@@ -540,9 +540,15 @@ char *mktemp(char *); /* No standard include */
 #define HAVE_GETGRNAM 1
 #ifndef QSORT_CAST
 #define QSORT_CAST (int (*)(const void *, const void *))
-#endif
-
-#endif 
+#endif /* QSORT_CAST */
+#if !defined(O_SYNC)
+#if defined(O_FSYNC)
+#define O_SYNC O_FSYNC
+#else /* defined(O_FSYNC) */
+#define O_SYNC 0
+#endif /* defined(O_FSYNC) */
+#endif /* !defined(O_SYNC) */
+#endif /* FreeBSD */
 
 #ifdef __OpenBSD__
 #include <strings.h>

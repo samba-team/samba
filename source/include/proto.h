@@ -58,8 +58,8 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd);
 /*The following definitions come from  client.c  */
 
 void cli_smb_close(char *inbuf, char *outbuf, int clnt_fd, int c_num, int f_num);
-void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir);
-void cmd_help(char *dum1, char *dum2);
+void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir, BOOL dirstoo);
+void cmd_help(char *dum_in, char *dum_out);
 
 /*The following definitions come from  clientgen.c  */
 
@@ -126,16 +126,16 @@ BOOL cli_send_trans_request(char *outbuf,int trans,
 			       int mdata,int mparam,int msetup);
 BOOL cli_send_session_request(char *inbuf,char *outbuf);
 BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, struct connection_options *options);
-void cli_send_logout(char *dum1, char *dum2);
+void cli_send_logout(char *dum_in, char *dum_out);
 BOOL cli_open_sockets(int port );
 BOOL cli_reopen_connection(char *inbuf,char *outbuf);
 
 /*The following definitions come from  clitar.c  */
 
 int padit(char *buf, int bufsize, int padsize);
-void cmd_block(char *dum1, char *dum2);
-void cmd_tarmode(char *dum1, char *dum2);
-void cmd_setmode(char *dum1, char *dum2);
+void cmd_block(char *dum_in, char *dum_out);
+void cmd_tarmode(char *dum_in, char *dum_out);
+void cmd_setmode(char *dum_in, char *dum_out);
 void cmd_tar(char *inbuf, char *outbuf);
 int process_tar(char *inbuf, char *outbuf);
 int clipfind(char **aret, int ret, char *tok);

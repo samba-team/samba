@@ -737,6 +737,10 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 		accessmode |= 1;
 	} 
 
+	if ((flags & O_SYNC) == O_SYNC) {
+		accessmode |= (1<<14);
+	}
+
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf,smb_size);
 
@@ -1208,8 +1212,9 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 }
 
 /****************************************************************************
-send a SamOEMChangePassword command
+Send a SamOEMChangePassword command
 ****************************************************************************/
+
 BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_password,
                              char *old_password)
 {
@@ -1282,11 +1287,11 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
   E_old_pw_hash( new_pw_hash, old_pw_hash, (uchar *)&data[516]);
 
   data_len = 532;
-   
+    
   if(cli_send_trans(cli,SMBtrans,PIPE_LANMAN,0,0,
-		 data,param,NULL,
-		 data_len , param_len,0,
-		 0,2,0) == False) {
+                 data,param,NULL,
+                 data_len , param_len,0,
+                 0,2,0) == False) {
     DEBUG(0,("cli_oem_change_password: Failed to send password change for user %s\n",
               user ));
     return False;

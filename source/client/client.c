@@ -80,7 +80,7 @@ extern BOOL have_ip;
 extern int max_xmit;
 
 static int interpret_long_filename(int level,char *p,file_info *finfo);
-static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,BOOL recurse_dir,void (*fn)(file_info *),BOOL longdir);
+static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,BOOL recurse_dir,void (*fn)(file_info *),BOOL longdir, BOOL dirstoo);
 static int interpret_short_filename(char *p,file_info *finfo);
 static BOOL do_this_one(file_info *finfo);
 
@@ -405,7 +405,7 @@ static void do_dskattr(void)
 /****************************************************************************
 show cd/pwd
 ****************************************************************************/
-static void cmd_pwd(char *dum1, char *dum2)
+static void cmd_pwd(char *dum_in, char *dum_out)
 {
   DEBUG(0,("Current directory is %s",CNV_LANG(service)));
   DEBUG(0,("%s\n",CNV_LANG(cur_dir)));
@@ -478,7 +478,7 @@ static void display_finfo(file_info *finfo)
   do a directory listing, calling fn on each file found. Use the TRANSACT2
   call for long filenames
   ****************************************************************************/
-static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir)
+static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir, BOOL dirstoo)
 {
   int max_matches = 512;
   int info_level = Protocol<PROTOCOL_NT1?1:260; /* NT uses 260, OS/2 uses 2. Both accept 1. */
@@ -638,7 +638,7 @@ static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*
   for (p=dirlist,i=0;i<total_received;i++)
     {
       p += interpret_long_filename(info_level,p,&finfo);
-      dir_action(inbuf,outbuf,attribute,&finfo,recurse_dir,fn,True);
+      dir_action(inbuf,outbuf,attribute,&finfo,recurse_dir,fn,True, dirstoo);
     }
 
   /* free up the dirlist buffer */
@@ -650,7 +650,7 @@ static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*
 /****************************************************************************
   do a directory listing, calling fn on each file found
   ****************************************************************************/
-static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir)
+static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir, BOOL dirstoo)
 {
   char *p;
   int received = 0;
@@ -777,7 +777,7 @@ static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (
   for (p=dirlist,i=0;i<num_received;i++)
     {
       p += interpret_short_filename(p,&finfo);
-      dir_action(inbuf,outbuf,attribute,&finfo,recurse_dir,fn,False);
+      dir_action(inbuf,outbuf,attribute,&finfo,recurse_dir,fn,False,dirstoo);
     }
 
   if (dirlist) free(dirlist);
@@ -789,17 +789,17 @@ static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (
 /****************************************************************************
   do a directory listing, calling fn on each file found
   ****************************************************************************/
-void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir)
+void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir, BOOL dirstoo)
 {
   DEBUG(5,("do_dir(%s,%x,%s)\n",Mask,attribute,BOOLSTR(recurse_dir)));
   if (Protocol >= PROTOCOL_LANMAN2)
     {
-      if (do_long_dir(inbuf,outbuf,Mask,attribute,fn,recurse_dir) > 0)
+      if (do_long_dir(inbuf,outbuf,Mask,attribute,fn,recurse_dir,dirstoo) > 0)
 	return;
     }
 
   expand_mask(Mask,False);
-  do_short_dir(inbuf,outbuf,Mask,attribute,fn,recurse_dir);
+  do_short_dir(inbuf,outbuf,Mask,attribute,fn,recurse_dir,dirstoo);
   return;
 }
 
@@ -973,8 +973,11 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 
 /****************************************************************************
   act on the files in a dir listing
+
+  RJS, 4-Apr-1998, dirstoo added to allow caller to indicate that directories
+                   should be processed as well.
   ****************************************************************************/
-static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,BOOL recurse_dir,void (*fn)(file_info *),BOOL longdir)
+static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,BOOL recurse_dir,void (*fn)(file_info *),BOOL longdir, BOOL dirstoo)
 {
 
   if (!((finfo->mode & aDIR) == 0 && *fileselection && 
@@ -986,6 +989,11 @@ static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,B
 	{
 	  pstring mask2;
 	  pstring sav_dir;
+
+          if (fn && dirstoo && do_this_one(finfo)) { /* Do dirs, RJS */
+	    fn(finfo);
+	  }
+
 	  strcpy(sav_dir,cur_dir);
 	  strcat(cur_dir,finfo->name);
 	  strcat(cur_dir,"\\");
@@ -997,9 +1005,9 @@ static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,B
 	  strcat(mask2,"*");
 
 	  if (longdir)
-	    do_long_dir(inbuf,outbuf,mask2,attribute,fn,True);      
+	    do_long_dir(inbuf,outbuf,mask2,attribute,fn,True, dirstoo);      
 	  else
-	    do_dir(inbuf,outbuf,mask2,attribute,fn,True);
+	    do_dir(inbuf,outbuf,mask2,attribute,fn,True, dirstoo);
 
 	  strcpy(cur_dir,sav_dir);
 	}
@@ -1038,7 +1046,7 @@ static void cmd_dir(char *inbuf,char *outbuf)
     strcat(mask,"*");
   }
 
-  do_dir(inbuf,outbuf,mask,attribute,NULL,recurse);
+  do_dir(inbuf,outbuf,mask,attribute,NULL,recurse,False);
 
   do_dskattr();
 
@@ -1446,7 +1454,7 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
 /****************************************************************************
   get a file
   ****************************************************************************/
-static void cmd_get(char *dum1, char *dum2)
+static void cmd_get(char *dum_in, char *dum_out)
 {
   pstring lname;
   pstring rname;
@@ -1541,7 +1549,7 @@ static void do_mget(file_info *finfo)
       strcat(mget_mask,"*");
       
       do_dir((char *)inbuf,(char *)outbuf,
-	     mget_mask,aSYSTEM | aHIDDEN | aDIR,do_mget,False);
+	     mget_mask,aSYSTEM | aHIDDEN | aDIR,do_mget,False, False);
       chdir("..");
       strcpy(cur_dir,saved_curdir);
       free(inbuf);free(outbuf);
@@ -1557,7 +1565,7 @@ static void do_mget(file_info *finfo)
 /****************************************************************************
 view the file using the pager
 ****************************************************************************/
-static void cmd_more(char *dum1, char *dum2)
+static void cmd_more(char *dum_in, char *dum_out)
 {
   fstring rname,lname,tmpname,pager_cmd;
   char *pager;
@@ -1610,7 +1618,7 @@ static void cmd_mget(char *inbuf,char *outbuf)
 	strcpy(mget_mask,p);
       else
 	strcat(mget_mask,p);
-      do_dir((char *)inbuf,(char *)outbuf,mget_mask,attribute,do_mget,False);
+      do_dir((char *)inbuf,(char *)outbuf,mget_mask,attribute,do_mget,False,False);
     }
 
   if (! *mget_mask)
@@ -1619,7 +1627,7 @@ static void cmd_mget(char *inbuf,char *outbuf)
       if(mget_mask[strlen(mget_mask)-1]!='\\')
 	strcat(mget_mask,"\\");
       strcat(mget_mask,"*");
-      do_dir((char *)inbuf,(char *)outbuf,mget_mask,attribute,do_mget,False);
+      do_dir((char *)inbuf,(char *)outbuf,mget_mask,attribute,do_mget,False,False);
     }
 }
 
@@ -1946,7 +1954,7 @@ static void do_put(char *rname,char *lname,file_info *finfo)
 /****************************************************************************
   put a file
   ****************************************************************************/
-static void cmd_put(char *dum1, char *dum2)
+static void cmd_put(char *dum_in, char *dum_out)
 {
   pstring lname;
   pstring rname;
@@ -2010,7 +2018,7 @@ static BOOL seek_list(FILE *f,char *name)
 /****************************************************************************
   set the file selection mask
   ****************************************************************************/
-static void cmd_select(char *dum1, char *dum2)
+static void cmd_select(char *dum_in, char *dum_out)
 {
   strcpy(fileselection,"");
   next_token(NULL,fileselection,NULL);
@@ -2020,7 +2028,7 @@ static void cmd_select(char *dum1, char *dum2)
 /****************************************************************************
   mput some files
   ****************************************************************************/
-static void cmd_mput(char *dum1, char *dum2)
+static void cmd_mput(char *dum_in, char *dum_out)
 {
   pstring lname;
   pstring rname;
@@ -2674,7 +2682,7 @@ static void cmd_del(char *inbuf,char *outbuf )
     }
   strcat(mask,buf);
 
-  do_dir((char *)inbuf,(char *)outbuf,mask,attribute,do_del,False);
+  do_dir((char *)inbuf,(char *)outbuf,mask,attribute,do_del,False,False);
 }
 
 
@@ -2769,7 +2777,7 @@ static void cmd_rename(char *inbuf,char *outbuf )
 /****************************************************************************
 toggle the prompt flag
 ****************************************************************************/
-static void cmd_prompt(char *dum1, char *dum2)
+static void cmd_prompt(char *dum_in, char *dum_out)
 {
   prompt = !prompt;
   DEBUG(2,("prompting is now %s\n",prompt?"on":"off"));
@@ -2779,7 +2787,7 @@ static void cmd_prompt(char *dum1, char *dum2)
 /****************************************************************************
 set the newer than time
 ****************************************************************************/
-static void cmd_newer(char *dum1, char *dum2)
+static void cmd_newer(char *dum_in, char *dum_out)
 {
   fstring buf;
   BOOL ok;
@@ -2802,7 +2810,7 @@ static void cmd_newer(char *dum1, char *dum2)
 /****************************************************************************
 set the archive level
 ****************************************************************************/
-static void cmd_archive(char *dum1, char *dum2)
+static void cmd_archive(char *dum_in, char *dum_out)
 {
   fstring buf;
 
@@ -2815,7 +2823,7 @@ static void cmd_archive(char *dum1, char *dum2)
 /****************************************************************************
 toggle the lowercaseflag
 ****************************************************************************/
-static void cmd_lowercase(char *dum1, char *dum2)
+static void cmd_lowercase(char *dum_in, char *dum_out)
 {
   lowercase = !lowercase;
   DEBUG(2,("filename lowercasing is now %s\n",lowercase?"on":"off"));
@@ -2827,7 +2835,7 @@ static void cmd_lowercase(char *dum1, char *dum2)
 /****************************************************************************
 toggle the recurse flag
 ****************************************************************************/
-static void cmd_recurse(char *dum1, char *dum2)
+static void cmd_recurse(char *dum_in, char *dum_out)
 {
   recurse = !recurse;
   DEBUG(2,("directory recursion is now %s\n",recurse?"on":"off"));
@@ -2836,7 +2844,7 @@ static void cmd_recurse(char *dum1, char *dum2)
 /****************************************************************************
 toggle the translate flag
 ****************************************************************************/
-static void cmd_translate(char *dum1, char *dum2)
+static void cmd_translate(char *dum_in, char *dum_out)
 {
   translation = !translation;
   DEBUG(2,("CR/LF<->LF and print text translation now %s\n",
@@ -2847,7 +2855,7 @@ static void cmd_translate(char *dum1, char *dum2)
 /****************************************************************************
 do a printmode command
 ****************************************************************************/
-static void cmd_printmode(char *dum1, char *dum2)
+static void cmd_printmode(char *dum_in, char *dum_out)
 {
   fstring buf;
   fstring mode;
@@ -2884,7 +2892,7 @@ static void cmd_printmode(char *dum1, char *dum2)
 /****************************************************************************
 do the lcd command
 ****************************************************************************/
-static void cmd_lcd(char *dum1, char *dum2)
+static void cmd_lcd(char *dum_in, char *dum_out)
 {
   fstring buf;
   pstring d;
@@ -3172,11 +3180,12 @@ static BOOL list_servers(char *wk_grp)
   return(ok);
 }
 
+
 /* This defines the commands supported by this client */
 struct
 {
   char *name;
-  void (*fn)(char *,char *); 
+  void (*fn)(char *, char *);
   char *description;
 } commands[] = 
 {
@@ -3262,7 +3271,7 @@ static int process_tok(fstring tok)
 /****************************************************************************
 help
 ****************************************************************************/
-void cmd_help(char *dum1, char *dum2)
+void cmd_help(char *dum_in, char *dum_out)
 {
   int i=0,j;
   fstring buf;
@@ -3795,7 +3804,7 @@ static void usage(char *pname)
 
 	ret=process_tar(InBuffer, OutBuffer);
 
-	cli_send_logout(InBuffer,OutBuffer);
+	cli_send_logout(InBuffer, OutBuffer);
 	close_sockets();
 	return(ret);
     } else
@@ -3850,31 +3859,6 @@ static void usage(char *pname)
 
       return(ret);
     }
-
-#ifdef NTDOMAIN
-
-	if (nt_domain_logon)
-	{
-		int ret = 0;
-		sprintf(service,"\\\\%s\\IPC$",query_host);
-		strupper(service);
-		connect_as_ipc = True;
-
-		DEBUG(5,("NT Domain Logon.  Service: %s\n", service));
-
-		if (cli_open_sockets(port))
-		{
-			if (!cli_send_login(NULL,NULL,True,True,NULL)) return(1);
-
-			do_nt_login(desthost, myhostname, Client, cnum);
-
-			cli_send_logout();
-			close_sockets();
-		}
-
-		return(ret);
-	}
-#endif 
 
   if (cli_open_sockets(port))
     {
