@@ -319,13 +319,10 @@ void queue_packet(struct packet_struct *packet)
 static BOOL listening(struct packet_struct *p,struct nmb_name *n)
 {
   struct subnet_record *d;
-  struct name_record *n1;
+  struct name_record *n1 = NULL;
 
-  /* We explicitly don't search WINS here - this will be done
-     in find_name_search if it was a packet from a non-local subnet. */
-  d = find_subnet(p->ip);
-
-  n1 = find_name_search(&d,n,FIND_LOCAL|FIND_WINS|FIND_SELF,p->ip);
+  if((d = find_subnet_all(p->ip)) != NULL)
+    n1 = find_name_on_subnet(d, n, FIND_SELF_NAME);
 
   return (n1 != NULL);
 }
@@ -483,7 +480,7 @@ static void process_nmb(struct packet_struct *p)
   ******************************************************************/
 void run_packet_queue()
 {
-	struct packet_struct *p, *nextp;
+	struct packet_struct *p;
 
 	while ((p=packet_queue)) {
 		packet_queue = p->next;

@@ -35,22 +35,22 @@ extern int DEBUGLEVEL;
   ****************************************************************************/
 static struct name_record *add_dns_result(struct nmb_name *question, struct in_addr addr)
 {
-	int name_type = question->name_type;
-	char *qname = question->name;
+  int name_type = question->name_type;
+  char *qname = question->name;
 
-	if (!addr.s_addr) {
-		/* add the fail to WINS cache of names. give it 1 hour in the cache */
-		DEBUG(3,("Negative DNS answer for %s\n", qname));
-		add_netbios_entry(wins_subnet,qname,name_type,NB_ACTIVE,60*60,DNSFAIL,addr,
-				  True, True);
-		return NULL;
-	}
+  if (!addr.s_addr) {
+    /* add the fail to WINS cache of names. give it 1 hour in the cache */
+    DEBUG(3,("Negative DNS answer for %s\n", qname));
+    add_netbios_entry(wins_client_subnet,qname,name_type,NB_ACTIVE,60*60,
+                      DNSFAIL,addr,True);
+    return NULL;
+  }
 
-	/* add it to our WINS cache of names. give it 2 hours in the cache */
-	DEBUG(3,("DNS gave answer for %s of %s\n", qname, inet_ntoa(addr)));
+  /* add it to our WINS cache of names. give it 2 hours in the cache */
+  DEBUG(3,("DNS gave answer for %s of %s\n", qname, inet_ntoa(addr)));
 
-	return add_netbios_entry(wins_subnet,qname,name_type,NB_ACTIVE,2*60*60,DNS,addr,
-				 True,True);
+  return add_netbios_entry(wins_client_subnet,qname,name_type,NB_ACTIVE,
+                           2*60*60,DNS,addr, True);
 }
 
 

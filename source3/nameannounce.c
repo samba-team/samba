@@ -367,32 +367,32 @@ void announce_master(time_t t)
 
   if (!announce_timer_last) announce_timer_last = t;
   if (t-announce_timer_last < CHECK_TIME_MST_ANNOUNCE * 60)
-    {
-      DEBUG(10,("announce_master: t (%d) - last(%d) < %d\n",
-                 t, announce_timer_last, CHECK_TIME_MST_ANNOUNCE * 60 ));
-      return;
-    }
+  {
+    DEBUG(10,("announce_master: t (%d) - last(%d) < %d\n",
+               t, announce_timer_last, CHECK_TIME_MST_ANNOUNCE * 60 ));
+    return;
+  }
 
-  if(wins_subnet == NULL)
-    {
-      DEBUG(10,("announce_master: no wins subnet, ignoring.\n"));
-      return;
-    }
+  if(wins_client_subnet == NULL)
+  {
+    DEBUG(10,("announce_master: no wins subnet, ignoring.\n"));
+    return;
+  }
 
   announce_timer_last = t;
 
   for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
+  {
+    for (work = d->workgrouplist; work; work = work->next)
     {
-      for (work = d->workgrouplist; work; work = work->next)
-	{
-	  if (AM_MASTER(work))
-	    {
-	      am_master = True;
-              DEBUG(4,( "announce_master: am_master = %d for \
+      if (AM_MASTER(work))
+      {
+        am_master = True;
+        DEBUG(4,( "announce_master: am_master = %d for \
 workgroup %s\n", am_master, work->work_group));
-	    }
-	}
+      }
     }
+  }
  
   if (!am_master) return; /* only proceed if we are a master browser */
   
@@ -400,79 +400,71 @@ workgroup %s\n", am_master, work->work_group));
      and that we *only* do this on the WINS subnet. */
 
   /* Try and find our workgroup on the WINS subnet */
-  work = find_workgroupstruct(wins_subnet, myworkgroup, False);
+  work = find_workgroupstruct(wins_client_subnet, myworkgroup, False);
 
   if (work)
+  {
+    /* assume that the domain master browser we want to sync
+       with is our own domain.
+     */
+    char *name = work->work_group;
+    int   type = 0x1b;
+
+    /* check the existence of a dmb for this workgroup, and if
+       one exists at the specified ip, sync with it and announce
+       ourselves as a master browser to it
+     */
+
+    if (!lp_wins_support() && *lp_wins_server() )
     {
-      char *name;
-      int   type;
+      DEBUG(4, ("Local Announce: find %s<%02x> from WINS server %s\n",
+                 name, type, lp_wins_server()));
 
-        {
-          /* assume that the domain master browser we want to sync
-             with is our own domain.
-           */
-          name = work->work_group;
-          type = 0x1b;
-        }
+      queue_netbios_pkt_wins(ClientNMB,
+                NMB_QUERY,NAME_QUERY_DOM_SRV_CHK,
+                name, type, 0,0,0,
+                work->work_group,NULL,
+                ipzero, ipzero);
+    }
+    else if(lp_wins_support()) 
+    {
+      /* We are the WINS server - query ourselves for the dmb name. */
 
-      /* check the existence of a dmb for this workgroup, and if
-         one exists at the specified ip, sync with it and announce
-         ourselves as a master browser to it
-       */
+      struct nmb_name netb_name;
+      struct name_record *nr = 0;
 
-      if (!lp_wins_support() && *lp_wins_server() )
-        {
-          DEBUG(4, ("Local Announce: find %s<%02x> from WINS server %s\n",
-                     name, type, lp_wins_server()));
+      make_nmb_name(&netb_name, name, type, scope);
 
-          queue_netbios_pkt_wins(ClientNMB,
-                    NMB_QUERY,NAME_QUERY_DOM_SRV_CHK,
-                    name, type, 0,0,0,
-                    work->work_group,NULL,
-                    ipzero, ipzero);
-        }
-      else if(lp_wins_support()) 
-        {
-           /* We are the WINS server - query ourselves for the dmb name. */
-
-           struct nmb_name netb_name;
-           struct name_record *nr = 0;
-
-	   d = NULL;
-
-           make_nmb_name(&netb_name, name, type, scope);
-
-           if ((nr = find_name_search(&d, &netb_name, FIND_WINS, ipzero)) == 0)
-             {
-               DEBUG(0, ("announce_master: unable to find domain master browser for workgroup %s \
+      if ((nr = find_name_on_subnet(wins_client_subnet, &netb_name, FIND_ANY_NAME)) == 0)
+      {
+        DEBUG(0, ("announce_master: unable to find domain master browser for workgroup %s \
 in our own WINS database.\n", work->work_group));
-               return;
-             }
+        return;
+      }
 
-           /* Check that this isn't one of our addresses (ie. we are not domain master
-              ourselves) */
-           if(ismyip(nr->ip_flgs[0].ip) || ip_equal(nr->ip_flgs[0].ip, ipzero))
-             {
-               DEBUG(4, ("announce_master: domain master ip found (%s) for workgroup %s \
+      /* Check that this isn't one of our addresses (ie. we are not domain master
+         ourselves) */
+      if(ismyip(nr->ip_flgs[0].ip) || ip_equal(nr->ip_flgs[0].ip, ipzero))
+      {
+        DEBUG(4, ("announce_master: domain master ip found (%s) for workgroup %s \
 is one of our interfaces.\n", work->work_group, inet_ntoa(nr->ip_flgs[0].ip) ));
-               return;
-             }
+        return;
+      }
 
-           /* Issue a NAME_STATUS_DOM_SRV_CHK immediately - short circuit the
-              NAME_QUERY_DOM_SRV_CHK which is done only if we are talking to a 
-              remote WINS server. */
+      /* Issue a NAME_STATUS_DOM_SRV_CHK immediately - short circuit the
+         NAME_QUERY_DOM_SRV_CHK which is done only if we are talking to a 
+         remote WINS server. */
 
-           DEBUG(4, ("announce_master: doing name status for %s<%02x> to domain master ip %s \
+      DEBUG(4, ("announce_master: doing name status for %s<%02x> to domain master ip %s \
 for workgroup %s\n", name, type, inet_ntoa(nr->ip_flgs[0].ip), work->work_group ));
 
-           queue_netbios_packet(wins_subnet, ClientNMB,
-                    NMB_QUERY,NAME_STATUS_DOM_SRV_CHK,
-                    name, type, 0,0,0,
-                    work->work_group,NULL,
-                    False, False, nr->ip_flgs[0].ip, nr->ip_flgs[0].ip, 0);
-         }
-
+      queue_netbios_packet(wins_client_subnet, ClientNMB,
+               NMB_QUERY,NAME_STATUS_DOM_SRV_CHK,
+               name, type, 0,0,0,
+               work->work_group,NULL,
+               False, False, nr->ip_flgs[0].ip, nr->ip_flgs[0].ip, 0);
     }
+  }
 }
 
 /****************************************************************************

@@ -38,9 +38,8 @@
 #define NMB_WAIT_ACK    0x07 /* see rfc1002.txt 4.2.16 */
 /* XXXX what about all the other types?? 0x1, 0x2, 0x3, 0x4, 0x8? */
 
-#define FIND_SELF  0x01
-#define FIND_WINS  0x02
-#define FIND_LOCAL 0x04
+#define FIND_ANY_NAME   0
+#define FIND_SELF_NAME  1
 
 /* NetBIOS flags */
 #define NB_GROUP  0x80
@@ -428,11 +427,11 @@ struct packet_struct
    the WINS subnet. */
 
 extern struct subnet_record *subnetlist;
-extern struct subnet_record *wins_subnet;
+extern struct subnet_record *wins_client_subnet;
 
 #define FIRST_SUBNET subnetlist
 #define NEXT_SUBNET_EXCLUDING_WINS(x) ((x)->next)
-#define NEXT_SUBNET_INCLUDING_WINS(x) ( ((x) == wins_subnet) ? NULL : \
-                                        (((x)->next == NULL) ? wins_subnet : \
+#define NEXT_SUBNET_INCLUDING_WINS(x) ( ((x) == wins_client_subnet) ? NULL : \
+                                        (((x)->next == NULL) ? wins_client_subnet : \
                                          (x)->next))
 

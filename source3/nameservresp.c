@@ -111,7 +111,7 @@ static void response_name_reg(struct nmb_name *ans_name,
      treat such errors as success for this particular
      case only. jallison@whistle.com.
    */
-  if ( ((d != wins_subnet) && (nmb->header.rcode == 6) && strequal(myworkgroup, name) &&
+  if ( ((d != wins_client_subnet) && (nmb->header.rcode == 6) && strequal(myworkgroup, name) &&
          (type == 0x1b)) ||
        (nmb->header.rcode == 0 && nmb->answers && nmb->answers->rdata))
 #else
@@ -426,10 +426,12 @@ static void response_name_query_sync(struct nmb_packet *nmb,
 	}
       else
 	{
+          struct subnet_record *add_rec = (!bcast) ? wins_client_subnet : d;
+
 	  /* update our netbios name list (re-register it if necessary) */
-	  add_netbios_entry(d, ans_name->name, ans_name->name_type,
+	  add_netbios_entry(add_rec, ans_name->name, ans_name->name_type,
 			    nb_flags,GET_TTL(0),REGISTER,
-			    found_ip,False,!bcast);
+			    found_ip,False);
 	}
     }
   else
@@ -443,8 +445,7 @@ static void response_name_query_sync(struct nmb_packet *nmb,
 	     then we're in a mess: our name database doesn't match
 	     reality. sort it out
              */
-	  remove_netbios_name(d,n->name.name, n->name.name_type,
-			      REGISTER,n->send_ip);
+	  remove_netbios_name(d,n->name.name, n->name.name_type, REGISTER);
 	}
     }
 }

@@ -440,20 +440,15 @@ void set_samba_nb_type(void);
 BOOL name_equal(struct nmb_name *n1,struct nmb_name *n2);
 BOOL ms_browser_name(char *name, int type);
 void remove_name(struct subnet_record *d, struct name_record *n);
-struct name_record *find_name(struct name_record *n,
-			struct nmb_name *name, int search);
-struct name_record *find_name_search(struct subnet_record **d,
-				     struct nmb_name *name,
-				     int search, struct in_addr ip);
+struct name_record *find_name_on_subnet(struct subnet_record *d,
+			struct nmb_name *name, BOOL self_only);
 void dump_names(void);
 void load_netbios_names(void);
 void remove_netbios_name(struct subnet_record *d,
-			char *name,int type, enum name_source source,
-			 struct in_addr ip);
+			char *name,int type, enum name_source source);
 struct name_record *add_netbios_entry(struct subnet_record *d,
-		char *name, int type, int nb_flags, 
-		int ttl, enum name_source source, struct in_addr ip,
-		BOOL new_only,BOOL wins);
+		char *name, int type, int nb_flags, int ttl, 
+                enum name_source source, struct in_addr ip, BOOL new_only);
 void expire_names(time_t t);
 
 /*The following definitions come from  namedbresp.c  */
@@ -486,9 +481,8 @@ void expire_servers(time_t t);
 
 /*The following definitions come from  namedbsubnet.c  */
 
-struct subnet_record *find_subnet(struct in_addr bcast_ip);
-struct subnet_record *find_req_subnet(struct in_addr ip, BOOL bcast);
-struct subnet_record *find_subnet_all(struct in_addr bcast_ip);
+struct subnet_record *find_subnet(struct in_addr ip);
+struct subnet_record *find_subnet_all(struct in_addr ip);
 void add_workgroup_to_subnet( struct subnet_record *d, char *group);
 void add_my_subnets(char *group);
 void write_browse_list(time_t t);

@@ -283,8 +283,8 @@ static void load_hosts_file(char *fname)
       ipaddr = *interpret_addr2(ip);
       d = find_subnet_all(ipaddr);
       if (d) {
-	add_netbios_entry(d,name,0x00,NB_ACTIVE,0,source,ipaddr,True,True);
-	add_netbios_entry(d,name,0x20,NB_ACTIVE,0,source,ipaddr,True,True);
+	add_netbios_entry(d,name,0x00,NB_ACTIVE,0,source,ipaddr,True);
+	add_netbios_entry(d,name,0x20,NB_ACTIVE,0,source,ipaddr,True);
       } 
     }
   

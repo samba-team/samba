@@ -170,7 +170,7 @@ static void start_sync_browse_entry(struct browse_cache_record *b)
   struct work_record *work;
 
   /* Check panic conditions - these should not be true. */
-  if(b->subnet != wins_subnet) {
+  if(b->subnet != wins_client_subnet) {
       DEBUG(0, 
         ("start_sync_browse_entry: ERROR sync requested on non-WINS subnet.\n"));
       return;

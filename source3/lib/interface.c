@@ -438,6 +438,9 @@ struct in_addr *iface_n_ip(int n)
   return NULL;
 }
 
+/****************************************************************************
+Try and find an interface that matches an ip. If we cannot, return NULL
+  **************************************************************************/
 static struct interface *iface_find(struct in_addr ip)
 {
   struct interface *i;
@@ -446,7 +449,7 @@ static struct interface *iface_find(struct in_addr ip)
   for (i=local_interfaces;i;i=i->next)
     if (same_net(i->ip,ip,i->nmask)) return i;
 
-  return local_interfaces;
+  return NULL;
 }
 
 /* these 3 functions return the ip/bcast/nmask for the interface
@@ -454,17 +457,20 @@ static struct interface *iface_find(struct in_addr ip)
 
 struct in_addr *iface_bcast(struct in_addr ip)
 {
-  return(&iface_find(ip)->bcast);
+  struct interface *i = iface_find(ip);
+  return(i ? &i->bcast : &local_interfaces->bcast);
 }
 
 struct in_addr *iface_nmask(struct in_addr ip)
 {
-  return(&iface_find(ip)->nmask);
+  struct interface *i = iface_find(ip);
+  return(i ? &i->nmask : &local_interfaces->nmask);
 }
 
 struct in_addr *iface_ip(struct in_addr ip)
 {
-  return(&iface_find(ip)->ip);
+  struct interface *i = iface_find(ip);
+  return(i ? &i->ip : &local_interfaces->ip);
 }
 
 

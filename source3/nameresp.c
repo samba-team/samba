@@ -61,15 +61,14 @@ static void dead_netbios_entry(struct subnet_record *d,
 	  
 	  if ((!NAME_GROUP(n->nb_flags)))
 	    {
-	      struct subnet_record *d1 = wins_subnet;
+	      struct subnet_record *d1 = wins_client_subnet;
 	      if (d1)
 		{
 		  /* remove the name that had been registered with us,
 		     and we're now getting no response when challenging.
 		     see rfc1001.txt 15.5.2
 		     */
-		  remove_netbios_name(d1, n->name.name, n->name.name_type,
-				      REGISTER, n->send_ip);
+		  remove_netbios_name(d1, n->name.name, n->name.name_type, REGISTER);
 		}
 	    }
 	}
@@ -271,7 +270,7 @@ struct response_record *queue_netbios_pkt_wins(
 
   if (zero_ip(send_ip)) return NULL;
 
-  return queue_netbios_packet(wins_subnet,fd, quest_type, state, 
+  return queue_netbios_packet(wins_client_subnet,fd, quest_type, state, 
 		       name, name_type, nb_flags, ttl,
                server_type,my_name,my_comment,
 		       False, True, send_ip, reply_to_ip, 0);

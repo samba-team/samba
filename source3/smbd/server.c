@@ -2453,6 +2453,8 @@ max can be %d\n", num_interfaces, FD_SETSIZE));
           if(FD_ISSET(fd_listenset[i],&lfds))
           {
             s = fd_listenset[i];
+            /* Clear this so we don't look at it again. */
+            FD_CLR(fd_listenset[i],&lfds);
             break;
           }
         }
