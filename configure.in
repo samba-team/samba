@@ -66,7 +66,7 @@ if test "$with_krb4"; then
 	LIB_kdb="-lkdb -lkrb"
 	if test "$krb4_libdir"; then
 		LIB_krb4="-rpath $krb4_libdir $LIB_krb4"
-		LIB_kdb="-rpath $krb4_libdir $LIB_kdb -L$krb4_libdir"
+		LIB_kdb="-rpath $krb4_libdir -L$krb4_libdir $LIB_kdb"
 	fi
 	EXTRA_LIB45=lib45.a
 	AC_SUBST(EXTRA_LIB45)
@@ -396,7 +396,7 @@ AC_NEED_PROTO([#include <stdlib.h>], setenv)
 AC_NEED_PROTO([#include <stdlib.h>], unsetenv)
 AC_NEED_PROTO([#include <unistd.h>], gethostname)
 AC_NEED_PROTO([#include <unistd.h>], mkstemp)
-AC_NEED_PROTO([#include <unistd.h>],getusershell)
+AC_NEED_PROTO([#include <unistd.h>], getusershell)
 
 AC_NEED_PROTO([
 #ifdef HAVE_SYS_TYPES_H
@@ -522,6 +522,11 @@ AC_NEED_PROTO([
 #include <string.h>
 ],
 strtok_r)
+
+AC_NEED_PROTO([
+#include <string.h>
+],
+strsep)
 
 AC_CHECK_VAR([#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
