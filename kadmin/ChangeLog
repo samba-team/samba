@@ -1,3 +1,12 @@
+2001-01-12  Assar Westerlund  <assar@sics.se>
+
+	* util.c (parse_attributes): make empty string mean no attributes,
+	specifying the empty string at the command line should give you no
+	attributes, but just pressing return at the prompt gives you
+	default attributes
+	(edit_entry): only pick up values from the default principal if they
+	aren't set in the principal being edited
+
 2001-01-04  Assar Westerlund  <assar@sics.se>
 
 	* load.c (doit): print an error and bail out if storing an entry
