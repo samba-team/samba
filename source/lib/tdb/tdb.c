@@ -1479,6 +1479,12 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 		/* first try in-place update, on modify or replace. */
 		if (tdb_update_hash(tdb, key, hash, dbuf) == 0)
 			goto out;
+		if (tdb->ecode == TDB_ERR_NOEXIST &&
+		    flag == TDB_MODIFY) {
+			/* if the record doesn't exist and we are in TDB_MODIFY mode then
+			 we should fail the store */
+			goto fail;
+		}
 	}
 	/* reset the error code potentially set by the tdb_update() */
 	tdb->ecode = TDB_SUCCESS;
