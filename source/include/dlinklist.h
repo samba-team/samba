@@ -71,23 +71,15 @@ do { \
 		} \
 } while (0)
 
-/* demote an element to the end of the list, needs a tmp pointer */
-#define DLIST_DEMOTE(list, p, tmp) \
+/* insert 'p' after the given element 'el' in a list. If el is NULL then
+   this is the same as a DLIST_ADD() */
+#define DLIST_ADD_AFTER(list, p, el) \
 do { \
-		DLIST_REMOVE(list, p); \
-		DLIST_ADD_END(list, p, tmp); \
-} while (0)
-
-/* concatenate two lists - putting all elements of the 2nd list at the
-   end of the first list */
-#define DLIST_CONCATENATE(list1, list2, type) \
-do { \
-		if (!(list1)) { \
-			(list1) = (list2); \
-		} else { \
-			type tmp; \
-			for (tmp = (list1); tmp->next; tmp = tmp->next) ; \
-			tmp->next = (list2); \
-			(list2)->prev = tmp; \
-		} \
+        if (!(list) || !(el)) { \
+		DLIST_ADD(list, p); \
+	} else { \
+		p->prev = el; \
+		p->next = el->next; \
+		el->next = p; \
+	}\
 } while (0)
