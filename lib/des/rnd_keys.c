@@ -111,6 +111,17 @@ sigALRM(int sig)
     SIGRETURN(0);
 }
 
+static
+void
+des_rand_data(unsigned char *data, int size)
+{
+  int i;
+
+  for(i = 0; i < size; ++i)
+    data[i] = random() % 0x100;
+}
+
+#if 0
 /*
  * Generate size bytes of "random" data using timed interrupts.
  * It takes about 40ms/byte random data.
@@ -164,6 +175,7 @@ des_rand_data(unsigned char *data, int size)
     setitimer(ITIMER_REAL, &otv, 0);
     sigaction(SIGALRM, &osa, 0);
 }
+#endif
 
 void
 des_generate_random_block(des_cblock *block)
