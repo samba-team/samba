@@ -247,8 +247,11 @@ void server_terminate_connection(struct server_connection *srv_conn, const char 
 void server_destroy_connection(struct server_connection *srv_conn)
 {
 	close(srv_conn->event.fde->fd);
+
 	event_remove_fd(srv_conn->event.ctx, srv_conn->event.fde);
 	event_remove_timed(srv_conn->event.ctx, srv_conn->event.idle);
+
+	talloc_destroy(srv_conn->mem_ctx);
 }
 
 void server_io_handler(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags)
