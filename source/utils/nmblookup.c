@@ -25,6 +25,7 @@
 #include "includes.h"
 
 extern struct in_addr ipzero;
+extern BOOL AllowDebugChange;
 
 static BOOL use_bcast = True;
 static BOOL got_bcast = False;
@@ -195,7 +196,6 @@ int main(int argc,char *argv[])
   int i;
   static pstring servicesf = CONFIGFILE;
   BOOL lookup_by_ip = False;
-  int commandline_debuglevel = -2;
 
   DEBUGLEVEL = 1;
   *lookup = 0;
@@ -239,7 +239,8 @@ int main(int argc,char *argv[])
 	recursion_desired = True;
 	break;
       case 'd':
-	commandline_debuglevel = DEBUGLEVEL = atoi(optarg);
+	DEBUGLEVEL = atoi(optarg);
+	AllowDebugChange = False;
 	break;
       case 's':
 	pstrcpy(servicesf, optarg);
@@ -272,9 +273,6 @@ int main(int argc,char *argv[])
    * Ensure we reset DEBUGLEVEL if someone specified it
    * on the command line.
    */
-
-  if(commandline_debuglevel != -2)
-    DEBUGLEVEL = commandline_debuglevel;
 
   load_interfaces();
   if (!open_sockets()) return(1);
