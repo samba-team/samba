@@ -25,16 +25,17 @@ fi
 
 AC_MSG_CHECKING(whether to use included popt)
 if test x"$INCLUDED_POPT" != x"no"; then
-	TMP_LIBPOPT_OBJS="lib/popt/findme.o lib/popt/popt.o lib/popt/poptconfig.o \
-				lib/popt/popthelp.o lib/popt/poptparse.o"
 	CPPFLAGS="$CPPFLAGS -I$srcdir/lib/popt"
+	SMB_SUBSYSTEM(LIBPOPT,[],
+		[],
+		[INT_LIB_POPT])
 	AC_MSG_RESULT(yes)
 else
+	SMB_SUBSYSTEM(LIBPOPT,[],
+		[],
+		[EXT_LIB_POPT])
+	SMB_EXT_LIB(POPT, [${TMP_LIBPOPT_LIBS}])
 	AC_MSG_RESULT(no)
 fi
 
-SMB_EXT_LIB(POPT, [${TMP_LIBPOPT_LIBS}])
-
-SMB_SUBSYSTEM(LIBPOPT,[],
-		[${TMP_LIBPOPT_OBJS}],
-		[EXT_LIB_POPT])
+AC_CHECK_HEADERS([float.h])
