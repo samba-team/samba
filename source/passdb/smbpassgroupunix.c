@@ -29,7 +29,7 @@ extern DOM_SID global_member_sid;
  to ensure no modification outside this module.
 ****************************************************************/
 
-static void *startsmbfilegrpent(BOOL update)
+static void *startsmbunixgrpent(BOOL update)
 {
 	return startsmbfilepwent(False);
 }
@@ -38,7 +38,7 @@ static void *startsmbfilegrpent(BOOL update)
  End enumeration of the smbpasswd list.
 ****************************************************************/
 
-static void endsmbfilegrpent(void *vp)
+static void endsmbunixgrpent(void *vp)
 {
 	endsmbfilepwent(vp);
 }
@@ -48,7 +48,7 @@ static void endsmbfilegrpent(void *vp)
  This must be treated as an opaque token.
 *************************************************************************/
 
-static SMB_BIG_UINT getsmbfilegrppos(void *vp)
+static SMB_BIG_UINT getsmbunixgrppos(void *vp)
 {
 	return getsmbfilepwpos(vp);
 }
@@ -58,7 +58,7 @@ static SMB_BIG_UINT getsmbfilegrppos(void *vp)
  This must be treated as an opaque token.
 *************************************************************************/
 
-static BOOL setsmbfilegrppos(void *vp, SMB_BIG_UINT tok)
+static BOOL setsmbunixgrppos(void *vp, SMB_BIG_UINT tok)
 {
 	return setsmbfilepwpos(vp, tok);
 }
@@ -66,7 +66,7 @@ static BOOL setsmbfilegrppos(void *vp, SMB_BIG_UINT tok)
 /*************************************************************************
  Routine to return the next smbpassgroup entry
  *************************************************************************/
-static struct smb_passwd *getsmbfilegrpent(void *vp,
+static struct smb_passwd *getsmbunixgrpent(void *vp,
 		uint32 **grp_rids, int *num_grps,
 		uint32 **als_rids, int *num_alss)
 {
@@ -79,7 +79,7 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 
 	if (vp == NULL)
 	{
-		DEBUG(0,("getsmbfilegrpent: Bad password file pointer.\n"));
+		DEBUG(0,("getsmbunixgrpent: Bad password file pointer.\n"));
 		return NULL;
 	}
 
@@ -217,14 +217,14 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 
 static struct passgrp_ops file_ops =
 {
-	startsmbfilegrpent,
-	endsmbfilegrpent,
-	getsmbfilegrppos,
-	setsmbfilegrppos,
+	startsmbunixgrpent,
+	endsmbunixgrpent,
+	getsmbunixgrppos,
+	setsmbunixgrppos,
 	iterate_getsmbgrpnam,          /* In passgrp.c */
 	iterate_getsmbgrpuid,          /* In passgrp.c */
 	iterate_getsmbgrprid,          /* In passgrp.c */
-	getsmbfilegrpent,
+	getsmbunixgrpent,
 };
 
 struct passgrp_ops *unix_initialise_password_grp(void)
