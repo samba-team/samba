@@ -319,6 +319,8 @@ sub NeededTypedef($)
 		    'bitmask' => "$2"
 		    };
 	    }
+
+	    $needed{"ett_$t->{NAME}"} = 1;
 	}
 }
 
@@ -645,10 +647,13 @@ sub RewriteC($$$)
 	    pidl $_;
 
 	    if (defined($bitmaps{$cur_fn})) {
+		pidl "\t{\n\t\tproto_tree *subtree = NULL;\n\n";
+		pidl "\t\tif (tree->proto_tree)\n\t\t\tsubtree = proto_item_add_subtree(tree->proto_tree->last_child, ett_$cur_fn);\n\n";
 		foreach my $e (@{$bitmaps{$cur_fn}->{DATA}{ELEMENTS}}) {
 		    $e =~ /^(.*?) \( (.*?) \)$/;
-		    pidl "\tproto_tree_add_boolean(tree->proto_tree, hf_${cur_fn}_$1, ndr->tvb, ndr->offset - sizeof(v), sizeof(v), v);\n";
+		    pidl "\t\tproto_tree_add_boolean(subtree, hf_${cur_fn}_$1, ndr->tvb, ndr->offset - sizeof(v), sizeof(v), v);\n";
 		}
+		pidl "\t}\n";
 	    }
 
 	    next;
