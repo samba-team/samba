@@ -1,3 +1,23 @@
+2004-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/db3.c: fix all db >= 4.1 cases
+	
+	* doc/setup.texi: add text about hostname to realm mapping using
+	DNS
+
+2004-02-19  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/store.c: handle memory allocate errors
+
+	* lib/krb5/fcache.c (_krb5_xlock): handle that everything was ok,
+	and don't put an error in the error strings then
+	
+2004-02-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: rename AC_WFLAGS to rk_WFLAGS
+	
+	* acinclude.m4: use m4_define, over-quote string
+	
 2004-02-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/init_creds_pw.c (change_password): handle that
@@ -22,7 +42,13 @@
 	integers, it got the length wrong, fix from Panasas, Inc.
 	
 	rename len_int and len_unsigned to _heim_\&
+	
 	* lib/asn1/der_locl.h: add _heim_len_unsigned, _heim_len_int
+	
+2004-02-06  Dave Love  <d.love@dl.ac.uk>
+
+	* configure.in: Check for sys/socket.h, net/if.h.  Modify term.h,
+	security/pam_appl.h tests.
 	
 2004-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
