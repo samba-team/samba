@@ -1014,6 +1014,7 @@ int main(int argc, char **argv)
 {	
 	BOOL amroot = getuid() == 0;
 
+	DEBUGLEVEL = 0;
 	AllowDebugChange = False;
 
 #if defined(HAVE_SET_AUTH_PARAMETERS)
