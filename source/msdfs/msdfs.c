@@ -100,7 +100,7 @@ static BOOL create_conn_struct( connection_struct *conn, int snum,
  Parse the contents of a symlink to verify if it is an msdfs referral
  A valid referral is of the form: msdfs:server1\share1,server2\share2
  **********************************************************************/
-static inline BOOL parse_symlink(char* buf,struct referral** preflist, 
+static BOOL parse_symlink(char* buf,struct referral** preflist, 
 				 int* refcount)
 {
 	pstring temp;
