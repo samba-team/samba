@@ -569,8 +569,8 @@ BOOL name_register_wins(const char *name, int name_type)
 
   if( DEBUGLVL( 4 ) )
     {
-    dbg_text( "name_register_wins: Registering my name %s ", name );
-    dbg_text( "with WINS server %s.\n", wins_srv_name() );
+    dbgtext( "name_register_wins: Registering my name %s ", name );
+    dbgtext( "with WINS server %s.\n", wins_srv_name() );
     }
 
   sock = open_socket_in( SOCK_DGRAM, 0, 3, 
