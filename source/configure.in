@@ -1391,12 +1391,21 @@ if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
     AC_DEFINE(HAVE_GETTIMEOFDAY_TZ,1,[Whether gettimeofday() is available])
 fi
 
-AC_CACHE_CHECK([for __va_copy],samba_cv_HAVE_VA_COPY,[
+AC_CACHE_CHECK([for va_copy],samba_cv_HAVE_VA_COPY,[
 AC_TRY_LINK([#include <stdarg.h>
-va_list ap1,ap2;], [__va_copy(ap1,ap2);],
+va_list ap1,ap2;], [va_copy(ap1,ap2);],
 samba_cv_HAVE_VA_COPY=yes,samba_cv_HAVE_VA_COPY=no)])
 if test x"$samba_cv_HAVE_VA_COPY" = x"yes"; then
-    AC_DEFINE(HAVE_VA_COPY,1,[Whether __va_copy() is available])
+    AC_DEFINE(HAVE_VA_COPY,1,[Whether va_copy() is available])
+else
+    AC_CACHE_CHECK([for __va_copy],samba_cv_HAVE___VA_COPY,[
+    AC_TRY_LINK([#include <stdarg.h>
+    va_list ap1,ap2;], [__va_copy(ap1,ap2);],
+    samba_cv_HAVE___VA_COPY=yes,
+    samba_cv_HAVE___VA_COPY=no)])
+    if test x"$samba_cv_HAVE___VA_COPY" = x"yes"; then
+        AC_DEFINE(HAVE___VA_COPY,1,[Whether __va_copy() is available])
+    fi
 fi
 
 AC_CACHE_CHECK([for C99 vsnprintf],samba_cv_HAVE_C99_VSNPRINTF,[
@@ -1606,7 +1615,7 @@ dnl Try to find iconv(3)
     if test "$ICONV_FOUND" = yes; then
         LIB_ADD_DIR(LDFLAGS, "$i/lib")
         CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-        LIBS="$save_LIBS $LIBS"
+        LIBS="$save_LIBS"
         ICONV_LOCATION=$i
         export LDFLAGS LIBS CPPFLAGS
 dnl Now, check for a working iconv ... we want to do it here because
@@ -1670,9 +1679,9 @@ dnl ])
 
         LIBS="$ic_save_LIBS"
         if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
-		CPPFLAGS=$save_CPPFLAGS
-		CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-		export CPPFLAGS
+  	   CPPFLAGS=$save_CPPFLAGS
+	   CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
+	   export CPPFLAGS
            AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
 	   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
 	   AC_DEFINE_UNQUOTED(DEFAULT_DISPLAY_CHARSET,$default_display_charset,[Default display charset name])

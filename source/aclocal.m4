@@ -125,11 +125,11 @@ AC_DEFUN(AC_LIBTESTFUNC,
 # may have different results.
 #
 # Note that using directly AS_VAR_PUSHDEF([ac_Lib], [ac_cv_lib_$1_$3])
-# is asking for troubles, since AC_CHECK_LIB($lib, fun) would give
+# is asking for trouble, since AC_CHECK_LIB($lib, fun) would give
 # ac_cv_lib_$lib_fun, which is definitely not what was meant.  Hence
 # the AS_LITERAL_IF indirection.
 #
-# FIXME: This macro is extremely suspicious.  It DEFINEs unconditionnally,
+# FIXME: This macro is extremely suspicious.  It DEFINEs unconditionally,
 # whatever the FUNCTION, in addition to not being a *S macro.  Note
 # that the cache does depend upon the function we are looking for.
 #
