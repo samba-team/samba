@@ -1,0 +1,4 @@
+Sun Nov  9 07:14:45 1997  Assar Westerlund  <assar@sics.se>
+
+	* mdtest.c: print out old and new string
+
