@@ -368,7 +368,10 @@ There are two ways to create machine trust accounts:
 	account is automatically created by Samba at the time the client
 	is joined to the domain. (For security, this is the
 	recommended method.) The corresponding Unix account may be
-	created automatically or manually. </para>
+	created automatically or manually. This option requires that the
+	administrator configures in smb.conf [globals] the <emphasis>add machine script</emphasis>
+	parameter entry.
+	</para>
 	</listitem>
 
 </itemizedlist>
