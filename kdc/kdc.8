@@ -46,17 +46,19 @@
 .Op Fl p | Fl -no-require-preauth
 .Op Fl -max-request= Ns Ar size
 .Op Fl H | Fl -enable-http
+.Op Fl -no-524
+.Op Fl -kerberos4
+.Op Fl -kerberos4-cross-realm
 .Oo Fl r Ar string \*(Ba Xo
 .Fl -v4-realm= Ns Ar string
 .Xc
 .Oc
-.Op Fl K | Fl -no-kaserver
-.Op Fl r Ar realm
-.Op Fl -v4-realm= Ns Ar realm
-.Oo Fl P Ar string \*(Ba Xo
-.Fl -ports= Ns Ar string
+.Op Fl K | Fl -kaserver
+.Oo Fl P Ar portspec \*(Ba Xo
+.Fl -ports= Ns Ar portspec
 .Xc
 .Oc
+.Op Fl -detach
 .Op Fl -addresses= Ns Ar list of addresses
 .Sh DESCRIPTION
 .Nm
@@ -101,13 +103,22 @@ willing to handle.
 .Xc
 Makes the kdc listen on port 80 and handle requests encapsulated in HTTP.
 .It Xo
-.Fl K ,
-.Fl -no-kaserver
+.Fl -no-524
 .Xc
-Disables kaserver emulation (in case it's compiled in).
+don't respond to 524 requests
 .It Xo
-.Fl r Ar realm ,
-.Fl -v4-realm= Ns Ar realm
+.Fl -kerberos4
+.Xc
+respond to kerberos 4 requests
+.It Xo
+.Fl -kerberos4-cross-realm
+.Xc
+respond to kerberos 4 requests from foreign realms.
+This is a known security hole and should not be enabled unless you
+understand the consequences and are willing to live with them.
+.It Xo
+.Fl r Ar string ,
+.Fl -v4-realm= Ns Ar string
 .Xc
 What realm this server should act as when dealing with version 4
 requests.
@@ -119,8 +130,13 @@ The default is whatever is returned by
 This option is only availabe if the KDC has been compiled with version
 4 support.
 .It Xo
-.Fl P Ar string ,
-.Fl -ports= Ns Ar string
+.Fl K ,
+.Fl -kaserver
+.Xc
+Enable kaserver emulation (in case it's compiled in).
+.It Xo
+.Fl P Ar portspec ,
+.Fl -ports= Ns Ar portspec
 .Xc
 Specifies the set of ports the KDC should listen on.
 It is given as a
