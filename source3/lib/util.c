@@ -1047,9 +1047,6 @@ char *uidtoname(uid_t uid)
 	static fstring name;
 	struct passwd *pass;
 
-	if (winbind_uidtoname(name, uid))
-		return name;
-
 	pass = sys_getpwuid(uid);
 	if (pass) return(pass->pw_name);
 	slprintf(name, sizeof(name) - 1, "%d",(int)uid);
@@ -1065,9 +1062,6 @@ char *gidtoname(gid_t gid)
 {
 	static fstring name;
 	struct group *grp;
-
-	if (winbind_gidtoname(name, gid))
-		return name;
 
 	grp = getgrgid(gid);
 	if (grp) return(grp->gr_name);
@@ -1087,9 +1081,6 @@ uid_t nametouid(char *name)
 
 	u = (uid_t)strtol(name, &p, 0);
 	if ((p != name) && (*p == '\0'))
-		return u;
-
-	if (winbind_nametouid(&u, name))
 		return u;
 
 	pass = getpwnam_alloc(name);
@@ -1113,9 +1104,6 @@ gid_t nametogid(const char *name)
 
 	g = (gid_t)strtol(name, &p, 0);
 	if ((p != name) && (*p == '\0'))
-		return g;
-
-	if (winbind_nametogid(&g, name))
 		return g;
 
 	grp = getgrnam(name);
