@@ -54,11 +54,13 @@ char *(*multibyte_strtok)(char *, char *) = (char *(*)(char *, char *)) strtok;
  * charcnv.c.
  */
 
-static int not_multibyte_char(char);
+static int skip_non_multibyte_char(char);
+static BOOL not_multibyte_char_1(char);
 
 char *(*_dos_to_unix)(char *, BOOL) = dos2unix_format;
 char *(*_unix_to_dos)(char *, BOOL) = unix2dos_format;
-int (*is_multibyte_char)(char) = not_multibyte_char;
+int (*_skip_multibyte_char)(char) = skip_non_multibyte_char;
+BOOL (*is_multibyte_char_1)(char) = not_multibyte_char_1;
 
 #else /* KANJI */
 
@@ -68,11 +70,13 @@ int (*is_multibyte_char)(char) = not_multibyte_char;
  */
 
 static char *sj_to_sj(char *from, BOOL overwrite);
-static int kanji_multibyte_char(char);
+static int skip_kanji_multibyte_char(char);
+static BOOL kanji_multibyte_char_1(char);
 
 char *(*_dos_to_unix)(char *, BOOL) = sj_to_sj;
 char *(*_unix_to_dos)(char *, BOOL) = sj_to_sj;
-int (*is_multibyte_char)(char) = kanji_multibyte_char;
+int (*_skip_multibyte_char)(char) = skip_kanji_multibyte_char;
+int (*is_multibyte_char_1)(char) = is_kanji_multibyte_char_1;
 
 #endif /* KANJI */
 
@@ -186,10 +190,10 @@ static char *sj_strrchr(char *s, int c)
 }
 
 /*******************************************************************
- Kanji multibyte char function.
+ Kanji multibyte char skip function.
 *******************************************************************/
    
-static int kanji_multibyte_char(char c)
+static int skip_kanji_multibyte_char(char c)
 {
   if(is_shift_jis(c)) {
     return 2;
@@ -200,13 +204,60 @@ static int kanji_multibyte_char(char c)
 }
 
 /*******************************************************************
-  Hangul (Korean - code page 949) functions
+ Kanji multibyte char identification.
+*******************************************************************/
+   
+static BOOL is_kanji_multibyte_char_1(char c)
+{
+  return is_shift_jis(c);
+}
+
+/*******************************************************************
+ The following functions are the only ones needed to do multibyte
+ support for Hangul, Big5 and Simplified Chinese. Most of the
+ real work for these codepages is done in the generic multibyte
+ functions. The only reason these functions are needed at all
+ is that the is_xxx(c) calls are really preprocessor macros.
 ********************************************************************/
+
+/*******************************************************************
+  Hangul (Korean - code page 949) function.
+********************************************************************/
+
+static BOOL hangul_is_multibyte_char_1(char c)
+{
+  return is_hangul(c);
+}
+
+/*******************************************************************
+  Big5 Traditional Chinese (code page 950) function.
+********************************************************************/
+
+static BOOL big5_is_multibyte_char_1(char c)
+{
+  return is_big5_c1(c);
+}
+
+/*******************************************************************
+  Simplified Chinese (code page 936) function.
+********************************************************************/
+
+static BOOL simpch_is_multibyte_char_1(char c)
+{
+  return is_simpch_c1(c);
+}
+
+/*******************************************************************
+  Generic multibyte functions - used by Hangul, Big5 and Simplified
+  Chinese codepages.
+********************************************************************/
+
 /*******************************************************************
  search token from S1 separated any char of S2
- S1 contains hangul chars.
+ S1 contains generic multibyte chars.
 ********************************************************************/
-static char *hangul_strtok(char *s1, char *s2)
+
+static char *generic_multibyte_strtok(char *s1, char *s2)
 {
     static char *s = NULL;
     char *q;
@@ -217,7 +268,7 @@ static char *hangul_strtok(char *s1, char *s2)
         s1 = s;
     }
     for (q = s1; *s1; ) {
-        if (is_hangul (*s1)) {
+        if ((*is_multibyte_char_1)(*s1)) {
             s1 += 2;
         } else {
             char *p = strchr (s2, *s1);
@@ -241,9 +292,10 @@ static char *hangul_strtok(char *s1, char *s2)
 
 /*******************************************************************
  search string S2 from S1
- S1 contains hangul chars.
+ S1 contains generic multibyte chars.
 ********************************************************************/
-static char *hangul_strstr(char *s1, char *s2)
+
+static char *generic_multibyte_strstr(char *s1, char *s2)
 {
     int len = strlen ((char *) s2);
     if (!*s2)
@@ -253,7 +305,7 @@ static char *hangul_strstr(char *s1, char *s2)
             if (strncmp (s1, s2, len) == 0)
                 return (char *) s1;
         }
-        if (is_hangul (*s1)) {
+        if ((*is_multibyte_char_1)(*s1)) {
             s1 += 2;
         } else {
             s1++;
@@ -264,14 +316,15 @@ static char *hangul_strstr(char *s1, char *s2)
 
 /*******************************************************************
  Search char C from beginning of S.
- S contains hangul chars.
+ S contains generic multibyte chars.
 ********************************************************************/
-static char *hangul_strchr (char *s, int c)
+
+static char *generic_multibyte_strchr(char *s, int c)
 {
     for (; *s; ) {
         if (*s == c)
             return (char *) s;
-        if (is_hangul (*s)) {
+        if ((*is_multibyte_char_1)(*s)) {
             s += 2;
         } else {
             s++;
@@ -282,9 +335,10 @@ static char *hangul_strchr (char *s, int c)
 
 /*******************************************************************
  Search char C end of S.
- S contains hangul chars.
+ S contains generic multibyte chars.
 ********************************************************************/
-static char *hangul_strrchr(char *s, int c)
+
+static char *generic_multibyte_strrchr(char *s, int c)
 {
     char *q;
  
@@ -292,7 +346,7 @@ static char *hangul_strrchr(char *s, int c)
         if (*s == c) {
             q = (char *) s;
         }
-        if (is_hangul (*s)) {
+        if ((*is_multibyte_char_1)(*s)) {
             s += 2;
         } else {
             s++;
@@ -302,127 +356,12 @@ static char *hangul_strrchr(char *s, int c)
 }
 
 /*******************************************************************
- Hangul multibyte char function.
+ Generic multibyte char skip function.
 *******************************************************************/
 
-static int hangul_multibyte_char(char c)
+static int skip_generic_multibyte_char(char c)
 {
-  if( is_hangul(c)) {
-    return 2;
-  }
-  return 0;
-}
-
-/*******************************************************************
-  Big5 Traditional Chinese (code page 950) functions
-********************************************************************/
-
-/*******************************************************************
- search token from S1 separated any char of S2
- S1 contains big5 chars.
-********************************************************************/
-static char *big5_strtok(char *s1, char *s2)
-{
-    static char *s = NULL;
-    char *q;
-    if (!s1) {
-        if (!s) {
-            return NULL;
-        }
-        s1 = s;
-    }
-    for (q = s1; *s1; ) {
-        if (is_big5_c1 (*s1)) {
-            s1 += 2;
-        } else {
-            char *p = strchr (s2, *s1);
-            if (p) {
-                if (s1 != q) {
-                    s = s1 + 1;
-                    *s1 = '\0';
-                    return q;
-                }
-                q = s1 + 1;
-            }
-            s1++;
-        }
-    }
-    s = NULL;
-    if (*q) {
-        return q;
-    }
-    return NULL;
-}
-
-/*******************************************************************
- search string S2 from S1
- S1 contains big5 chars.
-********************************************************************/
-static char *big5_strstr(char *s1, char *s2)
-{
-    int len = strlen ((char *) s2);
-    if (!*s2)
-        return (char *) s1;
-    for (;*s1;) {
-        if (*s1 == *s2) {
-            if (strncmp (s1, s2, len) == 0)
-                return (char *) s1;
-        }
-        if (is_big5_c1 (*s1)) {
-            s1 += 2;
-        } else {
-            s1++;
-        }
-    }
-    return 0;
-}
-
-/*******************************************************************
- Search char C from beginning of S.
- S contains big5 chars.
-********************************************************************/
-static char *big5_strchr (char *s, int c)
-{
-    for (; *s; ) {
-        if (*s == c)
-            return (char *) s;
-        if (is_big5_c1 (*s)) {
-            s += 2;
-        } else {
-            s++;
-        }
-    }
-    return 0;
-}
-
-/*******************************************************************
- Search char C end of S.
- S contains big5 chars.
-********************************************************************/
-static char *big5_strrchr(char *s, int c)
-{
-    char *q;
- 
-    for (q = 0; *s; ) {
-        if (*s == c) {
-            q = (char *) s;
-        }
-        if (is_big5_c1 (*s)) {
-            s += 2;
-        } else {
-            s++;
-        }
-    }
-    return q;
-}
-
-/*******************************************************************
- Big5 multibyte char function.
-*******************************************************************/
-
-static int big5_multibyte_char(char c)
-{
-  if( is_big5_c1(c)) {
+  if( (*is_multibyte_char_1)(c)) {
     return 2;
   }
   return 0;
@@ -1091,9 +1030,10 @@ static void setup_string_function(int codes)
     }
 }
 
-/*
- * Interpret coding system.
- */
+/************************************************************************
+ Interpret coding system.
+************************************************************************/
+
 void interpret_coding_system(char *str)
 {
     int codes = UNKNOWN_CODE;
@@ -1191,9 +1131,18 @@ void interpret_coding_system(char *str)
  Non multibyte char function.
 *******************************************************************/
    
-static int not_multibyte_char(char c)
+static int skip_non_multibyte_char(char c)
 {
   return 0;
+}
+
+/*******************************************************************
+ Function that always says a character isn't multibyte.
+*******************************************************************/
+
+static BOOL not_multibyte_char_1(char c)
+{
+  return False;
 }
 
 /*******************************************************************
@@ -1214,28 +1163,41 @@ void initialize_multibyte_vectors( int client_codepage)
     multibyte_strrchr = (char *(*)(char *, int )) sj_strrchr;
     multibyte_strstr = (char *(*)(char *, char *)) sj_strstr;
     multibyte_strtok = (char *(*)(char *, char *)) sj_strtok;
-    is_multibyte_char = kanji_multibyte_char;
+    _skip_multibyte_char = skip_kanji_multibyte_char;
+    is_multibyte_char_1 = is_kanji_multibyte_char_1;
     break;
   case HANGUL_CODEPAGE:
-    multibyte_strchr = (char *(*)(char *, int )) hangul_strchr;
-    multibyte_strrchr = (char *(*)(char *, int )) hangul_strrchr;
-    multibyte_strstr = (char *(*)(char *, char *)) hangul_strstr;
-    multibyte_strtok = (char *(*)(char *, char *)) hangul_strtok;
-    is_multibyte_char = hangul_multibyte_char;
-    break;
+    multibyte_strchr = (char *(*)(char *, int )) generic_multibyte_strchr;
+    multibyte_strrchr = (char *(*)(char *, int )) generic_multibyte_strrchr;
+    multibyte_strstr = (char *(*)(char *, char *)) generic_multibyte_strstr;
+    multibyte_strtok = (char *(*)(char *, char *)) generic_multibyte_strtok;
+    _skip_multibyte_char = skip_generic_multibyte_char;
+    is_multibyte_char_1 = hangul_is_multibyte_char_1;
   case BIG5_CODEPAGE:
-    multibyte_strchr = (char *(*)(char *, int )) big5_strchr;
-    multibyte_strrchr = (char *(*)(char *, int )) big5_strrchr;
-    multibyte_strstr = (char *(*)(char *, char *)) big5_strstr;
-    multibyte_strtok = (char *(*)(char *, char *)) big5_strtok;
-    is_multibyte_char = big5_multibyte_char;
+    multibyte_strchr = (char *(*)(char *, int )) generic_multibyte_strchr;
+    multibyte_strrchr = (char *(*)(char *, int )) generic_multibyte_strrchr;
+    multibyte_strstr = (char *(*)(char *, char *)) generic_multibyte_strstr;
+    multibyte_strtok = (char *(*)(char *, char *)) generic_multibyte_strtok;
+    _skip_multibyte_char = skip_generic_multibyte_char;
+    is_multibyte_char_1 = big5_is_multibyte_char_1;
+  case SIMPLIFIED_CHINESE_CODEPAGE:
+    multibyte_strchr = (char *(*)(char *, int )) generic_multibyte_strchr;
+    multibyte_strrchr = (char *(*)(char *, int )) generic_multibyte_strrchr;
+    multibyte_strstr = (char *(*)(char *, char *)) generic_multibyte_strstr;
+    multibyte_strtok = (char *(*)(char *, char *)) generic_multibyte_strtok;
+    _skip_multibyte_char = skip_generic_multibyte_char;
+    is_multibyte_char_1 = simpch_is_multibyte_char_1;
     break;
+  /*
+   * Single char size code page.
+   */
   default:
     multibyte_strchr = (char *(*)(char *, int )) strchr;
     multibyte_strrchr = (char *(*)(char *, int )) strrchr;
     multibyte_strstr = (char *(*)(char *, char *)) strstr;
     multibyte_strtok = (char *(*)(char *, char *)) strtok;
-    is_multibyte_char = not_multibyte_char;
+    _skip_multibyte_char = skip_non_multibyte_char;
+    is_multibyte_char_1 = not_multibyte_char_1;
     break; 
   }
 }
