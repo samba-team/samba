@@ -895,8 +895,8 @@ struct aliasdb_ops
 	BOOL (*mod_alias_entry)(LOCAL_GRP *);
 	BOOL (*del_alias_entry)(uint32);
 
-	BOOL (*add_alias_member)(uint32, DOM_SID*);
-	BOOL (*del_alias_member)(uint32, DOM_SID*);
+	BOOL (*add_alias_member)(uint32, const DOM_SID*);
+	BOOL (*del_alias_member)(uint32, const DOM_SID*);
 
 	/*
 	 * user alias functions

@@ -38,8 +38,8 @@ LOCAL_GRP *getaliasent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem);
 BOOL add_alias_entry(LOCAL_GRP *newgrp);
 BOOL mod_alias_entry(LOCAL_GRP* als);
 BOOL del_alias_entry(uint32 rid);
-BOOL add_alias_member(uint32 rid, DOM_SID *member_sid);
-BOOL del_alias_member(uint32 rid, DOM_SID *member_sid);
+BOOL add_alias_member(uint32 rid, const DOM_SID *member_sid);
+BOOL del_alias_member(uint32 rid, const DOM_SID *member_sid);
 LOCAL_GRP *getaliasntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem);
 LOCAL_GRP *getaliasrid(uint32 alias_rid, LOCAL_GRP_MEMBER **mem, int *num_mem);
 LOCAL_GRP *getaliasgid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem);
@@ -77,8 +77,8 @@ void endbuiltinent(void *vp);
 LOCAL_GRP *getbuiltinent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem);
 BOOL add_builtin_entry(LOCAL_GRP *newblt);
 BOOL mod_builtin_entry(LOCAL_GRP* blt);
-BOOL add_builtin_member(uint32 rid, DOM_SID *member_sid);
-BOOL del_builtin_member(uint32 rid, DOM_SID *member_sid);
+BOOL add_builtin_member(uint32 rid, const DOM_SID *member_sid);
+BOOL del_builtin_member(uint32 rid, const DOM_SID *member_sid);
 LOCAL_GRP *getbuiltinntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem);
 LOCAL_GRP *getbuiltinrid(uint32 builtin_rid, LOCAL_GRP_MEMBER **mem, int *num_mem);
 LOCAL_GRP *getbuiltingid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem);
@@ -4238,31 +4238,31 @@ uint32 _samr_unknown_2c(const POLICY_HND *user_pol,
 				uint32 *unknown_0,
 				uint32 *unknown_1);
 uint32 _samr_unknown_3(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff);
-uint32 _samr_enum_dom_users(  POLICY_HND *pol, uint32 *start_idx, 
+uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx, 
 				uint16 acb_mask, uint16 unk_1, uint32 size,
 				SAM_ENTRY **sam,
 				UNISTR2 **uni_acct_name,
 				uint32 *num_sam_users);
-uint32 _samr_add_groupmem(POLICY_HND *pol, uint32 rid, uint32 unknown);
-uint32 _samr_del_groupmem(POLICY_HND *pol, uint32 rid);
-uint32 _samr_add_aliasmem(POLICY_HND *alias_pol, DOM_SID *sid);
-uint32 _samr_del_aliasmem(POLICY_HND *alias_pol, DOM_SID *sid);
-uint32 _samr_enum_domains(POLICY_HND *pol, uint32 *start_idx, 
+uint32 _samr_add_groupmem(const POLICY_HND *pol, uint32 rid, uint32 unknown);
+uint32 _samr_del_groupmem(const POLICY_HND *pol, uint32 rid);
+uint32 _samr_add_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid);
+uint32 _samr_del_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid);
+uint32 _samr_enum_domains(const POLICY_HND *pol, uint32 *start_idx, 
 				uint32 size,
 				SAM_ENTRY **sam,
 				UNISTR2 **uni_acct_name,
 				uint32 *num_sam_users);
-uint32 _samr_enum_dom_groups(POLICY_HND *pol,
-					uint32 *start_idx, uint32 size,
-					SAM_ENTRY **sam,
-					UNISTR2 **uni_acct_name,
-					uint32 *num_sam_groups);
-uint32 _samr_enum_dom_aliases(POLICY_HND *pol,
+uint32 _samr_enum_dom_groups(const POLICY_HND *pol,
+				uint32 *start_idx, uint32 size,
+				SAM_ENTRY **sam,
+				UNISTR2 **uni_acct_name,
+				uint32 *num_sam_groups);
+uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 					uint32 *start_idx, uint32 size,
 					SAM_ENTRY **sam,
 					UNISTR2 **uni_acct_name,
 					uint32 *num_sam_aliases);
-uint32 _samr_query_dispinfo(  POLICY_HND *domain_pol, uint16 level,
+uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 					uint32 start_idx,
 					uint32 max_entries,
 					uint32 max_size,
@@ -4270,15 +4270,16 @@ uint32 _samr_query_dispinfo(  POLICY_HND *domain_pol, uint16 level,
 					uint32 *num_entries,
 					SAM_DISPINFO_CTR *ctr);
 uint32 _samr_delete_dom_group(POLICY_HND *group_pol);
-uint32 _samr_query_groupmem(POLICY_HND *group_pol, 
+uint32 _samr_query_groupmem(const POLICY_HND *group_pol, 
 					uint32 *num_mem,
 					uint32 **rid,
 					uint32 **attr);
-uint32 _samr_query_groupinfo(POLICY_HND *pol,
+uint32 _samr_query_groupinfo(const POLICY_HND *pol,
 				uint16 switch_level,
 				GROUP_INFO_CTR* ctr);
-uint32 _samr_query_aliasinfo(POLICY_HND *alias_pol, uint16 switch_level,
-					ALIAS_INFO_CTR *ctr);
+uint32 _samr_query_aliasinfo(const POLICY_HND *alias_pol,
+				uint16 switch_level,
+				ALIAS_INFO_CTR *ctr);
 uint32 _samr_query_useraliases(const POLICY_HND *pol,
 				const uint32 *ptr_sid, const DOM_SID2 *sid,
 				uint32 *num_aliases, uint32 **rid);

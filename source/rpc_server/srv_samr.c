@@ -363,6 +363,7 @@ static void api_samr_delete_dom_group( rpcsrv_struct *p, prs_struct *data, prs_s
 
 	samr_io_q_delete_dom_group("", &q_u, data, 0);
 	r_u.status = _samr_delete_dom_group(&q_u.group_pol);
+	memcpy(&r_u.pol, &q_u.group_pol, sizeof(q_u.group_pol));
 	samr_io_r_delete_dom_group("", &r_u, rdata, 0);
 }
 

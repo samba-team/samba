@@ -366,7 +366,7 @@ BOOL mod_builtin_entry(LOCAL_GRP* blt)
 /************************************************************************
  Routine to add a member to an entry in the builtin database file.
 *************************************************************************/
-BOOL add_builtin_member(uint32 rid, DOM_SID *member_sid)
+BOOL add_builtin_member(uint32 rid, const DOM_SID *member_sid)
 {
  	return bidb_ops->add_alias_member(rid, member_sid);
 }
@@ -374,7 +374,7 @@ BOOL add_builtin_member(uint32 rid, DOM_SID *member_sid)
 /************************************************************************
  Routine to delete a member from an entry in the builtindatabase file.
 *************************************************************************/
-BOOL del_builtin_member(uint32 rid, DOM_SID *member_sid)
+BOOL del_builtin_member(uint32 rid, const DOM_SID *member_sid)
 {
  	return bidb_ops->del_alias_member(rid, member_sid);
 }
