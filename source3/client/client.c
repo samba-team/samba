@@ -1693,9 +1693,9 @@ struct cli_state *do_connect(char *server, char *share)
 	 * mode to turn these on/off ? JRA.
 	 */
 
-	if (*c->server_domain || *c->server_os || *c->server_name)
+	if (*c->server_domain || *c->server_os || *c->server_type)
 		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-			c->server_domain,c->server_os,c->server_name));
+			c->server_domain,c->server_os,c->server_type));
 	
 	DEBUG(4,(" session setup ok\n"));
 
