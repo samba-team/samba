@@ -812,19 +812,20 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL bad_path = False;
  
   pstrcpy(fname,smb_buf(inbuf) + 1);
-  unix_convert(fname,conn,0,&bad_path,&sbuf);
 
   /* dos smetimes asks for a stat of "" - it returns a "hidden directory"
      under WfWg - weird! */
   if (! (*fname))
-    {
-      mode = aHIDDEN | aDIR;
-      if (!CAN_WRITE(conn)) mode |= aRONLY;
-      size = 0;
-      mtime = 0;
-      ok = True;
-    }
+  {
+    mode = aHIDDEN | aDIR;
+    if (!CAN_WRITE(conn)) mode |= aRONLY;
+    size = 0;
+    mtime = 0;
+    ok = True;
+  }
   else
+  {
+    unix_convert(fname,conn,0,&bad_path,&sbuf);
     if (check_name(fname,conn))
     {
       if (VALID_STAT(sbuf) || dos_stat(fname,&sbuf) == 0)
@@ -839,6 +840,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
       else
         DEBUG(3,("stat of %s failed (%s)\n",fname,strerror(errno)));
     }
+  }
   
   if (!ok)
   {
