@@ -37,7 +37,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 
 	ads->ld = ldap_open(ads->ldap_server, ads->ldap_port);
 	if (!ads->ld) {
-		return ADS_ERROR_SYSTEM(errno)
+		return ADS_ERROR_SYSTEM(errno);
 	}
 	status = ads_server_info(ads);
 	if (!ADS_ERR_OK(status)) {
@@ -150,7 +150,8 @@ static char **ads_dup_values(char **values)
 #define ADS_MAX_NUM_VALUES 32
 
 	for (i=0; values[i] && i<ADS_MAX_NUM_VALUES; i++);
-	newvals = malloc((i+1)*sizeof(char *));
+	if (!(newvals = malloc((i+1)*sizeof(char *))))
+		return NULL;
 	for (i=0; values[i] && i<ADS_MAX_NUM_VALUES; i++)
 		newvals[i] = values[i];
 	newvals[i] = NULL;
@@ -162,16 +163,17 @@ static char **ads_dup_values(char **values)
                               so proto.h works on non-ldap systems
 */
 
-void **ads_mod_list_start(int num_mods)
+void **ads_init_mods(int num_mods)
 {
 	LDAPMod **mods;
 	
 	if (num_mods < 1)
 		return NULL;
 	
-	mods = malloc(sizeof(LDAPMod *) * (num_mods + 1));
-	memset(mods, 0, sizeof(LDAPMod *) * num_mods);
-	mods[num_mods] = (LDAPMod *) -1;
+	if ((mods = calloc(1, sizeof(LDAPMod *) * (num_mods + 1))))
+		/* -1 is safety to make sure we don't go over the end.
+		   need to reset it to NULL before doing ldap modify */
+		mods[num_mods] = (LDAPMod *) -1;
 	
 	return (void **) mods;
 }
@@ -179,7 +181,7 @@ void **ads_mod_list_start(int num_mods)
 /*
   add an attribute to the list, with values list already constructed
 */
-static BOOL ads_mod_list_add(void **mods, int mod_op, char *name, char **values)
+static ADS_STATUS ads_modlist_add(void **mods, int mod_op, char *name, char **values)
 {
 	int curmod;
 	LDAPMod **modlist = (LDAPMod **) mods;
@@ -187,39 +189,46 @@ static BOOL ads_mod_list_add(void **mods, int mod_op, char *name, char **values)
 	/* find the first empty slot */
 	for (curmod=0; modlist[curmod] > 0; curmod++);
 	if (modlist[curmod] == (LDAPMod *) -1)
-		return False;
+		return ADS_ERROR(LDAP_NO_MEMORY);
 
-	modlist[curmod] = malloc(sizeof(LDAPMod));
+	if (!(modlist[curmod] = malloc(sizeof(LDAPMod))))
+		return ADS_ERROR(LDAP_NO_MEMORY);
 	modlist[curmod]->mod_type = name;
 	modlist[curmod]->mod_values = values;
 	modlist[curmod]->mod_op = mod_op;
-	return True;
+	return ADS_ERROR(LDAP_SUCCESS);
 }
 
-BOOL ads_mod_add_list(void **mods, char *name, char **values)
+ADS_STATUS ads_mod_add_list(void **mods, char *name, char **values)
 {
 	char **newvals = ads_dup_values(values);
-	return ads_mod_list_add(mods, LDAP_MOD_ADD, name, newvals);
+	if (newvals)
+		return ads_modlist_add(mods, LDAP_MOD_ADD, name, newvals);
+	else
+		return ADS_ERROR(LDAP_NO_MEMORY);
 }
 
-BOOL ads_mod_repl_list(void **mods, char *name, char **values)
+ADS_STATUS ads_mod_repl_list(void **mods, char *name, char **values)
 {
 	char **newvals;
 	if (values && *values) {
-		newvals = ads_dup_values(values);
-		return ads_mod_list_add(mods, LDAP_MOD_REPLACE, name, newvals);
+		if (!(newvals = ads_dup_values(values)))
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		else
+			return ads_modlist_add(mods, LDAP_MOD_REPLACE,
+						name, newvals);
 	}
 	else
-		return ads_mod_list_add(mods, LDAP_MOD_DELETE, name, NULL);
+		return ads_modlist_add(mods, LDAP_MOD_DELETE, name, NULL);
 }
 
 /*
   add an attribute to the list, with values list to be built from args
 */
-BOOL ads_mod_list_add_var(void **mods, int mod_op, char *name, ...)
+ADS_STATUS ads_mod_add_var(void **mods, int mod_op, char *name, ...)
 {
 	va_list ap;
-	int num_vals, i;
+	int num_vals, i, do_op;
 	char *value, **values;
 
 	/* count the number of values */
@@ -227,45 +236,75 @@ BOOL ads_mod_list_add_var(void **mods, int mod_op, char *name, ...)
 	for (num_vals=0; va_arg(ap, char *); num_vals++);
 	va_end(ap);
 
-
 	if (num_vals) {
-		values = malloc(sizeof(char *) * (num_vals + 1));
+		if (!(values = malloc(sizeof(char *) * (num_vals + 1))))
+			return ADS_ERROR(LDAP_NO_MEMORY);
 		va_start(ap, name);
 		for (i=0; (value = (char *) va_arg(ap, char *)) &&
 			     i < num_vals; i++)
 			values[i] = value;
 		va_end(ap);
 		values[i] = NULL;
-	} else
+		do_op = mod_op;
+	} else {
+		do_op = LDAP_MOD_DELETE;
 		values = NULL;
-	return ads_mod_list_add(mods, mod_op, name, values);
+	}
+	return ads_modlist_add(mods, do_op, name, values);
 }
 
-BOOL ads_mod_repl(void **mods, char *name, char *val)
+ADS_STATUS ads_mod_add_ber(void **mods, int mod_op, char *name, ...)
+{
+	va_list ap;
+	int num_vals, i, do_op;
+	char *value, **values;
+
+	/* count the number of values */
+	va_start(ap, name);
+	for (num_vals=0; va_arg(ap, struct berval *); num_vals++);
+	va_end(ap);
+
+	if (num_vals) {
+		if (!(values = malloc(sizeof(struct berval) * (num_vals + 1))))
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		va_start(ap, name);
+		for (i=0; (value = (char *) va_arg(ap, char *)) &&
+			     i < num_vals; i++)
+			values[i] = value;
+		va_end(ap);
+		values[i] = NULL;
+		do_op = mod_op;
+	} else {
+		do_op = LDAP_MOD_DELETE;
+		values = NULL;
+	}
+	do_op |= LDAP_MOD_BVALUES;
+	return ads_modlist_add(mods, do_op, name, values);
+}
+
+ADS_STATUS ads_mod_repl(void **mods, char *name, char *val)
 {
 	if (val)
-		return ads_mod_list_add_var(mods, LDAP_MOD_REPLACE,
+		return ads_mod_add_var(mods, LDAP_MOD_REPLACE,
 					    name, val, NULL);
 	else
-		return ads_mod_list_add_var(mods, LDAP_MOD_DELETE, name, NULL);
+		return ads_mod_add_var(mods, LDAP_MOD_DELETE, name, NULL);
 }
 
-BOOL ads_mod_add(void **mods, char *name, char *val)
+ADS_STATUS ads_mod_add(void **mods, char *name, char *val)
 {
-	return ads_mod_list_add_var(mods, LDAP_MOD_ADD, name, val, NULL);
+	return ads_mod_add_var(mods, LDAP_MOD_ADD, name, val, NULL);
 }
 
-void ads_mod_list_end(void **mods)
+void ads_free_mods(void **mods)
 {
 	int i;
 	LDAPMod **modlist = (LDAPMod **) mods;
 	
 	if (modlist) {
 		for (i = 0; modlist[i];  i++) {
-			if (modlist[i]->mod_values) {
-				free(modlist[i]->mod_values);
-			}
-			free(modlist[i]);
+			SAFE_FREE(modlist[i]->mod_values);
+			SAFE_FREE(modlist[i]);
 		}
 		free(modlist);
 	}
@@ -274,12 +313,28 @@ void ads_mod_list_end(void **mods)
 ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, void **mods)
 {
 	int ret,i;
-	
+	LDAPControl control;
+	LDAPControl *controls[2];
+	char bv_val = (char) 1;
+
+	/* 
+	   this control seems to be necessary to have any modify
+	   that contains a currently non-existent attribute (but
+	   allowable for the object) to run
+	*/
+	control.ldctl_oid = "1.2.840.113556.1.4.1413";
+	control.ldctl_value.bv_len = 1;
+	control.ldctl_value.bv_val = &bv_val;
+	control.ldctl_iscritical = (char) 0;
+	controls[0] = &control;
+	controls[1] = NULL;
+
 	/* find the end of the list, marked by NULL or -1 */
 	for(i=0;mods[i]>0;i++);
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
-	ret = ldap_modify_s(ads->ld, mod_dn, (LDAPMod **) mods);
+	ret = ldap_modify_ext_s(ads->ld, mod_dn, (LDAPMod **) mods,
+				controls, NULL);
 	return ADS_ERROR(ret);
 }
 
