@@ -1,3 +1,10 @@
+2000-07-09  Assar Westerlund  <assar@sics.se>
+
+	* rtbl.c (rtbl_add_column): initialize `col' completely
+
+	* configure.in: bring headers and functions more in-line with
+	what's actually being used
+
 2000-07-08  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken.h.in: declare ether_addr and sockaddr_dl for AIX
