@@ -97,9 +97,9 @@ static BOOL set_smb_signing_real_common(struct smb_sign_info *si)
 {
 	if (si->mandatory_signing) {
 		DEBUG(5, ("Mandatory SMB signing enabled!\n"));
-		si->doing_signing = True;
 	}
 
+	si->doing_signing = True;
 	DEBUG(5, ("SMB signing enabled!\n"));
 
 	return True;
