@@ -30,6 +30,16 @@ Sun Dec  6 19:53:21 1998  Assar Westerlund  <assar@sics.se>
  	no unit was given
 	(acc_flags, acc_units): update to new standard
 
+Fri Nov 27 03:09:42 1998  Assar Westerlund  <assar@sics.se>
+
+	* resolve.c (stot): constify
+	(type_to_string): always declare
+	(dns_lookup_int): correct debug output
+
+Thu Nov 26 23:43:55 1998  Assar Westerlund  <assar@sics.se>
+
+	* resolve.c (dns_lookup_int): send rr_class to res_search
+
 Thu Nov 26 17:09:47 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* resolve.c: some cleanup
