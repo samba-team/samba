@@ -4,6 +4,8 @@
    Winbind cache backend functions
 
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Gerald Carter   2003
+   
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -342,6 +344,7 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 		domain->sequence_number = DOM_SEQUENCE_NONE;
 	}
 	
+	domain->last_status = status;
 	domain->last_seq_check = time(NULL);
 	
 	/* save the new sequence number ni the cache */
@@ -671,9 +674,10 @@ do_query:
 	*num_entries = 0;
 	*info = NULL;
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
+	/* Return status value returned by seq number check */
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
 
 	/* Put the query_user_list() in a retry loop.  There appears to be
 	 * some bug either with Windows 2000 or Samba's handling of large
@@ -697,7 +701,8 @@ do_query:
 				winbindd_cm_flush();
 			}
 
-	} while (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL) && (retry++ < 5));
+	} while (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL) && 
+		 (retry++ < 5));
 
 	/* and save it */
 	refresh_sequence_number(domain, False);
@@ -775,9 +780,10 @@ do_query:
 	*num_entries = 0;
 	*info = NULL;
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
+	/* Return status value returned by seq number check */
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
 
 	DEBUG(10,("enum_dom_groups: [Cached] - doing backend query for list for domain %s\n",
 		domain->name ));
@@ -857,9 +863,10 @@ do_query:
 	*num_entries = 0;
 	*info = NULL;
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
+	/* Return status value returned by seq number check */
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
 
 	DEBUG(10,("enum_local_groups: [Cached] - doing backend query for list for domain %s\n",
 		domain->name ));
@@ -924,9 +931,16 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 do_query:
 	ZERO_STRUCTP(sid);
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
+	/* If the seq number check indicated that there is a problem
+	 * with this DC, then return that status... except for
+	 * access_denied.  This is special because the dc may be in
+	 * "restrict anonymous = 1" mode, in which case it will deny
+	 * most unauthenticated operations, but *will* allow the LSA
+	 * name-to-sid that we try as a fallback. */
+
+	if (!(NT_STATUS_IS_OK(domain->last_status)
+	      || NT_STATUS_EQUAL(domain->last_status, NT_STATUS_ACCESS_DENIED)))
+		return domain->last_status;
 
 	DEBUG(10,("name_to_sid: [Cached] - doing backend query for name for domain %s\n",
 		domain->name ));
@@ -980,6 +994,17 @@ do_query:
 		return NT_STATUS_SERVER_DISABLED;
 	}
 
+	/* If the seq number check indicated that there is a problem
+	 * with this DC, then return that status... except for
+	 * access_denied.  This is special because the dc may be in
+	 * "restrict anonymous = 1" mode, in which case it will deny
+	 * most unauthenticated operations, but *will* allow the LSA
+	 * sid-to-name that we try as a fallback. */
+
+	if (!(NT_STATUS_IS_OK(domain->last_status)
+	      || NT_STATUS_EQUAL(domain->last_status, NT_STATUS_ACCESS_DENIED)))
+		return domain->last_status;
+
 	DEBUG(10,("sid_to_name: [Cached] - doing backend query for name for domain %s\n",
 		domain->name ));
 
@@ -1003,12 +1028,24 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	fstring sid_string;
 
 	if (!cache->tdb)
 		goto do_query;
 
-	centry = wcache_fetch(cache, domain, "U/%s", sid_to_string(sid_string, user_sid));
+	centry = wcache_fetch(cache, domain, "U/%s", sid_string_static(user_sid));
+	
+	/* If we have an access denied cache entry and a cached info3 in the
+           samlogon cache then do a query.  This will force the rpc back end
+           to return the info3 data. */
+
+	if (NT_STATUS_V(domain->last_status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) &&
+	    netsamlogon_cache_have(user_sid)) {
+		DEBUG(10, ("query_user: cached access denied and have cached info3\n"));
+		domain->last_status = NT_STATUS_OK;
+		centry_free(centry);
+		goto do_query;
+	}
+	
 	if (!centry)
 		goto do_query;
 
@@ -1027,9 +1064,10 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 do_query:
 	ZERO_STRUCTP(info);
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
+	/* Return status value returned by seq number check */
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
 	
 	DEBUG(10,("sid_to_name: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
@@ -1060,6 +1098,19 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		goto do_query;
 
 	centry = wcache_fetch(cache, domain, "UG/%s", sid_to_string(sid_string, user_sid));
+	
+	/* If we have an access denied cache entry and a cached info3 in the
+           samlogon cache then do a query.  This will force the rpc back end
+           to return the info3 data. */
+
+	if (NT_STATUS_V(domain->last_status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) &&
+	    netsamlogon_cache_have(user_sid)) {
+		DEBUG(10, ("query_user: cached access denied and have cached info3\n"));
+		domain->last_status = NT_STATUS_OK;
+		centry_free(centry);
+		goto do_query;
+	}
+	
 	if (!centry)
 		goto do_query;
 
@@ -1088,9 +1139,10 @@ do_query:
 	(*num_groups) = 0;
 	(*user_gids) = NULL;
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
+	/* Return status value returned by seq number check */
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
 
 	DEBUG(10,("lookup_usergroups: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
@@ -1167,10 +1219,10 @@ do_query:
 	(*names) = NULL;
 	(*name_types) = NULL;
 	
+	/* Return status value returned by seq number check */
 
-	if (wcache_server_down(domain)) {
-		return NT_STATUS_SERVER_DISABLED;
-	}
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
 
 	DEBUG(10,("lookup_groupmem: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
@@ -1246,6 +1298,46 @@ static NTSTATUS alternate_name(struct winbindd_domain *domain)
 
 	/* we don't cache this call */
 	return domain->backend->alternate_name(domain);
+}
+
+/* Invalidate cached user and group lists coherently */
+
+static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, 
+		       void *state)
+{
+	if (strncmp(kbuf.dptr, "UL/", 3) == 0 ||
+	    strncmp(kbuf.dptr, "GL/", 3) == 0)
+		tdb_delete(the_tdb, kbuf);
+
+	return 0;
+}
+
+/* Invalidate the getpwnam and getgroups entries for a winbindd domain */
+
+void wcache_invalidate_samlogon(struct winbindd_domain *domain, 
+				NET_USER_INFO_3 *info3)
+{
+	struct winbind_cache *cache;
+	
+	if (!domain)
+		return;
+
+	cache = get_cache(domain);
+	netsamlogon_clear_cached_user(cache->tdb, info3);
+}
+
+void wcache_invalidate_cache(void)
+{
+	struct winbindd_domain *domain;
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		struct winbind_cache *cache = get_cache(domain);
+
+		DEBUG(10, ("wcache_invalidate_cache: invalidating cache "
+			   "entries for %s\n", domain->name));
+		if (cache)
+			tdb_traverse(cache->tdb, traverse_fn, NULL);
+	}
 }
 
 /* the ADS backend methods are exposed via this structure */

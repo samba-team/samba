@@ -855,8 +855,6 @@ void build_options(BOOL screen);
 
 	init_modules();
 
-	uni_group_cache_init(); /* Non-critical */
-	
 	/* possibly reload the services file. */
 	reload_services(True);
 
@@ -891,7 +889,6 @@ void build_options(BOOL screen);
 
 	smbd_process();
 	
-	uni_group_cache_shutdown();
 	namecache_shutdown();
 	exit_server("normal exit");
 	return(0);

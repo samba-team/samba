@@ -360,7 +360,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	} else {
 		nt_status = make_server_info_info3(mem_ctx, user_info->internal_username.str, 
 						   user_info->smb_name.str, domain, server_info, &info3);
-		uni_group_cache_store_netlogon(mem_ctx, &info3);
+		netsamlogon_cache_store( mem_ctx, &info3 );
 	}
 
 #if 0

@@ -450,8 +450,14 @@ BOOL cm_check_for_native_mode_win2k( const char *domain )
 		ret = True;
 
 done:
+
+#if 0
+	/*
+	 * I don't think we need to shutdown here ? JRA.
+	 */
 	if ( conn.cli )
 		cli_shutdown( conn.cli );
+#endif
 	
 	return ret;
 }
@@ -460,7 +466,7 @@ done:
 
 /* Return a LSA policy handle on a domain */
 
-CLI_POLICY_HND *cm_get_lsa_handle(const char *domain)
+NTSTATUS cm_get_lsa_handle(const char *domain, CLI_POLICY_HND **return_hnd)
 {
 	struct winbindd_cm_conn *conn;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -470,13 +476,16 @@ CLI_POLICY_HND *cm_get_lsa_handle(const char *domain)
 	/* Look for existing connections */
 
 	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn)))
-		return NULL;
+		return result;
 
 	/* This *shitty* code needs scrapping ! JRA */
+	
 	if (policy_handle_is_valid(&conn->pol)) {
 		hnd.pol = conn->pol;
 		hnd.cli = conn->cli;
-		return &hnd;
+		*return_hnd = &hnd;
+
+		return NT_STATUS_OK;
 	}
 	
 	result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
@@ -486,7 +495,7 @@ CLI_POLICY_HND *cm_get_lsa_handle(const char *domain)
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
 			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn)))
-				return NULL;
+				return result;
 
 			result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
 						     des_access, &conn->pol);
@@ -496,19 +505,21 @@ CLI_POLICY_HND *cm_get_lsa_handle(const char *domain)
 			cli_shutdown(conn->cli);
 			DLIST_REMOVE(cm_conns, conn);
 			SAFE_FREE(conn);
-			return NULL;
+			return result;
 		}
 	}	
 
 	hnd.pol = conn->pol;
 	hnd.cli = conn->cli;
 
-	return &hnd;
+	*return_hnd = &hnd;
+
+	return NT_STATUS_OK;
 }
 
 /* Return a SAM policy handle on a domain */
 
-CLI_POLICY_HND *cm_get_sam_handle(char *domain)
+NTSTATUS cm_get_sam_handle(char *domain, CLI_POLICY_HND **return_hnd)
 { 
 	struct winbindd_cm_conn *conn;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -518,39 +529,49 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 	/* Look for existing connections */
 
 	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn)))
-		return NULL;
+		return result;
 	
 	/* This *shitty* code needs scrapping ! JRA */
+	
 	if (policy_handle_is_valid(&conn->pol)) {
 		hnd.pol = conn->pol;
 		hnd.cli = conn->cli;
-		return &hnd;
+		
+		*return_hnd = &hnd;
+
+		return NT_STATUS_OK;
 	}
+	
 	result = cli_samr_connect(conn->cli, conn->cli->mem_ctx,
 				  des_access, &conn->pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
+		
 			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn)))
-				return NULL;
+				return result;
 
 			result = cli_samr_connect(conn->cli, conn->cli->mem_ctx,
 						  des_access, &conn->pol);
 		}
 
 		if (!NT_STATUS_IS_OK(result)) {
+		
 			cli_shutdown(conn->cli);
 			DLIST_REMOVE(cm_conns, conn);
 			SAFE_FREE(conn);
-			return NULL;
+			
+			return result;
 		}
 	}	
 
 	hnd.pol = conn->pol;
 	hnd.cli = conn->cli;
 
-	return &hnd;
+	*return_hnd = &hnd;
+
+	return NT_STATUS_OK;
 }
 
 /* Get a handle on a netlogon pipe.  This is a bit of a hack to re-use the

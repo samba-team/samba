@@ -308,7 +308,7 @@ VFS_NETATALK_OBJ = modules/vfs_netatalk.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
-UNIGRP_OBJ = libsmb/netlogon_unigrp.o 
+UNIGRP_OBJ = libsmb/samlogon_cache.o
 
 AUTH_BUILTIN_OBJ = auth/auth_builtin.o
 AUTH_DOMAIN_OBJ = auth/auth_domain.o
@@ -594,7 +594,7 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_rpc.o \
 		nsswitch/winbindd_ads.o \
 		nsswitch/winbindd_dual.o \
-		nsswitch/winbindd_passdb.o
+		nsswitch/winbindd_passdb.o 
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
