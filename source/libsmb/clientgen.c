@@ -250,7 +250,7 @@ void cli_shutdown(struct cli_state *cli)
 	allocated = cli->allocated;
 	ZERO_STRUCTP(cli);
 	if (allocated) {
-		free(cli);
+		SAFE_FREE(cli);
 	} 
 }
 

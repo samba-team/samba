@@ -197,7 +197,7 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 		num_sids += sup_tok->num_sids;
 
 	if ((token->user_sids = (DOM_SID *)malloc( num_sids*sizeof(DOM_SID))) == NULL) {
-		free(token);
+		SAFE_FREE(token);
 		return NULL;
 	}
 
@@ -801,7 +801,7 @@ and given password ok\n", user));
 				}
 			}
 
-			free(user_list);
+			SAFE_FREE(user_list);
 		}
 
 		/* check for a previously validated username/password pair */
@@ -1067,7 +1067,7 @@ struct cli_state *server_cryptkey(void)
 		}
 	}
 
-	free(pserver);
+	SAFE_FREE(pserver);
 
 	if (!connected_ok) {
 		DEBUG(0,("password server not available\n"));
@@ -1432,9 +1432,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 		}
 	}
 
-	if(ip_list != NULL)
-		free((char *)ip_list);
-
+	SAFE_FREE((char *)ip_list);
 
 	return connected_ok;
 }
@@ -1607,7 +1605,7 @@ BOOL domain_client_validate( char *user, char *domain,
     ptok->num_sids = (size_t)info3.num_groups2;
     if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
       DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
-      free(ptok);
+      SAFE_FREE(ptok);
       return False;
     }
  

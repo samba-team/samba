@@ -62,7 +62,7 @@ void *talloc(TALLOC_CTX *t, size_t size)
 
 	tc = malloc(sizeof(*tc));
 	if (!tc) {
-		free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 
@@ -112,8 +112,8 @@ void talloc_destroy_pool(TALLOC_CTX *t)
 
 	while (t->list) {
 		c = t->list->next;
-		if (t->list->ptr) free(t->list->ptr);
-		free(t->list);
+		SAFE_FREE(t->list->ptr);
+		SAFE_FREE(t->list);
 		t->list = c;
 	}
 
@@ -128,7 +128,7 @@ void talloc_destroy(TALLOC_CTX *t)
 		return;
 	talloc_destroy_pool(t);
 	memset(t, 0, sizeof(*t));
-	free(t);
+	SAFE_FREE(t);
 }
 
 /* return the current total size of the pool. */

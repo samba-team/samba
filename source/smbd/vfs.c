@@ -679,7 +679,7 @@ static void array_promote(char *array,int elsize,int element)
 	memcpy(p,array + element * elsize, elsize);
 	memmove(array + elsize,array,elsize*element);
 	memcpy(array,p,elsize);
-	free(p);
+	SAFE_FREE(p);
 }
 
 /*******************************************************************

@@ -37,7 +37,9 @@
 #define IS_DOS_HIDDEN(test_mode)   (((test_mode) & aHIDDEN) != 0)
 
 /* free memory if the pointer is valid and zero the pointer */
+#ifndef SAFE_FREE
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
+#endif
 
 /* zero a structure */
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))

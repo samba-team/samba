@@ -820,7 +820,7 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
         if (!msg)
                 return;
         syslog(facility_priority, "%s", msg);
-        free(msg);
+        SAFE_FREE(msg);
 }
 #endif /* HAVE_SYSLOG */
 #endif /* HAVE_VSYSLOG */

@@ -52,11 +52,9 @@ static void delete_groupname_map_list(void)
   groupname_map_entry *gmep;
 
   while((gmep = (groupname_map_entry *)ubi_slRemHead( &groupname_map_list )) != NULL) {
-    if(gmep->windows_name)
-      free(gmep->windows_name);
-    if(gmep->unix_name)
-      free(gmep->unix_name);
-    free((char *)gmep);
+    SAFE_FREE(gmep->windows_name);
+    SAFE_FREE(gmep->unix_name);
+    SAFE_FREE((char *)gmep);
   }
 }
 
@@ -187,11 +185,9 @@ Error was %s.\n", unixname, strerror(errno) ));
     if(new_ep->windows_name == NULL || new_ep->unix_name == NULL) {
       DEBUG(0,("load_groupname_map: malloc fail for names in groupname_map_entry.\n"));
       fclose(fp);
-      if(new_ep->windows_name != NULL)
-        free(new_ep->windows_name);
-      if(new_ep->unix_name != NULL)
-        free(new_ep->unix_name);
-      free((char *)new_ep);
+      SAFE_FREE(new_ep->windows_name);
+      SAFE_FREE(new_ep->unix_name);
+      SAFE_FREE((char *)new_ep);
       file_lines_free(lines);
       return;
     }

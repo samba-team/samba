@@ -297,7 +297,7 @@ void sync_check_completion(void)
 			complete_sync(s);
 			DLIST_REMOVE(syncs, s);
 			ZERO_STRUCTP(s);
-			free(s);
+			SAFE_FREE(s);
 		}
 	}
 }

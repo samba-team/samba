@@ -108,7 +108,7 @@ winbind_xid_lookup(int xid, struct winbindd_request **requestp)
                 *last = dx->next;
                 result = dx->rq;
 		*requestp = dx->request;
-                free(dx);
+                SAFE_FREE(dx);
         }
 	nsd_logprintf(NSD_LOG_LOW,
 		"entering winbind_xid_lookup xid = %d rq = 0x%x, request = 0x%x\n",
@@ -339,7 +339,7 @@ send_next_request(nsd_file_t *rq, struct winbindd_request *request)
 	nsd_logprintf(NSD_LOG_MIN, "send_next_request (winbind) %d to = %d\n",
 			rq->f_cmd_data, timeout);
 	status = winbindd_send_request((int)rq->f_cmd_data,request);
-	free(request);
+	SAFE_FREE(request);
 
 	if (status != NSS_STATUS_SUCCESS) {
 		nsd_logprintf(NSD_LOG_MIN, 
@@ -413,7 +413,7 @@ int lookup(nsd_file_t *rq)
 		 * Don't understand this map - just return not found
 		 */
 		nsd_logprintf(NSD_LOG_MIN, "lookup (winbind) unknown table\n");
-		free(request);
+		SAFE_FREE(request);
 		rq->f_status = NS_NOTFOUND;
 		return NSD_NEXT;
 	}
@@ -471,7 +471,7 @@ do_list(int state, nsd_file_t *rq)
 		    break;
 		default:
 		    nsd_logprintf(NSD_LOG_MIN, "do_list (winbind) unknown state\n");
-		    free(request);
+		    SAFE_FREE(request);
 		    rq->f_status = NS_NOTFOUND;
 		    return NSD_NEXT;
 	    }
@@ -489,7 +489,7 @@ do_list(int state, nsd_file_t *rq)
 		    break;
 		default:
 		    nsd_logprintf(NSD_LOG_MIN, "do_list (winbind) unknown state\n");
-		    free(request);
+		    SAFE_FREE(request);
 		    rq->f_status = NS_NOTFOUND;
 		    return NSD_NEXT;
 	    }
@@ -498,7 +498,7 @@ do_list(int state, nsd_file_t *rq)
 		 * Don't understand this map - just return not found
 		 */
 		nsd_logprintf(NSD_LOG_MIN, "do_list (winbind) unknown table\n");
-		free(request);
+		SAFE_FREE(request);
 		rq->f_status = NS_NOTFOUND;
 		return NSD_NEXT;
 	}

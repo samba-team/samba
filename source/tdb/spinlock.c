@@ -384,11 +384,11 @@ int tdb_create_rwlocks(int fd, unsigned int hash_size)
 
 	/* Write it out (appending to end) */
 	if (write(fd, rwlocks, size) != size) {
-		free(rwlocks);
+		SAFE_FREE(rwlocks);
 		return -1;
 	}
 	smp_machine = this_is_smp();
-	free(rwlocks);
+	SAFE_FREE(rwlocks);
 	return 0;
 }
 

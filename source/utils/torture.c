@@ -3646,8 +3646,8 @@ int cli_setfileinfo_test(struct cli_state *cli, int fnum, int level, char *data,
         return False;
     }
  
-    if (rdata) free(rdata);
-    if (rparam) free(rparam);
+    SAFE_FREE(rdata);
+    SAFE_FREE(rparam);
  
     return True;
 }

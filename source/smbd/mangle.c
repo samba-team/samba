@@ -465,7 +465,7 @@ static signed int cache_compare( ubi_btItemPtr ItemPtr, ubi_btNodePtr NodePtr )
 static void cache_free_entry( ubi_trNodePtr WarrenZevon )
   {
 	  ZERO_STRUCTP(WarrenZevon);
-	  free( WarrenZevon );
+	  SAFE_FREE( WarrenZevon );
   } /* cache_free_entry */
 
 /* ************************************************************************** **
@@ -632,7 +632,7 @@ BOOL check_mangled_cache( char *s )
     {
       /* Replace the saved_ext as it was truncated. */
       (void)pstrcat( s, saved_ext );
-      free(saved_ext);
+      SAFE_FREE(saved_ext);
     }
     return( False );
   }
@@ -648,7 +648,7 @@ BOOL check_mangled_cache( char *s )
   {
     /* Replace the saved_ext as it was truncated. */
     (void)pstrcat( s, saved_ext );
-    free(saved_ext);
+    SAFE_FREE(saved_ext);
   }
 
   DEBUG( 3, ("as %s\n", s) );
@@ -1016,7 +1016,7 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
 
 		if(tmp != NULL) {
 			cache_mangled_name(OutName, tmp);
-			free(tmp);
+			SAFE_FREE(tmp);
 		}
 	}
 

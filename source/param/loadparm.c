@@ -1766,11 +1766,7 @@ static void free_service(service * pservice)
 		       pservice->szService));
 
 	string_free(&pservice->szService);
-	if (pservice->copymap)
-	{
-		free(pservice->copymap);
-		pservice->copymap = NULL;
-	}
+	SAFE_FREE(pservice->copymap);
 
 	for (i = 0; parm_table[i].label; i++)
 		if ((parm_table[i].type == P_STRING ||
@@ -2622,8 +2618,7 @@ initialise a copymap
 static void init_copymap(service * pservice)
 {
 	int i;
-	if (pservice->copymap)
-		free(pservice->copymap);
+	SAFE_FREE(pservice->copymap);
 	pservice->copymap = (BOOL *)malloc(sizeof(BOOL) * NUMPARAMETERS);
 	if (!pservice->copymap)
 		DEBUG(0,
@@ -3204,7 +3199,7 @@ static void lp_add_auto_services(char *str)
 			lp_add_home(p, homes, home);
 		}
 	}
-	free(s);
+	SAFE_FREE(s);
 }
 
 /***************************************************************************

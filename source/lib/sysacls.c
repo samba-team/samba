@@ -1335,7 +1335,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 			maxlen += nbytes + 20 * (acl_d->count - i);
 
 			if ((text = Realloc(oldtext, maxlen)) == NULL) {
-				free(oldtext);
+				SAFE_FREE(oldtext);
 				errno = ENOMEM;
 				return NULL;
 			}
@@ -1865,9 +1865,7 @@ int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 
 	ret = acl(name, ACL_SET, acl_count, acl_p);
 
-	if (acl_buf) {
-		free(acl_buf);
-	}
+	SAFE_FREE(acl_buf);
 
 	return ret;
 }
@@ -1919,13 +1917,13 @@ int sys_acl_delete_def_file(const char *path)
 
 int sys_acl_free_text(char *text)
 {
-	free(text);
+	SAFE_FREE(text);
 	return 0;
 }
 
 int sys_acl_free_acl(SMB_ACL_T acl_d) 
 {
-	free(acl_d);
+	SAFE_FREE(acl_d);
 	return 0;
 }
 

@@ -282,13 +282,13 @@ static char *smbw_find_workgroup(void)
 			slprintf(server, sizeof(server), "%s#1D", name);
 			if (smbw_server(server, "IPC$")) {
 				smbw_setshared("WORKGROUP", name);
-				free(ip_list);
+				SAFE_FREE(ip_list);
 				return name;
 			}
 		}
 	}
 
-	free(ip_list);
+	SAFE_FREE(ip_list);
 
 	return p;
 }
@@ -607,9 +607,9 @@ struct smbw_server *smbw_server(char *server, char *share)
 	cli_shutdown(&c);
 	if (!srv) return NULL;
 
-	if (srv->server_name) free(srv->server_name);
-	if (srv->share_name) free(srv->share_name);
-	free(srv);
+	SAFE_FREE(srv->server_name);
+	SAFE_FREE(srv->share_name);
+	SAFE_FREE(srv);
 	return NULL;
 }
 
@@ -723,12 +723,10 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 	}
 	if (file) {
 		if (file->f) {
-			if (file->f->fname) {
-				free(file->f->fname);
-			}
-			free(file->f);
+			SAFE_FREE(file->f->fname);
+			SAFE_FREE(file->f);
 		}
-		free(file);
+		SAFE_FREE(file);
 	}
 	smbw_busy--;
 	return -1;
@@ -893,11 +891,11 @@ int smbw_close(int fd)
 
 	file->f->ref_count--;
 	if (file->f->ref_count == 0) {
-		free(file->f->fname);
-		free(file->f);
+		SAFE_FREE(file->f->fname);
+		SAFE_FREE(file->f);
 	}
 	ZERO_STRUCTP(file);
-	free(file);
+	SAFE_FREE(file);
 	
 	smbw_busy--;
 
@@ -1385,14 +1383,14 @@ static void smbw_srv_close(struct smbw_server *srv)
 
 	cli_shutdown(&srv->cli);
 
-	free(srv->server_name);
-	free(srv->share_name);
+	SAFE_FREE(srv->server_name);
+	SAFE_FREE(srv->share_name);
 
 	DLIST_REMOVE(smbw_srvs, srv);
 
 	ZERO_STRUCTP(srv);
 
-	free(srv);
+	SAFE_FREE(srv);
 	
 	smbw_busy--;
 }

@@ -43,7 +43,7 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 		char *ptr;
 		asprintf(&ptr,"xterm -e gdb /proc/%d/exe %d", getpid(), getpid());
 		system(ptr);
-		free(ptr);
+		SAFE_FREE(ptr);
 	}
 #endif	
 }
@@ -129,7 +129,7 @@ static void addrec_db(void)
 		if (tdb_store(db, key, data, TDB_REPLACE) != 0) {
 			fatal("tdb_store failed");
 		}
-		if (data.dptr) free(data.dptr);
+		SAFE_FREE(data.dptr);
 		tdb_chainunlock(db, lockkey);
 		goto next;
 	} 
@@ -143,12 +143,12 @@ static void addrec_db(void)
 #endif
 
 	data = tdb_fetch(db, key);
-	if (data.dptr) free(data.dptr);
+	SAFE_FREE(data.dptr);
 
 next:
-	free(k);
-	free(d);
-	free(s);
+	SAFE_FREE(k);
+	SAFE_FREE(d);
+	SAFE_FREE(s);
 }
 
 static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf,

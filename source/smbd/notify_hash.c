@@ -195,7 +195,7 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 
 static void hash_remove_notify(void *datap)
 {
-	free(datap);
+	SAFE_FREE(datap);
 }
 
 /****************************************************************************

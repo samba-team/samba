@@ -823,7 +823,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 				ippDelete(response);
 				httpClose(http);
 
-				free (queue);
+				SAFE_FREE(queue);
 				return (0);
 			}
 

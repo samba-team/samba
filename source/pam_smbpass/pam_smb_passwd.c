@@ -167,7 +167,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             set( SMB__OLD_PASSWD, ctrl );
             retval = _smb_read_password( pamh, ctrl, Announce, "Current SMB password: ",
                                          NULL, _SMB_OLD_AUTHTOK, &pass_old );
-            free( Announce );
+            SAFE_FREE( Announce );
 
             if (retval != PAM_SUCCESS) {
                 _log_err( LOG_NOTICE

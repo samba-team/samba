@@ -119,8 +119,8 @@ static int mygetc(myFILE *f)
 static void myfile_close(myFILE *f)
 {
 	if (!f) return;
-	if (f->buf) free(f->buf);
-	free(f);
+	SAFE_FREE(f->buf);
+	SAFE_FREE(f);
 }
 
 /* -------------------------------------------------------------------------- **
@@ -541,7 +541,7 @@ static myFILE *OpenConfFile( char *FileName )
     DEBUG( lvl,
       ("%s Unable to open configuration file \"%s\":\n\t%s\n",
       func, FileName, strerror(errno)) );
-    free(ret);
+    SAFE_FREE(ret);
     return NULL;
     }
 
@@ -591,7 +591,7 @@ BOOL pm_process( char *FileName,
       return( False );
       }
     result = Parse( InFile, sfunc, pfunc );
-    free( bufr );
+    SAFE_FREE( bufr );
     bufr  = NULL;
     bSize = 0;
     }

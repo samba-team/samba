@@ -1756,8 +1756,8 @@ only use %d.\n", (count*2) + 2, FD_SETSIZE));
 
   *listen_number = (count*2) + 2;
 
-  if (*ppset) free(*ppset);
-  if (*psock_array) free(*psock_array);
+  SAFE_FREE(*ppset);
+  SAFE_FREE(*psock_array);
 
   *ppset = pset;
   *psock_array = sock_array;

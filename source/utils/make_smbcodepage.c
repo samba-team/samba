@@ -99,7 +99,7 @@ static int clean_data( char **buf, size_t *size)
     newbuf_p += (strlen(newbuf_p) + 1);
   }
 
-  free(*buf);
+  SAFE_FREE(*buf);
   *buf = newbuf;
   return num_lines;
 }
@@ -209,7 +209,7 @@ The maximum size I will believe is 100k.\n", prog_name, size);
   {
     fprintf(stderr, "%s: read failed for file %s. Error was %s.\n", prog_name,
             input_file, strerror(errno));
-    free((char *)buf);
+    SAFE_FREE((char *)buf);
     fclose(fp);
     exit(1);
   }
@@ -303,7 +303,7 @@ definition file. File %s has %d.\n", prog_name, MAXCODEPAGELINES, input_file, nu
 
   fclose(fp);
 
-  free(orig_buf);
+  SAFE_FREE(orig_buf);
   return 0;
 }
 

@@ -68,7 +68,7 @@ int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
 		return -1;
 	
 	memcpy(&ret, data.dptr, sizeof(int));
-	free(data.dptr);
+	SAFE_FREE(data.dptr);
 	return ret;
 }
 
@@ -374,7 +374,7 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 		return;
 
 	DEBUG(level, ("tdb(%s): %s", tdb->name, ptr));
-	free(ptr);
+	SAFE_FREE(ptr);
 }
 
 /****************************************************************************

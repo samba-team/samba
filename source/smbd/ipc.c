@@ -183,13 +183,13 @@ static BOOL api_rpc_trans_reply(char *outbuf, pipes_struct *p)
 	}
 
 	if((data_len = read_from_pipe( p, rdata, p->max_trans_reply)) < 0) {
-		free(rdata);
+		SAFE_FREE(rdata);
 		return False;
 	}
 
 	send_trans_reply(outbuf, NULL, 0, rdata, data_len, p->out_data.current_pdu_len > data_len);
 
-	free(rdata);
+	SAFE_FREE(rdata);
 	return True;
 }
 
@@ -442,12 +442,9 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 				DEBUG(0,("reply_trans: %s in getting secondary trans response.\n",
 					 (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
 			}
-			if (params)
-				free(params);
-			if (data)
-				free(data);
-			if (setup)
-				free(setup);
+			SAFE_FREE(params);
+			SAFE_FREE(data);
+			SAFE_FREE(setup);
 			END_PROFILE(SMBtrans);
 			return(ERROR_DOS(ERRSRV,ERRerror));
 		}
@@ -509,12 +506,9 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	}
 
 	
-	if (data)
-		free(data);
-	if (params)
-		free(params);
-	if (setup)
-		free(setup);
+	SAFE_FREE(data);
+	SAFE_FREE(params);
+	SAFE_FREE(setup);
 	
 	if (close_on_completion)
 		close_cnum(conn,vuid);

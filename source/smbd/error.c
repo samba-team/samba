@@ -37,8 +37,7 @@ int cached_error_packet(char *outbuf,files_struct *fsp,int line,const char *file
 	int32 err = wbmpx->wr_error;
  
 	/* We can now delete the auxiliary struct */
-	free((char *)wbmpx);
-	fsp->wbmpx_ptr = NULL;
+	SAFE_FREE((char *)wbmpx);
 	return error_packet(outbuf,NT_STATUS_OK,eclass,err,line,file);
 }
 

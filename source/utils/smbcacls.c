@@ -328,7 +328,7 @@ static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace)
 	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
 	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
 	new = make_sec_acl(ctx,(*the_acl)->revision,1+(*the_acl)->num_aces, aces);
-	free(aces);
+	SAFE_FREE(aces);
 	(*the_acl) = new;
 	return True;
 }
@@ -391,8 +391,8 @@ static SEC_DESC *sec_desc_parse(char *str)
 	ret = make_sec_desc(ctx,revision, owner_sid, grp_sid, 
 			    NULL, dacl, &sd_size);
 
-	if (grp_sid) free(grp_sid);
-	if (owner_sid) free(owner_sid);
+	SAFE_FREE(grp_sid);
+	SAFE_FREE(owner_sid);
 
 	return ret;
 }
@@ -605,10 +605,8 @@ static int cacl_set(struct cli_state *cli, char *filename,
 					}
 					old->dacl->num_aces--;
 					if (old->dacl->num_aces == 0) {
-						free(old->dacl->ace);
-						old->dacl->ace=NULL;
-						free(old->dacl);
-						old->dacl = NULL;
+						SAFE_FREE(old->dacl->ace);
+						SAFE_FREE(old->dacl);
 						old->off_dacl = 0;
 					}
 					found = True;

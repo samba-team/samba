@@ -108,7 +108,7 @@ static struct printjob *print_job_find(int jobid)
 	if (!ret.dptr || ret.dsize != sizeof(pjob)) return NULL;
 
 	memcpy(&pjob, ret.dptr, sizeof(pjob));
-	free(ret.dptr);
+	SAFE_FREE(ret.dptr);
 	return &pjob;
 }
 
@@ -282,7 +282,7 @@ static pid_t get_updating_pid(fstring printer_name)
 		return (pid_t)-1;
 
 	memcpy(&updating_pid, data.dptr, sizeof(pid_t));
-	free(data.dptr);
+	SAFE_FREE(data.dptr);
 
 	if (process_exists(updating_pid))
 		return updating_pid;
@@ -794,7 +794,7 @@ static int get_queue_status(int snum, print_status_struct *status)
 		if (data.dsize == sizeof(print_status_struct)) {
 			memcpy(status, data.dptr, sizeof(print_status_struct));
 		}
-		free(data.dptr);
+		SAFE_FREE(data.dptr);
 	}
 	return status->qcount;
 }
@@ -1162,7 +1162,7 @@ int print_queue_status(int snum,
 		if (data.dsize == sizeof(*status)) {
 			memcpy(status, data.dptr, sizeof(*status));
 		}
-		free(data.dptr);
+		SAFE_FREE(data.dptr);
 	}
 
 	/*

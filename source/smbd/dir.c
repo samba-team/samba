@@ -244,10 +244,9 @@ static void dptr_close_internal(dptr_struct *dptr)
   }
 
   /* Lanman 2 specific code */
-  if (dptr->wcard)
-    free(dptr->wcard);
+  SAFE_FREE(dptr->wcard);
   string_set(&dptr->path,"");
-  free((char *)dptr);
+  SAFE_FREE((char *)dptr);
 }
 
 /****************************************************************************
@@ -436,7 +435,7 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
 
       if(dptr->dnum == -1 || dptr->dnum > 254) {
         DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
-        free((char *)dptr);
+        SAFE_FREE((char *)dptr);
         return -1;
       }
     }
@@ -465,7 +464,7 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
 
       if(dptr->dnum == -1 || dptr->dnum < 255) {
         DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
-        free((char *)dptr);
+        SAFE_FREE((char *)dptr);
         return -1;
       }
     }
@@ -767,7 +766,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
       
 	    if (asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
 		    ret = user_can_read_file(conn, entry);
-		    free(entry);
+		    SAFE_FREE(entry);
 	    }
 	    if (!ret) continue;
     }
@@ -802,8 +801,8 @@ void CloseDir(void *p)
 {
   Dir *dirp = (Dir *)p;
   if (!dirp) return;    
-  if (dirp->data) free(dirp->data);
-  free(dirp);
+  SAFE_FREE(dirp->data);
+  SAFE_FREE(dirp);
 }
 
 /*******************************************************************
@@ -912,7 +911,7 @@ void DirCacheAdd( char *path, char *name, char *dname, int snum )
 
   /* Free excess cache entries. */
   while( DIRCACHESIZE < dir_cache->count )
-    free( ubi_dlRemTail( dir_cache ) );
+    safe_free( ubi_dlRemTail( dir_cache ) );
 
 }
 
@@ -964,7 +963,7 @@ void DirCacheFlush(int snum)
 	    NULL != entry; )  {
 		next = ubi_dlNext( entry );
 		if( entry->snum == snum )
-			free( ubi_dlRemThis( dir_cache, entry ) );
+			safe_free( ubi_dlRemThis( dir_cache, entry ) );
 		entry = (dir_cache_entry *)next;
 	}
 }

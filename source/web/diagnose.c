@@ -36,7 +36,7 @@ BOOL nmbd_running(void)
 		if ((ip_list = name_query(fd, "__SAMBA__", 0, 
 					  True, True, loopback_ip,
 					  &count)) != NULL) {
-			free(ip_list);
+			SAFE_FREE(ip_list);
 			close(fd);
 			return True;
 		}

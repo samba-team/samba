@@ -110,7 +110,7 @@ static void kernel_remove_notify(void *datap)
 		}
 		close(fd);
 	}
-	free(data);
+	SAFE_FREE(data);
 	DEBUG(3,("removed kernel change notify fd=%d\n", fd));
 }
 

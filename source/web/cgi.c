@@ -168,7 +168,7 @@ void cgi_load_variables(FILE *f1)
 			variables[num_variables].name = strdup(line);
 			variables[num_variables].value = strdup(p+1);
 
-			free(line);
+			SAFE_FREE(line);
 			
 			if (!variables[num_variables].name || 
 			    !variables[num_variables].value)

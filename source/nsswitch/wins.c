@@ -205,7 +205,7 @@ int lookup(nsd_file_t *rq)
 		if ( status = lookup_byaddr_backend(key, &count)) {
 		    size = strlen(key) + 1;
 		    if (size > len) {
-			free(status);
+			SAFE_FREE(status);
 			return NSD_ERROR;
 		    }
 		    len -= size;
@@ -217,7 +217,7 @@ int lookup(nsd_file_t *rq)
 			if (status[i].type == 0x20) {
 				size = sizeof(status[i].name) + 1;
 				if (size > len) {
-				    free(status);
+				    SAFE_FREE(status);
 				    return NSD_ERROR;
 				}
 				len -= size;
@@ -227,7 +227,7 @@ int lookup(nsd_file_t *rq)
 			}
 		    }
 		    response[strlen(response)-1] = '\n';
-		    free(status);
+		    SAFE_FREE(status);
 		}
 	} else if (strcasecmp(map,"hosts.byname") == 0) {
 	    if (ip_list = lookup_byname_backend(key, &count)) {
@@ -235,7 +235,7 @@ int lookup(nsd_file_t *rq)
 		    addr = inet_ntoa(ip_list[i-1]);
 		    size = strlen(addr) + 1;
 		    if (size > len) {
-			free(ip_list);
+			SAFE_FREE(ip_list);
 			return NSD_ERROR;
 		    }
 		    len -= size;
@@ -246,13 +246,13 @@ int lookup(nsd_file_t *rq)
 		}
 		size = strlen(key) + 1;
 		if (size > len) {
-		    free(ip_list);
+		    SAFE_FREE(ip_list);
 		    return NSD_ERROR;
 		}   
 		strncat(response,key,size);
 		strncat(response,"\n",1);
 		found = True;
-		free(ip_list);
+		SAFE_FREE(ip_list);
 	    }
 	}
 
@@ -310,8 +310,7 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 		host_addresses++;
 	}
 
-	if (ip_list)
-		free(ip_list);
+	SAFE_FREE(ip_list);
 
 	memcpy(buffer, name, namelen);
 	he->h_name = buffer;

@@ -175,17 +175,14 @@ void load_interfaces(void)
 	allones_ip = *interpret_addr2("255.255.255.255");
 	loopback_ip = *interpret_addr2("127.0.0.1");
 
-	if (probed_ifaces) {
-		free(probed_ifaces);
-		probed_ifaces = NULL;
-	}
+	SAFE_FREE(probed_ifaces);
 
 	/* dump the current interfaces if any */
 	while (local_interfaces) {
 		struct interface *iface = local_interfaces;
 		DLIST_REMOVE(local_interfaces, local_interfaces);
 		ZERO_STRUCTPN(iface);
-		free(iface);
+		SAFE_FREE(iface);
 	}
 
 	/* probe the kernel for interfaces */

@@ -293,7 +293,7 @@ void _cleanup_failures( pam_handle_t * pamh, void *fl, int err )
         }
         _pam_delete( failure->agent );	/* tidy up */
         _pam_delete( failure->user );	/* tidy up */
-	free( failure );
+	SAFE_FREE( failure );
     }
 }
 

@@ -496,10 +496,8 @@ void delete_write_cache(files_struct *fsp)
 
   SMB_ASSERT(wcp->data_size == 0);
 
-  free(wcp->data);
-  free(wcp);
-
-  fsp->wcp = NULL;
+  SAFE_FREE(wcp->data);
+  SAFE_FREE(wcp);
 
   DEBUG(10,("delete_write_cache: File %s deleted write cache\n", fsp->fsp_name ));
 
@@ -532,7 +530,7 @@ static BOOL setup_write_cache(files_struct *fsp, SMB_OFF_T file_size)
   if((wcp->data = malloc(wcp->alloc_size)) == NULL) {
     DEBUG(0,("setup_write_cache: malloc fail for buffer size %u.\n",
           (unsigned int)wcp->alloc_size ));
-    free(wcp);
+    SAFE_FREE(wcp);
     return False;
   }
 

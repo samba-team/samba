@@ -263,7 +263,7 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
 			DEBUG(10, ("cm_open_connection cache entry expired for %s, %s\n", domain, new_conn->controller));
 
 			DLIST_REMOVE(open_connection_cache, occ);
-			free(occ);
+			SAFE_FREE(occ);
 
 			break;
 		}
@@ -716,7 +716,7 @@ static void dump_conn_list(void)
 		asprintf(&msg, "\t%-15s %-15s %-16s", con->domain, con->controller, con->pipe_name);
 		
 		DEBUG(0, ("%s\n", msg));
-		free(msg);
+		SAFE_FREE(msg);
 	}
 }
 
