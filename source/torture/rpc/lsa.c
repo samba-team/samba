@@ -21,14 +21,9 @@
 
 #include "includes.h"
 
-/*
-  this makes the debug code display the right thing
-*/
 static void init_lsa_Name(struct lsa_Name *name, const char *s)
 {
 	name->name = s;
-	name->name_len = strlen_m(s)*2;
-	name->name_size = name->name_len;
 }
 
 static BOOL test_OpenPolicy(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)

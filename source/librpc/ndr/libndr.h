@@ -111,6 +111,7 @@ struct ndr_print {
 #define LIBNDR_ALIGN_FLAGS (LIBNDR_FLAG_ALIGN2|LIBNDR_FLAG_ALIGN4|LIBNDR_FLAG_ALIGN8)
 
 #define LIBNDR_PRINT_ARRAY_HEX   (1<<15)
+#define LIBNDR_PRINT_SET_VALUES  (1<<16)
 
 
 /* useful macro for debugging */
@@ -119,7 +120,7 @@ struct ndr_print {
 #define NDR_PRINT_FUNCTION_DEBUG(type, flags, p) ndr_print_function_debug((ndr_print_function_t)ndr_print_ ##type, #type, flags, p)
 #define NDR_PRINT_BOTH_DEBUG(type, p) NDR_PRINT_FUNCTION_DEBUG(type, NDR_BOTH, p)
 #define NDR_PRINT_OUT_DEBUG(type, p) NDR_PRINT_FUNCTION_DEBUG(type, NDR_OUT, p)
-#define NDR_PRINT_IN_DEBUG(type, p) NDR_PRINT_FUNCTION_DEBUG(type, NDR_IN, p)
+#define NDR_PRINT_IN_DEBUG(type, p) NDR_PRINT_FUNCTION_DEBUG(type, NDR_IN | NDR_SET_VALUES, p)
 
 
 enum ndr_err_code {
@@ -149,6 +150,7 @@ enum ndr_err_code {
 #define NDR_IN 1
 #define NDR_OUT 2
 #define NDR_BOTH 3
+#define NDR_SET_VALUES 4
 
 #define NDR_PULL_NEED_BYTES(ndr, n) do { \
 	if ((n) > ndr->data_size || ndr->offset + (n) > ndr->data_size) { \

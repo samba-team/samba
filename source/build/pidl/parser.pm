@@ -405,6 +405,12 @@ sub ParseElementPrintScalar($$)
 		return;
 	}
 
+	if (my $value = util::has_property($e, "value")) {
+		pidl "\tif (ndr->flags & LIBNDR_PRINT_SET_VALUES) {\n";
+		pidl "\t\t$cprefix$var_prefix$e->{NAME} = $value;\n";
+		pidl "\t}\n";
+	}
+
 	if (util::is_fixed_array($e)) {
 		ParseElementPrintBuffer($e, $var_prefix);
 	} elsif (util::has_direct_buffers($e)) {
@@ -1100,7 +1106,11 @@ sub ParseFunctionPrint($)
 	pidl "\n{\n";
 	pidl "\tndr_print_struct(ndr, name, \"$fn->{NAME}\");\n";
 	pidl "\tndr->depth++;\n";
-	
+
+	pidl "\tif (flags & NDR_SET_VALUES) {\n";
+	pidl "\t\tndr->flags |= LIBNDR_PRINT_SET_VALUES;\n";
+	pidl "}\n";
+
 	pidl "\tif (flags & NDR_IN) {\n";
 	pidl "\t\tndr_print_struct(ndr, \"in\", \"$fn->{NAME}\");\n";
 	pidl "\tndr->depth++;\n";

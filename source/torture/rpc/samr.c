@@ -26,18 +26,9 @@
 static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			       struct policy_handle *handle);
 
-/*
-  this makes the debug code display the right thing
-*/
 static void init_samr_Name(struct samr_Name *name, const char *s)
 {
-	name->name_len = strlen_m(s)*2;
-	name->name_size = name->name_len;
-	if (name->name_len == 0) {
-		name->name = NULL;
-	} else {
-		name->name = s;
-	}
+	name->name = s;
 }
 
 static BOOL test_Close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 

@@ -91,7 +91,7 @@ interface netlogon
 	} netr_IdentityInfo;
 
 	typedef [flag(NDR_PAHEX)] struct {
-		uint8 password[16];
+		uint8 data[16];
 	} netr_Password;
 
 	typedef struct {
@@ -252,19 +252,18 @@ interface netlogon
 		[in,out]    netr_Credential credentials
 		);
 
-#if 0
-	typedef struct {
-		uint8 encrypted_password[16];
-	} ENCRYPTED_LM_OWF_PASSWORD;
-	WERROR netr_ServerPasswordSet(
-		[in] unistr *server_name,
-		[in] unistr username,
-		[in] uint16 secure_challenge_type,
-		[in] unistr ComputerName,
-		[in][ref] AUTHENTICATOR credential,
-		[in][ref] LM_OWF_PASSWORD UasNewPassword,
-		[out][ref] AUTHENTICATOR return_authenticator
+
+	NTSTATUS netr_ServerPasswordSet(
+		[in]  unistr *server_name,
+		[in]  unistr username,
+		[in]  uint16 secure_challenge_type,
+		[in]  unistr computer_name,
+		[in]  netr_Authenticator credential,
+		[in]  netr_Password new_password,
+		[out] netr_Authenticator return_authenticator
 		);
+
+#if 0
 	typedef struct {
 		unistr *username;
 		netr_String dummy1;

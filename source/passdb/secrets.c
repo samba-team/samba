@@ -82,7 +82,7 @@ BOOL secrets_store(const char *key, const void *data, size_t size)
 	dbuf.dptr = memdup(data, size);
 	dbuf.dsize = size;
 
-	ret = tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) == 0;
+	ret = tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
 	free(kbuf.dptr);
 	free(dbuf.dptr);
