@@ -3050,9 +3050,6 @@ void init_srv_share_info2(SH_INFO_2 *sh2,
 				char *net_name, uint32 type, char *remark,
 				uint32 perms, uint32 max_uses, uint32 num_uses,
 				char *path, char *passwd);
-void free_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr);
-void free_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n);
-void free_srv_r_net_share_enum(SRV_R_NET_SHARE_ENUM *r_n);
 void init_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
 				char *srv_name, uint32 info_level,
 				uint32 preferred_len, ENUM_HND *hnd);

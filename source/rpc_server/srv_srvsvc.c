@@ -218,9 +218,6 @@ static BOOL srv_reply_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n,
 	/* store the response in the SMB stream */
 	ret = srv_io_r_net_share_enum("", &r_n, rdata, 0);
 
-	/* Free the memory used by the response. */
-	free_srv_r_net_share_enum(&r_n);
-
 	DEBUG(5,("srv_net_share_enum: %d\n", __LINE__));
 
 	return ret;
@@ -285,9 +282,6 @@ static BOOL srv_reply_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n,
 
 	/* store the response in the SMB stream */
 	ret = srv_io_r_net_share_get_info("", &r_n, rdata, 0);
-
-	/* Free the memory used by the response. */
-	free_srv_r_net_share_get_info(&r_n);
 
 	DEBUG(5,("srv_net_share_get_info: %d\n", __LINE__));
 
@@ -1024,9 +1018,6 @@ static BOOL api_srv_net_share_enum(pipes_struct *p)
 
 	ret = srv_reply_net_share_enum(&q_n, rdata);
 
-	/* Free any data allocated in the unmarshalling. */
-	free_srv_q_net_share_enum(&q_n);
-
 	return ret;
 }
 
@@ -1048,9 +1039,6 @@ static BOOL api_srv_net_share_get_info(pipes_struct *p)
 	}
 
 	ret = srv_reply_net_share_get_info(&q_n, rdata);
-
-	/* Free any data allocated in the unmarshalling. */
-	free_srv_q_net_share_get_info(&q_n);
 
 	return ret;
 }
