@@ -1041,13 +1041,13 @@ _krb5_pk_verify_sign(krb5_context context,
     public_key = X509_get_pubkey(cert);
 
     /* verify signature */
-    if (oid_cmp(&signer_info->digestAlgorithm.algorithm,
+    if (heim_oid_cmp(&signer_info->digestAlgorithm.algorithm,
 		&heim_sha1WithRSAEncryption_oid) == 0)
 	evp_type = EVP_sha1();
-    else if (oid_cmp(&signer_info->digestAlgorithm.algorithm,
+    else if (heim_oid_cmp(&signer_info->digestAlgorithm.algorithm,
 		     &heim_md5WithRSAEncryption_oid) == 0) 
 	evp_type = EVP_md5();
-    else if (oid_cmp(&signer_info->digestAlgorithm.algorithm, 
+    else if (heim_oid_cmp(&signer_info->digestAlgorithm.algorithm, 
 		     &heim_sha1_oid) == 0)
 	evp_type = EVP_sha1();
     else {
@@ -1118,7 +1118,7 @@ get_reply_key(krb5_context context,
     krb5_error_code ret;
     size_t size;
 
-    if (oid_cmp(eContentType, &heim_pkrkeydata_oid) != 0) {
+    if (heim_oid_cmp(eContentType, &heim_pkrkeydata_oid) != 0) {
 	krb5_set_error_string(context, "PKINIT, reply key, wrong oid");
 	return KRB5KRB_AP_ERR_MSG_TYPE;
     }
@@ -1194,7 +1194,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
     user_cert = sk_X509_value(ctx->id->cert, 0);
 
-    if (oid_cmp(&pkcs7_enveloped_oid, &rep->contentType)) {
+    if (heim_oid_cmp(&pkcs7_enveloped_oid, &rep->contentType)) {
 	krb5_set_error_string(context, "Invalid content type");
 	return EINVAL;
     }
@@ -1230,7 +1230,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	goto out;
     }
 
-    if (oid_cmp(&heim_rsaEncryption_oid,
+    if (heim_oid_cmp(&heim_rsaEncryption_oid,
 		&ri->keyEncryptionAlgorithm.algorithm)) {
 	krb5_set_error_string(context, "Invalid content type");
 	return EINVAL;
@@ -1244,19 +1244,19 @@ pk_rd_pa_reply_enckey(krb5_context context,
   
     /* verify content type */
     if (context->pkinit_flags & KRB5_PKINIT_WIN2K) {
-	if (oid_cmp(&ed.encryptedContentInfo.contentType, &pkcs7_data_oid)) {
+	if (heim_oid_cmp(&ed.encryptedContentInfo.contentType, &pkcs7_data_oid)) {
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
 	}
     } else {
-	if (oid_cmp(&ed.encryptedContentInfo.contentType, &pkcs7_signed_oid)) {
+	if (heim_oid_cmp(&ed.encryptedContentInfo.contentType, &pkcs7_signed_oid)) {
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
 	}
     }
 
 
-    if (oid_cmp(&ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm,
+    if (heim_oid_cmp(&ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm,
 		&heim_des_ede3_cbc_oid) == 0) {
 	/* use des-ede3-cbc */
 	heim_octet_string encryptedContent;
@@ -1318,7 +1318,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	    goto out;
 	}
 
-	if (oid_cmp(&ci.contentType, &pkcs7_signed_oid) == 0) {
+	if (heim_oid_cmp(&ci.contentType, &pkcs7_signed_oid) == 0) {
 	    ret = EINVAL; /* XXX */
 	    krb5_set_error_string(context, "Invalid content type");
 	    goto out;
@@ -1384,7 +1384,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     krb5_data_zero(&eContent);
     memset(&kdc_dh_info, 0, sizeof(kdc_dh_info));
 
-    if (oid_cmp(&pkcs7_signed_oid, &rep->contentType)) {
+    if (heim_oid_cmp(&pkcs7_signed_oid, &rep->contentType)) {
 	krb5_set_error_string(context, "Invalid content type");
 	return EINVAL;
     }
@@ -1409,7 +1409,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     if (ret)
 	goto out;
 
-    if (oid_cmp(&eContentType, &heim_pkdhkeydata_oid)) {
+    if (heim_oid_cmp(&eContentType, &heim_pkdhkeydata_oid)) {
 	ret = KRB5KRB_AP_ERR_MSG_TYPE; /* XXX */
 	goto out;
     }

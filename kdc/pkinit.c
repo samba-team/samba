@@ -346,7 +346,7 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
 
     memset(&dhparam, 0, sizeof(dhparam));
 
-    if (oid_cmp(&dh_key_info->algorithm.algorithm, &heim_dhpublicnumber_oid)) {
+    if (heim_oid_cmp(&dh_key_info->algorithm.algorithm, &heim_dhpublicnumber_oid)) {
 	krb5_set_error_string(context,
 			      "PKINIT invalid oid in clientPublicValue");
 	return KRB5_BADMSGTYPE;
@@ -468,7 +468,7 @@ pk_rd_padata(krb5_context context,
 	return ret;
     }
 
-    if (oid_cmp(&r.signedAuthPack.contentType, &pkcs7_signed_oid)) {
+    if (heim_oid_cmp(&r.signedAuthPack.contentType, &pkcs7_signed_oid)) {
 	krb5_set_error_string(context, "PK-AS-REQ invalid content type oid");
 	ret = KRB5KRB_ERR_GENERIC;
 	goto out;
@@ -491,7 +491,7 @@ pk_rd_padata(krb5_context context,
 	goto out;
 
     /* Signature is correct, now verify the signed message */
-    if (oid_cmp(&eContentType, &heim_pkauthdata_oid)) {
+    if (heim_oid_cmp(&eContentType, &heim_pkauthdata_oid)) {
 	krb5_set_error_string(context, "got wrong oid for pkauthdata");
 	ret = KRB5_BADMSGTYPE;
 	goto out;
