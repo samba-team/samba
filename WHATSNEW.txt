@@ -100,6 +100,8 @@ opens were denied has been fixed.
 4). Fix for glibc2.1 bug on 32-bit systems being reported as 64
 bit.
 5). Prevent timestamps of 0 or -1 corrupting file timestamps.
+6). Fix for unusual delays when browsing shares using Windows
+2000.
 
 Changes in 2.0.4b
 -----------------

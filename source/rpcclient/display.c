@@ -460,9 +460,9 @@ void display_srv_conn_info_ctr(FILE *out_hnd, enum action_type action,
 share info level 1 display function
 ****************************************************************************/
 void display_share_info_1(FILE *out_hnd, enum action_type action,
-		SH_INFO_1 *info1, SH_INFO_1_STR *str1)
+			  SRV_SHARE_INFO_1 *info1)
 {
-	if (info1 == NULL || str1 == NULL)
+	if (info1 == NULL)
 	{
 		return;
 	}
@@ -480,10 +480,10 @@ void display_share_info_1(FILE *out_hnd, enum action_type action,
 			fstring remark  ;
 			fstring net_name;
 
-			fstrcpy(net_name, unistrn2(str1->uni_netname.buffer, str1->uni_netname.uni_str_len));
-			fstrcpy(remark  , unistrn2(str1->uni_remark .buffer, str1->uni_remark .uni_str_len));
+			fstrcpy(net_name, unistrn2(info1->info_1_str.uni_netname.buffer, info1->info_1_str.uni_netname.uni_str_len));
+			fstrcpy(remark  , unistrn2(info1->info_1_str.uni_remark .buffer, info1->info_1_str.uni_remark .uni_str_len));
 
-			display_share(out_hnd, action, net_name, info1->type, remark);
+			display_share(out_hnd, action, net_name, info1->info_1.type, remark);
 
 			break;
 		}
@@ -500,9 +500,9 @@ void display_share_info_1(FILE *out_hnd, enum action_type action,
 share info level 2 display function
 ****************************************************************************/
 void display_share_info_2(FILE *out_hnd, enum action_type action,
-		SH_INFO_2 *info2, SH_INFO_2_STR *str2)
+			  SRV_SHARE_INFO_2 *info2)
 {
-	if (info2 == NULL || str2 == NULL)
+	if (info2 == NULL)
 	{
 		return;
 	}
@@ -522,14 +522,15 @@ void display_share_info_2(FILE *out_hnd, enum action_type action,
 			fstring path    ;
 			fstring passwd  ;
 
-			fstrcpy(net_name, unistrn2(str2->uni_netname.buffer, str2->uni_netname.uni_str_len));
-			fstrcpy(remark  , unistrn2(str2->uni_remark .buffer, str2->uni_remark .uni_str_len));
-			fstrcpy(path    , unistrn2(str2->uni_path   .buffer, str2->uni_path   .uni_str_len));
-			fstrcpy(passwd  , unistrn2(str2->uni_passwd .buffer, str2->uni_passwd .uni_str_len));
+			fstrcpy(net_name, unistrn2(info2->info_2_str.uni_netname.buffer, info2->info_2_str.uni_netname.uni_str_len));
+			fstrcpy(remark  , unistrn2(info2->info_2_str.uni_remark .buffer, info2->info_2_str.uni_remark .uni_str_len));
+			fstrcpy(path    , unistrn2(info2->info_2_str.uni_path   .buffer, info2->info_2_str.uni_path   .uni_str_len));
+			fstrcpy(passwd  , unistrn2(info2->info_2_str.uni_passwd .buffer, info2->info_2_str.uni_passwd .uni_str_len));
 
-			display_share2(out_hnd, action, net_name, info2->type, remark,
-			                                      info2->perms, info2->max_uses, info2->num_uses,
-			                                      path, passwd);
+			display_share2(out_hnd, action, net_name,
+			      info2->info_2.type, remark, info2->info_2.perms,
+			      info2->info_2.max_uses, info2->info_2.num_uses,
+			      path, passwd);
 
 			break;
 		}
@@ -543,113 +544,53 @@ void display_share_info_2(FILE *out_hnd, enum action_type action,
 }
 
 /****************************************************************************
-share info level 1 container display function
-****************************************************************************/
-void display_srv_share_info_1_ctr(FILE *out_hnd, enum action_type action,
-				SRV_SHARE_INFO_1 *ctr)
-{
-	if (ctr == NULL)
-	{
-		fprintf(out_hnd, "display_srv_share_info_1_ctr: unavailable due to an internal error\n");
-		return;
-	}
-
-	switch (action)
-	{
-		case ACTION_HEADER:
-		{
-			break;
-		}
-		case ACTION_ENUMERATE:
-		{
-			int i;
-
-			for (i = 0; i < ctr->num_entries_read; i++)
-			{
-				display_share_info_1(out_hnd, ACTION_HEADER   , &(ctr->info_1[i]), &(ctr->info_1_str[i]));
-				display_share_info_1(out_hnd, ACTION_ENUMERATE, &(ctr->info_1[i]), &(ctr->info_1_str[i]));
-				display_share_info_1(out_hnd, ACTION_FOOTER   , &(ctr->info_1[i]), &(ctr->info_1_str[i]));
-			}
-			break;
-		}
-		case ACTION_FOOTER:
-		{
-			break;
-		}
-	}
-}
-
-/****************************************************************************
-share info level 2 container display function
-****************************************************************************/
-void display_srv_share_info_2_ctr(FILE *out_hnd, enum action_type action,
-				SRV_SHARE_INFO_2 *ctr)
-{
-	if (ctr == NULL)
-	{
-		fprintf(out_hnd, "display_srv_share_info_2_ctr: unavailable due to an internal error\n");
-		return;
-	}
-
-	switch (action)
-	{
-		case ACTION_HEADER:
-		{
-			break;
-		}
-		case ACTION_ENUMERATE:
-		{
-			int i;
-
-			for (i = 0; i < ctr->num_entries_read; i++)
-			{
-				display_share_info_2(out_hnd, ACTION_HEADER   , &(ctr->info_2[i]), &(ctr->info_2_str[i]));
-				display_share_info_2(out_hnd, ACTION_ENUMERATE, &(ctr->info_2[i]), &(ctr->info_2_str[i]));
-				display_share_info_2(out_hnd, ACTION_FOOTER   , &(ctr->info_2[i]), &(ctr->info_2_str[i]));
-			}
-			break;
-		}
-		case ACTION_FOOTER:
-		{
-			break;
-		}
-	}
-}
-
-/****************************************************************************
 share info container display function
 ****************************************************************************/
 void display_srv_share_info_ctr(FILE *out_hnd, enum action_type action,
 				SRV_SHARE_INFO_CTR *ctr)
 {
-	if (ctr == NULL || ctr->ptr_share_ctr == 0)
+	if (ctr == NULL)
 	{
 		fprintf(out_hnd, "display_srv_share_info_ctr: unavailable due to an internal error\n");
-		return;
+	return;
 	}
 
-	switch (ctr->switch_value)
+	switch (action)
 	{
-		case 1:
+		case ACTION_HEADER:
 		{
-			display_srv_share_info_1_ctr(out_hnd, action,
-			                   &(ctr->share.info1));
 			break;
 		}
-		case 2:
+		case ACTION_ENUMERATE:
 		{
-			display_srv_share_info_2_ctr(out_hnd, action,
-			                   &(ctr->share.info2));
+			int i;
+
+			for (i = 0; i < ctr->num_entries; i++)
+			{
+				switch (ctr->info_level) {
+				case 1:
+					display_share_info_1(out_hnd, ACTION_HEADER   , &(ctr->share.info1[i]));
+					display_share_info_1(out_hnd, ACTION_ENUMERATE, &(ctr->share.info1[i]));
+					display_share_info_1(out_hnd, ACTION_FOOTER   , &(ctr->share.info1[i]));
+					break;
+				case 2:
+					display_share_info_2(out_hnd, ACTION_HEADER   , &(ctr->share.info2[i]));
+					display_share_info_2(out_hnd, ACTION_ENUMERATE, &(ctr->share.info2[i]));
+					display_share_info_2(out_hnd, ACTION_FOOTER   , &(ctr->share.info2[i]));
+					break;
+				default:
+					fprintf(out_hnd, "display_srv_share_info_ctr: Unknown Info Level\n");
+					break;
+				}
+			}
 			break;
 		}
-		default:
+		case ACTION_FOOTER:
 		{
-			fprintf(out_hnd, "display_srv_share_info_ctr: Unknown Info Level\n");
 			break;
 		}
 	}
 }
-
 
 /****************************************************************************
 file info level 3 display function
