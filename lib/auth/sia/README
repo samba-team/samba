@@ -24,6 +24,16 @@ you will have to do the following:
 
 Users with local passwords (like root) should be able to login safely.
 
+When using Digital's xdm the KRBTKFILE environment variable doesn't
+get passed along (since xdm zaps the environment). Instead you have to
+set KRBTKFILE to the correct value in /usr/lib/X11/xdm/Xsession. Add a
+line similar to
+
+KRBTKFILE=/tmp/tkt`id -u`_`ps -o ppid= -p $$`
+
+Also remember to export this variable.
+
+
 There is currently no support for changing kerberos passwords. Use
 kpasswd instead.
 
