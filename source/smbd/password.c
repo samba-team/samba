@@ -1247,10 +1247,9 @@ BOOL domain_client_validate( char *user, char *domain, char *server_list,
 	}
 #endif /* 0 */
 
-#if 0
 	cli_nt_session_close(&cli, nt_pipe_fnum);
 	cli_ulogoff(&cli);
 	cli_shutdown(&cli);
-#endif
+
 	return True;
 }
