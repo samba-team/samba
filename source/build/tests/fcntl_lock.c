@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 	/* set a 4 byte write lock */
 	fcntl(fd,F_SETLK,&lock);
 
-	sys_waitpid(pid, &status, 0);
+	waitpid(pid, &status, 0);
 
 	unlink(DATA);
 
