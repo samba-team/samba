@@ -71,6 +71,28 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 		printf("scope is %s\n", name->scope);
 	}
 
+	printf("release the name\n");
+	release.in.name = *name;
+	release.in.dest_addr = address;
+	release.in.address = myaddress;
+	release.in.nb_flags = NBT_NODE_H;
+	release.in.broadcast = False;
+	release.in.timeout = 3;
+	release.in.retries = 0;
+
+	status = nbt_name_release(nbtsock, mem_ctx, &release);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		printf("No response from %s for name release\n", address);
+		return False;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Bad response from %s for name query - %s\n",
+		       address, nt_errstr(status));
+		return False;
+	}
+	CHECK_VALUE(release.out.rcode, 0);
+
+	printf("register the name\n");
 	io.in.name = *name;
 	io.in.wins_servers = str_list_make(mem_ctx, address, NULL);
 	io.in.addresses = str_list_make(mem_ctx, myaddress, NULL);
