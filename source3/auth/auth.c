@@ -63,7 +63,7 @@ static struct auth_init_function_entry *auth_find_backend_entry(const char *name
 	struct auth_init_function_entry *entry = backends;
 
 	while(entry) {
-		if (strequal(entry->name, name)) return entry;
+		if (strcmp(entry->name, name)==0) return entry;
 		entry = entry->next;
 	}
 	
