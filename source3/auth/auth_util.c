@@ -494,10 +494,7 @@ void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
 		DEBUGADDC(dbg_class, dbg_lev, ("SID[%3lu]: %s\n", (unsigned long)i, 
 					       sid_to_string(sid_str, &token->user_sids[i])));
 
-	DEBUGADDC(dbg_class, dbg_lev, ("Privileges: [%d]\n", token->privileges.count));
-	for ( i=0; i<token->privileges.count; i++ ) {
-		DEBUGADDC(dbg_class, dbg_lev, ("\t%s\n", luid_to_privilege_name(&token->privileges.set[i].luid) ));
-	}
+	dump_se_priv( dbg_class, dbg_lev, &token->privileges );
 }
 
 /****************************************************************************
@@ -591,10 +588,7 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 
 	/* add privileges assigned to this user */
 
-	privilege_set_init( &ptoken->privileges );
-
 	get_privileges_for_sids( &ptoken->privileges, ptoken->user_sids, ptoken->num_sids );
-
 	
 	debug_nt_user_token(DBGC_AUTH, 10, ptoken);
 	
@@ -1426,8 +1420,6 @@ void delete_nt_token(NT_USER_TOKEN **pptoken)
 		NT_USER_TOKEN *ptoken = *pptoken;
 
 		SAFE_FREE( ptoken->user_sids );
-		privilege_set_free( &ptoken->privileges );
-
 		ZERO_STRUCTP(ptoken);
 	}
 	SAFE_FREE(*pptoken);
@@ -1460,9 +1452,8 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
 	
 	/* copy the privileges; don't consider failure to be critical here */
 	
-	privilege_set_init( &token->privileges);
-	if ( !dup_privilege_set( &token->privileges, &ptoken->privileges ) ) {
-		DEBUG(0,("dup_nt_token: Failure to copy PRIVILEGE_SET!.  Continuing with 0 privileges assigned.\n"));
+	if ( !se_priv_copy( &token->privileges, &ptoken->privileges ) ) {
+		DEBUG(0,("dup_nt_token: Failure to copy SE_PRIV!.  Continuing with 0 privileges assigned.\n"));
 	}
 
 	return token;
