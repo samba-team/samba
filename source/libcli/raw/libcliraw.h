@@ -1,9 +1,8 @@
 /*
    Unix SMB/CIFS implementation.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1998
-   Copyright (C) Jeremy Allison 1998
+
+   Copyright (C) Andrew Tridgell 2002-2004
    Copyright (C) James Myers 2003 <myersjj@samba.org>
 
    This program is free software; you can redistribute it and/or modify
