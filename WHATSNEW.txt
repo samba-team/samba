@@ -126,6 +126,8 @@ in is_in_path function - fix from Steven Hartland
 <steven_hartland@pa.press.net>.
 18). Fixed bug in smbclient where debug log level on the
 command line was being overridden by the log level in smb.conf.
+19). Fixed bug in USE_MMAP code where client sending
+a silly offset to readraw could cause a smbd core dump.
 
 Bugfixes added since 1.9.18p2
 -----------------------------
