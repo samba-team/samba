@@ -528,8 +528,15 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 	dump_data(100, nt_pwd, 16);
 #endif
 
+	if (smb_pass->smb_nt_passwd == NULL)
+	{
+		DEBUG(5,("warning: NETLOGON user %s only has an LM password\n",
+		          smb_pass->unix_name));
+	}
+
 	if (memcmp(smb_pass->smb_passwd   , lm_pwd, 16) != 0 &&
-	    memcmp(smb_pass->smb_nt_passwd, nt_pwd, 16) != 0)
+	    (smb_pass->smb_nt_passwd == NULL ||
+	    memcmp(smb_pass->smb_nt_passwd, nt_pwd, 16) != 0))
 	{
 		status = 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
 	}
