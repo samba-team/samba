@@ -163,7 +163,7 @@ static void make_reply_lookup_rids(LSA_R_LOOKUP_RIDS *r_l,
 	r_l->undoc_buffer = 1;
 	r_l->num_entries2 = num_entries;
 
-	ASSERT_ARRAY(r_l->dom_rid, num_entries);
+	SMB_ASSERT_ARRAY(r_l->dom_rid, num_entries);
 
 	for (i = 0; i < num_entries; i++)
 	{
@@ -184,7 +184,7 @@ static void make_lsa_trans_names(LSA_TRANS_NAME_ENUM *trn,
 	int i;
 	(*total) = 0;
 
-	ASSERT(num_entries <= MAX_LOOKUP_SIDS);
+	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
 
 	for (i = 0; i < num_entries; i++)
 	{
@@ -196,7 +196,7 @@ static void make_lsa_trans_names(LSA_TRANS_NAME_ENUM *trn,
 		trn->ptr_name[i] = 0;
 		trn->ptr_name[(*total)] = 0;
 
-		ASSERT_ARRAY(sid[i].sid.sub_auths, num_auths);
+		SMB_ASSERT_ARRAY(sid[i].sid.sub_auths, num_auths);
 
 		/* find the rid to look up */
 		if (num_auths != 0)
@@ -403,7 +403,7 @@ static void api_lsa_lookup_names( int uid, prs_struct *data,
         string_to_sid(&sid_S_1_3, "S-1-3");
         string_to_sid(&sid_S_1_5, "S-1-5");
 
-	ASSERT_ARRAY(q_l.lookup_name, q_l.num_entries);
+	SMB_ASSERT_ARRAY(q_l.lookup_name, q_l.num_entries);
 
 	/* convert received RIDs to strings, so we can do them. */
 	for (i = 0; i < q_l.num_entries; i++)

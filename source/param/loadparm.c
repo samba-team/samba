@@ -1068,7 +1068,7 @@ FN_GLOBAL_STRING(lp_nis_home_map_name,&Globals.szNISHomeMapName)
 FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
 FN_GLOBAL_STRING(lp_driverfile,&Globals.szDriverFile)
-FN_GLOBAL_STRING(lp_panic_action,&Globals.szPanicAction);
+FN_GLOBAL_STRING(lp_panic_action,&Globals.szPanicAction)
 
 FN_GLOBAL_STRING(lp_domain_sid,&Globals.szDomainSID)
 FN_GLOBAL_STRING(lp_domain_other_sids,&Globals.szDomainOtherSIDs)
