@@ -3027,6 +3027,10 @@ decrypt_internal_derived(krb5_context context,
 
     len -= checksum_sz;
 
+    if ((len % et->padsize) != 0) {
+	krb5_clear_error_string(context);
+	return KRB5_BAD_MSIZE;
+    }
     ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
     if(ret) {
 	free(p);
@@ -3086,6 +3090,11 @@ decrypt_internal(krb5_context context,
     size_t checksum_sz, l;
     struct encryption_type *et = crypto->et;
     
+    if ((len % et->padsize) != 0) {
+	krb5_clear_error_string(context);
+	return KRB5_BAD_MSIZE;
+    }
+
     checksum_sz = CHECKSUMSIZE(et->checksum);
     p = malloc(len);
     if(len != 0 && p == NULL) {
@@ -3147,6 +3156,11 @@ decrypt_internal_special(krb5_context context,
     char *cdata = (char *)data;
     char *tmp;
     krb5_error_code ret;
+
+    if ((len % et->padsize) != 0) {
+	krb5_clear_error_string(context);
+	return KRB5_BAD_MSIZE;
+    }
 
     tmp = malloc (sz);
     if (tmp == NULL) {
