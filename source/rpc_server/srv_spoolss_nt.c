@@ -168,6 +168,41 @@ static void free_spool_notify_option(SPOOL_NOTIFY_OPTION **pp)
 	SAFE_FREE(*pp);
 }
 
+/****************************************************************************
+ wrapper function to maintain a reference count to the number of
+ open change notification handles we have
+****************************************************************************/
+
+static BOOL spooler_message_flags( BOOL doreg )
+{
+	static uint32 ref_count = 0;
+	BOOL result = True;
+
+	/* 
+	 * check for boundary counditions ....
+	 * if ref_count == 0 and we want to register OR
+	 * if ref_count == 1 and we want to deregister, THEN
+	 * OK.
+	 */
+	
+	if ( ((ref_count == 0) && doreg) || ((ref_count == 1) && !doreg) )
+		result = register_message_flags( doreg, FLAG_MSG_PRINTING );
+
+	/* increment/decrement reference count */
+
+	if ( doreg )
+		ref_count++;
+	else {
+		/* minimum is always 0 */
+		if ( ref_count ) 
+			ref_count--;
+	}
+
+	DEBUG(10,("spooler_message_flags: ref_count == %d\n", ref_count));
+
+	return result;
+}
+
 /***************************************************************************
  Disconnect from the client
 ****************************************************************************/
@@ -196,6 +231,11 @@ static void srv_spoolss_replycloseprinter(POLICY_HND *handle)
 		message_deregister(MSG_PRINTER_NOTIFY2);
 	}
 
+        /* Tell the connections db we're not interested in printer notify messages. */
+	/* reference count is handled by spooler_message_flags() */
+
+        spooler_message_flags( False );	
+
 	smb_connections--;
 }
 
@@ -217,9 +257,6 @@ static void free_printer_entry(void *ptr)
 	free_spool_notify_option(&Printer->notify.option);
 	Printer->notify.option=NULL;
 	Printer->notify.client_connected=False;
-
-	/* Tell the connections db we're not interested in printer notify messages. */
-	register_message_flags(False, FLAG_MSG_PRINTING);
 
 	/* Remove from the internal list. */
 	DLIST_REMOVE(printers_list, Printer);
@@ -788,7 +825,7 @@ static void process_notify2_message(struct spoolss_notify_msg *msg, TALLOC_CTX *
 			id = 0;
 		else
 			id = msg->id;
-				
+
 
 		/* Convert unix jobid to smb jobid */
 
@@ -2243,8 +2280,6 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 					&Printer->notify.client_hnd))
 		return WERR_SERVER_UNAVAILABLE;
 
-	/* Tell the connections db we're interested in printer notify messages. */
-	register_message_flags(True, FLAG_MSG_PRINTING);
 	Printer->notify.client_connected=True;
 
 	return WERR_OK;
@@ -5615,9 +5650,6 @@ WERROR _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 	if (Printer->notify.option)
 		free_spool_notify_option(&Printer->notify.option);
 	Printer->notify.client_connected=False;
-
-	/* Tell the connections db we're not interested in printer notify messages. */
-	register_message_flags(False, FLAG_MSG_PRINTING);
 
 	return WERR_OK;
 }
