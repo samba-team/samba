@@ -26,6 +26,8 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 static SORTED_TREE *cache_tree;
+extern REGISTRY_OPS regdb_ops;		/* these are the default */
+static REGISTRY_HOOK default_hook = { KEY_TREE_ROOT, &regdb_ops };
 
 /**********************************************************************
  Initialize the cache tree
@@ -33,7 +35,7 @@ static SORTED_TREE *cache_tree;
 
 BOOL reghook_cache_init( void )
 {
-	cache_tree = sorted_tree_init( NULL, NULL );
+	cache_tree = sorted_tree_init( &default_hook, NULL, NULL );
 
 	return ( cache_tree == NULL );
 }

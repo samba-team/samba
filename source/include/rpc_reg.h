@@ -66,7 +66,7 @@
 #define KEY_HKLM	"HKLM"
 #define KEY_HKU		"HKU"
 #define KEY_PRINTING 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
-
+#define KEY_TREE_ROOT	""
 
 /* Registry data types */
 
@@ -89,7 +89,7 @@
 
 /* structure to contain registry values */
 
-typedef struct _RegistryValue {
+typedef struct {
 	fstring		valuename;
 	uint16		type;
 	uint32		size;	/* in bytes */
@@ -100,22 +100,37 @@ typedef struct _RegistryValue {
 	} data;
 } REGISTRY_VALUE;
 
+/* container for regostry values */
+
+typedef struct {
+	TALLOC_CTX      *ctx;
+	uint32          num_values;
+	REGISTRY_VALUE	**values;
+} REGVAL_CTR;
+
+/* container for registry subkey names */
+
+typedef struct {
+	TALLOC_CTX	*ctx;
+	uint32          num_subkeys;
+	char            **subkeys;
+} REGSUBKEY_CTR;
+
 
 /* 
  * container for function pointers to enumeration routines
  * for vitural registry view 
  */ 
  
-typedef struct _reg_ops {
+typedef struct {
 	/* functions for enumerating subkeys and values */	
-	int 	(*subkey_fn)( char *key, char **subkeys );
-	int 	(*subkey_specific_fn)( char *key, char** subkey, uint32 indx );
-	int 	(*value_fn) ( char *key, REGISTRY_VALUE **val );
-	BOOL 	(*store_subkeys_fn)( char *key, char **subkeys, uint32 num_subkeys );
-	BOOL 	(*store_values_fn)( char *key, REGISTRY_VALUE **val, uint32 num_values );
+	int 	(*subkey_fn)( char *key, REGSUBKEY_CTR *subkeys);
+	int 	(*value_fn) ( char *key, REGVAL_CTR *val );
+	BOOL 	(*store_subkeys_fn)( char *key, REGSUBKEY_CTR *subkeys );
+	BOOL 	(*store_values_fn)( char *key, REGVAL_CTR *val );
 } REGISTRY_OPS;
 
-typedef struct _reg_hook {
+typedef struct {
 	char		*keyname;	/* full path to name of key */
 	REGISTRY_OPS	*ops;		/* registry function hooks */
 } REGISTRY_HOOK;

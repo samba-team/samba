@@ -51,8 +51,25 @@ static char *top_level_keys[MAX_TOP_LEVEL_KEYS] = {
 static char* trim_reg_path( char *path )
 {
 	char *p;
+	uint16 key_len = strlen(KEY_PRINTING);
+	
+	/* 
+	 * sanity check...this really should never be True.
+	 * It is only here to prevent us from accessing outside
+	 * the path buffer in the extreme case.
+	 */
+	
+	if ( strlen(path) < key_len ) {
+		DEBUG(0,("trim_reg_path: Registry path too short! [%s]\n", path));
+		DEBUG(0,("trim_reg_path: KEY_PRINTING => [%s]!\n", KEY_PRINTING));
+		return NULL;
+	}
+	
 	
 	p = path + strlen(KEY_PRINTING);
+	
+	if ( *p == '\\' )
+		p++;
 	
 	if ( *p )
 		return strdup(p);
@@ -61,15 +78,98 @@ static char* trim_reg_path( char *path )
 }
 
 /**********************************************************************
- handle enumeration of subkeys below KEY_PRINTING.
+ handle enumeration of subkeys below KEY_PRINTING\Environments
  *********************************************************************/
  
-static int handle_printing_subpath( char *key, char **subkeys, uint32 index )
+static int print_subpath_environments( char *key, REGSUBKEY_CTR *subkeys, int32 idx )
+{
+	DEBUG(10,("print_subpath_environments: key=>[%s]\n", key ? key : "NULL" ));
+	
+	if ( !key )
+	{
+		/* listed architectures of installed drivers */
+		
+	}
+	
+	
+	return 0;
+}
+
+/**********************************************************************
+ handle enumeration of subkeys below KEY_PRINTING\Forms
+ *********************************************************************/
+ 
+static int print_subpath_forms( char *key, REGSUBKEY_CTR *subkeys, int32 idx )
+{
+	DEBUG(10,("print_subpath_forms: key=>[%s]\n", key ? key : "NULL" ));
+	
+	return 0;
+}
+
+/**********************************************************************
+ handle enumeration of values below KEY_PRINTING\Forms
+ *********************************************************************/
+ 
+static int print_values_forms( char *key, REGVAL_CTR *val, int idx )
+{
+	int num_values = 0;
+	
+	DEBUG(10,("print_values_forms: key=>[%s]\n", key ? key : "NULL" ));
+	
+	/* handle ..\Forms\ */
+	
+#if 0	/* JERRY */
+	if ( !key )
+	{
+		nt_forms_struct *forms = NULL;
+		int i;
+		
+		if ( (num_values = get_ntforms( &forms )) == 0 )
+			return 0;
+		
+		if ( !(*values = malloc(sizeof(REGISTRY_VALUE) * num_values)) ) {
+			DEBUG(0,("print_values_forms: Failed to malloc memory for [%d] REGISTRY_VALUE structs!\n",
+				num_values));
+			return -1;
+		}
+		
+		for ( i=0; i<num_values; i++ )
+		{
+			
+		
+		}
+	}
+#endif
+	
+	return num_values;
+}
+
+/**********************************************************************
+ handle enumeration of subkeys below KEY_PRINTING\Printers
+ *********************************************************************/
+ 
+static int print_subpath_printers( char *key, REGSUBKEY_CTR *subkeys, int32 idx )
+{
+	DEBUG(10,("print_subpath_printers: key=>[%s]\n", key ? key : "NULL" ));
+	
+	return 0;
+}
+
+/**********************************************************************
+ Routine to handle enumeration of subkeys and values 
+ below KEY_PRINTING (depending on whether or not subkeys/val are 
+ valid pointers. 
+ *********************************************************************/
+ 
+static int handle_printing_subpath( char *key, REGSUBKEY_CTR *subkeys,
+                                    REGVAL_CTR *val, int32 key_index, int32 val_index )
 {
 	int result = 0;
 	char *p, *base;
 	int i;
-		
+	
+	DEBUG(10,("handle_printing_subpath: key=>[%s], key_index == [%d], val_index == [%d]\n",
+		key, key_index, val_index));	
 	
 	/* 
 	 * break off the first part of the path 
@@ -77,29 +177,36 @@ static int handle_printing_subpath( char *key, char **subkeys, uint32 index )
 	 * in top_level_keys[]
 	 */
 	
-	base = key;
-	p = strchr( key, '\\' );
-	if ( p )
-		*p = '\0';
+	reg_split_path( key, &base, &p);
 		
 	for ( i=0; i<MAX_TOP_LEVEL_KEYS; i++ ) {
 		if ( StrCaseCmp( top_level_keys[i], base ) == 0 )
 			break;
 	}
 	
-	if ( !(i < MAX_TOP_LEVEL_KEYS) )
+	DEBUG(10,("handle_printing_subpath: base=>[%s], i==[%d]\n", base, i));	
+		
+	if ( (key_index != -1) && !(i < MAX_TOP_LEVEL_KEYS) )
 		return -1;
-	
+			
 	/* Call routine to handle each top level key */
 	switch ( i )
 	{
 		case KEY_INDEX_ENVIR:
+			if ( subkeys )
+				print_subpath_environments( p, subkeys, key_index );
+#if 0	/* JERRY */
+			if ( val )
+				print_subpath_values_environments( p, val, val_index );
+#endif
 			break;
 		
 		case KEY_INDEX_FORMS:
+			result = print_subpath_forms( p, subkeys, key_index );
 			break;
 			
 		case KEY_INDEX_PRINTER:
+			result = print_subpath_printers( p, subkeys, key_index );
 			break;
 	
 		/* default case for top level key that has no handler */
@@ -118,7 +225,7 @@ static int handle_printing_subpath( char *key, char **subkeys, uint32 index )
  Caller is responsible for freeing memory to **subkeys
  *********************************************************************/
  
-int printing_subkey_info( char *key, char **subkeys )
+int printing_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
 {
 	char 		*path;
 	BOOL		top_level = False;
@@ -134,32 +241,29 @@ int printing_subkey_info( char *key, char **subkeys )
 		top_level = True;
 		
 	if ( top_level ) {
-		if ( ! (*subkeys = malloc( sizeof(top_level_keys) )) )
-			goto done;
-			
-		num_subkeys = MAX_TOP_LEVEL_KEYS;
-		memcpy( *subkeys, top_level_keys, sizeof(top_level_keys) );
+		for ( num_subkeys=0; num_subkeys<MAX_TOP_LEVEL_KEYS; num_subkeys++ )
+			regsubkey_ctr_addkey( subkey_ctr, top_level_keys[num_subkeys] );
 	}
 	else
-		num_subkeys = handle_printing_subpath( path, subkeys, -1 );
+		num_subkeys = handle_printing_subpath( path, subkey_ctr, NULL, -1, -1 );
 	
-done:
 	SAFE_FREE( path );
+	
 	return num_subkeys;
 }
 
 /**********************************************************************
- Count the registry subkey names given a registry path.  
- Caller is responsible for freeing memory to **subkey
+ Enumerate registry values given a registry path.  
+ Caller is responsible for freeing memory 
  *********************************************************************/
- 
-BOOL printing_subkey_specific( char *key, char** subkey, uint32 indx )
+
+int printing_value_info( char *key, REGVAL_CTR *val )
 {
 	char 		*path;
 	BOOL		top_level = False;
-	BOOL		result = False;
+	int		num_values = 0;
 	
-	DEBUG(10,("printing_subkey_specific: key=>[%s], index=>[%d]\n", key, indx));
+	DEBUG(10,("printing_value_info: key=>[%s]\n", key));
 	
 	path = trim_reg_path( key );
 	
@@ -168,43 +272,16 @@ BOOL printing_subkey_specific( char *key, char** subkey, uint32 indx )
 	if ( !path )
 		top_level = True;
 	
-	
-		
-	if ( top_level ) {
-	
-		/* make sure the index is in range */
-		
-		if ( !(indx < MAX_TOP_LEVEL_KEYS) )
-			goto done;
-
-		if ( !(*subkey = malloc( strlen(top_level_keys[indx])+1 )) )
-			goto done;
-			
-		strncpy( *subkey, top_level_keys[indx], strlen(top_level_keys[indx])+1 );
-		
-		result = True;
+	/* fill in values from the getprinterdata_printer_server() */
+	if ( top_level )
+	{
+		num_values = 0;
 	}
-	else {
-		if ( handle_printing_subpath( path, subkey, indx ) != -1 )
-			result = True;
-	}
+	else
+		num_values = handle_printing_subpath( path, NULL, val, -1, -1 );
+		
 	
-done:
-	SAFE_FREE( path );
-
-	return result;
-}
-
-/**********************************************************************
- Enumerate registry values given a registry path.  
- Caller is responsible for freeing memory 
- *********************************************************************/
-
-int printing_value_info( char *key, REGISTRY_VALUE **val )
-{
-	DEBUG(10,("printing_value_info: key=>[%s]\n", key));
-	
-	return 0;
+	return num_values;
 }
 
 /**********************************************************************
@@ -213,7 +290,7 @@ int printing_value_info( char *key, REGISTRY_VALUE **val )
  (for now at least)
  *********************************************************************/
 
-BOOL printing_store_subkey( char *key, char **subkeys, uint32 num_subkeys )
+BOOL printing_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
 {
 	return False;
 }
@@ -224,7 +301,7 @@ BOOL printing_store_subkey( char *key, char **subkeys, uint32 num_subkeys )
  (for now at least)
  *********************************************************************/
 
-BOOL printing_store_value( char *key, REGISTRY_VALUE **val, uint32 num_values )
+BOOL printing_store_value( char *key, REGVAL_CTR *val )
 {
 	return False;
 }
@@ -235,9 +312,9 @@ BOOL printing_store_value( char *key, REGISTRY_VALUE **val, uint32 num_values )
  
 REGISTRY_OPS printing_ops = {
 	printing_subkey_info,
-	printing_subkey_specific,
 	printing_value_info,
 	printing_store_subkey,
 	printing_store_value
 };
+
 

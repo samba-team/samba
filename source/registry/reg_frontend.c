@@ -26,12 +26,14 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 extern REGISTRY_OPS printing_ops;
+extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
 /* array of REGISTRY_HOOK's which are read into a tree for easy access */
 
 
 REGISTRY_HOOK reg_hooks[] = {
-  { KEY_PRINTING, &printing_ops },
+  { KEY_TREE_ROOT,  &regdb_ops    },
+  { KEY_PRINTING,   &printing_ops },
   { NULL, NULL }
 };
 
@@ -70,9 +72,12 @@ BOOL init_registry( void )
  High level wrapper function for storing registry subkeys
  ***********************************************************************/
  
-BOOL store_reg_keys( REGISTRY_KEY *key, char **subkeys, uint32 num_subkeys  )
+BOOL store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
 {
-	return regdb_store_reg_keys( key->name, subkeys, num_subkeys );
+	if ( key->hook && key->hook->ops && key->hook->ops->store_subkeys_fn )
+		return key->hook->ops->store_subkeys_fn( key->name, subkeys );
+	else
+		return False;
 
 }
 
@@ -80,60 +85,210 @@ BOOL store_reg_keys( REGISTRY_KEY *key, char **subkeys, uint32 num_subkeys  )
  High level wrapper function for storing registry values
  ***********************************************************************/
  
-BOOL store_reg_values( REGISTRY_KEY *key, REGISTRY_VALUE **val, uint32 num_values )
+BOOL store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
-	return True;
+	if ( key->hook && key->hook->ops && key->hook->ops->store_values_fn )
+		return key->hook->ops->store_values_fn( key->name, val );
+	else
+		return False;
 }
 
 
 /***********************************************************************
  High level wrapper function for enumerating registry subkeys
+ Initialize the TALLOC_CTX if necessary
  ***********************************************************************/
 
-int fetch_reg_keys( REGISTRY_KEY *key, char **subkeys )
+int fetch_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkey_ctr )
 {
-	int num_subkeys;
+	int result = -1;
 	
 	if ( key->hook && key->hook->ops && key->hook->ops->subkey_fn )
-		num_subkeys = key->hook->ops->subkey_fn( key->name, subkeys );
-	else 
-		num_subkeys = regdb_fetch_reg_keys( key->name, subkeys );
+		result = key->hook->ops->subkey_fn( key->name, subkey_ctr );
 
-	return num_subkeys;
+	return result;
 }
 
 /***********************************************************************
- High level wrapper function for retreiving a specific registry subkey
- given and index.
+ retreive a specific subkey specified by index.  Caller is 
+ responsible for freeing memory
  ***********************************************************************/
 
 BOOL fetch_reg_keys_specific( REGISTRY_KEY *key, char** subkey, uint32 key_index )
 {
-	BOOL result;
-		
-	if ( key->hook && key->hook->ops && key->hook->ops->subkey_specific_fn )
-		result = key->hook->ops->subkey_specific_fn( key->name, subkey, key_index );
-	else
-		result = regdb_fetch_reg_keys_specific( key->name, subkey, key_index );
+	char *s;
+	REGSUBKEY_CTR ctr;
 	
-	return result;
+	ZERO_STRUCTP( &ctr );
+	
+	regsubkey_ctr_init( &ctr );
+	
+	if ( fetch_reg_keys( key, &ctr) == -1 )
+		return False;
+
+	if ( !(s = regsubkey_ctr_specific_key( &ctr, key_index )) )
+		return False;
+
+	*subkey = strdup( s );
+
+	regsubkey_ctr_destroy( &ctr ); 
+	
+	return True;
 }
 
 
 /***********************************************************************
  High level wrapper function for enumerating registry values
+ Initialize the TALLOC_CTX if necessary
  ***********************************************************************/
 
-int fetch_reg_values( REGISTRY_KEY *key, REGISTRY_VALUE **val )
+int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
-	int num_values;
+	int result = -1;
 	
 	if ( key->hook && key->hook->ops && key->hook->ops->value_fn )
-		num_values = key->hook->ops->value_fn( key->name, val );
-	else 
-		num_values = regdb_fetch_reg_values( key->name, val );
-		
-	return num_values;
+		result = key->hook->ops->value_fn( key->name, val );
+
+	return result;
 }
 
+/***********************************************************************
+ Utility function for splitting the base path of a registry path off
+ by setting base and new_path to the apprapriate offsets withing the
+ path.
+ 
+ WARNING!!  Does modify the original string!
+ ***********************************************************************/
+
+BOOL reg_split_path( char *path, char **base, char **new_path )
+{
+	char *p;
+	
+	*new_path = *base = NULL;
+	
+	if ( !path)
+		return False;
+	
+	*base = path;
+	
+	p = strchr( path, '\\' );
+	
+	if ( p ) {
+		*p = '\0';
+		*new_path = p+1;
+	}
+	
+	return True;
+}
+
+
+/*
+ * Utility functions for REGSUBKEY_CTR
+ */
+
+/***********************************************************************
+ Init the talloc context held by a REGSUBKEY_CTR structure
+ **********************************************************************/
+
+void regsubkey_ctr_init( REGSUBKEY_CTR *ctr )
+{
+	if ( !ctr->ctx )
+		ctr->ctx = talloc_init();
+}
+
+/***********************************************************************
+ Add a new key to the array
+ **********************************************************************/
+
+int regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, char *keyname )
+{
+	uint32 len;
+	
+	if ( keyname )
+	{
+		len = strlen( keyname );
+
+		if (  ctr->subkeys == 0 )
+			ctr->subkeys = talloc( ctr->ctx, 1 );
+		else
+			talloc_realloc(	ctr->ctx, ctr->subkeys, ctr->num_subkeys+1 );
+
+		ctr->subkeys[ctr->num_subkeys] = talloc( ctr->ctx, len+1 );
+		strncpy( ctr->subkeys[ctr->num_subkeys], keyname, len+1 );
+		ctr->num_subkeys++;
+	}
+	
+	return ctr->num_subkeys;
+}
+ 
+/***********************************************************************
+ How many keys does the container hold ?
+ **********************************************************************/
+
+int regsubkey_ctr_numkeys( REGSUBKEY_CTR *ctr )
+{
+	return ctr->num_subkeys;
+}
+
+/***********************************************************************
+ Retreive a specific key string
+ **********************************************************************/
+
+char* regsubkey_ctr_specific_key( REGSUBKEY_CTR *ctr, uint32 index )
+{
+	if ( ! (index < ctr->num_subkeys) )
+		return NULL;
+		
+	return ctr->subkeys[index];
+}
+
+/***********************************************************************
+ free memory held by a REGSUBKEY_CTR structure
+ **********************************************************************/
+
+void regsubkey_ctr_destroy( REGSUBKEY_CTR *ctr )
+{
+	if ( ctr )
+		talloc_destroy( ctr->ctx );
+		
+	ctr->num_subkeys  = 0;
+	ctr->subkeys      = NULL;
+}
+
+
+/*
+ * Utility functions for REGVAL_CTR
+ */
+
+/***********************************************************************
+ Init the talloc context held by a REGSUBKEY_CTR structure
+ **********************************************************************/
+
+void regval_ctr_init( REGVAL_CTR *ctr )
+{
+	if ( !ctr->ctx )
+		ctr->ctx = talloc_init();
+}
+
+/***********************************************************************
+ How many keys does the container hold ?
+ **********************************************************************/
+
+int regval_ctr_numvals( REGVAL_CTR *ctr )
+{
+	return ctr->num_values;
+}
+
+/***********************************************************************
+ free memory held by a REGVAL_CTR structure
+ **********************************************************************/
+
+void regval_ctr_destroy( REGVAL_CTR *ctr )
+{
+	if ( ctr )
+		talloc_destroy( ctr->ctx );
+		
+	ctr->num_values  = 0;
+	ctr->values      = NULL;
+}
 
