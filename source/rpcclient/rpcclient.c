@@ -188,6 +188,7 @@ static void get_username (char *username)
 }
 
 /* Fetch the SID for this domain */
+
 void fetch_domain_sid(struct cli_state *cli)
 {
 	POLICY_HND pol;
@@ -262,22 +263,65 @@ void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
 }
 
 
+/* Display help on commands */
+
 static uint32 cmd_help(struct cli_state *cli, int argc, char **argv)
 {
-	struct cmd_list *temp_list;
+	struct cmd_list *tmp;
+        struct cmd_set *tmp_set;
 
-	for (temp_list = cmd_list; temp_list; temp_list = temp_list->next) {
-		struct cmd_set *temp_set = temp_list->cmd_set;
+        /* Usage */
 
-		while(temp_set->name) {
-			printf("%15s\t\t%s\n", temp_set->name,
-			       temp_set->description);
-			temp_set++;
+        if (argc > 2) {
+                printf("Usage: %s [command]\n", argv[0]);
+                return 0;
+        }
+
+        /* Help on one command */
+
+        if (argc == 2) {
+                for (tmp = cmd_list; tmp; tmp = tmp->next) {
+                        
+                        tmp_set = tmp->cmd_set;
+
+                        while(tmp_set->name) {
+                                if (strequal(argv[1], tmp_set->name)) {
+                                        if (tmp_set->usage &&
+                                            tmp_set->usage[0])
+                                                printf("%s\n", tmp_set->usage);
+                                        else
+                                                printf("No help for %s\n", tmp_set->name);
+
+                                        return 0;
+                                }
+
+                                tmp_set++;
+                        }
+                }
+
+                printf("No such command: %s\n", argv[1]);
+                return 0;
+        }
+
+        /* List all commands */
+
+	for (tmp = cmd_list; tmp; tmp = tmp->next) {
+
+		tmp_set = tmp->cmd_set;
+
+		while(tmp_set->name) {
+
+			printf("%15s\t\t%s\n", tmp_set->name,
+			       tmp_set->description);
+
+			tmp_set++;
 		}
 	}
 
 	return 0;
 }
+
+/* Change the debug level */
 
 static uint32 cmd_debuglevel(struct cli_state *cli, int argc, char **argv)
 {
@@ -304,19 +348,21 @@ static uint32 cmd_quit(struct cli_state *cli, int argc, char **argv)
 /* Build in rpcclient commands */
 
 static struct cmd_set rpcclient_commands[] = {
-	{ "GENERAL OPTIONS", 	NULL, 	"" },
-	{ "help", 	cmd_help, 	"Print list of commands" },
-	{ "?", 		cmd_help, 	"Print list of commands" },
-	{ "debuglevel", cmd_debuglevel, "Set debug level" },
-	{ "exit", 	cmd_quit, 	"Exit program" },
-	{ "quit", 	cmd_quit, 	"Exit program" },
 
-	{ NULL, NULL, NULL }
+	{ "GENERAL OPTIONS" },
+
+	{ "help", 	cmd_help, 	"Get help on commands", "[command]" },
+	{ "?", 		cmd_help, 	"Get help on commands", "[command]" },
+	{ "debuglevel", cmd_debuglevel, "Set debug level", "level" },
+	{ "exit", 	cmd_quit, 	"Exit program", "" },
+	{ "quit", 	cmd_quit, 	"Exit program", "" },
+
+	{ NULL }
 };
 
 static struct cmd_set separator_command[] = {
 	{ "---------------", NULL,	"----------------------" },
-	{ NULL, NULL, NULL }
+	{ NULL }
 };
 
 

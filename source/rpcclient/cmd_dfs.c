@@ -311,13 +311,14 @@ static uint32 cmd_dfs_getinfo(struct cli_state *cli, int argc, char **argv)
 /* List of commands exported by this module */
 
 struct cmd_set dfs_commands[] = {
-	{ "DFS", NULL, "" },
 
-	{ "dfsexist", cmd_dfs_exist, "Query DFS support" },
-	{ "dfsadd", cmd_dfs_add, "Add a DFS share" },
-	{ "dfsremove", cmd_dfs_remove, "Remove a DFS share" },
-	{ "dfsgetinfo", cmd_dfs_getinfo, "Query DFS share info" },
-	{ "dfsenum", cmd_dfs_enum, "Enumerate dfs shares" },
+	{ "DFS" },
 
-	{ NULL, NULL, NULL }
+	{ "dfsexist",   cmd_dfs_exist,   "Query DFS support",    "" },
+	{ "dfsadd",     cmd_dfs_add,     "Add a DFS share",      "" },
+	{ "dfsremove",  cmd_dfs_remove,  "Remove a DFS share",   "" },
+	{ "dfsgetinfo", cmd_dfs_getinfo, "Query DFS share info", "" },
+	{ "dfsenum",    cmd_dfs_enum,    "Enumerate dfs shares", "" },
+
+	{ NULL }
 };

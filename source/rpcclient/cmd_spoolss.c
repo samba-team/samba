@@ -1362,20 +1362,22 @@ static uint32 cmd_spoolss_deletedriver (struct cli_state *cli, int argc, char **
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
-	{ "SPOOLSS", 		NULL, 				"" },
-	{ "adddriver",		cmd_spoolss_addprinterdriver,	"Add a print driver" },
-	{ "addprinter",		cmd_spoolss_addprinterex,	"Add a printer" },
-	{ "deldriver",		cmd_spoolss_deletedriver,	"Delete a printer driver" },
-	{ "enumdata",		cmd_spoolss_not_implemented,	"Enumerate printer data (*)" },
-	{ "enumjobs",		cmd_spoolss_not_implemented,	"Enumerate print jobs (*)" },
-	{ "enumports", 		cmd_spoolss_enum_ports, 	"Enumerate printer ports" },
-	{ "enumdrivers", 	cmd_spoolss_enum_drivers, 	"Enumerate installed printer drivers" },
-	{ "enumprinters", 	cmd_spoolss_enum_printers, 	"Enumerate printers" },
-	{ "getdata",		cmd_spoolss_not_implemented,	"Get print driver data (*)" },
-	{ "getdriver",		cmd_spoolss_getdriver,		"Get print driver information" },
-	{ "getdriverdir",	cmd_spoolss_getdriverdir,	"Get print driver upload directory" },
-	{ "getprinter", 	cmd_spoolss_getprinter, 	"Get printer info" },
-	{ "openprinter",	cmd_spoolss_open_printer_ex,	"Open printer handle" },
-	{ "setdriver",		cmd_spoolss_setdriver,		"Set printer driver" },
-	{ NULL, NULL, NULL }
+	{ "SPOOLSS"  },
+
+	{ "adddriver",		cmd_spoolss_addprinterdriver,	"Add a print driver",                  "" },
+	{ "addprinter",		cmd_spoolss_addprinterex,	"Add a printer",                       "" },
+	{ "deldriver",		cmd_spoolss_deletedriver,	"Delete a printer driver",             "" },
+	{ "enumdata",		cmd_spoolss_not_implemented,	"Enumerate printer data (*)",          "" },
+	{ "enumjobs",		cmd_spoolss_not_implemented,	"Enumerate print jobs (*)",            "" },
+	{ "enumports", 		cmd_spoolss_enum_ports, 	"Enumerate printer ports",             "" },
+	{ "enumdrivers", 	cmd_spoolss_enum_drivers, 	"Enumerate installed printer drivers", "" },
+	{ "enumprinters", 	cmd_spoolss_enum_printers, 	"Enumerate printers",                  "" },
+	{ "getdata",		cmd_spoolss_not_implemented,	"Get print driver data (*)",           "" },
+	{ "getdriver",		cmd_spoolss_getdriver,		"Get print driver information",        "" },
+	{ "getdriverdir",	cmd_spoolss_getdriverdir,	"Get print driver upload directory",   "" },
+	{ "getprinter", 	cmd_spoolss_getprinter, 	"Get printer info",                    "" },
+	{ "openprinter",	cmd_spoolss_open_printer_ex,	"Open printer handle",                 "" },
+	{ "setdriver",		cmd_spoolss_setdriver,		"Set printer driver",                  "" },
+
+	{ NULL }
 };
