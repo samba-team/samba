@@ -49,8 +49,9 @@ static uint32_t access_check_max_allowed(struct security_descriptor *sd,
 	unsigned i;
 	
 	if (sid_active_in_token(sd->owner_sid, token)) {
-		granted |= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL);
+		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL;
 	}
+	granted |= SEC_STD_DELETE;
 
 	for (i = 0;i<sd->dacl->num_aces; i++) {
 		struct security_ace *ace = &sd->dacl->aces[i];
@@ -84,14 +85,16 @@ NTSTATUS sec_access_check(struct security_descriptor *sd,
 	int i;
 	uint32_t bits_remaining;
 
+	*access_granted = access_desired;
+	bits_remaining = access_desired;
+
 	/* handle the maximum allowed flag */
 	if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
 		access_desired |= access_check_max_allowed(sd, token);
 		access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
+		*access_granted = access_desired;
+		bits_remaining = access_desired & ~SEC_STD_DELETE;
 	}
-
-	*access_granted = access_desired;
-	bits_remaining = access_desired;
 
 #if 0
 	/* this is where we should check for the "system security" privilege, once we 
