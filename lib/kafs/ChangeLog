@@ -1,3 +1,7 @@
+2003-06-22  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* afskrb5.c (v5_convert): rename one of the two c to cred4
+	
 2003-04-23  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* common.c, kafs.h: drop the int argument (the error code) from
