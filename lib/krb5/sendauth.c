@@ -12,14 +12,14 @@ RCSID("$Id$");
  * protocol string (with terminating zero)
  *
  * server -> client
- * 1 byte - status ( 0 = OK)
+ * 4 bytes - length (0 = OK, else length of error)
+ * (error)
  *
  * client -> server
  * 4 bytes - length
  * AP-REQ
  *
  * server -> client
- * 4 bytes - 00 00 00 00 (this probably forwarding related?)
  * 4 bytes - length
  * AP-REP
  */
