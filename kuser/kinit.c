@@ -365,7 +365,7 @@ renew_validate(krb5_context context,
     ret = krb5_cc_store_cred(context, cache, out);
 
 #ifdef KRB4
-    if(ret != 0 && server == NULL) {
+    if(ret == 0 && server == NULL) {
 	/* only do this if it's a general renew-my-tgt request */
 	if(get_v4_tgt)
 	    do_524init(context, cache, out, NULL);
