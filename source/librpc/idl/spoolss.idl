@@ -58,6 +58,17 @@
 	} spoolss_PrinterInfo1;
 
 	typedef struct {
+		uint32 flags;
+		[relative] nstring *name;
+		uint32 width;
+		uint32 length;
+		uint32 left;
+		uint32 top;
+		uint32 right;
+		uint32 bottom;
+	} spoolss_FormInfo1;
+
+	typedef struct {
 		[relative] nstring *servername;
 		[relative] nstring *printername;
 		[relative] nstring *sharename;
@@ -309,7 +320,8 @@
 		[in,ref] policy_handle *handle,
 		[in] unistr formname,
 		[in] uint32 level,
-		[out,subcontext(4),switch_is(level)] spoolss_PrinterInfo *info,
+		[in] DATA_BLOB *buffer,
+		[out,subcontext(4),switch_is(level)] spoolss_FormInfo *info,
 		[in,out,ref] uint32 *buf_size
 	);
 
@@ -318,14 +330,18 @@
 	WERROR spoolss_21(
 	);
 
+	typedef [nodiscriminant,public] union {
+		[case(1)] spoolss_FormInfo1 info1;
+	} spoolss_FormInfo;
+
 	/******************/
 	/* Function: 0x22 */
 	WERROR spoolss_EnumForms(
 		[in,ref] policy_handle *handle,
 		[in] uint32 level,
-		[in]         DATA_BLOB *buffer,
-		[out,subcontext(4),switch_is(level)] spoolss_PrinterInfo *info,
-		[in,out,ref] uint32 *buf_size
+		[in,out] DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size,
+		[out] uint32 count
 	);
 
 	/******************/
