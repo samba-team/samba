@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    SAM interface API.
-	
+
    Copyright (C) Stefan (metze) Metzmacher		2002
       
    This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SAM
 
-/* this function should be used by the rest of SAMBA --metze */
+/* these functions should be used by the rest of SAMBA --metze */
 
 /* General API */
 
