@@ -1217,8 +1217,8 @@ BOOL get_dc_list(TALLOC_CTX *mem_ctx, const char *domain, struct in_addr **ip_li
 	/* If it's our domain then use the 'password server' parameter. */
 
 	if (strequal(domain, lp_workgroup())) {
-		char *p;
-		char *pserver = lp_passwordserver(); /* UNIX charset. */
+		const char *p;
+		const char *pserver = lp_passwordserver(); /* UNIX charset. */
 		fstring name;
 		int num_addresses = 0;
 		int  local_count, i, j;
