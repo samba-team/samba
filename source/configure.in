@@ -256,14 +256,6 @@ if test x"$samba_cv_have_setresgid_decl" = x"yes"; then
     AC_DEFINE(HAVE_SETRESGID_DECL)
 fi
 
-# stupid glibc has the functions but no declaration. grrrr.
-AC_CACHE_CHECK([for crypt declaration],samba_cv_have_crypt_decl,[
-    AC_TRY_COMPILE([#include <unistd.h>],[int i = (int)crypt],
-        samba_cv_have_crypt_decl=yes,samba_cv_have_crypt_decl=no)])
-if test x"$samba_cv_have_crypt_decl" = x"yes"; then
-    AC_DEFINE(HAVE_CRYPT_DECL)
-fi
-
 # and glibc has setresuid under linux but the function does
 # nothing until kernel 2.1.44! very dumb.
 AC_CACHE_CHECK([for real setresuid],samba_cv_have_setresuid,[

@@ -45,6 +45,11 @@
 #undef HAVE_TERMIOS_H
 #endif
 
+#ifdef LINUX
+#define DEFAULT_PRINTING PRINT_BSD
+#define PRINTCAP_NAME "/etc/printcap"
+#endif
+
 #ifdef RELIANTUNIX
 /*
  * <unistd.h> has to be included before any other to get
@@ -814,11 +819,6 @@ int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 #endif
 #if (defined(HAVE_SETRESGID) && !defined(HAVE_SETRESGID_DECL))
 int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
-#endif
-
-#if (defined(HAVE_CRYPT) && !defined(HAVE_CRYPT_DECL) && !defined(KRB4_AUTH))
-/* stupid glibc */
-int crypt(const char *key, const char *salt);
 #endif
 
 #if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
