@@ -50,8 +50,8 @@ static void usage(void)
 	printf("(actually to add a user you need to use smbpasswd)\n");
 	printf("options:\n");
 	printf("  -l                   list usernames\n");
-	printf("  -v                   verbose output\n");
-	printf("  -w                   smbpasswd file style\n");
+	printf("     -v                verbose output\n");
+	printf("     -w                smbpasswd file style\n");
 	printf("  -u username          print user's info\n");
 	printf("     -f fullname       set Full Name\n");
 	printf("     -h homedir        set home directory\n");
@@ -89,8 +89,8 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 	{
 		char lm_passwd[33];
 		char nt_passwd[33];
-		pdb_gethexpwd(pdb_get_lanman_passwd(sam_pwent), lm_passwd);
-		pdb_gethexpwd(pdb_get_nt_passwd(sam_pwent),     nt_passwd);
+		pdb_sethexpwd(lm_passwd, pdb_get_lanman_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
+		pdb_sethexpwd(nt_passwd, pdb_get_nt_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
 		
 		printf ("%s:%d:%s:%s:%s:LCT-%08x:\n",
 			pdb_get_username(sam_pwent),

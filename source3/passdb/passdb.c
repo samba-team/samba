@@ -283,7 +283,9 @@ BOOL pdb_gethexpwd(char *p, unsigned char *pwd)
 	unsigned char   lonybble, hinybble;
 	char           *hexchars = "0123456789ABCDEF";
 	char           *p1, *p2;
-
+	
+	if (!p) return (False);
+	
 	for (i = 0; i < 32; i += 2)
 	{
 		hinybble = toupper(p[i]);
