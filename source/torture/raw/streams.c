@@ -183,6 +183,21 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smbcli_unlink(cli->tree, sname1);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	printf("delete a stream via delete-on-close\n");
+	io.ntcreatex.in.fname = sname2;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_DELETE;
+	io.ntcreatex.in.access_mask = GENERIC_RIGHTS_FILE_ALL_ACCESS;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+	
+	smbcli_close(cli->tree, fnum);
+	status = smbcli_unlink(cli->tree, sname2);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+
 	printf("deleting file\n");
 	status = smbcli_unlink(cli->tree, fname);
 	CHECK_STATUS(status, NT_STATUS_OK);
