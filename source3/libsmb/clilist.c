@@ -54,10 +54,14 @@ static int interpret_long_filename(struct cli_state *cli,
 			len = CVAL(p, 26);
 			p += 27;
 			p += clistr_align_in(cli, p, 0);
+			/* the len+2 below looks strange but it is
+			   important to cope with the differences
+			   between win2000 and win9x for this call
+			   (tridge) */
 			p += clistr_pull(cli, finfo->name, p,
-				    sizeof(finfo->name),
-				    len, 
-				    STR_TERMINATE);
+					 sizeof(finfo->name),
+					 len+2, 
+					 STR_TERMINATE);
 			return PTR_DIFF(p, base);
 
 		case 2: /* this is what OS/2 uses mostly */
