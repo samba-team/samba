@@ -913,7 +913,6 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 	} else if (sid_equal(sid, get_global_sam_sid()) && !lp_hide_local_users()) {
 		struct sys_grent *glist;
 		struct sys_grent *grp;
-		struct passwd *pw;
 		gid_t winbind_gid_low, winbind_gid_high;
 		BOOL winbind_groups_exist = lp_idmap_gid(&winbind_gid_low, &winbind_gid_high);
 
@@ -952,7 +951,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 
 			/* Don't return user private groups... */
 
-			if ((pw = Get_Pwnam(smap.nt_name)) != 0) {
+			if (Get_Pwnam(smap.nt_name) != 0) {
 				DEBUG(10,("get_group_alias_entries: not returing %s, clashes with user.\n", smap.nt_name ));
 				continue;			
 			}
@@ -2145,7 +2144,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 				       num_users, num_groups, num_aliases);
 			break;
 		case 0x03:
-			account_policy_get(AP_TIME_TO_LOGOUT, (int *)&u_logout);
+			account_policy_get(AP_TIME_TO_LOGOUT, (unsigned int *)&u_logout);
 			unix_to_nt_time_abs(&nt_logout, u_logout);
 			
 			init_unk_info3(&ctr->info.inf3, nt_logout);

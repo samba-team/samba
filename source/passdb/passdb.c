@@ -1315,7 +1315,7 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	}
 									
 	/* unpack the buffer into variables */
-	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING,
+	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING,
 		&logon_time,
 		&logoff_time,
 		&kickoff_time,
@@ -1658,7 +1658,7 @@ uint32 init_buffer_from_sam (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL size_
 	}
 	
 	/* now for the real call to tdb_pack() */
-	buflen = tdb_pack(*buf, len,  TDB_FORMAT_STRING,
+	buflen = tdb_pack((char *)*buf, len,  TDB_FORMAT_STRING,
 		logon_time,
 		logoff_time,
 		kickoff_time,

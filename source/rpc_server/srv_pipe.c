@@ -1226,10 +1226,10 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 			     sizeof(p->ntlmssp_hash));
 
 		dump_data_pw("Incoming RPC PDU (NTLMSSP sealed)\n", 
-			     data, data_len);
+			     (const unsigned char *)data, data_len);
 		NTLMSSPcalc_p(p, (uchar*)data, data_len);
 		dump_data_pw("Incoming RPC PDU (NTLMSSP unsealed)\n", 
-			     data, data_len);
+			     (const unsigned char *)data, data_len);
 		crc32 = crc32_calc_buffer(data, data_len);
 	}
 

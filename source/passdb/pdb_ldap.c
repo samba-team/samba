@@ -1694,7 +1694,7 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GROUP_TYPE)));
 		return False;
 	}
-	map->sid_name_use = (uint32)atol(temp);
+	map->sid_name_use = (enum SID_NAME_USE)atol(temp);
 
 	if ((map->sid_name_use < SID_NAME_USER) ||
 	    (map->sid_name_use > SID_NAME_UNKNOWN)) {
@@ -2137,7 +2137,6 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 	GROUP_MAP map;
 	GROUP_MAP *mapt;
 	int entries = 0;
-	NTSTATUS nt_status;
 
 	*num_entries = 0;
 	*rmap = NULL;
@@ -2147,7 +2146,7 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	while (NT_STATUS_IS_OK(nt_status = ldapsam_getsamgrent(methods, &map))) {
+	while (NT_STATUS_IS_OK(ldapsam_getsamgrent(methods, &map))) {
 		if (sid_name_use != SID_NAME_UNKNOWN &&
 		    sid_name_use != map.sid_name_use) {
 			DEBUG(11,("enum_group_mapping: group %s is not of the requested type\n", map.nt_name));

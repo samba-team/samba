@@ -502,7 +502,7 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	if (!(info->access & POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	nt_status = secrets_get_trusted_domains(p->mem_ctx, &enum_context, max_num_domains, &num_domains, &trust_doms);
+	nt_status = secrets_get_trusted_domains(p->mem_ctx, (int *)&enum_context, max_num_domains, (int *)&num_domains, &trust_doms);
 
 	if (!NT_STATUS_IS_OK(nt_status) &&
 	    !NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES) &&

@@ -73,7 +73,7 @@ BOOL echo_io_q_echo_data(const char *desc, ECHO_Q_ECHO_DATA *q_d,
 			return False;
 	}
 
-	if (!prs_uint8s(False, "data", ps, depth, q_d->data, q_d->size))
+	if (!prs_uint8s(False, "data", ps, depth, (unsigned char *)q_d->data, q_d->size))
 		return False;
 
 	return True;
@@ -92,7 +92,7 @@ BOOL echo_io_r_echo_data(const char *desc, ECHO_R_ECHO_DATA *q_d,
 			return False;
 	}
 
-	if (!prs_uint8s(False, "data", ps, depth, q_d->data, q_d->size))
+	if (!prs_uint8s(False, "data", ps, depth, (unsigned char *)q_d->data, q_d->size))
 		return False;
 
 	return True;
@@ -120,7 +120,7 @@ BOOL echo_io_q_sink_data(const char *desc, ECHO_Q_SINK_DATA *q_d,
 			return False;
 	}
 
-	if (!prs_uint8s(False, "data", ps, depth, q_d->data, q_d->size))
+	if (!prs_uint8s(False, "data", ps, depth, (unsigned char *)q_d->data, q_d->size))
 		return False;
 
 	return True;
@@ -159,7 +159,7 @@ BOOL echo_io_r_source_data(const char *desc, ECHO_R_SOURCE_DATA *q_d,
 			return False;
 	}
 
-	if (!prs_uint8s(False, "data", ps, depth, q_d->data, q_d->size))
+	if (!prs_uint8s(False, "data", ps, depth, (unsigned char *)q_d->data, q_d->size))
 		return False;
 
 	return True;
