@@ -691,7 +691,7 @@ propagate_database (krb5_context context, int type,
 			    HPROP_VERSION,
 			    NULL,
 			    server,
-			    AP_OPTS_MUTUAL_REQUIRED,
+			    AP_OPTS_MUTUAL_REQUIRED | AP_OPTS_USE_SUBKEY,
 			    NULL, /* in_data */
 			    NULL, /* in_creds */
 			    ccache,
