@@ -32,6 +32,7 @@ LIB_getsockopt		= @LIB_getsockopt@
 LIB_logout		= @LIB_logout@
 LIB_logwtmp		= @LIB_logwtmp@
 LIB_odm_initialize	= @LIB_odm_initialize@
+LIB_openpty		= @LIB_openpty@
 LIB_pidfile		= @LIB_pidfile@
 LIB_res_search		= @LIB_res_search@
 LIB_setpcred		= @LIB_setpcred@
