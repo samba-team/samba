@@ -124,13 +124,13 @@
 #endif
 
 #if defined(HAVE_KRB5_GET_PERMITTED_ENCTYPES)
-krb5_error_code get_kerberos_allowed_etypes(krb5_context context, 
+ krb5_error_code get_kerberos_allowed_etypes(krb5_context context, 
 					    krb5_enctype **enctypes)
 {
 	return krb5_get_permitted_enctypes(context, enctypes);
 }
 #elif defined(HAVE_KRB5_GET_DEFAULT_IN_TKT_ETYPES)
-krb5_error_code get_kerberos_allowed_etypes(krb5_context context, 
+ krb5_error_code get_kerberos_allowed_etypes(krb5_context context, 
 					    krb5_enctype **enctypes)
 {
 	return krb5_get_default_in_tkt_etypes(context, enctypes);
@@ -473,7 +473,7 @@ failed:
 }
 #endif
 
-krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry)
+ krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry)
 {
 #if defined(HAVE_KRB5_KT_FREE_ENTRY)
 	return krb5_kt_free_entry(context, kt_entry);
