@@ -41,7 +41,7 @@ OM_uint32 gss_add_oid_set_member (
             gss_OID_set * oid_set
            )
 {
-  size_t n = (*oid_set)->count;
+  size_t n = (*oid_set)->count + 1;
 
   (*oid_set)->elements = realloc ((*oid_set)->elements,
 				  n * sizeof(gss_OID_desc));
