@@ -1,3 +1,7 @@
+2005-01-08  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* dump-format.txt: text dump format
+
 2004-12-08  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kadmind.8: use keeps around options, from OpenBSD
