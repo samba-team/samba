@@ -92,6 +92,7 @@ ipropd_slave_SOURCES = ipropd_slave.c iprop.h kadm5_locl.h
 LDADD = \
 	libkadm5srv.la \
 	$(top_builddir)/lib/hdb/libhdb.la \
+	$(LIB_openldap) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(top_builddir)/lib/des/libdes.la \
