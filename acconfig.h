@@ -13,8 +13,14 @@
 #undef HAVE_U_INT32_T
 #undef HAVE_U_INT64_T
 
+/* Define this to the type ssize_t should be */
 #undef ssize_t
+
+/* Define this to the type sig_atomic_t should be */
 #undef sig_atomic_t
+
+/* Define this to the type mode_t should be */
+#undef mode_t
 
 /*  Define this if struct utmp have ut_user  */
 #undef HAVE_UT_USER
