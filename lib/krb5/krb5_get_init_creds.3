@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,24 +31,30 @@
 .\"
 .\" $Id$
 .\"
-.Dd August 17, 2003
+.Dd March 21, 2004
 .Dt KRB5_GET_INIT_CREDS 3
 .Os HEIMDAL
 .Sh NAME
-.Nm krb5_get_init_creds_opt ,
-.Nm krb5_get_init_creds_opt_init ,
-.Nm krb5_get_init_creds_opt_set_default_flags ,
-.Nm krb5_get_init_creds_opt_set_tkt_life ,
-.Nm krb5_get_init_creds_opt_set_rewew_life ,
-.Nm krb5_get_init_creds_opt_set_forwardable ,
-.Nm krb5_get_init_creds_opt_set_proxiable ,
-.Nm krb5_get_init_creds_opt_set_etype_list ,
-.Nm krb5_get_init_creds_opt_set_address_list ,
-.Nm krb5_get_init_creds_opt_set_preauth_list ,
-.Nm krb5_get_init_creds_opt_set_salt ,
-.Nm krb5_get_init_creds_opt_set_anonymous ,
 .Nm krb5_get_init_creds ,
-.Nm krb5_get_init_creds_keytab
+.Nm krb5_get_init_creds_keytab ,
+.Nm krb5_get_init_creds_opt ,
+.Nm krb5_get_init_creds_opt_alloc ,
+.Nm krb5_get_init_creds_opt_free ,
+.Nm krb5_get_init_creds_opt_free_pkinit ,
+.Nm krb5_get_init_creds_opt_init ,
+.Nm krb5_get_init_creds_opt_set_address_list ,
+.Nm krb5_get_init_creds_opt_set_anonymous ,
+.Nm krb5_get_init_creds_opt_set_default_flags ,
+.Nm krb5_get_init_creds_opt_set_etype_list ,
+.Nm krb5_get_init_creds_opt_set_forwardable ,
+.Nm krb5_get_init_creds_opt_set_pa_password ,
+.Nm krb5_get_init_creds_opt_set_paq_request ,
+.Nm krb5_get_init_creds_opt_set_preauth_list ,
+.Nm krb5_get_init_creds_opt_set_proxiable ,
+.Nm krb5_get_init_creds_opt_set_rewew_life ,
+.Nm krb5_get_init_creds_opt_set_salt ,
+.Nm krb5_get_init_creds_opt_set_tkt_life ,
+.Nm krb5_get_init_creds_password
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh SYNOPSIS
@@ -56,9 +62,32 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Pp
 .Ft krb5_get_init_creds_opt;
 .Pp
+.Ft krb5_error_code
+.Fo krb5_get_init_creds_opt_alloc
+.Fa "krb5_context context"
+.Fa "krb5_get_init_creds_opt **opt"
+.Fc
+.Ft void
+.Fo krb5_get_init_creds_opt_free
+.Fa "krb5_get_init_creds_opt *opt"
+.Fc
+.Ft void
+.Fo krb5_get_init_creds_opt_free_pkinit
+.Fa "krb5_get_init_creds_opt *opt"
+.Fc
 .Ft void
 .Fo krb5_get_init_creds_opt_init
 .Fa "krb5_get_init_creds_opt *opt"
+.Fc
+.Ft void
+.Fo krb5_get_init_creds_opt_set_address_list
+.Fa "krb5_get_init_creds_opt *opt"
+.Fa "krb5_addresses *addresses"
+.Fc
+.Ft void
+.Fo krb5_get_init_creds_opt_set_anonymous
+.Fa "krb5_get_init_creds_opt *opt"
+.Fa "int anonymous"
 .Fc
 .Ft void
 .Fo krb5_get_init_creds_opt_set_default_flags
@@ -68,35 +97,38 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_get_init_creds_opt *opt"
 .Fc
 .Ft void
-.Fo krb5_get_init_creds_opt_set_tkt_life
-.Fa "krb5_get_init_creds_opt *opt"
-.Fa "krb5_deltat tkt_life"
-.Fc
-.Ft void
-.Fo krb5_get_init_creds_opt_set_rewew_life
-.Fa "krb5_get_init_creds_opt *opt"
-.Fa "krb5_deltat renew_life"
-.Fc
-.Ft void
-.Fo krb5_get_init_creds_opt_set_forwardable
-.Fa "krb5_get_init_creds_opt *opt"
-.Fa "int forwardable"
-.Fc
-.Ft void
-.Fo krb5_get_init_creds_opt_set_proxiable
-.Fa "krb5_get_init_creds_opt *opt"
-.Fa "int proxiable"
-.Fc
-.Ft void
 .Fo krb5_get_init_creds_opt_set_etype_list
 .Fa "krb5_get_init_creds_opt *opt"
 .Fa "krb5_enctype *etype_list"
 .Fa int etype_list_length"
 .Fc
 .Ft void
-.Fo krb5_get_init_creds_opt_set_address_list
+.Fo krb5_get_init_creds_opt_set_forwardable
 .Fa "krb5_get_init_creds_opt *opt"
-.Fa "krb5_addresses *addresses"
+.Fa "int forwardable"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_get_init_creds_opt_set_pa_password
+.Fa "krb5_context context"
+.Fa "krb5_get_init_creds_opt *opt"
+.Fa "const char *password"
+.Fa "krb5_s2k_proc key_proc"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_get_init_creds_opt_set_paq_request
+.Fa "krb5_context context"
+.Fa "krb5_get_init_creds_opt *opt"
+.Fa "krb5_boolean req_pac"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_get_init_creds_opt_set_pkinit
+.Fa "krb5_context context"
+.Fa "krb5_get_init_creds_opt *opt"
+.Fa "const char *cert_file"
+.Fa "const char *key_file"
+.Fa "const char *x509_anchors"
+.Fa "int flags"
+.Fa "char *password"
 .Fc
 .Ft void
 .Fo krb5_get_init_creds_opt_set_preauth_list
@@ -105,14 +137,35 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "int preauth_list_length"
 .Fc
 .Ft void
+.Fo krb5_get_init_creds_opt_set_proxiable
+.Fa "krb5_get_init_creds_opt *opt"
+.Fa "int proxiable"
+.Fc
+.Ft void
+.Fo krb5_get_init_creds_opt_set_rewew_life
+.Fa "krb5_get_init_creds_opt *opt"
+.Fa "krb5_deltat renew_life"
+.Fc
+.Ft void
 .Fo krb5_get_init_creds_opt_set_salt
 .Fa "krb5_get_init_creds_opt *opt"
 .Fa "krb5_data *salt"
 .Fc
 .Ft void
-.Fo krb5_get_init_creds_opt_set_anonymous
+.Fo krb5_get_init_creds_opt_set_tkt_life
 .Fa "krb5_get_init_creds_opt *opt"
-.Fa "int anonymous"
+.Fa "krb5_deltat tkt_life"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_get_init_creds
+.Fa "krb5_context context"
+.Fa "krb5_creds *creds"
+.Fa "krb5_principal client"
+.Fa "krb5_prompter_fct prompter"
+.Fa "void *data"
+.Fa "krb5_deltat start_time"
+.Fa "const char *in_tkt_service"
+.Fa "krb5_get_init_creds_opt *options"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_get_init_creds
@@ -126,6 +179,18 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_deltat start_time"
 .Fa "const char *in_tkt_service"
 .Fa "krb5_get_init_creds_opt *options"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_get_init_creds_password
+.Fa "krb5_context context"
+.Fa "krb5_creds *creds"
+.Fa "krb5_principal client"
+.Fa "const char *password"
+.Fa "krb5_prompter_fct prompter"
+.Fa "void *data"
+.Fa "krb5_deltat start_time"
+.Fa "const char *in_tkt_service"
+.Fa "krb5_get_init_creds_opt *in_options"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_get_init_creds_keytab
@@ -149,8 +214,27 @@ If you only to verify a user and password, consider using
 .Xr krb5_verify_user 3
 instead, since it also verifies that initial credentials with using a
 keytab to make sure the response was from the KDC.
+.Pp
+First a
+.Li krb5_get_init_creds_opt
+structure is initialized. The structure modified by the any of the
+.Fn krb5_get_init_creds_opt_set
+functions to change request parameters and authentication information.
+.Pp
+The the actual reqest to the KDC is done by any of the
+.Fn krb5_get_init_creds ,
+.Fn krb5_get_init_creds_password ,
+or
+.Fn krb5_get_init_creds_keytab
+functions.
+.Fn krb5_get_init_creds
+is the least specialized function and can, with the right in data,
+behave like the later two.
+The later two are there for compatibly with older releases and that
+they are slightly easier to use.
 .Sh SEE ALSO
 .Xr krb5 3 ,
+.Xr krb5_creds 3 ,
 .Xr krb5_verify_user 3 ,
 .Xr krb5.conf 5 ,
 .Xr kerberos 8
