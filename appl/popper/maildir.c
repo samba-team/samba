@@ -44,7 +44,7 @@ static void
 make_path(POP *p, MsgInfoList *mp, int new, char *buf, size_t len)
 {
     snprintf(buf, len, "%s/%s%s%s", p->drop_name, 
-	     new ? "new" : "cur", mp ? "/" : "", mp ? "" : mp->name);
+	     new ? "new" : "cur", mp ? "/" : "", mp ? mp->name : "");
 }
 
 static int
