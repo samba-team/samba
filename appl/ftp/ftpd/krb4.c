@@ -61,9 +61,16 @@ int krb4_adat(char *auth)
   
     des_set_key(&auth_dat.session, schedule);
 
-    cs = htonl(auth_dat.checksum + 1);
-    len = krb_mk_safe(&cs, msg, sizeof(cs), &auth_dat.session, 
-		      &ctrl_addr, &his_addr);
+    cs = auth_dat.checksum + 1;
+    {
+	unsigned char tmp[4];
+	tmp[0] = (cs >> 24) & 0xff;
+	tmp[1] = (cs >> 16) & 0xff;
+	tmp[2] = (cs >> 8) & 0xff;
+	tmp[3] = cs & 0xff;
+	len = krb_mk_safe(tmp, msg, 4, &auth_dat.session, 
+			  &ctrl_addr, &his_addr);
+    }
     if(len < 0){
 	reply(535, "Error creating reply: %s.", strerror(errno));
 	return -1;
