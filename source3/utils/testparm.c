@@ -213,7 +213,7 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 			    POPT_CONTEXT_KEEP_FIRST);
 	poptSetOtherOptionHelp(pc, "[OPTION...] <config-file> [host-name] [host-ip]");
 
-	while((opt = poptGetNextOpt(pc)) != -1);
+	while(poptGetNextOpt(pc) != -1);
 
 	setup_logging(poptGetArg(pc), True);
 
