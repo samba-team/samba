@@ -46,12 +46,10 @@ char*
 kdc_log_msg_va(int level, const char *fmt, va_list ap)
 {
     char *msg;
-    if(level > loglevel)
-	return NULL;
     if(logf == NULL)
 	krb5_openlog(context, "kdc", &logf);
     
-    krb5_vlog_msg(context, logf, &msg, fmt, ap);
+    krb5_vlog_msg(context, logf, &msg, level, fmt, ap);
     return msg;
 }
 
