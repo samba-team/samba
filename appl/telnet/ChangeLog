@@ -1,3 +1,7 @@
+Mon Mar 15 17:40:53 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* telnetd/telnetd.c: replace perror/exit with fatalperror
+
 Sat Mar 13 22:18:57 1999  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/telnetd.c (main): 0 -> STDIN_FILENO.  remove abs

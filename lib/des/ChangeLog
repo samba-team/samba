@@ -1,3 +1,10 @@
+Mon Mar 15 17:36:41 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* rnd_keys.c (des_rand_data): if not using setitimer, block
+ 	SIGCHLD around fork(), also make sure we get the status of the
+ 	child process
+	(fake_signal): emulate signal using sigaction
+
 Tue Jan 12 05:06:54 1999  Assar Westerlund  <assar@sics.se>
 
 	* des.h: sparcv9 is also 64 bits, use `unsigned int' instead of
