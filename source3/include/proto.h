@@ -1368,7 +1368,6 @@ int lp_maxmux(void);
 int lp_passwordlevel(void);
 int lp_usernamelevel(void);
 int lp_readsize(void);
-int lp_shmem_size(void);
 int lp_deadtime(void);
 int lp_maxprotocol(void);
 int lp_security(void);
