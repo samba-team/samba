@@ -1,4 +1,6 @@
-Sun Jan 28 23:50:37 2001  Assar Westerlund  <assar@sics.se>
+2001-01-28  Assar Westerlund  <assar@sics.se>
+
+	* rcp_locl.h: add
 
 	* Makefile.am (LDADD): remove unused libraries
 
