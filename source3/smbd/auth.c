@@ -230,6 +230,8 @@ BOOL password_ok(char *user, char *password, int pwlen)
                 return False;
         }
 	
+	/* The password could be either NTLM or plain LM.  Try NTLM first, but fall-through as
+	   required. */
 	if (pass_check_smb(user, lp_workgroup(), NULL, 0, password, pwlen) == NT_STATUS_NOPROBLEMO) {
 		return True;
 	}
