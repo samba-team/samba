@@ -70,7 +70,7 @@ inet_ntop_v4 (const void *src, char *dst, size_t size)
     const char digits[] = "0123456789";
     int i;
     struct in_addr *addr = (struct in_addr *)src;
-    u_long a = addr->s_addr;
+    u_long a = ntohl(addr->s_addr);
     const char *orig_dst = dst;
 
     if (size < INET_ADDRSTRLEN) {
