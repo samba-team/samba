@@ -70,7 +70,8 @@ doit(const char *principal)
     }
     init_entry (db, &ent);
     edit_entry (&ent);
-    set_password (&ent);
+    if(set_password (&ent))
+	goto cleanup;
     set_created_by (&ent);
     
     ret = db->store(context, db, 0, &ent);
