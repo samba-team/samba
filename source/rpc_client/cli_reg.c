@@ -508,6 +508,60 @@ BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd,
 }
 
 /****************************************************************************
+do a REG Delete Value
+****************************************************************************/
+BOOL do_reg_delete_val(struct cli_state *cli, POLICY_HND *hnd, char *val_name)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_DELETE_VALUE q_o;
+	BOOL valid_delete = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_DELETE_VALUE */
+
+	DEBUG(4,("REG Delete Value: %s\n", val_name));
+
+	make_reg_q_delete_val(&q_o, hnd, val_name);
+
+	/* turn parameters into data stream */
+	reg_io_q_delete_val("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_DELETE_VALUE, &buf, &rbuf))
+	{
+		REG_R_DELETE_VALUE r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_delete_val("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_DELETE_VALUE: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_delete = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_delete;
+}
+
+/****************************************************************************
 do a REG Delete Key
 ****************************************************************************/
 BOOL do_reg_delete_key(struct cli_state *cli, POLICY_HND *hnd, char *key_name)

@@ -109,6 +109,7 @@ struct
   {"regdeletekey",cmd_reg_delete_key,  "<parentname> <keyname> Registry Key Delete"},
   {"regcreatekey",cmd_reg_create_key,  "<parentname> <keyname> [keyclass] Registry Key Create"},
   {"regquerykey",cmd_reg_query_key,    "<keyname> Registry Key Query"},
+  {"regdeleteval",cmd_reg_delete_val,  "<parentname> <valname> Registry Value Delete"},
   {"regcreateval",cmd_reg_create_val,  "<parentname> <valname> <valtype> <value> Registry Key Create"},
   {"regtest2",   cmd_reg_test2,        "Registry Testing No 2"},
   {"reggetsec",  cmd_reg_get_key_sec,  "<keyname> | <valname> Registry Key Security"},

@@ -1314,6 +1314,7 @@ BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
 				char *type, uint32 *unk_0, uint32 *unk_1);
 BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd,
 				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf);
+BOOL do_reg_delete_val(struct cli_state *cli, POLICY_HND *hnd, char *val_name);
 BOOL do_reg_delete_key(struct cli_state *cli, POLICY_HND *hnd, char *key_name);
 BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 				char *key_name, char *key_class,
@@ -1624,6 +1625,10 @@ void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 				SEC_INFO *sam_access);
 void reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int depth);
 void reg_io_r_create_key(char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int depth);
+void make_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
+				char *name);
+void reg_io_q_delete_val(char *desc,  REG_Q_DELETE_VALUE *r_q, prs_struct *ps, int depth);
+void reg_io_r_delete_val(char *desc,  REG_R_DELETE_VALUE *r_r, prs_struct *ps, int depth);
 void make_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
 				char *name);
 void reg_io_q_delete_key(char *desc,  REG_Q_DELETE_KEY *r_q, prs_struct *ps, int depth);
@@ -2092,6 +2097,7 @@ void cmd_reg_enum(struct client_info *info);
 void cmd_reg_query_key(struct client_info *info);
 void cmd_reg_test2(struct client_info *info);
 void cmd_reg_create_val(struct client_info *info);
+void cmd_reg_delete_val(struct client_info *info);
 void cmd_reg_delete_key(struct client_info *info);
 void cmd_reg_create_key(struct client_info *info);
 void cmd_reg_get_key_sec(struct client_info *info);
