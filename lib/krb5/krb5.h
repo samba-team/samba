@@ -70,7 +70,7 @@ typedef struct krb5_crypto_data *krb5_crypto;
 
 typedef CKSUMTYPE krb5_cksumtype;
 
-typedef enum krb5_enctype { 
+typedef enum krb5_enctype {
     ETYPE_NULL			= 0,
     ENCTYPE_NULL			= ETYPE_NULL,
     ETYPE_DES_CBC_CRC		= 1,
@@ -106,7 +106,7 @@ typedef enum krb5_enctype {
     ETYPE_DES_PCBC_NONE		= -0x1003,
     ENCTYPE_DES_PCBC_NONE		= ETYPE_DES_PCBC_NONE,
     ETYPE_DES3_CBC_NONE_IVEC	= -0x1004,
-    ENCTYPE_DES3_CBC_NONE_IVEC	= ETYPE_DES3_CBC_NONE_IVEC,
+    ENCTYPE_DES3_CBC_NONE_IVEC	= ETYPE_DES3_CBC_NONE_IVEC
 } krb5_enctype;
 
 typedef PADATA_TYPE krb5_preauthtype;
