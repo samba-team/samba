@@ -479,9 +479,9 @@ char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
 {
 	static fstring acct_str;
 
-	SMB_ASSERT(length <= sizeof(acct_str));
-
 	size_t i = 0;
+
+	SMB_ASSERT(length <= sizeof(acct_str));
 
 	acct_str[i++] = '[';
 
