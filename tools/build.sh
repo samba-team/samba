@@ -125,7 +125,7 @@ build () {
 	{ logprint failed to make ${pv} ; return 1 ; }
     ${opt_n} make install >> ${logfile} 2>&1 || \
 	{ logprint failed to install ${pv} ; return 1 ; }
-    do_check_p make_check_version ${real_ver} && \
+    do_check_p make_check_version ${real_ver} || \
     	{ ${opt_n} make check >> ${logfile} 2>&1 || return 1 ; }
     ${opt_n} cd ..
     return 0
