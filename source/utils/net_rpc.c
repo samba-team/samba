@@ -2198,6 +2198,8 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("  net rpc file \t\t\tto list open files\n");
 	d_printf("  net rpc changetrustpw \tto change the trust account password\n");
 	d_printf("  net rpc getsid \t\tfetch the domain sid into the local secrets.tdb\n");
+	d_printf("  net rpc vampire \t\tsyncronise an NT PDC's users and groups into the local passdb\n");
+	d_printf("  net rpc samdump \t\tdiplay an NT PDC's users, groups and other data\n");
 	d_printf("  net rpc trustdom \t\tto create trusting domain's account\n"
 		 "\t\t\t\t\tor establish trust\n");
 	d_printf("  net rpc abortshutdown \tto abort the shutdown of a remote server\n");
