@@ -5,13 +5,11 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 INCLUDES = -I$(top_builddir)/include
 
 lib_LIBRARIES = libeditline.a
+if el_compat
+noinst_LIBRARIES = libel_compat.a
+else
+noinst_LIBRARIES =
+endif
 
-## hata
-
-libeditline_a_SOURCES =
-
-EXTRA_libeditline_a_SOURCES = \
-complete.c edit_compat.c editline.c sysunix.c
-
-libeditline_a_LIBADD = @editline_OBJS@
-libeditline_a_DEPENDENCIES = $(libeditline_a_LIBADD)
+libeditline_a_SOURCES = complete.c editline.c sysunix.c
+libel_compat_a_SOURCES = edit_compat.c

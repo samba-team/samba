@@ -332,7 +332,7 @@ AC_BROKEN(chown daemon err errx fchown flock fnmatch getcwd)
 AC_BROKEN(getdtablesize getopt getusershell inet_aton)
 AC_BROKEN(initgroups iruserok lstat memmove mkstemp)
 AC_BROKEN(putenv rcmd readv setegid setenv seteuid)
-AC_BROKEN(seteuid strcasecmp strncasecmp strcpy_truncate strdup strerror)
+AC_BROKEN(seteuid strcasecmp strncasecmp strdup strerror)
 AC_BROKEN(strftime strlwr strnlen strsep strtok_r strupr swab)
 AC_BROKEN(unsetenv verr verrx vsyslog vwarn vwarnx warn warnx writev)
 
@@ -501,35 +501,26 @@ dnl Tests for editline
 dnl
 
 AC_FIND_FUNC_NO_LIBS(el_init, edit)
-AC_FIND_FUNC_NO_LIBS(readline, readline)
-
+AC_FIND_FUNC_NO_LIBS(readline, edit readline)
+ac_foo=no
 if test "$with_readline"; then
-	AC_DEFINE(HAVE_READLINE, 1)
-	editline_OBJS=
-	LIB_readline="$READLINELIB "'$(LIB_tgetent)'
+	LIB_readline="$READLINELIB"
 	INCLUDE_readline="$READLINEINCLUDE"
-elif test "$ac_cv_func_el_init" = yes; then
-	AC_DEFINE(HAVE_READLINE, 1)
-
-	editline_OBJS=edit_compat.o
-	LIB_readline='$(top_builddir)/lib/editline/libeditline.a '"$LIB_el_init"' $(LIB_tgetent)'
-
-	INCLUDE_readline='-I$(top_builddir)/lib/editline -I$(top_srcdir)/lib/editline'
 elif test "$ac_cv_func_readline" = yes; then
-	AC_DEFINE(HAVE_READLINE, 1)
-	editline_OBJS=
-	LIB_readline='-lreadline $(LIB_tgetent)'
 	INCLUDE_readline=
+elif test "$ac_cv_func_el_init" = yes; then
+	ac_foo=yes
+	LIB_readline="\$(top_builddir)/lib/editline/libel_compat.a $LIB_el_init"
+	INCLUDE_readline='-I$(top_srcdir)/lib/editline'
 else
-	AC_DEFINE(HAVE_READLINE, 1)
-	editline_OBJS="editline.o complete.o sysunix.o"
-	LIB_readline='$(top_builddir)/lib/editline/libeditline.a $(LIB_tgetent)'
-	INCLUDE_readline='-I$(top_builddir)/lib/editline -I$(top_srcdir)/lib/editline'
+	LIB_readline='$(top_builddir)/lib/editline/libeditline.a'
+	INCLUDE_readline='-I$(top_srcdir)/lib/editline'
 fi
-AC_SUBST(LIB_tgetent)
+AM_CONDITIONAL(el_compat, test "$ac_foo" = yes)
+LIB_readline="$LIB_readline \$(LIB_tgetent)"
+AC_DEFINE(HAVE_READLINE, 1)dnl XXX
 AC_SUBST(LIB_readline)
 AC_SUBST(INCLUDE_readline)
-AC_SUBST(editline_OBJS)
 
 dnl telnet muck --------------------------------------------------
 
