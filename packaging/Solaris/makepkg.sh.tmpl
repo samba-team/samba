@@ -144,7 +144,7 @@ if [ -f prototype ]; then
 fi
 
 # Setup version from version.h
-VERSION=`sed 's/#define VERSION \"\(.*\)\"$/\1/' ../../source/include/version.h`
+VERSION=PVERSION
 sed -e "s|__VERSION__|$VERSION|" -e "s|__ARCH__|`uname -p`|" -e "s|__BASEDIR__|$INSTALL_BASE|g" pkginfo.master >pkginfo
 
 sed -e "s|__BASEDIR__|$INSTALL_BASE|g" inetd.conf.master >inetd.conf
