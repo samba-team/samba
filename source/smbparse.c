@@ -456,7 +456,9 @@ char* smb_io_dom_query(BOOL io, DOM_QUERY *d_q, char *q, char *base, int align)
 
 	if (d_q->buffer_dom_name != 0)
 	{
+#if 0 /* REMOVED AS WON'T COMPILE AS IS - LUKE PLEASE CHECK !!!!! */
 		q = smb_io_unistr(io, &(d_q->uni_domain_name), q, base, align); /* domain name (unicode string) */
+#endif
 	}
 	if (d_q->buffer_dom_sid != 0)
 	{

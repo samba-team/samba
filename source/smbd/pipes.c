@@ -364,6 +364,8 @@ BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
   return(True);
 }
 
+#if 0 /* HAVING TO DO THIS TO GET THINGS TO COMPILE - LUKE PLEASE CHECK THIS !!! */
+
 /*
    PAXX: Someone fix above.
    The above API is indexing RPC calls based on RPC flags and 
@@ -757,3 +759,5 @@ static int lsa_reply_sam_logoff(LSA_Q_SAM_LOGOFF *q_s, char *q, char *base,
 	/* return length of SMB data stored */
 	return q - start; 
 }
+
+#endif /* LUKE PLEASE CHECK THIS !! */
