@@ -45,7 +45,7 @@ Mirror sites include:
 --- Russian Federation ---  
 	ftp://ftp.uic.nsu.ru/pub/vendors/samba/
 --- United Kingdom ---  
-	ftp://sunsite.doc.ic.ac.uk/packages/samba/sources/
+	ftp://sunsite.doc.ic.ac.uk/packages/samba/
 	ftp://ftp.demon.co.uk/pub/mirrors/samba/
 
 SCO binaries available from:
