@@ -68,7 +68,7 @@ char cfn[128];
 
 struct error_code *codes = NULL;
 
-int
+static int
 generate_c(void)
 {
     int n;
@@ -122,7 +122,7 @@ generate_c(void)
     return 0;
 }
 
-int
+static int
 generate_h(void)
 {
     struct error_code *ec;
@@ -173,7 +173,7 @@ generate_h(void)
     return 0;
 }
 
-int
+static int
 generate(void)
 {
     return generate_c() || generate_h();
