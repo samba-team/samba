@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -232,7 +232,7 @@ hdb_create(krb5_context context, HDB **db, const char *filename)
 
     if(filename == NULL)
 	filename = HDB_DEFAULT_DB;
-    initialize_hdb_error_table_r(&context->et_list);
+    krb5_add_et_list(context, initialize_hdb_error_table_r);
     h = find_method (filename, &residual);
     if (h == NULL)
 	krb5_errx(context, 1, "No database support! (hdb_create)");
