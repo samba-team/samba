@@ -1,0 +1,86 @@
+.\" Copyright (c) 2003 Kungliga Tekniska Högskolan
+.\" (Royal Institute of Technology, Stockholm, Sweden).
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\"
+.\" 3. Neither the name of the Institute nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\" $Id$
+.\"
+.Dd July 22, 2003
+.Dt KRB5_KEYBLOCK 3
+.Os HEIMDAL
+.Sh NAME
+.Nm krb5_keyblock ,
+.Nm krb5_keyblock_get_enctype ,
+.Nm krb5_copy_keyblock_contents ,
+.Nm krb5_free_keyblock ,
+.Nm krb5_free_keyblock_contents
+.Nd Kerberos 5 key handling functions.
+.Sh LIBRARY
+Kerberos 5 Library (libkrb5, -lkrb5)
+.Sh SYNOPSIS
+.In krb5.h
+.Pp
+.Li krb5_keyblock ;
+.Ft krb5_enctype
+.Fo krb5_keyblock_get_enctype
+.Fa "const krb5_keyblock *block"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_copy_keyblock_contents
+.Fa "krb5_context context"
+.Fa "const krb5_keyblock *inblock"
+.Fa "krb5_keyblock *to"
+.Fc
+.Sh DESCRIPTION
+.Li krb5_keyblock
+holds the encryption key for a specific encryption type.
+There is no component inside
+.Li krb5_keyblock
+that is directly referable.
+.Pp
+.Fn krb5_keyblock_get_enctype
+returns the encryption type of the keyblock.
+.Pp
+.Fn krb5_copy_keyblock_contents
+copies the contents of
+.Fa inblock
+to the
+.Fa to
+keyblock.
+The destination keyblock is overritten.
+.Pp
+.Fn krb5_free_keyblock
+free the content and the keyblock itself.
+.Pp
+.Fn krb5_free_keyblock_contents
+frees the content of the keyblock.
+.\" .Sh EXAMPLES
+.Sh SEE ALSO
+.Xr krb5 3 ,
+.Xr krb5.conf 5
