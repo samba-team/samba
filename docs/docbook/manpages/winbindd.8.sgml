@@ -331,9 +331,13 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	<para>This assumes your domain is called "DOMAIN" and your Samba 
 	workstation is called "MACHINE". </para>
 
-	<para>Next copy <filename>libnss_winbind.so.2</filename> to 
+	<para>Next copy <filename>libnss_winbind.so</filename> to 
 	<filename>/lib</filename> and <filename>pam_winbind.so</filename>
-	to <filename>/lib/security</filename>.</para>
+	to <filename>/lib/security</filename>.  A symbolic link needs to be
+	made from <filename>/lib/libnss_winbind.so</filename> to
+	<filename>/lib/libnss_winbind.so.2</filename>.  If you are using an
+	older version of glibc then the target of the link should be
+	<filename>/lib/libnss_winbind.so.1</filename>.</para>
 
 	<para>Finally, setup a smb.conf containing directives like the 
 	following:  </para> 
