@@ -2,6 +2,7 @@
 dnl test for ipv6 using the gethostbyname2() function. That should be sufficient
 dnl for now
 AC_CHECK_FUNCS(gethostbyname2, have_ipv6=true, have_ipv6=false)
+SMB_MODULE_DEFAULT(socket_ipv6, NOT)
 if $have_ipv6 = true; then
     SMB_MODULE_DEFAULT(socket_ipv6, STATIC)
     AC_DEFINE(HAVE_SOCKET_IPV6,1,[Whether the system has ipv6 support])

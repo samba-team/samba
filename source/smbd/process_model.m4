@@ -1,5 +1,7 @@
 dnl # Server process model subsystem
 
+SMB_MODULE_DEFAULT(process_model_thread,NOT)
+
 #################################################
 # check for pthread support
 AC_MSG_CHECKING(whether to use pthreads)
