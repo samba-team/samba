@@ -112,22 +112,37 @@ sigALRM(int sig)
     SIGRETURN(0);
 }
 
-#if !defined(HAVE_SETITIMER) && defined(HAVE_RANDOM)
+#ifdef HAVE_RANDOM
 
 /* XXX this is a quick hack, should be fixed */
 
 void
-des_rand_data(unsigned char *data, int size)
+des_not_rand_data(unsigned char *data, int size)
 {
   int i;
 
   srandom (time (NULL));
 
   for(i = 0; i < size; ++i)
-    data[i] = random() % 0x100;
+    data[i] ^= random() % 0x100;
 }
 
-#else
+#endif
+
+#ifndef HAVE_SETITIMER
+void pacemaker(struct timeval *tv)
+{
+    fd_set fds;
+    pid_t pid;
+    pid = getppid();
+    while(1){
+	FD_ZERO(&fds);
+	FD_SET(0, &fds);
+	select(1, &fds, NULL, NULL, tv);
+	kill(pid, SIGALRM);
+    }
+}
+#endif
 
 /*
  * Generate size bytes of "random" data using timed interrupts.
@@ -140,6 +155,7 @@ des_rand_data(unsigned char *data, int size)
     struct itimerval tv, otv;
     struct sigaction sa, osa;
     int i, j;
+    pid_t pid;
   
     /*
      * If there is a /dev/random it's use is preferred.
@@ -181,7 +197,17 @@ des_rand_data(unsigned char *data, int size)
     tv.it_value.tv_sec = 0;
     tv.it_value.tv_usec = 10 * 1000; /* 10 ms */
     tv.it_interval = tv.it_value;
+#ifdef HAVE_SETITIMER
     setitimer(ITIMER_REAL, &tv, &otv);
+#else
+    pid = fork();
+    if(pid == -1){
+	des_not_rand_data(data, size);
+	return;
+    }
+    if(pid == 0)
+	pacemaker(&tv.it_interval);
+#endif
 
     for(i = 0; i < 4; i++) {
 	for (igdata = 0; igdata < size;) /* igdata++ in sigALRM */
@@ -189,10 +215,13 @@ des_rand_data(unsigned char *data, int size)
 	for (j = 0; j < size; j++) /* Only use 2 bits each lap */
 	    gdata[j] = (gdata[j]>>2) | (gdata[j]<<6);
     }
+#ifdef HAVE_SETITIMER
     setitimer(ITIMER_REAL, &otv, 0);
+#else
+    kill(pid, SIGKILL);
+#endif
     sigaction(SIGALRM, &osa, 0);
 }
-#endif
 
 void
 des_generate_random_block(des_cblock *block)
