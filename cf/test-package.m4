@@ -74,7 +74,7 @@ if test "$ires" -a "$lres" -a "$with_$1" != "no"; then
 	$1_libdir="$lres"
 	INCLUDE_$1="-I$$1_includedir"
 	LIB_$1="-L$$1_libdir $3"
-	ifval([$6],
+	m4_ifval([$6],
 		AC_DEFINE_UNQUOTED($6,1,[Define if you have the $1 package.]),
 		AC_DEFINE_UNQUOTED(upcase($1),1,[Define if you have the $1 package.]))
 	with_$1=yes
@@ -85,7 +85,7 @@ else
 	with_$1=no
 	AC_MSG_RESULT($with_$1)
 fi
-dnl ifval([$6],
+dnl m4_ifval([$6],
 dnl 	AM_CONDITIONAL($6, test "$with_$1" = yes)
 dnl 	AM_CONDITIONAL(upcase($1), test "$with_$1" = yes))
 AC_SUBST(INCLUDE_$1)
