@@ -45,6 +45,7 @@
 #include <assert.h>
 
 #include "cfx.h"
+#include "arcfour.h"
 
 /*
  *
