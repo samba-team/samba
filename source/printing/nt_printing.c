@@ -3428,7 +3428,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 		info.devmode = construct_nt_devicemode(printername);
 	}
 
-	safe_strcpy(adevice, info.printername, sizeof(adevice)-1);
+	slprintf( adevice, sizeof(adevice), "%s", info.printername );
 	if (info.devmode) {
 		fstrcpy(info.devmode->devicename, adevice);	
 	}
