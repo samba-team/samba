@@ -1,4 +1,6 @@
-Tue Dec 23 01:38:01 1997  Assar Westerlund  <assar@sics.se>
+Tue Dec 23 01:56:45 1997  Assar Westerlund  <assar@sics.se>
+
+	* Release 0.0m
 
 	* lib/kadm5/ent_setup.c (attr_to_flags): try to set `client'
 
