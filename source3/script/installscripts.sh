@@ -10,7 +10,7 @@ shift
 
 echo Installing scripts in $BINDIR
 
-for d in [ $BINDIR ]; do
+for d in $BINDIR; do
  if [ ! -d $d ]; then
   mkdir $d
   if [ ! -d $d ]; then
