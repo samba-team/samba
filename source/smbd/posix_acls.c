@@ -289,21 +289,7 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 	if ((ace->perms & ALL_ACE_PERMS) == ALL_ACE_PERMS) {
 			nt_mask = UNIX_ACCESS_RWX;
 	} else if ((ace->perms & ALL_ACE_PERMS) == (mode_t)0) {
-		/*
-		 * Here we differentiate between the owner and any other user.
-		 */
-		if (sid_equal(powner_sid, &ace->sid)) {
-			nt_mask = UNIX_ACCESS_NONE;
-		} else {
-			/* Not owner, no access. */
-			if (ace->type == SMB_ACL_USER) {
-				/* user objects can be deny entries. */
-				*pacl_type = SEC_ACE_TYPE_ACCESS_DENIED;
-				nt_mask = GENERIC_ALL_ACCESS;
-			}
-			else
-				nt_mask = UNIX_ACCESS_NONE;
-		}
+		nt_mask = UNIX_ACCESS_NONE;
 	} else {
 		nt_mask |= ((ace->perms & S_IRUSR) ? UNIX_ACCESS_R : 0 );
 		nt_mask |= ((ace->perms & S_IWUSR) ? UNIX_ACCESS_W : 0 );
@@ -1344,7 +1330,7 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	mode = psbuf->st_mode;
 
 	owner_ace->perms = unix_perms_to_acl_perms(mode, S_IRUSR, S_IWUSR, S_IXUSR);
-	owner_ace->attr = owner_ace->perms ? ALLOW_ACE : DENY_ACE;
+	owner_ace->attr = ALLOW_ACE;
 	
 	group_ace->perms = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
 	group_ace->attr = ALLOW_ACE;
@@ -2140,11 +2126,15 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
 
 int chmod_acl(char *name, mode_t mode)
 {
+	int saved_errno = errno;
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;
 
-	if ((posix_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS)) == NULL)
+	if ((posix_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS)) == NULL) {
+		if (errno == ENOSYS)
+			errno = saved_errno;
 		return -1;
+	}
 
 	if ((ret = chmod_acl_internals(posix_acl, mode)) == -1)
 		goto done;
@@ -2164,11 +2154,15 @@ int chmod_acl(char *name, mode_t mode)
 
 int fchmod_acl(int fd, mode_t mode)
 {
+	int saved_errno = errno;
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;
 
-	if ((posix_acl = sys_acl_get_fd(fd)) == NULL)
+	if ((posix_acl = sys_acl_get_fd(fd)) == NULL) {
+		if (errno == ENOSYS)
+			errno = saved_errno;
 		return -1;
+	}
 
 	if ((ret = chmod_acl_internals(posix_acl, mode)) == -1)
 		goto done;
