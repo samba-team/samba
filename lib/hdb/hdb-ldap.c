@@ -398,6 +398,8 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     hdb_entry orig;
     unsigned long oflags, nflags;
 
+    *pmods = NULL;
+
     krb5_boolean is_samba_account = FALSE;
     krb5_boolean is_account = FALSE;
     krb5_boolean is_heimdal_entry = FALSE;
@@ -405,6 +407,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 
     if (msg != NULL) {
 	char **values;
+
 	ret = LDAP_message2entry(context, db, msg, &orig);
 	if (ret)
 	    goto out;
@@ -428,22 +431,41 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	    }
 	    ldap_value_free(values);
 	}
-    } else {
+
+	/*
+	 * If this is just a "account" entry and no other objectclass
+	 * is hanging on this entry, its really a new entry.
+	 */
+	if (is_samba_account == FALSE && is_heimdal_principal == FALSE && 
+	    is_heimdal_entry == FALSE) {
+	    if (is_account == TRUE) {
+		is_new_entry = TRUE;
+	    } else {
+		ret = HDB_ERR_NOENTRY;
+		goto out;
+	    }
+	}
+    } else
+	is_new_entry = TRUE;
+
+    if (is_new_entry) {
+
 	/* to make it perfectly obvious we're depending on
 	 * orig being intiialized to zero */
 	memset(&orig, 0, sizeof(orig));
-	is_new_entry = TRUE;
 
 	ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "objectClass", "top");
 	if (ret)
 	    goto out;
-
+	
 	/* account is the structural object class */
-	ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "objectClass", 
-			  structural_object);
-	is_account = TRUE;
-	if (ret)
-	    goto out;
+	if (is_account == FALSE) {
+	    ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "objectClass", 
+			      structural_object);
+	    is_account = TRUE;
+	    if (ret)
+		goto out;
+	}
 
 	ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "objectClass", "krb5Principal");
 	is_heimdal_principal = TRUE;
@@ -495,9 +517,8 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	    ret = ENOMEM;
 	    goto out;
 	}
-	ret =
-	    LDAP_addmod(&mods, LDAP_MOD_REPLACE, "krb5KeyVersionNumber",
-			tmp);
+	ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE, "krb5KeyVersionNumber",
+			  tmp);
 	free(tmp);
 	if (ret)
 	    goto out;
