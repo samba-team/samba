@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB transaction2 handling
-   Copyright (C) Jeremy Allison 1994-1998
+   Copyright (C) Jeremy Allison 1994-2002.
 
    Extensively modified by Andrew Tridgell, 1995
 
@@ -323,15 +323,6 @@ Byte offset   Type     name                description
 
 #define MODE_NO_CHANGE                 -1     /* file mode value which */
                                               /* means "don't change it" */
-#define UNIX_TYPE_FILE 0
-#define UNIX_TYPE_DIR 1
-#define UNIX_TYPE_SYMLINK 2
-#define UNIX_TYPE_CHARDEV 3
-#define UNIX_TYPE_BLKDEV 4
-#define UNIX_TYPE_FIFO 5
-#define UNIX_TYPE_SOCKET 6
-#define UNIx_TYPE_UNKNOWN 0xFFFFFFFF
-
 /*
  LARGE_INTEGER EndOfFile                File size
  LARGE_INTEGER Blocks                   Number of bytes used on disk (st_blocks).
@@ -354,11 +345,50 @@ Byte offset   Type     name                description
  LARGE_INTEGER uniqueid                 This is a server-assigned unique id for the file. The client
                                         will typically map this onto an inode number. The scope of
                                         uniqueness is the share.
- LARGE_INTEGER permissions              Standard UNIX file permissions
+ LARGE_INTEGER permissions              Standard UNIX file permissions  - see below.
  LARGE_INTEGER nlinks                   The number of directory entries that map to this entry
                                           (number of hard links)
 
 */
+
+/* UNIX filetype mappings. */
+
+#define UNIX_TYPE_FILE 0
+#define UNIX_TYPE_DIR 1
+#define UNIX_TYPE_SYMLINK 2
+#define UNIX_TYPE_CHARDEV 3
+#define UNIX_TYPE_BLKDEV 4
+#define UNIX_TYPE_FIFO 5
+#define UNIX_TYPE_SOCKET 6
+#define UNIX_TYPE_UNKNOWN 0xFFFFFFFF
+
+/*
+ * Oh this is fun. "Standard UNIX permissions" has no
+ * meaning in POSIX. We need to define the mapping onto
+ * and off the wire as this was not done in the original HP
+ * code. JRA.
+ */
+
+#define UNIX_X_OTH			0000001
+#define UNIX_W_OTH			0000002
+#define UNIX_R_OTH			0000004
+#define UNIX_X_GRP			0000010
+#define UNIX_W_GRP                      0000020
+#define UNIX_R_GRP                      0000040
+#define UNIX_X_USR                      0000100
+#define UNIX_W_USR                      0000200
+#define UNIX_R_USR                      0000400
+#define UNIX_STICKY                     0001000
+#define UNIX_SET_GID                    0002000
+#define UNIX_SET_UID                    0004000
+
+/* Masks for the above */
+#define UNIX_OTH_MASK                   0000007
+#define UNIX_GRP_MASK                   0000070
+#define UNIX_USR_MASK                   0000700
+#define UNIX_PERM_MASK                  0000777
+#define UNIX_EXTRA_MASK                 0007000
+#define UNIX_ALL_MASK                   0007777
 
 #define SMB_QUERY_FILE_UNIX_LINK       0x201
 #define SMB_SET_FILE_UNIX_LINK         0x201
