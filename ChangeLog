@@ -1,5 +1,13 @@
 1999-05-21  Assar Westerlund  <assar@sics.se>
 
+	* kuser/kgetcred.c (main): correct error message
+
+	* lib/krb5/crypto.c (verify_checksum): call (*ct->checksum)
+ 	directly, avoiding redundant lookups and memory leaks
+
+	* lib/krb5/auth_context.c (krb5_auth_con_setaddrs_from_fd): free
+ 	local and remote addresses
+
 	* lib/krb5/get_default_principal.c (get_logname): also try
  	$USERNAME
 	

@@ -1,3 +1,7 @@
+1999-05-23  Assar Westerlund  <assar@sics.se>
+
+	* init.c (create_random_entry): more correct setting of mask
+
 1999-05-21  Assar Westerlund  <assar@sics.se>
 
 	* server.c (handle_v5): read sendauth version correctly.
