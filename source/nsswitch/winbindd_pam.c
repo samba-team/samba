@@ -87,7 +87,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	   so make sure we free them. */
 
 	if (info3.gids)
-		free(info3.gid);
+		free(info3.gids);
 
 	if (status != NT_STATUS_NOPROBLEMO) {
                 DEBUG(3, ("winbindd_pam_auth() failed with status 0x%08x\n",
@@ -140,7 +140,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	   so make sure we free them. */
 
 	if (info3.gids)
-		free(info3.gid);
+		free(info3.gids);
 
 	if (status != NT_STATUS_NOPROBLEMO) {
                 DEBUG(3, ("winbindd_pam_auth() failed with status 0x%08x\n",
