@@ -19,3 +19,5 @@
 
 #define RCSID(msg) \
 static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
+
+#undef PROTOTYPES
