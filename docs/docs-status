@@ -40,13 +40,10 @@ docs/docbook/manpages/smbstatus.1.sgml
 docs/docbook/manpages/smbtar.1.sgml
 docs/docbook/manpages/smbumount.8.sgml
 docs/docbook/manpages/swat.8.sgml
-docs/docbook/manpages/testparm.1.sgml
 docs/docbook/manpages/testprns.1.sgml
 
 Stuff that needs to be documented:
 Doc for package maintainers
-Some kind of introduction to the various terms used (locking, wins, browsing, domain, ... )
-Merge the various docs about wins and browsing
 Windows NT 4.0 Style Trust Relationship
 One Time Migration script from a Windows NT 4.0 PDC to a Samba PDC
 ldap passwd sync
