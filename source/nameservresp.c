@@ -782,7 +782,6 @@ void response_netbios_packet(struct packet_struct *p)
   {
     DEBUG(2,("response from %s. ", inet_ntoa(p->ip)));
     DEBUG(2,("expected on subnet %s. hmm.\n", inet_ntoa(d->bcast_ip)));
-    return;
   }
 
   if (nmb->answers == NULL)
