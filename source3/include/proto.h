@@ -418,6 +418,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 				struct nmb_name *calling, struct nmb_name *called,
 				char *service, char *service_type,
 				BOOL do_shutdown, BOOL do_tcon);
+int cli_printjob_del(struct cli_state *cli, int job);
 int cli_print_queue(struct cli_state *cli, 
 		    void (*fn)(struct print_job_info *));
 
