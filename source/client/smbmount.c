@@ -113,7 +113,8 @@ static void usr1_handler(int x)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct cli_state *do_connection(char *service)
+
+static struct cli_state *do_connection(char *svc_name)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
@@ -123,12 +124,12 @@ static struct cli_state *do_connection(char *service)
 	pstring server;
 	char *share;
 
-	if (service[0] != '\\' || service[1] != '\\') {
+	if (svc_name[0] != '\\' || svc_name[1] != '\\') {
 		usage();
 		exit(1);
 	}
 
-	pstrcpy(server, service+2);
+	pstrcpy(server, svc_name+2);
 	share = strchr(server,'\\');
 	if (!share) {
 		usage();
@@ -309,7 +310,7 @@ static void smb_umount(char *mount_point)
  * not exit after open_sockets() or send_login() errors,
  * as the smbfs mount would then have no way to recover.
  */
-static void send_fs_socket(char *service, char *mount_point, struct cli_state *c)
+static void send_fs_socket(char *svc_name, char *mount_point, struct cli_state *c)
 {
 	int fd, closed = 0, res = 1;
 	pid_t parentpid = getppid();
@@ -383,7 +384,7 @@ static void send_fs_socket(char *service, char *mount_point, struct cli_state *c
 			setup_logging("mount.smbfs", False);
 			append_log = True;
 			reopen_logs();
-			DEBUG(0, ("mount.smbfs: entering daemon mode for service %s, pid=%d\n", service, getpid()));
+			DEBUG(0, ("mount.smbfs: entering daemon mode for service %s, pid=%d\n", svc_name, getpid()));
 
 			closed = 1;
 		}
@@ -394,7 +395,7 @@ static void send_fs_socket(char *service, char *mount_point, struct cli_state *c
 			CatchSignal(SIGUSR1, &usr1_handler);
 			pause();
 			DEBUG(2,("mount.smbfs[%d]: got signal, getting new socket\n", getpid()));
-			c = do_connection(service);
+			c = do_connection(svc_name);
 		}
 	}
 
@@ -634,31 +635,31 @@ static void usage(void)
 	printf("Version %s\n\n",VERSION);
 
 	printf(
-"Options:
-      username=<arg>                  SMB username
-      password=<arg>                  SMB password
-      credentials=<filename>          file with username/password
-      netbiosname=<arg>               source NetBIOS name
-      uid=<arg>                       mount uid or username
-      gid=<arg>                       mount gid or groupname
-      port=<arg>                      remote SMB port number
-      fmask=<arg>                     file umask
-      dmask=<arg>                     directory umask
-      debug=<arg>                     debug level
-      ip=<arg>                        destination host or IP address
-      workgroup=<arg>                 workgroup on destination
-      sockopt=<arg>                   TCP socket options
-      scope=<arg>                     NetBIOS scope
-      iocharset=<arg>                 Linux charset (iso8859-1, utf8)
-      codepage=<arg>                  server codepage (cp850)
-      ttl=<arg>                       dircache time to live
-      guest                           don't prompt for a password
-      ro                              mount read-only
-      rw                              mount read-write
-
-This command is designed to be run from within /bin/mount by giving
-the option '-t smbfs'. For example:
-  mount -t smbfs -o username=tridge,password=foobar //fjall/test /data/test
+"Options:\n\
+      username=<arg>                  SMB username\n\
+      password=<arg>                  SMB password\n\
+      credentials=<filename>          file with username/password\n\
+      netbiosname=<arg>               source NetBIOS name\n\
+      uid=<arg>                       mount uid or username\n\
+      gid=<arg>                       mount gid or groupname\n\
+      port=<arg>                      remote SMB port number\n\
+      fmask=<arg>                     file umask\n\
+      dmask=<arg>                     directory umask\n\
+      debug=<arg>                     debug level\n\
+      ip=<arg>                        destination host or IP address\n\
+      workgroup=<arg>                 workgroup on destination\n\
+      sockopt=<arg>                   TCP socket options\n\
+      scope=<arg>                     NetBIOS scope\n\
+      iocharset=<arg>                 Linux charset (iso8859-1, utf8)\n\
+      codepage=<arg>                  server codepage (cp850)\n\
+      ttl=<arg>                       dircache time to live\n\
+      guest                           don't prompt for a password\n\
+      ro                              mount read-only\n\
+      rw                              mount read-write\n\
+\n\
+This command is designed to be run from within /bin/mount by giving\n\
+the option '-t smbfs'. For example:\n\
+  mount -t smbfs -o username=tridge,password=foobar //fjall/test /data/test\n\
 ");
 }
 
