@@ -79,8 +79,8 @@ main(int argc, char **argv)
 	    if(ret)
 		krb5_err(context, 1, ret, "hdb_create %s", d->dbname);
 	    ret = hdb_set_master_keyfile(context, db[num_db], d->mkey_file);
-    if (ret)
-	krb5_err(context, 1, ret, "hdb_set_master_keyfile");
+	    if (ret)
+		krb5_err(context, 1, ret, "hdb_set_master_keyfile");
 	}
     }
 
