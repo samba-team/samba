@@ -148,7 +148,7 @@ static struct work_record *make_workgroup(char *name)
   expire old servers in the serverlist
   time of -1 indicates everybody dies
   ******************************************************************/
-static void remove_old_servers(struct work_record *work, time_t t)
+void remove_old_servers(struct work_record *work, time_t t)
 {
   struct server_record *s;
   struct server_record *nexts;
@@ -270,7 +270,7 @@ struct work_record *find_workgroupstruct(struct subnet_record *d,
 	       inet_ntoa(d->bcast_ip)));
       queue_netbios_pkt_wins(d,ClientNMB,NMB_QUERY, NAME_QUERY_FIND_MST,
 			     MSBROWSE,0x1,0,0,
-			     True,False, d->bcast_ip);
+			     True,False, d->bcast_ip, d->bcast_ip);
       return NULL;
     }
   

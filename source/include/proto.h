@@ -242,6 +242,7 @@ void sync_server(enum state_type state, char *serv_name, char *work_name,
 		 int name_type,
 		 struct in_addr ip);
 void announce_backup(void);
+void remove_my_servers(void);
 void announce_server(struct subnet_record *d, struct work_record *work,
 					char *name, char *comment, time_t ttl, int server_type);
 void announce_host(void);
@@ -250,6 +251,7 @@ void expire_browse_cache(time_t t);
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
 					      time_t ttl, struct in_addr ip);
 void do_browser_lists(void);
+void remove_old_servers(struct work_record *work, time_t t);
 struct work_record *remove_workgroup(struct subnet_record *d, 
 				     struct work_record *work);
 struct work_record *find_workgroupstruct(struct subnet_record *d, 
@@ -269,6 +271,59 @@ struct server_record *add_server_entry(struct subnet_record *d,
 void add_my_subnets(char *group);
 void write_browse_list(void);
 void expire_servers(time_t t);
+BOOL name_equal(struct nmb_name *n1,struct nmb_name *n2);
+BOOL ms_browser_name(char *name, int type);
+void remove_name(struct subnet_record *d, struct name_record *n);
+struct name_record *find_name(struct name_record *n,
+			struct nmb_name *name,
+			int search, struct in_addr ip);
+struct name_record *find_name_search(struct subnet_record **d,
+			struct nmb_name *name,
+			int search, struct in_addr ip);
+void dump_names(void);
+void load_netbios_names(void);
+void remove_netbios_name(struct subnet_record *d,
+			char *name,int type, enum name_source source,
+			 struct in_addr ip);
+struct name_record *add_netbios_entry(struct subnet_record *d,
+		char *name, int type, int nb_flags, 
+		int ttl, enum name_source source, struct in_addr ip,
+		BOOL new_only,BOOL wins);
+void expire_names(time_t t);
+struct name_record *search_for_name(struct subnet_record **d,
+					struct nmb_name *question,
+				    struct in_addr ip, int Time, int search);
+void add_response_record(struct subnet_record *d,
+				struct response_record *n);
+void remove_response_record(struct subnet_record *d,
+				struct response_record *n);
+struct response_record *make_response_queue_record(enum state_type state,
+				int id,int fd,
+				int quest_type, char *name,int type, int nb_flags, time_t ttl,
+				BOOL bcast,BOOL recurse,
+				struct in_addr send_ip, struct in_addr reply_to_ip);
+struct response_record *find_response_record(struct subnet_record **d,
+				uint16 id);
+void remove_old_servers(struct work_record *work, time_t t);
+struct server_record *add_server_entry(struct subnet_record *d, 
+				       struct work_record *work,
+				       char *name,int servertype, 
+				       int ttl,char *comment,
+				       BOOL replace);
+void expire_servers(time_t t);
+struct subnet_record *find_subnet(struct in_addr bcast_ip);
+struct subnet_record *find_req_subnet(struct in_addr ip, BOOL bcast);
+void add_subnet_interfaces(void);
+void add_my_subnets(char *group);
+struct subnet_record *add_subnet_entry(struct in_addr bcast_ip, 
+				       struct in_addr mask_ip,
+				       char *name, BOOL add, BOOL lmhosts);
+void write_browse_list(void);
+struct work_record *remove_workgroup(struct subnet_record *d, 
+				     struct work_record *work);
+struct work_record *find_workgroupstruct(struct subnet_record *d, 
+					 fstring name, BOOL add);
+void dump_workgroups(void);
 void check_master_browser(void);
 void browser_gone(char *work_name, struct in_addr ip);
 void send_election(struct subnet_record *d, char *group,uint32 criterion,
@@ -283,6 +338,20 @@ void run_elections(void);
 void process_election(struct packet_struct *p,char *buf);
 BOOL check_elections(void);
 void process_logon_packet(struct packet_struct *p,char *buf,int len);
+void initiate_netbios_packet(uint16 *id,
+				int fd,int quest_type,char *name,int name_type,
+			    int nb_flags,BOOL bcast,BOOL recurse,
+			    struct in_addr to_ip);
+void reply_netbios_packet(struct packet_struct *p1,int trn_id,
+				int rcode,int opcode, BOOL recurse,
+				struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
+				char *data,int len);
+void queue_packet(struct packet_struct *packet);
+void run_packet_queue();
+void listen_for_packets(BOOL run_election);
+BOOL send_mailslot_reply(char *mailslot,int fd,char *buf,int len,char *srcname,
+			 char *dstname,int src_type,int dest_type,
+			 struct in_addr dest_ip,struct in_addr src_ip);
 BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 		 struct in_addr to_ip,char *master,char *rname,
 		 void (*fn)());
@@ -290,64 +359,39 @@ BOOL name_query(int fd,char *name,int name_type,
 		BOOL bcast,BOOL recurse,
 		struct in_addr to_ip, struct in_addr *ip,void (*fn)());
 void expire_netbios_response_entries();
-void reply_netbios_packet(struct packet_struct *p1,int trn_id,
-				int rcode,int opcode, BOOL recurse,
-				struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
-				char *data,int len);
-void queue_netbios_pkt_wins(struct subnet_record *d,
+struct response_record *queue_netbios_pkt_wins(struct subnet_record *d,
 				int fd,int quest_type,enum state_type state,
 			    char *name,int name_type,int nb_flags, time_t ttl,
-			    BOOL bcast,BOOL recurse,struct in_addr to_ip);
-void queue_netbios_packet(struct subnet_record *d,
+			    BOOL bcast,BOOL recurse,
+				struct in_addr send_ip, struct in_addr reply_to_ip);
+struct response_record *queue_netbios_packet(struct subnet_record *d,
 			int fd,int quest_type,enum state_type state,char *name,
 			int name_type,int nb_flags, time_t ttl,
-			BOOL bcast,BOOL recurse, struct in_addr to_ip);
-struct response_record *find_response_record(struct subnet_record **d,
-				uint16 id);
-void queue_packet(struct packet_struct *packet);
-void run_packet_queue();
-void listen_for_packets(BOOL run_election);
-BOOL interpret_node_status(struct subnet_record *d,
-				char *p, struct nmb_name *name,int t,
-			   char *serv_name, struct in_addr ip, BOOL bcast);
-BOOL send_mailslot_reply(char *mailslot,int fd,char *buf,int len,char *srcname,
-			 char *dstname,int src_type,int dest_type,
-			 struct in_addr dest_ip,struct in_addr src_ip);
-BOOL special_browser_name(char *name, int type);
-void remove_name(struct subnet_record *d, struct name_record *n);
-void dump_names(void);
-void load_netbios_names(void);
-void remove_netbios_name(struct subnet_record *d,
-			char *name,int type, enum name_source source,
-			 struct in_addr ip);
-struct name_record *add_netbios_entry(struct subnet_record *d,
-		char *name, int type, int nb_flags, 
-		int ttl, enum name_source source, struct in_addr ip,
-		BOOL new_only,BOOL wins);
+			    BOOL bcast,BOOL recurse,
+				struct in_addr send_ip, struct in_addr reply_to_ip);
 void remove_name_entry(struct subnet_record *d, char *name,int type);
 void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags);
 void add_my_names(void);
 void remove_my_names();
 void refresh_my_names(time_t t);
 void query_refresh_names(void);
-void expire_names(time_t t);
-void response_name_release(struct subnet_record *d, struct packet_struct *p);
 void reply_name_release(struct packet_struct *p);
-void response_name_reg(struct subnet_record *d, struct packet_struct *p);
+void send_name_response(int fd,
+				int name_trn_id, int opcode, BOOL success, BOOL recurse,
+				struct nmb_name *reply_name, int nb_flags, int ttl,
+				struct in_addr ip);
 void reply_name_reg(struct packet_struct *p);
 void reply_name_status(struct packet_struct *p);
-struct name_record *search_for_name(struct subnet_record **d,
-					struct nmb_name *question,
-				    struct in_addr ip, int Time, int search);
 void reply_name_query(struct packet_struct *p);
-void process_nmb(struct packet_struct *p);
+void response_name_release(struct subnet_record *d, struct packet_struct *p);
+void response_name_reg(struct subnet_record *d, struct packet_struct *p);
+void response_netbios_packet(struct packet_struct *p);
 void reset_server(char *name, int state, struct in_addr ip);
 void tell_become_backup(void);
 BOOL same_context(struct dgram_packet *dgram);
 BOOL listening_name(struct work_record *work, struct nmb_name *n);
 BOOL listening_type(struct packet_struct *p, int command);
 void process_browse_packet(struct packet_struct *p,char *buf,int len);
-void process_dgram(struct packet_struct *p);
 BOOL reload_services(BOOL test);
 void debug_nmb_packet(struct packet_struct *p);
 char *namestr(struct nmb_name *n);

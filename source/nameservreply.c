@@ -1,0 +1,556 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   NBT netbios routines and daemon - version 2
+   Copyright (C) Andrew Tridgell 1994-1996
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Module name: nameservreply.c
+
+   Revision History:
+
+   14 jan 96: lkcl@pires.co.uk
+   added multiple workgroup domain master support
+
+   04 jul 96: lkcl@pires.co.uk
+   created module nameservreply containing NetBIOS reply functions
+
+*/
+
+#include "includes.h"
+
+extern int ClientNMB;
+
+extern int DEBUGLEVEL;
+
+extern struct in_addr ipgrp;
+
+
+/****************************************************************************
+reply to a name release
+****************************************************************************/
+void reply_name_release(struct packet_struct *p)
+{
+  struct nmb_packet *nmb = &p->packet.nmb;
+  struct in_addr ip;
+  int nb_flags = nmb->additional->rdata[0];
+  BOOL bcast = nmb->header.nm_flags.bcast;
+  struct name_record *n;
+  struct subnet_record *d = NULL;
+  int search = 0;
+  
+  putip((char *)&ip,&nmb->additional->rdata[2]);  
+  
+  DEBUG(3,("Name release on name %s\n",
+	   namestr(&nmb->question.question_name)));
+  
+  if (!(d = find_req_subnet(p->ip, bcast)))
+  {
+    DEBUG(3,("response packet: bcast %s not known\n",
+			inet_ntoa(p->ip)));
+    return;
+  }
+
+  if (bcast)
+	search &= FIND_LOCAL;
+  else
+	search &= FIND_WINS;
+
+  n = find_name_search(&d, &nmb->question.question_name, 
+					search, ip);
+  
+  /* XXXX under what conditions should we reject the removal?? */
+  if (n && n->nb_flags == nb_flags)
+    {
+      /* success = True; */
+      
+      remove_name(d,n);
+      n = NULL;
+    }
+  
+  if (bcast) return;
+  
+  /* Send a NAME RELEASE RESPONSE */
+  send_name_response(p->fd, nmb->header.name_trn_id, NMB_REL,
+						True, False,
+						&nmb->question.question_name, nb_flags, 0, ip);
+}
+
+
+/****************************************************************************
+send a registration / release response: pos/neg
+**************************************************************************/
+void send_name_response(int fd,
+				int name_trn_id, int opcode, BOOL success, BOOL recurse,
+				struct nmb_name *reply_name, int nb_flags, int ttl,
+				struct in_addr ip)
+{
+  char rdata[6];
+  struct packet_struct p;
+
+  int rcode = 0;  
+
+  if (success == False)
+  {
+    /* NEGATIVE RESPONSE */
+    rcode = 6;
+  }
+  else if (opcode == NMB_REG && recurse == False)
+  {
+    /* END-NODE CHALLENGE REGISTRATION RESPONSE */
+	rcode = 0;
+  }
+  
+  rdata[0] = nb_flags;
+  rdata[1] = 0;
+  putip(&rdata[2],(char *)&ip);
+  
+  p.ip = ip;
+  p.port = NMB_PORT;
+  p.fd = fd;
+  p.timestamp = time(NULL);
+  p.packet_type = NMB_PACKET;
+
+  reply_netbios_packet(&p,name_trn_id,
+		       rcode,opcode,recurse,
+		       reply_name, 0x20, 0x1,
+		       ttl, 
+		       rdata, 6);
+}
+
+
+/****************************************************************************
+reply to a reg request
+**************************************************************************/
+void reply_name_reg(struct packet_struct *p)
+{
+  struct nmb_packet *nmb = &p->packet.nmb;
+  struct nmb_name *question = &nmb->question.question_name;
+  
+  struct nmb_name *reply_name = question;
+
+  char *qname      = question->name;
+  int   qname_type = question->name_type;
+ 
+  BOOL bcast = nmb->header.nm_flags.bcast;
+  
+  int ttl = GET_TTL(nmb->additional->ttl);
+  int nb_flags = nmb->additional->rdata[0];
+  BOOL group = NAME_GROUP(nb_flags);
+
+  struct subnet_record *d = NULL;
+  struct name_record *n = NULL;
+
+  BOOL success = True;
+  BOOL secured_redirect = False;
+  BOOL recurse = True; /* true if samba replies yes/no: false if caller
+                          must challenge the current owner of the unique
+                          name: applies to non-secured WINS server only
+                        */
+
+  struct in_addr ip, from_ip;
+  int search = 0;
+  
+  putip((char *)&from_ip,&nmb->additional->rdata[2]);
+  ip = from_ip;
+  
+  DEBUG(3,("Name registration for name %s at %s\n",
+	           namestr(question),inet_ntoa(ip)));
+  
+  if (group)
+    {
+      /* apparently we should return 255.255.255.255 for group queries
+	 (email from MS) */
+      ip = ipgrp;
+    }
+  
+  if (!(d = find_req_subnet(p->ip, bcast)))
+  {
+    DEBUG(3,("response packet: bcast %s not known\n",
+				inet_ntoa(p->ip)));
+    return;
+  }
+
+  if (bcast)
+	search &= FIND_LOCAL;
+  else
+	search &= FIND_WINS;
+
+  /* see if the name already exists */
+  n = find_name_search(&d, question, search, from_ip);
+  
+  if (n)
+  {
+    if (!group) /* unique names */
+	{
+	  if (n->source == SELF || NAME_GROUP(n->nb_flags))
+	  {
+	      /* no-one can register one of samba's names, nor can they
+		 register a name that's a group name as a unique name */
+	      
+	      success = False;
+	  }
+	  else if(!ip_equal(ip, n->ip))
+	  {
+#if 0
+	      /* hm. this unique name doesn't belong to them. */
+	      
+	      /* XXXX rfc1001.txt says:
+	       * if we are doing non-secured WINS (which is much simpler) then
+	       * we send a message to the person wanting the name saying 'he
+	       * owns this name: i don't want to hear from you ever again
+	       * until you've checked with him if you can have it!'. we then
+	       * abandon the registration. once the person wanting the name
+	       * has checked with the current owner, they will repeat the
+	       * registration packet if the current owner is dead or doesn't
+	       * want the name.
+	       */
+
+	      /* non-secured WINS implementation: caller is responsible
+		 for checking with current owner of name, then getting back
+		 to us... IF current owner no longer owns the unique name */
+	      
+           /* XXXX please note also that samba cannot cope with 
+              _receiving_ such redirecting, non-secured registration
+              packets. code to do this needs to be added.
+            */
+
+          secured_redirect = False;
+	      success = False;
+	      recurse = False;
+	      
+	      /* we inform on the current owner to the caller (which is
+		 why it's non-secure */
+	      
+	      reply_name = &n->name;
+#else
+	      /* XXXX rfc1001.txt says:
+	       * if we are doing secured WINS, we must send a Wait-Acknowledge
+	       * packet (WACK) to the person who wants the name, then do a
+	       * name query on the person who currently owns the unique name.
+	       * if the current owner still says they own it, the person who wants
+		   * the name can't have it. if they do not, or are not alive, they can.
+	       */
+
+          secured_redirect = True;
+	      recurse = False;
+
+	      reply_name = &n->name;
+
+#endif /* 0 */
+
+	  }
+	  else
+	  {
+	      n->ip = ip;
+	      n->death_time = ttl?p->timestamp+ttl*3:0;
+	      DEBUG(3,("%s owner: %s\n",namestr(&n->name),inet_ntoa(n->ip)));
+	  }
+	}
+    else
+	{
+	  /* refresh the name */
+	  if (n->source != SELF)
+	  {
+	      n->death_time = ttl?p->timestamp + ttl*3:0;
+	  }
+	}
+
+    /* XXXX bug reported by terryt@ren.pc.athabascau.ca */
+    /* names that people have checked for and not found get DNSFAILed. 
+       we need to update the name record if someone then registers */
+
+    if (n->source == DNSFAIL)
+      n->source = REGISTER;
+
+  }
+  else
+  {
+      /* add the name to our name/subnet, or WINS, database */
+      n = add_netbios_entry(d,qname,qname_type,nb_flags,ttl,REGISTER,ip,
+				True,!bcast);
+  }
+  
+  /* if samba owns a unique name on a subnet, then it must respond and
+     disallow the attempted registration. if the registration is
+     successful by broadcast, only then is there no need to respond
+     (implicit registration: see rfc1001.txt 15.2.1).
+   */
+
+  if (bcast && success) return;
+  
+  if (secured_redirect)
+  {
+    char rdata[2];
+
+    /* XXXX luke is confused. RSVAL or SSVAL? assume NMB byte ordering */
+    RSSVAL(rdata,0,(nmb->header.opcode&0xf) + ((nb_flags&0xff) << 4));
+  
+    /* XXXX mistake in rfc1002.txt? 4.2.16: NULL is 0xa see 4.2.1.3 
+       type  = 0x0a; see rfc1002.txt 4.2.1.3 
+       class = 0x01; see rfc1002.txt 4.2.16
+     */
+
+    /* send WAIT ACKNOWLEDGEMENT see rfc1002.txt 4.2.16 */
+    reply_netbios_packet(p,nmb->header.name_trn_id,
+		       0,NMB_WAIT_ACK,False,
+		       reply_name, 0x0a, 0x01,
+		       15*1000, /* 15 seconds long enough to wait? */
+		       rdata, 2);
+
+    /* initiate some enquiries to the current owner. */
+	queue_netbios_packet(d,ClientNMB,NMB_QUERY,
+						 NAME_REGISTER_CHALLENGE,
+						 reply_name->name,reply_name->name_type,nb_flags,0,
+						 False, False, n->ip, p->ip);
+  }
+  else
+  {
+    /* Send a NAME REGISTRATION RESPONSE (pos/neg) see rfc1002.txt 4.2.13-14
+       or an END-NODE CHALLENGE REGISTRATION RESPONSE see rfc1002.txt 4.2.7
+     */
+
+  	send_name_response(p->fd, nmb->header.name_trn_id, NMB_REG,
+						success, recurse,
+						reply_name, nb_flags, ttl, ip);
+  }
+}
+
+
+/****************************************************************************
+reply to a name status query
+****************************************************************************/
+void reply_name_status(struct packet_struct *p)
+{
+  struct nmb_packet *nmb = &p->packet.nmb;
+  char *qname   = nmb->question.question_name.name;
+  int ques_type = nmb->question.question_name.name_type;
+  char rdata[MAX_DGRAM_SIZE];
+  char *countptr, *buf, *bufend;
+  int names_added;
+  struct name_record *n;
+  struct subnet_record *d = NULL;
+
+  BOOL bcast = nmb->header.nm_flags.bcast;
+  
+  if (!(d = find_req_subnet(p->ip, bcast)))
+  {
+    DEBUG(3,("Name status req: bcast %s not known\n",
+			inet_ntoa(p->ip)));
+    return;
+  }
+
+  DEBUG(3,("Name status for name %s %s\n",
+	   namestr(&nmb->question.question_name), inet_ntoa(p->ip)));
+  
+  n = find_name_search(&d, &nmb->question.question_name,
+				FIND_SELF|FIND_LOCAL,
+				p->ip);
+  
+  if (!n) return;
+  
+  /* XXXX hack, we should calculate exactly how many will fit */
+  bufend = &rdata[MAX_DGRAM_SIZE] - 18;
+  countptr = buf = rdata;
+  buf += 1;
+  
+  names_added = 0;
+  
+  for (n = d->namelist ; n && buf < bufend; n = n->next) 
+    {
+      int name_type = n->name.name_type;
+      
+      if (n->source != SELF) continue;
+      
+      /* start with first bit of putting info in buffer: the name */
+      
+      bzero(buf,18);
+	  sprintf(buf,"%-15.15s",n->name.name);
+      strupper(buf);
+      
+      /* now check if we want to exclude other workgroup names
+	 from the response. if we don't exclude them, windows clients
+	 get confused and will respond with an error for NET VIEW */
+      
+      if (name_type >= 0x1b && name_type <= 0x20 && 
+	  ques_type >= 0x1b && ques_type <= 0x20)
+	{
+	  if (!strequal(qname, n->name.name)) continue;
+	}
+      
+      /* carry on putting name info in buffer */
+      
+      buf[15] = name_type;
+      buf[16]  = n->nb_flags;
+      
+      buf += 18;
+      
+      names_added++;
+    }
+  
+  SCVAL(countptr,0,names_added);
+  
+  /* XXXXXXX we should fill in more fields of the statistics structure */
+  bzero(buf,64);
+  {
+    extern int num_good_sends,num_good_receives;
+    SIVAL(buf,20,num_good_sends);
+    SIVAL(buf,24,num_good_receives);
+  }
+  
+  SIVAL(buf,46,0xFFB8E5); /* undocumented - used by NT */
+  
+  buf += 64;
+  
+  /* Send a POSITIVE NAME STATUS RESPONSE */
+  reply_netbios_packet(p,nmb->header.name_trn_id,
+			   0,0,True,
+		       &nmb->question.question_name,
+		       nmb->question.question_type,
+		       nmb->question.question_class,
+		       0,
+		       rdata,PTR_DIFF(buf,rdata));
+}
+
+
+/***************************************************************************
+reply to a name query.
+
+with broadcast name queries:
+
+	- only reply if the query is for one of YOUR names. all other machines on
+	  the network will be doing the same thing (that is, only replying to a
+	  broadcast query if they own it)
+	  NOTE: broadcast name queries should only be sent out by a machine
+	  if they HAVEN'T been configured to use WINS. this is generally bad news
+	  in a wide area tcp/ip network and should be rectified by the systems
+	  administrator. USE WINS! :-)
+	- the exception to this is if the query is for a Primary Domain Controller
+	  type name (0x1b), in which case, a reply is sent.
+
+	- NEVER send a negative response to a broadcast query. no-one else will!
+
+with directed name queries:
+
+	- if you are the WINS server, you are expected to respond with either
+      a negative response, a positive response, or a wait-for-acknowledgement
+      packet, and then later on a pos/neg response.
+
+****************************************************************************/
+void reply_name_query(struct packet_struct *p)
+{
+  struct nmb_packet *nmb = &p->packet.nmb;
+  struct nmb_name *question = &nmb->question.question_name;
+  int name_type = question->name_type;
+  BOOL bcast = nmb->header.nm_flags.bcast;
+  int ttl=0;
+  int rcode = 0;
+  int nb_flags = 0;
+  struct in_addr retip;
+  char rdata[6];
+  struct subnet_record *d = NULL;
+  BOOL success = True;
+  struct name_record *n;
+
+  /* directed queries are for WINS server: broadcasts are local SELF queries.
+     the exception is PDC names.  */
+
+  int search = bcast ? FIND_LOCAL | FIND_SELF : FIND_WINS;
+  
+  if (name_type == 0x1b)
+  {
+    /* even if it's a broadcast, we don't ignore queries for PDC names */
+    search |= FIND_WINS;
+    search &= ~FIND_SELF;
+  }
+
+  if (!(d = find_req_subnet(p->ip, bcast)))
+  {
+    DEBUG(3,("name query: bcast %s not known\n",
+				  inet_ntoa(p->ip)));
+    success = False;
+  }
+
+  DEBUG(3,("Name query "));
+  
+  if (search == 0)
+  {
+    /* eh? no criterion for searching database. help! */
+    success = False;
+  }
+
+  if (success && (n = search_for_name(&d,question,p->ip,p->timestamp, search)))
+  {
+      /* don't respond to broadcast queries unless the query is for
+         a name we own or it is for a Primary Domain Controller name */
+
+      if (bcast && n->source != SELF && name_type != 0x1b) {
+	    if (!lp_wins_proxy() || same_net(p->ip,n->ip,*iface_nmask(p->ip))) {
+	      /* never reply with a negative response to broadcast queries */
+	      return;
+	    }
+	  }
+      
+      /* name is directed query, or it's self, or it's a PDC type name, or
+	     we're replying on behalf of a caller because they are on a different
+         subnet and cannot hear the broadcast. XXXX lp_wins_proxy should be
+		 switched off in environments where broadcasts are forwarded */
+
+      /* XXXX note: for proxy servers, we should forward the query on to
+         another WINS server if the name is not in our database, or we are
+         not a WINS server ourselves
+       */
+      ttl = n->death_time - p->timestamp;
+      retip = n->ip;
+      nb_flags = n->nb_flags;
+  }
+  else
+  {
+      if (bcast) return; /* never reply negative response to bcasts */
+      success = False;
+  }
+  
+  /* if the IP is 0 then substitute my IP */
+  if (zero_ip(retip)) retip = *iface_ip(p->ip);
+
+  if (success)
+  {
+      rcode = 0;
+      DEBUG(3,("OK %s\n",inet_ntoa(retip)));      
+  }
+  else
+  {
+      rcode = 3;
+      DEBUG(3,("UNKNOWN\n"));      
+  }
+  
+  if (success)
+  {
+      rdata[0] = nb_flags;
+      rdata[1] = 0;
+      putip(&rdata[2],(char *)&retip);
+  }
+  
+  reply_netbios_packet(p,nmb->header.name_trn_id,
+			   rcode,0,True,
+		       &nmb->question.question_name,
+		       nmb->question.question_type,
+		       nmb->question.question_class,
+		       ttl,
+		       rdata, success ? 6 : 0);
+}
+
+
