@@ -584,8 +584,8 @@ static NTSTATUS sam_ads_get_sec_desc(const SAM_METHODS *sam_method, const NT_USE
 		return ads_ntstatus(ads_status);
 	}
 
-	if (!(mem_ctx = talloc_init_named("sec_desc parse in sam_ads"))) {
-		DEBUG(1, ("talloc_init_named() failed for sec_desc parse context in sam_ads"));
+	if (!(mem_ctx = talloc_init("sec_desc parse in sam_ads"))) {
+		DEBUG(1, ("talloc_init() failed for sec_desc parse context in sam_ads"));
 		ads_msgfree(ads_struct, sec_desc_res);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1323,8 +1323,8 @@ NTSTATUS sam_init_ads(SAM_METHODS *sam_method, const char *module_params)
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	if (!(sam_ads_state->mem_ctx = talloc_init_named("sam_ads_method"))) {
-		DEBUG(0, ("talloc_init_named() failed for sam_ads_state->mem_ctx\n"));
+	if (!(sam_ads_state->mem_ctx = talloc_init("sam_ads_method"))) {
+		DEBUG(0, ("talloc_init() failed for sam_ads_state->mem_ctx\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 

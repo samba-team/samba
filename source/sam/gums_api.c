@@ -795,7 +795,7 @@ NTSTATUS gums_create_commit_set(GUMS_COMMIT_SET **com_set, TALLOC_CTX *ctx, DOM_
 	TALLOC_CTX *mem_ctx;
 	GUMS_COMMIT_SET *set;
 
-	mem_ctx = talloc_init_named("commit_set");
+	mem_ctx = talloc_init("commit_set");
 	if (mem_ctx == NULL)
 		return NT_STATUS_NO_MEMORY;
 	set = (GUMS_COMMIT_SET *)talloc(mem_ctx, sizeof(GUMS_COMMIT_SET));

@@ -384,7 +384,7 @@ NTSTATUS make_sam_context(SAM_CONTEXT **context)
 {
 	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init_named("sam_context internal allocation context");
+	mem_ctx = talloc_init("sam_context internal allocation context");
 
 	if (!mem_ctx) {
 		DEBUG(0, ("make_sam_context: talloc init failed!\n"));

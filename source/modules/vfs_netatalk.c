@@ -223,7 +223,7 @@ static int atalk_rmdir(struct connection_struct *conn, const char *path)
 
 	strstr(path, APPLEDOUBLE) ? (add = False) : (add = True);
 
-	if (!(ctx = talloc_init_named("remove_directory")))
+	if (!(ctx = talloc_init("remove_directory")))
 		goto exit_rmdir;
 
 	if (!(dpath = talloc_asprintf(ctx, "%s/%s%s", 
@@ -252,7 +252,7 @@ static int atalk_rename(struct connection_struct *conn, const char *old, const c
 
 	if (!conn || !old) return ret;
 
-	if (!(ctx = talloc_init_named("rename_file")))
+	if (!(ctx = talloc_init("rename_file")))
 		return ret;
 
 	if (atalk_build_paths(ctx, conn->origpath, old, &adbl_path, &orig_path, 
@@ -308,7 +308,7 @@ static int atalk_unlink(struct connection_struct *conn, const char *path)
 		}
 	}
 
-	if (!(ctx = talloc_init_named("unlink_file")))
+	if (!(ctx = talloc_init("unlink_file")))
 		return ret;
 
 	if (atalk_build_paths(ctx, conn->origpath, path, &adbl_path, &orig_path, 
@@ -340,7 +340,7 @@ static int atalk_chmod(struct connection_struct *conn, const char *path, mode_t 
 
 	if (!conn || !path) return ret;
 
-	if (!(ctx = talloc_init_named("chmod_file")))
+	if (!(ctx = talloc_init("chmod_file")))
 		return ret;
 
 	if (atalk_build_paths(ctx, conn->origpath, path, &adbl_path, &orig_path,
@@ -372,7 +372,7 @@ static int atalk_chown(struct connection_struct *conn, const char *path, uid_t u
 
 	if (!conn || !path) return ret;
 
-	if (!(ctx = talloc_init_named("chown_file")))
+	if (!(ctx = talloc_init("chown_file")))
 		return ret;
 
 	if (atalk_build_paths(ctx, conn->origpath, path, &adbl_path, &orig_path,

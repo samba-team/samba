@@ -103,7 +103,7 @@ NTSTATUS sam_init_account(SAM_ACCOUNT_HANDLE **account)
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
 	
-	mem_ctx = talloc_init_named("sam internal SAM_ACCOUNT_HANDLE allocation");
+	mem_ctx = talloc_init("sam internal SAM_ACCOUNT_HANDLE allocation");
 
 	if (!mem_ctx) {
 		DEBUG(0,("sam_init_account: error while doing talloc_init()\n"));

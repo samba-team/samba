@@ -83,7 +83,7 @@ NTSTATUS sam_init_group(SAM_GROUP_HANDLE **group)
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
 	
-	mem_ctx = talloc_init_named("sam internal SAM_GROUP_HANDLE allocation");
+	mem_ctx = talloc_init("sam internal SAM_GROUP_HANDLE allocation");
 
 	if (!mem_ctx) {
 		DEBUG(0,("sam_init_group: error while doing talloc_init()\n"));

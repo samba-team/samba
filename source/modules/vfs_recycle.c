@@ -104,7 +104,7 @@ vfs_op_tuple *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops,
 	}
 
 	recycle_bin_private_handle = vfs_handle;
-	if (!(mem_ctx = talloc_init_named("recycle bin data"))) {
+	if (!(mem_ctx = talloc_init("recycle bin data"))) {
 		DEBUG(0, ("Failed to allocate memory in VFS module recycle_bin\n"));
 		return NULL;
 	}
@@ -171,7 +171,7 @@ static int recycle_connect(struct connection_struct *conn, const char *service, 
 		return -1;
 	}
 
-	if (!(ctx = talloc_init_named("recycle bin connection"))) {
+	if (!(ctx = talloc_init("recycle bin connection"))) {
 		DEBUG(0, ("Failed to allocate memory in VFS module recycle_bin\n"));
 		return -1;
 	}
