@@ -1509,6 +1509,21 @@ exit(1);
   fi
 fi
 
+
+case "$host_os" in
+*linux*)
+AC_CACHE_CHECK([for broken RedHat 7.2 system header files],samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS,[
+AC_TRY_COMPILE([
+#include <sys/vfs.h>
+#include <sys/capability.h>
+],[int i;],
+   samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS=no,samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS=yes)])
+if test x"$samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS" = x"yes"; then
+   AC_DEFINE(BROKEN_REDHAT_7_SYSTEM_HEADERS)
+fi
+;;
+esac
+
 AC_CACHE_CHECK([for broken nisplus include files],samba_cv_BROKEN_NISPLUS_INCLUDE_FILES,[
 AC_TRY_COMPILE([#include <sys/acl.h>
 #if defined(HAVE_RPCSVC_NIS_H)

@@ -227,6 +227,7 @@
 #undef WITH_TDB_SAM
 #undef LINUX_QUOTAS_1
 #undef LINUX_QUOTAS_2
+#undef BROKEN_REDHAT_7_SYSTEM_HEADERS
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -816,14 +817,14 @@
 /* Define if you have the <netinet/tcp.h> header file.  */
 #undef HAVE_NETINET_TCP_H
 
+/* Define if you have the <ns_api.h> header file.  */
+#undef HAVE_NS_API_H
+
 /* Define if you have the <nss.h> header file.  */
 #undef HAVE_NSS_H
 
 /* Define if you have the <nss_common.h> header file.  */
 #undef HAVE_NSS_COMMON_H
-
-/* Define if you have the <ns_api.h> header file.  */
-#undef HAVE_NS_API_H
 
 /* Define if you have the <poll.h> header file.  */
 #undef HAVE_POLL_H
