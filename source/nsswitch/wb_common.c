@@ -148,6 +148,7 @@ static int make_safe_fd(int fd)
 
 int winbind_open_pipe_sock(void)
 {
+#ifdef HAVE_UNIXSOCKET
 	struct sockaddr_un sunaddr;
 	static pid_t our_pid;
 	struct stat st;
@@ -221,6 +222,9 @@ int winbind_open_pipe_sock(void)
 	}
         
 	return winbindd_fd;
+#else
+	return -1;
+#endif /* HAVE_UNIXSOCKET */
 }
 
 /* Write data to winbindd socket */
