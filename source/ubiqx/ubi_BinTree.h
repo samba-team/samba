@@ -29,6 +29,10 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_BinTree.h,v 
+ * Revision 4.5  1998/06/04 21:29:27  crh
+ * Upper-cased defined constants (eg UBI_BINTREE_H) in some header files.
+ * This is more "standard", and is what people expect.  Weird, eh?
+ *
  * Revision 4.4  1998/06/03 17:42:46  crh
  * Further fiddling with sys_include.h.  It's now in ubi_BinTree.h which is
  * included by all of the binary tree files.
