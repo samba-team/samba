@@ -109,10 +109,23 @@ try these commands:
     or
      ./script/tests/test_posix.sh //localhost/test administrator SOMEPASSWORD
 
-Note that to pass all the tests you would need to be using a
-filesystem with user_xattr support. On many Linux systems with an ext3
-filesystem this means mounting with the "-o user_xattr"
-option. Consult your filesystem and kernel docs for more details.
+
+NOTE about filesystem support
+-----------------------------
+
+To use the advanced features of Samba4 you need a filesystem that
+supports both the "user" and "system" xattr namespaces.
+
+If you run Linux with a 2.6 kernel and ext3 this means you need to
+include the option "user_xattr" in your /etc/fstab. For example:
+
+/dev/hda3		/home			ext3    user_xattr     1 1
+
+You also need to compile your kernel with the XATTR and SECURITY
+options for your filesystem. For ext3 that means you need:
+
+   CONFIG_EXT3_FS_XATTR=y
+   CONFIG_EXT3_FS_SECURITY=y
 
 If you don't have a filesystem with xattr support, then you can
 simulate it by using the option:
