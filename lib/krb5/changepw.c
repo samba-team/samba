@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -65,8 +65,10 @@ get_kdc_address (krb5_context context,
 	*dot = '\0';
 
 #ifdef HAVE_GETHOSTBYNAME2
+#ifdef HAVE_IPV6
     hostent = gethostbyname2 (p, AF_INET6);
     if (hostent == NULL)
+#endif
 	hostent = gethostbyname2 (p, AF_INET);
 #else
     hostent = roken_gethostbyname (p);
