@@ -436,7 +436,7 @@ WINBINDD_PW* wb_getpwuid( const uid_t uid )
 /**********************************************************************
 **********************************************************************/
 
-BOOL wb_storepwnam( const WINBINDD_PW *pw )
+static BOOL wb_storepwnam( const WINBINDD_PW *pw )
 {
 	char *namekey, *uidkey;
 	TDB_DATA data;
@@ -566,7 +566,7 @@ WINBINDD_GR* wb_getgrgid( gid_t gid )
 /**********************************************************************
 **********************************************************************/
 
-BOOL wb_storegrnam( const WINBINDD_GR *grp )
+static BOOL wb_storegrnam( const WINBINDD_GR *grp )
 {
 	char *namekey, *gidkey;
 	TDB_DATA data;
