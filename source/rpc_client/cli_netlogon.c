@@ -339,6 +339,7 @@ BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr,
              ctr->switch_value));
 
   memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
+	dummy_rtn_creds.timestamp.time = time(NULL);
 
   /* store the parameters */
   make_sam_info(&(q_s.sam_id), cli->srv_name_slash, global_myname,

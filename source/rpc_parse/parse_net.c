@@ -116,7 +116,7 @@ static void make_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_statu
 
 	if (trusted_dc_name != NULL)
 	{
-		make_unistr2(&(info->uni_trusted_dc_name), trusted_dc_name, len_dc_name);
+		make_unistr2(&(info->uni_trusted_dc_name), trusted_dc_name, len_dc_name+1);
 	}
 	else
 	{
@@ -294,7 +294,7 @@ void make_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 		fstring domain_name;
 		fstrcpy(domain_name, dom_name);
 		strupper(domain_name);
-		make_unistr2(&(r_t->uni_trust_dom_name[i]), domain_name, strlen(domain_name));
+		make_unistr2(&(r_t->uni_trust_dom_name[i]), domain_name, strlen(domain_name)+1);
 		/* the use of UNISTR2 here is non-standard. */
 		r_t->uni_trust_dom_name[i].undoc = 0x1;
 	}
@@ -354,8 +354,8 @@ void make_q_req_chal(NET_Q_REQ_CHAL *q_c,
 
 	q_c->undoc_buffer = 1; /* don't know what this buffer is */
 
-	make_unistr2(&(q_c->uni_logon_srv ), logon_srv , strlen(logon_srv ));
-	make_unistr2(&(q_c->uni_logon_clnt), logon_clnt, strlen(logon_clnt));
+	make_unistr2(&(q_c->uni_logon_srv ), logon_srv , strlen(logon_srv )+1);
+	make_unistr2(&(q_c->uni_logon_clnt), logon_clnt, strlen(logon_clnt)+1);
 
 	memcpy(q_c->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
 
@@ -377,7 +377,7 @@ void net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int dep
     
 	prs_uint32("undoc_buffer", ps, depth, &(q_c->undoc_buffer));
 
-	smb_io_unistr2("", &(q_c->uni_logon_srv), True, ps, depth); /* logon server unicode string */
+	smb_io_unistr2("", &(q_c->uni_logon_srv ), True, ps, depth); /* logon server unicode string */
 	smb_io_unistr2("", &(q_c->uni_logon_clnt), True, ps, depth); /* logon client unicode string */
 
 	old_align = ps->align;
