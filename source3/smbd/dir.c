@@ -729,9 +729,21 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
   dirp->pos = dirp->numentries = dirp->mallocsize = 0;
   dirp->data = dirp->current = NULL;
 
-  while ((n = vfs_readdirname(conn, p)))
+  while (True)
   {
     int l;
+
+    if (used == 0) {
+	n = ".";
+    } else if (used == 2) {
+	n = "..";
+    } else {
+	n = vfs_readdirname(conn, p);
+	if (n == NULL)
+		break;
+	if ((strcmp(".",n) == 0) ||(strcmp("..",n) == 0))
+		continue;
+    }
 
     l = strlen(n)+1;
 
