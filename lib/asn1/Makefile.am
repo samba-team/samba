@@ -157,3 +157,7 @@ $(libasn1_la_OBJECTS): asn1.h asn1_err.h
 	$(COMPILE_ET) $<
 .et.c:
 	$(COMPILE_ET) $<
+
+asn1_err.h: asn1_err.et
+
+asn1_err.c: asn1_err.et
