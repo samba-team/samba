@@ -1,3 +1,30 @@
+Thu Aug 28 01:13:17 1997  Assar Westerlund  <assar@sics.se>
+
+	* kuser/kinit.1, klist.1, kdestroy.1: new man pages
+
+	* kpasswd/kpasswd.1, kpasswdd.8: new man pages
+
+	* kdc/kstash.8, hprop.8, hpropd.8: new man pages
+
+	* admin/ktutil.8, admin/kdb_edit.8: new man pages
+
+	* admin/mod.c: new file
+
+	* admin/life.c: renamed gettime and puttime to getlife and putlife
+	and moved them to life.c
+
+	* admin/util.c: add print_flags, parse_flags, init_entry,
+ 	set_created_by, set_modified_by, edit_entry, set_password.  Use
+ 	them.
+
+	* admin/get.c: use print_flags
+
+	* admin: removed unused stuff.  use krb5_{warn,err}*
+
+	* admin/ank.c: re-organized and abstracted.
+
+	* admin/gettime.c: removed
+
 Thu Aug 28 00:37:39 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/roken/base64.c: Add base64 functions.
