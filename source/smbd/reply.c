@@ -732,9 +732,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   if (Protocol < PROTOCOL_NT1) {
     smb_apasslen = SVAL(inbuf,smb_vwv7);
-    if (smb_apasslen > MAX_PASS_LEN)
+    if (smb_apasslen > MAX_PASS_LEN) {
       overflow_attack(smb_apasslen);
-
+      return(ERROR(ERRDOS,ERRbuftoosmall));
+    }
+      
     memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
     smb_apasswd[smb_apasslen] = 0;
     pstrcpy(user,smb_buf(inbuf)+smb_apasslen);
@@ -772,6 +774,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
     if (passlen1 > MAX_PASS_LEN) {
       overflow_attack(passlen1);
+      return(ERROR(ERRDOS,ERRbuftoosmall));
     }
 
     passlen1 = MIN(passlen1, MAX_PASS_LEN);
@@ -911,15 +914,23 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   pstrcpy( orig_user, user);
 
-  /* if the username exists as a domain/username pair on the unix system then use 
-     that */
-  if (!sys_getpwnam(user)) {
-	  pstring user2;
-	  slprintf(user2,sizeof(user2)-1,"%s%s%s", dos_to_unix(domain,False), lp_winbind_separator(), user);
-	  if (sys_getpwnam(user2)) {
-		  DEBUG(3,("Using unix username %s\n", user2));
-		  pstrcpy(user, user2);
-	  }
+  /*
+   * Always try the "DOMAIN\user" lookup first, as this is the most
+   * specific case. If this fails then try the simple "user" lookup.
+   */
+
+  {
+    pstring dom_user;
+
+    /* Work out who's who */
+
+    slprintf(dom_user, sizeof(dom_user) - 1,"%s%s%s",
+               dos_to_unix(domain, False), lp_winbind_separator(), user);
+
+    if (sys_getpwnam(dom_user) != NULL) {
+      pstrcpy(user, dom_user);
+      DEBUG(3,("Using unix username %s\n", dom_user));
+    }
   }
 
   /*
