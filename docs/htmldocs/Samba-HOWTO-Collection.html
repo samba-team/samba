@@ -668,101 +668,231 @@ HREF="#AEN1602"
 ></DD
 ><DT
 >9. <A
+HREF="#SAMBA-BDC"
+>How to a Purely Samba Controlled Domain</A
+></DT
+><DD
+><DL
+><DT
+>9.1. <A
+HREF="#AEN1638"
+>Prerequisite Reading</A
+></DT
+><DT
+>9.2. <A
+HREF="#AEN1642"
+>Background</A
+></DT
+><DT
+>9.3. <A
+HREF="#AEN1650"
+>What qualifies a Domain Controller on the network?</A
+></DT
+><DD
+><DL
+><DT
+>9.3.1. <A
+HREF="#AEN1653"
+>How does a Workstation find its domain controller?</A
+></DT
+><DT
+>9.3.2. <A
+HREF="#AEN1656"
+>When is the PDC needed?</A
+></DT
+></DL
+></DD
+><DT
+>9.4. <A
+HREF="#AEN1659"
+>Can Samba be a Backup Domain Controller?</A
+></DT
+><DT
+>9.5. <A
+HREF="#AEN1663"
+>How do I set up a Samba BDC?</A
+></DT
+><DD
+><DL
+><DT
+>9.5.1. <A
+HREF="#AEN1679"
+>How do I replicate the smbpasswd file?</A
+></DT
+></DL
+></DD
+></DL
+></DD
+><DT
+>10. <A
+HREF="#SAMBA-LDAP-HOWTO"
+>Storing Samba's User/Machine Account information in an LDAP Directory</A
+></DT
+><DD
+><DL
+><DT
+>10.1. <A
+HREF="#AEN1700"
+>Purpose</A
+></DT
+><DT
+>10.2. <A
+HREF="#AEN1720"
+>Introduction</A
+></DT
+><DT
+>10.3. <A
+HREF="#AEN1749"
+>Supported LDAP Servers</A
+></DT
+><DT
+>10.4. <A
+HREF="#AEN1754"
+>Schema and Relationship to the RFC 2307 posixAccount</A
+></DT
+><DT
+>10.5. <A
+HREF="#AEN1766"
+>Configuring Samba with LDAP</A
+></DT
+><DD
+><DL
+><DT
+>10.5.1. <A
+HREF="#AEN1768"
+>OpenLDAP configuration</A
+></DT
+><DT
+>10.5.2. <A
+HREF="#AEN1785"
+>Configuring Samba</A
+></DT
+></DL
+></DD
+><DT
+>10.6. <A
+HREF="#AEN1813"
+>Accounts and Groups management</A
+></DT
+><DT
+>10.7. <A
+HREF="#AEN1818"
+>Security and sambaAccount</A
+></DT
+><DT
+>10.8. <A
+HREF="#AEN1838"
+>LDAP specials attributes for sambaAccounts</A
+></DT
+><DT
+>10.9. <A
+HREF="#AEN1908"
+>Example LDIF Entries for a sambaAccount</A
+></DT
+><DT
+>10.10. <A
+HREF="#AEN1916"
+>Comments</A
+></DT
+></DL
+></DD
+><DT
+>11. <A
 HREF="#WINBIND"
 >Unified Logons between Windows NT and UNIX using Winbind</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.1. <A
-HREF="#AEN1652"
+>11.1. <A
+HREF="#AEN1945"
 >Abstract</A
 ></DT
 ><DT
->9.2. <A
-HREF="#AEN1656"
+>11.2. <A
+HREF="#AEN1949"
 >Introduction</A
 ></DT
 ><DT
->9.3. <A
-HREF="#AEN1669"
+>11.3. <A
+HREF="#AEN1962"
 >What Winbind Provides</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.3.1. <A
-HREF="#AEN1676"
+>11.3.1. <A
+HREF="#AEN1969"
 >Target Uses</A
 ></DT
 ></DL
 ></DD
 ><DT
->9.4. <A
-HREF="#AEN1680"
+>11.4. <A
+HREF="#AEN1973"
 >How Winbind Works</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.4.1. <A
-HREF="#AEN1685"
+>11.4.1. <A
+HREF="#AEN1978"
 >Microsoft Remote Procedure Calls</A
 ></DT
 ><DT
->9.4.2. <A
-HREF="#AEN1689"
+>11.4.2. <A
+HREF="#AEN1982"
 >Name Service Switch</A
 ></DT
 ><DT
->9.4.3. <A
-HREF="#AEN1705"
+>11.4.3. <A
+HREF="#AEN1998"
 >Pluggable Authentication Modules</A
 ></DT
 ><DT
->9.4.4. <A
-HREF="#AEN1713"
+>11.4.4. <A
+HREF="#AEN2006"
 >User and Group ID Allocation</A
 ></DT
 ><DT
->9.4.5. <A
-HREF="#AEN1717"
+>11.4.5. <A
+HREF="#AEN2010"
 >Result Caching</A
 ></DT
 ></DL
 ></DD
 ><DT
->9.5. <A
-HREF="#AEN1720"
+>11.5. <A
+HREF="#AEN2013"
 >Installation and Configuration</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.5.1. <A
-HREF="#AEN1725"
+>11.5.1. <A
+HREF="#AEN2018"
 >Introduction</A
 ></DT
 ><DT
->9.5.2. <A
-HREF="#AEN1738"
+>11.5.2. <A
+HREF="#AEN2031"
 >Requirements</A
 ></DT
 ><DT
->9.5.3. <A
-HREF="#AEN1752"
+>11.5.3. <A
+HREF="#AEN2045"
 >Testing Things Out</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.5.3.1. <A
-HREF="#AEN1763"
+>11.5.3.1. <A
+HREF="#AEN2056"
 >Configure and compile SAMBA</A
 ></DT
 ><DT
->9.5.3.2. <A
-HREF="#AEN1782"
+>11.5.3.2. <A
+HREF="#AEN2075"
 >Configure <TT
 CLASS="FILENAME"
 >nsswitch.conf</TT
@@ -770,31 +900,31 @@ CLASS="FILENAME"
 winbind libraries</A
 ></DT
 ><DT
->9.5.3.3. <A
-HREF="#AEN1807"
+>11.5.3.3. <A
+HREF="#AEN2100"
 >Configure smb.conf</A
 ></DT
 ><DT
->9.5.3.4. <A
-HREF="#AEN1823"
+>11.5.3.4. <A
+HREF="#AEN2116"
 >Join the SAMBA server to the PDC domain</A
 ></DT
 ><DT
->9.5.3.5. <A
-HREF="#AEN1834"
+>11.5.3.5. <A
+HREF="#AEN2127"
 >Start up the winbindd daemon and test it!</A
 ></DT
 ><DT
->9.5.3.6. <A
-HREF="#AEN1870"
+>11.5.3.6. <A
+HREF="#AEN2163"
 >Fix the <TT
 CLASS="FILENAME"
 >/etc/rc.d/init.d/smb</TT
 > startup files</A
 ></DT
 ><DT
->9.5.3.7. <A
-HREF="#AEN1892"
+>11.5.3.7. <A
+HREF="#AEN2185"
 >Configure Winbind and PAM</A
 ></DT
 ></DL
@@ -802,52 +932,52 @@ HREF="#AEN1892"
 ></DL
 ></DD
 ><DT
->9.6. <A
-HREF="#AEN1939"
+>11.6. <A
+HREF="#AEN2232"
 >Limitations</A
 ></DT
 ><DT
->9.7. <A
-HREF="#AEN1949"
+>11.7. <A
+HREF="#AEN2242"
 >Conclusion</A
 ></DT
 ></DL
 ></DD
 ><DT
->10. <A
+>12. <A
 HREF="#OS2"
 >OS2 Client HOWTO</A
 ></DT
 ><DD
 ><DL
 ><DT
->10.1. <A
-HREF="#AEN1963"
+>12.1. <A
+HREF="#AEN2256"
 >FAQs</A
 ></DT
 ><DD
 ><DL
 ><DT
->10.1.1. <A
-HREF="#AEN1965"
+>12.1.1. <A
+HREF="#AEN2258"
 >How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></DT
 ><DT
->10.1.2. <A
-HREF="#AEN1980"
+>12.1.2. <A
+HREF="#AEN2273"
 >How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></DT
 ><DT
->10.1.3. <A
-HREF="#AEN1989"
+>12.1.3. <A
+HREF="#AEN2282"
 >Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></DT
 ><DT
->10.1.4. <A
-HREF="#AEN1993"
+>12.1.4. <A
+HREF="#AEN2286"
 >How do I get printer driver download working 
 		for OS/2 clients?</A
 ></DT
@@ -856,32 +986,32 @@ HREF="#AEN1993"
 ></DL
 ></DD
 ><DT
->11. <A
+>13. <A
 HREF="#CVS-ACCESS"
 >HOWTO Access Samba source code via CVS</A
 ></DT
 ><DD
 ><DL
 ><DT
->11.1. <A
-HREF="#AEN2009"
+>13.1. <A
+HREF="#AEN2302"
 >Introduction</A
 ></DT
 ><DT
->11.2. <A
-HREF="#AEN2014"
+>13.2. <A
+HREF="#AEN2307"
 >CVS Access to samba.org</A
 ></DT
 ><DD
 ><DL
 ><DT
->11.2.1. <A
-HREF="#AEN2017"
+>13.2.1. <A
+HREF="#AEN2310"
 >Access via CVSweb</A
 ></DT
 ><DT
->11.2.2. <A
-HREF="#AEN2022"
+>13.2.2. <A
+HREF="#AEN2315"
 >Access via cvs</A
 ></DT
 ></DL
@@ -890,7 +1020,7 @@ HREF="#AEN2022"
 ></DD
 ><DT
 ><A
-HREF="#AEN2050"
+HREF="#AEN2343"
 >Index</A
 ></DT
 ></DL
@@ -7833,16 +7963,1189 @@ within its registry.</P
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="WINBIND"
->Chapter 9. Unified Logons between Windows NT and UNIX using Winbind</A
+NAME="SAMBA-BDC"
+>Chapter 9. How to a Purely Samba Controlled Domain</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1652"
->9.1. Abstract</A
+NAME="AEN1638"
+>9.1. Prerequisite Reading</A
+></H1
+><P
+>Before you continue reading in this chapter, please make sure
+that you are comfortable with configuring a Samba PDC
+as described in the <A
+HREF="Samba-PDC-HOWTO.html"
+TARGET="_top"
+>Samba-PDC-HOWTO</A
+>.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN1642"
+>9.2. Background</A
+></H1
+><P
+>What is a Domain Controller? It is a machine that is able to answer
+logon requests from workstations in a Windows NT Domain. Whenever a
+user logs into a Windows NT Workstation, the workstation connects to a
+Domain Controller and asks him whether the username and password the
+user typed in is correct.  The Domain Controller replies with a lot of
+information about the user, for example the place where the users
+profile is stored, the users full name of the user. All this
+information is stored in the NT user database, the so-called SAM.</P
+><P
+>There are two kinds of Domain Controller in a NT 4 compatible Domain:
+A Primary Domain Controller (PDC) and one or more Backup Domain
+Controllers (BDC). The PDC contains the master copy of the
+SAM. Whenever the SAM has to change, for example when a user changes
+his password, this change has to be done on the PDC. A Backup Domain
+Controller is a machine that maintains a read-only copy of the
+SAM. This way it is able to reply to logon requests and authenticate
+users in case the PDC is not available. During this time no changes to
+the SAM are possible. Whenever changes to the SAM are done on the PDC,
+all BDC receive the changes from the PDC.</P
+><P
+>Since version 2.2 Samba officially supports domain logons for all
+current Windows Clients, including Windows 2000 and XP. This text
+assumes the domain to be named SAMBA. To be able to act as a PDC, some
+parameters in the [global]-section of the smb.conf have to be set:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>workgroup = SAMBA
+domain master = yes
+domain logons = yes</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Several other things like a [homes] and a [netlogon] share also may be
+set along with settings for the profile path, the users home drive and
+others. This will not be covered in this document.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN1650"
+>9.3. What qualifies a Domain Controller on the network?</A
+></H1
+><P
+>Every machine that is a Domain Controller for the domain SAMBA has to
+register the NetBIOS group name SAMBA#1c with the WINS server and/or
+by broadcast on the local network. The PDC also registers the unique
+NetBIOS name SAMBA#1b with the WINS server. The name type #1b is
+normally reserved for the domain master browser, a role that has
+nothing to do with anything related to authentication, but the
+Microsoft Domain implementation requires the domain master browser to
+be on the same machine as the PDC.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN1653"
+>9.3.1. How does a Workstation find its domain controller?</A
+></H2
+><P
+>A NT workstation in the domain SAMBA that wants a local user to be
+authenticated has to find the domain controller for SAMBA. It does
+this by doing a NetBIOS name query for the group name SAMBA#1c. It
+assumes that each of the machines it gets back from the queries is a
+domain controller and can answer logon requests. To not open security
+holes both the workstation and the selected (TODO: How is the DC
+chosen) domain controller authenticate each other. After that the
+workstation sends the user's credentials (his name and password) to
+the domain controller, asking for approval.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN1656"
+>9.3.2. When is the PDC needed?</A
+></H2
+><P
+>Whenever a user wants to change his password, this has to be done on
+the PDC. To find the PDC, the workstation does a NetBIOS name query
+for SAMBA#1b, assuming this machine maintains the master copy of the
+SAM. The workstation contacts the PDC, both mutually authenticate and
+the password change is done.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN1659"
+>9.4. Can Samba be a Backup Domain Controller?</A
+></H1
+><P
+>With version 2.2, no. The native NT SAM replication protocols have
+not yet been fully implemented. The Samba Team is working on
+understanding and implementing the protocols, but this work has not
+been finished for version 2.2.</P
+><P
+>Can I get the benefits of a BDC with Samba?  Yes. The main reason for
+implementing a BDC is availability. If the PDC is a Samba machine,
+a second Samba machine can be set up to
+service logon requests whenever the PDC is down.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN1663"
+>9.5. How do I set up a Samba BDC?</A
+></H1
+><P
+>Several things have to be done:</P
+><P
+></P
+><UL
+><LI
+><P
+>The file private/MACHINE.SID identifies the domain. When a samba
+server is first started, it is created on the fly and must never be
+changed again. This file has to be the same on the PDC and the BDC,
+so the MACHINE.SID has to be copied from the PDC to the BDC.</P
+></LI
+><LI
+><P
+>The Unix user database has to be synchronized from the PDC to the
+BDC. This means that both the /etc/passwd and /etc/group have to be
+replicated from the PDC to the BDC. This can be done manually
+whenever changes are made, or the PDC is set up as a NIS master
+server and the BDC as a NIS slave server. To set up the BDC as a
+mere NIS client would not be enough, as the BDC would not be able to
+access its user database in case of a PDC failure.</P
+></LI
+><LI
+><P
+>The Samba password database in the file private/smbpasswd has to be
+replicated from the PDC to the BDC. This is a bit tricky, see the
+next section.</P
+></LI
+><LI
+><P
+>Any netlogon share has to be replicated from the PDC to the
+BDC. This can be done manually whenever login scripts are changed,
+or it can be done automatically together with the smbpasswd
+synchronization.</P
+></LI
+></UL
+><P
+>Finally, the BDC has to be found by the workstations. This can be done
+by setting</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>workgroup = samba
+domain master = no
+domain logons = yes</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>in the [global]-section of the smb.conf of the BDC. This makes the BDC
+only register the name SAMBA#1c with the WINS server. This is no
+problem as the name SAMBA#1c is a NetBIOS group name that is meant to
+be registered by more than one machine. The parameter 'domain master =
+no' forces the BDC not to register SAMBA#1b which as a unique NetBIOS
+name is reserved for the Primary Domain Controller.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN1679"
+>9.5.1. How do I replicate the smbpasswd file?</A
+></H2
+><P
+>Replication of the smbpasswd file is sensitive. It has to be done
+whenever changes to the SAM are made. Every user's password change is
+done in the smbpasswd file and has to be replicated to the BDC. So
+replicating the smbpasswd file very often is necessary.</P
+><P
+>As the smbpasswd file contains plain text password equivalents, it
+must not be sent unencrypted over the wire. The best way to set up
+smbpasswd replication from the PDC to the BDC is to use the utility
+rsync. rsync can use ssh as a transport. ssh itself can be set up to
+accept *only* rsync transfer without requiring the user to type a
+password.</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="SAMBA-LDAP-HOWTO"
+>Chapter 10. Storing Samba's User/Machine Account information in an LDAP Directory</A
+></H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN1700"
+>10.1. Purpose</A
+></H1
+><P
+>This document describes how to use an LDAP directory for storing Samba user
+account information traditionally stored in the smbpasswd(5) file.  It is
+assumed that the reader already has a basic understanding of LDAP concepts
+and has a working directory server already installed.  For more information
+on LDAP architectures and Directories, please refer to the following sites.</P
+><P
+></P
+><UL
+><LI
+><P
+>OpenLDAP - <A
+HREF="http://www.openldap.org/"
+TARGET="_top"
+>http://www.openldap.org/</A
+></P
+></LI
+><LI
+><P
+>iPlanet Directory Server - <A
+HREF="http://iplanet.netscape.com/directory"
+TARGET="_top"
+>http://iplanet.netscape.com/directory</A
+></P
+></LI
+></UL
+><P
+>Note that <A
+HREF="http://www.ora.com/"
+TARGET="_top"
+>O'Reilly Publishing</A
+> is working on
+a guide to LDAP for System Administrators which has a planned release date of
+early summer, 2002.</P
+><P
+>Two additional Samba resources which may prove to be helpful are</P
+><P
+></P
+><UL
+><LI
+><P
+>The <A
+HREF="http://www.unav.es/cti/ldap-smb/ldap-smb-2_2-howto.html"
+TARGET="_top"
+>Samba-PDC-LDAP-HOWTO</A
+>
+	maintained by Ignacio Coupeau.</P
+></LI
+><LI
+><P
+>The NT migration scripts from <A
+HREF="http://samba.idealx.org/"
+TARGET="_top"
+>IDEALX</A
+> that are
+	geared to manage users and group in such a Samba-LDAP Domain Controller configuration.
+	</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN1720"
+>10.2. Introduction</A
+></H1
+><P
+>Traditionally, when configuring <A
+HREF="smb.conf.5.html#ENCRYPTPASSWORDS"
+TARGET="_top"
+>"encrypt
+passwords = yes"</A
+> in Samba's <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file, user account
+information such as username, LM/NT password hashes, password change times, and account
+flags have been stored in the <TT
+CLASS="FILENAME"
+>smbpasswd(5)</TT
+> file.  There are several
+disadvantages to this approach for sites with very large numbers of users (counted
+in the thousands).</P
+><P
+></P
+><UL
+><LI
+><P
+>The first is that all lookups must be performed sequentially.  Given that
+there are approximately two lookups per domain logon (one for a normal
+session connection such as when mapping a network drive or printer), this
+is a performance bottleneck for lareg sites.  What is needed is an indexed approach
+such as is used in databases.</P
+></LI
+><LI
+><P
+>The second problem is that administrators who desired to replicate a
+smbpasswd file to more than one Samba server were left to use external
+tools such as <B
+CLASS="COMMAND"
+>rsync(1)</B
+> and <B
+CLASS="COMMAND"
+>ssh(1)</B
+>
+and wrote custom, in-house scripts.</P
+></LI
+><LI
+><P
+>And finally, the amount of information which is stored in an
+smbpasswd entry leaves no room for additional attributes such as
+a home directory, password expiration time, or even a Relative
+Identified (RID).</P
+></LI
+></UL
+><P
+>As a result of these defeciencies, a more robust means of storing user attributes
+used by smbd was developed.  The API which defines access to user accounts
+is commonly referred to as the samdb interface (previously this was called the passdb
+API, and is still so named in the CVS trees).  In Samba 2.2.3, enabling support
+for a samdb backend (e.g. <TT
+CLASS="PARAMETER"
+><I
+>--with-ldapsam</I
+></TT
+> or
+<TT
+CLASS="PARAMETER"
+><I
+>--with-tdbsam</I
+></TT
+>) requires compile time support.</P
+><P
+>When compiling Samba to include the <TT
+CLASS="PARAMETER"
+><I
+>--with-ldapsam</I
+></TT
+> autoconf
+option, smbd (and associated tools) will store and lookup user accounts in
+an LDAP directory.  In reality, this is very easy to understand.  If you are
+comfortable with using an smbpasswd file, simply replace "smbpasswd" with
+"LDAP directory" in all the documentation.</P
+><P
+>There are a few points to stress about what the <TT
+CLASS="PARAMETER"
+><I
+>--with-ldapsam</I
+></TT
+>
+does not provide.  The LDAP support referred to in the this documentation does not
+include:</P
+><P
+></P
+><UL
+><LI
+><P
+>A means of retrieving user account information from
+	an Windows 2000 Active Directory server.</P
+></LI
+><LI
+><P
+>A means of replacing /etc/passwd.</P
+></LI
+></UL
+><P
+>The second item can be accomplished by using LDAP NSS and PAM modules.  LGPL
+versions of these libraries can be obtained from PADL Software
+(<A
+HREF="http://www.padl.com/"
+TARGET="_top"
+>http://www.padl.com/</A
+>).  However,
+the details of configuring these packages are beyond the scope of this document.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN1749"
+>10.3. Supported LDAP Servers</A
+></H1
+><P
+>The LDAP samdb code in 2.2.3 has been developed and tested using the OpenLDAP
+2.0 server and client libraries.  The same code should be able to work with
+Netscape's Directory Server and client SDK. However, due to lack of testing
+so far, there are bound to be compile errors and bugs.  These should not be
+hard to fix. If you are so inclined, please be sure to forward all patches to
+<A
+HREF="samba-patches@samba.org"
+TARGET="_top"
+>samba-patches@samba.org</A
+> and
+<A
+HREF="jerry@samba.org"
+TARGET="_top"
+>jerry@samba.org</A
+>.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN1754"
+>10.4. Schema and Relationship to the RFC 2307 posixAccount</A
+></H1
+><P
+>Samba 2.2.3 includes the necessary schema file for OpenLDAP 2.0 in
+<TT
+CLASS="FILENAME"
+>examples/LDAP/samba.schema</TT
+>.  (Note that this schema
+file has been modified since the experimental support initially included
+in 2.2.2).  The sambaAccount objectclass is given here:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>objectclass ( 1.3.1.5.1.4.1.7165.2.2.2 NAME 'sambaAccount' SUP top STRUCTURAL
+     DESC 'Samba Account'
+     MUST ( uid $ rid )
+     MAY  ( cn $ lmPassword $ ntPassword $ pwdLastSet $ logonTime $
+            logoffTime $ kickoffTime $ pwdCanChange $ pwdMustChange $ acctFlags $
+            displayName $ smbHome $ homeDrive $ scriptPath $ profilePath $
+            description $ userWorkstations $ primaryGroupID $ domain ))</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>The samba.schema file has been formatted for OpenLDAP 2.0.  The OID's are
+owned by the Samba Team and as such is legal to be openly published.
+If you translate the schema to be used with Netscape DS, please
+submit the modified schema file as a patch to <A
+HREF="jerry@samba.org"
+TARGET="_top"
+>jerry@samba.org</A
+></P
+><P
+>Just as the smbpasswd file is mean to store information which supplements a
+user's <TT
+CLASS="FILENAME"
+>/etc/passwd</TT
+> entry, so is the sambaAccount object
+meant to supplement the UNIX user account information.  A sambaAccount is a
+<TT
+CLASS="CONSTANT"
+>STRUCTURAL</TT
+> objectclass so it can be stored individually
+in the directory.  However, there are several fields (e.g. uid) which overlap
+with the posixAccount objectclass outlined in RFC2307.  This is by design.</P
+><P
+>In order to store all user account information (UNIX and Samba) in the directory,
+it is necessary to use the sambaAccount and posixAccount objectclasses in
+combination.  However, smbd will still obtain the user's UNIX account
+information via the standard C library calls (e.g. getpwnam(), et. al.).
+This means that the Samba server must also have the LDAP NSS library installed
+and functioning correctly.  This division of information makes it possible to
+store all Samba account information in LDAP, but still maintain UNIX account
+information in NIS while the network is transitioning to a full LDAP infrastructure.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN1766"
+>10.5. Configuring Samba with LDAP</A
+></H1
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN1768"
+>10.5.1. OpenLDAP configuration</A
+></H2
+><P
+>To include support for the sambaAccount object in an OpenLDAP directory
+server, first copy the samba.schema file to slapd's configuration directory.</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><B
+CLASS="COMMAND"
+>cp samba.schema /etc/openldap/schema/</B
+></P
+><P
+>Next, include the <TT
+CLASS="FILENAME"
+>samba.schema</TT
+> file in <TT
+CLASS="FILENAME"
+>slapd.conf</TT
+>.
+The sambaAccount object contains two attributes which depend upon other schema
+files.  The 'uid' attribute is defined in <TT
+CLASS="FILENAME"
+>cosine.schema</TT
+> and
+the 'displayName' attribute is defined in the <TT
+CLASS="FILENAME"
+>inetorgperson.schema</TT
+>
+file.  Bother of these must be included before the <TT
+CLASS="FILENAME"
+>samba.schema</TT
+> file.</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>## /etc/openldap/slapd.conf
+
+## schema files (core.schema is required by default)
+include	           /etc/openldap/schema/core.schema
+
+## needed for sambaAccount
+include            /etc/openldap/schema/cosine.schema
+include            /etc/openldap/schema/inetorgperson.schema
+include            /etc/openldap/schema/samba.schema
+
+## uncomment this line if you want to support the RFC2307 (NIS) schema
+## include         /etc/openldap/schema/nis.schema
+
+....</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>It is recommended that you maintain some indices on some of the most usefull attributes,
+like in the following example, to speed up searches made on sambaAccount objectclasses
+(and possibly posixAccount and posixGroup as well).</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+># Indices to maintain
+## required by OpenLDAP 2.0
+index objectclass   eq
+
+## support pb_getsampwnam()
+index uid           pres,eq
+## support pdb_getsambapwrid()
+index rid           eq
+
+## uncomment these if you are storing posixAccount and
+## posixGroup entries in the directory as well
+##index uidNumber     eq
+##index gidNumber     eq
+##index cn            eq
+##index memberUid     eq</PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN1785"
+>10.5.2. Configuring Samba</A
+></H2
+><P
+>The following parameters are available in smb.conf only with <TT
+CLASS="PARAMETER"
+><I
+>--with-ldapsam</I
+></TT
+>
+was included with compiling Samba.</P
+><P
+></P
+><UL
+><LI
+><P
+><A
+HREF="smb.conf.5.html#LDAPSSL"
+TARGET="_top"
+>ldap ssl</A
+></P
+></LI
+><LI
+><P
+><A
+HREF="smb.conf.5.html#LDAPSERVER"
+TARGET="_top"
+>ldap server</A
+></P
+></LI
+><LI
+><P
+><A
+HREF="smb.conf.5.html#LDAPADMINDN"
+TARGET="_top"
+>ldap admin dn</A
+></P
+></LI
+><LI
+><P
+><A
+HREF="smb.conf.5.html#LDAPSUFFIX"
+TARGET="_top"
+>ldap suffix</A
+></P
+></LI
+><LI
+><P
+><A
+HREF="smb.conf.5.html#LDAPFILTER"
+TARGET="_top"
+>ldap filter</A
+></P
+></LI
+><LI
+><P
+><A
+HREF="smb.conf.5.html#LDAPPORT"
+TARGET="_top"
+>ldap port</A
+></P
+></LI
+></UL
+><P
+>These are described in the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+>smb.conf(5)</A
+> man
+page and so will not be repeated here.  However, a sample smb.conf file for
+use with an LDAP directory could appear as</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>## /usr/local/samba/lib/smb.conf
+[global]
+     security = user
+     encrypt passwords = yes
+
+     netbios name = TASHTEGO
+     workgroup = NARNIA
+
+     # ldap related parameters
+
+     # define the DN to use when binding to the directory servers
+     # The password for this DN is not stored in smb.conf.  Rather it
+     # must be set by using 'smbpasswd -w <TT
+CLASS="REPLACEABLE"
+><I
+>secretpw</I
+></TT
+>' to store the
+     # passphrase in the secrets.tdb file.  If the "ldap admin dn" values
+     # changes, this password will need to be reset.
+     ldap admin dn = "cn=Samba Manager,ou=people,dc=samba,dc=org"
+
+     #  specify the LDAP server's hostname (defaults to locahost)
+     ldap server = ahab.samba.org
+
+     # Define the SSL option when connecting to the directory
+     # ('off', 'start tls', or 'on' (default))
+     ldap ssl = start tls
+
+     # define the port to use in the LDAP session (defaults to 636 when
+     # "ldap ssl = on")
+     ldap port = 389
+
+     # specify the base DN to use when searching the directory
+     ldap suffix = "ou=people,dc=samba,dc=org"
+
+     # generally the default ldap search filter is ok
+     # ldap filter = "(&#38;(uid=%u)(objectclass=sambaAccount))"</PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN1813"
+>10.6. Accounts and Groups management</A
+></H1
+><P
+>As users accounts are managed thru the sambaAccount objectclass, you should
+modify you existing administration tools to deal with sambaAccount attributes.</P
+><P
+>Machines accounts are managed with the sambaAccount objectclass, just
+like users accounts. However, it's up to you to stored thoses accounts
+in a different tree of you LDAP namespace: you should use
+"ou=Groups,dc=plainjoe,dc=org" to store groups and
+"ou=People,dc=plainjoe,dc=org" to store users. Just configure your
+NSS and PAM accordingly (usually, in the /etc/ldap.conf configuration
+file).</P
+><P
+>In Samba release 2.2.3, the group management system is based on posix
+groups. This meand that Samba make usage of the posixGroup objectclass.
+For now, there is no NT-like group system management (global and local
+groups).</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN1818"
+>10.7. Security and sambaAccount</A
+></H1
+><P
+>There are two important points to remember when discussing the security
+of sambaAccount entries in the directory.</P
+><P
+></P
+><UL
+><LI
+><P
+><EM
+>Never</EM
+> retrieve the lmPassword or
+	ntPassword attribute values over an unencrypted LDAP session.</P
+></LI
+><LI
+><P
+><EM
+>Never</EM
+> allow non-admin users to
+	view the lmPassword or ntPassword attribute values.</P
+></LI
+></UL
+><P
+>These password hashes are clear text equivalents and can be used to impersonate
+the user without deriving the original clear text strings.  For more information
+on the details of LM/NT password hashes, refer to the <A
+HREF="ENCRYPTION.html"
+TARGET="_top"
+>ENCRYPTION chapter</A
+> of the Samba-HOWTO-Collection.</P
+><P
+>To remedy the first security issue, the "ldap ssl" smb.conf parameter defaults
+to require an encrypted session (<B
+CLASS="COMMAND"
+>ldap ssl = on</B
+>) using
+the default port of 636
+when contacting the directory server.  When using an OpenLDAP 2.0 server, it
+is possible to use the use the StartTLS LDAP extended  operation in the place of
+LDAPS.  In either case, you are strongly discouraged to disable this security
+(<B
+CLASS="COMMAND"
+>ldap ssl = off</B
+>).</P
+><P
+>Note that the LDAPS protocol is deprecated in favor of the LDAPv3 StartTLS
+extended operation.  However, the OpenLDAP library still provides support for
+the older method of securing communication between clients and servers.</P
+><P
+>The second security precaution is to prevent non-administrative users from
+harvesting password hashes from the directory.  This can be done using the
+following ACL in <TT
+CLASS="FILENAME"
+>slapd.conf</TT
+>:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>## allow the "ldap admin dn" access, but deny everyone else
+access to attrs=lmPassword,ntPassword
+     by dn="cn=Samba Admin,ou=people,dc=plainjoe,dc=org" write
+     by * none</PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN1838"
+>10.8. LDAP specials attributes for sambaAccounts</A
+></H1
+><P
+>The sambaAccount objectclass is composed of the following attributes:</P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>lmPassword</TT
+>: the LANMAN password 16-byte hash stored as a character
+	representation of a hexidecimal string.</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>ntPassword</TT
+>: the NT password hash 16-byte stored as a character
+	representation of a hexidecimal string.</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>pwdLastSet</TT
+>: The integer time in seconds since 1970 when the
+	<TT
+CLASS="CONSTANT"
+>lmPassword</TT
+> and <TT
+CLASS="CONSTANT"
+>ntPassword</TT
+> attributes were last set.
+	</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>acctFlags</TT
+>: string of 11 characters surrounded by square brackets []
+	representing account flags such as U (user), W(workstation), X(no password expiration), and
+	D(disabled).</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>logonTime</TT
+>: Integer value currently unused</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>logoffTime</TT
+>: Integer value currently unused</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>kickoffTime</TT
+>: Integer value currently unused</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>pwdCanChange</TT
+>: Integer value currently unused</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>pwdMustChange</TT
+>: Integer value currently unused</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>homeDrive</TT
+>: specifies the drive letter to which to map the
+	UNC path specified by homeDirectory. The drive letter must be specified in the form "X:"
+	where X is the letter of the drive to map. Refer to the "logon drive" parameter in the
+	smb.conf(5) man page for more information.</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>scriptPath</TT
+>: The scriptPath property specifies the path of
+	the user's logon script, .CMD, .EXE, or .BAT file. The string can be null. The path
+	is relative to the netlogon share.  Refer to the "logon script" parameter in the
+	smb.conf(5) man page for more information.</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>profilePath</TT
+>: specifies a path to the user's profile.
+	This value can be a null string, a local absolute path, or a UNC path.  Refer to the
+	"logon path" parameter in the smb.conf(5) man page for more information.</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>smbHome</TT
+>: The homeDirectory property specifies the path of
+	the home directory for the user. The string can be null. If homeDrive is set and specifies
+	a drive letter, homeDirectory should be a UNC path. The path must be a network
+	UNC path of the form \\server\share\directory. This value can be a null string.
+	Refer to the "logon home" parameter in the smb.conf(5) man page for more information.
+	</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>userWorkstation</TT
+>: character string value currently unused.
+	</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>rid</TT
+>: the integer representation of the user's relative identifier
+	(RID).</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>primaryGroupID</TT
+>: the relative identifier (RID) of the primary group
+	of the user.</P
+></LI
+></UL
+><P
+>The majority of these parameters are only used when Samba is acting as a PDC of
+a domain (refer to the <A
+HREF="Samba-PDC-HOWTO.html"
+TARGET="_top"
+>Samba-PDC-HOWTO</A
+> for details on
+how to configure Samba as a Primary Domain Controller). The following four attributes
+are only stored with the sambaAccount entry if the values are non-default values:</P
+><P
+></P
+><UL
+><LI
+><P
+>smbHome</P
+></LI
+><LI
+><P
+>scriptPath</P
+></LI
+><LI
+><P
+>logonPath</P
+></LI
+><LI
+><P
+>homeDrive</P
+></LI
+></UL
+><P
+>These attributes are only stored with the sambaAccount entry if
+the values are non-default values.  For example, assume TASHTEGO has now been
+configured as a PDC and that <B
+CLASS="COMMAND"
+>logon home = \\%L\%u</B
+> was defined in
+its <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file. When a user named "becky" logons to the domain,
+the <TT
+CLASS="PARAMETER"
+><I
+>logon home</I
+></TT
+> string is expanded to \\TASHTEGO\becky.
+If the smbHome attribute exists in the entry "uid=becky,ou=people,dc=samba,dc=org",
+this value is used.  However, if this attribute does not exist, then the value
+of the <TT
+CLASS="PARAMETER"
+><I
+>logon home</I
+></TT
+> parameter is used in its place.  Samba
+will only write the attribute value to the directory entry is the value is
+something other than the default (e.g. \\MOBY\becky).</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN1908"
+>10.9. Example LDIF Entries for a sambaAccount</A
+></H1
+><P
+>The following is a working LDIF with the inclusion of the posixAccount objectclass:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>dn: uid=guest2, ou=people,dc=plainjoe,dc=org
+ntPassword: 878D8014606CDA29677A44EFA1353FC7
+pwdMustChange: 2147483647
+primaryGroupID: 1201
+lmPassword: 552902031BEDE9EFAAD3B435B51404EE
+pwdLastSet: 1010179124
+logonTime: 0
+objectClass: sambaAccount
+uid: guest2
+kickoffTime: 2147483647
+acctFlags: [UX         ]
+logoffTime: 2147483647
+rid: 19006
+pwdCanChange: 0</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>The following is an LDIF entry for using both the sambaAccount and
+posixAccount objectclasses:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>dn: uid=gcarter, ou=people,dc=plainjoe,dc=org
+logonTime: 0
+displayName: Gerald Carter
+lmPassword: 552902031BEDE9EFAAD3B435B51404EE
+primaryGroupID: 1201
+objectClass: posixAccount
+objectClass: sambaAccount
+acctFlags: [UX         ]
+userPassword: {crypt}BpM2ej8Rkzogo
+uid: gcarter
+uidNumber: 9000
+cn: Gerald Carter
+loginShell: /bin/bash
+logoffTime: 2147483647
+gidNumber: 100
+kickoffTime: 2147483647
+pwdLastSet: 1010179230
+rid: 19000
+homeDirectory: /home/tashtego/gcarter
+pwdCanChange: 0
+pwdMustChange: 2147483647
+ntPassword: 878D8014606CDA29677A44EFA1353FC7</PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN1916"
+>10.10. Comments</A
+></H1
+><P
+>Please mail all comments regarding this HOWTO to <A
+HREF="mailto:jerry@samba.org"
+TARGET="_top"
+>jerry@samba.org</A
+>.  This documents was
+last updated to reflect the Samba 2.2.3 release.&#13;</P
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="WINBIND"
+>Chapter 11. Unified Logons between Windows NT and UNIX using Winbind</A
+></H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN1945"
+>11.1. Abstract</A
 ></H1
 ><P
 >Integration of UNIX and Microsoft Windows NT through 
@@ -7864,8 +9167,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1656"
->9.2. Introduction</A
+NAME="AEN1949"
+>11.2. Introduction</A
 ></H1
 ><P
 >It is well known that UNIX and Microsoft Windows NT have 
@@ -7918,8 +9221,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1669"
->9.3. What Winbind Provides</A
+NAME="AEN1962"
+>11.3. What Winbind Provides</A
 ></H1
 ><P
 >Winbind unifies UNIX and Windows NT account management by 
@@ -7960,8 +9263,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1676"
->9.3.1. Target Uses</A
+NAME="AEN1969"
+>11.3.1. Target Uses</A
 ></H2
 ><P
 >Winbind is targeted at organizations that have an 
@@ -7984,8 +9287,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1680"
->9.4. How Winbind Works</A
+NAME="AEN1973"
+>11.4. How Winbind Works</A
 ></H1
 ><P
 >The winbind system is designed around a client/server 
@@ -8004,8 +9307,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1685"
->9.4.1. Microsoft Remote Procedure Calls</A
+NAME="AEN1978"
+>11.4.1. Microsoft Remote Procedure Calls</A
 ></H2
 ><P
 >Over the last two years, efforts have been underway 
@@ -8030,8 +9333,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1689"
->9.4.2. Name Service Switch</A
+NAME="AEN1982"
+>11.4.2. Name Service Switch</A
 ></H2
 ><P
 >The Name Service Switch, or NSS, is a feature that is 
@@ -8110,8 +9413,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1705"
->9.4.3. Pluggable Authentication Modules</A
+NAME="AEN1998"
+>11.4.3. Pluggable Authentication Modules</A
 ></H2
 ><P
 >Pluggable Authentication Modules, also known as PAM, 
@@ -8159,8 +9462,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1713"
->9.4.4. User and Group ID Allocation</A
+NAME="AEN2006"
+>11.4.4. User and Group ID Allocation</A
 ></H2
 ><P
 >When a user or group is created under Windows NT 
@@ -8185,8 +9488,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1717"
->9.4.5. Result Caching</A
+NAME="AEN2010"
+>11.4.5. Result Caching</A
 ></H2
 ><P
 >An active system can generate a lot of user and group 
@@ -8208,8 +9511,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1720"
->9.5. Installation and Configuration</A
+NAME="AEN2013"
+>11.5. Installation and Configuration</A
 ></H1
 ><P
 >Many thanks to John Trostel <A
@@ -8227,8 +9530,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1725"
->9.5.1. Introduction</A
+NAME="AEN2018"
+>11.5.1. Introduction</A
 ></H2
 ><P
 >This HOWTO describes the procedures used to get winbind up and 
@@ -8278,8 +9581,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1738"
->9.5.2. Requirements</A
+NAME="AEN2031"
+>11.5.2. Requirements</A
 ></H2
 ><P
 >If you have a samba configuration file that you are currently 
@@ -8336,8 +9639,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1752"
->9.5.3. Testing Things Out</A
+NAME="AEN2045"
+>11.5.3. Testing Things Out</A
 ></H2
 ><P
 >Before starting, it is probably best to kill off all the SAMBA 
@@ -8381,8 +9684,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1763"
->9.5.3.1. Configure and compile SAMBA</A
+NAME="AEN2056"
+>11.5.3.1. Configure and compile SAMBA</A
 ></H3
 ><P
 >The configuration and compilation of SAMBA is pretty straightforward.
@@ -8456,8 +9759,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1782"
->9.5.3.2. Configure <TT
+NAME="AEN2075"
+>11.5.3.2. Configure <TT
 CLASS="FILENAME"
 >nsswitch.conf</TT
 > and the 
@@ -8546,8 +9849,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1807"
->9.5.3.3. Configure smb.conf</A
+NAME="AEN2100"
+>11.5.3.3. Configure smb.conf</A
 ></H3
 ><P
 >Several parameters are needed in the smb.conf file to control 
@@ -8630,8 +9933,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1823"
->9.5.3.4. Join the SAMBA server to the PDC domain</A
+NAME="AEN2116"
+>11.5.3.4. Join the SAMBA server to the PDC domain</A
 ></H3
 ><P
 >Enter the following command to make the SAMBA server join the 
@@ -8654,7 +9957,7 @@ CLASS="PROMPT"
 >root#</TT
 > <B
 CLASS="COMMAND"
->/usr/local/samba/bin/smbpasswd -j DOMAIN -r PDC -U Administrator</B
+>/usr/local/samba/bin/net rpc join -s PDC -U Administrator</B
 ></P
 ><P
 >The proper response to the command should be: "Joined the domain 
@@ -8676,8 +9979,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1834"
->9.5.3.5. Start up the winbindd daemon and test it!</A
+NAME="AEN2127"
+>11.5.3.5. Start up the winbindd daemon and test it!</A
 ></H3
 ><P
 >Eventually, you will want to modify your smb startup script to 
@@ -8817,8 +10120,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1870"
->9.5.3.6. Fix the <TT
+NAME="AEN2163"
+>11.5.3.6. Fix the <TT
 CLASS="FILENAME"
 >/etc/rc.d/init.d/smb</TT
 > startup files</A
@@ -8947,8 +10250,8 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1892"
->9.5.3.7. Configure Winbind and PAM</A
+NAME="AEN2185"
+>11.5.3.7. Configure Winbind and PAM</A
 ></H3
 ><P
 >If you have made it this far, you know that winbindd and samba are working
@@ -9169,8 +10472,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1939"
->9.6. Limitations</A
+NAME="AEN2232"
+>11.6. Limitations</A
 ></H1
 ><P
 >Winbind has a number of limitations in its current 
@@ -9210,8 +10513,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1949"
->9.7. Conclusion</A
+NAME="AEN2242"
+>11.7. Conclusion</A
 ></H1
 ><P
 >The winbind system, through the use of the Name Service 
@@ -9227,23 +10530,23 @@ CLASS="CHAPTER"
 ><HR><H1
 ><A
 NAME="OS2"
->Chapter 10. OS2 Client HOWTO</A
+>Chapter 12. OS2 Client HOWTO</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1963"
->10.1. FAQs</A
+NAME="AEN2256"
+>12.1. FAQs</A
 ></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1965"
->10.1.1. How can I configure OS/2 Warp Connect or 
+NAME="AEN2258"
+>12.1.1. How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></H2
 ><P
@@ -9301,8 +10604,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1980"
->10.1.2. How can I configure OS/2 Warp 3 (not Connect), 
+NAME="AEN2273"
+>12.1.2. How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></H2
 ><P
@@ -9354,8 +10657,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1989"
->10.1.3. Are there any other issues when OS/2 (any version) 
+NAME="AEN2282"
+>12.1.3. Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></H2
 ><P
@@ -9376,8 +10679,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1993"
->10.1.4. How do I get printer driver download working 
+NAME="AEN2286"
+>12.1.4. How do I get printer driver download working 
 		for OS/2 clients?</A
 ></H2
 ><P
@@ -9425,15 +10728,15 @@ CLASS="CHAPTER"
 ><HR><H1
 ><A
 NAME="CVS-ACCESS"
->Chapter 11. HOWTO Access Samba source code via CVS</A
+>Chapter 13. HOWTO Access Samba source code via CVS</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2009"
->11.1. Introduction</A
+NAME="AEN2302"
+>13.1. Introduction</A
 ></H1
 ><P
 >Samba is developed in an open environment.  Developers use CVS
@@ -9454,8 +10757,8 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2014"
->11.2. CVS Access to samba.org</A
+NAME="AEN2307"
+>13.2. CVS Access to samba.org</A
 ></H1
 ><P
 >The machine samba.org runs a publicly accessible CVS 
@@ -9467,8 +10770,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2017"
->11.2.1. Access via CVSweb</A
+NAME="AEN2310"
+>13.2.1. Access via CVSweb</A
 ></H2
 ><P
 >You can access the source code via your 
@@ -9488,8 +10791,8 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2022"
->11.2.2. Access via cvs</A
+NAME="AEN2315"
+>13.2.2. Access via cvs</A
 ></H2
 ><P
 >You can also access the source code via a 
@@ -9594,7 +10897,7 @@ CLASS="COMMAND"
 ></DIV
 ><HR><H1
 ><A
-NAME="AEN2050"
+NAME="AEN2343"
 >Index</A
 ></H1
 ><DL

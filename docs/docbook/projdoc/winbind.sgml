@@ -557,7 +557,7 @@ a domain user who has administrative privileges in the domain.
 	
 
 <para>
-<prompt>root#</prompt> <command>/usr/local/samba/bin/smbpasswd -j DOMAIN -r PDC -U Administrator</command>
+<prompt>root#</prompt> <command>/usr/local/samba/bin/net rpc join -s PDC -U Administrator</command>
 </para>
 
 

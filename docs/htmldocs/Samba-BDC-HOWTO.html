@@ -1,0 +1,245 @@
+<HTML
+><HEAD
+><TITLE
+>How to a Purely Samba Controlled Domain</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="ARTICLE"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="ARTICLE"
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="SAMBA-BDC"
+>How to a Purely Samba Controlled Domain</A
+></H1
+><HR></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3"
+>Prerequisite Reading</A
+></H1
+><P
+>Before you continue reading in this chapter, please make sure
+that you are comfortable with configuring a Samba PDC
+as described in the <A
+HREF="Samba-PDC-HOWTO.html"
+TARGET="_top"
+>Samba-PDC-HOWTO</A
+>.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN7"
+>Background</A
+></H1
+><P
+>What is a Domain Controller? It is a machine that is able to answer
+logon requests from workstations in a Windows NT Domain. Whenever a
+user logs into a Windows NT Workstation, the workstation connects to a
+Domain Controller and asks him whether the username and password the
+user typed in is correct.  The Domain Controller replies with a lot of
+information about the user, for example the place where the users
+profile is stored, the users full name of the user. All this
+information is stored in the NT user database, the so-called SAM.</P
+><P
+>There are two kinds of Domain Controller in a NT 4 compatible Domain:
+A Primary Domain Controller (PDC) and one or more Backup Domain
+Controllers (BDC). The PDC contains the master copy of the
+SAM. Whenever the SAM has to change, for example when a user changes
+his password, this change has to be done on the PDC. A Backup Domain
+Controller is a machine that maintains a read-only copy of the
+SAM. This way it is able to reply to logon requests and authenticate
+users in case the PDC is not available. During this time no changes to
+the SAM are possible. Whenever changes to the SAM are done on the PDC,
+all BDC receive the changes from the PDC.</P
+><P
+>Since version 2.2 Samba officially supports domain logons for all
+current Windows Clients, including Windows 2000 and XP. This text
+assumes the domain to be named SAMBA. To be able to act as a PDC, some
+parameters in the [global]-section of the smb.conf have to be set:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>workgroup = SAMBA
+domain master = yes
+domain logons = yes</PRE
+></P
+><P
+>Several other things like a [homes] and a [netlogon] share also may be
+set along with settings for the profile path, the users home drive and
+others. This will not be covered in this document.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN15"
+>What qualifies a Domain Controller on the network?</A
+></H1
+><P
+>Every machine that is a Domain Controller for the domain SAMBA has to
+register the NetBIOS group name SAMBA#1c with the WINS server and/or
+by broadcast on the local network. The PDC also registers the unique
+NetBIOS name SAMBA#1b with the WINS server. The name type #1b is
+normally reserved for the domain master browser, a role that has
+nothing to do with anything related to authentication, but the
+Microsoft Domain implementation requires the domain master browser to
+be on the same machine as the PDC.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN18"
+>How does a Workstation find its domain controller?</A
+></H2
+><P
+>A NT workstation in the domain SAMBA that wants a local user to be
+authenticated has to find the domain controller for SAMBA. It does
+this by doing a NetBIOS name query for the group name SAMBA#1c. It
+assumes that each of the machines it gets back from the queries is a
+domain controller and can answer logon requests. To not open security
+holes both the workstation and the selected (TODO: How is the DC
+chosen) domain controller authenticate each other. After that the
+workstation sends the user's credentials (his name and password) to
+the domain controller, asking for approval.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN21"
+>When is the PDC needed?</A
+></H2
+><P
+>Whenever a user wants to change his password, this has to be done on
+the PDC. To find the PDC, the workstation does a NetBIOS name query
+for SAMBA#1b, assuming this machine maintains the master copy of the
+SAM. The workstation contacts the PDC, both mutually authenticate and
+the password change is done.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN24"
+>Can Samba be a Backup Domain Controller?</A
+></H1
+><P
+>With version 2.2, no. The native NT SAM replication protocols have
+not yet been fully implemented. The Samba Team is working on
+understanding and implementing the protocols, but this work has not
+been finished for version 2.2.</P
+><P
+>Can I get the benefits of a BDC with Samba?  Yes. The main reason for
+implementing a BDC is availability. If the PDC is a Samba machine,
+a second Samba machine can be set up to
+service logon requests whenever the PDC is down.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN28"
+>How do I set up a Samba BDC?</A
+></H1
+><P
+>Several things have to be done:</P
+><P
+></P
+><UL
+><LI
+><P
+>The file private/MACHINE.SID identifies the domain. When a samba
+server is first started, it is created on the fly and must never be
+changed again. This file has to be the same on the PDC and the BDC,
+so the MACHINE.SID has to be copied from the PDC to the BDC.</P
+></LI
+><LI
+><P
+>The Unix user database has to be synchronized from the PDC to the
+BDC. This means that both the /etc/passwd and /etc/group have to be
+replicated from the PDC to the BDC. This can be done manually
+whenever changes are made, or the PDC is set up as a NIS master
+server and the BDC as a NIS slave server. To set up the BDC as a
+mere NIS client would not be enough, as the BDC would not be able to
+access its user database in case of a PDC failure.</P
+></LI
+><LI
+><P
+>The Samba password database in the file private/smbpasswd has to be
+replicated from the PDC to the BDC. This is a bit tricky, see the
+next section.</P
+></LI
+><LI
+><P
+>Any netlogon share has to be replicated from the PDC to the
+BDC. This can be done manually whenever login scripts are changed,
+or it can be done automatically together with the smbpasswd
+synchronization.</P
+></LI
+></UL
+><P
+>Finally, the BDC has to be found by the workstations. This can be done
+by setting</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>workgroup = samba
+domain master = no
+domain logons = yes</PRE
+></P
+><P
+>in the [global]-section of the smb.conf of the BDC. This makes the BDC
+only register the name SAMBA#1c with the WINS server. This is no
+problem as the name SAMBA#1c is a NetBIOS group name that is meant to
+be registered by more than one machine. The parameter 'domain master =
+no' forces the BDC not to register SAMBA#1b which as a unique NetBIOS
+name is reserved for the Primary Domain Controller.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN44"
+>How do I replicate the smbpasswd file?</A
+></H2
+><P
+>Replication of the smbpasswd file is sensitive. It has to be done
+whenever changes to the SAM are made. Every user's password change is
+done in the smbpasswd file and has to be replicated to the BDC. So
+replicating the smbpasswd file very often is necessary.</P
+><P
+>As the smbpasswd file contains plain text password equivalents, it
+must not be sent unencrypted over the wire. The best way to set up
+smbpasswd replication from the PDC to the BDC is to use the utility
+rsync. rsync can use ssh as a transport. ssh itself can be set up to
+accept *only* rsync transfer without requiring the user to type a
+password.</P
+></DIV
+></DIV
+></DIV
+></BODY
+></HTML
+>
