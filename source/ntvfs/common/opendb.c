@@ -117,11 +117,12 @@ static int odb_lock_destructor(void *ptr)
   get a lock on a entry in the odb. This call returns a lock handle,
   which the caller should unlock using talloc_free().
 */
-struct odb_lock *odb_lock(struct odb_context *odb, DATA_BLOB *file_key)
+struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
+			  struct odb_context *odb, DATA_BLOB *file_key)
 {
 	struct odb_lock *lck;
 
-	lck = talloc_p(odb, struct odb_lock);
+	lck = talloc_p(mem_ctx, struct odb_lock);
 	if (lck == NULL) {
 		return NULL;
 	}
