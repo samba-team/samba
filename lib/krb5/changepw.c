@@ -40,8 +40,6 @@
 
 RCSID("$Id$");
 
-#define KPASSWD_PORT 464
-
 static krb5_error_code
 get_kdc_address (krb5_context context,
 		 krb5_realm realm,
