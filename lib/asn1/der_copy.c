@@ -54,8 +54,8 @@ int
 copy_octet_string (const octet_string *from, octet_string *to)
 {
     to->length = from->length;
-    to->data = malloc(to->length);
-    if(to->data == NULL)
+    to->data   = malloc(to->length);
+    if(to->length != 0 && to->data == NULL)
 	return ENOMEM;
     memcpy(to->data, from->data, to->length);
     return 0;
