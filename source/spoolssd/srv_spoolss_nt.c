@@ -3275,15 +3275,15 @@ uint32 _spoolss_setform( const POLICY_HND *handle,
 	return 0x0;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumprintprocessors(SPOOL_Q_ENUMPRINTPROCESSORS *q_u, prs_struct *rdata)
+uint32 _spoolss_enumprintprocessors(const UNISTR2 *name,
+				const UNISTR2 *environment,
+				uint32 level,
+				PRINTPROCESSOR_1 **info_1,
+				uint32 *offered,
+				uint32 *numofprintprocessors)
 {
-	SPOOL_R_ENUMPRINTPROCESSORS r_u;
-	PRINTPROCESSOR_1 *info_1;
-	
  	DEBUG(5,("spoolss_enumprintprocessors\n"));
 
 	/* 
@@ -3293,22 +3293,20 @@ uint32 _spoolss_enumprintprocessors(SPOOL_Q_ENUMPRINTPROCESSORS *q_u, prs_struct
 	 * and I can use my nice printer checker.
 	 */
 	
-	status = 0x0;
-	offered = buf_size;
-	level = level;
+	(*numofprintprocessors) = 0x1;
+	(*info_1) = (PRINTPROCESSOR_1 *)malloc(sizeof(PRINTPROCESSOR_1));
 	
-	numofprintprocessors = 0x1;
-	
-	info_1 = (PRINTPROCESSOR_1 *)malloc(sizeof(PRINTPROCESSOR_1));
-	
-	make_unistr(&(info_1->name), "winprint");
-	
-	info_1=info_1;
-	
-	spoolss_io_r_enumprintprocessors("", &r_u, rdata, 0);
-	
-	free(info_1);
+	if ((*info_1) == NULL)
+	{
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	make_unistr(&((*info_1)->name), "winprint");
+
+	return 0x0;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/

@@ -944,49 +944,24 @@ static void api_spoolss_setform(rpcsrv_struct *p, prs_struct *data,
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_enumprintprocessors(SPOOL_Q_ENUMPRINTPROCESSORS *q_u, prs_struct *rdata)
-{
-	SPOOL_R_ENUMPRINTPROCESSORS r_u;
-	PRINTPROCESSOR_1 *info_1;
-	
- 	DEBUG(5,("spoolss_reply_enumprintprocessors\n"));
-
-	/* 
-	 * Enumerate the print processors ...
-	 *
-	 * Just reply with "winprint", to keep NT happy
-	 * and I can use my nice printer checker.
-	 */
-	
-	r_u.status = 0x0;
-	r_u.offered = q_u->buf_size;
-	r_u.level = q_u->level;
-	
-	r_u.numofprintprocessors = 0x1;
-	
-	info_1 = (PRINTPROCESSOR_1 *)malloc(sizeof(PRINTPROCESSOR_1));
-	
-	make_unistr(&(info_1->name), "winprint");
-	
-	r_u.info_1 = info_1;
-	
-	spoolss_io_r_enumprintprocessors("", &r_u, rdata, 0);
-	
-	free(info_1);
-}
-
-/****************************************************************************
-****************************************************************************/
 static void api_spoolss_enumprintprocessors(rpcsrv_struct *p, prs_struct *data,
 				            prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTPROCESSORS q_u;
+	SPOOL_R_ENUMPRINTPROCESSORS r_u;
 
 	spoolss_io_q_enumprintprocessors("", &q_u, data, 0);
-
-	spoolss_reply_enumprintprocessors(&q_u, rdata);
-
-	spoolss_io_free_buffer(&(q_u.buffer));
+	r_u.offered = q_u.buf_size;
+	r_u.level = q_u.level;
+	r_u.status = _spoolss_enumprintprocessors(&q_u.name,
+				&q_u.environment,
+				q_u.level,
+				&r_u.info_1,
+				&r_u.offered,
+				&r_u.numofprintprocessors);
+	spoolss_io_free_buffer(&q_u.buffer);
+	spoolss_io_r_enumprintprocessors("", &r_u, rdata, 0);
+	safe_free(r_u.info_1);
 }
 
 /****************************************************************************
