@@ -1516,6 +1516,10 @@ BOOL spoolss_io_q_deleteprinterdriverex(char *desc, SPOOL_Q_DELETEPRINTERDRIVERE
 		return False;
 	if(!smb_io_unistr2("driver", &q_u->driver, True, ps, depth))
 		return False;
+
+	if (!prs_align(ps))
+		return False;
+
 	if(!prs_uint32("delete_flags ", ps, depth, &q_u->delete_flags))
 		return False;		
 	if(!prs_uint32("version      ", ps, depth, &q_u->version))
