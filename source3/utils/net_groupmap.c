@@ -274,10 +274,10 @@ static int net_groupmap_add(int argc, const char **argv)
 		sid_to_string(string_sid, &sid);
 	}
 
-	if (ntcomment[0])
+	if (!ntcomment[0])
 		fstrcpy(ntcomment, "Local Unix group");
 		
-	if ( !ntgroup[0] )
+	if (!ntgroup[0] )
 		fstrcpy( ntgroup, unixgrp );
 		
 	
