@@ -63,6 +63,8 @@ static pid_t local_pid;
 #define PRINT_SPOOL_PREFIX "smbprn."
 #define PRINT_DATABASE_VERSION 2
 
+static int get_queue_status(int, print_status_struct *);
+
 /****************************************************************************
 initialise the printing backend. Called once at startup. 
 Does not survive a fork
@@ -315,6 +317,7 @@ static void print_queue_update(int snum)
 	int numlines, i, qcount;
 	print_queue_struct *queue = NULL;
 	print_status_struct status;
+	print_status_struct old_status;
 	struct printjob *pjob;
 	struct traverse_struct tstruct;
 	fstring keystr, printer_name;
@@ -409,13 +412,26 @@ static void print_queue_update(int snum)
 
 	safe_free(tstruct.queue);
 
-	/* store the queue status structure */
-	status.qcount = qcount;
+	/*
+	 * Get the old print status. We will use this to compare the
+	 * number of jobs. If they have changed we need to send a
+	 * "changed" message to the smbds.
+	 */
+
+	if( qcount != get_queue_status(snum, &old_status)) {
+		DEBUG(10,("print_queue_update: queue status change %d jobs -> %d jobs for printer %s\n",
+				old_status.qcount, qcount, printer_name ));
+		message_send_all(MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+	}
+
+	/* store the new queue status structure */
 	slprintf(keystr, sizeof(keystr), "STATUS/%s", printer_name);
-	data.dptr = (void *)&status;
-	data.dsize = sizeof(status);
 	key.dptr = keystr;
 	key.dsize = strlen(keystr);
+
+	status.qcount = qcount;
+	data.dptr = (void *)&status;
+	data.dsize = sizeof(status);
 	tdb_store(tdb, key, data, TDB_REPLACE);	
 
 	/* Unlock for database update */
@@ -713,6 +729,29 @@ static BOOL print_cache_expired(int snum)
 }
 
 /****************************************************************************
+ Get the queue status - do not update if db is out of date.
+****************************************************************************/
+
+static int get_queue_status(int snum, print_status_struct *status)
+{
+	fstring keystr;
+	TDB_DATA data, key;
+
+	ZERO_STRUCTP(status);
+	slprintf(keystr, sizeof(keystr), "STATUS/%s", lp_servicename(snum));
+	key.dptr = keystr;
+	key.dsize = strlen(keystr);
+	data = tdb_fetch(tdb, key);
+	if (data.dptr) {
+		if (data.dsize == sizeof(print_status_struct)) {
+			memcpy(status, data.dptr, sizeof(print_status_struct));
+		}
+		free(data.dptr);
+	}
+	return status->qcount;
+}
+
+/****************************************************************************
  Determine the number of jobs in a queue.
 ****************************************************************************/
 
@@ -726,18 +765,7 @@ static int print_queue_length(int snum)
 	if (print_cache_expired(snum)) print_queue_update(snum);
 
 	/* also fetch the queue status */
-	ZERO_STRUCTP(&status);
-	slprintf(keystr, sizeof(keystr), "STATUS/%s", lp_servicename(snum));
-	key.dptr = keystr;
-	key.dsize = strlen(keystr);
-	data = tdb_fetch(tdb, key);
-	if (data.dptr) {
-		if (data.dsize == sizeof(status)) {
-			memcpy(&status, data.dptr, sizeof(status));
-		}
-		free(data.dptr);
-	}
-	return status.qcount;
+	return get_queue_status(snum, &status);
 }
 
 /***************************************************************************
