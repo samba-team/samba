@@ -810,7 +810,7 @@ static void print_cache_flush(int snum)
  Check if someone already thinks they are doing the update.
 ****************************************************************************/
 
-static pid_t get_updating_pid(fstring sharename)
+static pid_t get_updating_pid(const char *sharename)
 {
 	fstring keystr;
 	TDB_DATA data, key;
@@ -1075,12 +1075,6 @@ static void print_queue_update_internal( const char *sharename,
 	DEBUG(5,("print_queue_update_internal: printer = %s, type = %d, lpq command = [%s]\n",
 		sharename, current_printif->type, lpq_command));
 
-	if ( !print_cache_expired(sharename, False) ) {
-		DEBUG(5,("print_queue_update_internal: print cache for %s is still ok\n", sharename));
-		release_print_db(pdb);
-		return;
-	}
-
 	/*
 	 * Update the cache time FIRST ! Stops others even
 	 * attempting to get the lock and doing this
@@ -1212,20 +1206,24 @@ static void print_queue_update_internal( const char *sharename,
  smbd processes maytry to update the lpq cache concurrently).
 ****************************************************************************/
 
-static void print_queue_update_with_lock(int snum)
+static void print_queue_update_with_lock( const char *sharename, 
+                                          struct printif *current_printif,
+                                          char *lpq_command )
 {
-	fstring sharename, keystr;
-	pstring lpq_command;
+	fstring keystr;
 	struct tdb_print_db *pdb;
-	struct printif *current_printif = get_printer_fns( snum );
-
-	fstrcpy(sharename, lp_const_servicename(snum));
 
 	DEBUG(5,("print_queue_update_with_lock: printer share = %s\n", sharename));
 	pdb = get_print_db_byname(sharename);
 	if (!pdb)
 		return;
 
+	if ( !print_cache_expired(sharename, False) ) {
+		DEBUG(5,("print_queue_update_with_lock: print cache for %s is still ok\n", sharename));
+		release_print_db(pdb);
+		return;
+	}
+	
 	/*
 	 * Check to see if someone else is doing this update.
 	 * This is essentially a mutex on the update.
@@ -1276,12 +1274,6 @@ static void print_queue_update_with_lock(int snum)
 	tdb_unlock_bystring(pdb->tdb, keystr);
 
 	/* do the main work now */
-	/* have to substitute any variables here since 
-           print_queue_get_internal() will not */
-	
-	pstrcpy( lpq_command, lp_lpqcommand(snum) );
-	pstring_sub( lpq_command, "%p", PRINTERNAME(snum) );
-	standard_sub_snum( snum, lpq_command, sizeof(lpq_command) );
 	
 	print_queue_update_internal( sharename, current_printif, lpq_command );
 	
@@ -1313,7 +1305,7 @@ static void print_queue_receive(int msg_type, pid_t src, void *buf, size_t msgle
 	ctx.sharename = sharename;
 	ctx.lpqcommand = lpqcommand;
 
-	print_queue_update_internal(ctx.sharename, 
+	print_queue_update_with_lock(ctx.sharename, 
 		get_printer_fns_from_type(ctx.printing_type),
 		ctx.lpqcommand );
 
@@ -1380,9 +1372,9 @@ void start_background_queue(void)
 /****************************************************************************
 update the internal database from the system print queue for a queue
 ****************************************************************************/
-static void print_queue_update(int snum)
+
+static void print_queue_update(int snum, BOOL force)
 {
-	struct print_queue_update_context ctx;
 	fstring key;
 	fstring sharename;
 	pstring lpqcommand;
@@ -1390,48 +1382,49 @@ static void print_queue_update(int snum)
 	size_t len = 0;
 	size_t newlen;
 	struct tdb_print_db *pdb;
+	enum printing_types type;
+	struct printif *current_printif;
 
+	fstrcpy( sharename, lp_const_servicename(snum));
+
+	pstrcpy( lpqcommand, lp_lpqcommand(snum));
+	pstring_sub( lpqcommand, "%p", PRINTERNAME(snum) );
+	standard_sub_snum( snum, lpqcommand, sizeof(lpqcommand) );
+	
 	/* 
 	 * Make sure that the background queue process exists.  
 	 * Otherwise just do the update ourselves 
 	 */
 	
-	if ( background_lpq_updater_pid == -1 ) {
-		print_queue_update_with_lock( snum );
+	if ( force || background_lpq_updater_pid == -1 ) {
+		DEBUG(4,("print_queue_update: updating queue [%s] myself\n", sharename));
+		current_printif = get_printer_fns( snum );
+		print_queue_update_with_lock( sharename, current_printif, lpqcommand );
+
 		return;
 	}
 
-	fstrcpy( sharename, lp_const_servicename(snum));
-
-	ctx.printing_type = lp_printing(snum);
-
-	pstrcpy( lpqcommand, lp_lpqcommand(snum));
-	pstring_sub( lpqcommand, "%p", PRINTERNAME(snum) );
-	standard_sub_snum( snum, lpqcommand, sizeof(lpqcommand) );
-
-	ctx.sharename = SMB_STRDUP( sharename );
-	ctx.lpqcommand = SMB_STRDUP( lpqcommand );
-
+	type = lp_printing(snum);
+	
 	/* get the length */
 
 	len = tdb_pack( buffer, len, "fdP",
-		ctx.sharename,
-		ctx.printing_type,
-		ctx.lpqcommand );
+		sharename,
+		type,
+		lpqcommand );
 
 	buffer = SMB_XMALLOC_ARRAY( char, len );
 
 	/* now pack the buffer */
 	newlen = tdb_pack( buffer, len, "fdP",
-		ctx.sharename,
-		ctx.printing_type,
-		ctx.lpqcommand );
+		sharename,
+		type,
+		lpqcommand );
 
 	SMB_ASSERT( newlen == len );
 
 	DEBUG(10,("print_queue_update: Sending message -> printer = %s, "
-		"type = %d, lpq command = [%s]\n",
-		ctx.sharename, ctx.printing_type, ctx.lpqcommand ));
+		"type = %d, lpq command = [%s]\n", sharename, type, lpqcommand ));
 
 	/* here we set a msg pending record for other smbd processes 
 	   to throttle the number of duplicate print_queue_update msgs
@@ -1456,8 +1449,6 @@ static void print_queue_update(int snum)
 		 MSG_PRINTER_UPDATE, buffer, len, False);
 	unbecome_root();
 
-	SAFE_FREE( ctx.sharename );
-	SAFE_FREE( ctx.lpqcommand );
 	SAFE_FREE( buffer );
 
 	return;
@@ -1920,7 +1911,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 	/* force update the database and say the delete failed if the
            job still exists */
 
-	print_queue_update(snum);
+	print_queue_update(snum, True);
 	
 	deleted = !print_job_exists(sharename, jobid);
 	if ( !deleted )
@@ -2104,7 +2095,7 @@ int print_queue_length(int snum, print_status_struct *pstatus)
  
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(snum);
+		print_queue_update(snum, False);
  
 	/* also fetch the queue status */
 	memset(&status, 0, sizeof(status));
@@ -2419,7 +2410,7 @@ BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
 	
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(snum);
+		print_queue_update(snum, False);
 	
 	return True;
 
@@ -2451,7 +2442,7 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(snum);
+		print_queue_update(snum, False);
  
 	*pcount = 0;
 	*ppqueue = NULL;
@@ -2572,7 +2563,7 @@ int print_queue_status(int snum,
 	/* make sure the database is up to date */
 
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(snum);
+		print_queue_update(snum, False);
 
 	/* return if we are done */
 	if ( !ppqueue || !status )
@@ -2631,9 +2622,14 @@ BOOL print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
 		*errcode = WERR_ACCESS_DENIED;
 		return False;
 	}
+	
 
+	become_root();
+		
 	ret = (*(current_printif->queue_pause))(snum);
 
+	unbecome_root();
+		
 	if (ret != 0) {
 		*errcode = WERR_INVALID_PARAM;
 		return False;
@@ -2662,9 +2658,13 @@ BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
 		*errcode = WERR_ACCESS_DENIED;
 		return False;
 	}
-
+	
+	become_root();
+		
 	ret = (*(current_printif->queue_resume))(snum);
 
+	unbecome_root();
+		
 	if (ret != 0) {
 		*errcode = WERR_INVALID_PARAM;
 		return False;
@@ -2672,7 +2672,7 @@ BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(snum);
+		print_queue_update(snum, True);
 
 	/* Send a printer notify message */
 
@@ -2693,10 +2693,13 @@ BOOL print_queue_purge(struct current_user *user, int snum, WERROR *errcode)
 	BOOL can_job_admin;
 
 	/* Force and update so the count is accurate (i.e. not a cached count) */
-	print_queue_update(snum);
+	print_queue_update(snum, True);
 	
 	can_job_admin = print_access_check(user, snum, JOB_ACCESS_ADMINISTER);
 	njobs = print_queue_status(snum, &queue, &status);
+	
+	if ( can_job_admin )
+		become_root();
 
 	for (i=0;i<njobs;i++) {
 		BOOL owner = is_owner(user, snum, queue[i].job);
@@ -2705,6 +2708,12 @@ BOOL print_queue_purge(struct current_user *user, int snum, WERROR *errcode)
 			print_job_delete1(snum, queue[i].job);
 		}
 	}
+	
+	if ( can_job_admin )
+		unbecome_root();
+
+	/* update the cache */
+	print_queue_update( snum, True );
 
 	SAFE_FREE(queue);
 
