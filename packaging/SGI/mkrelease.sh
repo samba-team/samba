@@ -26,6 +26,7 @@ if [ "$1" = "clean" ]; then
   shift
 elif [ "$1" = "5" ]; then
   SGI_ABI=-32
+  ISA=""
   shift
 fi
 
@@ -36,6 +37,7 @@ if [ "$1" = "clean" ]; then
   shift
 elif [ "$1" = "5" ]; then
   SGI_ABI=-32
+  ISA=""
   shift
 fi
 
