@@ -30,7 +30,7 @@ extern int DEBUGLEVEL;
 This is a utility function of smbrun().
 ****************************************************************************/
 
-static BOOL setup_out_fd(void)
+static int setup_out_fd(void)
 {  
 	int fd;
 	pstring path;
