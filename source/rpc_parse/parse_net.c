@@ -1283,6 +1283,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	/* need to count the number of space-delimited sids */
 	unsigned int i;
 	int num_other_sids = 0;
+	char *username;
 	
 	NTTIME 		logon_time, logoff_time, kickoff_time,
 			pass_last_set_time, pass_can_change_time,
@@ -1294,7 +1295,21 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	int len_logon_srv    = strlen(logon_srv);
 	int len_logon_dom    = strlen(logon_dom);
 
-	len_user_name    = strlen(user_name   );
+
+	/* do some cleanup on the user name here to deal with users from a 
+	   trusted domain logging onto a client in our domain.  If we are running 
+	   winbindd, the trusted users will be of the form DOMAIN\user so strip 
+	   out the domain portion.  I noticed then when looking at an SMBsessionsetup&X.
+	   The client was sending GLASS\Administrator as the username and GLASS as the 
+	   domain name -- jerry */
+	   
+	if ( (username = strchr( user_name, *lp_winbind_separator() )) != NULL )
+		username++;
+	else
+		username = user_name;
+		
+		
+	len_user_name    = strlen(username    );
 	len_full_name    = strlen(full_name   );
 	len_home_dir     = strlen(home_dir    );
 	len_dir_drive    = strlen(dir_drive   );
@@ -1306,6 +1321,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 
 	usr->ptr_user_info = 1; /* yes, we're bothering to put USER_INFO data here */
 
+	
 
 	/* Create NTTIME structs */
 	unix_to_nt_time (&logon_time, 		 unix_logon_time);
@@ -1356,7 +1372,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	usr->num_other_sids = num_other_sids;
 	usr->buffer_other_sids = (num_other_sids != 0) ? 1 : 0; 
 	
-	init_unistr2(&usr->uni_user_name, user_name, len_user_name);
+	init_unistr2(&usr->uni_user_name, username, len_user_name);
 	init_unistr2(&usr->uni_full_name, full_name, len_full_name);
 	init_unistr2(&usr->uni_logon_script, logon_script, len_logon_script);
 	init_unistr2(&usr->uni_profile_path, profile_path, len_profile_path);
