@@ -96,6 +96,9 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 {
 	int i;
 
+	uint32 uid = (uint32)r_u->uid;
+	uint32 gid = (uint32)r_u->gid;
+
 	if (r_u == NULL)
 		return False;
 
@@ -104,8 +107,11 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 
 	prs_align(ps);
 
-	prs_uint32("uid", ps, depth, &(r_u->uid));
-	prs_uint32("gid", ps, depth, &(r_u->gid));
+	prs_uint32("uid", ps, depth, &uid);
+	prs_uint32("gid", ps, depth, &gid);
+
+	r_u->uid = (uid_t)uid;
+	r_u->gid = (uid_t)gid;
 
 	prs_align(ps);
 	prs_string("name", ps, depth, r_u->name, strlen(r_u->name),
