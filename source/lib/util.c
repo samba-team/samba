@@ -582,26 +582,37 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,
 /*******************************************************************
 sleep for a specified number of milliseconds
 ********************************************************************/
-void msleep(int t)
+void msleep(unsigned int t)
 {
-  int tdiff=0;
-  struct timeval tval,t1,t2;  
-  fd_set fds;
+	unsigned int tdiff=0;
+	struct timeval tval,t1,t2;  
+	fd_set fds;
 
-  GetTimeOfDay(&t1);
-  GetTimeOfDay(&t2);
+	GetTimeOfDay(&t1);
+	GetTimeOfDay(&t2);
   
-  while (tdiff < t) {
-    tval.tv_sec = (t-tdiff)/1000;
-    tval.tv_usec = 1000*((t-tdiff)%1000);
- 
-    FD_ZERO(&fds);
-    errno = 0;
-    sys_select_intr(0,&fds,&tval);
+	while (tdiff < t) {
+		tval.tv_sec = (t-tdiff)/1000;
+		tval.tv_usec = 1000*((t-tdiff)%1000);
 
-    GetTimeOfDay(&t2);
-    tdiff = TvalDiff(&t1,&t2);
-  }
+		/* Never wait for more than 1 sec. */
+		if (tval.tv_sec > 1) {
+			tval.tv_sec = 1;
+			tval.tv_usec = 0;
+		}
+ 
+		FD_ZERO(&fds);
+		errno = 0;
+		sys_select_intr(0,&fds,&tval);
+
+		GetTimeOfDay(&t2);
+		if (t2.tv_sec < t1.tv_sec) {
+			/* Someone adjusted time... */
+			t1 = t2;
+		}
+
+		tdiff = TvalDiff(&t1,&t2);
+	}
 }
 
 

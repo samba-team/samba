@@ -1265,7 +1265,7 @@ static BOOL connect_to_domain_password_server(struct cli_state *pcli,
      two connections where one hasn't completed a negprot yet it will send a 
      TCP reset to the first connection (tridge) */
 
-  if (!message_named_mutex(server)) {
+  if (!message_named_mutex(server, 20)) {
 	  DEBUG(1,("domain mutex failed for %s\n", server));
 	  return False;
   }

@@ -170,7 +170,7 @@ void message_deregister(int msg_type);
 BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 		      const void *buf, size_t len,
 		      BOOL duplicates_allowed);
-BOOL message_named_mutex(const char *name);
+BOOL message_named_mutex(const char *name, unsigned int timeout);
 void message_named_mutex_release(const char *name);
 
 /*The following definitions come from  lib/ms_fnmatch.c  */
@@ -672,7 +672,7 @@ void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,ti
 void close_low_fds(void);
 int set_blocking(int fd, BOOL set);
 SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,int align);
-void msleep(int t);
+void msleep(unsigned int t);
 void become_daemon(void);
 BOOL yesno(char *p);
 void *Realloc(void *p,size_t size);
