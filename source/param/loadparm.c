@@ -3011,10 +3011,13 @@ static BOOL lp_do_parameter_parametric(int snum, const char *pszParmName, const 
 	struct param_opt *paramo, *data;
 	char *name;
 
+	while (isspace(*pszParmName)) {
+		pszParmName++;
+	}
+
 	name = strdup(pszParmName);
 	if (!name) return False;
 
-	string_sub(name, " ", "", 0);
 	strlower(name);
 
 	if (snum < 0) {
