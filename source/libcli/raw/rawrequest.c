@@ -304,6 +304,19 @@ BOOL cli_request_receive(struct cli_request *req)
 
 
 /*
+  receive another reply to a request - this is used for requests that
+  have multi-part replies (such as SMBtrans2)
+*/
+BOOL cli_request_receive_more(struct cli_request *req)
+{
+	req->state = CLI_REQUEST_RECV;
+	DLIST_ADD(req->transport->pending_recv, req);
+
+	return cli_request_receive(req);
+}
+
+
+/*
   handle oplock break requests from the server - return True if the request was
   an oplock break
 */

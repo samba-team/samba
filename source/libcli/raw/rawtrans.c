@@ -180,10 +180,7 @@ NTSTATUS smb_raw_trans2_recv(struct cli_request *req,
 		if (total_data <= parms->out.data.length && total_param <= parms->out.params.length)
 			break;
 	
-		/* to receive more requests we need to mark this request as not received */
-		req->in.buffer = NULL;
-	
-		if (!cli_request_receive(req)) {
+		if (!cli_request_receive_more(req)) {
 			req->status = NT_STATUS_UNSUCCESSFUL;
 			return cli_request_destroy(req);
 		}
