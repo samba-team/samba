@@ -2,8 +2,19 @@
 
 #include "includes.h"
 
-NTSTATUS ndr_push_spoolss_00(struct ndr_push *ndr, struct spoolss_00 *r)
+NTSTATUS ndr_push_spoolss_EnumPrinters(struct ndr_push *ndr, struct spoolss_EnumPrinters *r)
 {
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.flags));
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.server));
+	if (r->in.server) {
+		NDR_CHECK(ndr_push_unistr(ndr, r->in.server));
+	}
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.buffer));
+	if (r->in.buffer) {
+		NDR_CHECK(ndr_push_uint8_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.buffer));
+	}
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.offered));
 
 	return NT_STATUS_OK;
 }
@@ -176,8 +187,9 @@ NTSTATUS ndr_push_spoolss_1c(struct ndr_push *ndr, struct spoolss_1c *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_spoolss_1d(struct ndr_push *ndr, struct spoolss_1d *r)
+NTSTATUS ndr_push_spoolss_ClosePrinter(struct ndr_push *ndr, struct spoolss_ClosePrinter *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
 
 	return NT_STATUS_OK;
 }
@@ -667,8 +679,20 @@ NTSTATUS ndr_push_spoolss_5f(struct ndr_push *ndr, struct spoolss_5f *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_spoolss_00(struct ndr_pull *ndr, struct spoolss_00 *r)
+NTSTATUS ndr_pull_spoolss_EnumPrinters(struct ndr_pull *ndr, struct spoolss_EnumPrinters *r)
 {
+	uint32 _ptr_buffer;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_buffer));
+	if (_ptr_buffer) {
+		NDR_ALLOC(ndr, r->out.buffer);
+	} else {
+		r->out.buffer = NULL;
+	}
+	if (r->out.buffer) {
+		NDR_CHECK(ndr_pull_uint8_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.buffer));
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.needed));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.returned));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -870,8 +894,9 @@ NTSTATUS ndr_pull_spoolss_1c(struct ndr_pull *ndr, struct spoolss_1c *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_spoolss_1d(struct ndr_pull *ndr, struct spoolss_1d *r)
+NTSTATUS ndr_pull_spoolss_ClosePrinter(struct ndr_pull *ndr, struct spoolss_ClosePrinter *r)
 {
+	NDR_CHECK(ndr_pull_policy_handle(ndr, r->out.handle));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
