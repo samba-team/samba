@@ -415,13 +415,8 @@ arg_match_long(struct getargs *args, size_t num_args,
 
 	if (*optarg == '\0')
 	    val = 1;
-	else {
-	    char *endstr;
-
-	    val = strtol (optarg, &endstr, 0);
-	    if (endstr == optarg)
-		return ARG_ERR_BAD_ARG;
-	}
+	else if(sscanf(optarg + 1, "%d", &val) != 1)
+	    return ARG_ERR_BAD_ARG;
 	*(int *)current->value += val;
 	return 0;
     }
