@@ -510,7 +510,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 				sid = &global_sam_sid;
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				name = global_myworkgroup;
+				name = global_myname;
 				sid = &global_sam_sid;
 				break;
 			case ROLE_STANDALONE:
