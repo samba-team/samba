@@ -522,53 +522,6 @@ gsskrb5_accept_sec_context
 }
 
 static OM_uint32
-code_MechTypeList(OM_uint32 *minor_status,
-		  const MechTypeList *mechlist,
-		  gss_buffer_t out,
-		  u_char **ret_buf)
-{
-    OM_uint32 ret;
-    u_char *buf;
-    size_t buf_size, buf_len;
-
-    buf_size = 1024;
-    buf = malloc(buf_size);
-    if (buf == NULL) {
-	*minor_status = ENOMEM;
-	return GSS_S_FAILURE;
-    }
-
-    do {
-	ret = encode_MechTypeList(buf + buf_size -1,
-				  buf_size,
-				  mechlist, &buf_len);
-	if (ret) {
-	    if (ret == ASN1_OVERFLOW) {
-		u_char *tmp;
-
-		buf_size *= 2;
-		tmp = realloc (buf, buf_size);
-		if (tmp == NULL) {
-		    *minor_status = ENOMEM;
-		    free(buf);
-		    return GSS_S_FAILURE;
-		}
-		buf = tmp;
-	    } else {
-		*minor_status = ret;
-		free(buf);
-		return GSS_S_FAILURE;
-	    }
-	}
-    } while (ret == ASN1_OVERFLOW);
-
-    out->value  = buf + buf_size - buf_len;
-    out->length = buf_len;
-    *ret_buf    = buf;
-    return GSS_S_COMPLETE;
-}
-
-static OM_uint32
 code_NegTokenArg(OM_uint32 *minor_status,
 		 const NegTokenTarg *targ,
 		 krb5_data *data,
@@ -729,6 +682,8 @@ send_accept (OM_uint32 *minor_status,
     }
 
     if (major_status == GSS_S_COMPLETE) {
+	size_t buf_len;
+
 	ALLOC(targ.mechListMIC, 1);
 	if (targ.mechListMIC == NULL) {
 	    free_NegTokenTarg(&targ);
@@ -736,16 +691,18 @@ send_accept (OM_uint32 *minor_status,
 	    return GSS_S_FAILURE;
 	}
 	
-	ret = code_MechTypeList (minor_status, mechtypelist,
-				 &mech_buf, &mech_begbuf);
+	ASN1_MALLOC_ENCODE(MechTypeList, mech_buf.value, mech_buf.length,
+			   mechtypelist, &buf_len, ret);
 	if (ret) {
 	    free_NegTokenTarg(&targ);
 	    return ret;
 	}
-	
+	if (mech_buf.length != buf_len)
+	    abort();
+
 	ret = gss_get_mic(minor_status, context_handle, 0, &mech_buf,
 			  &mech_mic_buf);
-	free (mech_begbuf);
+	free (mech_buf.value);
 	if (ret) {
 	    free_NegTokenTarg(&targ);
 	    return ret;
