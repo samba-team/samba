@@ -257,6 +257,19 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 			ret = False; \
 		} \
 	}} while (0)
+
+#define CHECK_UNIX_NAME(name, sname1, field1, fname, flags) do { \
+	s = find(name); \
+	if (s) { \
+		if (!s->sname1.field1 || \
+		    strcmp(s->sname1.field1, fname)) { \
+			printf("(%d) %s/%s [%s] != %s\n", \
+			       __LINE__, \
+				#sname1, #field1, s->sname1.field1, \
+				fname); \
+			ret = False; \
+		} \
+	}} while (0)
 	
 	/* check that all the results are as expected */
 	CHECK_VAL("SEARCH",              search,              attrib, all_info, all_info, attrib);
@@ -336,6 +349,7 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_NAME("BOTH_DIRECTORY_INFO", both_directory_info, name, fname+1, STR_TERMINATE_ASCII);
 	CHECK_NAME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           name, fname+1, STR_TERMINATE_ASCII);
 	CHECK_NAME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           name, fname+1, STR_TERMINATE_ASCII);
+	CHECK_UNIX_NAME("UNIX_INFO",           unix_info,           name, fname+1, STR_TERMINATE_ASCII);
 
 	CHECK_VAL("ID_FULL_DIRECTORY_INFO", id_full_directory_info, file_id, internal_info, internal_information, file_id);
 	CHECK_VAL("ID_BOTH_DIRECTORY_INFO", id_both_directory_info, file_id, internal_info, internal_information, file_id);
