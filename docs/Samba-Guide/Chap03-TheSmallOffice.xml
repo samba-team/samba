@@ -430,23 +430,13 @@ net groupmap modify ntgroup="Domain Guests"  unixgroup=nobody
 # Add Functional Domain Groups
 net groupmap add ntgroup="Accounts Dept"  unixgroup=acctsdep type=d
 net groupmap add ntgroup="Financial Services" unixgroup=finsrvcs type=d
-
-# Map Windows NT machine local groups to local UNIX groups
-net groupmap modify ntgroup="Administrators" unixgroup=sys
-net groupmap modify ntgroup="Users"          unixgroup=public
-net groupmap modify ntgroup="Guests"         unixgroup=nobody
-net groupmap modify ntgroup="System Operators"  unixgroup=daemon
-net groupmap modify ntgroup="Account Operators" unixgroup=wheel
-net groupmap modify ntgroup="Backup Operators"  unixgroup=bin
-net groupmap modify ntgroup="Print Operators"   unixgroup=lp
-net groupmap modify ntgroup="Replicators"    unixgroup=kmem
-net groupmap modify ntgroup="Power Users"    unixgroup=ntadmin
 </screen>
 </example>
 
 <screen>
 &rootprompt; chmod 755 initGrps.sh
-&rootprompt; /etc/samba # ./initGrps.sh
+&rootprompt; cd /etc/samba 
+&rootprompt; ./initGrps.sh
 Updated mapping entry for Domain Admins
 Updated mapping entry for Domain Users
 Updated mapping entry for Domain Guests
@@ -454,31 +444,23 @@ No rid or sid specified, choosing algorithmic mapping
 Successfully added group Accounts Dept to the mapping db
 No rid or sid specified, choosing algorithmic mapping
 Successfully added group Domain Guests to the mapping db
-Updated mapping entry for Administrators
-Updated mapping entry for Users
-Updated mapping entry for Guests
-Updated mapping entry for System Operators
-Updated mapping entry for Account Operators
-Updated mapping entry for Backup Operators
-Updated mapping entry for Print Operators
-Updated mapping entry for Replicators
-Updated mapping entry for Power Users
 
-&rootprompt; /etc/samba # net groupmap list | sort
-Account Operators (S-1-5-32-548) -> wheel
+&rootprompt; cd /etc/samba 
+&rootprompt; net groupmap list | sort
+Account Operators (S-1-5-32-548) -> -1
 Accounts Dept (S-1-5-21-194350-25496802-3394589-2003) -> acctsdep
-Administrators (S-1-5-32-544) -> sys
-Backup Operators (S-1-5-32-551) -> bin
+Administrators (S-1-5-32-544) -> -1
+Backup Operators (S-1-5-32-551) -> -1
 Domain Admins (S-1-5-21-194350-25496802-3394589-512) -> root
 Domain Guests (S-1-5-21-194350-25496802-3394589-514) -> nobody
 Domain Users (S-1-5-21-194350-25496802-3394589-513) -> users
 Financial Services (S-1-5-21-194350-25496802-3394589-2005) -> finsrvcs
-Guests (S-1-5-32-546) -> nobody
-Power Users (S-1-5-32-547) -> ntadmin
-Print Operators (S-1-5-32-550) -> lp
-Replicators (S-1-5-32-552) -> kmem
-System Operators (S-1-5-32-549) -> daemon
-Users (S-1-5-32-545) -> public
+Guests (S-1-5-32-546) -> -1
+Power Users (S-1-5-32-547) -> -1
+Print Operators (S-1-5-32-550) -> -1
+Replicators (S-1-5-32-552) -> -1
+System Operators (S-1-5-32-549) -> -1
+Users (S-1-5-32-545) -> -1
 </screen>
 		</para></step>
 
@@ -677,13 +659,13 @@ hosts:	files wins
 <smbconfoption><name>name resolve order</name><value>wins bcast hosts</value></smbconfoption>
 <smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
 <smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
-<smbconfoption><name>add user script</name><value>/usr/sbin/useradd -m %u</value></smbconfoption>
-<smbconfoption><name>delete user script</name><value>/usr/sbin/userdel -r %u</value></smbconfoption>
-<smbconfoption><name>add group script</name><value>/usr/sbin/groupadd %g</value></smbconfoption>
-<smbconfoption><name>delete group script</name><value>/usr/sbin/groupdel %g</value></smbconfoption>
-<smbconfoption><name>add user to group script</name><value>/usr/sbin/usermod -G %g %u</value></smbconfoption>
+<smbconfoption><name>add user script</name><value>/usr/sbin/useradd -m '%u'</value></smbconfoption>
+<smbconfoption><name>delete user script</name><value>/usr/sbin/userdel -r '%u'</value></smbconfoption>
+<smbconfoption><name>add group script</name><value>/usr/sbin/groupadd '%g'</value></smbconfoption>
+<smbconfoption><name>delete group script</name><value>/usr/sbin/groupdel '%g'</value></smbconfoption>
+<smbconfoption><name>add user to group script</name><value>/usr/sbin/usermod -G '%g' '%u'</value></smbconfoption>
 <smbconfoption><name>add machine script</name><value>/usr/sbin/useradd \</value></smbconfoption>
-<member><parameter>-s /bin/false -d /dev/null %u</parameter></member>
+<member><parameter>-s /bin/false -d /dev/null '%u'</parameter></member>
 <smbconfoption><name>logon script</name><value>scripts\login.bat</value></smbconfoption>
 <smbconfoption><name>logon path</name><value> </value></smbconfoption>
 <smbconfoption><name>logon drive</name><value>X:</value></smbconfoption>
@@ -763,13 +745,13 @@ Loaded services file OK.
         name resolve order = wins bcast hosts
         printcap name = CUPS
         show add printer wizard = No
-        add user script = /usr/sbin/useradd -m %u
-        delete user script = /usr/sbin/userdel -r %u
-        add group script = /usr/sbin/groupadd %g
-        delete group script = /usr/sbin/groupdel %g
-        add user to group script = /usr/sbin/usermod -G %g %u
+        add user script = /usr/sbin/useradd -m '%u'
+        delete user script = /usr/sbin/userdel -r '%u'
+        add group script = /usr/sbin/groupadd '%g'
+        delete group script = /usr/sbin/groupdel '%g'
+        add user to group script = /usr/sbin/usermod -G '%g' '%u'
         add machine script = /usr/sbin/useradd 
-				-s /bin/false -d /dev/null %u
+				-s /bin/false -d /dev/null '%u'
         logon script = scripts\logon.bat
         logon path =
         logon drive = X:
