@@ -37,6 +37,21 @@ static BOOL showall;
 #define LOCK_PCT 45
 #define UNLOCK_PCT 45
 
+enum op_type {OP_lock=0, OP_unlock, OP_reopen};
+
+struct preset {
+	int r1, r2;
+	int conn, f;
+	int start, len;
+	int rw;
+} preset[] = {
+{86, 37, 0, 1, 29, 41, WRITE_LOCK},
+{46, 21, 0, 1, 55, 7, READ_LOCK},
+{51, 35, 0, 0, 79, 2, WRITE_LOCK},
+{69, 97, 0, 1, },
+{35, 27, 1, 1, 31, 45, READ_LOCK},
+	};
+
 /* each server has two connections open to it. Each connection has two file
    descriptors open on the file - 8 file descriptors in total 
 
@@ -65,25 +80,34 @@ static void test_locks(struct cli_state *cli[2][2])
 	}
 
 	for (n=0; n<numops; n++) {
-		int start, len, op, r;
+		int start, len, op, r1, r2;
 		BOOL ret1, ret2;
 
-		conn = random() % 2;
-		f = random() % 2;
-		start = random() % (LOCKRANGE-1);
-		len = 1 + random() % (LOCKRANGE-start);
+		if (n < sizeof(preset) / sizeof(preset[0])) {
+			conn = preset[n].conn;
+			f = preset[n].f;
+			start = preset[n].start;
+			len = preset[n].len;
+			r1 = preset[n].r1;
+			r2 = preset[n].r2;
+		} else {
+			conn = random() % 2;
+			f = random() % 2;
+			start = random() % (LOCKRANGE-1);
+			len = 1 + random() % (LOCKRANGE-start);
 
-		r = random() % 100;
+			r1 = random() % 100;
+			r2 = random() % 100;
+		}
 
-		if (r < READ_PCT) {
+		if (r1 < READ_PCT) {
 			op = READ_LOCK; 
 		} else {
 			op = WRITE_LOCK; 
 		}
 
-		r = random() % 100;
 
-		if (r < LOCK_PCT) {
+		if (r2 < LOCK_PCT) {
 			/* set a lock */
 			ret1 = cli_lock(cli[0][conn], 
 					fnum[0][conn][f],
@@ -92,12 +116,12 @@ static void test_locks(struct cli_state *cli[2][2])
 					fnum[1][conn][f],
 					start, len, 0, op);
 			if (showall || ret1 != ret2) {
-				printf("%5d lock   conn=%d f=%d %d:%d op=%s -> %d:%d\n",
-				       n, conn, f, start, len, op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
+				printf("%5d r1=%d r2=%d lock   conn=%d f=%d %d:%d op=%s -> %d:%d\n",
+				       n, r1, r2, conn, f, start, len, op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
 				       ret1, ret2);
 			}
 			if (ret1 != ret2) return;
-		} else if (r < LOCK_PCT+UNLOCK_PCT) {
+		} else if (r2 < LOCK_PCT+UNLOCK_PCT) {
 			/* unset a lock */
 			/* set a lock */
 			ret1 = cli_unlock(cli[0][conn], 
@@ -107,8 +131,8 @@ static void test_locks(struct cli_state *cli[2][2])
 					  fnum[1][conn][f],
 					  start, len);
 			if (showall || ret1 != ret2) {
-				printf("%5d unlock conn=%d f=%d %d:%d       -> %d:%d\n",
-				       n, conn, f, start, len,
+				printf("%5d r1=%d r2=%d unlock conn=%d f=%d %d:%d       -> %d:%d\n",
+				       n, r1, r2, conn, f, start, len,
 				       ret1, ret2);
 			}
 		} else {
@@ -130,8 +154,8 @@ static void test_locks(struct cli_state *cli[2][2])
 				return;
 			}
 			if (showall) {
-				printf("%5d reopen conn=%d f=%d\n",
-				       n, conn, f);
+				printf("%5d r1=%d r2=%d reopen conn=%d f=%d\n",
+				       n, r1, r2, conn, f);
 			}
 			if (ret1 != ret2) return;
 		}
