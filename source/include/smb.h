@@ -402,6 +402,7 @@ typedef struct files_struct
 	BOOL delete_on_close;
 	SMB_OFF_T pos;
 	SMB_OFF_T size;
+	SMB_OFF_T initial_allocation_size; /* Faked up initial allocation on disk. */
 	mode_t mode;
 	uint16 vuid;
 	write_bmpx_struct *wbmpx_ptr;
