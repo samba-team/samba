@@ -527,12 +527,10 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		if (pace->type == SMB_ACL_USER_OBJ) {
 
 			if (setting_acl) {
-				if (pace->perms == (mode_t)0) {
-					/* Ensure owner has read access. */
-					pace->perms = S_IRUSR;
-					if (fsp->is_directory)
-						pace->perms |= (S_IWUSR|S_IXUSR);
-				}
+				/* Ensure owner has read access. */
+				pace->perms |= S_IRUSR;
+				if (fsp->is_directory)
+					pace->perms |= (S_IWUSR|S_IXUSR);
 
 				/*
 				 * Ensure create mask/force create mode is respected on set.
@@ -1699,6 +1697,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 
 static BOOL convert_canon_ace_to_posix_perms( files_struct *fsp, canon_ace *file_ace_list, mode_t *posix_perms)
 {
+	int snum = SNUM(fsp->conn);
 	size_t ace_count = count_canon_ace_list(file_ace_list);
 	canon_ace *ace_p;
 	canon_ace *owner_ace = NULL;
@@ -1738,8 +1737,29 @@ posix perms.\n", fsp->fsp_name ));
 
 	/* The owner must have at least read access. */
 
-	if (*posix_perms == (mode_t)0)
-		*posix_perms = S_IRUSR;
+	*posix_perms |= S_IRUSR;
+	if (fsp->is_directory)
+		*posix_perms |= (S_IWUSR|S_IXUSR);
+
+	/* If requested apply the masks. */
+
+	if (lp_restrict_acl_with_mask(snum)) {
+		mode_t and_bits;
+		mode_t or_bits;
+
+		/* Get the initial bits to apply. */
+
+		if (fsp->is_directory) {
+			and_bits = lp_dir_mask(snum);
+			or_bits = lp_force_dir_mode(snum);
+		} else {
+			and_bits = lp_create_mask(snum);
+			or_bits = lp_force_create_mode(snum);
+		}
+
+		*posix_perms = (((*posix_perms) & and_bits)|or_bits);
+
+	}
 
 	DEBUG(10,("convert_canon_ace_to_posix_perms: converted u=%o,g=%o,w=%o to perm=0%o for file %s.\n",
 		(int)owner_ace->perms, (int)group_ace->perms, (int)other_ace->perms, (int)*posix_perms,
