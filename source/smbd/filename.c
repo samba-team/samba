@@ -324,6 +324,18 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
 				pstrcat(start,"/");
 				pstrcat(start,rest);
 				*end = '\0';
+			} else {
+				/*
+				 * We just scanned for, and found the end of the path.
+				 * We must return a valid stat struct if it exists.
+				 * JRA.
+				 */
+
+				if (vfs_stat(conn,name, &st) == 0) {
+					*pst = st;
+				} else {
+					ZERO_STRUCT(st);
+				}
 			}
 		} /* end else */
 
