@@ -524,7 +524,7 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_ChangePasswordUser r;
 	BOOL ret = True;
-	struct samr_Hash hash1, hash2, hash3, hash4;
+	struct samr_Hash hash1, hash2, hash3, hash4, hash5, hash6;
 	struct policy_handle user_handle;
 	char *oldpass = *password;
 	char *newpass = samr_rand_pass(mem_ctx);	
@@ -540,36 +540,34 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	E_md4hash(oldpass, old_nt_hash);
 	E_md4hash(newpass, new_nt_hash);
-
 	E_deshash(oldpass, old_lm_hash);
 	E_deshash(newpass, new_lm_hash);
 
-	memcpy(hash1.hash, new_lm_hash, 16);
-	SamOEMhash(hash1.hash, old_lm_hash, 16);
-	E_old_pw_hash(new_lm_hash, old_lm_hash, hash2.hash);
-
-	memcpy(hash3.hash, new_lm_hash, 16);
-	SamOEMhash(hash3.hash, old_nt_hash, 16);
-	E_old_pw_hash(new_nt_hash, old_nt_hash, hash4.hash);
+	E_old_pw_hash(new_lm_hash, old_lm_hash, hash1.hash);
+	E_old_pw_hash(old_lm_hash, new_lm_hash, hash2.hash);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, hash3.hash);
+	E_old_pw_hash(old_nt_hash, new_nt_hash, hash4.hash);
+	E_old_pw_hash(old_lm_hash, new_nt_hash, hash5.hash);
+	E_old_pw_hash(old_nt_hash, new_lm_hash, hash6.hash);
 
 	r.in.handle = &user_handle;
-	r.in.unknown1 = 1;
-	r.in.hash1 = &hash1;
-	r.in.hash2 = &hash2;
-	r.in.unknown2 = 1;
-	r.in.hash3 = &hash3;
-	r.in.hash4 = &hash4;
-	r.in.unknown3 = 1;
-	r.in.hash5 = &hash1;
-	r.in.unknown4 = 1;
-	r.in.hash6 = &hash3;
+	r.in.lm_present = 1;
+	r.in.old_lm_crypted = &hash1;
+	r.in.new_lm_crypted = &hash2;
+	r.in.nt_present = 1;
+	r.in.old_nt_crypted = &hash3;
+	r.in.new_nt_crypted = &hash4;
+	r.in.cross1_present = 1;
+	r.in.nt_cross = &hash5;
+	r.in.cross2_present = 1;
+	r.in.lm_cross = &hash6;
 
 	status = dcerpc_samr_ChangePasswordUser(p, mem_ctx, &r);
-	/* because we don't yet have the right code above, we expect
-	   WRONG_PASSWORD back */
-	if (!NT_STATUS_EQUAL(NT_STATUS_WRONG_PASSWORD, status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("ChangePasswordUser failed - %s\n", nt_errstr(status));
 		ret = False;
+	} else {
+		*password = newpass;
 	}
 
 	if (!test_Close(p, mem_ctx, &user_handle)) {
@@ -2719,3 +2717,4 @@ BOOL torture_rpc_samr(int dummy)
 
 	return ret;
 }
+
