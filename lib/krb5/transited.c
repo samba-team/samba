@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -327,8 +327,9 @@ krb5_domain_x500_decode(krb5_data tr, char ***realms, int *num_realms,
 	*num_realms = 0;
 	while(r){
 	    R = realloc(*realms, (*num_realms + 1) * sizeof(**realms));
-	    if(R == NULL){
-		abort();
+	    if(R == NULL) {
+		free(*realms);
+		return ENOMEM;
 	    }
 	    R[*num_realms] = r->realm;
 	    (*num_realms)++;
