@@ -63,6 +63,11 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 		return;
 	}
 
+	if (ip_equal(nmask, allones_ip)) {
+		DEBUG(3,("not adding non-broadcast interface %s\n",inet_ntoa(ip)));
+		return;
+	}
+
 	iface = (struct interface *)malloc(sizeof(*iface));
 	if (!iface) return;
 	
@@ -116,7 +121,8 @@ static void interpret_interface(char *token)
 	if (!p) {
 		ip = *interpret_addr2(token);
 		for (i=0;i<total_probed;i++) {
-			if (ip.s_addr == probed_ifaces[i].ip.s_addr) {
+			if (ip.s_addr == probed_ifaces[i].ip.s_addr &&
+			    !ip_equal(allones_ip, probed_ifaces[i].netmask)) {
 				add_interface(probed_ifaces[i].ip,
 					      probed_ifaces[i].netmask);
 				return;
