@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -34,6 +34,31 @@
 #include "hdb_locl.h"
 
 RCSID("$Id$");
+
+struct hdb_method {
+    const char *prefix;
+    krb5_error_code (*create)(krb5_context, HDB **, const char *filename);
+};
+
+static struct hdb_method methods[] = {
+#if HAVE_DB_H
+    {"db:",	hdb_db_create},
+#endif
+#if HDB_NDBM_H
+    {"ndbm:",	hdb_ndbm_create},
+#endif
+#if OPENLDAP
+    {"ldap:",	hdb_ldap_create},
+#endif
+#if HAVE_DB_H
+    {"",	hdb_db_create},
+#elif HAVE_NDBM_H
+    {"",	hdb_ndbm_create},
+#elif OPENLDAP
+    {"",	hdb_ldap_create},
+#endif
+    {NULL,	NULL}
+};
 
 krb5_error_code
 hdb_next_enctype2key(krb5_context context,
@@ -281,21 +306,38 @@ hdb_init_db(krb5_context context, HDB *db)
     return ret;
 }
 
+/*
+ * find the relevant method for `filename', returning a pointer to the
+ * rest in `rest'.
+ * return NULL if there's no such method.
+ */
+
+static const struct hdb_method *
+find_method (const char *filename, const char **rest)
+{
+    const struct hdb_method *h;
+
+    for (h = methods; h->prefix != NULL; ++h)
+	if (strncmp (filename, h->prefix, strlen(h->prefix)) == 0) {
+	    *rest = filename + strlen(h->prefix);
+	    return h;
+	}
+    return NULL;
+}
+
 krb5_error_code
 hdb_create(krb5_context context, HDB **db, const char *filename)
 {
-    krb5_error_code ret = 0;
+    const struct hdb_method *h;
+    const char *residual;
+
     if(filename == NULL)
 	filename = HDB_DEFAULT_DB;
     initialize_hdb_error_table_r(&context->et_list);
-#ifdef HAVE_DB_H
-    ret = hdb_db_create(context, db, filename);
-#elif HAVE_NDBM_H
-    ret = hdb_ndbm_create(context, db, filename);
-#else
-    krb5_errx(context, 1, "No database support! (hdb_create)");
-#endif
-    return ret;
+    h = find_method (filename, &residual);
+    if (h == NULL)
+	krb5_errx(context, 1, "No database support! (hdb_create)");
+    return (*h->create)(context, db, residual);
 }
 
 krb5_error_code
