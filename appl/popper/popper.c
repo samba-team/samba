@@ -38,10 +38,12 @@ tgets(char *str, int size, FILE *fp, int timeout)
 {
   signal(SIGALRM, ring);
   alarm(timeout);
-  if (setjmp(env))
-    str = NULL;
-  else
-    str = fgets(str,size,fp);
+  if (setjmp(env)) {
+      alarm(0);
+      signal(SIGALRM,SIG_DFL);
+      return NULL;
+  }
+  fgets(str,size,fp);
   alarm(0);
   signal(SIGALRM,SIG_DFL);
   return(str);
