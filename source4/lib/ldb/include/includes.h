@@ -18,6 +18,13 @@
 #include <fnmatch.h>
 #include <sys/time.h>
 #include <time.h>
+
+
+#ifndef _PRINTF_ATTRIBUTE
+#define _PRINTF_ATTRIBUTE(a,b)
+#endif
+
 #include "ldb.h"
 #include "tdb.h"
 #include "proto.h"
+
