@@ -53,17 +53,17 @@ void
 print_cred(krb5_context context, krb5_creds *cred)
 {
     char *str;
-    struct timeval now;
     krb5_error_code ret;
+    int32_t sec;
 
-    gettimeofday(&now, NULL);
+    krb5_timeofday (context, &sec);
 
     if(cred->times.starttime)
 	printf ("%s  ", printable_time(cred->times.starttime));
     else
 	printf ("%s  ", printable_time(cred->times.authtime));
     
-    if(cred->times.endtime > now.tv_sec)
+    if(cred->times.endtime > sec)
 	printf ("%s  ", printable_time(cred->times.endtime));
     else
 	printf ("%-15s  ", ">>>Expired<<<");
@@ -82,9 +82,9 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     char *str;
     krb5_error_code ret;
     int first_flag;
-    struct timeval now;
+    int32_t sec;
 
-    gettimeofday(&now, NULL);
+    krb5_timeofday (context, &sec);
 
     ret = krb5_unparse_name(context, cred->server, &str);
     if(ret)
@@ -98,7 +98,7 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     if(cred->times.authtime != cred->times.starttime)
 	printf("Start time: %s\n", printable_time(cred->times.starttime));
     printf("End time:   %s", printable_time(cred->times.endtime));
-    if(now.tv_sec > cred->times.endtime)
+    if(sec > cred->times.endtime)
 	printf(" (expired)");
     printf("\n");
     if(cred->flags.b.renewable)
@@ -206,6 +206,24 @@ main (int argc, char **argv)
     printf ("Credentials cache: %s\n", krb5_cc_get_name(context, ccache));
     printf ("\tPrincipal: %s\n\n", str);
     free (str);
+
+    if (do_verbose && context->kdc_sec_offset) {
+	char buf[BUFSIZ];
+	int val;
+	int sig;
+
+	val = context->kdc_sec_offset;
+	sig = 1;
+	if (val < 0) {
+	    sig = -1;
+	    val = -val;
+	}
+
+	unparse_time (val, buf, sizeof(buf));
+
+	printf ("\tKDC time offset: %s%s\n",
+		sig == -1 ? "-" : "", buf);
+    }
 
     ret = krb5_cc_start_seq_get (context, ccache, &cursor);
     if (ret)
