@@ -405,7 +405,7 @@ NTSTATUS samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /*
   check that a password is sufficiently complex
 */
-BOOL samdb_password_complexity_ok(const char *pass)
+static BOOL samdb_password_complexity_ok(const char *pass)
 {
 	return check_password_quality(pass);
 }
@@ -482,7 +482,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 
 	if (new_pass) {
 		/* check the various password restrictions */
-		if (minPwdLength > str_charnum(new_pass)) {
+		if (minPwdLength > strlen_m(new_pass)) {
 			if (reject_reason) {
 				*reject_reason = SAMR_REJECT_TOO_SHORT;
 			}
