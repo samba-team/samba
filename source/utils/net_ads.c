@@ -81,7 +81,7 @@ static int net_ads_lookup(int argc, const char **argv)
 		d_printf("Didn't find the cldap server!\n");
 		return -1;
 	} if (!ads->config.realm) {
-		ads->config.realm = opt_target_workgroup;
+                ads->config.realm = (char *) opt_target_workgroup;
 		ads->ldap_port = 389;
 	}
 

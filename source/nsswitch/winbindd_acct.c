@@ -222,7 +222,7 @@ static WINBINDD_GR* string2group( char *string )
 			gr_members = SMB_XMALLOC_ARRAY(char*, num_gr_members+1);
 			
 			i = 0;
-			while ( next_token(&str, buffer, ",", sizeof(buffer)) && i<num_gr_members ) {
+			while ( next_token((const char **) &str, buffer, ",", sizeof(buffer)) && i<num_gr_members ) {
 				gr_members[i++] = smb_xstrdup(buffer);
 			}
 

@@ -34,6 +34,8 @@ static TDB_CONTEXT *svcctl_tdb; /* used for share security descriptors */
 /********************************************************************
 ********************************************************************/
 
+#if 0 /* unused static function */
+
 static BOOL init_svcctl_db( void )
 {
 	static pid_t local_pid;
@@ -68,6 +70,8 @@ static BOOL init_svcctl_db( void )
 
 	return True;
 }
+
+#endif
 
 /********************************************************************
  TODO
