@@ -911,7 +911,7 @@ BOOL get_policy_con(struct policy_cache *cache, const POLICY_HND * hnd,
 
 	if (dev != NULL)
 	{
-		DEBUG(3, ("Getting policy con state\n"));
+		DEBUG(5, ("Getting policy con state\n"));
 		(*con) = dev->con;
 		return True;
 	}
