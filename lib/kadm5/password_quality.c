@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000, 2003-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,6 +32,7 @@
  */
 
 #include "kadm5_locl.h"
+#include "kadm5-pwcheck.h"
 
 RCSID("$Id$");
 
@@ -39,32 +40,120 @@ RCSID("$Id$");
 #include <dlfcn.h>
 #endif
 
-static const char *
-simple_passwd_quality (krb5_context context,
-		       krb5_principal principal,
-		       krb5_data *pwd)
+static int
+min_length_passwd_quality (krb5_context context,
+			   krb5_principal principal,
+			   krb5_data *pwd,
+			   const char *opaque,
+			   char *message,
+			   size_t length)
 {
-    if (pwd->length < 6)
-	return "Password too short";
-    else
-	return NULL;
+    u_int32_t min_length = krb5_config_get_int_default(context, NULL, 6,
+						       "password_quality",
+						       "min_length",
+						       NULL);
+
+    if (pwd->length < min_length) {
+	strlcpy(message, "Password too short", length);
+	return 1;
+    } else
+	return 0;
 }
 
-typedef const char* (*passwd_quality_check_func)(krb5_context, 
-						 krb5_principal, 
-						 krb5_data*);
+static const char *
+min_length_passwd_quality_v0 (krb5_context context,
+			      krb5_principal principal,
+			      krb5_data *pwd)
+{
+    static char message[1024];
+    int ret;
 
-static passwd_quality_check_func passwd_quality_check = simple_passwd_quality;
+    message[0] = '\0';
 
-#ifdef HAVE_DLOPEN
+    ret = min_length_passwd_quality(context, principal, pwd, NULL,
+				    message, sizeof(message));
+    if (ret)
+	return message;
+    return NULL;
+}
 
-#define PASSWD_VERSION 0
 
-#endif
+static int
+char_class_passwd_quality (krb5_context context,
+			   krb5_principal principal,
+			   krb5_data *pwd,
+			   const char *opaque,
+			   char *message,
+			   size_t length)
+{
+    char *classes[] = {
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+	"abcdefghijklmnopqrstuvwxyz",
+	"1234567890",
+	"!@#$%^&*()/?<>,.{[]}\\|'~`\" "
+    };
+    int i, counter = 0, req_classes;
+    size_t len;
+    char *pw;
+
+    req_classes = krb5_config_get_int_default(context, NULL, 3,
+					      "password_quality",
+					      "min_classes",
+					      NULL);
+
+    len = pwd->length + 1;
+    pw = malloc(len);
+    if (pw == NULL) {
+	strlcpy(message, "out of memory", sizeof(message));
+	return 1;
+    }
+    strlcpy(pw, pwd->data, len);
+    len = strlen(pw);
+
+    for (i = 0; i < sizeof(classes)/sizeof(classes[0]); i++) {
+	if (strcspn(pw, classes[i]) < len)
+	    counter++;
+    }
+    memset(pw, 0, pwd->length + 1);
+    free(pw);
+    if (counter < req_classes) {
+	snprintf(message, length,
+	    "Password doesn't meet complexity requirement.\n"
+	    "Add more characters from the following classes:\n"
+	    "1. English uppercase characters (A through Z)\n"
+	    "2. English lowercase characters (a through z)\n"
+	    "3. Base 10 digits (0 through 9)\n"
+	    "4. Nonalphanumeric characters (e.g., !, $, #, %%)");
+	return 1;
+    }
+    return 0;
+}
+
+static kadm5_passwd_quality_check_func_v0 passwd_quality_check = 
+	min_length_passwd_quality_v0;
+
+struct kadm5_pw_policy_check_func builtin_funcs[] = {
+    { "minimum-length", min_length_passwd_quality },
+    { "character-class", char_class_passwd_quality },
+    { NULL }
+};
+struct kadm5_pw_policy_verifier builtin_verifier = {
+    "builtin", 
+    KADM5_PASSWD_VERSION_V1, 
+    "Heimdal builtin",
+    builtin_funcs
+};
+
+static struct kadm5_pw_policy_verifier **verifiers;
+static int num_verifiers;
 
 /*
  * setup the password quality hook
  */
+
+#ifndef RTLD_NOW
+#define RTLD_NOW 0
+#endif
 
 void
 kadm5_setup_passwd_quality_check(krb5_context context,
@@ -75,14 +164,7 @@ kadm5_setup_passwd_quality_check(krb5_context context,
     void *handle;
     void *sym;
     int *version;
-    int flags;
     const char *tmp;
-
-#ifdef RTLD_NOW
-    flags = RTLD_NOW;
-#else
-    flags = 0;
-#endif
 
     if(check_library == NULL) {
 	tmp = krb5_config_get_string(context, NULL, 
@@ -105,7 +187,7 @@ kadm5_setup_passwd_quality_check(krb5_context context,
 
     if(check_library == NULL)
 	return;
-    handle = dlopen(check_library, flags);
+    handle = dlopen(check_library, RTLD_NOW);
     if(handle == NULL) {
 	krb5_warnx(context, "failed to open `%s'", check_library);
 	return;
@@ -117,10 +199,10 @@ kadm5_setup_passwd_quality_check(krb5_context context,
 	dlclose(handle);
 	return;
     }
-    if(*version != PASSWD_VERSION) {
+    if(*version != KADM5_PASSWD_VERSION_V0) {
 	krb5_warnx(context,
 		   "version of loaded library is %d (expected %d)",
-		   *version, PASSWD_VERSION);
+		   *version, KADM5_PASSWD_VERSION_V0);
 	dlclose(handle);
 	return;
     }
@@ -132,8 +214,110 @@ kadm5_setup_passwd_quality_check(krb5_context context,
 	dlclose(handle);
 	return;
     }
-    passwd_quality_check = (passwd_quality_check_func) sym;
+    passwd_quality_check = (kadm5_passwd_quality_check_func_v0) sym;
 #endif /* HAVE_DLOPEN */
+}
+
+krb5_error_code
+kadm5_add_passwd_quality_verifier(krb5_context context,
+				  const char *check_library)
+{
+#ifdef HAVE_DLOPEN
+    struct kadm5_pw_policy_verifier *v, **tmp;
+    void *handle;
+    int i;
+
+    if(check_library == NULL)
+	return EINVAL;
+
+    handle = dlopen(check_library, RTLD_NOW);
+    if(handle == NULL) {
+	krb5_warnx(context, "failed to open `%s'", check_library);
+	return ENOENT;
+    }
+    v = dlsym(handle, "kadm5_password_verifier");
+    if(v == NULL) {
+	krb5_warnx(context,
+		   "didn't find `kadm5_password_verifier' symbol "
+		   "in `%s'", check_library);
+	dlclose(handle);
+	return ENOENT;
+    }
+    if(v->version != KADM5_PASSWD_VERSION_V1) {
+	krb5_warnx(context,
+		   "version of loaded library is %d (expected %d)",
+		   v->version, KADM5_PASSWD_VERSION_V1);
+	dlclose(handle);
+	return EINVAL;
+    }
+    for (i = 0; i < num_verifiers; i++) {
+	if (strcmp(v->name, verifiers[i]->name) == 0)
+	    break;
+    }
+    if (i < num_verifiers) {
+	krb5_warnx(context, "password verifier library `%s' is already loaded",
+		   v->name);
+	dlclose(handle);
+	return 0;
+    }
+
+    tmp = realloc(verifiers, (num_verifiers + 1) * sizeof(*verifiers));
+    if (tmp == NULL) {
+	krb5_warnx(context, "out of memory");
+	dlclose(handle);
+	return 0;
+    }
+    verifiers = tmp;
+    verifiers[num_verifiers] = v;
+    num_verifiers++;
+#endif /* HAVE_DLOPEN */
+    return 0;
+}
+
+/*
+ *
+ */
+
+static struct kadm5_pw_policy_check_func *
+find_func(krb5_context context, const char *name)
+{
+    struct kadm5_pw_policy_check_func *f;
+    char *module = NULL;
+    const char *p, *func;
+    int i;
+
+    p = strchr(name, ':');
+    if (p) {
+	func = p + 1;
+	module = strndup(name, p - name - 1);
+	if (module == NULL)
+	    return NULL;
+    } else
+	func = name;
+
+    /* Find module in loaded modules first */
+    for (i = 0; i < num_verifiers; i++) {
+	if (module && strcmp(module, verifiers[i]->name) != 0)
+	    continue;
+	for (f = verifiers[i]->funcs; f->name ; f++)
+	    if (strcmp(name, f->name) == 0) {
+		if (module)
+		    free(module);
+		return f;
+	    }
+    }
+    /* Lets try try the builtin modules */
+    if (module == NULL || strcmp(module, "builtin") == 0) {
+	for (f = builtin_verifier.funcs; f->name ; f++)
+	    if (strcmp(name, f->name) == 0) {
+		if (module)
+		    free(module);
+		return f;
+	    }
+    }
+    if (module)
+	free(module);
+    return NULL;
 }
 
 const char *
@@ -141,5 +325,41 @@ kadm5_check_password_quality (krb5_context context,
 			      krb5_principal principal,
 			      krb5_data *pwd_data)
 {
-    return (*passwd_quality_check) (context, principal, pwd_data);
+    struct kadm5_pw_policy_check_func *proc;
+    static char error_msg[1024];
+    const char *msg;
+    char **v, **vp;
+    int ret;
+
+    v = krb5_config_get_strings(context, NULL, 
+				"password_quality", 
+				"policies", 
+				NULL);
+    if (v == NULL)
+	return (*passwd_quality_check) (context, principal, pwd_data);
+
+    error_msg[0] = '\0';
+
+    msg = NULL;
+    for(vp = v; *vp; vp++) {
+	proc = find_func(context, *vp);
+	if (proc == NULL) {
+	    msg = "failed to find password verifier function";
+	    break;
+	}
+	ret = (proc->func)(context, principal, pwd_data, NULL,
+			   error_msg, sizeof(error_msg));
+	if (ret) {
+	    msg = error_msg;
+	    break;
+	}
+    }
+    krb5_config_free_strings(v);
+
+    /* If the default quality check isn't used, lets check that the
+     * old quality function the user have set too */
+    if (msg == NULL && passwd_quality_check != min_length_passwd_quality_v0)
+	msg = (*passwd_quality_check) (context, principal, pwd_data);
+
+    return msg;
 }
