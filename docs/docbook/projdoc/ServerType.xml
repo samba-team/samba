@@ -431,7 +431,7 @@ the later natively capable of encrypted password support.
 When Samba is running in <emphasis>server level</emphasis> security it is essential that
 the parameter <emphasis>password server</emphasis> is set to the precise netbios machine
 name of the target authentication server. Samba can NOT determine this from NetBIOS name
-lookups because the choice of the target authentication server arbitrary and can not
+lookups because the choice of the target authentication server is arbitrary and can not
 be determined from a domain name. In essence a samba server that is in
 <emphasis>server level</emphasis> security is operating in what used to be known as
 workgroup mode.
@@ -482,7 +482,7 @@ for the user, this account can be blocked to prevent logons by other than MS Win
 <title>Seamless Windows Network Integration</title>
 
 <para>
-MS Windows clients may use encrypted passwords as part of a challenege/response
+MS Windows clients may use encrypted passwords as part of a challenge/response
 authentication model (a.k.a. NTLMv1 and NTLMv2) or alone, or clear text strings for simple
 password based authentication. It should be realized that with the SMB protocol
 the password is passed over the network either in plain text or encrypted, but
@@ -573,7 +573,7 @@ passwords will eventually lead to user complaints and unhappiness.
 
 <para>
 We all make mistakes. It is Ok to make mistakes, so long as they are made in the right places
-and at the right time. A mistake that causes lost productivity is seldom tollerated. A mistake
+and at the right time. A mistake that causes lost productivity is seldom tolerated. A mistake
 made in a developmental test lab is expected.
 </para>
 
@@ -581,7 +581,7 @@ made in a developmental test lab is expected.
 Here we look at common mistakes and misapprehensions that have been the subject of discussions
 on the samba mailing lists. Many of these are avoidable by doing you homework before attempting
 a Samba implementation. Some are the result of misundertanding of the English language. The
-English language has many terms of phrase that are potentially vague and may be highly confusing
+English language has many turns of phrase that are potentially vague and may be highly confusing
 to those for whom English is not their native tongue.
 </para>
 

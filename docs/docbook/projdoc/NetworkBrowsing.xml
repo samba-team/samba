@@ -801,10 +801,10 @@ remote LMB or else is the network broadcast address of the remote segment.
 
 <para>
 Use of WINS (either Samba WINS _or_ MS Windows NT Server WINS) is highly
-recommended. Every NetBIOS machine registers it's name together with a
+recommended. Every NetBIOS machine registers its name together with a
 name_type value for each of of several types of service it has available.
-eg: It registers it's name directly as a unique (the type 0x03) name.
-It also registers it's name if it is running the lanmanager compatible
+eg: It registers its name directly as a unique (the type 0x03) name.
+It also registers its name if it is running the lanmanager compatible
 server service (used to make shares and printers available to other users)
 by registering the server (the type 0x20) name.
 </para>
@@ -1268,7 +1268,7 @@ Consisting of 3 subnets (1, 2, 3) connected by two routers
 (R1, R2) - these do not pass broadcasts.  Subnet 1 has 5 machines
 on it, subnet 2 has 4 machines, subnet 3 has 4 machines.  Assume
 for the moment that all these machines are configured to be in the
-same workgroup (for simplicities sake).  Machine N1_C on subnet 1
+same workgroup (for simplicity's sake).  Machine N1_C on subnet 1
 is configured as Domain Master Browser (ie.  it will collate the
 browse lists for the workgroup).  Machine N2_D is configured as
 WINS server and all the other machines are configured to register
@@ -1341,7 +1341,7 @@ Now examine subnet 2.  As soon as N2_B has become the local
 master browser it looks for a Domain master browser to synchronize
 its browse list with.  It does this by querying the WINS server
 (N2_D) for the IP address associated with the NetBIOS name 
-WORKGROUP&lt;1B&gt;.  This name was registerd by the Domain master
+WORKGROUP&lt;1B&gt;.  This name was registered by the Domain master
 browser (N1_C) with the WINS server as soon as it was booted.
 </para>
 
@@ -1494,7 +1494,7 @@ particular note.
 <title>How can one flush the Samba NetBIOS name cache without restarting samba?</title>
 
 <para>
-Sambas' nmbd process controls all browse list handling. Under normal circumstances it is
+Samba's nmbd process controls all browse list handling. Under normal circumstances it is
 safe to restart nmbd. This will effectively flush the samba NetBIOS name cache and cause it
 to be rebuilt. Note that this does NOT make certain that a rogue machine name will not re-appear
 in the browse list. When nmbd is taken out of service another machine on the network will

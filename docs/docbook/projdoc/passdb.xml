@@ -28,7 +28,7 @@ In the course of development of Samba-3 a number of requests were received to pr
 ability to migrate MS Windows NT4 SAM accounts to Samba-3 without the need to provide
 matching Unix/Linux accounts. We called this the <emphasis>Non Unix Accounts (NUA)</emphasis>
 capability. The intent was that an administrator could decide to use the <emphasis>tdbsam</emphasis>
-backend and by simply specifying <emphasis>"passdb backedn = tdbsam_nua, guest"</emphasis>
+backend and by simply specifying <emphasis>"passdb backend = tdbsam_nua, guest"</emphasis>
 this would allow Samba-3 to implement a solution that did not use Unix accounts per se. Late
 in the development cycle the team doing this work hit upon some obstacles that prevents this
 solution from being used. Given the delays with Samba-3 release a decision was made to NOT
@@ -128,7 +128,7 @@ Samba-3 introduces the following new password backend capabilities:
 			</para>
 
 			<para>
-			The inclusion of the <emphasis>tdbssam</emphasis> capability is a direct
+			The inclusion of the <emphasis>tdbsam</emphasis> capability is a direct
 			response to user requests to allow simple site operation without the overhead
 			of the complexities of running OpenLDAP. It is recommended to use this only
 			for sites that have fewer than 250 users. For larger sites or implementations
@@ -150,7 +150,7 @@ Samba-3 introduces the following new password backend capabilities:
 			</para>
 
 			<para>
-			The new LDAP implmentation significantly expands the control abilities that
+			The new LDAP implementation significantly expands the control abilities that
 			were possible with prior versions of Samba. It is now possible to specify
 			"per user" profile settings, home directories, account access controls, and
 			much more. Corporate sites will see that the Samba-Team has listened to their
@@ -597,12 +597,12 @@ backends of the same type. For example, to use two different tdbsam databases:
 		<listitem><para>
 		And finally, the amount of information which is stored in an smbpasswd entry leaves
 		no room for additional attributes such as a home directory, password expiration time,
-		or even a Relative Identified (RID).
+		or even a Relative Identifier (RID).
 		</para></listitem>
 		</itemizedlist>
 
 		<para>
-		As a result of these defeciencies, a more robust means of storing user attributes
+		As a result of these deficiencies, a more robust means of storing user attributes
 		used by smbd was developed.  The API which defines access to user accounts
 		is commonly referred to as the samdb interface (previously this was called the passdb
 		API, and is still so named in the Samba CVS trees). 
@@ -655,7 +655,7 @@ backends of the same type. For example, to use two different tdbsam databases:
 		System Administration; Gerald Carter, O'Reilly; Chapter 6: Replacing NIS".
 		Refer to <ulink url="http://safari.oreilly.com/?XmlId=1-56592-491-6">
 		http://safari.oreilly.com/?XmlId=1-56592-491-6</ulink> for those who might wish to know
-                more about configuration and adminstration of an OpenLDAP server.
+                more about configuration and administration of an OpenLDAP server.
 		</para>
 
 		<para>
