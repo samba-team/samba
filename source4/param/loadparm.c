@@ -2431,6 +2431,9 @@ BOOL lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 	int parmnum = map_parameter(pszParmName);
 	int i;
 
+	while (isspace(*pszParmValue)) pszParmValue++;
+
+
 	if (parmnum < 0 && strchr(pszParmName, ':')) {
 		/* set a parametric option */
 		return lp_do_parameter_parametric(-1, pszParmName, pszParmValue, FLAG_CMDLINE);
