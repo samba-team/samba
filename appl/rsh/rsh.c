@@ -62,6 +62,9 @@ loop (int s, int errsock)
     fd_set real_readset;
     int count = 1;
 
+    if (s >= FD_SETSIZE || errsock >= FD_SETSIZE)
+	errx (1, "fd too large");
+    
     FD_ZERO(&real_readset);
     FD_SET(s, &real_readset);
     if (errsock != -1) {
@@ -444,6 +447,9 @@ proto (int s, int errsock,
 
 	for (;;) {
 	    fd_set fdset;
+
+	    if (errsock >= FD_SETSIZE || s >= FD_SETSIZE)
+		errx (1, "fd too large");
 
 	    FD_ZERO(&fdset);
 	    FD_SET(errsock, &fdset);
