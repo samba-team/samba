@@ -328,7 +328,7 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_STRING(14, workstations,  5, workstations, "14workstation4", 0);
 	TEST_USERINFO_STRING(14, workstations, 21, workstations, "14workstation21", 0);
 	TEST_USERINFO_STRING(21, workstations, 21, workstations, "21workstation21", 
-			   SAMR_FIELD_WORKSTATION);
+			   SAMR_FIELD_WORKSTATIONS);
 
 	TEST_USERINFO_STRING(20, parameters, 21, parameters, "xx20-21 parameters", 0);
 	TEST_USERINFO_STRING(21, parameters, 21, parameters, "xx21-21 parameters", 
@@ -385,6 +385,7 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_INT(9, primary_gid,  5, primary_gid, 513);
 	TEST_USERINFO_INT(9, primary_gid, 21, primary_gid, 513);
 #endif
+
 	return ret;
 }
 
