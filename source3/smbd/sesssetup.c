@@ -266,7 +266,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	DEBUG(3,("Got secblob of size %d\n", secblob.length));
 
 #ifdef HAVE_KRB5
-	if (got_kerberos) {
+	if (got_kerberos && (SEC_ADS == lp_security())) {
 		int ret = reply_spnego_kerberos(conn, inbuf, outbuf, 
 						length, bufsize, &secblob);
 		data_blob_free(&secblob);
@@ -332,11 +332,12 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		fstrcat(dnsname, lp_realm());
 		strlower(dnsname);
 
-		msrpc_gen(&struct_blob, "aaaa",
+		msrpc_gen(&struct_blob, "aaaaa",
 			  2, lp_workgroup(),
 			  1, global_myname,
 			  4, dnsdomname,
-			  3, dnsname);
+			  3, dnsname,
+			  0, "");
 
 		msrpc_gen(&chal, "CdUdbddB",
 			  "NTLMSSP", 
