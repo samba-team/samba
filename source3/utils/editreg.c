@@ -306,6 +306,9 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 #include <sys/mman.h>
 #include <string.h>
 #include <fcntl.h>
+
+static int verbose = 0;
+
 /* 
  * These definitions are for the in-memory registry structure.
  * It is a tree structure that mimics what you see with tools like regedit
@@ -399,7 +402,53 @@ typedef struct key_sec_desc_s {
  * An API for accessing/creating/destroying items above
  */
 
+/*
+ * Iterate over the keys, depth first, calling a function for each key
+ * and indicating if it is terminal or non-terminal and if it has values.
+ *
+ * In addition, for each value in the list, call a value list function
+ */
+
+/*
+ * There should eventually be one to deal with security keys as well
+ */
+
+typedef int (*key_print_f)(char *key_name, char *class_name, int root,
+			   int terminal, int values);
+
+typedef int (*val_print_f)(char *val_name, int val_type, int data_len, 
+			   void *data_blk, int last);
+typedef struct regf_struct_s REGF;
+
+int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, 
+		    key_print_f *key_print, val_print_f *val_print)
+{
+
+  if (!regf || !key_tree)
+    return -1;
+
+  /* List the key first, then the values, then the sub-keys */
+
+  if (key_print) {
+
+    (*key_print)(key_tree->name, 
+		 key_tree->class_name, 
+		 (key_tree->type == REG_ROOT_KEY),
+		 (key_tree->sub_keys == NULL),
+		 (key_tree->values?(key_tree->values->val_count):0)); 
+
+  }
+
+  return 1;
+}
+
 /* Make, delete keys */
+
+int nt_delete_val_list(VAL_LIST *vl)
+{
+
+  return 1;
+}
 
 int nt_delete_reg_key(REG_KEY *key)
 {
@@ -464,7 +513,7 @@ typedef struct sk_map_s {
 
 #define REGF_HDR_BLKSIZ 0x1000 
 
-typedef struct regf_struct_s {
+struct regf_struct_s {
   int reg_type;
   char *regfile_name, *outfile_name;
   int fd;
@@ -475,7 +524,7 @@ typedef struct regf_struct_s {
   REG_KEY *root;  /* Root of the tree for this file */
   int sk_count, sk_map_size;
   SK_MAP **sk_map;
-} REGF;
+};
 
 /*
  * Structures for dealing with the on-disk format of the registry
@@ -784,6 +833,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
   flag = SVAL(&vk_hdr->flag);
   dat_type = IVAL(&vk_hdr->dat_type);
   dat_len = IVAL(&vk_hdr->dat_len);  /* If top bit, offset contains data */
+  dat_off = IVAL(&vk_hdr->dat_off);
 
   tmp = (VAL_KEY *)malloc(sizeof(VAL_KEY));
   if (!tmp) {
@@ -803,13 +853,38 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
   else
     strncpy(val_name, "<No Name>", 10);
 
+  /*
+   * Allocate space and copy the data as a BLOB
+   */
+
+  if (dat_len) {
+    
+    char *dtmp = (char *)malloc(dat_len&0x7FFFFFFF);
+    
+    if (!dtmp) {
+      goto error;
+    }
+
+    tmp->data_blk = dtmp;
+
+    if (dat_len&0x80000000 == 0 ) { /* The data is pointed to by the offset */
+      char *dat_ptr = LOCN(regf->base, dat_off);
+      bcopy(dat_ptr, dtmp, dat_len);
+    }
+    else { /* The data is in the offset */
+      dat_len = dat_len & 0x7FFFFFFF;
+      bcopy(&dat_off, dtmp, dat_len);
+    }
+
+  }
+
   val_type = val_to_str(dat_type, reg_type_names);
 
   /*
    * We need to save the data area as well
    */
 
-  fprintf(stdout, "  %s : %s : \n", val_name, val_type);
+  if (verbose) fprintf(stdout, "  %s : %s : \n", val_name, val_type);
 
   return tmp;
 
@@ -948,8 +1023,8 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
     /*return NULL;*/
   }
 
-  fprintf(stdout, "NK HDR: Name len: %d, class name len: %d\n", name_len,
-	  clsname_len);
+  if (verbose) fprintf(stdout, "NK HDR: Name len: %d, class name len: %d\n", 
+		       name_len, clsname_len);
 
   /* Fish out the key name and process the LF list */
 
@@ -960,10 +1035,12 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
   if (!tmp) return tmp;
   bzero(tmp, sizeof(REG_KEY));
 
+  tmp->type = (IVAL(&nk_hdr->type)==0x2C?REG_ROOT_KEY:REG_SUB_KEY);
+
   strncpy(key_name, nk_hdr->key_nam, name_len);
   key_name[name_len] = '\0';
 
-  fprintf(stdout, "Key name: %s\n", key_name);
+  if (verbose) fprintf(stdout, "Key name: %s\n", key_name);
 
   tmp->name = strdup(key_name);
   if (!tmp->name) {
@@ -996,7 +1073,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
       goto error;
     }
 
-    fprintf(stdout, "  Class Name: %s\n", cls_name);
+    if (verbose) fprintf(stdout, "  Class Name: %s\n", cls_name);
 
   }
 
