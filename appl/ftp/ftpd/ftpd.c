@@ -2092,7 +2092,7 @@ static char *onefile[] = {
 };
 
 void
-list_file(char *file)
+list_file(const char *file)
 {
     if(use_builtin_ls) {
 	FILE *dout;
