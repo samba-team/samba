@@ -468,33 +468,15 @@ typedef struct write_cache
     char *data;
 } write_cache;
 
-/*
- * Structure used to indirect fd's from the files_struct.
- * Needed as POSIX locking is based on file and process, not
- * file descriptor and process.
- */
-
-typedef struct file_fd_struct
-{
-	struct file_fd_struct *next, *prev;
-	uint16 ref_count;
-	uint16 uid_cache_count;
-	uid_t uid_users_cache[10];
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
-	int fd;
-	int fd_readonly;
-	int fd_writeonly;
-	int real_open_flags;
-	BOOL delete_on_close;
-} file_fd_struct;
-
 typedef struct files_struct
 {
 	struct files_struct *next, *prev;
 	int fnum;
 	struct connection_struct *conn;
-	file_fd_struct *fd_ptr;
+	int fd;
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	BOOL delete_on_close;
 	SMB_OFF_T pos;
 	SMB_OFF_T size;
 	mode_t mode;
