@@ -1423,7 +1423,7 @@ static int net_ads_test(int argc, const char **argv)
 #endif
 
 	msg->type = LDAP_TAG_AbandonRequest;
-	msg->messageid = 12345;
+	msg->r.AbandonRequest.messageid = 5000;
 
 	if (!ldap_send_msg(conn, msg, NULL)) {
 		d_printf("Could not send abandon msg\n");
