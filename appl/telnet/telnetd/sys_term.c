@@ -101,7 +101,7 @@ extern struct sysv sysv;
 #include <sys/proc.h>
 #undef SE
 #endif
-#ifndef __sgi
+#if !(defined(__sgi) || defined(__linux))
 #include <sys/tty.h>
 #endif
 #ifdef	t_erase
