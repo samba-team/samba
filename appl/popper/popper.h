@@ -15,8 +15,8 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
-#include "protos.h"
+#include <config.h>
+#include <protos.h>
 #define DEBUG
 #define RETURN_PATH_HANDLING
 #endif
@@ -77,9 +77,6 @@
 #define POP_TERMINATE   '.'
 
 extern int              errno;
-extern int              sys_nerr;
-extern char         *   sys_errlist[];
-extern char         *   sys_siglist[];
 
 #define pop_command         pop_parm[0]     /*  POP command is first token */
 #define pop_subcommand      pop_parm[1]     /*  POP XTND subcommand is the 
