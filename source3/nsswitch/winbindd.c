@@ -739,7 +739,7 @@ static void usage(void)
 	printf("\t-h                show this help message\n");
 }
 
-int main(int argc, char **argv)
+ int main(int argc, char **argv)
 {
 	extern BOOL AllowDebugChange;
 	extern pstring global_myname;
