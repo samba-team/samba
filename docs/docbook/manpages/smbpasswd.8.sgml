@@ -69,6 +69,13 @@
 	<command>smbpasswd</command> accesses the local smbpasswd file 
 	directly, thus enabling changes to be made even if smbd is not 
 	running. </para>
+
+	<para><command>smbpasswd</command> can also be used to retrieve 
+	the SIDs related to previous incarnations of this server on the
+	same machine, as well as set the SID of this domain. This is needed
+	in those cases when the admin changes the NetBIOS or DNS name of 
+	the server without realizing that doing so will change the SID of
+	the server as well. See the -W and -X options below. </para>
 </refsect1>
 
 <refsect1>
@@ -210,7 +217,23 @@
                 </listitem>
 		</varlistentry>
 		
-		
+		<varlistentry>
+		<term> -W S-1-5-21-x-y-z</term>
+		<listitem><para>This option forces the SID S-1-5-21-x-y-z to
+		be the server and domain SID for the current Samba server. It
+		does this by updating the appropriate keys in the secrets
+		file. </para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term> -X server|domain</term>
+		<listitme><para>This option allows the admin to retrieve the 
+		SID associated with a former servername or domain name that
+		this Samba server might have used. It does this by retrieving
+		the appropriate entry from the secrets file.</para>
+		</listitem>
+		</varlistitem>
 <varlistentry>
 <term><command>NOTE:</command></term>
 <listitem><para>
