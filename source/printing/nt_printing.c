@@ -2794,6 +2794,8 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 		
 		regval_ctr_addvalue( &printer_data->keys[key_index].values, valuename, type, data_p, size );
 
+		SAFE_FREE(data_p); /* 'B' option to tdbpack does a malloc() */
+
 		DEBUG(8,("specific: [%s:%s], len: %d\n", keyname, valuename, size));
 	}
 
@@ -4339,7 +4341,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF *
 	fstring key;
 	char *temp;
 
-	if ((temp = strchr(printername + 2, '\\'))) {
+	if (strlen(printername) > 2 && (temp = strchr(printername + 2, '\\'))) {
 		printername = temp + 1;
 	}
 
