@@ -38,6 +38,16 @@ static struct {
 static struct idmap_methods *local_map;
 static struct idmap_methods *remote_map;
 
+static void lazy_initialize_idmap(void)
+{
+	static BOOL initialized = False;
+	if (initialized) return;
+	idmap_init();
+	initialized = True;
+}
+
+
+
 static struct idmap_methods *get_methods(const char *name)
 {
 	int i = 0;
@@ -89,6 +99,8 @@ BOOL idmap_init(void)
 NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 {
 	NTSTATUS ret;
+
+	lazy_initialize_idmap();
 
 	if (!lp_idmap_only()) {
 		if (id_type & ID_USERID) {
@@ -145,6 +157,8 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 	NTSTATUS ret;
 	int loc_type;
 
+	lazy_initialize_idmap();
+
 	loc_type = *id_type;
 	if (remote_map) { /* We have a central remote idmap */
 		loc_type |= ID_NOMAP;
@@ -173,6 +187,8 @@ NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 {
 	NTSTATUS ret;
 	int loc_type;
+
+	lazy_initialize_idmap();
 
 	loc_type = id_type;
 	if (remote_map) {
@@ -218,6 +234,8 @@ NTSTATUS idmap_close(void)
 /* Dump backend status */
 void idmap_status(void)
 {
+	lazy_initialize_idmap();
+
 	local_map->status();
 	if (remote_map) remote_map->status();
 }
