@@ -1,3 +1,11 @@
+Tue Nov 11 02:53:19 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/keyblock.c: Rename krb5_free_keyblock to
+ 	krb5_free_keyblock_contents, and reimplement krb5_free_keyblock.
+
+	* lib/krb5/rd_req.c: Use auth_context->keyblock if
+ 	ap_options.use_session_key.
+
 Tue Nov 11 02:35:17 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/net_{read,write}.c: change `int fd' to `void *p_fd'.
