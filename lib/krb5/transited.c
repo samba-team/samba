@@ -368,11 +368,9 @@ krb5_domain_x500_encode(char **realms, int num_realms, krb5_data *encoding)
     char *s = NULL;
     int len = 0;
     int i;
-    if (num_realms == 0) {
-	encoding->data = NULL;
-	encoding->length = 0;
+    krb5_data_zero(encoding);
+    if (num_realms == 0)
 	return 0;
-    }
     for(i = 0; i < num_realms; i++){
 	len += strlen(realms[i]);
 	if(realms[i][0] == '/')
