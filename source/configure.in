@@ -1532,23 +1532,25 @@ AC_ARG_WITH(pam,
 )
 
 #################################################
+# removed until we get the code actually working
+# --jeremy
 # check for a TDB password database
-AC_MSG_CHECKING(whether to use TDB password database)
-AC_ARG_WITH(tdbpwd,
-[  --with-tdbpwd   Include TDB password database
-  --without-tdbpwd  Don't include TDB password database (default)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_TDBPWD)
+# AC_MSG_CHECKING(whether to use TDB password database)
+#AC_ARG_WITH(tdbpwd,
+#[  --with-tdbpwd   Include TDB password database
+#  --without-tdbpwd  Don't include TDB password database (default)],
+#[ case "$withval" in
+#  yes)
+#    AC_MSG_RESULT(yes)
+#    AC_DEFINE(WITH_TDBPWD)
 #    AC_MSG_ERROR([TDB password database not supported in this version.])
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
+#    ;;
+#  *)
+#    AC_MSG_RESULT(no)
+#    ;;
+#  esac ],
+#  AC_MSG_RESULT(no)
+#)
 
 #################################################
 # removed until we get the code actually working
