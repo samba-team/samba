@@ -104,11 +104,11 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	}
 	asprintf(&s, "%s@%s", ads->user_name, ads->realm);
 	ret = kerberos_kinit_password(s, ads->password);
-	free(s);
 	if (ret) {
 		DEBUG(1,("kerberos_kinit_password %s failed: %s\n", 
 			 s, error_message(ret)));
 	}
+	free(s);
 	return ret;
 }
 
