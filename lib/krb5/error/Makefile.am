@@ -4,9 +4,11 @@ AUTOMAKE_OPTIONS = no-dependencies
 
 INCLUDES = -I$(top_builddir)/include -I$(srcdir)/.. -I$(srcdir)
 
-lib_LIBRARIES = error
+lib_LIBRARIES = liberror.a
 
-error_SOURCES = error.c krb5_err.c asn1_err.c
+liberror_a_SOURCES = krb5_err.c asn1_err.c error.c 
 
 %.c: %.et
-	$(srcdir)/compile_et $<
+	$(SHELL) compile_et $<
+
+krb5_err.o: asn1_err.c

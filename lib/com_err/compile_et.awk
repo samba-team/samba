@@ -13,6 +13,9 @@ $1 == "error_table" {
 		base = -(4294967295 - base + 1) # 0xffffffff
 	}
 	sub("\\..*$", "", name)
+# for normal awk:
+#	split(name, foo, "\\.")
+#	name = foo[1]
 	c_file = name "_err.c"
 	h_file = name "_err.h"
 	number = 0

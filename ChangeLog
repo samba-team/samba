@@ -1,3 +1,21 @@
+Sun Jan 19 06:17:39 1997  Assar Westerlund  <assar@pdc.kth.se>
+
+	* lib/krb5/krb5.h (krb5_free_keyblock): Fix prototype.
+
+	* lib/krb5/build_auth.c (krb5_build_authenticator): It seems the
+ 	CRC should be stored LSW first. (?)
+
+	* lib/krb5/auth_context.c: Implement `krb5_auth_con_getkey' and
+ 	`krb5_free_keyblock'
+
+	* lib/**/Makefile.am: Rename foo libfoo.a
+
+	* include/Makefile.in: Use test instead of [
+	-e does not work with /bin/sh on psoriasis
+
+	* configure.in: Search for awk
+	create lib/krb/error/compile_et
+	
 Tue Jan 14 03:46:26 1997  Assar Westerlund  <assar@pdc.kth.se>
 
 	* lib/krb5/Makefile.am: replaced mit-crc.c by crc.c
