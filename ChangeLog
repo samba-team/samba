@@ -1,5 +1,7 @@
 Mon Oct 13 17:18:57 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* Release 0.0j
+
 	* lib/krb5/get_cred.c: Get the subkey from mk_req so it can be
  	used to decrypt the reply from DCE secds.
 
