@@ -6402,8 +6402,7 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 /*	uint32 level = q_u->level; - notused. */
 	FORM *form = &q_u->form;
 	nt_forms_struct tmpForm;
-
-	int count=0;
+	int count=0, snum;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
@@ -6414,14 +6413,19 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 		return WERR_BADFID;
 	}
 
-	/* 
-	 * FIXME!!  Feels like there should be an access check here, but haven't
-	 * had time to verify.  --jerry
-	 */
+	/* Must be administrator to add a form */
+
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(0, ("_spoolss_addform: Access denied\n"));
+		return WERR_ACCESS_DENIED;
+	}
 
 	/* can't add if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
-		return WERR_INVALID_PARAM;
+		return WERR_FILE_EXISTS;
 	}
 
 	count=get_ntforms(&list);
@@ -6442,7 +6446,7 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	POLICY_HND *handle = &q_u->handle;
 	UNISTR2 *form_name = &q_u->name;
 	nt_forms_struct tmpForm;
-	int count=0;
+	int count=0, snum;
 	WERROR ret = WERR_OK;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
@@ -6452,6 +6456,16 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	if (!Printer) {
 		DEBUG(0,("_spoolss_deleteform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
+	}
+
+	/* Must be administrator to set a form */
+
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(0, ("_spoolss_addform: Access denied\n"));
+		return WERR_ACCESS_DENIED;
 	}
 
 	/* can't delete if builtin */
@@ -6478,8 +6492,7 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 /*	uint32 level = q_u->level; - notused. */
 	FORM *form = &q_u->form;
 	nt_forms_struct tmpForm;
-
-	int count=0;
+	int count=0, snum;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
@@ -6489,6 +6502,17 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 		DEBUG(0,("_spoolss_setform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
+
+	/* Must be administrator to set a form */
+
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(0, ("_spoolss_addform: Access denied\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
 	/* can't set if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
 		return WERR_INVALID_PARAM;
