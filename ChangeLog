@@ -1,3 +1,7 @@
+2000-08-23  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/mcache.c: implement resolve
+
 2000-08-18  Assar Westerlund  <assar@sics.se>
 
 	* kuser/kdecode_ticket.c: check return value from krb5_crypto_init

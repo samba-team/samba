@@ -1,3 +1,7 @@
+Changes in release 0.3c
+
+ * lib/krb5: memory caches now support the resolve operation
+
 Changes in release 0.3b
 
  * kdc: prefer default-salted keys on v5 requests
