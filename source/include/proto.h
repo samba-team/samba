@@ -1216,15 +1216,12 @@ BOOL resolve_name(char *name, struct in_addr *return_ip);
 void *startnisppwent(BOOL update);
 void endnisppwent(void *vp);
 struct sam_passwd *getnisp21pwent(void *vp);
-struct smb_passwd *getnisppwent(void *vp);
 unsigned long getnisppwpos(void *vp);
 BOOL setnisppwpos(void *vp, unsigned long tok);
 BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd);
-BOOL add_nisppwd_entry(struct smb_passwd *newpwd);
 BOOL mod_nisp21pwd_entry(struct sam_passwd* pwd, BOOL override);
-BOOL mod_nisppwd_entry(struct smb_passwd* pwd, BOOL override);
-struct smb_passwd *getnisppwnam(char *name);
-struct smb_passwd *getnisppwuid(int smb_userid);
+struct sam_passwd *getnisp21pwnam(char *name);
+struct sam_passwd *getnisp21pwuid(int smb_userid);
 
 /*The following definitions come from  nmbd.c  */
 
@@ -1586,12 +1583,14 @@ BOOL add_sampwd_entry(struct smb_passwd *newpwd);
 BOOL add_sam21pwd_entry(struct sam_passwd *newpwd);
 BOOL mod_sampwd_entry(struct smb_passwd* pwd, BOOL override);
 BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override);
-struct smb_passwd *getsampwnam(char *name);
 struct sam_passwd *getsam21pwnam(char *name);
+struct smb_passwd *getsampwnam(char *name);
 struct smb_passwd *getsampwuid(uid_t smb_userid);
 struct sam_passwd *getsam21pwrid(uint32 rid);
+void pdb_init_dispinfo(struct sam_disp_info *user);
 void pdb_init_smb(struct smb_passwd *user);
 void pdb_init_sam(struct sam_passwd *user);
+struct sam_disp_info *pdb_sam_to_dispinfo(struct sam_passwd *user);
 struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user);
 struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user);
 time_t pdb_get_last_set_time(char *p);
