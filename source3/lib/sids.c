@@ -259,14 +259,6 @@ BOOL get_domain_sids(DOM_SID *sid3, DOM_SID *sid5, char *servers)
 			sid_to_string(sid, sid5);
 			DEBUG(2,("Domain Controller - Domain: %s SID: %s\n", dom5, sid));
 		}
-
-		if (!strequal(dom3, global_myworkgroup) ||
-		    !strequal(dom5, global_myworkgroup))
-		{
-			DEBUG(0,("get_member_domain_sid: %s is a DC for %s not %s\n",
-			          cli.desthost, dom5, global_myworkgroup));
-			res = False;
-		}
 	}
 	else
 	{
