@@ -136,6 +136,7 @@ void start_async_dns(void)
 	CatchChild();
 
 	if (pipe(fd1) || pipe(fd2)) {
+		DEBUG(0,("can't create asyncdns pipes\n"));
 		return;
 	}
 
@@ -146,6 +147,7 @@ void start_async_dns(void)
 		fd_out = fd2[1];
 		close(fd1[1]);
 		close(fd2[0]);
+		DEBUG(0,("started asyncdns process %d\n", child_pid));
 		return;
 	}
 
