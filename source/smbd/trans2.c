@@ -1357,7 +1357,12 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		dirtype, maxentries, close_after_first, close_if_end, requires_resume_key,
 		info_level, max_data_bytes));
-  
+
+	if (!maxentries) {
+		/* W2K3 seems to treat zero as 1. */
+		maxentries = 1;
+	}
+ 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
 		case SMB_INFO_QUERY_EA_SIZE:
@@ -1582,6 +1587,11 @@ close_after_request=%d, close_if_end = %d requires_resume_key = %d \
 resume_key = %d resume name = %s continue=%d level = %d\n",
 		dptr_num, max_data_bytes, maxentries, close_after_request, close_if_end, 
 		requires_resume_key, resume_key, resume_name, continue_bit, info_level));
+
+	if (!maxentries) {
+		/* W2K3 seems to treat zero as 1. */
+		maxentries = 1;
+	}
 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
