@@ -950,5 +950,5 @@ void sort_query_replies(char *data, int n, struct in_addr ip)
 
 	putip(sort_ip, (char *)&ip);
 
-	qsort(data, n, 6, name_query_comp);
+	qsort(data, n, 6, QSORT_CAST name_query_comp);
 }
