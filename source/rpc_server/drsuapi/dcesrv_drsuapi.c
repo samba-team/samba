@@ -273,10 +273,10 @@ static WERROR DRSUAPI_EXECUTE_KCC(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 
 /* 
-  DRSUAPI_GET_REPL_INFO 
+  drsuapi_DsReplicaGetInfo 
 */
-static WERROR DRSUAPI_GET_REPL_INFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_GET_REPL_INFO *r)
+static WERROR drsuapi_DsReplicaGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct drsuapi_DsReplicaGetInfo *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
