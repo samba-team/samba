@@ -48,12 +48,13 @@ verify_mic_des
 {
   u_char *p;
   MD5_CTX md5;
-  u_char hash[16], seq_data[8];
+  u_char hash[16], *seq;
   des_key_schedule schedule;
   des_cblock zero;
   des_cblock deskey;
   int32_t seq_number;
   OM_uint32 ret;
+  int cmp;
 
   p = token_buffer->value;
   ret = gssapi_krb5_verify_header (&p,
@@ -92,16 +93,6 @@ verify_mic_des
   /* verify sequence number */
   
   HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-  krb5_auth_getremoteseqnumber (gssapi_krb5_context,
-				context_handle->auth_context,
-				&seq_number);
-  seq_data[0] = (seq_number >> 0)  & 0xFF;
-  seq_data[1] = (seq_number >> 8)  & 0xFF;
-  seq_data[2] = (seq_number >> 16) & 0xFF;
-  seq_data[3] = (seq_number >> 24) & 0xFF;
-  memset (seq_data + 4,
-	  (context_handle->more_flags & LOCAL) ? 0xFF : 0,
-	  4);
 
   p -= 16;
   des_set_key (&deskey, schedule);
@@ -111,13 +102,25 @@ verify_mic_des
   memset (deskey, 0, sizeof(deskey));
   memset (schedule, 0, sizeof(schedule));
 
-  if (memcmp (p, seq_data, 8) != 0) {
+  seq = p;
+  gssapi_decode_om_uint32(seq, &seq_number);
+
+  if (context_handle->more_flags & LOCAL)
+      cmp = memcmp(&seq[4], "\xff\xff\xff\xff", 4);
+  else
+      cmp = memcmp(&seq[4], "\x00\x00\x00\x00", 4);
+
+  if (cmp != 0) {
+    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     return GSS_S_BAD_MIC;
   }
 
-  krb5_auth_con_setremoteseqnumber (gssapi_krb5_context,
-				context_handle->auth_context,
-				++seq_number);
+  ret = gssapi_msg_order_check(context_handle->order, seq_number);
+  if (ret) {
+      HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+      return ret;
+  }
+
   HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
 
   return GSS_S_COMPLETE;
@@ -135,7 +138,7 @@ verify_mic_des3
 	    )
 {
   u_char *p;
-  u_char seq[8];
+  u_char *seq;
   int32_t seq_number;
   OM_uint32 ret;
   krb5_crypto crypto;
@@ -199,24 +202,29 @@ retry:
   }
 
   HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-  krb5_auth_getremoteseqnumber (gssapi_krb5_context,
-				context_handle->auth_context,
-				&seq_number);
-  seq[0] = (seq_number >> 0)  & 0xFF;
-  seq[1] = (seq_number >> 8)  & 0xFF;
-  seq[2] = (seq_number >> 16) & 0xFF;
-  seq[3] = (seq_number >> 24) & 0xFF;
-  memset (seq + 4,
-	  (context_handle->more_flags & LOCAL) ? 0xFF : 0,
-	  4);
-  cmp = memcmp (seq, seq_data.data, seq_data.length);
+
+  seq = seq_data.data;
+  gssapi_decode_om_uint32(seq, &seq_number);
+
+  if (context_handle->more_flags & LOCAL)
+      cmp = memcmp(&seq[4], "\xff\xff\xff\xff", 4);
+  else
+      cmp = memcmp(&seq[4], "\x00\x00\x00\x00", 4);
+
   krb5_data_free (&seq_data);
   if (cmp != 0) {
-      if (docompat++) {
-	  krb5_crypto_destroy (gssapi_krb5_context, crypto);
-	  return GSS_S_BAD_MIC;
-      } else
-	  goto retry;
+      krb5_crypto_destroy (gssapi_krb5_context, crypto);
+      *minor_status = 0;
+      HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+      return GSS_S_BAD_MIC;
+  }
+
+  ret = gssapi_msg_order_check(context_handle->order, seq_number);
+  if (ret) {
+      krb5_crypto_destroy (gssapi_krb5_context, crypto);
+      *minor_status = 0;
+      HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+      return ret;
   }
 
   /* verify checksum */
@@ -224,6 +232,7 @@ retry:
   tmp = malloc (message_buffer->length + 8);
   if (tmp == NULL) {
       krb5_crypto_destroy (gssapi_krb5_context, crypto);
+      HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
       *minor_status = ENOMEM;
       return GSS_S_FAILURE;
   }
@@ -244,12 +253,9 @@ retry:
       gssapi_krb5_set_error_string ();
       krb5_crypto_destroy (gssapi_krb5_context, crypto);
       *minor_status = ret;
+      HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
       return GSS_S_BAD_MIC;
   }
-
-  krb5_auth_con_setremoteseqnumber (gssapi_krb5_context,
-				context_handle->auth_context,
-				++seq_number);
   HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
 
   krb5_crypto_destroy (gssapi_krb5_context, crypto);
