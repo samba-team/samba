@@ -51,7 +51,7 @@ NTSTATUS new_cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal,
         
         /* create and send a MSRPC command with api NET_REQCHAL */
 
-        DEBUG(4,("cli_net_req_chal: LSA Request Challenge from %s to %s: %s\n",
+        DEBUG(4,("new_cli_net_req_chal: LSA Request Challenge from %s to %s: %s\n",
                  cli->desthost, global_myname, credstr(clnt_chal->data)));
         
         /* store the parameters */
@@ -108,7 +108,7 @@ NTSTATUS new_cli_net_auth2(struct cli_state *cli,
 
         /* create and send a MSRPC command with api NET_AUTH2 */
 
-        DEBUG(4,("cli_net_auth2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %x\n",
+        DEBUG(4,("new_cli_net_auth2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %x\n",
                  cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname,
                  credstr(cli->clnt_cred.challenge.data), neg_flags));
 
@@ -147,7 +147,7 @@ NTSTATUS new_cli_net_auth2(struct cli_state *cli,
                         /*
                          * Server replied with bad credential. Fail.
                          */
-                        DEBUG(0,("cli_net_auth2: server %s replied with bad credential (bad machine \
+                        DEBUG(0,("new_cli_net_auth2: server %s replied with bad credential (bad machine \
 password ?).\n", cli->desthost ));
                         result = NT_STATUS_ACCESS_DENIED;
                         goto done;
@@ -180,7 +180,7 @@ NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli,
         result = new_cli_net_req_chal(cli, &clnt_chal, &srv_chal);
 
         if (!NT_STATUS_IS_OK(result)) {
-                DEBUG(0,("cli_nt_setup_creds: request challenge failed\n"));
+                DEBUG(0,("new_cli_nt_setup_creds: request challenge failed\n"));
                 return result;
         }
         
@@ -206,7 +206,7 @@ NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli,
 	result = new_cli_net_auth2(cli, sec_chan, 0x000001ff, 
 				   &srv_chal);
 	if (!NT_STATUS_IS_OK(result)) {
-                DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed %s\n",
+                DEBUG(0,("new_cli_nt_setup_creds: auth2 challenge failed %s\n",
 			 get_nt_error_msg(result)));
         }
 

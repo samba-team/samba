@@ -1498,6 +1498,8 @@ static char *lp_string(const char *s)
 
 #define FN_LOCAL_STRING(fn_name,val) \
  char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
+#define FN_LOCAL_CONST_STRING(fn_name,val) \
+ const char *fn_name(int i) {return(const char *)((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
  BOOL fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_CHAR(fn_name,val) \
@@ -1679,6 +1681,7 @@ FN_LOCAL_STRING(lp_postexec, szPostExec)
 FN_LOCAL_STRING(lp_rootpreexec, szRootPreExec)
 FN_LOCAL_STRING(lp_rootpostexec, szRootPostExec)
 FN_LOCAL_STRING(lp_servicename, szService)
+FN_LOCAL_CONST_STRING(lp_const_servicename, szService)
 FN_LOCAL_STRING(lp_pathname, szPath)
 FN_LOCAL_STRING(lp_dontdescend, szDontdescend)
 FN_LOCAL_STRING(lp_username, szUsername)
@@ -3376,42 +3379,34 @@ static void set_server_role(void)
 {
 	server_role = ROLE_STANDALONE;
 
-	switch (lp_security())
-	{
+	switch (lp_security()) {
 		case SEC_SHARE:
-		{
 			if (lp_domain_logons())
-			{
-				DEBUG(0,
-				      ("Server's Role (logon server) conflicts with share-level security\n"));
-			}
+				DEBUG(0, ("Server's Role (logon server) conflicts with share-level security\n"));
+			DEBUG(10,("set_server_role: ROLE_STANDALONE\n"));
 			break;
-		}
 		case SEC_SERVER:
 		case SEC_DOMAIN:
-		{
-			if (lp_domain_logons())
-			{
+			if (lp_domain_logons()) {
 				server_role = ROLE_DOMAIN_BDC;
+				DEBUG(10,("set_server_role: ROLE_DOMAIN_BDC\n"));
 				break;
 			}
 			server_role = ROLE_DOMAIN_MEMBER;
+			DEBUG(10,("set_server_role: ROLE_DOMAIN_MEMBER\n"));
 			break;
-		}
 		case SEC_USER:
-		{
-			if (lp_domain_logons())
-			{
+			if (lp_domain_logons()) {
 				server_role = ROLE_DOMAIN_PDC;
+				DEBUG(10,("set_server_role: ROLE_DOMAIN_PDC\n"));
 				break;
 			}
+			DEBUG(10,("set_server_role: ROLE_STANDALONE\n"));
 			break;
-		}
 		default:
-		{
-			DEBUG(0,
-			      ("Server's Role undefined due to unknown security mode\n"));
-		}
+			DEBUG(0, ("Server's Role undefined due to unknown security mode\n"));
+			DEBUG(10,("set_server_role: ROLE_STANDALONE\n"));
+			break;
 	}
 }
 
