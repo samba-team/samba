@@ -703,3 +703,20 @@ NTSTATUS pvfs_change_create_options(struct pvfs_state *pvfs,
 
 	return status;
 }
+
+
+/*
+  determine if a file is open - used to prevent some operations on open files
+*/
+BOOL pvfs_is_open(struct pvfs_state *pvfs, struct pvfs_filename *name)
+{
+	NTSTATUS status;
+	DATA_BLOB key;
+
+	status = pvfs_locking_key(name, name, &key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	return odb_is_open(pvfs->odb_context, &key);
+}
