@@ -96,7 +96,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 		con->pipe_name = strdup(pipe_name);
 	}
 
-	con->cli = cli_net_use_add(srv_name, usr_creds);
+	con->cli = cli_net_use_add(srv_name, usr_creds, True);
 
 	if (con->cli == NULL)
 	{

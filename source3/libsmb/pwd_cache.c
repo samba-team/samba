@@ -43,6 +43,14 @@ void pwd_init(struct pwd_info *pwd)
 }
 
 /****************************************************************************
+returns NULL password flag
+****************************************************************************/
+BOOL pwd_is_nullpwd(const struct pwd_info *pwd)
+{
+	return pwd->null_pwd;
+}
+
+/****************************************************************************
 de-obfuscates a password
 ****************************************************************************/
 static void pwd_deobfuscate(const struct pwd_info *pwd)
