@@ -16,6 +16,7 @@ PNMTOPNG = @PNMTOPNG@
 PNMTOPS = @PNMTOPS@
 HTML2TEXT = @HTML2TEXT@
 PLUCKERBUILD = @PLUCKERBUILD@
+COPY_IMAGES = ./scripts/copy-images.sh
 THUMBPDF = @THUMBPDF@
 PDFLATEX = TEXINPUTS=xslt/latex:.: @PDFLATEX@ --file-line-error-style
 LATEX = TEXINPUTS=xslt/latex:.: @LATEX@ --file-line-error-style
@@ -54,15 +55,6 @@ MANPAGES = $(wildcard $(MANPAGEDIR)/*.?.xml)
 # Lists of files to process
 LATEX_FIGURES = xslt/figures/caution.pdf xslt/figures/important.pdf xslt/figures/note.pdf xslt/figures/tip.pdf xslt/figures/warning.pdf
 MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES_SOURCES))
-
-Samba_HOWTO_Collection_IMAGES_PNG = $(wildcard Samba-HOWTO-Collection/imagefiles/*.png)
-Samba_Guide_IMAGES_PNG = $(wildcard Samba-Guide/images/*.png)
-
-Samba_HOWTO_Collection_IMAGEDIR = Samba-HOWTO-Collection/imagefiles
-Samba_Guide_IMAGEDIR = Samba-Guide/images
-
-Samba_HOWTO_Collection_IMAGES_EPS = $(patsubst %.png,%.eps,$(Samba_HOWTO_Collection_IMAGES_PNG))
-Samba_Guide_IMAGES_EPS = $(patsubst %.png,%.eps,$(Samba_Guide_IMAGES_PNG))
 
 help: 
 	@echo "Supported make targets:"
@@ -106,11 +98,11 @@ htmlhelp: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLHELPDIR)/%,$(MAIN_DOCS))
 
 $(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
 	mkdir -p $(@D)
-	$(XSLTPROC) --stringparam noreference 1 --stringparam imagedir "$($(subst -,_,$*)_IMAGEDIR)/" --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+	$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/%.xml: $(MANPAGEDIR)/%.xml xslt/expand-sambadoc.xsl
 	mkdir -p $(@D)
-	$(XSLTPROC) --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
+	$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/manpages.xml: $(MANPAGES_SOURCES) xslt/manpage-summary.xsl
 	mkdir -p $(@D)
@@ -127,15 +119,17 @@ $(HTMLDIR)/index.html: htmldocs.html
 $(HTMLDIR)/%/index.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/%/samba.css  xslt/html-chunk.xsl
 	mkdir -p $(@D)
 	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/$*/" xslt/html-chunk.xsl $<
-	-mkdir $(HTMLDIR)/$*/images
+	-mkdir $(@D)/images
+	$(COPY_IMAGES) html $(DOCBOOKDIR)/$*.xml $* $(@D)
 
 # Single large HTML files
 $(OUTPUTDIR)/%/samba.css: xslt/html/samba.css
 	mkdir -p $(@D)
 	cp $< $@
 
-$(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css $(patsubst %.png,$(HTMLDIR)/images/%.png,$(%_IMAGES_PNG)) xslt/html.xsl
-	mkdir -p $(@D)
+$(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl 
+	mkdir -p $(@D)/images
+	$(COPY_IMAGES) html $(DOCBOOKDIR)/$*.xml $* $(@D)
 	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
 %-attributions.xml: 
@@ -169,7 +163,7 @@ $(PDFDIR)/%.pdf: %.pdf
 	cp $< $@
 
 # Adobe PDF files
-%.pdf: %.tex latexfigures gpl.tex $(%_IMAGES_PNG)
+%.pdf: %.tex latexfigures gpl.tex 
 	-$(PDFLATEX) $<
 	-$(PDFLATEX) $<
 	$(MAKEINDEX) $*
@@ -181,7 +175,8 @@ $(DVIDIR)/%.dvi: %.dvi
 	mkdir -p $(@D)
 	cp $< $@
 
-%.dvi: %.tex %.idx gpl.tex $(%_IMAGES_EPS)
+%.dvi: %.tex %.idx gpl.tex
+	$(MAKE) $(shell $(XSLTPROC) --stringparam prepend "" --stringparam append ".eps" --stringparam role latex xslt/find-image-dependencies.xsl $(DOCBOOKDIR)/$*.xml)
 	-$(LATEX) $< 
 	-$(LATEX) $< 
 	$(MAKEINDEX) $*
@@ -203,13 +198,9 @@ $(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml
 	mkdir -p $(@D)
 	$(XSLTPROC) --output $@ http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl $<
 
-# HTML Help
-$(HTMLHELPDIR)/%/images/%.png: $(%_IMAGEDIR)/%.png
-	mkdir -p $(@D)
-	cp $< $@
-
-$(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml #$(patsubst $(%_IMAGEDIR)/%.png,$(HTMLHELPDIR)/%/images/%.png,$(%_IMAGEDIR)/*.png)
-	-mkdir $@
+$(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml
+	-mkdir -p $@/images
+	$(COPY_IMAGES) html $(DOCBOOKDIR)/$*.xml $* $@
 	$(XSLTPROC) --stringparam htmlhelp.chm $*.chm --stringparam manifest.in.base.dir "$@/" --stringparam base.dir "$@/" http://docbook.sourceforge.net/release/xsl/current/htmlhelp/htmlhelp.xsl $<
 
 # Plucker docs

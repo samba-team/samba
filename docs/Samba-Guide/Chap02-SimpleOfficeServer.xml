@@ -497,8 +497,8 @@
 		</para>
 
 		<image id="charitynet">
-			<description>Charity Administration Office Network</description>
-			<imagefile scale="100">Charity-Network.png</imagefile>
+			<imagedescription>Charity Administration Office Network</imagedescription>
+			<imagefile scale="100">Charity-Network</imagefile>
 		</image>
 
 		<procedure>
@@ -986,8 +986,8 @@ C:\WINDOWS: regedit ME-dpwc.reg
 		</para>
 
 		<image id="acctingnet2">
-			<description>Accounting Office Network Topology</description>
-			<imagefile scale="100">AccountingNetwork.png</imagefile>
+			<imagedescription>Accounting Office Network Topology</imagedescription>
+			<imagefile scale="100">AccountingNetwork</imagefile>
 		</image>
 
 		<table id="acctingnet">

@@ -709,13 +709,13 @@
 	    inconsistent directory information can be exceedingly difficult.</para>
 
 	<image id="chap7net">
-		<description>Network Topology &smbmdash; 2000 User Complex Design A</description>
-		<imagefile scale="80">chap7-net-Ar.png</imagefile>
+		<imagedescription>Network Topology &smbmdash; 2000 User Complex Design A</imagedescription>
+		<imagefile scale="80">chap7-net-Ar</imagefile>
 	</image>
 
 	<image id="chap7net2">
-		<description>Network Topology &smbmdash; 2000 User Complex Design B</description>
-		<imagefile scale="80">chap7-net2-Br.png</imagefile>
+		<imagedescription>Network Topology &smbmdash; 2000 User Complex Design B</imagedescription>
+		<imagefile scale="80">chap7-net2-Br</imagefile>
 	</image>
 
 	</sect3>
@@ -759,8 +759,8 @@
 	</para>
 
 	<image id="chap7idres">
-		<description>Samba and Authentication Backend Search Pathways</description>
-		<imagefile scale="80">chap7-idresol.png</imagefile>
+		<imagedescription>Samba and Authentication Backend Search Pathways</imagedescription>
+		<imagefile scale="80">chap7-idresol</imagefile>
 	</image>
 
       <para><indexterm>
@@ -800,8 +800,8 @@ passdb backend = ldapsam:ldap://master.abmas.biz
 	This configuration tells Samba to use a single LDAP server as shown in
 	<link linkend="ch7singleLDAP"/>.
 	<image id="ch7singleLDAP">
-		<description>Samba Configuration to Use a Single LDAP Server</description>
-		<imagefile scale="100">ch7-singleLDAP.png</imagefile>
+		<imagedescription>Samba Configuration to Use a Single LDAP Server</imagedescription>
+		<imagefile scale="100">ch7-singleLDAP</imagefile>
 	</image>
 	<indexterm>
 	  <primary>LDAP</primary>
@@ -822,8 +822,8 @@ passdb backend = ldapsam:"ldap://master.abmas.biz \
 	This configuration tells Samba to use a master LDAP server, with fail-over to a slave server if necessary,
 	as shown in <link linkend="ch7dualLDAP"/>.
 	<image id="ch7dualLDAP">
-		<description>Samba Configuration to Use a Dual (Fail-over) LDAP Server</description>
-		<imagefile scale="100">ch7-fail-overLDAP.png</imagefile>
+		<imagedescription>Samba Configuration to Use a Dual (Fail-over) LDAP Server</imagedescription>
+		<imagefile scale="100">ch7-fail-overLDAP</imagefile>
 	</image>
       </para>
 
@@ -847,8 +847,8 @@ passdb backend = ldapsam:ldap://master.abmas.biz \
 	</para>
 
 	<image id="ch7dualadd">
-		<description>Samba Configuration to Use Dual LDAP Databases - Broken - Do Not Use!</description>
-		<imagefile scale="80">ch7-dual-additive-LDAP.png</imagefile>
+		<imagedescription>Samba Configuration to Use Dual LDAP Databases - Broken - Do Not Use!</imagedescription>
+		<imagefile scale="80">ch7-dual-additive-LDAP</imagefile>
 	</image>
 
 	<para>
@@ -859,8 +859,8 @@ passdb backend = ldapsam:ldap://master.abmas.biz \
         </para>
 
 		<image id="ch7dualok">
-			<description>Samba Configuration to Use Two LDAP Databases - The result is additive.</description>
-			<imagefile scale="80">ch7-dual-additive-LDAP-Ok.png</imagefile>
+			<imagedescription>Samba Configuration to Use Two LDAP Databases - The result is additive.</imagedescription>
+			<imagefile scale="80">ch7-dual-additive-LDAP-Ok</imagefile>
 		</image>
 
 	<note><para>
