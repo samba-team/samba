@@ -4,7 +4,7 @@ RCSID("$Id$");
 
 #ifdef HAVE_NDBM_H
 
-krb5_error_code
+static krb5_error_code
 NDBM_close(krb5_context context, HDB *db)
 {
     DBM *d = (DBM*)db->db;

@@ -2,7 +2,7 @@
 
 RCSID("$Id$");
 
-RETSIGTYPE
+static RETSIGTYPE
 sigterm(int sig)
 {
     exit(0);
