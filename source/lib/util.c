@@ -1580,12 +1580,12 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
 #else
   pstring dir2;
   pstring wd;
-  pstring basename;
+  pstring base_name;
   pstring newname;
   char *p=NULL;
   BOOL relative = (*s != '/');
 
-  *dir2 = *wd = *basename = *newname = 0;
+  *dir2 = *wd = *base_name = *newname = 0;
 
   if (widelinks)
     {
@@ -1608,8 +1608,8 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
   /* remove any double slashes */
   string_sub(s,"//","/");
 
-  pstrcpy(basename,s);
-  p = strrchr(basename,'/');
+  pstrcpy(base_name,s);
+  p = strrchr(base_name,'/');
 
   if (!p)
     return(True);
@@ -1634,7 +1634,7 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
     }
 
 
-    if (p && (p != basename))
+    if (p && (p != base_name))
       {
 	*p = 0;
 	if (strcmp(p+1,".")==0)
@@ -1643,10 +1643,10 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
 	  *p = '/';
       }
 
-  if (ChDir(basename) != 0)
+  if (ChDir(base_name) != 0)
     {
       ChDir(wd);
-      DEBUG(3,("couldn't chdir for %s %s basename=%s\n",s,dir,basename));
+      DEBUG(3,("couldn't chdir for %s %s basename=%s\n",s,dir,base_name));
       return(False);
     }
 
@@ -1657,7 +1657,7 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
       return(False);
     }
 
-  if (p && (p != basename))
+  if (p && (p != base_name))
     {
       strcat(newname,"/");
       strcat(newname,p+1);
