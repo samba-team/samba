@@ -621,7 +621,7 @@ OM_uint32 gss_inquire_context (
             gss_OID * mech_type,
             OM_uint32 * ctx_flags,
             int * locally_initiated,
-            int * open
+            int * open_context
            );
 
 OM_uint32 gss_wrap_size_limit (
