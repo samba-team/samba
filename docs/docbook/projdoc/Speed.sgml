@@ -54,92 +54,6 @@ systems.
 </sect1>
 
 <sect1>
-<title>Oplocks</title>
-
-<sect2>
-<title>Overview</title>
-
-<para>
-Oplocks are the way that SMB clients get permission from a server to
-locally cache file operations. If a server grants an oplock
-(opportunistic lock) then the client is free to assume that it is the
-only one accessing the file and it will agressively cache file
-data. With some oplock types the client may even cache file open/close
-operations. This can give enormous performance benefits.
-</para>
-
-<para>
-With the release of Samba 1.9.18 we now correctly support opportunistic 
-locks. This is turned on by default, and can be turned off on a share-
-by-share basis by setting the parameter :
-</para>
-
-<para>
-<command>oplocks = False</command>
-</para>
-
-<para>
-We recommend that you leave oplocks on however, as current benchmark
-tests with NetBench seem to give approximately a 30% improvement in
-speed with them on. This is on average however, and the actual 
-improvement seen can be orders of magnitude greater, depending on
-what the client redirector is doing.
-</para>
-
-<para>
-Previous to Samba 1.9.18 there was a 'fake oplocks' option. This
-option has been left in the code for backwards compatibility reasons
-but it's use is now deprecated. A short summary of what the old
-code did follows.
-</para>
-
-</sect2>
-
-<sect2>
-<title>Level2 Oplocks</title>
-
-<para>
-With Samba 2.0.5 a new capability - level2 (read only) oplocks is
-supported (although the option is off by default - see the smb.conf
-man page for details). Turning on level2 oplocks (on a share-by-share basis)
-by setting the parameter :
-</para>
-
-<para>
-<command>level2 oplocks = true</command>
-</para>
-
-<para>
-should speed concurrent access to files that are not commonly written
-to, such as application serving shares (ie. shares that contain common
-.EXE files - such as a Microsoft Office share) as it allows clients to
-read-ahread cache copies of these files.
-</para>
-
-</sect2>
-
-<sect2>
-<title>Old 'fake oplocks' option - deprecated</title>
-
-<para>
-Samba can also fake oplocks, by granting a oplock whenever a client 
-asks for one. This is controlled using the smb.conf option "fake 
-oplocks". If you set "fake oplocks = yes" then you are telling the 
-client that it may agressively cache the file data for all opens.
-</para>
-
-<para>
-Enabling 'fake oplocks' on all read-only shares or shares that you know
-will only be accessed from one client at a time you will see a big
-performance improvement on many operations. If you enable this option
-on shares where multiple clients may be accessing the files read-write
-at the same time you can get data corruption.
-</para>
-
-</sect2>
-</sect1>
-
-<sect1>
 <title>Socket options</title>
 
 <para>
@@ -227,55 +141,6 @@ In most cases the default is the best option.
 </sect1>
 
 <sect1>
-<title>Locking</title>
-
-<para>
-By default Samba does not implement strict locking on each read/write
-call (although it did in previous versions). If you enable strict
-locking (using "strict locking = yes") then you may find that you
-suffer a severe performance hit on some systems.
-</para>
-
-<para>
-The performance hit will probably be greater on NFS mounted
-filesystems, but could be quite high even on local disks.
-</para>
-
-</sect1>
-
-<sect1>
-<title>Share modes</title>
-
-<para>
-Some people find that opening files is very slow. This is often
-because of the "share modes" code needed to fully implement the dos
-share modes stuff. You can disable this code using "share modes =
-no". This will gain you a lot in opening and closing files but will
-mean that (in some cases) the system won't force a second user of a
-file to open the file read-only if the first has it open
-read-write. For many applications that do their own locking this
-doesn't matter, but for some it may. Most Windows applications
-depend heavily on "share modes" working correctly and it is
-recommended that the Samba share mode support be left at the
-default of "on".
-</para>
-
-<para>
-The share mode code in Samba has been re-written in the 1.9.17
-release following tests with the Ziff-Davis NetBench PC Benchmarking
-tool. It is now believed that Samba 1.9.17 implements share modes
-similarly to Windows NT.
-</para>
-
-<para>
-NOTE: In the most recent versions of Samba there is an option to use
-shared memory via mmap() to implement the share modes. This makes
-things much faster. See the Makefile for how to enable this.
-</para>
-
-</sect1>
-
-<sect1>
 <title>Log level</title>
 
 <para>
@@ -284,18 +149,6 @@ then you may suffer a large drop in performance. This is because the
 server flushes the log file after each operation, which can be very
 expensive. 
 </para>
-</sect1>
-
-<sect1>
-<title>Wide lines</title>
-
-<para>
-The "wide links" option is now enabled by default, but if you disable
-it (for better security) then you may suffer a performance hit in
-resolving filenames. The performance loss is lessened if you have
-"getwd cache = yes", which is now the default.
-</para>
-
 </sect1>
 
 <sect1>
@@ -335,61 +188,6 @@ being enabled by default.
 <para>
 Some machines may find "write raw" slower than normal write, in which
 case you may wish to change this option.
-</para>
-
-</sect1>
-
-<sect1>
-<title>Read prediction</title>
-
-<para>
-Samba can do read prediction on some of the SMB commands. Read
-prediction means that Samba reads some extra data on the last file it
-read while waiting for the next SMB command to arrive. It can then
-respond more quickly when the next read request arrives.
-</para>
-
-<para>
-This is disabled by default. You can enable it by using "read
-prediction = yes".
-</para>
-
-<para>
-Note that read prediction is only used on files that were opened read
-only.
-</para>
-
-<para>
-Read prediction should particularly help for those silly clients (such
-as "Write" under NT) which do lots of very small reads on a file.
-</para>
-
-<para>
-Samba will not read ahead more data than the amount specified in the
-"read size" option. It always reads ahead on 1k block boundaries.
-</para>
-
-</sect1>
-
-<sect1>
-<title>Memory mapping</title>
-
-<para>
-Samba supports reading files via memory mapping them. One some
-machines this can give a large boost to performance, on others it
-makes not difference at all, and on some it may reduce performance.
-</para>
-
-<para>
-To enable you you have to recompile Samba with the -DUSE_MMAP option
-on the FLAGS line of the Makefile.
-</para>
-
-<para>
-Note that memory mapping is only used on files opened read only, and
-is not used by the "read raw" operation. Thus you may find memory
-mapping is more effective if you disable "read raw" using "read raw =
-no".
 </para>
 
 </sect1>
@@ -510,11 +308,12 @@ drive (Kernel 2.0.30). The transfer rate was reasonable for 10 baseT.
 </para>
 
 <para>
-FIXME
+<programlisting>
 The figures are:          Put              Get 
 P166 client 3Com card:    420-440kB/s      500-520kB/s
 P100 client 3Com card:    390-410kB/s      490-510kB/s
 DX4-75 client NE2000:     370-380kB/s      330-350kB/s
+</programlisting>
 </para>
 
 <para>
@@ -539,39 +338,6 @@ Looking at standard FTP throughput, Samba is a bit slower (100kB/s
 upwards). I suppose there is more going on in the samba protocol, but 
 if it could get up to the rate of FTP the perfomance would be quite 
 staggering.
-</para>
-
-</sect1>
-
-<sect1>
-<title>My Results</title>
-
-<para>
-Some people want to see real numbers in a document like this, so here
-they are. I have a 486sx33 client running WfWg 3.11 with the 3.11b
-tcp/ip stack. It has a slow IDE drive and 20Mb of ram. It has a SMC
-Elite-16 ISA bus ethernet card. The only WfWg tuning I've done is to
-set DefaultRcvWindow in the [MSTCP] section of system.ini to 16384. My
-server is a 486dx3-66 running Linux. It also has 20Mb of ram and a SMC
-Elite-16 card. You can see my server config in the examples/tridge/
-subdirectory of the distribution.
-</para>
-
-<para>
-I get 490k/s on reading a 8Mb file with copy.
-I get 441k/s writing the same file to the samba server.
-</para>
-
-<para>
-Of course, there's a lot more to benchmarks than 2 raw throughput
-figures, but it gives you a ballpark figure.
-</para>
-
-<para>
-I've also tested Win95 and WinNT, and found WinNT gave me the best
-speed as a samba client. The fastest client of all (for me) is
-smbclient running on another linux box. Maybe I'll add those results
-here someday ...
 </para>
 
 </sect1>
