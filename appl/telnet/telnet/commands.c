@@ -1086,7 +1086,7 @@ static struct modelist ModeList[] = {
     { "-edit",	"Disable character editing",	tn_clearmode, 1, MODE_EDIT },
     { "softtabs", "Enable tab expansion",	tn_setmode, 1, MODE_SOFT_TAB },
     { "+softtabs", 0,				tn_setmode, 1, MODE_SOFT_TAB },
-    { "-softtabs", "Disable character editing",	tn_clearmode, 1, MODE_SOFT_TAB },
+    { "-softtabs", "Disable tab expansion",	tn_clearmode, 1, MODE_SOFT_TAB },
     { "litecho", "Enable literal character echo", tn_setmode, 1, MODE_LIT_ECHO },
     { "+litecho", 0,				tn_setmode, 1, MODE_LIT_ECHO },
     { "-litecho", "Disable literal character echo", tn_clearmode, 1, MODE_LIT_ECHO },
