@@ -1,3 +1,24 @@
+2003-09-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c (init_cred_loop): handle
+	KRB5KRB_ERR_RESPONSE_TOO_BIG and loop again, this time requesting
+	LARGE_MSG from send to kdc, and if this is the second time bail
+	out; try to free memory
+
+	* lib/krb5/send_to_kdc.c (krb5_sendto_kdc_flags): new function,
+	and then implement the order krb5_sendto_kdc* function with this
+	function.
+
+	* lib/krb5/krbhst.c (krb5_krbhst_init_flags): new function, use it
+	and adapt callers
+	(krbhst_get_default_proto): new function, returns udp, or in case
+	large_msg was requested for the krb5_krbhst_data, use tcp.
+	(*): if the flag KD_LARGE_MSG was set on the krb5_krbhst_data, avoid
+	using udp, use krbhst_get_default_proto
+	
+	* lib/krb5/krb5.h: flags for krb5_krbhst_init_flags (and
+	krb5_send_to_kdc_flags)
+
 2003-09-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/rd_req.c (krb5_rd_req): if we have a keyblock in auth
