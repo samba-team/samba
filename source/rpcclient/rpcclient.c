@@ -50,7 +50,7 @@ static void cmd_quit(struct client_info *info);
 static struct cli_state smbcli;
 struct cli_state *smb_cli = &smbcli;
 
-FILE *out_hnd = stdout;
+FILE *out_hnd;
 
 /****************************************************************************
 initialise smb client structure
@@ -403,6 +403,8 @@ enum client_action
 	struct client_info cli_info;
 
 	pstring password; /* local copy only, if one is entered */
+
+	out_hnd = stdout;
 
 	rpcclient_init();
 
