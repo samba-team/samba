@@ -131,7 +131,7 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
 	/*
 	 * Read a loopback udp message.
 	 */
-	msg_len = recvfrom(oplock_sock, &buffer[OPBRK_CMD_HEADER_LEN],
+	msg_len = sys_recvfrom(oplock_sock, &buffer[OPBRK_CMD_HEADER_LEN],
 						buffer_len - OPBRK_CMD_HEADER_LEN, 0, (struct sockaddr *)&from, &fromlen);
 
 	if(msg_len < 0) {
