@@ -5735,6 +5735,26 @@ JOB_INFO_2 *add_job2_to_array(uint32 *len, JOB_INFO_2 ***array,
 }
 
 /*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_replyopenprinter(SPOOL_Q_REPLYOPENPRINTER *q_u, 
+			       const fstring string, uint32 printer, uint32 type)
+{      
+	if (q_u == NULL)
+		return False;
+
+	init_unistr2(&q_u->string, string, strlen(string)+1);
+
+	q_u->printer=printer;
+	q_u->type=type;
+
+	q_u->unknown0=0x0;
+	q_u->unknown1=0x0;
+
+	return True;
+}
+
+/*******************************************************************
  Parse a SPOOL_Q_REPLYOPENPRINTER structure.
 ********************************************************************/  
 BOOL spoolss_io_q_replyopenprinter(char *desc, SPOOL_Q_REPLYOPENPRINTER *q_u, prs_struct *ps, int depth)
@@ -5756,7 +5776,9 @@ BOOL spoolss_io_q_replyopenprinter(char *desc, SPOOL_Q_REPLYOPENPRINTER *q_u, pr
 	if(!prs_uint32("type", ps, depth, &q_u->type))
 		return False;
 	
-	if(!new_spoolss_io_buffer("", ps, depth, q_u->buffer))
+	if(!prs_uint32("unknown0", ps, depth, &q_u->unknown0))
+		return False;
+	if(!prs_uint32("unknown1", ps, depth, &q_u->unknown1))
 		return False;
 
 	return True;
@@ -5780,6 +5802,19 @@ BOOL spoolss_io_r_replyopenprinter(char *desc, SPOOL_R_REPLYOPENPRINTER *r_u, pr
 		return False;
 
 	return True;		
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_reply_closeprinter(SPOOL_Q_REPLYCLOSEPRINTER *q_u, POLICY_HND *hnd)
+{      
+	if (q_u == NULL)
+		return False;
+
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+
+	return True;
 }
 
 /*******************************************************************
@@ -5811,6 +5846,88 @@ BOOL spoolss_io_r_replycloseprinter(char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, 
 		return False;
 
 	if(!smb_io_pol_hnd("printer handle",&r_u->handle,ps,depth))
+		return False;
+
+	if (!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;		
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
+			        uint32 change_low, uint32 change_high)
+{      
+	if (q_u == NULL)
+		return False;
+
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+
+	q_u->change_low=change_low;
+	q_u->change_high=change_high;
+
+	q_u->unknown0=0x0;
+	q_u->unknown1=0x0;
+
+	q_u->info_ptr=1;
+
+	q_u->info.version=2;
+	q_u->info.flags=PRINTER_NOTIFY_INFO_DISCARDED;
+	q_u->info.count=0;
+
+	return True;
+}
+
+/*******************************************************************
+ Parse a SPOOL_Q_REPLY_RRPCN structure.
+********************************************************************/  
+BOOL spoolss_io_q_reply_rrpcn(char *desc, SPOOL_Q_REPLY_RRPCN *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_replycloseprinter");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
+		return False;
+
+	if (!prs_uint32("change_low", ps, depth, &q_u->change_low))
+		return False;
+
+	if (!prs_uint32("change_high", ps, depth, &q_u->change_high))
+		return False;
+
+	if (!prs_uint32("unknown0", ps, depth, &q_u->unknown0))
+		return False;
+
+	if (!prs_uint32("unknown1", ps, depth, &q_u->unknown1))
+		return False;
+
+	if (!prs_uint32("info_ptr", ps, depth, &q_u->info_ptr))
+		return False;
+
+	if(q_u->info_ptr!=0)
+		if(!smb_io_notify_info(desc, &q_u->info, ps, depth))
+			return False;
+		
+	return True;
+}
+
+/*******************************************************************
+ Parse a SPOOL_R_REPLY_RRPCN structure.
+********************************************************************/  
+BOOL spoolss_io_r_reply_rrpcn(char *desc, SPOOL_R_REPLY_RRPCN *r_u, prs_struct *ps, int depth)
+{		
+	prs_debug(ps, depth, desc, "spoolss_io_r_replycloseprinter");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("unknown0", ps, depth, &r_u->unknown0))
 		return False;
 
 	if (!prs_uint32("status", ps, depth, &r_u->status))
