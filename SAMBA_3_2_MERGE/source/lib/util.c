@@ -64,7 +64,6 @@ int chain_size = 0;
 int trans_num = 0;
 
 static enum remote_arch_types ra_type = RA_UNKNOWN;
-pstring user_socket_options=DEFAULT_SOCKET_OPTIONS;   
 
 /***********************************************************************
  Definitions for all names.

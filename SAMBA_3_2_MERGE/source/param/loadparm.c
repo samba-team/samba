@@ -57,7 +57,6 @@ BOOL in_client = False;		/* Not in the client by default */
 BOOL bLoaded = False;
 
 extern userdom_struct current_user_info;
-extern pstring user_socket_options;
 
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
@@ -228,6 +227,7 @@ typedef struct
 	int ldap_port;
 	char *szLdapServer;
 #endif
+	char *socket_options;
 	int ldap_ssl;
 	char *szLdapSuffix;
 	char *szLdapFilter;
@@ -933,7 +933,7 @@ static struct parm_struct parm_table[] = {
 	{"max open files", P_INTEGER, P_GLOBAL, &Globals.max_open_files, NULL, NULL, FLAG_ADVANCED}, 
 	{"min print space", P_INTEGER, P_LOCAL, &sDefault.iMinPrintSpace, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 
-	{"socket options", P_STRING, P_GLOBAL, user_socket_options, NULL, NULL, FLAG_ADVANCED}, 
+	{"socket options", P_STRING, P_GLOBAL, &Globals.socket_options, NULL, NULL, FLAG_ADVANCED}, 
 	{"strict allocate", P_BOOL, P_LOCAL, &sDefault.bStrictAllocate, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"sync always", P_BOOL, P_LOCAL, &sDefault.bSyncAlways, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -1355,8 +1355,6 @@ static void init_globals(void)
 	slprintf(s, sizeof(s) - 1, "%d.%d", DEFAULT_MAJOR_VERSION,
 		 DEFAULT_MINOR_VERSION);
 	string_set(&Globals.szAnnounceVersion, s);
-
-	pstrcpy(user_socket_options, DEFAULT_SOCKET_OPTIONS);
 
 	string_set(&Globals.szLogonDrive, "");
 	/* %N is the NIS auto.home server if -DAUTOHOME is used, else same as %L */
@@ -4296,4 +4294,15 @@ int lp_maxprintjobs(int snum)
 BOOL lp_use_sendfile(int snum)
 {
 	return (_lp_use_sendfile(snum) && !srv_is_signing_active());
+}
+
+
+/*******************************************************************
+ set the socket options strings
+********************************************************************/
+
+void lp_set_socket_options( const char *opt )
+{
+	if ( opt )
+		string_set(&Globals.socket_options, opt );
 }
