@@ -84,6 +84,10 @@ struct ndr_push {
 				} \
                            } while (0)
 
+/* these are used when generic fn pointers are needed for ndr push/pull fns */
+typedef NTSTATUS (*ndr_push_fn_t)(struct ndr_push *, void *);
+typedef NTSTATUS (*ndr_pull_fn_t)(struct ndr_pull *, void *);
+
 /* now pull in the individual parsers */
 #include "libcli/ndr/ndr_sec.h"
 #include "libcli/ndr/ndr_echo.h"

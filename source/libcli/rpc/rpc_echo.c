@@ -30,50 +30,25 @@ NTSTATUS dcerpc_rpcecho_addone(struct dcerpc_pipe *p,
 {
 	struct rpcecho_addone r;
 	NTSTATUS status;
-	DATA_BLOB request, response;
 	TALLOC_CTX *mem_ctx;
-	struct ndr_push *push;
-	struct ndr_pull *pull;
 
 	mem_ctx = talloc_init("dcerpc_rpcecho_addone");
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	push = ndr_push_init();
-	if (!push) {
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
+	/* fill the .in side of the call */
 	r.in.data = in_data;
 
-	status = ndr_push_rpcecho_addone(push, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
+	/* make the call */
+	status = dcerpc_ndr_request(p, RPCECHO_CALL_ADDONE, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_rpcecho_addone,
+				    (ndr_pull_fn_t) ndr_pull_rpcecho_addone,
+				    &r);
 
-	request = ndr_push_blob(push);
-
-	status = cli_dcerpc_request(p, RPCECHO_CALL_ADDONE, mem_ctx, &request, &response);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
-
-	pull = ndr_pull_init_blob(&response, mem_ctx);
-	if (!pull) {
-		goto failed;
-	}
-
-	status = ndr_pull_rpcecho_addone(pull, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
-
+	/* and extract the .out parameters */
 	*out_data = r.out.data;
 
-failed:
-	ndr_push_free(push);
 	talloc_destroy(mem_ctx);
 	return status;
 }

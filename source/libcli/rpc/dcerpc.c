@@ -656,3 +656,58 @@ NTSTATUS cli_dcerpc_request(struct dcerpc_pipe *p,
 
 	return status;
 }
+
+
+/*
+  a useful helper function for synchronous rpc requests
+*/
+NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
+			    uint32 opnum,
+			    TALLOC_CTX *mem_ctx,
+			    NTSTATUS (*ndr_push)(struct ndr_push *, void *),
+			    NTSTATUS (*ndr_pull)(struct ndr_pull *, void *),
+			    void *struct_ptr)
+{
+	struct ndr_push *push;
+	struct ndr_pull *pull;
+	NTSTATUS status;
+	DATA_BLOB request, response;
+
+	/* setup for a ndr_push_* call */
+	push = ndr_push_init();
+	if (!push) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* push the structure into a blob */
+	status = ndr_push_rpcecho_addone(push, struct_ptr);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	/* retrieve the blob */
+	request = ndr_push_blob(push);
+
+	/* make the actual dcerpc request */
+	status = cli_dcerpc_request(p, RPCECHO_CALL_ADDONE, mem_ctx, &request, &response);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	/* prepare for ndr_pull_* */
+	pull = ndr_pull_init_blob(&response, mem_ctx);
+	if (!pull) {
+		goto failed;
+	}
+
+	/* pull the structure from the blob */
+	status = ndr_pull_rpcecho_addone(pull, struct_ptr);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+failed:
+	ndr_push_free(push);
+	return status;
+}

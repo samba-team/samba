@@ -21,12 +21,36 @@
 
 #include "includes.h"
 
+
+/*
+  test the AddOne interface
+*/
+static BOOL test_addone(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	int i;
+	NTSTATUS status;
+
+	printf("\nTesting AddOne\n");
+
+	for (i=0;i<10;i++) {
+		int n;
+		status = dcerpc_rpcecho_addone(p, i, &n);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("AddOne(%d) failed - %s\n", i, nt_errstr(status));
+			return False;
+		}
+		printf("%d + 1 = %d\n", i, n);
+	}
+
+	return True;
+}
+
 BOOL torture_rpc_echo(int dummy)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
-	int i;
+	BOOL ret = True;
 
 	mem_ctx = talloc_init("torture_rpc_echo");
 
@@ -34,18 +58,13 @@ BOOL torture_rpc_echo(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
-	
-	for (i=0;i<10;i++) {
-		int n;
-		status = dcerpc_rpcecho_addone(p, i, &n);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("AddOne(%d) failed - %s\n", i, nt_errstr(status));
-			goto done;
-		}
-		printf("%d + 1 = %d\n", i, n);
+
+	if (!test_addone(p, mem_ctx)) {
+		ret = False;
 	}
 
-done:
+	printf("\n");
+	
         torture_rpc_close(p);
-	return NT_STATUS_IS_OK(status);
+	return ret;
 }
