@@ -89,6 +89,8 @@
 #ifdef __386__
    #define __i386__
 #endif
+#define SHADOW_PWD
+#define NO_GETSPNAM
 #endif
 
 #ifdef NEWS42
@@ -959,8 +961,11 @@ extern char *getpass(char *);
 #endif
 
 #ifdef QNX
+#include <arpa/inet.h>
 #define STATFS4
 #include <sys/statfs.h>
+/* Override QNX size of 32 to be 255 */
+#define FD_SETSIZE 255
 #include <sys/select.h>
 #include <signal.h>
 #include <sys/dir.h>
@@ -1106,7 +1111,7 @@ extern char    *getsmbpass(char *);
 #endif
 
 /* Now for some other grungy stuff */
-#ifdef NO_GETSPNAM
+#if defined(NO_GETSPNAM) && !defined(QNX)
 struct spwd { /* fake shadow password structure */
        char *sp_pwdp;
 };
