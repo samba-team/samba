@@ -28,7 +28,6 @@ static BOOL test_EnumServicesStatus(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 	NTSTATUS status;
 	uint32 resume_handle = 0;
 	struct ENUM_SERVICE_STATUS *service = NULL; 
-	uint32 needed, sr;
 
 	r.in.handle = h;
 	r.in.type = SERVICE_TYPE_WIN32;
