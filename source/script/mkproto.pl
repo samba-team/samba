@@ -10,7 +10,6 @@ if ($ARGV[0] eq '-h') {
 	$header_name = shift @ARGV;
 }
 
-
 sub print_header {
 	print "#ifndef $header_name\n";
 	print "#define $header_name\n\n";
@@ -52,46 +51,28 @@ sub handle_loadparm {
 sub process_file($) 
 {
 	my $filename = shift;
-	my $line;
-	my $inheader;
-	my $gotstart;
 
 	open(FH, "< $filename") || die "Failed to open $filename";
 
-	$inheader = 0;
-	$gotstart = 0;
-
 	print "\n/* The following definitions come from $filename  */\n\n";
 
-	while ($line = <FH>) {	      
-		# this ignores most lines
+	while (my $line = <FH>) {	      
+		# these are ordered for maximum speed
 		next if ($line =~ /^\s/);
 	      
-		$gotstart = 0;
-	      
-		if ($line =~ /^static|^extern/o ||
-		    $line !~ /^[a-zA-Z]/o ||
-		    $line =~ /[;]/o) {
-			next;
-		}
-	      	      
+		next unless ($line =~ /\(/);
+
+		next if ($line =~ /^\/|[;]/);
+
 		if ($line =~ /^FN_/) {
 			handle_loadparm($line);
 		}
 
-		next unless ($line =~ /\(/);
-	      
-		if ( $line =~ /
-		     ^void|^BOOL|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^unsigned|^long|
-		     ^NTSTATUS|^ADS_STATUS|^enum\s.*\(|^DATA_BLOB|^WERROR|^XFILE|^FILE|^DIR|
-		     ^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME
-		     /xo) {
-			$gotstart = 1;
-		}
-		
-		
-		# goto next line if we don't have a start
-		next unless $gotstart;
+		next unless ( $line =~ /
+			      ^void|^BOOL|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^unsigned|^long|
+			      ^NTSTATUS|^ADS_STATUS|^enum\s.*\(|^DATA_BLOB|^WERROR|^XFILE|^FILE|^DIR|
+			      ^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME
+			      /xo);
 
 		if ( $line =~ /\(.*\)\s*$/o ) {
 			chomp $line;
@@ -110,6 +91,8 @@ sub process_file($)
 			print "$line\n";
 		}
 	}
+
+	close(FH);
 }
 
 sub process_files {
