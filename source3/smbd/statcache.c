@@ -270,16 +270,18 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 
 			if (!sizechanged) {
 				memcpy(name, scp->translated_path, MIN(sizeof(pstring)-1, scp->translated_path_length));
-			} else {
-				pstring last_component;
-				sp = strnrchr_m(name, '/', num_components);
-				if (!sp) {
-					/* Logic error. */
-					smb_panic("logic error in stat_cache_lookup\n");
-				}
-				pstrcpy(last_component, sp);
+			} else if (num_components == 0) {
 				pstrcpy(name, scp->translated_path);
-				pstrcat(name, last_component);
+			} else {
+				sp = strnrchr_m(name, '/', num_components);
+				if (sp) {
+					pstring last_component;
+					pstrcpy(last_component, sp);
+					pstrcpy(name, scp->translated_path);
+					pstrcat(name, last_component);
+				} else {
+					pstrcpy(name, scp->translated_path);
+				}
 			}
 
 			/* set pointer for 'where to start' on fixing the rest of the name */
