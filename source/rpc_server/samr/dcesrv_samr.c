@@ -1676,12 +1676,17 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			SET_STRING(msg, info21.workstations.name, "userWorkstations");
 		IFSET(SAMR_FIELD_LOGON_HOURS)  
 			SET_LHOURS(msg, info21.logon_hours,       "logonHours");
+		IFSET(SAMR_FIELD_ACCT_FLAGS)     
+			SET_AFLAGS(msg, info21.acct_flags,        "userAccountControl");
 		IFSET(SAMR_FIELD_CALLBACK)     
 			SET_STRING(msg, info21.callback.name,     "userParameters");
 		IFSET(SAMR_FIELD_COUNTRY_CODE) 
 			SET_UINT  (msg, info21.country_code,      "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)    
 			SET_UINT  (msg, info21.code_page,         "codePage");
+
+
+		/* Any reason the rest of these can't be set? */
 #undef IFSET
 		break;
 
@@ -1701,6 +1706,8 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			SET_STRING(msg, info23.info.workstations.name, "userWorkstations");
 		IFSET(SAMR_FIELD_LOGON_HOURS)  
 			SET_LHOURS(msg, info23.info.logon_hours,       "logonHours");
+		IFSET(SAMR_FIELD_ACCT_FLAGS)     
+			SET_AFLAGS(msg, info23.info.acct_flags,        "userAccountControl");
 		IFSET(SAMR_FIELD_CALLBACK)     
 			SET_STRING(msg, info23.info.callback.name,     "userParameters");
 		IFSET(SAMR_FIELD_COUNTRY_CODE) 
@@ -1744,6 +1751,8 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			SET_STRING(msg, info25.info.workstations.name, "userWorkstations");
 		IFSET(SAMR_FIELD_LOGON_HOURS)  
 			SET_LHOURS(msg, info25.info.logon_hours,       "logonHours");
+		IFSET(SAMR_FIELD_ACCT_FLAGS)     
+			SET_AFLAGS(msg, info25.info.acct_flags,        "userAccountControl");
 		IFSET(SAMR_FIELD_CALLBACK)     
 			SET_STRING(msg, info25.info.callback.name,     "userParameters");
 		IFSET(SAMR_FIELD_COUNTRY_CODE) 
