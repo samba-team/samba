@@ -21,7 +21,7 @@ krb5_get_all_client_addrs (krb5_addresses *res)
 	  return errno;
      res->number = 1;
      res->addrs = malloc (sizeof(*res->addrs));
-     res->addrs[0].type = hostent->h_addrtype;
+     res->addrs[0].addr_type = hostent->h_addrtype;
      res->addrs[0].address.data = NULL;
      res->addrs[0].address.length = 0;
      err = krb5_data_alloc (&res->addrs[0].address, hostent->h_length);

@@ -40,7 +40,7 @@ krb5_build_ap_req (krb5_context context,
 
   ret->length = length_AP_REQ(&ap);
   ret->data = malloc(ret->length);
-  encode_AP_REQ(ret->data + ret->length - 1, ret->length, &ap);
+  encode_AP_REQ((char *)ret->data + ret->length - 1, ret->length, &ap);
   free_AP_REQ(&ap);
   
   return 0;

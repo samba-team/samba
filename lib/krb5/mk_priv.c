@@ -32,7 +32,7 @@ krb5_mk_priv(krb5_context context,
     *(part.seq_number) = ++auth_context->local_seqnumber;
   } else 
     part.seq_number = NULL;
-  part.s_address.addr_type = addr.addrs[0].type;
+  part.s_address.addr_type = addr.addrs[0].addr_type;
   part.s_address.address   = addr.addrs[0].address;
   part.r_address = NULL;
 

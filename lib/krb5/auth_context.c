@@ -56,11 +56,11 @@ krb5_auth_con_setaddrs(krb5_context context,
 		       krb5_address *local_addr,
 		       krb5_address *remote_addr)
 {
-    auth_context->local_address.type = local_addr->type;
+    auth_context->local_address.addr_type = local_addr->addr_type;
     krb5_data_copy (&auth_context->local_address.address,
 		    local_addr->address.data,
 		    local_addr->address.length);
-    auth_context->remote_address.type = remote_addr->type;
+    auth_context->remote_address.addr_type = remote_addr->addr_type;
     krb5_data_copy (&auth_context->remote_address.address,
 		    remote_addr->address.data,
 		    remote_addr->address.length);
@@ -81,7 +81,7 @@ krb5_auth_con_getaddrs(krb5_context context,
     *local_addr = malloc (sizeof(**local_addr));
     if (*local_addr == NULL)
 	return ENOMEM;
-    (*local_addr)->type = auth_context->local_address.type;
+    (*local_addr)->addr_type = auth_context->local_address.addr_type;
     ret = krb5_data_copy (&(*local_addr)->address,
 			  auth_context->local_address.address.data,
 			  auth_context->local_address.address.length);
@@ -93,7 +93,7 @@ krb5_auth_con_getaddrs(krb5_context context,
     *remote_addr = malloc (sizeof(**remote_addr));
     if (*remote_addr == NULL)
 	return ENOMEM;
-    (*remote_addr)->type = auth_context->remote_address.type;
+    (*remote_addr)->addr_type = auth_context->remote_address.addr_type;
     ret = krb5_data_copy (&(*remote_addr)->address,
 			  auth_context->remote_address.address.data,
 			  auth_context->remote_address.address.length);
@@ -192,6 +192,14 @@ krb5_auth_getlocalseqnumber(krb5_context context,
   return 0;
 }
 
+krb5_error_code
+krb5_auth_setlocalseqnumber (krb5_context context,
+			     krb5_auth_context auth_context,
+			     int32_t seqnumber)
+{
+  auth_context->local_seqnumber = seqnumber;
+  return 0;
+}
 
 krb5_error_code
 krb5_auth_getremoteseqnumber(krb5_context context,
@@ -199,6 +207,15 @@ krb5_auth_getremoteseqnumber(krb5_context context,
 			     int32_t *seqnumber)
 {
   *seqnumber = auth_context->remote_seqnumber;
+  return 0;
+}
+
+krb5_error_code
+krb5_auth_setremoteseqnumber (krb5_context context,
+			      krb5_auth_context auth_context,
+			      int32_t seqnumber)
+{
+  auth_context->remote_seqnumber = seqnumber;
   return 0;
 }
 
