@@ -3406,19 +3406,21 @@ static uint32 enumprinterdrivers_level1(fstring *list, fstring servername, fstri
 static uint32 enumprinterdrivers_level2(fstring *list, fstring servername, fstring architecture, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int i;
-	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_2 *driver_info_2=NULL;
-
-	ZERO_STRUCT(driver);
 
 	if (*returned > 0 && 
 	    !(driver_info_2=(DRIVER_INFO_2 *)malloc(*returned * sizeof(DRIVER_INFO_2))))
 		return ERROR_NOT_ENOUGH_MEMORY;
 
 	for (i=0; i<*returned; i++) {
-		get_a_printer_driver(&driver, 3, list[i], architecture);
+		NT_PRINTER_DRIVER_INFO_LEVEL driver;
+		ZERO_STRUCT(driver);
+		if (get_a_printer_driver(&driver, 3, list[i], architecture)
+		    != 0) { 
+			*returned = i;
+			break;
+		}
 		fill_printer_driver_info_2(&(driver_info_2[i]), driver, servername, architecture );
-		free_a_printer_driver(driver, 3);
 	}
 	
 	safe_free(list);
