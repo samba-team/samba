@@ -6529,7 +6529,7 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("security descriptor change denied by existing "
 			  "security descriptor\n"));
-		result = ERROR_ACCESS_DENIED;
+		status = WERR_ACCESS_DENIED;
 		goto done;
 	}
 		
