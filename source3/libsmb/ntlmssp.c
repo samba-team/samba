@@ -529,6 +529,9 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	ntlmssp_state->server_domain = talloc_strdup(ntlmssp_state->mem_ctx,
+						     server_domain);
+
 	SAFE_FREE(server_domain);
 	if (challenge_blob.length != 8) {
 		data_blob_free(&struct_blob);

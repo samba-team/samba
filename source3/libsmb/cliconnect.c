@@ -610,6 +610,7 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 	} while (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED));
 
 	if (NT_STATUS_IS_OK(nt_status)) {
+		fstrcpy(cli->server_domain, ntlmssp_state->server_domain);
 		set_cli_session_key(cli, ntlmssp_state->session_key);
 	}
 
