@@ -611,9 +611,9 @@ static BOOL samr_reply_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_u,
 
 	DEBUG(5,("samr_reply_enum_dom_users: %d\n", __LINE__));
 
-	become_root(True);
+	become_root();
 	get_sampwd_entries(pass, 0, &total_entries, &num_entries, MAX_SAM_ENTRIES, q_u->acb_mask);
-	unbecome_root(True);
+	unbecome_root();
 
 	init_samr_r_enum_dom_users(&r_e, total_entries,
 	                           q_u->unknown_0, num_entries,
@@ -852,9 +852,9 @@ static BOOL samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u, prs_struct *rd
 
 	  DEBUG(10,("samr_reply_query_dispinfo: Setting q_u->max_entries to %u\n",q_u->max_entries));
 
-		become_root(True);
+		become_root();
 		got_pwds = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries, q_u->max_entries, 0);
-		unbecome_root(True);
+		unbecome_root();
 
 		/* more left - set resume handle */
 		if(total_entries > num_entries)
@@ -1028,9 +1028,9 @@ static BOOL samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 		                            q_u->uni_user_name[i].uni_str_len));
 
 		/* find the user account */
-		become_root(True);
+		become_root();
 		sam_pass = get_smb21pwd_entry(user_name, 0);
-		unbecome_root(True);
+		unbecome_root();
 
 		if (sam_pass == NULL)
 		{
@@ -1374,9 +1374,9 @@ static BOOL samr_reply_open_user(SAMR_Q_OPEN_USER *q_u, prs_struct *rdata, int s
 		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	become_root(True);
+	become_root();
 	sam_pass = getsam21pwrid(q_u->user_rid);
-	unbecome_root(True);
+	unbecome_root();
 
 	/* check that the RID exists in our domain. */
 	if (r_u.status == 0x0 && sam_pass == NULL)
@@ -1441,9 +1441,9 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 		return False;
 	}
 
-	become_root(True);
+	become_root();
 	smb_pass = getsmbpwrid(user_rid);
-	unbecome_root(True);
+	unbecome_root();
 
 	if (smb_pass == NULL)
 	{
@@ -1474,9 +1474,9 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 		return False;
 	}
 
-	become_root(True);
+	become_root();
 	sam_pass = getsam21pwrid(user_rid);
-	unbecome_root(True);
+	unbecome_root();
 
 	if (sam_pass == NULL)
 	{
@@ -1669,9 +1669,9 @@ static BOOL samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 
 	if (status == 0x0)
 	{
-		become_root(True);
+		become_root();
 		sam_pass = getsam21pwrid(rid);
-		unbecome_root(True);
+		unbecome_root();
 
 		if (sam_pass == NULL)
 		{
@@ -1859,9 +1859,9 @@ static BOOL api_samr_unknown_32(pipes_struct *p)
 	fstrcpy(mach_acct, dos_unistrn2(q_u.uni_mach_acct.buffer,
 	                            q_u.uni_mach_acct.uni_str_len));
 
-	become_root(True);
+	become_root();
 	sam_pass = getsam21pwnam(mach_acct);
-	unbecome_root(True);
+	unbecome_root();
 
 	if (sam_pass != NULL)
 	{

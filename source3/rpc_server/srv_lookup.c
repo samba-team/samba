@@ -113,9 +113,9 @@ int make_dom_gids(DOMAIN_GRP *mem, int num_members, DOM_GID **ppgids)
 		uint8  attr  = mem[count].attr;
 		char   *name = mem[count].name;
 
-		become_root(True);
+		become_root();
 		status = lookup_grp_rid(name, &rid, &type);
-		unbecome_root(True);
+		unbecome_root();
 
 		if (status == 0x0)
 		{
@@ -344,9 +344,9 @@ uint32 lookup_user_name(uint32 rid, char *user_name, uint8 *type)
 	DEBUG(5,("lookup_user_name: rid: %d", rid));
 
 	/* find the user account */
-	become_root(True);
+	become_root();
 	disp_info = getsamdisprid(rid);
-	unbecome_root(True);
+	unbecome_root();
 
 	if (disp_info != NULL)
 	{
@@ -537,9 +537,9 @@ uint32 lookup_added_user_rids(char *user_name,
 	(*grp_rid) = 0;
 
 	/* find the user account */
-	become_root(True);
+	become_root();
 	sam_pass = getsam21pwnam(user_name);
-	unbecome_root(True);
+	unbecome_root();
 
 	if (sam_pass != NULL)
 	{
@@ -561,9 +561,9 @@ uint32 lookup_added_user_rid(char *user_name, uint32 *rid, uint8 *type)
 	(*type) = SID_NAME_USER;
 
 	/* find the user account */
-	become_root(True);
+	become_root();
 	sam_pass = getsam21pwnam(user_name);
-	unbecome_root(True);
+	unbecome_root();
 
 	if (sam_pass != NULL)
 	{

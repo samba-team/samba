@@ -360,24 +360,24 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 
 	if(!guest_user) {
 
-		become_root(True);
+		become_root();
 
 		if(!(p->ntlmssp_auth_validated = pass_check_smb(unix_user_name, domain,
 		                      (uchar*)p->challenge, lm_owf, nt_owf, NULL))) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: User %s\\%s from machine %s \
 failed authentication on named pipe %s.\n", domain, unix_user_name, wks, p->name ));
-			unbecome_root(True);
+			unbecome_root();
 			return False;
 		}
 
 		if(!(smb_pass = getsmbpwnam(unix_user_name))) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: Cannot find user %s in smb passwd database.\n",
 				unix_user_name));
-			unbecome_root(True);
+			unbecome_root();
 			return False;
 		}
 
-		unbecome_root(True);
+		unbecome_root();
 
 		if (smb_pass == NULL) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: Couldn't find user '%s' in smb_passwd file.\n", 
