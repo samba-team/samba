@@ -543,7 +543,6 @@ static int process_nonroot(int argc, char *argv[])
  done:
 	safe_free(old_passwd);
 	safe_free(new_passwd);
-	safe_free(user_name);
 
 	return result;
 }
