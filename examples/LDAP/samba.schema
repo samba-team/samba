@@ -10,6 +10,10 @@
 ## 1.3.6.1.4.1.7165.2.2.x - objectclasses
 ##
 
+#######################################################################
+##                Attributes used by Samba 2.2 schema                ##
+#######################################################################
+
 ##
 ## Password hashes
 ##
@@ -110,11 +114,104 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.15 NAME 'primaryGroupID'
 	EQUALITY integerMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
+	
+#######################################################################
+##                Attributes used by Samba 3.0 schema                ##
+#######################################################################
+
+##
+## Password hashes
+##
+attributetype ( 1.3.6.1.4.1.7165.2.1.24 NAME 'sambaLMPassword'
+	DESC 'LanManager Passwd'
+	EQUALITY caseIgnoreIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.25 NAME 'sambaNTPassword'
+	DESC 'NT Passwd'
+	EQUALITY caseIgnoreIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} SINGLE-VALUE )
+
+##
+## Account flags in string format ([UWDX     ])
+##
+attributetype ( 1.3.6.1.4.1.7165.2.1.26 NAME 'sambaAcctFlags'
+	DESC 'Account Flags'
+	EQUALITY caseIgnoreIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{16} SINGLE-VALUE )
+
+## 
+## Password timestamps & policies
+##
+attributetype ( 1.3.6.1.4.1.7165.2.1.27 NAME 'sambaPwdLastSet'
+	DESC 'NT pwdLastSet'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.28 NAME 'sambaPwdCanChange'
+	DESC 'NT pwdCanChange'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.29 NAME 'sambaPwdMustChange'
+	DESC 'NT pwdMustChange'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+	
+attributetype ( 1.3.6.1.4.1.7165.2.1.30 NAME 'sambaLogonTime'
+	DESC 'NT logonTime'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.31 NAME 'sambaLogoffTime'
+	DESC 'NT logoffTime'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.32 NAME 'sambaKickoffTime'
+	DESC 'NT kickoffTime'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+
+##
+## string settings
+##
+attributetype ( 1.3.6.1.4.1.7165.2.1.33 NAME 'sambaHomeDrive'
+	DESC 'NT homeDrive'
+	EQUALITY caseIgnoreIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{4} SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.34 NAME 'sambaLogonScript'
+	DESC 'NT scriptPath'
+	EQUALITY caseIgnoreIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{255} SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.35 NAME 'sambaProfilePath'
+	DESC 'NT profilePath'
+	EQUALITY caseIgnoreIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{255} SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.36 NAME 'sambaUserWorkstations'
+	DESC 'userWorkstations'
+	EQUALITY caseIgnoreIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{255} SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.37 NAME 'sambaHomePath'
+	DESC 'smbHome'
+	EQUALITY caseIgnoreIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{128} )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.38 NAME 'sambaDomainName'
+	DESC 'Windows NT domain to which the user belongs'
+	EQUALITY caseIgnoreIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{128} )
+
 ##
 ## SID, of any type
 ##
 
-attributetype ( 1.3.6.1.4.1.7165.2.1.20 NAME 'ntSid'
+attributetype ( 1.3.6.1.4.1.7165.2.1.20 NAME 'sambaSID'
 	DESC 'Security ID'
 	EQUALITY caseIgnoreIA5Match
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{64} SINGLE-VALUE )
@@ -124,7 +221,7 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.20 NAME 'ntSid'
 ## Primary group SID, compatible with ntSid
 ##
 
-attributetype ( 1.3.6.1.4.1.7165.2.1.23 NAME 'primaryGroupSID'
+attributetype ( 1.3.6.1.4.1.7165.2.1.23 NAME 'sambaPrimaryGroupSID'
 	DESC 'Primary Group Security ID'
 	EQUALITY caseIgnoreIA5Match
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{64} SINGLE-VALUE )
@@ -132,7 +229,7 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.23 NAME 'primaryGroupSID'
 ##
 ## group mapping attributes
 ##
-attributetype ( 1.3.6.1.4.1.7165.2.1.19 NAME 'ntGroupType'
+attributetype ( 1.3.6.1.4.1.7165.2.1.19 NAME 'sambaGroupType'
 	DESC 'NT Group Type'
 	EQUALITY integerMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
@@ -141,15 +238,20 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.19 NAME 'ntGroupType'
 ## Store info on the domain
 ##
 
-attributetype ( 1.3.6.1.4.1.7165.2.1.21 NAME 'nextUserRid'
+attributetype ( 1.3.6.1.4.1.7165.2.1.21 NAME 'sambaNextUserRid'
 	DESC 'Next NT rid to give our for users'
 	EQUALITY integerMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
-attributetype ( 1.3.6.1.4.1.7165.2.1.22 NAME 'nextGroupRid'
+attributetype ( 1.3.6.1.4.1.7165.2.1.22 NAME 'sambaNextGroupRid'
 	DESC 'Next NT rid to give out for groups'
 	EQUALITY integerMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+
+########################################################################
+##                            HISTORICAL                              ##
+########################################################################
 
 ##
 ## The smbPasswordEntry objectclass has been depreciated in favor of the
@@ -168,17 +270,35 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.22 NAME 'nextGroupRid'
 #               displayName $ smbHome $ homeDrive $ scriptPath $ profilePath $
 #               description $ userWorkstations $ primaryGroupID $ domain ))
 
+########################################################################
+##                        END OF HISTORICAL                           ##
+########################################################################
+
 ## The X.500 data model (and therefore LDAPv3) says that each entry can 
 ## only have one structural objectclass.  OpenLDAP 2.0 does not enforce 
 ## this currently but will in v2.1
 
 objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
 	DESC 'Samba Auxilary Account'
-	MUST ( uid $ ntSid ) 
+	MUST ( uid $ rid ) 
 	MAY  ( cn $ lmPassword $ ntPassword $ pwdLastSet $ logonTime $
                logoffTime $ kickoffTime $ pwdCanChange $ pwdMustChange $ acctFlags $ 
                displayName $ smbHome $ homeDrive $ scriptPath $ profilePath $
-               description $ userWorkstations $ primaryGroupSID $ domain ))
+               description $ userWorkstations $ primaryGroupID $ domain ))
+
+##
+## added new objectclass (and OID) for 3.0 to help us deal with backwards 
+## compatibility with 2.2 installations (e.g. ldapsam_compat)  --jerry
+##
+objectclass ( 1.3.6.1.4.1.7165.2.2.6 NAME 'sambaSamAccount' SUP top AUXILIARY
+	DESC 'Samba 3.0 Auxilary Account'
+	MUST ( uid $ sambaSID ) 
+	MAY  ( cn $ sambaLMPassword $ sambaNTPassword $ sambaPwdLastSet $ 
+	       sambaLogonTime $ sambaLogoffTime $ sambaKickoffTime $ 
+	       sambaPwdCanChange $ sambaPwdMustChange $ sambaAcctFlags $ 
+               displayName $ sambaHomePath $ sambaHomeDrive $ sambaLogonScript $ 
+	       sambaProfilePath $ description $ sambaUserWorkstations $ 
+	       sambaPrimaryGroupSID $ sambaDomainName ))
 
 ############################################################################
 ##
@@ -188,29 +308,18 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
 ############################################################################
 
 ##
-## Whole-of-domain info
-##
-
-objectclass ( 1.3.6.1.4.1.7165.2.2.5 NAME 'sambaDomain' SUP top STRUCTURAL
-	DESC 'Samba Domain Information'
-	MUST ( domain $ nextGroupRid $ nextUserRid $ ntSid)) 
-
-##
 ## Group mapping info
 ##
 objectclass ( 1.3.6.1.4.1.7165.2.2.4 NAME 'sambaGroupMapping' SUP top AUXILIARY
 	DESC 'Samba Group Mapping'
-	MUST ( gidNumber $ ntSid $ ntGroupType ) 
-	MAY  ( displayName $ description ))
+	MUST ( gidNumber $ sambaSID $ sambaGroupType ) 
+	MAY  ( displayName $ description $ cn ))
 
 ##
-## Used for Winbind experimentation
+## Whole-of-domain info
 ##
-#objectclass ( 1.3.6.1.4.1.7165.1.2.2.3 NAME 'uidPool' SUP top AUXILIARY
-#	DESC 'Pool for allocating UNIX uids'
-#	MUST ( uidNumber ) )
-
-#objectclass ( 1.3.6.1.4.1.7165.1.2.2.4 NAME 'gidPool' SUP top AUXILIARY
-#	DESC 'Pool for allocating UNIX gids'
-#	MUST ( gidNumber ) )
+objectclass ( 1.3.6.1.4.1.7165.2.2.5 NAME 'sambaDomain' SUP top STRUCTURAL
+	DESC 'Samba Domain Information'
+	MUST ( sambaDomainName $ sambaNextGroupRid $ sambaNextUserRid $ 
+	       sambaSID ) ) 
 
