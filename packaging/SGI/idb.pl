@@ -225,6 +225,13 @@ if (@nsswitch) {
   }
 }
 
+print IDB "d 0755 lp sys usr/samba/printer $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "d 0755 lp sys usr/samba/printer/W32X86 $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "d 0755 lp sys usr/samba/printer/WIN40 $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "d 0755 lp sys usr/samba/printer/W32MIPS $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "d 0755 lp sys usr/samba/printer/W32ALPHA $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "d 0755 lp sys usr/samba/printer/W32PPC $SRCPFX/packaging/SGI $PKG.sw.base\n";
+
 print IDB "d 0644 root sys usr/samba/private $SRCPFX/packaging/SGI $PKG.sw.base\n";
 print IDB "f 0600 root sys usr/samba/private/smbpasswd $SRCPFX/packaging/SGI/smbpasswd $PKG.sw.base config(suggest)\n";
 
@@ -294,7 +301,7 @@ while (@catman) {
   }
   print IDB "f 0664 root sys usr/share/catman/u_man/cat$dirnum/$file $SRCPFX/$nextfile $PKG.man.manpages\n";
 }
-print IDB "d 01777 nobody nobody var/spool/samba $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "d 01777 lp sys var/spool/samba $SRCPFX/packaging/SGI $PKG.sw.base\n";
 
 close IDB;
 print "\n\n$PKG.idb file has been created\n";
