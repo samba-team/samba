@@ -13,10 +13,8 @@ init_generate (char *filename)
 {
     orig_filename = filename;
     headerfile = fopen (STEM ".h", "w");
-    if (headerfile == NULL) {
-	fprintf (stderr, "Could not open " STEM ".h" "\n");
-	exit (1);
-    }
+    if (headerfile == NULL)
+	err (1, "open " STEM ".h");
     fprintf (headerfile,
 	     "/* Generated from %s */\n"
 	     "/* Do not edit */\n\n",
@@ -28,13 +26,13 @@ init_generate (char *filename)
 	     "#include <stddef.h>\n"
 	     "#include <time.h>\n\n");
     fprintf (headerfile,
-	     "typedef struct {\n"
+	     "typedef struct octet_string {\n"
 	     "  size_t length;\n"
 	     "  void *data;\n"
 	     "} octet_string;\n\n");
     fprintf (headerfile,
 #if 0
-	     "typedef struct {\n"
+	     "typedef struct general_string {\n"
 	     "  size_t length;\n"
 	     "  char *data;\n"
 	     "} general_string;\n\n"
@@ -43,10 +41,8 @@ init_generate (char *filename)
 #endif
 	     );
     logfile = fopen(STEM "_files", "w");
-    if (logfile == NULL) {
-	fprintf (stderr, "Could not open " STEM "_files" "\n");
-	exit (1);
-    }
+    if (logfile == NULL)
+	err (1, "open " STEM "_files");
 }
 
 void
@@ -157,7 +153,7 @@ define_asn1 (int level, Type *t)
 }
 
 static void
-define_type (int level, char *name, Type *t)
+define_type (int level, char *name, Type *t, int typedefp)
 {
     switch (t->type) {
     case TType:
@@ -179,12 +175,12 @@ define_type (int level, char *name, Type *t)
 
 	i.type = TInteger;
 	space(level);
-	fprintf (headerfile, "struct {\n");
+	fprintf (headerfile, "struct %s {\n", typedefp ? name : "");
 	for (m = t->members; m && m->val != tag; m = m->next) {
-	    char *n = malloc(strlen(m->gen_name) + 3);
-	    strcpy (n, m->gen_name);
-	    strcat (n, ":1");
-	    define_type (level + 1, n, &i);
+	    char *n;
+
+	    asprintf (&n, "%s:1", m->gen_name);
+	    define_type (level + 1, n, &i, FALSE);
 	    free (n);
 	    if (tag == -1)
 		tag = m->val;
@@ -198,17 +194,16 @@ define_type (int level, char *name, Type *t)
 	int tag = -1;
 
 	space(level);
-	fprintf (headerfile, "struct {\n");
+	fprintf (headerfile, "struct %s {\n", typedefp ? name : "");
 	for (m = t->members; m && m->val != tag; m = m->next) {
 	    if (m->optional) {
-		char *n = malloc(strlen(m->gen_name) + 2);
+		char *n;
 
-		*n = '*';
-		strcpy (n+1, m->gen_name);
-		define_type (level + 1, n, m->type);
+		asprintf (&n, "*%s", m->gen_name);
+		define_type (level + 1, n, m->type, FALSE);
 		free (n);
 	    } else
-		define_type (level + 1, m->gen_name, m->type);
+		define_type (level + 1, m->gen_name, m->type, FALSE);
 	    if (tag == -1)
 		tag = m->val;
 	}
@@ -223,9 +218,9 @@ define_type (int level, char *name, Type *t)
 	i.application = 0;
 
 	space(level);
-	fprintf (headerfile, "struct {\n");
-	define_type (level + 1, "len", &i);
-	define_type (level + 1, "*val", t->subtype);
+	fprintf (headerfile, "struct %s {\n", typedefp ? name : "");
+	define_type (level + 1, "len", &i, FALSE);
+	define_type (level + 1, "*val", t->subtype, FALSE);
 	space(level);
 	fprintf (headerfile, "} %s;\n", name);
 	break;
@@ -239,7 +234,7 @@ define_type (int level, char *name, Type *t)
 	fprintf (headerfile, "general_string %s;\n", name);
 	break;
     case TApplication:
-	define_type (level, name, t->subtype);
+	define_type (level, name, t->subtype, FALSE);
 	break;
     default:
 	abort ();
@@ -255,7 +250,7 @@ generate_type_header (Symbol *s)
     fprintf (headerfile, "\n*/\n\n");
 
     fprintf (headerfile, "typedef ");
-    define_type (0, s->gen_name, s->type);
+    define_type (0, s->gen_name, s->type, TRUE);
 
     fprintf (headerfile, "\n");
 }
@@ -264,13 +259,11 @@ generate_type_header (Symbol *s)
 void
 generate_type (Symbol *s)
 {
-    char *filename = malloc(strlen(STEM) + strlen(s->gen_name) + 4);
-    sprintf(filename, "%s_%s.x", STEM, s->gen_name);
+    char *filename;
+    asprintf (&filename, "%s_%s.x", STEM, s->gen_name);
     codefile = fopen (filename, "w");
-    if (codefile == NULL) {
-	fprintf (stderr, "Could not create %s\n", filename);
-	exit (1);
-    }
+    if (codefile == NULL)
+	err (1, "fopen %s", filename);
     fprintf(logfile, "%s ", filename);
     free(filename);
     fprintf (codefile, 
