@@ -28,6 +28,8 @@ struct change_data {
 	time_t status_time; /* Info from the directory we're monitoring. */
 	time_t total_time; /* Total time of all directory entries - don't care if it wraps. */
 	unsigned int num_entries; /* Zero or the number of files in the directory. */
+	unsigned int mode_sum;
+	unsigned char name_hash[16];
 };
 
 /****************************************************************************
@@ -74,9 +76,6 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	 * larger than the max time_t value).
 	 */
 
-	if (!(flags & (FILE_NOTIFY_CHANGE_SIZE|FILE_NOTIFY_CHANGE_LAST_WRITE)))
-		return True;
-
 	dp = OpenDir(conn, path, True);
 	if (dp == NULL)
 		return False;
@@ -103,7 +102,31 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		 * Do the stat - but ignore errors.
 		 */		
 		vfs_stat(conn,full_name, &st);
+
+		/*
+		 * Always sum the times.
+		 */
+
 		data->total_time += (st.st_mtime + st.st_ctime);
+
+		/*
+		 * If requested hash the names.
+		 */
+
+		if (flags & (FILE_NOTIFY_CHANGE_DIR_NAME|FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_FILE)) {
+			int i;
+			unsigned char tmp_hash[16];
+			mdfour(tmp_hash, fname, strlen(fname));
+			for (i=0;i<16;i++)
+				data->name_hash[i] ^= tmp_hash[i];
+		}
+
+		/*
+		 * If requested sum the mode_t's.
+		 */
+
+		if (flags & (FILE_NOTIFY_CHANGE_ATTRIBUTES|FILE_NOTIFY_CHANGE_SECURITY))
+			data->mode_sum = st.st_mode;
 	}
 	
 	CloseDir(dp);
@@ -151,7 +174,9 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 	    data2.modify_time != data->modify_time ||
 	    data2.status_time != data->status_time ||
 	    data2.total_time != data->total_time ||
-	    data2.num_entries != data->num_entries) {
+	    data2.num_entries != data->num_entries ||
+		data2.mode_sum != data->mode_sum ||
+		memcmp(data2.name_hash, data->name_hash, sizeof(data2.name_hash))) {
 		change_to_root_user();
 		return True;
 	}
