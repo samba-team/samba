@@ -123,6 +123,9 @@ int net_help_idmap(int argc, const char **argv)
 	d_printf("net idmap dump filename"\
 		 "\n  Dump current id mapping\n");
 
+	d_printf("net idmap restore"\
+		 "\n  Restore entries from stdin to current local idmap\n");
+
 	return -1;
 }
 
