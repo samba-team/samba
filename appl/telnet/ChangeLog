@@ -1,3 +1,14 @@
+2000-12-07  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/sys_term.c (scrub_env): remove some const-ness
+	* telnetd/sys_term.c (scrub_env): add LOGNAME and POSIXLY_CORRECT
+	to the list of authorized environment variables to be compatible
+	with linux-telnetd
+
+	* telnetd/sys_term.c (scrub_env): change filtering algoritm from
+	allowing everything except a few bad cases to not allowing
+	anything except a few non-dangerous cases
+
 2000-12-06  Johan Danielsson  <joda@pdc.kth.se>
 
 	* libtelnet/kerberos5.c: de-pointerise auth_context parameter to
