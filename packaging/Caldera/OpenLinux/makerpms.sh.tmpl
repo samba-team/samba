@@ -6,8 +6,14 @@ SRCDIR=${SRCDIR:-/usr/src/OpenLinux/SOURCES}
 USERID=`id -u`
 GRPID=`id -g`
 
-( cd ../../../.. ; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba )
-( cd ../../../.. ; tar czvf ${SRCDIR}/samba-PVERSION-PRELEASE.tar.gz samba )
+if ( z$1 == "zdevel" ) then
+        ( cd ../../../.. ; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba; mv samba samba-PVERSION )
+        ( cd ../../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba-PVERIONS; mv samba-PVERSION samba )
+else
+        ( cd ../../../.. ; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba-PVERSION )
+        ( cd ../../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba-PVERSION )
+done
+
 cp -a *.spec *.spec-lsb $SPECDIR
 for src in *.patch; do
   trg=`echo $src | sed 's;xxxxxx;PVERSION;'`
