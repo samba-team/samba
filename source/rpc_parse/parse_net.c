@@ -1289,15 +1289,20 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 	init_unistr2(&usr->uni_home_dir, home_dir, len_home_dir);
 	init_unistr2(&usr->uni_dir_drive, dir_drive, len_dir_drive);
 
-	usr->num_groups2 = num_groups;
+	/* always have at least one group == the user's primary group */
+	usr->num_groups2 = num_groups+1;
 
-	if (num_groups > 0) {
-		usr->gids = (DOM_GID *)talloc_zero(ctx,sizeof(DOM_GID) * num_groups);
-		if (usr->gids == NULL)
-			return;
-		for (i = 0; i < num_groups; i++)
-			usr->gids[i] = gids[i];
-	}
+	usr->gids = (DOM_GID *)talloc_zero(ctx,sizeof(DOM_GID) * (num_groups+1));
+	if (usr->gids == NULL)
+		return;
+
+	/* primary group **MUST** go first.  NT4's winmsd.exe will give
+	   "The Network statistics are currently not available.  9-5"
+	   What the heck is this?     -- jerry  */
+	usr->gids[0].g_rid = usr->group_id;
+	usr->gids[0].attr  = 0x07;
+	for (i = 0; i < num_groups; i++) 
+		usr->gids[i+1] = gids[i];	
 
 	init_unistr2(&usr->uni_logon_srv, logon_srv, len_logon_srv);
 	init_unistr2(&usr->uni_logon_dom, logon_dom, len_logon_dom);
