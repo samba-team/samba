@@ -67,6 +67,8 @@ BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 	struct smb_passwd *smb_pwent;
 	uchar           new_p16[16];
 	uchar           new_nt_p16[16];
+	fstring unix_name;
+	uid_t unix_uid;
 
 	*err_str = '\0';
 	*msg_str = '\0';
@@ -77,12 +79,24 @@ BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 	 * Check for a machine account.
 	 */
 	
-	if(trust_account && !pwd) {
-		slprintf(err_str, err_str_len - 1, "User %s does not \
-exist in system password file (usually /etc/passwd). Cannot add machine \
-account without a valid system user.\n", user_name);
+	if (pwd == NULL)
+	{
+		if (trust_account)
+		{
+			slprintf(err_str, err_str_len - 1, "User %s does not \
+exist in system password file (usually /etc/passwd).  \
+Cannot add machine account without a valid system user.\n", user_name);
+		}
+		else
+		{
+			slprintf(err_str, err_str_len - 1, "User %s does not \
+exist in system password file (usually /etc/passwd).\n", user_name);
+		}
 		return False;
 	}
+
+	unix_uid = pwd->pw_uid;
+	fstrcpy(unix_name, pwd->pw_name);
 
 	/* Calculate the MD4 hash (NT compatible) of the new password. */
 	nt_lm_owf_gen(new_passwd, new_nt_p16, new_p16);
@@ -114,12 +128,12 @@ account without a valid system user.\n", user_name);
 	if (smb_pwent == NULL) {
 		if(add_user == False) {
 			slprintf(err_str, err_str_len-1,
-				"Failed to find entry for user %s.\n", pwd->pw_name);
+				"Failed to find entry for user %s.\n", unix_name);
 			endsmbpwent(vp);
 			return False;
 		}
 
-		if (add_new_user(user_name, pwd->pw_uid, trust_account, disable_user,
+		if (add_new_user(user_name, unix_uid, trust_account, disable_user,
 				 set_no_password, new_p16, new_nt_p16)) {
 			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
 			endsmbpwent(vp);
@@ -160,7 +174,7 @@ account without a valid system user.\n", user_name);
 	
 	if(mod_smbpwd_entry(smb_pwent,True) == False) {
 		slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n",
-			pwd->pw_name);
+			unix_name);
 		endsmbpwent(vp);
 		return False;
 	}
