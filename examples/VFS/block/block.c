@@ -80,7 +80,7 @@ static vfs_op_tuple block_vfs_ops[] = {
 
 extern BOOL pm_process(char *FileName, BOOL (*sfunc)(char *), BOOL(*pfunc)(char * , char *));
 
-//functions
+/* functions */
 
 static BOOL enter_pblock_mount(char *dir);
 static BOOL get_section(char *sect);
