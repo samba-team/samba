@@ -191,7 +191,7 @@ again:
 
 	status = dcerpc_samr_GetUserPwInfo(join->p, join, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_len;
+		policy_min_pw_len = pwp.out.info.min_password_length;
 	}
 
 	join->machine_password = generate_random_str(join, MAX(8, policy_min_pw_len));
