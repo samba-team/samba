@@ -168,8 +168,10 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		printf("'winbind separator = +' might cause problems with group membership.\n");
 	}
 
-	if (lp_algorithmic_rid_base() < 1000) {
-		printf("'algorithmic rid base' must be equal or above 1000.\n");
+	if (lp_algorithmic_rid_base() < BASE_RID) {
+		/* Try to prevent admin foot-shooting, we can't put algorithmic
+		   rids below 1000, that's the 'well known RIDs' on NT */
+		printf("'algorithmic rid base' must be equal to or above %lu\n", BASE_RID);
 	}
 
 	if (lp_algorithmic_rid_base() & 1) {

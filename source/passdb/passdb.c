@@ -509,9 +509,11 @@ static int algorithmic_rid_base(void)
 
 	rid_offset = lp_algorithmic_rid_base();
 
-	if (rid_offset < 1000) {
-		DEBUG(0, ("algorithmic rid base must be above 1000\n"));
-		rid_offset = 1000;
+	if (rid_offset < BASE_RID) {  
+		/* Try to prevent admin foot-shooting, we can't put algorithmic
+		   rids below 1000, that's the 'well known RIDs' on NT */
+		DEBUG(0, ("'algorithmic rid base' must be equal to or above %ld\n", BASE_RID));
+		rid_offset = BASE_RID;
 	}
 	if (rid_offset & 1) {
 		DEBUG(0, ("algorithmic rid base must be even\n"));
