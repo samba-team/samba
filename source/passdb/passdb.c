@@ -900,7 +900,7 @@ account without a valid local system user.\n", user_name);
 		}
 
 		sam_pass = NULL;
-		if (!pdb_init_sam_pw(&sam_pass, pwd)) {
+		if (!pdb_init_sam_pw(&sam_pass, sys_getpwnam(user_name))) {
 			return False;
 		}
 
