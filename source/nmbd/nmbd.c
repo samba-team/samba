@@ -770,8 +770,8 @@ static void usage(char *pname)
 
   reopen_logs();
 
-  DEBUG( 1, ( "Netbios nameserver version %s started.\n", VERSION ) );
-  DEBUGADD( 1, ( "Copyright Andrew Tridgell 1994-1998\n" ) );
+  DEBUG( 0, ( "Netbios nameserver version %s started.\n", VERSION ) );
+  DEBUGADD( 0, ( "Copyright Andrew Tridgell and the Samba Team 1994-2002\n" ) );
 
   if ( !reload_nmbd_services(False) )
     return(-1);
