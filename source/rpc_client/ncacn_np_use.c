@@ -20,14 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/*************************************************************
- Ever wonder where Luke comes up with some of these names?
-
-	(N)etwork (C)omputing (A)rchitechture ???
-
- get it?   --jerry
-*************************************************************/
-
 
 #define NO_SYSLOG
 
@@ -53,6 +45,9 @@ terminate client connection
 ****************************************************************************/
 static void ncacn_np_shutdown(struct ncacn_np *cli)
 {
+	struct ntuser_creds	usr;
+	BOOL			closed;
+
         if (cli != NULL)
         {
                 if (cli->smb != NULL)
@@ -62,10 +57,8 @@ static void ncacn_np_shutdown(struct ncacn_np *cli)
                                 /* cli_nt_session_close(cli->smb, cli->fnum); JERRY */
                                 cli_nt_session_close(cli->smb);
                         }
-#if 0  /* commented out by JERRY */
-                        cli_net_use_del(cli->smb->desthost,
-                                        &cli->smb->usr, False, False);
-#endif
+			create_ntc_from_cli_state(&usr, cli->smb);
+                        cli_net_use_del(cli->smb->desthost, &usr, False, &closed);
                 }
         }
 }
@@ -121,11 +114,17 @@ static struct ncacn_np_use *add_ncacn_np_to_array(uint32 * len,
                                                   ***array,
                                                   struct ncacn_np_use *cli)
 {
+	
         int i;
+
+	/* traverse the list and try to find a previously
+	   allocate spot that is not being used */
         for (i = 0; i < num_msrpcs; i++)
         {
                 if (msrpcs[i] == NULL)
                 {
+			/* found and empty spot to 
+			   store the cli pointer */
                         msrpcs[i] = cli;
                         return cli;
                 }
@@ -167,7 +166,7 @@ BOOL ncacn_np_use_del(const char *srv_name, const char *pipe_name,
 
         if (strnequal("\\\\", srv_name, 2))
         {
-                srv_name = &srv_name[6];
+                srv_name = &srv_name[2];
         }
 
         for (i = 0; i < num_msrpcs; i++)
@@ -194,15 +193,15 @@ BOOL ncacn_np_use_del(const char *srv_name, const char *pipe_name,
                 {
                         ncacn_np_name = &ncacn_np_name[6];
                 }
-                if (!strequal(ncacn_np_srv_name, srv_name))
+                if (!strequal(ncacn_np_name, pipe_name))
                 {
                         continue;
                 }
                 if (strnequal("\\\\", ncacn_np_srv_name, 2))
                 {
-                        ncacn_np_srv_name = &ncacn_np_srv_name[6];
+                        ncacn_np_srv_name = &ncacn_np_srv_name[2];
                 }
-                if (!strequal(ncacn_np_name, pipe_name))
+                if (!strequal(ncacn_np_srv_name, srv_name))
                 {
                         continue;
                 }
