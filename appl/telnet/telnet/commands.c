@@ -2337,7 +2337,7 @@ tn(int argc, char **argv)
     } while (connected == 0);
     cmdrc(hostp, hostname);
     if (autologin && user == NULL)
-	user = get_default_username ();
+	user = (char *)get_default_username ();
     if (user) {
 	env_define((unsigned char *)"USER", (unsigned char *)user);
 	env_export((unsigned char *)"USER");
