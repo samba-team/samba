@@ -159,42 +159,25 @@ static const char *attr[] = {"uid", "pwdLastSet", "logonTime",
 /*******************************************************************
  open a connection to the ldap server.
 ******************************************************************/
-static BOOL ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP ** ldap_struct)
+static int ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP ** ldap_struct)
 {
-
+	int rc = LDAP_SUCCESS;
 	int version;
-
-#ifndef NO_LDAP_SECURITY
-	if (geteuid() != 0) {
-		DEBUG(0, ("ldap_open_connection: cannot access LDAP when not root..\n"));
-		return False;
-	}
-#endif
+	BOOL ldap_v3 = False;
 
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 	DEBUG(10, ("ldapsam_open_connection: %s\n", ldap_state->uri));
 	
-	if (ldap_initialize(ldap_struct, ldap_state->uri) != LDAP_SUCCESS) {
-		DEBUG(0, ("ldap_initialize: %s\n", strerror(errno)));
-		return (False);
+	if ((rc = ldap_initialize(ldap_struct, ldap_state->uri)) != LDAP_SUCCESS) {
+		DEBUG(0, ("ldap_initialize: %s\n", ldap_err2string(rc)));
+		return rc;
 	}
 	
-	if (ldap_get_option(*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version) == LDAP_OPT_SUCCESS)
-	{
-		if (version != LDAP_VERSION3)
-		{
-			version = LDAP_VERSION3;
-			ldap_set_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version);
-		}
-	}
-
 #else 
 
 	/* Parse the string manually */
 
 	{
-		int rc;
-		int tls = LDAP_OPT_X_TLS_HARD;
 		int port = 0;
 		fstring protocol;
 		fstring host;
@@ -205,7 +188,7 @@ static BOOL ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP *
 		if ( strncasecmp( p, "URL:", 4 ) == 0 ) {
 			p += 4;
 		}
-
+		
 		sscanf(p, "%10[^:]://%254s[^:]:%d", protocol, host, &port);
 		
 		if (port == 0) {
@@ -217,59 +200,65 @@ static BOOL ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP *
 				DEBUG(0, ("unrecognised protocol (%s)!\n", protocol));
 			}
 		}
-
+		
 		if ((*ldap_struct = ldap_init(host, port)) == NULL)	{
 			DEBUG(0, ("ldap_init failed !\n"));
-			return False;
+			return LDAP_OPERATIONS_ERROR;
 		}
-
-		/* Connect to older servers using SSL and V2 rather than Start TLS */
-		if (ldap_get_option(*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version) == LDAP_OPT_SUCCESS)
-		{
-			if (version != LDAP_VERSION2)
+		
+	        if (strequal(protocol, "ldaps")) {
+#ifdef LDAP_OPT_X_TLS
+			int tls = LDAP_OPT_X_TLS_HARD;
+			if (ldap_set_option (*ldap_struct, LDAP_OPT_X_TLS, &tls) != LDAP_SUCCESS)
 			{
-				version = LDAP_VERSION2;
-				ldap_set_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version);
+				DEBUG(0, ("Failed to setup a TLS session\n"));
 			}
-		}
-
-		if (strequal(protocol, "ldaps")) { 
-			if (lp_ldap_ssl() == LDAP_SSL_START_TLS) {
-				if (ldap_get_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, 
-						     &version) == LDAP_OPT_SUCCESS)
-				{
-					if (version < LDAP_VERSION3)
-					{
-						version = LDAP_VERSION3;
-						ldap_set_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION,
-								 &version);
-					}
-				}
-				if ((rc = ldap_start_tls_s (*ldap_struct, NULL, NULL)) != LDAP_SUCCESS)
-				{
-					DEBUG(0,("Failed to issue the StartTLS instruction: %s\n",
-						 ldap_err2string(rc)));
-					return False;
-				}
-				DEBUG (2, ("StartTLS issued: using a TLS connection\n"));
-			} else {
-				
-				if (ldap_set_option (*ldap_struct, LDAP_OPT_X_TLS, &tls) != LDAP_SUCCESS)
-				{
-					DEBUG(0, ("Failed to setup a TLS session\n"));
-				}
-			}
-		} else {
-			/* 
-			 * No special needs to setup options prior to the LDAP
-			 * bind (which should be called next via ldap_connect_system()
-			 */
+			
+			DEBUG(3,("LDAPS option set...!\n"));
+#else
+			DEBUG(0,("ldap_open_connection: Secure connection not supported by LDAP client libraries!\n"));
+			return LDAP_OPERATIONS_ERROR;
+#endif
 		}
 	}
 #endif
 
+	if (ldap_get_option(*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version) == LDAP_OPT_SUCCESS)
+	{
+		if (version != LDAP_VERSION3)
+		{
+			version = LDAP_VERSION3;
+			if (ldap_set_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version) == LDAP_OPT_SUCCESS) {
+				ldap_v3 = True;
+			}
+		} else {
+			ldap_v3 = True;
+		}
+	}
+
+	if (lp_ldap_ssl() == LDAP_SSL_START_TLS) {
+#ifdef LDAP_OPT_X_TLS
+		if (ldap_v3) {
+			if ((rc = ldap_start_tls_s (*ldap_struct, NULL, NULL)) != LDAP_SUCCESS)
+			{
+				DEBUG(0,("Failed to issue the StartTLS instruction: %s\n",
+					 ldap_err2string(rc)));
+				return False;
+			}
+			DEBUG (3, ("StartTLS issued: using a TLS connection\n"));
+		} else {
+			
+			DEBUG(0, ("Need LDAPv3 for Start TLS\n"));
+			return LDAP_OPERATIONS_ERROR;
+		}
+#else
+		DEBUG(0,("ldap_open_connection: StartTLS not supported by LDAP client libraries!\n"));
+		return LDAP_OPERATIONS_ERROR;
+#endif
+	}
+
 	DEBUG(2, ("ldap_open_connection: connection opened\n"));
-	return True;
+	return rc;
 }
 
 
@@ -371,7 +360,7 @@ static int rebindproc_connect (LDAP * ld, LDAP_CONST char *url, int request,
 /*******************************************************************
  connect to the ldap server under system privilege.
 ******************************************************************/
-static BOOL ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * ldap_struct)
+static int ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * ldap_struct)
 {
 	int rc;
 	char *ldap_dn;
@@ -385,7 +374,7 @@ static BOOL ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * l
 	if (!fetch_ldapsam_pw(&ldap_dn, &ldap_secret))
 	{
 		DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
-		return False;
+		return LDAP_INVALID_CREDENTIALS;
 	}
 
 	ldap_state->bind_dn = ldap_dn;
@@ -417,21 +406,28 @@ static BOOL ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * l
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0, ("Bind failed: %s\n", ldap_err2string(rc)));
-		return False;
+		return rc;
 	}
 	
 	DEBUG(2, ("ldap_connect_system: succesful connection to the LDAP server\n"));
-	return True;
+	return rc;
 }
 
 /**********************************************************************
 Connect to LDAP server 
 *********************************************************************/
-static NTSTATUS ldapsam_open(struct ldapsam_privates *ldap_state)
+static int ldapsam_open(struct ldapsam_privates *ldap_state)
 {
-	if (!ldap_state)
-		return NT_STATUS_INVALID_PARAMETER;
+	int rc;
+	SMB_ASSERT(ldap_state);
 		
+#ifndef NO_LDAP_SECURITY
+	if (geteuid() != 0) {
+		DEBUG(0, ("ldapsam_open: cannot access LDAP when not root..\n"));
+		return  LDAP_INSUFFICIENT_ACCESS;
+	}
+#endif
+
 	if ((ldap_state->ldap_struct != NULL) && ((ldap_state->last_ping + LDAPSAM_DONT_PING_TIME) < time(NULL))) {
 		struct sockaddr_un addr;
 		socklen_t len;
@@ -449,23 +445,24 @@ static NTSTATUS ldapsam_open(struct ldapsam_privates *ldap_state)
 
 	if (ldap_state->ldap_struct != NULL) {
 		DEBUG(5,("ldapsam_open: allready connected to the LDAP server\n"));
-		return NT_STATUS_OK;
+		return LDAP_SUCCESS;
 	}
 
-	if (!ldapsam_open_connection(ldap_state, &ldap_state->ldap_struct)) {
-		return NT_STATUS_UNSUCCESSFUL;
+	if ((rc = ldapsam_open_connection(ldap_state, &ldap_state->ldap_struct))) {
+		return rc;
 	}
-	if (!ldapsam_connect_system(ldap_state, ldap_state->ldap_struct)) {
+
+	if ((rc = ldapsam_connect_system(ldap_state, ldap_state->ldap_struct))) {
 		ldap_unbind_ext(ldap_state->ldap_struct, NULL, NULL);
 		ldap_state->ldap_struct = NULL;
-		return NT_STATUS_UNSUCCESSFUL;
+		return rc;
 	}
 
 
 	ldap_state->last_ping = time(NULL);
 	DEBUG(4,("The LDAP server is succesful connected\n"));
 
-	return NT_STATUS_OK;
+	return LDAP_SUCCESS;
 }
 
 /**********************************************************************
@@ -489,8 +486,9 @@ static NTSTATUS ldapsam_close(struct ldapsam_privates *ldap_state)
 
 static int ldapsam_retry_open(struct ldapsam_privates *ldap_state, int *attempts)
 {
-	if (!ldap_state || !attempts)
-		return (-1);
+	int rc;
+
+	SMB_ASSERT(ldap_state && attempts);
 		
 	if (*attempts != 0) {
 		/* we retry after 0.5, 2, 4.5, 8, 12.5, 18, 24.5 seconds */
@@ -498,9 +496,9 @@ static int ldapsam_retry_open(struct ldapsam_privates *ldap_state, int *attempts
 	}
 	(*attempts)++;
 
-	if (!NT_STATUS_IS_OK(ldapsam_open(ldap_state))){
+	if ((rc = ldapsam_open(ldap_state))) {
 		DEBUG(0,("Connection to LDAP Server failed for the %d try!\n",*attempts));
-		return LDAP_SERVER_DOWN;
+		return rc;
 	} 
 	
 	return LDAP_SUCCESS;		
@@ -512,8 +510,7 @@ static int ldapsam_search(struct ldapsam_privates *ldap_state, char *base, int s
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	
-	if (!ldap_state)
-		return (-1);
+	SMB_ASSERT(ldap_state);
 
 	while ((rc == LDAP_SERVER_DOWN) && (attempts < 8)) {
 		
@@ -1573,7 +1570,9 @@ Do the actual modification - also change a plaittext passord if
 it it set.
 **********************************************************************/
 
-static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,SAM_ACCOUNT *newpwd,char *dn,LDAPMod **mods,int ldap_op, BOOL pdb_add)
+static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods, 
+				     SAM_ACCOUNT *newpwd, char *dn,
+				     LDAPMod **mods, int ldap_op, BOOL pdb_add)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
@@ -1590,35 +1589,28 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,SAM_ACCOUNT 
 		{
 			case LDAP_MOD_ADD: 
 				make_a_mod(&mods, LDAP_MOD_ADD, "objectclass", "account");
-				if((rc = ldapsam_add(ldap_state,dn,mods))!=LDAP_SUCCESS) {
-					char *ld_error;
-					ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
-					&ld_error);
-					DEBUG(0,
-		    				("failed to add user with uid = %s with: %s\n\t%s\n",
-		    				pdb_get_username(newpwd), ldap_err2string(rc),
-		    				ld_error));
-					free(ld_error);
-					return NT_STATUS_UNSUCCESSFUL;
-				}  
+				rc = ldapsam_add(ldap_state, dn, mods);
 				break;
-			case LDAP_MOD_REPLACE: 	
-				if((rc = ldapsam_modify(ldap_state,dn,mods))!=LDAP_SUCCESS) {
-					char *ld_error;
-					ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
-					&ld_error);
-					DEBUG(0,
-		    				("failed to modify user with uid = %s with: %s\n\t%s\n",
-		    				pdb_get_username(newpwd), ldap_err2string(rc),
-		    				ld_error));
-					free(ld_error);
-					return NT_STATUS_UNSUCCESSFUL;
-				}  
+			case LDAP_MOD_REPLACE: 
+				rc = ldapsam_modify(ldap_state, dn ,mods);
 				break;
 			default: 	
-				DEBUG(0,("Wrong LDAP operation type: %d!\n",ldap_op));
+				DEBUG(0,("Wrong LDAP operation type: %d!\n", ldap_op));
 				return NT_STATUS_UNSUCCESSFUL;
 		}
+		
+		if (rc!=LDAP_SUCCESS) {
+			char *ld_error;
+			ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
+					&ld_error);
+			DEBUG(1,
+			      ("failed to %s user dn= %s with: %s\n\t%s\n",
+			       ldap_op == LDAP_MOD_ADD ? "add" : "modify",
+			       dn, ldap_err2string(rc),
+			       ld_error));
+			free(ld_error);
+			return NT_STATUS_UNSUCCESSFUL;
+		}  
 	}
 	
 #ifdef LDAP_EXOP_X_MODIFY_PASSWD
@@ -1969,18 +1961,18 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	} else {
 		int ldap_port = lp_ldap_port();
 			
-		/* remap default port is no SSL */
-		if ( (lp_ldap_ssl() == LDAP_SSL_OFF) && (ldap_port == 636) ) {
+		/* remap default port if not using SSL (ie clear or TLS) */
+		if ( (lp_ldap_ssl() != LDAP_SSL_ON) && (ldap_port == 636) ) {
 			ldap_port = 389;
 		}
 
-		ldap_state->uri = talloc_asprintf(pdb_context->mem_ctx, "%s://%s:%d", lp_ldap_ssl() ? "ldap" : "ldaps", lp_ldap_server(), ldap_port);
+		ldap_state->uri = talloc_asprintf(pdb_context->mem_ctx, "%s://%s:%d", lp_ldap_ssl() == LDAP_SSL_ON ? "ldaps" : "ldap", lp_ldap_server(), ldap_port);
 		if (!ldap_state->uri) {
 			return NT_STATUS_NO_MEMORY;
 		}
 #else
 	} else {
-		ldap_state->uri = "ldaps://localhost";
+		ldap_state->uri = "ldap://localhost";
 #endif
 	}
 
