@@ -129,23 +129,25 @@ typedef struct sam_data_info
 SAM_DATA;
 
 /******************************************************************
-makes a SAMR_R_ENUM_USERS structure.
+tdb_userlookup_names
 ********************************************************************/
-static int tdb_user_traverse(TDB_CONTEXT * tdb,
-			     TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+static int tdb_user_traverse(TDB_CONTEXT * tdb, void *state)
 {
-	prs_struct ps;
 	SAM_USER_INFO_21 usr;
 	SAM_DATA *data = (SAM_DATA *) state;
 	uint32 num_sam_entries = data->num_sam_entries + 1;
 	SAM_ENTRY *sam;
 	UNISTR2 *str;
 
+	DEBUG(5, ("tdb_userlookup_names\n"));
+
+	if (!tdb_lookup_user(tdb, &usr))
+	{
+		return -1;
+	}
+
 	DEBUG(5, ("tdb_user_traverse: idx: %d %d\n",
 		  data->current_idx, num_sam_entries));
-
-	dump_data_pw("usr:\n", dbuf.dptr, dbuf.dsize);
-	dump_data_pw("rid:\n", kbuf.dptr, kbuf.dsize);
 
 	/* skip first requested items */
 	if (data->current_idx < data->start_idx)
@@ -174,16 +176,11 @@ static int tdb_user_traverse(TDB_CONTEXT * tdb,
 	ZERO_STRUCTP(sam);
 	ZERO_STRUCTP(str);
 
-	prs_create(&ps, dbuf.dptr, dbuf.dsize, 4, True);
+	sam->rid = usr.user_rid;
+	copy_unistr2(str, &usr.uni_user_name);
+	make_uni_hdr(&sam->hdr_name, str->uni_str_len);
 
-	if (sam_io_user_info21("usr", &usr, &ps, 0))
-	{
-		sam->rid = usr.user_rid;
-		copy_unistr2(str, &usr.uni_user_name);
-		make_uni_hdr(&sam->hdr_name, str->uni_str_len);
-
-		data->num_sam_entries++;
-	}
+	data->num_sam_entries++;
 
 	return 0;
 }
@@ -198,10 +195,11 @@ uint32 _samr_enum_dom_users(const POLICY_HND *pol, uint32 * start_idx,
 {
 	TDB_CONTEXT *sam_tdb = NULL;
 	SAM_DATA state;
+	DOM_SID dom_sid;
 
 	/* find the domain sid associated with the policy handle */
 	if (!get_tdbdomsid(get_global_hnd_cache(), pol, &sam_tdb,
-			   NULL, NULL, NULL, NULL, NULL))
+			   NULL, NULL, NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -211,7 +209,12 @@ uint32 _samr_enum_dom_users(const POLICY_HND *pol, uint32 * start_idx,
 	ZERO_STRUCT(state);
 
 	state.start_idx = (*start_idx);
-	tdb_traverse(sam_tdb, tdb_user_traverse, (void *)&state);
+	/* lookups */
+	if (!dom_user_traverse
+	    (&dom_sid, tdb_user_traverse, (void *)&state))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	(*sam) = state.sam;
 	(*uni_acct_name) = state.uni_name;
