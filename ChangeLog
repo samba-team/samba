@@ -1,3 +1,30 @@
+2004-06-01  Love  <lha@stacken.kth.se>
+
+	* lib/hdb/hdb-ldap.c: require search base to be configured, create
+	local context structure
+	
+2004-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: more ldap text, partly from Tarjei Huse
+	<tarjei@nu.no>
+
+2004-05-28  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/hdb/hdb-ldap.c: clean, indent
+	
+	* lib/hdb/hdb-ldap.c (LDAP_entry2mods): make sure
+	krb5KeyVersionNumber is added on new entires
+
+2004-05-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: minor fixes, partly from Tarjei Huse
+	<tarjei@nu.no>
+
+	* lib/krb5/krb5.conf.5: some text about dbname and realm
+	
+	* lib/krb5/krb5.conf.5: default value for
+	hdb-ldap-structural-object is account
+
 2004-05-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* tools/Makefile.am: use ! instead of , as sed delimiter
