@@ -273,7 +273,11 @@ const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bindi
 		return NULL;
 	}
 
-	s = talloc_asprintf(mem_ctx, "%s:%s:[", t_name, b->host);
+	if (b->object) { 
+		s = talloc_asprintf(mem_ctx, "%s@", GUID_string(mem_ctx, b->object));
+	}
+
+	s = talloc_asprintf_append(s, "%s:%s[", t_name, b->host);
 	if (!s) return NULL;
 
 	/* this is a *really* inefficent way of dealing with strings,
@@ -302,81 +306,90 @@ const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bindi
 */
 NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding *b)
 {
-	char *part1, *part2, *part3;
+	char *options, *type;
 	char *p;
 	int i, j, comma_count;
+
+	p = strchr(s, '@');
+
+	if (p && PTR_DIFF(p, s) == 36) { /* 36 is the length of a UUID */
+		NTSTATUS status;
+
+		b->object = talloc_p(mem_ctx, struct GUID);
+		
+		status = GUID_from_string(s, b->object);
+
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(0, ("Failed parsing UUID\n"));
+			return status;
+		}
+
+		s = p + 1;
+	} else {
+		b->object = NULL;
+	}
 
 	p = strchr(s, ':');
 	if (!p) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	part1 = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
-	if (!part1) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	s = p+1;
 
-	p = strchr(s, ':');
-	if (!p) {
-		p = strchr(s, '[');
-		if (p) {
-			part2 = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
-			part3 = talloc_strdup(mem_ctx, p+1);
-			if (part3[strlen(part3)-1] != ']') {
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-			part3[strlen(part3)-1] = 0;
-		} else {
-			part2 = talloc_strdup(mem_ctx, s);
-			part3 = NULL;
-		}
-	} else {
-		part2 = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
-		part3 = talloc_strdup(mem_ctx, p+1);
-	}
-	if (!part2) {
+	type = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
+	if (!type) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0;i<ARRAY_SIZE(ncacn_transports);i++) {
-		if (strcasecmp(part1, ncacn_transports[i].name) == 0) {
+		if (strcasecmp(type, ncacn_transports[i].name) == 0) {
 			b->transport = ncacn_transports[i].transport;
 			break;
 		}
 	}
 	if (i==ARRAY_SIZE(ncacn_transports)) {
-		DEBUG(0,("Unknown dcerpc transport '%s'\n", part1));
+		DEBUG(0,("Unknown dcerpc transport '%s'\n", type));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+	
+	s = p+1;
 
-	b->host = part2;
+	p = strchr(s, '[');
+	if (p) {
+		b->host = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
+		options = talloc_strdup(mem_ctx, p+1);
+		if (options[strlen(options)-1] != ']') {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		options[strlen(options)-1] = 0;
+	} else {
+		b->host = talloc_strdup(mem_ctx, s);
+		options = NULL;
+	}
+
+	if (!b->host) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	b->options = NULL;
 	b->flags = 0;
 
-	if (!part3) {
+	if (!options) {
 		return NT_STATUS_OK;
 	}
 
-	/* the [] brackets are optional */
-	if (*part3 == '[' && part3[strlen(part3)-1] == ']') {
-		part3++;
-		part3[strlen(part3)-1] = 0;
-	}
-
-	comma_count = count_chars(part3, ',');
+	comma_count = count_chars(options, ',');
 	b->options = talloc_array_p(mem_ctx, const char *, comma_count+2);
 	if (!b->options) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0; (p = strchr(part3, ',')); i++) {
-		b->options[i] = talloc_strndup(mem_ctx, part3, PTR_DIFF(p, part3));
+	for (i=0; (p = strchr(options, ',')); i++) {
+		b->options[i] = talloc_strndup(mem_ctx, options, PTR_DIFF(p, options));
 		if (!b->options[i]) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		part3 = p+1;
+		options = p+1;
 	}
-	b->options[i] = part3;
+	b->options[i] = options;
 	b->options[i+1] = NULL;
 
 	/* some options are pre-parsed for convenience */
@@ -413,7 +426,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	struct smbcli_state *cli;
 	const char *pipe_name;
 	
-	if (!binding->options || !binding->options[0]) {
+	if (!binding->options || !binding->options[0] || !strlen(binding->options[0])) {
 		const struct dcerpc_interface_table *table = idl_iface_by_uuid(pipe_uuid);
 		if (!table) {
 			DEBUG(0,("Unknown interface endpoint '%s'\n", pipe_uuid));
@@ -501,7 +514,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 	NTSTATUS status;
 	uint32_t port = 0;
 
-	if (binding->options && binding->options[0]) {
+	if (binding->options && binding->options[0] && strlen(binding->options[0])) {
 		port = atoi(binding->options[0]);
 	}
 

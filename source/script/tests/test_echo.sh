@@ -35,13 +35,13 @@ for transport in ncacn_np ncacn_ip_tcp; do
         "--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:keyexchange=no" \
     ; do
    echo Testing $transport with $bindoptions and $ntlmoptions
-   testit bin/smbtorture $transport:"$server":$bindoptions $ntlmoptions -U"$username"%"$password" -W $domain RPC-ECHO "$*"
+   testit bin/smbtorture $transport:"$server[$bindoptions]" $ntlmoptions -U"$username"%"$password" -W $domain RPC-ECHO "$*"
   done
  done
 done
 
 # separately test the print option - its v slow
 echo Testing print option
-testit bin/smbtorture ncacn_np:"$server":print -U"$username"%"$password" -W $domain RPC-ECHO "$*"
+testit bin/smbtorture ncacn_np:"$server[print]" -U"$username"%"$password" -W $domain RPC-ECHO "$*"
 
 echo "ALL OK";
