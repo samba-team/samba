@@ -23,6 +23,37 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/*
+ * This module implements parseable logging for all Samba VFS operations.
+ *
+ * You use it as follows:
+ *
+ * [tmp]
+ * path = /tmp
+ * vfs objects = full_audit
+ * full_audit:prefix = %u|%I
+ * full_audit:success = open opendir
+ * full_audit:failure = all
+ *
+ * This leads to syslog entries of the form:
+ * smbd_audit: nobody|192.168.234.1|opendir|ok|.
+ * smbd_audit: nobody|192.168.234.1|open|fail (File not found)|r|x.txt
+ *
+ * where "nobody" is the connected username and "192.168.234.1" is the
+ * client's IP address. 
+ *
+ * Options:
+ *
+ * prefix: A macro expansion template prepended to the syslog entry.
+ *
+ * success: A list of VFS operations for which a successful completion should
+ * be logged. Defaults to no logging at all. The special operation "all" logs
+ * - you guessed it - everything.
+ *
+ * failure: A list of VFS operations for which failure to complete should be
+ * logged. Defaults to logging everything.
+ */
+
 
 #include "includes.h"
 
