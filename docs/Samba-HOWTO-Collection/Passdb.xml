@@ -170,6 +170,17 @@ Samba-3 introduces a number of new password backend capabilities.
 		</listitem>
 	</varlistentry>
 
+	<varlistentry><term>pgsqlsam (PostGreSQL based backend)</term>
+		<listitem>
+			<para>
+				Stores user information in a PostgreSQL database.
+				This backend is largely undocumented at 
+				the moment, though it's configuration is very similar to 
+				that of the mysqlsam backend.
+			</para>
+		</listitem>
+	</varlistentry>
+
 	<varlistentry><term>xmlsam (XML based datafile)</term>
 		<listitem>
 			<para>
