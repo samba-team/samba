@@ -215,7 +215,8 @@ static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		return result;
 	}
 	
-	r->out.type = &value->data_type;
+	r->out.type = talloc_p(mem_ctx, uint32_t);
+	*r->out.type = value->data_type;
 	r->out.name_out.name = value->name;
 	r->out.value = value->data_blk;
 	r->out.size = talloc_p(mem_ctx, uint32_t);
