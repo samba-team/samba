@@ -997,8 +997,13 @@ static BOOL parse_lpq_vlp(char *line,print_queue_struct *buf,BOOL first)
 #endif /* DEVELOPER */
 
 /****************************************************************************
-parse a lpq line. Choose printing style
+ Ensure we return UNIX codepage strings.
 ****************************************************************************/
+
+/****************************************************************************
+ Parse a lpq line. Choose printing style. Return UNIX character set strings.
+****************************************************************************/
+
 BOOL parse_lpq_entry(int snum,char *line,
 		     print_queue_struct *buf,
 		     print_status_struct *status,BOOL first)
@@ -1045,6 +1050,11 @@ BOOL parse_lpq_entry(int snum,char *line,
       break;
     }
 
+  if (ret) {
+	dos_to_unix(buf->fs_user);
+	dos_to_unix(buf->fs_file);
+  }
+
   /* We don't want the newline in the status message. */
   {
     char *p = strchr(line,'\n');
@@ -1072,6 +1082,7 @@ BOOL parse_lpq_entry(int snum,char *line,
 	for (i=0; stat0_strings[i]; i++)
 	  if (strstr(line,stat0_strings[i])) {
 	    StrnCpy(status->message,line,sizeof(status->message)-1);
+	    dos_to_unix(status->message);
 	    status->status=LPSTAT_OK;
 	    return ret;
 	  }
@@ -1079,6 +1090,7 @@ BOOL parse_lpq_entry(int snum,char *line,
 	for (i=0; stat1_strings[i]; i++)
 	  if (strstr(line,stat1_strings[i])) {
 	    StrnCpy(status->message,line,sizeof(status->message)-1);
+	    dos_to_unix(status->message);
 	    status->status=LPSTAT_STOPPED;
 	    return ret;
 	  }
@@ -1086,6 +1098,7 @@ BOOL parse_lpq_entry(int snum,char *line,
 	for (i=0; stat2_strings[i]; i++)
 	  if (strstr(line,stat2_strings[i])) {
 	    StrnCpy(status->message,line,sizeof(status->message)-1);
+	    dos_to_unix(status->message);
 	    status->status=LPSTAT_ERROR;
 	    return ret;
 	  }

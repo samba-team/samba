@@ -445,7 +445,7 @@ void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER
 BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
 	fstring sid;
-	char *sep = lp_winbind_separator();
+	const char *sep = lp_winbind_separator();
 
 	*name_type = SID_NAME_UNKNOWN;
 

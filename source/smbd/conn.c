@@ -217,7 +217,7 @@ void msg_force_tdis(int msg_type, pid_t pid, void *buf, size_t len)
 
 	for (conn=Connections;conn;conn=next) {
 		next=conn->next;
-		if (strequal(lp_servicename(conn->service), sharename)) {
+		if (strequal_unix(lp_servicename_unix(conn->service), sharename)) {
 			DEBUG(1,("Forcing close of share %s cnum=%d\n",
 				 sharename, conn->cnum));
 			close_cnum(conn, (uint16)-1);

@@ -215,7 +215,7 @@ static int Continuation( char *line, int pos )
 }
 
 
-static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
+static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
   /* ------------------------------------------------------------------------ **
    * Scan a section name, and pass the name to function sfunc().
    *
@@ -272,7 +272,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
           DEBUG(0, ("%s Empty section name in configuration file.\n", func ));
           return( False );
           }
-        if( !sfunc( unix_to_dos(bufr) ) )            /* Got a valid name.  Deal with it. */
+        if( !sfunc( bufr ) )            /* Got a valid name.  Deal with it. */
           return( False );
         (void)EatComment( InFile );     /* Finish off the line.             */
         return( True );
@@ -311,7 +311,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
   return( False );
   } /* Section */
 
-static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
+static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *), int c )
   /* ------------------------------------------------------------------------ **
    * Scan a parameter name and value, and pass these two fields to pfunc().
    *
@@ -456,8 +456,8 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
   } /* Parameter */
 
 static BOOL Parse( myFILE *InFile,
-                   BOOL (*sfunc)(char *),
-                   BOOL (*pfunc)(char *, char *) )
+                   BOOL (*sfunc)(const char *),
+                   BOOL (*pfunc)(const char *, const char *) )
   /* ------------------------------------------------------------------------ **
    * Scan & parse the input.
    *
@@ -550,8 +550,8 @@ static myFILE *OpenConfFile( char *FileName )
   } /* OpenConfFile */
 
 BOOL pm_process( char *FileName,
-                 BOOL (*sfunc)(char *),
-                 BOOL (*pfunc)(char *, char *) )
+                 BOOL (*sfunc)(const char *),
+                 BOOL (*pfunc)(const char *, const char *) )
   /* ------------------------------------------------------------------------ **
    * Process the named parameter file.
    *

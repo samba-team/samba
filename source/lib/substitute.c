@@ -131,16 +131,17 @@ static char *automount_path(char *user_name)
  moved out to a separate function.
 *******************************************************************/
 
-static char *automount_server(char *user_name)
+static char *automount_server(const char *user_name)
 {
 	static pstring server_name;
 
 	/* use the local machine name as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
-	if (*local_machine)
+	if (*local_machine) {
 		pstrcpy(server_name, local_machine);
-	else
-		pstrcpy(server_name, global_myname_dos());
+		dos_to_unix(server_name);
+	} else
+		pstrcpy(server_name, global_myname_unix());
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
@@ -162,7 +163,7 @@ static char *automount_server(char *user_name)
 }
 
 /****************************************************************************
- Do some standard substitutions in a string.
+ Do some standard substitutions in a string. str is in UNIX charset.
 ****************************************************************************/
 
 void standard_sub_basic(char *str, int len)
@@ -179,7 +180,7 @@ void standard_sub_basic(char *str, int len)
 		switch (*(p+1)) {
 		case 'U' : 
 			fstrcpy(tmp_str, sam_logon_in_ssb?samlogon_user:current_user_info.smb_name);
-			strlower(tmp_str);
+			strlower_unix(tmp_str);
 			string_sub(p,"%U",tmp_str,l);
 			break;
 		case 'G' :
@@ -192,20 +193,17 @@ void standard_sub_basic(char *str, int len)
 			break;
 		case 'D' :
 			fstrcpy(tmp_str, current_user_info.domain);
-			strupper(tmp_str);
+			strupper_unix(tmp_str);
 			string_sub(p,"%D", tmp_str,l);
 			break;
 		case 'I' : string_sub(p,"%I", client_addr(),l); break;
 		case 'L' : 
-			if (*local_machine)
-				string_sub(p,"%L", local_machine,l); 
-			else {
-				pstring temp_name;
-
-				pstrcpy(temp_name, global_myname_dos());
-				strlower(temp_name);
-				string_sub(p,"%L", temp_name,l); 
-			}
+			if (*local_machine) {
+				fstrcpy(tmp_str, local_machine);
+				dos_to_unix(tmp_str);
+				string_sub(p,"%L", tmp_str,l); 
+			} else
+				string_sub(p,"%L", global_myname_unix(),l); 
 			break;
 		case 'M' : string_sub(p,"%M", client_name(),l); break;
 		case 'R' : string_sub(p,"%R", remote_proto,l); break;
@@ -216,7 +214,10 @@ void standard_sub_basic(char *str, int len)
 			string_sub(p,"%d", pidstr,l);
 			break;
 		case 'h' : string_sub(p,"%h", myhostname(),l); break;
-		case 'm' : string_sub(p,"%m", remote_machine,l); break;
+		case 'm' :
+			   fstrcpy(tmp_str, remote_machine);
+			   dos_to_unix(tmp_str);
+			   string_sub(p,"%m", tmp_str,l); break;
 		case 'v' : string_sub(p,"%v", VERSION,l); break;
 		case '$' : p += expand_env_var(p,l); break; /* Expand environment variables */
 		case '\0': 
@@ -230,10 +231,10 @@ void standard_sub_basic(char *str, int len)
 }
 
 /****************************************************************************
- Do some standard substitutions in a string.
+ Do some standard substitutions in a string. All strings must be in UNIX charset.
 ****************************************************************************/
 
-void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str, int len)
+void standard_sub_advanced(int snum, const char *user, const char *connectpath, gid_t gid, char *str, int len)
 {
 	char *p, *s, *home;
 
@@ -243,10 +244,14 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 		switch (*(p+1)) {
 		case 'N' : string_sub(p,"%N", automount_server(user),l); break;
 		case 'H':
-			if ((home = get_user_home_dir(user))) {
-				string_sub(p,"%H",home, l);
-			} else {
-				p += 2;
+			{
+				fstring nc_user;
+				fstrcpy(nc_user, user);
+				if ((home = get_user_home_dir(nc_user))) {
+					string_sub(p,"%H",home, l);
+				} else {
+					p += 2;
+				}
 			}
 			break;
 		case 'P': 
@@ -254,7 +259,7 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 			break;
 			
 		case 'S': 
-			string_sub(p,"%S", lp_servicename(snum), l); 
+			string_sub(p,"%S", lp_servicename_unix(snum), l); 
 			break;
 			
 		case 'g': 
@@ -272,7 +277,7 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 			 * "path =" string in [homes] and so needs the
 			 * service name, not the username.  */
 		case 'p': 
-			string_sub(p,"%p", automount_path(lp_servicename(snum)), l); 
+			string_sub(p,"%p", automount_path(lp_servicename_unix(snum)), l); 
 			break;
 		case '\0': 
 			p++; 
@@ -292,7 +297,12 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 
 void standard_sub_conn(connection_struct *conn, char *str, int len)
 {
-	standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath, conn->gid, str, len);
+	pstring unix_connpath;
+
+	pstrcpy(unix_connpath, conn->connectpath);
+	dos_to_unix(unix_connpath);
+
+	standard_sub_advanced(SNUM(conn), conn->user, unix_connpath, conn->gid, str, len);
 }
 
 /****************************************************************************

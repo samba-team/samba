@@ -37,9 +37,10 @@ static void init_srv_share_info_1(pipes_struct *p, SRV_SHARE_INFO_1 *sh1, int sn
 	pstring remark;
 	uint32 type;
 
-	pstrcpy(net_name, lp_servicename(snum));
-	pstrcpy(remark, lp_comment(snum));
+	pstrcpy(net_name, lp_servicename_dos(snum));
+	pstrcpy(remark, lp_comment_unix(snum));
 	standard_sub_conn(p->conn, remark, sizeof(remark));
+	unix_to_dos(remark);
 	len_net_name = strlen(net_name);
 
 	/* work out the share type */
@@ -69,11 +70,12 @@ static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int sn
 	pstring passwd;
 	uint32 type;
 
-	pstrcpy(net_name, lp_servicename(snum));
-	pstrcpy(remark, lp_comment(snum));
+	pstrcpy(net_name, lp_servicename_dos(snum));
+	pstrcpy(remark, lp_comment_unix(snum));
 	standard_sub_conn(p->conn, remark, sizeof(remark));
+	unix_to_dos(remark);
 	pstrcpy(path, "C:");
-	pstrcat(path, lp_pathname(snum));
+	pstrcat(path, lp_pathname_dos(snum));
 
 	/*
 	 * Change / to \\ so that win2k will see it as a valid path.  This was added to
@@ -201,12 +203,12 @@ static SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
 
 	/* Fetch security descriptor from tdb */
  
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename(snum));
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename_unix(snum));
  
 	if (tdb_prs_fetch(share_tdb, key, &ps, ctx)!=0 ||
 		!sec_io_desc("get_share_security", &psd, &ps, 1)) {
  
-		DEBUG(4,("get_share_security: using default secdesc for %s\n", lp_servicename(snum) ));
+		DEBUG(4,("get_share_security: using default secdesc for %s\n", lp_servicename_unix(snum) ));
  
 		return get_share_security_default(ctx, snum, psize);
 	}
@@ -266,13 +268,13 @@ static BOOL delete_share_security(int snum)
 	TDB_DATA kbuf;
 	fstring key;
 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename(snum));
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename_unix(snum));
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
 
 	if (tdb_delete(share_tdb, kbuf) != 0) {
 		DEBUG(0,("delete_share_security: Failed to delete entry for share %s\n",
-				lp_servicename(snum) ));
+				lp_servicename_unix(snum) ));
 		return False;
 	}
 
@@ -354,9 +356,10 @@ static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, 
 	pstring remark;
 	uint32 type;
 
-	pstrcpy(net_name, lp_servicename(snum));
-	pstrcpy(remark, lp_comment(snum));
+	pstrcpy(net_name, lp_servicename_dos(snum));
+	pstrcpy(remark, lp_comment_unix(snum));
 	standard_sub_conn(p->conn, remark,sizeof(remark));
+	unix_to_dos(remark);
 
 	len_net_name = strlen(net_name);
 
@@ -393,11 +396,13 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 
 	ZERO_STRUCTP(sh502);
 
-	pstrcpy(net_name, lp_servicename(snum));
-	pstrcpy(remark, lp_comment(snum));
+	pstrcpy(net_name, lp_servicename_dos(snum));
+	pstrcpy(remark, lp_comment_unix(snum));
 	standard_sub_conn(p->conn, remark,sizeof(remark));
+	unix_to_dos(remark);
+
 	pstrcpy(path, "C:");
-	pstrcat(path, lp_pathname(snum));
+	pstrcat(path, lp_pathname_dos(snum));
 
 	/*
 	 * Change / to \\ so that win2k will see it as a valid path.  This was added to
@@ -450,7 +455,7 @@ static BOOL is_admin_share(int snum)
 {
 	pstring net_name;
 
-	pstrcpy(net_name, lp_servicename(snum));
+	pstrcpy(net_name, lp_servicename_dos(snum));
 	return (net_name[strlen(net_name)] == '$') ? True : False;
 }
 
@@ -1068,7 +1073,7 @@ WERROR _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R
 	case 102:
 		init_srv_info_102(&ctr->srv.sv102,
 		                  500, global_myname_dos(), 
-						string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH),
+						string_truncate(lp_serverstring_dos(), MAX_SERVER_STRING_LENGTH),
 		                  lp_major_announce_version(), lp_minor_announce_version(),
 		                  lp_default_server_announce(),
 		                  0xffffffff, /* users */
@@ -1084,7 +1089,7 @@ WERROR _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R
 		                  500, global_myname_dos(),
 		                  lp_major_announce_version(), lp_minor_announce_version(),
 		                  lp_default_server_announce(),
-		                  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
+		                  string_truncate(lp_serverstring_dos(), MAX_SERVER_STRING_LENGTH));
 		break;
 	case 100:
 		init_srv_info_100(&ctr->srv.sv100, 500, global_myname_dos());
@@ -1363,8 +1368,8 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	case 1005:
 		return WERR_ACCESS_DENIED;
 	case 1501:
-		fstrcpy(pathname, lp_pathname(snum));
-		fstrcpy(comment, lp_comment(snum));
+		fstrcpy(pathname, lp_pathname_dos(snum));
+		fstrcpy(comment, lp_comment_dos(snum));
 		psd = q_u->info.share.info1501.sdb->sec;
 		map_generic_share_sd_bits(psd);
 		type = STYPE_DISKTREE;
@@ -1392,7 +1397,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	/* Only call modify function if something changed. */
 
-	if (strcmp(ptr, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) ) {
+	if (strcmp(ptr, lp_pathname_dos(snum)) || strcmp(comment, lp_comment_dos(snum)) ) {
 		if (!lp_change_share_cmd() || !*lp_change_share_cmd())
 			return WERR_ACCESS_DENIED;
 
@@ -1579,7 +1584,7 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 		return WERR_ACCESS_DENIED;
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
-			lp_delete_share_cmd(), CONFIGFILE, lp_servicename(snum));
+			lp_delete_share_cmd(), CONFIGFILE, lp_servicename_unix(snum));
 
 	DEBUG(10,("_srv_net_share_del: Running [%s]\n", command ));
 	if ((ret = smbrun(command, NULL)) != 0) {

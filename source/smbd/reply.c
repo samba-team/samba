@@ -452,7 +452,7 @@ int reply_ioctl(connection_struct *conn,
 	    case IOCTL_QUERY_JOB_INFO:		    
 		SSVAL(p,0,fsp->print_jobid);             /* Job number */
 		StrnCpy(p+2, global_myname_dos(), 15);         /* Our NetBIOS name */
-		StrnCpy(p+18, lp_servicename(SNUM(conn)), 13); /* Service name */
+		StrnCpy(p+18, lp_servicename_dos(SNUM(conn)), 13); /* Service name */
 		break;
 	}
 
@@ -1024,7 +1024,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   }
 
   if (!strequal(user,lp_guestaccount(-1)) &&
-      lp_servicenumber(user) < 0)      
+      lp_servicenumber_unix(user) < 0)      
   {
 	add_home_service(user,get_user_service_home_dir(user));
   }
@@ -1431,7 +1431,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
       if ((dirtype&0x1F) == aVOLID)
       {	  
         memcpy(p,status,21);
-        make_dir_struct(p,"???????????",volume_label(SNUM(conn)),0,aVOLID,0);
+        make_dir_struct(p,"???????????",volume_label_dos(SNUM(conn)),0,aVOLID,0);
         dptr_fill(p+12,dptr_num);
         if (dptr_zero(p+12) && (status_len==0))
           numentries = 1;
@@ -3527,7 +3527,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 	BOOL ok;
 
 	ok = (vfs_rmdir(conn,directory) == 0);
-	if(!ok && ((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn))) {
+	if(!ok && ((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files_dos(SNUM(conn))) {
 		/* 
 		 * Check to see if the only thing in this directory are
 		 * vetoed files/directories. If so then delete them and

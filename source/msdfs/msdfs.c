@@ -87,7 +87,7 @@ static BOOL create_conn_struct( connection_struct *conn, int snum)
 
 	ZERO_STRUCTP(conn);
 	conn->service = snum;
-	conn->connectpath = lp_pathname(snum);
+	conn->connectpath = lp_pathname_dos(snum);
 	pstring_sub(conn->connectpath, "%S", lp_servicename(snum));
 
 	if (!smbd_vfs_init(conn)) {

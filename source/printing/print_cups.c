@@ -73,8 +73,7 @@ cups_passwd_cb(const char *prompt)	/* I - Prompt */
  *                       system.
  */
 
-void
-cups_printer_fn(void (*fn)(char *, char *))	/* I - Function to call */
+void cups_printer_fn(void (*fn)(const char *, const char *))
 {
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
@@ -210,8 +209,9 @@ cups_printer_fn(void (*fn)(char *, char *))	/* I - Function to call */
  *                           for CUPS.
  */
 
-int					/* O - 1 if printer name OK */
-cups_printername_ok(char *name)		/* I - Name of printer */
+/* O - 1 if printer name OK */
+/* I - Name of printer */
+int cups_printername_ok(const char *dos_name)
 {
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
@@ -220,7 +220,7 @@ cups_printername_ok(char *name)		/* I - Name of printer */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
 
 
-	DEBUG(5,("cups_printername_ok(\"%s\")\n", name));
+	DEBUG(5,("cups_printername_ok(\"%s\")\n", dos_name));
 
        /*
         * Make sure we don't ask for passwords...
@@ -266,7 +266,7 @@ cups_printername_ok(char *name)		/* I - Name of printer */
                      "requested-attributes", NULL, "printer-uri");
 
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
-	         dos_to_unix_static(name));
+	         dos_to_unix_static(dos_name));
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
                      "printer-uri", NULL, uri);
@@ -277,7 +277,8 @@ cups_printername_ok(char *name)		/* I - Name of printer */
 
 	if ((response = cupsDoRequest(http, request, "/")) == NULL)
 	{
-		DEBUG(0,("Unable to get printer status for %s - %s\n", name,
+		DEBUG(0,("Unable to get printer status for %s - %s\n",
+				       dos_to_unix_static(dos_name),
 			 ippErrorString(cupsLastError())));
 		httpClose(http);
 		return (0);
@@ -287,7 +288,8 @@ cups_printername_ok(char *name)		/* I - Name of printer */
 
 	if (response->request.status.status_code >= IPP_OK_CONFLICT)
 	{
-		DEBUG(0,("Unable to get printer status for %s - %s\n", name,
+		DEBUG(0,("Unable to get printer status for %s - %s\n",
+			dos_to_unix_static(dos_name),
 			 ippErrorString(response->request.status.status_code)));
 		ippDelete(response);
 		return (0);
@@ -629,7 +631,7 @@ cups_job_submit(int snum, struct printjob *pjob)
         	     "attributes-natural-language", NULL, language->language);
 
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
-	         PRINTERNAME(snum));
+	         lp_printername_unix(snum));
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
         	     "printer-uri", NULL, uri);
@@ -644,14 +646,14 @@ cups_job_submit(int snum, struct printjob *pjob)
 	* Do the request and get back a response...
 	*/
 
-	slprintf(uri, sizeof(uri) - 1, "/printers/%s", PRINTERNAME(snum));
+	slprintf(uri, sizeof(uri) - 1, "/printers/%s", lp_printername_unix(snum));
 
         ret = 1;
 	if ((response = cupsDoFileRequest(http, request, uri,
 	                                  pjob->filename)) != NULL)
 	{
 		if (response->request.status.status_code >= IPP_OK_CONFLICT)
-			DEBUG(0,("Unable to print file to %s - %s\n", PRINTERNAME(snum),
+			DEBUG(0,("Unable to print file to %s - %s\n", lp_printername_unix(snum),
 			         ippErrorString(cupsLastError())));
         	else
 			ret = 0;
@@ -659,7 +661,7 @@ cups_job_submit(int snum, struct printjob *pjob)
 		ippDelete(response);
 	}
 	else
-		DEBUG(0,("Unable to print file to `%s' - %s\n", PRINTERNAME(snum),
+		DEBUG(0,("Unable to print file to `%s' - %s\n", lp_printername_unix(snum),
 			 ippErrorString(cupsLastError())));
 
 	httpClose(http);
@@ -733,7 +735,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 	*/
 
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
-	         PRINTERNAME(snum));
+	         lp_printername_unix(snum));
 
        /*
 	* Build an IPP_GET_JOBS request, which requires the following
@@ -952,7 +954,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 
 	if ((response = cupsDoRequest(http, request, "/")) == NULL)
 	{
-		DEBUG(0,("Unable to get printer status for %s - %s\n", PRINTERNAME(snum),
+		DEBUG(0,("Unable to get printer status for %s - %s\n", lp_printername_unix(snum),
 			 ippErrorString(cupsLastError())));
 		httpClose(http);
 		*q = queue;
@@ -961,7 +963,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 
 	if (response->request.status.status_code >= IPP_OK_CONFLICT)
 	{
-		DEBUG(0,("Unable to get printer status for %s - %s\n", PRINTERNAME(snum),
+		DEBUG(0,("Unable to get printer status for %s - %s\n", lp_printername_unix(snum),
 			 ippErrorString(response->request.status.status_code)));
 		ippDelete(response);
 		httpClose(http);
@@ -1057,7 +1059,7 @@ cups_queue_pause(int snum)
         	     "attributes-natural-language", NULL, language->language);
 
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
-	         PRINTERNAME(snum));
+	         lp_printername_unix(snum));
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
 
@@ -1073,7 +1075,7 @@ cups_queue_pause(int snum)
 	if ((response = cupsDoRequest(http, request, "/admin/")) != NULL)
 	{
 	  if (response->request.status.status_code >= IPP_OK_CONFLICT)
-		DEBUG(0,("Unable to pause printer %s - %s\n", PRINTERNAME(snum),
+		DEBUG(0,("Unable to pause printer %s - %s\n", lp_printername_unix(snum),
 			 ippErrorString(cupsLastError())));
           else
 	  	ret = 0;
@@ -1081,7 +1083,7 @@ cups_queue_pause(int snum)
 	  ippDelete(response);
 	}
 	else
-	  DEBUG(0,("Unable to pause printer %s - %s\n", PRINTERNAME(snum),
+	  DEBUG(0,("Unable to pause printer %s - %s\n", lp_printername_unix(snum),
 		   ippErrorString(cupsLastError())));
 
 	httpClose(http);
@@ -1149,7 +1151,7 @@ cups_queue_resume(int snum)
         	     "attributes-natural-language", NULL, language->language);
 
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
-	         PRINTERNAME(snum));
+	         lp_printername_unix(snum));
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
 
@@ -1165,7 +1167,7 @@ cups_queue_resume(int snum)
 	if ((response = cupsDoRequest(http, request, "/admin/")) != NULL)
 	{
 	  if (response->request.status.status_code >= IPP_OK_CONFLICT)
-		DEBUG(0,("Unable to resume printer %s - %s\n", PRINTERNAME(snum),
+		DEBUG(0,("Unable to resume printer %s - %s\n", lp_printername_unix(snum),
 			 ippErrorString(cupsLastError())));
           else
 	  	ret = 0;
@@ -1173,7 +1175,7 @@ cups_queue_resume(int snum)
 	  ippDelete(response);
 	}
 	else
-	  DEBUG(0,("Unable to resume printer %s - %s\n", PRINTERNAME(snum),
+	  DEBUG(0,("Unable to resume printer %s - %s\n", lp_printername_unix(snum),
 		   ippErrorString(cupsLastError())));
 
 	httpClose(http);

@@ -479,7 +479,7 @@ static int print_subpath_printers( char *key, REGSUBKEY_CTR *subkeys )
 			if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 				continue;
 				
-			fstrcpy( sname, lp_servicename(snum) );
+			fstrcpy( sname, lp_servicename_dos(snum) );
 				
 			regsubkey_ctr_addkey( subkeys, sname );
 		}
@@ -599,7 +599,7 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 
 		/* stream the device mode */
 		
-		snum = lp_servicenumber(info2->sharename);
+		snum = lp_servicenumber_dos(info2->sharename);
 		if ( (devmode = construct_dev_mode( snum )) != NULL )
 		{			
 			if ( spoolss_io_devmode( "devmode", &prs, 0, devmode ) ) {
@@ -625,7 +625,6 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 			}
 		}
 
-				
 		prs_mem_free( &prs );
 		
 		num_values = regval_ctr_numvals( val );	

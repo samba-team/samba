@@ -52,7 +52,7 @@ char *get_user_home_dir(char *user)
 }
 
 /****************************************************************************
- Get a users home service directory.
+ Get a users home service directory. Returns in dos codepage.
 ****************************************************************************/
 
 char *get_user_service_home_dir(char *user)
@@ -69,19 +69,21 @@ char *get_user_service_home_dir(char *user)
 	/* If a path is specified in [homes] then use it instead of the
 	   user's home directory from struct passwd. */
 
-	if ((snum = lp_servicenumber(HOMES_NAME)) != -1) {
+	if ((snum = lp_servicenumber_unix(HOMES_NAME)) != -1) {
 		static pstring home_dir;
 
-		pstrcpy(home_dir, lp_pathname(snum));
+		pstrcpy(home_dir, lp_pathname_unix(snum));
 		standard_sub_home(snum, user, home_dir, sizeof(home_dir));
 
-		if (home_dir[0])
+		if (home_dir[0]) {
+			unix_to_dos(home_dir);
 			return home_dir;
+		}
 	}
 
 	/* Return home directory from struct passwd. */
 
-	return(pass->pw_dir);      
+	return(unix_to_dos(pass->pw_dir));      
 }
 
 /*******************************************************************
@@ -116,10 +118,10 @@ BOOL map_username(char *user)
 		initialised = True;
 	}
 
-	if (strequal(user,last_to))
+	if (strequal_unix(user,last_to))
 		return False;
 
-	if (strequal(user,last_from)) {
+	if (strequal_unix(user,last_from)) {
 		DEBUG(3,("Mapped user %s to %s\n",user,last_to));
 		fstrcpy(user,last_to);
 		return True;
@@ -725,7 +727,7 @@ struct passwd *smb_getpwnam(char *user, BOOL allow_change)
 {
 	struct passwd *pw;
 	char *p;
-	char *sep;
+	const char *sep;
 
 	pw = Get_Pwnam(user, allow_change);
 	if (pw)

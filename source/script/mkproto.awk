@@ -70,7 +70,27 @@ END {
   printf "char *%s(int );\n", a[2]
 }
 
+/^FN_LOCAL_STRING_UNIX/ {
+  split($0,a,"[,()]")
+  printf "char *%s(int );\n", a[2]
+}
+
+/^FN_LOCAL_STRING_DOS/ {
+  split($0,a,"[,()]")
+  printf "char *%s(int );\n", a[2]
+}
+
 /^FN_LOCAL_CONST_STRING/ {
+  split($0,a,"[,()]")
+  printf "const char *%s(int );\n", a[2]
+}
+
+/^FN_LOCAL_CONST_STRING_UNIX/ {
+  split($0,a,"[,()]")
+  printf "const char *%s(int );\n", a[2]
+}
+
+/^FN_LOCAL_CONST_STRING_DOS/ {
   split($0,a,"[,()]")
   printf "const char *%s(int );\n", a[2]
 }
@@ -100,7 +120,27 @@ END {
   printf "char *%s(void);\n", a[2]
 }
 
+/^FN_GLOBAL_STRING_UNIX/ {
+  split($0,a,"[,()]")
+  printf "char *%s(void);\n", a[2]
+}
+
+/^FN_GLOBAL_STRING_DOS/ {
+  split($0,a,"[,()]")
+  printf "char *%s(void);\n", a[2]
+}
+
 /^FN_GLOBAL_CONST_STRING/ {
+  split($0,a,"[,()]")
+  printf "const char *%s(void);\n", a[2]
+}
+
+/^FN_GLOBAL_CONST_STRING_UNIX/ {
+  split($0,a,"[,()]")
+  printf "const char *%s(void);\n", a[2]
+}
+
+/^FN_GLOBAL_CONST_STRING_DOS/ {
   split($0,a,"[,()]")
   printf "const char *%s(void);\n", a[2]
 }

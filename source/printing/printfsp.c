@@ -72,6 +72,7 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
 	string_set(&fsp->fsp_name,print_job_fname(SNUM(conn),jobid));
+	unix_to_dos(fsp->fsp_name);
 	fsp->wbmpx_ptr = NULL;      
 	fsp->wcp = NULL; 
 	conn->vfs_ops.fstat(fsp,fsp->fd, &sbuf);
@@ -87,6 +88,7 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 /****************************************************************************
 print a file - called on closing the file
 ****************************************************************************/
+
 void print_fsp_end(files_struct *fsp, BOOL normal_close)
 {
 	if (fsp->share_mode == FILE_DELETE_ON_CLOSE) {
@@ -99,7 +101,6 @@ void print_fsp_end(files_struct *fsp, BOOL normal_close)
 
 	print_job_end(SNUM(fsp->conn),fsp->print_jobid, normal_close);
 
-	if (fsp->fsp_name) {
+	if (fsp->fsp_name)
 		string_free(&fsp->fsp_name);
-	}
 }

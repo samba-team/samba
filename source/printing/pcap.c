@@ -247,7 +247,7 @@ must be in DOS codepage.
 The xxx_printername_ok functions need fixing to understand they are being
 given a DOS codepage. FIXME !! JRA.
 ***************************************************************************/
-BOOL pcap_printername_ok(const char *pszPrintername, const char *pszPrintcapname)
+BOOL pcap_printername_ok(char *pszPrintername, const char *pszPrintcapname)
 {
   char *line=NULL;
   const char *psz;
@@ -329,7 +329,7 @@ passed the primary name and the comment (if possible). Note the fn() takes
 strings in DOS codepage. This means the xxx_printer_fn() calls must be fixed
 to return DOS codepage. FIXME !! JRA.
 ***************************************************************************/
-void pcap_printer_fn(void (*fn)(char *, char *))
+void pcap_printer_fn(void (*fn)(const char *, const char *))
 {
   pstring name,comment;
   char *line;

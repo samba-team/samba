@@ -88,6 +88,9 @@ extern pstring user_socket_options;
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && ServicePtrs[(i)]->valid)
 #define VALID(i) ServicePtrs[i]->valid
 
+#define UNIX_STRING_OFFSET 0
+#define DOS_STRING_OFFSET 1
+
 int keepalive = DEFAULT_KEEPALIVE;
 BOOL use_getwd_cache = True;
 
@@ -108,12 +111,12 @@ typedef struct
 	char *szLockDir;
 	char *szPidDir;
 	char *szRootdir;
-	char *szDefaultService;
+	char *szDefaultService[2];
 	char *szDfree;
 	char *szMsgCommand;
 	char *szHostsEquiv;
-	char *szServerString;
-	char *szAutoServices;
+	char *szServerString[2];
+	char *szAutoServices[2];
 	char *szPasswdProgram;
 	char *szPasswdChat;
 	char *szLogFile;
@@ -137,10 +140,10 @@ typedef struct
 #endif				/* USING_GROUPNAME_MAP */
 	char *szCharacterSet;
 	char *szCodePageDir;
-	char *szLogonScript;
-	char *szLogonPath;
+	char *szLogonScript[2];
+	char *szLogonPath[2];
 	char *szLogonDrive;
-	char *szLogonHome;
+	char *szLogonHome[2];
 	char **szWINSservers;
 	char *szCodingSystem;
 	char *szInterfaces;
@@ -297,8 +300,8 @@ typedef struct
 {
 	BOOL valid;
 	BOOL autoloaded;
-	char *szService;
-	char *szPath;
+	char *szService[2];
+	char *szPath[2];
 	char *szUsername;
 	char *szGuestaccount;
 	char **szInvalidUsers;
@@ -317,7 +320,7 @@ typedef struct
 	char *szLpresumecommand;
 	char *szQueuepausecommand;
 	char *szQueueresumecommand;
-	char *szPrintername;
+	char *szPrintername[2];
 	char *szPrinterDriver;
 	char *szPrinterDriverLocation;
 	char *szDriverFile;
@@ -327,16 +330,16 @@ typedef struct
 	char *szMagicScript;
 	char *szMagicOutput;
 	char *szMangledMap;
-	char *szVetoFiles;
-	char *szHideFiles;
-	char *szVetoOplockFiles;
-	char *comment;
+	char *szVetoFiles[2];
+	char *szHideFiles[2];
+	char *szVetoOplockFiles[2];
+	char *comment[2];
 	char *force_user;
 	char *force_group;
 	char **readlist;
 	char **writelist;
 	char **printer_admin;
-	char *volume;
+	char *volume[2];
 	char *fstype;
 	char *szVfsObjectFile;
 	char *szVfsOptions;
@@ -418,8 +421,8 @@ service;
 static service sDefault = {
 	True,			/* valid */
 	False,			/* not autoloaded */
-	NULL,			/* szService */
-	NULL,			/* szPath */
+	{NULL,NULL},		/* szService */
+	{NULL,NULL},		/* szPath */
 	NULL,			/* szUsername */
 	NULL,			/* szGuestAccount  - this is set in init_globals() */
 	NULL,			/* szInvalidUsers */
@@ -438,7 +441,7 @@ static service sDefault = {
 	NULL,			/* szLpresumecommand */
 	NULL,			/* szQueuepausecommand */
 	NULL,			/* szQueueresumecommand */
-	NULL,			/* szPrintername */
+	{NULL,NULL},		/* szPrintername */
 	NULL,			/* szPrinterDriver - this is set in init_globals() */
 	NULL,			/* szPrinterDriverLocation */
 	NULL,			/* szDriverFile */
@@ -448,16 +451,16 @@ static service sDefault = {
 	NULL,			/* szMagicScript */
 	NULL,			/* szMagicOutput */
 	NULL,			/* szMangledMap */
-	NULL,			/* szVetoFiles */
-	NULL,			/* szHideFiles */
-	NULL,			/* szVetoOplockFiles */
-	NULL,			/* comment */
+	{NULL,NULL},		/* szVetoFiles */
+	{NULL,NULL},		/* szHideFiles */
+	{NULL,NULL},		/* szVetoOplockFiles */
+	{NULL,NULL},		/* comment */
 	NULL,			/* force user */
 	NULL,			/* force group */
 	NULL,			/* readlist */
 	NULL,			/* writelist */
 	NULL,			/* printer admin */
-	NULL,			/* volume */
+	{NULL,NULL},		/* volume */
 	NULL,			/* fstype */
 	NULL,			/* vfs object */
 	NULL,			/* vfs options */
@@ -545,21 +548,21 @@ static int default_server_announce;
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 /* prototypes for the special type handlers */
-static BOOL handle_valid_chars(char *pszParmValue, char **ptr);
-static BOOL handle_include(char *pszParmValue, char **ptr);
-static BOOL handle_copy(char *pszParmValue, char **ptr);
-static BOOL handle_character_set(char *pszParmValue, char **ptr);
-static BOOL handle_coding_system(char *pszParmValue, char **ptr);
-static BOOL handle_client_code_page(char *pszParmValue, char **ptr);
-static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
-static BOOL handle_source_env(char *pszParmValue, char **ptr);
-static BOOL handle_netbios_name(char *pszParmValue, char **ptr);
-static BOOL handle_winbind_uid(char *pszParmValue, char **ptr);
-static BOOL handle_winbind_gid(char *pszParmValue, char **ptr);
-static BOOL handle_debug_list( char *pszParmValue, char **ptr );
-static BOOL handle_workgroup( char *pszParmValue, char **ptr );
-static BOOL handle_netbios_aliases( char *pszParmValue, char **ptr );
-static BOOL handle_netbios_scope( char *pszParmValue, char **ptr );
+static BOOL handle_valid_chars(const char *pszParmValue, char **ptr);
+static BOOL handle_include(const char *pszParmValue, char **ptr);
+static BOOL handle_copy(const char *pszParmValue, char **ptr);
+static BOOL handle_character_set(const char *pszParmValue, char **ptr);
+static BOOL handle_coding_system(const char *pszParmValue, char **ptr);
+static BOOL handle_client_code_page(const char *pszParmValue, char **ptr);
+static BOOL handle_vfs_object(const char *pszParmValue, char **ptr);
+static BOOL handle_source_env(const char *pszParmValue, char **ptr);
+static BOOL handle_netbios_name(const char *pszParmValue, char **ptr);
+static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr);
+static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr);
+static BOOL handle_debug_list(const char *pszParmValue, char **ptr );
+static BOOL handle_workgroup(const char *pszParmValue, char **ptr );
+static BOOL handle_netbios_aliases(const char *pszParmValue, char **ptr );
+static BOOL handle_netbios_scope(const char *pszParmValue, char **ptr );
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -709,7 +712,7 @@ static struct parm_struct parm_table[] = {
 	{"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page, handle_client_code_page, NULL, 0},
 	{"code page directory", P_STRING, P_GLOBAL, &Globals.szCodePageDir,   NULL,   NULL,  0},
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING},
-	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING},
+	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING },
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_DOS_STRING},
 	{"workgroup", P_USTRING, P_GLOBAL, NULL, handle_workgroup, NULL, FLAG_BASIC},
 	{"netbios name", P_UGSTRING, P_GLOBAL, NULL, handle_netbios_name, NULL, FLAG_BASIC },
@@ -940,8 +943,8 @@ static struct parm_struct parm_table[] = {
 	{"hide dot files", P_BOOL, P_LOCAL, &sDefault.bHideDotFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"hide unreadable", P_BOOL, P_LOCAL, &sDefault.bHideUnReadable, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"delete veto files", P_BOOL, P_LOCAL, &sDefault.bDeleteVetoFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
-	{"veto files", P_STRING, P_LOCAL, &sDefault.szVetoFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL | FLAG_DOS_STRING},
-	{"hide files", P_STRING, P_LOCAL, &sDefault.szHideFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL | FLAG_DOS_STRING},
+	{"veto files", P_STRING, P_LOCAL, &sDefault.szVetoFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL|FLAG_DOS_STRING},
+	{"hide files", P_STRING, P_LOCAL, &sDefault.szHideFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL|FLAG_DOS_STRING},
 	{"veto oplock files", P_STRING, P_LOCAL, &sDefault.szVetoOplockFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL | FLAG_DOS_STRING},
 	{"map system", P_BOOL, P_LOCAL, &sDefault.bMap_system, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"map hidden", P_BOOL, P_LOCAL, &sDefault.bMap_hidden, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
@@ -1231,21 +1234,27 @@ static void init_printer_values(void)
 /***************************************************************************
 Initialise the global parameter structure.
 ***************************************************************************/
+
 static void init_globals(void)
 {
 	static BOOL done_init = False;
 	pstring s;
 
-	if (!done_init)
-	{
+	if (!done_init) {
 		int i;
 		memset((void *)&Globals, '\0', sizeof(Globals));
 
-		for (i = 0; parm_table[i].label; i++)
-			if ((parm_table[i].type == P_STRING ||
-			     parm_table[i].type == P_USTRING) &&
-			    parm_table[i].ptr)
-				string_set(parm_table[i].ptr, "");
+		for (i = 0; parm_table[i].label; i++) {
+			if ((parm_table[i].type == P_STRING || parm_table[i].type == P_USTRING)
+					&& parm_table[i].ptr) {
+				if (parm_table[i].flags & FLAG_DOS_STRING) {
+					char **ptr = (char **)parm_table[i].ptr;
+					string_set(&ptr[UNIX_STRING_OFFSET],"");
+					string_set(&ptr[DOS_STRING_OFFSET],"");
+				} else
+					string_set(parm_table[i].ptr, "");
+			}
+		}
 
 		string_set(&sDefault.szGuestaccount, GUEST_ACCOUNT);
 		string_set(&sDefault.fstype, FSTYPE_STRING);
@@ -1285,7 +1294,8 @@ static void init_globals(void)
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
 	pstrcpy(s, "Samba ");
 	pstrcat(s, VERSION);
-	string_set(&Globals.szServerString, s);
+	string_set(&Globals.szServerString[UNIX_STRING_OFFSET], s);
+	string_set(&Globals.szServerString[DOS_STRING_OFFSET], s);
 	slprintf(s, sizeof(s) - 1, "%d.%d", DEFAULT_MAJOR_VERSION,
 		 DEFAULT_MINOR_VERSION);
 	string_set(&Globals.szAnnounceVersion, s);
@@ -1294,8 +1304,10 @@ static void init_globals(void)
 
 	string_set(&Globals.szLogonDrive, "");
 	/* %N is the NIS auto.home server if -DAUTOHOME is used, else same as %L */
-	string_set(&Globals.szLogonHome, "\\\\%N\\%U");
-	string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
+	string_set(&Globals.szLogonHome[UNIX_STRING_OFFSET], "\\\\%N\\%U");
+	string_set(&Globals.szLogonHome[DOS_STRING_OFFSET], "\\\\%N\\%U");
+	string_set(&Globals.szLogonPath[UNIX_STRING_OFFSET], "\\\\%N\\%U\\profile");
+	string_set(&Globals.szLogonPath[DOS_STRING_OFFSET], "\\\\%N\\%U\\profile");
 
 	string_set(&Globals.szNameResolveOrder, "lmhosts host wins bcast");
 	string_set(&Globals.szCodePageDir, CODEPAGEDIR);
@@ -1460,8 +1472,9 @@ static void init_globals(void)
 static TALLOC_CTX *lp_talloc;
 
 /******************************************************************* a
-free up temporary memory - called from the main loop
+ Free up temporary memory - called from the main loop.
 ********************************************************************/
+
 void lp_talloc_free(void)
 {
 	if (!lp_talloc)
@@ -1471,11 +1484,12 @@ void lp_talloc_free(void)
 }
 
 /*******************************************************************
-convenience routine to grab string parameters into temporary memory
-and run standard_sub_basic on them. The buffers can be written to by
-callers without affecting the source string.
+ Convenience routine to grab string parameters into temporary memory
+ and run standard_sub_basic on them. The buffers can be written to by
+ callers without affecting the source string.
 ********************************************************************/
-static char *lp_string(const char *s)
+
+static char *lp_string(const char *s, BOOL sub_dos)
 {
 	size_t len = s ? strlen(s) : 0;
 	char *ret;
@@ -1495,7 +1509,13 @@ static char *lp_string(const char *s)
 
 	trim_string(ret, "\"", "\"");
 
-	standard_sub_basic(ret, len + 100);
+	if (sub_dos) {
+		dos_to_unix(ret);
+		standard_sub_basic(ret, len + 100);
+		unix_to_dos(ret);
+	} else
+		standard_sub_basic(ret, len + 100);
+
 	return (ret);
 }
 
@@ -1506,9 +1526,17 @@ static char *lp_string(const char *s)
 */
 
 #define FN_GLOBAL_STRING(fn_name,ptr) \
- char *fn_name(void) {return(lp_string(*(char **)(ptr) ? *(char **)(ptr) : ""));}
+ char *fn_name(void) {return lp_string(*(char **)(ptr) ? *(char **)(ptr) : "",False);}
+#define FN_GLOBAL_STRING_UNIX(fn_name,ptr) \
+ char *fn_name(void) {return lp_string((*(char **)((ptr))[UNIX_STRING_OFFSET]) ? *(char **)((ptr)[UNIX_STRING_OFFSET]) : "", False);}
+#define FN_GLOBAL_STRING_DOS(fn_name,ptr) \
+ char *fn_name(void) {return lp_string((*(char **)((ptr))[DOS_STRING_OFFSET]) ? *(char **)((ptr)[DOS_STRING_OFFSET]) : "", True);}
 #define FN_GLOBAL_CONST_STRING(fn_name,ptr) \
-const  char *fn_name(void) {return(const char *)(*(char **)(ptr) ? *(char **)(ptr) : "");}
+const char *fn_name(void) {return(const char *)(*(char **)(ptr) ? *(char **)(ptr) : "");}
+#define FN_GLOBAL_CONST_STRING_UNIX(fn_name,ptr) \
+const char *fn_name(void) {return(const char *)(*(char **)((ptr)[UNIX_STRING_OFFSET]) ? *(char **)((ptr)[UNIX_STRING_OFFSET]) : "");}
+#define FN_GLOBAL_CONST_STRING_DOS(fn_name,ptr) \
+const char *fn_name(void) {return(const char *)(*(char **)((ptr)[DOS_STRING_OFFSET]) ? *(char **)((ptr)[DOS_STRING_OFFSET]) : "");}
 #define FN_GLOBAL_LIST(fn_name,ptr) \
  char **fn_name(void) {return(*(char ***)(ptr));}
 #define FN_GLOBAL_BOOL(fn_name,ptr) \
@@ -1519,9 +1547,15 @@ const  char *fn_name(void) {return(const char *)(*(char **)(ptr) ? *(char **)(pt
  int fn_name(void) {return(*(int *)(ptr));}
 
 #define FN_LOCAL_STRING(fn_name,val) \
- char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
-#define FN_LOCAL_CONST_STRING(fn_name,val) \
- const char *fn_name(int i) {return(const char *)((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val);}
+ char *fn_name(int i) {return lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val, False);}
+#define FN_LOCAL_STRING_UNIX(fn_name,val) \
+ char *fn_name(int i) {return lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val[UNIX_STRING_OFFSET]) ? ServicePtrs[(i)]->val[UNIX_STRING_OFFSET] : sDefault.val[UNIX_STRING_OFFSET], False);}
+#define FN_LOCAL_STRING_DOS(fn_name,val) \
+ char *fn_name(int i) {return lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val[DOS_STRING_OFFSET]) ? ServicePtrs[(i)]->val[DOS_STRING_OFFSET] : sDefault.val[DOS_STRING_OFFSET], True);}
+#define FN_LOCAL_CONST_STRING_UNIX(fn_name,val) \
+ const char *fn_name(int i) {return(const char *) ((LP_SNUM_OK(i) && ServicePtrs[(i)]->val[UNIX_STRING_OFFSET]) ? ServicePtrs[(i)]->val[UNIX_STRING_OFFSET] : sDefault.val[UNIX_STRING_OFFSET]);}
+#define FN_LOCAL_CONST_STRING_DOS(fn_name,val) \
+ const char *fn_name(int i) {return(const char *)((LP_SNUM_OK(i) && ServicePtrs[(i)]->val[DOS_STRING_OFFSET]) ? ServicePtrs[(i)]->val[DOS_STRING_OFFSET] : sDefault.val[DOS_STRING_OFFSET]);}
 #define FN_LOCAL_LIST(fn_name,val) \
  char **fn_name(int i) {return(char **)(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
@@ -1538,7 +1572,8 @@ FN_GLOBAL_STRING(lp_tdb_passwd_file, &Globals.szTDBPasswdFile)
 #else
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 #endif
-FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
+FN_GLOBAL_STRING_UNIX(lp_serverstring_unix, &Globals.szServerString)
+FN_GLOBAL_STRING_DOS(lp_serverstring_dos, &Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
 FN_GLOBAL_STRING(lp_addprinter_cmd, &Globals.szAddPrinterCommand)
@@ -1553,11 +1588,13 @@ FN_GLOBAL_BOOL(lp_utmp, &Globals.bUtmp)
 #endif
 FN_GLOBAL_STRING(lp_rootdir, &Globals.szRootdir)
 FN_GLOBAL_STRING(lp_source_environment, &Globals.szSourceEnv)
-FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)
+FN_GLOBAL_CONST_STRING_UNIX(lp_defaultservice_unix, &Globals.szDefaultService)
+FN_GLOBAL_CONST_STRING_DOS(lp_defaultservice_dos, &Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_msg_command, &Globals.szMsgCommand)
 FN_GLOBAL_STRING(lp_dfree_command, &Globals.szDfree)
 FN_GLOBAL_STRING(lp_hosts_equiv, &Globals.szHostsEquiv)
-FN_GLOBAL_STRING(lp_auto_services, &Globals.szAutoServices)
+FN_GLOBAL_CONST_STRING_UNIX(lp_auto_services_unix, &Globals.szAutoServices)
+FN_GLOBAL_CONST_STRING_DOS(lp_auto_services_dos, &Globals.szAutoServices)
 FN_GLOBAL_STRING(lp_passwd_program, &Globals.szPasswdProgram)
 FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
 FN_GLOBAL_STRING(lp_passwordserver, &Globals.szPasswordServer)
@@ -1566,10 +1603,13 @@ FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
 #ifdef USING_GROUPNAME_MAP
 FN_GLOBAL_STRING(lp_groupname_map, &Globals.szGroupnameMap)
 #endif /* USING_GROUPNAME_MAP */
-FN_GLOBAL_STRING(lp_logon_script, &Globals.szLogonScript)
-FN_GLOBAL_STRING(lp_logon_path, &Globals.szLogonPath)
+FN_GLOBAL_STRING_UNIX(lp_logon_script_unix, &Globals.szLogonScript)
+FN_GLOBAL_STRING_DOS(lp_logon_script_dos, &Globals.szLogonScript)
+FN_GLOBAL_STRING_UNIX(lp_logon_path_unix, &Globals.szLogonPath)
+FN_GLOBAL_STRING_DOS(lp_logon_path_dos, &Globals.szLogonPath)
 FN_GLOBAL_STRING(lp_logon_drive, &Globals.szLogonDrive)
-FN_GLOBAL_STRING(lp_logon_home, &Globals.szLogonHome)
+FN_GLOBAL_STRING_UNIX(lp_logon_home_unix, &Globals.szLogonHome)
+FN_GLOBAL_STRING_DOS(lp_logon_home_dos, &Globals.szLogonHome)
 FN_GLOBAL_STRING(lp_remote_announce, &Globals.szRemoteAnnounce)
 FN_GLOBAL_STRING(lp_remote_browse_sync, &Globals.szRemoteBrowseSync)
 FN_GLOBAL_LIST(lp_wins_server_list, &Globals.szWINSservers)
@@ -1704,9 +1744,12 @@ FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
 FN_LOCAL_STRING(lp_rootpreexec, szRootPreExec)
 FN_LOCAL_STRING(lp_rootpostexec, szRootPostExec)
-FN_LOCAL_STRING(lp_servicename, szService)
-FN_LOCAL_CONST_STRING(lp_const_servicename, szService)
-FN_LOCAL_STRING(lp_pathname, szPath)
+FN_LOCAL_STRING_UNIX(lp_servicename_unix, szService)
+FN_LOCAL_STRING_DOS(lp_servicename_dos, szService)
+FN_LOCAL_CONST_STRING_UNIX(lp_const_servicename_unix, szService)
+FN_LOCAL_CONST_STRING_DOS(lp_const_servicename_dos, szService)
+FN_LOCAL_STRING_UNIX(lp_pathname_unix, szPath)
+FN_LOCAL_STRING_DOS(lp_pathname_dos, szPath)
 FN_LOCAL_STRING(lp_dontdescend, szDontdescend)
 FN_LOCAL_STRING(lp_username, szUsername)
 FN_LOCAL_STRING(lp_guestaccount, szGuestaccount)
@@ -1720,14 +1763,16 @@ FN_LOCAL_STRING(lp_lppausecommand, szLppausecommand)
 FN_LOCAL_STRING(lp_lpresumecommand, szLpresumecommand)
 FN_LOCAL_STRING(lp_queuepausecommand, szQueuepausecommand)
 FN_LOCAL_STRING(lp_queueresumecommand, szQueueresumecommand)
-static FN_LOCAL_STRING(_lp_printername, szPrintername)
+static FN_LOCAL_CONST_STRING_UNIX(_lp_const_printername_unix, szPrintername)
+static FN_LOCAL_CONST_STRING_DOS(_lp_const_printername_dos, szPrintername)
 FN_LOCAL_STRING(lp_driverfile, szDriverFile)
 FN_LOCAL_STRING(lp_printerdriver, szPrinterDriver)
 FN_LOCAL_STRING(lp_hostsallow, szHostsallow)
 FN_LOCAL_STRING(lp_hostsdeny, szHostsdeny)
 FN_LOCAL_STRING(lp_magicscript, szMagicScript)
 FN_LOCAL_STRING(lp_magicoutput, szMagicOutput)
-FN_LOCAL_STRING(lp_comment, comment)
+FN_LOCAL_STRING_UNIX(lp_comment_unix, comment)
+FN_LOCAL_STRING_DOS(lp_comment_dos, comment)
 FN_LOCAL_STRING(lp_force_user, force_user)
 FN_LOCAL_STRING(lp_force_group, force_group)
 FN_LOCAL_LIST(lp_readlist, readlist)
@@ -1736,11 +1781,15 @@ FN_LOCAL_LIST(lp_printer_admin, printer_admin)
 FN_LOCAL_STRING(lp_fstype, fstype)
 FN_LOCAL_STRING(lp_vfsobj, szVfsObjectFile)
 FN_LOCAL_STRING(lp_vfs_options, szVfsOptions)
-static FN_LOCAL_STRING(lp_volume, volume)
+static FN_LOCAL_CONST_STRING_UNIX(lp_volume_unix, volume)
+static FN_LOCAL_CONST_STRING_DOS(lp_volume_dos, volume)
 FN_LOCAL_STRING(lp_mangled_map, szMangledMap)
-FN_LOCAL_STRING(lp_veto_files, szVetoFiles)
-FN_LOCAL_STRING(lp_hide_files, szHideFiles)
-FN_LOCAL_STRING(lp_veto_oplocks, szVetoOplockFiles)
+FN_LOCAL_STRING_UNIX(lp_veto_files_unix, szVetoFiles)
+FN_LOCAL_STRING_DOS(lp_veto_files_dos, szVetoFiles)
+FN_LOCAL_STRING_UNIX(lp_hide_files_unix, szHideFiles)
+FN_LOCAL_STRING_DOS(lp_hide_files_dos, szHideFiles)
+FN_LOCAL_STRING_UNIX(lp_veto_oplocks_unix, szVetoOplockFiles)
+FN_LOCAL_STRING_DOS(lp_veto_oplocks_dos, szVetoOplockFiles)
 FN_LOCAL_STRING(lp_driverlocation, szPrinterDriverLocation)
 FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
 FN_LOCAL_BOOL(lp_autoloaded, autoloaded)
@@ -1814,66 +1863,74 @@ FN_GLOBAL_INTEGER(lp_restrict_anonymous, &Globals.bRestrictAnonymous)
 
 /* local prototypes */
 
-static int map_parameter(char *pszParmName);
-static BOOL set_boolean(BOOL *pb, char *pszParmValue);
-static int getservicebyname(char *pszServiceName,
+static int map_parameter(const char *pszParmName);
+static BOOL set_boolean(BOOL *pb, const char *pszParmValue);
+static int getservicebyname_dos(const char *pszServiceName,
 			 service * pserviceDest);
 static void copy_service(service * pserviceDest,
 		      service * pserviceSource, BOOL *pcopymapDest);
 static BOOL service_ok(int iService);
-static BOOL do_parameter(char *pszParmName, char *pszParmValue);
-static BOOL do_section(char *pszSectionName);
+static BOOL do_parameter(const char *unix_pszParmName, const char *unix_pszParmValue);
+static BOOL do_section(const char *pszSectionName);
 static void init_copymap(service * pservice);
 
 
 /***************************************************************************
-initialise a service to the defaults
+ Initialise a service to the defaults.
 ***************************************************************************/
+
 static void init_service(service * pservice)
 {
 	memset((char *)pservice, '\0', sizeof(service));
 	copy_service(pservice, &sDefault, NULL);
 }
 
-
 /***************************************************************************
-free the dynamically allocated parts of a service struct
+ Free the dynamically allocated parts of a service struct.
 ***************************************************************************/
+
 static void free_service(service * pservice)
 {
 	int i;
 	if (!pservice)
 		return;
 
-	if (pservice->szService)
-		DEBUG(5,
-		      ("free_service: Freeing service %s\n",
-		       pservice->szService));
+	if (pservice->szService[UNIX_STRING_OFFSET])
+		DEBUG(5, ("free_service: Freeing service %s\n",
+		       pservice->szService[UNIX_STRING_OFFSET]));
 
-	string_free(&pservice->szService);
+	string_free(&pservice->szService[UNIX_STRING_OFFSET]);
+	string_free(&pservice->szService[DOS_STRING_OFFSET]);
 	SAFE_FREE(pservice->copymap);
 
 	for (i = 0; parm_table[i].label; i++) {
-		if ((parm_table[i].type == P_STRING ||
-		     parm_table[i].type == P_USTRING) &&
-		    parm_table[i].class == P_LOCAL)
-			string_free((char **)
-				    (((char *)pservice) +
+		if ((parm_table[i].type == P_STRING || parm_table[i].type == P_USTRING) &&
+				parm_table[i].class == P_LOCAL) {
+
+			if (parm_table[i].flags & FLAG_DOS_STRING) {
+				char **ptr = (char **)(((char *)pservice) + PTR_DIFF(parm_table[i].ptr, &sDefault));
+				string_free(&ptr[UNIX_STRING_OFFSET]);
+				string_free(&ptr[DOS_STRING_OFFSET]);
+			} else {
+				string_free((char **)(((char *)pservice) +
 				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
-		else if (parm_table[i].type == P_LIST && parm_table[i].class == P_LOCAL)
-			str_list_free((char ***)
-					(((char *)pservice) +
+			}
+
+		} else if (parm_table[i].type == P_LIST && parm_table[i].class == P_LOCAL) {
+			str_list_free((char ***) (((char *)pservice) +
 					 PTR_DIFF(parm_table[i].ptr, &sDefault)));
+		}
 	}
 
 	ZERO_STRUCTP(pservice);
 }
 
 /***************************************************************************
-add a new service to the services array initialising it with the given 
-service. name must be in DOS codepage.
+ Add a new service to the services array initialising it with the given 
+ service. name must be in DOS codepage.
 ***************************************************************************/
-static int add_a_service(service * pservice, char *name)
+
+static int add_a_service(service * pservice, const char *dos_name)
 {
 	int i;
 	service tservice;
@@ -1883,9 +1940,8 @@ static int add_a_service(service * pservice, char *name)
 
 	/* it might already exist */
 
-	if (name)
-	{
-		i = getservicebyname(name, NULL);
+	if (dos_name) {
+		i = getservicebyname_dos(dos_name, NULL);
 		if (i >= 0)
 			return (i);
 	}
@@ -1896,8 +1952,7 @@ static int add_a_service(service * pservice, char *name)
 			break;
 
 	/* if not, then create one */
-	if (i == iNumServices)
-	{
+	if (i == iNumServices) {
 		service **tsp;
 
 #ifdef __INSURE__
@@ -1939,64 +1994,75 @@ static int add_a_service(service * pservice, char *name)
 
 	init_service(ServicePtrs[i]);
 	copy_service(ServicePtrs[i], &tservice, NULL);
-	if (name)
-	{
-		string_set(&ServicePtrs[i]->szService, name);
+	if (dos_name) {
+		fstring unix_name;
+		string_set(&ServicePtrs[i]->szService[DOS_STRING_OFFSET], dos_name);
+		fstrcpy(unix_name, dos_name);
+		dos_to_unix(unix_name);
+		string_set(&ServicePtrs[i]->szService[UNIX_STRING_OFFSET], unix_name);
 	}
 	return (i);
 }
 
 /***************************************************************************
-add a new home service, with the specified home directory, defaults coming 
-from service ifrom. homename must be in DOS codepage.
+ Add a new home service, with the specified home directory, defaults coming 
+ from service ifrom. homename must be in DOS codepage.
 ***************************************************************************/
-BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
+
+BOOL lp_add_home(const char *dos_pszHomename, int iDefaultService, const char *dos_pszHomedir)
 {
 	int i;
+	pstring unix_homedir;
 	SMB_STRUCT_STAT buf;
 	
+	pstrcpy(unix_homedir, dos_pszHomedir);
+	dos_to_unix(unix_homedir);
+
 	/* if the user's home directory doesn't exist, then don't 
 	   add it to the list of available shares */
-	if (sys_stat(pszHomedir, &buf))
+	if (sys_stat(unix_homedir, &buf))
 		return False;
 	
-	i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
+	i = add_a_service(ServicePtrs[iDefaultService], dos_pszHomename);
 
 	if (i < 0)
 		return (False);
 
-	if (!(*(ServicePtrs[i]->szPath))
-	    || strequal(ServicePtrs[i]->szPath, lp_pathname(-1)))
-		string_set(&ServicePtrs[i]->szPath, pszHomedir);
-	if (!(*(ServicePtrs[i]->comment)))
-	{
+	if (!(*(ServicePtrs[i]->szPath[DOS_STRING_OFFSET]))
+	    || strequal(ServicePtrs[i]->szPath[DOS_STRING_OFFSET], lp_pathname_dos(-1))) {
+		string_set(&ServicePtrs[i]->szPath[DOS_STRING_OFFSET], dos_pszHomedir);
+		string_set(&ServicePtrs[i]->szPath[UNIX_STRING_OFFSET], unix_homedir);
+	}
+	if (!(*(ServicePtrs[i]->comment[DOS_STRING_OFFSET]))) {
 		pstring comment;
 		slprintf(comment, sizeof(comment) - 1,
-			 "Home directory of %s", pszHomename);
-		string_set(&ServicePtrs[i]->comment, comment);
+			 "Home directory of %s", dos_pszHomename);
+		string_set(&ServicePtrs[i]->comment[DOS_STRING_OFFSET], comment);
+		dos_to_unix(comment);
+		string_set(&ServicePtrs[i]->comment[UNIX_STRING_OFFSET], comment);
 	}
 	ServicePtrs[i]->bAvailable = sDefault.bAvailable;
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
-	DEBUG(3,
-	      ("adding home directory %s at %s\n", pszHomename, pszHomedir));
+	DEBUG(3, ("adding home directory %s at %s\n", dos_pszHomename, unix_homedir));
 
 	return (True);
 }
 
 /***************************************************************************
-add a new service, based on an old one. pszService must be in DOS codepage.
+ Add a new service, based on an old one. pszService must be in DOS codepage.
 ***************************************************************************/
-int lp_add_service(char *pszService, int iDefaultService)
+
+int lp_add_service(const char *dos_pszService, int iDefaultService)
 {
-	return (add_a_service(ServicePtrs[iDefaultService], pszService));
+	return (add_a_service(ServicePtrs[iDefaultService], dos_pszService));
 }
 
-
 /***************************************************************************
-add the IPC service
+ Add the IPC service.
 ***************************************************************************/
-static BOOL lp_add_ipc(char *ipc_name, BOOL guest_ok)
+
+static BOOL lp_add_ipc(const char *ipc_name, BOOL guest_ok)
 {
 	pstring comment;
 	int i = add_a_service(&sDefault, ipc_name);
@@ -2005,11 +2071,15 @@ static BOOL lp_add_ipc(char *ipc_name, BOOL guest_ok)
 		return (False);
 
 	slprintf(comment, sizeof(comment) - 1,
-		 "IPC Service (%s)", Globals.szServerString);
+		 "IPC Service (%s)", Globals.szServerString[UNIX_STRING_OFFSET]);
 
-	string_set(&ServicePtrs[i]->szPath, tmpdir());
+	string_set(&ServicePtrs[i]->szPath[UNIX_STRING_OFFSET], tmpdir());
+	string_set(&ServicePtrs[i]->szPath[DOS_STRING_OFFSET], tmpdir());
+	unix_to_dos(ServicePtrs[i]->szPath[DOS_STRING_OFFSET]);
 	string_set(&ServicePtrs[i]->szUsername, "");
-	string_set(&ServicePtrs[i]->comment, comment);
+	string_set(&ServicePtrs[i]->comment[UNIX_STRING_OFFSET], comment);
+	unix_to_dos(comment);
+	string_set(&ServicePtrs[i]->comment[DOS_STRING_OFFSET], comment);
 	string_set(&ServicePtrs[i]->fstype, "IPC");
 	ServicePtrs[i]->status = False;
 	ServicePtrs[i]->iMaxConnections = 0;
@@ -2025,15 +2095,15 @@ static BOOL lp_add_ipc(char *ipc_name, BOOL guest_ok)
 	return (True);
 }
 
-
 /***************************************************************************
-add a new printer service, with defaults coming from service iFrom.
-printername must be in DOS codepage.
+ Add a new printer service, with defaults coming from service iFrom.
+ printername must be in DOS codepage.
 ***************************************************************************/
-BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
+
+BOOL lp_add_printer(const char *dos_pszPrintername, int iDefaultService)
 {
 	char *comment = "From Printcap";
-	int i = add_a_service(ServicePtrs[iDefaultService], pszPrintername);
+	int i = add_a_service(ServicePtrs[iDefaultService], dos_pszPrintername);
 
 	if (i < 0)
 		return (False);
@@ -2044,8 +2114,11 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 	/* entry (if/when the 'available' keyword is implemented!).    */
 
 	/* the printer name is set to the service name. */
-	string_set(&ServicePtrs[i]->szPrintername, pszPrintername);
-	string_set(&ServicePtrs[i]->comment, comment);
+	string_set(&ServicePtrs[i]->szPrintername[DOS_STRING_OFFSET], dos_pszPrintername);
+	string_set(&ServicePtrs[i]->szPrintername[UNIX_STRING_OFFSET], dos_pszPrintername);
+	dos_to_unix(ServicePtrs[i]->szPrintername[UNIX_STRING_OFFSET]);
+	string_set(&ServicePtrs[i]->comment[DOS_STRING_OFFSET], comment);
+	string_set(&ServicePtrs[i]->comment[UNIX_STRING_OFFSET], comment);
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 	/* Printers cannot be read_only. */
 	ServicePtrs[i]->bRead_only = False;
@@ -2054,16 +2127,17 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 	/* Printer services must be printable. */
 	ServicePtrs[i]->bPrint_ok = True;
 
-	DEBUG(3, ("adding printer service %s\n", pszPrintername));
+	DEBUG(3, ("adding printer service %s\n", dos_pszPrintername));
 
 	return (True);
 }
 
 /***************************************************************************
-Map a parameter's string representation to something we can use. 
-Returns False if the parameter string is not recognised, else TRUE.
+ Map a parameter's string representation to something we can use. 
+ Returns False if the parameter string is not recognised, else TRUE.
 ***************************************************************************/
-static int map_parameter(char *pszParmName)
+
+static int map_parameter(const char *pszParmName)
 {
 	int iIndex;
 
@@ -2078,13 +2152,13 @@ static int map_parameter(char *pszParmName)
 	return (-1);
 }
 
-
 /***************************************************************************
-Set a boolean variable from the text value stored in the passed string.
-Returns True in success, False if the passed string does not correctly 
-represent a boolean.
+ Set a boolean variable from the text value stored in the passed string.
+ Returns True in success, False if the passed string does not correctly 
+ represent a boolean.
 ***************************************************************************/
-static BOOL set_boolean(BOOL *pb, char *pszParmValue)
+
+static BOOL set_boolean(BOOL *pb, const char *pszParmValue)
 {
 	BOOL bRetval;
 
@@ -2111,39 +2185,37 @@ static BOOL set_boolean(BOOL *pb, char *pszParmValue)
 /***************************************************************************
 Find a service by name. Otherwise works like get_service.
 ***************************************************************************/
-static int getservicebyname(char *pszServiceName, service * pserviceDest)
+
+static int getservicebyname_dos(const char *dos_pszServiceName, service * pserviceDest)
 {
 	int iService;
 
-	for (iService = iNumServices - 1; iService >= 0; iService--)
+	for (iService = iNumServices - 1; iService >= 0; iService--) {
 		if (VALID(iService) &&
-		    strwicmp(ServicePtrs[iService]->szService, pszServiceName) == 0)
-		{
+		    strwicmp(ServicePtrs[iService]->szService[DOS_STRING_OFFSET], dos_pszServiceName) == 0) {
 			if (pserviceDest != NULL)
 				copy_service(pserviceDest, ServicePtrs[iService], NULL);
 			break;
 		}
+	}
 
 	return (iService);
 }
 
-
-
 /***************************************************************************
-Copy a service structure to another
-
-If pcopymapDest is NULL then copy all fields
+ Copy a service structure to another.
+ If pcopymapDest is NULL then copy all fields.
 ***************************************************************************/
+
 static void copy_service(service * pserviceDest,
 			 service * pserviceSource, BOOL *pcopymapDest)
 {
 	int i;
 	BOOL bcopyall = (pcopymapDest == NULL);
 
-	for (i = 0; parm_table[i].label; i++)
+	for (i = 0; parm_table[i].label; i++) {
 		if (parm_table[i].ptr && parm_table[i].class == P_LOCAL &&
-		    (bcopyall || pcopymapDest[i]))
-		{
+		    (bcopyall || pcopymapDest[i])) {
 			void *def_ptr = parm_table[i].ptr;
 			void *src_ptr =
 				((char *)pserviceSource) + PTR_DIFF(def_ptr,
@@ -2152,8 +2224,7 @@ static void copy_service(service * pserviceDest,
 				((char *)pserviceDest) + PTR_DIFF(def_ptr,
 								  &sDefault);
 
-			switch (parm_table[i].type)
-			{
+			switch (parm_table[i].type) {
 				case P_BOOL:
 				case P_BOOLREV:
 					*(BOOL *)dest_ptr = *(BOOL *)src_ptr;
@@ -2170,8 +2241,13 @@ static void copy_service(service * pserviceDest,
 					break;
 
 				case P_STRING:
-					string_set(dest_ptr,
-						   *(char **)src_ptr);
+					if (parm_table[i].flags & FLAG_DOS_STRING) {
+						char **str_p = ((char **)dest_ptr);
+						string_set(&str_p[UNIX_STRING_OFFSET], *(char **)src_ptr);
+						string_set(&str_p[DOS_STRING_OFFSET], *(char **)src_ptr);
+						unix_to_dos(*str_p);
+					} else 
+						string_set(dest_ptr, *(char **)src_ptr);
 					break;
 
 				case P_USTRING:
@@ -2186,9 +2262,9 @@ static void copy_service(service * pserviceDest,
 					break;
 			}
 		}
+	}
 
-	if (bcopyall)
-	{
+	if (bcopyall) {
 		init_copymap(pserviceDest);
 		if (pserviceSource->copymap)
 			memcpy((void *)pserviceDest->copymap,
@@ -2198,16 +2274,17 @@ static void copy_service(service * pserviceDest,
 }
 
 /***************************************************************************
-Check a service for consistency. Return False if the service is in any way
-incomplete or faulty, else True.
+ Check a service for consistency. Return False if the service is in any way
+ incomplete or faulty, else True.
 ***************************************************************************/
+
 static BOOL service_ok(int iService)
 {
 	BOOL bRetval;
 
 	bRetval = True;
-	if (ServicePtrs[iService]->szService[0] == '\0')
-	{
+	if (ServicePtrs[iService]->szService[DOS_STRING_OFFSET] == NULL ||
+			*ServicePtrs[iService]->szService[DOS_STRING_OFFSET] == '\0') {
 		DEBUG(0,
 		      ("The following message indicates an internal error:\n"));
 		DEBUG(0, ("No service name in service entry.\n"));
@@ -2216,11 +2293,11 @@ static BOOL service_ok(int iService)
 
 	/* The [printers] entry MUST be printable. I'm all for flexibility, but */
 	/* I can't see why you'd want a non-printable printer service...        */
-	if (strwicmp(ServicePtrs[iService]->szService, PRINTERS_NAME) == 0) {
+	if (strwicmp(ServicePtrs[iService]->szService[DOS_STRING_OFFSET], PRINTERS_NAME) == 0) {
 		if (!ServicePtrs[iService]->bPrint_ok) {
 			DEBUG(0,
 			      ("WARNING: [%s] service MUST be printable!\n",
-			       ServicePtrs[iService]->szService));
+			       ServicePtrs[iService]->szService[UNIX_STRING_OFFSET]));
 			ServicePtrs[iService]->bPrint_ok = True;
 		}
 		/* [printers] service must also be non-browsable. */
@@ -2228,19 +2305,21 @@ static BOOL service_ok(int iService)
 			ServicePtrs[iService]->bBrowseable = False;
 	}
 
-	if (ServicePtrs[iService]->szPath[0] == '\0' &&
-	    strwicmp(ServicePtrs[iService]->szService, HOMES_NAME) != 0)
+	if (*ServicePtrs[iService]->szPath[DOS_STRING_OFFSET] == '\0' &&
+	    strwicmp(ServicePtrs[iService]->szService[DOS_STRING_OFFSET], HOMES_NAME) != 0)
 	{
 		DEBUG(0,
 		      ("No path in service %s - using %s\n",
-		       ServicePtrs[iService]->szService, tmpdir()));
-		string_set(&ServicePtrs[iService]->szPath, tmpdir());
+		       ServicePtrs[iService]->szService[UNIX_STRING_OFFSET], tmpdir()));
+		string_set(&ServicePtrs[iService]->szPath[UNIX_STRING_OFFSET], tmpdir());
+		string_set(&ServicePtrs[iService]->szPath[DOS_STRING_OFFSET], tmpdir());
+		unix_to_dos(ServicePtrs[iService]->szPath[DOS_STRING_OFFSET]);
 	}
 
 	/* If a service is flagged unavailable, log the fact at level 0. */
 	if (!ServicePtrs[iService]->bAvailable)
 		DEBUG(1, ("NOTE: Service %s is flagged unavailable.\n",
-			  ServicePtrs[iService]->szService));
+			  ServicePtrs[iService]->szService[UNIX_STRING_OFFSET]));
 
 	return (bRetval);
 }
@@ -2254,10 +2333,11 @@ static struct file_lists
 } *file_lists = NULL;
 
 /*******************************************************************
-keep a linked list of all config files so we know when one has changed 
-it's date and needs to be reloaded
+ Keep a linked list of all config files so we know when one has changed 
+ it date and needs to be reloaded.
 ********************************************************************/
-static void add_to_file_list(char *fname, char *subfname)
+
+static void add_to_file_list(const char *fname, char *subfname)
 {
 	struct file_lists *f = file_lists;
  
@@ -2292,8 +2372,9 @@ static void add_to_file_list(char *fname, char *subfname)
 }
 
 /*******************************************************************
-check if a config file has changed date
+ Check if a config file has changed date.
 ********************************************************************/
+
 BOOL lp_file_list_changed(void)
 {
 	struct file_lists *f = file_lists;
@@ -2329,7 +2410,7 @@ BOOL lp_file_list_changed(void)
  Note: We must *NOT* use string_set() here as ptr points to global_myname.
 ***************************************************************************/
 
-static BOOL handle_netbios_name(char *pszParmValue, char **ptr)
+static BOOL handle_netbios_name(const char *pszParmValue, char **ptr)
 {
 	pstring netbios_name;
 
@@ -2346,17 +2427,17 @@ static BOOL handle_netbios_name(char *pszParmValue, char **ptr)
 	return (True);
 }
 
-static BOOL handle_workgroup(char *pszParmValue, char **ptr)
+static BOOL handle_workgroup(const char *pszParmValue, char **ptr)
 {
 	return set_global_myworkgroup_unix(pszParmValue);
 }
 
-static BOOL handle_netbios_scope(char *pszParmValue, char **ptr)
+static BOOL handle_netbios_scope(const char *pszParmValue, char **ptr)
 {
 	return set_global_scope_unix(pszParmValue);
 }
 
-static BOOL handle_netbios_aliases(char *pszParmValue, char **ptr)
+static BOOL handle_netbios_aliases(const char *pszParmValue, char **ptr)
 {
 	string_set(ptr, pszParmValue);
 	return set_netbios_aliases(pszParmValue);
@@ -2423,7 +2504,7 @@ static BOOL source_env(char **lines)
  Handle the source environment operation
 ***************************************************************************/
 
-static BOOL handle_source_env(char *pszParmValue, char **ptr)
+static BOOL handle_source_env(const char *pszParmValue, char **ptr)
 {
 	pstring fname;
 	char *p = fname;
@@ -2466,9 +2547,10 @@ static BOOL handle_source_env(char *pszParmValue, char **ptr)
 }
 
 /***************************************************************************
-  handle the interpretation of the vfs object parameter
-  *************************************************************************/
-static BOOL handle_vfs_object(char *pszParmValue, char **ptr)
+ Handle the interpretation of the vfs object parameter.
+*************************************************************************/
+
+static BOOL handle_vfs_object(const char *pszParmValue, char **ptr)
 {
 	/* Set string value */
 
@@ -2481,9 +2563,10 @@ static BOOL handle_vfs_object(char *pszParmValue, char **ptr)
 }
 
 /***************************************************************************
-  handle the interpretation of the coding system parameter
-  *************************************************************************/
-static BOOL handle_coding_system(char *pszParmValue, char **ptr)
+ Handle the interpretation of the coding system parameter
+*************************************************************************/
+
+static BOOL handle_coding_system(const char *pszParmValue, char **ptr)
 {
 	string_set(ptr, pszParmValue);
 	interpret_coding_system(pszParmValue);
@@ -2496,7 +2579,7 @@ static BOOL handle_coding_system(char *pszParmValue, char **ptr)
 
 static char *saved_character_set = NULL;
 
-static BOOL handle_character_set(char *pszParmValue, char **ptr)
+static BOOL handle_character_set(const char *pszParmValue, char **ptr)
 {
 	/* A dependency here is that the parameter client code page should be
 	   set before this is called.
@@ -2514,7 +2597,7 @@ static BOOL handle_character_set(char *pszParmValue, char **ptr)
  parameter in case this came before 'client code page' in the smb.conf.
 ***************************************************************************/
 
-static BOOL handle_client_code_page(char *pszParmValue, char **ptr)
+static BOOL handle_client_code_page(const char *pszParmValue, char **ptr)
 {
 	Globals.client_code_page = atoi(pszParmValue);
 	if (saved_character_set != NULL)
@@ -2525,10 +2608,10 @@ static BOOL handle_client_code_page(char *pszParmValue, char **ptr)
 }
 
 /***************************************************************************
-handle the valid chars lines
+ Handle the valid chars lines.
 ***************************************************************************/
 
-static BOOL handle_valid_chars(char *pszParmValue, char **ptr)
+static BOOL handle_valid_chars(const char *pszParmValue, char **ptr)
 {
 	string_set(ptr, pszParmValue);
 
@@ -2543,10 +2626,10 @@ static BOOL handle_valid_chars(char *pszParmValue, char **ptr)
 }
 
 /***************************************************************************
-handle the include operation
+ Handle the include operation.
 ***************************************************************************/
 
-static BOOL handle_include(char *pszParmValue, char **ptr)
+static BOOL handle_include(const char *pszParmValue, char **ptr)
 {
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
@@ -2565,11 +2648,11 @@ static BOOL handle_include(char *pszParmValue, char **ptr)
 	return (False);
 }
 
-
 /***************************************************************************
-handle the interpretation of the copy parameter
+ Handle the interpretation of the copy parameter.
 ***************************************************************************/
-static BOOL handle_copy(char *pszParmValue, char **ptr)
+
+static BOOL handle_copy(const char *pszParmValue, char **ptr)
 {
 	BOOL bRetval;
 	int iTemp;
@@ -2583,24 +2666,18 @@ static BOOL handle_copy(char *pszParmValue, char **ptr)
 
 	DEBUG(3, ("Copying service from service %s\n", pszParmValue));
 
-	if ((iTemp = getservicebyname(pszParmValue, &serviceTemp)) >= 0)
-	{
-		if (iTemp == iServiceIndex)
-		{
+	if ((iTemp = getservicebyname_dos(pszParmValue, &serviceTemp)) >= 0) {
+		if (iTemp == iServiceIndex) {
 			DEBUG(0,
 			      ("Can't copy service %s - unable to copy self!\n",
 			       pszParmValue));
-		}
-		else
-		{
+		} else {
 			copy_service(ServicePtrs[iServiceIndex],
 				     &serviceTemp,
 				     ServicePtrs[iServiceIndex]->copymap);
 			bRetval = True;
 		}
-	}
-	else
-	{
+	} else {
 		DEBUG(0, ("Unable to copy service - source not found: %s\n",
 			  pszParmValue));
 		bRetval = False;
@@ -2659,7 +2736,7 @@ BOOL lp_winbind_gid(gid_t *low, gid_t *high)
 
 /* Do some simple checks on "winbind [ug]id" parameter values */
 
-static BOOL handle_winbind_uid(char *pszParmValue, char **ptr)
+static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr)
 {
 	unsigned int low, high;
 
@@ -2676,7 +2753,7 @@ static BOOL handle_winbind_uid(char *pszParmValue, char **ptr)
 	return True;
 }
 
-static BOOL handle_winbind_gid(char *pszParmValue, char **ptr)
+static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr)
 {
 	unsigned int low, high;
 
@@ -2697,7 +2774,7 @@ static BOOL handle_winbind_gid(char *pszParmValue, char **ptr)
  Handle the DEBUG level list.
 ***************************************************************************/
 
-static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
+static BOOL handle_debug_list(const char *pszParmValueIn, char **ptr )
 {
 	pstring pszParmValue;
 
@@ -2726,9 +2803,10 @@ static void init_copymap(service * pservice)
 
 
 /***************************************************************************
- return the local pointer to a parameter given the service number and the 
+ Return the local pointer to a parameter given the service number and the 
  pointer into the default structure
 ***************************************************************************/
+
 void *lp_local_ptr(int snum, void *ptr)
 {
 	return (void *)(((char *)ServicePtrs[snum]) + PTR_DIFF(ptr, &sDefault));
@@ -2736,52 +2814,44 @@ void *lp_local_ptr(int snum, void *ptr)
 
 /***************************************************************************
 Process a parameter for a particular service number. If snum < 0
-then assume we are in the globals
+then assume we are in the globals.
 ***************************************************************************/
-BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
+
+BOOL lp_do_parameter(int snum, const char *unix_pszParmName, const char *unix_pszParmValue)
 {
 	int parmnum, i;
 	void *parm_ptr = NULL;	/* where we are going to store the result */
 	void *def_ptr = NULL;
 
-	parmnum = map_parameter(pszParmName);
+	parmnum = map_parameter(unix_pszParmName);
 
-	if (parmnum < 0)
-	{
+	if (parmnum < 0) {
 		DEBUG(0,
-		      ("Ignoring unknown parameter \"%s\"\n", pszParmName));
+		      ("Ignoring unknown parameter \"%s\"\n", unix_pszParmName));
 		return (True);
 	}
 
-	if (parm_table[parmnum].flags & FLAG_DEPRECATED)
-	{
+	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
 		DEBUG(0, ("WARNING: The \"%s\"option is deprecated\n",
-			  pszParmName));
+			  unix_pszParmName));
 	}
 
 	def_ptr = parm_table[parmnum].ptr;
 
 	/* we might point at a service, the default service or a global */
-	if (snum < 0)
-	{
+	if (snum < 0) {
 		parm_ptr = def_ptr;
-	}
-	else
-	{
-		if (parm_table[parmnum].class == P_GLOBAL)
-		{
+	} else {
+		if (parm_table[parmnum].class == P_GLOBAL) {
 			DEBUG(0,
 			      ("Global parameter %s found in service section!\n",
-			       pszParmName));
+			       unix_pszParmName));
 			return (True);
 		}
-		parm_ptr =
-			((char *)ServicePtrs[snum]) + PTR_DIFF(def_ptr,
-							    &sDefault);
+		parm_ptr = ((char *)ServicePtrs[snum]) + PTR_DIFF(def_ptr, &sDefault);
 	}
 
-	if (snum >= 0)
-	{
+	if (snum >= 0) {
 		if (!ServicePtrs[snum]->copymap)
 			init_copymap(ServicePtrs[snum]);
 
@@ -2793,74 +2863,69 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 	}
 
 	/* if it is a special case then go ahead */
-	if (parm_table[parmnum].special)
-	{
-		parm_table[parmnum].special(pszParmValue, (char **)parm_ptr);
+	if (parm_table[parmnum].special) {
+		parm_table[parmnum].special(unix_pszParmValue, (char **)parm_ptr);
 		return (True);
 	}
 
 	/* now switch on the type of variable it is */
-	switch (parm_table[parmnum].type)
-	{
+	switch (parm_table[parmnum].type) {
 		case P_BOOL:
-			set_boolean(parm_ptr, pszParmValue);
+			set_boolean(parm_ptr, unix_pszParmValue);
 			break;
 
 		case P_BOOLREV:
-			set_boolean(parm_ptr, pszParmValue);
+			set_boolean(parm_ptr, unix_pszParmValue);
 			*(BOOL *)parm_ptr = !*(BOOL *)parm_ptr;
 			break;
 
 		case P_INTEGER:
-			*(int *)parm_ptr = atoi(pszParmValue);
+			*(int *)parm_ptr = atoi(unix_pszParmValue);
 			break;
 
 		case P_CHAR:
-			*(char *)parm_ptr = *pszParmValue;
+			*(char *)parm_ptr = *unix_pszParmValue;
 			break;
 
 		case P_OCTAL:
-			sscanf(pszParmValue, "%o", (int *)parm_ptr);
+			sscanf(unix_pszParmValue, "%o", (int *)parm_ptr);
 			break;
 
 		case P_LIST:
-			*(char ***)parm_ptr = str_list_make(pszParmValue, NULL);
+			*(char ***)parm_ptr = str_list_make(unix_pszParmValue, NULL);
 			break;
 
 		case P_STRING:
-			string_set(parm_ptr, pszParmValue);
-			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos(*(char **)parm_ptr);
+			if (parm_table[parmnum].flags & FLAG_DOS_STRING) {
+				char **str_p = ((char **)parm_ptr);
+				string_set(&str_p[UNIX_STRING_OFFSET], unix_pszParmValue);
+				string_set(&str_p[DOS_STRING_OFFSET], unix_pszParmValue);
+				unix_to_dos(*str_p);
+			} else
+				string_set(parm_ptr, unix_pszParmValue);
 			break;
 
 		case P_USTRING:
-			string_set(parm_ptr, pszParmValue);
-			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos(*(char **)parm_ptr);
+			string_set(parm_ptr, unix_pszParmValue);
+			unix_to_dos(*(char **)parm_ptr);
 			strupper(*(char **)parm_ptr);
+			dos_to_unix(*(char **)parm_ptr);
 			break;
 
 		case P_GSTRING:
-			pstrcpy((char *)parm_ptr, pszParmValue);
-			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos((char *)parm_ptr);
+			pstrcpy((char *)parm_ptr, unix_pszParmValue);
 			break;
 
 		case P_UGSTRING:
-			pstrcpy((char *)parm_ptr, pszParmValue);
-			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos((char *)parm_ptr);
+			pstrcpy((char *)parm_ptr, unix_pszParmValue);
+			unix_to_dos((char *)parm_ptr);
 			strupper((char *)parm_ptr);
+			dos_to_unix((char *)parm_ptr);
 			break;
 
 		case P_ENUM:
-			for (i = 0; parm_table[parmnum].enum_list[i].name;
-			     i++)
-			{
-				if (strequal
-				    (pszParmValue,
-				     parm_table[parmnum].enum_list[i].name))
-				{
+			for (i = 0; parm_table[parmnum].enum_list[i].name; i++) {
+				if (strequal (unix_pszParmValue, parm_table[parmnum].enum_list[i].name)) {
 					*(int *)parm_ptr =
 						parm_table[parmnum].
 						enum_list[i].value;
@@ -2878,33 +2943,30 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 /***************************************************************************
 Process a parameter.
 ***************************************************************************/
-static BOOL do_parameter(char *pszParmName, char *pszParmValue)
+
+static BOOL do_parameter(const char *unix_pszParmName, const char *unix_pszParmValue)
 {
 	if (!bInGlobalSection && bGlobalOnly)
 		return (True);
 
-	DEBUGADD(4, ("doing parameter %s = %s\n", pszParmName, pszParmValue));
+	DEBUGADD(4, ("doing parameter %s = %s\n", unix_pszParmName, unix_pszParmValue));
 
 	return (lp_do_parameter(bInGlobalSection ? -2 : iServiceIndex,
-				pszParmName, pszParmValue));
+				unix_pszParmName, unix_pszParmValue));
 }
 
-
 /***************************************************************************
-print a parameter of the specified type
+ Print a parameter of the specified type.
 ***************************************************************************/
-static void print_parameter(struct parm_struct *p, void *ptr, FILE * f,  char *(*dos_to_ext)(const char *))
+
+static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 {
 	int i;
-	switch (p->type)
-	{
+	switch (p->type) {
 		case P_ENUM:
-			for (i = 0; p->enum_list[i].name; i++)
-			{
-				if (*(int *)ptr == p->enum_list[i].value)
-				{
-					fprintf(f, "%s",
-						p->enum_list[i].name);
+			for (i = 0; p->enum_list[i].name; i++) {
+				if (*(int *)ptr == p->enum_list[i].value) {
+					fprintf(f, "%s", p->enum_list[i].name);
 					break;
 				}
 			}
@@ -2948,36 +3010,33 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f,  char *(
 
 		case P_GSTRING:
 		case P_UGSTRING:
-			if ((char *)ptr) {
-				if (p->flags & FLAG_DOS_STRING)
-					fprintf(f, "%s", dos_to_ext((const char *)ptr));
-				else
-					fprintf(f, "%s", (char *)ptr);
-			}
+			if (p->flags) {
+
+			} else if ((char *)ptr)
+				fprintf(f, "%s", (char *)ptr);
 			break;
 
 		case P_STRING:
 		case P_USTRING:
-			if (*(char **)ptr) {
-				if(p->flags & FLAG_DOS_STRING)
-					fprintf(f,"%s",dos_to_ext((const char *)*(const char **)ptr));
-				else
-					fprintf(f, "%s", *(char **)ptr);
-			}
+			if (p->flags & FLAG_DOS_STRING) {
+				const char **str_p = &(((const char **)ptr)[UNIX_STRING_OFFSET]);
+				if (*str_p)
+					fprintf(f, "%s", *str_p);
+			} else if (*(char **)ptr)
+				fprintf(f, "%s", *(char **)ptr);
 			break;
 		case P_SEP:
 			break;
 	}
 }
 
-
 /***************************************************************************
-check if two parameters are equal
+ Check if two parameters are equal.
 ***************************************************************************/
-static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
+
+static BOOL equal_parameter(struct parm_struct *parm, void *ptr1, void *ptr2)
 {
-	switch (type)
-	{
+	switch (parm->type) {
 		case P_BOOL:
 		case P_BOOLREV:
 			return (*((BOOL *)ptr1) == *((BOOL *)ptr2));
@@ -3006,7 +3065,16 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
 		case P_STRING:
 		case P_USTRING:
 		{
-			char *p1 = *(char **)ptr1, *p2 = *(char **)ptr2;
+			char *p1, *p2;
+
+			if (parm->flags & FLAG_DOS_STRING) {
+				p1 = ((char **)ptr1)[DOS_STRING_OFFSET];
+				p2 = ((char **)ptr2)[DOS_STRING_OFFSET];
+			} else {
+				p1 = *(char **)ptr1;
+				p2 = *(char **)ptr2;
+			}
+
 			if (p1 && !*p1)
 				p1 = NULL;
 			if (p2 && !*p2)
@@ -3029,15 +3097,16 @@ void init_locals(void)
 }
 
 /***************************************************************************
-Process a new section (service). At this stage all sections are services.
-Later we'll have special sections that permit server parameters to be set.
-Returns True on success, False on failure. SectionName must be in DOS codepage.
+ Process a new section (service). At this stage all sections are services.
+ Later we'll have special sections that permit server parameters to be set.
+ Returns True on success, False on failure. SectionName must be in UNIX codepage.
 ***************************************************************************/
-static BOOL do_section(char *pszSectionName)
+
+static BOOL do_section(const char *unix_pszSectionName)
 {
 	BOOL bRetval;
-	BOOL isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
-			 (strwicmp(pszSectionName, GLOBAL_NAME2) == 0));
+	BOOL isglobal = ((strwicmp(unix_pszSectionName, GLOBAL_NAME) == 0) ||
+			 (strwicmp(unix_pszSectionName, GLOBAL_NAME2) == 0));
 	bRetval = False;
 
 	/* if we were in a global section then do the local inits */
@@ -3048,9 +3117,8 @@ static BOOL do_section(char *pszSectionName)
 	bInGlobalSection = isglobal;
 
 	/* check for multiple global sections */
-	if (bInGlobalSection)
-	{
-		DEBUG(3, ("Processing section \"[%s]\"\n", pszSectionName));
+	if (bInGlobalSection) {
+		DEBUG(3, ("Processing section \"[%s]\"\n", unix_pszSectionName));
 		return (True);
 	}
 
@@ -3064,15 +3132,17 @@ static BOOL do_section(char *pszSectionName)
 		bRetval = service_ok(iServiceIndex);
 
 	/* if all is still well, move to the next record in the services array */
-	if (bRetval)
-	{
+	if (bRetval) {
+		fstring dos_sectionname;
+
+		fstrcpy(dos_sectionname, unix_pszSectionName);
+		unix_to_dos(dos_sectionname);
+
 		/* We put this here to avoid an odd message order if messages are */
 		/* issued by the post-processing of a previous section. */
-		DEBUG(2, ("Processing section \"[%s]\"\n", pszSectionName));
+		DEBUG(2, ("Processing section \"[%s]\"\n", unix_pszSectionName));
 
-		if ((iServiceIndex = add_a_service(&sDefault, pszSectionName))
-		    < 0)
-		{
+		if ((iServiceIndex = add_a_service(&sDefault, dos_sectionname)) < 0) {
 			DEBUG(0, ("Failed to add a new service\n"));
 			return (False);
 		}
@@ -3081,22 +3151,27 @@ static BOOL do_section(char *pszSectionName)
 	return (bRetval);
 }
 
-
 /***************************************************************************
-determine if a partcular base parameter is currently set to the default value.
+ Determine if a partcular base parameter is currently set to the default value.
 ***************************************************************************/
+
 static BOOL is_default(int i)
 {
 	if (!defaults_saved)
 		return False;
-	switch (parm_table[i].type)
-	{
+
+	switch (parm_table[i].type) {
 		case P_LIST:
 			return str_list_compare (parm_table[i].def.lvalue,
 					*(char ***)parm_table[i].ptr);
 		case P_STRING:
 		case P_USTRING:
-			return strequal(parm_table[i].def.svalue,
+			if (parm_table[i].flags & FLAG_DOS_STRING) {
+				const char **str_ptr = (const char **)parm_table[i].ptr;
+				return strequal(parm_table[i].def.str_val[DOS_STRING_OFFSET],
+					str_ptr[DOS_STRING_OFFSET]);
+			} else
+				return strequal(parm_table[i].def.svalue,
 					*(char **)parm_table[i].ptr);
 		case P_GSTRING:
 		case P_UGSTRING:
@@ -3120,11 +3195,11 @@ static BOOL is_default(int i)
 	return False;
 }
 
-
 /***************************************************************************
 Display the contents of the global structure.
 ***************************************************************************/
-static void dump_globals(FILE *f, char *(*dos_to_ext)(const char *))
+
+static void dump_globals(FILE *f)
 {
 	int i;
 	fprintf(f, "# Global parameters\n[global]\n");
@@ -3137,49 +3212,46 @@ static void dump_globals(FILE *f, char *(*dos_to_ext)(const char *))
 			if (defaults_saved && is_default(i))
 				continue;
 			fprintf(f, "\t%s = ", parm_table[i].label);
-			print_parameter(&parm_table[i], parm_table[i].ptr, f, dos_to_ext);
+			print_parameter(&parm_table[i], parm_table[i].ptr, f);
 			fprintf(f, "\n");
 		}
 }
 
 /***************************************************************************
-return True if a local parameter is currently set to the global default
+ Return True if a local parameter is currently set to the global default.
 ***************************************************************************/
+
 BOOL lp_is_default(int snum, struct parm_struct *parm)
 {
 	int pdiff = PTR_DIFF(parm->ptr, &sDefault);
 
-	return equal_parameter(parm->type,
+	return equal_parameter(parm,
 			       ((char *)ServicePtrs[snum]) + pdiff,
 			       ((char *)&sDefault) + pdiff);
 }
 
-
 /***************************************************************************
-Display the contents of a single services record.
+ Display the contents of a single services record.
 ***************************************************************************/
-static void dump_a_service(service * pService, FILE * f, char *(*dos_to_ext)(const char *))
+
+static void dump_a_service(service * pService, FILE * f)
 {
 	int i;
 	if (pService != &sDefault)
-		fprintf(f, "\n[%s]\n", pService->szService);
+		fprintf(f, "\n[%s]\n", pService->szService[UNIX_STRING_OFFSET]);
 
-	for (i = 0; parm_table[i].label; i++)
+	for (i = 0; parm_table[i].label; i++) {
 		if (parm_table[i].class == P_LOCAL &&
 		    parm_table[i].ptr &&
 		    (*parm_table[i].label != '-') &&
-		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr)))
-		{
+		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) {
 			int pdiff = PTR_DIFF(parm_table[i].ptr, &sDefault);
 
-			if (pService == &sDefault)
-			{
+			if (pService == &sDefault) {
 				if (defaults_saved && is_default(i))
 					continue;
-			}
-			else
-			{
-				if (equal_parameter(parm_table[i].type,
+			} else {
+				if (equal_parameter(&parm_table[i],
 						    ((char *)pService) +
 						    pdiff,
 						    ((char *)&sDefault) +
@@ -3189,24 +3261,22 @@ static void dump_a_service(service * pService, FILE * f, char *(*dos_to_ext)(con
 
 			fprintf(f, "\t%s = ", parm_table[i].label);
 			print_parameter(&parm_table[i],
-					((char *)pService) + pdiff, f, dos_to_ext);
+					((char *)pService) + pdiff, f);
 			fprintf(f, "\n");
 		}
+	}
 }
 
-
 /***************************************************************************
-return info about the next service  in a service. snum==-1 gives the globals
-
-return NULL when out of parameters
+ Return info about the next service  in a service. snum==-1 gives the globals
+ Return NULL when out of parameters.
 ***************************************************************************/
+
 struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 {
-	if (snum == -1)
-	{
+	if (snum == -1) {
 		/* do the globals */
-		for (; parm_table[*i].label; (*i)++)
-		{
+		for (; parm_table[*i].label; (*i)++) {
 			if (parm_table[*i].class == P_SEPARATOR)
 				return &parm_table[(*i)++];
 
@@ -3221,13 +3291,10 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 
 			return &parm_table[(*i)++];
 		}
-	}
-	else
-	{
+	} else {
 		service *pService = ServicePtrs[snum];
 
-		for (; parm_table[*i].label; (*i)++)
-		{
+		for (; parm_table[*i].label; (*i)++) {
 			if (parm_table[*i].class == P_SEPARATOR)
 				return &parm_table[(*i)++];
 
@@ -3243,7 +3310,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 						 &sDefault);
 
 				if (allparameters ||
-				    !equal_parameter(parm_table[*i].type,
+				    !equal_parameter(&parm_table[*i],
 						     ((char *)pService) +
 						     pdiff,
 						     ((char *)&sDefault) +
@@ -3294,25 +3361,25 @@ BOOL lp_snum_ok(int iService)
  Auto-load some home services.
 ***************************************************************************/
 
-static void lp_add_auto_services(char *str)
+static void lp_add_auto_services(const char *dos_str)
 {
 	char *s;
 	char *p;
 	int homes;
 
-	if (!str)
+	if (!dos_str)
 		return;
 
-	s = strdup(str);
+	s = strdup(dos_str);
 	if (!s)
 		return;
 
-	homes = lp_servicenumber(HOMES_NAME);
+	homes = lp_servicenumber_dos(HOMES_NAME);
 
 	for (p = strtok(s, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
 		char *home = get_user_service_home_dir(p);
 
-		if (lp_servicenumber(p) >= 0)
+		if (lp_servicenumber_dos(p) >= 0)
 			continue;
 
 		if (home && homes >= 0)
@@ -3325,83 +3392,92 @@ static void lp_add_auto_services(char *str)
  Auto-load one printer.
 ***************************************************************************/
 
-void lp_add_one_printer(char *name, char *comment)
+void lp_add_one_printer(const char *dos_name, const char *dos_comment)
 {
-	int printers = lp_servicenumber(PRINTERS_NAME);
+	int printers = lp_servicenumber_dos(PRINTERS_NAME);
 	int i;
 
-	if (lp_servicenumber(name) < 0) {
-		lp_add_printer(name, printers);
-		if ((i = lp_servicenumber(name)) >= 0) {
-			string_set(&ServicePtrs[i]->comment, comment);
-			unix_to_dos(ServicePtrs[i]->comment);
+	if (lp_servicenumber_dos(dos_name) < 0) {
+		lp_add_printer(dos_name, printers);
+		if ((i = lp_servicenumber_dos(dos_name)) >= 0) {
+			string_set(&ServicePtrs[i]->comment[DOS_STRING_OFFSET], dos_comment);
+			string_set(&ServicePtrs[i]->comment[UNIX_STRING_OFFSET], dos_comment);
+			dos_to_unix(ServicePtrs[i]->comment[UNIX_STRING_OFFSET]);
 			ServicePtrs[i]->autoloaded = True;
 		}
 	}
 }
 
 /***************************************************************************
-have we loaded a services file yet?
+ Have we loaded a services file yet ?
 ***************************************************************************/
+
 BOOL lp_loaded(void)
 {
 	return (bLoaded);
 }
 
 /***************************************************************************
-unload unused services
+ Unload unused services.
 ***************************************************************************/
+
 void lp_killunused(BOOL (*snumused) (int))
 {
 	int i;
-	for (i = 0; i < iNumServices; i++)
-	{
+	for (i = 0; i < iNumServices; i++) {
 		if (!VALID(i))
 			continue;
 
-		if (!snumused || !snumused(i))
-		{
+		if (!snumused || !snumused(i)) {
 			ServicePtrs[i]->valid = False;
 			free_service(ServicePtrs[i]);
 		}
 	}
 }
 
-
 /***************************************************************************
-unload a service
+ Unload a service.
 ***************************************************************************/
+
 void lp_killservice(int iServiceIn)
 {
-	if (VALID(iServiceIn))
-	{
+	if (VALID(iServiceIn)) {
 		ServicePtrs[iServiceIn]->valid = False;
 		free_service(ServicePtrs[iServiceIn]);
 	}
 }
 
 /***************************************************************************
-save the curent values of all global and sDefault parameters into the 
-defaults union. This allows swat and testparm to show only the
-changed (ie. non-default) parameters.
+ Save the curent values of all global and sDefault parameters into the 
+ defaults union. This allows swat and testparm to show only the
+ changed (ie. non-default) parameters.
 ***************************************************************************/
+
 static void lp_save_defaults(void)
 {
 	int i;
-	for (i = 0; parm_table[i].label; i++)
-	{
+	for (i = 0; parm_table[i].label; i++) {
+
 		if (i > 0 && parm_table[i].ptr == parm_table[i - 1].ptr)
 			continue;
-		switch (parm_table[i].type)
-		{
+
+		switch (parm_table[i].type) {
 			case P_LIST:
 				str_list_copy(&(parm_table[i].def.lvalue),
 						*(char ***)parm_table[i].ptr);
 				break;
 			case P_STRING:
 			case P_USTRING:
-				parm_table[i].def.svalue =
-					strdup(*(char **)parm_table[i].ptr);
+				if (parm_table[i].flags & FLAG_DOS_STRING) {
+					const char **str_ptr = (const char **)parm_table[i].ptr;
+					parm_table[i].def.str_val[UNIX_STRING_OFFSET] =
+						strdup(str_ptr[UNIX_STRING_OFFSET]);
+					parm_table[i].def.str_val[DOS_STRING_OFFSET] =
+						strdup(str_ptr[DOS_STRING_OFFSET]);
+				} else {
+					parm_table[i].def.svalue =
+						strdup(*(char **)parm_table[i].ptr);
+				}
 				break;
 			case P_GSTRING:
 			case P_UGSTRING:
@@ -3433,6 +3509,7 @@ static void lp_save_defaults(void)
 /*******************************************************************
  Set the server type we will announce as via nmbd.
 ********************************************************************/
+
 static void set_server_role(void)
 {
 	server_role = ROLE_STANDALONE;
@@ -3468,13 +3545,12 @@ static void set_server_role(void)
 	}
 }
 
-
 /***************************************************************************
 Load the services array from the services file. Return True on success, 
 False on failure.
 ***************************************************************************/
-BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
-	     BOOL add_ipc)
+
+BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults, BOOL add_ipc)
 {
 	pstring n2;
 	BOOL bRetval;
@@ -3491,8 +3567,7 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 
 	init_globals();
 
-	if (save_defaults)
-	{
+	if (save_defaults) {
 		init_locals();
 		lp_save_defaults();
 	}
@@ -3510,7 +3585,7 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 		if (iServiceIndex >= 0)
 			bRetval = service_ok(iServiceIndex);
 
-	lp_add_auto_services(lp_auto_services());
+	lp_add_auto_services(lp_auto_services_dos());
 
 	if (add_ipc) {
 		lp_add_ipc("IPC$", True);
@@ -3531,18 +3606,19 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 	return (bRetval);
 }
 
-
 /***************************************************************************
-reset the max number of services
+ Reset the max number of services.
 ***************************************************************************/
+
 void lp_resetnumservices(void)
 {
 	iNumServices = 0;
 }
 
 /***************************************************************************
-return the max number of services
+ Return the max number of services.
 ***************************************************************************/
+
 int lp_numservices(void)
 {
 	return (iNumServices);
@@ -3551,36 +3627,34 @@ int lp_numservices(void)
 /***************************************************************************
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
-void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint, char *(*dos_to_ext)(const char *))
+
+void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint)
 {
 	int iService;
 
 	if (show_defaults)
-	{
 		defaults_saved = False;
-	}
 
-	dump_globals(f, dos_to_ext);
+	dump_globals(f);
 
-	dump_a_service(&sDefault, f, dos_to_ext);
+	dump_a_service(&sDefault, f);
 
 	for (iService = 0; iService < maxtoprint; iService++)
-		lp_dump_one(f, show_defaults, iService, dos_to_ext);
+		lp_dump_one(f, show_defaults, iService);
 }
 
 /***************************************************************************
 Display the contents of one service in human-readable form.
 ***************************************************************************/
-void lp_dump_one(FILE * f, BOOL show_defaults, int snum, char *(*dos_to_ext)(const char *))
+
+void lp_dump_one(FILE * f, BOOL show_defaults, int snum)
 {
-	if (VALID(snum))
-	{
+	if (VALID(snum)) {
 		if (ServicePtrs[snum]->szService[0] == '\0')
 			return;
-		dump_a_service(ServicePtrs[snum], f, dos_to_ext);
+		dump_a_service(ServicePtrs[snum], f);
 	}
 }
-
 
 /***************************************************************************
 Return the number of the service with the given name, or -1 if it doesn't
@@ -3589,49 +3663,63 @@ getservicebyname()! This works ONLY if all services have been loaded, and
 does not copy the found service.
 ***************************************************************************/
 
-int lp_servicenumber(const char *pszServiceName)
+int lp_servicenumber_unix(const char *unix_pszServiceName)
 {
 	int iService;
 	fstring serviceName;
 	
 
-	for (iService = iNumServices - 1; iService >= 0; iService--)
-	{
-		if (VALID(iService) && ServicePtrs[iService]->szService) 
-		{
+	for (iService = iNumServices - 1; iService >= 0; iService--) {
+		if (VALID(iService) && ServicePtrs[iService]->szService[UNIX_STRING_OFFSET]) {
 			/*
 			 * The substitution here is used to support %U is 
 			 * service names
 			 */
-			fstrcpy(serviceName, ServicePtrs[iService]->szService);
+			fstrcpy(serviceName, ServicePtrs[iService]->szService[UNIX_STRING_OFFSET]);
 			standard_sub_basic(serviceName,sizeof(serviceName));
-			if (strequal(serviceName, pszServiceName))
+			if (strequal_unix(serviceName, unix_pszServiceName))
 				break;
 		}
 	}
 
 	if (iService < 0)
-		DEBUG(7,("lp_servicenumber: couldn't find %s\n", pszServiceName));
+		DEBUG(7,("lp_servicenumber_unix: couldn't find %s\n", unix_pszServiceName));
 
 	return (iService);
+}
+
+int lp_servicenumber_dos(const char *dos_pszServiceName)
+{
+	fstring unix_servicename;
+	fstrcpy(unix_servicename, dos_pszServiceName);
+	dos_to_unix(unix_servicename);
+	return lp_servicenumber_unix(unix_servicename);
 }
 
 /*******************************************************************
  A useful volume label function. Returns a string in DOS codepage.
 ********************************************************************/
 
-char *volume_label(int snum)
+const char *volume_label_dos(int snum)
 {
-	char *ret = lp_volume(snum);
+	const char *ret = lp_volume_dos(snum);
 	if (!*ret)
-		return lp_servicename(snum);
+		return lp_servicename_dos(snum);
 	return (ret);
 }
 
+const char *volume_label_unix(int snum)
+{
+	const char *ret = lp_volume_unix(snum);
+	if (!*ret)
+		return lp_servicename_unix(snum);
+	return (ret);
+}
 
 /*******************************************************************
  Set the server type we will announce as via nmbd.
 ********************************************************************/
+
 static void set_default_server_announce_type(void)
 {
 	default_server_announce = 0;
@@ -3640,71 +3728,47 @@ static void set_default_server_announce_type(void)
 	default_server_announce |= SV_TYPE_SERVER_UNIX;
 	default_server_announce |= SV_TYPE_PRINTQ_SERVER;
 
-	switch (lp_announce_as())
-	{
+	switch (lp_announce_as()) {
 		case ANNOUNCE_AS_NT_SERVER:
-		{
 			default_server_announce |= SV_TYPE_SERVER_NT;
 			/* fall through... */
-		}
 		case ANNOUNCE_AS_NT_WORKSTATION:
-		{
 			default_server_announce |= SV_TYPE_NT;
 			break;
-		}
 		case ANNOUNCE_AS_WIN95:
-		{
 			default_server_announce |= SV_TYPE_WIN95_PLUS;
 			break;
-		}
 		case ANNOUNCE_AS_WFW:
-		{
 			default_server_announce |= SV_TYPE_WFW;
 			break;
-		}
 		default:
-		{
 			break;
-		}
 	}
 
-	switch (lp_server_role())
-	{
+	switch (lp_server_role()) {
 		case ROLE_DOMAIN_MEMBER:
-		{
 			default_server_announce |= SV_TYPE_DOMAIN_MEMBER;
 			break;
-		}
 		case ROLE_DOMAIN_PDC:
-		{
 			default_server_announce |= SV_TYPE_DOMAIN_CTRL;
 			break;
-		}
 		case ROLE_DOMAIN_BDC:
-		{
 			default_server_announce |= SV_TYPE_DOMAIN_BAKCTRL;
 			break;
-		}
 		case ROLE_STANDALONE:
 		default:
-		{
 			break;
-		}
 	}
 
 	if (lp_time_server())
-	{
 		default_server_announce |= SV_TYPE_TIME_SOURCE;
-	}
 
 	if (lp_host_msdfs())
-	{
 		default_server_announce |= SV_TYPE_DFS_SERVER;
-	}
 }
 
 /***********************************************************
- returns role of Samba server
+ Returns role of Samba server.
 ************************************************************/
 
 int lp_server_role(void)
@@ -3713,15 +3777,13 @@ int lp_server_role(void)
 }
 
 /***********************************************************
- If we are PDC then prefer us as DMB
+ If we are PDC then prefer us as DMB.
 ************************************************************/
 
 BOOL lp_domain_master(void)
 {
 	if (Globals.bDomainMaster == Auto)
-	{
 		return (lp_server_role() == ROLE_DOMAIN_PDC);
-	}
 
 	return Globals.bDomainMaster;
 }
@@ -3733,42 +3795,39 @@ BOOL lp_domain_master(void)
 BOOL lp_preferred_master(void)
 {
 	if (Globals.bPreferredMaster == Auto)
-	{
 		return (lp_local_master() && lp_domain_master());
-	}
 
 	return Globals.bPreferredMaster;
 }
 
-
-
 /*******************************************************************
-remove a service
+ Remove a service.
 ********************************************************************/
+
 void lp_remove_service(int snum)
 {
 	ServicePtrs[snum]->valid = False;
 }
 
 /*******************************************************************
-copy a service. new_name must be in dos codepage
+ Copy a service. new_name must be in dos codepage.
 ********************************************************************/
-void lp_copy_service(int snum, char *new_name)
+
+void lp_copy_service(int snum, char *dos_new_name)
 {
-	char *oldname = lp_servicename(snum);
-	do_section(new_name);
-	if (snum >= 0)
-	{
-		snum = lp_servicenumber(new_name);
+	const char *dos_oldname = lp_servicename_dos(snum);
+	do_section(dos_new_name);
+	if (snum >= 0) {
+		snum = lp_servicenumber_dos(dos_new_name);
 		if (snum >= 0)
-			lp_do_parameter(snum, "copy", oldname);
+			lp_do_parameter(snum, "copy", dos_oldname);
 	}
 }
-
 
 /*******************************************************************
  Get the default server type we will announce as via nmbd.
 ********************************************************************/
+
 int lp_default_server_announce(void)
 {
 	return default_server_announce;
@@ -3777,6 +3836,7 @@ int lp_default_server_announce(void)
 /*******************************************************************
  Split the announce version into major and minor numbers.
 ********************************************************************/
+
 int lp_major_announce_version(void)
 {
 	static BOOL got_major = False;
@@ -3830,11 +3890,21 @@ void lp_set_name_resolve_order(char *new_order)
 	Globals.szNameResolveOrder = new_order;
 }
 
-char *lp_printername(int snum)
+const char *lp_printername_dos(int snum)
 {
-	char *ret = _lp_printername(snum);
+	const char *ret = _lp_const_printername_dos(snum);
+
 	if (ret == NULL || (ret != NULL && *ret == '\0'))
-		ret = lp_servicename(snum);
+		ret = lp_const_servicename_dos(snum);
+	return ret;
+}
+
+const char *lp_printername_unix(int snum)
+{
+	const char *ret = _lp_const_printername_unix(snum);
+
+	if (ret == NULL || (ret != NULL && *ret == '\0'))
+		ret = lp_const_servicename_unix(snum);
 
 	return ret;
 }

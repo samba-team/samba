@@ -23,7 +23,9 @@
 #define CTRLZ 	26
 #define SPC 	32
 
-static char cvtbuf[sizeof(pstring)];
+#define NUM_CVTBUFS 8
+static char cvtbuf[NUM_CVTBUFS][sizeof(pstring)];
+static size_t current_cvtbuf_index;
 
 static BOOL mapsinited = 0;
 
@@ -403,6 +405,7 @@ update_map("\370\253\371\246\372\247\373\256\374\376\375\257\376\361");
 char *unix2dos_format_static(const char *str)
 {
 	const char *p;
+	char *curr_cvtbuf;
 	char *dp;
 
 	if (!mapsinited)
@@ -410,10 +413,14 @@ char *unix2dos_format_static(const char *str)
 
 	if (!str)
 		return NULL;
-	for (p = str, dp = cvtbuf;*p && (dp - cvtbuf < sizeof(cvtbuf) - 1); p++,dp++)
+
+	current_cvtbuf_index = (current_cvtbuf_index + 1) % NUM_CVTBUFS;
+	curr_cvtbuf = cvtbuf[current_cvtbuf_index];
+
+	for (p = str, dp = curr_cvtbuf;*p && (dp - curr_cvtbuf < sizeof(pstring) - 1); p++,dp++)
 		*dp = unix2dos[(unsigned char)*p];
 	*dp = 0;
-	return cvtbuf;
+	return curr_cvtbuf;
 }
 
 char *unix2dos_format(char *str)
@@ -437,6 +444,7 @@ char *unix2dos_format(char *str)
 char *dos2unix_format_static(const char *str)
 {
 	const char *p;
+	char *curr_cvtbuf;
 	char *dp;
 
 	if (!mapsinited)
@@ -444,10 +452,14 @@ char *dos2unix_format_static(const char *str)
 
 	if (!str)
 		return NULL;
-	for (p = str, dp = cvtbuf;*p && (dp - cvtbuf < sizeof(cvtbuf) - 1); p++,dp++)
+
+	current_cvtbuf_index = (current_cvtbuf_index + 1) % NUM_CVTBUFS;
+	curr_cvtbuf = cvtbuf[current_cvtbuf_index];
+
+	for (p = str, dp = curr_cvtbuf;*p && (dp - curr_cvtbuf < sizeof(pstring) - 1); p++,dp++)
 		*dp = dos2unix[(unsigned char)*p];
 	*dp = 0;
-	return cvtbuf;
+	return curr_cvtbuf;
 }
 
 char *dos2unix_format(char *str)

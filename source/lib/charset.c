@@ -376,7 +376,7 @@ for code page %d failed. Using default client codepage 850\n",
 /*******************************************************************
 add characters depending on a string passed by the user
 ********************************************************************/
-void add_char_string(char *s)
+void add_char_string(const char *s)
 {
   char *extra_chars = (char *)strdup(s);
   char *t;

@@ -705,11 +705,9 @@ static NTSTATUS get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 
 		}
 	} else if (strequal(sid_str, sam_sid_str) && !lp_hide_local_users()) {
 		fstring name;
-		char *sep;
+		const char *sep = lp_winbind_separator();
 		struct sys_grent *glist;
 		struct sys_grent *grp;
-
-		sep = lp_winbind_separator();
 
 		/* local aliases */
 		/* we return the UNIX groups here.  This seems to be the right */

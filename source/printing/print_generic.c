@@ -36,32 +36,35 @@ static int generic_queue_pause(int snum);
 static int generic_queue_resume(int snum);
 
 
-struct printif	generic_printif =
-		{
-		  generic_queue_get,
-		  generic_queue_pause,
-		  generic_queue_resume,
-		  generic_job_delete,
-		  generic_job_pause,
-		  generic_job_resume,
-		  generic_job_submit,
-		};
+struct printif	generic_printif = {
+	generic_queue_get,
+	generic_queue_pause,
+	generic_queue_resume,
+	generic_job_delete,
+	generic_job_pause,
+	generic_job_resume,
+	generic_job_submit,
+};
 
 /****************************************************************************
-run a given print command 
-a null terminated list of value/substitute pairs is provided
-for local substitution strings
+ Run a given print command.
+ A null terminated list of value/substitute pairs is provided
+ for local substitution strings.
+ All strings are in UNIX codepage.
 ****************************************************************************/
+
 static int print_run_command(int snum,char *command, int *outfd, ...)
 {
 
 	pstring syscmd;
-	char *p, *arg;
+	const char *p;
+	char *arg;
 	int ret;
 	va_list ap;
 	va_start(ap, outfd);
 
-	if (!command || !*command) return -1;
+	if (!command || !*command)
+		return -1;
 
 	if (!VALID_SNUM(snum)) {
 		DEBUG(0,("Invalid snum %d for command %s\n", snum, command));
@@ -76,13 +79,11 @@ static int print_run_command(int snum,char *command, int *outfd, ...)
 	}
 	va_end(ap);
   
-	p = PRINTERNAME(snum);
+	p = lp_printername_unix(snum);
   
 	pstring_sub(syscmd, "%p", p);
 	standard_sub_snum(snum,syscmd,sizeof(syscmd));
 
-	/* Convert script args to unix-codepage */
-	dos_to_unix(syscmd);
 	ret = smbrun(syscmd,outfd);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
@@ -90,10 +91,10 @@ static int print_run_command(int snum,char *command, int *outfd, ...)
 	return ret;
 }
 
-
 /****************************************************************************
-delete a print job
+ Delete a print job.
 ****************************************************************************/
+
 static int generic_job_delete(int snum, struct printjob *pjob)
 {
 	fstring jobstr;
@@ -109,8 +110,9 @@ static int generic_job_delete(int snum, struct printjob *pjob)
 }
 
 /****************************************************************************
-pause a job
+ Pause a job.
 ****************************************************************************/
+
 static int generic_job_pause(int snum, struct printjob *pjob)
 {
 	fstring jobstr;
@@ -124,8 +126,9 @@ static int generic_job_pause(int snum, struct printjob *pjob)
 }
 
 /****************************************************************************
-resume a job
+ Resume a job.
 ****************************************************************************/
+
 static int generic_job_resume(int snum, struct printjob *pjob)
 {
 	fstring jobstr;
@@ -186,27 +189,22 @@ static int generic_job_submit(int snum, struct printjob *pjob)
         return ret;
 }
 
-
 /****************************************************************************
-get the current list of queued jobs
+ Get the current list of queued jobs.
 ****************************************************************************/
+
 static int generic_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 {
 	char **qlines;
 	int fd;
 	int numlines, i, qcount;
 	print_queue_struct *queue = NULL;
-	fstring printer_name;
               
-	/* Convert printer name (i.e. share name) to unix-codepage */
-	fstrcpy(printer_name, lp_servicename(snum));
-	dos_to_unix(printer_name);
-	
 	print_run_command(snum, lp_lpqcommand(snum), &fd, NULL);
 
 	if (fd == -1) {
 		DEBUG(5,("generic_queue_get: Can't read print queue status for printer %s\n",
-			printer_name ));
+			lp_const_servicename_unix(snum) ));
 		return 0;
 	}
 	
@@ -236,16 +234,18 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 }
 
 /****************************************************************************
- pause a queue
+ Pause a queue.
 ****************************************************************************/
+
 static int generic_queue_pause(int snum)
 {
 	return print_run_command(snum, lp_queuepausecommand(snum), NULL, NULL);
 }
 
 /****************************************************************************
- resume a queue
+ Resume a queue.
 ****************************************************************************/
+
 static int generic_queue_resume(int snum)
 {
 	return print_run_command(snum, lp_queueresumecommand(snum), NULL, NULL);

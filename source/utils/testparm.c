@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
 
   for (s=0;s<1000;s++) {
     if (VALID_SNUM(s))
-      if (strlen(lp_servicename(s)) > 8) {
+      if (strlen(lp_servicename_unix(s)) > 8) {
         printf("WARNING: You have some share names that are longer than 8 chars\n");
         printf("These may give errors while browsing or may not be accessible\nto some older clients\n");
         break;
@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
         char *hasquery = strchr(deny_list, '?');
         if(hasstar || hasquery) {
           printf("Invalid character %c in hosts deny list %s for service %s.\n",
-                 hasstar ? *hasstar : *hasquery, deny_list, lp_servicename(s) );
+                 hasstar ? *hasstar : *hasquery, deny_list, lp_servicename_unix(s) );
         }
       }
 
@@ -276,14 +276,14 @@ int main(int argc, char *argv[])
         char *hasquery = strchr(allow_list, '?');
         if(hasstar || hasquery) {
           printf("Invalid character %c in hosts allow list %s for service %s.\n",
-                 hasstar ? *hasstar : *hasquery, allow_list, lp_servicename(s) );
+                 hasstar ? *hasstar : *hasquery, allow_list, lp_servicename_unix(s) );
         }
       }
 
       if(lp_level2_oplocks(s) && !lp_oplocks(s)) {
         printf("Invalid combination of parameters for service %s. \
 Level II oplocks can only be set if oplocks are also set.\n",
-               lp_servicename(s) );
+               lp_servicename_unix(s) );
       }
     }
   }
@@ -298,7 +298,7 @@ Level II oplocks can only be set if oplocks are also set.\n",
       getc(stdin);
     }
     memcpy(DEBUGLEVEL_CLASS,parsed_debuglevel_class,sizeof(parsed_debuglevel_class));
-    lp_dump(stdout,True, lp_numservices(), _dos_to_unix_static);
+    lp_dump(stdout,True, lp_numservices());
   }
   
   if (argc >= 3) {
@@ -318,10 +318,10 @@ Level II oplocks can only be set if oplocks are also set.\n",
       if (VALID_SNUM(s)) {		 
         if (allow_access(lp_hostsdeny(s),lp_hostsallow(s),cname,caddr)) {
           printf("Allow connection from %s (%s) to %s\n",
-                 cname,caddr,lp_servicename(s));
+                 cname,caddr,lp_servicename_unix(s));
         } else {
           printf("Deny connection from %s (%s) to %s\n",
-                 cname,caddr,lp_servicename(s));
+                 cname,caddr,lp_servicename_unix(s));
         }
       }
     }

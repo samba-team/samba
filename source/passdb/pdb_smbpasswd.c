@@ -1235,15 +1235,15 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
 		
 	        sam_logon_in_ssb = True;
 
-	        pstrcpy(str, lp_logon_script());
+	        pstrcpy(str, lp_logon_script_unix());
        		standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str,0);
 		pdb_set_logon_script(sam_pass, str, False);
 
-	        pstrcpy(str, lp_logon_path());
+	        pstrcpy(str, lp_logon_path_unix());
        		standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str,0);
 		pdb_set_profile_path(sam_pass, str, False);
 
-	        pstrcpy(str, lp_logon_home());
+	        pstrcpy(str, lp_logon_home_unix());
         	standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str,0);
 		pdb_set_homedir(sam_pass, str, False);
  		

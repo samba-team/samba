@@ -93,10 +93,11 @@
 #define SNUM(conn)         ((conn)?(conn)->service:-1)
 
 /* access various service details */
-#define SERVICE(snum)      (lp_servicename(snum))
+#if 0
 #define PRINTCAP           (lp_printcapname())
 #define PRINTCOMMAND(snum) (lp_printcommand(snum))
 #define PRINTERNAME(snum)  (lp_printername(snum))
+#endif
 #define CAN_WRITE(conn)    (!conn->read_only)
 #define VALID_SNUM(snum)   (lp_snum_ok(snum))
 #define GUEST_OK(snum)     (VALID_SNUM(snum) && lp_guest_ok(snum))

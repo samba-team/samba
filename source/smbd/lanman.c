@@ -61,7 +61,7 @@ static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param,char *
 
 
 static int CopyExpanded(connection_struct *conn, 
-			int snum, char** dst, char* src, int* n)
+			int snum, char** dst, const char* src, int* n)
 {
 	pstring buf;
 	int l;
@@ -69,8 +69,10 @@ static int CopyExpanded(connection_struct *conn,
 	if (!src || !dst || !n || !(*dst)) return(0);
 
 	StrnCpy(buf,src,sizeof(buf)/2);
-	pstring_sub(buf,"%S",lp_servicename(snum));
+	dos_to_unix(buf);
+	pstring_sub(buf,"%S",lp_const_servicename_unix(snum));
 	standard_sub_conn(conn,buf,sizeof(buf));
+	unix_to_dos(buf);
 	StrnCpy(*dst,buf,*n-1);
 	l = strlen(*dst) + 1;
 	(*dst) += l;
@@ -78,34 +80,38 @@ static int CopyExpanded(connection_struct *conn,
 	return l;
 }
 
-static int CopyAndAdvance(char** dst, char* src, int* n)
+static int CopyAndAdvance(char** dst, const char* src, int* n)
 {
-  int l;
-  if (!src || !dst || !n || !(*dst)) return(0);
-  StrnCpy(*dst,src,*n-1);
-  l = strlen(*dst) + 1;
-  (*dst) += l;
-  (*n) -= l;
-  return l;
+	int l;
+	if (!src || !dst || !n || !(*dst)) return(0);
+	StrnCpy(*dst,src,*n-1);
+	l = strlen(*dst) + 1;
+	(*dst) += l;
+	(*n) -= l;
+	return l;
 }
 
-static int StrlenExpanded(connection_struct *conn, int snum, char* s)
+static int StrlenExpanded(connection_struct *conn, int snum, const char* s)
 {
 	pstring buf;
 	if (!s) return(0);
 	StrnCpy(buf,s,sizeof(buf)/2);
-	pstring_sub(buf,"%S",lp_servicename(snum));
+	dos_to_unix(buf);
+	pstring_sub(buf,"%S",lp_const_servicename_unix(snum));
 	standard_sub_conn(conn,buf,sizeof(buf));
+	unix_to_dos(buf);
 	return strlen(buf) + 1;
 }
 
-static char* Expand(connection_struct *conn, int snum, char* s)
+static char* Expand(connection_struct *conn, int snum, const char* s)
 {
 	static pstring buf;
 	if (!s) return(NULL);
 	StrnCpy(buf,s,sizeof(buf)/2);
-	pstring_sub(buf,"%S",lp_servicename(snum));
+	dos_to_unix(buf);
+	pstring_sub(buf,"%S",lp_const_servicename_unix(snum));
 	standard_sub_conn(conn,buf,sizeof(buf));
+	unix_to_dos(buf);
 	return &buf[0];
 }
 
@@ -458,7 +464,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
 
   PACKI(desc,"W",pjobid_to_rap(snum,queue->job)); /* uJobId */
   if (uLevel == 1) {
-    PACKS(desc,"B21",dos_to_unix_static(queue->fs_user)); /* szUserName */
+    PACKS(desc,"B21",unix_to_dos_static(queue->fs_user)); /* szUserName */
     PACKS(desc,"B","");		/* pad */
     PACKS(desc,"B16","");	/* szNotifyName */
     PACKS(desc,"B10","PM_Q_RAW"); /* szDataType */
@@ -468,23 +474,23 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
     PACKS(desc,"z","");		/* pszStatus */
     PACKI(desc,"D",t); /* ulSubmitted */
     PACKI(desc,"D",queue->size); /* ulSize */
-    PACKS(desc,"z",dos_to_unix_static(queue->fs_file)); /* pszComment */
+    PACKS(desc,"z",unix_to_dos_static(queue->fs_file)); /* pszComment */
   }
   if (uLevel == 2 || uLevel == 3 || uLevel == 4) {
     PACKI(desc,"W",queue->priority);		/* uPriority */
-    PACKS(desc,"z",dos_to_unix_static(queue->fs_user)); /* pszUserName */
+    PACKS(desc,"z",unix_to_dos_static(queue->fs_user)); /* pszUserName */
     PACKI(desc,"W",n+1);		/* uPosition */
     PACKI(desc,"W",printj_status(queue->status)); /* fsStatus */
     PACKI(desc,"D",t); /* ulSubmitted */
     PACKI(desc,"D",queue->size); /* ulSize */
     PACKS(desc,"z","Samba");	/* pszComment */
-    PACKS(desc,"z",dos_to_unix_static(queue->fs_file)); /* pszDocument */
+    PACKS(desc,"z",unix_to_dos_static(queue->fs_file)); /* pszDocument */
     if (uLevel == 3) {
       PACKS(desc,"z","");	/* pszNotifyName */
       PACKS(desc,"z","PM_Q_RAW"); /* pszDataType */
       PACKS(desc,"z","");	/* pszParms */
       PACKS(desc,"z","");	/* pszStatus */
-      PACKS(desc,"z",SERVICE(snum)); /* pszQueue */
+      PACKS(desc,"z",lp_const_servicename_dos(snum)); /* pszQueue */
       PACKS(desc,"z","lpd");	/* pszQProcName */
       PACKS(desc,"z","");	/* pszQProcParms */
       PACKS(desc,"z","NULL"); /* pszDriverName */
@@ -515,7 +521,7 @@ static BOOL get_driver_name(int snum, pstring drivername)
 	NT_PRINTER_INFO_LEVEL *info = NULL;
 	BOOL in_tdb = False;
 
-	get_a_printer (&info, 2, lp_servicename(snum));
+	get_a_printer (&info, 2, lp_servicename_dos(snum));
 	if (info != NULL) {
 		pstrcpy( drivername, info->info_2->drivername);
 		in_tdb = True;
@@ -674,7 +680,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 		}
 		
 		DEBUG(3,("fill_printq_info on <%s> gave %d entries\n",
-		  	  SERVICE(snum),count));
+		  	  lp_const_servicename_unix(snum),count));
 
 	        desc->errcode=NERR_Success;
 		goto done;
@@ -698,12 +704,12 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 	switch (uLevel) {
 	case 1:
 	case 2:
-		PACKS(desc,"B13",SERVICE(snum));
+		PACKS(desc,"B13",lp_const_servicename_dos(snum));
 		break;
 	case 3:
 	case 4:
 	case 5:
-		PACKS(desc,"z",Expand(conn,snum,SERVICE(snum)));
+		PACKS(desc,"z",Expand(conn,snum,lp_const_servicename_dos(snum)));
 		break;
 	case 51:
 		PACKI(desc,"K",printq_status(status->status));
@@ -717,14 +723,14 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 		PACKI(desc,"W",0);		/* until time */
 		PACKS(desc,"z","");		/* pSepFile */
 		PACKS(desc,"z","lpd");	/* pPrProc */
-		PACKS(desc,"z",SERVICE(snum)); /* pDestinations */
+		PACKS(desc,"z",lp_const_servicename_dos(snum)); /* pDestinations */
 		PACKS(desc,"z","");		/* pParms */
 		if (snum < 0) {
 			PACKS(desc,"z","UNKNOWN PRINTER");
 			PACKI(desc,"W",LPSTAT_ERROR);
 		}
 		else if (!status || !status->message[0]) {
-			PACKS(desc,"z",Expand(conn,snum,lp_comment(snum)));
+			PACKS(desc,"z",Expand(conn,snum,lp_comment_dos(snum)));
 			PACKI(desc,"W",LPSTAT_OK); /* status */
 		} else {
 			PACKS(desc,"z",status->message);
@@ -752,7 +758,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 			PACKI(desc,"W",printq_status(status->status)); /* fsStatus */
 		}
 		PACKI(desc,(uLevel == 3 ? "W" : "N"),count);	/* cJobs */
-		PACKS(desc,"z",SERVICE(snum)); /* pszPrinters */
+		PACKS(desc,"z",lp_const_servicename_dos(snum)); /* pszPrinters */
 		get_driver_name(snum,drivername);
 		PACKS(desc,"z",drivername);		/* pszDriverName */
 		PackDriverData(desc);	/* pDriverData */
@@ -899,12 +905,12 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 		return(True);
 	}
  
-	snum = lp_servicenumber(QueueName);
+	snum = lp_servicenumber_dos(QueueName);
 	if (snum < 0 && pcap_printername_ok(QueueName,NULL)) {
-		int pnum = lp_servicenumber(PRINTERS_NAME);
+		int pnum = lp_servicenumber_dos(PRINTERS_NAME);
 		if (pnum >= 0) {
 			lp_add_printer(QueueName,pnum);
-			snum = lp_servicenumber(QueueName);
+			snum = lp_servicenumber_dos(QueueName);
 		}
 	}
   
@@ -1083,6 +1089,7 @@ static BOOL check_server_info(int uLevel, char* id)
   return True;
 }
 
+/* All strings here are in DOS codepage. */
 struct srv_info_struct
 {
   fstring name;
@@ -1496,8 +1503,8 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
   if (!buf)
     {
       len = 0;
-      if (uLevel > 0) len += StrlenExpanded(conn,snum,lp_comment(snum));
-      if (uLevel > 1) len += strlen(lp_pathname(snum)) + 1;
+      if (uLevel > 0) len += StrlenExpanded(conn,snum,lp_comment_dos(snum));
+      if (uLevel > 1) len += strlen(lp_pathname_dos(snum)) + 1;
       if (buflen) *buflen = struct_len;
       if (stringspace) *stringspace = len;
       return struct_len + len;
@@ -1518,7 +1525,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
     }
   if (!baseaddr) baseaddr = p;
   
-  StrnCpy(p,lp_servicename(snum),13);
+  StrnCpy(p,lp_servicename_dos(snum),13);
   
   if (uLevel > 0)
     {
@@ -1526,10 +1533,10 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
       SCVAL(p,13,0);
       type = STYPE_DISKTREE;
       if (lp_print_ok(snum)) type = STYPE_PRINTQ;
-      if (strequal("IPC$",lp_servicename(snum))) type = STYPE_IPC;
+      if (strequal("IPC$",lp_servicename_dos(snum))) type = STYPE_IPC;
       SSVAL(p,14,type);		/* device type */
       SIVAL(p,16,PTR_DIFF(p2,baseaddr));
-      len += CopyExpanded(conn,snum,&p2,lp_comment(snum),&l2);
+      len += CopyExpanded(conn,snum,&p2,lp_comment_dos(snum),&l2);
     }
   
   if (uLevel > 1)
@@ -1538,7 +1545,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
       SSVALS(p,22,-1);		/* max uses */
       SSVAL(p,24,1); /* current uses */
       SIVAL(p,26,PTR_DIFF(p2,baseaddr)); /* local pathname */
-      len += CopyAndAdvance(&p2,lp_pathname(snum),&l2);
+      len += CopyAndAdvance(&p2,lp_pathname_dos(snum),&l2);
       memset(p+30,0,SHPWLEN+2); /* passwd (reserved), pad field */
     }
   
@@ -1982,7 +1989,7 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
 	*rparam = REALLOC(*rparam,*rparam_len);
 	*rdata_len = 0;
 
-	snum = print_queue_snum(QueueName);
+	snum = print_queue_snum_dos(QueueName);
 
 	if (snum == -1) {
 		errcode = NERR_JobNotFound;
@@ -2162,7 +2169,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
       pstring comment;
       uint32 servertype= lp_default_server_announce();
 
-      pstrcpy(comment,string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
+      pstrcpy(comment,string_truncate(lp_serverstring_dos(), MAX_SERVER_STRING_LENGTH));
 
       if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup_dos()))>0) {
 	for (i=0;i<count;i++)
@@ -2524,7 +2531,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
-		pstrcpy(p2, lp_logon_home());
+		pstrcpy(p2, lp_logon_home_dos());
 		standard_sub_conn(conn, p2,*rdata_len-(p2 - *rdata));
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
@@ -2561,14 +2568,14 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SSVAL(p,42,
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		pstrcpy(p2,lp_logon_home());
+		pstrcpy(p2,lp_logon_home_dos());
 		standard_sub_conn(conn, p2,*rdata_len-(p2 - *rdata));
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
 		SSVAL(p,52,0);		/* flags */
 		SIVAL(p,54,PTR_DIFF(p2,*rdata));		/* script_path */
-		pstrcpy(p2,lp_logon_script());
+		pstrcpy(p2,lp_logon_script_dos());
 		standard_sub_conn( conn, p2,*rdata_len-(p2 - *rdata));             
 		p2 = skip_string(p2,1);
 		if (uLevel == 2)
@@ -2716,7 +2723,7 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
 /* made sure all macros are fully substituted and available */
     {
       pstring logon_script;
-      pstrcpy(logon_script,lp_logon_script());
+      pstrcpy(logon_script,lp_logon_script_dos());
       standard_sub_conn( conn, logon_script,sizeof(logon_script) );
       PACKS(&desc,"z", logon_script);		/* script path */
     }
@@ -2874,12 +2881,12 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
   if (uLevel > 2) return False;	/* defined only for uLevel 0,1,2 */
   if (!check_printjob_info(&desc,uLevel,str2)) return False;
 
-  snum = lp_servicenumber(name);
+  snum = lp_servicenumber_dos(name);
   if (snum < 0 && pcap_printername_ok(name,NULL)) {
-    int pnum = lp_servicenumber(PRINTERS_NAME);
+    int pnum = lp_servicenumber_dos(PRINTERS_NAME);
     if (pnum >= 0) {
       lp_add_printer(name,pnum);
-      snum = lp_servicenumber(name);
+      snum = lp_servicenumber_dos(name);
     }
   }
 
@@ -2932,7 +2939,7 @@ static void fill_printdest_info(connection_struct *conn, int snum, int uLevel,
 				struct pack_desc* desc)
 {
   char buf[100];
-  strncpy(buf,SERVICE(snum),sizeof(buf)-1);
+  strncpy(buf,lp_const_servicename_dos(snum),sizeof(buf)-1);
   buf[sizeof(buf)-1] = 0;
   strupper(buf);
   if (uLevel <= 1) {
@@ -2986,12 +2993,12 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   if (strcmp(str1,"zWrLh") != 0) return False;
   if (!check_printdest_info(&desc,uLevel,str2)) return False;
 
-  snum = lp_servicenumber(PrinterName);
+  snum = lp_servicenumber_dos(PrinterName);
   if (snum < 0 && pcap_printername_ok(PrinterName,NULL)) {
-    int pnum = lp_servicenumber(PRINTERS_NAME);
+    int pnum = lp_servicenumber_dos(PRINTERS_NAME);
     if (pnum >= 0) {
       lp_add_printer(PrinterName,pnum);
-      snum = lp_servicenumber(PrinterName);
+      snum = lp_servicenumber_dos(PrinterName);
     }
   }
 

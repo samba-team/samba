@@ -4,6 +4,7 @@
    printing backend routines
    Copyright (C) Tim Potter,            2002
    Copyright (C) Gerald Carter,         2002
+   Copyright (C) Jeremy Allison.	2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,7 +27,7 @@ static TALLOC_CTX *send_ctx;
 
 static struct notify_queue {
 	struct notify_queue *next, *prev;
-	char *printername;
+	char *unix_printername;
 	void *buf;
 	size_t buflen;
 } *notify_queue_head = NULL;
@@ -44,7 +45,7 @@ BOOL print_notify_messages_pending(void)
  Send the batched messages - on a per-printer basis.
 *******************************************************************/
 
-static void print_notify_send_messages_to_printer(const char *printer)
+static void print_notify_send_messages_to_printer(const char *unix_printer)
 {
 	char *buf;
 	struct notify_queue *pq, *pq_next;
@@ -55,7 +56,7 @@ static void print_notify_send_messages_to_printer(const char *printer)
 
 	/* Count the space needed to send the messages. */
 	for (pq = notify_queue_head; pq; pq = pq->next) {
-		if (strequal(printer, pq->printername)) {
+		if (strequal_unix(unix_printer, pq->unix_printername)) {
 			offset += (pq->buflen + 4);
 			msg_count++;
 		}	
@@ -75,7 +76,7 @@ static void print_notify_send_messages_to_printer(const char *printer)
 	for (pq = notify_queue_head; pq; pq = pq_next) {
 		pq_next = pq->next;
 
-		if (strequal(printer, pq->printername)) {
+		if (strequal(unix_printer, pq->unix_printername)) {
 			SIVAL(buf,offset,pq->buflen);
 			offset += 4;
 			memcpy(buf + offset, pq->buf, pq->buflen);
@@ -87,13 +88,13 @@ static void print_notify_send_messages_to_printer(const char *printer)
 	}
 
 	DEBUG(5, ("print_notify_send_messages_to_printer: sending %d print notify message%s to printer %s\n", 
-		  msg_count, msg_count != 1 ? "s" : "", printer));
+		  msg_count, msg_count != 1 ? "s" : "", unix_printer));
 
 	/*
 	 * Get the list of PID's to send to.
 	 */
 
-	if (!print_notify_pid_list(printer, send_ctx, &num_pids, &pid_list))
+	if (!print_notify_pid_list(unix_printer, send_ctx, &num_pids, &pid_list))
 		return;
 
 	for (i = 0; i < num_pids; i++)
@@ -113,7 +114,7 @@ void print_notify_send_messages(void)
 		return;
 
 	while (print_notify_messages_pending())
-		print_notify_send_messages_to_printer(notify_queue_head->printername);
+		print_notify_send_messages_to_printer(notify_queue_head->unix_printername);
 
 	talloc_destroy_pool(send_ctx);
 }
@@ -174,8 +175,8 @@ again:
 	if (!pnqueue)
 		goto fail;
 
-	pnqueue->printername = talloc_strdup(send_ctx, msg->printer);
-	if (!pnqueue->printername)
+	pnqueue->unix_printername = talloc_strdup(send_ctx, msg->printer);
+	if (!pnqueue->unix_printername)
 		 goto fail;
 
 	pnqueue->buf = buf;
@@ -195,7 +196,7 @@ to notify_queue_head\n", msg->type, msg->field, msg->printer));
 	DEBUG(0,("send_spoolss_notify2_msg: Out of memory.\n"));
 }
 
-static void send_notify_field_values(const char *printer_name, uint32 type,
+static void send_notify_field_values(const char *unix_printer_name, uint32 type,
 				     uint32 field, uint32 id, uint32 value1, 
 				     uint32 value2, uint32 flags)
 {
@@ -203,7 +204,7 @@ static void send_notify_field_values(const char *printer_name, uint32 type,
 
 	ZERO_STRUCT(msg);
 
-	fstrcpy(msg.printer, printer_name);
+	fstrcpy(msg.printer, unix_printer_name);
 	msg.type = type;
 	msg.field = field;
 	msg.id = id;
@@ -214,7 +215,7 @@ static void send_notify_field_values(const char *printer_name, uint32 type,
 	send_spoolss_notify2_msg(&msg);
 }
 
-static void send_notify_field_buffer(const char *printer_name, uint32 type,
+static void send_notify_field_buffer(const char *unix_printer_name, uint32 type,
 				     uint32 field, uint32 id, uint32 len,
 				     char *buffer)
 {
@@ -222,7 +223,7 @@ static void send_notify_field_buffer(const char *printer_name, uint32 type,
 
 	ZERO_STRUCT(msg);
 
-	fstrcpy(msg.printer, printer_name);
+	fstrcpy(msg.printer, unix_printer_name);
 	msg.type = type;
 	msg.field = field;
 	msg.id = id;
@@ -234,43 +235,43 @@ static void send_notify_field_buffer(const char *printer_name, uint32 type,
 
 /* Send a message that the printer status has changed */
 
-void notify_printer_status_byname(const char *printer_name, uint32 status)
+void notify_printer_status_byname(const char *unix_printer_name, uint32 status)
 {
 	/* Printer status stored in value1 */
 
-	send_notify_field_values(printer_name, PRINTER_NOTIFY_TYPE, 
+	send_notify_field_values(unix_printer_name, PRINTER_NOTIFY_TYPE, 
 				 PRINTER_NOTIFY_STATUS, 0, 
 				 status, 0, 0);
 }
 
 void notify_printer_status(int snum, uint32 status)
 {
-	const char *printer_name = SERVICE(snum); 
+	const char *printer_name = lp_const_servicename_unix(snum);
 
 	if (printer_name)
 		notify_printer_status_byname(printer_name, status);
 }
 
-void notify_job_status_byname(const char *printer_name, uint32 jobid, uint32 status,
+void notify_job_status_byname(const char *unix_printer_name, uint32 jobid, uint32 status,
 			      uint32 flags)
 {
 	/* Job id stored in id field, status in value1 */
 
-	send_notify_field_values(printer_name, JOB_NOTIFY_TYPE,
+	send_notify_field_values(unix_printer_name, JOB_NOTIFY_TYPE,
 				 JOB_NOTIFY_STATUS, jobid,
 				 status, 0, flags);
 }
 
 void notify_job_status(int snum, uint32 jobid, uint32 status)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *printer_name = lp_const_servicename_unix(snum);
 
 	notify_job_status_byname(printer_name, jobid, status, 0);
 }
 
 void notify_job_total_bytes(int snum, uint32 jobid, uint32 size)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *printer_name = lp_const_servicename_unix(snum);
 
 	/* Job id stored in id field, status in value1 */
 
@@ -281,7 +282,7 @@ void notify_job_total_bytes(int snum, uint32 jobid, uint32 size)
 
 void notify_job_total_pages(int snum, uint32 jobid, uint32 pages)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *printer_name = lp_const_servicename_unix(snum);
 
 	/* Job id stored in id field, status in value1 */
 
@@ -292,7 +293,7 @@ void notify_job_total_pages(int snum, uint32 jobid, uint32 pages)
 
 void notify_job_username(int snum, uint32 jobid, char *name)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *printer_name = lp_const_servicename_unix(snum);
 
 	send_notify_field_buffer(
 		printer_name, JOB_NOTIFY_TYPE, JOB_NOTIFY_USER_NAME,
@@ -301,7 +302,7 @@ void notify_job_username(int snum, uint32 jobid, char *name)
 
 void notify_job_name(int snum, uint32 jobid, char *name)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *printer_name = lp_const_servicename_unix(snum);
 
 	send_notify_field_buffer(
 		printer_name, JOB_NOTIFY_TYPE, JOB_NOTIFY_DOCUMENT,
@@ -310,7 +311,7 @@ void notify_job_name(int snum, uint32 jobid, char *name)
 
 void notify_job_submitted(int snum, uint32 jobid, time_t submitted)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *printer_name = lp_const_servicename_unix(snum);
 
 	send_notify_field_buffer(
 		printer_name, JOB_NOTIFY_TYPE, JOB_NOTIFY_SUBMITTED,
@@ -319,7 +320,7 @@ void notify_job_submitted(int snum, uint32 jobid, time_t submitted)
 
 void notify_printer_driver(int snum, char *driver_name)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *printer_name = lp_const_servicename_unix(snum);
 
 	send_notify_field_buffer(
 		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,
@@ -328,7 +329,7 @@ void notify_printer_driver(int snum, char *driver_name)
 
 void notify_printer_comment(int snum, char *comment)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *printer_name = lp_const_servicename_unix(snum);
 
 	send_notify_field_buffer(
 		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_COMMENT,
@@ -337,7 +338,7 @@ void notify_printer_comment(int snum, char *comment)
 
 void notify_printer_sharename(int snum, char *share_name)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *printer_name = lp_const_servicename_unix(snum);
 
 	send_notify_field_buffer(
 		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SHARE_NAME,
@@ -346,7 +347,7 @@ void notify_printer_sharename(int snum, char *share_name)
 
 void notify_printer_port(int snum, char *port_name)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *printer_name = lp_const_servicename_unix(snum);
 
 	send_notify_field_buffer(
 		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PORT_NAME,
@@ -355,7 +356,7 @@ void notify_printer_port(int snum, char *port_name)
 
 void notify_printer_location(int snum, char *location)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *printer_name = lp_const_servicename_unix(snum);
 
 	send_notify_field_buffer(
 		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_LOCATION,

@@ -308,7 +308,8 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain)
 void split_domain_name(const char *fullname, char *domain, char *name)
 {
 	pstring full_name;
-	char *p, *sep;
+	char *p;
+	const char *sep;
 
 	sep = lp_winbind_separator();
 

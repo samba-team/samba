@@ -405,13 +405,13 @@ static BOOL load_config(BOOL save_def)
   write a config file 
 ****************************************************************************/
 
-static void write_config(FILE *f, BOOL show_defaults, char *(*dos_to_ext)(const char *))
+static void write_config(FILE *f, BOOL show_defaults)
 {
 	fprintf(f, "# Samba config file created using SWAT\n");
 	fprintf(f, "# from %s (%s)\n", cgi_remote_host(), cgi_remote_addr());
 	fprintf(f, "# Date: %s\n\n", timestring(False));
 	
-	lp_dump(f, show_defaults, iNumNonAutoPrintServices, dos_to_ext);	
+	lp_dump(f, show_defaults, iNumNonAutoPrintServices);	
 }
 
 /****************************************************************************
@@ -434,9 +434,9 @@ static int save_reload(int snum)
 		fchmod(fileno(f), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 	}
 
-	write_config(f, False, _dos_to_unix_static);
+	write_config(f, False);
 	if (snum)
-		lp_dump_one(f, False, snum, _dos_to_unix_static);
+		lp_dump_one(f, False, snum);
 	fclose(f);
 
 	lp_killunused(NULL);
@@ -459,16 +459,12 @@ static void commit_parameter(int snum, struct parm_struct *parm, char *v)
 	int i;
 	char *s;
 
-	/* lp_do_parameter() will do unix_to_dos(v). */
-	if(parm->flags & FLAG_DOS_STRING)
-		dos_to_unix(v);
-
 	if (snum < 0 && parm->class == P_LOCAL) {
 		/* this handles the case where we are changing a local
 		   variable globally. We need to change the parameter in 
 		   all shares where it is currently set to the default */
 		for (i=0;i<lp_numservices();i++) {
-			s = lp_servicename(i);
+			s = lp_servicename_unix(i);
 			if (s && (*s) && lp_is_default(i, parm)) {
 				lp_do_parameter(i, parm->label, v);
 			}
@@ -562,7 +558,7 @@ static void viewconfig_page(void)
 	}
 
 	printf("<p><pre>");
-	write_config(stdout, full_view, _dos_to_dos_static);
+	write_config(stdout, full_view);
 	printf("</pre>");
 	printf("</form>\n");
 }
@@ -622,7 +618,7 @@ static void shares_page(void)
 	int advanced = 0;
 
 	if (share)
-		snum = lp_servicenumber(share);
+		snum = lp_servicenumber_unix(share);
 
 	printf("<H2>Share Parameters</H2>\n");
 
@@ -642,15 +638,11 @@ static void shares_page(void)
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
-		/* add_a_service() which is called by lp_copy_service()
-			will do unix_to_dos() conversion, so we need dos_to_unix() before the lp_copy_service(). */
-		pstring unix_share;
-		pstrcpy(unix_share, dos_to_unix_static(share));
 		load_config(False);
-		lp_copy_service(GLOBALS_SNUM, unix_share);
+		lp_copy_service(GLOBALS_SNUM, share);
 		iNumNonAutoPrintServices = lp_numservices();
 		save_reload(0);
-		snum = lp_servicenumber(share);
+		snum = lp_servicenumber_unix(share);
 	}
 
 	printf("<FORM name=\"swatform\" method=post>\n");
@@ -662,7 +654,7 @@ static void shares_page(void)
 	if (snum < 0)
 		printf("<option value=\" \"> \n");
 	for (i=0;i<lp_numservices();i++) {
-		s = lp_servicename(i);
+		s = lp_servicename_unix(i);
 		if (s && (*s) && strcmp(s,"IPC$") && !lp_print_ok(i)) {
 			printf("<option %s value=\"%s\">%s\n", 
 			       (share && strcmp(share,s)==0)?"SELECTED":"",
@@ -952,7 +944,7 @@ static void printers_page(void)
 	int advanced = 0;
 
 	if (share)
-		snum = lp_servicenumber(share);
+		snum = lp_servicenumber_unix(share);
 
 	printf("<H2>Printer Parameters</H2>\n");
 
@@ -983,15 +975,13 @@ static void printers_page(void)
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
 		/* add_a_service() which is called by lp_copy_service()
 			will do unix_to_dos() conversion, so we need dos_to_unix() before the lp_copy_service(). */
-		pstring unix_share;
-		pstrcpy(unix_share, dos_to_unix_static(share));
 		load_config(False);
-		lp_copy_service(GLOBALS_SNUM, unix_share);
+		lp_copy_service(GLOBALS_SNUM, share);
 		iNumNonAutoPrintServices = lp_numservices();
-		snum = lp_servicenumber(share);
+		snum = lp_servicenumber_unix(share);
 		lp_do_parameter(snum, "print ok", "Yes");
 		save_reload(0);
-		snum = lp_servicenumber(share);
+		snum = lp_servicenumber_unix(share);
 	}
 
 	printf("<FORM name=\"swatform\" method=post>\n");
@@ -1002,7 +992,7 @@ static void printers_page(void)
 	if (snum < 0 || !lp_print_ok(snum))
 		printf("<option value=\" \"> \n");
 	for (i=0;i<lp_numservices();i++) {
-		s = lp_servicename(i);
+		s = lp_servicename_unix(i);
 		if (s && (*s) && strcmp(s,"IPC$") && lp_print_ok(i)) {
                     if (i >= iNumNonAutoPrintServices)
                         printf("<option %s value=\"%s\">[*]%s\n",

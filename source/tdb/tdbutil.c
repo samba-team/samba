@@ -197,8 +197,10 @@ BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len, uint32 
 	key.dptr = keyval;
 	key.dsize = len;
 	data = tdb_fetch(tdb, key);
-	if (!data.dptr || data.dsize != sizeof(uint32))
+	if (!data.dptr || data.dsize != sizeof(uint32)) {
+		SAFE_FREE(data.dptr);
 		return False;
+	}
 	
 	*value = IVAL(data.dptr,0);
 	SAFE_FREE(data.dptr);
@@ -423,6 +425,18 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 			if (bufsize >= len)
 				memcpy(buf, s, len);
 			break;
+		case 'F': /* Convert from DOS to UNIX codepage. */
+			{
+				fstring tmp_str;
+				s = va_arg(ap,char *);
+				fstrcpy(tmp_str,s);
+				dos_to_unix(tmp_str);
+				w = strlen(tmp_str);
+				len = w + 1;
+				if (bufsize >= len)
+					memcpy(buf, tmp_str, len);
+				break;
+			}
 		case 'f':
 			s = va_arg(ap,char *);
 			w = strlen(s);
@@ -515,6 +529,14 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 			if (bufsize < len || len > sizeof(fstring))
 				goto no_space;
 			memcpy(s, buf, len);
+			break;
+		case 'F': /* Convert from UNIX to DOS codepage. */
+			s = va_arg(ap,char *);
+			len = strlen(buf) + 1;
+			if (bufsize < len || len > sizeof(fstring))
+				goto no_space;
+			memcpy(s, buf, len);
+			unix_to_dos(s);
 			break;
 		case 'B':
 			i = va_arg(ap, int *);

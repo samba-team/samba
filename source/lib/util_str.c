@@ -291,11 +291,15 @@ BOOL strequal(const char *s1, const char *s2)
 BOOL strequal_unix(const char *s1, const char *s2)
 {
   pstring dos_s1, dos_s2;
-  if (s1 == s2) return(True);
-  if (!s1 || !s2) return(False);
+  if (s1 == s2)
+	  return(True);
+  if (!s1 || !s2)
+	  return(False);
   
-  pstrcpy(dos_s1, unix_to_dos_static(s1));
-  pstrcpy(dos_s2, unix_to_dos_static(s2));
+  pstrcpy(dos_s1, s1);
+  unix_to_dos(dos_s1);
+  pstrcpy(dos_s2, s2);
+  unix_to_dos(dos_s2);
   return(StrCaseCmp(dos_s1,dos_s2)==0);
 }
 
@@ -325,7 +329,8 @@ BOOL strcsequal(const char *s1,const char *s2)
 /***************************************************************************
 Do a case-insensitive, whitespace-ignoring string compare.
 ***************************************************************************/
-int strwicmp(char *psz1, char *psz2)
+
+int strwicmp(const char *psz1, const char *psz2)
 {
 	/* if BOTH strings are NULL, return TRUE, if ONE is NULL return */
 	/* appropriate value. */
@@ -463,6 +468,13 @@ void strupper_unix(char *s)
 {
 	unix_to_dos(s);
 	strupper(s);
+	dos_to_unix(s);
+}
+
+void strlower_unix(char *s)
+{
+	unix_to_dos(s);
+	strlower(s);
 	dos_to_unix(s);
 }
 

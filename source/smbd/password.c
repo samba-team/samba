@@ -630,10 +630,10 @@ BOOL user_ok(char *user,int snum)
 	/* Substitute for service name */
 
 	str_list_copy(&valid_list, lp_valid_users(snum));
-	str_list_substitute(valid_list, "%S", lp_servicename(snum));
+	str_list_substitute(valid_list, "%S", lp_servicename_unix(snum));
 
 	str_list_copy(&invalid_list, lp_invalid_users(snum));
-	str_list_substitute(invalid_list, "%S", lp_servicename(snum));
+	str_list_substitute(invalid_list, "%S", lp_servicename_unix(snum));
 
 	/* User is not ok if they are in the invalid users list */
 
@@ -829,7 +829,7 @@ and given password ok\n", user));
 			pstring user_list;
 			StrnCpy(user_list,lp_username(snum),sizeof(pstring));
 
-			pstring_sub(user_list,"%S",lp_servicename(snum));
+			pstring_sub(user_list,"%S",lp_servicename_unix(snum));
 	  
 			for (auser=strtok(user_list,LIST_SEP); auser && !ok;
 					auser = strtok(NULL,LIST_SEP)) {

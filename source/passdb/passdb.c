@@ -144,10 +144,10 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, struct passwd *pwd)
 	pdb_set_fullname(*new_sam_acct, pwd->pw_gecos);
 	pdb_set_uid(*new_sam_acct, pwd->pw_uid);
 	pdb_set_gid(*new_sam_acct, pwd->pw_gid);
-	pdb_set_profile_path(*new_sam_acct, lp_logon_path(), False);
-	pdb_set_homedir(*new_sam_acct, lp_logon_home(), False);
+	pdb_set_profile_path(*new_sam_acct, lp_logon_path_unix(), False);
+	pdb_set_homedir(*new_sam_acct, lp_logon_home_unix(), False);
 	pdb_set_dir_drive(*new_sam_acct, lp_logon_drive(), False);
-	pdb_set_logon_script(*new_sam_acct, lp_logon_script(), False);
+	pdb_set_logon_script(*new_sam_acct, lp_logon_script_unix(), False);
 	return True;
 }
 

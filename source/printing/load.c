@@ -23,49 +23,54 @@
 
 
 /***************************************************************************
-auto-load printer services
+ Auto-load printer services.
 ***************************************************************************/
+
 void add_all_printers(void)
 {
-	int printers = lp_servicenumber(PRINTERS_NAME);
+	int printers = lp_servicenumber_unix(PRINTERS_NAME);
 
-	if (printers < 0) return;
+	if (printers < 0)
+		return;
 
 	pcap_printer_fn(lp_add_one_printer);
 }
 
 /***************************************************************************
-auto-load some homes and printer services
+ Auto-load some homes and printer services.
 ***************************************************************************/
+
 static void add_auto_printers(void)
 {
 	char *p;
 	int printers;
-	char *str = strdup(lp_auto_services());
+	char *str = strdup(lp_auto_services_dos());
 
-	if (!str) return;
+	if (!str)
+		return;
 
-	printers = lp_servicenumber(PRINTERS_NAME);
+	printers = lp_servicenumber_unix(PRINTERS_NAME);
 
 	if (printers < 0) {
-        SAFE_FREE(str);
-        return;
-    }
+		SAFE_FREE(str);
+		return;
+	}
 	
 	for (p=strtok(str,LIST_SEP);p;p=strtok(NULL,LIST_SEP)) {
-		if (lp_servicenumber(p) >= 0) continue;
+		if (lp_servicenumber_dos(p) >= 0)
+			continue;
 		
-		if (pcap_printername_ok(p,NULL)) {
+		if (pcap_printername_ok(p,NULL))
 			lp_add_printer(p,printers);
-		}
 	}
 
-    SAFE_FREE(str);
+	SAFE_FREE(str);
 }
 
 /***************************************************************************
-load automatic printer services
+ Load automatic printer services.
 ***************************************************************************/
+
 void load_printers(void)
 {
 	add_auto_printers();

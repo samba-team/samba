@@ -38,13 +38,12 @@ TDB_CONTEXT *conn_tdb_ctx(void)
 	return tdb;
 }
 
-static void make_conn_key(connection_struct *conn,char *name, TDB_DATA *pkbuf, struct connections_key *pkey)
+static void make_conn_key(connection_struct *conn,const char *name, TDB_DATA *pkbuf, struct connections_key *pkey)
 {
 	ZERO_STRUCTP(pkey);
 	pkey->pid = sys_getpid();
 	pkey->cnum = conn?conn->cnum:-1;
 	fstrcpy(pkey->name, name);
-	dos_to_unix(pkey->name);           /* Convert key to unix-codepage */
 
 	pkbuf->dptr = (char *)pkey;
 	pkbuf->dsize = sizeof(*pkey);
@@ -54,7 +53,7 @@ static void make_conn_key(connection_struct *conn,char *name, TDB_DATA *pkbuf, s
  Delete a connection record.
 ****************************************************************************/
 
-BOOL yield_connection(connection_struct *conn,char *name)
+BOOL yield_connection(connection_struct *conn,const char *unix_name)
 {
 	struct connections_key key;
 	TDB_DATA kbuf;
@@ -62,14 +61,14 @@ BOOL yield_connection(connection_struct *conn,char *name)
 	if (!tdb)
 		return False;
 
-	DEBUG(3,("Yielding connection to %s\n",name));
+	DEBUG(3,("Yielding connection to %s\n",unix_name));
 
-	make_conn_key(conn, name, &kbuf, &key);
+	make_conn_key(conn, unix_name, &kbuf, &key);
 
 	if (tdb_delete(tdb, kbuf) != 0) {
 		int dbg_lvl = (!conn && (tdb_error(tdb) == TDB_ERR_NOEXIST)) ? 3 : 0;
 		DEBUG(dbg_lvl,("yield_connection: tdb_delete for name %s failed with error %s.\n",
-			name, tdb_errorstr(tdb) ));
+			unix_name, tdb_errorstr(tdb) ));
 		return (False);
 	}
 
@@ -79,7 +78,7 @@ BOOL yield_connection(connection_struct *conn,char *name)
 struct count_stat {
 	pid_t mypid;
 	int curr_connections;
-	char *name;
+	fstring name;
 	BOOL Clear;
 };
 
@@ -110,7 +109,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 		return 0;
 	}
 
-	if (strequal(crec.name, cs->name))
+	if (strequal_unix(crec.name, cs->name))
 		cs->curr_connections++;
 
 	return 0;
@@ -120,7 +119,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
  Claim an entry in the connections database.
 ****************************************************************************/
 
-BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOOL Clear, uint32 msg_flags)
+BOOL claim_connection(connection_struct *conn,const char *unix_name,int max_connections,BOOL Clear, uint32 msg_flags)
 {
 	struct connections_key key;
 	struct connections_data crec;
@@ -142,7 +141,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 
 		cs.mypid = sys_getpid();
 		cs.curr_connections = 0;
-		cs.name = lp_servicename(SNUM(conn));
+		fstrcpy(cs.name, lp_servicename_unix(SNUM(conn)));
 		cs.Clear = Clear;
 
 		/*
@@ -158,14 +157,14 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 
 		if (cs.curr_connections >= max_connections) {
 			DEBUG(1,("claim_connection: Max connections (%d) exceeded for %s\n",
-				max_connections, name ));
+				max_connections, unix_name ));
 			return False;
 		}
 	}
 
-	DEBUG(5,("claiming %s %d\n",name,max_connections));
+	DEBUG(5,("claiming %s %d\n",unix_name,max_connections));
 
-	make_conn_key(conn, name, &kbuf, &key);
+	make_conn_key(conn, unix_name, &kbuf, &key);
 
 	/* fill in the crec */
 	ZERO_STRUCT(crec);
@@ -176,12 +175,13 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		crec.uid = conn->uid;
 		crec.gid = conn->gid;
 		StrnCpy(crec.name,
-			lp_servicename(SNUM(conn)),sizeof(crec.name)-1);
+			lp_servicename_unix(SNUM(conn)),sizeof(crec.name)-1);
 	}
 	crec.start = time(NULL);
 	crec.bcast_msg_flags = msg_flags;
 
 	StrnCpy(crec.machine,remote_machine,sizeof(crec.machine)-1);
+	dos_to_unix(crec.machine);
 	StrnCpy(crec.addr,conn?conn->client_address:client_addr(),sizeof(crec.addr)-1);
 
 	dbuf.dptr = (char *)&crec;

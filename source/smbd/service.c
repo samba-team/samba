@@ -79,17 +79,17 @@ BOOL set_current_service(connection_struct *conn,BOOL do_chdir)
  Add a home service. Returns the new service number or -1 if fail.
 ****************************************************************************/
 
-int add_home_service(char *service, char *homedir)
+int add_home_service(const char *dos_service, const char *dos_homedir)
 {
 	int iHomeService;
 	int iService;
-	fstring new_service;
+	fstring dos_new_service;
 	char *usr_p = NULL;
 
-	if (!service || !homedir)
+	if (!dos_service || !dos_homedir)
 		return -1;
 
-	if ((iHomeService = lp_servicenumber(HOMES_NAME)) < 0)
+	if ((iHomeService = lp_servicenumber_dos(HOMES_NAME)) < 0)
 		return -1;
 
 	/*
@@ -99,13 +99,13 @@ int add_home_service(char *service, char *homedir)
 	 * include any macros.
 	 */
 
-	fstrcpy(new_service, service); 
+	fstrcpy(dos_new_service, dos_service); 
 
-	if ((usr_p = strchr(service,*lp_winbind_separator())) != NULL)
-		fstrcpy(new_service, usr_p+1);
+	if ((usr_p = strchr(dos_service,*lp_winbind_separator())) != NULL)
+		fstrcpy(dos_new_service, usr_p+1);
 
-	lp_add_home(new_service,iHomeService,homedir);
-	iService = lp_servicenumber(new_service);
+	lp_add_home(dos_new_service,iHomeService,dos_homedir);
+	iService = lp_servicenumber_dos(dos_new_service);
 
 	return iService;
 }
@@ -114,18 +114,21 @@ int add_home_service(char *service, char *homedir)
  Find a service entry. service is always in dos codepage.
 ****************************************************************************/
 
-int find_service(char *service)
+int find_service(char *dos_service)
 {
    int iService;
+   fstring unix_service;
 
-   all_string_sub(service,"\\","/",0);
+   all_string_sub(dos_service,"\\","/",0);
+   fstrcpy(unix_service, dos_service);
+   dos_to_unix(unix_service);
 
-   iService = lp_servicenumber(service);
+   iService = lp_servicenumber_dos(dos_service);
 
    /* now handle the special case of a home directory */
    if (iService < 0)
    {
-      char *phome_dir = get_user_service_home_dir(service);
+      char *phome_dir = get_user_service_home_dir(unix_service);
 
       if(!phome_dir)
       {
@@ -133,14 +136,15 @@ int find_service(char *service)
          * Try mapping the servicename, it may
          * be a Windows to unix mapped user name.
          */
-        if(map_username(service))
-          phome_dir = get_user_service_home_dir(service);
+        if(map_username(unix_service))
+          phome_dir = get_user_service_home_dir(unix_service);
+	fstrcpy(dos_service, unix_service);
       }
 
-      DEBUG(3,("checking for home directory %s gave %s\n",service,
+      DEBUG(3,("checking for home directory %s gave %s\n",unix_service,
             phome_dir?phome_dir:"(NULL)"));
 
-      iService = add_home_service(service,phome_dir);
+      iService = add_home_service(dos_service,phome_dir);
    }
 
    /* If we still don't have a service, attempt to add it as a printer. */
@@ -148,23 +152,23 @@ int find_service(char *service)
    {
       int iPrinterService;
 
-      if ((iPrinterService = lp_servicenumber(PRINTERS_NAME)) >= 0)
+      if ((iPrinterService = lp_servicenumber_dos(PRINTERS_NAME)) >= 0)
       {
          char *pszTemp;
 
-         DEBUG(3,("checking whether %s is a valid printer name...\n", service));
-         pszTemp = PRINTCAP;
-         if ((pszTemp != NULL) && pcap_printername_ok(service, pszTemp))
+         DEBUG(3,("checking whether %s is a valid printer name...\n", dos_service));
+         pszTemp = lp_printcapname();
+         if ((pszTemp != NULL) && pcap_printername_ok(dos_service, pszTemp))
          {
-            DEBUG(3,("%s is a valid printer name\n", service));
-            DEBUG(3,("adding %s as a printer service\n", service));
-            lp_add_printer(service,iPrinterService);
-            iService = lp_servicenumber(service);
+            DEBUG(3,("%s is a valid printer name\n", dos_service));
+            DEBUG(3,("adding %s as a printer service\n", dos_service));
+            lp_add_printer(dos_service,iPrinterService);
+            iService = lp_servicenumber_dos(dos_service);
             if (iService < 0)
-               DEBUG(0,("failed to add %s as a printer service!\n", service));
+               DEBUG(0,("failed to add %s as a printer service!\n", dos_service));
          }
          else
-            DEBUG(3,("%s is not a valid printer name\n", service));
+            DEBUG(3,("%s is not a valid printer name\n", dos_service));
       }
    }
 
@@ -176,10 +180,10 @@ int find_service(char *service)
    /* just possibly it's a default service? */
    if (iService < 0) 
    {
-     char *pdefservice = lp_defaultservice();
+     const char *pdefservice = lp_defaultservice_dos();
      if (pdefservice && *pdefservice && 
-	 !strequal(pdefservice,service) &&
-	 !strstr(service,".."))
+	 !strequal(pdefservice,dos_service) &&
+	 !strstr(dos_service,".."))
      {
        /*
         * We need to do a local copy here as lp_defaultservice() 
@@ -192,8 +196,8 @@ int find_service(char *service)
        iService = find_service(defservice);
        if (iService >= 0)
        {
-         all_string_sub(service,"_","/",0);
-         iService = lp_add_service(service,iService);
+         all_string_sub(dos_service,"_","/",0);
+         iService = lp_add_service(dos_service,iService);
        }
      }
    }
@@ -201,12 +205,12 @@ int find_service(char *service)
    if (iService >= 0)
      if (!VALID_SNUM(iService))
      {
-       DEBUG(0,("Invalid snum %d for %s\n",iService,service));
+       DEBUG(0,("Invalid snum %d for %s\n",iService,dos_service));
        iService = -1;
      }
 
    if (iService < 0)
-     DEBUG(3,("find_service() failed to find service %s\n", service));
+     DEBUG(3,("find_service() failed to find service %s\n", dos_service));
 
    return (iService);
 }
@@ -359,7 +363,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		char **list;
 
 		str_list_copy(&list, lp_readlist(snum));
-		str_list_substitute(list, "%S", lp_servicename(snum));
+		str_list_substitute(list, "%S", lp_servicename_unix(snum));
 
 		if (user_in_plist(user, list)) {
 			DEBUG(10,("make_connection: user in read list makes share read only\n"));
@@ -369,7 +373,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		str_list_free(&list);
 
 		str_list_copy(&list, lp_writelist(snum));
-		str_list_substitute(list, "%S", lp_servicename(snum));
+		str_list_substitute(list, "%S", lp_servicename_unix(snum));
 
 		if (user_in_plist(user, list)) {
 			DEBUG(10,("make_connection: user in write list makes share writable.\n"));
@@ -492,8 +496,9 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	{
 		pstring s;
-		pstrcpy(s,lp_pathname(snum));
+		pstrcpy(s,lp_pathname_unix(snum));
 		standard_sub_conn(conn,s,sizeof(s));
+		unix_to_dos(s);
 		string_set(&conn->connectpath,s);
 		DEBUG(3,("Connect path is %s\n",s));
 	}
@@ -509,7 +514,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	/* check number of connections */
 	if (!claim_connection(conn,
-			      lp_servicename(SNUM(conn)),
+			      lp_servicename_unix(SNUM(conn)),
 			      lp_max_connections(SNUM(conn)),
 			      False,0)) {
 		DEBUG(1,("too many connections - rejected\n"));
@@ -537,7 +542,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				*ecode = ERRaccess;
 				DEBUG(0,( "make_connection: connection to %s denied due to security descriptor.\n",
 					service ));
-				yield_connection(conn, lp_servicename(SNUM(conn)));
+				yield_connection(conn, lp_servicename_unix(SNUM(conn)));
 				conn_free(conn);
 				return NULL;
 			} else {
@@ -548,8 +553,8 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	/* Initialise VFS function pointers */
 
 	if (!smbd_vfs_init(conn)) {
-		DEBUG(0, ("smbd_vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
-		yield_connection(conn, lp_servicename(SNUM(conn)));
+		DEBUG(0, ("smbd_vfs_init failed for service %s\n", lp_servicename_unix(SNUM(conn))));
+		yield_connection(conn, lp_servicename_unix(SNUM(conn)));
 		conn_free(conn);
 		return NULL;
 	}
@@ -563,7 +568,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
-			yield_connection(conn, lp_servicename(SNUM(conn)));
+			yield_connection(conn, lp_servicename_unix(SNUM(conn)));
 			conn_free(conn);
 			*ecode = ERRsrverror;
 			return NULL;
@@ -572,7 +577,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	
 	if (!change_to_user(conn, conn->vuid)) {
 		DEBUG(0,("Can't become connected user!\n"));
-		yield_connection(conn, lp_servicename(SNUM(conn)));
+		yield_connection(conn, lp_servicename_unix(SNUM(conn)));
 		conn_free(conn);
 		*ecode = ERRbadpw;
 		return NULL;
@@ -586,7 +591,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
-			yield_connection(conn, lp_servicename(SNUM(conn)));
+			yield_connection(conn, lp_servicename_unix(SNUM(conn)));
 			conn_free(conn);
 			*ecode = ERRsrverror;
 			return NULL;
@@ -609,7 +614,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			 remote_machine, conn->client_address,
 			 conn->connectpath,strerror(errno)));
 		change_to_root_user();
-		yield_connection(conn, lp_servicename(SNUM(conn)));
+		yield_connection(conn, lp_servicename_unix(SNUM(conn)));
 		conn_free(conn);
 		*ecode = ERRnosuchshare;
 		return NULL;
@@ -619,7 +624,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	if (stat(conn->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
 		DEBUG(0,("%s is not a directory\n", conn->connectpath));
 		change_to_root_user();
-		yield_connection(conn, lp_servicename(SNUM(conn)));
+		yield_connection(conn, lp_servicename_unix(SNUM(conn)));
 		conn_free(conn);
 		*ecode = ERRnosuchshare;
 		return NULL;
@@ -646,7 +651,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
 		dbgtext( "%s (%s) ", remote_machine, conn->client_address );
-		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
+		dbgtext( "connect to service %s ", lp_servicename_unix(SNUM(conn)) );
 		dbgtext( "as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
 		dbgtext( "(pid %d)\n", (int)sys_getpid() );
@@ -657,9 +662,9 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	
 	/* Add veto/hide lists */
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
-		set_namearray( &conn->veto_list, lp_veto_files(SNUM(conn)));
-		set_namearray( &conn->hide_list, lp_hide_files(SNUM(conn)));
-		set_namearray( &conn->veto_oplock_list, lp_veto_oplocks(SNUM(conn)));
+		set_namearray( &conn->veto_list, lp_veto_files_dos(SNUM(conn)));
+		set_namearray( &conn->hide_list, lp_hide_files_dos(SNUM(conn)));
+		set_namearray( &conn->veto_oplock_list, lp_veto_oplocks_dos(SNUM(conn)));
 	}
 	
 	/* Invoke VFS make connection hook */
@@ -685,7 +690,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
 				 remote_machine,conn->client_address,
-				 lp_servicename(SNUM(conn))));
+				 lp_servicename_unix(SNUM(conn))));
 
 	if (conn->vfs_ops.disconnect != NULL) {
 
@@ -695,7 +700,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    
 	}
 
-	yield_connection(conn, lp_servicename(SNUM(conn)));
+	yield_connection(conn, lp_servicename_unix(SNUM(conn)));
 
 	file_close_conn(conn);
 	dptr_closecnum(conn);

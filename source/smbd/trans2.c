@@ -1344,7 +1344,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 	uint16 info_level;
 	int data_len;
 	SMB_STRUCT_STAT st;
-	char *vname = volume_label(SNUM(conn));
+	const char *vname = volume_label_dos(SNUM(conn));
 	int snum = SNUM(conn);
 	char *fstype = lp_fstype(SNUM(conn));
 
@@ -1392,7 +1392,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			 * Add volume serial number - hash of a combination of
 			 * the called hostname and the service name.
 			 */
-			SIVAL(pdata,0,str_checksum(lp_servicename(snum)) ^ (str_checksum(local_machine)<<16) );
+			SIVAL(pdata,0,str_checksum(lp_servicename_dos(snum)) ^ (str_checksum(local_machine)<<16) );
 			SCVAL(pdata,l2_vol_cch,volname_len);
 			StrnCpy(pdata+l2_vol_szVolLabel,vname,volname_len);
 			DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",
@@ -1435,7 +1435,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			 * Add volume serial number - hash of a combination of
 			 * the called hostname and the service name.
 			 */
-			SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ 
+			SIVAL(pdata,8,str_checksum(lp_servicename_dos(snum)) ^ 
 				(str_checksum(local_machine)<<16));
 
 			/* NT4 always serves this up as unicode but expects it to be
@@ -3115,7 +3115,7 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, 
 
 		SSVAL(pdata,0,fsp->print_jobid);                     /* Job number */
 		StrnCpy(pdata+2, global_myname_dos(), 15);           /* Our NetBIOS name */
-		StrnCpy(pdata+18, lp_servicename(SNUM(conn)), 13); /* Service name */
+		StrnCpy(pdata+18, lp_servicename_dos(SNUM(conn)), 13); /* Service name */
 		send_trans2_replies(outbuf,bufsize,*pparams,0,*ppdata,32);
 		return(-1);
 	} else {

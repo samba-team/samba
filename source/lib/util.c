@@ -237,10 +237,10 @@ const char *my_netbios_names_unix(int i)
 	return smb_my_netbios_names_unix[i];
 }
 
-BOOL set_netbios_aliases(char *str)
+BOOL set_netbios_aliases(const char *str)
 {
         int namecount;
-        char *p = str;
+        const char *p = str;
         pstring nbname;
 
         /* Work out the max number of netbios aliases that we have */
@@ -613,7 +613,7 @@ void unix_clean_name(char *s)
 /****************************************************************************
   make a dir struct
 ****************************************************************************/
-void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date)
+void make_dir_struct(char *buf,const char *mask,const char *fname,SMB_OFF_T size,int mode,time_t date)
 {  
   char *p;
   pstring mask2;

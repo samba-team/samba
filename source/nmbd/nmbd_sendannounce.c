@@ -499,7 +499,7 @@ void announce_remote(time_t t)
   if (!*s)
     return;
 
-  comment = string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH);
+  comment = string_truncate(lp_serverstring_dos(), MAX_SERVER_STRING_LENGTH);
 
   for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) 
   {

@@ -91,7 +91,7 @@ int smbrun(char *cmd, int *outfd)
 			*outfd = -1;
 		}
 		return errno;
-    }
+	}
 
 	if (pid) {
 		/*
