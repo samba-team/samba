@@ -379,7 +379,7 @@ static NTSTATUS cmd_samr_query_group(struct cli_state *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 info_level = 1;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
-	GROUP_INFO_CTR group_ctr;
+	GROUP_INFO_CTR *group_ctr;
 	fstring			server;	
 	uint32 group_rid;
 	
@@ -427,7 +427,7 @@ static NTSTATUS cmd_samr_query_group(struct cli_state *cli,
 		goto done;
 	}
 
-	display_group_info_ctr(&group_ctr);
+	display_group_info_ctr(group_ctr);
 
 done:
 	return result;
