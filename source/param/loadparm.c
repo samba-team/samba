@@ -1495,7 +1495,7 @@ static char *lp_string(const char *s, BOOL sub_dos)
 	char *ret;
 
 	if (!lp_talloc)
-		lp_talloc = talloc_init();
+		lp_talloc = talloc_init_named("lp_string");
 
 	ret = (char *)talloc(lp_talloc, len + 100);	/* leave room for substitution */
 

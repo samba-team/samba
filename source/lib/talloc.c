@@ -117,7 +117,7 @@ static void talloc_disenroll(TALLOC_CTX *t)
 
 
 /** Create a new talloc context. **/
-TALLOC_CTX *talloc_init(void)
+static TALLOC_CTX *talloc_init(void)
 {
 	TALLOC_CTX *t;
 

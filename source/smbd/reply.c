@@ -1383,7 +1383,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
       *p = 0;
 
     if (strlen(directory) == 0)
-      pstrcpy(directory,"./");
+      pstrcpy(directory,".");
     memset((char *)status,'\0',21);
     SCVAL(status,0,(dirtype & 0x1F));
   }

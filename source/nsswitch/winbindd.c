@@ -67,6 +67,25 @@ static BOOL reload_services_file(BOOL test)
 	return(ret);
 }
 
+/*******************************************************************
+ Print out all talloc memory info.
+********************************************************************/
+
+void return_all_talloc_info(int msg_type, pid_t src_pid, void *buf, size_t len)
+{
+	TALLOC_CTX *ctx = talloc_init_named("info context");
+	char *info = NULL;
+
+	if (!ctx)
+		return;
+
+	info = talloc_describe_all(ctx);
+	if (info)
+		DEBUG(10,(info));
+	message_send_pid(src_pid, MSG_POOL_USAGE, info, info ? strlen(info) : 0, True);
+	talloc_destroy(ctx);
+}
+
 #if DUMP_CORE
 
 /**************************************************************************** **
@@ -897,6 +916,8 @@ int main(int argc, char **argv)
 		DEBUG(0, ("unable to initialise messaging system\n"));
 		exit(1);
 	}
+
+	message_register(MSG_REQ_POOL_USAGE, return_all_talloc_info);
 
 	/* Loop waiting for requests */
 

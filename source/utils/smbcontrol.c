@@ -36,6 +36,7 @@ static struct {
 	{"close-share", MSG_SMB_FORCE_TDIS},
 	{"printnotify", MSG_PRINTER_NOTIFY2 },
 	{"drvupgrade", MSG_PRINTER_DRVUPGRADE},
+	{"tallocdump", MSG_REQ_POOL_USAGE},
 	{NULL, -1}
 };
 
@@ -68,8 +69,10 @@ static void usage(BOOL doexit)
 
 static int pong_count;
 static BOOL got_level;
+static BOOL got_pool;
 static BOOL pong_registered = False;
 static BOOL debuglevel_registered = False;
+static BOOL poolusage_registered = False;
 static BOOL profilelevel_registered = False;
 
 
@@ -80,6 +83,22 @@ void pong_function(int msg_type, pid_t src, void *buf, size_t len)
 {
 	pong_count++;
 	printf("PONG from PID %u\n",(unsigned int)src);
+}
+
+/****************************************************************************
+Prints out the current talloc list.
+****************************************************************************/
+void tallocdump_function(int msg_type, pid_t src, void *buf, size_t len)
+{
+	char *info = (char *)buf;
+
+	printf("Current talloc contexts for process %u\n", (unsigned int)src );
+	if (len == 0)
+		printf("None returned\n");
+	else
+		printf(info);
+	printf("\n");
+	got_pool = True;
 }
 
 /****************************************************************************
@@ -272,6 +291,25 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 				message_dispatch();
 				if ((time(NULL) - timeout_start) > MAX_WAIT) {
 					fprintf(stderr,"profilelevel timeout\n");
+					break;
+				}
+			}
+		}
+		break;
+
+	case MSG_REQ_POOL_USAGE:
+		if (!poolusage_registered) {
+		    message_register(MSG_POOL_USAGE, tallocdump_function);
+		    poolusage_registered = True;
+		}
+		got_pool = False;
+		retval = send_message(dest, MSG_REQ_POOL_USAGE, NULL, 0, True);
+		if (retval) {
+			timeout_start = time(NULL);
+			while (!got_pool) {
+				message_dispatch();
+				if ((time(NULL) - timeout_start) > MAX_WAIT) {
+					fprintf(stderr,"tallocdump timeout\n");
 					break;
 				}
 			}

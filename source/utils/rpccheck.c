@@ -39,7 +39,7 @@ main()
 	setup_logging("", True);
 	DEBUGLEVEL=10;
 
-	ctx=talloc_init();
+	ctx=talloc_init_named("main");
 	if (!ctx)
 		exit(1);
 

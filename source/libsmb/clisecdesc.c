@@ -75,6 +75,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 /****************************************************************************
   set the security descriptor for a open file
  ****************************************************************************/
+
 BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 {
 	char param[8];
@@ -84,7 +85,7 @@ BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 	prs_struct pd;
 	BOOL ret = False;
 
-	if ((mem_ctx = talloc_init()) == NULL) {
+	if ((mem_ctx = talloc_init_named("cli_set_secdesc")) == NULL) {
 		DEBUG(0,("talloc_init failed.\n"));
 		goto cleanup;
 	}

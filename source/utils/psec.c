@@ -192,7 +192,7 @@ int psec_getsec(char *printer)
 
 	slprintf(keystr, sizeof(keystr) - 1, "SECDESC/%s", printer);
 
-	mem_ctx = talloc_init();
+	mem_ctx = talloc_init_named("psec_getsec");
 
 	if (!mem_ctx) {
 		printf("memory allocation error\n");
@@ -277,7 +277,7 @@ int psec_setsec(char *printer)
 
 	ZERO_STRUCT(ps);
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init_named("psec_setsec"))) {
 		printf("memory allocation error\n");
 		result = 1;
 		goto done;

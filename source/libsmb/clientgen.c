@@ -219,7 +219,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;
 
-	if ((cli->mem_ctx = talloc_init()) == NULL)
+	if ((cli->mem_ctx = talloc_init_named("cli->mem_ctx for cli %p", cli)) == NULL)
                 goto error;
 
 	memset(cli->outbuf, 0, cli->bufsize);

@@ -827,7 +827,7 @@ You can string acls together with spaces, commas or newlines\n\
 	enum chown_mode change_mode = REQUEST_NONE;
 	int result;
 
-	ctx=talloc_init();
+	ctx=talloc_init_named("main");
 
 	setlinebuf(stdout);
 

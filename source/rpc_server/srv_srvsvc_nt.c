@@ -231,7 +231,7 @@ static BOOL set_share_security(TALLOC_CTX *ctx, const char *share_name, SEC_DESC
 	fstring key;
 	BOOL ret = False;
 
-	mem_ctx = talloc_init();
+	mem_ctx = talloc_init_named("set_share_security");
 	if (mem_ctx == NULL)
 		return False;
 
@@ -322,7 +322,7 @@ BOOL share_access_check(connection_struct *conn, int snum, uint16 vuid, uint32 d
 	user_struct *vuser = get_valid_user_struct(vuid);
 	BOOL ret = True;
 
-	mem_ctx = talloc_init();
+	mem_ctx = talloc_init_named("share_access_check");
 	if (mem_ctx == NULL)
 		return False;
 

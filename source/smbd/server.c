@@ -396,6 +396,25 @@ BOOL reload_services(BOOL test)
 	return(ret);
 }
 
+/*******************************************************************
+ Print out all talloc memory info.
+********************************************************************/
+
+void return_all_talloc_info(int msg_type, pid_t src_pid, void *buf, size_t len)
+{
+	TALLOC_CTX *ctx = talloc_init_named("info context");
+	char *info = NULL;
+
+	if (!ctx)
+		return;
+
+	info = talloc_describe_all(ctx);
+	if (info)
+		DEBUG(10,(info));
+	message_send_pid(src_pid, MSG_POOL_USAGE, info, info ? strlen(info) : 0, True);
+	talloc_destroy(ctx);
+}
+
 #if DUMP_CORE
 /*******************************************************************
  Prepare to dump a core file - carefully !
@@ -814,6 +833,8 @@ static void usage(char *pname)
 		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
 		exit(1);
 	}
+
+	message_register(MSG_REQ_POOL_USAGE, return_all_talloc_info);
 
 	if (!open_sockets(is_daemon,interactive,port))
 		exit(1);

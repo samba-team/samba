@@ -1198,7 +1198,7 @@ static NTSTATUS cmd_samr_query_sec_obj(struct cli_state *cli,
 	SEC_DESC_BUF *sec_desc_buf=NULL;
 	BOOL domain = False;
 
-	ctx=talloc_init();
+	ctx=talloc_init_named("cmd_samr_query_sec_obj");
 	
 	if (argc > 2) {
 		printf("Usage: %s [rid|-d]\n", argv[0]);

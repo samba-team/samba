@@ -1088,7 +1088,7 @@ static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 security
 	 * Init the parse struct we will unmarshall from.
 	 */
 
-	if ((mem_ctx = talloc_init()) == NULL) {
+	if ((mem_ctx = talloc_init_named("set_sd")) == NULL) {
 		DEBUG(0,("set_sd: talloc_init failed.\n"));
 		*pdef_class = ERRDOS;
 		*pdef_code = ERRnomem;
@@ -1665,7 +1665,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   *ppparams = params;
 
-  if ((mem_ctx = talloc_init()) == NULL) {
+  if ((mem_ctx = talloc_init_named("call_nt_transact_query_security_desc")) == NULL) {
     DEBUG(0,("call_nt_transact_query_security_desc: talloc_init failed.\n"));
     return ERROR_DOS(ERRDOS,ERRnomem);
   }

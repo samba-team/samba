@@ -325,7 +325,7 @@ static int join_domain_byuser(char *domain, char *remote,
 	ZERO_STRUCT(creds);
 	ZERO_STRUCT(dest_ip); /* Make sure no nasty surprises */
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init_named("join_domain_byuser"))) {
 		DEBUG(0, ("Could not initialise talloc context\n"));
 		goto done;
 	}

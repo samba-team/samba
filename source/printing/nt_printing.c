@@ -3509,7 +3509,7 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, uint8 *data, ui
 		 * saved to tdb.
 		 */
 
-		if ((ctx = talloc_init()) == NULL)
+		if ((ctx = talloc_init_named("save_driver_init_2")) == NULL)
 			return WERR_NOMEM;
 
 		if ((nt_devmode = (NT_DEVICEMODE*)malloc(sizeof(NT_DEVICEMODE))) == NULL) {
@@ -4177,7 +4177,7 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 	fstring key;
 	WERROR status;
 
-	mem_ctx = talloc_init();
+	mem_ctx = talloc_init_named("nt_printing_setsec");
 	if (mem_ctx == NULL)
 		return WERR_NOMEM;
 
@@ -4534,7 +4534,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
 	/* Get printer security descriptor */
 
-	if(!(mem_ctx = talloc_init())) {
+	if(!(mem_ctx = talloc_init_named("print_access_check"))) {
 		errno = ENOMEM;
 		return False;
 	}
