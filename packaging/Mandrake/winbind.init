@@ -83,7 +83,7 @@ case "$1" in
   	mdkstatus
 	;;
   condrestart)
-  	[ -f /var/lock/subsys/winbind ] && restart || :
+  	[ -f /var/lock/subsys/winbindd ] && restart || :
 	;;
   *)
 	echo "Usage: $0 {start|stop|restart|status|condrestart}"
