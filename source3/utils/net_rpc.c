@@ -1623,10 +1623,10 @@ static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
 	rpcstr_pull_unistr2_fstring(remark, &info1->info_1_str.uni_remark);
 
 	if (opt_long_list_entries) {
-		d_printf("%-12.12s %-8.8s %-50.50s\n",
+		d_printf("%-12s %-8.8s %-50s\n",
 			 netname, share_type[info1->info_1.type], remark);
 	} else {
-		d_printf("%-12.12s\n", netname);
+		d_printf("%s\n", netname);
 	}
 
 }
