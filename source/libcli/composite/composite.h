@@ -115,3 +115,20 @@ struct smb_composite_connect {
 	} out;
 };
 
+
+/*
+  generic session setup interface that takes care of which
+  session setup varient to use
+*/
+struct smb_composite_sesssetup {
+	struct {
+		uint32_t sesskey;
+		uint32_t capabilities;
+		const char *password;
+		const char *user;
+		const char *domain;
+	} in;
+	struct {
+		uint16_t vuid;
+	} out;		
+};

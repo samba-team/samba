@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/composite/composite.h"
 
 #define BASEDIR "\\rawcontext"
 
@@ -61,7 +62,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	struct smbcli_session *session2;
 	struct smbcli_session *session3;
 	struct smbcli_tree *tree;
-	union smb_sesssetup setup;
+	struct smb_composite_sesssetup setup;
 	union smb_open io;
 	union smb_write wr;
 	union smb_close cl;
@@ -82,33 +83,31 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("create a second security context on the same transport\n");
 	session = smbcli_session_init(cli->transport);
 
-	setup.generic.level = RAW_SESSSETUP_GENERIC;
-	setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
-	setup.generic.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.generic.in.password = password;
-	setup.generic.in.user = username;
-	setup.generic.in.domain = domain;
+	setup.in.sesskey = cli->transport->negotiate.sesskey;
+	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
+	setup.in.password = password;
+	setup.in.user = username;
+	setup.in.domain = domain;
 
-	status = smb_raw_session_setup(session, mem_ctx, &setup);
+	status = smb_composite_sesssetup(session, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	session->vuid = setup.generic.out.vuid;
+	session->vuid = setup.out.vuid;
 
 	printf("create a third security context on the same transport, with vuid set\n");
 	session2 = smbcli_session_init(cli->transport);
 
 	session2->vuid = session->vuid;
-	setup.generic.level = RAW_SESSSETUP_GENERIC;
-	setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
-	setup.generic.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.generic.in.password = password;
-	setup.generic.in.user = username;
-	setup.generic.in.domain = domain;
+	setup.in.sesskey = cli->transport->negotiate.sesskey;
+	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
+	setup.in.password = password;
+	setup.in.user = username;
+	setup.in.domain = domain;
 
-	status = smb_raw_session_setup(session2, mem_ctx, &setup);
+	status = smb_composite_sesssetup(session2, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	session2->vuid = setup.generic.out.vuid;
+	session2->vuid = setup.out.vuid;
 	printf("vuid1=%d vuid2=%d vuid3=%d\n", cli->session->vuid, session->vuid, session2->vuid);
 	
 	CHECK_NOT_VALUE(session->vuid, session2->vuid);
@@ -119,14 +118,13 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		session3 = smbcli_session_init(cli->transport);
 
 		session3->vuid = session->vuid;
-		setup.generic.level = RAW_SESSSETUP_GENERIC;
-		setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
-		setup.generic.in.capabilities = 0; /* force a non extended security login (should fail) */
-		setup.generic.in.password = password;
-		setup.generic.in.user = username;
-		setup.generic.in.domain = domain;
+		setup.in.sesskey = cli->transport->negotiate.sesskey;
+		setup.in.capabilities = 0; /* force a non extended security login (should fail) */
+		setup.in.password = password;
+		setup.in.user = username;
+		setup.in.domain = domain;
 
-		status = smb_raw_session_setup(session3, mem_ctx, &setup);
+		status = smb_composite_sesssetup(session3, &setup);
 		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
 
 		talloc_free(session3);

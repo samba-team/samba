@@ -201,31 +201,10 @@ union smb_tcon {
 };
 
 
-enum smb_sesssetup_level {RAW_SESSSETUP_GENERIC, RAW_SESSSETUP_OLD, RAW_SESSSETUP_NT1, RAW_SESSSETUP_SPNEGO};
+enum smb_sesssetup_level {RAW_SESSSETUP_OLD, RAW_SESSSETUP_NT1, RAW_SESSSETUP_SPNEGO};
 
 /* union used in session_setup call */
 union smb_sesssetup {
-	
-	/* generic interface - used for auto selecting based on negotiated
-	   protocol options */
-	struct {
-		enum smb_sesssetup_level level;
-
-		struct {
-			uint32_t sesskey;
-			uint32_t capabilities;
-			const char *password;
-			const char *user;
-			const char *domain;
-		} in;
-		struct {
-			uint16_t vuid;
-			char *os;
-			char *lanman;
-			char *domain;
-		} out;		
-	} generic;
-
 	/* the pre-NT1 interface */
 	struct {
 		enum smb_sesssetup_level level;

@@ -23,22 +23,22 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
+#include "libcli/composite/composite.h"
 
 static BOOL try_failed_login(struct smbcli_state *cli)
 {
 	NTSTATUS status;
-	union smb_sesssetup setup;
+	struct smb_composite_sesssetup setup;
 	struct smbcli_session *session;
 
 	session = smbcli_session_init(cli->transport);
-	setup.generic.level = RAW_SESSSETUP_GENERIC;
-	setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
-	setup.generic.in.capabilities = cli->transport->negotiate.capabilities;
-	setup.generic.in.password = "INVALID-PASSWORD";
-	setup.generic.in.user = "INVALID-USERNAME";
-	setup.generic.in.domain = "INVALID-DOMAIN";
+	setup.in.sesskey = cli->transport->negotiate.sesskey;
+	setup.in.capabilities = cli->transport->negotiate.capabilities;
+	setup.in.password = "INVALID-PASSWORD";
+	setup.in.user = "INVALID-USERNAME";
+	setup.in.domain = "INVALID-DOMAIN";
 
-	status = smb_raw_session_setup(session, session, &setup);
+	status = smb_composite_sesssetup(session, &setup);
 	talloc_free(session);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("Allowed session setup with invalid credentials?!\n");

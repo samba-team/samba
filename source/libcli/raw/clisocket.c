@@ -1,5 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
+
    SMB client socket context management functions
 
    Copyright (C) Andrew Tridgell 1994-2005
@@ -72,6 +73,7 @@ static void smbcli_sock_connect_handler(struct event_context *ev, struct fd_even
 	c->status = socket_connect_complete(conn->sock->sock, 0);
 	if (NT_STATUS_IS_OK(c->status)) {
 		socket_set_option(conn->sock->sock, lp_socket_options(), NULL);
+		conn->sock->hostname = talloc_strdup(conn->sock, conn->dest_host);
 		c->state = SMBCLI_REQUEST_DONE;
 		if (c->async.fn) {
 			c->async.fn(c);
