@@ -863,6 +863,7 @@ static void usage(void)
 
 	process_loop();
 
+	trustdom_cache_shutdown();
 	uni_group_cache_shutdown();
 	return 0;
 }

@@ -1659,6 +1659,10 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 
 	domain_name = smb_xstrdup(argv[0]);
 	strupper(domain_name);
+
+	/* account name used at first is our domain's name with '$' */
+	asprintf(&acct_name, "%s$", lp_workgroup());
+	strupper(acct_name);
 	
 	/*
 	 * opt_workgroup will be used by connection functions further,
@@ -1668,9 +1672,6 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		SAFE_FREE(opt_workgroup);
 		opt_workgroup = smb_xstrdup(domain_name);
 	};
-	
-	asprintf(&acct_name, "%s$", lp_workgroup());
-	strupper(acct_name);
 	
 	opt_user_name = acct_name;
 

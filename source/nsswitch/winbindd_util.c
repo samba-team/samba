@@ -178,7 +178,7 @@ void rescan_trusted_domains(void)
 		int i;
 
 		result = domain->methods->trusted_domains(domain, mem_ctx, &num_domains,
-							  &names, &alt_names, &dom_sids);
+		                                          &names, &alt_names, &dom_sids);
 		if (!NT_STATUS_IS_OK(result)) {
 			continue;
 		}
@@ -187,9 +187,12 @@ void rescan_trusted_domains(void)
 		   the access methods of its parent */
 		for(i = 0; i < num_domains; i++) {
 			DEBUG(10,("Found domain %s\n", names[i]));
-			add_trusted_domain(names[i], 
-					   alt_names?alt_names[i]:NULL, 
-					   domain->methods, &dom_sids[i]);
+			add_trusted_domain(names[i], alt_names?alt_names[i]:NULL,
+			                   domain->methods, &dom_sids[i]);
+			
+			/* store trusted domain in the cache */
+			trustdom_cache_store(names[i], alt_names ? alt_names[i] : NULL,
+			                     &dom_sids[i], t + WINBINDD_RESCAN_FREQ);
 		}
 	}
 
@@ -209,8 +212,10 @@ BOOL init_domain_list(void)
 	/* Add ourselves as the first entry */
 	domain = add_trusted_domain(lp_workgroup(), NULL, &cache_methods, NULL);
 
-	/* Now we *must* get the domain sid for our primary domain. Go into
-	   a holding pattern until that is available */
+	/* 
+	 * Now we *must* get the domain sid for our primary domain. Go into
+	 * a holding pattern until that is available
+	 */
 
 	result = cache_methods.domain_sid(domain, &domain->sid);
 	while (!NT_STATUS_IS_OK(result)) {
