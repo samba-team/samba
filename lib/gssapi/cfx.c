@@ -35,21 +35,36 @@
 RCSID("$Id$");
 
 /*
- * Implementation of draft-ietf-krb-wg-gssapi-cfx-00.txt
+ * Implementation of draft-ietf-krb-wg-gssapi-cfx-01.txt
  */
+
+#define SentByAcceptor	(1 << 0)
+#define Sealed		(1 << 1)
 
 static krb5_error_code
 wrap_length_cfx(krb5_crypto crypto,
 		int conf_req_flag,
 		size_t input_length,
 		size_t *output_length,
+		size_t *cksumsize,
 		u_int16_t *padlength)
 {
     krb5_error_code ret;
+    krb5_cksumtype type;
 
     /* 16-byte header is always first */
     *output_length = sizeof(gss_cfx_wrap_token_desc);
     *padlength = 0;
+
+    ret = krb5_crypto_get_checksum_type(gssapi_krb5_context, crypto, &type);
+    if (ret) {
+	return ret;
+    }
+
+    ret = krb5_checksumsize(gssapi_krb5_context, type, cksumsize);
+    if (ret) {
+	return ret;
+    }
 
     if (conf_req_flag) {
 	size_t padsize;
@@ -65,27 +80,15 @@ wrap_length_cfx(krb5_crypto crypto,
 	    /* XXX check this */
 	    *padlength = padsize - (input_length % padsize);
 	}
+
+	/* We add the pad ourselves (noted here for completeness only) */
+	input_length += *padlength;
+
 	*output_length += krb5_get_wrapped_length(gssapi_krb5_context,
 						  crypto, input_length);
     } else {
-	krb5_cksumtype type;
-	size_t cksumsize;
-
-	/*
-	 * Find out how much space the wrapped cleartext will occupy.
-	 */
-	ret = krb5_crypto_get_checksum_type(gssapi_krb5_context, crypto, &type);
-	if (ret) {
-	    return ret;
-	}
-
-	ret = krb5_checksumsize(gssapi_krb5_context, type, &cksumsize);
-	if (ret) {
-	    return ret;
-	}
-
 	/* Checksum is concatenated with data */
-	*output_length += input_length + cksumsize;
+	*output_length += input_length + *cksumsize;
     }
 
     assert(*output_length > input_length);
@@ -94,17 +97,17 @@ wrap_length_cfx(krb5_crypto crypto,
 }
 
 OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
-	    const gss_ctx_id_t context_handle,
-	    int conf_req_flag,
-	    gss_qop_t qop_req,
-	    OM_uint32 req_output_size,
-	    OM_uint32 *max_input_size,
-	    krb5_keyblock *key)
+				const gss_ctx_id_t context_handle,
+				int conf_req_flag,
+				gss_qop_t qop_req,
+				OM_uint32 req_output_size,
+				OM_uint32 *max_input_size,
+				krb5_keyblock *key)
 {
     krb5_error_code ret;
     krb5_crypto crypto;
     u_int16_t padlength;
-    size_t output_length, len, total_len;
+    size_t output_length, len, total_len, cksumsize;
 #ifdef GSS_C_DCE_STYLE
     int dce_style = (context_handle->flags & GSS_C_DCE_STYLE);
 #else
@@ -120,7 +123,7 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
 
     ret = wrap_length_cfx(crypto, conf_req_flag, 
 			  dce_style ? 0 : req_output_size,
-			  &output_length, &padlength);
+			  &output_length, &cksumsize, &padlength);
     if (ret != 0) {
 	gssapi_krb5_set_error_string();
 	*minor_status = ret;
@@ -146,6 +149,9 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
+/*
+ * Rotate rightmost "rrc" bytes to the front.
+ */
 static krb5_error_code rrc_rotate(void *data, size_t len, u_int16_t rrc)
 {
     u_char *tmp;
@@ -173,21 +179,21 @@ static krb5_error_code rrc_rotate(void *data, size_t len, u_int16_t rrc)
 }
 
 OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
-	   const gss_ctx_id_t context_handle,
-	   int conf_req_flag,
-	   gss_qop_t qop_req,
-	   const gss_buffer_t input_message_buffer,
-	   int *conf_state,
-	   gss_buffer_t output_message_buffer,
-	   krb5_keyblock *key)
+			   const gss_ctx_id_t context_handle,
+			   int conf_req_flag,
+			   gss_qop_t qop_req,
+			   const gss_buffer_t input_message_buffer,
+			   int *conf_state,
+			   gss_buffer_t output_message_buffer,
+			   krb5_keyblock *key)
 {
     krb5_crypto crypto;
     gss_cfx_wrap_token token;
     krb5_error_code ret;
     unsigned usage;
     krb5_data cipher;
-    size_t wrapped_len, len, total_len;
-    u_int16_t padlength, rrc;
+    size_t wrapped_len, len, total_len, cksumsize;
+    u_int16_t padlength, rrc = 0;
     OM_uint32 seq_number;
     u_char *p;
 
@@ -200,7 +206,7 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 
     ret = wrap_length_cfx(crypto, conf_req_flag, 
 			  input_message_buffer->length,
-			  &wrapped_len, &padlength);
+			  &wrapped_len, &cksumsize, &padlength);
     if (ret != 0) {
 	gssapi_krb5_set_error_string();
 	*minor_status = ret;
@@ -210,15 +216,13 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 
 #ifdef GSS_C_DCE_STYLE
     if (context_handle->flags & GSS_C_DCE_STYLE) {
-	rrc = wrapped_len - (input_message_buffer->length + padlength);
-	_gssapi_encap_length(rrc, &len, &total_len, GSS_KRB5_MECHANISM);
-    } else {
-#endif
-	rrc = 0;
-	_gssapi_encap_length(wrapped_len, &len, &total_len, GSS_KRB5_MECHANISM);
-#ifdef GSS_C_DCE_STYLE
-    }
-#endif
+	/* Rotate encrypted token (if any) and checksum to header */
+	rrc = (conf_req_flag ? sizeof(*token) : 0) + (u_int16_t)cksumsize;
+	len = wrapped_len - input_message_buffer->length - padlength;
+	_gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
+    } else
+#endif /* GSS_C_DCE_STYLE */
+    _gssapi_encap_length(wrapped_len, &len, &total_len, GSS_KRB5_MECHANISM);
 
     output_message_buffer->length = total_len;
     output_message_buffer->value = malloc(output_message_buffer->length);
@@ -233,10 +237,26 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     token = (gss_cfx_wrap_token)p;
     token->TOK_ID[0] = 0x05;
     token->TOK_ID[1] = 0x04;
-    token->Direction = (context_handle->more_flags & LOCAL) ? 0 : 0xFF;
-    token->Seal = conf_req_flag ? 0xFF : 0;
-    token->EC[0] = (padlength >> 0) & 0xFF;
-    token->EC[1] = (padlength >> 8) & 0xFF;
+    token->Flags = 0;
+    if ((context_handle->more_flags & LOCAL) == 0)
+	token->Flags |= SentByAcceptor;
+    if (conf_req_flag) {
+	/*
+	 * In Wrap tokens with confidentiality, the EC field is
+	 * used to encode the size (in bytes) of the random filler.
+	 */
+	token->Flags |= Sealed;
+	token->EC[0] = (padlength >> 0) & 0xFF;
+	token->EC[1] = (padlength >> 8) & 0xFF;
+    } else {
+	/*
+	 * In Wrap tokens without confidentiality, the EC field is
+	 * used to encode the size (in bytes) of the trailing
+	 * checksum.
+	 */
+	token->EC[0] = (cksumsize >> 0) & 0xFF;
+	token->EC[1] = (cksumsize >> 8) & 0xFF;
+    }
     token->RRC[0] = (rrc >> 0) & 0xFF;
     token->RRC[1] = (rrc >> 8) & 0xFF;
 
@@ -254,7 +274,7 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     /*
      * If confidentiality is requested, the token header is
      * appended to the plaintext before encryption; the resulting
-     * token is { "header" | encrypt( "plaintext" | "header" ) }
+     * token is {"header" | encrypt(plaintext | pad | "header")}.
      *
      * If no confidentiality is requested, the checksum is
      * calculated over the plaintext concatenated with the
@@ -268,19 +288,23 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 
     if (conf_req_flag) {
 	/*
-	 * Note: it is likely that in version 01 of this draft
-	 * the header and EC padding will be placed before the
-	 * plaintext data, rather than the header at the end as
-	 * is the case presently.
+	 * Any necessary padding is added here to ensure that the
+	 * encrypted token header is always at the end of the
+	 * ciphertext.
+	 *
+	 * The specification does not require that the padding
+	 * bytes are initialized.
 	 */
-	/* Place the header after the plaintext */
 	p += sizeof(*token);
 	memcpy(p, input_message_buffer->value, input_message_buffer->length);
-	memcpy(p + input_message_buffer->length, token, sizeof(*token));
+	memset(p + input_message_buffer->length, 0xFF, padlength);
+	memcpy(p + input_message_buffer->length + padlength,
+	       token, sizeof(*token));
 
 	ret = krb5_encrypt(gssapi_krb5_context, crypto,
 			   usage, p,
-			   input_message_buffer->length + sizeof(*token),
+			   input_message_buffer->length + padlength +
+				sizeof(*token),
 			   &cipher);
 	if (ret != 0) {
 	    gssapi_krb5_set_error_string();
@@ -317,7 +341,8 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 
 	ret = krb5_create_checksum(gssapi_krb5_context, crypto,
 				   usage, 0, buf, 
-				   input_message_buffer->length + sizeof(*token), 
+				   input_message_buffer->length +
+					sizeof(*token), 
 				   &cksum);
 	if (ret != 0) {
 	    gssapi_krb5_set_error_string();
@@ -359,12 +384,12 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 }
 
 OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
-	     const gss_ctx_id_t context_handle,
-	     const gss_buffer_t input_message_buffer,
-	     gss_buffer_t output_message_buffer,
-	     int *conf_state,
-	     gss_qop_t *qop_state,
-	     krb5_keyblock *key)
+			     const gss_ctx_id_t context_handle,
+			     const gss_buffer_t input_message_buffer,
+			     gss_buffer_t output_message_buffer,
+			     int *conf_state,
+			     gss_qop_t *qop_state,
+			     krb5_keyblock *key)
 {
     krb5_crypto crypto;
     gss_cfx_wrap_token token;
@@ -372,7 +397,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     unsigned usage;
     krb5_data data;
     size_t len;
-    u_int16_t rrc, padlength;
+    u_int16_t ec, rrc;
     OM_uint32 seq_number_lo, seq_number_hi;
     u_char *p;
 
@@ -398,20 +423,21 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	return GSS_S_DEFECTIVE_TOKEN;
     }
 
-    if (token->Direction != ((context_handle->more_flags & LOCAL) ? 0xFF : 0)){
+    /* Reject unknown flags */
+    if (token->Flags & ~(SentByAcceptor | Sealed)) {
 	return GSS_S_DEFECTIVE_TOKEN;
     }
 
-    if (token->Seal != 0 && token->Seal != 0xFF) {
-	return GSS_S_DEFECTIVE_TOKEN;
+    if (token->Flags & SentByAcceptor) {
+	if ((context_handle->more_flags & LOCAL) == 0)
+	    return GSS_S_DEFECTIVE_TOKEN;
     }
 
     if (conf_state != NULL) {
-	*conf_state = (token->Seal == 0xFF);
+	*conf_state = (token->Flags & Sealed) ? 1 : 0;
     }
 
-    padlength = (token->EC[1] << 8) | token->EC[0];
-
+    ec  = (token->EC[1] << 8)  | token->EC[0];
     rrc = (token->RRC[1] << 8) | token->RRC[0];
 
     /*
@@ -456,14 +482,13 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     len -= (p - (u_char *)input_message_buffer->value);
 
     /* Rotate by RRC; bogus to do this in-place XXX */
-    *minor_status = rrc_rotate(input_message_buffer->value,
-	input_message_buffer->length, rrc);
+    *minor_status = rrc_rotate(p, len, rrc);
     if (*minor_status != 0) {
 	krb5_crypto_destroy(gssapi_krb5_context, crypto);
 	return GSS_S_FAILURE;
     }
 
-    if (token->Seal) {
+    if (token->Flags & Sealed) {
 	ret = krb5_decrypt(gssapi_krb5_context, crypto, usage,
 	    p, len, &data);
 	if (ret != 0) {
@@ -473,8 +498,8 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	    return GSS_S_BAD_MIC;
 	}
 
-	/* Check that there is room for the token header */
-	if (data.length < sizeof(*token)) {
+	/* Check that there is room for the pad and token header */
+	if (data.length < ec + sizeof(*token)) {
 	    krb5_crypto_destroy(gssapi_krb5_context, crypto);
 	    krb5_data_free(&data);
 	    return GSS_S_DEFECTIVE_TOKEN;
@@ -490,21 +515,11 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	}
 
 	output_message_buffer->value = data.data;
-	output_message_buffer->length = data.length - sizeof(*token);
+	output_message_buffer->length = data.length - ec - sizeof(*token);
     } else {
 	Checksum cksum;
 
-	/* EC shouldn't be set if confidentiality is not requested */
-	/*
-	 * NB: it is possible that version 1 of this draft will
-	 * include the checksum length in EC.
-	 */
-	if (padlength != 0) {
-	    krb5_crypto_destroy(gssapi_krb5_context, crypto);
-	    return GSS_S_BAD_MIC;
-	}
-
-	/* Determine checksum type and length */
+	/* Determine checksum type */
 	ret = krb5_crypto_get_checksum_type(gssapi_krb5_context,
 					    crypto, &cksum.cksumtype);
 	if (ret != 0) {
@@ -514,14 +529,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	    return GSS_S_FAILURE;
 	}
 
-	ret = krb5_checksumsize(gssapi_krb5_context, cksum.cksumtype,
-				&cksum.checksum.length);
-	if (ret != 0) {
-	    gssapi_krb5_set_error_string();
-	    *minor_status = ret;
-	    krb5_crypto_destroy(gssapi_krb5_context, crypto);
-	    return GSS_S_FAILURE;
-	}
+	cksum.checksum.length = ec;
 
 	/* Check we have at least as much data as the checksum */
 	if (len < cksum.checksum.length) {
@@ -572,11 +580,11 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 }
 
 OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
-	  const gss_ctx_id_t context_handle,
-	  gss_qop_t qop_req,
-	  const gss_buffer_t message_buffer,
-	  gss_buffer_t message_token,
-	  krb5_keyblock *key)
+			  const gss_ctx_id_t context_handle,
+			  gss_qop_t qop_req,
+			  const gss_buffer_t message_buffer,
+			  gss_buffer_t message_token,
+			  krb5_keyblock *key)
 {
     krb5_crypto crypto;
     gss_cfx_mic_token token;
@@ -605,7 +613,9 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
     token = (gss_cfx_mic_token)buf;
     token->TOK_ID[0] = 0x04;
     token->TOK_ID[1] = 0x04;
-    token->Direction = (context_handle->more_flags & LOCAL) ? 0 : 0xFF;
+    token->Flags = 0;
+    if ((context_handle->more_flags & LOCAL) == 0)
+	token->Flags |= SentByAcceptor;
     memset(token->Filler, 0xFF, 5);
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
@@ -666,11 +676,11 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
 }
 
 OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
-	     const gss_ctx_id_t context_handle,
-	     const gss_buffer_t message_buffer,
-	     const gss_buffer_t token_buffer,
-	     gss_qop_t *qop_state,
-	     krb5_keyblock *key)
+				 const gss_ctx_id_t context_handle,
+				 const gss_buffer_t message_buffer,
+				 const gss_buffer_t token_buffer,
+				 gss_qop_t *qop_state,
+				 krb5_keyblock *key)
 {
     krb5_crypto crypto;
     gss_cfx_mic_token token;
@@ -703,8 +713,14 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
 	return GSS_S_DEFECTIVE_TOKEN;
     }
 
-    if (token->Direction != ((context_handle->more_flags & LOCAL) ? 0xFF : 0)){
+    /* Reject unknown flags */
+    if (token->Flags & ~(SentByAcceptor)) {
 	return GSS_S_DEFECTIVE_TOKEN;
+    }
+
+    if (token->Flags & SentByAcceptor) {
+	if ((context_handle->more_flags & LOCAL) == 0)
+	    return GSS_S_DEFECTIVE_TOKEN;
     }
 
     if (memcmp(token->Filler, "\xff\xff\xff\xff\xff", 5) != 0) {
@@ -788,4 +804,3 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
 
     return GSS_S_COMPLETE;
 }
-
