@@ -1,7 +1,6 @@
 /*
  * Metrics for samba PMDA
  *
- * $Revision: 1.1 $
  */
 
 samba {
