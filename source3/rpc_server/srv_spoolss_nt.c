@@ -2605,7 +2605,11 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info,
 	
 	get_short_archi(short_archi, architecture);
 	
+#if MANGLE_DRIVER_PATH
 	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\%s\\", servername, short_archi, driver.info_3->name);
+#else
+	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\", servername, short_archi);
+#endif
 
 	info->version=driver.info_3->cversion;
 
@@ -3502,7 +3506,7 @@ static uint32 enumprinterdrivers_level3(fstring *list, fstring servername, fstri
 	/* check the required size. */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding driver [%d]'s size\n",i));
-		*needed += spoolss_size_printer_driver_info_3(&(driver_info_3[i]));
+		*needed += spoolss_size_printer_driver_info_3(&driver_info_3[i]);
 	}
 
 	if (!alloc_buffer_size(buffer, *needed)) {
@@ -3513,7 +3517,7 @@ static uint32 enumprinterdrivers_level3(fstring *list, fstring servername, fstri
 	/* fill the buffer with the form structures */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding form [%d] to buffer\n",i));
-		new_smb_io_printer_driver_info_3("", buffer, &(driver_info_3[i]), 0);
+		new_smb_io_printer_driver_info_3("", buffer, &driver_info_3[i], 0);
 	}
 
 	for (i=0; i<*returned; i++)
