@@ -38,7 +38,7 @@ extern int DEBUGLEVEL;
 extern int max_send;
 
 extern pstring local_machine;
-extern pstring global_myworkgroup;
+extern fstring global_myworkgroup;
 
 #define NERR_Success 0
 #define NERR_badpass 86
