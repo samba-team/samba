@@ -743,6 +743,11 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 {
     size_t len;
 
+	if (maxlength == 0)
+	{
+		return dest;
+	}
+
     if (!dest) {
         DEBUG(0,("ERROR: NULL dest in safe_strcpy\n"));
         return NULL;
