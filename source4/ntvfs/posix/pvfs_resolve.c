@@ -29,6 +29,7 @@
 
 #include "include/includes.h"
 #include "vfs_posix.h"
+#include "system/dir.h"
 
 /*
   compare two filename components. This is where the name mangling hook will go

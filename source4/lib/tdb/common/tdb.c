@@ -66,6 +66,8 @@
 #include "spinlock.h"
 #else
 #include "includes.h"
+#include "system/time.h"
+#include "system/shmem.h"
 #endif
 
 #define TDB_MAGIC_FOOD "TDB file\n"

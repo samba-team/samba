@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "system/time.h"
 
 int torture_nprocs=4;
 int torture_numops=100;

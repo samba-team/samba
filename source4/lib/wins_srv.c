@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/time.h"
 
 /*
   This is pretty much a complete rewrite of the earlier code. The main

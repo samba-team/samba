@@ -72,37 +72,18 @@
 /** Feel free to add definitions for other compilers here. */
 #endif
 
-#ifdef RELIANTUNIX
-/*
- * <unistd.h> has to be included before any other to get
- * large file support on Reliant UNIX. Yes, it's broken :-).
- */
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#endif /* RELIANTUNIX */
 
 #include <sys/types.h>
 #include <stdint.h>
-
-#ifdef TIME_WITH_SYS_TIME
-#include <sys/time.h>
-#include <time.h>
-#else
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif
-#endif
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
 
 #include <stdio.h>
 #include <stddef.h>
@@ -113,12 +94,6 @@
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_SYS_SYSCALL_H
-#include <sys/syscall.h>
-#elif HAVE_SYSCALL_H
-#include <syscall.h>
 #endif
 
 #ifdef HAVE_STRING_H
@@ -164,25 +139,8 @@
 #ifdef HAVE_CTYPE_H
 #include <ctype.h>
 #endif
-#ifdef HAVE_GRP_H
-#include <grp.h>
-#endif
-#ifdef HAVE_SYS_PRIV_H
-#include <sys/priv.h>
-#endif
-#ifdef HAVE_SYS_ID_H
-#include <sys/id.h>
-#endif
 
 #include <errno.h>
-
-#ifdef HAVE_UTIME_H
-#include <utime.h>
-#endif
-
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
 
 #ifdef HAVE_SYS_MODE_H
 /* apparently AIX needs this for S_ISLNK */
@@ -191,130 +149,16 @@
 #endif
 #endif
 
-#ifdef HAVE_GLOB_H
-#include <glob.h>
-#endif
-
-#include <pwd.h>
-
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
 #else
 #include <varargs.h>
 #endif
 
-#ifdef HAVE_SYSLOG_H
-#include <syslog.h>
-#else
-#ifdef HAVE_SYS_SYSLOG_H
-#include <sys/syslog.h>
-#endif
-#endif
-
 #include <sys/file.h>
-
-#if defined(HAVE_TERMIOS_H)
-/* POSIX terminal handling. */
-#include <termios.h>
-#elif defined(HAVE_TERMIO_H)
-/* Older SYSV terminal handling - don't use if we can avoid it. */
-#include <termio.h>
-#elif defined(HAVE_SYS_TERMIO_H)
-/* Older SYSV terminal handling - don't use if we can avoid it. */
-#include <sys/termio.h>
-#endif
-
-#if HAVE_DIRENT_H
-# include <dirent.h>
-# define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-# define dirent direct
-# define NAMLEN(dirent) (dirent)->d_namlen
-# if HAVE_SYS_NDIR_H
-#  include <sys/ndir.h>
-# endif
-# if HAVE_SYS_DIR_H
-#  include <sys/dir.h>
-# endif
-# if HAVE_NDIR_H
-#  include <ndir.h>
-# endif
-#endif
-
-#ifdef HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#endif
-
-#ifdef HAVE_SYS_MOUNT_H
-#include <sys/mount.h>
-#endif
-
-#ifdef HAVE_SYS_VFS_H
-#include <sys/vfs.h>
-#endif
-
-#ifdef HAVE_SYS_ACL_H
-#include <sys/acl.h>
-#endif
-
-#ifdef HAVE_SYS_FS_S5PARAM_H 
-#include <sys/fs/s5param.h>
-#endif
-
-#if defined (HAVE_SYS_FILSYS_H) && !defined (_CRAY)
-#include <sys/filsys.h> 
-#endif
-
-#ifdef HAVE_SYS_STATFS_H
-# include <sys/statfs.h>
-#endif
-
-#ifdef HAVE_DUSTAT_H              
-#include <sys/dustat.h>
-#endif
-
-#ifdef HAVE_SYS_STATVFS_H          
-#include <sys/statvfs.h>
-#endif
-
-#ifdef HAVE_SHADOW_H
-#include <shadow.h>
-#endif
-
-#ifdef HAVE_GETPWANAM
-#include <sys/label.h>
-#include <sys/audit.h>
-#include <pwdadj.h>
-#endif
-
-#ifdef HAVE_SYS_SECURITY_H
-#include <sys/security.h>
-#include <prot.h>
-#define PASSWORD_LENGTH 16
-#endif  /* HAVE_SYS_SECURITY_H */
-
-#ifdef HAVE_COMPAT_H
-#include <compat.h>
-#endif
 
 #ifdef HAVE_STROPTS_H
 #include <stropts.h>
-#endif
-
-#ifdef HAVE_SYS_CAPABILITY_H
-
-#if defined(BROKEN_REDHAT_7_SYSTEM_HEADERS) && !defined(_I386_STATFS_H)
-#define _I386_STATFS_H
-#define BROKEN_REDHAT_7_STATFS_WORKAROUND
-#endif
-
-#include <sys/capability.h>
-
-#ifdef BROKEN_REDHAT_7_STATFS_WORKAROUND
-#undef _I386_STATFS_H
-#undef BROKEN_REDHAT_7_STATFS_WORKAROUND
-#endif
-
 #endif
 
 /* we support ADS if we want it and have krb5 and ldap libs */

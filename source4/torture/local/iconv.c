@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "system/iconv.h"
+#include "system/time.h"
 
 #if HAVE_NATIVE_ICONV
 /*

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/time.h"
 
 /* 
  * ck/cd - change key
