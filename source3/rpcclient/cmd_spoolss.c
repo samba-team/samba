@@ -58,7 +58,7 @@ BOOL get_short_archi(char *short_archi, char *long_archi)
 
         if (archi_table[i].long_archi==NULL) {
                 DEBUGADD(10,("Unknown architecture [%s] !\n", long_archi));
-                return FALSE;
+                return False;
         }
 
         StrnCpy (short_archi, archi_table[i].short_archi, strlen(archi_table[i].short_archi));
