@@ -125,6 +125,7 @@ typedef struct krb5_ccache_data *krb5_ccache;
 
 typedef struct krb5_context_data *krb5_context;
 
+/* #define USE_ASN1_PRINCIPAL */
 #ifdef USE_ASN1_PRINCIPAL
 typedef Realm krb5_realm;
 typedef Principal krb5_principal_data;
@@ -772,7 +773,7 @@ krb5_encrypt (krb5_context context,
 	      void *ptr,
 	      size_t len,
 	      int etype,
-	      krb5_keyblock *keyblock,
+	      const krb5_keyblock *keyblock,
 	      krb5_data *result);
 
 krb5_error_code
