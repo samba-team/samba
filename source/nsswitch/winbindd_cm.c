@@ -5,6 +5,7 @@
 
    Copyright (C) Tim Potter 2001
    Copyright (C) Andrew Bartlett 2002
+   Copyright (C) Volker Lendecke 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -443,21 +444,6 @@ static BOOL add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 	return True;
 }
 
-static BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
-				const char *str, char ***array, int *num)
-{
-	char *dup_str = talloc_strdup(mem_ctx, str);
-
-	*array = talloc_realloc(mem_ctx, *array, ((*num)+1) * sizeof(**array));
-
-	if ((*array == NULL) || (dup_str == NULL))
-		return False;
-
-	(*array)[*num] = dup_str;
-	*num += 1;
-	return True;
-}
-
 static BOOL add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 				  struct in_addr ip, uint16 port,
 				  struct sockaddr_in **addrs, int *num)
@@ -475,6 +461,132 @@ static BOOL add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static void mailslot_name(struct in_addr dc_ip, fstring name)
+{
+	fstr_sprintf(name, "\\MAILSLOT\\NET\\GETDC%X", dc_ip.s_addr);
+}
+
+static BOOL send_getdc_request(struct in_addr dc_ip,
+			       const char *domain_name,
+			       const DOM_SID *sid)
+{
+	pstring outbuf;
+	char *p;
+	fstring my_acct_name;
+	fstring my_mailslot;
+
+	mailslot_name(dc_ip, my_mailslot);
+
+	memset(outbuf, '\0', sizeof(outbuf));
+
+	p = outbuf;
+
+	SCVAL(p, 0, SAMLOGON);
+	p++;
+
+	SCVAL(p, 0, 0); /* Count pointer ... */
+	p++;
+
+	SIVAL(p, 0, 0); /* The sender's token ... */
+	p += 2;
+
+	p += dos_PutUniCode(p, global_myname(), sizeof(pstring), True);
+	fstr_sprintf(my_acct_name, "%s$", global_myname());
+	p += dos_PutUniCode(p, my_acct_name, sizeof(pstring), True);
+
+	memcpy(p, my_mailslot, strlen(my_mailslot)+1);
+	p += strlen(my_mailslot)+1;
+
+	SIVAL(p, 0, 0x80);
+	p+=4;
+
+	SIVAL(p, 0, sid_size(sid));
+	p+=4;
+
+	p = ALIGN4(p, outbuf);
+
+	sid_linearize(p, sid_size(sid), sid);
+	p += sid_size(sid);
+
+	SIVAL(p, 0, 1);
+	SSVAL(p, 4, 0xffff);
+	SSVAL(p, 6, 0xffff);
+	p+=8;
+
+	return cli_send_mailslot(False, "\\MAILSLOT\\NET\\NTLOGON", 0,
+				 outbuf, PTR_DIFF(p, outbuf),
+				 global_myname(), 0, domain_name, 0x1c,
+				 dc_ip);
+}
+
+static BOOL receive_getdc_response(struct in_addr dc_ip,
+				   const char *domain_name,
+				   fstring dc_name)
+{
+	struct packet_struct *packet;
+	fstring my_mailslot;
+	char *buf, *p;
+	fstring dcname, user, domain;
+	int len;
+
+	mailslot_name(dc_ip, my_mailslot);
+
+	packet = receive_unexpected(DGRAM_PACKET, 0, my_mailslot);
+
+	if (packet == NULL) {
+		DEBUG(5, ("Did not receive packet for %s\n", my_mailslot));
+		return False;
+	}
+
+	DEBUG(5, ("Received packet for %s\n", my_mailslot));
+
+	buf = packet->packet.dgram.data;
+	len = packet->packet.dgram.datasize;
+
+	if (len < 70) {
+		/* 70 is a completely arbitrary value to make sure
+		   the SVAL below does not read uninitialized memory */
+		DEBUG(3, ("GetDC got short response\n"));
+		return False;
+	}
+
+	/* This should be (buf-4)+SVAL(buf-4, smb_vwv12)... */
+	p = buf+SVAL(buf, smb_vwv10);
+
+	if (CVAL(p,0) != SAMLOGON_R) {
+		DEBUG(8, ("GetDC got invalid response type %d\n", CVAL(p, 0)));
+		return False;
+	}
+
+	p+=2;
+	pull_ucs2(buf, dcname, p, sizeof(dcname), PTR_DIFF(buf+len, p),
+		  STR_TERMINATE|STR_NOALIGN);
+	p = skip_unibuf(p, PTR_DIFF(buf+len, p));
+	pull_ucs2(buf, user, p, sizeof(dcname), PTR_DIFF(buf+len, p),
+		  STR_TERMINATE|STR_NOALIGN);
+	p = skip_unibuf(p, PTR_DIFF(buf+len, p));
+	pull_ucs2(buf, domain, p, sizeof(dcname), PTR_DIFF(buf+len, p),
+		  STR_TERMINATE|STR_NOALIGN);
+	p = skip_unibuf(p, PTR_DIFF(buf+len, p));
+
+	if (!strequal(domain, domain_name)) {
+		DEBUG(3, ("GetDC: Expected domain %s, got %s\n",
+			  domain_name, domain));
+		return False;
+	}
+
+	p = dcname;
+	if (*p == '\\')	p += 1;
+	if (*p == '\\')	p += 1;
+
+	fstrcpy(dc_name, p);
+
+	DEBUG(10, ("GetDC gave name %s for domain %s\n",
+		   dc_name, domain));
+
+	return True;
+}
+
 static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
 		       const struct winbindd_domain *domain,
 		       struct dc_name_ip **dcs, int *num_dcs)
@@ -486,8 +598,42 @@ static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
 				   lp_name_resolve_order()))
 		return False;
 
-	/* Now try to find the server names of at least one IP address, hosts
-	 * not replying should be cached as such, but are not currently. TODO */
+	for (i=0; i<num; i++)
+		send_getdc_request(iplist[i].ip, domain->name, &domain->sid);
+
+	for (i=0; i<5; i++) {
+		int j;
+		BOOL retry = False;
+
+		for (j = 0; j<num; j++) {
+
+			fstring dcname;
+
+			if (iplist[j].ip.s_addr == 0)
+				continue;
+
+			if (receive_getdc_response(iplist[j].ip,
+						   domain->name,
+						   dcname)) {
+				add_one_dc_unique(mem_ctx, domain->name,
+						  dcname, iplist[j].ip,
+						  dcs, num_dcs);
+				iplist[i].ip.s_addr = 0;
+			} else {
+				retry = True;
+			}
+		}
+
+		if (!retry)
+			break;
+
+		smb_msleep(1000);
+	}
+
+	if (*num_dcs > 0)
+		return True;
+
+	/* Fall back to the old method with the name status request */
 
 	for (i=0; i<num; i++) {
 

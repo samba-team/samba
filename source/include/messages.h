@@ -46,6 +46,7 @@
 /* nmbd messages */
 #define MSG_FORCE_ELECTION 1001
 #define MSG_WINS_NEW_ENTRY 1002
+#define MSG_SEND_PACKET    1003
 
 /* printing messages */
 /* #define MSG_PRINTER_NOTIFY  2001*/ /* Obsolete */

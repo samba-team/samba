@@ -2067,14 +2067,15 @@ BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
 			 const char *str, const char ***strings,
 			 int *num)
 {
+	char *dup_str = talloc_strdup(mem_ctx, str);
+
 	*strings = talloc_realloc(mem_ctx, *strings,
 				  ((*num)+1) * sizeof(**strings));
 
-	if (*strings == NULL)
+	if ((*strings == NULL) || (dup_str == NULL))
 		return False;
 
-	(*strings)[*num] = str;
+	(*strings)[*num] = dup_str;
 	*num += 1;
-
 	return True;
 }

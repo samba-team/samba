@@ -303,9 +303,16 @@ BOOL init_domain_list(void)
 		domain = add_trusted_domain(get_global_sam_name(), NULL,
 					    &passdb_methods, get_global_sam_sid());
 	} else {
+
+		DOM_SID our_sid;
+
+		if (!secrets_fetch_domain_sid(lp_workgroup(), &our_sid)) {
+			DEBUG(0, ("Could not fetch our SID - did we join?\n"));
+			return False;
+		}
 	
 		domain = add_trusted_domain( lp_workgroup(), lp_realm(),
-					     &cache_methods, NULL);
+					     &cache_methods, &our_sid);
 	
 		/* set flags about native_mode, active_directory */
 		set_dc_type_and_flags(domain);
