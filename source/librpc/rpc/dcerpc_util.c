@@ -187,3 +187,17 @@ int idl_num_calls(const char *uuid, uint32 if_version)
 	return -1;
 }
 
+
+/*
+  find a dcerpc interface by name
+*/
+const struct dcerpc_interface_table *idl_iface_by_name(const char *name)
+{
+	int i;
+	for (i=0;dcerpc_pipes[i];i++) {
+		if (strcasecmp(dcerpc_pipes[i]->name, name) == 0) {
+			return dcerpc_pipes[i];
+		}
+	}
+	return NULL;
+}
