@@ -709,7 +709,7 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 	}
 
 	if (pkt.ptype == DCERPC_PKT_FAULT) {
-		DEBUG(5,("rpc fault 0x%x\n", pkt.u.fault.status));
+		DEBUG(5,("rpc fault: %s\n", dcerpc_errstr(p, pkt.u.fault.status)));
 		req->fault_code = pkt.u.fault.status;
 		req->status = NT_STATUS_NET_WRITE_FAULT;
 		req->state = RPC_REQUEST_DONE;
