@@ -1,3 +1,12 @@
+Sun Apr 26 11:47:58 1998  Assar Westerlund  <assar@sics.se>
+
+	* pop_pass.c (pop_pass): check return value from changeuser
+
+	* pop_dropcopy.c (changeuser): check that `setuid' and `setgid'
+ 	succeeded.
+
+	* popper.h: changeuser now returns int
+
 Thu Apr 23 00:54:38 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* Add support for maildir spoolfiles.
