@@ -236,12 +236,13 @@ int socket_get_fd(struct socket_context *sock)
 
 const struct socket_ops *socket_getops_byname(const char *name, enum socket_type type)
 {
-	if (strequal("ip", name) || strequal("ipv4", name)) {
+	if (strcmp("ip", name) == 0 || 
+	    strcmp("ipv4", name) == 0) {
 		return socket_ipv4_ops();
 	}
 
-	if (strequal("unix", name)) {
-		return socket_ipv4_ops();
+	if (strcmp("unix", name) == 0) {
+		return socket_unixdom_ops();
 	}
 
 	return NULL;
