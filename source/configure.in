@@ -162,6 +162,7 @@ AC_SUBST(SMBWRAPPER)
 AC_SUBST(EXTRA_BIN_PROGS)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
+AC_SUBST(CONFIG_LIBS)
 
 AC_ARG_ENABLE(debug, 
 [  --enable-debug          Turn on compiler debugging information (default=no)],
@@ -299,7 +300,7 @@ dnl These have to be built static:
 default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss rpc_epmapper auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin pdb_gums gums_tdbsam2"
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap charset_CP850 charset_CP437"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap charset_CP850 charset_CP437 config_ldap"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_echo"
@@ -2288,6 +2289,8 @@ AC_MSG_RESULT($with_ldap_support)
 
 SMBLDAP=""
 AC_SUBST(SMBLDAP)
+SMBLDAPUTIL=""
+AC_SUBST(SMBLDAPUTIL)
 if test x"$with_ldap_support" != x"no"; then
 
   ##################################################################
@@ -2343,7 +2346,9 @@ if test x"$with_ldap_support" != x"no"; then
   if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes" -a x"$ac_cv_func_ext_ldap_domain2hostlist" = x"yes"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
     default_static_modules="$default_static_modules pdb_ldap idmap_ldap";
+    default_shared_modules="$default_shared_modules config_ldap";
     SMBLDAP="lib/smbldap.o"
+    SMBLDAPUTIL="lib/smbldap_util.o"
     with_ldap_support=yes
     AC_MSG_CHECKING(whether LDAP support is used)
     AC_MSG_RESULT(yes)
@@ -4193,6 +4198,9 @@ SMB_MODULE(vfs_default_quota, \$(VFS_DEFAULT_QUOTA_OBJ), "bin/default_quota.$SHL
 SMB_MODULE(vfs_readonly, \$(VFS_READONLY_OBJ), "bin/readonly.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_cap, \$(VFS_CAP_OBJ), "bin/cap.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
+
+SMB_MODULE(config_ldap, param/config_ldap.o, "bin/config_ldap.$SHLIBEXT", CONFIG, [ CONFIG_LIBS="$CONFIG_LIBS $LDAP_LIBS" "$SMBLDAP" ])
+SMB_SUBSYSTEM(CONFIG, param/modconf.o)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 

@@ -66,6 +66,7 @@ RPCLIBDIR = $(LIBDIR)/rpc
 IDMAPLIBDIR = $(LIBDIR)/idmap
 CHARSETLIBDIR = $(LIBDIR)/charset
 AUTHLIBDIR = $(LIBDIR)/auth
+CONFIGLIBDIR = $(LIBDIR)/config
 CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
@@ -154,7 +155,8 @@ RPC_MODULES = @RPC_MODULES@
 IDMAP_MODULES = @IDMAP_MODULES@
 CHARSET_MODULES = @CHARSET_MODULES@
 AUTH_MODULES = @AUTH_MODULES@
-MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) $(CHARSET_MODULES) $(AUTH_MODULES)
+CONFIG_MODULES = @CONFIG_MODULES@
+MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) $(CHARSET_MODULES) $(AUTH_MODULES) $(CONFIG_MODULES)
 
 ######################################################################
 # object file lists
@@ -163,7 +165,7 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) $(CHARSE
 TDBBASE_OBJ = tdb/tdb.o tdb/spinlock.o
 TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o tdb/tdbback.o
 
-SMBLDAP_OBJ = @SMBLDAP@
+SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
 
 LIB_OBJ = lib/version.o lib/charcnv.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/md4.o \
@@ -198,7 +200,7 @@ POPT_LIB_OBJ = lib/popt_common.o
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o 
 
-PARAM_OBJ = dynconfig.o param/loadparm.o param/params.o
+PARAM_OBJ = dynconfig.o param/loadparm.o param/params.o param/modconf.o
 
 KRBCLIENT_OBJ = libads/kerberos.o
 
@@ -339,6 +341,8 @@ AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/auth_compat.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(SLCACHE_OBJ) $(DCUTIL_OBJ)
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
+
+CONFIG_LDAP_OBJ = param/config_ldap.o
 
 SMBD_OBJ_MAIN = smbd/server.o
 
@@ -1155,6 +1159,11 @@ bin/cap.@SHLIBEXT@: $(VFS_CAP_OBJ:.o=.@PICSUFFIX@)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CAP_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
+bin/config_ldap.@SHLIBEXT@: $(CONFIG_LDAP_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	 @$(SHLD) $(LDSHFLAGS) -o $@ $(CONFIG_LDAP_OBJ:.o=.@PICSUFFIX@) \
+		@SMBLDAP@ @LDAP_LIBS@ @SONAMEFLAG@`basename $@`
+
 bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WBINFO_OBJ) $(LIBS) @POPTLIBS@
@@ -1223,6 +1232,7 @@ installmodules: modules installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(IDMAPLIBDIR) $(IDMAP_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(CHARSETLIBDIR) $(CHARSET_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(AUTHLIBDIR) $(AUTH_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(CONFIGLIBDIR) $(CONFIG_MODULES)
 	@# These symlinks are required for the 'probing' of modules. 
 	@# This mechanism should go at some point..
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ ldapsam_compat.@SHLIBEXT@
