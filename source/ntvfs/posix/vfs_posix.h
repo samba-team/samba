@@ -161,6 +161,7 @@ struct pvfs_mangle_context {
 #define PVFS_FLAG_READONLY       (1<<4)
 #define PVFS_FLAG_STRICT_SYNC    (1<<5)
 #define PVFS_FLAG_STRICT_LOCKING (1<<6)
+#define PVFS_FLAG_XATTR_ENABLE   (1<<7)
 
 /* forward declare some anonymous structures */
 struct pvfs_dir;

@@ -20,7 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "include/includes.h"
+#include "includes.h"
 #include "vfs_posix.h"
 #include "system/time.h"
 #include "system/filesys.h"
@@ -330,6 +330,14 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return status;
 	}
 
+
+#if HAVE_XATTR_SUPPORT
+	name->dos.attrib = io->ntcreatex.in.file_attr;
+	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
+		status = pvfs_xattr_save(pvfs, name, fd);
+	}
+#endif
+
 	/* form the lock context used for byte range locking and
 	   opendb locking */
 	status = pvfs_locking_key(name, f, &f->locking_key);
@@ -471,6 +479,10 @@ static void pvfs_open_retry(void *private, enum pvfs_wait_notice reason)
 		   the reply yet */
 		return;
 	}
+
+	/* re-mark it async, just in case someone up the chain does
+	   paranoid checking */
+	req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC;
 
 	/* send the reply up the chain */
 	req->async_states->status = status;
