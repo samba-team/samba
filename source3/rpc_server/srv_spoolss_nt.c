@@ -612,7 +612,7 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
  receive the notify message
 ****************************************************************************/
 
-void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
+static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 {
 	fstring printer;
 	uint32 status;
