@@ -49,7 +49,6 @@ int net_rpc_join_ok(const char *domain)
 	int retval = 1;
 	uint32 channel;
 	NTSTATUS result;
-	uint32 neg_flags = 0x000001ff;
 
 	/* Connect to remote machine */
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC))) {
@@ -68,10 +67,12 @@ int net_rpc_join_ok(const char *domain)
 		goto done;
 	}
 	
-	CHECK_RPC_ERR(cli_nt_setup_creds(cli, 
-					 channel,
-					 stored_md4_trust_password, &neg_flags, 2),
-			  "error in domain join verification");
+	/* ensure that schannel uses the right domain */
+	fstrcpy(cli->domain, domain);
+	if (! NT_STATUS_IS_OK(result = cli_nt_establish_netlogon(cli, channel, stored_md4_trust_password))) {
+		DEBUG(0,("Error in domain join verfication\n"));
+		goto done;
+	}
 	
 	retval = 0;		/* Success! */
 	
@@ -131,7 +132,6 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	uint32 flags = 0x3e8;
 	char *acct_name;
 	const char *const_acct_name;
-	uint32 neg_flags = 0x000001ff;
 
 	/* check what type of join */
 	if (argc >= 0) {
@@ -315,11 +315,12 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		goto done;
 	}
 
-	CHECK_RPC_ERR(cli_nt_setup_creds(cli, 
-					 sec_channel_type,
-					 md4_trust_password, &neg_flags, 2),
-			  "error in domain join verification");
-	
+	/* ensure that schannel uses the right domain */
+	fstrcpy(cli->domain, domain);
+	CHECK_RPC_ERR(cli_nt_establish_netlogon(cli, sec_channel_type, 
+						md4_trust_password),
+		      "Error in domain join verfication\n");
+
 	/* Now store the secret in the secrets database */
 
 	strupper(domain);
@@ -366,7 +367,7 @@ done:
  **/
 int net_rpc_testjoin(int argc, const char **argv) 
 {
-	char *domain = smb_xstrdup(lp_workgroup());
+	char *domain = smb_xstrdup(opt_target_workgroup);
 
 	/* Display success or failure */
 	if (net_rpc_join_ok(domain) != 0) {
