@@ -747,7 +747,7 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
     DEBUG(0,("oplock_break_level2: unable to remove level II oplock for file %s\n", fsp->fsp_name ));
   }
 
-  if (got_lock)
+  if (!local_request && got_lock)
     unlock_share_entry(fsp->conn, dev, inode, token);
 
   fsp->oplock_type = NO_OPLOCK;
