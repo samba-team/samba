@@ -67,7 +67,7 @@ void generate_type_length (Symbol *s);
 void generate_type_copy (Symbol *s);
 void generate_type_maybe (Symbol *s);
 
-void init_generate (char *filename);
+void init_generate (char *filename, char *basename);
 void close_generate(void);
 int yyparse(void);
 
