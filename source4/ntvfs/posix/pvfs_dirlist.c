@@ -82,7 +82,8 @@ NTSTATUS pvfs_list(struct pvfs_state *pvfs, struct pvfs_filename *name, struct p
 	if (!name->has_wildcard) {
 		return pvfs_list_no_wildcard(pvfs, name, pattern, dir);
 	}
-	
+
+	dir->names = NULL;
 	dir->count = 0;
 	dir->unix_path = talloc_strdup(dir, name->full_name);
 	if (!dir->unix_path) {
