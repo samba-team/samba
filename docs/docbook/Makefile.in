@@ -36,7 +36,8 @@ MANPAGES=$(MANDIR)/findsmb.1 $(MANDIR)/smbclient.1 \
 	$(MANDIR)/smbpasswd.8 $(MANDIR)/testprns.1 \
 	$(MANDIR)/smb.conf.5 $(MANDIR)/wbinfo.1 $(MANDIR)/pdbedit.8 \
 	$(MANDIR)/smbcacls.1 $(MANDIR)/smbsh.1 $(MANDIR)/winbindd.8 \
-	$(MANDIR)/make_unicodemap.1
+	$(MANDIR)/make_unicodemap.1 $(MANDIR)/net.8 \
+	$(MANDIR)/smbgroupedit.8
 
 SGMLMANSRC=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
 	manpages/smbspool.8.sgml manpages/lmhosts.5.sgml \
@@ -51,7 +52,8 @@ SGMLMANSRC=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
 	manpages/smb.conf.5.sgml manpages/pdbedit.8.sgml \
 	manpages/wbinfo.1.sgml manpages/smbcacls.1.sgml \
 	manpages/smbsh.1.sgml manpages/winbindd.8.sgml \
-	manpages/make_unicodemap.1.sgml
+	manpages/make_unicodemap.1.sgml manpages./smbgroupedit.8.sgml \
+	manpages/net.8.sgml
 
 HOWTOSRC=projdoc/DOMAIN_MEMBER.sgml projdoc/NT_Security.sgml \
 	projdoc/msdfs_setup.sgml projdoc/printer_driver2.sgml \
@@ -365,6 +367,22 @@ $(MANDIR)/winbindd.8: manpages/winbindd.8.sgml
 
 
 $(MANDIR)/pdbedit.8: manpages/pdbedit.8.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/net.8: manpages/net.8.sgml
+	@echo "Making $@"
+	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
+	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
+	@/bin/rm -f `echo $@ | sed 's,.*/,,'`
+	@echo "Making HTML version of $@"
+	@$(JADE) -t sgml -i html -V nochunks -d ./stylesheets/ldp.dsl\#html $< > $(HTMLDIR)/`echo $< | sed 's,.*/,,'| sed "s/\.sgml/\.html/g"`
+
+$(MANDIR)/smbgroupedit.8: manpages/smbgroupedit.8.sgml
 	@echo "Making $@"
 	@$(NSGMLS) $< | $(SGMLSPL) $(SGML_SHARE)/docbook2X/docbook2man-spec.pl
 	@cat `echo $@ | sed 's,.*/,,'` | $(PERL) scripts/strip-links.pl > $@
