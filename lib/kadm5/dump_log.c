@@ -49,7 +49,7 @@ static char *op_names[] = {
 };
 
 static void
-print_entry(krb5_context context,
+print_entry(kadm5_server_context *server_context,
 	    u_int32_t ver,
 	    time_t timestamp,
 	    enum kadm_ops op,
@@ -62,6 +62,7 @@ print_entry(krb5_context context,
     krb5_principal source;
     char *name1, *name2;
     krb5_data data;
+    krb5_context context = server_context->context;
 
     off_t end = sp->seek(sp, 0, SEEK_CUR) + len;
     

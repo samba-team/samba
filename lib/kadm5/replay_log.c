@@ -35,11 +35,9 @@
 
 RCSID("$Id$");
 
-static krb5_context context;
-static kadm5_server_context *server_context;
-
 static void
-apply_entry(u_int32_t ver,
+apply_entry(kadm5_server_context *server_context,
+	    u_int32_t ver,
 	    time_t timestamp,
 	    enum kadm_ops op,
 	    u_int32_t len,
@@ -53,7 +51,7 @@ apply_entry(u_int32_t ver,
     ret = kadm5_log_replay (server_context,
 			    op, ver, len, sp);
     if (ret)
-	krb5_warn (context, ret, "kadm5_log_replay");
+	krb5_warn (server_context->context, ret, "kadm5_log_replay");
 
     
     printf ("done\n");
@@ -70,9 +68,11 @@ int num_args = sizeof(args) / sizeof(args[0]);
 int
 main(int argc, char **argv)
 {
+    krb5_context context;
     krb5_error_code ret;
     void *kadm_handle;
     kadm5_config_params conf;
+    kadm5_server_context *server_context;
 
     krb5_program_setup(&context, argc, argv, args, num_args, NULL);
     
