@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -67,7 +67,7 @@ static struct getargs args[] = {
     },
     {	
 	"server-port",	's',	arg_integer,   &server_port, 
-	"server to contact", "port number" 
+	"port to use", "port number" 
     },
     {	"local", 'l', arg_flag, &local_flag, "local admin mode" },
     {	"help",		'h',	arg_flag,   &help_flag },
