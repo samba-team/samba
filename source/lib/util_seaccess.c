@@ -230,9 +230,11 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 	for ( i = 0 ; i < acl->num_aces && tmp_acc_desired != 0; i++) {
 		SEC_ACE *ace = &acl->ace[i];
 
-		DEBUG(10,("se_access_check: ACE %u: SID = %s mask = %x, current desired = %x\n",
-				(unsigned int)i, sid_to_string(sid_str, &ace->sid),
-				(unsigned int) ace->info.mask, (unsigned int)tmp_acc_desired ));
+		DEBUG(10,("se_access_check: ACE %u: type %d, SID = %s mask = %x, current desired = %x\n",
+			  (unsigned int)i, ace->type,
+			  sid_to_string(sid_str, &ace->sid),
+			  (unsigned int) ace->info.mask, 
+			  (unsigned int)tmp_acc_desired ));
 
 		tmp_acc_desired = check_ace( ace, token, tmp_acc_desired, status);
 		if (*status != NT_STATUS_NOPROBLEMO) {
