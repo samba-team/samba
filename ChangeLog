@@ -1,3 +1,23 @@
+2004-07-26  Love  <lha@stacken.kth.se>
+
+	* lib/krb5/Makefile.am: man_MANS += krb5_rd_error
+	
+	* lib/krb5/krb5_rd_error.3: krb5_rd_error and friends
+	
+	* lib/krb5/krb5_warn.3: clarify on what string
+	krb5_free_error_string should operate on
+
+	* lib/krb5/krb5_get_credentials.3: add krb5_get_kdc_cred
+	
+	* lib/krb5/Makefile.am: krb5_get_credentials,
+	krb5_get_forwarded_creds and friends
+
+	* lib/krb5/krb5_get_forwarded_creds.3: krb5_get_forwarded_creds
+	and friends
+
+	* lib/krb5/krb5_get_credentials.3: krb5_get_credentials and
+	friends
+
 2004-07-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/klist.c (print_cred_verbose): keytypes are no longer, use
