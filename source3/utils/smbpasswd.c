@@ -37,6 +37,10 @@ struct
   {0, NULL}
 };
 
+/******************************************************
+ Convert a hex password.
+*******************************************************/
+
 static int gethexpwd(char *p, char *pwd)
 {
 	int i;
@@ -60,6 +64,10 @@ static int gethexpwd(char *p, char *pwd)
 	return (True);
 }
 
+/******************************************************
+ Find a password entry by name.
+*******************************************************/
+
 static struct smb_passwd *
 _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd, 
 		BOOL *got_valid_nt_entry, long *pwd_seekpos)
@@ -75,6 +83,8 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 	unsigned char  *p;
 	long            uidval;
 	long            linebuf_len;
+
+        pw_buf.acct_ctrl = ACB_NORMAL;
 
 	/*
 	 * Scan the file, a line at a time and check if the name matches.
@@ -159,6 +169,8 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 			*got_valid_nt_entry = False;
 			pw_buf.smb_nt_passwd = NULL;	/* No NT password (yet)*/
 
+                        pw_buf.acct_ctrl |= ACB_DISABLED;
+
 			/* Now check if the NT compatible password is
 			   available. */
 			p += 33; /* Move to the first character of the line after 
@@ -184,6 +196,7 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 
 		if (!strncasecmp((char *)p, "NO PASSWORD", 11)) {
 		  pw_buf.smb_passwd = NULL;	/* No password */
+                  pw_buf.acct_ctrl |= ACB_PWNOTREQ;
 		} else {
 		  if(!gethexpwd((char *)p,(char *)smbpwd))
 		    return False;
@@ -207,24 +220,125 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 			  if (gethexpwd((char *)p,(char *)smbntpwd))
 			    pw_buf.smb_nt_passwd = smbntpwd;
 			}
+
+                        p += 33; /* Move to the first character of the line after
+                                    the NT password. */
 		}
+
+                /*
+                 * Check if the account type bits have been encoded after the
+                 * NT password (in the form [NDHTUWSLXI]).
+                 */
+            
+                if (*p == '[') {
+                  BOOL finished = False;
+            
+                  pw_buf.acct_ctrl = 0;
+            
+                  for(p++;*p && !finished; p++) {
+                    switch (*p) {
+                      case 'N':
+                        /* 'N'o password. */
+                        pw_buf.acct_ctrl |= ACB_PWNOTREQ;
+                        break;
+                      case 'D':
+                        /* 'D'isabled. */
+                        pw_buf.acct_ctrl |= ACB_DISABLED;
+                        break;
+                      case 'H':
+                        /* 'H'omedir required. */
+                        pw_buf.acct_ctrl |= ACB_HOMDIRREQ;
+                        break;
+                      case 'T':
+                        /* 'T'emp account. */
+                        pw_buf.acct_ctrl |= ACB_TEMPDUP;
+                        break;
+                      case 'U':
+                        /* 'U'ser account (normal). */
+                        pw_buf.acct_ctrl |= ACB_NORMAL;
+                        break;
+                      case 'M':
+                        /* 'M'NS logon user account. What is this ? */
+                        pw_buf.acct_ctrl |= ACB_MNS;
+                        break;
+                      case 'W':
+                        /* 'W'orkstation account. */
+                        pw_buf.acct_ctrl |= ACB_WSTRUST;
+                        break;
+                      case 'S':
+                        /* 'S'erver account. */
+                        pw_buf.acct_ctrl |= ACB_SVRTRUST;
+                        break;
+                      case 'L':
+                        /* 'L'ocked account. */
+                        pw_buf.acct_ctrl |= ACB_AUTOLOCK;
+                        break;
+                      case 'X':
+                        /* No 'X'piry. */
+                        pw_buf.acct_ctrl |= ACB_PWNOEXP;
+                        break;
+                      case 'I':
+                        /* 'I'nterdomain trust account. */
+                        pw_buf.acct_ctrl |= ACB_DOMTRUST;
+                        break;
+            
+                      case ':':
+                      case '\n':
+                      case '\0': 
+                      case ']':
+                      default:
+                        finished = True;
+                    }
+                  }
+            
+                  /* Must have some account type set. */
+                  if(pw_buf.acct_ctrl == 0)
+                    pw_buf.acct_ctrl = ACB_NORMAL;
+            
+                } else {
+                  /* 'Old' style file. Fake up based on user name. */
+                  /*
+                   * Currently machine accounts are kept in the same
+                   * password file as 'normal accounts'. If this changes
+                   * we will have to fix this code. JRA.
+                   */
+                  if(pw_buf.smb_name[strlen(pw_buf.smb_name) - 1] == '$') {
+                    pw_buf.acct_ctrl &= ~ACB_NORMAL;
+                    pw_buf.acct_ctrl |= ACB_WSTRUST;
+                  }
+                }
 		return &pw_buf;
 	}
 	return NULL;
 }
 
-/*
- * Print command usage on stderr and die.
- */
+/**********************************************************
+ Allocate an unused uid in the smbpasswd file to a new
+ machine account.
+***********************************************************/
+
+int get_machine_uid(void)
+{
+  return 65534;
+}
+
+/*********************************************************
+ Print command usage on stderr and die.
+**********************************************************/
+
 static void usage(char *name, BOOL is_root)
 {
 	if(is_root)
-		fprintf(stderr, "Usage is : %s [-a] [username] [password]\n\
-%s: [-r machine] [username] [password]\n%s: [-h]", name, name, name);
+		fprintf(stderr, "Usage is : %s [-a] [-d] [-m] [-n] [username] [password]\n\
+%s: [-r machine] [username] [password]\n%s: [-h]\n", name, name, name);
 	else
 		fprintf(stderr, "Usage is : %s [-h] [-r machine] [password]\n", name);
 	exit(1);
 }
+
+/*********************************************************
+ Start here.
+**********************************************************/
 
 int main(int argc, char **argv)
 {
@@ -233,9 +347,8 @@ int main(int argc, char **argv)
   char *prog_name;
   int             real_uid;
   struct passwd  *pwd;
+  struct passwd   machine_account_pwd;
   fstring         old_passwd;
-  uchar           old_p16[16];
-  uchar           old_nt_p16[16];
   fstring         new_passwd;
   uchar           new_p16[16];
   uchar           new_nt_p16[16];
@@ -255,17 +368,20 @@ int main(int argc, char **argv)
   char            readbuf[16 * 1024];
   BOOL is_root = False;
   pstring  user_name;
+  pstring  machine_gcos_name;
   char *remote_machine = NULL;
   BOOL		 add_user = False;
   BOOL		 got_new_pass = False;
   BOOL		 machine_account = False;
+  BOOL		 disable_user = False;
+  BOOL		 set_no_password = False;
   pstring servicesf = CONFIGFILE;
 
   new_passwd[0] = '\0';
   user_name[0] = '\0';
 
   memset(old_passwd, '\0', sizeof(old_passwd));
-  memset(new_passwd, '\0', sizeof(old_passwd));
+  memset(new_passwd, '\0', sizeof(new_passwd));
 
   prog_name = argv[0];
 
@@ -292,16 +408,37 @@ int main(int argc, char **argv)
 
   is_root = (real_uid == 0);
 
-  while ((ch = getopt(argc, argv, "ahr:m:")) != EOF) {
+  while ((ch = getopt(argc, argv, "adhmnr:")) != EOF) {
     switch(ch) {
     case 'a':
-      add_user = True;
+      if(is_root)
+        add_user = True;
+      else
+        usage(prog_name, is_root);
       break;
+    case 'd':
+      if(is_root) {
+        disable_user = True;
+        got_new_pass = True;
+        strcpy(new_passwd, "XXXXXX");
+      } else
+        usage(prog_name, is_root);
+      break;
+    case 'n':
+      if(is_root) {
+        set_no_password = True;
+        got_new_pass = True;
+        strcpy(new_passwd, "NO PASSWORD");
+      } else
+        usage(prog_name, is_root);
     case 'r':
       remote_machine = optarg;
       break;
     case 'm':
-      machine_account = True;
+      if(is_root)
+        machine_account = True;
+      else
+        usage(prog_name, is_root);
       break;
     case 'h':
     default:
@@ -318,14 +455,6 @@ int main(int argc, char **argv)
    */
   if(add_user && (remote_machine != NULL))
     usage(prog_name, True);
-
-  /*
-   * If we are adding a machine account then pretend
-   * we already have the new password, we will be using
-   * the machinename as the password.
-   */
-  if(add_user && machine_account)
-    got_new_pass = True;
 
   if( is_root ) {
 
@@ -387,6 +516,19 @@ int main(int argc, char **argv)
   if (*user_name == '\0') {
     fprintf(stderr, "%s: Unable to get a user name for password change.\n", prog_name);
     exit(1);
+  }
+
+  /*
+   * If we are adding a machine account then pretend
+   * we already have the new password, we will be using
+   * the machinename as the password.
+   */
+
+  if(add_user && machine_account) {
+    got_new_pass = True;
+    strncpy(new_passwd, user_name, sizeof(fstring));
+    new_passwd[sizeof(fstring)-1] = '\0';
+    strlower(new_passwd);
   }
 
   /* 
@@ -516,28 +658,36 @@ int main(int argc, char **argv)
     if(user_name[username_len] != '$') {
       user_name[username_len] = '$';
       user_name[username_len+1] = '\0';
-    } 
+    }
+
+    /*
+     * Setup the pwd struct to point to known
+     * values for a machine account (it doesn't
+     * exist in /etc/passwd).
+     */
+
+    pwd = &machine_account_pwd;
+    pwd->pw_name = user_name;
+    sprintf(machine_gcos_name, "Machine account for %s", user_name);
+    pwd->pw_gecos = machine_gcos_name;
+    pwd->pw_dir = "";
+    pwd->pw_shell = "";
+    pwd->pw_uid = get_machine_uid();
+      
   }
 
-  /* Calculate the MD4 hash (NT compatible) of the old and new passwords */
-  memset(old_nt_p16, '\0', 16);
-  E_md4hash((uchar *)old_passwd, old_nt_p16);
+  /* Calculate the MD4 hash (NT compatible) of the new password. */
   
   memset(new_nt_p16, '\0', 16);
   E_md4hash((uchar *) new_passwd, new_nt_p16);
   
-  /* Mangle the passwords into Lanman format */
-  old_passwd[14] = '\0';
-  strupper(old_passwd);
+  /* Mangle the password into Lanman format */
   new_passwd[14] = '\0';
   strupper(new_passwd);
   
   /*
-   * Calculate the SMB (lanman) hash functions of both old and new passwords.
+   * Calculate the SMB (lanman) hash functions of the new password.
    */
-  
-  memset(old_p16, '\0', 16);
-  E_P16((uchar *) old_passwd, old_p16);
   
   memset(new_p16, '\0', 16);
   E_P16((uchar *) new_passwd, new_p16);
@@ -580,6 +730,7 @@ int main(int argc, char **argv)
     perror(prog_name);
     exit(err);
   }
+
   /* Get the smb passwd entry for this user */
   smb_pwent = _my_get_smbpwnam(fp, user_name, &valid_old_pwd, 
 			       &got_valid_nt_entry, &seekpos);
@@ -619,19 +770,31 @@ Error was %s\n", prog_name, user_name, pfile, strerror(errno));
       if((new_entry = (char *)malloc( new_entry_length )) == 0) {
         fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
 Error was %s\n", prog_name, pwd->pw_name, pfile, strerror(errno));
-        fclose(fp);
         pw_file_unlock(lockfd);
+        fclose(fp);
         exit(1);
       }
 
       sprintf(new_entry, "%s:%u:", pwd->pw_name, (unsigned)pwd->pw_uid);
       p = &new_entry[strlen(new_entry)];
-      for( i = 0; i < 16; i++)
-        sprintf(&p[i*2], "%02X", new_p16[i]);
-      p += 32;
-      *p++ = ':';
-      for( i = 0; i < 16; i++)
-        sprintf(&p[i*2], "%02X", new_nt_p16[i]);
+      if(disable_user) {
+        memcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 32);
+        p += 32;
+        *p++ = ':';
+        memcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 32);
+      } else if (set_no_password) {
+        memcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 32);
+        p += 32;
+        *p++ = ':';
+        memcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 32);
+      } else {
+        for( i = 0; i < 16; i++)
+          sprintf(&p[i*2], "%02X", new_p16[i]);
+        p += 32;
+        *p++ = ':';
+        for( i = 0; i < 16; i++)
+          sprintf(&p[i*2], "%02X", new_nt_p16[i]);
+      }
       p += 32;
       *p++ = ':';
       sprintf(p, "%s:%s:%s\n", pwd->pw_gecos, 
@@ -645,13 +808,13 @@ Error was %s\n", prog_name, pwd->pw_name, pfile, strerror(errno));
 Error was %s. Password file may be corrupt ! Please examine by hand !\n", 
                    prog_name, pwd->pw_name, strerror(errno));
         }
-        fclose(fp);
         pw_file_unlock(lockfd);
+        fclose(fp);
         exit(1);
       }
       
-      fclose(fp);  
       pw_file_unlock(lockfd);  
+      fclose(fp);  
       exit(0);
     }
   } else {
@@ -664,14 +827,26 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
    */
 
   /* Create the 32 byte representation of the new p16 */
-  for (i = 0; i < 16; i++) {
-    sprintf(&ascii_p16[i * 2], "%02X", (uchar) new_p16[i]);
+  if(disable_user) {
+    memcpy(ascii_p16, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 32);
+  } else if (set_no_password) {
+    memcpy(ascii_p16, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 32);
+  } else {
+    for (i = 0; i < 16; i++) {
+      sprintf(&ascii_p16[i * 2], "%02X", (uchar) new_p16[i]);
+    }
   }
   if(got_valid_nt_entry) {
     /* Add on the NT md4 hash */
     ascii_p16[32] = ':';
-    for (i = 0; i < 16; i++) {
-      sprintf(&ascii_p16[(i * 2)+33], "%02X", (uchar) new_nt_p16[i]);
+    if(disable_user) {
+      memcpy(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 32);
+    } else if (set_no_password) {
+      memcpy(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 32);
+    } else {
+      for (i = 0; i < 16; i++) {
+        sprintf(&ascii_p16[(i * 2)+33], "%02X", (uchar) new_nt_p16[i]);
+      }
     }
   }
   /*
@@ -684,10 +859,10 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
     err = errno;
     fprintf(stderr, "%s: seek fail on file %s.\n",
 	    prog_name, pfile);
-    fclose(fp);
     errno = err;
     perror(prog_name);
     pw_file_unlock(lockfd);
+    fclose(fp);
     exit(1);
   }
   /* Sanity check - ensure the character is a ':' */
@@ -695,17 +870,17 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
     err = errno;
     fprintf(stderr, "%s: read fail on file %s.\n",
 	    prog_name, pfile);
-    fclose(fp);
     errno = err;
     perror(prog_name);
     pw_file_unlock(lockfd);
+    fclose(fp);
     exit(1);
   }
   if (c != ':') {
     fprintf(stderr, "%s: sanity check on passwd file %s failed.\n",
 	    prog_name, pfile);
-    fclose(fp);
     pw_file_unlock(lockfd);
+    fclose(fp);
     exit(1);
   }
   writelen = (got_valid_nt_entry) ? 65 : 32;
@@ -713,15 +888,19 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
     err = errno;
     fprintf(stderr, "%s: write fail in file %s.\n",
 	    prog_name, pfile);
-    fclose(fp);
     errno = err;
     perror(prog_name);
     pw_file_unlock(lockfd);
+    fclose(fp);
     exit(err);
   }
-  fclose(fp);
   pw_file_unlock(lockfd);
-  printf("Password changed\n");
+  fclose(fp);
+  if(disable_user)
+    printf("User %s disabled.\n", user_name);
+  else if (set_no_password)
+    printf("User %s - set to no password.\n", user_name);
+  else
+    printf("Password changed for user %s.\n", user_name);
   return 0;
 }
-

@@ -187,6 +187,8 @@ struct smb_passwd *getsmbpwent(FILE *fp)
     return NULL;
   }
 
+  pw_buf.acct_ctrl = ACB_NORMAL;  
+
   /*
    * Scan the file, a line at a time and check if the name matches.
    */
@@ -406,10 +408,10 @@ struct smb_passwd *getsmbpwent(FILE *fp)
        * password file as 'normal accounts'. If this changes
        * we will have to fix this code. JRA.
        */
-      if(pw_buf.smb_name[strlen(pw_buf.smb_name) - 1] == '$')
-        pw_buf.acct_ctrl = ACB_WSTRUST;
-      else
-        pw_buf.acct_ctrl = ACB_NORMAL;
+      if(pw_buf.smb_name[strlen(pw_buf.smb_name) - 1] == '$') {
+        pw_buf.acct_ctrl &= ~ACB_NORMAL;
+        pw_buf.acct_ctrl |= ACB_WSTRUST;
+      }
     }
 
     return &pw_buf;
