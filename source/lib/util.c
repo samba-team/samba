@@ -1391,6 +1391,47 @@ BOOL is_myname(char *s)
   return(ret);
 }
 
+BOOL is_myname_or_ipaddr(char *s)
+{
+	char **ptr;
+	
+	/* optimize for the common case */
+	if (strequal(s, global_myname)) 
+		return True;
+
+	/* maybe its an IP address? */
+	if (is_ipaddress(s))
+	{
+		struct iface_struct nics[MAX_INTERFACES];
+		int i, n;
+		uint32 ip;
+		
+		ip = interpret_addr(s);
+		if ((ip==0) || (ip==0xffffffff))
+			return False;
+			
+		n = get_interfaces(nics, MAX_INTERFACES);
+		for (i=0; i<n; i++) {
+			if (ip == nics[i].ip.s_addr)
+				return True;
+		}
+	}	
+
+	/* check for an alias */
+  	ptr = lp_netbios_aliases();
+	for ( ; *ptr; ptr++ )
+	{
+		if (StrCaseCmp(s, *ptr) == 0)
+			return True;
+	}
+	
+	
+	/* no match */
+	return False;
+
+}
+
+
 /*******************************************************************
 set the horrid remote_arch string based on an enum.
 ********************************************************************/
