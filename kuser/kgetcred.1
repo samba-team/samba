@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\"
-.Dd October 21, 2003
+.Dd March 12, 2004
 .Dt KGETCRED 1
 .Os HEIMDAL
 .Sh NAME
@@ -39,6 +39,7 @@
 .Nd "get a ticket for a particular service"
 .Sh SYNOPSIS
 .Nm
+.Op Fl -canonicalize
 .Oo Fl e Ar enctype \*(Ba Xo
 .Fl -enctype= Ns Ar enctype
 .Xc
@@ -56,6 +57,10 @@ ticket or of a special type.
 .Pp
 Supported options:
 .Bl -tag -width Ds
+.It Xo
+.Fl -canonicalize
+.Xc
+requests that the KDC canonicalize the principal.
 .It Xo
 .Fl e Ar enctype ,
 .Fl -enctype= Ns Ar enctype
