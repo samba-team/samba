@@ -3799,6 +3799,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 
 /*The following definitions come from  smbd/sec_ctx.c  */
 
+#if OLD_NTDOMAIN
 int get_current_groups(int *p_ngroups, gid_t **p_groups);
 void delete_nt_token(NT_USER_TOKEN **pptoken);
 NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken);
@@ -3808,6 +3809,7 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 void set_root_sec_ctx(void);
 BOOL pop_sec_ctx(void);
 void init_sec_ctx(void);
+#endif
 
 /*The following definitions come from  smbd/server.c  */
 
@@ -3883,6 +3885,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
 
 /*The following definitions come from  smbd/vfs-wrap.c  */
 
+#if OLD_NTDOMAIN
 int vfswrap_dummy_connect(connection_struct *conn, char *service, char *user);
 void vfswrap_dummy_disconnect(connection_struct *conn);
 SMB_BIG_UINT vfswrap_disk_free(connection_struct *conn, char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
@@ -3914,9 +3917,11 @@ size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc);
 size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc);
 BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd);
 BOOL vfswrap_set_nt_acl(files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd);
+#endif
 
 /*The following definitions come from  smbd/vfs.c  */
 
+#if OLD_NTDOMAIN
 int vfs_init_default(connection_struct *conn);
 BOOL vfs_init_custom(connection_struct *conn);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st);
@@ -3933,6 +3938,7 @@ char *vfs_readdirname(connection_struct *conn, void *p);
 int vfs_ChDir(connection_struct *conn, char *path);
 char *vfs_GetWd(connection_struct *conn, char *path);
 BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks);
+#endif
 
 /*The following definitions come from  smbwrapper/realcalls.c  */
 
