@@ -95,7 +95,7 @@ void free_cmd_set_array(uint32 num_entries, struct command_set **entries)
 	free_void_array(num_entries, (void **)entries, *fn);
 }
 
-struct command_set *add_cmd_set_to_array(uint32 * len,
+struct command_set *add_cmd_set_to_array(uint32 *len,
 					 struct command_set ***array,
 					 const struct command_set *cmd)
 {
@@ -1294,7 +1294,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	if (IS_BITS_SET_ALL(cmd_set_options, CMD_INTER))
 	{
 		setup_logging(debugf, interactive);
-		if (! interactive)
+		if (!interactive)
 			reopen_logs();
 	}
 
@@ -1345,7 +1345,19 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	if (auto_connect && !strequal(srv_name, "\\\\."))
 	{
 		BOOL isnew;
-		cli_net_use_add(srv_name, &usr.ntc, True, False, &isnew);
+		report(out_hnd, "Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
+		       srv_name, usr.ntc.user_name, usr.ntc.domain);
+		report(out_hnd, "Connection:\t");
+
+		if (cli_net_use_add(srv_name, &usr.ntc, True, False, &isnew)
+		    != NULL)
+		{
+			report(out_hnd, "OK\n");
+		}
+		else
+		{
+			report(out_hnd, "FAILED\n");
+		}
 		usr_creds = NULL;
 	}
 	if (cmd_str != NULL)
@@ -1400,10 +1412,7 @@ static void read_user_env(struct ntuser_creds *u)
 void readline_init(void)
 {
 #ifdef HAVE_READLINE
-
-	/* Initialise GNU Readline */
-
-	rl_readline_name = "rpcclient";
+	/* Initialise GNU Readline */ rl_readline_name = "rpcclient";
 	rl_attempted_completion_function = completion_fn;
 	rl_completion_entry_function = (Function *) complete_cmd_null;
 
