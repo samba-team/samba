@@ -1227,6 +1227,7 @@ BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
 	char protocol[11];
 	char tmp_host[255];
 	const char *p = url;
+	int ret;
 
 	/* skip leading "URL:" (if any) */
 	if (strncasecmp( p, "URL:", 4) == 0) {
@@ -1236,7 +1237,10 @@ BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
 	/* Paranoia check */
 	SMB_ASSERT(sizeof(protocol)>10 && sizeof(tmp_host)>254);
 		
-	sscanf(p, "%10[^:]://%254[^:/]:%d", protocol, tmp_host, &tmp_port);
+	ret = sscanf(p, "%10[^:]://%254[^:/]:%d", protocol, tmp_host, &tmp_port);
+	if (ret < 2) {
+		return False;
+	}
 
 	if (strequal(protocol, "ldap")) {
 		*port = 389;
