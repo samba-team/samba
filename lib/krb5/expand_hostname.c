@@ -78,3 +78,40 @@ krb5_expand_hostname (krb5_context context,
     freeaddrinfo (ai);
     return copy_hostname (context, orig_hostname, new_hostname);
 }
+
+/*
+ * expand `hostname' to a name we believe to be a hostname in newly
+ * allocated space in `host' and return realms in `realms'.
+ */
+
+krb5_error_code
+krb5_expand_hostname_realms (krb5_context context,
+			     const char *orig_hostname,
+			     char **new_hostname,
+			     char ***realms)
+{
+    struct addrinfo *ai, *a, hints;
+    int error;
+
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_flags = AI_CANONNAME;
+
+    error = getaddrinfo (orig_hostname, NULL, &hints, &ai);
+    if (error)
+	return copy_hostname (context, orig_hostname, new_hostname);
+    for (a = ai; a != NULL; a = a->ai_next) {
+	if (a->ai_canonname != NULL) {
+	    krb5_error_code ret = krb5_get_host_realm (context,
+						       a->ai_canonname,
+						       realms);
+
+	    if (ret == 0) {
+		ret = copy_hostname (context, a->ai_canonname, new_hostname);
+		freeaddrinfo (ai);
+		return ret;
+	    }
+	}
+    }
+    freeaddrinfo (ai);
+    return copy_hostname (context, orig_hostname, new_hostname);
+}
