@@ -208,10 +208,10 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 				hdtrl[0].iov_base = NULL;
 				hdtrl[0].iov_len = 0;
 			} else {
-				nwritten = 0;
 				/* iov_base is defined as a void *... */
 				hdtrl[0].iov_base = ((char *)hdtrl[0].iov_base) + nwritten;
 				hdtrl[0].iov_len -= nwritten;
+				nwritten = 0;
 			}
 		}
 		total -= nwritten;
@@ -280,9 +280,9 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 				hdtrl.iov_base = NULL;
 				hdtrl.iov_len = 0;
 			} else {
-				nwritten = 0;
 				hdtrl.iov_base += nwritten;
 				hdtrl.iov_len -= nwritten;
+				nwritten = 0;
 			}
 		}
 		total -= nwritten;
