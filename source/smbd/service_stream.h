@@ -52,6 +52,6 @@ struct stream_server_ops {
 	/* the name of the server_service */
 	const char *name;
 	void (*accept_connection)(struct stream_connection *);
-	void (*recv_handler)(struct stream_connection *, struct timeval, uint16_t);
-	void (*send_handler)(struct stream_connection *, struct timeval, uint16_t);
+	void (*recv_handler)(struct stream_connection *, uint16_t);
+	void (*send_handler)(struct stream_connection *, uint16_t);
 };

@@ -359,7 +359,6 @@ static int event_loop_epoll(struct event_context *ev, struct timeval *tvalp)
 	struct epoll_event events[maxevents];
 	uint32_t destruction_count = ev->destruction_count;
 	int timeout = -1;
-	struct timeval t;
 
 	if (tvalp) {
 		timeout = (tvalp->tv_usec / 1000) + (tvalp->tv_sec*1000);
@@ -367,7 +366,7 @@ static int event_loop_epoll(struct event_context *ev, struct timeval *tvalp)
 
 	ret = epoll_wait(ev->epoll_fd, events, maxevents, timeout);
 
-	if (ret == -1) {
+	if (ret == -1 && errno != EINTR) {
 		epoll_fallback_to_select(ev, "epoll_wait() failed");
 		return -1;
 	}
@@ -376,8 +375,6 @@ static int event_loop_epoll(struct event_context *ev, struct timeval *tvalp)
 		event_loop_timer(ev);
 		return 0;
 	}
-
-	t = timeval_current();
 
 	for (i=0;i<ret;i++) {
 		struct fd_event *fde = talloc_get_type(events[i].data.ptr, 
@@ -391,7 +388,7 @@ static int event_loop_epoll(struct event_context *ev, struct timeval *tvalp)
 		if (events[i].events & EPOLLIN) flags |= EVENT_FD_READ;
 		if (events[i].events & EPOLLOUT) flags |= EVENT_FD_WRITE;
 		if (flags) {
-			fde->handler(ev, fde, t, flags, fde->private);
+			fde->handler(ev, fde, flags, fde->private);
 			if (destruction_count != ev->destruction_count) {
 				break;
 			}
@@ -451,7 +448,6 @@ static int event_loop_select(struct event_context *ev, struct timeval *tvalp)
 	}
 
 	if (selrtn > 0) {
-		struct timeval t = timeval_current();
 		/* at least one file descriptor is ready - check
 		   which ones and call the handler, being careful to allow
 		   the handler to remove itself when called */
@@ -460,7 +456,7 @@ static int event_loop_select(struct event_context *ev, struct timeval *tvalp)
 			if (FD_ISSET(fe->fd, &r_fds)) flags |= EVENT_FD_READ;
 			if (FD_ISSET(fe->fd, &w_fds)) flags |= EVENT_FD_WRITE;
 			if (flags) {
-				fe->handler(ev, fe, t, flags, fe->private);
+				fe->handler(ev, fe, flags, fe->private);
 				if (destruction_count != ev->destruction_count) {
 					break;
 				}
@@ -472,7 +468,7 @@ static int event_loop_select(struct event_context *ev, struct timeval *tvalp)
 }		
 
 /*
-  do a single event loop using the events defined in ev this function
+  do a single event loop using the events defined in ev 
 */
 int event_loop_once(struct event_context *ev)
 {
