@@ -34,9 +34,6 @@ PASSDB_LIBS=@PASSDB_LIBS@
 IDMAP_LIBS=@IDMAP_LIBS@
 KRB5LIBS=@KRB5_LIBS@
 LDAP_LIBS=@LDAP_LIBS@
-XML_LIBS=@XML_LIBS@
-MYSQL_LIBS=@MYSQL_LIBS@
-PGSQL_LIBS=@PGSQL_LIBS@
 
 LINK=$(CC) $(FLAGS) $(LDFLAGS)
 
@@ -838,8 +835,7 @@ bin/rpcclient@EXEEXT@: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(PASSDB_LIBS) $(RPCCLIENT_OBJ) \
 		$(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ \
-		$(KRB5LIBS) $(LDAP_LIBS) \
-		$(XML_LIBS) $(MYSQL_LIBS) $(PGSQL_LIBS)
+		$(KRB5LIBS) $(LDAP_LIBS)
 
 bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -1119,12 +1115,12 @@ bin/sam.@SHLIBEXT@: $(AUTH_SAM_OBJ:.o=.@PICSUFFIX@)
 
 bin/mysql.@SHLIBEXT@: $(MYSQL_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(MYSQL_OBJ:.o=.@PICSUFFIX@) $(MYSQL_LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(MYSQL_OBJ:.o=.@PICSUFFIX@) @MYSQL_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
 bin/pgsql.@SHLIBEXT@: $(PGSQL_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PGSQL_OBJ:.o=.@PICSUFFIX@) $(PGSQL_LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(PGSQL_OBJ:.o=.@PICSUFFIX@) @PGSQL_LIBS@ \
       @SONAMEFLAG@`basename $@`
 
 bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.@PICSUFFIX@
@@ -1164,7 +1160,7 @@ bin/macosxfs.@SHLIBEXT@: $(CHARSET_MACOSXFS_OBJ:.o=.@PICSUFFIX@)
 
 bin/xml.@SHLIBEXT@: $(XML_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(XML_OBJ:.o=.@PICSUFFIX@) $(XML_LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(XML_OBJ:.o=.@PICSUFFIX@) @XML_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
 bin/audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ:.o=.@PICSUFFIX@)
