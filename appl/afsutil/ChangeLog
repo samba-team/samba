@@ -1,4 +1,9 @@
-2004-07-27  Love  <lha@stacken.kth.se>
+2004-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* afslog.c: use negative string help string for arg_negative_flag
+	Pointed out by Harald Barth
+	
+2004-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pagsh.c: use setprogname, if we stripped off -c, try use the
 	fallback code
