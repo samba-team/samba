@@ -159,7 +159,7 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
 
-	DEBUG(3, ("[%5d]: sid to gid %s\n", state->pid, 
+	DEBUG(3, ("[%5lu]: sid to gid %s\n", (unsigned long)state->pid, 
 		  state->request.data.sid));
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
@@ -192,8 +192,8 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	DEBUG(3, ("[%5lu]: uid to sid %d\n", (unsigned long)state->pid, 
-		  state->request.data.uid));
+	DEBUG(3, ("[%5lu]: uid to sid %lu\n", (unsigned long)state->pid, 
+		  (unsigned long)state->request.data.uid));
 
 	/* Lookup rid for this uid */
 	if (!NT_STATUS_IS_OK(idmap_uid_to_sid(&sid, state->request.data.uid))) {

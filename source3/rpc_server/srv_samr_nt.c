@@ -2761,8 +2761,9 @@ static BOOL set_unix_primary_group(SAM_ACCOUNT *sampass)
 	grp = getgrgid(gid);
 
 	if (grp == NULL) {
-		DEBUG(2,("Could not find primary group %d for "
-			 "user %s\n", gid, pdb_get_username(sampass)));
+		DEBUG(2,("Could not find primary group %lu for "
+			 "user %s\n", (unsigned long)gid, 
+			 pdb_get_username(sampass)));
 		return False;
 	}
 
