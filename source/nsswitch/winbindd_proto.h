@@ -11,10 +11,10 @@ int main(int argc, char **argv);
 /*The following definitions come from  nsswitch/winbindd_cache.c  */
 
 void winbindd_cache_init(void);
-void winbindd_store_user_cache(char *domain_name, 
+void winbindd_store_user_cache(char *domain, 
 			       struct getpwent_user *sam_entries,
 			       int num_sam_entries);
-void winbindd_store_group_cache(char *domain_name,
+void winbindd_store_group_cache(char *domain,
 				struct acct_info *sam_entries,
 				int num_sam_entries);
 void winbindd_store_user_cache_entry(char *domain, char *user_name, 
@@ -30,7 +30,8 @@ void winbindd_store_gid_cache_entry(char *domain, gid_t gid,
 BOOL winbindd_fetch_user_cache(char *domain_name, 
 			       struct getpwent_user **sam_entries,
                                int *num_entries);
-BOOL winbindd_fetch_group_cache(char *domain_name, void **sam_entries,
+BOOL winbindd_fetch_group_cache(char *domain_name, 
+				struct acct_info **sam_entries,
                                 int *num_entries);
 BOOL winbindd_fetch_user_cache_entry(char *domain_name, char *user, 
                                      struct winbindd_pw *pw);
