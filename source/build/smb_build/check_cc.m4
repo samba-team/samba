@@ -11,12 +11,6 @@ if test x"$CC" = x""; then
 	AC_MSG_ERROR([Please Install gcc from http://gcc.gnu.org/])
 fi
 
-# compile with optimization and without debugging by default, but
-# allow people to set their own preference.
-if test "x$CFLAGS" = x; then
-	CFLAGS="-O ${CFLAGS}"
-fi
-
 dnl needed before AC_TRY_COMPILE
 AC_ISC_POSIX
 
@@ -81,7 +75,7 @@ AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
 
 #
 # Check if the compiler can handle the options we selected by
-# --enable-*developer and --enable-debug
+# --enable-*developer
 #
 if test -n "$DEVELOPER_CFLAGS"; then
 	OLD_CFLAGS="${CFLAGS}"
