@@ -1,3 +1,8 @@
+2002-02-14  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/rd_safe.c: actually use the correct key (from Daniel
+	Kouril)
+
 2002-02-12  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/context.c (krb5_get_err_text): protect against NULL
