@@ -501,6 +501,92 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         return result;
 }
 
+
+/** 
+ * Logon domain user with an 'network' SAM logon 
+ *
+ * @param info3 Pointer to a NET_USER_INFO_3 already allocated by the caller.
+ **/
+
+NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					char *username, char *domain, char *workstation, 
+					uint8 chal[8],
+					DATA_BLOB lm_response, DATA_BLOB nt_response,
+					NET_USER_INFO_3 *info3)
+
+{
+	prs_struct qbuf, rbuf;
+	NET_Q_SAM_LOGON q;
+	NET_R_SAM_LOGON r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        DOM_CRED clnt_creds, dummy_rtn_creds;
+	NET_ID_INFO_CTR ctr;
+	extern pstring global_myname;
+	int validation_level = 3;
+	char *workstation_name_slash;
+	
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", workstation);
+	
+	if (!workstation_name_slash) {
+		DEBUG(0, ("talloc_asprintf failed!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	gen_next_creds(cli, &clnt_creds);
+
+	q.validation_level = validation_level;
+
+	memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
+	dummy_rtn_creds.timestamp.time = time(NULL);
+
+        ctr.switch_value = NET_LOGON_TYPE;
+
+	init_id_info2(&ctr.auth.id2, domain,
+		      0, /* param_ctrl */
+		      0xdead, 0xbeef, /* LUID? */
+		      username, workstation_name_slash, (uchar*)chal,
+		      lm_response.data, lm_response.length, nt_response.data, nt_response.length);
+ 
+        init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname,
+                      &clnt_creds, &dummy_rtn_creds, NET_LOGON_TYPE,
+                      &ctr);
+
+        /* Marshall data and send request */
+
+	if (!net_io_q_sam_logon("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, NET_SAMLOGON, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+        r.user = info3;
+
+	if (!net_io_r_sam_logon("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+        /* Return results */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+        return result;
+}
+
 /***************************************************************************
 LSA Server Password Set.
 ****************************************************************************/
