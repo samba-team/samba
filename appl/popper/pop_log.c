@@ -11,7 +11,11 @@ static char SccsId[] = "@(#)@(#)pop_log.c	2.1  2.1 3/18/91";
 
 #include <stdio.h>
 #include <sys/types.h>
+#if __STDC__
+#include <stdarg.h>
+#else
 #include <varargs.h>
+#endif
 #include "popper.h"
 
 /* 
@@ -20,10 +24,18 @@ static char SccsId[] = "@(#)@(#)pop_log.c	2.1  2.1 3/18/91";
 
 static char msgbuf[MAXLINELEN];
 
+int
+#ifdef __STDC__
+pop_log(POP *p, int stat, char *format, ...)
+#else
 pop_log(va_alist)
 va_dcl
+#endif
 {
     va_list     ap;
+#ifdef __STDC__
+    va_start(ap, format);
+#else
     POP     *   p;
     int         stat;
     char    *   format;
@@ -32,14 +44,21 @@ va_dcl
     p = va_arg(ap,POP *);
     stat = va_arg(ap,int);
     format = va_arg(ap,char *);
-    va_end(ap);
+#endif
 
 #ifdef HAVE_VSPRINTF
         vsprintf(msgbuf,format,ap);
 #else
-        (void)sprintf (msgbuf,format,((int *)ap)[0],((int *)ap)[1],((int *)ap)[2],
-                ((int *)ap)[3],((int *)ap)[4],((int *)ap)[5]);
-#endif HAVE_VSPRINTF
+        {
+	    int a0 = va_arg(ap, int);
+	    int a1 = va_arg(ap, int);
+	    int a2 = va_arg(ap, int);
+	    int a3 = va_arg(ap, int);
+	    int a4 = va_arg(ap, int);
+	    int a5 = va_arg(ap, int);
+	    (void)sprintf(msgbuf, format, a0, a1, a2, a3, a4, a5, 0, 4711);
+	}
+#endif /* HAVE_VSPRINTF */
 
     if (p->debug && p->trace) {
         (void)fprintf(p->trace,"%s\n",msgbuf);
@@ -48,6 +67,7 @@ va_dcl
     else {
         syslog (stat,"%s",msgbuf);
     }
+    va_end(ap);
 
     return(stat);
 }

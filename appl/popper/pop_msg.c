@@ -12,29 +12,41 @@ static char SccsId[] = "@(#)@(#)pop_msg.c	2.1  2.1 3/18/91";
 #include <stdio.h>
 #include <sys/types.h>
 #include <strings.h>
+#if __STDC__
+#include <stdarg.h>
+#else
 #include <varargs.h>
+#endif
 #include "popper.h"
 
 /* 
  *  msg:    Send a formatted line to the POP client
  */
 
+int
+#ifdef __STDC__
+pop_msg(POP *p, int stat, char *format, ...)
+#else
 pop_msg(va_alist)
 va_dcl
+#endif
 {
+    register char   *   mp;
+    char                message[MAXLINELEN];
+    va_list             ap;
+#ifdef __STDC__
+    va_start(ap, format);
+#else
     POP             *   p;
     int                 stat;               /*  POP status indicator */
     char            *   format;             /*  Format string for the message */
-    va_list             ap;
-    register char   *   mp;
-    char                message[MAXLINELEN];
 
     va_start(ap);
     p = va_arg(ap, POP *);
     stat = va_arg(ap, int);
     format = va_arg(ap, char *);
-    va_end(ap);
-
+#endif
+    
     /*  Point to the message buffer */
     mp = message;
 
@@ -52,9 +64,16 @@ va_dcl
 #ifdef HAVE_VSPRINTF
         vsprintf(mp,format,ap);
 #else
-        (void)sprintf(mp,format,((int *)ap)[0],((int *)ap)[1],((int *)ap)[2],
-                ((int *)ap)[3],((int *)ap)[4]);
-#endif HAVE_VSPRINTF
+        {
+	    int a0 = va_arg(ap, int);
+	    int a1 = va_arg(ap, int);
+	    int a2 = va_arg(ap, int);
+	    int a3 = va_arg(ap, int);
+	    int a4 = va_arg(ap, int);
+	    int a5 = va_arg(ap, int);
+	    (void)sprintf(mp, format, a0, a1, a2, a3, a4, a5, 0, 4711);
+	}
+#endif /* HAVE_VSPRINTF */
     
     /*  Log the message if debugging is turned on */
 #ifdef DEBUG
@@ -73,5 +92,6 @@ va_dcl
     (void)fputs(message,p->output);
     (void)fflush(p->output);
 
+    va_end(ap);
     return(stat);
 }
