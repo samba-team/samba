@@ -276,7 +276,7 @@ SHA1_Final (void *res, struct sha *m)
   zeros[dstart+2] = (m->sz[1] >> 8) & 0xff;
   zeros[dstart+1] = (m->sz[1] >> 16) & 0xff;
   zeros[dstart+0] = (m->sz[1] >> 24) & 0xff;
-  SHA1Update (m, zeros, dstart + 8);
+  SHA1_Update (m, zeros, dstart + 8);
   {
       int i;
       unsigned char *r = (unsigned char*)res;

@@ -250,7 +250,7 @@ MD5_Final (void *res, struct md5 *m)
   zeros[dstart+5] = (m->sz[1] >> 8) & 0xff;
   zeros[dstart+6] = (m->sz[1] >> 16) & 0xff;
   zeros[dstart+7] = (m->sz[1] >> 24) & 0xff;
-  MD5Update (m, zeros, dstart + 8);
+  MD5_Update (m, zeros, dstart + 8);
   {
       int i;
       unsigned char *r = (unsigned char *)res;
