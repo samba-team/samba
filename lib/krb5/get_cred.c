@@ -175,110 +175,9 @@ get_krbtgt(krb5_context context,
 }
 
 
-krb5_error_code
-krb5_get_kdc_cred(krb5_context context,
-		  krb5_ccache id,
-		  krb5_kdc_flags flags,
-		  krb5_addresses *addresses,
-		  Ticket  *second_ticket,
-		  krb5_creds *in_creds,
-		  krb5_creds **out_creds
-		  )
-{
-    TGS_REQ req;
-    krb5_data enc;
-    krb5_data resp;
-    krb5_kdc_rep rep;
-    KRB_ERROR error;
-    krb5_error_code ret;
-    krb5_creds *krbtgt;
-    unsigned nonce;
-    unsigned char buf[1024];
-    size_t len;
-    
-    krb5_generate_random_block(&nonce, sizeof(nonce));
-
-    ret = get_krbtgt (context,
-		      id,
-		      in_creds->server->realm,
-		      &krbtgt);
-    if (ret)
-	return ret;
-
-    ret = init_tgs_req (context,
-			id,
-			addresses,
-			flags,
-			second_ticket,
-			in_creds,
-			krbtgt,
-			nonce,
-			&req);
-    if (ret)
-	goto out;
-
-    ret = encode_TGS_REQ  (buf + sizeof (buf) - 1, sizeof(buf),
-			   &req, &enc.length);
-    /* Don't free this part, it's from the caller */
-    req.req_body.addresses = NULL;
-    free_TGS_REQ(&req);
-
-    enc.data = buf + sizeof(buf) - enc.length;
-    if (ret)
-	goto out;
-    
-    /*
-     * Send and receive
-     */
-
-    ret = krb5_sendto_kdc (context, &enc, &in_creds->server->realm, &resp);
-    if(ret)
-	goto out;
-
-    memset(&rep, 0, sizeof(rep));
-    if(decode_TGS_REP(resp.data, resp.length, &rep.part1, &len) == 0){
-	ret = krb5_copy_creds_contents (context,
-					in_creds,
-					*out_creds);
-	if(ret)
-	    goto out;
-
-#if 0
-	krb5_copy_principal (context,
-			     in_creds->client,
-			     &(*out_creds)->client);
-
-	krb5_copy_principal (context,
-			     in_creds->server,
-			     &(*out_creds)->server);
-#endif
-
-	ret = extract_ticket(context,
-			     &rep,
-			     *out_creds,
-			     &krbtgt->session,
-			     NULL,
-			     &krbtgt->addresses,
-			     nonce,
-			     NULL,
-			     NULL);
-	krb5_free_kdc_rep(context, &rep);
-	if (ret)
-	    goto out;
-    }else if(krb5_rd_error(context, &resp, &error) == 0){
-	ret = error.error_code;
-	free_KRB_ERROR(&error);
-    }else
-	ret = KRB5KRB_AP_ERR_MSG_TYPE;
-    krb5_data_free(&resp);
-out:
-    krb5_free_creds (context, krbtgt);
-    return ret;
-}
-
-
 static krb5_error_code
 get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
+	     krb5_addresses *addresses, 
 	     krb5_creds *in_creds, krb5_creds *krbtgt,
 	     krb5_creds **out_creds)
 {
@@ -291,10 +190,6 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
     unsigned nonce;
     unsigned char buf[1024];
     size_t len;
-    krb5_addresses *addresses;
-    
-    addresses = malloc(sizeof(*addresses));
-    krb5_get_all_client_addrs(addresses);
     
     krb5_generate_random_block(&nonce, sizeof(nonce));
     
@@ -312,6 +207,8 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
 
     ret = encode_TGS_REQ  (buf + sizeof (buf) - 1, sizeof(buf),
 			   &req, &enc.length);
+    /* don't free addresses */
+    req.req_body.addresses = NULL;
     free_TGS_REQ(&req);
 
     enc.data = buf + sizeof(buf) - enc.length;
@@ -356,6 +253,47 @@ out:
     return ret;
     
 }
+
+/* same as above, just get local addresses first */
+
+static krb5_error_code
+get_cred_kdc_la(krb5_context context, krb5_ccache id, krb5_kdc_flags flags, 
+		krb5_creds *in_creds, krb5_creds *krbtgt, 
+		krb5_creds **out_creds)
+{
+    krb5_error_code ret;
+    krb5_addresses addresses;
+    
+    krb5_get_all_client_addrs(&addresses);
+    ret = get_cred_kdc(context, id, flags, &addresses, 
+		       in_creds, krbtgt, out_creds);
+    krb5_free_addresses(context, &addresses);
+    return ret;
+}
+
+krb5_error_code
+krb5_get_kdc_cred(krb5_context context,
+		  krb5_ccache id,
+		  krb5_kdc_flags flags,
+		  krb5_addresses *addresses,
+		  Ticket  *second_ticket,
+		  krb5_creds *in_creds,
+		  krb5_creds **out_creds
+		  )
+{
+    krb5_error_code ret;
+    krb5_creds *krbtgt;
+    ret = get_krbtgt (context,
+		      id,
+		      in_creds->server->realm,
+		      &krbtgt);
+    ret = get_cred_kdc(context, id, flags, addresses, 
+		       in_creds, krbtgt, out_creds);
+    krb5_free_creds (context, krbtgt);
+    return ret;
+}
+
+
 
 /*
 get_cred(server)
@@ -416,7 +354,7 @@ krb5_get_credentials(krb5_context context,
 	    ret = krb5_cc_retrieve_cred_any_realm(context, ccache, 0, 
 						  &tmp_creds, &tgts);
 	    if(ret == 0){
-		ret = get_cred_kdc(context, ccache, flags, 
+		ret = get_cred_kdc_la(context, ccache, flags, 
 				   in_creds, &tgts, out_creds);
 		krb5_free_creds_contents(context, &tgts);
 		krb5_free_principal(context, tmp_creds.server);
@@ -449,7 +387,7 @@ krb5_get_credentials(krb5_context context,
 
 	krb5_free_principal(context, tmp_creds.server);
 	krb5_free_principal(context, tmp_creds.client);
-	ret = get_cred_kdc(context, ccache, flags, in_creds, tgt, out_creds);
+	ret = get_cred_kdc_la(context, ccache, flags, in_creds, tgt, out_creds);
 	krb5_free_creds_contents(context, tgt);
 	free(tgt);
 	if(ret)
