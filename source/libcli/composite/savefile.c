@@ -47,7 +47,7 @@ struct savefile_state {
 static NTSTATUS setup_close(struct smbcli_composite *c, 
 			    struct smbcli_tree *tree, uint16_t fnum)
 {
-	struct savefile_state *state = c->private;
+	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
 	union smb_close *io_close;
 
 	/* nothing to write, setup the close */
@@ -76,7 +76,7 @@ static NTSTATUS setup_close(struct smbcli_composite *c,
 static NTSTATUS savefile_open(struct smbcli_composite *c, 
 			      struct smb_composite_savefile *io)
 {
-	struct savefile_state *state = c->private;
+	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
 	union smb_write *io_write;
 	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
@@ -122,7 +122,7 @@ static NTSTATUS savefile_open(struct smbcli_composite *c,
 static NTSTATUS savefile_write(struct smbcli_composite *c, 
 			      struct smb_composite_savefile *io)
 {
-	struct savefile_state *state = c->private;
+	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
 	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
 	uint32_t max_xmit = tree->session->transport->negotiate.max_xmit;
@@ -160,7 +160,7 @@ static NTSTATUS savefile_write(struct smbcli_composite *c,
 static NTSTATUS savefile_close(struct smbcli_composite *c, 
 			       struct smb_composite_savefile *io)
 {
-	struct savefile_state *state = c->private;
+	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
 	NTSTATUS status;
 
 	status = smbcli_request_simple_recv(state->req);
@@ -185,7 +185,7 @@ static NTSTATUS savefile_close(struct smbcli_composite *c,
 static void savefile_handler(struct smbcli_request *req)
 {
 	struct smbcli_composite *c = req->async.private;
-	struct savefile_state *state = c->private;
+	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
 
 	/* when this handler is called, the stage indicates what
 	   call has just finished */

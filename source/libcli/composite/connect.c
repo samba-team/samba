@@ -53,7 +53,7 @@ static void composite_handler(struct smbcli_composite *);
 static NTSTATUS connect_send_negprot(struct smbcli_composite *c, 
 				     struct smb_composite_connect *io)
 {
-	struct connect_state *state = c->private;
+	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
 
 	state->req = smb_raw_negotiate_send(state->transport, lp_maxprotocol());
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
@@ -72,7 +72,7 @@ static NTSTATUS connect_send_negprot(struct smbcli_composite *c,
 static NTSTATUS connect_tcon(struct smbcli_composite *c, 
 			     struct smb_composite_connect *io)
 {
-	struct connect_state *state = c->private;
+	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
 	NTSTATUS status;
 
 	status = smb_tree_connect_recv(state->req, c, state->io_tcon);
@@ -104,7 +104,7 @@ static NTSTATUS connect_tcon(struct smbcli_composite *c,
 static NTSTATUS connect_session_setup(struct smbcli_composite *c, 
 				      struct smb_composite_connect *io)
 {
-	struct connect_state *state = c->private;
+	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
 	NTSTATUS status;
 
 	status = smb_composite_sesssetup_recv(state->creq);
@@ -151,7 +151,7 @@ static NTSTATUS connect_session_setup(struct smbcli_composite *c,
 static NTSTATUS connect_negprot(struct smbcli_composite *c, 
 				struct smb_composite_connect *io)
 {
-	struct connect_state *state = c->private;
+	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
 	NTSTATUS status;
 
 	status = smb_raw_negotiate_recv(state->req);
@@ -191,7 +191,7 @@ static NTSTATUS connect_negprot(struct smbcli_composite *c,
 static NTSTATUS connect_session_request(struct smbcli_composite *c, 
 					struct smb_composite_connect *io)
 {
-	struct connect_state *state = c->private;
+	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
 	NTSTATUS status;
 
 	status = smbcli_transport_connect_recv(state->req);
@@ -207,7 +207,7 @@ static NTSTATUS connect_session_request(struct smbcli_composite *c,
 static NTSTATUS connect_socket(struct smbcli_composite *c, 
 			       struct smb_composite_connect *io)
 {
-	struct connect_state *state = c->private;
+	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
 	NTSTATUS status;
 	struct nmb_name calling, called;
 
@@ -245,7 +245,7 @@ static NTSTATUS connect_socket(struct smbcli_composite *c,
 */
 static void state_handler(struct smbcli_composite *c)
 {
-	struct connect_state *state = c->private;
+	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
 
 	switch (c->stage) {
 	case CONNECT_SOCKET:
@@ -338,7 +338,7 @@ NTSTATUS smb_composite_connect_recv(struct smbcli_composite *c, TALLOC_CTX *mem_
 	status = smb_composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
-		struct connect_state *state = c->private;
+		struct connect_state *state = talloc_get_type(c->private, struct connect_state);
 		talloc_steal(mem_ctx, state->io->out.tree);
 	}
 
