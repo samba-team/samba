@@ -309,6 +309,7 @@ extern gss_OID GSS_KRB5_MECHANISM;
 /* for compatibility with MIT api */
 
 #define gss_mech_krb5 GSS_KRB5_MECHANISM
+#define gss_krb5_nt_general_name GSS_KRB5_NT_PRINCIPAL_NAME
 
 /* Major status codes */
 
