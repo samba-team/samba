@@ -56,7 +56,7 @@ static size_t ucs2hex_push(void *,const char **, size_t *, char **, size_t *);
 static size_t iconv_copy  (void *,const char **, size_t *, char **, size_t *);
 static size_t iconv_swab  (void *,const char **, size_t *, char **, size_t *);
 
-static const struct charset_functions const builtin_functions[] = {
+static const struct charset_functions builtin_functions[] = {
 	/* windows is closest to UTF-16 */
 	{"UCS-2LE",  iconv_copy, iconv_copy},
 	{"UTF-16LE",  iconv_copy, iconv_copy},
