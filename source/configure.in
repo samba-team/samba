@@ -2016,6 +2016,14 @@ if test x"$samba_cv_SYSCONF_SC_NGROUPS_MAX" = x"yes"; then
     AC_DEFINE(SYSCONF_SC_NGROUPS_MAX,1,[Whether sysconf(_SC_NGROUPS_MAX) is available])
 fi
 
+AC_CACHE_CHECK([for sysconf(_SC_NPROC_ONLN)],samba_cv_SYSCONF_SC_NPROC_ONLN,[
+AC_TRY_RUN([#include <unistd.h>
+main() { exit(sysconf(_SC_NPROC_ONLN) == -1 ? 1 : 0); }],
+samba_cv_SYSCONF_SC_NPROC_ONLN=yes,samba_cv_SYSCONF_SC_NPROC_ONLN=no,samba_cv_SYSCONF_SC_NPROC_ONLN=cross)])
+if test x"$samba_cv_SYSCONF_SC_NPROC_ONLN" = x"yes"; then
+    AC_DEFINE(SYSCONF_SC_NPROC_ONLN,1,[Whether sysconf(_SC_NPROC_ONLN) is available])
+fi
+
 AC_CACHE_CHECK([for root],samba_cv_HAVE_ROOT,[
 AC_TRY_RUN([main() { exit(getuid() != 0); }],
            samba_cv_HAVE_ROOT=yes,samba_cv_HAVE_ROOT=no,samba_cv_HAVE_ROOT=cross)])
