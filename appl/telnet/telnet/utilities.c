@@ -66,9 +66,8 @@ int	prettydump;
  *	Upcase (in place) the argument.
  */
 
-    void
-upcase(argument)
-    register char *argument;
+void
+upcase(char *argument)
 {
     register int c;
 
@@ -86,9 +85,8 @@ upcase(argument)
  * Compensate for differences in 4.2 and 4.3 systems.
  */
 
-    int
-SetSockOpt(fd, level, option, yesno)
-    int fd, level, option, yesno;
+int
+SetSockOpt(int fd, int level, int option, int yesno)
 {
 #ifndef	NOT43
     return setsockopt(fd, level, option,
@@ -109,9 +107,8 @@ SetSockOpt(fd, level, option, yesno)
 
 unsigned char NetTraceFile[256] = "(standard output)";
 
-    void
-SetNetTrace(file)
-    register char *file;
+void
+SetNetTrace(char *file)
 {
     if (NetTrace && NetTrace != stdout)
 	fclose(NetTrace);
@@ -127,11 +124,8 @@ SetNetTrace(file)
     strcpy((char *)NetTraceFile, "(standard output)");
 }
 
-    void
-Dump(direction, buffer, length)
-    char direction;
-    unsigned char *buffer;
-    int length;
+void
+Dump(char direction, unsigned char *buffer, int length)
 {
 #   define BYTES_PER_LINE	32
 #   define min(x,y)	((x<y)? x:y)
@@ -179,10 +173,8 @@ Dump(direction, buffer, length)
 }
 
 
-	void
-printoption(direction, cmd, option)
-	char *direction;
-	int cmd, option;
+void
+printoption(char *direction, int cmd, int option)
 {
 	if (!showoptions)
 		return;
@@ -215,8 +207,8 @@ printoption(direction, cmd, option)
 	return;
 }
 
-    void
-optionstatus()
+void
+optionstatus(void)
 {
     register int i;
     extern char will_wont_resp[], do_dont_resp[];
@@ -292,11 +284,8 @@ optionstatus()
 
 }
 
-    void
-printsub(direction, pointer, length)
-    char direction;	/* '<' or '>' */
-    unsigned char *pointer;	/* where suboption data sits */
-    int		  length;	/* length of suboption data */
+void
+printsub(char direction, unsigned char *pointer, int length)
 {
     register int i;
     char buf[512];
@@ -856,8 +845,8 @@ printsub(direction, pointer, length)
  *			way to the kernel (thus the select).
  */
 
-    void
-EmptyTerminal()
+void
+EmptyTerminal(void)
 {
     fd_set	outs;
 
@@ -877,8 +866,8 @@ EmptyTerminal()
     }
 }
 
-    void
-SetForExit()
+void
+SetForExit(void)
 {
     setconnmode(0);
     do {
@@ -893,18 +882,15 @@ SetForExit()
     setcommandmode();
 }
 
-    void
-Exit(returnCode)
-    int returnCode;
+void
+Exit(int returnCode)
 {
     SetForExit();
     exit(returnCode);
 }
 
-    void
-ExitString(string, returnCode)
-    char *string;
-    int returnCode;
+void
+ExitString(char *string, int returnCode)
 {
     SetForExit();
     fwrite(string, 1, strlen(string), stderr);

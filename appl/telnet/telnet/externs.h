@@ -200,9 +200,9 @@ extern jmp_buf
 
 extern void
     command P((int, char *, int)),
-    Dump P((int, unsigned char *, int)),
+    Dump P((char, unsigned char *, int)),
     printoption P((char *, int, int)),
-    printsub P((int, unsigned char *, int)),
+    printsub P((char, unsigned char *, int)),
     sendnaws P((void)),
     setconnmode P((int)),
     setcommandmode P((void)),
