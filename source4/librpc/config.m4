@@ -3,7 +3,6 @@ dnl # LIBRPC subsystem
 SMB_SUBSYSTEM_MK(LIBNDR_RAW,librpc/config.mk)
 
 SMB_SUBSYSTEM_NOPROTO(LIBNDR_GEN)
-SMB_MODULE_MK(ndr_echo, LIBNDR_GEN_ECHO, STATIC, librpc/config.m4)
 SMB_SUBSYSTEM(LIBNDR_GEN,[],
 		[librpc/gen_ndr/tables.o
 		librpc/gen_ndr/ndr_audiosrv.o
