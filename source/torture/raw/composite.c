@@ -28,7 +28,7 @@
 
 static void loadfile_complete(struct smbcli_composite *c)
 {
-	int *count = c->async.private;
+	int *count = talloc_get_type(c->async.private, int);
 	(*count)++;
 }
 
@@ -45,7 +45,8 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	char *data;
 	size_t len = random() % 100000;
 	const int num_ops = 50;
-	int i, count=0;
+	int i;
+	int *count = talloc_zero(mem_ctx, int);
 
 	data = talloc_array(mem_ctx, uint8_t, len);
 
@@ -72,16 +73,16 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=0;i<num_ops;i++) {
 		c[i] = smb_composite_loadfile_send(cli->tree, &io2);
 		c[i]->async.fn = loadfile_complete;
-		c[i]->async.private = &count;
+		c[i]->async.private = count;
 	}
 
 	printf("waiting for completion\n");
-	while (count != num_ops) {
+	while (*count != num_ops) {
 		event_loop_once(cli->transport->socket->event.ctx);
-		printf("count=%d\r", count);
+		printf("count=%d\r", *count);
 		fflush(stdout);
 	}
-	printf("count=%d\n", count);
+	printf("count=%d\n", *count);
 	
 	for (i=0;i<num_ops;i++) {
 		status = smb_composite_loadfile_recv(c[i], mem_ctx);
