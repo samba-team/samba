@@ -1,3 +1,8 @@
+2000-12-11  Assar Westerlund  <assar@sics.se>
+
+	* vis.c: s/u_int32_t/unsigned/ for systems that do not define
+	u_int32_t
+
 2000-12-10  Johan Danielsson  <joda@pdc.kth.se>
 
 	* Makefile.am: rename some headers to avoid conflict with possible

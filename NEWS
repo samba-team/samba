@@ -18,6 +18,8 @@ Changes in release 0.3d
 
  * update config.guess and config.sub
 
+ * lib/roken: more stuff implemented
+
  * bug fixes and portability enhancements
 
 Changes in release 0.3c
