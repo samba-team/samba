@@ -460,7 +460,8 @@ int main(int argc, char **argv)
 	}
 
 	if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
-		DEBUG(0, ("error opening config file\n"));
+		fprintf(stderr, "wbinfo: error opening config file %s. Error was %s\n",
+			dyn_CONFIGFILE, strerror(errno));
 		exit(1);
 	}
 	
