@@ -1753,9 +1753,6 @@ AC_ARG_WITH(tdbpwd,
 )
 
 #################################################
-# removed until we get the code actually working
-# --jerry
-#
 # check for a LDAP password database
 AC_MSG_CHECKING(whether to use LDAP password database)
 AC_ARG_WITH(ldap,
