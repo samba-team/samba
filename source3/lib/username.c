@@ -493,7 +493,7 @@ BOOL user_in_list(const char *user,char **list)
 
 	while (*list) {
 
-		DEBUG(10,("user_in_list: checking user |%s| in group |%s|\n", user, *list));
+		DEBUG(10,("user_in_list: checking user |%s| against |%s|\n", user, *list));
 
 		/*
 		 * Check raw username.
