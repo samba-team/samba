@@ -214,8 +214,6 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
 			token->num_sids++;
 		}
 	}
-	for (i = 0; i < ngroups; i++)
-		gid_to_sid( &psids[i+2], groups[i]);
 
 	return token;
 }
