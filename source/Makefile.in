@@ -419,7 +419,7 @@ debug2html : CHECK bin/debug2html
 
 smbfilter : CHECK bin/smbfilter
 
-nsswitch : CHECK $(WINBIND_PROGS)
+nsswitch : CHECK @WINBIND_TARGETS@
 
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
