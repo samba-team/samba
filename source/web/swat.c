@@ -737,7 +737,16 @@ static void wizard_page(void)
 	d_printf("<td><input type=radio name=\"WINSType\" value=0 %s> Not Used&nbsp;</td>", (winstype == 0) ? "checked" : "");
 	d_printf("<td><input type=radio name=\"WINSType\" value=1 %s> Server for client use&nbsp;</td>", (winstype == 1) ? "checked" : "");
 	d_printf("<td><input type=radio name=\"WINSType\" value=2 %s> Client of another WINS server&nbsp;</td>", (winstype == 2) ? "checked" : "");
-	d_printf("<tr><td></td><td></td><td></td><td>Remote WINS Server&nbsp;<input type=text size=\"16\" name=\"WINSAddr\" value=\"%s\"></td></tr>",lp_wins_server_list());
+	d_printf("<tr><td></td><td></td><td></td><td>Remote WINS Server&nbsp;<input type=text size=\"16\" name=\"WINSAddr\" value=\"");
+	
+	/* Print out the list of wins servers */
+	if(lp_wins_server_list()) {
+		int i;
+		const char **wins_servers = lp_wins_server_list();
+		for(i = 0; wins_servers[i]; i++) d_printf("%s ", wins_servers[i]);
+	}
+	
+	d_printf("\"></td></tr>");
 	if (winstype == 3) {
 		d_printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">Error: WINS Server Mode and WINS Support both set in smb.conf</font></td></tr>");
 		d_printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">Please Select desired WINS mode above.</font></td></tr>");
