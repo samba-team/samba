@@ -137,13 +137,13 @@ chdir $curdir;
 open(IDB,"> $curdir/$PKG.idb") || die "Unable to open $PKG.idb for output\n";
 
 print IDB "f 0644 root sys etc/config/samba $SRCPFX/packaging/SGI/samba.config $PKG.sw.base config(update)\n";
-print IDB "f 0644 root sys etc/config/winbindd $SRCPFX/packaging/SGI/winbindd.config $PKG.sw.base config(update)\n";
+print IDB "f 0644 root sys etc/config/winbind $SRCPFX/packaging/SGI/winbindd.config $PKG.sw.base config(update)\n";
 print IDB "f 0755 root sys etc/init.d/samba $SRCPFX/packaging/SGI/samba.rc $PKG.sw.base\n";
-print IDB "f 0755 root sys etc/init.d/winbindd $SRCPFX/packaging/SGI/winbindd.rc $PKG.sw.base\n";
-print IDB "l 0000 root sys etc/rc0.d/K36winbindd $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/winbindd)\n";
+print IDB "f 0755 root sys etc/init.d/winbind $SRCPFX/packaging/SGI/winbindd.rc $PKG.sw.base\n";
+print IDB "l 0000 root sys etc/rc0.d/K36winbind $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/winbind)\n";
 print IDB "l 0000 root sys etc/rc0.d/K37samba $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/samba)\n";
 print IDB "l 0000 root sys etc/rc2.d/S81samba $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/samba)\n";
-print IDB "l 0000 root sys etc/rc2.d/S82winbindd $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/winbindd)\n";
+print IDB "l 0000 root sys etc/rc2.d/S82winbind $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/winbind)\n";
 
 if ($PKG eq "samba_irix") {
   print IDB "d 0755 root sys usr/relnotes/samba_irix $SRCPFX/packaging/SGI $PKG.man.relnotes\n";
