@@ -278,6 +278,26 @@ get_cred_cache(krb5_context context,
     return ret;
 }
 
+static kadm5_ret_t
+open_socket(struct hostent *hp, short port, int *sock)
+{
+    struct sockaddr_in sin;
+    int s;
+    s = socket(AF_INET, SOCK_STREAM, 0);
+    if(s < 0)
+	return KADM5_FAILURE;
+    memset(&sin, 0, sizeof(sin));
+    sin.sin_family = AF_INET;
+    sin.sin_port   = port;
+    memcpy(&sin.sin_addr, hp->h_addr, hp->h_length);
+    if(connect(s, (struct sockaddr*)&sin, sizeof(sin)) < 0){
+	close(s);
+	return KADM5_RPC_ERROR;
+    }
+    *sock = s;
+    return 0;
+}
+
 static kadm5_ret_t 
 kadm5_c_init_with_context(krb5_context context,
 			  const char *client_name, 
@@ -296,26 +316,19 @@ kadm5_c_init_with_context(krb5_context context,
     krb5_principal server;
     krb5_ccache cc;
     int s;
-    struct sockaddr_in sin;
     struct hostent *hp;
 
     ret = _kadm5_c_init_context(&ctx, realm_params, context);
     if(ret)
 	return ret;
-    s = socket(AF_INET, SOCK_STREAM, 0);
-    if(s < 0)
-	return KADM5_FAILURE;
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    sin.sin_port   = ctx->kadmind_port;
     hp = gethostbyname(ctx->admin_server);
     if(hp == NULL)
 	return KADM5_BAD_SERVER_NAME;
-    memcpy(&sin.sin_addr, hp->h_addr, hp->h_length);
-    if(connect(s, (struct sockaddr*)&sin, sizeof(sin)) < 0){
-	close(s);
-	return KADM5_RPC_ERROR;
-    }
+    
+    ret = open_socket(hp, ctx->kadmind_port, &s);
+    if(ret)
+	return ret;
+
     ret = get_cred_cache(context, client_name, service_name, 
 			 password, prompter, keytab, ccache, &cc);
     
@@ -331,9 +344,40 @@ kadm5_c_init_with_context(krb5_context context,
 	return ret;
     }
     ctx->ac = NULL;
-    ret = krb5_sendauth(context, &ctx->ac, &s, KADMIN_APPL_VERSION, NULL, 
+
+    ret = krb5_sendauth(context, &ctx->ac, &s, 
+			KADMIN_APPL_VERSION, NULL, 
 			server, AP_OPTS_MUTUAL_REQUIRED, 
 			NULL, NULL, cc, NULL, NULL, NULL);
+    if(ret == 0) {
+	krb5_data params, enc_data;
+	ret = _kadm5_marshal_params(context, realm_params, &params);
+	
+	ret = krb5_mk_priv(context,
+			   ctx->ac,
+			   &params,
+			   &enc_data,
+			   NULL);
+
+	ret = krb5_write_message(context, &s, &enc_data);
+	
+	krb5_data_free(&params);
+	krb5_data_free(&enc_data);
+    } else if(ret == KRB5_SENDAUTH_BADAPPLVERS) {
+	close(s);
+	ret = open_socket(hp, ctx->kadmind_port, &s);
+	if(ret)
+	    return ret;
+	ret = krb5_sendauth(context, &ctx->ac, &s, 
+			    KADMIN_OLD_APPL_VERSION, NULL, 
+			    server, AP_OPTS_MUTUAL_REQUIRED, 
+			    NULL, NULL, cc, NULL, NULL, NULL);
+    }
+    if(ret) {
+	close(s);
+	return ret;
+    }
+    
     krb5_free_principal(context, server);
     if(ccache == NULL)
 	krb5_cc_close(context, cc);
