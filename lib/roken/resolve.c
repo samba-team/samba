@@ -354,14 +354,17 @@ parse_reply(const unsigned char *data, size_t len)
 	return NULL;
 
     p = data;
-#if 0
-    /* doesn't work on Crays */
-    memcpy(&r->h, p, sizeof(HEADER));
-    p += sizeof(HEADER);
-#else
     memcpy(&r->h, p, 12); /* XXX this will probably be mostly garbage */
+
+    r->h.id = (p[0] << 8) | p[1];
+    r->h.misc = (p[2] << 8) | p[3];
+    r->h.qdcount = (p[4] << 8) | p[5];
+    r->h.ancount = (p[6] << 8) | p[7];
+    r->h.nscount = (p[8] << 8) | p[9];
+    r->h.arcount = (p[10] << 8) | p[11];
+
     p += 12;
-#endif
+
     if(ntohs(r->h.qdcount) != 1) {
 	free(r);
 	return NULL;
