@@ -66,7 +66,7 @@ int read_predict(int fd,int offset,char *buf,char **ptr,int num)
   if (ret == num) {
     predict_skip = True;
   } else {
-    struct stat rp_stat;
+    SMB_STRUCT_STAT rp_stat;
 
     /* Find the end of the file - ensure we don't
        read predict beyond it. */

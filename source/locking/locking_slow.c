@@ -159,7 +159,7 @@ static BOOL slow_lock_share_entry(connection_struct *conn,
 
     do
     {
-      struct stat dummy_stat;
+      SMB_STRUCT_STAT dummy_stat;
 
       fd = (int)open(fname,read_only?O_RDONLY:(O_RDWR|O_CREAT),
 		     SHARE_FILE_MODE);
@@ -221,7 +221,7 @@ static BOOL slow_unlock_share_entry(connection_struct *conn,
 {
   int fd = token;
   int ret = True;
-  struct stat sb;
+  SMB_STRUCT_STAT sb;
   pstring fname;
 
   if (read_only) return True;
@@ -267,7 +267,7 @@ Read a share file into a buffer.
 ********************************************************************/
 static int read_share_file(connection_struct *conn, int fd, char *fname, char **out, BOOL *p_new_file)
 {
-  struct stat sb;
+  SMB_STRUCT_STAT sb;
   char *buf;
   int size;
 
@@ -680,7 +680,7 @@ static BOOL slow_set_share_mode(int token,files_struct *fsp, uint16 port, uint16
   pstring fname;
   int fd = (int)token;
   int pid = (int)getpid();
-  struct stat sb;
+  SMB_STRUCT_STAT sb;
   char *buf;
   int num_entries;
   int header_size;

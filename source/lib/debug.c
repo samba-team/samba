@@ -249,7 +249,7 @@ void force_check_log_size( void )
 static void check_log_size( void )
   {
   int         maxlog;
-  struct stat st;
+  SMB_STRUCT_STAT st;
 
   if( debug_count++ < 100 || getuid() != 0 )
     return;

@@ -202,7 +202,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
   int unixmode;
   int size=0,fmode=0,mtime=0,rmode;
   SMB_INO_T inode = 0;
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   int smb_action = 0;
   BOOL bad_path = False;
   files_struct *fsp;
@@ -302,7 +302,7 @@ static int get_lanman2_dir_entry(connection_struct *conn,
 {
   char *dname;
   BOOL found = False;
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   pstring mask;
   pstring pathreal;
   pstring fname;
@@ -376,7 +376,7 @@ static int get_lanman2_dir_entry(connection_struct *conn,
           if(needslash)
   	    pstrcat(pathreal,"/");
 	  pstrcat(pathreal,dname);
-	  if (sys_stat(pathreal,&sbuf) != 0) 
+	  if (dos_stat(pathreal,&sbuf) != 0) 
 	    {
 	      DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",pathreal,strerror(errno)));
 	      continue;
@@ -1062,13 +1062,13 @@ static int call_trans2qfsinfo(connection_struct *conn,
   char *params = *pparams;
   uint16 info_level = SVAL(params,0);
   int data_len;
-  struct stat st;
+  SMB_STRUCT_STAT st;
   char *vname = volume_label(SNUM(conn));
   int snum = SNUM(conn);
  
   DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
-  if(sys_stat(".",&st)!=0) {
+  if(dos_stat(".",&st)!=0) {
     DEBUG(2,("call_trans2qfsinfo: stat of . failed (%s)\n", strerror(errno)));
     return (ERROR(ERRSRV,ERRinvdevice));
   }
@@ -1203,7 +1203,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
   int mode=0;
   int size=0;
   unsigned int data_size;
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   pstring fname1;
   char *fname;
   char *p;
@@ -1229,7 +1229,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
     fname = &fname1[0];
     pstrcpy(fname,&params[6]);
     unix_convert(fname,conn,0,&bad_path,&sbuf);
-    if (!check_name(fname,conn) || (!VALID_STAT(sbuf) && sys_stat(fname,&sbuf))) {
+    if (!check_name(fname,conn) || (!VALID_STAT(sbuf) && dos_stat(fname,&sbuf))) {
       DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
       if((errno == ENOENT) && bad_path)
       {
@@ -1434,7 +1434,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   int mode=0;
   int size=0;
   struct utimbuf tvs;
-  struct stat st;
+  SMB_STRUCT_STAT st;
   pstring fname1;
   char *fname;
   int fd = -1;
@@ -1473,7 +1473,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       return(UNIXERROR(ERRDOS,ERRbadpath));
     }
  
-    if(!VALID_STAT(st) && sys_stat(fname,&st)!=0) {
+    if(!VALID_STAT(st) && dos_stat(fname,&st)!=0) {
       DEBUG(3,("stat of %s failed (%s)\n", fname, strerror(errno)));
       if((errno == ENOENT) && bad_path)
       {
@@ -1601,7 +1601,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   }
 
   /* check the mode isn't different, before changing it */
-  if (mode != dos_mode(conn, fname, &st) && dos_chmod(conn, fname, mode, NULL))
+  if (mode != dos_mode(conn, fname, &st) && file_chmod(conn, fname, mode, NULL))
   {
     DEBUG(2,("chmod of %s failed (%s)\n", fname, strerror(errno)));
     return(ERROR(ERRDOS,ERRnoaccess));
@@ -1611,7 +1611,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   {
     if (fd == -1)
     {
-      fd = sys_open(fname,O_RDWR,0);
+      fd = dos_open(fname,O_RDWR,0);
       if (fd == -1)
       {
         return(ERROR(ERRDOS,ERRbadpath));
@@ -1653,7 +1653,7 @@ static int call_trans2mkdir(connection_struct *conn,
 
   unix_convert(directory,conn,0,&bad_path,NULL);
   if (check_name(directory,conn))
-    ret = sys_mkdir(directory,unix_mode(conn,aDIR));
+    ret = dos_mkdir(directory,unix_mode(conn,aDIR));
   
   if(ret < 0)
     {

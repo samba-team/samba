@@ -47,7 +47,7 @@ extern pstring myhostname;
 
 void do_global_checks(void)
 {
-	struct stat st;
+	SMB_STRUCT_STAT st;
 	if (lp_security() > SEC_SHARE && lp_revalidate(-1)) {
 		printf("WARNING: the 'revalidate' parameter is ignored in all but \
 'security=share' mode.\n");

@@ -751,7 +751,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   pstring name;
   BOOL ok = False;
   BOOL bad_path = False;
-  struct stat st;
+  SMB_STRUCT_STAT st;
  
   pstrcpy(name,smb_buf(inbuf) + 1);
   unix_convert(name,conn,0,&bad_path,&st);
@@ -806,7 +806,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 {
   pstring fname;
   int outsize = 0;
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   BOOL ok = False;
   int mode=0;
   uint32 size=0;
@@ -829,7 +829,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   else
     if (check_name(fname,conn))
     {
-      if (VALID_STAT(sbuf) || sys_stat(fname,&sbuf) == 0)
+      if (VALID_STAT(sbuf) || dos_stat(fname,&sbuf) == 0)
       {
         mode = dos_mode(conn,fname,&sbuf);
         size = sbuf.st_size;
@@ -886,7 +886,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL ok=False;
   int mode;
   time_t mtime;
-  struct stat st;
+  SMB_STRUCT_STAT st;
   BOOL bad_path = False;
  
   pstrcpy(fname,smb_buf(inbuf) + 1);
@@ -898,7 +898,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   if (VALID_STAT_OF_DIR(st) || directory_exist(fname,NULL))
     mode |= aDIR;
   if (check_name(fname,conn))
-    ok =  (dos_chmod(conn,fname,mode,NULL) == 0);
+    ok =  (file_chmod(conn,fname,mode,NULL) == 0);
   if (ok)
     ok = set_filetime(conn,fname,mtime);
   
@@ -1248,7 +1248,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   time_t mtime=0;
   int unixmode;
   int rmode=0;
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   BOOL bad_path = False;
   files_struct *fsp;
   int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
@@ -1345,7 +1345,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   int smb_ofun = SVAL(inbuf,smb_vwv8);
   int unixmode;
   int size=0,fmode=0,mtime=0,rmode=0;
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   int smb_action = 0;
   BOOL bad_path = False;
   files_struct *fsp;
@@ -1638,12 +1638,12 @@ check if a user is allowed to delete a file
 ********************************************************************/
 static BOOL can_delete(char *fname,connection_struct *conn, int dirtype)
 {
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   int fmode;
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (sys_lstat(fname,&sbuf) != 0) return(False);
+  if (dos_lstat(fname,&sbuf) != 0) return(False);
   fmode = dos_mode(conn,fname,&sbuf);
   if (fmode & aDIR) return(False);
   if (!lp_delete_readonly(SNUM(conn))) {
@@ -1700,7 +1700,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   if (!has_wild) {
     pstrcat(directory,"/");
     pstrcat(directory,mask);
-    if (can_delete(directory,conn,dirtype) && !sys_unlink(directory)) count++;
+    if (can_delete(directory,conn,dirtype) && !dos_unlink(directory)) count++;
     if (!count) exists = file_exist(directory,NULL);    
   } else {
     void *dirptr = NULL;
@@ -1731,7 +1731,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	    error = ERRnoaccess;
 	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 	    if (!can_delete(fname,conn,dirtype)) continue;
-	    if (!sys_unlink(fname)) count++;
+	    if (!dos_unlink(fname)) count++;
 	    DEBUG(3,("reply_unlink : doing unlink on %s\n",fname));
 	  }
 	CloseDir(dirptr);
@@ -1813,7 +1813,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
     int sizeneeded = startpos + maxcount;
 	    
     if (size < sizeneeded) {
-      struct stat st;
+      SMB_STRUCT_STAT st;
       if (fstat(fsp->fd_ptr->fd,&st) == 0)
         size = st.st_size;
       if (!fsp->can_write) 
@@ -2787,7 +2787,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   unix_convert(directory,conn,0,&bad_path,NULL);
   
   if (check_name(directory, conn))
-    ret = sys_mkdir(directory,unix_mode(conn,aDIR));
+    ret = dos_mkdir(directory,unix_mode(conn,aDIR));
   
   if (ret < 0)
   {
@@ -2822,7 +2822,7 @@ static BOOL recursive_rmdir(char *directory)
   while((dname = ReadDirName(dirptr)))
   {
     pstring fullname;
-    struct stat st;
+    SMB_STRUCT_STAT st;
 
     if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
       continue;
@@ -2838,7 +2838,7 @@ static BOOL recursive_rmdir(char *directory)
     pstrcat(fullname, "/");
     pstrcat(fullname, dname);
 
-    if(sys_lstat(fullname, &st) != 0)
+    if(dos_lstat(fullname, &st) != 0)
     {
       ret = True;
       break;
@@ -2851,13 +2851,13 @@ static BOOL recursive_rmdir(char *directory)
         ret = True;
         break;
       }
-      if(sys_rmdir(fullname) != 0)
+      if(dos_rmdir(fullname) != 0)
       {
         ret = True;
         break;
       }
     }
-    else if(sys_unlink(fullname) != 0)
+    else if(dos_unlink(fullname) != 0)
     {
       ret = True;
       break;
@@ -2884,7 +2884,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     {
 
       dptr_closepath(directory,SVAL(inbuf,smb_pid));
-      ok = (sys_rmdir(directory) == 0);
+      ok = (dos_rmdir(directory) == 0);
       if(!ok && (errno == ENOTEMPTY) && lp_veto_files(SNUM(conn)))
         {
           /* Check to see if the only thing in this directory are
@@ -2914,7 +2914,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
                   while ((dname = ReadDirName(dirptr)))
                     {
                       pstring fullname;
-                      struct stat st;
+                      SMB_STRUCT_STAT st;
 
                       if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
                         continue;
@@ -2929,7 +2929,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
                       pstrcat(fullname, "/");
                       pstrcat(fullname, dname);
                       
-                      if(sys_lstat(fullname, &st) != 0)
+                      if(dos_lstat(fullname, &st) != 0)
                         break;
                       if(st.st_mode & S_IFDIR)
                       {
@@ -2938,15 +2938,15 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
                           if(recursive_rmdir(fullname) != 0)
                             break;
                         }
-                        if(sys_rmdir(fullname) != 0)
+                        if(dos_rmdir(fullname) != 0)
                           break;
                       }
-                      else if(sys_unlink(fullname) != 0)
+                      else if(dos_unlink(fullname) != 0)
                         break;
                     }
                   CloseDir(dirptr);
                   /* Retry the rmdir */
-                  ok = (sys_rmdir(directory) == 0);
+                  ok = (dos_rmdir(directory) == 0);
                 }
               else
                 CloseDir(dirptr);
@@ -3047,11 +3047,11 @@ check if a user is allowed to rename a file
 ********************************************************************/
 static BOOL can_rename(char *fname,connection_struct *conn)
 {
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (sys_lstat(fname,&sbuf) != 0) return(False);
+  if (dos_lstat(fname,&sbuf) != 0) return(False);
   if (!check_file_sharing(conn,fname,True)) return(False);
 
   return(True);
@@ -3171,13 +3171,13 @@ int rename_internals(connection_struct *conn,
 			 */
 			if(resolve_wildcards(directory,newname) &&
 			   can_rename(directory,conn) &&
-			   !sys_rename(directory,newname))
+			   !dos_rename(directory,newname))
 				count++;
 		} else {
 			if (resolve_wildcards(directory,newname) && 
 			    can_rename(directory,conn) && 
 			    !file_exist(newname,NULL) &&
-			    !sys_rename(directory,newname))
+			    !dos_rename(directory,newname))
 				count++;
 		}
 
@@ -3232,7 +3232,7 @@ int rename_internals(connection_struct *conn,
 					continue;
 				}
 				
-				if (!sys_rename(fname,destname))
+				if (!dos_rename(fname,destname))
 					count++;
 				DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
 			}
@@ -3284,7 +3284,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		      int count,BOOL target_is_directory)
 {
   int Access,action;
-  struct stat st;
+  SMB_STRUCT_STAT st;
   int ret=0;
   files_struct *fsp1,*fsp2;
   pstring dest;
@@ -3940,7 +3940,7 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
 ****************************************************************************/
 int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   int outsize = 0;
   int mode;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);

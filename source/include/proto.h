@@ -165,18 +165,18 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
-int sys_unlink(char *fname);
-int sys_open(char *fname,int flags,int mode);
-DIR *sys_opendir(char *dname);
-int sys_stat(char *fname,struct stat *sbuf);
+int dos_unlink(char *fname);
+int dos_open(char *fname,int flags,int mode);
+DIR *dos_opendir(char *dname);
+int dos_stat(char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_waitpid(pid_t pid,int *status,int options);
-int sys_lstat(char *fname,struct stat *sbuf);
-int sys_mkdir(char *dname,int mode);
-int sys_rmdir(char *dname);
-int sys_chdir(char *dname);
-int sys_utime(char *fname,struct utimbuf *times);
-int sys_rename(char *from, char *to);
-int sys_chmod(char *fname,int mode);
+int dos_lstat(char *fname,struct stat *sbuf);
+int dos_mkdir(char *dname,int mode);
+int dos_rmdir(char *dname);
+int dos_chdir(char *dname);
+int dos_utime(char *fname,struct utimbuf *times);
+int dos_rename(char *from, char *to);
+int dos_chmod(char *fname,int mode);
 char *sys_getwd(char *s);
 int sys_chown(char *fname,int uid,int gid);
 int sys_chroot(char *dname);
@@ -199,7 +199,7 @@ time_t make_unix_date2(void *date_ptr);
 time_t make_unix_date3(void *date_ptr);
 char *http_timestring(time_t t);
 char *timestring(void );
-time_t get_create_time(struct stat *st,BOOL fake_dirs);
+time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs);
 
 /*The following definitions come from  lib/ufc.c  */
 
@@ -227,9 +227,9 @@ char *StrCpy(char *dest,char *src);
 char *StrnCpy(char *dest,char *src,int n);
 void putip(void *dest,void *src);
 int name_mangle( char *In, char *Out, char name_type );
-BOOL file_exist(char *fname,struct stat *sbuf);
+BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf);
 time_t file_modtime(char *fname);
-BOOL directory_exist(char *dname,struct stat *st);
+BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st);
 uint32 file_size(char *file_name);
 char *attrib_string(int mode);
 int StrCaseCmp(char *s, char *t);
@@ -1977,7 +1977,7 @@ BOOL dptr_fill(char *buf1,unsigned int key);
 BOOL dptr_zero(char *buf);
 void *dptr_fetch(char *buf,int *num);
 void *dptr_fetch_lanman2(int dptr_num);
-BOOL dir_check_ftype(connection_struct *conn,int mode,struct stat *st,int dirtype);
+BOOL dir_check_ftype(connection_struct *conn,int mode,SMB_STRUCT_STAT *st,int dirtype);
 BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,int *size,int *mode,time_t *date,BOOL check_descend);
 void *OpenDir(connection_struct *conn, char *name, BOOL use_veto);
 void CloseDir(void *p);
@@ -1991,8 +1991,8 @@ void DirCacheFlush(int snum);
 /*The following definitions come from  smbd/dosmode.c  */
 
 mode_t unix_mode(connection_struct *conn,int dosmode);
-int dos_mode(connection_struct *conn,char *path,struct stat *sbuf);
-int dos_chmod(connection_struct *conn,char *fname,int dosmode,struct stat *st);
+int dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf);
+int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *st);
 int file_utime(connection_struct *conn, char *fname, struct utimbuf *times);
 BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime);
 
@@ -2015,14 +2015,14 @@ BOOL fname_equal(char *name1, char *name2);
 BOOL mangled_equal(char *name1, char *name2);
 void print_stat_cache_statistics(void);
 BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, 
-                  BOOL *bad_path, struct stat *pst);
+                  BOOL *bad_path, SMB_STRUCT_STAT *pst);
 BOOL check_name(char *name,connection_struct *conn);
 BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache);
 
 /*The following definitions come from  smbd/files.c  */
 
 files_struct *file_new(void );
-file_fd_struct *fd_get_already_open(struct stat *sbuf);
+file_fd_struct *fd_get_already_open(SMB_STRUCT_STAT *sbuf);
 file_fd_struct *fd_get_new(void);
 void file_close_conn(connection_struct *conn);
 void file_init(void);

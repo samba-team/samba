@@ -51,7 +51,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   uid_t euser_id;
   int r;
   struct dqblk D;
-  struct stat S;
+  SMB_STRUCT_STAT S;
   FILE *fp;
   struct mntent *mnt;
   int devno;
@@ -135,7 +135,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 {
   struct mntent *mnt;
   FILE *fd;
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   dev_t devno ;
   static dev_t devno_cached = 0 ;
   static pstring name;
@@ -255,7 +255,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   static pstring name;
 #endif
   FILE *fd;
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   dev_t devno ;
   static dev_t devno_cached = 0 ;
   int found ;
@@ -377,7 +377,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   uid_t user_id, euser_id;
   int r, save_errno;
   struct dqblk D;
-  struct stat S;
+  SMB_STRUCT_STAT S;
 
   euser_id = geteuid();
   user_id = getuid();
@@ -433,7 +433,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   int r;
   struct dqblk D;
   struct fs_disk_quota        F;
-  struct stat S;
+  SMB_STRUCT_STAT S;
   FILE *fp;
   struct mntent *mnt;
   int devno;
@@ -573,7 +573,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   struct dqblk D;
 #if !defined(__FreeBSD__) && !defined(AIX) && !defined(__OpenBSD__)
   char dev_disk[256];
-  struct stat S;
+  SMB_STRUCT_STAT S;
   /* find the block device file */
   if ((stat(path, &S)<0) ||
       (devnm(S_IFBLK, S.st_dev, dev_disk, 256, 0)<0)) return (False);

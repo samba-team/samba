@@ -416,7 +416,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	int unixmode, pnum = -1;
 	int fmode=0,mtime=0,rmode=0;
 	off_t file_len = 0;
-	struct stat sbuf;
+	SMB_STRUCT_STAT sbuf;
 	int smb_action = 0;
 	BOOL bad_path = False;
 	files_struct *fsp=NULL;
@@ -596,7 +596,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 		
 	if(fsp->is_directory) {
-		if(sys_stat(fsp->fsp_name, &sbuf) != 0) {
+		if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
 			close_directory(fsp);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
@@ -701,7 +701,7 @@ static int call_nt_transact_create(connection_struct *conn,
   int unixmode, pnum = -1;
   int fmode=0,mtime=0,rmode=0;
   off_t file_len = 0;
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   int smb_action = 0;
   BOOL bad_path = False;
   files_struct *fsp = NULL;
@@ -1084,7 +1084,7 @@ void process_pending_change_notify_queue(time_t t)
    */
 
   while((cnbp != NULL) && (cnbp->next_check_time <= t)) {
-    struct stat st;
+    SMB_STRUCT_STAT st;
     files_struct *fsp = cnbp->fsp;
     connection_struct *conn = cnbp->conn;
     uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : 
@@ -1121,7 +1121,7 @@ void process_pending_change_notify_queue(time_t t)
       continue;
     }
 
-    if(sys_stat(fsp->fsp_name, &st) < 0) {
+    if(dos_stat(fsp->fsp_name, &st) < 0) {
       DEBUG(0,("process_pending_change_notify_queue: Unable to stat directory %s. \
 Error was %s.\n", fsp->fsp_name, strerror(errno) ));
       /*
@@ -1171,7 +1171,7 @@ static int call_nt_transact_notify_change(connection_struct *conn,
   char *setup = *ppsetup;
   files_struct *fsp;
   change_notify_buf *cnbp;
-  struct stat st;
+  SMB_STRUCT_STAT st;
 
   fsp = file_fsp(setup,4);
 
@@ -1200,7 +1200,7 @@ static int call_nt_transact_notify_change(connection_struct *conn,
    * Store the current timestamp on the directory we are monitoring.
    */
 
-  if(sys_stat(fsp->fsp_name, &st) < 0) {
+  if(dos_stat(fsp->fsp_name, &st) < 0) {
     DEBUG(0,("call_nt_transact_notify_change: Unable to stat name = %s. \
 Error was %s\n", fsp->fsp_name, strerror(errno) ));
     free((char *)cnbp);

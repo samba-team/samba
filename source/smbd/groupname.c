@@ -68,7 +68,7 @@ void load_groupname_map(void)
   static time_t groupmap_file_last_modified = (time_t)0;
   static BOOL initialized = False;
   char *groupname_map_file = lp_groupname_map();
-  struct stat st;
+  SMB_STRUCT_STAT st;
   FILE *fp;
   char *s;
   pstring buf;

@@ -75,7 +75,7 @@ mode_t unix_mode(connection_struct *conn,int dosmode)
 /****************************************************************************
   change a unix mode to a dos mode
 ****************************************************************************/
-int dos_mode(connection_struct *conn,char *path,struct stat *sbuf)
+int dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
 {
   int result = 0;
 
@@ -139,16 +139,16 @@ int dos_mode(connection_struct *conn,char *path,struct stat *sbuf)
 /*******************************************************************
 chmod a file - but preserve some bits
 ********************************************************************/
-int dos_chmod(connection_struct *conn,char *fname,int dosmode,struct stat *st)
+int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *st)
 {
-  struct stat st1;
+  SMB_STRUCT_STAT st1;
   int mask=0;
   int tmp;
   int unixmode;
 
   if (!st) {
     st = &st1;
-    if (sys_stat(fname,st)) return(-1);
+    if (dos_stat(fname,st)) return(-1);
   }
 
   if (S_ISDIR(st->st_mode)) dosmode |= aDIR;
@@ -186,23 +186,23 @@ int dos_chmod(connection_struct *conn,char *fname,int dosmode,struct stat *st)
     unixmode |= tmp;
   }
 
-  return(sys_chmod(fname,unixmode));
+  return(dos_chmod(fname,unixmode));
 }
 
 
 /*******************************************************************
-Wrapper around sys_utime that possibly allows DOS semantics rather
+Wrapper around dos_utime that possibly allows DOS semantics rather
 than POSIX.
 *******************************************************************/
 int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 {
   extern struct current_user current_user;
-  struct stat sb;
+  SMB_STRUCT_STAT sb;
   int ret = -1;
 
   errno = 0;
 
-  if(sys_utime(fname, times) == 0)
+  if(dos_utime(fname, times) == 0)
     return 0;
 
   if((errno != EPERM) && (errno != EACCES))
@@ -217,7 +217,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
      (as DOS does).
    */
 
-  if(sys_stat(fname,&sb) != 0)
+  if(dos_stat(fname,&sb) != 0)
     return -1;
 
   /* Check if we have write access. */
@@ -230,7 +230,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 			 current_user.ngroups,current_user.groups)))) {
 		  /* We are allowed to become root and change the filetime. */
 		  become_root(False);
-		  ret = sys_utime(fname, times);
+		  ret = dos_utime(fname, times);
 		  unbecome_root(False);
 	  }
   }

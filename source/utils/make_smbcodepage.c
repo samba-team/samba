@@ -170,7 +170,7 @@ int do_compile(int codepage, char *input_file, char *output_file)
   char output_buf[CODEPAGE_HEADER_SIZE + 4 * MAXCODEPAGELINES];
   int num_lines = 0;
   int i = 0;
-  struct stat st;
+  SMB_STRUCT_STAT st;
 
   /* Get the size of the input file. Read the entire thing into memory. */
   if(stat((char *)input_file, &st)!= 0)
@@ -310,7 +310,7 @@ definition file. File %s has %d.\n", prog_name, MAXCODEPAGELINES, input_file, nu
 int do_decompile( int codepage, char *input_file, char *output_file)
 {
   uint32 size = 0;
-  struct stat st;
+  SMB_STRUCT_STAT st;
   char header_buf[CODEPAGE_HEADER_SIZE];
   char *buf = NULL;
   FILE *fp = NULL;

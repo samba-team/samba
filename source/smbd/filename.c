@@ -231,7 +231,7 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
  Return True if we translated (and did a scuccessful stat on) the entire name.
 *****************************************************************************/
 
-static BOOL stat_cache_lookup( char *name, char *dirpath, char **start, struct stat *pst)
+static BOOL stat_cache_lookup( char *name, char *dirpath, char **start, SMB_STRUCT_STAT *pst)
 {
   stat_cache_entry *scp;
   stat_cache_entry *longest_hit = NULL;
@@ -275,7 +275,7 @@ static BOOL stat_cache_lookup( char *name, char *dirpath, char **start, struct s
    * and then promote it to the top.
    */
 
-  if(sys_stat( longest_hit->translated_name, pst) != 0) {
+  if(dos_stat( longest_hit->translated_name, pst) != 0) {
     /*
      * Discard this entry.
      */
@@ -322,9 +322,9 @@ of a pathname does not exist.
 ****************************************************************************/
 
 BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, 
-                  BOOL *bad_path, struct stat *pst)
+                  BOOL *bad_path, SMB_STRUCT_STAT *pst)
 {
-  struct stat st;
+  SMB_STRUCT_STAT st;
   char *start, *end, *orig_start;
   pstring dirpath;
   pstring orig_path;
@@ -335,7 +335,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   *dirpath = 0;
   *bad_path = False;
   if(pst)
-    memset( (char *)pst, '\0', sizeof(struct stat));
+    memset( (char *)pst, '\0', sizeof(SMB_STRUCT_STAT));
 
   if(saved_last_component)
     *saved_last_component = 0;
@@ -406,7 +406,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
    * stat the name - if it exists then we are all done!
    */
 
-  if (sys_stat(name,&st) == 0) {
+  if (dos_stat(name,&st) == 0) {
     stat_cache_add(orig_path, name);
     DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
     if(pst)
@@ -459,7 +459,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
       /* 
        * Check if the name exists up to this point.
        */
-      if (sys_stat(name, &st) == 0) {
+      if (dos_stat(name, &st) == 0) {
         /*
          * It exists. it must either be a directory or this must be
          * the last part of the path for it to be OK.
@@ -611,8 +611,8 @@ BOOL check_name(char *name,connection_struct *conn)
 #ifdef S_ISLNK
   if (!lp_symlinks(SNUM(conn)))
     {
-      struct stat statbuf;
-      if ( (sys_lstat(name,&statbuf) != -1) &&
+      SMB_STRUCT_STAT statbuf;
+      if ( (dos_lstat(name,&statbuf) != -1) &&
           (S_ISLNK(statbuf.st_mode)) )
         {
           DEBUG(3,("check_name: denied: file path name %s is a symlink\n",name));

@@ -102,12 +102,12 @@ int write_file(files_struct *fsp,char *data,int n)
   }
 
   if (!fsp->modified) {
-    struct stat st;
+    SMB_STRUCT_STAT st;
     fsp->modified = True;
     if (fstat(fsp->fd_ptr->fd,&st) == 0) {
       int dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
       if (MAP_ARCHIVE(fsp->conn) && !IS_DOS_ARCHIVE(dosmode)) {	
-	dos_chmod(fsp->conn,fsp->fsp_name,dosmode | aARCH,&st);
+        file_chmod(fsp->conn,fsp->fsp_name,dosmode | aARCH,&st);
       }
     }  
   }

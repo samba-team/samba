@@ -520,12 +520,12 @@ int name_mangle( char *In, char *Out, char name_type )
 /*******************************************************************
   check if a file exists
 ********************************************************************/
-BOOL file_exist(char *fname,struct stat *sbuf)
+BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
 {
-  struct stat st;
+  SMB_STRUCT_STAT st;
   if (!sbuf) sbuf = &st;
   
-  if (sys_stat(fname,sbuf) != 0) 
+  if (dos_stat(fname,sbuf) != 0) 
     return(False);
 
   return(S_ISREG(sbuf->st_mode));
@@ -536,9 +536,9 @@ check a files mod time
 ********************************************************************/
 time_t file_modtime(char *fname)
 {
-  struct stat st;
+  SMB_STRUCT_STAT st;
   
-  if (sys_stat(fname,&st) != 0) 
+  if (dos_stat(fname,&st) != 0) 
     return(0);
 
   return(st.st_mtime);
@@ -547,14 +547,14 @@ time_t file_modtime(char *fname)
 /*******************************************************************
   check if a directory exists
 ********************************************************************/
-BOOL directory_exist(char *dname,struct stat *st)
+BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st)
 {
-  struct stat st2;
+  SMB_STRUCT_STAT st2;
   BOOL ret;
 
   if (!st) st = &st2;
 
-  if (sys_stat(dname,st) != 0) 
+  if (dos_stat(dname,st) != 0) 
     return(False);
 
   ret = S_ISDIR(st->st_mode);
@@ -568,9 +568,9 @@ returns the size in bytes of the named file
 ********************************************************************/
 uint32 file_size(char *file_name)
 {
-  struct stat buf;
+  SMB_STRUCT_STAT buf;
   buf.st_size = 0;
-  sys_stat(file_name,&buf);
+  dos_stat(file_name,&buf);
   return(buf.st_size);
 }
 
@@ -1205,7 +1205,7 @@ int ChDir(char *path)
 
   if (*path == '/' && strcsequal(LastDir,path)) return(0);
   DEBUG(3,("chdir to %s\n",path));
-  res = sys_chdir(path);
+  res = dos_chdir(path);
   if (!res)
     pstrcpy(LastDir,path);
   return(res);
@@ -1233,7 +1233,7 @@ char *GetWd(char *str)
 {
   pstring s;
   static BOOL getwd_cache_init = False;
-  struct stat st, st2;
+  SMB_STRUCT_STAT st, st2;
   int i;
 
   *s = 0;
@@ -3270,7 +3270,7 @@ int set_filelen(int fd, long len)
 #ifdef HAVE_FTRUNCATE_EXTEND
   return ftruncate(fd, len);
 #else
-  struct stat st;
+  SMB_STRUCT_STAT st;
   char c = 0;
   long currpos = lseek(fd, 0L, SEEK_CUR);
 

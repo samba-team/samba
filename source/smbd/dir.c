@@ -408,7 +408,7 @@ void *dptr_fetch_lanman2(int dptr_num)
 /****************************************************************************
 check a filetype for being valid
 ****************************************************************************/
-BOOL dir_check_ftype(connection_struct *conn,int mode,struct stat *st,int dirtype)
+BOOL dir_check_ftype(connection_struct *conn,int mode,SMB_STRUCT_STAT *st,int dirtype)
 {
   if (((mode & ~dirtype) & (aHIDDEN | aSYSTEM | aDIR)) != 0)
     return False;
@@ -422,7 +422,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,in
 {
   char *dname;
   BOOL found = False;
-  struct stat sbuf;
+  SMB_STRUCT_STAT sbuf;
   pstring path;
   pstring pathreal;
   BOOL isrootdir;
@@ -471,7 +471,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,in
 	  pstrcpy(pathreal,path);
 	  pstrcat(path,fname);
 	  pstrcat(pathreal,dname);
-	  if (sys_stat(pathreal,&sbuf) != 0) 
+	  if (dos_stat(pathreal,&sbuf) != 0) 
 	    {
 	      DEBUG(5,("Couldn't stat 1 [%s]\n",path));
 	      continue;
@@ -519,7 +519,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 {
   Dir *dirp;
   char *n;
-  void *p = sys_opendir(name);
+  void *p = dos_opendir(name);
   int used=0;
 
   if (!p) return(NULL);
