@@ -1,0 +1,72 @@
+#
+# Utilities for driving rpcclient.  
+#
+# These procedures can also be used outside of the DejaGNU testing
+# framework in expect scripts:
+#
+# #!/usr/local/bin/expect
+# 
+# source "../testsuite/lib/rpcclient.exp"
+# spawn_rpcclient -S SERVER -U user%password
+# do_rpcclient "lsaenumdomains\r"
+#
+
+# Variables
+
+set rpc_prompt ".*@.*\\]"
+
+proc spawn_rpcclient { args } {
+    global rpc_prompt
+    set result 0
+    global spawn_id
+
+    # Spawn rpcclient
+
+    spawn bin/rpcclient [lindex $args 0] [lindex $args 1] [lindex $args 2] \
+	    [lindex $args 3] [lindex $args 4]
+
+    # Wait for prompt
+
+    expect {
+	"session setup ok" { set result 1; exp_continue }
+	-re $rpc_prompt    { }
+	"FAILED"           { return $result }
+	timeout            { perror "timed out spawning rpcclient" }
+	eof                { perror "end of file spawning rpcclient" }
+    }
+
+    return $result
+}
+
+# Run a command wait for a prompt
+
+proc do_rpcclient { args } {
+    set action [lindex $args 0]
+    set description [lindex $args 1]
+    set have_verbose 0
+
+    global rpc_prompt
+    
+    if {[info commands verbose] != ""} {
+	set have_verbose 1
+    }
+
+    # Send command
+
+    if { $have_verbose } {
+	verbose $action
+    }
+    send $action
+
+    expect {
+	-re $rpc_prompt  {}
+	timeout          { perror "timed out $description"; return -1 }
+	eof              { perror "end of file description"; return -1 }
+    }
+
+    if { $have_verbose} {
+	verbose $expect_out(buffer)
+    }
+
+    return $expect_out(buffer)
+}
