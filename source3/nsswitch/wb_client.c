@@ -25,6 +25,28 @@
 
 #include "includes.h"
 
+/* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
+   form DOMAIN/user into a domain and a user */
+
+static void parse_domain_user(char *domuser, fstring domain, fstring user)
+{
+        char *p;
+        char *sep = lp_winbind_separator();
+        if (!sep) sep = "\\";
+        p = strchr(domuser,*sep);
+        if (!p) p = strchr(domuser,'\\');
+        if (!p) {
+                fstrcpy(domain,"");
+                fstrcpy(user, domuser);
+                return;
+        }
+        
+        fstrcpy(user, p+1);
+        fstrcpy(domain, domuser);
+        domain[PTR_DIFF(p, domuser)] = 0;
+        strupper(domain);
+}
+
 /* Call winbindd to convert a name to a sid */
 
 BOOL winbind_lookup_name(const char *name, DOM_SID *sid, enum SID_NAME_USE *name_type)
