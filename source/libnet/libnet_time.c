@@ -88,7 +88,7 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 
 disconnect:
 	/* close connection */
-	dcerpc_pipe_close(c.standard.out.dcerpc_pipe);
+	talloc_free(c.standard.out.dcerpc_pipe);
 
 	return status;
 }

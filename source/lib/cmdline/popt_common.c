@@ -177,13 +177,13 @@ static void popt_common_credentials_callback(poptContext con,
 						const char *arg, const void *data)
 {
 	if (reason == POPT_CALLBACK_REASON_PRE) {
-		cmdline_credentials = talloc_zero(talloc_autofree_context(), struct cli_credentials);
-		cli_credentials_guess(cmdline_credentials);
-
+		cmdline_credentials = cli_credentials_init(talloc_autofree_context());
 		return;
 	}
 	
 	if (reason == POPT_CALLBACK_REASON_POST) {
+		cli_credentials_guess(cmdline_credentials);
+
 		if (!dont_ask) {
 			cli_credentials_set_cmdline_callbacks(cmdline_credentials);
 		}
@@ -232,8 +232,7 @@ static void popt_common_credentials_callback(poptContext con,
 			cmdline_credentials->username_obtained = CRED_SPECIFIED;
 			cli_credentials_set_password(cmdline_credentials, opt_password, CRED_SPECIFIED);
 			free(opt_password);
-
-			cli_credentials_set_domain(cmdline_credentials, lp_workgroup(), CRED_SPECIFIED);
+			
 		}
 		/* machine accounts only work with kerberos */
 

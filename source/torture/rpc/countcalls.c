@@ -44,7 +44,7 @@ BOOL torture_rpc_countcalls(void)
 		return False;
 	}
 
-	status = torture_rpc_connection(&p, iface->endpoints->names[0], 
+	status = torture_rpc_connection(NULL, &p, iface->endpoints->names[0], 
 					iface->uuid, iface->if_version);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open '%s' - %s\n", iface->name, nt_errstr(status));
@@ -65,13 +65,14 @@ BOOL torture_rpc_countcalls(void)
 	}
 	
 	if (i==5000) {
+		talloc_free(p);
 		printf("no limit on calls!?\n");
 		return False;
 	}
 
 	printf("Found %d calls\n", i);
 
-	torture_rpc_close(p);
+	talloc_free(p);
 
 	return True;
 }

@@ -294,8 +294,9 @@ static NTSTATUS dcerpc_schannel_client_start(struct gensec_security *gensec_secu
 /*
   get a schannel key using a netlogon challenge on a secondary pipe
 */
-static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
-									struct cli_credentials *credentials,
+static NTSTATUS dcerpc_schannel_key(TALLOC_CTX *tmp_ctx, 
+				    struct dcerpc_pipe *p,
+				    struct cli_credentials *credentials,
 				    int chan_type,
 				    struct creds_CredentialState *creds)
 {
@@ -308,7 +309,6 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	struct samr_Password mach_pwd;
 	const char *workgroup;
 	uint32_t negotiate_flags;
-	TALLOC_CTX *tmp_ctx;
 
 	if (p->conn->flags & DCERPC_SCHANNEL_128) {
 		negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
@@ -318,8 +318,6 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 
 	workgroup = cli_credentials_get_domain(credentials);
 
-	tmp_ctx = talloc_new(NULL);
-
 	/*
 	  step 1 - establish a netlogon connection, with no authentication
 	*/
@@ -328,7 +326,6 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	status = dcerpc_parse_binding(tmp_ctx, p->conn->binding_string, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", p->conn->binding_string));
-		talloc_free(tmp_ctx);
 		return status;
 	}
 
@@ -337,17 +334,13 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n", 
 			 DCERPC_NETLOGON_UUID, nt_errstr(status)));
-		talloc_free(p);
 		return status;
 	}
 
 	status = dcerpc_secondary_connection(p, &p2, b);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
 		return status;
 	}
-
-	talloc_free(tmp_ctx);
 
 	status = dcerpc_bind_auth_none(p2, DCERPC_NETLOGON_UUID, 
 				       DCERPC_NETLOGON_VERSION);
@@ -359,14 +352,14 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	/*
 	  step 2 - request a netlogon challenge
 	*/
-	r.in.server_name = talloc_asprintf(p, "\\\\%s", dcerpc_server_name(p));
+	r.in.server_name = talloc_asprintf(tmp_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.credentials = &credentials1;
 	r.out.credentials = &credentials2;
 
 	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 
-	status = dcerpc_netr_ServerReqChallenge(p2, p, &r);
+	status = dcerpc_netr_ServerReqChallenge(p2, tmp_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -391,7 +384,7 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	a.in.credentials = &credentials3;
 	a.out.credentials = &credentials3;
 
-	status = dcerpc_netr_ServerAuthenticate2(p2, p, &a);
+	status = dcerpc_netr_ServerAuthenticate2(p2, tmp_ctx, &a);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -405,7 +398,7 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 
 	  we no longer need the netlogon pipe open
 	*/
-	dcerpc_pipe_close(p2);
+	talloc_free(p2);
 
 	return NT_STATUS_OK;
 }
@@ -480,14 +473,15 @@ NTSTATUS dcerpc_bind_auth_schannel_withkey(struct dcerpc_pipe *p,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
+NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx, 
+				   struct dcerpc_pipe *p,
 				   const char *uuid, uint_t version,
 				   struct cli_credentials *credentials)
 {
 	NTSTATUS status;
 	int chan_type = 0;
 	struct creds_CredentialState *creds;
-	creds = talloc(p, struct creds_CredentialState);
+	creds = talloc(tmp_ctx, struct creds_CredentialState);
 	if (!creds) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -500,7 +494,8 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 		chan_type = SEC_CHAN_DOMAIN;
 	}
 
-	status = dcerpc_schannel_key(p, credentials,
+	status = dcerpc_schannel_key(tmp_ctx, 
+				     p, credentials,
 				     chan_type,
 				     creds);
 
@@ -514,7 +509,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 }
 
 static BOOL dcerpc_schannel_have_feature(struct gensec_security *gensec_security,
-					  uint32_t feature)
+					 uint32_t feature)
 {
 	if (feature & (GENSEC_FEATURE_SESSION_KEY | 
 		       GENSEC_FEATURE_SIGN | 

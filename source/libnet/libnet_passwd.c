@@ -247,7 +247,7 @@ ChangePasswordUser:
 #endif
 disconnect:
 	/* close connection */
-	dcerpc_pipe_close(c.pdc.out.dcerpc_pipe);
+	talloc_free(c.pdc.out.dcerpc_pipe);
 
 	return status;
 }
@@ -631,7 +631,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 
 disconnect:
 	/* close connection */
-	dcerpc_pipe_close(c.pdc.out.dcerpc_pipe);
+	talloc_free(c.pdc.out.dcerpc_pipe);
 
 	return status;
 }

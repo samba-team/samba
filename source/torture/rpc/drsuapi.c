@@ -1008,17 +1008,19 @@ BOOL torture_rpc_drsuapi(void)
 	BOOL ret = True;
 	struct DsPrivate priv;
 
-	status = torture_rpc_connection(&p, 
+	mem_ctx = talloc_init("torture_rpc_drsuapi");
+
+	status = torture_rpc_connection(mem_ctx, 
+					&p, 
 					DCERPC_DRSUAPI_NAME,
 					DCERPC_DRSUAPI_UUID,
 					DCERPC_DRSUAPI_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
 	printf("Connected to DRAUAPI pipe\n");
-
-	mem_ctx = talloc_init("torture_rpc_drsuapi");
 
 	ZERO_STRUCT(priv);
 
@@ -1041,8 +1043,6 @@ BOOL torture_rpc_drsuapi(void)
 	ret &= test_DsUnbind(p, mem_ctx, &priv);
 
 	talloc_free(mem_ctx);
-
-        torture_rpc_close(p);
 
 	return ret;
 }

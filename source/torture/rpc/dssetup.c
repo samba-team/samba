@@ -64,19 +64,19 @@ BOOL torture_rpc_dssetup(void)
 
 	mem_ctx = talloc_init("torture_rpc_dssetup");
 
-	status = torture_rpc_connection(&p, 
+	status = torture_rpc_connection(mem_ctx, &p, 
 					DCERPC_DSSETUP_NAME, 
 					DCERPC_DSSETUP_UUID, 
 					DCERPC_DSSETUP_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+
 		return False;
 	}
 
 	ret &= test_DsRoleGetPrimaryDomainInformation(p, mem_ctx);
 
 	talloc_free(mem_ctx);
-
-        torture_rpc_close(p);
 
 	return ret;
 }

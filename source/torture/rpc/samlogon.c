@@ -1072,6 +1072,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  const char *plain_pass,
 			  int n_subtests)
 {
+	TALLOC_CTX *fn_ctx = talloc_named(mem_ctx, 0, "test_SamLogon function-level context");
 	int i, v, l, f;
 	BOOL ret = True;
 	int validation_levels[] = {2,3,6};
@@ -1084,27 +1085,26 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	
 	printf("testing netr_LogonSamLogon and netr_LogonSamLogonWithFlags\n");
 	
-	samlogon_state.mem_ctx = mem_ctx;
 	samlogon_state.account_name = account_name;
 	samlogon_state.account_domain = account_domain;
 	samlogon_state.password = plain_pass;
 	samlogon_state.p = p;
 	samlogon_state.creds = creds;
 
-	samlogon_state.chall = data_blob_talloc(mem_ctx, NULL, 8);
+	samlogon_state.chall = data_blob_talloc(fn_ctx, NULL, 8);
 
 	generate_random_buffer(samlogon_state.chall.data, 8);
-	samlogon_state.r_flags.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	samlogon_state.r_flags.in.server_name = talloc_asprintf(fn_ctx, "\\\\%s", dcerpc_server_name(p));
 	samlogon_state.r_flags.in.workstation = TEST_MACHINE_NAME;
 	samlogon_state.r_flags.in.credential = &samlogon_state.auth;
 	samlogon_state.r_flags.in.return_authenticator = &samlogon_state.auth2;
 	samlogon_state.r_flags.in.flags = 0;
 
-	samlogon_state.r_ex.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	samlogon_state.r_ex.in.server_name = talloc_asprintf(fn_ctx, "\\\\%s", dcerpc_server_name(p));
 	samlogon_state.r_ex.in.workstation = TEST_MACHINE_NAME;
 	samlogon_state.r_ex.in.flags = 0;
 
-	samlogon_state.r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	samlogon_state.r.in.server_name = talloc_asprintf(fn_ctx, "\\\\%s", dcerpc_server_name(p));
 	samlogon_state.r.in.workstation = TEST_MACHINE_NAME;
 	samlogon_state.r.in.credential = &samlogon_state.auth;
 	samlogon_state.r.in.return_authenticator = &samlogon_state.auth2;
@@ -1117,6 +1117,8 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			for (v=0;v<ARRAY_SIZE(validation_levels);v++) {
 				for (l=0;l<ARRAY_SIZE(logon_levels);l++) {
 					char *error_string = NULL;
+					TALLOC_CTX *tmp_ctx = talloc_named(fn_ctx, 0, "test_SamLogon inner loop");
+					samlogon_state.mem_ctx = tmp_ctx;
 					samlogon_state.function_level = function_levels[f];
 					samlogon_state.r.in.validation_level = validation_levels[v];
 					samlogon_state.r.in.logon_level = logon_levels[l];
@@ -1139,11 +1141,12 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 						}
 						SAFE_FREE(error_string);
 					}
+					talloc_free(tmp_ctx);
 				}
 			}
 		}
 	}
-
+	talloc_free(fn_ctx);
 	return ret;
 }
 
@@ -1156,6 +1159,7 @@ static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				  const char *plain_pass)
 {
 	NTSTATUS status;
+	TALLOC_CTX *fn_ctx = talloc_named(mem_ctx, 0, "test_InteractiveLogon function-level context");
 	struct netr_LogonSamLogonWithFlags r;
 	struct netr_Authenticator a, ra;
 	struct netr_PasswordInfo pinfo;
@@ -1166,7 +1170,7 @@ static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	creds_client_authenticator(creds, &a);
 
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.server_name = talloc_asprintf(fn_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.workstation = TEST_MACHINE_NAME;
 	r.in.credential = &a;
 	r.in.return_authenticator = &ra;
@@ -1195,14 +1199,17 @@ static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("Testing netr_LogonSamLogonWithFlags (Interactive Logon)\n");
 
-	status = dcerpc_netr_LogonSamLogonWithFlags(p, mem_ctx, &r);
+	status = dcerpc_netr_LogonSamLogonWithFlags(p, fn_ctx, &r);
 	if (!r.out.return_authenticator || !creds_client_check(creds, &r.out.return_authenticator->cred)) {
 		printf("Credential chaining failed\n");
+		talloc_free(fn_ctx);
 		return False;
 	}
 
+	talloc_free(fn_ctx);
+
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("netr_LogonSamLogonWithFlags - %s\n", nt_errstr(status));
+		printf("[%s]\\[%s] netr_LogonSamLogonWithFlags - %s\n", account_name, account_domain, nt_errstr(status));
 		return False;
 	}
 
@@ -1216,7 +1223,7 @@ BOOL torture_rpc_samlogon(void)
         NTSTATUS status;
         struct dcerpc_pipe *p;
 	struct dcerpc_binding *b;
-	struct cli_credentials credentials;
+	struct cli_credentials *credentials;
 	TALLOC_CTX *mem_ctx = talloc_init("torture_rpc_netlogon");
 	BOOL ret = True;
 	struct test_join *join_ctx;
@@ -1256,9 +1263,9 @@ BOOL torture_rpc_samlogon(void)
 			NULL,
 			talloc_asprintf(mem_ctx, 
 					"%s@%s", 
-			cli_credentials_get_domain(cmdline_credentials),
-			cli_credentials_get_username(cmdline_credentials)
-					),
+					cli_credentials_get_username(cmdline_credentials),
+					cli_credentials_get_domain(cmdline_credentials)
+				),
 			cli_credentials_get_password(cmdline_credentials),
 			False
 		},
@@ -1268,7 +1275,7 @@ BOOL torture_rpc_samlogon(void)
 					"%s@%s", 
 					cli_credentials_get_username(cmdline_credentials),
 					cli_credentials_get_realm(cmdline_credentials)
-					),
+				),
 			cli_credentials_get_password(cmdline_credentials),
 			True
 		},
@@ -1300,6 +1307,8 @@ BOOL torture_rpc_samlogon(void)
 #endif
 	};
 		
+	credentials = cli_credentials_init(mem_ctx);
+
 	test_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	/* We only need to join as a workstation here, and in future,
 	 * if we wish to test against trusted domains, we must be a
@@ -1338,17 +1347,18 @@ BOOL torture_rpc_samlogon(void)
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN | DCERPC_SCHANNEL_128;
 
-	cli_credentials_set_workstation(&credentials, TEST_MACHINE_NAME, CRED_SPECIFIED);
-	cli_credentials_set_domain(&credentials, lp_workgroup(), CRED_SPECIFIED);
-	cli_credentials_set_username(&credentials, test_machine_account, CRED_SPECIFIED);
-	cli_credentials_set_password(&credentials, machine_password, CRED_SPECIFIED);
+	cli_credentials_set_workstation(credentials, TEST_MACHINE_NAME, CRED_SPECIFIED);
+	cli_credentials_set_domain(credentials, lp_workgroup(), CRED_SPECIFIED);
+	cli_credentials_set_username(credentials, test_machine_account, CRED_SPECIFIED);
+	cli_credentials_set_password(credentials, machine_password, CRED_SPECIFIED);
 
-	status = dcerpc_pipe_connect_b(&p, b, 
+	status = dcerpc_pipe_connect_b(mem_ctx, &p, b, 
 				       DCERPC_NETLOGON_UUID,
 				       DCERPC_NETLOGON_VERSION,
-					   &credentials);
+				       credentials);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		printf("RPC pipe connect as domain member failed: %s\n", nt_errstr(status));
 		ret = False;
 		goto failed;
 	}
@@ -1404,8 +1414,6 @@ BOOL torture_rpc_samlogon(void)
 
 failed:
 	talloc_free(mem_ctx);
-
-	torture_rpc_close(p);
 
 	torture_leave_domain(join_ctx);
 #if 0

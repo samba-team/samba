@@ -1573,12 +1573,15 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		SAMR_FIELD_PASSWORD | SAMR_FIELD_PASSWORD2,
 		0
 	};
+	
+	TALLOC_CTX *user_ctx;
 
 	/* This call creates a 'normal' account - check that it really does */
 	const uint32_t acct_flags = ACB_NORMAL;
 	struct samr_String name;
 	BOOL ret = True;
 
+	user_ctx = talloc_named(mem_ctx, 0, "test_CreateUser2 per-user context");
 	init_samr_String(&name, TEST_ACCOUNT_NAME);
 
 	r.in.domain_handle = domain_handle;
@@ -1589,21 +1592,24 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("Testing CreateUser(%s)\n", r.in.account_name->string);
 
-	status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
+	status = dcerpc_samr_CreateUser(p, user_ctx, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 		printf("Server refused create of '%s'\n", r.in.account_name->string);
 		ZERO_STRUCTP(user_handle);
+		talloc_free(user_ctx);
 		return True;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-		if (!test_DeleteUser_byname(p, mem_ctx, domain_handle, r.in.account_name->string)) {
+		if (!test_DeleteUser_byname(p, user_ctx, domain_handle, r.in.account_name->string)) {
+			talloc_free(user_ctx);
 			return False;
 		}
-		status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
+		status = dcerpc_samr_CreateUser(p, user_ctx, &r);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(user_ctx);
 		printf("CreateUser failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -1611,7 +1617,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	q.in.user_handle = user_handle;
 	q.in.level = 16;
 
-	status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &q);
+	status = dcerpc_samr_QueryUserInfo(p, user_ctx, &q);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("QueryUserInfo level %u failed - %s\n", 
 		       q.in.level, nt_errstr(status));
@@ -1625,44 +1631,46 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (!test_user_ops(p, mem_ctx, user_handle, acct_flags, name.string)) {
+	if (!test_user_ops(p, user_ctx, user_handle, acct_flags, name.string)) {
 		ret = False;
 	}
 
-	if (!test_SetUserPass(p, mem_ctx, user_handle, &password)) {
+	if (!test_SetUserPass(p, user_ctx, user_handle, &password)) {
 		ret = False;
 	}	
 
 	for (i = 0; password_fields[i]; i++) {
-		if (!test_SetUserPass_23(p, mem_ctx, user_handle, password_fields[i], &password)) {
+		if (!test_SetUserPass_23(p, user_ctx, user_handle, password_fields[i], &password)) {
 			ret = False;
 		}	
 		
 		/* check it was set right */
-		if (!test_ChangePasswordUser3(p, mem_ctx, domain_handle, 0, &password)) {
+		if (!test_ChangePasswordUser3(p, user_ctx, domain_handle, 0, &password)) {
 			ret = False;
 		}
 	}		
 
 	for (i = 0; password_fields[i]; i++) {
-		if (!test_SetUserPass_25(p, mem_ctx, user_handle, password_fields[i], &password)) {
+		if (!test_SetUserPass_25(p, user_ctx, user_handle, password_fields[i], &password)) {
 			ret = False;
 		}	
 		
 		/* check it was set right */
-		if (!test_ChangePasswordUser3(p, mem_ctx, domain_handle, 0, &password)) {
+		if (!test_ChangePasswordUser3(p, user_ctx, domain_handle, 0, &password)) {
 			ret = False;
 		}
 	}		
 
-	if (!test_SetUserPassEx(p, mem_ctx, user_handle, &password)) {
+	if (!test_SetUserPassEx(p, user_ctx, user_handle, &password)) {
 		ret = False;
 	}	
 
-	if (!test_ChangePassword(p, mem_ctx, domain_handle, &password)) {
+	if (!test_ChangePassword(p, user_ctx, domain_handle, &password)) {
 		ret = False;
 	}	
 
+	talloc_free(user_ctx);
+	
 	return ret;
 }
 
@@ -1724,9 +1732,10 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	};
 
 	for (i = 0; account_types[i].account_name; i++) {
+		TALLOC_CTX *user_ctx;
 		uint32_t acct_flags = account_types[i].acct_flags;
 		uint32_t access_granted;
-
+		user_ctx = talloc_named(mem_ctx, 0, "test_CreateUser2 per-user context");
 		init_samr_String(&name, account_types[i].account_name);
 
 		r.in.domain_handle = handle;
@@ -1739,17 +1748,20 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		
 		printf("Testing CreateUser2(%s, 0x%x)\n", r.in.account_name->string, acct_flags);
 		
-		status = dcerpc_samr_CreateUser2(p, mem_ctx, &r);
+		status = dcerpc_samr_CreateUser2(p, user_ctx, &r);
 		
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			talloc_free(user_ctx);
 			printf("Server refused create of '%s'\n", r.in.account_name->string);
 			continue;
 
 		} else if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			if (!test_DeleteUser_byname(p, mem_ctx, handle, r.in.account_name->string)) {
-				return False;
+			if (!test_DeleteUser_byname(p, user_ctx, handle, r.in.account_name->string)) {
+				talloc_free(user_ctx);
+				ret = False;
+				continue;
 			}
-			status = dcerpc_samr_CreateUser2(p, mem_ctx, &r);
+			status = dcerpc_samr_CreateUser2(p, user_ctx, &r);
 
 		}
 		if (!NT_STATUS_EQUAL(status, account_types[i].nt_status)) {
@@ -1762,7 +1774,7 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			q.in.user_handle = &user_handle;
 			q.in.level = 16;
 			
-			status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &q);
+			status = dcerpc_samr_QueryUserInfo(p, user_ctx, &q);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("QueryUserInfo level %u failed - %s\n", 
 				       q.in.level, nt_errstr(status));
@@ -1776,7 +1788,7 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				}
 			}
 		
-			if (!test_user_ops(p, mem_ctx, &user_handle, acct_flags, name.string)) {
+			if (!test_user_ops(p, user_ctx, &user_handle, acct_flags, name.string)) {
 				ret = False;
 			}
 
@@ -1785,12 +1797,13 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			d.in.user_handle = &user_handle;
 			d.out.user_handle = &user_handle;
 			
-			status = dcerpc_samr_DeleteUser(p, mem_ctx, &d);
+			status = dcerpc_samr_DeleteUser(p, user_ctx, &d);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("DeleteUser failed - %s\n", nt_errstr(status));
 				ret = False;
 			}
 		}
+		talloc_free(user_ctx);
 	}
 
 	return ret;
@@ -3188,11 +3201,13 @@ BOOL torture_rpc_samr(void)
 
 	mem_ctx = talloc_init("torture_rpc_samr");
 
-	status = torture_rpc_connection(&p, 
+	status = torture_rpc_connection(mem_ctx, 
+					&p, 
 					DCERPC_SAMR_NAME,
 					DCERPC_SAMR_UUID,
 					DCERPC_SAMR_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
@@ -3221,8 +3236,6 @@ BOOL torture_rpc_samr(void)
 	}
 
 	talloc_free(mem_ctx);
-
-        torture_rpc_close(p);
 
 	return ret;
 }

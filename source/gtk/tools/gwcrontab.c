@@ -103,7 +103,7 @@ on_connect_activate                    (GtkMenuItem     *menuitem,
 	mem_ctx = talloc_init("gwcrontab_connect");
 	/* If connected, get list of jobs */
 	
-	status = dcerpc_pipe_connect_b(&at_pipe,
+	status = dcerpc_pipe_connect_b(mem_ctx, &at_pipe,
 				       gtk_rpc_binding_dialog_get_binding(d, mem_ctx),
 				       DCERPC_ATSVC_UUID,
 				       DCERPC_ATSVC_VERSION,
@@ -118,6 +118,7 @@ on_connect_activate                    (GtkMenuItem     *menuitem,
 	}
 	gtk_widget_destroy(GTK_WIDGET(d));
 
+	at_pipe = talloc_reference(talloc_autofree_context(), at_pipe);
 	talloc_free(mem_ctx);
 	update_joblist();
 }
@@ -126,7 +127,7 @@ void
 on_quit_activate                      (GtkMenuItem     *menuitem,
 									   gpointer         user_data)
 {
-	if(at_pipe)dcerpc_pipe_close(at_pipe);
+	talloc_free(at_pipe);
 	gtk_main_quit();
 }
 

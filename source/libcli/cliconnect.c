@@ -78,11 +78,6 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	if (cli_credentials_is_anonymous(credentials)) {
-		setup.in.password = NULL;
-		setup.in.user = "";
-		setup.in.domain = "";
-		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY;
-	} else {
 		if (cli->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
 			setup.in.password = cli_credentials_get_password(credentials);
 		} else {

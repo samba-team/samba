@@ -26,6 +26,7 @@
 #include "lib/events/events.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "auth/auth.h"
+#include "lib/cmdline/popt_common.h"
 
 static const char *machine_password;
 
@@ -37,7 +38,7 @@ static BOOL test_LogonUasLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_LogonUasLogon r;
 
 	r.in.server_name = NULL;
-	r.in.account_name = lp_parm_string(-1, "torture", "username");
+	r.in.account_name = cli_credentials_get_username(cmdline_credentials),
 	r.in.workstation = TEST_MACHINE_NAME;
 
 	printf("Testing LogonUasLogon\n");
@@ -58,7 +59,7 @@ static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_LogonUasLogoff r;
 
 	r.in.server_name = NULL;
-	r.in.account_name = lp_parm_string(-1, "torture", "username");
+	r.in.account_name = cli_credentials_get_username(cmdline_credentials),
 	r.in.workstation = TEST_MACHINE_NAME;
 
 	printf("Testing LogonUasLogoff\n");
@@ -491,8 +492,8 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_LogonSamLogon r;
 	struct netr_Authenticator auth, auth2;
 	struct netr_NetworkInfo ninfo;
-	const char *username = lp_parm_string(-1, "torture", "username");
-	const char *password = lp_parm_string(-1, "torture", "password");
+	const char *username = cli_credentials_get_username(cmdline_credentials);
+	const char *password = cli_credentials_get_password(cmdline_credentials);
 	struct creds_CredentialState *creds;
 
 	int i;
@@ -503,7 +504,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	ninfo.identity_info.domain_name.string = lp_workgroup();
+	ninfo.identity_info.domain_name.string = cli_credentials_get_domain(cmdline_credentials);
 	ninfo.identity_info.parameter_control = 0;
 	ninfo.identity_info.logon_id_low = 0;
 	ninfo.identity_info.logon_id_high = 0;
@@ -1330,7 +1331,7 @@ static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	dcerpc_pipe_close(p2);
+	talloc_free(p2);
 
 	d.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s",
 					    dcerpc_server_name(p));
@@ -1368,15 +1369,17 @@ BOOL torture_rpc_netlogon(void)
 	join_ctx = torture_join_domain(TEST_MACHINE_NAME, lp_workgroup(), ACB_SVRTRUST, 
 				       &machine_password);
 	if (!join_ctx) {
+		talloc_free(mem_ctx);
 		printf("Failed to join as BDC\n");
 		return False;
 	}
 
-	status = torture_rpc_connection(&p, 
+	status = torture_rpc_connection(mem_ctx, &p, 
 					DCERPC_NETLOGON_NAME,
 					DCERPC_NETLOGON_UUID,
 					DCERPC_NETLOGON_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
@@ -1402,8 +1405,6 @@ BOOL torture_rpc_netlogon(void)
 	ret &= test_netr_DrsGetDCNameEx2(p, mem_ctx);
 
 	talloc_free(mem_ctx);
-
-	torture_rpc_close(p);
 
 	torture_leave_domain(join_ctx);
 
