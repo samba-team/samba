@@ -4128,7 +4128,7 @@ static BOOL run_test(const char *name)
 */
 static void parse_user(const char *user)
 {
-	char *username, *password, *p;
+	char *username, *password = NULL, *p;
 
 	username = strdup(user);
 	p = strchr_m(username,'%');
@@ -4138,9 +4138,17 @@ static void parse_user(const char *user)
 	}
 
 	lp_set_cmdline("torture:username", username);
-	lp_set_cmdline("torture:password", password);
-}
 
+	if (password) {
+		lp_set_cmdline("torture:password", password);
+	}
+
+	if (!lp_parm_string(-1,"torture","password")) {
+		password = getpass("password:");
+
+		lp_set_cmdline("torture:password", password);
+	}
+}
 
 static void usage(void)
 {
@@ -4308,6 +4316,10 @@ static void usage(void)
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
 			usage();
 		}
+	}
+
+	if (!lp_parm_string(-1,"torture","password")) {
+		lp_set_cmdline("torture:password", "");
 	}
 
 	if (argc == optind) {
