@@ -63,7 +63,7 @@ static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
 	}
 	
 	
-#if DEBUG_PASSWORD
+#ifdef DEBUG_PASSWORD
 	DEBUG(100,("Part password (P16) was |\n"));
 	dump_data(100, part_passwd, 16);
 	DEBUGADD(100,("Password from client was |\n"));
