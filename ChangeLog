@@ -1,5 +1,35 @@
 2005-01-05  Luke Howard  <lukeh@padl.com>
 
+	* lib/krb5/auth_context.c: use krb5_generate_subkey_extended()
+
+	* lib/krb5/generate_subkey.c: add krb5_generate_subkey_extended()
+
+	* lib/krb5/build_auth.c: support for enctype negotiation
+	  (client sends EtypeList in Authenticator authz data)
+
+	* lib/krb5/rd_req.c: support for enctype negotiation
+	  (client sends EtypeList in Authenticator authz data)
+
+	* lib/gssapi/8003.c: use symbolic name for checksum type
+
+	* lib/gssapi/accept_sec_context.c: allow client to indicate
+	  that subkey should be used
+
+	* lib/gssapi/acquire_cred.c: plug leak
+
+	* lib/gssapi/get_mic.c: use gss_krb5_get_subkey() instead
+	  of gss_krb5_get_{local,remote}key()
+
+	* lib/gssapi/gssapi_local.c: use gss_krb5_get_subkey()
+
+	* lib/gssapi/unwrap.c: use gss_krb5_get_subkey()
+
+	* lib/gssapi/verify_mic.c: use gss_krb5_get_subkey()
+
+	* lib/gssapi/wrap.c: use gss_krb5_get_subkey()
+
+2005-01-04  Luke Howard  <lukeh@padl.com>
+
 	* lib/asn1/k5.asn1: add authorization data types for enctype
 	negotiation implementation
 
