@@ -190,7 +190,6 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 			target_name_dns = dnsname;
 		}
 
-		/* the numbers here are the string type flags */
 		msrpc_gen(&struct_blob, "aaaaa",
 			  ntlmssp_state->unicode, NTLMSSP_NAME_TYPE_DOMAIN, target_name,
 			  ntlmssp_state->unicode, NTLMSSP_NAME_TYPE_SERVER, ntlmssp_state->get_global_myname(),
