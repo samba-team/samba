@@ -1599,6 +1599,8 @@ static BOOL allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char 
 	if (i > 2) {
 		DEBUG(0, ("allocate_print_jobid: failed to allocate a print job for queue %s\n",
 				unix_printername ));
+		/* Probably full... */
+		errno = ENOSPC;
 		return False;
 	}
 
@@ -1673,12 +1675,15 @@ uint32 print_job_start(struct current_user *user, int snum, const char *unix_job
 
 	/* Insure the maximum queue size is not violated */
 	if ((njobs = print_queue_length(snum,NULL)) > lp_maxprintjobs(snum)) {
-		DEBUG(3, ("print_job_start: number of jobs (%d) larger than max printjobs per queue (%d).\n",
-			njobs, lp_maxprintjobs(snum) ));
+		DEBUG(3, ("print_job_start: Queue %s number of jobs (%d) larger than max printjobs per queue (%d).\n",
+			unix_printername, njobs, lp_maxprintjobs(snum) ));
 		release_print_db(pdb);
 		errno = ENOSPC;
 		return (uint32)-1;
 	}
+
+	DEBUG(10,("print_job_start: Queue %s number of jobs (%d), max printjobs = %d\n",
+			unix_printername, njobs, lp_maxprintjobs(snum) ));
 
 	if (!allocate_print_jobid(pdb, snum, unix_printername, &jobid))
 		goto fail;
