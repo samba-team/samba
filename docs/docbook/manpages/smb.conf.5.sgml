@@ -736,6 +736,7 @@
 		<listitem><para><link linkend="USERHOSTS"><parameter>use rhosts</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAMELEVEL"><parameter>username level</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAMEMAP"><parameter>username map</parameter></link></para></listitem>
+		<listitem><para><link linkend="UTMP"><parameter>utmp</parameter></link></para></listitem>
 		<listitem><para><link linkend="UTMPDIRECTORY"><parameter>utmp directory</parameter></link></para></listitem>
 		<listitem><para><link linkend="VALIDCHARS"><parameter>valid chars</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDCACHETIME"><parameter>winbind cache time</parameter></link></para></listitem>
@@ -863,7 +864,6 @@
 		<listitem><para><link linkend="USER"><parameter>user</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAME"><parameter>username</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERS"><parameter>users</parameter></link></para></listitem>
-		<listitem><para><link linkend="UTMP"><parameter>utmp</parameter></link></para></listitem>
 		<listitem><para><link linkend="VALIDUSERS"><parameter>valid users</parameter></link></para></listitem>
 		<listitem><para><link linkend="VETOFILES"><parameter>veto files</parameter></link></para></listitem>
 		<listitem><para><link linkend="VETOOPLOCKFILES"><parameter>veto oplock files</parameter></link></para></listitem>
@@ -7545,7 +7545,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="UTMP">utmp (S)</term>
+		<term><anchor id="UTMP">utmp</term>
 		<listitem><para>This boolean parameter is only available if 
 		Samba has been configured and compiled  with the option <command>
 		--with-utmp</command>. If set to <constant>true</constant> then Samba will attempt
