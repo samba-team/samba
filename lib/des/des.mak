@@ -59,6 +59,7 @@ CLEAN :
 	-@erase "$(INTDIR)\cfb64ede.obj"
 	-@erase "$(INTDIR)\cfb64enc.obj"
 	-@erase "$(INTDIR)\cfb_enc.obj"
+	-@erase "$(INTDIR)\des_enc.obj"
 	-@erase "$(INTDIR)\dllmain.obj"
 	-@erase "$(INTDIR)\ecb3_enc.obj"
 	-@erase "$(INTDIR)\ecb_enc.obj"
@@ -122,6 +123,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\cfb64ede.obj" \
 	"$(INTDIR)\cfb64enc.obj" \
 	"$(INTDIR)\cfb_enc.obj" \
+	"$(INTDIR)\des_enc.obj" \
 	"$(INTDIR)\dllmain.obj" \
 	"$(INTDIR)\ecb3_enc.obj" \
 	"$(INTDIR)\ecb_enc.obj" \
@@ -173,6 +175,7 @@ CLEAN :
 	-@erase "$(INTDIR)\cfb64ede.obj"
 	-@erase "$(INTDIR)\cfb64enc.obj"
 	-@erase "$(INTDIR)\cfb_enc.obj"
+	-@erase "$(INTDIR)\des_enc.obj"
 	-@erase "$(INTDIR)\dllmain.obj"
 	-@erase "$(INTDIR)\ecb3_enc.obj"
 	-@erase "$(INTDIR)\ecb_enc.obj"
@@ -241,6 +244,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\cfb64ede.obj" \
 	"$(INTDIR)\cfb64enc.obj" \
 	"$(INTDIR)\cfb_enc.obj" \
+	"$(INTDIR)\des_enc.obj" \
 	"$(INTDIR)\dllmain.obj" \
 	"$(INTDIR)\ecb3_enc.obj" \
 	"$(INTDIR)\ecb_enc.obj" \
@@ -689,6 +693,20 @@ DEP_CPP_READ_=\
 	
 
 "$(INTDIR)\read_pwd.obj" : $(SOURCE) $(DEP_CPP_READ_) "$(INTDIR)"
+
+
+# End Source File
+################################################################################
+# Begin Source File
+
+SOURCE=.\des_enc.c
+DEP_CPP_DES_E=\
+	"..\..\include\win32\config.h"\
+	".\des.h"\
+	".\des_locl.h"\
+	
+
+"$(INTDIR)\des_enc.obj" : $(SOURCE) $(DEP_CPP_DES_E) "$(INTDIR)"
 
 
 # End Source File
