@@ -1811,7 +1811,12 @@ void init_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO * r_u,
 
 	r_u->switch_level = switch_level;
 	r_u->num_entries = num_entries;
-	r_u->ptr_entries = 1;
+
+	if (num_entries==0)
+		r_u->ptr_entries = 0;
+	else
+		r_u->ptr_entries = 1;
+
 	r_u->num_entries2 = num_entries;
 	r_u->ctr = ctr;
 
@@ -1847,6 +1852,16 @@ BOOL samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO * r_u,
 		return False;
 	if(!prs_uint32("ptr_entries ", ps, depth, &r_u->ptr_entries))
 		return False;
+
+	if (r_u->ptr_entries==0) {
+		if(!prs_align(ps))
+			return False;
+		if(!prs_uint32("status", ps, depth, &r_u->status))
+			return False;
+
+		return True;
+	}
+
 	if(!prs_uint32("num_entries2", ps, depth, &r_u->num_entries2))
 		return False;
 
@@ -1883,8 +1898,6 @@ BOOL samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO * r_u,
 		break;
 	}
 	
-	if(!prs_align(ps))
-		return False;
 	if(!prs_align(ps))
 		return False;
 	if(!prs_uint32("status", ps, depth, &r_u->status))

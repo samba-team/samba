@@ -88,17 +88,14 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
         pw_buf[(*num_entries)].acb_info = (uint16)pwd->acct_ctrl;
 
         DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x",
-                  (*num_entries), pwd->smb_name,
-                  pwd->user_rid, pwd->acct_ctrl));
+                  (*num_entries), pwd->smb_name, pwd->user_rid, pwd->acct_ctrl));
 
         if (acb_mask == 0 || (pwd->acct_ctrl & acb_mask)) {
             DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
             (*num_entries)++;
         }
         else
-        {
             DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
-        }
 
         (*total_entries)++;
     }
@@ -106,6 +103,62 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
     endsmbpwent(vp);
 
     return (*num_entries) > 0;
+}
+
+static BOOL jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
+                                int *total_entries, int *num_entries,
+                                int max_num_entries, uint16 acb_mask)
+{
+	void *vp = NULL;
+	struct sam_passwd *pwd = NULL;
+
+	*num_entries = 0;
+	*total_entries = 0;
+
+	if (pw_buf == NULL)
+		return False;
+
+	vp = startsmbpwent(False);
+	if (!vp) {
+		DEBUG(0, ("get_sampwd_entries: Unable to open SMB password database.\n"));
+		return False;
+	}
+
+	while (((pwd = getsam21pwent(vp)) != NULL) && (*num_entries) < max_num_entries) {
+		int user_name_len;
+
+		if (acb_mask != 0 && !(pwd->acct_ctrl & acb_mask))
+			continue;
+
+		if (start_idx > 0) {
+			/* skip the requested number of entries.
+			   not very efficient, but hey...
+			*/
+			start_idx--;
+			continue;
+		}
+
+		user_name_len = strlen(pwd->smb_name)+1;
+		init_unistr2(&pw_buf[(*num_entries)].uni_user_name, pwd->smb_name, user_name_len);
+		init_uni_hdr(&pw_buf[(*num_entries)].hdr_user_name, user_name_len);
+		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
+		memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
+
+		/* Now check if the NT compatible password is available. */
+		if (pwd->smb_nt_passwd != NULL) {
+			memcpy( pw_buf[(*num_entries)].nt_pwd , pwd->smb_nt_passwd, 16);
+		}
+
+		pw_buf[(*num_entries)].acb_info = (uint16)pwd->acct_ctrl;
+
+		DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x\n", (*num_entries), pwd->smb_name, pwd->user_rid, pwd->acct_ctrl));
+		(*num_entries)++;
+	}
+
+	endsmbpwent(vp);
+
+	*total_entries = *num_entries;
+	return True;
 }
 
 /*******************************************************************
@@ -228,7 +281,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 	/* at zero though.                                                   */
 	if (start_idx > current_idx) {
 		/* We aren't far enough; advance to start_idx */
-		while (current_idx < start_idx) {
+		while (current_idx <= start_idx) {
 			char *unmap_name;
 
 			if(!orig_done) {
@@ -808,13 +861,19 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	case 0x1:
 	case 0x4:
 		become_root();
+#if 0
 		ret = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
 						MAX_SAM_ENTRIES, acb_mask);
+#endif
 #if 0
 	/*
 	 * Which should we use here ? JRA.
 	 */
 		ret = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
+						MAX_SAM_ENTRIES, acb_mask);
+#endif
+#if 1
+		ret = jf_get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
 						MAX_SAM_ENTRIES, acb_mask);
 #endif
 		unbecome_root();
@@ -892,28 +951,29 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 
 uint32 _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAMR_R_QUERY_ALIASINFO *r_u)
 {
-    fstring alias_desc = "Local Unix group";
-    fstring alias="";
-    enum SID_NAME_USE type;
-    uint32 alias_rid;
+	fstring alias_desc = "Local Unix group";
+	fstring alias="";
+	enum SID_NAME_USE type;
+	uint32 alias_rid;
 
-    r_u->status = NT_STATUS_NOPROBLEMO;
+	r_u->status = NT_STATUS_NOPROBLEMO;
 
-    DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
+	DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
 
-    /* find the policy handle.  open a policy on it. */
-    if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
-        return NT_STATUS_INVALID_HANDLE;
+	/* find the policy handle.  open a policy on it. */
+	if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
+		return NT_STATUS_INVALID_HANDLE;
 
-    alias_rid = get_lsa_policy_samr_rid(&q_u->pol);
-    if(alias_rid == 0xffffffff)
+	alias_rid = get_lsa_policy_samr_rid(&q_u->pol);
+	if(alias_rid == 0xffffffff)
 		return NT_STATUS_NO_SUCH_ALIAS;
 
-    if(!local_lookup_rid(alias_rid, alias, &type))
-        return NT_STATUS_NO_SUCH_ALIAS;
+	if(!local_lookup_rid(alias_rid, alias, &type))
+	return NT_STATUS_NO_SUCH_ALIAS;
 
 	switch (q_u->switch_level) {
 	case 3:
+		r_u->ptr = 1;
 		r_u->ctr.switch_value1 = 3;
 		init_samr_alias_info3(&r_u->ctr.alias.info3, alias_desc);
 		break;
@@ -921,9 +981,9 @@ uint32 _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAMR_
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-    DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
+	DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
 
-    return True;
+	return True;
 }
 
 #if 0
@@ -1813,6 +1873,12 @@ uint32 _api_samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN
 		close_lsa_policy_hnd(alias_pol);
 		return NT_STATUS_INVALID_HANDLE;
 	}
+
+	/*
+	 * we should check if the rid really exist !!!
+	 * JFM.
+	 */
+
 
 	/* append the alias' RID to it */
 	if(!sid_append_rid(&sid, alias_rid)) {
