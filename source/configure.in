@@ -884,7 +884,7 @@ case "$host_os" in
 			LDSHFLAGS="-shared"
 			DYNEXP="-Wl,--export-dynamic"
 			SONAMEFLAG="-Wl,-soname,"
-			PICFLAG="-fPIC"
+			PICFLAG="-fPIC -DPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 		*openbsd*)  BLDSHARED="true"
@@ -2088,7 +2088,10 @@ AC_ARG_WITH(ldapsam,
     AC_DEFINE(WITH_LDAP_SAM)
     LDAPLIBS="-lldap"
     AC_CHECK_LIB(lber, ber_bvfree, [LDAPLIBS="$LDAPLIBS -llber"])
-    LDAPLIBS="-lresolv $LDAPLIBS"
+    ## remove -lresolv as this should be included by the -lsasl dependency 
+    ## in the OpenLDAP clients.  By not requiring it specifically, we avoid
+    ## issues on platforms that don't have it
+    LDAPLIBS="$LDAPLIBS"
     old_LDFLAGS="$LDFLAGS"
     LDFLAGS="$LDFLAGS $LDAPLIBS"
     AC_CHECK_FUNCS(ldap_start_tls_s)
