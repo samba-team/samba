@@ -131,8 +131,9 @@ fcc_store_cred(krb5_context context,
 	krb5_store_principal(sp, creds->server);
 	krb5_store_keyblock(sp, creds->session);
 	krb5_store_times(sp, creds->times);
-	krb5_store_int8(sp, 0); /* s/key */
-	krb5_store_int32(sp, 0); /* flags */
+	krb5_store_int8(sp, 0);  /* this is probably the
+				    enc-tkt-in-skey bit from KDCOptions */
+	krb5_store_int32(sp, creds->flags.i);
 	krb5_store_addrs(sp, creds->addresses);
 	krb5_store_authdata(sp, creds->authdata);
 	krb5_store_data(sp, creds->ticket);
