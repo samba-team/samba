@@ -314,6 +314,7 @@ NTSTATUS cli_lsa_get_dispname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 NTSTATUS cli_lsa_enum_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                 POLICY_HND *pol, uint32 *enum_ctx, uint32 pref_max_length, 
                                 uint32 *num_sids, DOM_SID **sids);
+BOOL fetch_domain_sid( char *domain, char *remote_machine, DOM_SID *psid);
 
 /*The following definitions come from  libsmb/climessage.c  */
 

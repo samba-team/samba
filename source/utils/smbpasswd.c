@@ -81,66 +81,6 @@ static void usage(void)
 	exit(1);
 }
 
-/*********************************************************
-Join a domain.
-**********************************************************/
-static int join_domain(char *domain, char *remote)
-{
-	pstring remote_machine;
-	fstring trust_passwd;
-	unsigned char orig_trust_passwd_hash[16];
-	BOOL ret;
-
-	pstrcpy(remote_machine, remote ? remote : "");
-	fstrcpy(trust_passwd, global_myname);
-	strlower(trust_passwd);
-	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
-
-	/* Ensure that we are not trying to join a
-	   domain if we are locally set up as a domain
-	   controller. */
-
-	if(strequal(remote, global_myname)) {
-		fprintf(stderr, "Cannot join domain %s as the domain controller name is our own. We cannot be a domain controller for a domain and also be a domain member.\n", domain);
-		return 1;
-	}
-
-	/*
-	 * Write the old machine account password.
-	 */
-	
-	if(!secrets_store_trust_account_password(domain,  orig_trust_passwd_hash)) {              
-		fprintf(stderr, "Unable to write the machine account password for \
-machine %s in domain %s.\n", global_myname, domain);
-		return 1;
-	}
-	
-	/*
-	 * If we are given a remote machine assume this is the PDC.
-	 */
-	
-	if(remote == NULL) {
-		pstrcpy(remote_machine, lp_passwordserver());
-	}
-
-	if(!*remote_machine) {
-		fprintf(stderr, "No password server list given in smb.conf - \
-unable to join domain.\n");
-		return 1;
-	}
-
-	ret = change_trust_account_password( domain, remote_machine);
-	
-	if(!ret) {
-		trust_password_delete(domain);
-		fprintf(stderr,"Unable to join domain %s.\n",domain);
-	} else {
-		printf("Joined domain %s.\n",domain);
-	}
-	
-	return (int)ret;
-}
-
 /* Initialise client credentials for authenticated pipe access */
 
 void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
@@ -428,6 +368,75 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 	}
 	
 	return retval;
+}
+
+/*********************************************************
+Join a domain. Old server manager method.
+**********************************************************/
+
+static int join_domain(char *domain, char *remote)
+{
+	pstring remote_machine;
+	fstring trust_passwd;
+	unsigned char orig_trust_passwd_hash[16];
+	DOM_SID domain_sid;
+	BOOL ret;
+
+	pstrcpy(remote_machine, remote ? remote : "");
+	fstrcpy(trust_passwd, global_myname);
+	strlower(trust_passwd);
+	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
+
+	/* Ensure that we are not trying to join a
+	   domain if we are locally set up as a domain
+	   controller. */
+
+	if(strequal(remote, global_myname)) {
+		fprintf(stderr, "Cannot join domain %s as the domain controller name is our own. We cannot be a domain controller for a domain and also be a domain member.\n", domain);
+		return 1;
+	}
+
+	/*
+	 * Write the old machine account password.
+	 */
+	
+	if(!secrets_store_trust_account_password(domain,  orig_trust_passwd_hash)) {              
+		fprintf(stderr, "Unable to write the machine account password for \
+machine %s in domain %s.\n", global_myname, domain);
+		return 1;
+	}
+	
+	/*
+	 * If we are given a remote machine assume this is the PDC.
+	 */
+	
+	if(remote == NULL) {
+		pstrcpy(remote_machine, lp_passwordserver());
+	}
+
+	if(!*remote_machine) {
+		fprintf(stderr, "No password server list given in smb.conf - \
+unable to join domain.\n");
+		return 1;
+	}
+
+	if (!fetch_domain_sid( domain, remote_machine, &domain_sid) ||
+		!secrets_store_domain_sid(domain, &domain_sid)) {
+		fprintf(stderr,"Failed to get domain SID. Unable to join domain %s.\n",domain);
+		return 1;
+	}
+		
+	ret = change_trust_account_password( domain, remote_machine);
+	
+	if(!ret) {
+		trust_password_delete(domain);
+		fprintf(stderr,"Unable to join domain %s.\n",domain);
+		return 1;
+	} else {
+		printf("Joined domain %s.\n",domain);
+	}
+	
+	return 0;
 }
 
 static void set_line_buffering(FILE *f)
