@@ -142,8 +142,7 @@ SEC_ACL *make_sec_acl(uint16 revision, int num_aces, SEC_ACE *ace_list)
 		return NULL;
 	}
 
-	for (i = 0; i < num_aces; i++)
-	{
+	for (i = 0; i < num_aces; i++) {
 		dst->ace_list[i] = ace_list[i]; /* Structure copy. */
 		dst->size += ace_list[i].size;
 	}
@@ -201,8 +200,7 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 
 	psa = *ppsa;
 
-	if(UNMARSHALLING(ps) && psa == NULL)
-	{
+	if(UNMARSHALLING(ps) && psa == NULL) {
 		/*
 		 * This is a read and we must allocate the stuct to read into.
 		 */
@@ -229,16 +227,14 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 	if(!prs_uint32("num_aces ", ps, depth, &psa->num_aces))
 		return False;
 
-	if (UNMARSHALLING(ps) && psa->num_aces != 0)
-	{
+	if (UNMARSHALLING(ps) && psa->num_aces != 0) {
 		/* reading */
 		if((psa->ace_list = malloc(sizeof(psa->ace_list[0]) * psa->num_aces)) == NULL)
 			return False;
 		ZERO_STRUCTP(psa->ace_list);
 	}
 
-	for (i = 0; i < MIN(psa->num_aces, MAX_SEC_ACES); i++)
-	{
+	for (i = 0; i < psa->num_aces; i++) {
 		fstring tmp;
 		slprintf(tmp, sizeof(tmp)-1, "ace_list[%02d]: ", i);
 		if(!sec_io_ace(tmp, &psa->ace_list[i], ps, depth))
@@ -267,9 +263,8 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 
 	*sec_desc_size = 0;
 
-	if(( dst = (SEC_DESC *)malloc(sizeof(SEC_DESC))) == NULL) {
+	if(( dst = (SEC_DESC *)malloc(sizeof(SEC_DESC))) == NULL)
 		return NULL;
-	}
 
 	ZERO_STRUCTP(dst);
 
@@ -299,42 +294,38 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 	 * Work out the linearization sizes.
 	 */
 
-	if (dst->dacl != NULL)
-	{
+	if (dst->dacl != NULL) {
+
 		if (offset == 0)
-		{
 			offset = SD_HEADER_SIZE;
-		}
+
 		dst->off_dacl = offset;
 		offset += ((dacl->size + 3) & ~3);
 	}
 
-	if (dst->sacl != NULL)
-	{
+	if (dst->sacl != NULL) {
+
 		if (offset == 0)
-		{
 			offset = SD_HEADER_SIZE;
-		}
+
 		dst->off_sacl = offset;
 		offset += ((sacl->size + 3) & ~3);
 	}
 
-	if (dst->owner_sid != NULL)
-	{
+	if (dst->owner_sid != NULL) {
+
 		if (offset == 0)
-		{
 			offset = SD_HEADER_SIZE;
-		}
+
 		dst->off_owner_sid = offset;
 		offset += ((sid_size(dst->owner_sid) + 3) & ~3);
 	}
 
-	if (dst->grp_sid != NULL)
-	{
+	if (dst->grp_sid != NULL) {
+
 		if (offset == 0)
-		{
 			offset = SD_HEADER_SIZE;
-		}
+
 		dst->off_grp_sid = offset;
 		offset += ((sid_size(dst->grp_sid) + 3) & ~3);
 	}
@@ -414,8 +405,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	psd = *ppsd;
 
-	if(UNMARSHALLING(ps) && psd == NULL)
-	{
+	if(UNMARSHALLING(ps) && psd == NULL) {
 		if((psd = (SEC_DESC *)malloc(sizeof(SEC_DESC))) == NULL)
 			return False;
 		ZERO_STRUCTP(psd);
@@ -451,8 +441,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	max_offset = MAX(max_offset, prs_offset(ps));
 
-	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_DACL_PRESENT) && psd->dacl)
-	{
+	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_DACL_PRESENT)) {
 		if(!prs_set_offset(ps, old_offset + psd->off_dacl))
 			return False;
 		if(!sec_io_acl("dacl", &psd->dacl, ps, depth))
@@ -463,8 +452,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	max_offset = MAX(max_offset, prs_offset(ps));
 
-	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_SACL_PRESENT) && psd->sacl)
-	{
+	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_SACL_PRESENT)) {
 		if(!prs_set_offset(ps, old_offset + psd->off_sacl))
 			return False;
 		if(!sec_io_acl("sacl", &psd->sacl, ps, depth))
@@ -475,10 +463,9 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	max_offset = MAX(max_offset, prs_offset(ps));
 
-	if (psd->off_owner_sid != 0)
-	{
-		if (UNMARSHALLING(ps))
-		{
+	if (psd->off_owner_sid != 0) {
+
+		if (UNMARSHALLING(ps)) {
 			if(!prs_set_offset(ps, old_offset + psd->off_owner_sid))
 				return False;
 			/* reading */
@@ -495,10 +482,9 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	max_offset = MAX(max_offset, prs_offset(ps));
 
-	if (psd->off_grp_sid != 0)
-	{
-		if (UNMARSHALLING(ps))
-		{
+	if (psd->off_grp_sid != 0) {
+
+		if (UNMARSHALLING(ps)) {
 			/* reading */
 			if(!prs_set_offset(ps, old_offset + psd->off_grp_sid))
 				return False;
@@ -537,8 +523,7 @@ SEC_DESC_BUF *make_sec_desc_buf(int len, SEC_DESC *sec_desc)
 	dst->max_len = len;
 	dst->len = len;
 
-	if(sec_desc && ((dst->sec = dup_sec_desc(sec_desc)) == NULL))
-	{
+	if(sec_desc && ((dst->sec = dup_sec_desc(sec_desc)) == NULL)) {
 		free_sec_desc_buf(&dst);
 		return NULL;
 	}
@@ -593,8 +578,7 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 
 	psdb = *ppsdb;
 
-	if (UNMARSHALLING(ps) && psdb == NULL)
-	{
+	if (UNMARSHALLING(ps) && psdb == NULL) {
 		if((psdb = (SEC_DESC_BUF *)malloc(sizeof(SEC_DESC_BUF))) == NULL)
 			return False;
 		ZERO_STRUCTP(psdb);
@@ -619,8 +603,7 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 	old_offset = prs_offset(ps);
 
 	/* reading, length is non-zero; writing, descriptor is non-NULL */
-	if ((psdb->len != 0 || MARSHALLING(ps)) && psdb->sec != NULL)
-	{
+	if ((psdb->len != 0 || MARSHALLING(ps)) && psdb->sec != NULL) {
 		if(!sec_io_desc("sec   ", &psdb->sec, ps, depth))
 			return False;
 	}

@@ -63,6 +63,7 @@ int dos_unlink(char *fname);
 int dos_open(char *fname,int flags,mode_t mode);
 DIR *dos_opendir(char *dname);
 char *dos_readdirname(DIR *p);
+int dos_chown(char *fname, uid_t uid, gid_t gid);
 int dos_stat(char *fname,SMB_STRUCT_STAT *sbuf);
 int dos_lstat(char *fname,SMB_STRUCT_STAT *sbuf);
 int dos_mkdir(char *dname,mode_t mode);

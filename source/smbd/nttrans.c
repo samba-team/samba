@@ -1195,6 +1195,7 @@ int reply_nttranss(connection_struct *conn,
 /****************************************************************************
  Reply to an NT transact rename command.
 ****************************************************************************/
+
 static int call_nt_transact_rename(connection_struct *conn,
 				   char *inbuf, char *outbuf, int length, 
                                    int bufsize,
@@ -1609,10 +1610,12 @@ name = %s\n", fsp->fsp_name ));
  Map unix perms to NT.
 ****************************************************************************/
 
-static SEC_ACCESS map_unix_perms( mode_t perm, int r_mask, int w_mask, int x_mask, BOOL is_directory)
+static SEC_ACCESS map_unix_perms( int *pacl_type, mode_t perm, int r_mask, int w_mask, int x_mask, BOOL is_directory)
 {
 	SEC_ACCESS sa;
 	uint32 nt_mask = 0;
+
+	*pacl_type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 
 	if((perm & (r_mask|w_mask|x_mask)) == (r_mask|w_mask|x_mask)) {
 		nt_mask = UNIX_ACCESS_RWX;
@@ -1644,8 +1647,11 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
   size_t sec_desc_size;
   SEC_ACL *psa = NULL;
   SEC_ACCESS owner_access;
+  int owner_acl_type;
   SEC_ACCESS group_access;
+  int grp_acl_type;
   SEC_ACCESS other_access;
+  int other_acl_type;
   int num_acls = 0;
  
   *ppdesc = NULL;
@@ -1656,7 +1662,7 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
   } else {
 
     if(fsp->is_directory) {
-      if(sys_stat(fsp->fsp_name, &sbuf) != 0) {
+      if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
         return 0;
       }
     } else {
@@ -1678,20 +1684,23 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
      * Create the generic 3 element UNIX acl.
      */
 
-	owner_access = map_unix_perms(sbuf.st_mode, S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory);
-    group_access = map_unix_perms(sbuf.st_mode, S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory);
-    other_access = map_unix_perms(sbuf.st_mode, S_IROTH, S_IWOTH, S_IXOTH, fsp->is_directory);
+	owner_access = map_unix_perms(&owner_acl_type, sbuf.st_mode,
+							S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory);
+    group_access = map_unix_perms(&grp_acl_type, sbuf.st_mode,
+							S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory);
+    other_access = map_unix_perms(&other_acl_type, sbuf.st_mode,
+							S_IROTH, S_IWOTH, S_IXOTH, fsp->is_directory);
 
     if(owner_access.mask)
-      init_sec_ace(&ace_list[num_acls++], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+      init_sec_ace(&ace_list[num_acls++], &owner_sid, owner_acl_type,
                    owner_access, 0);
 
 	if(group_access.mask)
-      init_sec_ace(&ace_list[num_acls++], &group_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+      init_sec_ace(&ace_list[num_acls++], &group_sid, grp_acl_type,
                    group_access, 0);
 
     if(other_access.mask)
-      init_sec_ace(&ace_list[num_acls++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+      init_sec_ace(&ace_list[num_acls++], &global_sid_World, other_acl_type,
                    other_access, 0);
 
     if(num_acls)
@@ -1776,7 +1785,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
   memset(data, '\0', sec_desc_size);
 
   /*
-   * Init the parse struct we will linearize into.
+   * Init the parse struct we will marshall into.
    */
 
   prs_init(&pd, 0, 4, MARSHALL);
@@ -1794,7 +1803,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   if(!sec_io_desc( "sd data", &psd, &pd, 1)) {
     free_sec_desc(&psd);
-    DEBUG(0,("call_nt_transact_query_security_desc: Error in linearizing \
+    DEBUG(0,("call_nt_transact_query_security_desc: Error in marshalling \
 security descriptor.\n"));
     /*
      * Return access denied for want of a better error message..
@@ -1811,25 +1820,316 @@ security descriptor.\n"));
   send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, (int)sec_desc_size);
   return -1;
 }
-   
-/****************************************************************************
- Reply to set a security descriptor - currently this is not implemented (it
- is planned to be though).
-****************************************************************************/
-static int call_nt_transact_set_security_desc(connection_struct *conn,
-					      char *inbuf, char *outbuf, 
-					      int length,
-                                              int bufsize, 
-                                              char **ppsetup, 
-					      char **ppparams, char **ppdata)
-{
-  static BOOL logged_message = False;
 
-  if(!logged_message) {
-    DEBUG(0,("call_nt_transact_set_security_desc: Currently not implemented.\n"));
-    logged_message = True; /* Only print this once... */
+/****************************************************************************
+ Validate a SID.
+****************************************************************************/
+
+static BOOL validate_unix_sid( DOM_SID *psid, uint32 *prid, DOM_SID *sd_sid)
+{
+  extern DOM_SID global_sam_sid;
+  DOM_SID sid;
+
+  if(!sd_sid) {
+    DEBUG(5,("validate_unix_sid: sid missing.\n"));
+    return False;
   }
-  return(ERROR(ERRSRV,ERRnosupport));
+
+  sid_copy(psid, sd_sid);
+  sid_copy(&sid, sd_sid);
+
+  if(!sid_split_rid(&sid, prid)) {
+    DEBUG(5,("validate_unix_sid: cannot get RID from sid.\n"));
+    return False;
+  }
+
+  if(!sid_equal( &sid, &global_sam_sid)) {
+    DEBUG(5,("validate_unix_sid: sid is not ours.\n"));
+    return False;
+  }
+
+  return True;
+}
+
+/****************************************************************************
+ Map NT perms to UNIX.
+****************************************************************************/
+
+static mode_t map_nt_perms( SEC_ACCESS access, int type)
+{
+  mode_t mode = 0;
+
+  switch(type) {
+  case S_IRUSR:
+    if(access.mask & GENERIC_ALL_ACCESS)
+      mode = S_IRUSR|S_IWUSR|S_IXUSR;
+    else {
+      mode |= (access.mask & GENERIC_READ_ACCESS) ? S_IRUSR : 0;
+      mode |= (access.mask & GENERIC_WRITE_ACCESS) ? S_IWUSR : 0;
+      mode |= (access.mask & GENERIC_EXECUTE_ACCESS) ? S_IXUSR : 0;
+    }
+    break;
+  case S_IRGRP:
+    if(access.mask & GENERIC_ALL_ACCESS)
+      mode = S_IRGRP|S_IWGRP|S_IXGRP;
+    else {
+      mode |= (access.mask & GENERIC_READ_ACCESS) ? S_IRGRP : 0;
+      mode |= (access.mask & GENERIC_WRITE_ACCESS) ? S_IWGRP : 0;
+      mode |= (access.mask & GENERIC_EXECUTE_ACCESS) ? S_IXGRP : 0;
+    }
+    break;
+  case S_IROTH:
+    if(access.mask & GENERIC_ALL_ACCESS)
+      mode = S_IROTH|S_IWOTH|S_IXOTH;
+    else {
+      mode |= (access.mask & GENERIC_READ_ACCESS) ? S_IROTH : 0;
+      mode |= (access.mask & GENERIC_WRITE_ACCESS) ? S_IWOTH : 0;
+      mode |= (access.mask & GENERIC_EXECUTE_ACCESS) ? S_IXOTH : 0;
+    }
+    break;
+  }
+
+  return mode;
+}
+
+/****************************************************************************
+ Unpack a SEC_DESC into a owner, group and set of UNIX permissions.
+****************************************************************************/
+
+static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, SEC_DESC *psd)
+{
+  extern DOM_SID global_sid_World;
+  DOM_SID owner_sid;
+  DOM_SID grp_sid;
+  uint32 owner_rid;
+  uint32 grp_rid;
+  SEC_ACL *dacl = psd->dacl;
+  int i;
+
+  *pmode = 0;
+
+  /*
+   * Validate the owner and group SID's.
+   */
+
+  DEBUG(5,("unpack_unix_permissions: validating owner_sid.\n"));
+
+  if(!validate_unix_sid( &owner_sid, &owner_rid, psd->owner_sid)) {
+    DEBUG(3,("unpack_unix_permissions: unable to validate owner sid.\n"));
+    return False;
+  }
+
+  *puser = pdb_user_rid_to_uid(owner_rid);
+
+  if(!validate_unix_sid( &grp_sid, &grp_rid, psd->grp_sid)) {
+    DEBUG(3,("unpack_unix_permissions: unable to validate group sid.\n"));
+    return False;
+  }
+
+  *pgrp = pdb_user_rid_to_gid(grp_rid);
+
+  /*
+   * Now go through the DACL and ensure that
+   * any owner/group sids match.
+   */
+
+  for(i = 0; i < dacl->num_aces; i++) {
+    DOM_SID ace_sid;
+    SEC_ACE *psa = &dacl->ace_list[i];
+
+    if((psa->type != SEC_ACE_TYPE_ACCESS_ALLOWED) &&
+       (psa->type != SEC_ACE_TYPE_ACCESS_DENIED)) {
+      DEBUG(3,("unpack_unix_permissions: unable to set anything but an ALLOW or DENY ACE.\n"));
+      return False;
+    }
+
+    if(psa->flags != 0) {
+      DEBUG(3,("unpack_unix_permissions: unable to set ACE flags.\n"));
+      return False;
+    }
+
+    if(psa->info.mask & ~(GENERIC_ALL_ACCESS|GENERIC_EXECUTE_ACCESS|GENERIC_WRITE_ACCESS|
+                     GENERIC_READ_ACCESS)) {
+      DEBUG(3,("unpack_unix_permissions: can only set generic permissions on an ACE.\n"));
+      return False;
+    }
+    
+    sid_copy(&ace_sid, &psa->sid);
+
+    if(sid_equal(&ace_sid, &owner_sid)) {
+      /*
+       * Map the desired permissions into owner perms.
+       */
+
+      if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
+        *pmode |= map_nt_perms( psa->info, S_IRUSR);
+      else
+        *pmode &= ~(map_nt_perms( psa->info, S_IRUSR));
+
+    } else if( sid_equal(&ace_sid, &grp_sid)) {
+      /*
+       * Map the desired permissions into group perms.
+       */
+
+      if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
+        *pmode |= map_nt_perms( psa->info, S_IRGRP);
+      else
+        *pmode &= ~(map_nt_perms( psa->info, S_IRGRP));
+
+    } else if( sid_equal(&ace_sid, &global_sid_World)) {
+      /*
+       * Map the desired permissions into other perms.
+       */
+
+      if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
+        *pmode |= map_nt_perms( psa->info, S_IROTH);
+      else
+        *pmode &= ~(map_nt_perms( psa->info, S_IROTH));
+
+    } else {
+      DEBUG(3,("unpack_unix_permissions: unknown SID used in ACL.\n"));
+      return False;
+    }
+  }
+
+  return True;
+}
+
+/****************************************************************************
+ Reply to set a security descriptor. Map to UNIX perms.
+****************************************************************************/
+
+static int call_nt_transact_set_security_desc(connection_struct *conn,
+									char *inbuf, char *outbuf, int length,
+									int bufsize, char **ppsetup, 
+									char **ppparams, char **ppdata)
+{
+  uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
+  char *params= *ppparams;
+  char *data = *ppdata;
+  prs_struct pd;
+  SEC_DESC *psd;
+  uint32 total_data_count = (uint32)IVAL(inbuf, smb_nts_TotalDataCount);
+  uid_t user;
+  gid_t grp;
+  mode_t perms;
+  SMB_STRUCT_STAT sbuf;
+  int res;
+  files_struct *fsp = NULL;
+
+  if(!lp_nt_acl_support())
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+
+  if((fsp = file_fsp(params,0)) == NULL)
+    return(ERROR(ERRDOS,ERRbadfid));
+
+  DEBUG(3,("call_nt_transact_set_security_desc: file = %s\n", fsp->fsp_name ));
+
+  /*
+   * Init the parse struct we will unmarshall from.
+   */
+
+  prs_init(&pd, 0, 4, UNMARSHALL);
+
+  /*
+   * Setup the prs_struct to point at the memory we just
+   * allocated.
+   */
+	
+  prs_give_memory( &pd, data, total_data_count, False);
+
+  /*
+   * Finally, unmarshall from the data buffer.
+   */
+
+  if(!sec_io_desc( "sd data", &psd, &pd, 1)) {
+    free_sec_desc(&psd);
+    DEBUG(0,("call_nt_transact_set_security_desc: Error in unmarshalling \
+security descriptor.\n"));
+    /*
+     * Return access denied for want of a better error message..
+     */ 
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
+
+  /*
+   * Now check some basics about the sd we got.
+   */
+
+  if(psd->dacl == NULL || psd->dacl->num_aces > 3) {
+    free_sec_desc(&psd);
+    DEBUG(3,("call_nt_transact_set_security_desc: invalid security descriptor.\n"));
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
+
+  /*
+   * Unpack the user/group/world id's and permissions.
+   */
+
+  if(!unpack_nt_permissions( &user, &grp, &perms, psd)) {
+    free_sec_desc(&psd);
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
+
+  free_sec_desc(&psd);
+
+  /*
+   * Get the current state of the file and check to see
+   * if we need to change anything.
+   */
+
+  if(fsp->is_directory) {
+    if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
+
+    perms &= lp_dir_mode(SNUM(conn));
+    perms |= lp_force_dir_mode(SNUM(conn));
+
+  } else {
+    if(sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
+
+    perms &= lp_create_mode(SNUM(conn)); 
+    perms |= lp_force_create_mode(SNUM(conn));
+
+  }
+
+  /*
+   * Do we need to chown ?
+   */
+
+  if(sbuf.st_uid != user || sbuf.st_gid != grp) {
+
+      DEBUG(3,("call_nt_transact_set_security_desc: chown %s. uid = %u, gid = %u.\n",
+            fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
+
+      if(dos_chown( fsp->fsp_name, user, grp) == -1) {
+        DEBUG(3,("call_nt_transact_set_security_desc: chown %s, %u, %u failed. Error = %s.\n",
+              fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
+        return(UNIXERROR(ERRDOS,ERRnoaccess));
+      }
+  }
+
+  /*
+   * Do we need to chmod ?
+   */
+
+  if(sbuf.st_mode != perms) {
+
+      DEBUG(3,("call_nt_transact_set_security_desc: chmod %s. perms = 0%o.\n",
+            fsp->fsp_name, perms ));
+
+    if(dos_chmod( fsp->fsp_name, perms) == -1) {
+        DEBUG(3,("call_nt_transact_set_security_desc: chmod %s, 0%o failed. Error = %s.\n",
+              fsp->fsp_name, (unsigned int)perms, strerror(errno) ));
+        return(UNIXERROR(ERRDOS,ERRnoaccess));
+      }
+  }
+
+  send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
+  return -1;
 }
    
 /****************************************************************************

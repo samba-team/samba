@@ -76,6 +76,15 @@ char *dos_readdirname(DIR *p)
 }
 
 /*******************************************************************
+ A chown() wrapper that calls dos_to_unix.
+********************************************************************/
+
+int dos_chown(char *fname, uid_t uid, gid_t gid)
+{
+  return(sys_chown(dos_to_unix(fname,False),uid,gid));
+}
+
+/*******************************************************************
  A stat() wrapper that calls dos_to_unix.
 ********************************************************************/
 

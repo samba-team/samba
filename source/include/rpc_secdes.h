@@ -88,9 +88,6 @@ typedef struct security_ace_info
 
 } SEC_ACE;
 
-
-#define MAX_SEC_ACES 16
-
 /* SEC_ACL */
 typedef struct security_acl_info
 {
@@ -100,7 +97,6 @@ typedef struct security_acl_info
 	SEC_ACE *ace_list;
 
 } SEC_ACL;
-
 
 /* SEC_DESC */
 typedef struct security_descriptor_info
