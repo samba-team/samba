@@ -97,7 +97,7 @@ extern jmp_buf urgcatch;
 
 extern	int form;
 extern	int debug;
-extern	int timeout;
+extern	int ftpd_timeout;
 extern	int maxtimeout;
 extern  int pdata;
 extern	char hostname[], remotehost[];

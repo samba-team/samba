@@ -123,7 +123,7 @@ int	oobflag;
 int	logged_in;
 struct	passwd *pw;
 int	debug;
-int	timeout = 900;    /* timeout after 15 minutes of inactivity */
+int	ftpd_timeout = 900;    /* timeout after 15 minutes of inactivity */
 int	maxtimeout = 7200;/* don't allow idle time to be set beyond 2 hours */
 int	logging;
 int	guest;
@@ -310,15 +310,15 @@ main(int argc, char **argv, char **envp)
 		    break;
 		    
 		case 't':
-			timeout = atoi(optarg);
-			if (maxtimeout < timeout)
-				maxtimeout = timeout;
+			ftpd_timeout = atoi(optarg);
+			if (maxtimeout < ftpd_timeout)
+				maxtimeout = ftpd_timeout;
 			break;
 
 		case 'T':
 			maxtimeout = atoi(optarg);
-			if (timeout > maxtimeout)
-				timeout = maxtimeout;
+			if (ftpd_timeout > maxtimeout)
+				ftpd_timeout = maxtimeout;
 			break;
 
 		case 'u':
