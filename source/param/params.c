@@ -114,7 +114,8 @@ typedef struct {
 static int mygetc(myFILE *f)
 {
 	if (f->p >= f->buf+f->size) return EOF;
-	return (int)*(f->p++);
+        /* be sure to return chars >127 as positive values */
+	return (int)( *(f->p++) & 0x00FF );
 }
 
 static void myfile_close(myFILE *f)
