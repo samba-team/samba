@@ -64,23 +64,21 @@ static void schan_security_end(struct dcerpc_security *dcerpc_security)
 
 
 /*
-  do a schannel style bind on a dcerpc pipe. The username is usually
-  of the form HOSTNAME$ and the password is the domain trust password
+  get a schannel key using a netlogon challenge on a secondary pipe
 */
-NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
-				   const char *uuid, unsigned version,
-				   const char *domain,
-				   const char *username,
-				   const char *password)
+NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
+			     const char *domain,
+			     const char *username,
+			     const char *password,
+			     int chan_type,
+			     uint8 new_session_key[8])
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p2;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate2 a;
 	uint8 mach_pwd[16];
-	uint8 session_key[16];
 	struct netr_CredentialState creds;
-	struct schannel_state *schannel_state;
 	const char *workgroup, *workstation;
 	uint32 negotiate_flags = 0;
 
@@ -117,11 +115,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 
 	a.in.server_name = r.in.server_name;
 	a.in.username = talloc_asprintf(p->mem_ctx, "%s$", workstation);
-	if (lp_server_role() == ROLE_DOMAIN_BDC) {
-		a.in.secure_channel_type = SEC_CHAN_BDC;
-	} else {
-		a.in.secure_channel_type = SEC_CHAN_WKSTA;
-	}
+	a.in.secure_channel_type = chan_type;
 	a.in.computer_name = workstation;
 	a.in.negotiate_flags = &negotiate_flags;
 	a.out.negotiate_flags = &negotiate_flags;
@@ -141,8 +135,36 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 	*/
 	dcerpc_pipe_close(p2);
 
+	memcpy(new_session_key, creds.session_key, 8);
+
+	return NT_STATUS_OK;
+}
+
+
+/*
+  do a schannel style bind on a dcerpc pipe with the given schannel
+  key. The username is usually of the form HOSTNAME$ and the password
+  is the domain trust password
+*/
+NTSTATUS dcerpc_bind_auth_schannel_key(struct dcerpc_pipe *p,
+				       const char *uuid, unsigned version,
+				       const char *domain,
+				       const char *username,
+				       const uint8 session_key[8])
+{
+	NTSTATUS status;
+	uint8 full_session_key[16];
+	struct schannel_state *schannel_state;
+	const char *workgroup, *workstation;
+
+	memcpy(full_session_key, session_key, 8);
+	memset(full_session_key+8, 0, 8);
+
+	workstation = username;
+	workgroup = domain;
+
 	/*
-	  step 4 - perform a bind with security type schannel
+	  perform a bind with security type schannel
 	*/
 	p->auth_info = talloc(p->mem_ctx, sizeof(*p->auth_info));
 	if (!p->auth_info) {
@@ -198,10 +220,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 		goto done;
 	}
 
-	memcpy(session_key, creds.session_key, 8);
-	memset(session_key+8, 0, 8);
-
-	status = schannel_start(&schannel_state, session_key, True);
+	status = schannel_start(&schannel_state, full_session_key, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -216,6 +235,32 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 	p->security_state->security_end = schan_security_end;
 
 done:
+	return status;
+}
+
+
+/*
+  do a schannel style bind on a dcerpc pipe. The username is usually
+  of the form HOSTNAME$ and the password is the domain trust password
+*/
+NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
+				   const char *uuid, unsigned version,
+				   const char *domain,
+				   const char *username,
+				   const char *password)
+{
+	NTSTATUS status;
+	uint8 session_key[8];
+
+	status = dcerpc_schannel_key(p, domain, username, password, 
+				     lp_server_role() == ROLE_DOMAIN_BDC? SEC_CHAN_BDC:SEC_CHAN_WKSTA,
+				     session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = dcerpc_bind_auth_schannel_key(p, uuid, version, domain, username, session_key);
+
 	return status;
 }
 
