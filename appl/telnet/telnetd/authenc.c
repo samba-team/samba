@@ -67,9 +67,8 @@ telnet_spin(void)
 }
 
 char *
-telnet_getenv(char *val)
+telnet_getenv(const char *val)
 {
-    extern char *getenv(const char *);
     return(getenv(val));
 }
 
