@@ -1089,9 +1089,6 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 			add_gids_from_group_sid(&info3->other_sids[i].sid,
 						&gid_list, &num_gids);
-
-			if (gid_list == NULL)
-				goto done;
 		}
 
 		for (i = 0; i < info3->num_groups2; i++) {
@@ -1103,9 +1100,6 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 			add_gids_from_group_sid(&group_sid, &gid_list,
 						&num_gids);
-
-			if (gid_list == NULL)
-				goto done;
 		}
 
 		SAFE_FREE(info3);
@@ -1123,11 +1117,12 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 		for (i = 0; i < num_groups; i++) {
 			add_gids_from_group_sid(user_grpsids[i],
 						&gid_list, &num_gids);
-
-			if (gid_list == NULL)
-				goto done;
 		}
 	}
+
+	/* We want at least one group... */
+	if (gid_list == NULL)
+		goto done;
 
 	remove_duplicate_gids( &num_gids, gid_list );
 
