@@ -219,7 +219,7 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 	if (NT_STATUS_IS_OK(result))
 		return WINBINDD_OK;
 
-	DEBUG(1, ("Could not get uid for sid %s\n", state->request.data.sid));
+	DEBUG(4, ("Could not get uid for sid %s\n", state->request.data.sid));
 	return WINBINDD_ERROR;
 }
 
@@ -329,7 +329,7 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 	if (NT_STATUS_IS_OK(result))
 		return WINBINDD_OK;
 
-	DEBUG(1, ("Could not get gid for sid %s\n", state->request.data.sid));
+	DEBUG(4, ("Could not get gid for sid %s\n", state->request.data.sid));
 	return WINBINDD_ERROR;
 }
 
