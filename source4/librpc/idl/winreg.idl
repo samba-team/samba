@@ -10,9 +10,9 @@
 ] interface winreg
 {
 	typedef struct {
-		[value(2*strlen_m(r->name))] uint16 name_len;
-		[value(r->name_len)]         uint16 name_size;
-		unistr_noterm *name;
+		[value(2*(strlen_m(r->name)+1))] uint16 name_len;
+		[value(r->name_len)]             uint16 name_size;
+		unistr *name;
 	} winreg_String;
 
 	typedef struct {
