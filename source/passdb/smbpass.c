@@ -65,6 +65,8 @@ static int do_pw_lock(int fd, int waitsecs, int type)
   return ret;
 }
 
+static int pw_file_lock_depth;
+
 /***************************************************************
  Lock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
@@ -73,9 +75,14 @@ int pw_file_lock(int fd, int type, int secs)
 {
   if (fd < 0)
     return (-1);
-  if (do_pw_lock(fd, secs, type)) {
-    return -1;
+  if(pw_file_lock_depth == 0) {
+    if (do_pw_lock(fd, secs, type)) {
+      return -1;
+    }
   }
+
+  pw_file_lock_depth++;
+
   return fd;
 }
 
@@ -85,7 +92,14 @@ int pw_file_lock(int fd, int type, int secs)
 
 int pw_file_unlock(int fd)
 {
- return do_pw_lock(fd, 5, F_UNLCK);
+ int ret = 0;
+
+ if(pw_file_lock_depth == 1)
+   ret = do_pw_lock(fd, 5, F_UNLCK);
+
+ pw_file_lock_depth--;
+
+ return ret;
 }
 
 /***************************************************************
@@ -629,40 +643,55 @@ BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
 
   if((offpos = lseek(fd, 0, SEEK_END)) == -1) {
     DEBUG(0, ("add_smbpwd_entry(lseek): Failed to add entry for user %s to file %s. \
-Error was %s\n", pwd->smb_name, pfile, strerror(errno)));
+Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
     endsmbpwent(fp);
     return False;
   }
 
-  new_entry_length = strlen(pwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + 5 + 1 + 13 + 2;
+  new_entry_length = strlen(newpwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + 5 + 1 + 13 + 2;
 
   if((new_entry = (char *)malloc( new_entry_length )) == NULL) {
     DEBUG(0, ("add_smbpwd_entry(malloc): Failed to add entry for user %s to file %s. \
-Error was %s\n", pwd->smb_name, pfile, strerror(errno)));
+Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
     endsmbpwent(fp);
     return False;
   }
 
-  sprintf(new_entry, "%s:%u:", pwd->smb_name, (unsigned)pwd->smb_userid);
+  sprintf(new_entry, "%s:%u:", newpwd->smb_name, (unsigned)newpwd->smb_userid);
   p = (unsigned char *)&new_entry[strlen(new_entry)];
 
-  for( i = 0; i < 16; i++) {
-    sprintf((char *)&p[i*2], "%02X", pwd->smb_passwd[i]);
+  if(newpwd->smb_passwd != NULL) {
+    for( i = 0; i < 16; i++) {
+      sprintf((char *)&p[i*2], "%02X", newpwd->smb_passwd[i]);
+    }
+  } else {
+    if(newpwd->acct_ctrl & ACB_PWNOTREQ)
+      sprintf((char *)&p[i*2], "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+    else
+      sprintf((char *)&p[i*2], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
   }
-
+  
   p += 32;
 
   *p++ = ':';
 
-  for( i = 0; i < 16; i++) {
-    sprintf((char *)&p[i*2], "%02X", pwd->smb_nt_passwd[i]);
+  if(newpwd->smb_nt_passwd != NULL) {
+    for( i = 0; i < 16; i++) {
+      sprintf((char *)&p[i*2], "%02X", newpwd->smb_nt_passwd[i]);
+    }
+  } else {
+    if(newpwd->acct_ctrl & ACB_PWNOTREQ)
+      sprintf(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+    else
+      sprintf(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
   }
+
   p += 32;
 
   *p++ = ':';
 
   /* Add the account encoding and the last change time. */
-  sprintf((char *)p, "%s:LCT-%08X:\n", encode_acct_ctrl(pwd->acct_ctrl),
+  sprintf((char *)p, "%s:LCT-%08X:\n", encode_acct_ctrl(newpwd->acct_ctrl),
                      (uint32)time(NULL));
 
 #ifdef DEBUG_PASSWORD
@@ -672,13 +701,13 @@ Error was %s\n", pwd->smb_name, pfile, strerror(errno)));
 
   if ((wr_len = write(fd, new_entry, strlen(new_entry))) != strlen(new_entry)) {
     DEBUG(0, ("add_smbpwd_entry(write): %d Failed to add entry for user %s to file %s. \
-Error was %s\n", wr_len, pwd->smb_name, pfile, strerror(errno)));
+Error was %s\n", wr_len, newpwd->smb_name, pfile, strerror(errno)));
 
     /* Remove the entry we just wrote. */
     if(ftruncate(fd, offpos) == -1) {
       DEBUG(0, ("add_smbpwd_entry: ERROR failed to ftruncate file %s. \
 Error was %s. Password file may be corrupt ! Please examine by hand !\n", 
-             pwd->smb_name, strerror(errno)));
+             newpwd->smb_name, strerror(errno)));
     }
 
     endsmbpwent(fp);
@@ -911,12 +940,6 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 
   if (*p == '[') {
 
-    /* 
-     * Note that here we are assuming that the account
-     * info in the pwd struct matches the account info
-     * here in the file. It better..... JRA.
-     */
-
     i = 0;
     p++;
     while((linebuf_len > PTR_DIFF(p, linebuf)) && (*p != ']'))
@@ -987,8 +1010,15 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
   }
  
   /* Create the 32 byte representation of the new p16 */
-  for (i = 0; i < 16; i++) {
-    sprintf(&ascii_p16[i*2], "%02X", (uchar) pwd->smb_passwd[i]);
+  if(pwd->smb_passwd != NULL) {
+    for (i = 0; i < 16; i++) {
+      sprintf(&ascii_p16[i*2], "%02X", (uchar) pwd->smb_passwd[i]);
+    }
+  } else {
+    if(pwd->acct_ctrl & ACB_PWNOTREQ)
+      sprintf(ascii_p16, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+    else
+      sprintf(ascii_p16, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
   }
 
   /* Add on the NT md4 hash */
@@ -999,8 +1029,10 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
       sprintf(&ascii_p16[(i*2)+33], "%02X", (uchar) pwd->smb_nt_passwd[i]);
     }
   } else {
-    /* No NT hash - write out an 'invalid' string. */
-    strcpy(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+    if(pwd->acct_ctrl & ACB_PWNOTREQ)
+      sprintf(&ascii_p16[33], "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+    else
+      sprintf(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
   }
 
   /* Add on the account info bits and the time of last
@@ -1009,7 +1041,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
   pwd->last_change_time = time(NULL);
 
   if(got_last_change_time) {
-    sprintf(&ascii_p16[strlen(ascii_p16)], ":[%s]:TLC-%08X", 
+    sprintf(&ascii_p16[strlen(ascii_p16)], ":[%s]:TLC-%08X:", 
                      encode_bits, (uint32)pwd->last_change_time );
     wr_len = strlen(ascii_p16);
   }
