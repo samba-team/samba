@@ -5,8 +5,7 @@ Release: PRELEASE
 Copyright: GNU GPL version 2
 Group: Networking
 Source: ftp://samba.org/pub/samba/samba-PVERSION.tar.gz
-#Patch: makefile-path.patch
-Patch1: smbw.patch
+Patch: smbw.patch
 Requires: pam >= 0.64 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
 BuildRoot: /var/tmp/samba
@@ -180,8 +179,7 @@ explanation for conceps like NetBIOS name or share.
 
 %prep
 %setup
-#%patch -p1
-%patch1 -p1
+%patch -p1
 
 
 %build
