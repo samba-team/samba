@@ -1,3 +1,7 @@
+1999-07-07  Assar Westerlund  <assar@sics.se>
+
+	* telnet/commands.c (tn): extra bogus const-cast
+
 1999-07-06  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/sys_term.c (start_login): print a different warning with
