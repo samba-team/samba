@@ -5,6 +5,9 @@ if test x"$PERL" = x""; then
 	AC_MSG_WARN([No version of perl was not found!])
 	AC_MSG_ERROR([Please Install perl from http://www.perl.com/])
 fi
+if test x"$debug" = x"yes";then
+	PERL="$PERL -W"
+fi
 
 AC_PROG_CC
 AC_PROG_INSTALL
