@@ -193,17 +193,19 @@ static void get_sam_domain_name(void)
 			break;
 		}
 		case ROLE_DOMAIN_MEMBER:
+		case ROLE_DOMAIN_NONE:
 		{
 			/* we are a "PDC", but FOR LOCAL SAM DATABASE ONLY */
 			fstrcpy(global_sam_name, global_myname);
-			DEBUG(5,("get_sam_domain_name: Dom-Mem"));
+			DEBUG(5,("get_sam_domain_name: Local SAM Database "));
 			break;
 		}
 		default:
 		{
 			/* no domain role, probably due to "security = share" */
 			memset(global_sam_name, 0, sizeof(global_sam_name));
-			DEBUG(5,("get_sam_domain_name: no role"));
+			DEBUG(0,("get_sam_domain_name: unknown role type!\n"));
+			DEBUG(5,("get_sam_domain_name: no SAM name"));
 			break;
 		}
 	}

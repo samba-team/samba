@@ -91,6 +91,7 @@ static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
                                              SEC_RIGHTS_MAXIMUM_ALLOWED,
 					     user_rid, &usr_pol);
 	}
+	DEBUG(10,("_samr_open_user: status %x\n", status_usr));
 	if (status_usr == NT_STATUS_NOPROBLEMO)
 	{
 		if (!set && gids != NULL && num_grps != NULL)
@@ -98,6 +99,7 @@ static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
 			status_grp = _samr_query_usergroups(&usr_pol,
 							    num_grps, gids);
 		}
+		DEBUG(10,("_samr_query_usergroups: status %x\n", status_grp));
 		if (set)
 		{
 			status_pwd = _samr_set_userinfo(&usr_pol, level, ctr);
