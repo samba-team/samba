@@ -220,6 +220,16 @@ main (int argc, char **argv)
     if (ret)
 	errx(1, "krb5_init_context failed: %u", ret);
   
+    forwardable = krb5_config_get_bool (context, NULL,
+					"libdefaults",
+					"forwardable",
+					NULL);
+
+    get_v4_tgt = krb5_config_get_bool (context, NULL,
+				       "libdefaults",
+				       "krb4_get_tickets",
+				       NULL);
+
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage(1);
     
