@@ -44,7 +44,7 @@ void cmd_wks_query_info(struct client_info *info)
 
 	fstrcpy(dest_wks, "\\\\");
 	fstrcat(dest_wks, info->dest_host);
-	strupper(dest_wks);
+	strupper_m(dest_wks);
 
 	if (next_token_nr(NULL, tmp, NULL, sizeof(tmp)))
 	{
