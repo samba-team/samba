@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -118,6 +118,7 @@ krb5_storage_emem(void)
     krb5_storage *sp = malloc(sizeof(krb5_storage));
     emem_storage *s = malloc(sizeof(*s));
     sp->data = s;
+    sp->host_byteorder = 0;
     s->size = 1024;
     s->base = malloc(s->size);
     s->len = 0;
