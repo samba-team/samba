@@ -63,7 +63,7 @@ static void overflow_attack(int len)
 /****************************************************************************
   does _both_ nt->unix and unix->unix username remappings.
 ****************************************************************************/
-static BOOL map_nt_and_unix_username(const char *domain, char *user)
+static void map_nt_and_unix_username(const char *domain, char *user)
 {
 	DOM_NAME_MAP gmep;
 	fstring nt_username;
@@ -83,12 +83,11 @@ static BOOL map_nt_and_unix_username(const char *domain, char *user)
 	{
 		fstrcpy(nt_username, user);
 	}
-	if (!lookupsmbpwntnam(nt_username, &gmep))
-	{
-		return False;
-	}
 
-	fstrcpy(user, gmep.unix_name);
+	if (lookupsmbpwntnam(nt_username, &gmep))
+	{
+		fstrcpy(user, gmep.unix_name);
+	}
 
 	/*
 	 * Pass the user through the unix -> unix user mapping
@@ -100,7 +99,7 @@ static BOOL map_nt_and_unix_username(const char *domain, char *user)
 	/*
 	 * Do any UNIX username case mangling.
 	 */
-	return Get_Pwnam( user, True) != NULL;
+	(void)Get_Pwnam( user, True);
 }
 
 /****************************************************************************
@@ -665,10 +664,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   pstrcpy( orig_user, user);
 
-	if (!map_nt_and_unix_username(domain, user))
-	{
-		return(ERROR(ERRSRV,ERRbadpw));
-	}
+	map_nt_and_unix_username(domain, user);
 
   add_session_user(user);
 
