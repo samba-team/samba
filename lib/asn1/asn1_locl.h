@@ -1,0 +1,25 @@
+/* $Id$ */
+
+#ifndef __ASN1_LOCL_H__
+#define __ASN1_LOCL_H__
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "der.h"
+#include "gen.h"
+
+void generate_type_encode (Symbol *s);
+void generate_type_decode (Symbol *s);
+void generate_type_free (Symbol *s);
+void generate_type_length (Symbol *s);
+void generate_type_copy (Symbol *s);
+
+int fix_dce(int, int*);
+
+extern FILE *headerfile, *codefile, *logfile;
+
+#endif /* __ASN1_LOCL_H__ */
