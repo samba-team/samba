@@ -381,9 +381,9 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 	uint32 flags = 0x200003f3; /* absolutely no idea. */
 	uint32 alias_rid;
 	const char **names = NULL;
-	uint32 num_names = 0;
+	int num_names = 0;
 	DOM_SID *sids = NULL; 
-	uint32 num_sids = 0;
+	int num_sids = 0;
 	int i;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
