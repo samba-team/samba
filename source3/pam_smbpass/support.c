@@ -221,7 +221,7 @@ void _cleanup( pam_handle_t * pamh, void *x, int error_status )
  * evidence of old token around for later stack analysis.
  */
 
-char * xstrdup( const char *x )
+char * smb_xstrdup( const char *x )
 {
     register char *new = NULL;
 
@@ -231,7 +231,7 @@ char * xstrdup( const char *x )
         for (i = 0; x[i]; ++i); /* length of string */
         if ((new = malloc(++i)) == NULL) {
             i = 0;
-            _log_err( LOG_CRIT, "out of memory in xstrdup" );
+            _log_err( LOG_CRIT, "out of memory in smb_xstrdup" );
         } else {
             while (i-- > 0) {
                 new[i] = x[i];
@@ -417,9 +417,9 @@ int _smb_verify_password( pam_handle_t * pamh
                       , smb_pwent->smb_userid );
                     new->count = 1;
                 }
-                new->user = xstrdup( name );
+                new->user = smb_xstrdup( name );
                 new->id = smb_pwent->smb_userid;
-                new->agent = xstrdup( uidtoname( getuid() ) );
+                new->agent = smb_xstrdup( uidtoname( getuid() ) );
                 pam_set_data( pamh, data_name, new, _cleanup_failures );
 
             } else {
@@ -560,7 +560,7 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl
 
         if (retval == PAM_SUCCESS) {	/* a good conversation */
 
-            token = xstrdup(resp[j++].resp);
+            token = smb_xstrdup(resp[j++].resp);
             if (token != NULL) {
                 if (expect == 2) {
                     /* verify that password entered correctly */
