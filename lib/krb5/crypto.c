@@ -619,6 +619,8 @@ _krb5_PKCS5_PBKDF2(krb5_context context, krb5_cksumtype cktype,
     return 0;
 }
 
+int _krb5_AES_string_to_default_iterator = 45056;
+
 static krb5_error_code
 AES_string_to_key(krb5_context context,
 		  krb5_enctype enctype,
@@ -633,7 +635,7 @@ AES_string_to_key(krb5_context context,
     struct key_data kd;
 
     if (opaque.length == 0)
-	iter = 45056 - 1;
+	iter = _krb5_AES_string_to_default_iterator - 1;
     else if (opaque.length == 4) {
 	unsigned long v;
 	_krb5_get_int(opaque.data, &v, 4);
@@ -747,7 +749,7 @@ struct key_type keytype_aes256 = {
     KEYTYPE_AES256,
     "aes-256",
     256,
-    16,
+    32,
     sizeof(AES_KEY) * 2,
     NULL,
     AES_schedule,
@@ -1025,6 +1027,21 @@ krb5_string_to_key_salt (krb5_context context,
     pw.data = (void*)password;
     pw.length = strlen(password);
     return krb5_string_to_key_data_salt(context, enctype, pw, salt, key);
+}
+
+krb5_error_code
+krb5_string_to_key_salt_opaque (krb5_context context,
+				krb5_enctype enctype,
+				const char *password,
+				krb5_salt salt,
+				krb5_data opaque,
+				krb5_keyblock *key)
+{
+    krb5_data pw;
+    pw.data = (void*)password;
+    pw.length = strlen(password);
+    return krb5_string_to_key_data_salt_opaque(context, enctype, 
+					       pw, salt, opaque, key);
 }
 
 krb5_error_code
