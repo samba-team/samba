@@ -140,6 +140,17 @@ int ldb_delete(struct ldb_context *ldb, const char *dn)
 }
 
 /*
+  rename a record in the database
+*/
+int ldb_rename(struct ldb_context *ldb, const char *olddn, const char *newdn)
+{
+	int ret;
+	ret = ldb->ops->rename_record(ldb, olddn, newdn);
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_rename(%s,%s) -> %d\n", olddn, newdn);
+	return ret;
+}
+
+/*
   return extended error information 
 */
 const char *ldb_errstring(struct ldb_context *ldb)

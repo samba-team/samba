@@ -2,6 +2,7 @@
    ldb database library
 
    Copyright (C) Andrew Tridgell  2004
+   Copyright (C) Stefan Metzmacher  2004
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -30,6 +31,7 @@
  *  Description: defines for base ldb API
  *
  *  Author: Andrew Tridgell
+ *  Author: Stefan Metzmacher
  */
 
 #ifndef _LDB_H_
@@ -131,6 +133,7 @@ struct ldb_backend_ops {
 	int (*add_record)(struct ldb_context *, const struct ldb_message *);
 	int (*modify_record)(struct ldb_context *, const struct ldb_message *);
 	int (*delete_record)(struct ldb_context *, const char *);
+	int (*rename_record)(struct ldb_context *, const char *olddn, const char *newdn);
 	const char * (*errstring)(struct ldb_context *);
 
 	/* this is called when the alloc ops changes to ensure we 
@@ -233,6 +236,11 @@ int ldb_add(struct ldb_context *ldb,
 */
 int ldb_modify(struct ldb_context *ldb, 
 	       const struct ldb_message *message);
+
+/*
+  rename a record in the database
+*/
+int ldb_rename(struct ldb_context *ldb, const char *olddn, const char *newdn);
 
 /*
   delete a record from the database

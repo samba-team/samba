@@ -2,6 +2,8 @@
    ldb database library
 
    Copyright (C) Andrew Tridgell  2004
+   Copyright (C) Stefan Metzmacher  2004
+   
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -30,6 +32,7 @@
  *  Description: core functions for tdb backend
  *
  *  Author: Andrew Tridgell
+ *  Author: Stefan Metzmacher
  */
 
 #include "includes.h"
@@ -582,6 +585,60 @@ static int ltdb_modify(struct ldb_context *ldb, const struct ldb_message *msg)
 }
 
 /*
+  rename a record
+*/
+static int ltdb_rename(struct ldb_context *ldb, const char *olddn, const char *newdn)
+{
+	struct ltdb_private *ltdb = ldb->private_data;
+	int ret;
+	struct ldb_message msg;
+	const char *error_str;
+
+	ltdb->last_err_string = NULL;
+
+	if (ltdb_lock(ldb) != 0) {
+		return -1;
+	}
+
+	/* in case any attribute of the message was indexed, we need
+	   to fetch the old record */
+	ret = ltdb_search_dn1(ldb, olddn, &msg);
+	if (ret != 1) {
+		/* not finding the old record is an error */
+		goto failed;
+	}
+
+	ldb_free(ldb, msg.dn);
+	msg.dn = ldb_strdup(ldb,newdn);
+	if (!msg.dn) {
+		ltdb_search_dn1_free(ldb, &msg);
+		goto failed;
+	}
+
+	ret = ltdb_add(ldb, &msg);
+	if (ret == -1) {
+		ltdb_search_dn1_free(ldb, &msg);
+		goto failed;
+	}
+	ltdb_search_dn1_free(ldb, &msg);
+
+	ret = ltdb_delete(ldb, olddn);
+	error_str = ltdb->last_err_string;
+	if (ret == -1) {
+		ltdb_delete(ldb, newdn);
+	}
+
+	ltdb->last_err_string = error_str;
+
+	ltdb_unlock(ldb);
+
+	return ret;
+failed:
+	ltdb_unlock(ldb);
+	return -1;
+}
+
+/*
   close database
 */
 static int ltdb_close(struct ldb_context *ldb)
@@ -621,6 +678,7 @@ static const struct ldb_backend_ops ltdb_ops = {
 	ltdb_add,
 	ltdb_modify,
 	ltdb_delete,
+	ltdb_rename,
 	ltdb_errstring,
 	ltdb_cache_free
 };
