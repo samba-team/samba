@@ -159,6 +159,7 @@ man_MANS =					\
 	krb5_context.3				\
 	krb5_create_checksum.3			\
 	krb5_crypto_init.3			\
+	krb5_data.3				\
 	krb5_encrypt.3				\
 	krb5_free_addresses.3			\
 	krb5_free_principal.3			\
