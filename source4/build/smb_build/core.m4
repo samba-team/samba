@@ -44,6 +44,11 @@ cat >> config.smb_build.pl <<\_SMB_ACEOF
 ###########################################################
 #
 #########################################
+## Start Build Env
+$SMB_INFO_BUILD_ENV
+## End Build Env
+#########################################
+#########################################
 ## Start Ext Libs
 $SMB_INFO_EXT_LIBS
 ## End Ext Libs
