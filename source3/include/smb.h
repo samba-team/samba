@@ -248,7 +248,6 @@ typedef uint32 WERROR;
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
 #endif
 
-#ifndef _DOM_SID
 /**
  * @brief Security Identifier
  *
@@ -268,8 +267,6 @@ typedef struct sid_info
   uint32 sub_auths[MAXSUBAUTHS];  
 
 } DOM_SID;
-#define _DOM_SID
-#endif
 
 /*
  * The complete list of SIDS belonging to this user.
@@ -284,13 +281,10 @@ typedef struct sid_info
 #define PRIMARY_USER_SID_INDEX 0
 #define PRIMARY_GROUP_SID_INDEX 1
 
-#ifndef _NT_USER_TOKEN
 typedef struct _nt_user_token {
 	size_t num_sids;
 	DOM_SID *user_sids;
 } NT_USER_TOKEN;
-#define _NT_USER_TOKEN
-#endif
 
 /*** query a local group, get a list of these: shows who is in that group ***/
 
