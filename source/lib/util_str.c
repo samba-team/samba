@@ -424,15 +424,27 @@ size_t count_chars(const char *s,char c)
  *
  * This is meant to catch possible string overflows, even if the
  * actual string copied is not big enough to cause an overflow.
+ *
+ * In addition, under Valgrind the buffer is marked as uninitialized.
  **/
 void clobber_region(const char *fn, unsigned int line, char *dest, size_t len)
 {
 #ifdef DEVELOPER
-	/* F1 is odd and 0xf1f1f1f1 shouldn't be a valid pointer */
-	memset(dest, 0xF1, len);
 	global_clobber_region_function = fn;
 	global_clobber_region_line = line;
-#endif
+
+	/* F1 is odd and 0xf1f1f1f1 shouldn't be a valid pointer */
+	memset(dest, 0xF1, len);
+#ifdef VALGRIND
+	/* Even though we just wrote to this, from the application's
+	 * point of view it is not initialized.
+	 *
+	 * (This is not redundant with the clobbering above.  The
+	 * marking might not actually take effect if we're not running
+	 * under valgrind or not with --client-perms.) */
+	VALGRIND_MAKE_WRITABLE(dest, len);
+#endif /* VALGRIND */
+#endif /* DEVELOPER */
 }
 
 
