@@ -93,19 +93,6 @@ krb5_free_context(krb5_context context)
   free(context);
 }
 
-/*
- * XXX - This information needs to be coordinated with encrypt.c
- */
-
-static krb5_boolean
-valid_etype(krb5_context context, krb5_enctype e)
-{
-    krb5_keytype thrash;
-
-    return e != ETYPE_NULL
-	&& krb5_etype_to_keytype(context, e, &thrash) == 0;
-}
-
 static krb5_error_code
 default_etypes(krb5_enctype **etype)
 {
@@ -134,7 +121,7 @@ krb5_set_default_in_tkt_etypes(krb5_context context,
   if(etypes) {
     i = 0;
     while(etypes[i])
-      if(!valid_etype(context, etypes[i++]))
+      if(!krb5_etype_valid(context, etypes[i++]))
 	return KRB5_PROG_ETYPE_NOSUPP;
     ++i;
     ALLOC(p, i);
