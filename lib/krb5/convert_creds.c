@@ -166,33 +166,24 @@ krb524_convert_creds_kdc(krb5_context context,
 	goto out2;
 
     {
-	char **hostlist;
-	int port;
-	port = krb5_getportbyname (context, "krb524", "udp", 4444);
-	
-	ret = krb5_get_krb524hst (context, krb5_princ_realm(context, 
-							    v5_creds->server), 
-				  &hostlist);
-	if(ret)
+	krb5_krbhst_handle handle;
+
+	ret = krb5_krbhst_init(context,
+			       *krb5_princ_realm(context, 
+						v5_creds->server),
+			       KRB5_KRBHST_KRB524,
+			       &handle);
+	if (ret)
 	    goto out2;
-	
+
 	ret = krb5_sendto (context,
 			   &v5_creds->ticket,
-			   hostlist,
-			   port,
+			   handle,
 			   &reply);
-	if(ret == KRB5_KDC_UNREACH) {
-	    port = krb5_getportbyname (context, "kerberos", "udp", 88);
-	    ret = krb5_sendto (context,
-			       &v5_creds->ticket,
-			       hostlist,
-			       port,
-			       &reply);
-	}
-	krb5_free_krbhst (context, hostlist);
+	krb5_krbhst_free(context, handle);
+	if (ret)
+	    goto out2;
     }
-    if (ret)
-	goto out2;
     sp = krb5_storage_from_mem(reply.data, reply.length);
     if(sp == NULL) {
 	ret = ENOMEM;
