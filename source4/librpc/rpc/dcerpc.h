@@ -91,6 +91,8 @@ struct dcerpc_pipe {
 #define DCERPC_SCHANNEL_ANY            (DCERPC_SCHANNEL_BDC| \
 					DCERPC_SCHANNEL_DOMAIN| \
 					DCERPC_SCHANNEL_WORKSTATION)
+/* use a 128 bit session key */
+#define DCERPC_SCHANNEL_128            (1<<11)
 
 #define DCERPC_AUTH_OPTIONS    (DCERPC_SEAL|DCERPC_SIGN|DCERPC_SCHANNEL_ANY)
 

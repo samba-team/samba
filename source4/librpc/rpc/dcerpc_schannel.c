@@ -91,7 +91,13 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	struct samr_Password mach_pwd;
 	struct creds_CredentialState creds;
 	const char *workgroup, *workstation;
-	uint32_t negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	uint32_t negotiate_flags;
+
+	if (p->flags & DCERPC_SCHANNEL_128) {
+		negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	} else {
+		negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	}
 
 	workstation = username;
 	workgroup = domain;
