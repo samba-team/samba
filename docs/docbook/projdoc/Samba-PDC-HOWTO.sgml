@@ -341,6 +341,12 @@ nickname"</replaceable> -s /bin/false <replaceable>machine_name</replaceable>$ <
 <prompt>root# </prompt><command>passwd -l <replaceable>machine_name</replaceable>$</command>
 </para>
 
+<para>On *BSD systems, this can be done using the 'chpass' utility:</para>
+
+<para>
+<prompt>root# </prompt><command>chpass -a "<replaceable>machine_name</replaceable>$:*:101:100::0:0:Workstation <replaceable>machine_name</replaceable>:/dev/null:/sbin/nologin"</command>
+</para>
+
 <para>
 The <filename>/etc/passwd</filename> entry will list the machine name 
 with a "$" appended, won't have a password, will have a null shell and no 
