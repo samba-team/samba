@@ -148,14 +148,14 @@ int StrCaseCmp(const char *s1, const char *s2)
 		char u1 = toupper(*s1);
 		char u2 = toupper(*s2);
 		if (u1 != u2) {
-			return u2 - u1;
+			return u1 - u2;
 		}
 		s1++;
 		s2++;
 	}
 
 	if (*s1 == 0 || *s2 == 0) {
-		return *s2 - *s1;
+		return *s1 - *s2;
 	}
 
 	return StrCaseCmp_slow(s1, s2);
