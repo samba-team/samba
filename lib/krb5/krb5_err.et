@@ -81,7 +81,7 @@ prefix KRB5_AP_ERR
 error_code USER_TO_USER_REQUIRED, "User to user required"
 
 index 70
-prefix KDC_ERROR
+prefix KRB5_KDC_ERROR
 error_code CANT_VERIFY_CERTIFICATE, "Cannot verify certificate"
 error_code INVALID_CERTIFICATE,	"Invalid certificate"
 error_code REVOKED_CERTIFICATE,	"Revoked certificate"
@@ -94,7 +94,7 @@ error_code KDC_NAME_MISMATCH,	"KDC name mismatch"
 # 76-79 are reserved
 
 index 80
-prefix KRB_IAKERB
+prefix KRB5_IAKERB
 error_code ERR_KDC_NOT_FOUND,	"IAKERB proxy could not find a KDC"
 error_code ERR_KDC_NO_RESPONSE,	"IAKERB proxy never reeived a response from a KDC"
 
