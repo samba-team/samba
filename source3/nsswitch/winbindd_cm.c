@@ -182,7 +182,7 @@ static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const i
 
 				if (!NT_STATUS_IS_OK(result = cli_session_setup_spnego(new_conn->cli, machine_krb5_principal, 
 							      machine_password, 
-							      domain->name))) {
+							      lp_workgroup()))) {
 					DEBUG(4,("failed kerberos session setup with %s\n", nt_errstr(result)));
 				}
 			}
@@ -202,7 +202,7 @@ static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const i
 				if (!cli_session_setup(new_conn->cli, ipc_username, 
 						       ipc_password, strlen(ipc_password)+1, 
 						       ipc_password, strlen(ipc_password)+1, 
-						       domain->name)) {
+						       ipc_domain)) {
 					result = cli_nt_error(new_conn->cli);
 					DEBUG(4,("failed authenticated session setup with %s\n", nt_errstr(result)));
 					if (NT_STATUS_IS_OK(result)) 
