@@ -1117,7 +1117,7 @@ void msleep(int t)
 * used by the unix matcher.
 *********************************************************/
 
-BOOL unix_do_match(char *str, char *regexp, int case_sig)
+BOOL unix_do_match(char *str, char *regexp, BOOL case_sig)
 {
   char *p;
 
@@ -1182,7 +1182,7 @@ BOOL unix_do_match(char *str, char *regexp, int case_sig)
 * This is the 'original code' used by the unix matcher.
 *********************************************************/
 
-static BOOL unix_mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
+static BOOL unix_mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2)
 {
   char *p;
   pstring p1, p2;
@@ -1321,6 +1321,15 @@ static BOOL do_match(char *str, char *regexp, int case_sig, BOOL win9x_semantics
   return False;
 }
 
+/*********************************************************
+* Routine to check if a given string matches exactly.
+* Case can be significant or not.
+**********************************************************/
+
+BOOL exact_match(char *str, char *regexp, BOOL case_sig)
+{
+  return ((case_sig?strcmp(str,regexp):strcasecmp(str,regexp)) == 0);
+}
 
 /*********************************************************
 * Routine to match a given string with a regexp - uses
@@ -1330,7 +1339,7 @@ static BOOL do_match(char *str, char *regexp, int case_sig, BOOL win9x_semantics
 * This is the new 'NT style' matcher.
 *********************************************************/
 
-BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
+BOOL mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2)
 {
   char *p;
   pstring t_pattern, t_filename, te_pattern, te_filename;
@@ -1339,7 +1348,8 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   BOOL win9x_semantics = (get_remote_arch() == RA_WIN95) && trans2;
 
   /* special case - if it is exactly the same then it always matches! */
-  if ((case_sig?strcmp(str,regexp):strcasecmp(str,regexp)) == 0) return True;
+  if(exact_match(str, regexp, case_sig))
+    return True;
 
   /* Make local copies of str and regexp */
   pstrcpy(t_pattern,regexp);

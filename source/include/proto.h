@@ -251,8 +251,9 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,
 int name_extract(char *buf,int ofs,char *name);
 int name_len(char *s1);
 void msleep(int t);
-BOOL unix_do_match(char *str, char *regexp, int case_sig);
-BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2);
+BOOL unix_do_match(char *str, char *regexp, BOOL case_sig);
+BOOL exact_match(char *str, char *regexp, BOOL case_sig);
+BOOL mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2);
 void become_daemon(void);
 BOOL yesno(char *p);
 int set_filelen(int fd, SMB_OFF_T len);
@@ -2593,7 +2594,7 @@ void process_smb(char *inbuf, char *outbuf);
 char *smb_fn_name(int type);
 void construct_reply_common(char *inbuf,char *outbuf);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
-void check_reload(int time);
+void check_reload(int t);
 void smbd_process(void);
 
 /*The following definitions come from  smbd/reply.c  */
