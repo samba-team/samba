@@ -557,7 +557,7 @@ struct winbindd_state server_state;   /* Server state information */
 
 int main(int argc, char **argv)
 {
-    extern fstring global_myname;
+    extern pstring global_myname;
     extern pstring debugf;
     int accept_sock;
     BOOL interactive = False;
