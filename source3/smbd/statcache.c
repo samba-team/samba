@@ -310,7 +310,7 @@ BOOL reset_stat_cache( void )
 	}
 
 	/* Create the in-memory tdb using our custom hash function. */
-	tdb_stat_cache = tdb_open_ex("statcache", 0, TDB_INTERNAL,
+	tdb_stat_cache = tdb_open_ex("statcache", 1031, TDB_INTERNAL,
                                     (O_RDWR|O_CREAT), 0644, NULL, fast_string_hash);
 
 	if (!tdb_stat_cache)
