@@ -5350,6 +5350,42 @@ BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_st
 	return True;
 }
 
+/*******************************************************************
+********************************************************************/  
+BOOL spoolss_io_q_resetprinter(char *desc, SPOOL_Q_RESETPRINTER *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_resetprinter");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+	if (!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
+		return False;
+
+	if (!prs_uint32("unknown1", ps, depth, &q_u->unknown1))
+		return False;
+
+	if (!spoolss_io_devmode_cont(desc, &q_u->devmode_ctr, ps, depth))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+********************************************************************/  
+BOOL spoolss_io_r_resetprinter(char *desc, SPOOL_R_RESETPRINTER *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_resetprinter");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("status",     ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
 
 /*******************************************************************
 ********************************************************************/  

@@ -49,7 +49,6 @@
 #define SPOOLSS_DELETEPRINTPROCESSOR			0x30
 #define SPOOLSS_ADDPRINTPROVIDOR			0x31
 #define SPOOLSS_DELETEPRINTPROVIDOR			0x32
-#define SPOOLSS_RESETPRINTER				0x34
 #define SPOOLSS_FINDFIRSTPRINTERCHANGENOTIFICATION	0x36
 #define SPOOLSS_FINDNEXTPRINTERCHANGENOTIFICATION	0x37
 #define SPOOLSS_ROUTERFINDFIRSTPRINTERNOTIFICATIONOLD	0x39
@@ -94,6 +93,7 @@
 #define SPOOLSS_ENUMPORTS				0x23
 #define SPOOLSS_ENUMMONITORS				0x24
 #define SPOOLSS_ENUMPRINTPROCDATATYPES			0x33
+#define SPOOLSS_RESETPRINTER				0x34
 #define SPOOLSS_GETPRINTERDRIVER2			0x35
 /* find close printer notification */
 #define SPOOLSS_FCPN					0x38
@@ -1691,6 +1691,22 @@ typedef struct spool_r_setprinterdata
 	uint32 status;
 }
 SPOOL_R_SETPRINTERDATA;
+
+typedef struct spool_q_resetprinter
+{
+	POLICY_HND handle;
+	uint32 unknown1;
+	DEVMODE_CTR devmode_ctr;
+
+} SPOOL_Q_RESETPRINTER;
+
+typedef struct spool_r_resetprinter
+{
+	uint32 status;
+} 
+SPOOL_R_RESETPRINTER;
+
+
 
 typedef struct _form
 {

@@ -5928,6 +5928,15 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 	return status;
 }
 
+
+/****************************************************************************
+****************************************************************************/
+uint32 _spoolss_resetprinter( POLICY_HND *handle, DEVMODE_CTR *ctr)
+{
+	return NT_STATUS_NO_PROBLEMO;
+}
+
+
 /****************************************************************************
 ****************************************************************************/
 uint32 _spoolss_deleteprinterdata( POLICY_HND *handle, const UNISTR2 *value)
