@@ -39,7 +39,7 @@
 	/******************/
 	/* Function: 0x04 */
 	NTSTATUS dfs_Info (
-		[in,ref] unistr *path,
+		[in,ref] unistr_noterm *path,
 		[in]     unistr *server,
 		[in]     unistr *share,
 		[in]     uint16 level
@@ -48,9 +48,29 @@
 	/******************/
 	/* Function: 0x05 */
 
+	typedef struct {
+		unistr *str;
+	} dfs_String;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] dfs_String *s;
+	} dfs_Enum1;
+
+	typedef union {
+		case(1) dfs_Enum1 *enum1;
+	} dfs_EnumInfo;
+
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] dfs_EnumInfo e;
+	} dfs_EnumStruct;
+
 	NTSTATUS dfs_Enum (
-		[in] unistr *name,
 		[in] uint32 level,
-		[in] uint32 buffer_size
+		[in] uint32 bufsize,
+		[in,out] dfs_EnumStruct *info,
+		[in]     uint32 *unknown,
+		[in,out] uint32 *total
 		);
 }

@@ -780,6 +780,8 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 	/* retrieve the blob */
 	request = ndr_push_blob(push);
 
+	dump_data(10, request.data, request.length);
+
 	/* make the actual dcerpc request */
 	status = dcerpc_request(p, opnum, mem_ctx, &request, &response);
 	if (!NT_STATUS_IS_OK(status)) {

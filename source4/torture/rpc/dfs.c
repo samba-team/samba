@@ -45,19 +45,33 @@ static BOOL test_Enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct dfs_Enum r;
-	uint32 resume_handle = 0;
+	uint32 total=0;
+	struct dfs_EnumStruct e;
+	uint32 i = 0;
+	struct dfs_String s;
+	struct dfs_Enum1 e1;
 
-	r.in.name = "";
+	e.level = 1;
+	e.e.enum1 = &e1;
+	e.e.enum1->count = 0;
+	e.e.enum1->s = &s;
+	s.str = NULL;
+
 	r.in.level = 1;
-	r.in.buffer_size = 20000;
-	r.in.resume_handle = &resume_handle;
-	r.out.resume_handle = &resume_handle;
-
+	r.in.bufsize = (uint32)-1;
+	r.in.total = &total;
+	r.in.unknown = NULL;
+	r.in.info = &e;
+	
 	status = dcerpc_dfs_Enum(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Enum failed - %s\n", nt_errstr(status));
 		return False;
 	}
+
+	NDR_PRINT_DEBUG(dfs_EnumStruct, r.out.info);
+
+	printf("total=%d\n", r.out.total?*r.out.total:-1);
 
 	return True;
 }
