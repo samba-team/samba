@@ -76,11 +76,20 @@
 #include <krb5.h>
 #include <hdb_err.h>
 
+#ifdef KRB4
+#include <krb.h>
+#include <prot.h>
+#endif
+
 #include "hdb.h"
 
 extern require_preauth;
 extern sig_atomic_t exit_flag;
 extern char *keyfile;
+
+#ifdef KRB4
+extern char *v4_realm;
+#endif
 
 extern struct timeval now;
 #define kdc_time (now.tv_sec)
@@ -93,11 +102,14 @@ krb5_error_code tgs_rep(krb5_context, KDC_REQ *, krb5_data *, const char*);
 krb5_error_code as_rep(krb5_context, KDC_REQ *, krb5_data *, const char*);
 
 int maybe_version4(unsigned char*, int);
-krb5_error_code do_version4();
+krb5_error_code do_version4(krb5_context, unsigned char*, size_t, krb5_data*, 
+			    const char*, struct sockaddr_in*);
 
 void loop (krb5_context);
 
 void kdc_log(int, const char *fmt, ...);
+char* kdc_log_msg_va(int, const char*, va_list);
+char* kdc_log_msg(int, const char*, ...);
 
 Key *unseal_key(Key *key);
 
