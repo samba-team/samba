@@ -499,6 +499,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	fstring nt_username, nt_domain, nt_workstation;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
+	extern userdom_struct current_user_info;
 	        
 	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
 	if (!usr_info)
@@ -555,7 +556,9 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
 	DEBUG(3,("User:[%s@%s] Requested Domain:[%s]\n", nt_username, 
                  nt_workstation, nt_domain));
-        
+   	
+	pstrcpy(current_user_info.smb_name, nt_username);
+     
 	/*
 	 * Convert to a UNIX username.
 	 */
