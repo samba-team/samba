@@ -1019,7 +1019,7 @@ static int cmd_mkdir(void)
 /****************************************************************************
   show alt name
   ****************************************************************************/
-static void cmd_altname(void)
+static int cmd_altname(void)
 {
 	pstring name;
 	fstring buf;
@@ -1029,11 +1029,13 @@ static void cmd_altname(void)
 
 	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		d_printf("altname <file>\n");
-		return;
+		return 1;
 	}
 	pstrcat(name,p);
 
 	do_altname(name);
+
+	return 0;
 }
 
 

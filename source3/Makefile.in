@@ -7,7 +7,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 mandir=@mandir@
 
-LIBS=@LIBS@ @INTLLIBS@
+LIBS=@LIBS@ 
 CC=@CC@
 SHLD=@SHLD@
 CFLAGS=@CFLAGS@
@@ -25,7 +25,6 @@ INSTALLCMD=@INSTALL@
 VPATH=@srcdir@
 srcdir=@srcdir@
 builddir=@builddir@
-top_builddir=.
 SHELL=/bin/sh
 
 BASEDIR= @prefix@
@@ -58,13 +57,6 @@ SWATDIR = @swatdir@
 # the directory where lock files go
 LOCKDIR = @lockdir@
 
-# swat i18n with gettext
-I18N_PACKAGE = @PACKAGE@
-i18n_datadir = $(prefix)/@DATADIRNAME@
-i18n_localedir = $(i18n_datadir)/locale
-intlsubdirs = po intl
-top_srcdir = @top_srcdir@
-
 # man pages language(s)
 man_langs = "@manlangs@"
 
@@ -73,7 +65,7 @@ FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/s
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" 
 FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\"
 FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\" -DBINDIR=\"$(BINDIR)\" -DFORMSFILE=\"$(FORMSFILE)\" -DNTDRIVERSDIR=\"$(NTDRIVERSDIR)\" -DLIBDIR=\"$(LIBDIR)\"
-FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) -DHAVE_INCLUDES_H -DI18N_PACKAGE=\"$(I18N_PACKAGE)\" -DI18N_LOCALEDIR=\"$(i18n_localedir)\" -Iintl -I$(srcdir)/intl
+FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) -DHAVE_INCLUDES_H 
 FLAGS  = $(ISA) $(FLAGS5) $(PASSWD_FLAGS)
 FLAGS32  = $(ISA32) $(FLAGS5) $(PASSWD_FLAGS)
 
@@ -420,7 +412,7 @@ WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 ######################################################################
 # now the rules...
 ######################################################################
-all : CHECK I18N-SUPPORT-ALL include/proto.h $(SPROGS) $(PROGS) $(SHLIBS) nsswitch
+all : CHECK include/proto.h $(SPROGS) $(PROGS) $(SHLIBS) nsswitch
 
 pam_smbpass : CHECK bin/pam_smbpass.@SHLIBEXT@
 
@@ -663,7 +655,7 @@ bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
 	$(LD) @LDSHFLAGS@ -symbolic -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(LIBS) -lc
 
-install: installbin installman installscripts installswat I18N-SUPPORT-INSTALL
+install: installbin installman installscripts installswat 
 
 installdirs:
 	-$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) \
@@ -681,7 +673,6 @@ installscripts: installdirs
 
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir) \
-	@i18n_swat@
 
 installclientlib:
 	-$(INSTALLCMD) bin/libsmbclient.so $(LIBDIR)
@@ -708,11 +699,8 @@ uninstallbin:
 uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
-clean: I18N-SUPPORT-CLEAN
-	@test -d intl/po || mkdir intl/po
-	-mv po/* intl/po
+clean: 
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ $(PROGS) $(SPROGS) include/build_env.h
-	-mv intl/po/* po/
 
 winbindd_proto:
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
@@ -782,18 +770,3 @@ config.status: $(srcdir)/configure
 Makefile: $(srcdir)/Makefile.in config.status
 	@echo "WARNING: you need to run ./config.status"
 
-# SWAT i18n
-I18N-SUPPORT-ALL:
-	@for I in ${intlsubdirs}; do (cd $$I; ${MAKE} all || exit 1); done
-
-I18N-SUPPORT-INSTALL:
-	@for I in ${intlsubdirs}; do (cd $$I; ${MAKE} install || exit 1); done
-
-I18N-SUPPORT-CLEAN:
-	@for I in ${intlsubdirs}; do (cd $$I; ${MAKE} clean || exit 1); done
-
-I18N-SUPPORT-DISTCLEAN:
-	@for I in ${intlsubdirs}; do (cd $$I; ${MAKE} distclean || exit 1); done
-
-I18N-SUPPORT-UNINSTALL:
-	@for I in ${intlsubdirs}; do (cd $$I; ${MAKE} uninstall || exit 1); done

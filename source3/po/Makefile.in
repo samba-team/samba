@@ -16,7 +16,7 @@ SHELL = /bin/sh
 srcdir = .
 top_srcdir = ..
 
-prefix = /usr/local/samba
+prefix = /home/tridge/prefix
 exec_prefix = ${prefix}
 datadir = $(prefix)/share
 localedir = $(datadir)/locale
@@ -36,8 +36,8 @@ XGETTEXT = PATH=../src:$$PATH /usr/bin/xgettext
 MSGMERGE = PATH=../src:$$PATH msgmerge
 
 DEFS = -DHAVE_CONFIG_H
-CFLAGS = -O 
-CPPFLAGS = 
+CFLAGS = -O  -g -Wall -I/usr/local/include
+CPPFLAGS = -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE 
 
 INCLUDES = -I.. -I$(top_srcdir)/intl -I$(top_srcdir)/include
 
