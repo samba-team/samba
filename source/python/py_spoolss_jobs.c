@@ -224,42 +224,29 @@ PyObject *spoolss_hnd_startdocprinter(PyObject *self, PyObject *args, PyObject *
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
 	static char *kwlist[] = { "document_info", NULL };
-	PyObject *doc_info, *obj;
+	PyObject *info, *obj;
 	uint32 level, jobid;
 	char *document_name = NULL, *output_file = NULL, *data_type = NULL;
 
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "O!", kwlist, &PyDict_Type, &doc_info))
+		    args, kw, "O!", kwlist, &PyDict_Type, &info))
 		return NULL;
 	
 	/* Check document_info parameter */
 
-	if ((obj = PyDict_GetItemString(doc_info, "level"))) {
-
-		if (!PyInt_Check(obj)) {
-			PyErr_SetString(spoolss_error,
-					"level not an integer");
-			return NULL;
-		}
-
-		level = PyInt_AsLong(obj);
-
-		/* Only level 1 supported by Samba! */
-
-		if (level != 1) {
-			PyErr_SetString(spoolss_error,
-					"unsupported info level");
-			return NULL;
-		}
-
-	} else {
-		PyErr_SetString(spoolss_error, "no info level present");
+	if (!get_level_value(info, &level)) {
+		PyErr_SetString(spoolss_error, "invalid info level");
 		return NULL;
 	}
 
-	if ((obj = PyDict_GetItemString(doc_info, "document_name"))) {
+	if (level != 1) {
+		PyErr_SetString(spoolss_error, "unsupported info level");
+		return NULL;
+	}
+
+	if ((obj = PyDict_GetItemString(info, "document_name"))) {
 
 		if (!PyString_Check(obj) && obj != Py_None) {
 			PyErr_SetString(spoolss_error,
@@ -275,7 +262,7 @@ PyObject *spoolss_hnd_startdocprinter(PyObject *self, PyObject *args, PyObject *
 		return NULL;
 	}
 
-	if ((obj = PyDict_GetItemString(doc_info, "output_file"))) {
+	if ((obj = PyDict_GetItemString(info, "output_file"))) {
 
 		if (!PyString_Check(obj) && obj != Py_None) {
 			PyErr_SetString(spoolss_error,
@@ -291,7 +278,7 @@ PyObject *spoolss_hnd_startdocprinter(PyObject *self, PyObject *args, PyObject *
 		return NULL;
 	}
 
-	if ((obj = PyDict_GetItemString(doc_info, "data_type"))) {
+	if ((obj = PyDict_GetItemString(info, "data_type"))) {
 		
 		if (!PyString_Check(obj) && obj != Py_None) {
 			PyErr_SetString(spoolss_error,
