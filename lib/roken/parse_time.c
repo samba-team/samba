@@ -70,6 +70,12 @@ unparse_time (int t, char *s, size_t len)
     return unparse_units (t, time_units, s, len);
 }
 
+size_t
+unparse_time_approx (int t, char *s, size_t len)
+{
+    return unparse_units_approx (t, time_units, s, len);
+}
+
 void
 print_time_table (FILE *f)
 {
