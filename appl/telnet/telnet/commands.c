@@ -2143,6 +2143,8 @@ tn(int argc, char **argv)
 	    host = gethostbyname(hostp);
 #endif
 	    if (host) {
+		family = host->h_addrtype;
+
 		switch(family) {
 		case AF_INET:
 		    memset(&sin, 0, sizeof(sin));
