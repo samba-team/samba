@@ -24,7 +24,6 @@
 #include <lber.h>
 #include <ldap.h>
 #include <wchar.h>
-#include <ldap_utf8.h>
 
 #include "smbldap.h"
 

@@ -282,6 +282,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->inbuf = (char *)SMB_MALLOC(cli->bufsize+SAFETY_MARGIN);
 	cli->oplock_handler = cli_oplock_ack;
 	cli->case_sensitive = False;
+	cli->smb_rw_error = 0;
 
 	cli->use_spnego = lp_client_use_spnego();
 

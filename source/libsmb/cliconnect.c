@@ -892,7 +892,12 @@ BOOL cli_ulogoff(struct cli_state *cli)
 	if (!cli_receive_smb(cli))
 		return False;
 
-	return !cli_is_error(cli);
+	if (cli_is_error(cli)) {
+		return False;
+	}
+
+        cli->cnum = -1;
+        return True;
 }
 
 /****************************************************************************
@@ -977,8 +982,12 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		cli->win95 = True;
 	}
 	
-	if ( cli->protocol >= PROTOCOL_LANMAN2 )
-		cli->dfsroot = (SVAL( cli->inbuf, smb_vwv2 ) & SMB_SHARE_IN_DFS);
+	/* Make sure that we have the optional support 16-bit field.  WCT > 2 */
+	/* Avoids issues when connecting to Win9x boxes sharing files */
+
+	cli->dfsroot = False;
+	if ( (CVAL(cli->inbuf, smb_wct))>2 && cli->protocol >= PROTOCOL_LANMAN2 )
+		cli->dfsroot = (SVAL( cli->inbuf, smb_vwv2 ) & SMB_SHARE_IN_DFS) ? True : False;
 
 	cli->cnum = SVAL(cli->inbuf,smb_tid);
 	return True;

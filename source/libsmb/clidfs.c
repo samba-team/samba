@@ -595,26 +595,8 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 
 	/* we got an error, check for DFS referral */
 			
-	if ( !cli_dfs_check_error(rootcli) ) {
-		/* Check for Win98 server - doesn't support this call. */
-		uint32 flgs2 = SVAL(rootcli->inbuf,smb_flg2);
-
-		/* only deal with DS when we negotiated NT_STATUS codes and UNICODE */
-
-		if ( !( (flgs2&FLAGS2_32_BIT_ERROR_CODES) && (flgs2&FLAGS2_UNICODE_STRINGS) ) ) {
-			uint8 eclass = 0;
-			uint32 ecode = 0;
-			cli_dos_error(rootcli, &eclass, &ecode);
-			if ((eclass == ERRDOS) && (ecode == ERRbadfunc)) {
-				rootcli->dfsroot = 0;
-				*targetcli = rootcli;
-				pstrcpy( targetpath, path );
-				return True;
-			}
-		}
-
+	if ( !cli_dfs_check_error(rootcli) ) 
 		return False;
-	}
 
 	/* check for the referral */
 
