@@ -124,6 +124,7 @@ EXTRA_libroken_la_SOURCES =	\
 	strnlen.c		\
 	strptime.c		\
 	strsep.c		\
+	strsep_copy.c		\
 	strtok_r.c		\
 	strupr.c		\
 	swab.c			\
