@@ -343,7 +343,6 @@ typedef struct
   BOOL bDosFiletimeResolution;
   BOOL bFakeDirCreateTimes;
   BOOL bBlockingLocks;
-  BOOL bMangleLocks;
   char dummy[3]; /* for alignment */
 } service;
 
@@ -443,7 +442,6 @@ static service sDefault =
   False, /* bDosFiletimeResolution */
   False, /* bFakeDirCreateTimes */
   True,  /* bBlockingLocks */
-  True,  /* bMangleLocks */
   ""     /* dummy */
 };
 
@@ -758,7 +756,6 @@ static struct parm_struct parm_table[] =
   {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  FLAG_SHARE},
   {"kernel oplocks",   P_BOOL,    P_GLOBAL, &Globals.bKernelOplocks,    NULL,   NULL,  FLAG_GLOBAL},
   {"locking",          P_BOOL,    P_LOCAL,  &sDefault.bLocking,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
-  {"mangle locks",     P_BOOL,    P_LOCAL,  &sDefault.bMangleLocks,     NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"ole locking compatibility",   P_BOOL,    P_GLOBAL,  &Globals.bOleLockingCompat,   NULL,   NULL,  FLAG_GLOBAL},
   {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"level2 oplocks",   P_BOOL,    P_LOCAL,  &sDefault.bLevel2OpLocks,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
@@ -1351,7 +1348,6 @@ FN_LOCAL_BOOL(lp_dos_filetimes,bDosFiletimes)
 FN_LOCAL_BOOL(lp_dos_filetime_resolution,bDosFiletimeResolution)
 FN_LOCAL_BOOL(lp_fake_dir_create_times,bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks,bBlockingLocks)
-FN_LOCAL_BOOL(lp_mangle_locks,bMangleLocks)
 
 FN_LOCAL_INTEGER(lp_create_mask,iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)
