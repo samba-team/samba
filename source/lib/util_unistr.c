@@ -114,7 +114,7 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 		*dest='\0';
 		return;
 	}
-	pull_ucs2(NULL, dest, str->buffer, maxlen, str->uni_str_len, STR_NOALIGN);
+	pull_ucs2(NULL, dest, str->buffer, maxlen, str->uni_str_len*2, STR_NOALIGN);
 }
 
 
