@@ -1161,6 +1161,7 @@ int lp_max_connections(int );
 int lp_defaultcase(int );
 int lp_minprintspace(int );
 int lp_printing(int );
+int lp_oplock_contention_limit(int );
 char lp_magicchar(int );
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir);
 int lp_add_service(char *pszService, int iDefaultService);

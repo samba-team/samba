@@ -1107,6 +1107,9 @@ parameter for details\&. Note that some are synonyms\&.
 \fBoplocks\fP
 .IP 
 .IP o 
+\fBoplock contention limit\fP
+.IP 
+.IP o 
 \fBpath\fP
 .IP 
 .IP o 
@@ -3996,6 +3999,22 @@ for details\&.
 .IP 
 \fBExample:\fP
 \f(CW	oplocks = False\fP
+.IP 
+.IP "\fBoplock contention limit (S)\fP" 
+.IP 
+This is a \fIvery\fP advanced \fBsmbd\fP tuning option to improve
+the efficiency of the granting of oplocks under multiple client contention for the same file\&.
+.IP 
+In brief it specifies a number, which causes smbd not to grant an oplock even
+when requested if the approximate number of clients contending for an oplock on
+the same file goes over this limit\&. This causes \fBsmbd\fP to
+behave in a similar way to Windows NT\&.
+.IP 
+\fIDO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
+OPLOCK CODE\fP\&.
+.IP 
+\fBDefault:\fP
+\f(CW	oplock contention limit = 2\fP
 .IP 
 .IP "\fBos level (G)\fP" 
 .IP 

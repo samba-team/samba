@@ -895,6 +895,8 @@ it() link(bf(only user))(onlyuser)
 
 it() link(bf(oplocks))(oplocks)
 
+it() link(bf(oplock contention limit))(oplockcontentionlimit)
+
 it() link(bf(path))(path)
 
 it() link(bf(postexec))(postexec)
@@ -3845,6 +3847,23 @@ tt(	oplocks = True)
 
   bf(Example:)
 tt(	oplocks = False)
+
+label(oplockcontentionlimit)
+dit(bf(oplock contention limit (S)))
+
+This is a em(very) advanced url(bf(smbd))(smbd.8.html) tuning option to improve
+the efficiency of the granting of oplocks under multiple client contention for the same file.
+
+In brief it specifies a number, which causes smbd not to grant an oplock even
+when requested if the approximate number of clients contending for an oplock on
+the same file goes over this limit. This causes url(bf(smbd))(smbd.8.html) to
+behave in a similar way to Windows NT.
+
+em(DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
+OPLOCK CODE).
+
+  bf(Default:)
+tt(	oplock contention limit = 2)
 
 label(oslevel)
 dit(bf(os level (G)))

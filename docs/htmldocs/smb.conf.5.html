@@ -611,6 +611,7 @@ parameter for details. Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#onlyguest"><strong>only guest</strong></a>
 <p><br><li > <a href="smb.conf.5.html#onlyuser"><strong>only user</strong></a>
 <p><br><li > <a href="smb.conf.5.html#oplocks"><strong>oplocks</strong></a>
+<p><br><li > <a href="smb.conf.5.html#oplockcontentionlimit"><strong>oplock contention limit</strong></a>
 <p><br><li > <a href="smb.conf.5.html#path"><strong>path</strong></a>
 <p><br><li > <a href="smb.conf.5.html#postexec"><strong>postexec</strong></a>
 <p><br><li > <a href="smb.conf.5.html#postscript"><strong>postscript</strong></a>
@@ -2757,6 +2758,18 @@ for details.
 <code>	oplocks = True</code>
 <p><br><strong>Example:</strong>
 <code>	oplocks = False</code>
+<p><br><a name="oplockcontentionlimit"></a>
+<li><strong><strong>oplock contention limit (S)</strong></strong>
+<p><br>This is a <em>very</em> advanced <a href="smbd.8.html"><strong>smbd</strong></a> tuning option to improve
+the efficiency of the granting of oplocks under multiple client contention for the same file.
+<p><br>In brief it specifies a number, which causes smbd not to grant an oplock even
+when requested if the approximate number of clients contending for an oplock on
+the same file goes over this limit. This causes <a href="smbd.8.html"><strong>smbd</strong></a> to
+behave in a similar way to Windows NT.
+<p><br><em>DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
+OPLOCK CODE</em>.
+<p><br><strong>Default:</strong>
+<code>	oplock contention limit = 2</code>
 <p><br><a name="oslevel"></a>
 <li><strong><strong>os level (G)</strong></strong>
 <p><br>This integer value controls what level Samba advertises itself as for

@@ -777,6 +777,7 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   SMB_DEV_T dev = 0;
   SMB_INO_T inode = 0;
   int num_share_modes = 0;
+  int oplock_contention_count = 0;
 
   fsp->open = False;
   fsp->fd_ptr = 0;
@@ -943,12 +944,25 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
         {
           free((char *)old_shares);
           num_share_modes = get_share_modes(conn, token, dev, inode, &old_shares);
+          oplock_contention_count++;
         }
       } while(broke_oplock);
     }
 
     if(old_shares != 0)
       free((char *)old_shares);
+  }
+
+  /*
+   * Refuse to grant an oplock in case the contention limit is
+   * reached when going through the lock list multiple times.
+   */
+
+  if(oplock_contention_count >= lp_oplock_contention_limit(SNUM(conn)))
+  {
+    oplock_request = 0;
+    DEBUG(4,("open_file_shared: oplock contention = %d. Not granting oplock.\n",
+          oplock_contention_count ));
   }
 
   DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",

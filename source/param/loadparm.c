@@ -297,6 +297,7 @@ typedef struct
   int  iMaxConnections;
   int  iDefaultCase;
   int  iPrinting;
+  int  iOplockContentionLimit;
   BOOL bAlternatePerm;
   BOOL bRevalidate;
   BOOL bCaseSensitive;
@@ -390,6 +391,7 @@ static service sDefault =
   0,       /* iMaxConnections */
   CASE_LOWER, /* iDefaultCase */
   DEFAULT_PRINTING, /* iPrinting */
+  2,       /* iOplockContentionLimit */
   False,   /* bAlternatePerm */
   False,   /* revalidate */
   False,   /* case sensitive */
@@ -619,13 +621,13 @@ static struct parm_struct parm_table[] =
   {"announce as",      P_ENUM,    P_GLOBAL, &Globals.announce_as,       NULL,   enum_announce_as, 0},
   {"max mux",          P_INTEGER, P_GLOBAL, &Globals.max_mux,           NULL,   NULL,  0},
   {"max xmit",         P_INTEGER, P_GLOBAL, &Globals.max_xmit,          NULL,   NULL,  0},
-  {"name resolve order",  P_STRING,  P_GLOBAL, &Globals.szNameResolveOrder,  NULL,   NULL, 0},
+  {"name resolve order",P_STRING, P_GLOBAL, &Globals.szNameResolveOrder,NULL,   NULL, 0},
   {"max packet",       P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL,   NULL,  0},
   {"packet size",      P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL,   NULL,  0},
   {"max ttl",          P_INTEGER, P_GLOBAL, &Globals.max_ttl,           NULL,   NULL,  0},
   {"max wins ttl",     P_INTEGER, P_GLOBAL, &Globals.max_wins_ttl,      NULL,   NULL,  0},
   {"min wins ttl",     P_INTEGER, P_GLOBAL, &Globals.min_wins_ttl,      NULL,   NULL,  0},
-  {"time server",      P_BOOL,    P_GLOBAL, &Globals.bTimeServer,	NULL,   NULL,  0},
+  {"time server",      P_BOOL,    P_GLOBAL, &Globals.bTimeServer,	    NULL,   NULL,  0},
 
   {"Tuning Options", P_SEP, P_SEPARATOR},
   {"change notify timeout", P_INTEGER, P_GLOBAL, &Globals.change_notify_timeout, NULL,   NULL,  0},
@@ -738,6 +740,7 @@ static struct parm_struct parm_table[] =
   {"locking",          P_BOOL,    P_LOCAL,  &sDefault.bLocking,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"ole locking compatibility",   P_BOOL,    P_GLOBAL,  &Globals.bOleLockingCompat,   NULL,   NULL,  FLAG_GLOBAL},
   {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"oplock contention limit",P_INTEGER,P_LOCAL,&sDefault.iOplockContentionLimit,NULL,NULL,FLAG_SHARE|FLAG_GLOBAL},
   {"strict locking",   P_BOOL,    P_LOCAL,  &sDefault.bStrictLocking,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"share modes",      P_BOOL,    P_LOCAL,  &sDefault.bShareModes,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
 
@@ -1328,6 +1331,7 @@ FN_LOCAL_INTEGER(lp_max_connections,iMaxConnections)
 FN_LOCAL_INTEGER(lp_defaultcase,iDefaultCase)
 FN_LOCAL_INTEGER(lp_minprintspace,iMinPrintSpace)
 FN_LOCAL_INTEGER(lp_printing,iPrinting)
+FN_LOCAL_INTEGER(lp_oplock_contention_limit,iOplockContentionLimit)
 
 FN_LOCAL_CHAR(lp_magicchar,magic_char)
 
