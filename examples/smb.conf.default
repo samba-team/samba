@@ -135,6 +135,7 @@
 ;   writable = no
 ;   For browseable say NO if you want to hide the NETLOGON share
 ;   browseable = yes
+;   share modes = no
 
 ; Un-comment the following to provide a specific roving profile share
 ; the default is to use the user's home directory
