@@ -1,3 +1,9 @@
+2000-03-29  Assar Westerlund  <assar@sics.se>
+
+	* kdc/connect.c: remember to repoint all descr->sa to _ss after
+	realloc as this might have moved the memory around.  problem
+	discovered and diagnosed by Brandon S. Allbery
+
 2000-03-27  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: recognize solaris 2.8
