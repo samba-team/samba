@@ -245,8 +245,10 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	/* pad to 8 byte multiple */
-	p->security_state.auth_info->auth_pad_length = NDR_ALIGN(ndr, 8);
+	/* pad to 16 byte multiple in the payload portion of the
+	   packet. This matches what w2k3 does */
+	p->security_state.auth_info->auth_pad_length = 
+		(16 - (pkt->u.request.stub_and_verifier.length & 15)) & 15;
 	ndr_push_zero(ndr, p->security_state.auth_info->auth_pad_length);
 
 	/* sign or seal the packet */
