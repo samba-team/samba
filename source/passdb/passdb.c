@@ -878,8 +878,8 @@ account without a valid local system user.\n", user_name);
 			return False;
 		}
 
-		/* set account flags */
-		if (!pdb_set_acct_ctrl(sam_pass,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL) )) {
+		/* set account flags. Note that the default is non-expiring accounts */
+		if (!pdb_set_acct_ctrl(sam_pass,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL|ACB_PWNOEXP) )) {
 			slprintf(err_str, err_str_len-1, "Failed to set 'trust account' flags for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return False;
