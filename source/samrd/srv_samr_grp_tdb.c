@@ -92,7 +92,9 @@ uint32 _samr_add_groupmem(const POLICY_HND *pol, uint32 rid, uint32 unknown)
 
 	DEBUG(10,("lookup on Domain SID\n"));
 
+#if 0
 	if (!add_group_member(group_rid, rid))
+#endif
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -127,7 +129,9 @@ uint32 _samr_del_groupmem(const POLICY_HND *pol, uint32 rid)
 	}
 	DEBUG(10,("lookup on Domain SID\n"));
 
+#if 0
 	if (!del_group_member(group_rid, rid))
+#endif
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -164,7 +168,9 @@ uint32 _samr_delete_dom_group(POLICY_HND *group_pol)
 
 	DEBUG(10,("lookup on Domain SID\n"));
 
+#if 0
 	if (!del_group_entry(group_rid))
+#endif
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -213,7 +219,9 @@ uint32 _samr_query_groupmem(const POLICY_HND *group_pol,
 	DEBUG(10,("lookup on Domain SID\n"));
 
 	become_root(True);
+#if 0
 	grp = getgrouprid(group_rid, &mem_grp, &num_rids);
+#endif
 	unbecome_root(True);
 
  	if (grp == NULL)
@@ -329,7 +337,9 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 		return status;
 	}
 
+#if 0
 	if (!add_group_entry(&grp))
+#endif
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}

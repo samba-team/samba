@@ -278,7 +278,9 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 	}
 
 	become_root(True);
+#if 0
 	sam_pass = getsam21pwrid(rid);
+#endif
 	unbecome_root(True);
 
 	if (sam_pass == NULL)
@@ -287,7 +289,9 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 	}
 
 	become_root(True);
+#if 0
 	ret = getusergroupsntnam(sam_pass->nt_name, &mem_grp, num_groups);
+#endif
 	unbecome_root(True);
 
 	if (!ret)
@@ -296,7 +300,9 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 	}
 
 	(*gids) = NULL;
+#if 0
 	(*num_groups) = make_dom_gids(mem_grp, *num_groups, gids);
+#endif
 
 	if (mem_grp != NULL)
 	{
@@ -410,31 +416,6 @@ uint32 _samr_open_user(const POLICY_HND *domain_pol,
 	return samr_open_by_tdbrid(tdb_usr, user_pol, access_mask, user_rid);
 }
 
-
-/*************************************************************************
- get_user_info_10
- *************************************************************************/
-static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
-{
-	struct sam_passwd *sam_pass;
-
-	become_root(True);
-	sam_pass = getsam21pwrid(user_rid);
-	unbecome_root(True);
-
-	if (sam_pass == NULL)
-	{
-		DEBUG(4,("User 0x%x not found\n", user_rid));
-		return False;
-	}
-
-	DEBUG(3,("User:[%s]\n", sam_pass->nt_name));
-
-	make_sam_user_info10(id10, sam_pass->acct_ctrl); 
-
-	return True;
-}
-
 /*******************************************************************
  samr_reply_query_userinfo
  ********************************************************************/
@@ -470,10 +451,7 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 			{
 				return NT_STATUS_NO_MEMORY;
 			}
-			if (!get_user_info_10(ctr->info.id10, rid))
-			{
-				return NT_STATUS_NO_SUCH_USER;
-			}
+			make_sam_user_info10(ctr->info.id10, usr.acb_info); 
 			break;
 		}
 #if 0

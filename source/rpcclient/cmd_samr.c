@@ -1979,6 +1979,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	BOOL res1 = True;
 	int opt;
 	BOOL set_acb_bits = False;
+	BOOL clr_acb_bits = False;
 
 	fstring user_name;
 
@@ -1990,6 +1991,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	POLICY_HND pol_dom;
 	SAM_USERINFO_CTR ctr;
 	uint16 acb_set = 0x0;
+	uint16 acb_clr = 0x0;
 
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
@@ -2002,7 +2004,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		report(out_hnd, "samuserset2 <name> [-s <acb_bits>]\n");
+		report(out_hnd, "samuserset2 <name> [-s <acb_bits>] [-c <acb_bits]\n");
 		return;
 	}
 
@@ -2011,7 +2013,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 
 	safe_strcpy(user_name, argv[0], sizeof(user_name));
 
-	while ((opt = getopt(argc, argv,"s:")) != EOF)
+	while ((opt = getopt(argc, argv,"s:c:")) != EOF)
 	{
 		switch (opt)
 		{
@@ -2019,6 +2021,12 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 			{
 				set_acb_bits = True;
 				acb_set = get_number(optarg);
+				break;
+			}
+			case 'c':
+			{
+				clr_acb_bits = True;
+				acb_clr = get_number(optarg);
 				break;
 			}
 		}
@@ -2058,10 +2066,18 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 		{
 			SAM_USER_INFO_16 *p = (SAM_USER_INFO_16 *)malloc(sizeof(SAM_USER_INFO_16));
 			p->acb_info = ctr.info.id10->acb_info;
+			DEBUG(10,("acb_info: %x\n", p->acb_info));
 			if (set_acb_bits)
 			{
 				p->acb_info |= acb_set;
 			}
+
+			if (clr_acb_bits)
+			{
+				p->acb_info &= (~acb_clr);
+			}
+
+			DEBUG(10,("acb_info: %x\n", p->acb_info));
 
 			usr = (void*)p;
 			switch_value = 16;

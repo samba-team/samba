@@ -86,7 +86,9 @@ uint32 _samr_add_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid)
 	{
 		DEBUG(10,("add member on Domain SID\n"));
 
+#if 0
 		if (!add_alias_member(alias_rid, sid))
+#endif
 		{
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -95,7 +97,9 @@ uint32 _samr_add_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid)
 	{
 		DEBUG(10,("add member on BUILTIN SID\n"));
 
+#if 0
 		if (!add_builtin_member(alias_rid, sid))
+#endif
 		{
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -132,7 +136,9 @@ uint32 _samr_del_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid)
 	{
 		DEBUG(10,("del member on Domain SID\n"));
 
+#if 0
 		if (!del_alias_member(alias_rid, sid))
+#endif
 		{
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -141,7 +147,9 @@ uint32 _samr_del_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid)
 	{
 		DEBUG(10,("del member on BUILTIN SID\n"));
 
+#if 0
 		if (!del_builtin_member(alias_rid, sid))
+#endif
 		{
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -216,7 +224,9 @@ uint32 _samr_delete_dom_alias(POLICY_HND *alias_pol)
 
 	DEBUG(10,("lookup on Domain SID\n"));
 
+#if 0
 	if (!del_alias_entry(alias_rid))
+#endif
 	{
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
@@ -259,7 +269,9 @@ uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol,
 		DEBUG(10,("lookup on S-1-5-20\n"));
 
 		become_root(True);
+#if 0
 		grp = getbuiltinrid(alias_rid, &mem_grp, &num_sids);
+#endif
 		unbecome_root(True);
 	}
 	else if (sid_equal(&alias_sid, &global_sam_sid))
@@ -267,7 +279,9 @@ uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol,
 		DEBUG(10,("lookup on Domain SID\n"));
 
 		become_root(True);
+#if 0
 		grp = getaliasrid(alias_rid, &mem_grp, &num_sids);
+#endif
 		unbecome_root(True);
 	}
 	else
@@ -348,7 +362,9 @@ uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
 		return status;
 	}
 
+#if 0
 	if (!add_alias_entry(&grp))
+#endif
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}

@@ -5883,6 +5883,11 @@ BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
 	q_u->switch_value  = switch_value;
 	q_u->ctr = ctr;
 
+	if (q_u->ctr != NULL)
+	{
+		q_u->ctr->switch_value = switch_value;
+	}
+
 	return True;
 }
 

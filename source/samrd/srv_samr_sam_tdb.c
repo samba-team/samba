@@ -319,9 +319,11 @@ uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
 
 	DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
 
+#if 0
 	if (!pass_oem_change(user_name,
 	                     lm_newpass, lm_oldhash,
 	                     nt_newpass, nt_oldhash))
+#endif
 	{
 		return NT_STATUS_WRONG_PASSWORD;
 	}

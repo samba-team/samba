@@ -24,7 +24,6 @@ AC_SUBST(LIBSAMBA32)
 AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
-AC_SUBST(SAM_SRVDB_OBJ)
 
 # compile with optimisation and without debugging by default
 CFLAGS=${CFLAGS-"-O"}
@@ -670,32 +669,6 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/sysv_ipc.c"],
 if test x"$samba_cv_HAVE_SYSV_IPC" = x"yes"; then
     AC_DEFINE(HAVE_SYSV_IPC)
 fi
-
-#################################################
-# check for samtdb support
-AC_MSG_CHECKING(whether to use samtdb)
-AC_ARG_WITH(samtdb,
-[  --with-samtdb     Include samtdb support 
-  --without-samtdb  Don't include samtdb support (default) ],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_SAMTDB)
-	SAM_SRVDB_OBJ="samrd/srv_samr_dom_tdb.o \
-samrd/srv_samr_sam_tdb.o \
-samrd/srv_samr_usr_tdb.o \
-samrd/srv_samr_grp_tdb.o \
-samrd/srv_samr_als_tdb.o \
-samrd/srv_samr_tdb.o"
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-	SAM_SRVDB_OBJ="samrd/srv_samr_passdb.o"
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-	SAM_SRVDB_OBJ="samrd/srv_samr_passdb.o"
-)
 
 #################################################
 # check for libmsrpc support

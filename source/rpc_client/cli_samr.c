@@ -2154,7 +2154,10 @@ BOOL samr_set_userinfo2(  POLICY_HND *pol, uint16 switch_value,
 	prs_struct rdata;
 
 	SAMR_Q_SET_USERINFO2 q_o;
+	SAM_USERINFO2_CTR ctr;
 	BOOL valid_query = False;
+
+	ctr.info.id = usr;
 
 	DEBUG(4,("SAMR Set User Info 2.  level: %d\n", switch_value));
 
@@ -2166,7 +2169,7 @@ BOOL samr_set_userinfo2(  POLICY_HND *pol, uint16 switch_value,
 	prs_init(&rdata, 0, 4, True );
 
 	/* store the parameters */
-	make_samr_q_set_userinfo2(&q_o, pol, switch_value, usr);
+	make_samr_q_set_userinfo2(&q_o, pol, switch_value, &ctr);
 
 	/* turn parameters into data stream */
 	samr_io_q_set_userinfo2("", &q_o,  &data, 0);

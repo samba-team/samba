@@ -361,7 +361,9 @@ uint32 _samr_enum_dom_groups(const POLICY_HND *pol,
 	}
 
 	become_root(True);
+#if 0
 	ret = enumdomgroups(&grps, &num_entries);
+#endif
 	unbecome_root(True);
 	if (!ret)
 	{
@@ -446,7 +448,9 @@ uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 		/* builtin aliases */
 
 		become_root(True);
+#if 0
 		ret = enumdombuiltins(&alss, &num_entries);
+#endif
 		unbecome_root(True);
 		if (!ret)
 		{
@@ -459,7 +463,9 @@ uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
 		/* local aliases */
 
 		become_root(True);
+#if 0
 		ret = enumdomaliases(&alss, &num_entries);
+#endif
 		unbecome_root(True);
 		if (!ret)
 		{
@@ -547,7 +553,9 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 			BOOL ret;
 
 			become_root(True);
+#if 0
 			ret = enumdomgroups(&sam_grps, &num_sam_entries);
+#endif
 			unbecome_root(True);
 			if (!ret)
 			{

@@ -20,7 +20,6 @@ LINK=$(LIBTOOL) --mode=link $(CC) $(FLAGS) $(LDFLAGS)
 INSTALL = @INSTALL@
 INSTALLCMD=@INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
-SAM_SRVDB_OBJ = @SAM_SRVDB_OBJ@
 
 VPATH=@srcdir@
 srcdir=@srcdir@
@@ -217,8 +216,7 @@ RPC_CLIENT_OBJ = \
 		rpc_client/msrpc_netlogon.o   \
 		rpc_client/msrpc_lsarpc.o   \
 		rpc_client/cli_atsvc.o \
-		rpc_client/cli_eventlog.o \
-		libsmb/clienttrust.o
+		rpc_client/cli_eventlog.o
 
 LOCKING_OBJ = locking/locking.o 
 
@@ -252,7 +250,6 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 		smbd/challenge.o \
 		passdb/smbpassfile.o \
 		passdb/pass_check.o \
-		lib/domain_namemap.o \
 		lib/util_pwdb.o
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o
@@ -288,11 +285,24 @@ NETLOGOND_OBJ1 = netlogond/netlogond.o \
 		lib/passcheck.o \
 		smbd/chgpasswd.o
 
+SAMRTDBD_OBJ1 = samrd/samrtdbd.o \
+		rpc_server/srv_pipe_ntlmssp.o \
+		rpc_server/srv_samr.o \
+		passdb/smbpassfile.o \
+		lib/sursalgdomonly.o \
+		lib/util_pwdb.o lib/domain_namemap.o \
+		samrd/srv_samr_dom_tdb.o \
+		samrd/srv_samr_sam_tdb.o \
+		samrd/srv_samr_usr_tdb.o \
+		samrd/srv_samr_grp_tdb.o \
+		samrd/srv_samr_als_tdb.o \
+		samrd/srv_samr_tdb.o
+
 SAMRD_OBJ1 = samrd/samrd.o \
 		rpc_server/srv_lookup.o \
 		rpc_server/srv_pipe_ntlmssp.o \
-		rpc_server/srv_samr.o $(SAM_SRVDB_OBJ) \
-		lib/sursalgdomonly.o \
+		rpc_server/srv_samr.o \
+		samrd/srv_samr_passdb.o \
 		smbd/chgpasswd.o
 
 SVCCTLD_OBJ1 = svcctld/svcctld.o \
@@ -356,6 +366,12 @@ NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
            $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
 
+SAMRTDBD_OBJ = $(MSRPCD_OBJ) $(SAMRTDBD_OBJ1) \
+           $(RPC_SRVUTIL_OBJ) \
+           $(LOCKING_OBJ) \
+           $(SIDDB_OBJ) \
+		$(PROFILE_OBJ) 
+
 SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(LOCKING_OBJ) \
@@ -400,6 +416,7 @@ TESTPARM_OBJ = utils/testparm.o
 TESTPRNS_OBJ = utils/testprns.o $(PRINTING_OBJ) 
 
 SMBPASSWD_OBJ = utils/smbpasswd.o libsmb/passchange.o \
+		libsmb/clienttrust.o \
 		rpc_client/cli_netlogon_sync.o \
            $(SIDDB_OBJ) $(STUB_UID_OBJ)
 
@@ -475,6 +492,7 @@ RPCTORTURE_OBJ = utils/rpctorture.o \
 PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(WINREGD_OBJ1) \
 		$(SAMRD_OBJ1) \
+		$(SAMRTDBD_OBJ1) \
 		$(SRVSVCD_OBJ1) $(WKSSVCD_OBJ1) $(BROWSERD_OBJ1) \
 		$(SPOOLSSD_OBJ1) $(NETLOGOND_OBJ1) \
 		$(LSARPCD_OBJ1) $(SMBD_OBJ) $(NMBD_OBJ) \
@@ -677,6 +695,10 @@ bin/netlogond: $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(NETLOGOND_OBJ) bin/.dummy
 bin/samrd: $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(SAMRD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SAMRD_OBJ) $(SMBPWLIB) $(SAMBA_LIBS) $(UBIQXLIB) $(LIBS)
+
+bin/samrtdbd: $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBD_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(SAMRTDBD_OBJ) $(SAMBA_LIBS) $(UBIQXLIB) $(LIBS)
 
 bin/nmbd: $(SMBLIB) $(SAMBALIB) $(UBIQXLIB) $(NMBLIB) $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
