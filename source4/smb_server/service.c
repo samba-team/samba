@@ -182,7 +182,7 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	
 	/* Invoke NTVFS connection hook */
 	if (tcon->ntvfs_ops->connect) {
-		status = tcon->ntvfs_ops->connect(req, lp_servicename(snum));
+		status = tcon->ntvfs_ops->connect(req, lp_servicename(snum), 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("make_connection: NTVFS make connection failed!\n"));
 			conn_free(req->smb_conn, tcon);
@@ -252,7 +252,7 @@ void close_cnum(struct smbsrv_tcon *tcon)
 		 lp_servicename(SNUM(tcon))));
 
 	/* tell the ntvfs backend that we are disconnecting */
-	tcon->ntvfs_ops->disconnect(tcon);
+	tcon->ntvfs_ops->disconnect(tcon, 0);
 
 	conn_free(tcon->smb_conn, tcon);
 }

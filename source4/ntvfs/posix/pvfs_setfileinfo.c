@@ -29,7 +29,7 @@
 NTSTATUS pvfs_setfileinfo(struct smbsrv_request *req, 
 			  union smb_setfileinfo *info)
 {
-	struct pvfs_private *pvfs = req->tcon->ntvfs_private;
+	NTVFS_GET_PRIVATE(pvfs_private, pvfs, req);
 	struct utimbuf unix_times;
 	struct pvfs_file *f;
 
