@@ -248,40 +248,68 @@ use this powerful tool. Please refer to the resource kit manuals for specific us
 <title>Managing Account/User Policies</title>
 
 <para>
-Document what are user policies (ie: Account Policies) here.
+Policies can define a specific user's settings or the settings for a group of users. The resulting
+policy file contains the registry settings for all users, groups, and computers that will be using
+the policy file. Separate policy files for each user, group, or computer are not not necessary.
+</para>
+
+<para>
+If you create a policy that will be automatically downloaded from validating domain controllers,
+you should name the file NTconfig.POL. As system administrator, you have the option of renaming the
+policy file and, by modifying the Windows NT-based workstation, directing the computer to update
+the policy from a manual path. You can do this by either manually changing the registry or by using
+the System Policy Editor. This path can even be a local path such that each machine has its own policy file,
+but if a change is necessary to all machines, this change must be made individually to each workstation.
+</para>
+
+<para>
+When a Windows NT4/200x/XP machine logs onto the network the NETLOGON share on the authenticating domain 
+controller for the presence of the NTConfig.POL file. If one exists it is downloaded, parsed and then
+applied to the user's part of the registry.
+</para>
+
+<para>
+MS Windows 200x/XP clients that log onto an MS Windows Active Directory security domain may additionally,
+acquire policy settings through Group Policy Objects (GPOs) that are defined and stored in Active Directory
+itself. The key benefit of using AS GPOs is that they impose no registry <emphasis>tatooing</emphasis> effect.
+This has considerable advanage compared with the use of NTConfig.POL (NT4) style policy updates.
+</para>
+
+<para>
+Inaddition to user access controls that may be imposed or applied via system and/or group policies
+in a manner that works in conjunction with user profiles, the user management environment under
+MS Windows NT4/200x/XP allows per domain as well as per user account restrictions to be applied.
+Common restrictions that are frequently used includes:
+</para>
+
+<para>
+<simplelist>
+	<member>Logon Hours</member>
+	<member>Password Aging</member>
+	<member>Permitted Logon from certain machines only</member>
+	<member>Account type (Local or Global)</member>
+	<member>User Rights</member>
+</simplelist>
 </para>
 
 <sect2>
 <title>With Windows NT4/200x</title>
 
 <para>
-Brief overview of the tools and how to use them.
+The tools that may be used to configure these types of controls from the MS Windows environment are:
+The NT4 User Manager for domains, the NT4 System and Group Policy Editor, the registry editor (regedt32.exe).
+Under MS Windows 200x/XP this is done using the Microsoft Managment Console (MMC) with approapriate
+"snap-ins", the registry editor, and potentially also the NT4 System and Group Policy Editor.
 </para>
-
-<sect3>
-<title>Windows NT4 Tools</title>
-
-<para>
-Blah, blah, blah ...
-</para>
-
-</sect3>
-
-<sect3>
-<title>Windows 200x Tools</title>
-
-<para>
-Blah, blah, blah ...
-</para>
-
-</sect3>
 </sect2>
 
 <sect2>
 <title>With a Samba PDC</title>
 
 <para>
-Document the HOWTO here.
+With a Samba Domain Controller, the new tools for managing of user account and policy information includes:
+<filename>smbpasswd, pdbedit, smbgroupedit, net, rpcclient.</filename>. The administrator should read the
+man pages for these tools and become familiar with their use.
 </para>
 
 </sect1>
