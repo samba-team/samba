@@ -18,10 +18,13 @@ pop_user (POP *p)
 
     strcpy(p->user, p->pop_parm[1]);
 
+#ifdef OTP
     if (otp_challenge (&p->otp_ctx, p->user, ss, sizeof(ss)) == 0) {
 	return pop_msg(p, POP_SUCCESS, "Password %s required for %s.",
 		       ss, p->user);
-    } else if (p->auth_level != AUTH_NONE) {
+    } else
+#endif
+    if (p->auth_level != AUTH_NONE) {
 	char *s = otp_error(&p->otp_ctx);
 	return pop_msg(p, POP_FAILURE, "Permission denied%s%s",
 		       s ? ":" : "", s ? s : "");

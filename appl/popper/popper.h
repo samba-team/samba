@@ -267,7 +267,9 @@ typedef struct  {                               /*  POP parameter block */
 #endif
     int			version;                /*  4 or 5? */
     int			auth_level;		/*  Dont allow cleartext */
+#ifdef OTP
     OtpContext		otp_ctx;		/*  OTP context */
+#endif
 } POP;
 
 typedef struct {                                /*  State information for 

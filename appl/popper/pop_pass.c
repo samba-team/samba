@@ -133,7 +133,7 @@ pop_pass (POP *p)
 		    p->ipaddr,
 		    p->kdata.pname, p->kdata.pinst, p->kdata.prealm,
 		    p->user);
-	} 
+	} else
 #endif /* KRB4 */
 #ifdef KRB5
 	if (p->version == 5) {
@@ -164,9 +164,12 @@ pop_pass (POP *p)
 			      "Password supplied for \"%s\" is incorrect.",
 			      p->user));
 
+#ifdef OTP
 	 if (otp_verify_user (&p->otp_ctx, p->pop_parm[1]) == 0)
 	     ;
-	 else if(p->auth_level != AUTH_NONE)
+	 else
+#endif
+	 if(p->auth_level != AUTH_NONE)
 	     return pop_msg(p, POP_FAILURE,
 			    "Password supplied for \"%s\" is incorrect.",
 			    p->user);

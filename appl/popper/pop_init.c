@@ -226,7 +226,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     krb5_set_warn_dest(p->context, p->logf);
 #else
     /*  Open the log file */
-    openlog(p->myname,POP_LOGOPTS,POP_FACILITY);
+    roken_openlog(p->myname,POP_LOGOPTS,POP_FACILITY);
 #endif
 
     p->auth_level = AUTH_NONE;
@@ -312,7 +312,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     p->ipport = ntohs(cs.sin_port);
 
     /*  Get the canonical name of the host to whom I am speaking */
-    ch = gethostbyaddr((const char *)&cs.sin_addr,
+    ch = roken_gethostbyaddr((const char *)&cs.sin_addr,
 		       sizeof(cs.sin_addr),
 		       AF_INET);
     if (ch == NULL){
@@ -329,7 +329,7 @@ pop_init(POP *p,int argcount,char **argmessage)
 
         /*  See if the name obtained for the client's IP 
             address returns an address */
-        if ((ch_again = gethostbyname(ch->h_name)) == NULL) {
+        if ((ch_again = roken_gethostbyname(ch->h_name)) == NULL) {
             pop_log(p,POP_PRIORITY,
                 "Client at \"%s\" resolves to an unknown host name \"%s\"",
                     p->ipaddr,ch->h_name);
