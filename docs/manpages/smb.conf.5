@@ -504,9 +504,6 @@ Here is a list of all global parameters. See the section of
 each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
-\fIabort shutdown script\fR
-.TP 0.2i
-\(bu
 \fIadd printer command\fR
 .TP 0.2i
 \(bu
@@ -514,9 +511,6 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIadd user script\fR
-.TP 0.2i
-\(bu
-\fIadd machine script\fR
 .TP 0.2i
 \(bu
 \fIallow trusted domains\fR
@@ -688,6 +682,12 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIlock directory\fR
+.TP 0.2i
+\(bu
+\fIlock spin count\fR
+.TP 0.2i
+\(bu
+\fIlock spin time\fR
 .TP 0.2i
 \(bu
 \fIpid directory\fR
@@ -880,9 +880,6 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIshow add printer wizard\fR
-.TP 0.2i
-\(bu
-\fIshutdown script\fR
 .TP 0.2i
 \(bu
 \fIsmb passwd file\fR
@@ -1414,18 +1411,6 @@ each parameter for details. Note that some are synonyms.
 \fIwriteable\fR
 .SH "EXPLANATION OF EACH PARAMETER"
 .TP
-\fBabort shutdown script (G)\fR
-\fBThis parameter only exists in the HEAD cvs branch\fR
-This a full path name to a script called by
-\fBsmbd(8)\fRthat
-should stop a shutdown procedure issued by the \fIshutdown script\fR.
-
-This command will be run as user.
-
-Default: \fBNone\fR.
-
-Example: \fBabort shutdown script = /sbin/shutdown -c\fR
-.TP
 \fBadd printer command (G)\fR
 With the introduction of MS-RPC based printing
 support for Windows NT/2000 clients in Samba 2.2, The MS Add
@@ -1538,19 +1523,6 @@ Default: \fBnone\fR
 Example: \fBadd share command = /usr/local/bin/addshare\fR
 .PP
 .TP
-\fBadd machine script (G)\fR
-This is the full pathname to a script that will 
-be run by smbd(8)when a machine is added
-to it's domain using the administrator username and password method. 
-
-This option is only required when using sam back-ends tied to the
-Unix uid method of RID calculation such as smbpasswd. This option is only
-available in Samba 3.0.
-
-Default: \fBadd machine script = <empty string>
-\fR
-Example: \fBadd machine script = /usr/sbin/adduser -n -g machines -c Machine -d /dev/null -s /bin/false %u
-\fR.TP
 \fBadd user script (G)\fR
 This is the full pathname to a script that will 
 be run \fBAS ROOT\fR by smbd(8)
@@ -3640,6 +3612,26 @@ option.
 Default: \fBlock directory = ${prefix}/var/locks\fR
 
 Example: \fBlock directory = /var/run/samba/locks\fR
+.TP
+\fBlock spin count (G)\fR
+This parameter controls the number of times
+that smbd should attempt to gain a byte range lock on the 
+behalf of a client request. Experiments have shown that
+Windows 2k servers do not reply with a failure if the lock
+could not be immediately granted, but try a few more times
+in case the lock could later be aquired. This behavior
+is used to support PC database formats such as MS Access
+and FoxPro.
+
+Default: \fBlock spin count = 2\fR
+.TP
+\fBlock spin time (G)\fR
+The time in microseconds that smbd should 
+pause before attempting to gain a failed lock. See
+\fIlock spin 
+count\fR for more details.
+
+Default: \fBlock spin time = 10\fR
 .TP
 \fBlocking (S)\fR
 This controls whether or not locking will be 
@@ -6116,53 +6108,6 @@ See also \fIaddprinter
 command\fR,  \fIdeleteprinter command\fR, \fIprinter admin\fR
 
 Default :\fBshow add printer wizard = yes\fR
-.TP
-\fBshutdown script (G)\fR
-\fBThis parameter only exists in the HEAD cvs branch\fR
-This a full path name to a script called by
-\fBsmbd(8)\fRthat
-should start a shutdown procedure.
-
-This command will be run as the user connected to the
-server.
-
-%m %t %r %f parameters are expanded
-
-\fI%m\fR will be substituted with the
-shutdown message sent to the server.
-
-\fI%t\fR will be substituted with the
-number of seconds to wait before effectively starting the
-shutdown procedure.
-
-\fI%r\fR will be substituted with the
-switch \fB-r\fR. It means reboot after shutdown
-for NT.
-
-\fI%f\fR will be substituted with the
-switch \fB-f\fR. It means force the shutdown
-even if applications do not respond for NT.
-
-Default: \fBNone\fR.
-
-Example: \fBabort shutdown script = /usr/local/samba/sbin/shutdown %m %t %r %f\fR
-
-Shutdown script example:
-.sp
-.nf
-		#!/bin/bash
-		
-		$time=0
-		let "time/60"
-		let "time++"
-
-		/sbin/shutdown $3 $4 +$time $1 &
-		
-.sp
-.fi
-Shutdown does not return so we need to launch it in background.
-
-See also \fIabort shutdown script\fR.
 .TP
 \fBsmb passwd file (G)\fR
 This option sets the path to the encrypted 

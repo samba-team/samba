@@ -588,11 +588,9 @@
 	each parameter for details.  Note that some are synonyms.</para>
 
 	<itemizedlist>
-		<listitem><para><link linkend="ABORTSHUTDOWNSCRIPT"><parameter>abort shutdown script</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDPRINTERCOMMAND"><parameter>add printer command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDSHARECOMMAND"><parameter>add share command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDUSERSCRIPT"><parameter>add user script</parameter></link></para></listitem>
-		<listitem><para><link linkend="ADDMACHINESCRIPT"><parameter>add machine script</parameter></link></para></listitem>
 		<listitem><para><link linkend="ALLOWTRUSTEDDOMAINS"><parameter>allow trusted domains</parameter></link></para></listitem>
 		<listitem><para><link linkend="ANNOUNCEAS"><parameter>announce as</parameter></link></para></listitem>
 		<listitem><para><link linkend="ANNOUNCEVERSION"><parameter>announce version</parameter></link></para></listitem>
@@ -652,6 +650,8 @@
 		<listitem><para><link linkend="LOCALMASTER"><parameter>local master</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOCKDIR"><parameter>lock dir</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOCKDIRECTORY"><parameter>lock directory</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOCKSPINCOUNT"><parameter>lock spin count</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOCKSPINTIME"><parameter>lock spin time</parameter></link></para></listitem>
 		<listitem><para><link linkend="PIDDIRECTORY"><parameter>pid directory</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOGFILE"><parameter>log file</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOGLEVEL"><parameter>log level</parameter></link></para></listitem>
@@ -716,7 +716,6 @@
 		<listitem><para><link linkend="SECURITY"><parameter>security</parameter></link></para></listitem>
 		<listitem><para><link linkend="SERVERSTRING"><parameter>server string</parameter></link></para></listitem>
 		<listitem><para><link linkend="SHOWADDPRINTERWIZARD"><parameter>show add printer wizard</parameter></link></para></listitem>
-		<listitem><para><link linkend="SHUTDOWNSCRIPT"><parameter>shutdown script</parameter></link></para></listitem>
 		<listitem><para><link linkend="SMBPASSWDFILE"><parameter>smb passwd file</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOCKETADDRESS"><parameter>socket address</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOCKETOPTIONS"><parameter>socket options</parameter></link></para></listitem>
@@ -915,21 +914,6 @@
 	
 	<variablelist>
 
-		<varlistentry>
-		<term><anchor id="ABORTSHUTDOWNSCRIPT">abort shutdown script (G)</term>
-		<listitem><para><emphasis>This parameter only exists in the HEAD cvs branch</emphasis>
-		This a full path name to a script called by
-		<ulink url="smbd.8.html"><command>smbd(8)</command></ulink>  that
-		should stop a shutdown procedure issued by the <link 
-		linkend="SHUTDOWNSCRIPT"><parameter>shutdown script</parameter></link>.</para>
-		
-		<para>This command will be run as user.</para>
-
-		<para>Default: <emphasis>None</emphasis>.</para>
-		<para>Example: <command>abort shutdown script = /sbin/shutdown -c</command></para>
-		</listitem>
-		</varlistentry>
-
 
 		<varlistentry>
 		<term><anchor id="ADDPRINTERCOMMAND">add printer command (G)</term>
@@ -1043,23 +1027,6 @@
 
 
 
-		<varlistentry>
-		<term><anchor id="ADDMACHINESCRIPT">add machine script (G)</term>
-		<listitem><para>This is the full pathname to a script that will 
-		be run by <ulink url="smbd.8.html">smbd(8)</ulink>  when a machine is added
-                to it's domain using the administrator username and password method. </para>
-
-		<para>This option is only required when using sam back-ends tied to the
-                Unix uid method of RID calculation such as smbpasswd.  This option is only
-                available in Samba 3.0.</para>
-
-		<para>Default: <command>add machine script = &lt;empty string&gt;
-		</command></para>	
-
-		<para>Example: <command>add machine script = /usr/sbin/adduser -n -g machines -c Machine -d /dev/null -s /bin/false %u
-                </command></para>
-		</listitem>
-		</varlistentry>
 
 
 		<varlistentry>
@@ -1115,6 +1082,7 @@
 
 
 
+		
 		<varlistentry>
 		<term><anchor id="ADMINUSERS">admin users (S)</term>
 		<listitem><para>This is a list of users who will be granted 
@@ -3739,6 +3707,39 @@
 
 		<para>Default: <command>lock directory = ${prefix}/var/locks</command></para>
 		<para>Example: <command>lock directory = /var/run/samba/locks</command>
+		</para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="LOCKSPINCOUNT">lock spin count (G)</term>
+		<listitem><para>This parameter controls the number of times
+		that smbd should attempt to gain a byte range lock on the 
+		behalf of a client request.  Experiments have shown that
+		Windows 2k servers do not reply with a failure if the lock
+		could not be immediately granted, but try a few more times
+		in case the lock could later be aquired.  This behavior
+		is used to support PC database formats such as MS Access
+		and FoxPro.
+		</para>
+
+		<para>Default: <command>lock spin count = 2</command>
+		</para></listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="LOCKSPINTIME">lock spin time (G)</term>
+		<listitem><para>The time in microseconds that smbd should 
+		pause before attempting to gain a failed lock.  See
+		<link linkend="LOCKSPINCOUNT"><parameter>lock spin 
+		count</parameter></link> for more details.
+		</para>
+
+		<para>Default: <command>lock spin time = 10</command>
 		</para></listitem>
 		</varlistentry>
 
@@ -6843,49 +6844,6 @@
 		</varlistentry>
 
 
-
-		<varlistentry>
-		<term><anchor id="SHUTDOWNSCRIPT">shutdown script (G)</term>
-		<listitem><para><emphasis>This parameter only exists in the HEAD cvs branch</emphasis>
-		This a full path name to a script called by
-		<ulink url="smbd.8.html"><command>smbd(8)</command></ulink> that
-		should start a shutdown procedure.</para>
-
-		<para>This command will be run as the user connected to the
-		server.</para>
-
-		<para>%m %t %r %f parameters are expanded</para>
-		<para><parameter>%m</parameter> will be substituted with the
-		shutdown message sent to the server.</para>
-		<para><parameter>%t</parameter> will be substituted with the
-		number of seconds to wait before effectively starting the
-		shutdown procedure.</para>
-		<para><parameter>%r</parameter> will be substituted with the
-		switch <emphasis>-r</emphasis>. It means reboot after shutdown
-		for NT.
-		</para>
-		<para><parameter>%f</parameter> will be substituted with the
-		switch <emphasis>-f</emphasis>. It means force the shutdown
-		even if applications do not respond for NT.</para>
-
-		<para>Default: <emphasis>None</emphasis>.</para>
-		<para>Example: <command>abort shutdown script = /usr/local/samba/sbin/shutdown %m %t %r %f</command></para>
-		<para>Shutdown script example:
-		<programlisting>
-		#!/bin/bash
-		
-		$time=0
-		let "time/60"
-		let "time++"
-
-		/sbin/shutdown $3 $4 +$time $1 &
-		</programlisting>
-		Shutdown does not return so we need to launch it in background.
-		</para>
-
-		<para>See also <link linkend="ABORTSHUTDOWNSCRIPT"><parameter>abort shutdown script</parameter></link>.</para>
-		</listitem>
-		</varlistentry>
 
 
 		<varlistentry>
