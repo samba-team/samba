@@ -49,8 +49,6 @@ static NTSTATUS fetchfile_connect(struct smbcli_composite *c,
 	status = smb_composite_connect_recv(state->req, c);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	printf("connect done\n");
-
 	state->loadfile = talloc(state, struct smb_composite_loadfile);
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -66,8 +64,6 @@ static NTSTATUS fetchfile_connect(struct smbcli_composite *c,
 	state->stage = FETCHFILE_READ;
 	c->event_ctx = talloc_reference(c, state->req->event_ctx);
 
-	printf("load started\n");
-
 	return NT_STATUS_OK;
 }
 
@@ -78,12 +74,8 @@ static NTSTATUS fetchfile_read(struct smbcli_composite *c,
 	struct fetchfile_state *state;
 	state = talloc_get_type(c->private, struct fetchfile_state);
 
-	printf("read event\n");
-
 	status = smb_composite_loadfile_recv(state->req, NULL);
 	NT_STATUS_NOT_OK_RETURN(status);
-
-	printf("read done\n");
 
 	io->out.data = state->loadfile->out.data;
 	io->out.size = state->loadfile->out.size;
