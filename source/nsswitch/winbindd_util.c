@@ -81,6 +81,13 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 {
 	struct winbindd_domain *domain;
 	char *contact_name;
+	const char *alternative_name = NULL;
+	
+	/* ignore alt_name if we are not in an AD domain */
+	
+	if ( (lp_security() == SEC_ADS) && alt_name && *alt_name) {
+		alternative_name = alt_name;
+	}
         
 	/* We can't call domain_list() as this function is called from
 	   init_domain_list() and we'll get stuck in a loop. */
@@ -89,9 +96,9 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		    strcasecmp(domain_name, domain->alt_name) == 0) {
 			return domain;
 		}
-		if (alt_name && *alt_name) {
-			if (strcasecmp(alt_name, domain->name) == 0 ||
-			    strcasecmp(alt_name, domain->alt_name) == 0) {
+		if (alternative_name && *alternative_name) {
+			if (strcasecmp(alternative_name, domain->name) == 0 ||
+			    strcasecmp(alternative_name, domain->alt_name) == 0) {
 				return domain;
 			}
 		}
@@ -108,13 +115,13 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	ZERO_STRUCTP(domain);
 
 	/* prioritise the short name */
-	if (strchr_m(domain_name, '.') && alt_name && *alt_name) {
-		fstrcpy(domain->name, alt_name);
+	if (strchr_m(domain_name, '.') && alternative_name && *alternative_name) {
+		fstrcpy(domain->name, alternative_name);
 		fstrcpy(domain->alt_name, domain_name);
 	} else {
 		fstrcpy(domain->name, domain_name);
-		if (alt_name) {
-			fstrcpy(domain->alt_name, alt_name);
+		if (alternative_name) {
+			fstrcpy(domain->alt_name, alternative_name);
 		}
 	}
 
@@ -261,16 +268,22 @@ BOOL init_domain_list(void)
 
 	/* Add ourselves as the first entry */
 	
-	domain = add_trusted_domain( lp_workgroup(), NULL, &cache_methods, NULL);
+	domain = add_trusted_domain( lp_workgroup(), lp_realm(), &cache_methods, NULL);
 	
+	/* get any alternate name for the primary domain */
+	
+	cache_methods.alternate_name(domain);
+	
+	/* now we have the correct netbios (short) domain name */
+	
+	if ( *domain->name )
+		set_global_myworkgroup( domain->name );
+		
 	if (!secrets_fetch_domain_sid(domain->name, &domain->sid)) {
 		DEBUG(1, ("Could not fetch sid for our domain %s\n",
 			  domain->name));
 		return False;
 	}
-
-	/* get any alternate name for the primary domain */
-	cache_methods.alternate_name(domain);
 
 	/* do an initial scan for trusted domains */
 	add_trusted_domains(domain);

@@ -35,6 +35,8 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
         int num_retries = 0;
         struct cli_state *cli;
 	uint32 sec_channel_type;
+	const char *contact_domain_name = NULL;
+	
 	DEBUG(3, ("[%5lu]: check machine account\n", (unsigned long)state->pid));
 
 	/* Get trust account password */
@@ -46,11 +48,21 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 		goto done;
 	}
 
+
+	/* use the realm name if appropriate and possible */
+	
+	if ( lp_security() == SEC_ADS )
+		contact_domain_name = lp_realm();
+	
+	if ( !contact_domain_name || !*contact_domain_name )
+		contact_domain_name = lp_workgroup();
+		
         /* This call does a cli_nt_setup_creds() which implicitly checks
            the trust account password. */
-
 	/* Don't shut this down - it belongs to the connection cache code */
-        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, sec_channel_type, True, &cli);
+	
+        result = cm_get_netlogon_cli(contact_domain_name,
+		trust_passwd, sec_channel_type, True, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
