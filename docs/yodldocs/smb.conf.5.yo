@@ -1876,6 +1876,8 @@ Server as the correct NT user and with the correct NT group permissions)
 in the UNIX group be mapped to the correct NT Domain users in the specified
 NT Domain using link(bf('domain user map'))(domainusermap).
 
+endit()
+
 Failure to meet any of these requirements may result in either (or
 both) errors reported in the log files or (and) incorrect or missing
 access rights granted to users.
@@ -2032,6 +2034,8 @@ it() that the UNIX user exists on the UNIX server.
 it() that the NT Domain User exists in the specified NT Domain.
 
 it() that the UNIX Server knows about the specified Domain.
+
+endit()
 
 Failure to meet any of these requirements may result in either (or
 both) errors reported in the log files or (and) incorrect or missing
@@ -2816,6 +2820,8 @@ it() that all the UNIX users (who are expecting to access the Samba
 Server as the correct NT user and with the correct NT group permissions)
 in the UNIX group be mapped to the correct NT Domain users in the specified
 NT Domain using link(bf('domain user map'))(domainusermap).
+
+endit()
 
 Failure to meet any of these requirements may result in either (or
 both) errors reported in the log files or (and) incorrect or missing
