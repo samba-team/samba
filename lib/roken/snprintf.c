@@ -268,11 +268,11 @@ append_char(struct state *state,
 
 #define PARSE_INT_FORMAT(res, arg, unsig) \
 if (long_flag) \
-     res = va_arg(arg, unsig long); \
+     res = (unsig long)va_arg(arg, unsig long); \
 else if (short_flag) \
-     res = va_arg(arg, unsig short); \
+     res = (unsig short)va_arg(arg, unsig short); \
 else \
-     res = va_arg(arg, unsig int)
+     res = (unsig int)va_arg(arg, unsig int)
 
 /*
  * zyxprintf - return 0 or -1
