@@ -172,14 +172,6 @@ struct ipv4_addr {
 	uint32_t s_addr;
 };
 
-#ifndef UINT8_MAX
-#define UINT8_MAX 255
-#endif
-
-#ifndef UINT16_MAX
-#define UINT16_MAX 65535
-#endif
-
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif

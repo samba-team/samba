@@ -23,6 +23,7 @@
 #include "include/includes.h"
 #include "vfs_posix.h"
 #include "system/time.h"
+#include "system/filesys.h"
 
 
 /* the state of a search started with pvfs_search_first() */

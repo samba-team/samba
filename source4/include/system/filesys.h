@@ -104,6 +104,20 @@
 #include <dlfcn.h>
 #endif
 
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+
+
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
+
+
 #ifndef RTLD_LAZY
 #define RTLD_LAZY 0
 #endif
@@ -161,3 +175,8 @@
 #ifndef HAVE_RENAME
 int rename(const char *zfrom, const char *zto);
 #endif
+
+#ifndef UINT16_MAX
+#define UINT16_MAX 65535
+#endif
+
