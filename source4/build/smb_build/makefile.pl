@@ -173,23 +173,27 @@ dynconfig.o: dynconfig.c Makefile
 ###########################################################
 # This function creates a standard make rule which is using $(CC)
 #
-# $output = _prepare_std_CC_rule($srcext,$destext,$message,$comment)
+# $output = _prepare_std_CC_rule($srcext,$destext,$flags,$message,$comment)
 #
 # $srcext -	sourcefile extension
 #
 # $destext -	destinationfile extension
+#
+# $flags -	additional compiler flags
 #
 # $message -	logmessage which is echoed while running this rule
 #
 # $comment -	just a comment what this rule should do
 #
 # $output -		the resulting output buffer
-sub _prepare_std_CC_rule($$$$)
+sub _prepare_std_CC_rule($$$$$)
 {
 	my $src = shift;
 	my $dst = shift;
+	my $flags = shift;
 	my $message = shift;
 	my $comment = shift;
+	my $flagsstr = "";
 	my $output;
 
 	$output = "
@@ -199,7 +203,7 @@ sub _prepare_std_CC_rule($$$$)
 	\@if (: >> \$\@ || : > \$\@) >/dev/null 2>&1; then rm -f \$\@; else \\
 	 dir=`echo \$\@ | sed 's,/[^/]*\$\$,,;s,^\$\$,.,'` \$(MAKEDIR); fi
 	\@echo $message \$*.$src
-	\@\$(CC) \$(CC_FLAGS) -c \$< -o \$\@
+	\@\$(CC) \$(CC_FLAGS) $flags -c \$< -o \$\@
 \@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
 #End $comment
 ###################################
@@ -848,8 +852,8 @@ sub _prepare_makefile_in($)
 
 	$output .= _prepare_dummy_MAKEDIR();
 
-	$output .= _prepare_std_CC_rule("c","o","Compiling","Rule for std objectfiles");
-	$output .= _prepare_std_CC_rule("h","h.gch","Precompiling","Rule for precompiled headerfiles");
+	$output .= _prepare_std_CC_rule("c","o","","Compiling","Rule for std objectfiles");
+	$output .= _prepare_std_CC_rule("h","h.gch","","Precompiling","Rule for precompiled headerfiles");
 
 	$output .= _prepare_obj_lists($CTX);
 
