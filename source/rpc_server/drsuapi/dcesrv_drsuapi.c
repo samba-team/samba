@@ -110,20 +110,20 @@ static WERROR drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, TALLOC_C
 
 
 /* 
-  DRSUAPI_GET_NC_CHANGES 
+  drsuapi_DsGetNCChanges
 */
-static WERROR DRSUAPI_GET_NC_CHANGES(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_GET_NC_CHANGES *r)
+static WERROR drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct drsuapi_DsGetNCChanges *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  DRSUAPI_UPDATE_REFS 
+  drsuapi_DsReplicaUpdateRefs
 */
-static WERROR DRSUAPI_UPDATE_REFS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_UPDATE_REFS *r)
+static WERROR drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct drsuapi_DsReplicaUpdateRefs *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -246,10 +246,10 @@ static WERROR drsuapi_DsGetDomainControllerInfo(struct dcesrv_call_state *dce_ca
 
 
 /* 
-  DRSUAPI_ADD_ENTRY 
+  drsuapi_DsAddEntry
 */
-static WERROR DRSUAPI_ADD_ENTRY(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_ADD_ENTRY *r)
+static WERROR drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct drsuapi_DsAddEntry *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

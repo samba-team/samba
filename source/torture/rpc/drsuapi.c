@@ -29,6 +29,7 @@ struct DsPrivate {
 	struct GUID bind_guid;
 	const char *domain_obj_dn;
 	const char *domain_guid_str;
+	const char *domain_dns_name;
 	struct GUID domain_guid;
 	struct drsuapi_DsGetDCInfo2 dcinfo;
 };
@@ -133,6 +134,7 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
+	priv->domain_dns_name = r.out.ctr.ctr1->array[0].dns_domain_name;
 	priv->domain_guid_str = r.out.ctr.ctr1->array[0].result_name;
 	GUID_from_string(priv->domain_guid_str, &priv->domain_guid);
 
@@ -780,21 +782,20 @@ static BOOL test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.bind_handle	= &priv->bind_handle;
 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
-		printf("testing DsReplicaGetInfo level %d\n",
+		printf("testing DsReplicaSync level %d\n",
 			array[i].level);
 
 		r.in.level = array[i].level;
 		switch(r.in.level) {
 		case 1:
 			r.in.req.req1.info			= &info1;
-			r.in.req.req1.info->unknown1		= 32;
-			r.in.req.req1.info->unknown2		= 120;
+			r.in.req.req1.info->unknown1		= 0;
 			ZERO_STRUCT(r.in.req.req1.info->guid1);
-			ZERO_STRUCT(r.in.req.req1.info->unknown3);
+			ZERO_STRUCT(r.in.req.req1.info->byte_array);
 			r.in.req.req1.info->nc_dn		= priv->domain_obj_dn?priv->domain_obj_dn:"";
 			r.in.req.req1.guid1			= priv->dcinfo.ntds_guid;
 			r.in.req.req1.string1			= NULL;
-			r.in.req.req1.unknown1			= 16;
+			r.in.req.req1.options			= 16;
 			break;
 		}
 
@@ -808,6 +809,63 @@ static BOOL test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			ret = False;
 		} else if (!W_ERROR_IS_OK(r.out.result)) {
 			printf("DsReplicaSync failed - %s\n", win_errstr(r.out.result));
+			ret = False;
+		}
+	}
+
+	return ret;
+}
+
+static BOOL test_DsReplicaUpdateRefs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			struct DsPrivate *priv)
+{
+	NTSTATUS status;
+	BOOL ret = True;
+	int i;
+	struct drsuapi_DsReplicaUpdateRefs r;
+	struct GUID null_guid;
+	struct {
+		int32_t level;
+	} array[] = {
+		{	
+			1
+		}
+	};
+
+	ZERO_STRUCT(null_guid);
+
+	r.in.bind_handle	= &priv->bind_handle;
+
+	for (i=0; i < ARRAY_SIZE(array); i++) {
+		printf("testing DsReplicaUpdateRefs level %d\n",
+			array[i].level);
+
+		r.in.level = array[i].level;
+		switch(r.in.level) {
+		case 1:
+			r.in.req.req1.unknown1			= 0;
+			r.in.req.req1.unknown2			= 0;
+			r.in.req.req1.dest_dsa_guid		= null_guid;
+			r.in.req.req1.options			= 0;
+			r.in.req.req1.sync_req_info1.unknown1	= 0;
+			r.in.req.req1.sync_req_info1.guid1	= null_guid;
+			ZERO_STRUCT(r.in.req.req1.sync_req_info1.byte_array);
+			r.in.req.req1.sync_req_info1.nc_dn	= priv->domain_obj_dn?priv->domain_obj_dn:"";
+			r.in.req.req1.dest_dsa_dns_name		= talloc_asprintf(mem_ctx, "__some_dest_dsa_guid_string._msdn.%s",
+										priv->domain_dns_name);
+			break;
+		}
+
+		status = dcerpc_drsuapi_DsReplicaUpdateRefs(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			const char *errstr = nt_errstr(status);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+				errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+			}
+			printf("dcerpc_drsuapi_DsReplicaUpdateRefs failed - %s\n", errstr);
+			ret = False;
+		} else if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("DsReplicaUpdateRefs failed - %s\n", win_errstr(r.out.result));
 			ret = False;
 		}
 	}
@@ -876,6 +934,8 @@ BOOL torture_rpc_drsuapi(void)
 	ret &= test_DsReplicaGetInfo(p, mem_ctx, &priv);
 
 	ret &= test_DsReplicaSync(p, mem_ctx, &priv);
+
+	ret &= test_DsReplicaUpdateRefs(p, mem_ctx, &priv);
 
 	ret &= test_DsUnbind(p, mem_ctx, &priv);
 
