@@ -91,11 +91,11 @@ syslog_and_die (const char *m, ...)
 }
 
 static void
-fatal (int sock, const char *m, ...)
-    __attribute__ ((format (printf, 2, 3)));
+fatal (int, const char*, const char *, ...)
+    __attribute__ ((format (printf, 3, 4)));
 
 static void
-fatal (int sock, const char *m, ...)
+fatal (int sock, const char *what, const char *m, ...)
 {
     va_list args;
     char buf[BUFSIZ];
@@ -106,7 +106,10 @@ fatal (int sock, const char *m, ...)
     len = vsnprintf (buf + 1, sizeof(buf) - 1, m, args);
     len = min(len, sizeof(buf) - 1);
     va_end(args);
-    syslog (LOG_ERR, "%s", buf + 1);
+    if(what != NULL)
+	syslog (LOG_ERR, "%s: %m: %s", what, buf + 1);
+    else
+	syslog (LOG_ERR, "%s", buf + 1);
     net_write (sock, buf, len + 1);
     exit (1);
 }
@@ -122,7 +125,7 @@ read_str (int s, char *str, size_t sz, char *expl)
 	--sz;
 	++str;
     }
-    fatal (s, "%s too long", expl);
+    fatal (s, NULL, "%s too long", expl);
 }
 
 static int
@@ -140,10 +143,10 @@ recv_bsd_auth (int s, u_char *buf,
     read_str (s, cmd, COMMAND_SZ, "command");
     pwd = getpwnam(server_username);
     if (pwd == NULL)
-	fatal(s, "Login incorrect.");
+	fatal(s, NULL, "Login incorrect.");
     if (iruserok(thataddr->sin_addr.s_addr, pwd->pw_uid == 0,
 		 client_username, server_username))
-	fatal(s, "Login incorrect.");
+	fatal(s, NULL, "Login incorrect.");
     return 0;
 }
 
@@ -193,7 +196,7 @@ recv_krb4_auth (int s, u_char *buf,
 
     read_str (s, server_username, USERNAME_SZ, "remote username");
     if (kuserok (&auth, server_username) != 0)
-	fatal (s, "Permission denied");
+	fatal (s, NULL, "Permission denied.");
     read_str (s, cmd, COMMAND_SZ, "command");
 
     syslog(LOG_INFO|LOG_AUTH,
@@ -371,14 +374,14 @@ recv_krb5_auth (int s, u_char *buf,
     if(!krb5_kuserok (context,
 		     ticket->client,
 		     server_username))
-	fatal (s, "Permission denied");
+	fatal (s, NULL, "Permission denied.");
 
     if (strncmp (cmd, "-x ", 3) == 0) {
 	do_encrypt = 1;
 	memmove (cmd, cmd + 3, strlen(cmd) - 2);
     } else {
 	if(do_encrypt)
-	    fatal (s, "Encryption required");
+	    fatal (s, NULL, "Encryption is required.");
 	do_encrypt = 0;
     }
 
@@ -494,7 +497,7 @@ static void
 pipe_a_like (int fd[2])
 {
     if (socketpair (AF_UNIX, SOCK_STREAM, 0, fd) < 0)
-	fatal (STDOUT_FILENO, "socketpair: %m");
+	fatal (STDOUT_FILENO, "socketpair", "Pipe creation failed.");
 }
 
 /*
@@ -511,7 +514,7 @@ setup_copier (void)
     pipe_a_like(p2);
     pid = fork ();
     if (pid < 0)
-	fatal (STDOUT_FILENO, "fork: %m");
+	fatal (STDOUT_FILENO, "fork", "Could not create child process.");
     if (pid == 0) { /* child */
 	close (p0[1]);
 	close (p1[0]);
@@ -528,7 +531,7 @@ setup_copier (void)
 	close (p2[1]);
 
 	if (net_write (STDOUT_FILENO, "", 1) != 1)
-	    fatal (STDOUT_FILENO, "write failed");
+	    fatal (STDOUT_FILENO, "net_write", "Write failure.");
 
 	loop (STDIN_FILENO, p0[1],
 	      STDOUT_FILENO, p1[0],
@@ -619,7 +622,7 @@ doit (int do_kerberos, int check_rhosts)
 	syslog_and_die ("getpeername: %m");
 
     if (!do_kerberos && !is_reserved(socket_get_port(thataddr)))
-	fatal(s, "Permission denied");
+	fatal(s, NULL, "Permission denied.");
 
     p = buf;
     port = 0;
@@ -635,7 +638,7 @@ doit (int do_kerberos, int check_rhosts)
     }
 
     if (!do_kerberos && !is_reserved(htons(port)))
-	fatal(s, "Permission denied");
+	fatal(s, NULL, "Permission denied.");
 
     if (port) {
 	int priv_port = IPPORT_RESERVED - 1;
@@ -711,25 +714,25 @@ doit (int do_kerberos, int check_rhosts)
 
     pwd = getpwnam (server_user);
     if (pwd == NULL)
-	fatal (s, "Login incorrect.");
+	fatal (s, NULL, "Login incorrect.");
 
     if (*pwd->pw_shell == '\0')
 	pwd->pw_shell = _PATH_BSHELL;
 
     if (pwd->pw_uid != 0 && access (_PATH_NOLOGIN, F_OK) == 0)
-	fatal (s, "Login disabled.");
+	fatal (s, NULL, "Login disabled.");
 
 
     ret = getnameinfo_verified (thataddr, thataddr_len,
 				that_host, sizeof(that_host),
 				NULL, 0, 0);
     if (ret)
-	fatal (s, "getnameinfo: %s", gai_strerror(ret));
+	fatal (s, NULL, "getnameinfo: %s", gai_strerror(ret));
 
     if (login_access(pwd, that_host) == 0) {
 	syslog(LOG_NOTICE, "Kerberos rsh denied to %s from %s",
 	       server_user, that_host);
-	fatal(s, "Permission denied");
+	fatal(s, NULL, "Permission denied.");
     }
 
 #ifdef HAVE_GETSPNAM
@@ -742,7 +745,7 @@ doit (int do_kerberos, int check_rhosts)
 	    today = time(0)/(24L * 60 * 60);
 	    if (sp->sp_expire > 0) 
 		if (today > sp->sp_expire) 
-		    fatal(s, "Account has expired.");
+		    fatal(s, NULL, "Account has expired.");
 	}
     }
 #endif
@@ -786,20 +789,20 @@ doit (int do_kerberos, int check_rhosts)
 #endif /* HAVE_SETPCRED */
 
     if (initgroups (pwd->pw_name, pwd->pw_gid) < 0)
-	fatal (s, "Login incorrect.");
+	fatal (s, "initgroups", "Login incorrect.");
 
     if (setgid(pwd->pw_gid) < 0)
-	fatal (s, "Login incorrect.");
+	fatal (s, "setgid", "Login incorrect.");
 
     if (setuid (pwd->pw_uid) < 0)
-	fatal (s, "Login incorrect.");
+	fatal (s, "setuid", "Login incorrect.");
 
     if (chdir (pwd->pw_dir) < 0)
-	fatal (s, "Remote directory.");
+	fatal (s, "chdir", "Remote directory.");
 
     if (errsock >= 0) {
 	if (dup2 (errsock, STDERR_FILENO) < 0)
-	    fatal (s, "Dup2 failed.");
+	    fatal (s, "dup2", "Cannot dup stderr.");
 	close (errsock);
     }
 
@@ -809,7 +812,7 @@ doit (int do_kerberos, int check_rhosts)
 	setup_copier ();
     } else {
 	if (net_write (s, "", 1) != 1)
-	    fatal (s, "write failed");
+	    fatal (s, "net_write", "write failed");
     }
 
 #ifdef KRB4
