@@ -94,8 +94,12 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 # for WIN95 clients get workgroup name from nmblookup response
       @name = grep(/<00> - <GROUP>/,@nmblookup);
       $_ = @name[0];
-      /(\S+)/;
-      $_ = "[$1]";
+      if ($_) {
+        /(\S+)/;
+        $_ = "[$1]";
+      } else {
+	$_ = "Unknown Workgroup";
+      }
     }
 
 # see if machine registered a local master browser name
