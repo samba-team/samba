@@ -156,6 +156,51 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
 
 
 /****************************************************************************
+  add the domain logon server and domain master browser names 
+
+  this code was written so that several samba servers can co-operate in
+  sharing the task of (one server) being a domain master, and of being
+  domain logon servers.
+
+  **************************************************************************/
+void add_domain_names(time_t t)
+{
+  static time_t lastrun = 0;
+  struct subnet_record *d;
+
+  if (lastrun != 0 && t < lastrun + CHECK_TIME_ADD_DOM_NAMES * 60) return;
+  lastrun = t;
+
+  for (d = subnetlist; d; d = d->next)
+  {
+    struct work_record *work = find_workgroupstruct(d, lp_workgroup(), False);
+    struct nmb_name n;
+
+    if (lp_domain_logons() && work && work->log_state == LOGON_NONE)
+    {
+      make_nmb_name(&n,lp_workgroup(),0x1c,scope);
+      if (!find_name(d->namelist, &n, FIND_SELF))
+      {
+        DEBUG(0,("%s attempting to become logon server for %s %s\n",
+             timestring(), lp_workgroup(), inet_ntoa(d->bcast_ip)));
+        become_logon_server(d, work);
+      }
+    }
+    if (lp_domain_master() && work && work->dom_state == DOMAIN_NONE)
+    {
+      make_nmb_name(&n,lp_workgroup(),0x1b,scope);
+      if (!find_name(d->namelist, &n, FIND_SELF))
+      {
+        DEBUG(1,("%s attempting to become logon server for %s %s\n",
+             timestring(), lp_workgroup(), inet_ntoa(d->bcast_ip)));
+        become_domain_master(d, work);
+      }
+    }
+  }
+}
+
+
+/****************************************************************************
   add the magic samba names, useful for finding samba servers
   **************************************************************************/
 void add_my_names(void)
@@ -170,6 +215,7 @@ void add_my_names(void)
   for (d = subnetlist; d; d = d->next)
   {
     BOOL wins = lp_wins_support() && ip_equal(d->bcast_ip,ipgrp);
+    struct work_record *work = find_workgroupstruct(d, lp_workgroup(), False);
 
     add_my_name_entry(d, myname,0x20,nb_type|NB_ACTIVE);
     add_my_name_entry(d, myname,0x03,nb_type|NB_ACTIVE);
@@ -183,18 +229,13 @@ void add_my_names(void)
     add_netbios_entry(d,"__SAMBA__",0x20,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
     add_netbios_entry(d,"__SAMBA__",0x00,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
     
-    if (lp_domain_logons()) {
-      /* XXXX the 0x1c is apparently something to do with domain logons */
-      add_my_name_entry(d, lp_workgroup(),0x1c,nb_type|NB_ACTIVE|NB_GROUP);
-    }
-  }
-  if (lp_domain_master() && (d = find_subnet(ipgrp)))
-  {
-    struct work_record *work = find_workgroupstruct(d, lp_workgroup(), True);
-    if (work && work->state == MST_NONE)
+    if (lp_domain_logons() && work && work->log_state == LOGON_NONE)
     {
-      work->state = MST_DOMAIN_NONE;
-      become_master(d, work);
+      become_logon_server(d, work);
+    }
+    if (lp_domain_master() && work && work->dom_state == DOMAIN_NONE)
+    {
+      become_domain_master(d, work);
     }
   }
 }

@@ -79,7 +79,8 @@ void announce_request(struct work_record *work, struct in_addr ip)
      of 0x1e, then we could get the master browser to announce to
      us instead of the members of the workgroup. wha-hey! */
 
-  send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
+  send_mailslot_reply(False, BROWSE_MAILSLOT,ClientDGRAM,
+              outbuf,PTR_DIFF(p,outbuf),
 		      myname,work->work_group,0x20,0x1e,ip,*iface_ip(ip));
 }
 
@@ -106,7 +107,8 @@ void do_announce_request(char *info, char *to_name, int announce_type,
   strupper(p);
   p = skip_string(p,1);
   
-  send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
+  send_mailslot_reply(False,BROWSE_MAILSLOT,ClientDGRAM,
+              outbuf,PTR_DIFF(p,outbuf),
 		      myname,to_name,from,to,dest_ip,*iface_ip(dest_ip));
 }
 
@@ -172,7 +174,7 @@ void do_announce_host(int command,
     debug_browse_data(outbuf, PTR_DIFF(p,outbuf));
 
 	/* send the announcement */
-	send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
+	send_mailslot_reply(False,BROWSE_MAILSLOT,ClientDGRAM,outbuf,
 					  PTR_DIFF(p,outbuf),
 					  from_name, to_name,
 					  from_type, to_type,

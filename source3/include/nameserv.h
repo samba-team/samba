@@ -73,7 +73,8 @@
 /* server type identifiers */
 #define AM_MASTER(work) (work->ServerType & SV_TYPE_MASTER_BROWSER)
 #define AM_BACKUP(work) (work->ServerType & SV_TYPE_BACKUP_BROWSER)
-#define AM_DOMCTL(work) (work->ServerType & SV_TYPE_DOMAIN_CTRL)
+#define AM_DOMMST(work) (work->ServerType & SV_TYPE_DOMAIN_MASTER)
+#define AM_DOMMEM(work) (work->ServerType & SV_TYPE_DOMAIN_MEMBER)
 
 /* microsoft browser NetBIOS name */
 #define MSBROWSE "\001\002__MSBROWSE__\002"
@@ -85,16 +86,27 @@
 enum name_source {STATUS_QUERY, LMHOSTS, REGISTER, SELF, DNS, DNSFAIL};
 enum node_type {B_NODE=0, P_NODE=1, M_NODE=2, NBDD_NODE=3};
 enum packet_type {NMB_PACKET, DGRAM_PACKET};
+
 enum master_state
 {
-   MST_NONE,
-   MST_WON,
+   MST_POTENTIAL,
+   MST_BACK,
    MST_MSB,
-   MST_BROWSER,
-   MST_DOMAIN_NONE,
-   MST_DOMAIN_MEM,
-   MST_DOMAIN_TST,
-   MST_DOMAIN
+   MST_BROWSER
+};
+
+enum domain_state
+{
+   DOMAIN_NONE,
+   DOMAIN_WAIT,
+   DOMAIN_MST
+};
+
+enum logon_state
+{
+   LOGON_NONE,
+   LOGON_WAIT,
+   LOGON_SRV
 };
 
 enum state_type
@@ -179,8 +191,14 @@ struct work_record
 
   struct server_record *serverlist;
 
-  /* stage of development from non-master to master browser / domain master */
-  enum master_state state;
+  /* stage of development from non-local-master up to local-master browser */
+  enum master_state mst_state;
+
+  /* stage of development from non-domain-master to domain master browser */
+  enum domain_state dom_state;
+
+  /* stage of development from non-logon-server to logon server */
+  enum logon_state log_state;
 
   /* work group info */
   fstring work_group;
@@ -366,6 +384,9 @@ struct packet_struct
 
 
 /* broadcast packet announcement intervals, in minutes */
+
+/* attempt to add domain logon and domain master names */
+#define CHECK_TIME_ADD_DOM_NAMES 5 
 
 /* search for master browsers of workgroups samba knows about, 
    except default */

@@ -54,86 +54,101 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
   pstring outbuf;
   int code,reply_code;
   struct work_record *work;
+	char   unknown_byte = 0;
+	uint16 request_count = 0;
+	uint16 token = 0;
   
   if (!d) return;
   
-  if (!(work = find_workgroupstruct(d,dgram->dest_name.name, False))) 
-    return;
+	if (!(work = find_workgroupstruct(d,dgram->dest_name.name, False))) return;
   
-  if (!lp_domain_logons()) {
+	if (!lp_domain_logons())
+	{
     DEBUG(3,("No domain logons\n"));
     return;
   }
   
   code = SVAL(buf,0);
-  switch (code) {
+	switch (code)
+	{
   case 0:    
     {
       char *machine = buf+2;
       char *user = skip_string(machine,1);
+			char *tmp;
       logname = skip_string(user,1);
-      reply_code = 6;
+			tmp = skip_string(logname,1);
+			unknown_byte = CVAL(tmp,0);
+			request_count = SVAL(tmp,1);
+			token = SVAL(tmp,3);
+
+			reply_code = 0x6;
       strcpy(reply_name,myname); 
       strupper(reply_name);
       add_slashes = True;
-      DEBUG(3,("Domain login request from %s(%s) user=%s\n",
- 	       machine,inet_ntoa(p->ip),user));
-    }
+			DEBUG(3,("Domain login request from %s(%s) user=%s token=%x\n",
+					  machine,inet_ntoa(p->ip),user,token));
     break;
+		}
   case 7:    
     {
       char *machine = buf+2;
       logname = skip_string(machine,1);
-      reply_code = 7;
+			token = SVAL(skip_string(logname,1),0);
+
       strcpy(reply_name,lp_domain_controller()); 
-      if (!*reply_name) {
+			if (!*reply_name)
+			{
+				/* oo! no domain controller. must be us, then */
 	strcpy(reply_name,myname); 
         reply_code = 0xC;
       }
-      strupper(reply_name);
-      DEBUG(3,("GETDC request from %s(%s), reporting %s 0x%2x\n",
- 	       machine,inet_ntoa(p->ip), reply_name, reply_code));
+			else
+			{
+				/* refer logon request to the domain controller */
+				reply_code = 0x7;
     }
+
+			strupper(reply_name);
+			DEBUG(3,("GETDC request from %s(%s), reporting %s 0x%x token=%x\n",
+			          machine,inet_ntoa(p->ip), reply_name, reply_code,token));
     break;
+		}
   default:
+		{
     DEBUG(3,("Unknown domain request %d\n",code));
     return;
   }
+	}
   
   bzero(outbuf,sizeof(outbuf));
   q = outbuf;
   SSVAL(q,0,reply_code);
   q += 2;
-  if (add_slashes) {
+
+	if (token == 0xffff || /* LM 2.0 or later */
+	    token == 0xfffe) /* WfWg networking */
+	{
+		if (add_slashes)
+		{
     strcpy(q,"\\\\");
     q += 2;
   }
-  StrnCpy(q,reply_name,16);
+		strcpy(q, reply_name); 
+		strupper(q);
   q = skip_string(q,1);
 
-  if (reply_code == 0xC)
-  {
-   if ( PTR_DIFF (q,outbuf) & 1 )
+		if (token == 0xffff) /* LM 2.0 or later */
    {
-       q++;
-   }
-
-   PutUniCode(q,reply_name);
-   q += 2*(strlen(reply_name) + 1);
-
-   PutUniCode(q,lp_workgroup());
-   q += 2*(strlen(lp_workgroup()) + 1);
-
-   SIVAL(q,0,1);
-   q += 4;
-   SSVAL(q,0,0xFFFF);
+			SSVAL(q,0,token);
    q += 2;
   }
+	}
 
   SSVAL(q,0,0xFFFF);
   q += 2;
   
-  send_mailslot_reply(logname,ClientDGRAM,outbuf,PTR_DIFF(q,outbuf),
+  send_mailslot_reply(True, logname,ClientDGRAM,outbuf,PTR_DIFF(q,outbuf),
  		      myname,&dgram->source_name.name[0],0x20,0,p->ip,
 		      *iface_ip(p->ip));  
 }

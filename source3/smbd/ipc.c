@@ -1,3 +1,4 @@
+
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -1672,7 +1673,8 @@ static BOOL api_RNetServerGetInfo(int cnum,uint16 vuid, char *param,char *data,
 
       if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup()))>0) {
 	for (i=0;i<count;i++)
-	  if (strequal(servers[i].name,local_machine)) {
+	  if (strequal(servers[i].name,local_machine))
+      {
 	    servertype = servers[i].type;
 	    strcpy(comment,servers[i].comment);	    
 	  }
@@ -1742,8 +1744,10 @@ static BOOL api_NetWkstaGetInfo(int cnum,uint16 vuid, char *param,char *data,
   p = *rdata;
   p2 = p + 22;
 
-  SIVAL(p,0,PTR_DIFF(p2,*rdata));
+
+  SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* host name */
   strcpy(p2,local_machine);
+  strupper(p2);
   p2 = skip_string(p2,1);
   p += 4;
 
@@ -1752,21 +1756,22 @@ static BOOL api_NetWkstaGetInfo(int cnum,uint16 vuid, char *param,char *data,
   p2 = skip_string(p2,1);
   p += 4;
 
-  SIVAL(p,0,PTR_DIFF(p2,*rdata));
+  SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* login domain */
   strcpy(p2,lp_workgroup());
+  strupper(p2);
   p2 = skip_string(p2,1);
   p += 4;
 
-  SCVAL(p,0,MAJOR_VERSION); 
-  SCVAL(p,1,MINOR_VERSION); 
+  SCVAL(p,0,MAJOR_VERSION); /* system version - e.g 4 in 4.1 */
+  SCVAL(p,1,MINOR_VERSION); /* system version - e.g .1 in 4.1 */
   p += 2;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata));
-  strcpy(p2,lp_workgroup());	/* login domain?? */
+  strcpy(p2,lp_workgroup());	/* don't know.  login domain?? */
   p2 = skip_string(p2,1);
   p += 4;
 
-  SIVAL(p,0,PTR_DIFF(p2,*rdata));
+  SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* don't know */
   strcpy(p2,"");
   p2 = skip_string(p2,1);
   p += 4;
@@ -1778,165 +1783,337 @@ static BOOL api_NetWkstaGetInfo(int cnum,uint16 vuid, char *param,char *data,
   return(True);
 }
 
-
 /****************************************************************************
   get info about a user
+
+    struct user_info_11 {
+        char                usri11_name[21];  0-20 
+        char                usri11_pad;       21 
+        char                *usri11_comment;  22-25 
+        char            *usri11_usr_comment;  26-29
+        unsigned short      usri11_priv;      30-31
+        unsigned long       usri11_auth_flags; 32-35
+        long                usri11_password_age; 36-39
+        char                *usri11_homedir; 40-43
+        char            *usri11_parms; 44-47
+        long                usri11_last_logon; 48-51
+        long                usri11_last_logoff; 52-55
+        unsigned short      usri11_bad_pw_count; 56-57
+        unsigned short      usri11_num_logons; 58-59
+        char                *usri11_logon_server; 60-63
+        unsigned short      usri11_country_code; 64-65
+        char            *usri11_workstations; 66-69
+        unsigned long       usri11_max_storage; 70-73
+        unsigned short      usri11_units_per_week; 74-75
+        unsigned char       *usri11_logon_hours; 76-79
+        unsigned short      usri11_code_page; 80-81
+    };
+
+where:
+
+  usri11_name specifies the user name for which information is retireved
+
+  usri11_pad aligns the next data structure element to a word boundary
+
+  usri11_comment is a null terminated ASCII comment
+
+  usri11_user_comment is a null terminated ASCII comment about the user
+
+  usri11_priv specifies the level of the privilege assigned to the user.
+       The possible values are:
+
+Name             Value  Description
+USER_PRIV_GUEST  0      Guest privilege
+USER_PRIV_USER   1      User privilege
+USER_PRV_ADMIN   2      Administrator privilege
+
+  usri11_auth_flags specifies the account operator privileges. The
+       possible values are:
+
+Name            Value   Description
+AF_OP_PRINT     0       Print operator
+
+
+Leach, Naik                                        [Page 28]
+
+
+INTERNET-DRAFT   CIFS Remote Admin Protocol     January 10, 1997
+
+
+AF_OP_COMM      1       Communications operator
+AF_OP_SERVER    2       Server operator
+AF_OP_ACCOUNTS  3       Accounts operator
+
+
+  usri11_password_age specifies how many seconds have elapsed since the
+       password was last changed.
+
+  usri11_home_dir points to a null terminated ASCII string that contains
+       the path name of the user's home directory.
+
+  usri11_parms points to a null terminated ASCII string that is set
+       aside for use by applications.
+
+  usri11_last_logon specifies the time when the user last logged on.
+       This value is stored as the number of seconds elapsed since
+       00:00:00, January 1, 1970.
+
+  usri11_last_logoff specifies the time when the user last logged off.
+       This value is stored as the number of seconds elapsed since
+       00:00:00, January 1, 1970. A value of 0 means the last logoff
+       time is unknown.
+
+  usri11_bad_pw_count specifies the number of incorrect passwords
+       entered since the last successful logon.
+
+  usri11_log1_num_logons specifies the number of times this user has
+       logged on. A value of -1 means the number of logons is unknown.
+
+  usri11_logon_server points to a null terminated ASCII string that
+       contains the name of the server to which logon requests are sent.
+       A null string indicates logon requests should be sent to the
+       domain controller.
+
+  usri11_country_code specifies the country code for the user's language
+       of choice.
+
+  usri11_workstations points to a null terminated ASCII string that
+       contains the names of workstations the user may log on from.
+       There may be up to 8 workstations, with the names separated by
+       commas. A null strings indicates there are no restrictions.
+
+  usri11_max_storage specifies the maximum amount of disk space the user
+       can occupy. A value of 0xffffffff indicates there are no
+       restrictions.
+
+  usri11_units_per_week specifies the equal number of time units into
+       which a week is divided. This value must be equal to 168.
+
+  usri11_logon_hours points to a 21 byte (168 bits) string that
+       specifies the time during which the user can log on. Each bit
+       represents one unique hour in a week. The first bit (bit 0, word
+       0) is Sunday, 0:00 to 0:59, the second bit (bit 1, word 0) is
+
+
+
+Leach, Naik                                        [Page 29]
+
+
+INTERNET-DRAFT   CIFS Remote Admin Protocol     January 10, 1997
+
+
+       Sunday, 1:00 to 1:59 and so on. A null pointer indicates there
+       are no restrictions.
+
+  usri11_code_page specifies the code page for the user's language of
+       choice
+
+All of the pointers in this data structure need to be treated
+specially. The  pointer is a 32 bit pointer. The higher 16 bits need
+to be ignored. The converter word returned in the parameters section
+needs to be subtracted from the lower 16 bits to calculate an offset
+into the return buffer where this ASCII string resides.
+
+There is no auxiliary data in the response.
+
   ****************************************************************************/
+
+#define usri11_name           0 
+#define usri11_pad            21
+#define usri11_comment        22
+#define usri11_usr_comment    26
+#define usri11_full_name      30
+#define usri11_priv           34
+#define usri11_auth_flags     36
+#define usri11_password_age   40
+#define usri11_homedir        44
+#define usri11_parms          48
+#define usri11_last_logon     52
+#define usri11_last_logoff    56
+#define usri11_bad_pw_count   60
+#define usri11_num_logons     62
+#define usri11_logon_server   64
+#define usri11_country_code   68
+#define usri11_workstations   70
+#define usri11_max_storage    74
+#define usri11_units_per_week 78
+#define usri11_logon_hours    80
+#define usri11_code_page      84
+#define usri11_end            86
 
 #define USER_PRIV_GUEST 0
 #define USER_PRIV_USER 1
 #define USER_PRIV_ADMIN 2
+
+#define AF_OP_PRINT     0 
+#define AF_OP_COMM      1
+#define AF_OP_SERVER    2
+#define AF_OP_ACCOUNTS  3
 
 static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
 {
-  char *str1 = param+2;
-  char *str2 = skip_string(str1,1);
-  char *UserName = skip_string(str2,1);
-  char *p = skip_string(UserName,1);
-  int uLevel = SVAL(p,0);
-  char *p2;
+	char *str1 = param+2;
+	char *str2 = skip_string(str1,1);
+	char *UserName = skip_string(str2,1);
+	char *p = skip_string(UserName,1);
+	int uLevel = SVAL(p,0);
+	char *p2;
 
-  *rparam_len = 6;
-  *rparam = REALLOC(*rparam,*rparam_len);
+	*rparam_len = 6;
+	*rparam = REALLOC(*rparam,*rparam_len);
 
-  /* check it's a supported varient */
-  if (strcmp(str1,"zWrLh") != 0) return False;
-  switch( uLevel ) {
-  case 0: p2 = "B21"; break;
-  case 1: p2 = "B21BB16DWzzWz"; break;
-  case 2: p2 = "B21BB16DWzzWzDzzzzDDDDWb21WWzWW"; break;
-  case 10: p2 = "B21Bzzz"; break;
-  case 11: p2 = "B21BzzzWDDzzDDWWzWzDWb21W"; break;
-  default: return False;
-  }
-  if (strcmp(p2,str2) != 0) return False;
+	/* check it's a supported varient */
+	if (strcmp(str1,"zWrLh") != 0) return False;
+	switch( uLevel )
+	{
+		case 0: p2 = "B21"; break;
+		case 1: p2 = "B21BB16DWzzWz"; break;
+		case 2: p2 = "B21BB16DWzzWzDzzzzDDDDWb21WWzWW"; break;
+		case 10: p2 = "B21Bzzz"; break;
+		case 11: p2 = "B21BzzzWDDzzDDWWzWzDWb21W"; break;
+		default: return False;
+	}
 
-  *rdata_len = mdrcnt + 1024;
-  *rdata = REALLOC(*rdata,*rdata_len);
+	if (strcmp(p2,str2) != 0) return False;
 
-  SSVAL(*rparam,0,NERR_Success);
-  SSVAL(*rparam,2,0);		/* converter word */
+	*rdata_len = mdrcnt + 1024;
+	*rdata = REALLOC(*rdata,*rdata_len);
 
-  p = *rdata;
-  p2 = p + 86;
+	SSVAL(*rparam,0,NERR_Success);
+	SSVAL(*rparam,2,0);		/* converter word */
 
-  memset(p,0,21);
-  strcpy(p,UserName);
-  if (uLevel > 0) {
-    SCVAL(p,21,0);
-    *p2 = 0;
-    if (uLevel >= 10) {
-      SIVAL(p,22,PTR_DIFF(p2,p)); /* comment */
-      strcpy(p2,"<Comment>");
-      p2 = skip_string(p2,1);
-      SIVAL(p,26,PTR_DIFF(p2,p)); /* user_comment */
-      strcpy(p2,"<UserComment>");
-      p2 = skip_string(p2,1);
-      SIVAL(p,30,PTR_DIFF(p2,p)); /* full name */
-      strcpy(p2,"<FullName>");
-      p2 = skip_string(p2,1);
-    }
-    if (uLevel == 11) {         /* modelled after NTAS 3.51 reply */
-      SSVAL(p,34,
-	    Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER); 
-      SIVAL(p,36,0);		/* auth flags */
-      SIVALS(p,40,-1);		/* password age */
-      SIVAL(p,44,PTR_DIFF(p2,p)); /* home dir */
-      if (*lp_logon_path())
-      {
-        strcpy(p2,lp_logon_path());
-      }
-      else
-      {
-        strcpy(p2,"\\\\%L\\HOMES");
-        standard_sub_basic(p2);
-      }
-      p2 = skip_string(p2,1);
-      SIVAL(p,48,PTR_DIFF(p2,p)); /* parms */
-      strcpy(p2,"");
-      p2 = skip_string(p2,1);
-      SIVAL(p,52,0);		/* last logon */
-      SIVAL(p,56,0);		/* last logoff */
-      SSVALS(p,60,-1);		/* bad pw counts */
-      SSVALS(p,62,-1);		/* num logons */
-      SIVAL(p,64,PTR_DIFF(p2,p)); /* logon server */
-      strcpy(p2,"\\\\*");
-      p2 = skip_string(p2,1);
-      SSVAL(p,68,0);		/* country code */
+	p = *rdata;
+	p2 = p + usri11_end;
 
-      SIVAL(p,70,PTR_DIFF(p2,p)); /* workstations */
-      strcpy(p2,"");
-      p2 = skip_string(p2,1);
+	memset(p,0,21); 
+	strcpy(p+usri11_name,UserName); /* 21 bytes - user name */
 
-      SIVALS(p,74,-1);		/* max storage */
-      SSVAL(p,78,168);		/* units per week */
-      SIVAL(p,80,PTR_DIFF(p2,p)); /* logon hours */
-      memset(p2,-1,21);
-      SCVAL(p2,21,0);           /* fix zero termination */
-      p2 = skip_string(p2,1);
+	if (uLevel > 0)
+	{
+		SCVAL(p,usri11_pad,0); /* padding - 1 byte */
+		*p2 = 0;
+	}
+	if (uLevel >= 10)
+	{
+		SIVAL(p,usri11_comment,PTR_DIFF(p2,p)); /* comment */
+		strcpy(p2,"Comment");
+		p2 = skip_string(p2,1);
 
-      SSVAL(p,84,0);		/* code page */
-    }
-    if (uLevel == 1 || uLevel == 2) {
-      memset(p+22,' ',16);	/* password */
-      SIVALS(p,38,-1);		/* password age */
-      SSVAL(p,42,
-	    Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
-      SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-      if (*lp_logon_path())
-      {
-        strcpy(p2,lp_logon_path());
-      }
-      else
-      {
-        strcpy(p2,"\\\\%L\\HOMES");
-        standard_sub_basic(p2);
-      }
-      p2 = skip_string(p2,1);
-      SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
-      *p2++ = 0;
-      SSVAL(p,52,0);		/* flags */
-      SIVAL(p,54,0);		/* script_path */
-      if (uLevel == 2) {
-	SIVAL(p,60,0);		/* auth_flags */
-	SIVAL(p,64,PTR_DIFF(p2,*rdata)); /* full_name */
-	strcpy(p2,"<Full Name>");
-	p2 = skip_string(p2,1);
-	SIVAL(p,68,0);		/* urs_comment */
-	SIVAL(p,72,PTR_DIFF(p2,*rdata)); /* parms */
-	strcpy(p2,"");
-	p2 = skip_string(p2,1);
-	SIVAL(p,76,0);		/* workstations */
-	SIVAL(p,80,0);		/* last_logon */
-	SIVAL(p,84,0);		/* last_logoff */
-	SIVALS(p,88,-1);		/* acct_expires */
-	SIVALS(p,92,-1);		/* max_storage */
-	SSVAL(p,96,168);	/* units_per_week */
-	SIVAL(p,98,PTR_DIFF(p2,*rdata)); /* logon_hours */
-	memset(p2,-1,21);
-	p2 += 21;
-	SSVALS(p,102,-1);	/* bad_pw_count */
-	SSVALS(p,104,-1);	/* num_logons */
-	SIVAL(p,106,PTR_DIFF(p2,*rdata)); /* logon_server */
-	strcpy(p2,"\\\\%L");
-	standard_sub_basic(p2);
-	p2 = skip_string(p2,1);
-	SSVAL(p,110,49);	/* country_code */
-	SSVAL(p,112,860);	/* code page */
-      }
-    }
-  }
+		SIVAL(p,usri11_usr_comment,PTR_DIFF(p2,p)); /* user_comment */
+		strcpy(p2,"UserComment");
+		p2 = skip_string(p2,1);
 
-  *rdata_len = PTR_DIFF(p2,*rdata);
+        /* EEK! the cifsrap.txt doesn't have this in!!!! */
+		SIVAL(p,usri11_full_name,PTR_DIFF(p2,p)); /* full name */
+#if 0
+		strcpy(p2,"FullName");
+#endif
+		strcpy(p2,UserName); /* suggest copying the user name, for now... */
+		p2 = skip_string(p2,1);
+	}
+	if (uLevel == 11) /* modelled after NTAS 3.51 reply */
+	{         
+		SSVAL(p,usri11_priv,Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER); 
+		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
+		SIVALS(p,usri11_password_age,0xffffffff);		/* password age */
+		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
+		if (*lp_logon_path())
+		{
+			strcpy(p2,lp_logon_path());
+		}
+		else
+		{
+			strcpy(p2,"\\\\%L\\%U");
+		}
+		standard_sub_basic(p2);
+		p2 = skip_string(p2,1);
+		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
+		strcpy(p2,"");
+		p2 = skip_string(p2,1);
+		SIVAL(p,usri11_last_logon,0);		/* last logon */
+		SIVAL(p,usri11_last_logoff,0);		/* last logoff */
+		SSVALS(p,usri11_bad_pw_count,0xffffffff);		/* bad pw counts */
+		SSVALS(p,usri11_num_logons,0xffffffff);		/* num logons */
+		SIVAL(p,usri11_logon_server,PTR_DIFF(p2,p)); /* logon server */
+		strcpy(p2,"\\\\*");
+		p2 = skip_string(p2,1);
+		SSVAL(p,usri11_country_code,0);		/* country code */
 
-  SSVAL(*rparam,4,*rdata_len);	/* is this right?? */
+		SIVAL(p,usri11_workstations,PTR_DIFF(p2,p)); /* workstations */
+		strcpy(p2,"");
+		p2 = skip_string(p2,1);
 
-  return(True);
+		SIVALS(p,usri11_max_storage,0xffffffff);		/* max storage */
+		SSVAL(p,usri11_units_per_week,168);		/* units per week */
+		SIVAL(p,usri11_logon_hours,PTR_DIFF(p2,p)); /* logon hours */
+
+		/* a simple way to get logon hours at all times. */
+		memset(p2,0xff,21);
+		SCVAL(p2,21,0);           /* fix zero termination */
+		p2 = skip_string(p2,1);
+
+		SSVAL(p,usri11_code_page,0);		/* code page */
+	}
+	if (uLevel == 1 || uLevel == 2)
+	{
+		memset(p+22,' ',16);	/* password */
+		SIVALS(p,38,-1);		/* password age */
+		SSVAL(p,42,
+		Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
+		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
+		if (*lp_logon_path())
+		{
+			strcpy(p2,lp_logon_path());
+		}
+		else
+		{
+			strcpy(p2,"\\\\%L\\%U");
+		}
+		standard_sub_basic(p2);
+		p2 = skip_string(p2,1);
+		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
+		*p2++ = 0;
+		SSVAL(p,52,0);		/* flags */
+		SIVAL(p,54,0);		/* script_path */
+		if (uLevel == 2)
+		{
+			SIVAL(p,60,0);		/* auth_flags */
+			SIVAL(p,64,PTR_DIFF(p2,*rdata)); /* full_name */
+			strcpy(p2,"<Full Name>");
+			p2 = skip_string(p2,1);
+			SIVAL(p,68,0);		/* urs_comment */
+			SIVAL(p,72,PTR_DIFF(p2,*rdata)); /* parms */
+			strcpy(p2,"");
+			p2 = skip_string(p2,1);
+			SIVAL(p,76,0);		/* workstations */
+			SIVAL(p,80,0);		/* last_logon */
+			SIVAL(p,84,0);		/* last_logoff */
+			SIVALS(p,88,-1);		/* acct_expires */
+			SIVALS(p,92,-1);		/* max_storage */
+			SSVAL(p,96,168);	/* units_per_week */
+			SIVAL(p,98,PTR_DIFF(p2,*rdata)); /* logon_hours */
+			memset(p2,-1,21);
+			p2 += 21;
+			SSVALS(p,102,-1);	/* bad_pw_count */
+			SSVALS(p,104,-1);	/* num_logons */
+			SIVAL(p,106,PTR_DIFF(p2,*rdata)); /* logon_server */
+			strcpy(p2,"\\\\%L");
+			standard_sub_basic(p2);
+			p2 = skip_string(p2,1);
+			SSVAL(p,110,49);	/* country_code */
+			SSVAL(p,112,860);	/* code page */
+		}
+	}
+
+	*rdata_len = PTR_DIFF(p2,*rdata);
+
+	SSVAL(*rparam,4,*rdata_len);	/* is this right?? */
+
+	return(True);
 }
-
 
 /*******************************************************************
   get groups that a user is a member of
@@ -2016,9 +2193,8 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
   desc.subformat = NULL;
   desc.format = str2;
   
-  
-
-  if (init_package(&desc,1,0)) {
+  if (init_package(&desc,1,0))
+  {
     PACKI(&desc,"W",0);		/* code */
     PACKS(&desc,"B21",name);	/* eff. name */
     PACKS(&desc,"B","");		/* pad */
@@ -2027,7 +2203,7 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
     PACKI(&desc,"D",0);		/* auth flags XXX */
     PACKI(&desc,"W",0);		/* num logons */
     PACKI(&desc,"W",0);		/* bad pw count */
-    PACKI(&desc,"D",-1);		/* last logon */
+    PACKI(&desc,"D",0);		/* last logon */
     PACKI(&desc,"D",-1);		/* last logoff */
     PACKI(&desc,"D",-1);		/* logoff time */
     PACKI(&desc,"D",-1);		/* kickoff time */
@@ -2043,7 +2219,7 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
     }
     PACKS(&desc,"z",lp_workgroup());/* domain */
     PACKS(&desc,"z",lp_logon_script());		/* script path */
-    PACKI(&desc,"D",0);		/* reserved */
+    PACKI(&desc,"D",0x00000000);		/* reserved */
   }
 
   *rdata_len = desc.usedlen;

@@ -91,7 +91,9 @@ static struct work_record *make_workgroup(char *name)
   work->ElectionCount = 0;
   work->needelection = False;
   work->needannounce = True;
-  work->state = MST_NONE;
+  work->mst_state = MST_POTENTIAL;
+  work->dom_state = DOMAIN_NONE;
+  work->log_state = LOGON_NONE;
   
   /* make sure all token representations of workgroups are unique */
   

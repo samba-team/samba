@@ -559,7 +559,7 @@ void listen_for_packets(BOOL run_election)
   Note that this currently sends all answers to port 138. thats the
   wrong things to do! I should send to the requestors port. XXX
   **************************************************************************/
-BOOL send_mailslot_reply(char *mailslot,int fd,char *buf,int len,char *srcname,
+BOOL send_mailslot_reply(BOOL unique, char *mailslot,int fd,char *buf,int len,char *srcname,
 			 char *dstname,int src_type,int dest_type,
 			 struct in_addr dest_ip,struct in_addr src_ip)
 {
@@ -576,7 +576,8 @@ BOOL send_mailslot_reply(char *mailslot,int fd,char *buf,int len,char *srcname,
 
   update_name_trn_id();
 
-  dgram->header.msg_type = 0x11; /* DIRECT GROUP DATAGRAM */
+  /* DIRECT GROUP or UNIQUE datagram */
+  dgram->header.msg_type = unique ? 0x10 : 0x11; 
   dgram->header.flags.node_type = M_NODE;
   dgram->header.flags.first = True;
   dgram->header.flags.more = False;
