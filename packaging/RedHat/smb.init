@@ -32,7 +32,15 @@ case "$1" in
 	;;
   stop)
 	echo -n "Shutting down SMB services: "
-	killproc smbd -TERM
+
+	## we have to get all the smbd process here instead of just the
+	## main parent (i.e. killproc) because it can take a long time
+	## for an individual process to process a TERM signal
+	smbdpids=`ps guax | grep smbd | grep -v grep | awk '{print $2}'`
+	for pid in $smbdpids; do
+		kill -TERM $pid
+	done
+	## nmbd and winbindd are ok to kill using killproc()
 	killproc nmbd -TERM
 	if [ "`ps -ef | grep winbind | grep -v grep`" ]; then
 		killproc winbindd
