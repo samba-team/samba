@@ -35,6 +35,10 @@
 
 RCSID("$Id$");
 
+#ifdef HAVE_DLFCN_H
+#include <dlfcn.h>
+#endif
+
 struct hdb_method {
     const char *prefix;
     krb5_error_code (*create)(krb5_context, HDB **, const char *filename);
@@ -205,6 +209,94 @@ hdb_init_db(krb5_context context, HDB *db)
     return ret;
 }
 
+#ifdef HAVE_DLOPEN
+
+ /*
+ * Load a dynamic backend from /usr/heimdal/lib/hdb_XXX.so,
+ * looking for the hdb_XXX_create symbol.
+ */
+
+static const struct hdb_method *
+find_dynamic_method (krb5_context context,
+		     const char *filename, 
+		     const char **rest)
+{
+    static struct hdb_method method;
+    struct hdb_so_method *mso;
+    char *prefix, *path, *symbol;
+    const char *p;
+    void *dl;
+    size_t len;
+    
+    dl = NULL;
+
+    p = strchr(filename, ':');
+    if (p != NULL) {
+	len = p - filename;
+	*rest = filename + len + 1;
+    } else {
+	len = strlen(filename);
+	*rest = "";
+    }
+    
+    prefix = strndup(filename, len);
+    if (prefix == NULL)
+	krb5_errx(context, 1, "out of memory");
+    
+    if (asprintf(&path, LIBDIR "/hdb_%s.so", prefix) == -1)
+	krb5_errx(context, 1, "out of memory");
+
+    dl = dlopen(path, RTLD_NOW | RTLD_GLOBAL);
+    if (dl == NULL) {
+	krb5_warnx(context, "error trying to load dynamic module %s: %s\n",
+		   path, dlerror());
+	free(prefix);
+	free(path);
+	return NULL;
+    }
+    
+    if (asprintf(&symbol, "hdb_%s_interface", prefix) == -1)
+	krb5_errx(context, 1, "out of memory");
+	
+    mso = dlsym(dl, symbol);
+    if (mso == NULL) {
+	krb5_warnx(context, "error finding symbol %s in %s: %s\n", 
+		   symbol, path, dlerror());
+	dlclose(dl);
+	free(symbol);
+	free(prefix);
+	free(path);
+	return NULL;
+    }
+    free(path);
+    free(symbol);
+
+    if (mso->version != HDB_INTERFACE_VERSION) {
+	krb5_warnx(context, 
+		   "error wrong version in shared module %s "
+		   "version: %d should have been %d\n", 
+		   prefix, mso->version, HDB_INTERFACE_VERSION);
+	dlclose(dl);
+	free(prefix);
+	return NULL;
+    }
+
+    if (mso->create == NULL) {
+	krb5_errx(context, 1,
+		  "no entry point function in shared mod %s ",
+		   prefix);
+	dlclose(dl);
+	free(prefix);
+	return NULL;
+    }
+
+    method.create = mso->create;
+    method.prefix = prefix;
+
+    return &method;
+}
+#endif /* HAVE_DLOPEN */
+
 /*
  * find the relevant method for `filename', returning a pointer to the
  * rest in `rest'.
@@ -227,13 +319,17 @@ find_method (const char *filename, const char **rest)
 krb5_error_code
 hdb_create(krb5_context context, HDB **db, const char *filename)
 {
-    const struct hdb_method *h;
+    const struct hdb_method *h = NULL;
     const char *residual;
 
     if(filename == NULL)
 	filename = HDB_DEFAULT_DB;
     krb5_add_et_list(context, initialize_hdb_error_table_r);
-    h = find_method (filename, &residual);
+#ifdef HAVE_DLOPEN
+    h = find_dynamic_method (context, filename, &residual);
+#endif
+    if (h == NULL)
+	h = find_method (filename, &residual);
     if (h == NULL)
 	krb5_errx(context, 1, "No database support! (hdb_create)");
     return (*h->create)(context, db, residual);
