@@ -564,7 +564,7 @@ fail:
  */
 
 static int
-match_local_auth (Xauth* auth, struct hostent *disp_he, int disp_nr)
+match_local_auth (Xauth* auth, struct addrinfo *ai, int disp_nr)
 {
     int auth_disp;
     char *tmp_disp;
@@ -578,18 +578,10 @@ match_local_auth (Xauth* auth, struct hostent *disp_he, int disp_nr)
 	return 1;
     if (auth->family == FamilyLocal
 	|| auth->family == FamilyWild) {
-	int i;
-
 	if (strncmp (auth->address,
-		     disp_he->h_name,
+		     ai->ai_canonname,
 		     auth->address_length) == 0)
 	    return 0;
-
-	for (i = 0; disp_he->h_aliases[i] != NULL; ++i)
-	    if (strncmp (auth->address,
-			 disp_he->h_aliases[i],
-			 auth->address_length) == 0)
-		return 0;
     }
     return 1;
 }
@@ -605,8 +597,10 @@ find_auth_cookie (FILE *f)
     char local_hostname[MaxHostNameLen];
     char *display = getenv("DISPLAY");
     char *colon;
-    struct hostent *display_he;
+    struct addrinfo *ai;
+    struct addrinfo hints;
     int disp;
+    int error;
 
     if (display == NULL)
 	display = ":0";
@@ -623,16 +617,24 @@ find_auth_cookie (FILE *f)
 	gethostname (local_hostname, sizeof(local_hostname));
 	display = local_hostname;
     }
-    display_he = gethostbyname (display);
-    if (display_he == NULL) {
-	warnx ("gethostbyname %s: %s", display, hstrerror(h_errno));
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_flags    = AI_CANONNAME;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    error = getaddrinfo (display, NULL, &hints, &ai);
+    if (error) {
+	warnx ("getaddrinfo %s: %s", display, gai_strerror(error));
 	return NULL;
     }
 
     for (; (ret = XauReadAuth (f)) != NULL; XauDisposeAuth(ret)) {
-	if (match_local_auth (ret, display_he, disp) == 0)
+	if (match_local_auth (ret, ai, disp) == 0) {
+	    freeaddrinfo (ai);
 	    return ret;
+	}
     }
+    freeaddrinfo (ai);
     return NULL;
 }
 
