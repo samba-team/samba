@@ -67,7 +67,7 @@ BOOL gencache_init(void)
 
 	SAFE_FREE(cache_fname);
 	if (!cache) {
-		DEBUG(0, ("Attempt to open the cache file has failed.\n"));
+		DEBUG(5, ("Attempt to open gencache.tdb has failed.\n"));
 		return False;
 	}
 	return True;
