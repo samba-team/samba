@@ -1657,7 +1657,7 @@ BOOL server_cryptkey(char *buf)
 }
 
 /****************************************************************************
-attempted support for server level security 
+support for server level security 
 ****************************************************************************/
 BOOL server_validate(char *buf)
 {

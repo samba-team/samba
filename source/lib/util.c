@@ -4414,8 +4414,9 @@ static void print_asc(int level, unsigned char *buf,int len)
 		DEBUG(level,("%c", isprint(buf[i])?buf[i]:'.'));
 }
 
-void dump_data(int level,unsigned char *buf,int len)
+void dump_data(int level,char *buf1,int len)
 {
+  unsigned char *buf = (unsigned char *)buf1;
   int i=0;
   if (len<=0) return;
 

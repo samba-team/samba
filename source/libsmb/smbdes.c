@@ -257,7 +257,7 @@ static void dohash(char *out, char *in, char *key)
 	permute(out, rl, perm6, 64);
 }
 
-void str_to_key(unsigned char *str,unsigned char *key)
+static void str_to_key(unsigned char *str,unsigned char *key)
 {
 	int i;
 
@@ -317,18 +317,18 @@ void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24)
 	smbhash(p24+16, c8, p21+14);
 }
 
-void cred_hash1(char *out, char *in, char *key)
+void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key)
 {
-	char buf[8];
+	unsigned char buf[8];
 
 	smbhash(buf, in, key);
 	smbhash(out, buf, key+9);
 }
 
-void cred_hash2(char *out, char *in, char *key)
+void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key)
 {
-	char buf[8];
-	static char key2[8];
+	unsigned char buf[8];
+	static unsigned char key2[8];
 	
 	smbhash(buf, in, key);
 	key2[0] = key[7];
