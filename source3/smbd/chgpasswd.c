@@ -753,9 +753,8 @@ static NTSTATUS check_oem_password(const char *user,
 	uint16 acct_ctrl;
 	uint32 new_pw_len;
 	uchar new_nt_hash[16];
-	uchar old_nt_hash_plain[16];
 	uchar new_lm_hash[16];
-	uchar old_lm_hash_plain[16];
+	uchar verifier[16];
 	char no_pw[2];
 	BOOL ret;
 
@@ -784,7 +783,7 @@ static NTSTATUS check_oem_password(const char *user,
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
-	if (acct_ctrl & ACB_PWNOTREQ && lp_null_passwords()) {
+	if ((acct_ctrl & ACB_PWNOTREQ) && lp_null_passwords()) {
 		/* construct a null password (in case one is needed */
 		no_pw[0] = 0;
 		no_pw[1] = 0;
@@ -854,12 +853,10 @@ static NTSTATUS check_oem_password(const char *user,
 
 		if (nt_pw) {
 			/*
-			 * Now use new_nt_hash as the key to see if the old
-			 * password matches.
+			 * check the NT verifier
 			 */
-			D_P16(new_nt_hash, old_nt_hash_encrypted, old_nt_hash_plain);
-			
-			if (memcmp(nt_pw, old_nt_hash_plain, 16)) {
+			E_old_pw_hash(new_nt_hash, nt_pw, verifier);
+			if (memcmp(verifier, old_nt_hash_encrypted, 16)) {
 				DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
 				pdb_free_sam(&sampass);
 				return NT_STATUS_WRONG_PASSWORD;
@@ -884,12 +881,10 @@ static NTSTATUS check_oem_password(const char *user,
 		
 		if (lanman_pw) {
 			/*
-			 * Now use new_nt_hash as the key to see if the old
-			 * LM password matches.
+			 * check the lm verifier
 			 */
-			D_P16(new_nt_hash, old_lm_hash_encrypted, old_lm_hash_plain);
-			
-			if (memcmp(lanman_pw, old_lm_hash_plain, 16)) {
+			E_old_pw_hash(new_nt_hash, lanman_pw, verifier);
+			if (memcmp(verifier, old_lm_hash_encrypted, 16)) {
 				DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
 				pdb_free_sam(&sampass);
 				return NT_STATUS_WRONG_PASSWORD;
@@ -908,12 +903,10 @@ static NTSTATUS check_oem_password(const char *user,
 		E_deshash(new_passwd, new_lm_hash);
 
 		/*
-		 * Now use new_lm_hash as the key to see if the old
-		 * password matches.
+		 * check the lm verifier
 		 */
-		D_P16(new_lm_hash, old_lm_hash_encrypted, old_lm_hash_plain);
-		
-		if (memcmp(lanman_pw, old_lm_hash_plain, 16)) {
+		E_old_pw_hash(new_lm_hash, lanman_pw, verifier);
+		if (memcmp(verifier, old_lm_hash_encrypted, 16)) {
 			DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
 			pdb_free_sam(&sampass);
 			return NT_STATUS_WRONG_PASSWORD;
