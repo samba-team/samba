@@ -224,9 +224,13 @@ sub HeaderTypedefProto($)
 	my $pull_args = $tf->{PULL_FN_ARGS}->($d);
 	my $push_args = $tf->{PUSH_FN_ARGS}->($d);
 	my $print_args = $tf->{PRINT_FN_ARGS}->($d);
-	pidl "NTSTATUS ndr_push_$d->{NAME}($push_args);\n";
-    pidl "NTSTATUS ndr_pull_$d->{NAME}($pull_args);\n";
-    if (!util::has_property($d, "noprint")) {
+	unless (util::has_property($d, "nopush")) {
+		pidl "NTSTATUS ndr_push_$d->{NAME}($push_args);\n";
+	}
+	unless (util::has_property($d, "nopull")) {
+	    pidl "NTSTATUS ndr_pull_$d->{NAME}($pull_args);\n";
+	}
+    unless (util::has_property($d, "noprint")) {
 	    pidl "void ndr_print_$d->{NAME}($print_args);\n";
     }
 }
