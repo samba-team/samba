@@ -1,5 +1,5 @@
 # generate prototypes for Samba C code
-
+# tridge, June 1996
 
 BEGIN {
   inheader=0;
