@@ -81,6 +81,14 @@ typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*,
 					      hdb_entry*, void*);
 extern krb5_kt_ops hdb_kt_ops;
 
+/* this is for db3.c */
+
+typedef struct HDB {
+	void *db;
+	void *dbc;
+	char *name;
+};
+
 #include <hdb-protos.h>
 
 #endif /* __HDB_H__ */
