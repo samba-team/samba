@@ -142,13 +142,22 @@ BOOL secrets_fetch_domain_guid(char *domain, GUID *guid)
 	GUID *dyn_guid;
 	fstring key;
 	size_t size;
+	GUID new_guid;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
 	strupper(key);
 	dyn_guid = (GUID *)secrets_fetch(key, &size);
 
-	if (dyn_guid == NULL)
-		return False;
+	DEBUG(6,("key is %s, guid is at %x, size is %d\n", key, dyn_guid, size));
+
+	if ((NULL == dyn_guid) && (ROLE_DOMAIN_PDC == lp_server_role())) {
+		uuid_generate_random(&new_guid);
+		if (!secrets_store_domain_guid(domain, &new_guid))
+			return False;
+		dyn_guid = (GUID *)secrets_fetch(key, &size);
+		if (dyn_guid == NULL)
+			return False;
+	}
 
 	if (size != sizeof(GUID))
 	{ 
