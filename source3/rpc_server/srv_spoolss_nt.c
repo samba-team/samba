@@ -519,21 +519,22 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 
 	ZERO_STRUCTP(new_printer);
 	
-	if ( !(new_printer->ctx = talloc_init("Printer Entry [0x%x]", (uint32)hnd)) ) {
-		DEBUG(0,("open_printer_hnd: talloc_init() failed!\n"));
-		return False;
-	}
-	
-	new_printer->notify.option=NULL;
-				
-	/* Add to the internal list. */
-	DLIST_ADD(printers_list, new_printer);
-
 	if (!create_policy_hnd(p, hnd, free_printer_entry, new_printer)) {
 		SAFE_FREE(new_printer);
 		return False;
 	}
-
+	
+	/* Add to the internal list. */
+	DLIST_ADD(printers_list, new_printer);
+	
+	new_printer->notify.option=NULL;
+				
+	if ( !(new_printer->ctx = talloc_init("Printer Entry [0x%x]", (uint32)hnd)) ) {
+		DEBUG(0,("open_printer_hnd: talloc_init() failed!\n"));
+		close_printer_handle(p, hnd);
+		return False;
+	}
+	
 	if (!set_printer_hnd_printertype(new_printer, name)) {
 		close_printer_handle(p, hnd);
 		return False;
