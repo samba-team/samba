@@ -125,7 +125,11 @@ static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_p
 			 */
 
 			if (!set_posix_lock(fsp, offset, count, lock_type)) {
-				status = NT_STATUS_LOCK_NOT_GRANTED;
+				if (errno == EACCES || errno == EAGAIN)
+					status = NT_STATUS_FILE_LOCK_CONFLICT;
+				else
+					status = map_nt_error_from_unix(errno);
+
 				/*
 				 * We failed to map - we must now remove the brl
 				 * lock entry.
