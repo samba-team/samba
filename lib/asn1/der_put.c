@@ -38,8 +38,9 @@ RCSID("$Id$");
 /*
  * All encoding functions take a pointer `p' to first position in
  * which to write, from the right, `len' which means the maximum
- * number of characters we are able to write and return an int
- * indicating how many actually got written, or <0 in case of errors.
+ * number of characters we are able to write.  The function returns
+ * the number of characters written in `size' (if non-NULL).
+ * The return value is 0 or an error.
  */
 
 static int
