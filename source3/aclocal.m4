@@ -32,7 +32,7 @@ AC_DEFUN(AC_DIRENT_D_OFF,
 #include <dirent.h>], [struct dirent d; d.d_off;],
 ac_cv_dirent_d_off=yes, ac_cv_dirent_d_off=no)])
 if test $ac_cv_dirent_d_off = yes; then
-  AC_DEFINE(HAVE_DIRENT_D_OFF)
+  AC_DEFINE(HAVE_DIRENT_D_OFF,1,[Whether dirent has a d_off member])
 fi
 ])
 
@@ -58,7 +58,7 @@ AC_DEFUN(AC_HAVE_DECL,
     AC_TRY_COMPILE([$2],[int i = (int)$1],
         ac_cv_have_$1_decl=yes,ac_cv_have_$1_decl=no)])
  if test x"$ac_cv_have_$1_decl" = x"yes"; then
-    AC_DEFINE([HAVE_]translit([$1], [a-z], [A-Z])[_DECL])
+    AC_DEFINE([HAVE_]translit([$1], [a-z], [A-Z])[_DECL],1,[Whether $1() is available])
  fi
 ])
 
