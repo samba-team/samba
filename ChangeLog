@@ -1,5 +1,8 @@
 Sat Jul 12 15:03:16 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* kuser/klist.c: Add verbose flag, and split main into smaller
+ 	pieces.
+
 	* lib/krb5/fcache.c: Save ticket flags.
 
 	* lib/krb5/get_in_tkt.c (extract_ticket): Extract addresses and
