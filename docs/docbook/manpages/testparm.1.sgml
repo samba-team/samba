@@ -18,6 +18,7 @@
 		<command>testparm</command>
 		<arg choice="opt">-s</arg>
 		<arg choice="opt">-h</arg>
+		<arg choice="opt">-x</arg>
 		<arg choice="opt">-L &lt;servername&gt;</arg>
 		<arg choice="req">config filename</arg>
 		<arg choice="opt">hostname  hostIP</arg>
@@ -69,6 +70,10 @@
 		<listitem><para>Print usage message </para></listitem>
 		</varlistentry>
 		
+		<varlistentry>
+		<term>-x</term>
+		<listitem><para>Print only parameters that have non-default values</para></listitem>
+		</varlistentry>
 		
 		<varlistentry>
 		<term>-L servername</term>
