@@ -372,14 +372,16 @@
 #endif
 
 /*
- * Define SIG_ATOMIC_T if needed.
+ * Define additional missing types
  */
-
-#if defined(HAVE_SIG_ATOMIC_T_TYPE)
-#define SIG_ATOMIC_T sig_atomic_t
-#else
-#define SIG_ATOMIC_T int
+#ifndef HAVE_SIG_ATOMIC_T_TYPE
+typedef int sig_atomic_t;
 #endif
+
+#ifndef HAVE_SOCKLEN_T_TYPE
+typedef int socklen_t;
+#endif
+
 
 #ifndef uchar
 #define uchar unsigned char

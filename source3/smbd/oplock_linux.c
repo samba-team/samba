@@ -25,9 +25,9 @@
 
 extern int DEBUGLEVEL;
 
-static VOLATILE SIG_ATOMIC_T signals_received;
-static VOLATILE SIG_ATOMIC_T signals_processed;
-static VOLATILE SIG_ATOMIC_T fd_pending; /* the fd of the current pending signal */
+static VOLATILE sig_atomic_t signals_received;
+static VOLATILE sig_atomic_t signals_processed;
+static VOLATILE sig_atomic_t fd_pending; /* the fd of the current pending signal */
 
 #ifndef F_SETLEASE
 #define F_SETLEASE	1024
@@ -55,7 +55,7 @@ handle a LEASE signal, incrementing the signals_received and blocking the signal
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
 	BlockSignals(True, sig);
-	fd_pending = (SIG_ATOMIC_T)info->si_fd;
+	fd_pending = (sig_atomic_t)info->si_fd;
 	signals_received++;
 	sys_select_signal();
 }
@@ -160,7 +160,7 @@ dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
 
  out:
 	/* now we can receive more signals */
-	fd_pending = (SIG_ATOMIC_T)-1;
+	fd_pending = (sig_atomic_t)-1;
 	signals_processed++;
 	BlockSignals(False, RT_SIGNAL_LEASE);
      

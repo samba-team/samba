@@ -1195,7 +1195,7 @@ setup oplocks for this process
 BOOL init_oplocks(void)
 {
 	struct sockaddr_in sock_name;
-	int len = sizeof(sock_name);
+	socklen_t len = sizeof(sock_name);
 
 	DEBUG(3,("open_oplock_ipc: opening loopback UDP socket.\n"));
 

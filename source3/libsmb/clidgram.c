@@ -145,7 +145,7 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
   struct in_addr sendto_ip, my_ip;
   int dgram_sock;
   struct sockaddr_in sock_out;
-  int name_size;
+  socklen_t name_size;
 
   if (!resolve_name(send_to_name, &sendto_ip, 0x1d)) {
 

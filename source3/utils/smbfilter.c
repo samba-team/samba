@@ -179,7 +179,7 @@ static void start_filter(char *desthost)
 		fd_set fds;
 		int num;
 		struct sockaddr addr;
-		int in_addrlen = sizeof(addr);
+		socklen_t in_addrlen = sizeof(addr);
 		
 		FD_ZERO(&fds);
 		FD_SET(s, &fds);

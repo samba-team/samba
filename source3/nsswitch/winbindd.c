@@ -310,7 +310,8 @@ static void new_connection(int accept_sock)
 {
 	struct sockaddr_un sunaddr;
 	struct winbindd_cli_state *state;
-	int len, sock;
+	socklen_t len;
+	int sock;
 	
 	/* Accept connection */
 	
