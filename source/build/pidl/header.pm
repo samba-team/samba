@@ -17,8 +17,8 @@ sub tabs()
 }
 
 #####################################################################
-# dump a properties list
-sub DumpProperties($)
+# parse a properties list
+sub HeaderProperties($)
 {
     my($props) = shift;
 
@@ -36,8 +36,8 @@ sub DumpProperties($)
 }
 
 #####################################################################
-# dump a structure element
-sub DumpElement($)
+# parse a structure element
+sub HeaderElement($)
 {
     my($element) = shift;
 
@@ -49,9 +49,9 @@ sub DumpElement($)
     }
 
 
-    (defined $element->{PROPERTIES}) && DumpProperties($element->{PROPERTIES});
+    (defined $element->{PROPERTIES}) && HeaderProperties($element->{PROPERTIES});
     $res .= tabs();
-    DumpType($element->{TYPE}, "");
+    HeaderType($element, $element->{TYPE}, "");
     $res .= " ";
     if ($element->{POINTERS}) {
 	    my($n) = $element->{POINTERS};
@@ -72,8 +72,8 @@ sub DumpElement($)
 }
 
 #####################################################################
-# dump a struct
-sub DumpStruct($$)
+# parse a struct
+sub HeaderStruct($$)
 {
     my($struct) = shift;
     my($name) = shift;
@@ -81,7 +81,7 @@ sub DumpStruct($$)
     $tab_depth++;
     if (defined $struct->{ELEMENTS}) {
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-	    DumpElement($e);
+	    HeaderElement($e);
 	}
     }
     $tab_depth--;
@@ -90,76 +90,79 @@ sub DumpStruct($$)
 
 
 #####################################################################
-# dump a union element
-sub DumpUnionElement($)
+# parse a union element
+sub HeaderUnionElement($)
 {
     my($element) = shift;
     $res .= "/* [case($element->{CASE})] */ ";
-    DumpElement($element->{DATA});
+    HeaderElement($element->{DATA});
 }
 
 #####################################################################
-# dump a union
-sub DumpUnion($$)
+# parse a union
+sub HeaderUnion($$)
 {
     my($union) = shift;
     my($name) = shift;
-    (defined $union->{PROPERTIES}) && DumpProperties($union->{PROPERTIES});
+    (defined $union->{PROPERTIES}) && HeaderProperties($union->{PROPERTIES});
     $res .= "union $name {\n";
     foreach my $e (@{$union->{DATA}}) {
-	DumpUnionElement($e);
+	HeaderUnionElement($e);
     }
     $res .= "}";
 }
 
 #####################################################################
-# dump a type
-sub DumpType($$)
+# parse a type
+sub HeaderType($$$)
 {
-    my($data) = shift;
-    my($name) = shift;
-    if (ref($data) eq "HASH") {
-	($data->{TYPE} eq "STRUCT") &&
-	    DumpStruct($data, $name);
-	($data->{TYPE} eq "UNION") &&
-	    DumpUnion($data, $name);
-	return;
-    }
-    if ($data =~ "unistr") {
-	    $res .= "const char";
-    } elsif (util::is_scalar_type($data)) {
-	    $res .= "$data";
-    } else {
-	    $res .= "struct $data";
-    }
+	my $e = shift;
+	my($data) = shift;
+	my($name) = shift;
+	if (ref($data) eq "HASH") {
+		($data->{TYPE} eq "STRUCT") &&
+		    HeaderStruct($data, $name);
+		($data->{TYPE} eq "UNION") &&
+		    HeaderUnion($data, $name);
+		return;
+	}
+	if ($data =~ "unistr") {
+		$res .= "const char";
+	} elsif (util::is_scalar_type($data)) {
+		$res .= "$data";
+	} elsif (util::has_property($e, "switch_is")) {
+		$res .= "union $data";
+	} else {
+		$res .= "struct $data";
+	}
 }
 
 #####################################################################
-# dump a typedef
-sub DumpTypedef($)
+# parse a typedef
+sub HeaderTypedef($)
 {
     my($typedef) = shift;
-    DumpType($typedef->{DATA}, $typedef->{NAME});
+    HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME});
     $res .= ";\n\n";
 }
 
 #####################################################################
-# dump a function
-sub DumpFunctionInOut($$)
+# parse a function
+sub HeaderFunctionInOut($$)
 {
     my($fn) = shift;
     my($prop) = shift;
     foreach my $e (@{$fn->{DATA}}) {
 	    if (util::has_property($e, $prop)) {
-		    DumpElement($e);
+		    HeaderElement($e);
 	    }
     }
 }
 
 
 #####################################################################
-# dump a function
-sub DumpFunction($)
+# parse a function
+sub HeaderFunction($)
 {
     my($fn) = shift;
     $res .= "struct $fn->{NAME} {\n";
@@ -167,14 +170,14 @@ sub DumpFunction($)
     tabs();
     $res .= "struct {\n";
     $tab_depth++;
-    DumpFunctionInOut($fn, "in");
+    HeaderFunctionInOut($fn, "in");
     $tab_depth--;
     tabs();
     $res .= "} in;\n\n";
     tabs();
     $res .= "struct {\n";
     $tab_depth++;
-    DumpFunctionInOut($fn, "out");
+    HeaderFunctionInOut($fn, "out");
     if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
 	    tabs();
 	    $res .= "$fn->{RETURN_TYPE} result;\n";
@@ -187,16 +190,16 @@ sub DumpFunction($)
 }
 
 #####################################################################
-# dump the interface definitions
-sub DumpInterface($)
+# parse the interface definitions
+sub HeaderInterface($)
 {
     my($interface) = shift;
     my($data) = $interface->{DATA};
     foreach my $d (@{$data}) {
 	($d->{TYPE} eq "TYPEDEF") &&
-	    DumpTypedef($d);
+	    HeaderTypedef($d);
 	($d->{TYPE} eq "FUNCTION") && 
-	    DumpFunction($d);
+	    HeaderFunction($d);
     }
 
     my $count = 0;
@@ -212,8 +215,8 @@ sub DumpInterface($)
 
 
 #####################################################################
-# dump a parsed IDL structure back into an IDL file
-sub Dump($)
+# parse a parsed IDL into a C header
+sub Parse($)
 {
     my($idl) = shift;
     $tab_depth = 0;
@@ -221,7 +224,7 @@ sub Dump($)
     $res = "/* header auto-generated by pidl */\n\n";
     foreach my $x (@{$idl}) {
 	($x->{TYPE} eq "INTERFACE") && 
-	    DumpInterface($x);
+	    HeaderInterface($x);
     }
     return $res;
 }

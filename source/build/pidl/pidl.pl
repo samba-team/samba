@@ -123,7 +123,7 @@ if ($opt_header) {
     my($idl) = util::LoadStructure($pidl_file);
     my($header) = util::ChangeExtension($opt_output, "h");
     print "Generating $header\n";
-    util::FileSave($header, IdlHeader::Dump($idl));
+    util::FileSave($header, IdlHeader::Parse($idl));
 }
 
 if ($opt_parser) {
