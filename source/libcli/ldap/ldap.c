@@ -351,11 +351,8 @@ static BOOL ldap_push_filter(ASN1_DATA *data, struct ldap_parse_tree *tree)
 	return !data->has_error;
 }
 
-static void ldap_encode_response(enum ldap_request_tag tag,
-				 struct ldap_Result *result,
-				 ASN1_DATA *data)
+static void ldap_encode_response(ASN1_DATA *data, struct ldap_Result *result)
 {
-	asn1_push_tag(data, ASN1_APPLICATION(tag));
 	asn1_write_enumerated(data, result->resultcode);
 	asn1_write_OctetString(data, result->dn,
 			       (result->dn) ? strlen(result->dn) : 0);
@@ -365,7 +362,6 @@ static void ldap_encode_response(enum ldap_request_tag tag,
 	if (result->referral != NULL)
 		asn1_write_OctetString(data, result->referral,
 				       strlen(result->referral));
-	asn1_pop_tag(data);
 }
 
 BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
@@ -380,7 +376,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	switch (msg->type) {
 	case LDAP_TAG_BindRequest: {
 		struct ldap_BindRequest *r = &msg->r.BindRequest;
-		asn1_push_tag(&data, ASN1_APPLICATION(LDAP_TAG_BindRequest));
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		asn1_write_Integer(&data, r->version);
 		asn1_write_OctetString(&data, r->dn,
 				       (r->dn != NULL) ? strlen(r->dn) : 0);
@@ -388,14 +384,14 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		switch (r->mechanism) {
 		case LDAP_AUTH_MECH_SIMPLE:
 			/* context, primitive */
-			asn1_push_tag(&data, r->mechanism | 0x80);
+			asn1_push_tag(&data, ASN1_CONTEXT_SIMPLE(0));
 			asn1_write(&data, r->creds.password,
 				   strlen(r->creds.password));
 			asn1_pop_tag(&data);
 			break;
 		case LDAP_AUTH_MECH_SASL:
 			/* context, constructed */
-			asn1_push_tag(&data, r->mechanism | 0xa0);
+			asn1_push_tag(&data, ASN1_CONTEXT(3));
 			asn1_write_OctetString(&data, r->creds.SASL.mechanism,
 					       strlen(r->creds.SASL.mechanism));
 			asn1_write_OctetString(&data, r->creds.SASL.secblob.data,
@@ -412,7 +408,12 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	}
 	case LDAP_TAG_BindResponse: {
 		struct ldap_BindResponse *r = &msg->r.BindResponse;
-		ldap_encode_response(msg->type, &r->response, &data);
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
+		ldap_encode_response(&data, &r->response);
+		if (r->SASL.secblob.length > 0) {
+			asn1_write_ContextSimple(&data, 7, &r->SASL.secblob);
+		}
+		asn1_pop_tag(&data);
 		break;
 	}
 	case LDAP_TAG_UnbindRequest: {
@@ -421,7 +422,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	}
 	case LDAP_TAG_SearchRequest: {
 		struct ldap_SearchRequest *r = &msg->r.SearchRequest;
-		asn1_push_tag(&data, ASN1_APPLICATION(LDAP_TAG_SearchRequest));
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		asn1_write_OctetString(&data, r->basedn, strlen(r->basedn));
 		asn1_write_enumerated(&data, r->scope);
 		asn1_write_enumerated(&data, r->deref);
@@ -458,7 +459,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	}
 	case LDAP_TAG_SearchResultEntry: {
 		struct ldap_SearchResEntry *r = &msg->r.SearchResultEntry;
-		asn1_push_tag(&data, ASN1_APPLICATION(LDAP_TAG_SearchResultEntry));
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		asn1_write_OctetString(&data, r->dn, strlen(r->dn));
 		asn1_push_tag(&data, ASN1_SEQUENCE(0));
 		for (i=0; i<r->num_attributes; i++) {
@@ -481,12 +482,14 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	}
 	case LDAP_TAG_SearchResultDone: {
 		struct ldap_Result *r = &msg->r.SearchResultDone;
-		ldap_encode_response(msg->type, r, &data);
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
+		ldap_encode_response(&data, r);
+		asn1_pop_tag(&data);
 		break;
 	}
 	case LDAP_TAG_ModifyRequest: {
 		struct ldap_ModifyRequest *r = &msg->r.ModifyRequest;
-		asn1_push_tag(&data, ASN1_APPLICATION(LDAP_TAG_ModifyRequest));
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		asn1_write_OctetString(&data, r->dn, strlen(r->dn));
 		asn1_push_tag(&data, ASN1_SEQUENCE(0));
 
@@ -515,12 +518,14 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	}
 	case LDAP_TAG_ModifyResponse: {
 		struct ldap_Result *r = &msg->r.ModifyResponse;
-		ldap_encode_response(msg->type, r, &data);
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
+		ldap_encode_response(&data, r);
+		asn1_pop_tag(&data);
 		break;
 	}
 	case LDAP_TAG_AddRequest: {
 		struct ldap_AddRequest *r = &msg->r.AddRequest;
-		asn1_push_tag(&data, ASN1_APPLICATION(LDAP_TAG_AddRequest));
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		asn1_write_OctetString(&data, r->dn, strlen(r->dn));
 		asn1_push_tag(&data, ASN1_SEQUENCE(0));
 
@@ -544,26 +549,28 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	}
 	case LDAP_TAG_AddResponse: {
 		struct ldap_Result *r = &msg->r.AddResponse;
-		ldap_encode_response(msg->type, r, &data);
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
+		ldap_encode_response(&data, r);
+		asn1_pop_tag(&data);
 		break;
 	}
 	case LDAP_TAG_DelRequest: {
 		struct ldap_DelRequest *r = &msg->r.DelRequest;
-		asn1_push_tag(&data,
-			      ASN1_APPLICATION_SIMPLE(LDAP_TAG_DelRequest));
+		asn1_push_tag(&data, ASN1_APPLICATION_SIMPLE(msg->type));
 		asn1_write(&data, r->dn, strlen(r->dn));
 		asn1_pop_tag(&data);
 		break;
 	}
 	case LDAP_TAG_DelResponse: {
 		struct ldap_Result *r = &msg->r.DelResponse;
-		ldap_encode_response(msg->type, r, &data);
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
+		ldap_encode_response(&data, r);
+		asn1_pop_tag(&data);
 		break;
 	}
 	case LDAP_TAG_ModifyDNRequest: {
 		struct ldap_ModifyDNRequest *r = &msg->r.ModifyDNRequest;
-		asn1_push_tag(&data,
-			      ASN1_APPLICATION(LDAP_TAG_ModifyDNRequest));
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		asn1_write_OctetString(&data, r->dn, strlen(r->dn));
 		asn1_write_OctetString(&data, r->newrdn, strlen(r->newrdn));
 		asn1_write_BOOLEAN(&data, r->deleteolddn);
@@ -578,13 +585,14 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	}
 	case LDAP_TAG_ModifyDNResponse: {
 		struct ldap_Result *r = &msg->r.ModifyDNResponse;
-		ldap_encode_response(msg->type, r, &data);
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
+		ldap_encode_response(&data, r);
+		asn1_pop_tag(&data);
 		break;
 	}
 	case LDAP_TAG_CompareRequest: {
 		struct ldap_CompareRequest *r = &msg->r.CompareRequest;
-		asn1_push_tag(&data,
-			      ASN1_APPLICATION(LDAP_TAG_CompareRequest));
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		asn1_write_OctetString(&data, r->dn, strlen(r->dn));
 		asn1_push_tag(&data, ASN1_SEQUENCE(0));
 		asn1_write_OctetString(&data, r->attribute,
@@ -597,13 +605,14 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	}
 	case LDAP_TAG_CompareResponse: {
 		struct ldap_Result *r = &msg->r.ModifyDNResponse;
-		ldap_encode_response(msg->type, r, &data);
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
+		ldap_encode_response(&data, r);
+		asn1_pop_tag(&data);
 		break;
 	}
 	case LDAP_TAG_AbandonRequest: {
 		struct ldap_AbandonRequest *r = &msg->r.AbandonRequest;
-		asn1_push_tag(&data,
-			      ASN1_APPLICATION_SIMPLE(LDAP_TAG_AbandonRequest));
+		asn1_push_tag(&data, ASN1_APPLICATION_SIMPLE(msg->type));
 		asn1_write_implicit_Integer(&data, r->messageid);
 		asn1_pop_tag(&data);
 		break;
@@ -614,7 +623,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	}
 	case LDAP_TAG_ExtendedRequest: {
 		struct ldap_ExtendedRequest *r = &msg->r.ExtendedRequest;
-		asn1_push_tag(&data, ASN1_APPLICATION(LDAP_TAG_ExtendedRequest));
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		asn1_push_tag(&data, ASN1_CONTEXT_SIMPLE(0));
 		asn1_write(&data, r->oid, strlen(r->oid));
 		asn1_pop_tag(&data);
@@ -626,7 +635,9 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	}
 	case LDAP_TAG_ExtendedResponse: {
 		struct ldap_ExtendedResponse *r = &msg->r.ExtendedResponse;
-		ldap_encode_response(msg->type, &r->response, &data);
+		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
+		ldap_encode_response(&data, &r->response);
+		asn1_pop_tag(&data);
 		break;
 	}
 	default:
@@ -662,10 +673,8 @@ static BOOL asn1_read_OctetString_talloc(TALLOC_CTX *mem_ctx,
 
 static void ldap_decode_response(TALLOC_CTX *mem_ctx,
 				 ASN1_DATA *data,
-				 enum ldap_request_tag tag,
 				 struct ldap_Result *result)
 {
-	asn1_start_tag(data, ASN1_APPLICATION(tag));
 	asn1_read_enumerated(data, &result->resultcode);
 	asn1_read_OctetString_talloc(mem_ctx, data, &result->dn);
 	asn1_read_OctetString_talloc(mem_ctx, data, &result->errormessage);
@@ -676,7 +685,6 @@ static void ldap_decode_response(TALLOC_CTX *mem_ctx,
 	} else {
 		result->referral = NULL;
 	}
-	asn1_end_tag(data);
 }
 
 static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, ASN1_DATA *data,
@@ -834,20 +842,29 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	case ASN1_APPLICATION(LDAP_TAG_BindRequest): {
 		struct ldap_BindRequest *r = &msg->r.BindRequest;
 		msg->type = LDAP_TAG_BindRequest;
-		asn1_start_tag(data, ASN1_APPLICATION(LDAP_TAG_BindRequest));
+		asn1_start_tag(data, tag);
 		asn1_read_Integer(data, &r->version);
 		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->dn);
-		if (asn1_peek_tag(data, 0x80)) {
+		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(0))) {
 			int pwlen;
 			r->creds.password = "";
-			/* Mechanism 0 (SIMPLE) */
-			asn1_start_tag(data, 0x80);
+			r->mechanism = LDAP_AUTH_MECH_SIMPLE;
+			asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(0));
 			pwlen = asn1_tag_remaining(data);
 			if (pwlen != 0) {
 				char *pw = talloc(msg->mem_ctx, pwlen+1);
 				asn1_read(data, pw, pwlen);
 				pw[pwlen] = '\0';
 				r->creds.password = pw;
+			}
+			asn1_end_tag(data);
+		} else if (asn1_peek_tag(data, ASN1_CONTEXT(3))){
+			asn1_start_tag(data, ASN1_CONTEXT(3));
+			r->mechanism = LDAP_AUTH_MECH_SASL;
+			asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->creds.SASL.mechanism);
+			asn1_read_OctetString(data, &r->creds.SASL.secblob);
+			if (r->creds.SASL.secblob.data) {
+				talloc_steal(msg->mem_ctx, r->creds.SASL.secblob.data);
 			}
 			asn1_end_tag(data);
 		}
@@ -858,17 +875,8 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	case ASN1_APPLICATION(LDAP_TAG_BindResponse): {
 		struct ldap_BindResponse *r = &msg->r.BindResponse;
 		msg->type = LDAP_TAG_BindResponse;
-		asn1_start_tag(data, ASN1_APPLICATION(LDAP_TAG_BindResponse));
-		asn1_read_enumerated(data, &r->response.resultcode);
-		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->response.dn);
-		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->response.errormessage);
-		if (asn1_peek_tag(data, ASN1_CONTEXT(3))) {
-			asn1_start_tag(data, ASN1_CONTEXT(3));
-			asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->response.referral);
-			asn1_end_tag(data);
-		} else {
-			r->response.referral = NULL;
-		}
+		asn1_start_tag(data, tag);
+		ldap_decode_response(msg->mem_ctx, data, &r->response);
 		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(7))) {
 			DATA_BLOB tmp_blob = data_blob(NULL, 0);
 			asn1_read_ContextSimple(data, 7, &tmp_blob);
@@ -883,7 +891,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 
 	case ASN1_APPLICATION_SIMPLE(LDAP_TAG_UnbindRequest): {
 		msg->type = LDAP_TAG_UnbindRequest;
-		asn1_start_tag(data, ASN1_APPLICATION_SIMPLE(LDAP_TAG_UnbindRequest));
+		asn1_start_tag(data, tag);
 		asn1_end_tag(data);
 		break;
 	}
@@ -891,7 +899,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	case ASN1_APPLICATION(LDAP_TAG_SearchRequest): {
 		struct ldap_SearchRequest *r = &msg->r.SearchRequest;
 		msg->type = LDAP_TAG_SearchRequest;
-		asn1_start_tag(data, ASN1_APPLICATION(LDAP_TAG_SearchRequest));
+		asn1_start_tag(data, tag);
 		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->basedn);
 		asn1_read_enumerated(data, (int *)&(r->scope));
 		asn1_read_enumerated(data, (int *)&(r->deref));
@@ -929,8 +937,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 		msg->type = LDAP_TAG_SearchResultEntry;
 		r->attributes = NULL;
 		r->num_attributes = 0;
-		asn1_start_tag(data,
-			       ASN1_APPLICATION(LDAP_TAG_SearchResultEntry));
+		asn1_start_tag(data, tag);
 		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->dn);
 		ldap_decode_attribs(msg->mem_ctx, data, &r->attributes,
 				    &r->num_attributes);
@@ -941,8 +948,9 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	case ASN1_APPLICATION(LDAP_TAG_SearchResultDone): {
 		struct ldap_Result *r = &msg->r.SearchResultDone;
 		msg->type = LDAP_TAG_SearchResultDone;
-		ldap_decode_response(msg->mem_ctx, data,
-				     LDAP_TAG_SearchResultDone, r);
+		asn1_start_tag(data, tag);
+		ldap_decode_response(msg->mem_ctx, data, r);
+		asn1_end_tag(data);
 		break;
 	}
 
@@ -982,15 +990,16 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	case ASN1_APPLICATION(LDAP_TAG_ModifyResponse): {
 		struct ldap_Result *r = &msg->r.ModifyResponse;
 		msg->type = LDAP_TAG_ModifyResponse;
-		ldap_decode_response(msg->mem_ctx, data,
-				     LDAP_TAG_ModifyResponse, r);
+		asn1_start_tag(data, tag);
+		ldap_decode_response(msg->mem_ctx, data, r);
+		asn1_end_tag(data);
 		break;
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_AddRequest): {
 		struct ldap_AddRequest *r = &msg->r.AddRequest;
 		msg->type = LDAP_TAG_AddRequest;
-		asn1_start_tag(data, ASN1_APPLICATION(LDAP_TAG_AddRequest));
+		asn1_start_tag(data, tag);
 		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->dn);
 
 		r->attributes = NULL;
@@ -1005,8 +1014,9 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	case ASN1_APPLICATION(LDAP_TAG_AddResponse): {
 		struct ldap_Result *r = &msg->r.AddResponse;
 		msg->type = LDAP_TAG_AddResponse;
-		ldap_decode_response(msg->mem_ctx, data,
-				     LDAP_TAG_AddResponse, r);
+		asn1_start_tag(data, tag);
+		ldap_decode_response(msg->mem_ctx, data, r);
+		asn1_end_tag(data);
 		break;
 	}
 
@@ -1031,8 +1041,9 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	case ASN1_APPLICATION(LDAP_TAG_DelResponse): {
 		struct ldap_Result *r = &msg->r.DelResponse;
 		msg->type = LDAP_TAG_DelResponse;
-		ldap_decode_response(msg->mem_ctx, data,
-				     LDAP_TAG_DelResponse, r);
+		asn1_start_tag(data, tag);
+		ldap_decode_response(msg->mem_ctx, data, r);
+		asn1_end_tag(data);
 		break;
 	}
 
@@ -1065,8 +1076,9 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	case ASN1_APPLICATION(LDAP_TAG_ModifyDNResponse): {
 		struct ldap_Result *r = &msg->r.ModifyDNResponse;
 		msg->type = LDAP_TAG_ModifyDNResponse;
-		ldap_decode_response(msg->mem_ctx, data,
-				     LDAP_TAG_ModifyDNResponse, r);
+		asn1_start_tag(data, tag);
+		ldap_decode_response(msg->mem_ctx, data, r);
+		asn1_end_tag(data);
 		break;
 	}
 
@@ -1090,16 +1102,16 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	case ASN1_APPLICATION(LDAP_TAG_CompareResponse): {
 		struct ldap_Result *r = &msg->r.CompareResponse;
 		msg->type = LDAP_TAG_CompareResponse;
-		ldap_decode_response(msg->mem_ctx, data,
-				     LDAP_TAG_CompareResponse, r);
+		asn1_start_tag(data, tag);
+		ldap_decode_response(msg->mem_ctx, data, r);
+		asn1_end_tag(data);
 		break;
 	}
 
 	case ASN1_APPLICATION_SIMPLE(LDAP_TAG_AbandonRequest): {
 		struct ldap_AbandonRequest *r = &msg->r.AbandonRequest;
 		msg->type = LDAP_TAG_AbandonRequest;
-		asn1_start_tag(data,
-				ASN1_APPLICATION_SIMPLE(LDAP_TAG_AbandonRequest));
+		asn1_start_tag(data, tag);
 		asn1_read_implicit_Integer(data, &r->messageid);
 		asn1_end_tag(data);
 		break;
@@ -1110,7 +1122,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 		DATA_BLOB tmp_blob = data_blob(NULL, 0);
 
 		msg->type = LDAP_TAG_ExtendedRequest;
-		asn1_start_tag(data,ASN1_APPLICATION(LDAP_TAG_ExtendedRequest));
+		asn1_start_tag(data,tag);
 		if (!asn1_read_ContextSimple(data, 0, &tmp_blob)) {
 			return False;
 		}
@@ -1135,14 +1147,15 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	case ASN1_APPLICATION(LDAP_TAG_ExtendedResponse): {
 		struct ldap_ExtendedResponse *r = &msg->r.ExtendedResponse;
 		msg->type = LDAP_TAG_ExtendedResponse;
-		ldap_decode_response(msg->mem_ctx, data,
-				     LDAP_TAG_ExtendedResponse, &r->response);
+		asn1_start_tag(data, tag);		
+		ldap_decode_response(msg->mem_ctx, data, &r->response);
 		/* I have to come across an operation that actually sends
 		 * something back to really see what's going on. The currently
 		 * needed pwdchange does not send anything back. */
 		r->name = NULL;
 		r->value.data = NULL;
 		r->value.length = 0;
+		asn1_end_tag(data);
 		break;
 	}
 	default: 
