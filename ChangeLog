@@ -1,5 +1,18 @@
 Fri Aug 15 00:09:37 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/45/get_ad_tkt.c: Kerberos 4 get_ad_tkt using
+ 	krb524_convert_creds_kdc.
+
+	* lib/krb5/convert_creds.c: Implementation of
+ 	krb524_convert_creds_kdc.
+
+	* lib/asn1/k5.asn1: Make kdc-req-body.till OPTIONAL
+
+	* kdc/524.c: A somewhat working 524-protocol module.
+
+	* kdc/kerberos4.c: Add version 4 ticket encoding and encryption
+ 	functions.
+
 	* lib/krb5/context.c: Fix kdc_timeout.
 
 	* lib/hdb/{ndbm,db}.c: Free name in close.
