@@ -233,12 +233,16 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 						  acct_name, ACB_WSTRUST,
 						  unknown, &user_pol, 
 						  &user_rid);
+	}
+
+
+	if (NT_STATUS_IS_OK(result)) {
 
 		/* We *must* do this.... don't ask... */
-
+	  
 		CHECK_RPC_ERR_DEBUG(cli_samr_close(&cli, mem_ctx, &user_pol), ("error closing user policy"));
 		result = NT_STATUS_USER_EXISTS;
-	}	
+	}
 
 	if (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_USER_EXISTS)) {
 		uint32 num_rids, *name_types, *user_rids;
