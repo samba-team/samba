@@ -99,12 +99,16 @@ static void do_dirrand(char *name, unsigned char *buf, int buf_len)
 
 /**************************************************************
  Try and get a good random number seed. Try a number of
- different factors. Firstly, try /dev/random and try and
+ different factors. Firstly, try /dev/urandom and try and
  read from this. If this fails iterate through /tmp and
  /dev and XOR all the file timestamps. Next add in
  a hash of the contents of /etc/shadow and the smb passwd
  file and a combination of pid and time of day (yes I know this
  sucks :-). Finally md4 the result.
+
+ We use /dev/urandom as a read of /dev/random can block if
+ the entropy pool dries up. This leads clients to timeout
+ or be very slow on connect.
 
  The result goes in a 16 byte buffer passed from the caller
 **************************************************************/
@@ -121,21 +125,21 @@ static uint32 do_reseed(unsigned char *md4_outbuf)
 
   memset(md4_inbuf, '\0', sizeof(md4_inbuf));
 
-  fd = sys_open( "/dev/random", O_RDONLY,0);
+  fd = sys_open( "/dev/urandom", O_RDONLY,0);
   if(fd >= 0) {
     /* 
-     * We can use /dev/random !
+     * We can use /dev/urandom !
      */
     if(read(fd, md4_inbuf, 40) == 40) {
       got_random = True;
-      DEBUG(10,("do_reseed: got 40 bytes from /dev/random.\n"));
+      DEBUG(10,("do_reseed: got 40 bytes from /dev/urandom.\n"));
     }
     close(fd);
   }
 
   if(!got_random) {
     /*
-     * /dev/random failed - try /tmp and /dev for timestamps.
+     * /dev/urandom failed - try /tmp and /dev for timestamps.
      */
     do_dirrand("/tmp", md4_inbuf, sizeof(md4_inbuf));
     do_dirrand("/dev", md4_inbuf, sizeof(md4_inbuf));
