@@ -31,7 +31,7 @@ Region                             Number of entries
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
-    EUROPE                                       31
+    EUROPE                                       32
     MIDDLE EAST                                   1
 
 AFRICA
@@ -1458,6 +1458,19 @@ URL: http://space.tin.it/internet/dsbragio
 We provide Samba support along with generic Linux support. Specifically we
 have implemented a powerful Fax servicing system for Samba with Win95/NT
 clients. Details could be found at our URL, currently, only in Italian.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ABANO TERME (PADOVA) - ITALY
+
+PROFUSO di Zanetti Giuseppe - Studio di Consulenza Informatica
+Abano Terme (PD) - ITALY
+profuso@profuso.com
+http://www.profuso.com/
+Phone: ++39 49 8059070 / ++39 348 2220811
+
+We provide all possible support for Linux, UNIX,
+development, security and system integration.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
