@@ -161,7 +161,7 @@ void sync_browse_lists(struct work_record *work,
 	DEBUG(2,("Initiating browse sync for %s to %s(%s)\n",
 		 work->work_group, name, inet_ntoa(ip)));
 
-	fp = fopen(s->fname,"w");
+	fp = sys_fopen(s->fname,"w");
 	if (!fp) _exit(1);	
 
 	sync_child(name, nm_type, work->work_group, ip, local, servers,
@@ -239,7 +239,7 @@ static void complete_sync(struct sync_record *s)
 	char *ptr;
 	int count=0;
 
-	f = fopen(s->fname,"r");
+	f = sys_fopen(s->fname,"r");
 
 	if (!f) return;
 	

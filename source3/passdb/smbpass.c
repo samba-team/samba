@@ -118,14 +118,14 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 		 * As 256 is shorter than a pstring we don't need to check
 		 * length here - if this ever changes....
 		 */
-		p = strncpyn(user_name, linebuf, sizeof(user_name), ':');
+		p = (unsigned char *)strncpyn(user_name, linebuf, sizeof(user_name), ':');
 
 		/* Go past ':' */
 		p++;
 
 		/* Get smb uid. */
 
-		p = Atoic((char *) p, &uidval, ":");
+		p = (unsigned char *)Atoic((char *) p, &uidval, ":");
 
 		pw_buf.smb_name = user_name;
 		pw_buf.smb_userid = uidval;
@@ -218,7 +218,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 			if (*p == ':')
 			{
 				p++;
-				pw_buf.pass_last_set_time = pwdb_get_last_set_time(p);
+				pw_buf.pass_last_set_time = pwdb_get_last_set_time((char *)p);
 			}
 		}
 		else
@@ -522,7 +522,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
   }
   DEBUG(10, ("mod_smbfilepwd_entry: opening file %s\n", pfile));
 
-  fp = fopen(pfile, "r+");
+  fp = sys_fopen(pfile, "r+");
 
   if (fp == NULL) {
     DEBUG(0, ("mod_smbfilepwd_entry: unable to open file %s\n", pfile));

@@ -191,14 +191,14 @@ static BOOL user_is_member(char *user_name, LOCAL_GRP_MEMBER *mem, int num_mem)
  *************************************************************************/
 BOOL iterate_getuseraliasnam(char *user_name, LOCAL_GRP **alss, int *num_alss)
 {
-	LOCAL_GRP *als;
+	LOCAL_GRP *als = NULL;
 	LOCAL_GRP_MEMBER *mem = NULL;
 	int num_mem = 0;
 	void *fp = NULL;
 
 	DEBUG(10, ("search for useralias by name: %s\n", user_name));
 
-	if (user_name == NULL || als == NULL || num_alss == NULL)
+	if (user_name == NULL || alss == NULL || num_alss == NULL)
 	{
 		return False;
 	}
@@ -254,12 +254,12 @@ BOOL iterate_getuseraliasnam(char *user_name, LOCAL_GRP **alss, int *num_alss)
  *************************************************************************/
 BOOL enumdomaliases(LOCAL_GRP **alss, int *num_alss)
 {
-	LOCAL_GRP *als;
+	LOCAL_GRP *als = NULL;
 	void *fp = NULL;
 
 	DEBUG(10, ("enum user aliases\n"));
 
-	if (als == NULL || num_alss == NULL)
+	if (alss == NULL || num_alss == NULL)
 	{
 		return False;
 	}

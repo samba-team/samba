@@ -1059,8 +1059,8 @@ void close_low_fds(void)
   /* try and use up these file descriptors, so silly
      library routines writing to stdout etc won't cause havoc */
   for (i=0;i<3;i++) {
-    fd = open("/dev/null",O_RDWR,0);
-    if (fd < 0) fd = open("/dev/null",O_WRONLY,0);
+    fd = sys_open("/dev/null",O_RDWR,0);
+    if (fd < 0) fd = sys_open("/dev/null",O_WRONLY,0);
     if (fd < 0) {
       DEBUG(0,("Can't open /dev/null\n"));
       return;
@@ -1705,7 +1705,7 @@ void become_daemon(void)
 	setsid();
 #elif defined(TIOCNOTTY)
 	{
-		int i = open("/dev/tty", O_RDWR);
+		int i = sys_open("/dev/tty", O_RDWR, 0);
 		if (i != -1) {
 			ioctl(i, (int) TIOCNOTTY, (char *)0);      
 			close(i);

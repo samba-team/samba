@@ -496,7 +496,7 @@ static void do_get(char *rname,char *lname)
 	if(!strcmp(lname,"-")) {
 		handle = fileno(stdout);
 	} else {
-		handle = open(lname,O_WRONLY|O_CREAT|O_TRUNC,0644);
+		handle = sys_open(lname,O_WRONLY|O_CREAT|O_TRUNC,0644);
 		newhandle = True;
 	}
 	if (handle < 0) {
@@ -818,7 +818,7 @@ static void do_put(char *rname,char *lname)
 		f = stdin;
 		/* size of file is not known */
 	} else {
-		f = fopen(lname,"r");
+		f = sys_fopen(lname,"r");
 	}
 
 	if (!f) {
@@ -982,7 +982,7 @@ static void cmd_mput(void)
 				 "/bin/ls %s > %s",p,tmpname);
 		system(cmd);
 
-		f = fopen(tmpname,"r");
+		f = sys_fopen(tmpname,"r");
 		if (!f) continue;
 		
 		while (!feof(f)) {
@@ -1787,7 +1787,7 @@ static void get_password_file(void)
 		sscanf(p, "%d", &fd);
 		close_it = False;
 	} else if ((p = getenv("PASSWD_FILE")) != NULL) {
-		fd = open(p, O_RDONLY);
+		fd = sys_open(p, O_RDONLY, 0);
 		pstrcpy(spec, p);
 		if (fd < 0) {
 			fprintf(stderr, "Error opening PASSWD_FILE %s: %s\n",

@@ -330,7 +330,7 @@ static void load_name_map(GROUP_TYPE type)
 	 * Load the file.
 	 */
 
-	fp = fopen(map_file,"r");
+	fp = sys_fopen(map_file,"r");
 	if (!fp)
 	{
 		DEBUG(0,("load_name_map: can't open name map %s. Error was %s\n",
@@ -461,7 +461,7 @@ static BOOL map_sid_to_ntname(GROUP_TYPE type, ubi_slList *map_list,
 			{
 				fstrcpy(ntname, gmep->grp.nt_domain);
 			}
-			DEBUG(7,("map_sid_to_ntname: Mapping unix group %s to nt group \%s\%s\n",
+			DEBUG(7,("map_sid_to_ntname: Mapping unix group %s to nt group \\%s\\%s\n",
 			       gmep->grp.unix_name,
 			       gmep->grp.nt_domain, gmep->grp.nt_name ));
 			return True;

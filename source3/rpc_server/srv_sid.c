@@ -69,7 +69,7 @@ DOM_SID global_sid_S_1_3_1;    /* Creator group */
 DOM_SID global_sid_S_1_3_2;    /* Creator owner server */
 DOM_SID global_sid_S_1_3_3;    /* Creator group server */
 
-extern pstring global_myworkgroup;
+extern fstring global_myworkgroup;
 /* extern fstring global_member_dom_name; */
 
 static struct sid_name_map_info
@@ -254,7 +254,7 @@ BOOL generate_sam_sid(void)
 
 	pstrcat(sid_file, "MACHINE.SID");
     
-	if ((fd = open(sid_file, O_RDWR | O_CREAT, 0644)) == -1) {
+	if ((fd = sys_open(sid_file, O_RDWR | O_CREAT, 0644)) == -1) {
 		DEBUG(0,("unable to open or create file %s. Error was %s\n",
 			 sid_file, strerror(errno) ));
 		return False;

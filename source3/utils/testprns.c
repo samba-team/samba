@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
       printf("Usage: testprns printername [printcapfile]\n");
    else
    {
-      dbf = fopen("test.log", "w");
+      dbf = sys_fopen("test.log", "w");
       if (dbf == NULL) {
          printf("Unable to open logfile.\n");
       } else {

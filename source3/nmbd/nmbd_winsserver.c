@@ -157,7 +157,7 @@ BOOL initialise_wins(void)
   pstrcat(fname,"/");
   pstrcat(fname,WINS_LIST);
 
-  if((fp = fopen(fname,"r")) == NULL)
+  if((fp = sys_fopen(fname,"r")) == NULL)
   {
     DEBUG(2,("initialise_wins: Can't open wins database file %s. Error was %s\n",
            fname, strerror(errno) ));
@@ -1555,7 +1555,7 @@ void wins_write_database(BOOL background)
   string_sub(fname,"//", "/");
   slprintf(fnamenew,sizeof(fnamenew),"%s.%u", fname, (unsigned int)getpid());
 
-  if((fp = fopen(fnamenew,"w")) == NULL)
+  if((fp = sys_fopen(fnamenew,"w")) == NULL)
   {
     DEBUG(0,("wins_write_database: Can't open %s. Error was %s\n", fnamenew, strerror(errno)));
     if (background) {

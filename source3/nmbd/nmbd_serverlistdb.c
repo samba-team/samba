@@ -345,7 +345,7 @@ void write_browse_list(time_t t, BOOL force_write)
   pstrcpy(fnamenew,fname);
   pstrcat(fnamenew,".");
  
-  fp = fopen(fnamenew,"w");
+  fp = sys_fopen(fnamenew,"w");
  
   if (!fp)
   {

@@ -1009,7 +1009,7 @@ int get_printqueue(int snum,
 
 	lpq_cache_reset[snum] = False;
 
-	f = fopen(outfile,"r");
+	f = sys_fopen(outfile,"r");
 	if (!f) {
 		return(0);
 	}

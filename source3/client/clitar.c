@@ -1539,7 +1539,7 @@ static int read_inclusion_file(char *filename)
 
   clipn = 0;
   buf[MAXPATHLEN] = '\0'; /* guarantee null-termination */
-  if ((inclusion = fopen(filename, "r")) == NULL) {
+  if ((inclusion = sys_fopen(filename, "r")) == NULL) {
     /* XXX It would be better to include a reason for failure, but without
      * autoconf, it's hard to use strerror, sys_errlist, etc.
      */
@@ -1823,8 +1823,8 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 	}
 	tarhandle=-1;
       } else
-    if ((tar_type=='x' && (tarhandle = open(argv[Optind], O_RDONLY)) == -1)
-	|| (tar_type=='c' && (tarhandle=creat(argv[Optind], 0644)) < 0))
+    if ((tar_type=='x' && (tarhandle = sys_open(argv[Optind], O_RDONLY, 0)) == -1)
+	|| (tar_type=='c' && (tarhandle=sys_creat(argv[Optind], 0644)) < 0))
       {
 	DEBUG(0,("Error opening local file %s - %s\n",
 		 argv[Optind], strerror(errno)));

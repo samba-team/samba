@@ -270,7 +270,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   if ( devno != devno_cached ) {
     devno_cached = devno ;
 #if defined(SUNOS5)
-    if ((fd = fopen(MNTTAB, "r")) == NULL)
+    if ((fd = sys_fopen(MNTTAB, "r")) == NULL)
       return(False) ;
     
     found = False ;
@@ -320,7 +320,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 
 #if defined(SUNOS5)
   DEBUG(5,("disk_quotas: looking for quotas file \"%s\"\n", name));
-  if((file=open(name, O_RDONLY))<0) {
+  if((file=sys_open(name, O_RDONLY,0))<0) {
     setuid(user_id);  /* Restore the original UID status */
     seteuid(euser_id);
     return(False);

@@ -176,14 +176,13 @@ static LOCAL_GRP *getalsfilepwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 
 	pstring linebuf;
 	char  *p;
-	size_t            linebuf_len;
 
 	aldb_init_als(&al_buf);
 
 	/*
 	 * Scan the file, a line at a time and check if the name matches.
 	 */
-	while ((linebuf_len = getfileline(vp, linebuf, sizeof(linebuf))) > 0)
+	while (getfileline(vp, linebuf, sizeof(linebuf)) > 0)
 	{
 		/* get alias name */
 

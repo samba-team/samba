@@ -231,6 +231,62 @@ SMB_OFF_T sys_ftell(FILE *fp)
 }
 
 /*******************************************************************
+ A creat() wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+int sys_creat(const char *path, mode_t mode)
+{
+#if defined(HAVE_CREAT64)
+  return creat64(path, mode);
+#else
+  /*
+   * If creat64 isn't defined then ensure we call a potential open64.
+   * JRA.
+   */
+  return sys_open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
+#endif
+}
+
+/*******************************************************************
+ An open() wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+int sys_open(const char *path, int oflag, mode_t mode)
+{
+#if defined(HAVE_OPEN64)
+  return open64(path, oflag, mode);
+#else
+  return open(path, oflag, mode);
+#endif
+}
+
+/*******************************************************************
+ An fopen() wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+FILE *sys_fopen(const char *path, const char *type)
+{
+#if defined(HAVE_FOPEN64)
+  return fopen64(path, type);
+#else
+  return fopen(path, type);
+#endif
+}
+
+/*******************************************************************
+ An mmap() wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd, SMB_OFF_T offset)
+{
+#if defined(LARGE_SMB_OFF_T) && defined(HAVE_MMAP64)
+  return mmap64(addr, len, prot, flags, fd, offset);
+#else
+  return mmap(addr, len, prot, flags, fd, offset);
+#endif
+}
+
+/*******************************************************************
 just a unlink wrapper that calls dos_to_unix.
 ********************************************************************/
 int dos_unlink(char *fname)
@@ -244,7 +300,7 @@ a simple open() wrapper that calls dos_to_unix.
 ********************************************************************/
 int dos_open(char *fname,int flags,mode_t mode)
 {
-  return(open(dos_to_unix(fname,False),flags,mode));
+  return(sys_open(dos_to_unix(fname,False),flags,mode));
 }
 
 
@@ -345,10 +401,10 @@ static int copy_reg(char *source, const char *dest)
   if (unlink (dest) && errno != ENOENT)
     return 1;
 
-  if((ifd = open (source, O_RDONLY, 0)) < 0)
+  if((ifd = sys_open (source, O_RDONLY, 0)) < 0)
     return 1;
 
-  if((ofd = open (dest, O_WRONLY | O_CREAT | O_TRUNC, 0600)) < 0 )
+  if((ofd = sys_open (dest, O_WRONLY | O_CREAT | O_TRUNC, 0600)) < 0 )
   {
     close (ifd);
     return 1;

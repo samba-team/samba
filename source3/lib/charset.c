@@ -235,7 +235,7 @@ code page file (size=%d).\n", codepage_file_name, (int)size));
      is held in little endian format.
    */
 
-  if((fp = fopen( codepage_file_name, "r")) == NULL)
+  if((fp = sys_fopen( codepage_file_name, "r")) == NULL)
   {
     DEBUG(0,("load_client_codepage: cannot open file %s. Error was %s\n",
               codepage_file_name, strerror(errno)));

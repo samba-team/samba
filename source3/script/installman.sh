@@ -29,7 +29,7 @@ for sect in 1 5 7 8 ; do
  
        if (rm -f $FNAME && touch $FNAME); then
          rm $FNAME
-         if [ x$GROFF = x ] ; then
+         if [ "x$GROFF" = x ] ; then
            cp $s $m              # Copy raw nroff 
          else
            echo "\t$FNAME"       # groff'ing can be slow, give the user

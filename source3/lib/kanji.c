@@ -54,12 +54,12 @@ char *(*multibyte_strtok)(char *, const char *) = (char *(*)(char *, const char 
  * charcnv.c.
  */
 
-static int skip_non_multibyte_char(char);
+static size_t skip_non_multibyte_char(char);
 static BOOL not_multibyte_char_1(char);
 
 char *(*_dos_to_unix)(char *, BOOL) = dos2unix_format;
 char *(*_unix_to_dos)(char *, BOOL) = unix2dos_format;
-int (*_skip_multibyte_char)(char) = skip_non_multibyte_char;
+size_t (*_skip_multibyte_char)(char) = skip_non_multibyte_char;
 BOOL (*is_multibyte_char_1)(char) = not_multibyte_char_1;
 
 #else /* KANJI */
@@ -70,12 +70,12 @@ BOOL (*is_multibyte_char_1)(char) = not_multibyte_char_1;
  */
 
 static char *sj_to_sj(char *from, BOOL overwrite);
-static int skip_kanji_multibyte_char(char);
+static size_t skip_kanji_multibyte_char(char);
 static BOOL is_kanji_multibyte_char_1(char);
 
 char *(*_dos_to_unix)(char *, BOOL) = sj_to_sj;
 char *(*_unix_to_dos)(char *, BOOL) = sj_to_sj;
-int (*_skip_multibyte_char)(char) = skip_kanji_multibyte_char;
+size_t (*_skip_multibyte_char)(char) = skip_kanji_multibyte_char;
 int (*is_multibyte_char_1)(char) = is_kanji_multibyte_char_1;
 
 #endif /* KANJI */
@@ -198,7 +198,7 @@ static const char *sj_strrchr(const char *s, int c)
  Kanji multibyte char skip function.
 *******************************************************************/
    
-static int skip_kanji_multibyte_char(char c)
+static size_t skip_kanji_multibyte_char(char c)
 {
   if(is_shift_jis(c)) {
     return 2;
@@ -364,7 +364,7 @@ static const char *generic_multibyte_strrchr(const char *s, int c)
  Generic multibyte char skip function.
 *******************************************************************/
 
-static int skip_generic_multibyte_char(char c)
+static size_t skip_generic_multibyte_char(char c)
 {
   if( (*is_multibyte_char_1)(c)) {
     return 2;
@@ -1143,7 +1143,7 @@ void interpret_coding_system(char *str)
  Non multibyte char function.
 *******************************************************************/
    
-static int skip_non_multibyte_char(char c)
+static size_t skip_non_multibyte_char(char c)
 {
   return 0;
 }

@@ -211,7 +211,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
   trim_string(fname,"","/");
   pstrcat(fname,"/STATUS..LCK");
 
-  f = fopen(fname,"r");
+  f = sys_fopen(fname,"r");
   if (!f) {
     printf("Couldn't open status file %s\n",fname);
     if (!lp_status(-1))

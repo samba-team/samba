@@ -124,7 +124,7 @@ void status_page(void)
 	pstrcat(fname,"/STATUS..LCK");
 
 
-	f = fopen(fname,"r");
+	f = sys_fopen(fname,"r");
 	if (f) {
 		while (!feof(f)) {
 			if (fread(&crec,sizeof(crec),1,f) != 1)	break;
@@ -157,7 +157,7 @@ void status_page(void)
 
 	printf("<p>\n");
 
-	f = fopen(fname,"r");
+	f = sys_fopen(fname,"r");
 	if (!f) {
 		printf("Couldn't open status file %s\n",fname);
 		if (!lp_status(-1))

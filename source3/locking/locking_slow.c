@@ -165,8 +165,7 @@ static BOOL slow_lock_share_entry(connection_struct *conn,
     {
       SMB_STRUCT_STAT dummy_stat;
 
-      fd = (int)open(fname,read_only?O_RDONLY:(O_RDWR|O_CREAT),
-		     SHARE_FILE_MODE);
+      fd = sys_open(fname,read_only?O_RDONLY:(O_RDWR|O_CREAT), SHARE_FILE_MODE);
 
       if(fd < 0)
       {
@@ -1008,7 +1007,7 @@ static int slow_share_forall(void (*fn)(share_mode_entry *, char *))
 		pstrcat(lname,"/");
 		pstrcat(lname,s);
        
-		fd = open(lname,read_only?O_RDONLY:O_RDWR,0);
+		fd = sys_open(lname,read_only?O_RDONLY:O_RDWR,0);
 		if (fd < 0) {
 			continue;
 		}

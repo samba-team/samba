@@ -56,7 +56,7 @@ static void msg_deliver(void)
   slprintf(s,sizeof(s)-1, "%s/msg.XXXXXX",tmpdir());
   fstrcpy(name,(char *)mktemp(s));
 
-  fd = open(name,O_WRONLY|O_CREAT|O_TRUNC|O_EXCL,0600);
+  fd = sys_open(name,O_WRONLY|O_CREAT|O_TRUNC|O_EXCL,0600);
   if (fd == -1) {
     DEBUG(1,("can't open message file %s\n",name));
     return;

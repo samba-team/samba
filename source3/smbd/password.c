@@ -813,7 +813,7 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
   int plus_allowed = 1;
   char *file_host;
   char *file_user;
-  FILE *fp = fopen(equiv_file, "r");
+  FILE *fp = sys_fopen(equiv_file, "r");
   DEBUG(5, ("check_user_equiv %s %s %s\n", user, remote, equiv_file));
   if (! fp) return False;
   while(fgets(buf, sizeof(buf), fp)) 

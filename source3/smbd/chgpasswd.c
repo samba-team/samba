@@ -65,7 +65,7 @@ static int findpty(char **slave)
 #endif /* !HAVE_GRANTPT */
   
 #if defined(HAVE_GRANTPT)
-  if ((master = open("/dev/ptmx", O_RDWR)) >= 1) {
+  if ((master = sys_open("/dev/ptmx", O_RDWR, 0)) >= 1) {
     grantpt(master);
     unlockpt(master);
     *slave = ptsname(master);
@@ -90,7 +90,7 @@ static int findpty(char **slave)
       DEBUG(3,("pty: try to open %s, line was %s\n", dpname, line ) );
       line[8] = dpname[3];
       line[9] = dpname[4];
-      if ((master = open(line, O_RDWR)) >= 0) {
+      if ((master = sys_open(line, O_RDWR, 0)) >= 0) {
         DEBUG(3,("pty: opened %s\n", line ) );
         line[5] = 't';
         *slave = line;
@@ -133,7 +133,7 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
   }
 
   /* Open slave pty and acquire as new controlling terminal. */
-  if ((slave = open(slavedev, O_RDWR)) < 0) {
+  if ((slave = sys_open(slavedev, O_RDWR, 0)) < 0) {
     DEBUG(3,("More weirdness, could not open %s\n", 
 	     slavedev));
     return(False);

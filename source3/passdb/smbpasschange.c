@@ -93,7 +93,7 @@ account without a valid system user.\n", user_name);
 		FILE *fp;
 		slprintf(msg_str,msg_str_len-1,
 			"smbpasswd file did not exist - attempting to create it.\n");
-		fp = fopen(lp_smb_passwd_file(), "w");
+		fp = sys_fopen(lp_smb_passwd_file(), "w");
 		if (fp) {
 			fprintf(fp, "# Samba SMB password file\n");
 			fclose(fp);
