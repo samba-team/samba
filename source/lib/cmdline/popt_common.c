@@ -373,6 +373,8 @@ static void popt_common_credentials_callback(poptContext con,
 #else
 		cmdline_auth_info.use_kerberos = True;
 		cmdline_auth_info.got_pass = True;
+		lp_set_cmdline("gensec:krb5", "True");
+		lp_set_cmdline("gensec:ms_krb5", "True");
 #endif
 		break;
 

@@ -512,8 +512,13 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 	{
 		char *principal;
 		DATA_BLOB unwrapped_in;
-		DATA_BLOB unwrapped_out;
+		DATA_BLOB unwrapped_out = data_blob(NULL, 0);
 		uint8 tok_id[2];
+
+		if (!in.data) {
+			*out = unwrapped_out;
+			return NT_STATUS_MORE_PROCESSING_REQUIRED;
+		}	
 
 		/* Parse the GSSAPI wrapping, if it's there... (win2k3 allows it to be omited) */
 		if (!gensec_gssapi_parse_krb5_wrap(out_mem_ctx, &in, &unwrapped_in, tok_id)) {
@@ -544,8 +549,11 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 		if (NT_STATUS_IS_OK(nt_status)) {
 			gensec_krb5_state->state_position = GENSEC_KRB5_DONE;
 			/* wrap that up in a nice GSS-API wrapping */
+#ifndef GENSEC_SEND_UNWRAPPED_KRB5
 			*out = gensec_gssapi_gen_krb5_wrap(out_mem_ctx, &unwrapped_out, TOK_ID_KRB_AP_REP);
-
+#else
+			*out = unwrapped_out;
+#endif
 			gensec_krb5_state->peer_principal = talloc_steal(gensec_krb5_state, principal);
 		}
 		return nt_status;

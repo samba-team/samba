@@ -3071,6 +3071,9 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 		lp_do_parameter(-1, "wins server", "127.0.0.1");
 	}
 
+	lp_do_parameter(-1, "gensec:krb5", "False");
+	lp_do_parameter(-1, "gensec:ms_krb5", "False");
+
 	init_iconv();
 
 	return (bRetval);
