@@ -96,7 +96,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 	}
 
 	if (rename(name->full_name, name2->full_name) == -1) {
-		return map_nt_error_from_unix(errno);
+		return pvfs_map_errno(pvfs, errno);
 	}
 
 	name->full_name = talloc_steal(name, name2->full_name);
