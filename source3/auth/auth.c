@@ -25,8 +25,6 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring global_myname;
-
 /****************************************************************************
  Check user is in correct domain if required
 ****************************************************************************/
@@ -63,7 +61,8 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	BOOL done_pam = False;
 	
-	DEBUG(3, ("check_password:  Checking password for smb user %s with the new password interface\n", user_info->smb_username.str));
+	DEBUG(3, ("check_password:  Checking password for smb user %s\\%s@%s with the new password interface\n", 
+		  user_info->smb_username.str, user_info->requested_domain.str, user_info->wksta_name.str));
   	if (!check_domain_match(user_info->smb_username.str, user_info->domain.str)) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
@@ -122,7 +121,8 @@ return True if the password is correct, False otherwise
 ****************************************************************************/
 
 NTSTATUS pass_check_smb_with_chal(char *smb_user, char *unix_user, 
-                                  char *domain, uchar chal[8], 
+                                  char *domain, char* workstation, 
+				  uchar chal[8], 
 				  uchar *lm_pwd, int lm_pwd_len,
 				  uchar *nt_pwd, int nt_pwd_len)
 {
@@ -158,8 +158,8 @@ NTSTATUS pass_check_smb_with_chal(char *smb_user, char *unix_user,
 	user_info.unix_username = unix_username;
 	user_info.smb_username = smb_username;
 
-	user_info.wksta_name.str = client_name();
-	user_info.wksta_name.len = strlen(client_name());
+	wksta_name.str = workstation;
+	wksta_name.len = strlen(workstation);
 
 	user_info.wksta_name = wksta_name;
 
@@ -204,7 +204,8 @@ NTSTATUS pass_check_smb_with_chal(char *smb_user, char *unix_user,
 	return check_password(&user_info, &server_info);
 }
 
-NTSTATUS pass_check_smb(char *smb_user, char *unix_user, char *domain,
+NTSTATUS pass_check_smb(char *smb_user, char *unix_user, 
+			char *domain, char *workstation,
 			uchar *lm_pwd, int lm_pwd_len,
 			uchar *nt_pwd, int nt_pwd_len)
 {
@@ -214,7 +215,8 @@ NTSTATUS pass_check_smb(char *smb_user, char *unix_user, char *domain,
 		generate_random_buffer( chal, 8, False);
 	}
 
-	return pass_check_smb_with_chal(smb_user, unix_user, domain, chal, 
+	return pass_check_smb_with_chal(smb_user, unix_user, 
+					domain, workstation, chal, 
 					lm_pwd, lm_pwd_len,
 					nt_pwd, nt_pwd_len);
 
@@ -227,6 +229,7 @@ return True if the password is correct, False otherwise
 ****************************************************************************/
 BOOL password_ok(char *user, char *password, int pwlen)
 {
+	extern fstring remote_machine;
 
 	/* 
 	 *  This hack must die!  But until I rewrite the rest of samba
@@ -240,11 +243,11 @@ BOOL password_ok(char *user, char *password, int pwlen)
 	
 	/* The password could be either NTLM or plain LM.  Try NTLM first, but fall-through as
 	   required. */
-	if (NT_STATUS_IS_OK(pass_check_smb(user, NULL, lp_workgroup(), NULL, 0, (unsigned char *)password, pwlen))) {
+	if (NT_STATUS_IS_OK(pass_check_smb(user, NULL, remote_machine, lp_workgroup(), NULL, 0, (unsigned char *)password, pwlen))) {
 		return True;
 	}
 
-	if (NT_STATUS_IS_OK(pass_check_smb(user, NULL, lp_workgroup(), (unsigned char *)password, pwlen, NULL, 0))) {
+	if (NT_STATUS_IS_OK(pass_check_smb(user, NULL, remote_machine, lp_workgroup(), (unsigned char *)password, pwlen, NULL, 0))) {
 		return True;
 	}
 

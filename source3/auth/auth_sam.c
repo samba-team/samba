@@ -112,9 +112,9 @@ static BOOL smb_pwd_check_ntlmv2(const uchar *password, size_t pwd_len,
 NTSTATUS smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
 {
 	uint8 *nt_pw, *lm_pw;
-	uint16	acct_ctrl;
-
-	acct_ctrl = pdb_get_acct_ctrl(sampass);
+	uint16	acct_ctrl = pdb_get_acct_ctrl(sampass);
+	char *workstation_list;
+	time_t kickoff_time;
 	
 	/* Quit if the account was disabled. */
 	if(acct_ctrl & ACB_DISABLED) {
@@ -122,6 +122,45 @@ NTSTATUS smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 		return(NT_STATUS_ACCOUNT_DISABLED);
 	}
 
+	/* Test account expire time */
+	
+	kickoff_time = pdb_get_kickoff_time(sampass);
+	if (kickoff_time != (time_t)-1) {
+		if (time(NULL) > kickoff_time) {
+			return NT_STATUS_ACCOUNT_EXPIRED;
+		}
+	}
+		
+	/* Test workstation. Workstation list is comma separated. */
+	
+	workstation_list = strdup(pdb_get_workstations(sampass));
+	
+	if (workstation_list) {
+		if (*workstation_list) {
+			BOOL invalid_ws = True;
+			char *s = workstation_list;
+			
+			fstring tok;
+			
+			while (next_token(&s, tok, ",", sizeof(tok))) {
+				DEBUG(10,("checking for workstation match %s and %s (len=%d)\n",
+					  tok, user_info->wksta_name.str, user_info->wksta_name.len));
+				if(strequal(tok, user_info->wksta_name.str)) {
+					invalid_ws = False;
+					break;
+				}
+			}
+			
+			free(workstation_list);		
+			if (invalid_ws) 
+				return NT_STATUS_INVALID_WORKSTATION;
+		} else {
+			free(workstation_list);
+		}
+	} else {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
 	if (acct_ctrl & ACB_PWNOTREQ) 
 	{
 		if (lp_null_passwords()) 
