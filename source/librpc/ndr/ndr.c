@@ -422,6 +422,49 @@ NTSTATUS ndr_pull_subcontext_union_fn(struct ndr_pull *ndr,
 
 
 /*
+  mark the start of a structure
+*/
+NTSTATUS ndr_pull_struct_start(struct ndr_pull *ndr)
+{
+	struct ndr_ofs_list *ofs;
+	NDR_ALLOC(ndr, ofs);
+	ofs->offset = ndr->offset;
+	ofs->next = ndr->ofs_list;
+	ndr->ofs_list = ofs;
+	return NT_STATUS_OK;
+}
+
+/*
+  mark the end of a structure
+*/
+void ndr_pull_struct_end(struct ndr_pull *ndr)
+{
+	ndr->ofs_list = ndr->ofs_list->next;
+}
+
+/*
+  mark the start of a structure
+*/
+NTSTATUS ndr_push_struct_start(struct ndr_push *ndr)
+{
+	struct ndr_ofs_list *ofs;
+	NDR_ALLOC(ndr, ofs);
+	ofs->offset = ndr->offset;
+	ofs->next = ndr->ofs_list;
+	ndr->ofs_list = ofs;
+	return NT_STATUS_OK;
+}
+
+/*
+  mark the end of a structure
+*/
+void ndr_push_struct_end(struct ndr_push *ndr)
+{
+	ndr->ofs_list = ndr->ofs_list->next;
+}
+
+
+/*
   pull a relative structure
 */
 NTSTATUS ndr_pull_relative(struct ndr_pull *ndr, const void **buf, size_t size, 
@@ -438,7 +481,7 @@ NTSTATUS ndr_pull_relative(struct ndr_pull *ndr, const void **buf, size_t size,
 		return NT_STATUS_OK;
 	}
 	ndr_pull_save(ndr, &save);
-	NDR_CHECK(ndr_pull_set_offset(ndr, ofs));
+	NDR_CHECK(ndr_pull_set_offset(ndr, ofs + ndr->ofs_list->offset));
 	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, ndr->data_size - ndr->offset));
 	if (size == 1) {
 		/* oh what a hack! */
@@ -458,35 +501,34 @@ NTSTATUS ndr_pull_relative(struct ndr_pull *ndr, const void **buf, size_t size,
 NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p, 
 			   NTSTATUS (*fn)(struct ndr_push *, int , const void *))
 {
-	struct ndr_push_save *save;
+	struct ndr_ofs_list *ofs;
 	if (ndr_flags & NDR_SCALARS) {
 		if (!p) {
 			NDR_CHECK(ndr_push_uint32(ndr, 0));
 			return NT_STATUS_OK;
 		}
-		save = talloc(ndr->mem_ctx, sizeof(*save));
-		if (!save) return NT_STATUS_NO_MEMORY;
+		NDR_ALLOC(ndr, ofs);
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		ndr_push_save(ndr, save);
+		ofs->offset = ndr->offset;
 		NDR_CHECK(ndr_push_uint32(ndr, 0xFFFFFFFF));
-		save->next = ndr->relative_list;
-		ndr->relative_list = save;
+		ofs->next = ndr->relative_list;
+		ndr->relative_list = ofs;
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		struct ndr_push_save save2;
+		struct ndr_push_save save;
 		if (!p) {
 			return NT_STATUS_OK;
 		}
-		save = ndr->relative_list;
-		if (!save) {
+		ofs = ndr->relative_list;
+		if (!ofs) {
 			return ndr_push_error(ndr, NDR_ERR_RELATIVE, "Empty relative stack");
 		}
-		ndr->relative_list = save->next;
+		ndr->relative_list = ndr->relative_list->next;
 		NDR_CHECK(ndr_push_align(ndr, 8));
-		ndr_push_save(ndr, &save2);
-		ndr_push_restore(ndr, save);
-		NDR_CHECK(ndr_push_uint32(ndr, save2.offset));
-		ndr_push_restore(ndr, &save2);
+		ndr_push_save(ndr, &save);
+		ndr->offset = ofs->offset;
+		NDR_CHECK(ndr_push_uint32(ndr, save.offset + ndr->ofs_list->offset));
+		ndr_push_restore(ndr, &save);
 		NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
 	}
 	return NT_STATUS_OK;

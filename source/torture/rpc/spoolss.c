@@ -30,14 +30,16 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		uint32 needed = 0;
-		     
+		uint32 buf_size = 0;
+		union spoolss_PrinterEnum *info;
+		int j;
+
 		r.in.flags = 0x02;
 		r.in.server = "";
 		r.in.level = levels[i];
-		r.in.buf = NULL;
-		r.in.offered = needed;
-		r.out.needed = &needed;
+		r.in.buffer = NULL;
+		r.in.buf_size = &buf_size;
+		r.out.buf_size = &buf_size;
 
 		printf("\nTesting EnumPrinters level %u\n", r.in.level);
 
@@ -48,14 +50,10 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			continue;
 		}
 		
-		if (NT_STATUS_V(status) == 0x0000007a) {
-			r.in.buf = talloc(mem_ctx, needed);
-			if (!r.in.buf) {
-				ret = False;
-				continue;
-			}
-			memset(r.in.buf, 0xfe, needed);
-			r.in.offered = needed;
+		if (NT_STATUS_V(status) == ERRinsufficientbuffer) {
+			DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
+			data_blob_clear(&blob);
+			r.in.buffer = &blob;
 			status = dcerpc_spoolss_EnumPrinters(p, mem_ctx, &r);
 		}
 		
@@ -63,8 +61,14 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			printf("EnumPrinters failed - %s\n", nt_errstr(status));
 		}
 
-		if (r.out.info) {
-			NDR_PRINT_UNION_DEBUG(spoolss_PrinterEnum, r.in.level, r.out.info);
+		status = pull_spoolss_PrinterEnumArray(r.out.buffer, mem_ctx, r.in.level, r.out.count, &info);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("EnumPrintersArray parse failed - %s\n", nt_errstr(status));
+		}
+
+		for (j=0;j<r.out.count;j++) {
+			printf("Printer %d\n", j);
+			NDR_PRINT_UNION_DEBUG(spoolss_PrinterEnum, r.in.level, &info[j]);
 		}
 	}
 	

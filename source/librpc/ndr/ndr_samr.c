@@ -41,10 +41,12 @@ NTSTATUS ndr_push_samr_Shutdown(struct ndr_push *ndr, struct samr_Shutdown *r)
 NTSTATUS ndr_push_samr_Name(struct ndr_push *ndr, int ndr_flags, struct samr_Name *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint16(ndr, 2*strlen_m(r->name)));
 	NDR_CHECK(ndr_push_uint16(ndr, r->name_len));
 	NDR_CHECK(ndr_push_ptr(ndr, r->name));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->name) {
@@ -513,6 +515,7 @@ NTSTATUS ndr_pull_samr_Shutdown(struct ndr_pull *ndr, struct samr_Shutdown *r)
 NTSTATUS ndr_pull_samr_Name(struct ndr_pull *ndr, int ndr_flags, struct samr_Name *r)
 {
 	uint32 _ptr_name;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->name_len));
@@ -523,6 +526,7 @@ NTSTATUS ndr_pull_samr_Name(struct ndr_pull *ndr, int ndr_flags, struct samr_Nam
 	} else {
 		r->name = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->name) {
@@ -551,10 +555,12 @@ NTSTATUS ndr_pull_samr_LookupDomain(struct ndr_pull *ndr, struct samr_LookupDoma
 
 NTSTATUS ndr_pull_samr_SamEntry(struct ndr_pull *ndr, int ndr_flags, struct samr_SamEntry *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->idx));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->name));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->name));
@@ -565,6 +571,7 @@ done:
 NTSTATUS ndr_pull_samr_SamArray(struct ndr_pull *ndr, int ndr_flags, struct samr_SamArray *r)
 {
 	uint32 _ptr_entries;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
@@ -574,6 +581,7 @@ NTSTATUS ndr_pull_samr_SamArray(struct ndr_pull *ndr, int ndr_flags, struct samr
 	} else {
 		r->entries = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->entries) {
@@ -620,6 +628,7 @@ NTSTATUS ndr_pull_samr_OpenDomain(struct ndr_pull *ndr, struct samr_OpenDomain *
 
 NTSTATUS ndr_pull_samr_DomInfo1(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo1 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->min_length_password));
@@ -627,6 +636,7 @@ NTSTATUS ndr_pull_samr_DomInfo1(struct ndr_pull *ndr, int ndr_flags, struct samr
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->flag));
 	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->expire));
 	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->min_passwordage));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -635,6 +645,7 @@ done:
 
 NTSTATUS ndr_pull_samr_DomInfo2(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo2 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->force_logoff_time));
@@ -648,6 +659,7 @@ NTSTATUS ndr_pull_samr_DomInfo2(struct ndr_pull *ndr, int ndr_flags, struct samr
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_users));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_groups));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_aliases));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->unknown1));
@@ -659,9 +671,11 @@ done:
 
 NTSTATUS ndr_pull_samr_DomInfo3(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo3 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->force_logoff_time));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -670,9 +684,11 @@ done:
 
 NTSTATUS ndr_pull_samr_DomInfo4(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo4 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->unknown));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->unknown));
@@ -682,9 +698,11 @@ done:
 
 NTSTATUS ndr_pull_samr_DomInfo5(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo5 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->domain));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->domain));
@@ -694,9 +712,11 @@ done:
 
 NTSTATUS ndr_pull_samr_DomInfo6(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo6 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->primary));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->primary));
@@ -706,9 +726,11 @@ done:
 
 NTSTATUS ndr_pull_samr_DomInfo7(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo7 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->role));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -717,10 +739,12 @@ done:
 
 NTSTATUS ndr_pull_samr_DomInfo8(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo8 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->sequence_num));
 	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->last_xxx_time));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -729,9 +753,11 @@ done:
 
 NTSTATUS ndr_pull_samr_DomInfo9(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo9 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -740,6 +766,7 @@ done:
 
 NTSTATUS ndr_pull_samr_DomInfo11(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo11 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->force_logoff_time));
@@ -756,6 +783,7 @@ NTSTATUS ndr_pull_samr_DomInfo11(struct ndr_pull *ndr, int ndr_flags, struct sam
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->lockout_duration));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->lockout_window));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->lockout_threshold));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->unknown1));
@@ -767,11 +795,13 @@ done:
 
 NTSTATUS ndr_pull_samr_DomInfo12(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo12 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->lockout_duration));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->lockout_window));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->lockout_threshold));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -780,12 +810,14 @@ done:
 
 NTSTATUS ndr_pull_samr_DomInfo13(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo13 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->sequence_num));
 	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->last_xxx_time));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown1));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown2));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -795,6 +827,7 @@ done:
 NTSTATUS ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_DomainInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	NDR_CHECK(ndr_pull_uint16(ndr, level));
 	switch (*level) {
 	case 1: {
@@ -848,6 +881,7 @@ NTSTATUS ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *l
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	switch (*level) {
@@ -1042,12 +1076,14 @@ NTSTATUS ndr_pull_samr_OpenGroup(struct ndr_pull *ndr, struct samr_OpenGroup *r)
 
 NTSTATUS ndr_pull_samr_GroupInfoAll(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoAll *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->name));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_members));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->description));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->name));
@@ -1058,9 +1094,11 @@ done:
 
 NTSTATUS ndr_pull_samr_GroupInfoName(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoName *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->Name));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->Name));
@@ -1070,9 +1108,11 @@ done:
 
 NTSTATUS ndr_pull_samr_GroupInfoX(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoX *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -1081,9 +1121,11 @@ done:
 
 NTSTATUS ndr_pull_samr_GroupInfoDesciption(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoDesciption *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->description));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->description));
@@ -1094,6 +1136,7 @@ done:
 NTSTATUS ndr_pull_samr_GroupInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_GroupInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	NDR_CHECK(ndr_pull_uint16(ndr, level));
 	switch (*level) {
 	case 1: {
@@ -1115,6 +1158,7 @@ NTSTATUS ndr_pull_samr_GroupInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *le
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	switch (*level) {
@@ -1213,11 +1257,13 @@ NTSTATUS ndr_pull_samr_OpenAlias(struct ndr_pull *ndr, struct samr_OpenAlias *r)
 
 NTSTATUS ndr_pull_samr_AliasInfoAll(struct ndr_pull *ndr, int ndr_flags, struct samr_AliasInfoAll *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->name));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_members));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->description));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->name));
@@ -1228,9 +1274,11 @@ done:
 
 NTSTATUS ndr_pull_samr_AliasInfoName(struct ndr_pull *ndr, int ndr_flags, struct samr_AliasInfoName *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->name));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->name));
@@ -1240,9 +1288,11 @@ done:
 
 NTSTATUS ndr_pull_samr_AliasInfoDescription(struct ndr_pull *ndr, int ndr_flags, struct samr_AliasInfoDescription *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->description));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->description));
@@ -1253,6 +1303,7 @@ done:
 NTSTATUS ndr_pull_samr_AliasInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_AliasInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	NDR_CHECK(ndr_pull_uint16(ndr, level));
 	switch (*level) {
 	case 1: {
@@ -1270,6 +1321,7 @@ NTSTATUS ndr_pull_samr_AliasInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *le
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	switch (*level) {
@@ -1364,6 +1416,7 @@ NTSTATUS ndr_pull_samr_DELETE_DOM_USER(struct ndr_pull *ndr, struct samr_DELETE_
 
 NTSTATUS ndr_pull_samr_UserInfo1(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo1 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->username));
@@ -1371,6 +1424,7 @@ NTSTATUS ndr_pull_samr_UserInfo1(struct ndr_pull *ndr, int ndr_flags, struct sam
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->primary_group_rid));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->description));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->comment));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->username));
@@ -1383,6 +1437,7 @@ done:
 
 NTSTATUS ndr_pull_samr_UserInfo2(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo2 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->comment));
@@ -1390,6 +1445,7 @@ NTSTATUS ndr_pull_samr_UserInfo2(struct ndr_pull *ndr, int ndr_flags, struct sam
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown2));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->country_code));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->code_page));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->comment));
@@ -1400,6 +1456,7 @@ done:
 NTSTATUS ndr_pull_samr_UserInfo3(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo3 *r)
 {
 	uint32 _ptr_logon_hours;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->username));
@@ -1426,6 +1483,7 @@ NTSTATUS ndr_pull_samr_UserInfo3(struct ndr_pull *ndr, int ndr_flags, struct sam
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->bad_pwd_count));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->num_logons));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->acct_flags));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->username));
@@ -1458,6 +1516,7 @@ done:
 NTSTATUS ndr_pull_samr_UserInfo4(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo4 *r)
 {
 	uint32 _ptr_logon_hours;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->units_per_week));
@@ -1467,6 +1526,7 @@ NTSTATUS ndr_pull_samr_UserInfo4(struct ndr_pull *ndr, int ndr_flags, struct sam
 	} else {
 		r->logon_hours = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->logon_hours) {
@@ -1492,6 +1552,7 @@ done:
 NTSTATUS ndr_pull_samr_UserInfo5(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo5 *r)
 {
 	uint32 _ptr_logon_hours;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->username));
@@ -1517,6 +1578,7 @@ NTSTATUS ndr_pull_samr_UserInfo5(struct ndr_pull *ndr, int ndr_flags, struct sam
 	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->last_pwd_change));
 	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->acct_expiry));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->acct_flags));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->username));
@@ -1549,10 +1611,12 @@ done:
 
 NTSTATUS ndr_pull_samr_UserInfo6(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo6 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->username));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->full_name));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->username));
@@ -1563,9 +1627,11 @@ done:
 
 NTSTATUS ndr_pull_samr_UserInfo7(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo7 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->username));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->username));
@@ -1575,9 +1641,11 @@ done:
 
 NTSTATUS ndr_pull_samr_UserInfo8(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo8 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->full_name));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->full_name));
@@ -1587,9 +1655,11 @@ done:
 
 NTSTATUS ndr_pull_samr_UserInfo9(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo9 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->PrimaryGroupRid));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -1598,10 +1668,12 @@ done:
 
 NTSTATUS ndr_pull_samr_UserInfo10(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo10 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->home_dir));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->home_drive));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->home_dir));
@@ -1612,9 +1684,11 @@ done:
 
 NTSTATUS ndr_pull_samr_UserInfo11(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo11 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->logon_script));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->logon_script));
@@ -1624,9 +1698,11 @@ done:
 
 NTSTATUS ndr_pull_samr_UserInfo12(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo12 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->profile));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->profile));
@@ -1636,9 +1712,11 @@ done:
 
 NTSTATUS ndr_pull_samr_UserInfo13(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo13 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->descriptiom));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->descriptiom));
@@ -1648,9 +1726,11 @@ done:
 
 NTSTATUS ndr_pull_samr_UserInfo14(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo14 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->workstations));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->workstations));
@@ -1660,9 +1740,11 @@ done:
 
 NTSTATUS ndr_pull_samr_UserInfo16(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo16 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->acct_flags));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -1671,9 +1753,11 @@ done:
 
 NTSTATUS ndr_pull_samr_UserInfo17(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo17 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->acct_expiry));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -1682,9 +1766,11 @@ done:
 
 NTSTATUS ndr_pull_samr_UserInfo20(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo20 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->callback));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->callback));
@@ -1696,6 +1782,7 @@ NTSTATUS ndr_pull_samr_UserInfo21(struct ndr_pull *ndr, int ndr_flags, struct sa
 {
 	uint32 _ptr_buffer;
 	uint32 _ptr_logon_hours;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->last_logon));
@@ -1743,6 +1830,7 @@ NTSTATUS ndr_pull_samr_UserInfo21(struct ndr_pull *ndr, int ndr_flags, struct sa
 	NDR_CHECK(ndr_pull_uint8(ndr, &r->lm_pwd_set));
 	NDR_CHECK(ndr_pull_uint8(ndr, &r->expired_flag));
 	NDR_CHECK(ndr_pull_uint8(ndr, &r->unknown4));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->username));
@@ -1792,6 +1880,7 @@ done:
 NTSTATUS ndr_pull_samr_UserInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_UserInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	NDR_CHECK(ndr_pull_uint16(ndr, level));
 	switch (*level) {
 	case 1: {
@@ -1869,6 +1958,7 @@ NTSTATUS ndr_pull_samr_UserInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *lev
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	switch (*level) {

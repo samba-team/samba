@@ -49,8 +49,10 @@ NTSTATUS ndr_push_dfs_SetInfo(struct ndr_push *ndr, struct dfs_SetInfo *r)
 NTSTATUS ndr_push_dfs_Info1(struct ndr_push *ndr, int ndr_flags, struct dfs_Info1 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_ptr(ndr, r->path));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->path) {
@@ -63,11 +65,13 @@ done:
 NTSTATUS ndr_push_dfs_Info2(struct ndr_push *ndr, int ndr_flags, struct dfs_Info2 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_ptr(ndr, r->path));
 	NDR_CHECK(ndr_push_ptr(ndr, r->comment));
 	NDR_CHECK(ndr_push_uint32(ndr, r->state));
 	NDR_CHECK(ndr_push_uint32(ndr, r->num_stores));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->path) {
@@ -83,10 +87,12 @@ done:
 NTSTATUS ndr_push_dfs_StorageInfo(struct ndr_push *ndr, int ndr_flags, struct dfs_StorageInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->state));
 	NDR_CHECK(ndr_push_ptr(ndr, r->server));
 	NDR_CHECK(ndr_push_ptr(ndr, r->share));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->server) {
@@ -102,12 +108,14 @@ done:
 NTSTATUS ndr_push_dfs_Info3(struct ndr_push *ndr, int ndr_flags, struct dfs_Info3 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_ptr(ndr, r->path));
 	NDR_CHECK(ndr_push_ptr(ndr, r->comment));
 	NDR_CHECK(ndr_push_uint32(ndr, r->state));
 	NDR_CHECK(ndr_push_uint32(ndr, r->num_stores));
 	NDR_CHECK(ndr_push_ptr(ndr, r->stores));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->path) {
@@ -127,6 +135,7 @@ done:
 NTSTATUS ndr_push_dfs_Info4(struct ndr_push *ndr, int ndr_flags, struct dfs_Info4 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_ptr(ndr, r->path));
 	NDR_CHECK(ndr_push_ptr(ndr, r->comment));
@@ -135,6 +144,7 @@ NTSTATUS ndr_push_dfs_Info4(struct ndr_push *ndr, int ndr_flags, struct dfs_Info
 	NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->guid));
 	NDR_CHECK(ndr_push_uint32(ndr, r->num_stores));
 	NDR_CHECK(ndr_push_ptr(ndr, r->stores));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->path) {
@@ -155,8 +165,10 @@ done:
 NTSTATUS ndr_push_dfs_Info200(struct ndr_push *ndr, int ndr_flags, struct dfs_Info200 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_ptr(ndr, r->dom_root));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->dom_root) {
@@ -169,9 +181,11 @@ done:
 NTSTATUS ndr_push_dfs_Info300(struct ndr_push *ndr, int ndr_flags, struct dfs_Info300 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->flags));
 	NDR_CHECK(ndr_push_ptr(ndr, r->dom_root));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->dom_root) {
@@ -200,9 +214,11 @@ NTSTATUS ndr_push_dfs_GetInfo(struct ndr_push *ndr, struct dfs_GetInfo *r)
 NTSTATUS ndr_push_dfs_EnumArray1(struct ndr_push *ndr, int ndr_flags, struct dfs_EnumArray1 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->count));
 	NDR_CHECK(ndr_push_ptr(ndr, r->s));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
@@ -216,9 +232,11 @@ done:
 NTSTATUS ndr_push_dfs_EnumArray2(struct ndr_push *ndr, int ndr_flags, struct dfs_EnumArray2 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->count));
 	NDR_CHECK(ndr_push_ptr(ndr, r->s));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
@@ -232,9 +250,11 @@ done:
 NTSTATUS ndr_push_dfs_EnumArray3(struct ndr_push *ndr, int ndr_flags, struct dfs_EnumArray3 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->count));
 	NDR_CHECK(ndr_push_ptr(ndr, r->s));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
@@ -248,9 +268,11 @@ done:
 NTSTATUS ndr_push_dfs_EnumArray4(struct ndr_push *ndr, int ndr_flags, struct dfs_EnumArray4 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->count));
 	NDR_CHECK(ndr_push_ptr(ndr, r->s));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
@@ -264,9 +286,11 @@ done:
 NTSTATUS ndr_push_dfs_EnumArray200(struct ndr_push *ndr, int ndr_flags, struct dfs_EnumArray200 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->count));
 	NDR_CHECK(ndr_push_ptr(ndr, r->s));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
@@ -280,9 +304,11 @@ done:
 NTSTATUS ndr_push_dfs_EnumArray300(struct ndr_push *ndr, int ndr_flags, struct dfs_EnumArray300 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->count));
 	NDR_CHECK(ndr_push_ptr(ndr, r->s));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
@@ -296,6 +322,7 @@ done:
 NTSTATUS ndr_push_dfs_EnumInfo(struct ndr_push *ndr, int ndr_flags, uint16 level, union dfs_EnumInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_uint16(ndr, level));
 	switch (level) {
 	case 1:
@@ -325,6 +352,7 @@ NTSTATUS ndr_push_dfs_EnumInfo(struct ndr_push *ndr, int ndr_flags, uint16 level
 	default:
 		return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	switch (level) {
@@ -374,9 +402,11 @@ done:
 NTSTATUS ndr_push_dfs_EnumStruct(struct ndr_push *ndr, int ndr_flags, struct dfs_EnumStruct *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->level));
 	NDR_CHECK(ndr_push_dfs_EnumInfo(ndr, NDR_SCALARS, r->level, &r->e));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	NDR_CHECK(ndr_push_dfs_EnumInfo(ndr, NDR_BUFFERS, r->level, &r->e));
@@ -435,6 +465,7 @@ NTSTATUS ndr_pull_dfs_SetInfo(struct ndr_pull *ndr, struct dfs_SetInfo *r)
 NTSTATUS ndr_pull_dfs_Info1(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info1 *r)
 {
 	uint32 _ptr_path;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_path));
@@ -443,6 +474,7 @@ NTSTATUS ndr_pull_dfs_Info1(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info
 	} else {
 		r->path = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->path) {
@@ -456,6 +488,7 @@ NTSTATUS ndr_pull_dfs_Info2(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info
 {
 	uint32 _ptr_path;
 	uint32 _ptr_comment;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_path));
@@ -472,6 +505,7 @@ NTSTATUS ndr_pull_dfs_Info2(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info
 	}
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->state));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_stores));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->path) {
@@ -488,6 +522,7 @@ NTSTATUS ndr_pull_dfs_StorageInfo(struct ndr_pull *ndr, int ndr_flags, struct df
 {
 	uint32 _ptr_server;
 	uint32 _ptr_share;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->state));
@@ -503,6 +538,7 @@ NTSTATUS ndr_pull_dfs_StorageInfo(struct ndr_pull *ndr, int ndr_flags, struct df
 	} else {
 		r->share = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->server) {
@@ -520,6 +556,7 @@ NTSTATUS ndr_pull_dfs_Info3(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info
 	uint32 _ptr_path;
 	uint32 _ptr_comment;
 	uint32 _ptr_stores;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_path));
@@ -542,6 +579,7 @@ NTSTATUS ndr_pull_dfs_Info3(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info
 	} else {
 		r->stores = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->path) {
@@ -570,6 +608,7 @@ NTSTATUS ndr_pull_dfs_Info4(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info
 	uint32 _ptr_path;
 	uint32 _ptr_comment;
 	uint32 _ptr_stores;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_path));
@@ -594,6 +633,7 @@ NTSTATUS ndr_pull_dfs_Info4(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info
 	} else {
 		r->stores = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->path) {
@@ -621,6 +661,7 @@ done:
 NTSTATUS ndr_pull_dfs_Info100(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info100 *r)
 {
 	uint32 _ptr_comment;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_comment));
@@ -629,6 +670,7 @@ NTSTATUS ndr_pull_dfs_Info100(struct ndr_pull *ndr, int ndr_flags, struct dfs_In
 	} else {
 		r->comment = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->comment) {
@@ -640,9 +682,11 @@ done:
 
 NTSTATUS ndr_pull_dfs_Info101(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info101 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->state));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -651,9 +695,11 @@ done:
 
 NTSTATUS ndr_pull_dfs_Info102(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info102 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->timeout));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -663,6 +709,7 @@ done:
 NTSTATUS ndr_pull_dfs_Info200(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info200 *r)
 {
 	uint32 _ptr_dom_root;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_dom_root));
@@ -671,6 +718,7 @@ NTSTATUS ndr_pull_dfs_Info200(struct ndr_pull *ndr, int ndr_flags, struct dfs_In
 	} else {
 		r->dom_root = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->dom_root) {
@@ -683,6 +731,7 @@ done:
 NTSTATUS ndr_pull_dfs_Info300(struct ndr_pull *ndr, int ndr_flags, struct dfs_Info300 *r)
 {
 	uint32 _ptr_dom_root;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->flags));
@@ -692,6 +741,7 @@ NTSTATUS ndr_pull_dfs_Info300(struct ndr_pull *ndr, int ndr_flags, struct dfs_In
 	} else {
 		r->dom_root = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->dom_root) {
@@ -704,6 +754,7 @@ done:
 NTSTATUS ndr_pull_dfs_Info(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union dfs_Info *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	NDR_CHECK(ndr_pull_uint16(ndr, level));
 	switch (*level) {
 	case 1: {
@@ -799,6 +850,7 @@ NTSTATUS ndr_pull_dfs_Info(struct ndr_pull *ndr, int ndr_flags, uint16 *level, u
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	switch (*level) {
@@ -877,6 +929,7 @@ NTSTATUS ndr_pull_dfs_GetInfo(struct ndr_pull *ndr, struct dfs_GetInfo *r)
 NTSTATUS ndr_pull_dfs_EnumArray1(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray1 *r)
 {
 	uint32 _ptr_s;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
@@ -886,6 +939,7 @@ NTSTATUS ndr_pull_dfs_EnumArray1(struct ndr_pull *ndr, int ndr_flags, struct dfs
 	} else {
 		r->s = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
@@ -906,6 +960,7 @@ done:
 NTSTATUS ndr_pull_dfs_EnumArray2(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray2 *r)
 {
 	uint32 _ptr_s;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
@@ -915,6 +970,7 @@ NTSTATUS ndr_pull_dfs_EnumArray2(struct ndr_pull *ndr, int ndr_flags, struct dfs
 	} else {
 		r->s = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
@@ -935,6 +991,7 @@ done:
 NTSTATUS ndr_pull_dfs_EnumArray3(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray3 *r)
 {
 	uint32 _ptr_s;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
@@ -944,6 +1001,7 @@ NTSTATUS ndr_pull_dfs_EnumArray3(struct ndr_pull *ndr, int ndr_flags, struct dfs
 	} else {
 		r->s = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
@@ -964,6 +1022,7 @@ done:
 NTSTATUS ndr_pull_dfs_EnumArray4(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray4 *r)
 {
 	uint32 _ptr_s;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
@@ -973,6 +1032,7 @@ NTSTATUS ndr_pull_dfs_EnumArray4(struct ndr_pull *ndr, int ndr_flags, struct dfs
 	} else {
 		r->s = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
@@ -993,6 +1053,7 @@ done:
 NTSTATUS ndr_pull_dfs_EnumArray200(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray200 *r)
 {
 	uint32 _ptr_s;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
@@ -1002,6 +1063,7 @@ NTSTATUS ndr_pull_dfs_EnumArray200(struct ndr_pull *ndr, int ndr_flags, struct d
 	} else {
 		r->s = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
@@ -1022,6 +1084,7 @@ done:
 NTSTATUS ndr_pull_dfs_EnumArray300(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumArray300 *r)
 {
 	uint32 _ptr_s;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
@@ -1031,6 +1094,7 @@ NTSTATUS ndr_pull_dfs_EnumArray300(struct ndr_pull *ndr, int ndr_flags, struct d
 	} else {
 		r->s = NULL;
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->s) {
@@ -1051,6 +1115,7 @@ done:
 NTSTATUS ndr_pull_dfs_EnumInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union dfs_EnumInfo *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	NDR_CHECK(ndr_pull_uint16(ndr, level));
 	switch (*level) {
 	case 1: {
@@ -1116,6 +1181,7 @@ NTSTATUS ndr_pull_dfs_EnumInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *leve
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	switch (*level) {
@@ -1164,6 +1230,7 @@ done:
 
 NTSTATUS ndr_pull_dfs_EnumStruct(struct ndr_pull *ndr, int ndr_flags, struct dfs_EnumStruct *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
@@ -1171,6 +1238,7 @@ NTSTATUS ndr_pull_dfs_EnumStruct(struct ndr_pull *ndr, int ndr_flags, struct dfs
 	NDR_CHECK(ndr_pull_dfs_EnumInfo(ndr, NDR_SCALARS, &_level, &r->e));
 	if (((NDR_SCALARS) & NDR_SCALARS) && (_level != r->level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
 	}
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	{ uint16 _level = r->level;

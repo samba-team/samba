@@ -23,6 +23,14 @@
 */
 
 
+/* offset lists are used to allow a push/pull function to find the
+   start of an encapsulating structure */
+struct ndr_ofs_list {
+	uint32 offset;
+	struct ndr_ofs_list *next;
+};
+
+
 /* this is the base structure passed to routines that 
    parse MSRPC formatted data 
 
@@ -37,13 +45,17 @@ struct ndr_pull {
 	uint32 data_size;
 	uint32 offset;
 	TALLOC_CTX *mem_ctx;
+
+	/* this points at a list of offsets to the structures being processed.
+	   The first element in the list is the current structure */
+	struct ndr_ofs_list *ofs_list;
 };
 
 struct ndr_pull_save {
 	uint32 data_size;
 	uint32 offset;
+	struct ndr_pull_save *next;
 };
-
 
 /* structure passed to functions that generate NDR formatted data */
 struct ndr_push {
@@ -53,8 +65,12 @@ struct ndr_push {
 	uint32 offset;
 	TALLOC_CTX *mem_ctx;
 
+	/* this points at a list of offsets to the structures being processed.
+	   The first element in the list is the current structure */
+	struct ndr_ofs_list *ofs_list;
+
 	/* this list is used by the [relative] code to find the offsets */
-	struct ndr_push_save *relative_list;
+	struct ndr_ofs_list *relative_list;
 };
 
 struct ndr_push_save {

@@ -68,19 +68,24 @@ struct spoolss_PrinterEnum2 {
 	uint32 averageppm;
 };
 
+union spoolss_PrinterEnum {
+/* [case(1)] */ struct spoolss_PrinterEnum1 info1;
+/* [case(2)] */ struct spoolss_PrinterEnum2 info2;
+};
+
 struct spoolss_EnumPrinters {
 	struct {
 		uint32 flags;
 		const char *server;
 		uint32 level;
-		uint8 *buf;
-		uint32 offered;
+		DATA_BLOB *buffer;
+		uint32 *buf_size;
 	} in;
 
 	struct {
-		union spoolss_PrinterEnum *info;
-		uint32 *needed;
-		uint32 returned;
+		DATA_BLOB *buffer;
+		uint32 *buf_size;
+		uint32 count;
 		NTSTATUS result;
 	} out;
 
