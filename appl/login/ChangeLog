@@ -1,3 +1,7 @@
+1999-05-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* login.c (do_login): set $SHELL
+
 1999-05-18  Assar Westerlund  <assar@sics.se>
 
 	* add login-access
