@@ -19,6 +19,7 @@ prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
 bindir = @bindir@
+libexecdir = @libexecdir@
 transform=@program_transform_name@
 
 PROG_BIN	= 

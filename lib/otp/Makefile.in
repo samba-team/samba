@@ -19,6 +19,7 @@ INSTALL_DATA	= @INSTALL_DATA@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
+exec_prefix = @exec_prefix@
 libdir = @libdir@
 
 PICFLAGS = @PICFLAGS@
@@ -59,6 +60,7 @@ install: all
 	$(INSTALL) -m 0555 $(LIB) $(libdir)
 
 uninstall:
+	rm -f $(libdir)/$(LIB)
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)

@@ -32,6 +32,8 @@ libcommon.a: $(libcommon_OBJS)
 
 install:
 
+uninstall:
+
 TAGS: $(SOURCES)
 	etags $(SOURCES)
 

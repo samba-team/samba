@@ -49,21 +49,21 @@ Wall:
 
 install: all
 	$(MKINSTALLDIRS) $(bindir)
-	for x in $(PROG_BIN); do 
+	for x in $(PROG_BIN); do \
 	  $(INSTALL) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 	$(MKINSTALLDIRS) $(mandir)/man1
 	(cd $(srcdir); \
 	for x in $(MAN1); do \
-	  $(INSTALL_DATA) $$x $(mandir)/man1/`echo $$x | echo $(transform) | sed 's/\.man/.1/'`; \
+	  $(INSTALL_DATA) $$x $(mandir)/man1/`echo $$x | sed '$(transform)' | sed 's/\.man/.1/'`; \
 	done)
 
 uninstall:
-	for x in $(PROG_BIN); do 
+	for x in $(PROG_BIN); do \
 	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 	for x in $(MAN1); do \
-	  rm -f $(mandir)/man1/`echo $$x | echo $(transform) | sed 's/\.man/.1/'`; \
+	  rm -f $(mandir)/man1/`echo $$x | sed '$(transform)' | sed 's/\.man/.1/'`; \
 	done
 
 TAGS: $(SOURCES)

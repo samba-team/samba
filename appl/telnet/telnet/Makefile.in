@@ -19,6 +19,7 @@ MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 PROGS = telnet
 
 prefix = @prefix@
+exec_prefix = @exec_prefix@
 bindir = @bindir@
 transform=@program_transform_name@
 

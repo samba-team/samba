@@ -32,6 +32,9 @@ libtelnet.a: $(OBJECTS)
 install:
 	@true
 
+uninstall:
+	@true
+
 TAGS: $(SOURCES)
 	etags $(SOURCES)
 

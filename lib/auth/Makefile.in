@@ -24,7 +24,15 @@ install: all
 		for i in $$SUBDIRS; \
 		do (cd $$i && $(MAKE) $(MFLAGS) install); done
 
+uninstall:
+		SUBDIRS=$(SUBDIRS); \
+		for i in $$SUBDIRS; \
+		do (cd $$i && $(MAKE) $(MFLAGS) uninstall); done
+
 check:
+		SUBDIRS=$(SUBDIRS); \
+		for i in $$SUBDIRS; \
+		do (cd $$i && $(MAKE) $(MFLAGS) check); done
 
 clean:
 		SUBDIRS=$(SUBDIRS); \
