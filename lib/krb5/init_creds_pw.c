@@ -452,6 +452,9 @@ krb5_get_init_creds_password(krb5_context context,
 	case KRB5KDC_ERR_KEY_EXPIRED :
 	    /* try to avoid recursion */
 
+	    if (prompter == NULL)
+		goto out;
+
 	    krb5_clear_error_string (context);
 
 	    if (in_tkt_service != NULL
