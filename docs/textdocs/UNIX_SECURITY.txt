@@ -1,5 +1,5 @@
 !==
-!== UNIX_SECURITY.txt for Samba release TNG-prealpha 08 Mar 2000
+!== UNIX_SECURITY.txt for Samba release TNG-prealpha 09 Mar 2000
 !==
 Contributor:	John H Terpstra <jht@samba.org>
 Date:		July 5, 1998
