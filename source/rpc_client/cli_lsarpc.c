@@ -211,7 +211,7 @@ BOOL lsa_open_policy(const char *system_name, POLICY_HND *hnd,
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 0, 4, False);
-	prs_init(&rbuf, 0   , 4, True );
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api LSA_OPENPOLICY */
 
@@ -248,7 +248,7 @@ BOOL lsa_open_policy(const char *system_name, POLICY_HND *hnd,
 		if (p)
 		{
 			/* ok, at last: we're happy. return the policy handle */
-			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			*hnd = r_o.pol;
 			
 			valid_pol = register_policy_hnd(get_global_hnd_cache(),
 			                                cli_con_sec_ctx(con),

@@ -455,7 +455,8 @@ static BOOL api_lsa_close( rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
-	r_c.status = _lsa_close(&q_c.pol);
+	r_c.pol = q_c.pol; /* in/out */
+	r_c.status = _lsa_close(&r_c.pol);
 	return lsa_io_r_close("", &r_c, rdata, 0);
 }
 
