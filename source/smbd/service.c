@@ -227,7 +227,9 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	BOOL guest = False;
 	BOOL force = False;
 	connection_struct *conn;
+#if !CHECK_PATH_ON_TCONX
 	struct stat st;
+#endif
 	uid_t euid;
 	int ret;
 
