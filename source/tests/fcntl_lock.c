@@ -1,5 +1,9 @@
 /* test whether fcntl locking works on this system */
 
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>

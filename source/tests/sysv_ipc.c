@@ -1,7 +1,9 @@
 /* this tests whether we can use a sysv shared memory segment
    as needed for the sysv varient of FAST_SHARE_MODES */
 
+#if defined(HAVE_UNISTD_H)
 #include <unistd.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ipc.h>

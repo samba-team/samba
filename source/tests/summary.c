@@ -2,7 +2,7 @@
 
 main()
 {
-#ifndef HAVE_FCNTL_LOCK
+#if !(defined(HAVE_FCNTL_LOCK) || defined(HAVE_STRUCT_FLOCK64))
 	printf("ERROR: No locking available. Running Samba would be unsafe\n");
 	exit(1);
 #endif

@@ -1,7 +1,9 @@
 /* test for a trapdoor uid system */
 
-#include <stdlib.h>
+#if defined(HAVE_UNISTD_H)
 #include <unistd.h>
+#endif
+#include <stdlib.h>
 #include <stdio.h>
 
 main()

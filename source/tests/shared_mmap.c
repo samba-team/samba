@@ -1,7 +1,9 @@
 /* this tests whether we can use a shared writeable mmap on a file -
    as needed for the mmap varient of FAST_SHARE_MODES */
 
+#if defined(HAVE_UNISTD_H)
 #include <unistd.h>
+#endif
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>

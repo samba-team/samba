@@ -373,6 +373,7 @@ ssize_t read_data(int fd,char *buffer,size_t N)
     }
     if (ret == -1)
     {
+      DEBUG(0,("read_data: read failure. Error = %s\n", strerror(errno) ));
       smb_read_error = READ_ERROR;
       return -1;
     }
@@ -402,7 +403,10 @@ ssize_t write_data(int fd,char *buffer,size_t N)
     ret = write(fd,buffer + total,N - total);
 #endif /* WITH_SSL */
 
-    if (ret == -1) return -1;
+    if (ret == -1) {
+      DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
+      return -1;
+    }
     if (ret == 0) return total;
 
     total += ret;
