@@ -1,3 +1,12 @@
+2004-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rc2test.c: test vectors from RFC2268
+	
+	* rc2.c (RC2_set_key): rewrite the mask calculation
+	
+	* rc2.c (RC2_set_key): handle keys where effective bits are
+	diffrent from keylength
+
 2004-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rc2.c: rc2 implementation
