@@ -121,4 +121,6 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
                              const char *domain,
                              const char *username,
                              const char *password);
-%include "samr.i"
+
+%include "librpc/gen_ndr/samr.i"
+%include "librpc/gen_ndr/lsa.i"
