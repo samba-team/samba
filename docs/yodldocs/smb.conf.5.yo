@@ -2237,14 +2237,15 @@ label(forcecreatemode)
 dit(bf(force create mode (S)))
 
 This parameter specifies a set of UNIX mode bit permissions that will
-em(*always*) be set on a file created by Samba. This is done by
-bitwise 'OR'ing these bits onto the mode bits of a file that is being
-created. The default for this parameter is (in octal) 000. The modes
-in this parameter are bitwise 'OR'ed onto the file mode after the mask
-set in the link(bf("create mask"))(createmask) parameter is applied.
+em(*always*) be set on a file by Samba. This is done by bitwise
+'OR'ing these bits onto the mode bits of a file that is being created
+or having its permissions changed. The default for this parameter is
+(in octal) 000. The modes in this parameter are bitwise 'OR'ed onto
+the file mode after the mask set in the link(bf("create
+mask"))(createmask) parameter is applied.
 
 See also the parameter link(bf("create mask"))(createmask) for details
-on masking mode bits on created files.
+on masking mode bits on files.
 
   bf(Default:)
 tt(	force create mode = 000)
