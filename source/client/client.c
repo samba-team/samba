@@ -275,6 +275,18 @@ static BOOL chkpath(char *path,BOOL report)
   *p++ = 4;
   strcpy(p,path2);
 
+#if 0
+  {
+	  /* this little bit of code can be used to extract NT error codes.
+	     Just feed a bunch of "cd foo" commands to smbclient then watch
+	     in netmon (tridge) */
+	  static int code=0;
+	  SIVAL(outbuf, smb_rcls, code | 0xC0000000);
+	  SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | (1<<14));
+	  code++;
+  }
+#endif
+
   send_smb(Client,outbuf);
   receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
