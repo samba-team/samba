@@ -278,9 +278,14 @@ static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 	*msg_type = rec.msg_type;
 	*src = rec.src;
 
-	memmove(dbuf.dptr, dbuf.dptr+sizeof(rec)+rec.len, dbuf.dsize - (sizeof(rec)+rec.len));
+	if (dbuf.dsize - (sizeof(rec)+rec.len) > 0)
+		memmove(dbuf.dptr, dbuf.dptr+sizeof(rec)+rec.len, dbuf.dsize - (sizeof(rec)+rec.len));
 	dbuf.dsize -= sizeof(rec)+rec.len;
-	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+
+	if (dbuf.dsize == 0)
+		tdb_delete(tdb, kbuf);
+	else
+		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
 	free(dbuf.dptr);
 	tdb_unlockchain(tdb, kbuf);
