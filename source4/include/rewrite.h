@@ -280,6 +280,7 @@ typedef struct {
 	char *from_name, *to_name;
 } *smb_iconv_t;
 
+#include "popt.h"
 #include "popt_common.h"
 
 #endif /* _REWRITE_H */
