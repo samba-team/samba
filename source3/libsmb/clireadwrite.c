@@ -252,6 +252,7 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 			    size_t size, int i)
 {
 	char *p;
+	BOOL bigoffset = False;
 
 	if (size > cli->bufsize) {
 		cli->outbuf = realloc(cli->outbuf, size + 1024);
@@ -264,7 +265,10 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	if (size > 0xFFFF)
+	if ((SMB_BIG_UINT)offset >> 32) 
+		bigoffset = True;
+
+	if (bigoffset)
 		set_message(cli->outbuf,14,0,True);
 	else
 		set_message(cli->outbuf,12,0,True);
@@ -277,14 +281,20 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 
 	SIVAL(cli->outbuf,smb_vwv3,offset);
-	SIVAL(cli->outbuf,smb_vwv5,(mode & 0x0008) ? 0xFFFFFFFF : 0);
+	SIVAL(cli->outbuf,smb_vwv5,0);
 	SSVAL(cli->outbuf,smb_vwv7,mode);
 
+	/*
+	 * THe following is still wrong ...
+	 */
 	SSVAL(cli->outbuf,smb_vwv8,(mode & 0x0008) ? size : 0);
 	SSVAL(cli->outbuf,smb_vwv9,((size>>16)&1));
 	SSVAL(cli->outbuf,smb_vwv10,size);
 	SSVAL(cli->outbuf,smb_vwv11,
 	      smb_buf(cli->outbuf) - smb_base(cli->outbuf));
+
+	if (bigoffset)
+		SIVAL(cli->outbuf,smb_vwv12,(offset>>32) & 0xffffffff);
 	
 	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11);
 	memcpy(p, buf, size);
