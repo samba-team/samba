@@ -316,7 +316,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	r4.in.system_name = "win2003";
+	r4.in.system_name = "";
 	r4.in.unknown = 0;
 	r4.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r4.out.handle = handle;
