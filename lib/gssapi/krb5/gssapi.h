@@ -50,22 +50,6 @@
 #include <config.h>
 #endif
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-
-#ifdef HAVE_NETINET_IN6_MACHTYPES_H
-#include <netinet/in6_machtypes.h>
-#endif
-
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif
-
-#ifdef HAVE_NETINET_IN6_MACHTYPES_H
-#include <netinet/in6_machtypes.h>
-#endif
-
 #include <bits.h>
 
 /*
@@ -94,8 +78,6 @@ typedef struct gss_ctx_id_t_desc_struct {
 } gss_ctx_id_t_desc;
 
 typedef gss_ctx_id_t_desc *gss_ctx_id_t;
-typedef int gss_cred_id_t;	/* XXX */
-
 
 typedef struct gss_OID_desc_struct {
       OM_uint32 length;
@@ -106,6 +88,20 @@ typedef struct gss_OID_set_desc_struct  {
       size_t     count;
       gss_OID    elements;
 } gss_OID_set_desc, *gss_OID_set;
+
+struct krb5_keytab_data;
+
+typedef int gss_cred_usage_t;
+
+typedef struct gss_cred_id_t_desc_struct {
+  gss_name_t principal;
+  struct krb5_keytab_data *keytab;
+  OM_uint32 lifetime;
+  gss_cred_usage_t usage;
+  gss_OID_set mechanisms;
+} gss_cred_id_t_desc;
+
+typedef gss_cred_id_t_desc *gss_cred_id_t;
 
 typedef struct gss_buffer_desc_struct {
       size_t length;
@@ -124,8 +120,6 @@ typedef struct gss_channel_bindings_struct {
  * For now, define a QOP-type as an OM_uint32
  */
 typedef OM_uint32 gss_qop_t;
-
-typedef int gss_cred_usage_t;
 
 /*
  * Flag bits for context-level services.
