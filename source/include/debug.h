@@ -74,7 +74,7 @@ BOOL dbgtext();
  *               Example usage:
  *                 if( DEBUGLVL( 2 ) )
  *                   dbgtext( "Some text.\n" );
- *  DEGUG()    - Good old DEBUG().  Each call to DEBUG() will generate a new
+ *  DEBUG()    - Good old DEBUG().  Each call to DEBUG() will generate a new
  *               header *unless* the previous debug output was unterminated
  *               (i.e., no '\n').  See debug.c:dbghdr() for more info.
  *               Example usage:
