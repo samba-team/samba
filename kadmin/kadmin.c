@@ -39,6 +39,7 @@ RCSID("$Id$");
 static char *config_file;
 static char *keyfile;
 static int local_flag;
+static int ad_flag;
 static int help_flag;
 static int version_flag;
 static char *realm;
@@ -72,6 +73,7 @@ static struct getargs args[] = {
 	"server-port",	's',	arg_integer,   &server_port, 
 	"port to use", "port number" 
     },
+    {	"ad", 		0, arg_flag, &ad_flag, "active directory admin mode" },
     {	"local", 'l', arg_flag, &local_flag, "local admin mode" },
     {	"help",		'h',	arg_flag,   &help_flag },
     {	"version",	'v',	arg_flag,   &version_flag }
@@ -299,6 +301,13 @@ main(int argc, char **argv)
 					     &conf, 0, 0, 
 					     &kadm_handle);
 	actual_cmds = commands;
+    } else if (ad_flag) {
+	ret = kadm5_ad_init_with_password(client_name,
+					  NULL,
+					  KADM5_ADMIN_SERVICE,
+					  &conf, 0, 0,
+					  &kadm_handle);
+        actual_cmds = commands + 4; /* XXX */
     } else if (keytab) {
         ret = kadm5_c_init_with_skey_ctx(context,
 					 client_name,
