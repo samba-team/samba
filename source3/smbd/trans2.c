@@ -2540,9 +2540,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		info_level = SVAL(params,0);    
 		srvstr_pull(inbuf, fname, &params[6], sizeof(fname), -1, STR_TERMINATE);
 		unix_convert(fname,conn,0,&bad_path,&sbuf);
-		if(!check_name(fname, conn)) {
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
-		}
 
 		/*
 		 * For CIFS UNIX extensions the target name may not exist.
@@ -2550,8 +2547,13 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 		if(!VALID_STAT(sbuf) && !INFO_LEVEL_IS_UNIX(info_level)) {
 			DEBUG(3,("call_trans2setfilepathinfo: stat of %s failed (%s)\n", fname, strerror(errno)));
-			return ERROR_NT(NT_STATUS_OBJECT_NAME_NOT_FOUND);
+			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 		}    
+
+		if(!check_name(fname, conn)) {
+			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
+		}
+
 	}
 
 	if (!CAN_WRITE(conn))
