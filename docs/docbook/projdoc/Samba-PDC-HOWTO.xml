@@ -289,26 +289,42 @@ be revised to duely reflect all configuration and management requirements.
 
 <para>
 There are two ways that MS Windows machines may interact with each other, with other servers,
-and with Domain Controllers: Either as <empahsis>Stand-Alone</emphasis> systems, more commonly
-called <empasis>Workgroup members</emphasis>, or as full participants in a security system,
-more commonly called <emphasis>Domain Members</emphasis>.
+and with Domain Controllers: Either as <emphasis>Stand-Alone</emphasis> systems, more commonly
+called <emphasis>Workgroup</emphasis> members, or as full participants in a security system,
+more commonly called <emphasis>Domain</emphasis> members.
 </para>
 
 <para>
-It should be noted that <emphasis>Workgroup membership</emphasis> involve no special configuration
+It should be noted that <emphasis>Workgroup</emphasis> membership involve no special configuration
 other than the machine being configured so that the network configuration has a commonly used name
 for it's workgroup entry. It is not uncommon for the name WORKGROUP to be used for this. With this
-mode of configuration there are NO machine trust accounts and any concept of "membership" as such
+mode of configuration there are NO machine trust accounts and any concept of membership as such
 is limited to the fact that all machines appear in the network neighbourhood to be logically
-groupped together.
+groupped together. Again, just to be clear: WORKGROUP MODE DOES NOT INVOLVE ANY SECURITY MACHINE
+ACCOUNTS.
 </para>
+
+<para>
+Domain member machines have a machine account in the Domain accounts database. A special procedure
+must be followed on each machine to affect Domain membership. This procedure, which can be done
+only by the local machine Adminisistrator account, will create the Domain machine account (if
+if does not exist), and then initializes that account. When the client first logs onto the
+Domain it triggers a machine password change.
+</para>
+
+<note><para>
+When running a Domain all MS Windows NT / 200x / XP Professional clients should be configured
+as full Domain Members - IF A SECURE NETWORK IS WANTED. If the machine is NOT made a member of the
+Domain, then it will operate like a workgroup (stand-alone) machine. Please refer to the chapter
+on Domain Membership for information regarding HOW to make your MS Windows clients Domain members.
+</para></note>
 
 <para>
 The following are necessary for configuring Samba-3 as an MS Windows NT4 style PDC for MS Windows
 NT4 / 200x / XP clients.
 </para>
 
-<orderedlist numeration="arabic">
+<orderedlist>
 	<listitem><para>
 	Configuration of basic TCP/IP and MS Windows Networking
 	</para></listitem>
@@ -535,15 +551,8 @@ There are a couple of points to emphasize in the above configuration.
 
 <para>
 Samba-3 can behave and appear to MS Windows 200x and XP clients as an Active Directory Server.
-To do this, Configure samba as a Primary Domain Controller, use LDAP as the passdb backend,
-and configure Kerberos5. The problem with doing this is that samba-3 is NOT, despite this
-configuration, and Active Directory server and does NOT yet fully support all protocols needed
-to make this a possibility.
-</para>
-
-<para>
-The best advice we can give at this time is - DO NOT DO THIS yet as it is NOT ready for
-production deployment.
+The problem with doing this is that samba-3 is NOT an Active Directory server and does NOT yet
+support all protocols needed to make this a possibility.
 </para>
 
 </sect1>
@@ -566,6 +575,7 @@ in Samba. One Domain Controller must be configured with <emphasis>domain master 
 must be set.
 </para>
 
+<sect3>
 <title>Example Configuration</title>
 
 <programlisting>
@@ -583,8 +593,32 @@ must be set.
 </para>
 </programlisting>
 
+</sect3>
 <sect3>
-<title>The Special Case of Windows 9x / Me / XP Home</title>
+<title>The Special Case of MS Windows XP Home Edition</title>
+
+<note><para>
+MS Windows XP Home Edition does not have the ability to join any type of Domain
+security facility. Unlike, MS Windows 9x / Me, MS Windows XP Home Edition also completely
+lacks the ability to log onto a network.
+</para></note>
+
+<para>
+To be completely clear: If you want MS Windows XP Home Edition to integrate with your
+MS Windows NT4 or Active Directory Domain security understand - IT CAN NOT BE DONE.
+Your only choice is to buy the upgrade pack from MS Windows XP Home Edition to
+MS Windows XP Professional.
+</para>
+
+<para>
+Now that this has been said, please do NOT ask the mailing list, or email any of the
+Samba-Team members with your questions asking how to make this work. It can't be done.
+</para>
+
+</sect3>
+
+<sect3>
+<title>The Special Case of Windows 9x / Me</title>
 
 <para>
 A domain and a workgroup are exactly the same thing in terms of network
@@ -641,7 +675,7 @@ worthwhile to look at how a Windows 9x/ME client performs a logon:
 <listitem>
 	<para>
 	The client broadcasts (to the IP broadcast address of the subnet it is in)
-	a NetLogon request. This is sent to the NetBIOS name DOMAIN&lt;1c&gt; at the
+	a NetLogon request. This is sent to the NetBIOS name DOMAIN&lt;#1c&gt; at the
 	NetBIOS layer.  The client chooses the first response it receives, which
 	contains the NetBIOS name of the logon server to use in the format of 
 	\\SERVER.
@@ -704,16 +738,20 @@ The main difference between a PDC and a Windows 9x logon server configuration is
 
 <itemizedlist>
 <listitem><para>
-	Password encryption is not required for a Windows 9x logon server.
+	Password encryption is not required for a Windows 9x logon server. But note
+	that beginning with MS Windows 98 the default setting is that plain-text
+	password support has been disabled. It can be re-enabled with the registry
+	changes that are documented in the chapter on Policies.
 	</para></listitem>
 
 	<listitem><para>
-	Windows 9x/ME clients do not possess machine trust accounts.
+	Windows 9x/ME clients do not require and do not use machine trust accounts.
 	</para></listitem>
 </itemizedlist>
 
 <para>
-A Samba PDC will also act as a Windows 9x logon server.
+A Samba PDC will act as a Windows 9x logon server, after all it does provide the
+network logon services that MS Windows 9x / Me expect to find.
 </para>
 
 </sect3>
@@ -729,7 +767,7 @@ or not it is ok to configure Samba as a Domain Controller in security
 modes other than <constant>USER</constant>.  The only security mode 
 which  will not work due to technical reasons is <constant>SHARE</constant>
 mode security.  <constant>DOMAIN</constant> and <constant>SERVER</constant>
-mode security is really just a variation on SMB user level security.
+mode security are really just a variation on SMB user level security.
 </para>
 
 <para>
@@ -738,7 +776,7 @@ or not Samba must be the domain master browser for its workgroup
 when operating as a DC.  While it may technically be possible
 to configure a server as such (after all, browsing and domain logons
 are two distinctly different functions), it is not a good idea to do
-so.  You should remember that the DC must register the DOMAIN#1b NetBIOS 
+so.  You should remember that the DC must register the DOMAIN&lt;#1b&gt; NetBIOS 
 name.  This is the name used by Windows clients to locate the DC.
 Windows clients do not distinguish between the DC and the DMB.
 For this reason, it is very wise to configure the Samba DC as the DMB.
@@ -746,22 +784,22 @@ For this reason, it is very wise to configure the Samba DC as the DMB.
 
 <para>
 Now back to the issue of configuring a Samba DC to use a mode other
-than "security = user".  If a Samba host is configured to use 
+than <emphasis>security = user</emphasis>.  If a Samba host is configured to use 
 another SMB server or DC in order to validate user connection 
 requests, then it is a fact that some other machine on the network 
-(the "password server") knows more about the user than the Samba host.
+(the <emphasis>password server</emphasis>) knows more about the user than the Samba host.
 99% of the time, this other host is a domain controller.  Now 
-in order to operate in domain mode security, the "workgroup" parameter
+in order to operate in domain mode security, the <emphasis>workgroup</emphasis> parameter
 must be set to the name of the Windows NT domain (which already 
-has a domain controller, right?)
+has a domain controller). If the domain does NOT already have a Domain Controller
+then you do not yet have a Domain!
 </para>
 
 <para>
-Therefore configuring a Samba box as a DC for a domain that 
-already by definition has a PDC is asking for trouble.
-Therefore, you should always configure the Samba DC to be the DMB
-for its domain and set <emphasis>security = user</emphasis>. This is the only
-officially supported mode of operation.
+Configuring a Samba box as a DC for a domain that already by definition has a
+PDC is asking for trouble. Therefore, you should always configure the Samba DC
+to be the DMB for its domain and set <emphasis>security = user</emphasis>.
+This is the only officially supported mode of operation.
 </para>
 
 </sect2>
