@@ -2541,25 +2541,22 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   pcon->ngroups = 0;
   pcon->groups = NULL;
 
-  if (!IS_IPC(cnum))
-    {
-      /* Find all the groups this uid is in and store them. Used by become_user() */
-      setup_groups(pcon->user,pcon->uid,pcon->gid,&pcon->ngroups,&pcon->igroups,&pcon->groups);
+  /* Find all the groups this uid is in and store them. Used by become_user() */
+  setup_groups(pcon->user,pcon->uid,pcon->gid,&pcon->ngroups,&pcon->igroups,&pcon->groups);
       
-      /* check number of connections */
-      if (!claim_connection(cnum,
+  /* check number of connections */
+  if (!claim_connection(cnum,
 			    lp_servicename(SNUM(cnum)),
 			    lp_max_connections(SNUM(cnum)),False))
-	{
-	  DEBUG(1,("too many connections - rejected\n"));
-	  return(-8);
-	}  
+  {
+    DEBUG(1,("too many connections - rejected\n"));
+    return(-8);
+  }  
 
-      if (lp_status(SNUM(cnum)))
-	claim_connection(cnum,"STATUS.",MAXSTATUS,first_connection);
+  if (lp_status(SNUM(cnum)))
+    claim_connection(cnum,"STATUS.",MAXSTATUS,first_connection);
 
-      first_connection = False;
-    } /* IS_IPC */
+  first_connection = False;
 
   pcon->open = True;
 
@@ -2577,13 +2574,13 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
     {
       DEBUG(0,("Can't become connected user!\n"));
       pcon->open = False;
-      if (!IS_IPC(cnum)) {
-	yield_connection(cnum,
+      yield_connection(cnum,
 			 lp_servicename(SNUM(cnum)),
 			 lp_max_connections(SNUM(cnum)));
-	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
+      if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
+      {
+        return(-1);
       }
-      return(-1);
     }
 
   if (ChDir(pcon->connectpath) != 0)
@@ -2592,13 +2589,13 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 	       pcon->connectpath,strerror(errno)));
       pcon->open = False;
       unbecome_user();
-      if (!IS_IPC(cnum)) {
-	yield_connection(cnum,
+      yield_connection(cnum,
 			 lp_servicename(SNUM(cnum)),
 			 lp_max_connections(SNUM(cnum)));
-	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
+      if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
+      {
+        return(-5);      
       }
-      return(-5);      
     }
 
   string_set(&pcon->origpath,pcon->connectpath);
