@@ -1,3 +1,7 @@
+2000-11-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ftpd.8: close list
+
 2000-11-15  Assar Westerlund  <assar@sics.se>
 
 	* ftp/main.c: add `-l' for no line-editing
