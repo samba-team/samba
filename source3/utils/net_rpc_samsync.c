@@ -287,6 +287,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	GROUP_MAP map;
 	struct group *grp;
 	DOM_SID sid;
+	BOOL try_add = False;
 
 	fstrcpy(account, unistr2_static(&delta->uni_acct_name));
 	d_printf("Creating account: %s\n", account);
@@ -295,10 +296,6 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		return nt_ret;
 
 	if (!pdb_getsampwnam(sam_account, account)) {
-		struct passwd *pw;
-
-		pdb_free_sam(&sam_account);
-
 		/* Create appropriate user */
 		if (delta->acb_info & ACB_NORMAL) {
 			pstrcpy(add_script, lp_adduser_script());
@@ -319,29 +316,25 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			DEBUG(1,("fetch_account: Running the command `%s' "
 				 "gave %d\n", add_script, add_ret));
 		}
-		pw = getpwnam_alloc(account);
-		if (pw) {
-			nt_ret = pdb_init_sam_pw(&sam_account, pw);
 
-			if (!NT_STATUS_IS_OK(nt_ret)) {
-				passwd_free(&pw);
-				pdb_free_sam(&sam_account);
-				return nt_ret;
-			}
-			passwd_free(&pw);
-		} else {
-			DEBUG(3, ("Could not create account %s\n", account));
-			pdb_free_sam(&sam_account);
-			return NT_STATUS_NO_SUCH_USER;
+		if (!pdb_getsampwnam(sam_account, account)) {
+			try_add = True;
+			/* still not there, hope the backend likes NUAs */
 		}
 	}
 
 	sam_account_from_delta(sam_account, delta);
 
-	if (!pdb_add_sam_account(sam_account)) {
-		DEBUG(1, ("SAM Account for %s already exists, updating\n",
-			  account));
-		pdb_update_sam_account(sam_account);
+	if (try_add) { 
+		if (!pdb_add_sam_account(sam_account)) {
+			DEBUG(1, ("SAM Account for %s failed to be added to the passdb!\n",
+				  account));
+		}
+	} else {
+		if (!pdb_update_sam_account(sam_account)) {
+			DEBUG(1, ("SAM Account for %s failed to be updated in the passdb!\n",
+				  account));
+		}
 	}
 
 	sid = *pdb_get_group_sid(sam_account);
