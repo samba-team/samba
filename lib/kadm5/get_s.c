@@ -87,11 +87,12 @@ kadm5_s_get_principal(void *server_handle,
 	    out->mod_date = ent.created_by.time;
     }
     if(mask & KADM5_MOD_NAME) {
-	if(ent.modified_by)
-	    ret = krb5_copy_principal(context->context, 
-				      ent.modified_by->principal,
-				      &out->mod_name);
-	else
+	if(ent.modified_by) {
+	    if (end.modified_by->principal != NULL)
+		ret = krb5_copy_principal(context->context, 
+					  ent.modified_by->principal,
+					  &out->mod_name);
+	} else
 	    ret = krb5_copy_principal(context->context, 
 				      ent.created_by.principal,
 				      &out->mod_name);
