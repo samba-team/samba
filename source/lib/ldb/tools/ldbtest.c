@@ -228,7 +228,7 @@ static void search_uid(struct ldb_context *ldb, int nrecords, int nsearches)
 		int ret;
 
 		asprintf(&expr, "(uid=TEST%d)", uid);
-		ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res);
+		ret = ldb_search(ldb, base_dn, LDB_SCOPE_SUBTREE, expr, NULL, &res);
 
 		if (uid < nrecords && ret != 1) {
 			printf("Failed to find %s - %s\n", expr, ldb_errstring(ldb));
@@ -327,7 +327,7 @@ static void start_test_index(struct ldb_context **ldb)
 		exit(1);
 	}
 
-	ret = ldb_search(*ldb, NULL, LDB_SCOPE_SUBTREE, "uid=test", NULL, &res);
+	ret = ldb_search(*ldb, base_dn, LDB_SCOPE_SUBTREE, "uid=test", NULL, &res);
 	if (ret != 1) {
 		printf("Should have found 1 record - found %d\n", ret);
 		exit(1);
