@@ -399,10 +399,11 @@ NTSTATUS create_nt_user_token(TALLOC_CTX *mem_ctx,
  Make a user_info struct
 ***************************************************************************/
 
-NTSTATUS make_server_info(struct auth_serversupplied_info **server_info, 
+NTSTATUS make_server_info(TALLOC_CTX *mem_ctx,
+			  struct auth_serversupplied_info **server_info, 
 			  const char *username)
 {
-	*server_info = talloc_p(NULL, struct auth_serversupplied_info);
+	*server_info = talloc_p(mem_ctx, struct auth_serversupplied_info);
 	if (!*server_info) {
 		DEBUG(0,("make_server_info: malloc failed!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -415,12 +416,12 @@ NTSTATUS make_server_info(struct auth_serversupplied_info **server_info,
 /***************************************************************************
  Make (and fill) a user_info struct for a guest login.
 ***************************************************************************/
-NTSTATUS make_server_info_guest(struct auth_serversupplied_info **server_info)
+NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx, struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
 	static const char zeros[16];
 
-	nt_status = make_server_info(server_info, "");
+	nt_status = make_server_info(mem_ctx, server_info, "");
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
