@@ -1936,14 +1936,17 @@ void display_sam_sync_ctr(FILE *out_hnd, enum action_type action,
 				}
 				case 5:
 				{
+					unsigned char lm_pwd[16];
+					unsigned char nt_pwd[16];
+
 					unistr2_to_ascii(name, &(ctr->account_info.uni_acct_name), sizeof(name)-1); 
 					fprintf(out_hnd, "Account: %s\n", name);
 
-					out_struct(out_hnd,
-						ctr->account_info.pass.buf_lm_pwd, 16, 8);
-					out_struct(out_hnd,
-						ctr->account_info.pass.buf_nt_pwd, 16, 8);
-						
+					sam_pwd_hash(ctr->account_info.user_rid, ctr->account_info.pass.buf_lm_pwd, lm_pwd, 0);
+					out_struct(out_hnd, lm_pwd, 16, 8);
+
+					sam_pwd_hash(ctr->account_info.user_rid, ctr->account_info.pass.buf_nt_pwd, nt_pwd, 0);
+					out_struct(out_hnd, nt_pwd, 16, 8);
 				}
 			}
 			break;
