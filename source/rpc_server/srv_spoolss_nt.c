@@ -1713,7 +1713,7 @@ static WERROR get_printer_dataex( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printe
 	
 	*type = regval_type( val );
 
-	DEBUG(5,("getprinterdata_printer:allocating %d\n", in_size));
+	DEBUG(5,("get_printer_dataex: allocating %d\n", in_size));
 
 	size = regval_size( val );
 	
@@ -1729,7 +1729,7 @@ static WERROR get_printer_dataex( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printe
 
 	*needed = size;
 	
-	DEBUG(5,("getprinterdata_printer:copy done\n"));
+	DEBUG(5,("get_printer_dataex: copy done\n"));
 
 	return WERR_OK;
 }
@@ -1841,68 +1841,6 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	
 	return WERR_INVALID_PARAM;
 }
-
-/********************************************************************
- GetPrinterData on a printer Handle.
-********************************************************************/
-
-static BOOL getprinterdata_printer(pipes_struct *p, TALLOC_CTX *ctx, POLICY_HND *handle,
-				fstring value, uint32 *type,
-                        	uint8 **data, uint32 *needed, uint32 in_size )
-{
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	int 		snum=0;	
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
-	REGISTRY_VALUE	*val;
-	int		size = 0;
-	
-	DEBUG(5,("getprinterdata_printer\n"));
-
-	if ( !Printer ) {
-		DEBUG(2,("getprinterdata_printer: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
-		return False;
-	}
-
-	if ( !get_printer_snum(p, handle, &snum) )
-		return False;
-
-	if ( !W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))) )
-		return False;
-
-	if ( !(val = get_printer_data( printer->info_2, SPOOL_PRINTERDATA_KEY, value)) )
-	{
-		free_a_printer(&printer, 2);
-		return False;
-	}
-	
-	*type = regval_type( val );
-
-
-	DEBUG(5,("getprinterdata_printer:allocating %d\n", in_size));
-
-	if (in_size) 
-	{
-		if ( (*data  = (uint8 *)talloc(ctx, in_size * sizeof(uint8))) == NULL )
-			return False;
-
-		memset( *data, 0, in_size *sizeof(uint8) );
-		
-		/* copy the min(in_size, len) */
-		
-		size = regval_size( val );
-		memcpy( *data, regval_data_p(val), (size > in_size) ? in_size : size*sizeof(uint8) );
-	}
-	else
-		*data = NULL;
-
-	*needed = size;
-	
-	DEBUG(5,("getprinterdata_printer:copy done\n"));
-			
-	
-	free_a_printer(&printer, 2);
-	return True;
-}	
 
 /********************************************************************
  * spoolss_getprinterdata
