@@ -74,30 +74,40 @@ def test_Enum(pipe, handle, depth = 0):
 
     # Enumerate values
 
-    return
-
     r = {}
     r['handle'] = handle
-    r['name'] = {}
-    r['name']['len'] = 0
-    r['name']['max_len'] = 0
-    r['name']['name'] = {}
-    r['name']['name']['max_len'] = 0
-    r['name']['name']['offset'] = 0
-    r['name']['name']['len'] = 0
-    r['name']['name']['buffer'] = None
+
+    keyinfo['max_valnamelen'] = 18
+    keyinfo['max_valbufsize'] = 0x31f5
+
+    r['foo'] = {}
+    r['foo']['len'] = 0
+    r['foo']['max_len'] = keyinfo['max_valnamelen'] * 2
+    r['foo']['buffer'] = {}
+    r['foo']['buffer']['max_len'] = keyinfo['max_valnamelen']
+    r['foo']['buffer']['offset'] = 0
+    r['foo']['buffer']['len'] = 0
+    r['foo']['buffer']['buffer'] = ''
     r['type'] = 0
     r['value'] = {}
-    r['value']['max_len'] = 0
+    r['value']['max_len'] = keyinfo['max_valbufsize']
     r['value']['offset'] = 0
     r['value']['len'] = 0
     r['value']['buffer'] = []
     r['returned_len'] = 0
+    r['foo2'] = {}
+    r['foo2']['max_len'] = keyinfo['max_valbufsize']
+    r['foo2']['offset'] = 0
+    r['foo2']['len'] = 0
+    r['foo2']['buffer'] = ''
+    r['value1'] = keyinfo['max_valbufsize']
+    r['value2'] = 0
     
     for i in range(0, keyinfo['num_values']):
 
         r['enum_index'] = i
-        
+
+        print keyinfo
         print dcerpc.winreg_EnumValue(pipe, r)
 
         sys.exit(1)        
