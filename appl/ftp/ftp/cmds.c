@@ -571,10 +571,8 @@ getit(int argc, char **argv, int restartit, char *mode)
 		argv[2] = argv[1];
 		loc++;
 	}
-	if (argc < 2 && !another(&argc, &argv, "remote-file"))
-		goto usage;
-	if (argc < 3 && !another(&argc, &argv, "local-file")) {
-usage:
+	if ((argc < 2 && !another(&argc, &argv, "remote-file")) ||
+	    (argc < 3 && !another(&argc, &argv, "local-file"))) {
 		printf("usage: %s remote-file [ local-file ]\n", argv[0]);
 		code = -1;
 		return (0);
