@@ -106,7 +106,7 @@ static char* next_command(char** cmdstr)
 
 /* Load specified configuration file */
 static NTSTATUS cmd_conf(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
-			int argc, char **argv)
+			int argc, const char **argv)
 {
 	if (argc != 2) {
 		printf("Usage: %s <smb.conf>\n", argv[0]);
@@ -181,7 +181,7 @@ static NTSTATUS cmd_help(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 }
 
 /* Change the debug level */
-static NTSTATUS cmd_debuglevel(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_debuglevel(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	if (argc > 2) {
 		printf("Usage: %s [debuglevel]\n", argv[0]);
@@ -197,7 +197,7 @@ static NTSTATUS cmd_debuglevel(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_freemem(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_freemem(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	/* Cleanup */
 	talloc_destroy(mem_ctx);
@@ -207,7 +207,7 @@ static NTSTATUS cmd_freemem(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_quit(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_quit(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	/* Cleanup */
 	talloc_destroy(mem_ctx);
@@ -311,7 +311,7 @@ static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *c
 		}
 
 		/* Run command */
-		result = cmd_entry->fn(vfs, mem_ctx, argc, argv);
+		result = cmd_entry->fn(vfs, mem_ctx, argc, (const char **)argv);
 
 	} else {
 		fprintf (stderr, "Invalid command\n");
@@ -478,7 +478,7 @@ int main(int argc, char *argv[])
 	struct cmd_set 		**cmd_set;
 	static struct vfs_state vfs;
 	int i;
-	static const char	*filename = NULL;
+	static char		*filename = NULL;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -520,9 +520,10 @@ int main(int argc, char *argv[])
 	}
 
 	/* some basic initialization stuff */
+	sec_init();
 	conn_init();
 	vfs.conn = conn_new();
-	vfs.conn->user = "vfstest";
+	string_set(&vfs.conn->user,"vfstest");
 	for (i=0; i < 1024; i++)
 		vfs.files[i] = NULL;
 

@@ -1887,7 +1887,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 		}
 	}
 
-	sd_size = conn->vfs_ops.get_nt_acl(fsp, fsp->fsp_name, &psd);
+	sd_size = VFS_GET_NT_ACL(fsp, fsp->fsp_name, &psd);
 
 	if (sd_size == 0) {
 		DEBUG(3,("_srv_net_file_query_secdesc: Unable to get NT ACL for file %s\n", filename));
@@ -1991,7 +1991,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 		}
 	}
 
-	ret = conn->vfs_ops.set_nt_acl(fsp, fsp->fsp_name, q_u->sec_info, q_u->sec_desc);
+	ret = VFS_SET_NT_ACL(fsp, fsp->fsp_name, q_u->sec_info, q_u->sec_desc);
 
 	if (ret == False) {
 		DEBUG(3,("_srv_net_file_set_secdesc: Unable to set NT ACL on file %s\n", filename));

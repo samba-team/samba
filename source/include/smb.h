@@ -259,7 +259,7 @@ enum SID_NAME_USE
  *
  * @sa http://msdn.microsoft.com/library/default.asp?url=/library/en-us/security/accctrl_38yn.asp
  **/
-typedef struct sid_info
+typedef struct DOM_SID
 {
   uint8  sid_rev_num;             /**< SID revision number */
   uint8  num_auths;               /**< Number of sub-authorities */
@@ -406,6 +406,7 @@ typedef struct files_struct
 } files_struct;
 
 #include "ntquotas.h"
+#include "sysquotas.h"
 
 /* used to hold an arbitrary blob of data */
 typedef struct data_blob {
@@ -441,18 +442,10 @@ typedef struct
 #include "smb_acls.h"
 #include "vfs.h"
 
-typedef struct smb_vfs_handle_struct
-{
-    void *data;
-    /* Handle on dlopen() call */
-    void *handle;
-    struct smb_vfs_handle_struct  *next, *prev;
-    
-} smb_vfs_handle_struct;
-
 typedef struct connection_struct
 {
 	struct connection_struct *next, *prev;
+	TALLOC_CTX *mem_ctx;
 	unsigned cnum; /* an index passed over the wire */
 	int service;
 	BOOL force_user;
@@ -467,8 +460,9 @@ typedef struct connection_struct
 	char *connectpath;
 	char *origpath;
 
-	struct vfs_ops vfs_ops;                   /* Filesystem operations */
-	struct smb_vfs_handle_struct *vfs_private;
+	struct vfs_ops vfs;                   /* Filesystem operations */
+	struct vfs_ops vfs_opaque;			/* OPAQUE Filesystem operations */
+	struct vfs_handle_struct *vfs_handles;		/* for the new plugins */
 
 	char *user; /* name of user who *opened* this connection */
 	uid_t uid; /* uid of user who *opened* this connection */

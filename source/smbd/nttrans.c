@@ -1032,7 +1032,7 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 	if (psd->off_dacl==0)
 		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	
-	ret = fsp->conn->vfs_ops.fset_nt_acl( fsp, fsp->fd, security_info_sent, psd);
+	ret = VFS_FSET_NT_ACL( fsp, fsp->fd, security_info_sent, psd);
 	
 	if (!ret) {
 		talloc_destroy(mem_ctx);
@@ -1561,7 +1561,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 	if (!lp_nt_acl_support(SNUM(conn)))
 		sd_size = get_null_nt_acl(mem_ctx, &psd);
 	else
-		sd_size = conn->vfs_ops.fget_nt_acl(fsp, fsp->fd, &psd);
+		sd_size = VFS_FGET_NT_ACL(fsp, fsp->fd, &psd);
 
 	if (sd_size == 0) {
 		talloc_destroy(mem_ctx);

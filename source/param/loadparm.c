@@ -336,9 +336,7 @@ typedef struct
 	char **printer_admin;
 	char *volume;
 	char *fstype;
-	char **szVfsObjectFile;
-	char *szVfsOptions;
-	char *szVfsPath;
+	char **szVfsObjects;
 	char *szMSDfsProxy;
 	int iMinPrintSpace;
 	int iMaxPrintJobs;
@@ -457,9 +455,7 @@ static service sDefault = {
 	NULL,			/* printer admin */
 	NULL,			/* volume */
 	NULL,			/* fstype */
-	NULL,			/* vfs object */
-	NULL,			/* vfs options */
-	NULL,			/* vfs path */
+	NULL,			/* vfs objects */
 	NULL,                   /* szMSDfsProxy */
 	0,			/* iMinPrintSpace */
 	1000,			/* iMaxPrintJobs */
@@ -1102,10 +1098,9 @@ static struct parm_struct parm_table[] = {
 	{"hide local users", P_BOOL, P_GLOBAL, &Globals.bHideLocalUsers, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{"VFS module options", P_SEP, P_SEPARATOR},
-	
-	{"vfs object", P_LIST, P_LOCAL, &sDefault.szVfsObjectFile, NULL, NULL, FLAG_SHARE},
-	{"vfs options", P_STRING, P_LOCAL, &sDefault.szVfsOptions, NULL, NULL, FLAG_SHARE},
-	{"vfs path", P_STRING, P_LOCAL, &sDefault.szVfsPath, NULL, NULL, FLAG_SHARE},
+
+	{"vfs objects", P_LIST, P_LOCAL, &sDefault.szVfsObjects, NULL, NULL, FLAG_SHARE},
+	{"vfs object", P_LIST, P_LOCAL, &sDefault.szVfsObjects, NULL, NULL, FLAG_SHARE | FLAG_HIDE},
 
 	
 	{"msdfs root", P_BOOL, P_LOCAL, &sDefault.bMSDfsRoot, NULL, NULL, FLAG_SHARE},
@@ -1770,9 +1765,7 @@ FN_LOCAL_LIST(lp_readlist, readlist)
 FN_LOCAL_LIST(lp_writelist, writelist)
 FN_LOCAL_LIST(lp_printer_admin, printer_admin)
 FN_LOCAL_STRING(lp_fstype, fstype)
-FN_LOCAL_LIST(lp_vfsobj, szVfsObjectFile)
-FN_LOCAL_STRING(lp_vfs_options, szVfsOptions)
-FN_LOCAL_STRING(lp_vfs_path, szVfsPath)
+FN_LOCAL_LIST(lp_vfs_objects, szVfsObjects)
 FN_LOCAL_STRING(lp_msdfs_proxy, szMSDfsProxy)
 static FN_LOCAL_STRING(lp_volume, volume)
 FN_LOCAL_STRING(lp_mangled_map, szMangledMap)
