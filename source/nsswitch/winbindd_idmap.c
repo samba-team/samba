@@ -22,6 +22,9 @@
 
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* High water mark keys */
 
 #define HWM_GROUP  "GROUP HWM"

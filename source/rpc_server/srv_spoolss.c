@@ -23,6 +23,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 /********************************************************************
  * api_spoolss_open_printer_ex (rarely seen - older call)
  ********************************************************************/

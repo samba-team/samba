@@ -38,6 +38,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 /*
  * A list of the rids of well known BUILTIN and Domain users
  * and groups.

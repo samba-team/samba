@@ -25,6 +25,9 @@
 #include "rpc_parse.h"
 #include "rpcclient.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_CLI
+
 #define DEBUG_TESTING
 
 extern FILE* out_hnd;

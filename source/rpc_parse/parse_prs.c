@@ -22,6 +22,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_PARSE
+
 /**
  * Dump a prs to a file: from the current location through to the end.
  **/

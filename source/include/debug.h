@@ -85,7 +85,7 @@ extern int DEBUGLEVEL;
 #define DBGC_PRINTDRIVERS	2
 #define DBGC_LANMAN		3
 #define DBGC_SMB		4
-#define DBGC_RPC		5
+#define DBGC_RPC_PARSE		5
 #define DBGC_RPC_SRV		6
 #define DBGC_RPC_CLI		7
 #define DBGC_PASSDB		8

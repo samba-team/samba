@@ -22,6 +22,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_PARSE
+
 /****************************************************************************
  A temporary TALLOC context for things like unistrs, that is valid for
  the life of a complete RPC call.

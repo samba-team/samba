@@ -26,6 +26,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 struct reg_info {
 	/* for use by \PIPE\winreg */
 	fstring name; /* name of registry key */

@@ -26,6 +26,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 extern pstring global_myname;
 
 /*************************************************************************

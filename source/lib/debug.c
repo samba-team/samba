@@ -149,7 +149,7 @@ static const char *default_classname_table[] = {
 	"printdrivers",      /* DBGC_PRINTDRIVERS */
 	"lanman",            /* DBGC_LANMAN       */
 	"smb",               /* DBGC_SMB          */
-	"rpc",               /* DBGC_RPC          */
+	"rpc_parse",         /* DBGC_RPC_PARSE    */
 	"rpc_srv",           /* DBGC_RPC_SRV      */
 	"rpc_cli",           /* DBGC_RPC_CLI      */
 	"passdb",            /* DBGC_PASSDB       */

@@ -27,6 +27,9 @@
 #include "rpc_parse.h"
 #include "nterr.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_PARSE
+
 /*******************************************************************
 inits a SAMR_Q_CLOSE_HND structure.
 ********************************************************************/
