@@ -26,16 +26,6 @@
 	if (!req) return NULL; \
 } while (0)
 
-/*
-  destroy a smbcli_tree
-*/
-static int tree_destructor(void *ptr)
-{
-	struct smbcli_tree *tree = ptr;
-	talloc_free(tree->session);
-	return 0;
-}
-
 /****************************************************************************
  Initialize the tree context
 ****************************************************************************/
@@ -49,8 +39,7 @@ struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session)
 	}
 
 	ZERO_STRUCTP(tree);
-	tree->session = session;
-	talloc_set_destructor(tree, tree_destructor);
+	tree->session = talloc_reference(tree, session);
 
 	return tree;
 }
@@ -188,17 +177,16 @@ NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	talloc_set_name_const(sock, "smbcli_tree_full_connection");
-
 	/* open a TCP socket to the server */
 	if (!smbcli_sock_connect_byname(sock, dest_host, port)) {
+		talloc_free(sock);
 		DEBUG(2,("Failed to establish socket connection - %s\n", strerror(errno)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	transport = smbcli_transport_init(sock);
+	talloc_free(sock);
 	if (!transport) {
-		talloc_free(sock);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -220,8 +208,8 @@ NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree,
 	}
 
 	session = smbcli_session_init(transport);
+	talloc_free(transport);
 	if (!session) {
-		talloc_free(transport);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -255,8 +243,8 @@ NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree,
 	session->vuid = setup.generic.out.vuid;
 
 	tree = smbcli_tree_init(session);
+	talloc_free(session);
 	if (!tree) {
-		talloc_free(session);
 		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}

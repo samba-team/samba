@@ -334,7 +334,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_pipe *p)
 	c.close.in.fnum = smb->fnum;
 	c.close.in.write_time = 0;
 	smb_raw_close(smb->tree, &c);
-	talloc_free(smb->tree);
+	talloc_free(smb);
 
 	return NT_STATUS_OK;
 }
@@ -371,15 +371,14 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 {
 	struct smb_private *smb;
         NTSTATUS status;
-	char *name = NULL;
+	char *name;
 	union smb_open io;
-	TALLOC_CTX *mem_ctx;
 
-	asprintf(&name, "\\%s", pipe_name);
+	name = talloc_asprintf(tree, "\\%s", pipe_name);
 	if (!name) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
+	
 	io.ntcreatex.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = 0;
 	io.ntcreatex.in.root_fid = 0;
@@ -400,14 +399,8 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = name;
 
-	mem_ctx = talloc_init("torture_rpc_connection");
-	if (!mem_ctx) {
-		free(name);
-		return NT_STATUS_NO_MEMORY;
-	}
-	status = smb_raw_open(tree, mem_ctx, &io);
-	free(name);
-	talloc_free(mem_ctx);
+	status = smb_raw_open(tree, name, &io);
+	talloc_free(name);
 
 	if (!NT_STATUS_IS_OK(status)) {
                 return status;
@@ -440,10 +433,9 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 	}
 
 	smb->fnum = io.ntcreatex.out.fnum;
-	smb->tree = tree;
+	smb->tree = talloc_reference(smb, tree);
 
 	(*p)->transport.private = smb;
-	talloc_increase_ref_count(tree);
 
         return NT_STATUS_OK;
 }

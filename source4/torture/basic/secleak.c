@@ -27,7 +27,6 @@ static BOOL try_failed_login(struct smbcli_state *cli)
 	NTSTATUS status;
 	union smb_sesssetup setup;
 	struct smbcli_session *session;
-	TALLOC_CTX *mem_ctx = talloc_init("failed_login");
 
 	session = smbcli_session_init(cli->transport);
 	setup.generic.level = RAW_SESSSETUP_GENERIC;
@@ -37,14 +36,12 @@ static BOOL try_failed_login(struct smbcli_state *cli)
 	setup.generic.in.user = "INVALID-USERNAME";
 	setup.generic.in.domain = "INVALID-DOMAIN";
 
-	status = smb_raw_session_setup(session, mem_ctx, &setup);
+	status = smb_raw_session_setup(session, session, &setup);
+	talloc_free(session);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("Allowed session setup with invalid credentials?!\n");
 		return False;
 	}
-
-	talloc_free(session);
-	talloc_free(mem_ctx);
 
 	return True;
 }
