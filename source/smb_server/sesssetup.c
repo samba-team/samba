@@ -74,7 +74,8 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 		return nt_status_squash(status);
 	}
 
-	status = make_session_info(server_info, &session_info);
+	/* This references server_info into session_info */
+	status = make_session_info(req, server_info, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);
 	}
@@ -157,12 +158,12 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		return nt_status_squash(status);
 	}
 
-	status = make_session_info(server_info, &session_info);
+	/* This references server_info into session_info */
+	status = make_session_info(req, server_info, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);
 	}
-
-	talloc_steal(session_info, server_info);
+	talloc_free(server_info);
 
 	sess->nt1.out.action = 0;
 	sess->nt1.out.vuid = smbsrv_register_session(req->smb_conn, session_info, NULL);
@@ -238,7 +239,8 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 	}
 
 	if (!smb_sess) {
-		vuid = smbsrv_register_session(req->smb_conn, session_info, gensec_ctx);
+		vuid = smbsrv_register_session(req->smb_conn, 
+					       session_info, gensec_ctx);
 		if (vuid == UID_FIELD_INVALID) {
 			return NT_STATUS_ACCESS_DENIED;
 		}

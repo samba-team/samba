@@ -534,18 +534,19 @@ BOOL make_auth_methods(struct auth_context *auth_context, struct auth_methods **
 	return True;
 }
 
-NTSTATUS make_session_info(struct auth_serversupplied_info *server_info, 
+NTSTATUS make_session_info(TALLOC_CTX *mem_ctx, 
+			   struct auth_serversupplied_info *server_info, 
 			   struct auth_session_info **session_info) 
 {
 	NTSTATUS nt_status;
 
-	*session_info = talloc_p(server_info, struct auth_session_info);
+	*session_info = talloc_p(mem_ctx, struct auth_session_info);
 	if (!*session_info) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	(*session_info)->refcount = 1;
 	(*session_info)->server_info = server_info;
+	talloc_reference(*session_info, server_info);
 
 	/* unless set otherwise, the session key is the user session
 	 * key from the auth subsystem */
@@ -570,12 +571,7 @@ NTSTATUS make_session_info(struct auth_serversupplied_info *server_info,
 void free_session_info(struct auth_session_info **session_info)
 {
 	DEBUG(5,("attempting to free a session_info structure\n"));
-	if (*session_info) {
-		(*session_info)->refcount--;
-		if ((*session_info)->refcount <= 0) {
-			talloc_free((*session_info));
-		}
-	}
+	talloc_free((*session_info));
 	*session_info = NULL;
 }
 
