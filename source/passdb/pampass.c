@@ -278,10 +278,8 @@ static BOOL pam_account(pam_handle_t *pamh, char * user, char * password)
 	return (True);
 }
 
-/*********************************************************************************/
-#if NOTBLOCKEDOUT
 
-static BOOL pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL instance)
+static BOOL pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL flag)
 {
        int pam_error;
 
@@ -289,7 +287,7 @@ static BOOL pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL instance
        PAM_username = user;
 
 #ifdef PAM_TTY
-       DEBUG(4,("PAM tty set to: %s\"\n", tty));
+       DEBUG(4,("PAM: tty set to: %s\n", tty));
        pam_error = pam_set_item(pamh, PAM_TTY, tty);
        if (!pam_error_handler(pamh, pam_error, "set tty failed", 0)) {
 	       proc_pam_end(pamh);
@@ -297,7 +295,7 @@ static BOOL pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL instance
        }
 #endif
 
-       if (instance) {
+       if (flag) {
          pam_error = pam_open_session(pamh, PAM_SILENT);
          if (!pam_error_handler(pamh, pam_error, "session setup failed", 0)) {
 	       proc_pam_end(pamh);
@@ -314,6 +312,36 @@ static BOOL pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL instance
        }
       return (True);
 }
+
+BOOL PAM_session(BOOL flag, const connection_struct *conn, char *tty)
+{
+	pam_handle_t *pamh = NULL;
+	char * user;
+
+	user = malloc(strlen(conn->user)+1);
+
+	/* This is freed by PAM */
+	strncpy(user, conn->user, strlen(conn->user)+1);
+
+	if (!proc_pam_start(&pamh, user))
+	{
+	  proc_pam_end(pamh);
+	  return False;
+	}
+
+	if (pam_session(pamh, user, tty, flag))
+	{
+	  return proc_pam_end(pamh);
+	}
+	else
+	{
+	  proc_pam_end(pamh);
+	  return False;
+	}
+}
+
+/*********************************************************************************/
+#if NOTBLOCKEDOUT
 
 static BOOL pam_account(pam_handle_t *pamh, char *user)
 {
@@ -372,32 +400,6 @@ static BOOL account_pam(char *user)
          return False;
 }
 
-BOOL PAM_session(BOOL instance, const connection_struct *conn, char *tty)
-{
-	pam_handle_t *pamh=NULL;
-	char * user;
-
-	user = malloc(strlen(conn->user)+1);
-
-	/* This is freed by PAM */
-	strncpy(user, conn->user, strlen(conn->user)+1);
-
-	if (!proc_pam_start(&pamh, user))
-	{
-	  proc_pam_end(pamh);
-	  return False;
-	}
-
-	if (pam_session(pamh, user, tty, instance))
-	{
-	  return proc_pam_end(pamh);
-	}
-	else
-	{
-	  proc_pam_end(pamh);
-	  return False;
-	}
-}
 
 #endif /* NOTBLOCKEDOUT */
 /************************************************************************************/
