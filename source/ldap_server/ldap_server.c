@@ -54,7 +54,7 @@ static void ldapsrv_init(struct server_service *service,
 	struct ldapsrv_service *ldap_service;
 	struct ldapsrv_partition *part;
 
-	DEBUG(1,("ldapsrv_init\n"));
+	DEBUG(10,("ldapsrv_init\n"));
 
 	ldap_service = talloc_p(service, struct ldapsrv_service);
 	if (!ldap_service) {
@@ -150,7 +150,7 @@ static BOOL read_into_buf(struct socket_context *sock, struct rw_buffer *buf)
 
 	status = socket_recv(sock, sock, &tmp_blob, 1024, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("socket_recv: %s\n",nt_errstr(status)));
+		DEBUG(10,("socket_recv: %s\n",nt_errstr(status)));
 		return False;
 	}
 
@@ -172,7 +172,7 @@ static BOOL write_from_buf(struct socket_context *sock, struct rw_buffer *buf)
 
 	status = socket_send(sock, sock, &tmp_blob, &sendlen, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("socket_send() %s\n",nt_errstr(status)));
+		DEBUG(10,("socket_send() %s\n",nt_errstr(status)));
 		return False;
 	}
 
@@ -240,7 +240,7 @@ NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	struct ldapsrv_reply *reply;
 	struct ldap_ExtendedResponse *r;
 
-	DEBUG(0,("Unwilling type[%d] id[%d]\n", call->request.type, call->request.messageid));
+	DEBUG(10,("Unwilling type[%d] id[%d]\n", call->request.type, call->request.messageid));
 
 	reply = ldapsrv_init_reply(call, LDAP_TAG_ExtendedResponse);
 	if (!reply) {
@@ -265,7 +265,7 @@ static NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
 	struct ldapsrv_reply *reply;
 	struct ldap_BindResponse *resp;
 
-	DEBUG(5, ("BindRequest dn: %s\n",req->dn));
+	DEBUG(10, ("BindRequest dn: %s\n",req->dn));
 
 	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
 	if (!reply) {
@@ -627,7 +627,7 @@ static void ldapsrv_accept(struct server_connection *conn)
 {
 	struct ldapsrv_connection *ldap_conn;
 
-	DEBUG(5, ("ldapsrv_accept\n"));
+	DEBUG(10, ("ldapsrv_accept\n"));
 
 	ldap_conn = talloc_p(conn, struct ldapsrv_connection);
 
@@ -648,7 +648,7 @@ static void ldapsrv_accept(struct server_connection *conn)
 */
 static void ldapsrv_exit(struct server_service *service, const char *reason)
 {
-	DEBUG(1,("ldapsrv_exit\n"));
+	DEBUG(10,("ldapsrv_exit\n"));
 	return;
 }
 
