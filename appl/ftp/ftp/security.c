@@ -86,7 +86,7 @@ name_to_level(const char *name)
     for(i = 0; i < sizeof(level_names) / sizeof(level_names[0]); i++)
 	if(!strncasecmp(level_names[i].name, name, strlen(name)))
 	    return level_names[i].level;
-    return -1;
+    return (enum protection_level)-1;
 }
 #endif
 
@@ -470,7 +470,7 @@ prot(char *pl)
 	    reply(536, "%s does not support %s protection.", 
 		  mech->name, level_to_name(p));
 	}else{
-	    data_prot = p;
+	    data_prot = (enum protection_level)p;
 	    reply(200, "Data protection is %s.", level_to_name(p));
 	}
     }else{
@@ -599,7 +599,7 @@ sec_prot_internal(int level)
 	return -1;
     }
     
-    data_prot = level;
+    data_prot = (enum protection_level)level;
     return 0;
 }
 
@@ -658,7 +658,7 @@ sec_request_prot(char *level)
     int l = name_to_level(level);
     if(l == -1)
 	return -1;
-    request_data_prot = l;
+    request_data_prot = (enum protection_level)l;
     return 0;
 }
 
@@ -721,7 +721,7 @@ sec_end(void)
 	free(app_data);
     }
     sec_complete = 0;
-    data_prot = 0;
+    data_prot = (enum protection_level)0;
 }
 
 #endif /* FTP_SERVER */
