@@ -722,6 +722,7 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip);
 
 void debug_nmb_packet(struct packet_struct *p);
 char *nmb_namestr(struct nmb_name *n);
+void nmb_safe_namestr(struct nmb_name *n, char *str, size_t len);
 struct packet_struct *copy_packet(struct packet_struct *packet);
 void free_packet(struct packet_struct *packet);
 struct packet_struct *read_packet(int fd,enum packet_type packet_type);
