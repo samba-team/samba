@@ -67,7 +67,7 @@ echo Making binaries
 echo "=====================  Making Profile versions ======================="
 make clean
 make headers
-make -P "CFLAGS=-O -g3 -D WITH_PROFILE" bin/smbd bin/nmbd
+make -P "CFLAGS=-O -g3 -woff 1188 -D WITH_PROFILE" bin/smbd bin/nmbd
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building profile sources\n";
@@ -79,7 +79,7 @@ mv  bin/nmbd bin/nmbd.profile
 echo "=====================  Making No Quota versions ======================="
 make clean
 make headers
-make -P "CFLAGS=-O -g3 -D QUOTAOBJS=smbd/noquotas.o" bin/smbd
+make -P "CFLAGS=-O -g3 -woff 1188 -D QUOTAOBJS=smbd/noquotas.o" bin/smbd
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building noquota sources\n";
@@ -88,7 +88,7 @@ fi
 mv  bin/smbd bin/smbd.noquota
 
 echo "=====================  Making Regular versions ======================="
-make -P "CFLAGS=-O -g3" all nsswitch/libnss_wins.so
+make -P "CFLAGS=-O -g3 -woff 1188" all
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building sources\n";
