@@ -101,9 +101,10 @@ kt_purge(int argc, char **argv)
     krb5_kt_cursor cursor;
     krb5_keytab_entry entry;
     int help_flag = 0;
-    int age = 7 * 24 * 60 * 60;
+    char *age_str = "1 week";
+    int age;
     struct getargs args[] = {
-	{ "age",   0,  arg_integer, NULL, "age to retire" },
+	{ "age",   0,  arg_string, NULL, "age to retire" },
 	{ "help", 'h', arg_flag, NULL }
     };
     int num_args = sizeof(args) / sizeof(args[0]);
@@ -112,7 +113,7 @@ kt_purge(int argc, char **argv)
     struct e *head = NULL;
     time_t judgement_day;
 
-    args[i++].value = &age;
+    args[i++].value = &age_str;
     args[i++].value = &help_flag;
 
     if(getarg(args, num_args, argc, argv, &optind)) {
@@ -121,6 +122,12 @@ kt_purge(int argc, char **argv)
     }
     if(help_flag) {
 	arg_printusage(args, num_args, "ktutil remove", "");
+	return 0;
+    }
+
+    age = parse_time(age_str, "s");
+    if(age < 0) {
+	krb5_warnx(context, "unparasable time `%s'", age_str);
 	return 0;
     }
 
