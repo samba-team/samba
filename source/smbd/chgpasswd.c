@@ -1046,6 +1046,19 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	/* Use external script to check password complexity */
+	if (lp_check_password_script()) {
+		int check_ret;
+
+		check_ret = smbrunsecret(lp_check_password_script(), new_passwd);
+		DEBUG(5, ("change_oem_password: check password script (%s) returned [%d]\n", lp_check_password_script(), check_ret));
+
+		if (check_ret != 0) {
+			DEBUG(1, ("change_oem_password: check password script said new password is not good enough!\n"));
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+	}
+
 	/*
 	 * If unix password sync was requested, attempt to change
 	 * the /etc/passwd database first. Return failure if this cannot

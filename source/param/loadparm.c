@@ -156,6 +156,7 @@ typedef struct
 	char *szAddMachineScript;
 	char *szShutdownScript;
 	char *szAbortShutdownScript;
+	char *szCheckPasswordScript;
 	char *szWINSHook;
 	char *szWINSPartners;
 	char *szUtmpDir;
@@ -811,6 +812,7 @@ static struct parm_struct parm_table[] = {
 	{"passwd chat", P_STRING, P_GLOBAL, &Globals.szPasswdChat, NULL, NULL, FLAG_ADVANCED}, 
 	{"passwd chat debug", P_BOOL, P_GLOBAL, &Globals.bPasswdChatDebug, NULL, NULL, FLAG_ADVANCED}, 
 	{"passwd chat timeout", P_INTEGER, P_GLOBAL, &Globals.iPasswdChatTimeout, NULL, NULL, FLAG_ADVANCED}, 
+	{"check password script", P_STRING, P_GLOBAL, &Globals.szCheckPasswordScript, NULL, NULL, FLAG_ADVANCED}, 
 	{"username map", P_STRING, P_GLOBAL, &Globals.szUsernameMap, NULL, NULL, FLAG_ADVANCED}, 
 	{"password level", P_INTEGER, P_GLOBAL, &Globals.pwordlevel, NULL, NULL, FLAG_ADVANCED}, 
 	{"username level", P_INTEGER, P_GLOBAL, &Globals.unamelevel, NULL, NULL, FLAG_ADVANCED}, 
@@ -1677,6 +1679,8 @@ FN_GLOBAL_STRING(lp_addmachine_script, &Globals.szAddMachineScript)
 
 FN_GLOBAL_STRING(lp_shutdown_script, &Globals.szShutdownScript)
 FN_GLOBAL_STRING(lp_abort_shutdown_script, &Globals.szAbortShutdownScript)
+
+FN_GLOBAL_STRING(lp_check_password_script, &Globals.szCheckPasswordScript)
 
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
 FN_GLOBAL_STRING(lp_wins_partners, &Globals.szWINSPartners)

@@ -90,7 +90,7 @@ int smbrun(char *cmd, int *outfd)
 			*outfd = -1;
 		}
 		return errno;
-    }
+	}
 
 	if (pid) {
 		/*
@@ -173,6 +173,127 @@ int smbrun(char *cmd, int *outfd)
 #endif
 
 	execl("/bin/sh","sh","-c",cmd,NULL);  
+	
+	/* not reached */
+	exit(82);
+	return 1;
+}
+
+
+/****************************************************************************
+run a command being careful about uid/gid handling and putting the output in
+outfd (or discard it if outfd is NULL).
+sends the provided secret to the child stdin.
+****************************************************************************/
+
+int smbrunsecret(char *cmd, char *secret)
+{
+	pid_t pid;
+	uid_t uid = current_user.uid;
+	gid_t gid = current_user.gid;
+	int ifd[2];
+	
+	/*
+	 * Lose any kernel oplock capabilities we may have.
+	 */
+	oplock_set_capability(False, False);
+
+	/* build up an input pipe */
+	if(pipe(ifd)) {
+		return -1;
+	}
+
+	/* in this method we will exec /bin/sh with the correct
+	   arguments, after first setting stdout to point at the file */
+
+	/*
+	 * We need to temporarily stop CatchChild from eating
+	 * SIGCLD signals as it also eats the exit status code. JRA.
+	 */
+
+	CatchChildLeaveStatus();
+                                   	
+	if ((pid=sys_fork()) < 0) {
+		DEBUG(0, ("smbrunsecret: fork failed with error %s\n", strerror(errno)));
+		CatchChild(); 
+		return errno;
+    	}
+
+	if (pid) {
+		/*
+		 * Parent.
+		 */
+		int status = 0;
+		pid_t wpid;
+		
+		close(ifd[0]);
+		/* send the secret */
+		write(ifd[1], secret, strlen(secret));
+		fsync(ifd[1]);
+		close(ifd[1]);
+
+		/* the parent just waits for the child to exit */
+		while((wpid = sys_waitpid(pid, &status, 0)) < 0) {
+			if(errno == EINTR) {
+				errno = 0;
+				continue;
+			}
+			break;
+		}
+
+		CatchChild(); 
+
+		if (wpid != pid) {
+			DEBUG(2, ("waitpid(%d) : %s\n", (int)pid, strerror(errno)));
+			return -1;
+		}
+
+#if defined(WIFEXITED) && defined(WEXITSTATUS)
+		if (WIFEXITED(status)) {
+			return WEXITSTATUS(status);
+		}
+#endif
+
+		return status;
+	}
+	
+	CatchChild(); 
+	
+	/* we are in the child. we exec /bin/sh to do the work for us. we
+	   don't directly exec the command we want because it may be a
+	   pipeline or anything else the config file specifies */
+	
+	close(ifd[1]);
+	close(0);
+	if (sys_dup2(ifd[0], 0) != 0) {
+		DEBUG(2,("Failed to create stdin file descriptor\n"));
+		close(ifd[0]);
+		exit(80);
+	}
+
+	/* now completely lose our privileges. This is a fairly paranoid
+	   way of doing it, but it does work on all systems that I know of */
+
+	become_user_permanently(uid, gid);
+
+	if (getuid() != uid || geteuid() != uid ||
+	    getgid() != gid || getegid() != gid) {
+		/* we failed to lose our privileges - do not execute
+                   the command */
+		exit(81); /* we can't print stuff at this stage,
+			     instead use exit codes for debugging */
+	}
+	
+#ifndef __INSURE__
+	/* close all other file descriptors, leaving only 0, 1 and 2. 0 and
+	   2 point to /dev/null from the startup code */
+	{
+		int fd;
+		for (fd = 3; fd < 256; fd++) close(fd);
+	}
+#endif
+
+	execl("/bin/sh", "sh", "-c", cmd, NULL);  
 	
 	/* not reached */
 	exit(82);
