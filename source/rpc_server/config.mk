@@ -119,7 +119,8 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE dcerpc_spoolss
 [MODULE::dcerpc_spoolss]
 INIT_OBJ_FILES = \
-		rpc_server/spoolss/dcesrv_spoolss.o
+		rpc_server/spoolss/dcesrv_spoolss.o \
+		rpc_server/spoolss/spoolssdb.o
 REQUIRED_SUBSYSTEMS = \
 		SAMDB \
 		DCERPC_COMMON

@@ -107,6 +107,7 @@ typedef struct
 	char *szConfigFile;
 	char *szSMBPasswdFile;
 	char *szSAM_URL;
+	char *szSPOOLSS_URL;
 	char *szPrivateDir;
 	char **szPassdbBackend;
 	char **szPreloadModules;
@@ -581,6 +582,7 @@ static struct parm_struct parm_table[] = {
 	{"password server", P_STRING, P_GLOBAL, &Globals.szPasswordServer, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"sam database", P_STRING, P_GLOBAL, &Globals.szSAM_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"spoolss database", P_STRING, P_GLOBAL, &Globals.szSPOOLSS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"non unix account range", P_STRING, P_GLOBAL, &Globals.szNonUnixAccountRange, handle_non_unix_account_range, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -960,6 +962,7 @@ static void init_globals(void)
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
 	asprintf(&Globals.szSAM_URL, "tdb://%s/sam.ldb", dyn_PRIVATE_DIR);
+	asprintf(&Globals.szSPOOLSS_URL, "tdb://%s/spoolss.ldb", dyn_PRIVATE_DIR);
 
 	string_set(&Globals.szGuestaccount, GUEST_ACCOUNT);
 
@@ -1205,6 +1208,7 @@ FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_sam_url, &Globals.szSAM_URL)
+FN_GLOBAL_STRING(lp_spoolss_url, &Globals.szSPOOLSS_URL)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
