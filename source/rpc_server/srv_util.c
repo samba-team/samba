@@ -46,7 +46,7 @@
  * and groups.
  */
 
-rid_name builtin_alias_rids[] =
+static const rid_name builtin_alias_rids[] =
 {  
     { BUILTIN_ALIAS_RID_ADMINS       , "Administrators" },
     { BUILTIN_ALIAS_RID_USERS        , "Users" },
@@ -62,7 +62,7 @@ rid_name builtin_alias_rids[] =
 };
 
 /* array lookup of well-known Domain RID users. */
-rid_name domain_user_rids[] =
+static const rid_name domain_user_rids[] =
 {  
     { DOMAIN_USER_RID_ADMIN         , "Administrator" },
     { DOMAIN_USER_RID_GUEST         , "Guest" },
@@ -70,7 +70,7 @@ rid_name domain_user_rids[] =
 };
 
 /* array lookup of well-known Domain RID groups. */
-rid_name domain_group_rids[] =
+static const rid_name domain_group_rids[] =
 {  
     { DOMAIN_GROUP_RID_ADMINS       , "Domain Admins" },
     { DOMAIN_GROUP_RID_USERS        , "Domain Users" },
@@ -414,167 +414,3 @@ NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 	return NT_STATUS_OK;
 }
 
-/*******************************************************************
- Look up a local (domain) rid and return a name and type.
- ********************************************************************/
-NTSTATUS local_lookup_group_name(uint32 rid, char *group_name, uint32 *type)
-{
-	int i = 0; 
-	(*type) = SID_NAME_DOM_GRP;
-
-	DEBUG(5,("lookup_group_name: rid: %d", rid));
-
-	while (domain_group_rids[i].rid != rid && domain_group_rids[i].rid != 0)
-	{
-		i++;
-	}
-
-	if (domain_group_rids[i].rid != 0)
-	{
-		fstrcpy(group_name, domain_group_rids[i].name);
-		DEBUG(5,(" = %s\n", group_name));
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(5,(" none mapped\n"));
-	return NT_STATUS_NONE_MAPPED;
-}
-
-/*******************************************************************
- Look up a local alias rid and return a name and type.
- ********************************************************************/
-NTSTATUS local_lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
-{
-	int i = 0; 
-	(*type) = SID_NAME_WKN_GRP;
-
-	DEBUG(5,("lookup_alias_name: rid: %d", rid));
-
-	while (builtin_alias_rids[i].rid != rid && builtin_alias_rids[i].rid != 0)
-	{
-		i++;
-	}
-
-	if (builtin_alias_rids[i].rid != 0)
-	{
-		fstrcpy(alias_name, builtin_alias_rids[i].name);
-		DEBUG(5,(" = %s\n", alias_name));
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(5,(" none mapped\n"));
-	return NT_STATUS_NONE_MAPPED;
-}
-
-
-#if 0 /*Nobody uses this function just now*/
-/*******************************************************************
- Look up a local user rid and return a name and type.
- ********************************************************************/
-NTSTATUS local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
-{
-	SAM_ACCOUNT *sampwd=NULL;
-	int i = 0;
-	BOOL ret;
-	
-	(*type) = SID_NAME_USER;
-
-	DEBUG(5,("lookup_user_name: rid: %d", rid));
-
-	/* look up the well-known domain user rids first */
-	while (domain_user_rids[i].rid != rid && domain_user_rids[i].rid != 0)
-	{
-		i++;
-	}
-
-	if (domain_user_rids[i].rid != 0) {
-		fstrcpy(user_name, domain_user_rids[i].name);
-		DEBUG(5,(" = %s\n", user_name));
-		return NT_STATUS_OK;
-	}
-
-	pdb_init_sam(&sampwd);
-
-	/* ok, it's a user.  find the user account */
-	become_root();
-	ret = pdb_getsampwrid(sampwd, rid);
-	unbecome_root();
-
-	if (ret == True) {
-		fstrcpy(user_name, pdb_get_username(sampwd) );
-		DEBUG(5,(" = %s\n", user_name));
-		pdb_free_sam(&sampwd);
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(5,(" none mapped\n"));
-	pdb_free_sam(&sampwd);
-	return NT_STATUS_NONE_MAPPED;
-}
-
-#endif
-
-/*******************************************************************
- Look up a local (domain) group name and return a rid
- ********************************************************************/
-NTSTATUS local_lookup_group_rid(char *group_name, uint32 *rid)
-{
-	const char *grp_name;
-	int i = -1; /* start do loop at -1 */
-
-	do /* find, if it exists, a group rid for the group name*/
-	{
-		i++;
-		(*rid) = domain_group_rids[i].rid;
-		grp_name = domain_group_rids[i].name;
-
-	} while (grp_name != NULL && !strequal(grp_name, group_name));
-
-	return (grp_name != NULL) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
-}
-
-/*******************************************************************
- Look up a local (BUILTIN) alias name and return a rid
- ********************************************************************/
-NTSTATUS local_lookup_alias_rid(const char *alias_name, uint32 *rid)
-{
-	const char *als_name;
-	int i = -1; /* start do loop at -1 */
-
-	do /* find, if it exists, a alias rid for the alias name*/
-	{
-		i++;
-		(*rid) = builtin_alias_rids[i].rid;
-		als_name = builtin_alias_rids[i].name;
-
-	} while (als_name != NULL && !strequal(als_name, alias_name));
-
-	return (als_name != NULL) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
-}
-
-/*******************************************************************
- Look up a local user name and return a rid
- ********************************************************************/
-NTSTATUS local_lookup_user_rid(char *user_name, uint32 *rid)
-{
-	SAM_ACCOUNT *sampass=NULL;
-	BOOL ret;
-
-	(*rid) = 0;
-
-	pdb_init_sam(&sampass);
-
-	/* find the user account */
-	become_root();
-	ret = pdb_getsampwnam(sampass, user_name);
-	unbecome_root();
-
-	if (ret == True) {
-		(*rid) = pdb_get_user_rid(sampass);
-		pdb_free_sam(&sampass);
-		return NT_STATUS_OK;
-	}
-
-	pdb_free_sam(&sampass);
-	return NT_STATUS_NONE_MAPPED;
-}
