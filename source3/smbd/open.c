@@ -696,6 +696,7 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
 /****************************************************************************
 open a file with a share mode
 ****************************************************************************/
+
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
 		      mode_t mode,int oplock_request, int *Access,int *action)
 {
@@ -714,6 +715,9 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   fsp->open = False;
   fsp->fd_ptr = 0;
 
+  DEBUG(10,("open_file_shared: fname = %s, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
+        fname, share_mode, ofun, mode,  oplock_request ));
+
   /* this is for OS/2 EAs - try and say we don't support them */
   if (strstr(fname,".+,;=[].")) 
   {
@@ -725,11 +729,14 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
     unix_ERR_code = ERROR_EAS_NOT_SUPPORTED;
 #endif /* OS2_WPS_FIX */
 
+    DEBUG(5,("open_file_shared: OS/2 EA's are not supported.\n"));
     return;
   }
 
   if ((ofun & 0x3) == 0 && file_existed)  
   {
+    DEBUG(5,("open_file_shared: create new requested for file %s and file already exists.\n",
+          fname ));
     errno = EEXIST;
     return;
   }
@@ -770,6 +777,8 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   {
     if (!fcbopen) 
     {
+      DEBUG(5,("open_file_shared: read/write access requested for file %s on read only %s\n",
+            fname, !CAN_WRITE(conn) ? "share" : "file" ));
       errno = EACCES;
       return;
     }
@@ -978,7 +987,7 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 		 * Create the directory.
 		 */
 
-		if(dos_mkdir(fname, unixmode) < 0) {
+		if(dos_mkdir(fname, unix_mode(conn,aDIR)) < 0) {
 			DEBUG(0,("open_directory: unable to create %s. Error was %s\n",
 				 fname, strerror(errno) ));
 			return -1;

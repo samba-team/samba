@@ -346,7 +346,37 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 	{
 		uchar p24[24];
 		NTLMSSPOWFencrypt(smb_pass->smb_passwd, lm_owf, p24);
-		NTLMSSPhash(p->ntlmssp_hash, p24);
+		{
+			unsigned char j = 0;
+			int ind;
+
+			unsigned char k2[8];
+
+			memcpy(k2, p24, 5);
+			k2[5] = 0xe5;
+			k2[6] = 0x38;
+			k2[7] = 0xb0;
+
+			for (ind = 0; ind < 256; ind++)
+			{
+				p->ntlmssp_hash[ind] = (unsigned char)ind;
+			}
+
+			for( ind = 0; ind < 256; ind++)
+			{
+				unsigned char tc;
+
+				j += (p->ntlmssp_hash[ind] + k2[ind%8]);
+
+				tc = p->ntlmssp_hash[ind];
+				p->ntlmssp_hash[ind] = p->ntlmssp_hash[j];
+				p->ntlmssp_hash[j] = tc;
+			}
+
+			p->ntlmssp_hash[256] = 0;
+			p->ntlmssp_hash[257] = 0;
+		}
+/*		NTLMSSPhash(p->ntlmssp_hash, p24); */
 		p->ntlmssp_seq_num = 0;
 	}
 	else

@@ -922,7 +922,36 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 			pwd_get_lm_nt_owf(&cli->pwd, lm_owf, NULL);
 			pwd_get_lm_nt_16(&cli->pwd, lm_hash, NULL);
 			NTLMSSPOWFencrypt(lm_hash, lm_owf, p24);
-			NTLMSSPhash(cli->ntlmssp_hash, p24);
+			{
+				unsigned char j = 0;
+				int ind;
+				unsigned char k2[8];
+
+				memcpy(k2, p24, 5);
+				k2[5] = 0xe5;
+				k2[6] = 0x38;
+				k2[7] = 0xb0;
+
+				for (ind = 0; ind < 256; ind++)
+				{
+					cli->ntlmssp_hash[ind] = (unsigned char)ind;
+				}
+
+				for( ind = 0; ind < 256; ind++)
+				{
+					unsigned char tc;
+
+					j += (cli->ntlmssp_hash[ind] + k2[ind%8]);
+
+					tc = cli->ntlmssp_hash[ind];
+					cli->ntlmssp_hash[ind] = cli->ntlmssp_hash[j];
+					cli->ntlmssp_hash[j] = tc;
+				}
+
+				cli->ntlmssp_hash[256] = 0;
+				cli->ntlmssp_hash[257] = 0;
+			}
+/*			NTLMSSPhash(cli->ntlmssp_hash, p24); */
 			bzero(lm_hash, sizeof(lm_hash));
 
 			/* this is a hack due to limitations in rpc_api_pipe */
