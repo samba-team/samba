@@ -35,6 +35,9 @@ fstring smbw_prefix = SMBW_PREFIX;
 
 int smbw_busy=0;
 
+/* needs to be here because of dumb include files on some systems */
+int creat_bits = O_WRONLY|O_CREAT|O_TRUNC;
+
 /***************************************************** 
 initialise structures
 *******************************************************/
@@ -1322,3 +1325,109 @@ int smbw_fork(void)
 	/* and continue in the child */
 	return 0;
 }
+
+#ifdef HAVE_ACL
+/***************************************************** 
+say no to acls
+*******************************************************/
+int smbw_acl(const char *pathp, int cmd, int nentries, aclent_t *aclbufp)
+{
+	if (cmd == GETACL || cmd == GETACLCNT) return 0;
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+
+#ifdef HAVE_FACL
+/***************************************************** 
+say no to acls
+*******************************************************/
+int smbw_facl(int fd, int cmd, int nentries, aclent_t *aclbufp)
+{
+	if (cmd == GETACL || cmd == GETACLCNT) return 0;
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+
+
+#ifdef HAVE_STAT64
+/* this can't be in wrapped.c because of include conflicts */
+void stat64_convert(struct stat *st, struct stat64 *st64)
+{
+	st64->st_size = st->st_size;
+	st64->st_mode = st->st_mode;
+	st64->st_ino = st->st_ino;
+	st64->st_dev = st->st_dev;
+	st64->st_rdev = st->st_rdev;
+	st64->st_nlink = st->st_nlink;
+	st64->st_uid = st->st_uid;
+	st64->st_gid = st->st_gid;
+	st64->st_atime = st->st_atime;
+	st64->st_mtime = st->st_mtime;
+	st64->st_ctime = st->st_ctime;
+	st64->st_blksize = st->st_blksize;
+	st64->st_blocks = st->st_blocks;
+}
+#endif
+
+#ifdef HAVE_READDIR64
+void dirent64_convert(struct dirent *d, struct dirent64 *d64)
+{
+	d64->d_ino = d->d_ino;
+	d64->d_off = d->d_off;
+	d64->d_reclen = d->d_reclen;
+	pstrcpy(d64->d_name, d->d_name);
+}
+#endif
+
+
+#ifdef HAVE___XSTAT
+/* Definition of `struct stat' used in the linux kernel..  */
+struct kernel_stat {
+	unsigned short int st_dev;
+	unsigned short int __pad1;
+	unsigned long int st_ino;
+	unsigned short int st_mode;
+	unsigned short int st_nlink;
+	unsigned short int st_uid;
+	unsigned short int st_gid;
+	unsigned short int st_rdev;
+	unsigned short int __pad2;
+	unsigned long int st_size;
+	unsigned long int st_blksize;
+	unsigned long int st_blocks;
+	unsigned long int st_atime;
+	unsigned long int __unused1;
+	unsigned long int st_mtime;
+	unsigned long int __unused2;
+	unsigned long int st_ctime;
+	unsigned long int __unused3;
+	unsigned long int __unused4;
+	unsigned long int __unused5;
+};
+
+void xstat_convert(int vers, struct stat *st, struct kernel_stat *kbuf)
+{
+	if (vers == _STAT_VER_LINUX_OLD) {
+		memcpy(st, kbuf, sizeof(*st));
+		return;
+	}
+
+	ZERO_STRUCTP(st);
+
+	st->st_dev = kbuf->st_dev;
+	st->st_ino = kbuf->st_ino;
+	st->st_mode = kbuf->st_mode;
+	st->st_nlink = kbuf->st_nlink;
+	st->st_uid = kbuf->st_uid;
+	st->st_gid = kbuf->st_gid;
+	st->st_rdev = kbuf->st_rdev;
+	st->st_size = kbuf->st_size;
+	st->st_blksize = kbuf->st_blksize;
+	st->st_blocks = kbuf->st_blocks;
+	st->st_atime = kbuf->st_atime;
+	st->st_mtime = kbuf->st_mtime;
+	st->st_ctime = kbuf->st_ctime;
+}
+#endif
