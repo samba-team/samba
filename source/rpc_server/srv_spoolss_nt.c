@@ -3657,7 +3657,9 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 		return False;
 	}
 
-	/* Compare two nt_printer_info_level structures */
+	/* Compare two nt_printer_info_level structures.  Don't compare
+	   status or cjobs as they seem to have something to do with the
+	   printer queue. */
 
 	pi1 = p1->info_2;
 	pi2 = p2->info_2;
@@ -3667,8 +3669,6 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	    pi1->default_priority != pi2->default_priority ||
 	    pi1->starttime != pi2->starttime ||
 	    pi1->untiltime != pi2->untiltime ||
-	    pi1->status != pi2->status ||
-	    pi1->cjobs != pi2->cjobs ||
 	    pi1->averageppm != pi2->averageppm) {
 		return False;
 	}
