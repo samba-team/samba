@@ -193,7 +193,7 @@ BOOL do_lsa_lookup_sids(struct cli_state *cli,
 				fstrcpy(dom_name, unistr2(ref.ref_dom[dom_idx].uni_dom_name.buffer));
 				fstrcpy(name    , unistr2(t_names.uni_name[i].buffer));
 				
-				snprintf(full_name, sizeof(full_name), "\\%s\\%s",
+				slprintf(full_name, sizeof(full_name)-1, "\\%s\\%s",
 				         dom_name, name);
 
 				(*names)[i] = strdup(full_name);

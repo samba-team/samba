@@ -71,7 +71,7 @@ static BOOL make_group_line(char *p, int max_len,
 {
 	int i;
 	int len;
-	len = snprintf(p, max_len, "%s:%s:%d:", grp->name, grp->comment, grp->rid);
+	len = slprintf(p, max_len-1, "%s:%s:%d:", grp->name, grp->comment, grp->rid);
 
 	if (len == -1)
 	{

@@ -71,7 +71,7 @@ static BOOL make_alias_line(char *p, int max_len,
 {
 	int i;
 	int len;
-	len = snprintf(p, max_len, "%s:%s:%d:", als->name, als->comment, als->rid);
+	len = slprintf(p, max_len-1, "%s:%s:%d:", als->name, als->comment, als->rid);
 
 	if (len == -1)
 	{

@@ -168,7 +168,7 @@ void close_sockets(void )
 #endif /* WITH_SSL */
 
   close(Client);
-  Client = 0;
+  Client = -1;
 }
 
 

@@ -563,6 +563,9 @@
 /* Define if you have the strpbrk function.  */
 #undef HAVE_STRPBRK
 
+/* Define if you have the syscall function.  */
+#undef HAVE_SYSCALL
+
 /* Define if you have the utime function.  */
 #undef HAVE_UTIME
 
@@ -628,6 +631,9 @@
 
 /* Define if you have the <rpc/clnt.h> header file.  */
 #undef HAVE_RPC_CLNT_H
+
+/* Define if you have the <rpc/rpc.h> header file.  */
+#undef HAVE_RPC_RPC_H
 
 /* Define if you have the <rpc/types.h> header file.  */
 #undef HAVE_RPC_TYPES_H

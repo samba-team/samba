@@ -162,7 +162,7 @@ void sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth)
 	for (i = 0; i < MIN(t->num_aces, MAX_SEC_ACES); i++)
 	{
 		fstring tmp;
-		snprintf(tmp, sizeof(tmp), "ace[%02d]: ", i);
+		slprintf(tmp, sizeof(tmp)-1, "ace[%02d]: ", i);
 		sec_io_ace(tmp, &t->ace[i], ps, depth);
 	}
 

@@ -137,7 +137,7 @@ static BOOL ldap_search_one_user_by_uid(LDAP *ldap_struct, int uid, LDAPMessage 
 {	
 	pstring filter;
 	
-	snprintf(filter, sizeof(pstring), "uidAccount = %d", uid);
+	slprintf(filter, sizeof(pstring)-1, "uidAccount = %d", uid);
 	
 	if ( !ldap_search_one_user(ldap_struct, filter, result) )
 	{	

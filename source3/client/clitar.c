@@ -970,7 +970,7 @@ static int skip_file(int skipsize)
 static int get_file(file_info2 finfo)
 {
   int fsize = finfo.size;
-  int fnum, pos = 0, dsize = 0, rsize = 0, bpos = 0;
+  int fnum = -1, pos = 0, dsize = 0, rsize = 0, bpos = 0;
 
   DEBUG(5, ("get_file: file: %s, size %i\n", finfo.name, fsize));
 
