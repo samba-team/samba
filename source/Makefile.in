@@ -608,13 +608,10 @@ bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 
 libsmbclient: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient shared library bin/$@.@SHLIBEXT@
-	@$(SHLD) @LDSHFLAGS@ -o \
-		bin/$@.@SHLIBEXT@ \
+	@$(SHLD) @LDSHFLAGS@ -o  bin/$@.@SHLIBEXT@ \
 		$(LIBSMBCLIENT_PICOBJS) $(LIBS)
 	@echo Linking libsmbclient non-shared library bin/$@.a
 	@-$(AR) -rc bin/$@.a $(LIBSMBCLIENT_PICOBJS)
- 
-
 
 bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
@@ -668,7 +665,7 @@ installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
 
 installclientlib:
-	-$(INSTALLCMD) bin/libsmbclient.so.$(LIBSMBCLIENT_MAJOR).$(LIBSMBCLIENT_MINOR) $(LIBDIR)
+	-$(INSTALLCMD) bin/libsmbclient.so
 	-$(INSTALLCMD) -d ${prefix}/include
 	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
 
