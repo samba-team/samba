@@ -132,6 +132,10 @@ static int run_rpc_command(struct cli_state *cli_arg, const char *pipe_name, int
 	else
 		cli = cli_arg;
 
+	if (!cli) {
+		return -1;
+	}
+
 	domain_sid = net_get_remote_domain_sid(cli);
 
 	/* Create mem_ctx */
