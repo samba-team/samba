@@ -79,7 +79,7 @@
 # ENCRYPTION.txt, Win95.txt and WinNT.txt in the Samba documentation.
 # Do not enable this option unless you have read those documents
 ;  encrypt passwords = yes
-;  smb passwd file = /etc/samba/private/smbpasswd
+;  smb passwd file = /etc/smbpasswd
 
 # The following are needed to allow password changing from Windows to
 # update the Linux sytsem password also.
@@ -92,12 +92,12 @@
 ;  passwd chat = *New*UNIX*password* %n\n *ReType*new*UNIX*password* %n\n *passwd:*all*authentication*tokens*updated*successfully*
 
 # Unix users can map to different SMB User names
-;  username map = /etc/samba/smbusers
+;  username map = /etc/smbusers
 
 # Using the following line enables you to customise your configuration
 # on a per machine basis. The %m gets replaced with the netbios name
 # of the machine that is connecting
-;   include = /etc/samba/smb.conf.%m
+;   include = /etc/smb.conf.%m
 
 # Most people will find that this option gives better performance.
 # See speed.txt and the manual pages for details
@@ -132,10 +132,6 @@
 # Preferred Master causes Samba to force a local browser election on startup
 # and gives it a slightly higher chance of winning the election
 ;   preferred master = yes
-
-# Use only if you have an NT server on your network that has been
-# configured at install time to be a primary domain controller.
-;   domain controller = <NT-Domain-Controller-SMBName>
 
 # Enable this if you want Samba to be a domain logon server for 
 # Windows95 workstations. 
@@ -202,7 +198,7 @@
 # Un-comment the following and create the netlogon directory for Domain Logons
 ; [netlogon]
 ;   comment = Network Logon Service
-;   path = /home/netlogon
+;   path = /home/samba/netlogon
 ;   guest ok = yes
 ;   writable = no
 ;   share modes = no
@@ -211,7 +207,7 @@
 # Un-comment the following to provide a specific roving profile share
 # the default is to use the user's home directory
 ;[Profiles]
-;    path = /home/profiles
+;    path = /home/samba/profiles
 ;    browseable = no
 ;    guest ok = yes
 
@@ -235,7 +231,7 @@
 # =====================================
 # print command: see above for details.
 # =====================================
-   print command = lpr-cups -P %p -o raw %s # using client side printer drivers.
+   print command = lpr-cups -P %p -o raw %s -r	 # using client side printer drivers.
 ;   print command = lpr-cups -P %p %s # using cups own drivers (use generic PostScript on clients).
    lpq command = lpstat -o %p
    lprm command = cancel %p-%j
@@ -251,9 +247,9 @@
 # the "staff" group
 ;[public]
 ;   comment = Public Stuff
-;   path = /home/samba
+;   path = /home/samba/public
 ;   public = yes
-;   read only = yes
+;   writable = no
 ;   write list = @staff
 
 # Other examples. 
