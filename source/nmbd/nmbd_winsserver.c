@@ -983,7 +983,7 @@ static void wins_multihomed_register_query_success(struct subnet_record *subrec,
   if( (namerec == NULL) || (namerec->data.source != REGISTER_NAME) || !WINS_STATE_ACTIVE(namerec) )
   {
     DEBUG(3,("wins_multihomed_register_query_success: name %s is not in the correct state to add \
-a subsequent IP addess.\n", nmb_namestr(question_name) ));
+a subsequent IP address.\n", nmb_namestr(question_name) ));
     send_wins_name_registration_response(RFS_ERR, 0, orig_reg_packet);
 
     orig_reg_packet->locked = False;
@@ -1100,6 +1100,16 @@ to register name %s from IP %s.", nmb_namestr(question), inet_ntoa(p->ip) ));
 
   namerec = find_name_on_subnet(subrec, question, FIND_ANY_NAME);
 
+  /*
+   * if the record exists but NOT in active state,
+   * consider it dead.
+   */
+  if ((namerec != NULL) && !WINS_STATE_ACTIVE(namerec)) {
+	  DEBUG(5,("wins_process_multihomed_name_registration_request: Name (%s) in WINS was not active - removing it.\n", nmb_namestr(question)));
+	  remove_name_from_namelist(subrec, namerec);
+	  namerec = NULL;
+  }
+  
   /*
    * Deal with the case where the name found was a dns entry.
    * Remove it as we now have a NetBIOS client registering the
