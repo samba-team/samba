@@ -2184,7 +2184,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 
 	ZERO_STRUCTP(nt_devmode);
 
-	safe_strcpy(adevice, default_devicename, sizeof(adevice)-1);
+	slprintf(adevice, sizeof(adevice), "%s", default_devicename);
 	fstrcpy(nt_devmode->devicename, adevice);	
 	
 	fstrcpy(nt_devmode->formname, "Letter");
@@ -3414,7 +3414,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 		info.devmode = construct_nt_devicemode(printername);
 	}
 
-	safe_strcpy(adevice, info.printername, sizeof(adevice)-1);
+	slprintf( adevice, sizeof(adevice), "%s", info.printername );
 	if (info.devmode) {
 		fstrcpy(info.devmode->devicename, adevice);	
 	}
@@ -3770,7 +3770,7 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	len += pack_values( &info->data, buf+len, buflen-len );
 
-	if (buflen != len) {
+	if (buflen < len) {
 		char *tb;
 
 		tb = (char *)Realloc(buf, len);
@@ -4072,7 +4072,7 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 				fstrcpy( servername, print_hnd->servername );
 			else {
 				fstrcpy( servername, "%L" );
-				standard_sub_basic( NULL, servername, sizeof(servername)-1 );
+				standard_sub_basic( "", servername, sizeof(servername)-1 );
 			}
 			
 			/* 

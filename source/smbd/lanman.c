@@ -441,7 +441,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
   /* the client expects localtime */
   t -= TimeDiff(t);
 
-  PACKI(desc,"W",pjobid_to_rap(snum,queue->job)); /* uJobId */
+  PACKI(desc,"W",pjobid_to_rap(lp_const_servicename(snum),queue->job)); /* uJobId */
   if (uLevel == 1) {
     PACKS(desc,"B21",queue->fs_user); /* szUserName */
     PACKS(desc,"B","");		/* pad */
@@ -549,7 +549,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum,
 	PACKS(desc, "z", driver.info_3->monitorname); /* language monitor */
 	
 	fstrcpy(location, "\\\\%L\\print$\\WIN40\\0");
-	standard_sub_basic( NULL, location, sizeof(location)-1 );
+	standard_sub_basic( "", location, sizeof(location)-1 );
 	PACKS(desc,"z", location);                          /* share to retrieve files */
 	
 	PACKS(desc,"z", driver.info_3->defaultdatatype);    /* default data type */
@@ -760,18 +760,10 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 		return(True);
 	}
  
-	snum = lp_servicenumber(QueueName);
-	if (snum < 0 && pcap_printername_ok(QueueName,NULL)) {
-		int pnum = lp_servicenumber(PRINTERS_NAME);
-		if (pnum >= 0) {
-			lp_add_printer(QueueName,pnum);
-			snum = lp_servicenumber(QueueName);
-		}
-	}
-  
-	if (snum < 0 || !VALID_SNUM(snum))
-		return(False);
-
+	snum = find_service(QueueName);
+	if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) )
+		return False;
+		
 	if (uLevel==52) {
 		count = get_printerdrivernumber(snum);
 		DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
@@ -1503,7 +1495,7 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
   for (i=0;i<count;i++) {
     fstring servicename_dos;
     if (!(lp_browseable(i) && lp_snum_ok(i)))
-           continue;
+	    continue;
     push_ascii_fstring(servicename_dos, lp_servicename(i));
     if( lp_browseable( i )
         && lp_snum_ok( i )
@@ -1533,7 +1525,7 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
     {
     fstring servicename_dos;
     if (!(lp_browseable(i) && lp_snum_ok(i)))
-           continue;
+	    continue;
     push_ascii_fstring(servicename_dos, lp_servicename(i));
     if( lp_browseable( i )
         && lp_snum_ok( i )
@@ -2125,11 +2117,12 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	char *p = skip_string(str2,1);
 	uint32 jobid;
 	int snum;
+	fstring sharename;
 	int errcode;
 	extern struct current_user current_user;
 	WERROR werr = WERR_OK;
 
-	if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
+	if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
 		return False;
 
 	/* check it's a supported varient */
@@ -2140,7 +2133,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	*rparam = REALLOC(*rparam,*rparam_len);	
 	*rdata_len = 0;
 
-	if (!print_job_exists(snum, jobid)) {
+	if (!print_job_exists(sharename, jobid)) {
 		errcode = NERR_JobNotFound;
 		goto out;
 	}
@@ -2266,14 +2259,21 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	char *p = skip_string(str2,1);
 	uint32 jobid;
 	int snum;
+	fstring sharename;
 	int uLevel = SVAL(p,2);
 	int function = SVAL(p,4);
 	int place, errcode;
 
-	if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
+	if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
 		return False;
 	*rparam_len = 4;
 	*rparam = REALLOC(*rparam,*rparam_len);
+
+	if ( (snum = lp_servicenumber(sharename)) == -1 ) {
+		DEBUG(0,("api_PrintJobInfo: unable to get service number from sharename [%s]\n",
+			sharename));
+		return False;
+	}
   
 	*rdata_len = 0;
 	
@@ -2282,7 +2282,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	    (!check_printjob_info(&desc,uLevel,str2)))
 		return(False);
 
-	if (!print_job_exists(snum, jobid)) {
+	if (!print_job_exists(sharename, jobid)) {
 		errcode=NERR_JobNotFound;
 		goto out;
 	}
@@ -2948,6 +2948,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   int count;
   int i;
   int snum;
+  fstring sharename;
   uint32 jobid;
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
@@ -2965,7 +2966,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   if (strcmp(str1,"WWrLh") != 0) return False;
   if (!check_printjob_info(&desc,uLevel,str2)) return False;
 
-  if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
+  if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
     return False;
 
   snum = lp_servicenumber( sharename);
@@ -3039,20 +3040,18 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
   DEBUG(3,("WPrintJobEnumerate uLevel=%d name=%s\n",uLevel,name));
 
   /* check it's a supported variant */
-  if (strcmp(str1,"zWrLeh") != 0) return False;
-  if (uLevel > 2) return False;	/* defined only for uLevel 0,1,2 */
-  if (!check_printjob_info(&desc,uLevel,str2)) return False;
+  if (strcmp(str1,"zWrLeh") != 0) 
+    return False;
+    
+  if (uLevel > 2) 
+    return False;	/* defined only for uLevel 0,1,2 */
+    
+  if (!check_printjob_info(&desc,uLevel,str2)) 
+    return False;
 
-  snum = lp_servicenumber(name);
-  if (snum < 0 && pcap_printername_ok(name,NULL)) {
-    int pnum = lp_servicenumber(PRINTERS_NAME);
-    if (pnum >= 0) {
-      lp_add_printer(name,pnum);
-      snum = lp_servicenumber(name);
-    }
-  }
-
-  if (snum < 0 || !VALID_SNUM(snum)) return(False);
+  snum = find_service(name);
+  if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) )
+    return False;
 
   count = print_queue_status(snum,&queue,&status);
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
@@ -3155,16 +3154,8 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   if (strcmp(str1,"zWrLh") != 0) return False;
   if (!check_printdest_info(&desc,uLevel,str2)) return False;
 
-  snum = lp_servicenumber(PrinterName);
-  if (snum < 0 && pcap_printername_ok(PrinterName,NULL)) {
-    int pnum = lp_servicenumber(PRINTERS_NAME);
-    if (pnum >= 0) {
-      lp_add_printer(PrinterName,pnum);
-      snum = lp_servicenumber(PrinterName);
-    }
-  }
-
-  if (snum < 0) {
+  snum = find_service(PrinterName);
+  if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) ) {
     *rdata_len = 0;
     desc.errcode = NERR_DestNotFound;
     desc.neededlen = 0;

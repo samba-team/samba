@@ -921,13 +921,13 @@ static BOOL parse_lpq_vlp(char *line,print_queue_struct *buf,BOOL first)
 parse a lpq line. Choose printing style
 ****************************************************************************/
 
-BOOL parse_lpq_entry(enum printing_types type ,char *line,
+BOOL parse_lpq_entry(enum printing_types printing_type,char *line,
 		     print_queue_struct *buf,
 		     print_status_struct *status,BOOL first)
 {
   BOOL ret;
 
-  switch (type)
+  switch (printing_type)
     {
     case PRINT_SYSV:
       ret = parse_lpq_sysv(line,buf,first);
@@ -971,7 +971,7 @@ BOOL parse_lpq_entry(enum printing_types type ,char *line,
   }
 
   /* in the LPRNG case, we skip lines starting by a space.*/
-  if (line && !ret && (type==PRINT_LPRNG) )
+  if (line && !ret && (printing_type==PRINT_LPRNG) )
   {
   	if (line[0]==' ')
 		return ret;

@@ -27,34 +27,6 @@
 
 
 /*
- * CUPS printing interface definitions...
- */
-
-static int cups_job_delete(int snum, struct printjob *pjob);
-static int cups_job_pause(int snum, struct printjob *pjob);
-static int cups_job_resume(int snum, struct printjob *pjob);
-static int cups_job_submit(int snum, struct printjob *pjob);
-static int cups_queue_get(const char *printer_name,
-			  enum printing_types printing_type,
-			  const char *lpq_command,
-			  print_queue_struct **q,
-			  print_status_struct *status);
-static int cups_queue_pause(int snum);
-static int cups_queue_resume(int snum);
-
-
-struct printif	cups_printif =
-		{
-		  cups_queue_get,
-		  cups_queue_pause,
-		  cups_queue_resume,
-		  cups_job_delete,
-		  cups_job_pause,
-		  cups_job_resume,
-		  cups_job_submit,
-		};
-
-/*
  * 'cups_passwd_cb()' - The CUPS password callback...
  */
 
@@ -94,12 +66,10 @@ void cups_printer_fn(void (*fn)(char *, char *))
 	ipp_attribute_t	*attr;		/* Current attribute */
 	cups_lang_t	*language;	/* Default language */
 	char		*name,		/* printer-name attribute */
-			*make_model,	/* printer-make-and-model attribute */
 			*info;		/* printer-info attribute */
 	static const char *requested[] =/* Requested attributes */
 			{
 			  "printer-name",
-			  "printer-make-and-model",
 			  "printer-info"
 			};       
 
@@ -179,7 +149,6 @@ void cups_printer_fn(void (*fn)(char *, char *))
 		*/
 
 		name       = NULL;
-		make_model = NULL;
 		info       = NULL;
 
 		while (attr != NULL && attr->group_tag == IPP_TAG_PRINTER)
@@ -187,10 +156,6 @@ void cups_printer_fn(void (*fn)(char *, char *))
         		if (strcmp(attr->name, "printer-name") == 0 &&
 			    attr->value_tag == IPP_TAG_NAME)
 				name = attr->values[0].string.text;
-
-        		if (strcmp(attr->name, "printer-make-and-model") == 0 &&
-			    attr->value_tag == IPP_TAG_TEXT)
-				make_model = attr->values[0].string.text;
 
         		if (strcmp(attr->name, "printer-info") == 0 &&
 			    attr->value_tag == IPP_TAG_TEXT)
@@ -206,12 +171,7 @@ void cups_printer_fn(void (*fn)(char *, char *))
 		if (name == NULL)
 			break;
 
- 		if (info == NULL || !info[0])
-			(*fn)(name, make_model);
-		else
-			(*fn)(name, info);
-		
-
+		(*fn)(name, info);
 	}
 
 	ippDelete(response);
@@ -273,7 +233,6 @@ void cups_printer_fn(void (*fn)(char *, char *))
 		*/
 
 		name       = NULL;
-		make_model = NULL;
 		info       = NULL;
 
 		while (attr != NULL && attr->group_tag == IPP_TAG_PRINTER)
@@ -281,10 +240,6 @@ void cups_printer_fn(void (*fn)(char *, char *))
         		if (strcmp(attr->name, "printer-name") == 0 &&
 			    attr->value_tag == IPP_TAG_NAME)
 				name = attr->values[0].string.text;
-
-        		if (strcmp(attr->name, "printer-make-and-model") == 0 &&
-			    attr->value_tag == IPP_TAG_TEXT)
-				make_model = attr->values[0].string.text;
 
         		if (strcmp(attr->name, "printer-info") == 0 &&
 			    attr->value_tag == IPP_TAG_TEXT)
@@ -300,12 +255,7 @@ void cups_printer_fn(void (*fn)(char *, char *))
 		if (name == NULL)
 			break;
 
- 		if (info == NULL || !info[0])
-			(*fn)(name, make_model);
-		else
-			(*fn)(name, info);
-		
-
+		(*fn)(name, info);
 	}
 
 	ippDelete(response);
@@ -815,10 +765,10 @@ cups_job_submit(int snum, struct printjob *pjob)
 
 static int
 cups_queue_get(const char *printer_name,
-	       enum printing_types printing_type,
-	       const char *lpq_command,
-	       print_queue_struct **q,
-	       print_status_struct *status)
+               enum printing_types printing_type,
+               char *lpq_command,
+               print_queue_struct **q, 
+               print_status_struct *status)
 {
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
@@ -877,8 +827,7 @@ cups_queue_get(const char *printer_name,
         * Generate the printer URI...
 	*/
 
-	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
-	         printer_name);
+	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s", printer_name);
 
        /*
 	* Build an IPP_GET_JOBS request, which requires the following
@@ -1097,8 +1046,8 @@ cups_queue_get(const char *printer_name,
 
 	if ((response = cupsDoRequest(http, request, "/")) == NULL)
 	{
-		DEBUG(0,("Unable to get printer status for %s - %s\n",
-			 printer_name, ippErrorString(cupsLastError())));
+		DEBUG(0,("Unable to get printer status for %s - %s\n", printer_name,
+			 ippErrorString(cupsLastError())));
 		httpClose(http);
 		*q = queue;
 		return (qcount);
@@ -1106,8 +1055,7 @@ cups_queue_get(const char *printer_name,
 
 	if (response->request.status.status_code >= IPP_OK_CONFLICT)
 	{
-		DEBUG(0,("Unable to get printer status for %s - %s\n",
-			 printer_name, 
+		DEBUG(0,("Unable to get printer status for %s - %s\n", printer_name,
 			 ippErrorString(response->request.status.status_code)));
 		ippDelete(response);
 		httpClose(http);
@@ -1327,6 +1275,21 @@ cups_queue_resume(int snum)
 	return (ret);
 }
 
+/*******************************************************************
+ * CUPS printing interface definitions...
+ ******************************************************************/
+
+struct printif	cups_printif =
+{
+	PRINT_CUPS,
+	cups_queue_get,
+	cups_queue_pause,
+	cups_queue_resume,
+	cups_job_delete,
+	cups_job_pause,
+	cups_job_resume,
+	cups_job_submit,
+};
 
 #else
  /* this keeps fussy compilers happy */
