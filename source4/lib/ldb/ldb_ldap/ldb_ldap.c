@@ -33,7 +33,8 @@
  */
 
 #include "includes.h"
-#include "ldb_ldap/ldb_ldap.h"
+#if HAVE_LDAP
+#include "ldb_ldap.h"
 
 #if 0
 /*
@@ -518,3 +519,4 @@ failed:
 	if (ldb) free(ldb);
 	return NULL;
 }
+#endif /*HAVE_LDAP*/
