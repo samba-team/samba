@@ -33,7 +33,7 @@ static struct passwd *uname_string_combinations2(char *s, int offset, struct pas
 
 BOOL name_is_local(const char *name)
 {
-	return !(strchr_m(name, *lp_winbind_separator()) || lp_winbind_use_default_domain());
+	return !(strchr_m(name, *lp_winbind_separator()));
 }
 
 /****************************************************************************
@@ -535,16 +535,29 @@ BOOL user_in_list(const char *user,char **list)
 			enum SID_NAME_USE name_type;
 			BOOL winbind_answered = False;
 			BOOL ret;
+			fstring groupname, domain;
+			
+			/* Parse a string of the form DOMAIN/user into a domain and a user */
 
-			/* Check to see if name is a Windows group */
-			if (winbind_lookup_name(*list, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
+			char *p = strchr(*list,*lp_winbind_separator());
+			
+			DEBUG(10,("user_in_list: checking if user |%s| is in winbind group |%s|\n", user, *list));
 
+			if (p) {
+				fstrcpy(groupname, p+1);
+				fstrcpy(domain, *list);
+				domain[PTR_DIFF(p, *list)] = 0;
+
+				/* Check to see if name is a Windows group */
+				if (winbind_lookup_name(groupname, domain, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
+					
 				/* Check if user name is in the Windows group */
-				ret = user_in_winbind_group_list(user, *list, &winbind_answered);
-
-				if (winbind_answered && ret == True) {
-					DEBUG(10,("user_in_list: user |%s| is in group |%s|\n", user, *list));
-					return ret;
+					ret = user_in_winbind_group_list(user, *list, &winbind_answered);
+					
+					if (winbind_answered && ret == True) {
+						DEBUG(10,("user_in_list: user |%s| is in winbind group |%s|\n", user, *list));
+						return ret;
+					}
 				}
 			}
 		}
