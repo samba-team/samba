@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell              1992-2000,
    Copyright (C) Jean Francois Micouleau      1998-2000.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -222,7 +222,7 @@ typedef struct ntdevicemode
 	uint32	panningwidth;
 	uint32	panningheight;
 	uint8 	*private;
-} NT_DEVICEMODE; 
+} NT_DEVICEMODE;
 
 typedef struct nt_printer_info_level_2
 {
@@ -288,7 +288,7 @@ typedef struct _form
 
 #ifndef SAMBA_PRINTER_PORT_NAME
 #define SAMBA_PRINTER_PORT_NAME "Samba Printer Port"
-#endif 
+#endif
 
 /* DOS header format */
 #define DOS_HEADER_SIZE                 64
@@ -311,11 +311,25 @@ typedef struct _form
 #define PE_HEADER_SIGNATURE             0x00004550
 #define PE_HEADER_MACHINE_OFFSET        4
 #define PE_HEADER_MACHINE_I386          0x14c
+#define PE_HEADER_NUMBER_OF_SECTIONS    6
 #define PE_HEADER_MAJOR_OS_VER_OFFSET   64
 #define PE_HEADER_MINOR_OS_VER_OFFSET   66
 #define PE_HEADER_MAJOR_IMG_VER_OFFSET  68
 #define PE_HEADER_MINOR_IMG_VER_OFFSET  70
 #define PE_HEADER_MAJOR_SS_VER_OFFSET   72
 #define PE_HEADER_MINOR_SS_VER_OFFSET   74
+#define PE_HEADER_SECT_HEADER_SIZE      40
+#define PE_HEADER_SECT_NAME_OFFSET      0
+#define PE_HEADER_SECT_SIZE_DATA_OFFSET 16
+#define PE_HEADER_SECT_PTR_DATA_OFFSET  20
+
+/* Microsoft file version format */
+#define VS_SIGNATURE                    "VS_VERSION_INFO"
+#define VS_MAGIC_VALUE                  0xfeef04bd
+#define VS_MAJOR_OFFSET					8
+#define VS_MINOR_OFFSET					12
+#define VS_VERSION_INFO_UNICODE_SIZE    (sizeof(VS_SIGNATURE)*2+4+VS_MINOR_OFFSET+4) /* not true size! */
+#define VS_VERSION_INFO_SIZE            (sizeof(VS_SIGNATURE)+4+VS_MINOR_OFFSET+4)   /* not true size! */
+#define VS_NE_BUF_SIZE                  4096  /* Must be > 2*VS_VERSION_INFO_SIZE */
 
 #endif /* NT_PRINTING_H_ */

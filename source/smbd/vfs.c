@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 1.9.
    VFS initialisation and support functions
    Copyright (C) Tim Potter 1999
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -36,7 +36,7 @@ struct vfs_syminfo {
 
 struct vfs_ops default_vfs_ops = {
 
-	/* Disk operations */        
+	/* Disk operations */
 
 	vfswrap_dummy_connect,
 	vfswrap_dummy_disconnect,
@@ -112,7 +112,7 @@ BOOL vfs_init_custom(connection_struct *conn)
     init_fptr = (struct vfs_ops *(*)(int *))dlsym(conn->dl_handle, "vfs_init");
 
     if (init_fptr == NULL) {
-		DEBUG(0, ("No vfs_init() symbol found in %s\n", 
+		DEBUG(0, ("No vfs_init() symbol found in %s\n",
 		  lp_vfsobj(SNUM(conn))));
 		return False;
     }
@@ -132,10 +132,10 @@ BOOL vfs_init_custom(connection_struct *conn)
 
     /* Fill in unused operations with default (disk based) ones.
        There's probably a neater way to do this then a whole bunch of
-       if statements. */ 
+       if statements. */
 
     memcpy(&conn->vfs_ops, ops, sizeof(struct vfs_ops));
-    
+
     if (conn->vfs_ops.connect == NULL) {
 	conn->vfs_ops.connect = default_vfs_ops.connect;
     }
@@ -179,47 +179,47 @@ BOOL vfs_init_custom(connection_struct *conn)
     if (conn->vfs_ops.read == NULL) {
 	conn->vfs_ops.read = default_vfs_ops.read;
     }
-    
+
     if (conn->vfs_ops.write == NULL) {
 	conn->vfs_ops.write = default_vfs_ops.write;
     }
-    
+
     if (conn->vfs_ops.lseek == NULL) {
 	conn->vfs_ops.lseek = default_vfs_ops.lseek;
     }
-    
+
     if (conn->vfs_ops.rename == NULL) {
 	conn->vfs_ops.rename = default_vfs_ops.rename;
     }
-    
+
     if (conn->vfs_ops.fsync == NULL) {
 	conn->vfs_ops.fsync = default_vfs_ops.fsync;
     }
-    
+
     if (conn->vfs_ops.stat == NULL) {
 	conn->vfs_ops.stat = default_vfs_ops.stat;
     }
-    
+
     if (conn->vfs_ops.fstat == NULL) {
 	conn->vfs_ops.fstat = default_vfs_ops.fstat;
     }
-    
+
     if (conn->vfs_ops.lstat == NULL) {
 	conn->vfs_ops.lstat = default_vfs_ops.lstat;
     }
-    
+
     if (conn->vfs_ops.unlink == NULL) {
 	conn->vfs_ops.unlink = default_vfs_ops.unlink;
     }
-    
+
     if (conn->vfs_ops.chmod == NULL) {
 	conn->vfs_ops.chmod = default_vfs_ops.chmod;
     }
-    
+
     if (conn->vfs_ops.chown == NULL) {
 	conn->vfs_ops.chown = default_vfs_ops.chown;
     }
-    
+
     if (conn->vfs_ops.chdir == NULL) {
 	conn->vfs_ops.chdir = default_vfs_ops.chdir;
     }
@@ -227,15 +227,15 @@ BOOL vfs_init_custom(connection_struct *conn)
     if (conn->vfs_ops.getwd == NULL) {
 	conn->vfs_ops.getwd = default_vfs_ops.getwd;
     }
-    
+
     if (conn->vfs_ops.utime == NULL) {
 	conn->vfs_ops.utime = default_vfs_ops.utime;
     }
-    
+
     if (conn->vfs_ops.ftruncate == NULL) {
 	conn->vfs_ops.ftruncate = default_vfs_ops.ftruncate;
     }
-    
+
     if (conn->vfs_ops.lock == NULL) {
 	conn->vfs_ops.lock = default_vfs_ops.lock;
     }
@@ -255,7 +255,7 @@ BOOL vfs_init_custom(connection_struct *conn)
     if (conn->vfs_ops.set_nt_acl == NULL) {
 	conn->vfs_ops.set_nt_acl = default_vfs_ops.set_nt_acl;
     }
-    
+
     return True;
 }
 #endif
@@ -272,7 +272,7 @@ BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *
 	if (!st)
 		st = &st2;
 
-	if (vfs_stat(conn,dname,st) != 0) 
+	if (vfs_stat(conn,dname,st) != 0)
 		return(False);
 
 	ret = S_ISDIR(st->st_mode);
@@ -294,7 +294,7 @@ int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode)
 
 	pstrcpy(name,dos_to_unix(fname,False)); /* paranoia copy */
 	if(!(ret=conn->vfs_ops.mkdir(conn,name,mode))) {
-		/* 
+		/*
 		 * Check if high bits should have been set,
 		 * then (if bits are missing): add them.
 		 * Consider bits automagically set by UNIX, i.e. SGID bit from parent dir.
@@ -331,11 +331,36 @@ BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
 		sbuf = &st;
 
 	ZERO_STRUCTP(sbuf);
- 
-	if (vfs_stat(conn,fname,sbuf) != 0) 
+
+	if (vfs_stat(conn,fname,sbuf) != 0)
 		return(False);
 
 	return(S_ISREG(sbuf->st_mode));
+}
+
+/****************************************************************************
+ Read data from fsp on the vfs. (note: EINTR re-read differs from vfs_write_data)
+****************************************************************************/
+
+ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
+{
+	size_t total=0;
+
+	while (total < byte_count)
+	{
+		ssize_t ret = fsp->conn->vfs_ops.read(fsp, fsp->fd, buf + total,
+											  byte_count - total);
+
+		if (ret == 0) return total;
+		if (ret == -1) {
+			if (errno == EINTR)
+				continue;
+			else
+				return -1;
+		}
+		total += ret;
+	}
+	return (ssize_t)total;
 }
 
 /****************************************************************************
@@ -363,11 +388,11 @@ ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
  Transfer some data between two file_struct's.
 ****************************************************************************/
 
-SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp, 
+SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp,
 			    int out_fd, files_struct *out_fsp,
 			    SMB_OFF_T n, char *header, int headlen, int align)
 {
-  static char *buf=NULL;  
+  static char *buf=NULL;
   static int size=0;
   char *buf1,*abuf;
   SMB_OFF_T total = 0;
@@ -425,7 +450,7 @@ SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp,
     }
 
     if (s > ret) {
-      ret += in_fsp ? 
+      ret += in_fsp ?
 	  in_fsp->conn->vfs_ops.read(in_fsp,in_fsp->fd,buf1+ret,s-ret) : read(in_fd,buf1+ret,s-ret);
     }
 
@@ -459,7 +484,7 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 
 	if (!p)
 		return(NULL);
-  
+
 	ptr = (struct dirent *)conn->vfs_ops.readdir(conn,p);
 	if (!ptr)
 		return(NULL);
@@ -497,7 +522,7 @@ static BOOL handle_vfs_option(char *pszParmValue, char **ptr)
 {
     struct vfs_options *new_option, **options = (struct vfs_options **)ptr;
     int i;
-    
+
     /* Create new vfs option */
 
     new_option = (struct vfs_options *)malloc(sizeof(*new_option));
@@ -508,7 +533,7 @@ static BOOL handle_vfs_option(char *pszParmValue, char **ptr)
     ZERO_STRUCTP(new_option);
 
     /* Get name and value */
-    
+
     new_option->name = strtok(pszParmValue, "=");
 
     if (new_option->name == NULL) {
@@ -714,7 +739,7 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 }
 
 /*******************************************************************
- Reduce a file name, removing .. elements and checking that 
+ Reduce a file name, removing .. elements and checking that
  it is below dir in the heirachy. This uses vfs_GetWd() and so must be run
  on the system that has the referenced file system.
  Widelinks are allowed if widelinks is true.
@@ -749,7 +774,7 @@ BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks)
 
     return(True);
   }
-  
+
   DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
 
   /* remove any double slashes */
@@ -810,7 +835,7 @@ BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks)
   }
 
   {
-    size_t l = strlen(dir2);    
+    size_t l = strlen(dir2);
     if (dir2[l-1] == '/')
       l--;
 
