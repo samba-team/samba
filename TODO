@@ -8,6 +8,10 @@ $Id$
 
 more programs here
 
+** appl/login
+
+/etc/environment etc.
+
 ** appl/popper
 
 Implement RFC1731 and 1734, pop over GSS-API
