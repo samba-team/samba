@@ -2087,6 +2087,16 @@ BOOL unix_wild_match(char *pattern, char *string)
 }
 
 /*******************************************************************
+ free() a data blob
+*******************************************************************/
+static void free_data_blob(DATA_BLOB *d)
+{
+	if ((d) && (d->free)) {
+		SAFE_FREE(d->data);
+	}
+}
+
+/*******************************************************************
  construct a data blob, must be freed with data_blob_free()
 *******************************************************************/
 DATA_BLOB data_blob(const void *p, size_t length)
@@ -2100,6 +2110,28 @@ DATA_BLOB data_blob(const void *p, size_t length)
 
 	ret.data = smb_xmemdup(p, length);
 	ret.length = length;
+	ret.free = free_data_blob;
+	return ret;
+}
+
+/*******************************************************************
+ construct a data blob, using supplied TALLOC_CTX
+*******************************************************************/
+DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
+{
+	DATA_BLOB ret;
+
+	if (!p || !length) {
+		ZERO_STRUCT(ret);
+		return ret;
+	}
+
+	ret.data = talloc_memdup(mem_ctx, p, length);
+	if (ret.data == NULL)
+		smb_panic("data_blob_talloc: talloc_memdup failed.\n");
+
+	ret.length = length;
+	ret.free = NULL;
 	return ret;
 }
 
@@ -2108,7 +2140,22 @@ free a data blob
 *******************************************************************/
 void data_blob_free(DATA_BLOB *d)
 {
-	SAFE_FREE(d->data);
+	if (d) {
+		if (d->free) {
+			d->free(d);
+		}
+		ZERO_STRUCTP(d);
+	}
+}
+
+/*******************************************************************
+clear a DATA_BLOB's contents
+*******************************************************************/
+void data_blob_clear(DATA_BLOB *d)
+{
+	if (d->data) {
+		memset(d->data, 0, d->length);
+	}
 }
 
 /*******************************************************************
@@ -2116,9 +2163,7 @@ free a data blob and clear its contents
 *******************************************************************/
 void data_blob_clear_free(DATA_BLOB *d)
 {
-	if (d->data) {
-		memset(d->data, 0, d->length);
-	}
+	data_blob_clear(d);
 	data_blob_free(d);
 }
 
