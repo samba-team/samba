@@ -24,37 +24,6 @@
 
 #include "includes.h"
 
-#if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
-#ifdef WITH_NISPLUS_HOME
-#ifdef BROKEN_NISPLUS_INCLUDE_FILES
-/*
- * The following lines are needed due to buggy include files
- * in Solaris 2.6 which define GROUP in both /usr/include/sys/acl.h and
- * also in /usr/include/rpcsvc/nis.h. The definitions conflict. JRA.
- * Also GROUP_OBJ is defined as 0x4 in /usr/include/sys/acl.h and as
- * an enum in /usr/include/rpcsvc/nis.h.
- */
-
-#if defined(GROUP)
-#undef GROUP
-#endif
-
-#if defined(GROUP_OBJ)
-#undef GROUP_OBJ
-#endif
-
-#endif /* BROKEN_NISPLUS_INCLUDE_FILES */
-
-#include <rpcsvc/nis.h>
-
-#else /* !WITH_NISPLUS_HOME */
-
-#include "rpcsvc/ypclnt.h"
-
-#endif /* WITH_NISPLUS_HOME */
-#endif /* HAVE_NETGROUP && WITH_AUTOMOUNT */
-
-
 /**************************************************************************n
  Find a suitable temporary directory. The result should be copied immediately
  as it may be overwritten by a subsequent call.
