@@ -82,6 +82,7 @@ static BOOL smb_ldap_fetch_pw(char **dn, char** pw)
 	}
 	
 	*pw=secrets_fetch(key, &size);
+	SAFE_FREE(key);
 	if (!size) {
 		/* Upgrade 2.2 style entry */
 		char *p;
