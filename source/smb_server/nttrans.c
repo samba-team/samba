@@ -49,7 +49,8 @@ static void nttrans_setup_reply(struct smbsrv_request *req,
 }
 
 
-/* parse NTTRANS_CREATE request
+/* 
+   parse NTTRANS_CREATE request
  */
 static NTSTATUS nttrans_create(struct smbsrv_request *req, 
 			       struct smb_nttrans *trans)
@@ -174,6 +175,106 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 	return NT_STATUS_OK;
 }
 
+
+/* 
+   parse NTTRANS_QUERY_SEC_DESC request
+ */
+static NTSTATUS nttrans_query_sec_desc(struct smbsrv_request *req, 
+				       struct smb_nttrans *trans)
+{
+	union smb_fileinfo *io;
+	NTSTATUS status;
+
+	if (trans->in.params.length < 8) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* parse the request */
+	io = talloc_p(req, union smb_fileinfo);
+	if (io == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	io->query_secdesc.level            = RAW_FILEINFO_SEC_DESC;
+	io->query_secdesc.in.fnum          = SVAL(trans->in.params.data, 0);
+	io->query_secdesc.in.secinfo_flags = IVAL(trans->in.params.data, 4);
+
+	/* call the backend - notice that we do it sync for now, until we support
+	   async nttrans requests */	
+	status = ntvfs_qfileinfo(req, io);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	trans->out.setup_count = 0;
+	trans->out.setup       = NULL;
+	trans->out.params      = data_blob_talloc(req, NULL, 4);
+	trans->out.data        = data_blob(NULL, 0);
+
+	status = ndr_push_struct_blob(&trans->out.data, req, 
+				      io->query_secdesc.out.sd, 
+				      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	SIVAL(trans->out.params.data, 0, trans->out.data.length);
+
+	return NT_STATUS_OK;
+}
+
+
+/* 
+   parse NTTRANS_SET_SEC_DESC request
+ */
+static NTSTATUS nttrans_set_sec_desc(struct smbsrv_request *req, 
+				       struct smb_nttrans *trans)
+{
+	union smb_setfileinfo *io;
+	NTSTATUS status;
+
+	if (trans->in.params.length < 8) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* parse the request */
+	io = talloc_p(req, union smb_setfileinfo);
+	if (io == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	io->set_secdesc.level            = RAW_SFILEINFO_SEC_DESC;
+	io->set_secdesc.file.fnum        = SVAL(trans->in.params.data, 0);
+	io->set_secdesc.in.secinfo_flags = IVAL(trans->in.params.data, 4);
+
+	io->set_secdesc.in.sd = talloc_p(io, struct security_descriptor);
+	if (io->set_secdesc.in.sd == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = ndr_pull_struct_blob(&trans->in.data, req, 
+				      io->set_secdesc.in.sd, 
+				      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* call the backend - notice that we do it sync for now, until we support
+	   async nttrans requests */	
+	status = ntvfs_setfileinfo(req, io);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	trans->out.setup_count = 0;
+	trans->out.setup       = NULL;
+	trans->out.params      = data_blob(NULL, 0);
+	trans->out.data        = data_blob(NULL, 0);
+
+	return NT_STATUS_OK;
+}
+
+
 /* parse NTTRANS_RENAME request
  */
 static NTSTATUS nttrans_rename(struct smbsrv_request *req, 
@@ -233,6 +334,10 @@ static NTSTATUS nttrans_backend(struct smbsrv_request *req,
 		return nttrans_ioctl(req, trans);
 	case NT_TRANSACT_RENAME:
 		return nttrans_rename(req, trans);
+	case NT_TRANSACT_QUERY_SECURITY_DESC:
+		return nttrans_query_sec_desc(req, trans);
+	case NT_TRANSACT_SET_SECURITY_DESC:
+		return nttrans_set_sec_desc(req, trans);
 	}
 
 	/* an unknown nttrans command */
