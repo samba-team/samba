@@ -175,7 +175,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	}
 
 	if (cli->initialised) {
-		cli_shutdown(cli);
+		cli_close_connection(cli);
 	}
 
 	ZERO_STRUCTP(cli);
@@ -238,8 +238,10 @@ void cli_close_connection(struct cli_state *cli)
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
 
-	if (cli->mem_ctx)
+	if (cli->mem_ctx) {
 		talloc_destroy(cli->mem_ctx);
+		cli->mem_ctx = NULL;
+	}
 
 #ifdef WITH_SSL
 	if (cli->fd != -1)
@@ -247,6 +249,7 @@ void cli_close_connection(struct cli_state *cli)
 #endif /* WITH_SSL */
 	if (cli->fd != -1) 
 		close(cli->fd);
+	cli->fd = -1;
 }
 
 /****************************************************************************
