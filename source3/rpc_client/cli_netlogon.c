@@ -636,7 +636,7 @@ BOOL change_trust_account_password( char *domain, char *remote_machine_list)
   time_t lct;
   BOOL res = False;
 
-  if(!get_trust_account_password(domain, old_trust_passwd_hash, &lct)) {
+  if(!secrets_fetch_trust_account_password(domain, old_trust_passwd_hash, &lct)) {
     DEBUG(0,("change_trust_account_password: unable to read the machine \
 account password for domain %s.\n", domain));
     return False;
@@ -693,7 +693,7 @@ domain %s.\n", timestring(False), domain));
        * Return the result of trying to write the new password
        * back into the trust account file.
        */
-      res = set_trust_account_password(domain, new_trust_passwd_hash);
+      res = secrets_store_trust_account_password(domain, new_trust_passwd_hash);
       memset(new_trust_passwd_hash, 0, 16);
       memset(old_trust_passwd_hash, 0, 16);
       return res;
