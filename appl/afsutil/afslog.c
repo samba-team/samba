@@ -246,6 +246,8 @@ do_afslog(const char *cell)
 	    return 0;
     }
 #endif
+    if (cell == NULL)
+	cell = "<default cell>";
 #ifdef KRB5
     if (k5ret)
 	warnx("krb5_afslog(%s): %s", cell, krb5_get_err_text(context, k5ret));
