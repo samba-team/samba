@@ -24,17 +24,6 @@
 
 #include "includes.h"
 
-#ifndef HAVE_LIBCUPS
- int main(int argc, char *argv[])
-{
-  puts("Sorry, this program is only available with CUPS.");
-  return (1);
-}
-#else
-
-#include <cups/cups.h>
-
-
 /*
  * Globals...
  */
@@ -47,7 +36,7 @@ extern struct in_addr	ipzero;		/* Any address */
  * Local functions...
  */
 
-static struct cli_state	*smb_connect(char *, char *, char *, char *);
+static struct cli_state	*smb_connect(char *, char *, char *, char *, char *);
 static int		smb_print(struct cli_state *, char *, FILE *);
 
 
@@ -59,21 +48,34 @@ static int		smb_print(struct cli_state *, char *, FILE *);
  main(int  argc,			/* I - Number of command-line arguments */
      char *argv[])		/* I - Command-line arguments */
 {
-  char		method[255],	/* Method in URI */
-		hostname[1024],	/* Hostname */
-		username[255],	/* Username info (not used) */
-		resource[1024];	/* Resource info (printer name) */
+  int		i;		/* Looping var */
+  int		copies;		/* Number of copies */
+  char		uri[1024],	/* URI */
+		*sep,		/* Pointer to separator */
+		*username,	/* Username */
+		*password,	/* Password */
+		*workgroup,	/* Workgroup */
+		*server,	/* Server name */
+		*printer;	/* Printer name */
   FILE		*fp;		/* File to print */
-  char		*password;	/* Pointer to password in username */
-  int		port;		/* Port number (not used) */
   int		status;		/* Status of LPD job */
   struct cli_state *cli;	/* SMB interface */
+
+  /* we expect the URI in argv[0]. Detect the case where it is in argv[1] and cope */
+  if (argc > 2 && strncmp(argv[0],"smb://", 6) && !strncmp(argv[1],"smb://", 6)) {
+	  argv++;
+	  argc--;
+  }
 
 
   if (argc < 6 || argc > 7)
   {
-    fprintf(stderr, "Usage: %s job-id user title copies options [file]\n",
+    fprintf(stderr, "Usage: %s [DEVICE_URI] job-id user title copies options [file]\n",
             argv[0]);
+    fputs("       The DEVICE_URI environment variable can also contain the\n", stderr);
+    fputs("       destination printer:\n", stderr);
+    fputs("\n", stderr);
+    fputs("           smb://[username:password@][workgroup/]server/printer\n", stderr);
     return (1);
   }
 
@@ -88,31 +90,83 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     * Print from Copy stdin to a temporary file...
     */
 
-    fp = stdin;
+    fp     = stdin;
+    copies = 1;
   }
   else if ((fp = fopen(argv[6], "rb")) == NULL)
   {
     perror("ERROR: Unable to open print file");
     return (1);
   }
+  else
+    copies = atoi(argv[4]);
 
  /*
-  * Extract the hostname and printer name from the URI...
+  * Fine the URI...
   */
 
-  if (strcmp(argv[0], "smb") == 0)
-    httpSeparate(getenv("DEVICE_URI"), method, username, hostname, &port, resource);
+  if (strncmp(argv[0], "smb://", 6) == 0)
+    strncpy(uri, argv[0], sizeof(uri) - 1);
+  else if (getenv("DEVICE_URI") != NULL)
+    strncpy(uri, getenv("DEVICE_URI"), sizeof(uri) - 1);
   else
-    httpSeparate(argv[0], method, username, hostname, &port, resource);
+  {
+    fputs("ERROR: No device URI found in argv[0] or DEVICE_URI environment variable!\n", stderr);
+    return (1);
+  }
+
+  uri[sizeof(uri) - 1] = '\0';
 
  /*
-  * Extract the username and password as needed...
+  * Extract the destination from the URI...
   */
 
-  if (username[0] && (password = strchr(username, ':')) != NULL)
-    *password++ = '\0';
+  if ((sep = strrchr(uri, '@')) != NULL)
+  {
+    username = uri + 6;
+    *sep++ = '\0';
+
+    server = sep;
+
+   /*
+    * Extract password as needed...
+    */
+
+    if ((password = strchr(username, ':')) != NULL)
+      *password++ = '\0';
+    else
+      password = "";
+  }
   else
+  {
+    username = "";
     password = "";
+    server   = uri + 6;
+  }
+
+  if ((sep = strchr(server, '/')) == NULL)
+  {
+    fputs("ERROR: Bad URI - need printer name!\n", stderr);
+    return (1);
+  }
+
+  *sep++ = '\0';
+  printer = sep;
+
+  if ((sep = strchr(printer, '/')) != NULL)
+  {
+   /*
+    * Convert to smb://[username:password@]workgroup/server/printer...
+    */
+
+    *sep++ = '\0';
+
+    workgroup = server;
+    server    = printer;
+    printer   = sep;
+  }
+  else
+    workgroup = NULL;
 
  /*
   * Setup the SAMBA server state...
@@ -131,11 +185,14 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     return (1);
   }
 
+  if (workgroup == NULL)
+    workgroup = lp_workgroup();
+
   codepage_initialise(lp_client_code_page());
 
   load_interfaces();
 
-  if ((cli = smb_connect(hostname, resource + 1, username, password)) == NULL)
+  if ((cli = smb_connect(workgroup, server, printer, username, password)) == NULL)
   {
     perror("ERROR: Unable to connect to SAMBA host");
     return (1);
@@ -145,7 +202,9 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   * Queue the job...
   */
 
-  status = smb_print(cli, argv[3] /* title */, fp);
+  for (i = 0; i < copies; i ++)
+    if ((status = smb_print(cli, argv[3] /* title */, fp)) != 0)
+      break;
 
   cli_shutdown(cli);
 
@@ -162,8 +221,9 @@ static int		smb_print(struct cli_state *, char *, FILE *);
  */
 
 static struct cli_state *		/* O - SMB connection */
-smb_connect(char *server,		/* I - Hostname */
-            char *share,		/* I - Resource */
+smb_connect(char *workgroup,		/* I - Workgroup */
+            char *server,		/* I - Server */
+            char *share,		/* I - Printer */
             char *username,		/* I - Username */
             char *password)		/* I - Password */
 {
@@ -227,7 +287,7 @@ smb_connect(char *server,		/* I - Hostname */
   if (!cli_session_setup(c, username, 
 			 password, strlen(password),
 			 password, strlen(password),
-			 lp_workgroup()))
+			 workgroup))
   {
     fprintf(stderr, "ERROR: SMB session setup failed: %s\n", cli_errstr(c));
     return (NULL);
@@ -279,6 +339,9 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
   * Copy the file to the printer...
   */
 
+  if (fp != stdin)
+    rewind(fp);
+
   tbytes = 0;
 
   while ((nbytes = fread(buffer, 1, sizeof(buffer), fp)) > 0)
@@ -301,4 +364,3 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
   else
     return (0);
 }
-#endif /* HAVE_LIBCUPS */
