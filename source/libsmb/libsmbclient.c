@@ -2670,8 +2670,8 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 	if (!smbc_initialized) {
 		/* Do some library wide intialisations the first time we get called */
 
-		/* Do we still need this ? */
-		DEBUGLEVEL = 10;
+		/* Set this to what the user wants */
+		DEBUGLEVEL = context->debug;
 		
 		setup_logging( "libsmbclient", True);
 
