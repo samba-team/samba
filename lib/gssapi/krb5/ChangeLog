@@ -1,3 +1,8 @@
+2003-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cfx.c: add AcceptorSubkey (but no code understand it yet) ignore
+	unknown token flags
+	
 2003-11-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* accept_sec_context.c: Don't require timestamp to be set on
@@ -5,7 +10,7 @@
 	windows doesn't alway send it) Pointed out by Zi-Bin Yang
 	<zbyang@decru.com> on heimdal-discuss
 
-2003-11-14  LLove Hörnquist Åstrand  <lha@it.su.se>
+2003-11-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cfx.c: fix {} error, pointed out by Liqiang Zhu
 	
