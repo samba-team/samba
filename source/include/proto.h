@@ -139,8 +139,6 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 		      const void *buf, size_t len,
 		      BOOL duplicates_allowed,
 		      int *n_sent);
-BOOL message_named_mutex(const char *name, unsigned int timeout);
-void message_named_mutex_release(char *name);
 
 /* The following definitions come from lib/ms_fnmatch.c  */
 
@@ -2380,6 +2378,8 @@ BOOL trust_password_delete(char *domain);
 void reset_globals_after_fork(void);
 BOOL secrets_store_ldap_pw(char* dn, char* pw);
 BOOL fetch_ldap_pw(char *dn, char* pw, int len);
+BOOL secrets_named_mutex(const char *name, unsigned int timeout);
+void secrets_named_mutex_release(char *name);
 
 /* The following definitions come from passdb/smbpassfile.c  */
 
@@ -4949,6 +4949,7 @@ int tdb_clear_spinlocks(TDB_CONTEXT *tdb);
 
 /* The following definitions come from tdb/tdb.c  */
 
+void tdb_set_lock_alarm(sig_atomic_t *palarm);
 void tdb_dump_all(TDB_CONTEXT *tdb);
 int tdb_printfreelist(TDB_CONTEXT *tdb);
 enum TDB_ERROR tdb_error(TDB_CONTEXT *tdb);
