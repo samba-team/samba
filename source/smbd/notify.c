@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /*
    Unix SMB/Netbios implementation.
    Version 3.0
@@ -224,6 +223,3 @@ BOOL init_change_notify(void)
 
 	return True;
 }
-
-
-#undef OLD_NTDOMAIN

@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -459,4 +458,3 @@ void init_sec_ctx(void)
 	current_user.vuid = UID_FIELD_INVALID;
 	current_user.nt_user_token = NULL;
 }
-#undef OLD_NTDOMAIN

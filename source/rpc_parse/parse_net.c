@@ -627,7 +627,7 @@ BOOL net_io_r_srv_pwset(char *desc, NET_R_SRV_PWSET *r_s, prs_struct *ps, int de
  Init DOM_SID2 array from a string containing multiple sids
  *************************************************************************/
 
-static int init_dom_sid2s(char *sids_str, DOM_SID2 **ppsids)
+static int init_dom_sid2s(TALLOC_CTX *ctx, char *sids_str, DOM_SID2 **ppsids)
 {
 	char *ptr;
 	pstring s2;
@@ -647,7 +647,7 @@ static int init_dom_sid2s(char *sids_str, DOM_SID2 **ppsids)
 			;
 
 		/* Now allocate space for them. */
-		*ppsids = (DOM_SID2 *)malloc(count * sizeof(DOM_SID2));
+		*ppsids = (DOM_SID2 *)talloc_zero(ctx, count * sizeof(DOM_SID2));
 		if (*ppsids == NULL)
 			return 0;
 
@@ -936,13 +936,21 @@ void init_sam_info(DOM_SAM_INFO *sam,
  Reads or writes a DOM_SAM_INFO structure.
 ********************************************************************/
 
-static BOOL net_io_id_info_ctr(char *desc, NET_ID_INFO_CTR *ctr, prs_struct *ps, int depth)
+static BOOL net_io_id_info_ctr(char *desc, NET_ID_INFO_CTR **pp_ctr, prs_struct *ps, int depth)
 {
-	if (ctr == NULL)
-		return False;
+	NET_ID_INFO_CTR *ctr = *pp_ctr;
 
 	prs_debug(ps, depth, desc, "smb_io_sam_info");
 	depth++;
+
+	if (UNMARSHALLING(ps)) {
+		ctr = *pp_ctr = (NET_ID_INFO_CTR *)prs_alloc_mem(ps, sizeof(NET_ID_INFO_CTR));
+		if (ctr == NULL)
+			return False;
+	}
+	
+	if (ctr == NULL)
+		return False;
 
 	/* don't 4-byte align here! */
 
@@ -993,8 +1001,8 @@ static BOOL smb_io_sam_info(char *desc, DOM_SAM_INFO *sam, prs_struct *ps, int d
 	if(!prs_uint16("logon_level  ", ps, depth, &sam->logon_level))
 		return False;
 
-	if (sam->logon_level != 0 && sam->ctr != NULL) {
-		if(!net_io_id_info_ctr("logon_info", sam->ctr, ps, depth))
+	if (sam->logon_level != 0) {
+		if(!net_io_id_info_ctr("logon_info", &sam->ctr, ps, depth))
 			return False;
 	}
 
@@ -1005,7 +1013,7 @@ static BOOL smb_io_sam_info(char *desc, DOM_SAM_INFO *sam, prs_struct *ps, int d
  Init
  *************************************************************************/
 
-void init_net_user_info3(NET_USER_INFO_3 *usr, SAM_ACCOUNT *sampw,
+void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sampw,
 			 uint16 logon_count, uint16 bad_pw_count,
  		 	 uint32 num_groups, DOM_GID *gids,
 			 uint32 user_flgs, char *sess_key,
@@ -1090,7 +1098,7 @@ void init_net_user_info3(NET_USER_INFO_3 *usr, SAM_ACCOUNT *sampw,
 
 	memset((char *)usr->padding, '\0', sizeof(usr->padding));
 
-	num_other_sids = init_dom_sid2s(other_sids, &usr->other_sids);
+	num_other_sids = init_dom_sid2s(ctx, other_sids, &usr->other_sids);
 
 	usr->num_other_sids = num_other_sids;
 	usr->buffer_other_sids = (num_other_sids != 0) ? 1 : 0; 
@@ -1105,7 +1113,7 @@ void init_net_user_info3(NET_USER_INFO_3 *usr, SAM_ACCOUNT *sampw,
 	usr->num_groups2 = num_groups;
 
 	if (num_groups > 0) {
-		usr->gids = (DOM_GID *)malloc(sizeof(DOM_GID) * num_groups);
+		usr->gids = (DOM_GID *)talloc_zero(ctx,sizeof(DOM_GID) * num_groups);
 		if (usr->gids == NULL)
 			return;
 		for (i = 0; i < num_groups; i++)
@@ -1117,16 +1125,6 @@ void init_net_user_info3(NET_USER_INFO_3 *usr, SAM_ACCOUNT *sampw,
 
 	init_dom_sid2(&usr->dom_sid, dom_sid);
 	/* "other" sids are set up above */
-}
-
-/*******************************************************************
- Delete any memory allocated by init_user_info_3...
-********************************************************************/
-
-void free_user_info3(NET_USER_INFO_3 *usr)
-{
-	safe_free(usr->gids);
-	safe_free(usr->other_sids);
 }
 
 /*******************************************************************

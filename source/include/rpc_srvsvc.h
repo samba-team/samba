@@ -470,6 +470,16 @@ typedef struct r_net_file_enum_info
 
 } SRV_R_NET_FILE_ENUM;
 
+/* SRV_INFO_100 */
+typedef struct srv_info_100_info
+{
+	uint32 platform_id;     /* 0x500 */
+	uint32 ptr_name;        /* pointer to server name */
+
+	UNISTR2 uni_name;       /* server name "server" */
+
+} SRV_INFO_100;
+
 /* SRV_INFO_101 */
 typedef struct srv_info_101_info
 {
@@ -518,6 +528,7 @@ typedef struct srv_info_ctr_info
     {
 		SRV_INFO_102 sv102; /* server info level 102 */
 		SRV_INFO_101 sv101; /* server info level 101 */
+		SRV_INFO_100 sv100; /* server info level 100 */
 
     } srv;
 

@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -39,6 +38,20 @@ static int pipes_open;
 
 static pipes_struct *Pipes;
 static struct bitmap *bmap;
+
+/****************************************************************************
+ Pipe iterator functions.
+****************************************************************************/
+
+pipes_struct *get_first_pipe(void)
+{
+	return Pipes;
+}
+
+pipes_struct *get_next_pipe(pipes_struct *p)
+{
+	return p->next;
+}
 
 /* this must be larger than the sum of the open files and directories */
 static int pipe_handle_offset;
@@ -135,7 +148,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	next_pipe = (i+1) % MAX_OPEN_PIPES;
 
 	for (p = Pipes; p; p = p->next)
-		DEBUG(5,("open pipes: name %s pnum=%x\n", p->name, p->pnum));  
+		DEBUG(5,("open_rpc_pipe_p: name %s pnum=%x\n", p->name, p->pnum));  
 
 	p = (pipes_struct *)malloc(sizeof(*p));
 
@@ -149,6 +162,8 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 		free(p);
 		return NULL;
 	}
+
+	init_pipe_handles(p);
 
 	DLIST_ADD(Pipes, p);
 
@@ -380,6 +395,23 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 }
 
 /****************************************************************************
+ Call this to free any talloc'ed memory. Do this before and after processing
+ a complete PDU.
+****************************************************************************/
+
+void free_pipe_context(pipes_struct *p)
+{
+	if (p->mem_ctx) {
+		DEBUG(3,("free_pipe_context: destroying talloc pool of size %u\n", talloc_pool_size(p->mem_ctx) ));
+		talloc_destroy_pool(p->mem_ctx);
+	} else {
+		p->mem_ctx = talloc_init();
+		if (p->mem_ctx == NULL)
+			p->fault_state = True;
+	}
+}
+
+/****************************************************************************
  Processes a request pdu. This will do auth processing if needed, and
  appends the data into the complete stream if the LAST flag is not set.
 ****************************************************************************/
@@ -487,8 +519,12 @@ authentication failed. Denying the request.\n", p->name));
 		 * Process the complete data stream here.
 		 */
 
+		free_pipe_context(p);
+
 		if(pipe_init_outgoing_data(p))
 			ret = api_pipe_request(p);
+
+		free_pipe_context(p);
 
 		/*
 		 * We have consumed the whole data stream. Set back to
@@ -780,23 +816,6 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
 
   out:
 
-	if(p->out_data.data_sent_length >= prs_offset(&p->out_data.rdata)) {
-		/*
-		 * We have copied all possible data into the current_pdu. This RPC is finished.
-		 * Reset the talloc context to free any allocated data from this RPC.
-		 */
-
-		if (p->mem_ctx) {
-			DEBUG(3,("read_from_pipe: destroying talloc pool of size %u\n", talloc_pool_size(p->mem_ctx) ));
-			talloc_destroy_pool(p->mem_ctx);
-		} else {
-			p->mem_ctx = talloc_init();
-			if (p->mem_ctx == NULL)
-				p->fault_state = True;
-		}
-
-	}
-
 	return data_returned;
 }
 
@@ -865,6 +884,9 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 	if (p->mem_ctx)
 		talloc_destroy(p->mem_ctx);
 
+	/* Free the handles database. */
+	close_policy_by_pipe(p);
+
 	bitmap_clear(bmap, p->pnum - pipe_handle_offset);
 
 	pipes_open--;
@@ -921,4 +943,3 @@ pipes_struct *get_rpc_pipe(int pnum)
 
 	return NULL;
 }
-#undef OLD_NTDOMAIN

@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /*
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -1974,4 +1973,3 @@ due to being in oplock break state.\n" ));
 		     calls have already sent it. If outsize != -1 then it is
 		     returning an error packet. */
 }
-#undef OLD_NTDOMAIN

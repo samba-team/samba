@@ -1,4 +1,3 @@
-#define NEW_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 2.2
@@ -454,5 +453,3 @@ struct cmd_set samr_commands[] = {
 	{ "querygroupmem", cmd_samr_query_groupmem, "Query group membership" },
 	{ NULL, NULL, NULL }
 };
-
-#undef NEW_NTDOMAIN

@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /*
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -1700,4 +1699,3 @@ int fchmod_acl(int fd, mode_t mode)
 	sys_acl_free_acl(posix_acl);
 	return ret;
 }
-#undef OLD_NTDOMAIN

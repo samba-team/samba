@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /*
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -1089,7 +1088,6 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	struct passwd *pass;
 	int ecode;
 	int ver = 0;
-	int outsize = 0;
 	int i;
 
 	*perr = 0;
@@ -1175,7 +1173,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		slprintf(new_name, sizeof(new_name), "%s/%s", architecture, driver->driverpath);	
 		slprintf(old_name, sizeof(old_name), "%s/%s", new_dir, driver->driverpath);	
 		if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-			if ((outsize = rename_internals(conn, inbuf, outbuf, new_name, old_name, True)) != 0) {
+			if (rename_internals(conn, inbuf, outbuf, new_name, old_name, True) != 0) {
 				DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 						new_name, old_name));
 				*perr = (uint32)SVAL(outbuf,smb_err);
@@ -1192,7 +1190,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 			slprintf(new_name, sizeof(new_name), "%s/%s", architecture, driver->datafile);	
 			slprintf(old_name, sizeof(old_name), "%s/%s", new_dir, driver->datafile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				if ((outsize = rename_internals(conn, inbuf, outbuf, new_name, old_name, True)) != 0) {
+				if (rename_internals(conn, inbuf, outbuf, new_name, old_name, True) != 0) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
 					*perr = (uint32)SVAL(outbuf,smb_err);
@@ -1211,7 +1209,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 			slprintf(new_name, sizeof(new_name), "%s/%s", architecture, driver->configfile);	
 			slprintf(old_name, sizeof(old_name), "%s/%s", new_dir, driver->configfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				if ((outsize = rename_internals(conn, inbuf, outbuf, new_name, old_name, True)) != 0) {
+				if (rename_internals(conn, inbuf, outbuf, new_name, old_name, True) != 0) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
 					*perr = (uint32)SVAL(outbuf,smb_err);
@@ -1231,7 +1229,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 			slprintf(new_name, sizeof(new_name), "%s/%s", architecture, driver->helpfile);	
 			slprintf(old_name, sizeof(old_name), "%s/%s", new_dir, driver->helpfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				if ((outsize = rename_internals(conn, inbuf, outbuf, new_name, old_name, True)) != 0) {
+				if (rename_internals(conn, inbuf, outbuf, new_name, old_name, True) != 0) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
 					*perr = (uint32)SVAL(outbuf,smb_err);
@@ -1260,7 +1258,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 				slprintf(new_name, sizeof(new_name), "%s/%s", architecture, driver->dependentfiles[i]);	
 				slprintf(old_name, sizeof(old_name), "%s/%s", new_dir, driver->dependentfiles[i]);	
 				if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-					if ((outsize = rename_internals(conn, inbuf, outbuf, new_name, old_name, True)) != 0) {
+					if (rename_internals(conn, inbuf, outbuf, new_name, old_name, True) != 0) {
 						DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 								new_name, old_name));
 						*perr = (uint32)SVAL(outbuf,smb_err);
@@ -3195,4 +3193,3 @@ uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 	free_a_printer(&printer, 2);
 	return result;
 }
-#undef OLD_NTDOMAIN

@@ -1687,8 +1687,3 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, BYTE *pwd)
 
 	return True;
 }
-
-
-
-
-

@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -79,4 +78,3 @@ uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO 
 
 	return r_u->status;
 }
-#undef OLD_NTDOMAIN

@@ -427,28 +427,6 @@ BOOL srv_io_r_net_share_enum(char *desc, SRV_R_NET_SHARE_ENUM *r_n, prs_struct *
 }
 
 /*******************************************************************
- Frees a SRV_Q_NET_SHARE_GET_INFO structure.
-********************************************************************/
-
-void free_srv_q_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n)
-{
-	if(!q_n)
-		return;
-	memset(q_n, '\0', sizeof(SRV_Q_NET_SHARE_GET_INFO));
-}
-
-/*******************************************************************
- Frees a SRV_R_NET_SHARE_GET_INFO structure.
-********************************************************************/
-
-void free_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n)
-{
-	if(!r_n)
-		return;
-	memset(r_n, '\0', sizeof(SRV_R_NET_SHARE_GET_INFO));
-}
-
-/*******************************************************************
  Reads or writes a structure.
 ********************************************************************/
 
@@ -1586,6 +1564,45 @@ BOOL srv_io_r_net_file_enum(char *desc, SRV_R_NET_FILE_ENUM *r_n, prs_struct *ps
 }
 
 /*******************************************************************
+ Inits a SRV_INFO_100 structure.
+ ********************************************************************/
+
+void init_srv_info_100(SRV_INFO_100 *sv100, uint32 platform_id, char *name)
+{
+	DEBUG(5,("init_srv_info_100\n"));
+
+	sv100->platform_id  = platform_id;
+	init_buf_unistr2(&sv100->uni_name, &sv100->ptr_name, name);
+}
+
+/*******************************************************************
+ Reads or writes a SRV_INFO_101 structure.
+ ********************************************************************/
+
+static BOOL srv_io_info_100(char *desc, SRV_INFO_100 *sv100, prs_struct *ps, int depth)
+{
+	if (sv100 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_info_100");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("platform_id ", ps, depth, &sv100->platform_id))
+		return False;
+	if(!prs_uint32("ptr_name    ", ps, depth, &sv100->ptr_name))
+		return False;
+
+	if(!smb_io_unistr2("uni_name    ", &sv100->uni_name, True, ps, depth))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
  Inits a SRV_INFO_101 structure.
  ********************************************************************/
 
@@ -1754,6 +1771,10 @@ static BOOL srv_io_info_ctr(char *desc, SRV_INFO_CTR *ctr, prs_struct *ps, int d
 
 	if (ctr->ptr_srv_ctr != 0 && ctr->switch_value != 0 && ctr != NULL) {
 		switch (ctr->switch_value) {
+		case 100:
+			if(!srv_io_info_100("sv100", &ctr->srv.sv100, ps, depth))
+				return False;
+			break;
 		case 101:
 			if(!srv_io_info_101("sv101", &ctr->srv.sv101, ps, depth))
 				return False;

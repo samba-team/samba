@@ -19,9 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 */
-
 #include "includes.h"
-
 #define CTRLZ 26
 extern int DEBUGLEVEL;
 

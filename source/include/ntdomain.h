@@ -152,6 +152,27 @@ struct msrpc_state
     uint32 pid;
 };
 
+/*
+ * Handle database - stored per pipe.
+ */
+
+struct policy
+{
+    struct policy *next, *prev;
+    struct pipes_struct *p;
+
+    POLICY_HND pol_hnd;
+
+    void *data_ptr;
+    void (*free_fn)(void *);
+
+};
+
+struct handle_list {
+	struct policy *Policy;
+	size_t count;
+};
+
 typedef struct pipes_struct
 {
 	struct pipes_struct *next, *prev;
@@ -224,6 +245,10 @@ typedef struct pipes_struct
 
 	/* talloc context to use when allocating memory on this pipe. */
 	TALLOC_CTX *mem_ctx;
+
+	/* handle database to use on this pipe. */
+	struct handle_list pipe_handles;
+
 } pipes_struct;
 
 struct api_struct
@@ -265,11 +290,7 @@ struct acct_info
 #include "rpc_lsa.h"
 #include "rpc_netlogon.h"
 #include "rpc_reg.h"
-#if OLD_NTDOMAIN
-#include "rpc_samr_old.h"
-#else
 #include "rpc_samr.h"
-#endif
 #include "rpc_srvsvc.h"
 #include "rpc_wkssvc.h"
 #include "rpc_spoolss.h"

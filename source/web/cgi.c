@@ -332,7 +332,6 @@ static BOOL cgi_handle_authorization(char *line)
 {
 	char *p, *user, *user_pass;
 	struct passwd *pass = NULL;
-	BOOL ret = False;
 	BOOL got_name = False;
 	BOOL tested_pass = False;
 	fstring default_user_lookup;
@@ -378,7 +377,7 @@ static BOOL cgi_handle_authorization(char *line)
 
 	tested_pass = True;
 
-	if((ret = pass_check(user, user_pass, strlen(user_pass), NULL, NULL)) == True) {
+	if(pass_check(user, user_pass, strlen(user_pass), NULL, NULL) == True) {
 
 		/*
 		 * Password was ok.

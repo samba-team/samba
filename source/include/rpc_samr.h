@@ -24,7 +24,9 @@
 #ifndef _RPC_SAMR_H /* _RPC_SAMR_H */
 #define _RPC_SAMR_H 
 
+
 #include "rpc_misc.h"
+
 
 /*******************************************************************
  the following information comes from a QuickView on samsrv.dll,
@@ -142,6 +144,8 @@ SamrTestPrivateFunctionsUser
 #define SAMR_CONNECT           0x39
 #define SAMR_SET_USERINFO      0x3A
 
+
+
 typedef struct logon_hours_info
 {
 	uint32 len; /* normally 21 bytes */
@@ -213,8 +217,6 @@ typedef struct sam_user_info_23
 typedef struct sam_user_info_24
 {
 	uint8 pass[516];
-	uint16 unk_0;
-
 } SAM_USER_INFO_24;
 
 
@@ -395,7 +397,7 @@ typedef struct q_samr_query_sec_obj_info
 typedef struct r_samr_query_sec_obj_info
 {
 	uint32 ptr;
-	SEC_DESC_BUF buf;
+	SEC_DESC_BUF *buf;
 
 	uint32 status;         /* return status */
 
@@ -537,14 +539,23 @@ typedef struct r_samr_lookup_domain_info
 
 } SAMR_R_LOOKUP_DOMAIN;
 
+
+/****************************************************************************
+SAMR_Q_OPEN_DOMAIN - unknown_0 values seen associated with SIDs:
+
+0x0000 03f1 and a specific   domain sid - S-1-5-21-44c01ca6-797e5c3d-33f83fd0
+0x0000 0200 and a specific   domain sid - S-1-5-21-44c01ca6-797e5c3d-33f83fd0
+*****************************************************************************/
+
 /* SAMR_Q_OPEN_DOMAIN */
 typedef struct q_samr_open_domain_info
 {
-	POLICY_HND connect_pol;   /* Policy handle */
-	uint32 access_mask;       /* Requested permissions */
-	DOM_SID2 dom_sid;         /* Domain SID */
+	POLICY_HND pol;   /* policy handle */
+	uint32 flags;               /* 0x2000 0000; 0x0000 0211; 0x0000 0280; 0x0000 0200 - flags? */
+	DOM_SID2 dom_sid;         /* domain SID */
 
 } SAMR_Q_OPEN_DOMAIN;
+
 
 /* SAMR_R_OPEN_DOMAIN - probably an open */
 typedef struct r_samr_open_domain_info
@@ -1072,7 +1083,7 @@ typedef struct alias_info_ctr
 typedef struct r_samr_query_aliasinfo_info
 {
 	uint32 ptr;        
-	ALIAS_INFO_CTR *ctr;
+	ALIAS_INFO_CTR ctr;
 
 	uint32 status;
 
@@ -1083,7 +1094,7 @@ typedef struct r_samr_query_aliasinfo_info
 typedef struct q_samr_set_alias_info
 {
 	POLICY_HND alias_pol;        /* policy handle */
-	ALIAS_INFO_CTR *ctr;
+	ALIAS_INFO_CTR ctr;
 
 } SAMR_Q_SET_ALIASINFO;
 
@@ -1449,7 +1460,7 @@ typedef struct q_samr_open_group_info
 /* SAMR_R_OPEN_GROUP - probably an open */
 typedef struct r_samr_open_group_info
 {
-	POLICY_HND group_pol;       /* policy handle */
+	POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */
 
 } SAMR_R_OPEN_GROUP;
@@ -1585,6 +1596,7 @@ typedef struct r_samr_get_dom_pwinfo
 {
 	uint16 unk_0;
 	uint16 unk_1;
+	uint16 unk_2;
 	uint32 status;
 
 } SAMR_R_GET_DOM_PWINFO;

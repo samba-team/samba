@@ -1,4 +1,3 @@
-#define NEW_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 2.2
@@ -519,5 +518,3 @@ uint32 cli_samr_query_groupmem(struct cli_state *cli, POLICY_HND *group_pol,
 
 	return result;
 }
-
-#undef NEW_NTDOMAIN
