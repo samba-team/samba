@@ -131,10 +131,14 @@ add_standard_ports (int family)
     add_port_service(family, "kerberos-sec", 88, "tcp");
     add_port_service(family, "kerberos-iv", 750, "udp");
     add_port_service(family, "kerberos-iv", 750, "tcp");
-    add_port_service(family, "krb524", 4444, "udp");
-    add_port_service(family, "krb524", 4444, "tcp");
     if(enable_http)
 	add_port_service(family, "http", 80, "tcp");
+#ifdef KRB4
+    if(enable_524) {
+	add_port_service(family, "krb524", 4444, "udp");
+	add_port_service(family, "krb524", 4444, "tcp");
+    }
+#endif
 #ifdef KASERVER
     if (enable_kaserver)
 	add_port_service(family, "afs3-kaserver", 7004, "udp");
