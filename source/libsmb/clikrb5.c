@@ -77,7 +77,7 @@
 	pkaddr->contents = (krb5_octet *)&(((struct sockaddr_in *)paddr)->sin_addr);
 }
 #else
- __ERROR__XX__UNKNOWN_ADDRTYPE
+#error UNKNOWN_ADDRTYPE
 #endif
 
 #if defined(HAVE_KRB5_PRINCIPAL2SALT) && defined(HAVE_KRB5_USE_ENCTYPE) && defined(HAVE_KRB5_STRING_TO_KEY)
@@ -120,7 +120,7 @@
 		salt, key);
 }
 #else
- __ERROR_XX_UNKNOWN_CREATE_KEY_FUNCTIONS
+#error UNKNOWN_CREATE_KEY_FUNCTIONS
 #endif
 
 int create_kerberos_key_from_string(krb5_context context,

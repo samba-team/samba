@@ -608,6 +608,17 @@ void kerberos_derive_salting_principal(krb5_context context,
 					char *service_principal)
 {
 	int i;
+	BOOL free_ccache = False;
+
+	if (ccache == NULL) {
+		krb5_error_code ret;
+		if ((ret = krb5_cc_resolve(context, LIBADS_CCACHE_NAME, &ccache)) != 0) {
+			DEBUG(0, ("kerberos_derive_salting_principal: krb5_cc_resolve for %s failed: %s\n", 
+				LIBADS_CCACHE_NAME, error_message(ret)));
+			return;
+		}
+		free_ccache = True;
+	}
 
 	/* Try for each enctype separately, because the rules are
 	 * different for different enctypes. */
@@ -628,6 +639,10 @@ void kerberos_derive_salting_principal(krb5_context context,
 								ccache,
 								enctypes[i],
 								enctypes);
+	}
+
+	if (free_ccache && ccache) {
+		krb5_cc_close(context, ccache);
 	}
 }
 
