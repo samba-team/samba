@@ -244,12 +244,20 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug);
  *                  the access requested involved writing.
  *                  - EACCES  The requested access to the file is not 
  *                  allowed 
+ *                  - ENODEV The requested share does not exist
+ *                  - ENOTDIR A file on the path is not a directory
  *                  - ENOENT  A directory component in pathname does 
  *                  not exist.
  *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_creat()
  *
+ * @note            This call uses an underlying routine that may create
+ *                  a new connection to the server specified in the URL.
+ *                  If the credentials supplied in the URL, or via the
+ *                  auth_fn in the smbc_init call, fail, this call will
+ *                  try again with an empty username and password. This 
+ *                  often gets mapped to the guest account on some machines.
 */
 int smbc_open(const char *furl, int flags, mode_t mode);
 
@@ -281,6 +289,7 @@ int smbc_open(const char *furl, int flags, mode_t mode);
  *                  allowed 
  *                  - ENOENT  A directory component in pathname does 
  *                  not exist.
+ *                  - ENODEV The requested share does not exist.
  *                  - EUCLEAN smbc_init() failed or has not been called
  * @see             smbc_open()
  *
@@ -435,8 +444,8 @@ int smbc_unlink(const char *furl);
  *                  - EXDEV Rename across shares not supported.
  *                  - ENOMEM Insufficient kernel memory was available.
  *                  - EUCLEAN smbc_init() failed or has not been called
+ *                  - EEXIST The target file, nurl, already exists.
  *
- * @todo Are errno values complete and correct?
  *
  * @todo Are we going to support copying when urls are not on the same
  *       share?  I say no... NOTE. I agree for the moment.
@@ -633,6 +642,7 @@ int smbc_rmdir(const char *durl);
  *                  - EINVAL a NULL url was passed.
  *                  - EACCES Permission denied.
  *                  - ENOMEM Out of memory
+ *                  - ENOTDIR The target dir, url, is not a directory.
  *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             Unix stat()
@@ -652,13 +662,12 @@ int smbc_stat(const char *url, struct stat *st);
  * @return          EBADF  filedes is bad.
  *                  - EACCES Permission denied.
  *                  - EBADF fd is not a valid file descriptor
- *                  - EINVAL ??? What is this for??? It is the wrong return
+ *                  - EINVAL Problems occurred in the underlying routines.
  *                  - ENOMEM Out of memory
  *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_stat(), Unix stat()
  *
- * @todo            Fix the EINVAL return ... It is wrong
  */
 int smbc_fstat(int fd, struct stat *st);
 
