@@ -176,3 +176,32 @@ BOOL trust_password_delete(char *domain)
 {
 	return secrets_delete(trust_keystr(domain));
 }
+
+/*******************************************************************
+ Reset the 'done' variables so after a client process is created
+ from a fork call these calls will be re-done. This should be
+ expanded if more variables need reseting.
+ ******************************************************************/
+
+void reset_globals_after_fork(void)
+{
+	unsigned char dummy;
+
+	/*
+	 * Increment the global seed value to ensure every smbd starts
+	 * with a new random seed.
+	 */
+
+	if (tdb) {
+		uint32 initial_val = sys_getpid();
+		tdb_change_int_atomic(tdb, "INFO/random_seed", &initial_val, 1);
+		set_rand_reseed_data((unsigned char *)&initial_val, sizeof(initial_val));
+	}
+
+	/*
+	 * Re-seed the random crypto generator, so all smbd's
+	 * started from the same parent won't generate the same
+	 * sequence.
+	 */
+	generate_random_buffer( &dummy, 1, True);
+}
