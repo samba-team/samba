@@ -112,14 +112,12 @@ void init_iconv(void)
 /**
  * Convert string from one encoding to another, making error checking etc
  *
- * @param descriptor conversion descriptor, created in init_iconv()
  * @param src pointer to source string (multibyte or singlebyte)
  * @param srclen length of the source string in bytes
  * @param dest pointer to destination string (multibyte or singlebyte)
  * @param destlen maximal length allowed for string
  * @returns the number of bytes occupied in the destination
  **/
-
 size_t convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
 		      void *dest, size_t destlen)
