@@ -674,6 +674,13 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 	prs_struct buf; 
 	REG_Q_CREATE_KEY q_o;
 	BOOL valid_create = False;
+	SEC_DESC sec;
+	SEC_DESC_BUF sec_buf;
+	int sec_len;
+
+	ZERO_STRUCT(sec);
+	ZERO_STRUCT(sec_buf);
+	ZERO_STRUCT(q_o);
 
 	if (hnd == NULL) return False;
 
@@ -685,7 +692,13 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 	DEBUG(4,("REG Create Key: %s %s 0x%08x\n", key_name, key_class,
 		sam_access != NULL ? sam_access->mask : 0));
 
-	make_reg_q_create_key(&q_o, hnd, key_name, key_class, sam_access);
+	sec_len = make_sec_desc(&sec, 1, SEC_DESC_SELF_RELATIVE,
+	                        NULL, NULL, NULL, NULL);
+
+	DEBUG(10,("make_sec_desc: len = %d\n", sec_len));
+
+	make_reg_q_create_key(&q_o, hnd, key_name, key_class, sam_access,
+	                      &sec_buf, sec_len, &sec);
 
 	/* turn parameters into data stream */
 	reg_io_q_create_key("", &q_o, &buf, 0);
@@ -714,6 +727,8 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 			memcpy(key, r_o.key_pol.data, sizeof(key->data));
 		}
 	}
+
+	free_sec_desc(&sec);
 
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );

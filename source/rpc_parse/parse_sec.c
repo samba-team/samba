@@ -194,33 +194,49 @@ int make_sec_desc(SEC_DESC *t, uint16 revision, uint16 type,
 	t->owner_sid = owner_sid;
 	t->grp_sid   = grp_sid;
 
-	offset = 0x14;
+	offset = 0x0;
 
 	if (dacl != NULL)
 	{
+		if (offset == 0)
+		{
+			offset = 0x14;
+		}
 		t->off_dacl = offset;
 		offset += dacl->size;
 	}
 
 	if (sacl != NULL)
 	{
+		if (offset == 0)
+		{
+			offset = 0x14;
+		}
 		t->off_dacl = offset;
 		offset += dacl->size;
 	}
 
 	if (owner_sid != NULL)
 	{
+		if (offset == 0)
+		{
+			offset = 0x14;
+		}
 		t->off_owner_sid = offset;
 		offset += sid_size(owner_sid);
 	}
 
 	if (grp_sid != NULL)
 	{
+		if (offset == 0)
+		{
+			offset = 0x14;
+		}
 		t->off_grp_sid = offset;
 		offset += sid_size(grp_sid);
 	}
 
-	return offset;
+	return (offset == 0) ? 0x14 : offset;
 }
 
 
@@ -256,10 +272,12 @@ reads or writes a structure.
 ********************************************************************/
 static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 {
+#if 0
 	uint32 off_owner_sid;
 	uint32 off_grp_sid  ;
 	uint32 off_sacl     ;
 	uint32 off_dacl     ;
+#endif
 	uint32 old_offset;
 	uint32 max_offset = 0; /* after we're done, move offset to end */
 
@@ -276,16 +294,23 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 	prs_uint16("revision ", ps, depth, &(t->revision ));
 	prs_uint16("type     ", ps, depth, &(t->type     ));
 
+	prs_uint32("off_owner_sid", ps, depth, &(t->off_owner_sid));
+	prs_uint32("off_grp_sid  ", ps, depth, &(t->off_grp_sid  ));
+	prs_uint32("off_sacl     ", ps, depth, &(t->off_sacl     ));
+	prs_uint32("off_dacl     ", ps, depth, &(t->off_dacl     ));
+#if 0
 	prs_uint32_pre("off_owner_sid", ps, depth, &(t->off_owner_sid), &off_owner_sid);
 	prs_uint32_pre("off_grp_sid  ", ps, depth, &(t->off_grp_sid  ), &off_grp_sid  );
 	prs_uint32_pre("off_sacl     ", ps, depth, &(t->off_sacl     ), &off_sacl     );
 	prs_uint32_pre("off_dacl     ", ps, depth, &(t->off_dacl     ), &off_dacl     );
-
+#endif
 	max_offset = MAX(max_offset, ps->offset);
 
 	if (IS_BITS_SET_ALL(t->type, SEC_DESC_DACL_PRESENT))
 	{
+#if 0
 		prs_uint32_post("off_dacl    ", ps, depth, &(t->off_dacl     ), off_dacl     , ps->offset - old_offset);
+#endif
 		ps->offset = old_offset + t->off_dacl;
 		if (ps->io)
 		{
@@ -304,16 +329,20 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 		sec_io_acl     ("dacl"        , t->dacl       , ps, depth);
 		prs_align(ps);
 	}
+#if 0
 	else
 	{
 		prs_uint32_post("off_dacl    ", ps, depth, &(t->off_dacl     ), off_dacl     , 0);
 	}
+#endif
 
 	max_offset = MAX(max_offset, ps->offset);
 
 	if (IS_BITS_SET_ALL(t->type, SEC_DESC_SACL_PRESENT))
 	{
+#if 0
 		prs_uint32_post("off_sacl  ", ps, depth, &(t->off_sacl  ), off_sacl  , ps->offset - old_offset);
+#endif
 		ps->offset = old_offset + t->off_sacl;
 		if (ps->io)
 		{
@@ -332,14 +361,18 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 		sec_io_acl     ("sacl"      , t->sacl       , ps, depth);
 		prs_align(ps);
 	}
+#if 0
 	else
 	{
 		prs_uint32_post("off_sacl  ", ps, depth, &(t->off_sacl  ), off_sacl  , 0);
 	}
+#endif
 
 	max_offset = MAX(max_offset, ps->offset);
 
+#if 0
 	prs_uint32_post("off_owner_sid", ps, depth, &(t->off_owner_sid), off_owner_sid, ps->offset - old_offset);
+#endif
 	if (t->off_owner_sid != 0)
 	{
 		if (ps->io)
@@ -366,7 +399,9 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 
 	max_offset = MAX(max_offset, ps->offset);
 
+#if 0
 	prs_uint32_post("off_grp_sid  ", ps, depth, &(t->off_grp_sid  ), off_grp_sid  , ps->offset - old_offset);
+#endif
 	if (t->off_grp_sid != 0)
 	{
 		if (ps->io)
