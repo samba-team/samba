@@ -46,6 +46,9 @@ LIB_hesiod = @LIB_hesiod@
 INCLUDE_krb4 = @INCLUDE_krb4@
 LIB_krb4 = @LIB_krb4@
 
+INCLUDE_openldap = @INCLUDE_openldap@
+LIB_openldap = @LIB_openldap@
+
 INCLUDE_readline = @INCLUDE_readline@
 LIB_readline = @LIB_readline@
 
