@@ -117,7 +117,7 @@ add_one_principal (const char *name,
     if(rand_key || key_data) {
 	princ.attributes |= KRB5_KDB_DISALLOW_ALL_TIX;
 	mask |= KADM5_ATTRIBUTES;
-	strlcpy (pwbuf, "hemlig", sizeof(pwbuf));
+	random_password (pwbuf, sizeof(pwbuf));
 	password = pwbuf;
     } else if (rand_password) {
 	random_password (pwbuf, sizeof(pwbuf));
