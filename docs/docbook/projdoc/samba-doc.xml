@@ -49,8 +49,9 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 
 <formalpara>
 	<title>Attributions</title>
-	
-	&attributions;
+	<para>
+		&attributions;
+	</para>
 </formalpara>
 
 </legalnotice>
