@@ -2541,8 +2541,11 @@ NTSTATUS _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_
 	if (!find_policy_by_hnd(p, &q_u->connect_pol, (void**)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
+	/* win9x user manager likes to use SA_RIGHT_SAM_ENUM_DOMAINS here.  
+	   Reverted that change so we will work with RAS servers again */
+
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted, 
-		SA_RIGHT_SAM_ENUM_DOMAINS, "_samr_lookup_domain"))) 
+		SA_RIGHT_SAM_OPEN_DOMAIN, "_samr_lookup_domain"))) 
 	{
 		return r_u->status;
 	}
