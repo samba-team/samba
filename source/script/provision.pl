@@ -31,6 +31,8 @@ sub randguid()
 	return sprintf("%08x-%04x-%04x-%04x-%08x%04x", $r1, $r2, $r3, $r4, $r5, $r6);
 }
 
+my $domainguid = randguid();
+
 sub randsid()
 {
 	return sprintf("S-1-5-21-%d-%d-%d", 
@@ -118,4 +120,3 @@ while ($data =~ /(.*?)\$\{(\w*)\}(.*)/s) {
 }
 
 print $res . $data;
-
