@@ -34,10 +34,6 @@ static int fd_open(struct connection_struct *conn, char *fname,
 		   int flags, mode_t mode)
 {
 	int fd;
-#ifdef O_NONBLOCK
-	flags |= O_NONBLOCK;
-#endif
-
 #ifdef O_NOFOLLOW
 	if (!lp_symlinks(SNUM(conn)))
 		flags |= O_NOFOLLOW;
