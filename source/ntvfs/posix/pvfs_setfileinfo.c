@@ -273,6 +273,8 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 		if (newstats.dos.alloc_size < newstats.st.st_size) {
 			newstats.st.st_size = newstats.dos.alloc_size;
 		}
+		newstats.dos.alloc_size = pvfs_round_alloc_size(pvfs, 
+								newstats.dos.alloc_size);
 		break;
 
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
@@ -443,6 +445,8 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 		if (newstats.dos.alloc_size < newstats.st.st_size) {
 			newstats.st.st_size = newstats.dos.alloc_size;
 		}
+		newstats.dos.alloc_size = pvfs_round_alloc_size(pvfs, 
+								newstats.dos.alloc_size);
 		break;
 
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
