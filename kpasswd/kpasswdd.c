@@ -267,6 +267,11 @@ setup_passwd_quality_check(krb5_context context)
 #endif
 }
 
+/*
+ * Change the password for `principal', sending the reply back on `s'
+ * (`sa', `sa_size') to `pwd_data'.
+ */
+
 static void
 change (krb5_auth_context auth_context,
 	krb5_principal principal,
@@ -315,7 +320,7 @@ change (krb5_auth_context auth_context,
 
     kd = &ent.key_data[0];
     
-    salt.salttype = KRB5_PW_SALT;
+    salt.salttype         = kd->key_data_type[1];
     salt.saltvalue.length = kd->key_data_length[1];
     salt.saltvalue.data   = kd->key_data_contents[1];
 
