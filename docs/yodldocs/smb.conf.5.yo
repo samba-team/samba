@@ -415,6 +415,9 @@ case. This option can be use with link(bf("preserve case =
 yes"))(preservecaseoption) to permit long filenames to retain their
 case, while short names are lowered. Default em(Yes).
 
+By default, Samba 2.0 has the same semantics as a Windows NT
+server, in that it is case insensitive but case preserving.
+
 label(COMPLETELISTOFGLOBALPARAMETERS)
 manpagesection(COMPLETE LIST OF GLOBAL PARAMETERS)
 
@@ -1116,95 +1119,267 @@ of the local host.
   bf(Example:)
        bind interfaces only = True
 
-label(browseable)
-dit(bf(browseable (S)))
+label(blockinglocks)
+dit(bf(blocking locks (S)))
+
+This parameter controls the behavior of url(bf(smbd))(smbd.8.html) when
+given a request by a client to obtain a byte range lock on a region
+of an open file, and the request has a time limit associated with it.
+
+If this parameter is set and the lock range requested cannot be
+immediately satisfied, Samba 2.0 will internally queue the lock 
+request, and periodically attempt to obtain the lock until the
+timeout period expires.
+
+If this parameter is set to "False", then Samba 2.0 will behave
+as previous versions of Samba would and will fail the lock
+request immediately if the lock range cannot be obtained.
+
+This parameter can be set per share.
+
+  bf(Default:)
+          blocking locks = True
+
+  bf(Example:)
+          blocking locks = False
+
+label(browsable)
+dit(bf(broweable (S)))
 
 This controls whether this share is seen in the list of available
 shares in a net view and in the browse list.
 
   bf(Default:)
-	browseable = Yes
+	browsable = Yes
 
   bf(Example:)
-	browseable = No
+	browsable = No
 
-.SS browse list(G)
-This controls whether the smbd will serve a browse list to a client
-doing a NetServerEnum call. Normally set to true. You should never
-need to change this.
+label(browselist)
+dit(bf(browse list(G)))
 
-.B Default:
+This controls whether url(bf(smbd))(smbd.8.html) will serve a browse
+list to a client doing a NetServerEnum call. Normally set to true. You
+should never need to change this.
+
+  bf(Default:)
 	browse list = Yes
 
-.SS case sensitive (G)
-See the discussion on NAME MANGLING.
+label(browseable)
+dit(bf(browseable))
 
-.SS case sig names (G)
-See "case sensitive"
+Synonym for link(bf(browsable))(browsable).
 
-.SS character set (G)
-This allows a smbd to map incoming characters from a DOS 850 Code page
-to either a Western European (ISO8859-1) or Easter European (ISO8859-2)
-code page. Normally not set, meaning no filename translation is done.
+label(casesensitive)
+dit(bf(case sensitive (G)))
 
-.B Default
+See the discussion in the section link(bf(NAME MANGLING))(NAMEMANGLING).
 
+label(casesignames)
+dit(bf(casesignames (G)))
+
+Synonym for link(bf("case sensitive"))(casesensitive).
+
+label(changenotifytimeout)
+dit(bf(change notify timeout (G)))
+
+One of the new NT SMB requests that Samba 2.0 supports is the
+"ChangeNotify" requests. This SMB allows a client to tell a server to
+em("watch") a particular directory for any changes and only reply to
+the SMB request when a change has occurred. Such constant scanning of
+a directory is expensive under UNIX, hence an
+url(bf(smbd))(smbd.8.html) daemon only performs such a scan on each
+requested directory once every bf(change notify timeout) seconds.
+
+bf(change notify timeout) is specified in units of seconds.
+
+  bf(Default:)
+     change notify timeout = 60
+
+  bf(Example:)
+     change notify timeout = 300
+
+     Would change the scan time to every 5 minutes.
+
+label(characterset)
+dit(bf(character set (G)))
+
+This allows a smbd to map incoming filenames from a DOS Code page (see
+the link(bf(client code page))(clientcodepage) parameter) to several
+built in UNIX character sets. The built in code page translations are:
+
+startit()
+
+it() bf(ISO8859-1) Western European UNIX character set. The parameter
+link(bf(client code page))(clientcodepage) em(MUST) be set to code
+page 850 if the bf(character set) parameter is set to iso8859-1
+in order for the conversion to the UNIX character set to be done
+correctly.
+
+it() bf(ISO8859-2) Eastern European UNIX character set. The parameter
+link(bf(client code page))(clientcodepage) em(MUST) be set to code
+page 852 if the bf(character set) parameter is set to ISO8859-2
+in order for the conversion to the UNIX character set to be done
+correctly. 
+
+it() bf(ISO8859-5) Russian Cyrillic UNIX character set. The parameter
+link(bf(client code page))(clientcodepage) em(MUST) be set to code
+page 866 if the bf(character set) parameter is set to ISO8859-2
+in order for the conversion to the UNIX character set to be done
+correctly. 
+
+it() bf(KOI8-R) Alternate mapping for Russian Cyrillic UNIX
+character set. The parameter link(bf(client code
+page))(clientcodepage) em(MUST) be set to code page 866 if the
+bf(character set) parameter is set to KOI8-R in order for the
+conversion to the UNIX character set to be done correctly.
+
+endit()
+
+em(BUG). These MSDOS code page to UNIX character set mappings should
+be dynamic, like the loading of MS DOS code pages, not static.
+
+See also link(bf(client code page))(clientcodepage).  Normally this
+parameter is not set, meaning no filename translation is done.
+
+  bf(Default:)
 	character set =
 
-.B Example
+  bf(Example:)
+	character set = ISO8859-1
 
-	character set = iso8859-1
+label(clientcodepage)
+dit(bf(client code page (G)))
 
-.SS client code page (G)
-Currently (Samba 1.9.17 and above) this may be set to one of two
-values, 850 or 437. It specifies the base DOS code page that the
-clients accessing Samba are using. To determine this, open a DOS
-command prompt and type the command "chcp". This will output the
-code page. The default for USA MS-DOS, Windows 95, and Windows NT
-releases is code page 437. The default for western european 
+This parameter specifies the DOS code page that the clients accessing
+Samba are using. To determine what code page a Windows or DOS client
+is using, open a DOS command prompt and type the command "chcp". This
+will output the code page. The default for USA MS-DOS, Windows 95, and
+Windows NT releases is code page 437. The default for western european
 releases of the above operating systems is code page 850.
 
-This parameter co-operates with the "valid chars" parameter in
-determining what characters are valid in filenames and how
-capitalization is done. It has been added as a convenience for
-clients whose code page is either 437 or 850 so a convoluted
-"valid chars" string does not have to be determined. If you
-set both this parameter and the "valid chars" parameter the 
-"client code page" parameter MUST be set before the "valid chars"
-in the smb.conf file. The "valid chars" string will then augment
+This parameter tells url(bf(smbd))(smbd.8.html) which of the
+tt(codepage.XXX) files to dynamically load on startup. These files,
+described more fully in the manual page url(bf(make_smbcodepage
+(1)))(make_smbcodepage.1.html), tell url(bf(smbd))(smbd.8.html) how
+to map lower to upper case characters to provide the case insensitivity
+of filenames that Windows clients expect.
+
+Samba currenly ships with the following code page files :
+
+startit()
+
+it() bf(Code Page 437 - MS-DOS Latin US)
+
+it() bf(Code Page 737 - Windows '95 Greek)
+
+it() bf(Code Page 850 - MS-DOS Latin 1)
+
+it() bf(Code Page 852 - MS-DOS Latin 2)
+
+it() bf(Code Page 861 - MS-DOS Icelandic)
+
+it() bf(Code Page 866 - MS-DOS Cyrillic)
+
+it() bf(Code Page 932 - MS-DOS Japanese SJIS)
+
+it() bf(Code Page 936 - MS-DOS Simplified Chinese)
+
+it() bf(Code Page 949 - MS-DOS Korean Hangul)
+
+it() bf(Code Page 950 - MS-DOS Traditional Chinese)
+
+endit()
+
+Thus this parameter may have any of the values 437, 737, 850, 852,
+861, 932, 936, 949, or 950.  If you don't find the codepage you need,
+read the comments in one of the other codepage files and the
+url(bf(make_smbcodepage (1)))(make_smbcodepage.1.html) man page and
+write one. Please remember to donate it back to the Samba user
+community.
+
+This parameter co-operates with the link(bf("valid
+chars"))(validchars) parameter in determining what characters are
+valid in filenames and how capitalization is done. If you set both
+this parameter and the link(bf("valid chars"))(validchars) parameter
+the bf("client code page") parameter em(MUST) be set before the
+link(bf("valid chars"))(validchars) parameter in the bf(smb.conf)
+file. The link(bf("valid chars"))(validchars) string will then augment
 the character settings in the "client code page" parameter.
 
-If "client code page" is set to a value other than 850 or 437
-it will default to 850.
+If not set, bf("client code page") defaults to 850.
 
-See also : "valid chars".
+See also : link(bf("valid chars"))(validchars)
 
-.B Default
+  bf(Default:)
 
 	client code page = 850
 
-.B Example
+  bf(Example:)
 
-	client code page = 437
+	client code page = 936
 
-.SS comment (S)
+label(codingsystem)
+dit(bf(codingsystem))
+
+This parameter is used to determine how incoming Shift-JIS Japanese
+characters are mapped from the incoming link(bf("client code
+page"))(clientcodepage) used by the client, into file names in the
+UNIX filesystem. Only useful if link(bf("client code
+page"))(clientcodepage) is set to 932 (Japanese Shift-JIS).
+
+The options are :
+
+startit()
+
+it() bf(SJIS))  Shift-JIS. Does no conversion of the incoming filename.
+
+it() bf(JIS8, J8BB, J8BH, J8@B, J8@J, J8@H )) Convert from incoming
+Shift-JIS to eight bit JIS code with different shift-in, shift out
+codes.
+
+it() bf(JIS7, J7BB, J7BH, J7@B, J7@J, J7@H )) Convert from incoming
+Shift-JIS to seven bit JIS code with different shift-in, shift out
+codes.
+
+it() bf(JUNET, JUBB, JUBH, JU@B, JU@J, JU@H )) Convert from incoming
+Shift-JIS to JUNET code with different shift-in, shift out codes.
+
+it() bf(EUC)  Convert an incoming Shift-JIS character to EUC code.
+
+it() bf(HEX) Convert an incoming Shift-JIS character to a 3 byte hex
+representation, ie. tt(:AB).
+
+it() bf(CAP) Convert an incoming Shift-JIS character to the 3 byte hex
+representation used by the Columbia Appletalk Program (CAP),
+ie. tt(:AB).  This is used for compatibility between Samba and CAP.
+
+endit()
+
+label(comment)
+dit(bf(comment (S)))
+
 This is a text field that is seen next to a share when a client does a
-net view to list what shares are available.
+queries the server, either via the network neighborhood or via "net
+view" to list what shares are available.
 
 If you want to set the string that is displayed next to the machine
 name then see the server string command.
 
-.B Default:
+  bf(Default:)
+
 	No comment string
 
-.B Example:
+  bf(Example:)
+
 	comment = Fred's Files
 
-.SS config file (G)
+label(configfile)
+dit(bf(config file (G)))
 
 This allows you to override the config file to use, instead of the
-default (usually smb.conf). There is a chicken and egg problem here as
-this option is set in the config file! 
+default (usually bf(smb.conf)). There is a chicken and egg problem
+here as this option is set in the config file!
 
 For this reason, if the name of the config file has changed when the
 parameters are loaded then it will reload them from the new config
@@ -1212,57 +1387,64 @@ file.
 
 This option takes the usual substitutions, which can be very useful.
 
-If the config file doesn't exist then it won't be loaded (allowing
-you to special case the config files of just a few clients).
+If the config file doesn't exist then it won't be loaded (allowing you
+to special case the config files of just a few clients).
 
-.B Example:
-	config file = /usr/local/samba/lib/smb.conf.%m
+  bf(Example:)
 
-.SS copy (S)
-This parameter allows you to 'clone' service entries. The specified
-service is simply duplicated under the current service's name. Any 
+tt(	config file = /usr/local/samba/lib/smb.conf.%m)
+
+label(copy)
+dit(bf(copy (S)))
+
+This parameter allows you to em('clone') service entries. The specified
+service is simply duplicated under the current service's name. Any
 parameters specified in the current section will override those in the
 section being copied.
 
-This feature lets you set up a 'template' service and create similar 
-services easily. Note that the service being copied must occur earlier 
+This feature lets you set up a 'template' service and create similar
+services easily. Note that the service being copied must occur earlier
 in the configuration file than the service doing the copying.
 
-.B Default:
+  bf(Default:)
  	none
 
-.B Example:
+  bf(Example:)
  	copy = otherservice
-.SS create mask (S)
-A synonym for this parameter is 'create mode'.
+
+label(createmode)
+dit(bf(create mask (S)))
+
+A synonym for this parameter is link(bf('create mode'))(createmode).
 
 When a file is created, the neccessary permissions are calculated
-according to the mapping from DOS modes to UNIX permissions, and
-the resulting UNIX mode is then bit-wise 'AND'ed with this parameter.
-This parameter may be thought of as a bit-wise MASK for the UNIX
-modes of a file. Any bit *not* set here will be removed from the
-modes set on a file when it is created.
+according to the mapping from DOS modes to UNIX permissions, and the
+resulting UNIX mode is then bit-wise 'AND'ed with this parameter.
+This parameter may be thought of as a bit-wise MASK for the UNIX modes
+of a file. Any bit em(*not*) set here will be removed from the modes set
+on a file when it is created.
 
-The default value of this parameter removes the 'group' and 'other' 
+The default value of this parameter removes the 'group' and 'other'
 write and execute bits from the UNIX modes.
 
 Following this Samba will bit-wise 'OR' the UNIX mode created from
-this parameter with the value of the "force create mode" parameter 
+this parameter with the value of the "force create mode" parameter
 which is set to 000 by default.
 
-For Samba 1.9.17 and above this parameter no longer affects directory
-modes. See the parameter 'directory mode' for details.
+This parameter does not affect directory modes. See the parameter
+link(bf('directory mode'))(directorymode) for details.
 
-See also the "force create mode" parameter for forcing particular
-mode bits to be set on created files.
-See also the "directory mode" parameter for masking mode bits on created
-directories.
+See also the link(bf("force create mode"))(forcecreatemode) parameter
+for forcing particular mode bits to be set on created files. See also
+the link(bf("directory mode"))(directorymode) parameter for masking
+mode bits on created directories.
 
-.B Default:
+  bf(Default:)
  	create mask = 0744
 
-.B Example:
+  bf(Example:)
  	create mask = 0775
+
 .SS create mode (S)
 See
 .B create mask.
