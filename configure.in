@@ -590,6 +590,9 @@ if test "$krb_cv_sys_streamspty" = yes; then
 	AC_DEFINE(STREAMSPTY, 1, [Define if you have streams ptys.])
 fi
 
+dnl Some operating systems already have com_err and compile_et
+CHECK_COMPILE_ET
+
 AC_AUTH_MODULES
 
 dnl This is done by AC_OUTPUT but we need the result here.

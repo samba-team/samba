@@ -18,7 +18,7 @@ libsl_la_LDFLAGS = -version-info 1:2:1
 libss_la_LDFLAGS = -version-info 1:4:1
 
 libsl_la_LIBADD = @LIB_readline@
-libss_la_LIBADD = @LIB_readline@ ../com_err/libcom_err.la
+libss_la_LIBADD = @LIB_readline@ @LIB_com_err@
 
 libsl_la_SOURCES = sl_locl.h sl.c $(ES)
 libss_la_SOURCES = $(libsl_la_SOURCES) ss.c ss.h

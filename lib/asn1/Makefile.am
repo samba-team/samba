@@ -7,7 +7,7 @@ YFLAGS = -d
 lib_LTLIBRARIES = libasn1.la
 libasn1_la_LDFLAGS = -version-info 5:0:0
 
-libasn1_la_LIBADD = ../com_err/libcom_err.la
+libasn1_la_LIBADD = @LIB_com_err@
 
 BUILT_SOURCES =			\
 	$(gen_files:.x=.c)	\

@@ -10,8 +10,6 @@ AM_CFLAGS = $(WFLAGS)
 
 CP	= cp
 
-COMPILE_ET = $(top_builddir)/lib/com_err/compile_et
-
 ## set build_HEADERZ to headers that should just be installed in build tree
 
 buildinclude = $(top_builddir)/include
