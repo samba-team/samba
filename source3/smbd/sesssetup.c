@@ -26,7 +26,9 @@
 /****************************************************************************
 reply to a session setup spnego negotiate packet for kerberos
 ****************************************************************************/
-static int reply_spnego_kerberos(connection_struct *conn, char *outbuf,
+static int reply_spnego_kerberos(connection_struct *conn, 
+				 char *inbuf, char *outbuf,
+				 int length, int bufsize,
 				 DATA_BLOB *secblob)
 {
 	DATA_BLOB ticket;
@@ -37,9 +39,15 @@ static int reply_spnego_kerberos(connection_struct *conn, char *outbuf,
 	krb5_data packet;
 	krb5_ticket *tkt = NULL;
 	int ret;
-	char *realm, *client;
+	char *realm, *client, *p;
 	fstring service;
 	extern pstring global_myname;
+	const struct passwd *pw;
+	char *user;
+	gid_t gid;
+	uid_t uid;
+	char *full_name;
+	int sess_vuid;
 
 	realm = lp_realm();
 
@@ -79,11 +87,48 @@ static int reply_spnego_kerberos(connection_struct *conn, char *outbuf,
 
 	DEBUG(3,("Ticket name is [%s]\n", client));
 
-	/* well, if we got a client above then I think we have authenticated the user
-	   but fail it for now until I understand it */
+	p = strchr_m(client, '@');
+	if (!p) {
+		DEBUG(3,("Doesn't look like a valid principle\n"));
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	*p = 0;
+	if (strcasecmp(p+1, realm) != 0) {
+		DEBUG(3,("Ticket for incorrect realm %s\n", p+1));
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
 	
+	user = client;
+
+	/* the password is good - let them in */
+	pw = smb_getpwnam(user,False);
+	if (!pw) {
+		DEBUG(1,("Username %s is invalid on this system\n",user));
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+	gid = pw->pw_gid;
+	uid = pw->pw_uid;
+	full_name = pw->pw_gecos;
 	
-	return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	sess_vuid = register_vuid(uid,gid,user,user,realm,False, full_name);
+
+	if (sess_vuid == -1) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	set_message(outbuf,4,0,True);
+	SSVAL(outbuf, smb_vwv3, 0);
+	p = smb_buf(outbuf);
+	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
+	set_message_end(outbuf,p);
+ 
+	SSVAL(outbuf,smb_uid,sess_vuid);
+	SSVAL(inbuf,smb_uid,sess_vuid);
+	
+	return chain_reply(inbuf,outbuf,length,bufsize);
 }
 #endif
 
@@ -118,7 +163,10 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 /****************************************************************************
 reply to a session setup spnego negotiate packet
 ****************************************************************************/
-static int reply_spnego_negotiate(connection_struct *conn, char *outbuf,
+static int reply_spnego_negotiate(connection_struct *conn, 
+				  char *inbuf,
+				  char *outbuf,
+				  int length, int bufsize,
 				  DATA_BLOB blob1)
 {
 	char *OIDs[ASN1_MAX_OIDS];
@@ -145,7 +193,8 @@ static int reply_spnego_negotiate(connection_struct *conn, char *outbuf,
 
 #if HAVE_KRB5
 	if (got_kerberos) {
-		int ret = reply_spnego_kerberos(conn, outbuf, &secblob);
+		int ret = reply_spnego_kerberos(conn, inbuf, outbuf, 
+						length, bufsize, &secblob);
 		data_blob_free(&secblob);
 		return ret;
 	}
@@ -331,12 +380,13 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,cha
 	blob1 = data_blob(p, SVAL(inbuf, smb_vwv7));
 	
 #if 0
+	chdir("/home/tridge");
 	file_save("negotiate.dat", blob1.data, blob1.length);
 #endif
 
 	if (blob1.data[0] == ASN1_APPLICATION(0)) {
 		/* its a negTokenTarg packet */
-		ret = reply_spnego_negotiate(conn, outbuf, blob1);
+		ret = reply_spnego_negotiate(conn, inbuf, outbuf, length, bufsize, blob1);
 		data_blob_free(&blob1);
 		return ret;
 	}
