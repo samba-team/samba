@@ -284,7 +284,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 	p = smb_buf(cli->outbuf);
 	memcpy(p,pword,passlen); p += passlen;
 	memcpy(p,ntpword,ntpasslen); p += ntpasslen;
-	p += clistr_push(cli, p, user, -1, STR_TERMINATE|STR_UPPER|STR_CONVERT);
+	p += clistr_push(cli, p, user, -1, STR_TERMINATE|STR_CONVERT);
 	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_UPPER|STR_CONVERT);
 	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE|STR_CONVERT);
 	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE|STR_CONVERT);
