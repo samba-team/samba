@@ -3894,6 +3894,7 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 		src = skip_unibuf(src, 2*buf5->buf_len - PTR_DIFF(src,buf5->buffer));
 		*ar = (fstring *)Realloc(*ar, sizeof(fstring)*(n+2));
 		fstrcpy((*ar)[n], f);
+		n++;
 	}
 	fstrcpy((*ar)[n], "");
 
