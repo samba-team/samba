@@ -19,7 +19,9 @@ kx_SOURCES = \
 	kx.c \
 	kx.h \
 	common.c \
-	encdata.c \
+	context.c \
+	krb4.c \
+	krb5.c \
 	$(XauWriteAuth_c)
 
 EXTRA_kx_SOURCES = writeauth.c
@@ -28,7 +30,9 @@ kxd_SOURCES = \
 	kxd.c \
 	kx.h \
 	common.c \
-	encdata.c \
+	context.c \
+	krb4.c \
+	krb5.c \
 	$(XauWriteAuth_c)
 
 EXTRA_kxd_SOURCES = writeauth.c
@@ -47,16 +51,10 @@ tenletxr: tenletxr.in
 	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/tenletxr.in > $@
 	chmod +x $@
 
-encdata.c:
-	$(LN_S) $(srcdir)/../kauth/encdata.c .
-kauth.h:
-	$(LN_S) $(srcdir)/../kauth/kauth.h .
-
-$(OBJECTS): kauth.h
-
 LDADD = \
 	$(LIB_kafs)				\
+	$(LIB_krb5) \
 	$(LIB_krb4)				\
 	$(top_builddir)/lib/des/libdes.la	\
 	$(LIB_roken)				\
-	$(LIB_XauReadAuth) $(X_PRE_LIBS) $(X_EXTRA_LIBS)
+	$(X_LIBS) $(LIB_XauReadAuth) $(X_PRE_LIBS) $(X_EXTRA_LIBS)
