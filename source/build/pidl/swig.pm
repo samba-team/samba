@@ -231,7 +231,13 @@ sub ParseStruct($)
     
     $res .= "struct $s->{NAME} *$s->{NAME}_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)\n";
     $res .= "{\n";
-    $res .= "\tstruct $s->{NAME} *s = talloc(mem_ctx, sizeof(struct $s->{NAME}));\n\n";
+    $res .= "\tstruct $s->{NAME} *s;\n\n";
+
+    $res .= "\tif (obj == Py_None) {\n";
+    $res .= "\t\treturn NULL;\n";
+    $res .= "\t}\n\n";
+
+    $res .= "\ts = talloc(mem_ctx, sizeof(struct $s->{NAME}));\n\n";
 
     foreach my $e (@{$s->{DATA}{ELEMENTS}}) {
 	$res .= XFromPython($e, "");
@@ -259,6 +265,11 @@ sub ParseStruct($)
     
     $res .= "\tPyObject *obj = PyDict_New();\n\n";
 
+    $res .= "\tif (s == NULL) {\n";
+    $res .= "\t\tPy_INCREF(Py_None);\n";
+    $res .= "\t\treturn Py_None;\n";
+    $res .= "\t}\n\n";
+    
     foreach my $e (@{$s->{DATA}{ELEMENTS}}) {
 	$res .= XToPython($e, "");
     }
@@ -282,7 +293,6 @@ sub ParseUnion($)
 
     $res .= "\tunion $u->{NAME} *u = talloc(mem_ctx, sizeof(union $u->{NAME}));\n";
     $res .= "\tPyObject *dict;\n\n";
-
     
     for my $e (@{$u->{DATA}{DATA}}) {
 	$res .= "\tif ((dict = PyDict_GetItem(obj, PyString_FromString(\"$e->{DATA}{NAME}\")))) {\n";
@@ -305,6 +315,12 @@ sub ParseUnion($)
 
     $res .= "PyObject *$u->{NAME}_ptr_to_python(TALLOC_CTX *mem_ctx, union $u->{NAME} *u)\n";
     $res .= "{\n";
+
+    $res .= "\tif (u == NULL) {\n";
+    $res .= "\t\tPy_INCREF(Py_None);\n";
+    $res .= "\t\treturn Py_None;\n";
+    $res .= "\t}\n\n";
+
     $res .= "\treturn PyDict_New();\n";
     $res .= "}\n\n";
 
