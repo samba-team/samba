@@ -122,8 +122,8 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
 	struct dcerpc_binding b;
-	struct dcerpc_pipe *p;
-	struct dcerpc_pipe *p_netlogon;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_pipe *p_netlogon = NULL;
 	struct creds_CredentialState *creds;
 
 	join_ctx = torture_join_domain(TEST_MACHINE_NAME, lp_workgroup(), acct_flags,
