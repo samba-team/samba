@@ -419,7 +419,7 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 
 	if(security_info_sent == 0) {
 		DEBUG(0,("unpack_nt_owners: no security info sent !\n"));
-		return False;
+		return True;
 	}
 
 	/*
@@ -438,8 +438,10 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 
 	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
 		sid_copy(&owner_sid, psd->owner_sid);
-		if (!sid_to_uid( &owner_sid, puser, &sid_type))
+		if (!sid_to_uid( &owner_sid, puser, &sid_type)) {
 			DEBUG(3,("unpack_nt_owners: unable to validate owner sid.\n"));
+			return False;
+		}
  	}
 
 	/*
@@ -449,8 +451,10 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 
 	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
 		sid_copy(&grp_sid, psd->grp_sid);
-		if (!sid_to_gid( &grp_sid, pgrp, &sid_type))
+		if (!sid_to_gid( &grp_sid, pgrp, &sid_type)) {
 			DEBUG(3,("unpack_nt_owners: unable to validate group sid.\n"));
+			return False;
+		}
 	}
 
 	DEBUG(5,("unpack_nt_owners: owner_sids validated.\n"));
