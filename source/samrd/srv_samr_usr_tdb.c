@@ -614,8 +614,6 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 		case 0x12:
 		{
 			SAM_USER_INFO_12 *id12 = ctr->info.id12;
-			SamOEMhash(id12->lm_pwd, user_sess_key, 0);
-			SamOEMhash(id12->nt_pwd, user_sess_key, 0);
 			if (!set_user_info_12(tdb_usr, id12))
 			{
 				DEBUG(10,
@@ -707,13 +705,13 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 		case 0x12:
 		{
 			SAM_USER_INFO_12 *id12 = ctr->info.id12;
-#if 0
-			lm_owf_gen("test", user_sess_key);
-#endif
-			dump_data_pw("user_sess_key:", user_sess_key, 16);
-			SamOEMhash(id12->lm_pwd, user_sess_key, 3);
-			SamOEMhash(id12->nt_pwd, user_sess_key, 3);
-			dump_data_pw("user_sess_key:", id12->nt_pwd, 16);
+			SamOEMhash(id12->lm_pwd, user_sess_key, 0);
+			SamOEMhash(id12->nt_pwd, user_sess_key, 0);
+
+			dump_data_pw("sess_key:\n", user_sess_key, 16);
+			dump_data_pw("lm_pwd:\n", id12->lm_pwd, 16);
+			dump_data_pw("nt_pwd:\n", id12->nt_pwd, 16);
+
 			if (!set_user_info_12(tdb_usr, id12))
 			{
 				DEBUG(10,

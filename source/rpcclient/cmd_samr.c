@@ -2391,6 +2391,10 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	uint16 acb_set = 0x0;
 	uint16 acb_clr = 0x0;
 
+	BOOL set_passwd = False;
+
+	fstring password;
+
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
@@ -2418,10 +2422,17 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 
 	safe_strcpy(user_name, argv[0], sizeof(user_name));
 
-	while ((opt = getopt(argc, argv,"s:c:")) != EOF)
+	while ((opt = getopt(argc, argv,"s:c:p:")) != EOF)
 	{
 		switch (opt)
 		{
+			case 'p':
+			{
+				set_passwd = True;
+				safe_strcpy(password, optarg,
+					    sizeof(password)-1);
+				break;
+			}
 			case 's':
 			{
 				set_acb_bits = True;
@@ -2455,8 +2466,28 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 					1, names,
 					&num_rids, &rids, &types) : False;
 
+
+	if (set_passwd && res1 && num_rids == 1)
+	{
+		void *usr = NULL;
+		uint32 switch_value = 0;
+
+		SAM_USER_INFO_12 *p = (SAM_USER_INFO_12 *)malloc(sizeof(SAM_USER_INFO_12));
+		usr = (void*)p;
+		switch_value = 0x12;
+		
+		if (usr != NULL)
+		{
+			nt_lm_owf_gen(password, p->nt_pwd, p->lm_pwd);
+			p->acb_info = 0x101;
+			res1 = set_samr_set_userinfo2( &pol_dom,
+					    switch_value, rids[0], usr);
+		}
+	}
+
 	/* send set user info */
-	if (res1 && num_rids == 1 && get_samr_query_userinfo( &pol_dom,
+	if ((!set_passwd) && res1 && num_rids == 1 &&
+	                  get_samr_query_userinfo( &pol_dom,
 						    0x10, rids[0],
 	                                            &ctr))
 	{
@@ -2504,14 +2535,8 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 		report(out_hnd, "Set User Info: Failed\n");
 		DEBUG(5,("cmd_sam_query_user: failed\n"));
 	}
-	if (rids != NULL)
-	{
-		free(rids);
-	}
-	if (types != NULL)
-	{
-		free(types);
-	}
+	safe_free(rids);
+	safe_free(types);
 	free_samr_userinfo_ctr(&ctr);
 }
 
@@ -2675,11 +2700,8 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 				usr21->logon_divs,
 				&usr21->logon_hrs,
 				usr21->unknown_5,
-				pwbuf
-#if 0
-				, usr21->unknown_6
-#endif
-				);
+				pwbuf,
+				usr21->unknown_6);
 
 			usr = p;
 			switch_value = 23;

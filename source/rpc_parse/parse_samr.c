@@ -5894,6 +5894,8 @@ BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
 				uint16 switch_value, 
 				SAM_USERINFO_CTR *ctr)
 {
+	uint8 usr_sess_key[16];
+
 	if (q_u == NULL || hnd == NULL) return False;
 
 	DEBUG(5,("make_samr_q_set_userinfo2\n"));
@@ -5905,6 +5907,25 @@ BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
 	if (q_u->ctr != NULL)
 	{
 		q_u->ctr->switch_value = switch_value;
+	}
+
+	if (!cli_get_usr_sesskey(hnd, usr_sess_key))
+	{
+		DEBUG(0,("make_samr_set_userinfo: could not obtain session key\n"));
+		return False;
+	}
+
+	switch (switch_value)
+	{
+		case 0x12:
+		{
+			SamOEMhash(ctr->info.id12->lm_pwd, usr_sess_key, 0);
+			SamOEMhash(ctr->info.id12->nt_pwd, usr_sess_key, 0);
+			dump_data_pw("sess_key", usr_sess_key, 16);
+			dump_data_pw("passwd", ctr->info.id12->lm_pwd, 16);
+			dump_data_pw("passwd", ctr->info.id12->nt_pwd, 16);
+			break;
+		}
 	}
 
 	return True;
