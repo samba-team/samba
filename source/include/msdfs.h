@@ -18,7 +18,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    
-   $Id: msdfs.h,v 1.5.4.3 2001/08/29 19:56:27 kalele Exp $
 */
 
 #ifndef _MSDFS_H
