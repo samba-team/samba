@@ -92,8 +92,10 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
   wrappers for the spnego_*() functions
 */
 static NTSTATUS gensec_spnego_unseal_packet(struct gensec_security *gensec_security, 
-				     TALLOC_CTX *mem_ctx, 
-				     uint8_t *data, size_t length, DATA_BLOB *sig)
+					    TALLOC_CTX *mem_ctx, 
+					    uint8_t *data, size_t length, 
+					    const uint8_t *whole_pdu, size_t pdu_length, 
+					    DATA_BLOB *sig)
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
 
@@ -103,13 +105,17 @@ static NTSTATUS gensec_spnego_unseal_packet(struct gensec_security *gensec_secur
 	}
 	
 	return gensec_unseal_packet(spnego_state->sub_sec_security, 
-				    mem_ctx, data, length, sig); 
+				    mem_ctx, 
+				    data, length, 
+				    whole_pdu, pdu_length,
+				    sig); 
 }
 
 static NTSTATUS gensec_spnego_check_packet(struct gensec_security *gensec_security, 
-				     TALLOC_CTX *mem_ctx, 
-				     const uint8_t *data, size_t length, 
-				     const DATA_BLOB *sig)
+					   TALLOC_CTX *mem_ctx, 
+					   const uint8_t *data, size_t length, 
+					   const uint8_t *whole_pdu, size_t pdu_length, 
+					   const DATA_BLOB *sig)
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
 
@@ -120,13 +126,17 @@ static NTSTATUS gensec_spnego_check_packet(struct gensec_security *gensec_securi
 	}
 	
 	return gensec_check_packet(spnego_state->sub_sec_security, 
-				mem_ctx, data, length, sig);
+				   mem_ctx, 
+				   data, length, 
+				   whole_pdu, pdu_length,
+				   sig);
 }
 
 static NTSTATUS gensec_spnego_seal_packet(struct gensec_security *gensec_security, 
-				    TALLOC_CTX *mem_ctx, 
-				    uint8_t *data, size_t length, 
-				    DATA_BLOB *sig)
+					  TALLOC_CTX *mem_ctx, 
+					  uint8_t *data, size_t length, 
+					  const uint8_t *whole_pdu, size_t pdu_length, 
+					  DATA_BLOB *sig)
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
 
@@ -137,13 +147,17 @@ static NTSTATUS gensec_spnego_seal_packet(struct gensec_security *gensec_securit
 	}
 	
 	return gensec_seal_packet(spnego_state->sub_sec_security, 
-				  mem_ctx, data, length, sig);
+				  mem_ctx, 
+				  data, length, 
+				  whole_pdu, pdu_length,
+				  sig);
 }
 
 static NTSTATUS gensec_spnego_sign_packet(struct gensec_security *gensec_security, 
-				    TALLOC_CTX *mem_ctx, 
-				    const uint8_t *data, size_t length, 
-				    DATA_BLOB *sig)
+					  TALLOC_CTX *mem_ctx, 
+					  const uint8_t *data, size_t length, 
+					  const uint8_t *whole_pdu, size_t pdu_length, 
+					  DATA_BLOB *sig)
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
 
@@ -153,11 +167,26 @@ static NTSTATUS gensec_spnego_sign_packet(struct gensec_security *gensec_securit
 	}
 	
 	return gensec_sign_packet(spnego_state->sub_sec_security, 
-				  mem_ctx, data, length, sig);
+				  mem_ctx, 
+				  data, length, 
+				  whole_pdu, pdu_length,
+				  sig);
+}
+
+static size_t gensec_spnego_sig_size(struct gensec_security *gensec_security) 
+{
+	struct spnego_state *spnego_state = gensec_security->private_data;
+
+	if (spnego_state->state_position != SPNEGO_DONE 
+	    && spnego_state->state_position != SPNEGO_FALLBACK) {
+		return 0;
+	}
+	
+	return gensec_sig_size(spnego_state->sub_sec_security);
 }
 
 static NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_security, 
-				    DATA_BLOB *session_key)
+					  DATA_BLOB *session_key)
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
 	if (!spnego_state->sub_sec_security) {
@@ -684,6 +713,7 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.update 	= gensec_spnego_update,
 	.seal_packet	= gensec_spnego_seal_packet,
 	.sign_packet	= gensec_spnego_sign_packet,
+	.sig_size	= gensec_spnego_sig_size,
 	.check_packet	= gensec_spnego_check_packet,
 	.unseal_packet	= gensec_spnego_unseal_packet,
 	.session_key	= gensec_spnego_session_key,

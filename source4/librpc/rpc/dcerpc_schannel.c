@@ -50,7 +50,9 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 */
 static NTSTATUS dcerpc_schannel_unseal_packet(struct gensec_security *gensec_security, 
 					      TALLOC_CTX *mem_ctx, 
-					      uint8_t *data, size_t length, DATA_BLOB *sig)
+					      uint8_t *data, size_t length, 
+					      const uint8_t *whole_pdu, size_t pdu_length, 
+					      DATA_BLOB *sig)
 {
 	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
 	
@@ -60,6 +62,7 @@ static NTSTATUS dcerpc_schannel_unseal_packet(struct gensec_security *gensec_sec
 static NTSTATUS dcerpc_schannel_check_packet(struct gensec_security *gensec_security, 
 					     TALLOC_CTX *mem_ctx, 
 					     const uint8_t *data, size_t length, 
+					     const uint8_t *whole_pdu, size_t pdu_length, 
 					     const DATA_BLOB *sig)
 {
 	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
@@ -70,6 +73,7 @@ static NTSTATUS dcerpc_schannel_check_packet(struct gensec_security *gensec_secu
 static NTSTATUS dcerpc_schannel_seal_packet(struct gensec_security *gensec_security, 
 					    TALLOC_CTX *mem_ctx, 
 					    uint8_t *data, size_t length, 
+					    const uint8_t *whole_pdu, size_t pdu_length, 
 					    DATA_BLOB *sig)
 {
 	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
@@ -80,6 +84,7 @@ static NTSTATUS dcerpc_schannel_seal_packet(struct gensec_security *gensec_secur
 static NTSTATUS dcerpc_schannel_sign_packet(struct gensec_security *gensec_security, 
 					    TALLOC_CTX *mem_ctx, 
 					    const uint8_t *data, size_t length, 
+					    const uint8_t *whole_pdu, size_t pdu_length, 
 					    DATA_BLOB *sig)
 {
 	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;

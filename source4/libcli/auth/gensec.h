@@ -60,13 +60,22 @@ struct gensec_security_ops {
 	NTSTATUS (*update)(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
 			   const DATA_BLOB in, DATA_BLOB *out);
 	NTSTATUS (*seal_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
-				uint8_t *data, size_t length, DATA_BLOB *sig);
+				uint8_t *data, size_t length, 
+				const uint8_t *whole_pdu, size_t pdu_length, 
+				DATA_BLOB *sig);
 	NTSTATUS (*sign_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
-				const uint8_t *data, size_t length, DATA_BLOB *sig);
+				const uint8_t *data, size_t length, 
+				const uint8_t *whole_pdu, size_t pdu_length, 
+				DATA_BLOB *sig);
+	size_t   (*sig_size)(struct gensec_security *gensec_security);
 	NTSTATUS (*check_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx, 
-				 const uint8_t *data, size_t length, const DATA_BLOB *sig);
+				 const uint8_t *data, size_t length, 
+				 const uint8_t *whole_pdu, size_t pdu_length, 
+				 const DATA_BLOB *sig);
 	NTSTATUS (*unseal_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
-				  uint8_t *data, size_t length, DATA_BLOB *sig);
+				  uint8_t *data, size_t length, 
+				  const uint8_t *whole_pdu, size_t pdu_length, 
+				  DATA_BLOB *sig);
 	NTSTATUS (*session_key)(struct gensec_security *gensec_security, DATA_BLOB *session_key);
 	NTSTATUS (*session_info)(struct gensec_security *gensec_security, 
 				 struct auth_session_info **session_info); 
