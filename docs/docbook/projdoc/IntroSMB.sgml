@@ -161,14 +161,20 @@ related to Samba: SMBFS and CIFS VFS.  These are both available in the Linux ker
 	name space), secure per-user session establishment, safe distributed caching (oplock), 
 	optional packet signing, Unicode and other internationalization improvements, and optional 
 	Winbind (nsswitch) integration.
-	</para></listitem>
-
+        </para></listitem>
+ 
 </itemizedlist>
 
 <para>
 Again, it's important to note that these are implementations for client filesystems, and have
 nothing to do with acting as a file and print server for SMB/CIFS clients.
 </para>
+
+<para>
+There are other Open Source CIFS client implementations, such as the jCIFS project
+(jcifs.samba.org) which provides an SMB client toolkit written in Java.
+</para>
+
 
 </sect1>
 

@@ -229,6 +229,7 @@ Nsswitch on Solaris 9 refuses to use the winbind nss module.  This behavior
 is fixed by Sun in patch 113476-05 which as of March 2003 is not in any
 roll-up packages.
 </para>
+</sect2>
 </sect1>
 
 </chapter>

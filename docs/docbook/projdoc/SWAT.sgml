@@ -134,7 +134,7 @@ Modifications to the swat setup are as following:
 	root# /usr/bin/openssl req -new -x509 -days 365 -nodes -config \
 	 	/usr/share/doc/packages/stunnel/stunnel.cnf \
 		-out /etc/stunnel/stunnel.pem -keyout /etc/stunnel/stunnel.pem
-	</programlisting><para></listitem>
+	</programlisting></para></listitem>
 
 	<listitem><para>
 	remove swat-entry from [x]inetd 
