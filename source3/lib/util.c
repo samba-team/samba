@@ -2889,15 +2889,22 @@ uint32 interpret_addr(char *str)
 {
   struct hostent *hp;
   uint32 res;
+  int i;
+  BOOL pure_address = True;
 
   if (strcmp(str,"0.0.0.0") == 0) return(0);
   if (strcmp(str,"255.255.255.255") == 0) return(0xFFFFFFFF);
 
+  for (i=0; pure_address && str[i]; i++)
+    if (!(isdigit(str[i]) || str[i] == '.')) 
+      pure_address = False;
+
   /* if it's in the form of an IP address then get the lib to interpret it */
-  if (isdigit(str[0])) {
+  if (pure_address) {
     res = inet_addr(str);
   } else {
-    /* otherwise assume it's a network name of some sort and use Get_Hostbyname */
+    /* otherwise assume it's a network name of some sort and use 
+       Get_Hostbyname */
     if ((hp = Get_Hostbyname(str)) == 0) {
       DEBUG(3,("Get_Hostbyname: Unknown host. %s\n",str));
       return 0;

@@ -373,3 +373,5 @@ struct packet_struct
 /* announce as master to WINS server and any Primary Domain Controllers */
 #define CHECK_TIME_MST_ANNOUNCE    15
 
+/* do all remote announcements this often */
+#define REMOTE_ANNOUNCE_INTERVAL 180

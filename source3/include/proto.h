@@ -140,6 +140,7 @@ char *lp_domain_controller(void);
 char *lp_username_map(void);
 char *lp_character_set(void);
 char *lp_logon_script(void);
+char *lp_remote_announce(void);
 char *lp_wins_server(void);
 char *lp_interfaces(void);
 BOOL lp_wins_support(void);
@@ -308,6 +309,7 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 					char *name, char *comment, time_t ttl, int server_type);
 void announce_host(void);
 void announce_master(void);
+void announce_remote(void);
 
 /*The following definitions come from  namebrowse.c  */
 

@@ -50,6 +50,8 @@ extern int  workgroup_count;
 
 extern struct in_addr ipgrp;
 
+
+
 /****************************************************************************
   send a announce request to the local net
   **************************************************************************/
@@ -577,4 +579,53 @@ void announce_master(void)
 	    }
 	}
     }
+}
+
+
+
+/****************************************************************************
+  do all the "remote" announcements. These are used to put ourselves
+  on a remote browse list. They are done blind, no checking is done to
+  see if there is actually a browse master at the other end.
+  **************************************************************************/
+void announce_remote(void)
+{
+  char *s,*ptr;
+  static time_t last_time = 0;
+  time_t t = time(NULL);
+  pstring s2;
+  struct in_addr addr;
+  char *comment,*workgroup;
+  int stype = SV_TYPE_WORKSTATION | SV_TYPE_SERVER | SV_TYPE_PRINTQ_SERVER |
+    SV_TYPE_SERVER_UNIX;
+
+  if (last_time && t < last_time + REMOTE_ANNOUNCE_INTERVAL)
+    return;
+
+  last_time = t;
+
+  s = lp_remote_announce();
+  if (!*s) return;
+
+  comment = lp_serverstring();
+  workgroup = lp_workgroup();
+
+  for (ptr=s; next_token(&ptr,s2,NULL); ) {
+    /* the entries are of the form a.b.c.d/WORKGROUP with 
+       WORKGROUP being optional */
+    char *wgroup;
+
+    wgroup = strchr(s2,'/');
+    if (wgroup) *wgroup++ = 0;
+    if (!wgroup || !*wgroup)
+      wgroup = workgroup;
+
+    addr = *interpret_addr2(s2);
+    
+    do_announce_host(ANN_HostAnnouncement,myname,0x20,*iface_ip(addr),
+		     wgroup,0x1e,addr,
+		     REMOTE_ANNOUNCE_INTERVAL,
+		     myname,stype,comment);    
+  }
+
 }
