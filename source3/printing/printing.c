@@ -811,14 +811,26 @@ int print_job_write(int jobid, const char *buf, int size)
 static BOOL print_cache_expired(int snum)
 {
 	fstring key;
-	time_t t2, t = time(NULL);
+	time_t last_qscan_time, time_now = time(NULL);
 
-	slprintf(key, sizeof(key)-1, "CACHE/%s", lp_servicename(snum));
-	t2 = tdb_fetch_int32(tdb, key);
-	if (t2 == ((time_t)-1) || (t - t2) >= lp_lpqcachetime()) {
+	slprintf(key, sizeof(key), "CACHE/%s", lp_servicename(snum));
+	last_qscan_time = (time_t)tdb_fetch_int32(tdb, key);
+
+	/*
+	 * Invalidate the queue for 3 reasons.
+	 * (1). last queue scan time == -1.
+	 * (2). Current time - last queue scan time > allowed cache time.
+	 * (3). last queue scan time > current time + MAX_CACHE_VALID_TIME (1 hour by default).
+	 * This last test picks up machines for which the clock has been moved
+	 * forward, an lpq scan done and then the clock moved back. Otherwise
+	 * that last lpq scan would stay around for a loooong loooong time... :-). JRA.
+	 */
+
+	if (last_qscan_time == ((time_t)-1) || (time_now - last_qscan_time) >= lp_lpqcachetime() ||
+			last_qscan_time > (time_now + MAX_CACHE_VALID_TIME)) {
 		DEBUG(3, ("print cache expired for queue %s \
-(last_cache = %d, time now = %d, qcachetime = %d)\n", lp_servicename(snum),
-			(int)t2, (int)t, (int)lp_lpqcachetime() ));
+(last_qscan_time = %d, time now = %d, qcachetime = %d)\n", lp_servicename(snum),
+			(int)last_qscan_time, (int)time_now, (int)lp_lpqcachetime() ));
 		return True;
 	}
 	return False;
