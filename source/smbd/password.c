@@ -311,7 +311,7 @@ int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	/* Find all the groups this uid is in and store them. 
 		Used by change_to_user() */
 	initialise_groups(unix_name, uid, gid);
-	get_current_groups( &vuser->n_groups, &vuser->groups);
+	get_current_groups( vuser->gid, &vuser->n_groups, &vuser->groups);
 
 #ifdef HAVE_GETGROUPS_TOO_MANY_EGIDS
 	/*
