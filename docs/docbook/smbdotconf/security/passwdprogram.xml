@@ -29,6 +29,13 @@
     for security implications. Note that by default <parameter moreinfo="none">unix 
     password sync</parameter> is set to <constant>no</constant>.</para>
 
+    <para>Not that this program is only invoked when a password change is
+    done via the smbd program, not when smbpasswd is used locally as root to
+    change a password. This means that you cannot run "smbpasswd USERNAME" as
+    root on the SMB server in order to test this parameter, but should run the
+    command "smbpasswd -r SMBMACHINE" as a non-root user instead if you want
+    to test the invocation of this program.</para>
+
     <para>See also <link linkend="UNIXPASSWORDSYNC"><parameter moreinfo="none">unix 
     password sync</parameter></link>.</para>
 
