@@ -1017,7 +1017,6 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		}
 
 		if ( sending_msg_count ) {
-			/* send last bit */
 			cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
 				data_len, data, p->notify.change, 0 );
 		}
