@@ -379,10 +379,7 @@ char *StrCpy(char *dest,char *src)
   char *d = dest;
 
   /* I don't want to get lazy with these ... */
-  if (!dest || !src) {
-	  DEBUG(0,("ERROR: NULL StrCpy() called!\n"));
-	  smb_panic("invalid StrCpy");
-  }
+  ASSERT(dest && src);
 
   if (!dest) return(NULL);
   if (!src) {
@@ -4326,8 +4323,9 @@ void smb_panic(char *why)
 	char *cmd = lp_panic_action();
 	if (cmd && *cmd) {
 		system(cmd);
-		exit(1);
 	}
+	DEBUG(0,("PANIC: %s\n", why));
+	exit(1);
 }
 
 

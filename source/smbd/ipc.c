@@ -373,13 +373,7 @@ va_dcl
   }
 #if CHECK_TYPES
   str = va_arg(args,char*);
-  if (strncmp(str,p->curpos,strlen(str)) != 0) {
-    DEBUG(2,("type error in package: %s instead of %*s\n",str,
- 	     strlen(str),p->curpos));
-    va_end(args);
-    smb_panic("invalid types in ipc");
-    return 0;
-  }
+  ASSERT(strncmp(str,p->curpos,strlen(str)) == 0);
 #endif
   stringneeded = -1;
 

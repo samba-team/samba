@@ -290,6 +290,8 @@ void sam_io_sid_stuff(char *desc,  SAM_SID_STUFF *stf, prs_struct *ps, int depth
 	prs_uint32("num_sids ", ps, depth, &(stf->num_sids ));
 	prs_uint16("padding2 ", ps, depth, &(stf->padding2 ));
 
+	ASSERT_ARRAY(stf->sid, stf->num_sids);
+
 	for (i = 0; i < stf->num_sids; i++)
 	{
 		sam_io_dom_sid3("", &(stf->sid[i]), ps, depth); 
@@ -735,6 +737,9 @@ void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 		r_u->num_entries2 = num_sam_entries;
 		r_u->num_entries3 = num_sam_entries;
 
+		ASSERT_ARRAY(r_u->sam, num_sam_entries);
+		ASSERT_ARRAY(r_u->uni_acct_name, num_sam_entries);
+
 		for (i = 0; i < num_sam_entries; i++)
 		{
 			make_sam_entry(&(r_u->sam[i]),
@@ -780,11 +785,15 @@ void samr_io_r_enum_dom_users(char *desc,  SAMR_R_ENUM_DOM_USERS *r_u, prs_struc
 		prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2));
 		prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3));
 
+		ASSERT_ARRAY(r_u->sam, r_u->num_entries2);
+
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
 			prs_grow(ps);
 			sam_io_sam_entry("", &(r_u->sam[i]), ps, depth);
 		}
+
+		ASSERT_ARRAY(r_u->uni_acct_name, r_u->num_entries2);
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
@@ -867,6 +876,8 @@ void make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
 		r_u->ptr_entries2 = 1;
 		r_u->num_entries3 = num_sam_entries;
 
+		ASSERT_ARRAY(r_u->sam, num_sam_entries);
+
 		for (i = 0; i < num_sam_entries; i++)
 		{
 			make_sam_entry(&(r_u->sam[i]),
@@ -908,6 +919,8 @@ void samr_io_r_enum_dom_aliases(char *desc,  SAMR_R_ENUM_DOM_ALIASES *r_u, prs_s
 		prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
 		prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2));
 		prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3));
+
+		ASSERT_ARRAY(r_u->sam, r_u->num_entries);
 
 		for (i = 0; i < r_u->num_entries; i++)
 		{
@@ -1036,6 +1049,8 @@ void sam_io_sam_info_2(char *desc,  SAM_INFO_2 *sam, prs_struct *ps, int depth)
 
 	prs_uint32("num_entries2 ", ps, depth, &(sam->num_entries2 ));
 
+	ASSERT_ARRAY(sam->sam, sam->num_entries);
+
 	for (i = 0; i < sam->num_entries; i++)
 	{
 		sam_io_sam_entry2("", &(sam->sam[i]), ps, depth);
@@ -1116,6 +1131,8 @@ void sam_io_sam_info_1(char *desc,  SAM_INFO_1 *sam, prs_struct *ps, int depth)
 	prs_uint32("ptr_entries  ", ps, depth, &(sam->ptr_entries  ));
 
 	prs_uint32("num_entries2 ", ps, depth, &(sam->num_entries2 ));
+
+	ASSERT_ARRAY(sam->sam, sam->num_entries);
 
 	for (i = 0; i < sam->num_entries; i++)
 	{
@@ -1333,6 +1350,8 @@ void samr_io_r_enum_dom_groups(char *desc,  SAMR_R_ENUM_DOM_GROUPS *r_u, prs_str
 
 		prs_uint32("num_entries2 ", ps, depth, &(r_u->num_entries2 ));
 
+		ASSERT_ARRAY(r_u->sam, r_u->num_entries);
+
 		for (i = 0; i < r_u->num_entries; i++)
 		{
 			sam_io_sam_entry3("", &(r_u->sam[i]), ps, depth);
@@ -1495,6 +1514,8 @@ void samr_io_q_lookup_ids(char *desc,  SAMR_Q_LOOKUP_IDS *q_u, prs_struct *ps, i
 	prs_uint32("ptr      ", ps, depth, &(q_u->ptr      ));
 	prs_uint32("num_sids2", ps, depth, &(q_u->num_sids2));
 
+	ASSERT_ARRAY(q_u->ptr_sid, q_u->num_sids2);
+
 	for (i = 0; i < q_u->num_sids2; i++)
 	{
 		slprintf(tmp, sizeof(tmp) - 1, "ptr[%02d]", i);
@@ -1531,6 +1552,8 @@ void make_samr_r_lookup_ids(SAMR_R_LOOKUP_IDS *r_u,
 		r_u->ptr = 1;
 		r_u->num_entries2 = num_rids;
 
+		ASSERT_ARRAY(r_u->rid, num_rids);
+
 		for (i = 0; i < num_rids; i++)
 		{
 			r_u->rid[i] = rid[i];
@@ -1566,6 +1589,7 @@ void samr_io_r_lookup_ids(char *desc,  SAMR_R_LOOKUP_IDS *r_u, prs_struct *ps, i
 
 	if (r_u->num_entries != 0)
 	{
+		ASSERT_ARRAY(r_u->rid, r_u->num_entries2);
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
@@ -1599,6 +1623,8 @@ void samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 	prs_uint32("ptr      ", ps, depth, &(q_u->ptr      ));
 	prs_uint32("num_rids2", ps, depth, &(q_u->num_rids2));
 
+	ASSERT_ARRAY(q_u->hdr_user_name, q_u->num_rids2);
+
 	for (i = 0; i < q_u->num_rids2; i++)
 	{
 		smb_io_unihdr ("", &(q_u->hdr_user_name[i]), ps, depth); 
@@ -1628,6 +1654,8 @@ void make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 		r_u->num_entries  = num_rids;
 		r_u->undoc_buffer = 1;
 		r_u->num_entries2 = num_rids;
+
+		ASSERT_ARRAY(r_u->dom_rid, num_rids);
 
 		for (i = 0; i < num_rids; i++)
 		{
@@ -1666,6 +1694,8 @@ void samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 
 	if (r_u->num_entries != 0)
 	{
+		ASSERT_ARRAY(r_u->dom_rid, r_u->num_entries2);
+
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
 			smb_io_dom_rid3("", &(r_u->dom_rid[i]), ps, depth);
@@ -1697,6 +1727,8 @@ void make_samr_q_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
 	q_u->ptr       = 0;
 	q_u->num_gids2 = num_gids;
 
+	ASSERT_ARRAY(q_u->gid, num_gids);
+
 	for (i = 0; i < num_gids; i++)
 	{
 		q_u->gid[i] = gid[i];
@@ -1725,6 +1757,8 @@ void samr_io_q_unknown_12(char *desc,  SAMR_Q_UNKNOWN_12 *q_u, prs_struct *ps, i
 	prs_uint32("rid      ", ps, depth, &(q_u->rid      ));
 	prs_uint32("ptr      ", ps, depth, &(q_u->ptr      ));
 	prs_uint32("num_gids2", ps, depth, &(q_u->num_gids2));
+
+	ASSERT_ARRAY(q_u->gid, q_u->num_gids2);
 
 	for (i = 0; i < q_u->num_gids2; i++)
 	{
@@ -1757,6 +1791,8 @@ void make_samr_r_unknown_12(SAMR_R_UNKNOWN_12 *r_u,
 		r_u->num_als_usrs1 = num_aliases;
 		r_u->ptr_als_usrs  = 1;
 		r_u->num_als_usrs2 = num_aliases;
+
+		ASSERT_ARRAY(r_u->hdr_als_name, num_aliases);
 
 		for (i = 0; i < num_aliases; i++)
 		{
@@ -1800,6 +1836,8 @@ void samr_io_r_unknown_12(char *desc,  SAMR_R_UNKNOWN_12 *r_u, prs_struct *ps, i
 
 	if (r_u->ptr_aliases != 0 && r_u->num_aliases1 != 0)
 	{
+		ASSERT_ARRAY(r_u->hdr_als_name, r_u->num_aliases2);
+
 		for (i = 0; i < r_u->num_aliases2; i++)
 		{
 			slprintf(tmp, sizeof(tmp) - 1, "als_hdr[%02d]  ", i);
@@ -1820,6 +1858,8 @@ void samr_io_r_unknown_12(char *desc,  SAMR_R_UNKNOWN_12 *r_u, prs_struct *ps, i
 
 	if (r_u->ptr_als_usrs != 0 && r_u->num_als_usrs1 != 0)
 	{
+		ASSERT_ARRAY(r_u->num_als_usrs, r_u->num_als_usrs2);
+
 		for (i = 0; i < r_u->num_als_usrs2; i++)
 		{
 			slprintf(tmp, sizeof(tmp) - 1, "als_usrs[%02d]  ", i);
@@ -1979,6 +2019,8 @@ void samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_s
 		if (r_u->num_entries != 0)
 		{
 			prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
+
+			ASSERT_ARRAY(r_u->gid, r_u->num_entries2);
 
 			for (i = 0; i < r_u->num_entries2; i++)
 			{
