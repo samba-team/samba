@@ -26,9 +26,6 @@
 
 #include "includes.h"
 
-#undef talloc
-#define talloc(ctx, size) _talloc(ctx, size)
-
 #define MAX_TALLOC_SIZE 0x10000000
 #define TALLOC_MAGIC 0xe814ec4f
 #define TALLOC_MAGIC_FREE 0x7faebef3
@@ -171,7 +168,7 @@ void *talloc_named(void *context, size_t size,
 	va_list ap;
 	void *ptr;
 
-	ptr = talloc(context, size);
+	ptr = _talloc(context, size);
 	if (ptr == NULL) {
 		return NULL;
 	}
@@ -192,7 +189,7 @@ void *talloc_named_const(void *context, size_t size, const char *name)
 {
 	void *ptr;
 
-	ptr = talloc(context, size);
+	ptr = _talloc(context, size);
 	if (ptr == NULL) {
 		return NULL;
 	}
@@ -222,7 +219,7 @@ void *talloc_init(const char *fmt, ...) _PRINTF_ATTRIBUTE(1,2)
 	va_list ap;
 	void *ptr;
 
-	ptr = talloc(NULL, 0);
+	ptr = _talloc(NULL, 0);
 	if (ptr == NULL) {
 		return NULL;
 	}
@@ -438,7 +435,7 @@ static void talloc_report_all(void)
 */
 void talloc_enable_leak_check(void)
 {
-	null_context = talloc_named(NULL, 0, "null_context");
+	null_context = talloc_named_const(NULL, 0, "null_context");
 	atexit(talloc_report_all);
 }
 
@@ -460,12 +457,13 @@ void *talloc_zero(void *t, size_t size)
 /*
   memdup with a talloc. 
 */
-void *talloc_memdup(void *t, const void *p, size_t size)
+void *_talloc_memdup(void *t, const void *p, size_t size, const char *name)
 {
-	void *newp = talloc(t,size);
+	void *newp = _talloc(t,size);
 
 	if (newp) {
 		memcpy(newp, p, size);
+		talloc_set_name_const(newp, name);
 	}
 
 	return newp;
@@ -476,10 +474,15 @@ void *talloc_memdup(void *t, const void *p, size_t size)
 */
 char *talloc_strdup(void *t, const char *p)
 {
+	char *ret;
 	if (!p) {
 		return NULL;
 	}
-	return talloc_memdup(t, p, strlen(p) + 1);
+	ret = talloc_memdup(t, p, strlen(p) + 1);
+	if (ret) {
+		talloc_set_name_const(ret, ret);
+	}
+	return ret;
 }
 
 /*
@@ -511,6 +514,7 @@ char *talloc_vasprintf(void *t, const char *fmt, va_list ap) _PRINTF_ATTRIBUTE(2
 	if (ret) {
 		VA_COPY(ap2, ap);
 		vsnprintf(ret, len+1, fmt, ap2);
+		talloc_set_name_const(ret, ret);
 	}
 
 	return ret;
@@ -563,6 +567,7 @@ static char *talloc_vasprintf_append(char *s,
 	VA_COPY(ap2, ap);
 
 	vsnprintf(s+s_len, len+1, fmt, ap2);
+	talloc_set_name_const(s, s);
 
 	return s;
 }

@@ -25,7 +25,7 @@
  construct a data blob, must be freed with data_blob_free()
  you can pass NULL for p and get a blank data blob
 *******************************************************************/
-DATA_BLOB data_blob(const void *p, size_t length)
+DATA_BLOB data_blob_named(const void *p, size_t length, const char *name)
 {
 	DATA_BLOB ret;
 
@@ -43,6 +43,7 @@ DATA_BLOB data_blob(const void *p, size_t length)
 		ret.length = 0;
 		return ret;
 	}
+	talloc_set_name_const(ret.data, name);
 	ret.length = length;
 	return ret;
 }
