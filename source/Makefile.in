@@ -606,7 +606,7 @@ RPCTORTURE_OBJ = torture/rpctorture.o \
 
 DEBUG2HTML_OBJ = utils/debug2html.o ubiqx/debugparse.o
 
-SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
+SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(SECRETS_OBJ) \
                  $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) 
 
 PROTO_OBJ = $(SMBD_OBJ_MAIN) \
