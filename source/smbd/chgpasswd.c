@@ -682,6 +682,12 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
 		return False;	/* We lose the NT hash. Sorry. */
 	}
 
+	if (!pdb_set_pass_changed_now  (sampass)) {
+		pdb_free_sam(&sampass);
+		/* Not quite sure what this one qualifies as, but this will do */
+		return False; 
+	}
+ 
 	/* Now flush the sam_passwd struct to persistent storage */
 	become_root();
 	ret = pdb_update_sam_account (sampass, False);
