@@ -239,7 +239,7 @@ struct server_connection *server_setup_connection(struct event_context *ev,
 	srv_conn->socket		= sock;
 	srv_conn->server_id		= server_id;
 
-	/* create a smb server context and add it to out event
+	/* create a server context and add it to out event
 	   handling */
 	server_socket->service->ops->accept_connection(srv_conn);
 
