@@ -1,4 +1,4 @@
-          WHATS NEW IN 1.9.18alpha7 Oct 29th 1997
+          WHATS NEW IN 1.9.18alpha8 Oct 29th 1997
           =======================================
 
 This is NOT a production release of Samba code.
