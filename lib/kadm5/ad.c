@@ -38,6 +38,7 @@
 #include <sasl.h>
 #endif
 #include <resolve.h>
+#include <base64.h>
 #endif
 
 RCSID("$Id$");
@@ -89,6 +90,9 @@ _kadm5_ad_connect(void *server_handle)
     } *s, *servers = NULL;
     int i, num_servers = 0;
 
+    if (context->ldap_conn)
+	return 0;
+
     {
 	struct dns_reply *r;
 	struct resource_record *rr;
@@ -122,22 +126,22 @@ _kadm5_ad_connect(void *server_handle)
     if (num_servers == 0)
 	return KADM5_NO_SRV;
 
-    if (context->ldap_conn == NULL) {
+    for (i = 0; i < num_servers; i++) {
 	int lret, version = LDAP_VERSION3;
 	LDAP *lp;
 
-	lp = ldap_init(servers[0].server, servers[0].port);
+	lp = ldap_init(servers[i].server, servers[i].port);
 	if (lp == NULL)
-	    return KADM5_RPC_ERROR; 
+	    continue;
 	
 	if (ldap_set_option(lp, LDAP_OPT_PROTOCOL_VERSION, &version)) {
 	    ldap_unbind(lp);
-	    return KADM5_RPC_ERROR; 
+	    continue;
 	}
 	
 	if (ldap_set_option(lp, LDAP_OPT_REFERRALS, LDAP_OPT_OFF)) {
 	    ldap_unbind(lp);
-	    return KADM5_RPC_ERROR; 
+	    continue;
 	}
 	
 	lret = ldap_sasl_interactive_bind_s(lp, NULL, NULL, NULL, NULL, 
@@ -145,11 +149,13 @@ _kadm5_ad_connect(void *server_handle)
 					    sasl_interact, NULL);
 	if (lret != LDAP_SUCCESS) {
 	    ldap_unbind(lp);
-	    return KADM5_RPC_ERROR; 
+	    continue;
 	}
-
 	context->ldap_conn = lp;
+	break;
     }
+    if (i >= num_servers)
+	goto fail;
 
     {
 	LDAPMessage *m, *m0;
@@ -166,7 +172,7 @@ _kadm5_ad_connect(void *server_handle)
 	if (ret != 0)
 	    goto fail;
 
-	if (ldap_count_entries(CTX2LP(context), m) == 1) {
+	if (ldap_count_entries(CTX2LP(context), m) > 0) {
 	    m0 = ldap_first_entry(CTX2LP(context), m);
 	    if (m0 == NULL) {
 		ldap_msgfree(m);
@@ -177,7 +183,8 @@ _kadm5_ad_connect(void *server_handle)
 	    if (vals == NULL)
 		goto fail;
 	    context->base_dn = strdup(vals[0]);
-	}
+	} else
+	    goto fail;
 	ldap_msgfree(m);
     }
 
@@ -433,7 +440,7 @@ kadm5_ad_modify_principal(void *server_handle,
      */
 
     if (mask & KADM5_KVNO)
-	entry->kvno = 1;
+	entry->kvno = 0;
 
 #ifdef OPENLDAP
     context = NULL; /* XXX */
@@ -452,32 +459,32 @@ kadm5_ad_randkey_principal(void *server_handle,
 {
     kadm5_ad_context *context = server_handle;
 
-    *keys = NULL;
-    *n_keys = 0;
-
     /*
      * random key
      */
 
 #ifdef OPENLDAP
-#if 0
-    LDAP *lp = CTX2LP(context);
-#endif
     krb5_data result_code_string, result_string;
-    int result_code;
+    int result_code, plen;
     kadm5_ret_t ret;
-    char password[128];
+    char *password;
 
-#if 1
-    if (1)
-	return KADM5_RPC_ERROR;
-#else
-    random_password (password, sizeof(password));
-#endif
+    *keys = NULL;
+    *n_keys = 0;
+
+    {
+	char p[64];
+	krb5_generate_random_block(p, sizeof(p));
+	plen = base64_encode(p, sizeof(p), &password);
+	if (plen < 0)
+	    return ENOMEM;
+    }
 
     ret = ad_get_cred(context, NULL);
-    if (ret)
+    if (ret) {
+	free(password);
 	return ret;
+    }
 
     krb5_data_zero (&result_code_string);
     krb5_data_zero (&result_string);
@@ -496,8 +503,10 @@ kadm5_ad_randkey_principal(void *server_handle,
     if (ret == 0) {
 
 	*keys = malloc(sizeof(**keys) * 1);
-	if (*keys == NULL)
-	    return ENOMEM;
+	if (*keys == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
 	*n_keys = 1;
 
 	ret = krb5_string_to_key(context->context,
@@ -510,12 +519,17 @@ kadm5_ad_randkey_principal(void *server_handle,
 	    free(*keys);
 	    *keys = NULL;
 	    *n_keys = 0;
-	    return ret;
+	    goto out;
 	}
     }
-
+    memset(password, 0, plen);
+    free(password);
+ out:
     return ret;
 #else
+    *keys = NULL;
+    *n_keys = 0;
+
     krb5_set_error_string(context->context, "Function not implemented");
     return KADM5_RPC_ERROR;
 #endif
