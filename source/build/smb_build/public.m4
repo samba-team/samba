@@ -352,22 +352,22 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 		if $PKG_CONFIG --atleast-pkgconfig-version 0.9.0; then
         		AC_MSG_CHECKING(for $2)
 
-          		if $PKG_CONFIG --exists "$2" ; then
+          		if $PKG_CONFIG --exists '$2' ; then
             			AC_MSG_RESULT(yes)
 
 				SMB_EXT_LIB_ENABLE($1, YES)
 				SMB_EXT_LIB($1, 
-					[`$PKG_CONFIG --libs-only-l "$2"`], 
-					[`$PKG_CONFIG --cflags-only-other "$2"`],
-					[`$PKG_CONFIG --cflags-only-I "$2"`],
-					[`$PKG_CONFIG --libs-only-other "$2"` `$PKG_CONFIG --libs-only-L "$2"`])
+					[`$PKG_CONFIG --libs-only-l '$2'`], 
+					[`$PKG_CONFIG --cflags-only-other '$2'`],
+					[`$PKG_CONFIG --cflags-only-I '$2'`],
+					[`$PKG_CONFIG --libs-only-other '$2'` `$PKG_CONFIG --libs-only-L '$2'`])
 
 				# FIXME: Dirty hack
-				$1_CFLAGS="`$PKG_CONFIG --cflags $2`"
+				$1_CFLAGS="`$PKG_CONFIG --cflags '$2'`"
 				CFLAGS="$CFLAGS $$1_CFLAGS"
         		else
 				AC_MSG_RESULT(no)
-            			$PKG_CONFIG --errors-to-stdout --print-errors $2
+            			$PKG_CONFIG --errors-to-stdout --print-errors '$2'
         		fi
      		else
         		echo "*** Your version of pkg-config is too old. You need version $PKG_CONFIG_MIN_VERSION or newer."
