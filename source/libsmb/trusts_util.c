@@ -155,6 +155,8 @@ BOOL is_trusted_domain(const char* dom_name)
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
+	talloc_destroy(mem_ctx);
+
 	/*
 	 * Query the trustdom_cache updated periodically. The only
 	 * way for domain member server.
