@@ -97,7 +97,7 @@ erase_file(const char *filename)
 {
     int fd;
     off_t pos;
-    char *p;
+    char buf[128];
 
     fd = open(filename, O_RDWR | O_BINARY);
     if(fd < 0){
@@ -108,10 +108,9 @@ erase_file(const char *filename)
     }
     pos = lseek(fd, 0, SEEK_END);
     lseek(fd, 0, SEEK_SET);
-    p = (char*) malloc(pos);
-    memset(p, 0, pos);
-    write(fd, p, pos);
-    free(p);
+    memset(buf, 0, sizeof(buf));
+    while(pos > 0)
+	pos -= write(fd, buf, sizeof(buf));
     close(fd);
     unlink(filename);
     return 0;
