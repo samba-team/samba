@@ -665,6 +665,21 @@ krb5_rd_priv(krb5_context context,
 	     /*krb5_replay_data*/ void *outdata);
 
 krb5_error_code
+krb5_rd_cred (krb5_context      context,
+	      krb5_auth_context auth_context,
+	      krb5_ccache       ccache,
+	      krb5_data         *in_data);
+
+krb5_error_code
+krb5_get_forwarded_creds (krb5_context	    context,
+			  krb5_auth_context auth_context,
+			  krb5_ccache       ccache,
+			  krb5_flags        flags,
+			  const char        *hostname,
+			  krb5_creds        *in_creds,
+			  krb5_data         *out_data);
+
+krb5_error_code
 krb5_sendauth(krb5_context context,
 	      krb5_auth_context *auth_context,
 	      krb5_pointer fd,
