@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -286,16 +286,14 @@ doit_passive (kx_context *kc)
 	     warn("fork");
 	     continue;
 	 } else if (child == 0) {
-	     struct sockaddr *addr;
 	     int fd;
 	     int xserver;
 
-	     addr = (struct sockaddr *)&kc->thataddr;
 	     close (otherside);
 
-	     socket_set_port(addr, htons(tmp));
+	     socket_set_port(kc->thataddr, htons(tmp));
 		 
-	     fd = socket (addr->sa_family, SOCK_STREAM, 0);
+	     fd = socket (kc->thataddr->sa_family, SOCK_STREAM, 0);
 	     if (fd < 0)
 		 err(1, "socket");
 #if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
@@ -315,7 +313,7 @@ doit_passive (kx_context *kc)
 	     }
 #endif
 
-	     if (connect (fd, addr, kc->thataddr_len) < 0)
+	     if (connect (fd, kc->thataddr, kc->thataddr_len) < 0)
 		 err(1, "connect(%s)", host);
 	     {
 		 int d = 0;
@@ -499,17 +497,15 @@ doit_active (kx_context *kc)
 	    continue;
 	} else if (child == 0) {
 	    int s;
-	    struct sockaddr *addr;
 
 	    for (i = 0; i < nsockets; ++i)
 		close (sockets[i].fd);
 
-	    addr = (struct sockaddr *)&kc->thataddr;
 	    close (otherside);
 
-	    socket_set_port(addr, htons(tmp));
+	    socket_set_port(kc->thataddr, htons(tmp));
 
-	    s = socket (addr->sa_family, SOCK_STREAM, 0);
+	    s = socket (kc->thataddr->sa_family, SOCK_STREAM, 0);
 	    if (s < 0)
 		err(1, "socket");
 #if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
@@ -529,7 +525,7 @@ doit_active (kx_context *kc)
 	    }
 #endif
 
-	    if (connect (s, addr, kc->thataddr_len) < 0)
+	    if (connect (s, kc->thataddr, kc->thataddr_len) < 0)
 		err(1, "connect");
 
 	    return active_session (fd, s, kc);
