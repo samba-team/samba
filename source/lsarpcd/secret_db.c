@@ -166,6 +166,9 @@ BOOL secret_init_db(void)
 	fstring domname;
 	fstring srvname;
 	NTTIME crt;
+	UNISTR2 name;
+	char *an = "$MACHINE.ACC";
+	LSA_SECRET sec;
 	TDB_CONTEXT *tdb;
 	BOOL ret = False;
 
@@ -192,34 +195,35 @@ BOOL secret_init_db(void)
 	
 	DEBUG(10,("secret_init_db: opened first time: initialising.\n"));
 
-	if (trust_get_passwd_time(trust_passwd, domname, srvname, &crt))
+	if (!trust_get_passwd_time(trust_passwd, domname, srvname, &crt))
 	{
-		UNISTR2 name;
-		char *an = "$MACHINE.ACC";
-		LSA_SECRET sec;
-		make_unistr2(&name, an, strlen(an));
-		ZERO_STRUCT(sec);
-
-		sec.curinfo.ptr_value = 1;
-		sec.curinfo.value.ptr_secret = 0x1;
-		make_strhdr2(&sec.curinfo.value.hdr_secret, 24, 24, 1);
-
-		sec.curinfo.value.enc_secret.str_max_len = 24;
-		sec.curinfo.value.enc_secret.undoc       = 0;
-		sec.curinfo.value.enc_secret.str_str_len = 24;
-
-		SIVAL(sec.curinfo.value.enc_secret.buffer, 0, 16);
-		SIVAL(sec.curinfo.value.enc_secret.buffer, 4, 0x01);
-		memcpy(sec.curinfo.value.enc_secret.buffer+8, trust_passwd, 16);
-
-		sec.oldinfo.ptr_update = 1;
-		sec.oldinfo.last_update = crt;
-
-		sec.curinfo.ptr_update = 1;
-		sec.curinfo.last_update = crt;
-
-		ret = tdb_store_secret(tdb, &name, &sec);
+		DEBUG(10,("secret_init_db: no old $MACHINE.ACC: creating.\n"));
+		generate_random_buffer(trust_passwd, 16, True);
+		unix_to_nt_time(&crt, time(NULL));
 	}
+
+	make_unistr2(&name, an, strlen(an));
+	ZERO_STRUCT(sec);
+
+	sec.curinfo.ptr_value = 1;
+	sec.curinfo.value.ptr_secret = 0x1;
+	make_strhdr2(&sec.curinfo.value.hdr_secret, 24, 24, 1);
+
+	sec.curinfo.value.enc_secret.str_max_len = 24;
+	sec.curinfo.value.enc_secret.undoc       = 0;
+	sec.curinfo.value.enc_secret.str_str_len = 24;
+
+	SIVAL(sec.curinfo.value.enc_secret.buffer, 0, 16);
+	SIVAL(sec.curinfo.value.enc_secret.buffer, 4, 0x01);
+	memcpy(sec.curinfo.value.enc_secret.buffer+8, trust_passwd, 16);
+
+	sec.oldinfo.ptr_update = 1;
+	sec.oldinfo.last_update = crt;
+
+	sec.curinfo.ptr_update = 1;
+	sec.curinfo.last_update = crt;
+
+	ret = tdb_store_secret(tdb, &name, &sec);
 
 	tdb_close(tdb);
 

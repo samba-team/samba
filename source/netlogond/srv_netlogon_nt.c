@@ -150,12 +150,21 @@ static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 	}
 #endif /* 0 */
 
+	if (strequal(trust_name, global_myname))
+	{
+		BOOL ret;
+		DEBUG(10,("get_md4pw: loop-back, use $MACHINE.ACC\n"));
+		ret = msrpc_lsa_query_trust_passwd("\\\\.",
+		                                        "$MACHINE.ACC", md4pw);
+		return ret ? NT_STATUS_ACCESS_DENIED : NT_STATUS_NOPROBLEMO;
+	}
+
 	/*
 	 * must do all this as root
 	 */
 	become_root(True);
 	status_pwd = direct_samr_userinfo(&uni_trust_acct, 0x12, &ctr,
-	                                   NULL, NULL, False);
+					   NULL, NULL, False);
 	unbecome_root(True);
 
 	if (status_pwd == NT_STATUS_NOPROBLEMO)

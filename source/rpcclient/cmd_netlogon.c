@@ -76,7 +76,11 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	}
 	strupper(wks_name);
 
-	fstrcpy(domain, usr_creds->ntc.domain);
+	domain[0] = 0;
+	if (usr_creds != NULL)
+	{
+		fstrcpy(domain, usr_creds->ntc.domain);
+	}
 
 	if (domain[0] == 0)
 	{
@@ -95,7 +99,11 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 1)
 	{
-		fstrcpy(nt_user_name, usr_creds->ntc.user_name);
+		nt_user_name[0] = 0;
+		if (usr_creds != NULL)
+		{
+			fstrcpy(nt_user_name, usr_creds->ntc.user_name);
+		}
 		if (nt_user_name[0] == 0)
 		{
 			report(out_hnd,"ntlogin: must specify username with anonymous connection\n");
@@ -174,7 +182,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 
 	/* do an NT login */
 	res = res ? (cli_nt_login_interactive(srv_name, info->myhostname,
-	                 usr_creds->ntc.domain, nt_user_name,
+	                 domain, nt_user_name,
 	                 getuid(), lm_pw, nt_pw,
 	                 &info->dom.ctr, &info->dom.user_info3) == 0x0) : False;
 
@@ -221,7 +229,11 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 	}
 	strupper(wks_name);
 
-	fstrcpy(domain, usr_creds->ntc.domain);
+	domain[0] = 0;
+	if (usr_creds != NULL)
+	{
+		fstrcpy(domain, usr_creds->ntc.domain);
+	}
 
 	if (domain[0] == 0)
 	{
@@ -292,7 +304,11 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 	fstrcpy(trust_acct, info->myhostname);
 	fstrcat(trust_acct, "$");
 
-	fstrcpy(domain, usr_creds->ntc.domain);
+	domain[0] = 0;
+	if (usr_creds != NULL)
+	{
+		fstrcpy(domain, usr_creds->ntc.domain);
+	}
 
 	if (domain[0] == 0)
 	{
