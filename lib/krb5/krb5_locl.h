@@ -136,10 +136,18 @@ struct sockaddr_dl;
 #define O_BINARY 0
 #endif
 
+typedef enum {
+    KRB5_PA_PAC_DONT_CARE = 0, 
+    KRB5_PA_PAC_REQ_TRUE,
+    KRB5_PA_PAC_REQ_FALSE
+} krb5_get_init_creds_req_pac;
+
 struct _krb5_get_init_creds_opt_private {
     /* ENC_TIMESTAMP */
     const char *password;
     krb5_s2k_proc key_proc;
+    /* PA_PAC_REQUEST */
+    krb5_get_init_creds_req_pac req_pac;
 };
 
 #endif /* __KRB5_LOCL_H__ */
