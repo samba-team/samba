@@ -73,7 +73,6 @@ int opt_jobid = 0;
 int opt_timeout = 0;
 char *opt_target_workgroup = NULL;
 
-static BOOL got_pass = False;
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
@@ -130,7 +129,7 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 {
 	NTSTATUS nt_status;
 
-	if (!got_pass) {
+	if (!opt_password) {
 		char *pass = getpass("Password:");
 		if (pass) {
 			opt_password = strdup(pass);
@@ -146,7 +145,7 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	} else {
-		DEBUG(0,("Cannot connect to server.  Error was %s\n", 
+		DEBUG(1,("Cannot connect to server.  Error was %s\n", 
 			 nt_errstr(nt_status)));
 
 		/* Display a nicer message depending on the result */
@@ -176,7 +175,7 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	} else {
-		DEBUG(0,("Cannot connect to server (anonymously).  Error was %s\n", nt_errstr(nt_status)));
+		DEBUG(1,("Cannot connect to server (anonymously).  Error was %s\n", nt_errstr(nt_status)));
 		return nt_status;
 	}
 }
@@ -301,10 +300,18 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	return cli;
 }
 
+static int net_user(int argc, const char **argv)
+{
+	if (net_ads_check() == 0)
+		return net_ads_user(argc, argv);
+
+	return net_rap_user(argc, argv);
+}
+
 
 static int net_join(int argc, const char **argv)
 {
-	if (lp_security() == SEC_ADS) {
+	if (net_ads_check() == 0) {
 		if (net_ads_join(argc, argv) == 0)
 			return 0;
 		else
@@ -383,7 +390,7 @@ static struct functable net_func[] = {
 	{"SERVER", net_rap_server},
 	{"DOMAIN", net_rap_domain},
 	{"PRINTQ", net_rap_printq},
-	{"USER", net_rap_user},
+	{"USER", net_user},
 	{"GROUP", net_rap_group},
 	{"VALIDATE", net_rap_validate},
 	{"GROUPMEMBER", net_rap_groupmember},
@@ -411,7 +418,7 @@ static struct functable net_func[] = {
 	const char ** argv_new;
 	poptContext pc;
 	static char *servicesf = dyn_CONFIGFILE;
-	static int debuglevel;
+	static int debuglevel = 0;
 
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
@@ -422,8 +429,8 @@ static struct functable net_func[] = {
 		{"port",	'p', POPT_ARG_INT,    &opt_port},
 		{"myname",	'n', POPT_ARG_STRING, &opt_requester_name},
 		{"conf",	's', POPT_ARG_STRING, &servicesf},
-		{"debug",	'd', POPT_ARG_INT,    &debuglevel, 'd'},
-		{"debuglevel",	'd', POPT_ARG_INT,    &debuglevel, 'd'},
+		{"debug",	'd', POPT_ARG_INT,    &debuglevel},
+		{"debuglevel",	'd', POPT_ARG_INT,    &debuglevel},
 		{"server",	'S', POPT_ARG_STRING, &opt_host},
 		{"comment",	'C', POPT_ARG_STRING, &opt_comment},
 		{"maxusers",	'M', POPT_ARG_INT,    &opt_maxusers},
@@ -436,7 +443,6 @@ static struct functable net_func[] = {
 		{ 0, 0, 0, 0}
 	};
 
-	got_pass = 0;
 	zero_ip(&opt_dest_ip);
 
 	dbf = x_stderr;
@@ -464,7 +470,6 @@ static struct functable net_func[] = {
 			if (p) {
 				*p = 0;
 				opt_password = p+1;
-				got_pass = 1;
 			}
 			break;
 		default:
