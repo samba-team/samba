@@ -64,11 +64,11 @@ static void populate_printers()
 
 			/* truncate the ": ..." */
 			if ((tmp = strchr(name, ':')) != NULL)
-				*tmp = NULL;
+				*tmp = '\0';
 
 			/* add it to the cache */
 			if ((ptmp = malloc(sizeof (*ptmp))) != NULL) {
-				memset(ptmp, NULL, sizeof (*ptmp));
+				memset(ptmp, '\0', sizeof (*ptmp));
 				ptmp->name = strdup(name);
 				ptmp->next = printers;
 				printers = ptmp;

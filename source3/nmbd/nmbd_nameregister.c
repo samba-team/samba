@@ -47,8 +47,8 @@ static void register_name_response(struct subnet_record *subrec,
   BOOL success = True;
   struct nmb_name *question_name = &rrec->packet->packet.nmb.question.question_name;
   struct nmb_name *answer_name = &nmb->answers->rr_name;
-  int ttl;
-  uint16 nb_flags;
+  int ttl = 0;
+  uint16 nb_flags = 0;
   struct in_addr registered_ip;
 
   /* Sanity check. Ensure that the answer name in the incoming packet is the
@@ -169,8 +169,8 @@ static void register_name_timeout_response(struct subnet_record *subrec,
   BOOL bcast = sent_nmb->header.nm_flags.bcast;
   BOOL success = False;
   struct nmb_name *question_name = &sent_nmb->question.question_name;
-  uint16 nb_flags;
-  int ttl;
+  uint16 nb_flags = 0;
+  int ttl = 0;
   struct in_addr registered_ip;
 
   if(bcast)

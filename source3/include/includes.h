@@ -510,12 +510,16 @@ char *mktemp(char *); /* No standard include */
 #include <netinet/tcp.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
+#if __FreeBSD__ >= 3
+#include <dirent.h>
+#else
+#define USE_DIRECT
+#endif
 #define SIGNAL_CAST (void (*)())
 #define USE_SETVBUF
 #define USE_SETSID
 #define USE_GETCWD
 #define USE_WAITPID
-#define USE_DIRECT
 #define HAVE_MEMMOVE
 #define HAVE_BZERO
 #define HAVE_GETTIMEOFDAY
@@ -568,6 +572,7 @@ char *mktemp(char *); /* No standard include */
 #include <sys/types.h>
 #include <sys/termios.h>
 #include <netinet/tcp.h>
+#include <arpa/inet.h>                /* needed for inet_ntoa proto */
 #ifdef HPUX_10_TRUSTED
 #include <hpsecurity.h>
 #include <prot.h>

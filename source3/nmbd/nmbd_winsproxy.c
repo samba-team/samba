@@ -39,7 +39,7 @@ static void wins_proxy_name_query_request_success( struct subnet_record *subrec,
   uint16 nb_flags;
   int num_ips;
   int i;
-  int ttl;
+  int ttl = 3600; /* By default one hour in the cache. */
   struct in_addr *iplist;
 
   /* Extract the original packet and the original broadcast subnet from
