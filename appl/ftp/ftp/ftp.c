@@ -1284,7 +1284,6 @@ noport:
     if (listen (data, 1) < 0)
 	warn ("listen");
     if (sendport) {
-	char *cmd;
 	char addr_str[256];
 	int inet_af;
 	int overbose;
@@ -1305,15 +1304,14 @@ noport:
 	    errx (1, "bad address family %d", data_addr->sa_family);
 	}
 
-	asprintf (&cmd, "EPRT |%d|%s|%d|",
-		  inet_af, addr_str, ntohs(socket_get_port (data_addr)));
 
 	overbose = verbose;
 	if (debug == 0)
 	    verbose  = -1;
 
-	result = command (cmd);
-
+	result = command ("EPRT |%d|%s|%d|",
+			  inet_af, addr_str, 
+			  ntohs(socket_get_port (data_addr)));
 	verbose = overbose;
 
 	if (result == ERROR) {
