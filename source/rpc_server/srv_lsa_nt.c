@@ -420,16 +420,19 @@ uint32 _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_SI
 {
 	DOM_SID2 *sid = q_u->sids.sid;
 	int num_entries = q_u->sids.num_entries;
-	DOM_R_REF ref;
-	LSA_TRANS_NAME_ENUM names;
+	DOM_R_REF *ref = NULL;
+	LSA_TRANS_NAME_ENUM *names = NULL;
 	uint32 mapped_count = 0;
 
-	ZERO_STRUCT(ref);
-	ZERO_STRUCT(names);
+	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
+	names = (LSA_TRANS_NAME_ENUM *)talloc_zero(p->mem_ctx, sizeof(LSA_TRANS_NAME_ENUM));
+
+	if (!ref || !names)
+		return NT_STATUS_NO_MEMORY;
 
 	/* set up the LSA Lookup SIDs response */
-	init_lsa_trans_names(p->mem_ctx, &ref, &names, num_entries, sid, &mapped_count);
-	init_reply_lookup_sids(r_u, &ref, &names, mapped_count);
+	init_lsa_trans_names(p->mem_ctx, ref, names, num_entries, sid, &mapped_count);
+	init_reply_lookup_sids(r_u, ref, names, mapped_count);
 
 	return r_u->status;
 }
@@ -442,16 +445,19 @@ uint32 _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP_N
 {
 	UNISTR2 *names = q_u->uni_name;
 	int num_entries = q_u->num_entries;
-	DOM_R_REF ref;
-	DOM_RID2 rids[MAX_LOOKUP_SIDS];
+	DOM_R_REF *ref;
+	DOM_RID2 *rids;
 	uint32 mapped_count = 0;
 
-	ZERO_STRUCT(ref);
-	ZERO_ARRAY(rids);
+	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
+	rids = (DOM_RID2 *)talloc_zero(p->mem_ctx, sizeof(DOM_RID2)*MAX_LOOKUP_SIDS);
+
+	if (!ref || !rids)
+		return NT_STATUS_NO_MEMORY;
 
 	/* set up the LSA Lookup RIDs response */
-	init_lsa_rid2s(&ref, rids, num_entries, names, &mapped_count);
-	init_reply_lookup_names(r_u, &ref, num_entries, rids, mapped_count);
+	init_lsa_rid2s(ref, rids, num_entries, names, &mapped_count);
+	init_reply_lookup_names(r_u, ref, num_entries, rids, mapped_count);
 
 	return r_u->status;
 }
