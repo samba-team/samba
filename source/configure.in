@@ -242,6 +242,36 @@ AC_CHECK_LIB(cups,httpConnect)
 AC_CHECK_LIB(dl, dlopen, [LIBS="$LIBS -ldl";
 	AC_DEFINE(HAVE_LIBDL)])
 
+# check for unix domain sockets
+AC_CACHE_CHECK([for unix domain sockets],samba_cv_unixsocket, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <sys/socket.h>
+#include <sys/un.h>],
+[
+  struct sockaddr_un sunaddr;
+  sunaddr.sun_family = AF_UNIX;
+],
+        samba_cv_unixsocket=yes,samba_cv_unixsocket=no)])
+if test x"$samba_cv_unixsocket" = x"yes"; then
+   AC_DEFINE(HAVE_UNIXSOCKET)
+fi
+ 
+AC_CACHE_CHECK([for socklen_t type],samba_cv_socklen_t, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <sys/socket.h>],[socklen_t i = 0],
+    samba_cv_socklen_t=yes,samba_cv_socklen_t=no)])
+if test x"$samba_cv_socklen_t" = x"yes"; then
+   AC_DEFINE(HAVE_SOCKLEN_T_TYPE)
+fi
+
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
     AC_TRY_COMPILE([
 #include <sys/types.h>

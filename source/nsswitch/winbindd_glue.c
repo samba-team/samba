@@ -34,7 +34,7 @@ BOOL wb_lsa_open_policy(char *server, BOOL sec_qos, uint32 des_access,
 	struct ntuser_creds creds;
 	struct in_addr dest_ip;
 	fstring dest_host;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 	extern pstring global_myname;
 
 	ZERO_STRUCTP(pol);
@@ -79,13 +79,13 @@ BOOL wb_lsa_open_policy(char *server, BOOL sec_qos, uint32 des_access,
 				     des_access, &pol->handle);
 
  done:
-	if (!NT_STATUS_IS_OK(result) && pol->cli) {
+	if (result != NT_STATUS_OK && pol->cli) {
 		if (pol->cli->initialised)
 			cli_shutdown(pol->cli);
-		SAFE_FREE(pol->cli);
+		free(pol->cli);
 	}
 
-	return NT_STATUS_IS_OK(result);
+	return (result == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -94,12 +94,12 @@ do a LSA Enumerate Trusted Domain
 BOOL wb_lsa_enum_trust_dom(CLI_POLICY_HND *hnd, uint32 *enum_ctx,
 			   uint32 * num_doms, char ***names, DOM_SID **sids)
 {
-	NTSTATUS ret;
+	uint32 ret;
 
 	ret = cli_lsa_enum_trust_dom(hnd->cli, hnd->mem_ctx, &hnd->handle,
 				     enum_ctx, num_doms, names, sids);
 
-	return NT_STATUS_IS_OK(ret);
+	return (ret == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -108,12 +108,12 @@ do a LSA Query Info Policy
 BOOL wb_lsa_query_info_pol(CLI_POLICY_HND *hnd, uint16 info_class,
 			   fstring domain_name, DOM_SID *domain_sid)
 {
-	NTSTATUS ret;
+	uint32 ret;
 
 	ret = cli_lsa_query_info_policy(hnd->cli, hnd->mem_ctx, &hnd->handle,
 					info_class, domain_name, domain_sid);
 
-	return NT_STATUS_IS_OK(ret);
+	return (ret == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -122,12 +122,12 @@ do a LSA Lookup Names
 BOOL wb_lsa_lookup_names(CLI_POLICY_HND *hnd, int num_names, char **names,
 			 DOM_SID **sids, uint32 **types, int *num_sids)
 {
-	NTSTATUS ret;
+	uint32 ret;
 
 	ret = cli_lsa_lookup_names(hnd->cli, hnd->mem_ctx, &hnd->handle,
 				   num_names, names, sids, types, num_sids);
 
-	return NT_STATUS_IS_OK(ret);
+	return (ret == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -136,12 +136,12 @@ do a LSA Lookup SIDS
 BOOL wb_lsa_lookup_sids(CLI_POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 			char ***names, uint32 **types, int *num_names)
 {
-	NTSTATUS ret;
+	uint32 ret;
 
 	ret = cli_lsa_lookup_sids(hnd->cli, hnd->mem_ctx, &hnd->handle,
 				  num_sids, sids, names, types, num_names);
 
-	return NT_STATUS_IS_OK(ret);
+	return (ret == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -149,11 +149,11 @@ lsa_close glue
 ****************************************************************************/
 BOOL wb_lsa_close(CLI_POLICY_HND *hnd)
 {
-	NTSTATUS ret;
+	uint32 ret;
 
 	ret = cli_lsa_close(hnd->cli, hnd->mem_ctx, &hnd->handle);
 
-	return NT_STATUS_IS_OK(ret);
+	return (ret == NT_STATUS_OK);
 }
 
 
@@ -162,11 +162,11 @@ samr_close glue
 ****************************************************************************/
 BOOL wb_samr_close(CLI_POLICY_HND *hnd)
 {
-	NTSTATUS ret;
+	uint32 ret;
 
 	ret = cli_samr_close(hnd->cli, hnd->mem_ctx, &hnd->handle);
 
-	return NT_STATUS_IS_OK(ret);
+	return (ret == NT_STATUS_OK);
 }
 
 
@@ -179,7 +179,7 @@ BOOL wb_samr_connect(char *server, uint32 access_mask, CLI_POLICY_HND *pol)
 	struct ntuser_creds creds;
 	struct in_addr dest_ip;
 	fstring dest_host;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
 	extern pstring global_myname;
 
 	ZERO_STRUCTP(pol);
@@ -225,13 +225,13 @@ BOOL wb_samr_connect(char *server, uint32 access_mask, CLI_POLICY_HND *pol)
 				  access_mask, &pol->handle);
 
  done:
-	if (!NT_STATUS_IS_OK(result) && pol->cli) {
+	if (result != NT_STATUS_OK && pol->cli) {
 		if (pol->cli->initialised)
 			cli_shutdown(pol->cli);
-		SAFE_FREE(pol->cli);
+		free(pol->cli);
 	}
 
-	return NT_STATUS_IS_OK(result);
+	return (result == NT_STATUS_OK);
 }
 
 
@@ -241,7 +241,7 @@ samr_open_domain glue
 BOOL wb_samr_open_domain(CLI_POLICY_HND *connect_pol, uint32 ace_perms,
 			 DOM_SID *sid, CLI_POLICY_HND *domain_pol)
 {
-	NTSTATUS ret;
+	uint32 ret;
 
 	ret = cli_samr_open_domain(connect_pol->cli, 
 				   connect_pol->mem_ctx,
@@ -250,7 +250,7 @@ BOOL wb_samr_open_domain(CLI_POLICY_HND *connect_pol, uint32 ace_perms,
 				   sid,
 				   &domain_pol->handle);
 
-	if NT_STATUS_IS_OK(ret) {
+	if (ret == NT_STATUS_OK) {
 		domain_pol->cli = connect_pol->cli;
 		domain_pol->mem_ctx = connect_pol->mem_ctx;
 		return True;
@@ -262,12 +262,16 @@ BOOL wb_samr_open_domain(CLI_POLICY_HND *connect_pol, uint32 ace_perms,
 /****************************************************************************
 do a SAMR enumerate groups
 ****************************************************************************/
-NTSTATUS wb_samr_enum_dom_groups(CLI_POLICY_HND *pol, uint32 *start_idx, 
+uint32 wb_samr_enum_dom_groups(CLI_POLICY_HND *pol, uint32 *start_idx, 
 			       uint32 size, struct acct_info **sam,
 			       uint32 *num_sam_groups)
 {
-	return cli_samr_enum_dom_groups(pol->cli, pol->mem_ctx, &pol->handle,
-					start_idx, size, sam, num_sam_groups);
+	uint32 ret;
+
+	ret = cli_samr_enum_dom_groups(pol->cli, pol->mem_ctx, &pol->handle,
+				       start_idx, size, sam, num_sam_groups);
+
+	return (ret == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -278,25 +282,25 @@ BOOL wb_get_samr_query_userinfo(CLI_POLICY_HND *pol, uint32 info_level,
 {
 	POLICY_HND user_pol;
 	BOOL got_user_pol = False;
-	NTSTATUS result;
+	uint32 result;
 
-	result = cli_samr_open_user(pol->cli, pol->mem_ctx, 
-				    &pol->handle, MAXIMUM_ALLOWED_ACCESS,
-				    user_rid, &user_pol);
-	if (!NT_STATUS_IS_OK(result))
+	if ((result = cli_samr_open_user(pol->cli, pol->mem_ctx, 
+					 &pol->handle, MAXIMUM_ALLOWED_ACCESS,
+					 user_rid, &user_pol)) 
+	    != NT_STATUS_OK)
 		goto done;
 
 	got_user_pol = True;
 
-	result = cli_samr_query_userinfo(pol->cli, pol->mem_ctx,
-					 &user_pol, info_level, ctr);
-	if (!NT_STATUS_IS_OK(result))
+	if ((result = cli_samr_query_userinfo(pol->cli, pol->mem_ctx,
+					      &user_pol, info_level, ctr))
+	    != NT_STATUS_OK)
 		goto done;
 
  done:
 	if (got_user_pol) cli_samr_close(pol->cli, pol->mem_ctx, &user_pol);
 
-	return NT_STATUS_IS_OK(result);
+	return (result == NT_STATUS_OK);
 }
 
 /****************************************************************************
@@ -305,23 +309,23 @@ do a SAMR enumerate groups
 BOOL wb_samr_open_user(CLI_POLICY_HND *pol, uint32 access_mask, uint32 rid,
 		       POLICY_HND *user_pol)
 {
-	NTSTATUS ret;
+	uint32 ret;
 
 	ret = cli_samr_open_user(pol->cli, pol->mem_ctx, &pol->handle,
 				 access_mask, rid, user_pol);
 
-	return NT_STATUS_IS_OK(ret);
+	return (ret == NT_STATUS_OK);
 }
 
 BOOL wb_samr_query_usergroups(CLI_POLICY_HND *pol, uint32 *num_groups,
 			      DOM_GID **gid)
 {
-	NTSTATUS ret;
+	uint32 ret;
 
 	ret = cli_samr_query_usergroups(pol->cli, pol->mem_ctx, &pol->handle,
 					num_groups, gid);
 
-	return NT_STATUS_IS_OK(ret);
+	return (ret == NT_STATUS_OK);
 }
 
 BOOL wb_get_samr_query_groupinfo(CLI_POLICY_HND *pol, uint32 info_level,
@@ -329,23 +333,25 @@ BOOL wb_get_samr_query_groupinfo(CLI_POLICY_HND *pol, uint32 info_level,
 {
 	POLICY_HND group_pol;
 	BOOL got_group_pol = False;
-	NTSTATUS result;
+	uint32 result;
 
-	result = cli_samr_open_group(pol->cli, pol->mem_ctx,
-				     &pol->handle, MAXIMUM_ALLOWED_ACCESS,
-				     group_rid, &group_pol);
-	if (!NT_STATUS_IS_OK(result))
+	if ((result = cli_samr_open_group(pol->cli, pol->mem_ctx,
+					  &pol->handle, MAXIMUM_ALLOWED_ACCESS,
+					  group_rid, &group_pol))
+	    != NT_STATUS_OK) 
 		goto done;
 
 	got_group_pol = True;
 
-	result = cli_samr_query_groupinfo(pol->cli, pol->mem_ctx,
-					  &group_pol, info_level,
-					  ctr);
+	if ((result = cli_samr_query_groupinfo(pol->cli, pol->mem_ctx,
+					       &group_pol, info_level,
+					       ctr)) != NT_STATUS_OK)
+		goto done;
+
  done:
 	if (got_group_pol) cli_samr_close(pol->cli, pol->mem_ctx, &group_pol);
 
-	return NT_STATUS_IS_OK(result);
+	return (result == NT_STATUS_OK);
 }
 
 BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
@@ -354,21 +360,20 @@ BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
 {
 	BOOL got_group_pol = False;
 	POLICY_HND group_pol;
-	NTSTATUS result;
-	uint32 i, total_names = 0;
+	uint32 result, i, total_names = 0;
 
-	result = cli_samr_open_group(pol->cli, pol->mem_ctx,
-				     &pol->handle, MAXIMUM_ALLOWED_ACCESS,
-				     group_rid, &group_pol);
-	if (!NT_STATUS_IS_OK(result))
+	if ((result = cli_samr_open_group(pol->cli, pol->mem_ctx,
+					  &pol->handle, MAXIMUM_ALLOWED_ACCESS,
+					  group_rid, &group_pol))
+	    != NT_STATUS_OK) 
 		goto done;
 
 	got_group_pol = True;
 
-	result = cli_samr_query_groupmem(pol->cli, pol->mem_ctx,
-					 &group_pol, num_names, rid_mem, 
-					 name_types);
-	if (!NT_STATUS_IS_OK(result))
+	if ((result = cli_samr_query_groupmem(pol->cli, pol->mem_ctx,
+					      &group_pol, num_names, rid_mem, 
+					      name_types))
+	    != NT_STATUS_OK)
 		goto done;
 
         /* Call cli_samr_lookup_rids() in bunches of ~1000 rids to avoid
@@ -393,7 +398,8 @@ BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
                                               &(*rid_mem)[i],
                                               &tmp_num_names,
                                               &tmp_names, &tmp_types);
-                if (!NT_STATUS_IS_OK(result))
+
+                if (result != NT_STATUS_OK)
                         goto done;
 
                 /* Copy result into array.  The talloc system will take
@@ -414,26 +420,26 @@ BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
 	if (got_group_pol) 
                 cli_samr_close(pol->cli, pol->mem_ctx, &group_pol);
 
-	return NT_STATUS_IS_OK(result);	
+	return (result == NT_STATUS_OK);	
 }
 
 BOOL wb_samr_query_dom_info(CLI_POLICY_HND *pol, uint16 switch_value,
 			    SAM_UNK_CTR *ctr)
 {
-	NTSTATUS ret;
+	uint32 ret;
 
 	ret = cli_samr_query_dom_info(pol->cli, pol->mem_ctx, 
 				      &pol->handle, switch_value, ctr);
 
-	return NT_STATUS_IS_OK(ret);
+	return (ret == NT_STATUS_OK);
 }
 
 /* Unlike all the others, the status code of this function is actually used
    by winbindd. */
 
-NTSTATUS wb_samr_query_dispinfo(CLI_POLICY_HND *pol, uint32 *start_ndx, 
-				uint16 info_level, uint32 *num_entries,
-				SAM_DISPINFO_CTR *ctr)
+uint32 wb_samr_query_dispinfo(CLI_POLICY_HND *pol, uint32 *start_ndx, 
+                              uint16 info_level, uint32 *num_entries,
+                              SAM_DISPINFO_CTR *ctr)
 {
         return cli_samr_query_dispinfo(pol->cli, pol->mem_ctx, 
                                        &pol->handle, start_ndx, 

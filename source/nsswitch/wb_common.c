@@ -29,6 +29,17 @@
 /* Global variables.  These are effectively the client state information */
 
 static int established_socket = -1;           /* fd for winbindd socket */
+static char *excluded_domain;
+
+/*
+  smbd needs to be able to exclude lookups for its own domain
+*/
+void winbind_exclude_domain(const char *domain)
+{
+	if (excluded_domain) free(excluded_domain);
+	excluded_domain = strdup(domain);
+}
+
 
 /* Initialise a request structure */
 
@@ -59,7 +70,7 @@ void init_response(struct winbindd_response *response)
 {
 	/* Initialise return value */
 
-	response->result = (enum winbindd_result)NSS_STATUS_UNAVAIL;
+	response->result = WINBINDD_ERROR;
 }
 
 /* Close established socket */
@@ -99,7 +110,8 @@ static int open_pipe_sock(void)
 		return -1;
 	}
 	
-	if (!S_ISDIR(st.st_mode) || (st.st_uid != 0)) {
+	if (!S_ISDIR(st.st_mode) || 
+	    (st.st_uid != 0 && st.st_uid != geteuid())) {
 		return -1;
 	}
 	
@@ -128,7 +140,8 @@ static int open_pipe_sock(void)
 	
 	/* Check permissions on unix socket file */
 	
-	if (!S_ISSOCK(st.st_mode) || (st.st_uid != 0)) {
+	if (!S_ISSOCK(st.st_mode) || 
+	    (st.st_uid != 0 && st.st_uid != geteuid())) {
 		return -1;
 	}
 	
@@ -141,6 +154,7 @@ static int open_pipe_sock(void)
 	if (connect(established_socket, (struct sockaddr *)&sunaddr, 
 		    sizeof(sunaddr)) == -1) {
 		close_sock();
+		established_socket = -1;
 		return -1;
 	}
         
@@ -305,7 +319,7 @@ void free_response(struct winbindd_response *response)
 
 /* Handle simple types of requests */
 
-enum nss_status winbindd_request(int req_type, 
+NSS_STATUS winbindd_request(int req_type, 
 				 struct winbindd_request *request,
 				 struct winbindd_response *response)
 {
@@ -315,6 +329,12 @@ enum nss_status winbindd_request(int req_type,
 	/* Check for our tricky environment variable */
 
 	if (getenv(WINBINDD_DONT_ENV)) {
+		return NSS_STATUS_NOTFOUND;
+	}
+
+	/* smbd may have excluded this domain */
+	if (excluded_domain && 
+	    strcasecmp(excluded_domain, request->domain) == 0) {
 		return NSS_STATUS_NOTFOUND;
 	}
 

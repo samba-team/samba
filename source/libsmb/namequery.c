@@ -421,6 +421,8 @@ BOOL parse_resolvconf(char name_server_arr[][16])
         }
     }
   }
+
+  return True;
 }
 
 /********************************************************

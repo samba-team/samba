@@ -108,7 +108,9 @@ int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 
 /*The following definitions come from  lib/genrand.c  */
 
-void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
+void set_rand_reseed_data(unsigned char *data, size_t len);
+void generate_random_buffer( unsigned char *out, int len, BOOL do_reseed_now);
+char *generate_random_str(size_t len);
 
 /*The following definitions come from  lib/getsmbpass.c  */
 
@@ -782,20 +784,17 @@ ssize_t write_socket(int fd,char *buf,size_t len);
 ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout);
 BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
 BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
-BOOL send_null_session_msg(int fd);
 BOOL send_smb(int fd,char *buffer);
 BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
-int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebind);
+int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL rebind );
 int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
-void reset_globals_after_fork(void);
 void client_setfd(int fd);
 char *client_name(void);
 char *client_addr(void);
 char *get_socket_name(int fd);
 char *get_socket_addr(int fd);
 int open_pipe_sock(char *path);
-int create_pipe_socket(char *dir, int dir_perms,
-				char *path, int path_perms);
+int sock_exec(const char *prog);
 
 /*The following definitions come from  lib/util_str.c  */
 
@@ -822,7 +821,7 @@ size_t count_chars(const char *s,char c);
 BOOL str_is_all(const char *s,char c);
 char *safe_strcpy(char *dest,const char *src, size_t maxlength);
 char *safe_strcat(char *dest, const char *src, size_t maxlength);
-char *alpha_strcpy(char *dest, const char *src, size_t maxlength);
+char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength);
 char *StrnCpy(char *dest,const char *src,size_t n);
 char *strncpyn(char *dest, const char *src,size_t n, char c);
 size_t strhex_to_str(char *p, size_t len, const char *strhex);
@@ -1349,7 +1348,7 @@ void expire_workgroups_and_servers(time_t t);
 
 /*The following definitions come from  nsswitch/wb_client.c  */
 
-BOOL winbind_lookup_name(char *name, DOM_SID *sid, enum SID_NAME_USE *name_type);
+BOOL winbind_lookup_name(const char *name, DOM_SID *sid, enum SID_NAME_USE *name_type);
 BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
 BOOL winbind_sid_to_uid(uid_t *puid, DOM_SID *sid);
 BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid);
@@ -1364,15 +1363,13 @@ BOOL winbind_nametogid(gid_t *pgid, char *gname);
 
 /*The following definitions come from  nsswitch/wb_common.c  */
 
+void winbind_exclude_domain(const char *domain);
 void init_request(struct winbindd_request *request, int request_type);
 void init_response(struct winbindd_response *response);
 void close_sock(void);
 int write_sock(void *buffer, int count);
 int read_reply(struct winbindd_response *response);
 void free_response(struct winbindd_response *response);
-enum nss_status winbindd_request(int req_type, 
-				 struct winbindd_request *request,
-				 struct winbindd_response *response);
 
 /*The following definitions come from  param/loadparm.c  */
 
@@ -1744,6 +1741,7 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time);
 BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16]);
 BOOL trust_password_delete(char *domain);
+void reset_globals_after_fork(void);
 
 /*The following definitions come from  passdb/smbpass.c  */
 

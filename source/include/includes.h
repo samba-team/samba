@@ -371,6 +371,10 @@
 #define SIG_ATOMIC_T int
 #endif
 
+#ifndef HAVE_SOCKLEN_T_TYPE
+typedef int socklen_t;
+#endif
+
 #ifndef uchar
 #define uchar unsigned char
 #endif
@@ -677,19 +681,7 @@ typedef struct smb_wpasswd {
 #define UNI_XDIGIT   0x8
 #define UNI_SPACE    0x10
 
-#ifdef HAVE_NSS_H
-#include <nss.h>
-#else
-
-/* Minimal needed to compile.. */
-
-enum nss_status {
-	NSS_STATUS_SUCCESS,
-	NSS_STATUS_NOTFOUND,
-	NSS_STATUS_UNAVAIL
-};
-
-#endif
+#include "nsswitch/nss.h"
 
 /***** automatically generated prototypes *****/
 #include "proto.h"

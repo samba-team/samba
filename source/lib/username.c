@@ -465,6 +465,26 @@ BOOL user_in_list(char *user,char *list)
         if(user_in_netgroup_list(user,&tok[1]))
           return True;
       }
+    } else if (strchr(tok,*lp_winbind_separator()) != NULL) {
+      /* If user name did not match and token is not
+         a unix group and the token has a winbind separator in the
+         name then assume it is a Windows group
+       */
+      DOM_SID g_sid;
+      enum SID_NAME_USE name_type;
+      BOOL winbind_answered = False;
+      BOOL ret;
+ 
+      /* Check to see if name is a Windows group */
+      if (winbind_lookup_name(tok, &g_sid, &name_type) &&
+          name_type == SID_NAME_DOM_GRP) {
+ 
+        /* Check if user name is in the Windows group */
+        ret = user_in_winbind_group_list(user, tok, &winbind_answered);
+ 
+        if (winbind_answered && ret == True)
+          return ret;
+      }
     }
   }
   return(False);
