@@ -42,7 +42,7 @@ krb5_appdefault_boolean(krb5_context context, const char *appname,
 {
     
     if(appname == NULL)
-	appname = __progname;
+	appname = getprogname();
     def_val = krb5_config_get_bool_default(context, NULL, def_val, 
 					   "appdefaults", 
 					   option, 
@@ -76,7 +76,7 @@ krb5_appdefault_string(krb5_context context, const char *appname,
 		       const char *def_val, char **ret_val)
 {
     if(appname == NULL)
-	appname = __progname;
+	appname = getprogname();
     def_val = krb5_config_get_string_default(context, NULL, def_val, 
 					     "appdefaults", 
 					     option, 

@@ -224,7 +224,7 @@ main(int argc, char **argv)
 {
     int optind = 0;
 
-    set_progname (argv[0]);
+    setprogname (argv[0]);
     initialize_asn1_error_table_r (&et_list);
     if(getarg(args, num_args, argc, argv, &optind))
 	usage(1);

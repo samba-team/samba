@@ -49,7 +49,7 @@ print_version(const char *progname)
     int i;
     
     if(progname == NULL)
-	progname = __progname;
+	progname = getprogname();
     
     if(num_args == 0)
 	msg = "no version information";

@@ -714,7 +714,7 @@ main(int argc, char **argv)
     const char *host, *user, *filename = NULL;
     char *pobox = NULL;
 
-    set_progname (argv[0]);
+    setprogname (argv[0]);
 
 #ifdef KRB5
     {

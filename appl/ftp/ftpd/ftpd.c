@@ -262,7 +262,7 @@ main(int argc, char **argv)
 
     int optind = 0;
 
-    set_progname (argv[0]);
+    setprogname (argv[0]);
 
     /* detach from any tickets and tokens */
     {

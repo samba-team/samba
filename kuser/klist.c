@@ -629,7 +629,7 @@ main (int argc, char **argv)
     int optind = 0;
     int exit_status = 0;
 
-    set_progname (argv[0]);
+    setprogname (argv[0]);
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage(1);

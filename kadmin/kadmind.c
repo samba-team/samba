@@ -98,7 +98,7 @@ main(int argc, char **argv)
     krb5_log_facility *logf;
     krb5_keytab keytab;
 
-    set_progname(argv[0]);
+    setprogname(argv[0]);
 
     ret = krb5_init_context(&context);
     if (ret)

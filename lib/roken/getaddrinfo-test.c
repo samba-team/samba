@@ -112,7 +112,7 @@ main(int argc, char **argv)
     int optind = 0;
     int i;
 
-    set_progname (argv[0]);
+    setprogname (argv[0]);
 
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
 		&optind))
@@ -122,7 +122,7 @@ main(int argc, char **argv)
 	usage (0);
 
     if (version_flag) {
-	fprintf (stderr, "%s from %s-%s)\n", __progname, PACKAGE, VERSION);
+	fprintf (stderr, "%s from %s-%s)\n", getprogname(), PACKAGE, VERSION);
 	return 0;
     }
 

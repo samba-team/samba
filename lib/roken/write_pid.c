@@ -88,7 +88,7 @@ pidfile(const char *basename)
     if(pidfile_path != NULL)
 	return;
     if(basename == NULL)
-	basename = __progname;
+	basename = getprogname();
     pidfile_path = pid_file_write(basename);
     atexit(pidfile_cleanup);
 }

@@ -293,7 +293,7 @@ main (int argc, char **argv)
     OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
     int optind = 0;
   
-    set_progname (argv[0]);
+    setprogname (argv[0]);
     if(getarg(args, num_args, argc, argv, &optind))
 	usage(1);
     if(help_flag)

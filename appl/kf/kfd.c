@@ -315,7 +315,7 @@ main(int argc, char **argv)
     int port;
     int ret;
 
-    set_progname (argv[0]);
+    setprogname (argv[0]);
     roken_openlog (argv[0], LOG_ODELAY | LOG_PID,LOG_AUTH);
     port = server_setup(&context, argc, argv);
     ret = doit (port, service);

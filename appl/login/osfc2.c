@@ -42,7 +42,7 @@ do_osfc2_magic(uid_t uid)
     char *argv[2];
     
     /* fake */
-    argv[0] = (char*)__progname;
+    argv[0] = (char*)getprogname();
     argv[1] = NULL;
     set_auth_parameters(1, argv);
     

@@ -339,7 +339,7 @@ main (int argc, char **argv)
     krb5_addresses no_addrs;
     char passwd[256];
 
-    set_progname (argv[0]);
+    setprogname (argv[0]);
     memset(&cred, 0, sizeof(cred));
     
     ret = krb5_init_context (&context);

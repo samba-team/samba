@@ -836,7 +836,7 @@ main(int argc, char **argv)
     if (setuid (uid) || (uid != 0 && setuid(0) == 0))
 	err (1, "setuid");
     
-    set_progname (argv[0]);
+    setprogname (argv[0]);
 
     if (argc >= 2 && argv[1][0] != '-') {
 	host = argv[host_index = 1];

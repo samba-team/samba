@@ -71,7 +71,7 @@ client_setup(krb5_context *context, int *argc, char **argv)
     int port = 0;
     int status;
 
-    set_progname (argv[0]);
+    setprogname (argv[0]);
  
     status = krb5_init_context (context);
     if (status)
