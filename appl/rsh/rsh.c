@@ -164,6 +164,8 @@ krb5_forward_cred (krb5_auth_context auth_context,
     krb5_data       out_data;
     krb5_principal  principal;
 
+    memset (&creds, 0, sizeof(creds));
+
     ret = krb5_cc_default (context, &ccache);
     if (ret) {
 	warnx ("could not forward creds: krb5_cc_default: %s",
