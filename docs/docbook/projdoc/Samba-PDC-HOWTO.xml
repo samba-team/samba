@@ -288,6 +288,22 @@ be revised to duely reflect all configuration and management requirements.
 <title>Preparing for Domain Control</title>
 
 <para>
+There are two ways that MS Windows machines may interact with each other, with other servers,
+and with Domain Controllers: Either as <empahsis>Stand-Alone</emphasis> systems, more commonly
+called <empasis>Workgroup members</emphasis>, or as full participants in a security system,
+more commonly called <emphasis>Domain Members</emphasis>.
+</para>
+
+<para>
+It should be noted that <emphasis>Workgroup membership</emphasis> involve no special configuration
+other than the machine being configured so that the network configuration has a commonly used name
+for it's workgroup entry. It is not uncommon for the name WORKGROUP to be used for this. With this
+mode of configuration there are NO machine trust accounts and any concept of "membership" as such
+is limited to the fact that all machines appear in the network neighbourhood to be logically
+groupped together.
+</para>
+
+<para>
 The following are necessary for configuring Samba-3 as an MS Windows NT4 style PDC for MS Windows
 NT4 / 200x / XP clients.
 </para>
