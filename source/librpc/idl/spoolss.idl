@@ -785,7 +785,7 @@
 		[out]	 lstring value_name,
 		[out]	 uint32 value_needed,
 		[out]    uint32 printerdata_type,
-		[out]    DATA_BLOB data,
+		[out]    DATA_BLOB buffer,
 		[in,out,ref] uint32 *data_size
 	);
 
