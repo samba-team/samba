@@ -120,7 +120,6 @@ account password for domain %s.\n", domain));
         if(NT_STATUS_IS_OK(res = modify_trust_password( domain, dc_name,
                                          old_trust_passwd_hash)))
           break;
-
     } else {
 	    res = modify_trust_password( domain, remote_machine,
 					 old_trust_passwd_hash);

@@ -953,7 +953,7 @@ struct bitmap {
 #define SMBntcancel      0xA4   /* NT cancel */
 
 /* These are the trans subcommands */
-#define TRANSACT_SETNAMEDPIPEHANDLESTATE  0x01
+#define TRANSACT_SETNAMEDPIPEHANDLESTATE  0x01 
 #define TRANSACT_DCERPCCMD                0x26
 #define TRANSACT_WAITNAMEDPIPEHANDLESTATE 0x53
 

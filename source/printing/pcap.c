@@ -62,8 +62,6 @@
 
 #include "includes.h"
 
-#include "smb.h"
-
 #ifdef AIX
 /*  ******************************************
      Extend for AIX system and qconfig file
