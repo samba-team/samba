@@ -107,7 +107,20 @@ GSS-API library (libgssapi, -lgssapi)
 .Fa "gss_OID_set * actual_mechs"
 .Fa "OM_uint32 * time_rec"
 .Fc
-.\" .Fn gss_add_cred
+.Ft OM_uint32
+.Fo gss_add_cred
+.Fa "OM_uint32 *minor_status"
+.Fa "const gss_cred_id_t input_cred_handle"
+.Fa "const gss_name_t desired_name"
+.Fa "const gss_OID desired_mech"
+.Fa "gss_cred_usage_t cred_usage"
+.Fa "OM_uint32 initiator_time_req"
+.Fa "OM_uint32 acceptor_time_req"
+.Fa "gss_cred_id_t *output_cred_handle"
+.Fa "gss_OID_set *actual_mechs"
+.Fa "OM_uint32 *initiator_time_rec"
+.Fa "OM_uint32 *acceptor_time_rec"
+.Fc
 .Ft OM_uint32
 .Fo gss_add_oid_set_member
 .Fa "OM_uint32 * minor_status"
@@ -297,7 +310,7 @@ GSS-API library (libgssapi, -lgssapi)
 .Fa "OM_uint32 * minor_status"
 .Fa "gss_name_t * input_name"
 .Fc
-.Ft
+.Ft OM_uint32
 .Fo gss_release_oid_set
 .Fa "OM_uint32 * minor_status"
 .Fa "gss_OID_set * set"
@@ -361,7 +374,7 @@ GSS-API library (libgssapi, -lgssapi)
 .Fa "const gss_buffer_t token_buffer"
 .Fa "gss_qop_t * qop_state"
 .Fc
-.Ft
+.Ft OM_uint32
 .Fo gss_wrap
 .Fa "OM_uint32 * minor_status"
 .Fa "const gss_ctx_id_t context_handle"
