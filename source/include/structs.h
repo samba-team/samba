@@ -153,6 +153,7 @@ struct smb_composite_savefile;
 struct smb_composite_connect;
 struct smb_composite_sesssetup;
 struct smb_composite_fetchfile;
+struct rpc_composite_userinfo;
 
 struct nbt_name;
 struct nbt_name_packet;
