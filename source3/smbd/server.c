@@ -96,7 +96,7 @@ static BOOL open_sockets_inetd(void)
 /****************************************************************************
   open and listen to a socket
 ****************************************************************************/
-static int open_server_socket(int port, ulong ipaddr)
+static int open_server_socket(int port, uint32 ipaddr)
 {
 	int s;
 
