@@ -1231,7 +1231,11 @@ ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
 
 	strlower(host);
 
-	asprintf(&principal, "%s@%s", host, ads->realm);
+	/*
+	  we need to use the '$' form of the name here, as otherwise the
+	  server might end up setting the password for a user instead
+	 */
+	asprintf(&principal, "%s$@%s", host, ads->realm);
 	
 	status = krb5_set_password(ads->kdc_server, principal, password);
 	
