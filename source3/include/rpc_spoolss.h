@@ -852,6 +852,24 @@ typedef struct printer_info_3
 }
 PRINTER_INFO_3;
 
+typedef struct printer_info_4
+{
+	UNISTR printername;
+	UNISTR servername;
+	uint32 attributes;
+}
+PRINTER_INFO_4;
+
+typedef struct printer_info_5
+{
+	UNISTR printername;
+	UNISTR portname;
+	uint32 attributes;
+	uint32 device_not_selected_timeout;
+	uint32 transmission_retry_timeout;
+}
+PRINTER_INFO_5;
+
 typedef struct spool_q_enumprinters
 {
 	uint32 flags;
@@ -869,6 +887,8 @@ typedef struct printer_info_ctr_info
 	PRINTER_INFO_1 *printers_1;
 	PRINTER_INFO_2 *printers_2;
 	PRINTER_INFO_3 *printers_3;
+	PRINTER_INFO_4 *printers_4;
+	PRINTER_INFO_5 *printers_5;
 }
 PRINTER_INFO_CTR;
 
