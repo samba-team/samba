@@ -46,10 +46,6 @@
 #endif
 
 
-#if defined(HAVE_RPC_RPC_H)
-#include <rpc/rpc.h>
-#endif
-
 #include <sys/types.h>
 
 #ifdef TIME_WITH_SYS_TIME
@@ -73,6 +69,11 @@
 
 #include <stdio.h>
 #include <stddef.h>
+
+#include <netinet/in.h>
+#if defined(HAVE_RPC_RPC_H)
+#include <rpc/rpc.h>
+#endif
 
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
@@ -179,7 +180,6 @@
 #include <varargs.h>
 #endif
 
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <syslog.h>
