@@ -3043,7 +3043,7 @@ static struct smbcli_state *do_connect(const char *server, const char *share, st
 		smbcli_parse_unc(share, NULL, &server, &share);
 	}
 	
-	status = smbcli_full_connection(NULL, &c, lp_netbios_name(), server,
+	status = smbcli_full_connection(NULL, &c, server,
 					share, NULL, cred);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to \\\\%s\\%s failed - %s\n", 

@@ -90,6 +90,8 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	struct composite_context *creq;
 	struct fd_event *fde;
 
+	struct cli_credentials *credentials;
+
 	/* Here we need to determine which server to connect to.
 	 * For now we use parametric options, type cifs.
 	 * Later we will use security=server and auth_server.c.
@@ -116,16 +118,20 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	ntvfs->private_data = private;
 
+	credentials = cli_credentials_init(private);
+	cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
+	cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
+	cli_credentials_set_password(credentials, pass, CRED_SPECIFIED);
+	cli_credentials_set_workstation(credentials, "vfs_cifs", CRED_SPECIFIED);
+
 	/* connect to the server, using the smbd event context */
 	io.in.dest_host = host;
 	io.in.port = 0;
 	io.in.called_name = host;
-	io.in.calling_name = "vfs_cifs";
+	io.in.credentials = credentials;
+	io.in.workgroup = lp_workgroup();
 	io.in.service = remote_share;
 	io.in.service_type = "?????";
-	io.in.domain = domain;
-	io.in.user = user;
-	io.in.password = pass;
 	
 	creq = smb_composite_connect_send(&io, tcon->smb_conn->connection->event.ctx);
 	status = smb_composite_connect_recv(creq, private);

@@ -320,7 +320,12 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	struct gensec_krb5_state *gensec_krb5_state;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
-
+	const char *hostname = gensec_get_target_hostname(gensec_security);
+	if (!hostname) {
+		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+			
 	nt_status = gensec_krb5_start(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -341,22 +346,8 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	}
 	
 	while (1) {
-		if (gensec_security->target.principal) {
-			DEBUG(5, ("Finding ticket for target [%s]\n", gensec_security->target.principal));
-			ret = ads_krb5_mk_req(gensec_krb5_state->context, 
-					      &gensec_krb5_state->auth_context,
-					      AP_OPTS_USE_SUBKEY | AP_OPTS_MUTUAL_REQUIRED,
-					      gensec_security->target.principal,
-					      gensec_krb5_state->ccache, 
-					      &gensec_krb5_state->ticket);
-		} else {
+		{
 			krb5_data in_data;
-			const char *hostname = gensec_get_target_hostname(gensec_security);
-			if (!hostname) {
-				DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
-				return NT_STATUS_ACCESS_DENIED;
-			}
-			
 			in_data.length = 0;
 
 			ret = krb5_mk_req(gensec_krb5_state->context, 
@@ -372,36 +363,40 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		case 0:
 			return NT_STATUS_OK;
 		case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
-			DEBUG(3, ("Server is not registered with our KDC: %s\n", 
-				  error_message(ret)));
+			DEBUG(3, ("Server [%s] is not registered with our KDC: %s\n", 
+				  hostname, error_message(ret)));
 			return NT_STATUS_ACCESS_DENIED;
 		case KRB5KDC_ERR_PREAUTH_FAILED:
 		case KRB5KRB_AP_ERR_TKT_EXPIRED:
 		case KRB5_CC_END:
+			/* Too much clock skew - we will need to kinit to re-skew the clock */
+		case KRB5KRB_AP_ERR_SKEW:
+		case KRB5_KDCREP_SKEW:
 		{
 			DEBUG(3, ("kerberos (mk_req) failed: %s\n", 
 				  error_message(ret)));
 			/* fall down to remaining code */
 		}
+
+
 		/* just don't print a message for these really ordinary messages */
 		case KRB5_FCC_NOFILE:
 		case KRB5_CC_NOTFOUND:
 		case ENOENT:
+			
 		{
-			char *password;
+			const char *password;
 			char *ccache_string;
 			time_t kdc_time = 0;
-			nt_status = gensec_get_password(gensec_security, 
-							gensec_security, 
-							&password);
+			password = cli_credentials_get_password(gensec_security->credentials);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				return nt_status;
 			}
 			
 			/* this string should be unique */
 			ccache_string = talloc_asprintf(gensec_krb5_state, "MEMORY:%s:%s:%s", 
-							gensec_get_client_principal(gensec_security, gensec_krb5_state), 
-							gensec_get_target_principal(gensec_security),
+							cli_credentials_get_principal(gensec_security->credentials, gensec_krb5_state), 
+							gensec_get_target_hostname(gensec_security),
 							generate_random_str(gensec_krb5_state, 16));
 
 			ret = krb5_cc_resolve(gensec_krb5_state->context, ccache_string, &gensec_krb5_state->ccache);
@@ -413,8 +408,8 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 			}
 
 			ret = kerberos_kinit_password_cc(gensec_krb5_state->context, gensec_krb5_state->ccache, 
-						      gensec_get_client_principal(gensec_security, gensec_krb5_state), 
-						      password, NULL, &kdc_time);
+							 cli_credentials_get_principal(gensec_security->credentials, gensec_krb5_state), 
+							 password, NULL, &kdc_time);
 
 			/* cope with ticket being in the future due to clock skew */
 			if ((unsigned)kdc_time > time(NULL)) {
@@ -422,10 +417,18 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 				int time_offset =(unsigned)kdc_time-t;
 				DEBUG(4,("Advancing clock by %d seconds to cope with clock skew\n", time_offset));
 				krb5_set_real_time(gensec_krb5_state->context, t + time_offset + 1, 0);
+				break;
 			}
 	
+			if (ret == KRB5KRB_AP_ERR_SKEW || ret == KRB5_KDCREP_SKEW) {
+				DEBUG(1,("kinit for %s failed (%s)\n", 
+					 cli_credentials_get_principal(gensec_security->credentials, gensec_krb5_state), 
+					 error_message(ret)));
+				return NT_STATUS_TIME_DIFFERENCE_AT_DC;
+			}
 			if (ret) {
-				DEBUG(1,("kinit failed (%s)\n", 
+				DEBUG(1,("kinit for %s failed (%s)\n", 
+					 cli_credentials_get_principal(gensec_security->credentials, gensec_krb5_state), 
 					 error_message(ret)));
 				return NT_STATUS_WRONG_PASSWORD;
 			}

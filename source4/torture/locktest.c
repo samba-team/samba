@@ -116,9 +116,10 @@ static struct smbcli_state *connect_one(char *share, int snum)
 	share++;
 
 	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), snum);
+	cli_credentials_set_workstation(servers[snum], myname, CRED_SPECIFIED);
 
 	do {
-		status = smbcli_full_connection(NULL, &c, myname,
+		status = smbcli_full_connection(NULL, &c, 
 						server, 
 						share, NULL,
 						servers[snum]);

@@ -5,6 +5,7 @@
 
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -926,7 +927,12 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 	p->conn->binding_string = dcerpc_binding_string(p, binding);
 
 	if (!cli_credentials_is_anonymous(credentials) &&
-		(binding->flags & DCERPC_SCHANNEL_ANY)) {
+		(binding->flags & DCERPC_SCHANNEL_ANY) && 
+		!cli_credentials_get_netlogon_creds(credentials)) {
+		
+		/* If we don't already have netlogon credentials for
+		 * the schannel bind, then we have to get these
+		 * first */
 		status = dcerpc_bind_auth_schannel(tmp_ctx, 
 						   p, pipe_uuid, pipe_version, 
 						   credentials);
@@ -936,6 +942,8 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 		} else if (binding->flags & DCERPC_AUTH_KRB5) {
 			auth_type = DCERPC_AUTH_TYPE_KRB5;
+		} else if (binding->flags & DCERPC_SCHANNEL_ANY) {
+			auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 		} else {
 			auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 		}
@@ -974,13 +982,11 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(TALLOC_CTX *tmp_ctx,
 		cli_credentials_set_anonymous(anon_creds);
 		cli_credentials_guess(anon_creds);
 		status = smbcli_full_connection(p->conn, &cli, 
-						cli_credentials_get_workstation(credentials),
 						binding->host, 
 						"IPC$", NULL, 
 						anon_creds);
 	} else {
 		status = smbcli_full_connection(p->conn, &cli, 
-						cli_credentials_get_workstation(credentials),
 						binding->host, 
 						"IPC$", NULL,
 						credentials);

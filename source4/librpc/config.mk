@@ -20,9 +20,9 @@ INIT_OBJ_FILES = \
 		librpc/rpc/dcerpc.o
 ADD_OBJ_FILES = \
 		librpc/rpc/dcerpc_auth.o \
+		librpc/rpc/dcerpc_schannel.o \
 		librpc/rpc/dcerpc_util.o \
 		librpc/rpc/dcerpc_error.o \
-		librpc/rpc/dcerpc_schannel.o \
 		librpc/rpc/dcerpc_smb.o \
 		librpc/rpc/dcerpc_sock.o
 REQUIRED_SUBSYSTEMS = SOCKET

@@ -52,22 +52,22 @@ enum stdio_helper_mode {
 
 typedef void (*stdio_helper_function)(enum stdio_helper_mode stdio_helper_mode, 
 				      char *buf, int length, void **private,
-				      unsigned int mux_id);
+				      unsigned int mux_id, void **private2);
 
 static void manage_squid_basic_request (enum stdio_helper_mode stdio_helper_mode, 
 					char *buf, int length, void **private,
-					unsigned int mux_id);
+					unsigned int mux_id, void **private2);
 
 static void manage_gensec_request (enum stdio_helper_mode stdio_helper_mode, 
 				   char *buf, int length, void **private,
-				   unsigned int mux_id);
+				   unsigned int mux_id, void **private2);
 
 static void manage_ntlm_server_1_request (enum stdio_helper_mode stdio_helper_mode, 
 					  char *buf, int length, void **private,
-					  unsigned int mux_id);
+					  unsigned int mux_id, void **private2);
 
 static void manage_squid_request(enum stdio_helper_mode helper_mode, 
-				 stdio_helper_function fn);
+				 stdio_helper_function fn, void **private2);
 
 static const struct {
 	enum stdio_helper_mode mode;
@@ -203,7 +203,7 @@ static NTSTATUS local_pw_check_specified(const char *username,
 
 static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode, 
 				       char *buf, int length, void **private,
-				       unsigned int mux_id) 
+				       unsigned int mux_id, void **private2) 
 {
 	char *user, *pass;	
 	user=buf;
@@ -234,10 +234,9 @@ static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
 
 static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mode, 
 					 char *buf, int length, void **private,
-					 unsigned int mux_id)  
+					 unsigned int mux_id, void **password)  
 {
 	DATA_BLOB in;
-	struct gensec_security **gensec_state = (struct gensec_security **)private;
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("query [%s] invalid", buf));
 		mux_printf(mux_id, "BH\n");
@@ -252,10 +251,10 @@ static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mod
 
 	if (strncmp(buf, "PW ", 3) == 0) {
 
-		(*gensec_state)->password_callback_private = talloc_strndup((*gensec_state), 
-									    (const char *)in.data, in.length);
+		*password = talloc_strndup(*private /* hopefully the right gensec context, useful to use for talloc */,
+					   (const char *)in.data, in.length);
 		
-		if ((*gensec_state)->password_callback_private == NULL) {
+		if (*password == NULL) {
 			DEBUG(1, ("Out of memory\n"));
 			mux_printf(mux_id, "BH\n");
 			data_blob_free(&in);
@@ -271,33 +270,27 @@ static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mod
 	data_blob_free(&in);
 }
 
-/* 
- * Callback for gensec, to ask the calling application for a password.  Uses the above function
- * for the stdio part of this.
+/** 
+ * Callback for password credentails.  This is not async, and when
+ * GENSEC and the credentails code is made async, it will look rather
+ * different.
  */
 
-static NTSTATUS get_password(struct gensec_security *gensec_security, 
-			     TALLOC_CTX *mem_ctx, 
-			     char **password) 
+static const char *get_password(struct cli_credentials *credentials) 
 {
-	*password = NULL;
+	char *password = NULL;
 	
 	/* Ask for a password */
-	mux_printf((unsigned int)gensec_security->password_callback_private, "PW\n");
-	gensec_security->password_callback_private = NULL;
+	mux_printf((unsigned int)credentials->priv_data, "PW\n");
+	credentials->priv_data = NULL;
 
-	manage_squid_request(NUM_HELPER_MODES /* bogus */, manage_gensec_get_pw_request);
-	*password = (char *)gensec_security->password_callback_private;
-	if (*password) {
-		return NT_STATUS_OK;
-	} else {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	manage_squid_request(NUM_HELPER_MODES /* bogus */, manage_gensec_get_pw_request, (void **)&password);
+	return password;
 }
 
 static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode, 
 				  char *buf, int length, void **private,
-				  unsigned int mux_id) 
+				  unsigned int mux_id, void **private2) 
 {
 	DATA_BLOB in;
 	DATA_BLOB out = data_blob(NULL, 0);
@@ -307,6 +300,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	NTSTATUS nt_status;
 	BOOL first = False;
 	const char *reply_code;
+	struct cli_credentials *creds;
 	
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("query [%s] invalid", buf));
@@ -351,19 +345,25 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			if (!NT_STATUS_IS_OK(gensec_client_start(NULL, gensec_state))) {
 				exit(1);
 			}
-			gensec_set_username(*gensec_state, opt_username);
-			gensec_set_domain(*gensec_state, opt_domain);		
-			if (opt_password) {
-				if (!NT_STATUS_IS_OK(gensec_set_password(*gensec_state, opt_password))) {
-					DEBUG(1, ("Out of memory\n"));
-					mux_printf(mux_id, "BH\n");
-					data_blob_free(&in);
-					return;
-				}
-			} else {
-				gensec_set_password_callback(*gensec_state, get_password, (void*)mux_id);
+
+			creds = cli_credentials_init(*gensec_state);
+			cli_credentials_set_conf(creds);
+			if (opt_username) {
+				cli_credentials_set_username(creds, opt_username, CRED_SPECIFIED);
+			} 
+			if (opt_domain) {
+				cli_credentials_set_domain(creds, opt_domain, CRED_SPECIFIED);
 			}
-			
+			if (opt_password) {
+				cli_credentials_set_password(creds, opt_password, CRED_SPECIFIED);
+			} else {
+				creds->password_obtained = CRED_CALLBACK;
+				creds->password_cb = get_password;
+				creds->priv_data = (void*)mux_id;
+			}
+
+			gensec_set_credentials(*gensec_state, creds);
+
 			break;
 		case GSS_SPNEGO_SERVER:
 		case SQUID_2_5_NTLMSSP:
@@ -395,7 +395,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		}
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(1, ("SPNEGO login failed to initialise: %s\n", nt_errstr(nt_status)));
+			DEBUG(1, ("GENSEC mech failed to start: %s\n", nt_errstr(nt_status)));
 			mux_printf(mux_id, "BH\n");
 			return;
 		}
@@ -403,16 +403,11 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	
 	if (strncmp(buf, "PW ", 3) == 0) {
 
-		if (!NT_STATUS_IS_OK(gensec_set_password(*gensec_state, 
-							 talloc_strndup((*gensec_state), 
-									(const char *)in.data, 
-									in.length)))) {
-			DEBUG(1, ("gensec_set_password failed: %s\n", nt_errstr(nt_status)));
-			mux_printf(mux_id, "BH %s\n", nt_errstr(nt_status));
-			data_blob_free(&in);
-			return;
-		}
-
+		cli_credentials_set_password((*gensec_state)->credentials, 
+					     talloc_strndup((*gensec_state), 
+							    (const char *)in.data, 
+							    in.length),
+					     CRED_SPECIFIED);
 		mux_printf(mux_id, "OK\n");
 		data_blob_free(&in);
 		return;
@@ -528,7 +523,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mode, 
 					 char *buf, int length, void **private,
-					 unsigned int mux_id) 
+					 unsigned int mux_id, void **private2) 
 {
 	char *request, *parameter;	
 	static DATA_BLOB challenge;
@@ -723,7 +718,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 }
 
 static void manage_squid_request(enum stdio_helper_mode helper_mode, 
-				 stdio_helper_function fn) 
+				 stdio_helper_function fn, void **private2) 
 {
 	char buf[SQUID_BUFFER_SIZE+1];
 	unsigned int mux_id;
@@ -785,7 +780,12 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 			mux_private->private_pointers = NULL;
 		}
 		
-		c=memchr(buf,' ',sizeof(buf)-1);
+		c=strchr(buf,' ');
+		if (!c) {
+			DEBUG(0, ("Invalid Request - no data after multiplex id\n"));
+			x_fprintf(x_stdout, "ERR\n");
+			return;
+		}
 		c++;
 		if (mux_id >= mux_private->max_mux) {
 			unsigned int prev_max = mux_private->max_mux;
@@ -804,7 +804,7 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 		private = &normal_private;
 	}
 	
-	fn(helper_mode, c, length, private, mux_id);
+	fn(helper_mode, c, length, private, mux_id, private2);
 }
 
 static void squid_stream(enum stdio_helper_mode stdio_mode, 
@@ -813,7 +813,7 @@ static void squid_stream(enum stdio_helper_mode stdio_mode,
 	x_setbuf(x_stdout, NULL);
 	x_setbuf(x_stderr, NULL);
 	while(1) {
-		manage_squid_request(stdio_mode, fn);
+		manage_squid_request(stdio_mode, fn, NULL);
 	}
 }
 

@@ -34,9 +34,13 @@ static BOOL try_failed_login(struct smbcli_state *cli)
 	session = smbcli_session_init(cli->transport, cli, False);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	setup.in.password = "INVALID-PASSWORD";
-	setup.in.user = "INVALID-USERNAME";
-	setup.in.domain = "INVALID-DOMAIN";
+	setup.in.workgroup = lp_workgroup();
+
+	setup.in.credentials = cli_credentials_init(NULL);
+	cli_credentials_set_conf(setup.in.credentials);
+	cli_credentials_set_domain(setup.in.credentials, "INVALID-DOMAIN", CRED_SPECIFIED);
+	cli_credentials_set_username(setup.in.credentials, "INVALID-USERNAME", CRED_SPECIFIED);
+	cli_credentials_set_password(setup.in.credentials, "INVALID-PASSWORD", CRED_SPECIFIED);
 
 	status = smb_composite_sesssetup(session, &setup);
 	talloc_free(session);

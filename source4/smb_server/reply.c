@@ -2106,9 +2106,9 @@ static void reply_sesssetup_spnego(struct smbsrv_request *req)
 	}
 	p += blob_len;
 	
-	p += req_pull_string(req, &sess.spnego.in.os,     p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &sess.spnego.in.lanman, p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &sess.spnego.in.domain, p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &sess.spnego.in.os,        p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &sess.spnego.in.lanman,    p, -1, STR_TERMINATE);
+	p += req_pull_string(req, &sess.spnego.in.workgroup, p, -1, STR_TERMINATE);
 
 	/* call the generic handler */
 	status = sesssetup_backend(req, &sess);
@@ -2134,9 +2134,9 @@ static void reply_sesssetup_spnego(struct smbsrv_request *req)
 	SSVAL(req->out.hdr, HDR_UID, sess.spnego.out.vuid);
 
 	memcpy(req->out.data, sess.spnego.out.secblob.data, sess.spnego.out.secblob.length);
-	req_push_str(req, NULL, sess.spnego.out.os, -1, STR_TERMINATE);
-	req_push_str(req, NULL, sess.spnego.out.lanman, -1, STR_TERMINATE);
-	req_push_str(req, NULL, sess.spnego.out.domain, -1, STR_TERMINATE);
+	req_push_str(req, NULL, sess.spnego.out.os,        -1, STR_TERMINATE);
+	req_push_str(req, NULL, sess.spnego.out.lanman,    -1, STR_TERMINATE);
+	req_push_str(req, NULL, sess.spnego.out.workgroup, -1, STR_TERMINATE);
 
 	chain_reply(req);
 }
