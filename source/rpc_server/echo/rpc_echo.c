@@ -105,6 +105,11 @@ static NTSTATUS echo_TestCall2(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	return NT_STATUS_OK;
 }
 
+static long echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSleep *r)
+{
+	sleep(r->in.seconds);
+	return r->in.seconds;
+}
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_echo_s.c"
