@@ -1097,8 +1097,6 @@ size_t strlen_m(const char *s)
 **/
 size_t strlen_m_term(const char *s)
 {
-	size_t count = 0;
-
 	if (!s) {
 		return 0;
 	}
