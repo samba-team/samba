@@ -290,7 +290,7 @@ hdb_ndbm_create(krb5_context context, HDB **db,
     (*db)->close = NDBM_close;
     (*db)->fetch = _hdb_fetch;
     (*db)->store = _hdb_store;
-    (*db)->delete = _hdb_delete;
+    (*db)->remove = _hdb_remove;
     (*db)->firstkey = NDBM_firstkey;
     (*db)->nextkey= NDBM_nextkey;
     (*db)->lock = NDBM_lock;

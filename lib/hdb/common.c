@@ -138,7 +138,7 @@ _hdb_store(krb5_context context, HDB *db, int replace, hdb_entry *entry)
 }
 
 krb5_error_code
-_hdb_delete(krb5_context context, HDB *db, hdb_entry *entry)
+_hdb_remove(krb5_context context, HDB *db, hdb_entry *entry)
 {
     krb5_data key;
     int code;

@@ -239,7 +239,7 @@ hdb_db_create(krb5_context context, HDB **db,
     (*db)->close = DB_close;
     (*db)->fetch = _hdb_fetch;
     (*db)->store = _hdb_store;
-    (*db)->delete = _hdb_delete;
+    (*db)->remove = _hdb_remove;
     (*db)->firstkey = DB_firstkey;
     (*db)->nextkey= DB_nextkey;
     (*db)->lock = DB_lock;

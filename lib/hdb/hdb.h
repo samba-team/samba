@@ -58,7 +58,7 @@ typedef struct HDB{
     krb5_error_code (*close)(krb5_context, struct HDB*);
     krb5_error_code (*fetch)(krb5_context, struct HDB*, hdb_entry*);
     krb5_error_code (*store)(krb5_context, struct HDB*, int, hdb_entry*);
-    krb5_error_code (*delete)(krb5_context, struct HDB*, hdb_entry*);
+    krb5_error_code (*remove)(krb5_context, struct HDB*, hdb_entry*);
     krb5_error_code (*firstkey)(krb5_context, struct HDB*, hdb_entry*);
     krb5_error_code (*nextkey)(krb5_context, struct HDB*, hdb_entry*);
     krb5_error_code (*lock)(krb5_context, struct HDB*, int operation);
