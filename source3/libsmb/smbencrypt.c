@@ -53,56 +53,6 @@ void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24)
 #endif
 }
 
-/* Routines for Windows NT MD4 Hash functions. */
-static int _my_wcslen(int16 *str)
-{
-	int len = 0;
-	while(*str++ != 0)
-		len++;
-	return len;
-}
-
-/*
- * Convert a string into an NT UNICODE string.
- * Note that regardless of processor type 
- * this must be in intel (little-endian)
- * format.
- */
- 
-static int _my_mbstowcs(int16 *dst, uchar *src, int len)
-{
-	int i;
-	int16 val;
- 
-	for(i = 0; i < len; i++) {
-		val = *src;
-		SSVAL(dst,0,val);
-		dst++;
-		src++;
-		if(val == 0)
-			break;
-	}
-	return i;
-}
-
-static int _my_mbstowcsupper(int16 * dst, const uchar * src, int len)
-{
-	int i;
-	int16 val;
-
-	for (i = 0; i < len; i++)
-	{
-		val = toupper(*src);
-		SSVAL(dst, 0, val);
-		dst++;
-		src++;
-		if (val == 0)
-			break;
-	}
-	return i;
-}
-
-
 /* 
  * Creates the MD4 Hash of the users password in NT UNICODE.
  */
@@ -110,17 +60,16 @@ static int _my_mbstowcsupper(int16 * dst, const uchar * src, int len)
 void E_md4hash(uchar *passwd, uchar *p16)
 {
 	int len;
-	int16 wpwd[129];
+	smb_ucs2_t wpwd[129];
 	
 	/* Password cannot be longer than 128 characters */
 	len = strlen((char *)passwd);
 	if(len > 128)
 		len = 128;
-	/* Password must be converted to NT unicode */
-	_my_mbstowcs(wpwd, passwd, len);
-	wpwd[len] = 0; /* Ensure string is null terminated */
+	/* Password must be converted to NT unicode - null terminated. */
+	push_ucs2(NULL, wpwd, passwd, 256, STR_UNICODE|STR_NOALIGN|STR_TERMINATE);
 	/* Calculate length in bytes */
-	len = _my_wcslen(wpwd) * sizeof(int16);
+	len = strlen_w(wpwd) * sizeof(int16);
 
 	mdfour(p16, (unsigned char *)wpwd, len);
 }
@@ -172,8 +121,8 @@ void ntv2_owf_gen(const uchar owf[16],
 	int user_l = strlen(user_n);
 	int domain_l = strlen(domain_n);
 
-	_my_mbstowcsupper((int16 *) user_u, user_n, user_l * 2);
-	_my_mbstowcsupper((int16 *) dom_u, domain_n, domain_l * 2);
+	push_ucs2(NULL, user_u, user_n, (user_l+1)*2, STR_UNICODE|STR_NOALIGN|STR_TERMINATE|STR_UPPER);
+	push_ucs2(NULL, dom_u, domain_n, (domain_l+1)*2, STR_UNICODE|STR_NOALIGN|STR_TERMINATE|STR_UPPER);
 
 	hmac_md5_init_limK_to_64(owf, 16, &ctx);
 	hmac_md5_update(user_u, user_l * 2, &ctx);
