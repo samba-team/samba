@@ -1734,8 +1734,9 @@ uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
 BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, struct current_user *user, uint32 *perr);
 uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model);
 uint32 del_a_printer(char *sharename);
-BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
+void add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM **param);
 BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
+void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr);
 NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename);
 NT_DEVICEMODE *dup_nt_devicemode(NT_DEVICEMODE *nt_devicemode);
 void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr);

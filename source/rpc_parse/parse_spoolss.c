@@ -5338,7 +5338,7 @@ BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
 		*param=(NT_PRINTER_PARAM *)malloc(sizeof(NT_PRINTER_PARAM));
 		if(*param == NULL)
 			return False;
-		ZERO_STRUCTP(*param);
+		memset((char *)*param, '\0', sizeof(NT_PRINTER_PARAM));
 		DEBUGADD(6,("Allocated a new PARAM struct\n"));
 	}
 	unistr2_to_ascii((*param)->value, value, sizeof((*param)->value)-1);

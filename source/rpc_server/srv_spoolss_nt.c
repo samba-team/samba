@@ -5198,13 +5198,13 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 
 	unlink_specific_param_if_exist(printer->info_2, param);
 	
-	if (!add_a_specific_param(printer->info_2, param))
-		status = ERROR_INVALID_PARAMETER;
-	else
-		status = mod_a_printer(*printer, 2);
+	add_a_specific_param(printer->info_2, &param);
+	status = mod_a_printer(*printer, 2);
 
  done:
 	free_a_printer(&printer, 2);
+	if (param)
+		free_nt_printer_param(&param);
 	safe_free(old_param.data);
 
 	return status;
