@@ -7,9 +7,8 @@ test -d "$1" || { echo not a dir in \$1 ; exit 1 ; }
 cd $1
 
 if test "$DATEDVERSION"; then
-	date=`date -u +%Y%m%d`
 	ed -s configure.in << END
-/AC_INIT/s/AC_INIT(\([^,]*\), [^,]*, \(.*\))/AC_INIT(\1, $date, \2)/
+/AC_INIT/s/AC_INIT(\([^,]*\), [^,]*, \(.*\))/AC_INIT(\1, $DATEDVERSION, \2)/
 w
 q
 END
