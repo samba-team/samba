@@ -796,6 +796,15 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 			printf("Second delete expected INVALID_HANDLE - %s\n", nt_errstr(status));
 			ret = False;
 		}
+
+		printf("Testing OpenSecret of just-deleted secret\n");
+		
+		status = dcerpc_lsa_OpenSecret(p, mem_ctx, &r2);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			printf("OpenSecret expected OBJECT_NAME_NOT_FOUND - %s\n", nt_errstr(status));
+			ret = False;
+		}
+		
 	}
 
 	return ret;
