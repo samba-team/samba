@@ -192,31 +192,48 @@ uint32 _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
 	pstring shutdown_script;
 	UNISTR2 unimsg = q_u->uni_msg;
 	pstring message;
+	pstring chkmsg;
 	fstring timeout;
 	fstring r;
 	fstring f;
 	
+	/* message */
 	rpcstr_pull (message, unimsg.buffer, sizeof(message), unimsg.uni_str_len*2,0);
+		/* security check */
+	alpha_strcpy (chkmsg, message, NULL, sizeof(message);
+	/* timeout */
 	snprintf(timeout, sizeof(timeout), "%d", q_u->timeout);
-	if ((q_u->flags) & 0x100) /* reboot */
-		snprintf(r, sizeof(r), SHUTDOWN_R_STRING);
-	if ((q_u->flags) & 0x001) /* force */
-		snprintf(f, sizeof(f), SHUTDOWN_F_STRING);
+	/* reboot */
+	snprintf(r, sizeof(r), (q_u->flags & 0x100)?SHUTDOWN_R_STRING:"");
+	/* force */
+	snprintf(f, sizeof(f), (q_u->flags & 0x001)?SHUTDOWN_F_STRING:"");
 
 	pstrcpy(shutdown_script, lp_shutdown_script());
 
-	if (!*shutdown_script) {
-		pstrcpy(shutdown_script, lp_shutdown_script());
-	}
-
 	if(*shutdown_script) {
 		int shutdown_ret;
-		all_string_sub(shutdown_script, "%m", message, sizeof(shutdown_script));
+		all_string_sub(shutdown_script, "%m", chkmsg, sizeof(shutdown_script));
 		all_string_sub(shutdown_script, "%t", timeout, sizeof(shutdown_script));
 		all_string_sub(shutdown_script, "%r", r, sizeof(shutdown_script));
 		all_string_sub(shutdown_script, "%f", f, sizeof(shutdown_script));
 		shutdown_ret = smbrun(shutdown_script,NULL);
 		DEBUG(3,("_reg_shutdown: Running the command `%s' gave %d\n",shutdown_script,shutdown_ret));
+	}
+
+	return status;
+}
+
+uint32 _reg_abort_shutdown(pipes_struct *p, REG_Q_ABORT_SHUTDOWN *q_u, REG_R_ABORT_SHUTDOWN *r_u)
+{
+	uint32 status = NT_STATUS_NOPROBLEMO;
+	pstring abort_shutdown_script;
+
+	pstrcpy(abort_shutdown_script, lp_abort_shutdown_script());
+
+	if(*abort_shutdown_script) {
+		int abort_shutdown_ret;
+		abort_shutdown_ret = smbrun(abort_shutdown_script,NULL);
+		DEBUG(3,("_reg_abort_shutdown: Running the command `%s' gave %d\n",abort_shutdown_script,abort_shutdown_ret));
 	}
 
 	return status;
