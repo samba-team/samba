@@ -504,7 +504,7 @@ reply:
 	return ldapsrv_queue_reply(call, compare_r);
 }
 
-NTSTATUS sldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyDNRequest *r)
+static NTSTATUS sldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyDNRequest *r)
 {
 	void *local_ctx;
 	struct ldap_dn *olddn, *newrdn, *newsuperior;
