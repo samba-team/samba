@@ -299,6 +299,7 @@ BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
 char *smbd_mktemp(char *template);
 void *memdup(void *p, size_t size);
 char *myhostname(void);
+char *lock_path(char *name);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -618,17 +619,18 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 BOOL locking_init(int read_only);
 BOOL locking_end(void);
 BOOL lock_share_entry(connection_struct *conn,
-		      SMB_DEV_T dev, SMB_INO_T inode, int *ptok);
+		      SMB_DEV_T dev, SMB_INO_T inode);
 BOOL unlock_share_entry(connection_struct *conn,
-			SMB_DEV_T dev, SMB_INO_T inode, int token);
+			SMB_DEV_T dev, SMB_INO_T inode);
 int get_share_modes(connection_struct *conn, 
-		    int token, SMB_DEV_T dev, SMB_INO_T inode, 
+		    SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **shares);
-void del_share_mode(int token, files_struct *fsp);
-BOOL set_share_mode(int token, files_struct *fsp, uint16 port, uint16 op_type);
-BOOL remove_share_oplock(int token, files_struct *fsp);
-BOOL downgrade_share_oplock(int token, files_struct *fsp);
-BOOL modify_share_mode(int token, files_struct *fsp, int new_mode, uint16 new_oplock);
+void del_share_mode(files_struct *fsp);
+BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type);
+BOOL remove_share_oplock(files_struct *fsp);
+BOOL downgrade_share_oplock(files_struct *fsp);
+BOOL modify_share_mode(files_struct *fsp, int new_mode, uint16 new_oplock);
+int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf);
 int share_mode_forall(void (*fn)(share_mode_entry *, char *));
 void share_status(FILE *f);
 
@@ -2375,7 +2377,6 @@ void conn_free(connection_struct *conn);
 
 /*The following definitions come from  smbd/connection.c  */
 
-TDB_CONTEXT *open_db(char *name);
 BOOL yield_connection(connection_struct *conn,char *name,int max_connections);
 int delete_dead(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf);
 BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOOL Clear);
@@ -2809,6 +2810,8 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int flags, mode_t mode);
 int tdb_close(TDB_CONTEXT *tdb);
 int tdb_writelock(TDB_CONTEXT *tdb);
 int tdb_writeunlock(TDB_CONTEXT *tdb);
+int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 
 /*The following definitions come from  utils/nbio.c  */
 

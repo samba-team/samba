@@ -27,27 +27,6 @@ extern fstring remote_machine;
 extern int DEBUGLEVEL;
 
 /****************************************************************************
-open the connections database
-****************************************************************************/
-TDB_CONTEXT *open_db(char *name)
-{
-	pstring fname;
-
-	pstrcpy(fname,lp_lockdir());
-	trim_string(fname,"","/");
-	
-	if (!directory_exist(fname,NULL)) {
-		mkdir(fname,0755);
-	}
-	
-	pstrcat(fname,"/connections.tdb");
-	
-	return tdb_open(fname, 0, O_RDWR | O_CREAT, 0644);
-}
-
-
-
-/****************************************************************************
 delete a connection record
 ****************************************************************************/
 BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
@@ -56,7 +35,8 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	TDB_DATA kbuf;
 	TDB_CONTEXT *tdb;
 
-	if (!(tdb = open_db(name))) return False;
+	tdb = tdb_open(lock_path("connections.tdb"), 0, O_RDWR | O_CREAT, 0644);
+	if (!tdb) return False;
 
 	DEBUG(3,("Yielding connection to %s\n",name));
 
@@ -100,7 +80,8 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	if (max_connections <= 0)
 		return(True);
 	
-	if (!(tdb = open_db(name))) return False;
+	tdb = tdb_open(lock_path("connections.tdb"), 0, O_RDWR | O_CREAT, 0644);
+	if (!tdb) return False;
 
 	DEBUG(5,("claiming %s %d\n",name,max_connections));
 

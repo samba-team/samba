@@ -135,8 +135,7 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_samr.o 
 
 
-LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
-              locking/shmem.o locking/shmem_sysv.o
+LOCKING_OBJ = locking/locking.o 
 
 PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o \
              passdb/pass_check.o passdb/ldap.o passdb/nispass.o passdb/smbpasschange.o

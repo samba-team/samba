@@ -75,6 +75,26 @@ static char *memdup(char *d, int size)
 }
 #endif
 
+
+/* a byte range locking function - return 0 on success
+   this functions locks/unlocks 1 byte at the specified offset */
+static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset, int set)
+{
+#if !NOLOCK
+	struct flock fl;
+
+	fl.l_type = set?F_WRLCK:F_UNLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = offset;
+	fl.l_len = 1;
+	fl.l_pid = 0;
+
+	if (fcntl(tdb->fd, F_SETLKW, &fl) != 0) return -1;
+#endif
+	return 0;
+}
+
+
 /* the hash algorithm - turn a key into an integer
    This is based on the hash agorithm from gdbm */
 static unsigned tdb_hash(TDB_DATA *key)
@@ -991,42 +1011,25 @@ int tdb_close(TDB_CONTEXT *tdb)
 /* lock the database. If we already have it locked then don't do anything */
 int tdb_writelock(TDB_CONTEXT *tdb)
 {
-#if !NOLOCK
-	struct flock fl;
-
-	if (tdb->write_locked) return 0;
-
-	fl.l_type = F_WRLCK;
-	fl.l_whence = SEEK_SET;
-	fl.l_start = 0;
-	fl.l_len = 1;
-	fl.l_pid = 0;
-
-	if (fcntl(tdb->fd, F_SETLKW, &fl) != 0) return -1;
-
-	tdb->write_locked = 1;
-#endif
-	return 0;
+	return tdb_brlock(tdb, 0, 1);
 }
 
-/* unlock the database. If we don't have it locked then return -1 */
+/* unlock the database. */
 int tdb_writeunlock(TDB_CONTEXT *tdb)
 {
-#if !NOLOCK
-	struct flock fl;
-
-	if (!tdb->write_locked) return -1;
-
-	fl.l_type = F_UNLCK;
-	fl.l_whence = SEEK_SET;
-	fl.l_start = 0;
-	fl.l_len = 1;
-	fl.l_pid = 0;
-
-	if (fcntl(tdb->fd, F_SETLK, &fl) != 0) return -1;
-
-	tdb->write_locked = 0;
-#endif
-	return 0;
+	return tdb_brlock(tdb, 0, 0);
 }
 
+/* lock one hash chain. This is meant to be used to reduce locking
+   contention - it cannot guarantee how many records will be locked */
+int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key)
+{
+	return tdb_brlock(tdb, tdb_hash_top(tdb, tdb_hash(&key)), 1);
+}
+
+
+/* unlock one hash chain */
+int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key)
+{
+	return tdb_brlock(tdb, tdb_hash_top(tdb, tdb_hash(&key)), 0);
+}

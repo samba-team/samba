@@ -128,7 +128,6 @@ static int traverse_fn3(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 /* show the current server status */
 void status_page(void)
 {
-	pstring fname;
 	char *v;
 	int autorefresh=0;
 	int refresh_interval=30;
@@ -173,12 +172,7 @@ void status_page(void)
 		refresh_interval = atoi(v);
 	}
 
-	pstrcpy(fname,lp_lockdir());
-	standard_sub_basic(fname);
-	trim_string(fname,"","/");
-	pstrcat(fname,"/connections.tdb");
-
-	tdb = tdb_open(fname, 0, O_RDONLY, 0);
+	tdb = tdb_open(lock_path("connections.tdb"), 0, O_RDONLY, 0);
 	if (tdb) tdb_traverse(tdb, traverse_fn1);
 
 	printf("<H2>Server Status</H2>\n");

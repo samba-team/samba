@@ -165,7 +165,6 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 	static pid_t last_pid;
 	struct session_record *ptr;
 	struct connections_data crec;
-	static int doneone;
 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 
@@ -176,13 +175,6 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 	}
 
 	if (brief) {
-		if (!doneone) {
-			printf("\nSamba version %s\n",VERSION);
-			printf("PID     Username  Machine                       Time logged in\n");
-			printf("-------------------------------------------------------------------\n");
-			doneone = 1;
-		}
-
 		ptr=srecs;
 		while (ptr!=NULL) {
 			if ((ptr->pid==crec.pid)&&(strncmp(ptr->machine,crec.machine,30)==0)) {
@@ -203,13 +195,6 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 			srecs=ptr;
 		}
 	} else {
-		if (!doneone) {
-			printf("\nSamba version %s\n",VERSION);
-			printf("Service      uid      gid      pid     machine\n");
-			printf("----------------------------------------------\n");
-			doneone = 1;
-		}
-
 		Ucrit_addPid(crec.pid);  
 		if (processes_only) {
 			if (last_pid != crec.pid)
@@ -292,19 +277,13 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 	
 	if (verbose) {
 		printf("using configfile = %s\n", servicesf);
-		printf("lockdir = %s\n", *lp_lockdir() ? lp_lockdir() : "NULL");
 	}
 	
 	if (profile_only) {
 		return profile_dump();
 	}
 	
-	pstrcpy(fname,lp_lockdir());
-	standard_sub_basic(fname);
-	trim_string(fname,"","/");
-	pstrcat(fname,"/connections.tdb");
-
-	tdb = tdb_open(fname, 0, O_RDONLY, 0);
+	tdb = tdb_open(lock_path("connections.tdb"), 0, O_RDONLY, 0);
 	if (!tdb) {
 		printf("Couldn't open status file %s\n",fname);
 		if (!lp_status(-1))
@@ -316,6 +295,14 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 
 	if (locks_only) goto locks;
 
+	printf("\nSamba version %s\n",VERSION);
+	if (brief) {
+		printf("PID     Username  Machine                       Time logged in\n");
+		printf("-------------------------------------------------------------------\n");
+	} else {
+		printf("Service      uid      gid      pid     machine\n");
+		printf("----------------------------------------------\n");
+	}
 	tdb_traverse(tdb, traverse_fn1);
 
  locks:
@@ -346,8 +333,6 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 			printf("No locked files\n");
 		
 		printf("\n");
-		
-		share_status(stdout);
 		
 		locking_end();
 	}

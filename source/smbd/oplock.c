@@ -406,13 +406,12 @@ static void downgrade_file_oplock(files_struct *fsp)
 
 BOOL remove_oplock(files_struct *fsp)
 {
-  int token;
   SMB_DEV_T dev = fsp->fd_ptr->dev;
   SMB_INO_T inode = fsp->fd_ptr->inode;
   BOOL ret = True;
 
   /* Remove the oplock flag from the sharemode. */
-  if (lock_share_entry(fsp->conn, dev, inode, &token) == False) {
+  if (lock_share_entry(fsp->conn, dev, inode) == False) {
     DEBUG(0,("remove_oplock: failed to lock share entry for file %s\n",
           fsp->fsp_name ));
     ret = False;
@@ -424,7 +423,7 @@ BOOL remove_oplock(files_struct *fsp)
      * Deal with a reply when a break-to-none was sent.
      */
 
-    if(remove_share_oplock(token, fsp)==False) {
+    if(remove_share_oplock(fsp)==False) {
       DEBUG(0,("remove_oplock: failed to remove share oplock for file %s fnum %d, \
 dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
       ret = False;
@@ -438,7 +437,7 @@ dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)
      * Deal with a reply when a break-to-level II was sent.
      */
 
-    if(downgrade_share_oplock(token, fsp)==False) {
+    if(downgrade_share_oplock(fsp)==False) {
       DEBUG(0,("remove_oplock: failed to downgrade share oplock for file %s fnum %d, \
 dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
       ret = False;
@@ -447,7 +446,7 @@ dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)
     downgrade_file_oplock(fsp);
   }
 
-  unlock_share_entry(fsp->conn, dev, inode, token);
+  unlock_share_entry(fsp->conn, dev, inode);
   return ret;
 }
 
@@ -792,18 +791,18 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
    * the existing lock on the shared memory area.
    */
 
-  if(!local_request && lock_share_entry(fsp->conn, dev, inode, &token) == False) {
+  if(!local_request && lock_share_entry(fsp->conn, dev, inode) == False) {
       DEBUG(0,("oplock_break_level2: unable to lock share entry for file %s\n", fsp->fsp_name ));
   } else {
     got_lock = True;
   }
 
-  if(remove_share_oplock(token, fsp)==False) {
+  if(remove_share_oplock(fsp)==False) {
     DEBUG(0,("oplock_break_level2: unable to remove level II oplock for file %s\n", fsp->fsp_name ));
   }
 
   if (!local_request && got_lock)
-    unlock_share_entry(fsp->conn, dev, inode, token);
+    unlock_share_entry(fsp->conn, dev, inode);
 
   fsp->oplock_type = NO_OPLOCK;
   level_II_oplocks_open--;
