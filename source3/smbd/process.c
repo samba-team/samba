@@ -97,7 +97,7 @@ static BOOL push_message(ubi_slList *list_head, char *buf, int msg_len)
 	ubi_slAddTail( list_head, msg);
 
 	/* Push the MID of this packet on the signing queue. */
-	srv_defer_sign_response(SVAL(buf,smb_mid), True);
+	srv_defer_sign_response(SVAL(buf,smb_mid));
 
 	return True;
 }
