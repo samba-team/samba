@@ -36,6 +36,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_private.h"
 
 static void usage(void)
 {
@@ -68,18 +69,7 @@ static void usage(void)
 			break;
 
 		case 'o':
-			ldbopts++;
-			if (options == NULL) {
-				options = (const char **)malloc(sizeof(char *) * (ldbopts + 1));
-			} else {
-				options = (const char **)realloc(options, sizeof(char *) * (ldbopts + 1));
-				if (options == NULL) {
-					fprintf(stderr, "Out of memory!\n");
-					exit(-1);
-				}
-			}
-			options[ldbopts - 1] = optarg;
-			options[ldbopts] = NULL;
+			options = ldb_options_parse(options, &ldbopts, optarg);
 			break;
 
 		case 'h':

@@ -127,4 +127,6 @@ struct ldb_context *lldb_connect(const char *url,
 				 const char *options[]);
 struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *options[]);
 
+const char **ldb_options_parse(const char **options, int *ldbopts, const char *arg);
+
 #endif
