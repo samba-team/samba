@@ -130,7 +130,7 @@ idl_full: build/pidl/idl.pm
 	CPP=\"\@CPP\@\" PERL=\"\$(PERL)\" script/build_idl.sh FULL
 
 idl: build/pidl/idl.pm
-	\@CPP=\"\@CPP\@\" script/build_idl.sh PARTIAL
+	\@CPP=\"\@CPP\@\" PERL=\"\$(PERL)\" script/build_idl.sh PARTIAL
 
 eparser_idl: build/pidl/idl.pm
 	CPP=\"\@CPP\@\" PERL=\"\$(PERL)\" EPARSERPREFIX=\"\$(eparserdir)\" script/build_idl.sh EPARSER 
