@@ -2461,6 +2461,7 @@ static struct {
 	{"RPC-MULTIBIND", torture_multi_bind, 0},
 	{"RPC-DRSUAPI", torture_rpc_drsuapi, 0},
 	{"RPC-LOGIN", torture_rpc_login, 0},
+	{"RPC-ROT", torture_rpc_rot, 0},
 
 	/* Distributed COM testers */
 	{"DCOM-SIMPLE", torture_dcom_simple, 0},
