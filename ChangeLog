@@ -1,5 +1,8 @@
 Tue Apr 20 12:42:08 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* kpasswd/kpasswdd.c: don't try to load library by default; get
+ 	library and function name from krb5.conf
+
 	* kpasswd/sample_passwd_check.c: sample password checking
  	functions
 
