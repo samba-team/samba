@@ -287,7 +287,8 @@ char* lsa_io_q_auth_2(BOOL io, LSA_Q_AUTH_2 *q_a, char *q, char *base, int align
 	q = align_offset(q, base, align);
     
 	q = smb_io_log_info (io, &(q_a->clnt_id), q, base, align, depth); /* client identification info */
-	q = smb_io_chal     (io, &(q_a->clnt_chal), q, base, align, depth); /* client-calculated credentials */
+	/* client challenge is _not_ aligned */
+	q = smb_io_chal     (io, &(q_a->clnt_chal), q, base, 0, depth); /* client-calculated credentials */
 	q = smb_io_neg_flags(io, &(q_a->clnt_flgs), q, base, align, depth);
 
 	return q;
