@@ -441,26 +441,26 @@ static BOOL spool_io_user_level_1(char *desc, SPOOL_USER_1 *q_u, prs_struct *ps,
 
 	if (!prs_align(ps))
 		return False;
-	if (!prs_uint32("size", ps, depth, &(q_u->size)))
+	if (!prs_uint32("size", ps, depth, &q_u->size))
 		return False;
-	if (!prs_uint32("client_name_ptr", ps, depth, &(q_u->client_name_ptr)))
+	if (!prs_uint32("client_name_ptr", ps, depth, &q_u->client_name_ptr))
 		return False;
-	if (!prs_uint32("user_name_ptr", ps, depth, &(q_u->user_name_ptr)))
+	if (!prs_uint32("user_name_ptr", ps, depth, &q_u->user_name_ptr))
 		return False;
-	if (!prs_uint32("build", ps, depth, &(q_u->build)))
+	if (!prs_uint32("build", ps, depth, &q_u->build))
 		return False;
-	if (!prs_uint32("major", ps, depth, &(q_u->major)))
+	if (!prs_uint32("major", ps, depth, &q_u->major))
 		return False;
-	if (!prs_uint32("minor", ps, depth, &(q_u->minor)))
+	if (!prs_uint32("minor", ps, depth, &q_u->minor))
 		return False;
-	if (!prs_uint32("processor", ps, depth, &(q_u->processor)))
+	if (!prs_uint32("processor", ps, depth, &q_u->processor))
 		return False;
 
-	if (!smb_io_unistr2("", &(q_u->client_name), q_u->client_name_ptr, ps, depth))
+	if (!smb_io_unistr2("", &q_u->client_name, q_u->client_name_ptr, ps, depth))
 		return False;
 	if (!prs_align(ps))
 		return False;
-	if (!smb_io_unistr2("", &(q_u->user_name),   q_u->user_name_ptr,   ps, depth))
+	if (!smb_io_unistr2("", &q_u->user_name,   q_u->user_name_ptr,   ps, depth))
 		return False;
 
 	return True;
@@ -485,7 +485,7 @@ static BOOL spool_io_user_level(char *desc, SPOOL_USER_CTR *q_u, prs_struct *ps,
 	
 	switch (q_u->level) {	
 	case 1:
-		if (!spool_io_user_level_1("", &(q_u->user1), ps, depth))
+		if (!spool_io_user_level_1("", &q_u->user1, ps, depth))
 			return False;
 		break;
 	default:
@@ -670,13 +670,13 @@ static BOOL spoolss_io_printer_default(char *desc, PRINTER_DEFAULT *pd, prs_stru
 	if (!prs_uint32("datatype_ptr", ps, depth, &pd->datatype_ptr))
 		return False;
 
-	if (!smb_io_unistr2("datatype", &(pd->datatype), pd->datatype_ptr, ps,depth))
+	if (!smb_io_unistr2("datatype", &pd->datatype, pd->datatype_ptr, ps,depth))
 		return False;
 	
 	if (!prs_align(ps))
 		return False;
 
-	if (!spoolss_io_devmode_cont("", &(pd->devmode_cont), ps, depth))
+	if (!spoolss_io_devmode_cont("", &pd->devmode_cont, ps, depth))
 		return False;
 
 	if (!prs_uint32("access_required", ps, depth, &pd->access_required))
