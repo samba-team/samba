@@ -370,6 +370,8 @@ SMBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(LIBSURS)
 SRVSVCD_OBJ = $(MSRPCD_OBJ) $(SRVSVCD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(PROFILE_OBJ)  \
+           $(LOCKING_OBJ) \
+  	   $(UBIQXLIB) \
            $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ)
 
@@ -409,6 +411,8 @@ SPOOLSSD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
 
 NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
+           $(LOCKING_OBJ) \
+  	   $(UBIQXLIB) \
            $(SIDDB_OBJ) \
 		$(UNIXPASSDB_OBJ) $(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
 

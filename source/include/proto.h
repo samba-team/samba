@@ -420,12 +420,12 @@ void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 BOOL surs_sam_sid_to_unixid(const SURS_SID_ID *sid, SURS_POSIX_ID *id, BOOL create);
 BOOL surs_unixid_to_sam_sid(const SURS_POSIX_ID *id, SURS_SID_ID *sid, BOOL create);
 
-/*The following definitions come from  lib/sursalgmultidom.c  */
+/*The following definitions come from  lib/sursalgdomonly.c  */
 
-BOOL surs_multidomalg_sam_sid_to_unixid(const SURS_SID_ID * sid,
-					SURS_POSIX_ID * id, BOOL create);
-BOOL surs_multidomalg_unixid_to_sam_sid(const SURS_POSIX_ID * id,
-					SURS_SID_ID * sid, BOOL create);
+BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, POSIX_ID *id,
+				BOOL create);
+BOOL surs_algdomonly_unixid_to_sam_sid(POSIX_ID *id, DOM_SID *sid,
+				BOOL create);
 
 /*The following definitions come from  lib/sursalgnt5ldap.c  */
 
@@ -785,6 +785,8 @@ int create_pipe_socket(char *dir, int dir_perms, char *path, int path_perms);
 BOOL get_connection_status(struct connect_record **crec,
 				uint32 *connection_count);
 BOOL get_session_count(struct connect_record **srec,uint32 *session_count);
+void status_traverse_share_mode(share_mode_entry *e, char *fname);
+BOOL get_locks_count(int pid, uint32 *locks_count);
 
 /*The following definitions come from  lib/util_str.c  */
 

@@ -710,7 +710,10 @@ static void make_srv_sess_info_1(SRV_SESS_INFO_1 * ss1, uint32 *snum,
 	uint32 num_entries = 0;
 	struct connect_record *crec;
 	uint32 session_count;
-
+	uint32 lock_count;
+	time_t current_time;
+	time_t diff;
+	
 	if (!get_session_count(&crec, &session_count))
 	{
 		(*snum) = 0;
@@ -729,7 +732,8 @@ static void make_srv_sess_info_1(SRV_SESS_INFO_1 * ss1, uint32 *snum,
 	}
 
 	DEBUG(5, ("make_srv_sess_1_ss1\n"));
-
+	current_time = time(NULL);
+	
 	if (snum)
 	{
 		for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES;
@@ -738,12 +742,16 @@ static void make_srv_sess_info_1(SRV_SESS_INFO_1 * ss1, uint32 *snum,
 			DEBUG(0, ("sess1 machine: %s, uid : %u\n",
 				  crec[num_entries].machine,
 				  (uint32)crec[num_entries].uid));
+			if (!get_locks_count(crec[num_entries].pid, &lock_count)) {
+				lock_count = 0;
+			}
+		  	diff = current_time - crec[num_entries].start;
 			make_srv_sess_1_info(&(ss1->info_1[num_entries]),
 					     &(ss1->info_1_str[num_entries]),
 					     crec[num_entries].machine,
 					     uidtoname(crec[num_entries].uid),
-					     1, 10, 5, 0);
-/* 	What are these on the End ??? */
+					     lock_count, diff, diff, 0);
+/* 	what is "user flags" ?? */
 
 			/* move on to creating next session */
 			/* move on to creating next sess */
@@ -969,7 +977,8 @@ static void make_srv_conn_info_1(SRV_CONN_INFO_1 * ss1, uint32 *snum,
 
 	struct connect_record *crec;
 	uint32 connection_count;
-
+        uint32 lock_count;
+        
 	if (!get_connection_status(&crec, &connection_count))
 	{
 		(*snum) = 0;
@@ -995,9 +1004,12 @@ static void make_srv_conn_info_1(SRV_CONN_INFO_1 * ss1, uint32 *snum,
 		     (*snum)++)
 		{
 			diff = current_time - crec[num_entries].start;
+			if (!get_locks_count(crec[num_entries].pid, &lock_count)) {
+				lock_count = 0;
+			}
 			make_srv_conn_1_info(&(ss1->info_1[num_entries]),
 					     &(ss1->info_1_str[num_entries]),
-					     (*snum), 0, 0, 1, diff,
+					     (*snum), 0, lock_count, 1, diff,
 					     uidtoname(crec[num_entries].uid),
 					     crec[num_entries].name);
 
