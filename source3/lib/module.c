@@ -41,7 +41,7 @@ static NTSTATUS do_smb_load_module(const char *module_name, BOOL is_probe)
 	handle = sys_dlopen(module_name, RTLD_LAZY);
 
 	if(!handle) {
-		int level = is_probe ? 2 : 0;
+		int level = is_probe ? 3 : 0;
 		DEBUG(level, ("Error loading module '%s': %s\n", module_name, 
 			      sys_dlerror()));
 
