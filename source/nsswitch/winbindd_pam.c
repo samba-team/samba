@@ -54,6 +54,7 @@ static uint32 check_any(fstring name_user, fstring name_domain,
 	int count, i;
 	uint32 result;
 	BOOL try_local = True;
+	extern struct in_addr ipzero;
 
 	if (!get_dc_list(False, lp_workgroup(), &ip_list, &count)) {
 		DEBUG(0, ("could not find domain controller for "
