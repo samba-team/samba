@@ -847,7 +847,7 @@ void client_setfd(int fd)
 
 char *client_name(void)
 {
-	return get_peer_name(client_fd,False);
+	return get_socket_name(client_fd,False);
 }
 
 char *client_addr(void)
@@ -953,7 +953,7 @@ char *get_socket_name(int fd, BOOL force_lookup)
 
 	fstrcpy(addr_buf, p);
 
-	addr = *interpret_addr2_x(p);
+	/*FIXMEaddr = *interpret_addr2_x(p);*/
 	
 	/* Look up the remote host name. */
 	if ((hp = gethostbyaddr((char *)&addr.s_addr, sizeof(addr.s_addr), AF_INET)) == 0) {
@@ -1129,4 +1129,3 @@ BOOL socket_pending(int fd)
 
 	return False;
 }
-

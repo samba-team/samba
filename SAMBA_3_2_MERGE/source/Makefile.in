@@ -660,8 +660,10 @@ NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(DUMMYROOT_OBJ) $(SERVER_MUTEX_OBJ) \
 	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ)
 
-CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
-	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
+CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBCLI_OBJ) $(UBIQX_OBJ) \
+	  $(KRBCLIENT_OBJ) $(SECRETS_OBJ) $(LIBNMB_OBJ) \
+	  $(LIBRPC_OBJ) $(BASIC_OBJ) $(TDB_OBJ) $(NSSWITCH_OBJ) lib/messages.o \
+	  lib/util_uuid.o lib/dmallocmsg.o lib/tallocmsg.o
 
 MOUNT_OBJ = client/smbmount.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) 
