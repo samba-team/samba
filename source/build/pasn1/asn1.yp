@@ -15,15 +15,42 @@
 # grammer
 %%
 
-asn1:
+asn1: 
+	identifier asn1_definitions asn1_delimitter asn1_begin asn1_decls asn1_end
+		{{
+			"OBJECT"	=>	"ASN1_DEFINITION",
+			"IDENTIFIER"	=>	$_[1],
+			"DATA"		=>	$_[5]
+		}}
+;
+
+asn1_delimitter: 
+	delimitter
+;
+
+asn1_definitions:
+	'DEFINITIONS'
+;
+
+asn1_begin:
+	'BEGIN'
+;
+
+asn1_end:
+	'END'
+;
+
+asn1_decls:
 	asn1_def
 		{ [ $_[1] ] }
-	| asn1 asn1_def 
+	| asn1_decls asn1_def 
 		{ push(@{$_[1]}, $_[2]); $_[1] }
 ;
 
+
+
 asn1_def: 
-	asn1_target asn1_delim asn1_application asn1_type
+	asn1_target asn1_delimitter asn1_application asn1_type
 		{{ 
 		    "OBJECT"		=> "ASN1_DEF",
 		    "IDENTIFIER"	=> $_[1],
@@ -34,10 +61,6 @@ asn1_def:
 
 asn1_target:
 	identifier
-;
-
-asn1_delim: 
-	delimitter
 ;
 
 asn1_application:
@@ -55,7 +78,8 @@ asn1_type:
 	| asn1_object_identifier
 	| asn1_real
 	| asn1_enumerated
-	| asn1_sequence 
+	| asn1_sequence
+	| identifier
 ;
 
 asn1_boolean:
@@ -227,7 +251,11 @@ again:
 			$parser->YYData->{LINE}++;
 			goto again;
 		}
-		if (s/^::=//) {
+		if (s/^(--.*\n)//) {
+			$parser->YYData->{LINE}++;
+			goto again;
+		}
+		if (s/^(::=)//) {
 			$parser->YYData->{LAST_TOKEN} = $1;
 			return('DELIMITTER',$1); 
 		}
@@ -239,13 +267,13 @@ again:
 			$parser->YYData->{LAST_TOKEN} = $1;
 			return('CONSTANT',$1); 
 		}
-		if (s/^([\w_]+)//) {
+		if (s/^([\w_-]+)//) {
 			$parser->YYData->{LAST_TOKEN} = $1;
 			if ($1 =~ 
 			    /^(SEQUENCE|INTEGER|OCTET|STRING|
 			       APPLICATION|OPTIONAL|NULL|COMPONENTS|OF|
-			       BOOLEAN|ENUMERATED|CHOISE|REAL|BIT|OBJECT|IDENTIFIER
-			       DEFAULT|FALSE|TRUE|SET)$/x) {
+			       BOOLEAN|ENUMERATED|CHOISE|REAL|BIT|OBJECT|IDENTIFIER|
+			       DEFAULT|FALSE|TRUE|SET|DEFINITIONS|BEGIN|END)$/x) {
 				return $1;
 			}
 			return('IDENTIFIER',$1);
