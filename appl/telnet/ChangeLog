@@ -1,0 +1,9 @@
+Mon Oct 20 05:47:19 1997  Assar Westerlund  <assar@sics.se>
+
+	* libtelnet/kerberos5.c: remove lots of old junk.  clean-up.
+  	better error checking and reporting.  tell the user permission
+ 	denied much earlier.
+
+	* libtelnet/kerberos.c (kerberos4_is): only print
+ 	UserNameRequested if != NULL
+

@@ -1,5 +1,7 @@
 Mon Oct 20 01:14:53 1997  Assar Westerlund  <assar@sics.se>
 
+	* admin/ktutil.c: add `help' command
+
 	* admin/kdb_edit.c: implement new commands: add_random_key(ark),
  	change_password(cpw), change_random_key(crk)
 
