@@ -1,5 +1,7 @@
 2003-03-10  Love Hörnquist Åstrand <lha@it.su.se>
 
+	* lib/krb5/*.[0-9]: add copyright/licenses on more manpages
+
 	* kuser/kdestroy.c (main): handle that krb5_cc_default_name can
 	return NULL
 
