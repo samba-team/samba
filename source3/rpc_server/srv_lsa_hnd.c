@@ -137,14 +137,6 @@ BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *)
 	DLIST_ADD(p->pipe_handles->Policy, pol);
 	p->pipe_handles->count++;
 
-	/*
-	 * Ensure we don't idle this connection if a handle is open.
-	 * Increment the number of files open on the first handle create.
-	 */
-
-	if (p->pipe_handles->count == 1)
-		p->conn->num_files_open++;
-
 	*hnd = pol->pol_hnd;
 	
 	DEBUG(4,("Opened policy hnd[%d] ", (int)p->pipe_handles->count));
@@ -211,15 +203,6 @@ BOOL close_policy_hnd(pipes_struct *p, POLICY_HND *hnd)
 		(*pol->free_fn)(pol->data_ptr);
 
 	p->pipe_handles->count--;
-
-	/*
-	 * Ensure we can idle this connection if this is the last handle.
-	 * Decrement the number of files open on the last handle delete.
-	 */
-
-	if (p->pipe_handles->count == 0)
-		p->conn->num_files_open--;
-
 
 	DLIST_REMOVE(p->pipe_handles->Policy, pol);
 
