@@ -1,8 +1,8 @@
-samba (2.2.6-1.woody) stable; urgency=low
+samba (2.2.6-0.1) unstable; urgency=low
 
-  * New upstream version.
+  * Local build.
 
- -- Eloy A. Paris <peloy@debian.org>  Sun, 13 Oct 2002 02:33:32 -0400
+ -- Debian User <user@somewhere.in.the.planet>  Sun, 13 Oct 2002 02:33:32 -0400
 
 samba (2.2.5-1.woody) stable; urgency=low
 
