@@ -447,11 +447,21 @@ struct krb5_keytab_key_proc_args {
 
 typedef struct krb5_keytab_key_proc_args krb5_keytab_key_proc_args;
 
+/* flags for krb5_auth_con_setflags */
 enum {
     KRB5_AUTH_CONTEXT_DO_TIME      = 1,
     KRB5_AUTH_CONTEXT_RET_TIME     = 2,
     KRB5_AUTH_CONTEXT_DO_SEQUENCE  = 4,
-    KRB5_AUTH_CONTEXT_RET_SEQUENCE = 8
+    KRB5_AUTH_CONTEXT_RET_SEQUENCE = 8,
+    KRB5_AUTH_CONTEXT_PERMIT_ALL   = 16,
+};
+
+/* flags for krb5_auth_con_genaddrs */
+enum {
+    KRB5_AUTH_CONTEXT_GENERATE_LOCAL_ADDR       = 1,
+    KRB5_AUTH_CONTEXT_GENERATE_LOCAL_FULL_ADDR  = 3,
+    KRB5_AUTH_CONTEXT_GENERATE_REMOTE_ADDR      = 4,
+    KRB5_AUTH_CONTEXT_GENERATE_REMOTE_FULL_ADDR = 12
 };
 
 typedef struct krb5_auth_context_data {
