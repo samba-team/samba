@@ -544,7 +544,6 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 
  int main(int argc, char *argv[])
 {
-	pstring fname;
 	int c;
 	static int profile_only = 0;
 	static int new_debuglevel = -1;
@@ -626,10 +625,11 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
   
 	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (!tdb) {
-		d_printf("connections.tdb not initialised\n");
+		d_printf("%s not initialised\n", lock_path("connections.tdb"));
+		d_printf("This is normal if an SMB client has never connected to your server.\n");
 	}  else  {
 		if (verbose) {
-			d_printf("Opened status file %s\n", fname);
+			d_printf("Opened %s\n", lock_path("connections.tdb"));
 		}
 
 		if (brief) 
