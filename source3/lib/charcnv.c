@@ -94,7 +94,7 @@ size_t convert_string(charset_t from, charset_t to,
 {
 	size_t i_len, o_len;
 	size_t retval;
-	char* inbuf = (char*)src;
+	const char* inbuf = (const char*)src;
 	char* outbuf = (char*)dest;
 	static int initialised;
 	smb_iconv_t descriptor;
