@@ -331,7 +331,7 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain);
 BOOL lookup_known_rid(DOM_SID *sid, uint32 rid, char *name, uint8 *psid_name_use);
 BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain);
 void split_domain_name(const char *fullname, char *domain, char *name);
-char *sid_to_string(pstring sidstr_out, DOM_SID *sid);
+char *sid_to_string(fstring sidstr_out, DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
 BOOL sid_append_rid(DOM_SID *sid, uint32 rid);
 BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
