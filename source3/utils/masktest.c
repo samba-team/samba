@@ -306,9 +306,10 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 
 	res2 = reg_test(mask, long_name, short_name);
 
-	if (showall || strcmp(res1+2, res2+2)) {
+	if (showall || strcmp(res1, res2)) {
 		DEBUG(0,("%s %s %d mask=[%s] file=[%s] rfile=[%s/%s]\n",
 			 res1, res2, count, mask, file, long_name, short_name));
+		//		exit(1);
 	}
 
 	cli_unlink(cli, file);
