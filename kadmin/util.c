@@ -101,9 +101,10 @@ str2attr(const char *str, krb5_flags orig)
 }
 
 void
-get_response(const char *def, char *buf, size_t len)
+get_response(const char *prompt, const char *def, char *buf, size_t len)
 {
     char *p;
+    printf("%s [%s]:", prompt, def);
     fgets(buf, len, stdin);
     p = strchr(buf, '\n');
     if(p) *p = 0;
@@ -112,27 +113,29 @@ get_response(const char *def, char *buf, size_t len)
     buf[len-1] = 0;
 }
 
+unsigned 
+get_deltat(const char *prompt, const char *def)
+{
+    char buf[128];
+    get_response(prompt, def, buf, sizeof(buf));
+    return str2deltat(buf);
+}
+
 int
 edit_entry(kadm5_principal_ent_t ent, int *mask)
 {
-    char buf[1024];
-    char resp[1024];
-
+    char buf[1024], resp[1024];
+    
     deltat2str(ent->max_life, buf, sizeof(buf));
-    printf("Max ticket life [%s]:", buf);
-    get_response(buf, resp, sizeof(resp));
-    ent->max_life = str2deltat(resp);
+    ent->max_life = get_deltat("Max ticket life", buf);
     *mask |= KADM5_MAX_LIFE;
 
     deltat2str(ent->max_renewable_life, buf, sizeof(buf));
-    printf("Max renewable life [%s]:", buf);
-    get_response(buf, resp, sizeof(resp));
-    ent->max_renewable_life = str2deltat(resp);
+    ent->max_renewable_life = get_deltat("Max renewable life", buf);
     *mask |= KADM5_MAX_RLIFE;
     
     attr2str(ent->attributes, buf, sizeof(buf));
-    printf("Attributes [%s]:", buf);
-    get_response(buf, resp, sizeof(resp));
+    get_response("Attributes", buf, resp, sizeof(resp));
     ent->attributes = str2attr(resp, ent->attributes);
     *mask |= KADM5_ATTRIBUTES;
 }
