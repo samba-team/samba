@@ -5,6 +5,11 @@
 	returning an gssapi error and setting minor status.  update
 	callers
 
+2001-08-28  Jacques Vidrine  <n@nectar.com>
+
+	* accept_sec_context.c: Create a cache for delegated credentials
+	  when needed.
+
 2001-08-28  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libgssapi_la_LDFLAGS): set version to 3:4:2

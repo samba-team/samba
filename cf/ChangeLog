@@ -1,3 +1,9 @@
+2001-08-29  Jacques Vidrine  <n@nectar.com>
+
+	* check-compile-et.m4: Check for already-installed com_err.
+	* Makefile.am.common: Use the compile_et discovered at
+	  configuration time.
+
 2001-08-29  Assar Westerlund  <assar@sics.se>
 
 	* find-func-no-libs2.m4: handle both -llib and lib in the second

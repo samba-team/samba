@@ -1,6 +1,6 @@
-2001-08-28  Assar Westerlund  <assar@assaris.sics.se>
+2001-08-29  Jacques Vidrine  <n@nectar.com>
 
-	* Release 0.4e
+	* configure.in: Check for already-installed com_err.
 
 2001-08-28  Assar Westerlund  <assar@sics.se>
 
