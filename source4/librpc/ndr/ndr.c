@@ -309,7 +309,7 @@ void ndr_print_array(struct ndr_print *ndr, const char *name, void *base,
 
 
 
-static void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...)
+void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...)
 {
 	va_list ap;
 	char *s = NULL;

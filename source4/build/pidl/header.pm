@@ -240,6 +240,8 @@ sub HeaderInterface($)
 	    $res .= "#define DCERPC_$name\_NAME \"$interface->{NAME}\"\n\n";
     }
 
+    $res .= "extern struct dcerpc_interface_table dcerpc_table_$interface->{NAME};\n\n";
+
     foreach my $d (@{$data}) {
 	    if ($d->{TYPE} eq "FUNCTION") {
 		    my $u_name = uc $d->{NAME};

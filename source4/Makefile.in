@@ -458,6 +458,9 @@ SMBTORTURE_OBJ1 = torture/torture.o torture/torture_util.o torture/nbio.o tortur
 SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) \
 	$(LIBSMB_OBJ) $(LIBDFS_OBJ) $(PARAM_OBJ) $(LIB_OBJ)
 
+NDRDUMP_OBJ = utils/ndrdump.o utils/rewrite.o \
+	$(LIBSMB_OBJ) $(LIBDFS_OBJ) $(PARAM_OBJ) $(LIB_OBJ)
+
 
 MASKTEST_OBJ = torture/masktest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(LIB_OBJ) libcli/raw/clirewrite.o
@@ -794,6 +797,10 @@ bin/nmblookup@EXEEXT@: $(NMBLOOKUP_OBJ) bin/.dummy
 bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/ndrdump@EXEEXT@: $(NDRDUMP_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(NDRDUMP_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/gentest@EXEEXT@: $(GENTEST_OBJ) bin/.dummy
 	@echo Linking $@
