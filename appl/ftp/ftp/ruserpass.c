@@ -91,7 +91,8 @@ guess_domain (char *hostname, size_t sz)
     if (error)
 	return hostname;
 
-    strlcpy (hostname, ai->ai_canonname, sz);
+    if (ai->ai_canonname != NULL)
+	strlcpy (hostname, ai->ai_canonname, sz);
     freeaddrinfo (ai);
     dot = strchr (hostname, '.');
     if (dot != NULL)
