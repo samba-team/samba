@@ -1193,7 +1193,7 @@ void init_srv_sess_info1_str(SESS_INFO_1_STR *ss1, char *name, char *user)
 	DEBUG(5,("init_srv_sess_info1_str\n"));
 
 	init_unistr2(&ss1->uni_name, name, strlen(name)+1);
-	init_unistr2(&ss1->uni_user, name, strlen(user)+1);
+	init_unistr2(&ss1->uni_user, user, strlen(user)+1);
 }
 
 /*******************************************************************
@@ -1374,10 +1374,10 @@ static BOOL srv_io_srv_sess_ctr(char *desc, SRV_SESS_INFO_CTR **pp_ctr, prs_stru
 ********************************************************************/
 
 void init_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n, 
-				char *srv_name, char *qual_name,
-				uint32 sess_level, SRV_SESS_INFO_CTR *ctr,
-				uint32 preferred_len,
-				ENUM_HND *hnd)
+			      char *srv_name, char *qual_name,
+			      char *user_name, uint32 sess_level, 
+			      SRV_SESS_INFO_CTR *ctr, uint32 preferred_len,
+			      ENUM_HND *hnd)
 {
 	q_n->ctr = ctr;
 
@@ -1385,6 +1385,7 @@ void init_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n,
 
 	init_buf_unistr2(&q_n->uni_srv_name, &q_n->ptr_srv_name, srv_name);
 	init_buf_unistr2(&q_n->uni_qual_name, &q_n->ptr_qual_name, qual_name);
+	init_buf_unistr2(&q_n->uni_user_name, &q_n->ptr_user_name, user_name);
 
 	q_n->sess_level    = sess_level;
 	q_n->preferred_len = preferred_len;
@@ -1418,6 +1419,13 @@ BOOL srv_io_q_net_sess_enum(char *desc, SRV_Q_NET_SESS_ENUM *q_n, prs_struct *ps
 	if(!prs_uint32("ptr_qual_name", ps, depth, &q_n->ptr_qual_name))
 		return False;
 	if(!smb_io_unistr2("", &q_n->uni_qual_name, q_n->ptr_qual_name, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("ptr_user_name", ps, depth, &q_n->ptr_user_name))
+		return False;
+	if(!smb_io_unistr2("", &q_n->uni_user_name, q_n->ptr_user_name, ps, depth))
 		return False;
 
 	if(!prs_align(ps))
