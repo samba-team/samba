@@ -174,26 +174,25 @@ void set_socket_options(int fd, char *options)
 
 ssize_t read_udp_socket(int fd,char *buf,size_t len)
 {
-  ssize_t ret;
-  struct sockaddr_in sock;
-  int socklen;
-  
-  socklen = sizeof(sock);
-  memset((char *)&sock,'\0',socklen);
-  memset((char *)&lastip,'\0',sizeof(lastip));
-  ret = (ssize_t)recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
-  if (ret <= 0) {
-    DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
-    return(0);
-  }
+	ssize_t ret;
+	struct sockaddr_in sock;
+	socklen_t socklen = sizeof(sock);
 
-  lastip = sock.sin_addr;
-  lastport = ntohs(sock.sin_port);
+	memset((char *)&sock,'\0',socklen);
+	memset((char *)&lastip,'\0',sizeof(lastip));
+	ret = (ssize_t)recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
+	if (ret <= 0) {
+		DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
+		return(0);
+	}
 
-  DEBUG(10,("read_udp_socket: lastip %s lastport %d read: %d\n",
-             inet_ntoa(lastip), lastport, ret));
+	lastip = sock.sin_addr;
+	lastport = ntohs(sock.sin_port);
 
-  return(ret);
+	DEBUG(10,("read_udp_socket: lastip %s lastport %d read: %d\n",
+			inet_ntoa(lastip), lastport, ret));
+
+	return(ret);
 }
 
 /****************************************************************************

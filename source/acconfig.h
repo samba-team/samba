@@ -8,6 +8,7 @@
 #undef HAVE_UNSIGNED_CHAR
 #undef HAVE_UTIMBUF
 #undef HAVE_SIG_ATOMIC_T_TYPE
+#undef HAVE_SOCKLEN_T_TYPE
 #undef ssize_t
 #undef ino_t
 #undef ssize_t

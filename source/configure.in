@@ -402,6 +402,19 @@ AC_CHECK_LIB(cups,httpConnect)
 AC_CHECK_LIB(dl, dlopen, [LIBS="$LIBS -ldl";
 	AC_DEFINE(HAVE_LIBDL)])
 
+AC_CACHE_CHECK([for socklen_t type],samba_cv_socklen_t, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <sys/socket.h>],[socklen_t i = 0],
+    samba_cv_socklen_t=yes,samba_cv_socklen_t=no)])
+if test x"$samba_cv_socklen_t" = x"yes"; then
+   AC_DEFINE(HAVE_SOCKLEN_T_TYPE)
+fi
+
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
     AC_TRY_COMPILE([
 #include <sys/types.h>

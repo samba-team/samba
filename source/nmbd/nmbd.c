@@ -83,7 +83,7 @@ static void sig_term(int sig)
 /**************************************************************************** **
  catch a sighup
  **************************************************************************** */
-static VOLATILE SIG_ATOMIC_T reload_after_sighup = False;
+static VOLATILE sig_atomic_t reload_after_sighup = False;
 
 static void sig_hup(int sig)
 {
