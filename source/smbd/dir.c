@@ -114,13 +114,13 @@ static void dptr_idleoldest(void)
  Get the dptr_struct for a dir index.
 ****************************************************************************/
 
-static dptr_struct *dptr_get(int key)
+static dptr_struct *dptr_get(int key, BOOL forclose)
 {
   dptr_struct *dptr;
 
   for(dptr = dirptrs; dptr; dptr = dptr->next) {
     if(dptr->dnum == key) {
-      if (!dptr->ptr) {
+      if (!forclose && !dptr->ptr) {
         if (dptrs_open >= MAX_OPEN_DIRECTORIES)
           dptr_idleoldest();
         DEBUG(4,("Reopening dptr key %d\n",key));
@@ -140,7 +140,7 @@ static dptr_struct *dptr_get(int key)
 
 static void *dptr_ptr(int key)
 {
-  dptr_struct *dptr = dptr_get(key);
+  dptr_struct *dptr = dptr_get(key, False);
 
   if (dptr)
     return(dptr->ptr);
@@ -153,7 +153,7 @@ static void *dptr_ptr(int key)
 
 char *dptr_path(int key)
 {
-  dptr_struct *dptr = dptr_get(key);
+  dptr_struct *dptr = dptr_get(key, False);
 
   if (dptr)
     return(dptr->path);
@@ -166,7 +166,7 @@ char *dptr_path(int key)
 
 char *dptr_wcard(int key)
 {
-  dptr_struct *dptr = dptr_get(key);
+  dptr_struct *dptr = dptr_get(key, False);
 
   if (dptr)
     return(dptr->wcard);
@@ -180,7 +180,7 @@ char *dptr_wcard(int key)
 
 BOOL dptr_set_wcard(int key, char *wcard)
 {
-  dptr_struct *dptr = dptr_get(key);
+  dptr_struct *dptr = dptr_get(key, False);
 
   if (dptr) {
     dptr->wcard = wcard;
@@ -196,7 +196,7 @@ BOOL dptr_set_wcard(int key, char *wcard)
 
 BOOL dptr_set_attr(int key, uint16 attr)
 {
-  dptr_struct *dptr = dptr_get(key);
+  dptr_struct *dptr = dptr_get(key, False);
 
   if (dptr) {
     dptr->attr = attr;
@@ -211,7 +211,7 @@ BOOL dptr_set_attr(int key, uint16 attr)
 
 uint16 dptr_attr(int key)
 {
-  dptr_struct *dptr = dptr_get(key);
+  dptr_struct *dptr = dptr_get(key, False);
 
   if (dptr)
     return(dptr->attr);
@@ -232,6 +232,11 @@ static void dptr_close_internal(dptr_struct *dptr)
    * Free the dnum in the bitmap. Remember the dnum value is always 
    * biased by one with respect to the bitmap.
    */
+
+  if(bitmap_query( dptr_bmap, dptr->dnum - 1) != True) {
+    DEBUG(0,("dptr_close_internal : Error - closing dnum = %d and bitmap not set !\n",
+			dptr->dnum ));
+  }
 
   bitmap_clear(dptr_bmap, dptr->dnum - 1);
 
@@ -269,7 +274,7 @@ void dptr_close(int *key)
     return;
   }
 
-  dptr = dptr_get(*key);
+  dptr = dptr_get(*key, True);
 
   if (!dptr) {
     DEBUG(0,("Invalid key %d given to dptr_close\n", *key));
@@ -430,7 +435,7 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
       dptr->dnum = bitmap_find(dptr_bmap, 0);
 
       if(dptr->dnum == -1 || dptr->dnum > 254) {
-        DEBUG(0,("dptr_create: Error - all old style dirptrs in use ?\n"));
+        DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
         free((char *)dptr);
         return -1;
       }
@@ -444,8 +449,8 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
 
     dptr->dnum = bitmap_find(dptr_bmap, 255);
 
-    if(dptr->dnum == -1) {
-      DEBUG(0,("dptr_create: Error - all dirptrs in use ?\n"));
+    if(dptr->dnum == -1 || dptr->dnum < 255) {
+      DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
       free((char *)dptr);
       return -1;
     }

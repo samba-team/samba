@@ -32,7 +32,7 @@
 /* max number of directories open at once */
 /* note that with the new directory code this no longer requires a
    file handle per directory, but large numbers do use more memory */
-#define MAX_OPEN_DIRECTORIES 64
+#define MAX_OPEN_DIRECTORIES 256
 
 /* max number of directory handles */
 /* As this now uses the bitmap code this can be
