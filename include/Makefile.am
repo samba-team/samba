@@ -2,6 +2,8 @@
 
 AUTOMAKE_OPTIONS = foreign no-dependencies
 
+SUBDIRS = kadm5
+
 noinst_PROGRAMS = bits
 
 INCLUDES=-DHOST=\"@CANONICAL_HOST@\"
