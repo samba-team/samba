@@ -1233,6 +1233,27 @@ AC_ARG_WITH(privatedir,
 )
 
 #################################################
+# set lock directory location
+AC_ARG_WITH(lockdir,
+[  --with-lockdir=DIR     Where to put lock files ($ac_default_prefix/var/locks)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-lockdir called without argument - will use default])
+    lockdir='$(VARDIR)/locks'
+  ;;
+  * )
+    lockdir="$withval"
+    ;;
+  esac
+  AC_SUBST(lockdir)],
+  [lockdir='$(VARDIR)/locks'
+   AC_SUBST(lockdir)]
+)
+
+#################################################
 # set SWAT directory location
 AC_ARG_WITH(swatdir,
 [  --with-swatdir=DIR     Where to put SWAT files ($ac_default_prefix/swat)],

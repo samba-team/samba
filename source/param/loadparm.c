@@ -818,7 +818,10 @@ static void init_globals(void)
   DEBUG(3,("Initialising global parameters\n"));
 
   string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
-  string_set(&Globals.szPasswdChat,"*old*password* %o\\n *new*password* %n\\n *new*password* %n\\n *changed*");
+  /*
+   * Allow the default PASSWD_CHAT to be overridden in local.h.
+   */
+  string_set(&Globals.szPasswdChat,DEFAULT_PASSWD_CHAT);
   string_set(&Globals.szWorkGroup, WORKGROUP);
   string_set(&Globals.szPasswdProgram, PASSWD_PROGRAM);
   string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
@@ -990,14 +993,14 @@ static void init_locals(void)
       string_initial(&sDefault.szLpqcommand,"lpstat -o%p");
       string_initial(&sDefault.szLprmcommand,"cancel %p-%j");
       string_initial(&sDefault.szPrintcommand,"lp -c -d%p %s; rm %s");
-#ifdef SYSV
+#ifdef HPUX
+      string_initial(&sDefault.szQueuepausecommand, "disable %p");
+      string_initial(&sDefault.szQueueresumecommand, "enable %p");
+#else /* SYSV */
       string_initial(&sDefault.szLppausecommand,"lp -i %p-%j -H hold");
       string_initial(&sDefault.szLpresumecommand,"lp -i %p-%j -H resume");
       string_initial(&sDefault.szQueuepausecommand, "lpc stop %p");
       string_initial(&sDefault.szQueueresumecommand, "lpc start %p");
-#else /* SYSV */
-      string_initial(&sDefault.szQueuepausecommand, "disable %p");
-      string_initial(&sDefault.szQueueresumecommand, "enable %p");
 #endif /* SYSV */
       break;
 

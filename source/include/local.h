@@ -191,4 +191,10 @@
 /* name of directory that netatalk uses to store macintosh resource forks */
 #define APPLEDOUBLE ".AppleDouble/"
 
+/*
+ * Default passwd chat script.
+ */
+
+#define DEFAULT_PASSWD_CHAT "*old*password* %o\\n *new*password* %n\\n *new*password* %n\\n *changed*"
+
 #endif

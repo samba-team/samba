@@ -46,13 +46,12 @@ PASSWD_PROGRAM = /bin/passwd
 PRIVATEDIR = @privatedir@
 
 SMB_PASSWD_FILE = $(PRIVATEDIR)/smbpasswd
-SMB_PASSGRP_FILE = $(PRIVATEDIR)/smbpassgrp
 
 # This is where SWAT images and help files go
 SWATDIR = @swatdir@
 
 # the directory where lock files go
-LOCKDIR = $(VARDIR)/locks
+LOCKDIR = @lockdir@
 
 # The directory where code page definition files go
 CODEPAGEDIR = $(LIBDIR)/codepages
@@ -68,7 +67,7 @@ CODEPAGELIST= 437 737 850 852 861 932 866 949 950 936
 SMBRUN = $(BINDIR)/smbrun
 
 
-PASSWD_FLAGS = -DPASSWD_PROGRAM=\"$(PASSWD_PROGRAM)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DSMB_PASSWD_PROGRAM=\"$(SMB_PASSWD_PROGRAM)\"
+PASSWD_FLAGS = -DPASSWD_PROGRAM=\"$(PASSWD_PROGRAM)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\"
 FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -DSMBLOGFILE=\"$(SMBLOGFILE)\" -DNMBLOGFILE=\"$(NMBLOGFILE)\"
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
 FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
