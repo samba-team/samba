@@ -1547,8 +1547,7 @@ static int get_version_id (char * arch)
  *                                                      --jerry
  ********************************************************************/
 
-WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER *q_u, 
-				    SPOOL_R_DELETEPRINTERDRIVER *r_u)
+WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER *q_u, SPOOL_R_DELETEPRINTERDRIVER *r_u)
 {
 	fstring				driver;
 	fstring				arch;
@@ -1565,18 +1564,50 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	}
 		
 	ZERO_STRUCT(info);
-	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) {
+	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version)))
 		return WERR_UNKNOWN_PRINTER_DRIVER;
-	}
 	
 
 	if (printer_driver_in_use(arch, driver))
-	{
 		return WERR_PRINTER_DRIVER_IN_USE;
-	}
 
-	return delete_printer_driver(info.info_3);	 
+	return delete_printer_driver(info.info_3);
 }
+
+/********************************************************************
+ * spoolss_deleteprinterdriverex
+ ********************************************************************/
+
+WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVEREX *q_u, SPOOL_R_DELETEPRINTERDRIVEREX *r_u)
+{
+	fstring				driver;
+	fstring				arch;
+	NT_PRINTER_DRIVER_INFO_LEVEL	info;
+	int				version;
+	
+	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver)-1 );
+	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch)-1   );
+
+	/* check that we have a valid driver name first */
+	if ((version=get_version_id(arch)) == -1) {
+		/* this is what NT returns */
+		return WERR_INVALID_ENVIRONMENT;
+	}
+	
+	if (q_u->delete_flags & DPD_DELETE_SPECIFIC_VERSION)
+		version = q_u->version;
+		
+	ZERO_STRUCT(info);
+	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version)))
+		return WERR_UNKNOWN_PRINTER_DRIVER;
+	
+
+	if (printer_driver_in_use(arch, driver))
+		return WERR_PRINTER_DRIVER_IN_USE;
+
+	return delete_printer_driver(info.info_3);
+}
+
 
 /********************************************************************
  GetPrinterData on a printer server Handle.
@@ -6884,6 +6915,32 @@ done:
 	return err;
 }
 
+/********************************************************************
+ * spoolss_addprinterdriverex
+ ********************************************************************/
+
+WERROR _spoolss_addprinterdriverex(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVEREX *q_u, SPOOL_R_ADDPRINTERDRIVEREX *r_u)
+{
+	SPOOL_Q_ADDPRINTERDRIVER q_u_local;
+	SPOOL_R_ADDPRINTERDRIVER r_u_local;
+	
+	/* 
+	 * we only support the semantics of AddPrinterDriver()
+	 * i.e. only copy files that are newer than existing ones
+	 */
+	
+	if ( q_u->copy_flags != APD_COPY_NEW_FILES )
+		return WERR_ACCESS_DENIED;
+	
+	/* just pass the information off to _spoolss_addprinterdriver() */
+	q_u_local.server_name_ptr = q_u->server_name_ptr;
+	copy_unistr2(&q_u_local.server_name, &q_u->server_name);
+	q_u_local.level = q_u->level;
+	memcpy( &q_u_local.info, &q_u->info, sizeof(SPOOL_PRINTER_DRIVER_INFO_LEVEL) );
+	
+	return _spoolss_addprinterdriver( p, &q_u_local, &r_u_local );
+}
+
 /****************************************************************************
 ****************************************************************************/
 
@@ -7120,10 +7177,8 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	POLICY_HND *handle = &q_u->handle;
 	UNISTR2 *value = &q_u->value;
 	uint32 type = q_u->type;
-/*	uint32 max_len = q_u->max_len; - notused. */
 	uint8 *data = q_u->data;
 	uint32 real_len = q_u->real_len;
-/*	uint32 numeric_data = q_u->numeric_data; - notused. */
 
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	NT_PRINTER_PARAM *param = NULL, old_param;
@@ -7395,8 +7450,6 @@ done:
 WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *r_u)
 {
 	POLICY_HND *handle = &q_u->handle;
-/*	UNISTR2 *uni_name = &q_u->name; - notused. */
-/*	uint32 level = q_u->level; - notused. */
 	FORM *form = &q_u->form;
 	nt_forms_struct tmpForm;
 	int snum;
@@ -7487,12 +7540,10 @@ static WERROR enumprintprocessors_level_1(NEW_BUFFER *buffer, uint32 offered, ui
 
 WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS *q_u, SPOOL_R_ENUMPRINTPROCESSORS *r_u)
 {
-/*	UNISTR2 *name = &q_u->name; - notused. */
-/*	UNISTR2 *environment = &q_u->environment; - notused. */
 	uint32 level = q_u->level;
-    NEW_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
-    uint32 *needed = &r_u->needed;
+	uint32 *needed = &r_u->needed;
 	uint32 *returned = &r_u->returned;
 
 	/* that's an [in out] buffer */
@@ -7556,8 +7607,6 @@ static WERROR enumprintprocdatatypes_level_1(NEW_BUFFER *buffer, uint32 offered,
 
 WERROR _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u)
 {
-/*	UNISTR2 *name = &q_u->name; - notused. */
-/*	UNISTR2 *processor = &q_u->processor; - notused. */
 	uint32 level = q_u->level;
 	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
@@ -7652,11 +7701,10 @@ static WERROR enumprintmonitors_level_2(NEW_BUFFER *buffer, uint32 offered, uint
 
 WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_u, SPOOL_R_ENUMPRINTMONITORS *r_u)
 {
-/*	UNISTR2 *name = &q_u->name; - notused. */
 	uint32 level = q_u->level;
-    NEW_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
-    uint32 *needed = &r_u->needed;
+	uint32 *needed = &r_u->needed;
 	uint32 *returned = &r_u->returned;
 
 	/* that's an [in out] buffer */
@@ -8062,6 +8110,34 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 }
 
 /********************************************************************
+ * spoolss_deleteprinterkey
+ ********************************************************************/
+
+WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u, SPOOL_R_DELETEPRINTERKEY *r_u)
+{
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, &q_u->handle);
+	fstring key;
+	
+	if (!Printer) {
+		DEBUG(2,("_spoolss_deleteprinterkey: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		return WERR_BADFID;
+	}
+	
+        unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
+
+        if (strcmp(key, "PrinterDriverData") != 0)
+	        return WERR_INVALID_PARAM;
+		
+	/* 
+	 * this is what 2k returns when you try to delete the "PrinterDriverData"
+	 * key
+	 */
+	 
+	return WERR_ACCESS_DENIED;	
+}
+
+
+/********************************************************************
  * spoolss_enumprinterdataex
  ********************************************************************/
 
@@ -8255,45 +8331,5 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 
 	return result;
 }
-
-/********************************************************************
- * spoolss_addprinterdriverex
- ********************************************************************/
-
-WERROR _spoolss_addprinterdriverex(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVEREX *q_u, SPOOL_R_ADDPRINTERDRIVEREX *r_u)
-{
-	return WERR_OK;
-}
-
-/********************************************************************
- * spoolss_deleteprinterdriverex
- ********************************************************************/
-
-WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVEREX *q_u, SPOOL_R_DELETEPRINTERDRIVEREX *r_u)
-{
-	return WERR_OK;
-}
-
-/********************************************************************
- * spoolss_deleteprinterkey
- ********************************************************************/
-
-WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u, SPOOL_R_DELETEPRINTERKEY *r_u)
-{
-	fstring key;
-	
-        unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
-
-        if (strcmp(key, "PrinterDriverData") != 0)
-	        return WERR_INVALID_PARAM;
-		
-	/* 
-	 * this is what 2k returns when you try to delete the "PrinterDriverData"
-	 * key
-	 */
-	 
-	return WERR_ACCESS_DENIED;	
-}
-
 
 

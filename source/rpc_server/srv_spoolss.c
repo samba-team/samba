@@ -1458,11 +1458,10 @@ static BOOL api_spoolss_deleteprinterkey(pipes_struct *p)
 	return True;
 }
 
-#if 0	/* JERRY */
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL api_spoolss_addprinterdrriverex(pipes_struct *p)
+static BOOL api_spoolss_addprinterdriverex(pipes_struct *p)
 {
 	SPOOL_Q_ADDPRINTERDRIVEREX q_u;
 	SPOOL_R_ADDPRINTERDRIVEREX r_u;
@@ -1514,9 +1513,6 @@ static BOOL api_spoolss_deleteprinterdriverex(pipes_struct *p)
 	
 	return True;
 }
-
-
-#endif	/* JERRY */
 
 
 /*******************************************************************
@@ -1574,10 +1570,8 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_ENUMPRINTERKEY",            SPOOLSS_ENUMPRINTERKEY,            api_spoolss_enumprinterkey            },
  {"SPOOLSS_DELETEPRINTERKEY",          SPOOLSS_DELETEPRINTERKEY,          api_spoolss_deleteprinterkey          },
  {"SPOOLSS_GETPRINTPROCESSORDIRECTORY",SPOOLSS_GETPRINTPROCESSORDIRECTORY,api_spoolss_getprintprocessordirectory},
-#if 0	/* JERRY */
  {"SPOOLSS_ADDPRINTERDRIVEREX",        SPOOLSS_ADDPRINTERDRIVEREX,        api_spoolss_addprinterdriverex        },
  {"SPOOLSS_DELETEPRINTERDRIVEREX",     SPOOLSS_DELETEPRINTERDRIVEREX,     api_spoolss_deleteprinterdriverex     },
-#endif
  { NULL,                               0,                                 NULL                                  }
 };
 
