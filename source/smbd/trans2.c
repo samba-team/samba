@@ -523,15 +523,23 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 					continue;
 				}
 			} else if (vfs_stat(conn,pathreal,&sbuf) != 0) {
-				/* Needed to show the msdfs symlinks as directories */
-				if(!lp_host_msdfs() || !lp_msdfs_root(SNUM(conn)) 
-						|| !is_msdfs_link(conn, pathreal, NULL, NULL)) {
+
+				/* Needed to show the msdfs symlinks as 
+				 * directories */
+
+				if(lp_host_msdfs() && 
+				   lp_msdfs_root(SNUM(conn)) &&
+				   is_msdfs_link(conn, pathreal, NULL, NULL,
+						 &sbuf)) {
+
+					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s as a directory\n", pathreal));
+					sbuf.st_mode = (sbuf.st_mode & S_IAMB) | S_IFDIR;
+
+				} else {
+
 					DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",
 						pathreal,strerror(errno)));
 					continue;
-				} else {
-					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s as a directory\n", pathreal));
-					sbuf.st_mode = (sbuf.st_mode & 0xFFF) | S_IFDIR;
 				}
 			}
 

@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+   $Id: msdfs.c,v 1.10.4.24 2002/04/11 18:27:27 kalele Exp $
 */
 
 #include "includes.h"
@@ -155,7 +156,8 @@ static inline BOOL parse_symlink(char* buf,struct referral** preflist,
  Returns true if the unix path is a valid msdfs symlink
  **********************************************************************/
 BOOL is_msdfs_link(connection_struct* conn, char* path,
-		   struct referral** reflistp, int* refcnt)
+		   struct referral** reflistp, int* refcnt,
+		   SMB_STRUCT_STAT *sbufp)
 {
 	SMB_STRUCT_STAT st;
 	pstring referral;
@@ -166,12 +168,15 @@ BOOL is_msdfs_link(connection_struct* conn, char* path,
 
 	strlower(path);
 
-	if (conn->vfs_ops.lstat(conn,dos_to_unix_static(path),&st) != 0) {
+	if (sbufp == NULL)
+		sbufp = &st;
+
+	if (conn->vfs_ops.lstat(conn,dos_to_unix_static(path), sbufp) != 0) {
 		DEBUG(5,("is_msdfs_link: %s does not exist.\n",path));
 		return False;
 	}
   
-	if (S_ISLNK(st.st_mode)) {
+	if (S_ISLNK(sbufp->st_mode)) {
 		/* open the link and read it */
 		referral_len = conn->vfs_ops.readlink(conn, path, referral, 
 						      sizeof(pstring));
@@ -230,7 +235,7 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 	fstrcpy(localpath, conn->connectpath);
 	fstrcat(localpath, "/");
 	fstrcat(localpath, dp->reqpath);
-	if (is_msdfs_link(conn, localpath, reflistpp, refcntp)) {
+	if (is_msdfs_link(conn, localpath, reflistpp, refcntp, NULL)) {
 		if (findfirst_flag) {
 			DEBUG(6,("resolve_dfs_path (FindFirst) No redirection "
 				 "for dfs link %s.\n", dfspath));
@@ -252,7 +257,7 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 		fstrcpy(localpath, conn->connectpath);
 		fstrcat(localpath, "/");
 		fstrcat(localpath, reqpath);
-		if (is_msdfs_link(conn, localpath, reflistpp, refcntp)) {
+		if (is_msdfs_link(conn, localpath, reflistpp, refcntp, NULL)) {
 			DEBUG(4, ("resolve_dfs_path: Redirecting %s because parent %s is dfs link\n", dfspath, localpath));
 
 			/* To find the path consumed, we truncate the original
@@ -422,9 +427,9 @@ static int setup_ver2_dfs_referral(char* pathname, char** ppdata,
 
 	DEBUG(10,("setting up version2 referral\nRequested path:\n"));
 
-	requestedpathlen = (dos_struni2(uni_requestedpath,pathname,512)+1)*2;
+	requestedpathlen = (dos_struni2((char *)uni_requestedpath,pathname,512) + 1) * 2;
 
-	dump_data(10,uni_requestedpath,requestedpathlen);
+	dump_data(10, (char *) uni_requestedpath,requestedpathlen);
 
 	DEBUG(10,("ref count = %u\n",junction->referral_count));
 
@@ -515,9 +520,9 @@ static int setup_ver3_dfs_referral(char* pathname, char** ppdata,
 	
 	DEBUG(10,("setting up version3 referral\n"));
 
-	reqpathlen = (dos_struni2(uni_reqpath,pathname,512)+1)*2;
+	reqpathlen = (dos_struni2((char *) uni_reqpath,pathname,512)+1)*2;
 	
-	dump_data(10,uni_reqpath,reqpathlen);
+	dump_data(10, (char *) uni_reqpath,reqpathlen);
 
 	uni_reqpathoffset1 = REFERRAL_HEADER_SIZE + VERSION3_REFERRAL_SIZE * junction->referral_count;
 	uni_reqpathoffset2 = uni_reqpathoffset1 + reqpathlen;
@@ -836,7 +841,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 		pstrcat(pathreal, dname);
  
 		if (is_msdfs_link(conn, pathreal, &(jn[cnt].referral_list),
-				  &(jn[cnt].referral_count))) {
+				  &(jn[cnt].referral_count), NULL)) {
 			pstrcpy(jn[cnt].service_name, service_name);
 			pstrcpy(jn[cnt].volume_name, dname);
 			cnt++;
@@ -872,7 +877,8 @@ int enum_msdfs_links(struct junction_map* jn)
 }
 
  BOOL is_msdfs_link(connection_struct* conn, char* path,
-		    struct referral** reflistpp, int* refcntp)
+		    struct referral** reflistpp, int* refcntp,
+		    SMB_STRUCT_STAT *sbufp)
 {
 	return False;
 }
