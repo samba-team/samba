@@ -432,6 +432,9 @@
 /* Define if you have the _write function.  */
 #undef HAVE__WRITE
 
+/* Define if you have the asprintf function.  */
+#undef HAVE_ASPRINTF
+
 /* Define if you have the atexit function.  */
 #undef HAVE_ATEXIT
 

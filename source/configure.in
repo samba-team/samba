@@ -490,7 +490,7 @@ fi
 
 AC_CHECK_FUNCS(waitpid getcwd strdup strtoul strerror chown fchown chmod fchmod chroot)
 AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync bzero memset)
-AC_CHECK_FUNCS(memmove vsnprintf snprintf setsid glob strpbrk pipe crypt16 getauthuid)
+AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select poll rdchk getgrnam getgrent pathconf)
 AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate stat64 fstat64)
