@@ -930,9 +930,10 @@ static void free_canon_ace_list( canon_ace *list_head )
  entries, last entry = other.
 ********************************************************************************/
 
-static void arrange_posix_perms( char *filename, canon_ace *list_head)
+static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 {
 	extern DOM_SID global_sid_World;
+	canon_ace *list_head = *pp_list_head;
 	canon_ace *owner_ace = NULL;
 	canon_ace *other_ace = NULL;
 	canon_ace *ace = NULL;
@@ -1011,6 +1012,10 @@ static void arrange_posix_perms( char *filename, canon_ace *list_head)
 		owner_ace->attr = DENY_ACE;
 		owner_ace->perms = 0;
 	}
+
+	/* We have probably changed the head of the list. */
+
+	*pp_list_head = list_head;
 }
 		
 /******************************************************************************
@@ -1080,7 +1085,7 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	DLIST_ADD(list_head, group_ace);
 	DLIST_ADD(list_head, owner_ace);
 
-	arrange_posix_perms(fsp->fsp_name,list_head );
+	arrange_posix_perms(fsp->fsp_name,&list_head );
 
 	return list_head;
 
@@ -1219,6 +1224,8 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 	 * acl_mask.
 	 */
 
+	DEBUG(10,("canonicalize_acl: ace entries before arrange :\n"));
+
 	for ( ace_count = 0, ace = list_head; ace; ace = next_ace, ace_count++) {
 		next_ace = ace->next;
 
@@ -1229,9 +1236,13 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 		if (ace->perms == 0) {
 			DLIST_PROMOTE(list_head, ace);
 		}
+
+		if( DEBUGLVL( 10 ) ) {
+			print_canon_ace(ace, ace_count);
+		}
 	}
 
-	arrange_posix_perms(fsp->fsp_name,list_head );
+	arrange_posix_perms(fsp->fsp_name,&list_head );
 
 	if( DEBUGLVL( 10 ) ) {
 		char *acl_text = sys_acl_to_text( posix_acl, NULL);
@@ -1239,6 +1250,12 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 		dbgtext("canonicalize_acl: processed acl %s\n", acl_text == NULL ? "NULL" : acl_text );
 		if (acl_text)
 			sys_acl_free_text(acl_text);
+
+		dbgtext("canonicalize_acl: ace entries after arrange :\n");
+
+		for ( ace_count = 0, ace = list_head; ace; ace = next_ace, ace_count++) {
+			print_canon_ace(ace, ace_count);
+		}
 	}
 
 	return list_head;

@@ -580,49 +580,61 @@ int sys_setgroups(int setlen, gid_t *gidset)
  Helper function for getpwnam/getpwuid wrappers.
 ****************************************************************************/
 
-static struct passwd *setup_pwret(struct passwd *pass)
-{
-	static fstring 	pw_name;
-	static fstring 	pw_passwd;
-	static struct passwd pw_ret;
-	
-	if (pass == NULL)
-		return NULL;
+struct saved_pw {
+	fstring 	pw_name;
+	fstring 	pw_passwd;
+	struct passwd pass;
+};
 
-	/* this gets the uid, gid and null pointers */
-	memcpy((char *)&pw_ret, pass, sizeof(struct passwd));
+static struct saved_pw pw_mod; /* This is the structure returned - can be modified. */
+static struct saved_pw pw_cache; /* This is the structure saved - used to check cache. */
 
-	if (pass->pw_name)
-	{
-		pw_ret.pw_name = pw_name;
-		fstrcpy(pw_ret.pw_name, pass->pw_name);
-	}
-
-	if (pass->pw_passwd)
-	{
-		pw_ret.pw_passwd = pw_passwd;
-		fstrcpy(pw_ret.pw_passwd, pass->pw_passwd);
-	}
-
-	return &pw_ret;
-}
-
-/* static pointer to be used for caching the last 
-   getpw[nam|uid]() call.  Patch by "Richard Bollinger" 
-   <rabollinger@home.com> */
-
-/*
- * This next static pointer is used to cache the results
- * from the real getpwXX calls. It is never returned to 
- * the caller, only the output from calling setup_pwret with
- * this is returned. JRA.
- */
-
-static struct passwd *sv_pw_ret; /* implicitly initialized to NULL */
 static int num_lookups; /* Counter so we don't always use cache. */
 #ifndef PW_RET_CACHE_MAX_LOOKUPS
 #define PW_RET_CACHE_MAX_LOOKUPS 100
 #endif
+
+static struct passwd *setup_pwret(struct passwd *pass)
+{
+	if (pass == NULL) {
+		/* Clear the caches. */
+		memset(&pw_cache, '\0', sizeof(struct saved_pw));
+		memset(&pw_mod, '\0', sizeof(struct saved_pw));
+		num_lookups = 0;
+		return NULL;
+	}
+
+	/* this gets the uid, gid and null pointers */
+
+	memcpy((char *)&pw_mod.pass, pass, sizeof(struct passwd));
+	fstrcpy(pw_mod.pw_name, pass->pw_name);
+	pw_mod.pass.pw_name = pw_mod.pw_name;
+	fstrcpy(pw_mod.pw_passwd, pass->pw_passwd);
+	pw_mod.pass.pw_passwd = pw_mod.pw_passwd;
+
+
+	if (pass != &pw_cache.pass) {
+
+		/* If it's a cache miss we must also refill the cache. */
+
+		memcpy((char *)&pw_cache.pass, pass, sizeof(struct passwd));
+		fstrcpy(pw_cache.pw_name, pass->pw_name);
+		pw_cache.pass.pw_name = pw_cache.pw_name;
+		fstrcpy(pw_cache.pw_passwd, pass->pw_passwd);
+		pw_cache.pass.pw_passwd = pw_cache.pw_passwd;
+
+		num_lookups = 1;
+
+	} else {
+
+		/* Cache hit. */
+
+		num_lookups++;
+		num_lookups = (num_lookups % PW_RET_CACHE_MAX_LOOKUPS);
+	}
+
+	return &pw_mod.pass;
+}
 
 /**************************************************************************
  Wrappers for setpwent(), getpwent() and endpwent()
@@ -630,19 +642,18 @@ static int num_lookups; /* Counter so we don't always use cache. */
 
 void sys_setpwent(void)
 {
-	sv_pw_ret = NULL;
+	setup_pwret(NULL); /* Clear cache. */
 	setpwent();
 }
 
 struct passwd *sys_getpwent(void)
 {
-	sv_pw_ret = getpwent();
-	return setup_pwret(sv_pw_ret);
+	return setup_pwret(getpwent());
 }
 
 void sys_endpwent(void)
 {
-	sv_pw_ret = NULL;
+	setup_pwret(NULL); /* Clear cache. */
 	endpwent();
 }
 
@@ -656,22 +667,15 @@ struct passwd *sys_getpwnam(const char *name)
 		return NULL;
 
 	/* check for a cache hit first */
-	if (num_lookups && sv_pw_ret && !strcmp(name, sv_pw_ret->pw_name))
-	{
+	if (num_lookups && pw_cache.pass.pw_name && !strcmp(name, pw_cache.pass.pw_name)) {
 		DEBUG(2,("getpwnam(%s) avoided - using cached results\n",name));
-		num_lookups++;
-		num_lookups = (num_lookups % PW_RET_CACHE_MAX_LOOKUPS);
-		return setup_pwret(sv_pw_ret);
+		return setup_pwret(&pw_cache.pass);
 	}
 
 	/* no cache hit--use old lookup instead */
 	DEBUG(2,("getpwnam(%s) called\n",name));
 
-	num_lookups = 1;
-
-	sv_pw_ret = getpwnam(name);
-
-	return setup_pwret(sv_pw_ret);
+	return setup_pwret(getpwnam(name));
 }
 
 /**************************************************************************
@@ -680,21 +684,14 @@ struct passwd *sys_getpwnam(const char *name)
 
 struct passwd *sys_getpwuid(uid_t uid)
 {
-	if (num_lookups && sv_pw_ret && (uid == sv_pw_ret->pw_uid))
-	{
+	if (num_lookups && pw_cache.pass.pw_name && (uid == pw_cache.pass.pw_uid)) {
 		DEBUG(2,("getpwuid(%d) avoided - using cached results\n",uid));
-		num_lookups++;
-		num_lookups = (num_lookups % PW_RET_CACHE_MAX_LOOKUPS);
-		return setup_pwret(sv_pw_ret);
+		return setup_pwret(&pw_cache.pass);
 	}
 	
 	DEBUG(2,("getpwuid(%d) called\n",uid));
 
-	num_lookups = 1;
-
-	sv_pw_ret = getpwuid(uid);
-
-  	return setup_pwret(sv_pw_ret);
+  	return setup_pwret(getpwuid(uid));
 }
 
 /**************************************************************************
