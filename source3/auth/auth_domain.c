@@ -78,6 +78,12 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
   
+	/* TODO: Send a SAMLOGON request to determine whether this is a valid
+	   logonserver.  We can avoid a 30-second timeout if the DC is down
+	   if the SAMLOGON request fails as it is only over UDP. */
+
+	/* Attempt connection */
+
 	result = cli_full_connection(cli, global_myname, server,
 				     &dest_ip, 0, "IPC$", "IPC", "", "", "", 0);
 	
@@ -444,7 +450,6 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	 */
 
 	pserver = lp_passwordserver();
-	if (! *pserver) pserver = "*";
 	p = pserver;
 
 	nt_status = domain_client_validate(mem_ctx, user_info, domain,
