@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -123,15 +123,19 @@ srvconv(int argc, char **argv)
 	}
 	ret = krb5_425_conv_principal(context, service, instance, realm,
 				      &entry.principal);
+	if (ret) {
+	    krb5_warn(context, ret, "krb5_425_conv_principal (%s.%s@%s)",
+		      service, instance, realm);
+	    free(service);
+	    free(instance);
+	    free(realm);
+	    break;
+	}
+	
 	free(service);
 	free(instance);
 	free(realm);
 	
-	if(ret) {
-	    krb5_warn(context, ret, "krb5_425_conv_principal");
-	    break;
-	}
-
 	ret = krb5_ret_int8(sp, &kvno);
 	if(ret) {
 	    krb5_warn(context, ret, "reading kvno");
