@@ -2186,7 +2186,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 
 		if (True)
 		{
-			SAM_USER_INFO_16 *p = (SAM_USER_INFO_16 *)malloc(sizeof(SAM_USER_INFO_16));
+			SAM_USER_INFO_10 *p = (SAM_USER_INFO_10 *)malloc(sizeof(SAM_USER_INFO_10));
 			p->acb_info = ctr.info.id10->acb_info;
 			DEBUG(10,("acb_info: %x\n", p->acb_info));
 			if (set_acb_bits)
