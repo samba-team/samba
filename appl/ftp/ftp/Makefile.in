@@ -59,7 +59,7 @@ uninstall:
 	done
 
 ftp$(EXECSUFFIX): $(ftp_OBJS) # ../common/libcommon.a
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(ftp_OBJS) ../common/libcommon.a -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes -L$(LIBTOP)/roken -lroken $(LIBS) -L$(LIBTOP)/roken -lroken
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(ftp_OBJS) -L../common -lcommon -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes -L$(LIBTOP)/roken -lroken $(LIBS) -L$(LIBTOP)/roken -lroken
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)
