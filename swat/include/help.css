@@ -1,0 +1,21 @@
+/* Alternate styles used when accessing the help menu */
+#gui {
+	width:100%;
+	margin:auto;
+}
+.banner {
+	display:none;
+}
+.nav {
+	display:none;
+}
+.controls {
+	background-color:#FFF;
+}
+.controls ul {
+	list-style-type:none;
+	margin-left:-10px;
+}
+.footer {
+	display:none;
+}

@@ -503,42 +503,50 @@ static void commit_parameters(int snum)
 }
 
 /****************************************************************************
-  spit out the html for a link with an image 
+  generate html for rollovers
 ****************************************************************************/
-static void image_link(const char *name, const char *hlink, const char *src)
+static void rollover_link(const char *name, const char *id, const char *page)
 {
-	printf("<A HREF=\"%s/%s\"><img border=\"0\" src=\"/swat/%s\" alt=\"%s\"></A>\n", 
-	       cgi_baseurl(), hlink, src, name);
+	if ( strcmp(page, id)==0 ) {
+		printf("    <img src=\"/swat/images/%s_flat.png\" alt=\"%s\" />\n", 
+	       	   id, name);
+	} else {
+		printf("    <a href=\"%s/%s\" onmouseover=\"swapImg('%s','%sOver')\" onmouseout=\"swapImg('%s','%sLink')\"><img src=\"/swat/images/%s_link.png\" name=\"%s\" alt=\"%s\" /></a>\n",
+	       cgi_baseurl(), id, id, id, id, id, id, id, name);
+	}
 }
 
 /****************************************************************************
   display the main navigation controls at the top of each page along
   with a title 
 ****************************************************************************/
-static void show_main_buttons(void)
+static void show_main_buttons(const char *page)
 {
 	char *p;
 	
+	printf("  <div id=\"nav\">\n");
+
+	if (have_write_access) {
+		rollover_link(_("Configure"), "conf", page);
+		rollover_link(_("Services"), "services", page);
+	}
+   
+	/* root always gets all buttons, otherwise look for -P */
+	if ( have_write_access || (!passwd_only && have_read_access) ) {
+		rollover_link(_("Status"), "status", page);
+	}
+	rollover_link(_("Password Management"), "passwd", page);
+	
+	printf("  </div>\n\n");
+	
+	/* Wrap the rest in a control div */
+	printf("  <div id=\"controls\">\n\n");
+
 	if ((p = cgi_user_name()) && strcmp(p, "root")) {
 		printf(_("Logged in as <b>%s</b>"), p);
 		printf("<p>\n");
 	}
 
-	image_link(_("Home"), "", "images/home.gif");
-	if (have_write_access) {
-		image_link(_("Globals"), "globals", "images/globals.gif");
-		image_link(_("Shares"), "shares", "images/shares.gif");
-		image_link(_("Printers"), "printers", "images/printers.gif");
-		image_link(_("Wizard"), "wizard", "images/wizard.gif");
-	}
-   /* root always gets all buttons, otherwise look for -P */
-	if ( have_write_access || (!passwd_only && have_read_access) ) {
-		image_link(_("Status"), "status", "images/status.gif");
-		image_link(_("View Config"), "viewconfig", "images/viewconfig.gif");
-	}
-	image_link(_("Password Management"), "passwd", "images/passwd.gif");
-
-	printf("<HR>\n");
 }
 
 /****************************************************************************
@@ -561,6 +569,33 @@ static void ViewModeBoxes(int mode)
 static void welcome_page(void)
 {
 	include_html("help/welcome.html");
+}
+
+/****************************************************************************
+  display splash page with conf options  
+****************************************************************************/
+static void conf_page(void)
+{
+	printf("  <div class=\"whereto\">\n");
+	printf("    <h2>Configuring Samba</h2>\n\n");
+	printf("    <p>The following options are available for editing your Samba configuration</p>\n");
+	printf("  </div\n");
+}
+
+/****************************************************************************
+  display help page  
+****************************************************************************/
+static void help_page(void)
+{
+	include_html("help/docs.html");
+}
+
+/****************************************************************************
+  display shares and printers links from an overall services page
+****************************************************************************/
+static void services_page(void)
+{
+	printf("Get served here.\n");
 }
 
 /****************************************************************************
@@ -628,7 +663,9 @@ static void rewritecfg_file(void)
 {
 	commit_parameters(GLOBAL_SECTION_SNUM);
 	save_reload(0);
-	printf("<H2>%s</H2>\n", _("Note: smb.conf file has been read and rewritten"));
+	printf("<h2>Samba Configuration Saved</h2>");
+	printf("<p>%s</p>\n", _("Note: smb.conf file has been read and rewritten"));
+	printf("<p>Return to the <a href=\"javascript:history.go(-1)\">previous page</a>.\n");
 }
 
 /****************************************************************************
@@ -1376,29 +1413,34 @@ static void printers_page(void)
 		have_read_access = (access(dyn_CONFIGFILE,R_OK) == 0);
 	}
 
-	show_main_buttons();
-
 	page = cgi_pathinfo();
 
-	/* Root gets full functionality */
-	if (have_read_access && strcmp(page, "globals")==0) {
+	show_main_buttons(page);
+
+	if (have_read_access && strcmp(page,"conf")==0) { 
+		conf_page();
+	} else if (have_read_access && strcmp(page,"viewconfig")==0) {
+		viewconfig_page();
+	} else if (have_read_access && strcmp(page,"rewritecfg")==0) {
+		rewritecfg_file();
+	} else if (have_read_access && strcmp(page, "globals")==0) {
 		globals_page();
+	} else if (have_read_access && strcmp(page,"services")==0) {
+		services_page();
 	} else if (have_read_access && strcmp(page,"shares")==0) {
 		shares_page();
 	} else if (have_read_access && strcmp(page,"printers")==0) {
 		printers_page();
 	} else if (have_read_access && strcmp(page,"status")==0) {
 		status_page();
-	} else if (have_read_access && strcmp(page,"viewconfig")==0) {
-		viewconfig_page();
 	} else if (strcmp(page,"passwd")==0) {
 		passwd_page();
 	} else if (have_read_access && strcmp(page,"wizard")==0) {
 		wizard_page();
 	} else if (have_read_access && strcmp(page,"wizard_params")==0) {
 		wizard_params_page();
-	} else if (have_read_access && strcmp(page,"rewritecfg")==0) {
-		rewritecfg_file();
+	} else if (have_read_access && strcmp(page,"help")==0) {
+		help_page();
 	} else {
 		welcome_page();
 	}

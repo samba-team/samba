@@ -1,0 +1,72 @@
+/* Styles for the main SWAT pages */
+#gui {
+	width:90%;
+	margin:auto;
+	border:2px groove #161C38;
+	background-color:#BBBDC3;
+}
+#banner {
+	height:30px;
+	line-height:30px;
+}
+#banner a,
+#banner a:link,
+#banner a:visited {
+	font-size:small;
+	color:#7B7C80;
+	text-decoration:none;
+	font-weight:bold;
+	margin:0 0 0 1px;
+}
+#banner a:hover {
+	color:#444;
+}
+#banner a:active {
+	color:#999;
+}
+#banner img {
+	float:right;
+	margin:-28px 1px 0 0;
+}
+#nav {
+	width:100%;
+	height:25px;
+	border-bottom:8px solid #7B7C80;
+	margin:0;
+	text-align:center;
+}
+#nav img {
+	margin:3px 0 0 -4px;
+}
+.controls {
+	background-color:#FFF;
+	border-left:25px solid #7B7C80;
+	border-right:25px solid #7B7C80;
+	background-color:#FFF;
+	padding:20px;
+}
+.controls p {
+	position:relative;
+	left:25px;
+	width:500px;
+}
+.controls ul {
+	position:relative;
+	left:35px;
+	list-style-type:none;
+	line-height:20px;
+	width:400px;
+}
+.controls li {
+	background:url(/swat/images/arrow.png) top left no-repeat;
+	margin-bottom:20px;
+	padding-left:28px;
+}
+#footer {
+	text-align:right;
+}
+#footer img {
+	width:84px;
+	height:40px;
+}
+
