@@ -267,7 +267,7 @@ doit (char *host, int passivep)
 	       fprintf (stderr, "%s: write: %s\n", prog, strerror(errno));
 	       return 1;
 	  }
-	  close (otherside);
+	  /* close (otherside); */
 	  fn = passive;
 	  pid = fork();
 	  if (pid < 0) {
