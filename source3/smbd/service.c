@@ -364,14 +364,14 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	} else if (vuser) {
 		if (vuser->guest) {
 			if (!lp_guest_ok(snum)) {
-				DEBUG(2, ("guest user (from session setup) not permitted to access this share (%s)", lp_servicename(snum)));
+				DEBUG(2, ("guest user (from session setup) not permitted to access this share (%s)\n", lp_servicename(snum)));
 				      conn_free(conn);
 				      *status = NT_STATUS_ACCESS_DENIED;
 				      return NULL;
 			}
 		} else {
 			if (!user_ok(vuser->user.unix_name, snum, vuser->groups, vuser->n_groups)) {
-				DEBUG(2, ("user '%s' (from session setup) not permitted to access this share (%s)", vuser->user.unix_name, lp_servicename(snum)));
+				DEBUG(2, ("user '%s' (from session setup) not permitted to access this share (%s)\n", vuser->user.unix_name, lp_servicename(snum)));
 				conn_free(conn);
 				*status = NT_STATUS_ACCESS_DENIED;
 				return NULL;
