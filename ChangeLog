@@ -1,5 +1,9 @@
 Wed Nov 12 02:35:57 1997  Assar Westerlund  <assar@sics.se>
 
+	* appl/rsh/rsh_locl.h: add AUTH_BROKEN and PATH_RSH
+
+	* appl/rsh/Makefile.am: set BINDIR
+
 	* appl/rsh/rsh.c: implemented BSD-style reserved port
  	`authentication'
 
