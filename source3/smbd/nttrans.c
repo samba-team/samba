@@ -1443,6 +1443,7 @@ int reply_ntcancel(connection_struct *conn,
 	START_PROFILE(SMBntcancel);
 	remove_pending_change_notify_requests_by_mid(mid);
 	remove_pending_lock_requests_by_mid(mid);
+	srv_cancel_sign_response(mid);
 	
 	DEBUG(3,("reply_ntcancel: cancel called on mid = %d.\n", mid));
 

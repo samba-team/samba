@@ -44,6 +44,7 @@ static struct change_notify *change_notify_list;
 /****************************************************************************
  Setup the common parts of the return packet and send it.
 *****************************************************************************/
+
 static void change_notify_reply_packet(char *inbuf, NTSTATUS error_code)
 {
 	char outbuf[smb_size+38];
