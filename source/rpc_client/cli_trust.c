@@ -34,16 +34,6 @@ static BOOL modify_trust_password( const char *domain, const char *remote_machin
 {
 	struct cli_state cli;
 	NTSTATUS result;
-	DOM_SID domain_sid;
-
-	/*
-	 * Ensure we have the domain SID for this domain.
-	 */
-
-	if (!secrets_fetch_domain_sid(domain, &domain_sid)) {
-		DEBUG(0, ("modify_trust_password: unable to fetch domain sid.\n"));
-		return False;
-	}
 
 	ZERO_STRUCT(cli);
 	if(cli_initialise(&cli) == NULL) {
