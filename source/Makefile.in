@@ -275,7 +275,8 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 		smbd/service.o smbd/error.o smbd/vfs.o smbd/vfs-wrap.o \
 		smbd/challenge.o  lib/util_pwdb.o smbd/afsticket.o
 
-PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_cups.o printing/load.o
+PRINTING_OBJ =  printing/pcap.o printing/print_svid.o printing/printing.o \
+		printing/lpq_parse.o printing/print_cups.o printing/load.o
 
 PRINTBACKEND_OBJ = printing/printing.o printing/lpq_parse.o printing/nt_printing.o
 
@@ -715,11 +716,12 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_group.o \
 		nsswitch/winbindd_surs.o  \
 		nsswitch/winbindd_util.o
+
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) \
 		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(STUB_UID_OBJ) \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSURS_OBJ) $(LIBSMB_OBJ) 
+		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSMB_OBJ)
 
 NTDOM_OBJ = nsswitch/ntdom.o
 
