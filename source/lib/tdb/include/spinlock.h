@@ -36,7 +36,7 @@ typedef struct {
 
 int tdb_spinlock(TDB_CONTEXT *tdb, int list, int rw_type);
 int tdb_spinunlock(TDB_CONTEXT *tdb, int list, int rw_type);
-int tdb_create_rwlocks(int fd, uint_t hash_size);
+int tdb_create_rwlocks(int fd, unsigned int hash_size);
 int tdb_clear_spinlocks(TDB_CONTEXT *tdb);
 
 #define TDB_SPINLOCK_SIZE(hash_size) (((hash_size) + 1) * sizeof(tdb_rwlock_t))
@@ -49,7 +49,7 @@ int tdb_clear_spinlocks(TDB_CONTEXT *tdb);
 #else
 int tdb_spinlock(TDB_CONTEXT *tdb, int list, int rw_type);
 int tdb_spinunlock(TDB_CONTEXT *tdb, int list, int rw_type);
-int tdb_create_rwlocks(int fd, uint_t hash_size);
+int tdb_create_rwlocks(int fd, unsigned int hash_size);
 #endif
 int tdb_clear_spinlocks(TDB_CONTEXT *tdb);
 #define TDB_SPINLOCK_SIZE(hash_size) 0

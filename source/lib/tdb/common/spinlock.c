@@ -55,7 +55,7 @@
 
 static inline int __spin_trylock(spinlock_t *lock)
 {
-	uint_t result;
+	unsigned int result;
 
 	asm volatile("ldstub    [%1], %0"
 		: "=r" (result)
@@ -85,7 +85,7 @@ static inline int __spin_is_locked(spinlock_t *lock)
 
 static inline int __spin_trylock(spinlock_t *lock)
 {
-	uint_t result;
+	unsigned int result;
 
 	__asm__ __volatile__(
 "1:	lwarx		%0,0,%1\n\
@@ -167,7 +167,7 @@ static inline int __spin_is_locked(spinlock_t *lock)
 /* Returns 0 if the lock is acquired, EBUSY otherwise. */
 static inline int __spin_trylock(spinlock_t *lock)
 {
-        uint_t val;
+        unsigned int val;
         val = __lock_test_and_set(lock, 1);
         return val == 0 ? 0 : EBUSY;
 }
@@ -185,16 +185,16 @@ static inline void __spin_lock_init(spinlock_t *lock)
 /* Returns 1 if the lock is held, 0 otherwise. */
 static inline int __spin_is_locked(spinlock_t *lock)
 {
-        uint_t val;
+        unsigned int val;
         val = __add_and_fetch(lock, 0);
 	return val;
 }
 
 #elif defined(MIPS_SPINLOCKS) 
 
-static inline uint_t load_linked(unsigned long addr)
+static inline unsigned int load_linked(unsigned long addr)
 {
-	uint_t res;
+	unsigned int res;
 
 	__asm__ __volatile__("ll\t%0,(%1)"
 		: "=r" (res)
@@ -203,9 +203,9 @@ static inline uint_t load_linked(unsigned long addr)
 	return res;
 }
 
-static inline uint_t store_conditional(unsigned long addr, uint_t value)
+static inline unsigned int store_conditional(unsigned long addr, unsigned int value)
 {
-	uint_t res;
+	unsigned int res;
 
 	__asm__ __volatile__("sc\t%0,(%2)"
 		: "=r" (res)
@@ -215,7 +215,7 @@ static inline uint_t store_conditional(unsigned long addr, uint_t value)
 
 static inline int __spin_trylock(spinlock_t *lock)
 {
-	uint_t mw;
+	unsigned int mw;
 
 	do {
 		mw = load_linked(lock);
@@ -418,9 +418,9 @@ int tdb_spinunlock(TDB_CONTEXT *tdb, int list, int rw_type)
 	return 0;
 }
 
-int tdb_create_rwlocks(int fd, uint_t hash_size)
+int tdb_create_rwlocks(int fd, unsigned int hash_size)
 {
-	uint_t size, i;
+	unsigned int size, i;
 	tdb_rwlock_t *rwlocks;
 
 	size = TDB_SPINLOCK_SIZE(hash_size);
@@ -446,7 +446,7 @@ int tdb_create_rwlocks(int fd, uint_t hash_size)
 int tdb_clear_spinlocks(TDB_CONTEXT *tdb)
 {
 	tdb_rwlock_t *rwlocks;
-	uint_t i;
+	unsigned int i;
 
 	if (tdb->header.rwlocks == 0) return 0;
 	if (!tdb->map_ptr) return -1;
@@ -460,7 +460,7 @@ int tdb_clear_spinlocks(TDB_CONTEXT *tdb)
 	return 0;
 }
 #else
-int tdb_create_rwlocks(int fd, uint_t hash_size) { return 0; }
+int tdb_create_rwlocks(int fd, unsigned int hash_size) { return 0; }
 int tdb_spinlock(TDB_CONTEXT *tdb, int list, int rw_type) { return -1; }
 int tdb_spinunlock(TDB_CONTEXT *tdb, int list, int rw_type) { return -1; }
 
