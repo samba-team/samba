@@ -40,7 +40,6 @@
 .Nm krb5_get_init_creds_opt ,
 .Nm krb5_get_init_creds_opt_alloc ,
 .Nm krb5_get_init_creds_opt_free ,
-.Nm krb5_get_init_creds_opt_free_pkinit ,
 .Nm krb5_get_init_creds_opt_init ,
 .Nm krb5_get_init_creds_opt_set_address_list ,
 .Nm krb5_get_init_creds_opt_set_anonymous ,
@@ -72,10 +71,6 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fc
 .Ft void
 .Fo krb5_get_init_creds_opt_free
-.Fa "krb5_get_init_creds_opt *opt"
-.Fc
-.Ft void
-.Fo krb5_get_init_creds_opt_free_pkinit
 .Fa "krb5_get_init_creds_opt *opt"
 .Fc
 .Ft void
@@ -216,11 +211,23 @@ keytab to make sure the response was from the KDC.
 .Pp
 First a
 .Li krb5_get_init_creds_opt
-structure is initialized. The structure modified by the any of the
+structure is initialized
+with
+.Fn krb5_get_init_creds_opt_alloc
+or
+.Fn krb5_get_init_creds_opt_init .
+.Fn krb5_get_init_creds_opt_alloc
+allocates a extendible structures that needs to be freed with
+.Fn krb5_get_init_creds_opt_free .
+The structure modified by the any of the
 .Fn krb5_get_init_creds_opt_set
 functions to change request parameters and authentication information.
 .Pp
-The the actual reqest to the KDC is done by any of the
+If the caller want to use the default options,
+.Dv NULL
+can be passed instead.
+.Pp
+The the actual request to the KDC is done by any of the
 .Fn krb5_get_init_creds ,
 .Fn krb5_get_init_creds_password ,
 or
