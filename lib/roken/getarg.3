@@ -65,7 +65,8 @@ struct getargs{
 	   arg_flag, 
 	   arg_negative_flag, 
 	   arg_strings,
-	   arg_double
+	   arg_double,
+           arg_collect
     } type;
     void *value;
     const char *help;
@@ -131,6 +132,76 @@ argument is a double precision floating point value, and
 .Fa value
 should point to a
 .Fa double .
+.It Fa arg_collect
+allows more fine-grained control of the option parsing process.
+.Fa value
+should be a pointer to a 
+.Fa getarg_collect_info
+structure:
+.Bd -literal
+typedef int (*getarg_collect_func)(int short_opt,
+				   int argc,
+				   char **argv,
+				   int *optind,
+				   int *optarg,
+				   void *data);
+
+typedef struct getarg_collect_info {
+    getarg_collect_func func;
+    void *data;
+} getarg_collect_info;
+.Ed
+.Pp
+With the
+.Fa func
+member set to a function to call, and 
+.Fa data
+to some application specific data. The parameters to the collect function are:
+.Bl -inset
+.It Fa short_flag
+non-zero if this call is via a short option flag, zero otherwise
+.It Fa argc , argv
+the whole argument list
+.It Fa optind
+pointer to the index in argv where the flag is
+.It Fa optarg
+pointer to the index in argv[*optind] where the flag name starts
+.It Fa data
+application specific data
+.El
+.Pp
+You can modify
+.Fa *optind ,
+and 
+.Fa *optarg ,
+but to do this correct you (more or less) have to know about the inner
+workings of getarg.
+ 
+You can skip parts of arguments by increasing
+.Fa *optarg
+(you could
+implement the 
+.Fl z Ns Ar 3
+set of flags from
+.Nm gzip
+with this), or whole argument strings by increasing
+.Fa *optind
+(let's say you want a flag 
+.Fl c Ar x y z
+to specify a coordinate); if you also have to set
+.Fa *optarg
+to a sane value.
+.Pp
+The collect function should return one of 
+.Dv ARG_ERR_NO_MATCH , ARG_ERR_BAD_ARG , ARG_ERR_NO_ARG
+on error, zero otherwise.
+.Pp
+For your convenience there is a function,
+.Fn getarg_optarg ,
+that returns the traditional argument string, and you pass it all
+arguments, sans data, that where given to the collection function.
+.Pp
+Don't use this more this unless you absolutely have to.
 .El
 .Pp
 Option parsing is similar to what 
