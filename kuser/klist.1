@@ -9,7 +9,13 @@
 list the current tickets
 .Sh SYNOPSIS
 .Nm
+.Oo Fl c Ar cache \*(Ba Xo
+.Fl -cache= Ns Ar cache Oc
+.Xc
 .Op Fl t | Fl -test
+.Op Fl 4 | Fl -v4
+.Op Fl T | Fl -tokens
+.Op Fl 5 | Fl -v5
 .Op Fl v | Fl -verbose
 .Op Fl -version
 .Op Fl -help
@@ -21,11 +27,31 @@ knows as the ticket file).
 Options supported:
 .Bl -tag -width Ds
 .It Xo
+.Fl c Ar cache Ns ,
+.Fl -cache= Ns Ar cache
+.Xc
+credentials cache to list
+.It Xo
 .Fl t Ns ,
 .Fl -test
 .Xc
 Test for there being an active and valid TGT for the local realm of
 the user in the credential cache.
+.It Xo
+.Fl 4 Ns ,
+.Fl -v4
+.Xc
+display v4 tickets
+.It Xo
+.Fl T Ns ,
+.Fl -tokens
+.Xc
+display AFS tokens
+.It Xo
+.Fl 5 Ns ,
+.Fl -v5
+.Xc
+display v5 cred cache (this is the default)
 .It Xo
 .Fl v Ns ,
 .Fl -verbose
