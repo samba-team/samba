@@ -1487,6 +1487,49 @@ static NTSTATUS cmd_samr_get_dom_pwinfo(struct cli_state *cli,
 	return result;
 }
 
+/* Look up domain name */
+
+static NTSTATUS cmd_samr_lookup_domain(struct cli_state *cli, 
+				       TALLOC_CTX *mem_ctx,
+				       int argc, const char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	fstring domain_name,sid_string;
+	DOM_SID sid;
+	
+	if (argc != 2) {
+		printf("Usage: %s domain_name\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+	
+	sscanf(argv[1], "%s", domain_name);
+	
+	result = try_samr_connects(cli, mem_ctx, access_mask, &connect_pol);
+	
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      access_mask, &domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+	
+	result = cli_samr_lookup_domain(
+		cli, mem_ctx, &connect_pol, domain_name, &sid);
+
+	sid_to_string(sid_string,&sid);
+ 
+	if (NT_STATUS_IS_OK(result)) 
+		printf("SAMR_LOOKUP_DOMAIN: Domain Name: %s Domain SID: %s\n",
+		       domain_name,sid_string);
+
+done:
+	return result;
+}
+
 
 /* List of commands exported by this module */
 
@@ -1513,5 +1556,6 @@ struct cmd_set samr_commands[] = {
 	{ "samquerysecobj",     RPC_RTYPE_NTSTATUS, cmd_samr_query_sec_obj,         NULL, PI_SAMR, "Query SAMR security object",   "" },
 	{ "getdompwinfo",       RPC_RTYPE_NTSTATUS, cmd_samr_get_dom_pwinfo,        NULL, PI_SAMR, "Retrieve domain password info", "" },
 
+	{ "lookupdomain",       RPC_RTYPE_NTSTATUS, cmd_samr_lookup_domain,         NULL, PI_SAMR, "Lookup Domain Name", "" },
 	{ NULL }
 };
