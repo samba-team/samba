@@ -11,16 +11,39 @@ risk.
 
 Common bugs fixed in 3.0.8pre2 include:
 
-  o 
+  o Several bugs in the spoolss printing code.
+  o Inconsistencies in the username map functionality 
+    when configured on domain member servers.
+  o Various compile warnings and errors on various platforms.
   
 New features included in the 3.0.8pre1 release are:
 
-  o 
-
+  o New experimental idmap backend for assigning uids/gids
+    directly based on the user/group RID when acting as a
+    member of single domain without any trusts.
+  o Additional printer migration support for XP/2003 platforms.
+    
     
 Change in Username Map
 ----------------------
 
+Previous Samba releases would only support reading the fully 
+qualified username (e.g. DOMAIN\user) when performing a kerberos
+login from a 200x/XP client.  However, when looking up a map entry
+for a user authenticated by NTLM[SSP], only the login name would be
+used for matches.  This resulted in inconsistent behavior sometimes
+even on the same server.
+
+Samba 3.0.8pre2 obeys the following rules when applying the username
+map functionality.
+
+  * When performing local authentication, the username map is 
+    applied to the login name before attempting to authenticate 
+    the connection.
+  * When relying upon a external domain controller for validating
+    authentication requests, smbd will apply the username map 
+    to the fully qualified username (i.e. DOMAIN\user) only
+    after the user has been successfully authenticated.
 
 
   
@@ -55,7 +78,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 1886: Prevent delete on close being set for readonly files 
       (and return the correct error code).
     * Ensure we pass most of the new lock tests except for the cancel 
-      lock which is yet to be addedd (merged from Samba 4 branch).
+      lock which is yet to be added (merged from Samba 4 branch).
     * BUG 1947: Fix incorrect use of getpwnam() etc. interface.
     * BUG 1956: Ensure errno is saved and restored consistently on a normal_close.
   
@@ -66,7 +89,7 @@ o   Andrew Bartlett <abartlet@samba.org>
     * Allow 'require_membership_of' and 'require-membership-of'.
     * Fix the error code for 'you didn't specify a domain' in 
       ntlm_auth.
-    * Use sys_getgroups() rather than scnanning all groups 
+    * Use sys_getgroups() rather than scanning all groups 
       when generating SAMR replies.
 
 
@@ -101,7 +124,7 @@ o   Guenther Deschner <gd@samba.org>
     * Check correct string length when verifying password-policies 
       and using extended characters (Thanks to Uwe Morgenroth from CC 
       Compunet and Volker).
-    * Make 'password history'-behaviour in ldapsam more consistent. 
+    * Make 'password history'-behavior in ldapsam more consistent. 
     * Adding "Windows x64" as architecture string and driverdir "x64" 
       for the 64bit AMD platform.
     * BUG 1343: Readd WKGUID-binding to match the correct default-
@@ -116,11 +139,8 @@ o   Guenther Deschner <gd@samba.org>
       Sumit Bose <sbose@suse.de>).
 
 
-o   Rob Foehl <rwf@loonybin.net>
-
-
 o   Steve French <sfrench@us.ibm.com>
-    * Fix ip address override in mount.cifs mount helper and clean 
+    * Fix IP address override in mount.cifs mount helper and clean 
       up warning messages from the sparse tool and expand syntax help.
     * Strip guest mount option off before sending to kernel mount 
       routine to avoid logging spurious message.
@@ -160,8 +180,8 @@ o   Björn Jacke <bjacke@sernet.de>
       UTF-8.  Reformat msgstr in msg-files to UTF-8.
     * Do not use display charset for swat output.
     * Convert the share names correctly from unix encoding to web 
-      encoding and vice vera. 
-    * Convert files from statuspage from unix charset to UTF-8.
+      encoding and vice versa. 
+    * Convert files from status page from unix charset to UTF-8.
 
 
 o   Tom Lackemann <cessnatomny@yahoo.com>
