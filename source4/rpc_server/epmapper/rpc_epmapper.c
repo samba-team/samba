@@ -148,13 +148,13 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 static NTSTATUS epm_Insert(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			   struct epm_Insert *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 static NTSTATUS epm_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			   struct epm_Delete *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -312,19 +312,19 @@ failed:
 static NTSTATUS epm_LookupHandleFree(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 				     struct epm_LookupHandleFree *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 static NTSTATUS epm_InqObject(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			      struct epm_InqObject *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 static NTSTATUS epm_MgmtDelete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			       struct epm_MgmtDelete *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 static NTSTATUS epm_MapAuth(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
