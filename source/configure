@@ -3878,7 +3878,7 @@ else
 fi
 done
 
-for ac_func in fseek64 ftell64 bigcrypt getprpwnam setluid yp_get_default_domain getpwnam
+for ac_func in fseek64 ftell64 bigcrypt getprpwnam setluid yp_get_default_domain getpwanam
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:3885: checking for $ac_func" >&5

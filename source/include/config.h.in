@@ -442,8 +442,8 @@
 /* Define if you have the getprpwnam function.  */
 #undef HAVE_GETPRPWNAM
 
-/* Define if you have the getpwnam function.  */
-#undef HAVE_GETPWNAM
+/* Define if you have the getpwanam function.  */
+#undef HAVE_GETPWANAM
 
 /* Define if you have the getrlimit function.  */
 #undef HAVE_GETRLIMIT
