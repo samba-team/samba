@@ -335,3 +335,23 @@ NTSTATUS odb_set_create_options(struct odb_lock *lck,
 
 	return status;
 }
+
+
+/*
+  determine if a file is open
+*/
+BOOL odb_is_open(struct odb_context *odb, DATA_BLOB *key)
+{
+	TDB_DATA dbuf;
+	TDB_DATA kbuf;
+
+	kbuf.dptr = key->data;
+	kbuf.dsize = key->length;
+
+	dbuf = tdb_fetch(odb->w->tdb, kbuf);
+	if (dbuf.dptr == NULL) {
+		return False;
+	}
+	free(dbuf.dptr);
+	return True;
+}
