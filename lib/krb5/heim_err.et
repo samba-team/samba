@@ -17,4 +17,19 @@ error_code OPNOTSUPP,		"Operation not supported"
 error_code EOF,			"End of file"
 error_code BAD_MKEY,		"Failed to get the master key"
 
+index 128
+prefix HEIM_EAI
+error_code NOERROR,		"no error"
+error_code ADDRFAMILY,		"address family for nodename not supported"
+error_code AGAIN,		"temporary failure in name resolution"
+error_code BADFLAGS,		"invalid value for ai_flags"
+error_code FAIL,		"non-recoverable failure in name resolution"
+error_code FAMILY,		"ai_family not supported"
+error_code MEMORY,		"memory allocation failure"
+error_code NODATA,		"no address associated with nodename"
+error_code NONAME,		"nodename nor servname provided, or not known"
+error_code SERVICE,		"servname not supported for ai_socktype"
+error_code SOCKTYPE,		"ai_socktype not supported"
+error_code SYSTEM,		"system error returned in errno"
+
 end
