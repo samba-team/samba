@@ -1,3 +1,15 @@
+1999-07-24  Assar Westerlund  <assar@sics.se>
+
+	* util.c (str2timeval, edit_time): functions for parsing and
+ 	editing times.  Based on patches from Love <lha@stacken.kth.se>.
+	(edit_entry): call new functions
+
+	* mod.c (mod_entry): allow modifying expiration times
+
+	* kadmin_locl.h (str2timeval): add prototype
+
+	* ank.c (add_one_principal): allow setting expiration times
+
 1999-07-03  Assar Westerlund  <assar@sics.se>
 
 	* server.c (v5_loop): handle data allocation with krb5_data_alloc
