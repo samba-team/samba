@@ -82,6 +82,7 @@ struct ntvfs_ops {
 
 /* this structure is used by backends to determine the size of some critical types */
 struct ntvfs_critical_sizes {
+	int interface_version;
 	int sizeof_ntvfs_ops;
 	int sizeof_SMB_OFF_T;
 	int sizeof_tcon_context;
