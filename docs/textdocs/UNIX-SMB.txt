@@ -155,6 +155,9 @@ within the one process. On some unixes (such as SCO) this is not
 possible. This means that on those unixes the client is restricted to
 a single uid.
 
+Note that you can also get the "trapdoor uid" message for other
+reasons. Please see the FAQ for details.
+
 Port numbers
 ============
 

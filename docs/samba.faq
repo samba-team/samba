@@ -402,6 +402,38 @@ valid.
 
 See also 'guest account' in smb.conf man page.
 
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* 11: You get the message "you appear to have a trapdoor uid system"
+      in your logs
+
+This can have several causes. It might be because you are using a uid
+or gid of 65535 or -1. This is a VERY bad idea, and is a big security
+hole. Check carefully in your /etc/passwd file and make sure that no
+user has uid 65535 or -1. Especially check the "nobody" user, as many
+broken systems are shipped with nobody setup with a uid of 65535.
+
+It might also mean that your OS has a trapdoor uid/gid system :-)
+
+This means that once a process changes effective uid from root to
+another user it can't go back to root. Unfortunately Samba relies on
+being able to change effective uid from root to non-root and back
+again to implement its security policy. If your OS has a trapdoor uid
+system this won't work, and several things in Samba may break. Less
+things will break if you use user or server level security instead of
+the default share level security, but you may still strike
+problems. 
+
+The problems don't give rise to any security holes, so don't panic,
+but it does mean some of Samba's capabilities will be unavailable.
+In particular you will not be able to connect to the Samba server as
+two different uids at once. This may happen if you try to print as a
+"guest" while accessing a share as a normal user. It may also affect
+your ability to list the available shares as this is normally done as
+the guest user.
+
+Complain to your OS vendor and ask them to fix their system.
+
 ===============================================================================
 SECTION FOUR: Specific client problems
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
