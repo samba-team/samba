@@ -33,13 +33,16 @@ PDFLATEX = @PDFLATEX@
 LATEX = @LATEX@
 DVIPS = @DVIPS@
 HTMLDOC = @HTMLDOC@
+PNGTOPNM = @PNGTOPNM@
+PNMTOPS = @PNMTOPS@
+XMLTO = @XMLTO@
 SRCDIR = @srcdir@
 MANDIR=../manpages
 HTMLDIR=../htmldocs
 MANPROJDOC = manpages
 PROJDOC = projdoc
+IMAGEPROJDIR = $(PROJDOC)/imagefiles
 DEVDOC = devdoc
-XMLTO = @XMLTO@
 SMBDOTCONFDOC = smbdotconf
 PSDIR = ..
 PDFDIR = ..
@@ -51,6 +54,8 @@ FAQDIR = ../faq
 MANPAGES=$(patsubst %,$(MANDIR)/%,$(MANPAGES_NAMES))
 MANPAGES_HTML=$(patsubst %,$(HTMLDIR)/%.html,$(MANPAGES_NAMES))
 
+PROJDOC_IMAGES_PNG = $(wildcard $(IMAGEPROJDIR)/*.png)
+PROJDOC_IMAGES_EPS=$(patsubst %.png,%.eps,$(wildcard $(IMAGEPROJDIR)/*.png))
 PROJDOC_DEPS = $(PROJDOC)/*.xml $(PROJDOC)/attributions.xml
 DEVDOC_DEPS = $(DEVDOC)/*.xml $(DEVDOC)/attributions.xml
 
@@ -111,7 +116,7 @@ dev-doc.tex: $(DEVDOC)/dev-doc.xml $(DEVDOC_DEPS)
 	@$(XSLTPROC) --output $@ xslt/latex.xsl $<
 
 # Adobe PDF files
-$(PDFDIR)/Samba-HOWTO-Collection.pdf: samba-doc.tex
+$(PDFDIR)/Samba-HOWTO-Collection.pdf: samba-doc.tex $(PROJDOC_IMAGES_PNG)
 	@echo "Building LaTeX sources via $(PDFLATEX)..."
 	@$(PDFLATEX) $< | grep 'Rerun to get cross-references right' && \
 	$(PDFLATEX) $< | grep 'Rerun to get cross-references right' && \
@@ -127,8 +132,10 @@ $(PDFDIR)/Samba-Developers-Guide.pdf: dev-doc.tex
 	@echo "done"
 	@mv dev-doc.pdf $@
 
+epsimages: $(PROJDOC_IMAGES_EPS)
+
 # DVI files
-$(DVIDIR)/Samba-HOWTO-Collection.dvi: samba-doc.tex
+$(DVIDIR)/Samba-HOWTO-Collection.dvi: samba-doc.tex $(PROJDOC_IMAGES_EPS)
 	@echo "Building LaTeX sources via $(LATEX)..."
 	@$(LATEX) $< 2>&1 | grep 'Rerun to get cross-references right' && \
 	$(LATEX) $< 2>&1 | grep 'Rerun to get cross-references right' && \
@@ -143,6 +150,9 @@ $(DVIDIR)/Samba-Developers-Guide.dvi: dev-doc.tex
 	$(LATEX) $< 2>&1 || echo 
 	@echo "done"
 	@mv dev-doc.dvi $@
+
+$(IMAGEPROJDIR)/%.eps: $(IMAGEPROJDIR)/%.png
+	@$(PNGTOPNM) $< | $(PNMTOPS) > $@
 
 # PostScript files
 $(PSDIR)/Samba-HOWTO-Collection.ps: $(DVIDIR)/Samba-HOWTO-Collection.dvi
@@ -159,7 +169,7 @@ $(HTMLDIR):
 CSS: $(HTMLDIR) xslt/html/samba.css
 	@cp xslt/html/samba.css $(HTMLDIR)/
 
-$(HTMLDIR)/Samba-HOWTO-Collection.html: $(PROJDOC)/samba-doc.xml $(PROJDOC_DEPS)
+$(HTMLDIR)/Samba-HOWTO-Collection.html: $(PROJDOC)/samba-doc.xml $(PROJDOC_DEPS) $(PROJDOC_IMAGES_PNG)
 	@$(XSLTPROC) --output $@ xslt/html.xsl $<
 
 $(HTMLDIR)/Samba-Developers-Guide.html: $(DEVDOC)/dev-doc.xml $(DEVDOC_DEPS)
@@ -216,4 +226,5 @@ clean:
 	@rm -f $(MANPAGES) $(MANPAGES_HTML) $(HTMLDIR)/*.html $(HTMLDIR)/*.css $(TXTDIR)/*.txt $(PSDIR)/*.ps $(PDFDIR)/*.pdf 
 	@rm -f $(MANPROJDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.*.xml
 	@rm -f samba-doc.* dev-doc.* $(PROJDOC)/attributions.xml
+	@rm -f $(IMAGEPROJDIR)/*.eps
 

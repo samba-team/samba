@@ -30,13 +30,9 @@
 		<surname>SAMBA Team</surname>
 	</author>
 	<address><email>samba@samba.org</email></address>
-</bookinfo>
-
-<dedication>
-<title>Abstract</title>
-
+<abstract>
 <para>
-<emphasis>Last Update</emphasis> : Mon Sep 30 15:23:53 CDT 2002
+<emphasis>Last Update</emphasis> : Fri Jun  6 00:45:54 CEST 2003
 </para>
 
 <para>
@@ -57,7 +53,7 @@ distribution.  A copy can be found on-line at <ulink
 url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</ulink>
 </para>
 
-</dedication>
+</abstract>
 
 <legalnotice>
 
@@ -70,6 +66,7 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 </formalpara>
 	
 </legalnotice>
+</bookinfo>
 
 <!-- Contents -->
 <toc/>
