@@ -34,6 +34,7 @@
 static void pvfs_setup_options(struct pvfs_state *pvfs)
 {
 	int snum = pvfs->tcon->service;
+	int delay;
 
 	if (lp_map_hidden(snum))     pvfs->flags |= PVFS_FLAG_MAP_HIDDEN;
 	if (lp_map_archive(snum))    pvfs->flags |= PVFS_FLAG_MAP_ARCHIVE;
@@ -42,6 +43,12 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	if (lp_strict_sync(snum))    pvfs->flags |= PVFS_FLAG_STRICT_SYNC;
 	if (lp_strict_locking(snum)) pvfs->flags |= PVFS_FLAG_STRICT_LOCKING;
 	if (lp_ci_filesystem(snum))  pvfs->flags |= PVFS_FLAG_CI_FILESYSTEM;
+
+	pvfs->sharing_violation_delay = 1000000;
+	delay = lp_parm_int(snum, "posix", "sharedelay");
+	if (delay != -1) {
+		pvfs->sharing_violation_delay = delay;
+	}
 
 	pvfs->share_name = talloc_strdup(pvfs, lp_servicename(snum));
 }
