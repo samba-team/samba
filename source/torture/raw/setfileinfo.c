@@ -525,6 +525,11 @@ BOOL torture_raw_sfileinfo_bug(int dummy)
 	NTSTATUS status;
 	int fnum;
 
+	if (lp_parm_int(-1, "torture", "dangerous") != 1) {
+		printf("torture_raw_sfileinfo_bug disabled - enable dangerous tests to use\n");
+		return True;
+	}
+
 	if (!torture_open_connection(&cli)) {
 		return False;
 	}
