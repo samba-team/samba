@@ -1,3 +1,7 @@
+Mon Feb 22 11:32:42 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Release 0.1b
+
 Sat Feb 20 15:48:06 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/hdb/convert_db.c: convert DES3 keys to des3-cbc-sha1, and
