@@ -308,6 +308,7 @@ typedef struct
   BOOL bWidelinks;
   BOOL bSymlinks;
   BOOL bSyncAlways;
+  BOOL bStrictSync;
   char magic_char;
   BOOL *copymap;
   BOOL bDeleteReadonly;
@@ -398,6 +399,7 @@ static service sDefault =
   True,  /* bWidelinks */
   True,  /* bSymlinks */
   False, /* bSyncAlways */
+  False, /* bStrictSync */
   '~',   /* magic char */
   NULL,  /* copymap */
   False, /* bDeleteReadonly */
@@ -582,6 +584,7 @@ static struct parm_struct parm_table[] =
   {"max connections",  P_INTEGER, P_LOCAL,  &sDefault.iMaxConnections,  NULL,   NULL,  0},
   {"min print space",  P_INTEGER, P_LOCAL,  &sDefault.iMinPrintSpace,   NULL,   NULL,  0},
   {"sync always",      P_BOOL,    P_LOCAL,  &sDefault.bSyncAlways,      NULL,   NULL,  0},
+  {"strict sync",      P_BOOL,    P_LOCAL,  &sDefault.bStrictSync,      NULL,   NULL,  0},
 
   {"Printing Options", P_SEP, P_SEPARATOR},
   {"load printers",    P_BOOL,    P_GLOBAL, &Globals.bLoadPrinters,     NULL,   NULL,  0},
@@ -1211,6 +1214,7 @@ FN_LOCAL_BOOL(lp_manglednames,bMangledNames)
 FN_LOCAL_BOOL(lp_widelinks,bWidelinks)
 FN_LOCAL_BOOL(lp_symlinks,bSymlinks)
 FN_LOCAL_BOOL(lp_syncalways,bSyncAlways)
+FN_LOCAL_BOOL(lp_strict_sync,bStrictSync)
 FN_LOCAL_BOOL(lp_map_system,bMap_system)
 FN_LOCAL_BOOL(lp_delete_readonly,bDeleteReadonly)
 FN_LOCAL_BOOL(lp_fake_oplocks,bFakeOplocks)

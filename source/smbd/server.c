@@ -1435,12 +1435,9 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
 #else /* No EROFS */
     if((fd_ptr->fd == -1) && (errno == EACCES)) {
 #endif /* EROFS */
-      if(flags & O_WRONLY) {
-        fd_ptr->fd = fd_attempt_open(fname, open_flags|O_WRONLY, mode);
-        fd_ptr->real_open_flags = O_WRONLY;
-      } else {
-        fd_ptr->fd = fd_attempt_open(fname, open_flags|O_RDONLY, mode);
-        fd_ptr->real_open_flags = O_RDONLY;
+      if(accmode != O_RDWR) {
+        fd_ptr->fd = fd_attempt_open(fname, open_flags|accmode, mode);
+        fd_ptr->real_open_flags = accmode;
       }
     }
   }
@@ -1564,10 +1561,11 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
 /*******************************************************************
 sync a file
 ********************************************************************/
-void sync_file(int fnum)
+void sync_file(int cnum, int fnum)
 {
 #ifndef NO_FSYNC
-  fsync(Files[fnum].fd_ptr->fd);
+  if(lp_strict_sync(SNUM(cnum)))
+    fsync(Files[fnum].fd_ptr->fd);
 #endif
 }
 
