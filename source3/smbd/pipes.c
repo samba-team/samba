@@ -44,7 +44,6 @@ extern int Client;
 
 #define VALID_PNUM(pnum)   (((pnum) >= 0) && ((pnum) < MAX_OPEN_PIPES))
 #define OPEN_PNUM(pnum)    (VALID_PNUM(pnum) && Pipes[pnum].open)
-#define PNUM_OK(pnum,c) (OPEN_PNUM(pnum) && (c)==Pipes[pnum].cnum)
 
 /* this macro should always be used to extract an pnum (smb_fid) from
    a packet to ensure chaining works correctly */
@@ -84,7 +83,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
     if( strequal(fname,pipe_names[i].client_pipe) )
       break;
 
-  if ( pipe_names[i].client_pipe == NULL )
+  if (pipe_names[i].client_pipe == NULL)
     return(ERROR(ERRSRV,ERRaccess));
 
   /* Strip \PIPE\ off the name. */
@@ -111,7 +110,9 @@ int reply_open_pipe_and_X(connection_struct *conn,
     rmode = 1;
   }
 
-  SSVAL(outbuf,smb_vwv2, pnum + 0x800); /* mark file handle up into high range */
+  SSVAL(outbuf,smb_vwv2, pnum + PIPE_HANDLE_OFFSET); /* mark file
+							handle up into
+							high range */
   SSVAL(outbuf,smb_vwv3,fmode);
   put_dos_date3(outbuf,smb_vwv4,mtime);
   SIVAL(outbuf,smb_vwv6,size);
@@ -137,12 +138,6 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int nread = -1;
   char *data;
   BOOL ok = False;
-
-/*
-  CHECK_FNUM(fnum,cnum);
-  CHECK_READ(fnum);
-  CHECK_ERROR(fnum);
-*/
 
   set_message(outbuf,12,0,True);
   data = smb_buf(outbuf);

@@ -575,6 +575,7 @@ struct current_user
 
 typedef struct
 {
+	int fnum;
 	connection_struct *conn;
 	file_fd_struct *fd_ptr;
 	int pos;
@@ -598,6 +599,10 @@ typedef struct
 	BOOL reserved;
 	char *fsp_name;
 } files_struct;
+
+/* this macro should always be used to extract an fnum (smb_fid) from
+   a packet to ensure chaining works correctly */
+#define GETFSP(buf,where) (chain_fsp?chain_fsp:file_fsp(SVAL(buf,where)))
 
 
 /* Domain controller authentication protocol info */
@@ -695,9 +700,9 @@ struct share_ops {
 	BOOL (*lock_entry)(connection_struct *, uint32 , uint32 , int *);
 	BOOL (*unlock_entry)(connection_struct *, uint32 , uint32 , int );
 	int (*get_entries)(connection_struct *, int , uint32 , uint32 , share_mode_entry **);
-	void (*del_entry)(int , int );
-	BOOL (*set_entry)(int , int , uint16 , uint16 );
-	BOOL (*remove_oplock)(int , int);
+	void (*del_entry)(int , files_struct *);
+	BOOL (*set_entry)(int, files_struct *, uint16 , uint16 );
+	BOOL (*remove_oplock)(files_struct *, int);
 	int (*forall)(void (*)(share_mode_entry *, char *));
 	void (*status)(FILE *);
 };
@@ -858,22 +863,21 @@ struct parm_struct
 #endif /* LOCKING_VERSION */
 
 /* these are useful macros for checking validity of handles */
-#define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < MAX_FNUMS))
-#define OPEN_FNUM(fnum)    (VALID_FNUM(fnum) && Files[fnum].open && !Files[fnum].is_directory)
+#define OPEN_FSP(fsp)    ((fsp) && (fsp)->open && !(fsp)->is_directory)
 #define VALID_CNUM(cnum)   (((cnum) >= 0) && ((cnum) < MAX_CONNECTIONS))
-#define OPEN_CNUM(conn)    ((conn) && (conn)->open)
+#define OPEN_CONN(conn)    ((conn) && (conn)->open)
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
-#define FNUM_OK(fnum,c) (OPEN_FNUM(fnum) && (c)==Files[fnum].conn)
+#define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn)
 
-#define CHECK_FNUM(fnum,conn) if (!FNUM_OK(fnum,conn)) \
+#define CHECK_FSP(fsp,conn) if (!FNUM_OK(fsp,conn)) \
                                return(ERROR(ERRDOS,ERRbadfid))
-#define CHECK_READ(fnum) if (!Files[fnum].can_read) \
+#define CHECK_READ(fsp) if (!(fsp)->can_read) \
                                return(ERROR(ERRDOS,ERRbadaccess))
-#define CHECK_WRITE(fnum) if (!Files[fnum].can_write) \
+#define CHECK_WRITE(fsp) if (!(fsp)->can_write) \
                                return(ERROR(ERRDOS,ERRbadaccess))
-#define CHECK_ERROR(fnum) if (HAS_CACHED_ERROR(fnum)) \
-                               return(CACHED_ERROR(fnum))
+#define CHECK_ERROR(fsp) if (HAS_CACHED_ERROR(fsp)) \
+                               return(CACHED_ERROR(fsp))
 
 /* translates a connection number into a service number */
 #define SNUM(conn)         ((conn)?(conn)->service:-1)
@@ -883,7 +887,7 @@ struct parm_struct
 #define PRINTCAP           (lp_printcapname())
 #define PRINTCOMMAND(snum) (lp_printcommand(snum))
 #define PRINTERNAME(snum)  (lp_printername(snum))
-#define CAN_WRITE(conn)    (OPEN_CNUM(conn) && !conn->read_only)
+#define CAN_WRITE(conn)    (OPEN_CONN(conn) && !conn->read_only)
 #define VALID_SNUM(snum)   (lp_snum_ok(snum))
 #define GUEST_OK(snum)     (VALID_SNUM(snum) && lp_guest_ok(snum))
 #define GUEST_ONLY(snum)   (VALID_SNUM(snum) && lp_guest_only(snum))
@@ -1432,11 +1436,10 @@ enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
 #define CACHE_ERROR(w,c,e) ((w)->wr_errclass = (c), (w)->wr_error = (e), \
 			    w->wr_discard = True, -1)
 /* Macro to test if an error has been cached for this fnum */
-#define HAS_CACHED_ERROR(fnum) (Files[(fnum)].open && \
-				Files[(fnum)].wbmpx_ptr && \
-				Files[(fnum)].wbmpx_ptr->wr_discard)
+#define HAS_CACHED_ERROR(fsp) ((fsp)->open && (fsp)->wbmpx_ptr && \
+				(fsp)->wbmpx_ptr->wr_discard)
 /* Macro to turn the cached error into an error packet */
-#define CACHED_ERROR(fnum) cached_error_packet(inbuf,outbuf,fnum,__LINE__)
+#define CACHED_ERROR(fsp) cached_error_packet(inbuf,outbuf,fsp,__LINE__)
 
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10

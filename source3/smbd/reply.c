@@ -33,9 +33,8 @@ extern int Protocol;
 extern int DEBUGLEVEL;
 extern int max_send;
 extern int max_recv;
-extern int chain_fnum;
+extern files_struct *chain_fsp;
 extern char magic_char;
-extern files_struct Files[];
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
@@ -43,11 +42,6 @@ extern pstring sesssetup_user;
 extern fstring global_myworkgroup;
 extern int Client;
 extern int global_oplock_break;
-
-/* this macro should always be used to extract an fnum (smb_fid) from
-a packet to ensure chaining works correctly */
-#define GETFNUM(buf,where) (chain_fnum!= -1?chain_fnum:SVAL(buf,where))
-
 
 /****************************************************************************
 report a possible attack via the password buffer overflow bug
@@ -1232,7 +1226,6 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring fname;
-  int fnum = -1;
   int outsize = 0;
   int fmode=0;
   int share_mode;
@@ -1250,11 +1243,9 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   pstrcpy(fname,smb_buf(inbuf)+1);
   unix_convert(fname,conn,0,&bad_path);
     
-  fnum = find_free_file();
-  if (fnum < 0)
+  fsp = find_free_file();
+  if (!fsp)
     return(ERROR(ERRSRV,ERRnofids));
-
-  fsp = &Files[fnum];
 
   if (!check_name(fname,conn))
   {
@@ -1263,13 +1254,13 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    fsp->reserved = False;
+    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
  
   unixmode = unix_mode(conn,aARCH);
       
-  open_file_shared(fnum,conn,fname,share_mode,3,unixmode,
+  open_file_shared(fsp,conn,fname,share_mode,3,unixmode,
                    oplock_request,&rmode,NULL);
 
   if (!fsp->open)
@@ -1279,12 +1270,12 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    fsp->reserved = False;
+    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
   if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-    close_file(fnum,False);
+    close_file(fsp,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
     
@@ -1294,12 +1285,12 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 
   if (fmode & aDIR) {
     DEBUG(3,("attempt to open a directory %s\n",fname));
-    close_file(fnum,False);
+    close_file(fsp,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
   
   outsize = set_message(outbuf,7,0,True);
-  SSVAL(outbuf,smb_vwv0,fnum);
+  SSVAL(outbuf,smb_vwv0,fsp->fnum);
   SSVAL(outbuf,smb_vwv1,fmode);
   if(lp_dos_filetime_resolution(SNUM(conn)) )
     put_dos_date3(outbuf,smb_vwv2,mtime & ~1);
@@ -1324,7 +1315,6 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
   pstring fname;
-  int fnum = -1;
   int smb_mode = SVAL(inbuf,smb_vwv3);
   int smb_attr = SVAL(inbuf,smb_vwv5);
   /* Breakout the oplock request bits so we can set the
@@ -1354,11 +1344,9 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   pstrcpy(fname,smb_buf(inbuf));
   unix_convert(fname,conn,0,&bad_path);
     
-  fnum = find_free_file();
-  if (fnum < 0)
+  fsp = find_free_file();
+  if (!fsp)
     return(ERROR(ERRSRV,ERRnofids));
-
-  fsp = &Files[fnum];
 
   if (!check_name(fname,conn))
   {
@@ -1367,13 +1355,13 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    fsp->reserved = False;
+    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
   unixmode = unix_mode(conn,smb_attr | aARCH);
       
-  open_file_shared(fnum,conn,fname,smb_mode,smb_ofun,unixmode,
+  open_file_shared(fsp,conn,fname,smb_mode,smb_ofun,unixmode,
 		   oplock_request, &rmode,&smb_action);
       
   if (!fsp->open)
@@ -1383,12 +1371,12 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    fsp->reserved = False;
+    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
   if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-    close_file(fnum,False);
+    close_file(fsp,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1396,7 +1384,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   fmode = dos_mode(conn,fname,&sbuf);
   mtime = sbuf.st_mtime;
   if (fmode & aDIR) {
-    close_file(fnum,False);
+    close_file(fsp,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1427,7 +1415,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   }
 
   set_message(outbuf,15,0,True);
-  SSVAL(outbuf,smb_vwv2,fnum);
+  SSVAL(outbuf,smb_vwv2,fsp->fnum);
   SSVAL(outbuf,smb_vwv3,fmode);
   if(lp_dos_filetime_resolution(SNUM(conn)) )
     put_dos_date3(outbuf,smb_vwv4,mtime & ~1);
@@ -1437,7 +1425,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   SSVAL(outbuf,smb_vwv8,rmode);
   SSVAL(outbuf,smb_vwv11,smb_action);
 
-  chain_fnum = fnum;
+  chain_fsp = fsp;
 
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -1458,16 +1446,7 @@ int reply_ulogoffX(connection_struct *conn, char *inbuf,char *outbuf,int length,
   /* in user level security we are supposed to close any files
      open by this user */
   if ((vuser != 0) && (lp_security() != SEC_SHARE)) {
-    int i;
-    for (i=0;i<MAX_FNUMS;i++) {
-      files_struct *fsp = &Files[i];
-      if ((fsp->vuid == vuid) && fsp->open) {
-        if(!fsp->is_directory)
-          close_file(i,False);
-        else
-          close_directory(i);
-      }
-    }
+	  file_close_user(vuid);
   }
 
   invalidate_vuid(vuid);
@@ -1487,7 +1466,6 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 {
   pstring fname;
   int com;
-  int fnum = -1;
   int outsize = 0;
   int createmode;
   mode_t unixmode;
@@ -1509,11 +1487,9 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
   unixmode = unix_mode(conn,createmode);
   
-  fnum = find_free_file();
-  if (fnum < 0)
+  fsp = find_free_file();
+  if (!fsp)
     return(ERROR(ERRSRV,ERRnofids));
-
-  fsp = &Files[fnum];
 
   if (!check_name(fname,conn))
   {
@@ -1522,7 +1498,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    fsp->reserved = False;
+    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1538,7 +1514,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   }
 
   /* Open file in dos compatibility share mode. */
-  open_file_shared(fnum,conn,fname,(DENY_FCB<<4)|0xF, ofun, unixmode, 
+  open_file_shared(fsp,conn,fname,(DENY_FCB<<4)|0xF, ofun, unixmode, 
                    oplock_request, NULL, NULL);
   
   if (!fsp->open)
@@ -1548,12 +1524,12 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    fsp->reserved = False;
+    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
  
   outsize = set_message(outbuf,1,0,True);
-  SSVAL(outbuf,smb_vwv0,fnum);
+  SSVAL(outbuf,smb_vwv0,fsp->fnum);
 
   if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
@@ -1563,8 +1539,8 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
  
   DEBUG( 2, ( "new file %s\n", fname ) );
-  DEBUG( 3, ( "mknew %s fd=%d fnum=%d dmode=%d umode=%o\n",
-        fname, fsp->fd_ptr->fd, fnum, createmode, (int)unixmode ) );
+  DEBUG( 3, ( "mknew %s fd=%d dmode=%d umode=%o\n",
+        fname, fsp->fd_ptr->fd, createmode, (int)unixmode ) );
 
   return(outsize);
 }
@@ -1577,7 +1553,6 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 {
   pstring fname;
   pstring fname2;
-  int fnum = -1;
   int outsize = 0;
   int createmode;
   mode_t unixmode;
@@ -1592,11 +1567,9 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
   unixmode = unix_mode(conn,createmode);
   
-  fnum = find_free_file();
-  if (fnum < 0)
+  fsp = find_free_file();
+  if (fsp)
     return(ERROR(ERRSRV,ERRnofids));
-
-  fsp = &Files[fnum];
 
   if (!check_name(fname,conn))
   {
@@ -1605,7 +1578,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    fsp->reserved = False;
+    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1613,7 +1586,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
   /* Open file in dos compatibility share mode. */
   /* We should fail if file exists. */
-  open_file_shared(fnum,conn,fname2,(DENY_FCB<<4)|0xF, 0x10, unixmode, 
+  open_file_shared(fsp,conn,fname2,(DENY_FCB<<4)|0xF, 0x10, unixmode, 
                    oplock_request, NULL, NULL);
 
   if (!fsp->open)
@@ -1623,12 +1596,12 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    fsp->reserved = False;
+    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
   outsize = set_message(outbuf,1,2 + strlen(fname2),True);
-  SSVAL(outbuf,smb_vwv0,fnum);
+  SSVAL(outbuf,smb_vwv0,fsp->fnum);
   CVAL(smb_buf(outbuf),0) = 4;
   pstrcpy(smb_buf(outbuf) + 1,fname2);
 
@@ -1640,8 +1613,8 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
 
   DEBUG( 2, ( "created temp file %s\n", fname2 ) );
-  DEBUG( 3, ( "ctemp %s fd=%d fnum=%d dmode=%d umode=%o\n",
-        fname2, fsp->fd_ptr->fd, fnum, createmode, (int)unixmode ) );
+  DEBUG( 3, ( "ctemp %s fd=%d dmode=%d umode=%o\n",
+        fname2, fsp->fd_ptr->fd, createmode, (int)unixmode ) );
 
   return(outsize);
 }
@@ -1777,7 +1750,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 ****************************************************************************/
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
 {
-  int maxcount,mincount,fnum;
+  int maxcount,mincount;
   int nread = 0;
   uint32 startpos;
   char *header = outbuf;
@@ -1800,7 +1773,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
     return -1;
   }
 
-  fnum = GETFNUM(inbuf,smb_vwv0);
+  fsp = GETFSP(inbuf,smb_vwv0);
 
   startpos = IVAL(inbuf,smb_vwv1);
   maxcount = SVAL(inbuf,smb_vwv3);
@@ -1810,23 +1783,18 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   maxcount = MIN(65535,maxcount);
   maxcount = MAX(mincount,maxcount);
 
-  if (!FNUM_OK(fnum,conn) || !Files[fnum].can_read)
-  {
-    DEBUG(3,("fnum %d not open in readbraw - cache prime?\n",fnum));
-    _smb_setlen(header,0);
-    transfer_file(0,Client,0,header,4,0);
-    return(-1);
-  }
-  else
-  {
-    fsp = &Files[fnum];
-
-    fd = fsp->fd_ptr->fd;
-    fname = fsp->fsp_name;
+  if (!FNUM_OK(fsp,conn) || !fsp->can_read) {
+	  DEBUG(3,("fnum %d not open in readbraw - cache prime?\n",fsp->fnum));
+	  _smb_setlen(header,0);
+	  transfer_file(0,Client,0,header,4,0);
+	  return(-1);
+  } else {
+	  fd = fsp->fd_ptr->fd;
+	  fname = fsp->fsp_name;
   }
 
 
-  if (!is_locked(fnum,conn,maxcount,startpos, F_RDLCK))
+  if (!is_locked(fsp,conn,maxcount,startpos, F_RDLCK))
   {
     int size = fsp->size;
     int sizeneeded = startpos + maxcount;
@@ -1846,7 +1814,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
     nread = 0;
   
   DEBUG( 3, ( "readbraw fnum=%d start=%d max=%d min=%d nread=%d\n",
-	      fnum, startpos,
+	      fsp->fnum, startpos,
 	      maxcount, mincount, nread ) );
   
 #if UNSAFE_READRAW
@@ -1860,7 +1828,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 #endif
 
     if ((nread-predict) > 0)
-      seek_file(fnum,startpos + predict);
+      seek_file(fsp,startpos + predict);
     
     ret = transfer_file(fd,Client,nread-predict,header,4+predict,
 			startpos+predict);
@@ -1871,7 +1839,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	     fname,startpos,nread,ret));
 
 #else
-  ret = read_file(fnum,header+4,startpos,nread);
+  ret = read_file(fsp,header+4,startpos,nread);
   if (ret < mincount) ret = 0;
 
   _smb_setlen(header,ret);
@@ -1888,19 +1856,17 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 ****************************************************************************/
 int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsiz)
 {
-  int fnum;
   int nread = -1;
   char *data;
   int outsize = 0;
   uint32 startpos, numtoread;
   int eclass;
   uint32 ecode;
-  
-  fnum = GETFNUM(inbuf,smb_vwv0);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
-  CHECK_FNUM(fnum,conn);
-  CHECK_READ(fnum);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_READ(fsp);
+  CHECK_ERROR(fsp);
 
   numtoread = SVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv2);
@@ -1909,10 +1875,10 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
   numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
   data = smb_buf(outbuf) + 3;
   
-  if(!do_lock( fnum, conn, numtoread, startpos, F_RDLCK, &eclass, &ecode))
+  if(!do_lock( fsp, conn, numtoread, startpos, F_RDLCK, &eclass, &ecode))
     return (ERROR(eclass,ecode));
 
-  nread = read_file(fnum,data,startpos,numtoread);
+  nread = read_file(fsp,data,startpos,numtoread);
 
   if (nread < 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -1923,7 +1889,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
   SSVAL(smb_buf(outbuf),1,nread);
 
   DEBUG( 3, ( "lockread fnum=%d num=%d nread=%d\n",
-            fnum, numtoread, nread ) );
+            fsp->fnum, numtoread, nread ) );
 
   return(outsize);
 }
@@ -1934,17 +1900,16 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
 ****************************************************************************/
 int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int numtoread,fnum;
+  int numtoread;
   int nread = 0;
   char *data;
   uint32 startpos;
   int outsize = 0;
-  
-  fnum = GETFNUM(inbuf,smb_vwv0);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
-  CHECK_FNUM(fnum,conn);
-  CHECK_READ(fnum);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_READ(fsp);
+  CHECK_ERROR(fsp);
 
   numtoread = SVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv2);
@@ -1953,11 +1918,11 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
   data = smb_buf(outbuf) + 3;
   
-  if (is_locked(fnum,conn,numtoread,startpos, F_RDLCK))
+  if (is_locked(fsp,conn,numtoread,startpos, F_RDLCK))
     return(ERROR(ERRDOS,ERRlock));	
 
   if (numtoread > 0)
-    nread = read_file(fnum,data,startpos,numtoread);
+    nread = read_file(fsp,data,startpos,numtoread);
   
   if (nread < 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -1969,7 +1934,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   SSVAL(smb_buf(outbuf),1,nread);
   
   DEBUG( 3, ( "read fnum=%d num=%d nread=%d\n",
-            fnum, numtoread, nread ) );
+            fsp->fnum, numtoread, nread ) );
 
   return(outsize);
 }
@@ -1980,7 +1945,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 ****************************************************************************/
 int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int fnum = GETFNUM(inbuf,smb_vwv2);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
   uint32 smb_offs = IVAL(inbuf,smb_vwv3);
   int smb_maxcnt = SVAL(inbuf,smb_vwv5);
   int smb_mincnt = SVAL(inbuf,smb_vwv6);
@@ -1992,16 +1957,16 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   if (IS_IPC(conn))
     return reply_pipe_read_and_X(inbuf,outbuf,length,bufsize);
 
-  CHECK_FNUM(fnum,conn);
-  CHECK_READ(fnum);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_READ(fsp);
+  CHECK_ERROR(fsp);
 
   set_message(outbuf,12,0,True);
   data = smb_buf(outbuf);
 
-  if (is_locked(fnum,conn,smb_maxcnt,smb_offs, F_RDLCK))
+  if (is_locked(fsp,conn,smb_maxcnt,smb_offs, F_RDLCK))
     return(ERROR(ERRDOS,ERRlock));
-  nread = read_file(fnum,data,smb_offs,smb_maxcnt);
+  nread = read_file(fsp,data,smb_offs,smb_maxcnt);
   ok = True;
   
   if (nread < 0)
@@ -2012,9 +1977,9 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   SSVAL(smb_buf(outbuf),-2,nread);
   
   DEBUG( 3, ( "readX fnum=%d min=%d max=%d nread=%d\n",
-	    fnum, smb_mincnt, smb_maxcnt, nread ) );
+	      fsp->fnum, smb_mincnt, smb_maxcnt, nread ) );
 
-  chain_fnum = fnum;
+  chain_fsp = fsp;
 
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -2028,18 +1993,16 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   int nwritten=0;
   int total_written=0;
   int numtowrite=0;
-  int fnum;
   int outsize = 0;
   long startpos;
   char *data=NULL;
   BOOL write_through;
   int tcount;
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
-  fnum = GETFNUM(inbuf,smb_vwv0);
-
-  CHECK_FNUM(fnum,conn);
-  CHECK_WRITE(fnum);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_WRITE(fsp);
+  CHECK_ERROR(fsp);
   
   tcount = IVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv3);
@@ -2059,17 +2022,17 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   CVAL(inbuf,smb_com) = SMBwritec;
   CVAL(outbuf,smb_com) = SMBwritec;
 
-  if (is_locked(fnum,conn,tcount,startpos, F_WRLCK))
+  if (is_locked(fsp,conn,tcount,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if (seek_file(fnum,startpos) != startpos)
+  if (seek_file(fsp,startpos) != startpos)
     DEBUG(0,("couldn't seek to %ld in writebraw\n",startpos));
 
   if (numtowrite>0)
-    nwritten = write_file(fnum,data,numtowrite);
+    nwritten = write_file(fsp,data,numtowrite);
   
   DEBUG(3,("writebraw1 fnum=%d start=%ld num=%d wrote=%d sync=%d\n",
-	   fnum, startpos, numtowrite, nwritten, write_through));
+	   fsp->fnum, startpos, numtowrite, nwritten, write_through));
 
   if (nwritten < numtowrite) 
     return(UNIXERROR(ERRHRD,ERRdiskfull));
@@ -2097,7 +2060,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
 	     tcount,nwritten,numtowrite));
   }
 
-  nwritten = transfer_file(Client,Files[fnum].fd_ptr->fd,numtowrite,NULL,0,
+  nwritten = transfer_file(Client,fsp->fd_ptr->fd,numtowrite,NULL,0,
 			   startpos+nwritten);
   total_written += nwritten;
   
@@ -2112,10 +2075,10 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   }
 
   if (lp_syncalways(SNUM(conn)) || write_through)
-    sync_file(conn,fnum);
+    sync_file(conn,fsp);
 
   DEBUG(3,("writebraw2 fnum=%d start=%ld num=%d wrote=%d\n",
-	   fnum, startpos, numtowrite, total_written));
+	   fsp->fnum, startpos, numtowrite, total_written));
 
   /* we won't return a status if write through is not selected - this 
      follows what WfWg does */
@@ -2131,28 +2094,26 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
 ****************************************************************************/
 int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int fnum;
   int nwritten = -1;
   int outsize = 0;
   char *data;
   uint32 numtowrite,startpos;
   int eclass;
   uint32 ecode;
-  
-  fnum = GETFNUM(inbuf,smb_vwv0);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
-  CHECK_FNUM(fnum,conn);
-  CHECK_WRITE(fnum);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_WRITE(fsp);
+  CHECK_ERROR(fsp);
 
   numtowrite = SVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv2);
   data = smb_buf(inbuf) + 3;
   
-  if (is_locked(fnum,conn,numtowrite,startpos, F_WRLCK))
+  if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  seek_file(fnum,startpos);
+  seek_file(fsp,startpos);
 
   /* The special X/Open SMB protocol handling of
      zero length writes is *NOT* done for
@@ -2160,15 +2121,15 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int dum
   if(numtowrite == 0)
     nwritten = 0;
   else
-    nwritten = write_file(fnum,data,numtowrite);
+    nwritten = write_file(fsp,data,numtowrite);
   
   if (lp_syncalways(SNUM(conn)))
-    sync_file(conn,fnum);
+    sync_file(conn,fsp);
 
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-  if(!do_unlock(fnum, conn, numtowrite, startpos, &eclass, &ecode))
+  if(!do_unlock(fsp, conn, numtowrite, startpos, &eclass, &ecode))
     return(ERROR(eclass,ecode));
 
   outsize = set_message(outbuf,1,0,True);
@@ -2176,7 +2137,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int dum
   SSVAL(outbuf,smb_vwv0,nwritten);
   
   DEBUG( 3, ( "writeunlock fnum=%d num=%d wrote=%d\n",
-	    fnum, numtowrite, nwritten ) );
+	      fsp->fnum, numtowrite, nwritten ) );
 
   return(outsize);
 }
@@ -2187,37 +2148,36 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int dum
 ****************************************************************************/
 int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,int dum_buffsize)
 {
-  int numtowrite,fnum;
+  int numtowrite;
   int nwritten = -1;
   int outsize = 0;
   int startpos;
   char *data;
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
-  fnum = GETFNUM(inbuf,smb_vwv0);
-
-  CHECK_FNUM(fnum,conn);
-  CHECK_WRITE(fnum);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_WRITE(fsp);
+  CHECK_ERROR(fsp);
 
   numtowrite = SVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv2);
   data = smb_buf(inbuf) + 3;
   
-  if (is_locked(fnum,conn,numtowrite,startpos, F_WRLCK))
+  if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  seek_file(fnum,startpos);
+  seek_file(fsp,startpos);
 
   /* X/Open SMB protocol says that if smb_vwv1 is
      zero then the file size should be extended or
      truncated to the size given in smb_vwv[2-3] */
   if(numtowrite == 0)
-    nwritten = set_filelen(Files[fnum].fd_ptr->fd, startpos);
+    nwritten = set_filelen(fsp->fd_ptr->fd, startpos);
   else
-    nwritten = write_file(fnum,data,numtowrite);
+    nwritten = write_file(fsp,data,numtowrite);
   
   if (lp_syncalways(SNUM(conn)))
-    sync_file(conn,fnum);
+    sync_file(conn,fsp);
 
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2232,7 +2192,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,i
   }
   
   DEBUG(3,("write fnum=%d num=%d wrote=%d\n",
-	   fnum, numtowrite, nwritten));
+	   fsp->fnum, numtowrite, nwritten));
 
   return(outsize);
 }
@@ -2243,7 +2203,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,i
 ****************************************************************************/
 int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int fnum = GETFNUM(inbuf,smb_vwv2);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
   uint32 smb_offs = IVAL(inbuf,smb_vwv3);
   int smb_dsize = SVAL(inbuf,smb_vwv10);
   int smb_doff = SVAL(inbuf,smb_vwv11);
@@ -2251,16 +2211,16 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   int nwritten = -1;
   char *data;
 
-  CHECK_FNUM(fnum,conn);
-  CHECK_WRITE(fnum);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_WRITE(fsp);
+  CHECK_ERROR(fsp);
 
   data = smb_base(inbuf) + smb_doff;
 
-  if (is_locked(fnum,conn,smb_dsize,smb_offs, F_WRLCK))
+  if (is_locked(fsp,conn,smb_dsize,smb_offs, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  seek_file(fnum,smb_offs);
+  seek_file(fsp,smb_offs);
   
   /* X/Open SMB protocol says that, unlike SMBwrite
      if the length is zero then NO truncation is
@@ -2269,7 +2229,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   if(smb_dsize == 0)
     nwritten = 0;
   else
-    nwritten = write_file(fnum,data,smb_dsize);
+    nwritten = write_file(fsp,data,smb_dsize);
   
   if(((nwritten == 0) && (smb_dsize != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2284,12 +2244,12 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   }
 
   DEBUG(3,("writeX fnum=%d num=%d wrote=%d\n",
-	   fnum, smb_dsize, nwritten));
+	   fsp->fnum, smb_dsize, nwritten));
 
-  chain_fnum = fnum;
+  chain_fsp = fsp;
 
   if (lp_syncalways(SNUM(conn)) || write_through)
-    sync_file(conn,fnum);
+    sync_file(conn,fsp);
 
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -2300,17 +2260,14 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 ****************************************************************************/
 int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int fnum;
   uint32 startpos;
   int32 res= -1;
   int mode,umode;
   int outsize = 0;
-  files_struct *fsp;
- 
-  fnum = GETFNUM(inbuf,smb_vwv0);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
-  CHECK_FNUM(fnum,conn);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_ERROR(fsp);
 
   mode = SVAL(inbuf,smb_vwv1) & 3;
   startpos = IVAL(inbuf,smb_vwv2);
@@ -2324,8 +2281,6 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
       umode = SEEK_SET; break;
     }
 
-  fsp = &Files[fnum];
-  
   res = lseek(fsp->fd_ptr->fd,startpos,umode);
   fsp->pos = res;
   
@@ -2333,7 +2288,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   SIVALS(outbuf,smb_vwv0,res);
   
   DEBUG(3,("lseek fnum=%d ofs=%d mode=%d\n",
-	   fnum, startpos, mode));
+	   fsp->fnum, startpos, mode));
 
   return(outsize);
 }
@@ -2344,28 +2299,21 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 ****************************************************************************/
 int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int fnum;
   int outsize = set_message(outbuf,0,0,True);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
-  fnum = GETFNUM(inbuf,smb_vwv0);
-
-  if (fnum != 0xFFFF) {
-    CHECK_FNUM(fnum,conn);
-    CHECK_ERROR(fnum);
+  if (fsp) {
+	  CHECK_FSP(fsp,conn);
+	  CHECK_ERROR(fsp);
   }
 
-  if (fnum == 0xFFFF) {
-	  int i;
-	  for (i=0;i<MAX_FNUMS;i++) {
-		  if (OPEN_FNUM(i)) {
-			  sync_file(conn,i);
-		  }
-	  }
+  if (!fsp) {
+	  file_sync_all(conn);
   } else {
-	  sync_file(conn,fnum);
+	  sync_file(conn,fsp);
   }
 
-  DEBUG( 3, ( "flush fnum=%d\n", fnum ) );
+  DEBUG(3,("flush\n"));
   return(outsize);
 }
 
@@ -2389,7 +2337,6 @@ int reply_exit(connection_struct *conn,
 int reply_close(connection_struct *conn,
 		char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-	int fnum;
 	int outsize = 0;
 	time_t mtime;
 	int32 eclass = 0, err = 0;
@@ -2402,18 +2349,16 @@ int reply_close(connection_struct *conn,
 		return reply_pipe_close(conn, inbuf,outbuf);
 	}
 
-	fnum = GETFNUM(inbuf,smb_vwv0);
+	fsp = GETFSP(inbuf,smb_vwv0);
 
 	/*
-	 * We can only use CHECK_FNUM if we know it's not a directory.
+	 * We can only use CHECK_FSP if we know it's not a directory.
 	 */
 
-	if(!(VALID_FNUM(fnum) && Files[fnum].open && Files[fnum].is_directory))
-		CHECK_FNUM(fnum,conn);
+	if(!(fsp && fsp->open && fsp->is_directory))
+		CHECK_FSP(fsp,conn);
 
-	fsp = &Files[fnum];
-
-	if(HAS_CACHED_ERROR(fnum)) {
+	if(HAS_CACHED_ERROR(fsp)) {
 		eclass = fsp->wbmpx_ptr->wr_errclass;
 		err = fsp->wbmpx_ptr->wr_error;
 	}
@@ -2423,8 +2368,8 @@ int reply_close(connection_struct *conn,
 		 * Special case - close NT SMB directory
 		 * handle.
 		 */
-		DEBUG(3,("close directory fnum=%d\n", fnum));
-		close_directory(fnum);
+		DEBUG(3,("close directory fnum=%d\n", fsp->fnum));
+		close_directory(fsp);
 	} else {
 		/*
 		 * Close ordinary file.
@@ -2435,10 +2380,10 @@ int reply_close(connection_struct *conn,
 		set_filetime(conn, fsp->fsp_name,mtime);
 
 		DEBUG(3,("close fd=%d fnum=%d (numopen=%d)\n",
-			 fsp->fd_ptr->fd, fnum,
+			 fsp->fd_ptr->fd, fsp->fnum,
 			 conn->num_files_open));
   
-		close_file(fnum,True);
+		close_file(fsp,True);
 	}  
 
 	/* We have a cached error */
@@ -2455,37 +2400,36 @@ int reply_close(connection_struct *conn,
 int reply_writeclose(connection_struct *conn,
 		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-	int numtowrite,fnum;
+	int numtowrite;
 	int nwritten = -1;
 	int outsize = 0;
 	int startpos;
 	char *data;
 	time_t mtime;
-  
-	fnum = GETFNUM(inbuf,smb_vwv0);
+	files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
-	CHECK_FNUM(fnum,conn);
-	CHECK_WRITE(fnum);
-	CHECK_ERROR(fnum);
+	CHECK_FSP(fsp,conn);
+	CHECK_WRITE(fsp);
+	CHECK_ERROR(fsp);
 
 	numtowrite = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL(inbuf,smb_vwv2);
 	mtime = make_unix_date3(inbuf+smb_vwv4);
 	data = smb_buf(inbuf) + 1;
   
-	if (is_locked(fnum,conn,numtowrite,startpos, F_WRLCK))
+	if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
 		return(ERROR(ERRDOS,ERRlock));
       
-	seek_file(fnum,startpos);
+	seek_file(fsp,startpos);
       
-	nwritten = write_file(fnum,data,numtowrite);
+	nwritten = write_file(fsp,data,numtowrite);
 
-	set_filetime(conn, Files[fnum].fsp_name,mtime);
+	set_filetime(conn, fsp->fsp_name,mtime);
   
-	close_file(fnum,True);
+	close_file(fsp,True);
 
 	DEBUG(3,("writeclose fnum=%d num=%d wrote=%d (numopen=%d)\n",
-		 fnum, numtowrite, nwritten,
+		 fsp->fnum, numtowrite, nwritten,
 		 conn->num_files_open));
   
 	if (nwritten <= 0)
@@ -2504,24 +2448,22 @@ int reply_writeclose(connection_struct *conn,
 int reply_lock(connection_struct *conn,
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-	int fnum;
 	int outsize = set_message(outbuf,0,0,True);
 	uint32 count,offset;
 	int eclass;
 	uint32 ecode;
+	files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
-	fnum = GETFNUM(inbuf,smb_vwv0);
-
-	CHECK_FNUM(fnum,conn);
-	CHECK_ERROR(fnum);
+	CHECK_FSP(fsp,conn);
+	CHECK_ERROR(fsp);
 
 	count = IVAL(inbuf,smb_vwv1);
 	offset = IVAL(inbuf,smb_vwv3);
 
 	DEBUG(3,("lock fd=%d fnum=%d ofs=%d cnt=%d\n",
-		 Files[fnum].fd_ptr->fd, fnum, offset, count));
+		 fsp->fd_ptr->fd, fsp->fnum, offset, count));
 
-	if (!do_lock(fnum, conn, count, offset, F_WRLCK, &eclass, &ecode))
+	if (!do_lock(fsp, conn, count, offset, F_WRLCK, &eclass, &ecode))
 		return (ERROR(eclass,ecode));
 
 	return(outsize);
@@ -2533,25 +2475,23 @@ int reply_lock(connection_struct *conn,
 ****************************************************************************/
 int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int fnum;
   int outsize = set_message(outbuf,0,0,True);
   uint32 count,offset;
   int eclass;
   uint32 ecode;
-  
-  fnum = GETFNUM(inbuf,smb_vwv0);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
-  CHECK_FNUM(fnum,conn);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_ERROR(fsp);
 
   count = IVAL(inbuf,smb_vwv1);
   offset = IVAL(inbuf,smb_vwv3);
 
-  if(!do_unlock(fnum, conn, count, offset, &eclass, &ecode))
+  if(!do_unlock(fsp, conn, count, offset, &eclass, &ecode))
     return (ERROR(eclass,ecode));
 
   DEBUG( 3, ( "unlock fd=%d fnum=%d ofs=%d cnt=%d\n",
-        Files[fnum].fd_ptr->fd, fnum, offset, count ) );
+        fsp->fd_ptr->fd, fsp->fnum, offset, count ) );
   
   return(outsize);
 }
@@ -2624,7 +2564,6 @@ int reply_printopen(connection_struct *conn,
 {
 	pstring fname;
 	pstring fname2;
-	int fnum = -1;
 	int outsize = 0;
 	files_struct *fsp;
 	
@@ -2649,26 +2588,24 @@ int reply_printopen(connection_struct *conn,
 		slprintf(fname,sizeof(fname)-1, "%s.XXXXXX",s);  
 	}
 
-	fnum = find_free_file();
-	if (fnum < 0)
+	fsp = find_free_file();
+	if (!fsp)
 		return(ERROR(ERRSRV,ERRnofids));
-
-	fsp = &Files[fnum];
 	
 	pstrcpy(fname2,(char *)mktemp(fname));
 
 	if (!check_name(fname2,conn)) {
-		fsp->reserved = False;
+		file_free(fsp);
 		return(ERROR(ERRDOS,ERRnoaccess));
 	}
 
 	/* Open for exclusive use, write only. */
-	open_file_shared(fnum,conn,fname2,
+	open_file_shared(fsp,conn,fname2,
 			 (DENY_ALL<<4)|1, 0x12, unix_mode(conn,0), 
 			 0, NULL, NULL);
 
 	if (!fsp->open) {
-		fsp->reserved = False;
+		file_free(fsp);
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
@@ -2676,10 +2613,10 @@ int reply_printopen(connection_struct *conn,
 	fsp->print_file = True;
   
 	outsize = set_message(outbuf,1,0,True);
-	SSVAL(outbuf,smb_vwv0,fnum);
+	SSVAL(outbuf,smb_vwv0,fsp->fnum);
   
 	DEBUG(3,("openprint %s fd=%d fnum=%d\n",
-		   fname2, fsp->fd_ptr->fd, fnum));
+		   fname2, fsp->fd_ptr->fd, fsp->fnum));
 
 	return(outsize);
 }
@@ -2691,21 +2628,19 @@ int reply_printopen(connection_struct *conn,
 int reply_printclose(connection_struct *conn,
 		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-	int fnum;
 	int outsize = set_message(outbuf,0,0,True);
-  
-	fnum = GETFNUM(inbuf,smb_vwv0);
+	files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
-	CHECK_FNUM(fnum,conn);
-	CHECK_ERROR(fnum);
+	CHECK_FSP(fsp,conn);
+	CHECK_ERROR(fsp);
 
 	if (!CAN_PRINT(conn))
 		return(ERROR(ERRDOS,ERRnoaccess));
   
 	DEBUG(3,("printclose fd=%d fnum=%d\n",
-		 Files[fnum].fd_ptr->fd,fnum));
+		 fsp->fd_ptr->fd,fsp->fnum));
   
-	close_file(fnum,True);
+	close_file(fsp,True);
 
 	return(outsize);
 }
@@ -2786,26 +2721,25 @@ int reply_printqueue(connection_struct *conn,
 ****************************************************************************/
 int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int numtowrite,fnum;
+  int numtowrite;
   int outsize = set_message(outbuf,0,0,True);
   char *data;
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
   
   if (!CAN_PRINT(conn))
     return(ERROR(ERRDOS,ERRnoaccess));
 
-  fnum = GETFNUM(inbuf,smb_vwv0);
-
-  CHECK_FNUM(fnum,conn);
-  CHECK_WRITE(fnum);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_WRITE(fsp);
+  CHECK_ERROR(fsp);
 
   numtowrite = SVAL(smb_buf(inbuf),1);
   data = smb_buf(inbuf) + 3;
   
-  if (write_file(fnum,data,numtowrite) != numtowrite)
+  if (write_file(fsp,data,numtowrite) != numtowrite)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
-  DEBUG( 3, ( "printwrite fnum=%d num=%d\n", fnum, numtowrite ) );
+  DEBUG( 3, ( "printwrite fnum=%d num=%d\n", fsp->fnum, numtowrite ) );
   
   return(outsize);
 }
@@ -3323,7 +3257,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
   int Access,action;
   struct stat st;
   int ret=0;
-  int fnum1,fnum2;
+  files_struct *fsp1,*fsp2;
   pstring dest;
   
   pstrcpy(dest,dest1);
@@ -3339,43 +3273,43 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 
   if (!file_exist(src,&st)) return(False);
 
-  fnum1 = find_free_file();
-  if (fnum1<0) return(False);
-  open_file_shared(fnum1,conn,src,(DENY_NONE<<4),
+  fsp1 = find_free_file();
+  if (!fsp1) return(False);
+  open_file_shared(fsp1,conn,src,(DENY_NONE<<4),
 		   1,0,0,&Access,&action);
 
-  if (!Files[fnum1].open) {
-	  Files[fnum1].reserved = False;
+  if (!fsp1->open) {
+	  fsp1->reserved = False;
 	  return(False);
   }
 
   if (!target_is_directory && count)
     ofun = 1;
 
-  fnum2 = find_free_file();
-  if (fnum2<0) {
-    close_file(fnum1,False);
-    return(False);
+  fsp2 = find_free_file();
+  if (!fsp2) {
+	  close_file(fsp1,False);
+	  return(False);
   }
-  open_file_shared(fnum2,conn,dest,(DENY_NONE<<4)|1,
+  open_file_shared(fsp2,conn,dest,(DENY_NONE<<4)|1,
 		   ofun,st.st_mode,0,&Access,&action);
 
-  if (!Files[fnum2].open) {
-    close_file(fnum1,False);
-    Files[fnum2].reserved = False;
+  if (!fsp2->open) {
+    close_file(fsp1,False);
+    fsp2->reserved = False;
     return(False);
   }
 
   if ((ofun&3) == 1) {
-    lseek(Files[fnum2].fd_ptr->fd,0,SEEK_END);
+    lseek(fsp2->fd_ptr->fd,0,SEEK_END);
   }
   
   if (st.st_size)
-    ret = transfer_file(Files[fnum1].fd_ptr->fd,
-                        Files[fnum2].fd_ptr->fd,st.st_size,NULL,0,0);
+    ret = transfer_file(fsp1->fd_ptr->fd,
+                        fsp2->fd_ptr->fd,st.st_size,NULL,0,0);
 
-  close_file(fnum1,False);
-  close_file(fnum2,False);
+  close_file(fsp1,False);
+  close_file(fsp2,False);
 
   return(ret == st.st_size);
 }
@@ -3556,7 +3490,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 ****************************************************************************/
 int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int fnum = GETFNUM(inbuf,smb_vwv2);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
   unsigned char locktype = CVAL(inbuf,smb_vwv3);
 #if 0
   unsigned char oplocklevel = CVAL(inbuf,smb_vwv3+1);
@@ -3570,8 +3504,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
   uint32 ecode=0, dummy2;
   int eclass=0, dummy1;
 
-  CHECK_FNUM(fnum,conn);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_ERROR(fsp);
 
   data = smb_buf(inbuf);
 
@@ -3581,28 +3515,27 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
   if ((locktype & LOCKING_ANDX_OPLOCK_RELEASE))
   {
     int token;
-    files_struct *fsp = &Files[fnum];
     uint32 dev = fsp->fd_ptr->dev;
     uint32 inode = fsp->fd_ptr->inode;
 
     DEBUG(5,("reply_lockingX: oplock break reply from client for fnum = %d\n",
-              fnum));
+              fsp->fnum));
     /*
      * Make sure we have granted an oplock on this file.
      */
     if(!fsp->granted_oplock)
     {
       DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
-no oplock granted on this file.\n", fnum));
+no oplock granted on this file.\n", fsp->fnum));
       return ERROR(ERRDOS,ERRlock);
     }
 
     /* Remove the oplock flag from the sharemode. */
     lock_share_entry(fsp->conn, dev, inode, &token);
-    if(remove_share_oplock( fnum, token)==False) {
+    if(remove_share_oplock(fsp, token)==False) {
 	    DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
 dev = %x, inode = %x\n", 
-		     fnum, dev, inode));
+		     fsp->fnum, dev, inode));
 	    unlock_share_entry(fsp->conn, dev, inode, token);
     } else {
 	    unlock_share_entry(fsp->conn, dev, inode, token);
@@ -3628,7 +3561,7 @@ dev = %x, inode = %x\n",
   for(i = 0; i < (int)num_ulocks; i++) {
     count = IVAL(data,SMB_LKLEN_OFFSET(i));
     offset = IVAL(data,SMB_LKOFF_OFFSET(i));
-    if(!do_unlock(fnum,conn,count,offset,&eclass, &ecode))
+    if(!do_unlock(fsp,conn,count,offset,&eclass, &ecode))
       return ERROR(eclass,ecode);
   }
 
@@ -3642,7 +3575,7 @@ dev = %x, inode = %x\n",
   for(i = 0; i < (int)num_locks; i++) {
     count = IVAL(data,SMB_LKLEN_OFFSET(i)); 
     offset = IVAL(data,SMB_LKOFF_OFFSET(i)); 
-    if(!do_lock(fnum,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
+    if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
                 &eclass, &ecode))
 #if 0 /* JRATEST - blocking lock code. */
       if((ecode == ERRlock) && (lock_timeout != 0)) {
@@ -3663,7 +3596,7 @@ dev = %x, inode = %x\n",
     for(; i >= 0; i--) {
       count = IVAL(data,SMB_LKLEN_OFFSET(i));  
       offset = IVAL(data,SMB_LKOFF_OFFSET(i)); 
-      do_unlock(fnum,conn,count,offset,&dummy1,&dummy2);
+      do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
     }
     return ERROR(eclass,ecode);
   }
@@ -3671,9 +3604,9 @@ dev = %x, inode = %x\n",
   set_message(outbuf,2,0,True);
   
   DEBUG( 3, ( "lockingX fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
-	fnum, (unsigned int)locktype, num_locks, num_ulocks ) );
+	fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks ) );
 
-  chain_fnum = fnum;
+  chain_fsp = fsp;
 
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -3684,7 +3617,6 @@ dev = %x, inode = %x\n",
 ****************************************************************************/
 int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-  int fnum;
   int nread = -1;
   int total_read;
   char *data;
@@ -3693,6 +3625,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
   int max_per_packet;
   int tcount;
   int pad;
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
   /* this function doesn't seem to work - disable by default */
   if (!lp_readbmpx())
@@ -3700,11 +3633,9 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 
   outsize = set_message(outbuf,8,0,True);
 
-  fnum = GETFNUM(inbuf,smb_vwv0);
-
-  CHECK_FNUM(fnum,conn);
-  CHECK_READ(fnum);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_READ(fsp);
+  CHECK_ERROR(fsp);
 
   startpos = IVAL(inbuf,smb_vwv1);
   maxcount = SVAL(inbuf,smb_vwv3);
@@ -3719,14 +3650,14 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
   tcount = maxcount;
   total_read = 0;
 
-  if (is_locked(fnum,conn,maxcount,startpos, F_RDLCK))
+  if (is_locked(fsp,conn,maxcount,startpos, F_RDLCK))
     return(ERROR(ERRDOS,ERRlock));
 	
   do
     {
       int N = MIN(max_per_packet,tcount-total_read);
   
-      nread = read_file(fnum,data,startpos,N);
+      nread = read_file(fsp,data,startpos,N);
 
       if (nread <= 0) nread = 0;
 
@@ -3755,18 +3686,17 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 ****************************************************************************/
 int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int numtowrite,fnum;
+  int numtowrite;
   int nwritten = -1;
   int outsize = 0;
   uint32 startpos;
   int tcount, write_through, smb_doff;
   char *data;
-  
-  fnum = GETFNUM(inbuf,smb_vwv0);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
-  CHECK_FNUM(fnum,conn);
-  CHECK_WRITE(fnum);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_WRITE(fsp);
+  CHECK_ERROR(fsp);
 
   tcount = SVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv3);
@@ -3780,14 +3710,14 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
      not an SMBwritebmpx - set this up now so we don't forget */
   CVAL(outbuf,smb_com) = SMBwritec;
 
-  if (is_locked(fnum,conn,tcount,startpos,F_WRLCK))
+  if (is_locked(fsp,conn,tcount,startpos,F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  seek_file(fnum,startpos);
-  nwritten = write_file(fnum,data,numtowrite);
+  seek_file(fsp,startpos);
+  nwritten = write_file(fsp,data,numtowrite);
 
   if(lp_syncalways(SNUM(conn)) || write_through)
-    sync_file(conn,fnum);
+    sync_file(conn,fsp);
   
   if(nwritten < numtowrite)
     return(UNIXERROR(ERRHRD,ERRdiskfull));
@@ -3799,8 +3729,8 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   if(tcount > nwritten) 
     {
       write_bmpx_struct *wbms;
-      if(Files[fnum].wbmpx_ptr != NULL)
-	wbms = Files[fnum].wbmpx_ptr; /* Use an existing struct */
+      if(fsp->wbmpx_ptr != NULL)
+	wbms = fsp->wbmpx_ptr; /* Use an existing struct */
       else
 	wbms = (write_bmpx_struct *)malloc(sizeof(write_bmpx_struct));
       if(!wbms)
@@ -3813,7 +3743,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
       wbms->wr_total_written = nwritten;
       wbms->wr_errclass = 0;
       wbms->wr_error = 0;
-      Files[fnum].wbmpx_ptr = wbms;
+      fsp->wbmpx_ptr = wbms;
     }
 
   /* We are returning successfully, set the message type back to
@@ -3825,7 +3755,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   SSVALS(outbuf,smb_vwv0,-1); /* We don't support smb_remaining */
   
   DEBUG( 3, ( "writebmpx fnum=%d num=%d wrote=%d\n",
-	    fnum, numtowrite, nwritten ) );
+	    fsp->fnum, numtowrite, nwritten ) );
 
   if (write_through && tcount==nwritten) {
     /* we need to send both a primary and a secondary response */
@@ -3847,18 +3777,18 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
 ****************************************************************************/
 int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int numtowrite,fnum;
+  int numtowrite;
   int nwritten = -1;
   int outsize = 0;
   int32 startpos;
   int tcount, write_through, smb_doff;
   char *data;
   write_bmpx_struct *wbms;
-  BOOL send_response = False;
-  
-  fnum = GETFNUM(inbuf,smb_vwv0);
-  CHECK_FNUM(fnum,conn);
-  CHECK_WRITE(fnum);
+  BOOL send_response = False; 
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+
+  CHECK_FSP(fsp,conn);
+  CHECK_WRITE(fsp);
 
   tcount = SVAL(inbuf,smb_vwv1);
   startpos = IVAL(inbuf,smb_vwv2);
@@ -3872,7 +3802,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 
   /* This fd should have an auxiliary struct attached,
      check that it does */
-  wbms = Files[fnum].wbmpx_ptr;
+  wbms = fsp->wbmpx_ptr;
   if(!wbms) return(-1);
 
   /* If write through is set we can return errors, else we must
@@ -3883,18 +3813,18 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   if(wbms->wr_discard)
     return -1; /* Just discard the packet */
 
-  seek_file(fnum,startpos);
-  nwritten = write_file(fnum,data,numtowrite);
+  seek_file(fsp,startpos);
+  nwritten = write_file(fsp,data,numtowrite);
 
   if(lp_syncalways(SNUM(conn)) || write_through)
-    sync_file(conn,fnum);
+    sync_file(conn,fsp);
   
   if (nwritten < numtowrite)
     {
       if(write_through)	{
 	/* We are returning an error - we can delete the aux struct */
 	if (wbms) free((char *)wbms);
-	Files[fnum].wbmpx_ptr = NULL;
+	fsp->wbmpx_ptr = NULL;
 	return(ERROR(ERRHRD,ERRdiskfull));
       }
       return(CACHE_ERROR(wbms,ERRHRD,ERRdiskfull));
@@ -3912,7 +3842,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
       }
 
       free((char *)wbms);
-      Files[fnum].wbmpx_ptr = NULL;
+      fsp->wbmpx_ptr = NULL;
     }
 
   if(send_response)
@@ -3927,16 +3857,14 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 ****************************************************************************/
 int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int fnum;
   struct utimbuf unix_times;
   int outsize = 0;
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
   outsize = set_message(outbuf,0,0,True);
 
-  fnum = GETFNUM(inbuf,smb_vwv0);
-
-  CHECK_FNUM(fnum,conn);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_ERROR(fsp);
 
   /* Convert the DOS times into unix times. Ignore create
      time as UNIX can't set this.
@@ -3954,7 +3882,7 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
     /* Ignore request */
     if( DEBUGLVL( 3 ) )
       {
-      dbgtext( "reply_setattrE fnum=%d ", fnum);
+      dbgtext( "reply_setattrE fnum=%d ", fsp->fnum);
       dbgtext( "ignoring zero request - not setting timestamps of 0\n" );
       }
     return(outsize);
@@ -3966,11 +3894,11 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
   }
 
   /* Set the date on this file */
-  if(file_utime(conn, Files[fnum].fsp_name, &unix_times))
+  if(file_utime(conn, fsp->fsp_name, &unix_times))
     return(ERROR(ERRDOS,ERRnoaccess));
   
   DEBUG( 3, ( "reply_setattrE fnum=%d actime=%d modtime=%d\n",
-            fnum, (int)unix_times.actime, (int)unix_times.modtime ) );
+            fsp->fnum, (int)unix_times.actime, (int)unix_times.modtime ) );
 
   return(outsize);
 }
@@ -3981,23 +3909,21 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
 ****************************************************************************/
 int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int fnum;
   struct stat sbuf;
   int outsize = 0;
   int mode;
+  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
 
   outsize = set_message(outbuf,11,0,True);
 
-  fnum = GETFNUM(inbuf,smb_vwv0);
-
-  CHECK_FNUM(fnum,conn);
-  CHECK_ERROR(fnum);
+  CHECK_FSP(fsp,conn);
+  CHECK_ERROR(fsp);
 
   /* Do an fstat on this file */
-  if(fstat(Files[fnum].fd_ptr->fd, &sbuf))
+  if(fstat(fsp->fd_ptr->fd, &sbuf))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
-  mode = dos_mode(conn,Files[fnum].fsp_name,&sbuf);
+  mode = dos_mode(conn,fsp->fsp_name,&sbuf);
   
   /* Convert the times into dos times. Set create
      date to be last modify date as UNIX doesn't save
@@ -4017,7 +3943,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
     }
   SSVAL(outbuf,smb_vwv10, mode);
   
-  DEBUG( 3, ( "reply_getattrE fnum=%d\n", fnum));
+  DEBUG( 3, ( "reply_getattrE fnum=%d\n", fsp->fnum));
   
   return(outsize);
 }

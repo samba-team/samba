@@ -35,8 +35,6 @@ static int chain_pnum = -1;
 #define MAX_OPEN_PIPES 50
 #endif
 
-#define PIPE_HANDLE_OFFSET 0x800
-
 pipes_struct Pipes[MAX_OPEN_PIPES];
 
 #define P_OPEN(p) ((p)->open)

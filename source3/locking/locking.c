@@ -33,7 +33,6 @@
 
 #include "includes.h"
 extern int DEBUGLEVEL;
-extern files_struct Files[];
 extern int Client;
 
 static struct share_ops *share_ops;
@@ -62,7 +61,7 @@ static ubi_slList blocking_lock_queue = { NULL, (ubi_slNodePtr)&blocking_lock_qu
 BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num)
 {
   blocking_lock_record *blr;
-  int fnum = GETFNUM(inbuf,smb_vwv2);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
 
   /*
    * Now queue an entry on the blocking lock queue. We setup
@@ -88,7 +87,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int 
   ubi_slAddTail(&blocking_lock_queue, blr);
 
   DEBUG(3,("push_blocking_lock_request: lock request blocked with expiry time %d \
-for fnum = %d, name = %s\n", blr->expire_time, fnum, Files[fnum].name ));
+for fnum = %d, name = %s\n", blr->expire_time, fsp->fnum, fsp->name ));
 
   return True;
 }
@@ -96,16 +95,15 @@ for fnum = %d, name = %s\n", blr->expire_time, fnum, Files[fnum].name ));
 /****************************************************************************
  Return a blocking lock success SMB.
 *****************************************************************************/
-
 static void blocking_lock_reply_success(blocking_lock_record *blr)
 {
   extern int chain_size;
-  extern int chain_fnum;
+  extern files_struct *chain_fsp;
   extern char *OutBuffer;
   char *outbuf = OutBuffer;
   int bufsize = BUFFER_SIZE;
   char *inbuf = blr->inbuf;
-  int fnum = GETFNUM(inbuf,smb_vwv2);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
   int outsize = 0;
 
   construct_reply_common(inbuf, outbuf);
@@ -119,7 +117,7 @@ static void blocking_lock_reply_success(blocking_lock_record *blr)
    * that here and must set up the chain info manually.
    */
 
-  chain_fnum = fnum;
+  chain_fsp = fsp;
   chain_size = 0;
 
   outsize = chain_reply(inbuf,outbuf,blr->length,bufsize);
@@ -142,7 +140,7 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int
   char *outbuf = OutBuffer;
   int bufsize = BUFFER_SIZE;
   char *inbuf = blr->inbuf;
-  int fnum = GETFNUM(inbuf,smb_vwv2);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   uint32 count, offset;
@@ -160,7 +158,7 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int
   for(i = blr->lock_num; i >= 0; i--) {
     count = IVAL(data,SMB_LKLEN_OFFSET(i));
     offset = IVAL(data,SMB_LKOFF_OFFSET(i));
-    do_unlock(fnum,conn,count,offset,&dummy1,&dummy2);
+    do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
   }
 
   construct_reply_common(inbuf, outbuf);
@@ -177,7 +175,7 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
 {
   char *inbuf = blr->inbuf;
   unsigned char locktype = CVAL(inbuf,smb_vwv3);
-  int fnum = GETFNUM(inbuf,smb_vwv2);
+  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   uint32 count, offset;
@@ -196,7 +194,7 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
   for(; blr->lock_num < num_locks; blr->lock_num++) {
     count = IVAL(data,SMB_LKLEN_OFFSET(blr->lock_num));
     offset = IVAL(data,SMB_LKOFF_OFFSET(blr->lock_num));
-    if(!do_lock(fnum,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
+    if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
                 &eclass, &ecode))
       break;
   }
@@ -208,7 +206,7 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
      */
 
     DEBUG(3,("blocking_lock_record_process fnum=%d type=%d num_locks=%d\n",
-          fnum, (unsigned int)locktype, num_locks) );
+          fsp->fnum, (unsigned int)locktype, num_locks) );
 
     blocking_lock_reply_success(blr);
     return True;
@@ -230,7 +228,7 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
    */
 
   DEBUG(10,("blocking_lock_record_process: only got %d locks of %d needed for fnum = %d. \
-Waiting..\n", blr->lock_num, num_locks, fnum ));
+Waiting..\n", blr->lock_num, num_locks, fsp->fnum));
 
   return False;
 }
@@ -252,13 +250,12 @@ void process_blocking_lock_queue(time_t t)
    */
 
   while(blr != NULL) {
-    int fnum = GETFNUM(blr->inbuf,smb_vwv2);
-    files_struct *fsp = &Files[fnum];
+    files_struct *fsp = GETFSP(blr->inbuf,smb_vwv2);
     uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID :
                   SVAL(blr->inbuf,smb_uid);
 
     DEBUG(5,("process_blocking_lock_queue: examining pending lock fnum = %d for file %s\n",
-          fnum, fsp->name ));
+          fsp->fnum, fsp->name ));
 
     if((blr->expire_time != -1) && (blr->expire_time > t)) {
       /*
@@ -266,7 +263,7 @@ void process_blocking_lock_queue(time_t t)
        * obtained locks and return lock error.
        */
       DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
-          fnum, fsp->name ));
+          fsp->fnum, fsp->name ));
 
       blocking_lock_reply_error(blr,ERRSRV,ERRaccess);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
@@ -356,11 +353,10 @@ static int map_lock_type( files_struct *fsp, int lock_type)
 /****************************************************************************
  Utility function called to see if a file region is locked.
 ****************************************************************************/
-BOOL is_locked(int fnum,connection_struct *conn,
+BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       uint32 count,uint32 offset, int lock_type)
 {
 	int snum = SNUM(conn);
-	files_struct *fsp = &Files[fnum];
 
 	if (count == 0)
 		return(False);
@@ -381,12 +377,11 @@ BOOL is_locked(int fnum,connection_struct *conn,
 /****************************************************************************
  Utility function called by locking requests.
 ****************************************************************************/
-BOOL do_lock(int fnum,connection_struct *conn,
+BOOL do_lock(files_struct *fsp,connection_struct *conn,
 	     uint32 count,uint32 offset,int lock_type,
              int *eclass,uint32 *ecode)
 {
   BOOL ok = False;
-  files_struct *fsp = &Files[fnum];
 
   if (!lp_locking(SNUM(conn)))
     return(True);
@@ -397,7 +392,7 @@ BOOL do_lock(int fnum,connection_struct *conn,
     return False;
   }
 
-  if (OPEN_FNUM(fnum) && fsp->can_lock && (fsp->conn == conn))
+  if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn))
     ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,
                     map_lock_type(fsp,lock_type));
 
@@ -413,16 +408,15 @@ BOOL do_lock(int fnum,connection_struct *conn,
 /****************************************************************************
  Utility function called by unlocking requests.
 ****************************************************************************/
-BOOL do_unlock(int fnum,connection_struct *conn,
+BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	       uint32 count,uint32 offset,int *eclass,uint32 *ecode)
 {
   BOOL ok = False;
-  files_struct *fsp = &Files[fnum];
 
   if (!lp_locking(SNUM(conn)))
     return(True);
 
-  if (OPEN_FNUM(fnum) && fsp->can_lock && (fsp->conn == conn))
+  if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn))
     ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,F_UNLCK);
    
   if (!ok) {
@@ -501,26 +495,26 @@ int get_share_modes(connection_struct *conn,
  Del the share mode of a file.
 ********************************************************************/
 
-void del_share_mode(int token, int fnum)
+void del_share_mode(int token, files_struct *fsp)
 {
-	share_ops->del_entry(token, fnum);
+	share_ops->del_entry(token, fsp);
 }
 
 /*******************************************************************
  Set the share mode of a file. Return False on fail, True on success.
 ********************************************************************/
 
-BOOL set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
+BOOL set_share_mode(int token, files_struct *fsp, uint16 port, uint16 op_type)
 {
-	return share_ops->set_entry(token, fnum, port, op_type);
+	return share_ops->set_entry(token, fsp, port, op_type);
 }
 
 /*******************************************************************
  Remove an oplock port and mode entry from a share mode.
 ********************************************************************/
-BOOL remove_share_oplock(int fnum, int token)
+BOOL remove_share_oplock(files_struct *fsp, int token)
 {
-	return share_ops->remove_oplock(fnum, token);
+	return share_ops->remove_oplock(fsp, token);
 }
 
 /*******************************************************************
