@@ -1,4 +1,4 @@
-                  WHATS NEW IN Samba 3.0.0 beta4
+                  WHATS NEW IN Samba 3.0.0 beta3
                            July 16 2003
                   ==============================
 
