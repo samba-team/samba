@@ -21,11 +21,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
 #include "nterr.h"
 #include "rpc_parse.h"
@@ -428,4 +423,3 @@ void cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv
 		report(out_hnd, "FAILED\n");
 
 }
-

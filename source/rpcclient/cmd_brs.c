@@ -20,12 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
 #include "rpc_brs.h"
 #include "nterr.h"
@@ -35,7 +29,6 @@ extern int DEBUGLEVEL;
 #define DEBUG_TESTING
 
 extern FILE* out_hnd;
-
 
 /****************************************************************************
 Browser get info query
@@ -81,4 +74,3 @@ void cmd_brs_query_info(struct client_info *info, int argc, char *argv[])
 		DEBUG(5,("cmd_brs_query_info: query failed\n"));
 	}
 }
-

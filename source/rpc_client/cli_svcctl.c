@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -21,11 +20,6 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
 
 #include "includes.h"
 #include "rpc_parse.h"
@@ -646,4 +640,3 @@ BOOL svc_unknown_3(const POLICY_HND *scman_hnd, POLICY_HND *hnd)
 
 	return valid_req;
 }
-

@@ -21,11 +21,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
 #include "nterr.h"
 
@@ -34,7 +29,6 @@ extern int DEBUGLEVEL;
 #define DEBUG_TESTING
 
 extern FILE* out_hnd;
-
 
 /****************************************************************************
 checks for a /OPTION:param style option

@@ -20,12 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
 #include "nterr.h"
 
@@ -437,4 +431,3 @@ void cmd_svc_unk3(struct client_info *info, int argc, char *argv[])
 		DEBUG(5,("cmd_svc_unk3: succeeded\n"));
 	}
 }
-

@@ -20,12 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
 #include "nterr.h"
 
@@ -34,7 +28,6 @@ extern int DEBUGLEVEL;
 #define DEBUG_TESTING
 
 extern FILE* out_hnd;
-
 
 /****************************************************************************
 workstation get info query
@@ -80,4 +73,3 @@ void cmd_wks_query_info(struct client_info *info, int argc, char *argv[])
 		DEBUG(5,("cmd_wks_query_info: query failed\n"));
 	}
 }
-

@@ -21,12 +21,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
 #include "rpc_parse.h"
 #include "nterr.h"
@@ -2552,4 +2546,3 @@ BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 
 	return valid_query;
 }
-

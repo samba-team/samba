@@ -20,12 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
 #include "rpc_parse.h"
 #include "rpcclient.h"
@@ -36,7 +30,6 @@ extern int DEBUGLEVEL;
 #define DEBUG_TESTING
 
 extern FILE *out_hnd;
-
 
 /****************************************************************************
 server get info query
