@@ -1,3 +1,12 @@
+1999-10-26  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpcmd.y (help): it's unnecessary to interpret help strings
+ 	as printf commands
+
+	* ftpd/ftpd.c (show_issue): don't interpret contents of
+ 	/etc/issue* as printf commands.  From Brian A May
+ 	<bmay@dgs.monash.edu.au>
+
 1999-10-21  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/kauth.c (kauth): complain if protection level isn't
