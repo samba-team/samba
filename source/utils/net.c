@@ -799,9 +799,10 @@ static BOOL migrate_printers(void)
 
 	for (p=0; p<num_printers; p++) {
 
-		d_printf("migrating PRINTER: %s\n", printers[p]);
-
 		NT_PRINTER_INFO_LEVEL_2	*info = NULL;
+		SEC_DESC_BUF *secdesc_ctr = NULL;
+
+		d_printf("migrating PRINTER: %s\n", printers[p]);
 
 		ZERO_STRUCTP(info);
 
@@ -813,7 +814,6 @@ static BOOL migrate_printers(void)
 			return False;
 			
 		d_printf("migrating SECDESC: %s\n", printers[p]);
-		SEC_DESC_BUF *secdesc_ctr = NULL;
 
 		err = tdb_get_secdesc(mem_ctx, printers[p], &secdesc_ctr);
 		if (!W_ERROR_IS_OK(err)) 
