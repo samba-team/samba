@@ -1304,7 +1304,7 @@ uint32 ndr_size_DATA_BLOB(int ret, const DATA_BLOB *data, int flags)
 	return ret + data->length;
 }
 
-uint32 ndr_size_string(int ret, const char **string, int flags) 
+uint32 ndr_size_string(int ret, const char * const* string, int flags) 
 {
 	/* FIXME: Is this correct for all strings ? */
 	if(!(*string)) return ret;

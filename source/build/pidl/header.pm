@@ -195,7 +195,7 @@ sub HeaderTypedefProto($)
 	    }
 
 	if (needed::is_needed("ndr_size_$d->{NAME}")) {
-		$res .= "size_t ndr_size_$d->{NAME}(int , struct $d->{NAME} *, int );\n";
+		$res .= "size_t ndr_size_$d->{NAME}(int , const struct $d->{NAME} *, int );\n";
 	}
     }
     if ($d->{DATA}{TYPE} eq "UNION") {
