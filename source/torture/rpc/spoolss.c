@@ -87,6 +87,47 @@ BOOL test_ClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			  struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct spoolss_EnumPrinterData r;
+
+	r.in.handle = handle;
+	r.in.enum_index = 0;
+
+	do {
+		uint32 data_size;
+		
+		r.in.value_offered = 0;
+		data_size = 0;
+		r.in.data_size = &data_size;
+		r.out.data_size = &data_size;
+
+		printf("Testing EnumPrinterData\n");
+
+		status = dcerpc_spoolss_EnumPrinterData(p, mem_ctx, &r);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("EnumPrinterData failed - %s\n", nt_errstr(status));
+			return False;
+		}
+
+		r.in.value_offered = r.out.value_needed;
+
+		status = dcerpc_spoolss_EnumPrinterData(p, mem_ctx, &r);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("EnumPrinterData failed - %s\n", nt_errstr(status));
+			return False;
+		}
+		
+		r.in.enum_index++;
+	} while (1);
+
+	return True;
+}
+
 static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			     const char *name)
 {
@@ -167,6 +208,10 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_GetPrinter(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_EnumPrinterData(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
