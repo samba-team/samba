@@ -334,8 +334,13 @@ manual page for a list of defined destinations.
 .Bl -tag -width "xxx" -offset indent
 .It Li dbname Li = Va DATABASENAME
 Use this database for this realm.
+See the info documetation how to configure diffrent database backends.
 .It Li realm Li = Va REALM
 Specifies the realm that will be stored in this database.
+It realm isn't set, it will used as the default database, there can
+only be one entry that doesn't have a
+.Li realm
+stanza.
 .It Li mkey_file Li = Pa FILENAME
 Use this keytab file for the master key of this database.
 If not specified
