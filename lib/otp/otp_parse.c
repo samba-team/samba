@@ -2239,11 +2239,19 @@ int
 otp_parse (OtpKey key, char *s, OtpAlgorithm *alg)
 {
   int ret;
+  int dohex = 1;
+
+  if (strncmp (s, OTP_HEXPREFIX, strlen(OTP_HEXPREFIX)) == 0)
+    return otp_parse_hex (key, s + strlen(OTP_HEXPREFIX));
+  if (strncmp (s, OTP_WORDPREFIX, strlen(OTP_WORDPREFIX)) == 0) {
+    s += strlen(OTP_WORDPREFIX);
+    dohex = 0;
+  }
 
   ret = otp_parse_stddict (key, s);
   if (ret)
     ret = otp_parse_altdict (key, s, alg);
-  if (ret)
+  if (ret && dohex)
     ret = otp_parse_hex (key, s);
   return ret;
 }
