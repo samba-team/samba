@@ -1614,4 +1614,7 @@ void wins_write_database(BOOL background)
   chmod(fnamenew,0644);
   unlink(fname);
   rename(fnamenew,fname);
+  if (background) {
+	  _exit(0);
+  }
 }
