@@ -72,7 +72,7 @@ int main (int argc, char **argv)
 		POPT_AUTOHELP
 		{"backend", 'b', POPT_ARG_STRING, &backend, 0, "backend to use", NULL},
 		{"fullpath", 'f', POPT_ARG_NONE, &fullpath, 0, "show full paths", NULL},
-		{"credentials", 'c', POPT_ARG_NONE, &credentials, 0, "credentials (user%password)", NULL},
+		{"credentials", 'c', POPT_ARG_STRING, &credentials, 0, "credentials (user%password)", NULL},
 		{"no-values", 'V', POPT_ARG_NONE, &no_values, 0, "don't show values", NULL},
 		POPT_TABLEEND
 	};
@@ -86,7 +86,7 @@ int main (int argc, char **argv)
 
 	error = reg_open(backend, poptPeekArg(pc), credentials, &h);
 	if(!W_ERROR_IS_OK(error)) {
-		fprintf(stderr, "Unable to open '%s' with backend '%s'\n", poptGetArg(pc), backend);
+		fprintf(stderr, "Unable to open '%s' with backend '%s':%s \n", poptGetArg(pc), backend, win_errstr(error));
 		return 1;
 	}
 	poptFreeContext(pc);
