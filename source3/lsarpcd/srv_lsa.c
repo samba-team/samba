@@ -39,18 +39,19 @@ lsa_reply_open_policy2
  ***************************************************************************/
 static void lsa_reply_open_policy2(prs_struct *rdata)
 {
-	int i;
 	LSA_R_OPEN_POL2 r_o;
 
 	ZERO_STRUCT(r_o);
 
 	/* set up the LSA QUERY INFO response */
 
-	for (i = 4; i < POL_HND_SIZE; i++)
-	{
-		r_o.pol.data[i] = i;
-	}
 	r_o.status = 0x0;
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!open_lsa_policy_hnd(&r_o.pol))
+	{
+		r_o.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
 	/* store the response in the SMB stream */
 	lsa_io_r_open_pol2("", &r_o, rdata, 0);
@@ -61,18 +62,19 @@ lsa_reply_open_policy
  ***************************************************************************/
 static void lsa_reply_open_policy(prs_struct *rdata)
 {
-	int i;
 	LSA_R_OPEN_POL r_o;
 
 	ZERO_STRUCT(r_o);
 
 	/* set up the LSA QUERY INFO response */
 
-	for (i = 4; i < POL_HND_SIZE; i++)
-	{
-		r_o.pol.data[i] = i;
-	}
 	r_o.status = 0x0;
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!open_lsa_policy_hnd(&r_o.pol))
+	{
+		r_o.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
 	/* store the response in the SMB stream */
 	lsa_io_r_open_pol("", &r_o, rdata, 0);
@@ -128,15 +130,22 @@ static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 
 	ZERO_STRUCT(r_q);
 
-	/* set up the LSA QUERY INFO response */
+	/* get a (unique) handle.  open a policy on it. */
+	if (r_q.status == 0x0 && !open_lsa_policy_hnd(&q_q->pol))
+	{
+		r_q.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	else
+	{
+		/* set up the LSA QUERY INFO response */
 
-	r_q.undoc_buffer = 0x22000000; /* bizarre */
-	r_q.info_class = q_q->info_class;
+		r_q.undoc_buffer = 0x1; /* bizarre */
+		r_q.info_class = q_q->info_class;
 
-	make_dom_query(&r_q.dom.id5, dom_name, dom_sid);
+		make_dom_query(&r_q.dom.id5, dom_name, dom_sid);
 
-	r_q.status = 0x0;
-
+		r_q.status = 0x0;
+	}
 	/* store the response in the SMB stream */
 	lsa_io_r_query("", &r_q, rdata, 0);
 }
@@ -572,8 +581,23 @@ static void api_lsa_close( pipes_struct *p, prs_struct *data,
                                   prs_struct *rdata)
 {
 	LSA_R_CLOSE r_c;
+	LSA_Q_CLOSE q_c;
+
+	lsa_io_q_close("", &q_c, data, 0);
 
 	ZERO_STRUCT(r_c);
+
+	r_c.status = 0x0;
+
+	/* find the connection policy handle. */
+	if (r_c.status == 0x0 && (find_lsa_policy_by_hnd(&(q_c.pol)) == -1))
+	{
+		r_c.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+	if (r_c.status == 0x0)
+	{
+		close_lsa_policy_hnd(&(q_c.pol));
+	}
 
 	/* store the response in the SMB stream */
 	lsa_io_r_close("", &r_c, rdata, 0);

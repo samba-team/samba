@@ -146,6 +146,8 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
         q = ascii_to_unibuf(q, my_name, outbuf+sizeof(outbuf)-q-2);
         q = ascii_to_unibuf(q, global_myworkgroup, outbuf+sizeof(outbuf)-q-2);
 
+	ntversion = 0x01;
+
         SIVAL(q, 0, ntversion);
         q += 4;
         SSVAL(q, 0, lmnttoken);

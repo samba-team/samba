@@ -202,6 +202,12 @@ commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 	{
+		"regqueryval",
+		cmd_reg_query_info,
+		"<valname> Registry Value Query",
+		{COMPL_REGKEY, COMPL_NONE}
+	},
+	{
 		"regquerykey",
 		cmd_reg_query_key,
 		"<keyname> Registry Key Query",

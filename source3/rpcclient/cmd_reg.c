@@ -306,6 +306,92 @@ void cmd_reg_enum(struct client_info *info)
 }
 
 /****************************************************************************
+nt registry query value info
+****************************************************************************/
+void cmd_reg_query_info(struct client_info *info)
+{
+	uint16 fnum;
+	BOOL res = True;
+	BOOL res1 = True;
+
+	POLICY_HND key_pol;
+	POLICY_HND pol_con;
+	fstring full_keyname;
+	fstring key_name;
+	fstring keyname;
+	fstring val_name;
+
+	/*
+	 * query value info
+	 */
+
+	fstring type;
+
+	type[0] = 0;
+	DEBUG(5, ("cmd_reg_enum: smb_cli->fd:%d\n", smb_cli->fd));
+
+	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	{
+		report(out_hnd, "regvalinfo value_name\n");
+		return;
+	}
+
+	reg_get_subkey(full_keyname, keyname, val_name);
+
+	if (keyname[0] == 0 || val_name[0] == 0)
+	{
+		report(out_hnd, "invalid value name\n");
+		return;
+	}
+	
+	/* open WINREG session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
+
+	/* open registry receive a policy handle */
+	res = res ? do_reg_connect(smb_cli, fnum, keyname, key_name,
+				&pol_con) : False;
+
+	if ((*key_name) != 0)
+	{
+		/* open an entry */
+		res1 = res  ? do_reg_open_entry(smb_cli, fnum, &pol_con,
+				 key_name, 0x02000000, &key_pol) : False;
+	}
+	else
+	{
+		memcpy(&key_pol, &pol_con, sizeof(key_pol));
+	}
+
+	/* query it */
+	res1 = res1 ? do_reg_query_info(smb_cli, fnum, &key_pol,
+	                        val_name, type) : False;
+
+	if (res1)
+	{
+		report(out_hnd, "type:\t%s\n", type);
+	}
+
+	/* close the handles */
+	if ((*key_name) != 0)
+	{
+		res1 = res1 ? do_reg_close(smb_cli, fnum, &key_pol) : False;
+	}
+	res  = res  ? do_reg_close(smb_cli, fnum, &pol_con) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, fnum);
+
+	if (res && res1)
+	{
+		DEBUG(5,("cmd_reg_query: query succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_reg_query: query failed\n"));
+	}
+}
+
+/****************************************************************************
 nt registry query key
 ****************************************************************************/
 void cmd_reg_query_key(struct client_info *info)

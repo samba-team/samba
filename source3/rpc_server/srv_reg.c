@@ -142,8 +142,8 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 	{
 		DEBUG(5,("reg_open_entry: %s\n", name));
 		/* lkcl XXXX do a check on the name, here */
-		if (!strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions") ||
-		    !strequal(name, "SYSTEM\\CurrentControlSet\\Services\\NETLOGON\\Parameters"))
+		if (!strequal(name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions") &&
+		    !strequal(name, "SYSTEM\\CurrentControlSet\\Services\\NETLOGON\\Parameters\\"))
 		{
 			status = 0xC000000 | NT_STATUS_ACCESS_DENIED;
 		}
@@ -197,9 +197,9 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 
 	if (status == 0)
 	{
+		make_reg_r_info(&r_u, 1, "LanmanNT", status);
 	}
 
-	make_reg_r_info(&r_u, 1, "LanmanNT", status);
 
 	/* store the response in the SMB stream */
 	reg_io_r_info("", &r_u, rdata, 0);

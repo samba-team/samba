@@ -1873,7 +1873,8 @@ BOOL do_reg_query_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				uint32 *sec_desc, NTTIME *mod_time);
 BOOL do_reg_unknown_1a(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, uint32 *unk);
 BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
-				char *type, uint32 *unk_0, uint32 *unk_1);
+				const char* val_name,
+				char *type);
 BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				uint32 sec_buf_size, SEC_DESC *sec_buf);
 BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
@@ -2494,11 +2495,11 @@ BOOL make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol,
 				uint32 buf_len, SEC_DESC_BUF *sec_buf);
 BOOL reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
 BOOL reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
-BOOL make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
-				time_t unix_time, uint8 major, uint8 minor);
+BOOL make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, const char *val_name,
+				uint8 major, uint8 minor);
 BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth);
 BOOL make_reg_r_info(REG_R_INFO *r_r,
-				uint32 level, char *os_type,
+				uint32 type, char *buf,
 				uint32 status);
 BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth);
 BOOL make_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
@@ -3403,6 +3404,7 @@ BOOL msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
 				REG_KEY_FN(reg_key_fn),
 				REG_VAL_FN(reg_val_fn));
 void cmd_reg_enum(struct client_info *info);
+void cmd_reg_query_info(struct client_info *info);
 void cmd_reg_query_key(struct client_info *info);
 void cmd_reg_create_val(struct client_info *info);
 void cmd_reg_delete_val(struct client_info *info);

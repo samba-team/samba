@@ -132,7 +132,7 @@ typedef struct lsa_r_open_pol2_info
 typedef struct lsa_query_info
 {
 	POLICY_HND pol; /* policy handle */
-    uint16 info_class; /* info class */
+	uint16 info_class; /* info class */
 
 } LSA_Q_QUERY_INFO;
 
