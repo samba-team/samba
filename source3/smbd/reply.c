@@ -260,10 +260,9 @@ int reply_tcon(connection_struct *conn,
 /****************************************************************************
  Reply to a tcon and X.
 ****************************************************************************/
-
 int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-	pstring service;
+	fstring service;
 	pstring user;
 	pstring password;
 	pstring devicename;
@@ -295,11 +294,9 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		passlen = strlen(password);
 	}
 	
-	fstrcpy(service,path+2);
-	p = strchr(service,'\\');
+	p = strchr(path+2,'\\');
 	if (!p)
 		return(ERROR(ERRSRV,ERRinvnetname));
-	*p = 0;
 	fstrcpy(service,p+1);
 	p = strchr(service,'%');
 	if (p) {
@@ -309,11 +306,11 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	StrnCpy(devicename,path + strlen(path) + 1,6);
 	DEBUG(4,("Got device type %s\n",devicename));
 
-    /*
-     * Ensure the user and password names are in UNIX codepage format.
-     */
+	/*
+	 * Ensure the user and password names are in UNIX codepage format.
+	 */
 
-    dos_to_unix(user,True);
+	dos_to_unix(user,True);
 	if (!doencrypt)
 		dos_to_unix(password,True);
 
