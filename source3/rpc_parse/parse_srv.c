@@ -1993,15 +1993,16 @@ static BOOL srv_io_srv_file_ctr(char *desc, SRV_FILE_INFO_CTR *ctr, prs_struct *
 ********************************************************************/
 
 void init_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n, 
-				char *srv_name, char *qual_name,
-				uint32 file_level, SRV_FILE_INFO_CTR *ctr,
-				uint32 preferred_len,
-				ENUM_HND *hnd)
+			      char *srv_name, char *qual_name, char *user_name,
+			      uint32 file_level, SRV_FILE_INFO_CTR *ctr,
+			      uint32 preferred_len,
+			      ENUM_HND *hnd)
 {
 	DEBUG(5,("init_q_net_file_enum\n"));
 
 	init_buf_unistr2(&q_n->uni_srv_name, &q_n->ptr_srv_name, srv_name);
 	init_buf_unistr2(&q_n->uni_qual_name, &q_n->ptr_qual_name, qual_name);
+	init_buf_unistr2(&q_n->uni_user_name, &q_n->ptr_user_name, user_name);
 
 	q_n->file_level    = q_n->ctr.switch_value = file_level;
 	q_n->preferred_len = preferred_len;
@@ -2099,6 +2100,68 @@ BOOL srv_io_r_net_file_enum(char *desc, SRV_R_NET_FILE_ENUM *r_n, prs_struct *ps
 
 	return True;
 }
+
+/*******************************************************************
+ Initialize a net file close request
+********************************************************************/
+void init_srv_q_net_file_close(SRV_Q_NET_FILE_CLOSE *q_n, char *server,
+			       uint32 file_id)
+{
+	q_n->ptr_srv_name = 1;
+	init_unistr2(&q_n->uni_srv_name, server, strlen(server) + 1);
+	q_n->file_id = file_id;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+BOOL srv_io_q_net_file_close(char *desc, SRV_Q_NET_FILE_CLOSE *q_n,
+			     prs_struct *ps, int depth)
+{
+	if (q_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_q_net_file_close");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_srv_name", ps, depth, &q_n->ptr_srv_name))
+		return False;
+	if(!smb_io_unistr2("", &q_n->uni_srv_name, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("file_id", ps, depth, &q_n->file_id))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL srv_io_r_net_file_close(char *desc, SRV_R_NET_FILE_CLOSE *q_n, 
+			     prs_struct *ps, int depth)
+{
+	if (q_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_r_net_file_close");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &q_n->status))
+		return False;
+
+	return True;
+}	
 
 /*******************************************************************
  Inits a SRV_INFO_100 structure.

@@ -317,8 +317,9 @@ WERROR cli_srvsvc_net_remote_tod(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				uint32 file_level, SRV_FILE_INFO_CTR *ctr,
-				int preferred_len, ENUM_HND *hnd)
+				uint32 file_level, char *user_name,
+				SRV_FILE_INFO_CTR *ctr,	int preferred_len,
+				ENUM_HND *hnd)
 {
 	prs_struct qbuf, rbuf;
 	SRV_Q_NET_FILE_ENUM q;
@@ -336,8 +337,8 @@ WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 
-	init_srv_q_net_file_enum(&q, cli->srv_name_slash, NULL, file_level,
-				 ctr, preferred_len, hnd);
+	init_srv_q_net_file_enum(&q, cli->srv_name_slash, NULL, user_name, 
+				 file_level, ctr, preferred_len, hnd);
 
 	/* Marshall data and send request */
 
@@ -399,5 +400,44 @@ WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
 
+	return result;
+}
+
+WERROR cli_srvsvc_net_file_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 uint32 file_id)
+{
+	prs_struct qbuf, rbuf;
+	SRV_Q_NET_FILE_CLOSE q;
+	SRV_R_NET_FILE_CLOSE r;
+	WERROR result = W_ERROR(ERRgeneral);
+	int i;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_srv_q_net_file_close(&q, cli->srv_name_slash, file_id);
+
+	/* Marshall data and send request */
+
+	if (!srv_io_q_net_file_close("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SRV_NET_FILE_CLOSE, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!srv_io_r_net_file_close("", &r, &rbuf, 0))
+		goto done;
+
+	result = r.status;
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 	return result;
 }
