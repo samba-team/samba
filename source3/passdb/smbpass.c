@@ -116,7 +116,6 @@ static BOOL pw_file_unlock(int fd, int *plock_depth)
  do not call this function directly.  use passdb.c instead.
 
  ****************************************************************/
-
 void *startsmbpwent(BOOL update)
 {
   FILE *fp = NULL;
