@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 1999, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -34,6 +34,8 @@
 #include "ftpd_locl.h"
 
 RCSID("$Id$");
+
+#ifdef KRB4
 
 static KTEXT_ST cip;
 static unsigned int lifetime;
@@ -346,11 +348,34 @@ krbtkfile(const char *tkfile)
     reply(200, "Using ticket file %s", tkfile);
 }
 
+#endif /* KRB4 */
+
+#if defined(KRB4) || defined(KRB5)
+
 void
 afslog(const char *cell)
 {
     if(k_hasafs()) {
+#ifdef KRB5
+	krb5_context context;
+	krb5_error_code ret;
+	krb5_ccache id;
+
+	ret = krb5_init_context(&context);
+	if (ret == 0) {
+	    ret = krb5_cc_default(context, &id);
+	    if (ret)
+		krb5_free_context(context);
+	}
+	if (ret == 0) {
+	    krb5_afslog(context, id, cell, 0);
+	    krb5_cc_close (context, id);
+	    krb5_free_context (context);
+	}
+#endif
+#ifdef KRB4
 	krb_afslog(cell, 0);
+#endif
 	reply(200, "afslog done");
     } else {
 	reply(200, "no AFS present");
@@ -363,3 +388,7 @@ afsunlog(void)
     if(k_hasafs())
 	k_unlog();
 }
+
+#else
+int ftpd_afslog_placeholder;
+#endif /* KRB4 || KRB5 */
