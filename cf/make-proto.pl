@@ -40,9 +40,15 @@ while(<>) {
 	s/\s+/ /g;
 	if($line =~ /\)\s$/){
 	    if(!/^static/ && !/^PRIVATE/){
+		if(/(.*)(__attribute__\s?\(.*\))/) {
+		    $attr = $2;
+		    $_ = $1;
+		} else {
+		    $attr = "";
+		}
 		# remove outer ()
 		s/\s*\(/@/;
-		s/\)$/@/;
+		s/\)\s?$/@/;
 		# remove , within ()
 		while(s/\(([^()]*),(.*)\)/($1\$$2)/g){}
 		s/,\s*/,\n\t/g;
@@ -61,10 +67,12 @@ while(<>) {
 		    s/@/ __P$LP/;
 		}
 		s/@/$RP/;
-		$_ = $_ . ";";
 		# insert newline before function name
 		s/(.*)\s([a-zA-Z0-9_]+ __P)/$1\n$2/;
-		s/(.*)\s(__attribute__.*)/$1\n\t$2/;
+		if($attr ne "") {
+		    $_ .= "\n    $attr";
+		}
+		$_ = $_ . ";";
 		$funcs{$f} = $_;
 	    }
 	}
