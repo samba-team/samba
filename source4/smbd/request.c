@@ -362,7 +362,34 @@ size_t req_push_str(struct request_context *req, char *dest, const char *str, in
 	return len;
 }
 
-
+/*
+  append raw bytes into the data portion of the request packet
+  return the number of bytes added
+*/
+size_t req_append_bytes(struct request_context *req, 
+		const uint8 *bytes, size_t byte_len)
+{
+	req_grow_allocation(req, byte_len + req->out.data_size);
+	memcpy(req->out.data + req->out.data_size, bytes, byte_len);
+	req_grow_data(req, byte_len + req->out.data_size);
+	return byte_len;
+}
+/*
+  append variable block (type 5 buffer) into the data portion of the request packet
+  return the number of bytes added
+*/
+size_t req_append_var_block(struct request_context *req, 
+		const uint8 *bytes, uint16 byte_len)
+{
+	req_grow_allocation(req, byte_len + 3 + req->out.data_size);
+	SCVAL(req->out.data + req->out.data_size, 0, 5);
+	SSVAL(req->out.data + req->out.data_size, 1, byte_len);		/* add field length */
+	if (byte_len > 0) {
+		memcpy(req->out.data + req->out.data_size + 3, bytes, byte_len);
+	}
+	req_grow_data(req, byte_len + 3 + req->out.data_size);
+	return byte_len + 3;
+}
 /*
   pull a UCS2 string from a request packet, returning a talloced unix string
 
