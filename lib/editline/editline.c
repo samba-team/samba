@@ -114,9 +114,10 @@ int		rl_meta_chars = 1;
 /*
 **  Declarations.
 */
-static unsigned char	*editinput();
-extern char	*tgetstr();
-extern int	tgetent();
+static unsigned char	*editinput(void);
+char	*tgetstr(const char*, char**);
+int	tgetent(char*, const char*);
+int	tgetnum(const char*);
 
 /*
 **  TTY input/output functions.
@@ -137,7 +138,7 @@ TTYput(unsigned char c)
     Screen[ScreenCount] = c;
     if (++ScreenCount >= ScreenSize - 1) {
 	ScreenSize += SCREEN_INC;
-	RENEW(Screen, char, ScreenSize);
+	Screen = realloc(Screen, ScreenSize);
     }
 }
 
@@ -460,11 +461,11 @@ insert_string(unsigned char *p)
 
     len = strlen((char *)p);
     if (End + len >= Length) {
-	if ((new = NEW(unsigned char, Length + len + MEM_INC)) == NULL)
+	if ((new = malloc(sizeof(unsigned char) * (Length + len + MEM_INC))) == NULL)
 	    return CSstay;
 	if (Length) {
-	    COPYFROMTO(new, Line, Length);
-	    DISPOSE(Line);
+	    memcpy(new, Line, Length);
+	    free(Line);
 	}
 	Line = new;
 	Length += len + MEM_INC;
@@ -472,7 +473,7 @@ insert_string(unsigned char *p)
 
     for (q = &Line[Point], i = End - Point; --i >= 0; )
 	q[len + i] = q[i];
-    COPYFROMTO(&Line[Point], p, len);
+    memcpy(&Line[Point], p, len);
     End += len;
     Line[End] = '\0';
     TTYstring(&Line[Point]);
@@ -572,7 +573,7 @@ search_hist(unsigned char *search, unsigned char *(*move)())
     /* Save or get remembered search pattern. */
     if (search && *search) {
 	if (old_search)
-	    DISPOSE(old_search);
+	    free(old_search);
 	old_search = (unsigned char *)strdup((char *)search);
     }
     else {
@@ -643,16 +644,16 @@ static void
 save_yank(int begin, int i)
 {
     if (Yanked) {
-	DISPOSE(Yanked);
+	free(Yanked);
 	Yanked = NULL;
     }
 
     if (i < 1)
 	return;
 
-    if ((Yanked = NEW(unsigned char, (size_t)i + 1)) != NULL) {
-	COPYFROMTO(Yanked, &Line[begin], i);
-	Yanked[i] = '\0';
+    if ((Yanked = malloc(sizeof(unsigned char) * (i + 1))) != NULL) {
+	memcpy(Yanked, &Line[begin], i);
+	Yanked[i+1] = '\0';
     }
 }
 
@@ -778,14 +779,14 @@ insert_char(int c)
 	return insert_string(buff);
     }
 
-    if ((p = NEW(unsigned char, Repeat + 1)) == NULL)
+    if ((p = malloc(Repeat + 1)) == NULL)
 	return CSstay;
     for (i = Repeat, q = p; --i >= 0; )
 	*q++ = c;
     *q = '\0';
     Repeat = 0;
     s = insert_string(p);
-    DISPOSE(p);
+    free(p);
     return s;
 }
 
@@ -921,7 +922,7 @@ hist_add(unsigned char *p)
     if (H.Size < HIST_SIZE)
 	H.Lines[H.Size++] = p;
     else {
-	DISPOSE(H.Lines[0]);
+	free(H.Lines[0]);
 	for (i = 0; i < HIST_SIZE - 1; i++)
 	    H.Lines[i] = H.Lines[i + 1];
 	H.Lines[i] = p;
@@ -939,7 +940,7 @@ rl_reset_terminal(char *p)
 }
 
 void
-rl_initialize()
+rl_initialize(void)
 {
 }
 
@@ -950,7 +951,7 @@ readline(const char* prompt)
 
     if (Line == NULL) {
 	Length = MEM_INC;
-	if ((Line = NEW(unsigned char, Length)) == NULL)
+	if ((Line = malloc(Length)) == NULL)
 	    return NULL;
     }
 
@@ -958,7 +959,7 @@ readline(const char* prompt)
     rl_ttyset(0);
     hist_add(NIL);
     ScreenSize = SCREEN_INC;
-    Screen = NEW(char, ScreenSize);
+    Screen = malloc(ScreenSize);
     Prompt = prompt ? prompt : (char *)NIL;
     TTYputs((unsigned char *)Prompt);
     if ((line = editinput()) != NULL) {
@@ -967,8 +968,8 @@ readline(const char* prompt)
 	TTYflush();
     }
     rl_ttyset(1);
-    DISPOSE(Screen);
-    DISPOSE(H.Lines[--H.Size]);
+    free(Screen);
+    free(H.Lines[--H.Size]);
     return (char *)line;
 }
 
@@ -1027,9 +1028,9 @@ find_word()
     for (p = &Line[Point]; p > Line && strchr(SEPS, (char)p[-1]) == NULL; p--)
 	continue;
     len = Point - (p - Line) + 1;
-    if ((new = NEW(unsigned char, len)) == NULL)
+    if ((new = malloc(len)) == NULL)
 	return NULL;
-    COPYFROMTO(new, p, len);
+    memcpy(new, p, len);
     new[len - 1] = '\0';
     return new;
 }
@@ -1045,12 +1046,12 @@ c_complete()
     word = find_word();
     p = (unsigned char *)rl_complete((char *)word, &unique);
     if (word)
-	DISPOSE(word);
+	free(word);
     if (p && *p) {
 	s = insert_string(p);
 	if (!unique)
 	    ring_bell();
-	DISPOSE(p);
+	free(p);
 	return s;
     }
     return ring_bell();
@@ -1066,12 +1067,12 @@ c_possible()
     word = find_word();
     ac = rl_list_possib((char *)word, (char ***)&av);
     if (word)
-	DISPOSE(word);
+	free(word);
     if (ac) {
 	columns(ac, av);
 	while (--ac >= 0)
-	    DISPOSE(av[ac]);
-	DISPOSE(av);
+	    free(av[ac]);
+	free(av);
 	return CSmove;
     }
     return ring_bell();
@@ -1250,7 +1251,7 @@ argify(unsigned char *line, unsigned char ***avp)
     int		i;
 
     i = MEM_INC;
-    if ((*avp = p = NEW(unsigned char*, i))== NULL)
+    if ((*avp = p = malloc(sizeof(unsigned char*) * i))== NULL)
 	 return 0;
 
     for (c = line; isspace(*c); c++)
@@ -1263,14 +1264,14 @@ argify(unsigned char *line, unsigned char ***avp)
 	    *c++ = '\0';
 	    if (*c && *c != '\n') {
 		if (ac + 1 == i) {
-		    new = NEW(unsigned char*, i + MEM_INC);
+		    new = malloc(sizeof(unsigned char*) * (i + MEM_INC));
 		    if (new == NULL) {
 			p[ac] = NULL;
 			return ac;
 		    }
-		    COPYFROMTO(new, p, i * sizeof (char **));
+		    memcpy(new, p, i * sizeof (char **));
 		    i += MEM_INC;
-		    DISPOSE(p);
+		    free(p);
 		    *avp = p = new;
 		}
 		p[ac++] = c;
@@ -1305,8 +1306,8 @@ last_argument()
 	s = ac ? insert_string(av[ac - 1]) : CSstay;
 
     if (ac)
-	DISPOSE(av);
-    DISPOSE(p);
+	free(av);
+    free(p);
     return s;
 }
 

@@ -38,15 +38,6 @@ typedef unsigned char	CHAR;
 #define MEM_INC		64
 #define SCREEN_INC	256
 
-#define DISPOSE(p)	free((char *)(p))
-#define NEW(T, c)	\
-	((T *)malloc((unsigned int)(sizeof (T) * (c))))
-#define RENEW(p, T, c)	\
-	(p = (T *)realloc((char *)(p), (unsigned int)(sizeof (T) * (c))))
-#define COPYFROMTO(new, p, len)	\
-	(void)memcpy((char *)(new), (char *)(p), (int)(len))
-
-
 /*
 **  Variables and routines internal to this package.
 */
@@ -55,7 +46,19 @@ extern int	rl_erase;
 extern int	rl_intr;
 extern int	rl_kill;
 extern int	rl_quit;
-extern char	*rl_complete(char *, int *);
-extern int	rl_list_possib(char *, char ***);
-extern void	rl_ttyset(int);
-extern void	rl_add_slash(char *, char *);
+
+typedef char* (*rl_complete_func_t)(char*, int*);
+
+typedef int (*rl_list_possib_func_t)(char*, char***);
+
+void	add_history (char*);
+char*	readline (const char* prompt);
+void	rl_add_slash (char*, char*);
+char*	rl_complete (char*, int*);
+void	rl_initialize (void);
+int	rl_list_possib (char*, char***);
+void	rl_reset_terminal (char*);
+void	rl_ttyset (int);
+rl_complete_func_t	rl_set_complete_func (rl_complete_func_t);
+rl_list_possib_func_t	rl_set_list_possib_func (rl_list_possib_func_t);
+ 
