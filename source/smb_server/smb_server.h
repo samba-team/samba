@@ -281,4 +281,12 @@ struct smbsrv_connection {
 	/* this holds list of replies that are waiting to be sent
 	   to the client */
 	struct smbsrv_request *pending_send;
+
+	/* a list of partially received transaction requests */
+	struct smbsrv_trans_partial {
+		struct smbsrv_trans_partial *next, *prev;
+		struct smbsrv_request *req;
+		struct smb_trans2 *trans;
+		uint8_t command;
+	} *trans_partial;
 };
