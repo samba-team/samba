@@ -254,7 +254,7 @@ sub array2oneline($)
 # $var_ctx->{OBJ_LIST} 	-	the list of objectfiles which sould be linked to this <var>
 #
 # $output -		the resulting output buffer
-sub _prepare_var_obj_list($$)
+sub _prepare_obj_list($$)
 {
 	my $var = shift;
 	my $ctx = shift;
@@ -312,74 +312,9 @@ sub _prepare_module_obj_list($)
 }
 
 ###########################################################
-# This function creates a make rule for linking a shared module
-#
-# $output = _prepare_shared_module_rule($module_ctx)
-#
-# $module_ctx -		the module context
-#
-# $module_ctx->{MODULE} -	the module binary name
-# $module_ctx->{DEPEND_LIST} -	the list of rules on which this module depends
-# $module_ctx->{LINK_LIST} -	the list of objectfiles and external libraries
-#				which sould be linked to this module
-# $module_ctx->{LINK_FLAGS} -	linker flags used by this module
-#
-# $output -		the resulting output buffer
-sub _prepare_shared_module_rule($)
-{
-	my $ctx = shift;
-	my $tmpdepend;
-	my $tmplink;
-	my $tmpflag;
-	my $output;
-
-	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
-	$tmplink = array2oneperline($ctx->{LINK_LIST});
-	$tmpflag = array2oneperline($ctx->{LINK_FLAGS});
-
-	$output = "
-###################################
-# Start Module $ctx->{MODULE}
-MODULE_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
-MODULE_$ctx->{NAME}_LINK_LIST =$tmplink
-MODULE_$ctx->{NAME}_LINK_FLAGS =$tmpflag
-#
-bin/$ctx->{MODULE}: \$(MODULE_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
-	\@echo Linking \$\@
-	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
-		\$(MODULE_$ctx->{NAME}_LINK_FLAGS) \\
-		\$(MODULE_$ctx->{NAME}_LINK_LIST)
-module_$ctx->{MODULE}: basics bin/$ctx->{MODULE}
-# Module $ctx->{MODULE}
-###################################
-";
-
-	return $output;
-}
-
-###########################################################
-# This function creates a object file list for a library
-#
-# $output = _prepare_library_obj_and_lib_list($library_ctx)
-#
-# $library_ctx -		the library context
-#
-# $library_ctx->{NAME} -	the library binary name
-# $library_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this library
-#
-# $output -		the resulting output buffer
-sub _prepare_library_obj_list($)
-{
-	my $ctx = shift;
-
-	return _prepare_var_obj_list("LIBRARY",$ctx);
-
-}
-
-###########################################################
 # This function creates a make rule for linking a library
 #
-# $output = _prepare_library_rule($library_ctx)
+# $output = _prepare_shared_library_rule($library_ctx)
 #
 # $library_ctx -		the library context
 #
@@ -387,20 +322,15 @@ sub _prepare_library_obj_list($)
 #
 # $library_ctx->{DEPEND_LIST} -		the list of rules on which this library depends
 #
-# $library_ctx->{STATIC_LIBRARY_NAME} -	the static library name
-# $library_ctx->{STATIC_LINK_LIST} -	the list of objectfiles	which sould be linked
-#					to this static library
-# $library_ctx->{STATIC_LINK_FLAGS} -	linker flags used by this static library
-#
-# $library_ctx->{SHARED_LIBRARY_NAME} -	the shared library name
-# $library_ctx->{SHARED_LIBRARY_REALNAME} -	the shared library real name
-# $library_ctx->{SHARED_LIBRARY_SONAME} - the shared library soname
-# $library_ctx->{SHARED_LINK_LIST} -	the list of objectfiles and external libraries
+# $library_ctx->{LIBRARY_NAME} -	the shared library name
+# $library_ctx->{LIBRARY_REALNAME} -	the shared library real name
+# $library_ctx->{LIBRARY_SONAME} - the shared library soname
+# $library_ctx->{LINK_LIST} -	the list of objectfiles and external libraries
 #					which sould be linked to this shared library
-# $library_ctx->{SHARED_LINK_FLAGS} -	linker flags used by this shared library
+# $library_ctx->{LINK_FLAGS} -	linker flags used by this shared library
 #
 # $output -		the resulting output buffer
-sub _prepare_library_rule($)
+sub _prepare_shared_library_rule($)
 {
 	my $ctx = shift;
 	my $tmpdepend;
@@ -413,13 +343,75 @@ sub _prepare_library_rule($)
 
 	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 
-	$tmpstlink = array2oneperline($ctx->{STATIC_LINK_LIST});
-	$tmpstflag = array2oneperline($ctx->{STATIC_LINK_FLAGS});
+	$tmpshlink = array2oneperline($ctx->{LINK_LIST});
+	$tmpshflag = array2oneperline($ctx->{LINK_FLAGS});
 
-	$tmpshlink = array2oneperline($ctx->{SHARED_LINK_LIST});
-	$tmpshflag = array2oneperline($ctx->{SHARED_LINK_FLAGS});
+	$output = "
+###################################
+# Start Library $ctx->{NAME}
+#
+LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
+#
+LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST =$tmpshlink
+LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS =$tmpshflag
+#
 
-	$tmprules = "bin/$ctx->{STATIC_LIBRARY_NAME}";
+# Shared $ctx->{LIBRARY_REALNAME}
+bin/$ctx->{LIBRARY_REALNAME}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+	\@echo Linking \$\@
+	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
+		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS) \\
+		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST)
+# Symlink $ctx->{LIBRARY_SONAME}
+bin/$ctx->{LIBRARY_SONAME}: bin/$ctx->{LIBRARY_REALNAME} bin/.dummy
+	\@echo Symlink \$\@
+	\@ln -sf $ctx->{LIBRARY_REALNAME} \$\@
+# Symlink $ctx->{_LIBRARY_NAME}
+bin/$ctx->{LIBRARY_NAME}: bin/$ctx->{LIBRARY_SONAME} bin/.dummy
+	\@echo Symlink \$\@
+	\@ln -sf $ctx->{LIBRARY_SONAME} \$\@
+library_$ctx->{NAME}: basics $ctx->{LIBRARY_SONAME}
+# End Library $ctx->{NAME}
+###################################
+";
+
+	return $output;
+}
+
+###########################################################
+# This function creates a make rule for linking a library
+#
+# $output = _prepare_static_library_rule($library_ctx)
+#
+# $library_ctx -		the library context
+#
+# $library_ctx->{NAME} -		the library name
+#
+# $library_ctx->{DEPEND_LIST} -		the list of rules on which this library depends
+#
+# $library_ctx->{LIBRARY_NAME} -	the static library name
+# $library_ctx->{LINK_LIST} -	the list of objectfiles	which sould be linked
+#					to this static library
+# $library_ctx->{LINK_FLAGS} -	linker flags used by this static library
+#
+# $output -		the resulting output buffer
+sub _prepare_static_library_rule($)
+{
+	my $ctx = shift;
+	my $tmpdepend;
+	my $tmpstlink;
+	my $tmpstflag;
+	my $tmpshlink;
+	my $tmpshflag;
+	my $tmprules;
+	my $output;
+
+	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
+
+	$tmpstlink = array2oneperline($ctx->{LINK_LIST});
+	$tmpstflag = array2oneperline($ctx->{LINK_FLAGS});
+
+	$tmprules = "bin/$ctx->{LIBRARY_NAME}";
 
 	$output = "
 ###################################
@@ -430,38 +422,13 @@ LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
 LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST =$tmpstlink
 LIBRARY_$ctx->{NAME}_STATIC_LINK_FLAGS =$tmpstflag
 #
-LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST =$tmpshlink
-LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS =$tmpshflag
-#
-# Static $ctx->{STATIC_LIBRARY_NAME}
-bin/$ctx->{STATIC_LIBRARY_NAME}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+# Static $ctx->{LIBRARY_NAME}
+bin/$ctx->{LIBRARY_NAME}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(STLD) \$(STLD_FLAGS) \$\@ \\
 		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_FLAGS) \\
 		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST)
-";
 
-	if (defined($ctx->{SHARED_LIBRARY_NAME})) {
-		$output .= "
-# Shared $ctx->{SHARED_LIBRARY_REALNAME}
-bin/$ctx->{SHARED_LIBRARY_REALNAME}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
-	\@echo Linking \$\@
-	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
-		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS) \\
-		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST)
-# Symlink $ctx->{SHARED_LIBRARY_SONAME}
-bin/$ctx->{SHARED_LIBRARY_SONAME}: bin/$ctx->{SHARED_LIBRARY_REALNAME} bin/.dummy
-	\@echo Symlink \$\@
-	\@ln -sf $ctx->{SHARED_LIBRARY_REALNAME} \$\@
-# Symlink $ctx->{SHARED_LIBRARY_NAME}
-bin/$ctx->{SHARED_LIBRARY_NAME}: bin/$ctx->{SHARED_LIBRARY_SONAME} bin/.dummy
-	\@echo Symlink \$\@
-	\@ln -sf $ctx->{SHARED_LIBRARY_SONAME} \$\@
-";
-		$tmprules .= " bin/$ctx->{SHARED_LIBRARY_NAME}"
-	}
-
-	$output .= "
 library_$ctx->{NAME}: basics $tmprules
 # End Library $ctx->{NAME}
 ###################################
@@ -470,24 +437,7 @@ library_$ctx->{NAME}: basics $tmprules
 	return $output;
 }
 
-###########################################################
-# This function creates a object file list for a binary
-#
-# $output = _prepare_binary_obj_and_lib_list($binary_ctx)
-#
-# $binary_ctx -		the binary context
-#
-# $binary_ctx->{NAME} -		the binary name
-# $binary_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this binary
-#
-# $output -		the resulting output buffer
-sub _prepare_binary_obj_list($)
-{
-	my $ctx = shift;
 
-	return _prepare_var_obj_list("BINARY",$ctx);
-
-}
 
 ###########################################################
 # This function creates a make rule for linking a binary
@@ -538,35 +488,6 @@ binary_$ctx->{BINARY}: basics bin/$ctx->{BINARY}
 	return $output;
 }
 
-###########################################################
-# This function creates a object file list for make proto
-#
-# $output = _prepare_proto_obj_list($proto_ctx)
-#
-# $proto_ctx -		the proto context
-
-# $proto_ctx->{OBJ_LIST} -	the list of objectfiles which sould be scanned by make proto
-#
-# $output -		the resulting output buffer
-sub _prepare_proto_obj_list($)
-{
-	my $ctx = shift;
-	my $tmplist;
-	my $output;
-
-	$tmplist = array2oneperline($ctx->{OBJ_LIST});
-
-	$output = "
-###################################
-# Start PROTO OBJ LIST
-PROTO_OBJS =$tmplist
-# End PROTO OBJ LIST
-###################################
-";
-
-	return $output;
-}
-
 sub _prepare_proto_rules()
 {
 	my $output = "";
@@ -584,7 +505,7 @@ delheaders: pch_clean
 include/proto.h:
 	\@cd \$(srcdir) && \$(SHELL) script/mkproto.sh \"\$(PERL)\" \\
 	  -h _PROTO_H_ \$(builddir)/include/proto.h \\
-	  \$(PROTO_OBJS)
+	  \$(PROTO_PROTO_OBJS)
 
 include/build_env.h:
 	\@echo Building include/build_env.h
@@ -648,23 +569,10 @@ sub _prepare_obj_lists($)
 	my $CTX = shift;
 	my $output = "";
 
-	foreach my $key (sort keys %{$CTX->{OUTPUT}{SUBSYSTEMS}}) {
-		$output .= _prepare_subsystem_obj_list(\%{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}});
+	foreach my $key (values %{$CTX}) {
+		next if not defined($key->{OBJ_LIST});
+		$output .= _prepare_obj_list($key->{TYPE}, $key);
 	}
-
-	foreach my $key (sort keys %{$CTX->{OUTPUT}{SHARED_MODULES}}) {
-		$output .= _prepare_module_obj_list(\%{$CTX->{OUTPUT}{SHARED_MODULES}{$key}});
-	}
-
-	foreach my $key (sort keys %{$CTX->{OUTPUT}{LIBRARIES}}) {
-		$output .= _prepare_library_obj_list(\%{$CTX->{OUTPUT}{LIBRARIES}{$key}});
-	}
-
-	foreach my $key (sort keys %{$CTX->{OUTPUT}{BINARIES}}) {
-		$output .= _prepare_binary_obj_list(\%{$CTX->{OUTPUT}{BINARIES}{$key}});
-	}
-
-	$output .= _prepare_proto_obj_list(\%{$CTX->{OUTPUT}{PROTO}});
 
 	return $output;
 }
@@ -820,19 +728,14 @@ ctags:
 
 sub _prepare_rule_lists($)
 {
-	my $CTX = shift;
+	my $depend = shift;
 	my $output = "";
 
-	foreach my $key (sort keys %{$CTX->{OUTPUT}{SHARED_MODULES}}) {
-		$output .= _prepare_shared_module_rule(\%{$CTX->{OUTPUT}{SHARED_MODULES}{$key}});
-	}
-
-	foreach my $key (sort keys %{$CTX->{OUTPUT}{LIBRARIES}}) {
-		$output .= _prepare_library_rule(\%{$CTX->{OUTPUT}{LIBRARIES}{$key}});
-	}
-
-	foreach my $key (sort keys %{$CTX->{OUTPUT}{BINARIES}}) {
-		$output .= _prepare_binary_rule(\%{$CTX->{OUTPUT}{BINARIES}{$key}});
+	foreach my $key (values %{$depend}) {
+		next if not defined $key->{OUTPUT_TYPE};
+		($output .= _prepare_static_library_rule($key)) if $key->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
+		($output .= _prepare_shared_library_rule($key)) if $key->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
+		($output .= _prepare_binary_rule($key)) if $key->{OUTPUT_TYPE} eq "BINARY";
 	}
 
 	my $idl_ctx;
@@ -840,7 +743,7 @@ sub _prepare_rule_lists($)
 
 	$output .= _prepare_proto_rules();
 
-	$output .= _prepare_install_rules($CTX);
+	$output .= _prepare_install_rules($depend);
 
 	return $output;
 }
@@ -886,7 +789,13 @@ sub _prepare_makefile_in($)
 
 	$output .= _prepare_rule_lists($CTX);
 
-	$output .= _prepare_make_target(\%{$CTX->{OUTPUT}{TARGETS}{ALL}});
+	my @all = ();
+	
+	foreach my $part (values %{$CTX}) {
+		push (@all, $part->{OUTPUT}) if defined ($part->{OUTPUT_TYPE}) and $part->{OUTPUT_TYPE} eq "BINARY";	
+	}
+	
+	$output .= _prepare_make_target({ TARGET => "all", DEPEND_LIST => \@all });
 
 	return $output;
 }
@@ -903,14 +812,9 @@ sub _prepare_makefile_in($)
 sub create_makefile_in($)
 {
 	my $CTX = shift;
-	my $output;
-
-	$output = _prepare_makefile_in($CTX);
 
 	open(MAKEFILE_IN,"> Makefile.in") || die ("Can't open Makefile.in\n");
-
-	print MAKEFILE_IN $output;
-
+	print MAKEFILE_IN _prepare_makefile_in($CTX);
 	close(MAKEFILE_IN);
 
 	print "config.smb_build.pl: creating Makefile.in\n";

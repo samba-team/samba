@@ -7,13 +7,11 @@
 ###########################################################
 
 use makefile;
-use depend;
 use smb_build_h;
 use input;
 use config_mk;
 use output;
 use direct;
-use dump;
 use strict;
 
 sub smb_build_main($)
@@ -23,19 +21,12 @@ sub smb_build_main($)
 		INPUT => $INPUT
 	);
 
-	input::check(\%SMB_BUILD_CTX);
+	%{$SMB_BUILD_CTX{DEPEND}} = input::check(\%SMB_BUILD_CTX);
 	
-	depend::create_depend(\%SMB_BUILD_CTX);
+	%{$SMB_BUILD_CTX{OUTPUT}} = output::create_output($SMB_BUILD_CTX{DEPEND});
 
-	output::create_output(\%SMB_BUILD_CTX);
+	makefile::create_makefile_in($SMB_BUILD_CTX{OUTPUT});
 
-	makefile::create_makefile_in(\%SMB_BUILD_CTX);
-
-	smb_build_h::create_smb_build_h(\%SMB_BUILD_CTX);
-
-	dump::dump_ctx(\%SMB_BUILD_CTX);
-
-
-	return 0;
+	smb_build_h::create_smb_build_h($SMB_BUILD_CTX{OUTPUT});
 }
 1;

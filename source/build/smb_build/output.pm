@@ -3,262 +3,116 @@
 ### - the output generating functions			###
 ###							###
 ###  Copyright (C) Stefan (metze) Metzmacher 2004	###
+###  Copyright (C) Jelmer Vernooij 2004	###
 ###  Released under the GNU GPL				###
 ###########################################################
 
 package output;
+use Data::Dumper;
 use strict;
 
-sub _generate_ext_libs($)
+sub generate_objlist($)
 {
-	my $CTX = shift;
+	my $subsys = shift;
 
-	#
-	# loop over all binaries
-	#
-	foreach my $key (sort keys %{$CTX->{DEPEND}{EXT_LIBS}}) {
-		my $NAME = $CTX->{INPUT}{EXT_LIBS}{$key}{NAME};
-
-		#
-		# set the lists
-		#
-		$CTX->{OUTPUT}{EXT_LIBS}{$key}{NAME} = $NAME;
-		@{$CTX->{OUTPUT}{EXT_LIBS}{$key}{LIBS}} = @{$CTX->{DEPEND}{EXT_LIBS}{$key}{LIBS}};
-		@{$CTX->{OUTPUT}{EXT_LIBS}{$key}{CFLAGS}} = @{$CTX->{DEPEND}{EXT_LIBS}{$key}{CFLAGS}};
-		@{$CTX->{OUTPUT}{EXT_LIBS}{$key}{CPPFLAGS}} = @{$CTX->{DEPEND}{EXT_LIBS}{$key}{CPPFLAGS}};
-		@{$CTX->{OUTPUT}{EXT_LIBS}{$key}{LDFLAGS}} = @{$CTX->{DEPEND}{EXT_LIBS}{$key}{LDFLAGS}};
-	}
-
-	return;	
+	$subsys->{OUTPUT} = "\$($subsys->{TYPE}_$subsys->{NAME}_OBJS)";
 }
 
-sub _generate_subsystems($)
+sub generate_shared_library($)
 {
-	my $CTX = shift;
+	my $lib = shift;
 
-	#
-	# loop over all subsystems
-	#
-	foreach my $key (sort keys %{$CTX->{DEPEND}{SUBSYSTEMS}}) {
-		my $NAME = $CTX->{INPUT}{SUBSYSTEMS}{$key}{NAME};
-		my @OBJ_LIST = @{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{OBJ_LIST}};
-
-		if ($CTX->{INPUT}{SUBSYSTEMS}{$key}{NOPROTO} ne "YES") {
-			push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(SUBSYSTEM_$key\_OBJS)");
-		}
-
-		#
-		# set the lists
-		#
-		$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{NAME} = $NAME;
-		@{$CTX->{OUTPUT}{SUBSYSTEMS}{$key}{OBJ_LIST}} = @OBJ_LIST;
-	}
-
-	return;	
+	@{$lib->{DEPEND_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
+	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
+	$lib->{LIBRARY_NAME} = $lib->{NAME}.".so";
+	$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{MAJOR_VERSION}";
+	$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_SONAME}.".$lib->{MINOR_VERSION}.$lib->{RELEASE_VERSION}";
+	
+	$lib->{OUTPUT} = "bin/$lib->{LIBRARY_SONAME}";
 }
 
-sub _generate_shared_modules($)
+sub generate_static_library($)
 {
-	my $CTX = shift;
+	my $lib = shift;
 
-	#
-	# loop over all shared modules
-	#
-	foreach my $key (sort keys %{$CTX->{DEPEND}{SHARED_MODULES}}) {
-		my $NAME = $CTX->{INPUT}{MODULES}{$key}{NAME};
-		my @OBJ_LIST = ();
-		#
-		my $MODULE = $NAME.".so";
-		my @DEPEND_LIST = ("\$(MODULE_$NAME\_OBJS)");
-		my @LINK_LIST = ("\$(MODULE_$NAME\_OBJS)");
-		my @LINK_FLAGS = ();
+	@{$lib->{DEPEND_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
 
-		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(MODULE_$key\_OBJS)");
-		push(@{$CTX->{OUTPUT}{TARGETS}{ALL}{DEPEND_LIST}},"bin/$MODULE");
+	$lib->{LIBRARY_NAME} = $lib->{NAME}.".a";
+	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
+	@{$lib->{LINK_FLAGS}} = ();
 
-		push(@OBJ_LIST,@{$CTX->{INPUT}{MODULES}{$key}{INIT_OBJ_FILES}});
-		push(@OBJ_LIST,@{$CTX->{INPUT}{MODULES}{$key}{ADD_OBJ_FILES}});
-
-		foreach my $elem (@{$CTX->{DEPEND}{SHARED_MODULES}{$key}{SUBSYSTEMS_LIST}}) {
-			if (!defined($CTX->{DEPEND}{SUBSYSTEMS}{$elem})) {
-				die("Shared Module[$NAME] depends on unknown Subsystem[$elem]!\n");
-			}
-			push(@DEPEND_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
-			push(@LINK_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
-		}
-
-		foreach my $elem (@{$CTX->{DEPEND}{SHARED_MODULES}{$key}{LIBRARIES_LIST}}) {
-			if (!defined($CTX->{DEPEND}{EXT_LIBS}{$elem})) {
-				die("Share Module[$NAME] depends on unknown External Library[$elem]!\n");
-			}
-			push(@LINK_LIST,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LIBS}});
-			push(@LINK_FLAGS,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LDFLAGS}});
-		}
-
-		#
-		# set the lists
-		#
-		$CTX->{OUTPUT}{SHARED_MODULES}{$key}{NAME} = $NAME;
-		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{OBJ_LIST}} = @OBJ_LIST;
-		#
-		$CTX->{OUTPUT}{SHARED_MODULES}{$key}{MODULE} = $MODULE;
-		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{DEPEND_LIST}} = @DEPEND_LIST;
-		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LINK_LIST}} = @LINK_LIST;
-		@{$CTX->{OUTPUT}{SHARED_MODULES}{$key}{LINK_FLAGS}} = @LINK_FLAGS;
-	}
-
-	return;	
+	$lib->{OUTPUT} = $lib->{LIBRARY_NAME};
 }
 
-sub _generate_libraries($)
+sub generate_binary($)
 {
-	my $CTX = shift;
+	my $bin = shift;
 
-	#
-	# loop over all binaries
-	#
-	foreach my $key (sort keys %{$CTX->{DEPEND}{LIBRARIES}}) {
-		my $NAME = $CTX->{INPUT}{LIBRARIES}{$key}{NAME};
-		my @OBJ_LIST = @{$CTX->{INPUT}{LIBRARIES}{$key}{OBJ_FILES}};
-		my $MAJOR_VERSION = $CTX->{INPUT}{LIBRARIES}{$key}{MAJOR_VERSION};
-		my $MINOR_VERSION = $CTX->{INPUT}{LIBRARIES}{$key}{MINOR_VERSION};
-		my $RELEASE_VERSION = $CTX->{INPUT}{LIBRARIES}{$key}{RELEASE_VERSION};
-		#
-		my @DEPEND_LIST = ("\$(LIBRARY_$NAME\_OBJS)");
+	@{$bin->{DEPEND_LIST}} = ("\$($bin->{TYPE}_$bin->{NAME}\_OBJS)");
+	@{$bin->{LINK_LIST}} = ("\$($bin->{TYPE}_$bin->{NAME}\_OBJS)");
+	@{$bin->{LINK_FLAGS}} = ();
 
-		my $STATIC_LIBRARY_NAME = $NAME.".a";
-		my @STATIC_LINK_LIST = ("\$(LIBRARY_$NAME\_OBJS)");
-		my @STATIC_LINK_FLAGS = ();
-
-		my $SHARED_LIBRARY_NAME = $NAME.".so";
-		my $SHARED_LIBRARY_SONAME = $SHARED_LIBRARY_NAME.".$MAJOR_VERSION";
-		my $SHARED_LIBRARY_REALNAME = $SHARED_LIBRARY_SONAME.".$MINOR_VERSION.$RELEASE_VERSION";
-		my @SHARED_LINK_LIST = ("\$(LIBRARY_$NAME\_OBJS)");
-		my @SHARED_LINK_FLAGS = ("\@SONAMEFLAG\@$SHARED_LIBRARY_SONAME");
-
-		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(LIBRARY_$key\_OBJS)");
-		
-		#
-		# not add to 'make all' for now
-		#
-
-		foreach my $elem (@{$CTX->{DEPEND}{LIBRARIES}{$key}{SUBSYSTEMS_LIST}}) {
-			if (!defined($CTX->{DEPEND}{SUBSYSTEMS}{$elem})) {
-				die("Library[$NAME] depends on unknown Subsystem[$elem]!\n");
-			}
-			push(@DEPEND_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
-			push(@STATIC_LINK_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
-			push(@SHARED_LINK_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
-		}
-
-		foreach my $elem (@{$CTX->{DEPEND}{LIBRARIES}{$key}{LIBRARIES_LIST}}) {
-			if (!defined($CTX->{DEPEND}{EXT_LIBS}{$elem})) {
-				die("Library[$NAME] depends on unknown External Library[$elem]!\n");
-			}
-			push(@SHARED_LINK_LIST,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LIBS}});
-			push(@SHARED_LINK_FLAGS,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LDFLAGS}});
-		}
-
-		#
-		# set the lists
-		#
-		$CTX->{OUTPUT}{LIBRARIES}{$key}{NAME} = $NAME;
-		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{OBJ_LIST}} = @OBJ_LIST;
-		#
-		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{DEPEND_LIST}} = @DEPEND_LIST;
-
-		$CTX->{OUTPUT}{LIBRARIES}{$key}{STATIC_LIBRARY_NAME} = $STATIC_LIBRARY_NAME;
-		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{STATIC_LINK_LIST}} = @STATIC_LINK_LIST;
-		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{STATIC_LINK_FLAGS}} = @STATIC_LINK_FLAGS;
-
-		$CTX->{OUTPUT}{LIBRARIES}{$key}{SHARED_LIBRARY_NAME} = $SHARED_LIBRARY_NAME;
-		$CTX->{OUTPUT}{LIBRARIES}{$key}{SHARED_LIBRARY_REALNAME} = $SHARED_LIBRARY_REALNAME;
-		$CTX->{OUTPUT}{LIBRARIES}{$key}{SHARED_LIBRARY_SONAME} = $SHARED_LIBRARY_SONAME;
-		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{SHARED_LINK_LIST}} = @SHARED_LINK_LIST;
-		@{$CTX->{OUTPUT}{LIBRARIES}{$key}{SHARED_LINK_FLAGS}} = @SHARED_LINK_FLAGS;
-	}
-
-	return;
+	$bin->{OUTPUT} = "bin/$bin->{NAME}";
+	$bin->{BINARY} = $bin->{NAME};
 }
 
-sub _generate_binaries($)
-{
-	my $CTX = shift;
-
-	#
-	# loop over all binaries
-	#
-	foreach my $key (sort keys %{$CTX->{DEPEND}{BINARIES}}) {
-		my $NAME = $CTX->{INPUT}{BINARIES}{$key}{NAME};
-		my @OBJ_LIST = @{$CTX->{INPUT}{BINARIES}{$key}{OBJ_FILES}};
-		#
-		my $BINARY = $NAME;
-		my @DEPEND_LIST = ("\$(BINARY_$NAME\_OBJS)");
-		my @LINK_LIST = ("\$(BINARY_$NAME\_OBJS)");
-		my @LINK_FLAGS = ();
-
-		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(BINARY_$key\_OBJS)");
-		push(@{$CTX->{OUTPUT}{TARGETS}{ALL}{DEPEND_LIST}},"bin/$BINARY");
-
-		foreach my $elem (@{$CTX->{DEPEND}{BINARIES}{$key}{SUBSYSTEMS_LIST}}) {
-			if (!defined($CTX->{DEPEND}{SUBSYSTEMS}{$elem})) {
-				die("Binary[$NAME] depends on unknown Subsystem[$elem]!\n");
-			}
-			push(@DEPEND_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
-			push(@LINK_LIST,"\$(SUBSYSTEM_$elem\_OBJS)");
-		}
-
-		foreach my $elem (@{$CTX->{DEPEND}{BINARIES}{$key}{LIBRARIES_LIST}}) {
-			if (!defined($CTX->{DEPEND}{EXT_LIBS}{$elem})) {
-				die("Binary[$NAME] depends on unknown External Library[$elem]!\n");
-			}
-			push(@LINK_LIST,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LIBS}});
-			push(@LINK_FLAGS,@{$CTX->{DEPEND}{EXT_LIBS}{$elem}{LDFLAGS}});
-		}
-
-		#
-		# set the lists
-		#
-		$CTX->{OUTPUT}{BINARIES}{$key}{NAME} = $NAME;
-		@{$CTX->{OUTPUT}{BINARIES}{$key}{OBJ_LIST}} = @OBJ_LIST;
-		#
-		$CTX->{OUTPUT}{BINARIES}{$key}{BINARY} = $BINARY;
-		@{$CTX->{OUTPUT}{BINARIES}{$key}{DEPEND_LIST}} = @DEPEND_LIST;
-		@{$CTX->{OUTPUT}{BINARIES}{$key}{LINK_LIST}} = @LINK_LIST;
-		@{$CTX->{OUTPUT}{BINARIES}{$key}{LINK_FLAGS}} = @LINK_FLAGS;
-	}
-
-	return;	
-}
-
-###########################################################
-# This function generates the output 
-#
-# create_output($SMB_BUILD_CTX)
-#
-# $SMB_BUILD_CTX -	the global SMB_BUILD context
 sub create_output($)
 {
-	my $CTX = shift;
+	my $depend = shift;
+	my %output = ();
+	my $part;
 
-	$CTX->{OUTPUT}{PROTO} = ();
-	@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}} = ();
+	$depend->{PROTO}{OUTPUT_TYPE} = "OBJLIST";
+	$depend->{PROTO}{TYPE} = "PROTO";
+	$depend->{PROTO}{NAME} = "PROTO";
+	
+	foreach $part (values %{$depend}) {
+		next if not defined($part->{OUTPUT_TYPE});
 
-	$CTX->{OUTPUT}{TARGETS}{ALL} = ();
-	$CTX->{OUTPUT}{TARGETS}{ALL}{TARGET} = "all";
-	@{$CTX->{OUTPUT}{TARGETS}{ALL}{DEPEND_LIST}} = ();
+		generate_binary($part) if $part->{OUTPUT_TYPE} eq "BINARY";
+		generate_objlist($part) if $part->{OUTPUT_TYPE} eq "OBJLIST";
+		generate_shared_library($part) if $part->{TYPE} eq "SHARED_LIBRARY";
+		generate_static_library($part) if $part->{TYPE} eq "STATIC_LIBRARY";
 
-	_generate_ext_libs($CTX);
+		# Combine object lists
+		push(@{$part->{OBJ_LIST}}, @{$part->{INIT_OBJ_FILES}}) if defined($part->{INIT_OBJ_FILES});
+		push(@{$part->{OBJ_LIST}}, @{$part->{ADD_OBJ_FILES}}) if defined($part->{ADD_OBJ_FILES});
+		push(@{$part->{OBJ_LIST}}, @{$part->{OBJ_FILES}}) if defined($part->{OBJ_FILES});
 
-	_generate_subsystems($CTX);
+		push(@{$depend->{PROTO}{OBJ_LIST}}, @{$part->{OBJ_LIST}}) if ((not defined ($part->{NOPROTO}) or $part->{NOPROTO} eq "NO") and defined(@{$part->{OBJ_LIST}}));
+	}
 
-	_generate_shared_modules($CTX);
+	foreach $part (values %{$depend}) {
+		next if not defined($part->{OUTPUT_TYPE});
 
-	_generate_libraries($CTX);
+		# Always import the CFLAGS and CPPFLAGS of the unique dependencies
+		foreach my $elem (values %{$part->{UNIQUE_DEPENDENCIES}}) {
+			next if $elem == $part;
 
-	_generate_binaries($CTX);
+			push(@{$part->{CPPFLAGS}}, @{$elem->{CPPFLAGS}}) if defined(@{$elem->{CPPFLAGS}});
+			push(@{$part->{CFLAGS}}, @{$elem->{CFLAGS}}) if defined(@{$elem->{CFLAGS}});
+			push(@{$part->{DEPEND_LIST}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
+			push(@{$part->{LINK_LIST}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
+			push(@{$part->{LINK_LIST}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
+			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
 
-	return;
+			push(@{$part->{MODULE_INIT_FUNCTIONS}}, $elem->{INIT_FUNCTION}) if 
+				$elem->{TYPE} eq "MODULE" and 
+				defined($elem->{INIT_FUNCTION}) and
+				$elem->{INIT_FUNCTION} ne "" and 
+				$elem->{SUBSYSTEM} eq $part->{NAME};
+
+			push(@{$part->{SUBSYSTEM_INIT_FUNCTIONS}}, $elem->{INIT_FUNCTION}) if 
+				$part->{OUTPUT_TYPE} eq "BINARY" and 
+				$elem->{TYPE} eq "SUBSYSTEM" and
+				defined($elem->{INIT_FUNCTION}) and 
+				$elem->{INIT_FUNCTION} ne "";
+		}
+	}
+
+	print Data::Dumper::Dumper($depend);
+
+	return %{$depend};
 }
 
 1;

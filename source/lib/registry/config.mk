@@ -44,8 +44,7 @@ REQUIRED_SUBSYSTEMS = \
 INIT_FUNCTION = registry_gconf_init
 INIT_OBJ_FILES = \
 		lib/registry/reg_backend_gconf/reg_backend_gconf.o
-REQUIRED_LIBRARIES = \
-		gconf
+REQUIRED_SUBSYSTEMS = EXT_LIB_gconf
 # End MODULE registry_gconf
 ################################################
 

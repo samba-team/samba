@@ -26,7 +26,6 @@ BINARY:
 	(e.g. 'smbtorture' or 'ldbedit')
 	a BINARY typicly has only commandline handling and basic 
 	functionality code in it and depends on the functions of
-	EXT_LIB's (required_libraries/REQUIRED_LIBRARIES) and/or
 	SUBSYSTEM's (required_subsystems/REQUIRED_SUBSYSTEMS).
 
 LIBRARY:
@@ -35,8 +34,7 @@ LIBRARY:
 	(e.g. for libldb 'libldb.so', 'libldb.so.0' 'libldb.so.0.0.1'
 	      and libldb.a are created on linux)
 	a LIBRARY typicly has only glue code in it and depends on
-	the functions of EXT_LIB's (required_libraries/REQUIRED_LIBRARIES) 
-	and/or SUBSYSTEM's (required_subsystems/REQUIRED_SUBSYSTEMS).
+	SUBSYSTEM's (required_subsystems/REQUIRED_SUBSYSTEMS).
 
 
 Macrodescriptions

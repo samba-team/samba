@@ -216,7 +216,7 @@ SMB_INFO_MODULES="$SMB_INFO_MODULES
 ###################################
 # Start MODULE $1
 
-\$INPUT{MODULES}{$1} = {
+\$INPUT{$1} = {
 	  TYPE => "MODULE",
 	  NAME => \"$1\",
 	  SUBSYSTEM => \"$2\",
@@ -258,7 +258,8 @@ AC_DEFUN([SMB_MODULE_MK],
 SMB_INFO_MODULES="$SMB_INFO_MODULES
 ###################################
 # Start MODULE $1
-\$INPUT{MODULES}{$1} = {
+\$INPUT{$1} = {
+	TYPE => \"MODULE\",
 	NAME => \"$1\",
 	SUBSYSTEM => \"$2\",
 	DEFAULT_BUILD => \"$[SMB_MODULE_DEFAULT_][$1]\",
@@ -312,7 +313,8 @@ AC_DEFUN([SMB_SUBSYSTEM],
 SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
-\$INPUT{SUBSYSTEMS}{$1} = {
+\$INPUT{$1} = {
+	TYPE => \"SUBSYSTEM\",
 	NAME => \"$1\",
 	INIT_OBJ_FILES => ][STR2ARRAY([$2])][,
 	ADD_OBJ_FILES => ][STR2ARRAY([$3])][,
@@ -344,7 +346,8 @@ AC_DEFUN([SMB_SUBSYSTEM_MK],
 SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
-\$INPUT{SUBSYSTEMS}{$1} = {
+\$INPUT{$1} = {
+	TYPE => \"SUBSYSTEM\",
 	NAME => \"$1\",
 	INIT_OBJ_FILES => @<:@ config_mk::subsystem_get_array(\"$2\", \"$1\", \"INIT_OBJ_FILES\") @:>@,
 	ADD_OBJ_FILES => @<:@ config_mk::subsystem_get_array(\"$2\", \"$1\", \"ADD_OBJ_FILES\") @:>@,
@@ -433,8 +436,9 @@ AC_DEFUN([SMB_EXT_LIB],
 SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
 ###################################
 # Start Ext Lib $1
-\$INPUT{EXT_LIBS}{$1} = {
-	NAME => \"$1\",
+\$INPUT{EXT_LIB_$1} = {
+	TYPE => \"EXT_LIB\",
+	NAME => \"EXT_LIB_$1\",
 	LIBS => ][STR2ARRAY([$2])][,
 	CFLAGS => ][STR2ARRAY([$3])][,
 	CPPFLAGS => ][STR2ARRAY([$4])][,
@@ -475,7 +479,8 @@ AC_DEFUN([SMB_LIBRARY],
 SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 ###################################
 # Start Library $1
-\$INPUT{LIBRARIES}{$1} = {
+\$INPUT{$1} = {
+	TYPE => \"LIBRARY\",
 	NAME => \"$1\",
 	MAJOR_VERSION => \"$2\",
 	MINOR_VERSION => \"$3\",
@@ -504,7 +509,8 @@ AC_DEFUN([SMB_LIBRARY_MK],
 SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 ###################################
 # Start Library $1
-\$INPUT{LIBRARIES}{$1} = {
+\$INPUT{$1} = {
+	TYPE => \"LIBRARY\",
 	NAME => \"$1\",
 	MAJOR_VERSION => config_mk::library_get_var(\"$2\", \"$1\", \"MAJOR_VERSION\"),
 	MINOR_VERSION => config_mk::library_get_var(\"$2\", \"$1\", \"MINOR_VERSION\"),
@@ -546,7 +552,8 @@ AC_DEFUN([SMB_BINARY],
 SMB_INFO_BINARIES="$SMB_INFO_BINARIES
 ###################################
 # Start Binary $1
-\$INPUT{BINARIES}{$1} = {
+\$INPUT{$1} = {
+	TYPE => \"BINARY\",
 	NAME => \"$1\",
 	BUILD_TARGETS => ][STR2ARRAY([$2])][,
 	INSTALL_PATH => ][STR2ARRAY([$3])][,
@@ -574,7 +581,8 @@ AC_DEFUN([SMB_BINARY_MK],
 SMB_INFO_BINARIES="$SMB_INFO_BINARIES
 ###################################
 # Start Binary $1
-\$INPUT{BINARIES}{$1} = {
+\$INPUT{$1} = {
+	TYPE => \"BINARY\",
 	NAME => \"$1\",
 	BUILD_TARGETS => @<:@ config_mk::binary_get_array(\"$2\", \"$1\", \"BUILD_TARGETS\") @:>@,
 	INSTALL_PATH => @<:@ config_mk::binary_get_array(\"$2\", \"$1\", \"INSTALL_PATH\") @:>@,

@@ -30,8 +30,7 @@ REQUIRED_SUBSYSTEMS = \
 OBJ_FILES= \
 		lib/tdb/tools/tdbtest.o
 REQUIRED_SUBSYSTEMS = \
-		LIBTDB
-REQUIRED_LIBRARIES = GDBM
+		LIBTDB EXT_LIB_GDBM
 # End BINARY tdbtest
 ################################################
 
