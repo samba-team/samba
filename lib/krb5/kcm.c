@@ -77,7 +77,7 @@ kcm_send_request(krb5_context context,
     for (i = 0; i < context->max_retries; i++) {
 	int fd;
 
-	fd = socket(PF_LOCAL, SOCK_STREAM, 0);
+	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0)
 	    continue;
 
@@ -110,22 +110,31 @@ kcm_storage_request(krb5_context context,
     krb5_storage *sp;
     krb5_error_code ret;
 
+    *storage_p = NULL;
+
     sp = krb5_storage_emem();
     if (sp == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
 	return KRB5_CC_NOMEM;
     }
 
     /* Send MAJOR | VERSION | OPCODE */
     ret  = krb5_store_int8(sp, KCM_PROTOCOL_VERSION_MAJOR);
-    ret |= krb5_store_int8(sp, KCM_PROTOCOL_VERSION_MINOR);
-    ret |= krb5_store_int16(sp, opcode);
-
-    if (ret) {
-	krb5_storage_free(sp);
-	sp = NULL;
-    }
+    if (ret)
+	goto fail;
+    ret = krb5_store_int8(sp, KCM_PROTOCOL_VERSION_MINOR);
+    if (ret)
+	goto fail;
+    ret = krb5_store_int16(sp, opcode);
+    if (ret)
+	goto fail;
 
     *storage_p = sp;
+ fail:
+    if (ret) {
+	krb5_set_error_string(context, "Failed to encode request");
+	krb5_storage_free(sp);
+    }
    
     return ret; 
 }
@@ -151,7 +160,7 @@ kcm_alloc(krb5_context context, const char *name, krb5_ccache *id)
     } else
 	k->name = NULL;
 
-    k->path.sun_family = AF_LOCAL;
+    k->path.sun_family = AF_UNIX;
     strlcpy(k->path.sun_path, _PATH_KCM_SOCKET, sizeof(k->path.sun_path));
 
     (*id)->data.data = k;
