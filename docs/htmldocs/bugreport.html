@@ -74,18 +74,18 @@ CLASS="CHAPTER"
 ><A
 NAME="BUGREPORT"
 ></A
->Chapter 27. Reporting Bugs</H1
+>Chapter 31. Reporting Bugs</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3874"
->27.1. Introduction</A
+NAME="AEN4500"
+>31.1. Introduction</A
 ></H1
 ><P
 >The email address for bug reports for stable releases is <A
-HREF="samba@samba.org"
+HREF="mailto:samba@samba.org"
 TARGET="_top"
 >samba@samba.org</A
 >. 
@@ -125,8 +125,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3884"
->27.2. General info</A
+NAME="AEN4510"
+>31.2. General info</A
 ></H1
 ><P
 >Before submitting a bug report check your config for silly
@@ -135,8 +135,7 @@ you've misconfigured something and run testparm to test your config
 file for correct syntax.</P
 ><P
 >Have you run through the <A
-HREF="Diagnosis.html"
-TARGET="_top"
+HREF="diagnosis.html"
 >diagnosis</A
 >? 
 This is very important.</P
@@ -150,8 +149,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3890"
->27.3. Debug levels</A
+NAME="AEN4516"
+>31.3. Debug levels</A
 ></H1
 ><P
 >If the bug has anything to do with Samba behaving incorrectly as a
@@ -181,9 +180,15 @@ include = /usr/local/samba/lib/smb.conf.%m</PRE
 >then create a file 
 <TT
 CLASS="FILENAME"
->/usr/local/samba/lib/smb.conf.machine</TT
+>/usr/local/samba/lib/smb.conf.<VAR
+CLASS="REPLACEABLE"
+>machine</VAR
+></TT
 > where
-"machine" is the name of the client you wish to debug. In that file
+<VAR
+CLASS="REPLACEABLE"
+>machine</VAR
+> is the name of the client you wish to debug. In that file
 put any smb.conf commands you want, for example 
 <B
 CLASS="COMMAND"
@@ -204,7 +209,10 @@ CLASS="COMMAND"
 >debuglevel =</B
 > that has been 
 used in older versions of Samba and is being retained for backwards 
-compatibility of smb.conf files.</P
+compatibility of <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> files.</P
 ><P
 >As the <B
 CLASS="COMMAND"
@@ -220,14 +228,14 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3907"
->27.4. Internal errors</A
+NAME="AEN4536"
+>31.4. Internal errors</A
 ></H1
 ><P
 >If you get a "INTERNAL ERROR" message in your log files it means that
 Samba got an unexpected signal while running. It is probably a
 segmentation fault and almost certainly means a bug in Samba (unless
-you have faulty hardware or system software)</P
+you have faulty hardware or system software).</P
 ><P
 >If the message came from smbd then it will probably be accompanied by
 a message which details the last SMB message received by smbd. This
@@ -237,7 +245,10 @@ include it in your bug report.</P
 >You should also detail how to reproduce the problem, if
 possible. Please make this reasonably detailed.</P
 ><P
->You may also find that a core file appeared in a "corefiles"
+>You may also find that a core file appeared in a <TT
+CLASS="FILENAME"
+>corefiles</TT
+>
 subdirectory of the directory where you keep your samba log
 files. This file is the most useful tool for tracking down the bug. To
 use it you do this:</P
@@ -248,11 +259,20 @@ CLASS="COMMAND"
 ></P
 ><P
 >adding appropriate paths to smbd and core so gdb can find them. If you
-don't have gdb then try "dbx". Then within the debugger use the
-command "where" to give a stack trace of where the problem
+don't have gdb then try <KBD
+CLASS="USERINPUT"
+>dbx</KBD
+>. Then within the debugger use the
+command <KBD
+CLASS="USERINPUT"
+>where</KBD
+> to give a stack trace of where the problem
 occurred. Include this in your mail.</P
 ><P
->If you known any assembly language then do a "disass" of the routine
+>If you known any assembly language then do a <KBD
+CLASS="USERINPUT"
+>disass</KBD
+> of the routine
 where the problem occurred (if its in a library routine then
 disassemble the routine that called it) and try to work out exactly
 where the problem is by looking at the surrounding code. Even if you
@@ -264,15 +284,30 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3917"
->27.5. Attaching to a running process</A
+NAME="AEN4550"
+>31.5. Attaching to a running process</A
 ></H1
 ><P
 >Unfortunately some unixes (in particular some recent linux kernels)
 refuse to dump a core file if the task has changed uid (which smbd
 does often). To debug with this sort of system you could try to attach
-to the running process using "gdb smbd PID" where you get PID from
-smbstatus. Then use "c" to continue and try to cause the core dump
+to the running process using <KBD
+CLASS="USERINPUT"
+>gdb smbd <VAR
+CLASS="REPLACEABLE"
+>PID</VAR
+></KBD
+> where you get <VAR
+CLASS="REPLACEABLE"
+>PID</VAR
+> from
+<SPAN
+CLASS="APPLICATION"
+>smbstatus</SPAN
+>. Then use <KBD
+CLASS="USERINPUT"
+>c</KBD
+> to continue and try to cause the core dump
 using the client. The debugger should catch the fault and tell you
 where it occurred.</P
 ></DIV
@@ -281,18 +316,18 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3920"
->27.6. Patches</A
+NAME="AEN4558"
+>31.6. Patches</A
 ></H1
 ><P
 >The best sort of bug report is one that includes a fix! If you send us
-patches please use <B
-CLASS="COMMAND"
->diff -u</B
+patches please use <KBD
+CLASS="USERINPUT"
+>diff -u</KBD
 > format if your version of 
-diff supports it, otherwise use <B
-CLASS="COMMAND"
->diff -c4</B
+diff supports it, otherwise use <KBD
+CLASS="USERINPUT"
+>diff -c4</KBD
 >. Make sure 
 your do the diff against a clean version of the source and let me know 
 exactly what version you used. </P

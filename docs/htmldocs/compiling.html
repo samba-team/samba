@@ -74,7 +74,7 @@ CLASS="CHAPTER"
 ><A
 NAME="COMPILING"
 ></A
->Chapter 26. How to compile SAMBA</H1
+>Chapter 30. How to compile SAMBA</H1
 ><P
 >You can obtain the samba source from the <A
 HREF="http://samba.org/"
@@ -87,16 +87,16 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3706"
->26.1. Access Samba source code via CVS</A
+NAME="AEN4323"
+>30.1. Access Samba source code via CVS</A
 ></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3708"
->26.1.1. Introduction</A
+NAME="AEN4325"
+>30.1.1. Introduction</A
 ></H2
 ><P
 >Samba is developed in an open environment.  Developers use CVS
@@ -117,8 +117,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3713"
->26.1.2. CVS Access to samba.org</A
+NAME="AEN4330"
+>30.1.2. CVS Access to samba.org</A
 ></H2
 ><P
 >The machine samba.org runs a publicly accessible CVS 
@@ -130,8 +130,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN3716"
->26.1.2.1. Access via CVSweb</A
+NAME="AEN4333"
+>30.1.2.1. Access via CVSweb</A
 ></H3
 ><P
 >You can access the source code via your 
@@ -151,8 +151,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN3721"
->26.1.2.2. Access via cvs</A
+NAME="AEN4338"
+>30.1.2.2. Access via cvs</A
 ></H3
 ><P
 >You can also access the source code via a 
@@ -192,9 +192,9 @@ TYPE="1"
 >	Run the command 
 	</P
 ><P
->	<B
-CLASS="COMMAND"
->cvs -d :pserver:cvs@samba.org:/cvsroot login</B
+>	<KBD
+CLASS="USERINPUT"
+>cvs -d :pserver:cvs@samba.org:/cvsroot login</KBD
 >
 	</P
 ><P
@@ -209,9 +209,9 @@ CLASS="USERINPUT"
 >	Run the command 
 	</P
 ><P
->	<B
-CLASS="COMMAND"
->cvs -d :pserver:cvs@samba.org:/cvsroot co samba</B
+>	<KBD
+CLASS="USERINPUT"
+>cvs -d :pserver:cvs@samba.org:/cvsroot co samba</KBD
 >
 	</P
 ><P
@@ -226,12 +226,12 @@ CLASS="PARAMETER"
 >
 	and defining a tag name.  A list of branch tag names can be found on the
 	"Development" page of the samba web site.  A common request is to obtain the
-	latest 2.2 release code.  This could be done by using the following command.
+	latest 2.2 release code.  This could be done by using the following userinput.
 	</P
 ><P
->	<B
-CLASS="COMMAND"
->cvs -d :pserver:cvs@samba.org:/cvsroot co -r SAMBA_2_2 samba</B
+>	<KBD
+CLASS="USERINPUT"
+>cvs -d :pserver:cvs@samba.org:/cvsroot co -r SAMBA_2_2 samba</KBD
 >
 	</P
 ></LI
@@ -241,9 +241,9 @@ CLASS="COMMAND"
 	the following command from within the samba directory: 
 	</P
 ><P
->	<B
-CLASS="COMMAND"
->cvs update -d -P</B
+>	<KBD
+CLASS="USERINPUT"
+>cvs update -d -P</KBD
 >
 	</P
 ></LI
@@ -256,8 +256,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3749"
->26.2. Accessing the samba sources via rsync and ftp</A
+NAME="AEN4366"
+>30.2. Accessing the samba sources via rsync and ftp</A
 ></H1
 ><P
 >	pserver.samba.org also exports unpacked copies of most parts of the CVS tree at <A
@@ -284,14 +284,14 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3755"
->26.3. Building the Binaries</A
+NAME="AEN4372"
+>30.3. Building the Binaries</A
 ></H1
 ><P
->To do this, first run the program <B
-CLASS="COMMAND"
+>To do this, first run the program <KBD
+CLASS="USERINPUT"
 >./configure
-	</B
+	</KBD
 > in the source directory. This should automatically 
 	configure Samba for your operating system. If you have unusual 
 	needs then you may wish to run</P
@@ -370,8 +370,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3783"
->26.3.1. Compiling samba with Active Directory support</A
+NAME="AEN4400"
+>30.3.1. Compiling samba with Active Directory support</A
 ></H2
 ><P
 >In order to compile samba with ADS support, you need to have installed
@@ -420,8 +420,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN3795"
->26.3.1.1. Installing the required packages for Debian</A
+NAME="AEN4412"
+>30.3.1.1. Installing the required packages for Debian</A
 ></H3
 ><P
 >On Debian you need to install the following packages:</P
@@ -451,8 +451,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN3802"
->26.3.1.2. Installing the required packages for RedHat</A
+NAME="AEN4419"
+>30.3.1.2. Installing the required packages for RedHat</A
 ></H3
 ><P
 >On RedHat this means you should have at least: </P
@@ -493,22 +493,22 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3812"
->26.4. Starting the smbd and nmbd</A
+NAME="AEN4429"
+>30.4. Starting the smbd and nmbd</A
 ></H1
 ><P
 >You must choose to start smbd and nmbd either
-	as daemons or from <B
-CLASS="COMMAND"
->inetd</B
->. Don't try
+	as daemons or from <SPAN
+CLASS="APPLICATION"
+>inetd</SPAN
+>Don't try
 	to do both!  Either you can put them in <TT
 CLASS="FILENAME"
 >	inetd.conf</TT
 > and have them started on demand
-	by <B
-CLASS="COMMAND"
->inetd</B
+	by <SPAN
+CLASS="APPLICATION"
+>inetd</SPAN
 >, or you can start them as
 	daemons either from the command line or in <TT
 CLASS="FILENAME"
@@ -518,13 +518,13 @@ CLASS="FILENAME"
 	the bit about what user you need to be in order to start
 	Samba.  In many cases you must be root.</P
 ><P
->The main advantage of starting <B
-CLASS="COMMAND"
->smbd</B
+>The main advantage of starting <SPAN
+CLASS="APPLICATION"
+>smbd</SPAN
 >
-	and <B
-CLASS="COMMAND"
->nmbd</B
+	and <SPAN
+CLASS="APPLICATION"
+>nmbd</SPAN
 > using the recommended daemon method
 	is that they will respond slightly more quickly to an initial connection
 	request.</P
@@ -533,8 +533,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3822"
->26.4.1. Starting from inetd.conf</A
+NAME="AEN4439"
+>30.4.1. Starting from inetd.conf</A
 ></H2
 ><P
 >NOTE; The following will be different if 
@@ -595,19 +595,39 @@ CLASS="FILENAME"
 ><P
 >NOTE: On many systems you may need to use the 
 		"interfaces" option in smb.conf to specify the IP address 
-		and netmask of your interfaces. Run <B
-CLASS="COMMAND"
->ifconfig</B
+		and netmask of your interfaces. Run <SPAN
+CLASS="APPLICATION"
+>ifconfig</SPAN
 > 
 		as root if you don't know what the broadcast is for your
-		net. <B
-CLASS="COMMAND"
->nmbd</B
+		net. <SPAN
+CLASS="APPLICATION"
+>nmbd</SPAN
 > tries to determine it at run 
-		time, but fails on some unixes. See the section on "testing nmbd" 
-		for a method of finding if you need to do this.</P
+		time, but fails on some unixes. 
+		</P
+><DIV
+CLASS="WARNING"
 ><P
->!!!WARNING!!! Many unixes only accept around 5 
+></P
+><TABLE
+CLASS="WARNING"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/warning.gif"
+HSPACE="5"
+ALT="Warning"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Many unixes only accept around 5 
 		parameters on the command line in <TT
 CLASS="FILENAME"
 >inetd.conf</TT
@@ -618,14 +638,18 @@ CLASS="FILENAME"
 CLASS="COMMAND"
 >inetd</B
 >.</P
+></TD
+></TR
+></TABLE
+></DIV
 ><P
 >Restart <B
 CLASS="COMMAND"
 >inetd</B
 >, perhaps just send 
-		it a HUP. If you have installed an earlier version of <B
-CLASS="COMMAND"
->		nmbd</B
+		it a HUP. If you have installed an earlier version of <SPAN
+CLASS="APPLICATION"
+>		nmbd</SPAN
 > then you may need to kill nmbd as well.</P
 ></DIV
 ><DIV
@@ -633,8 +657,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3851"
->26.4.2. Alternative: starting it as a daemon</A
+NAME="AEN4469"
+>30.4.2. Alternative: starting it as a daemon</A
 ></H2
 ><P
 >To start the server as a daemon you should create 
@@ -676,13 +700,37 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >smbd</B
 >.</P
+><DIV
+CLASS="NOTE"
 ><P
->NOTE: If you use the SVR4 style init system then 
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>If you use the SVR4 style init system then 
 		you may like to look at the <TT
 CLASS="FILENAME"
 >examples/svr4-startup</TT
 >
 		script to make Samba fit into that system.</P
+></TD
+></TR
+></TABLE
+></DIV
 ></DIV
 ></DIV
 ></DIV

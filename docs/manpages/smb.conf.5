@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "03 april 2003" "" ""
+.TH "SMB.CONF" "5" "06 April 2003" "" ""
 
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
@@ -923,6 +923,9 @@ each parameter for details.  Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIsecurity\fR
+.TP 0.2i
+\(bu
+\fIserver schannel\fR
 .TP 0.2i
 \(bu
 \fIserver string\fR
@@ -6104,6 +6107,26 @@ security mask\fR,   \fIforce security mode\fR parameters.
 Default: \fBsecurity mask = 0777\fR
 
 Example: \fBsecurity mask = 0770\fR
+.TP
+\fB>server schannel (G)\fR
+This controls whether the server offers or even
+demands the use of the netlogon schannel.
+\fIserver schannel = no\fR does not
+offer the schannel, \fIserver schannel =
+auto\fR offers the schannel but does not
+enforce it, and \fIserver schannel =
+yes\fR denies access if the client is not
+able to speak netlogon schannel. This is only the case
+for Windows NT4 before SP4.
+
+Please note that with this set to
+\fIno\fR you will have to apply the
+WindowsXP requireSignOrSeal-Registry patch found in
+the docs/Registry subdirectory.
+
+Default: \fBserver schannel = auto\fR
+
+Example: \fBserver schannel = yes\fR/para>
 .TP
 \fB>server string (G)\fR
 This controls what string will show up in the 

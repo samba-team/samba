@@ -13,11 +13,11 @@ REL="UP"
 TITLE="Advanced Configuration"
 HREF="optional.html"><LINK
 REL="PREVIOUS"
-TITLE="Hosting a Microsoft Distributed File System tree on Samba"
-HREF="msdfs.html"><LINK
+TITLE="PAM Configuration for Centrally Managed Authentication"
+HREF="pam.html"><LINK
 REL="NEXT"
-TITLE="Securing Samba"
-HREF="securing-samba.html"></HEAD
+TITLE="Hosting a Microsoft Distributed File System tree on Samba"
+HREF="msdfs.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -45,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="msdfs.html"
+HREF="pam.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -59,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="securing-samba.html"
+HREF="msdfs.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -74,14 +74,14 @@ CLASS="CHAPTER"
 ><A
 NAME="VFS"
 ></A
->Chapter 20. Stackable VFS modules</H1
+>Chapter 19. Stackable VFS modules</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3259"
->20.1. Introduction and configuration</A
+NAME="AEN3423"
+>19.1. Introduction and configuration</A
 ></H1
 ><P
 >Since samba 3.0, samba supports stackable VFS(Virtual File System) modules.  
@@ -121,16 +121,16 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3268"
->20.2. Included modules</A
+NAME="AEN3432"
+>19.2. Included modules</A
 ></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3270"
->20.2.1. audit</A
+NAME="AEN3434"
+>19.2.1. audit</A
 ></H2
 ><P
 >A simple module to audit file access to the syslog
@@ -167,8 +167,30 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3278"
->20.2.2. recycle</A
+NAME="AEN3442"
+>19.2.2. extd_audit</A
+></H2
+><P
+>This module is identical with the <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>audit</I
+></SPAN
+> module above except
+that it sends audit logs to both syslog as well as the smbd log file/s. The 
+loglevel for this module is set in the smb.conf file. At loglevel = 0, only file
+and directory deletions and directory and file creations are logged. At loglevel = 1
+file opens are renames and permission changes are logged , while at loglevel = 2 file
+open and close calls are logged also.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN3446"
+>19.2.3. recycle</A
 ></H2
 ><P
 >A recycle-bin like modules. When used any unlink call
@@ -238,8 +260,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3315"
->20.2.3. netatalk</A
+NAME="AEN3483"
+>19.2.4. netatalk</A
 ></H2
 ><P
 >A netatalk module, that will ease co-existence of samba and
@@ -271,8 +293,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3322"
->20.3. VFS modules available elsewhere</A
+NAME="AEN3490"
+>19.3. VFS modules available elsewhere</A
 ></H1
 ><P
 >This section contains a listing of various other VFS modules that 
@@ -287,8 +309,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3326"
->20.3.1. DatabaseFS</A
+NAME="AEN3494"
+>19.3.1. DatabaseFS</A
 ></H2
 ><P
 >URL: <A
@@ -321,8 +343,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3334"
->20.3.2. vscan</A
+NAME="AEN3502"
+>19.3.2. vscan</A
 ></H2
 ><P
 >URL: <A
@@ -355,7 +377,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="msdfs.html"
+HREF="pam.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -373,7 +395,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="securing-samba.html"
+HREF="msdfs.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -383,7 +405,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Hosting a Microsoft Distributed File System tree on Samba</TD
+>PAM Configuration for Centrally Managed Authentication</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
@@ -397,7 +419,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Securing Samba</TD
+>Hosting a Microsoft Distributed File System tree on Samba</TD
 ></TR
 ></TABLE
 ></DIV

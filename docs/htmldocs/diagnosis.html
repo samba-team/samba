@@ -67,14 +67,14 @@ CLASS="CHAPTER"
 ><A
 NAME="DIAGNOSIS"
 ></A
->Chapter 28. The samba checklist</H1
+>Chapter 32. The samba checklist</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3943"
->28.1. Introduction</A
+NAME="AEN4581"
+>32.1. Introduction</A
 ></H1
 ><P
 >This file contains a list of tests you can perform to validate your
@@ -95,8 +95,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3948"
->28.2. Assumptions</A
+NAME="AEN4586"
+>32.2. Assumptions</A
 ></H1
 ><P
 >In all of the tests it is assumed you have a Samba server called 
@@ -133,17 +133,18 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3958"
->28.3. Tests</A
+NAME="AEN4596"
+>32.3. The tests</A
 ></H1
 ><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN3960"
->28.3.1. Test 1</A
-></H2
+CLASS="PROCEDURE"
+><P
+><B
+>Diagnosing your samba server</B
+></P
+><OL
+TYPE="1"
+><LI
 ><P
 >In the directory in which you store your smb.conf file, run the command
 "testparm smb.conf". If it reports any errors then your smb.conf
@@ -157,15 +158,8 @@ CLASS="FILENAME"
 CLASS="FILENAME"
 >/usr/local/samba/lib</TT
 ></P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN3966"
->28.3.2. Test 2</A
-></H2
+></LI
+><LI
 ><P
 >Run the command "ping BIGSERVER" from the PC and "ping ACLIENT" from
 the unix box. If you don't get a valid response then your TCP/IP
@@ -183,15 +177,8 @@ you do have correct entries for the remainder of these tests. </P
 software. You will need to relax the rules to let in the workstation
 in question, perhaps by allowing access from another subnet (on Linux
 this is done via the ipfwadm program.)</P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN3972"
->28.3.3. Test 3</A
-></H2
+></LI
+><LI
 ><P
 >Run the command "smbclient -L BIGSERVER" on the unix box. You
 should get a list of available shares back. </P
@@ -254,15 +241,8 @@ to start smbd as a daemon, it can avoid a lot of frustration!</P
 and / or broadcast address settings are incorrect. Please check that the
 network interface IP Address / Broadcast Address / Subnet Mask settings are
 correct and that Samba has correctly noted these in the log.nmb file.</P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN3987"
->28.3.4. Test 4</A
-></H2
+></LI
+><LI
 ><P
 >Run the command "nmblookup -B BIGSERVER __SAMBA__". You should get the
 IP address of your Samba server back.</P
@@ -275,15 +255,8 @@ to udp port 137.</P
 parameters on the command line. If this is the case then create a
 one-line script that contains the right parameters and run that from
 inetd.</P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN3992"
->28.3.5. Test 5</A
-></H2
+></LI
+><LI
 ><P
 >run the command <B
 CLASS="COMMAND"
@@ -296,15 +269,8 @@ got the name of the PC wrong. </P
 ><P
 >If ACLIENT doesn't resolve via DNS then use the IP address of the
 client in the above test.</P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN3998"
->28.3.6. Test 6</A
-></H2
+></LI
+><LI
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -330,15 +296,8 @@ subnet.</P
 ><P
 >This test will probably fail if your subnet mask and broadcast address are
 not correct. (Refer to TEST 3 notes above).</P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN4006"
->28.3.7. Test 7</A
-></H2
+></LI
+><LI
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -419,15 +378,8 @@ when you type <B
 CLASS="COMMAND"
 >dir</B
 >.</P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN4032"
->28.3.8. Test 8</A
-></H2
+></LI
+><LI
 ><P
 >On the PC type the command <B
 CLASS="COMMAND"
@@ -479,15 +431,8 @@ name and password.</P
 it probably means that the host is not contactable via tcp services.
 Check to see if the host is running tcp wrappers, and if so add an entry in
 the hosts.allow file for your client (or subnet, etc.)</P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN4049"
->28.3.9. Test 9</A
-></H2
+></LI
+><LI
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -513,15 +458,8 @@ CLASS="FILENAME"
 >smb.conf</TT
 >.
 Turn it back on to fix.</P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN4057"
->28.3.10. Test 10</A
-></H2
+></LI
+><LI
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -539,15 +477,8 @@ CLASS="COMMAND"
 >preferred master = yes</B
 > to ensure that 
 an election is held at startup.</P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN4063"
->28.3.11. Test 11</A
-></H2
+></LI
+><LI
 ><P
 >From file manager try to browse the server. Your samba server should
 appear in the browse list of your local workgroup (or the one you
@@ -566,6 +497,8 @@ CLASS="COMMAND"
 > in your
 smb.conf file, or enable encrypted passwords AFTER compiling in support
 for encrypted passwords (refer to the Makefile).</P
+></LI
+></OL
 ></DIV
 ></DIV
 ><DIV
@@ -573,8 +506,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4068"
->28.4. Still having troubles?</A
+NAME="AEN4697"
+>32.4. Still having troubles?</A
 ></H1
 ><P
 >Try the mailing list or newsgroup, or use the ethereal utility to
@@ -589,7 +522,7 @@ out the samba web page at
 <A
 HREF="http://samba.org/samba"
 TARGET="_top"
->http://samba.org/samba</A
+>http://samba.org/samba/</A
 ></P
 ><P
 >Also look at the other docs in the Samba package!</P

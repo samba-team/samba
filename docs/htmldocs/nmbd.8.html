@@ -196,14 +196,6 @@ CLASS="COMMAND"
 		than a file.</P
 ></DD
 ><DT
->-a</DT
-><DD
-><P
->If this parameter is specified, each new 
-		connection will append log messages to the log file.  
-		This is the default.</P
-></DD
-><DT
 >-i</DT
 ><DD
 ><P
@@ -222,26 +214,10 @@ CLASS="CONSTANT"
 		given. </P
 ></DD
 ><DT
->-o</DT
+>-h|--help</DT
 ><DD
 ><P
->If this parameter is specified, the 
-		log files will be overwritten when opened.  By default, 
-		<B
-CLASS="COMMAND"
->smbd</B
-> will append entries to the log 
-		files.</P
-></DD
-><DT
->-h</DT
-><DD
-><P
->Prints the help information (usage) 
-		for <B
-CLASS="COMMAND"
->nmbd</B
->.</P
+>Print a summary of command line options.</P
 ></DD
 ><DT
 >-H &#60;filename&#62;</DT
@@ -312,113 +288,80 @@ CLASS="REFENTRYTITLE"
 ><DD
 ><P
 >Prints the version number for 
-		<B
+<B
 CLASS="COMMAND"
->nmbd</B
+>smbd</B
 >.</P
 ></DD
 ><DT
->-d &#60;debug level&#62;</DT
+>-s &#60;configuration file&#62;</DT
 ><DD
 ><P
->debuglevel is an integer 
-		from 0 to 10.  The default value if this parameter is 
-		not specified is zero.</P
+>The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> for more information.
+The default configuration file name is determined at 
+compile time.</P
+></DD
+><DT
+>-d|--debug=debuglevel</DT
+><DD
 ><P
->The higher this value, the more detail will 
-		be logged to the log files about the activities of the 
-		server. At level 0, only critical errors and serious 
-		warnings will be logged. Level 1 is a reasonable level for
-		day to day running - it generates a small amount of 
-		information about operations carried out.</P
+><VAR
+CLASS="REPLACEABLE"
+>debuglevel</VAR
+> is an integer 
+from 0 to 10.  The default value if this parameter is 
+not specified is zero.</P
 ><P
->Levels above 1 will generate considerable amounts 
-		of log data, and should only be used when investigating 
- 		a problem. Levels above 3 are designed for use only by developers 
-		and generate HUGE amounts of log data, most of which is extremely 
-		cryptic.</P
+>The higher this value, the more detail will be 
+logged to the log files about the activities of the 
+server. At level 0, only critical errors and serious 
+warnings will be logged. Level 1 is a reasonable level for
+day to day running - it generates a small amount of 
+information about operations carried out.</P
 ><P
->Note that specifying this parameter here will override 
-		the <A
+>Levels above 1 will generate considerable 
+amounts of log data, and should only be used when 
+investigating a problem. Levels above 3 are designed for 
+use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic.</P
+><P
+>Note that specifying this parameter here will 
+override the <A
 HREF="smb.conf.5.html#loglevel"
 TARGET="_top"
-><VAR
-CLASS="PARAMETER"
->log level</VAR
+>log
+level</A
+> parameter in the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
 ></A
-> 
-		parameter in the <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
 > file.</P
 ></DD
 ><DT
->-l &#60;log directory&#62;</DT
+>-l|--logfile=logbasename</DT
 ><DD
 ><P
->The -l parameter specifies a directory 
-		into which the "log.nmbd" log file will be created
-		for operational data from the running <B
-CLASS="COMMAND"
->nmbd</B
->
-		server. The default log directory is compiled into Samba
-		as part of the build process. Common defaults are <TT
-CLASS="FILENAME"
->		/usr/local/samba/var/log.nmb</TT
->, <TT
-CLASS="FILENAME"
->		/usr/samba/var/log.nmb</TT
-> or
-		<TT
-CLASS="FILENAME"
->/var/log/log.nmb</TT
->.  <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->Beware:</I
-></SPAN
->
-                If the directory specified does not exist, <B
-CLASS="COMMAND"
->nmbd</B
->
-                will log to the default debug log location defined at compile time.
-		</P
-></DD
-><DT
->-n &#60;primary NetBIOS name&#62;</DT
-><DD
-><P
->This option allows you to override
-		the NetBIOS name that Samba uses for itself. This is identical 
-		to setting the <A
-HREF="smb.conf.5.html#netbiosname"
-TARGET="_top"
-><VAR
-CLASS="PARAMETER"
->NetBIOS
-		name</VAR
-></A
-> parameter in the <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
-> file.  However, a command
-		line setting will take precedence over settings in 
-		<SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
->.</P
+>File name for log/debug files. The extension
+<CODE
+CLASS="CONSTANT"
+>".client"</CODE
+> will be appended. The log file is
+never removed by the client.</P
 ></DD
 ><DT
 >-p &#60;UDP port number&#62;</DT
@@ -433,34 +376,13 @@ CLASS="COMMAND"
 		use this option unless you are an expert, in which case you
 		won't need help!</P
 ></DD
-><DT
->-s &#60;configuration file&#62;</DT
-><DD
-><P
->The default configuration file name
-		is set at build time, typically as <TT
-CLASS="FILENAME"
->		/usr/local/samba/lib/smb.conf</TT
->, but
-		this may be changed when Samba is autoconfigured.</P
-><P
->The file specified contains the configuration details
-		required by the server. See <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
-> for more information.
-		</P
-></DD
 ></DL
 ></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN162"
+NAME="AEN131"
 ></A
 ><H2
 >FILES</H2
@@ -629,7 +551,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN216"
+NAME="AEN185"
 ></A
 ><H2
 >SIGNALS</H2
@@ -693,7 +615,7 @@ CLASS="REFENTRYTITLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN233"
+NAME="AEN202"
 ></A
 ><H2
 >VERSION</H2
@@ -704,7 +626,7 @@ NAME="AEN233"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN236"
+NAME="AEN205"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -764,7 +686,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN260"
+NAME="AEN229"
 ></A
 ><H2
 >AUTHOR</H2

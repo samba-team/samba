@@ -13,10 +13,10 @@ REL="UP"
 TITLE="Advanced Configuration"
 HREF="optional.html"><LINK
 REL="PREVIOUS"
-TITLE="System Policies"
-HREF="advancednetworkmanagement.html"><LINK
+TITLE="Advanced Configuration"
+HREF="optional.html"><LINK
 REL="NEXT"
-TITLE="Group mapping HOWTO"
+TITLE="Configuring Group Mapping"
 HREF="groupmapping.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
@@ -45,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="advancednetworkmanagement.html"
+HREF="optional.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -74,14 +74,14 @@ CLASS="CHAPTER"
 ><A
 NAME="UNIX-PERMISSIONS"
 ></A
->Chapter 11. UNIX Permission Bits and Windows NT Access Control Lists</H1
+>Chapter 10. UNIX Permission Bits and Windows NT Access Control Lists</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1663"
->11.1. Viewing and changing UNIX permissions using the NT 
+NAME="AEN1499"
+>10.1. Viewing and changing UNIX permissions using the NT 
 	security dialogs</A
 ></H1
 ><P
@@ -92,14 +92,46 @@ NAME="AEN1663"
 	the security of the UNIX host Samba is running on, and 
 	still obeys all the file permission rules that a Samba 
 	administrator can set.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>	All access to Unix/Linux system file via Samba is controlled at
+	the operating system file access control level. When trying to
+	figure out file access problems it is vitally important to identify
+	the identity of the Windows user as it is presented by Samba at
+	the point of file access. This can best be determined from the
+	Samba log files.
+	</P
+></TD
+></TR
+></TABLE
+></DIV
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1667"
->11.2. How to view file security on a Samba share</A
+NAME="AEN1505"
+>10.2. How to view file security on a Samba share</A
 ></H1
 ><P
 >From an NT4/2000/XP client, single-click with the right 
@@ -167,8 +199,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1678"
->11.3. Viewing file ownership</A
+NAME="AEN1516"
+>10.3. Viewing file ownership</A
 ></H1
 ><P
 >Clicking on the <B
@@ -253,8 +285,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1698"
->11.4. Viewing file or directory permissions</A
+NAME="AEN1536"
+>10.4. Viewing file or directory permissions</A
 ></H1
 ><P
 >The third button is the <B
@@ -307,8 +339,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1713"
->11.4.1. File Permissions</A
+NAME="AEN1551"
+>10.4.1. File Permissions</A
 ></H2
 ><P
 >The standard UNIX user/group/world triple and 
@@ -369,8 +401,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1727"
->11.4.2. Directory Permissions</A
+NAME="AEN1565"
+>10.4.2. Directory Permissions</A
 ></H2
 ><P
 >Directories on an NT NTFS file system have two 
@@ -401,8 +433,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1734"
->11.5. Modifying file or directory permissions</A
+NAME="AEN1572"
+>10.5. Modifying file or directory permissions</A
 ></H1
 ><P
 >Modifying file and directory permissions is as simple 
@@ -497,8 +529,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1756"
->11.6. Interaction with the standard Samba create mask 
+NAME="AEN1594"
+>10.6. Interaction with the standard Samba create mask 
 	parameters</A
 ></H1
 ><P
@@ -691,8 +723,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1810"
->11.7. Interaction with the standard Samba file attribute 
+NAME="AEN1648"
+>10.7. Interaction with the standard Samba file attribute 
 	mapping</A
 ></H1
 ><P
@@ -750,7 +782,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="advancednetworkmanagement.html"
+HREF="optional.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -778,7 +810,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->System Policies</TD
+>Advanced Configuration</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
@@ -792,7 +824,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Group mapping HOWTO</TD
+>Configuring Group Mapping</TD
 ></TR
 ></TABLE
 ></DIV

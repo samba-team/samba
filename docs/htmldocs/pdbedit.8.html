@@ -37,12 +37,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >pdbedit</B
->  [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-D drive] [-S script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-b passdb-backend] [-d debuglevel] [-s configfile] [-P account-policy] [-V value]</P
+>  [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-D drive] [-S script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-g] [-b passdb-backend] [-g] [-d debuglevel] [-s configfile] [-P account-policy] [-C value]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN30"
+NAME="AEN32"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -70,7 +70,7 @@ CLASS="REFENTRYTITLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN39"
+NAME="AEN41"
 ></A
 ><H2
 >OPTIONS</H2
@@ -336,6 +336,44 @@ CLASS="COMMAND"
 ></P
 ></DD
 ><DT
+>-g</DT
+><DD
+><P
+>If you specify <VAR
+CLASS="PARAMETER"
+>-g</VAR
+>,
+		then <VAR
+CLASS="PARAMETER"
+>-i in-backend -e out-backend</VAR
+>
+		applies to the group mapping instead of the user database.
+
+		</P
+><P
+>This option will ease migration from one passdb backend to
+		another and will ease backing up.</P
+></DD
+><DT
+>-g</DT
+><DD
+><P
+>If you specify <VAR
+CLASS="PARAMETER"
+>-g</VAR
+>,
+		then <VAR
+CLASS="PARAMETER"
+>-i in-backend -e out-backend</VAR
+>
+		applies to the group mapping instead of the user database.
+
+		</P
+><P
+>This option will ease migration from one passdb backend to
+		another and will ease backing up.</P
+></DD
+><DT
 >-b passdb-backend</DT
 ><DD
 ><P
@@ -367,7 +405,7 @@ CLASS="PROGRAMLISTING"
 ></P
 ></DD
 ><DT
->-V account-policy-value</DT
+>-C account-policy-value</DT
 ><DD
 ><P
 >Sets an account policy to a specified value. 
@@ -380,7 +418,7 @@ CLASS="PARAMETER"
 ><P
 >Example: <B
 CLASS="COMMAND"
->pdbedit -P "bad lockout attempt" -V 3</B
+>pdbedit -P "bad lockout attempt" -C 3</B
 ></P
 ><P
 ><PRE
@@ -388,6 +426,42 @@ CLASS="PROGRAMLISTING"
 >account policy value for bad lockout attempt was 0
 account policy value for bad lockout attempt is now 3</PRE
 ></P
+></DD
+><DT
+>-h|--help</DT
+><DD
+><P
+>Print a summary of command line options.</P
+></DD
+><DT
+>-V</DT
+><DD
+><P
+>Prints the version number for 
+<B
+CLASS="COMMAND"
+>smbd</B
+>.</P
+></DD
+><DT
+>-s &#60;configuration file&#62;</DT
+><DD
+><P
+>The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> for more information.
+The default configuration file name is determined at 
+compile time.</P
 ></DD
 ><DT
 >-d|--debug=debuglevel</DT
@@ -429,30 +503,15 @@ CLASS="FILENAME"
 > file.</P
 ></DD
 ><DT
->-h|--help</DT
+>-l|--logfile=logbasename</DT
 ><DD
 ><P
->Print a summary of command line options.</P
-></DD
-><DT
->-s &#60;configuration file&#62;</DT
-><DD
-><P
->The file specified contains the 
-configuration details required by the server.  The 
-information in this file includes server-specific
-information such as what printcap file to use, as well 
-as descriptions of all the services that the server is 
-to provide. See <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)</TT
-></A
-> for more information.
-The default configuration file name is determined at 
-compile time.</P
+>File name for log/debug files. The extension
+<CODE
+CLASS="CONSTANT"
+>".client"</CODE
+> will be appended. The log file is
+never removed by the client.</P
 ></DD
 ></DL
 ></DIV
@@ -460,7 +519,7 @@ compile time.</P
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN184"
+NAME="AEN210"
 ></A
 ><H2
 >NOTES</H2
@@ -470,7 +529,7 @@ NAME="AEN184"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN187"
+NAME="AEN213"
 ></A
 ><H2
 >VERSION</H2
@@ -481,7 +540,7 @@ NAME="AEN187"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN190"
+NAME="AEN216"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -503,7 +562,7 @@ CLASS="REFENTRYTITLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN199"
+NAME="AEN225"
 ></A
 ><H2
 >AUTHOR</H2

@@ -145,16 +145,108 @@ CLASS="EMPHASIS"
 ></SPAN
 ></P
 ></DD
+><DT
+>-V</DT
+><DD
+><P
+>Prints the version number for 
+<B
+CLASS="COMMAND"
+>smbd</B
+>.</P
+></DD
+><DT
+>-s &#60;configuration file&#62;</DT
+><DD
+><P
+>The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> for more information.
+The default configuration file name is determined at 
+compile time.</P
+></DD
+><DT
+>-d|--debug=debuglevel</DT
+><DD
+><P
+><VAR
+CLASS="REPLACEABLE"
+>debuglevel</VAR
+> is an integer 
+from 0 to 10.  The default value if this parameter is 
+not specified is zero.</P
+><P
+>The higher this value, the more detail will be 
+logged to the log files about the activities of the 
+server. At level 0, only critical errors and serious 
+warnings will be logged. Level 1 is a reasonable level for
+day to day running - it generates a small amount of 
+information about operations carried out.</P
+><P
+>Levels above 1 will generate considerable 
+amounts of log data, and should only be used when 
+investigating a problem. Levels above 3 are designed for 
+use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic.</P
+><P
+>Note that specifying this parameter here will 
+override the <A
+HREF="smb.conf.5.html#loglevel"
+TARGET="_top"
+>log
+level</A
+> parameter in the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> file.</P
+></DD
+><DT
+>-l|--logfile=logbasename</DT
+><DD
+><P
+>File name for log/debug files. The extension
+<CODE
+CLASS="CONSTANT"
+>".client"</CODE
+> will be appended. The log file is
+never removed by the client.</P
+></DD
+><DT
+>-h|--help</DT
+><DD
+><P
+>Print a summary of command line options.</P
+></DD
 ></DL
 ></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN49"
+NAME="AEN80"
 ></A
 ><H2
 >INSTALLATION</H2
+><P
+>Swat is included as binary package with most distributions. The 
+	package manager in this case takes care of the installation and 
+	configuration. This section is only for those who have compiled 
+	swat from scratch.
+	</P
 ><P
 >After you compile SWAT you need to run <B
 CLASS="COMMAND"
@@ -185,7 +277,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT2"
 ><A
-NAME="AEN61"
+NAME="AEN93"
 ></A
 ><H3
 >Inetd Installation</H3
@@ -214,7 +306,7 @@ CLASS="COMMAND"
 >swat            901/tcp</B
 ></P
 ><P
->Note for NIS/YP users - you may need to rebuild the 
+>Note for NIS/YP and LDAP users - you may need to rebuild the 
 		NIS service maps rather than alter your local <TT
 CLASS="FILENAME"
 >		/etc/services</TT
@@ -255,27 +347,27 @@ CLASS="COMMAND"
 		</B
 > where PID is the process ID of the inetd daemon. </P
 ></DIV
-><DIV
-CLASS="REFSECT2"
-><A
-NAME="AEN83"
-></A
-><H3
->Launching</H3
-><P
->To launch SWAT just run your favorite web browser and 
-		point it at "http://localhost:901/".</P
-><P
->Note that you can attach to SWAT from any IP connected 
-		machine but connecting from a remote machine leaves your 
-		connection open to password sniffing as passwords will be sent 
-		in the clear over the wire. </P
-></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN87"
+NAME="AEN115"
+></A
+><H2
+>LAUNCHING</H2
+><P
+>To launch SWAT just run your favorite web browser and 
+	point it at "http://localhost:901/".</P
+><P
+>Note that you can attach to SWAT from any IP connected 
+	machine but connecting from a remote machine leaves your 
+	connection open to password sniffing as passwords will be sent 
+	in the clear over the wire. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN119"
 ></A
 ><H2
 >FILES</H2
@@ -335,7 +427,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN110"
+NAME="AEN142"
 ></A
 ><H2
 >WARNINGS</H2
@@ -365,17 +457,17 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN120"
+NAME="AEN152"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of the Samba suite.</P
+>This man page is correct for version 3.0 of the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN123"
+NAME="AEN155"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -400,7 +492,7 @@ CLASS="REFENTRYTITLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN133"
+NAME="AEN165"
 ></A
 ><H2
 >AUTHOR</H2
