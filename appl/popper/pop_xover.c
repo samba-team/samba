@@ -15,7 +15,7 @@ pop_xover (POP *p)
     
     /*  Loop through the message information list.  Skip deleted messages */
     for (i = p->msg_count, mp = p->mlp; i > 0; i--, mp++) {
-        if (!mp->del_flag) 
+        if (!(mp->flags & DEL_FLAG)) 
             fprintf(p->output,"%u\t%s\t%s\t%s\t%s\t%lu\t%u\r\n",
 		    mp->number,
 		    mp->subject,

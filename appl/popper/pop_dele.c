@@ -27,12 +27,12 @@ pop_dele (POP *p)
     mp = &(p->mlp[msg_num-1]);
 
     /*  Is the message already flagged for deletion? */
-    if (mp->del_flag)
+    if (mp->flags & DEL_FLAG)
         return (pop_msg (p,POP_FAILURE,"Message %d has already been deleted.",
             msg_num));
 
     /*  Flag the message for deletion */
-    mp->del_flag = TRUE;
+    mp->flags |= DEL_FLAG;
 
 #ifdef DEBUG
     if(p->debug)

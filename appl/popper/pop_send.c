@@ -10,7 +10,6 @@ RCSID("$Id$");
 /*
  *  sendline:   Send a line of a multi-line response to a client.
  */
-static
 void
 pop_sendline(POP *p, char *buffer)
 {
@@ -67,7 +66,7 @@ pop_send(POP *p)
     mp = &p->mlp[msg_num-1];
 
     /*  Is the message flagged for deletion? */
-    if (mp->del_flag)
+    if (mp->flags & DEL_FLAG)
         return (pop_msg (p,POP_FAILURE,
             "Message %d has been deleted.",msg_num));
 
@@ -80,7 +79,7 @@ pop_send(POP *p)
         /*  Assume that a RETR (retrieve) command was issued */
         msg_lines = -1;
         /*  Flag the message as retreived */
-        mp->retr_flag = TRUE;
+        mp->flags |= RETR_FLAG;
     }
     
     /*  Display the number of bytes in the message */

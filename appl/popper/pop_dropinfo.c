@@ -111,8 +111,7 @@ pop_dropinfo(POP *p)
             mp->length = 0;
             mp->lines = 0;
             mp->offset = ftell(p->drop) - nchar;
-            mp->del_flag = FALSE;
-            mp->retr_flag = FALSE;
+            mp->flags = 0;
 #if defined(UIDL) || defined(XOVER)
 	    mp->msg_id = 0;
 #endif

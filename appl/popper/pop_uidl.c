@@ -64,7 +64,7 @@ pop_uidl (POP *p)
         mp = &p->mlp[msg_num-1];
 
         /*  Is the message already flagged for deletion? */
-        if (mp->del_flag)
+        if (mp->flags & DEL_FLAG)
             return (pop_msg (p,POP_FAILURE,
                 "Message %d has been deleted.",msg_num));
 
@@ -80,7 +80,7 @@ pop_uidl (POP *p)
 
     /*  Loop through the message information list.  Skip deleted messages */
     for (i = p->msg_count, mp = p->mlp; i > 0; i--, mp++) {
-        if (!mp->del_flag) 
+        if (!(mp->flags & DEL_FLAG)) 
             fprintf(p->output,"%u %s\r\n",mp->number,mp->msg_id);
     }
 

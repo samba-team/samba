@@ -19,7 +19,7 @@ pop_rset (POP *p)
 
     /*  Unmark all the messages */
     for (i = p->msg_count, mp = p->mlp; i > 0; i--, mp++)
-        mp->del_flag = FALSE; 
+        mp->flags &= ~DEL_FLAG;
     
     /*  Reset the messages-deleted and bytes-deleted counters */
     p->msgs_deleted = 0;

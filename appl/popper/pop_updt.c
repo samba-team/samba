@@ -108,7 +108,7 @@ pop_updt (POP *p)
         /*  Get a pointer to the message information list */
         mp = &p->mlp[msg_num];
 
-        if (mp->del_flag) {
+        if (mp->flags & DEL_FLAG) {
 #ifdef DEBUG
             if(p->debug)
                 pop_log(p,POP_DEBUG,
@@ -131,7 +131,7 @@ pop_updt (POP *p)
 
                 /*  Update the message status */
                 if (strncasecmp(buffer,"Status:",7) == 0) {
-                    if (mp->retr_flag)
+                    if (mp->flags & RETR_FLAG)
                         fputs("Status: RO\n",md);
                     else
                         fputs(buffer, md);
@@ -142,7 +142,7 @@ pop_updt (POP *p)
                 if (*buffer == '\n') {
                     doing_body = 1;
                     if (status_written == 0) {
-                        if (mp->retr_flag)
+                        if (mp->flags & RETR_FLAG)
                             fputs("Status: RO\n\n",md);
                         else
                             fputs("Status: U\n\n",md);
