@@ -472,17 +472,44 @@ NSS_STATUS winbindd_request(int req_type,
 }
 
 /*************************************************************************
- A couple of simple jfunctions to disable winbindd lookups and re-
+ A couple of simple functions to disable winbindd lookups and re-
  enable them
  ************************************************************************/
  
+/* Use putenv() instead of setenv() as not all environments have the
+   latter. */
+
+static int set_winbind_dont_env(char value)
+{
+	int len = strlen(WINBINDD_DONT_ENV) + 3; /* len("_NO_WINBINDD=1\0") */
+	char *s = malloc(len);
+	int result;
+
+	if (s == NULL)
+		return -1;
+
+	/* It's OK to use strcpy here as we have allocated the correct
+	   buffer size and no user or network data is used. */
+
+	strcpy(s, WINBINDD_DONT_ENV);
+
+	s[strlen(WINBINDD_DONT_ENV)]     = '=';
+	s[strlen(WINBINDD_DONT_ENV) + 1] = value;
+	s[strlen(WINBINDD_DONT_ENV) + 2] = '\0';
+
+	result = putenv(s);
+
+	free(s);
+	return result;
+}
+
 BOOL winbind_off( void )
 {
-	return (setenv( WINBINDD_DONT_ENV, "1", 1 ) != -1); 
+	return set_winbind_dont_env('1') != -1;
 }
 
 BOOL winbind_on( void )
 {
-	return (setenv( WINBINDD_DONT_ENV, "0", 1 ) != -1); 
+	return set_winbind_dont_env('0') != -1;
 }
 
