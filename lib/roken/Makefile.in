@@ -62,6 +62,8 @@ SOURCES = \
 	memmove.c \
 	mini_inetd.c \
 	mkstemp.c \
+	net_read.c \
+	net_write.c \
 	parse_time.c \
 	parse_units.c \
 	print_version.c \
@@ -112,6 +114,8 @@ OBJECTS = \
 	k_getpwnam.o \
 	k_getpwuid.o \
 	mini_inetd.o \
+	net_read.o \
+	net_write.o \
 	parse_time.o \
 	parse_units.o \
 	print_version.o \
