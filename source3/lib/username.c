@@ -197,7 +197,7 @@ BOOL map_username(char *user)
 			}
 		}
 
-		dosuserlist = lp_list_make(dosname);
+		dosuserlist = str_list_make(dosname);
 		if (!dosuserlist) {
 			DEBUG(0,("Unable to build user list\n"));
 			return False;
@@ -210,13 +210,13 @@ BOOL map_username(char *user)
 			sscanf(unixname,"%s",user);
 			fstrcpy(last_to,user);
 			if(return_if_mapped) {
-				lp_list_free (&dosuserlist);
+				str_list_free (&dosuserlist);
 				x_fclose(f);
 				return True;
 			}
 		}
     
-		lp_list_free (&dosuserlist);
+		str_list_free (&dosuserlist);
 	}
 
 	x_fclose(f);

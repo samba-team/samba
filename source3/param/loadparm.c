@@ -1186,7 +1186,7 @@ static void init_globals(void)
 
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
-	Globals.szPassdbBackend = lp_list_make("smbpasswd unixsam");
+	Globals.szPassdbBackend = str_list_make("smbpasswd unixsam");
 
 	/* use the new 'hash2' method by default */
 	string_set(&Globals.szManglingMethod, "hash2");
@@ -1801,7 +1801,7 @@ static void free_service(service * pservice)
 				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
 		else if (parm_table[i].type == P_LIST &&
 			 parm_table[i].class == P_LOCAL)
-			     lp_list_free((char ***)
+			     str_list_free((char ***)
 			     		    (((char *)pservice) +
 					     PTR_DIFF(parm_table[i].ptr, &sDefault)));
 	}
@@ -2115,7 +2115,7 @@ static void copy_service(service * pserviceDest,
 					strupper(*(char **)dest_ptr);
 					break;
 				case P_LIST:
-					lp_list_copy((char ***)dest_ptr, *(char ***)src_ptr);
+					str_list_copy((char ***)dest_ptr, *(char ***)src_ptr);
 					break;
 				default:
 					break;
@@ -2835,7 +2835,7 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 			break;
 
 		case P_LIST:
-			*(char ***)parm_ptr = lp_list_make(pszParmValue);
+			*(char ***)parm_ptr = str_list_make(pszParmValue);
 			break;
 
 		case P_STRING:
@@ -2982,7 +2982,7 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
 			return (*((char *)ptr1) == *((char *)ptr2));
 		
 		case P_LIST:
-			return lp_list_compare(*(char ***)ptr1, *(char ***)ptr2);
+			return str_list_compare(*(char ***)ptr1, *(char ***)ptr2);
 
 		case P_GSTRING:
 		case P_UGSTRING:
@@ -3083,7 +3083,7 @@ static BOOL is_default(int i)
 	switch (parm_table[i].type)
 	{
 		case P_LIST:
-			return lp_list_compare (parm_table[i].def.lvalue, 
+			return str_list_compare (parm_table[i].def.lvalue, 
 						*(char ***)parm_table[i].ptr);
 		case P_STRING:
 		case P_USTRING:
@@ -3417,7 +3417,7 @@ static void lp_save_defaults(void)
 			continue;
 		switch (parm_table[i].type) {
 			case P_LIST:
-				lp_list_copy(&(parm_table[i].def.lvalue),
+				str_list_copy(&(parm_table[i].def.lvalue),
 					    *(char ***)parm_table[i].ptr);
 				break;
 			case P_STRING:
@@ -3881,186 +3881,6 @@ char *lp_printername(int snum)
 	return ret;
 }
 
-
-/***********************************************************
- List Parameters manipulation functions
-***********************************************************/
-
-#define P_LIST_ABS 16 /* P_LIST Allocation Block Size */
-
-char **lp_list_make(const char *string)
-{
-	char **list, **rlist;
-	char *str, *s;
-	int num, lsize;
-	pstring tok;
-	
-	if (!string || !*string) return NULL;
-	s = strdup(string);
-	if (!s) {
-		DEBUG(0,("lp_list_make: Unable to allocate memory"));
-		return NULL;
-	}
-	
-	num = lsize = 0;
-	list = NULL;
-	
-	str = s;
-	while (next_token(&str, tok, LIST_SEP, sizeof(tok)))
-	{		
-		if (num == lsize) {
-			lsize += P_LIST_ABS;
-			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
-			if (!rlist) {
-				DEBUG(0,("lp_list_make: Unable to allocate memory"));
-				lp_list_free(&list);
-				SAFE_FREE(s);
-				return NULL;
-			}
-			else list = rlist;
-			memset (&list[num], 0, ((sizeof(char**)) * (P_LIST_ABS +1)));
-		}
-		
-		list[num] = strdup(tok);
-		if (!list[num]) {
-			DEBUG(0,("lp_list_make: Unable to allocate memory"));
-			lp_list_free(&list);
-			SAFE_FREE(s);
-			return NULL;
-		}
-	
-		num++;	
-	}
-	
-	SAFE_FREE(s);
-	return list;
-}
-
-BOOL lp_list_copy(char ***dest, char **src)
-{
-	char **list, **rlist;
-	int num, lsize;
-	
-	*dest = NULL;
-	if (!src) return False;
-	
-	num = lsize = 0;
-	list = NULL;
-		
-	while (src[num])
-	{
-		if (num == lsize) {
-			lsize += P_LIST_ABS;
-			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
-			if (!rlist) {
-				DEBUG(0,("lp_list_copy: Unable to allocate memory"));
-				lp_list_free(&list);
-				return False;
-			}
-			else list = rlist;
-			memset (&list[num], 0, ((sizeof(char **)) * (P_LIST_ABS +1)));
-		}
-		
-		list[num] = strdup(src[num]);
-		if (!list[num]) {
-			DEBUG(0,("lp_list_copy: Unable to allocate memory"));
-			lp_list_free(&list);
-			return False;
-		}
-
-		num++;
-	}
-	
-	*dest = list;
-	return True;	
-}
-
-/* return true if all the elemnts of the list matches exactly */
-BOOL lp_list_compare(char **list1, char **list2)
-{
-	int num;
-	
-	if (!list1 || !list2) return (list1 == list2); 
-	
-	for (num = 0; list1[num]; num++) {
-		if (!list2[num]) return False;
-		if (!strcsequal(list1[num], list2[num])) return False;
-	}
-	if (list2[num]) return False; /* if list2 has more elements than list1 fail */
-	
-	return True;
-}
-
-void lp_list_free(char ***list)
-{
-	char **tlist;
-	
-	if (!list || !*list) return;
-	tlist = *list;
-	for(; *tlist; tlist++) SAFE_FREE(*tlist);
-	SAFE_FREE(*list);
-}
-
-BOOL lp_list_substitute(char **list, const char *pattern, const char *insert)
-{
-	char *p, *s, *t;
-	ssize_t ls, lp, li, ld, i, d;
-
-	if (!list) return False;
-	if (!pattern) return False;
-	if (!insert) return False;
-
-	lp = (ssize_t)strlen(pattern);
-	li = (ssize_t)strlen(insert);
-	ld = li -lp;
-			
-	while (*list)
-	{
-		s = *list;
-		ls = (ssize_t)strlen(s);
-
-		while ((p = strstr(s, pattern)))
-		{
-			t = *list;
-			d = p -t;
-			if (ld)
-			{
-				t = (char *) malloc(ls +ld +1);
-				if (!t) {
-					DEBUG(0,("lp_list_substitute: Unable to allocate memory"));
-					return False;
-				}
-				memcpy(t, *list, d);
-				memcpy(t +d +li, p +lp, ls -d -lp +1);
-				SAFE_FREE(*list);
-				*list = t;
-				ls += ld;
-				s = t +d +li;
-			}
-			
-			for (i = 0; i < li; i++) {
-				switch (insert[i]) {
-					case '`':
-					case '"':
-					case '\'':
-					case ';':
-					case '$':
-					case '%':
-					case '\r':
-					case '\n':
-						t[d +i] = '_';
-						break;
-					default:
-						t[d +i] = insert[i];
-				}
-			}	
-		}
-		
-		list++;
-	}
-	
-	return True;
-}
 
 /****************************************************************
  Compatibility fn. for 2.2.2 code.....

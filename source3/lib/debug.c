@@ -423,16 +423,16 @@ BOOL debug_parse_levels(const char *params_str)
 	if (AllowDebugChange == False)
 		return True;
 
-	params = lp_list_make(params_str);
+	params = str_list_make(params_str);
 
 	if (debug_parse_params(params, DEBUGLEVEL_CLASS,
 			       DEBUGLEVEL_CLASS_ISSET))
 	{
 		debug_dump_status(5);
-		lp_list_free(&params);
+		str_list_free(&params);
 		return True;
 	} else {
-		lp_list_free(&params);
+		str_list_free(&params);
 		return False;
 	}
 }

@@ -1013,3 +1013,185 @@ some platforms don't have strnlen
 	return i;
 }
 #endif
+
+
+
+/***********************************************************
+ List of Strings manipulation functions
+***********************************************************/
+
+#define S_LIST_ABS 16 /* List Allocation Block Size */
+
+char **str_list_make(const char *string)
+{
+	char **list, **rlist;
+	char *str, *s;
+	int num, lsize;
+	pstring tok;
+	
+	if (!string || !*string) return NULL;
+	s = strdup(string);
+	if (!s) {
+		DEBUG(0,("str_list_make: Unable to allocate memory"));
+		return NULL;
+	}
+	
+	num = lsize = 0;
+	list = NULL;
+	
+	str = s;
+	while (next_token(&str, tok, LIST_SEP, sizeof(tok)))
+	{		
+		if (num == lsize) {
+			lsize += S_LIST_ABS;
+			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
+			if (!rlist) {
+				DEBUG(0,("str_list_make: Unable to allocate memory"));
+				str_list_free(&list);
+				SAFE_FREE(s);
+				return NULL;
+			}
+			else list = rlist;
+			memset (&list[num], 0, ((sizeof(char**)) * (S_LIST_ABS +1)));
+		}
+		
+		list[num] = strdup(tok);
+		if (!list[num]) {
+			DEBUG(0,("str_list_make: Unable to allocate memory"));
+			str_list_free(&list);
+			SAFE_FREE(s);
+			return NULL;
+		}
+	
+		num++;	
+	}
+	
+	SAFE_FREE(s);
+	return list;
+}
+
+BOOL str_list_copy(char ***dest, char **src)
+{
+	char **list, **rlist;
+	int num, lsize;
+	
+	*dest = NULL;
+	if (!src) return False;
+	
+	num = lsize = 0;
+	list = NULL;
+		
+	while (src[num])
+	{
+		if (num == lsize) {
+			lsize += S_LIST_ABS;
+			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
+			if (!rlist) {
+				DEBUG(0,("str_list_copy: Unable to allocate memory"));
+				str_list_free(&list);
+				return False;
+			}
+			else list = rlist;
+			memset (&list[num], 0, ((sizeof(char **)) * (S_LIST_ABS +1)));
+		}
+		
+		list[num] = strdup(src[num]);
+		if (!list[num]) {
+			DEBUG(0,("str_list_copy: Unable to allocate memory"));
+			str_list_free(&list);
+			return False;
+		}
+
+		num++;
+	}
+	
+	*dest = list;
+	return True;	
+}
+
+/* return true if all the elemnts of the list matches exactly */
+BOOL str_list_compare(char **list1, char **list2)
+{
+	int num;
+	
+	if (!list1 || !list2) return (list1 == list2); 
+	
+	for (num = 0; list1[num]; num++) {
+		if (!list2[num]) return False;
+		if (!strcsequal(list1[num], list2[num])) return False;
+	}
+	if (list2[num]) return False; /* if list2 has more elements than list1 fail */
+	
+	return True;
+}
+
+void str_list_free(char ***list)
+{
+	char **tlist;
+	
+	if (!list || !*list) return;
+	tlist = *list;
+	for(; *tlist; tlist++) SAFE_FREE(*tlist);
+	SAFE_FREE(*list);
+}
+
+BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
+{
+	char *p, *s, *t;
+	ssize_t ls, lp, li, ld, i, d;
+
+	if (!list) return False;
+	if (!pattern) return False;
+	if (!insert) return False;
+
+	lp = (ssize_t)strlen(pattern);
+	li = (ssize_t)strlen(insert);
+	ld = li -lp;
+			
+	while (*list)
+	{
+		s = *list;
+		ls = (ssize_t)strlen(s);
+
+		while ((p = strstr(s, pattern)))
+		{
+			t = *list;
+			d = p -t;
+			if (ld)
+			{
+				t = (char *) malloc(ls +ld +1);
+				if (!t) {
+					DEBUG(0,("str_list_substitute: Unable to allocate memory"));
+					return False;
+				}
+				memcpy(t, *list, d);
+				memcpy(t +d +li, p +lp, ls -d -lp +1);
+				SAFE_FREE(*list);
+				*list = t;
+				ls += ld;
+				s = t +d +li;
+			}
+			
+			for (i = 0; i < li; i++) {
+				switch (insert[i]) {
+					case '`':
+					case '"':
+					case '\'':
+					case ';':
+					case '$':
+					case '%':
+					case '\r':
+					case '\n':
+						t[d +i] = '_';
+						break;
+					default:
+						t[d +i] = insert[i];
+				}
+			}	
+		}
+		
+		list++;
+	}
+	
+	return True;
+}

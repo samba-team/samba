@@ -266,24 +266,24 @@ static void set_read_only(connection_struct *conn)
 
 	if (!service) return;
 
-	lp_list_copy(&list, lp_readlist(conn->service));
+	str_list_copy(&list, lp_readlist(conn->service));
 	if (list) {
-		if (!lp_list_substitute(list, "%S", service)) {
+		if (!str_list_substitute(list, "%S", service)) {
 			DEBUG(0, ("ERROR: read list substitution failed\n"));
 		}
 		if (user_in_list(conn->user, list))
 			conn->read_only = True;
-		lp_list_free(&list);
+		str_list_free(&list);
 	}
 	
-	lp_list_copy(&list, lp_writelist(conn->service));
+	str_list_copy(&list, lp_writelist(conn->service));
 	if (list) {
-		if (!lp_list_substitute(list, "%S", service)) {
+		if (!str_list_substitute(list, "%S", service)) {
 			DEBUG(0, ("ERROR: write list substitution failed\n"));
 		}
 		if (user_in_list(conn->user, list))
 			conn->read_only = False;
-		lp_list_free(&list);
+		str_list_free(&list);
 	}
 }
 
