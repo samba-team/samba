@@ -101,5 +101,6 @@ int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
 	become_root();
 	retval = getgrouplist_internals(user, gid, groups, grpcnt);
 	unbecome_root();
+	return retval;
 #endif
 }
