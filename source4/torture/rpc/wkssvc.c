@@ -22,11 +22,11 @@
 #include "includes.h"
 
 
-static BOOL test_QueryInfo(struct dcerpc_pipe *p, 
+static BOOL test_NetWkstaGetInfo(struct dcerpc_pipe *p, 
 			   TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	struct wkssvc_QueryInfo r;
+	struct wkssvc_NetWkstaGetInfo r;
 	uint16 levels[] = {100, 101, 102, 502};
 	int i;
 	BOOL ret = True;
@@ -35,11 +35,14 @@ static BOOL test_QueryInfo(struct dcerpc_pipe *p,
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		r.in.level = levels[i];
-		printf("testing QueryInfo level %u\n", r.in.level);
-		status = dcerpc_wkssvc_QueryInfo(p, mem_ctx, &r);
+		printf("testing NetWkstaGetInfo level %u\n", r.in.level);
+		status = dcerpc_wkssvc_NetWkstaGetInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("QueryInfo level %u failed - %s\n", r.in.level, nt_errstr(status));
+			printf("NetWkstaGetInfo level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("NetWkstaGetInfo level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
 		}
 	}
 
@@ -47,29 +50,32 @@ static BOOL test_QueryInfo(struct dcerpc_pipe *p,
 }
 
 
-static BOOL test_TransportEnum(struct dcerpc_pipe *p, 
+static BOOL test_NetWkstaTransportEnum(struct dcerpc_pipe *p, 
 			       TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	struct wkssvc_TransportEnum r;
+	struct wkssvc_NetWkstaTransportEnum r;
 	BOOL ret = True;
 	uint32 resume_handle = 0;
-	struct wkssvc_TransportInfoArray array;
+	struct wkssvc_NetWkstaTransportCtr0 ctr0;
 
-	ZERO_STRUCT(array);
+	ZERO_STRUCT(ctr0);
 
 	r.in.server_name = dcerpc_server_name(p);
 	r.in.level = 0;
-	r.in.info.array = &array;
+	r.in.ctr.ctr0 = &ctr0;
 	r.in.max_buffer = (uint32)-1;
 	r.in.resume_handle = &resume_handle;
 	r.out.resume_handle = &resume_handle;
 
-	printf("testing TransportEnum\n");
-	status = dcerpc_wkssvc_TransportEnum(p, mem_ctx, &r);
+	printf("testing NetWkstaTransportEnum\n");
+	status = dcerpc_wkssvc_NetWkstaTransportEnum(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("TransportEnum failed - %s\n", nt_errstr(status));
+		printf("NetWkstaTransportEnum failed - %s\n", nt_errstr(status));
 		ret = False;
+	}
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("NetWkstaTransportEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
 	}
 
 	return ret;
@@ -96,11 +102,11 @@ BOOL torture_rpc_wkssvc(int dummy)
 
 	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 	
-	if (!test_QueryInfo(p, mem_ctx)) {
+	if (!test_NetWkstaGetInfo(p, mem_ctx)) {
 		ret = False;
 	}
 
-	if (!test_TransportEnum(p, mem_ctx)) {
+	if (!test_NetWkstaTransportEnum(p, mem_ctx)) {
 		ret = False;
 	}
 
