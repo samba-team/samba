@@ -1,3 +1,7 @@
+1999-05-11  Assar Westerlund  <assar@sics.se>
+
+	* init.c (init): initialize realm_max_life and realm_max_rlife
+
 1999-05-07  Assar Westerlund  <assar@sics.se>
 
 	* ank.c (add_new_key): initialize more variables
