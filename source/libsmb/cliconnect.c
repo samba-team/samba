@@ -978,6 +978,9 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 	int name_type = 0x20;
 	char *p;
 
+	/* reasonable default hostname */
+	if (!host) host = "*SMBSERVER";
+
 	fstrcpy(cli->desthost, host);
 
 	/* allow hostnames of the form NAME#xx and do a netbios lookup */
