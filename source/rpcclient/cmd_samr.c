@@ -120,7 +120,7 @@ static uint32 cmd_samr_query_user(struct cli_state *cli, int argc, char **argv)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 	
 	if ((result = cli_samr_connect(cli, server, MAXIMUM_ALLOWED_ACCESS,
@@ -239,7 +239,7 @@ static uint32 cmd_samr_query_group(struct cli_state *cli, int argc, char **argv)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 
 	if ((result = cli_samr_connect(cli, server, MAXIMUM_ALLOWED_ACCESS,
@@ -319,7 +319,7 @@ static uint32 cmd_samr_query_usergroups(struct cli_state *cli, int argc, char **
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 		
 	if ((result = cli_samr_connect(cli, server, MAXIMUM_ALLOWED_ACCESS,
@@ -396,7 +396,7 @@ static uint32 cmd_samr_query_groupmem(struct cli_state *cli, int argc, char **ar
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 
 	if ((result = cli_samr_connect(cli, server, MAXIMUM_ALLOWED_ACCESS,

@@ -1836,7 +1836,7 @@ static void process_stdin(void)
 		int i;
 		
 		/* display a prompt */
-		slprintf(prompt, sizeof(prompt), "smb: %s> ", cur_dir);
+		slprintf(prompt, sizeof(prompt)-1, "smb: %s> ", cur_dir);
 		line = smb_readline(prompt, readline_callback, completion_fn);
 
 		if (!line) break;

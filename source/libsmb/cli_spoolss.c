@@ -474,7 +474,7 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-        slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (server);
 
 	do {
@@ -749,7 +749,7 @@ uint32 cli_spoolss_enumprinterdrivers (
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-        slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (server);
 
 	do 
@@ -829,7 +829,7 @@ uint32 cli_spoolss_getprinterdriverdir (
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-        slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (server);
 
 	do 
@@ -896,7 +896,7 @@ uint32 cli_spoolss_addprinterdriver (
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-        slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (server);
 
 	/* Initialise input parameters */
@@ -953,9 +953,9 @@ uint32 cli_spoolss_addprinterex (
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-        slprintf (client, sizeof(fstring), "\\\\%s", cli->desthost);
+        slprintf (client, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (client);
-        slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (server);
 	fstrcpy  (user, cli->user_name);
 	

@@ -50,7 +50,7 @@ static void wins_hook(char *operation, struct name_record *namerec, int ttl)
 	}
 	
 	p = command;
-	p += slprintf(p, sizeof(command), "%s %s %s %02x %d", 
+	p += slprintf(p, sizeof(command)-1, "%s %s %s %02x %d", 
 		      cmd,
 		      operation, 
 		      namerec->name.name,
@@ -58,7 +58,7 @@ static void wins_hook(char *operation, struct name_record *namerec, int ttl)
 		      ttl);
 
 	for (i=0;i<namerec->data.num_ips;i++) {
-		p += slprintf(p, sizeof(command) - (p-command), " %s", inet_ntoa(namerec->data.ip[i]));
+		p += slprintf(p, sizeof(command) - (p-command) -1, " %s", inet_ntoa(namerec->data.ip[i]));
 	}
 
 	DEBUG(3,("calling wins hook for %s\n", nmb_namestr(&namerec->name)));
@@ -1597,9 +1597,9 @@ void wins_write_database(BOOL background)
 	  }
   }
 
-  slprintf(fname,sizeof(fname),"%s/%s", lp_lockdir(), WINS_LIST);
+  slprintf(fname,sizeof(fname)-1,"%s/%s", lp_lockdir(), WINS_LIST);
   all_string_sub(fname,"//", "/", 0);
-  slprintf(fnamenew,sizeof(fnamenew),"%s.%u", fname, (unsigned int)sys_getpid());
+  slprintf(fnamenew,sizeof(fnamenew)-1,"%s.%u", fname, (unsigned int)sys_getpid());
 
   if((fp = sys_fopen(fnamenew,"w")) == NULL)
   {
