@@ -848,10 +848,7 @@ BOOL check_domain_env(char *domain_env, char *domain)
 
 BOOL parse_domain_user(char *domuser, fstring domain, fstring user)
 {
-	char *p;
-	char *sep = lp_winbind_separator();
-
-	p = strchr(domuser,*sep);
+	char *p = strchr(domuser,*lp_winbind_separator());
 
 	if (!p)
 		return False;

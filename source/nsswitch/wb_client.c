@@ -36,16 +36,14 @@ static BOOL parse_domain_user(char *domuser, fstring domain, fstring user)
 {
         char *p = strchr(domuser,*lp_winbind_separator());
 
-        if (!p) {
-                fstrcpy(domain,"");
-                fstrcpy(user, domuser);
-                return;
-        }
+        if (!p)
+		return False;
         
         fstrcpy(user, p+1);
         fstrcpy(domain, domuser);
         domain[PTR_DIFF(p, domuser)] = 0;
         strupper(domain);
+	return True;
 }
 
 /* Call winbindd to convert a name to a sid */
