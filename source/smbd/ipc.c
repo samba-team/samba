@@ -2946,7 +2946,7 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
   
 #ifdef NTDOMAIN
-  if (api_fd_commands[i].subcommand != -1)
+  if (data != NULL && api_fd_commands[i].subcommand != -1)
   {
     RPC_HDR hdr;
 
