@@ -889,9 +889,9 @@ static void receive_notify2_message(void *buf, size_t len)
 
 static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, size_t len)
 {
-	size_t msg_count, i;
+	size_t msg_count, *msg_len_array, i;
 	char *buf = (char *)msg;
-	char *msg_ptr;
+	char *msg_ptr, **msg_ptr_array;
 
 	if (len < 4)
 		goto bad_msg;
@@ -904,6 +904,24 @@ static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, siz
 	if (msg_count == 0)
 		goto bad_msg;
 
+	/* Process notifies in *reverse* order in which they are sent
+	   in the message.  This is because a DLIST_ADD is used by the
+	   message sender which results in the first (post!) message
+	   being at the end of the list.  Notify messages must be
+	   delivered in the order the events occur in otherwise the
+	   port monitor gets confused. */
+
+	if (!(msg_len_array = (size_t *)malloc(sizeof(size_t) * msg_count))) {
+		DEBUG(0, ("receive_notify2_message_list: out of memory\n"));
+		return;
+	}
+
+	if (!(msg_ptr_array = (char **)malloc(sizeof(char *) * msg_count))) {
+		SAFE_FREE(msg_len_array);
+		DEBUG(0, ("receive_notify2_message_list: out of memory\n"));
+		return;
+	}
+
 	for (i = 0; i < msg_count; i++) {
 		size_t msg_len;
 
@@ -915,9 +933,18 @@ static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, siz
 
 		if (msg_ptr + msg_len - buf > len)
 			goto bad_msg;
-		receive_notify2_message(msg_ptr, msg_len);
+
+		msg_len_array[i] = msg_len;
+		msg_ptr_array[i] = msg_ptr;
+
 		msg_ptr += msg_len;
 	}
+
+	for(i = msg_count; i > 0; i--)
+		receive_notify2_message(msg_ptr_array[i - 1], msg_len_array[i - 1]);
+
+	SAFE_FREE(msg_len_array);
+	SAFE_FREE(msg_ptr_array);
 
 	DEBUG(10,("receive_notify2_message_list: processed %u messages\n",
 		(unsigned int)msg_count ));
