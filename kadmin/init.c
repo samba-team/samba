@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -90,6 +90,7 @@ static struct getargs args[] = {
       "realm max ticket lifetime" },
     { "realm-max-renewable-life",  0,	arg_string,	NULL,
       "realm max renewable lifetime" },
+    { "help", 'h', arg_flag, NULL },
 };
 
 static int num_args = sizeof(args) / sizeof(args[0]);
@@ -107,14 +108,16 @@ init(int argc, char **argv)
     int i;
     char *realm_max_life  = NULL;
     char *realm_max_rlife = NULL;
+    int help_flag = 0;
     HDB *db;
     int optind = 0;
     krb5_deltat max_life, max_rlife;
 
     args[0].value = &realm_max_life;
     args[1].value = &realm_max_rlife;
+    args[2].value = &help_flag;
 
-    if(getarg(args, num_args, argc, argv, &optind)) {
+    if(getarg(args, num_args, argc, argv, &optind) || help_flag) {
 	usage();
 	return 0;
     }
