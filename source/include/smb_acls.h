@@ -166,6 +166,53 @@ typedef ushort	*SMB_ACL_PERMSET_T;
 #define EXTENDED_PERM_BITS			(ACL_CHOWN|ACL_CHMOD|ACL_DELETE)
 #endif /* CONFIG_EXTENDED_PERMISSION */
 
+#elif defined(HAVE_AIX_ACLS)
+
+/* Donated by Medha Date, mdate@austin.ibm.com, for IBM */
+
+#include "/usr/include/acl.h"
+
+typedef uint                        *SMB_ACL_PERMSET_T;
+ 
+struct acl_entry_link{
+	struct acl_entry_link *prevp;
+	struct new_acl_entry *entryp;
+	struct acl_entry_link *nextp;
+	int count;
+};
+
+struct new_acl_entry{
+	unsigned short  ace_len;
+	unsigned short  ace_type;
+	unsigned int    ace_access;
+	struct ace_id ace_id[1];
+};
+
+#define SMB_ACL_ENTRY_T             struct new_acl_entry*
+#define SMB_ACL_T                   struct acl_entry_link*
+ 
+#define SMB_ACL_TAG_T               unsigned short
+#define SMB_ACL_TYPE_T              int
+#define SMB_ACL_PERM_T              uint
+#define SMB_ACL_READ                S_IRUSR
+#define SMB_ACL_WRITE               S_IWUSR
+#define SMB_ACL_EXECUTE             S_IXUSR
+
+/* Types of ACLs. */
+#define SMB_ACL_USER                ACEID_USER
+#define SMB_ACL_USER_OBJ            3
+#define SMB_ACL_GROUP               ACEID_GROUP
+#define SMB_ACL_GROUP_OBJ           4
+#define SMB_ACL_OTHER               5
+#define SMB_ACL_MASK                6
+
+
+#define SMB_ACL_FIRST_ENTRY         1
+#define SMB_ACL_NEXT_ENTRY          2
+
+#define SMB_ACL_TYPE_ACCESS         0
+#define SMB_ACL_TYPE_DEFAULT        1
+
 #else /* No ACLs. */
 
 /* No ACLS - fake it. */
