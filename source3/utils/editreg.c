@@ -381,6 +381,7 @@ typedef struct reg_key_s {
   struct key_list_s *sub_keys;
   struct val_list_s *values;
   KEY_SEC_DESC *security;
+  unsigned int offset;  /* Offset of the record in the file */
 } REG_KEY;
 
 /*
@@ -443,11 +444,12 @@ struct key_sec_desc_s {
   struct key_sec_desc_s *prev, *next;
   int ref_cnt;
   int state;
+  int offset, stored;
   SEC_DESC *sec_desc;
 }; 
 
 /* 
- * All of the structures below actually have a four-byte lenght before them
+ * All of the structures below actually have a four-byte length before them
  * which always seems to be negative. The following macro retrieves that
  * size as an integer
  */
@@ -483,8 +485,8 @@ typedef struct hbin_sub_struct {
 
 typedef struct hbin_struct {
   DWORD HBIN_ID; /* hbin */
-  DWORD prev_off;
-  DWORD next_off;
+  DWORD off_from_first;
+  DWORD off_to_next;
   DWORD uk1;
   DWORD uk2;
   DWORD uk3;
@@ -1319,6 +1321,7 @@ KEY_SEC_DESC *nt_create_init_sec(REGF *regf)
 
   tsec->ref_cnt = 1;
   tsec->state = SEC_DESC_NBK;
+  tsec->stored = tsec->offset = 0;
 
   tsec->sec_desc = regf->def_sec_desc;
 
@@ -1795,6 +1798,7 @@ KEY_SEC_DESC *lookup_create_sec_key(REGF *regf, SK_MAP *sk_map, int sk_off)
     if (!tmp) {
       return NULL;
     }
+    bzero(tmp, sizeof(KEY_SEC_DESC));
     tmp->state = SEC_DESC_RES;
     if (!alloc_sk_map_entry(regf, tmp, sk_off)) {
       return NULL;
@@ -2416,7 +2420,7 @@ int nt_load_registry(REGF *regf)
 		       IVAL(&regf_hdr->dblk_size));
 
   if (verbose) fprintf(stdout, "Offset to next hbin block: %0X\n",
-		       IVAL(&hbin_hdr->next_off));
+		       IVAL(&hbin_hdr->off_to_next));
 
   if (verbose) fprintf(stdout, "HBIN block size: %0X\n",
 		       IVAL(&hbin_hdr->blk_size));
@@ -2447,6 +2451,7 @@ int nt_load_registry(REGF *regf)
 HBIN_BLK *nt_create_hbin_blk(REGF *regf, int size)
 {
   HBIN_BLK *tmp;
+  HBIN_HDR *hdr;
 
   if (!regf || !size) return NULL;
 
@@ -2467,6 +2472,15 @@ HBIN_BLK *nt_create_hbin_blk(REGF *regf, int size)
 
   tmp->free_space = size - (sizeof(HBIN_HDR) - sizeof(HBIN_SUB_HDR));
   tmp->fsp_off = size - tmp->free_space;
+
+  /* 
+   * Now, build the header in the data block 
+   */
+  hdr = (HBIN_HDR *)tmp->data;
+  hdr->HBIN_ID = REG_HBIN_ID;
+  hdr->off_from_first = tmp->file_offset - REGF_HDR_BLKSIZ;
+  hdr->off_to_next = tmp->size;
+  hdr->blk_size = tmp->size;
 
   /*
    * Now link it in
@@ -2515,10 +2529,13 @@ void *nt_alloc_regf_space(REGF *regf, int size, int *off)
 
   for (blk = regf->free_space; blk != NULL; blk = blk->next) {
     if (blk->free_space <= size) {
-      tmp = blk->file_offset + blk->fsp_off;
+      tmp = blk->file_offset + blk->fsp_off - REGF_HDR_BLKSIZ;
       ret = blk->data + blk->fsp_off;
       blk->free_space -= size;
       blk->fsp_off += size;
+
+      /* Insert the header */
+      ((HBIN_SUB_HDR *)ret)->dblocksize = -size;
 
       /*
        * Fix up the free space ptr
@@ -2529,7 +2546,7 @@ void *nt_alloc_regf_space(REGF *regf, int size, int *off)
 	regf->free_space = blk->next;
 
       *off = tmp;
-      return ret;
+      return (((char *)ret)+4);/* The pointer needs to be to the data struct */
     }
   }
 
@@ -2539,10 +2556,13 @@ void *nt_alloc_regf_space(REGF *regf, int size, int *off)
    */
   if (nt_create_hbin_blk(regf, REGF_HDR_BLKSIZ)) {
     blk = regf->free_space;
-    tmp = blk->file_offset + blk->fsp_off;
+    tmp = blk->file_offset + blk->fsp_off - REGF_HDR_BLKSIZ;
     ret = blk->data + blk->fsp_off;
     blk->free_space -= size;
     blk->fsp_off += size;
+
+    /* Insert the header */
+    ((HBIN_SUB_HDR *)ret)->dblocksize = -size;
 
     /*
      * Fix up the free space ptr
@@ -2553,10 +2573,24 @@ void *nt_alloc_regf_space(REGF *regf, int size, int *off)
       regf->free_space = blk->next;
 
     *off = tmp;
-    return ret;
+    return (((char *)ret) + 4);/* The pointer needs to be to the data struct */
   }
 
   return NULL;
+}
+
+/*
+ * Store the security information
+ *
+ * If it has already been stored, just get its offset from record
+ * otherwise, store it and record its offset
+ */
+
+unsigned int nt_store_security(REGF *regf, KEY_SEC_DESC *sec)
+{
+
+  return 0;
+
 }
 
 /*
@@ -2567,11 +2601,56 @@ void *nt_alloc_regf_space(REGF *regf, int size, int *off)
  * 
  * We store the NK hdr, any SK header, class name, and VK structure, then
  * recurse down the LF structures ... 
+ * 
+ * We return the offset of the NK struct
  */
 int nt_store_reg_key(REGF *regf, REG_KEY *key)
 {
   NK_HDR *nk_hdr; 
+  unsigned int nk_off, sk_off, val_off, clsnam_off, size;
 
+  if (!regf || !key) return 0;
+
+  size = sizeof(NK_HDR) + strlen(key->name) - 1;
+  nk_hdr = nt_alloc_regf_space(regf, size, &nk_off);
+  if (!nk_hdr) goto error;
+
+  key->offset = nk_off;  /* We will need this later */
+
+  /*
+   * Now fill in each field etc ...
+   */
+
+  nk_hdr->NK_ID = REG_NK_ID; 
+  if (key->type == REG_ROOT_KEY)
+    nk_hdr->type = 0x2C;
+  else
+    nk_hdr->type = 0x20;
+
+  /* FIXME: Fill in the time of last update */
+
+  if (key->type != REG_ROOT_KEY)
+    nk_hdr->own_off = key->owner->offset;
+
+  if (key->sub_keys)
+    nk_hdr->subk_num = key->sub_keys->key_count;
+
+  /*
+   * Now, process the Sec Desc and then store its offset
+   */
+
+  sk_off = nt_store_security(regf, key->security);
+
+  /*
+   * Then, store the val list and store its offset
+   */
+
+
+  /*
+   * Finally, store the subkeys, and their offsets
+   */
+
+ error:
   return 0;
 }
 
@@ -2617,14 +2696,17 @@ REGF_HDR *nt_get_reg_header(REGF *regf)
 int nt_store_registry(REGF *regf)
 {
   REGF_HDR *reg;
-  NK_HDR *fkey;
+  int fkey;
 
   /*
    * Get a header ... and partially fill it in ...
    */
   reg = nt_get_reg_header(regf);
 
-  
+  /*
+   * Store the first key
+   */
+  fkey = nt_store_reg_key(regf, regf->root);
 
   return 1;
 }
