@@ -12,9 +12,6 @@ static char SccsId[] = "@(#)@(#)pop_xmit.c	2.1  2.1 3/18/91";
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/file.h>
-#ifdef _AIX
-#define _BSD
-#endif
 #include <sys/wait.h>
 #include "popper.h"
 
@@ -31,7 +28,7 @@ POP     *   p;
     char                    buffer[MAXLINELEN];     /*  Read buffer */
     char                    temp_xmit[MAXDROPLEN];  /*  Name of the temporary 
                                                         filedrop */
-    union   wait            stat;
+    int		            stat;
     int                     id, pid;
 
     /*  Create a temporary file into which to copy the user's message */
@@ -88,7 +85,7 @@ POP     *   p;
         default:
             while((id = wait(&stat)) >=0 && id != pid);
             if (!p->debug) (void)unlink (temp_xmit);
-            if (stat.w_retcode)
+            if (WEXITSTATUS(stat) != 0)
                 return (pop_msg(p,POP_FAILURE,"Unable to send message"));
             return (pop_msg (p,POP_SUCCESS,"Message sent successfully"));
     }
