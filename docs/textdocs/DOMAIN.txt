@@ -22,7 +22,9 @@ details.
 
 2) create a share called [netlogon] in your smb.conf. This share should
 be readable by all users, and probably should not be writeable. This
-share will hold your network logon scripts.
+share will hold your network logon scripts, and the CONFIG.POL file
+(Note: for details on the CONFIG.POL file, refer to the Microsoft
+Windows NT Server Help documentation)
 
 For example I have used:
 
