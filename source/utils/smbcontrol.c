@@ -139,7 +139,7 @@ static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL dupl
 
 	/* "smbd" is the only broadcast operation */
 	if (strequal(dest,"smbd")) {
-		retval = message_send_all(the_tdb,msg_type, buf, len, duplicates);
+		retval = message_send_all(the_tdb,msg_type, buf, len, duplicates, NULL);
 	} else if (strequal(dest,"nmbd")) {
 		pid = pidfile_pid(dest);
 		if (pid == 0) {
