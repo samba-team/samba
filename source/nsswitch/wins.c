@@ -139,6 +139,8 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 	int i, count;
 	size_t namelen = strlen(name) + 1;
 
+	memset(he, '\0', sizeof(*he));
+
 	ip_list = lookup_backend(name, &count);
 	if (!ip_list) {
 		return NSS_STATUS_NOTFOUND;
