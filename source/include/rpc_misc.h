@@ -215,13 +215,6 @@ typedef struct {
 	uint32 buffer; 
 } UNIHDR;
 
-typedef struct {
-	UNIHDR unihdr;
-	uint32 buffer; /* 32 bit buffer pointer */
-} UNIHDR2;
-
-
-
 /********************************************************************** 
  * UNICODE string variations
  **********************************************************************/
@@ -248,7 +241,7 @@ typedef struct {		/* UNISTR3 - XXXX not sure about this structure */
 
 } UNISTR3;
 
-typedef struct {		/* UNIHDR + (UNISTR2*) */
+typedef struct {		/* Buffer wrapped around a UNISTR2 */
 	uint16 length;		/* number of bytes not counting NULL terminatation */
 	uint16 size;		/* number of bytes including NULL terminatation */
 	UNISTR2 *string;

@@ -523,6 +523,7 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	}
 
 	/* set up the lsa_enum_trust_dom response */
+
 	init_r_enum_trust_dom(p->mem_ctx, r_u, enum_context, max_num_domains, num_domains, trust_doms);
 
 	return r_u->status;

@@ -4,6 +4,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Gerald (Jerry) Carter             2005
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -280,6 +281,33 @@ void init_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid)
  Reads or writes a DOM_SID2 structure.
 ********************************************************************/
 
+BOOL smb_io_dom_sid2_p(const char *desc, prs_struct *ps, int depth, DOM_SID2 **sid2)
+{
+	uint32 data_p;
+
+	/* caputure the pointer value to stream */
+
+	data_p = (uint32) *sid2;
+
+	if ( !prs_uint32("dom_sid2_p", ps, depth, &data_p ))
+		return False;
+
+	/* we're done if there is no data */
+
+	if ( !data_p )
+		return True;
+
+	if (UNMARSHALLING(ps)) {
+		if ( !(*sid2 = PRS_ALLOC_MEM(ps, DOM_SID2, 1)) )
+		return False;
+	}
+
+	return True;
+}
+/*******************************************************************
+ Reads or writes a DOM_SID2 structure.
+********************************************************************/
+
 BOOL smb_io_dom_sid2(const char *desc, DOM_SID2 *sid, prs_struct *ps, int depth)
 {
 	if (sid == NULL)
@@ -479,39 +507,6 @@ BOOL smb_io_hdrbuf(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth)
 	if(!prs_uint32("buf_max_len", ps, depth, &hdr->buf_max_len))
 		return False;
 	if(!prs_uint32("buf_len    ", ps, depth, &hdr->buf_len))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-creates a UNIHDR2 structure.
-********************************************************************/
-
-void init_uni_hdr2(UNIHDR2 *hdr, UNISTR2 *str2)
-{
-	init_uni_hdr(&hdr->unihdr, str2);
-	hdr->buffer = (str2->uni_str_len > 0) ? 1 : 0;
-}
-
-/*******************************************************************
- Reads or writes a UNIHDR2 structure.
-********************************************************************/
-
-BOOL smb_io_unihdr2(const char *desc, UNIHDR2 *hdr2, prs_struct *ps, int depth)
-{
-	if (hdr2 == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_unihdr2");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_unihdr("hdr", &hdr2->unihdr, ps, depth))
-		return False;
-	if(!prs_uint32("buffer", ps, depth, &hdr2->buffer))
 		return False;
 
 	return True;
@@ -913,6 +908,14 @@ void init_unistr4(UNISTR4 *uni4, const char *buf, enum unistr2_term_codes flags)
 	uni4->size   = 2 * (uni4->string->uni_max_len);
 }
 
+void init_unistr4_w( TALLOC_CTX *ctx, UNISTR4 *uni4, const smb_ucs2_t *buf )
+{
+	uni4->string = TALLOC_P( ctx, UNISTR2 );
+	init_unistr2_w( ctx, uni4->string, buf );
+
+	uni4->length = 2 * (uni4->string->uni_str_len);
+	uni4->size   = 2 * (uni4->string->uni_max_len);
+}
 
 /** 
  *  Inits a UNISTR2 structure.
