@@ -112,7 +112,12 @@ chdir $curdir;
 
 # add my local files to the list of binaries to install
 @bins = sort byfilename (@sprogs,@progs,@progs1,@progs2,@mprogs,@scripts,@winbind_progs,@winbind_sprogs,("/findsmb","/sambalp","/smbprint"));
-@nsswitch = sort byfilename (@winbind_lprogs,@winbind_pam_progs);
+
+# add libnss_wins.so if it was built
+if (-e "$SRCDIR/source/nsswitch/libnss_wins.so") {
+  $libns_wins = "nsswitch/libnss_wins.so";
+}
+@nsswitch = sort byfilename (@winbind_lprogs,@winbind_pam_progs,$libns_wins);
 
 # get a complete list of all files in the tree
 chdir "$SRCDIR/";
@@ -131,7 +136,7 @@ chdir $curdir;
 
 # strip out all the generated directories and the "*.o" files from the source
 # release
-@allfiles = grep(!/^.*\.o$/ & !/^.*\.po$/ & !/^.*\.po32$/ & !/^source\/bin/ & !/^packaging\/SGI\/bins/ & !/^packaging\/SGI\/catman/ & !/^packaging\/SGI\/html/ & !/^packaging\/SGI\/codepages/ & !/^packaging\/SGI\/swat/, @allfiles);
+@allfiles = grep(!/^.*\.o$/ & !/^.*\.po$/ & !/^.*\.po32$/ & !/^.*\.so$/ & !/^source\/bin/ & !/^packaging\/SGI\/bins/ & !/^packaging\/SGI\/catman/ & !/^packaging\/SGI\/html/ & !/^packaging\/SGI\/codepages/ & !/^packaging\/SGI\/swat/, @allfiles);
 
 open(IDB,"> $curdir/$PKG.idb") || die "Unable to open $PKG.idb for output\n";
 
@@ -180,12 +185,18 @@ while(@bins) {
     }
     elsif ($filename eq "smbd") {
       print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
-      print IDB "f 0755 root sys usr/samba/bin/$filename.noquota $SRCPFX/source/$nextfile.noquota $PKG.sw.base \n";
-      print IDB "f 0755 root sys usr/samba/bin/$filename.profile $SRCPFX/source/$nextfile.profile $PKG.sw.base \n";
+      if (-e "$SRCDIR/source/$nextfile.noquota") {
+	print IDB "f 0755 root sys usr/samba/bin/$filename.noquota $SRCPFX/source/$nextfile.noquota $PKG.sw.base \n";
+      }
+      if (-e "$SRCDIR/source/$nextfile.profile") {
+	print IDB "f 0755 root sys usr/samba/bin/$filename.profile $SRCPFX/source/$nextfile.profile $PKG.sw.base \n";
+      }
     }
     elsif ($filename eq "nmbd") {
       print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
-      print IDB "f 0755 root sys usr/samba/bin/$filename.profile $SRCPFX/source/$nextfile.profile $PKG.sw.base \n";
+      if (-e "$SRCDIR/source/$nextfile.profile") {
+	print IDB "f 0755 root sys usr/samba/bin/$filename.profile $SRCPFX/source/$nextfile.profile $PKG.sw.base \n";
+      }
     }
     else {
       print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
@@ -215,15 +226,6 @@ while (@codepage) {
   print IDB "f 0644 root sys usr/samba/lib/codepages/$nextpage $SRCPFX/packaging/SGI/codepages/$nextpage $PKG.sw.base nostrip \n";
 }
 print IDB "f 0644 root sys usr/samba/lib/smb.conf $SRCPFX/packaging/SGI/smb.conf $PKG.sw.base config(suggest)\n";
-
-if (@nsswitch) {
-  print IDB "d 0644 root sys usr/samba/nsswitch $SRCPFX/packaging/SGI $PKG.sw.base\n";
-  while(@nsswitch) {
-    $nextfile = shift @nsswitch;
-    ($filename = $nextfile) =~ s/^.*\///;;
-    print IDB "f 0755 root sys usr/samba/nsswitch/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
-  }
-}
 
 print IDB "d 0755 lp sys usr/samba/printer $SRCPFX/packaging/SGI $PKG.sw.base\n";
 print IDB "d 0755 lp sys usr/samba/printer/W32ALPHA $SRCPFX/packaging/SGI $PKG.sw.base\n";
@@ -301,6 +303,17 @@ while (@catman) {
   }
   print IDB "f 0664 root sys usr/share/catman/u_man/cat$dirnum/$file $SRCPFX/$nextfile $PKG.man.manpages\n";
 }
+
+if (@nsswitch) {
+  print IDB "d 0755 root sys var/ns/lib $SRCPFX/packaging/SGI $PKG.sw.base\n";
+  while(@nsswitch) {
+    $nextfile = shift @nsswitch;
+    ($filename = $nextfile) =~ s/^.*\///;
+    $filename =~ s/libnss/libns/;
+    print IDB "f 0644 root sys var/ns/lib/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
+  }
+}
+
 print IDB "d 01777 lp sys var/spool/samba $SRCPFX/packaging/SGI $PKG.sw.base\n";
 
 close IDB;
