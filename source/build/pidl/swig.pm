@@ -145,6 +145,9 @@ sub ParseFunction($)
 
     $res .= "\tstruct $fn->{NAME} *s = talloc(mem_ctx, sizeof(struct $fn->{NAME}));\n\n";
 
+    # Remove this when all elements are initialised
+    $res .= "\tmemset(s, 0, sizeof(struct $fn->{NAME}));\n\n";
+
     foreach my $e (@{$fn->{DATA}}) {
 	$res .= XFromPython($e, "in.") if util::has_property($e, "in")
     }
@@ -246,6 +249,23 @@ sub ParseUnion($)
 
     $res .= "union $u->{NAME} *$u->{NAME}_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)\n";
     $res .= "{\n";
+
+    $res .= "\tunion $u->{NAME} *u = talloc(mem_ctx, sizeof(struct $u->{NAME}));\n";
+    $res .= "\tPyObject *dict;\n\n";
+
+    
+    for my $e (@{$u->{DATA}{DATA}}) {
+	$res .= "\tif ((dict = PyDict_GetItem(obj, PyString_FromString(\"$e->{DATA}{NAME}\")))) {\n";
+#	if ($e->{DATA}{POINTERS} == 0) {
+#	    $res .= "\t\t// $e->{TYPE} pointers=$e->{DATA}{POINTERS}\n";
+#	} else {
+#	    $res .= "\t\t// $e->{TYPE} pointers=$e->{DATA}{POINTERS}\n";
+#	}
+
+	$res .= "\t\treturn u;\n";
+	$res .= "\t}\n\n";
+    }
+
     $res .= "\treturn NULL;\n";
     $res .= "}\n\n";
 
