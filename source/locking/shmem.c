@@ -43,8 +43,8 @@ struct SmbShmHeader
    int smb_shm_version;
    int total_size;	/* in bytes */
    BOOL consistent;
-   smb_shm_offset_t first_free_off;
-   smb_shm_offset_t userdef_off;    /* a userdefined offset. can be used to store root of tree or list */
+   int first_free_off;
+   int userdef_off;    /* a userdefined offset. can be used to store root of tree or list */
    struct {		/* a cell is a range of bytes of sizeof(struct SmbShmBlockDesc) size */
       int cells_free;
       int cells_used;
@@ -55,7 +55,7 @@ struct SmbShmHeader
 #define SMB_SHM_NOT_FREE_OFF (-1)
 struct SmbShmBlockDesc
 {
-   smb_shm_offset_t next;	/* offset of next block in the free list or SMB_SHM_NOT_FREE_OFF when block in use  */
+   int next;	/* offset of next block in the free list or SMB_SHM_NOT_FREE_OFF when block in use  */
    int          size;   /* user size in BlockDescSize units */
 };
 
@@ -141,10 +141,9 @@ static BOOL smb_shm_global_unlock(void)
  * Function to create the hash table for the share mode entries. Called
  * when smb shared memory is global locked.
  */
-
-BOOL smb_shm_create_hash_table( unsigned int size )
+static BOOL smb_shm_create_hash_table( unsigned int size )
 {
-  size *= sizeof(smb_shm_offset_t);
+  size *= sizeof(int);
 
   smb_shm_global_lock();
   smb_shm_header_p->userdef_off = smb_shm_alloc( size );
@@ -381,7 +380,7 @@ static void smb_shm_solve_neighbors(struct SmbShmBlockDesc *head_p )
 
 
 
-BOOL smb_shm_open( char *file_name, int size)
+BOOL smb_shm_open(char *file_name, int size)
 {
    int filesize;
    BOOL created_new = False;
@@ -533,13 +532,13 @@ BOOL smb_shm_close( void )
    return True;
 }
 
-smb_shm_offset_t smb_shm_alloc(int size)
+int smb_shm_alloc(int size)
 {
    unsigned num_cells ;
    struct SmbShmBlockDesc *scanner_p;
    struct SmbShmBlockDesc *prev_p;
    struct SmbShmBlockDesc *new_p;
-   smb_shm_offset_t result_offset;
+   int result_offset;
    
    
    if( !smb_shm_header_p )
@@ -637,7 +636,7 @@ smb_shm_offset_t smb_shm_alloc(int size)
 
 
 
-BOOL smb_shm_free(smb_shm_offset_t offset)
+BOOL smb_shm_free(int offset)
 {
    struct SmbShmBlockDesc *header_p  ; /*	pointer	to header of block to free */
    struct SmbShmBlockDesc *scanner_p ; /*	used to	scan the list			   */
@@ -716,7 +715,7 @@ BOOL smb_shm_free(smb_shm_offset_t offset)
    }
 }
 
-smb_shm_offset_t smb_shm_get_userdef_off(void)
+int smb_shm_get_userdef_off(void)
 {
    if (!smb_shm_header_p)
       return NULL_OFFSET;
@@ -724,16 +723,7 @@ smb_shm_offset_t smb_shm_get_userdef_off(void)
       return smb_shm_header_p->userdef_off;
 }
 
-BOOL smb_shm_set_userdef_off(smb_shm_offset_t userdef_off)
-{
-   if (!smb_shm_header_p)
-      return False;
-   else
-      smb_shm_header_p->userdef_off = userdef_off;
-   return True;
-}
-
-void *smb_shm_offset2addr(smb_shm_offset_t offset)
+void *smb_shm_offset2addr(int offset)
 {
    if (offset == NULL_OFFSET )
       return (void *)(0);
@@ -744,7 +734,7 @@ void *smb_shm_offset2addr(smb_shm_offset_t offset)
    return (void *)((char *)smb_shm_header_p + offset );
 }
 
-smb_shm_offset_t smb_shm_addr2offset(void *addr)
+int smb_shm_addr2offset(void *addr)
 {
    if (!addr)
       return NULL_OFFSET;
@@ -752,7 +742,7 @@ smb_shm_offset_t smb_shm_addr2offset(void *addr)
    if (!smb_shm_header_p)
       return NULL_OFFSET;
    
-   return (smb_shm_offset_t)((char *)addr - (char *)smb_shm_header_p);
+   return (int)((char *)addr - (char *)smb_shm_header_p);
 }
 
 /*******************************************************************
@@ -761,7 +751,7 @@ smb_shm_offset_t smb_shm_addr2offset(void *addr)
 
 BOOL smb_shm_lock_hash_entry( unsigned int entry)
 {
-  int start = (smb_shm_header_p->userdef_off + (entry * sizeof(smb_shm_offset_t)));
+  int start = (smb_shm_header_p->userdef_off + (entry * sizeof(int)));
 
   if (smb_shm_fd < 0)
     {
@@ -776,7 +766,7 @@ BOOL smb_shm_lock_hash_entry( unsigned int entry)
     }
   
   /* Do an exclusive wait lock on the 4 byte region mapping into this entry  */
-  if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(smb_shm_offset_t), F_WRLCK) == False)
+  if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(int), F_WRLCK) == False)
     {
       DEBUG(0,("ERROR smb_shm_lock_hash_entry : fcntl_lock failed with code %s\n",strerror(errno)));
       return False;
@@ -792,7 +782,7 @@ BOOL smb_shm_lock_hash_entry( unsigned int entry)
 
 BOOL smb_shm_unlock_hash_entry( unsigned int entry )
 {
-  int start = (smb_shm_header_p->userdef_off + (entry * sizeof(smb_shm_offset_t)));
+  int start = (smb_shm_header_p->userdef_off + (entry * sizeof(int)));
 
   if (smb_shm_fd < 0)
     {
@@ -807,7 +797,7 @@ BOOL smb_shm_unlock_hash_entry( unsigned int entry )
     }
 
   /* Do a wait lock on the 4 byte region mapping into this entry  */
-  if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(smb_shm_offset_t), F_UNLCK) == False)
+  if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(int), F_UNLCK) == False)
     {
       DEBUG(0,("ERROR smb_shm_unlock_hash_entry : fcntl_lock failed with code %s\n",strerror(errno)));
       return False;

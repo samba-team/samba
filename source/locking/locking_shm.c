@@ -42,19 +42,19 @@ extern files_struct Files[];
 /* share mode record pointed to in shared memory hash bucket */
 typedef struct
 {
-  smb_shm_offset_t next_offset; /* offset of next record in chain from hash bucket */
+  int next_offset; /* offset of next record in chain from hash bucket */
   int locking_version;
   int32 st_dev;
   int32 st_ino;
   int num_share_mode_entries;
-  smb_shm_offset_t share_mode_entries; /* Chain of share mode entries for this file */
+  int share_mode_entries; /* Chain of share mode entries for this file */
   char file_name[1];
 } share_mode_record;
 
 /* share mode entry pointed to by share_mode_record struct */
 typedef struct
 {
-	smb_shm_offset_t next_share_mode_entry;
+	int next_share_mode_entry;
 	share_mode_entry e;
 } shm_share_mode_entry;
 
@@ -89,7 +89,7 @@ get all share mode entries in shared memory for a dev/inode pair.
 static int shm_get_share_modes(int cnum, int token, uint32 dev, uint32 inode, 
 			       share_mode_entry **old_shares)
 {
-  smb_shm_offset_t *mode_array;
+  int *mode_array;
   unsigned int hash_entry = HASH_ENTRY(dev, inode); 
   share_mode_record *file_scanner_p;
   share_mode_record *file_prev_p;
@@ -111,7 +111,7 @@ static int shm_get_share_modes(int cnum, int token, uint32 dev, uint32 inode,
     return 0;
   }
 
-  mode_array = (smb_shm_offset_t *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+  mode_array = (int *)smb_shm_offset2addr(smb_shm_get_userdef_off());
   
   if(mode_array[hash_entry] == NULL_OFFSET)
   {
@@ -267,7 +267,7 @@ del the share mode of a file.
 static void shm_del_share_mode(int token, int fnum)
 {
   uint32 dev, inode;
-  smb_shm_offset_t *mode_array;
+  int *mode_array;
   unsigned int hash_entry;
   share_mode_record *file_scanner_p;
   share_mode_record *file_prev_p;
@@ -290,7 +290,7 @@ static void shm_del_share_mode(int token, int fnum)
     return;
   }
 
-  mode_array = (smb_shm_offset_t *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+  mode_array = (int *)smb_shm_offset2addr(smb_shm_get_userdef_off());
  
   if(mode_array[hash_entry] == NULL_OFFSET)
   {  
@@ -408,12 +408,12 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
 {
   files_struct *fs_p = &Files[fnum];
   int32 dev, inode;
-  smb_shm_offset_t *mode_array;
+  int *mode_array;
   unsigned int hash_entry;
   share_mode_record *file_scanner_p;
   share_mode_record *file_prev_p;
   shm_share_mode_entry *new_entry_p;
-  smb_shm_offset_t new_entry_offset;
+  int new_entry_offset;
   BOOL found = False;
 
   dev = fs_p->fd_ptr->dev;
@@ -429,7 +429,7 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
     return False;
   }
 
-  mode_array = (smb_shm_offset_t *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+  mode_array = (int *)smb_shm_offset2addr(smb_shm_get_userdef_off());
 
   file_scanner_p = (share_mode_record *)smb_shm_offset2addr(mode_array[hash_entry]);
   file_prev_p = file_scanner_p;
@@ -453,7 +453,7 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
   {
     /* We must create a share_mode_record */
     share_mode_record *new_mode_p = NULL;
-    smb_shm_offset_t new_offset = smb_shm_alloc( sizeof(share_mode_record) +
+    int new_offset = smb_shm_alloc( sizeof(share_mode_record) +
                                         strlen(fs_p->name) + 1);
     if(new_offset == NULL_OFFSET)
     {
@@ -482,7 +482,7 @@ inode %d in hash bucket %d\n", fs_p->name, dev, inode, hash_entry));
   new_entry_offset = smb_shm_alloc( sizeof(shm_share_mode_entry));
   if(new_entry_offset == NULL_OFFSET)
   {
-    smb_shm_offset_t delete_offset = mode_array[hash_entry];
+    int delete_offset = mode_array[hash_entry];
     DEBUG(0,("ERROR:set_share_mode (FAST_SHARE_MODES): smb_shm_alloc fail 1!\n"));
     /* Unlink the damaged record */
     mode_array[hash_entry] = file_scanner_p->next_offset;
@@ -528,7 +528,7 @@ Remove an oplock port and mode entry from a share mode.
 static BOOL shm_remove_share_oplock(int fnum, int token)
 {
   uint32 dev, inode;
-  smb_shm_offset_t *mode_array;
+  int *mode_array;
   unsigned int hash_entry;
   share_mode_record *file_scanner_p;
   share_mode_record *file_prev_p;
@@ -551,7 +551,7 @@ static BOOL shm_remove_share_oplock(int fnum, int token)
     return False;
   }
 
-  mode_array = (smb_shm_offset_t *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+  mode_array = (int *)smb_shm_offset2addr(smb_shm_get_userdef_off());
 
   if(mode_array[hash_entry] == NULL_OFFSET)
   {
@@ -641,10 +641,10 @@ share mode system
 static int shm_share_forall(void (*fn)(share_mode_entry *, char *))
 {
 	int i, count=0;
-	smb_shm_offset_t *mode_array;
+	int *mode_array;
 	share_mode_record *file_scanner_p;
 
-	mode_array = (smb_shm_offset_t *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+	mode_array = (int *)smb_shm_offset2addr(smb_shm_get_userdef_off());
 
 	for( i = 0; i < lp_shmem_hash_size(); i++) {
 		smb_shm_lock_hash_entry(i);
