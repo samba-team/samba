@@ -17,7 +17,7 @@ libkrb5_a_SOURCES = \
 	get_port.c keyblock.c keytab.c krbhst.c \
 	kuserok.c misc.c mk_error.c mk_priv.c mk_rep.c \
 	mk_req.c mk_req_ext.c mk_safe.c net_read.c \
-	net_write.c principal.c rd_priv.c rd_rep.c \
+	net_write.c padata.c principal.c rd_priv.c rd_rep.c \
 	rd_req.c rd_safe.c read_message.c recvauth.c \
 	send_to_kdc.c sendauth.c set_default_realm.c \
 	store.c store_emem.c store_fd.c store_mem.c \
