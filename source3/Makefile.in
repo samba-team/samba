@@ -222,9 +222,15 @@ all : CHECK $(SPROGS) $(PROGS)
 CHECK:
 	@echo "Using FLAGS = $(FLAGS)"
 	@echo "Using LIBS = $(LIBS)"
+	@(cd $(srcdir) && ls -1d */*.c) | sed 's,/[^/]*$$,,;s,^$$,.,' | \
+	 while read dir; do \
+	   if test ! -d "$$dir"; then mkdir "$$dir" || true; else true; fi; \
+	 done
 
 .c.o: @MAINT@ .deps/.dummy
 	@echo Compiling $*.c
+	@dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` && \
+	   if test ! -d "$$dir"; then mkdir "$$dir" || true; else true; fi
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< -o $@ \
 	@MAINT@ -Wp,-MD,.deps/`echo $* | sed s,/,_,g`.P && : >.deps/.stamp
 # the line above is for atomatic dependency tracking
@@ -358,7 +364,7 @@ realclean: clean
 	-rm -f config.log $(PROGS) $(SPROGS)
 
 distclean: realclean
-	-rm -f include/config.h include/stamp-h Makefile */.dummy
+	-rm -f include/config.h include/stamp-h Makefile
 	-rm -f config.status config.cache
 	-rm -rf .deps
 
@@ -381,7 +387,8 @@ $(srcdir)/configure: @MAINT@ $(srcdir)/configure.in $(srcdir)/aclocal.m4
 config.status: $(srcdir)/configure
 	$(SHELL) ./config.status --recheck
 
-Makefile: $(srcdir)/Makefile.in config.status
+Makefile: $(srcdir)/Makefile.in config.status \
+	  include/stamp-h # just to ensure that config.h is up-to-date
 	CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
 # note that nothing depends on config.h, so will probably be rebuilt
@@ -398,14 +405,7 @@ $(srcdir)/include/config.h.in: $(srcdir)/include/stamp-h.in
 
 $(srcdir)/include/stamp-h.in: @MAINT@ $(srcdir)/acconfig.h $(srcdir)/configure.in
 	cd $(srcdir) && $(AUTOHEADER)
-	@cd $(srcdir) && echo > include/stamp-h.in
-
-DUMMY_FILES = @DUMMY_FILES@
-DUMMY_BASE = @DUMMY_BASE@
-
-Makefile: $(DUMMY_FILES)
-$(DUMMY_FILES):
-	CONFIG_FILES=$@$(DUMMY_BASE) CONFIG_HEADERS= $(SHELL) ./config.status
+	@date -u > $@
 
 # automatic dependency tracking rules
 .deps/.dummy:
