@@ -8,12 +8,18 @@
 			<orgname>VA Linux Systems/Samba Team</orgname>
 			<address><email>jerry@samba.org</email></address>
 		</affiliation>
+		<firstname>David</firstname><surname>Bannon</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address><email>dbannon@samba.org</email></address>
+		</affiliation>
+		
 	</author>
-	<pubdate> (15 Apr 2001) </pubdate>
+	<pubdate> (26 Apr 2001) </pubdate>
 </chapterinfo>
 
 <title>
-How to Configure Samba 2.2.x as a Primary Domain Controller
+How to Configure Samba 2.2 as a Primary Domain Controller
 </title>
 
 
@@ -27,28 +33,41 @@ How to Configure Samba 2.2.x as a Primary Domain Controller
 Background
 </title>
 
-<para><emphasis>Author's Note :</emphasis> This document
-is a combination of David Bannon's Samba 2.2 PDC HOWTO
-and the Samba NT Domain FAQ. Both documents are superceeded by this one.
+<note>
+<para>
+<emphasis>Author's Note :</emphasis> This document is a combination 
+of David Bannon's Samba 2.2 PDC HOWTO and the Samba NT Domain FAQ. 
+Both documents are superceeded by this one.
 </para>
+</note>
 
 <para>
 Version of Samba prior to release 2.2 had marginal capabilities to
 act as a Windows NT 4.0 Primary Domain Controller (PDC).  The following 
-functionality should work in 2.2.0:
+functionality should work in 2.2:
 </para>
 
 <itemizedlist>
-	<listitem><para>domain logons for Windows NT 4.0/2000 clients</para></listitem>
+	<listitem><para>
+	domain logons for Windows NT 4.0/2000 clients
+	</para></listitem>
 	
-	<listitem><para>placing a Windows 9x client in user level security</para></listitem>
+	<listitem><para>
+	placing a Windows 9x client in user level security
+	</para></listitem>
 	
-	<listitem><para>retrieving a list of users and groups from a Samba PDC to
-	Windows 9x/NT/2000 clients </para></listitem>
+	<listitem><para>
+	retrieving a list of users and groups from a Samba PDC to
+	Windows 9x/NT/2000 clients
+	</para></listitem>
 	
-	<listitem><para>roving user profiles</para></listitem>
+	<listitem><para>
+	roving (roaming) user profiles
+	</para></listitem>
 	
-	<listitem><para>Windows NT 4.0 style system policies</para></listitem>
+	<listitem><para>
+	Windows NT 4.0 style system policies
+	</para></listitem>
 </itemizedlist>
 
 <para>
@@ -56,15 +75,23 @@ The following pieces of functionality are not included in the 2.2 release:
 </para>
 
 <itemizedlist>
-	<listitem><para>Windows NT 4 domain trusts</para></listitem>
+	<listitem><para>
+	Windows NT 4 domain trusts
+	</para></listitem>
 	
-	<listitem><para>Sam replication with Windows NT 4.0 Domain Controllers
-	(i.e. a Samba PDC and a Windows NT BDC or vice versa) </para></listitem>
+	<listitem><para>
+	SAM replication with Windows NT 4.0 Domain Controllers
+	(i.e. a Samba PDC and a Windows NT BDC or vice versa) 
+	</para></listitem>
 	
-	<listitem><para>Adding users via the User Manager for Domains</para></listitem>
+	<listitem><para>
+	Adding users via the User Manager for Domains
+	</para></listitem>
 
-	<listitem><para>Acting as a Windows 2000 Domain Controller (i.e. Kerberos
-	and Active Directory)</para></listitem>
+	<listitem><para>
+	Acting as a Windows 2000 Domain Controller (i.e. Kerberos and 
+	Active Directory)
+	</para></listitem>
 </itemizedlist>
 
 <para>
@@ -80,11 +107,10 @@ Beginning with Samba 2.2.0, we are proud to announce official
 support for Windows NT 4.0 style domain logons from Windows NT
 4.0 and Windows 2000 (including SP1) clients.  This article 
 outlines the steps necessary for configuring Samba as a PDC.
-Note that it is necessary to have a working Samba server
-prior to implementing the PDC functionality.  If you have not 
-followed the steps outlined in <ulink url="UNIX_INSTALL.html">
-UNIX_INSTALL.html</ulink>, please make sure that your server 
-is configured correctly before proceeding.  Another good 
+It is necessary to have a working Samba server prior to implementing the 
+PDC functionality.  If you have not followed the steps outlined in 
+<ulink url="UNIX_INSTALL.html"> UNIX_INSTALL.html</ulink>, please make sure 
+that your server is configured correctly before proceeding.  Another good 
 resource in the <ulink url="smb.conf.5.html">smb.conf(5) man 
 page</ulink>.
 </para>
@@ -95,11 +121,14 @@ steps.
 </para>
 
 <orderedlist numeration="Arabic">
-	<listitem><para>Configuring the Samba Domain Controller
+	<listitem><para>
+	Configuring the Samba PDC
 	</para></listitem>
 	
-	<listitem><para>Creating machine trust accounts
-	and joining clients to the domain</para></listitem>
+	<listitem><para>
+	Creating machine trust accounts	and joining clients 
+	to the domain
+	</para></listitem>
 </orderedlist>
 
 <para>
@@ -164,7 +193,7 @@ Here is an example smb.conf for acting as a PDC:
     <ulink url="smb.conf.5.html#LOGONHOME">logon home</ulink> = \\homeserver\%u
     
     ; specify a generic logon script for all users
-    ; this is a relative path to the [netlogon] share
+    ; this is a relative **DOS** path to the [netlogon] share
     <ulink url="smb.conf.5.html#LOGONSCRIPT">logon script</ulink> = logon.cmd
 
 ; necessary share for domain controller
@@ -182,28 +211,30 @@ Here is an example smb.conf for acting as a PDC:
 </programlisting></para>
 
 <para>
-There are a couple of points to emphasize in the above
-configuration.
+There are a couple of points to emphasize in the above configuration.
 </para>
 
 <itemizedlist>
-	<listitem><para>encrypted passwords must be enabled.
-	For more details on how to do this, refer to 
-	<ulink url="ENCRYPTION.html">ENCRYPTION.html</ulink>.
+	<listitem><para>
+	Encrypted passwords must be enabled.  For more details on how 
+	to do this, refer to <ulink url="ENCRYPTION.html">ENCRYPTION.html</ulink>.
 	</para></listitem>
 	
-	<listitem><para>The server must support domain logons
-	and a <filename>[netlogon]</filename> share</para></listitem>
+	<listitem><para>
+	The server must support domain logons and a
+	<filename>[netlogon]</filename> share
+	</para></listitem>
 	
-	<listitem><para>The server must be the domain master browser
-	in order for Windows client to locate the server as a DC.</para>
-	</listitem>
+	<listitem><para>
+	The server must be the domain master browser in order for Windows 
+	client to locate the server as a DC.
+	</para></listitem>
 </itemizedlist>    
 
 <para>
 As Samba 2.2 does not offer a complete implementation of group mapping between 
 Windows NT groups and UNIX groups (this is really quite complicated to explain 
-in a short space), you should refer to the <ulink url="smb.conf.5.html#DOMAINADMONUSERS">domain 
+in a short space), you should refer to the <ulink url="smb.conf.5.html#DOMAINADMINUSERS">domain 
 admin users</ulink> and <ulink url="smb.conf.5.html#DOMAINADMINGROUP">domain 
 admin group</ulink> smb.conf parameters for information of creating a Domain Admins 
 style accounts.
@@ -215,11 +246,6 @@ style accounts.
 <sect1>
 <title>Creating Machine Trust Accounts and Joining Clients 
 to the Domain</title>
-
-<para>
-First you must understand what a machine trust account is and what 
-it is used for.
-</para>
 
 <para>
 A machine trust account is a user account owned by a computer.  
@@ -234,7 +260,7 @@ secret with the DC.
 On a Windows NT PDC, these machine trust account passwords are stored
 in the registry.  A Samba PDC stores these accounts in he same location
 as user LanMan and NT password hashes (currently <filename>smbpasswd</filename>).
-However, machine trust accounts only possess the NT password hash.
+However, machine trust accounts only possess and use the NT password hash.
 </para>
 
 <para>
@@ -242,15 +268,18 @@ There are two means of creating machine trust accounts.
 </para>
 
 <itemizedlist>
-	<listitem><para>Manual creation before joining the client
-	to the domain.  In this case, the password is set to a known
-	value -- the lower case of the machine's netbios name.</para></listitem>
+	<listitem><para>
+	Manual creation before joining the client to the domain.  In this case, 
+	the password is set to a known value -- the lower case of the 
+	machine's netbios name.
+	</para></listitem>
 	
-	<listitem><para>Creation of the account at the time of 
-	joining the domain.  In this case, the session key of the 
-	administrative account used to join the client to the domain acts
-	as an encryption key for setting the password to a random value.</para>
-	</listitem>
+	<listitem><para>
+	Creation of the account at the time of joining the domain.  In 
+	this case, the session key of the administrative account used to join 
+	the client to the domain acts as an encryption key for setting the 
+	password to a random value.
+	</para></listitem>
 </itemizedlist>
 
 <para>
@@ -300,8 +329,8 @@ in your domain.
 <para>
 The second way of creating machine trust accounts is to add
 them on the fly at the time the client is joined to the domain.
-You will need to include a value for the 
-<ulink url="smb.conf.5.html#ADDUSERSCRIPT">add user script</ulink>
+You will need to include a value for the <ulink 
+url="smb.conf.5.html#ADDUSERSCRIPT">add user script</ulink>
 parameter.  Below is an example I use on a RedHat 6.2 Linux system.
 </para>
 
@@ -310,12 +339,11 @@ add user script = /usr/sbin/useradd -d /dev/null -g 100 -s /bin/false -M %u
 </programlisting></para>
 
 <para>
-In Samba 2.2.0, <emphasis>only the root account</emphasis> can be used to create
-machine accounts on the fly like this.  Therefore, it is required
-to create an entry in smbpasswd for <emphasis>root</emphasis>.
-The password <emphasis>SHOULD</emphasis> be set to s different
-password that the associated <filename>/etc/passwd</filename>
-entry for security reasons.
+In Samba 2.2, <emphasis>only the root account</emphasis> can be used to create
+machine accounts on the fly like this.  Therefore, it is required to create 
+an entry in smbpasswd for <emphasis>root</emphasis>.  The password 
+<emphasis>SHOULD</emphasis> be set to s different password that the 
+associated <filename>/etc/passwd</filename> entry for security reasons.
 </para>
 </sect1>
 
