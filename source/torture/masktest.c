@@ -277,8 +277,6 @@ static void usage(void)
 	char *p;
 	int seed;
 
-	masktest_init_subsystems;
-
 	setlinebuf(stdout);
 
 	setup_logging("masktest", DEBUG_STDOUT);
@@ -362,9 +360,10 @@ static void usage(void)
 		}
 	}
 
+	masktest_init_subsystems;
+
 	argc -= optind;
 	argv += optind;
-
 
 	cli = connect_one(share);
 	if (!cli) {

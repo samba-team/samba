@@ -861,8 +861,6 @@ enum {
 		POPT_TABLEEND
 	};
 
-	ntlm_auth_init_subsystems;
-
 	/* Samba client initialisation */
 
 	setup_logging("ntlm_auth", DEBUG_STDERR);
@@ -898,6 +896,9 @@ enum {
 			poptStrerror(opt));
 		return 1;
 	}
+
+	ntlm_auth_init_subsystems;
+
 
 	if (opt_domain == NULL) {
 		opt_domain = lp_workgroup();
