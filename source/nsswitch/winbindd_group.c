@@ -816,20 +816,21 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 }
 
 /* Get user supplementary groups.  This is much quicker than trying to
-   invert the groups database. */
+   invert the groups database.  We merge the groups from the gids and
+   other_sids info3 fields as trusted domain, universal group
+   memberships, and nested groups (win2k native mode only) are not
+   returned by the getgroups RPC call but are present in the info3. */
 
 enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 {
 	fstring name_domain, name_user;
 	DOM_SID user_sid;
 	enum SID_NAME_USE name_type;
-	uint32 user_rid, num_groups, num_gids, num_other_gids = 0;
+	uint32 user_rid, num_gids = 0;
 	NTSTATUS status;
-	uint32 *group_rids;
 	struct winbindd_domain *domain;
 	enum winbindd_result result = WINBINDD_ERROR;
-	gid_t *gid_list, *other_gids = NULL;
-	int i;
+	gid_t *gid_list = NULL;
 	TALLOC_CTX *mem_ctx;
 	NET_USER_INFO_3 *info3 = NULL;
 	
@@ -870,25 +871,23 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	sid_split_rid(&user_sid, &user_rid);
 
-	status = domain->methods->lookup_usergroups(domain, mem_ctx, user_rid, &num_groups, &group_rids);
-	if (!NT_STATUS_IS_OK(status)) goto done;
+	/* Treat the info3 cache as authoritative as the
+	   lookup_usergroups() function may return cached data. */
 
-	/* Also merge in groups from cached info3 other_sids.  Unfortunately 
-           we have to work out whether these guys are user or group sids. */
+	if ((info3 = netsamlogon_cache_get(mem_ctx, &domain->sid, user_rid))) {
+		uint32 num_groups;
+		int i;
 
-	if ((info3 = netsamlogon_cache_get(mem_ctx, &domain->sid, user_rid)) &&
-	    info3->num_other_sids) {
+		DEBUG(10, ("winbindd_getgroups: info3 has %d groups, %d other sids\n",
+			   info3->num_groups2, info3->num_other_sids));
 
-		DEBUG(10, ("winbindd_getgroups: info3 has %d other sids\n",
-			   info3->num_other_sids));
-
-		other_gids = calloc(sizeof(gid_t), info3->num_other_sids);
-		num_other_gids = info3->num_other_sids;
+		num_groups = info3->num_other_sids + info3->num_groups2;
+		gid_list = calloc(sizeof(gid_t), num_groups);
 
 		/* Go through each other sid and convert it to a gid */
 
 		for (i = 0; i < info3->num_other_sids; i++) {
-			fstring domain_name, name;
+			fstring name;
 			enum SID_NAME_USE sid_type;
 			uint32 other_rid;
 
@@ -897,7 +896,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 			if (!winbindd_lookup_name_by_sid(
 				    &info3->other_sids[i].sid,
-				    domain_name, name, &sid_type)) {
+				    domain->name, name, &sid_type)) {
 				DEBUG(10, ("winbindd_getgroups: could not "
 					   "lookup name for %s\n", 
 					   sid_string_static(
@@ -928,7 +927,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			}
 
 			if (!winbindd_idmap_get_gid_from_rid(
-				    domain_name, other_rid, &other_gids[i])) {
+				    domain->name, other_rid, &gid_list[num_gids])) {
 				DEBUG(10, ("winbindd_getgroups: could not "
 					   "map rid %d from sid %s to gid\n",
 					   other_rid,
@@ -936,51 +935,68 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 						   &info3->other_sids[i].sid)));
 				continue;
 			}
-			
+
 			/* We've jumped through a lot of hoops to get here */
 
 			DEBUG(10, ("winbindd_getgroups: mapped other sid %s to "
 				   "gid %d\n", sid_string_static(
 					   &info3->other_sids[i].sid),
-				   other_gids[i]));
+				   gid_list[num_gids]));
+
+			num_gids++;
 		}
-	}
 
-	SAFE_FREE(info3);
+		for (i = 0; i < info3->num_groups2; i++) {
 
-	/* Copy data back to client */
+			if (!winbindd_idmap_get_gid_from_rid(
+				    domain->name, info3->gids[i].g_rid,
+				    &gid_list[num_gids])) {
+				DEBUG(10, ("winbindd_getgroups: could not "
+					   "map rid %d to gid\n",
+					   info3->gids[i].g_rid));
+			}
 
-	num_gids = 0;
-	gid_list = malloc(sizeof(gid_t) * (num_groups + num_other_gids));
-
-	if (state->response.extra_data)
-		goto done;
-
-	for (i = 0; i < num_groups; i++) {
-
-		if (!winbindd_idmap_get_gid_from_rid(domain->name, 
-						     group_rids[i], 
-						     &gid_list[num_gids])) {
-
-			DEBUG(1, ("unable to convert group rid %d to gid\n", 
-				  group_rids[i]));
-			continue;
+			num_gids++;
 		}
+
+		SAFE_FREE(info3);
+
+	} else {
+		uint32 num_groups = 0;
+		uint32 *group_rids = NULL;
+		int i;
+
+		/* No info3 cache - might as well use rpc data */
+
+		status = domain->methods->lookup_usergroups(
+			domain, mem_ctx, user_rid, &num_groups, &group_rids);
+
+		if (!NT_STATUS_IS_OK(status)) 
+			goto done;
+
+		gid_list = calloc(sizeof(gid_t), num_groups);
+
+		for (i = 0; i < num_groups; i++) {
+
+			if (!winbindd_idmap_get_gid_from_rid(
+				    domain->name, group_rids[i], 
+				    &gid_list[num_gids])) {
+				
+				DEBUG(1, ("unable to convert group rid %d to gid\n", 
+					  group_rids[i]));
+				continue;
+			}
 			
-		num_gids++;
-	}
+			DEBUG(10, ("winbindd_getgroups: mapped group rid %d to gid %d\n",
+				    group_rids[i], gid_list[num_gids]));
 
-	if (other_gids) {
-
-		for (i = 0; i < num_other_gids; i++) {
-			if (other_gids[i]) {
-				gid_list[num_gids] = other_gids[i];
-				num_gids++;
-			} 
+			num_gids++;
 		}
 
-		SAFE_FREE(other_gids);
+		SAFE_FREE(group_rids);
 	}
+
+	/* Send data back to client */
 
 	state->response.data.num_entries = num_gids;
 	state->response.extra_data = gid_list;
