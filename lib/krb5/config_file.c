@@ -158,6 +158,7 @@ krb5_config_parse_file (const char *fname, krb5_config_section **res)
     f = fopen (fname, "r");
     if (f == NULL)
 	return -1;
+    *res = NULL;
     for (lineno = 1; fgets(buf, sizeof(buf), f) != NULL; ++lineno) {
 	char *p;
 
@@ -289,6 +290,9 @@ krb5_config_vget_next (krb5_config_section *c,
 {
     krb5_config_binding *b;
     const char *p;
+
+    if(c == NULL)
+	return NULL;
 
     if (*pointer == NULL) {
 	b = c;
