@@ -50,14 +50,6 @@ void initsamba(void)
 	module = Py_InitModule("samba", samba_methods);
 	dict = PyModule_GetDict(module);
 
-	new_module = PyModule_N("cheepy");
-
-	
-
-	PyDict_SetItemString(dict, "cheepy", new_module);
-
-	
-
 	/* Do samba initialisation */
 
 	py_samba_init();
