@@ -158,7 +158,7 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 	char *credentials;
 	const char *location;
 	char *tmp;
-	GtkWidget *rpcwin = GTK_WIDGET(gtk_rpc_binding_dialog_new(TRUE));
+	GtkWidget *rpcwin = GTK_WIDGET(gtk_rpc_binding_dialog_new(TRUE, NULL));
 	gint result = gtk_dialog_run(GTK_DIALOG(rpcwin));
 	WERROR error;
 	

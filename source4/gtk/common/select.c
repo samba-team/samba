@@ -163,7 +163,6 @@ GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe)
 	} else if (r.out.sam) {
 		for (i=0;i<r.out.sam->count;i++) {
 			GtkTreeIter iter;
-			printf("- %s\n", r.out.sam->entries[i].name.name);
 			gtk_list_store_append(d->store_domains, &iter);
 			gtk_list_store_set (d->store_domains, &iter, 0, r.out.sam->entries[i].name.name, -1);
 		}
@@ -271,7 +270,7 @@ GType gtk_select_host_dialog_get_type (void)
 	return mytype;
 }
                                                                                                                              
-GtkWidget *gtk_select_host_dialog_new (BOOL nocredentials)
+GtkWidget *gtk_select_host_dialog_new (struct sam_pipe *sam_pipe, BOOL nocredentials)
 {
         return GTK_WIDGET ( gtk_type_new (gtk_select_host_dialog_get_type ()));
 }
