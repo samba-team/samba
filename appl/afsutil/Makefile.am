@@ -2,12 +2,16 @@
 
 include $(top_srcdir)/Makefile.am.common
 
+INCLUDES += $(INCLUDE_krb4)
+
 if KRB4
 AFSPROGS = afslog
 endif
-bin_PROGRAMS = $(AFSPROGS)
+bin_PROGRAMS = $(AFSPROGS) pagsh
 
 afslog_SOURCES = afslog.c
+
+pagsh_SOURCES  = pagsh.c
 
 LDADD = $(LIB_kafs) \
 	$(LIB_krb4) \
