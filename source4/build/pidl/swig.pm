@@ -102,6 +102,7 @@ sub FieldFromPython($$)
     # Generate conversion for element
     
     if (util::is_scalar_type($e->{TYPE})) {
+	
 	if ($e->{POINTERS} == 0) {
 	    if ($e->{ARRAY_LEN}) {
 		$result .= ArrayFromPython($e, $prefix);
@@ -109,8 +110,8 @@ sub FieldFromPython($$)
 		$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python($obj, \"$e->{NAME}\");\n";
 	    }
 	} else {
-	    $result .= "\t// Pointer to scalar\n";
-	    $result .= DebugField($e);
+	    $result .= "\ts->$prefix$e->{NAME} = talloc(mem_ctx, sizeof($e->{TYPE}));\n";
+	    $result .= "\t*s->$prefix$e->{NAME} = $e->{TYPE}_from_python($obj, \"$e->{NAME}\");\n";
 	}
     } else {
 	if ($e->{POINTERS} == 0) {
@@ -137,7 +138,7 @@ sub ArrayToPython($$)
 
     my($array_len) = $e->{ARRAY_LEN};
 
-    if ($array_len eq "*") {
+    if ($array_len eq "*" or util::has_property($e, "size_is")) {
 	$array_len = util::has_property($e, "size_is");
     }
 
@@ -207,7 +208,11 @@ sub FieldToPython($$)
 		$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_ptr_to_python(mem_ctx, &s->$prefix$e->{NAME}));\n";
 	    }
 	} else {
-	    $result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
+	    if ($e->{ARRAY_LEN} or util::has_property($e, "size_is")) {
+		$result .= ArrayToPython($e, $prefix);
+	    } else {
+		$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
+	    }
 	}
     }
 
