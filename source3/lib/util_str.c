@@ -1662,10 +1662,10 @@ void base64_decode_inplace(char *s)
 {
 	DATA_BLOB decoded = base64_decode_data_blob(s);
 	memcpy(s, decoded.data, decoded.length);
-	data_blob_free(&decoded);
-
 	/* null terminate */
 	s[decoded.length] = '\0';
+
+	data_blob_free(&decoded);
 }
 
 /**
