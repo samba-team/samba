@@ -39,6 +39,41 @@ can be one of the following:
 .Xc
 Adds a key to the keytab. Options that are not specified will be
 prompted for.
+.It change Xo
+.Op Fl r Ar realm
+.Op Fl -realm= Ns Ar realm
+.Op Fl -a Ar host
+.Op Fl -admin-server= Ns Ar hots
+.Op Fl -s Ar port
+.Op Fl -server-port= Ns Ar port
+.Xc
+Update one or several keys to new versions.  By default, use the admin
+server for the realm of an keytab entry.  Otherwise it will use the
+values specified by the options.
+.Pp
+If no principals are given, all the ones in the keytab are updated.
+.It copy Xo
+.Ar keytab-src
+.Ar keytab-dest
+.Xc
+Copies all the entries from
+.Ar keytab-src
+to
+.Ar keytab-dest .
+.It get Xo
+.Op Fl p Ar admin principal
+.Op Fl -principal= Ns Ar admin principal
+.Op Fl r Ar realm
+.Op Fl -realm= Ns Ar realm
+.Op Fl a Ar admin server
+.Op Fl -admin-server= Ns Ar admin server
+.Op Fl s Ar server port
+.Op Fl -server-port= Ns Ar server port
+.Ar principal
+.Xc
+Get a key for
+.Nm principal
+and store it in a keytab.
 .It list
 List the keys stored in the keytab.
 .It remove Xo
@@ -72,20 +107,6 @@ Converts the version 5 keytab in
 .Ar keytab
 to a version 4 srvtab and stores it in
 .Ar srvtab .
-.It get Xo
-.Op Fl p Ar admin principal
-.Op Fl -principal= Ns Ar admin principal
-.Op Fl r Ar realm
-.Op Fl -realm= Ns Ar realm
-.Op Fl a Ar admin server
-.Op Fl -admin-server= Ns Ar admin server
-.Op Fl s Ar server port
-.Op Fl -server-port= Ns Ar server port
-principal
-.Xc
-Get a key for
-.Nm principal
-and store it in a keytab.
 .El
-.\" .Sh SEE ALSO
-.\" .Xr kadmin 8
+.Sh SEE ALSO
+.Xr kadmin 8
