@@ -1247,7 +1247,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	 */
 
 	if(default_ace || fsp->is_directory || fsp->fd == -1) {
-		if (sys_acl_set_file(fsp->fsp_name, the_acl_type, the_acl) == -1) {
+		if (sys_acl_set_file(dos_to_unix(fsp->fsp_name,False), the_acl_type, the_acl) == -1) {
 			DEBUG(0,("set_canon_ace_list: sys_acl_set_file type %s failed for file %s (%s).\n",
 					the_acl_type == SMB_ACL_TYPE_DEFAULT ? "directory default" : "file",
 					fsp->fsp_name, strerror(errno) ));
@@ -1587,12 +1587,14 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
 	SMB_ACL_ENTRY_T entry;
 	int num_entries = 0;
 
-#if 1
-	return -1;
-#else
 	while ( sys_acl_get_entry(posix_acl, entry_id, &entry) == 1) {
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
+		mode_t perms;
+
+		/* get_next... */
+		if (entry_id == SMB_ACL_FIRST_ENTRY)
+			entry_id = SMB_ACL_NEXT_ENTRY;
 
 		if (sys_acl_get_tag_type(entry, &tagtype) == -1)
 			return -1;
@@ -1604,21 +1606,37 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
 
 		switch(tagtype) {
 			case SMB_ACL_USER_OBJ:
+				perms = unix_perms_to_acl_perms(mode, S_IRUSR, S_IWUSR, S_IXUSR);
                 break;
-			case SMB_ACL_USER:
-				break;
 			case SMB_ACL_GROUP_OBJ:
-				break;
-			case SMB_ACL_GROUP:
+				perms = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
 				break;
 			case SMB_ACL_MASK:
+				perms = S_IRUSR|S_IWUSR|S_IXUSR;
 				break;
 			case SMB_ACL_OTHER:
+				perms = unix_perms_to_acl_perms(mode, S_IROTH, S_IWOTH, S_IXOTH);
 				break;
+			default:
+				continue;
 		}
 
+		if (map_acl_perms_to_permset(perms, &permset) == -1)
+			return -1;
+
+		if (sys_acl_set_permset(entry, permset) == -1)
+			return -1;
 	}
-#endif
+
+	/*
+	 * If this is a simple 3 element ACL then it's a standard
+	 * UNIX permission set. Just use chmod...	
+	 */
+
+	if (num_entries == 3)
+		return -1;
+
+	return 0;
 }
 
 /****************************************************************************
@@ -1630,11 +1648,20 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
 int chmod_acl(char *name, mode_t mode)
 {
 	SMB_ACL_T posix_acl = NULL;
+	int ret = -1;
 
 	if ((posix_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS)) == NULL)
 		return -1;
 
-	return chmod_acl_internals(posix_acl, mode);
+	if ((ret = chmod_acl_internals(posix_acl, mode)) == -1)
+		goto done;
+
+	ret = sys_acl_set_file(name, SMB_ACL_TYPE_ACCESS, posix_acl);
+
+  done:
+
+	sys_acl_free_acl(posix_acl);
+	return ret;
 }
 
 /****************************************************************************
@@ -1645,11 +1672,20 @@ int chmod_acl(char *name, mode_t mode)
 int fchmod_acl(int fd, mode_t mode)
 {
 	SMB_ACL_T posix_acl = NULL;
+	int ret = -1;
 
 	if ((posix_acl = sys_acl_get_fd(fd)) == NULL)
 		return -1;
 
-	return chmod_acl_internals(posix_acl, mode);
+	if ((ret = chmod_acl_internals(posix_acl, mode)) == -1)
+		goto done;
+
+	ret = sys_acl_set_fd(fd, posix_acl);
+
+  done:
+
+	sys_acl_free_acl(posix_acl);
+	return ret;
 }
 
 #undef OLD_NTDOMAIN
