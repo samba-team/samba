@@ -141,25 +141,44 @@ BOOL secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
 	return True;
 }
 
-BOOL secrets_store_domain_guid(const char *domain, GUID *guid)
+BOOL secrets_store_domain_guid(const char *domain, struct GUID *guid)
 {
+	const char *s;
 	fstring key;
+	TALLOC_CTX *mem_ctx;
+	BOOL ret;
+	
+	mem_ctx = talloc_init("secrets_store_domain_guid");
+	if (!mem_ctx) {
+		return False;
+	}
+
+	s = GUID_string(mem_ctx, guid);
+	if (!s) {
+		talloc_destroy(mem_ctx);
+		return False;
+	}
+
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
 	strupper(key);
-	return secrets_store(key, guid, sizeof(GUID));
+	ret = secrets_store(key, s, strlen(s)+1);
+	
+	talloc_destroy(mem_ctx);
+	return ret;
 }
 
-BOOL secrets_fetch_domain_guid(const char *domain, GUID *guid)
+BOOL secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
 {
-	GUID *dyn_guid;
+	char *dyn_guid;
 	fstring key;
 	size_t size;
-	GUID new_guid;
+	struct GUID new_guid;
+	NTSTATUS status;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
 	strupper(key);
-	dyn_guid = (GUID *)secrets_fetch(key, &size);
+	dyn_guid = secrets_fetch(key, &size);
 
 	DEBUG(6,("key is %s, size is %d\n", key, (int)size));
 
@@ -167,19 +186,18 @@ BOOL secrets_fetch_domain_guid(const char *domain, GUID *guid)
 		uuid_generate_random(&new_guid);
 		if (!secrets_store_domain_guid(domain, &new_guid))
 			return False;
-		dyn_guid = (GUID *)secrets_fetch(key, &size);
+		dyn_guid = secrets_fetch(key, &size);
 		if (dyn_guid == NULL)
 			return False;
 	}
 
-	if (size != sizeof(GUID))
-	{ 
-		SAFE_FREE(dyn_guid);
+	status = GUID_from_string(dyn_guid, guid);
+	SAFE_FREE(dyn_guid);
+
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
-	*guid = *dyn_guid;
-	SAFE_FREE(dyn_guid);
 	return True;
 }
 

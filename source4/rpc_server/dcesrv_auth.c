@@ -232,7 +232,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 
 	/* non-signed packets are simple */
 	if (!dce->auth_state.auth_info || !dce->auth_state.ntlmssp_state) {
-		status = dcerpc_push_auth(blob, call->mem_ctx, pkt, NULL);
+		status = dcerpc_push_auth(blob, call->mem_ctx, pkt, NULL, 0);
 		return NT_STATUS_IS_OK(status);
 	}
 

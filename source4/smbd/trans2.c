@@ -202,6 +202,7 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 	NTSTATUS status;
 	uint16 level;
 	uint_t i;
+	DATA_BLOB guid_blob;
 
 	/* make sure we got enough parameters */
 	if (trans->in.params.length != 2) {
@@ -369,7 +370,15 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 
 		trans2_setup_reply(req, trans, 0, 64, 0);
 
-		memcpy(trans->out.data.data, fsinfo.objectid_information.out.guid.info, GUID_SIZE);
+		status = ndr_push_struct_blob(&guid_blob, req->mem_ctx, 
+					      &fsinfo.objectid_information.out.guid,
+					      (ndr_push_flags_fn_t)ndr_push_GUID);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		memcpy(trans->out.data.data, guid_blob.data, GUID_SIZE);
+
 		for (i=0;i<6;i++) {
 			SBVAL(trans->out.data.data, 16 + 8*i, fsinfo.objectid_information.out.unknown[i]);
 		}

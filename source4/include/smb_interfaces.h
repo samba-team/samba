@@ -24,10 +24,6 @@ typedef SMB_BIG_UINT large_t;
 
 /* Globally Unique ID */
 #define GUID_SIZE 16
-typedef struct GUID
-{
-	uint8 info[GUID_SIZE];
-} GUID;
 
 /* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info
@@ -946,7 +942,7 @@ union smb_fsinfo {
 			large_t quota_soft;
 			large_t quota_hard;
 			large_t quota_flags;
-			GUID guid;
+			struct GUID guid;
 			char *volume_name;
 			char *fs_type;
 		} out;
@@ -1074,7 +1070,7 @@ union smb_fsinfo {
 		enum fsinfo_level level;
 
 		struct {
-			GUID  guid;
+			struct GUID  guid;
 			large_t unknown[6];
 		} out;
 	} objectid_information;	

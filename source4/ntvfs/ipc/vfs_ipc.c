@@ -181,10 +181,13 @@ static NTSTATUS ipc_setpathinfo(struct request_context *req, union smb_setfilein
 	return NT_STATUS_ACCESS_DENIED;
 }
 
+
+
 /*
-  open a file - used for MSRPC pipes
+  open a file backend - used for MSRPC pipes
 */
-static NTSTATUS ipc_open(struct request_context *req, union smb_open *oi)
+static NTSTATUS ipc_open_generic(struct request_context *req, const char *fname, 
+				 struct pipe_state **ps)
 {
 	struct pipe_state *p;
 	TALLOC_CTX *mem_ctx;
@@ -192,12 +195,7 @@ static NTSTATUS ipc_open(struct request_context *req, union smb_open *oi)
 	struct dcesrv_endpoint endpoint;
 	struct ipc_private *private = req->conn->ntvfs_private;
 
-	/* for now only handle NTcreateX style opens */
-	if (oi->generic.level != RAW_OPEN_NTCREATEX) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	mem_ctx = talloc_init("ipc_open '%s'", oi->ntcreatex.in.fname);
+	mem_ctx = talloc_init("ipc_open '%s'", fname);
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -209,7 +207,7 @@ static NTSTATUS ipc_open(struct request_context *req, union smb_open *oi)
 	}
 	p->mem_ctx = mem_ctx;
 
-	p->pipe_name = talloc_strdup(mem_ctx, oi->ntcreatex.in.fname);
+	p->pipe_name = talloc_strdup(mem_ctx, fname);
 	if (!p->pipe_name) {
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -250,11 +248,79 @@ static NTSTATUS ipc_open(struct request_context *req, union smb_open *oi)
 
 	DLIST_ADD(private->pipe_list, p);
 
+	*ps = p;
+
+	return NT_STATUS_OK;
+}
+
+/*
+  open a file with ntcreatex - used for MSRPC pipes
+*/
+static NTSTATUS ipc_open_ntcreatex(struct request_context *req, union smb_open *oi)
+{
+	struct pipe_state *p;
+	NTSTATUS status;
+
+	status = ipc_open_generic(req, oi->ntcreatex.in.fname, &p);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	ZERO_STRUCT(oi->ntcreatex.out);
 	oi->ntcreatex.out.fnum = p->fnum;
 	oi->ntcreatex.out.ipc_state = p->ipc_state;
 
-	return NT_STATUS_OK;
+	return status;
+}
+
+/*
+  open a file with openx - used for MSRPC pipes
+*/
+static NTSTATUS ipc_open_openx(struct request_context *req, union smb_open *oi)
+{
+	struct pipe_state *p;
+	NTSTATUS status;
+	const char *fname = oi->openx.in.fname;
+
+	if (strncasecmp(fname, "PIPE\\", 5) != 0) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	fname += 4;
+
+	status = ipc_open_generic(req, fname, &p);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ZERO_STRUCT(oi->openx.out);
+	oi->openx.out.fnum = p->fnum;
+	oi->openx.out.ftype = 2;
+	oi->openx.out.devstate = p->ipc_state;
+	
+	return status;
+}
+
+/*
+  open a file - used for MSRPC pipes
+*/
+static NTSTATUS ipc_open(struct request_context *req, union smb_open *oi)
+{
+	NTSTATUS status;
+
+	switch (oi->generic.level) {
+	case RAW_OPEN_NTCREATEX:
+		status = ipc_open_ntcreatex(req, oi);
+		break;
+	case RAW_OPEN_OPENX:
+		status = ipc_open_openx(req, oi);
+		break;
+	default:
+		status = NT_STATUS_NOT_SUPPORTED;
+		break;
+	}
+
+	return status;
 }
 
 /*

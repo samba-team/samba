@@ -30,7 +30,7 @@ enum handle_types {HTYPE_LOOKUP};
 /*
   simple routine to compare a GUID string to a GUID structure
 */
-static int guid_cmp(TALLOC_CTX *mem_ctx, const GUID *guid, const char *uuid_str)
+static int guid_cmp(TALLOC_CTX *mem_ctx, const struct GUID *guid, const char *uuid_str)
 {
 	const char *s = GUID_string(mem_ctx, guid);
 	if (!s || strcasecmp(s, uuid_str)) {

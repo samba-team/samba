@@ -13,8 +13,7 @@ interface dcerpc
 {
 	typedef [public] struct {
 		GUID uuid;
-		uint16 major_version;
-		uint16 minor_version;
+		uint32 if_version;
 	} dcerpc_syntax_id;
 
 	typedef struct {
@@ -28,7 +27,7 @@ interface dcerpc
 		uint16 max_xmit_frag;
 		uint16 max_recv_frag;
 		uint32 assoc_group_id;
-		uint8 num_contexts;
+		uint8  num_contexts;
 		dcerpc_ctx_list ctx_list[num_contexts];
 		[flag(NDR_ALIGN8)]    DATA_BLOB _pad;
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
@@ -167,6 +166,7 @@ interface dcerpc
 	const uint8 DCERPC_PFC_FLAG_NOCALL = 0x20;
 
 	/* these offsets are needed by the signing code */
+	const uint8 DCERPC_DREP_OFFSET     =  4;
 	const uint8 DCERPC_FRAG_LEN_OFFSET =  8;
 	const uint8 DCERPC_AUTH_LEN_OFFSET = 10;
 

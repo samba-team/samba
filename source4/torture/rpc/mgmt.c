@@ -55,10 +55,9 @@ static BOOL test_inq_if_ids(struct dcerpc_pipe *p,
 
 		uuid = GUID_string(mem_ctx, &id->uuid);
 
-		printf("\tuuid %s  version 0x%04x:0x%04x  '%s'\n",
+		printf("\tuuid %s  version 0x%08x  '%s'\n",
 		       uuid,
-		       id->major_version, id->minor_version,
-		       idl_pipe_name(uuid, id->major_version));
+		       id->if_version, idl_pipe_name(uuid, id->if_version));
 	}
 
 	return True;

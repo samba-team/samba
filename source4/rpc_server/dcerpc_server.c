@@ -209,7 +209,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL);
+	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -266,7 +266,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32 reason)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL);
+	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -296,13 +296,13 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return dcesrv_bind_nak(call, 0);
 	}
 
-	if_version = call->pkt.u.bind.ctx_list[0].abstract_syntax.major_version;
+	if_version = call->pkt.u.bind.ctx_list[0].abstract_syntax.if_version;
 	uuid = GUID_string(call->mem_ctx, &call->pkt.u.bind.ctx_list[0].abstract_syntax.uuid);
 	if (!uuid) {
 		return dcesrv_bind_nak(call, 0);
 	}
 
-	transfer_syntax_version = call->pkt.u.bind.ctx_list[0].transfer_syntaxes[0].major_version;
+	transfer_syntax_version = call->pkt.u.bind.ctx_list[0].transfer_syntaxes[0].if_version;
 	transfer_syntax = GUID_string(call->mem_ctx, 
 				      &call->pkt.u.bind.ctx_list[0].transfer_syntaxes[0].uuid);
 	if (!transfer_syntax ||
@@ -356,8 +356,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.u.bind_ack.ctx_list[0].result = result;
 	pkt.u.bind_ack.ctx_list[0].reason = reason;
 	GUID_from_string(NDR_GUID, &pkt.u.bind_ack.ctx_list[0].syntax.uuid);
-	pkt.u.bind_ack.ctx_list[0].syntax.major_version = NDR_GUID_VERSION;
-	pkt.u.bind_ack.ctx_list[0].syntax.minor_version = 0;
+	pkt.u.bind_ack.ctx_list[0].syntax.if_version = NDR_GUID_VERSION;
 	pkt.u.bind_ack.auth_info = data_blob(NULL, 0);
 
 	if (!dcesrv_auth_bind_ack(call, &pkt)) {
@@ -370,7 +369,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, 
-				  call->dce->auth_state.auth_info);
+				  call->dce->auth_state.auth_info, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

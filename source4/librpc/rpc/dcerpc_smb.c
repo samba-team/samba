@@ -91,7 +91,7 @@ static NTSTATUS dcerpc_raw_recv(struct dcerpc_pipe *p,
 
 	/* we might have recieved a partial fragment, in which case we
 	   need to pull the rest of it */
-	frag_length = SVAL(payload.data, 8);
+	frag_length = dcerpc_get_frag_length(&payload);
 	if (frag_length <= payload.length) {
 		goto done;
 	}
@@ -197,7 +197,7 @@ NTSTATUS smb_secondary_request(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	frag_length = SVAL(blob->data, 8);
+	frag_length = dcerpc_get_frag_length(blob);
 	if (frag_length <= blob->length) {
 		return status;
 	}

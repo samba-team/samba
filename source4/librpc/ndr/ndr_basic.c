@@ -22,6 +22,12 @@
 
 #include "includes.h"
 
+#define NDR_BE(ndr) ((ndr)->flags & LIBNDR_FLAG_BIGENDIAN)
+#define NDR_SVAL(ndr, ofs) (NDR_BE(ndr)?RSVAL(ndr->data,ofs):SVAL(ndr->data,ofs))
+#define NDR_IVAL(ndr, ofs) (NDR_BE(ndr)?RIVAL(ndr->data,ofs):IVAL(ndr->data,ofs))
+#define NDR_SSVAL(ndr, ofs, v) do { if (NDR_BE(ndr))  { RSSVAL(ndr->data,ofs,v); } else SSVAL(ndr->data,ofs,v); } while (0)
+#define NDR_SIVAL(ndr, ofs, v) do { if (NDR_BE(ndr))  { RSIVAL(ndr->data,ofs,v); } else SIVAL(ndr->data,ofs,v); } while (0)
+
 /*
   parse a uint8
 */
@@ -41,7 +47,7 @@ NTSTATUS ndr_pull_uint16(struct ndr_pull *ndr, uint16 *v)
 {
 	NDR_PULL_ALIGN(ndr, 2);
 	NDR_PULL_NEED_BYTES(ndr, 2);
-	*v = SVAL(ndr->data, ndr->offset);
+	*v = NDR_SVAL(ndr, ndr->offset);
 	ndr->offset += 2;
 	return NT_STATUS_OK;
 }
@@ -54,7 +60,7 @@ NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, uint32 *v)
 {
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 4);
-	*v = IVAL(ndr->data, ndr->offset);
+	*v = NDR_IVAL(ndr, ndr->offset);
 	ndr->offset += 4;
 	return NT_STATUS_OK;
 }
@@ -66,8 +72,8 @@ NTSTATUS ndr_pull_HYPER_T(struct ndr_pull *ndr, HYPER_T *v)
 {
 	NDR_PULL_ALIGN(ndr, 8);
 	NDR_PULL_NEED_BYTES(ndr, 8);
-	v->low = IVAL(ndr->data, ndr->offset);
-	v->high = IVAL(ndr->data, ndr->offset+4);
+	v->low = NDR_IVAL(ndr, ndr->offset);
+	v->high = NDR_IVAL(ndr, ndr->offset+4);
 	ndr->offset += 8;
 	return NT_STATUS_OK;
 }
@@ -174,18 +180,6 @@ NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, int ndr_flags, uint32 *data
 }
 
 /*
-  parse a GUID
-*/
-NTSTATUS ndr_pull_GUID(struct ndr_pull *ndr, int ndr_flags, GUID *guid)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		return ndr_pull_bytes(ndr, guid->info, GUID_SIZE);
-	}
-	return NT_STATUS_OK;
-}
-
-
-/*
   push a uint8
 */
 NTSTATUS ndr_push_uint8(struct ndr_push *ndr, uint8 v)
@@ -203,7 +197,7 @@ NTSTATUS ndr_push_uint16(struct ndr_push *ndr, uint16 v)
 {
 	NDR_PUSH_ALIGN(ndr, 2);
 	NDR_PUSH_NEED_BYTES(ndr, 2);
-	SSVAL(ndr->data, ndr->offset, v);
+	NDR_SSVAL(ndr, ndr->offset, v);
 	ndr->offset += 2;
 	return NT_STATUS_OK;
 }
@@ -215,7 +209,7 @@ NTSTATUS ndr_push_uint32(struct ndr_push *ndr, uint32 v)
 {
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 4);
-	SIVAL(ndr->data, ndr->offset, v);
+	NDR_SIVAL(ndr, ndr->offset, v);
 	ndr->offset += 4;
 	return NT_STATUS_OK;
 }
@@ -227,8 +221,8 @@ NTSTATUS ndr_push_HYPER_T(struct ndr_push *ndr, HYPER_T v)
 {
 	NDR_PUSH_ALIGN(ndr, 8);
 	NDR_PUSH_NEED_BYTES(ndr, 8);
-	SIVAL(ndr->data, ndr->offset, v.low);
-	SIVAL(ndr->data, ndr->offset+4, v.high);
+	NDR_SIVAL(ndr, ndr->offset, v.low);
+	NDR_SIVAL(ndr, ndr->offset+4, v.high);
 	ndr->offset += 8;
 	return NT_STATUS_OK;
 }
@@ -582,17 +576,6 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 }
 
 /*
-  push a GUID
-*/
-NTSTATUS ndr_push_GUID(struct ndr_push *ndr, int ndr_flags, GUID *guid)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		return ndr_push_bytes(ndr, guid->info, GUID_SIZE);
-	}
-	return NT_STATUS_OK;
-}
-
-/*
   push a NTTIME
 */
 NTSTATUS ndr_push_NTTIME(struct ndr_push *ndr, NTTIME t)
@@ -770,26 +753,25 @@ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
 {
         uint32 time_low;
         uint32 time_mid, time_hi_and_version;
-        uint32 clock_seq_hi_and_reserved;
-        uint32 clock_seq_low;
+        uint32 clock_seq[2];
         uint32 node[6];
         int i;
 
         if (11 != sscanf(s, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
                          &time_low, &time_mid, &time_hi_and_version, 
-                         &clock_seq_hi_and_reserved, &clock_seq_low,
+                         &clock_seq[0], &clock_seq[1],
                          &node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
                 return NT_STATUS_INVALID_PARAMETER;
         }
 
-        SIVAL(guid->info, 0, time_low);
-        SSVAL(guid->info, 4, time_mid);
-        SSVAL(guid->info, 6, time_hi_and_version);
-        SCVAL(guid->info, 8, clock_seq_hi_and_reserved);
-        SCVAL(guid->info, 9, clock_seq_low);
+	guid->time_low = time_low;
+	guid->time_mid = time_mid;
+	guid->time_hi_and_version = time_hi_and_version;
+	guid->clock_seq[0] = clock_seq[0];
+	guid->clock_seq[1] = clock_seq[1];
         for (i=0;i<6;i++) {
-                SCVAL(guid->info, 10 + i, node[i]);
-        }
+		guid->node[i] = node[i];
+	}
 
         return NT_STATUS_OK;
 }
@@ -801,12 +783,13 @@ const char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	return talloc_asprintf(mem_ctx, 
 			       "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-			       IVAL(guid->info, 0), SVAL(guid->info, 4), 
-			       SVAL(guid->info, 6),
-			       guid->info[8], guid->info[9],
-			       guid->info[10], guid->info[11], 
-			       guid->info[12], guid->info[13], 
-			       guid->info[14], guid->info[15]);
+			       guid->time_low, guid->time_mid,
+			       guid->time_hi_and_version,
+			       guid->clock_seq[0],
+			       guid->clock_seq[1],
+			       guid->node[0], guid->node[1],
+			       guid->node[2], guid->node[3],
+			       guid->node[4], guid->node[5]);
 }
 
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid)

@@ -421,7 +421,9 @@ struct vuid_cache {
 #include "smb_acls.h"
 #include "enums.h"
 #include "events.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 #include "smb_interfaces.h"
+#include "librpc/ndr/libndr.h"
 
 typedef struct smb_vfs_handle_struct
 {

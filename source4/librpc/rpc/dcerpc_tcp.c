@@ -60,7 +60,7 @@ static NTSTATUS tcp_raw_recv(struct dcerpc_pipe *p,
 
 	/* we might have recieved a partial fragment, in which case we
 	   need to pull the rest of it */
-	frag_length = SVAL(blob1.data, 8);
+	frag_length = dcerpc_get_frag_length(&blob1);
 	if (frag_length == blob1.length) {
 		*blob = blob1;
 		return NT_STATUS_OK;
