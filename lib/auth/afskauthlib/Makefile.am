@@ -26,6 +26,7 @@ if KRB4
 KAFS = $(top_builddir)/lib/kafs/.libs/libkafs.a
 endif
 
+if KRB5
 L = \
 	$(KAFS)	\
 	$(top_builddir)/lib/krb5/.libs/libkrb5.a	\
@@ -34,5 +35,15 @@ L = \
 	$(top_builddir)/lib/des/.libs/libdes.a		\
 	$(top_builddir)/lib/roken/.libs/libroken.a	\
 	-lc
+
+else
+
+L = \
+	$(KAFS)	\
+	$(LIB_krb4)					\
+	$(top_builddir)/lib/des/.libs/libdes.a		\
+	$(top_builddir)/lib/roken/.libs/libroken.a	\
+	-lc
+endif
 
 $(OBJS): $(top_builddir)/include/config.h
