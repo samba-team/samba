@@ -188,9 +188,6 @@ static BOOL net_io_netinfo_2(char *desc, NETLOGON_INFO_2 *info, prs_struct *ps, 
 
 BOOL net_io_q_logon_ctrl2(char *desc, NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, int depth)
 {
-	if (q_l == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "net_io_q_logon_ctrl2");
 	depth++;
 
@@ -217,14 +214,31 @@ BOOL net_io_q_logon_ctrl2(char *desc, NET_Q_LOGON_CTRL2 *q_l, prs_struct *ps, in
 }
 
 /*******************************************************************
+ Inits an NET_Q_LOGON_CTRL2 structure.
+********************************************************************/
+
+void init_net_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, char *srv_name,
+			    uint32 query_level)
+{
+	DEBUG(5,("init_q_logon_ctrl2\n"));
+
+	q_l->function_code = 0x01;
+	q_l->query_level = query_level;
+	q_l->switch_value  = 0x01;
+
+	init_unistr2(&q_l->uni_server_name, srv_name, strlen(srv_name) + 1);
+}
+
+/*******************************************************************
  Inits an NET_R_LOGON_CTRL2 structure.
 ********************************************************************/
 
-void init_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
-				uint32 flags, uint32 pdc_status, uint32 logon_attempts,
-				uint32 tc_status, char *trusted_domain_name)
+void init_net_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
+			    uint32 flags, uint32 pdc_status, 
+			    uint32 logon_attempts, uint32 tc_status, 
+			    char *trusted_domain_name)
 {
-	DEBUG(5,("make_r_logon_ctrl2\n"));
+	DEBUG(5,("init_r_logon_ctrl2\n"));
 
 	r_l->switch_value  = query_level; /* should only be 0x1 */
 
@@ -301,6 +315,113 @@ BOOL net_io_r_logon_ctrl2(char *desc, NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, in
 }
 
 /*******************************************************************
+ Reads or writes an NET_Q_LOGON_CTRL structure.
+********************************************************************/
+
+BOOL net_io_q_logon_ctrl(char *desc, NET_Q_LOGON_CTRL *q_l, prs_struct *ps, 
+			 int depth)
+{
+	prs_debug(ps, depth, desc, "net_io_q_logon_ctrl");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr          ", ps, depth, &q_l->ptr))
+		return False;
+
+	if(!smb_io_unistr2 ("", &q_l->uni_server_name, q_l->ptr, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("function_code", ps, depth, &q_l->function_code))
+		return False;
+	if(!prs_uint32("query_level  ", ps, depth, &q_l->query_level))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Inits an NET_Q_LOGON_CTRL structure.
+********************************************************************/
+
+void init_net_q_logon_ctrl(NET_Q_LOGON_CTRL *q_l, char *srv_name,
+			   uint32 query_level)
+{
+	DEBUG(5,("init_q_logon_ctrl\n"));
+
+	q_l->function_code = 0x01; /* ??? */
+	q_l->query_level = query_level;
+
+	init_unistr2(&q_l->uni_server_name, srv_name, strlen(srv_name) + 1);
+}
+
+/*******************************************************************
+ Inits an NET_R_LOGON_CTRL structure.
+********************************************************************/
+
+void init_net_r_logon_ctrl(NET_R_LOGON_CTRL *r_l, uint32 query_level,
+			   uint32 flags, uint32 pdc_status)
+{
+	DEBUG(5,("init_r_logon_ctrl\n"));
+
+	r_l->switch_value  = query_level; /* should only be 0x1 */
+
+	switch (query_level) {
+	case 1:
+		r_l->ptr = 1; /* undocumented pointer */
+		init_netinfo_1(&r_l->logon.info1, flags, pdc_status);	
+		r_l->status = 0;
+		break;
+	default:
+		DEBUG(2,("init_r_logon_ctrl: unsupported switch value %d\n",
+			r_l->switch_value));
+		r_l->ptr = 0; /* undocumented pointer */
+
+		/* take a guess at an error code... */
+		r_l->status = NT_STATUS_INVALID_INFO_CLASS;
+		break;
+	}
+}
+
+/*******************************************************************
+ Reads or writes an NET_R_LOGON_CTRL structure.
+********************************************************************/
+
+BOOL net_io_r_logon_ctrl(char *desc, NET_R_LOGON_CTRL *r_l, prs_struct *ps, 
+			 int depth)
+{
+	prs_debug(ps, depth, desc, "net_io_r_logon_ctrl");
+	depth++;
+
+	if(!prs_uint32("switch_value ", ps, depth, &r_l->switch_value))
+		return False;
+	if(!prs_uint32("ptr          ", ps, depth, &r_l->ptr))
+		return False;
+
+	if (r_l->ptr != 0) {
+		switch (r_l->switch_value) {
+		case 1:
+			if(!net_io_netinfo_1("", &r_l->logon.info1, ps, depth))
+				return False;
+			break;
+		default:
+			DEBUG(2,("net_io_r_logon_ctrl: unsupported switch value %d\n",
+				r_l->switch_value));
+			break;
+		}
+	}
+
+	if(!prs_uint32("status       ", ps, depth, &r_l->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Inits an NET_R_TRUST_DOM_LIST structure.
 ********************************************************************/
 
@@ -309,7 +430,7 @@ void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 {
 	int i = 0;
 
-	DEBUG(5,("make_r_trust_dom\n"));
+	DEBUG(5,("init_r_trust_dom\n"));
 
 	for (i = 0; i < MAX_TRUST_DOMS; i++) {
 		r_t->uni_trust_dom_name[i].uni_str_len = 0;
@@ -410,7 +531,7 @@ void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
 				char *logon_srv, char *logon_clnt,
 				DOM_CHAL *clnt_chal)
 {
-	DEBUG(5,("make_q_req_chal: %d\n", __LINE__));
+	DEBUG(5,("init_q_req_chal: %d\n", __LINE__));
 
 	q_c->undoc_buffer = 1; /* don't know what this buffer is */
 
@@ -419,7 +540,7 @@ void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
 
 	memcpy(q_c->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
 
-	DEBUG(5,("make_q_req_chal: %d\n", __LINE__));
+	DEBUG(5,("init_q_req_chal: %d\n", __LINE__));
 }
 
 /*******************************************************************
@@ -624,7 +745,7 @@ BOOL net_io_r_auth_2(char *desc, NET_R_AUTH_2 *r_a, prs_struct *ps, int depth)
 void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char *logon_srv, char *acct_name, 
                 uint16 sec_chan, char *comp_name, DOM_CRED *cred, char nt_cypher[16])
 {
-	DEBUG(5,("make_q_srv_pwset\n"));
+	DEBUG(5,("init_q_srv_pwset\n"));
 
 	init_clnt_info(&q_s->clnt_id, logon_srv, acct_name, sec_chan, comp_name, cred);
 
@@ -736,7 +857,7 @@ void init_id_info1(NET_ID_INFO_1 *id, char *domain_name,
 	unsigned char lm_owf[16];
 	unsigned char nt_owf[16];
 
-	DEBUG(5,("make_id_info1: %d\n", __LINE__));
+	DEBUG(5,("init_id_info1: %d\n", __LINE__));
 
 	id->ptr_id_info1 = 1;
 
