@@ -15,6 +15,21 @@
 # blank lines before the @ line are ignored
 #
 
+@ SAMBA.0 Count and Time Instance Domain
+Contains count and time information for system calls and smb transactions.
+Counts shows the number of times each transaction was called. Times 
+indicates the time spent in each transaction.
+
+@ SAMBA.1 Byte Instance Domain
+This domain contains instances for the number of bytes transferred
+using the read and write system call.
+
+@ samba.counts Count of calls to this function
+
+@ samba.times Time required to complete call
+
+@ samba.bytes Number of bytes processed by this call
+
 @ samba.smbd.smb_count Count of SMB packets processed
 
 @ samba.smbd.uid_changes Count of times effective uid changed
