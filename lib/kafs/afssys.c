@@ -43,7 +43,7 @@ RCSID("$Id$");
 /* Magic to get AIX syscalls to work */
 #ifdef _AIX
 
-static int (*Pioctl)(char*, int, void*, int);
+static int (*Pioctl)(char*, int, struct ViceIoctl*, int);
 static int (*Setpag)(void);
 
 #include "dlfcn.h"
@@ -78,7 +78,8 @@ aix_setup(void)
     ptr = dlopen(path, 0);
     if(ptr){
 	Setpag = (int (*)(void))dlsym(ptr, "aix_setpag");
-	Pioctl = (int (*)(char*, int, void*, int))dlsym(ptr, "aix_pioctl");
+	Pioctl = (int (*)(char*, int, 
+			  struct ViceIoctl*, int))dlsym(ptr, "aix_pioctl");
     }
 #endif
 }
