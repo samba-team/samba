@@ -251,7 +251,7 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
         /* Close LSA connections if we are killing connections to the dc
            that has them open. */
 
-	if (strequal(server_state.controller, domain->controller)) {
+	if (strequal(domain->name, lp_workgroup())) {
 		server_state.pwdb_initialised = False;
 		server_state.lsa_handle_open = False;
 		lsa_close(&server_state.lsa_handle);
