@@ -246,11 +246,13 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/common.po
 
-SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
+SMBW_OBJ = smbwrapper/smbw.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
 		smbwrapper/realcalls.o smbwrapper/shared.o \
 		$(LIBSMB_OBJ) $(PARAM_OBJ) \
                 $(UBIQX_OBJ) $(LIB_OBJ)
+
+SMBWRAPPER_OBJ = $(SMBW_OBJ) smbwrapper/wrapped.o
 
 CLIENT_OBJ = client/client.o client/clitar.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
@@ -506,6 +508,11 @@ bin/debug2html: $(DEBUG2HTML_OBJ) bin/.dummy
 bin/smbfilter: $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBFILTER_OBJ) $(LDFLAGS) $(LIBS)
+
+
+bin/smbw_sample: $(SMBW_OBJ) utils/smbw_sample.o bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SMBW_OBJ) utils/smbw_sample.o $(LDFLAGS) $(LIBS)
 
 bin/smbwrapper.@SHLIBEXT@: $(PICOBJS)
 	@echo Linking shared library $@
