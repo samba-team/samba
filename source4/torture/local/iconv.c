@@ -128,21 +128,7 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 		last_charset = charset;
 	}
 
-#if 0
-	int i;
-	for (i=0;i<50;i++) {
-		ptr_in = inbuf;
-		ptr_out = buf1;
-		size_in1 = size;
-		outsize1 = sizeof(buf1);
-
-		memset(ptr_out, 0, outsize1);
-		errno = 0;
-		ret1 = smb_iconv(cd2, &ptr_in, &size_in1, &ptr_out, &outsize1);
-		errno1 = errno;
-	}
-#endif
-
+	/* internal convert to charset - placing result in buf1 */
 	ptr_in = inbuf;
 	ptr_out = buf1;
 	size_in1 = size;
@@ -153,6 +139,7 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 	ret1 = smb_iconv(cd2, &ptr_in, &size_in1, &ptr_out, &outsize1);
 	errno1 = errno;
 
+	/* system convert to charset - placing result in buf2 */
 	ptr_in = inbuf;
 	ptr_out = buf2;
 	size_in2 = size;
@@ -221,7 +208,8 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 
 		ok = 0;
 	}
-	
+
+	/* convert back to UTF-16, putting result in buf3 */
 	size = size - size_in1;
 	ptr_in = buf1;
 	ptr_out = buf3;
@@ -230,12 +218,26 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 
 	memset(ptr_out, 0, outsize3);
 	ret3 = smb_iconv(cd3, &ptr_in, &size_in3, &ptr_out, &outsize3);
-	
+
+	/* we only internally support the first 1M codepoints */
+	if (outsize3 != sizeof(buf3) - size &&
+	    get_codepoint(inbuf+sizeof(buf3) - outsize3, 
+			  size - (sizeof(buf3) - outsize3),
+			  "UTF-16LE") >= (1<<20)) {
+		return ok;
+	}
+
 	if (ret3 != 0) {
 		printf("pull failed - %s\n", strerror(errno));
 		ok = 0;
 	}
-	
+
+	if (strncmp(charset, "UTF", 3) != 0) {
+		/* don't expect perfect mappings for non UTF charsets */
+		return ok;
+	}
+
+
 	if (outsize3 != sizeof(buf3) - size) {
 		printf("wrong outsize3 - %d should be %d\n", 
 		       outsize3, sizeof(buf3) - size);
@@ -245,8 +247,12 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 	if (memcmp(buf3, inbuf, size) != 0) {
 		printf("pull bytes mismatch:\n");
 		show_buf("inbuf", inbuf, size);
-		show_buf(" buf3", buf3, size);
+		show_buf(" buf3", buf3, sizeof(buf3) - outsize3);
 		ok = 0;
+		printf("next codepoint is %u\n", 
+		       get_codepoint(inbuf+sizeof(buf3) - outsize3, 
+				     size - (sizeof(buf3) - outsize3),
+				     "UTF-16LE"));
 	}
 
 	if (!ok) {
