@@ -61,6 +61,7 @@
 #include <hdb.h>
 #include <roken.h>
 #include <parse_units.h>
+#include "private.h"
 
 struct kadm_func {
     kadm5_ret_t (*chpass_principal) (void *, krb5_principal, char*);
