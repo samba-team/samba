@@ -262,10 +262,10 @@ const char *gensec_get_name_by_authtype(uint8_t authtype)
 }
 	
 
-const char *gensec_get_name_by_oid(const char *oid) 
+const char *gensec_get_name_by_oid(const char *oid_string) 
 {
 	const struct gensec_security_ops *ops;
-	ops = gensec_security_by_oid(oid);
+	ops = gensec_security_by_oid(oid_string);
 	if (ops) {
 		return ops->name;
 	}
