@@ -3,9 +3,9 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBCONTROL" "1" "28 January 2002" "" ""
+.TH "SMBCONTROL" "1" "08 May 2002" "" ""
 .SH NAME
-smbcontrol \- send messages to smbd or nmbd processes
+smbcontrol \- send messages to smbd, nmbd or winbindd processes
 .SH SYNOPSIS
 .sp
 \fBsmbcontrol\fR [ \fB-i\fR ] 
@@ -16,9 +16,10 @@ smbcontrol \- send messages to smbd or nmbd processes
 This tool is part of the  Sambasuite.
 .PP
 \fBsmbcontrol\fR is a very small program, which 
-sends messages to an smbd(8)or 
-an nmbd(8)daemon running on the 
-system.
+sends messages to an smbd(8), 
+an nmbd(8)
+or a winbindd(8)
+daemon running on the system.
 .SH "OPTIONS"
 .TP
 \fB-i\fR
@@ -52,8 +53,9 @@ The close-share message-type sends a
 message to smbd which will then close the client connections to
 the named share. Note that this doesn't affect client connections
 to any other shares. This message-type takes an argument of the
-share name for which client connections will be close, or the
+share name for which client connections will be closed, or the
 "*" character which will close all currently open shares.
+This may be useful if you made changes to the access controls on the share.
 This message can only be sent to smbd.
 
 The debug message-type allows 
@@ -76,7 +78,7 @@ parameter. The parameter can be "on" to turn on profile stats
 collection, "off" to turn off profile stats collection, "count"
 to enable only collection of count stats (time stats are 
 disabled), and "flush" to zero the current profile stats. This can 
-be sent to any of the destinations.
+be sent to any smbd or nmbd destinations.
 
 The debuglevel message-type sends 
 a "request debug level" message. The current debug level setting 
@@ -86,18 +88,13 @@ sent to any of the destinations.
 The profilelevel message-type sends 
 a "request profile level" message. The current profile level 
 setting is returned by a "profilelevel" message. This can be sent 
-to any of the destinations.
+to any smbd or nmbd destinations.
 
 The printer-notify message-type sends a 
 message to smbd which in turn sends a printer notify message to 
 any Windows NT clients connected to a printer. This message-type 
 takes an argument of the printer name to send notify messages to. 
 This message can only be sent to smbd.
-
-The close-share message-type sends a
-message to smbd which forces smbd to close the share that was
-specified as an argument. This may be useful if you made changes
-to the access controls on the share. 
 .TP
 \fBparameters\fR
 any parameters required for the message-type

@@ -50,8 +50,9 @@ static void get_challenge(char buff[8])
 }
 
 /****************************************************************************
-reply for the core protocol
+ Reply for the core protocol.
 ****************************************************************************/
+
 static int reply_corep(char *inbuf, char *outbuf)
 {
 	int outsize = set_message(outbuf,1,0,True);
@@ -61,107 +62,110 @@ static int reply_corep(char *inbuf, char *outbuf)
 	return outsize;
 }
 
-
 /****************************************************************************
-reply for the coreplus protocol
+ Reply for the coreplus protocol.
 ****************************************************************************/
+
 static int reply_coreplus(char *inbuf, char *outbuf)
 {
-  int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
-  int outsize = set_message(outbuf,13,0,True);
-  SSVAL(outbuf,smb_vwv5,raw); /* tell redirector we support
-				 readbraw and writebraw (possibly) */
-  /* Reply, SMBlockread, SMBwritelock supported. */
-  SCVAL(outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
-  SSVAL(outbuf,smb_vwv1,0x1); /* user level security, don't encrypt */	
+	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
+	int outsize = set_message(outbuf,13,0,True);
+	SSVAL(outbuf,smb_vwv5,raw); /* tell redirector we support
+			readbraw and writebraw (possibly) */
+	/* Reply, SMBlockread, SMBwritelock supported. */
+	SCVAL(outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
+	SSVAL(outbuf,smb_vwv1,0x1); /* user level security, don't encrypt */	
 
-  Protocol = PROTOCOL_COREPLUS;
+	Protocol = PROTOCOL_COREPLUS;
 
-  return outsize;
+	return outsize;
 }
 
-
 /****************************************************************************
-reply for the lanman 1.0 protocol
+ Reply for the lanman 1.0 protocol.
 ****************************************************************************/
+
 static int reply_lanman1(char *inbuf, char *outbuf)
 {
-  int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
-  int secword=0;
-  time_t t = time(NULL);
+	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
+	int secword=0;
+	time_t t = time(NULL);
 
-  global_encrypted_passwords_negotiated = lp_encrypted_passwords();
+	global_encrypted_passwords_negotiated = lp_encrypted_passwords();
 
-  if (lp_security()>=SEC_USER) secword |= 1;
-  if (global_encrypted_passwords_negotiated) secword |= 2;
+	if (lp_security()>=SEC_USER)
+		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
+	if (global_encrypted_passwords_negotiated)
+		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 
-  set_message(outbuf,13,global_encrypted_passwords_negotiated?8:0,True);
-  SSVAL(outbuf,smb_vwv1,secword); 
-  /* Create a token value and add it to the outgoing packet. */
-  if (global_encrypted_passwords_negotiated) {
-	  get_challenge(smb_buf(outbuf));
-  }
+	set_message(outbuf,13,global_encrypted_passwords_negotiated?8:0,True);
+	SSVAL(outbuf,smb_vwv1,secword); 
+	/* Create a token value and add it to the outgoing packet. */
+	if (global_encrypted_passwords_negotiated) {
+		get_challenge(smb_buf(outbuf));
+	}
 
-  Protocol = PROTOCOL_LANMAN1;
+	Protocol = PROTOCOL_LANMAN1;
 
-  /* Reply, SMBlockread, SMBwritelock supported. */
-  SCVAL(outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
-  SSVAL(outbuf,smb_vwv2,max_recv);
-  SSVAL(outbuf,smb_vwv3,lp_maxmux()); /* maxmux */
-  SSVAL(outbuf,smb_vwv4,1);
-  SSVAL(outbuf,smb_vwv5,raw); /* tell redirector we support
-				 readbraw writebraw (possibly) */
-  SIVAL(outbuf,smb_vwv6,sys_getpid());
-  SSVAL(outbuf,smb_vwv10, TimeDiff(t)/60);
+	/* Reply, SMBlockread, SMBwritelock supported. */
+	SCVAL(outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
+	SSVAL(outbuf,smb_vwv2,max_recv);
+	SSVAL(outbuf,smb_vwv3,lp_maxmux()); /* maxmux */
+	SSVAL(outbuf,smb_vwv4,1);
+	SSVAL(outbuf,smb_vwv5,raw); /* tell redirector we support
+		readbraw writebraw (possibly) */
+	SIVAL(outbuf,smb_vwv6,sys_getpid());
+	SSVAL(outbuf,smb_vwv10, TimeDiff(t)/60);
 
-  put_dos_date(outbuf,smb_vwv8,t);
+	put_dos_date(outbuf,smb_vwv8,t);
 
-  return (smb_len(outbuf)+4);
+	return (smb_len(outbuf)+4);
 }
-
 
 /****************************************************************************
-reply for the lanman 2.0 protocol
+ Reply for the lanman 2.0 protocol.
 ****************************************************************************/
+
 static int reply_lanman2(char *inbuf, char *outbuf)
 {
-  int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
-  int secword=0;
-  time_t t = time(NULL);
+	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
+	int secword=0;
+	time_t t = time(NULL);
 
-  global_encrypted_passwords_negotiated = lp_encrypted_passwords();
+	global_encrypted_passwords_negotiated = lp_encrypted_passwords();
   
-  if (lp_security()>=SEC_USER) secword |= 1;
-  if (global_encrypted_passwords_negotiated) secword |= 2;
+	if (lp_security()>=SEC_USER)
+		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
+	if (global_encrypted_passwords_negotiated)
+		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 
-  set_message(outbuf,13,global_encrypted_passwords_negotiated?8:0,True);
-  SSVAL(outbuf,smb_vwv1,secword); 
-  SIVAL(outbuf,smb_vwv6,sys_getpid());
+	set_message(outbuf,13,global_encrypted_passwords_negotiated?8:0,True);
+	SSVAL(outbuf,smb_vwv1,secword); 
+	SIVAL(outbuf,smb_vwv6,sys_getpid());
 
-  /* Create a token value and add it to the outgoing packet. */
-  if (global_encrypted_passwords_negotiated) {
-	  get_challenge(smb_buf(outbuf));
-  }
+	/* Create a token value and add it to the outgoing packet. */
+	if (global_encrypted_passwords_negotiated) {
+		get_challenge(smb_buf(outbuf));
+	}
 
-  Protocol = PROTOCOL_LANMAN2;
+	Protocol = PROTOCOL_LANMAN2;
 
-  /* Reply, SMBlockread, SMBwritelock supported. */
-  SCVAL(outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
-  SSVAL(outbuf,smb_vwv2,max_recv);
-  SSVAL(outbuf,smb_vwv3,lp_maxmux()); 
-  SSVAL(outbuf,smb_vwv4,1);
-  SSVAL(outbuf,smb_vwv5,raw); /* readbraw and/or writebraw */
-  SSVAL(outbuf,smb_vwv10, TimeDiff(t)/60);
-  put_dos_date(outbuf,smb_vwv8,t);
+	/* Reply, SMBlockread, SMBwritelock supported. */
+	SCVAL(outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
+	SSVAL(outbuf,smb_vwv2,max_recv);
+	SSVAL(outbuf,smb_vwv3,lp_maxmux()); 
+	SSVAL(outbuf,smb_vwv4,1);
+	SSVAL(outbuf,smb_vwv5,raw); /* readbraw and/or writebraw */
+	SSVAL(outbuf,smb_vwv10, TimeDiff(t)/60);
+	put_dos_date(outbuf,smb_vwv8,t);
 
-  return (smb_len(outbuf)+4);
+	return (smb_len(outbuf)+4);
 }
 
+/****************************************************************************
+ Generate the spnego negprot reply blob. Return the number of bytes used.
+****************************************************************************/
 
-
-/* 
-   generate the spnego negprot reply blob. Return the number of bytes used
-*/
 static int negprot_spnego(char *p)
 {
 	DATA_BLOB blob;
@@ -197,7 +201,7 @@ static int negprot_spnego(char *p)
 		blob = spnego_gen_negTokenInit(guid, OIDs_plain, "NONE");
 	} else {
 		ADS_STRUCT *ads;
-		ads = ads_init(NULL, NULL, NULL, NULL);
+		ads = ads_init_simple();
 		/* win2000 uses host$@REALM, which we will probably use eventually,
 		   but for now this works */
 		asprintf(&principal, "HOST/%s@%s", guid, ads->realm);
@@ -211,11 +215,10 @@ static int negprot_spnego(char *p)
 	return len;
 }
 
-		
-
 /****************************************************************************
-reply for the nt protocol
+ Reply for the nt protocol.
 ****************************************************************************/
+
 static int reply_nt1(char *inbuf, char *outbuf)
 {
 	/* dual names + lock_and_read + nt SMBs + remote API calls */
@@ -262,9 +265,9 @@ static int reply_nt1(char *inbuf, char *outbuf)
 		capabilities |= CAP_DFS;
 	
 	if (lp_security() >= SEC_USER)
-		secword |= 1;
+		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
 	if (global_encrypted_passwords_negotiated)
-		secword |= 2;
+		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	
 	set_message(outbuf,17,0,True);
 	
@@ -377,133 +380,128 @@ protocol [LANMAN2.1]
  
 /* List of supported protocols, most desired first */
 static struct {
-  char *proto_name;
-  char *short_name;
-  int (*proto_reply_fn)(char *, char *);
-  int protocol_level;
+	char *proto_name;
+	char *short_name;
+	int (*proto_reply_fn)(char *, char *);
+	int protocol_level;
 } supported_protocols[] = {
-  {"NT LANMAN 1.0",           "NT1",      reply_nt1,      PROTOCOL_NT1},
-  {"NT LM 0.12",              "NT1",      reply_nt1,      PROTOCOL_NT1},
-  {"LM1.2X002",               "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
-  {"Samba",                   "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
-  {"DOS LM1.2X002",           "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
-  {"LANMAN1.0",               "LANMAN1",  reply_lanman1,  PROTOCOL_LANMAN1},
-  {"MICROSOFT NETWORKS 3.0",  "LANMAN1",  reply_lanman1,  PROTOCOL_LANMAN1},
-  {"MICROSOFT NETWORKS 1.03", "COREPLUS", reply_coreplus, PROTOCOL_COREPLUS},
-  {"PC NETWORK PROGRAM 1.0",  "CORE",     reply_corep,    PROTOCOL_CORE}, 
-  {NULL,NULL,NULL,0},
+	{"NT LANMAN 1.0",           "NT1",      reply_nt1,      PROTOCOL_NT1},
+	{"NT LM 0.12",              "NT1",      reply_nt1,      PROTOCOL_NT1},
+	{"LM1.2X002",               "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
+	{"Samba",                   "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
+	{"DOS LM1.2X002",           "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
+	{"LANMAN1.0",               "LANMAN1",  reply_lanman1,  PROTOCOL_LANMAN1},
+	{"MICROSOFT NETWORKS 3.0",  "LANMAN1",  reply_lanman1,  PROTOCOL_LANMAN1},
+	{"MICROSOFT NETWORKS 1.03", "COREPLUS", reply_coreplus, PROTOCOL_COREPLUS},
+	{"PC NETWORK PROGRAM 1.0",  "CORE",     reply_corep,    PROTOCOL_CORE}, 
+	{NULL,NULL,NULL,0},
 };
 
-
 /****************************************************************************
-  reply to a negprot
+ Reply to a negprot.
 ****************************************************************************/
+
 int reply_negprot(connection_struct *conn, 
 		  char *inbuf,char *outbuf, int dum_size, 
 		  int dum_buffsize)
 {
-  int outsize = set_message(outbuf,1,0,True);
-  int Index=0;
-  int choice= -1;
-  int protocol;
-  char *p;
-  int bcc = SVAL(smb_buf(inbuf),-2);
-  int arch = ARCH_ALL;
-  START_PROFILE(SMBnegprot);
+	int outsize = set_message(outbuf,1,0,True);
+	int Index=0;
+	int choice= -1;
+	int protocol;
+	char *p;
+	int bcc = SVAL(smb_buf(inbuf),-2);
+	int arch = ARCH_ALL;
+	START_PROFILE(SMBnegprot);
 
-  p = smb_buf(inbuf)+1;
-  while (p < (smb_buf(inbuf) + bcc))
-    { 
-      Index++;
-      DEBUG(3,("Requested protocol [%s]\n",p));
-      if (strcsequal(p,"Windows for Workgroups 3.1a"))
-	arch &= ( ARCH_WFWG | ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K );
-      else if (strcsequal(p,"DOS LM1.2X002"))
-	arch &= ( ARCH_WFWG | ARCH_WIN95 );
-      else if (strcsequal(p,"DOS LANMAN2.1"))
-	arch &= ( ARCH_WFWG | ARCH_WIN95 );
-      else if (strcsequal(p,"NT LM 0.12"))
-	arch &= ( ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K );
-      else if (strcsequal(p,"LANMAN2.1"))
-	arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
-      else if (strcsequal(p,"LM1.2X002"))
-	arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
-      else if (strcsequal(p,"MICROSOFT NETWORKS 1.03"))
-	arch &= ARCH_WINNT;
-      else if (strcsequal(p,"XENIX CORE"))
-	arch &= ( ARCH_WINNT | ARCH_OS2 );
-      else if (strcsequal(p,"Samba")) {
-	arch = ARCH_SAMBA;
-	break;
-      }
+	p = smb_buf(inbuf)+1;
+	while (p < (smb_buf(inbuf) + bcc)) { 
+		Index++;
+		DEBUG(3,("Requested protocol [%s]\n",p));
+		if (strcsequal(p,"Windows for Workgroups 3.1a"))
+			arch &= ( ARCH_WFWG | ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K );
+		else if (strcsequal(p,"DOS LM1.2X002"))
+			arch &= ( ARCH_WFWG | ARCH_WIN95 );
+		else if (strcsequal(p,"DOS LANMAN2.1"))
+			arch &= ( ARCH_WFWG | ARCH_WIN95 );
+		else if (strcsequal(p,"NT LM 0.12"))
+			arch &= ( ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K );
+		else if (strcsequal(p,"LANMAN2.1"))
+			arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
+		else if (strcsequal(p,"LM1.2X002"))
+			arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
+		else if (strcsequal(p,"MICROSOFT NETWORKS 1.03"))
+			arch &= ARCH_WINNT;
+		else if (strcsequal(p,"XENIX CORE"))
+			arch &= ( ARCH_WINNT | ARCH_OS2 );
+		else if (strcsequal(p,"Samba")) {
+			arch = ARCH_SAMBA;
+			break;
+		}
  
-      p += strlen(p) + 2;
-    }
+		p += strlen(p) + 2;
+	}
     
-  switch ( arch ) {
-  case ARCH_SAMBA:
-    set_remote_arch(RA_SAMBA);
-    break;
-  case ARCH_WFWG:
-    set_remote_arch(RA_WFWG);
-    break;
-  case ARCH_WIN95:
-    set_remote_arch(RA_WIN95);
-    break;
-  case ARCH_WINNT:
-   if(SVAL(inbuf,smb_flg2)==FLAGS2_WIN2K_SIGNATURE)
-     set_remote_arch(RA_WIN2K);
-   else
-     set_remote_arch(RA_WINNT);
-    break;
-  case ARCH_WIN2K:
-    set_remote_arch(RA_WIN2K);
-    break;
-  case ARCH_OS2:
-    set_remote_arch(RA_OS2);
-    break;
-  default:
-    set_remote_arch(RA_UNKNOWN);
-    break;
-  }
+	switch ( arch ) {
+		case ARCH_SAMBA:
+			set_remote_arch(RA_SAMBA);
+			break;
+		case ARCH_WFWG:
+			set_remote_arch(RA_WFWG);
+			break;
+		case ARCH_WIN95:
+			set_remote_arch(RA_WIN95);
+			break;
+		case ARCH_WINNT:
+			if(SVAL(inbuf,smb_flg2)==FLAGS2_WIN2K_SIGNATURE)
+				set_remote_arch(RA_WIN2K);
+			else
+				set_remote_arch(RA_WINNT);
+			break;
+		case ARCH_WIN2K:
+			set_remote_arch(RA_WIN2K);
+			break;
+		case ARCH_OS2:
+			set_remote_arch(RA_OS2);
+			break;
+		default:
+			set_remote_arch(RA_UNKNOWN);
+		break;
+	}
  
-  /* possibly reload - change of architecture */
-  reload_services(True);      
+	/* possibly reload - change of architecture */
+	reload_services(True);      
     
-  /* Check for protocols, most desirable first */
-  for (protocol = 0; supported_protocols[protocol].proto_name; protocol++)
-    {
-      p = smb_buf(inbuf)+1;
-      Index = 0;
-      if ((supported_protocols[protocol].protocol_level <= lp_maxprotocol()) &&
-	  (supported_protocols[protocol].protocol_level >= lp_minprotocol()))
-	while (p < (smb_buf(inbuf) + bcc))
-	  { 
-	    if (strequal(p,supported_protocols[protocol].proto_name))
-	      choice = Index;
-	    Index++;
-	    p += strlen(p) + 2;
-	  }
-      if(choice != -1)
-	break;
-    }
+	/* Check for protocols, most desirable first */
+	for (protocol = 0; supported_protocols[protocol].proto_name; protocol++) {
+		p = smb_buf(inbuf)+1;
+		Index = 0;
+		if ((supported_protocols[protocol].protocol_level <= lp_maxprotocol()) &&
+				(supported_protocols[protocol].protocol_level >= lp_minprotocol()))
+			while (p < (smb_buf(inbuf) + bcc)) { 
+				if (strequal(p,supported_protocols[protocol].proto_name))
+					choice = Index;
+				Index++;
+				p += strlen(p) + 2;
+			}
+		if(choice != -1)
+			break;
+	}
   
-  SSVAL(outbuf,smb_vwv0,choice);
-  if(choice != -1) {
-    extern fstring remote_proto;
-    fstrcpy(remote_proto,supported_protocols[protocol].short_name);
-    reload_services(True);          
-    outsize = supported_protocols[protocol].proto_reply_fn(inbuf, outbuf);
-    DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
-  }
-  else {
-    DEBUG(0,("No protocol supported !\n"));
-  }
-  SSVAL(outbuf,smb_vwv0,choice);
+	SSVAL(outbuf,smb_vwv0,choice);
+	if(choice != -1) {
+		extern fstring remote_proto;
+		fstrcpy(remote_proto,supported_protocols[protocol].short_name);
+		reload_services(True);          
+		outsize = supported_protocols[protocol].proto_reply_fn(inbuf, outbuf);
+		DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
+	} else {
+		DEBUG(0,("No protocol supported !\n"));
+	}
+	SSVAL(outbuf,smb_vwv0,choice);
   
-  DEBUG( 5, ( "negprot index=%d\n", choice ) );
+	DEBUG( 5, ( "negprot index=%d\n", choice ) );
 
-  END_PROFILE(SMBnegprot);
-  return(outsize);
+	END_PROFILE(SMBnegprot);
+	return(outsize);
 }
-

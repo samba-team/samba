@@ -163,10 +163,10 @@ int reply_tcon(connection_struct *conn,
 	*service = *password = *dev = 0;
 
 	p = smb_buf(inbuf)+1;
-	p += srvstr_pull(inbuf, service, p, sizeof(service), -1, STR_TERMINATE) + 1;
-	pwlen = srvstr_pull(inbuf, password, p, sizeof(password), -1, STR_TERMINATE) + 1;
+	p += srvstr_pull_buf(inbuf, service, p, sizeof(service), STR_TERMINATE) + 1;
+	pwlen = srvstr_pull_buf(inbuf, password, p, sizeof(password), STR_TERMINATE) + 1;
 	p += pwlen;
-	p += srvstr_pull(inbuf, dev, p, sizeof(dev), -1, STR_TERMINATE) + 1;
+	p += srvstr_pull_buf(inbuf, dev, p, sizeof(dev), STR_TERMINATE) + 1;
 
 	p = strrchr_m(service,'\\');
 	if (p) {
@@ -233,7 +233,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 
 	p = smb_buf(inbuf) + passlen;
-	p += srvstr_pull(inbuf, path, p, sizeof(path), -1, STR_TERMINATE);
+	p += srvstr_pull_buf(inbuf, path, p, sizeof(path), STR_TERMINATE);
 
 	/*
 	 * the service name can be either: \\server\share
@@ -377,7 +377,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   SMB_STRUCT_STAT sbuf;
   START_PROFILE(SMBchkpth);
 
-  srvstr_pull(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), -1, STR_TERMINATE);
+  srvstr_pull_buf(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), STR_TERMINATE);
 
   RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 
@@ -429,7 +429,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   START_PROFILE(SMBgetatr);
 
   p = smb_buf(inbuf) + 1;
-  p += srvstr_pull(inbuf, fname, p, sizeof(fname), -1, STR_TERMINATE);
+  p += srvstr_pull_buf(inbuf, fname, p, sizeof(fname), STR_TERMINATE);
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
   
@@ -505,7 +505,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   START_PROFILE(SMBsetatr);
 
   p = smb_buf(inbuf) + 1;
-  p += srvstr_pull(inbuf, fname, p, sizeof(fname), -1, STR_TERMINATE);
+  p += srvstr_pull_buf(inbuf, fname, p, sizeof(fname), STR_TERMINATE);
   unix_convert(fname,conn,0,&bad_path,&sbuf);
 
   mode = SVAL(inbuf,smb_vwv0);
@@ -542,23 +542,46 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 ****************************************************************************/
 int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int outsize = 0;
-  SMB_BIG_UINT dfree,dsize,bsize;
-  START_PROFILE(SMBdskattr);
-  
-  conn->vfs_ops.disk_free(conn,".",True,&bsize,&dfree,&dsize);
-  
-  outsize = set_message(outbuf,5,0,True);
-  
-  SSVAL(outbuf,smb_vwv0,dsize);
-  SSVAL(outbuf,smb_vwv1,bsize/512);
-  SSVAL(outbuf,smb_vwv2,512);
-  SSVAL(outbuf,smb_vwv3,dfree);
+	int outsize = 0;
+	SMB_BIG_UINT dfree,dsize,bsize;
+	START_PROFILE(SMBdskattr);
 
-  DEBUG(3,("dskattr dfree=%d\n", (unsigned int)dfree));
+	conn->vfs_ops.disk_free(conn,".",True,&bsize,&dfree,&dsize);
+  
+	outsize = set_message(outbuf,5,0,True);
+	
+	if (Protocol <= PROTOCOL_LANMAN2) {
+		double total_space, free_space;
+		/* we need to scale this to a number that DOS6 can handle. We
+		   use floating point so we can handle large drives on systems
+		   that don't have 64 bit integers 
 
-  END_PROFILE(SMBdskattr);
-  return(outsize);
+		   we end up displaying a maximum of 2G to DOS systems
+		*/
+		total_space = dsize * (double)bsize;
+		free_space = dfree * (double)bsize;
+
+		dsize = (total_space+63*512) / (64*512);
+		dfree = (free_space+63*512) / (64*512);
+		
+		if (dsize > 0xFFFF) dsize = 0xFFFF;
+		if (dfree > 0xFFFF) dfree = 0xFFFF;
+
+		SSVAL(outbuf,smb_vwv0,dsize);
+		SSVAL(outbuf,smb_vwv1,64); /* this must be 64 for dos systems */
+		SSVAL(outbuf,smb_vwv2,512); /* and this must be 512 */
+		SSVAL(outbuf,smb_vwv3,dfree);
+	} else {
+		SSVAL(outbuf,smb_vwv0,dsize);
+		SSVAL(outbuf,smb_vwv1,bsize/512);
+		SSVAL(outbuf,smb_vwv2,512);
+		SSVAL(outbuf,smb_vwv3,dfree);
+	}
+
+	DEBUG(3,("dskattr dfree=%d\n", (unsigned int)dfree));
+
+	END_PROFILE(SMBdskattr);
+	return(outsize);
 }
 
 
@@ -602,7 +625,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   maxentries = SVAL(inbuf,smb_vwv0); 
   dirtype = SVAL(inbuf,smb_vwv1);
   p = smb_buf(inbuf) + 1;
-  p += srvstr_pull(inbuf, path, p, sizeof(path), -1, STR_TERMINATE);
+  p += srvstr_pull_buf(inbuf, path, p, sizeof(path), STR_TERMINATE);
   p++;
   status_len = SVAL(p, 0);
   p += 2;
@@ -783,7 +806,7 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   outsize = set_message(outbuf,1,0,True);
   p = smb_buf(inbuf) + 1;
-  p += srvstr_pull(inbuf, path, p, sizeof(path), -1, STR_TERMINATE);
+  p += srvstr_pull_buf(inbuf, path, p, sizeof(path), STR_TERMINATE);
   p++;
   status_len = SVAL(p,0);
   p += 2;
@@ -831,7 +854,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
  
   share_mode = SVAL(inbuf,smb_vwv0);
 
-  srvstr_pull(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), -1, STR_TERMINATE);
+  srvstr_pull_buf(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), STR_TERMINATE);
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
@@ -921,7 +944,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   }
 
   /* XXXX we need to handle passed times, sattr and flags */
-  srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE);
+  srvstr_pull_buf(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE);
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
@@ -1040,7 +1063,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   com = SVAL(inbuf,smb_com);
 
   createmode = SVAL(inbuf,smb_vwv0);
-  srvstr_pull(inbuf, fname, smb_buf(inbuf) + 1, sizeof(fname), -1, STR_TERMINATE);
+  srvstr_pull_buf(inbuf, fname, smb_buf(inbuf) + 1, sizeof(fname), STR_TERMINATE);
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
@@ -1112,7 +1135,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   START_PROFILE(SMBctemp);
 
   createmode = SVAL(inbuf,smb_vwv0);
-  srvstr_pull(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), -1, STR_TERMINATE);
+  srvstr_pull_buf(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), STR_TERMINATE);
   pstrcat(fname,"\\TMXXXXXX");
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
@@ -1370,7 +1393,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	
 	dirtype = SVAL(inbuf,smb_vwv0);
 	
-	srvstr_pull(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), -1, STR_TERMINATE);
+	srvstr_pull_buf(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), STR_TERMINATE);
 	
 	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 	
@@ -2719,7 +2742,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	NTSTATUS status;
 	START_PROFILE(SMBmkdir);
  
-	srvstr_pull(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), -1, STR_TERMINATE);
+	srvstr_pull_buf(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), STR_TERMINATE);
 
 	status = mkdir_internal(conn, directory);
 	if (!NT_STATUS_IS_OK(status))
@@ -2880,7 +2903,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   SMB_STRUCT_STAT sbuf;
   START_PROFILE(SMBrmdir);
 
-  srvstr_pull(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), -1, STR_TERMINATE);
+  srvstr_pull_buf(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), STR_TERMINATE);
 
   RESOLVE_DFSPATH(directory, conn, inbuf, outbuf)
 
@@ -3241,9 +3264,9 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	START_PROFILE(SMBmv);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_pull(inbuf, name, p, sizeof(name), -1, STR_TERMINATE);
+	p += srvstr_pull_buf(inbuf, name, p, sizeof(name), STR_TERMINATE);
 	p++;
-	p += srvstr_pull(inbuf, newname, p, sizeof(newname), -1, STR_TERMINATE);
+	p += srvstr_pull_buf(inbuf, newname, p, sizeof(newname), STR_TERMINATE);
 	
 	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 	RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
@@ -3373,8 +3396,8 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   *directory = *mask = 0;
 
   p = smb_buf(inbuf);
-  p += srvstr_pull(inbuf, name, p, sizeof(name), -1, STR_TERMINATE);
-  p += srvstr_pull(inbuf, newname, p, sizeof(newname), -1, STR_TERMINATE);
+  p += srvstr_pull_buf(inbuf, name, p, sizeof(name), STR_TERMINATE);
+  p += srvstr_pull_buf(inbuf, newname, p, sizeof(newname), STR_TERMINATE);
    
   DEBUG(3,("reply_copy : %s -> %s\n",name,newname));
    
@@ -3526,7 +3549,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     return ERROR_DOS(ERRDOS,ERRnoaccess);
   }
 
-  srvstr_pull(inbuf, newdir, smb_buf(inbuf) + 1, sizeof(newdir), -1, STR_TERMINATE);
+  srvstr_pull_buf(inbuf, newdir, smb_buf(inbuf) + 1, sizeof(newdir), STR_TERMINATE);
   
   if (strlen(newdir) == 0) {
 	  ok = True;

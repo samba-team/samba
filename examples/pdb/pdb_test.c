@@ -17,11 +17,24 @@
  * Mass Ave, Cambridge, MA 02139, USA.
  */
 
+
 #include "includes.h"
 
-static BOOL testsam_setsampwent(struct pdb_context *context, BOOL update)
+static int testsam_debug_level = DBGC_ALL;
+
+#undef DBGC_CLASS
+#define DBGC_CLASS testsam_debug_level
+
+/* define the version of the passdb interface */ 
+PDB_MODULE_VERSIONING_MAGIC
+
+/***************************************************************
+ Start enumeration of the passwd list.
+****************************************************************/
+
+static BOOL testsam_setsampwent(struct pdb_methods *methods, BOOL update)
 {
-	DEBUG(0, ("testsam_setsampwent called\n"));
+	DEBUG(10, ("testsam_setsampwent called\n"));
 	return True;
 }
 
@@ -29,18 +42,18 @@ static BOOL testsam_setsampwent(struct pdb_context *context, BOOL update)
  End enumeration of the passwd list.
 ****************************************************************/
 
-static void testsam_endsampwent(struct pdb_context *context)
+static void testsam_endsampwent(struct pdb_methods *methods)
 {
-	DEBUG(0, ("testsam_endsampwent called\n"));
+	DEBUG(10, ("testsam_endsampwent called\n"));
 }
 
 /*****************************************************************
  Get one SAM_ACCOUNT from the list (next in line)
 *****************************************************************/
 
-static BOOL testsam_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
+static BOOL testsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT *user)
 {
-	DEBUG(0, ("testsam_getsampwent called\n"));
+	DEBUG(10, ("testsam_getsampwent called\n"));
 	return False;
 }
 
@@ -48,19 +61,19 @@ static BOOL testsam_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
  Lookup a name in the SAM database
 ******************************************************************/
 
-static BOOL testsam_getsampwnam (struct pdb_context *context, SAM_ACCOUNT *user, const char *sname)
+static BOOL testsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *user, const char *sname)
 {
-	DEBUG(0, ("testsam_getsampwnam called\n"));
+	DEBUG(10, ("testsam_getsampwnam called\n"));
 	return False;
 }
 
 /***************************************************************************
- Search by rid
+ Search by sid
  **************************************************************************/
 
-static BOOL testsam_getsampwrid (struct pdb_context *context, SAM_ACCOUNT *user, uint32 rid)
+static BOOL testsam_getsampwsid (struct pdb_methods *methods, SAM_ACCOUNT *user, DOM_SID sid)
 {
-	DEBUG(0, ("testsam_getsampwrid called\n"));
+	DEBUG(10, ("testsam_getsampwsid called\n"));
 	return False;
 }
 
@@ -68,9 +81,9 @@ static BOOL testsam_getsampwrid (struct pdb_context *context, SAM_ACCOUNT *user,
  Delete a SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL testsam_delete_sam_account(struct pdb_context *context, const SAM_ACCOUNT *sam_pass)
+static BOOL testsam_delete_sam_account(struct pdb_methods *methods, const SAM_ACCOUNT *sam_pass)
 {
-	DEBUG(0, ("testsam_delete_sam_account called\n"));
+	DEBUG(10, ("testsam_delete_sam_account called\n"));
 	return False;
 }
 
@@ -78,9 +91,9 @@ static BOOL testsam_delete_sam_account(struct pdb_context *context, const SAM_AC
  Modifies an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL testsam_update_sam_account (struct pdb_context *context, const SAM_ACCOUNT *newpwd)
+static BOOL testsam_update_sam_account (struct pdb_methods *methods, const SAM_ACCOUNT *newpwd)
 {
-	DEBUG(0, ("testsam_update_sam_account called\n"));
+	DEBUG(10, ("testsam_update_sam_account called\n"));
 	return False;
 }
 
@@ -88,9 +101,9 @@ static BOOL testsam_update_sam_account (struct pdb_context *context, const SAM_A
  Adds an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL testsam_add_sam_account (struct pdb_context *context, const SAM_ACCOUNT *newpwd)
+static BOOL testsam_add_sam_account (struct pdb_methods *methods, const SAM_ACCOUNT *newpwd)
 {
-	DEBUG(0, ("testsam_add_sam_account called\n"));
+	DEBUG(10, ("testsam_add_sam_account called\n"));
 	return False;
 }
 
@@ -104,18 +117,27 @@ NTSTATUS pdb_init(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char
 
 	(*pdb_method)->name = "testsam";
 
+	/* Functions your pdb module doesn't provide should be set 
+	 * to NULL */
+
 	(*pdb_method)->setsampwent = testsam_setsampwent;
 	(*pdb_method)->endsampwent = testsam_endsampwent;
 	(*pdb_method)->getsampwent = testsam_getsampwent;
 	(*pdb_method)->getsampwnam = testsam_getsampwnam;
-	(*pdb_method)->getsampwrid = testsam_getsampwrid;
+	(*pdb_method)->getsampwsid = testsam_getsampwsid;
 	(*pdb_method)->add_sam_account = testsam_add_sam_account;
 	(*pdb_method)->update_sam_account = testsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = testsam_delete_sam_account;
+
+	testsam_debug_level = debug_add_class("testsam");
+	if (testsam_debug_level == -1) {
+		testsam_debug_level = DBGC_ALL;
+		DEBUG(0, ("testsam: Couldn't register custom debugging class!\n"));
+	} else DEBUG(0, ("testsam: Debug class number of 'testsam': %d\n", testsam_debug_level));
     
 	DEBUG(0, ("Initializing testsam\n"));
 	if (location)
-		DEBUG(0, ("Location: %s\n", location));
+		DEBUG(10, ("Location: %s\n", location));
 
 	return NT_STATUS_OK;
 }

@@ -31,20 +31,6 @@
  * @{
  **/
 
-/** Opens a SMB connection and connects to the SPOOLSS pipe.
- *
- * @param cli Uninitialised client handle.
- * @param system_name NETBIOS name of the machine to connect to.
- * @param creds User credentials to connect as.
- * @returns Initialised client handle.
- */
-struct cli_state *cli_spoolss_initialise(struct cli_state *cli,
-					 char *system_name,
-					 struct ntuser_creds *creds)
-{
-        return cli_pipe_initialise(cli, system_name, PIPE_SPOOLSS, creds);
-}
-
 /**********************************************************************
  Initialize a new spoolss buff for use by a client rpc
 **********************************************************************/
@@ -420,8 +406,8 @@ WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	fstrcpy (server, cli->desthost);
-	strupper (server);
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper (server);
 	
 	/* Initialise input parameters */
 
@@ -620,7 +606,7 @@ WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (W_ERROR_IS_OK(result)) {
 		switch (level) {
 		case 0:
 			decode_printer_info_0(mem_ctx, r.buffer, 1, &ctr->printers_0);
@@ -1492,48 +1478,6 @@ WERROR cli_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/*********************************************************************************
- Win32 API - SetPrinterData()
- ********************************************************************************/
-
-WERROR cli_spoolss_setprinterdata (struct cli_state *cli, TALLOC_CTX *mem_ctx,
-					POLICY_HND *pol, char* valname, char* value)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_SETPRINTERDATA q;
-        SPOOL_R_SETPRINTERDATA r;
-	WERROR result = W_ERROR(ERRgeneral);
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
-
-	/* write the request */
-	make_spoolss_q_setprinterdata(&q, mem_ctx, pol, valname, value);
-
-	/* Marshall data and send request */
-	if (!spoolss_io_q_setprinterdata ("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, SPOOLSS_SETPRINTERDATA, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-	if (spoolss_io_r_setprinterdata ("", &r, &rbuf, 0))
-		goto done;
-		
-	result = r.status;
-
-done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
-	return result;
-}
-
 static void decode_jobs_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
 			  uint32 num_jobs, JOB_INFO_1 **jobs)
 {
@@ -1612,16 +1556,595 @@ WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	switch(level) {
 	case 1:
 		decode_jobs_1(mem_ctx, r.buffer, r.returned,
-			      &ctr->job.job_info_1);
+				ctr->job.job_info_1);
 		break;
 	case 2:
 		decode_jobs_2(mem_ctx, r.buffer, r.returned,
-			      &ctr->job.job_info_2);
+				ctr->job.job_info_2);
 		break;
 	default:
 		DEBUG(3, ("unsupported info level %d", level));
 		break;
 	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Set job */
+
+WERROR cli_spoolss_setjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			  POLICY_HND *hnd, uint32 jobid, uint32 level, 
+			  uint32 command)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_SETJOB q;
+	SPOOL_R_SETJOB r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_setjob(&q, hnd, jobid, level, command);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_setjob("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_SETJOB, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_setjob("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Get job */
+
+WERROR cli_spoolss_getjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			  uint32 offered, uint32 *needed,
+			  POLICY_HND *hnd, uint32 jobid, uint32 level,
+			  JOB_INFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETJOB q;
+	SPOOL_R_GETJOB r;
+	WERROR result = W_ERROR(ERRgeneral);
+	NEW_BUFFER buffer;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_getjob(&q, hnd, jobid, level, &buffer, offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getjob("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_GETJOB, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_getjob("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;
+
+	switch(level) {
+	case 1:
+		decode_jobs_1(mem_ctx, r.buffer, 1, ctr->job.job_info_1);
+		break;
+	case 2:
+		decode_jobs_2(mem_ctx, r.buffer, 1, ctr->job.job_info_2);
+		break;
+	default:
+		DEBUG(3, ("unsupported info level %d", level));
+		break;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Startpageprinter.  Sent to notify the spooler when a page is about to be
+   sent to a printer. */ 
+
+WERROR cli_spoolss_startpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				    POLICY_HND *hnd)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_STARTPAGEPRINTER q;
+	SPOOL_R_STARTPAGEPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_startpageprinter(&q, hnd);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_startpageprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_STARTPAGEPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_startpageprinter("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Endpageprinter.  Sent to notify the spooler when a page has finished
+   being sent to a printer. */
+
+WERROR cli_spoolss_endpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  POLICY_HND *hnd)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENDPAGEPRINTER q;
+	SPOOL_R_ENDPAGEPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_endpageprinter(&q, hnd);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_endpageprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENDPAGEPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_endpageprinter("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Startdocprinter.  Sent to notify the spooler that a document is about
+   to be spooled for printing. */
+
+WERROR cli_spoolss_startdocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				   POLICY_HND *hnd, char *docname, 
+				   char *outputfile, char *datatype, 
+				   uint32 *jobid)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_STARTDOCPRINTER q;
+	SPOOL_R_STARTDOCPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+	uint32 level = 1;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_startdocprinter(&q, hnd, level, docname, outputfile, 
+				       datatype);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_startdocprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_STARTDOCPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_startdocprinter("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+	
+	if (W_ERROR_IS_OK(result))
+		*jobid = r.jobid;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Enddocprinter.  Sent to notify the spooler that a document has finished
+   being spooled. */
+
+WERROR cli_spoolss_enddocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  POLICY_HND *hnd)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENDDOCPRINTER q;
+	SPOOL_R_ENDDOCPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_enddocprinter(&q, hnd);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_enddocprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENDDOCPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enddocprinter("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Get printer data */
+
+WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  uint32 offered, uint32 *needed,
+				  POLICY_HND *hnd, char *valuename, 
+				  uint32 *data_type, char **data, 
+				  uint32 *data_size)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETPRINTERDATA q;
+	SPOOL_R_GETPRINTERDATA r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_getprinterdata(&q, hnd, valuename, offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getprinterdata("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTERDATA, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_getprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+	/* Return output parameters */
+
+	if (data_type)
+		*data_type = r.type;
+
+	if (data) {
+		*data = (char *)talloc(mem_ctx, r.needed);
+		memcpy(*data, r.data, r.needed);
+	}
+
+	if (data_size) 
+		*data_size = r.needed;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Set printer data */
+
+WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  POLICY_HND *hnd, char *value, 
+				  uint32 data_type, char *data, 
+				  uint32 data_size)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_SETPRINTERDATA q;
+	SPOOL_R_SETPRINTERDATA r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_setprinterdata(&q, hnd, value, data, data_size);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_setprinterdata("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTERDATA, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_setprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Enum printer data */
+
+WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				   POLICY_HND *hnd, uint32 ndx,
+				   uint32 value_offered, uint32 data_offered,
+				   uint32 *value_needed, uint32 *data_needed,
+				   char **value, uint32 *data_type, char **data, 
+				   uint32 *data_size)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENUMPRINTERDATA q;
+	SPOOL_R_ENUMPRINTERDATA r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_enumprinterdata(&q, hnd, ndx, value_offered, data_offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_enumprinterdata("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERDATA, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enumprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;
+
+	/* Return data */
+
+	if (value_needed)
+		*value_needed = r.realvaluesize;
+
+	if (data_needed)
+		*data_needed = r.realdatasize;
+
+	if (data_type) 
+		*data_type = r.type;
+
+	if (value) {
+		fstring the_value;
+
+		rpcstr_pull(the_value, r.value, sizeof(the_value), -1, 
+			    STR_TERMINATE);
+		
+		*value = talloc_strdup(mem_ctx, the_value);
+	}
+
+	if (data)
+		*data = talloc_memdup(mem_ctx, r.data, r.realdatasize);
+
+	if (data_size)
+		*data_size = r.realdatasize;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Write data to printer */
+
+WERROR cli_spoolss_writeprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *hnd, uint32 data_size, char *data,
+				uint32 *num_written)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_WRITEPRINTER q;
+	SPOOL_R_WRITEPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_writeprinter(&q, hnd, data_size, data);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_writeprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_WRITEPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_writeprinter("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+	if (num_written)
+		*num_written = r.buffer_written;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Delete printer data */
+
+WERROR cli_spoolss_deleteprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				     POLICY_HND *hnd, char *valuename)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_DELETEPRINTERDATA q;
+	SPOOL_R_DELETEPRINTERDATA r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_deleteprinterdata(&q, hnd, valuename);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_deleteprinterdata("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_DELETEPRINTERDATA, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_deleteprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
 
  done:
 	prs_mem_free(&qbuf);

@@ -85,7 +85,7 @@ static void msg_deliver(void)
       pstrcpy(s,lp_msg_command());
       pstring_sub(s,"%f",alpha_strcpy(alpha_msgfrom,msgfrom,NULL,sizeof(alpha_msgfrom)));
       pstring_sub(s,"%t",alpha_strcpy(alpha_msgto,msgto,NULL,sizeof(alpha_msgto)));
-      standard_sub_basic(current_user_info.smb_name, s);
+      standard_sub_basic(current_user_info.smb_name, s, sizeof(s));
       pstring_sub(s,"%s",name);
       smbrun(s,NULL);
     }
@@ -118,8 +118,8 @@ int reply_sends(connection_struct *conn,
   outsize = set_message(outbuf,0,0,True);
 
   p = smb_buf(inbuf)+1;
-  p += srvstr_pull(inbuf, msgfrom, p, sizeof(msgfrom), -1, STR_TERMINATE) + 1;
-  p += srvstr_pull(inbuf, msgto, p, sizeof(msgto), -1, STR_TERMINATE) + 1;
+  p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_TERMINATE) + 1;
+  p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_TERMINATE) + 1;
 
   msg = p;
 
@@ -160,8 +160,8 @@ int reply_sendstrt(connection_struct *conn,
   msgpos = 0;
 
   p = smb_buf(inbuf)+1;
-  p += srvstr_pull(inbuf, msgfrom, p, sizeof(msgfrom), -1, STR_TERMINATE) + 1;
-  p += srvstr_pull(inbuf, msgto, p, sizeof(msgto), -1, STR_TERMINATE) + 1;
+  p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_TERMINATE) + 1;
+  p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_TERMINATE) + 1;
 
   DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", msgfrom, msgto ) );
 

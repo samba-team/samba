@@ -88,8 +88,9 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 		if (strcasecmp(name, data.dptr) != 0) {
 			/* we have a collision */
 			collisions++;
-			printf("Collision between %s and %s   ->  %s\n", 
-			       name, data.dptr, shortname);
+			printf("Collision between %s and %s   ->  %s "
+				" (coll/tot: %u/%u)\n", 
+				name, data.dptr, shortname, collisions, total);
 		}
 		free(data.dptr);
 	} else {

@@ -2,7 +2,7 @@
  * Unix SMB/CIFS implementation. 
  * SMB parameters and setup
  * Copyright (C) Andrew Tridgell 1992-1998
- * Copyright (C) Simo Sorce 2000
+ * Copyright (C) Simo Sorce 2000-2002
  * Copyright (C) Gerald Carter 2000
  * Copyright (C) Jeremy Allison 2001
  * Copyright (C) Andrew Bartlett 2002
@@ -24,6 +24,19 @@
 
 #include "includes.h"
 
+#if 0 /* when made a module use this */
+
+static int tdbsam_debug_level = DBGC_ALL;
+#undef DBGC_CLASS
+#define DBGC_CLASS tdbsam_debug_level
+
+#else
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_PASSDB
+
+#endif
+
 #ifdef WITH_TDB_SAM
 
 #define PDB_VERSION		"20010830"
@@ -41,8 +54,10 @@ struct tdbsam_privates {
 
 	BOOL permit_non_unix_accounts;
 
-/*	uint32 low_nua_rid; 
-	uint32 high_nua_rid; */
+	BOOL algorithmic_rids;
+
+	uint32 low_nua_rid; 
+	uint32 high_nua_rid;
 };
 
 /**********************************************************************
@@ -84,12 +99,10 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	uint8	*hours;
 	static uint8	*lm_pw_ptr, *nt_pw_ptr;
 	uint32		len = 0;
-	uint32		lmpwlen, ntpwlen, hourslen;
+	uint32		lm_pw_len, nt_pw_len, hourslen;
 	BOOL ret = True;
-	BOOL setflag;
-	pstring sub_buffer;
 	struct passwd *pw;
-	uid_t uid;
+	uid_t uid = -1;
 	gid_t gid = -1; /* This is what standard sub advanced expects if no gid is known */
 	
 	if(sampass == NULL || buf == NULL) {
@@ -119,8 +132,8 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		&munged_dial_len, &munged_dial,
 		&user_rid,
 		&group_rid,
-		&lmpwlen, &lm_pw_ptr,
-		&ntpwlen, &nt_pw_ptr,
+		&lm_pw_len, &lm_pw_ptr,
+		&nt_pw_len, &nt_pw_ptr,
 		&acct_ctrl,
 		&unknown_3,
 		&logon_divs,
@@ -150,6 +163,8 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		uid = pw->pw_uid;
 		gid = pw->pw_gid;
 		
+		pdb_set_unix_homedir(sampass, pw->pw_dir);
+
 		passwd_free(&pw);
 
 		pdb_set_uid(sampass, uid);
@@ -163,70 +178,76 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	pdb_set_pass_must_change_time(sampass, pass_must_change_time, True);
 	pdb_set_pass_last_set_time(sampass, pass_last_set_time);
 
-	pdb_set_username     (sampass, username);
+	pdb_set_username     (sampass, username); 
 	pdb_set_domain       (sampass, domain);
 	pdb_set_nt_username  (sampass, nt_username);
 	pdb_set_fullname     (sampass, fullname);
 
-	if (homedir) setflag = True;
-	else {
-		setflag = False;
-		pstrcpy(sub_buffer, lp_logon_home());
-		/* standard_sub_advanced() assumes pstring is passed!! */
-		standard_sub_advanced(-1, username, "", gid, username, sub_buffer);
-		homedir = strdup(sub_buffer);
-		if(!homedir) { ret = False; goto done; }
-		DEBUG(5,("Home directory set back to %s\n", homedir));
+	if (homedir) {
+		pdb_set_homedir(sampass, homedir, True);
 	}
-	pdb_set_homedir(sampass, homedir, setflag);
+	else {
+		pdb_set_homedir(sampass, 
+				talloc_sub_specified(sampass->mem_ctx, 
+						       lp_logon_home(),
+						       username, domain, 
+						       uid, gid),
+				False);
+	}
 
-	if (dir_drive) setflag = True;
+	if (dir_drive) 	
+		pdb_set_dir_drive(sampass, dir_drive, True);
 	else {
-		setflag = False;
-		pstrcpy(sub_buffer, lp_logon_drive());
-		standard_sub_advanced(-1, username, "", gid, username, sub_buffer);
-		dir_drive = strdup(sub_buffer);
-		if(!dir_drive) { ret = False; goto done; }
-		DEBUG(5,("Drive set back to %s\n", dir_drive));
+		pdb_set_dir_drive(sampass, 
+				  talloc_sub_specified(sampass->mem_ctx, 
+							 lp_logon_drive(),
+							 username, domain, 
+							 uid, gid),
+				  False);
 	}
-	pdb_set_dir_drive(sampass, dir_drive, setflag);
 
-	if (logon_script) setflag = True;
+	if (logon_script) 
+		pdb_set_logon_script(sampass, logon_script, True);
 	else {
-		setflag = False;
-		pstrcpy(sub_buffer, lp_logon_script());
-		standard_sub_advanced(-1, username, "", gid, username, sub_buffer);
-		logon_script = strdup(sub_buffer);
-		if(!logon_script) { ret = False; goto done; }
-		DEBUG(5,("Logon script set back to %s\n", logon_script));
+		pdb_set_logon_script(sampass, 
+				     talloc_sub_specified(sampass->mem_ctx, 
+							    lp_logon_script(),
+							    username, domain, 
+							    uid, gid),
+				  False);
 	}
-	pdb_set_logon_script(sampass, logon_script, setflag);
-
-	if (profile_path) setflag = True;
-	else {
-		setflag = False;
-		pstrcpy(sub_buffer, lp_logon_path());
-		standard_sub_advanced(-1, username, "", gid, username, sub_buffer);
-		profile_path = strdup(sub_buffer);
-		if(!profile_path) { ret = False; goto done; }
-		DEBUG(5,("Profile path set back to %s\n", profile_path));
+	
+	if (profile_path) {	
+		pdb_set_profile_path(sampass, profile_path, True);
+	} else {
+		pdb_set_profile_path(sampass, 
+				     talloc_sub_specified(sampass->mem_ctx, 
+							    lp_logon_path(),
+							    username, domain, 
+							    uid, gid),
+				     False);
 	}
-	pdb_set_profile_path(sampass, profile_path, setflag);
 
 	pdb_set_acct_desc    (sampass, acct_desc);
 	pdb_set_workstations (sampass, workstations);
 	pdb_set_munged_dial  (sampass, munged_dial);
-	if (!pdb_set_lanman_passwd(sampass, lm_pw_ptr)) {
-		ret = False;
-		goto done;
-	}
-	if (!pdb_set_nt_passwd(sampass, nt_pw_ptr)) {
-		ret = False;
-		goto done;
+
+	if (lm_pw_ptr && lm_pw_len == LM_HASH_LEN) {
+		if (!pdb_set_lanman_passwd(sampass, lm_pw_ptr)) {
+			ret = False;
+			goto done;
+		}
 	}
 
-	pdb_set_user_rid(sampass, user_rid);
-	pdb_set_group_rid(sampass, group_rid);
+	if (nt_pw_ptr && nt_pw_len == NT_HASH_LEN) {
+		if (!pdb_set_nt_passwd(sampass, nt_pw_ptr)) {
+			ret = False;
+			goto done;
+		}
+	}
+
+	pdb_set_user_sid_from_rid(sampass, user_rid);
+	pdb_set_group_sid_from_rid(sampass, group_rid);
 	pdb_set_unknown_3(sampass, unknown_3);
 	pdb_set_hours_len(sampass, hours_len);
 	pdb_set_unknown_5(sampass, unknown_5);
@@ -462,9 +483,9 @@ static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state,
  Open the TDB passwd database for SAM account enumeration.
 ****************************************************************/
 
-static BOOL tdbsam_setsampwent(struct pdb_context *context, BOOL update)
+static BOOL tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	
 	/* Open tdb passwd */
 	if (!(tdb_state->passwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, update?(O_RDWR|O_CREAT):O_RDONLY, 0600)))
@@ -490,9 +511,9 @@ static void close_tdb(struct tdbsam_privates *tdb_state)
  End enumeration of the TDB passwd list.
 ****************************************************************/
 
-static void tdbsam_endsampwent(struct pdb_context *context)
+static void tdbsam_endsampwent(struct pdb_methods *my_methods)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	close_tdb(tdb_state);
 	
 	DEBUG(7, ("endtdbpwent: closed sam database.\n"));
@@ -502,9 +523,9 @@ static void tdbsam_endsampwent(struct pdb_context *context)
  Get one SAM_ACCOUNT from the TDB (next in line)
 *****************************************************************/
 
-static BOOL tdbsam_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
+static BOOL tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *user)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_DATA 	data;
 	char *prefix = USERPREFIX;
 	int  prefixlen = strlen (prefix);
@@ -550,9 +571,9 @@ static BOOL tdbsam_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
  Lookup a name in the SAM TDB
 ******************************************************************/
 
-static BOOL tdbsam_getsampwnam (struct pdb_context *context, SAM_ACCOUNT *user, const char *sname)
+static BOOL tdbsam_getsampwnam (struct pdb_methods *my_methods, SAM_ACCOUNT *user, const char *sname)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 	*pwd_tdb;
 	TDB_DATA 	data, key;
 	fstring 	keystr;
@@ -606,9 +627,9 @@ static BOOL tdbsam_getsampwnam (struct pdb_context *context, SAM_ACCOUNT *user, 
  Search by rid
  **************************************************************************/
 
-static BOOL tdbsam_getsampwrid (struct pdb_context *context, SAM_ACCOUNT *user, uint32 rid)
+static BOOL tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT *user, uint32 rid)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 		*pwd_tdb;
 	TDB_DATA 		data, key;
 	fstring 		keystr;
@@ -644,16 +665,24 @@ static BOOL tdbsam_getsampwrid (struct pdb_context *context, SAM_ACCOUNT *user, 
 	
 	tdb_close (pwd_tdb);
 	
-	return tdbsam_getsampwnam (context, user, name);
+	return tdbsam_getsampwnam (my_methods, user, name);
+}
+
+static BOOL tdbsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
+{
+	uint32 rid;
+	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
+		return False;
+	return tdbsam_getsampwrid(my_methods, user, rid);
 }
 
 /***************************************************************************
  Delete a SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL tdbsam_delete_sam_account(struct pdb_context *context, const SAM_ACCOUNT *sam_pass)
+static BOOL tdbsam_delete_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT *sam_pass)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 	*pwd_tdb;
 	TDB_DATA 	key;
 	fstring 	keystr;
@@ -707,9 +736,9 @@ static BOOL tdbsam_delete_sam_account(struct pdb_context *context, const SAM_ACC
  Update the TDB SAM
 ****************************************************************************/
 
-static BOOL tdb_update_sam(struct pdb_context *context, const SAM_ACCOUNT* newpwd, int flag)
+static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, int flag)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)context->pdb_selected->private_data;
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 	*pwd_tdb = NULL;
 	TDB_DATA 	key, data;
 	uint8		*buf = NULL;
@@ -717,7 +746,7 @@ static BOOL tdb_update_sam(struct pdb_context *context, const SAM_ACCOUNT* newpw
 	fstring		name;
 	BOOL		ret = True;
 	uint32		user_rid;
-	int32		tdb_ret;
+	BOOL		tdb_ret;
 
 	/* invalidate the existing TDB iterator if it is open */
 	if (tdb_state->passwd_tdb) {
@@ -736,13 +765,32 @@ static BOOL tdb_update_sam(struct pdb_context *context, const SAM_ACCOUNT* newpw
 	/* if flag == TDB_INSERT then make up a new RID else throw an error. */
 	if (!(user_rid = pdb_get_user_rid(newpwd))) {
 		if (flag & TDB_INSERT) {
-			user_rid = BASE_RID;
-		        tdb_ret = tdb_change_int32_atomic(pwd_tdb, "RID_COUNTER", &user_rid, RID_MULTIPLIER);
-			if (tdb_ret == -1) {
-				ret = False;
-				goto done;
+			if (IS_SAM_UNIX_USER(newpwd)) {
+				if (tdb_state->algorithmic_rids) {
+					user_rid = fallback_pdb_uid_to_user_rid(pdb_get_uid(newpwd));
+				} else {
+					user_rid = BASE_RID;
+					tdb_ret = tdb_change_uint32_atomic(pwd_tdb, "RID_COUNTER", &user_rid, RID_MULTIPLIER);
+					if (!tdb_ret) {
+						ret = False;
+						goto done;
+					}
+				}
+				pdb_set_user_sid_from_rid(newpwd, user_rid);
+			} else {
+				user_rid = tdb_state->low_nua_rid;
+				tdb_ret = tdb_change_uint32_atomic(pwd_tdb, "NUA_RID_COUNTER", &user_rid, RID_MULTIPLIER);
+				if (!tdb_ret) {
+					ret = False;
+					goto done;
+				}
+				if (user_rid > tdb_state->high_nua_rid) {
+					DEBUG(0, ("tdbsam: no NUA rids available, cannot add user %s!\n", pdb_get_username(newpwd)));
+					ret = False;
+					goto done;
+				}
+				pdb_set_user_sid_from_rid(newpwd, user_rid);
 			}
-			pdb_set_user_rid(newpwd, user_rid);
 		} else {
 			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a RID\n",pdb_get_username(newpwd)));
 			ret = False;
@@ -758,7 +806,7 @@ static BOOL tdb_update_sam(struct pdb_context *context, const SAM_ACCOUNT* newpw
 				goto done;
 			} else {
 				/* This seems like a good default choice for non-unix users */
-				pdb_set_group_rid(newpwd, DOMAIN_GROUP_RID_USERS);
+				pdb_set_group_sid_from_rid(newpwd, DOMAIN_GROUP_RID_USERS);
 			}
 		} else {
 			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",pdb_get_username(newpwd)));
@@ -823,18 +871,18 @@ done:
  Modifies an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL tdbsam_update_sam_account (struct pdb_context *context, const SAM_ACCOUNT *newpwd)
+static BOOL tdbsam_update_sam_account (struct pdb_methods *my_methods, SAM_ACCOUNT *newpwd)
 {
-	return (tdb_update_sam(context, newpwd, TDB_MODIFY));
+	return (tdb_update_sam(my_methods, newpwd, TDB_MODIFY));
 }
 
 /***************************************************************************
  Adds an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL tdbsam_add_sam_account (struct pdb_context *context, const SAM_ACCOUNT *newpwd)
+static BOOL tdbsam_add_sam_account (struct pdb_methods *my_methods, SAM_ACCOUNT *newpwd)
 {
-	return (tdb_update_sam(context, newpwd, TDB_INSERT));
+	return (tdb_update_sam(my_methods, newpwd, TDB_INSERT));
 }
 
 static void free_private_data(void **vp) 
@@ -852,6 +900,14 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	NTSTATUS nt_status;
 	struct tdbsam_privates *tdb_state;
 
+#if 0 /* when made a module use this */
+	tdbsam_debug_level = debug_add_class("tdbsam");
+	if(tdbsam_debug_level == -1) {
+		tdbsam_debug_level = DBGC_ALL;
+		DEBUG(0, ("tdbsam: Couldn't register custom debugging class!\n"));
+	}
+#endif
+
 	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
 		return nt_status;
 	}
@@ -862,7 +918,7 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	(*pdb_method)->endsampwent = tdbsam_endsampwent;
 	(*pdb_method)->getsampwent = tdbsam_getsampwent;
 	(*pdb_method)->getsampwnam = tdbsam_getsampwnam;
-	(*pdb_method)->getsampwrid = tdbsam_getsampwrid;
+	(*pdb_method)->getsampwsid = tdbsam_getsampwsid;
 	(*pdb_method)->add_sam_account = tdbsam_add_sam_account;
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;
@@ -884,6 +940,8 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 		tdb_state->tdbsam_location = talloc_strdup(pdb_context->mem_ctx, tdbfile);
 	}
 
+	tdb_state->algorithmic_rids = True;
+
 	(*pdb_method)->private_data = tdb_state;
 
 	(*pdb_method)->free_private_data = free_private_data;
@@ -904,7 +962,7 @@ NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method,
 	(*pdb_method)->name = "tdbsam_nua";
 
 	tdb_state = (*pdb_method)->private_data;
-	
+
 	tdb_state->permit_non_unix_accounts = True;
 
 	if (!lp_non_unix_account_range(&low_nua_uid, &high_nua_uid)) {
@@ -912,10 +970,10 @@ NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-/*	tdb_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
+	tdb_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
 
 	tdb_state->high_nua_rid=fallback_pdb_uid_to_user_rid(high_nua_uid);
-*/
+
 	return NT_STATUS_OK;
 }
 

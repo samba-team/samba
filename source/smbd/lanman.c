@@ -71,7 +71,7 @@ static int CopyExpanded(connection_struct *conn,
 
 	StrnCpy(buf,src,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_conn(conn,buf);
+	standard_sub_conn(conn,buf,sizeof(buf));
 	l = push_ascii(*dst,buf,*n-1, STR_TERMINATE);
 	(*dst) += l;
 	(*n) -= l;
@@ -94,7 +94,7 @@ static int StrlenExpanded(connection_struct *conn, int snum, char* s)
 	if (!s) return(0);
 	StrnCpy(buf,s,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_conn(conn,buf);
+	standard_sub_conn(conn,buf,sizeof(buf));
 	return strlen(buf) + 1;
 }
 
@@ -104,7 +104,7 @@ static char* Expand(connection_struct *conn, int snum, char* s)
 	if (!s) return(NULL);
 	StrnCpy(buf,s,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_conn(conn,buf);
+	standard_sub_conn(conn,buf,sizeof(buf));
 	return &buf[0];
 }
 
@@ -1670,7 +1670,7 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid, char *param,ch
   fstring comment;
   pstring pathname;
   char *command, *cmdname;
-  uint offset;
+  unsigned int offset;
   int snum;
   int res = ERRunsup;
   
@@ -1754,82 +1754,104 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
   			      char **rdata,char **rparam,
   			      int *rdata_len,int *rparam_len)
 {
+	int i;
+	int errflags=0;
+	int resume_context, cli_buf_size;
 	char *str1 = param+2;
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
-	int uLevel = SVAL(p,0);
-	char *p2;
-	int count=0;
 
-	if (!prefix_ok(str1,"WrLeh")) return False;
-  
-	/* check it's a supported variant */
-	switch( uLevel )
-	{
-		case 0: 
-			p2 = "B21"; 
-			break;
-		default: 
-			return False;
+	GROUP_MAP *group_list;
+	int num_entries;
+ 
+	if (strcmp(str1,"WrLeh") != 0)
+		return False;
+
+	  /* parameters  
+	   * W-> resume context (number of users to skip)
+	   * r -> return parameter pointer to receive buffer 
+	   * L -> length of receive buffer
+	   * e -> return parameter number of entries
+	   * h -> return parameter total number of users
+	   */
+	if (strcmp("B21",str2) != 0)
+		return False;
+
+	/* get list of domain groups SID_DOMAIN_GRP=2 */
+	if(!enum_group_mapping(2 , &group_list, &num_entries, False, False)) {
+		DEBUG(3,("api_RNetGroupEnum:failed to get group list"));
+		return False;
 	}
 
-	if (strcmp(p2,str2) != 0) return False;
+	resume_context = SVAL(p,0); 
+	cli_buf_size=SVAL(p+2,0);
+	DEBUG(10,("api_RNetGroupEnum:resume context: %d, client buffer size: %d\n", resume_context, cli_buf_size));
 
-	*rdata_len = mdrcnt + 1024;
+	*rdata_len = cli_buf_size;
 	*rdata = REALLOC(*rdata,*rdata_len);
-
-	SSVAL(*rparam,0,NERR_Success);
-	SSVAL(*rparam,2,0);		/* converter word */
 
 	p = *rdata;
 
-	/* XXXX we need a real SAM database some day */
-	pstrcpy(p,"Users"); p += 21; count++;
-	pstrcpy(p,"Domain Users"); p += 21; count++;
-	pstrcpy(p,"Guests"); p += 21; count++;
-	pstrcpy(p,"Domain Guests"); p += 21; count++;
+	for(i=resume_context; i<num_entries; i++) {	
+		char* name=group_list[i].nt_name;
+		if( ((PTR_DIFF(p,*rdata)+21) <= *rdata_len) ) {
+			/* truncate the name at 21 chars. */
+			memcpy(p, name, 21); 
+			DEBUG(10,("adding entry %d group %s\n", i, p));
+			p += 21; 
+		} else {
+			/* set overflow error */
+			DEBUG(3,("overflow on entry %d group %s\n", i, name));
+			errflags=234;
+			break;
+		}
+	}
 
 	*rdata_len = PTR_DIFF(p,*rdata);
 
 	*rparam_len = 8;
 	*rparam = REALLOC(*rparam,*rparam_len);
 
-	SSVAL(*rparam,4,count);	/* is this right?? */
-	SSVAL(*rparam,6,count);	/* is this right?? */
-
-	DEBUG(3,("api_RNetGroupEnum gave %d entries\n", count));
+  	SSVAL(*rparam, 0, errflags);
+  	SSVAL(*rparam, 2, 0);		/* converter word */
+  	SSVAL(*rparam, 4, i-resume_context);	/* is this right?? */
+ 	SSVAL(*rparam, 6, num_entries);	/* is this right?? */
 
 	return(True);
 }
 
-/****************************************************************************
-  view list of groups available
-  ****************************************************************************/
-static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
+/*******************************************************************
+  get groups that a user is a member of
+  ******************************************************************/
+static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *param,char *data,
   			      int mdrcnt,int mprcnt,
   			      char **rdata,char **rparam,
   			      int *rdata_len,int *rparam_len)
 {
 	char *str1 = param+2;
 	char *str2 = skip_string(str1,1);
-	char *p = skip_string(str2,1);
+	char *UserName = skip_string(str2,1);
+	char *p = skip_string(UserName,1);
 	int uLevel = SVAL(p,0);
 	char *p2;
 	int count=0;
 
-	if (!prefix_ok(str1,"WrLeh")) return False;
+	*rparam_len = 8;
+	*rparam = REALLOC(*rparam,*rparam_len);
   
-	/* check it's a supported variant */
-	switch( uLevel )
-	{
-		case 0: 
-			p2 = "B21"; 
+	/* check it's a supported varient */
+	if (!strcmp(str1,"zWrLeh"))
+		return False;
+	switch( uLevel ) {
+		case 0:
+			p2 = "B21";
 			break;
-		default: 
+		default:
 			return False;
 	}
 
-	if (strcmp(p2,str2) != 0) return False;
+	if (strcmp(p2,str2) != 0)
+		return False;
 
 	*rdata_len = mdrcnt + 1024;
 	*rdata = REALLOC(*rdata,*rdata_len);
@@ -1847,15 +1869,101 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
 
 	*rdata_len = PTR_DIFF(p,*rdata);
 
-	*rparam_len = 8;
-	*rparam = REALLOC(*rparam,*rparam_len);
-
 	SSVAL(*rparam,4,count);	/* is this right?? */
 	SSVAL(*rparam,6,count);	/* is this right?? */
 
-	DEBUG(3,("api_RNetUserEnum gave %d entries\n", count));
-
 	return(True);
+}
+
+/*******************************************************************
+  get all users 
+  ******************************************************************/
+static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
+				 int mdrcnt,int mprcnt,
+				 char **rdata,char **rparam,
+				 int *rdata_len,int *rparam_len)
+{
+	SAM_ACCOUNT  *pwd=NULL;
+	int count_sent=0;
+	int count_total=0;
+	int errflags=0;
+	int resume_context, cli_buf_size;
+
+	char *str1 = param+2;
+	char *str2 = skip_string(str1,1);
+	char *p = skip_string(str2,1);
+
+	if (strcmp(str1,"WrLeh") != 0)
+		return False;
+	/* parameters
+	  * W-> resume context (number of users to skip)
+	  * r -> return parameter pointer to receive buffer
+	  * L -> length of receive buffer
+	  * e -> return parameter number of entries
+	  * h -> return parameter total number of users
+	  */
+  
+	resume_context = SVAL(p,0);
+	cli_buf_size=SVAL(p+2,0);
+	DEBUG(10,("api_RNetUserEnum:resume context: %d, client buffer size: %d\n", resume_context, cli_buf_size));
+
+	*rparam_len = 8;
+	*rparam = REALLOC(*rparam,*rparam_len);
+
+	/* check it's a supported varient */
+	if (strcmp("B21",str2) != 0)
+		return False;
+
+	*rdata_len = cli_buf_size;
+	*rdata = REALLOC(*rdata,*rdata_len);
+
+	p = *rdata;
+
+	/* to get user list enumerations for NetUserEnum in B21 format */
+	pdb_init_sam(&pwd);
+	
+	/* Open the passgrp file - not for update. */
+	become_root();
+	if(!pdb_setsampwent(False)) {
+		DEBUG(0, ("api_RNetUserEnum:unable to open sam database.\n"));
+		unbecome_root();
+		return False;
+	}
+	errflags=NERR_Success;
+
+	while ( pdb_getsampwent(pwd) ) {
+		const char *name=pdb_get_username(pwd);	
+		if ((name) && (*(name+strlen(name)-1)!='$')) { 
+			count_total++;
+			if(count_total>=resume_context) {
+				if( ((PTR_DIFF(p,*rdata)+21)<=*rdata_len)&&(strlen(name)<=21)  ) {
+					pstrcpy(p,name); 
+					DEBUG(10,("api_RNetUserEnum:adding entry %d username %s\n",count_sent,p));
+					p += 21; 
+					count_sent++; 
+				} else {
+					/* set overflow error */
+					DEBUG(10,("api_RNetUserEnum:overflow on entry %d username %s\n",count_sent,name));
+					errflags=234;
+					break;
+				}
+			}
+		}	
+	} ;
+
+	pdb_endsampwent();
+	unbecome_root();
+
+	pdb_free_sam(&pwd);
+
+	*rdata_len = PTR_DIFF(p,*rdata);
+
+	SSVAL(*rparam,0,errflags);
+	SSVAL(*rparam,2,0);	      /* converter word */
+	SSVAL(*rparam,4,count_sent);  /* is this right?? */
+	SSVAL(*rparam,6,count_total); /* is this right?? */
+
+	return True;
 }
 
 
@@ -2343,7 +2451,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 	SIVAL(p,6,0);
       } else {
 	SIVAL(p,6,PTR_DIFF(p2,*rdata));
-	standard_sub_conn(conn,comment);
+	standard_sub_conn(conn,comment,sizeof(comment));
 	StrnCpy(p2,comment,MAX(mdrcnt - struct_len,0));
 	p2 = skip_string(p2,1);
       }
@@ -2685,8 +2793,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
-		pstrcpy(p2, lp_logon_home());
-		standard_sub_conn(conn, p2);
+		pstrcpy(p2, vuser && vuser->homedir ? vuser->homedir : "");
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
 		pstrcpy(p2,"");
@@ -2722,15 +2829,13 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SSVAL(p,42,
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		pstrcpy(p2,lp_logon_home());
-		standard_sub_conn(conn, p2);
+		pstrcpy(p2, vuser && vuser->homedir ? vuser->homedir : "");
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
 		SSVAL(p,52,0);		/* flags */
 		SIVAL(p,54,PTR_DIFF(p2,*rdata));		/* script_path */
-		pstrcpy(p2,lp_logon_script());
-		standard_sub_conn( conn, p2 );             
+		pstrcpy(p2,vuser && vuser->logon_script ? vuser->logon_script : "");
 		p2 = skip_string(p2,1);
 		if (uLevel == 2)
 		{
@@ -2755,7 +2860,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 			SSVALS(p,104,-1);	/* num_logons */
 			SIVAL(p,106,PTR_DIFF(p2,*rdata)); /* logon_server */
 			pstrcpy(p2,"\\\\%L");
-			standard_sub_conn(conn, p2);
+			standard_sub_conn(conn, p2,0);
 			p2 = skip_string(p2,1);
 			SSVAL(p,110,49);	/* country_code */
 			SSVAL(p,112,860);	/* code page */
@@ -2769,56 +2874,6 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	return(True);
 }
 
-/*******************************************************************
-  get groups that a user is a member of
-  ******************************************************************/
-static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *param,char *data,
-				 int mdrcnt,int mprcnt,
-				 char **rdata,char **rparam,
-				 int *rdata_len,int *rparam_len)
-{
-  char *str1 = param+2;
-  char *str2 = skip_string(str1,1);
-  char *UserName = skip_string(str2,1);
-  char *p = skip_string(UserName,1);
-  int uLevel = SVAL(p,0);
-  char *p2;
-  int count=0;
-
-  *rparam_len = 8;
-  *rparam = REALLOC(*rparam,*rparam_len);
-
-  /* check it's a supported varient */
-  if (strcmp(str1,"zWrLeh") != 0) return False;
-  switch( uLevel ) {
-  case 0: p2 = "B21"; break;
-  default: return False;
-  }
-  if (strcmp(p2,str2) != 0) return False;
-
-  *rdata_len = mdrcnt + 1024;
-  *rdata = REALLOC(*rdata,*rdata_len);
-
-  SSVAL(*rparam,0,NERR_Success);
-  SSVAL(*rparam,2,0);		/* converter word */
-
-  p = *rdata;
-
-  /* XXXX we need a real SAM database some day */
-  pstrcpy(p,"Users"); p += 21; count++;
-  pstrcpy(p,"Domain Users"); p += 21; count++;
-  pstrcpy(p,"Guests"); p += 21; count++;
-  pstrcpy(p,"Domain Guests"); p += 21; count++;
-
-  *rdata_len = PTR_DIFF(p,*rdata);
-
-  SSVAL(*rparam,4,count);	/* is this right?? */
-  SSVAL(*rparam,6,count);	/* is this right?? */
-
-  return(True);
-}
-
-
 static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
@@ -2830,6 +2885,12 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   int uLevel;
   struct pack_desc desc;
   char* name;
+    /* With share level security vuid will always be zero.
+       Don't depend on vuser being non-null !!. JRA */
+    user_struct *vuser = get_valid_user_struct(vuid);
+    if(vuser != NULL)
+      DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid, 
+	       vuser->user.unix_name));
 
   uLevel = SVAL(p,0);
   name = p + 2;
@@ -2873,15 +2934,7 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
     }
     PACKS(&desc,"z",global_myworkgroup);/* domain */
 
-/* JHT - By calling lp_logon_script() and standard_sub() we have */
-/* made sure all macros are fully substituted and available */
-    {
-      pstring logon_script;
-      pstrcpy(logon_script,lp_logon_script());
-      standard_sub_conn( conn, logon_script );
-      PACKS(&desc,"z", logon_script);		/* script path */
-    }
-/* End of JHT mods */
+    PACKS(&desc,"z", vuser && vuser->logon_script ? vuser->logon_script :"");		/* script path */
 
     PACKI(&desc,"D",0x00000000);		/* reserved */
   }
@@ -3030,7 +3083,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
 
   DEBUG(3,("WPrintJobEnumerate uLevel=%d name=%s\n",uLevel,name));
 
-  /* check it's a supported varient */
+  /* check it's a supported variant */
   if (strcmp(str1,"zWrLeh") != 0) return False;
   if (uLevel > 2) return False;	/* defined only for uLevel 0,1,2 */
   if (!check_printjob_info(&desc,uLevel,str2)) return False;
@@ -3383,38 +3436,6 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   return(True);
 }
 
-struct session_info {
-  char machine[31];
-  char username[24];
-  char clitype[24];
-  int opens;
-  int time;
-};
-
-struct sessions_info {
-  int count;
-  struct session_info *session_list;
-};
-
-static int gather_sessioninfo(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
-{
-  struct sessions_info *sinfo = state;
-  struct session_info *curinfo = NULL;
-  struct sessionid *sessid = (struct sessionid *) dbuf.dptr;
-
-  sinfo->count += 1;
-  sinfo->session_list = REALLOC(sinfo->session_list, sinfo->count * sizeof(struct session_info));
-
-  curinfo = &(sinfo->session_list[sinfo->count - 1]);
-
-  safe_strcpy(curinfo->machine, sessid->remote_machine, 
-	      sizeof(curinfo->machine));
-  safe_strcpy(curinfo->username, uidtoname(sessid->uid), 
-	  sizeof(curinfo->username));
-  DEBUG(7,("gather_sessioninfo session from %s@%s\n", 
-	   curinfo->username, curinfo->machine));
-  return 0;
-}
 
 /****************************************************************************
  List open sessions
@@ -3430,8 +3451,8 @@ static BOOL api_RNetSessionEnum(connection_struct *conn,uint16 vuid, char *param
   char *p = skip_string(str2,1);
   int uLevel;
   struct pack_desc desc;
-  struct sessions_info sinfo;
-  int i;
+  struct sessionid *session_list;
+  int i, num_sessions;
 
   memset((char *)&desc,'\0',sizeof(desc));
 
@@ -3445,26 +3466,20 @@ static BOOL api_RNetSessionEnum(connection_struct *conn,uint16 vuid, char *param
   if (strcmp(str1,RAP_NetSessionEnum_REQ) != 0) return False;
   if (uLevel != 2 || strcmp(str2,RAP_SESSION_INFO_L2) != 0) return False;
 
-  sinfo.count = 0;
-  sinfo.session_list = NULL;
-
-  if (!session_traverse(gather_sessioninfo, &sinfo)) {
-    DEBUG(4,("RNetSessionEnum session_traverse failed\n"));
-    return False;
-  }
+  num_sessions = list_sessions(&session_list);
 
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
   memset((char *)&desc,'\0',sizeof(desc));
   desc.base = *rdata;
   desc.buflen = mdrcnt;
   desc.format = str2;
-  if (!init_package(&desc,sinfo.count,0)) {
+  if (!init_package(&desc,num_sessions,0)) {
     return False;
   }
 
-  for(i=0; i<sinfo.count; i++) {
-    PACKS(&desc, "z", sinfo.session_list[i].machine);
-    PACKS(&desc, "z", sinfo.session_list[i].username);
+  for(i=0; i<num_sessions; i++) {
+    PACKS(&desc, "z", session_list[i].remote_machine);
+    PACKS(&desc, "z", session_list[i].username);
     PACKI(&desc, "W", 1); /* num conns */
     PACKI(&desc, "W", 0); /* num opens */
     PACKI(&desc, "W", 1); /* num users */
@@ -3480,7 +3495,7 @@ static BOOL api_RNetSessionEnum(connection_struct *conn,uint16 vuid, char *param
   *rparam = REALLOC(*rparam,*rparam_len);
   SSVALS(*rparam,0,desc.errcode);
   SSVAL(*rparam,2,0); /* converter */
-  SSVAL(*rparam,4,sinfo.count); /* count */
+  SSVAL(*rparam,4,num_sessions); /* count */
 
   DEBUG(4,("RNetSessionEnum: errorcode %d\n",desc.errcode));
   return True;
@@ -3540,43 +3555,47 @@ struct
   int id;
   BOOL (*fn)(connection_struct *,uint16,char *,char *,
 	     int,int,char **,char **,int *,int *);
-  int flags;
+  BOOL auth_user;		/* Deny anonymous access? */
 } api_commands[] = {
-  {"RNetShareEnum",	RAP_WshareEnum,		api_RNetShareEnum,0},
-  {"RNetShareGetInfo",	RAP_WshareGetInfo,	api_RNetShareGetInfo,0},
-  {"RNetShareAdd",	RAP_WshareAdd,		api_RNetShareAdd,0},
-  {"RNetSessionEnum",	RAP_WsessionEnum,	api_RNetSessionEnum,0},
-  {"RNetServerGetInfo",	RAP_WserverGetInfo,	api_RNetServerGetInfo,0},
-  {"RNetGroupEnum",	RAP_WGroupEnum,		api_RNetGroupEnum,0},
-  {"RNetGroupGetUsers", RAP_WGroupGetUsers,	api_RNetGroupGetUsers,0},
-  {"RNetUserEnum", 	RAP_WUserEnum,		api_RNetUserEnum,0},
-  {"RNetUserGetInfo",	RAP_WUserGetInfo,	api_RNetUserGetInfo,0},
-  {"NetUserGetGroups",	RAP_WUserGetGroups,	api_NetUserGetGroups,0},
-  {"NetWkstaGetInfo",	RAP_WWkstaGetInfo,	api_NetWkstaGetInfo,0},
-  {"DosPrintQEnum",	RAP_WPrintQEnum,	api_DosPrintQEnum,0},
-  {"DosPrintQGetInfo",	RAP_WPrintQGetInfo,	api_DosPrintQGetInfo,0},
-  {"WPrintQueuePause",  RAP_WPrintQPause,	api_WPrintQueueCtrl,0},
-  {"WPrintQueueResume", RAP_WPrintQContinue,	api_WPrintQueueCtrl,0},
-  {"WPrintJobEnumerate",RAP_WPrintJobEnum,	api_WPrintJobEnumerate,0},
-  {"WPrintJobGetInfo",	RAP_WPrintJobGetInfo,	api_WPrintJobGetInfo,0},
-  {"RDosPrintJobDel",	RAP_WPrintJobDel,	api_RDosPrintJobDel,0},
-  {"RDosPrintJobPause",	RAP_WPrintJobPause,	api_RDosPrintJobDel,0},
-  {"RDosPrintJobResume",RAP_WPrintJobContinue,	api_RDosPrintJobDel,0},
-  {"WPrintDestEnum",	RAP_WPrintDestEnum,	api_WPrintDestEnum,0},
-  {"WPrintDestGetInfo",	RAP_WPrintDestGetInfo,	api_WPrintDestGetInfo,0},
-  {"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD,0},
-  {"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl,0},
-  {"NetServerEnum",	RAP_NetServerEnum2,	api_RNetServerEnum,0},
-  {"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms,0},
-  {"SetUserPassword",	RAP_WUserPasswordSet2,	api_SetUserPassword,0},
-  {"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon,0},
-  {"PrintJobInfo",	RAP_WPrintJobSetInfo,	api_PrintJobInfo,0},
-  {"WPrintDriverEnum",	RAP_WPrintDriverEnum,	api_WPrintDriverEnum,0},
-  {"WPrintQProcEnum",	RAP_WPrintQProcessorEnum,api_WPrintQProcEnum,0},
-  {"WPrintPortEnum",	RAP_WPrintPortEnum,	api_WPrintPortEnum,0},
-  {"SamOEMChangePassword",RAP_SamOEMChgPasswordUser2_P,api_SamOEMChangePassword,0},
-  {NULL,		-1,	api_Unsupported,0}};
+  {"RNetShareEnum",	RAP_WshareEnum,		api_RNetShareEnum, True},
+  {"RNetShareGetInfo",	RAP_WshareGetInfo,	api_RNetShareGetInfo},
+  {"RNetShareAdd",	RAP_WshareAdd,		api_RNetShareAdd},
+  {"RNetSessionEnum",	RAP_WsessionEnum,	api_RNetSessionEnum, True},
+  {"RNetServerGetInfo",	RAP_WserverGetInfo,	api_RNetServerGetInfo},
+  {"RNetGroupEnum",	RAP_WGroupEnum,		api_RNetGroupEnum, True},
+  {"RNetGroupGetUsers", RAP_WGroupGetUsers,	api_RNetGroupGetUsers, True},
+  {"RNetUserEnum", 	RAP_WUserEnum,		api_RNetUserEnum, True},
+  {"RNetUserGetInfo",	RAP_WUserGetInfo,	api_RNetUserGetInfo},
+  {"NetUserGetGroups",	RAP_WUserGetGroups,	api_NetUserGetGroups},
+  {"NetWkstaGetInfo",	RAP_WWkstaGetInfo,	api_NetWkstaGetInfo},
+  {"DosPrintQEnum",	RAP_WPrintQEnum,	api_DosPrintQEnum, True},
+  {"DosPrintQGetInfo",	RAP_WPrintQGetInfo,	api_DosPrintQGetInfo},
+  {"WPrintQueuePause",  RAP_WPrintQPause,	api_WPrintQueueCtrl},
+  {"WPrintQueueResume", RAP_WPrintQContinue,	api_WPrintQueueCtrl},
+  {"WPrintJobEnumerate",RAP_WPrintJobEnum,	api_WPrintJobEnumerate},
+  {"WPrintJobGetInfo",	RAP_WPrintJobGetInfo,	api_WPrintJobGetInfo},
+  {"RDosPrintJobDel",	RAP_WPrintJobDel,	api_RDosPrintJobDel},
+  {"RDosPrintJobPause",	RAP_WPrintJobPause,	api_RDosPrintJobDel},
+  {"RDosPrintJobResume",RAP_WPrintJobContinue,	api_RDosPrintJobDel},
+  {"WPrintDestEnum",	RAP_WPrintDestEnum,	api_WPrintDestEnum},
+  {"WPrintDestGetInfo",	RAP_WPrintDestGetInfo,	api_WPrintDestGetInfo},
+  {"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD},
+  {"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl},
+  {"NetServerEnum",	RAP_NetServerEnum2,	api_RNetServerEnum}, /* anon OK */
+  {"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms},
+  {"SetUserPassword",	RAP_WUserPasswordSet2,	api_SetUserPassword},
+  {"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon},
+  {"PrintJobInfo",	RAP_WPrintJobSetInfo,	api_PrintJobInfo},
+  {"WPrintDriverEnum",	RAP_WPrintDriverEnum,	api_WPrintDriverEnum},
+  {"WPrintQProcEnum",	RAP_WPrintQProcessorEnum,api_WPrintQProcEnum},
+  {"WPrintPortEnum",	RAP_WPrintPortEnum,	api_WPrintPortEnum},
+  {"SamOEMChangePassword",RAP_SamOEMChgPasswordUser2_P,api_SamOEMChangePassword}, /* anon OK */
+  {NULL,		-1,	api_Unsupported}};
 
+/*  The following RAP calls are not implemented by Samba:
+
+        RAP_WFileEnum2 - anon not OK 
+*/
 
 /****************************************************************************
  Handle remote api calls
@@ -3611,6 +3630,15 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
         DEBUG(3,("Doing %s\n",api_commands[i].name));
         break;
     }
+  }
+
+  /* Check whether this api call can be done anonymously */
+
+  if (api_commands[i].auth_user && lp_restrict_anonymous()) {
+	  user_struct *user = get_valid_user_struct(vuid);
+
+	  if (!user || user->guest)
+		  return ERROR_NT(NT_STATUS_ACCESS_DENIED);
   }
 
   rdata = (char *)malloc(1024);

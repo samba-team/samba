@@ -111,13 +111,13 @@ fullpath(const char *p)
    OK then we change into that directory - this prevents race conditions */
 static int mount_ok(char *mount_point)
 {
-	SMB_STRUCT_STAT st;
+	struct stat st;
 
 	if (chdir(mount_point) != 0) {
 		return -1;
 	}
 
-        if (sys_stat(".", &st) != 0) {
+        if (stat(".", &st) != 0) {
 		return -1;
         }
 

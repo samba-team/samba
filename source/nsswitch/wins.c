@@ -80,14 +80,10 @@ static void nss_wins_init(void)
 	DEBUGLEVEL = 0;
 	AllowDebugChange = False;
 
-	/* needed for lp_xx() functions */
-	charset_initialise();
-
 	TimeInit();
 	setup_logging("nss_wins",False);
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
-	codepage_initialise(lp_client_code_page());
 }
 
 static struct node_status *lookup_byaddr_backend(char *addr, int *count)
@@ -115,10 +111,10 @@ static struct node_status *lookup_byaddr_backend(char *addr, int *count)
 
 static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
-	int fd;
+	int fd = -1;
 	struct in_addr *ret = NULL;
 	struct in_addr  p;
-	int j;
+	int j, flags = 0;
 
 	if (!initialised) {
 		nss_wins_init();
@@ -126,33 +122,24 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 
 	*count = 0;
 
-	fd = wins_lookup_open_socket_in();
-	if (fd == -1)
-		return NULL;
-
-	p = wins_srv_ip();
-	if( !is_zero_ip(p) ) {
-		ret = name_query(fd,name,0x20,False,True, p, count);
-		goto out;
+	/* always try with wins first */
+	if (resolve_wins(name,0x20,&ret,count)) {
+		return ret;
 	}
 
-	if (lp_wins_support()) {
-		/* we are our own WINS server */
-		ret = name_query(fd,name,0x20,False,True, *interpret_addr2("127.0.0.1"), count);
-		goto out;
+	fd = wins_lookup_open_socket_in();
+	if (fd == -1) {
+		return NULL;
 	}
 
 	/* uggh, we have to broadcast to each interface in turn */
-	for (j=iface_count() - 1;
-	     j >= 0;
-	     j--) {
+	for (j=iface_count() - 1;j >= 0;j--) {
 		struct in_addr *bcast = iface_n_bcast(j);
-		ret = name_query(fd,name,0x20,True,True,*bcast,count);
+		ret = name_query(fd,name,0x20,True,True,*bcast,count, &flags, NULL);
 		if (ret) break;
 	}
 
- out:
-
+out:
 	close(fd);
 	return ret;
 }
@@ -319,5 +306,19 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 
 	return NSS_STATUS_SUCCESS;
 }
-#endif
 
+
+NSS_STATUS
+_nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *he,
+				char *buffer, size_t buflen, int *errnop,
+				int *h_errnop)
+{
+	if(af!=AF_INET) {
+		*h_errnop = NO_DATA;
+		*errnop = EAFNOSUPPORT;
+		return NSS_STATUS_UNAVAIL;
+	}
+
+	return _nss_wins_gethostbyname_r(name,he,buffer,buflen,errnop,h_errnop);
+}
+#endif

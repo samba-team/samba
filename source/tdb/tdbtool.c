@@ -368,8 +368,10 @@ static void first_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
 	
 	dbuf = tdb_fetch(the_tdb, *pkey);
 	if (!dbuf.dptr) terror("fetch failed");
-	/* printf("%s : %*.*s\n", k, (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr); */
-	print_rec(the_tdb, *pkey, dbuf, NULL);
+	else {
+		/* printf("%s : %*.*s\n", k, (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr); */
+		print_rec(the_tdb, *pkey, dbuf, NULL);
+	}
 }
 
 static void next_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)

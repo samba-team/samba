@@ -22,7 +22,7 @@
 #include "includes.h"
 
 extern pstring global_myname;
-extern DOM_SID global_sam_sid;
+extern pstring global_myworkgroup;
 
 /*
  * Next two lines needed for SunOS and don't
@@ -287,14 +287,26 @@ int main (int argc, char **argv)
 			dyn_CONFIGFILE);
 		exit(1);
 	}
+
+	if (!*global_myname) {
+		char *p;
+		pstrcpy( global_myname, myhostname() );
+		p = strchr_m(global_myname, '.' );
+		if (p) 
+			*p = 0;
+	}
+
+	strupper(global_myname);
+
+	fstrcpy(global_myworkgroup, lp_workgroup());
 	
 	if(!initialize_password_db(True)) {
 		fprintf(stderr, "Can't setup password database vectors.\n");
 		exit(1);
 	}
 	
-	if(pdb_generate_sam_sid()==False) {
-		printf("Can not read machine SID\n");
+	if(get_global_sam_sid()==False) {
+		fprintf(stderr, "Can not read machine SID\n");
 		return 0;
 	}
 

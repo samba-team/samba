@@ -1493,7 +1493,7 @@ int cli_NetPrintQEnum(struct cli_state *cli,
 	  for (j=0;j<jobcount;j++) {
 	    uint16 jid, pos, fsstatus;
 	    pstring ownername, notifyname, datatype, jparms, jstatus, jcomment;
-	    uint submitted, jsize;
+	    unsigned int submitted, jsize;
 	    
 	    GETWORD(p, jid);
 	    GETSTRINGF(p, ownername, RAP_USERNAME_LEN);
@@ -1594,7 +1594,7 @@ int cli_NetPrintQGetInfo(struct cli_state *cli, const char *printer,
 	for (j=0;(j<jobcount)&&(PTR_DIFF(p,rdata)< rsize);j++) {
 	  uint16 jid, pos, fsstatus;
 	  pstring ownername, notifyname, datatype, jparms, jstatus, jcomment;
-	  uint submitted, jsize;
+	  unsigned int submitted, jsize;
 
 	  GETWORD(p, jid);
 	  GETSTRINGF(p, ownername, RAP_USERNAME_LEN);
@@ -1740,7 +1740,7 @@ int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16,
       for (i=0,p=rdata;i<count;i++) {
 	pstring wsname, username, clitype_name;
 	uint16  num_conns, num_opens, num_users;
-	uint    sess_time, idle_time, user_flags;
+	unsigned int    sess_time, idle_time, user_flags;
 
 	GETSTRINGP(p, wsname, rdata, converter);
 	GETSTRINGP(p, username, rdata, converter);
@@ -1813,7 +1813,7 @@ int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation, void (
       int rsize, converter;
       pstring wsname, username, clitype_name;
       uint16  num_conns, num_opens, num_users;
-      uint    sess_time, idle_time, user_flags;
+      unsigned int    sess_time, idle_time, user_flags;
 
       p = rparam + WORDSIZE;
       GETWORD(p, converter);
@@ -1935,7 +1935,7 @@ int cli_NetConnectionEnum(struct cli_state *cli, const char *qualifier, void (*f
       for (i=0,p=rdata;i<count;i++) {
 	pstring netname, username;
 	uint16  conn_id, conn_type, num_opens, num_users;
-	uint    conn_time;
+	unsigned int    conn_time;
 
 	GETWORD(p,conn_id);
 	GETWORD(p,conn_type);

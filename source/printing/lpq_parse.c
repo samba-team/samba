@@ -255,6 +255,8 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
 
   if (strequal(tokarr[LPRNG_RANKTOK],"active")) {
     buf->status = LPQ_PRINTING;
+  } else if (strequal(tokarr[LPRNG_RANKTOK],"done")) {
+    buf->status = LPQ_PRINTED;
   } else if (isdigit((int)*tokarr[LPRNG_RANKTOK])) {
     buf->status = LPQ_QUEUED;
   } else {
@@ -314,7 +316,7 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
   int count=0;
 
   /* handle the case of "(standard input)" as a filename */
-  pstring_sub(line,"standard input","STDIN");
+  string_sub(line,"standard input","STDIN",0);
   all_string_sub(line,"(","\"",0);
   all_string_sub(line,")","\"",0);
 
@@ -431,7 +433,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     }
     if (!header_line_ok) return (False); /* incorrect header line */
     /* handle the case of "(standard input)" as a filename */
-    pstring_sub(line,"standard input","STDIN");
+    string_sub(line,"standard input","STDIN",0);
     all_string_sub(line,"(","\"",0);
     all_string_sub(line,")","\"",0);
     
@@ -469,7 +471,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     else if (base_prio) base_prio_reset=False;
     
     /* handle the dash in the job id */
-    pstring_sub(line,"-"," ");
+    string_sub(line,"-"," ",0);
     
     for (count=0; count<12 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
       
@@ -593,14 +595,14 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
   DEBUG(4,("antes [%s]\n", line));
 
   /* handle the case of "-- standard input --" as a filename */
-  pstring_sub(line,"standard input","STDIN");
+  string_sub(line,"standard input","STDIN",0);
   DEBUG(4,("despues [%s]\n", line));
   all_string_sub(line,"-- ","\"",0);
   all_string_sub(line," --","\"",0);
   DEBUG(4,("despues 1 [%s]\n", line));
 
-  pstring_sub(line,"[job #","");
-  pstring_sub(line,"]","");
+  string_sub(line,"[job #","",0);
+  string_sub(line,"]","",0);
   DEBUG(4,("despues 2 [%s]\n", line));
 
   
@@ -656,7 +658,7 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
   int count=0;
 
   /* handle the case of "(standard input)" as a filename */
-  pstring_sub(line,"stdin","STDIN");
+  string_sub(line,"stdin","STDIN",0);
   all_string_sub(line,"(","\"",0);
   all_string_sub(line,")","\"",0);
   
@@ -726,7 +728,7 @@ static BOOL parse_lpq_softq(char *line,print_queue_struct *buf,BOOL first)
   int count=0;
 
   /* mung all the ":"s to spaces*/
-  pstring_sub(line,":"," ");
+  string_sub(line,":"," ",0);
   
   for (count=0; count<10 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
 

@@ -61,14 +61,14 @@ static int show_brl;
 
 
 /* added by OH */
-static void Ucrit_addUsername(char *username)
+static void Ucrit_addUsername(const char *username)
 {
 	pstrcpy(Ucrit_username, username);
 	if(strlen(Ucrit_username) > 0)
 		Ucrit_IsActive = 1;
 }
 
-static unsigned int Ucrit_checkUsername(char *username)
+static unsigned int Ucrit_checkUsername(const char *username)
 {
 	if ( !Ucrit_IsActive) return 1;
 	if (strcmp(Ucrit_username,username) ==0) return 1;
@@ -544,10 +544,9 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 
  int main(int argc, char *argv[])
 {
-	pstring fname;
 	int c;
 	static int profile_only = 0;
-	static int new_debuglevel = -1;
+	static char *new_debuglevel = NULL;
 	TDB_CONTEXT *tdb;
 	poptContext pc;
 	struct poptOption long_options[] = {
@@ -560,7 +559,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		{"brief",	'b', POPT_ARG_NONE, 	&brief},
 		{"profile",	'P', POPT_ARG_NONE,	&profile_only},
 		{"byterange",	'B', POPT_ARG_NONE,	&show_brl},
-		{"debug",	'd', POPT_ARG_INT,	&new_debuglevel},
+		{"debug",	'd', POPT_ARG_STRING,	&new_debuglevel},
 		{ 0, 0, 0, 0}
 	};
 
@@ -598,8 +597,8 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		return (-1);
 	}
 	
-	if (new_debuglevel != -1) {
-		DEBUGLEVEL = new_debuglevel;
+	if (new_debuglevel) {
+		debug_parse_levels(new_debuglevel);
 	}
 
 	if (verbose) {
@@ -626,10 +625,11 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
   
 	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (!tdb) {
-		d_printf("connections.tdb not initialised\n");
+		d_printf("%s not initialised\n", lock_path("connections.tdb"));
+		d_printf("This is normal if an SMB client has never connected to your server.\n");
 	}  else  {
 		if (verbose) {
-			d_printf("Opened status file %s\n", fname);
+			d_printf("Opened %s\n", lock_path("connections.tdb"));
 		}
 
 		if (brief) 

@@ -30,7 +30,7 @@ static int masked_match(char *tok, char *slash, char *s)
         if (strlen(slash + 1) > 2) {
                 mask = interpret_addr(slash + 1);
         } else {
-		mask = (uint32)((ALLONES >> atoi(slash + 1)) ^ ALLONES);
+		mask = (uint32)((ALLONES << atoi(slash + 1)) ^ ALLONES);
         }
 
 	if (net == INADDR_NONE || mask == INADDR_NONE) {
@@ -188,7 +188,7 @@ static int list_match(char **list,char *item, int (*match_fn)(char *, char *))
 
 
 /* return true if access should be allowed */
-BOOL allow_access(char **deny_list,char **allow_list,
+static BOOL allow_access_internal(char **deny_list,char **allow_list,
 		  char *cname,char *caddr)
 {
 	char *client[2];
@@ -238,6 +238,22 @@ BOOL allow_access(char **deny_list,char **allow_list,
 		return (False);
 	
 	return (True);
+}
+
+/* return true if access should be allowed */
+BOOL allow_access(char **deny_list,char **allow_list,
+		  const char *cname, const char *caddr)
+{
+	BOOL ret;
+	
+	char *nc_cname = smb_xstrdup(cname);
+	char *nc_caddr = smb_xstrdup(caddr);
+	
+	ret = allow_access_internal(deny_list, allow_list, nc_cname, nc_caddr);
+
+	SAFE_FREE(nc_cname);
+	SAFE_FREE(nc_caddr);
+	return ret;
 }
 
 /* return true if the char* contains ip addrs only.  Used to avoid 

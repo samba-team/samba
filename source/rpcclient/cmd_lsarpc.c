@@ -2,7 +2,8 @@
    Unix SMB/CIFS implementation.
    RPC pipe client
 
-   Copyright (C) Tim Potter 2000
+   Copyright (C) Tim Potter              2000
+   Copyright (C) Rafal Szczesniak        2002
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -95,18 +96,19 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1, 
 				      (const char**)(argv + 1), &sids, &types);
 
-	if (!NT_STATUS_IS_OK(result) && 
-	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_SOME_UNMAPPED))
+	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) != 
+	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
 		goto done;
+
+	result = NT_STATUS_OK;
 
 	/* Print results */
 
 	for (i = 0; i < (argc - 1); i++) {
 		fstring sid_str;
-
 		sid_to_string(sid_str, &sids[i]);
-		printf("%s %s (%d)\n", argv[i + 1], sid_str,
-		       types[i]);
+		printf("%s %s (%s: %d)\n", argv[i + 1], sid_str,
+		       sid_type_lookup(types[i]), types[i]);
 	}
 
  done:
@@ -147,7 +149,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	for (i = 0; i < (argc - 1); i++)
+	for (i = 0; i < argc - 1; i++)
 		string_to_sid(&sids[i], argv[i + 1]);
 
 	/* Lookup the SIDs */
@@ -155,9 +157,11 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	result = cli_lsa_lookup_sids(cli, mem_ctx, &pol, argc - 1, sids, 
 				     &domains, &names, &types);
 
-	if (!NT_STATUS_IS_OK(result) && 
-	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_SOME_UNMAPPED))
+	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) != 
+	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
 		goto done;
+
+	result = NT_STATUS_OK;
 
 	/* Print results */
 
@@ -165,7 +169,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		fstring sid_str;
 
 		sid_to_string(sid_str, &sids[i]);
-		printf("%s [%s]\\[%s] (%d)\n", sid_str, 
+		printf("%s %s\\%s (%d)\n", sid_str, 
 		       domains[i] ? domains[i] : "*unknown*", 
 		       names[i] ? names[i] : "*unknown*", types[i]);
 	}
@@ -184,17 +188,31 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID *domain_sids;
 	char **domain_names;
+
+	/* defaults, but may be changed using params */
 	uint32 enum_ctx = 0;
-	uint32 num_domains;
+	uint32 preferred_maxnum = 5;
+	uint32 num_domains = 0;
 	int i;
 
-	if (argc != 1) {
-		printf("Usage: %s\n", argv[0]);
+	if (argc > 3) {
+		printf("Usage: %s [preferred max number (%d)] [enum context (0)]\n",
+			argv[0], preferred_maxnum);
 		return NT_STATUS_OK;
 	}
 
+	/* enumeration context */
+	if (argc >= 2 && argv[1]) {
+		preferred_maxnum = atoi(argv[1]);
+	}	
+
+	/* preferred maximum number */
+	if (argc == 3 && argv[2]) {
+		enum_ctx = atoi(argv[2]);
+	}	
+
 	result = cli_lsa_open_policy(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     POLICY_VIEW_LOCAL_INFORMATION,
 				     &pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -203,14 +221,14 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli,
 	/* Lookup list of trusted domains */
 
 	result = cli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
-					&num_domains, &domain_names,
-					&domain_sids);
+						&preferred_maxnum, &num_domains,
+						&domain_names, &domain_sids);
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
+	    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
+	    goto done;
 
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	/* Print results */
-
+	/* Print results: list of names and sids returned in this response. */	 
 	for (i = 0; i < num_domains; i++) {
 		fstring sid_str;
 
@@ -447,6 +465,7 @@ static NTSTATUS cmd_lsa_lookupprivvalue(struct cli_state *cli,
 		goto done;
 
 	/* Print results */
+
 	printf("%u:%u (0x%x:0x%x)\n", luid.high, luid.low, luid.high, luid.low);
 
  done:
@@ -498,7 +517,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lsaquery", 	         cmd_lsa_query_info_policy,  PIPE_LSARPC, "Query info policy",                    "" },
 	{ "lookupsids",          cmd_lsa_lookup_sids,        PIPE_LSARPC, "Convert SIDs to names",                "" },
 	{ "lookupnames",         cmd_lsa_lookup_names,       PIPE_LSARPC, "Convert names to SIDs",                "" },
-	{ "enumtrust", 	         cmd_lsa_enum_trust_dom,     PIPE_LSARPC, "Enumerate trusted domains",            "" },
+	{ "enumtrust", 	         cmd_lsa_enum_trust_dom,     PIPE_LSARPC, "Enumerate trusted domains",            "Usage: [preferred max number] [enum context (0)]" },
 	{ "enumprivs", 	         cmd_lsa_enum_privilege,     PIPE_LSARPC, "Enumerate privileges",                 "" },
 	{ "getdispname",         cmd_lsa_get_dispname,       PIPE_LSARPC, "Get the privilege name",               "" },
 	{ "lsaenumsid",          cmd_lsa_enum_sids,          PIPE_LSARPC, "Enumerate the LSA SIDS",               "" },

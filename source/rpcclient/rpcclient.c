@@ -186,7 +186,7 @@ static void get_username (char *username)
 
 /* Fetch the SID for this computer */
 
-void fetch_machine_sid(struct cli_state *cli)
+static void fetch_machine_sid(struct cli_state *cli)
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_OK;
@@ -199,7 +199,7 @@ void fetch_machine_sid(struct cli_state *cli)
 
 	if (!(mem_ctx=talloc_init()))
 	{
-		DEBUG(0,("fetch_domain_sid: talloc_init returned NULL!\n"));
+		DEBUG(0,("fetch_machine_sid: talloc_init returned NULL!\n"));
 		goto error;
 	}
 
@@ -576,17 +576,18 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 /* Print usage information */
 static void usage(void)
 {
-	printf("Usage: rpcclient server [options]\n");
+	printf("Usage: rpcclient [options] server\n");
 
-	printf("\t-A or --authfile authfile          file containing user credentials\n");
-	printf("\t-c or --command \"command string\"   execute semicolon separated cmds\n");
-	printf("\t-d or --debug debuglevel           set the debuglevel\n");
-	printf("\t-l or --logfile logfile            logfile to use instead of stdout\n");
+	printf("\t-A or --authfile authfile          File containing user credentials\n");
+	printf("\t-c or --command \"command string\"   Execute semicolon separated cmds\n");
+	printf("\t-d or --debug debuglevel           Set the debuglevel\n");
+	printf("\t-l or --logfile logfile            Logfile to use instead of stdout\n");
 	printf("\t-h or --help                       Print this help message.\n");
-	printf("\t-N or --nopass                     don't ask for a password\n");
-	printf("\t-s or --conf configfile            specify an alternative config file\n");
-	printf("\t-U or --user username              set the network username\n");
-	printf("\t-W or --workgroup domain           set the domain name for user account\n");
+	printf("\t-N or --nopass                     Don't ask for a password\n");
+	printf("\t-s or --conf configfile            Specify an alternative config file\n");
+	printf("\t-U or --user username              Set the network username\n");
+	printf("\t-W or --workgroup domain           Set the domain name for user account\n");
+	printf("\t-I or --dest-ip ip                 Specify destination IP address\n");
 	printf("\n");
 }
 
@@ -594,24 +595,23 @@ static void usage(void)
 
  int main(int argc, char *argv[])
 {
-	extern char 		*optarg;
-	extern int 		optind;
 	extern pstring 		global_myname;
 	static int		got_pass = 0;
 	BOOL 			interactive = True;
 	int 			opt;
 	int 			olddebug;
 	static char		*cmdstr = "";
+	const char *server;
 	struct cli_state	*cli;
 	fstring 		password="",
 				username="",
-				domain="",
-				server="";
+		domain="";
 	static char 		*opt_authfile=NULL,
 				*opt_username=NULL,
 				*opt_domain=NULL,
 				*opt_configfile=NULL,
-				*opt_logfile=NULL;
+ 	                        *opt_logfile=NULL,
+	                        *opt_ipaddr=NULL;
 	static int		opt_debuglevel;
 	pstring 		logfile;
 	struct cmd_set 		**cmd_set;
@@ -633,7 +633,8 @@ static void usage(void)
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr},
 		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l'},
 		{"help",        'h', POPT_ARG_NONE,	0, 'h'},
-		{ 0, 0, 0, 0}
+		{"dest-ip",     'I', POPT_ARG_STRING,   &opt_ipaddr, 'I'},
+		{ NULL }
 	};
 
 
@@ -649,54 +650,53 @@ static void usage(void)
 		return 0;
 	}
 	
-	if (strncmp("//", argv[1], 2) == 0 || strncmp("\\\\", argv[1], 2) == 0)
-		argv[1] += 2;
-
-	pstrcpy(server, argv[1]);
-
-	argv++;
-	argc--;
-
-	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
-			    POPT_CONTEXT_KEEP_FIRST);
+	pc = poptGetContext("rpcclient", argc, (const char **) argv,
+			    long_options, 0);
 	
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case 'A':
 			/* only get the username, password, and domain from the file */
-			read_authfile (opt_authfile, username,
-				       password, domain);
+			read_authfile (opt_authfile, username, password, domain);
 			if (strlen (password))
 				got_pass = 1;
 			break;
-
+			
 		case 'l':
 			slprintf(logfile, sizeof(logfile) - 1, "%s.client", 
 				 opt_logfile);
 			lp_set_logfile(logfile);
 			interactive = False;
- 			break;
-
+			break;
+			
 		case 's':
 			pstrcpy(dyn_CONFIGFILE, opt_configfile);
 			break;
-
+			
 		case 'd':
 			DEBUGLEVEL = opt_debuglevel;
 			break;
-
+			
 		case 'U': {
 			char *lp;
+
 			pstrcpy(username,opt_username);
+
 			if ((lp=strchr_m(username,'%'))) {
 				*lp = 0;
 				pstrcpy(password,lp+1);
 				got_pass = 1;
-				memset(strchr_m(opt_username,'%')+1,'X',strlen(password));
+				memset(strchr_m(opt_username,'%') + 1, 'X',
+				       strlen(password));
 			}
 			break;
 		}
-		
+		case 'I':
+		        if (!inet_aton(opt_ipaddr, &server_ip)) {
+				fprintf(stderr, "%s not a valid IP address\n",
+					opt_ipaddr);
+				return 1;
+			}
 		case 'W':
 			pstrcpy(domain, opt_domain);
 			break;
@@ -706,6 +706,16 @@ static void usage(void)
 			usage();
 			exit(1);
 		}
+	}
+
+	/* Get server as remaining unparsed argument.  Print usage if more
+	   than one unparsed argument is present. */
+
+	server = poptGetArg(pc);
+	
+	if (!server || poptGetArg(pc)) {
+		usage();
+		return 1;
 	}
 
 	poptFreeContext(pc);
@@ -731,7 +741,7 @@ static void usage(void)
 
 	/* Resolve the IP address */
 
-	if (!resolve_name(server, &server_ip, 0x20))  {
+	if (!opt_ipaddr && !resolve_name(server, &server_ip, 0x20))  {
 		DEBUG(1,("Unable to resolve %s\n", server));
 		return 1;
 	}
@@ -755,7 +765,7 @@ static void usage(void)
 					&server_ip, 0,
 					"IPC$", "IPC",  
 					username, domain,
-					password, strlen(password));
+					password, 0);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));

@@ -248,6 +248,20 @@ typedef uint32 WERROR;
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
 #endif
 
+/* SID Types */
+enum SID_NAME_USE
+{
+	SID_NAME_USE_NONE = 0,/* NOTUSED */
+	SID_NAME_USER    = 1, /* user */
+	SID_NAME_DOM_GRP = 2, /* domain group */
+	SID_NAME_DOMAIN  = 3, /* domain: don't know what this is */
+	SID_NAME_ALIAS   = 4, /* local group */
+	SID_NAME_WKN_GRP = 5, /* well-known group */
+	SID_NAME_DELETED = 6, /* deleted account: needed for c2 rating */
+	SID_NAME_INVALID = 7, /* invalid account */
+	SID_NAME_UNKNOWN = 8  /* oops. */
+};
+
 /**
  * @brief Security Identifier
  *
@@ -581,7 +595,7 @@ typedef struct {
 #define FLAG_SAM_KICKOFFTIME	0x00000100
 #define FLAG_SAM_CANCHANGETIME	0x00000200
 #define FLAG_SAM_MUSTCHANGETIME	0x00000400
-
+#define FLAG_SAM_PLAINTEXT_PW   0x00000800
 
 #define IS_SAM_UNIX_USER(x) \
 	((pdb_get_init_flag(x) & FLAG_SAM_UID) \
@@ -594,6 +608,8 @@ typedef struct sam_passwd
 	TALLOC_CTX *mem_ctx;
 	
 	void (*free_fn)(struct sam_passwd **);
+
+	struct pdb_methods *methods;
 
 	struct user_data {
 		/* initiailization flags */
@@ -610,6 +626,7 @@ typedef struct sam_passwd
 		char * domain;       /* Windows Domain name */
 		char * nt_username;  /* Windows username string */
 		char * full_name;    /* user's full name string */
+		char * unix_home_dir;     /* UNIX home directory string */
 		char * home_dir;     /* home directory string */
 		char * dir_drive;    /* home directory drive string */
 		char * logon_script; /* logon script string */
@@ -621,11 +638,12 @@ typedef struct sam_passwd
 		
 		uid_t uid;          /* this is a unix uid_t */
 		gid_t gid;          /* this is a unix gid_t */
-		uint32 user_rid;    /* Primary User ID */
-		uint32 group_rid;   /* Primary Group ID */
+		DOM_SID user_sid;    /* Primary User SID */
+		DOM_SID group_sid;   /* Primary Group SID */
 		
 		DATA_BLOB lm_pw; /* .data is Null if no password */
 		DATA_BLOB nt_pw; /* .data is Null if no password */
+		DATA_BLOB plaintext_pw; /* .data is Null if not available */
 		
 		uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
 		uint32 unknown_3; /* 0x00ff ffff */
@@ -637,6 +655,7 @@ typedef struct sam_passwd
 		uint32 unknown_5; /* 0x0002 0000 */
 		uint32 unknown_6; /* 0x0000 04ec */
 	} private;
+
 	/* Lets see if the remaining code can get the hint that you
 	   are meant to use the pdb_...() functions. */
 	
@@ -669,6 +688,7 @@ typedef struct sam_passwd
 #define LOCAL_SET_PASSWORD 0x40
 #define LOCAL_SET_LDAP_ADMIN_PW 0x80
 #define LOCAL_INTERDOM_ACCOUNT 0x100
+#define LOCAL_AM_ROOT 0x200  /* Act as root */
 
 /* key and data in the connections database - used in smbstatus and smbd */
 struct connections_key {
@@ -781,7 +801,8 @@ struct bitmap {
 #define smb_err 11
 #define smb_flg 13
 #define smb_flg2 14
-#define smb_reb 13
+#define smb_pidhigh 16
+#define smb_ss_field 18
 #define smb_tid 28
 #define smb_pid 30
 #define smb_uid 32
@@ -1056,11 +1077,11 @@ struct bitmap {
 #define SYNCHRONIZE_ACCESS   (1L<<20) /* 0x00100000 */
 
 /* Combinations of standard masks. */
-#define STANDARD_RIGHTS_ALL_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS)
-#define STANDARD_RIGHTS_EXECUTE_ACCESS (READ_CONTROL_ACCESS)
-#define STANDARD_RIGHTS_READ_ACCESS (READ_CONTROL_ACCESS)
-#define STANDARD_RIGHTS_REQUIRED_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS)
-#define STANDARD_RIGHTS_WRITE_ACCESS (READ_CONTROL_ACCESS)
+#define STANDARD_RIGHTS_ALL_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS) /* 0x001f0000 */
+#define STANDARD_RIGHTS_EXECUTE_ACCESS (READ_CONTROL_ACCESS) /* 0x00020000 */
+#define STANDARD_RIGHTS_READ_ACCESS (READ_CONTROL_ACCESS) /* 0x00200000 */
+#define STANDARD_RIGHTS_REQUIRED_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS) /* 0x000f0000 */
+#define STANDARD_RIGHTS_WRITE_ACCESS (READ_CONTROL_ACCESS) /* 0x00020000 */
 
 #define SYSTEM_SECURITY_ACCESS (1L<<24)	          /* 0x01000000 */
 #define MAXIMUM_ALLOWED_ACCESS (1L<<25)	          /* 0x02000000 */
@@ -1275,18 +1296,25 @@ char *strdup(char *s);
 #define BROWSER_ELECTION_VERSION	0x010f
 #define BROWSER_CONSTANT	0xaa55
 
+/* Sercurity mode bits. */
+#define NEGOTIATE_SECURITY_USER_LEVEL		0x01
+#define NEGOTIATE_SECURITY_CHALLENGE_RESPONSE	0x02
+#define NEGOTIATE_SECURITY_SIGNATURES_ENABLED	0x04
+#define NEGOTIATE_SECURITY_SIGNATURES_REQUIRED	0x08
+
 /* NT Flags2 bits - cifs6.txt section 3.1.2 */
    
-#define FLAGS2_LONG_PATH_COMPONENTS   0x0001
-#define FLAGS2_EXTENDED_ATTRIBUTES    0x0002
-#define FLAGS2_IS_LONG_NAME           0x0040
-#define FLAGS2_EXTENDED_SECURITY      0x0800 
-#define FLAGS2_DFS_PATHNAMES          0x1000
-#define FLAGS2_READ_PERMIT_NO_EXECUTE 0x2000
-#define FLAGS2_32_BIT_ERROR_CODES     0x4000 
-#define FLAGS2_UNICODE_STRINGS        0x8000
+#define FLAGS2_LONG_PATH_COMPONENTS    0x0001
+#define FLAGS2_EXTENDED_ATTRIBUTES     0x0002
+#define FLAGS2_SMB_SECURITY_SIGNATURES 0x0004
+#define FLAGS2_IS_LONG_NAME            0x0040
+#define FLAGS2_EXTENDED_SECURITY       0x0800 
+#define FLAGS2_DFS_PATHNAMES           0x1000
+#define FLAGS2_READ_PERMIT_NO_EXECUTE  0x2000
+#define FLAGS2_32_BIT_ERROR_CODES      0x4000 
+#define FLAGS2_UNICODE_STRINGS         0x8000
 
-#define FLAGS2_WIN2K_SIGNATURE        0xC852 /* Hack alert ! For now... JRA. */
+#define FLAGS2_WIN2K_SIGNATURE         0xC852 /* Hack alert ! For now... JRA. */
 
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 
@@ -1304,7 +1332,7 @@ char *strdup(char *s);
 #define CAP_W2K_SMBS         0x2000
 #define CAP_LARGE_READX      0x4000
 #define CAP_LARGE_WRITEX     0x8000
-#define CAP_UNIX                0x800000 /* Capabilities for UNIX extensions. Created by HP. */
+#define CAP_UNIX             0x800000 /* Capabilities for UNIX extensions. Created by HP. */
 #define CAP_EXTENDED_SECURITY 0x80000000
 
 /* protocol types. It assumes that higher protocols include lower protocols
@@ -1344,11 +1372,6 @@ enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2
 /* case handling */
 enum case_handling {CASE_LOWER,CASE_UPPER};
 
-#ifdef WITH_SSL
-/* SSL version options */
-enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
-#endif /* WITH_SSL */
-
 /*
  * Global value meaing that the smb_uid field should be
  * ingored (in share level security and protocol level == CORE)
@@ -1356,30 +1379,6 @@ enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
 
 #define UID_FIELD_INVALID 0
 #define VUID_OFFSET 100 /* Amount to bias returned vuid numbers */
-
-/* Defines needed for multi-codepage support. */
-#define MSDOS_LATIN_1_CODEPAGE 850
-#define KANJI_CODEPAGE 932
-#define HANGUL_CODEPAGE 949
-#define BIG5_CODEPAGE 950
-#define SIMPLIFIED_CHINESE_CODEPAGE 936
-
-#ifdef KANJI
-/* 
- * Default client code page - Japanese 
- */
-#define DEFAULT_CLIENT_CODE_PAGE KANJI_CODEPAGE
-#else /* KANJI */
-/* 
- * Default client code page - 850 - Western European 
- */
-#define DEFAULT_CLIENT_CODE_PAGE MSDOS_LATIN_1_CODEPAGE
-#endif /* KANJI */
-
-/* Global val set if multibyte codepage. */
-extern int global_is_multibyte_codepage;
-
-#define get_character_len(x) (global_is_multibyte_codepage ? skip_multibyte_char((x)) : 0)
 
 /* 
  * Size of buffer to use when moving files across filesystems. 
@@ -1581,6 +1580,8 @@ typedef struct user_struct
 
 	userdom_struct user;
 	char *homedir;
+	char *unix_homedir;
+	char *logon_script;
 	
 	BOOL guest;
 
@@ -1594,6 +1595,9 @@ typedef struct user_struct
 	uint8 session_key[16];
 
 	int session_id; /* used by utmp and pam session code */
+	
+	int homes_snum;
+
 } user_struct;
 
 

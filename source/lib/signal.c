@@ -96,10 +96,11 @@ void BlockSignals(BOOL block,int signum)
  2) The signal should be blocked during handler execution.
 ********************************************************************/
 
-void CatchSignal(int signum,void (*handler)(int ))
+void (*CatchSignal(int signum,void (*handler)(int )))(int)
 {
 #ifdef HAVE_SIGACTION
 	struct sigaction act;
+	struct sigaction oldact;
 
 	ZERO_STRUCT(act);
 
@@ -113,10 +114,11 @@ void CatchSignal(int signum,void (*handler)(int ))
 #endif
 	sigemptyset(&act.sa_mask);
 	sigaddset(&act.sa_mask,signum);
-	sigaction(signum,&act,NULL);
+	sigaction(signum,&act,&oldact);
+	return oldact.sa_handler;
 #else /* !HAVE_SIGACTION */
 	/* FIXME: need to handle sigvec and systems with broken signal() */
-	signal(signum, handler);
+	return signal(signum, handler);
 #endif
 }
 

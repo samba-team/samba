@@ -19,7 +19,7 @@
 
     passdb backend = smbpasswd_nua
 
-    non unix account range = 10000-20000
+    non unix account range = 10000-200000
 
 [test]
     path = PREFIX/testdir

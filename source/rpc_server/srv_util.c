@@ -38,6 +38,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 /*
  * A list of the rids of well known BUILTIN and Domain users
  * and groups.
@@ -93,6 +96,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	uint32 *rids=NULL, *new_rids=NULL;
 	gid_t winbind_gid_low, winbind_gid_high;
 	BOOL ret;
+	BOOL winbind_groups_exist;
 
 	/*
 	 * this code is far from perfect.
@@ -108,17 +112,15 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	*prids=NULL;
 	*numgroups=0;
 
-	lp_winbind_gid(&winbind_gid_low, &winbind_gid_high);
+	winbind_groups_exist = lp_winbind_gid(&winbind_gid_low, &winbind_gid_high);
 
 
 	DEBUG(10,("get_alias_user_groups: looking if SID %s is a member of groups in the SID domain %s\n", 
 	          sid_to_string(str_qsid, q_sid), sid_to_string(str_domsid, sid)));
 
-	sid_peek_rid(q_sid, &rid);
-
 	pdb_init_sam(&sam_pass);
 	become_root();
-	ret = pdb_getsampwrid(sam_pass, rid);
+	ret = pdb_getsampwsid(sam_pass, q_sid);
 	unbecome_root();
 	if (ret == False) {
 		pdb_free_sam(&sam_pass);
@@ -157,7 +159,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 		}
 
 		/* Don't return winbind groups as they are not local! */
-		if ((grp->gr_gid >= winbind_gid_low) && (grp->gr_gid <= winbind_gid_high)) {
+		if (winbind_groups_exist && (grp->gr_gid >= winbind_gid_low) && (grp->gr_gid <= winbind_gid_high)) {
 			DEBUG(10,("get_alias_user_groups: not returing %s, not local.\n", map.nt_name));
 			continue;
 		}
@@ -226,7 +228,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	}
 
 	/* Don't return winbind groups as they are not local! */
-	if ((gid >= winbind_gid_low) && (gid <= winbind_gid_high)) {
+	if (winbind_groups_exist && (gid >= winbind_gid_low) && (gid <= winbind_gid_high)) {
 		DEBUG(10,("get_alias_user_groups: not returing %s, not local.\n", map.nt_name ));
 		goto done;
 	}
@@ -404,6 +406,8 @@ NTSTATUS local_lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
 	return NT_STATUS_NONE_MAPPED;
 }
 
+
+#if 0 /*Nobody uses this function just now*/
 /*******************************************************************
  Look up a local user rid and return a name and type.
  ********************************************************************/
@@ -447,6 +451,8 @@ NTSTATUS local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 	pdb_free_sam(&sampwd);
 	return NT_STATUS_NONE_MAPPED;
 }
+
+#endif
 
 /*******************************************************************
  Look up a local (domain) group name and return a rid

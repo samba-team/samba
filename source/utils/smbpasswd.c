@@ -30,20 +30,13 @@ extern char *optarg;
 extern int optind;
 
 /* forced running in root-mode */
-static BOOL local_mode;
 static BOOL got_pass = False, got_username = False;
-static int local_flags = 0;
 static BOOL stdin_passwd_get = False;
 static fstring user_name, user_password;
-static char *new_domain = NULL;
 static char *new_passwd = NULL;
-static char *old_passwd = NULL;
 static char *remote_machine = NULL;
-static pstring configfile;
 
-#ifdef WITH_LDAP_SAM
 static fstring ldap_secret;
-#endif
 
 /*********************************************************
  Print command usage on stderr and die.
@@ -71,9 +64,7 @@ static void usage(void)
 	printf("  -i                   interdomain trust account\n");
 	printf("  -m                   machine trust account\n");
 	printf("  -n                   set no password\n");
-#ifdef WITH_LDAP_SAM
 	printf("  -w                   ldap admin password\n");
-#endif
 	printf("  -x                   delete user\n");
 	printf("  -R ORDER             name resolve order\n");
 
@@ -88,62 +79,55 @@ static void set_line_buffering(FILE *f)
 /*******************************************************************
  Process command line options
  ******************************************************************/
-static void process_options(int argc, char **argv, BOOL amroot)
+static int process_options(int argc, char **argv, int local_flags)
 {
 	int ch;
+	pstring configfile;
+	pstrcpy(configfile, dyn_CONFIGFILE);
 
-	if (amroot)
-		local_flags = LOCAL_SET_PASSWORD;
+	local_flags |= LOCAL_SET_PASSWORD;
 
 	ZERO_STRUCT(user_name);
 	ZERO_STRUCT(user_password);
 
 	user_name[0] = '\0';
 
-	while ((ch = getopt(argc, argv, "c:axdehmnj:r:sw:R:D:U:L")) != EOF) {
+	while ((ch = getopt(argc, argv, "c:axdehmnjr:sw:R:D:U:L")) != EOF) {
 		switch(ch) {
 		case 'L':
-			local_mode = amroot = True;
-			local_flags = LOCAL_SET_PASSWORD;
+			local_flags |= LOCAL_AM_ROOT;
 			break;
 		case 'c':
 			pstrcpy(configfile,optarg);
 			break;
 		case 'a':
-			if (!amroot) goto bad_args;
 			local_flags |= LOCAL_ADD_USER;
 			break;
 		case 'x':
-			if (!amroot) goto bad_args;
 			local_flags |= LOCAL_DELETE_USER;
 			local_flags &= ~LOCAL_SET_PASSWORD;
 			break;
 		case 'd':
-			if (!amroot) goto bad_args;
 			local_flags |= LOCAL_DISABLE_USER;
 			local_flags &= ~LOCAL_SET_PASSWORD;
 			break;
 		case 'e':
-			if (!amroot) goto bad_args;
 			local_flags |= LOCAL_ENABLE_USER;
 			local_flags &= ~LOCAL_SET_PASSWORD;
 			break;
 		case 'm':
-			if (!amroot) goto bad_args;
 			local_flags |= LOCAL_TRUST_ACCOUNT;
 			break;
 		case 'i':
-			if (!amroot) goto bad_args;
 			local_flags |= LOCAL_INTERDOM_ACCOUNT;
 			break;
 		case 'j':
-			if (!amroot) goto bad_args;
 			d_printf("See 'net rpc join' for this functionality\n");
 			exit(1);
 			break;
 		case 'n':
-			if (!amroot) goto bad_args;
 			local_flags |= LOCAL_SET_NO_PASSWORD;
+			local_flags &= ~LOCAL_SET_PASSWORD;
 			new_passwd = smb_xstrdup("NO PASSWORD");
 			break;
 		case 'r':
@@ -156,17 +140,10 @@ static void process_options(int argc, char **argv, BOOL amroot)
 			stdin_passwd_get = True;
 			break;
 		case 'w':
-			if (!amroot) goto bad_args;
-#ifdef WITH_LDAP_SAM
 			local_flags |= LOCAL_SET_LDAP_ADMIN_PW;
 			fstrcpy(ldap_secret, optarg);
 			break;
-#else
-			printf("-w not available unless configured --with-ldap\n");
-			goto bad_args;
-#endif			
 		case 'R':
-			if (!amroot) goto bad_args;
 			lp_set_name_resolve_order(optarg);
 			break;
 		case 'D':
@@ -190,7 +167,6 @@ static void process_options(int argc, char **argv, BOOL amroot)
 		}
 		case 'h':
 		default:
-bad_args:
 			usage();
 		}
 	}
@@ -204,17 +180,21 @@ bad_args:
 			fstrcpy(user_name, "");
 		break;
 	case 1:
-		if (!amroot) {
+		if (!(local_flags & LOCAL_AM_ROOT)) {
 			new_passwd = argv[0];
-			break;
+		} else {
+			if (got_username) {
+				usage();
+			} else {
+				fstrcpy(user_name, argv[0]);
+			}
 		}
-		if (got_username)
-			usage();
-		fstrcpy(user_name, argv[0]);
 		break;
 	case 2:
-		if (!amroot || got_username || got_pass)
+		if (!(local_flags & LOCAL_AM_ROOT) || got_username || got_pass) {
 			usage();
+		}
+
 		fstrcpy(user_name, argv[0]);
 		new_passwd = smb_xstrdup(argv[1]);
 		break;
@@ -222,6 +202,13 @@ bad_args:
 		usage();
 	}
 
+	if (!lp_load(configfile,True,False,False)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
+			dyn_CONFIGFILE);
+		exit(1);
+	}
+
+	return local_flags;
 }
 
 /*************************************************************
@@ -329,7 +316,6 @@ static BOOL password_change(const char *remote_machine, char *user_name,
 	return ret;
 }
 
-#ifdef WITH_LDAP_SAM
 /*******************************************************************
  Store the LDAP admin password in secrets.tdb
  ******************************************************************/
@@ -343,19 +329,18 @@ static BOOL store_ldap_admin_pw (char* pw)
 	
 	return secrets_store_ldap_pw(lp_ldap_admin_dn(), pw);
 }
-#endif
 
 
 /*************************************************************
  Handle password changing for root.
 *************************************************************/
 
-static int process_root(void)
+static int process_root(int local_flags)
 {
 	struct passwd  *pwd;
 	int result = 0;
+	char *old_passwd = NULL;
 
-#ifdef WITH_LDAP_SAM
 	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW)
 	{
 		printf("Setting stored password for \"%s\" in secrets.tdb\n", 
@@ -364,7 +349,6 @@ static int process_root(void)
 			DEBUG(0,("ERROR: Failed to store the ldap admin password!\n"));
 		goto done;
 	}
-#endif
 
 	/*
 	 * Ensure both add/delete user are not set
@@ -383,8 +367,9 @@ static int process_root(void)
 		load_interfaces();
 	}
 
-	if (!user_name[0] && (pwd = sys_getpwuid(geteuid()))) {
+	if (!user_name[0] && (pwd = getpwuid_alloc(geteuid()))) {
 		fstrcpy(user_name, pwd->pw_name);
+		passwd_free(&pwd);
 	} 
 
 	if (!user_name[0]) {
@@ -508,15 +493,22 @@ static int process_root(void)
  Handle password changing for non-root.
 *************************************************************/
 
-static int process_nonroot(void)
+static int process_nonroot(int local_flags)
 {
 	struct passwd  *pwd = NULL;
 	int result = 0;
+	char *old_passwd = NULL;
+
+	if (local_flags & ~(LOCAL_AM_ROOT | LOCAL_SET_PASSWORD)) {
+		/* Extra flags that we can't honor non-root */
+		usage();
+	}
 
 	if (!user_name[0]) {
-		pwd = sys_getpwuid(getuid());
+		pwd = getpwuid_alloc(getuid());
 		if (pwd) {
 			fstrcpy(user_name,pwd->pw_name);
+			passwd_free(&pwd);
 		} else {
 			fprintf(stderr, "smbpasswd: you don't exist - go away\n");
 			exit(1);
@@ -570,25 +562,22 @@ static int process_nonroot(void)
 **********************************************************/
 int main(int argc, char **argv)
 {	
-	BOOL amroot = getuid() == 0;
-
-	pstrcpy(configfile, dyn_CONFIGFILE);
+	int local_flags = 0;
+	
 	AllowDebugChange = False;
 
 #if defined(HAVE_SET_AUTH_PARAMETERS)
 	set_auth_parameters(argc, argv);
 #endif /* HAVE_SET_AUTH_PARAMETERS */
 
-	process_options(argc, argv, amroot);
+	if (getuid() == 0) {
+		local_flags = LOCAL_AM_ROOT;
+	}
+
+	local_flags = process_options(argc, argv, local_flags);
 
 	setup_logging("smbpasswd", True);
 	
-	if (!lp_load(configfile,True,False,False)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
-			dyn_CONFIGFILE);
-		exit(1);
-	}
-
 	/*
 	 * Set the machine NETBIOS name if not already
 	 * set from the config file. 
@@ -608,10 +597,10 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if (local_mode || amroot) {
+	if (local_flags & LOCAL_AM_ROOT) {
 		secrets_init();
-		return process_root();
+		return process_root(local_flags);
 	} 
 
-	return process_nonroot();
+	return process_nonroot(local_flags);
 }

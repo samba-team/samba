@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    new hash based name mangling implementation
    Copyright (C) Andrew Tridgell 2002
+   Copyright (C) Simo Sorce 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +31,10 @@
   for simplicity, we only allow ascii characters in 8.3 names
  */
 
+ /* hash alghorithm changed to FNV1 by idra@samba.org (Simo Sorce).
+  * see http://www.isthe.com/chongo/tech/comp/fnv/index.html for a
+  * discussion on Fowler / Noll / Vo (FNV) Hash by one of it's authors
+  */
 
 /*
   ===============================================================================
@@ -73,6 +78,10 @@
 #define MANGLE_CACHE_SIZE 4096
 #endif
 
+#define FNV1_PRIME 0x01000193
+/*the following number is a fnv1 of the string: idra@samba.org 2002 */
+#define FNV1_INIT  0xa6b93095
+
 /* these tables are used to provide fast tests for characters */
 static unsigned char char_flags[256];
 
@@ -88,13 +97,14 @@ static char **prefix_cache;
 static u32 *prefix_cache_hashes;
 
 /* these are the characters we use in the 8.3 hash. Must be 36 chars long */
-const char *basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static const char *basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 static unsigned char base_reverse[256];
 #define base_forward(v) basechars[v]
 
 /* the list of reserved dos names - all of these are illegal */
-const char *reserved_names[] = { "AUX", "LOCK$", "CON", "COM1", "COM2", "COM3", "COM4",
-				 "LPT1", "LPT2", "LPT3", "NUL", "PRN", NULL };
+static const char *reserved_names[] = 
+{ "AUX", "LOCK$", "CON", "COM1", "COM2", "COM3", "COM4",
+  "LPT1", "LPT2", "LPT3", "NUL", "PRN", NULL };
 
 /* 
    hash a string of the specified length. The string does not need to be
@@ -120,13 +130,14 @@ static u32 mangle_hash(const char *key, unsigned length)
 	length = strlen(str);
 
 	/* Set the initial value from the key size. */
-	for (value = 0x238F13AF * length, i=0; i < length; i++) {
-		value = (value + (((unsigned char)str[i]) << (i*5 % 24)));
-	}
+	for (value = FNV1_INIT, i=0; i < length; i++) {
+                value *= (u32)FNV1_PRIME;
+                value ^= (u32)(str[i]);
+        }
 
 	/* note that we force it to a 31 bit hash, to keep within the limits
 	   of the 36^6 mangle space */
-	return (1103515243 * value + 12345) & ~0x80000000;  
+	return value & ~0x80000000;  
 }
 
 /* 
@@ -184,12 +195,12 @@ static const char *cache_lookup(u32 hash)
 
    In this algorithm, mangled names use only pure ascii characters (no
    multi-byte) so we can avoid doing a UCS2 conversion 
-*/
-static BOOL is_mangled(const char *name)
+ */
+static BOOL is_mangled_component(const char *name)
 {
 	int len, i;
 
-	M_DEBUG(0,("is_mangled %s ?\n", name));
+	M_DEBUG(0,("is_mangled_component %s ?\n", name));
 
 	/* the best distinguishing characteristic is the ~ */
 	if (name[6] != '~') return False;
@@ -229,6 +240,39 @@ static BOOL is_mangled(const char *name)
 }
 
 
+
+/* 
+   determine if a string is possibly in a mangled format, ignoring
+   case 
+
+   In this algorithm, mangled names use only pure ascii characters (no
+   multi-byte) so we can avoid doing a UCS2 conversion 
+
+   NOTE! This interface must be able to handle a path with unix
+   directory separators. It should return true if any component is
+   mangled
+ */
+static BOOL is_mangled(const char *name)
+{
+	const char *p;
+	const char *s;
+
+	M_DEBUG(0,("is_mangled %s ?\n", name));
+
+	for (s=name; (p=strchr(s, '/')); s=p+1) {
+		char *component = strndup(s, PTR_DIFF(p, s));
+		if (is_mangled_component(component)) {
+			free(component);
+			return True;
+		}
+		free(component);
+	}
+	
+	/* and the last part ... */
+	return is_mangled_component(s);
+}
+
+
 /* 
    see if a filename is an allowable 8.3 name.
 
@@ -236,7 +280,7 @@ static BOOL is_mangled(const char *name)
    simplifies things greatly (it means that we know the string won't
    get larger when converted from UNIX to DOS formats)
 */
-static BOOL is_8_3(const char *name, BOOL check_case)
+static BOOL is_8_3(const char *name, BOOL check_case, BOOL allow_wildcards)
 {
 	int len, i;
 	char *dot_p;
@@ -286,8 +330,8 @@ static BOOL is_8_3(const char *name, BOOL check_case)
 
 	/* the length are all OK. Now check to see if the characters themselves are OK */
 	for (i=0; name[i]; i++) {
-		/* note that we allow wildcard petterns! */
-		if (!FLAG_CHECK(name[i], FLAG_ASCII|FLAG_WILDCARD) && name[i] != '.') {
+		/* note that we may allow wildcard petterns! */
+		if (!FLAG_CHECK(name[i], FLAG_ASCII|(allow_wildcards ? FLAG_WILDCARD : 0)) && name[i] != '.') {
 			return False;
 		}
 	}
@@ -343,8 +387,12 @@ static BOOL check_cache(char *name)
 	}
 
 	/* we found it - construct the full name */
-	strncpy(extension, name+9, 3);
-	extension[3] = 0;
+	if (name[8] == '.') {
+		strncpy(extension, name+9, 3);
+		extension[3] = 0;
+	} else {
+		extension[0] = 0;
+	}
 
 	if (extension[0]) {
 		M_DEBUG(0,("check_cache: %s -> %s.%s\n", name, prefix, extension));
@@ -383,15 +431,36 @@ static BOOL is_reserved_name(const char *name)
 }
 
 /*
-  see if a filename is a legal long filename
+ See if a filename is a legal long filename.
+ A filename ending in a '.' is not legal unless it's "." or "..". JRA.
 */
+
 static BOOL is_legal_name(const char *name)
 {
+	const char *dot_pos = NULL;
+	BOOL alldots = True;
+	size_t numdots = 0;
+
 	while (*name) {
 		if (FLAG_CHECK(name[0], FLAG_ILLEGAL)) {
 			return False;
 		}
+		if (name[0] == '.') {
+			dot_pos = name;
+			numdots++;
+		} else {
+			alldots = False;
+		}
 		name++;
+	}
+
+	if (dot_pos) {
+		if (alldots && (numdots == 1 || numdots == 2))
+			return True; /* . or .. is a valid name */
+
+		/* A valid long name cannot end in '.' */
+		if (dot_pos[1] == '\0')
+			return False;
 	}
 
 	return True;
@@ -408,7 +477,7 @@ static BOOL is_legal_name(const char *name)
 
   the name parameter must be able to hold 13 bytes
 */
-static BOOL name_map(char *name, BOOL need83, BOOL cache83)
+static void name_map(char *name, BOOL need83, BOOL cache83)
 {
 	char *dot_p;
 	char lead_char;
@@ -422,14 +491,14 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 	if (!is_reserved_name(name)) {
 		/* if the name is already a valid 8.3 name then we don't need to 
 		   do anything */
-		if (is_8_3(name, False)) {
-			return True;
+		if (is_8_3(name, False, False)) {
+			return;
 		}
 
 		/* if the caller doesn't strictly need 8.3 then just check for illegal 
 		   filenames */
 		if (!need83 && is_legal_name(name)) {
-			return True;
+			return;
 		}
 	}
 
@@ -511,7 +580,6 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 	fstrcpy(name, new_name);
 
 	/* all done, we've managed to mangle it */
-	return True;
 }
 
 

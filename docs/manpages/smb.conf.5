@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "16 April 2002" "" ""
+.TH "SMB.CONF" "5" "08 May 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -30,7 +30,7 @@ line represents either a comment, a section name or a parameter.
 Section and parameter names are not case sensitive.
 .PP
 Only the first equals sign in a parameter is significant. 
-Whitespace before or after the first equals sign is discarded. 
+Whitespace before or after the first equals sign is discarded.
 Leading, trailing and internal whitespace in section and parameter 
 names is irrelevant. Leading and trailing whitespace in a parameter 
 value is discarded. Internal whitespace within a parameter value 
@@ -70,7 +70,7 @@ client as an extension of their native file systems) or
 printable services (used by the client to access print services 
 on the host running the server).
 .PP
-Sections may be designated \fBguest\fR services, 
+Sections may be designated \fBguest\fR services,
 in which case no password is required to access them. A specified 
 UNIX \fBguest account\fR is used to define access
 privileges in this case.
@@ -384,7 +384,7 @@ protocol negotiation. It can be one of CORE, COREPLUS,
 LANMAN1, LANMAN2 or NT1.
 .TP
 \fB%d\fR
-The process id of the current server 
+The process id of the current server
 process.
 .TP
 \fB%a\fR
@@ -445,7 +445,7 @@ case that the client passes, or if they are forced to be the
 "default" case. Default \fByes\fR.
 .TP
 \fBshort preserve case = yes/no\fR
-controls if new files which conform to 8.3 syntax, 
+controls if new files which conform to 8.3 syntax,
 that is all in upper case and of suitable length, are created 
 upper case, or if they are forced to be the "default" 
 case. This option can be use with "preserve case = yes" 
@@ -463,8 +463,9 @@ if it will allow a connection to a specified service. If all the
 steps fail, then the connection request is rejected. However, if one of the 
 steps succeeds, then the following steps are not checked.
 .PP
-If the service is marked "guest only = yes" then
-steps 1 to 5 are skipped.
+If the service is marked "guest only = yes" and the
+server is running with share-level security ("security = share")
+then steps 1 to 5 are skipped.
 .IP 1. 
 If the client has passed a username/password 
 pair and that username/password pair is validated by the UNIX 
@@ -519,6 +520,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIadd machine script\fR
+.TP 0.2i
+\(bu
+\fIalgorithmic rid base\fR
 .TP 0.2i
 \(bu
 \fIallow trusted domains\fR
@@ -683,6 +687,15 @@ each parameter for details. Note that some are synonyms.
 \fIlock directory\fR
 .TP 0.2i
 \(bu
+\fIlock spin count\fR
+.TP 0.2i
+\(bu
+\fIlock spin time\fR
+.TP 0.2i
+\(bu
+\fIpid directory\fR
+.TP 0.2i
+\(bu
 \fIlog file\fR
 .TP 0.2i
 \(bu
@@ -774,6 +787,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fInt pipe support\fR
+.TP 0.2i
+\(bu
+\fInt status support\fR
 .TP 0.2i
 \(bu
 \fInull passwords\fR
@@ -1080,6 +1096,9 @@ each parameter for details. Note that some are synonyms.
 \fIcreate mode\fR
 .TP 0.2i
 \(bu
+\fIcsc policy\fR
+.TP 0.2i
+\(bu
 \fIdefault case\fR
 .TP 0.2i
 \(bu
@@ -1177,6 +1196,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIinclude\fR
+.TP 0.2i
+\(bu
+\fIinherit acls\fR
 .TP 0.2i
 \(bu
 \fIinherit permissions\fR
@@ -1333,6 +1355,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIset directory\fR
+.TP 0.2i
+\(bu
+\fIshare modes\fR
 .TP 0.2i
 \(bu
 \fIshort preserve case\fR
@@ -1596,6 +1621,25 @@ Example: \fBadmin users = jason\fR
 .TP
 \fBallow hosts (S)\fR
 Synonym for  \fIhosts allow\fR.
+.TP
+\fBalgorithmic rid base (G)\fR
+This determines how Samba will use its
+algorithmic mapping from uids/gid to the RIDs needed to construct
+NT Security Identifiers.
+
+Setting this option to a larger value could be useful to sites
+transitioning from WinNT and Win2k, as existing user and 
+group rids would otherwise clash with sytem users etc. 
+
+All UIDs and GIDs must be able to be resolved into SIDs for 
+the correct operation of ACLs on the server. As such the algorithmic
+mapping can't be 'turned off', but pushing it 'out of the way' should
+resolve the issues. Users and groups can then be assigned 'low' RIDs
+in arbitary-rid supporting backends. 
+
+Default: \fBalgorithmic rid base = 1000\fR
+
+Example: \fBalgorithmic rid base = 100000\fR
 .TP
 \fBallow trusted domains (G)\fR
 This option only takes effect when the \fIsecurity\fR option is set to 
@@ -1912,6 +1956,23 @@ Example: \fBcreate mask = 0775\fR
 .TP
 \fBcreate mode (S)\fR
 This is a synonym for \fI create mask\fR.
+.TP
+\fBcsc policy (S)\fR
+This stands for \fBclient-side caching 
+policy\fR, and specifies how clients capable of offline
+caching will cache the files in the share. The valid values
+are: manual, documents, programs, disable.
+
+These values correspond to those used on Windows
+servers.
+
+For example, shares containing roaming profiles can have
+offline caching disabled using \fBcsc policy = disable
+\fR\&.
+
+Default: \fBcsc policy = manual\fR
+
+Example: \fBcsc policy = programs\fR
 .TP
 \fBdeadtime (G)\fR
 The value of the parameter (a decimal integer) 
@@ -3054,6 +3115,17 @@ Default: \fBno file included\fR
 
 Example: \fBinclude = /usr/local/samba/lib/admin_smb.conf
 \fR.TP
+\fBinherit acls (S)\fR
+This parameter can be used to ensure
+that if default acls exist on parent directories,
+they are always honored when creating a subdirectory.
+The default behavior is to use the mode specified
+when creating the directory. Enabling this option
+sets the mode to 0777, thus guaranteeing that 
+default directory acls are propagated.
+
+Default: \fBinherit acls = no\fR
+.TP
 \fBinherit permissions (S)\fR
 The permissions on new files and directories 
 are normally governed by \fI create mask\fR,  \fIdirectory mask\fR, \fIforce create mode\fR
@@ -3421,6 +3493,26 @@ Default: \fBlock directory = ${prefix}/var/locks\fR
 
 Example: \fBlock directory = /var/run/samba/locks\fR
 .TP
+\fBlock spin count (G)\fR
+This parameter controls the number of times
+that smbd should attempt to gain a byte range lock on the 
+behalf of a client request. Experiments have shown that
+Windows 2k servers do not reply with a failure if the lock
+could not be immediately granted, but try a few more times
+in case the lock could later be aquired. This behavior
+is used to support PC database formats such as MS Access
+and FoxPro.
+
+Default: \fBlock spin count = 2\fR
+.TP
+\fBlock spin time (G)\fR
+The time in microseconds that smbd should 
+pause before attempting to gain a failed lock. See
+\fIlock spin 
+count\fR for more details.
+
+Default: \fBlock spin time = 10\fR
+.TP
 \fBlocking (S)\fR
 This controls whether or not locking will be 
 performed by the server in response to lock requests from the 
@@ -3664,8 +3756,8 @@ This command should be a program or script which
 takes a printer name as its only parameter and outputs printer 
 status information.
 
-Currently eight styles of printer status information 
-are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX and SOFTQ. 
+Currently nine styles of printer status information 
+are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX, CUPS, and SOFTQ. 
 This covers most UNIX systems. You control which type is expected 
 using the \fIprinting =\fR option.
 
@@ -3681,7 +3773,10 @@ command.
 
 Note that it is good practice to include the absolute path 
 in the \fIlpq command\fR as the \fB$PATH
-\fRmay not be available to the server.
+\fRmay not be available to the server. When compiled with
+the CUPS libraries, no \fIlpq command\fR is
+needed because smbd will make a library call to obtain the 
+print queue listing.
 
 See also the \fIprinting
 \fRparameter.
@@ -4469,6 +4564,18 @@ alone.
 
 Default: \fBnt pipe support = yes\fR
 .TP
+\fBnt status support (G)\fR
+This boolean parameter controls whether smbd(8)will negotiate NT specific status
+support with Windows NT/2k/XP clients. This is a developer
+debugging option and should be left alone.
+If this option is set to no then Samba offers
+exactly the same DOS error codes that versions prior to Samba 2.2.3
+reported.
+
+You should not need to ever disable this parameter.
+
+Default: \fBnt status support = yes\fR
+.TP
 \fBnull passwords (G)\fR
 Allow or disallow client access to accounts 
 that have null passwords. 
@@ -4629,10 +4736,10 @@ Default: \fBpanic action = <empty string>\fR
 Example: \fBpanic action = "/bin/sleep 90000"\fR
 .TP
 \fBpassdb backend (G)\fR
-This option allows the administrator to chose what
-backend in which to store passwords. This allows (for example) both 
-smbpasswd and tdbsam to be used without a recompile. Only one can
-be used at a time however, and experimental backends must still be selected
+This option allows the administrator to chose which backends to retrieve and store passwords with. This allows (for example) both 
+smbpasswd and tdbsam to be used without a recompile. 
+Multiple backends can be specified, seperated by spaces. The backends will be searched in the order they are specified. New users are always added to the first backend specified.
+Experimental backends must still be selected
 (eg --with-tdbsam) at configure time.
 
 This paramater is in two parts, the backend's name, and a 'location'
@@ -4688,11 +4795,11 @@ for its own processing
 
 Default: \fBpassdb backend = smbpasswd\fR
 
-Example: \fBpassdb backend = tdbsam:/etc/samba/private/passdb.tdb\fR
+Example: \fBpassdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd\fR
 
 Example: \fBpassdb backend = ldapsam_nua:ldaps://ldap.example.com\fR
 
-Example: \fBpassdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args\fR
+Example: \fBpassdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args tdbsam:/etc/samba/private/passdb.tdb\fR
 .TP
 \fBpasswd chat (G)\fR
 This string controls the \fB"chat"\fR 
@@ -4948,6 +5055,14 @@ Default: \fBnone\fR
 
 Example: \fBpath = /home/fred\fR
 .TP
+\fBpid directory (G)\fR
+This option specifies the directory where pid 
+files will be placed. 
+
+Default: \fBpid directory = ${prefix}/var/locks\fR
+
+Example: \fBpid directory = /var/run/\fR
+.TP
 \fBposix locking (S)\fR
 The \fBsmbd(8)\fR
 daemon maintains an database of file locks obtained by SMB clients.
@@ -5077,13 +5192,22 @@ spool file when it has been processed, otherwise you will need to
 manually remove old spool files.
 
 The print command is simply a text string. It will be used 
-verbatim, with two exceptions: All occurrences of \fI%s
-\fRand \fI%f\fR will be replaced by the 
-appropriate spool file name, and all occurrences of \fI%p
-\fRwill be replaced by the appropriate printer name. The 
-spool file name is generated automatically by the server. The 
-\fI%J\fR macro can be used to access the job 
+verbatim after macro substitutions have been made:
+
+s, %p - the path to the spool
+file name
+
+%p - the appropriate printer 
+name
+
+%J - the job 
 name as transmitted by the client.
+
+%c - The number of printed pages
+of the spooled job (if known).
+
+%z - the size of the spooled
+print job (in bytes)
 
 The print command \fBMUST\fR contain at least 
 one occurrence of \fI%s\fR or \fI%f
@@ -5129,6 +5253,16 @@ For \fBprinting = SOFTQ :\fR
 
 \fBprint command = lp -d%p -s %s; rm %s\fR
 
+For printing = CUPS : If SAMBA is compiled against
+libcups, then printcap = cups 
+uses the CUPS API to
+submit jobs, etc. Otherwise it maps to the System V
+commands with the -oraw option for printing, i.e. it
+uses \fBlp -c -d%p -oraw; rm %s\fR. 
+With \fBprinting = cups\fR,
+and if SAMBA is compiled against libcups, any manually 
+set print command will be ignored.
+
 Example: \fBprint command = /usr/local/samba/bin/myprintscript
 %p %s\fR
 .TP
@@ -5155,6 +5289,13 @@ Synonym for \fI printcap name\fR.
 This parameter may be used to override the 
 compiled-in default printcap name used by the server (usually \fI /etc/printcap\fR). See the discussion of the [printers] section above for reasons 
 why you might want to do this.
+
+To use the CUPS printing interface set \fBprintcap name = cups
+\fR\&. This should be supplemented by an addtional setting 
+printing = cups in the [global] 
+section. \fBprintcap name = cups\fR will use the 
+"dummy" printcap created by CUPS, as specified in your CUPS
+configuration file.
 
 On System V systems that use \fBlpstat\fR to 
 list available printers you can use \fBprintcap name = lpstat
@@ -5885,6 +6026,29 @@ in the Digital Pathworks client. See the Pathworks documentation
 for details.
 
 Default: \fBset directory = no\fR
+.TP
+\fBshare modes (S)\fR
+This enables or disables the honoring of 
+the \fIshare modes\fR during a file open. These 
+modes are used by clients to gain exclusive read or write access 
+to a file.
+
+These open modes are not directly supported by UNIX, so
+they are simulated using shared memory, or lock files if your 
+UNIX doesn't support shared memory (almost all do).
+
+The share modes that are enabled by this option are 
+DENY_DOS, DENY_ALL,
+DENY_READ, DENY_WRITE,
+DENY_NONE and DENY_FCB.
+
+This option gives full share compatibility and enabled 
+by default.
+
+You should \fBNEVER\fR turn this parameter 
+off as many Windows applications will break if you do so.
+
+Default: \fBshare modes = yes\fR
 .TP
 \fBshort preserve case (S)\fR
 This boolean parameter controls if new files 
@@ -6956,7 +7120,7 @@ that Samba has to do in order to perform the link checks.
 
 Default: \fBwide links = yes\fR
 .TP
-\fBwinbind cache time\fR
+\fBwinbind cache time (G)\fR
 This parameter specifies the number of seconds the
 winbindd(8)daemon will cache 
 user and group information before querying a Windows NT server 
@@ -6964,7 +7128,7 @@ again.
 
 Default: \fBwinbind cache type = 15\fR
 .TP
-\fBwinbind enum users\fR
+\fBwinbind enum users (G)\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of users through the
@@ -6983,7 +7147,7 @@ usernames.
 
 Default: \fBwinbind enum users = yes \fR
 .TP
-\fBwinbind enum groups\fR
+\fBwinbind enum groups (G)\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of groups through the
@@ -6999,7 +7163,7 @@ enumeration may cause some programs to behave oddly.
 
 Default: \fBwinbind enum groups = yes \fR
 .TP
-\fBwinbind gid\fR
+\fBwinbind gid (G)\fR
 The winbind gid parameter specifies the range of group 
 ids that are allocated by the  winbindd(8)daemon. This range of group ids should have no 
 existing local or NIS groups within it as strange conflicts can 
@@ -7009,7 +7173,7 @@ Default: \fBwinbind gid = <empty string>
 \fR
 Example: \fBwinbind gid = 10000-20000\fR
 .TP
-\fBwinbind separator\fR
+\fBwinbind separator (G)\fR
 This parameter allows an admin to define the character 
 used when listing a username of the form of \fIDOMAIN
 \fR\\\fIuser\fR. This parameter 
@@ -7020,11 +7184,11 @@ Please note that setting this parameter to + causes problems
 with group membership at least on glibc systems, as the character +
 is used as a special character for NIS in /etc/group.
 
-Example: \fBwinbind separator = \\\\\fR
+Default: \fBwinbind separator = '\\'\fR
 
-Example: \fBwinbind separator = /\fR
+Example: \fBwinbind separator = +\fR
 .TP
-\fBwinbind uid\fR
+\fBwinbind uid (G)\fR
 The winbind gid parameter specifies the range of group 
 ids that are allocated by the  winbindd(8)daemon. This range of ids should have no 
 existing local or NIS users within it as strange conflicts can 

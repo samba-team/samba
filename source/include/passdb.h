@@ -27,9 +27,24 @@
  Functions to be implemented by the new (v2) passdb API 
 ****************************************************************/
 
+/*
+ * This next constant specifies the version number of the PASSDB interface
+ * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
+ */
+
+#define PASSDB_INTERFACE_VERSION 2
+
+/* use this inside a passdb module */
+#define PDB_MODULE_VERSIONING_MAGIC \
+int pdb_version(void)\
+{\
+	return PASSDB_INTERFACE_VERSION;\
+}
+
 typedef struct pdb_context 
 {
-	struct pdb_methods *pdb_selected;
+	struct pdb_methods *pdb_methods;
+	struct pdb_methods *pwent_methods;
 	
 	/* These functions are wrappers for the functions listed above.
 	   They may do extra things like re-reading a SAM_ACCOUNT on update */
@@ -42,7 +57,7 @@ typedef struct pdb_context
 	
 	BOOL (*pdb_getsampwnam)(struct pdb_context *, SAM_ACCOUNT *sam_acct, const char *username);
 	
-	BOOL (*pdb_getsampwrid)(struct pdb_context *, SAM_ACCOUNT *sam_acct, uint32 rid);
+	BOOL (*pdb_getsampwsid)(struct pdb_context *, SAM_ACCOUNT *sam_acct, DOM_SID *sid);
 	
 	BOOL (*pdb_add_sam_account)(struct pdb_context *, SAM_ACCOUNT *sampass);
 	
@@ -59,22 +74,27 @@ typedef struct pdb_context
 typedef struct pdb_methods 
 {
 	const char *name; /* What name got this module */
+	struct pdb_context *parent;
 
-	BOOL (*setsampwent)(struct pdb_context *, BOOL update);
+	/* Use macros from dlinklist.h on these two */
+	struct pdb_methods *next;
+	struct pdb_methods *prev;
+
+	BOOL (*setsampwent)(struct pdb_methods *, BOOL update);
 	
-	void (*endsampwent)(struct pdb_context *);
+	void (*endsampwent)(struct pdb_methods *);
 	
-	BOOL (*getsampwent)(struct pdb_context *, SAM_ACCOUNT *user);
+	BOOL (*getsampwent)(struct pdb_methods *, SAM_ACCOUNT *user);
 	
-	BOOL (*getsampwnam)(struct pdb_context *, SAM_ACCOUNT *sam_acct, const char *username);
+	BOOL (*getsampwnam)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, const char *username);
 	
-	BOOL (*getsampwrid)(struct pdb_context *, SAM_ACCOUNT *sam_acct, uint32 rid);
+	BOOL (*getsampwsid)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, DOM_SID *Sid);
 	
-	BOOL (*add_sam_account)(struct pdb_context *, const SAM_ACCOUNT *sampass);
+	BOOL (*add_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
 	
-	BOOL (*update_sam_account)(struct pdb_context *, const SAM_ACCOUNT *sampass);
+	BOOL (*update_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
 	
-	BOOL (*delete_sam_account)(struct pdb_context *, const SAM_ACCOUNT *username);
+	BOOL (*delete_sam_account)(struct pdb_methods *, SAM_ACCOUNT *username);
 	
 	void *private_data;  /* Private data of some kind */
 	
@@ -88,10 +108,8 @@ typedef NTSTATUS (*pdb_init_function)(struct pdb_context *,
 
 struct pdb_init_function_entry {
 	char *name;
-	/* Function to create a member of the authmethods list */
-	NTSTATUS (*init)(struct pdb_context *pdb_context, 
-			 struct pdb_methods **pdb_method, 
-			 const char *location);
+	/* Function to create a member of the pdb_methods list */
+	pdb_init_function init;
 };
 
 #endif /* _PASSDB_H */

@@ -276,19 +276,6 @@ int iface_count(void)
 }
 
 /****************************************************************************
- True if we have two or more interfaces.
-  **************************************************************************/
-BOOL we_are_multihomed(void)
-{
-	static int multi = -1;
-
-	if(multi == -1)
-		multi = (iface_count() > 1 ? True : False);
-	
-	return multi;
-}
-
-/****************************************************************************
   return the Nth interface
   **************************************************************************/
 struct interface *get_interface(int n)
@@ -331,40 +318,21 @@ struct in_addr *iface_n_bcast(int n)
 }
 
 
-/****************************************************************************
-this function provides a simple hash of the configured interfaces. It is
-used to detect a change in interfaces to tell us whether to discard
-the current wins.dat file.
-Note that the result is independent of the order of the interfaces
-  **************************************************************************/
-unsigned iface_hash(void)
-{
-	unsigned ret = 0;
-	struct interface *i;
-
-	for (i=local_interfaces;i;i=i->next) {
-		unsigned x1 = (unsigned)str_checksum(inet_ntoa(i->ip));
-		unsigned x2 = (unsigned)str_checksum(inet_ntoa(i->nmask));
-		ret ^= (x1 ^ x2);
-	}
-
-	return ret;
-}
-
-
 /* these 3 functions return the ip/bcast/nmask for the interface
    most appropriate for the given ip address. If they can't find
    an appropriate interface they return the requested field of the
    first known interface. */
 
-struct in_addr *iface_bcast(struct in_addr ip)
-{
-	struct interface *i = iface_find(ip, True);
-	return(i ? &i->bcast : &local_interfaces->bcast);
-}
-
 struct in_addr *iface_ip(struct in_addr ip)
 {
 	struct interface *i = iface_find(ip, True);
 	return(i ? &i->ip : &local_interfaces->ip);
+}
+
+/*
+  return True if a IP is directly reachable on one of our interfaces
+*/
+BOOL iface_local(struct in_addr ip)
+{
+	return iface_find(ip, True) ? True : False;
 }

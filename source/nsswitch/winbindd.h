@@ -29,6 +29,9 @@
 
 #include "winbindd_nss.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* Client state structure */
 
 struct winbindd_cli_state {

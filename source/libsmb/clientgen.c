@@ -32,6 +32,41 @@ int cli_set_port(struct cli_state *cli, int port)
 }
 
 /****************************************************************************
+  read an smb from a fd ignoring all keepalive packets. Note that the buffer 
+  *MUST* be of size BUFFER_SIZE+SAFETY_MARGIN.
+  The timeout is in milliseconds
+
+  This is exactly the same as receive_smb except that it never returns
+  a session keepalive packet (just as receive_smb used to do).
+  receive_smb was changed to return keepalives as the oplock processing means this call
+  should never go into a blocking read.
+****************************************************************************/
+
+static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
+{
+  BOOL ret;
+
+  for(;;)
+  {
+    ret = receive_smb(fd, buffer, timeout);
+
+    if (!ret)
+    {
+      DEBUG(10,("client_receive_smb failed\n"));
+      show_msg(buffer);
+      return ret;
+    }
+
+    /* Ignore session keepalive packets. */
+    if(CVAL(buffer,0) != SMBkeepalive)
+      break;
+  }
+  show_msg(buffer);
+  return ret;
+}
+
+
+/****************************************************************************
 recv an smb
 ****************************************************************************/
 BOOL cli_receive_smb(struct cli_state *cli)
@@ -72,7 +107,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
 }
 
 /****************************************************************************
-  send an smb to a fd.
+ Send an smb to a fd.
 ****************************************************************************/
 
 BOOL cli_send_smb(struct cli_state *cli)
@@ -82,31 +117,33 @@ BOOL cli_send_smb(struct cli_state *cli)
 	ssize_t ret;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
-	if (cli->fd == -1) return False;
+	if (cli->fd == -1)
+		return False;
+
+	cli_caclulate_sign_mac(cli);
 
 	len = smb_len(cli->outbuf) + 4;
 
 	while (nwritten < len) {
 		ret = write_socket(cli->fd,cli->outbuf+nwritten,len - nwritten);
 		if (ret <= 0) {
-                        close(cli->fd);
-                        cli->fd = -1;
-			DEBUG(0,("Error writing %d bytes to client. %d\n",
-				 (int)len,(int)ret));
+			close(cli->fd);
+			cli->fd = -1;
+			DEBUG(0,("Error writing %d bytes to client. %d\n", (int)len,(int)ret));
 			return False;
 		}
 		nwritten += ret;
 	}
-	
 	return True;
 }
 
 /****************************************************************************
-setup basics in a outgoing packet
+ Setup basics in a outgoing packet.
 ****************************************************************************/
+
 void cli_setup_packet(struct cli_state *cli)
 {
-        cli->rap_error = 0;
+	cli->rap_error = 0;
 	SSVAL(cli->outbuf,smb_pid,cli->pid);
 	SSVAL(cli->outbuf,smb_uid,cli->vuid);
 	SSVAL(cli->outbuf,smb_mid,cli->mid);
@@ -123,6 +160,8 @@ void cli_setup_packet(struct cli_state *cli)
 		if (cli->use_spnego) {
 			flags2 |= FLAGS2_EXTENDED_SECURITY;
 		}
+		if (cli->sign_info.use_smb_signing)
+			flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }
@@ -247,10 +286,6 @@ void cli_shutdown(struct cli_state *cli)
 	if (cli->mem_ctx)
 		talloc_destroy(cli->mem_ctx);
 
-#ifdef WITH_SSL
-	if (cli->fd != -1)
-		sslutil_disconnect(cli->fd);
-#endif /* WITH_SSL */
 	if (cli->fd != -1) 
 		close(cli->fd);
 	allocated = cli->allocated;

@@ -26,18 +26,14 @@
 
 /*
    This implements the X/Open SMB password encryption
-   It takes a password, a 8 byte "crypt key" and puts 24 bytes of 
-   encrypted password into p24 */
-void SMBencrypt(const uchar *passwd, const uchar *c8, uchar *p24)
+   It takes a password ('unix' string), a 8 byte "crypt key" 
+   and puts 24 bytes of encrypted password into p24 */
+void SMBencrypt(const char *passwd, const uchar *c8, uchar *p24)
 {
-	uchar p14[15], p21[21];
+	uchar p21[21];
 
 	memset(p21,'\0',21);
-	memset(p14,'\0',14);
-	StrnCpy((char *)p14,(const char *)passwd,14);
-
-	strupper((char *)p14);
-	E_P16(p14, p21); 
+	E_deshash(passwd, p21); 
 
 	SMBOWFencrypt(p21, c8, p24);
 
@@ -49,61 +45,74 @@ void SMBencrypt(const uchar *passwd, const uchar *c8, uchar *p24)
 #endif
 }
 
-/* 
+/**
  * Creates the MD4 Hash of the users password in NT UNICODE.
+ * @param passwd password in 'unix' charset.
+ * @param p16 return password hashed with md4, caller allocated 16 byte buffer
  */
  
-void E_md4hash(const uchar *passwd, uchar *p16)
+void E_md4hash(const char *passwd, uchar p16[16])
 {
 	int len;
 	smb_ucs2_t wpwd[129];
 	
-	/* Password cannot be longer than 128 characters */
-	len = strlen((const char *)passwd);
-	if(len > 128)
-		len = 128;
 	/* Password must be converted to NT unicode - null terminated. */
 	push_ucs2(NULL, wpwd, (const char *)passwd, 256, STR_UNICODE|STR_NOALIGN|STR_TERMINATE);
 	/* Calculate length in bytes */
 	len = strlen_w(wpwd) * sizeof(int16);
 
 	mdfour(p16, (unsigned char *)wpwd, len);
+	ZERO_STRUCT(wpwd);	
 }
 
+/**
+ * Creates the MD4 Hash of the users password in NT UNICODE.
+ * @param passwd password in 'unix' charset.
+ * @param p16 return password hashed with md4, caller allocated 16 byte buffer
+ */
+ 
+void E_deshash(const char *passwd, uchar p16[16])
+{
+	uchar dospwd[15]; /* Password must not be > 14 chars long. */
+	ZERO_STRUCT(dospwd);
+	ZERO_STRUCTP(p16);
+	
+	/* Password must be converted to DOS charset - null terminated. */
+	push_ascii(dospwd, (const char *)passwd, sizeof(dospwd), STR_UPPER|STR_TERMINATE);
+
+	E_P16(dospwd, p16);
+
+	ZERO_STRUCT(dospwd);	
+}
+
+/**
+ * Creates the MD4 and DES (LM) Hash of the users password.  
+ * MD4 is of the NT Unicode, DES is of the DOS UPPERCASE password.
+ * @param passwd password in 'unix' charset.
+ * @param nt_p16 return password hashed with md4, caller allocated 16 byte buffer
+ * @param p16 return password hashed with des, caller allocated 16 byte buffer
+ */
+ 
 /* Does both the NT and LM owfs of a user's password */
 void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar p16[16])
 {
-	char passwd[514];
-
-	memset(passwd,'\0',514);
-	safe_strcpy( passwd, pwd, sizeof(passwd)-1);
-
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	memset(nt_p16, '\0', 16);
-	E_md4hash((uchar *)passwd, nt_p16);
+	E_md4hash(pwd, nt_p16);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_lm_owf_gen: pwd, nt#\n"));
-	dump_data(120, passwd, strlen(passwd));
+	dump_data(120, pwd, strlen(pwd));
 	dump_data(100, (char *)nt_p16, 16);
 #endif
 
-	/* Mangle the passwords into Lanman format */
-	passwd[14] = '\0';
-	strupper(passwd);
-
-	/* Calculate the SMB (lanman) hash functions of the password */
-
-	memset(p16, '\0', 16);
-	E_P16((uchar *) passwd, (uchar *)p16);
+	E_deshash(pwd, (uchar *)p16);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_lm_owf_gen: pwd, lm#\n"));
-	dump_data(120, passwd, strlen(passwd));
+	dump_data(120, pwd, strlen(pwd));
 	dump_data(100, (char *)p16, 16);
 #endif
-	/* clear out local copy of user's password (just being paranoid). */
-	memset(passwd, '\0', sizeof(passwd));
 }
 
 /* Does both the NTLMv2 owfs of a user's password */
@@ -322,22 +331,56 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 #endif
 	
 	return True;
-
 }
 
-/* Calculate the NT owfs of a user's password */
-void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16])
+/***********************************************************
+ SMB signing - setup the MAC key.
+************************************************************/
+
+void cli_calculate_mac_key(struct cli_state *cli, const unsigned char *ntpasswd, const uchar resp[24])
 {
-	char buf[512];
-	int i;
+	/* Get first 16 bytes. */
+	E_md4hash(ntpasswd,&cli->sign_info.mac_key[0]);
+	memcpy(&cli->sign_info.mac_key[16],resp,24);
+	cli->sign_info.mac_key_len = 40;
+	cli->sign_info.use_smb_signing = True;
 
-	for (i = 0; i < MIN(pwd->uni_str_len, sizeof(buf) / 2); i++)
-	{
-		SIVAL(buf, i * 2, pwd->buffer[i]);
+	/* These calls are INCONPATIBLE with SMB signing */
+	cli->readbraw_supported = False;
+	cli->writebraw_supported = False;    
+
+	/* Reset the sequence number in case we had a previous (aborted) attempt */
+	cli->sign_info.send_seq_num = 0;
+}
+
+/***********************************************************
+ SMB signing - calculate a MAC to send.
+************************************************************/
+
+void cli_caclulate_sign_mac(struct cli_state *cli)
+{
+	unsigned char calc_md5_mac[16];
+	struct MD5Context md5_ctx;
+
+	if (!cli->sign_info.use_smb_signing) {
+		return;
 	}
-	/* Calculate the MD4 hash (NT compatible) of the password */
-	mdfour(nt_p16, (const unsigned char *)buf, pwd->uni_str_len * 2);
 
-	/* clear out local copy of user's password (just being paranoid). */
-	ZERO_STRUCT(buf);
+	/*
+	 * Firstly put the sequence number into the first 4 bytes.
+	 * and zero out the next 4 bytes.
+	 */
+	SIVAL(cli->outbuf, smb_ss_field, cli->sign_info.send_seq_num);
+	SIVAL(cli->outbuf, smb_ss_field + 4, 0);
+
+	/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
+	MD5Init(&md5_ctx);
+	MD5Update(&md5_ctx, cli->sign_info.mac_key, cli->sign_info.mac_key_len);
+	MD5Update(&md5_ctx, cli->outbuf + 4, smb_len(cli->outbuf));
+	MD5Final(calc_md5_mac, &md5_ctx);
+
+	memcpy(&cli->outbuf[smb_ss_field], calc_md5_mac, 8);
+	cli->sign_info.send_seq_num++;
+	cli->sign_info.reply_seq_num = cli->sign_info.send_seq_num;
+	cli->sign_info.send_seq_num++;
 }

@@ -14,7 +14,7 @@
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>smbumount</command>
+		<command>smbmount</command>
 		<arg choice="req">service</arg>
 		<arg choice="req">mount-point</arg>
 		<arg choice="opt">-o options</arg>

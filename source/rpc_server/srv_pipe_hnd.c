@@ -22,6 +22,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)
 
@@ -31,6 +34,23 @@ static int pipes_open;
 #ifndef MAX_OPEN_PIPES
 #define MAX_OPEN_PIPES 2048
 #endif
+
+/*
+ * Sometimes I can't decide if I hate Windows printer driver
+ * writers more than I hate the Windows spooler service driver
+ * writers. This gets around a combination of bugs in the spooler
+ * and the HP 8500 PCL driver that causes a spooler spin. JRA.
+ *
+ * bumped up from 20 -> 64 after viewing traffic from WordPerfect
+ * 2002 running on NT 4.- SP6
+ * bumped up from 64 -> 256 after viewing traffic from con2prt
+ * for lots of printers on a WinNT 4.x SP6 box.
+ */
+ 
+#ifndef MAX_OPEN_SPOOLSS_PIPES
+#define MAX_OPEN_SPOOLSS_PIPES 256
+#endif
+static int current_spoolss_pipes_open;
 
 static smb_np_struct *Pipes;
 static pipes_struct *InternalPipes;
@@ -99,6 +119,7 @@ void set_pipe_handle_offset(int max_open_files)
 /****************************************************************************
  Reset pipe chain handle number.
 ****************************************************************************/
+
 void reset_chain_p(void)
 {
 	chain_p = NULL;
@@ -155,11 +176,20 @@ smb_np_struct *open_rpc_pipe_p(char *pipe_name,
 	int i;
 	smb_np_struct *p, *p_it;
 	static int next_pipe;
+	BOOL is_spoolss_pipe = False;
 
 	DEBUG(4,("Open pipe requested %s (pipes_open=%d)\n",
 		 pipe_name, pipes_open));
 
-	
+	if (strstr(pipe_name, "spoolss"))
+		is_spoolss_pipe = True;
+ 
+	if (is_spoolss_pipe && current_spoolss_pipes_open >= MAX_OPEN_SPOOLSS_PIPES) {
+		DEBUG(10,("open_rpc_pipe_p: spooler bug workaround. Denying open on pipe %s\n",
+			pipe_name ));
+		return NULL;
+	}
+
 	/* not repeating pipe numbers makes it easier to track things in 
 	   log files and prevents client bugs where pipe numbers are reused
 	   over connection restarts */
@@ -180,8 +210,7 @@ smb_np_struct *open_rpc_pipe_p(char *pipe_name,
 
 	p = (smb_np_struct *)malloc(sizeof(*p));
 
-	if (!p)
-	{
+	if (!p) {
 		DEBUG(0,("ERROR! no memory for pipes_struct!\n"));
 		return NULL;
 	}
@@ -198,12 +227,10 @@ smb_np_struct *open_rpc_pipe_p(char *pipe_name,
 	p->np_state = p->namedpipe_create(pipe_name, conn, vuid);
 
 	if (p->np_state == NULL) {
-
 		DEBUG(0,("open_rpc_pipe_p: make_internal_rpc_pipe_p failed.\n"));
 		SAFE_FREE(p);
 		return NULL;
 	}
-
 
 	DLIST_ADD(Pipes, p);
 
@@ -244,7 +271,7 @@ smb_np_struct *open_rpc_pipe_p(char *pipe_name,
 }
 
 /****************************************************************************
- * make an internal namedpipes structure
+ Make an internal namedpipes structure
 ****************************************************************************/
 
 static void *make_internal_rpc_pipe_p(char *pipe_name, 
@@ -298,6 +325,10 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 	DLIST_ADD(InternalPipes, p);
 
 	p->conn = conn;
+
+	/* Ensure the connection isn't idled whilst this pipe is open. */
+	p->conn->num_files_open++;
+
 	p->vuid  = vuid;
 
 	p->ntlmssp_chal_flags = 0;
@@ -313,9 +344,10 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 	p->pipe_user.uid = (uid_t)-1;
 	p->pipe_user.gid = (gid_t)-1;
 	
-	/* Store the session key */
+	/* Store the session key and NT_TOKEN */
 	if (vuser) {
 		memcpy(p->session_key, vuser->session_key, sizeof(p->session_key));
+		p->pipe_user.nt_user_token = dup_nt_token(vuser->nt_user_token);
 	}
 
 	/*
@@ -1055,7 +1087,7 @@ BOOL close_rpc_pipe_hnd(smb_np_struct *p)
 	ZERO_STRUCTP(p);
 
 	SAFE_FREE(p);
-	
+
 	return True;
 }
 
@@ -1084,6 +1116,8 @@ static BOOL close_internal_rpc_pipe_hnd(void *np_conn)
 	SAFE_FREE(p->pipe_user.groups);
 
 	DLIST_REMOVE(InternalPipes, p);
+
+	p->conn->num_files_open--;
 
 	ZERO_STRUCTP(p);
 

@@ -4,6 +4,7 @@
    Winbind daemon for ntdom nss module
 
    Copyright (C) by Tim Potter 2000, 2001
+   Copyright (C) Andrew Tridgell 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,7 +27,8 @@
 
 struct winbindd_cli_state *client_list;
 static int num_clients;
-BOOL opt_nocache;
+BOOL opt_nocache = False;
+BOOL opt_dual_daemon = False;
 
 /* Reload configuration */
 
@@ -221,6 +223,7 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_SETGRENT, winbindd_setgrent, "SETGRENT" },
 	{ WINBINDD_ENDGRENT, winbindd_endgrent, "ENDGRENT" },
 	{ WINBINDD_GETGRENT, winbindd_getgrent, "GETGRENT" },
+	{ WINBINDD_GETGRLST, winbindd_getgrent, "GETGRLST" },
 
 	/* PAM auth functions */
 
@@ -365,9 +368,10 @@ static void remove_client(struct winbindd_cli_state *state)
 	}
 }
 
+
 /* Process a complete received packet from a client */
 
-static void process_packet(struct winbindd_cli_state *state)
+void winbind_process_packet(struct winbindd_cli_state *state)
 {
 	/* Process request */
 	
@@ -379,11 +383,16 @@ static void process_packet(struct winbindd_cli_state *state)
 	
 	state->read_buf_len = 0;
 	state->write_buf_len = sizeof(struct winbindd_response);
+
+	/* we might need to send it to the dual daemon */
+	if (opt_dual_daemon) {
+		dual_send_request(state);
+	}
 }
 
 /* Read some data from a client connection */
 
-static void client_read(struct winbindd_cli_state *state)
+void winbind_client_read(struct winbindd_cli_state *state)
 {
 	int n;
     
@@ -529,6 +538,10 @@ static void process_loop(int accept_sock)
 		timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
 		timeout.tv_usec = 0;
 
+		if (opt_dual_daemon) {
+			maxfd = dual_select_setup(&w_fds, maxfd);
+		}
+
 		/* Set up client readers and writers */
 
 		state = client_list;
@@ -583,6 +596,10 @@ static void process_loop(int accept_sock)
 
 		if (selret > 0) {
 
+			if (opt_dual_daemon) {
+				dual_select(&w_fds);
+			}
+
 			if (FD_ISSET(accept_sock, &r_fds))
 				new_connection(accept_sock);
             
@@ -596,7 +613,7 @@ static void process_loop(int accept_sock)
                     
 					/* Read data */
                     
-					client_read(state);
+					winbind_client_read(state);
 
 					/* 
 					 * If we have the start of a
@@ -620,7 +637,7 @@ static void process_loop(int accept_sock)
                     
 					if (state->read_buf_len == 
 					    sizeof(state->request)) {
-						process_packet(state);
+						winbind_process_packet(state);
 					}
 				}
                 
@@ -656,133 +673,12 @@ static void process_loop(int accept_sock)
 	}
 }
 
-/* Main function */
 
-struct winbindd_state server_state;   /* Server state information */
-
-
-static void usage(void)
+/*
+  these are split out from the main winbindd for use by the background daemon
+ */
+int winbind_setup_common(void)
 {
-	printf("Usage: winbindd [options]\n");
-	printf("\t-i                interactive mode\n");
-	printf("\t-n                disable cacheing\n");
-	printf("\t-d level          set debug level\n");
-	printf("\t-s configfile     choose smb.conf location\n");
-	printf("\t-h                show this help message\n");
-}
-
-int main(int argc, char **argv)
-{
-	extern BOOL AllowDebugChange;
-	extern pstring global_myname;
-	extern fstring global_myworkgroup;
-	extern BOOL append_log;
-	pstring logfile;
-	int accept_sock;
-	BOOL interactive = False;
-	int opt;
-
-	/* glibc (?) likes to print "User defined signal 1" and exit if a
-	   SIGUSR[12] is received before a handler is installed */
-
- 	CatchSignal(SIGUSR1, SIG_IGN);
- 	CatchSignal(SIGUSR2, SIG_IGN);
-
-	fault_setup((void (*)(void *))fault_quit );
-
-	/* Append to log file by default as we are a single process daemon
-	   program. */
-
-	append_log = True;
-
-	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
-	lp_set_logfile(logfile);
-
-	/* Initialise for running in non-root mode */
-
-	sec_init();
-
-	/* Set environment variable so we don't recursively call ourselves.
-	   This may also be useful interactively. */
-
-	SETENV(WINBINDD_DONT_ENV, "1", 1);
-
-	/* Initialise samba/rpc client stuff */
-
-	while ((opt = getopt(argc, argv, "id:s:nh")) != EOF) {
-		switch (opt) {
-
-			/* Don't become a daemon */
-		case 'i':
-			interactive = True;
-			break;
-
-			/* disable cacheing */
-		case 'n':
-			opt_nocache = True;
-			break;
-
-			/* Run with specified debug level */
-		case 'd':
-			DEBUGLEVEL = atoi(optarg);
-			AllowDebugChange = False;
-			break;
-
-			/* Load a different smb.conf file */
-		case 's':
-			pstrcpy(dyn_CONFIGFILE,optarg);
-			break;
-
-		case 'h':
-			usage();
-			exit(0);
-
-		default:
-			printf("Unknown option %c\n", (char)opt);
-			exit(1);
-		}
-	}
-
-	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
-	lp_set_logfile(logfile);
-	setup_logging("winbindd", interactive);
-	reopen_logs();
-
-	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
-	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2001\n" ) );
-
-	if (!reload_services_file(False)) {
-		DEBUG(0, ("error opening config file\n"));
-		exit(1);
-	}
-
-	pidfile_create("winbindd");
-
-	/* Setup names. */
-
-	if (!*global_myname) {
-		char *p;
-
-		fstrcpy(global_myname, myhostname());
-		p = strchr(global_myname, '.');
-		if (p)
-			*p = 0;
-	}
-
-        fstrcpy(global_myworkgroup, lp_workgroup());
-
-	if (!interactive)
-		become_daemon();
-
-#if HAVE_SETPGID
-	/*
-	 * If we're interactive we want to set our own process group for
-	 * signal management.
-	 */
-	if (interactive)
-		setpgid( (pid_t)0, (pid_t)0);
-#endif
-
 	load_interfaces();
 
 	if (!secrets_init()) {
@@ -828,6 +724,151 @@ int main(int argc, char **argv)
 
 	CatchSignal(SIGUSR2, sigusr2_handler);         /* Debugging sigs */
 	CatchSignal(SIGHUP, sighup_handler);
+
+	return 0;
+}
+
+
+/* Main function */
+
+struct winbindd_state server_state;   /* Server state information */
+
+
+static void usage(void)
+{
+	printf("Usage: winbindd [options]\n");
+	printf("\t-i                interactive mode\n");
+	printf("\t-B                dual daemon mode\n");
+	printf("\t-n                disable cacheing\n");
+	printf("\t-d level          set debug level\n");
+	printf("\t-s configfile     choose smb.conf location\n");
+	printf("\t-h                show this help message\n");
+}
+
+ int main(int argc, char **argv)
+{
+	extern BOOL AllowDebugChange;
+	extern pstring global_myname;
+	extern fstring global_myworkgroup;
+	extern BOOL append_log;
+	pstring logfile;
+	int accept_sock;
+	BOOL interactive = False;
+	int opt;
+
+	/* glibc (?) likes to print "User defined signal 1" and exit if a
+	   SIGUSR[12] is received before a handler is installed */
+
+ 	CatchSignal(SIGUSR1, SIG_IGN);
+ 	CatchSignal(SIGUSR2, SIG_IGN);
+
+	fault_setup((void (*)(void *))fault_quit );
+
+	/* Append to log file by default as we are a single process daemon
+	   program. */
+
+	append_log = True;
+
+	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
+	lp_set_logfile(logfile);
+
+	/* Initialise for running in non-root mode */
+
+	sec_init();
+
+	/* Set environment variable so we don't recursively call ourselves.
+	   This may also be useful interactively. */
+
+	SETENV(WINBINDD_DONT_ENV, "1", 1);
+
+	/* Initialise samba/rpc client stuff */
+
+	while ((opt = getopt(argc, argv, "id:s:nhB")) != EOF) {
+		switch (opt) {
+
+			/* Don't become a daemon */
+		case 'i':
+			interactive = True;
+			break;
+
+			/* dual daemon system */
+		case 'B':
+			opt_dual_daemon = True;
+			break;
+
+			/* disable cacheing */
+		case 'n':
+			opt_nocache = True;
+			break;
+
+			/* Run with specified debug level */
+		case 'd':
+			DEBUGLEVEL = atoi(optarg);
+			AllowDebugChange = False;
+			break;
+
+			/* Load a different smb.conf file */
+		case 's':
+			pstrcpy(dyn_CONFIGFILE,optarg);
+			break;
+
+		case 'h':
+			usage();
+			exit(0);
+
+		default:
+			printf("Unknown option %c\n", (char)opt);
+			exit(1);
+		}
+	}
+
+	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
+	lp_set_logfile(logfile);
+	setup_logging("winbindd", interactive);
+	reopen_logs();
+
+	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
+	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2001\n" ) );
+
+	if (!reload_services_file(False)) {
+		DEBUG(0, ("error opening config file\n"));
+		exit(1);
+	}
+
+	/* Setup names. */
+
+	if (!*global_myname) {
+		char *p;
+
+		fstrcpy(global_myname, myhostname());
+		p = strchr(global_myname, '.');
+		if (p)
+			*p = 0;
+	}
+
+        fstrcpy(global_myworkgroup, lp_workgroup());
+
+	if (!interactive) {
+		become_daemon();
+		pidfile_create("winbindd");
+	}
+
+#if HAVE_SETPGID
+	/*
+	 * If we're interactive we want to set our own process group for
+	 * signal management.
+	 */
+	if (interactive)
+		setpgid( (pid_t)0, (pid_t)0);
+#endif
+
+	if (opt_dual_daemon) {
+		do_dual_daemon();
+	}
+
+	if (winbind_setup_common() != 0) {
+		return 1;
+	}
 
 	/* Initialise messaging system */
 

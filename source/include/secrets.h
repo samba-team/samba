@@ -35,6 +35,8 @@
 #define SECRETS_DOMAIN_SID    "SECRETS/SID"
 #define SECRETS_SAM_SID       "SAM/SID"
 
+#define SECRETS_LDAP_BIND_PW "SECRETS/LDAP_BIND_PW"
+
 /* Authenticated user info is stored in secrets.tdb under these keys */
 
 #define SECRETS_AUTH_USER      "SECRETS/AUTH_USER"
@@ -48,12 +50,26 @@ struct machine_acct_pass {
 	time_t mod_time;
 };
 
-/* structure for storing trusted domain password */
+/*
+ * storage structure for trusted domain
+ */
 struct trusted_dom_pass {
-	int pass_len;
-	fstring pass;
+	size_t uni_name_len;
+	smb_ucs2_t uni_name[32]; /* unicode domain name */
+	size_t pass_len;
+	fstring pass;		/* trust relationship's password */
 	time_t mod_time;
-	DOM_SID domain_sid; /* remote domain's sid */
+	DOM_SID domain_sid;	/* remote domain's sid */
 };
+
+/*
+ * trusted domain entry/entries returned by secrets_get_trusted_domains
+ * (used in _lsa_enum_trust_dom call)
+ */
+typedef struct trustdom {
+	smb_ucs2_t *name;
+	DOM_SID sid;
+} TRUSTDOM;
+
 
 #endif /* _SECRETS_H */

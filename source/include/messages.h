@@ -47,9 +47,10 @@
 #define MSG_FORCE_ELECTION 1001
 #define MSG_WINS_NEW_ENTRY 1002
 
-/* rpc messages */
-#define MSG_PRINTER_NOTIFY 2001
-#define MSG_PRINTER_UPDATE 2002
+/* printing messages */
+/* #define MSG_PRINTER_NOTIFY  2001*/ /* Obsolete */
+#define MSG_PRINTER_DRVUPGRADE 2002
+#define MSG_PRINTER_NOTIFY2     2003
 
 /* smbd messages */
 #define MSG_SMB_CONF_UPDATED 3001

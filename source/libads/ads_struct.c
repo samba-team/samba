@@ -81,7 +81,8 @@ static char *find_ldap_server(ADS_STRUCT *ads)
 	char *list = NULL;
 	struct in_addr ip;
 
-	if (ads->realm && 
+	if (ads->realm &&
+	    strcasecmp(ads->workgroup, lp_workgroup()) == 0 &&
 	    ldap_domain2hostlist(ads->realm, &list) == LDAP_SUCCESS) {
 		char *p;
 		p = strchr(list, ':');
@@ -90,7 +91,12 @@ static char *find_ldap_server(ADS_STRUCT *ads)
 	}
 
 	/* get desperate, find the domain controller IP */
-	if (resolve_name(lp_workgroup(), &ip, 0x1B)) {
+	if (resolve_name(ads->workgroup, &ip, 0x1B)) {
+		return strdup(inet_ntoa(ip));
+	}
+	
+	/* or a BDC ... */
+	if (resolve_name(ads->workgroup, &ip, 0x1C)) {
 		return strdup(inet_ntoa(ip));
 	}
 
@@ -115,6 +121,7 @@ static char *find_ldap_server(ADS_STRUCT *ads)
   initialise a ADS_STRUCT, ready for some ads_ ops
 */
 ADS_STRUCT *ads_init(const char *realm, 
+		     const char *workgroup,
 		     const char *ldap_server,
 		     const char *bind_path,
 		     const char *password)
@@ -124,7 +131,12 @@ ADS_STRUCT *ads_init(const char *realm,
 	ads = (ADS_STRUCT *)smb_xmalloc(sizeof(*ads));
 	ZERO_STRUCTP(ads);
 	
+	if (!workgroup) {
+		workgroup = lp_workgroup();
+	}
+
 	ads->realm = realm? strdup(realm) : NULL;
+	ads->workgroup = strdup(workgroup);
 	ads->ldap_server = ldap_server? strdup(ldap_server) : NULL;
 	ads->bind_path = bind_path? strdup(bind_path) : NULL;
 	ads->ldap_port = LDAP_PORT;
@@ -140,8 +152,10 @@ ADS_STRUCT *ads_init(const char *realm,
 		ads->bind_path = ads_build_dn(ads->realm);
 	}
 	if (!ads->ldap_server) {
-		ads->ldap_server = strdup(lp_ads_server());
-		if (!ads->ldap_server[0]) {
+		if (strcasecmp(ads->workgroup, lp_workgroup()) == 0) {
+			ads->ldap_server = strdup(lp_ads_server());
+		}
+		if (!ads->ldap_server || !ads->ldap_server[0]) {
 			ads->ldap_server = find_ldap_server(ads);
 		}
 	}
@@ -151,6 +165,12 @@ ADS_STRUCT *ads_init(const char *realm,
 	}
 
 	return ads;
+}
+
+/* a simpler ads_init() interface using all defaults */
+ADS_STRUCT *ads_init_simple(void)
+{
+	return ads_init(NULL, NULL, NULL, NULL, NULL);
 }
 
 /*

@@ -79,6 +79,16 @@ void nbio_shmem(int n)
 	}
 }
 
+static int ne_find_handle(int handle)
+{
+	int i;
+	children[nbio_id].line = line_count;
+	for (i=0;i<MAX_FILES;i++) {
+		if (ftable[i].handle == handle) return i;
+	}
+	return -1;
+}
+
 static int find_handle(int handle)
 {
 	int i;

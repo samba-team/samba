@@ -23,6 +23,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_CLI
+
 extern struct pipe_id_info pipe_names[];
 extern fstring global_myworkgroup;
 extern pstring global_myname;

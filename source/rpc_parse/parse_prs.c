@@ -22,6 +22,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_PARSE
+
 /**
  * Dump a prs to a file: from the current location through to the end.
  **/
@@ -73,7 +76,7 @@ void prs_dump_region(char *name, int v, prs_struct *ps,
  XXXX side-effect of this function is to increase the debug depth XXXX
 
  ********************************************************************/
-void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
+void prs_debug(prs_struct *ps, int depth, const char *desc, char *fn_name)
 {
 	DEBUG(5+depth, ("%s%06x %s %s\n", tab_depth(depth), ps->data_offset, fn_name, desc));
 }
@@ -442,6 +445,38 @@ BOOL prs_align(prs_struct *ps)
 	}
 
 	return True;
+}
+
+/******************************************************************
+ Align on a 2 byte boundary
+ *****************************************************************/
+ 
+BOOL prs_align_uint16(prs_struct *ps)
+{
+	BOOL ret;
+	uint8 old_align = ps->align;
+
+	ps->align = 2;
+	ret = prs_align(ps);
+	ps->align = old_align;
+	
+	return ret;
+}
+
+/******************************************************************
+ Align on a 8 byte boundary
+ *****************************************************************/
+ 
+BOOL prs_align_uint64(prs_struct *ps)
+{
+	BOOL ret;
+	uint8 old_align = ps->align;
+
+	ps->align = 8;
+	ret = prs_align(ps);
+	ps->align = old_align;
+	
+	return ret;
 }
 
 /*******************************************************************

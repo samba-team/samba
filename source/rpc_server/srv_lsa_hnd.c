@@ -22,6 +22,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 /* This is the max handles across all instances of a pipe name. */
 #ifndef MAX_OPEN_POLS
 #define MAX_OPEN_POLS 1024
@@ -134,6 +137,14 @@ BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *)
 	DLIST_ADD(p->pipe_handles->Policy, pol);
 	p->pipe_handles->count++;
 
+	/*
+	 * Ensure we don't idle this connection if a handle is open.
+	 * Increment the number of files open on the first handle create.
+	 */
+
+	if (p->pipe_handles->count == 1)
+		p->conn->num_files_open++;
+
 	*hnd = pol->pol_hnd;
 	
 	DEBUG(4,("Opened policy hnd[%d] ", (int)p->pipe_handles->count));
@@ -201,6 +212,15 @@ BOOL close_policy_hnd(pipes_struct *p, POLICY_HND *hnd)
 
 	p->pipe_handles->count--;
 
+	/*
+	 * Ensure we can idle this connection if this is the last handle.
+	 * Decrement the number of files open on the last handle delete.
+	 */
+
+	if (p->pipe_handles->count == 0)
+		p->conn->num_files_open--;
+
+
 	DLIST_REMOVE(p->pipe_handles->Policy, pol);
 
 	ZERO_STRUCTP(pol);
@@ -231,4 +251,32 @@ void close_policy_by_pipe(pipes_struct *p)
 		SAFE_FREE(p->pipe_handles);
 		DEBUG(10,("close_policy_by_pipe: deleted handle list for pipe %s\n", p->name ));
 	}
+}
+
+/*******************************************************************
+Shall we allow access to this rpc?  Currently this function
+implements the 'restrict anonymous' setting by denying access to
+anonymous users if the restrict anonymous level is > 0.  Further work
+will be checking a security descriptor to determine whether a user
+token has enough access to access the pipe.
+********************************************************************/
+
+BOOL pipe_access_check(pipes_struct *p)
+{
+	/* Don't let anonymous users access this RPC if restrict
+	   anonymous > 0 */
+
+	if (lp_restrict_anonymous() > 0) {
+		user_struct *user = get_valid_user_struct(p->vuid);
+
+		if (!user) {
+			DEBUG(3, ("invalid vuid %d\n", p->vuid));
+			return False;
+		}
+
+		if (user->guest)
+			return False;
+	}
+
+	return True;
 }

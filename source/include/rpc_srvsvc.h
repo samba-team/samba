@@ -23,24 +23,24 @@
 #ifndef _RPC_SRVSVC_H /* _RPC_SRVSVC_H */
 #define _RPC_SRVSVC_H 
 
-
 /* srvsvc pipe */
-#define SRV_NETCONNENUM        0x08
-#define SRV_NETFILEENUM        0x09
-#define SRV_NETSESSENUM        0x0c
-#define SRV_NET_SHARE_ADD      0x0e
-#define SRV_NETSHAREENUM_ALL   0x0f
-#define SRV_NET_SHARE_GET_INFO 0x10
-#define SRV_NET_SHARE_SET_INFO 0x11
-#define SRV_NET_SHARE_DEL      0x12
-#define SRV_NET_SRV_GET_INFO   0x15
-#define SRV_NET_SRV_SET_INFO   0x16
-#define SRV_NET_DISK_ENUM      0x17
-#define SRV_NET_REMOTE_TOD     0x1c
-#define SRV_NET_NAME_VALIDATE  0x21
-#define SRV_NETSHAREENUM       0x24
-#define SRV_NETFILEQUERYSECDESC 0x27
-#define SRV_NETFILESETSECDESC	0x28
+#define SRV_NET_CONN_ENUM          0x08
+#define SRV_NET_FILE_ENUM          0x09
+#define SRV_NET_FILE_CLOSE         0x0b
+#define SRV_NET_SESS_ENUM          0x0c
+#define SRV_NET_SHARE_ADD          0x0e
+#define SRV_NET_SHARE_ENUM_ALL     0x0f
+#define SRV_NET_SHARE_GET_INFO     0x10
+#define SRV_NET_SHARE_SET_INFO     0x11
+#define SRV_NET_SHARE_DEL          0x12
+#define SRV_NET_SRV_GET_INFO       0x15
+#define SRV_NET_SRV_SET_INFO       0x16
+#define SRV_NET_DISK_ENUM          0x17
+#define SRV_NET_REMOTE_TOD         0x1c
+#define SRV_NET_NAME_VALIDATE      0x21
+#define SRV_NET_SHARE_ENUM         0x24
+#define SRV_NET_FILE_QUERY_SECDESC 0x27
+#define SRV_NET_FILE_SET_SECDESC   0x28
 
 #define MAX_SERVER_DISK_ENTRIES 15
 
@@ -164,6 +164,9 @@ typedef struct q_net_sess_enum_info
 
 	uint32 ptr_qual_name;         /* pointer (to qualifier name) */
 	UNISTR2 uni_qual_name;        /* qualifier name "\\qualifier" */
+
+	uint32 ptr_user_name;         /* pointer (to user name */
+	UNISTR2 uni_user_name;        /* user name */
 
 	uint32 sess_level;          /* session level */
 
@@ -538,6 +541,9 @@ typedef struct q_net_share_add
 
 	SRV_SHARE_INFO info;
 
+	uint32 ptr_err_index; /* pointer to error index */
+	uint32 err_index;     /* index in info to field in error */
+
 } SRV_Q_NET_SHARE_ADD;
 
 /* SRV_R_NET_SHARE_ADD */
@@ -555,6 +561,7 @@ typedef struct q_net_share_del
 	uint32 ptr_srv_name;
 	UNISTR2 uni_srv_name;
 	UNISTR2 uni_share_name;
+	uint32 reserved;
 
 } SRV_Q_NET_SHARE_DEL;
 
@@ -584,20 +591,11 @@ typedef struct str_file_info3_info
 
 } FILE_INFO_3_STR;
 
-/* oops - this is going to take up a *massive* amount of stack. */
-/* the UNISTR2s already have 1024 uint16 chars in them... */
-#define MAX_FILE_ENTRIES 32
-
 /* SRV_FILE_INFO_3 */
 typedef struct srv_file_info_3
 {
-	uint32 num_entries_read;                     /* EntriesRead */
-	uint32 ptr_file_info;                        /* Buffer */
-
-	uint32 num_entries_read2;                    /* EntriesRead */
-
-	FILE_INFO_3     info_3    [MAX_FILE_ENTRIES]; /* file entry details */
-	FILE_INFO_3_STR info_3_str[MAX_FILE_ENTRIES]; /* file entry strings */
+	FILE_INFO_3     info_3;     /* file entry details */
+	FILE_INFO_3_STR info_3_str; /* file entry strings */
 
 } SRV_FILE_INFO_3;
 
@@ -605,12 +603,15 @@ typedef struct srv_file_info_3
 typedef struct srv_file_info_3_info
 {
 	uint32 switch_value;         /* switch value */
-	uint32 ptr_file_ctr;       /* pointer to file info union */
-	union
-    {
-		SRV_FILE_INFO_3 info3; /* file info with 0 entries */
+	uint32 ptr_file_info;        /* pointer to file info union */
 
-    } file;
+	uint32 num_entries;
+	uint32 ptr_entries;
+	uint32 num_entries2;
+	union
+	{
+		SRV_FILE_INFO_3 *info3;
+	} file;
 
 } SRV_FILE_INFO_CTR;
 
@@ -624,9 +625,12 @@ typedef struct q_net_file_enum_info
 	uint32 ptr_qual_name;         /* pointer (to qualifier name) */
 	UNISTR2 uni_qual_name;        /* qualifier name "\\qualifier" */
 
+	uint32 ptr_user_name;         /* pointer (to user name) */
+	UNISTR2 uni_user_name;        /* user name */
+
 	uint32 file_level;          /* file level */
 
-	SRV_FILE_INFO_CTR *ctr;
+	SRV_FILE_INFO_CTR ctr;
 
 	uint32 preferred_len; /* preferred maximum length (0xffff ffff) */
 	ENUM_HND enum_hnd;
@@ -639,7 +643,7 @@ typedef struct r_net_file_enum_info
 {
 	uint32 file_level;          /* file level */
 
-	SRV_FILE_INFO_CTR *ctr;
+	SRV_FILE_INFO_CTR ctr;
 
 	uint32 total_entries;                    /* total number of files */
 	ENUM_HND enum_hnd;
@@ -647,6 +651,21 @@ typedef struct r_net_file_enum_info
 	WERROR status;        /* return status */
 
 } SRV_R_NET_FILE_ENUM;
+
+/* SRV_Q_NET_FILE_CLOSE */
+typedef struct q_net_file_close
+{
+	uint32 ptr_srv_name;         /* pointer to server name */
+	UNISTR2 uni_srv_name;        /* server name */
+	
+	uint32 file_id;
+} SRV_Q_NET_FILE_CLOSE;
+
+/* SRV_R_NET_FILE_CLOSE */
+typedef struct r_net_file_close
+{
+	WERROR status;               /* return status */
+} SRV_R_NET_FILE_CLOSE;
 
 /* SRV_INFO_100 */
 typedef struct srv_info_100_info
@@ -831,4 +850,5 @@ typedef struct r_net_file_set_secdesc
 {
 	WERROR status;
 } SRV_R_NET_FILE_SET_SECDESC;
+
 #endif /* _RPC_SRVSVC_H */

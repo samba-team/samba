@@ -32,6 +32,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 /*******************************************************************
  api_samr_close_hnd
  ********************************************************************/
@@ -120,6 +123,37 @@ static BOOL api_samr_get_usrdom_pwinfo(pipes_struct *p)
 		return False;
 	}
 
+	return True;
+}
+
+/*******************************************************************
+ api_samr_set_sec_obj
+ ********************************************************************/
+
+static BOOL api_samr_set_sec_obj(pipes_struct *p)
+{
+	SAMR_Q_SET_SEC_OBJ q_u;
+	SAMR_R_SET_SEC_OBJ r_u;
+	
+	prs_struct *data  = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
+	if(!samr_io_q_set_sec_obj("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_set_sec_obj: unable to unmarshall SAMR_Q_SET_SEC_OBJ.\n"));
+		return False;
+	}
+
+	r_u.status = _samr_set_sec_obj(p, &q_u, &r_u);
+
+	if(!samr_io_r_set_sec_obj("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_set_sec_obj: unable to marshall SAMR_R_SET_SEC_OBJ.\n"));
+		return False;
+	}
+	
+	
 	return True;
 }
 
@@ -1427,6 +1461,7 @@ static struct api_struct api_samr_cmds [] =
 	{"SAMR_LOOKUP_DOMAIN"     , SAMR_LOOKUP_DOMAIN    , api_samr_lookup_domain    },
 
 	{"SAMR_QUERY_SEC_OBJECT"  , SAMR_QUERY_SEC_OBJECT , api_samr_query_sec_obj    },
+	{"SAMR_SET_SEC_OBJECT"    , SAMR_SET_SEC_OBJECT   , api_samr_set_sec_obj      },
 	{"SAMR_GET_USRDOM_PWINFO" , SAMR_GET_USRDOM_PWINFO, api_samr_get_usrdom_pwinfo},
 	{"SAMR_UNKNOWN_2E"        , SAMR_UNKNOWN_2E       , api_samr_unknown_2e       },
 	{"SAMR_SET_DOMAIN_INFO"   , SAMR_SET_DOMAIN_INFO  , api_samr_set_dom_info     },

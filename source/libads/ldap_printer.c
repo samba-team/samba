@@ -31,7 +31,7 @@ ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
 				      char *printer, char *servername)
 {
 	ADS_STATUS status;
-	char *srv_dn, *exp;
+	char *srv_dn, **srv_cn, *exp;
 	const char *attrs[] = {"*", "nTSecurityDescriptor", NULL};
 
 	status = ads_find_machine_acct(ads, res, servername);
@@ -41,12 +41,14 @@ ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
 		return status;
 	}
 	srv_dn = ldap_get_dn(ads->ld, *res);
+	srv_cn = ldap_explode_dn(srv_dn, 1);
 	ads_msgfree(ads, *res);
 
-	asprintf(&exp, "(printerName=%s)", printer);
-	status = ads_do_search(ads, srv_dn, LDAP_SCOPE_SUBTREE, 
-			       exp, attrs, res);
+	asprintf(&exp, "(cn=%s-%s)", srv_cn[0], printer);
+	status = ads_search(ads, res, exp, attrs);
 
+	ldap_memfree(srv_dn);
+	ldap_value_free(srv_cn);
 	free(exp);
 	return status;	
 }
@@ -68,33 +70,33 @@ ADS_STATUS ads_mod_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 	mods = ads_init_mods(ctx);
 
 	/* add the attributes to the list - required ones first */
-	ads_mod_repl(ctx, &mods, "printerName", prt->printerName);
-	ads_mod_repl(ctx, &mods, "serverName", prt->serverName);
-	ads_mod_repl(ctx, &mods, "shortServerName", prt->shortServerName);
-	ads_mod_repl(ctx, &mods, "uNCName", prt->uNCName);
-	ads_mod_repl(ctx, &mods, "versionNumber", prt->versionNumber);
+	ads_mod_str(ctx, &mods, "printerName", prt->printerName);
+	ads_mod_str(ctx, &mods, "serverName", prt->serverName);
+	ads_mod_str(ctx, &mods, "shortServerName", prt->shortServerName);
+	ads_mod_str(ctx, &mods, "uNCName", prt->uNCName);
+	ads_mod_str(ctx, &mods, "versionNumber", prt->versionNumber);
 
 	/* now the optional ones */
-	ads_mod_repl_list(ctx, &mods, "description", prt->description);
-	ads_mod_repl(ctx, &mods, "assetNumber",prt->assetNumber);
-	ads_mod_repl(ctx, &mods, "bytesPerMinute",prt->bytesPerMinute);
-	ads_mod_repl(ctx, &mods, "defaultPriority",prt->defaultPriority);
-	ads_mod_repl(ctx, &mods, "driverName", prt->driverName);
-	ads_mod_repl(ctx, &mods, "driverVersion",prt->driverVersion);
-	ads_mod_repl(ctx, &mods, "location", prt->location);
-	ads_mod_repl(ctx, &mods, "operatingSystem",prt->operatingSystem);
-	ads_mod_repl(ctx, &mods, "operatingSystemHotfix",
+	ads_mod_strlist(ctx, &mods, "description", prt->description);
+	ads_mod_str(ctx, &mods, "assetNumber",prt->assetNumber);
+	ads_mod_str(ctx, &mods, "bytesPerMinute",prt->bytesPerMinute);
+	ads_mod_str(ctx, &mods, "defaultPriority",prt->defaultPriority);
+	ads_mod_str(ctx, &mods, "driverName", prt->driverName);
+	ads_mod_str(ctx, &mods, "driverVersion",prt->driverVersion);
+	ads_mod_str(ctx, &mods, "location", prt->location);
+	ads_mod_str(ctx, &mods, "operatingSystem",prt->operatingSystem);
+	ads_mod_str(ctx, &mods, "operatingSystemHotfix",
 		     prt->operatingSystemHotfix);
-	ads_mod_repl(ctx, &mods, "operatingSystemServicePack",
+	ads_mod_str(ctx, &mods, "operatingSystemServicePack",
 		     prt->operatingSystemServicePack);
-	ads_mod_repl(ctx, &mods, "operatingSystemVersion",
+	ads_mod_str(ctx, &mods, "operatingSystemVersion",
 		     prt->operatingSystemVersion);
-	ads_mod_repl(ctx, &mods, "physicalLocationObject",
+	ads_mod_str(ctx, &mods, "physicalLocationObject",
 		     prt->physicalLocationObject);
-	ads_mod_repl_list(ctx, &mods, "portName", prt->portName);
-	ads_mod_repl(ctx, &mods, "printStartTime", prt->printStartTime);
-	ads_mod_repl(ctx, &mods, "printEndTime", prt->printEndTime);
-	ads_mod_repl_list(ctx, &mods, "printBinNames", prt->printBinNames);
+	ads_mod_strlist(ctx, &mods, "portName", prt->portName);
+	ads_mod_str(ctx, &mods, "printStartTime", prt->printStartTime);
+	ads_mod_str(ctx, &mods, "printEndTime", prt->printEndTime);
+	ads_mod_strlist(ctx, &mods, "printBinNames", prt->printBinNames);
 	/*... and many others */
 
 	/* do the ldap modify */
@@ -124,12 +126,12 @@ static ADS_STATUS ads_add_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 		return ADS_ERROR(LDAP_NO_MEMORY);
 
 	/* These are the fields a printQueue must contain */
-	ads_mod_add(ctx, &mods, "uNCName", prt->uNCName);
-	ads_mod_add(ctx, &mods, "versionNumber", prt->versionNumber);
-	ads_mod_add(ctx, &mods, "serverName", prt->serverName);
-	ads_mod_add(ctx, &mods, "shortServerName", prt->shortServerName);
-	ads_mod_add(ctx, &mods, "printerName", prt->printerName);
-	ads_mod_add(ctx, &mods, "objectClass", "printQueue");
+	ads_mod_str(ctx, &mods, "uNCName", prt->uNCName);
+	ads_mod_str(ctx, &mods, "versionNumber", prt->versionNumber);
+	ads_mod_str(ctx, &mods, "serverName", prt->serverName);
+	ads_mod_str(ctx, &mods, "shortServerName", prt->shortServerName);
+	ads_mod_str(ctx, &mods, "printerName", prt->printerName);
+	ads_mod_str(ctx, &mods, "objectClass", "printQueue");
 
 
 	status = ads_gen_add(ads, prt_dn, mods);
@@ -157,14 +159,11 @@ ADS_STATUS ads_add_printer(ADS_STRUCT *ads, const ADS_PRINTER_ENTRY *prt)
 			  prt->shortServerName));
 		return status;
 	}
-	host_dn = ldap_get_dn(ads->ld, res);
+	host_dn = ads_get_dn(ads, res);
 	ads_msgfree(ads, res);
 
-	/* printer dn is cn=server-printer followed by host dn */
-	asprintf(&prt_dn, "cn=%s-%s,%s", prt->shortServerName,
-		 prt->printerName, host_dn);
-
-	status = ads_search_dn(ads, &res, prt_dn, attrs);
+	ads_find_printer_on_server(ads, &res, prt->printerName, 
+				   prt->shortServerName);
 
 	if (ADS_ERR_OK(status) && ads_count_replies(ads, res)) {
 		DEBUG(1, ("ads_add_printer: printer %s already exists\n",

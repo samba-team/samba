@@ -32,7 +32,7 @@ struct vfs_syminfo {
    very important.  They must be in the same order as defined in
    vfs.h.  Change at your own peril. */
 
-struct vfs_ops default_vfs_ops = {
+static struct vfs_ops default_vfs_ops = {
 
 	/* Disk operations */
 
@@ -139,7 +139,7 @@ static BOOL vfs_init_custom(connection_struct *conn)
 	/* Open object file */
 
 	if ((conn->dl_handle = sys_dlopen(lp_vfsobj(SNUM(conn)), RTLD_NOW | RTLD_GLOBAL)) == NULL) {
-		DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)), dlerror()));
+		DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)), sys_dlerror()));
 		return False;
 	}
 
@@ -222,7 +222,7 @@ BOOL vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_
 /*******************************************************************
  vfs getwd wrapper 
 ********************************************************************/
-char *vfs_getwd(connection_struct *conn, char *path)
+static char *vfs_getwd(connection_struct *conn, char *path)
 {
 	return conn->vfs_ops.getwd(conn,path);
 }
@@ -562,7 +562,7 @@ int vfs_ChDir(connection_struct *conn, char *path)
 /* number of list structures for a caching GetWd function. */
 #define MAX_GETWDCACHE (50)
 
-struct {
+static struct {
 	SMB_DEV_T dev; /* These *must* be compatible with the types returned in a stat() call. */
 	SMB_INO_T inode; /* These *must* be compatible with the types returned in a stat() call. */
 	char *dos_path; /* The pathname in DOS format. */

@@ -191,7 +191,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	if (i == count)
 		goto done;
 
-	pull_ascii(name, status[i].name, 15, 0, STR_TERMINATE);
+	pull_ascii(name, status[i].name, 15, -1, STR_TERMINATE);
 	result = True;
 
  done:
@@ -207,257 +207,233 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	return result;
 }
 
-/****************************************************************************
- Do a NetBIOS name registation to try to claim a name ...
-***************************************************************************/
-BOOL name_register(int fd, const char *name, int name_type,
-		   struct in_addr name_ip, int opcode,
-		   BOOL bcast, 
-		   struct in_addr to_ip, int *count)
+
+/*
+  comparison function used by sort_ip_list
+*/
+static int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
 {
-  int retries = 3;
-  struct timeval tval;
-  struct packet_struct p;
-  struct packet_struct *p2;
-  struct nmb_packet *nmb = &p.packet.nmb;
-  struct in_addr register_ip;
+	int max_bits1=0, max_bits2=0;
+	int num_interfaces = iface_count();
+	int i;
 
-  DEBUG(4, ("name_register: %s as %s on %s\n", name, inet_ntoa(name_ip), inet_ntoa(to_ip)));
+	for (i=0;i<num_interfaces;i++) {
+		struct in_addr ip;
+		int bits1, bits2;
+		ip = *iface_n_bcast(i);
+		bits1 = matching_quad_bits((uchar *)&ip1->s_addr, (uchar *)&ip.s_addr);
+		bits2 = matching_quad_bits((uchar *)&ip2->s_addr, (uchar *)&ip.s_addr);
+		max_bits1 = MAX(bits1, max_bits1);
+		max_bits2 = MAX(bits2, max_bits2);
+	}	
+	
+	/* bias towards directly reachable IPs */
+	if (iface_local(*ip1)) {
+		max_bits1 += 32;
+	}
+	if (iface_local(*ip2)) {
+		max_bits2 += 32;
+	}
 
-  register_ip.s_addr = name_ip.s_addr;  /* Fix this ... */
-  
-  memset((char *)&p, '\0', sizeof(p));
-
-  *count = 0;
-
-  nmb->header.name_trn_id = generate_trn_id();
-  nmb->header.opcode = opcode;
-  nmb->header.response = False;
-  nmb->header.nm_flags.bcast = False;
-  nmb->header.nm_flags.recursion_available = False;
-  nmb->header.nm_flags.recursion_desired = True;  /* ? */
-  nmb->header.nm_flags.trunc = False;
-  nmb->header.nm_flags.authoritative = True;
-
-  nmb->header.qdcount = 1;
-  nmb->header.ancount = 0;
-  nmb->header.nscount = 0;
-  nmb->header.arcount = 1;
-
-  make_nmb_name(&nmb->question.question_name, name, name_type);
-
-  nmb->question.question_type = 0x20;
-  nmb->question.question_class = 0x1;
-
-  /* Now, create the additional stuff for a registration request */
-
-  if ((nmb->additional = (struct res_rec *)malloc(sizeof(struct res_rec))) == NULL) {
-
-    DEBUG(0, ("name_register: malloc fail for additional record.\n"));
-    return False;
-
-  }
-
-  memset((char *)nmb->additional, '\0', sizeof(struct res_rec));
-
-  nmb->additional->rr_name  = nmb->question.question_name;
-  nmb->additional->rr_type  = RR_TYPE_NB;
-  nmb->additional->rr_class = RR_CLASS_IN;
-
-  /* See RFC 1002, sections 5.1.1.1, 5.1.1.2 and 5.1.1.3 */
-  if (nmb->header.nm_flags.bcast)
-    nmb->additional->ttl = PERMANENT_TTL;
-  else
-    nmb->additional->ttl = lp_max_ttl();
-
-  nmb->additional->rdlength = 6;
-
-  nmb->additional->rdata[0] = NB_MFLAG & 0xFF;
-
-  /* Set the address for the name we are registering. */
-  putip(&nmb->additional->rdata[2], &register_ip);
-
-  p.ip = to_ip;
-  p.port = NMB_PORT;
-  p.fd = fd;
-  p.timestamp = time(NULL);
-  p.packet_type = NMB_PACKET;
-
-  GetTimeOfDay(&tval);
-
-  if (!send_packet(&p))
-    return False;
-
-  retries--;
-
-  if ((p2 = receive_nmb_packet(fd, 10, nmb->header.name_trn_id))) {
-    debug_nmb_packet(p2);
-    SAFE_FREE(p2);  /* No memory leaks ... */
-  }
-
-  return True;
+	return max_bits2 - max_bits1;
 }
+
+/*
+  sort an IP list so that names that are close to one of our interfaces 
+  are at the top. This prevents the problem where a WINS server returns an IP that
+  is not reachable from our subnet as the first match
+*/
+static void sort_ip_list(struct in_addr *iplist, int count)
+{
+	if (count <= 1) {
+		return;
+	}
+
+	qsort(iplist, count, sizeof(struct in_addr), QSORT_CAST ip_compare);	
+}
+
 
 /****************************************************************************
  Do a netbios name query to find someones IP.
  Returns an array of IP addresses or NULL if none.
  *count will be set to the number of addresses returned.
+ *timed_out is set if we failed by timing out
 ****************************************************************************/
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
-			   struct in_addr to_ip, int *count)
+			   struct in_addr to_ip, int *count, int *flags,
+			   BOOL *timed_out)
 {
-  BOOL found=False;
-  int i, retries = 3;
-  int retry_time = bcast?250:2000;
-  struct timeval tval;
-  struct packet_struct p;
-  struct packet_struct *p2;
-  struct nmb_packet *nmb = &p.packet.nmb;
-  struct in_addr *ip_list = NULL;
+	BOOL found=False;
+	int i, retries = 3;
+	int retry_time = bcast?250:2000;
+	struct timeval tval;
+	struct packet_struct p;
+	struct packet_struct *p2;
+	struct nmb_packet *nmb = &p.packet.nmb;
+	struct in_addr *ip_list = NULL;
 
-  memset((char *)&p,'\0',sizeof(p));
-  (*count) = 0;
-
-  nmb->header.name_trn_id = generate_trn_id();
-  nmb->header.opcode = 0;
-  nmb->header.response = False;
-  nmb->header.nm_flags.bcast = bcast;
-  nmb->header.nm_flags.recursion_available = False;
-  nmb->header.nm_flags.recursion_desired = recurse;
-  nmb->header.nm_flags.trunc = False;
-  nmb->header.nm_flags.authoritative = False;
-  nmb->header.rcode = 0;
-  nmb->header.qdcount = 1;
-  nmb->header.ancount = 0;
-  nmb->header.nscount = 0;
-  nmb->header.arcount = 0;
-
-  make_nmb_name(&nmb->question.question_name,name,name_type);
-
-  nmb->question.question_type = 0x20;
-  nmb->question.question_class = 0x1;
-
-  p.ip = to_ip;
-  p.port = NMB_PORT;
-  p.fd = fd;
-  p.timestamp = time(NULL);
-  p.packet_type = NMB_PACKET;
-
-  GetTimeOfDay(&tval);
-
-  if (!send_packet(&p)) 
-    return NULL;
-
-  retries--;
-
+	if (timed_out) {
+		*timed_out = False;
+	}
+	
+	memset((char *)&p,'\0',sizeof(p));
+	(*count) = 0;
+	(*flags) = 0;
+	
+	nmb->header.name_trn_id = generate_trn_id();
+	nmb->header.opcode = 0;
+	nmb->header.response = False;
+	nmb->header.nm_flags.bcast = bcast;
+	nmb->header.nm_flags.recursion_available = False;
+	nmb->header.nm_flags.recursion_desired = recurse;
+	nmb->header.nm_flags.trunc = False;
+	nmb->header.nm_flags.authoritative = False;
+	nmb->header.rcode = 0;
+	nmb->header.qdcount = 1;
+	nmb->header.ancount = 0;
+	nmb->header.nscount = 0;
+	nmb->header.arcount = 0;
+	
+	make_nmb_name(&nmb->question.question_name,name,name_type);
+	
+	nmb->question.question_type = 0x20;
+	nmb->question.question_class = 0x1;
+	
+	p.ip = to_ip;
+	p.port = NMB_PORT;
+	p.fd = fd;
+	p.timestamp = time(NULL);
+	p.packet_type = NMB_PACKET;
+	
+	GetTimeOfDay(&tval);
+	
+	if (!send_packet(&p)) 
+		return NULL;
+	
+	retries--;
+	
 	while (1) {
-	  struct timeval tval2;
-      struct in_addr *tmp_ip_list;
-
-	  GetTimeOfDay(&tval2);
-	  if (TvalDiff(&tval,&tval2) > retry_time) {
-		  if (!retries)
-			  break;
-		  if (!found && !send_packet(&p))
-			  return NULL;
-		  GetTimeOfDay(&tval);
-		  retries--;
-	  }
-	  
-	  if ((p2=receive_nmb_packet(fd,90,nmb->header.name_trn_id))) {     
-		  struct nmb_packet *nmb2 = &p2->packet.nmb;
-		  debug_nmb_packet(p2);
-
-		  /* If we get a Negative Name Query Response from a WINS
-		   * server, we should report it and give up.
-		   */
-		  if( 0 == nmb2->header.opcode		/* A query response   */
-		      && !(bcast)			/* from a WINS server */
-		      && nmb2->header.rcode		/* Error returned     */
-		    ) {
-
-		    if( DEBUGLVL( 3 ) ) {
-		      /* Only executed if DEBUGLEVEL >= 3 */
+		struct timeval tval2;
+		struct in_addr *tmp_ip_list;
+		
+		GetTimeOfDay(&tval2);
+		if (TvalDiff(&tval,&tval2) > retry_time) {
+			if (!retries)
+				break;
+			if (!found && !send_packet(&p))
+				return NULL;
+			GetTimeOfDay(&tval);
+			retries--;
+		}
+		
+		if ((p2=receive_nmb_packet(fd,90,nmb->header.name_trn_id))) {     
+			struct nmb_packet *nmb2 = &p2->packet.nmb;
+			debug_nmb_packet(p2);
+			
+			/* If we get a Negative Name Query Response from a WINS
+			 * server, we should report it and give up.
+			 */
+			if( 0 == nmb2->header.opcode		/* A query response   */
+			    && !(bcast)			/* from a WINS server */
+			    && nmb2->header.rcode		/* Error returned     */
+				) {
+				
+				if( DEBUGLVL( 3 ) ) {
+					/* Only executed if DEBUGLEVEL >= 3 */
 					dbgtext( "Negative name query response, rcode 0x%02x: ", nmb2->header.rcode );
-		      switch( nmb2->header.rcode ) {
-		        case 0x01:
-			  dbgtext( "Request was invalidly formatted.\n" );
-			  break;
-		        case 0x02:
-			  dbgtext( "Problem with NBNS, cannot process name.\n");
-			  break;
-		        case 0x03:
-			  dbgtext( "The name requested does not exist.\n" );
-			  break;
-		        case 0x04:
-			  dbgtext( "Unsupported request error.\n" );
-			  break;
-		        case 0x05:
-			  dbgtext( "Query refused error.\n" );
-			  break;
-		        default:
-			  dbgtext( "Unrecognized error code.\n" );
-			  break;
-		      }
-		    }
-	            free_packet(p2);
-		    return( NULL );
-		  }
-
-		  if (nmb2->header.opcode != 0 ||
-		      nmb2->header.nm_flags.bcast ||
-		      nmb2->header.rcode ||
-		      !nmb2->header.ancount) {
-			  /* 
-			   * XXXX what do we do with this? Could be a
-			   * redirect, but we'll discard it for the
+					switch( nmb2->header.rcode ) {
+					case 0x01:
+						dbgtext( "Request was invalidly formatted.\n" );
+						break;
+					case 0x02:
+						dbgtext( "Problem with NBNS, cannot process name.\n");
+						break;
+					case 0x03:
+						dbgtext( "The name requested does not exist.\n" );
+						break;
+					case 0x04:
+						dbgtext( "Unsupported request error.\n" );
+						break;
+					case 0x05:
+						dbgtext( "Query refused error.\n" );
+						break;
+					default:
+						dbgtext( "Unrecognized error code.\n" );
+						break;
+					}
+				}
+				free_packet(p2);
+				return( NULL );
+			}
+			
+			if (nmb2->header.opcode != 0 ||
+			    nmb2->header.nm_flags.bcast ||
+			    nmb2->header.rcode ||
+			    !nmb2->header.ancount) {
+				/* 
+				 * XXXX what do we do with this? Could be a
+				 * redirect, but we'll discard it for the
 				 * moment.
 				 */
-			  free_packet(p2);
-			  continue;
-		  }
-
-          tmp_ip_list = (struct in_addr *)Realloc( ip_list, sizeof( ip_list[0] )
-                                                * ( (*count) + nmb2->answers->rdlength/6 ) );
- 
-          if (!tmp_ip_list) {
-              DEBUG(0,("name_query: Realloc failed.\n"));
-              SAFE_FREE(ip_list);
-          }
- 
-          ip_list = tmp_ip_list;
-
-		  if (ip_list) {
+				free_packet(p2);
+				continue;
+			}
+			
+			tmp_ip_list = (struct in_addr *)Realloc( ip_list, sizeof( ip_list[0] )
+								 * ( (*count) + nmb2->answers->rdlength/6 ) );
+			
+			if (!tmp_ip_list) {
+				DEBUG(0,("name_query: Realloc failed.\n"));
+				SAFE_FREE(ip_list);
+			}
+			
+			ip_list = tmp_ip_list;
+			
+			if (ip_list) {
 				DEBUG(2,("Got a positive name query response from %s ( ", inet_ntoa(p2->ip)));
-			  for (i=0;i<nmb2->answers->rdlength/6;i++) {
-				  putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
-				  DEBUGADD(2,("%s ",inet_ntoa(ip_list[(*count)])));
-				  (*count)++;
-			  }
-			  DEBUGADD(2,(")\n"));
-		  }
+				for (i=0;i<nmb2->answers->rdlength/6;i++) {
+					putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
+					DEBUGADD(2,("%s ",inet_ntoa(ip_list[(*count)])));
+					(*count)++;
+				}
+				DEBUGADD(2,(")\n"));
+			}
+			
+			found=True;
+			retries=0;
+			/* We add the flags back ... */
+			if (nmb2->header.response)
+				(*flags) |= NM_FLAGS_RS;
+			if (nmb2->header.nm_flags.authoritative)
+				(*flags) |= NM_FLAGS_AA;
+			if (nmb2->header.nm_flags.trunc)
+				(*flags) |= NM_FLAGS_TC;
+			if (nmb2->header.nm_flags.recursion_desired)
+				(*flags) |= NM_FLAGS_RD;
+			if (nmb2->header.nm_flags.recursion_available)
+				(*flags) |= NM_FLAGS_RA;
+			if (nmb2->header.nm_flags.bcast)
+				(*flags) |= NM_FLAGS_B;
+			free_packet(p2);
+			/*
+			 * If we're doing a unicast lookup we only
+			 * expect one reply. Don't wait the full 2
+			 * seconds if we got one. JRA.
+			 */
+			if(!bcast && found)
+				break;
+		}
+	}
 
-		  found=True;
-		  retries=0;
-		  free_packet(p2);
-		  /*
-		   * If we're doing a unicast lookup we only
-		   * expect one reply. Don't wait the full 2
-		   * seconds if we got one. JRA.
-		   */
-		  if(!bcast && found)
-			  break;
-	  }
-  }
+	if (timed_out) {
+		*timed_out = True;
+	}
 
-  /* Reach here if we've timed out waiting for replies.. */
-	if( !bcast && !found ) {
-    /* Timed out wating for WINS server to respond.  Mark it dead. */
-    wins_srv_died( to_ip );
-    }
+	/* sort the ip list so we choose close servers first if possible */
+	sort_ip_list(ip_list, *count);
 
-  return ip_list;
+	return ip_list;
 }
 
 /********************************************************
@@ -569,75 +545,6 @@ void endlmhosts(XFILE *fp)
 	x_fclose(fp);
 }
 
-BOOL name_register_wins(const char *name, int name_type)
-{
-  int sock, i, return_count;
-  int num_interfaces = iface_count();
-  struct in_addr sendto_ip;
-
-  /* 
-   * Check if we have any interfaces, prevents a segfault later
-   */
-
-  if (num_interfaces <= 0)
-    return False;         /* Should return some indication of the problem */
-
-  /*
-   * Do a broadcast register ...
-   */
-
-  if (0 == wins_srv_count())
-    return False;
-
-  if( DEBUGLVL( 4 ) )
-    {
-    dbgtext( "name_register_wins: Registering my name %s ", name );
-    dbgtext( "with WINS server %s.\n", wins_srv_name() );
-    }
-
-  sock = open_socket_in( SOCK_DGRAM, 0, 3, 
-			 interpret_addr("0.0.0.0"), True );
-
-  if (sock == -1) return False;
-
-  set_socket_options(sock, "SO_BROADCAST");     /* ????! crh */
-
-  sendto_ip = wins_srv_ip();
-
-  if (num_interfaces > 1) {
-
-    for (i = 0; i < num_interfaces; i++) {
-      
-      if (!name_register(sock, name, name_type, *iface_n_ip(i), 
-			 NMB_NAME_MULTIHOMED_REG_OPCODE,
-			 True, sendto_ip, &return_count)) {
-
-	close(sock);
-	return False;
-
-      }
-
-    }
-
-  }
-  else {
-
-    if (!name_register(sock, name, name_type, *iface_n_ip(0),
-		       NMB_NAME_REG_OPCODE,
-		       True, sendto_ip, &return_count)) {
-
-      close(sock);
-      return False;
-
-    }
-
-  }
-
-  close(sock);
-
-  return True;
-
-}
 
 /********************************************************
  Resolve via "bcast" method.
@@ -670,10 +577,11 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 	 */
 	for( i = num_interfaces-1; i >= 0; i--) {
 		struct in_addr sendto_ip;
+		int flags;
 		/* Done this way to fix compiler error on IRIX 5.x */
 		sendto_ip = *iface_n_bcast(i);
 		*return_ip_list = name_query(sock, name, name_type, True, 
-				    True, sendto_ip, return_count);
+				    True, sendto_ip, return_count, &flags, NULL);
 		if(*return_ip_list != NULL) {
 			close(sock);
 			return True;
@@ -687,62 +595,88 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 /********************************************************
  Resolve via "wins" method.
 *********************************************************/
-
-static BOOL resolve_wins(const char *name, int name_type,
-                         struct in_addr **return_iplist, int *return_count)
+BOOL resolve_wins(const char *name, int name_type,
+		  struct in_addr **return_iplist, int *return_count)
 {
-	int sock;
-	struct in_addr wins_ip;
-	BOOL wins_ismyip;
+	int sock, t, i;
+	char **wins_tags;
+	struct in_addr src_ip;
 
 	*return_iplist = NULL;
 	*return_count = 0;
 	
-	/*
-	 * "wins" means do a unicast lookup to the WINS server.
-	 * Ignore if there is no WINS server specified or if the
-	 * WINS server is one of our interfaces (if we're being
-	 * called from within nmbd - we can't do this call as we
-	 * would then block).
-	 */
-
 	DEBUG(3,("resolve_wins: Attempting wins lookup for name %s<0x%x>\n", name, name_type));
 
-	if (lp_wins_support()) {
-		/*
-		 * We're providing WINS support. Call ourselves so
-		 * long as we're not nmbd.
-		 */
-		extern struct in_addr loopback_ip;
-		wins_ip = loopback_ip;
-		wins_ismyip = True;
-	} else if( wins_srv_count() < 1 ) {
+	if (wins_srv_count() < 1) {
 		DEBUG(3,("resolve_wins: WINS server resolution selected and no WINS servers listed.\n"));
 		return False;
-	} else {
-		wins_ip     = wins_srv_ip();
-		wins_ismyip = ismyip(wins_ip);
 	}
 
-	DEBUG(3, ("resolve_wins: WINS server == <%s>\n", inet_ntoa(wins_ip)) );
-	if((wins_ismyip && !global_in_nmbd) || !wins_ismyip) {
-		sock = open_socket_in(  SOCK_DGRAM, 0, 3,
-					interpret_addr(lp_socket_address()),
-					True );
-		if (sock != -1) {
-			*return_iplist = name_query( sock,      name,
-						     name_type, False, 
-						     True,      wins_ip,
-						     return_count);
-			if(*return_iplist != NULL) {
-				close(sock);
-				return True;
+	/* we try a lookup on each of the WINS tags in turn */
+	wins_tags = wins_srv_tags();
+
+	if (!wins_tags) {
+		/* huh? no tags?? give up in disgust */
+		return False;
+	}
+
+	/* the address we will be sending from */
+	src_ip = *interpret_addr2(lp_socket_address());
+
+	/* in the worst case we will try every wins server with every
+	   tag! */
+	for (t=0; wins_tags && wins_tags[t]; t++) {
+		int srv_count = wins_srv_count_tag(wins_tags[t]);
+		for (i=0; i<srv_count; i++) {
+			struct in_addr wins_ip;
+			int flags;
+			BOOL timed_out;
+
+			wins_ip = wins_srv_ip_tag(wins_tags[t], src_ip);
+
+			if (global_in_nmbd && ismyip(wins_ip)) {
+				/* yikes! we'll loop forever */
+				continue;
+			}
+
+			/* skip any that have been unresponsive lately */
+			if (wins_srv_is_dead(wins_ip, src_ip)) {
+				continue;
+			}
+
+			DEBUG(3,("resolve_wins: using WINS server %s and tag '%s'\n", inet_ntoa(wins_ip), wins_tags[t]));
+
+			sock = open_socket_in(SOCK_DGRAM, 0, 3, src_ip.s_addr, True);
+			if (sock == -1) {
+				continue;
+			}
+
+			*return_iplist = name_query(sock,name,name_type, False, 
+						    True, wins_ip, return_count, &flags, 
+						    &timed_out);
+			if (*return_iplist != NULL) {
+				goto success;
 			}
 			close(sock);
+
+			if (timed_out) {
+				/* Timed out wating for WINS server to respond.  Mark it dead. */
+				wins_srv_died(wins_ip, src_ip);
+			} else {
+				/* The name definately isn't in this
+				   group of WINS servers. goto the next group  */
+				break;
+			}
 		}
 	}
 
+	wins_srv_tags_free(wins_tags);
 	return False;
+
+success:
+	wins_srv_tags_free(wins_tags);
+	close(sock);
+	return True;
 }
 
 /********************************************************
@@ -992,52 +926,6 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 	return False;
 }
 
-
-/********************************************************
- resolve a name of format \\server_name or \\ipaddress
- into a name.  also, cut the \\ from the front for us.
-*********************************************************/
-
-BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
-                                struct in_addr *ip)
-{
-        BOOL ret;
-        const char *sv_name = srv_name;
-
-        DEBUG(10,("resolve_srv_name: %s\n", srv_name));
-
-        if (srv_name == NULL || strequal("\\\\.", srv_name))
-        {
-                extern pstring global_myname;
-                fstrcpy(dest_host, global_myname);
-                ip = interpret_addr2("127.0.0.1");
-                return True;
-        }
-
-        if (strnequal("\\\\", srv_name, 2))
-        {
-                sv_name = &srv_name[2];
-        }
-
-        fstrcpy(dest_host, sv_name);
-        /* treat the '*' name specially - it is a magic name for the PDC */
-        if (strcmp(dest_host,"*") == 0) {
-                extern pstring global_myname;
-                ret = resolve_name(lp_workgroup(), ip, 0x1B);
-                lookup_dc_name(global_myname, lp_workgroup(), ip, dest_host);
-        } else {
-                ret = resolve_name(dest_host, ip, 0x20);
-        }
-        
-        if (is_ipaddress(dest_host))
-        {
-                fstrcpy(dest_host, "*SMBSERVER");
-        }
-        
-        return ret;
-}
-
-
 /********************************************************
  Find the IP address of the master browser or DMB for a workgroup.
 *********************************************************/
@@ -1269,14 +1157,6 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 #endif /* defined(I_HATE_WINDOWS_REPLY_CODE) */
 }
 
-/********************************************************
-  Get the IP address list of the Local Master Browsers
- ********************************************************/ 
-
-BOOL get_lmb_list(struct in_addr **ip_list, int *count)
-{
-    return internal_resolve_name( MSBROWSE, 0x1, ip_list, count);
-}
 
 /********************************************************
  Get the IP address list of the PDC/BDC's of a Domain.

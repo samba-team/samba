@@ -5,6 +5,7 @@
    Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
    Copyright (C) Gerald (Jerry) Carter		2000-2001
    Copyright (C) Andrew Bartlett		2001-2002
+   Copyright (C) Stefan (metze) Metzmacher	2002
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +23,9 @@
 */
 
 #include "includes.h"
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_PASSDB
 
 /**
  * @todo Redefine this to NULL, but this changes the API becouse
@@ -138,21 +142,35 @@ const uint8* pdb_get_lanman_passwd (const SAM_ACCOUNT *sampass)
 		return (NULL);
 }
 
-uint32 pdb_get_user_rid (const SAM_ACCOUNT *sampass)
+/* Return the plaintext password if known.  Most of the time
+   it isn't, so don't assume anything magic about this function.
+   
+   Used to pass the plaintext to passdb backends that might 
+   want to store more than just the NTLM hashes.
+*/
+const char* pdb_get_plaintext_passwd (const SAM_ACCOUNT *sampass)
 {
-	if (sampass)
-		return (sampass->private.user_rid);
+	if (sampass) {
+		return ((char*)sampass->private.plaintext_pw.data);
+	}
 	else
-		return (-1);
+		return (NULL);
+}
+const DOM_SID *pdb_get_user_sid(const SAM_ACCOUNT *sampass)
+{
+	if (sampass) 
+		return &sampass->private.user_sid;
+	else
+		return (NULL);
 }
 
-uint32 pdb_get_group_rid (const SAM_ACCOUNT *sampass)
+const DOM_SID *pdb_get_group_sid(const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->private.group_rid);
-	else
-		return (-1);
-}
+		return &sampass->private.group_sid;
+	else	
+		return (NULL);
+}	
 
 /**
  * Get flags showing what is initalised in the SAM_ACCOUNT
@@ -220,6 +238,14 @@ const char* pdb_get_homedir (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
 		return (sampass->private.home_dir);
+	else
+		return (NULL);
+}
+
+const char* pdb_get_unix_homedir (const SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->private.unix_home_dir);
 	else
 		return (NULL);
 }
@@ -461,27 +487,72 @@ BOOL pdb_set_gid (SAM_ACCOUNT *sampass, const gid_t gid)
 
 }
 
-BOOL pdb_set_user_rid (SAM_ACCOUNT *sampass, uint32 rid)
+BOOL pdb_set_user_sid (SAM_ACCOUNT *sampass, DOM_SID *u_sid)
 {
-	if (!sampass)
+	if (!sampass || !u_sid)
 		return False;
+	
+	sid_copy(&sampass->private.user_sid, u_sid);
 
-	DEBUG(10, ("pdb_set_rid: setting user rid %d, was %d\n", 
-		   rid, sampass->private.user_rid));
- 
-	sampass->private.user_rid = rid;
+	DEBUG(10, ("pdb_set_user_sid: setting user sid %s\n", 
+		    sid_string_static(&sampass->private.user_sid)));
+	
 	return True;
 }
 
-BOOL pdb_set_group_rid (SAM_ACCOUNT *sampass, uint32 grid)
+BOOL pdb_set_user_sid_from_string (SAM_ACCOUNT *sampass, fstring u_sid)
 {
-	if (!sampass)
+	DOM_SID new_sid;
+	if (!sampass || !u_sid)
 		return False;
 
-	DEBUG(10, ("pdb_set_group_rid: setting group rid %d, was %d\n", 
-		   grid, sampass->private.group_rid));
- 
-	sampass->private.group_rid = grid;
+	DEBUG(10, ("pdb_set_user_sid_from_string: setting user sid %s\n",
+		   u_sid));
+
+	if (!string_to_sid(&new_sid, u_sid)) { 
+		DEBUG(1, ("pdb_set_user_sid_from_string: %s isn't a valid SID!\n", u_sid));
+		return False;
+	}
+	 
+	if (!pdb_set_user_sid(sampass, &new_sid)) {
+		DEBUG(1, ("pdb_set_user_sid_from_string: could not set sid %s on SAM_ACCOUNT!\n", u_sid));
+		return False;
+	}
+
+	return True;
+}
+
+BOOL pdb_set_group_sid (SAM_ACCOUNT *sampass, DOM_SID *g_sid)
+{
+	if (!sampass || !g_sid)
+		return False;
+
+	sid_copy(&sampass->private.group_sid, g_sid);
+
+	DEBUG(10, ("pdb_set_group_sid: setting group sid %s\n", 
+		    sid_string_static(&sampass->private.group_sid)));
+
+	return True;
+}
+
+BOOL pdb_set_group_sid_from_string (SAM_ACCOUNT *sampass, fstring g_sid)
+{
+	DOM_SID new_sid;
+	if (!sampass || !g_sid)
+		return False;
+
+	DEBUG(10, ("pdb_set_group_sid_from_string: setting group sid %s\n",
+		   g_sid));
+
+	if (!string_to_sid(&new_sid, g_sid)) { 
+		DEBUG(1, ("pdb_set_group_sid_from_string: %s isn't a valid SID!\n", g_sid));
+		return False;
+	}
+	 
+	if (!pdb_set_group_sid(sampass, &new_sid)) {
+		DEBUG(1, ("pdb_set_group_sid_from_string: could not set sid %s on SAM_ACCOUNT!\n", g_sid));
+		return False;
+	}
 	return True;
 }
 
@@ -618,7 +689,7 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, const char *logon_script, BOOL s
 	}
 	
 	if (store) {
-		DEBUG(10, ("pdb_set_logon_script: setting logon script sam flag!"));
+		DEBUG(10, ("pdb_set_logon_script: setting logon script sam flag!\n"));
 		pdb_set_init_flag(sampass, FLAG_SAM_LOGONSCRIPT);
 	}
 
@@ -650,7 +721,7 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, const char *profile_path, BOOL 
 	}
 
 	if (store) {
-		DEBUG(10, ("pdb_set_profile_path: setting profile path sam flag!"));
+		DEBUG(10, ("pdb_set_profile_path: setting profile path sam flag!\n"));
 		pdb_set_init_flag(sampass, FLAG_SAM_PROFILE);
 	}
 
@@ -682,7 +753,7 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, const char *dir_drive, BOOL store)
 	}
 	
 	if (store) {
-		DEBUG(10, ("pdb_set_dir_drive: setting dir drive sam flag!"));
+		DEBUG(10, ("pdb_set_dir_drive: setting dir drive sam flag!\n"));
 		pdb_set_init_flag(sampass, FLAG_SAM_DRIVE);
 	}
 
@@ -714,8 +785,36 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, const char *home_dir, BOOL store)
 	}
 
 	if (store) {
-		DEBUG(10, ("pdb_set_homedir: setting home dir sam flag!"));
+		DEBUG(10, ("pdb_set_homedir: setting home dir sam flag!\n"));
 		pdb_set_init_flag(sampass, FLAG_SAM_SMBHOME);
+	}
+
+	return True;
+}
+
+/*********************************************************************
+ Set the user's unix home directory.
+ ********************************************************************/
+
+BOOL pdb_set_unix_homedir (SAM_ACCOUNT *sampass, const char *unix_home_dir)
+{
+	if (!sampass)
+		return False;
+
+	if (unix_home_dir) { 
+		DEBUG(10, ("pdb_set_unix_homedir: setting home dir %s, was %s\n", unix_home_dir,
+			(sampass->private.unix_home_dir)?(sampass->private.unix_home_dir):"NULL"));
+ 
+		sampass->private.unix_home_dir = talloc_strdup(sampass->mem_ctx, 
+							  unix_home_dir);
+		
+		if (!sampass->private.unix_home_dir) {
+			DEBUG(0, ("pdb_set_unix_home_dir: talloc_strdup() failed!\n"));
+			return False;
+		}
+
+	} else {
+		sampass->private.unix_home_dir = PDB_NOT_QUITE_NULL;
 	}
 
 	return True;
@@ -840,7 +939,7 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, const uint8 *pwd)
  Set the user's LM hash.
  ********************************************************************/
 
-BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 *pwd)
+BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 pwd[16])
 {
 	if (!sampass)
 		return False;
@@ -848,6 +947,23 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 *pwd)
 	data_blob_clear_free(&sampass->private.lm_pw);
 	
 	sampass->private.lm_pw = data_blob(pwd, LM_HASH_LEN);
+
+	return True;
+}
+
+/*********************************************************************
+ Set the user's plaintext password only (base procedure, see helper
+ below)
+ ********************************************************************/
+
+BOOL pdb_set_plaintext_pw_only (SAM_ACCOUNT *sampass, const uint8 *password, size_t len)
+{
+	if (!sampass)
+		return False;
+
+	data_blob_clear_free(&sampass->private.plaintext_pw);
+	
+	sampass->private.plaintext_pw = data_blob(password, len);
 
 	return True;
 }

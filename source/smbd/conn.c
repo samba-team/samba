@@ -166,7 +166,7 @@ void conn_free(connection_struct *conn)
 	    
 	if (conn->dl_handle != NULL) {
 		/* Close dlopen() handle */
-		dlclose(conn->dl_handle);
+		sys_dlclose(conn->dl_handle);
 	}
 
 	DLIST_REMOVE(Connections, conn);

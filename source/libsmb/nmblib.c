@@ -1045,7 +1045,7 @@ BOOL match_mailslot_name(struct packet_struct *p, char *mailslot_name)
 /****************************************************************************
 return the number of bits that match between two 4 character buffers
   ***************************************************************************/
-static int matching_bits(uchar *p1, uchar *p2)
+int matching_quad_bits(uchar *p1, uchar *p2)
 {
 	int i, j, ret = 0;
 	for (i=0; i<4; i++) {
@@ -1071,7 +1071,7 @@ compare two query reply records
   ***************************************************************************/
 static int name_query_comp(uchar *p1, uchar *p2)
 {
-	return matching_bits(p2+2, sort_ip) - matching_bits(p1+2, sort_ip);
+	return matching_quad_bits(p2+2, sort_ip) - matching_quad_bits(p1+2, sort_ip);
 }
 
 /****************************************************************************

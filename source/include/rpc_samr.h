@@ -79,7 +79,7 @@ SamrTestPrivateFunctionsUser
 
 #define SAMR_CONNECT_ANON      0x00
 #define SAMR_CLOSE_HND         0x01
-#define SAMR_UNKNOWN_2         0x02 /* set sec object? */
+#define SAMR_SET_SEC_OBJECT    0x02
 #define SAMR_QUERY_SEC_OBJECT  0x03
 
 #define SAMR_UNKNOWN_4         0x04 /* profile info? */
@@ -144,6 +144,175 @@ SamrTestPrivateFunctionsUser
 #define SAMR_GET_DOM_PWINFO    0x38
 #define SAMR_CONNECT           0x39
 #define SAMR_SET_USERINFO      0x3A
+
+/* Access bits to the SAM-object */
+
+#define SAMR_ACCESS_UNKNOWN_1        0x00000001
+#define SAMR_ACCESS_SHUTDOWN_SERVER  0x00000002
+#define SAMR_ACCESS_UNKNOWN_4        0x00000004
+#define SAMR_ACCESS_UNKNOWN_8        0x00000008
+#define SAMR_ACCESS_ENUM_DOMAINS     0x00000010
+#define SAMR_ACCESS_OPEN_DOMAIN      0x00000020
+
+#define SAMR_ALL_ACCESS  ( STANDARD_RIGHTS_REQUIRED_ACCESS | \
+                           SAMR_ACCESS_OPEN_DOMAIN         | \
+			   SAMR_ACCESS_ENUM_DOMAINS        | \
+			   SAMR_ACCESS_UNKNOWN_8           | \
+			   SAMR_ACCESS_UNKNOWN_4           | \
+			   SAMR_ACCESS_SHUTDOWN_SERVER     | \
+			   SAMR_ACCESS_UNKNOWN_1 )
+			   
+#define SAMR_READ        ( STANDARD_RIGHTS_READ_ACCESS     | \
+                           SAMR_ACCESS_ENUM_DOMAINS )
+
+#define SAMR_WRITE       ( STANDARD_RIGHTS_WRITE_ACCESS    | \
+                           SAMR_ACCESS_UNKNOWN_8           | \
+			   SAMR_ACCESS_UNKNOWN_4           | \
+			   SAMR_ACCESS_SHUTDOWN_SERVER )
+
+#define SAMR_EXECUTE     ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
+                           SAMR_ACCESS_OPEN_DOMAIN         | \
+			   SAMR_ACCESS_UNKNOWN_1 )            
+
+/* Access bits to Domain-objects */
+
+#define DOMAIN_ACCESS_LOOKUP_INFO_1  0x000000001
+#define DOMAIN_ACCESS_SET_INFO_1     0x000000002
+#define DOMAIN_ACCESS_LOOKUP_INFO_2  0x000000004
+#define DOMAIN_ACCESS_SET_INFO_2     0x000000008
+#define DOMAIN_ACCESS_CREATE_USER    0x000000010
+#define DOMAIN_ACCESS_CREATE_GROUP   0x000000020
+#define DOMAIN_ACCESS_CREATE_ALIAS   0x000000040
+#define DOMAIN_ACCESS_UNKNOWN_80     0x000000080
+#define DOMAIN_ACCESS_ENUM_ACCOUNTS  0x000000100
+#define DOMAIN_ACCESS_OPEN_ACCOUNT   0x000000200
+#define DOMAIN_ACCESS_SET_INFO_3     0x000000400
+
+#define DOMAIN_ALL_ACCESS  ( STANDARD_RIGHTS_REQUIRED_ACCESS | \
+                             DOMAIN_ACCESS_SET_INFO_3        | \
+			     DOMAIN_ACCESS_OPEN_ACCOUNT      | \
+			     DOMAIN_ACCESS_ENUM_ACCOUNTS     | \
+			     DOMAIN_ACCESS_UNKNOWN_80        | \
+			     DOMAIN_ACCESS_CREATE_ALIAS      | \
+			     DOMAIN_ACCESS_CREATE_GROUP      | \
+			     DOMAIN_ACCESS_CREATE_USER       | \
+			     DOMAIN_ACCESS_SET_INFO_2        | \
+			     DOMAIN_ACCESS_LOOKUP_INFO_2     | \
+			     DOMAIN_ACCESS_SET_INFO_1        | \
+			     DOMAIN_ACCESS_LOOKUP_INFO_1 )
+			   
+#define DOMAIN_READ        ( STANDARD_RIGHTS_READ_ACCESS     | \
+                             DOMAIN_ACCESS_UNKNOWN_80        | \
+			     DOMAIN_ACCESS_LOOKUP_INFO_2 )
+
+#define DOMAIN_WRITE       ( STANDARD_RIGHTS_WRITE_ACCESS    | \
+                             DOMAIN_ACCESS_SET_INFO_3        | \
+			     DOMAIN_ACCESS_CREATE_ALIAS      | \
+			     DOMAIN_ACCESS_CREATE_GROUP      | \
+			     DOMAIN_ACCESS_CREATE_USER       | \
+			     DOMAIN_ACCESS_SET_INFO_2        | \
+			     DOMAIN_ACCESS_SET_INFO_1 )
+
+#define DOMAIN_EXECUTE     ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
+                             DOMAIN_ACCESS_OPEN_ACCOUNT      | \
+			     DOMAIN_ACCESS_ENUM_ACCOUNTS     | \
+			     DOMAIN_ACCESS_LOOKUP_INFO_1 )            
+
+/* Access bits to User-objects */
+
+#define USER_ACCESS_GET_NAME_ETC     0x000000001
+#define USER_ACCESS_GET_LOCALE       0x000000002
+#define USER_ACCESS_SET_LOC_COM      0x000000004
+#define USER_ACCESS_GET_LOGONINFO    0x000000008
+#define USER_ACCESS_UNKNOWN_10       0x000000010
+#define USER_ACCESS_SET_ATTRIBUTES   0x000000020
+#define USER_ACCESS_CHANGE_PASSWORD  0x000000040
+#define USER_ACCESS_SET_PASSWORD     0x000000080
+#define USER_ACCESS_GET_GROUPS       0x000000100
+#define USER_ACCESS_UNKNOWN_200      0x000000200
+#define USER_ACCESS_UNKNOWN_400      0x000000400
+
+#define USER_ALL_ACCESS    ( STANDARD_RIGHTS_REQUIRED_ACCESS | \
+                             USER_ACCESS_UNKNOWN_400       | \
+			     USER_ACCESS_UNKNOWN_200       | \
+			     USER_ACCESS_GET_GROUPS        | \
+			     USER_ACCESS_SET_PASSWORD      | \
+			     USER_ACCESS_CHANGE_PASSWORD   | \
+			     USER_ACCESS_SET_ATTRIBUTES    | \
+			     USER_ACCESS_UNKNOWN_10        | \
+			     USER_ACCESS_GET_LOGONINFO     | \
+			     USER_ACCESS_SET_LOC_COM       | \
+			     USER_ACCESS_GET_LOCALE        | \
+			     USER_ACCESS_GET_NAME_ETC )
+			   
+#define USER_READ          ( STANDARD_RIGHTS_READ_ACCESS     | \
+                             USER_ACCESS_UNKNOWN_200         | \
+			     USER_ACCESS_GET_GROUPS          | \
+			     USER_ACCESS_UNKNOWN_10          | \
+			     USER_ACCESS_GET_LOGONINFO       | \
+			     USER_ACCESS_GET_LOCALE )
+
+#define USER_WRITE         ( STANDARD_RIGHTS_WRITE_ACCESS    | \
+                             USER_ACCESS_CHANGE_PASSWORD     | \
+			     USER_ACCESS_SET_LOC_COM )
+			     
+#define USER_EXECUTE       ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
+                             USER_ACCESS_CHANGE_PASSWORD     | \
+			     USER_ACCESS_GET_NAME_ETC )
+
+/* Access bits to Group-objects */
+
+#define GROUP_ACCESS_LOOKUP_INFO     0x00000001
+#define GROUP_ACCESS_SET_INFO        0x00000002
+#define GROUP_ACCESS_ADD_MEMBER      0x00000004
+#define GROUP_ACCESS_REMOVE_MEMBER   0x00000008
+#define GROUP_ACCESS_GET_MEMBERS     0x00000010
+
+#define GROUP_ALL_ACCESS   ( STANDARD_RIGHTS_REQUIRED_ACCESS | \
+                             GROUP_ACCESS_GET_MEMBERS        | \
+			     GROUP_ACCESS_REMOVE_MEMBER      | \
+			     GROUP_ACCESS_ADD_MEMBER         | \
+			     GROUP_ACCESS_SET_INFO           | \
+			     GROUP_ACCESS_LOOKUP_INFO )
+			   
+#define GROUP_READ         ( STANDARD_RIGHTS_READ_ACCESS     | \
+                             GROUP_ACCESS_GET_MEMBERS )
+
+#define GROUP_WRITE        ( STANDARD_RIGHTS_WRITE_ACCESS    | \
+                             GROUP_ACCESS_REMOVE_MEMBER      | \
+			     GROUP_ACCESS_ADD_MEMBER         | \
+			     GROUP_ACCESS_SET_INFO )
+			     
+#define GROUP_EXECUTE      ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
+                             GROUP_ACCESS_LOOKUP_INFO )
+			     
+/* Access bits to Alias-objects */
+
+#define ALIAS_ACCESS_ADD_MEMBER      0x00000001
+#define ALIAS_ACCESS_REMOVE_MEMBER   0x00000002
+#define ALIAS_ACCESS_GET_MEMBERS     0x00000004
+#define ALIAS_ACCESS_LOOKUP_INFO     0x00000008
+#define ALIAS_ACCESS_SET_INFO        0x00000010
+
+#define ALIAS_ALL_ACCESS   ( STANDARD_RIGHTS_REQUIRED_ACCESS | \
+                             ALIAS_ACCESS_GET_MEMBERS        | \
+			     ALIAS_ACCESS_REMOVE_MEMBER      | \
+			     ALIAS_ACCESS_ADD_MEMBER         | \
+			     ALIAS_ACCESS_SET_INFO           | \
+			     ALIAS_ACCESS_LOOKUP_INFO )
+			   
+#define ALIAS_READ         ( STANDARD_RIGHTS_READ_ACCESS     | \
+                             ALIAS_ACCESS_GET_MEMBERS )
+
+#define ALIAS_WRITE        ( STANDARD_RIGHTS_WRITE_ACCESS    | \
+                             ALIAS_ACCESS_REMOVE_MEMBER      | \
+			     ALIAS_ACCESS_ADD_MEMBER         | \
+			     ALIAS_ACCESS_SET_INFO )
+			     
+#define ALIAS_EXECUTE      ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
+                             ALIAS_ACCESS_LOOKUP_INFO )
+
+
 
 
 typedef struct _DISP_USER_INFO {
@@ -450,6 +619,26 @@ typedef struct r_samr_usrdom_pwinfo_info
 	NTSTATUS status; 
 
 } SAMR_R_GET_USRDOM_PWINFO;
+
+/****************************************************************************
+SAMR_Q_SET_SEC_OBJ - info level 4.
+*****************************************************************************/
+
+/* SAMR_Q_SET_SEC_OBJ - */
+typedef struct q_samr_set_sec_obj_info
+{
+	POLICY_HND pol;          /* policy handle */
+	uint32 sec_info;         /* xxxx_SECURITY_INFORMATION 0x0000 0004 */
+	SEC_DESC_BUF *buf;
+
+} SAMR_Q_SET_SEC_OBJ;
+
+/* SAMR_R_SET_SEC_OBJ - */
+typedef struct r_samr_set_sec_obj_info
+{
+	NTSTATUS status;         /* return status */
+
+} SAMR_R_SET_SEC_OBJ;
 
 
 /****************************************************************************
@@ -1693,9 +1882,16 @@ typedef struct q_samr_get_dom_pwinfo
 /* SAMR_R_GET_DOM_PWINFO */
 typedef struct r_samr_get_dom_pwinfo
 {
-	uint16 unk_0;
-	uint16 unk_1;
-	uint16 unk_2;
+	/*
+	 * Previously this was 3 uint16's.  However, after some tests
+	 * it appears that the data len for the signing needs to be 16.
+	 * Not sure how 3 unit16's ever worked since the length always
+	 * turned out to 12.  3 uint32's + NT_STATUS == 16 bytes.  Tested
+	 * using NT and 2k.  --jerry
+	 */
+	uint32 unk_0;
+	uint32 unk_1;
+	uint32 unk_2;
 	NTSTATUS status;
 
 } SAMR_R_GET_DOM_PWINFO;

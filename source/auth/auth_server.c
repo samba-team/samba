@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 extern pstring global_myname;
 extern userdom_struct current_user_info;
 
@@ -46,7 +49,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	p = pserver;
 
         while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
-		standard_sub_basic(current_user_info.smb_name, desthost);
+		standard_sub_basic(current_user_info.smb_name, desthost, sizeof(desthost));
 		strupper(desthost);
 
 		if(!resolve_name( desthost, &dest_ip, 0x20)) {
@@ -59,6 +62,15 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 			continue;
 		}
 
+		/* we use a mutex to prevent two connections at once - when a 
+		   Win2k PDC get two connections where one hasn't completed a 
+		   session setup yet it will send a TCP reset to the first 
+		   connection (tridge) */
+
+		if (!grab_server_mutex(desthost)) {
+			return NULL;
+		}
+
 		if (cli_connect(cli, desthost, &dest_ip)) {
 			DEBUG(3,("connected to password server %s\n",desthost));
 			connected_ok = True;
@@ -67,13 +79,19 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	}
 
 	if (!connected_ok) {
+		release_server_mutex();
 		DEBUG(0,("password server not available\n"));
 		cli_shutdown(cli);
 		return NULL;
 	}
-
-	if (!attempt_netbios_session_request(cli, global_myname, desthost, &dest_ip))
+	
+	if (!attempt_netbios_session_request(cli, global_myname, 
+					     desthost, &dest_ip)) {
+		release_server_mutex();
+		DEBUG(1,("password server fails session request\n"));
+		cli_shutdown(cli);
 		return NULL;
+	}
 	
 	if (strequal(desthost,myhostname())) {
 		exit_server("Password server loop!");
@@ -83,19 +101,37 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
 	if (!cli_negprot(cli)) {
 		DEBUG(1,("%s rejected the negprot\n",desthost));
+		release_server_mutex();
 		cli_shutdown(cli);
 		return NULL;
 	}
 
 	if (cli->protocol < PROTOCOL_LANMAN2 ||
-	    !(cli->sec_mode & 1)) {
+	    !(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		DEBUG(1,("%s isn't in user level security mode\n",desthost));
+		release_server_mutex();
 		cli_shutdown(cli);
 		return NULL;
 	}
 
-	DEBUG(3,("password server OK\n"));
+	/* Get the first session setup done quickly, to avoid silly 
+	   Win2k bugs.  (The next connection to the server will kill
+	   this one... 
+	*/
 
+	if (!cli_session_setup(cli, "", "", 0, "", 0,
+			       "")) {
+		DEBUG(0,("%s rejected the initial session setup (%s)\n",
+			 desthost, cli_errstr(cli)));
+		release_server_mutex();
+		cli_shutdown(cli);
+		return NULL;
+	}
+	
+	release_server_mutex();
+	
+	DEBUG(3,("password server OK\n"));
+	
 	return cli;
 }
 
@@ -142,7 +178,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 	if (cli) {
 		DEBUG(3,("using password server validation\n"));
 
-		if ((cli->sec_mode & 2) == 0) {
+		if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 			/* We can't work with unencrypted password servers
 			   unless 'encrypt passwords = no' */
 			DEBUG(5,("make_auth_info_server: Server is unencrypted, no challenge available..\n"));
@@ -213,7 +249,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 		return NT_STATUS_LOGON_FAILURE;
 	}  
 	
-	if ((cli->sec_mode & 2) == 0) {
+	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		if (user_info->encrypted) {
 			DEBUG(1,("password server %s is plaintext, but we are encrypted. This just can't work :-(\n", cli->desthost));
 			return NT_STATUS_LOGON_FAILURE;		
@@ -354,14 +390,15 @@ use this machine as the password server.\n"));
 	return(nt_status);
 }
 
-BOOL auth_init_smbserver(struct auth_context *auth_context, auth_methods **auth_method) 
+NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
+	(*auth_method)->name = "smbserver";
 	(*auth_method)->auth = check_smbserver_security;
 	(*auth_method)->get_chal = auth_get_challenge_server;
 	(*auth_method)->send_keepalive = send_server_keepalive;
 	(*auth_method)->free_private_data = free_server_private_data;
-	return True;
+	return NT_STATUS_OK;
 }

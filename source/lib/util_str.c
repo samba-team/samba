@@ -650,23 +650,27 @@ This routine looks for pattern in s and replaces it with
 insert. It may do multiple replacements.
 
 any of " ; ' $ or ` in the insert string are replaced with _
-if len==0 then no length check is performed
+if len==0 then the string cannot be extended. This is different from the old
+use of len==0 which was for no length checks to be done.
 ****************************************************************************/
-void string_sub(char *s,const char *pattern,const char *insert, size_t len)
+
+void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 {
 	char *p;
 	ssize_t ls,lp,li, i;
 
-	if (!insert || !pattern || !s) return;
+	if (!insert || !pattern || !*pattern || !s)
+		return;
 
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
 
-	if (!*pattern) return;
-	
+	if (len == 0)
+		len = ls;
+
 	while (lp <= ls && (p = strstr(s,pattern))) {
-		if (len && (ls + (li-lp) >= len)) {
+		if (ls + (li-lp) >= len) {
 			DEBUG(0,("ERROR: string overflow by %d in string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
 				 pattern, (int)len));
@@ -706,26 +710,98 @@ void pstring_sub(char *s,const char *pattern,const char *insert)
 	string_sub(s, pattern, insert, sizeof(pstring));
 }
 
+/* similar to string_sub, but it will accept only allocated strings
+ * and may realloc them so pay attention at what you pass on no
+ * pointers inside strings, no pstrings or const must be passed
+ * as string.
+ */
+
+char *realloc_string_sub(char *string, const char *pattern, const char *insert)
+{
+	char *p, *in;
+	char *s;
+	ssize_t ls,lp,li,ld, i;
+
+	if (!insert || !pattern || !*pattern || !string || !*string)
+		return NULL;
+
+	s = string;
+
+	in = strdup(insert);
+	if (!in) {
+		DEBUG(0, ("realloc_string_sub: out of memory!\n"));
+		return NULL;
+	}
+	ls = (ssize_t)strlen(s);
+	lp = (ssize_t)strlen(pattern);
+	li = (ssize_t)strlen(insert);
+	ld = li - lp;
+	for (i=0;i<li;i++) {
+		switch (in[i]) {
+			case '`':
+			case '"':
+			case '\'':
+			case ';':
+			case '$':
+			case '%':
+			case '\r':
+			case '\n':
+				in[i] = '_';
+			default:
+				/* ok */
+				break;
+		}
+	}
+	
+	while ((p = strstr(s,pattern))) {
+		if (ld > 0) {
+			char *t = Realloc(string, ls + ld + 1);
+			if (!t) {
+				DEBUG(0, ("realloc_string_sub: out of memory!\n"));
+				SAFE_FREE(in);
+				return NULL;
+			}
+			string = t;
+			p = t + (p - s);
+		}
+		if (li != lp) {
+			memmove(p+li,p+lp,strlen(p+lp)+1);
+		}
+		memcpy(p, in, li);
+		s = p + li;
+		ls += ld;
+	}
+	SAFE_FREE(in);
+	return string;
+}
+
 /****************************************************************************
 similar to string_sub() but allows for any character to be substituted. 
 Use with caution!
-if len==0 then no length check is performed
+if len==0 then the string cannot be extended. This is different from the old
+use of len==0 which was for no length checks to be done.
 ****************************************************************************/
+
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
 	char *p;
 	ssize_t ls,lp,li;
 
-	if (!insert || !pattern || !s) return;
+	if (!insert || !pattern || !s)
+		return;
 
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
 
-	if (!*pattern) return;
+	if (!*pattern)
+		return;
+	
+	if (len == 0)
+		len = ls;
 	
 	while (lp <= ls && (p = strstr(s,pattern))) {
-		if (len && (ls + (li-lp) >= len)) {
+		if (ls + (li-lp) >= len) {
 			DEBUG(0,("ERROR: string overflow by %d in all_string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
 				 pattern, (int)len));
@@ -743,10 +819,8 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 /****************************************************************************
 similar to all_string_sub but for unicode strings.
 return a new allocate unicode string.
-len is the number of bytes, not chars
   similar to string_sub() but allows for any character to be substituted.
   Use with caution!
-  if len==0 then no length check is performed
 ****************************************************************************/
 
 smb_ucs2_t *all_string_sub_w(const smb_ucs2_t *s, const smb_ucs2_t *pattern,
@@ -916,6 +990,20 @@ void strlower_m(char *s)
 }
 
 /*******************************************************************
+  duplicate convert a string to lower case
+********************************************************************/
+char *strdup_lower(const char *s)
+{
+	char *t = strdup(s);
+	if (t == NULL) {
+		DEBUG(0, ("strdup_lower: Out of memory!\n"));
+		return NULL;
+	}
+	strlower_m(t);
+	return t;
+}
+
+/*******************************************************************
   convert a string to upper case
 ********************************************************************/
 void strupper_m(char *s)
@@ -933,6 +1021,20 @@ void strupper_m(char *s)
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in multibyte encoding. (VIV) */
 	unix_strupper(s,strlen(s)+1,s,strlen(s)+1);	
+}
+
+/*******************************************************************
+  convert a string to upper case
+********************************************************************/
+char *strdup_upper(const char *s)
+{
+	char *t = strdup(s);
+	if (t == NULL) {
+		DEBUG(0, ("strdup_upper: Out of memory!\n"));
+		return NULL;
+	}
+	strupper_m(t);
+	return t;
 }
 
 /*
@@ -991,13 +1093,207 @@ some platforms don't have strndup
  char *strndup(const char *s, size_t n)
 {
 	char *ret;
-	int i;
-	for (i=0;s[i] && i<n;i++) ;
-
-	ret = malloc(i+1);
+	
+	n = strnlen(s, n);
+	ret = malloc(n+1);
 	if (!ret) return NULL;
-	memcpy(ret, s, i);
-	ret[i] = 0;
+	memcpy(ret, s, n);
+	ret[n] = 0;
+
 	return ret;
 }
 #endif
+
+#ifndef HAVE_STRNLEN
+/*******************************************************************
+some platforms don't have strnlen
+********************************************************************/
+ size_t strnlen(const char *s, size_t n)
+{
+	int i;
+	for (i=0; s[i] && i<n; i++) /* noop */ ;
+	return i;
+}
+#endif
+
+
+
+/***********************************************************
+ List of Strings manipulation functions
+***********************************************************/
+
+#define S_LIST_ABS 16 /* List Allocation Block Size */
+
+char **str_list_make(const char *string)
+{
+	char **list, **rlist;
+	char *str, *s;
+	int num, lsize;
+	pstring tok;
+	
+	if (!string || !*string) return NULL;
+	s = strdup(string);
+	if (!s) {
+		DEBUG(0,("str_list_make: Unable to allocate memory"));
+		return NULL;
+	}
+	
+	num = lsize = 0;
+	list = NULL;
+	
+	str = s;
+	while (next_token(&str, tok, LIST_SEP, sizeof(tok)))
+	{		
+		if (num == lsize) {
+			lsize += S_LIST_ABS;
+			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
+			if (!rlist) {
+				DEBUG(0,("str_list_make: Unable to allocate memory"));
+				str_list_free(&list);
+				SAFE_FREE(s);
+				return NULL;
+			}
+			else list = rlist;
+			memset (&list[num], 0, ((sizeof(char**)) * (S_LIST_ABS +1)));
+		}
+		
+		list[num] = strdup(tok);
+		if (!list[num]) {
+			DEBUG(0,("str_list_make: Unable to allocate memory"));
+			str_list_free(&list);
+			SAFE_FREE(s);
+			return NULL;
+		}
+	
+		num++;	
+	}
+	
+	SAFE_FREE(s);
+	return list;
+}
+
+BOOL str_list_copy(char ***dest, char **src)
+{
+	char **list, **rlist;
+	int num, lsize;
+	
+	*dest = NULL;
+	if (!src) return False;
+	
+	num = lsize = 0;
+	list = NULL;
+		
+	while (src[num])
+	{
+		if (num == lsize) {
+			lsize += S_LIST_ABS;
+			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
+			if (!rlist) {
+				DEBUG(0,("str_list_copy: Unable to allocate memory"));
+				str_list_free(&list);
+				return False;
+			}
+			else list = rlist;
+			memset (&list[num], 0, ((sizeof(char **)) * (S_LIST_ABS +1)));
+		}
+		
+		list[num] = strdup(src[num]);
+		if (!list[num]) {
+			DEBUG(0,("str_list_copy: Unable to allocate memory"));
+			str_list_free(&list);
+			return False;
+		}
+
+		num++;
+	}
+	
+	*dest = list;
+	return True;	
+}
+
+/* return true if all the elemnts of the list matches exactly */
+BOOL str_list_compare(char **list1, char **list2)
+{
+	int num;
+	
+	if (!list1 || !list2) return (list1 == list2); 
+	
+	for (num = 0; list1[num]; num++) {
+		if (!list2[num]) return False;
+		if (!strcsequal(list1[num], list2[num])) return False;
+	}
+	if (list2[num]) return False; /* if list2 has more elements than list1 fail */
+	
+	return True;
+}
+
+void str_list_free(char ***list)
+{
+	char **tlist;
+	
+	if (!list || !*list) return;
+	tlist = *list;
+	for(; *tlist; tlist++) SAFE_FREE(*tlist);
+	SAFE_FREE(*list);
+}
+
+BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
+{
+	char *p, *s, *t;
+	ssize_t ls, lp, li, ld, i, d;
+
+	if (!list) return False;
+	if (!pattern) return False;
+	if (!insert) return False;
+
+	lp = (ssize_t)strlen(pattern);
+	li = (ssize_t)strlen(insert);
+	ld = li -lp;
+			
+	while (*list)
+	{
+		s = *list;
+		ls = (ssize_t)strlen(s);
+
+		while ((p = strstr(s, pattern)))
+		{
+			t = *list;
+			d = p -t;
+			if (ld)
+			{
+				t = (char *) malloc(ls +ld +1);
+				if (!t) {
+					DEBUG(0,("str_list_substitute: Unable to allocate memory"));
+					return False;
+				}
+				memcpy(t, *list, d);
+				memcpy(t +d +li, p +lp, ls -d -lp +1);
+				SAFE_FREE(*list);
+				*list = t;
+				ls += ld;
+				s = t +d +li;
+			}
+			
+			for (i = 0; i < li; i++) {
+				switch (insert[i]) {
+					case '`':
+					case '"':
+					case '\'':
+					case ';':
+					case '$':
+					case '%':
+					case '\r':
+					case '\n':
+						t[d +i] = '_';
+						break;
+					default:
+						t[d +i] = insert[i];
+				}
+			}	
+		}
+		
+		list++;
+	}
+	
+	return True;
+}

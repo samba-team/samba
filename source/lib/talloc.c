@@ -82,7 +82,7 @@ struct talloc_ctx {
  * @todo We should turn the global list off when using Insure++,
  * otherwise all the memory will be seen as still reachable.
  **/
-TALLOC_CTX *list_head = NULL;
+static TALLOC_CTX *list_head = NULL;
 
 
 /**
@@ -287,6 +287,15 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 		return NULL;
 }
 
+/** strdup_w with a talloc */
+smb_ucs2_t *talloc_strdup_w(TALLOC_CTX *t, const smb_ucs2_t *p)
+{
+	if (p)
+		return talloc_memdup(t, p, (strlen_w(p) + 1) * sizeof(smb_ucs2_t));
+	else
+		return NULL;
+}
+
 /**
  * Perform string formatting, and return a pointer to newly allocated
  * memory holding the result, inside a memory pool.
@@ -307,12 +316,17 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 {	
 	int len;
 	char *ret;
+	va_list ap2;
 	
-	len = vsnprintf(NULL, 0, fmt, ap);
+	VA_COPY(ap2, ap);
+
+	len = vsnprintf(NULL, 0, fmt, ap2);
 
 	ret = talloc(t, len+1);
-	if (ret)
-		vsnprintf(ret, len+1, fmt, ap);
+	if (ret) {
+		VA_COPY(ap2, ap);
+		vsnprintf(ret, len+1, fmt, ap2);
+	}
 
 	return ret;
 }
@@ -345,14 +359,19 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 			       const char *fmt, va_list ap)
 {	
 	int len, s_len;
+	va_list ap2;
+
+	VA_COPY(ap2, ap);
 
 	s_len = strlen(s);
-	len = vsnprintf(NULL, 0, fmt, ap);
+	len = vsnprintf(NULL, 0, fmt, ap2);
 
 	s = talloc_realloc(t, s, s_len + len+1);
 	if (!s) return NULL;
 
-	vsnprintf(s+s_len, len+1, fmt, ap);
+	VA_COPY(ap2, ap);
+
+	vsnprintf(s+s_len, len+1, fmt, ap2);
 
 	return s;
 }

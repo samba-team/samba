@@ -89,6 +89,12 @@ void build_options(BOOL screen)
 #ifdef HAVE_KRB5
        output(screen,"   HAVE_KRB5");
 #endif
+#ifdef HAVE_GSSAPI
+       output(screen,"   HAVE_GSSAPI");
+#endif
+#ifdef HAVE_LDAP
+       output(screen,"   HAVE_LDAP");
+#endif
 #ifdef WITH_AUTOMOUNT
        output(screen,"   WITH_AUTOMOUNT\n");
 #endif
@@ -101,9 +107,6 @@ void build_options(BOOL screen)
 #ifdef WITH_TDB_SAM
        output(screen,"   WITH_TDB_SAM\n");
 #endif
-#ifdef WITH_LDAP_SAM
-       output(screen,"   WITH_LDAP_SAM\n");
-#endif
 #ifdef WITH_SMBPASSWD_SAM
        output(screen,"   WITH_SMBPASSWD_SAM\n");
 #endif
@@ -112,12 +115,6 @@ void build_options(BOOL screen)
 #endif
 #ifdef WITH_NISPLUS_HOME
        output(screen,"   WITH_NISPLUS_HOME\n");
-#endif
-#ifdef WITH_SSL
-       output(screen,"   WITH_SSL\n");
-#endif
-#ifdef SSL_DIR
-       output(screen,"   SSL_DIR: %s\n",SSL_DIR);
 #endif
 #ifdef WITH_SYSLOG
        output(screen,"   WITH_SYSLOG\n");
@@ -220,8 +217,17 @@ void build_options(BOOL screen)
 #ifdef HAVE_CUPS_LANGUAGE_H
        output(screen,"   HAVE_CUPS_LANGUAGE_H\n");
 #endif
-#ifdef HAVE_LIBDL
-       output(screen,"   HAVE_LIBDL\n");
+#ifdef HAVE_DLOPEN
+       output(screen,"   HAVE_DLOPEN\n");
+#endif
+#ifdef HAVE_DLCLOSE
+       output(screen,"   HAVE_DLCLOSE\n");
+#endif
+#ifdef HAVE_DLSYM
+       output(screen,"   HAVE_DLSYM\n");
+#endif
+#ifdef HAVE_DLERROR
+       output(screen,"   HAVE_DLERROR\n");
 #endif
 #ifdef HAVE_UNIXSOCKET
        output(screen,"   HAVE_UNIXSOCKET\n");

@@ -76,7 +76,7 @@ static BOOL cli_link_internal(struct cli_state *cli, const char *fname_src, cons
 
 uint32  unix_perms_to_wire(mode_t perms)
 {
-        uint ret = 0;
+        unsigned int ret = 0;
 
         ret |= ((perms & S_IXOTH) ?  UNIX_X_OTH : 0);
         ret |= ((perms & S_IWOTH) ?  UNIX_W_OTH : 0);

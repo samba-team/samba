@@ -25,6 +25,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 /*******************************************************************
  api_srv_net_srv_get_info
 ********************************************************************/
@@ -492,25 +495,25 @@ static BOOL api_srv_net_file_set_secdesc(pipes_struct *p)
 \PIPE\srvsvc commands
 ********************************************************************/
 
-struct api_struct api_srv_cmds[] =
+static const struct api_struct api_srv_cmds[] =
 {
-	{ "SRV_NETCONNENUM"       , SRV_NETCONNENUM       , api_srv_net_conn_enum    },
-	{ "SRV_NETSESSENUM"       , SRV_NETSESSENUM       , api_srv_net_sess_enum    },
-	{ "SRV_NETSHAREENUM_ALL"  , SRV_NETSHAREENUM_ALL  , api_srv_net_share_enum_all   },
-	{ "SRV_NETSHAREENUM"      , SRV_NETSHAREENUM      , api_srv_net_share_enum   },
-	{ "SRV_NET_SHARE_ADD"     , SRV_NET_SHARE_ADD     , api_srv_net_share_add },
-	{ "SRV_NET_SHARE_DEL"     , SRV_NET_SHARE_DEL     , api_srv_net_share_del },
-	{ "SRV_NET_SHARE_GET_INFO", SRV_NET_SHARE_GET_INFO, api_srv_net_share_get_info },
-	{ "SRV_NET_SHARE_SET_INFO", SRV_NET_SHARE_SET_INFO, api_srv_net_share_set_info },
-	{ "SRV_NETFILEENUM"       , SRV_NETFILEENUM       , api_srv_net_file_enum    },
-	{ "SRV_NET_SRV_GET_INFO"  , SRV_NET_SRV_GET_INFO  , api_srv_net_srv_get_info },
-	{ "SRV_NET_SRV_SET_INFO"  , SRV_NET_SRV_SET_INFO  , api_srv_net_srv_set_info },
-	{ "SRV_NET_REMOTE_TOD"    , SRV_NET_REMOTE_TOD    , api_srv_net_remote_tod   },
-	{ "SRV_NET_DISK_ENUM"     , SRV_NET_DISK_ENUM     , api_srv_net_disk_enum    },
-	{ "SRV_NET_NAME_VALIDATE" , SRV_NET_NAME_VALIDATE , api_srv_net_name_validate},
-	{ "SRV_NETFILEQUERYSECDESC",SRV_NETFILEQUERYSECDESC,api_srv_net_file_query_secdesc},
-	{ "SRV_NETFILESETSECDESC" , SRV_NETFILESETSECDESC , api_srv_net_file_set_secdesc},
-	{ NULL                    , 0                     , NULL                     }
+	{ "SRV_NET_CONN_ENUM"       ,  SRV_NET_CONN_ENUM       ,   api_srv_net_conn_enum    },
+	{ "SRV_NET_SESS_ENUM"       ,  SRV_NET_SESS_ENUM       ,   api_srv_net_sess_enum    },
+	{ "SRV_NET_SHARE_ENUM_ALL"  ,  SRV_NET_SHARE_ENUM_ALL  ,   api_srv_net_share_enum_all   },
+	{ "SRV_NET_SHARE_ENUM"      ,  SRV_NET_SHARE_ENUM      ,   api_srv_net_share_enum   },
+	{ "SRV_NET_SHARE_ADD"     ,    SRV_NET_SHARE_ADD     ,     api_srv_net_share_add },
+	{ "SRV_NET_SHARE_DEL"     ,    SRV_NET_SHARE_DEL     ,     api_srv_net_share_del },
+	{ "SRV_NET_SHARE_GET_INFO",    SRV_NET_SHARE_GET_INFO,     api_srv_net_share_get_info },
+	{ "SRV_NET_SHARE_SET_INFO",    SRV_NET_SHARE_SET_INFO,     api_srv_net_share_set_info },
+	{ "SRV_NET_FILE_ENUM"       ,  SRV_NET_FILE_ENUM       ,   api_srv_net_file_enum    },
+	{ "SRV_NET_SRV_GET_INFO"  ,    SRV_NET_SRV_GET_INFO  ,     api_srv_net_srv_get_info },
+	{ "SRV_NET_SRV_SET_INFO"  ,    SRV_NET_SRV_SET_INFO  ,     api_srv_net_srv_set_info },
+	{ "SRV_NET_REMOTE_TOD"    ,    SRV_NET_REMOTE_TOD    ,     api_srv_net_remote_tod   },
+	{ "SRV_NET_DISK_ENUM"     ,    SRV_NET_DISK_ENUM     ,     api_srv_net_disk_enum    },
+	{ "SRV_NET_NAME_VALIDATE" ,    SRV_NET_NAME_VALIDATE ,     api_srv_net_name_validate},
+	{ "SRV_NET_FILE_QUERY_SECDESC",SRV_NET_FILE_QUERY_SECDESC, api_srv_net_file_query_secdesc},
+	{ "SRV_NET_FILE_SET_SECDESC" , SRV_NET_FILE_SET_SECDESC ,  api_srv_net_file_set_secdesc},
+	{ NULL                    ,    0                     ,     NULL                     }
 };
 
 /*******************************************************************

@@ -27,6 +27,7 @@
  **/
 
 #include "includes.h"
+#include "../web/swat_proto.h"
 
 #define GLOBALS_SNUM -1
 
@@ -329,7 +330,7 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 					break;
 
 				case P_LIST:
-					if (!lp_list_compare(*(char ***)ptr, (char **)(parm->def.lvalue))) continue;
+					if (!str_list_compare(*(char ***)ptr, (char **)(parm->def.lvalue))) continue;
 					break;
 
 				case P_STRING:

@@ -3,6 +3,7 @@
    program to send control messages to Samba processes
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) 2001, 2002 by Martin Pool
+   Copyright (C) Simo Sorce 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,7 +34,7 @@ static struct {
 	{"profile", MSG_PROFILE},
 	{"profilelevel", MSG_REQ_PROFILELEVEL},
 	{"debuglevel", MSG_REQ_DEBUGLEVEL},
-	{"printer-notify", MSG_PRINTER_NOTIFY},
+	{"printnotify", MSG_PRINTER_NOTIFY2 },
 	{"close-share", MSG_SMB_FORCE_TDIS},
         {"samsync", MSG_SMB_SAM_SYNC},
         {"samrepl", MSG_SMB_SAM_REPL},
@@ -105,17 +106,14 @@ Prints out the current Debug level returned by MSG_DEBUGLEVEL
 ****************************************************************************/
 void debuglevel_function(int msg_type, pid_t src, void *buf, size_t len)
 {
-	int i;
-	int debuglevel_class[DBGC_LAST];
+	char *levels = (char *)buf;
+	pstring dbgcl;
 
-	memcpy(debuglevel_class, buf, len);
-
-	printf("Current debug level of PID %u is %d ",(unsigned int)src, debuglevel_class[0]);
-	for (i=1;i<DBGC_LAST;i++)
-		if (debuglevel_class[i])
-			printf("%s:%d ", debug_classname_from_index(i), debuglevel_class[i]);
-	printf("\n");
-
+	printf("Current debug levels of PID %u are:\n",(unsigned int)src);
+	
+	while(next_token(&levels, dbgcl, " ", sizeof(pstring)))
+		printf("%s\n", dbgcl);
+	
 	got_level = True;
 }
 
@@ -243,19 +241,36 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 
 	switch (mtype) {
 	case MSG_DEBUG: {
-		struct debuglevel_message dm;
+		char *buf, *b;
+		char **p;
+		int dim = 0;
 
 		if (!params || !params[0]) {
 			fprintf(stderr,"MSG_DEBUG needs a parameter\n");
 			return(False);
 		}
 
-		ZERO_STRUCT(dm);
-		if (!debug_parse_params(params, dm.debuglevel_class, dm.debuglevel_class_isset)) {
-			fprintf(stderr, "MSG_DEBUG error. Expected <class name>:level\n");
+		/* first pass retrieve total lenght */
+		for (p = params; p && *p ; p++)
+			dim += (strnlen(*p, 1024) +1); /* lenght + space */
+		b = buf = malloc(dim);
+		if (!buf) {
+			fprintf(stderr, "Out of memory!");
 			return(False);
-		} else
-			send_message(dest, MSG_DEBUG, &dm, sizeof(dm), False);
+		}
+		/* now build a single string with all parameters */
+		for(p = params; p && *p; p++) {
+			int l = strnlen(*p, 1024);
+			strncpy(b, *p, l);
+			b[l] = ' ';
+			b = b + l + 1;
+		}
+		b[-1] = '\0';
+
+		send_message(dest, MSG_DEBUG, buf, dim, False);
+
+		free(buf);
+  
 		break;
 	}
 
@@ -326,24 +341,106 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 		}
 		break;
 
-	case MSG_PRINTER_NOTIFY:
-		if (!strequal(dest, "smbd")) {
-			fprintf(stderr,"printer-notify can only be sent to smbd\n");
-			return(False);
-		}
-		if (!params || !params[0]) {
-			fprintf(stderr, "printer-notify needs a printer name\n");
-			return (False);
-		}
-		{
-			char msg[8 + sizeof(fstring)];
-			SIVAL(msg,0,PRINTER_CHANGE_ALL);
-			SIVAL(msg,4,0);
-			fstrcpy(&msg[8], params[0]);
+		/* Send a notification message to a printer */
 
-			retval = send_message(dest, MSG_PRINTER_NOTIFY, msg, 8 + strlen(params[0]) + 1, False);
+	case MSG_PRINTER_NOTIFY2: {
+		char *cmd;
+
+		/* Read subcommand */
+
+		if (!params || !params[0]) {
+			fprintf(stderr, "Must specify subcommand:\n");
+			fprintf(stderr, "\tqueuepause <printername>\n");
+			fprintf(stderr, "\tqueueresume <printername>\n");
+			return False;
 		}
+
+		cmd = params[0];
+
+		/* Pause a print queue */
+
+		if (strequal(cmd, "queuepause")) {
+
+			if (!params[1]) {
+				fprintf(stderr, "queuepause command requires a printer name\n");
+				return False;
+			}
+
+			notify_printer_status_byname(params[1], PRINTER_STATUS_PAUSED);
+			break;
+		}
+
+		/* Resume a print queue */
+
+		if (strequal(cmd, "queueresume")) {
+
+			if (!params[1]) {
+				fprintf(stderr, "queueresume command requires a printer name\n");
+				return False;
+			}
+
+			notify_printer_status_byname(params[1], PRINTER_STATUS_OK);
+			break;
+		}
+
+		/* Pause a print job */
+
+		if (strequal(cmd, "jobpause")) {
+			int jobid;
+
+			if (!params[1] || !params[2]) {
+				fprintf(stderr, "jobpause command requires a printer name and a jobid\n");
+				return False;
+			}
+
+			jobid = atoi(params[2]);
+
+			notify_job_status_byname(
+				params[1], jobid, JOB_STATUS_PAUSED, 
+				SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
+		}
+
+		/* Resume a print job */
+
+		if (strequal(cmd, "jobresume")) {
+			int jobid;
+
+			if (!params[1] || !params[2]) {
+				fprintf(stderr, "jobresume command requires a printer name and a jobid\n");
+				return False;
+			}
+
+			jobid = atoi(params[2]);
+
+			notify_job_status_byname(
+				params[1], jobid, JOB_STATUS_QUEUED,
+				SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
+		}
+
+		/* Delete a print job */
+
+		if (strequal(cmd, "jobdelete")) {
+			int jobid;
+
+			if (!params[1] || !params[2]) {
+				fprintf(stderr, "jobdelete command requires a printer name and a jobid\n");
+				return False;
+			}
+
+			jobid = atoi(params[2]);
+
+			notify_job_status_byname(
+				params[1], jobid, JOB_STATUS_DELETING,
+				SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
+
+			notify_job_status_byname(
+				params[1], jobid, JOB_STATUS_DELETING|
+				JOB_STATUS_DELETED,
+				SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
+		}
+
 		break;
+	  }
 
 	case MSG_SMB_FORCE_TDIS:
 		if (!strequal(dest, "smbd")) {

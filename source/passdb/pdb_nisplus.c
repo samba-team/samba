@@ -56,7 +56,7 @@ struct nisp_enum_info
 };
 
 static struct nisp_enum_info global_nisp_ent;
-static VOLATILE sig_atomic_t gotalarm;
+static SIG_ATOMIC_T gotalarm;
 
 /***************************************************************
 
@@ -339,8 +339,8 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
 
   pdb_set_uid(pw_buf, atoi(ENTRY_VAL(obj, NPF_UID)));
   pdb_set_gid(pw_buf, atoi(ENTRY_VAL(obj, NPF_SMB_GRPID)));
-  pdb_set_user_rid(pw_buf, atoi(ENTRY_VAL(obj, NPF_USER_RID)));
-  pdb_set_group_rid(pw_buf, atoi(ENTRY_VAL(obj, NPF_GROUP_RID)));
+  pdb_set_user_sid_from_rid(pw_buf, atoi(ENTRY_VAL(obj, NPF_USER_RID)));
+  pdb_set_group_sid_from_rid(pw_buf, atoi(ENTRY_VAL(obj, NPF_GROUP_RID)));
 
   /* values, must exist for user */
   if( !(pdb_get_acct_ctrl(pw_buf) & ACB_WSTRUST) ) {
@@ -381,7 +381,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
   else 
   {
     /* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
-    pdb_set_group_rid (pw_buf, DOMAIN_GROUP_RID_USERS); 
+    pdb_set_group_sid_from_rid (pw_buf, DOMAIN_GROUP_RID_USERS); 
   }
 
   /* Check the lanman password column. */
@@ -538,7 +538,8 @@ static BOOL init_nisp_from_sam(nis_object *obj, const SAM_ACCOUNT *sampass,
 
 		if (rid==0) {
 			if (get_group_map_from_gid(pdb_get_gid(sampass), &map, MAPPING_WITHOUT_PRIV)) {
-				sid_peek_rid(&map.sid, &rid);
+				if (!sid_peek_check_rid(get_global_sam_sid(), &map.sid, &rid))
+					return False;
 			} else 
 				rid=pdb_gid_to_group_rid(pdb_get_gid(sampass));
 		}
@@ -1030,7 +1031,16 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT * user, const char *sname)
 /*************************************************************************
  Routine to search the nisplus passwd file for an entry matching the username
  *************************************************************************/
-BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
+
+BOOL pdb_getsampwsid(SAM_ACCOUNT * user, DOM_SID *sid)
+{
+	uint32 rid;
+	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
+		return False;
+	return pdb_getsampwrid(user, rid);
+}
+
+static BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
 {
 	nis_result *result;
 	char *nisname;

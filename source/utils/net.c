@@ -72,11 +72,13 @@ int opt_flags = -1;
 int opt_jobid = 0;
 int opt_timeout = 0;
 char *opt_target_workgroup = NULL;
+static int opt_machine_pass = 0;
 
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
 extern pstring global_myname;
+extern BOOL AllowDebugChange;
 
 /*
   run a function from a function table. If not found then
@@ -119,7 +121,7 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 					server_ip, opt_port,
 					"IPC$", "IPC",  
 					opt_user_name, opt_workgroup,
-					opt_password, strlen(opt_password));
+					opt_password, 0);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -279,8 +281,6 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	return cli;
 }
 
-
-
 static int net_user(int argc, const char **argv)
 {
 	if (net_ads_check() == 0)
@@ -293,6 +293,16 @@ static int net_user(int argc, const char **argv)
 	return net_rap_user(argc, argv);
 }
 
+static int net_group(int argc, const char **argv)
+{
+	if (net_ads_check() == 0)
+		return net_ads_group(argc, argv);
+
+	if (argc == 0 && net_rpc_check(NET_FLAGS_PDC))
+		return net_rpc_group(argc, argv);
+
+	return net_rap_group(argc, argv);
+}
 
 static int net_join(int argc, const char **argv)
 {
@@ -305,6 +315,20 @@ static int net_join(int argc, const char **argv)
 	return net_rpc_join(argc, argv);
 }
 
+static int net_share(int argc, const char **argv)
+{
+	if (net_rpc_check(0))
+		return net_rpc_share(argc, argv);
+	return net_rap_share(argc, argv);
+}
+
+static int net_file(int argc, const char **argv)
+{
+	if (net_rpc_check(0))
+		return net_rpc_file(argc, argv);
+	return net_rap_file(argc, argv);
+}
+
 /* main function table */
 static struct functable net_func[] = {
 	{"RPC", net_rpc},
@@ -312,14 +336,14 @@ static struct functable net_func[] = {
 	{"ADS", net_ads},
 
 	/* eventually these should auto-choose the transport ... */
-	{"FILE", net_rap_file},
-	{"SHARE", net_rap_share},
+	{"FILE", net_file},
+	{"SHARE", net_share},
 	{"SESSION", net_rap_session},
 	{"SERVER", net_rap_server},
 	{"DOMAIN", net_rap_domain},
 	{"PRINTQ", net_rap_printq},
 	{"USER", net_user},
-	{"GROUP", net_rap_group},
+	{"GROUP", net_group},
 	{"VALIDATE", net_rap_validate},
 	{"GROUPMEMBER", net_rap_groupmember},
 	{"ADMIN", net_rap_admin},
@@ -346,7 +370,7 @@ static struct functable net_func[] = {
 	const char ** argv_new;
 	poptContext pc;
 	static char *servicesf = dyn_CONFIGFILE;
-	static int debuglevel = 0;
+	static char *debuglevel = NULL;
 
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
@@ -357,8 +381,8 @@ static struct functable net_func[] = {
 		{"port",	'p', POPT_ARG_INT,    &opt_port},
 		{"myname",	'n', POPT_ARG_STRING, &opt_requester_name},
 		{"conf",	's', POPT_ARG_STRING, &servicesf},
-		{"debug",	'd', POPT_ARG_INT,    &debuglevel},
-		{"debuglevel",	'd', POPT_ARG_INT,    &debuglevel},
+		{"debug",	'd', POPT_ARG_STRING,    &debuglevel},
+		{"debuglevel",	'd', POPT_ARG_STRING,    &debuglevel},
 		{"server",	'S', POPT_ARG_STRING, &opt_host},
 		{"comment",	'C', POPT_ARG_STRING, &opt_comment},
 		{"maxusers",	'M', POPT_ARG_INT,    &opt_maxusers},
@@ -368,6 +392,7 @@ static struct functable net_func[] = {
 		{"reboot",	'r', POPT_ARG_NONE,   &opt_reboot},
 		{"force",	'f', POPT_ARG_NONE,   &opt_force},
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
+		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
 		{ 0, 0, 0, 0}
 	};
 
@@ -403,12 +428,16 @@ static struct functable net_func[] = {
 		default:
 			d_printf("\nInvalid option %c (%d)\n", (char)opt, opt);
 			net_help(argc, argv);
+			exit(1);
 		}
 	}
 
-	lp_load(servicesf,True,False,False);       
+	if (debuglevel) {
+		debug_parse_levels(debuglevel);
+		AllowDebugChange = False;
+	}
 
-	DEBUGLEVEL = debuglevel;
+	lp_load(servicesf,True,False,False);       
 
 	argv_new = (const char **)poptGetArgs(pc);
 
@@ -419,7 +448,7 @@ static struct functable net_func[] = {
 			break;
 		}
 	}
-  	 
+
 	if (!opt_requester_name) {
 		static fstring myname;
 		get_myname(myname);
@@ -451,6 +480,23 @@ static struct functable net_func[] = {
 
 	load_interfaces();
 
+	if (opt_machine_pass) {
+		/* it is very useful to be able to make ads queries as the
+		   machine account for testing purposes and for domain leave */
+
+		if (!secrets_init()) {
+			d_printf("ERROR: Unable to open secrets database\n");
+			exit(1);
+		}
+
+		asprintf(&opt_user_name,"%s$", global_myname);
+		opt_password = secrets_fetch_machine_password();
+		if (!opt_password) {
+			d_printf("ERROR: Unable to fetch machine password\n");
+			exit(1);
+		}
+	}
+  	 
 	rc = net_run_function(argc_new-1, argv_new+1, net_func, net_help);
 	
 	DEBUG(2,("return code = %d\n", rc));

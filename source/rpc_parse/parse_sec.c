@@ -1,5 +1,6 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1998,
  *  Copyright (C) Jeremy R. Allison            1995-1998
@@ -23,6 +24,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_PARSE
+
 /*******************************************************************
  Sets up a SEC_ACCESS structure.
 ********************************************************************/
@@ -43,9 +47,6 @@ BOOL sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
 
 	prs_debug(ps, depth, desc, "sec_io_access");
 	depth++;
-
-	if(!prs_align(ps))
-		return False;
 	
 	if(!prs_uint32("mask", ps, depth, &(t->mask)))
 		return False;
@@ -112,9 +113,6 @@ BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 
 	prs_debug(ps, depth, desc, "sec_io_ace");
 	depth++;
-
-	if(!prs_align(ps))
-		return False;
 	
 	old_offset = prs_offset(ps);
 
@@ -128,9 +126,6 @@ BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 		return False;
 
 	if(!sec_io_access("info ", &psa->info, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	/* check whether object access is present */
@@ -293,6 +288,13 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 	uint32 offset_acl_size;
 	SEC_ACL *psa;
 
+	/*
+	 * Note that the size is always a multiple of 4 bytes due to the
+	 * nature of the data structure.  Therefore the prs_align() calls
+	 * have been removed as they through us off when doing two-layer
+	 * marshalling such as in the printing code (NEW_BUFFER).  --jerry
+	 */
+
 	if (ppsa == NULL)
 		return False;
 
@@ -309,9 +311,6 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 
 	prs_debug(ps, depth, desc, "sec_io_acl");
 	depth++;
-
-	if(!prs_align(ps))
-		return False;
 	
 	old_offset = prs_offset(ps);
 
@@ -341,9 +340,6 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 			return False;
 	}
 
-	if(!prs_align(ps))
-		return False;
-
 	if(!prs_uint16_post("size     ", ps, depth, &psa->size, offset_acl_size, old_offset))
 		return False;
 
@@ -362,17 +358,19 @@ size_t sec_desc_size(SEC_DESC *psd)
 
 	offset = SEC_DESC_HEADER_SIZE;
 
+	/* don't align */
+
 	if (psd->owner_sid != NULL)
-		offset += ((sid_size(psd->owner_sid) + 3) & ~3);
+		offset += sid_size(psd->owner_sid);
 
 	if (psd->grp_sid != NULL)
-		offset += ((sid_size(psd->grp_sid) + 3) & ~3);
+		offset += sid_size(psd->grp_sid);
 
 	if (psd->sacl != NULL)
-		offset += ((psd->sacl->size + 3) & ~3);
+		offset += psd->sacl->size;
 
 	if (psd->dacl != NULL)
-		offset += ((psd->dacl->size + 3) & ~3);
+		offset += psd->dacl->size;
 
 	return offset;
 }
@@ -640,7 +638,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 		if (offset == 0)
 			offset = SEC_DESC_HEADER_SIZE;
 
-		offset += ((sid_size(dst->owner_sid) + 3) & ~3);
+		offset += sid_size(dst->owner_sid);
 	}
 
 	if (dst->grp_sid != NULL) {
@@ -648,7 +646,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 		if (offset == 0)
 			offset = SEC_DESC_HEADER_SIZE;
 
-		offset += ((sid_size(dst->grp_sid) + 3) & ~3);
+		offset += sid_size(dst->grp_sid);
 	}
 
 	if (dst->sacl != NULL) {
@@ -656,7 +654,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 		offset_acl = SEC_DESC_HEADER_SIZE;
 
 		dst->off_sacl  = offset_acl;
-		offset_acl    += ((dst->sacl->size + 3) & ~3);
+		offset_acl    += dst->sacl->size;
 		offset        += dst->sacl->size;
 		offset_sid    += dst->sacl->size;
 	}
@@ -667,19 +665,20 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 			offset_acl = SEC_DESC_HEADER_SIZE;
 
 		dst->off_dacl  = offset_acl;
-		offset_acl    += ((dst->dacl->size + 3) & ~3);
+		offset_acl    += dst->dacl->size;
 		offset        += dst->dacl->size;
 		offset_sid    += dst->dacl->size;
 	}
 
 	*sd_size = (size_t)((offset == 0) ? SEC_DESC_HEADER_SIZE : offset);
 
-	dst->off_owner_sid = offset_sid;
-
 	if (dst->owner_sid != NULL)
+		dst->off_owner_sid = offset_sid;
+		
+	/* sid_size() returns 0 if the sid is NULL so this is ok */
+		
+	if (dst->grp_sid != NULL)
 		dst->off_grp_sid = offset_sid + sid_size(dst->owner_sid);
-	else
-		dst->off_grp_sid = offset_sid;
 
 	return dst;
 
@@ -748,8 +747,15 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "sec_io_desc");
 	depth++;
 
+#if 0	
+	/*
+	 * if alignment is needed, should be done by the the 
+	 * caller.  Not here.  This caused me problems when marshalling
+	 * printer info into a buffer.   --jerry
+	 */
 	if(!prs_align(ps))
 		return False;
+#endif
 	
 	/* start of security descriptor stored for back-calc offset purposes */
 	old_offset = prs_offset(ps);
@@ -776,71 +782,68 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	if (psd->off_owner_sid != 0) {
 
+		tmp_offset = ps->data_offset;
+		if(!prs_set_offset(ps, old_offset + psd->off_owner_sid))
+			return False;
+
 		if (UNMARSHALLING(ps)) {
-			if(!prs_set_offset(ps, old_offset + psd->off_owner_sid))
-				return False;
 			/* reading */
 			if((psd->owner_sid = (DOM_SID *)prs_alloc_mem(ps,sizeof(*psd->owner_sid))) == NULL)
 				return False;
 		}
 
-		tmp_offset = ps->data_offset;
-		ps->data_offset = psd->off_owner_sid;
-
 		if(!smb_io_dom_sid("owner_sid ", psd->owner_sid , ps, depth))
 			return False;
-		if(!prs_align(ps))
+
+		max_offset = MAX(max_offset, prs_offset(ps));
+
+		if (!prs_set_offset(ps,tmp_offset))
 			return False;
-
-		ps->data_offset = tmp_offset;
 	}
-
-	max_offset = MAX(max_offset, prs_offset(ps));
 
 	if (psd->off_grp_sid != 0) {
 
+		tmp_offset = ps->data_offset;
+		if(!prs_set_offset(ps, old_offset + psd->off_grp_sid))
+			return False;
+
 		if (UNMARSHALLING(ps)) {
 			/* reading */
-			if(!prs_set_offset(ps, old_offset + psd->off_grp_sid))
-				return False;
 			if((psd->grp_sid = (DOM_SID *)prs_alloc_mem(ps,sizeof(*psd->grp_sid))) == NULL)
 				return False;
 		}
 
-		tmp_offset = ps->data_offset;
-		ps->data_offset = psd->off_grp_sid;
-
 		if(!smb_io_dom_sid("grp_sid", psd->grp_sid, ps, depth))
 			return False;
-		if(!prs_align(ps))
-			return False;
+			
+		max_offset = MAX(max_offset, prs_offset(ps));
 
-		ps->data_offset = tmp_offset;
+		if (!prs_set_offset(ps,tmp_offset))
+			return False;
 	}
 
-	max_offset = MAX(max_offset, prs_offset(ps));
-
 	if ((psd->type & SEC_DESC_SACL_PRESENT) && psd->off_sacl) {
+		tmp_offset = ps->data_offset;
 		if(!prs_set_offset(ps, old_offset + psd->off_sacl))
 			return False;
 		if(!sec_io_acl("sacl", &psd->sacl, ps, depth))
 			return False;
-		if(!prs_align(ps))
+		max_offset = MAX(max_offset, prs_offset(ps));
+		if (!prs_set_offset(ps,tmp_offset))
 			return False;
 	}
 
-	max_offset = MAX(max_offset, prs_offset(ps));
 
 	if ((psd->type & SEC_DESC_DACL_PRESENT) && psd->off_dacl != 0) {
+		tmp_offset = ps->data_offset;
 		if(!prs_set_offset(ps, old_offset + psd->off_dacl))
 			return False;
 		if(!sec_io_acl("dacl", &psd->dacl, ps, depth))
 			return False;
-		if(!prs_align(ps))
+		max_offset = MAX(max_offset, prs_offset(ps));
+		if (!prs_set_offset(ps,tmp_offset))
 			return False;
 	}
-
-	max_offset = MAX(max_offset, prs_offset(ps));
 
 	if(!prs_set_offset(ps, max_offset))
 		return False;

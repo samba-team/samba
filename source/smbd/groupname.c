@@ -21,7 +21,6 @@
 #ifdef USING_GROUPNAME_MAP
 
 #include "includes.h"
-extern DOM_SID global_sam_sid;
 
 /**************************************************************************
  Groupname map functionality. The code loads a groupname map file and
@@ -160,7 +159,7 @@ Error was %s.\n", unixname, strerror(errno) ));
        * It's not a well known name, convert the UNIX gid_t
        * to a rid within this domain SID.
        */
-      tmp_sid = global_sam_sid;
+      sid_copy(&tmp_sid,get_global_sam_sid());
       tmp_sid.sub_auths[tmp_sid.num_auths++] = 
                     pdb_gid_to_group_rid(gid);
     }
@@ -228,7 +227,7 @@ void map_gid_to_sid( gid_t gid, DOM_SID *psid)
    * If there's no map, convert the UNIX gid_t
    * to a rid within this domain SID.
    */
-  *psid = global_sam_sid;
+  sid_copy(psid,get_global_sam_sid());
   psid->sub_auths[psid->num_auths++] = pdb_gid_to_group_rid(gid);
 
   return;

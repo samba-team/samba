@@ -27,6 +27,9 @@
 #include "rpc_parse.h"
 #include "nterr.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_PARSE
+
 /*******************************************************************
 inits a SAMR_Q_CLOSE_HND structure.
 ********************************************************************/
@@ -386,6 +389,36 @@ BOOL samr_io_r_get_usrdom_pwinfo(char *desc, SAMR_R_GET_USRDOM_PWINFO * r_u,
 
 	return True;
 }
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_q_set_sec_obj(char *desc, SAMR_Q_SET_SEC_OBJ * q_u,
+			     prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_q_set_sec_obj");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("pol", &q_u->pol, ps, depth))
+		return False;
+
+	if(!prs_uint32("sec_info", ps, depth, &q_u->sec_info))
+		return False;
+		
+	if(!sec_io_desc_buf("sec_desc", &q_u->buf, ps, depth))
+		return False;
+	
+	return True;
+}
+
 
 /*******************************************************************
 reads or writes a structure.
@@ -858,6 +891,28 @@ BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 	
+	return True;
+}
+
+/*******************************************************************
+reads or writes a SAMR_R_SET_SEC_OBJ structure.
+********************************************************************/
+
+BOOL samr_io_r_set_sec_obj(char *desc, SAMR_R_SET_SEC_OBJ * r_u,
+			     prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+  
+	prs_debug(ps, depth, desc, "samr_io_r_set_sec_obj");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+		return False;
+
 	return True;
 }
 
@@ -1437,7 +1492,8 @@ inits a SAM_DISPINFO_1 structure.
 ********************************************************************/
 
 NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_entries,
-			 uint32 start_idx, DISP_USER_INFO *disp_user_info)
+			     uint32 start_idx, DISP_USER_INFO *disp_user_info,
+			     DOM_SID *domain_sid)
 {
 	uint32 len_sam_name, len_sam_full, len_sam_desc;
 	uint32 i;
@@ -1462,18 +1518,49 @@ NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_en
 	ZERO_STRUCTP(sam->str);
 
 	for (i = 0; i < num_entries ; i++) {
+		const char *username;
+		const char *fullname;
+		const char *acct_desc;
+		uint32 user_rid;
+		const DOM_SID *user_sid;
+		fstring user_sid_string, domain_sid_string;			
+
 		DEBUG(11, ("init_sam_dispinfo_1: entry: %d\n",i));
 		
 		pwd=disp_user_info[i+start_idx].sam;
 		
-		len_sam_name = strlen(pdb_get_username(pwd));
-		len_sam_full = strlen(pdb_get_fullname(pwd));
-		len_sam_desc = strlen(pdb_get_acct_desc(pwd));
+		username = pdb_get_username(pwd);
+		fullname = pdb_get_fullname(pwd);
+		acct_desc = pdb_get_acct_desc(pwd);
+		
+		if (!username) 
+			username = "";
+
+		if (!fullname) 
+			fullname = "";
+		
+		if (!acct_desc) 
+			acct_desc = "";
+
+		user_sid = pdb_get_user_sid(pwd);
+
+		if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
+			DEBUG(0, ("init_sam_dispinfo_1: User %s has SID %s, which conflicts with "
+				  "the domain sid %s.  Failing operation.\n", 
+				  username, 
+				  sid_to_string(user_sid_string, user_sid),
+				  sid_to_string(domain_sid_string, domain_sid)));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+			
+		len_sam_name = strlen(username);
+		len_sam_full = strlen(fullname);
+		len_sam_desc = strlen(acct_desc);
 
 		init_sam_entry1(&sam->sam[i], start_idx + i + 1,
 				len_sam_name, len_sam_full, len_sam_desc,
-				pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd));
-
+				user_rid, pdb_get_acct_ctrl(pwd));
+		
 		ZERO_STRUCTP(&sam->str[i].uni_acct_name);
 		ZERO_STRUCTP(&sam->str[i].uni_full_name);
 		ZERO_STRUCTP(&sam->str[i].uni_acct_desc);
@@ -1540,7 +1627,8 @@ inits a SAM_DISPINFO_2 structure.
 ********************************************************************/
 
 NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 num_entries,
-			 uint32 start_idx, DISP_USER_INFO *disp_user_info)
+			     uint32 start_idx, DISP_USER_INFO *disp_user_info, 
+			     DOM_SID *domain_sid )
 {
 	uint32 len_sam_name, len_sam_desc;
 	uint32 i;
@@ -1563,20 +1651,39 @@ NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 num_en
 	ZERO_STRUCTP(sam->str);
 
 	for (i = 0; i < num_entries; i++) {
+		uint32 user_rid;
+		const DOM_SID *user_sid;
+		const char *username;
+		const char *acct_desc;
+		fstring user_sid_string, domain_sid_string;			
+
 		DEBUG(11, ("init_sam_dispinfo_2: entry: %d\n",i));
 		pwd=disp_user_info[i+start_idx].sam;
 
-		len_sam_name = strlen(pdb_get_username(pwd));
-		len_sam_desc = strlen(pdb_get_acct_desc(pwd));
+		username = pdb_get_username(pwd);
+		acct_desc = pdb_get_acct_desc(pwd);
+		user_sid = pdb_get_user_sid(pwd);
+
+		if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
+			DEBUG(0, ("init_sam_dispinfo_2: User %s has SID %s, which conflicts with "
+				  "the domain sid %s.  Failing operation.\n", 
+				  username, 
+				  sid_to_string(user_sid_string, user_sid),
+				  sid_to_string(domain_sid_string, domain_sid)));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+			
+		len_sam_name = strlen(username);
+		len_sam_desc = strlen(acct_desc);
 	  
 		init_sam_entry2(&sam->sam[i], start_idx + i + 1,
 			  len_sam_name, len_sam_desc,
-			  pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd));
+			  user_rid, pdb_get_acct_ctrl(pwd));
 	  
 		ZERO_STRUCTP(&sam->str[i].uni_srv_name);
 		ZERO_STRUCTP(&sam->str[i].uni_srv_desc);
 
-		init_unistr2(&sam->str[i].uni_srv_name, pdb_get_username(pwd),  len_sam_name);
+		init_unistr2(&sam->str[i].uni_srv_name, username,  len_sam_name);
 		init_unistr2(&sam->str[i].uni_srv_desc, pdb_get_acct_desc(pwd), len_sam_desc);
 	}
 
@@ -4535,7 +4642,7 @@ inits a SAMR_Q_LOOKUP_NAMES structure.
 
 NTSTATUS init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 			      POLICY_HND *pol, uint32 flags,
-			      uint32 num_names, char **name)
+			      uint32 num_names, const char **name)
 {
 	uint32 i;
 
@@ -5824,7 +5931,7 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 
  *************************************************************************/
 
-void init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw)
+NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *domain_sid)
 {
 	NTTIME 		logon_time, logoff_time, kickoff_time,
 			pass_last_set_time, pass_can_change_time,
@@ -5844,6 +5951,12 @@ void init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw)
 	const char*		description = pdb_get_acct_desc(pw);
 	const char*		workstations = pdb_get_workstations(pw);
 	const char*		munged_dial = pdb_get_munged_dial(pw);
+
+	uint32 user_rid;
+	const DOM_SID *user_sid;
+
+	uint32 group_rid;
+	const DOM_SID *group_sid;
 
 	len_user_name    = user_name    != NULL ? strlen(user_name   )+1 : 0;
 	len_full_name    = full_name    != NULL ? strlen(full_name   )+1 : 0;
@@ -5887,8 +6000,34 @@ void init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw)
 	ZERO_STRUCT(usr->nt_pwd);
 	ZERO_STRUCT(usr->lm_pwd);
 
-	usr->user_rid  = pdb_get_user_rid(pw);
-	usr->group_rid = pdb_get_group_rid(pw);
+	user_sid = pdb_get_user_sid(pw);
+	
+	if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
+		fstring user_sid_string;
+		fstring domain_sid_string;
+		DEBUG(0, ("init_sam_user_info_21A: User %s has SID %s, \nwhich conflicts with "
+			  "the domain sid %s.  Failing operation.\n", 
+			  user_name, 
+			  sid_to_string(user_sid_string, user_sid),
+			  sid_to_string(domain_sid_string, domain_sid)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	group_sid = pdb_get_group_sid(pw);
+	
+	if (!sid_peek_check_rid(domain_sid, group_sid, &group_rid)) {
+		fstring group_sid_string;
+		fstring domain_sid_string;
+		DEBUG(0, ("init_sam_user_info_21A: User %s has Primary Group SID %s, \n"
+			  "which conflicts with the domain sid %s.  Failing operation.\n", 
+			  user_name, 
+			  sid_to_string(group_sid_string, group_sid),
+			  sid_to_string(domain_sid_string, domain_sid)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	usr->user_rid  = user_rid;
+	usr->group_rid = group_rid;
 	usr->acb_info  = pdb_get_acct_ctrl(pw);
 	usr->unknown_3 = pdb_get_unknown3(pw);
 
@@ -5917,6 +6056,8 @@ void init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw)
 		memcpy(&usr->logon_hrs.hours, pdb_get_hours(pw), MAX_HOURS_LEN);
 	} else
 		memset(&usr->logon_hrs, 0xff, sizeof(usr->logon_hrs));
+
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -6702,17 +6843,16 @@ BOOL samr_io_r_get_dom_pwinfo(char *desc, SAMR_R_GET_DOM_PWINFO * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint16("unk_0", ps, depth, &r_u->unk_0))
+	/*
+	 * We need 16 bytes here according to tests.  Don't know
+	 * what they are, but the length is important for the singing
+	*/
+
+	if(!prs_uint32("unk_0", ps, depth, &r_u->unk_0))
 		return False;
-	if(!prs_align(ps))
+	if(!prs_uint32("unk_1", ps, depth, &r_u->unk_1))
 		return False;
-	if(!prs_uint16("unk_1", ps, depth, &r_u->unk_1))
-		return False;
-	if(!prs_align(ps))
-		return False;
-	if(!prs_uint16("unk_2", ps, depth, &r_u->unk_2))
-		return False;
-	if(!prs_align(ps))
+	if(!prs_uint32("unk_2", ps, depth, &r_u->unk_2))
 		return False;
 
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))

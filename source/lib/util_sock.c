@@ -21,13 +21,6 @@
 
 #include "includes.h"
 
-#ifdef WITH_SSL
-#include <openssl/ssl.h>
-#undef Realloc  /* SSLeay defines this and samba has a function of this name */
-extern SSL  *ssl;
-extern int  sslFd;
-#endif  /* WITH_SSL */
-
 /* the last IP received from */
 struct in_addr lastip;
 
@@ -42,23 +35,22 @@ int smb_read_error = 0;
 
 BOOL is_a_socket(int fd)
 {
-  int v,l;
-  l = sizeof(int);
-  return(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)&v, &l) == 0);
+	int v,l;
+	l = sizeof(int);
+	return(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)&v, &l) == 0);
 }
 
 enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
 
-typedef struct smb_socket_option
-{
-  char *name;
-  int level;
-  int option;
-  int value;
-  int opttype;
+typedef struct smb_socket_option {
+	char *name;
+	int level;
+	int option;
+	int value;
+	int opttype;
 } smb_socket_option;
 
-smb_socket_option socket_options[] = {
+static const smb_socket_option socket_options[] = {
   {"SO_KEEPALIVE",      SOL_SOCKET,    SO_KEEPALIVE,    0,                 OPT_BOOL},
   {"SO_REUSEADDR",      SOL_SOCKET,    SO_REUSEADDR,    0,                 OPT_BOOL},
   {"SO_BROADCAST",      SOL_SOCKET,    SO_BROADCAST,    0,                 OPT_BOOL},
@@ -97,10 +89,11 @@ smb_socket_option socket_options[] = {
 /****************************************************************************
  Print socket options.
 ****************************************************************************/
+
 static void print_socket_options(int s)
 {
 	int value, vlen = 4;
-	smb_socket_option *p = &socket_options[0];
+	const smb_socket_option *p = &socket_options[0];
 
 	for (; p->name != NULL; p++) {
 		if (getsockopt(s, p->level, p->option, (void *)&value, &vlen) == -1) {
@@ -178,7 +171,7 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
 
 	memset((char *)&sock,'\0',socklen);
 	memset((char *)&lastip,'\0',sizeof(lastip));
-	ret = (ssize_t)recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
+	ret = (ssize_t)sys_recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
 	if (ret <= 0) {
 		DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
 		return(0);
@@ -196,7 +189,7 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
 /*******************************************************************
  checks if read data is outstanding.
  ********************************************************************/
-int read_data_outstanding(int fd, unsigned int time_out)
+static int read_data_outstanding(int fd, unsigned int time_out)
 {
 	int selrtn;
 	fd_set fds;
@@ -243,15 +236,7 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
 		if (mincnt == 0) mincnt = maxcnt;
 		
 		while (nread < mincnt) {
-#ifdef WITH_SSL
-			if (fd == sslFd) {
-				readret = SSL_read(ssl, buf + nread, maxcnt - nread);
-			} else {
-				readret = read(fd, buf + nread, maxcnt - nread);
-			}
-#else /* WITH_SSL */
-			readret = read(fd, buf + nread, maxcnt - nread);
-#endif /* WITH_SSL */
+			readret = sys_read(fd, buf + nread, maxcnt - nread);
 			
 			if (readret == 0) {
 				DEBUG(5,("read_socket_with_timeout: blocking read. EOF from client.\n"));
@@ -300,15 +285,7 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
 			return -1;
 		}
 		
-#ifdef WITH_SSL
-		if (fd == sslFd) {
-			readret = SSL_read(ssl, buf + nread, maxcnt - nread);
-		}else{
-			readret = read(fd, buf + nread, maxcnt - nread);
-		}
-#else /* WITH_SSL */
-		readret = read(fd, buf+nread, maxcnt-nread);
-#endif /* WITH_SSL */
+		readret = sys_read(fd, buf+nread, maxcnt-nread);
 		
 		if (readret == 0) {
 			/* we got EOF on the file descriptor */
@@ -353,15 +330,7 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 		if (mincnt == 0) mincnt = maxcnt;
 		
 		while (nread < mincnt) {
-#ifdef WITH_SSL
-			if(fd == sslFd){
-				readret = SSL_read(ssl, buf + nread, maxcnt - nread);
-			}else{
-				readret = read(fd, buf + nread, maxcnt - nread);
-			}
-#else /* WITH_SSL */
-			readret = read(fd, buf + nread, maxcnt - nread);
-#endif /* WITH_SSL */
+			readret = sys_read(fd, buf + nread, maxcnt - nread);
 			
 			if (readret <= 0)
 				return readret;
@@ -383,15 +352,7 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 		if(selrtn <= 0)
 			return selrtn;
 		
-#ifdef WITH_SSL
-		if(fd == sslFd){
-			readret = SSL_read(ssl, buf + nread, maxcnt - nread);
-		}else{
-			readret = read(fd, buf + nread, maxcnt - nread);
-		}
-#else /* WITH_SSL */
-		readret = read(fd, buf+nread, maxcnt-nread);
-#endif /* WITH_SSL */
+		readret = sys_read(fd, buf+nread, maxcnt-nread);
 		
 		if (readret <= 0)
 			return readret;
@@ -404,57 +365,33 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 }
 
 /****************************************************************************
-send a keepalive packet (rfc1002)
-****************************************************************************/
-
-BOOL send_keepalive(int client)
-{
-  unsigned char buf[4];
-
-  buf[0] = SMBkeepalive;
-  buf[1] = buf[2] = buf[3] = 0;
-
-  return(write_socket_data(client,(char *)buf,4) == 4);
-}
-
-/****************************************************************************
   read data from the client, reading exactly N bytes. 
 ****************************************************************************/
 
 ssize_t read_data(int fd,char *buffer,size_t N)
 {
-  ssize_t  ret;
-  size_t total=0;  
+	ssize_t ret;
+	size_t total=0;  
  
-  smb_read_error = 0;
+	smb_read_error = 0;
 
-  while (total < N)
-  {
-#ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_read(ssl, buffer + total, N - total);
-    }else{
-      ret = read(fd,buffer + total,N - total);
-    }
-#else /* WITH_SSL */
-    ret = read(fd,buffer + total,N - total);
-#endif /* WITH_SSL */
+	while (total < N) {
+		ret = sys_read(fd,buffer + total,N - total);
 
-    if (ret == 0)
-    {
-      DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
-      smb_read_error = READ_EOF;
-      return 0;
-    }
-    if (ret == -1)
-    {
-      DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
-      smb_read_error = READ_ERROR;
-      return -1;
-    }
-    total += ret;
-  }
-  return (ssize_t)total;
+		if (ret == 0) {
+			DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_EOF;
+			return 0;
+		}
+
+		if (ret == -1) {
+			DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_ERROR;
+			return -1;
+		}
+		total += ret;
+	}
+	return (ssize_t)total;
 }
 
 /****************************************************************************
@@ -463,38 +400,28 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 
 static ssize_t read_socket_data(int fd,char *buffer,size_t N)
 {
-  ssize_t  ret;
-  size_t total=0;  
+	ssize_t ret;
+	size_t total=0;  
  
-  smb_read_error = 0;
+	smb_read_error = 0;
 
-  while (total < N)
-  {
-#ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_read(ssl, buffer + total, N - total);
-    }else{
-      ret = read(fd,buffer + total,N - total);
-    }
-#else /* WITH_SSL */
-    ret = read(fd,buffer + total,N - total);
-#endif /* WITH_SSL */
+	while (total < N) {
+		ret = sys_read(fd,buffer + total,N - total);
 
-    if (ret == 0)
-    {
-      DEBUG(10,("read_socket_data: recv of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
-      smb_read_error = READ_EOF;
-      return 0;
-    }
-    if (ret == -1)
-    {
-      DEBUG(0,("read_socket_data: recv failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
-      smb_read_error = READ_ERROR;
-      return -1;
-    }
-    total += ret;
-  }
-  return (ssize_t)total;
+		if (ret == 0) {
+			DEBUG(10,("read_socket_data: recv of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_EOF;
+			return 0;
+		}
+
+		if (ret == -1) {
+			DEBUG(0,("read_socket_data: recv failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_ERROR;
+			return -1;
+		}
+		total += ret;
+	}
+	return (ssize_t)total;
 }
 
 /****************************************************************************
@@ -503,62 +430,46 @@ static ssize_t read_socket_data(int fd,char *buffer,size_t N)
 
 ssize_t write_data(int fd,char *buffer,size_t N)
 {
-  size_t total=0;
-  ssize_t ret;
+	size_t total=0;
+	ssize_t ret;
 
-  while (total < N)
-  {
-#ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_write(ssl,buffer + total,N - total);
-    }else{
-      ret = write(fd,buffer + total,N - total);
-    }
-#else /* WITH_SSL */
-    ret = write(fd,buffer + total,N - total);
-#endif /* WITH_SSL */
+	while (total < N) {
+		ret = sys_write(fd,buffer + total,N - total);
 
-    if (ret == -1) {
-      DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
-      return -1;
-    }
-    if (ret == 0) return total;
+		if (ret == -1) {
+			DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (ret == 0)
+			return total;
 
-    total += ret;
-  }
-  return (ssize_t)total;
+		total += ret;
+	}
+	return (ssize_t)total;
 }
 
 /****************************************************************************
  Write data to a socket - use send rather than write.
 ****************************************************************************/
 
-ssize_t write_socket_data(int fd,char *buffer,size_t N)
+static ssize_t write_socket_data(int fd,char *buffer,size_t N)
 {
-  size_t total=0;
-  ssize_t ret;
+	size_t total=0;
+	ssize_t ret;
 
-  while (total < N)
-  {
-#ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_write(ssl,buffer + total,N - total);
-    }else{
-      ret = send(fd,buffer + total,N - total, 0);
-    }
-#else /* WITH_SSL */
-    ret = send(fd,buffer + total,N - total,0);
-#endif /* WITH_SSL */
+	while (total < N) {
+		ret = sys_send(fd,buffer + total,N - total,0);
 
-    if (ret == -1) {
-      DEBUG(0,("write_socket_data: write failure. Error = %s\n", strerror(errno) ));
-      return -1;
-    }
-    if (ret == 0) return total;
+		if (ret == -1) {
+			DEBUG(0,("write_socket_data: write failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (ret == 0)
+			return total;
 
-    total += ret;
-  }
-  return (ssize_t)total;
+		total += ret;
+	}
+	return (ssize_t)total;
 }
 
 /****************************************************************************
@@ -567,18 +478,33 @@ write to a socket
 
 ssize_t write_socket(int fd,char *buf,size_t len)
 {
-  ssize_t ret=0;
+	ssize_t ret=0;
 
-  DEBUG(6,("write_socket(%d,%d)\n",fd,(int)len));
-  ret = write_socket_data(fd,buf,len);
+	DEBUG(6,("write_socket(%d,%d)\n",fd,(int)len));
+	ret = write_socket_data(fd,buf,len);
       
-  DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,(int)len,(int)ret));
-  if(ret <= 0)
-    DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n", 
-       (int)len, fd, strerror(errno) ));
+	DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,(int)len,(int)ret));
+	if(ret <= 0)
+		DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n", 
+			(int)len, fd, strerror(errno) ));
 
-  return(ret);
+	return(ret);
 }
+
+/****************************************************************************
+send a keepalive packet (rfc1002)
+****************************************************************************/
+
+BOOL send_keepalive(int client)
+{
+	unsigned char buf[4];
+
+	buf[0] = SMBkeepalive;
+	buf[1] = buf[2] = buf[3] = 0;
+
+	return(write_socket_data(client,(char *)buf,4) == 4);
+}
+
 
 /****************************************************************************
 read 4 bytes of a smb packet and return the smb length of the packet
@@ -590,30 +516,29 @@ timeout is in milliseconds.
 
 static ssize_t read_smb_length_return_keepalive(int fd,char *inbuf,unsigned int timeout)
 {
-  ssize_t len=0;
-  int msg_type;
-  BOOL ok = False;
+	ssize_t len=0;
+	int msg_type;
+	BOOL ok = False;
 
-  while (!ok)
-  {
-    if (timeout > 0)
-      ok = (read_socket_with_timeout(fd,inbuf,4,4,timeout) == 4);
-    else 
-      ok = (read_socket_data(fd,inbuf,4) == 4);
+	while (!ok) {
+		if (timeout > 0)
+			ok = (read_socket_with_timeout(fd,inbuf,4,4,timeout) == 4);
+		else 
+			ok = (read_socket_data(fd,inbuf,4) == 4);
 
-    if (!ok)
-      return(-1);
+		if (!ok)
+			return(-1);
 
-    len = smb_len(inbuf);
-    msg_type = CVAL(inbuf,0);
+		len = smb_len(inbuf);
+		msg_type = CVAL(inbuf,0);
 
-    if (msg_type == SMBkeepalive) 
-      DEBUG(5,("Got keepalive packet\n"));
-  }
+		if (msg_type == SMBkeepalive) 
+			DEBUG(5,("Got keepalive packet\n"));
+	}
 
-  DEBUG(10,("got smb length of %d\n",len));
+	DEBUG(10,("got smb length of %d\n",len));
 
-  return(len);
+	return(len);
 }
 
 /****************************************************************************
@@ -625,23 +550,22 @@ timeout is in milliseconds.
 
 ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
 {
-  ssize_t len;
+	ssize_t len;
 
-  for(;;)
-  {
-    len = read_smb_length_return_keepalive(fd, inbuf, timeout);
+	for(;;) {
+		len = read_smb_length_return_keepalive(fd, inbuf, timeout);
 
-    if(len < 0)
-      return len;
+		if(len < 0)
+			return len;
 
-    /* Ignore session keepalives. */
-    if(CVAL(inbuf,0) != SMBkeepalive)
-      break;
-  }
+		/* Ignore session keepalives. */
+		if(CVAL(inbuf,0) != SMBkeepalive)
+			break;
+	}
 
-  DEBUG(10,("read_smb_length: got smb length of %d\n",len));
+	DEBUG(10,("read_smb_length: got smb length of %d\n",len));
 
-  return len;
+	return len;
 }
 
 /****************************************************************************
@@ -709,40 +633,6 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 }
 
 /****************************************************************************
-  read an smb from a fd ignoring all keepalive packets. Note that the buffer 
-  *MUST* be of size BUFFER_SIZE+SAFETY_MARGIN.
-  The timeout is in milliseconds
-
-  This is exactly the same as receive_smb except that it never returns
-  a session keepalive packet (just as receive_smb used to do).
-  receive_smb was changed to return keepalives as the oplock processing means this call
-  should never go into a blocking read.
-****************************************************************************/
-
-BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
-{
-  BOOL ret;
-
-  for(;;)
-  {
-    ret = receive_smb(fd, buffer, timeout);
-
-    if (!ret)
-    {
-      DEBUG(10,("client_receive_smb failed\n"));
-      show_msg(buffer);
-      return ret;
-    }
-
-    /* Ignore session keepalive packets. */
-    if(CVAL(buffer,0) != SMBkeepalive)
-      break;
-  }
-  show_msg(buffer);
-  return ret;
-}
-
-/****************************************************************************
   send an smb to a fd 
 ****************************************************************************/
 
@@ -764,45 +654,6 @@ BOOL send_smb(int fd,char *buffer)
 	}
 
 	return True;
-}
-
-/****************************************************************************
-send a single packet to a port on another machine
-****************************************************************************/
-
-BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
-{
-  BOOL ret;
-  int out_fd;
-  struct sockaddr_in sock_out;
-
-  /* create a socket to write to */
-  out_fd = socket(AF_INET, type, 0);
-  if (out_fd == -1) 
-    {
-      DEBUG(0,("socket failed"));
-      return False;
-    }
-
-  /* set the address and port */
-  memset((char *)&sock_out,'\0',sizeof(sock_out));
-  putip((char *)&sock_out.sin_addr,(char *)&ip);
-  sock_out.sin_port = htons( port );
-  sock_out.sin_family = AF_INET;
-  
-  if (DEBUGLEVEL > 0)
-    DEBUG(3,("sending a packet of len %d to (%s) on port %d of type %s\n",
-	     len,inet_ntoa(ip),port,type==SOCK_DGRAM?"DGRAM":"STREAM"));
-	
-  /* send it */
-  ret = (sendto(out_fd,buf,len,0,(struct sockaddr *)&sock_out,sizeof(sock_out)) >= 0);
-
-  if (!ret)
-    DEBUG(0,("Packet send to %s(%d) failed ERRNO=%s\n",
-	     inet_ntoa(ip),port,strerror(errno)));
-
-  close(out_fd);
-  return(ret);
 }
 
 /****************************************************************************
@@ -866,7 +717,7 @@ int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL reb
 		return( -1 ); 
 	}
 
-	DEBUG( 3, ( "bind succeeded on port %d\n", port ) );
+	DEBUG( 10, ( "bind succeeded on port %d\n", port ) );
 
 	return( res );
  }
@@ -1113,37 +964,6 @@ char *get_socket_addr(int fd)
 	return addr_buf;
 }
 
-/*******************************************************************
- opens and connects to a unix pipe socket
- ******************************************************************/
-int open_pipe_sock(char *path)
-{
-	int sock;
-	struct sockaddr_un sa;
-
-	sock = socket(AF_UNIX, SOCK_STREAM, 0);
-
-	if (sock < 0)
-	{
-		DEBUG(0, ("unix socket open failed\n"));
-		return sock;
-	}
-
-	ZERO_STRUCT(sa);
-	sa.sun_family = AF_UNIX;
-	safe_strcpy(sa.sun_path, path, sizeof(sa.sun_path)-1);
-
-	DEBUG(10, ("socket open succeeded.  file name: %s\n", sa.sun_path));
-
-	if (connect(sock, (struct sockaddr*) &sa, sizeof(sa)) < 0)
-	{
-		DEBUG(0,("socket connect to %s failed\n", sa.sun_path));
-		close(sock);
-		return -1;
-	}
-
-	return sock;
-}
 
 /*******************************************************************
  Create protected unix domain socket.
@@ -1153,8 +973,8 @@ int open_pipe_sock(char *path)
  permissions, instead.
  ******************************************************************/
 int create_pipe_sock(const char *socket_dir,
-					const char *socket_name,
-					mode_t dir_perms)
+		     const char *socket_name,
+		     mode_t dir_perms)
 {
         struct sockaddr_un sunaddr;
         struct stat st;

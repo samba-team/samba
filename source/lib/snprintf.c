@@ -57,6 +57,12 @@
 
 #ifndef NO_CONFIG_H /* for some tests */
 #include "config.h"
+#else
+#define NULL 0
+#endif
+
+#ifdef TEST_SNPRINTF /* need math library headers for testing */
+#include <math.h>
 #endif
 
 #ifdef HAVE_STRING_H
@@ -94,8 +100,21 @@
 #define LLONG long
 #endif
 
+/* free memory if the pointer is valid and zero the pointer */
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
+#endif
+
+#ifndef VA_COPY
+#ifdef HAVE_VA_COPY
+#define VA_COPY(dest, src) __va_copy(dest, src)
+#else
+#define VA_COPY(dest, src) (dest) = (src)
+#endif
+#endif
+
 static size_t dopr(char *buffer, size_t maxlen, const char *format, 
-		   va_list args);
+		   va_list args_in);
 static void fmtstr(char *buffer, size_t *currlen, size_t maxlen,
 		    char *value, int flags, int min, int max);
 static void fmtint(char *buffer, size_t *currlen, size_t maxlen,
@@ -138,7 +157,7 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c);
 #define MAX(p,q) (((p) >= (q)) ? (p) : (q))
 #endif
 
-static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args)
+static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args_in)
 {
 	char ch;
 	LLONG value;
@@ -150,6 +169,9 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 	int flags;
 	int cflags;
 	size_t currlen;
+	va_list args;
+
+	VA_COPY(args, args_in);
 	
 	state = DP_S_DEFAULT;
 	currlen = flags = cflags = min = 0;
@@ -656,9 +678,8 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 
 	/* Convert integer part */
 	do {
-		temp = intpart;
-		my_modf(intpart*0.1, &intpart);
-		temp = temp*0.1;
+		temp = intpart*0.1;
+		my_modf(temp, &intpart);
 		index = (int) ((temp -intpart +0.05)* 10.0);
 		/* index = (int) (((double)(temp*0.1) -intpart +0.05) *10.0); */
 		/* printf ("%llf, %f, %x\n", temp, intpart, index); */
@@ -672,9 +693,8 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 	if (fracpart)
 	{
 		do {
-			temp = fracpart;
-			my_modf(fracpart*0.1, &fracpart);
-			temp = temp*0.1;
+			temp = fracpart*0.1;
+			my_modf(temp, &fracpart);
 			index = (int) ((temp -fracpart +0.05)* 10.0);
 			/* index = (int) ((((temp/10) -fracpart) +0.05) *10); */
 			/* printf ("%lf, %lf, %ld\n", temp, fracpart, index); */
@@ -726,13 +746,13 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 	if (max > 0) {
 		dopr_outch (buffer, currlen, maxlen, '.');
 		
+		while (zpadlen > 0) {
+			dopr_outch (buffer, currlen, maxlen, '0');
+			--zpadlen;
+		}
+
 		while (fplace > 0) 
 			dopr_outch (buffer, currlen, maxlen, fconvert[--fplace]);
-	}
-	
-	while (zpadlen > 0) {
-		dopr_outch (buffer, currlen, maxlen, '0');
-		--zpadlen;
 	}
 
 	while (padlen < 0) {
@@ -784,13 +804,19 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
  int vasprintf(char **ptr, const char *format, va_list ap)
 {
 	int ret;
+	va_list ap2;
+
+	VA_COPY(ap2, ap);
 	
-	ret = vsnprintf(NULL, 0, format, ap);
+	ret = vsnprintf(NULL, 0, format, ap2);
 	if (ret <= 0) return ret;
 
 	(*ptr) = (char *)malloc(ret+1);
 	if (!*ptr) return -1;
-	ret = vsnprintf(*ptr, ret+1, format, ap);
+
+	VA_COPY(ap2, ap);
+
+	ret = vsnprintf(*ptr, ret+1, format, ap2);
 
 	return ret;
 }
@@ -811,20 +837,6 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 	return ret;
 }
 #endif
-
-#ifndef HAVE_VSYSLOG
-#ifdef HAVE_SYSLOG
- void vsyslog (int facility_priority, char *format, va_list arglist)
-{
-	char *msg = NULL;
-	vasprintf(&msg, format, arglist);
-        if (!msg)
-                return;
-        syslog(facility_priority, "%s", msg);
-        free(msg);
-}
-#endif /* HAVE_SYSLOG */
-#endif /* HAVE_VSYSLOG */
 
 #ifdef TEST_SNPRINTF
 
@@ -853,7 +865,7 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 		NULL
 	};
 	double fp_nums[] = { 6442452944.1234, -1.5, 134.21, 91340.2, 341.1234, 0203.9, 0.96, 0.996, 
-			     0.9996, 1.996, 4.136,  0};
+			     0.9996, 1.996, 4.136, 5.030201, 0};
 	char *int_fmt[] = {
 		"%-1.5d",
 		"%1.5d",
@@ -948,8 +960,10 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 	{
 		double v0 = 0.12345678901234567890123456789012345678901;
 		for (x=0; x<100; x++) {
-			snprintf(buf1, sizeof(buf1), "%1.1f", v0*pow(10, x));
-			sprintf(buf2,                "%1.1f", v0*pow(10, x));
+			double p = pow(10, x); 
+			double r = v0*p;
+			snprintf(buf1, sizeof(buf1), "%1.1f", r);
+			sprintf(buf2,                "%1.1f", r);
 			if (strcmp(buf1, buf2)) {
 				printf("we seem to support %d digits\n", x-1);
 				break;

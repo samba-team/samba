@@ -20,12 +20,15 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 /**
  * update the encrypted smbpasswd file from the plaintext username and password
  *  
  *  this ugly hack needs to die, but not quite yet, I think people still use it...
  **/
-static BOOL update_smbpassword_file(char *user, char *password)
+static BOOL update_smbpassword_file(const char *user, const char *password)
 {
 	SAM_ACCOUNT 	*sampass = NULL;
 	BOOL            ret;
@@ -66,8 +69,6 @@ static BOOL update_smbpassword_file(char *user, char *password)
 	if (ret) {
 		DEBUG(3,("pdb_update_sam_account returned %d\n",ret));
 	}
-
-	memset(password, '\0', strlen(password));
 
 	pdb_free_sam(&sampass);
 	return ret;
@@ -118,12 +119,14 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-BOOL auth_init_unix(struct auth_context *auth_context, auth_methods **auth_method) 
+NTSTATUS auth_init_unix(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
+	(*auth_method)->name = "unix";
 	(*auth_method)->auth = check_unix_security;
-	return True;
+	return NT_STATUS_OK;
 }
+

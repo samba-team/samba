@@ -23,8 +23,12 @@
 int net_lookup_usage(int argc, const char **argv)
 {
 	d_printf(
-"  net lookup host HOSTNAME <type>\n\tgives IP for a hostname\n\n"\
-"\n");
+"  net lookup host HOSTNAME <type>\n\tgives IP for a hostname\n\n"
+"  net lookup ldap [domain]\n\tgives IP of domain's ldap server\n\n"
+"  net lookup kdc [realm]\n\tgives IP of realm's kerberos KDC\n\n"
+"  net lookup dc [domain]\n\tgives IP of domains Domain Controllers\n\n"
+"  net lookup master [domain|wg]\n\tgive IP of master browser\n\n"
+);
 	return -1;
 }
 
@@ -48,12 +52,177 @@ static int net_lookup_host(int argc, const char **argv)
 	return 0;
 }
 
+static void print_ldap_srvlist(char *srvlist)
+{
+	char *cur, *next;
+	struct in_addr ip;
+	BOOL printit;
 
+	cur = srvlist;
+	do {
+		next = strchr(cur,':');
+		if (next) *next++='\0';
+		printit = resolve_name(cur, &ip, 0x20);
+		cur=next;
+		next=cur ? strchr(cur,' ') :NULL;
+		if (next)
+			*next++='\0';
+		if (printit)
+			d_printf("%s:%s\n", inet_ntoa(ip), cur?cur:"");
+		cur = next;
+	} while (next);
+}
+		
+
+static int net_lookup_ldap(int argc, const char **argv)
+{
+#ifdef HAVE_LDAP
+	char *srvlist, *domain;
+	int rc, count;
+	struct in_addr *addr;
+	struct hostent *hostent;
+
+	if (argc > 0)
+		domain = argv[0];
+	else
+		domain = opt_target_workgroup;
+
+	DEBUG(9, ("Lookup up ldap for domain %s\n", domain));
+	rc = ldap_domain2hostlist(domain, &srvlist);
+	if ((rc == LDAP_SUCCESS) && srvlist) {
+		print_ldap_srvlist(srvlist);
+		return 0;
+	}
+
+     	DEBUG(9, ("Looking up DC for domain %s\n", domain));
+	if (!get_dc_list(True, domain, &addr, &count))
+		return -1;
+
+	hostent = gethostbyaddr((char *) &addr->s_addr, sizeof(addr->s_addr),
+				AF_INET);
+	if (!hostent)
+		return -1;
+
+	DEBUG(9, ("Found DC with DNS name %s\n", hostent->h_name));
+	domain = strchr(hostent->h_name, '.');
+	if (!domain)
+		return -1;
+	domain++;
+
+	DEBUG(9, ("Looking up ldap for domain %s\n", domain));
+	rc = ldap_domain2hostlist(domain, &srvlist);
+	if ((rc == LDAP_SUCCESS) && srvlist) {
+		print_ldap_srvlist(srvlist);
+		return 0;
+	}
+	return -1;
+#endif
+	DEBUG(1,("No LDAP support\n"));
+	return -1;
+}
+
+static int net_lookup_dc(int argc, const char **argv)
+{
+	struct in_addr *ip_list;
+	char *pdc_str = NULL;
+	char *domain=opt_target_workgroup;
+	int count, i;
+
+	if (argc > 0)
+		domain=argv[0];
+
+	/* first get PDC */
+	if (!get_dc_list(True, domain, &ip_list, &count))
+		return -1;
+
+	asprintf(&pdc_str, "%s", inet_ntoa(*ip_list));
+	d_printf("%s\n", pdc_str);
+
+	if (!get_dc_list(False, domain, &ip_list, &count)) {
+		SAFE_FREE(pdc_str);
+		return 0;
+	}
+	for (i=0;i<count;i++) {
+		char *dc_str = inet_ntoa(ip_list[i]);
+		if (!strequal(pdc_str, dc_str))
+			d_printf("%s\n", dc_str);
+	}
+	SAFE_FREE(pdc_str);
+	return 0;
+}
+
+static int net_lookup_master(int argc, const char **argv)
+{
+	struct in_addr master_ip;
+	char *domain=opt_target_workgroup;
+
+	if (argc > 0)
+		domain=argv[0];
+
+	if (!find_master_ip(domain, &master_ip))
+		return -1;
+	d_printf("%s\n", inet_ntoa(master_ip));
+	return 0;
+}
+
+static int net_lookup_kdc(int argc, const char **argv)
+{
+#ifdef HAVE_KRB5
+	krb5_error_code rc;
+	krb5_context ctx;
+	struct sockaddr_in *addrs;
+	int num_kdcs,i;
+	krb5_data realm;
+	char **realms;
+
+	rc = krb5_init_context(&ctx);
+	if (rc) {
+		DEBUG(1,("krb5_init_context failed (%s)\n", 
+			 error_message(rc)));
+		return -1;
+	}
+
+	if (argc>0) {
+		realm.data = (krb5_pointer) argv[0];
+		realm.length = strlen(argv[0]);
+	} else if (lp_realm() && *lp_realm()) {
+		realm.data = (krb5_pointer) lp_realm();
+		realm.length = strlen(realm.data);
+	} else {
+		rc = krb5_get_host_realm(ctx, NULL, &realms);
+		if (rc) {
+			DEBUG(1,("krb5_gethost_realm failed (%s)\n",
+				 error_message(rc)));
+			return -1;
+		}
+		realm.data = (krb5_pointer) *realms;
+		realm.length = strlen(realm.data);
+	}
+
+	rc = krb5_locate_kdc(ctx, &realm, &addrs, &num_kdcs, 0);
+	if (rc) {
+		DEBUG(1, ("krb5_locate_kdc failed (%s)\n", error_message(rc)));
+		return -1;
+	}
+	for (i=0;i<num_kdcs;i++)
+		if (addrs[i].sin_family == AF_INET) 
+			d_printf("%s:%hd\n", inet_ntoa(addrs[i].sin_addr),
+				 ntohs(addrs[i].sin_port));
+	return 0;
+
+#endif	
+	DEBUG(1, ("No kerberos support\n"));
+	return -1;
+}
 /* lookup hosts or IP addresses using internal samba lookup fns */
 int net_lookup(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"HOST", net_lookup_host},
+		{"LDAP", net_lookup_ldap},
+		{"DC", net_lookup_dc},
+		{"MASTER", net_lookup_master},
+		{"KDC", net_lookup_kdc},
 		{NULL, NULL}
 	};
 

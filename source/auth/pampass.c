@@ -29,6 +29,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 #ifdef WITH_PAM
 
 /*******************************************************************
@@ -183,7 +186,7 @@ static void special_char_sub(char *buf)
 
 static void pwd_sub(char *buf, const char *username, const char *oldpass, const char *newpass)
 {
-	pstring_sub(buf, "%u", username);
+	fstring_sub(buf, "%u", username);
 	all_string_sub(buf, "%o", oldpass, sizeof(fstring));
 	all_string_sub(buf, "%n", newpass, sizeof(fstring));
 }
@@ -494,7 +497,7 @@ static BOOL smb_pam_start(pam_handle_t **pamh, const char *user, const char *rho
 /*
  * PAM Authentication Handler
  */
-static NTSTATUS smb_pam_auth(pam_handle_t *pamh, char *user)
+static NTSTATUS smb_pam_auth(pam_handle_t *pamh, const char *user)
 {
 	int pam_error;
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
@@ -579,7 +582,7 @@ static NTSTATUS smb_pam_account(pam_handle_t *pamh, const char * user)
  * PAM Credential Setting
  */
 
-static NTSTATUS smb_pam_setcred(pam_handle_t *pamh, char * user)
+static NTSTATUS smb_pam_setcred(pam_handle_t *pamh, const char * user)
 {
 	int pam_error;
 	NTSTATUS nt_status = NT_STATUS_NO_TOKEN;
@@ -619,7 +622,7 @@ static NTSTATUS smb_pam_setcred(pam_handle_t *pamh, char * user)
 /*
  * PAM Internal Session Handler
  */
-static BOOL smb_internal_pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL flag)
+static BOOL smb_internal_pam_session(pam_handle_t *pamh, const char *user, const char *tty, BOOL flag)
 {
 	int pam_error;
 
@@ -785,7 +788,7 @@ NTSTATUS smb_pam_accountcheck(const char * user)
  * PAM Password Validation Suite
  */
 
-NTSTATUS smb_pam_passcheck(char * user, char * password)
+NTSTATUS smb_pam_passcheck(const char * user, const char * password)
 {
 	pam_handle_t *pamh = NULL;
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;

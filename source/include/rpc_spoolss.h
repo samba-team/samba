@@ -1,9 +1,11 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell              1992-2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
    Copyright (C) Jean Francois Micouleau      1998-2000.
+   Copyright (C) Gerald Carter                2001-2002.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,9 +24,6 @@
 
 #ifndef _RPC_SPOOLSS_H		/* _RPC_SPOOLSS_H */
 #define _RPC_SPOOLSS_H
-
-#define INTEGER 1
-#define STRING 2
 
 /* spoolss pipe: this are the calls which are not implemented ...
 #define SPOOLSS_GETPRINTERDRIVER			0x0b
@@ -51,9 +50,6 @@
 #define SPOOLSS_REMOTEFINDFIRSTPRINTERCHANGENOTIFICATION0x3e
 #define SPOOLSS_SPOOLERINIT				0x3f
 #define SPOOLSS_RESETPRINTEREX				0x40
-#define SPOOLSS_DELETEPRINTERDATAEX			0x51
-#define SPOOLSS_DELETEPRINTERDRIVEREX			0x54
-#define SPOOLSS_ADDPRINTERDRIVEREX			0x59
 */
 
 /* those are implemented */
@@ -109,6 +105,10 @@
 #define SPOOLSS_GETPRINTERDATAEX			0x4e
 #define SPOOLSS_ENUMPRINTERDATAEX			0x4f
 #define SPOOLSS_ENUMPRINTERKEY				0x50
+#define SPOOLSS_DELETEPRINTERDATAEX			0x51
+#define SPOOLSS_DELETEPRINTERKEY			0x52
+#define SPOOLSS_DELETEPRINTERDRIVEREX			0x54
+#define SPOOLSS_ADDPRINTERDRIVEREX			0x59
 
 
 #define PRINTER_CONTROL_UNPAUSE		0x00000000
@@ -117,6 +117,7 @@
 #define PRINTER_CONTROL_PURGE		0x00000003
 #define PRINTER_CONTROL_SET_STATUS	0x00000004
 
+#define PRINTER_STATUS_OK               0x00000000
 #define PRINTER_STATUS_PAUSED		0x00000001
 #define PRINTER_STATUS_ERROR		0x00000002
 #define PRINTER_STATUS_PENDING_DELETION	0x00000004
@@ -157,17 +158,18 @@
 
 /* JOB status codes. */
 
-#define JOB_STATUS_PAUSED		0x001
-#define JOB_STATUS_ERROR		0x002
-#define JOB_STATUS_DELETING		0x004
-#define JOB_STATUS_SPOOLING		0x008
-#define JOB_STATUS_PRINTING		0x010
-#define JOB_STATUS_OFFLINE		0x020
-#define JOB_STATUS_PAPEROUT		0x040
-#define JOB_STATUS_PRINTED		0x080
-#define JOB_STATUS_DELETED		0x100
-#define JOB_STATUS_BLOCKED		0x200
-#define JOB_STATUS_USER_INTERVENTION	0x400
+#define JOB_STATUS_QUEUED               0x0000
+#define JOB_STATUS_PAUSED		0x0001
+#define JOB_STATUS_ERROR		0x0002
+#define JOB_STATUS_DELETING		0x0004
+#define JOB_STATUS_SPOOLING		0x0008
+#define JOB_STATUS_PRINTING		0x0010
+#define JOB_STATUS_OFFLINE		0x0020
+#define JOB_STATUS_PAPEROUT		0x0040
+#define JOB_STATUS_PRINTED		0x0080
+#define JOB_STATUS_DELETED		0x0100
+#define JOB_STATUS_BLOCKED		0x0200
+#define JOB_STATUS_USER_INTERVENTION	0x0400
 
 /* ACE masks for the various print permissions */
 
@@ -194,9 +196,12 @@
 #define JOB_WRITE	STANDARD_RIGHTS_WRITE_ACCESS|JOB_ACCESS_ADMINISTER
 #define JOB_EXECUTE	STANDARD_RIGHTS_EXECUTE_ACCESS|JOB_ACCESS_ADMINISTER
 
-#define ONE_VALUE 1
-#define TWO_VALUE 2
-#define POINTER   3
+/* Notify field types */
+
+#define NOTIFY_ONE_VALUE 1		/* Notify data is stored in value1 */
+#define NOTIFY_TWO_VALUE 2		/* Notify data is stored in value2 */
+#define NOTIFY_POINTER   3		/* Data is a pointer to a buffer */
+#define NOTIFY_STRING    4		/* Data is a pointer to a buffer w/length */
 
 #define PRINTER_NOTIFY_TYPE 0x00
 #define JOB_NOTIFY_TYPE     0x01
@@ -394,6 +399,23 @@ PRINTER_MESSAGE_INFO;
 #define PRINTER_ENUM_ICON6		0x00200000
 #define PRINTER_ENUM_ICON7		0x00400000
 #define PRINTER_ENUM_ICON8		0x00800000
+
+/* FLAGS for SPOOLSS_DELETEPRINTERDRIVEREX */
+
+#define DPD_DELETE_UNUSED_FILES		0x00000001
+#define DPD_DELETE_SPECIFIC_VERSION	0x00000002
+#define DPD_DELETE_ALL_FILES		0x00000004
+
+#define DRIVER_ANY_VERSION		0xffffffff
+#define DRIVER_MAX_VERSION		4
+
+/* FLAGS for SPOOLSS_ADDPRINTERDRIVEREX */
+
+#define APD_STRICT_UPGRADE		0x00000001
+#define APD_STRICT_DOWNGRADE		0x00000002
+#define APD_COPY_ALL_FILES		0x00000004
+#define APD_COPY_NEW_FILES		0x00000008
+
 
 /* this struct is undocumented */
 /* thanks to the ddk ... */
@@ -677,6 +699,23 @@ typedef struct spool_r_deleteprinterdriver
 	WERROR status;
 }
 SPOOL_R_DELETEPRINTERDRIVER;
+
+typedef struct spool_q_deleteprinterdriverex
+{
+	uint32 server_ptr;
+	UNISTR2 server;
+	UNISTR2 arch;
+	UNISTR2 driver;
+	uint32 delete_flags;
+	uint32 version;
+}
+SPOOL_Q_DELETEPRINTERDRIVEREX;
+
+typedef struct spool_r_deleteprinterdriverex
+{
+	WERROR status;
+}
+SPOOL_R_DELETEPRINTERDRIVEREX;
 
 
 typedef struct spool_doc_info_1
@@ -1199,8 +1238,8 @@ typedef struct job_info_ctr_info
 {
 	union
 	{
-		JOB_INFO_1 *job_info_1;
-		JOB_INFO_2 *job_info_2;
+		JOB_INFO_1 **job_info_1;
+		JOB_INFO_2 **job_info_2;
 		void *info;
 	} job;
 
@@ -1646,6 +1685,22 @@ typedef struct spool_r_addprinterdriver
 }
 SPOOL_R_ADDPRINTERDRIVER;
 
+typedef struct spool_q_addprinterdriverex
+{
+	uint32 server_name_ptr;
+	UNISTR2 server_name;
+	uint32 level;
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL info;
+	uint32 copy_flags;
+}
+SPOOL_Q_ADDPRINTERDRIVEREX;
+
+typedef struct spool_r_addprinterdriverex
+{
+	WERROR status;
+}
+SPOOL_R_ADDPRINTERDRIVEREX;
+
 
 typedef struct driver_directory_1
 {
@@ -2034,6 +2089,21 @@ typedef struct spool_r_setprinterdataex
 SPOOL_R_SETPRINTERDATAEX;
 
 
+typedef struct spool_q_deleteprinterdataex
+{
+	POLICY_HND handle;
+	UNISTR2 keyname;
+	UNISTR2 valuename;
+}
+SPOOL_Q_DELETEPRINTERDATAEX;
+
+typedef struct spool_r_deleteprinterdataex
+{
+	WERROR status;
+}
+SPOOL_R_DELETEPRINTERDATAEX;
+
+
 typedef struct spool_q_enumprinterkey
 {
 	POLICY_HND handle;
@@ -2049,6 +2119,19 @@ typedef struct spool_r_enumprinterkey
 	WERROR status;
 }
 SPOOL_R_ENUMPRINTERKEY;
+
+typedef struct spool_q_deleteprinterkey
+{
+	POLICY_HND handle;
+	UNISTR2 keyname;
+}
+SPOOL_Q_DELETEPRINTERKEY;
+
+typedef struct spool_r_deleteprinterkey
+{
+	WERROR status;
+}
+SPOOL_R_DELETEPRINTERKEY;
 
 typedef struct printer_enum_values
 {

@@ -52,13 +52,6 @@
 #endif /* WITH_NISPLUS_HOME */
 #endif /* HAVE_NETGROUP && WITH_AUTOMOUNT */
 
-#ifdef WITH_SSL
-#include <openssl/ssl.h>
-#undef Realloc  /* SSLeay defines this and samba has a function of this name */
-extern SSL  *ssl;
-extern int  sslFd;
-#endif  /* WITH_SSL */
-
 int Protocol = PROTOCOL_COREPLUS;
 
 /* a default finfo structure to ensure all fields are sensible */
@@ -91,9 +84,10 @@ char **my_netbios_names;
 
 
 /****************************************************************************
-  find a suitable temporary directory. The result should be copied immediately
+ Find a suitable temporary directory. The result should be copied immediately
  as it may be overwritten by a subsequent call.
-  ****************************************************************************/
+****************************************************************************/
+
 char *tmpdir(void)
 {
   char *p;
@@ -124,7 +118,7 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
  Like atoi but gets the value up to the separator character.
 ****************************************************************************/
 
-char *Atoic(char *p, int *n, char *c)
+static char *Atoic(char *p, int *n, char *c)
 {
 	if (!isdigit((int)*p)) {
 		DEBUG(5, ("Atoic: malformed number\n"));
@@ -190,7 +184,7 @@ BOOL file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
   if (sys_stat(fname,sbuf) != 0) 
     return(False);
 
-  return(S_ISREG(sbuf->st_mode));
+	return((S_ISREG(sbuf->st_mode)) || (S_ISFIFO(sbuf->st_mode)));
 }
 
 /*******************************************************************
@@ -552,13 +546,13 @@ int set_blocking(int fd, BOOL set)
 #endif
 #endif
 
-  if((val = fcntl(fd, F_GETFL, 0)) == -1)
+  if((val = sys_fcntl_long(fd, F_GETFL, 0)) == -1)
 	return -1;
   if(set) /* Turn blocking on - ie. clear nonblock flag */
 	val &= ~FLAG_TO_SET;
   else
     val |= FLAG_TO_SET;
-  return fcntl( fd, F_SETFL, val);
+  return sys_fcntl_long( fd, F_SETFL, val);
 #undef FLAG_TO_SET
 }
 
@@ -620,7 +614,7 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 
 SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n)
 {
-	return (SMB_OFF_T)transfer_file_internal(infd, outfd, (size_t)n, read, write);
+	return (SMB_OFF_T)transfer_file_internal(infd, outfd, (size_t)n, sys_read, sys_write);
 }
 
 /*******************************************************************
@@ -689,7 +683,7 @@ void become_daemon(void)
 
 
 /****************************************************************************
-put up a yes/no prompt
+ Put up a yes/no prompt
 ****************************************************************************/
 BOOL yesno(char *p)
 {
@@ -862,7 +856,7 @@ struct in_addr *interpret_addr2(const char *str)
 }
 
 /*******************************************************************
-  check if an IP is the 0.0.0.0
+ Check if an IP is the 0.0.0.0
   ******************************************************************/
 BOOL is_zero_ip(struct in_addr ip)
 {
@@ -871,7 +865,9 @@ BOOL is_zero_ip(struct in_addr ip)
   return(a == 0);
 }
 
-/* Set an IP to 0.0.0.0 */
+/*******************************************************************
+ Set an IP to 0.0.0.0
+ ******************************************************************/
 
 void zero_ip(struct in_addr *ip)
 {
@@ -1056,15 +1052,19 @@ BOOL process_exists(pid_t pid)
  Convert a uid into a user name.
 ********************************************************************/
 
-char *uidtoname(uid_t uid)
+const char *uidtoname(uid_t uid)
 {
 	static fstring name;
 	struct passwd *pass;
 
-	pass = sys_getpwuid(uid);
-	if (pass) return(pass->pw_name);
-	slprintf(name, sizeof(name) - 1, "%d",(int)uid);
-	return(name);
+	pass = getpwuid_alloc(uid);
+	if (pass) {
+		fstrcpy(name, pass->pw_name);
+		passwd_free(&pass);
+	} else {
+		slprintf(name, sizeof(name) - 1, "%ld",(long int)uid);
+	}
+	return name;
 }
 
 
@@ -1078,13 +1078,14 @@ char *gidtoname(gid_t gid)
 	struct group *grp;
 
 	grp = getgrgid(gid);
-	if (grp) return(grp->gr_name);
+	if (grp)
+		return(grp->gr_name);
 	slprintf(name,sizeof(name) - 1, "%d",(int)gid);
 	return(name);
 }
 
 /*******************************************************************
- Convert a user name into a uid. If winbindd is present uses this.
+ Convert a user name into a uid. 
 ********************************************************************/
 
 uid_t nametouid(char *name)
@@ -1093,21 +1094,22 @@ uid_t nametouid(char *name)
 	char *p;
 	uid_t u;
 
+	pass = getpwnam_alloc(name);
+	if (pass) {
+		u = pass->pw_uid;
+		passwd_free(&pass);
+		return u;
+	}
+
 	u = (uid_t)strtol(name, &p, 0);
 	if ((p != name) && (*p == '\0'))
 		return u;
 
-	pass = getpwnam_alloc(name);
-	if (pass) {
-		return(pass->pw_uid);
-		passwd_free(&pass);
-	}
 	return (uid_t)-1;
 }
 
 /*******************************************************************
- Convert a name to a gid_t if possible. Return -1 if not a group. If winbindd
- is present does a shortcut lookup...
+ Convert a name to a gid_t if possible. Return -1 if not a group. 
 ********************************************************************/
 
 gid_t nametogid(const char *name)
@@ -1120,7 +1122,7 @@ gid_t nametogid(const char *name)
 	if ((p != name) && (*p == '\0'))
 		return g;
 
-	grp = getgrnam(name);
+	grp = sys_getgrnam(name);
 	if (grp)
 		return(grp->gr_gid);
 	return (gid_t)-1;
@@ -1353,11 +1355,9 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
   lock.l_len = count;
   lock.l_pid = 0;
 
-  errno = 0;
+  ret = sys_fcntl_ptr(fd,op,&lock);
 
-  ret = fcntl(fd,op,&lock);
-
-  if (errno != 0)
+  if (ret == -1 && errno != 0)
     DEBUG(3,("fcntl_lock: fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));
 
   /* a lock query */
@@ -1391,20 +1391,39 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 }
 
 /*******************************************************************
-is the name specified one of my netbios names
-returns true is it is equal, false otherwise
+ Is the name specified one of my netbios names.
+ Returns true if it is equal, false otherwise.
 ********************************************************************/
+
 BOOL is_myname(char *s)
 {
-  int n;
-  BOOL ret = False;
+	int n;
+	BOOL ret = False;
 
-  for (n=0; my_netbios_names[n]; n++) {
-    if (strequal(my_netbios_names[n], s))
-      ret=True;
-  }
-  DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
-  return(ret);
+	for (n=0; my_netbios_names[n]; n++) {
+		if (strequal(my_netbios_names[n], s))
+			ret=True;
+	}
+	DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
+	return(ret);
+}
+
+/********************************************************************
+ Return only the first IP address of our configured interfaces
+ as a string
+ *******************************************************************/
+
+const char* get_my_primary_ip (void)
+{
+	static fstring ip_string;
+	int n;
+	struct iface_struct nics[MAX_INTERFACES];
+
+	if ((n=get_interfaces(nics, MAX_INTERFACES)) <= 0)
+		return NULL;
+
+	fstrcpy(ip_string, inet_ntoa(nics[0].ip));
+	return ip_string;
 }
 
 BOOL is_myname_or_ipaddr(char *s)
@@ -1416,8 +1435,7 @@ BOOL is_myname_or_ipaddr(char *s)
 		return True;
 
 	/* maybe its an IP address? */
-	if (is_ipaddress(s))
-	{
+	if (is_ipaddress(s)) {
 		struct iface_struct nics[MAX_INTERFACES];
 		int i, n;
 		uint32 ip;
@@ -1435,59 +1453,56 @@ BOOL is_myname_or_ipaddr(char *s)
 
 	/* check for an alias */
   	ptr = lp_netbios_aliases();
-	for ( ; *ptr; ptr++ )
-	{
+	for ( ; *ptr; ptr++ ) {
 		if (StrCaseCmp(s, *ptr) == 0)
 			return True;
 	}
 	
-	
 	/* no match */
 	return False;
-
 }
 
-
 /*******************************************************************
-set the horrid remote_arch string based on an enum.
+ Set the horrid remote_arch string based on an enum.
 ********************************************************************/
+
 void set_remote_arch(enum remote_arch_types type)
 {
-  extern fstring remote_arch;
-  ra_type = type;
-  switch( type )
-  {
-  case RA_WFWG:
-    fstrcpy(remote_arch, "WfWg");
-    return;
-  case RA_OS2:
-    fstrcpy(remote_arch, "OS2");
-    return;
-  case RA_WIN95:
-    fstrcpy(remote_arch, "Win95");
-    return;
-  case RA_WINNT:
-    fstrcpy(remote_arch, "WinNT");
-    return;
-  case RA_WIN2K:
-    fstrcpy(remote_arch, "Win2K");
-    return;
-  case RA_SAMBA:
-    fstrcpy(remote_arch,"Samba");
-    return;
-  default:
-    ra_type = RA_UNKNOWN;
-    fstrcpy(remote_arch, "UNKNOWN");
-    break;
-  }
+	extern fstring remote_arch;
+	ra_type = type;
+	switch( type ) {
+	case RA_WFWG:
+		fstrcpy(remote_arch, "WfWg");
+		return;
+	case RA_OS2:
+		fstrcpy(remote_arch, "OS2");
+		return;
+	case RA_WIN95:
+		fstrcpy(remote_arch, "Win95");
+		return;
+	case RA_WINNT:
+		fstrcpy(remote_arch, "WinNT");
+		return;
+	case RA_WIN2K:
+		fstrcpy(remote_arch, "Win2K");
+		return;
+	case RA_SAMBA:
+		fstrcpy(remote_arch,"Samba");
+		return;
+	default:
+		ra_type = RA_UNKNOWN;
+		fstrcpy(remote_arch, "UNKNOWN");
+		break;
+	}
 }
 
 /*******************************************************************
  Get the remote_arch type.
 ********************************************************************/
+
 enum remote_arch_types get_remote_arch(void)
 {
-  return ra_type;
+	return ra_type;
 }
 
 
@@ -1495,42 +1510,35 @@ void out_ascii(FILE *f, unsigned char *buf,int len)
 {
 	int i;
 	for (i=0;i<len;i++)
-	{
 		fprintf(f, "%c", isprint(buf[i])?buf[i]:'.');
-	}
 }
 
 void out_data(FILE *f,char *buf1,int len, int per_line)
 {
 	unsigned char *buf = (unsigned char *)buf1;
 	int i=0;
-	if (len<=0)
-	{
+	if (len<=0) {
 		return;
 	}
 
 	fprintf(f, "[%03X] ",i);
-	for (i=0;i<len;)
-	{
+	for (i=0;i<len;) {
 		fprintf(f, "%02X ",(int)buf[i]);
 		i++;
 		if (i%(per_line/2) == 0) fprintf(f, " ");
-		if (i%per_line == 0)
-		{      
+		if (i%per_line == 0) {      
 			out_ascii(f,&buf[i-per_line  ],per_line/2); fprintf(f, " ");
 			out_ascii(f,&buf[i-per_line/2],per_line/2); fprintf(f, "\n");
 			if (i<len) fprintf(f, "[%03X] ",i);
 		}
 	}
-	if ((i%per_line) != 0)
-	{
+	if ((i%per_line) != 0) {
 		int n;
 
 		n = per_line - (i%per_line);
 		fprintf(f, " ");
 		if (n>(per_line/2)) fprintf(f, " ");
-		while (n--)
-		{
+		while (n--) {
 			fprintf(f, "   ");
 		}
 		n = MIN(per_line/2,i%per_line);
@@ -1769,10 +1777,10 @@ int smb_mkstemp(char *template)
 #endif
 }
 
-
-/**
+/*****************************************************************
  malloc that aborts with smb_panic on fail or zero size.
-**/
+ *****************************************************************/  
+
 void *smb_xmalloc(size_t size)
 {
 	void *p;
@@ -1811,7 +1819,11 @@ char *smb_xstrdup(const char *s)
 int smb_xvasprintf(char **ptr, const char *format, va_list ap)
 {
 	int n;
-	n = vasprintf(ptr, format, ap);
+	va_list ap2;
+
+	VA_COPY(ap2, ap);
+
+	n = vasprintf(ptr, format, ap2);
 	if (n == -1 || ! *ptr) {
 		smb_panic("smb_xvasprintf: out of memory");
 	}
@@ -1847,7 +1859,7 @@ char *myhostname(void)
 /*****************************************************************
 a useful function for returning a path in the Samba lock directory
  *****************************************************************/  
-char *lock_path(char *name)
+char *lock_path(const char *name)
 {
 	static pstring fname;
 
@@ -1864,6 +1876,26 @@ char *lock_path(char *name)
 	return fname;
 }
 
+/*****************************************************************
+a useful function for returning a path in the Samba pid directory
+ *****************************************************************/
+char *pid_path(const char *name)
+{
+	static pstring fname;
+
+	pstrcpy(fname,lp_piddir());
+	trim_string(fname,"","/");
+
+	if (!directory_exist(fname,NULL)) {
+		mkdir(fname,0755);
+	}
+
+	pstrcat(fname,"/");
+	pstrcat(fname,name);
+
+	return fname;
+}
+
 
 /**
  * @brief Returns an absolute path to a file in the Samba lib directory.
@@ -1872,7 +1904,7 @@ char *lock_path(char *name)
  *
  * @retval Pointer to a static #pstring containing the full path.
  **/
-char *lib_path(char *name)
+char *lib_path(const char *name)
 {
 	static pstring fname;
 	snprintf(fname, sizeof(fname), "%s/%s", dyn_LIBDIR, name);
@@ -2090,92 +2122,6 @@ BOOL unix_wild_match(char *pattern, char *string)
 		return True;
 
 	return unix_do_match(p2, s2) == 0;	
-}
-
-/*******************************************************************
- free() a data blob
-*******************************************************************/
-static void free_data_blob(DATA_BLOB *d)
-{
-	if ((d) && (d->free)) {
-		SAFE_FREE(d->data);
-	}
-}
-
-/*******************************************************************
- construct a data blob, must be freed with data_blob_free()
- you can pass NULL for p and get a blank data blob
-*******************************************************************/
-DATA_BLOB data_blob(const void *p, size_t length)
-{
-	DATA_BLOB ret;
-
-	if (!length) {
-		ZERO_STRUCT(ret);
-		return ret;
-	}
-
-	if (p) {
-		ret.data = smb_xmemdup(p, length);
-	} else {
-		ret.data = smb_xmalloc(length);
-	}
-	ret.length = length;
-	ret.free = free_data_blob;
-	return ret;
-}
-
-/*******************************************************************
- construct a data blob, using supplied TALLOC_CTX
-*******************************************************************/
-DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
-{
-	DATA_BLOB ret;
-
-	if (!p || !length) {
-		ZERO_STRUCT(ret);
-		return ret;
-	}
-
-	ret.data = talloc_memdup(mem_ctx, p, length);
-	if (ret.data == NULL)
-		smb_panic("data_blob_talloc: talloc_memdup failed.\n");
-
-	ret.length = length;
-	ret.free = NULL;
-	return ret;
-}
-
-/*******************************************************************
-free a data blob
-*******************************************************************/
-void data_blob_free(DATA_BLOB *d)
-{
-	if (d) {
-		if (d->free) {
-			(d->free)(d);
-		}
-		ZERO_STRUCTP(d);
-	}
-}
-
-/*******************************************************************
-clear a DATA_BLOB's contents
-*******************************************************************/
-void data_blob_clear(DATA_BLOB *d)
-{
-	if (d->data) {
-		memset(d->data, 0, d->length);
-	}
-}
-
-/*******************************************************************
-free a data blob and clear its contents
-*******************************************************************/
-void data_blob_clear_free(DATA_BLOB *d)
-{
-	data_blob_clear(d);
-	data_blob_free(d);
 }
 
 #ifdef __INSURE__

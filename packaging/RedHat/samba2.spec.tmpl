@@ -8,6 +8,7 @@ Source: ftp://samba.org/pub/samba/samba-%{version}.tar.gz
 Packager: John H Terpstra [Samba-Team] <jht@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
+Provides: samba = %{version}, samba-common = %{version}, samba-client = %{version}, samba-swat = %{version}
 BuildRoot: /var/tmp/samba
 Prefix: /usr
 
@@ -43,9 +44,16 @@ for Shadow passwords and quotas. Do NOT recompile with the
 SHADOW_PWD option enabled
 
 %changelog
+* Mon May 6 2002 Gerald Carter <jerry@samba.org>
+  - moved findsmb to a standard component in samba's 
+    "make install".  Removed from specfile.
+ 
+* Sun Oct 14 2001 Andrew Bartlett <abartlet@samba.org>
+ - Set SBINDIR for codepage/manpage install, cope with 
+    broken Makefile
+
 * Mon Aug 1 2001 Tim Potter <tpot@samba.org>
  - Install winbind daemon, client programs, nss and pam libraries
- - Removed codepage stuff so spec file works with current HEAD branch
 
 * Sat Mar 31 2001 Andrew Bartlett <abartlet@pcug.org.au>
  - Changed prefix/share/man for _mandir/share/man
@@ -158,11 +166,11 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-privatedir=/etc/samba \
 	--with-fhs \
 	--with-quotas \
+	--with-msdfs \
 	--with-smbmount \
 	--with-pam \
 	--with-syslog \
 	--with-utmp \
-	--with-netatalk \
 	--with-sambabook=%{prefix}/share/swat/using_samba \
 	--with-swatdir=%{prefix}/share/swat
 make -j${NUMCPU} proto
@@ -182,8 +190,8 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/{bin,sbin}
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/{images,help,include,using_samba}
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/using_samba/{figs,gifs}
 mkdir -p $RPM_BUILD_ROOTMANDIR_MACRO
-mkdir -p $RPM_BUILD_ROOT/var/lock/samba
-mkdir -p $RPM_BUILD_ROOT/var/log/samba
+mkdir -p $RPM_BUILD_ROOT/var/cache/samba
+mkdir -p $RPM_BUILD_ROOT/var/{log,run}/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 mkdir -p $RPM_BUILD_ROOT/lib/security
 
@@ -211,19 +219,21 @@ ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 # This allows us to get away without duplicating code that 
 #  sombody else can maintain for us.  
 cd source
-make LIBDIR=$RPM_BUILD_ROOT/etc/samba \
+make BASEDIR=$RPM_BUILD_ROOT/usr \
+	LIBDIR=$RPM_BUILD_ROOT/etc/samba \
+	SBINDIR=$RPM_BUILD_ROOT%{prefix}/sbin \
 	BINDIR=$RPM_BUILD_ROOT%{prefix}/bin \
 	MANDIR=$RPM_BUILD_ROOTMANDIR_MACRO \
 	SWATDIR=$RPM_BUILD_ROOT/usr/share/swat \
 	SAMBABOOK=$RPM_BUILD_ROOT/usr/share/swat/using_samba \
-	installman installswat
+	installman installcp installswat
 cd ..
 
 # Install the nsswitch library extension file
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 
 # Make link for wins resolver
-( cd $RPM_BUILD_ROOT/lib; ln -s libnss_wins.so libnss_wins.so.2; )
+( cd $RPM_BUILD_ROOT/lib; ln -sf libnss_wins.so libnss_wins.so.2; )
 
 # Install winbind shared libraries
 install -m755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/lib
@@ -246,7 +256,6 @@ done
 # Install the miscellany
 install -m644 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
-install -m755 packaging/RedHat/findsmb $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
 install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
@@ -265,33 +274,72 @@ rm -rf $RPM_BUILD_ROOT
 /sbin/chkconfig smb off
 
 echo "Looking for old /etc/smb.conf..."
-if [ -f /etc/smb.conf ]; then
+if [ -f /etc/smb.conf -a ! -f /etc/samba/smb.conf ]; then
 	echo "Moving old /etc/smb.conf to /etc/samba/smb.conf"
 	mv /etc/smb.conf /etc/samba/smb.conf
 fi
 
 echo "Looking for old /etc/smbusers..."
-if [ -f /etc/smbusers ]; then
+if [ -f /etc/smbusers -a ! -f /etc/samba/smbusers ]; then
 	echo "Moving old /etc/smbusers to /etc/samba/smbusers"
 	mv /etc/smbusers /etc/samba/smbusers
 fi
 
 echo "Looking for old /etc/lmhosts..."
-if [ -f /etc/lmhosts ]; then
+if [ -f /etc/lmhosts -a ! -f /etc/samba/lmhosts ]; then
 	echo "Moving old /etc/lmhosts to /etc/samba/lmhosts"
 	mv /etc/lmhosts /etc/samba/lmhosts
 fi
 
 echo "Looking for old /etc/MACHINE.SID..."
-if [ -f /etc/MACHINE.SID ]; then
+if [ -f /etc/MACHINE.SID -a ! -f /etc/samba/MACHINE.SID ]; then
 	echo "Moving old /etc/MACHINE.SID to /etc/samba/MACHINE.SID"
 	mv /etc/MACHINE.SID /etc/samba/MACHINE.SID
 fi
 
 echo "Looking for old /etc/smbpasswd..."
-if [ -f /etc/smbpasswd ]; then
+if [ -f /etc/smbpasswd -a ! -f /etc/samba/smbpasswd ]; then
 	echo "Moving old /etc/smbpasswd to /etc/samba/smbpasswd"
 	mv /etc/smbpasswd /etc/samba/smbpasswd
+fi
+
+#
+# For 2.2.1 we move the tdb files from /var/lock/samba to /var/cache/samba
+# to preserve across reboots.
+#
+echo "Moving tdb files in /var/lock/samba/*.tdb to /var/cache/samba/*.tdb"
+for i in /var/lock/samba/*.tdb
+do
+if [ -f $i ]; then
+	newname=`echo $i | sed -e's|var\/lock\/samba|var\/cache\/samba|'`
+	echo "Moving $i to $newname"
+	mv $i $newname
+fi
+done
+
+# Remove the transient tdb files.
+if [ -e /var/cache/samba/brlock.tdb ]; then
+	rm -f /var/cache/samba/brlock.tdb
+fi
+
+if [ -e /var/cache/samba/unexpected.tdb ]; then
+	rm -f /var/cache/samba/unexpected.tdb
+fi
+
+if [ -e /var/cache/samba/connections.tdb ]; then
+	rm -f /var/cache/samba/connections.tdb
+fi
+
+if [ -e /var/cache/samba/locking.tdb ]; then
+	rm -f /var/cache/samba/locking.tdb
+fi
+
+if [ -e /var/cache/samba/messages.tdb ]; then
+	rm -f /var/cache/samba/messages.tdb
+fi
+
+if [ -d /var/lock/samba ]; then
+	rm -rf /var/lock/samba
 fi
 
 # Add swat entry to /etc/services if not already there.
@@ -309,7 +357,7 @@ fi
 
 # Add swat entry to xinetd.d if needed.
 if [ -d $RPM_BUILD_ROOT/etc/xinetd.d -a ! -f /etc/xinetd.d/swat ]; then
-        mv /etc/samba/samba.xinetd /etc/xinetd.d/swat
+	mv /etc/samba/samba.xinetd /etc/xinetd.d/swat
 else
 	rm -f /etc/samba/samba.xinetd
 fi
@@ -325,39 +373,41 @@ fi
 
 # Create winbind nss client symlink
 
-ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2
+if [ -e /lib/libnss_winbind.so ]; then
+	ln -sf /lib/libnss_winbind.so /lib/libnss_winbind.so.2
+fi
 
 %preun
 if [ $1 = 0 ] ; then
-    /sbin/chkconfig --del smb
+	/sbin/chkconfig --del smb
 
-    # We want to remove the browse.dat and wins.dat files so they can not interfer with a new version of samba!
-    if [ -e /var/lock/samba/browse.dat ]; then
-	    rm -f /var/lock/samba/browse.dat
-    fi
-    if [ -e /var/lock/samba/wins.dat ]; then
-	    rm -f /var/lock/samba/wins.dat
-    fi
+	# We want to remove the browse.dat and wins.dat files so they can not interfer with a new version of samba!
+	if [ -e /var/cache/samba/browse.dat ]; then
+		rm -f /var/cache/samba/browse.dat
+	fi
+	if [ -e /var/cache/samba/wins.dat ]; then
+		rm -f /var/cache/samba/wins.dat
+	fi
 
 	# Remove the transient tdb files.
-	if [ -e /var/lock/samba/brlock.tdb ]; then
-		rm -f /var/lock/samba/brlock.tdb
+	if [ -e /var/cache/samba/brlock.tdb ]; then
+		rm -f /var/cache/samba/brlock.tdb
 	fi
 
-	if [ -e /var/lock/samba/unexpected.tdb ]; then
-		rm -f /var/lock/samba/unexpected.tdb
+	if [ -e /var/cache/samba/unexpected.tdb ]; then
+		rm -f /var/cache/samba/unexpected.tdb
 	fi
 
-	if [ -e /var/lock/samba/connections.tdb ]; then
-		rm -f /var/lock/samba/connections.tdb
+	if [ -e /var/cache/samba/connections.tdb ]; then
+		rm -f /var/cache/samba/connections.tdb
 	fi
 
-	if [ -e /var/lock/samba/locking.tdb ]; then
-		rm -f /var/lock/samba/locking.tdb
+	if [ -e /var/cache/samba/locking.tdb ]; then
+		rm -f /var/cache/samba/locking.tdb
 	fi
 
-	if [ -e /var/lock/samba/messages.tdb ]; then
-		rm -f /var/lock/samba/messages.tdb
+	if [ -e /var/cache/samba/messages.tdb ]; then
+		rm -f /var/cache/samba/messages.tdb
 	fi
 
 	# Remove winbind nss client symlink
@@ -376,6 +426,9 @@ if [ $1 = 0 ] ; then
     if [ -e /var/log/samba ]; then
       rm -rf /var/log/samba
     fi
+	if [ -e /var/cache/samba ]; then
+		rm -rf /var/cache/samba
+	fi
 
     # Remove swat entries from /etc/inetd.conf and /etc/services
     cd /etc
@@ -403,56 +456,61 @@ if [ $0 != 0 ]; then
 fi
 
 %files
+%defattr(-,root,root)
 %doc README COPYING Manifest Read-Manifest-Now
 %doc WHATSNEW.txt Roadmap
 %doc docs
 %doc swat/README
 %doc examples
-%attr(-,root,root) %{prefix}/sbin/smbd
-%attr(-,root,root) %{prefix}/sbin/nmbd
-%attr(-,root,root) %{prefix}/sbin/swat
-%attr(-,root,root) %{prefix}/sbin/smbmnt
-%attr(-,root,root) %{prefix}/sbin/smbmount
-%attr(-,root,root) %{prefix}/sbin/smbumount
-%attr(-,root,root) %{prefix}/sbin/winbindd
-%attr(-,root,root) /sbin/mount.smbfs
-%attr(-,root,root) /sbin/mount.smb
-%attr(-,root,root) %{prefix}/bin/mksmbpasswd.sh
-%attr(-,root,root) %{prefix}/bin/smbclient
-%attr(-,root,root) %{prefix}/bin/smbspool
-%attr(-,root,root) %{prefix}/bin/rpcclient
-%attr(-,root,root) %{prefix}/bin/testparm
-%attr(-,root,root) %{prefix}/bin/testprns
-%attr(-,root,root) %{prefix}/bin/findsmb
-%attr(-,root,root) %{prefix}/bin/smbstatus
-%attr(-,root,root) %{prefix}/bin/nmblookup
-%attr(-,root,root) %{prefix}/bin/make_printerdef
-%attr(-,root,root) %{prefix}/bin/smbpasswd
-%attr(-,root,root) %{prefix}/bin/smbtar
-%attr(-,root,root) %{prefix}/bin/smbprint
-%attr(-,root,root) %{prefix}/bin/smbcontrol
-%attr(-,root,root) %{prefix}/bin/smbcacls
-%attr(-,root,root) %{prefix}/bin/wbinfo
+%{prefix}/sbin/smbd
+%{prefix}/sbin/nmbd
+%{prefix}/sbin/swat
+%{prefix}/sbin/smbmnt
+%{prefix}/sbin/smbmount
+%{prefix}/sbin/smbumount
+%{prefix}/sbin/winbindd
+/sbin/mount.smbfs
+/sbin/mount.smb
+%{prefix}/bin/mksmbpasswd.sh
+%{prefix}/bin/smbclient
+%{prefix}/bin/smbspool
+%{prefix}/bin/rpcclient
+%{prefix}/bin/testparm
+%{prefix}/bin/testprns
+%{prefix}/bin/findsmb
+%{prefix}/bin/smbstatus
+%{prefix}/bin/nmblookup
+%{prefix}/bin/make_smbcodepage
+%{prefix}/bin/make_unicodemap
+%{prefix}/bin/make_printerdef
+%{prefix}/bin/smbpasswd
+%{prefix}/bin/smbtar
+%{prefix}/bin/smbprint
+%{prefix}/bin/smbcontrol
+%{prefix}/bin/smbcacls
+%{prefix}/bin/wbinfo
 %attr(755,root,root) /lib/libnss_wins.s*
-%attr(-,root,root) %{prefix}/share/swat/help/*
-%attr(-,root,root) %{prefix}/share/swat/images/*
-%attr(-,root,root) %{prefix}/share/swat/include/header.html
-%attr(-,root,root) %{prefix}/share/swat/include/footer.html
-%attr(-,root,root) %{prefix}/share/swat/using_samba/*
-%attr(-,root,root) %config(noreplace) /etc/samba/lmhosts
-%attr(-,root,root) %config(noreplace) /etc/samba/smb.conf
-%attr(-,root,root) %config(noreplace) /etc/samba/smbusers
-%attr(-,root,root) /etc/samba/samba.stack
-%attr(-,root,root) /etc/samba/samba.xinetd
-%attr(-,root,root) /etc/rc.d/init.d/smb
-%attr(-,root,root) /etc/logrotate.d/samba
-%attr(-,root,root) %config(noreplace) /etc/pam.d/samba
-%attr(-,root,root) MANDIR_MACRO/man1/*
-%attr(-,root,root) MANDIR_MACRO/man5/*
-%attr(-,root,root) MANDIR_MACRO/man7/*
-%attr(-,root,root) MANDIR_MACRO/man8/*
-%attr(755,root,root) %dir /var/lock/samba
-%attr(-,root,root) %dir /var/log/samba
+%{prefix}/share/swat/help/*
+%{prefix}/share/swat/images/*
+%{prefix}/share/swat/include/header.html
+%{prefix}/share/swat/include/footer.html
+%{prefix}/share/swat/using_samba/*
+%config(noreplace) /etc/samba/lmhosts
+%config(noreplace) /etc/samba/smb.conf
+%config(noreplace) /etc/samba/smbusers
+/etc/samba/samba.stack
+/etc/samba/samba.xinetd
+/etc/rc.d/init.d/smb
+/etc/logrotate.d/samba
+%config(noreplace) /etc/pam.d/samba
+MANDIR_MACRO/man1/*
+MANDIR_MACRO/man5/*
+MANDIR_MACRO/man7/*
+MANDIR_MACRO/man8/*
+%dir /etc/codepages/*
+%attr(755,root,root) %dir /var/cache/samba
+%dir /var/log/samba
+%dir /var/run/samba
 %attr(1777,root,root) %dir /var/spool/samba
 %attr(-,root,root) /lib/libnss_winbind.so
 %attr(-,root,root) /lib/security/pam_winbind.so

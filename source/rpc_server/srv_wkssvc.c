@@ -24,6 +24,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 /*******************************************************************
  api_wks_query_info
  ********************************************************************/
@@ -55,7 +58,7 @@ static BOOL api_wks_query_info(pipes_struct *p)
 /*******************************************************************
  \PIPE\wkssvc commands
  ********************************************************************/
-struct api_struct api_wks_cmds[] =
+static struct api_struct api_wks_cmds[] =
 {
 	{ "WKS_Q_QUERY_INFO", WKS_QUERY_INFO, api_wks_query_info },
 	{ NULL             , 0            , NULL }

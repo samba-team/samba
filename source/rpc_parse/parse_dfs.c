@@ -25,6 +25,9 @@
 #include "nterr.h"
 #include "rpc_parse.h"   
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_PARSE
+
 /******************************************************************* 
 Make a DFS_Q_DFS_QUERY structure
 *******************************************************************/

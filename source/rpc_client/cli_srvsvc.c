@@ -23,6 +23,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_CLI
+
 /****************************************************************************
 do a server net conn enum
 ****************************************************************************/
@@ -43,7 +46,7 @@ BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
 	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
 	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
-	/* create and send a MSRPC command with api SRV_NETCONNENUM */
+	/* create and send a MSRPC command with api SRV_NET_CONN_ENUM */
 
 	DEBUG(4,("SRV Net Server Connection Enum(%s, %s), level %d, enum:%8x\n",
 				server_name, qual_name, switch_value, get_enum_hnd(hnd)));
@@ -67,7 +70,7 @@ BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
 	}
 
 	/* send the data on \PIPE\ */
-	if(!rpc_api_pipe_req(cli, SRV_NETCONNENUM, &data, &rdata)) {
+	if(!rpc_api_pipe_req(cli, SRV_NET_CONN_ENUM, &data, &rdata)) {
 		prs_mem_free(&data);
 		prs_mem_free(&rdata);
 		return False;
@@ -107,10 +110,11 @@ do a server net sess enum
 ****************************************************************************/
 
 BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
-			char *server_name, char *qual_name,
-			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd)
+			      char *server_name, char *qual_name,
+			      char *user_name,
+			      uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
+			      uint32 preferred_len,
+			      ENUM_HND *hnd)
 {
 	prs_struct data; 
 	prs_struct rdata;
@@ -123,7 +127,7 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
 	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
 	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
-	/* create and send a MSRPC command with api SRV_NETSESSENUM */
+	/* create and send a MSRPC command with api SRV_NET_SESS_ENUM */
 
 	DEBUG(4,("SRV Net Session Enum (%s), level %d, enum:%8x\n",
 				server_name, switch_value, get_enum_hnd(hnd)));
@@ -134,7 +138,7 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
 	ctr->sess.info0.ptr_sess_info    = 1;
 
 	/* store the parameters */
-	init_srv_q_net_sess_enum(&q_o, server_name, qual_name,
+	init_srv_q_net_sess_enum(&q_o, server_name, qual_name, user_name,
 	                         switch_value, ctr,
 	                         preferred_len,
 	                         hnd);
@@ -147,7 +151,7 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
 	}
 
 	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SRV_NETSESSENUM, &data, &rdata)) {
+	if (!rpc_api_pipe_req(cli, SRV_NET_SESS_ENUM, &data, &rdata)) {
 		prs_mem_free(&data);
 		prs_mem_free(&rdata);
 		return False;
@@ -200,7 +204,7 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
 	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
-	/* create and send a MSRPC command with api SRV_NETSHAREENUM */
+	/* create and send a MSRPC command with api SRV_NET_SHARE_ENUM */
 
 	DEBUG(4,("SRV Get Share Info (%s), level %d, enum:%8x\n",
 				server_name, switch_value, get_enum_hnd(hnd)));
@@ -217,7 +221,7 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 	}
 
 	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SRV_NETSHAREENUM, &data, &rdata)) {
+	if (!rpc_api_pipe_req(cli, SRV_NET_SHARE_ENUM, &data, &rdata)) {
 		prs_mem_free(&data);
 		prs_mem_free(&rdata);
 		return False;
@@ -271,7 +275,7 @@ BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
 	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
 	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
-	/* create and send a MSRPC command with api SRV_NETFILEENUM */
+	/* create and send a MSRPC command with api SRV_NET_FILE_ENUM */
 
 	DEBUG(4,("SRV Get File Info (%s), level %d, enum:%8x\n",
 				server_name, switch_value, get_enum_hnd(hnd)));
@@ -297,7 +301,7 @@ BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
 	}
 
 	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SRV_NETFILEENUM, &data, &rdata)) {
+	if (!rpc_api_pipe_req(cli, SRV_NET_FILE_ENUM, &data, &rdata)) {
 		prs_mem_free(&data);
 		prs_mem_free(&rdata);
 		return False;

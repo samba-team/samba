@@ -13,8 +13,8 @@
 			<address><email>olem@IDEALX.org</email></address>
 		</affiliation>
 	</author>
-	
-		
+
+
 	<pubdate> (13 Jan 2002) </pubdate>
 </chapterinfo>
 
@@ -98,7 +98,7 @@ Identified (RID).
 As a result of these defeciencies, a more robust means of storing user attributes
 used by smbd was developed.  The API which defines access to user accounts
 is commonly referred to as the samdb interface (previously this was called the passdb
-API, and is still so named in the CVS trees).  In Samba 2.2.3, enabling support
+API, and is still so named in the CVS trees). In Samba 2.2.3, enabling support
 for a samdb backend (e.g. <parameter>--with-ldapsam</parameter> or
 <parameter>--with-tdbsam</parameter>) requires compile time support.
 </para>
@@ -512,7 +512,6 @@ something other than the default (e.g. \\MOBY\becky).
 
 
 </sect1>
-
 
 
 

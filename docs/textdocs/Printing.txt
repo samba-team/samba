@@ -3,7 +3,7 @@ Revised by:	Patrick Powell <papowell@lprng.org>
 Date:		August 11, 2000
 Status:		Current
 
-Subject:	Dubugging Printing Problems
+Subject:	Debugging Printing Problems
 =============================================================================
 
 This is a short description of how to debug printing problems with

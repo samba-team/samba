@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 BOOL global_machine_password_needs_changing = False;
 
 extern pstring global_myname;
@@ -66,7 +69,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 		fstrcpy(remote_machine, server);
 	}
 
-	standard_sub_basic(current_user_info.smb_name, remote_machine);
+	standard_sub_basic(current_user_info.smb_name, remote_machine, sizeof(remote_machine));
 	strupper(remote_machine);
 
 	if(!resolve_name( remote_machine, &dest_ip, 0x20)) {
@@ -84,21 +87,25 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	   logonserver.  We can avoid a 30-second timeout if the DC is down
 	   if the SAMLOGON request fails as it is only over UDP. */
 
-	/* we use a mutex to prevent two connections at once - when a NT PDC gets
-	   two connections where one hasn't completed a negprot yet it will send a 
-	   TCP reset to the first connection (tridge) */
-	if (!message_named_mutex(server, 20)) {
-		DEBUG(1,("connect_to_domain_password_server: domain mutex failed for %s\n", server));
+	/* we use a mutex to prevent two connections at once - when a 
+	   Win2k PDC get two connections where one hasn't completed a 
+	   session setup yet it will send a TCP reset to the first 
+	   connection (tridge) */
+
+	/*
+	 * With NT4.x DC's *all* authentication must be serialized to avoid
+	 * ACCESS_DENIED errors if 2 auths are done from the same machine. JRA.
+	 */
+
+	if (!grab_server_mutex(server))
 		return NT_STATUS_UNSUCCESSFUL;
-	}
 	
 	/* Attempt connection */
 	result = cli_full_connection(cli, global_myname, server,
 				     &dest_ip, 0, "IPC$", "IPC", "", "", "", 0);
 
-	message_named_mutex_release(server);
-	
 	if (!NT_STATUS_IS_OK(result)) {
+		release_server_mutex();
 		return result;
 	}
 
@@ -121,12 +128,14 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 		cli_nt_session_close(*cli);
 		cli_ulogoff(*cli);
 		cli_shutdown(*cli);
+		release_server_mutex();
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	snprintf((*cli)->mach_acct, sizeof((*cli)->mach_acct) - 1, "%s$", setup_creds_as);
 
 	if (!(*cli)->mach_acct) {
+		release_server_mutex();
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -138,8 +147,11 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 		cli_nt_session_close(*cli);
 		cli_ulogoff(*cli);
 		cli_shutdown(*cli);
+		release_server_mutex();
 		return result;
 	}
+
+	/* We exit here with the mutex *locked*. JRA */
 
 	return NT_STATUS_OK;
 }
@@ -270,14 +282,13 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 				       auth_serversupplied_info **server_info, 
 				       char *server, char *setup_creds_as,
 				       uint16 sec_chan,
-				       unsigned char *trust_passwd,
+				       unsigned char trust_passwd[16],
 				       time_t last_change_time)
 {
 	fstring remote_machine;
 	NET_USER_INFO_3 info3;
 	struct cli_state *cli = NULL;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	struct passwd *pass;
 
 	/*
 	 * At this point, smb_apasswd points to the lanman response to
@@ -321,63 +332,15 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
                          user_info->domain.str, cli->srv_name_slash, 
                          nt_errstr(nt_status)));
 	} else {
-                char *dom_user;
+		nt_status = make_server_info_info3(mem_ctx, user_info->internal_username.str, 
+						   user_info->smb_name.str, domain, server_info, &info3);
+#if 0 
+		/* The stuff doesn't work right yet */
+		SMB_ASSERT(sizeof((*server_info)->session_key) == sizeof(info3.user_sess_key)); 
+		memcpy((*server_info)->session_key, info3.user_sess_key, sizeof((*server_info)->session_key)/* 16 */);
+		SamOEMhash((*server_info)->session_key, trust_passwd, sizeof((*server_info)->session_key));
+#endif		
 
-                /* Check DOMAIN\username first to catch winbind users, then
-                   just the username for local users. */
-
-                dom_user = talloc_asprintf(mem_ctx, "%s%s%s", user_info->domain.str,
-					   lp_winbind_separator(),
-					   user_info->internal_username.str);
-		
-		if (!dom_user) {
-			DEBUG(0, ("talloc_asprintf failed!\n"));
-			nt_status = NT_STATUS_NO_MEMORY;
-		} else { 
-
-			if (!(pass = Get_Pwnam(dom_user)))
-				pass = Get_Pwnam(user_info->internal_username.str);
-			
-			if (pass) {
-				make_server_info_pw(server_info, pass);
-				if (!server_info) {
-					nt_status = NT_STATUS_NO_MEMORY;
-				}
-			} else {
-				nt_status = NT_STATUS_NO_SUCH_USER;
-			}
-		}
-	}
-
-	/* Store the user group information in the server_info returned to the caller. */
-	
-	if (NT_STATUS_IS_OK(nt_status) && (info3.num_groups2 != 0)) {
-		int i;
-		NT_USER_TOKEN *ptok;
-		auth_serversupplied_info *pserver_info = *server_info;
-
-		if ((pserver_info->ptok = malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
-			DEBUG(0, ("domain_client_validate: out of memory allocating rid group membership\n"));
-			nt_status = NT_STATUS_NO_MEMORY;
-			free_server_info(server_info);
-			goto done;
-		}
-
-		ptok = pserver_info->ptok;
-		ptok->num_sids = (size_t)info3.num_groups2;
-
-		if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
-			DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
-			nt_status = NT_STATUS_NO_MEMORY;
-			free_server_info(server_info);
-			goto done;
-		}
- 
-		for (i = 0; i < ptok->num_sids; i++) {
-			sid_copy(&ptok->user_sids[i], &info3.dom_sid.sid);
-			sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
-		}
-		
 		uni_group_cache_store_netlogon(mem_ctx, &info3);
 	}
 
@@ -397,8 +360,6 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	}
 #endif /* 0 */
 
-  done:
-
 	/* Note - once the cli stream is shutdown the mem_ctx used
 	   to allocate the other_sids and gids structures has been deleted - so
 	   these pointers are no longer valid..... */
@@ -406,6 +367,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	cli_nt_session_close(cli);
 	cli_ulogoff(cli);
 	cli_shutdown(cli);
+	release_server_mutex();
 	return nt_status;
 }
 
@@ -448,7 +410,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 
 	if (!secrets_fetch_trust_account_password(domain, trust_passwd, &last_change_time))
 	{
-		DEBUG(0, ("check_ntdomain_security: could not fetch trust account password for domain %s\n", lp_workgroup()));
+		DEBUG(0, ("check_ntdomain_security: could not fetch trust account password for domain '%s'\n", domain));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
@@ -473,14 +435,15 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-BOOL auth_init_ntdomain(struct auth_context *auth_context, auth_methods **auth_method) 
+NTSTATUS auth_init_ntdomain(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
+	(*auth_method)->name = "ntdomain";
 	(*auth_method)->auth = check_ntdomain_security;
-	return True;
+	return NT_STATUS_OK;
 }
 
 
@@ -527,7 +490,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	}
 
 	/*
-	 * Get the machine account password for the trusted domain
+	 * Get the trusted account password for the trusted domain
 	 * No need to become_root() as secrets_init() is done at startup.
 	 */
 
@@ -560,12 +523,13 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 }
 
 /* module initialisation */
-BOOL auth_init_trustdomain(struct auth_context *auth_context, auth_methods **auth_method) 
+NTSTATUS auth_init_trustdomain(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
+	(*auth_method)->name = "trustdomain";
 	(*auth_method)->auth = check_trustdomain_security;
-	return True;
+	return NT_STATUS_OK;
 }

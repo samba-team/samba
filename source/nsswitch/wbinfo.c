@@ -25,6 +25,9 @@
 #include "winbindd.h"
 #include "debug.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* Prototypes from common.h */
 
 NSS_STATUS winbindd_request(int req_type, 
@@ -248,25 +251,22 @@ static BOOL wbinfo_show_sequence(void)
 static BOOL wbinfo_check_secret(void)
 {
         struct winbindd_response response;
-        BOOL result;
+        NSS_STATUS result;
 
         ZERO_STRUCT(response);
 
         result = winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response) ==
                 NSS_STATUS_SUCCESS;
+		
+	d_printf("checking the trust secret via RPC calls %s\n", 
+		 (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
-        if (result) {
-
-                if (response.data.num_entries == 0)
-                        d_printf("Secret is good\n");
-                else
-                        d_printf("Secret is bad\n0x%08x\n", 
-			       response.data.num_entries);
-
-                return True;
-        }
-
-        return False;
+	if (result != NSS_STATUS_SUCCESS)	
+		d_printf("error code was %s (0x%x)\n", 
+		 	 response.data.auth.nt_status_string, 
+		 	 response.data.auth.nt_status);
+	
+	return result == NSS_STATUS_SUCCESS;	
 }
 
 /* Convert uid to sid */
@@ -593,7 +593,7 @@ static BOOL wbinfo_set_auth_user(char *username)
 
 	/* Store in secrets.tdb */
 
-	if (!secrets_store(SECRETS_AUTH_USER, username, 
+	if (!secrets_store(SECRETS_AUTH_USER, user, 
 			   strlen(user) + 1) ||
 	    !secrets_store(SECRETS_AUTH_DOMAIN, domain, 
 			   strlen(domain) + 1) ||
@@ -640,16 +640,17 @@ static void usage(void)
 	d_printf("\t-m\t\t\tlist trusted domains\n");
 	d_printf("\t-r user\t\t\tget user groups\n");
 	d_printf("\t-a user%%password\tauthenticate user\n");
-	d_printf("\t-A user%%password\tstore user and password used by winbindd (root only)\n");
-	d_printf("\t-p 'ping' winbindd to see if it is alive\n");
+ 	d_printf("\t-A user%%password\tstore user and password used by winbindd (root only)\n");
+	d_printf("\t-p\t\t\t'ping' winbindd to see if it is alive\n");
 	d_printf("\t--sequence\t\tshow sequence numbers of all domains\n");
+	d_printf("\t--set-auth-user DOMAIN\\user%%password\tset password for restrict anonymous\n");
 }
 
 /* Main program */
 
 enum {
 	OPT_SET_AUTH_USER = 1000,
-	OPT_SEQUENCE,
+	OPT_SEQUENCE
 };
 
 int main(int argc, char **argv)
