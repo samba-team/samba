@@ -118,6 +118,60 @@ out:
 }
 
 /*
+ * Set the `enc-authorization-data' in `req_body' based on `authdata'
+ */
+
+static krb5_error_code
+set_auth_data (krb5_context context,
+	       KDC_REQ_BODY *req_body,
+	       krb5_authdata *authdata,
+	       krb5_keyblock *key)
+{
+    if(authdata->len) {
+	size_t len;
+	unsigned char *buf;
+	krb5_crypto crypto;
+	krb5_error_code ret;
+
+	len = length_AuthorizationData(authdata);
+	buf = malloc(len);
+	if (buf == NULL)
+	    return ENOMEM;
+	ret = encode_AuthorizationData(buf + len - 1,
+				       len, authdata, &len);
+	if (ret) {
+	    free (buf);
+	    return ret;
+	}
+
+	ALLOC(req_body->enc_authorization_data, 1);
+	if (req_body->enc_authorization_data == NULL) {
+	    free (buf);
+	    return ret;
+	}
+	ret = krb5_crypto_init(context, key, 0, &crypto);
+	if (ret) {
+	    free (buf);
+	    free (req_body->enc_authorization_data);
+	    return ret;
+	}
+	krb5_encrypt_EncryptedData(context, 
+				   crypto,
+				   KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY, 
+				   /* KRB5_KU_TGS_REQ_AUTH_DAT_SESSION? */
+				   buf,
+				   len,
+				   0,
+				   req_body->enc_authorization_data);
+	free (buf);
+	krb5_crypto_destroy(context, crypto);
+    } else {
+	req_body->enc_authorization_data = NULL;
+    }
+    return 0;
+}    
+
+/*
  * Create a tgs-req in `t' with `addresses', `flags', `second_ticket'
  * (if not-NULL), `in_creds', `krbtgt', and returning the generated
  * subkey in `subkey'.
@@ -226,35 +280,20 @@ init_tgs_req (krb5_context context,
 	    goto fail;
 	}
 
-	if(in_creds->authdata.len) {
-	    size_t len;
-	    unsigned char *buf;
-	    krb5_crypto crypto;
-	    len = length_AuthorizationData(&in_creds->authdata);
-	    buf = malloc(len);
-	    ret = encode_AuthorizationData(buf + len - 1,
-					   len, &in_creds->authdata, &len);
-	    ALLOC(t->req_body.enc_authorization_data, 1);
-	    ret = krb5_crypto_init(context, key, 0, &crypto);
-	    krb5_encrypt_EncryptedData(context, 
-				       crypto,
-				       KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY, 
-				       /* KRB5_KU_TGS_REQ_AUTH_DAT_SESSION? */
-				       buf, 
-				       len, 
-				       0,
-				       t->req_body.enc_authorization_data);
-	    krb5_crypto_destroy(context, crypto);
-	} else {
-	    t->req_body.enc_authorization_data = NULL;
+	ret = set_auth_data (context, &t->req_body, &in_creds->authdata, key);
+	if (ret) {
+	    krb5_free_keyblock (context, key);
+	    krb5_auth_con_free (context, ac);
+	    goto fail;
 	}
-    
+
 	ret = make_pa_tgs_req(context,
 			      ac,
 			      &t->req_body, 
 			      t->padata->val,
 			      krbtgt);
 	if(ret) {
+	    krb5_free_keyblock (context, key);
 	    krb5_auth_con_free(context, ac);
 	    goto fail;
 	}
