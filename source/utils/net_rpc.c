@@ -1785,7 +1785,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	nt_status = cli_lsa_open_policy2(cli, mem_ctx, True, SEC_RIGHTS_QUERY_VALUE,
+	nt_status = cli_lsa_open_policy2(cli, mem_ctx, False, SEC_RIGHTS_QUERY_VALUE,
 	                                 &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
@@ -1803,9 +1803,6 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 			nt_errstr(nt_status)));
 		return -1;
 	}
-
-
-
 
 	/* There should be actually query info level 3 (following nt serv behaviour),
 	   but I still don't know if it's _really_ necessary */
@@ -1955,7 +1952,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		return -1;
 	};
 
-	nt_status = cli_lsa_open_policy2(cli, mem_ctx, True, SEC_RIGHTS_QUERY_VALUE,
+	nt_status = cli_lsa_open_policy2(cli, mem_ctx, False, SEC_RIGHTS_QUERY_VALUE,
 					&connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
