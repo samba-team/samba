@@ -60,20 +60,6 @@
 #endif
 #endif /* RELIANTUNIX */
 
-#ifdef HAVE_SYSV_IPC
-#define USE_SYSV_IPC
-#endif
-
-#ifdef HAVE_SHARED_MMAP
-#define USE_SHARED_MMAP
-#endif
-
-
-/* if we have both SYSV IPC and shared mmap then we need to choose */
-#if (defined(USE_SYSV_IPC) && defined(USE_SHARED_MMAP))
-#  undef USE_SHARED_MMAP
-#endif
-
 #include <sys/types.h>
 
 #ifdef TIME_WITH_SYS_TIME
@@ -263,29 +249,6 @@
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
-
-#ifdef HAVE_SYSV_IPC
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/sem.h>
-
-/*
- * The following is needed if compiling
- * with gcc on SGI IRIX 6.5.x systems as
- * the structure packing for system calls is
- * different between IRIX cc and gcc.
- */
-
-#ifdef NEED_SGI_SEMUN_HACK
-union semun_hack {
-        int val;
-        struct semid_ds *buf;
-        unsigned short *array;
-       char __dummy[5];
-};
-#define semun semun_hack
-#endif /* NEED_SGI_SEMUN_HACK */
-#endif /* HAVE_SYSV_IPC */
 
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
@@ -748,22 +711,8 @@ typedef struct smb_wpasswd {
 #define SIGCLD SIGCHLD
 #endif
 
-#if (defined(HAVE_SYSV_IPC) || defined(HAVE_SHARED_MMAP))
-#define FAST_SHARE_MODES 1
-#endif
-
 #ifndef MAP_FILE
 #define MAP_FILE 0
-#endif
-
-#ifdef HAVE_SYSV_IPC
-#ifndef HAVE_UNION_SEMUN
-union semun {
-	int val;
-	struct semid_ds *buf;
-	unsigned short *array;
-};
-#endif
 #endif
 
 #if (!defined(WITH_NISPLUS) && !defined(WITH_LDAP))

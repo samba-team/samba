@@ -195,6 +195,13 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 /*The following definitions come from  lib/snprintf.c  */
 
 
+/*The following definitions come from  lib/substitute.c  */
+
+void standard_sub_basic(char *str);
+void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str);
+void standard_sub(connection_struct *conn, char *str);
+void standard_sub_snum(int snum, char *str);
+
 /*The following definitions come from  lib/system.c  */
 
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
@@ -210,7 +217,6 @@ SMB_OFF_T sys_ftell(FILE *fp);
 int sys_creat(const char *path, mode_t mode);
 int sys_open(const char *path, int oflag, mode_t mode);
 FILE *sys_fopen(const char *path, const char *type);
-void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd, SMB_OFF_T offset);
 SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp);
 int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(char *s);
@@ -313,10 +319,6 @@ BOOL is_ipaddress(const char *str);
 uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
-void standard_sub_basic(char *str);
-void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str);
-void standard_sub(connection_struct *conn, char *str);
-void standard_sub_snum(int snum, char *str);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 struct hostent *Get_Hostbyname(const char *name);
 BOOL process_exists(pid_t pid);

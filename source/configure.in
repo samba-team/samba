@@ -366,7 +366,7 @@ AC_CHECK_FUNCS(initgroups select rdchk getgrnam getgrent pathconf)
 AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate stat64 fstat64)
 AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64 readdir64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid yp_get_default_domain getpwanam)
-AC_CHECK_FUNCS(srandom random srand rand setenv usleep mmap64 strcasecmp fcvt fcvtl)
+AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl)
 
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
@@ -978,11 +978,10 @@ fi
 fi
 
 
-AC_CACHE_CHECK([for shared mmap],samba_cv_HAVE_SHARED_MMAP,[
+AC_CACHE_CHECK([for working mmap],samba_cv_HAVE_MMAP,[
 AC_TRY_RUN([#include "${srcdir-.}/tests/shared_mmap.c"],
-           samba_cv_HAVE_SHARED_MMAP=yes,samba_cv_HAVE_SHARED_MMAP=no,samba_cv_HAVE_SHARED_MMAP=cross)])
-if test x"$samba_cv_HAVE_SHARED_MMAP" = x"yes"; then
-    AC_DEFINE(HAVE_SHARED_MMAP)
+           samba_cv_HAVE_MMAP=yes,samba_cv_HAVE_MMAP=no,samba_cv_HAVE_MMAP=cross)])
+if test x"$samba_cv_HAVE_MMAP" = x"yes"; then
     AC_DEFINE(HAVE_MMAP)
 fi
 

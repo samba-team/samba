@@ -32,7 +32,6 @@
 #undef OSF1
 #undef NEXT2
 #undef RELIANTUNIX
-#undef HAVE_SHARED_MMAP
 #undef HAVE_MMAP
 #undef HAVE_FCNTL_LOCK
 #undef HAVE_FTRUNCATE_EXTEND
