@@ -4,7 +4,7 @@
 
 load_lib util-defs.exp
 load_lib "$srcdir/config/env.exp"
-load_lib "$srcdir/config/default-nt-names.exp"
+load_lib "$srcdir/lib/default-nt-names.exp"
 
 # Look up domain users using finger.  This should test getpwnam()
 
