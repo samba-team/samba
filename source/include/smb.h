@@ -1040,20 +1040,25 @@ struct bitmap {
 #define PIPE_RAW_MODE 0x4
 #define PIPE_START_MESSAGE 0x8
 
-/* these are the constants used in the above call. */
-/* DesiredAccess */
-/* File Specific access rights. */
-#define FILE_READ_DATA        0x001
-#define FILE_WRITE_DATA       0x002
-#define FILE_APPEND_DATA      0x004
-#define FILE_READ_EA          0x008
-#define FILE_WRITE_EA         0x010
-#define FILE_EXECUTE          0x020
-#define FILE_DELETE_CHILD     0x040
-#define FILE_READ_ATTRIBUTES  0x080
-#define FILE_WRITE_ATTRIBUTES 0x100
+/* File Specific access rights */
+#define FILE_READ_DATA        0x00000001
+#define FILE_WRITE_DATA       0x00000002
+#define FILE_APPEND_DATA      0x00000004
+#define FILE_READ_EA          0x00000008 /* File and directory */
+#define FILE_WRITE_EA         0x00000010 /* File and directory */
+#define FILE_EXECUTE          0x00000020
+#define FILE_DELETE_CHILD     0x00000040
+#define FILE_READ_ATTRIBUTES  0x00000080
+#define FILE_WRITE_ATTRIBUTES 0x00000100
 
-#define FILE_ALL_ACCESS       0x1FF
+#define FILE_ALL_ACCESS       0x000001FF
+
+/* Directory specific access rights */
+#define FILE_LIST_DIRECTORY   0x00000001
+#define FILE_ADD_FILE         0x00000002
+#define FILE_ADD_SUBDIRECTORY 0x00000004
+#define FILE_TRAVERSE         0x00000020
+#define FILE_DELETE_CHILD     0x00000040
 
 /* the desired access to use when opening a pipe */
 #define DESIRED_ACCESS_PIPE 0x2019f
