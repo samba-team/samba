@@ -1025,6 +1025,38 @@ static NTSTATUS lsa_TestCall(struct dcesrv_call_state *dce_call,
 }
 
 /*
+  lookup a SID for 1 name
+*/
+static NTSTATUS lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx,
+				const char *name, struct dom_sid **sid, uint32_t *atype)
+{
+	int ret;
+	struct ldb_message **res;
+	const char * const attrs[] = { "objectSid", "sAMAccountType", NULL};
+
+	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, "sAMAccountName=%s", name);
+	if (ret == 1) {
+		const char *sid_str = ldb_msg_find_string(res[0], "objectSid", NULL);
+		if (sid_str == NULL) {
+			return NT_STATUS_INVALID_SID;
+		}
+
+		*sid = dom_sid_parse_talloc(mem_ctx, sid_str);
+		if (*sid == NULL) {
+			return NT_STATUS_INVALID_SID;
+		}
+
+		*atype = samdb_result_uint(res[0], "sAMAccountType", 0);
+
+		return NT_STATUS_OK;
+	}
+
+	/* need to add a call into sidmap to check for a allocated sid */
+
+	return NT_STATUS_INVALID_SID;
+}
+
+/*
   lsa_LookupNames2
 */
 static NTSTATUS lsa_LookupNames2(struct dcesrv_call_state *dce_call,
@@ -1061,11 +1093,7 @@ static NTSTATUS lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 	}
 
 	for (i=0;i<r->in.num_names;i++) {
-		const char * const attrs[] = { "objectSid", "sAMAccountType", NULL};
 		const char *name = r->in.names[i].string;
-		int ret;
-		const char *sid_str;
-		struct ldb_message **res;
 		struct dom_sid *sid;
 		uint32_t atype, rtype, sid_index;
 		NTSTATUS status2;
@@ -1078,26 +1106,8 @@ static NTSTATUS lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
 		r->out.sids->sids[i].unknown     = 0;
 
-		ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, "sAMAccountName=%s", name);
-		if (ret != 1) {
-			status = STATUS_SOME_UNMAPPED;
-			continue;
-		}
-
-		sid_str = ldb_msg_find_string(res[0], "objectSid", NULL);
-		if (sid_str == NULL) {
-			status = STATUS_SOME_UNMAPPED;
-			continue;
-		}
-
-		sid = dom_sid_parse_talloc(mem_ctx, sid_str);
-		if (sid == NULL || sid->num_auths == 0) {
-			status = STATUS_SOME_UNMAPPED;
-			continue;
-		}
-
-		atype = samdb_result_uint(res[0], "sAMAccountType", 0);
-		if (atype == 0) {
+		status2 = lsa_lookup_name(state, mem_ctx, name, &sid, &atype);
+		if (!NT_STATUS_IS_OK(status) || sid->num_auths == 0) {
 			status = STATUS_SOME_UNMAPPED;
 			continue;
 		}
