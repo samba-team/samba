@@ -68,7 +68,7 @@
 /* Modification by Jens Kupferschmidt (Cu)
  * I have included directive PARA for shared memory computers.
  * I have included a directive LONGCRYPT to using this routine to cipher
- * passwords with more then 8 bytes like HP-UX 10.x it used. The MAXPLEN
+ * passwords with more than 8 bytes like HP-UX 10.x it used. The MAXPLEN
  * definition is the maximum of lenght of password and can changed. I have
  * defined 24.
  */
