@@ -472,6 +472,7 @@ static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T
    */
 
   do {
+    share_mode_entry broken_entry;
 
     broke_oplock = False;
     *p_all_current_opens_are_level_II = True;
@@ -514,6 +515,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
         }
 
         broke_oplock = True;
+        broken_entry = *share_entry;
         break;
 
       } else if (!LEVEL_II_OPLOCK_TYPE(share_entry->op_type)) {
@@ -533,6 +535,14 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 
     if(broke_oplock) {
       free((char *)old_shares);
+      if (del_share_entry(dev, inode, &broken_entry, NULL) == -1) {
+        DEBUG(0,("open_mode_check: cannot delete entry when breaking oplock (%x) on file %s, \
+dev = %x, inode = %.0f\n", broken_entry.op_type, fname, (unsigned int)dev, (double)inode));
+        errno = EACCES;
+        unix_ERR_class = ERRDOS;
+        unix_ERR_code = ERRbadshare;
+        return -1;
+      }
       num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
       oplock_contention_count++;
     }
