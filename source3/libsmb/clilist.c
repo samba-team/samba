@@ -283,9 +283,9 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		total_received += ff_searchcount;
 
-		if (rdata) free(rdata); rdata = NULL;
-		if (rparam) free(rparam); rparam = NULL;
-		
+		SAFE_FREE(rdata);
+		SAFE_FREE(rparam);
+
 		DEBUG(3,("received %d entries (eos=%d)\n",
 			 ff_searchcount,ff_eos));
 
@@ -300,7 +300,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	}
 
 	/* free up the dirlist buffer */
-	if (dirlist) free(dirlist);
+	SAFE_FREE(dirlist);
 	return(total_received);
 }
 
@@ -394,7 +394,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		if (!tdl) {
 			DEBUG(0,("cli_list_old: failed to expand dirlist"));
-			if (dirlist) free(dirlist);
+			SAFE_FREE(dirlist);
 			return 0;
 		}
 		else dirlist = tdl;
@@ -446,7 +446,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		fn(&finfo, Mask, state);
 	}
 
-	if (dirlist) free(dirlist);
+	SAFE_FREE(dirlist);
 	return(num_received);
 }
 

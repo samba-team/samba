@@ -201,11 +201,11 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 
  error:
 
-        safe_free(cli->inbuf);
-        safe_free(cli->outbuf);
+        SAFE_FREE(cli->inbuf);
+        SAFE_FREE(cli->outbuf);
 
         if (alloced_cli)
-                safe_free(cli);
+                SAFE_FREE(cli);
 
         return NULL;
 }
@@ -215,14 +215,8 @@ shutdown a client structure
 ****************************************************************************/
 void cli_shutdown(struct cli_state *cli)
 {
-	if (cli->outbuf)
-	{
-		free(cli->outbuf);
-	}
-	if (cli->inbuf)
-	{
-		free(cli->inbuf);
-	}
+	SAFE_FREE(cli->outbuf);
+	SAFE_FREE(cli->inbuf);
 
 	if (cli->mem_ctx)
 		talloc_destroy(cli->mem_ctx);
