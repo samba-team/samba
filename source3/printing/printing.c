@@ -395,3 +395,77 @@ void load_printers(void)
 	if (lp_load_printers())
 		add_all_printers();
 }
+
+
+void print_open_file(files_struct *fsp,connection_struct *conn,char *fname)
+{
+	pstring template;
+	char *p;
+	SMB_STRUCT_STAT sbuf;
+	extern struct current_user current_user;
+
+	/* see if we have sufficient disk space */
+	if (lp_minprintspace(SNUM(conn))) {
+		SMB_BIG_UINT dum1,dum2,dum3;
+		if (conn->vfs_ops.disk_free(conn->connectpath,False,&dum1,&dum2,&dum3) < 
+		    (SMB_BIG_UINT)lp_minprintspace(SNUM(conn))) {
+			errno = ENOSPC;
+			return;
+		}
+	}
+
+	slprintf(template, sizeof(template), "%s/smb.XXXXXX", conn->connectpath);
+	p = smbd_mktemp(template);
+	if (!p) {
+		DEBUG(2,("Error creating temporary filename in %s\n",
+			 conn->connectpath));
+		errno = ENOSPC;
+		return;
+	}
+
+	fsp->fd = conn->vfs_ops.open(p,O_RDWR|O_CREAT|O_EXCL,0600);
+
+	if (fsp->fd == -1) {
+		DEBUG(3,("Error opening file %s\n",p));
+		return;
+	}
+	
+	/*
+	 * If the printer is marked as postscript output a leading
+	 * file identifier to ensure the file is treated as a raw
+	 * postscript file.
+	 * This has a similar effect as CtrlD=0 in WIN.INI file.
+	 * tim@fsg.com 09/06/94
+	 */
+	if (lp_postscript(SNUM(conn))) {
+		DEBUG(3,("Writing postscript line\n"));
+		conn->vfs_ops.write(fsp->fd,"%!\n",3);
+	}
+
+	/* setup a full fsp */
+	conn->vfs_ops.fstat(fsp->fd, &sbuf);
+	conn->num_files_open++;
+	fsp->mode = sbuf.st_mode;
+	fsp->inode = sbuf.st_ino;
+	fsp->dev = sbuf.st_dev;
+	GetTimeOfDay(&fsp->open_time);
+	fsp->vuid = current_user.vuid;
+	fsp->size = 0;
+	fsp->pos = -1;
+	fsp->open = True;
+	fsp->can_lock = True;
+	fsp->can_read = False;
+	fsp->can_write = True;
+	fsp->share_mode = 0;
+	fsp->print_file = True;
+	fsp->modified = False;
+	fsp->oplock_type = NO_OPLOCK;
+	fsp->sent_oplock_break = NO_BREAK_SENT;
+	fsp->is_directory = False;
+	fsp->stat_open = False;
+	fsp->directory_delete_on_close = False;
+	fsp->conn = conn;
+	string_set(&fsp->fsp_name,p);
+	fsp->wbmpx_ptr = NULL;      
+	fsp->wcp = NULL; 
+}
