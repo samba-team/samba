@@ -308,7 +308,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   }
   else
   {
-    char *fsname = "SAMBA";
+    char *fsname = FSTYPE_STRING;
     char *p;
 
     set_message(outbuf,3,3,True);
