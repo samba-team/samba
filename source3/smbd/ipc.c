@@ -1504,6 +1504,7 @@ static BOOL api_RNetShareEnum(int cnum,uint16 vuid, char *param,char *data,
   char *p2;
   int count=lp_numservices();
   int total=0,counted=0;
+  BOOL missed = False;
   int i;
   int data_len, fixed_len, string_len;
   int f_len = 0, s_len = 0;
@@ -1514,16 +1515,18 @@ static BOOL api_RNetShareEnum(int cnum,uint16 vuid, char *param,char *data,
   data_len = fixed_len = string_len = 0;
   for (i=0;i<count;i++)
     if (lp_browseable(i) && lp_snum_ok(i))
+    {
+      total++;
+      data_len += fill_share_info(cnum,i,uLevel,0,&f_len,0,&s_len,0);
+      if (data_len <= buf_len)
       {
-  	total++;
- 	data_len += fill_share_info(cnum,i,uLevel,0,&f_len,0,&s_len,0);
- 	if (data_len <= buf_len)
- 	  {
- 	    counted++;
- 	    fixed_len += f_len;
- 	    string_len += s_len;
- 	  }
+        counted++;
+        fixed_len += f_len;
+        string_len += s_len;
       }
+      else
+        missed = True;
+    }
   *rdata_len = fixed_len + string_len;
   *rdata = REALLOC(*rdata,*rdata_len);
   memset(*rdata,0,*rdata_len);
@@ -1539,7 +1542,7 @@ static BOOL api_RNetShareEnum(int cnum,uint16 vuid, char *param,char *data,
   
   *rparam_len = 8;
   *rparam = REALLOC(*rparam,*rparam_len);
-  SSVAL(*rparam,0,NERR_Success);
+  SSVAL(*rparam,0,missed ? ERROR_MORE_DATA : NERR_Success);
   SSVAL(*rparam,2,0);
   SSVAL(*rparam,4,counted);
   SSVAL(*rparam,6,total);

@@ -433,6 +433,8 @@ typedef struct
 typedef struct
 {
   uint16 ref_count;
+  uint16 uid_cache_count;
+  uid_t uid_users_cache[10];
   uint32 dev;
   uint32 inode;
   int fd;
