@@ -91,7 +91,7 @@ BOOL validated_username(vuser_key * key, char *name, size_t len)
 	{
 		return False;
 	}
-	safe_strcpy(name, vuser->name, len - 1);
+	safe_strcpy(name, vuser->unix_name, len - 1);
 	return True;
 }
 
@@ -116,7 +116,7 @@ uint16 create_vuid(pid_t pid,
 	vuser.uid = uid;
 	vuser.gid = gid;
 	vuser.guest = guest;
-	fstrcpy(vuser.name, unix_name);
+	fstrcpy(vuser.unix_name, unix_name);
 	fstrcpy(vuser.requested_name, requested_name);
 	fstrcpy(vuser.real_name, real_name);
 	memcpy_zero(&vuser.usr, info3, sizeof(vuser.usr));
@@ -209,7 +209,7 @@ BOOL check_vuser_ok(struct uid_cache *cache, user_struct * vuser, int snum)
 		if (cache->list[i] == vuser->uid)
 			return (True);
 
-	if (!user_ok(vuser->name, snum))
+	if (!user_ok(vuser->unix_name, snum))
 		return (False);
 
 	i = cache->entries % UID_CACHE_SIZE;

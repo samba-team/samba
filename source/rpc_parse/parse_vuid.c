@@ -67,7 +67,7 @@ BOOL make_vuid_user_struct(user_struct * r_u,
 	r_u->uid = uid;
 	r_u->gid = gid;
 
-	fstrcpy(r_u->name, name);
+	fstrcpy(r_u->unix_name, name);
 	fstrcpy(r_u->requested_name, requested_name);
 	fstrcpy(r_u->real_name, real_name);
 	r_u->guest = guest;
@@ -115,8 +115,8 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 	r_u->gid = (uid_t)gid;
 
 	prs_align(ps);
-	prs_string("name", ps, depth, r_u->name, strlen(r_u->name),
-		   sizeof(r_u->name));
+	prs_string("name", ps, depth, r_u->unix_name, strlen(r_u->unix_name),
+		   sizeof(r_u->unix_name));
 	prs_align(ps);
 	prs_string("requested_name", ps, depth, r_u->requested_name,
 		   strlen(r_u->requested_name), sizeof(r_u->requested_name));

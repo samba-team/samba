@@ -280,7 +280,7 @@ void standard_sub_snum(int snum, char *str)
 ********************************************************************/
 void standard_sub_vuser(char *str, user_struct *vuser)
 {
-	standard_sub_advanced(-1, vuser->name, "", -1, str);
+	standard_sub_advanced(-1, vuser->unix_name, "", -1, str);
 }
 
 /*******************************************************************
@@ -288,6 +288,6 @@ void standard_sub_vuser(char *str, user_struct *vuser)
 ********************************************************************/
 void standard_sub_vsnum(char *str, user_struct *vuser, int snum)
 {
-	standard_sub_advanced(snum, vuser->name, "", -1, str);
+	standard_sub_advanced(snum, vuser->unix_name, "", -1, str);
 }
 
