@@ -514,6 +514,8 @@ kpasswd_get_next(krb5_context context,
 		 struct krb5_krbhst_data *kd,
 		 krb5_krbhst_info **host)
 {
+    krb5_error_code ret;
+
     if((kd->flags & KD_CONFIG) == 0) {
 	config_get_hosts(context, kd, "kpasswd_server");
 	if(get_next(kd, host))
@@ -538,7 +540,10 @@ kpasswd_get_next(krb5_context context,
 	kd->flags = 0;
 	kd->port  = kd->def_port;
 	kd->get_next = admin_get_next;
-	return (*kd->get_next)(context, kd, host);
+	ret = (*kd->get_next)(context, kd, host);
+	if (ret == 0)
+	    (*host)->proto = KRB5_KRBHST_UDP;
+	return ret;
     }
 
     return KRB5_KDC_UNREACH; /* XXX */
