@@ -358,7 +358,9 @@ sub ParseFunction($)
 
     if (!($fn->{RETURN_TYPE} eq "NTSTATUS")) {
 	$result .= "\tif (!W_ERROR_IS_OK(arg3->out.result) && \n";
-	$result .= "\t\t!(W_ERROR_EQUAL(arg3->out.result, WERR_INSUFFICIENT_BUFFER))) {\n";
+	$result .= "\t\t!(W_ERROR_EQUAL(arg3->out.result, WERR_INSUFFICIENT_BUFFER)) &&\n";
+	$result .= "\t\t!(W_ERROR_EQUAL(arg3->out.result, WERR_NO_MORE_ITEMS)) &&\n";
+	$result .= "\t\t!(W_ERROR_EQUAL(arg3->out.result, WERR_MORE_DATA))) {\n";
 	$result .= "\t\tset_werror_exception(W_ERROR_V(arg3->out.result));\n";
 	$result .= "\t\tgoto fail;\n";
 	$result .= "\t}\n";
