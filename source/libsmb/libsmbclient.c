@@ -5,7 +5,7 @@
    Copyright (C) Richard Sharpe 2000, 2002
    Copyright (C) John Terpstra 2000
    Copyright (C) Tom Jansen (Ninja ISD) 2002 
-   Copyright (C) Derrell Lipman 2003
+   Copyright (C) Derrell Lipman 2003, 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,6 +25,21 @@
 #include "includes.h"
 
 #include "include/libsmb_internal.h"
+
+
+/*
+ * DOS Attribute values (used internally)
+ */
+typedef struct DOS_ATTR_DESC
+{
+    int mode;
+    unsigned long long size;
+    time_t a_time;
+    time_t c_time;
+    time_t m_time;
+    unsigned long long inode;
+} DOS_ATTR_DESC;
+
 
 /*
  * Internal flags for extended attributes
@@ -84,73 +99,103 @@ hex2int( unsigned int _char )
     return -1;
 }
 
-static void 
-decode_urlpart(char *segment, size_t sizeof_segment)
+/*
+ * smbc_urldecode()
+ *
+ * Convert strings of %xx to their single character equivalent.  Each 'x' must
+ * be a valid hexadecimal digit, or that % sequence is left undecoded.
+ *
+ * dest may, but need not be, the same pointer as src.
+ *
+ * Returns the number of % sequences which could not be converted due to lack
+ * of two following hexadecimal digits.
+ */
+int
+smbc_urldecode(char *dest, char * src, size_t max_dest_len)
 {
-    int old_length = strlen(segment);
-    int new_length = 0;
-    int new_length2 = 0;
-    int i = 0;
-    pstring new_segment;
-    char *new_usegment = 0;
+        int old_length = strlen(src);
+        int i = 0;
+        int err_count = 0;
+        pstring temp;
+        char * p;
 
-    if ( !old_length ) {
-	return;
-    }
+        if ( old_length == 0 ) {
+                return 0;
+        }
 
-    /* make a copy of the old one */
-    new_usegment = (char*)SMB_MALLOC( old_length * 3 + 1 );
+        p = temp;
+        while ( i < old_length ) {
+                unsigned char character = src[ i++ ];
 
-    while( i < old_length ) {
-	int bReencode = False;
-	unsigned char character = segment[ i++ ];
-	if ((character <= ' ') || (character > 127))
-	    bReencode = True;
+                if (character == '%') {
+                        int a = i+1 < old_length ? hex2int( src[i] ) : -1;
+                        int b = i+1 < old_length ? hex2int( src[i+1] ) : -1;
 
-	new_usegment [ new_length2++ ] = character;
-	if (character == '%' ) {
-	    int a = i+1 < old_length ? hex2int( segment[i] ) : -1;
-	    int b = i+1 < old_length ? hex2int( segment[i+1] ) : -1;
-	    if ((a == -1) || (b == -1)) { /* Only replace if sequence is valid */
-		/* Contains stray %, make sure to re-encode! */
-		bReencode = True;
-	    } else {
-		/* Valid %xx sequence */
-		character = a * 16 + b; /* Replace with value of %dd */
-		if (!character)
-		    break; /* Stop at %00 */
+                        /* Replace valid sequence */
+                        if (a != -1 && b != -1) {
 
-		new_usegment [ new_length2++ ] = (unsigned char) segment[i++];
-		new_usegment [ new_length2++ ] = (unsigned char) segment[i++];
-	    }
-	}
-	if (bReencode) {
-	    unsigned int c = character / 16;
-	    new_length2--;
-	    new_usegment [ new_length2++ ] = '%';
+                                /* Replace valid %xx sequence with %dd */
+                                character = (a * 16) + b;
 
-	    c += (c > 9) ? ('A' - 10) : '0';
-	    new_usegment[ new_length2++ ] = c;
+                                if (character == '\0') {
+                                        break; /* Stop at %00 */
+                                }
 
-	    c = character % 16;
-	    c += (c > 9) ? ('A' - 10) : '0';
-	    new_usegment[ new_length2++ ] = c;
-	}
+                                i += 2;
+                        } else {
 
-	new_segment [ new_length++ ] = character;
-    }
-    new_segment [ new_length ] = 0;
+                                err_count++;
+                        }
+                }
 
-    free(new_usegment);
+                *p++ = character;
+        }
 
-    /* realloc it with unix charset */
-    pull_utf8_allocate(&new_usegment, new_segment);
+        *p = '\0';
 
-    /* this assumes (very safely) that removing %aa sequences
-       only shortens the string */
-    strncpy(segment, new_usegment, sizeof_segment);
+        strncpy(dest, temp, max_dest_len);
 
-    free(new_usegment);
+        return err_count;
+}
+
+/*
+ * smbc_urlencode()
+ *
+ * Convert any characters not specifically allowed in a URL into their %xx
+ * equivalent.
+ *
+ * Returns the remaining buffer length.
+ */
+int
+smbc_urlencode(char * dest, char * src, int max_dest_len)
+{
+        char hex[] = "0123456789ABCDEF";
+
+        for (; *src != '\0' && max_dest_len >= 3; src++) {
+
+                if ((*src < '0' &&
+                     *src != '-' &&
+                     *src != '.') ||
+                    (*src > '9' &&
+                     *src < 'A') ||
+                    (*src > 'Z' &&
+                     *src < 'a' &&
+                     *src != '_') ||
+                    (*src > 'z')) {
+                        *dest++ = '%';
+                        *dest++ = hex[(*src >> 4) & 0x0f];
+                        *dest++ = hex[*src & 0x0f];
+                        max_dest_len -= 3;
+                } else {
+                        *dest++ = *src;
+                        max_dest_len--;
+                }
+        }
+
+        *dest++ = '\0';
+        max_dest_len--;
+        
+        return max_dest_len;
 }
 
 /*
@@ -158,10 +203,7 @@ decode_urlpart(char *segment, size_t sizeof_segment)
  *
  * The general format of an SMB URI is explain in Christopher Hertel's CIFS
  * book, at http://ubiqx.org/cifs/Appendix-D.html.  We accept a subset of the
- * general format ("smb:" only; we do not look for "cifs:"), and expand on
- * what he calls "context", herein called "options" to avoid conflict with the
- * SMBCCTX context used throughout this library.  We add the "mb" keyword
- * which applies as follows:
+ * general format ("smb:" only; we do not look for "cifs:").
  *
  *
  * We accept:
@@ -169,37 +211,28 @@ decode_urlpart(char *segment, size_t sizeof_segment)
  *
  * Meaning of URLs:
  *
- * smb://           show all workgroups known by the first master browser found
- * smb://?mb=.any   same as smb:// (i.e. without any options)
+ * smb://           Show all workgroups.
  *
- * smb://?mb=.all   show all workgroups known by every master browser found.
- *                  Why might you want this?  In an "appliance" application
- *                  where the workgroup/domain being used on the local network
- *                  is not known ahead of time, but where one wanted to
- *                  provide network services via samba, a unique workgroup
- *                  could be used.  However, when the appliance is first
- *                  started, the local samba instance's master browser has not
- *                  synchronized with the other master browser(s) on the
- *                  network (and might not synchronize for 12 minutes) and
- *                  therefore is not aware of the workgroup/ domain names
- *                  available on the network.  This option may be used to
- *                  overcome the problem of a libsmbclient application
- *                  arbitrarily selecting the local (still ignorant) master
- *                  browser to obtain its list of workgroups/domains and
- *                  getting back a practically emmpty list.  By requesting
- *                  the list of workgroups/domains from each found master
- *                  browser on the local network, a complete list of
- *                  workgroups/domains can be built.
- *
- * smb://?mb=name   NOT YET IMPLEMENTED -- show all workgroups known by the
- *                  master browser whose name is "name"
+ *                  The method of locating the list of workgroups varies
+ *                  depending upon the setting of the context variable
+ *                  context->options.browse_max_lmb_count.  This value
+ *                  determine the maximum number of local master browsers to
+ *                  query for the list of workgroups.  In order to ensure that
+ *                  a complete list of workgroups is obtained, all master
+ *                  browsers must be queried, but if there are many
+ *                  workgroups, the time spent querying can begin to add up.
+ *                  For small networks (not many workgroups), it is suggested
+ *                  that this variable be set to 0, indicating query all local
+ *                  master browsers.  When the network has many workgroups, a
+ *                  reasonable setting for this variable might be around 3.
  *
  * smb://name/      if name<1D> or name<1B> exists, list servers in
  *                  workgroup, else, if name<20> exists, list all shares
  *                  for server ...
  *
- * If "options" are provided, this function returns the entire option list as
- * a string, for later parsing by the caller.
+ * If "options" are provided, this function returns the entire option list as a
+ * string, for later parsing by the caller.  Note that currently, no options
+ * are supported.
  */
 
 static const char *smbc_prefix = "smb:";
@@ -246,7 +279,7 @@ smbc_parse_path(SMBCCTX *context,
 	p += 2;  /* Skip the double slash */
 
         /* See if any options were specified */
-        if ( (q = strrchr(p, '?')) != NULL ) {
+        if ((q = strrchr(p, '?')) != NULL ) {
                 /* There are options.  Null terminate here and point to them */
                 *q++ = '\0';
                 
@@ -333,11 +366,11 @@ smbc_parse_path(SMBCCTX *context,
 	all_string_sub(path, "/", "\\", 0);
 
  decoding:
-	decode_urlpart(path, path_len);
-	decode_urlpart(server, server_len);
-	decode_urlpart(share, share_len);
-	decode_urlpart(user, user_len);
-	decode_urlpart(password, password_len);
+	(void) smbc_urldecode(path, path, path_len);
+	(void) smbc_urldecode(server, server, server_len);
+	(void) smbc_urldecode(share, share, share_len);
+	(void) smbc_urldecode(user, user, user_len);
+	(void) smbc_urldecode(password, password, password_len);
 
 	return 0;
 }
@@ -352,28 +385,8 @@ static int smbc_check_options(char *server, char *share, char *path, char *optio
         /* No options at all is always ok */
         if (! *options) return 0;
 
-        /*
-         * For right now, we only support a very few options possibilities.
-         * No options are supported if server, share, or path are not empty.
-         * If all are empty, then we support the following two choices right
-         * now:
-         *
-         *   mb=.any
-         *   mb=.all
-         */
-        if ((*server || *share || *path) && *options) {
-                /* Invalid: options provided with server, share, or path */
-                DEBUG(1, ("Found unsupported options (%s) with non-empty server, share, or path\n", options));
-                return -1;
-        }
-
-        if (strcmp(options, "mb=.any") != 0 &&
-            strcmp(options, "mb=.all") != 0) {
-                DEBUG(1, ("Found unsupported options (%s)\n", options));
-                return -1;
-        }
-
-        return 0;
+        /* Currently, we don't support any options. */
+        return -1;
 }
 
 /*
@@ -452,8 +465,6 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv)
 
 	context->callbacks.remove_cached_srv_fn(context, srv);
 	
-	SAFE_FREE(srv);
-	
 	return 0;
 }
 
@@ -471,7 +482,7 @@ SMBCSRV *find_server(SMBCCTX *context,
 
 	srv = context->callbacks.get_cached_srv_fn(context, server, share, 
 						   workgroup, username);
-	
+
 	if (!auth_called && !srv && (!username[0] || !password[0])) {
 		context->callbacks.auth_fn(server, share,
                                            workgroup, sizeof(fstring),
@@ -512,6 +523,7 @@ SMBCSRV *find_server(SMBCCTX *context,
                          */
 			goto check_server_cache; 
 		}
+
 		return srv;
  	}
 
@@ -541,6 +553,8 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 	pstring ipenv;
 	struct in_addr ip;
 	int tried_reverse = 0;
+        int port_try_first;
+        int port_try_next;
   
 	zero_ip(&ip);
 	ZERO_STRUCT(c);
@@ -552,25 +566,56 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 
         srv = find_server(context, server, share,
                           workgroup, username, password);
-        if (srv)
+
+        /*
+         * If we found a connection and we're only allowed one share per
+         * server...
+         */
+        if (srv && *share != '\0' && context->internal->options.one_share_per_server) {
+
+                /*
+                 * ... then if there's no current connection to the share,
+                 * connect to it.  find_server(), or rather the function
+                 * pointed to by context->callbacks.get_cached_srv_fn which
+                 * was called by find_server(), will have issued a tree
+                 * disconnect if the requested share is not the same as the
+                 * one that was already connected.
+                 */
+                if (srv->cli.cnum == (uint16) -1) {
+                        /* Ensure we have accurate auth info */
+                        context->callbacks.auth_fn(server, share,
+                                                   workgroup, sizeof(fstring),
+                                                   username, sizeof(fstring),
+                                                   password, sizeof(fstring));
+
+                        if (! cli_send_tconX(&srv->cli, share, "?????",
+                                             password, strlen(password)+1)) {
+                        
+                                errno = smbc_errno(context, &srv->cli);
+                                cli_shutdown(&srv->cli);
+                                context->callbacks.remove_cached_srv_fn(context, srv);
+                                srv = NULL;
+                        }
+
+                        /* Regenerate the dev value since it's based on both server and share */
+                        if (srv) {
+                                srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
+                        }
+                }
+        }
+        
+        /* If we have a connection... */
+        if (srv) {
+
+                /* ... then we're done here.  Give 'em what they came for. */
                 return srv;
+        }
 
 	make_nmb_name(&calling, context->netbios_name, 0x0);
 	make_nmb_name(&called , server, 0x20);
 
 	DEBUG(4,("smbc_server: server_n=[%s] server=[%s]\n", server_n, server));
   
-#if 0 /* djl: obsolete code?  neither group nor p is used beyond here */
-	if ((p=strchr_m(server_n,'#')) && 
-	    (strcmp(p+1,"1D")==0 || strcmp(p+1,"01")==0)) {
-    
-		fstrcpy(group, server_n);
-		p = strchr_m(group,'#');
-		*p = 0;
-		
-	}
-#endif
-
 	DEBUG(4,(" -> server_n=[%s] server=[%s]\n", server_n, server));
 
  again:
@@ -593,18 +638,31 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 
 	c.timeout = context->timeout;
 
-        /* Force use of port 139 for first try, so browse lists can work */
-        c.port = 139;
+        /*
+         * Force use of port 139 for first try if share is $IPC, empty, or
+         * null, so browse lists can work
+         */
+        if (share == NULL || *share == '\0' || strcmp(share, "IPC$") == 0)
+        {
+                port_try_first = 139;
+                port_try_next = 445;
+        }
+        else
+        {
+                port_try_first = 445;
+                port_try_next = 139;
+        }
+
+        c.port = port_try_first;
 
 	if (!cli_connect(&c, server_n, &ip)) {
-                /*
-                 * Port 139 connection failed.  Try port 445 to handle
-                 * connections to newer (e.g. XP) hosts with NetBIOS disabled.
-                 */
-                c.port = 445;
+
+                /* First connection attempt failed.  Try alternate port. */
+                c.port = port_try_next;
+
                 if (!cli_connect(&c, server_n, &ip)) {
-			cli_shutdown(&c);
-                        errno = ENETUNREACH;
+                        cli_shutdown(&c);
+                        errno = ETIMEDOUT;
                         return NULL;
                 }
  	}
@@ -625,7 +683,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 
 		    if ((rem_ip.s_addr=inet_addr(server)) == INADDR_NONE) {
 		      DEBUG(4, ("Could not convert IP address %s to struct in_addr\n", server));
-		      errno = ENOENT;
+		      errno = ETIMEDOUT;
 		      return NULL;
 		    }
 
@@ -639,7 +697,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 
 		  }
 		}
-		errno = ENOENT;
+		errno = ETIMEDOUT;
 		return NULL;
 	}
   
@@ -647,7 +705,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
   
 	if (!cli_negprot(&c)) {
 		cli_shutdown(&c);
-		errno = ENOENT;
+		errno = ETIMEDOUT;
 		return NULL;
 	}
 
@@ -732,10 +790,11 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
 	SMBCSRV *ipc_srv=NULL;
 
         /*
-         * See if we've already created this special connection.  Reference
-         * our "special" share name 'IPC$$'.
+         * See if we've already created this special connection.  Reference our
+         * "special" share name '*IPC$', which is an impossible real share name
+         * due to the leading asterisk.
          */
-        ipc_srv = find_server(context, server, "IPC$$",
+        ipc_srv = find_server(context, server, "*IPC$",
                               workgroup, username, password);
         if (!ipc_srv) {
 
@@ -801,7 +860,7 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                 errno = 0;      /* let cache function set errno if it likes */
                 if (context->callbacks.add_cached_srv_fn(context, ipc_srv,
                                                          server,
-                                                         "IPC$$",
+                                                         "*IPC$",
                                                          workgroup,
                                                          username)) {
                         DEBUG(3, (" Failed to add server to cache\n"));
@@ -1621,21 +1680,15 @@ static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint
 {
 	struct smbc_dirent *dirent;
 	int size;
-	char *u_name = NULL, *u_comment = NULL;
-	size_t u_name_len = 0, u_comment_len = 0;
-
-	if (name)
-	    u_name_len = push_utf8_allocate(&u_name, name);
-	if (comment)
-	    u_comment_len = push_utf8_allocate(&u_comment, comment);
+        int name_length = (name == NULL ? 0 : strlen(name));
+        int comment_len = (comment == NULL ? 0 : strlen(comment));
 
 	/*
 	 * Allocate space for the dirent, which must be increased by the 
-	 * size of the name and the comment and 1 for the null on the comment.
-	 * The null on the name is already accounted for.
+	 * size of the name and the comment and 1 each for the null terminator.
 	 */
 
-	size = sizeof(struct smbc_dirent) + u_name_len + u_comment_len + 1;
+	size = sizeof(struct smbc_dirent) + name_length + comment_len + 2;
     
 	dirent = SMB_MALLOC(size);
 
@@ -1682,18 +1735,15 @@ static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint
 	dir->dir_end->dirent = dirent;
 	
 	dirent->smbc_type = type;
-	dirent->namelen = u_name_len;
-	dirent->commentlen = u_comment_len;
+	dirent->namelen = name_length;
+	dirent->commentlen = comment_len;
 	dirent->dirlen = size;
   
-	strncpy(dirent->name, (u_name?u_name:""), dirent->namelen + 1);
+	strncpy(dirent->name, (name?name:""), dirent->namelen + 1);
 
 	dirent->comment = (char *)(&dirent->name + dirent->namelen + 1);
-	strncpy(dirent->comment, (u_comment?u_comment:""), dirent->commentlen + 1);
+	strncpy(dirent->comment, (comment?comment:""), dirent->commentlen + 1);
 	
-	SAFE_FREE(u_comment);
-	SAFE_FREE(u_name);
-
 	return 0;
 
 }
@@ -1781,7 +1831,7 @@ list_fn(const char *name, uint32 type, const char *comment, void *state)
 }
 
 static void
-dir_list_fn(file_info *finfo, const char *mask, void *state)
+dir_list_fn(const char *mnt, file_info *finfo, const char *mask, void *state)
 {
 
 	if (add_dirent((SMBCFILE *)state, finfo->name, "", 
@@ -1807,14 +1857,14 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
 	        DEBUG(4, ("no valid context\n"));
-		errno = EINVAL;
+		errno = EINVAL + 8192;
 		return NULL;
 
 	}
 
 	if (!fname) {
 		DEBUG(4, ("no valid fname\n"));
-		errno = EINVAL;
+		errno = EINVAL + 8193;
 		return NULL;
 	}
 
@@ -1826,7 +1876,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                             password, sizeof(password),
                             options, sizeof(options))) {
 	        DEBUG(4, ("no valid path\n"));
-		errno = EINVAL;
+		errno = EINVAL + 8194;
 		return NULL;
 	}
 
@@ -1835,7 +1885,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
         /* Ensure the options are valid */
         if (smbc_check_options(server, share, path, options)) {
                 DEBUG(4, ("unacceptable options (%s)\n", options));
-                errno = EINVAL;
+                errno = EINVAL + 8195;
                 return NULL;
         }
 
@@ -1861,108 +1911,11 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 	dir->file     = False;
 	dir->dir_list = dir->dir_next = dir->dir_end = NULL;
 
-	if (server[0] == (char)0 &&
-            (! *options || strcmp(options, "mb=.any") == 0)) {
-                struct in_addr server_ip;
-		if (share[0] != (char)0 || path[0] != (char)0) {
-
-			errno = EINVAL;
-			if (dir) {
-				SAFE_FREE(dir->fname);
-				SAFE_FREE(dir);
-			}
-			return NULL;
-		}
-
-		/*
-                 * We have server and share and path empty ... so list the
-                 * workgroups first try to get the LMB for our workgroup, and
-                 * if that fails, try the DMB
-                 */
-
-		pstrcpy(workgroup, lp_workgroup());
-
-		if (!find_master_ip(workgroup, &server_ip)) {
-		    struct user_auth_info u_info;
-		    struct cli_state *cli;
-
-		    DEBUG(4, ("Unable to find master browser for workgroup %s\n", 
-			      workgroup));
-
-		    /* find the name of the server ... */
-		    pstrcpy(u_info.username, user);
-		    pstrcpy(u_info.password, password);
-
-		    if (!(cli = get_ipc_connect_master_ip_bcast(workgroup, &u_info))) {
-			DEBUG(4, ("Unable to find master browser by "
-				  "broadcast\n"));
-			errno = ENOENT;
-			return NULL;
-		    }
-
-		    fstrcpy(server, cli->desthost);
-
-		    cli_shutdown(cli);
-		} else {
-                    /*
-                     * Do a name status query to find out the name of the
-                     * master browser.  We use <01><02>__MSBROWSE__<02>#01 if
-                     * *#00 fails because a domain master browser will not
-                     * respond to a wildcard query (or, at least, an NT4
-                     * server acting as the domain master browser will not).
-                     *
-                     * We might be able to use ONLY the query on MSBROWSE, but
-                     * that's not yet been tested with all Windows versions,
-                     * so until it is, leave the original wildcard query as
-                     * the first choice and fall back to MSBROWSE if the
-                     * wildcard query fails.
-                     */
-		    if (!name_status_find("*", 0, 0x20, server_ip, server) &&
-                        !name_status_find(MSBROWSE, 1, 0x1b, server_ip, server)) {
-			errno = ENOENT;
-			return NULL;
-		    }
-		}	
-
-		DEBUG(4, ("using workgroup %s %s\n", workgroup, server));
-
-                /*
-                 * Get a connection to IPC$ on the server if we do not already
-                 * have one
-                 */
-                
-		srv = smbc_server(context, server, "IPC$", workgroup, user, password);
-                if (!srv) {
-                    
-                    if (dir) {
-                        SAFE_FREE(dir->fname);
-                        SAFE_FREE(dir);
-                    }
-                    return NULL;
-                }
-                
-		dir->srv = srv;
-		dir->dir_type = SMBC_WORKGROUP;
-
-		/* Now, list the stuff ... */
-
-		if (!cli_NetServerEnum(&srv->cli, workgroup, SV_TYPE_DOMAIN_ENUM, list_fn,
-				       (void *)dir)) {
-
-                        DEBUG(1, ("Could not enumerate domains using '%s'\n", workgroup));
-			if (dir) {
-				SAFE_FREE(dir->fname);
-				SAFE_FREE(dir);
-			}
-
-			return NULL;
-
-		}
-        } else if (server[0] == (char)0 &&
-                   (! *options || strcmp(options, "mb=.all") == 0)) {
+	if (server[0] == (char)0) {
 
                 int i;
                 int count;
+                int max_lmb_count;
                 struct ip_service *ip_list;
                 struct ip_service server_addr;
                 struct user_auth_info u_info;
@@ -1970,13 +1923,18 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 		if (share[0] != (char)0 || path[0] != (char)0) {
 
-			errno = EINVAL;
+			errno = EINVAL + 8196;
 			if (dir) {
 				SAFE_FREE(dir->fname);
 				SAFE_FREE(dir);
 			}
 			return NULL;
 		}
+
+                /* Determine how many local master browsers to query */
+                max_lmb_count = (context->internal->options.browse_max_lmb_count == 0
+                                 ? INT_MAX
+                                 : context->internal->options.browse_max_lmb_count);
 
                 pstrcpy(u_info.username, user);
                 pstrcpy(u_info.password, password);
@@ -2001,11 +1959,10 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                         count = 1;
                 }
 
-                for (i = 0; i < count; i++) {
+                for (i = 0; i < count && i < max_lmb_count; i++) {
                         DEBUG(99, ("Found master browser %s\n", inet_ntoa(ip_list[i].ip)));
                         
                         cli = get_ipc_connect_master_ip(&ip_list[i], workgroup, &u_info);
-
 			/* cli == NULL is the master browser refused to talk or 
 			   could not be found */
 			if ( !cli )
@@ -2060,7 +2017,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 			if (path[0] != (char)0) { /* Should not have empty share with path */
 
-				errno = EINVAL;
+				errno = EINVAL + 8197;
 				if (dir) {
 					SAFE_FREE(dir->fname);
 					SAFE_FREE(dir);
@@ -2254,12 +2211,54 @@ static int smbc_closedir_ctx(SMBCCTX *context, SMBCFILE *dir)
 
 }
 
+static void smbc_readdir_internal(SMBCCTX * context,
+                                  struct smbc_dirent *dest,
+                                  struct smbc_dirent *src,
+                                  int max_namebuf_len)
+{
+        if (context->internal->options.urlencode_readdir_entries) {
+
+                /* url-encode the name.  get back remaining buffer space */
+                max_namebuf_len =
+                        smbc_urlencode(dest->name, src->name, max_namebuf_len);
+
+                /* We now know the name length */
+                dest->namelen = strlen(dest->name);
+
+                /* Save the pointer to the beginning of the comment */
+                dest->comment = dest->name + dest->namelen + 1;
+
+                /* Copy the comment */
+                strncpy(dest->comment, src->comment, max_namebuf_len);
+
+                /* Ensure the comment is null terminated */
+                if (max_namebuf_len > src->commentlen) {
+                        dest->comment[src->commentlen] = '\0';
+                } else {
+                        dest->comment[max_namebuf_len - 1] = '\0';
+                }
+
+                /* Save other fields */
+                dest->smbc_type = src->smbc_type;
+                dest->commentlen = strlen(dest->comment);
+                dest->dirlen = ((dest->comment + dest->commentlen + 1) -
+                                (char *) dest);
+        } else {
+
+                /* No encoding.  Just copy the entry as is. */
+                memcpy(dest, src, src->dirlen);
+                dest->comment = (char *)(&dest->name + src->namelen + 1);
+        }
+        
+}
+
 /*
  * Routine to get a directory entry
  */
 
 struct smbc_dirent *smbc_readdir_ctx(SMBCCTX *context, SMBCFILE *dir)
 {
+        int maxlen;
 	struct smbc_dirent *dirp, *dirent;
 
 	/* Check that all is ok first ... */
@@ -2292,37 +2291,40 @@ struct smbc_dirent *smbc_readdir_ctx(SMBCCTX *context, SMBCFILE *dir)
 	if (!dir->dir_next) {
 		return NULL;
         }
-	else {
 
-		dirent = dir->dir_next->dirent;
-		if (!dirent) {
+        dirent = dir->dir_next->dirent;
+        if (!dirent) {
 
-			errno = ENOENT;
-			return NULL;
+                errno = ENOENT;
+                return NULL;
 
-		}
+        }
 
-		/* Hmmm, do I even need to copy it? */
+        dirp = (struct smbc_dirent *)context->internal->_dirent;
+        maxlen = (sizeof(context->internal->_dirent) -
+                  sizeof(struct smbc_dirent));
 
-		memcpy(context->internal->_dirent, dirent, dirent->dirlen); /* Copy the dirent */
-		dirp = (struct smbc_dirent *)context->internal->_dirent;
-		dirp->comment = (char *)(&dirp->name + dirent->namelen + 1);
-		dir->dir_next = dir->dir_next->next;
+        smbc_readdir_internal(context, dirp, dirent, maxlen);
 
-		return (struct smbc_dirent *)context->internal->_dirent;
-	}
+        dir->dir_next = dir->dir_next->next;
 
+        return dirp;
 }
 
 /*
  * Routine to get directory entries
  */
 
-static int smbc_getdents_ctx(SMBCCTX *context, SMBCFILE *dir, struct smbc_dirent *dirp, int count)
+static int smbc_getdents_ctx(SMBCCTX *context,
+                             SMBCFILE *dir,
+                             struct smbc_dirent *dirp,
+                             int count)
 {
-	struct smbc_dir_list *dirlist;
-	int rem = count, reqd;
+	int rem = count;
+        int reqd;
+        int maxlen;
 	char *ndir = (char *)dirp;
+	struct smbc_dir_list *dirlist;
 
 	/* Check that all is ok first ... */
 
@@ -2364,8 +2366,15 @@ static int smbc_getdents_ctx(SMBCCTX *context, SMBCFILE *dir, struct smbc_dirent
 
 		}
 
-		if (rem < (reqd = (sizeof(struct smbc_dirent) + dirlist->dirent->namelen + 
-				   dirlist->dirent->commentlen + 1))) {
+                /* Do urlencoding of next entry, if so selected */
+                dirent = (struct smbc_dirent *)context->internal->_dirent;
+                maxlen = (sizeof(context->internal->_dirent) -
+                          sizeof(struct smbc_dirent));
+                smbc_readdir_internal(context, dirent, dirlist->dirent, maxlen);
+
+                reqd = dirent->dirlen;
+
+		if (rem < reqd) {
 
 			if (rem < count) { /* We managed to copy something */
 
@@ -2382,12 +2391,12 @@ static int smbc_getdents_ctx(SMBCCTX *context, SMBCFILE *dir, struct smbc_dirent
 
 		}
 
-		dirent = dirlist->dirent;
-
 		memcpy(ndir, dirent, reqd); /* Copy the data in ... */
     
 		((struct smbc_dirent *)ndir)->comment = 
-			(char *)(&((struct smbc_dirent *)ndir)->name + dirent->namelen + 1);
+			(char *)(&((struct smbc_dirent *)ndir)->name +
+                                 dirent->namelen +
+                                 1);
 
 		ndir += reqd;
 
@@ -2453,27 +2462,6 @@ static int smbc_mkdir_ctx(SMBCCTX *context, const char *fname, mode_t mode)
 
 	}
 
-	/* if (strncmp(srv->cli.dev, "IPC", 3) == 0) {
-
-	   mode = aDIR | aRONLY;
-
-	   }
-	   else if (strncmp(srv->cli.dev, "LPT", 3) == 0) {
-
-	   if (strcmp(path, "\\") == 0) {
-
-	   mode = aDIR | aRONLY;
-
-	   }
-	   else {
-
-	   mode = aRONLY;
-	   smbc_stat_printjob(srv, path, &size, &m_time);
-	   c_time = a_time = m_time;
-
-	   }
-	   else { */
-
 	if (!cli_mkdir(&srv->cli, path)) {
 
 		errno = smbc_errno(context, &srv->cli);
@@ -2491,7 +2479,7 @@ static int smbc_mkdir_ctx(SMBCCTX *context, const char *fname, mode_t mode)
 
 static int smbc_rmdir_dirempty = True;
 
-static void rmdir_list_fn(file_info *finfo, const char *mask, void *state)
+static void rmdir_list_fn(const char *mnt, file_info *finfo, const char *mask, void *state)
 {
 
 	if (strncmp(finfo->name, ".", 1) != 0 && strncmp(finfo->name, "..", 2) != 0)
@@ -3238,10 +3226,93 @@ static SEC_DESC *sec_desc_parse(TALLOC_CTX *ctx,
 }
 
 
+/* Obtain the current dos attributes */
+static DOS_ATTR_DESC *dos_attr_query(SMBCCTX *context,
+                                     TALLOC_CTX *ctx,
+                                     const char *filename,
+                                     SMBCSRV *srv)
+{
+        time_t m_time = 0, a_time = 0, c_time = 0;
+        size_t size = 0;
+        uint16 mode = 0;
+	SMB_INO_T inode = 0;
+        DOS_ATTR_DESC *ret;
+    
+        ret = talloc(ctx, sizeof(DOS_ATTR_DESC));
+        if (!ret) {
+                errno = ENOMEM;
+                return NULL;
+        }
+
+        /* Obtain the DOS attributes */
+        if (!smbc_getatr(context, srv, filename, &mode, &size, 
+                         &c_time, &a_time, &m_time, &inode)) {
+        
+                errno = smbc_errno(context, &srv->cli);
+                DEBUG(5, ("dos_attr_query Failed to query old attributes\n"));
+                return NULL;
+        
+        }
+                
+        ret->mode = mode;
+        ret->size = size;
+        ret->a_time = a_time;
+        ret->c_time = c_time;
+        ret->m_time = m_time;
+        ret->inode = inode;
+
+        return ret;
+}
+
+
+/* parse a ascii version of a security descriptor */
+static void dos_attr_parse(SMBCCTX *context,
+                           DOS_ATTR_DESC *dad,
+                           SMBCSRV *srv,
+                           char *str)
+{
+	const char *p = str;
+	fstring tok;
+
+	while (next_token(&p, tok, "\t,\r\n", sizeof(tok))) {
+
+		if (StrnCaseCmp(tok, "MODE:", 5) == 0) {
+			dad->mode = strtol(tok+5, NULL, 16);
+			continue;
+		}
+
+		if (StrnCaseCmp(tok, "SIZE:", 5) == 0) {
+                        dad->size = strtoll(tok+5, NULL, 10);
+			continue;
+		}
+
+		if (StrnCaseCmp(tok, "A_TIME:", 7) == 0) {
+                        dad->a_time = strtoll(tok+7, NULL, 10);
+			continue;
+		}
+
+		if (StrnCaseCmp(tok, "C_TIME:", 7) == 0) {
+                        dad->c_time = strtoll(tok+7, NULL, 10);
+			continue;
+		}
+
+		if (StrnCaseCmp(tok, "M_TIME:", 7) == 0) {
+                        dad->m_time = strtoll(tok+7, NULL, 10);
+			continue;
+		}
+
+		if (StrnCaseCmp(tok, "INODE:", 6) == 0) {
+                        dad->inode = strtoll(tok+6, NULL, 10);
+			continue;
+		}
+	}
+}
+
+
 /***************************************************** 
 retrieve the acls for a file
 *******************************************************/
-static int cacl_get(TALLOC_CTX *ctx, struct cli_state *cli,
+static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                     struct cli_state *ipc_cli, POLICY_HND *pol,
                     char *filename, char *name, char *buf, int bufsize)
 {
@@ -3249,213 +3320,490 @@ static int cacl_get(TALLOC_CTX *ctx, struct cli_state *cli,
         int n = 0;
         int n_used;
         BOOL all;
+        BOOL all_nt;
+        BOOL all_dos;
+        BOOL some_nt;
+        BOOL some_dos;
         BOOL numeric = True;
         BOOL determine_size = (bufsize == 0);
 	int fnum = -1;
 	SEC_DESC *sd;
 	fstring sidstr;
         char *p;
+	time_t m_time = 0, a_time = 0, c_time = 0;
+	size_t size = 0;
+	uint16 mode = 0;
+	SMB_INO_T ino = 0;
+        struct cli_state *cli = &srv->cli;
 
-	fnum = cli_nt_create(cli, filename, CREATE_ACCESS_READ);
-
-	if (fnum == -1) {
-                DEBUG(5, ("cacl_get failed to open %s: %s\n",
-                          filename, cli_errstr(cli)));
-                errno = 0;
-		return -1;
-	}
-
-	sd = cli_query_secdesc(cli, fnum, ctx);
-
-	if (!sd) {
-                DEBUG(5, ("cacl_get Failed to query old descriptor\n"));
-                errno = 0;
-		return -1;
-	}
-
-	cli_close(cli, fnum);
-
-        all = (*name == '*');
+        all = (StrnCaseCmp(name, "system.*", 8) == 0);
+        all_nt = (StrnCaseCmp(name, "system.nt_sec_desc.*", 20) == 0);
+        all_dos = (StrnCaseCmp(name, "system.dos_attr.*", 17) == 0);
+        some_nt = (StrnCaseCmp(name, "system.nt_sec_desc.", 19) == 0);
+        some_dos = (StrnCaseCmp(name, "system.dos_attr.", 16) == 0);
         numeric = (* (name + strlen(name) - 1) != '+');
 
         n_used = 0;
 
-        if (all) {
-                if (determine_size) {
-                        p = talloc_asprintf(ctx,
-                                            "REVISION:%d", sd->revision);
-                        if (!p) {
-                                errno = ENOMEM;
-                                return -1;
-                        }
-                        n = strlen(p);
-                } else {
-                        n = snprintf(buf, bufsize,
-                                     "REVISION:%d", sd->revision);
+        /*
+         * If we are (possibly) talking to an NT or new system and some NT
+         * attributes have been requested...
+         */
+        if (ipc_cli && (all || some_nt)) {
+                /* Point to the portion after "system.nt_sec_desc." */
+                name += 19;     /* if (all) this will be invalid but unused */
+
+                /* ... then obtain any NT attributes which were requested */
+                fnum = cli_nt_create(cli, filename, CREATE_ACCESS_READ);
+
+                if (fnum == -1) {
+                        DEBUG(5, ("cacl_get failed to open %s: %s\n",
+                                  filename, cli_errstr(cli)));
+                        errno = 0;
+                        return -1;
                 }
-        } else if (StrCaseCmp(name, "revision") == 0) {
-                if (determine_size) {
-                        p = talloc_asprintf(ctx, "%d", sd->revision);
-                        if (!p) {
-                                errno = ENOMEM;
-                                return -1;
-                        }
-                        n = strlen(p);
-                } else {
-                        n = snprintf(buf, bufsize, "%d", sd->revision);
+
+                sd = cli_query_secdesc(cli, fnum, ctx);
+
+                if (!sd) {
+                        DEBUG(5,
+                              ("cacl_get Failed to query old descriptor\n"));
+                        errno = 0;
+                        return -1;
                 }
-        }
+
+                cli_close(cli, fnum);
+
+                if (all || all_nt) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx,
+                                                    "REVISION:%d",
+                                                    sd->revision);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize,
+                                             "REVISION:%d", sd->revision);
+                        }
+                } else if (StrCaseCmp(name, "revision") == 0) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx, "%d", sd->revision);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize, "%d", sd->revision);
+                        }
+                }
         
-        if (!determine_size && n > bufsize) {
-                errno = ERANGE;
-                return -1;
-        }
-        buf += n;
-        n_used += n;
-        bufsize -= n;
-
-	/* Get owner and group sid */
-
-	if (sd->owner_sid) {
-                convert_sid_to_string(ipc_cli, pol,
-                                      sidstr, numeric, sd->owner_sid);
-	} else {
-		fstrcpy(sidstr, "");
-	}
-
-        if (all) {
-                if (determine_size) {
-                        p = talloc_asprintf(ctx, ",OWNER:%s", sidstr);
-                        if (!p) {
-                                errno = ENOMEM;
-                                return -1;
-                        }
-                        n = strlen(p);
-                } else {
-                        n = snprintf(buf, bufsize, ",OWNER:%s", sidstr);
-                }
-        } else if (StrnCaseCmp(name, "owner", 5) == 0) {
-                if (determine_size) {
-                        p = talloc_asprintf(ctx, "%s", sidstr);
-                        if (!p) {
-                                errno = ENOMEM;
-                                return -1;
-                        }
-                        n = strlen(p);
-                } else {
-                        n = snprintf(buf, bufsize, "%s", sidstr);
-                }
-        }
-
-        if (!determine_size && n > bufsize) {
-                errno = ERANGE;
-                return -1;
-        }
-        buf += n;
-        n_used += n;
-        bufsize -= n;
-
-	if (sd->grp_sid) {
-		convert_sid_to_string(ipc_cli, pol,
-                                      sidstr, numeric, sd->grp_sid);
-	} else {
-		fstrcpy(sidstr, "");
-	}
-
-        if (all) {
-                if (determine_size) {
-                        p = talloc_asprintf(ctx, ",GROUP:%s", sidstr);
-                        if (!p) {
-                                errno = ENOMEM;
-                                return -1;
-                        }
-                        n = strlen(p);
-                } else {
-                        n = snprintf(buf, bufsize, ",GROUP:%s", sidstr);
-                }
-        } else if (StrnCaseCmp(name, "group", 5) == 0) {
-                if (determine_size) {
-                        p = talloc_asprintf(ctx, "%s", sidstr);
-                        if (!p) {
-                                errno = ENOMEM;
-                                return -1;
-                        }
-                        n = strlen(p);
-                } else {
-                        n = snprintf(buf, bufsize, "%s", sidstr);
-                }
-        }
-
-        if (!determine_size && n > bufsize) {
-                errno = ERANGE;
-                return -1;
-        }
-        buf += n;
-        n_used += n;
-        bufsize -= n;
-
-	/* Add aces to value buffer  */
-	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
-
-		SEC_ACE *ace = &sd->dacl->ace[i];
-		convert_sid_to_string(ipc_cli, pol,
-                                      sidstr, numeric, &ace->trustee);
-
-                if (all) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx, 
-                                                    ",ACL:%s:%d/%d/0x%08x", 
-                                                    sidstr,
-                                                    ace->type,
-                                                    ace->flags,
-                                                    ace->info.mask);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
-                                }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize,
-                                             ",ACL:%s:%d/%d/0x%08x", 
-                                             sidstr,
-                                             ace->type,
-                                             ace->flags,
-                                             ace->info.mask);
-                        }
-                } else if ((StrnCaseCmp(name, "acl", 3) == 0 &&
-                            StrCaseCmp(name + 3, sidstr) == 0) ||
-                           (StrnCaseCmp(name, "acl+", 4) == 0 &&
-                            StrCaseCmp(name + 4, sidstr) == 0)) {
-                        if (determine_size) {
-                                p = talloc_asprintf(ctx, 
-                                                    "%d/%d/0x%08x", 
-                                                    ace->type,
-                                                    ace->flags,
-                                                    ace->info.mask);
-                                if (!p) {
-                                        errno = ENOMEM;
-                                        return -1;
-                                }
-                                n = strlen(p);
-                        } else {
-                                n = snprintf(buf, bufsize,
-                                             "%d/%d/0x%08x", 
-                                             ace->type, ace->flags, ace->info.mask);
-                        }
-                }
-                if (n > bufsize) {
+                if (!determine_size && n > bufsize) {
                         errno = ERANGE;
                         return -1;
                 }
                 buf += n;
                 n_used += n;
                 bufsize -= n;
-	}
+
+                /* Get owner and group sid */
+
+                if (sd->owner_sid) {
+                        convert_sid_to_string(ipc_cli, pol,
+                                              sidstr, numeric, sd->owner_sid);
+                } else {
+                        fstrcpy(sidstr, "");
+                }
+
+                if (all || all_nt) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx, ",OWNER:%s", sidstr);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize,
+                                             ",OWNER:%s", sidstr);
+                        }
+                } else if (StrnCaseCmp(name, "owner", 5) == 0) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx, "%s", sidstr);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize, "%s", sidstr);
+                        }
+                }
+
+                if (!determine_size && n > bufsize) {
+                        errno = ERANGE;
+                        return -1;
+                }
+                buf += n;
+                n_used += n;
+                bufsize -= n;
+
+                if (sd->grp_sid) {
+                        convert_sid_to_string(ipc_cli, pol,
+                                              sidstr, numeric, sd->grp_sid);
+                } else {
+                        fstrcpy(sidstr, "");
+                }
+
+                if (all || all_nt) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx, ",GROUP:%s", sidstr);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize,
+                                             ",GROUP:%s", sidstr);
+                        }
+                } else if (StrnCaseCmp(name, "group", 5) == 0) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx, "%s", sidstr);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize, "%s", sidstr);
+                        }
+                }
+
+                if (!determine_size && n > bufsize) {
+                        errno = ERANGE;
+                        return -1;
+                }
+                buf += n;
+                n_used += n;
+                bufsize -= n;
+
+                /* Add aces to value buffer  */
+                for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
+
+                        SEC_ACE *ace = &sd->dacl->ace[i];
+                        convert_sid_to_string(ipc_cli, pol,
+                                              sidstr, numeric, &ace->trustee);
+
+                        if (all || all_nt) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx, 
+                                                            ",ACL:"
+                                                            "%s:%d/%d/0x%08x", 
+                                                            sidstr,
+                                                            ace->type,
+                                                            ace->flags,
+                                                            ace->info.mask);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     ",ACL:%s:%d/%d/0x%08x", 
+                                                     sidstr,
+                                                     ace->type,
+                                                     ace->flags,
+                                                     ace->info.mask);
+                                }
+                        } else if ((StrnCaseCmp(name, "acl", 3) == 0 &&
+                                    StrCaseCmp(name + 3, sidstr) == 0) ||
+                                   (StrnCaseCmp(name, "acl+", 4) == 0 &&
+                                    StrCaseCmp(name + 4, sidstr) == 0)) {
+                                if (determine_size) {
+                                        p = talloc_asprintf(ctx, 
+                                                            "%d/%d/0x%08x", 
+                                                            ace->type,
+                                                            ace->flags,
+                                                            ace->info.mask);
+                                        if (!p) {
+                                                errno = ENOMEM;
+                                                return -1;
+                                        }
+                                        n = strlen(p);
+                                } else {
+                                        n = snprintf(buf, bufsize,
+                                                     "%d/%d/0x%08x", 
+                                                     ace->type,
+                                                     ace->flags,
+                                                     ace->info.mask);
+                                }
+                        }
+                        if (n > bufsize) {
+                                errno = ERANGE;
+                                return -1;
+                        }
+                        buf += n;
+                        n_used += n;
+                        bufsize -= n;
+                }
+
+                /* Restore name pointer to its original value */
+                name -= 19;
+        }
+
+        if (all || some_dos) {
+                /* Point to the portion after "system.dos_attr." */
+                name += 16;     /* if (all) this will be invalid but unused */
+
+                /* Obtain the DOS attributes */
+                if (!smbc_getatr(context, srv, filename, &mode, &size, 
+                                 &c_time, &a_time, &m_time, &ino)) {
+                        
+                        errno = smbc_errno(context, &srv->cli);
+                        return -1;
+                        
+                }
+                
+                if (all || all_dos) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx,
+                                                    "%sMODE:0x%x",
+                                                    (ipc_cli &&
+                                                     (all || some_nt)
+                                                     ? ","
+                                                     : ""),
+                                                    mode);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize,
+                                             "%sMODE:0x%x",
+                                             (ipc_cli &&
+                                              (all || some_nt)
+                                              ? ","
+                                              : ""),
+                                             mode);
+                        }
+                } else if (StrCaseCmp(name, "mode") == 0) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx, "0x%x", mode);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize, "0x%x", mode);
+                        }
+                }
+        
+                if (!determine_size && n > bufsize) {
+                        errno = ERANGE;
+                        return -1;
+                }
+                buf += n;
+                n_used += n;
+                bufsize -= n;
+
+                if (all || all_dos) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx,
+                                                    ",SIZE:%llu",
+                                                    (unsigned long long) size);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize,
+                                             ",SIZE:%llu",
+                                             (unsigned long long) size);
+                        }
+                } else if (StrCaseCmp(name, "size") == 0) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx,
+                                                    "%llu",
+                                                    (unsigned long long) size);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize,
+                                             "%llu",
+                                             (unsigned long long) size);
+                        }
+                }
+        
+                if (!determine_size && n > bufsize) {
+                        errno = ERANGE;
+                        return -1;
+                }
+                buf += n;
+                n_used += n;
+                bufsize -= n;
+
+                if (all || all_dos) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx,
+                                                    ",C_TIME:%lu", c_time);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize,
+                                             ",C_TIME:%lu", c_time);
+                        }
+                } else if (StrCaseCmp(name, "c_time") == 0) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx, "%lu", c_time);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize, "%lu", c_time);
+                        }
+                }
+        
+                if (!determine_size && n > bufsize) {
+                        errno = ERANGE;
+                        return -1;
+                }
+                buf += n;
+                n_used += n;
+                bufsize -= n;
+
+                if (all || all_dos) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx,
+                                                    ",A_TIME:%lu", a_time);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize,
+                                             ",A_TIME:%lu", a_time);
+                        }
+                } else if (StrCaseCmp(name, "a_time") == 0) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx, "%lu", a_time);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize, "%lu", a_time);
+                        }
+                }
+        
+                if (!determine_size && n > bufsize) {
+                        errno = ERANGE;
+                        return -1;
+                }
+                buf += n;
+                n_used += n;
+                bufsize -= n;
+
+                if (all || all_dos) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx,
+                                                    ",M_TIME:%lu", m_time);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize,
+                                             ",M_TIME:%lu", m_time);
+                        }
+                } else if (StrCaseCmp(name, "m_time") == 0) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx, "%lu", m_time);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize, "%lu", m_time);
+                        }
+                }
+        
+                if (!determine_size && n > bufsize) {
+                        errno = ERANGE;
+                        return -1;
+                }
+                buf += n;
+                n_used += n;
+                bufsize -= n;
+
+                if (all || all_dos) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx,
+                                                    ",INODE:%llu",
+                                                    (unsigned long long) ino);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize,
+                                             ",INODE:%llu",
+                                             (unsigned long long) ino);
+                        }
+                } else if (StrCaseCmp(name, "inode") == 0) {
+                        if (determine_size) {
+                                p = talloc_asprintf(ctx,
+                                                    "%llu",
+                                                    (unsigned long long) ino);
+                                if (!p) {
+                                        errno = ENOMEM;
+                                        return -1;
+                                }
+                                n = strlen(p);
+                        } else {
+                                n = snprintf(buf, bufsize,
+                                             "%llu",
+                                             (unsigned long long) ino);
+                        }
+                }
+        
+                if (!determine_size && n > bufsize) {
+                        errno = ERANGE;
+                        return -1;
+                }
+                buf += n;
+                n_used += n;
+                bufsize -= n;
+
+                /* Restore name pointer to its original value */
+                name -= 16;
+        }
 
         if (n_used == 0) {
                 errno = ENOATTR;
                 return -1;
         }
+
 	return n_used;
 }
 
@@ -3492,8 +3840,7 @@ static int cacl_set(TALLOC_CTX *ctx, struct cli_state *cli,
                         the_acl = p + 1;
                 }
 
-                sd = sec_desc_parse(ctx, ipc_cli, pol,
-                                    numeric, (char *) the_acl);
+                sd = sec_desc_parse(ctx, ipc_cli, pol, numeric, the_acl);
 
                 if (!sd) {
                         errno = EINVAL;
@@ -3653,12 +4000,14 @@ int smbc_setxattr_ctx(SMBCCTX *context,
                       int flags)
 {
         int ret;
+        int ret2;
         SMBCSRV *srv;
         SMBCSRV *ipc_srv;
 	fstring server, share, user, password, workgroup;
 	pstring path;
         TALLOC_CTX *ctx;
         POLICY_HND pol;
+        DOS_ATTR_DESC *dad;
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -3675,8 +4024,7 @@ int smbc_setxattr_ctx(SMBCCTX *context,
 
 	}
   
-	DEBUG(4, ("smbc_setxattr(%s, %s, %.*s)\n",
-                  fname, name, (int) size, (char *) value));
+	DEBUG(4, ("smbc_setxattr(%s, %s, %.*s)\n", fname, name, (int) size, (const char*)value));
 
 	if (smbc_parse_path(context, fname,
                             server, sizeof(server),
@@ -3698,17 +4046,84 @@ int smbc_setxattr_ctx(SMBCCTX *context,
 		return -1;  /* errno set by smbc_server */
 	}
 
-        ipc_srv = smbc_attr_server(context, server, share,
-                                   workgroup, user, password,
-                                   &pol);
-        if (!ipc_srv) {
-                return -1;
+        if (! srv->no_nt_session) {
+                ipc_srv = smbc_attr_server(context, server, share,
+                                           workgroup, user, password,
+                                           &pol);
+                srv->no_nt_session = True;
+        } else {
+                ipc_srv = NULL;
         }
         
         ctx = talloc_init("smbc_setxattr");
         if (!ctx) {
                 errno = ENOMEM;
                 return -1;
+        }
+
+        /*
+         * Are they asking to set the entire set of known attributes?
+         */
+        if (StrCaseCmp(name, "system.*") == 0 ||
+            StrCaseCmp(name, "system.*+") == 0) {
+                /* Yup. */
+                char *namevalue =
+                        talloc_asprintf(ctx, "%s:%s", name+7, (const char *) value);
+                if (! namevalue) {
+                        errno = ENOMEM;
+                        ret = -1;
+                        return -1;
+                }
+
+                if (ipc_srv) {
+                        ret = cacl_set(ctx, &srv->cli,
+                                       &ipc_srv->cli, &pol, path,
+                                       namevalue,
+                                       (*namevalue == '*'
+                                        ? SMBC_XATTR_MODE_SET
+                                        : SMBC_XATTR_MODE_ADD),
+                                       flags);
+                } else {
+                        ret = 0;
+                }
+
+                /* get a DOS Attribute Descriptor with current attributes */
+                dad = dos_attr_query(context, ctx, path, srv);
+                if (dad) {
+                        /* Overwrite old with new, using what was provided */
+                        dos_attr_parse(context, dad, srv, namevalue);
+
+                        /* Set the new DOS attributes */
+#warning "Should try Set Path Info first, but it's not yet implemented"
+#if 0                           /* not yet implemented */
+                        if (! cli_setpathinfo(&srv->cli, path,
+                                              dad->c_time,
+                                              dad->a_time,
+                                              dad->m_time,
+                                              dad->mode)) {
+                                if (!cli_setatr(&srv->cli, path,
+                                                dad->mode, dad->m_time)) {
+                                        errno = smbc_errno(context, &srv->cli);
+                                }
+                        }
+#else
+                        if (!cli_setatr(&srv->cli, path,
+                                        dad->mode, dad->m_time)) {
+                                errno = smbc_errno(context, &srv->cli);
+                        }
+#endif
+                }
+
+                /* we only fail if both NT and DOS sets failed */
+                if (ret < 0 && ! dad) {
+                        ret = -1; /* in case dad was null */
+                }
+                else {
+                        ret = 0;
+                }
+
+                talloc_destroy(ctx);
+                return ret;
         }
 
         /*
@@ -3723,8 +4138,12 @@ int smbc_setxattr_ctx(SMBCCTX *context,
 
                 /* Yup. */
                 char *namevalue =
-                        talloc_asprintf(ctx, "%s:%s", name+19, (char *) value);
-                if (! namevalue) {
+                        talloc_asprintf(ctx, "%s:%s", name+19, (const char *) value);
+
+                if (! ipc_srv) {
+                        ret = -1; /* errno set by smbc_server() */
+                }
+                else if (! namevalue) {
                         errno = ENOMEM;
                         ret = -1;
                 } else {
@@ -3748,8 +4167,13 @@ int smbc_setxattr_ctx(SMBCCTX *context,
 
                 /* Yup. */
                 char *namevalue =
-                        talloc_asprintf(ctx, "%s:%s", name+19, (char *) value);
-                if (! namevalue) {
+                        talloc_asprintf(ctx, "%s:%s", name+19, (const char *) value);
+
+                if (! ipc_srv) {
+                        
+                        ret = -1; /* errno set by smbc_server() */
+                }
+                else if (! namevalue) {
                         errno = ENOMEM;
                         ret = -1;
                 } else {
@@ -3769,8 +4193,13 @@ int smbc_setxattr_ctx(SMBCCTX *context,
 
                 /* Yup. */
                 char *namevalue =
-                        talloc_asprintf(ctx, "%s:%s", name+19, (char *) value);
-                if (! namevalue) {
+                        talloc_asprintf(ctx, "%s:%s", name+19, (const char *) value);
+
+                if (! ipc_srv) {
+                        /* errno set by smbc_server() */
+                        ret = -1;
+                }
+                else if (! namevalue) {
                         errno = ENOMEM;
                         ret = -1;
                 } else {
@@ -3778,6 +4207,67 @@ int smbc_setxattr_ctx(SMBCCTX *context,
                                        &ipc_srv->cli, &pol, path,
                                        namevalue, SMBC_XATTR_MODE_CHOWN, 0);
                 }
+                talloc_destroy(ctx);
+                return ret;
+        }
+
+        /*
+         * Are they asking to set a DOS attribute?
+         */
+        if (StrCaseCmp(name, "system.dos_attr.*") == 0 ||
+            StrCaseCmp(name, "system.dos_attr.mode") == 0 ||
+            StrCaseCmp(name, "system.dos_attr.c_time") == 0 ||
+            StrCaseCmp(name, "system.dos_attr.a_time") == 0 ||
+            StrCaseCmp(name, "system.dos_attr.m_time") == 0) {
+
+                /* get a DOS Attribute Descriptor with current attributes */
+                dad = dos_attr_query(context, ctx, path, srv);
+                if (dad) {
+                        char *namevalue =
+                                talloc_asprintf(ctx, "%s:%s", name+16, (const char *) value);
+                        if (! namevalue) {
+                                errno = ENOMEM;
+                                ret = -1;
+                        } else {
+                                /* Overwrite old with provided new params */
+                                dos_attr_parse(context, dad, srv, namevalue);
+
+                                /* Set the new DOS attributes */
+#warning "Should try Set Path Info first, but it's not yet implemented"
+#if 0                           /* not yet implemented */
+                                ret2 = cli_setpathinfo(&srv->cli, path,
+                                                       dad->c_time,
+                                                       dad->a_time,
+                                                       dad->m_time,
+                                                       dad->mode);
+                                if (! ret2) {
+                                        ret2 = cli_setatr(&srv->cli, path,
+                                                          dad->mode,
+                                                          dad->m_time);
+                                        if (! ret2) {
+                                                errno = smbc_errno(context,
+                                                                   &srv->cli);
+                                        }
+                                }
+#else
+                                ret2 = cli_setatr(&srv->cli, path,
+                                                  dad->mode, dad->m_time);
+                                if (! ret2) {
+                                        errno = smbc_errno(context, &srv->cli);
+                                }
+#endif
+
+                                /* ret2 has True (success) / False (failure) */
+                                if (ret2) {
+                                        ret = 0;
+                                } else {
+                                        ret = -1;
+                                }
+                        }
+                } else {
+                        ret = -1;
+                }
+
                 talloc_destroy(ctx);
                 return ret;
         }
@@ -3801,6 +4291,7 @@ int smbc_getxattr_ctx(SMBCCTX *context,
         pstring path;
         TALLOC_CTX *ctx;
         POLICY_HND pol;
+
 
         if (!context || !context->internal ||
             !context->internal->_initialized) {
@@ -3839,11 +4330,15 @@ int smbc_getxattr_ctx(SMBCCTX *context,
                 return -1;  /* errno set by smbc_server */
         }
 
-        ipc_srv = smbc_attr_server(context, server, share,
-                                   workgroup, user, password,
-                                   &pol);
-        if (!ipc_srv) {
-                return -1;
+        if (! srv->no_nt_session) {
+                ipc_srv = smbc_attr_server(context, server, share,
+                                           workgroup, user, password,
+                                           &pol);
+                if (! ipc_srv) {
+                        srv->no_nt_session = True;
+                }
+        } else {
+                ipc_srv = NULL;
         }
         
         ctx = talloc_init("smbc:getxattr");
@@ -3853,7 +4348,9 @@ int smbc_getxattr_ctx(SMBCCTX *context,
         }
 
         /* Are they requesting a supported attribute? */
-        if (StrCaseCmp(name, "system.nt_sec_desc.*") == 0 ||
+        if (StrCaseCmp(name, "system.*") == 0 ||
+            StrCaseCmp(name, "system.*+") == 0 ||
+            StrCaseCmp(name, "system.nt_sec_desc.*") == 0 ||
             StrCaseCmp(name, "system.nt_sec_desc.*+") == 0 ||
             StrCaseCmp(name, "system.nt_sec_desc.revision") == 0 ||
             StrCaseCmp(name, "system.nt_sec_desc.owner") == 0 ||
@@ -3861,13 +4358,21 @@ int smbc_getxattr_ctx(SMBCCTX *context,
             StrCaseCmp(name, "system.nt_sec_desc.group") == 0 ||
             StrCaseCmp(name, "system.nt_sec_desc.group+") == 0 ||
             StrnCaseCmp(name, "system.nt_sec_desc.acl", 22) == 0 ||
-            StrnCaseCmp(name, "system.nt_sec_desc.acl+", 23) == 0) {
+            StrnCaseCmp(name, "system.nt_sec_desc.acl+", 23) == 0 ||
+            StrCaseCmp(name, "system.dos_attr.*") == 0 ||
+            StrCaseCmp(name, "system.dos_attr.mode") == 0 ||
+            StrCaseCmp(name, "system.dos_attr.size") == 0 ||
+            StrCaseCmp(name, "system.dos_attr.c_time") == 0 ||
+            StrCaseCmp(name, "system.dos_attr.a_time") == 0 ||
+            StrCaseCmp(name, "system.dos_attr.m_time") == 0 ||
+            StrCaseCmp(name, "system.dos_attr.inode") == 0) {
 
                 /* Yup. */
-                ret = cacl_get(ctx, &srv->cli,
-                               &ipc_srv->cli, &pol, 
-                               (char *) path, (char *) name + 19,
-                               (char *) value, size);
+                ret = cacl_get(context, ctx, srv,
+                               ipc_srv == NULL ? NULL : &ipc_srv->cli, 
+                               &pol,
+                               (char *) path, (char *) name,
+                               (const char *) value, size);
                 if (ret < 0 && errno == 0) {
                         errno = smbc_errno(context, &srv->cli);
                 }
@@ -3931,20 +4436,19 @@ int smbc_removexattr_ctx(SMBCCTX *context,
                 return -1;  /* errno set by smbc_server */
         }
 
-        ipc_srv = smbc_attr_server(context, server, share,
-                                   workgroup, user, password,
-                                   &pol);
-        if (!ipc_srv) {
-                return -1;
+        if (! srv->no_nt_session) {
+                ipc_srv = smbc_attr_server(context, server, share,
+                                           workgroup, user, password,
+                                           &pol);
+                srv->no_nt_session = True;
+        } else {
+                ipc_srv = NULL;
         }
         
-        ipc_srv = smbc_attr_server(context, server, share,
-                                   workgroup, user, password,
-                                   &pol);
-        if (!ipc_srv) {
-                return -1;
+        if (! ipc_srv) {
+                return -1; /* errno set by smbc_attr_server */
         }
-        
+
         ctx = talloc_init("smbc_removexattr");
         if (!ctx) {
                 errno = ENOMEM;
@@ -3996,10 +4500,12 @@ int smbc_listxattr_ctx(SMBCCTX *context,
 {
         /*
          * This isn't quite what listxattr() is supposed to do.  This returns
-         * the complete set of attributes, always, rather than only those
+         * the complete set of attribute names, always, rather than only those
          * attribute names which actually exist for a file.  Hmmm...
          */
         const char supported[] =
+                "system.*\0"
+                "system.*+\0"
                 "system.nt_sec_desc.revision\0"
                 "system.nt_sec_desc.owner\0"
                 "system.nt_sec_desc.owner+\0"
@@ -4009,6 +4515,11 @@ int smbc_listxattr_ctx(SMBCCTX *context,
                 "system.nt_sec_desc.acl+\0"
                 "system.nt_sec_desc.*\0"
                 "system.nt_sec_desc.*+\0"
+                "system.dos_attr.*\0"
+                "system.dos_attr.mode\0"
+                "system.dos_attr.c_time\0"
+                "system.dos_attr.a_time\0"
+                "system.dos_attr.m_time\0"
                 ;
 
         if (size == 0) {
@@ -4295,6 +4806,8 @@ SMBCCTX * smbc_new_context(void)
                 return NULL;
         }
 
+	context->flags = SMBCCTX_FLAG_CTXVER;
+
         ZERO_STRUCTP(context->internal);
 
         
@@ -4302,37 +4815,41 @@ SMBCCTX * smbc_new_context(void)
         context->debug            = 0;
         context->timeout          = 20000; /* 20 seconds */
 
-        context->open             = smbc_open_ctx;
-        context->creat            = smbc_creat_ctx;
-        context->read             = smbc_read_ctx;
-        context->write            = smbc_write_ctx;
-        context->close            = smbc_close_ctx;
-        context->unlink           = smbc_unlink_ctx;
-        context->rename           = smbc_rename_ctx;
-        context->lseek            = smbc_lseek_ctx;
-        context->stat             = smbc_stat_ctx;
-        context->fstat            = smbc_fstat_ctx;
-        context->opendir          = smbc_opendir_ctx;
-        context->closedir         = smbc_closedir_ctx;
-        context->readdir          = smbc_readdir_ctx;
-        context->getdents         = smbc_getdents_ctx;
-        context->mkdir            = smbc_mkdir_ctx;
-        context->rmdir            = smbc_rmdir_ctx;
-        context->telldir          = smbc_telldir_ctx;
-        context->lseekdir         = smbc_lseekdir_ctx;
-        context->fstatdir         = smbc_fstatdir_ctx;
-        context->chmod            = smbc_chmod_ctx;
-        context->utimes           = smbc_utimes_ctx;
-        context->setxattr         = smbc_setxattr_ctx;
-        context->getxattr         = smbc_getxattr_ctx;
-        context->removexattr      = smbc_removexattr_ctx;
-        context->listxattr        = smbc_listxattr_ctx;
-        context->open_print_job   = smbc_open_print_job_ctx;
-        context->print_file       = smbc_print_file_ctx;
-        context->list_print_jobs  = smbc_list_print_jobs_ctx;
-        context->unlink_print_job = smbc_unlink_print_job_ctx;
+	context->internal->options.browse_max_lmb_count      = 3;    /* # LMBs to query */
+	context->internal->options.urlencode_readdir_entries = False;/* backward compat */
+	context->internal->options.one_share_per_server      = False;/* backward compat */
 
-        context->callbacks.check_server_fn      = smbc_check_server;
+        context->open                              = smbc_open_ctx;
+        context->creat                             = smbc_creat_ctx;
+        context->read                              = smbc_read_ctx;
+        context->write                             = smbc_write_ctx;
+        context->close                             = smbc_close_ctx;
+        context->unlink                            = smbc_unlink_ctx;
+        context->rename                            = smbc_rename_ctx;
+        context->lseek                             = smbc_lseek_ctx;
+        context->stat                              = smbc_stat_ctx;
+        context->fstat                             = smbc_fstat_ctx;
+        context->opendir                           = smbc_opendir_ctx;
+        context->closedir                          = smbc_closedir_ctx;
+        context->readdir                           = smbc_readdir_ctx;
+        context->getdents                          = smbc_getdents_ctx;
+        context->mkdir                             = smbc_mkdir_ctx;
+        context->rmdir                             = smbc_rmdir_ctx;
+        context->telldir                           = smbc_telldir_ctx;
+        context->lseekdir                          = smbc_lseekdir_ctx;
+        context->fstatdir                          = smbc_fstatdir_ctx;
+        context->chmod                             = smbc_chmod_ctx;
+        context->utimes                            = smbc_utimes_ctx;
+        context->setxattr                          = smbc_setxattr_ctx;
+        context->getxattr                          = smbc_getxattr_ctx;
+        context->removexattr                       = smbc_removexattr_ctx;
+        context->listxattr                         = smbc_listxattr_ctx;
+        context->open_print_job                    = smbc_open_print_job_ctx;
+        context->print_file                        = smbc_print_file_ctx;
+        context->list_print_jobs                   = smbc_list_print_jobs_ctx;
+        context->unlink_print_job                  = smbc_unlink_print_job_ctx;
+
+        context->callbacks.check_server_fn         = smbc_check_server;
         context->callbacks.remove_unused_server_fn = smbc_remove_unused_server;
 
         smbc_default_cache_functions(context);
@@ -4547,4 +5064,12 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
         context->internal->_initialized = 1;
         
         return context;
+}
+
+
+/* Return the verion of samba, and thus libsmbclient */
+const char *
+smbc_version(void)
+{
+        return samba_version_string();
 }
