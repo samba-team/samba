@@ -457,7 +457,7 @@ BOOL get_domain_info(struct winbindd_domain *domain)
 
 /* Store a SID in a domain indexed by name in the cache. */
  
-static void store_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME_USE type)
+static void store_sid_by_name_in_cache(char *name, DOM_SID *sid, enum SID_NAME_USE type)
 {
     fstring domain_str;
     char *p;
@@ -480,7 +480,7 @@ static void store_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME
 
 /* Lookup a SID in a domain indexed by name in the cache. */
  
-static BOOL winbindd_lookup_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME_USE *type)
+static BOOL winbindd_lookup_sid_by_name_in_cache(char *name, DOM_SID *sid, enum SID_NAME_USE *type)
 {
 	fstring name_domain, name_user, key_name;
 	struct winbindd_sid sid_ret;
@@ -513,7 +513,7 @@ static BOOL winbindd_lookup_sid_by_name_in_cache(fstring name, DOM_SID *sid, enu
 
 /* Store a name in a domain indexed by SID in the cache. */
  
-static void store_name_by_sid_in_cache(DOM_SID *sid, fstring name, enum SID_NAME_USE type)
+static void store_name_by_sid_in_cache(DOM_SID *sid, char *name, enum SID_NAME_USE type)
 {
     fstring sid_str;
     uint32 rid;
@@ -626,6 +626,8 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
 
     sid_copy(sid, &sids[0]);
     *type = types[0];
+
+    safe_free(types);
 
     res = lsa_lookup_sids(&server_state.lsa_handle, 1, &sids,
 			  &names, &types, &num_names);
