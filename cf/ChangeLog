@@ -1,3 +1,8 @@
+2003-08-01  Love  <lha@stacken.kth.se>
+
+	* check-compile-et.m4: check if compile_et support ``error_table N
+	M'' also, don't be overly aggressivly reset CFLAGS
+	
 2003-07-22  Love  <lha@stacken.kth.se>
 
 	* pthreads.m4: pthread test
