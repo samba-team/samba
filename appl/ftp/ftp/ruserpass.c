@@ -106,169 +106,170 @@ guess_domain (char *hostname, size_t sz)
 int
 ruserpass(char *host, char **aname, char **apass, char **aacct)
 {
-	char *hdir, buf[BUFSIZ], *tmp;
-	int t, i, c, usedefault = 0;
-	struct stat stb;
+    char *hdir, buf[BUFSIZ], *tmp;
+    int t, i, c, usedefault = 0;
+    struct stat stb;
 
-	mydomain = guess_domain (myhostname, MaxHostNameLen);
+    mydomain = guess_domain (myhostname, MaxHostNameLen);
 
-	hdir = getenv("HOME");
-	if (hdir == NULL)
-		hdir = ".";
-	snprintf(buf, sizeof(buf), "%s/.netrc", hdir);
-	cfile = fopen(buf, "r");
-	if (cfile == NULL) {
-		if (errno != ENOENT)
-			warn("%s", buf);
-		return (0);
-	}
+    hdir = getenv("HOME");
+    if (hdir == NULL)
+	hdir = ".";
+    snprintf(buf, sizeof(buf), "%s/.netrc", hdir);
+    cfile = fopen(buf, "r");
+    if (cfile == NULL) {
+	if (errno != ENOENT)
+	    warn("%s", buf);
+	return (0);
+    }
 
 next:
-	while ((t = token())) switch(t) {
+    while ((t = token())) switch(t) {
 
-	case DEFAULT:
-		usedefault = 1;
-		/* FALL THROUGH */
+    case DEFAULT:
+	usedefault = 1;
+	/* FALL THROUGH */
 
-	case MACH:
-		if (!usedefault) {
-			if (token() != ID)
-				continue;
-			/*
-			 * Allow match either for user's input host name
-			 * or official hostname.  Also allow match of 
-			 * incompletely-specified host in local domain.
-			 */
-			if (strcasecmp(host, tokval) == 0)
-				goto match;
-			if (strcasecmp(hostname, tokval) == 0)
-				goto match;
-			if ((tmp = strchr(hostname, '.')) != NULL &&
-			    tmp++ &&
-			    strcasecmp(tmp, mydomain) == 0 &&
-			    strncasecmp(hostname, tokval, tmp-hostname) == 0 &&
-			    tokval[tmp - hostname] == '\0')
-				goto match;
-			if ((tmp = strchr(host, '.')) != NULL &&
-			    tmp++ &&
-			    strcasecmp(tmp, mydomain) == 0 &&
-			    strncasecmp(host, tokval, tmp - host) == 0 &&
-			    tokval[tmp - host] == '\0')
-				goto match;
-			continue;
-		}
-	match:
-		while ((t = token()) && t != MACH && t != DEFAULT) switch(t) {
-
-		case LOGIN:
-			if (token())
-				if (*aname == 0) { 
-					*aname = strdup(tokval);
-				} else {
-					if (strcmp(*aname, tokval))
-						goto next;
-				}
-			break;
-		case PASSWD:
-			if ((*aname == NULL || strcmp(*aname, "anonymous")) &&
-			    fstat(fileno(cfile), &stb) >= 0 &&
-			    (stb.st_mode & 077) != 0) {
-	warnx("Error: .netrc file is readable by others.");
-	warnx("Remove password or make file unreadable by others.");
-				goto bad;
-			}
-			if (token() && *apass == 0) {
-				*apass = strdup(tokval);
-			}
-			break;
-		case ACCOUNT:
-			if (fstat(fileno(cfile), &stb) >= 0
-			    && (stb.st_mode & 077) != 0) {
-	warnx("Error: .netrc file is readable by others.");
-	warnx("Remove account or make file unreadable by others.");
-				goto bad;
-			}
-			if (token() && *aacct == 0) {
-				*aacct = strdup(tokval);
-			}
-			break;
-		case MACDEF:
-			if (proxy) {
-				fclose(cfile);
-				return (0);
-			}
-			while ((c=getc(cfile)) != EOF && 
-			       (c == ' ' || c == '\t'));
-			if (c == EOF || c == '\n') {
-				printf("Missing macdef name argument.\n");
-				goto bad;
-			}
-			if (macnum == 16) {
-				printf("Limit of 16 macros have already been defined\n");
-				goto bad;
-			}
-			tmp = macros[macnum].mac_name;
-			*tmp++ = c;
-			for (i=0; i < 8 && (c=getc(cfile)) != EOF &&
-			    !isspace(c); ++i) {
-				*tmp++ = c;
-			}
-			if (c == EOF) {
-				printf("Macro definition missing null line terminator.\n");
-				goto bad;
-			}
-			*tmp = '\0';
-			if (c != '\n') {
-				while ((c=getc(cfile)) != EOF && c != '\n');
-			}
-			if (c == EOF) {
-				printf("Macro definition missing null line terminator.\n");
-				goto bad;
-			}
-			if (macnum == 0) {
-				macros[macnum].mac_start = macbuf;
-			}
-			else {
-				macros[macnum].mac_start = macros[macnum-1].mac_end + 1;
-			}
-			tmp = macros[macnum].mac_start;
-			while (tmp != macbuf + 4096) {
-				if ((c=getc(cfile)) == EOF) {
-				printf("Macro definition missing null line terminator.\n");
-					goto bad;
-				}
-				*tmp = c;
-				if (*tmp == '\n') {
-					if (*(tmp-1) == '\0') {
-					   macros[macnum++].mac_end = tmp - 1;
-					   break;
-					}
-					*tmp = '\0';
-				}
-				tmp++;
-			}
-			if (tmp == macbuf + 4096) {
-				printf("4K macro buffer exceeded\n");
-				goto bad;
-			}
-			break;
-		case PROT:
-		    token();
-		    if(sec_request_prot(tokval) < 0)
-			warnx("Unknown protection level \"%s\"", tokval);
-		    break;
-		default:
-			warnx("Unknown .netrc keyword %s", tokval);
-			break;
-		}
-		goto done;
+    case MACH:
+	if (!usedefault) {
+	    if (token() != ID)
+		continue;
+	    /*
+	     * Allow match either for user's input host name
+	     * or official hostname.  Also allow match of 
+	     * incompletely-specified host in local domain.
+	     */
+	    if (strcasecmp(host, tokval) == 0)
+		goto match;
+	    if (strcasecmp(hostname, tokval) == 0)
+		goto match;
+	    if ((tmp = strchr(hostname, '.')) != NULL &&
+		tmp++ &&
+		strcasecmp(tmp, mydomain) == 0 &&
+		strncasecmp(hostname, tokval, tmp-hostname) == 0 &&
+		tokval[tmp - hostname] == '\0')
+		goto match;
+	    if ((tmp = strchr(host, '.')) != NULL &&
+		tmp++ &&
+		strcasecmp(tmp, mydomain) == 0 &&
+		strncasecmp(host, tokval, tmp - host) == 0 &&
+		tokval[tmp - host] == '\0')
+		goto match;
+	    continue;
 	}
+    match:
+	while ((t = token()) && t != MACH && t != DEFAULT) switch(t) {
+
+	case LOGIN:
+	    if (token()) {
+		if (*aname == 0) { 
+		    *aname = strdup(tokval);
+		} else {
+		    if (strcmp(*aname, tokval))
+			goto next;
+		}
+	    }
+	    break;
+	case PASSWD:
+	    if ((*aname == NULL || strcmp(*aname, "anonymous")) &&
+		fstat(fileno(cfile), &stb) >= 0 &&
+		(stb.st_mode & 077) != 0) {
+		warnx("Error: .netrc file is readable by others.");
+		warnx("Remove password or make file unreadable by others.");
+		goto bad;
+	    }
+	    if (token() && *apass == 0) {
+		*apass = strdup(tokval);
+	    }
+	    break;
+	case ACCOUNT:
+	    if (fstat(fileno(cfile), &stb) >= 0
+		&& (stb.st_mode & 077) != 0) {
+		warnx("Error: .netrc file is readable by others.");
+		warnx("Remove account or make file unreadable by others.");
+		goto bad;
+	    }
+	    if (token() && *aacct == 0) {
+		*aacct = strdup(tokval);
+	    }
+	    break;
+	case MACDEF:
+	    if (proxy) {
+		fclose(cfile);
+		return (0);
+	    }
+	    while ((c=getc(cfile)) != EOF && 
+		   (c == ' ' || c == '\t'));
+	    if (c == EOF || c == '\n') {
+		printf("Missing macdef name argument.\n");
+		goto bad;
+	    }
+	    if (macnum == 16) {
+		printf("Limit of 16 macros have already been defined\n");
+		goto bad;
+	    }
+	    tmp = macros[macnum].mac_name;
+	    *tmp++ = c;
+	    for (i=0; i < 8 && (c=getc(cfile)) != EOF &&
+		     !isspace(c); ++i) {
+		*tmp++ = c;
+	    }
+	    if (c == EOF) {
+		printf("Macro definition missing null line terminator.\n");
+		goto bad;
+	    }
+	    *tmp = '\0';
+	    if (c != '\n') {
+		while ((c=getc(cfile)) != EOF && c != '\n');
+	    }
+	    if (c == EOF) {
+		printf("Macro definition missing null line terminator.\n");
+		goto bad;
+	    }
+	    if (macnum == 0) {
+		macros[macnum].mac_start = macbuf;
+	    }
+	    else {
+		macros[macnum].mac_start = macros[macnum-1].mac_end + 1;
+	    }
+	    tmp = macros[macnum].mac_start;
+	    while (tmp != macbuf + 4096) {
+		if ((c=getc(cfile)) == EOF) {
+		    printf("Macro definition missing null line terminator.\n");
+		    goto bad;
+		}
+		*tmp = c;
+		if (*tmp == '\n') {
+		    if (*(tmp-1) == '\0') {
+			macros[macnum++].mac_end = tmp - 1;
+			break;
+		    }
+		    *tmp = '\0';
+		}
+		tmp++;
+	    }
+	    if (tmp == macbuf + 4096) {
+		printf("4K macro buffer exceeded\n");
+		goto bad;
+	    }
+	    break;
+	case PROT:
+	    token();
+	    if(sec_request_prot(tokval) < 0)
+		warnx("Unknown protection level \"%s\"", tokval);
+	    break;
+	default:
+	    warnx("Unknown .netrc keyword %s", tokval);
+	    break;
+	}
+	goto done;
+    }
 done:
-	fclose(cfile);
-	return (0);
+    fclose(cfile);
+    return (0);
 bad:
-	fclose(cfile);
-	return (-1);
+    fclose(cfile);
+    return (-1);
 }
 
 static int
