@@ -354,6 +354,7 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 	/*
 	  fill in the transport methods
 	*/
+	(*p)->transport.transport = NCACN_NP;
 	(*p)->transport.private = NULL;
 	(*p)->transport.full_request = smb_full_request;
 	(*p)->transport.secondary_request = smb_secondary_request;
@@ -374,4 +375,18 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 	tree->reference_count++;
 
         return NT_STATUS_OK;
+}
+
+/*
+  return the SMB tree used for a dcerpc over SMB pipe
+*/
+struct cli_tree *dcerpc_smb_tree(struct dcerpc_pipe *p)
+{
+	struct smb_private *smb = p->transport.private;
+
+	if (p->transport.transport != NCACN_NP) {
+		return NULL;
+	}
+
+	return smb->tree;
 }

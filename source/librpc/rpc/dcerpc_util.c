@@ -578,6 +578,11 @@ NTSTATUS dcerpc_pipe_connect_b(struct dcerpc_pipe **p,
 		break;
 	}
 
+	/* remember the binding string for possible secondary connections */
+	if (NT_STATUS_IS_OK(status)) {
+		(*p)->binding_string = dcerpc_binding_string((*p)->mem_ctx, binding);
+	}
+
 	return status;
 }
 
@@ -612,4 +617,38 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **p,
 
 	talloc_destroy(mem_ctx);
 	return status;
+}
+
+
+/*
+  create a secondary dcerpc connection on SMB
+  the secondary connection will be on the same SMB connection, but
+  use a new fnum
+*/
+NTSTATUS dcerpc_secondary_smb(struct dcerpc_pipe *p, struct dcerpc_pipe **p2,
+			      const char *pipe_name,
+			      const char *pipe_uuid,
+			      uint32 pipe_version)
+{
+	NTSTATUS status;
+	struct cli_tree *tree;
+
+	tree = dcerpc_smb_tree(p);
+	if (!tree) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dcerpc_pipe_open_smb(p2, tree, pipe_name);
+	if (!NT_STATUS_IS_OK(status)) {
+                return status;
+        }
+	
+	(*p2)->flags = p->flags;
+
+	status = dcerpc_bind_auth_none(*p2, pipe_uuid, pipe_version);
+	if (!NT_STATUS_IS_OK(status)) {
+                return status;
+        }
+
+	return NT_STATUS_OK;
 }
