@@ -159,7 +159,7 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) $(CHARSE
 ######################################################################
 
 TDBBASE_OBJ = tdb/tdb.o tdb/spinlock.o
-TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o 
+TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o tdb/tdbback.o
 
 SMBLDAP_OBJ = @SMBLDAP@
 
@@ -613,7 +613,7 @@ WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
 
-TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
+TDBBACKUP_OBJ = tdb/tdbbackup.o tdb/tdbback.o $(TDBBASE_OBJ)
 
 NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ)
 
