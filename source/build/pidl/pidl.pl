@@ -17,6 +17,7 @@ use idl;
 use dump;
 use header;
 use server;
+use clientfns;
 use parser;
 use eparser;
 use validator;
@@ -31,6 +32,7 @@ my($opt_header) = 0;
 my($opt_template) = 0;
 my($opt_server) = 0;
 my($opt_parser) = 0;
+my($opt_clientfns) = 0;
 my($opt_eparser) = 0;
 my($opt_keep) = 0;
 my($opt_output);
@@ -84,6 +86,7 @@ GetOptions (
 	    'server' => \$opt_server,
 	    'template' => \$opt_template,
 	    'parser' => \$opt_parser,
+	    'clientfns' => \$opt_clientfns,
 	    'eparser' => \$opt_eparser,
 	    'diff' => \$opt_diff,
 	    'keep' => \$opt_keep
@@ -142,6 +145,11 @@ sub process_file($)
 		IdlParser::Parse($pidl, $parser);
 	}
 	
+	if ($opt_clientfns) {
+	        my($clientfns) = util::ChangeExtension($output, "_c.c");
+		util::FileSave($clientfns, IdlClientFns::Parse($pidl));
+	}
+
 	if ($opt_eparser) {
 		my($parser) = util::ChangeExtension($output, ".c");
 		util::FileSave($parser, IdlEParser::Parse($pidl));
