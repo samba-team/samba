@@ -2,8 +2,10 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1998
-   Modified by Jeremy Allison 1995.
+   Copyright (C) Andrew Tridgell 1992-2000
+   Modified by Jeremy Allison.
+   Copyright (C) Jeremy Allison 1995-2000.
+   Copyright (C) Luke Kennethc Casson Leighton 1996-2000.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

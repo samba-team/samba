@@ -3,8 +3,8 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1999,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,33 +31,6 @@
 extern int DEBUGLEVEL;
 extern struct pipe_id_info pipe_names[];
 extern pstring global_myname;
-
-static void NETSECcalc_ap( struct netsec_auth_struct *a, unsigned char *data, int len)
-{
-	unsigned char *hash = a->netsec_hash;
-    unsigned char index_i = hash[256];
-    unsigned char index_j = hash[257];
-    int ind;
-
-    for (ind = 0; ind < len; ind++)
-    {
-        unsigned char tc;
-        unsigned char t;
-
-        index_i++;
-        index_j += hash[index_i];
-
-        tc = hash[index_i];
-        hash[index_i] = hash[index_j];
-        hash[index_j] = tc;
-
-        t = hash[index_i] + hash[index_j];
-        data[ind] = data[ind] ^ hash[t];
-    }
-
-    hash[256] = index_i;
-    hash[257] = index_j;
-}
 
 /****************************************************************************
  decrypt data on an rpc pipe

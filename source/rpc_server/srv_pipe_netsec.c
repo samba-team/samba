@@ -3,8 +3,8 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe server routines
- *  Copyright (C) Andrew Tridgell              1992-1999
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
+ *  Copyright (C) Andrew Tridgell              1992-2000
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
