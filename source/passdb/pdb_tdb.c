@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-#ifdef WITH_TDBPWD
+#ifdef WITH_TDBSAM
 
 #define PDB_VERSION		"20010830"
 #define PASSDB_FILE_NAME	"/passdb.tdb"
@@ -817,4 +817,4 @@ BOOL pdb_add_sam_account (SAM_ACCOUNT *newpwd)
 #else
 	/* Do *NOT* make this function static. It breaks the compile on gcc. JRA */
 	void samtdb_dummy_function(void) { } /* stop some compilers complaining */
-#endif /* WITH_TDBPWD */
+#endif /* WITH_TDBSAM */
