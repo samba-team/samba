@@ -240,6 +240,9 @@ smb_np_struct *open_rpc_pipe_p(char *pipe_name,
 	for (p_it = Pipes; p_it; p_it = p_it->next)
 		DEBUG(5,("open pipes: name %s pnum=%x\n", p_it->name, p_it->pnum));  
 
+	/* Ensure the connection isn't idled whilst this pipe is open. */
+	conn->num_files_open++;
+
 	return chain_p;
 }
 
@@ -1055,7 +1058,9 @@ BOOL close_rpc_pipe_hnd(smb_np_struct *p)
 	ZERO_STRUCTP(p);
 
 	SAFE_FREE(p);
-	
+
+	conn->num_files_open--;
+
 	return True;
 }
 
