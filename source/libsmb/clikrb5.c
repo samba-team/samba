@@ -234,6 +234,42 @@ krb5_error_code get_kerberos_allowed_etypes(krb5_context context,
 }
 #endif
 
+static BOOL ads_cleanup_expired_creds(krb5_context context, 
+				      krb5_ccache  ccache,
+				      krb5_creds  *credsp)
+{
+	krb5_error_code retval;
+
+	DEBUG(3, ("Ticket in ccache[%s] expiration %s\n",
+		  krb5_cc_default_name(context),
+		  http_timestring(credsp->times.endtime)));
+
+	/* we will probably need new tickets if the current ones
+	   will expire within 10 seconds.
+	*/
+	if (credsp->times.endtime >= (time(NULL) + 10))
+		return False;
+
+	/* heimdal won't remove creds from a file ccache, and 
+	   perhaps we shouldn't anyway, since internally we 
+	   use memory ccaches, and a FILE one probably means that
+	   we're using creds obtained outside of our exectuable
+	*/
+	if (StrCaseCmp(krb5_cc_get_type(context, ccache), "FILE") == 0) {
+		DEBUG(5, ("We do not remove creds from a FILE ccache\n"));
+		return False;
+	}
+	
+	retval = krb5_cc_remove_cred(context, ccache, 0, credsp);
+	if (retval) {
+		DEBUG(1, ("krb5_cc_remove_cred failed, err %s\n",
+			  error_message(retval)));
+		/* If we have an error in this, we want to display it,
+		   but continue as though we deleted it */
+	}
+	return True;
+}
+
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
 */
@@ -249,7 +285,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	krb5_creds 		* credsp;
 	krb5_creds 		  creds;
 	krb5_data in_data;
-	BOOL have_creds = False;
+	BOOL creds_ready = False;
 	
 	retval = krb5_parse_name(context, principal, &server);
 	if (retval) {
@@ -271,7 +307,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		goto cleanup_creds;
 	}
 
-	while(!have_creds) {
+	while(!creds_ready) {
 		if ((retval = krb5_get_credentials(context, 0, ccache, 
 						   &creds, &credsp))) {
 			DEBUG(1,("krb5_get_credentials failed for %s (%s)\n",
@@ -287,21 +323,8 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 			krb5_set_real_time(context, t + time_offset + 1, 0);
 		}
 
-		/* cope with expired tickets */
-		if ((unsigned)credsp->times.endtime < time(NULL)) {
-			DEBUG(3,("Ticket (%s) in ccache (%s) has expired (%s - %d). Obtaining new ticket.\n", 
-				 principal, krb5_cc_default_name(context),
-				 http_timestring(
-					 (unsigned)credsp->times.endtime), 
-				 (unsigned)credsp->times.endtime));
-			if ((retval = krb5_cc_remove_cred(context, ccache, 0,
-							  credsp))) {
-				DEBUG(1,("krb5_cc_remove_cred failed for %s (%s)\n", 
-					 principal, error_message(retval)));
-			} 
-		} else {
-			have_creds = True;
-		}
+		if (!ads_cleanup_expired_creds(context, ccache, credsp))
+			creds_ready = True;
 	}
 
 	DEBUG(10,("Ticket (%s) in ccache (%s) is valid until: (%s - %d)\n",
