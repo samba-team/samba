@@ -404,7 +404,9 @@ typedef struct files_struct {
 	struct timeval open_time;
 	int share_mode;
 	uint32 desired_access;
+	BOOL pending_modtime_owner;
 	time_t pending_modtime;
+	time_t last_write_time;
 	int oplock_type;
 	int sent_oplock_break;
 	unsigned long file_id;
