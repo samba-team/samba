@@ -21,7 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
+#include "winbindd.h"
 #include "sids.h"
 
 /* Connect to a domain controller using get_any_dc_name() to discover 
