@@ -22,7 +22,6 @@
 
 static fstring password;
 static fstring username;
-static int max_protocol = PROTOCOL_NT1;
 static BOOL showall = False;
 static BOOL old_list = False;
 static const char *maskchars = "<>\"?*abc.";
@@ -130,7 +129,7 @@ static BOOL reg_match_one(struct smbcli_state *cli, const char *pattern, const c
 
 	if (strcmp(pattern,".") == 0) return False;
 
-	if (max_protocol <= PROTOCOL_LANMAN2) {
+	if (cli->transport->negotiate.protocol <= PROTOCOL_LANMAN1) {
 		return ms_fnmatch_lanman(pattern, file)==0;
 	}
 
@@ -208,7 +207,7 @@ static void get_real_name(struct smbcli_state *cli,
 			  pstring long_name, fstring short_name)
 {
 	const char *mask;
-	if (max_protocol <= PROTOCOL_LANMAN1) {
+	if (cli->transport->negotiate.protocol <= PROTOCOL_LANMAN1) {
 		mask = "\\masktest\\*.*";
 	} else {
 		mask = "\\masktest\\*";
@@ -410,7 +409,7 @@ static void usage(void)
 			verbose++;
 			break;
 		case 'M':
-			max_protocol = interpret_protocol(optarg, max_protocol);
+			lp_set_cmdline("max protocol", optarg);
 			break;
 		case 'U':
 			fstrcpy(username,optarg);
@@ -455,7 +454,7 @@ static void usage(void)
 	}
 
 	/* need to init seed after connect as clientgen uses random numbers */
-	DEBUG(0,("seed=%d\n", seed));
+	DEBUG(0,("seed=%d     format --- --- (server, correct)\n", seed));
 	srandom(seed);
 
 	test_mask(argc, argv, cli);

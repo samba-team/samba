@@ -86,7 +86,7 @@ NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport)
 	struct smbcli_request *req;
 	int protocol;
 
-	req = smb_negprot_send(transport, PROTOCOL_NT1);
+	req = smb_negprot_send(transport, lp_maxprotocol());
 	if (!req) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}

@@ -151,7 +151,8 @@ REQUIRED_SUBSYSTEMS = \
 # Start BINARY locktest
 [BINARY::locktest]
 OBJ_FILES = \
-		torture/locktest.o
+		torture/locktest.o \
+		torture/torture_util.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		CONFIG \

@@ -20,11 +20,6 @@
 
 #include "includes.h"
 
-static fstring password[2];
-static fstring username[2];
-static int got_user;
-static int got_pass;
-static BOOL use_kerberos;
 static int numops = 1000;
 static BOOL showall;
 static BOOL analyze;
@@ -48,6 +43,11 @@ static BOOL zero_zero;
 #define LOCK_TIMEOUT 0
 
 #define NASTY_POSIX_LOCK_HACK 0
+
+static struct {
+	char *username;
+	char *password;
+} servers[NSERVERS];
 
 enum lock_op {OP_LOCK, OP_UNLOCK, OP_REOPEN};
 
@@ -118,15 +118,12 @@ static struct smbcli_state *connect_one(char *share, int snum)
 
 	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), snum);
 
-	if (use_kerberos)
-		flags |= SMBCLI_FULL_CONNECTION_USE_KERBEROS;
-
 	do {
 		status = smbcli_full_connection(&c, myname,
 					     server, NULL,  
 					     share, "?????", 
-					     username[snum], lp_workgroup(), 
-					     password[snum], flags, NULL);
+					     servers[snum].username, lp_workgroup(), 
+					     servers[snum].password, flags, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			sleep(2);
 		}
@@ -437,7 +434,6 @@ static void usage(void)
   locktest //server1/share1 //server2/share2 [options..]\n\
   options:\n\
         -U user%%pass        (may be specified twice)\n\
-        -k               use kerberos\n\
         -s seed\n\
         -o numops\n\
         -u          hide unlock fails\n\
@@ -459,8 +455,7 @@ static void usage(void)
 {
 	char *share[NSERVERS];
 	int opt;
-	char *p;
-	int seed, server;
+	int seed, server, i;
 
 	setlinebuf(stdout);
 
@@ -484,35 +479,17 @@ static void usage(void)
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 
-	if (getenv("USER")) {
-		fstrcpy(username[0],getenv("USER"));
-		fstrcpy(username[1],getenv("USER"));
-	}
-
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:ho:aAW:OkR:B:M:EZW:")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:ho:aAW:OR:B:M:EZW:")) != EOF) {
 		switch (opt) {
-		case 'k':
-#ifdef HAVE_KRB5
-			use_kerberos = True;
-#else
-			d_printf("No kerberos support compiled in\n");
-			exit(1);
-#endif
-			break;
 		case 'U':
-			got_user = 1;
-			if (got_pass == 2) {
-				d_printf("Max of 2 usernames\n");
-				exit(1);
-			}
-			fstrcpy(username[got_pass],optarg);
-			p = strchr_m(username[got_pass],'%');
-			if (p) {
-				*p = 0;
-				fstrcpy(password[got_pass], p+1);
-				got_pass++;
+			i = servers[0].username?1:0;
+			if (!split_username(optarg, 
+					    &servers[i].username, 
+					    &servers[i].password)) {
+				printf("Must supply USER%%PASS\n");
+				return -1;
 			}
 			break;
 		case 'R':
@@ -560,7 +537,14 @@ static void usage(void)
 		}
 	}
 
-	if(use_kerberos && !got_user) got_pass = True;
+	if (!servers[0].username) {
+		usage();
+		return -1;
+	}
+	if (!servers[1].username) {
+		servers[1].username = servers[0].username;
+		servers[1].password = servers[0].password;
+	}
 
 	argc -= optind;
 	argv += optind;

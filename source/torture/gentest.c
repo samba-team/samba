@@ -2068,7 +2068,7 @@ static void usage(void)
 "Usage:\n\
   gentest2 //server1/share1 //server2/share2 [options..]\n\
   options:\n\
-        -U user%%pass        (must be specified twice)\n\
+        -U user%%pass        (can be specified twice)\n\
         -s seed\n\
         -o numops\n\
         -a            (show all ops)\n\
@@ -2179,9 +2179,13 @@ static void usage(void)
 		}
 	}
 
-	if (!servers[0].username || !servers[1].username) {
+	if (!servers[0].username) {
 		usage();
 		return -1;
+	}
+	if (!servers[1].username) {
+		servers[1].username = servers[0].username;
+		servers[1].password = servers[0].password;
 	}
 
 	printf("seed=%u\n", options.seed);
