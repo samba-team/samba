@@ -52,10 +52,6 @@ extern fstring global_sam_name;
 extern DOM_SID global_sam_sid;
 extern DOM_SID global_sid_S_1_5_20;
 
-extern rid_name builtin_alias_rids[];
-extern rid_name domain_user_rids[];
-extern rid_name domain_group_rids[];
-
 int make_dom_gids(DOMAIN_GRP *mem, int num_members, DOM_GID **ppgids)
 {
 	int count;
@@ -192,9 +188,9 @@ uint32 lookup_sid(DOM_SID *sid, char *name, uint8 *type)
  ********************************************************************/
 uint32 lookup_wk_group_sid(DOM_SID *sid, char *group_name, uint8 *type)
 {
-	int i = 0; 
 	uint32 rid;
 	DOM_SID tmp;
+	char	*mapped;
 
 	(*type) = SID_NAME_DOM_GRP;
 
@@ -208,20 +204,16 @@ uint32 lookup_wk_group_sid(DOM_SID *sid, char *group_name, uint8 *type)
 
 	DEBUG(5,("lookup_wk_group_sid: rid: %d", rid));
 
-	while (domain_group_rids[i].rid != rid && domain_group_rids[i].rid != 0)
+	/* look up the well-known domain group rids first */
+	mapped = lookup_wk_group_rid(rid);
+	if(mapped == NULL)
 	{
-		i++;
+		DEBUG(5,(" none mapped\n"));
+		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
 	}
-
-	if (domain_group_rids[i].rid != 0)
-	{
-		fstrcpy(group_name, domain_group_rids[i].name);
-		DEBUG(5,(" = %s\n", group_name));
-		return 0x0;
-	}
-
-	DEBUG(5,(" none mapped\n"));
-	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	fstrcpy(group_name, mapped);
+	DEBUG(5,(" = %s\n", group_name));
+	return 0x0;
 }
 
 /*******************************************************************
@@ -267,9 +259,9 @@ uint32 lookup_group_sid(DOM_SID *sid, char *group_name, uint8 *type)
  ********************************************************************/
 uint32 lookup_wk_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type)
 {
-	int i = 0; 
 	uint32 rid;
 	DOM_SID tmp;
+	char	*mapped;
 
 	(*type) = SID_NAME_ALIAS;
 
@@ -283,20 +275,16 @@ uint32 lookup_wk_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type)
 
 	DEBUG(5,("lookup_wk_alias_sid: rid: %d", rid));
 
-	while (builtin_alias_rids[i].rid != rid && builtin_alias_rids[i].rid != 0)
+	/* look up the well-known alias group rids first */
+	mapped = lookup_wk_alias_rid(rid);
+	if(mapped == NULL)
 	{
-		i++;
+		DEBUG(5,(" none mapped\n"));
+		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
 	}
-
-	if (builtin_alias_rids[i].rid != 0)
-	{
-		fstrcpy(alias_name, builtin_alias_rids[i].name);
-		DEBUG(5,(" = %s\n", alias_name));
-		return 0x0;
-	}
-
-	DEBUG(5,(" none mapped\n"));
-	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	fstrcpy(alias_name, mapped);
+	DEBUG(5,(" = %s\n", alias_name));
+	return 0x0;
 }
 
 /*******************************************************************
@@ -342,9 +330,9 @@ uint32 lookup_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type)
  ********************************************************************/
 uint32 lookup_wk_user_sid(DOM_SID *sid, char *user_name, uint8 *type)
 {
-	int i = 0;
 	uint32 rid;
 	DOM_SID tmp;
+	char	*mapped;
 
 	(*type) = SID_NAME_USER;
 
@@ -359,20 +347,15 @@ uint32 lookup_wk_user_sid(DOM_SID *sid, char *user_name, uint8 *type)
 	DEBUG(5,("lookup_wk_user_sid: rid: %d", rid));
 
 	/* look up the well-known domain user rids first */
-	while (domain_user_rids[i].rid != rid && domain_user_rids[i].rid != 0)
+	mapped = lookup_wk_user_rid(rid);
+	if(mapped == NULL)
 	{
-		i++;
+		DEBUG(5,(" none mapped\n"));
+		return 0xC0000000 | NT_STATUS_NONE_MAPPED;
 	}
-
-	if (domain_user_rids[i].rid != 0)
-	{
-		fstrcpy(user_name, domain_user_rids[i].name);
-		DEBUG(5,(" = %s\n", user_name));
-		return 0x0;
-	}
-
-	DEBUG(5,(" none mapped\n"));
-	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	fstrcpy(user_name, mapped);
+	DEBUG(5,(" = %s\n", user_name));
+	return 0x0;
 }
 
 /*******************************************************************

@@ -479,7 +479,6 @@ static ubi_slList *load_name_map(DOM_MAP_TYPE type)
 	char *aliasname_map_file = lp_aliasname_map();
 	char *ntusrname_map_file = lp_ntusrname_map();
 
-	SMB_STRUCT_STAT st;
 	FILE *fp;
 	char *s;
 	pstring buf;
@@ -533,32 +532,13 @@ static ubi_slList *load_name_map(DOM_MAP_TYPE type)
 		return map_list;
 	}
 
-	if (sys_stat(map_file, &st) != 0)
-	{
-		DEBUG(0, ("load_name_map: Unable to stat file %s. Error was %s\n",
-		           map_file, strerror(errno) ));
-		return map_list;
-	}
-
-	/*
-	 * Check if file has changed.
-	 */
-	if (st.st_mtime <= (*file_last_modified))
-	{
-		return map_list;
-	}
-
-	(*file_last_modified) = st.st_mtime;
-
 	/*
 	 * Load the file.
 	 */
 
-	fp = fopen(map_file,"r");
+	fp = open_file_if_modified(map_file, "r", file_last_modified);
 	if (!fp)
 	{
-		DEBUG(0,("load_name_map: can't open name map %s. Error was %s\n",
-		          map_file, strerror(errno)));
 		return map_list;
 	}
 

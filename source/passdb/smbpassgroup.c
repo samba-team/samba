@@ -105,6 +105,12 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 		 */
 		p = strncpyn(user_name, linebuf, sizeof(user_name), ':');
 
+		if (p == NULL)
+		{
+			DEBUG(0,("getsmbfilegrpent: no ':' separator found\n"));
+			continue;
+		}
+
 		/* Go past ':' */
 		p++;
 

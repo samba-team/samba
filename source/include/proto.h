@@ -497,6 +497,8 @@ SMB_BIG_UINT getfilepwpos(void *vp);
 BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok);
 int getfileline(void *vp, char *linebuf, int linebuf_size);
 char *fgets_slash(char *s2,int maxlen,FILE *f);
+BOOL file_modified(const char *filename, time_t *lastmodified);
+void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodified);
 
 /*The following definitions come from  lib/util_pwdb.c  */
 
@@ -518,6 +520,9 @@ void pwdb_set_last_set_time(char *p, int max_len, time_t t);
 void pwdb_sethexpwd(char *p, const char *pwd, uint16 acct_ctrl);
 BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl);
 BOOL pwdb_initialise(BOOL is_server);
+char *lookup_wk_alias_rid(uint32 rid);
+char *lookup_wk_user_rid(uint32 rid);
+char *lookup_wk_group_rid(uint32 rid);
 
 /*The following definitions come from  lib/util_sid.c  */
 
@@ -1239,6 +1244,7 @@ char *lp_username_map(void);
 char *lp_aliasname_map(void);
 char *lp_groupname_map(void);
 char *lp_builtinname_map(void);
+char *lp_builtinrid_file(void);
 char *lp_ntusrname_map(void);
 char *lp_logon_script(void);
 char *lp_logon_path(void);
