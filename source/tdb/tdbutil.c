@@ -36,14 +36,14 @@ int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval)
 }
 
 /* unlock a chain by string */
-int tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
+void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
 {
 	TDB_DATA key;
 
 	key.dptr = keyval;
 	key.dsize = strlen(keyval)+1;
 	
-	return tdb_chainunlock(tdb, key);
+	tdb_chainunlock(tdb, key);
 }
 
 /* lock a chain by string key */
