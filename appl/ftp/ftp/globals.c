@@ -46,8 +46,6 @@ char	*hostname;		/* name of host connected to */
 int	unix_server;		/* server is unix, can use binary for ascii */
 int	unix_proxy;		/* proxy is unix, can use binary for ascii */
 
-struct	servent *sp;		/* service spec for tcp/ftp */
-
 jmp_buf	toplevel;		/* non-local goto stuff for cmd scanner */
 
 char	line[200];		/* input line buffer */

@@ -90,8 +90,6 @@ extern char	*hostname;		/* name of host connected to */
 extern int	unix_server;		/* server is unix, can use binary for ascii */
 extern int	unix_proxy;		/* proxy is unix, can use binary for ascii */
 
-extern struct	servent *sp;		/* service spec for tcp/ftp */
-
 extern jmp_buf	toplevel;		/* non-local goto stuff for cmd scanner */
 
 extern char	line[200];		/* input line buffer */
