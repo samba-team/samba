@@ -59,7 +59,7 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 		tdb_flags |= TDB_NOMMAP;
 
 	tdb = tdb_open_ex(name, hash_size, tdb_flags, 
-				    open_flags, mode, tdb_log);
+				    open_flags, mode, tdb_log, NULL);
 	if (!tdb)
 		return NULL;
 
