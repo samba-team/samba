@@ -166,10 +166,10 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       send_mailslot(True, getdc,
                   outbuf,PTR_DIFF(q,outbuf),
-                  dgram->dest_name.name,
-                  dgram->dest_name.name_type,
-                  dgram->source_name.name,
-                  dgram->source_name.name_type,
+                  my_name,
+                  0x0,
+                    dgram->source_name.name,
+                    dgram->source_name.name_type,
                   p->ip, *iface_ip(p->ip), p->port);  
       return;
     }
@@ -258,10 +258,10 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       send_mailslot(True, getdc,
                    outbuf,PTR_DIFF(q,outbuf),
-                   dgram->dest_name.name,
-                   dgram->dest_name.name_type,
-                   dgram->source_name.name,
-                   dgram->source_name.name_type,
+                  my_name,
+                  0x0,
+                    dgram->source_name.name,
+                    dgram->source_name.name_type,
                    p->ip, *iface_ip(p->ip), p->port);  
       break;
     }
