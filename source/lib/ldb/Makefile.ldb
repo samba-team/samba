@@ -96,7 +96,11 @@ test-ldap:
 	@echo "STARTING LDAP BACKEND TEST"
 	tests/test-ldap.sh
 
-test: test-tdb test-ldap
+test-schema:
+	@echo "STARTING SCHEMA MODULE TEST"
+	tests/test-schema.sh
+
+test: test-tdb test-ldap test-schema
 
 gcov:
 	gcov -po ldb_ldap ldb_ldap/*.c 2| tee ldb_ldap.report.gcov
