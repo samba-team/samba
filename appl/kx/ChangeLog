@@ -1,3 +1,8 @@
+1999-05-22  Assar Westerlund  <assar@sics.se>
+
+	* kxd.c (recv_conn): fix syslog messages
+	(main): fix inetd_flag thinko
+
 1999-05-21  Assar Westerlund  <assar@sics.se>
 
 	* kx.c (main): don't byte-swap the argument to krb5_getportbyname
