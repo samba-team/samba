@@ -1882,14 +1882,13 @@ static BOOL can_delete(char *fname,connection_struct *conn, int dirtype)
 }
 
 /****************************************************************************
- Reply to a unlink
+ The guts of the unlink command, split out so it may be called by the NT SMB
+ code.
 ****************************************************************************/
 
-int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int unlink_internals(connection_struct *conn, char *inbuf,char *outbuf,
+					 int dirtype, char *name)
 {
-  int outsize = 0;
-  pstring name;
-  int dirtype;
   pstring directory;
   pstring mask;
   char *p;
@@ -1900,18 +1899,9 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL bad_path = False;
   BOOL rc = True;
   SMB_STRUCT_STAT sbuf;
-  START_PROFILE(SMBunlink);
 
   *directory = *mask = 0;
 
-  dirtype = SVAL(inbuf,smb_vwv0);
-  
-  pstrcpy(name,smb_buf(inbuf) + 1);
-   
-  RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
-
-  DEBUG(3,("reply_unlink : %s\n",name));
-   
   rc = unix_convert(name,conn,0,&bad_path,&sbuf);
 
   p = strrchr(name,'/');
@@ -1975,29 +1965,58 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 	    if (!can_delete(fname,conn,dirtype)) continue;
 	    if (!vfs_unlink(conn,fname)) count++;
-	    DEBUG(3,("reply_unlink : doing unlink on %s\n",fname));
+	    DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
 	  }
 	CloseDir(dirptr);
       }
   }
   
   if (count == 0) {
-    if (exists) {
-      END_PROFILE(SMBunlink);
+    if (exists)
       return(ERROR(ERRDOS,error));
-    } else
-    {
-      if((errno == ENOENT) && bad_path)
-      {
+    else {
+      if((errno == ENOENT) && bad_path) {
         unix_ERR_class = ERRDOS;
         unix_ERR_code = ERRbadpath;
       }
-      END_PROFILE(SMBunlink);
       return(UNIXERROR(ERRDOS,error));
     }
   }
   
+  return 0;
+}
+
+/****************************************************************************
+ Reply to a unlink
+****************************************************************************/
+
+int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+{
+  int outsize = 0;
+  pstring name;
+  int dirtype;
+  START_PROFILE(SMBunlink);
+
+  dirtype = SVAL(inbuf,smb_vwv0);
+
+  pstrcpy(name,smb_buf(inbuf) + 1);
+
+  RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+
+  DEBUG(3,("reply_unlink : %s\n",name));
+
+  outsize = unlink_internals(conn, inbuf, outbuf, dirtype, name);
+  if(outsize == 0) {
+
+    /*
+     * Win2k needs a changenotify request response before it will
+     * update after a rename..
+     */
+
+    process_pending_change_notify_queue((time_t)0);
+
   outsize = set_message(outbuf,0,0,True);
+  }
   
   END_PROFILE(SMBunlink);
   return(outsize);
@@ -3589,7 +3608,6 @@ static BOOL can_rename(char *fname,connection_struct *conn)
 
   if (conn->vfs_ops.lstat(conn,dos_to_unix(fname,False),&sbuf) != 0) return(False);
   if (!check_file_sharing(conn,fname,True)) return(False);
-
   return(True);
 }
 
@@ -3718,6 +3736,7 @@ int rename_internals(connection_struct *conn,
 			 * file with the same name so don't check for
 			 * vfs_file_exist().
 			 */
+
 			if(resolve_wildcards(directory,newname) &&
 			   can_rename(directory,conn) &&
 			   !conn->vfs_ops.rename(conn,zdirectory,
