@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -52,6 +52,7 @@ struct entry{
     char *valid_end;
     char *pw_end;
     char *flags;
+    char *etypes;
 };
 
 static char *
@@ -183,6 +184,23 @@ parse_hdbflags2int(char *str)
 }
 
 static void
+parse_etypes(char *str, unsigned **val, unsigned *len)
+{
+    unsigned v;
+	
+    *val = NULL;
+    *len = 0;
+    while(sscanf(str, "%u", &v) == 1) {
+	*val = realloc(*val, (*len+1) * sizeof(**val));
+	(*val)[(*len)++] = v;
+	str = strchr(str, ':');
+	if(str == NULL)
+	    break;
+	str++;
+    }
+}
+
+static void
 doit(char *filename, int merge)
 {
     krb5_error_code ret;
@@ -249,6 +267,9 @@ doit(char *filename, int merge)
 	e.flags = p;
 	p = skip_next(p);
 
+	e.etypes = p;
+	p = skip_next(p);
+
 	memset(&ent, 0, sizeof(ent));
 	ret = krb5_parse_name(context, e.principal, &ent.principal);
 	if(ret){
@@ -269,8 +290,14 @@ doit(char *filename, int merge)
 	ent.pw_end = parse_time_string(NULL, e.pw_end);
 	ent.max_life = parse_integer(NULL, e.max_life);
 	ent.max_renew = parse_integer(NULL, e.max_renew);
-	
 	ent.flags = parse_hdbflags2int(e.flags);
+	ALLOC(ent.etypes);
+	parse_etypes(e.etypes, &ent.etypes->val, &ent.etypes->len);
+	if(ent.etypes->len == 0) {
+	    free(ent.etypes);
+	    ent.etypes = NULL;
+	}
+
 	db->store(context, db, 1, &ent);
 	hdb_free_entry (context, &ent);
     }
