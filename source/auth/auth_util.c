@@ -343,7 +343,7 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 	SMBOWFencrypt((const unsigned char *)lm_pwd, chal, local_lm_response);
 	SMBOWFencrypt((const unsigned char *)nt_pwd, chal, local_nt_response);
 	
-	/* Password info parinoia */
+	/* Password info paranoia */
 	ZERO_STRUCT(lm_pwd);
 	ZERO_STRUCT(nt_pwd);
 	ZERO_STRUCT(key);
