@@ -183,10 +183,12 @@ void initiate_netbios_packet(uint16 *id,
 
 
 /****************************************************************************
-  reply to a netbios name packet 
+  reply to a netbios name packet.  see rfc1002.txt
   ****************************************************************************/
 void reply_netbios_packet(struct packet_struct *p1,int trn_id,
-				int rcode, int rcv_code, int opcode, BOOL recurse,
+				int rcode, int rcv_code, int opcode,
+                BOOL recursion_available,
+                BOOL recursion_desired,
 				struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
 				char *data,int len)
 {
@@ -196,6 +198,11 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
   char *packet_type = "unknown";
   
   p = *p1;
+
+  if (recursion_available && lp_wins_server())
+  {
+    DEBUG(0,("reply_netbios_packet: r_a not to be used when not a WINS server\n"));
+  }
 
   switch (rcv_code)
   {
@@ -240,8 +247,8 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
   nmb->header.opcode = opcode;
   nmb->header.response = True;
   nmb->header.nm_flags.bcast = False;
-  nmb->header.nm_flags.recursion_available = (lp_wins_support() ? True : False );
-  nmb->header.nm_flags.recursion_desired = (lp_wins_support() ? recurse : False );
+  nmb->header.nm_flags.recursion_available = recursion_available;
+  nmb->header.nm_flags.recursion_desired = recursion_desired;
   nmb->header.nm_flags.trunc = False;
   nmb->header.nm_flags.authoritative = True;
   

@@ -474,7 +474,9 @@ void initiate_netbios_packet(uint16 *id,
 			     int nb_flags,BOOL bcast,BOOL recurse,
 			     struct in_addr to_ip);
 void reply_netbios_packet(struct packet_struct *p1,int trn_id,
-				int rcode, int rcv_code, int opcode, BOOL recurse,
+				int rcode, int rcv_code, int opcode,
+                BOOL recursion_available,
+                BOOL recursion_desired,
 				struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
 				char *data,int len);
 void queue_packet(struct packet_struct *packet);
@@ -627,6 +629,8 @@ int get_printqueue(int snum,int cnum,print_queue_struct **queue,
 		   print_status_struct *status);
 void del_printqueue(int cnum,int snum,int jobid);
 void status_printjob(int cnum,int snum,int jobid,int status);
+int printjob_encode(int snum, int job);
+void printjob_decode(int jobid, int *snum, int *job);
 
 /*The following definitions come from  quotas.c  */
 
