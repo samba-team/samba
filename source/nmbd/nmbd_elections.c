@@ -34,7 +34,7 @@ static void send_election_dgram(struct subnet_record *subrec, const char *workgr
                                 uint32 criterion, int timeup,const char *server_name)
 {
 	pstring outbuf;
-	fstring srv_name;
+	unstring srv_name;
 	char *p;
 
 	DEBUG(2,("send_election_dgram: Sending election packet for workgroup %s on subnet %s\n",
@@ -49,7 +49,7 @@ static void send_election_dgram(struct subnet_record *subrec, const char *workgr
 	SIVAL(p,1,criterion);
 	SIVAL(p,5,timeup*1000); /* ms - Despite what the spec says. */
 	p += 13;
-	fstrcpy(srv_name, server_name);
+	unstrcpy(srv_name, server_name);
 	strupper_m(srv_name);
 	/* The following call does UNIX -> DOS charset conversion. */
 	pstrcpy_base(p, srv_name, outbuf);
@@ -70,7 +70,7 @@ static void check_for_master_browser_success(struct subnet_record *subrec,
                                  struct nmb_name *answer_name,
                                  struct in_addr answer_ip, struct res_rec *rrec)
 {
-	fstring aname;
+	unstring aname;
 	pull_ascii_nstring(aname, sizeof(aname), answer_name->name);
 	DEBUG(3,("check_for_master_browser_success: Local master browser for workgroup %s exists at \
 IP %s (just checking).\n", aname, inet_ntoa(answer_ip) ));
@@ -85,7 +85,7 @@ static void check_for_master_browser_fail( struct subnet_record *subrec,
                                            struct nmb_name *question_name,
                                            int fail_code)
 {
-	fstring workgroup_name;
+	unstring workgroup_name;
 	struct work_record *work;
 
 	pull_ascii_nstring(workgroup_name,sizeof(workgroup_name),question_name->name);
@@ -263,9 +263,9 @@ void process_election(struct subnet_record *subrec, struct packet_struct *p, cha
 	int version = CVAL(buf,0);
 	uint32 criterion = IVAL(buf,1);
 	int timeup = IVAL(buf,5)/1000;
-	fstring server_name;
+	unstring server_name;
 	struct work_record *work;
-	fstring workgroup_name;
+	unstring workgroup_name;
 
 	pull_ascii_nstring(server_name, sizeof(server_name), buf+13);
 	pull_ascii_nstring(workgroup_name, sizeof(workgroup_name), dgram->dest_name.name);

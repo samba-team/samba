@@ -61,13 +61,13 @@ static struct work_record *create_workgroup(const char *name, int ttl)
         errno = 0;
         push_ascii_nstring(nname, name);
         if (errno == E2BIG) {
-        	fstring tname;
+        	unstring tname;
                 pull_ascii_nstring(tname, sizeof(tname), nname);
-		fstrcpy(work->work_group,tname);
+		unstrcpy(work->work_group,tname);
                 DEBUG(0,("create_workgroup: workgroup name %s is too long. Truncating to %s\n",
 			name, tname));
         } else {
-		fstrcpy(work->work_group,name);
+		unstrcpy(work->work_group,name);
         }
 	work->serverlist = NULL;
   
