@@ -192,7 +192,6 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	int s;
 	static BOOL silent_mode = False;
 	int ret = 0;
-	int opt;
 	poptContext pc;
 	static const char *term_code = "";
 	static char *new_local_machine = NULL;
