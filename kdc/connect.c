@@ -98,7 +98,7 @@ add_port_string (int family, const char *port_str, const char *protocol)
 	if (end == port_str)
 	    return;
     }
-    return add_port (family, port, protocol);
+    add_port (family, port, protocol);
 }
 
 static void
