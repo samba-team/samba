@@ -16,6 +16,8 @@ pfrom: pfrom.in
 
 man_MANS = push.8
 
+CLEANFILES = pfrom
+
 EXTRA_DIST = pfrom.in $(man_MANS)
 
 LDADD = $(LIB_krb5) \
