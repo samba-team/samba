@@ -1302,7 +1302,7 @@ BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
 BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
-BOOL do_reg_unk_b(struct cli_state *cli, POLICY_HND *hnd);
+BOOL do_reg_flush_key(struct cli_state *cli, POLICY_HND *hnd);
 BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
 				char *class, uint32 *class_len,
 				uint32 *num_subkeys, uint32 *max_subkeylen,
@@ -1616,9 +1616,9 @@ void make_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
 				uint16 unknown_0, uint32 level);
 void reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int depth);
 void reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int depth);
-void make_reg_q_unk_b(REG_Q_UNK_B *q_u, POLICY_HND *pol);
-void reg_io_q_unk_b(char *desc,  REG_Q_UNK_B *r_q, prs_struct *ps, int depth);
-void reg_io_r_unk_b(char *desc,  REG_R_UNK_B *r_r, prs_struct *ps, int depth);
+void make_reg_q_flush_key(REG_Q_FLUSH_KEY *q_u, POLICY_HND *pol);
+void reg_io_q_flush_key(char *desc,  REG_Q_FLUSH_KEY *r_q, prs_struct *ps, int depth);
+void reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int depth);
 void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 				char *name, char *class,
 				SEC_INFO *sam_access);

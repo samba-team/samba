@@ -82,7 +82,7 @@ void reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int d
 /*******************************************************************
 creates a structure.
 ********************************************************************/
-void make_reg_q_unk_b(REG_Q_UNK_B *q_u, POLICY_HND *pol)
+void make_reg_q_flush_key(REG_Q_FLUSH_KEY *q_u, POLICY_HND *pol)
 {
 	memcpy(&(q_u->pol), pol, sizeof(q_u->pol));
 }
@@ -90,11 +90,11 @@ void make_reg_q_unk_b(REG_Q_UNK_B *q_u, POLICY_HND *pol)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_q_unk_b(char *desc,  REG_Q_UNK_B *r_q, prs_struct *ps, int depth)
+void reg_io_q_flush_key(char *desc,  REG_Q_FLUSH_KEY *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL) return;
 
-	prs_debug(ps, depth, desc, "reg_io_q_unk_b");
+	prs_debug(ps, depth, desc, "reg_io_q_flush_key");
 	depth++;
 
 	prs_align(ps);
@@ -106,11 +106,11 @@ void reg_io_q_unk_b(char *desc,  REG_Q_UNK_B *r_q, prs_struct *ps, int depth)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void reg_io_r_unk_b(char *desc,  REG_R_UNK_B *r_r, prs_struct *ps, int depth)
+void reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL) return;
 
-	prs_debug(ps, depth, desc, "reg_io_r_unk_b");
+	prs_debug(ps, depth, desc, "reg_io_r_flush_key");
 	depth++;
 
 	prs_align(ps);
