@@ -329,14 +329,15 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 	     if (connect (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 		 err(1, "connect(%s)", host);
 	     {
-		 int d;
+		 int d = 0;
 		 char *s;
 
 		 s = getenv ("DISPLAY");
-		 if (s == NULL || (s = strchr(s, ':')) == NULL)
-		     d = 0;
-		 else
-		     d = atoi (s);
+		 if (s != NULL) {
+		     s = strchr (s, ':');
+		     if (s != NULL)
+			 d = atoi (s + 1);
+		 }
 
 		 xserver = connect_local_xsocket (d);
 		 if (xserver < 0)
