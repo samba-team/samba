@@ -26,11 +26,8 @@
 
 struct DsPrivate {
 	struct policy_handle bind_handle;
-	struct GUID domain_guid;
-	struct GUID site_guid;
-	struct GUID computer_guid;
-	struct GUID server_guid;
-	struct GUID ntds_guid;
+	const char *domain_guid_str;
+	struct drsuapi_DsGetDCInfo2 dcinfo;
 };
 
 static BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
@@ -110,6 +107,54 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	dns_domain = r.out.ctr.ctr1->array[0].dns_domain_name;
 	nt4_domain = r.out.ctr.ctr1->array[0].result_name;
 
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_GUID;
+
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
+	priv->domain_guid_str = r.out.ctr.ctr1->array[0].result_name;
+
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
+	names[0].str = priv->domain_guid_str;
+
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = nt4_domain;
@@ -138,7 +183,7 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
-	names[0].str = talloc_asprintf(mem_ctx, "%s%s$", nt4_domain, dcerpc_server_name(p));
+	names[0].str = talloc_asprintf(mem_ctx, "%s%s$", nt4_domain, priv->dcinfo.netbios_name);
 
 	printf("testing DsCrackNames with name '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
@@ -276,7 +321,7 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
-	names[0].str = GUID_string2(mem_ctx, &priv->site_guid);
+	names[0].str = GUID_string2(mem_ctx, &priv->dcinfo.site_guid);
 
 	printf("testing DsCrackNames with Site GUID '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
@@ -298,7 +343,8 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	names[0].str = GUID_string2(mem_ctx, &priv->computer_guid);
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
+	names[0].str = GUID_string2(mem_ctx, &priv->dcinfo.computer_guid);
 
 	printf("testing DsCrackNames with Computer GUID '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
@@ -320,7 +366,7 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	names[0].str = GUID_string2(mem_ctx, &priv->server_guid);
+	names[0].str = GUID_string2(mem_ctx, &priv->dcinfo.server_guid);
 
 	printf("testing DsCrackNames with Server GUID '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
@@ -342,7 +388,7 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	names[0].str = GUID_string2(mem_ctx, &priv->ntds_guid);
+	names[0].str = GUID_string2(mem_ctx, &priv->dcinfo.ntds_guid);
 
 	printf("testing DsCrackNames with NTDS GUID '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
@@ -422,10 +468,7 @@ static BOOL test_DsGetDCInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	} else {
 		if (r.out.ctr.ctr2.count > 0) {
-			priv->site_guid		= r.out.ctr.ctr2.array[0].site_guid;
-			priv->computer_guid	= r.out.ctr.ctr2.array[0].computer_guid;
-			priv->server_guid	= r.out.ctr.ctr2.array[0].server_guid;
-			priv->ntds_guid		= r.out.ctr.ctr2.array[0].ntds_guid;
+			priv->dcinfo	= r.out.ctr.ctr2.array[0];
 		}
 	}
 
@@ -548,6 +591,8 @@ BOOL torture_rpc_drsuapi(void)
 
 	mem_ctx = talloc_init("torture_rpc_drsuapi");
 
+	ZERO_STRUCT(priv);
+
 	if (!test_DsBind(p, mem_ctx, &priv)) {
 		ret = False;
 	}
@@ -564,11 +609,6 @@ BOOL torture_rpc_drsuapi(void)
 		ret = False;
 	}
 
-#if 0
-	if (!test_scan(p, mem_ctx)) {
-		ret = False;
-	}
-#endif
 	talloc_destroy(mem_ctx);
 
         torture_rpc_close(p);
