@@ -81,11 +81,11 @@ NTSTATUS _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u,
 
 NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTRL2 *r_u)
 {
-    uint32 flags = 0x0;
-    uint32 pdc_connection_status = 0x0;
-    uint32 logon_attempts = 0x0;
-    uint32 tc_status = ERROR_NO_LOGON_SERVERS;
-    char *trusted_domain = "test_domain";
+	uint32 flags = 0x0;
+	uint32 pdc_connection_status = 0x0;
+	uint32 logon_attempts = 0x0;
+	uint32 tc_status = ERROR_NO_LOGON_SERVERS;
+	char *trusted_domain = "test_domain";
 
         DEBUG(0, ("*** net long ctrl2 %d, %d, %d\n",
                   q_u->function_code, q_u->query_level, q_u->switch_value));
