@@ -19,6 +19,7 @@ my $netbiosname;
 my $dnsname;
 my $basedn;
 my $defaultsite = "Default-First-Site-Name";
+my $joinpass = randpass();
 
 # return the current NTTIME as an integer
 sub nttime()
@@ -139,6 +140,10 @@ sub substitute($)
 
 	if ($var eq "RANDPASS") {
 	    return randpass();
+	}
+
+	if ($var eq "JOINPASS") {
+	    return $joinpass;
 	}
 
 	if ($var eq "NTTIME") {
