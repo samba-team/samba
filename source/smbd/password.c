@@ -1047,6 +1047,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   /* extract relevant info */
   strcpy(this_user,pass->pw_name);  
   strcpy(this_salt,pass->pw_passwd);
+  this_salt[2] = 0;
   strcpy(this_crypted,pass->pw_passwd);
  
   if (!*this_crypted) {
