@@ -35,7 +35,7 @@ LIBKAFS = @KRB_KAFS_LIB@
 LIBKRB	= -L$(LIBTOP)/krb -lkrb
 LIBDES	= -L$(LIBTOP)/des -ldes
 LIBOTP  = -L$(LIBTOP)/otp -lotp
-LIBROKEN= $(LIBTOP)/roken/libroken.a
+LIBROKEN= -L$(LIBTOP)/roken -lroken
 
 PROGS = ftpd
 
