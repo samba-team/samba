@@ -1,8 +1,8 @@
 !==
 !== Application_Serving.txt for Samba release 1.9.18p3 19 Feb 1998
 !==
-January 7, 1997
-Updated:	June 27, 1997
+Contributed:	January 7, 1997
+Updated:	March 24, 1998
 Contributor:	John H Terpstra <samba-bugs@samba.anu.edu.au>
 		Copyright (C) 1997 - John H Terpstra
 Status:		Current
@@ -51,3 +51,9 @@ Solution:
 workstation as follows:-
 	\\"Server_Name"\MSOP95\msoffice\setup
 
+MS Office Sharing - Please note:
+================================
+
+Workgroup Templates should be stored on an ordinary writable or read-only share
+but USER templates MUST be stored on a writable share _OR_ on the users' local
+machine.
