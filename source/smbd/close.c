@@ -203,7 +203,7 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
 
 	unlock_share_entry_fsp(fsp);
 
-	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+	if(fsp->oplock_type)
 		release_file_oplock(fsp);
 
 	locking_close_file(fsp);
