@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -287,9 +287,9 @@ void
 krb5_init_ets(krb5_context context)
 {
     if(context->et_list == NULL){
-	initialize_krb5_error_table_r(&context->et_list);
-	initialize_asn1_error_table_r(&context->et_list);
-	initialize_heim_error_table_r(&context->et_list);
+	krb5_add_et_list(context, initialize_krb5_error_table_r);
+	krb5_add_et_list(context, initialize_asn1_error_table_r);
+	krb5_add_et_list(context, initialize_heim_error_table_r);
     }
 }
 
