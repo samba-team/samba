@@ -137,7 +137,7 @@ static struct hostent*
 roken_gethostby(const char *hostname)
 {
     int s;
-    struct sockaddr_in sin;
+    struct sockaddr_in addr;
     char *request;
     char buf[1024];
     int offset = 0;
@@ -146,7 +146,7 @@ roken_gethostby(const char *hostname)
     
     if(dns_addr.sin_family == 0)
 	return NULL; /* no configured host */
-    sin = dns_addr;
+    addr = dns_addr;
     asprintf(&request, "GET %s?%s HTTP/1.0\r\n\r\n", dns_req, hostname);
     if(request == NULL)
 	return NULL;
@@ -155,7 +155,7 @@ roken_gethostby(const char *hostname)
 	free(request);
 	return NULL;
     }
-    if(connect(s, (struct sockaddr*)&sin, sizeof(sin)) < 0) {
+    if(connect(s, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
 	close(s);
 	free(request);
 	return NULL;
