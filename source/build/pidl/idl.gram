@@ -25,7 +25,8 @@ interface: 'interface' <commit> identifier '{' definition(s?) '}'
           }}
           | <error?>
 
-definition : typedef { $item[1] }
+definition : cpp_prefix
+             | typedef { $item[1] }
              | function { $item[1] }
 
 typedef : 'typedef' <commit> type identifier array_len(?) ';' 
