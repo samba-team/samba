@@ -97,26 +97,25 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname, BOOL allow_w
 				d--;
 			}
 			s += 3;
-		} else if ((s[0] == '.') && (IS_DIRECTORY_SEP(s[1]) || (s[1] == '\0'))) {
-
+		} else if ((s[0] == '.') && (s[1] == '\0')) {
+			if (s == srcname) {
+				ret = NT_STATUS_OBJECT_NAME_INVALID;
+				break;
+			}
+			*d++ = *s++;
+		} else if ((s[0] == '.') && IS_DIRECTORY_SEP(s[1])) {
 			/*
 			 * No mb char starts with '.' so we're safe checking the directory separator here.
 			 */
 
-			/* "./" or ".\\" fails with a different error depending on where it is... */
+			/* "./" or ".\\" fails with a different error depending on what is after it... */
 
-			if (s == srcname) {
+			if (s[2] == '\0') {
 				ret = NT_STATUS_OBJECT_NAME_INVALID;
-				break;
 			} else {
-				if (s[1] != '\0' && s[2] == '\0') {
-					ret = NT_STATUS_INVALID_PARAMETER;
-					break;
-				}
 				ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-				break;
 			}
-			s++;
+			break;
 		} else {
 			if (!(*s & 0x80)) {
 				if (allow_wcard_names) {
@@ -521,7 +520,6 @@ int reply_ioctl(connection_struct *conn,
 int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
 	int outsize = 0;
-	int mode;
 	pstring name;
 	BOOL ok = False;
 	BOOL bad_path = False;
@@ -543,8 +541,6 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		END_PROFILE(SMBchkpth);
 		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	}
-
-	mode = SVAL(inbuf,smb_vwv0);
 
 	if (check_name(name,conn)) {
 		if (VALID_STAT(sbuf) || SMB_VFS_STAT(conn,name,&sbuf) == 0)
@@ -578,8 +574,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	}
 
 	outsize = set_message(outbuf,0,0,True);
-
-	DEBUG(3,("chkpth %s mode=%d\n", name, mode));
+	DEBUG(3,("chkpth %s mode=%d\n", name, (int)SVAL(inbuf,smb_vwv0)));
 
 	END_PROFILE(SMBchkpth);
 	return(outsize);
