@@ -1,3 +1,13 @@
+2003-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_encrypt.3: document:
+	krb5_crypto_getconfoundersize, krb5_crypto_getblocksize
+	krb5_crypto_getenctype, krb5_crypto_getpadsize
+
+	* lib/krb5/crypto.c (krb5_crypto_getpadsize,
+	krb5_crypto_getconfoundersize): added From: Luke Howard
+	<lukeh@PADL.COM>
+
 2003-08-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/connect.c (handle_tcp): handle recvfrom returning 0
@@ -15,8 +25,8 @@
 	* lib/krb5/krb5_create_checksum.3: document
 	krb5_crypto_get_checksum_type
 
-	* lib/krb5/crypto.c: add krb5_crypto_get_checksum_type From: Luke
-	Howard <lukeh@PADL
+	* lib/krb5/crypto.c: add krb5_crypto_get_checksum_type
+	From: Luke Howard <lukeh@PADL.COM>
 	
 	* lib/asn1/gen.c: s/UTF8String/heim_utf8_string/ in generated code
 	From: Luke Howard <lukeh@PADL.COM>
