@@ -189,7 +189,6 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
 	NT_USER_TOKEN *token;
 	DOM_SID *psids;
 	int i, psid_ndx = 0;
-	int i;
 
 	if ((token = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL)
 		return NULL;
