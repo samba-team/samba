@@ -214,6 +214,7 @@ $(PLUCKERDIR):
 	mkdir $(PLUCKERDIR)
 
 %/samba.css: xslt/html/samba.css
+	if [ ! -d `dirname $@` ]; then mkdir -p `dirname $@`; fi
 	cp $< $@
 
 $(HTMLDIR)/Samba-HOWTO-Collection.html: Samba-HOWTO-Collection.xml $(HOWTODIR_DEPS) $(HOWTODIR_IMAGES_PNG)
