@@ -21,9 +21,8 @@ interface drsblobs {
 	} replPropertyMetaData1;
 
 	typedef struct {
-		uint32 unknown1;
 		uint32 count;
-		uint32 unknown2;
+		uint32 reserved;
 		replPropertyMetaData1 array[count];
 	} replPropertyMetaDataCtr1;
 
@@ -33,6 +32,7 @@ interface drsblobs {
 	
 	typedef [public] struct {
 		uint32 version;
+		uint32 reserved;
 		[switch_is(version)] replPropertyMetaDataCtr ctr;
 	} replPropertyMetaDataBlob;
 
@@ -46,27 +46,25 @@ interface drsblobs {
 	 * w2k3 uses version 2
 	 */
 	typedef struct {
-		GUID dsa;
-		uint64 usn;
+		GUID invocation_id_guid;
+		uint64 highest_usn; /* updated after a full replication cycle */
 	} replUpToDateVector1;
 
 	typedef struct {
-		uint32 unknown1;
 		uint32 count;
-		uint32 unknown2;
+		uint32 reserved;
 		replUpToDateVector1 array[count];
 	} replUpToDateVectorCtr1;
 
 	typedef struct {
-		GUID dsa;
-		uint64 usn;
-		NTTIME_1sec time;
+		GUID invocation_id_guid;
+		uint64 highest_usn; /* updated after a full replication cycle */
+		NTTIME_1sec last_success;
 	} replUpToDateVector2;
 
 	typedef struct {
-		uint32 unknown1;
 		uint32 count;
-		uint32 unknown2;
+		uint32 reserved;
 		replUpToDateVector2 array[count];
 	} replUpToDateVectorCtr2;
 
@@ -77,6 +75,7 @@ interface drsblobs {
 
 	typedef [public] struct {
 		uint32 version;
+		uint32 reserved;
 		[switch_is(version)] replUpToDateVectorCtr ctr;
 	} replUpToDateVectorBlob;
 
@@ -89,31 +88,37 @@ interface drsblobs {
 	 * w2k  uses version 1
 	 * w2k3 uses version 1
 	 */
-	typedef [flag(NDR_PAHEX)] struct {
-		NTTIME_1sec time1;
-		NTTIME_1sec time2;
-		uint32 unknown1[4];
-		uint8 unknown2[84];
-		uint32 unknown3;
-		uint64 usn1;
-		uint32 unknown4;
-		uint32 unknown5;
-		uint64 usn2;
-		GUID guid1;
-		GUID guid2;
-		uint32 unknown6[4];
+	typedef [gensize] struct {
 		asclstr dns_name;
+	} repsFromTo1OtherInfo;
+
+	typedef [gensize,flag(NDR_PAHEX)] struct {
+		/* this includes the 8 bytes of the repsFromToBlob header */
+		[value(ndr_size_repsFromTo1(8, r, ndr->flags))] uint32 blobsize;
+		uint32 consecutive_failures;
+		NTTIME_1sec last_success;
+		NTTIME_1sec last_attempt;
+		WERROR result_last_attempt;
+		[relative,length_is(other_info_length)] repsFromTo1OtherInfo *other_info;
+		[value(ndr_size_repsFromTo1OtherInfo(0, r->other_info, ndr->flags))] uint32 other_info_length;
+		uint32 replica_flags;
+		uint8 schedule[84];
+		uint32 reserved;
+		uint64 tmp_highest_usn; /* updated after each object update */
+		uint64 reserved_usn;
+		uint64 highest_usn; /* updated after a full replication cycle */
+		GUID dsa_guid;
+		GUID invocation_id_guid;
+		GUID transport_guid;
 	} repsFromTo1;
 
 	typedef [nodiscriminant] union {
 		[case(1)] repsFromTo1 ctr1;
 	} repsFromTo;
 
-	typedef [public,gensize] struct {
+	typedef [public] struct {
 		uint32 version;
-		uint32 unknown1;
-		[value(ndr_size_repsFromToBlob(0, r, ndr->flags))] uint32 blobsize;
-		uint32 unknown2;
+		uint32 reserved;
 		[switch_is(version)] repsFromTo ctr;
 	} repsFromToBlob;
 
