@@ -390,6 +390,34 @@ int smbw_errno(struct cli_state *c)
 	return ret;
 }
 
+/* Return a username and password given a server and share name */
+
+void get_envvar_auth_data(char *server, char *share, char **workgroup,
+			  char **username, char **password)
+{
+	/* Fall back to shared memory/environment variables */
+
+	*username = smbw_getshared("USER");
+	if (!*username) *username = getenv("USER");
+	if (!*username) *username = "guest";
+
+	*workgroup = smbw_getshared("WORKGROUP");
+	if (!*workgroup) *workgroup = lp_workgroup();
+
+	*password = smbw_getshared("PASSWORD");
+	if (!*password) *password = "";
+}
+
+static smbw_get_auth_data_fn get_auth_data_fn = get_envvar_auth_data;
+
+/*****************************************************
+set the get auth data function
+******************************************************/
+void smbw_set_auth_data_fn(smbw_get_auth_data_fn fn)
+{
+	get_auth_data_fn = fn;
+}
+
 /***************************************************** 
 return a connection to a server (existing or new)
 *******************************************************/
@@ -410,20 +438,13 @@ struct smbw_server *smbw_server(char *server, char *share)
 	ip = ipzero;
 	ZERO_STRUCT(c);
 
-	username = smbw_getshared("USER");
-	if (!username) username = getenv("USER");
-	if (!username) username = "guest";
-
-	workgroup = smbw_getshared("WORKGROUP");
-	if (!workgroup) workgroup = lp_workgroup();
-
-	password = smbw_getshared("PASSWORD");
-	if (!password) password = "";
-
 	/* try to use an existing connection */
 	for (srv=smbw_srvs;srv;srv=srv->next) {
 		if (strcmp(server,srv->server_name)==0 &&
-		    strcmp(share,srv->share_name)==0) return srv;
+		    strcmp(share,srv->share_name)==0 &&
+		    strcmp(workgroup,srv->workgroup)==0 &&
+		    strcmp(username, srv->username) == 0) 
+			return srv;
 	}
 
 	if (server[0] == 0) {
@@ -433,6 +454,8 @@ struct smbw_server *smbw_server(char *server, char *share)
 
 	make_nmb_name(&calling, global_myname, 0x0);
 	make_nmb_name(&called , server, 0x20);
+
+	get_auth_data_fn(server, share, &workgroup, &username, &password);
 
 	DEBUG(4,("server_n=[%s] server=[%s]\n", server_n, server));
 
@@ -535,6 +558,18 @@ struct smbw_server *smbw_server(char *server, char *share)
 
 	srv->share_name = strdup(share);
 	if (!srv->share_name) {
+		errno = ENOMEM;
+		goto failed;
+	}
+
+	srv->workgroup = strdup(workgroup);
+	if (!srv->workgroup) {
+		errno = ENOMEM;
+		goto failed;
+	}
+
+	srv->username = strdup(username);
+	if (!srv->username) {
 		errno = ENOMEM;
 		goto failed;
 	}
