@@ -97,12 +97,22 @@ BOOL pwd_compare(struct pwd_info *pwd1, struct pwd_info *pwd2)
 	if (!pwd1->null_pwd  && !pwd2->null_pwd &&
 	    !pwd1->cleartext && !pwd2->cleartext)
 	{
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("pwd compare: nt#\n"));
+		dump_data(100, pwd1->smb_nt_pwd, 16);
+		dump_data(100, pwd2->smb_nt_pwd, 16);
+#endif
 		if (memcmp(pwd1->smb_nt_pwd, pwd2->smb_nt_pwd, 16) == 0)
 		{
 			pwd_obfuscate(pwd1);
 			pwd_obfuscate(pwd2);
 			return True;
 		}
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("pwd compare: lm#\n"));
+		dump_data(100, pwd1->smb_lm_pwd, 16);
+		dump_data(100, pwd2->smb_lm_pwd, 16);
+#endif
 		if (memcmp(pwd1->smb_lm_pwd, pwd2->smb_lm_pwd, 16) == 0)
 		{
 			pwd_obfuscate(pwd1);

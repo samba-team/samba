@@ -159,6 +159,7 @@ static struct cli_use *cli_find(const char* srv_name,
 		if (!usr_creds->reuse &&
 		    !pwd_compare(&usr_creds->pwd, &c->cli->usr.pwd))
 		{
+			DEBUG(100,("password doesn't match\n"));
 			continue;
 		}
 		if (usr_creds->domain[0] == 0)
@@ -223,7 +224,7 @@ struct cli_state *cli_net_use_add(const char* srv_name,
 	}
 
 	/* reuse an existing connection requested, and one was not found */
-	if (usr_creds != NULL && usr_creds->reuse)
+	if (usr_creds != NULL && usr_creds->reuse && !redir)
 	{
 		return False;
 	}
@@ -290,7 +291,10 @@ BOOL cli_net_use_del(const char* srv_name,
 		sv_name = &sv_name[2];
 	}
 
-	*connection_closed = False;
+	if (connection_closed != NULL)
+	{
+		*connection_closed = False;
+	}
 
 	for (i = 0; i < num_clis; i++)
 	{
@@ -322,7 +326,10 @@ BOOL cli_net_use_del(const char* srv_name,
 			{
 				cli_use_free(clis[i]);
 				clis[i] = NULL;
-				*connection_closed = True;
+				if (connection_closed != NULL)
+				{
+					*connection_closed = True;
+				}
 			}
 			return True;
 		}

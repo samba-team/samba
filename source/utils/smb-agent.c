@@ -33,74 +33,139 @@
 #define CLI_CAPABILITY_MASK CAP_UNICODE
 #define CLI_CAPABILITY_SET  0
 
-static char *netbiosname;
 static char packet[BUFFER_SIZE];
 
 extern int DEBUGLEVEL;
 
-static void agent_reply(char *buf)
+
+struct sock_redir
 {
-	int msg_type = CVAL(buf,0);
-	int type = CVAL(buf,smb_com);
-	unsigned x;
+	int c;
+	struct cli_state *s;
 
-	if (msg_type) return;
+};
 
-	switch (type) {
+static uint32 num_socks = 0;
+static struct sock_redir **socks = NULL;
 
-	case SMBnegprot:
-		/* force the security bits */
-		x = CVAL(buf, smb_vwv1);
-		x = (x | SECURITY_SET) & ~SECURITY_MASK;
-		SCVAL(buf, smb_vwv1, x);
-
-		/* force the capabilities */
-		x = IVAL(buf,smb_vwv9+1);
-		x = (x | CAPABILITY_SET) & ~CAPABILITY_MASK;
-		SIVAL(buf, smb_vwv9+1, x);
-		break;
-
+/****************************************************************************
+terminate sockent connection
+****************************************************************************/
+static void sock_redir_free(struct sock_redir *sock)
+{
+	close(sock->c);
+	sock->c = -1;
+	if (sock->s != NULL)
+	{
+		cli_net_use_del(sock->s->desthost, &sock->s->usr,
+		                False, NULL);
+		sock->s = NULL;
 	}
+	free(sock);
 }
 
-static void agent_request(char *buf)
+/****************************************************************************
+free a sockent array
+****************************************************************************/
+static void free_sock_array(uint32 num_entries, struct sock_redir **entries)
 {
-	int msg_type = CVAL(buf,0);
-	int type = CVAL(buf,smb_com);
-	pstring name1,name2;
-	unsigned x;
+	void(*fn)(void*) = (void(*)(void*))&sock_redir_free;
+	free_void_array(num_entries, (void**)entries, *fn);
+}
 
-	if (msg_type) {
-		/* it's a netbios special */
-		switch (msg_type) {
-		case 0x81:
-			/* session request */
-			name_extract(buf,4,name1);
-			name_extract(buf,4 + name_len(buf + 4),name2);
-			DEBUG(0,("sesion_request: %s -> %s\n",
-				 name1, name2));
-			if (netbiosname) {
-				/* replace the destination netbios name */
-				name_mangle(netbiosname, buf+4, 0x20);
-			}
+/****************************************************************************
+add a sockent state to the array
+****************************************************************************/
+static struct sock_redir* add_sock_to_array(uint32 *len,
+				struct sock_redir ***array,
+				struct sock_redir *sock)
+{
+	int i;
+	for (i = 0; i < num_socks; i++)
+	{
+		if (socks[i] == NULL)
+		{
+			socks[i] = sock;
+			return sock;
 		}
-		return;
 	}
 
-	/* it's an ordinary SMB request */
-	switch (type) {
-	case SMBsesssetupX:
-		/* force the client capabilities */
-		x = IVAL(buf,smb_vwv11);
-		x = (x | CLI_CAPABILITY_SET) & ~CLI_CAPABILITY_MASK;
-		SIVAL(buf, smb_vwv11, x);
-		break;
-	}
-
+	return (struct sock_redir*)add_item_to_array(len,
+	                     (void***)array, (void*)sock);
+				
 }
 
-#define AGENT_CMD_CON       0
-#define AGENT_CMD_CON_REUSE 1
+/****************************************************************************
+initiate sockent array
+****************************************************************************/
+void init_sock_redir(void)
+{
+	socks = NULL;
+	num_socks = 0;
+}
+
+/****************************************************************************
+terminate sockent array
+****************************************************************************/
+void free_sock_redir(void)
+{
+	free_sock_array(num_socks, socks);
+	init_sock_redir();
+}
+
+/****************************************************************************
+create a new sockent state from user credentials
+****************************************************************************/
+static struct sock_redir *sock_redir_get(int fd, struct cli_state *cli)
+{
+	struct sock_redir *sock = (struct sock_redir*)malloc(sizeof(*sock));
+
+	if (sock == NULL)
+	{
+		return NULL;
+	}
+
+	ZERO_STRUCTP(sock);
+
+	sock->c = fd;
+	sock->s = cli;
+
+	return sock;
+}
+
+/****************************************************************************
+init sock state
+****************************************************************************/
+static void sock_add(int fd, struct cli_state *cli)
+{
+	struct sock_redir *sock;
+	sock = sock_redir_get(fd, cli);
+	if (sock != NULL)
+	{
+		add_sock_to_array(&num_socks, &socks, sock);
+	}
+}
+
+/****************************************************************************
+delete a sockent state
+****************************************************************************/
+static BOOL sock_del(int fd)
+{
+	int i;
+
+	for (i = 0; i < num_socks; i++)
+	{
+		if (socks[i] == NULL) continue;
+		if (socks[i]->c == fd) 
+		{
+			sock_redir_free(socks[i]);
+			socks[i] = NULL;
+			return True;
+		}
+	}
+
+	return False;
+}
 
 static struct cli_state *init_client_connection(int c)
 {
@@ -142,7 +207,7 @@ static struct cli_state *init_client_connection(int c)
 	if (rl < 0)
 	{
 		DEBUG(0,("Unable to read from connection\n"));
-		exit(1);
+		return NULL;
 	}
 	
 #ifdef DEBUG_PASSWORD
@@ -162,9 +227,9 @@ static struct cli_state *init_client_connection(int c)
 
 	if (PTR_DIFF(p, buf) < rl)
 	{
-		memcpy(ntpw, p, 16);
-		p += 16;
 		memcpy(lmpw, p, 16);
+		p += 16;
+		memcpy(ntpw, p, 16);
 		p += 16;
 		pwd_set_lm_nt_16(&usr.pwd, lmpw, ntpw);
 	}
@@ -177,7 +242,7 @@ static struct cli_state *init_client_connection(int c)
 	{
 		DEBUG(0,("Buffer size %d %d!\n",
 			PTR_DIFF(p, buf), rl));
-		exit(1);
+		return NULL;
 	}
 
 	switch (command)
@@ -221,88 +286,60 @@ static struct cli_state *init_client_connection(int c)
 	return NULL;
 }
 
-static void agent_child(int c)
+void process_cli_sock(struct sock_redir **sock)
 {
-	struct cli_state *s = NULL;
-
-	DEBUG(10,("agent_child: %d\n", c));
-
-	while (c != -1)
+	struct cli_state *s = (*sock)->s;
+	if (s == NULL)
 	{
-		fd_set fds;
-		int num;
-		int maxfd = 0;
-		
-		FD_ZERO(&fds);
-		if (s != NULL)
+		s = init_client_connection((*sock)->c);
+		if (s == NULL)
 		{
-			FD_SET(s->fd, &fds);
-			maxfd = MAX(s->fd, maxfd);
+			sock_redir_free(*sock);
+			*sock = NULL;
+			return ;
 		}
-	
-		if (c != -1)
+		(*sock)->s = s;
+	}
+	else
+	{
+		if (!receive_smb((*sock)->c, packet, 0))
 		{
-			FD_SET(c, &fds);
-			maxfd = MAX(c, maxfd);
+			DEBUG(0,("client closed connection\n"));
+			sock_redir_free(*sock);
+			*sock = NULL;
+			return;
 		}
-
-		num = sys_select(maxfd+1,&fds,NULL, NULL);
-		if (num <= 0) continue;
-		
-		if (c != -1 && FD_ISSET(c, &fds))
+		/* ignore keep-alives */
+		if (CVAL(packet, 0) != 0x85)
 		{
-			if (s == NULL)
+			if (!send_smb(s->fd, packet))
 			{
-				s = init_client_connection(c);
-				if (s == NULL)
-				{
-					exit(1);
-				}
-			}
-			else
-			{
-				if (!receive_smb(c, packet, 0))
-				{
-					DEBUG(0,("client closed connection\n"));
-					exit(0);
-				}
-				/* ignore keep-alives */
-				if (CVAL(packet, 0) != 0x85)
-				{
-					if (!send_smb(s->fd, packet))
-					{
-						DEBUG(0,("server is dead\n"));
-						exit(1);
-					}			
-				}
-			}
-		}
-		if (s != NULL && FD_ISSET(s->fd, &fds))
-		{
-			if (!receive_smb(s->fd, packet, 0))
-			{
-				DEBUG(0,("server closed connection\n"));
-				exit(0);
-			}
-#if 0
-			agent_reply(packet);
-#endif
-			if (!send_smb(c, packet))
-			{
-				DEBUG(0,("client is dead\n"));
-				cli_shutdown(s);
-				free(s);
-				exit(1);
+				DEBUG(0,("server is dead\n"));
+				sock_redir_free(*sock);
+				*sock = NULL;
+				return;
 			}			
 		}
 	}
-	DEBUG(0,("Connection closed\n"));
-	if (s != NULL)
+}
+
+void process_srv_sock(struct sock_redir **sock)
+{
+	struct cli_state *s = (*sock)->s;
+	if (!receive_smb(s->fd, packet, 0))
 	{
-		cli_shutdown(s);
-		free(s);
+		DEBUG(0,("server closed connection\n"));
+		sock_redir_free(*sock);
+		(*sock) = NULL;
+		return;
 	}
-	exit(0);
+	if (!send_smb((*sock)->c, packet))
+	{
+		DEBUG(0,("client is dead\n"));
+		sock_redir_free(*sock);
+		(*sock) = NULL;
+		return;
+	}			
 }
 
 
@@ -311,13 +348,22 @@ static void start_agent(void)
 	int s, c;
 	struct sockaddr_un sa;
 	fstring path;
-	slprintf(path, sizeof(path)-1, "/tmp/smb-agent/smb.%d", getuid());
+	fstring dir;
 
 	CatchChild();
 
-	/* start listening on unix socket */
-	mkdir("/tmp/smb-agent", 777);
+	slprintf(dir, sizeof(dir)-1, "/tmp/.smb.%d", getuid());
+	mkdir(dir, S_IRUSR|S_IWUSR|S_IXUSR);
 
+	slprintf(path, sizeof(path)-1, "%s/agent", dir);
+	if (chmod(dir, S_IRUSR|S_IWUSR|S_IXUSR) < 0)
+	{
+		fprintf(stderr, "chmod on %s failed\n", sa.sun_path);
+		exit(1);
+	}
+
+
+	/* start listening on unix socket */
 	s = socket(AF_UNIX, SOCK_STREAM, 0);
 
 	if (s < 0)
@@ -338,14 +384,6 @@ static void start_agent(void)
 		exit(1);
 	}
 
-	if (chmod(path, S_IRUSR|S_IWUSR|S_ISVTX) < 0)
-	{
-		fprintf(stderr, "chmod on %s failed\n", sa.sun_path);
-		close(s);
-		remove(path);
-		exit(1);
-	}
-
 	if (s == -1)
 	{
 		DEBUG(0,("bind failed\n"));
@@ -361,27 +399,71 @@ static void start_agent(void)
 
 	while (1)
 	{
+		int i;
 		fd_set fds;
 		int num;
 		struct sockaddr_un addr;
 		int in_addrlen = sizeof(addr);
+		int maxfd = s;
 		
 		FD_ZERO(&fds);
 		FD_SET(s, &fds);
 
-		num = sys_select(s+1,&fds,NULL, NULL);
-		if (num > 0)
+		for (i = 0; i < num_socks; i++)
+		{
+			if (socks[i] != NULL)
+			{
+				int fd = socks[i]->c;
+				FD_SET(fd, &fds);
+				maxfd = MAX(maxfd, fd);
+
+				if (socks[i]->s != NULL)
+				{
+					fd = socks[i]->s->fd;
+					FD_SET(fd, &fds);
+					maxfd = MAX(fd, maxfd);
+				}
+			}
+		}
+
+		dbgflush();
+		num = sys_select(maxfd+1,&fds,NULL, NULL);
+
+		if (num <= 0)
+		{
+			continue;
+		}
+
+		if (FD_ISSET(s, &fds))
 		{
 			c = accept(s, (struct sockaddr*)&addr, &in_addrlen);
-			if (c != -1) {
-				if (fork() == 0)
-				{
-					close(s);
-					agent_child(c);
-					exit(0);
-				} else {
-					close(c);
-				}
+			if (c != -1)
+			{
+				sock_add(c, NULL);
+			}
+		}
+
+		for (i = 0; i < num_socks; i++)
+		{
+			if (socks[i] == NULL)
+			{
+				continue;
+			}
+			if (FD_ISSET(socks[i]->c, &fds))
+			{
+				process_cli_sock(&socks[i]);
+			}
+			if (socks[i] == NULL)
+			{
+				continue;
+			}
+			if (socks[i]->s == NULL)
+			{
+				continue;
+			}
+			if (FD_ISSET(socks[i]->s->fd, &fds))
+			{
+				process_srv_sock(&socks[i]);
 			}
 		}
 	}
