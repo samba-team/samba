@@ -827,6 +827,7 @@ static void usage(char *pname)
   pidfile_create("nmbd");
   message_init();
   message_register(MSG_FORCE_ELECTION, nmbd_message_election);
+  message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
 
   DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 

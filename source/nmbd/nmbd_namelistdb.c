@@ -213,6 +213,7 @@ struct name_record *add_name_to_subnet( struct subnet_record *subrec,
 
   /* Enter the name as active. */
   namerec->data.nb_flags = nb_flags | NB_ACTIVE;
+  namerec->data.wins_flags = WINS_ACTIVE;
 
   /* If it's our primary name, flag it as so. */
   if( strequal( my_netbios_names[0], name ) )
