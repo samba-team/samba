@@ -3,15 +3,56 @@
 	&author.jeremy;
 	&author.jelmer;
 	&author.jht;
+	&author.eroseme;
 </chapterinfo>
 <title>File and Record Locking</title>
 
+<para>
+One area which causes trouble for many network administrators is locking.
+The extent of the problem is readily evident from searches over the internet.
+</para>
+
 <sect1>
-<title>Discussion</title>
+<title>Features and Benefits</title>
 
 <para>
-One area which sometimes causes trouble is locking.
+Samba provides all the same locking semantics that MS Windows clients expect
+and that MS Windows NT4 / 200x servers provide also.
 </para>
+
+<para>
+The term <emphasis>locking</emphasis> has exceptionally broad meaning and covers
+a range of functions that are all categorized under this one term.
+</para>
+
+<para>
+Opportunistic locking is a desirable feature when it can enhance the
+perceived performance of applications on a networked client.  However, the
+opportunistic locking protocol is not robust, and therefore can
+encounter problems when invoked beyond a simplistic configuration, or
+on extended, slow, or faulty networks.  In these cases, operating
+system management of opportunistic locking and/or recovering from
+repetitive errors can offset the perceived performance advantage that
+it is intended to provide.
+</para>
+
+<para>
+The MS Windows network administrator needs to be aware that file and record
+locking semantics (behaviour) can be controlled either in Samba or by way of registry
+settings on the MS Windows client.
+</para>
+
+<note>
+<para>
+Sometimes it is necessary to disable locking control settings BOTH on the Samba
+server as well as on each MS Windows client!
+</para>
+</note>
+
+</sect1>
+
+<sect1>
+<title>Discussion</title>
 
 <para>
 There are two types of locking which need to be performed by a SMB server.
@@ -62,10 +103,430 @@ access should be allowed simultaneously with its open. A client may ask for
 DENY_NONE, DENY_READ, DENY_WRITE or DENY_ALL. There are also special compatibility
 modes called DENY_FCB and  DENY_DOS.
 </para>
+
+<sect2>
+<title>Opportunistic Locking Overview</title>
+
+<para>
+OPPORTUNISTIC LOCKING (Oplocks) is invoked by the Windows file system
+(as opposed to an API) via registry entries (on the server AND client)
+for the purpose of enhancing network performance when accessing a file
+residing on a server. Performance is enhanced by caching the file
+locally on the client which allows:
+</para>
+
+<variablelist>
+	<varlistentry><term>Read-ahead:</term>
+		<listitem><para>
+		The client reads the local copy of the file, eliminating network latency
+		</para></listitem>
+	</varlistentry>
+
+	<varlistentry><term>Write caching:</term>
+		<listitem><para>
+		The client writes to the local copy of the file, eliminating network latency
+		</para></listitem>
+	</varlistentry>
+
+        <varlistentry><term>Lock caching:</term>
+                <listitem><para>
+		The client caches application locks locally, eliminating network latency
+		</para></listitem>
+        </varlistentry>
+</variablelist>
+
+<para>
+The performance enhancement of oplocks is due to the opportunity of
+exclusive access to the file - even if it is opened with deny-none -
+because Windows monitors the file's status for concurrent access from
+other processes.
+</para>
+
+<variablelist>
+<title>Windows defines 4 kinds of Oplocks:</title>
+	<varlistentry><term>Level1 Oplock:</term>
+                <listitem><para>
+		The redirector sees that the file was opened with deny
+                none (allowing concurrent access), verifies that no
+                other process is accessing the file, checks that
+                oplocks are enabled, then grants deny-all/read-write/ex-
+                clusive access to the file.  The client now performs
+                operations on the cached local file.
+		</para>
+
+		<para>
+		If a second process attempts to open the file, the open
+                is deferred while the redirector "breaks" the original
+                oplock.  The oplock break signals the caching client to
+                write the local file back to the server, flush the
+                local locks, and discard read-ahead data.  The break is
+                then complete, the deferred open is granted, and the
+                multiple processes can enjoy concurrent file access as
+                dictated by mandatory or byte-range locking options.
+                However, if the original opening process opened the
+                file with a share mode other than deny-none, then the
+                second process is granted limited or no access, despite
+                the oplock break.
+                </para></listitem>
+        </varlistentry>
+
+        <varlistentry><term>Level2 Oplock:</term>
+                <listitem><para>
+		Performs like a level1 oplock, except caching is only
+                operative for reads. All other operations are performed
+                on the server disk copy of the file.
+                </para></listitem>
+        </varlistentry>
+
+        <varlistentry><term>Filter Oplock:</term>
+                <listitem><para>
+		Does not allow write or delete file access
+                </para></listitem>
+        </varlistentry>
+
+        <varlistentry><term>Batch Oplock:</term>
+                <listitem><para>
+		Manipulates file openings and closings - allows caching
+                of file attributes
+                </para></listitem>
+        </varlistentry>
+</variablelist>
+
+<para>
+An important detail is that oplocks are invoked by the file system, not
+an application API.  Therefore, an application can close an oplocked
+file, but the file system does not relinquish the oplock.  When the
+oplock break is issued, the file system then simply closes the file in
+preparation for the subsequent open by the second process.
+</para>
+
+<para>
+<emphasis>Opportunistic Locking</emphasis> is actually an improper name for this feature.
+The true benefit of this feature is client-side data caching, and
+oplocks is merely a notification mechanism for writing data back to the
+networked storage disk.  The limitation of opportunistic locking is the
+reliability of the mechanism to process an oplock break (notification)
+between the server and the caching client.  If this exchange is faulty
+(usually due to timing out for any number of reasons) then the
+client-side caching benefit is negated.
+</para>
+
+<para>
+The actual decision that a user or administrator should consider is
+whether it is sensible to share amongst multiple users data that will
+be cached locally on a client.  In many cases the answer is no.
+Deciding when to cache or not cache data is the real question, and thus
+"opportunistic locking" should be treated as a toggle for client-side
+caching. Turn it "ON" when client-side caching is desirable and
+reliable.  Turn it "OFF" when client-side caching is redundant,
+unreliable, or counter-productive.
+</para>
+
+<para>
+Opportunistic locking is by default set to "on" by Samba on all
+configured shares, so careful attention should be given to each case to
+determine if the potential benefit is worth the potential for delays.
+The following recommendations will help to characterize the environment
+where opportunistic locking may be effectively configured.
+</para>
+
+<para>
+Windows Opportunistic Locking is a lightweight performance-enhancing
+feature.  It is not a robust and reliable protocol.  Every
+implementation of Opportunistic Locking should be evaluated as a
+tradeoff between perceived performance and reliability.  Reliability
+decreases as each successive rule above is not enforced.  Consider a
+share with oplocks enabled, over a wide area network, to a client on a
+South Pacific atoll, on a high-availability server, serving a
+mission-critical multi-user corporate database, during a tropical
+storm.  This configuration will likely encounter problems with oplocks.
+</para>
+
+<para>
+Oplocks can be beneficial to perceived client performance when treated
+as a configuration toggle for client-side data caching.  If the data
+caching is likely to be interrupted, then oplock usage should be
+reviewed.  Samba enables opportunistic locking by default on all
+shares.  Careful attention should be given to the client usage of
+shared data on the server, the server network reliability, and the
+opportunistic locking configuration of each share.
+n mission critical high availability environments, data integrity is
+often a priority.  Complex and expensive configurations are implemented
+to ensure that if a client loses connectivity with a file server, a
+failover replacement will be available immediately to provide
+continuous data availability.
+</para>
+
+<para>
+Windows client failover behavior is more at risk of application
+interruption than other platforms because it is dependant upon an
+established TCP transport connection.  If the connection is interrupted
+- as in a file server failover - a new session must be established.
+It is rare for Windows client applications to be coded to recover
+correctly from a transport connection loss, therefore most applications
+will experience some sort of interruption - at worst, abort and
+require restarting.
+</para>
+
+<para>
+If a client session has been caching writes and reads locally due to
+opportunistic locking, it is likely that the data will be lost when the
+application restarts, or recovers from the TCP interrupt. When the TCP
+connection drops, the client state is lost.  When the file server
+recovers, an oplock break is not sent to the client.  In this case, the
+work from the prior session is lost.  Observing this scenario with
+oplocks disabled, and the client was writing data to the file server
+real-time, then the failover will provide the data on disk as it
+existed at the time of the disconnect.
+</para>
+
+<para>
+In mission critical high availability environments, careful attention
+should be given to opportunistic locking.  Ideally, comprehensive
+testing should be done with all affected applications with oplocks
+enabled and disabled.
+</para>
+
+<sect3>
+<title>Exclusively Accessed Shares</title>
+
+<para>
+Opportunistic locking is most effective when it is confined to shares
+that are exclusively accessed by a single user, or by only one user at
+a time.  Because the true value of opportunistic locking is the local
+client caching of data, any operation that interrupts the caching
+mechanism will cause a delay.
+</para>
+
+<para>
+Home directories are the most obvious examples of where the performance
+benefit of opportunistic locking can be safely realized.
+</para>
+
+</sect3>
+
+<sect3>
+<title>Multiple-Accessed Shares or Files</title>
+
+<para>
+As each additional user accesses a file in a share with opportunistic
+locking enabled, the potential for delays and resulting perceived poor
+performance increases.  When multiple users are accessing a file on a
+share that has oplocks enabled, the management impact of sending and
+receiving oplock breaks, and the resulting latency while other clients
+wait for the caching client to flush data, offset the performance gains
+of the caching user.
+</para>
+
+<para>
+As each additional client attempts to access a file with oplocks set,
+the potential performance improvement is negated and eventually results
+in a performance bottleneck.
+</para>
+
+</sect3>
+
+<sect3>
+<title>Unix or NFS Client Accessed Files</title>
+
+<para>
+Local Unix and NFS clients access files without a mandatory
+file locking mechanism.  Thus, these client platforms are incapable of
+initiating an oplock break request from the server to a Windows client
+that has a file cached. Local Unix or NFS file access can therefore
+write to a file that has been cached by a Windows client, which
+exposes the file to likely data corruption.
+</para>
+
+<para>
+If files are shared between Windows clients, and either loca Unix 
+or NFS users, then turn opportunistic locking off.
+</para>
+
+</sect3>
+
+<sect3>
+<title>Slow and/or Unreliable Networks</title>
+
+<para>
+The biggest potential performance improvement for opportunistic locking
+occurs when the client-side caching of reads and writes delivers the
+most differential over sending those reads and writes over the wire.
+This is most likely to occur when the network is extremely slow,
+congested, or distributed (as in a WAN).  However, network latency also
+has a very high impact on the reliability of the oplock break
+mechanism, and thus increases the likelihood of encountering oplock
+problems that more than offset the potential perceived performance
+gain. Of course, if an oplock break never has to be sent, then this is
+the most advantageous scenario to utilize opportunistic locking.
+</para>
+
+<para>
+If the network is slow, unreliable, or a WAN, then do not configure
+opportunistic locking if there is any chance of multiple users
+regularly opening the same file.
+</para>
+
+</sect3>
+
+<sect3>
+<title>Multi-User Databases</title>
+
+<para>
+Multi-user databases clearly pose a risk due to their very nature -
+they are typically heavily accessed by numerous users at random
+intervals.  Placing a multi-user database on a share with opportunistic
+locking enabled will likely result in a locking management bottleneck
+on the Samba server.  Whether the database application is developed
+in-house or a commercially available product, ensure that the share
+has opportunistic locking disabled.
+</para>
+
+</sect3>
+
+<sect3>
+<title>PDM Data Shares</title>
+
+<para>
+Process Data Management (PDM) applications such as IMAN, Enovia, and
+Clearcase, are increasing in usage with Windows client platforms, and
+therefore SMB data stores.  PDM applications manage multi-user
+environments for critical data security and access.  The typical PDM
+environment is usually associated with sophisticated client design
+applications that will load data locally as demanded.  In addition, the
+PDM application will usually monitor the data-state of each client.
+In this case, client-side data caching is best left to the local
+application and PDM server to negotiate and maintain.  It is
+appropriate to eliminate the client OS from any caching tasks, and the
+server from any oplock management, by disabling opportunistic locking on
+the share.
+</para>
+
+</sect3>
+
+<sect3>
+<title>Beware of Force User</title>
+
+<para>
+Samba includes an smb.conf parameter called "force user" that changes
+the user accessing a share from the incoming user to whatever user is
+defined by the smb.conf variable.  If opportunistic locking is enabled
+on a share, the change in user access causes an oplock break to be sent
+to the client, even if the user has not explicitly loaded a file.  In
+cases where the network is slow or unreliable, an oplock break can
+become lost without the user even accessing a file.  This can cause
+apparent performance degradation as the client continually reconnects
+to overcome the lost oplock break.
+</para>
+
+<para>
+Avoid the combination of the following: 
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	<emphasis>force user</emphasis> in the &smb.conf; share configuration.
+	</para></listitem>
+
+	<listitem><para>
+	Slow or unreliable networks
+	</para></listitem>
+
+	<listitem><para>
+	Opportunistic Locking Enabled
+	</para></listitem>
+</itemizedlist>
+
+</sect3>
+
+<sect3>
+<title>Advanced Samba Opportunistic Locking Parameters</title>
+
+<para>
+Samba provides opportunistic locking parameters that allow the
+administrator to adjust various properties of the oplock mechanism to
+account for timing and usage levels.  These parameters provide good
+versatility for implementing oplocks in environments where they would
+likely cause problems.  The parameters are: <emphasis>oplock break wait time,
+oplock contention limit</emphasis>.
+</para>
+
+<para>
+For most users, administrators, and environments, if these parameters
+are required, then the better option is to simply turn oplocks off.
+The samba SWAT help text for both parameters reads "DO NOT CHANGE THIS
+PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA OPLOCK CODE."
+This is good advice.
+</para>
+
+</sect3>
+
+<sect3>
+<title>Mission Critical High Availability</title>
+
+<para>
+In mission critical high availability environments, data integrity is
+often a priority.  Complex and expensive configurations are implemented
+to ensure that if a client loses connectivity with a file server, a
+failover replacement will be available immediately to provide
+continuous data availability.
+</para>
+
+<para>
+Windows client failover behavior is more at risk of application
+interruption than other platforms because it is dependant upon an
+established TCP transport connection.  If the connection is interrupted
+- as in a file server failover - a new session must be established.
+It is rare for Windows client applications to be coded to recover
+correctly from a transport connection loss, therefore most applications
+will experience some sort of interruption - at worst, abort and
+require restarting.
+</para>
+
+<para>
+If a client session has been caching writes and reads locally due to
+opportunistic locking, it is likely that the data will be lost when the
+application restarts, or recovers from the TCP interrupt. When the TCP
+connection drops, the client state is lost.  When the file server
+recovers, an oplock break is not sent to the client.  In this case, the
+work from the prior session is lost.  Observing this scenario with
+oplocks disabled, and the client was writing data to the file server
+real-time, then the failover will provide the data on disk as it
+existed at the time of the disconnect.
+</para>
+
+<para>
+In mission critical high availability environments, careful attention
+should be given to opportunistic locking.  Ideally, comprehensive
+testing should be done with all affected applications with oplocks
+enabled and disabled.
+</para>
+
+</sect3>
+</sect2>
 </sect1>
 
 <sect1>
 <title>Samba Opportunistic Locking Control</title>
+
+<para>
+Opportunistic Locking is a unique Windows file locking feature.  It is
+not really file locking, but is included in most discussions of Windows
+file locking, so is considered a defacto locking feature.
+Opportunistic Locking is actually part of the Windows client file
+caching mechanism.  It is not a particularly robust or reliable feature
+when implemented on the variety of customized networks that exist in
+enterprise computing.
+</para>
+
+<para>
+Like Windows, Samba implements Opportunistic Locking as a server-side
+component of the client caching mechanism.  Because of the lightweight
+nature of the Windows feature design, effective configuration of
+Opportunistic Locking requires a good understanding of its limitations,
+and then applying that understanding when configuring data access for
+each particular customized network and client usage state.
+</para>
 
 <para>
 Opportunistic locking essentially means that the client is allowed to download and cache
@@ -116,16 +577,38 @@ Another factor to consider is the perceived performance of file access. If oploc
 measurable speed benefit on your network, it might not be worth the hassle of dealing with them.
 </para>
 
+<sect2>
+<title>Example Configuration</title>
+
+<para>
+In the following we examine two destinct aspects of samba locking controls.
+</para>
+
+<sect3>
+<title>Disabling Oplocks</title>
+
 <para>
 You can disable oplocks on a per-share basis with the following:
+</para>
 
+<para>
 <programlisting>
+[acctdata]
 	oplocks = False
 	level2 oplocks = False
 </programlisting>
+</para>
 
+<para>
+The default oplock type is Level1. Level2 Oplocks are enabled on a per-share basis
+in the &smb.conf; file.
+</para>
+
+<para>
 Alternately, you could disable oplocks on a per-file basis within the share:
+</para>
 
+<para>
 <programlisting>
 	veto oplock files = /*.mdb/*.MDB/*.dbf/*.DBF/
 </programlisting>
@@ -135,6 +618,96 @@ Alternately, you could disable oplocks on a per-file basis within the share:
 If you are experiencing problems with oplocks as apparent from Samba's log entries,
 you may want to play it safe and disable oplocks and level2 oplocks.
 </para>
+
+</sect3>
+
+<sect3>
+<title>Diabling Kernel OpLocks</title>
+
+<para>
+Kernel OpLocks is an &smb.conf; parameter that notifies Samba (if
+the UNIX kernel has the capability to send a Windows client an oplock
+break) when a UNIX process is attempting to open the file that is
+cached.  This parameter addresses sharing files between UNIX and
+Windows with Oplocks enabled on the Samba server: the UNIX process
+can open the file that is Oplocked (cached) by the Windows client and
+the smbd process will not send an oplock break, which exposes the file
+to the risk of data corruption.  If the UNIX kernel has the ability to
+send an oplock break, then the kernel oplocks parameter enables Samba
+to send the oplock break.  Kernel oplocks are enabled on a per-server
+basis in the &smb.conf; file.
+</para>
+
+<para>
+<programlisting><title>Example:</title>
+[global]
+       kernel oplocks = yes
+
+The default is "no".
+</programlisting>
+</para>
+
+<para>
+Veto OpLocks is an &smb.conf; parameter that identifies specific files for
+which Oplocks are disabled.  When a Windows client opens a file that
+has been configured for veto oplocks, the client will not be granted
+the oplock, and all operations will be executed on the original file on
+disk instead of a client-cached file copy.  By explicitly identifying
+files that are shared with UNIX processes, and disabling oplocks for
+those files, the server-wide Oplock configuration can be enabled to
+allow Windows clients to utilize the performance benefit of file
+caching without the risk of data corruption.  Veto Oplocks can be
+enabled on a per-share basis, or globally for the entire server, in the
+&smb.conf; file:
+</para>
+
+<para>
+<programlisting><title>Example Veto OpLock Settings</title>
+[global]
+        veto oplock files = /filename.htm/*.txt/
+
+[share_name]
+        veto oplock files = /*.exe/filename.ext/
+</programlisting>
+</para>
+
+<para>
+<emphasis>Oplock break wait time</emphasis> is an &smb.conf; parameter that adjusts the time
+interval for Samba to reply to an oplock break request.  Samba
+recommends "DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND
+UNDERSTOOD THE SAMBA OPLOCK CODE."  Oplock Break Wait Time can only be
+configured globally in the smb.conf file:
+</para>
+
+<para>
+<programlisting>
+[global]
+          oplock break wait time =  0 (default)
+</programlisting>
+</para>
+
+<para>
+<emphasis>Oplock break contention limit</emphasis> is an &smb.conf; parameter that limits the
+response of the Samba server to grant an oplock if the configured
+number of contending clients reaches the limit specified by the
+parameter.  Samba recommends "DO NOT CHANGE THIS PARAMETER UNLESS YOU
+HAVE READ AND UNDERSTOOD THE SAMBA OPLOCK CODE."  Oplock Break
+Contention Limit can be enable on a per-share basis, or globally for
+the entire server, in the &smb.conf; file:
+</para>
+
+<para>
+<programlisting>
+[global]
+          oplock break contention limit =  2 (default)
+
+ [share_name]
+         oplock break contention limit =  2 (default)
+</programlisting>
+</para>
+
+</sect3>
+</sect2>
 
 </sect1>
 
@@ -196,7 +769,8 @@ You can also deny the granting of opportunistic locks by changing the following 
 
 <para>
 <programlisting>
-	HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\MRXSmb\Parameters\
+	HKEY_LOCAL_MACHINE\System\
+		CurrentControlSet\Services\MRXSmb\Parameters\
 
 		OplocksDisabled REG_DWORD 0 or 1
 		Default: 0 (not disabled)
@@ -211,7 +785,8 @@ request opportunistic locks on a remote file. To disable oplocks, the value of
 
 <para>
 <programlisting>
-	HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters
+	HKEY_LOCAL_MACHINE\System\
+		CurrentControlSet\Services\LanmanServer\Parameters
 
 		EnableOplocks REG_DWORD 0 or 1
 		Default: 1 (Enabled by Default)
@@ -275,7 +850,8 @@ An illustration of how level II oplocks work:
 <title>Workstation Service Entries</title>
 
 <para><programlisting>
-	\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters
+	\HKEY_LOCAL_MACHINE\System\
+		CurrentControlSet\Services\LanmanWorkstation\Parameters
 
 	UseOpportunisticLocking   REG_DWORD   0 or 1
 	Default: 1 (true)
@@ -291,7 +867,8 @@ enhancement. This parameter should be disabled only to isolate problems.
 <title>Server Service Entries</title>
 
 <para><programlisting>
-	\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters
+	\HKEY_LOCAL_MACHINE\System\
+		CurrentControlSet\Services\LanmanServer\Parameters
 
 	EnableOplocks   REG_DWORD   0 or 1
 	Default: 1 (true)
@@ -358,6 +935,53 @@ our Knowledge Base.
 </sect1>
 
 <sect1>
+<title>Common Errors</title>
+
+<para>
+In some sites locking problems surface as soon as a server is installed, in other sites
+locking problems may not surface for a long time. Almost without exeception, when a locking
+problem does surface it will cause embarassment and potential data corruption.
+</para>
+
+<para>
+Over the past few years there have been a number of complaints on the samba mailing lists
+that have claimed that samba caused data corruption. Three causes have been identified
+so far:
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	Incorrect configuration of opportunistic locking (incompatible with the application
+	being used. This is a VERY common problem even where MS Windows NT4 or MS Windows 200x
+	based servers were in use. It is imperative that the software application vendors'
+	instructions for configuration of file locking should be followed. If in doubt,
+	disable oplocks on both the server and the client. Disabling of all forms of file
+	caching on the MS Windows client may be necessary also.
+	</para></listitem>
+
+	<listitem><para>
+	Defective network cards, cables, or HUBs / Switched. This is generally a more
+	prevalent factor with low cost networking hardware, though occasionally there
+	have been problems with incompatibilities in more up market hardware also.
+	</para></listitem>
+
+	<listitem><para>
+	There have been some random reports of samba log files being written over data
+	files. This has been reported by very few sites (about 5 in the past 3 years)
+	and all attempts to reproduce the problem have failed. The Samba-Team has been
+	unable to catch this happening and thus has NOT been able to isolate any particular
+	cause. Considering the millions of systems that use samba, for the sites that have
+	been affected by this as well as for the Samba-Team this is a frustrating and
+	a vexing challenge. If you see this type of thing happening please create a bug
+	report on https://bugzilla.samba.org without delay. Make sure that you give as much
+	information as you possibly can to help isolate the cause and to allow reproduction
+	of the problem (an essential step in problem isolation and correction).
+	</para></listitem>
+</itemizedlist>
+
+</sect1>
+
+<sect1>
 <title>Additional Reading</title>
 
 <para>
@@ -379,7 +1003,7 @@ Windows Base Services &gt; Files and I/O &gt; SDK Documentation &gt; File Storag
 
 <para>
 Microsoft Knowledge Base Article Q224992 "Maintaining Transactional Integrity with OPLOCKS",
-Microsoft Corporation, April 1999, <ulink url="=http://support.microsoft.com/default.aspx?scid=kb;en-us;Q224992">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q224992</ulink>.
+Microsoft Corporation, April 1999, <ulink url="http://support.microsoft.com/default.aspx?scid=kb;en-us;Q224992">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q224992</ulink>.
 </para>
 
 <para>

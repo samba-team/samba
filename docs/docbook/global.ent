@@ -93,6 +93,16 @@
 	</affiliation>
 </author>'>
 
+<!ENTITY author.eroseme '
+<author>
+	<firstname>Eric</firstname><surname>Roseme</surname>
+	<affiliation>
+		<orgname>HP Oplocks Usage Recommendations Whitepaper</orgname>
+		<address><email>eric.roseme@hp.com</email</address>
+	</affiliation>
+</author>'>
+
+
 <!-- URL's -->
 <!ENTITY url.samba.cvsinfo 'http://pserver.samba.org/samba/cvs.html'>
 <!ENTITY url.pdc-howto.local 'samba-pdc-howto.html'>
