@@ -1,5 +1,19 @@
 1999-05-04  Assar Westerlund  <assar@sics.se>
 
+	* kadmin_locl.h (set_entry): add prototype
+
+	* kadmin.c (usage): update usage string
+
+	* init.c (init): new arguments realm-max-ticket-life and
+ 	realm-max-renewable-life
+
+	* util.c (edit_time, edit_attributes): don't do anything if it's
+ 	already set
+	(set_entry): new function
+
+	* ank.c (add_new_key): new options for setting max-ticket-life,
+ 	max-renewable-life, and attributes
+
 	* server.c (v5_loop): remove unused variable
 
 	* kadmin_locl.h: add prototypes

@@ -1,3 +1,18 @@
+1999-05-04  Assar Westerlund  <assar@sics.se>
+
+	* private.h (_kadm5_setup_entry): change prototype
+
+	* modify_s.c: call new _kadm5_setup_entry
+
+	* ent_setup.c (_kadm5_setup_entry): change so that it takes three
+ 	masks, one for what bits to set and one for each of principal and
+ 	def containing the bits that are set there.
+
+	* create_s.c: call new _kadm5_setup_entry
+
+	* create_s.c (get_default): check return value
+	(create_principal): send wider mask to _kadm5_setup_entry
+
 1999-05-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* send_recv.c (_kadm5_client_recv): handle arbitrarily sized
