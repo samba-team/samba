@@ -18,9 +18,9 @@ LIB = $(LIBNAME).$(LIBEXT)
 
 prefix = @prefix@
 
-SOURCES=auth.c encrypt.c genget.c enc_des.c misc.c kerberos.c kerberos5.c read_password.c
+SOURCES=auth.c encrypt.c genget.c enc_des.c misc.c kerberos.c kerberos5.c
 
-OBJECTS=auth.o encrypt.o genget.o enc_des.o misc.o kerberos.o kerberos5.o read_password.o
+OBJECTS=auth.o encrypt.o genget.o enc_des.o misc.o kerberos.o kerberos5.o
 
 all: $(LIB)
 
