@@ -22,7 +22,7 @@
 # says it's not done consistently.
 
 template_setup() {
-	cat $1.template | \
+	cat template/$1 | \
               sed "s|PREFIX|$prefix|g" | \
 	      sed "s|BUILD_FARM|$test_root|g" | \
 	      sed "s|WHOAMI|$whoami|g" | \
@@ -52,13 +52,16 @@ test_smb_conf_setup() {
 	exit 1
     esac
 
+#   Please keep these names under 15 characters,
+#   so that the final name is 31 characters or fewer.
+
     template_smb_conf_setup 
     template_smb_conf_setup .hostsequiv
     template_smb_conf_setup .validusers
     template_smb_conf_setup .invalidusers
     template_smb_conf_setup .preexec
     template_smb_conf_setup .preexec_close
-    template_smb_conf_setup .preexec_cl_fail
+    template_smb_conf_setup .preexec_cl_fl
 
     template_setup preexec lib/preexec
 
