@@ -1,48 +1,6 @@
 @BOTTOM@
 
-#undef BINDIR 
-#undef LIBDIR
-#undef LIBEXECDIR
-#undef SBINDIR
-
-#undef HAVE_INT8_T
-#undef HAVE_INT16_T
-#undef HAVE_INT32_T
-#undef HAVE_INT64_T
-#undef HAVE_U_INT8_T
-#undef HAVE_U_INT16_T
-#undef HAVE_U_INT32_T
-#undef HAVE_U_INT64_T
-#undef HAVE_UINT8_T
-#undef HAVE_UINT16_T
-#undef HAVE_UINT32_T
-#undef HAVE_UINT64_T
-
-#if defined(HAVE_FOUR_VALUED_KRB_PUT_INT) || !defined(KRB4)
-#define KRB_PUT_INT(F, T, L, S) krb_put_int((F), (T), (L), (S))
-#else
-#define KRB_PUT_INT(F, T, L, S) krb_put_int((F), (T), (S))
-#endif
-
-#ifdef BROKEN_REALLOC
-#define realloc(X, Y) isoc_realloc((X), (Y))
-#define isoc_realloc(X, Y) ((X) ? realloc((X), (Y)) : malloc(Y))
-#endif
-
-#ifdef VOID_RETSIGTYPE
-#define SIGRETURN(x) return
-#else
-#define SIGRETURN(x) return (RETSIGTYPE)(x)
-#endif
-
-#define RCSID(msg) \
-static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
-
 #undef PROTOTYPES
-
-/* Maximum values on all known systems */
-#define MaxHostNameLen (64+4)
-#define MaxPathLen (1024+4)
 
 #if defined(HAVE_SGTTY_H) && defined(__NeXT__)
 #define SGTTY
