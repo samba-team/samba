@@ -1542,10 +1542,10 @@ AC_ARG_WITH(smbwrapper,
 )
 
 #################################################
-# check for the AFS filesystem
-AC_MSG_CHECKING(whether to use AFS)
+# check for AFS clear-text auth support
+AC_MSG_CHECKING(whether to use AFS clear-text auth)
 AC_ARG_WITH(afs,
-[  --with-afs              Include AFS support (default=no) ],
+[  --with-afs              Include AFS clear-text auth support (default=no) ],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1560,10 +1560,10 @@ AC_ARG_WITH(afs,
 
 
 #################################################
-# check for the DFS auth system
-AC_MSG_CHECKING(whether to use DFS auth)
+# check for the DFS clear-text auth system
+AC_MSG_CHECKING(whether to use DFS clear-text auth)
 AC_ARG_WITH(dfs,
-[  --with-dce-dfs          Include DCE/DFS support (default=no)],
+[  --with-dce-dfs          Include DCE/DFS clear-text auth support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1576,41 +1576,18 @@ AC_ARG_WITH(dfs,
   AC_MSG_RESULT(no)
 )
 
-#################################################
-# check for Kerberos IV auth system
-AC_MSG_CHECKING(whether to use Kerberos IV)
-AC_ARG_WITH(krb4,
-[  --with-krb4=base-dir    Include Kerberos IV support (default=no)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(KRB4_AUTH)
-    LIBS="$LIBS -lkrb -ldes"
-    CFLAGS="$CFLAGS -I$withval/include"
-    LDFLAGS="$LDFLAGS -L$withval/lib"
-    AC_DEFINE_UNQUOTED(KRB4_DIR, ${withval})
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-
 
 #################################################
 # check for location of Kerberos 5 install
 AC_MSG_CHECKING(for kerberos 5 install path)
 AC_ARG_WITH(krb5,
-[  --with-krb5=base-dir    Include Kerberos 5 support (default=no)],
+[  --with-krb5=base-dir    Locate Kerberos 5 support (default=/usr)],
 [ case "$withval" in
   no)
     AC_MSG_RESULT(no)
     ;;
   *)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(KRB5_AUTH)
     LIBS="$LIBS -lkrb5"
     CFLAGS="$CFLAGS -I$withval/include"
     LDFLAGS="$LDFLAGS -L$withval/lib"
@@ -1680,11 +1657,11 @@ AC_ARG_WITH(smbmount,
 
 
 #################################################
-# check for a PAM password database
+# check for a PAM clear-text auth, accounts, password and session support
 with_pam_for_crypt=no
-AC_MSG_CHECKING(whether to use PAM password database)
+AC_MSG_CHECKING(whether to use PAM)
 AC_ARG_WITH(pam,
-[  --with-pam              Include PAM password database support (default=no)],
+[  --with-pam              Include PAM support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)

@@ -26,7 +26,7 @@
 
 /* these are kept here to keep the string_combinations function simple */
 static fstring this_user;
-#if !(defined(WITH_PAM) || defined(KRB4_AUTH) || defined(KRB5_AUTH))
+#if !defined(WITH_PAM) 
 static fstring this_salt;
 static fstring this_crypted;
 #endif
@@ -370,122 +370,6 @@ void dfs_unlogin(void)
 }
 #endif
 
-#ifdef KRB5_AUTH
-
-#include <krb5.h>
-
-/*******************************************************************
-check on Kerberos authentication
-********************************************************************/
-static BOOL krb5_auth(char *user, char *password)
-{
-	krb5_data tgtname = {
-		0,
-		KRB5_TGS_NAME_SIZE,
-		KRB5_TGS_NAME
-	};
-	krb5_context kcontext;
-	krb5_principal kprinc;
-	krb5_principal server;
-	krb5_creds kcreds;
-	int options = 0;
-	krb5_address **addrs = (krb5_address **) 0;
-	krb5_preauthtype *preauth = NULL;
-	krb5_keytab keytab = NULL;
-	krb5_timestamp now;
-	krb5_ccache ccache = NULL;
-	int retval;
-	char *name;
-
-	if (retval = krb5_init_context(&kcontext))
-	{
-		return (False);
-	}
-
-	if (retval = krb5_timeofday(kcontext, &now))
-	{
-		return (False);
-	}
-
-	if (retval = krb5_cc_default(kcontext, &ccache))
-	{
-		return (False);
-	}
-
-	if (retval = krb5_parse_name(kcontext, user, &kprinc))
-	{
-		return (False);
-	}
-
-	ZERO_STRUCT(kcreds);
-
-	kcreds.client = kprinc;
-
-	if ((retval = krb5_build_principal_ext(kcontext, &server,
-					       krb5_princ_realm(kcontext,
-								kprinc)->
-					       length,
-					       krb5_princ_realm(kcontext,
-								kprinc)->data,
-					       tgtname.length, tgtname.data,
-					       krb5_princ_realm(kcontext,
-								kprinc)->
-					       length,
-					       krb5_princ_realm(kcontext,
-								kprinc)->data,
-					       0)))
-	{
-		return (False);
-	}
-
-	kcreds.server = server;
-
-	retval = krb5_get_in_tkt_with_password(kcontext,
-					       options,
-					       addrs,
-					       NULL,
-					       preauth,
-					       password, 0, &kcreds, 0);
-
-	if (retval)
-	{
-		return (False);
-	}
-
-	return (True);
-}
-#endif /* KRB5_AUTH */
-
-#ifdef KRB4_AUTH
-#include <krb.h>
-
-/*******************************************************************
-check on Kerberos authentication
-********************************************************************/
-static BOOL krb4_auth(char *user, char *password)
-{
-	char realm[REALM_SZ];
-	char tkfile[MAXPATHLEN];
-
-	if (krb_get_lrealm(realm, 1) != KSUCCESS)
-	{
-		(void)safe_strcpy(realm, KRB_REALM, sizeof(realm) - 1);
-	}
-
-	(void)slprintf(tkfile, sizeof(tkfile) - 1, "/tmp/samba_tkt_%d",
-		       (int)sys_getpid());
-
-	krb_set_tkt_string(tkfile);
-	if (krb_verify_user(user, "", realm, password, 0, "rmcd") == KSUCCESS)
-	{
-		unlink(tkfile);
-		return 1;
-	}
-	unlink(tkfile);
-	return 0;
-}
-#endif /* KRB4_AUTH */
-
 #ifdef LINUX_BIGCRYPT
 /****************************************************************************
 an enhanced crypt for Linux to handle password longer than 8 characters
@@ -602,10 +486,6 @@ static NTSTATUS password_check(char *password)
 {
 #ifdef WITH_PAM
 	return smb_pam_passcheck(this_user, password);
-#elif defined(KRB5_AUTH)
-	return krb5_auth(this_user, password) ? NT_STATUS_WRONG_PASSWORD : NT_STATUS_OK;
-#elif defined(KRB4_AUTH)
-	return krb4_auth(this_user, password) ? NT_STATUS_WRONG_PASSWORD : NT_STATUS_OK;
 #else
 
 	BOOL ret;
@@ -729,7 +609,7 @@ NTSTATUS pass_check(struct passwd *pass, char *user, char *password,
 	if (((!*password) || (!pwlen)) && !lp_null_passwords())
 		return NT_STATUS_LOGON_FAILURE;
 
-#if defined(WITH_PAM) || defined(KRB4_AUTH) || defined(KRB5_AUTH)
+#if defined(WITH_PAM) 
 
 	/*
 	 * If we're using PAM we want to short-circuit all the 
@@ -834,7 +714,7 @@ NTSTATUS pass_check(struct passwd *pass, char *user, char *password,
 		}
 	}
 
-#endif /* defined(WITH_PAM) || defined(KRB4_AUTH) || defined(KRB5_AUTH) */
+#endif /* defined(WITH_PAM) */
 
 	/* try it as it came to us */
 	nt_status = password_check(password);
