@@ -1,3 +1,12 @@
+Mon Nov  2 01:15:06 1998  Assar Westerlund  <assar@sics.se>
+
+	* kdc/connect.c (handle_udp, handle_tcp): correct type of `n'
+
+	* appl/rsh/rsh.c (main): initialize host
+
+	* appl/rsh/rshd.c (recv_krb5_auth): disable `do_encrypt' if not
+ 	encrypting.
+
 Tue Sep 15 17:02:33 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* lib/kadm5/set_keys.c: add KEYTYPE_USE_AFS3_SALT to keytype if
