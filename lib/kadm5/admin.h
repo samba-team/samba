@@ -51,6 +51,8 @@
 #error No support for API versions other than 2
 #endif
 
+#define KADM5_STRUCT_VERSION 0
+
 #include <krb5.h>
 
 #define KRB5_KDB_DISALLOW_POSTDATED	0x00000001
@@ -265,10 +267,31 @@ kadm5_c_get_privs __P((
 	u_int32_t *privs));
 
 kadm5_ret_t
+kadm5_c_init_with_creds __P((
+	const char *client_name,
+	krb5_ccache ccache,
+	const char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
+kadm5_c_init_with_creds_ctx __P((
+	krb5_context context,
+	const char *client_name,
+	krb5_ccache ccache,
+	const char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
 kadm5_c_init_with_password __P((
-	char *client_name,
-	char *pass,
-	char *service_name,
+	const char *client_name,
+	const char *password,
+	const char *service_name,
 	kadm5_config_params *realm_params,
 	unsigned long struct_version,
 	unsigned long api_version,
@@ -277,9 +300,30 @@ kadm5_c_init_with_password __P((
 kadm5_ret_t
 kadm5_c_init_with_password_ctx __P((
 	krb5_context context,
-	char *client_name,
-	char *pass,
-	char *service_name,
+	const char *client_name,
+	const char *password,
+	const char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
+kadm5_c_init_with_skey __P((
+	const char *client_name,
+	const char *keytab,
+	const char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
+kadm5_c_init_with_skey_ctx __P((
+	krb5_context context,
+	const char *client_name,
+	const char *keytab,
+	const char *service_name,
 	kadm5_config_params *realm_params,
 	unsigned long struct_version,
 	unsigned long api_version,
@@ -365,10 +409,31 @@ kadm5_get_privs __P((
 	u_int32_t *privs));
 
 kadm5_ret_t
+kadm5_init_with_creds __P((
+	const char *client_name,
+	krb5_ccache ccache,
+	const char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
+kadm5_init_with_creds_ctx __P((
+	krb5_context context,
+	const char *client_name,
+	krb5_ccache ccache,
+	const char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
 kadm5_init_with_password __P((
-	char *client_name,
-	char *pass,
-	char *service_name,
+	const char *client_name,
+	const char *password,
+	const char *service_name,
 	kadm5_config_params *realm_params,
 	unsigned long struct_version,
 	unsigned long api_version,
@@ -377,9 +442,30 @@ kadm5_init_with_password __P((
 kadm5_ret_t
 kadm5_init_with_password_ctx __P((
 	krb5_context context,
-	char *client_name,
-	char *pass,
-	char *service_name,
+	const char *client_name,
+	const char *password,
+	const char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
+kadm5_init_with_skey __P((
+	const char *client_name,
+	const char *keytab,
+	const char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
+kadm5_init_with_skey_ctx __P((
+	krb5_context context,
+	const char *client_name,
+	const char *keytab,
+	const char *service_name,
 	kadm5_config_params *realm_params,
 	unsigned long struct_version,
 	unsigned long api_version,
@@ -469,10 +555,31 @@ kadm5_s_get_privs __P((
 	u_int32_t *privs));
 
 kadm5_ret_t
+kadm5_s_init_with_creds __P((
+	const char *client_name,
+	krb5_ccache ccache,
+	const char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
+kadm5_s_init_with_creds_ctx __P((
+	krb5_context context,
+	const char *client_name,
+	krb5_ccache ccache,
+	const char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
 kadm5_s_init_with_password __P((
-	char *client_name,
-	char *pass,
-	char *service_name,
+	const char *client_name,
+	const char *password,
+	const char *service_name,
 	kadm5_config_params *realm_params,
 	unsigned long struct_version,
 	unsigned long api_version,
@@ -481,9 +588,30 @@ kadm5_s_init_with_password __P((
 kadm5_ret_t
 kadm5_s_init_with_password_ctx __P((
 	krb5_context context,
-	char *client_name,
-	char *pass,
-	char *service_name,
+	const char *client_name,
+	const char *password,
+	const char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
+kadm5_s_init_with_skey __P((
+	const char *client_name,
+	const char *keytab,
+	const char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
+kadm5_s_init_with_skey_ctx __P((
+	krb5_context context,
+	const char *client_name,
+	const char *keytab,
+	const char *service_name,
 	kadm5_config_params *realm_params,
 	unsigned long struct_version,
 	unsigned long api_version,
