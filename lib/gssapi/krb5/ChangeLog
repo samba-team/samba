@@ -1,5 +1,13 @@
 2003-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* arcfour.c: support KEYTYPE_ARCFOUR_56 keys, from Luke Howard
+	<lukeh@PADL.COM>
+	
+	* arcfour.c: use right seal alg, inherit keytype from parent key
+	
+	* arcfour.c: include the confounder in the checksum use the right
+	key usage number for warped/unwraped tokens
+	
 	* gssapi.h: add gss_krb5_nt_general_name as an mit compat glue
 	(same as GSS_KRB5_NT_PRINCIPAL_NAME)
 
