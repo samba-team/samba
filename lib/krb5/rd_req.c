@@ -126,6 +126,13 @@ krb5_rd_req_with_keyblock(krb5_context context,
     (*auth_context)->authenticator->cusec = authenticator.cusec;
     (*auth_context)->authenticator->ctime = authenticator.ctime;
 
+    if (authenticator.seq_number)
+      (*auth_context)->remote_seqnumber = *(authenticator.seq_number);
+
+    /* XXX - Xor sequence numbers */
+
+    /* XXX - check addresses */
+
     if (ap_req_options) {
       *ap_req_options = 0;
       if (ap_req.ap_options.use_session_key)

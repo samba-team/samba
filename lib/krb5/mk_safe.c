@@ -37,12 +37,17 @@ krb5_mk_safe(krb5_context context,
   usec = tv.tv_usec;
   s.safe_body.timestamp  = &tv.tv_sec;
   s.safe_body.usec       = &usec;
-  s.safe_body.seq_number = NULL;
+  if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
+    s.safe_body.seq_number = malloc(sizeof(*s.safe_body.seq_number));
+    *(s.safe_body.seq_number) = ++auth_context->local_seqnumber;
+  } else 
+    s.safe_body.seq_number = NULL;
   s.safe_body.s_address.addr_type = addr.addrs[0].type;
   s.safe_body.s_address.address   = addr.addrs[0].address;
   s.safe_body.r_address = NULL;
 
   len = encode_KRB_SAFE (buf + sizeof(buf) - 1, sizeof(buf), &s);
+  free(s.safe_body.seq_number);
   if (len < 0)
     return ASN1_PARSE_ERROR;
   outbuf->length = len;

@@ -27,12 +27,17 @@ krb5_mk_priv(krb5_context context,
   usec = tv.tv_usec;
   part.timestamp  = &tv.tv_sec;
   part.usec       = &usec;
-  part.seq_number = NULL;
+  if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
+    part.seq_number = malloc(sizeof(*part.seq_number));
+    *(part.seq_number) = ++auth_context->local_seqnumber;
+  } else 
+    part.seq_number = NULL;
   part.s_address.addr_type = addr.addrs[0].type;
   part.s_address.address   = addr.addrs[0].address;
   part.r_address = NULL;
 
   len = encode_EncKrbPrivPart (buf + sizeof(buf) - 1, sizeof(buf), &part);
+  free (part.seq_number);
   if (len < 0)
     return ASN1_PARSE_ERROR;
 

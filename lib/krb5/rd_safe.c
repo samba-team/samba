@@ -22,7 +22,25 @@ krb5_rd_safe(krb5_context context,
     return KRB5KRB_AP_ERR_MSG_TYPE;
   if (safe.cksum.cksumtype != CKSUMTYPE_RSA_MD4)
     return KRB5KRB_AP_ERR_INAPP_CKSUM;
-  /* XXX */
+  /* check timestamp */
+  if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
+    struct timeval tv;
+
+    gettimeofday (&tv, NULL);
+    if (safe.safe_body.timestamp == NULL ||
+	safe.safe_body.usec      == NULL ||
+	*(safe.safe_body.timestamp) - tv.tv_sec > 600)
+      return KRB5KRB_AP_ERR_SKEW;
+  }
+  /* XXX - check replay cache */
+
+  /* check sequence number */
+  if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
+    if (safe.safe_body.seq_number == NULL ||
+	*safe.safe_body.seq_number != ++auth_context->remote_seqnumber)
+      return KRB5KRB_AP_ERR_BADORDER;
+  }
+
   r = krb5_verify_checksum (context,
 			    safe.safe_body.user_data.data,
 			    safe.safe_body.user_data.length,

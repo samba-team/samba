@@ -15,6 +15,7 @@ krb5_build_authenticator (krb5_context context,
   char buf[1024];
   int len;
   krb5_error_code ret;
+  int32_t seq_number;
 
   auth->authenticator_vno = 5;
   auth->crealm = malloc(cred->client->realm.length + 1);
@@ -26,7 +27,14 @@ krb5_build_authenticator (krb5_context context,
   auth->cusec = tv.tv_usec;
   auth->ctime = tv.tv_sec;
   auth->subkey = NULL;
-  auth->seq_number = NULL;
+  if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
+    krb5_generate_seq_number (context,
+			      &cred->session, 
+			      &auth_context->local_seqnumber);
+    auth->seq_number = malloc(sizeof(*auth->seq_number));
+    *(auth->seq_number) = auth_context->local_seqnumber;
+  } else
+    auth->seq_number = NULL;
   auth->authorization_data = NULL;
   auth->cksum = cksum;
 
@@ -39,13 +47,15 @@ krb5_build_authenticator (krb5_context context,
 
   memset (buf, 0, sizeof(buf));
   len = encode_Authenticator (buf + sizeof(buf) - 1, sizeof(buf), auth);
-  free (auth->crealm);
 
   ret = krb5_encrypt (context, buf + sizeof(buf) - len, len, &cred->session, result);
 
   if (auth_result)
     *auth_result = auth;
-  else
+  else {
+    free (auth->crealm);
+    free (auth->seq_number);
     free (auth);
+  }
   return ret;
 }

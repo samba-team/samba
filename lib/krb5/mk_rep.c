@@ -21,7 +21,14 @@ krb5_mk_rep(krb5_context context,
   body.ctime = (*auth_context)->authenticator->ctime;
   body.cusec = (*auth_context)->authenticator->cusec;
   body.subkey = NULL;
-  body.seq_number = NULL;
+  if ((*auth_context)->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
+    krb5_generate_seq_number (context,
+			      &(*auth_context)->key,
+			      &(*auth_context)->local_seqnumber);
+    body.seq_number = malloc (sizeof(*body.seq_number));
+    *(body.seq_number) = (*auth_context)->local_seqnumber;
+  } else
+    body.seq_number = NULL;
 
   ap.enc_part.etype = (*auth_context)->key.keytype;
   ap.enc_part.kvno  = NULL;

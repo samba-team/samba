@@ -35,11 +35,29 @@ krb5_rd_priv(krb5_context context,
   if (len < 0)
     return ASN1_PARSE_ERROR;
 
+  /* check timestamp */
+  if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
+    struct timeval tv;
+
+    gettimeofday (&tv, NULL);
+    if (part.timestamp == NULL ||
+	part.usec      == NULL ||
+	*part.timestamp - tv.tv_sec > 600)
+      return KRB5KRB_AP_ERR_SKEW;
+  }
+
+  /* XXX - check replay cache */
+
+  /* check sequence number */
+  if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
+    if (part.seq_number == NULL ||
+	*part.seq_number != ++auth_context->remote_seqnumber)
+      return KRB5KRB_AP_ERR_BADORDER;
+  }
+
   r = krb5_data_copy (outbuf, part.user_data.data, part.user_data.length);
   if (r)
     return r;
-
-  /* XXX */
 
   return 0;
 }
