@@ -20,8 +20,6 @@ add rcp program
 
 * kdc
 
-preferably use keys with default salt for v5 requests
-
 * kadmin
 
 is in need of a major cleanup
