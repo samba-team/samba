@@ -13,13 +13,17 @@ extern char *__progname;
 
 void warnerr(int doexit, int eval, int doerrno, const char *fmt, va_list ap);
 
-void verr(int eval, const char *fmt, va_list ap);
-void err(int eval, const char *fmt, ...);
-void verrx(int eval, const char *fmt, va_list ap);
-void errx(int eval, const char *fmt, ...);
-void vwarn(const char *fmt, va_list ap);
-void warn(const char *fmt, ...);
-void vwarnx(const char *fmt, va_list ap);
-void warnx(const char *fmt, ...);
+#ifndef __GNUC__
+#define __attribute__(x)
+#endif
+
+void verr(int eval, const char *fmt, va_list ap) __attribute__ ((noreturn, format (printf, 2, 0)));
+void err(int eval, const char *fmt, ...)  __attribute__ ((noreturn, format (printf, 2, 3)));
+void verrx(int eval, const char *fmt, va_list ap) __attribute__ ((noreturn, format (printf, 2, 0)));
+void errx(int eval, const char *fmt, ...)  __attribute__ ((noreturn, format (printf, 2, 3)));
+void vwarn(const char *fmt, va_list ap) __attribute__ ((format (printf, 1, 0)));
+void warn(const char *fmt, ...)  __attribute__ ((format (printf, 1, 2)));
+void vwarnx(const char *fmt, va_list ap) __attribute__ ((format (printf, 1, 0)));
+void warnx(const char *fmt, ...)  __attribute__ ((format (printf, 1, 2)));;
 
 #endif /* __ERR_H__ */
