@@ -16,18 +16,19 @@
 ] interface samr
 {
 	/* account control (acct_flags) bits */
-	const int ACB_DISABLED  = 0x0001;  /* 1 = User account disabled */
-	const int ACB_HOMDIRREQ = 0x0002;  /* 1 = Home directory required */
-	const int ACB_PWNOTREQ  = 0x0004;  /* 1 = User password not required */
-	const int ACB_TEMPDUP   = 0x0008;  /* 1 = Temporary duplicate account */
-	const int ACB_NORMAL    = 0x0010;  /* 1 = Normal user account */
-	const int ACB_MNS       = 0x0020;  /* 1 = MNS logon user account */
-	const int ACB_DOMTRUST  = 0x0040;  /* 1 = Interdomain trust account */
-	const int ACB_WSTRUST   = 0x0080;  /* 1 = Workstation trust account */
-	const int ACB_SVRTRUST  = 0x0100;  /* 1 = Server trust account */
-	const int ACB_PWNOEXP   = 0x0200;  /* 1 = User password does not expire */
-	const int ACB_AUTOLOCK  = 0x0400;  /* 1 = Account auto locked */
-
+	typedef bitmap {
+		ACB_DISABLED  = 0x00000001,  /* 1 = User account disabled */
+		ACB_HOMDIRREQ = 0x00000002,  /* 1 = Home directory required */
+		ACB_PWNOTREQ  = 0x00000004,  /* 1 = User password not required */
+		ACB_TEMPDUP   = 0x00000008,  /* 1 = Temporary duplicate account */
+		ACB_NORMAL    = 0x00000010,  /* 1 = Normal user account */
+		ACB_MNS       = 0x00000020,  /* 1 = MNS logon user account */
+		ACB_DOMTRUST  = 0x00000040,  /* 1 = Interdomain trust account */
+		ACB_WSTRUST   = 0x00000080,  /* 1 = Workstation trust account */
+		ACB_SVRTRUST  = 0x00000100,  /* 1 = Server trust account */
+		ACB_PWNOEXP   = 0x00000200,  /* 1 = User password does not expire */
+		ACB_AUTOLOCK  = 0x00000400   /* 1 = Account auto locked */
+	} samr_AcctFlags;
 
 	/******************/
 	/* Function: 0x00 */
@@ -271,7 +272,7 @@
 	NTSTATUS samr_EnumDomainUsers(
 		[in,ref]      policy_handle *domain_handle,
 		[in,out,ref]  uint32 *resume_handle,
-		[in]          uint32 acct_flags,
+		[in]          samr_AcctFlags acct_flags,
 		[in]          uint32 max_size,
 		[out]         samr_SamArray *sam,
 		[out]         uint32 num_entries
@@ -292,7 +293,7 @@
 	NTSTATUS samr_EnumDomainAliases(
 		[in,ref]      policy_handle *domain_handle,
 		[in,out,ref]  uint32 *resume_handle,
-		[in]          uint32 acct_flags,
+		[in]          samr_AcctFlags acct_flags,
 		[out]         samr_SamArray *sam,
 		[out]         uint32 num_entries
 		);
@@ -589,7 +590,7 @@
 		samr_LogonHours logon_hours;
 		uint16 bad_password_count;
 		uint16 logon_count;
-		uint32 acct_flags;
+		samr_AcctFlags acct_flags;
 	} samr_UserInfo3;
 
 	typedef struct {
@@ -614,7 +615,7 @@
 		uint16 logon_count;
 		NTTIME last_password_change;
 		NTTIME acct_expiry;
-		uint32 acct_flags;
+		samr_AcctFlags acct_flags;
 	} samr_UserInfo5;
 
 	typedef struct {
@@ -656,7 +657,7 @@
 	} samr_UserInfo14;
 
 	typedef struct {
-		uint32 acct_flags;
+		samr_AcctFlags acct_flags;
 	} samr_UserInfo16;
 	
 	typedef struct {
@@ -668,19 +669,21 @@
 	} samr_UserInfo20;
 
 	/* this defines the bits used for fields_present in info21 */
-	const int SAMR_FIELD_NAME         = 0x00000002;
-	const int SAMR_FIELD_DESCRIPTION  = 0x00000010;
-	const int SAMR_FIELD_COMMENT      = 0x00000020;
-	const int SAMR_FIELD_LOGON_SCRIPT = 0x00000100;
-	const int SAMR_FIELD_PROFILE_PATH = 0x00000200;
-	const int SAMR_FIELD_WORKSTATION  = 0x00000400;
-	const int SAMR_FIELD_LOGON_HOURS  = 0x00002000;
-	const int SAMR_FIELD_ACCT_FLAGS   = 0x00100000;
-	const int SAMR_FIELD_PARAMETERS   = 0x00200000;
-	const int SAMR_FIELD_COUNTRY_CODE = 0x00400000;
-	const int SAMR_FIELD_CODE_PAGE    = 0x00800000;
-	const int SAMR_FIELD_PASSWORD     = 0x01000000; /* either of these */
-	const int SAMR_FIELD_PASSWORD2    = 0x02000000; /* two bits seems to work */
+	typedef bitmap {
+		SAMR_FIELD_NAME         = 0x00000002,
+		SAMR_FIELD_DESCRIPTION  = 0x00000010,
+		SAMR_FIELD_COMMENT      = 0x00000020,
+		SAMR_FIELD_LOGON_SCRIPT = 0x00000100,
+		SAMR_FIELD_PROFILE_PATH = 0x00000200,
+		SAMR_FIELD_WORKSTATION  = 0x00000400,
+		SAMR_FIELD_LOGON_HOURS  = 0x00002000,
+		SAMR_FIELD_ACCT_FLAGS   = 0x00100000,
+		SAMR_FIELD_PARAMETERS   = 0x00200000,
+		SAMR_FIELD_COUNTRY_CODE = 0x00400000,
+		SAMR_FIELD_CODE_PAGE    = 0x00800000,
+		SAMR_FIELD_PASSWORD     = 0x01000000, /* either of these */
+		SAMR_FIELD_PASSWORD2    = 0x02000000 /* two bits seems to work */
+	} samr_FieldsPresent;
 
 	typedef struct {
 		NTTIME last_logon;
@@ -706,8 +709,8 @@
 		[size_is(buf_count)] uint8 *buffer;
 		uint32 rid;
 		uint32 primary_gid;
-		uint32 acct_flags;
-		uint32 fields_present;
+		samr_AcctFlags acct_flags;
+		samr_FieldsPresent fields_present;
 		samr_LogonHours logon_hours;
 		uint16 bad_password_count;
 		uint16 logon_count;
@@ -832,7 +835,7 @@
 	typedef struct {
 		uint32    idx;
 		uint32    rid;
-		uint32    acct_flags;
+		samr_AcctFlags acct_flags;
 		samr_String account_name;
 		samr_String full_name;
 		samr_String description;
@@ -846,7 +849,7 @@
 	typedef struct {
 		uint32    idx;
 		uint32    rid;
-		uint32    acct_flags;
+		samr_AcctFlags acct_flags;
 		samr_String account_name;
 		samr_String description;
 	} samr_DispEntryFull;
@@ -1022,7 +1025,7 @@
 	NTSTATUS samr_CreateUser2(
 		[in,ref]      policy_handle *domain_handle,
 		[in,ref]      samr_String *account_name,
-		[in]          uint32 acct_flags,
+		[in]          samr_AcctFlags acct_flags,
 		[in]          uint32 access_mask,
 		[out,ref]     policy_handle *user_handle,
 		[out,ref]     uint32 *access_granted,
