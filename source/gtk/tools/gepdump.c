@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "dynconfig.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
@@ -322,9 +323,9 @@ static GtkWidget* create_mainwindow (void)
  int main(int argc, char **argv)
 {
 	gtk_init(&argc, &argv);
-    lp_load(dyn_CONFIGFILE,True,False,False);
-    load_interfaces();
-    setup_logging("gepdump", True);
+	lp_load(dyn_CONFIGFILE,True,False,False);
+	load_interfaces();
+	setup_logging("gepdump", True);
 	mainwin = create_mainwindow();
 	gtk_widget_show_all(mainwin);
 	gtk_main();
