@@ -2751,6 +2751,7 @@ static void remember_query_host(const char *arg,
 
  int main(int argc,char *argv[])
 {
+	extern BOOL AllowDebugChange;
 	fstring base_directory;
 	int opt;
 	pstring query_host;
@@ -2792,13 +2793,11 @@ static void remember_query_host(const char *arg,
 	*query_host = 0;
 	*base_directory = 0;
 
-	setup_logging(argv[0],True);
+        /* set default debug level to 0 regardless of what smb.conf sets */
+	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
+	dbf = x_stderr;
+	x_setbuf( x_stderr, NULL );
 
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
-		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
-			argv[0], dyn_CONFIGFILE);
-	}
-	
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 
 				POPT_CONTEXT_KEEP_FIRST);
 	poptSetOtherOptionHelp(pc, "service <password>");
@@ -2869,6 +2868,17 @@ static void remember_query_host(const char *arg,
 	}
 
 	poptGetArg(pc);
+	
+	/*
+	 * Don't load debug level from smb.conf. It should be
+	 * set by cmdline arg or remain default (0)
+	 */
+	AllowDebugChange = False;
+
+	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
+			argv[0], dyn_CONFIGFILE);
+	}
 	
 	load_interfaces();
 
