@@ -1204,16 +1204,16 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 	    && (pw_buf->smb_userid >= smbpasswd_state->low_nua_userid) 
 	    && (pw_buf->smb_userid <= smbpasswd_state->high_nua_userid)) {
 
-		pdb_set_user_sid_from_rid(sam_pass, fallback_pdb_uid_to_user_rid (pw_buf->smb_userid));
+		pdb_set_user_sid_from_rid(sam_pass, fallback_pdb_uid_to_user_rid (pw_buf->smb_userid), PDB_SET);
 
 		/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. 
 		   
 		   This was down the bottom for machines, but it looks pretty good as
 		   a general default for non-unix users. --abartlet 2002-01-08
 		*/
-		pdb_set_group_sid_from_rid (sam_pass, DOMAIN_GROUP_RID_USERS); 
-		pdb_set_username (sam_pass, pw_buf->smb_name);
-		pdb_set_domain (sam_pass, lp_workgroup());
+		pdb_set_group_sid_from_rid (sam_pass, DOMAIN_GROUP_RID_USERS, PDB_SET); 
+		pdb_set_username (sam_pass, pw_buf->smb_name, PDB_SET);
+		pdb_set_domain (sam_pass, lp_workgroup(), PDB_DEFAULT);
 	} else {
 
 		pwfile = getpwnam_alloc(pw_buf->smb_name);
@@ -1229,18 +1229,18 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 		passwd_free(&pwfile);
 	}
 	
-	pdb_set_nt_passwd (sam_pass, pw_buf->smb_nt_passwd);
-	pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd);			
-	pdb_set_acct_ctrl (sam_pass, pw_buf->acct_ctrl);
-	pdb_set_pass_last_set_time (sam_pass, pw_buf->pass_last_set_time);
-	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time, True);
+	pdb_set_nt_passwd (sam_pass, pw_buf->smb_nt_passwd, PDB_SET);
+	pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd, PDB_SET);			
+	pdb_set_acct_ctrl (sam_pass, pw_buf->acct_ctrl, PDB_SET);
+	pdb_set_pass_last_set_time (sam_pass, pw_buf->pass_last_set_time, PDB_SET);
+	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time, PDB_SET);
 	
 #if 0	/* JERRY */
 	/* the smbpasswd format doesn't have a must change time field, so
 	   we can't get this right. The best we can do is to set this to 
 	   some time in the future. 21 days seems as reasonable as any other value :) 
 	*/
-	pdb_set_pass_must_change_time (sam_pass, pw_buf->pass_last_set_time + MAX_PASSWORD_AGE);
+	pdb_set_pass_must_change_time (sam_pass, pw_buf->pass_last_set_time + MAX_PASSWORD_AGE, PDB_DEFAULT);
 #endif
 	return True;
 }
@@ -1492,6 +1492,50 @@ static NTSTATUS smbpasswd_delete_sam_account (struct pdb_methods *my_methods, SA
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
+static NTSTATUS smbpasswd_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
+				   DOM_SID sid, BOOL with_priv)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS smbpasswd_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
+				   gid_t gid, BOOL with_priv)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS smbpasswd_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
+				   char *name, BOOL with_priv)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS smbpasswd_add_group_mapping_entry(struct pdb_methods *methods,
+						  GROUP_MAP *map)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS smbpasswd_update_group_mapping_entry(struct pdb_methods *methods,
+						     GROUP_MAP *map)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS smbpasswd_delete_group_mapping_entry(struct pdb_methods *methods,
+						     DOM_SID sid)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS smbpasswd_enum_group_mapping(struct pdb_methods *methods,
+					     enum SID_NAME_USE sid_name_use,
+					     GROUP_MAP **rmap, int *num_entries,
+					     BOOL unix_only, BOOL with_priv)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 static void free_private_data(void **vp) 
 {
 	struct smbpasswd_privates **privates = (struct smbpasswd_privates**)vp;
@@ -1522,6 +1566,13 @@ NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
 	(*pdb_method)->add_sam_account = smbpasswd_add_sam_account;
 	(*pdb_method)->update_sam_account = smbpasswd_update_sam_account;
 	(*pdb_method)->delete_sam_account = smbpasswd_delete_sam_account;
+	(*pdb_method)->getgrsid = smbpasswd_getgrsid;
+	(*pdb_method)->getgrgid = smbpasswd_getgrgid;
+	(*pdb_method)->getgrnam = smbpasswd_getgrnam;
+	(*pdb_method)->add_group_mapping_entry = smbpasswd_add_group_mapping_entry;
+	(*pdb_method)->update_group_mapping_entry = smbpasswd_update_group_mapping_entry;
+	(*pdb_method)->delete_group_mapping_entry = smbpasswd_delete_group_mapping_entry;
+	(*pdb_method)->enum_group_mapping = smbpasswd_enum_group_mapping;
 
 	/* Setup private data and free function */
 

@@ -205,8 +205,8 @@ static void samr_clear_sam_passwd(SAM_ACCOUNT *sam_pass)
 
 	/* These now zero out the old password */
 
-	pdb_set_lanman_passwd(sam_pass, NULL);
-	pdb_set_nt_passwd(sam_pass, NULL);
+	pdb_set_lanman_passwd(sam_pass, NULL, PDB_DEFAULT);
+	pdb_set_nt_passwd(sam_pass, NULL, PDB_DEFAULT);
 }
 
 
@@ -302,7 +302,7 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 		return NT_STATUS_OK;
 	}
 
-	if (!enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV)) {
+	if (!pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -894,7 +894,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 	/* well-known aliases */
 	if (sid_equal(sid, &global_sid_Builtin) && !lp_hide_local_users()) {
 		
-		enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
+		pdb_enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
 		
 		if (num_entries != 0) {		
 			*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
@@ -931,7 +931,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 		for (; (num_entries < max_entries) && (grp != NULL); grp = grp->next) {
 			uint32 trid;
 			
-			if(!get_group_from_gid(grp->gr_gid, &smap, MAPPING_WITHOUT_PRIV))
+			if(!pdb_getgrgid(&smap, grp->gr_gid, MAPPING_WITHOUT_PRIV))
 				continue;
 			
 			if (smap.sid_name_use!=SID_NAME_ALIAS) {
@@ -1012,7 +1012,7 @@ static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DO
 
 	*p_num_entries = 0;
 
-	enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
+	pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
 
 	num_entries=group_entries-start_idx;
 
@@ -1328,7 +1328,7 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	    !sid_check_is_in_builtin(&sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	if (!get_group_map_from_sid(sid, &map, MAPPING_WITHOUT_PRIV))
+	if (!pdb_getgrsid(&map, sid, MAPPING_WITHOUT_PRIV))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	switch (q_u->switch_level) {
@@ -2288,13 +2288,13 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 			return nt_status;
 		}
 		
-		if (!pdb_set_username(sam_pass, account)) {
+		if (!pdb_set_username(sam_pass, account, PDB_CHANGED)) {
 			pdb_free_sam(&sam_pass);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
- 	pdb_set_acct_ctrl(sam_pass, acb_info);
+ 	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);
  
  	if (!pdb_add_sam_account(sam_pass)) {
  		pdb_free_sam(&sam_pass);
@@ -2675,8 +2675,9 @@ static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, DOM_SID *sid)
 		pdb_free_sam(&pwd);
 		return False;
 	}
-
-	if (!pdb_set_acct_ctrl(pwd, id10->acb_info)) {
+	
+	/* FIX ME: check if the value is really changed --metze */
+	if (!pdb_set_acct_ctrl(pwd, id10->acb_info, PDB_CHANGED)) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
@@ -2712,11 +2713,11 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, DOM_SID *sid)
 		return False;
 	}
  
-	if (!pdb_set_lanman_passwd (pwd, id12->lm_pwd)) {
+	if (!pdb_set_lanman_passwd (pwd, id12->lm_pwd, PDB_CHANGED)) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
-	if (!pdb_set_nt_passwd     (pwd, id12->nt_pwd)) {
+	if (!pdb_set_nt_passwd     (pwd, id12->nt_pwd, PDB_CHANGED)) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
@@ -3180,7 +3181,7 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 
 	if (sid_equal(&alias_sid, &global_sid_Builtin)) {
 		DEBUG(10, ("lookup on Builtin SID (S-1-5-32)\n"));
-		if(!get_local_group_from_sid(als_sid, &map, MAPPING_WITHOUT_PRIV))
+		if(!get_builtin_group_from_sid(als_sid, &map, MAPPING_WITHOUT_PRIV))
 			return NT_STATUS_NO_SUCH_ALIAS;
 	} else {
 		if (sid_equal(&alias_sid, get_global_sam_sid())) {
@@ -3404,19 +3405,21 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 
 	if ((pwd=getpwuid_alloc(uid)) == NULL) {
 		return NT_STATUS_NO_SUCH_USER;
-	} else {
-		passwd_free(&pwd);
 	}
 
-	if ((grp=getgrgid(map.gid)) == NULL)
+	if ((grp=getgrgid(map.gid)) == NULL) {
+		passwd_free(&pwd);
 		return NT_STATUS_NO_SUCH_ALIAS;
+	}
 
 	/* we need to copy the name otherwise it's overloaded in user_in_group_list */
 	fstrcpy(grp_name, grp->gr_name);
 
 	/* if the user is already in the group */
-	if(user_in_group_list(pwd->pw_name, grp_name))
+	if(user_in_group_list(pwd->pw_name, grp_name)) {
+		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_IN_ALIAS;
+	}
 
 	/* 
 	 * ok, the group exist, the user exist, the user is not in the group,
@@ -3425,9 +3428,12 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	smb_add_user_group(grp_name, pwd->pw_name);
 
 	/* check if the user has been added then ... */
-	if(!user_in_group_list(pwd->pw_name, grp_name))
+	if(!user_in_group_list(pwd->pw_name, grp_name)) {
+		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_NOT_IN_ALIAS;	/* don't know what to reply else */
+	}
 
+	passwd_free(&pwd);
 	return NT_STATUS_OK;
 }
 
@@ -3512,7 +3518,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	GROUP_MAP map;
 	uid_t uid;
 	NTSTATUS ret;
-	SAM_ACCOUNT *sam_user;
+	SAM_ACCOUNT *sam_user=NULL;
 	BOOL check;
 	uint32 acc_granted;
 
@@ -3559,19 +3565,21 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 
 	if ((pwd=getpwuid_alloc(uid)) == NULL) {
 		return NT_STATUS_NO_SUCH_USER;
-	} else {
-		passwd_free(&pwd);
 	}
 
-	if ((grp=getgrgid(map.gid)) == NULL)
+	if ((grp=getgrgid(map.gid)) == NULL) {
+		passwd_free(&pwd);
 		return NT_STATUS_NO_SUCH_GROUP;
+	}
 
 	/* we need to copy the name otherwise it's overloaded in user_in_group_list */
 	fstrcpy(grp_name, grp->gr_name);
 
 	/* if the user is already in the group */
-	if(user_in_group_list(pwd->pw_name, grp_name))
+	if(user_in_group_list(pwd->pw_name, grp_name)) {
+		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_IN_GROUP;
+	}
 
 	/* 
 	 * ok, the group exist, the user exist, the user is not in the group,
@@ -3582,9 +3590,12 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	smb_add_user_group(grp_name, pwd->pw_name);
 
 	/* check if the user has been added then ... */
-	if(!user_in_group_list(pwd->pw_name, grp_name))
+	if(!user_in_group_list(pwd->pw_name, grp_name)) {
+		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;		/* don't know what to reply else */
+	}
 
+	passwd_free(&pwd);
 	return NT_STATUS_OK;
 }
 
@@ -3783,7 +3794,7 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	if ( (grp=getgrgid(gid)) != NULL)
 		return NT_STATUS_ACCESS_DENIED;
 
-	if(!group_map_remove(group_sid))
+	if(!pdb_delete_group_mapping_entry(group_sid))
 		return NT_STATUS_ACCESS_DENIED;
 
 	if (!close_policy_hnd(p, &q_u->group_pol))
@@ -3846,7 +3857,7 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* don't check if we removed it as it could be an un-mapped group */
-	group_map_remove(alias_sid);
+	pdb_delete_group_mapping_entry(alias_sid);
 
 	if (!close_policy_hnd(p, &q_u->alias_pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
@@ -4076,7 +4087,7 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if(!add_mapping_entry(&map, TDB_REPLACE)) {
+	if(!pdb_update_group_mapping_entry(&map)) {
 		free_privilege(&map.priv_set);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
@@ -4120,7 +4131,7 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if(!add_mapping_entry(&map, TDB_REPLACE)) {
+	if(!pdb_update_group_mapping_entry(&map)) {
 		free_privilege(&map.priv_set);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}

@@ -707,11 +707,11 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
 		D_P16(pwd, pass2, unenc_new_pw);
 	}
 
-	if (!pdb_set_lanman_passwd(sampass, unenc_new_pw)) {
+	if (!pdb_set_lanman_passwd(sampass, unenc_new_pw, PDB_CHANGED)) {
 		return False;
 	}
 
-	if (!pdb_set_nt_passwd    (sampass, NULL)) {
+	if (!pdb_set_nt_passwd    (sampass, NULL, PDB_CHANGED)) {
 		return False;	/* We lose the NT hash. Sorry. */
 	}
 

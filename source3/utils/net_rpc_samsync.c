@@ -111,7 +111,7 @@ static void display_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta)
 
 static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds)
 {
-	unsigned last_rid = -1;
+	unsigned sync_context = 0;
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
@@ -126,15 +126,15 @@ static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret
 	d_printf("Dumping database %u\n", db_type);
 
 	do {
-		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds, db_type, last_rid+1,
+		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds, db_type,
+					       sync_context,
 					       &num_deltas, &hdr_deltas, &deltas);
 		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), ret_creds);
-		last_rid = 0;
                 for (i = 0; i < num_deltas; i++) {
 			display_sam_entry(&hdr_deltas[i], &deltas[i]);
-			last_rid = hdr_deltas[i].target_rid;
                 }
-	} while (last_rid && NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+		sync_context += 1;
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	talloc_destroy(mem_ctx);
 }
@@ -199,62 +199,62 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 	   desc, workstations, profile. */
 
 	unistr2_to_ascii(s, &delta->uni_acct_name, sizeof(s) - 1);
-	pdb_set_nt_username(account, s);
+	pdb_set_nt_username(account, s, PDB_CHANGED);
 
 	/* Unix username is the same - for sainity */
-	pdb_set_username(account, s);
+	pdb_set_username(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_full_name, sizeof(s) - 1);
-	pdb_set_fullname(account, s);
+	pdb_set_fullname(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_home_dir, sizeof(s) - 1);
-	pdb_set_homedir(account, s, True);
+	pdb_set_homedir(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_dir_drive, sizeof(s) - 1);
-	pdb_set_dir_drive(account, s, True);
+	pdb_set_dir_drive(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_logon_script, sizeof(s) - 1);
-	pdb_set_logon_script(account, s, True);
+	pdb_set_logon_script(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_acct_desc, sizeof(s) - 1);
-	pdb_set_acct_desc(account, s);
+	pdb_set_acct_desc(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_workstations, sizeof(s) - 1);
-	pdb_set_workstations(account, s);
+	pdb_set_workstations(account, s, PDB_CHANGED);
 
 	unistr2_to_ascii(s, &delta->uni_profile, sizeof(s) - 1);
-	pdb_set_profile_path(account, s, True);
+	pdb_set_profile_path(account, s, PDB_CHANGED);
 
 	/* User and group sid */
 
-	pdb_set_user_sid_from_rid(account, delta->user_rid);
-	pdb_set_group_sid_from_rid(account, delta->group_rid);
+	pdb_set_user_sid_from_rid(account, delta->user_rid, PDB_CHANGED);
+	pdb_set_group_sid_from_rid(account, delta->group_rid, PDB_CHANGED);
 
 	/* Logon and password information */
 
-	pdb_set_logon_time(account, nt_time_to_unix(&delta->logon_time), True);
+	pdb_set_logon_time(account, nt_time_to_unix(&delta->logon_time), PDB_CHANGED);
 	pdb_set_logoff_time(account, nt_time_to_unix(&delta->logoff_time),
-			    True);
-	pdb_set_logon_divs(account, delta->logon_divs);
+			    PDB_CHANGED);
+	pdb_set_logon_divs(account, delta->logon_divs, PDB_CHANGED);
 
 	/* TODO: logon hours */
 	/* TODO: bad password count */
 	/* TODO: logon count */
 
 	pdb_set_pass_last_set_time(
-		account, nt_time_to_unix(&delta->pwd_last_set_time));
+		account, nt_time_to_unix(&delta->pwd_last_set_time), PDB_CHANGED);
 
-	pdb_set_kickoff_time(account, get_time_t_max(), True);
+	pdb_set_kickoff_time(account, get_time_t_max(), PDB_CHANGED);
 
 	/* Decode hashes from password hash */
 	sam_pwd_hash(delta->user_rid, delta->pass.buf_lm_pwd, lm_passwd, 0);
 	sam_pwd_hash(delta->user_rid, delta->pass.buf_nt_pwd, nt_passwd, 0);
-	pdb_set_nt_passwd(account, nt_passwd);
-	pdb_set_lanman_passwd(account, lm_passwd);
+	pdb_set_nt_passwd(account, nt_passwd, PDB_CHANGED);
+	pdb_set_lanman_passwd(account, lm_passwd, PDB_CHANGED);
 
 	/* TODO: account expiry time */
 
-	pdb_set_acct_ctrl(account, delta->acb_info);
+	pdb_set_acct_ctrl(account, delta->acb_info, PDB_CHANGED);
 	return NT_STATUS_OK;
 }
 
@@ -324,8 +324,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		pdb_update_sam_account(sam_account);
 	}
 
-	if (!get_group_map_from_sid(*pdb_get_group_sid(sam_account),
-				    &map, False)) {
+	if (!pdb_getgrsid(&map, *pdb_get_group_sid(sam_account), False)) {
 		DEBUG(0, ("Primary group of %s has no mapping!\n",
 			  pdb_get_username(sam_account)));
 		pdb_free_sam(&sam_account);
@@ -353,7 +352,7 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	DOM_SID group_sid;
 	fstring sid_string;
 	GROUP_MAP map;
-	int flag = TDB_INSERT;
+	BOOL insert = True;
 
 	unistr2_to_ascii(name, &delta->uni_grp_name, sizeof(name)-1);
 	unistr2_to_ascii(comment, &delta->uni_grp_desc, sizeof(comment)-1);
@@ -363,9 +362,9 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	sid_append_rid(&group_sid, rid);
 	sid_to_string(sid_string, &group_sid);
 
-	if (get_group_map_from_sid(group_sid, &map, False)) {
+	if (pdb_getgrsid(&map, group_sid, False)) {
 		grp = getgrgid(map.gid);
-		flag = 0; /* Don't TDB_INSERT, mapping exists */
+		insert = False;
 	}
 
 	if (grp == NULL)
@@ -392,7 +391,10 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	map.priv_set.count = 0;
 	map.priv_set.set = NULL;
 
-	add_mapping_entry(&map, flag);
+	if (insert)
+		pdb_add_group_mapping_entry(&map);
+	else
+		pdb_update_group_mapping_entry(&map);
 
 	return NT_STATUS_OK;
 }
@@ -530,7 +532,7 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	DOM_SID alias_sid;
 	fstring sid_string;
 	GROUP_MAP map;
-	int insert_flag = TDB_INSERT;
+	BOOL insert = True;
 
 	unistr2_to_ascii(name, &delta->uni_als_name, sizeof(name)-1);
 	unistr2_to_ascii(comment, &delta->uni_als_desc, sizeof(comment)-1);
@@ -540,9 +542,9 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	sid_append_rid(&alias_sid, rid);
 	sid_to_string(sid_string, &alias_sid);
 
-	if (get_group_map_from_sid(alias_sid, &map, False)) {
+	if (pdb_getgrsid(&map, alias_sid, False)) {
 		grp = getgrgid(map.gid);
-		insert_flag = 0; /* Don't TDB_INSERT, mapping exists */
+		insert = False;
 	}
 
 	if (grp == NULL) {
@@ -573,7 +575,10 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	map.priv_set.count = 0;
 	map.priv_set.set = NULL;
 
-	add_mapping_entry(&map, insert_flag);
+	if (insert)
+		pdb_add_group_mapping_entry(&map);
+	else
+		pdb_update_group_mapping_entry(&map);
 
 	return NT_STATUS_OK;
 }
@@ -620,7 +625,7 @@ static void
 fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 	       DOM_SID dom_sid)
 {
-	unsigned last_rid = -1;
+	unsigned sync_context = 0;
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
@@ -636,17 +641,16 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 
 	do {
 		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds,
-					       db_type, last_rid+1,
+					       db_type, sync_context,
 					       &num_deltas,
 					       &hdr_deltas, &deltas);
 		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred),
 				     ret_creds);
-		last_rid = 0;
                 for (i = 0; i < num_deltas; i++) {
 			fetch_sam_entry(&hdr_deltas[i], &deltas[i], dom_sid);
-			last_rid = hdr_deltas[i].target_rid;
                 }
-	} while (last_rid && NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+		sync_context += 1;
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	talloc_destroy(mem_ctx);
 }

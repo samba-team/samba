@@ -276,7 +276,7 @@ BOOL get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids, SA
 	DEBUG(10,("get_domain_user_groups: searching domain groups [%s] is a member of\n", user_name));
 
 	/* first get the list of the domain groups */
-	if (!enum_group_mapping(SID_NAME_DOM_GRP, &map, &num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV))
+	if (!pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, &num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV))
 		return False;
 	DEBUG(10,("get_domain_user_groups: there are %d mapped groups\n", num_entries));
 

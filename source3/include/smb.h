@@ -569,25 +569,59 @@ typedef struct {
 /*
  * bit flags representing initialized fields in SAM_ACCOUNT
  */
-#define FLAG_SAM_UNINIT		0x00000000
-#define FLAG_SAM_UID		0x00000001
-#define FLAG_SAM_GID		0x00000002
-#define FLAG_SAM_SMBHOME	0x00000004
-#define FLAG_SAM_PROFILE	0x00000008
-#define FLAG_SAM_DRIVE          0x00000010
-#define FLAG_SAM_LOGONSCRIPT	0x00000020
-#define FLAG_SAM_LOGONTIME	0x00000040
-#define FLAG_SAM_LOGOFFTIME	0x00000080
-#define FLAG_SAM_KICKOFFTIME	0x00000100
-#define FLAG_SAM_CANCHANGETIME	0x00000200
-#define FLAG_SAM_MUSTCHANGETIME	0x00000400
-#define FLAG_SAM_PLAINTEXT_PW   0x00000800
+enum pdb_elements {
+	PDB_UNINIT,
+	PDB_UID,
+	PDB_GID,
+	PDB_SMBHOME,
+	PDB_PROFILE,
+	PDB_DRIVE,
+	PDB_LOGONSCRIPT,
+	PDB_LOGONTIME,
+	PDB_LOGOFFTIME,
+	PDB_KICKOFFTIME,
+	PDB_CANCHANGETIME,
+	PDB_MUSTCHANGETIME,
+	PDB_PLAINTEXT_PW,
+	PDB_USERNAME,
+	PDB_FULLNAME,
+	PDB_DOMAIN,
+	PDB_NTUSERNAME,
+	PDB_HOURSLEN,
+	PDB_LOGONDIVS,
+	PDB_USERSID,
+	PDB_GROUPSID,
+	PDB_ACCTCTRL,
+	PDB_PASSLASTSET,
+	PDB_UNIXHOMEDIR,
+	PDB_ACCTDESC,
+	PDB_WORKSTATIONS,
+	PDB_UNKNOWNSTR,
+	PDB_MUNGEDDIAL,
+	PDB_HOURS,
+	PDB_UNKNOWN3,
+	PDB_UNKNOWN5,
+	PDB_UNKNOWN6,
+	PDB_LMPASSWD,
+	PDB_NTPASSWD,
+
+	/* this must be the last element */
+	PDB_COUNT,
+};
+
+enum pdb_value_state {
+	PDB_DEFAULT=0,
+	PDB_SET,
+	PDB_CHANGED
+};
 
 #define IS_SAM_UNIX_USER(x) \
-	((pdb_get_init_flag(x) & FLAG_SAM_UID) \
-	 && (pdb_get_init_flag(x) & FLAG_SAM_GID))
+	(( pdb_get_init_flags(x, PDB_UID) != PDB_DEFAULT ) \
+	 && ( pdb_get_init_flags(x,PDB_GID) != PDB_DEFAULT ))
 
-#define IS_SAM_SET(x, flag)	((x)->private.init_flag & (flag))
+#define IS_SAM_SET(x, flag)	(pdb_get_init_flags(x, flag) == PDB_SET)
+#define IS_SAM_CHANGED(x, flag)	(pdb_get_init_flags(x, flag) == PDB_CHANGED)
+#define IS_SAM_DEFAULT(x, flag)	(pdb_get_init_flags(x, flag) == PDB_DEFAULT)
 		
 typedef struct sam_passwd
 {
@@ -599,8 +633,9 @@ typedef struct sam_passwd
 
 	struct user_data {
 		/* initiailization flags */
-		uint32 init_flag;
-		
+		struct bitmap *change_flags;
+		struct bitmap *set_flags;
+
 		time_t logon_time;            /* logon time */
 		time_t logoff_time;           /* logoff time */
 		time_t kickoff_time;          /* kickoff time */
