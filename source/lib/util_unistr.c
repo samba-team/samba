@@ -402,7 +402,7 @@ BOOL load_unicode_map(int codepage)
 
   size = st.st_size;
 
-  if ( size != UNICODE_MAP_HEADER_SIZE + 4*65536 || size != UNICODE_MAP_HEADER_SIZE +(2*256 + 2*65536)) {
+  if ((size != UNICODE_MAP_HEADER_SIZE + 4*65536) && (size != UNICODE_MAP_HEADER_SIZE +(2*256 + 2*65536))) {
     DEBUG(0,("load_unicode_map: file %s is an incorrect size for a \
 unicode map file (size=%d).\n", unicode_map_file_name, (int)size));
     return NULL;
