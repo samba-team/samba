@@ -908,7 +908,7 @@ BOOL cli_open_sockets(int port )
 				    interpret_addr(lp_socket_address()))) != -1) {
 	  set_socket_options(bcast, "SO_BROADCAST");
 
-	  if ((ip_list = name_query(bcast, host, name_type, True, True, *iface_bcast(dest_ip),
+	  if (ip_list = name_query(bcast, host, name_type, True, True, *iface_bcast(dest_ip),
 				    &count,0)) {
 		  dest_ip = ip_list[0];
 		  free(ip_list);

@@ -167,7 +167,7 @@ int do_compile(int codepage, char *input_file, char *output_file)
   FILE *fp = NULL;
   uint32 size = 0;
   char *buf = NULL;
-  char output_buf[CODEPAGE_HEADER_SIZE + 512];
+  char output_buf[CODEPAGE_HEADER_SIZE + 4 * MAXCODEPAGELINES];
   int num_lines = 0;
   int i = 0;
   struct stat st;
@@ -223,11 +223,11 @@ The maximum size I will believe is 100k.\n", prog_name, size);
 
   num_lines = clean_data( &buf, &size);
 
-  /* There can be a maximum of 128 lines. */
-  if(num_lines > 128)
+  /* There can be a maximum of MAXCODEPAGELINES lines. */
+  if(num_lines > MAXCODEPAGELINES)
   {
-    fprintf(stderr, "%s: There can be a maximum 128 lines of data in a codepage \
-definition file. File %s has %d.\n", prog_name, input_file, num_lines);
+    fprintf(stderr, "%s: There can be a maximum %d lines of data in a codepage \
+definition file. File %s has %d.\n", prog_name, MAXCODEPAGELINES, input_file, num_lines);
     exit(1);
   }
 

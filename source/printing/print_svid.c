@@ -60,7 +60,7 @@ static void populate_printers()
 			if (((tmp = strchr(buf, ' ')) == NULL) ||
 			    ((tmp = strchr(++tmp, ' ')) == NULL))
 				continue;
-			name = tmp++;
+			name = ++tmp;
 
 			/* truncate the ": ..." */
 			if ((tmp = strchr(name, ':')) != NULL)

@@ -216,11 +216,11 @@ static codepage_p load_client_codepage( int client_codepage )
   /* Check if it is at least big enough to hold the required
      data. Should be 2 byte version, 2 byte codepage, 4 byte length, 
      plus zero or more bytes of data. Note that the data cannot be more
-     than 512 bytes - giving a max size of 520.
+     than 4 * MAXCODEPAGELINES bytes.
    */
   size = (unsigned int)st.st_size;
 
-  if( size < CODEPAGE_HEADER_SIZE || size > (CODEPAGE_HEADER_SIZE + 256))
+  if( size < CODEPAGE_HEADER_SIZE || size > (CODEPAGE_HEADER_SIZE + 4 * MAXCODEPAGELINES))
   {
     DEBUG(0,("load_client_codepage: file %s is an incorrect size for a \
 code page file.\n", codepage_file_name));
@@ -323,10 +323,9 @@ initialise the client codepage.
 void codepage_initialise(int client_codepage)
 {
   int i;
-  codepage_p cp = NULL;
-  static BOOL done = False;
+  static codepage_p cp = NULL;
 
-  if(done == True) 
+  if(cp != NULL)
   {
     DEBUG(6,
       ("codepage_initialise: called twice - ignoring second client code page = %d\n",
@@ -361,8 +360,6 @@ for code page %d failed. Using default client codepage 850\n",
     for(i = 0; !((cp[i][0] == '\0') && (cp[i][1] == '\0')); i++)
       add_dos_char(cp[i][0], (BOOL)cp[i][2], cp[i][1], (BOOL)cp[i][3]);
   }
-
-  done = True;
 }
 
 /*******************************************************************
