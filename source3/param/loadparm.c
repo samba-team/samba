@@ -159,6 +159,8 @@ typedef struct
   char *szAddUserScript;
   char *szDelUserScript;
   char *szWINSHook;
+  char *szNtForms;
+  char *szNtDriverFile;    
 #ifdef WITH_UTMP
   char *szUtmpDir;
 #endif /* WITH_UTMP */
@@ -721,6 +723,8 @@ static struct parm_struct parm_table[] =
   {"printer",          P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL,  0},
   {"printer driver",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriver,  NULL,   NULL,  FLAG_PRINT},
   {"printer driver location",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriverLocation,  NULL,   NULL,  FLAG_PRINT|FLAG_GLOBAL},
+  {"nt forms file",    P_STRING,  P_GLOBAL, &Globals.szNtForms,         NULL,   NULL,  FLAG_GLOBAL},
+  {"nt printer driver",P_STRING,  P_GLOBAL, &Globals.szNtDriverFile,    NULL,   NULL,  FLAG_GLOBAL},
 
 
   {"Filename Handling", P_SEP, P_SEPARATOR},
@@ -908,6 +912,8 @@ static void init_globals(void)
   string_set(&Globals.szPasswdProgram, PASSWD_PROGRAM);
   string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
   string_set(&Globals.szDriverFile, DRIVERFILE);
+  string_set(&Globals.szNtForms, FORMSFILE);
+  string_set(&Globals.szNtDriverFile, NTDRIVERSDIR);
   string_set(&Globals.szLockDir, LOCKDIR);
   string_set(&Globals.szRootdir, "/");
 #ifdef WITH_UTMP
@@ -1221,6 +1227,9 @@ FN_GLOBAL_STRING(lp_domain_admin_group,&Globals.szDomainAdminGroup)
 FN_GLOBAL_STRING(lp_domain_guest_group,&Globals.szDomainGuestGroup)
 FN_GLOBAL_STRING(lp_domain_admin_users,&Globals.szDomainAdminUsers)
 FN_GLOBAL_STRING(lp_domain_guest_users,&Globals.szDomainGuestUsers)
+
+FN_GLOBAL_STRING(lp_nt_forms,&Globals.szNtForms)
+FN_GLOBAL_STRING(lp_nt_drivers_file,&Globals.szNtDriverFile)
 
 #ifdef WITH_LDAP
 FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);

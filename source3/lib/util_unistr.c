@@ -79,6 +79,61 @@ int dos_PutUniCode(char *dst,const char *src, ssize_t len)
 }
 
 /*******************************************************************
+ Put an ASCII string into a UNICODE array (uint16's).
+
+ Warning: doesn't do any codepage !!! BAD !!!
+ 
+ Help ! Fix Me ! Fix Me !
+********************************************************************/
+
+void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
+{
+	uint16 *destend = dest + maxlen;
+	register char c;
+
+	while (dest < destend)
+	{
+		c = *(src++);
+		if (c == 0)
+		{
+			break;
+		}
+
+		*(dest++) = (uint16)c;
+	}
+
+	*dest = 0;
+}
+
+/*******************************************************************
+ Pull an ASCII string out of a UNICODE array (uint16's).
+
+ Warning: doesn't do any codepage !!! BAD !!!
+ 
+ Help ! Fix Me ! Fix Me !
+********************************************************************/
+
+void unistr_to_ascii(char *dest, const uint16 *src, int len)
+{
+	char *destend = dest + len;
+	register uint16 c;
+
+	while (dest < destend)
+	{
+		c = *(src++);
+		if (c == 0)
+		{
+			break;
+		}
+
+		*(dest++) = (char)c;
+	}
+
+	*dest = 0;
+}
+
+
+/*******************************************************************
  Skip past some unicode strings in a buffer.
 ********************************************************************/
 
@@ -181,6 +236,48 @@ char *dos_unistr2_to_str(UNISTR2 *str)
 	*p = 0;
 	return lbuf;
 }
+
+/*******************************************************************
+ Convert a UNISTR2 structure to an ASCII string
+ Warning: this version does DOS codepage.
+********************************************************************/
+
+void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
+{
+	char *destend;
+	const uint16 *src;
+	size_t len;
+	register uint16 c;
+
+	src = str->buffer;
+	len = MIN(str->uni_str_len, maxlen);
+	destend = dest + len;
+
+	while (dest < destend)
+	{
+		uint16 ucs2_val;
+		uint16 cp_val;
+
+		c = *(src++);
+		if (c == 0)
+		{
+			break;
+		}
+		
+		ucs2_val = SVAL(src,0);
+		cp_val = ucs2_to_doscp[ucs2_val];
+				
+		if (cp_val < 256)
+			*(dest++) = (char)cp_val;
+		else {
+			*dest= (cp_val >> 8) & 0xff;
+			*(dest++) = (cp_val & 0xff);
+		}
+	}
+
+	*dest = 0;
+}
+
 
 /*******************************************************************
 Return a number stored in a buffer
