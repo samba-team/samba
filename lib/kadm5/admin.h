@@ -415,6 +415,12 @@ kadm5_ret_principal_ent __P((
 	kadm5_principal_ent_t princ));
 
 kadm5_ret_t
+kadm5_ret_principal_ent_mask __P((
+	krb5_storage *sp,
+	kadm5_principal_ent_t princ,
+	u_int32_t *mask));
+
+kadm5_ret_t
 kadm5_ret_tl_data __P((
 	krb5_storage *sp,
 	krb5_tl_data *tl));
@@ -513,9 +519,27 @@ kadm5_store_principal_ent __P((
 	kadm5_principal_ent_t princ));
 
 kadm5_ret_t
+kadm5_store_principal_ent_mask __P((krb5_storage *sp,
+				    kadm5_principal_ent_t princ,
+				    u_int32_t mask));
+kadm5_ret_t
 kadm5_store_tl_data __P((
 	krb5_storage *sp,
 	krb5_tl_data *tl));
+
+kadm5_ret_t
+kadm5_server_send_sp __P((krb5_context context, krb5_auth_context ac, 
+		  krb5_storage *sp, int fd));
+kadm5_ret_t
+kadm5_server_send __P((krb5_context context, krb5_auth_context ac, 
+		  krb5_data *data, int fd));
+kadm5_ret_t
+kadm5_server_recv_sp __P((krb5_context context, krb5_auth_context ac, 
+		  krb5_storage *sp, int fd));
+
+kadm5_ret_t
+kadm5_server_recv __P((krb5_context context, krb5_auth_context ac, 
+		  krb5_data *data, int fd));
 
 kadm5_ret_t
 kadmind_dispatch __P((
