@@ -8,8 +8,12 @@
 $1 == "error_table" || $1 == "et" {
 	name = $2
 	base = 0
-	for(i = 1; i <= length(name); i++){
-		base = base * 64 + index("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_", substr(name, i, 1))
+	if(NF < 3)
+		base_str = name
+	else
+		base_str = $3
+	for(i = 1; i <= length(base_str); i++){
+		base = base * 64 + index("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_", substr(base_str, i, 1))
 	}
 	base *= 256
 	if(base >= 2147483648){ # 0x80000000
