@@ -3843,6 +3843,8 @@ BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		for (i = 0; i < num_names; i++)
 		{
 			int len = name[i] != NULL ? strlen(name[i]) : 0;
+			DEBUG(10,("name[%d]:%s\ttype:%d\n",
+			           i, name[i], type[i]));
 			make_uni_hdr(&(r_u->hdr_name[i]), len);
 			make_unistr2(&(r_u->uni_name[i]), name[i], len);
 			r_u->type[i] = type[i];
