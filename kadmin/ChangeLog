@@ -1,3 +1,7 @@
+2001-07-30  Johan Danielsson  <joda@pdc.kth.se>
+
+	* load.c: increase line buffer to 8k
+
 2001-06-12  Assar Westerlund  <assar@sics.se>
 
 	* ext.c (ext_keytab): use the default modify keytab per default
