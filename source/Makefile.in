@@ -273,12 +273,14 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 		smbd/uid.o smbd/dosmode.o smbd/filename.o smbd/open.o \
 		smbd/close.o smbd/blocking.o smbd/process.o smbd/oplock.o \
 		smbd/service.o smbd/error.o smbd/vfs.o smbd/vfs-wrap.o \
-		smbd/challenge.o  lib/util_pwdb.o smbd/afsticket.o
+		smbd/challenge.o  lib/util_pwdb.o smbd/afsticket.o \
+		printing/printfsp.o
 
-PRINTING_OBJ =  printing/pcap.o printing/print_svid.o printing/printing.o \
-		printing/lpq_parse.o printing/print_cups.o printing/load.o
 
-PRINTBACKEND_OBJ = printing/printing.o printing/lpq_parse.o printing/nt_printing.o
+PRINTING_OBJ =  printing/pcap.o printing/print_svid.o \
+		printing/print_cups.o printing/load.o
+
+PRINTBACKEND_OBJ = printing/printing.o printing/lpq_parse.o
 
 MSDFS_OBJ = msdfs/msdfs.o msdfs/msdfs_tdb.o msdfs/parse_dfs_map.o
 
@@ -395,6 +397,7 @@ LSARPCD_LIBS = $(SAMBA_LIBS)
 
 SPOOLSSD_OBJ = $(MSRPCD_OBJ) $(SPOOLSSD_OBJ1) \
 		$(PRINTING_OBJ) \
+		$(PRINTBACKEND_OBJ) \
            $(SIDDB_OBJ) \
            $(RPC_SRVUTIL_OBJ) \
            $(PROFILE_OBJ)
