@@ -1,3 +1,16 @@
+2003-03-19  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* lib/krb5/krb5_keytab.3: spelling, from
+	<jmc@prioris.mini.pw.edu.pl>
+
+	* lib/krb5/krb5.conf.5: . means new line
+	
+	* lib/krb5/krb5.conf.5: spelling, from
+	<jmc@prioris.mini.pw.edu.pl>
+
+	* lib/krb5/krb5_auth_context.3: spelling, from
+	<jmc@prioris.mini.pw.edu.pl>
+
 2003-03-18  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* kuser/Makefile.am: INCLUDES: -I$(srcdir)/../lib/krb5
