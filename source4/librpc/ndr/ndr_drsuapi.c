@@ -24,12 +24,23 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 
-
-void ndr_print_drsuapi_DsGetNCChangesInfo1(struct ndr_print *ndr, const char *name, struct drsuapi_DsGetNCChangesInfo1 *r)
+void ndr_print_drsuapi_DsReplicaObjectListItem(struct ndr_print *ndr, const char *name, struct drsuapi_DsReplicaObjectListItem *r)
 {
-	ndr_print_struct(ndr, name, "drsuapi_DsGetNCChangesInfo1");
+	ndr_print_struct(ndr, name, "drsuapi_DsReplicaObjectListItem");
 	ndr->depth++;
-	ndr_print_ptr(ndr, "next", r->next);
+	ndr_print_ptr(ndr, "next_object", r->next_object);
+	ndr_print_drsuapi_DsReplicaObject(ndr, "object", &r->object);
+	ndr->depth--;
+	if (r->next_object) {
+		ndr_print_drsuapi_DsReplicaObjectListItem(ndr, "next_object", r->next_object);
+	}
+}
+
+void ndr_print_drsuapi_DsReplicaObjectListItemEx(struct ndr_print *ndr, const char *name, struct drsuapi_DsReplicaObjectListItemEx *r)
+{
+	ndr_print_struct(ndr, name, "drsuapi_DsReplicaObjectListItemEx");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "next_object", r->next_object);
 	ndr_print_drsuapi_DsReplicaObject(ndr, "object", &r->object);
 	ndr_print_uint32(ndr, "unknown1", r->unknown1);
 	ndr_print_ptr(ndr, "guid", r->guid);
@@ -45,7 +56,7 @@ void ndr_print_drsuapi_DsGetNCChangesInfo1(struct ndr_print *ndr, const char *na
 	}
 	ndr->depth--;
 	ndr->depth--;
-	if (r->next) {
-		ndr_print_drsuapi_DsGetNCChangesInfo1(ndr, "next", r->next);
+	if (r->next_object) {
+		ndr_print_drsuapi_DsReplicaObjectListItemEx(ndr, "next_object", r->next_object);
 	}
 }
