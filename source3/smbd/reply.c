@@ -179,6 +179,8 @@ int reply_tcon(connection_struct *conn,
 	password_blob = data_blob(password, pwlen+1);
 
 	conn = make_connection(service,password_blob,dev,vuid,&nt_status);
+
+	data_blob_clear_free(&password);
   
 	if (!conn) {
 		END_PROFILE(SMBtcon);
@@ -257,6 +259,8 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	conn = make_connection(service,password,devicename,vuid,&nt_status);
 	
+	data_blob_clear_free(&password);
+  
 	if (!conn) {
 		END_PROFILE(SMBtconX);
 		return ERROR_NT(nt_status);
