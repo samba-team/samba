@@ -20,12 +20,15 @@
 #include <netinet/in6_machtypes.h>
 #endif
 
-#include <bits.h>
-
-/* I don't want to include krb.h here */
-#if 0
-#include <krb5.h>
+#ifdef HAVE_SYS_BITYPES_H
+#include <sys/bitypes.h>
 #endif
+
+#ifdef HAVE_NETINET_IN6_MACHTYPES_H
+#include <netinet/in6_machtypes.h>
+#endif
+
+#include <bits.h>
 
 /*
  * Now define the three implementation-dependent types.
@@ -39,9 +42,11 @@ typedef u_int32_t OM_uint32;
 
 struct krb5_auth_context_data;
 
-/* */
+struct Principal;
 
-typedef void *gss_name_t;
+/* typedef void *gss_name_t; */
+
+typedef struct Principal *gss_name_t;
 
 typedef struct gss_ctx_id_t_desc_struct {
   struct krb5_auth_context_data *auth_context;
@@ -252,7 +257,6 @@ extern gss_OID GSS_C_NT_EXPORT_NAME;
  * This if for kerberos5 names.
  */
 
-extern gss_OID GSS_KRB5_NT_PRINCIPAL_NAME;
 extern gss_OID GSS_KRB5_NT_PRINCIPAL_NAME;
 extern gss_OID GSS_KRB5_NT_USER_NAME;
 extern gss_OID GSS_KRB5_NT_MACHINE_UID_NAME;
