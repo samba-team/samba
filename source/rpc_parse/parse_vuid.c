@@ -98,7 +98,7 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 
 	uint32 uid = (uint32)r_u->uid;
 	uint32 gid = (uint32)r_u->gid;
-	uint32 *groups;
+	uint32 *groups = NULL;
 
 	if (r_u->n_groups != 0)
 	{
@@ -108,7 +108,7 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 			return False;
 		}
 	}
-	if (MARSHALLING(ps))
+	if (UNMARSHALLING(ps))
 	{
 		for (i = 0; i < r_u->n_groups; i++)
 		{
@@ -145,7 +145,7 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 	prs_uint32("n_groups", ps, depth, &(r_u->n_groups));
 	if (r_u->n_groups != 0)
 	{
-		if (UNMARSHALLING(ps))
+		if (MARSHALLING(ps))
 		{
 			/* reading */
 			r_u->groups = g_new(gid_t, r_u->n_groups);
@@ -153,8 +153,13 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 		if (r_u->groups == NULL)
 		{
 			vuid_free_user_struct(r_u);
+			safe_free(groups);
 			return False;
 		}
+	}
+	else if (MARSHALLING(ps))
+	{
+		r_u->groups = NULL;
 	}
 	for (i = 0; i < r_u->n_groups; i++)
 	{
@@ -170,6 +175,8 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 	}
 
 	net_io_user_info3("usr", &r_u->usr, ps, depth);
+
+	safe_free(groups);
 
 	return True;
 }
