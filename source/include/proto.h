@@ -1798,6 +1798,8 @@ void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr);
 void get_printer_subst_params(int snum, fstring *printername, fstring *sharename, fstring *portname);
 uint32 mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
+uint32 set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level);
+uint32 save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_PRINTER_PARAM *param);
 uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring sharename);
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
 uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
@@ -2920,6 +2922,7 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 BOOL make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
 BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
                                      prs_struct *ps, int depth);
+BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode);
 void free_spoolss_devmode(DEVICEMODE *devmode);
 BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 		const fstring printername, 

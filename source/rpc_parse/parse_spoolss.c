@@ -526,7 +526,7 @@ static BOOL spool_io_user_level(char *desc, SPOOL_USER_CTR *q_u, prs_struct *ps,
  * read or write a DEVICEMODE struct.
  * on reading allocate memory for the private member
  ********************************************************************/
-static BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode)
+BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_devmode");
 	depth++;
@@ -4361,8 +4361,7 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 
 	if(!prs_uint32("version", ps, depth, &il->version))
 		return False;
-
-	if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
+    if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
 		return False;	
 	/*
 	 * If name_ptr is NULL then the next 4 bytes are the name_ptr. A driver 

@@ -31,6 +31,7 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 
 #define FORMS_PREFIX "FORMS/"
 #define DRIVERS_PREFIX "DRIVERS/"
+#define DRIVER_INIT_PREFIX "DRIVER_INIT/"
 #define PRINTERS_PREFIX "PRINTERS/"
 
 #define NTDRIVERS_DATABASE_VERSION 1
@@ -488,6 +489,359 @@ BOOL get_short_archi(char *short_archi, char *long_archi)
 }
 
 /****************************************************************************
+Version information in Microsoft files is held in a VS_VERSION_INFO structure.
+There are two case to be covered here: PE (Portable Executable) and NE (New
+Executable) files. Both files support the same INFO structure, but PE files
+store the signature in unicode, and NE files store it as !unicode.
+****************************************************************************/
+static BOOL get_file_version(files_struct *fsp, char *fname,uint32 *major,
+							 uint32 *minor)
+{
+	int     i;
+	char    *buf;
+	ssize_t byte_count;
+
+	if ((buf=malloc(PE_HEADER_SIZE)) == NULL) {
+		DEBUG(0,("get_file_version: PE file [%s] PE Header malloc failed bytes = %d\n",
+				fname, PE_HEADER_SIZE));
+		goto error_exit;
+	}
+
+	/* Note: DOS_HEADER_SIZE < malloc'ed PE_HEADER_SIZE */
+	if ((byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE)) < DOS_HEADER_SIZE) {
+		DEBUG(3,("get_file_version: File [%s] DOS header too short, bytes read = %d\n",
+				fname, byte_count));
+		goto no_version_info;
+	}
+
+	/* Is this really a DOS header? */
+	if (SVAL(buf,DOS_HEADER_MAGIC_OFFSET) != DOS_HEADER_MAGIC) {
+		DEBUG(6,("get_file_version: File [%s] bad DOS magic = 0x%x\n",
+				fname, SVAL(buf,DOS_HEADER_MAGIC_OFFSET)));
+		goto no_version_info;
+	}
+
+	/* Skip OEM header (if any) and the DOS stub to start of Windows header */
+	if (fsp->conn->vfs_ops.lseek(fsp, fsp->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
+		DEBUG(3,("get_file_version: File [%s] too short, errno = %d\n",
+				fname, errno));
+		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
+		goto no_version_info;
+	}
+
+	if ((byte_count = vfs_read_data(fsp, buf, PE_HEADER_SIZE)) < PE_HEADER_SIZE) {
+		DEBUG(3,("get_file_version: File [%s] Windows header too short, bytes read = %d\n",
+				fname, byte_count));
+		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
+		goto no_version_info;
+	}
+
+	/* The header may be a PE (Portable Executable) or an NE (New Executable) */
+	if (IVAL(buf,PE_HEADER_SIGNATURE_OFFSET) == PE_HEADER_SIGNATURE) {
+		int num_sections;
+		int section_table_bytes;
+		
+		if (SVAL(buf,PE_HEADER_MACHINE_OFFSET) != PE_HEADER_MACHINE_I386) {
+			DEBUG(3,("get_file_version: PE file [%s] wrong machine = 0x%x\n",
+					fname, SVAL(buf,PE_HEADER_MACHINE_OFFSET)));
+			/* At this point, we assume the file is in error. It still could be somthing
+			 * else besides a PE file, but it unlikely at this point.
+			 */
+			goto error_exit;
+		}
+
+		/* get the section table */
+		num_sections        = SVAL(buf,PE_HEADER_NUMBER_OF_SECTIONS);
+		section_table_bytes = num_sections * PE_HEADER_SECT_HEADER_SIZE;
+		free(buf);
+		if ((buf=malloc(section_table_bytes)) == NULL) {
+			DEBUG(0,("get_file_version: PE file [%s] section table malloc failed bytes = %d\n",
+					fname, section_table_bytes));
+			goto error_exit;
+		}
+
+		if ((byte_count = vfs_read_data(fsp, buf, section_table_bytes)) < section_table_bytes) {
+			DEBUG(3,("get_file_version: PE file [%s] Section header too short, bytes read = %d\n",
+					fname, byte_count));
+			goto error_exit;
+		}
+
+		/* Iterate the section table looking for the resource section ".rsrc" */
+		for (i = 0; i < num_sections; i++) {
+			int sec_offset = i * PE_HEADER_SECT_HEADER_SIZE;
+
+			if (strcmp(".rsrc", &buf[sec_offset+PE_HEADER_SECT_NAME_OFFSET]) == 0) {
+				int section_pos   = IVAL(buf,sec_offset+PE_HEADER_SECT_PTR_DATA_OFFSET);
+				int section_bytes = IVAL(buf,sec_offset+PE_HEADER_SECT_SIZE_DATA_OFFSET);
+
+				free(buf);
+				if ((buf=malloc(section_bytes)) == NULL) {
+					DEBUG(0,("get_file_version: PE file [%s] version malloc failed bytes = %d\n",
+							fname, section_bytes));
+					goto error_exit;
+				}
+
+				/* Seek to the start of the .rsrc section info */
+				if (fsp->conn->vfs_ops.lseek(fsp, fsp->fd, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
+					DEBUG(3,("get_file_version: PE file [%s] too short for section info, errno = %d\n",
+							fname, errno));
+					goto error_exit;
+				}
+
+				if ((byte_count = vfs_read_data(fsp, buf, section_bytes)) < section_bytes) {
+					DEBUG(3,("get_file_version: PE file [%s] .rsrc section too short, bytes read = %d\n",
+							fname, byte_count));
+					goto error_exit;
+				}
+
+				for (i=0; i<section_bytes-VS_VERSION_INFO_UNICODE_SIZE; i++) {
+					/* Scan for 1st 3 unicoded bytes followed by word aligned magic value */
+					if (buf[i] == 'V' && buf[i+1] == '\0' && buf[i+2] == 'S') {
+						/* Align to next long address */
+						int pos = (i + sizeof(VS_SIGNATURE)*2 + 3) & 0xfffffffc;
+
+						if (IVAL(buf,pos) == VS_MAGIC_VALUE) {
+							*major = IVAL(buf,pos+VS_MAJOR_OFFSET);
+							*minor = IVAL(buf,pos+VS_MINOR_OFFSET);
+							
+							DEBUG(6,("get_file_version: PE file [%s] Version = %08x:%08x (%d.%d.%d.%d)\n",
+									  fname, *major, *minor,
+									  (*major>>16)&0xffff, *major&0xffff,
+									  (*minor>>16)&0xffff, *minor&0xffff));
+							free(buf);
+							return True;
+						}
+					}
+				}
+			}
+		}
+
+		/* Version info not found, fall back to origin date/time */
+		DEBUG(10,("get_file_version: PE file [%s] has no version info\n", fname));
+		free(buf);
+		return False;
+
+	} else if (SVAL(buf,NE_HEADER_SIGNATURE_OFFSET) == NE_HEADER_SIGNATURE) {
+		if (CVAL(buf,NE_HEADER_TARGET_OS_OFFSET) != NE_HEADER_TARGOS_WIN ) {
+			DEBUG(3,("get_file_version: NE file [%s] wrong target OS = 0x%x\n",
+					fname, CVAL(buf,NE_HEADER_TARGET_OS_OFFSET)));
+			/* At this point, we assume the file is in error. It still could be somthing
+			 * else besides a NE file, but it unlikely at this point. */
+			goto error_exit;
+		}
+
+		/* Allocate a bit more space to speed up things */
+		free(buf);
+		if ((buf=malloc(VS_NE_BUF_SIZE)) == NULL) {
+			DEBUG(0,("get_file_version: NE file [%s] malloc failed bytes  = %d\n",
+					fname, PE_HEADER_SIZE));
+			goto error_exit;
+		}
+
+		/* This is a HACK! I got tired of trying to sort through the messy
+		 * 'NE' file format. If anyone wants to clean this up please have at
+		 * it, but this works. 'NE' files will eventually fade away. JRR */
+		while((byte_count = vfs_read_data(fsp, buf, VS_NE_BUF_SIZE)) > 0) {
+			/* Cover case that should not occur in a well formed 'NE' .dll file */
+			if (byte_count-VS_VERSION_INFO_SIZE <= 0) break;
+
+			for(i=0; i<byte_count; i++) {
+				/* Fast skip past data that can't possibly match */
+				if (buf[i] != 'V') continue;
+
+				/* Potential match data crosses buf boundry, move it to beginning
+				 * of buf, and fill the buf with as much as it will hold. */
+				if (i>byte_count-VS_VERSION_INFO_SIZE) {
+					int bc;
+
+					memcpy(buf, &buf[i], byte_count-i);
+					if ((bc = vfs_read_data(fsp, &buf[byte_count-i], VS_NE_BUF_SIZE-
+								   (byte_count-i))) < 0) {
+
+						DEBUG(0,("get_file_version: NE file [%s] Read error, errno=%d\n",
+								 fname, errno));
+						goto error_exit;
+					}
+
+					byte_count = bc + (byte_count - i);
+					if (byte_count<VS_VERSION_INFO_SIZE) break;
+
+					i = 0;
+				}
+
+				/* Check that the full signature string and the magic number that
+				 * follows exist (not a perfect solution, but the chances that this
+				 * occurs in code is, well, remote. Yes I know I'm comparing the 'V'
+				 * twice, as it is simpler to read the code. */
+				if (strcmp(&buf[i], VS_SIGNATURE) == 0) {
+					/* Compute skip alignment to next long address */
+					int skip = -(fsp->conn->vfs_ops.lseek(fsp, fsp->fd, 0, SEEK_CUR) - (byte_count - i) +
+								 sizeof(VS_SIGNATURE)) & 3;
+					if (IVAL(buf,i+sizeof(VS_SIGNATURE)+skip) != 0xfeef04bd) continue;
+
+					*major = IVAL(buf,i+sizeof(VS_SIGNATURE)+skip+VS_MAJOR_OFFSET);
+					*minor = IVAL(buf,i+sizeof(VS_SIGNATURE)+skip+VS_MINOR_OFFSET);
+					DEBUG(6,("get_file_version: NE file [%s] Version = %08x:%08x (%d.%d.%d.%d)\n",
+							  fname, *major, *minor,
+							  (*major>>16)&0xffff, *major&0xffff,
+							  (*minor>>16)&0xffff, *minor&0xffff));
+					free(buf);
+					return True;
+				}
+			}
+		}
+
+		/* Version info not found, fall back to origin date/time */
+		DEBUG(0,("get_file_version: NE file [%s] Version info not found\n", fname));
+		free(buf);
+		return False;
+
+	} else
+		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
+		DEBUG(3,("get_file_version: File [%s] unknown file format, signature = 0x%x\n",
+				fname, IVAL(buf,PE_HEADER_SIGNATURE_OFFSET)));
+
+	no_version_info:
+		free(buf);
+		return False;
+
+	error_exit:
+		free(buf);
+		return -1;
+}
+
+/****************************************************************************
+Drivers for Microsoft systems contain multiple files. Often, multiple drivers
+share one or more files. During the MS installation process files are checked
+to insure that only a newer version of a shared file is installed over an
+older version. There are several possibilities for this comparison. If there
+is no previous version, the new one is newer (obviously). If either file is
+missing the version info structure, compare the creation date (on Unix use
+the modification date). Otherwise chose the numerically larger version number.
+****************************************************************************/
+static int file_version_is_newer(connection_struct *conn, fstring new_file,
+								fstring old_file)
+{
+	BOOL   use_version = True;
+	pstring filepath;
+
+	uint32 new_major;
+	uint32 new_minor;
+	time_t new_create_time;
+
+	uint32 old_major;
+	uint32 old_minor;
+	time_t old_create_time;
+
+	int access_mode;
+	int action;
+	files_struct    *fsp = NULL;
+	SMB_STRUCT_STAT st;
+	SMB_STRUCT_STAT stat_buf;
+	BOOL bad_path;
+
+	ZERO_STRUCT(st);
+	ZERO_STRUCT(stat_buf);
+	new_create_time = (time_t)0;
+	old_create_time = (time_t)0;
+
+	/* Get file version info (if available) for previous file (if it exists) */
+	pstrcpy(filepath, old_file);
+
+	unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
+
+	fsp = open_file_shared(conn, filepath, &stat_buf,
+						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
+						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+						   0, 0, &access_mode, &action);
+	if (!fsp) {
+		/* Old file not found, so by definition new file is in fact newer */
+		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
+				filepath, errno));
+		return True;
+
+	} else {
+		int ret = get_file_version(fsp, old_file, &old_major, &old_minor);
+		if (ret == -1) goto error_exit;
+
+		if (!ret) {
+			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
+					 old_file));
+			use_version = False;
+			if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
+			old_create_time = st.st_mtime;
+			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
+		}
+	}
+	fsp->conn->vfs_ops.close(fsp, fsp->fd);
+	file_free(fsp);
+
+
+	/* Get file version info (if available) for new file */
+	pstrcpy(filepath, new_file);
+	unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
+
+	fsp = open_file_shared(conn, filepath, &stat_buf,
+						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
+						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+						   0, 0, &access_mode, &action);
+	if (!fsp) {
+		/* New file not found, this shouldn't occur if the caller did its job */
+		DEBUG(3,("file_version_is_newer: Can't open new file [%s], errno = %d\n",
+				filepath, errno));
+		goto error_exit;
+
+	} else {
+		int ret = get_file_version(fsp, new_file, &new_major, &new_minor);
+		if (ret == -1) goto error_exit;
+
+		if (!ret) {
+			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
+					 new_file));
+			use_version = False;
+			if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
+			new_create_time = st.st_mtime;
+			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
+		}
+	}
+	fsp->conn->vfs_ops.close(fsp, fsp->fd);
+	file_free(fsp);
+
+	if (use_version) {
+		/* Compare versions and choose the larger version number */
+		if (new_major > old_major ||
+			(new_major == old_major && new_minor > old_minor)) {
+			
+			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
+			return True;
+		}
+		else {
+			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
+			return False;
+		}
+
+	} else {
+		/* Compare modification time/dates and choose the newest time/date */
+		if (new_create_time > old_create_time) {
+			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
+			return True;
+		}
+		else {
+			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
+			return False;
+		}
+	}
+
+	error_exit:
+		if(fsp) {
+			file_free(fsp);
+			if(fsp->fd != -1)
+				fsp->conn->vfs_ops.close(fsp, fsp->fd);
+		}
+		return -1;
+}
+
+/****************************************************************************
 Determine the correct cVersion associated with an architecture and driver
 ****************************************************************************/
 static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
@@ -568,81 +922,38 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 		*perr = ERROR_ACCESS_DENIED;
 		goto error_exit;
 	}
+	else {
+		uint32 major;
+		uint32 minor;
+		int    ret = get_file_version(fsp, driverpath, &major, &minor);
+		if (ret == -1) goto error_exit;
 
-	if ((byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE)) < DOS_HEADER_SIZE) {
-		DEBUG(3,("get_correct_cversion: File [%s] DOS header too short, bytes read = %d\n",
-				driverpath, byte_count));
-		*perr = NT_STATUS_FILE_INVALID;
-		goto error_exit;
-	}
-
-	/* Is this really a DOS header? */
-	if (SVAL(buf,DOS_HEADER_MAGIC_OFFSET) != DOS_HEADER_MAGIC) {
-		DEBUG(6,("get_correct_cversion: File [%s] bad DOS magic = 0x%x\n",
-				driverpath, SVAL(buf,DOS_HEADER_MAGIC_OFFSET)));
-		*perr = NT_STATUS_FILE_INVALID;
-		goto error_exit;
-	}
-
-	/* Skip OEM header (if any) and the DOS stub to start of Windows header */
-	if (fsp->conn->vfs_ops.lseek(fsp, fsp->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
-		DEBUG(3,("get_correct_cversion: File [%s] too short, errno = %d\n",
-				driverpath, errno));
-		*perr = NT_STATUS_FILE_INVALID;
-		goto error_exit;
-	}
-
-	if ((byte_count = vfs_read_data(fsp, buf, PE_HEADER_SIZE)) < PE_HEADER_SIZE) {
-		DEBUG(3,("get_correct_cversion: File [%s] Windows header too short, bytes read = %d\n",
-				driverpath, byte_count));
-		*perr = NT_STATUS_FILE_INVALID;
-		goto error_exit;
-	}
-
-	/* The header may be a PE (Portable Executable) or an NE (New Executable) */
-	if (IVAL(buf,PE_HEADER_SIGNATURE_OFFSET) == PE_HEADER_SIGNATURE) {
-		if (SVAL(buf,PE_HEADER_MACHINE_OFFSET) == PE_HEADER_MACHINE_I386) {
-
-			switch (SVAL(buf,PE_HEADER_MAJOR_OS_VER_OFFSET)) {
-				case 4: cversion = 2; break;	/* Win NT 4 */
-				case 5: cversion = 3; break;	/* Win 2000 */
-				default:
-					DEBUG(6,("get_correct_cversion: PE formated file [%s] bad version = %d\n",
-							driverpath, SVAL(buf,PE_HEADER_MAJOR_OS_VER_OFFSET)));
-					*perr = NT_STATUS_FILE_INVALID;
-					goto error_exit;
-			}
-		} else {
-			DEBUG(6,("get_correct_cversion: PE formatted file [%s] wrong machine = 0x%x\n",
-					driverpath, SVAL(buf,PE_HEADER_MACHINE_OFFSET)));
-			*perr = NT_STATUS_FILE_INVALID;
+		if (!ret) {
+			DEBUG(6,("get_correct_cversion: Version info not found [%s]\n", driverpath));
 			goto error_exit;
 		}
 
-	} else if (SVAL(buf,NE_HEADER_SIGNATURE_OFFSET) == NE_HEADER_SIGNATURE) {
-		if (CVAL(buf,NE_HEADER_TARGET_OS_OFFSET) == NE_HEADER_TARGOS_WIN ) {
-
-			switch (CVAL(buf,NE_HEADER_MAJOR_VER_OFFSET)) {
-				case 3: cversion = 0; break;	/* Win 3.x / Win 9x / Win ME */
-			/*	case ?: cversion = 1; break;*/ 	/* Win NT 3.51 ... needs research JRR */
-				default:
-					DEBUG(6,("get_correct_cversion: NE formated file [%s] bad version = %d\n",
-							driverpath, CVAL(buf,NE_HEADER_MAJOR_VER_OFFSET)));
-					*perr = NT_STATUS_FILE_INVALID;
-					goto error_exit;
-			}
-		} else {
-			DEBUG(6,("get_correct_cversion: NE formatted file [%s] wrong target OS = 0x%x\n",
-					driverpath, CVAL(buf,NE_HEADER_TARGET_OS_OFFSET)));
-			*perr = NT_STATUS_FILE_INVALID;
-			goto error_exit;
+		/*
+		 * This is a Microsoft'ism. See references in MSDN to VER_FILEVERSION
+		 * for more details. Version in this case is not just the version of the 
+		 * file, but the version in the sense of kernal mode (2) vs. user mode
+		 * (3) drivers. Other bits of the version fields are the version info. 
+		 * JRR 010716
+		*/
+		cversion = major & 0x0000ffff;
+		switch (cversion) {
+			case 2: /* WinNT drivers */
+			case 3: /* Win2K drivers */
+				break;
+			
+			default:
+				DEBUG(6,("get_correct_cversion: cversion invalid [%s]  cversion = %d\n", 
+					driverpath, cversion));
+				goto error_exit;
 		}
 
-	} else {
-		DEBUG(6,("get_correct_cversion: Unknown file format [%s], signature = 0x%x\n",
-				driverpath, IVAL(buf,PE_HEADER_SIGNATURE_OFFSET)));
-		*perr = NT_STATUS_FILE_INVALID;
-		goto error_exit;
+		DEBUG(10,("get_correct_cversion: Version info found [%s]  major = 0x%x  minor = 0x%x\n",
+				  driverpath, major, minor));
 	}
 
 	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
@@ -1011,359 +1322,6 @@ static char* ffmt(unsigned char *c){
 }
 
 #endif
-
-/****************************************************************************
-Version information in Microsoft files is held in a VS_VERSION_INFO structure.
-There are two case to be covered here: PE (Portable Executable) and NE (New
-Executable) files. Both files support the same INFO structure, but PE files
-store the signature in unicode, and NE files store it as !unicode.
-****************************************************************************/
-static BOOL get_file_version(files_struct *fsp, char *fname,uint32 *major,
-							 uint32 *minor)
-{
-	int     i;
-	char    *buf;
-	ssize_t byte_count;
-
-	if ((buf=malloc(PE_HEADER_SIZE)) == NULL) {
-		DEBUG(0,("get_file_version: PE file [%s] PE Header malloc failed bytes = %d\n",
-				fname, PE_HEADER_SIZE));
-		goto error_exit;
-	}
-
-	/* Note: DOS_HEADER_SIZE < malloc'ed PE_HEADER_SIZE */
-	if ((byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE)) < DOS_HEADER_SIZE) {
-		DEBUG(3,("get_file_version: File [%s] DOS header too short, bytes read = %d\n",
-				fname, byte_count));
-		goto no_version_info;
-	}
-
-	/* Is this really a DOS header? */
-	if (SVAL(buf,DOS_HEADER_MAGIC_OFFSET) != DOS_HEADER_MAGIC) {
-		DEBUG(6,("get_file_version: File [%s] bad DOS magic = 0x%x\n",
-				fname, SVAL(buf,DOS_HEADER_MAGIC_OFFSET)));
-		goto no_version_info;
-	}
-
-	/* Skip OEM header (if any) and the DOS stub to start of Windows header */
-	if (fsp->conn->vfs_ops.lseek(fsp, fsp->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
-		DEBUG(3,("get_file_version: File [%s] too short, errno = %d\n",
-				fname, errno));
-		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
-		goto no_version_info;
-	}
-
-	if ((byte_count = vfs_read_data(fsp, buf, PE_HEADER_SIZE)) < PE_HEADER_SIZE) {
-		DEBUG(3,("get_file_version: File [%s] Windows header too short, bytes read = %d\n",
-				fname, byte_count));
-		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
-		goto no_version_info;
-	}
-
-	/* The header may be a PE (Portable Executable) or an NE (New Executable) */
-	if (IVAL(buf,PE_HEADER_SIGNATURE_OFFSET) == PE_HEADER_SIGNATURE) {
-		int num_sections;
-		int section_table_bytes;
-		
-		if (SVAL(buf,PE_HEADER_MACHINE_OFFSET) != PE_HEADER_MACHINE_I386) {
-			DEBUG(3,("get_file_version: PE file [%s] wrong machine = 0x%x\n",
-					fname, SVAL(buf,PE_HEADER_MACHINE_OFFSET)));
-			/* At this point, we assume the file is in error. It still could be somthing
-			 * else besides a PE file, but it unlikely at this point.
-			 */
-			goto error_exit;
-		}
-
-		/* get the section table */
-		num_sections        = SVAL(buf,PE_HEADER_NUMBER_OF_SECTIONS);
-		section_table_bytes = num_sections * PE_HEADER_SECT_HEADER_SIZE;
-		free(buf);
-		if ((buf=malloc(section_table_bytes)) == NULL) {
-			DEBUG(0,("get_file_version: PE file [%s] section table malloc failed bytes = %d\n",
-					fname, section_table_bytes));
-			goto error_exit;
-		}
-
-		if ((byte_count = vfs_read_data(fsp, buf, section_table_bytes)) < section_table_bytes) {
-			DEBUG(3,("get_file_version: PE file [%s] Section header too short, bytes read = %d\n",
-					fname, byte_count));
-			goto error_exit;
-		}
-
-		/* Iterate the section table looking for the resource section ".rsrc" */
-		for (i = 0; i < num_sections; i++) {
-			int sec_offset = i * PE_HEADER_SECT_HEADER_SIZE;
-
-			if (strcmp(".rsrc", &buf[sec_offset+PE_HEADER_SECT_NAME_OFFSET]) == 0) {
-				int section_pos   = IVAL(buf,sec_offset+PE_HEADER_SECT_PTR_DATA_OFFSET);
-				int section_bytes = IVAL(buf,sec_offset+PE_HEADER_SECT_SIZE_DATA_OFFSET);
-
-				free(buf);
-				if ((buf=malloc(section_bytes)) == NULL) {
-					DEBUG(0,("get_file_version: PE file [%s] version malloc failed bytes = %d\n",
-							fname, section_bytes));
-					goto error_exit;
-				}
-
-				/* Seek to the start of the .rsrc section info */
-				if (fsp->conn->vfs_ops.lseek(fsp, fsp->fd, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
-					DEBUG(3,("get_file_version: PE file [%s] too short for section info, errno = %d\n",
-							fname, errno));
-					goto error_exit;
-				}
-
-				if ((byte_count = vfs_read_data(fsp, buf, section_bytes)) < section_bytes) {
-					DEBUG(3,("get_file_version: PE file [%s] .rsrc section too short, bytes read = %d\n",
-							fname, byte_count));
-					goto error_exit;
-				}
-
-				for (i=0; i<section_bytes-VS_VERSION_INFO_UNICODE_SIZE; i++) {
-					/* Scan for 1st 3 unicoded bytes followed by word aligned magic value */
-					if (buf[i] == 'V' && buf[i+1] == '\0' && buf[i+2] == 'S') {
-						/* Align to next long address */
-						int pos = (i + sizeof(VS_SIGNATURE)*2 + 3) & 0xfffffffc;
-
-						if (IVAL(buf,pos) == VS_MAGIC_VALUE) {
-							*major = IVAL(buf,pos+VS_MAJOR_OFFSET);
-							*minor = IVAL(buf,pos+VS_MINOR_OFFSET);
-							
-							DEBUG(6,("get_file_version: PE file [%s] Version = %08x:%08x (%d.%d.%d.%d)\n",
-									  fname, *major, *minor,
-									  (*major>>16)&0xffff, *major&0xffff,
-									  (*minor>>16)&0xffff, *minor&0xffff));
-							free(buf);
-							return True;
-						}
-					}
-				}
-			}
-		}
-
-		/* Version info not found, fall back to origin date/time */
-		DEBUG(10,("get_file_version: PE file [%s] has no version info\n", fname));
-		free(buf);
-		return False;
-
-	} else if (SVAL(buf,NE_HEADER_SIGNATURE_OFFSET) == NE_HEADER_SIGNATURE) {
-		if (CVAL(buf,NE_HEADER_TARGET_OS_OFFSET) != NE_HEADER_TARGOS_WIN ) {
-			DEBUG(3,("get_file_version: NE file [%s] wrong target OS = 0x%x\n",
-					fname, CVAL(buf,NE_HEADER_TARGET_OS_OFFSET)));
-			/* At this point, we assume the file is in error. It still could be somthing
-			 * else besides a NE file, but it unlikely at this point. */
-			goto error_exit;
-		}
-
-		/* Allocate a bit more space to speed up things */
-		free(buf);
-		if ((buf=malloc(VS_NE_BUF_SIZE)) == NULL) {
-			DEBUG(0,("get_file_version: NE file [%s] malloc failed bytes  = %d\n",
-					fname, PE_HEADER_SIZE));
-			goto error_exit;
-		}
-
-		/* This is a HACK! I got tired of trying to sort through the messy
-		 * 'NE' file format. If anyone wants to clean this up please have at
-		 * it, but this works. 'NE' files will eventually fade away. JRR */
-		while((byte_count = vfs_read_data(fsp, buf, VS_NE_BUF_SIZE)) > 0) {
-			/* Cover case that should not occur in a well formed 'NE' .dll file */
-			if (byte_count-VS_VERSION_INFO_SIZE <= 0) break;
-
-			for(i=0; i<byte_count; i++) {
-				/* Fast skip past data that can't possibly match */
-				if (buf[i] != 'V') continue;
-
-				/* Potential match data crosses buf boundry, move it to beginning
-				 * of buf, and fill the buf with as much as it will hold. */
-				if (i>byte_count-VS_VERSION_INFO_SIZE) {
-					int bc;
-
-					memcpy(buf, &buf[i], byte_count-i);
-					if ((bc = vfs_read_data(fsp, &buf[byte_count-i], VS_NE_BUF_SIZE-
-								   (byte_count-i))) < 0) {
-
-						DEBUG(0,("get_file_version: NE file [%s] Read error, errno=%d\n",
-								 fname, errno));
-						goto error_exit;
-					}
-
-					byte_count = bc + (byte_count - i);
-					if (byte_count<VS_VERSION_INFO_SIZE) break;
-
-					i = 0;
-				}
-
-				/* Check that the full signature string and the magic number that
-				 * follows exist (not a perfect solution, but the chances that this
-				 * occurs in code is, well, remote. Yes I know I'm comparing the 'V'
-				 * twice, as it is simpler to read the code. */
-				if (strcmp(&buf[i], VS_SIGNATURE) == 0) {
-					/* Compute skip alignment to next long address */
-					int skip = -(fsp->conn->vfs_ops.lseek(fsp, fsp->fd, 0, SEEK_CUR) - (byte_count - i) +
-								 sizeof(VS_SIGNATURE)) & 3;
-					if (IVAL(buf,i+sizeof(VS_SIGNATURE)+skip) != 0xfeef04bd) continue;
-
-					*major = IVAL(buf,i+sizeof(VS_SIGNATURE)+skip+VS_MAJOR_OFFSET);
-					*minor = IVAL(buf,i+sizeof(VS_SIGNATURE)+skip+VS_MINOR_OFFSET);
-					DEBUG(6,("get_file_version: NE file [%s] Version = %08x:%08x (%d.%d.%d.%d)\n",
-							  fname, *major, *minor,
-							  (*major>>16)&0xffff, *major&0xffff,
-							  (*minor>>16)&0xffff, *minor&0xffff));
-					free(buf);
-					return True;
-				}
-			}
-		}
-
-		/* Version info not found, fall back to origin date/time */
-		DEBUG(0,("get_file_version: NE file [%s] Version info not found\n", fname));
-		free(buf);
-		return False;
-
-	} else
-		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
-		DEBUG(3,("get_file_version: File [%s] unknown file format, signature = 0x%x\n",
-				fname, IVAL(buf,PE_HEADER_SIGNATURE_OFFSET)));
-
-	no_version_info:
-		free(buf);
-		return False;
-
-	error_exit:
-		free(buf);
-		return -1;
-}
-
-/****************************************************************************
-Drivers for Microsoft systems contain multiple files. Often, multiple drivers
-share one or more files. During the MS installation process files are checked
-to insure that only a newer version of a shared file is installed over an
-older version. There are several possibilities for this comparison. If there
-is no previous version, the new one is newer (obviously). If either file is
-missing the version info structure, compare the creation date (on Unix use
-the modification date). Otherwise chose the numerically larger version number.
-****************************************************************************/
-static int file_version_is_newer(connection_struct *conn, fstring new_file,
-								fstring old_file)
-{
-	BOOL   use_version = True;
-	pstring filepath;
-
-	uint32 new_major;
-	uint32 new_minor;
-	time_t new_create_time;
-
-	uint32 old_major;
-	uint32 old_minor;
-	time_t old_create_time;
-
-	int access_mode;
-	int action;
-	files_struct    *fsp = NULL;
-	SMB_STRUCT_STAT st;
-	SMB_STRUCT_STAT stat_buf;
-	BOOL bad_path;
-
-	ZERO_STRUCT(st);
-	ZERO_STRUCT(stat_buf);
-	new_create_time = (time_t)0;
-	old_create_time = (time_t)0;
-
-	/* Get file version info (if available) for previous file (if it exists) */
-	pstrcpy(filepath, old_file);
-
-	unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
-
-	fsp = open_file_shared(conn, filepath, &stat_buf,
-						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
-						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   0, 0, &access_mode, &action);
-	if (!fsp) {
-		/* Old file not found, so by definition new file is in fact newer */
-		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
-				filepath, errno));
-		return True;
-
-	} else {
-		int ret = get_file_version(fsp, old_file, &old_major, &old_minor);
-		if (ret == -1) goto error_exit;
-
-		if (!ret) {
-			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
-					 old_file));
-			use_version = False;
-			if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
-			old_create_time = st.st_mtime;
-			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
-		}
-	}
-	fsp->conn->vfs_ops.close(fsp, fsp->fd);
-	file_free(fsp);
-
-
-	/* Get file version info (if available) for new file */
-	pstrcpy(filepath, new_file);
-	unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
-
-	fsp = open_file_shared(conn, filepath, &stat_buf,
-						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
-						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   0, 0, &access_mode, &action);
-	if (!fsp) {
-		/* New file not found, this shouldn't occur if the caller did its job */
-		DEBUG(3,("file_version_is_newer: Can't open new file [%s], errno = %d\n",
-				filepath, errno));
-		goto error_exit;
-
-	} else {
-		int ret = get_file_version(fsp, new_file, &new_major, &new_minor);
-		if (ret == -1) goto error_exit;
-
-		if (!ret) {
-			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
-					 new_file));
-			use_version = False;
-			if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
-			new_create_time = st.st_mtime;
-			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
-		}
-	}
-	fsp->conn->vfs_ops.close(fsp, fsp->fd);
-	file_free(fsp);
-
-	if (use_version) {
-		/* Compare versions and choose the larger version number */
-		if (new_major > old_major ||
-			(new_major == old_major && new_minor > old_minor)) {
-			
-			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
-			return True;
-		}
-		else {
-			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
-			return False;
-		}
-
-	} else {
-		/* Compare modification time/dates and choose the newest time/date */
-		if (new_create_time > old_create_time) {
-			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
-			return True;
-		}
-		else {
-			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
-			return False;
-		}
-	}
-
-	error_exit:
-		if(fsp) {
-			file_free(fsp);
-			if(fsp->fd != -1)
-				fsp->conn->vfs_ops.close(fsp, fsp->fd);
-		}
-		return -1;
-}
 
 /****************************************************************************
 ****************************************************************************/
@@ -2102,7 +2060,6 @@ static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	return ret;
 }
 
-
 /****************************************************************************
 ****************************************************************************/
 void add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM **param)
@@ -2721,7 +2678,7 @@ void get_printer_subst_params(int snum, fstring *printername, fstring *sharename
 
 uint32 mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 {
-	uint32 result;
+    uint32 result;
 	
 	dump_a_printer(printer, level);	
 	
@@ -2779,6 +2736,308 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	}
 	
 	return result;
+}
+
+/****************************************************************************
+ Initialize printer devmode & data with previously saved driver init values.
+****************************************************************************/
+static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
+{
+	int                     len = 0;
+	pstring                 key;
+	TDB_DATA                kbuf, dbuf;
+	NT_PRINTER_PARAM        *current;
+	NT_PRINTER_INFO_LEVEL_2 info;
+
+	ZERO_STRUCT(info);
+
+	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info_ptr->drivername);
+	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+
+	dbuf = tdb_fetch(tdb, kbuf);
+	if (!dbuf.dptr)
+		return False;
+
+	/*
+	 * Get the saved DEVMODE..
+	 */
+	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
+
+	/*
+	 * The saved DEVMODE contains the devicename from the printer used during
+	 * the initialization save. Change it to reflect the new printer.
+	 */
+	ZERO_STRUCT(info.devmode->devicename);
+	fstrcpy(info.devmode->devicename, info_ptr->printername);
+
+	/* 
+	 * 	Bind the saved DEVMODE to the new the printer.
+	 */
+	free_nt_devicemode(&info_ptr->devmode);
+	info_ptr->devmode = info.devmode;
+
+	DEBUG(10,("set_driver_init_2: Set printer [%s] init DEVMODE for driver [%s]\n",
+			info_ptr->printername, info_ptr->drivername));
+
+	/* 
+	 * There should not be any printer data 'specifics' already set during the
+	 * add printer operation, if there are delete them. 
+	 */
+	while ( (current=info_ptr->specific) != NULL ) {
+		info_ptr->specific=current->next;
+		safe_free(current->data);
+		safe_free(current);
+	}
+
+	/* 
+	 * Add the printer data 'specifics' to the new printer
+	 */
+	len += unpack_specifics(&info_ptr->specific,dbuf.dptr+len, dbuf.dsize-len);
+
+	safe_free(dbuf.dptr);
+
+	return True;	
+}
+
+/****************************************************************************
+ Initialize printer devmode & data with previously saved driver init values.
+ When a printer is created using AddPrinter, the drivername bound to the
+ printer is used to lookup previously saved driver initialization info, which
+ is bound to the new printer.
+****************************************************************************/
+
+uint32 set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
+{
+	uint32 result;
+	
+	switch (level)
+	{
+		case 2:
+		{
+			result=set_driver_init_2(printer->info_2);
+			break;
+		}
+		default:
+			result=1;
+			break;
+	}
+	
+	return result;
+}
+
+/****************************************************************************
+ Pack up the DEVMODE and specifics for a printer into a 'driver init' entry 
+ in the tdb. Note: this is different from the driver entry and the printer
+ entry. There should be a single driver init entry for each driver regardless
+ of whether it was installed from NT or 2K. Technically, they should be
+ different, but they work out to the same struct.
+****************************************************************************/
+static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
+{
+	pstring key;
+	char *buf;
+	int buflen, len, ret;
+	TDB_DATA kbuf, dbuf;
+
+	buf = NULL;
+	buflen = 0;
+
+ again:	
+	len = 0;
+	len += pack_devicemode(info->devmode, buf+len, buflen-len);
+
+	len += pack_specifics(info->specific, buf+len, buflen-len);
+
+	if (buflen != len) {
+		buf = (char *)Realloc(buf, len);
+		buflen = len;
+		goto again;
+	}
+
+	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info->drivername);
+	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+	dbuf.dptr = buf;
+	dbuf.dsize = len;
+
+	ret = tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+
+	if (ret == -1)
+		DEBUG(8, ("update_driver_init_2: error updating printer init to tdb on disk\n"));
+
+	safe_free(buf);
+
+	DEBUG(10,("update_driver_init_2: Saved printer [%s] init DEVMODE & specifics for driver [%s]\n",
+		 info->sharename, info->drivername));
+
+	return ret;
+}
+
+/****************************************************************************
+ Update (i.e. save) the driver init info (DEVMODE and specifics) for a printer
+****************************************************************************/
+
+static uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level)
+{
+	uint32 result;
+	
+	dump_a_printer(printer, level);	
+	
+	switch (level)
+	{
+		case 2:
+		{
+			result=update_driver_init_2(printer.info_2);
+			break;
+		}
+		default:
+			result=1;
+			break;
+	}
+	
+	return result;
+}
+
+/****************************************************************************
+ Convert the printer data value, a REG_BINARY array, into an initialization 
+ DEVMODE. Note: the array must be parsed as if it was a DEVMODE in an rpc...
+ got to keep the endians happy :).
+****************************************************************************/
+
+static BOOL convert_driver_init(NT_PRINTER_PARAM *param, TALLOC_CTX *ctx, NT_DEVICEMODE *nt_devmode)
+{
+	BOOL       result = False;
+	prs_struct ps;
+	DEVICEMODE devmode;
+
+	ZERO_STRUCT(devmode);
+
+	prs_init(&ps, 0, 0, ctx, UNMARSHALL);
+	ps.data_p      = param->data;
+	ps.buffer_size = param->data_len;
+
+	if (spoolss_io_devmode("phantom DEVMODE", &ps, 0, &devmode))
+		result = convert_devicemode("", &devmode, &nt_devmode);
+	else
+		DEBUG(10,("convert_driver_init: error parsing DEVMODE\n"));
+
+
+	safe_free(devmode.private);
+	return result;
+}
+
+/****************************************************************************
+ Set the DRIVER_INIT info in the tdb. Requires Win32 client code that:
+
+ 1. Use the driver's config DLL to this UNC printername and:
+    a. Call DrvPrintEvent with PRINTER_EVENT_INITIALIZE
+    b. Call DrvConvertDevMode with CDM_DRIVER_DEFAULT to get default DEVMODE
+ 2. Call SetPrinterData with the 'magic' key and the DEVMODE as data.
+
+ The last step triggers saving the "driver initialization" information for
+ this printer into the tdb. Later, new printers that use this driver will
+ have this initialization information bound to them. This simulates the
+ driver initialization, as if it had run on the Samba server (as it would
+ have done on NT).
+
+ The Win32 client side code requirement sucks! But until we can run arbitrary
+ Win32 printer driver code on any Unix that Samba runs on, we are stuck with it.
+ 
+ It would have been easier to use SetPrinter because all the UNMARSHALLING of
+ the DEVMODE is done there, but 2K/XP clients do not set the DEVMODE... think
+ about it and you will realize why.  JRR 010720
+****************************************************************************/
+
+static uint32 save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARAM *param)
+{
+	uint32        status       = ERROR_SUCCESS;
+	TALLOC_CTX    *ctx         = NULL;
+	NT_DEVICEMODE *nt_devmode  = NULL;
+	NT_DEVICEMODE *tmp_devmode = printer->info_2->devmode;
+	
+	/*
+	 * Set devmode on printer info, so entire printer initialization can be 
+	 * saved to tdb.
+	 */
+	if ((ctx = talloc_init()) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
+
+	if ((nt_devmode = (NT_DEVICEMODE*)malloc(sizeof(NT_DEVICEMODE))) == NULL) {
+		status = ERROR_NOT_ENOUGH_MEMORY;
+		goto done;
+	}
+	
+	ZERO_STRUCTP(nt_devmode);
+
+	/*
+	 * The DEVMODE is held in the 'data' component of the param in raw binary.
+	 * Convert it to to a devmode structure
+	 */
+	if (!convert_driver_init(param, ctx, nt_devmode)) {
+		DEBUG(10,("save_driver_init_2: error converting DEVMODE\n"));
+		status = ERROR_INVALID_PARAMETER;
+		goto done;
+	}
+
+	/*
+	 * Pack up and add (or update) the DEVMODE and any current printer data to
+	 * a 'driver init' element in the tdb
+	 * 
+	 */
+	printer->info_2->devmode = nt_devmode;
+	if (update_driver_init(*printer, 2)!=0) {
+		DEBUG(10,("save_driver_init_2: error updating DEVMODE\n"));
+		status = ERROR_NOT_ENOUGH_MEMORY;
+		goto done;
+	}
+	
+	/*
+	 * If driver initialization info was successfully saved, set the current 
+	 * printer to match it. This allows initialization of the current printer 
+	 * as well as the driver.
+	 */
+	if (mod_a_printer(*printer, 2)!=0) {
+		DEBUG(10,("save_driver_init_2: error setting DEVMODE on printer [%s]\n",
+				  printer->info_2->printername));
+		status = ERROR_INVALID_PARAMETER;
+	}
+
+  done:
+	talloc_destroy(ctx);
+	if (nt_devmode)
+		safe_free(nt_devmode->private);
+	safe_free(nt_devmode);
+	printer->info_2->devmode = tmp_devmode;
+
+	return status;
+}
+
+/****************************************************************************
+ Update the driver init info (DEVMODE and specifics) for a printer
+****************************************************************************/
+
+uint32 save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_PRINTER_PARAM *param)
+{
+	uint32 status = ERROR_SUCCESS;
+	
+	switch (level)
+	{
+		case 2:
+		{
+			status=save_driver_init_2(printer, param);
+			break;
+		}
+		default:
+			status=ERROR_INVALID_LEVEL;
+			break;
+	}
+	
+	return status;
 }
 
 /****************************************************************************
