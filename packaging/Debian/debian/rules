@@ -41,7 +41,6 @@ endif
 
 DESTDIR=`pwd`/debian/tmp
 SWATDIR=`pwd`/debian/swat
-SAMBABOOK=`pwd`/debian/swat
 
 IVARS = BASEDIR=$(DESTDIR)/usr \
 		prefix=$(DESTDIR)/usr \
@@ -52,7 +51,6 @@ IVARS = BASEDIR=$(DESTDIR)/usr \
 		VARDIR=$(DESTDIR)/var \
 		INCLUDEDIR=$(DESTDIR)/usr/include \
 		SWATDIR=$(SWATDIR)/usr/share/samba/swat \
-		SAMBABOOK=$(SAMBABOOK)/usr/share/samba/swat/using_samba \
 		CODEPAGEDIR=$(DESTDIR)/usr/share/samba/ \
 		PRIVATEDIR=$(DESTDIR)/etc/samba \
 		CONFIGDIR=$(DESTDIR)/etc/samba
@@ -92,7 +90,6 @@ configure-stamp:
 		--with-smbmount \
 		--with-pam \
 		--with-syslog \
-		--with-sambabook \
 		--with-utmp \
 		--with-readline \
 		--with-pam_smbpass \
@@ -103,7 +100,7 @@ configure-stamp:
 		--with-acl-support \
 		--with-tdbsam \
 		--with-ldap \
-		--with-python=python2.2)
+		--with-python=python2.3)
 
 	touch configure-stamp
 
@@ -142,7 +139,7 @@ install: build
 	         $(DESTDIR)/lib/security $(DESTDIR)/sbin \
 	         $(DESTDIR)/usr/lib/cups/backend $(DESTDIR)/usr/share/samba \
 	         $(DESTDIR)/etc/pam.d $(DESTDIR)/etc/dhcp3/dhclient-enter-hooks.d \
-	         $(DESTDIR)/usr/lib/python2.2/site-packages
+	         $(DESTDIR)/usr/lib/python2.3/site-packages
 
 	# Add here commands to install the package into debian/tmp.
 	$(MAKE) -C source install $(IVARS)
@@ -187,14 +184,6 @@ install: build
 	#	Erich Schubert <debian@vitavonni.de> in #109509):
 	ln -s ../../../bin/smbspool $(DESTDIR)/usr/lib/cups/backend/smb
 
-	# To avoid duplication of a large number of files, the swat package
-	#	does not contain the "Using Samba" book nor the HTML docs.
-	#	Instead, these are provided by the samba-doc package and
-	#	are accessed through symlinks provided in the swat package.
-	#	Here we create the symlink for the book, and the symlinks
-	#	for the HTML files are created by the script installswat.sh.
-	ln -s ../../doc/samba-doc/htmldocs/using_samba $(SAMBABOOK)/usr/share/samba/swat/using_samba
-
 	# Install man pages for files without man pages in the upstream sources
 	install -m 0644 debian/mksmbpasswd.8 $(DESTDIR)/usr/share/man/man8/mksmbpasswd.8
 
@@ -217,7 +206,12 @@ install: build
 	install -m755 debian/samba-common.dhcp $(DESTDIR)/etc/dhcp3/dhclient-enter-hooks.d/samba
 
 	# Install the Python modules
-	cp source/build/lib.*/samba/*.so $(DESTDIR)/usr/lib/python2.2/site-packages/
+	#
+	# Hmmm... need to figure this out. We have lib.linux-i686-2.2
+	# and lib.linux-i686-2.3 directories. Using only the stuff from
+	# the 2.3 directory for now. peloy.-
+	#cp source/build/lib.*/samba/*.so $(DESTDIR)/usr/lib/python2.3/site-packages/
+	cp source/build/lib.linux-i686-2.3/samba/*.so $(DESTDIR)/usr/lib/python2.3/site-packages/
 
 	dh_movefiles
 
@@ -262,7 +256,7 @@ binary-arch: build install
 	dh_installdebconf
 	dh_installdocs -A debian/README.build
 	# dh_installexamples is not available in Debian Potato...
-	[ -x /usr/bin/dh_installexamples ] && DH_OPTIONS= dh_installexamples -v -ppython2.2-samba source/python/examples/*
+	[ -x /usr/bin/dh_installexamples ] && DH_OPTIONS= dh_installexamples -v -ppython2.3-samba source/python/examples/*
 #	dh_installmenu
 	# dh_installlogrotate is not available in Debian Potato...
 	if [ -x /usr/bin/dh_installlogrotate ]; then \

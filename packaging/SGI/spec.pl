@@ -4,15 +4,21 @@
 # information in the version.h file in the source tree
 
 open (VER,'../../source/include/version.h') || die "Unable to open version.h\n";
-($_ = <VER>) =~ s/"//g;
+while ( <VER> ) {
+  chomp;
+  if ( /SAMBA_VERSION_OFFICIAL_STRING/ ) {
+    s/^.*SAMBA_VERSION_OFFICIAL_STRING "//;
+    s/".*$//;
+    $SambaVersion = $_;
+  }
+}
 close (VER);
-@foo = split(' ');
-splice(@foo,0,2);
-$_ = $foo[0];
 
 # create the package name
-$vername = "    id \"Samba Version ".$_."\"\n";
+$vername = "    id \"Samba Version ".$SambaVersion."\"\n";
 
+$_ = $SambaVersion;
+s/^.* //;
 $patch = 0;
 #create the subsystem version numbers
 if (/alpha/) {

@@ -13,7 +13,7 @@
 # cvs should be submitted for inclusion in samba cvs.
 
 %define pkg_name	samba
-%define ver 		3.0.0beta2
+%define ver 		3.0.0beta3
 %define rel 		3mdk
 %define vscanver 	0.3.3beta1
 %define libsmbmajor 	0
@@ -72,17 +72,22 @@
 %define build_scanners	0
 # CUPS supports functionality for 'printcap name = cups' (9.0 and later):
 %define build_cupspc	0
+# releases that have chrpath available in main
+%define build_chrpath	0
 
 # Set defaults for each version
 %if %build_mdk92
 %define build_cupspc	1
+%define build_chrpath	1
 %endif
 
 %if %build_mdk91
 %define build_cupspc	1
+%define build_chrpath	1
 %endif
 
 %if %build_mdk90
+%define build_chrpath	1
 %endif
 
 %if %build_mdk82
@@ -171,6 +176,9 @@
 %define message_bugzilla() %(echo -e -n "Please file bug reports for this package at Mandrake bugzilla \\n(http://qa.mandrakesoft.com) under the product name %{1}")
 %define message_system %(echo -e -n "NOTE: This is a prerelease of samba-%{samba_major}, not intended for production\\n use. Rather these packages are provided, parallel installable\\nwith samba-2.2.x, for testing purposes")
 
+#check gcc version to disable some optimisations on gcc-3.3.1
+%define gcc331 %(gcc -dumpversion|awk '{if ($1>3.3) print 1; else print 0}')
+
 %ifarch alpha
 %define build_expsam xml
 %else
@@ -223,13 +231,12 @@ Source7: README.%{name}-mandrake-rpm
 Source8: samba-vscan-%{vscanver}.tar.bz2
 %endif
 Source10: samba-print-pdf.sh.bz2
+Source11: mount.cifs.8.bz2
 Patch1: smbw.patch.bz2
-Patch2: samba-2.2.0-gawk.patch.bz2
 Patch3: samba-2.2.0-buildroot.patch.bz2
 Patch4: samba-3.0-smbmount-sbin.patch.bz2
 %if !%have_pversion
 # Version specific patches: current version
-Patch100: samba-3.0.0beta2-mandrake-packaging.patch.bz2
 %else
 # Version specific patches: upcoming version
 %endif
@@ -254,6 +261,9 @@ BuildRequires: libcups-devel
 BuildRequires: libldap-devel
 %if %build_ads
 BuildRequires: libldap-devel krb5-devel
+%endif
+%if %build_chrpath
+BuildRequires: chrpath
 %endif
 BuildRoot: %{_tmppath}/%{name}-root
 Prefix: /usr
@@ -748,13 +758,11 @@ echo -e "\n%{name}-%{version}-%{release}\n">>%{SOURCE7}
 %endif
 #%patch111 -p1
 %patch1 -p1 -b .smbw
-%patch2 -p1 -b .gawk
 %patch3 -p1 -b .buildroot
 %patch4 -p1 -b .sbin
 # Version specific patches: current version
 %if !%have_pversion
 echo "Applying patches for current version: %{ver}"
-%patch100 -p1 -b .mdk
 %else
 # Version specific patches: upcoming version
 echo "Applying patches for new versions: %{pversion}"
@@ -795,21 +803,27 @@ perl -pi -e 's/^# define SAMBA_VERSION_MAJOR 2/# define SAMBA_VERSION_MAJOR 3/g'
 perl -pi -e 's/%{pkg_name}/%{name}/g' source/auth/pampass.c
 %endif
 
+#remove cvs internal files from docs:
+find docs examples -name '.cvsignore' -exec rm -f {} \;
+
 %build
 #%serverbuild
 (cd source
-CFLAGS="$RPM_OPT_FLAGS"
+CFLAGS=`echo "$RPM_OPT_FLAGS"|sed -e 's/-g//g'`
+%if %gcc331
+#CFLAGS=`echo "$CFLAGS"|sed -e 's/-O2/-Os/g'`
+%endif
 # Don't use --with-fhs now, since it overrides libdir, it sets configdir, 
 # lockdir,piddir logfilebase,privatedir and swatdir
 %configure      --prefix=%{_prefix} \
-                --sysconfdir=/etc/%{name} \
+                --sysconfdir=%{_sysconfdir}/%{name} \
                 --localstatedir=/var \
                 --libdir=%{_libdir}/%{name} \
-                --with-privatedir=/etc/%{name} \
+                --with-privatedir=%{_sysconfdir}/%{name} \
 		--with-lockdir=/var/cache/%{name} \
 		--with-piddir=/var/run/%{name} \
                 --with-swatdir=%{_datadir}/swat%{samba_major} \
-                --with-configdir=/etc/%{name} \
+                --with-configdir=%{_sysconfdir}/%{name} \
 		--with-logfilebase=/var/log/%{name} \
 %if !%build_ads
 		--with-ads=no	\
@@ -846,7 +860,7 @@ perl -pi -e 's/-g //g' Makefile
 %endif
 
 make proto_exists
-%make	all libsmbclient smbfilter wins modules %{!?_without_test: torture debug2html} bin/editreg
+%make	all libsmbclient smbfilter wins modules %{!?_without_test: torture debug2html} bin/editreg client/mount.cifs
 
 
 # Build VFS modules (experimental)
@@ -906,7 +920,7 @@ mkdir -p $RPM_BUILD_ROOT
 chmod a+r docs -R
 
 # Any entries here mean samba makefile is *really* broken:
-mkdir -p $RPM_BUILD_ROOT/etc/%{name}
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/%{name}
 mkdir -p $RPM_BUILD_ROOT/%{_datadir}
 mkdir -p $RPM_BUILD_ROOT%{_libdir}/%{name}/vfs
 
@@ -917,8 +931,8 @@ install -m755 source/bin/editreg %{buildroot}/%{_bindir}
 
 #need to stay
 mkdir -p $RPM_BUILD_ROOT/sbin
-mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,xinetd.d}
-mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/{logrotate.d,pam.d,xinetd.d}
+mkdir -p $RPM_BUILD_ROOT/%{_initrddir}
 mkdir -p $RPM_BUILD_ROOT/var/cache/%{name}
 mkdir -p $RPM_BUILD_ROOT/var/log/%{name}
 mkdir -p $RPM_BUILD_ROOT/var/run/%{name}
@@ -975,20 +989,20 @@ done
 
 # Install other stuff
 
-#        install -m644 examples/VFS/recycle/recycle.conf $RPM_BUILD_ROOT/etc/samba/
-        install -m644 packaging/Mandrake/smbusers $RPM_BUILD_ROOT/etc/%{name}/smbusers
+#        install -m644 examples/VFS/recycle/recycle.conf $RPM_BUILD_ROOT%{_sysconfdir}/samba/
+        install -m644 packaging/Mandrake/smbusers $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/smbusers
         install -m755 packaging/Mandrake/smbprint $RPM_BUILD_ROOT/%{_bindir}
         #install -m755 packaging/RedHat/smbadduser $RPM_BUILD_ROOT/usr/bin
         install -m755 packaging/Mandrake/findsmb $RPM_BUILD_ROOT/%{_bindir}
-        install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb%{samba_major}
+        install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/%{_initrddir}/smb%{samba_major}
         install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/%{_sbindir}/%{name}
-	install -m755 packaging/Mandrake/winbind.init $RPM_BUILD_ROOT/etc/rc.d/init.d/winbind%{samba_major}
-#	install -m755 packaging/Mandrake/wrepld.init $RPM_BUILD_ROOT/etc/rc.d/init.d/wrepld%{samba_major}
+	install -m755 packaging/Mandrake/winbind.init $RPM_BUILD_ROOT/%{_initrddir}/winbind%{samba_major}
+#	install -m755 packaging/Mandrake/wrepld.init $RPM_BUILD_ROOT/%{_initrddir}/wrepld%{samba_major}
 	install -m755 packaging/Mandrake/winbind.init $RPM_BUILD_ROOT/%{_sbindir}/winbind%{samba_major}
-        install -m644 packaging/Mandrake/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/%{name}
-	install -m644 packaging/Mandrake/system-auth-winbind.pamd $RPM_BUILD_ROOT/etc/pam.d/system-auth-winbind%{samba_major}
+        install -m644 packaging/Mandrake/samba.pamd $RPM_BUILD_ROOT/%{_sysconfdir}/pam.d/%{name}
+	install -m644 packaging/Mandrake/system-auth-winbind.pamd $RPM_BUILD_ROOT/%{_sysconfdir}/pam.d/system-auth-winbind%{samba_major}
 #
-        install -m644 %{SOURCE1} $RPM_BUILD_ROOT/etc/logrotate.d/%{name}
+        install -m644 %{SOURCE1} $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.d/%{name}
 #	install -m644 packaging/Mandrake/samba-slapd-include.conf $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/samba-slapd.include
 
 # Install smbldap-tools scripts:
@@ -1018,15 +1032,15 @@ install -m755 examples/LDAP/convertSambaAccount $RPM_BUILD_ROOT/%{_datadir}/%{na
 
 # make a conf file for winbind from the default one:
 	cat packaging/Mandrake/smb.conf|sed -e  's/^;  winbind/  winbind/g;s/^;  obey pam/  obey pam/g; s/^;   printer admin = @"D/   printer admin = @"D/g;s/^;   password server = \*/   password server = \*/g;s/^;  template/  template/g; s/^   security = user/   security = domain/g' > packaging/Mandrake/smb-winbind.conf
-        install -m644 packaging/Mandrake/smb-winbind.conf $RPM_BUILD_ROOT/etc/%{name}/smb-winbind.conf
+        install -m644 packaging/Mandrake/smb-winbind.conf $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/smb-winbind.conf
 
 # Some inline fixes for smb.conf for non-winbind use
-install -m644 packaging/Mandrake/smb.conf $RPM_BUILD_ROOT/etc/%{name}/smb.conf
+install -m644 packaging/Mandrake/smb.conf $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/smb.conf
 cat packaging/Mandrake/smb.conf | \
-sed -e 's/^;   printer admin = @adm/   printer admin = @adm/g' >$RPM_BUILD_ROOT/etc/%{name}/smb.conf
+sed -e 's/^;   printer admin = @adm/   printer admin = @adm/g' >$RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/smb.conf
 %if %build_cupspc
-perl -pi -e 's/printcap name = lpstat/printcap name = cups/g' $RPM_BUILD_ROOT/etc/%{name}/smb.conf
-perl -pi -e 's/printcap name = lpstat/printcap name = cups/g' $RPM_BUILD_ROOT/etc/%{name}/smb-winbind.conf
+perl -pi -e 's/printcap name = lpstat/printcap name = cups/g' $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/smb.conf
+perl -pi -e 's/printcap name = lpstat/printcap name = cups/g' $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/smb-winbind.conf
 %endif
 
 # Link smbmount to /sbin/mount.smb and /sbin/mount.smbfs
@@ -1035,7 +1049,12 @@ perl -pi -e 's/printcap name = lpstat/printcap name = cups/g' $RPM_BUILD_ROOT/et
         ln -s ..%{_bindir}/smbmount%{samba_major} mount.smb%{samba_major}
         ln -s ..%{_bindir}/smbmount%{samba_major} mount.smbfs%{samba_major}
 )
-        echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/%{name}/lmhosts
+
+#install mount.cifs
+install -m755 source/client/mount.cifs %{buildroot}/sbin
+bzcat %{SOURCE11} > %{buildroot}/%{_mandir}/man8/mount.cifs.8
+
+        echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/lmhosts
 
 # Link smbspool to CUPS (does not require installed CUPS)
 
@@ -1044,8 +1063,8 @@ perl -pi -e 's/printcap name = lpstat/printcap name = cups/g' $RPM_BUILD_ROOT/et
 
 # xinetd support
 
-        mkdir -p $RPM_BUILD_ROOT/etc/xinetd.d
-        install -m644 %{SOURCE3} $RPM_BUILD_ROOT/etc/xinetd.d/swat%{samba_major}
+        mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/xinetd.d
+        install -m644 %{SOURCE3} $RPM_BUILD_ROOT/%{_sysconfdir}/xinetd.d/swat%{samba_major}
 
 # menu support
 
@@ -1075,6 +1094,10 @@ bzcat %{SOURCE6} > $RPM_BUILD_ROOT%{_miconsdir}/swat%{samba_major}.png
 
 bzcat %{SOURCE10}> $RPM_BUILD_ROOT%{_datadir}/%{name}/scripts/print-pdf
 
+%if %build_chrpath
+find %{buildroot}/%{_lib} %{buildroot}/%{_bindir} %{buildroot}/%{_sbindir} %{buildroot}/%{_libdir} -type f -exec chrpath -d {} \;
+%endif
+
 # Fix configs when not building system samba:
 %if !%build_system
 # Work around non-existent but claimed --program-suffix support :-(
@@ -1095,15 +1118,15 @@ for OLD in $FILES; do
 done		
 # Replace paths in config files and init scripts:
 for i in smb winbind;do
-	perl -pi -e 's,/subsys/'$i',/subsys/'$i'%{samba_major},g' $RPM_BUILD_ROOT/etc/rc.d/init.d/${i}%{samba_major}
+	perl -pi -e 's,/subsys/'$i',/subsys/'$i'%{samba_major},g' $RPM_BUILD_ROOT/%{_initrddir}/${i}%{samba_major}
 done
-for i in /etc/%{name}/smb.conf /etc/rc.d/init.d/smb%{samba_major} %{_sbindir}/%{name} /etc/rc.d/init.d/winbind%{samba_major} %{_sbindir}/winbind%{samba_major} /etc/logrotate.d/%{name} /etc/xinetd.d/swat%{samba_major} /etc/rc.d/init.d/wrepld%{samba_major}; do
+for i in %{_sysconfdir}/%{name}/smb.conf %{_initrddir}/smb%{samba_major} %{_sbindir}/%{name} %{_initrddir}/winbind%{samba_major} %{_sbindir}/winbind%{samba_major} /%{_sysconfdir}/logrotate.d/%{name} /%{_sysconfdir}/xinetd.d/swat%{samba_major} %{_initrddir}/wrepld%{samba_major}; do
 	perl -pi -e 's,/%{pkg_name},/%{name},g; s,smbd,%{_sbindir}/smbd%{samba_major},g; s,nmbd,%{_sbindir}/nmbd%{samba_major},g; s,winbindd,%{_sbindir}/winbindd%{samba_major},g; s,/usr/sbin/swat,%{_sbindir}/swat%{samba_major},g;s,wrepld,%{_sbindir}/wrepld%{samba_major},g' $RPM_BUILD_ROOT/$i;
 done
 # Fix pam files
-perl -pi -e 's/winbind/winbind%{samba_major}/g' $RPM_BUILD_ROOT/etc/pam.d/system-auth-winbind%{samba_major}
+perl -pi -e 's/winbind/winbind%{samba_major}/g' $RPM_BUILD_ROOT/%{_sysconfdir}/pam.d/system-auth-winbind%{samba_major}
 # Fix xinetd file for swat:
-perl -pi -e 's,/usr/sbin,%{_sbindir},g' $RPM_BUILD_ROOT/etc/xinetd.d/swat%{samba_major}
+perl -pi -e 's,/usr/sbin,%{_sbindir},g' $RPM_BUILD_ROOT/%{_sysconfdir}/xinetd.d/swat%{samba_major}
 %endif
 
 #Clean up unpackaged files:
@@ -1145,12 +1168,12 @@ fi
 
 %post common
 # Basic migration script for pre-2.2.1 users,
-# since smb config moved from /etc to /etc/samba
+# since smb config moved from /etc to %{_sysconfdir}/samba
 
-# Let's create a proper /etc/samba/smbpasswd file
-[ -f /etc/%{name}/smbpasswd ] || {
+# Let's create a proper %{_sysconfdir}/samba/smbpasswd file
+[ -f %{_sysconfdir}/%{name}/smbpasswd ] || {
 	echo "Creating password file for samba..."
-	touch /etc/%{name}/smbpasswd
+	touch %{_sysconfdir}/%{name}/smbpasswd
 }
 
 # And this too, in case we don't have smbd to create it for us
@@ -1159,46 +1182,46 @@ fi
 }
 
 # Let's define the proper paths for config files
-perl -pi -e 's/(\/etc\/)(smb)/\1%{name}\/\2/' /etc/%{name}/smb.conf
+perl -pi -e 's/(\/etc\/)(smb)/\1%{name}\/\2/' %{_sysconfdir}/%{name}/smb.conf
 
 # Let's replace lpstat with cups in older smb.conf:
 %if %build_cupspc
 echo "Updating samba printing configuration if necessary..."
-perl -pi -e 's/= lpstat/= cups/' /etc/%{name}/smb.conf
+perl -pi -e 's/= lpstat/= cups/' %{_sysconfdir}/%{name}/smb.conf
 %endif
 
 # Fix the logrotate.d file from smb and nmb to smbd and nmbd
-if [ -f /etc/logrotate.d/samba ]; then
-        perl -pi -e 's/smb /smbd /' /etc/logrotate.d/samba
-        perl -pi -e 's/nmb /nmbd /' /etc/logrotate.d/samba
+if [ -f %{_sysconfdir}/logrotate.d/samba ]; then
+        perl -pi -e 's/smb /smbd /' %{_sysconfdir}/logrotate.d/samba
+        perl -pi -e 's/nmb /nmbd /' %{_sysconfdir}/logrotate.d/samba
 fi
 
 # And not loose our machine account SID
-[ -f /etc/MACHINE.SID ] && mv -f /etc/MACHINE.SID /etc/%{name}/ ||:
+[ -f %{_sysconfdir}/MACHINE.SID ] && mv -f %{_sysconfdir}/MACHINE.SID %{_sysconfdir}/%{name}/ ||:
 
 %if %build_winbind
 %post winbind
 if [ $1 = 1 ]; then
     /sbin/chkconfig winbind%{samba_major} on
-    cp -af /etc/nsswitch.conf /etc/nsswitch.conf.rpmsave
-    cp -af /etc/nsswitch.conf /etc/nsswitch.conf.rpmtemp
+    cp -af %{_sysconfdir}/nsswitch.conf %{_sysconfdir}/nsswitch.conf.rpmsave
+    cp -af %{_sysconfdir}/nsswitch.conf %{_sysconfdir}/nsswitch.conf.rpmtemp
     for i in passwd group;do
-        grep ^$i /etc/nsswitch.conf |grep -v 'winbind%{samba_major}' >/dev/null
+        grep ^$i %{_sysconfdir}/nsswitch.conf |grep -v 'winbind%{samba_major}' >/dev/null
         if [ $? = 0 ];then
-            echo "Adding a winbind%{samba_major} entry to the $i section of /etc/nsswitch.conf"
-            awk '/^'$i'/ {print $0 " winbind%{samba_major}"};!/^'$i'/ {print}' /etc/nsswitch.conf.rpmtemp >/etc/nsswitch.conf;
-	    cp -af /etc/nsswitch.conf /etc/nsswitch.conf.rpmtemp
+            echo "Adding a winbind%{samba_major} entry to the $i section of %{_sysconfdir}/nsswitch.conf"
+            awk '/^'$i'/ {print $0 " winbind%{samba_major}"};!/^'$i'/ {print}' %{_sysconfdir}/nsswitch.conf.rpmtemp >%{_sysconfdir}/nsswitch.conf;
+	    cp -af %{_sysconfdir}/nsswitch.conf %{_sysconfdir}/nsswitch.conf.rpmtemp
         else
-            echo "$i entry found in /etc/nsswitch.conf"
+            echo "$i entry found in %{_sysconfdir}/nsswitch.conf"
         fi
     done
-    if [ -f /etc/nsswitch.conf.rpmtemp ];then rm -f /etc/nsswitch.conf.rpmtemp;fi
+    if [ -f %{_sysconfdir}/nsswitch.conf.rpmtemp ];then rm -f %{_sysconfdir}/nsswitch.conf.rpmtemp;fi
 fi
 
 %preun winbind
 if [ $1 = 0 ]; then
-	echo "Removing winbind%{samba_major} entries from /etc/nsswitch.conf"
-	perl -pi -e 's/ winbind%{samba_major}//' /etc/nsswitch.conf
+	echo "Removing winbind%{samba_major} entries from %{_sysconfdir}/nsswitch.conf"
+	perl -pi -e 's/ winbind%{samba_major}//' %{_sysconfdir}/nsswitch.conf
 
 	/sbin/chkconfig winbind%{samba_major} reset
 fi
@@ -1207,13 +1230,13 @@ fi
 %if %build_wins
 %post -n nss_wins%{samba_major}
 if [ $1 = 1 ]; then
-    cp -af /etc/nsswitch.conf /etc/nsswitch.conf.rpmsave
-    grep '^hosts' /etc/nsswitch.conf |grep -v 'wins%{samba_major}' >/dev/null
+    cp -af %{_sysconfdir}/nsswitch.conf %{_sysconfdir}/nsswitch.conf.rpmsave
+    grep '^hosts' %{_sysconfdir}/nsswitch.conf |grep -v 'wins%{samba_major}' >/dev/null
     if [ $? = 0 ];then
-        echo "Adding a wins entry to the hosts section of /etc/nsswitch.conf"
-        awk '/^hosts/ {print $0 " wins%{samba_major}"};!/^hosts/ {print}' /etc/nsswitch.conf.rpmsave >/etc/nsswitch.conf;
+        echo "Adding a wins entry to the hosts section of %{_sysconfdir}/nsswitch.conf"
+        awk '/^hosts/ {print $0 " wins%{samba_major}"};!/^hosts/ {print}' %{_sysconfdir}/nsswitch.conf.rpmsave >%{_sysconfdir}/nsswitch.conf;
     else
-        echo "wins entry found in /etc/nsswitch.conf"
+        echo "wins entry found in %{_sysconfdir}/nsswitch.conf"
     fi
 #    else
 #        echo "Upgrade, leaving nsswitch.conf intact"
@@ -1221,10 +1244,10 @@ fi
 
 %preun -n nss_wins%{samba_major}
 if [ $1 = 0 ]; then
-	echo "Removing wins entry from /etc/nsswitch.conf"
-	perl -pi -e 's/ wins%{samba_major}//' /etc/nsswitch.conf
+	echo "Removing wins entry from %{_sysconfdir}/nsswitch.conf"
+	perl -pi -e 's/ wins%{samba_major}//' %{_sysconfdir}/nsswitch.conf
 #else
-#	echo "Leaving /etc/nsswitch.conf intact"
+#	echo "Leaving %{_sysconfdir}/nsswitch.conf intact"
 fi
 %endif %build_wins
 
@@ -1260,8 +1283,8 @@ fi
 %postun swat
 
 # Remove swat entry from xinetd
-if [ $1 = 0 -a -f /etc/xinetd.conf ] ; then
-rm -f /etc/xinetd.d/swat%{samba_major}
+if [ $1 = 0 -a -f %{_sysconfdir}/xinetd.conf ] ; then
+rm -f %{_sysconfdir}/xinetd.d/swat%{samba_major}
 	service xinetd reload &>/dev/null || :
 fi
 
@@ -1280,7 +1303,7 @@ fi
 if [ $1 != 0 ]; then
         [ ! -d /var/lock/samba ] && mkdir -m 0755 /var/lock/samba ||:
         [ ! -d /var/spool/samba ] && mkdir -m 1777 /var/spool/samba ||:
-        [ -f /etc/inetd.conf ] && chmod 644 /etc/services /etc/inetd.conf ||:
+        [ -f %{_sysconfdir}/inetd.conf ] && chmod 644 %{_sysconfdir}/services %{_sysconfdir}/inetd.conf ||:
 fi
 
 %files server
@@ -1302,13 +1325,12 @@ fi
 %{_libdir}/%{name}/vfs/*.so
 %dir %{_libdir}/%{name}/pdb
 
-#/usr/share/swat
-%attr(-,root,root) %config(noreplace) /etc/%{name}/smbusers
-%attr(-,root,root) %config %{_initrddir}/smb%{samba_major}
-#%attr(-,root,root) %config %{_initrddir}/wrepld%{samba_major}
-%attr(-,root,root) %config(noreplace) /etc/logrotate.d/%{name}
-%attr(-,root,root) %config(noreplace) /etc/pam.d/%{name}
-#%attr(-,root,root) %config(noreplace) /etc/%{name}/samba-slapd.include
+%attr(-,root,root) %config(noreplace) %{_sysconfdir}/%{name}/smbusers
+%attr(-,root,root) %config(noreplace) %{_initrddir}/smb%{samba_major}
+#%attr(-,root,root) %config(noreplace) %{_initrddir}/wrepld%{samba_major}
+%attr(-,root,root) %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
+%attr(-,root,root) %config(noreplace) %{_sysconfdir}/pam.d/%{name}
+#%attr(-,root,root) %config(noreplace) %{_sysconfdir}/%{name}/samba-slapd.include
 %{_mandir}/man1/smbstatus*.1*
 %{_mandir}/man5/smbpasswd*.5*
 %{_mandir}/man7/samba*.7*
@@ -1319,9 +1341,10 @@ fi
 %{_mandir}/man8/tdbbackup*.8*
 %{_mandir}/man1/profiles*.1*
 %{_mandir}/man1/editreg*.1*
-%attr(775,root,root) %dir %{_localstatedir}/%{name}/netlogon
-%attr(775,root,root) %dir %{_localstatedir}/%{name}/profiles
-%attr(775,root,root) %dir %{_localstatedir}/%{name}/printers
+%attr(775,root,adm) %dir %{_localstatedir}/%{name}/netlogon
+%attr(755,root,root) %dir %{_localstatedir}/%{name}/profiles
+%attr(755,root,root) %dir %{_localstatedir}/%{name}/printers
+%attr(775,root,adm) %dir %{_localstatedir}/%{name}/printers/*
 %attr(1777,root,root) %dir /var/spool/%{name}
 %dir %{_datadir}/%{name}
 %dir %{_datadir}/%{name}/scripts
@@ -1341,36 +1364,38 @@ fi
 %doc README.%{name}-mandrake-rpm
 %doc docs
 %doc examples
-%doc swat/README
-%attr(-,root,root) %{_datadir}/swat%{samba_major}/using_samba/*
+%attr(-,root,root) %{_datadir}/swat%{samba_major}/using_samba/
 
 %files swat
 %defattr(-,root,root)
-%config(noreplace) /etc/xinetd.d/swat%{samba_major}
+%config(noreplace) %{_sysconfdir}/xinetd.d/swat%{samba_major}
 #%attr(-,root,root) /sbin/*
 %{_sbindir}/swat%{samba_major}
 %{_menudir}/%{name}-swat
 %{_miconsdir}/*.png
 %{_liconsdir}/*.png
 %{_iconsdir}/*.png
-%attr(-,root,root) %{_datadir}/swat%{samba_major}/help/*
-%attr(-,root,root) %{_datadir}/swat%{samba_major}/images/*
-%attr(-,root,root) %{_datadir}/swat%{samba_major}/include/*
+%attr(-,root,root) %{_datadir}/swat%{samba_major}/help/
+%attr(-,root,root) %{_datadir}/swat%{samba_major}/images/
+%attr(-,root,root) %{_datadir}/swat%{samba_major}/include/
 %lang(ja) %{_datadir}/swat%{samba_major}/lang/ja
 %lang(tr) %{_datadir}/swat%{samba_major}/lang/tr
 %{_mandir}/man8/swat*.8*
+%doc swat/README
 
 %files client
 %defattr(-,root,root)
 %ifnarch alpha
 /sbin/mount.smb%{samba_major}
 /sbin/mount.smbfs%{samba_major}
+/sbin/mount.cifs
 %attr(755,root,root) %{_bindir}/smbmount%{samba_major}
 %attr(4755,root,root) %{_bindir}/smbumount%{samba_major}
 %attr(4755,root,root) %{_bindir}/smbmnt%{samba_major}
 %{_mandir}/man8/smbmnt*.8*
 %{_mandir}/man8/smbmount*.8*
 %{_mandir}/man8/smbumount*.8*
+%{_mandir}/man8/mount.cifs*.8*
 %else
 %exclude %{_bindir}/smb*m*nt%{samba_major}
 %exclude %{_mandir}/man8/smb*m*nt*.8*
@@ -1432,6 +1457,7 @@ fi
 %{_mandir}/man1/smbtree*.1*
 %{_mandir}/man1/ntlm_auth*.1*
 %{_mandir}/man7/Samba*.7*
+%dir %{_datadir}/swat%{samba_major}
 
 %if %build_winbind
 %files winbind
@@ -1441,8 +1467,8 @@ fi
 %{_bindir}/wbinfo%{samba_major}
 %attr(755,root,root) /%{_lib}/security/pam_winbind*
 %attr(755,root,root) /%{_lib}/libnss_winbind%{samba_major}*
-%attr(-,root,root) %config /etc/rc.d/init.d/winbind%{samba_major}
-%attr(-,root,root) %config(noreplace) /etc/pam.d/system-auth-winbind*
+%attr(-,root,root) %config(noreplace) %{_initrddir}/winbind%{samba_major}
+%attr(-,root,root) %config(noreplace) %{_sysconfdir}/pam.d/system-auth-winbind*
 %{_mandir}/man8/winbindd*.8*
 %{_mandir}/man1/wbinfo*.1*
 %endif
@@ -1567,6 +1593,19 @@ fi
 %exclude %{_mandir}/man1/smbsh*.1*
 
 %changelog
+* Mon Jul 28 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.beta3.3mdk
+- Rebuild for kerberos-1.3 on cooker
+- Put printer directories back
+- Add mount.cifs
+- Go back to standard optimisations
+
+* Thu Jul 17 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.beta3.2mdk
+- beta3
+- remove -g from cflags to avoid large static libraries
+- drop optimisation from O2 to O1 for gcc 3.3.1
+- own some directories for distriblint's benefit
+- use chrpath on distro's that have it to drastically reduce rpmlint score
+
 * Mon Jul 14 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.beta2.3mdk
 - place non-conditional excludes at the end of files list, to prevent causing
   rpm in Mandrake <=8.2 from segfaulting when processing files.
