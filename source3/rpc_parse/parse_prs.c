@@ -69,9 +69,11 @@ void prs_mem_free(prs_struct *ps)
 /*******************************************************************
  link one parsing structure to another
  ********************************************************************/
-void prs_link(prs_struct *ps, prs_struct const *const to)
+void prs_link(prs_struct *prev, prs_struct *ps, prs_struct *next)
 {
-	DEBUG(0,("NOT IMPLEMENTED\n"));
+	ps->data->offset.start = prev != NULL ? prev->data->offset.end : 0;
+	ps->data->offset.end   = ps->data->offset.start + ps->offset;
+	ps->data->next         = next != NULL ? next->data : NULL;
 }
 
 /*******************************************************************
@@ -236,7 +238,7 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 
 	ps->offset += i*2;
 
-	dump_data(5+depth, (char *)start, ps->offset);
+	dump_data(5+depth, (char *)start, i * 2);
 
 	return True;
 }
@@ -277,7 +279,7 @@ BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, ui
 
 	ps->offset += i+1;
 
-	dump_data(5+depth, (char *)start, ps->offset);
+	dump_data(5+depth, (char *)start, i);
 
 	return True;
 }

@@ -123,7 +123,7 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
 	if (!p) return(ERROR(ERRDOS,ERRbadfid));
 
-	data = smb_buf(inbuf) + smb_doff;
+	data = smb_base(inbuf) + smb_doff;
 
 	if (numtowrite == 0)
 	{
