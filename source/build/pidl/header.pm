@@ -41,7 +41,7 @@ sub DumpElement($)
 {
     my($element) = shift;
 
-    if (util::has_property($element->{PROPERTIES}, "struct_len")) {
+    if (util::has_property($element, "struct_len")) {
 	    # a struct_len is an internal artifact - it is put on the 
 	    # wire but not exposed via the api, which means it does 
 	    # not appear in the header file
@@ -143,7 +143,7 @@ sub DumpFunctionInOut($$)
     my($fn) = shift;
     my($prop) = shift;
     foreach my $e (@{$fn->{DATA}}) {
-	    if (util::has_property($e->{PROPERTIES}, $prop)) {
+	    if (util::has_property($e, $prop)) {
 		    DumpElement($e);
 	    }
     }
@@ -168,7 +168,7 @@ sub DumpFunction($)
     $res .= "struct {\n";
     $tab_depth++;
     DumpFunctionInOut($fn, "out");
-    if ($fn->{RETURN_TYPE}) {
+    if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
 	    tabs();
 	    $res .= "$fn->{RETURN_TYPE} result;\n";
     }
@@ -190,6 +190,16 @@ sub DumpInterface($)
 	    DumpTypedef($d);
 	($d->{TYPE} eq "FUNCTION") && 
 	    DumpFunction($d);
+    }
+
+    my $count = 0;
+
+    foreach my $d (@{$data}) {
+	    if ($d->{TYPE} eq "FUNCTION") {
+		    $u_name = uc $d->{NAME};
+		    $res .= "#define DCERPC_$u_name $count\n";
+		    $count++;
+	    }
     }
 }
 
