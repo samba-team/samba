@@ -323,7 +323,7 @@ BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
    generate a SPNEGO negTokenTarg packet, ready for a EXTENDED_SECURITY
    kerberos session setup 
 */
-DATA_BLOB spnego_gen_negTokenTarg(const char *principal, int time_offset, unsigned char session_key_krb5[16])
+DATA_BLOB spnego_gen_negTokenTarg(const char *principal, int time_offset, DATA_BLOB *session_key_krb5)
 {
 	DATA_BLOB tkt, tkt_wrapped, targ;
 	const char *krb_mechs[] = {OID_KERBEROS5_OLD, OID_NTLMSSP, NULL};

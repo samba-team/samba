@@ -415,8 +415,8 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			logon_script,
 			profile_path,
 			acct_desc,
-			munged_dial,
 			workstations;
+	char		munged_dial[2048];
 	uint32 		user_rid; 
 	uint8 		smblmpwd[LM_HASH_LEN],
 			smbntpwd[NT_HASH_LEN];
@@ -660,6 +660,13 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		pdb_set_workstations(sampass, workstations, PDB_SET);
 	}
 
+	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
+		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_MUNGED_DIAL), munged_dial)) {
+		/* leave as default */;
+	} else {
+		pdb_set_munged_dial(sampass, munged_dial, PDB_SET);
+	}
+	
 	/* FIXME: hours stuff should be cleaner */
 	
 	logon_divs = 168;
@@ -703,7 +710,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
 	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
 
-	pdb_set_munged_dial(sampass, munged_dial, PDB_SET);
+/*	pdb_set_munged_dial(sampass, munged_dial, PDB_SET); */
 	
 	/* pdb_set_unknown_3(sampass, unknown3, PDB_SET); */
 
@@ -851,7 +858,12 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_WKS), 
 			pdb_get_workstations(sampass));
-
+	
+	if (need_update(sampass, PDB_MUNGEDDIAL))
+		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
+			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_MUNGED_DIAL), 
+			pdb_get_munged_dial(sampass));
+	
 	if (need_update(sampass, PDB_SMBHOME))
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_HOME_PATH), 

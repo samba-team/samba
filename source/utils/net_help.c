@@ -88,11 +88,14 @@ int net_help_group(int argc, const char **argv)
 {
 	d_printf("net [<method>] group [misc. options] [targets]"\
 		 "\n\tList user groups\n\n");
+	d_printf("net rpc group LIST [global|local|builtin]* [misc. options]"\
+		 "\n\tList specific user groups\n\n");
 	d_printf("net [<method>] group DELETE <name> "\
 		 "[misc. options] [targets]"\
 		 "\n\tDelete specified group\n");
 	d_printf("\nnet [<method>] group ADD <name> [-C comment] [-c container]"\
 		 " [misc. options] [targets]\n\tCreate specified group\n");
+	d_printf("\nnet rpc group MEMBERS <name>\n\tList Group Members\n\n");
 	net_common_methods_usage(argc, argv);
 	net_common_flags_usage(argc, argv);
 	d_printf("\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
@@ -146,6 +149,15 @@ int net_help_file(int argc, const char **argv)
 	return -1;
 }
 
+int net_help_status(int argc, const char **argv)
+{
+	d_printf("  net status sessions [parseable] "
+		 "Show list of open sessions\n");
+	d_printf("  net status shares [parseable]   "
+		 "Show list of open shares\n");
+	return -1;
+}
+
 static int net_usage(int argc, const char **argv)
 {
 	d_printf("  net time\t\tto view or set time information\n"\
@@ -159,6 +171,7 @@ static int net_usage(int argc, const char **argv)
 		 "  net setlocalsid SID\tto set the local domain SID\n"\
 		 "  net changesecretpw\tto change the machine password in the local secrets database only\n"\
 		 "                    \tthis requires the -f flag as a safety barrier\n"\
+		 "  net status\t\tShow server status\n"\
 		 "\n"\
 		 "  net ads <command>\tto run ADS commands\n"\
 		 "  net rap <command>\tto run RAP (pre-RPC) commands\n"\

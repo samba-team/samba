@@ -370,7 +370,7 @@ We were expecting seq %u\n", reply_seq_number, saved_seq ));
 #endif /* JRATEST */
 
 	} else {
-		DEBUG(10, ("client_check_incoming_message:: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
+		DEBUG(10, ("client_check_incoming_message: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
 		dump_data(10, (const char *)server_sent_mac, 8);
 	}
 	return signing_good(inbuf, si, good, saved_seq);
@@ -405,11 +405,11 @@ static void simple_free_signing_context(struct smb_sign_info *si)
  SMB signing - Simple implementation - setup the MAC key.
 ************************************************************/
 
-BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[16], const DATA_BLOB response)
+BOOL cli_simple_set_signing(struct cli_state *cli, const DATA_BLOB user_session_key, const DATA_BLOB response)
 {
 	struct smb_basic_signing_context *data;
 
-	if (!user_session_key)
+	if (!user_session_key.length)
 		return False;
 
 	if (!cli_set_smb_signing_common(cli)) {
@@ -425,20 +425,22 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 
 	cli->sign_info.signing_context = data;
 	
-	data->mac_key = data_blob(NULL, response.length + 16);
+	data->mac_key = data_blob(NULL, response.length + user_session_key.length);
 
-	memcpy(&data->mac_key.data[0], user_session_key, 16);
+	memcpy(&data->mac_key.data[0], user_session_key.data, user_session_key.length);
 
 	DEBUG(10, ("cli_simple_set_signing: user_session_key\n"));
-	dump_data(10, (const char *)user_session_key, 16);
+	dump_data(10, (const char *)user_session_key.data, user_session_key.length);
 
 	if (response.length) {
-		memcpy(&data->mac_key.data[16],response.data, response.length);
+		memcpy(&data->mac_key.data[user_session_key.length],response.data, response.length);
 		DEBUG(10, ("cli_simple_set_signing: response_data\n"));
 		dump_data(10, (const char *)response.data, response.length);
 	} else {
 		DEBUG(10, ("cli_simple_set_signing: NULL response_data\n"));
 	}
+
+	dump_data_pw("MAC ssession key is:\n", data->mac_key.data, data->mac_key.length);
 
 	/* Initialise the sequence number */
 	data->send_seq_num = 0;
@@ -455,9 +457,12 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 
 /***********************************************************
  Tell client code we are in a multiple trans reply state.
+ We call this after the last outgoing trans2 packet (which
+ has incremented the sequence numbers), so we must save the
+ current mid and sequence number -2.
 ************************************************************/
 
-void cli_signing_trans_start(struct cli_state *cli)
+void cli_signing_trans_start(struct cli_state *cli, uint16 mid)
 {
 	struct smb_basic_signing_context *data = cli->sign_info.signing_context;
 
@@ -467,9 +472,9 @@ void cli_signing_trans_start(struct cli_state *cli)
 	data->trans_info = smb_xmalloc(sizeof(struct trans_info_context));
 	ZERO_STRUCTP(data->trans_info);
 
-	data->trans_info->send_seq_num = data->send_seq_num;
-	data->trans_info->mid = SVAL(cli->outbuf,smb_mid);
-	data->trans_info->reply_seq_num = data->send_seq_num+1;
+	data->trans_info->send_seq_num = data->send_seq_num-2;
+	data->trans_info->mid = mid;
+	data->trans_info->reply_seq_num = data->send_seq_num-1;
 
 	DEBUG(10,("cli_signing_trans_start: storing mid = %u, reply_seq_num = %u, send_seq_num = %u \
 data->send_seq_num = %u\n",
@@ -490,10 +495,15 @@ void cli_signing_trans_stop(struct cli_state *cli)
 	if (!cli->sign_info.doing_signing || !data)
 		return;
 
+	DEBUG(10,("cli_signing_trans_stop: freeing mid = %u, reply_seq_num = %u, send_seq_num = %u \
+data->send_seq_num = %u\n",
+			(unsigned int)data->trans_info->mid,
+			(unsigned int)data->trans_info->reply_seq_num,
+			(unsigned int)data->trans_info->send_seq_num,
+			(unsigned int)data->send_seq_num ));
+
 	SAFE_FREE(data->trans_info);
 	data->trans_info = NULL;
-
-	data->send_seq_num += 2;
 }
 
 /***********************************************************
@@ -741,7 +751,26 @@ We were expecting seq %u\n", reply_seq_number, saved_seq ));
 		DEBUG(10, ("srv_check_incoming_message: seq %u: (current is %u) got good SMB signature of\n", (unsigned int)reply_seq_number, (unsigned int)data->send_seq_num));
 		dump_data(10, (const char *)server_sent_mac, 8);
 	}
-	return signing_good(inbuf, si, good, saved_seq);
+
+	if (!signing_good(inbuf, si, good, saved_seq)) {
+		if (!si->mandatory_signing && (data->send_seq_num < 3)){
+			/* Non-mandatory signing - just turn off if this is the first bad packet.. */
+			DEBUG(5, ("srv_check_incoming_message: signing negotiated but not required and client \
+isn't sending correct signatures. Turning off.\n"));
+			si->negotiated_smb_signing = False;
+			si->allow_smb_signing = False;
+			si->doing_signing = False;
+			free_signing_context(si);
+			return True;
+		} else {
+			/* Mandatory signing or bad packet after signing started - fail and disconnect. */
+			if (saved_seq)
+				DEBUG(0, ("srv_check_incoming_message: BAD SIG: seq %u\n", (unsigned int)saved_seq));
+			return False;
+		}
+	} else {
+		return True;
+	}
 }
 
 /***********************************************************
@@ -928,11 +957,11 @@ data->send_seq_num = %u\n",
  Turn on signing from this packet onwards. 
 ************************************************************/
 
-void srv_set_signing(const uchar user_session_key[16], const DATA_BLOB response)
+void srv_set_signing(const DATA_BLOB user_session_key, const DATA_BLOB response)
 {
 	struct smb_basic_signing_context *data;
 
-	if (!user_session_key)
+	if (!user_session_key.length)
 		return;
 
 	if (!srv_sign_info.negotiated_smb_signing && !srv_sign_info.mandatory_signing) {
@@ -957,11 +986,17 @@ void srv_set_signing(const uchar user_session_key[16], const DATA_BLOB response)
 
 	srv_sign_info.signing_context = data;
 	
-	data->mac_key = data_blob(NULL, response.length + 16);
+	data->mac_key = data_blob(NULL, response.length + user_session_key.length);
 
-	memcpy(&data->mac_key.data[0], user_session_key, 16);
+	memcpy(&data->mac_key.data[0], user_session_key.data, user_session_key.length);
 	if (response.length)
-		memcpy(&data->mac_key.data[16],response.data, response.length);
+		memcpy(&data->mac_key.data[user_session_key.length],response.data, response.length);
+
+	dump_data_pw("MAC ssession key is:\n", data->mac_key.data, data->mac_key.length);
+
+	DEBUG(3,("srv_set_signing: turning on SMB signing: signing negotiated = %s, mandatory_signing = %s.\n",
+				BOOLSTR(srv_sign_info.negotiated_smb_signing),
+			 	BOOLSTR(srv_sign_info.mandatory_signing) ));
 
 	/* Initialise the sequence number */
 	data->send_seq_num = 0;

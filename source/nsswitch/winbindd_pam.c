@@ -225,9 +225,15 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	DATA_BLOB lm_resp, nt_resp;
 
 	if (!state->privileged) {
-		DEBUG(2, ("winbindd_pam_auth_crap: non-privileged access denied!\n"));
+		char *error_string = NULL;
+		DEBUG(2, ("winbindd_pam_auth_crap: non-privileged access denied.  !\n"));
+		DEBUGADD(2, ("winbindd_pam_auth_crap: Ensure permissions on %s are set correctly.\n", 
+			     get_winbind_priv_pipe_dir()));
 		/* send a better message than ACCESS_DENIED */
-		push_utf8_fstring(state->response.data.auth.error_string, "winbind client not authorized to use winbindd_pam_auth_crap");
+		asprintf(&error_string, "winbind client not authorized to use winbindd_pam_auth_crap.  Ensure permissions on %s are set correctly.",
+			 get_winbind_priv_pipe_dir());
+		push_utf8_fstring(state->response.data.auth.error_string, error_string);
+		SAFE_FREE(error_string);
 		result =  NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
@@ -378,6 +384,8 @@ done:
 	
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	push_utf8_fstring(state->response.data.auth.nt_status_string, nt_errstr(result));
+	
+	/* we might have given a more useful error above */
 	if (!*state->response.data.auth.error_string) 
 		push_utf8_fstring(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);

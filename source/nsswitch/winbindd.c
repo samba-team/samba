@@ -221,6 +221,7 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_GETPWENT, winbindd_getpwent, "GETPWENT" },
 
 	{ WINBINDD_GETGROUPS, winbindd_getgroups, "GETGROUPS" },
+	{ WINBINDD_GETUSERSIDS, winbindd_getusersids, "GETUSERSIDS" },
 
 	/* Group functions */
 
@@ -722,6 +723,7 @@ static void process_loop(void)
 					    && *(uint32 *) &state->request != sizeof(state->request)) {
 						DEBUG(0,("process_loop: Invalid request size from pid %lu: %d bytes sent, should be %ld\n",
 								(unsigned long)state->request.pid, *(uint32 *) &state->request, (unsigned long)sizeof(state->request)));
+						DEBUGADD(0, ("This usually means that you are running old wbinfo, pam_winbind or libnss_winbind clients\n"));
 
 						remove_client(state);
 						break;

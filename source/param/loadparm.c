@@ -262,6 +262,7 @@ typedef struct
 	BOOL bPamPasswordChange;
 	BOOL bUnixPasswdSync;
 	BOOL bPasswdChatDebug;
+	int iPasswdChatTimeout;
 	BOOL bTimestampLogs;
 	BOOL bNTSmbSupport;
 	BOOL bNTPipeSupport;
@@ -280,7 +281,6 @@ typedef struct
 	BOOL bDebugPid;
 	BOOL bDebugUid;
 	BOOL bHostMSDfs;
-	BOOL bHideLocalUsers;
 	BOOL bUnicode;
 	BOOL bUseMmap;
 	BOOL bHostnameLookups;
@@ -565,9 +565,6 @@ static BOOL handle_netbios_aliases( const char *pszParmValue, char **ptr );
 static BOOL handle_netbios_scope( const char *pszParmValue, char **ptr );
 static BOOL handle_charset( const char *pszParmValue, char **ptr );
 
-static BOOL handle_ldap_suffix ( const char *pszParmValue, char **ptr );
-static BOOL handle_ldap_sub_suffix ( const char *pszParmValue, char **ptr );
-
 static BOOL handle_acl_compatibility(const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
@@ -749,6 +746,12 @@ static const struct enum_list enum_map_to_guest[] = {
  *       Any parameter that does NOT have FLAG_ADVANCED will not disply at all
  *	 Set FLAG_SHARE and FLAG_PRINT to specifically display parameters in
  *        respective views.
+ *
+ * NOTE2: Handling of duplicated (synonym) paramters:
+ *	Only the first occurance of a parameter should be enabled by FLAG_BASIC
+ *	and/or FLAG_ADVANCED. All duplicates following the first mention should be
+ *	set to FLAG_HIDE. ie: Make you must place the parameter that has the preferred
+ *	name first, and all synonyms must follow it with the FLAG_HIDE attribute.
  */
 
 static struct parm_struct parm_table[] = {
@@ -801,6 +804,7 @@ static struct parm_struct parm_table[] = {
 	{"passwd program", P_STRING, P_GLOBAL, &Globals.szPasswdProgram, NULL, NULL, FLAG_ADVANCED}, 
 	{"passwd chat", P_STRING, P_GLOBAL, &Globals.szPasswdChat, NULL, NULL, FLAG_ADVANCED}, 
 	{"passwd chat debug", P_BOOL, P_GLOBAL, &Globals.bPasswdChatDebug, NULL, NULL, FLAG_ADVANCED}, 
+	{"passwd chat timeout", P_INTEGER, P_GLOBAL, &Globals.iPasswdChatTimeout, NULL, NULL, FLAG_ADVANCED}, 
 	{"username map", P_STRING, P_GLOBAL, &Globals.szUsernameMap, NULL, NULL, FLAG_ADVANCED}, 
 	{"password level", P_INTEGER, P_GLOBAL, &Globals.pwordlevel, NULL, NULL, FLAG_ADVANCED}, 
 	{"username level", P_INTEGER, P_GLOBAL, &Globals.unamelevel, NULL, NULL, FLAG_ADVANCED}, 
@@ -1064,11 +1068,11 @@ static struct parm_struct parm_table[] = {
 	{"ldap server", P_STRING, P_GLOBAL, &Globals.szLdapServer, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap port", P_INTEGER, P_GLOBAL, &Globals.ldap_port, NULL, NULL, FLAG_ADVANCED}, 
 #endif
-	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, handle_ldap_suffix, NULL, FLAG_ADVANCED}, 
-	{"ldap machine suffix", P_STRING, P_GLOBAL, &Globals.szLdapMachineSuffix, handle_ldap_sub_suffix, NULL, FLAG_ADVANCED}, 
-	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, handle_ldap_sub_suffix, NULL, FLAG_ADVANCED}, 
-	{"ldap group suffix", P_STRING, P_GLOBAL, &Globals.szLdapGroupSuffix, handle_ldap_sub_suffix, NULL, FLAG_ADVANCED}, 
-	{"ldap idmap suffix", P_STRING, P_GLOBAL, &Globals.szLdapIdmapSuffix, handle_ldap_sub_suffix, NULL, FLAG_ADVANCED}, 
+	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, NULL, NULL, FLAG_ADVANCED}, 
+	{"ldap machine suffix", P_STRING, P_GLOBAL, &Globals.szLdapMachineSuffix, NULL, NULL, FLAG_ADVANCED}, 
+	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, NULL, NULL, FLAG_ADVANCED}, 
+	{"ldap group suffix", P_STRING, P_GLOBAL, &Globals.szLdapGroupSuffix, NULL, NULL, FLAG_ADVANCED}, 
+	{"ldap idmap suffix", P_STRING, P_GLOBAL, &Globals.szLdapIdmapSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, FLAG_ADVANCED}, 
@@ -1133,7 +1137,6 @@ static struct parm_struct parm_table[] = {
 
 	{"fake directory create times", P_BOOL, P_LOCAL, &sDefault.bFakeDirCreateTimes, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"panic action", P_STRING, P_GLOBAL, &Globals.szPanicAction, NULL, NULL, FLAG_ADVANCED}, 
-	{"hide local users", P_BOOL, P_GLOBAL, &Globals.bHideLocalUsers, NULL, NULL, FLAG_ADVANCED}, 
 
 	{N_("VFS module options"), P_SEP, P_SEPARATOR}, 
 
@@ -1150,9 +1153,9 @@ static struct parm_struct parm_table[] = {
 	{"enable rid algorithm", P_BOOL, P_GLOBAL, &Globals.bEnableRidAlgorithm, NULL, NULL, FLAG_DEPRECATED}, 
 	{"idmap backend", P_STRING, P_GLOBAL, &Globals.szIdmapBackend, NULL, NULL, FLAG_ADVANCED}, 
 	{"idmap uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED}, 
-	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED}, 
+	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_HIDE}, 
 	{"idmap gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED}, 
-	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED}, 
+	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_HIDE}, 
 	{"template primary group", P_STRING, P_GLOBAL, &Globals.szTemplatePrimaryGroup, NULL, NULL, FLAG_ADVANCED}, 
 	{"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, FLAG_ADVANCED}, 
 	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, FLAG_ADVANCED}, 
@@ -1417,6 +1420,7 @@ static void init_globals(void)
 	Globals.bUnixPasswdSync = False;
 	Globals.bPamPasswordChange = False;
 	Globals.bPasswdChatDebug = False;
+	Globals.iPasswdChatTimeout = 2; /* 2 second default. */
 	Globals.bUnicode = True;	/* Do unicode on the wire by default */
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
 	Globals.bNTStatusSupport = True; /* Use NT status by default. */
@@ -1689,10 +1693,6 @@ FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
 FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
 #endif
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
-FN_GLOBAL_STRING(lp_ldap_machine_suffix, &Globals.szLdapMachineSuffix)
-FN_GLOBAL_STRING(lp_ldap_user_suffix, &Globals.szLdapUserSuffix)
-FN_GLOBAL_STRING(lp_ldap_idmap_suffix, &Globals.szLdapIdmapSuffix)
-FN_GLOBAL_STRING(lp_ldap_group_suffix, &Globals.szLdapGroupSuffix)
 FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
@@ -1734,6 +1734,7 @@ FN_GLOBAL_BOOL(lp_bind_interfaces_only, &Globals.bBindInterfacesOnly)
 FN_GLOBAL_BOOL(lp_pam_password_change, &Globals.bPamPasswordChange)
 FN_GLOBAL_BOOL(lp_unix_password_sync, &Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug, &Globals.bPasswdChatDebug)
+FN_GLOBAL_INTEGER(lp_passwd_chat_timeout, &Globals.iPasswdChatTimeout)
 FN_GLOBAL_BOOL(lp_unicode, &Globals.bUnicode)
 FN_GLOBAL_BOOL(lp_nt_pipe_support, &Globals.bNTPipeSupport)
 FN_GLOBAL_BOOL(lp_nt_status_support, &Globals.bNTStatusSupport)
@@ -1894,7 +1895,6 @@ FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
 FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
-FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
 FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
@@ -2992,56 +2992,56 @@ static BOOL handle_debug_list( const char *pszParmValueIn, char **ptr )
 }
 
 /***************************************************************************
- Handle setting ldap suffix and determines whether ldap machine suffix needs
- to be set as well.
- 
- Set all of the sub suffix strings to be the 'ldap suffix' by default
+ Handle ldap suffixes - default to ldapsuffix if sub-suffixes are not defined.
 ***************************************************************************/
 
-static BOOL handle_ldap_suffix( const char *pszParmValue, char **ptr )
+static char* append_ldap_suffix( const char *str )
 {
-	pstring suffix;
-               
-	pstrcpy(suffix, pszParmValue);
+	char *suffix_string;
 
-	/* set defaults for the the sub-suffixes */
-	
-	if (! *Globals.szLdapMachineSuffix )
-		string_set(&Globals.szLdapMachineSuffix, suffix);
-	if (! *Globals.szLdapUserSuffix ) 
-		string_set(&Globals.szLdapUserSuffix, suffix);
-	if (! *Globals.szLdapGroupSuffix ) 
-		string_set(&Globals.szLdapGroupSuffix, suffix);
-	if (! *Globals.szLdapIdmapSuffix ) 
-		string_set(&Globals.szLdapIdmapSuffix, suffix);
 
-	string_set(ptr, suffix); 
-	return True;
+	if (!lp_talloc)
+		lp_talloc = talloc_init("lp_talloc");
+
+	suffix_string = talloc_asprintf( lp_talloc, "%s,%s", str, Globals.szLdapSuffix );
+	if ( !suffix_string ) {
+		DEBUG(0,("append_ldap_suffix: talloc_asprintf() failed!\n"));
+		return NULL;
+	}
+
+	return suffix_string;
 }
 
-/***************************************************************************
- Handle the ldap sub suffix option.
- Always append the 'ldap suffix' if it is set
-***************************************************************************/
-
-static BOOL handle_ldap_sub_suffix( const char *pszParmValue, char **ptr)
+char *lp_ldap_machine_suffix(void)
 {
-	pstring suffix;
-       
-	pstrcpy(suffix, pszParmValue);
+	if (Globals.szLdapMachineSuffix[0])
+		return append_ldap_suffix(Globals.szLdapMachineSuffix);
 
-	if (! *Globals.szLdapSuffix ) {
-		string_set( ptr, suffix );
-		return True;
-	}
-	else {
-		if ( *pszParmValue )
-			pstrcat(suffix, ",");
-		pstrcat(suffix, Globals.szLdapSuffix);
-	}
-	
-	string_set( ptr, suffix );
-	return True;
+	return lp_string(Globals.szLdapSuffix);
+}
+
+char *lp_ldap_user_suffix(void)
+{
+	if (Globals.szLdapUserSuffix[0])
+		return append_ldap_suffix(Globals.szLdapUserSuffix);
+
+	return lp_string(Globals.szLdapSuffix);
+}
+
+char *lp_ldap_group_suffix(void)
+{
+	if (Globals.szLdapGroupSuffix[0])
+		return append_ldap_suffix(Globals.szLdapGroupSuffix);
+
+	return lp_string(Globals.szLdapSuffix);
+}
+
+char *lp_ldap_idmap_suffix(void)
+{
+	if (Globals.szLdapIdmapSuffix[0])
+		return append_ldap_suffix(Globals.szLdapIdmapSuffix);
+
+	return lp_string(Globals.szLdapSuffix);
 }
 
 /***************************************************************************
@@ -3311,9 +3311,13 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			if ((char ***)ptr && *(char ***)ptr) {
 				char **list = *(char ***)ptr;
 				
-				for (; *list; list++)
-					fprintf(f, "%s%s", *list,
-						((*(list+1))?", ":""));
+				for (; *list; list++) {
+					/* surround strings with whitespace in single quotes */
+					if ( strchr_m( *list, ' ' ) )
+						fprintf(f, "\'%s\'%s", *list, ((*(list+1))?", ":""));
+					else
+						fprintf(f, "%s%s", *list, ((*(list+1))?", ":""));
+				}
 			}
 			break;
 

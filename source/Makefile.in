@@ -294,6 +294,7 @@ MYSQL_OBJ = passdb/pdb_mysql.o
 DEVEL_HELP_WEIRD_OBJ = modules/weird.o
 CP850_OBJ = modules/CP850.o
 CP437_OBJ = modules/CP437.o
+CHARSET_MACOSXFS_OBJ = modules/charset_macosxfs.o
 
 GROUPDB_OBJ = groupdb/mapping.o
 
@@ -494,7 +495,8 @@ CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \
 	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o \
-	   utils/net_cache.o utils/net_groupmap.o utils/net_idmap.o
+	   utils/net_cache.o utils/net_groupmap.o utils/net_idmap.o \
+	   utils/net_status.o
 
 NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
@@ -1019,7 +1021,7 @@ bin/librpc_echo.@SHLIBEXT@: $(RPC_ECHO_OBJ)
 
 bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo "Linking $@"
-	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) 
+	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(PASSDB_LIBS)
 
 # Please don't add .o files to libnss_winbind, libnss_wins, or the pam_winbind
 # libraries.  Add to the appropriate PICOBJ variable instead.
@@ -1102,6 +1104,11 @@ bin/CP437.@SHLIBEXT@: $(CP437_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(CP437_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
+
+bin/macosxfs.@SHLIBEXT@: $(CHARSET_MACOSXFS_OBJ:.o=.po)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(CHARSET_MACOSXFS_OBJ:.o=.po) \
+		-framework CoreFoundation @SONAMEFLAG@`basename $@`
 
 bin/xml.@SHLIBEXT@: $(XML_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"

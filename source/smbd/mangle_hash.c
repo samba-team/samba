@@ -139,7 +139,7 @@ extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
 
 /* -------------------------------------------------------------------- */
 
-static NTSTATUS has_valid_chars(const smb_ucs2_t *s, BOOL allow_wildcards)
+static NTSTATUS has_valid_83_chars(const smb_ucs2_t *s, BOOL allow_wildcards)
 {
 	if (!s || !*s)
 		return NT_STATUS_INVALID_PARAMETER;
@@ -176,7 +176,7 @@ static NTSTATUS mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **pr
 	if ((p = strrchr_w(*prefix, UCS2_CHAR('.')))) {
 		ext_len = strlen_w(p+1);
 		if ((ext_len > 0) && (ext_len < 4) && (p != *prefix) &&
-		    (NT_STATUS_IS_OK(has_valid_chars(p+1,allow_wildcards)))) /* check extension */ {
+		    (NT_STATUS_IS_OK(has_valid_83_chars(p+1,allow_wildcards)))) /* check extension */ {
 			*p = 0;
 			*extension = strdup_w(p+1);
 			if (!*extension) {
@@ -200,7 +200,7 @@ static NTSTATUS mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **pr
  * ************************************************************************** **
  */
 
-static NTSTATUS is_valid_name(const smb_ucs2_t *fname, BOOL allow_wildcards)
+static NTSTATUS is_valid_name(const smb_ucs2_t *fname, BOOL allow_wildcards, BOOL only_8_3)
 {
 	smb_ucs2_t *str, *p;
 	NTSTATUS ret = NT_STATUS_OK;
@@ -216,9 +216,11 @@ static NTSTATUS is_valid_name(const smb_ucs2_t *fname, BOOL allow_wildcards)
 	if (*fname == UCS2_CHAR('.'))
 		return NT_STATUS_UNSUCCESSFUL;
 	
-	ret = has_valid_chars(fname, allow_wildcards);
-	if (!NT_STATUS_IS_OK(ret))
-		return ret;
+	if (only_8_3) {
+		ret = has_valid_83_chars(fname, allow_wildcards);
+		if (!NT_STATUS_IS_OK(ret))
+			return ret;
+	}
 
 	str = strdup_w(fname);
 	p = strchr_w(str, UCS2_CHAR('.'));
@@ -286,7 +288,7 @@ static NTSTATUS is_8_3_w(const smb_ucs2_t *fname, BOOL allow_wildcards)
 	if (strcmp_wa(fname, ".") == 0 || strcmp_wa(fname, "..") == 0)
 		return NT_STATUS_OK;
 
-	if (!NT_STATUS_IS_OK(is_valid_name(fname, allow_wildcards)))
+	if (!NT_STATUS_IS_OK(is_valid_name(fname, allow_wildcards, True)))
 		goto done;
 
 	if (!NT_STATUS_IS_OK(mangle_get_prefix(fname, &pref, &ext, allow_wildcards)))
@@ -737,7 +739,7 @@ static void name_map(char *OutName, BOOL need83, BOOL cache83)
 		return;
 	}
 
-	if( !need83 && !NT_STATUS_IS_OK(is_valid_name(OutName_ucs2, False)))
+	if( !need83 && !NT_STATUS_IS_OK(is_valid_name(OutName_ucs2, False, False)))
 		need83 = True;
 
 	/* check if it's already in 8.3 format */

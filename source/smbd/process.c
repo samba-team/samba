@@ -924,10 +924,16 @@ const char *smb_fn_name(int type)
 	return(smb_messages[type].name);
 }
 
-
 /****************************************************************************
- Helper function for contruct_reply.
+ Helper functions for contruct_reply.
 ****************************************************************************/
+
+static uint32 common_flags2 = FLAGS2_LONG_PATH_COMPONENTS|FLAGS2_EXTENDED_SECURITY|FLAGS2_32_BIT_ERROR_CODES;
+
+void remove_from_common_flags2(uint32 v)
+{
+	common_flags2 &= ~v;
+}
 
 void construct_reply_common(char *inbuf,char *outbuf)
 {
@@ -941,9 +947,8 @@ void construct_reply_common(char *inbuf,char *outbuf)
 	SCVAL(outbuf,smb_reh,0);
 	SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); 
 	SSVAL(outbuf,smb_flg2,
-	      (SVAL(inbuf,smb_flg2) & FLAGS2_UNICODE_STRINGS) |
-	      FLAGS2_LONG_PATH_COMPONENTS |
-	      FLAGS2_32_BIT_ERROR_CODES | FLAGS2_EXTENDED_SECURITY);
+		(SVAL(inbuf,smb_flg2) & FLAGS2_UNICODE_STRINGS) |
+		common_flags2);
 
 	SSVAL(outbuf,smb_err,SMB_SUCCESS);
 	SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));

@@ -547,27 +547,28 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 {
-	struct group *grp;
-
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping"));
 		return(False);
 	}
 
 	/* The group is in the mapping table */
-	if(pdb_getgrsid(map, sid)) {
-		if (map->sid_name_use!=SID_NAME_ALIAS) {
-			return False;
- 		}
+	
+	if( !pdb_getgrsid(map, sid) ) 
+		return False;
 		
-		if (map->gid==-1) {
-			return False;
-		}
-
-		if ( (grp=getgrgid(map->gid)) == NULL) {
-			return False;
-		}
-	} else {
+	if ( (map->sid_name_use != SID_NAME_ALIAS)
+		|| (map->gid == -1)
+		|| (getgrgid(map->gid) == NULL) ) 
+	{
+		return False;
+	} 		
+			
+#if 0 	/* JERRY */
+	/* local groups only exist in the group mapping DB so this 
+	   is not necessary */
+	   
+	else {
 		/* the group isn't in the mapping table.
 		 * make one based on the unix information */
 		uint32 alias_rid;
@@ -588,6 +589,7 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 		sid_copy(&map->sid, &sid);
 	}
+#endif
 
 	return True;
 }
@@ -629,6 +631,7 @@ Returns a GROUP_MAP struct based on the gid.
 BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 {
 	struct group *grp;
+	BOOL ret;
 
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping"));
@@ -641,7 +644,12 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 	/*
 	 * make a group map from scratch if doesn't exist.
 	 */
-	if (!pdb_getgrgid(map, gid)) {
+	
+	become_root();
+	ret = pdb_getgrgid(map, gid);
+	unbecome_root();
+	
+	if ( !ret ) {
 		map->gid=gid;
 		map->sid_name_use=SID_NAME_ALIAS;
 

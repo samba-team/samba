@@ -416,6 +416,7 @@ NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
 {
 	const char *guest_account = lp_guestaccount();
 	GROUP_MAP map;
+	BOOL ret;
 	
 	if (!account_data || !pwd) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -445,7 +446,11 @@ NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
 	}
 	
 	/* call the mapping code here */
-	if(pdb_getgrgid(&map, pwd->pw_gid)) {
+	become_root();
+	ret = pdb_getgrgid(&map, pwd->pw_gid);
+	unbecome_root();
+	
+	if( ret ) {
 		if (!pdb_set_group_sid(account_data, &map.sid, PDB_SET)){
 			DEBUG(0,("Can't set Group SID!\n"));
 			return NT_STATUS_INVALID_PARAMETER;
@@ -725,14 +730,6 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 		return True;
 	}
 
-	/*
-	 * Don't try to convert the rid to a name if 
-	 * running in appliance mode
-	 */
-
-	if (lp_hide_local_users())
-		return False;
-		
 	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
 		return False;
 	}
@@ -852,17 +849,13 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 		return True;
 	}
 
-	/* 
-	 * Don't lookup local unix users if running in appliance mode
-	 */
-	if (lp_hide_local_users()) 
-		return False;
-
 	(void)map_username(user);
 
 	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
 		return False;
 	}
+	
+	/* BEGIN ROOT BLOCK */
 	
 	become_root();
 	if (pdb_getsampwnam(sam_account, user)) {
@@ -873,7 +866,6 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 		pdb_free_sam(&sam_account);
 		return True;
 	}
-	unbecome_root();
 
 	pdb_free_sam(&sam_account);
 
@@ -889,8 +881,10 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 	} else {
 		/* it's not a mapped group */
 		grp = getgrnam(user);
-		if(!grp)
+		if(!grp) {
+			unbecome_root();		/* ---> exit form block */	
 			return False;
+		}
 		
 		/* 
 		 *check if it's mapped, if it is reply it doesn't exist
@@ -905,12 +899,15 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 		 */
 		
 		if (pdb_getgrgid(&map, grp->gr_gid)){
+			unbecome_root();		/* ---> exit form block */
 			return False;
 		}
 		
 		sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
 		*psid_name_use = SID_NAME_ALIAS;
 	}
+	unbecome_root();
+	/* END ROOT BLOCK */
 
 	sid_copy( psid, &local_sid);
 

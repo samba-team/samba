@@ -307,7 +307,7 @@ cleanup_princ:
 /*
   get a kerberos5 ticket for the given service 
 */
-DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset, unsigned char session_key_krb5[16])
+DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset, DATA_BLOB *session_key_krb5)
 {
 	krb5_error_code retval;
 	krb5_data packet;
@@ -369,7 +369,7 @@ failed:
 	return data_blob(NULL, 0);
 }
 
- BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16], BOOL remote)
+ BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, BOOL remote)
  {
 	krb5_keyblock *skey;
 	krb5_error_code err;
@@ -383,11 +383,11 @@ failed:
 		err = krb5_auth_con_getlocalsubkey(context, auth_context, &skey);
 	if (err == 0 && skey != NULL) {
 		DEBUG(10, ("Got KRB5 session key of length %d\n",  KRB5_KEY_LENGTH(skey)));
-		if (KRB5_KEY_LENGTH(skey) == 16) {
-			memcpy(session_key, KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
-			dump_data_pw("KRB5 Session Key:\n", session_key, 16);
-			ret = True;
-		}
+		*session_key = data_blob(KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
+		dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
+
+		ret = True;
+
 		krb5_free_keyblock(context, skey);
 	} else {
 		DEBUG(10, ("KRB5 error getting session key %d\n", err));
@@ -410,7 +410,7 @@ failed:
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
-DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset, unsigned char session_key_krb5[16])
+DATA_BLOB cli_krb5_get_ticket(const char *principal, time_t time_offset, DATA_BLOB *session_key_krb5)
  {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
 	 return data_blob(NULL, 0);

@@ -369,6 +369,7 @@ WERROR _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u,
 {
 	UNISTR2* uni_path = &q_u->uni_path;
 	uint32 level = q_u->level;
+	int consumedcnt = sizeof(pstring);
 	pstring path;
 	struct junction_map jn;
 
@@ -377,7 +378,7 @@ WERROR _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u,
 		return WERR_DFS_NO_SUCH_SERVER;
   
 	/* The following call can change the cwd. */
-	if(!get_referred_path(path, &jn, NULL, NULL)) {
+	if(!get_referred_path(path, &jn, &consumedcnt, NULL) || consumedcnt < strlen(path)) {
 		vfs_ChDir(p->conn,p->conn->connectpath);
 		return WERR_DFS_NO_SUCH_VOL;
 	}

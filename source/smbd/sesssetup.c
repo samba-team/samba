@@ -149,7 +149,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	DATA_BLOB auth_data;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
 	auth_serversupplied_info *server_info = NULL;
-	uint8 session_key[16];
+	DATA_BLOB session_key;
 	uint8 tok_id[2];
 	BOOL foreign = False;
 	DATA_BLOB nullblob = data_blob(NULL, 0);
@@ -164,7 +164,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	ret = ads_verify_ticket(lp_realm(), &ticket, &client, &auth_data, &ap_rep, session_key);
+	ret = ads_verify_ticket(lp_realm(), &ticket, &client, &auth_data, &ap_rep, &session_key);
 
 	data_blob_free(&ticket);
 
@@ -223,11 +223,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(ret);
 	}
 
-	/* Copy out the session key from the AP_REQ. */
-	memcpy(server_info->session_key, session_key, sizeof(session_key));
-
 	/* register_vuid keeps the server info */
-	sess_vuid = register_vuid(server_info, nullblob, user);
+	sess_vuid = register_vuid(server_info, session_key, nullblob, user);
 
 	free(user);
 
@@ -297,9 +294,10 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 	if (NT_STATUS_IS_OK(nt_status)) {
 		int sess_vuid;
 		DATA_BLOB nullblob = data_blob(NULL, 0);
+		DATA_BLOB session_key = data_blob((*auth_ntlmssp_state)->ntlmssp_state->session_key.data, (*auth_ntlmssp_state)->ntlmssp_state->session_key.length);
 
 		/* register_vuid keeps the server info */
-		sess_vuid = register_vuid(server_info, nullblob, (*auth_ntlmssp_state)->ntlmssp_state->user);
+		sess_vuid = register_vuid(server_info, session_key, nullblob, (*auth_ntlmssp_state)->ntlmssp_state->user);
 		(*auth_ntlmssp_state)->server_info = NULL;
 
 		if (sess_vuid == -1) {
@@ -474,6 +472,11 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 
 	if (global_client_caps == 0) {
 		global_client_caps = IVAL(inbuf,smb_vwv10);
+
+		if (!(global_client_caps & CAP_STATUS32)) {
+			remove_from_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
+		}
+
 	}
 		
 	p = (uint8 *)smb_buf(inbuf);
@@ -566,6 +569,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	NTSTATUS nt_status;
 
 	BOOL doencrypt = global_encrypted_passwords_negotiated;
+
+	DATA_BLOB session_key;
 	
 	START_PROFILE(SMBsesssetupX);
 
@@ -615,17 +620,22 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		enum remote_arch_types ra_type = get_remote_arch();
 		char *p = smb_buf(inbuf);    
 
-		if(global_client_caps == 0)
+		if(global_client_caps == 0) {
 			global_client_caps = IVAL(inbuf,smb_vwv11);
 		
-		/* client_caps is used as final determination if client is NT or Win95. 
-		   This is needed to return the correct error codes in some
-		   circumstances.
-		*/
+			if (!(global_client_caps & CAP_STATUS32)) {
+				remove_from_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
+			}
+
+			/* client_caps is used as final determination if client is NT or Win95. 
+			   This is needed to return the correct error codes in some
+			   circumstances.
+			*/
 		
-		if(ra_type == RA_WINNT || ra_type == RA_WIN2K || ra_type == RA_WIN95) {
-			if(!(global_client_caps & (CAP_NT_SMBS | CAP_STATUS32))) {
-				set_remote_arch( RA_WIN95);
+			if(ra_type == RA_WINNT || ra_type == RA_WIN2K || ra_type == RA_WIN95) {
+				if(!(global_client_caps & (CAP_NT_SMBS | CAP_STATUS32))) {
+					set_remote_arch( RA_WIN95);
+				}
 			}
 		}
 
@@ -686,7 +696,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			ra_lanman_string( native_lanman );
 
 	}
-	
+
 	if (SVAL(inbuf,smb_vwv4) == 0) {
 		setup_new_vc_session();
 	}
@@ -766,18 +776,28 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 	free_user_info(&user_info);
 	
-	data_blob_free(&lm_resp);
-	data_blob_clear_free(&plaintext_password);
-	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		nt_status = do_map_to_guest(nt_status, &server_info, user, domain);
 	}
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		data_blob_free(&nt_resp);
+		data_blob_free(&lm_resp);
+		data_blob_clear_free(&plaintext_password);
 		return ERROR_NT(nt_status_squash(nt_status));
 	}
 
+	if (server_info->nt_session_key.data) {
+		session_key = data_blob(server_info->nt_session_key.data, server_info->nt_session_key.length);
+	} else if (server_info->lm_session_key.length >= 8 && lm_resp.length == 24) {
+		session_key = data_blob(NULL, 16);
+		SMBsesskeygen_lmv1(server_info->lm_session_key.data, lm_resp.data, 
+				   session_key.data);
+	}
+
+	data_blob_free(&lm_resp);
+	data_blob_clear_free(&plaintext_password);
+	
 	/* it's ok - setup a reply */
 	set_message(outbuf,3,0,True);
 	if (Protocol >= PROTOCOL_NT1) {
@@ -795,7 +815,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	   to a uid can get through without a password, on the same VC */
 
 	/* register_vuid keeps the server info */
-	sess_vuid = register_vuid(server_info, nt_resp, sub_user);
+	sess_vuid = register_vuid(server_info, session_key, nt_resp, sub_user);
 	data_blob_free(&nt_resp);
 
 	if (sess_vuid == -1) {

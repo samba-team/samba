@@ -21,6 +21,14 @@ Changes since 3.0.1pre2
 Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details:
 
+1)  Fix for pdbedit error code returns (bug 763).
+
+Changes since 3.0.1pre3
+-----------------------
+
+Please refer to the CVS log for the SAMBA_3_0 branch for complete
+details:
+
 1)  Skip over the winbind separator when looking up a user.
     This fixes the bug that prevented local users from
     matching an AD user when not running winbindd (bug 698).

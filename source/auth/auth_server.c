@@ -143,8 +143,10 @@ static void free_server_private_data(void **private_data_pointer)
 {
 	struct cli_state **cli = (struct cli_state **)private_data_pointer;
 	if (*cli && (*cli)->initialised) {
+		DEBUG(10, ("Shutting down smbserver connection\n"));
 		cli_shutdown(*cli);
 	}
+	*private_data_pointer = NULL;
 }
 
 /****************************************************************************

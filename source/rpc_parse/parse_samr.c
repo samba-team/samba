@@ -181,9 +181,9 @@ BOOL samr_io_r_lookup_domain(const char *desc, SAMR_R_LOOKUP_DOMAIN * r_u,
 reads or writes a structure.
 ********************************************************************/
 
-void init_samr_q_remove_user_foreign_domain(SAMR_Q_REMOVE_USER_FOREIGN_DOMAIN * q_u, POLICY_HND *dom_pol, DOM_SID *sid)
+void init_samr_q_remove_sid_foreign_domain(SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN * q_u, POLICY_HND *dom_pol, DOM_SID *sid)
 {
-	DEBUG(5, ("samr_init_samr_q_remove_user_foreign_domain\n"));
+	DEBUG(5, ("samr_init_samr_q_remove_sid_foreign_domain\n"));
 
 	q_u->dom_pol = *dom_pol;
 	init_dom_sid2(&q_u->sid, sid);
@@ -193,13 +193,13 @@ void init_samr_q_remove_user_foreign_domain(SAMR_Q_REMOVE_USER_FOREIGN_DOMAIN * 
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_q_remove_user_foreign_domain(const char *desc, SAMR_Q_REMOVE_USER_FOREIGN_DOMAIN * q_u,
+BOOL samr_io_q_remove_sid_foreign_domain(const char *desc, SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN * q_u,
 			  prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_q_remove_user_foreign_domain");
+	prs_debug(ps, depth, desc, "samr_io_q_remove_sid_foreign_domain");
 	depth++;
 
 	if(!prs_align(ps))
@@ -221,13 +221,13 @@ BOOL samr_io_q_remove_user_foreign_domain(const char *desc, SAMR_Q_REMOVE_USER_F
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_r_remove_user_foreign_domain(const char *desc, SAMR_R_REMOVE_USER_FOREIGN_DOMAIN * r_u,
+BOOL samr_io_r_remove_sid_foreign_domain(const char *desc, SAMR_R_REMOVE_SID_FOREIGN_DOMAIN * r_u,
 			  prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_remove_user_foreign_domain");
+	prs_debug(ps, depth, desc, "samr_io_r_remove_sid_foreign_domain");
 	depth++;
 
 	if(!prs_align(ps))
@@ -5938,13 +5938,19 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 	const char*		description = pdb_get_acct_desc(pw);
 	const char*		workstations = pdb_get_workstations(pw);
 	const char*		munged_dial = pdb_get_munged_dial(pw);
-	DATA_BLOB blob = base64_decode_data_blob(munged_dial);
+	DATA_BLOB 		munged_dial_blob;
 
 	uint32 user_rid;
 	const DOM_SID *user_sid;
 
 	uint32 group_rid;
 	const DOM_SID *group_sid;
+
+	if (munged_dial) {
+		munged_dial_blob = base64_decode_data_blob(munged_dial);
+	} else {
+		munged_dial_blob = data_blob(NULL, 0);
+	}
 
 	/* Create NTTIME structs */
 	unix_to_nt_time (&logon_time, 		pdb_get_logon_time(pw));
@@ -5975,7 +5981,7 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 			  user_name, 
 			  sid_to_string(user_sid_string, user_sid),
 			  sid_to_string(domain_sid_string, domain_sid)));
-		data_blob_free(&blob);
+		data_blob_free(&munged_dial_blob);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -5989,7 +5995,7 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 			  user_name, 
 			  sid_to_string(group_sid_string, group_sid),
 			  sid_to_string(domain_sid_string, domain_sid)));
-		data_blob_free(&blob);
+		data_blob_free(&munged_dial_blob);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -6049,9 +6055,9 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 	init_unistr2(&usr->uni_unknown_str, NULL, UNI_STR_TERMINATE);
 	init_uni_hdr(&usr->hdr_unknown_str, &usr->uni_unknown_str);
 
-	init_unistr2_from_datablob(&usr->uni_munged_dial, &blob);
+	init_unistr2_from_datablob(&usr->uni_munged_dial, &munged_dial_blob);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
-	data_blob_free(&blob);
+	data_blob_free(&munged_dial_blob);
 
 	usr->unknown_6 = pdb_get_unknown_6(pw);
 	usr->padding4 = 0;
@@ -6296,8 +6302,8 @@ NTSTATUS make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 inits a SAM_USERINFO_CTR structure.
 ********************************************************************/
 
-void init_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr, uchar * sess_key,
-			    uint16 switch_value, void *info)
+static void init_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr, DATA_BLOB *sess_key,
+				   uint16 switch_value, void *info)
 {
 	DEBUG(5, ("init_samr_userinfo_ctr\n"));
 
@@ -6306,13 +6312,13 @@ void init_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr, uchar * sess_key,
 
 	switch (switch_value) {
 	case 0x18:
-		SamOEMhash(ctr->info.id24->pass, sess_key, 516);
-		dump_data(100, (char *)sess_key, 16);
+		SamOEMhashBlob(ctr->info.id24->pass, 516, sess_key);
+		dump_data(100, (char *)sess_key->data, sess_key->length);
 		dump_data(100, (char *)ctr->info.id24->pass, 516);
 		break;
 	case 0x17:
-		SamOEMhash(ctr->info.id23->pass, sess_key, 516);
-		dump_data(100, (char *)sess_key, 16);
+		SamOEMhashBlob(ctr->info.id23->pass, 516, sess_key);
+		dump_data(100, (char *)sess_key->data, sess_key->length);
 		dump_data(100, (char *)ctr->info.id23->pass, 516);
 		break;
 	default:
@@ -6497,7 +6503,7 @@ inits a SAMR_Q_SET_USERINFO structure.
 ********************************************************************/
 
 void init_samr_q_set_userinfo(SAMR_Q_SET_USERINFO * q_u,
-			      POLICY_HND *hnd,  unsigned char sess_key[16],
+			      POLICY_HND *hnd, DATA_BLOB *sess_key,
 			      uint16 switch_value, void *info)
 {
 	DEBUG(5, ("init_samr_q_set_userinfo\n"));
@@ -6571,7 +6577,7 @@ inits a SAMR_Q_SET_USERINFO2 structure.
 ********************************************************************/
 
 void init_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u,
-			       POLICY_HND *hnd, unsigned char sess_key[16],
+			       POLICY_HND *hnd, DATA_BLOB *sess_key,
 			       uint16 switch_value, SAM_USERINFO_CTR * ctr)
 {
 	DEBUG(5, ("init_samr_q_set_userinfo2\n"));
@@ -6585,9 +6591,9 @@ void init_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u,
 
 	switch (switch_value) {
 	case 0x12:
-		SamOEMhash(ctr->info.id12->lm_pwd, sess_key, 16);
-		SamOEMhash(ctr->info.id12->nt_pwd, sess_key, 16);
-		dump_data(100, (char *)sess_key, 16);
+		SamOEMhashBlob(ctr->info.id12->lm_pwd, 16, sess_key);
+		SamOEMhashBlob(ctr->info.id12->nt_pwd, 16, sess_key);
+		dump_data(100, (char *)sess_key->data, sess_key->length);
 		dump_data(100, (char *)ctr->info.id12->lm_pwd, 16);
 		dump_data(100, (char *)ctr->info.id12->nt_pwd, 16);
 		break;

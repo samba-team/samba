@@ -1933,7 +1933,7 @@ bin/net -Uadministrator%XXXXX ads search '(&(objectclass=crossref)(dnsroot=VNET3
 but you need to force the bind path to match the configurationNamingContext from the rootDSE
 
 */
-ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **workgroup)
+ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char **workgroup)
 {
 	char *expr;
 	ADS_STATUS rc;

@@ -136,6 +136,37 @@ static BOOL wbinfo_get_usergroups(char *user)
 	return True;
 }
 
+
+/* List group SIDs a user SID is a member of */
+static BOOL wbinfo_get_usersids(char *user_sid)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+	int i;
+	const char *s;
+
+	ZERO_STRUCT(response);
+
+	/* Send request */
+	fstrcpy(request.data.sid, user_sid);
+
+	result = winbindd_request(WINBINDD_GETUSERSIDS, &request, &response);
+
+	if (result != NSS_STATUS_SUCCESS)
+		return False;
+
+	s = response.extra_data;
+	for (i = 0; i < response.data.num_entries; i++) {
+		d_printf("%s\n", s);
+		s += strlen(s) + 1;
+	}
+
+	SAFE_FREE(response.extra_data);
+
+	return True;
+}
+
 /* Convert NetBIOS name to IP */
 
 static BOOL wbinfo_wins_byname(char *name)
@@ -884,7 +915,8 @@ enum {
 	OPT_SET_AUTH_USER = 1000,
 	OPT_GET_AUTH_USER,
 	OPT_DOMAIN_NAME,
-	OPT_SEQUENCE
+	OPT_SEQUENCE,
+	OPT_USERSIDS
 };
 
 int main(int argc, char **argv)
@@ -923,6 +955,7 @@ int main(int argc, char **argv)
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
+		{ "user-sids", 0, POPT_ARG_STRING, &string_arg, OPT_USERSIDS, "Get user group sids for user SID", "SID" },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
 		{ "get-auth-user", 0, POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER, "Retrieve user and password used by winbindd (root only)", NULL },
@@ -1051,6 +1084,13 @@ int main(int argc, char **argv)
 		case 'r':
 			if (!wbinfo_get_usergroups(string_arg)) {
 				d_printf("Could not get groups for user %s\n", 
+				       string_arg);
+				goto done;
+			}
+			break;
+		case OPT_USERSIDS:
+			if (!wbinfo_get_usersids(string_arg)) {
+				d_printf("Could not get group SIDs for user SID %s\n", 
 				       string_arg);
 				goto done;
 			}

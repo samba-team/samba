@@ -61,14 +61,20 @@ DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
 {
 	DATA_BLOB ret;
 
-	if (!p || !length) {
+	if (!length) {
 		ZERO_STRUCT(ret);
 		return ret;
 	}
 
-	ret.data = talloc_memdup(mem_ctx, p, length);
-	if (ret.data == NULL)
-		smb_panic("data_blob_talloc: talloc_memdup failed.\n");
+	if (p) {
+		ret.data = talloc_memdup(mem_ctx, p, length);
+		if (ret.data == NULL)
+			smb_panic("data_blob_talloc: talloc_memdup failed.\n");
+	} else {
+		ret.data = talloc(mem_ctx, length);
+		if (ret.data == NULL)
+			smb_panic("data_blob_talloc: talloc failed.\n");
+	}
 
 	ret.length = length;
 	ret.free = NULL;

@@ -916,6 +916,26 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	uint32 start_idx=0, max_entries=250, num_entries, i, loop_count = 0;
 	struct acct_info *groups;
 	DOM_SID global_sid_Builtin;
+	BOOL global = False;
+	BOOL local = False;
+	BOOL builtin = False;
+
+	if (argc == 0) {
+		global = True;
+		local = True;
+		builtin = True;
+	}
+
+	for (i=0; i<argc; i++) {
+		if (strequal(argv[i], "global"))
+			global = True;
+
+		if (strequal(argv[i], "local"))
+			local = True;
+
+		if (strequal(argv[i], "builtin"))
+			builtin = True;
+	}
 
 	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
@@ -949,6 +969,8 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 		ZERO_STRUCT(info3);
 		ctr.sam.info3 = &info3;
 
+		if (!global) break;
+
 		get_query_dispinfo_params(
 			loop_count, &max_entries, &max_size);
 
@@ -967,12 +989,14 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 				printf("%-21.21s %-50.50s\n",
 				       group, desc);
 			else
-				printf("%-21.21s\n", group);
+				printf("%s\n", group);
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 	/* query domain aliases */
 	start_idx = 0;
 	do {
+		if (!local) break;
+
 		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
 						  &start_idx, max_entries,
 						  &groups, &num_entries);
@@ -1006,7 +1030,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 				       groups[i].acct_name,
 				       description);
 			} else {
-				printf("%-21.21s\n", groups[i].acct_name);
+				printf("%s\n", groups[i].acct_name);
 			}
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
@@ -1022,6 +1046,8 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	/* query builtin aliases */
 	start_idx = 0;
 	do {
+		if (!builtin) break;
+
 		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
 						  &start_idx, max_entries,
 						  &groups, &num_entries);
@@ -1055,13 +1081,118 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 				       groups[i].acct_name,
 				       description);
 			} else {
-				printf("%-21.21s\n", groups[i].acct_name);
+				printf("%s\n", groups[i].acct_name);
 			}
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
  done:
 	return result;
+}
+
+static int rpc_group_list(int argc, const char **argv)
+{
+	return run_rpc_command(NULL, PI_SAMR, 0,
+			       rpc_group_list_internals,
+			       argc, argv);
+}
+ 
+static NTSTATUS 
+rpc_group_members_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+			    TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	NTSTATUS result;
+	POLICY_HND connect_pol, domain_pol, group_pol;
+	uint32 num_rids, *rids, *rid_types;
+	uint32 num_members, *group_rids, *group_attrs;
+	uint32 num_names;
+	char **names;
+	uint32 *name_types;
+	int i;
+
+	/* Get sam policy handle */
+	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	
+	/* Get domain policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol, 1000,
+				       1, argv, &num_rids, &rids, &rid_types);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (num_rids != 1) {
+		d_printf("Could not find group %s\n", argv[0]);
+		goto done;
+	}
+
+	if (rid_types[0] != SID_NAME_DOM_GRP) {
+		d_printf("%s is not a domain group\n", argv[0]);
+		goto done;
+	}
+
+	result = cli_samr_open_group(cli, mem_ctx, &domain_pol,
+				     MAXIMUM_ALLOWED_ACCESS,
+				     rids[0], &group_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_samr_query_groupmem(cli, mem_ctx, &group_pol,
+					 &num_members, &group_rids,
+					 &group_attrs);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	do {
+		int this_time = 512;
+
+		if (num_members < this_time)
+			this_time = num_members;
+
+		result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol, 1000,
+					      this_time, group_rids,
+					      &num_names, &names, &name_types);
+
+		if (!NT_STATUS_IS_OK(result))
+			goto done;
+
+		for (i = 0; i < this_time; i++) {
+			printf("%s\n", names[i]);
+		}
+
+		num_members -= this_time;
+		group_rids += 512;
+
+	} while (num_members > 0);
+
+ done:
+	return result;
+}
+
+static int rpc_group_members(int argc, const char **argv)
+{
+	if (argc != 1) {
+		return rpc_group_usage(argc, argv);
+	}
+
+	return run_rpc_command(NULL, PI_SAMR, 0,
+			       rpc_group_members_internals,
+			       argc, argv);
 }
 
 /** 
@@ -1078,6 +1209,8 @@ int net_rpc_group(int argc, const char **argv)
 		{"add", rpc_group_add},
 		{"delete", rpc_group_delete},
 #endif
+		{"list", rpc_group_list},
+		{"members", rpc_group_members},
 		{NULL, NULL}
 	};
 	
@@ -1727,7 +1860,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 		ctr.info.id24 = &p24;
 
 		result = cli_samr_set_userinfo(cli, mem_ctx, &user_pol, 24,
-					       cli->user_session_key, &ctr);
+					       &cli->user_session_key, &ctr);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(0,("Could not set trust account password: %s\n",

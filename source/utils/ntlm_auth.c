@@ -29,14 +29,42 @@
 
 #define SQUID_BUFFER_SIZE 2010
 
-enum squid_mode {
+enum stdio_helper_mode {
 	SQUID_2_4_BASIC,
 	SQUID_2_5_BASIC,
 	SQUID_2_5_NTLMSSP,
 	GSS_SPNEGO,
-	GSS_SPNEGO_CLIENT
+	GSS_SPNEGO_CLIENT,
+	NUM_HELPER_MODES
 };
-	
+
+typedef void (*stdio_helper_function)(enum stdio_helper_mode stdio_helper_mode, 
+				     char *buf, int length);
+
+static void manage_squid_basic_request (enum stdio_helper_mode stdio_helper_mode, 
+					char *buf, int length);
+
+static void manage_squid_ntlmssp_request (enum stdio_helper_mode stdio_helper_mode, 
+					  char *buf, int length);
+
+static void manage_gss_spnego_request (enum stdio_helper_mode stdio_helper_mode, 
+				       char *buf, int length);
+
+static void manage_gss_spnego_client_request (enum stdio_helper_mode stdio_helper_mode, 
+					      char *buf, int length);
+
+static const struct {
+	enum stdio_helper_mode mode;
+	const char *name;
+	stdio_helper_function fn;
+} stdio_helper_protocols[] = {
+	{ SQUID_2_4_BASIC, "squid-2.4-basic", manage_squid_basic_request},
+	{ SQUID_2_5_BASIC, "squid-2.5-basic", manage_squid_basic_request},
+	{ SQUID_2_5_NTLMSSP, "squid-2.5-ntlmssp", manage_squid_ntlmssp_request},
+	{ GSS_SPNEGO, "gss-spnego", manage_gss_spnego_request},
+	{ GSS_SPNEGO_CLIENT, "gss-spnego-client", manage_gss_spnego_client_request},
+	{ NUM_HELPER_MODES, NULL, NULL}
+};
 
 extern int winbindd_fd;
 
@@ -96,7 +124,7 @@ static const char *get_winbind_domain(void)
 
 	if (winbindd_request(WINBINDD_DOMAIN_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
-		d_printf("could not obtain winbind domain name!\n");
+		DEBUG(0, ("could not obtain winbind domain name!\n"));
 		return NULL;
 	}
 
@@ -122,7 +150,7 @@ static const char *get_winbind_netbios_name(void)
 
 	if (winbindd_request(WINBINDD_NETBIOS_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
-		d_printf("could not obtain winbind netbios name!\n");
+		DEBUG(0, ("could not obtain winbind netbios name!\n"));
 		return NULL;
 	}
 
@@ -264,20 +292,42 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 	return nt_status;
 }
 				   
-static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state) 
+static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key) 
 {
-	return contact_winbind_auth_crap(ntlmssp_state->user, ntlmssp_state->domain,
-					 ntlmssp_state->workstation,
-					 &ntlmssp_state->chal,
-					 &ntlmssp_state->lm_resp,
-					 &ntlmssp_state->nt_resp, 
-					 0,
-					 NULL, 
-					 NULL, 
-					 NULL);
+	static const char zeros[16];
+	NTSTATUS nt_status;
+	char *error_string;
+	uint8 lm_key[8]; 
+	uint8 nt_key[16]; 
+	
+	nt_status = contact_winbind_auth_crap(ntlmssp_state->user, ntlmssp_state->domain,
+					      ntlmssp_state->workstation,
+					      &ntlmssp_state->chal,
+					      &ntlmssp_state->lm_resp,
+					      &ntlmssp_state->nt_resp, 
+					      WBFLAG_PAM_LMKEY | WBFLAG_PAM_NTKEY,
+					      lm_key, nt_key, 
+					      &error_string);
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		if (memcmp(lm_key, zeros, 8) != 0) {
+			*lm_session_key = data_blob(NULL, 16);
+			memcpy(lm_session_key->data, lm_key, 8);
+			memset(lm_session_key->data+8, '\0', 8);
+		}
+		
+		if (memcmp(nt_key, zeros, 16) != 0) {
+			*nt_session_key = data_blob(nt_key, 16);
+		}
+	} else {
+		DEBUG(NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED) ? 0 : 3, 
+		      ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
+		       ntlmssp_state->domain, ntlmssp_state->user, ntlmssp_state->workstation, error_string ? error_string : "unknown error (NULL)"));
+	}
+	return nt_status;
 }
 
-static void manage_squid_ntlmssp_request(enum squid_mode squid_mode, 
+static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode, 
 					 char *buf, int length) 
 {
 	static NTLMSSP_STATE *ntlmssp_state = NULL;
@@ -295,7 +345,7 @@ static void manage_squid_ntlmssp_request(enum squid_mode squid_mode,
 	} else if (strcmp(buf, "YR") == 0) {
 		request = data_blob(NULL, 0);
 		if (ntlmssp_state)
-			ntlmssp_server_end(&ntlmssp_state);
+			ntlmssp_end(&ntlmssp_state);
 	} else {
 		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
 		x_fprintf(x_stdout, "BH\n");
@@ -312,7 +362,7 @@ static void manage_squid_ntlmssp_request(enum squid_mode squid_mode,
 	DEBUG(10, ("got NTLMSSP packet:\n"));
 	dump_data(10, (const char *)request.data, request.length);
 
-	nt_status = ntlmssp_server_update(ntlmssp_state, request, &reply);
+	nt_status = ntlmssp_update(ntlmssp_state, request, &reply);
 	
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		char *reply_base64 = base64_encode_data_blob(reply);
@@ -320,6 +370,9 @@ static void manage_squid_ntlmssp_request(enum squid_mode squid_mode,
 		SAFE_FREE(reply_base64);
 		data_blob_free(&reply);
 		DEBUG(10, ("NTLMSSP challenge\n"));
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
+		x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
+		DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
 	} else if (!NT_STATUS_IS_OK(nt_status)) {
 		x_fprintf(x_stdout, "NA %s\n", nt_errstr(nt_status));
 		DEBUG(10, ("NTLMSSP %s\n", nt_errstr(nt_status)));
@@ -331,7 +384,7 @@ static void manage_squid_ntlmssp_request(enum squid_mode squid_mode,
 	data_blob_free(&request);
 }
 
-static void manage_squid_basic_request(enum squid_mode squid_mode, 
+static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode, 
 				       char *buf, int length) 
 {
 	char *user, *pass;	
@@ -346,7 +399,7 @@ static void manage_squid_basic_request(enum squid_mode squid_mode,
 	*pass='\0';
 	pass++;
 	
-	if (squid_mode == SQUID_2_5_BASIC) {
+	if (stdio_helper_mode == SQUID_2_5_BASIC) {
 		rfc1738_unescape(user);
 		rfc1738_unescape(pass);
 	}
@@ -409,7 +462,7 @@ static void offer_gss_spnego_mechs(void) {
 	return;
 }
 
-static void manage_gss_spnego_request(enum squid_mode squid_mode,
+static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode, 
 				      char *buf, int length) 
 {
 	static NTLMSSP_STATE *ntlmssp_state = NULL;
@@ -470,9 +523,7 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 	if (request.type == SPNEGO_NEG_TOKEN_INIT) {
 
 		/* Second request from Client. This is where the
-		   client offers its mechanism to use. We currently
-		   only support NTLMSSP, the decision for Kerberos
-		   would be taken here. */
+		   client offers its mechanism to use. */
 
 		if ( (request.negTokenInit.mechTypes == NULL) ||
 		     (request.negTokenInit.mechTypes[0] == NULL) ) {
@@ -493,7 +544,7 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 				DEBUG(1, ("Client wants a new NTLMSSP challenge, but "
 					  "already got one\n"));
 				x_fprintf(x_stdout, "BH\n");
-				ntlmssp_server_end(&ntlmssp_state);
+				ntlmssp_end(&ntlmssp_state);
 				return;
 			}
 
@@ -510,7 +561,7 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 			response.negTokenTarg.supportedMech = strdup(OID_NTLMSSP);
 			response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
 
-			status = ntlmssp_server_update(ntlmssp_state,
+			status = ntlmssp_update(ntlmssp_state,
 						       request.negTokenInit.mechToken,
 						       &response.negTokenTarg.responseToken);
 		}
@@ -521,7 +572,7 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 			char *principal;
 			DATA_BLOB auth_data;
 			DATA_BLOB ap_rep;
-			uint8 session_key[16];
+			DATA_BLOB session_key;
 
 			if ( request.negTokenInit.mechToken.data == NULL ) {
 				DEBUG(1, ("Client did not provide Kerberos data\n"));
@@ -537,7 +588,7 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 			status = ads_verify_ticket(lp_realm(),
 						   &request.negTokenInit.mechToken,
 						   &principal, &auth_data, &ap_rep,
-						   session_key);
+						   &session_key);
 
 			/* Now in "principal" we have the name we are
                            authenticated as. */
@@ -583,7 +634,7 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 			return;
 		}
 
-		status = ntlmssp_server_update(ntlmssp_state,
+		status = ntlmssp_update(ntlmssp_state,
 					       request.negTokenTarg.responseToken,
 					       &response.negTokenTarg.responseToken);
 
@@ -594,7 +645,7 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 		if (NT_STATUS_IS_OK(status)) {
 			user = strdup(ntlmssp_state->user);
 			domain = strdup(ntlmssp_state->domain);
-			ntlmssp_server_end(&ntlmssp_state);
+			ntlmssp_end(&ntlmssp_state);
 		}
 	}
 
@@ -638,7 +689,7 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 	return;
 }
 
-static NTLMSSP_CLIENT_STATE *client_ntlmssp_state = NULL;
+static NTLMSSP_STATE *client_ntlmssp_state = NULL;
 
 static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 {
@@ -677,7 +728,7 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not start NTLMSSP client: %s\n",
 			  nt_errstr(status)));
-		ntlmssp_client_end(&client_ntlmssp_state);
+		ntlmssp_end(&client_ntlmssp_state);
 		return False;
 	}
 
@@ -686,7 +737,7 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not set username: %s\n",
 			  nt_errstr(status)));
-		ntlmssp_client_end(&client_ntlmssp_state);
+		ntlmssp_end(&client_ntlmssp_state);
 		return False;
 	}
 
@@ -695,7 +746,7 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not set domain: %s\n",
 			  nt_errstr(status)));
-		ntlmssp_client_end(&client_ntlmssp_state);
+		ntlmssp_end(&client_ntlmssp_state);
 		return False;
 	}
 
@@ -704,7 +755,7 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not set password: %s\n",
 			  nt_errstr(status)));
-		ntlmssp_client_end(&client_ntlmssp_state);
+		ntlmssp_end(&client_ntlmssp_state);
 		return False;
 	}
 
@@ -713,13 +764,13 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	spnego.negTokenInit.reqFlags = 0;
 	spnego.negTokenInit.mechListMIC = null_blob;
 
-	status = ntlmssp_client_update(client_ntlmssp_state, null_blob,
+	status = ntlmssp_update(client_ntlmssp_state, null_blob,
 				       &spnego.negTokenInit.mechToken);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		DEBUG(1, ("Expected MORE_PROCESSING_REQUIRED, got: %s\n",
 			  nt_errstr(status)));
-		ntlmssp_client_end(&client_ntlmssp_state);
+		ntlmssp_end(&client_ntlmssp_state);
 		return False;
 	}
 
@@ -746,23 +797,23 @@ static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 	if (client_ntlmssp_state == NULL) {
 		DEBUG(1, ("Got NTLMSSP tArg without a client state\n"));
 		x_fprintf(x_stdout, "BH\n");
-		ntlmssp_client_end(&client_ntlmssp_state);
+		ntlmssp_end(&client_ntlmssp_state);
 		return;
 	}
 
 	if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
 		x_fprintf(x_stdout, "NA\n");
-		ntlmssp_client_end(&client_ntlmssp_state);
+		ntlmssp_end(&client_ntlmssp_state);
 		return;
 	}
 
 	if (spnego.negTokenTarg.negResult == SPNEGO_ACCEPT_COMPLETED) {
 		x_fprintf(x_stdout, "AF\n");
-		ntlmssp_client_end(&client_ntlmssp_state);
+		ntlmssp_end(&client_ntlmssp_state);
 		return;
 	}
 
-	status = ntlmssp_client_update(client_ntlmssp_state,
+	status = ntlmssp_update(client_ntlmssp_state,
 				       spnego.negTokenTarg.responseToken,
 				       &request);
 		
@@ -772,7 +823,7 @@ static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 			  nt_errstr(status)));
 		x_fprintf(x_stdout, "BH\n");
 		data_blob_free(&request);
-		ntlmssp_client_end(&client_ntlmssp_state);
+		ntlmssp_end(&client_ntlmssp_state);
 		return;
 	}
 
@@ -798,7 +849,7 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 {
 	char *principal;
 	DATA_BLOB tkt, to_server;
-	unsigned char session_key_krb5[16];
+	DATA_BLOB session_key_krb5;
 	SPNEGO_DATA reply;
 	char *reply_base64;
 	
@@ -822,7 +873,7 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 	       spnego.negTokenInit.mechListMIC.length);
 	principal[spnego.negTokenInit.mechListMIC.length] = '\0';
 
-	tkt = cli_krb5_get_ticket(principal, 0, session_key_krb5);
+	tkt = cli_krb5_get_ticket(principal, 0, &session_key_krb5);
 
 	if (tkt.data == NULL) {
 
@@ -845,8 +896,10 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 			return True;
 		}
 
-		tkt = cli_krb5_get_ticket(principal, 0, session_key_krb5);
+		tkt = cli_krb5_get_ticket(principal, 0, &session_key_krb5);
 	}
+
+	data_blob_free(&session_key_krb5);
 
 	ZERO_STRUCT(reply);
 
@@ -896,7 +949,7 @@ static void manage_client_krb5_targ(SPNEGO_DATA spnego)
 
 #endif
 
-static void manage_gss_spnego_client_request(enum squid_mode squid_mode,
+static void manage_gss_spnego_client_request(enum stdio_helper_mode stdio_helper_mode, 
 					     char *buf, int length) 
 {
 	DATA_BLOB request;
@@ -1000,7 +1053,7 @@ static void manage_gss_spnego_client_request(enum squid_mode squid_mode,
 				x_fprintf(x_stdout, "BH\n");
 			}
 
-			ntlmssp_client_end(&client_ntlmssp_state);
+			ntlmssp_end(&client_ntlmssp_state);
 			goto out;
 		}
 
@@ -1029,7 +1082,7 @@ static void manage_gss_spnego_client_request(enum squid_mode squid_mode,
 	return;
 }
 
-static void manage_squid_request(enum squid_mode squid_mode) 
+static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helper_function fn) 
 {
 	char buf[SQUID_BUFFER_SIZE+1];
 	int length;
@@ -1066,24 +1119,16 @@ static void manage_squid_request(enum squid_mode squid_mode)
 		return;
 	}
 	
-	if (squid_mode == SQUID_2_5_BASIC || squid_mode == SQUID_2_4_BASIC) {
-		manage_squid_basic_request(squid_mode, buf, length);
-	} else if (squid_mode == SQUID_2_5_NTLMSSP) {
-		manage_squid_ntlmssp_request(squid_mode, buf, length);
-	} else if (squid_mode == GSS_SPNEGO) {
-		manage_gss_spnego_request(squid_mode, buf, length);
-	} else if (squid_mode == GSS_SPNEGO_CLIENT) {
-		manage_gss_spnego_client_request(squid_mode, buf, length);
-	}
+	fn(helper_mode, buf, length);
 }
 
 
-static void squid_stream(enum squid_mode squid_mode) {
+static void squid_stream(enum stdio_helper_mode stdio_mode, stdio_helper_function fn) {
 	/* initialize FDescs */
 	x_setbuf(x_stdout, NULL);
 	x_setbuf(x_stderr, NULL);
 	while(1) {
-		manage_squid_request(squid_mode);
+		manage_squid_request(stdio_mode, fn);
 	}
 }
 
@@ -2019,20 +2064,15 @@ enum {
 	}
 
 	if (helper_protocol) {
-		if (strcmp(helper_protocol, "squid-2.5-ntlmssp")== 0) {
-			squid_stream(SQUID_2_5_NTLMSSP);
-		} else if (strcmp(helper_protocol, "squid-2.5-basic")== 0) {
-			squid_stream(SQUID_2_5_BASIC);
-		} else if (strcmp(helper_protocol, "squid-2.4-basic")== 0) {
-			squid_stream(SQUID_2_4_BASIC);
-		} else if (strcmp(helper_protocol, "gss-spnego")== 0) {
-			squid_stream(GSS_SPNEGO);
-		} else if (strcmp(helper_protocol, "gss-spnego-client") == 0) {
-			squid_stream(GSS_SPNEGO_CLIENT);
-		} else {
-			x_fprintf(x_stderr, "unknown helper protocol [%s]\n", helper_protocol);
-			exit(1);
+		int i;
+		for (i=0; i<NUM_HELPER_MODES; i++) {
+			if (strcmp(helper_protocol, stdio_helper_protocols[i].name) == 0) {
+				squid_stream(stdio_helper_protocols[i].mode, stdio_helper_protocols[i].fn);
+				exit(0);
+			}
 		}
+		x_fprintf(x_stderr, "unknown helper protocol [%s]\n", helper_protocol);
+		exit(1);
 	}
 
 	if (!opt_username) {

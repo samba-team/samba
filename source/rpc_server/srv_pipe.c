@@ -420,9 +420,15 @@ failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
 	 * Set up the sign/seal data.
 	 */
 
-	{
+	if (server_info->lm_session_key.length != 16) {
+		DEBUG(1,("api_pipe_ntlmssp_verify: User [%s]\\[%s] from machine %s \
+succeeded authentication on named pipe %s, but session key was of incorrect length [%u].\n", 
+			 domain, user_name, wks, p->name, server_info->lm_session_key.length));
+		free_server_info(&server_info);
+		return False;
+	} else {
 		uchar p24[24];
-		NTLMSSPOWFencrypt(server_info->first_8_lm_hash, lm_owf, p24);
+		NTLMSSPOWFencrypt(server_info->lm_session_key.data, lm_owf, p24);
 		{
 			unsigned char j = 0;
 			int ind;
@@ -468,7 +474,7 @@ failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
 	 */
 
-	memcpy(p->session_key, server_info->session_key, sizeof(p->session_key));
+	p->session_key = data_blob(server_info->lm_session_key.data, server_info->lm_session_key.length);
 
 	p->pipe_user.uid = server_info->uid;
 	p->pipe_user.gid = server_info->gid;
