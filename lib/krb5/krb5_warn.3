@@ -60,9 +60,14 @@ functions exits with exit status
 after printing the message.
 .Pp
 The
-.Fn krb4_set_warn_func
+.Fn krb5_set_warn_func
 function sets the destination for warning messages to the specified 
 .Fa facility .
+Messages logged with the
+.Dq warn
+functions have a log level of 1, while the
+.Dq err
+functions logs with level 0.
 
 .Sh SEE ALSO
 .Xr krb5_openlog 3
