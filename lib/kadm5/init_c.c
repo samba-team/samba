@@ -227,18 +227,10 @@ get_cred_cache(krb5_context context,
 	if(client == NULL)
 	    client = default_client;
 	if(client == NULL) {
-	    char *user;
+	    const char *user;
 
-	    user = getenv ("USERNAME");
-	    if (user == NULL) {
-		user = getlogin();
-		if(user == NULL) {
-		    struct passwd *pw = getpwuid(getuid());
-		    if (pw == NULL)
-			return KADM5_FAILURE;
-		    user = pw->pw_name;
-		}
-	    }
+	    user = get_default_username ();
+
 	    if(user == NULL)
 		return KADM5_FAILURE;
 	    ret = krb5_make_principal(context, &client, 
