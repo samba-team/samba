@@ -213,6 +213,28 @@ int ldb_msg_add_string(struct ldb_context *ldb, struct ldb_message *msg,
 }
 
 /*
+  add a printf formatted element to a message
+*/
+int ldb_msg_add_fmt(struct ldb_context *ldb, struct ldb_message *msg, 
+		    const char *attr_name, const char *fmt, ...)
+{
+	struct ldb_val val;
+	va_list ap;
+	char *str;
+
+	va_start(ap, fmt);
+	str = talloc_vasprintf(msg, fmt, ap);
+	va_end(ap);
+
+	if (str == NULL) return -1;
+
+	val.data   = str;
+	val.length = strlen(str);
+
+	return ldb_msg_add_value(ldb, msg, attr_name, &val);
+}
+
+/*
   compare two ldb_message_element structures
   assumes case senistive comparison
 */
