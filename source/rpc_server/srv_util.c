@@ -149,7 +149,11 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 
 	for (i=0;i<num_groups;i++) {
 
-		if (!get_group_from_gid(groups[i], &map)) {
+		become_root();
+		ret = get_group_from_gid(groups[i], &map);
+		unbecome_root();
+		
+		if ( !ret ) {
 			DEBUG(10,("get_alias_user_groups: gid %d. not found\n", (int)groups[i]));
 			continue;
 		}
