@@ -25,6 +25,6 @@
 typedef NTSTATUS (*init_module_function) (void);
 
 /* Module that registers a backend for a certain subsystem */
-typedef NTSTATUS (*register_backend_function) (void *data);
+typedef NTSTATUS (*register_backend_function) (const void *data);
 
 #endif /* _MODULE_H */
