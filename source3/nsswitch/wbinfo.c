@@ -699,8 +699,13 @@ static BOOL print_domain_users(const char *domain)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 	
-	if (domain)
-		fstrcpy( request.domain_name, domain );
+	if (domain) {
+		/* '.' is the special sign for our own domwin */
+		if ( strequal(domain, ".") )
+			fstrcpy( request.domain_name, lp_workgroup() );
+		else
+			fstrcpy( request.domain_name, domain );
+	}
 
 	if (winbindd_request(WINBINDD_LIST_USERS, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
@@ -733,9 +738,13 @@ static BOOL print_domain_groups(const char *domain)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	if (domain) 
-		fstrcpy( request.domain_name, domain );
-		
+	if (domain) {
+		if ( strequal(domain, ".") )
+			fstrcpy( request.domain_name, lp_workgroup() );
+		else
+			fstrcpy( request.domain_name, domain );
+	}
+
 	if (winbindd_request(WINBINDD_LIST_GROUPS, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
