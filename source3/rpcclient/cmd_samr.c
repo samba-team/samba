@@ -146,8 +146,7 @@ static uint32 cmd_samr_query_user(struct cli_state *cli, int argc, char **argv)
 	BOOL 	got_connect_pol = False, 
 		got_domain_pol = False,
 		got_user_pol = False;
-	SAM_USERINFO_CTR user_ctr;
-	SAM_USER_INFO_21 info_21;
+	SAM_USERINFO_CTR *user_ctr;
 	fstring			server;
 	TALLOC_CTX		*mem_ctx;
 	uint32 user_rid;
@@ -204,17 +203,14 @@ static uint32 cmd_samr_query_user(struct cli_state *cli, int argc, char **argv)
 	got_user_pol = True;
 
 	ZERO_STRUCT(user_ctr);
-	ZERO_STRUCT(info_21);
 
-	user_ctr.info.id21 = &info_21;
-
-	if ((result = cli_samr_query_userinfo(cli, mem_ctx, &user_pol, info_level,
-					      &user_ctr)) 
+	if ((result = cli_samr_query_userinfo(cli, mem_ctx, &user_pol, 
+					      info_level, &user_ctr)) 
 	    != NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
 
-	display_sam_user_info_21(&info_21);
+	display_sam_user_info_21(user_ctr->info.id21);
 
 done:
 	if (got_user_pol) cli_samr_close(cli, mem_ctx, &user_pol);
