@@ -1,5 +1,10 @@
 Thu Jul 24 08:13:59 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* kdc/kerberos5.c: Unseal keys from database before use.
+
+	* kdc/misc.c: New functions set_master_key, unseal_key and
+ 	free_key.
+
 	* lib/roken/getarg.c: Handle `-f arg' correctly.
 
 Thu Jul 24 01:54:43 1997  Assar Westerlund  <assar@sics.se>
