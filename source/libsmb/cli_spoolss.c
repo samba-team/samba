@@ -420,8 +420,8 @@ WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	fstrcpy (server, cli->desthost);
-	strupper (server);
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper (server);
 	
 	/* Initialise input parameters */
 
