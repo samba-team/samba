@@ -1,3 +1,7 @@
+Tue Mar 30 13:49:54 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am.common: CFLAGS -> AM_CFLAGS
+
 Mon Mar 29 16:51:12 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* check-xau.m4: check for XauWriteAuth before checking for

@@ -1,5 +1,32 @@
 Mon Mar 29 20:19:57 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* kuser/klist.c (print_cred_verbose): use krb5_print_address
+
+	* lib/kadm5/server.c: k_{put,get}_int -> _krb5_{put,get}_int
+
+	* lib/krb5/addr_families.c (krb5_print_address): handle unknown
+ 	address types; (ipv6_print_addr): print in 16-bit groups (as it
+ 	should)
+
+	* lib/krb5/crc.c: crc_{init_table,update} ->
+ 	_krb5_crc_{init_table,update}
+
+	* lib/krb5/crypto.c: k_{put,get}_int -> _krb5_{put,get}_int
+ 	crc_{init_table,update} -> _krb5_crc_{init_table,update}
+
+	* lib/krb5/send_to_kdc.c: k_{put,get}_int -> _krb5_{put,get}_int
+
+	* lib/krb5/store.c: k_{put,get}_int -> _krb5_{put,get}_int
+
+	* lib/krb5/krb5_locl.h: include krb5-private.h
+
+	* kdc/connect.c (addr_to_string): use krb5_print_address
+
+	* lib/krb5/addr_families.c (krb5_print_address): int -> size_t
+
+	* lib/krb5/addr_families.c: add support for printing ipv6
+ 	addresses, either with inet_ntop, or ugly for-loop
+
 	* kdc/524.c: check that the ticket came from a valid address; use
  	the address of the connection as the address to put in the v4
  	ticket (if this address is AF_INET)
