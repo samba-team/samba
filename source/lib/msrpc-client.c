@@ -190,8 +190,7 @@ void msrpc_sockopt(struct msrpc_state *msrpc, char *options)
 }
 
 
-static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
-				const vuser_key *key)
+static BOOL msrpc_authenticate(struct msrpc_state *msrpc)
 {
 	int sock = msrpc->fd;
 	uint32 len;
@@ -203,12 +202,10 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 
 	uint16 command;
 
-	msrpc->nt.key = *key;
-
 	command = AGENT_CMD_CON;
 
 	if (!create_user_creds(&ps, msrpc->pipe_name, 0x0, command,
-	                        key, NULL))
+	                        &msrpc->nt.key, NULL))
 	{
 		DEBUG(0,("could not parse credentials\n"));
 		close(sock);
@@ -257,7 +254,6 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 }
 
 static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
-				const vuser_key *key,
 				const char* pipe_name)
 {
 	int sock;
@@ -274,7 +270,7 @@ static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
 
 	msrpc->fd = sock;
 
-	if (!msrpc_authenticate(msrpc, key))
+	if (!msrpc_authenticate(msrpc))
 	{
 		DEBUG(0,("authenticate failed\n"));
 		close(msrpc->fd);
@@ -296,7 +292,7 @@ BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
 		return False;
 	}
 
-	if (!msrpc_establish_connection(msrpc, key, pipename))
+	if (!msrpc_establish_connection(msrpc, pipename))
 	{
 		msrpc_shutdown(msrpc);
 		return False;
@@ -311,14 +307,16 @@ initialise a msrpcent structure
 struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc,
 				const vuser_key *key)
 {
-	if (!msrpc) {
+	if (!msrpc)
+	{
 		msrpc = (struct msrpc_state *)malloc(sizeof(*msrpc));
 		if (!msrpc)
 			return NULL;
 		ZERO_STRUCTP(msrpc);
 	}
 
-	if (msrpc->initialised) {
+	if (msrpc->initialised)
+	{
 		msrpc_shutdown(msrpc);
 	}
 
@@ -333,7 +331,26 @@ struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc,
 	}
 
 	msrpc->initialised = 1;
-	msrpc->nt.key.vuid = UID_FIELD_INVALID;
+
+	if (key != NULL)
+	{
+		msrpc->nt.key = *key;
+	}
+	else
+	{
+		NET_USER_INFO_3 usr;
+		uid_t uid = getuid();
+		gid_t gid = getgid();
+		char *name = uidtoname(uid);
+
+		ZERO_STRUCT(usr);
+
+		msrpc->nt.key.pid = getpid();
+		msrpc->nt.key.vuid = register_vuid(msrpc->nt.key.pid,
+		                             uid, gid,
+	                                     name, name, False,
+		                             &usr);
+	}
 
 	return msrpc;
 }
@@ -361,7 +378,6 @@ void msrpc_shutdown(struct msrpc_state *msrpc)
 establishes a connection right up to doing tconX, reading in a password.
 ****************************************************************************/
 BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
-				const vuser_key *key,
 				const char *pipe_name)
 {
 	DEBUG(5,("msrpc_establish_connection: connecting to %s\n",
@@ -376,7 +392,7 @@ BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
 
 	if (msrpc->fd == -1 && msrpc->redirect)
 	{
-		if (msrpc_init_redirect(msrpc, key, pipe_name))
+		if (msrpc_init_redirect(msrpc, pipe_name))
 		{
 			DEBUG(10,("msrpc_establish_connection: redirected OK\n"));
 			return True;
@@ -398,7 +414,7 @@ BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
 		}
 	}
 
-	if (!msrpc_authenticate(msrpc, key))
+	if (!msrpc_authenticate(msrpc))
 	{
 		DEBUG(0,("authenticate failed\n"));
 		close(msrpc->fd);

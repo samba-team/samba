@@ -146,7 +146,8 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	fstrcpy(trust_acct, info->myhostname);
 	fstrcat(trust_acct, "$");
 
-	res = res ? msrpc_lsa_query_trust_passwd(wks_name, trust_passwd, "$MACHINE.ACC") : False;
+	res = res ? msrpc_lsa_query_trust_passwd(wks_name, "$MACHINE.ACC",
+	                                         trust_passwd) : False;
 
 	res = res ? cli_nt_setup_creds(srv_name, domain, info->myhostname,
 	                               trust_acct, 

@@ -112,7 +112,12 @@ static struct msrpc_use *msrpc_find(const char* pipe_name, const vuser_key *key)
 {
 	int i;
 
-	DEBUG(10,("msrpc_find: %s\n", pipe_name));
+	DEBUG(10,("msrpc_find: %s", pipe_name));
+	if (key != NULL)
+	{
+		DEBUG(10,(" [%d, %x]", key->pid, key->vuid));
+	}
+	DEBUG(10,("\n"));
 
 	for (i = 0; i < num_msrpcs; i++)
 	{
@@ -195,7 +200,7 @@ struct msrpc_state *msrpc_use_add(const char* pipe_name,
 	cli = msrpc_use_get(pipe_name, key);
 	cli->cli->redirect = redir;
 
-	if (!msrpc_establish_connection(cli->cli, key, pipe_name))
+	if (!msrpc_establish_connection(cli->cli, pipe_name))
 	{
 		DEBUG(0,("msrpc_use_add: connection failed\n"));
 		cli->cli = NULL;

@@ -1043,6 +1043,9 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	 * local-loopback.
 	 */
 
+	DEBUG(10,("create_dom_user: myhostname: %s server: %s\n",
+			info->myhostname, name));
+
 	fstrcpy(wks_name, "\\\\");
 	if (strequal(srv_name, "\\\\.") && strequal(name, info->myhostname))
 	{

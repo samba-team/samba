@@ -22,7 +22,6 @@ struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc,
 				const vuser_key *key);
 void msrpc_shutdown(struct msrpc_state *msrpc);
 BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
-				const vuser_key *key,
 				const char *pipe_name);
 
 /*The following definitions come from  lib/msrpc_use.c  */

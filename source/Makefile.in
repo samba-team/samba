@@ -522,6 +522,20 @@ LSACLIENT_OBJ = lib/cmd_interp.o \
 		$(STUB_UID_OBJ)
 LSACLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
 
+RPCTORTURE_OBJ = lib/cmd_interp.o \
+		utils/rpctorture.o \
+		rpcclient/net_cmds.o \
+		rpcclient/display_event.o \
+		rpcclient/display_srv.o \
+		rpcclient/display_sync.o \
+		rpcclient/cmd_wkssvc.o \
+		rpcclient/cmd_brs.o \
+		rpcclient/cmd_srvsvc.o \
+		rpcclient/cmd_netlogon.o \
+		$(SIDDB_OBJ) \
+		$(STUB_UID_OBJ)
+RPCTORTURE_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+
 RPCCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/rpcclient.o \
 		rpcclient/svcctrl_cmds.o \
@@ -592,15 +606,6 @@ SMBFILTER_OBJ = utils/smbfilter.o \
 		 rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o \
 		 rpc_parse/parse_misc.o
 
-RPCTORTURE_OBJ = utils/rpctorture.o \
-             rpcclient/display.o \
-             rpcclient/cmd_lsarpc.o \
-             rpcclient/cmd_wkssvc.o \
-             rpcclient/cmd_samr.o \
-             rpcclient/cmd_srvsvc.o \
-             rpcclient/cmd_netlogon.o \
-           $(SIDDB_OBJ)
-
 PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(WINREGD_OBJ1) \
 		$(SAMRD_OBJ1) \
@@ -615,6 +620,7 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(SWAT_OBJ) $(CLIENT_OBJ) \
 		$(REGEDIT_OBJ) $(SVCCLIENT_OBJ) \
 		$(SAMCLIENT_OBJ) $(RPCCLIENT_OBJ) \
+		$(RPCTORTURE_OBJ) \
 		$(CMDCLIENT_OBJ) $(LSACLIENT_OBJ) \
 		$(EVTCLIENT_OBJ) $(NETCLIENT_OBJ) \
 		$(LIBSMB_OBJ) $(SMBWRAPPER_OBJ) \
@@ -929,6 +935,10 @@ bin/lsa: $(LSACLIENT_LIBS) $(LSACLIENT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(LSACLIENT_OBJ) $(LSACLIENT_LIBS) $(LIBS)
 
+bin/rpctorture: $(RPCTORTURE_LIBS) $(RPCTORTURE_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(RPCTORTURE_OBJ) $(RPCTORTURE_LIBS) $(LIBS)
+
 bin/rpcclient: $(RPCCLIENT_LIBS) $(RPCCLIENT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(RPCCLIENT_OBJ) $(RPCCLIENT_LIBS) $(LIBS)
@@ -980,10 +990,6 @@ bin/make_printerdef: $(SAMBALIB) $(MAKE_PRINTERDEF_OBJ) bin/.dummy
 bin/smbtorture: $(SAMBA_LIBS) $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SMBTORTURE_OBJ) $(SAMBA_LIBS) $(LIBS)
-
-bin/rpctorture: $(SAMBA_LIBS) $(RPCTORTURE_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(LINK) -o $@ $(RPCTORTURE_OBJ) $(SAMBA_LIBS) $(LIBS)
 
 bin/smb-client: $(SMB_CLIENT_OBJ) bin/.dummy
 	@echo Linking $@

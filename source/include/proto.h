@@ -325,7 +325,6 @@ struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc,
 				const vuser_key *key);
 void msrpc_shutdown(struct msrpc_state *msrpc);
 BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
-				const vuser_key *key,
 				const char *pipe_name);
 
 /*The following definitions come from  lib/msrpc_use.c  */
@@ -2711,7 +2710,7 @@ BOOL req_groupmem_info( const POLICY_HND *pol_dom,
 				GROUP_MEM_FN(grp_mem));
 uint32 msrpc_sam_get_first_domain( const char* srv_name,
 				char *dom_name,
-				DOM_SID *sid);
+				DOM_SID *dom_sid);
 uint32 msrpc_sam_enum_domains( const char* srv_name,
 				struct acct_info **sam,
 				uint32 *num_sam_entries,
@@ -3464,6 +3463,12 @@ void cmd_svc_set(struct client_info *info, int argc, char *argv[]);
 
 void cmd_wks_query_info(struct client_info *info, int argc, char *argv[]);
 
+/*The following definitions come from  rpcclient/cmdat.c  */
+
+
+/*The following definitions come from  rpcclient/cmdat_cmds.c  */
+
+
 /*The following definitions come from  rpcclient/display_at.c  */
 
 void display_at_enum_info(FILE *out_hnd, enum action_type action, 
@@ -3624,6 +3629,27 @@ void display_sam_sync(FILE *out_hnd, enum action_type action,
 				SAM_DELTA_CTR *const ctr, 
 				uint32 num);
 
+/*The following definitions come from  rpcclient/eventlog.c  */
+
+
+/*The following definitions come from  rpcclient/eventlog_cmds.c  */
+
+
+/*The following definitions come from  rpcclient/lsa.c  */
+
+
+/*The following definitions come from  rpcclient/lsa_cmds.c  */
+
+
+/*The following definitions come from  rpcclient/net.c  */
+
+
+/*The following definitions come from  rpcclient/net_cmds.c  */
+
+
+/*The following definitions come from  rpcclient/netlogon_cmds.c  */
+
+
 /*The following definitions come from  rpcclient/regedit.c  */
 
 
@@ -3637,6 +3663,12 @@ void display_sam_sync(FILE *out_hnd, enum action_type action,
 
 
 /*The following definitions come from  rpcclient/samedit_cmds.c  */
+
+
+/*The following definitions come from  rpcclient/svcctrl.c  */
+
+
+/*The following definitions come from  rpcclient/svcctrl_cmds.c  */
 
 
 /*The following definitions come from  samrd/samrd.c  */
@@ -4797,6 +4829,12 @@ int tdb_writelock(TDB_CONTEXT *tdb);
 int tdb_writeunlock(TDB_CONTEXT *tdb);
 int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
+
+/*The following definitions come from  utils/rpctorture.c  */
+
+void run_enums_test(struct client_info *info, int argc, char *argv[]);
+void run_ntlogin_test(struct client_info *info, int argc, char *argv[]);
+BOOL do_random_rpc(struct cli_state *cli, uint16 nt_pipe_fnum, int max_len);
 
 /*The following definitions come from  utils/smbpasswd.c  */
 

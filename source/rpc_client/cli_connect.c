@@ -102,7 +102,6 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 				BOOL reuse)
 {
 	struct cli_connection *con = NULL;
-	vuser_key con_key;
 
 	con = (struct cli_connection*)malloc(sizeof(*con));
 
@@ -116,26 +115,6 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 
 	copy_user_creds(&con->usr_creds, usr_creds);
 	con->usr_creds.reuse = reuse;
-
-	if (user_key != NULL)
-	{
-		con_key = *user_key;
-	}
-	else
-	{
-		NET_USER_INFO_3 usr;
-		uid_t uid = getuid();
-		gid_t gid = getgid();
-		char *name = uidtoname(uid);
-
-		ZERO_STRUCT(usr);
-
-		con_key.pid = getpid();
-		con_key.vuid = register_vuid(con_key.pid,
-		                             uid, gid,
-	                             name, name, False,
-		                             &usr);
-	}
 
 	if (srv_name != NULL)
 	{
@@ -164,7 +143,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 		become_root(False);
 		con->type = MSRPC_LOCAL;
 		con->usr_creds.reuse = False;
-		con->msrpc.local = msrpc_use_add(&pipe_name[6], &con_key,
+		con->msrpc.local = msrpc_use_add(&pipe_name[6], user_key,
 		                                  False);
 		unbecome_root(False);
 	}
@@ -198,7 +177,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 			}
 		}
 	}
-		
+
 	if (con->msrpc.cli != NULL)
 	{
 		RPC_IFACE abstract;

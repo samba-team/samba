@@ -603,7 +603,7 @@ BOOL req_groupmem_info( const POLICY_HND *pol_dom,
 				GROUP_MEM_FN(grp_mem));
 uint32 msrpc_sam_get_first_domain( const char* srv_name,
 				char *dom_name,
-				DOM_SID *sid);
+				DOM_SID *dom_sid);
 uint32 msrpc_sam_enum_domains( const char* srv_name,
 				struct acct_info **sam,
 				uint32 *num_sam_entries,

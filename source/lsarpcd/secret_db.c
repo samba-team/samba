@@ -176,7 +176,7 @@ BOOL secret_init_db(void)
 
 	tdb = open_secret_db(O_RDWR);
 
-	if (tdb == NULL)
+	if (tdb != NULL)
 	{
 		DEBUG(10,("secret_init_db: opened\n"));
 		return True;
