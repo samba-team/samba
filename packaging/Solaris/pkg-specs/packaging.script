@@ -34,6 +34,7 @@ cp static_prototype prototype
 # Add the dynamic part to the prototype file
 ./dyngen_prototype.sh $1 >> prototype
 
+[ $? -ne 0 ] && exit 1
 # Create the package
 pkgmk -o -d /tmp -b $1 -f prototype
 if [ $? = 0 ]

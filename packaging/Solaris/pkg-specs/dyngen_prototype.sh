@@ -3,7 +3,7 @@
 # on the distribution tree
 # The distr base directory is passed as $1
 if [ $# != 1 ]; then
-	echo "Dynamically generates prototype entries depending on the distribution tree.\nCalled from packaging.script.\nUsage: $0 base_directory"
+	echo "Dynamically generates prototype entries depending on the distribution tree.\nCalled from packaging.script.\nUsage: $0 base_directory" >&2
 	exit 1
 fi
 
@@ -12,6 +12,13 @@ echo "#\n# Codepages \n#"
 echo d none samba/lib/codepages 0755 root other
 
 CODEPAGELIST="437 737 850 852 861 932 866 949 950 936"
+# Check if make_smbcodepage exists
+if [ ! -f $1/source/bin/make_smbcodepage ]; then
+	echo "Could not find $1/source/bin/make_smbcodepage to generate codepages.\n\
+Please create the binaries before packaging." >&2
+	exit 1
+fi
+
 for p in $CODEPAGELIST; do
 	$1/source/bin/make_smbcodepage c $p $1/source/codepages/codepage_def.$p $1/source/codepages/codepage.$p
 	echo f none samba/lib/codepages/codepage.$p=source/codepages/codepage.$p 0644 root other

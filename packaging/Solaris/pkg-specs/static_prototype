@@ -7,14 +7,15 @@
 # 
 i pkginfo=./pkginfo
 i copyright=./copyright
+i request=./request
 #
 # Stuff that goes into the system areas of the filesystem.
 #
-d none /etc ? ? ?
-d none /etc/init.d ? ? ?
-f none /etc/init.d/samba.server=packaging/Solaris/pkg-specs/samba.server 0744 root sys
-d none /etc/rc3.d ? ? ?
-l none /etc/rc3.d/S95samba.server=/etc/init.d/samba.server
+d initscript /etc ? ? ?
+d initscript /etc/init.d ? ? ?
+f initscript /etc/init.d/samba.server=packaging/Solaris/pkg-specs/samba.server 0744 root sys
+d initscript /etc/rc3.d ? ? ?
+l initscript /etc/rc3.d/S99samba.server=/etc/init.d/samba.server
 #
 # Create the samba subtree. (Usually /usr/local/samba )
 #
@@ -60,6 +61,7 @@ f none /usr/share/man/man8/smbmount.8=docs/manpages/smbmount.8 0644 root other
 f none /usr/share/man/man8/smbpasswd.8=docs/manpages/smbpasswd.8 0644 root other
 f none /usr/share/man/man8/smbumount.8=docs/manpages/smbumount.8 0644 root other
 f none /usr/share/man/man8/swat.8=docs/manpages/swat.8 0644 root other
+f none /usr/share/man/man8/smbspool.8=docs/manpages/smbspool.8 0644 root other
 #
 # Stuff that goes into lib
 #
