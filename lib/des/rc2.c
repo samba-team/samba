@@ -204,7 +204,7 @@ RC2_cbc_encrypt(const unsigned char *in, unsigned char *out, long size,
     int i;
 
     if (encrypt) {
-	while (size > 0) {
+	while (size >= RC2_BLOCK_SIZE) {
 	    for (i = 0; i < RC2_BLOCK_SIZE; i++)
 		tmp[i] = in[i] ^ iv[i];
 	    RC2_encryptc(tmp, out, key);
@@ -213,8 +213,16 @@ RC2_cbc_encrypt(const unsigned char *in, unsigned char *out, long size,
 	    in += RC2_BLOCK_SIZE;
 	    out += RC2_BLOCK_SIZE;
 	}
+	if (size) {
+	    for (i = 0; i < size; i++)
+		tmp[i] = in[i] ^ iv[i];
+	    for (i = size; i < RC2_BLOCK_SIZE; i++)
+		tmp[i] = iv[i];
+	    RC2_encryptc(tmp, out, key);
+	    memcpy(iv, out, RC2_BLOCK_SIZE);
+	}
     } else {
-	while (size > 0) {
+	while (size >= RC2_BLOCK_SIZE) {
 	    memcpy(tmp, in, RC2_BLOCK_SIZE);
 	    RC2_decryptc(tmp, out, key);
 	    for (i = 0; i < RC2_BLOCK_SIZE; i++)
@@ -223,6 +231,13 @@ RC2_cbc_encrypt(const unsigned char *in, unsigned char *out, long size,
 	    size -= RC2_BLOCK_SIZE;
 	    in += RC2_BLOCK_SIZE;
 	    out += RC2_BLOCK_SIZE;
+	}
+	if (size) {
+	    memcpy(tmp, in, RC2_BLOCK_SIZE);
+	    RC2_decryptc(tmp, out, key);
+	    for (i = 0; i < size; i++)
+		out[i] ^= iv[i];
+	    memcpy(iv, tmp, RC2_BLOCK_SIZE);
 	}
     }
 }
