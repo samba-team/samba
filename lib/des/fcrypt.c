@@ -112,6 +112,9 @@
  * ----------------------------------------------------------------------------
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <md5.h>
 
 static unsigned char itoa64[] =		/* 0 ... 63 => ascii - 64 */
