@@ -1510,7 +1510,7 @@ static void init_globals(void)
 	string_set(&Globals.szCupsServer, "");
 
 	Globals.winbind_cache_time = 300;	/* 5 minutes */
-	Globals.bWinbindEnableLocalAccounts = True;
+	Globals.bWinbindEnableLocalAccounts = False;
 	Globals.bWinbindEnumUsers = True;
 	Globals.bWinbindEnumGroups = True;
 	Globals.bWinbindUseDefaultDomain = False;
