@@ -855,8 +855,9 @@ ADS_STATUS ads_trusted_domains(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 
 	for (i=0, msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
 		(*names)[i] = ads_pull_string(ads, mem_ctx, msg, "flatName");
-		ads_pull_sid(ads, msg, "securityIdentifier", &(*sids)[i]);
-		i++;
+		if (ads_pull_sid(ads, msg, "securityIdentifier", &(*sids)[i])) {
+			i++;
+		}
 	}
 
 	ads_msgfree(ads, res);
