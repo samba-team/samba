@@ -1,3 +1,31 @@
+2004-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_sec_context.c (spnego_reply): use
+	_gss_spnego_require_mechlist_mic to figure out if we need to check
+	MechListMIC; From: Luke Howard <lukeh@padl.com>
+
+	* accept_sec_context.c (send_accept): use
+	_gss_spnego_require_mechlist_mic to figure out if we need to send
+	MechListMIC; From: Luke Howard <lukeh@padl.com>
+
+	* gssapi_locl.h: add _gss_spnego_require_mechlist_mic
+	From: Luke Howard <lukeh@padl.com>
+
+	* compat.c: add _gss_spnego_require_mechlist_mic for compatibility
+	with MS SPNEGO, From: Luke Howard <lukeh@padl.com>
+	
+2004-04-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* accept_sec_context.c (gsskrb5_is_cfx): krb5_keyblock->keytype is
+	an enctype, not keytype
+
+	* accept_sec_context.c: use ASN1_MALLOC_ENCODE
+	
+	* init_sec_context.c: avoid the malloc loop and just allocate the
+	propper amount of data
+
+	* init_sec_context.c (spnego_initial): handle mech_token better
+	
 2004-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gssapi.h: add gss_krb5_get_tkt_flags
