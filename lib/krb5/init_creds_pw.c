@@ -1212,8 +1212,12 @@ init_cred_loop(krb5_context context,
     krb5_generate_random_block (&ctx->nonce, sizeof(ctx->nonce));
     ctx->nonce &= 0xffffffff;
     ctx->as_req.req_body.nonce = ctx->nonce;
+#if 0
     krb5_generate_random_block (&ctx->pk_nonce, sizeof(ctx->pk_nonce));
     ctx->pk_nonce &= 0xffffffff;
+#else
+    ctx->pk_nonce = ctx->nonce;
+#endif
 
 #define MAX_PA_COUNTER 3 
 
