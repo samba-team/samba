@@ -167,7 +167,8 @@ DB_seq(krb5_context context, HDB *db, hdb_entry *entry, int flag)
     key_data.length = key.size;
     data.data = value.data;
     data.length = value.size;
-    hdb_value2entry(context, &data, entry);
+    if (hdb_value2entry(context, &data, entry))
+	return DB_seq(context, db, entry, R_NEXT);
     if (entry->principal == NULL) {
 	entry->principal = malloc(sizeof(*entry->principal));
 	hdb_key2principal(context, &key_data, entry->principal);
@@ -227,9 +228,7 @@ DB__get(krb5_context context, HDB *db, krb5_data key, krb5_data *reply)
     if(code == 1)
 	return HDB_ERR_NOENTRY;
     
-    reply->length = v.size;
-    reply->data = malloc(reply->length);
-    memcpy(reply->data, v.data, reply->length);
+    krb5_data_copy(reply, v.size, v.data);
     return 0;
 }
 
