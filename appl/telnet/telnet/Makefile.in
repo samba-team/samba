@@ -1,4 +1,4 @@
-# Makefile.in,v 1.2 1994/05/13 05:02:46 assar Exp
+# $Id$
 
 srcdir		= @srcdir@
 VPATH		= @srcdir@
@@ -9,8 +9,11 @@ CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
-CFLAGS = @CFLAGS@ -I/usr/athena/include -I.. -I$(VPATH)/..
+CFLAGS = @CFLAGS@
 LIBS = @LIBS@
+INSTALL = @INSTALL@
+
+PROGS = telnet
 
 prefix = @prefix@
 exec_prefix = $(prefix)
@@ -23,14 +26,23 @@ SOURCES=commands.c main.c network.c ring.c \
 OBJECTS=authenc.o commands.o main.o network.o ring.o sys_bsd.o \
 	telnet.o terminal.o utilities.o ${GETOPT_OBJ}
 
-KLIB=-L/usr/athena/lib -lkrb -ldes
+libtop=../../../lib
+
+KLIB=$(libtop)/krb/libkrb.a $(libtop)/des/libdes.a
 
 
 all: telnet
 
+.c.o:
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) \
+	-I../../../include -I$(srcdir)/../../../include -I.. -I$(srcdir)/.. $<
+
 telnet: $(OBJECTS)
 	$(CC) -o telnet $(OBJECTS) $(LIBS) ../libtelnet/libtelnet.a $(KLIB)
 
+install: all
+	$(INSTALL) -d $(prefix)/bin
+	$(INSTALL) $(PROGS) $(prefix)/bin
 
 clean cleandir:
 	rm -f *.o *.a telnet \#* *~ core

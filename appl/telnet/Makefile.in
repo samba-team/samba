@@ -21,6 +21,10 @@ all: stamp-configure
 	for i in $(SUBDIRS); \
 	do (cd $$i; $(MAKE) $(MFLAGS) all); done
 
+install:
+	for i in $(SUBDIRS); \
+	do (cd $$i; $(MAKE) $(MFLAGS) install); done
+
 stamp-configure:
 	@echo "Configuring directory appl/telnet"
 	$(srcdir)/configure && touch stamp-configure

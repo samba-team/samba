@@ -9,12 +9,15 @@ CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
-CFLAGS = @CFLAGS@ -I/usr/athena/include -I.. -I$(VPATH)/..
+CFLAGS = @CFLAGS@
 LIBS = @LIBS@
+INSTALL = @INSTALL@
 
 prefix = @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
+
+PROGS = telnetd
 
 SOURCES=telnetd.c state.c termstat.c slc.c sys_term.c \
 	utility.c global.c authenc.c
@@ -24,16 +27,25 @@ OBJECTS=telnetd.o state.o termstat.o slc.o sys_term.o \
 	utility.o global.o authenc.o
 
 
-libtop=/usr/athena/lib
+libtop=../../../lib
 
 KLIB=$(libtop)/kafs/libkafs.a $(libtop)/krb/libkrb.a $(libtop)/des/libdes.a
 
 
 all: telnetd
 
+$(OBJECTS): ../config.h
+
+.c.o:
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) \
+	-I../../../include -I$(srcdir)/../../../include -I.. -I$(srcdir)/.. $<
+
 telnetd: $(OBJECTS)
 	$(CC) -o telnetd $(OBJECTS) $(LIBS) ../libtelnet/libtelnet.a $(KLIB)
 
+install: all
+	$(INSTALL) -d $(prefix)/libexec
+	$(INSTALL) $(PROGS) $(prefix)/libexec
 
 clean cleandir:
 	rm -f *.o *.a telnetd \#* *~ core
