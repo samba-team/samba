@@ -878,6 +878,8 @@ it() link(bf(hosts deny))(hostsdeny)
 
 it() link(bf(include))(include)
 
+it() link(bf(inherit permissions))(inheritpermissions)
+
 it() link(bf(invalid users))(invalidusers)
 
 it() link(bf(level2 oplocks))(level2oplocks)
@@ -1569,6 +1571,7 @@ See also the link(bf("force create mode"))(forcecreatemode) parameter
 for forcing particular mode bits to be set on created files. See also
 the link(bf("directory mode"))(directorymode) parameter for masking
 mode bits on created directories.
+See also the link(bf("inherit permissions"))(inheritpermissions) parameter.
 
   bf(Default:)
 tt(	create mask = 0744)
@@ -1912,6 +1915,8 @@ See also the link(bf("create mode"))(createmode) parameter for masking
 mode bits on created files, and the link(bf("directory security mask"))(directorysecuritymask)
 parameter.
 
+See also the link(bf("inherit permissions"))(inheritpermissions) parameter.
+
   bf(Default:)
 tt(	directory mask = 0755)
 
@@ -2253,6 +2258,8 @@ mask"))(createmask) parameter is applied.
 See also the parameter link(bf("create mask"))(createmask) for details
 on masking mode bits on files.
 
+See also the link(bf("inherit permissions"))(inheritpermissions) parameter.
+
   bf(Default:)
 tt(	force create mode = 000)
 
@@ -2276,6 +2283,8 @@ link(bf("directory mask"))(directorymask) is applied.
 
 See also the parameter link(bf("directory mask"))(directorymask) for
 details on masking mode bits on created directories.
+
+See also the link(bf("inherit permissions"))(inheritpermissions) parameter.
 
   bf(Default:)
 tt(	force directory mode = 000)
@@ -2689,6 +2698,42 @@ is included literally, as though typed in place.
 
 It takes the standard substitutions, except link(bf(%u))(percentu),
 link(bf(%P))(percentP) and link(bf(%S))(percentS).
+
+label(inheritpermissions)
+dit(bf(inherit permissions (S)))
+
+The permissions on new files and directories are normally governed by
+link(bf("create mask"))(createmask),
+link(bf("directory mask"))(directorymask),
+link(bf("force create mode"))(forcecreatemode) and
+link(bf("force directory mode"))(forcedirectorymode)
+but the boolean inherit permissions parameter overrides this.
+
+New directories inherit the mode of the parent directory,
+including bits such as setgid.
+
+New files inherit their read/write bits from the parent directory.
+Their execute bits continue to be determined by
+link(bf("map archive"))(maparchive),
+link(bf("map hidden"))(maphidden) and
+link(bf("map system"))(mapsystem) as usual.
+
+Note that the setuid bit is *never* set via inheritance
+(the code explicitly prohibits this).
+
+This can be particularly useful on large systems with many users,
+perhaps several thousand,
+to allow a single bf([homes]) share to be used flexibly by each user.
+
+See also link(bf("create mask"))(createmask), link(bf("directory mask"))(directorymask),
+link(bf("force create mode"))(forcecreatemode) and
+link(bf("force directory mode"))(forcedirectorymode).
+
+  bf(Default)
+tt(   inherit permissions = no)
+
+  bf(Example)
+tt(   inherit permissions = yes)
 
 label(interfaces)
 dit(bf(interfaces (G)))
