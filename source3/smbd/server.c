@@ -344,7 +344,7 @@ BOOL reload_services(BOOL test)
 	}
 
 	reset_mangled_cache();
-    reset_stat_cache();
+	reset_stat_cache();
 
 	/* this forces service parameters to be flushed */
 	become_service(NULL,True);
