@@ -1,5 +1,23 @@
 Sat Jul 19 04:07:39 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/asn1/k5.asn1: Update with more pa-data types from
+ 	draft-ietf-cat-kerberos-revisions-00.txt
+
+	* admin/load.c: Update to match current db-format.
+
+	* kdc/kerberos5.c (as_rep): Try all valid pa-datas before giving
+ 	up. Send back an empty pa-data if the client has the v4 flag set.
+
+	* lib/krb5/get_in_tkt.c: Pass both version5 and version4 salted
+ 	pa-data. DTRT if there is any pa-data in the reply.
+
+	* lib/krb5/str2key.c: XOR with some sane value.
+
+	* lib/hdb/hdb.h: Add `version 4 salted key' flag.
+
+	* kuser/kinit.c: Ask for password before calling get_in_tkt. This
+ 	makes it possible to call key_proc more than once.
+
 	* kdc/string2key.c: Add flags to output version 5 (DES only),
  	version 4, and AFS string-to-key of a password.
 
