@@ -42,12 +42,12 @@ static BOOL read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 			asn1_start_tag(asn1, ASN1_CONTEXT(0));
 			asn1_start_tag(asn1, ASN1_SEQUENCE(0));
 
-			token->mechTypes = SMB_MALLOC_P(char *);
+			token->mechTypes = SMB_MALLOC_P(const char *);
 			for (i = 0; !asn1->has_error &&
 				     0 < asn1_tag_remaining(asn1); i++) {
 				token->mechTypes = 
-					SMB_REALLOC_ARRAY(token->mechTypes, char *, i + 2);
-				asn1_read_OID(asn1, token->mechTypes + i);
+					SMB_REALLOC_ARRAY(token->mechTypes, const char *, i + 2);
+				asn1_read_OID(asn1, (char **) (token->mechTypes + i));
 			}
 			token->mechTypes[i] = NULL;
 			
@@ -182,7 +182,7 @@ static BOOL read_negTokenTarg(ASN1_DATA *asn1, negTokenTarg_t *token)
 			break;
 		case ASN1_CONTEXT(1):
 			asn1_start_tag(asn1, ASN1_CONTEXT(1));
-			asn1_read_OID(asn1, &token->supportedMech);
+			asn1_read_OID(asn1, (char **) &token->supportedMech);
 			asn1_end_tag(asn1);
 			break;
 		case ASN1_CONTEXT(2):
@@ -317,7 +317,7 @@ BOOL free_spnego_data(SPNEGO_DATA *spnego)
 		if (spnego->negTokenInit.mechTypes) {
 			int i;
 			for (i = 0; spnego->negTokenInit.mechTypes[i]; i++) {
-				free(spnego->negTokenInit.mechTypes[i]);
+				free((void *) spnego->negTokenInit.mechTypes[i]);
 			}
 			free(spnego->negTokenInit.mechTypes);
 		}
@@ -326,7 +326,7 @@ BOOL free_spnego_data(SPNEGO_DATA *spnego)
 		break;
 	case SPNEGO_NEG_TOKEN_TARG:
 		if (spnego->negTokenTarg.supportedMech) {
-			free(spnego->negTokenTarg.supportedMech);
+			free((void *) spnego->negTokenTarg.supportedMech);
 		}
 		data_blob_free(&spnego->negTokenTarg.responseToken);
 		data_blob_free(&spnego->negTokenTarg.mechListMIC);

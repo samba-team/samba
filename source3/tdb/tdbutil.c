@@ -43,7 +43,7 @@ static void gotalarm_sig(void)
 TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
 {
 	TDB_DATA ret;
-	ret.dptr = dptr;
+	ret.dptr = (char *) dptr;
 	ret.dsize = dsize;
 	return ret;
 }
@@ -62,7 +62,7 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 	/* Allow tdb_chainlock to be interrupted by an alarm. */
 	int ret;
 	gotalarm = 0;
-	tdb_set_lock_alarm(&gotalarm);
+	tdb_set_lock_alarm((sig_atomic_t *) &gotalarm);
 
 	if (timeout) {
 		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
