@@ -128,6 +128,7 @@ typedef struct
   char *szUsernameMap;
   char *szCharacterSet;
   char *szLogonScript;
+  char *szLogonPath;
   char *szVetoFiles;
   char *szSmbrun;
   char *szWINSserver;
@@ -406,6 +407,7 @@ struct parm_struct
   {"username map",     P_STRING,  P_GLOBAL, &Globals.szUsernameMap,     NULL},
   {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set},
   {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL},
+  {"logon path",       P_STRING,  P_GLOBAL, &Globals.szLogonPath,       NULL},
   {"remote announce",  P_STRING,  P_GLOBAL, &Globals.szRemoteAnnounce,  NULL},
   {"socket address",   P_STRING,  P_GLOBAL, &Globals.szSocketAddress,   NULL},
   {"max log size",     P_INTEGER, P_GLOBAL, &Globals.max_log_size,      NULL},
@@ -746,6 +748,7 @@ FN_GLOBAL_STRING(lp_domain_controller,&Globals.szDomainController)
 FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
 FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet) 
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
+FN_GLOBAL_STRING(lp_logon_path,&Globals.szLogonPath) 
 FN_GLOBAL_STRING(lp_veto_files,&Globals.szVetoFiles)
 FN_GLOBAL_STRING(lp_remote_announce,&Globals.szRemoteAnnounce) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)

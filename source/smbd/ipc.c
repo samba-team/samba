@@ -1845,8 +1845,15 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
       SIVAL(p,36,0);		/* auth flags */
       SIVALS(p,40,-1);		/* password age */
       SIVAL(p,44,PTR_DIFF(p2,p)); /* home dir */
-      strcpy(p2,"\\\\%L\\HOMES");
-      standard_sub_basic(p2);
+      if (*lp_logon_path())
+      {
+        strcpy(p2,lp_logon_path());
+      }
+      else
+      {
+        strcpy(p2,"\\\\%L\\HOMES");
+        standard_sub_basic(p2);
+      }
       p2 = skip_string(p2,1);
       SIVAL(p,48,PTR_DIFF(p2,p)); /* parms */
       strcpy(p2,"");
@@ -1879,8 +1886,15 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
       SSVAL(p,42,
 	    Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
       SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-      strcpy(p2,"\\\\%L\\HOMES");
-      standard_sub_basic(p2);
+      if (*lp_logon_path())
+      {
+        strcpy(p2,lp_logon_path());
+      }
+      else
+      {
+        strcpy(p2,"\\\\%L\\HOMES");
+        standard_sub_basic(p2);
+      }
       p2 = skip_string(p2,1);
       SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
       *p2++ = 0;
