@@ -680,6 +680,8 @@ users
 
 valid users
 
+veto oplock files
+
 volume
 
 wide links
@@ -2419,6 +2421,9 @@ cache files locally and you may want to disable this option for unreliable
 network environments (it is turned on by default in Windows NT Servers).
 For more information see the file Speed.txt in the Samba docs/ directory.
 
+Oplocks may be selectively turned off on certain files on a per share basis.
+See the 'veto oplock files' parameter.
+
 .B Default:
     oplocks = True
 
@@ -3665,6 +3670,25 @@ See also "hide files" and "case sensitive"
     creates.
 
     veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
+
+.SS veto oplock files (S)
+This parameter is only valid when the 'oplocks' parameter is turned on
+for a share. It allows the Samba administrator to selectively turn off
+the granting of oplocks on selected files that match a wildcarded list,
+similar to the wildcarded list used in the 'veto files' parameter.
+
+.B Default
+    No files are vetoed for oplock grants.
+
+.B Examples
+You might want to do this on files that you know will be heavily
+contended for by clients. A good example of this is in the NetBench
+SMB benchmark program, which causes heavy client contention for files
+ending in .SEM. To cause Samba not to grant oplocks on these files
+you would use the line (either in the [global] section or in the section
+for the particular NetBench share :
+
+     veto oplock files = /*.SEM/
 
 .SS volume (S)
 This allows you to override the volume label returned for a
