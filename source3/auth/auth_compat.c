@@ -21,7 +21,7 @@
 #include "includes.h"
 
 #undef DBGC_CLASS
-#define DBGC_CLASS DGBC_AUTH
+#define DBGC_CLASS DBGC_AUTH
 
 /****************************************************************************
  COMPATIBILITY INTERFACES:
