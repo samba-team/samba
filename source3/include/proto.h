@@ -280,6 +280,39 @@ BOOL mem_grow_data(struct mem_buf **buf, BOOL io, int new_size, BOOL force_grow)
 uint32 mem_buf_len(struct mem_buf *buf);
 char *mem_data(struct mem_buf **buf, uint32 offset);
 
+/*The following definitions come from  lib/msrpc-agent.c  */
+
+void start_msrpc_agent(char *pipe_name);
+
+/*The following definitions come from  lib/msrpc-client.c  */
+
+BOOL msrpc_receive(struct msrpc_state *msrpc);
+BOOL msrpc_send(struct msrpc_state *msrpc, BOOL show);
+BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name);
+void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_credentials *usr);
+void msrpc_close_socket(struct msrpc_state *msrpc);
+void msrpc_sockopt(struct msrpc_state *msrpc, char *options);
+BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
+				const char* pipename,
+				const struct user_credentials *usr);
+struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc);
+void msrpc_shutdown(struct msrpc_state *msrpc);
+BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
+		const char *pipe_name);
+
+/*The following definitions come from  lib/msrpc_use.c  */
+
+void init_msrpc_use(void);
+void free_msrpc_use(void);
+struct msrpc_state *msrpc_use_add(const char* pipe_name,
+				const struct user_credentials *usr_creds,
+				BOOL redir);
+BOOL msrpc_use_del(const char* pipe_name,
+				const struct user_credentials *usr_creds,
+				BOOL force_close,
+				BOOL *connection_closed);
+void msrpc_net_use_enum(uint32 *num_cons, struct use_info ***use);
+
 /*The following definitions come from  lib/netmask.c  */
 
 int get_netmask(struct in_addr *ipaddr, struct in_addr *nmask);
@@ -494,8 +527,8 @@ void free_void_array(uint32 num_entries, void **entries,
 void* add_copy_to_array(uint32 *len, void ***array, const void *item,
 	void*(item_dup)(const void*), BOOL alloc_anyway);
 void* add_item_to_array(uint32 *len, void ***array, void *item);
-void free_use_array(uint32 num_entries, struct use_info **entries);
-struct use_info* add_use_to_array(uint32 *len, struct use_info ***array,
+void free_use_info_array(uint32 num_entries, struct use_info **entries);
+struct use_info* add_use_info_to_array(uint32 *len, struct use_info ***array,
 				const struct use_info *name);
 void free_char_array(uint32 num_entries, char **entries);
 char* add_chars_to_array(uint32 *len, char ***array, const char *name);

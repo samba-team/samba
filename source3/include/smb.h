@@ -1754,6 +1754,17 @@ struct nmb_state
 	int port;
 };
 
+struct msrpc_state
+{
+	fstring pipe_name;
+	struct user_credentials usr;
+	int fd;
+	BOOL redirect;
+	BOOL initialised;
+	char *inbuf;
+	char *outbuf;
+};
+
 #endif /* _SMB_H */
 
 /* _SMB_H */
