@@ -39,16 +39,16 @@ main (int argc, char **argv)
 
   err = krb5_init_context (&context);
   if (err)
-      errx (1, "%s", krb5_get_err_text(context, err));
+      errx (1, "krb5_init_context: %s", krb5_get_err_text(context, err));
   
   err = krb5_cc_default (context, &ccache);
   if (err)
-      errx (1, "%s", krb5_get_err_text(context, err));
+      errx (1, "krb5_cc_default: %s", krb5_get_err_text(context, err));
   
   if(argv[0]){
       err = krb5_parse_name (context, argv[0], &principal);
       if (err)
-	  errx (1, "%s", krb5_get_err_text(context, err));
+	  errx (1, "krb5_parse_name: %s", krb5_get_err_text(context, err));
       
   }else{
       char *realm;
@@ -56,16 +56,22 @@ main (int argc, char **argv)
 
       err = krb5_get_default_realm (context, &realm);
       if (err)
-	  errx (1, "%s", krb5_get_err_text(context, err));
+	  errx (1, "krb5_get_default_realm: %s",
+		krb5_get_err_text(context, err));
       pw = getpwuid(getuid());
-      krb5_build_principal(context, &principal, strlen(realm), realm,
-			   pw->pw_name, NULL);
+      err = krb5_build_principal(context, &principal,
+				 strlen(realm), realm,
+				 pw->pw_name, NULL);
+      if (err)
+	  errx (1, "krb5_build_principal: %s",
+		krb5_get_err_text(context, err));
       free(realm);
   }
 
   err = krb5_cc_initialize (context, ccache, principal);
   if (err)
-      errx (1, "%s", krb5_get_err_text(context, err));
+      errx (1, "krb5_cc_initialize: %s",
+	    krb5_get_err_text(context, err));
 
   cred.client = principal;
   cred.times.endtime = 0;
@@ -90,7 +96,8 @@ main (int argc, char **argv)
 #endif
 				  NULL);
   if (err)
-      errx (1, "%s", krb5_get_err_text(context, err));
+      errx (1, "krb5_build_principal_ext: %s",
+	    krb5_get_err_text(context, err));
 
 #ifdef USE_ASN1_PRINCIPAL
   cred.server->name.name_type = KRB5_NT_SRV_INST;
