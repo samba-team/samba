@@ -134,6 +134,14 @@ static BOOL pam_auth(char *user, char *password)
 	 * put a pam_allow.so entry in /etc/pam.conf for account handling. */
 	pam_error = pam_acct_mgmt(pamh, PAM_SILENT);
 	PAM_BAIL;
+
+	/*
+	 * This will allow samba to aquire a kerberos token. And, when
+	 * exporting an AFS cell, be able to /write/ to this cell.
+	 */
+	pam_error = pam_setcred(pamh, (PAM_ESTABLISH_CRED|PAM_SILENT));
+	PAM_BAIL;
+	
 	pam_end(pamh, PAM_SUCCESS);
 	/* If this point is reached, the user has been authenticated. */
 	return (True);
