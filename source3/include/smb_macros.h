@@ -69,7 +69,7 @@
 /* assert macros */
 #define SMB_ASSERT(b) ((b)?(void)0: \
         (DEBUG(0,("PANIC: assert failed at %s(%d)\n", \
-		 __FILE__, __LINE__)), smb_panic("assert failed")))
+		 FILE_MACRO, __LINE__)), smb_panic("assert failed")))
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
 
 /* these are useful macros for checking validity of handles */
@@ -156,17 +156,17 @@
 #define HAS_CACHED_ERROR(fsp) ((fsp)->wbmpx_ptr && \
                 (fsp)->wbmpx_ptr->wr_discard)
 /* Macro to turn the cached error into an error packet */
-#define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,__FILE__)
+#define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,FILE_MACRO)
 
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
 
-#define ERROR_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,__LINE__,__FILE__)
-#define ERROR_NT(status) error_packet(outbuf,status,0,0,__LINE__,__FILE__)
-#define ERROR_BOTH(status,class,code) error_packet(outbuf,status,class,code,__LINE__,__FILE__)
+#define ERROR_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,__LINE__,FILE_MACRO)
+#define ERROR_NT(status) error_packet(outbuf,status,0,0,__LINE__,FILE_MACRO)
+#define ERROR_BOTH(status,class,code) error_packet(outbuf,status,class,code,__LINE__,FILE_MACRO)
 
 /* this is how errors are generated */
-#define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__,__FILE__)
+#define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__,FILE_MACRO)
 
 #define SMB_ROUNDUP(x,r) ( ((x)%(r)) ? ( (((x)+(r))/(r))*(r) ) : (x))
 

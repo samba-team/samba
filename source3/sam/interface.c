@@ -170,7 +170,7 @@ static NTSTATUS make_backend_entry(SAM_BACKEND_ENTRY *backend_entry, char *sam_b
 	if (!secrets_fetch_domain_sid(backend_entry->domain_name, backend_entry->domain_sid)) {
 		DEBUG(2,("make_backend_entry: There is no SID stored for domain %s. Creating a new one.\n",
 			backend_entry->domain_name));		
-		DEBUG(0, ("FIXME in %s:%d\n", __FILE__, __LINE__));
+		DEBUG(0, ("FIXME in %s:%d\n", FILE_MACRO, __LINE__));
 		ZERO_STRUCTP(backend_entry->domain_sid);
 	}
 	

@@ -247,7 +247,7 @@ pytdbpack_data(const char *format_str,
 		default:
 			PyErr_Format(PyExc_ValueError,
 				     "%s: format character '%c' is not supported",
-				     __FUNCTION__, ch);
+				     FUNCTION_MACRO, ch);
 			return NULL;
 		}
 	}
@@ -477,7 +477,7 @@ pytdbunpack(PyObject *self,
 		if (i == 0) {
 			PyErr_Format(PyExc_ValueError,
 				     "%s: '$' may not be first character in format",
-				     __FUNCTION__);
+				     FUNCTION_MACRO);
 			return NULL;
 		} 
 		while (packed_len > 0)
@@ -511,7 +511,7 @@ static void
 pytdbunpack_err_too_short(void)
 {
 	PyErr_Format(PyExc_IndexError,
-		     __FUNCTION__ ": data too short for unpack format");
+		     FUNCTION_MACRO ": data too short for unpack format");
 }
 
 
@@ -598,7 +598,7 @@ pytdbunpack_buffer(char **pbuf, int *plen, PyObject *val_list)
 
 	if (slen < 0) { /* surely you jest */
 		PyErr_Format(PyExc_ValueError,
-			     __FUNCTION__ ": buffer seems to have negative length");
+			     FUNCTION_MACRO ": buffer seems to have negative length");
 		return NULL;
 	}
 
@@ -608,7 +608,7 @@ pytdbunpack_buffer(char **pbuf, int *plen, PyObject *val_list)
 
 	if (*plen < slen) {
 		PyErr_Format(PyExc_IndexError,
-			     __FUNCTION__ ": not enough data to unpack buffer: "
+			     FUNCTION_MACRO ": not enough data to unpack buffer: "
 			     "need %d bytes, have %d",
 			     (int) slen, *plen);
 		return NULL;
@@ -668,7 +668,7 @@ static PyObject *pytdbunpack_item(char ch,
 	}
 	else {
 		PyErr_Format(PyExc_ValueError,
-			     __FUNCTION__ ": format character '%c' is not supported",
+			     FUNCTION_MACRO ": format character '%c' is not supported",
 			     ch);
 		
 		return NULL;
