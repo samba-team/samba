@@ -154,7 +154,7 @@
 ;  add user script = /usr/sbin/useradd %u
 ;  add group script = /usr/sbin/groupadd %g
 ;  add machine script = /usr/sbin/adduser -n -g machines -c Machine -d /dev/null -s /bin/false %u
-;  delete user script = /usr/sbin/userdle %u
+;  delete user script = /usr/sbin/userdel %u
 ;  delete user from group script = /usr/sbin/deluser %u %g
 ;  delete group script = /usr/sbin/groupdel %g
 
