@@ -56,8 +56,6 @@ Changes since 2.2.8pre1
     currently)
 29) Fix a couple of string handling errors in smbd/dir.c that would 
     cause smbd to crash
-30) Use "netbios name" instead of localhost when checking to see if
-    smbd is running in SWAT status page.  
 
 
 Changes since 2.2.7a
