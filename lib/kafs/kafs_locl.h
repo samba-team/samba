@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -125,6 +125,9 @@ int _kafs_afslog_all_local_cells(kafs_data*, uid_t, const char*);
 
 int _kafs_get_cred(kafs_data*, const char*, const char*, const char *, 
 		  CREDENTIALS*);
+
+int
+_kafs_realm_of_cell(kafs_data *data, const char *cell, char **realm);
 
 #ifdef _AIX
 int aix_pioctl(char*, int, struct ViceIoctl*, int);
