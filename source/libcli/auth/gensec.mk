@@ -3,7 +3,7 @@
 [SUBSYSTEM::GENSEC]
 INIT_OBJ_FILES = libcli/auth/gensec.o
 REQUIRED_SUBSYSTEMS = \
-		AUTH SCHANNELDB
+		SCHANNELDB
 # End SUBSYSTEM GENSEC
 #################################
 
@@ -14,7 +14,8 @@ INIT_OBJ_FILES = libcli/auth/gensec_krb5.o
 ADD_OBJ_FILES = \
 		libcli/auth/clikrb5.o \
 		libcli/auth/kerberos.o \
-		libcli/auth/kerberos_verify.o
+		libcli/auth/kerberos_verify.o \
+		libcli/auth/gssapi_parse.o
 REQUIRED_SUBSYSTEMS = GENSEC
 # End MODULE gensec_krb5
 ################################################
