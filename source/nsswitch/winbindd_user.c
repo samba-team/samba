@@ -157,6 +157,8 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	
 	/* The following costs 3 packets */
 
+	ZERO_STRUCT(user_info);
+
 	if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_user(): error getting user info for "
 			  "user '%s'\n", name_user));
