@@ -177,13 +177,13 @@ static void recycle_disconnect(struct connection_struct *conn)
 
 static BOOL recycle_XXX_exist(connection_struct *conn, const char *dname, BOOL isdir)
 {
-        SMB_STRUCT_STAT st;
+	SMB_STRUCT_STAT st;
 
-        if (default_vfs_ops.stat(conn,dname,&st) != 0)
-                return(False);
+	if (default_vfs_ops.stat(conn,dname,&st) != 0)
+		return(False);
 
 	if (isdir)
-	        return S_ISDIR(st.st_mode) ? True : False;
+		return S_ISDIR(st.st_mode) ? True : False;
 	else
 		return S_ISREG(st.st_mode) ? True : False;
 }
@@ -200,9 +200,9 @@ static BOOL recycle_file_exist(connection_struct *conn, const char *fname)
 
 static SMB_OFF_T recycle_get_file_size(connection_struct *conn, const char *fname)
 {
-        SMB_STRUCT_STAT st;
+	SMB_STRUCT_STAT st;
 
-        if (default_vfs_ops.stat(conn,fname,&st) != 0)
+	if (default_vfs_ops.stat(conn,fname,&st) != 0)
 		return (SMB_OFF_T)-1;
 
 	return(st.st_size);
@@ -219,7 +219,7 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 	char *base, *ext;
 	pstring bin;
 	int i=1, len, addlen;
-	int dir_mask=0700;
+	int dir_mask=0770;
 	SMB_BIG_UINT dfree,dsize,bsize;
 
 	*recycle_bin = '\0';
@@ -274,8 +274,11 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 		DEBUG(3, ("recycle bin: move %s -> %s\n", fname, bin));
 
 		ret = default_vfs_ops.rename(conn, fname, bin);
-		if (ret == -1)
+		if (ret == -1) {
 			DEBUG(3, ("recycle bin: move error %d (%s)\n", errno, strerror(errno) ));
+			DEBUG(3, ("recycle bin: move failed, purging...\n"));
+			return default_vfs_ops.unlink(conn,fname);
+		}
 		return ret;
 	} else { 
 		DEBUG(3, ("recycle bin: move failed, purging...\n"));
