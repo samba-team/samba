@@ -1,4 +1,4 @@
-.\" Copyright (c) 2001 - 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2001 - 2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\"
-.Dd April 16, 2003
+.Dd July 14, 2004
 .Dt POPPER 8
 .Os HEIMDAL
 .Sh NAME
@@ -41,7 +41,7 @@ POP3 server
 .Sh SYNOPSIS
 .Nm
 .Op Fl k
-.Op Fl a Ar none Ns \*(Ba Ns otp
+.Op Fl a Ar plaintext Ns \*(Ba Ns Ar otp Ns \*(Ba Ns Ar sasl
 .Op Fl t Ar file
 .Op Fl T Ar seconds
 .Op Fl d
@@ -52,55 +52,38 @@ POP3 server
 .Nm
 serves mail via the Post Office Protocol.  Supported options include:
 .Bl -tag -width Ds
-.It Xo
-.Fl a Ar none Ns \*(Ba Ns otp ,
-.Fl -auth-mode= Ns Ar none Ns \*(Ba Ns otp
-.Xc
-tells
+.It Fl a Ar plaintext Ns \*(Ba Ns Ar otp Ns \*(Ba Ns Ar sasl
+Tells
 .Nm
-what authentication modes are acceptable, passing
+which authentication mode is acceptable, 
+.Ar sasl
+enables SASL (RFC2222),  and
 .Ar otp
-disables clear text passwords. Otp doesn't disable Kerberos
-authentication, only cleartext passwords.
-.It Xo
-.Fl -address-log= Ns Pa file
-.Xc
-logs the addresses of all clients to the specified file
-.It Xo
-.Fl d ,
-.Fl -debug
-.Xc
-enables more verbose log messages
-.It Xo
-.Fl i ,
-.Fl -interactive
-.Xc
-when not started by inetd, this flag tells
+enables OTP (RFC1938) authentication. Both disable plaintext passwords.
+.It Fl -address-log= Ns Pa file
+Logs the addresses (along with a timestamp) of all clients to the
+specified file. This can be used to implement POP-before-SMTP
+authentication.
+.It Fl d
+Enables more verbose log messages.
+.It Fl i
+When not started by inetd, this flag tells
 .Nm
-that it has to create a socket by itself
-.It Xo
-.Fl k ,
-.Fl -kerberos
-.Xc
-tells
+that it has to create a socket by itself.
+.It Fl k
+Tells
 .Nm
-to use the Kerberos for authentication.
-.It Xo
-.Fl p Ar port ,
-.Fl -port= Ns Ar port
-.Xc
-port to listen to, in combination with
-.Fl i
-.It Xo
-.Fl t Ar file ,
-.Fl -trace-file= Ns Ar file
-.Xc
-trace all commands to file
-.It Xo
-.Fl T Ar seconds ,
-.Fl -timeout= Ns Ar seconds
-.Xc
-set timeout to something other than the default of 120 seconds
+to use Kerberos for authentication. This is the traditional way of
+doing Kerberos authentication, and is normally done on a separate port
+(as it doesn't follow RFC1939), and should be used instead of using
+SASL.
+.It Fl p Ar port
+Port to listen to, in combination with
+.Fl i .
+.It Fl t Ar file
+Trace all commands to file.
+.It Fl T Ar seconds
+Set timeout to something other than the default of 120 seconds.
 .El
 .\".Sh ENVIRONMENT
 .\".Sh FILES
