@@ -87,7 +87,6 @@ void invalidate_vuid(uint16 vuid)
 
 	SAFE_FREE(vuser->groups);
 	delete_nt_token(&vuser->nt_user_token);
-	destroy_privilege(&vuser->privs);
 	SAFE_FREE(vuser);
 	num_validated_vuids--;
 }
@@ -235,11 +234,6 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 		return UID_FIELD_INVALID;
 	}
 
-	if (server_info->privs) {
-		init_privilege(&(vuser->privs));
-		dup_priv_set(vuser->privs, server_info->privs);
-	}
-
 	/* use this to keep tabs on all our info from the authentication */
 	vuser->server_info = server_info;
 
@@ -275,14 +269,10 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 		vuser->homes_snum = -1;
 	}
 	
-	if (srv_is_signing_negotiated() && !vuser->guest && !srv_signing_started()) {
+	if (lp_server_signing() && !vuser->guest && !srv_is_signing_active()) {
 		/* Try and turn on server signing on the first non-guest sessionsetup. */
 		srv_set_signing(vuser->session_key, response_blob);
 	}
-	
-	/* fill in the current_user_info struct */
-	set_current_user_info( &vuser->user );
-
 
 	return vuser->vuid;
 }

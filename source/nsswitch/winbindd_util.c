@@ -83,20 +83,6 @@ void free_domain_list(void)
 	}
 }
 
-static BOOL is_internal_domain(const DOM_SID *sid)
-{
-	DOM_SID tmp_sid;
-
-	if (sid_equal(sid, get_global_sam_sid()))
-		return True;
-
-	string_to_sid(&tmp_sid, "S-1-5-32");
-	if (sid_equal(sid, &tmp_sid))
-		return True;
-
-	return False;
-}
-
 
 /* Add a trusted domain to our list of domains */
 static struct winbindd_domain *add_trusted_domain(const char *domain_name, const char *alt_name,
@@ -157,7 +143,6 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 
 	domain->methods = methods;
 	domain->backend = NULL;
-	domain->internal = is_internal_domain(sid);
 	domain->sequence_number = DOM_SEQUENCE_NONE;
 	domain->last_seq_check = 0;
 	if (sid) {
@@ -165,9 +150,8 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	}
 	
 	/* set flags about native_mode, active_directory */
-
-	if (!domain->internal)
-		set_dc_type_and_flags( domain );
+	   
+	set_dc_type_and_flags( domain );
 	
 	DEBUG(3,("add_trusted_domain: %s is an %s %s domain\n", domain->name,
 		 domain->active_directory ? "ADS" : "NT4", 
@@ -319,24 +303,6 @@ BOOL init_domain_list(void)
 
 	/* do an initial scan for trusted domains */
 	add_trusted_domains(domain);
-
-	/* Add our local SAM domains */
-	{
-		DOM_SID sid;
-		extern struct winbindd_methods passdb_methods;
-		struct winbindd_domain *dom;
-
-		string_to_sid(&sid, "S-1-5-32");
-
-		dom = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
-					 &sid);
-		dom->internal = True;
-
-		dom = add_trusted_domain(get_global_sam_name(), NULL,
-					 &passdb_methods,
-					 get_global_sam_sid());
-		dom->internal = True;
-	}
 	
 	/* avoid rescanning this right away */
 	last_trustdom_scan = time(NULL);

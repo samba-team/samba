@@ -66,7 +66,7 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_N
  Tries local lookup first - for local sids, then tries winbind.
 *****************************************************************/  
 
-BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type)
+BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type)
 {
 	if (!name_type)
 		return False;
@@ -105,44 +105,6 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAM
 	return True;
 }
 
-BOOL sid_to_local_user_name(const DOM_SID *sid, fstring username)
-{
-	fstring dom_name;
-	fstring name;
-	enum SID_NAME_USE type;
-
-	if (!sid_check_is_in_our_domain(sid))
-		return False;
-
-	if (!lookup_sid(sid, dom_name, name, &type))
-		return False;
- 
-	if (type != SID_NAME_USER)
-		return False;
- 
-	fstrcpy(username, name);
- 	return True;
-}
-
-BOOL sid_to_local_dom_grp_name(const DOM_SID *sid, fstring groupname)
-{
-	fstring dom_name;
-	fstring name;
-	enum SID_NAME_USE type;
-
-	if (!sid_check_is_in_our_domain(sid))
-		return False;
-
-	if (!lookup_sid(sid, dom_name, name, &type))
-		return False;
-
-	if (type != SID_NAME_DOM_GRP)
-		return False;
-
-	fstrcpy(groupname, name);
-	return True;
-}
- 
 
 /*****************************************************************
  Id mapping cache.  This is to avoid Winbind mappings already

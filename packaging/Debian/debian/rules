@@ -40,20 +40,6 @@ endif
 
 
 DESTDIR=`pwd`/debian/tmp
-SWATDIR=`pwd`/debian/swat
-
-IVARS = BASEDIR=$(DESTDIR)/usr \
-		prefix=$(DESTDIR)/usr \
-		BINDIR=$(DESTDIR)/usr/bin \
-		SBINDIR=$(DESTDIR)/usr/sbin \
-		MANDIR=$(DESTDIR)/usr/share/man \
-		LIBDIR=$(DESTDIR)/usr/lib/samba \
-		VARDIR=$(DESTDIR)/var \
-		INCLUDEDIR=$(DESTDIR)/usr/include \
-		SWATDIR=$(SWATDIR)/usr/share/samba/swat \
-		CODEPAGEDIR=$(DESTDIR)/usr/share/samba/ \
-		PRIVATEDIR=$(DESTDIR)/etc/samba \
-		CONFIGDIR=$(DESTDIR)/etc/samba
 
 patch: patch-stamp
 patch-stamp:
@@ -85,6 +71,7 @@ configure-stamp:
 		--sysconfdir=/etc \
 		--libdir=/etc/samba \
 		--with-privatedir=/etc/samba \
+		--with-piddir=/var/run/samba \
 		--localstatedir=/var \
 		--with-netatalk \
 		--with-smbmount \
@@ -143,11 +130,11 @@ install: build
 	         $(DESTDIR)/usr/lib/python2.3/site-packages
 
 	# Add here commands to install the package into debian/tmp.
-	$(MAKE) -C source install $(IVARS)
+	$(MAKE) -C source install DESTDIR=$(DESTDIR)
 
 	# libsmbclient files are not installed by the standard
 	#	'make install' - do it manually.
-	$(MAKE) -C source installclientlib $(IVARS)
+	$(MAKE) -C source installclientlib DESTDIR=$(DESTDIR)
 	mv $(DESTDIR)/usr/lib/libsmbclient.so $(DESTDIR)/usr/lib/libsmbclient.so.0.1
 	ln -s libsmbclient.so.0.1 $(DESTDIR)/usr/lib/libsmbclient.so.0
 	ln -s libsmbclient.so.0.1 $(DESTDIR)/usr/lib/libsmbclient.so
@@ -171,10 +158,11 @@ install: build
 	#	right location in the libpam-smbpass package.
 	install -m 0644 source/bin/pam_smbpass.so $(DESTDIR)/lib/security/
 
-	# Create the symlink that will allow us to do "mount -t smbfs ...".
-	#	Create also a symlink that will allow "mount -t smb ..." to
-	#	work too. The symlink is created in $(DESTDIR)/sbin/ but 
-	#	will be moved by dh_movefiles to the smbfs package later on.
+	# Create the symlinks that will allow us to do "mount -t smbfs ..."
+	# and "mount -t smb ...". Note that the source/script/installbin.sh
+	# tries to create the first symlink, but we have commented
+	# that code out and do everything here. We also create
+	# symlinks for the man pages.
 	ln -s /usr/bin/smbmount $(DESTDIR)/sbin/mount.smbfs
 	ln -s /usr/bin/smbmount $(DESTDIR)/sbin/mount.smb
 	ln -s smbmount.8 $(DESTDIR)/usr/share/man/man8/mount.smb.8
@@ -187,6 +175,12 @@ install: build
 
 	# Install man pages for files without man pages in the upstream sources
 	install -m 0644 debian/mksmbpasswd.8 $(DESTDIR)/usr/share/man/man8/mksmbpasswd.8
+
+	# We don't provide the "Using Samba" book in the swat package.
+	# It's provided in the samba-doc package so in the swat package
+	# we just provide a symlink to the real book.
+	ln -s ../../doc/samba-doc/htmldocs/using_samba \
+	      $(DESTDIR)/usr/share/samba/swat/using_samba
 
 	# Delete unwanted stuff leftover from "make install"
 

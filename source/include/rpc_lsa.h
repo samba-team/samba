@@ -275,7 +275,7 @@ typedef struct lsa_dns_dom_info
 	UNIHDR  hdr_dns_dom_name;
 	UNIHDR  hdr_forest_name;
 
-	struct uuid dom_guid; /* domain GUID */
+	GUID       dom_guid; /* domain GUID */
 
 	UNISTR2 uni_nb_dom_name;
 	UNISTR2 uni_dns_dom_name;
@@ -633,20 +633,6 @@ typedef struct lsa_r_unk_get_connuser
 
   NTSTATUS status;
 } LSA_R_UNK_GET_CONNUSER;
-
-
-typedef struct lsa_q_createaccount
-{
-	POLICY_HND pol; /* policy handle */
-	DOM_SID2 sid;
-	uint32 access; /* access */
-} LSA_Q_CREATEACCOUNT;
-
-typedef struct lsa_r_createaccount
-{
-	POLICY_HND pol; /* policy handle */
-	NTSTATUS status;
-} LSA_R_CREATEACCOUNT;
 
 
 typedef struct lsa_q_openaccount

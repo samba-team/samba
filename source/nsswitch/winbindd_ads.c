@@ -5,7 +5,6 @@
 
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
-   Copyright (C) Gerald (Jerry) Carter 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -40,22 +39,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	ADS_STATUS status;
 
 	if (domain->private) {
-		ads = (ADS_STRUCT *)domain->private;
-
-		/* check for a valid structure */
-
-		DEBUG(7, ("Current tickets expire at %d\n, time is now %d\n",
-			  (uint32) ads->auth.expire, (uint32) time(NULL)));
-		if ( ads->config.realm && (ads->auth.expire > time(NULL))) {
-			return ads;
-		}
-		else {
-			/* we own this ADS_STRUCT so make sure it goes away */
-			ads->is_mine = True;
-			ads_destroy( &ads );
-			ads_kdestroy("MEMORY:winbind_ccache");
-			domain->private = NULL;
-		}	
+		return (ADS_STRUCT *)domain->private;
 	}
 
 	/* we don't want this to affect the users ccache */
@@ -94,12 +78,6 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		}
 		return NULL;
 	}
-
-	/* set the flag that says we don't own the memory even 
-	   though we do so that ads_destroy() won't destroy the 
-	   structure we pass back by reference */
-
-	ads->is_mine = False;
 
 	domain->private = (void *)ads;
 	return ads;
@@ -412,7 +390,7 @@ failed:
 /* Lookup user information from a rid */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
-			   const DOM_SID *sid, 
+			   DOM_SID *sid, 
 			   WINBIND_USERINFO *info)
 {
 	ADS_STRUCT *ads = NULL;
@@ -583,7 +561,7 @@ done:
 /* Lookup groups a user is a member of. */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  const DOM_SID *sid, 
+				  DOM_SID *sid, 
 				  uint32 *num_groups, DOM_SID ***user_gids)
 {
 	ADS_STRUCT *ads = NULL;
@@ -681,7 +659,7 @@ done:
  */
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				const DOM_SID *group_sid, uint32 *num_names, 
+				DOM_SID *group_sid, uint32 *num_names, 
 				DOM_SID ***sid_mem, char ***names, 
 				uint32 **name_types)
 {

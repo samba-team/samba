@@ -38,11 +38,15 @@
 #include <fcntl.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "0"
+#define MOUNT_CIFS_VERSION_MINOR "1"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
 #define MOUNT_CIFS_VENDOR_SUFFIX ""
 #endif
+
+#ifndef MS_MOVE 
+#define MS_MOVE 8192 
+#endif 
 
 char * thisprogram;
 int verboseflag = 0;
@@ -227,7 +231,7 @@ static int get_password_from_file(int file_descript, char * filename)
 	return rc;
 }
 
-static int parse_options(char * options)
+static int parse_options(char * options, int * filesys_flags)
 {
 	char * data;
 	char * percent_char = 0;
@@ -394,7 +398,7 @@ static int parse_options(char * options)
 
 			if (strcmp (data, "fmask") == 0) {
 				printf ("WARNING: CIFS mount option 'fmask' is deprecated. Use 'file_mode' instead.\n");
-				data = "file_mode";
+				data = "file_mode"; /* BB fix this */
 			}
 		} else if (strcmp(data, "dir_mode") == 0 || strcmp(data, "dmask")==0) {
 			if (!value || !*value) {
@@ -410,29 +414,50 @@ static int parse_options(char * options)
 				printf ("WARNING: CIFS mount option 'dmask' is deprecated. Use 'dir_mode' instead.\n");
 				data = "dir_mode";
 			}
+			/* the following eight mount options should be
+			stripped out from what is passed into the kernel
+			since these eight options are best passed as the
+			mount flags rather than redundantly to the kernel 
+			and could generate spurious warnings depending on the
+			level of the corresponding cifs vfs kernel code */
+		} else if (strncmp(data, "nosuid", 6) == 0) {
+			*filesys_flags |= MS_NOSUID;
+		} else if (strncmp(data, "suid", 4) == 0) {
+			*filesys_flags &= ~MS_NOSUID;
+		} else if (strncmp(data, "nodev", 5) == 0) {
+			*filesys_flags |= MS_NODEV;
+		} else if (strncmp(data, "dev", 3) == 0) {
+			*filesys_flags &= ~MS_NODEV;
+		} else if (strncmp(data, "noexec", 6) == 0) {
+			*filesys_flags |= MS_NOEXEC;
+		} else if (strncmp(data, "exec", 4) == 0) {
+			*filesys_flags &= ~MS_NOEXEC;
+		} else if (strncmp(data, "ro", 2) == 0) {
+			*filesys_flags |= MS_RDONLY;
+		} else if (strncmp(data, "rw", 2) == 0) {
+			*filesys_flags &= ~MS_RDONLY;
 		} /* else if (strnicmp(data, "port", 4) == 0) {
-		if (value && *value) {
-			vol->port =
-				simple_strtoul(value, &value, 0);
-		}
-	} else if (strnicmp(data, "rsize", 5) == 0) {
-		if (value && *value) {
-			vol->rsize =
-				simple_strtoul(value, &value, 0);
-		}
-	} else if (strnicmp(data, "wsize", 5) == 0) {
-		if (value && *value) {
-			vol->wsize =
-				simple_strtoul(value, &value, 0);
-		}
-	} else if (strnicmp(data, "version", 3) == 0) {
-		
-	} else if (strnicmp(data, "rw", 2) == 0) {
-		
-	} else
-		printf("CIFS: Unknown mount option %s\n",data); */
+			if (value && *value) {
+				vol->port =
+					simple_strtoul(value, &value, 0);
+			}
+		} else if (strnicmp(data, "rsize", 5) == 0) {
+			if (value && *value) {
+				vol->rsize =
+					simple_strtoul(value, &value, 0);
+			}
+		} else if (strnicmp(data, "wsize", 5) == 0) {
+			if (value && *value) {
+				vol->wsize =
+					simple_strtoul(value, &value, 0);
+			}
+		} else if (strnicmp(data, "version", 3) == 0) {
+		} else {
+			printf("CIFS: Unknown mount option %s\n",data);
+		} */ /* nothing to do on those four mount options above.
+			Just pass to kernel and ignore them here */
 
-		/* move to next option */
+			/* move to next option */
 		data = next_keyword+1;
 
 		/* put overwritten equals sign back */
@@ -440,7 +465,7 @@ static int parse_options(char * options)
 			value--;
 			*value = '=';
 		}
-		
+	
 		/* put previous overwritten comma back */
 		if(next_keyword)
 			*next_keyword = ',';
@@ -522,7 +547,9 @@ char * parse_server(char * unc_name)
 
 static struct option longopts[] = {
 	{ "all", 0, 0, 'a' },
-	{ "help", 0, 0, 'h' },
+	{ "help",0, 0, 'h' },
+	{ "move",0, 0, 'm' },
+	{ "bind",0, 0, 'b' },
 	{ "read-only", 0, 0, 'r' },
 	{ "ro", 0, 0, 'r' },
 	{ "verbose", 0, 0, 'v' },
@@ -530,12 +557,11 @@ static struct option longopts[] = {
 	{ "read-write", 0, 0, 'w' },
 	{ "rw", 0, 0, 'w' },
 	{ "options", 1, 0, 'o' },
-	{ "types", 1, 0, 't' },
+	{ "type", 1, 0, 't' },
 	{ "rsize",1, 0, 'R' },
 	{ "wsize",1, 0, 'W' },
 	{ "uid", 1, 0, '1'},
 	{ "gid", 1, 0, '2'},
-	{ "uuid",1,0,'U' },
 	{ "user",1,0,'u'},
 	{ "username",1,0,'u'},
 	{ "dom",1,0,'d'},
@@ -544,13 +570,14 @@ static struct option longopts[] = {
 	{ "pass",1,0,'p'},
 	{ "credentials",1,0,'c'},
 	{ "port",1,0,'P'},
+	/* { "uuid",1,0,'U'}, */ /* BB unimplemented */
 	{ NULL, 0, 0, 0 }
 };
 
 int main(int argc, char ** argv)
 {
 	int c;
-	int flags = MS_MANDLOCK | MS_MGC_VAL;
+	int flags = MS_MANDLOCK; /* no need to set legacy MS_MGC_VAL */
 	char * orgoptions = NULL;
 	char * share_name = NULL;
 	char * domain_name = NULL;
@@ -615,6 +642,12 @@ int main(int argc, char ** argv)
 		case 'n':
 		    ++nomtab;
 		    break;
+		case 'b':
+			flags |= MS_BIND;
+			break;
+		case 'm':
+			flags |= MS_MOVE;
+			break;
 		case 'o':
 			orgoptions = strdup(optarg);
 		    break;
@@ -693,7 +726,7 @@ int main(int argc, char ** argv)
 
 	ipaddr = parse_server(share_name);
 	
-	if (orgoptions && parse_options(orgoptions))
+	if (orgoptions && parse_options(orgoptions, &flags))
 		return 1;
 
 	/* BB save off path and pop after mount returns? */
@@ -701,9 +734,10 @@ int main(int argc, char ** argv)
 
 	if(chdir(mountpoint)) {
 		printf("mount error: can not change directory into mount target %s\n",mountpoint);
+		return -1;
 	}
 
-	if(stat (mountpoint, &statbuf)) {
+	if(stat (".", &statbuf)) {
 		printf("mount error: mount point %s does not exist\n",mountpoint);
 		return -1;
 	}
@@ -715,7 +749,11 @@ int main(int argc, char ** argv)
 
 	if((getuid() != 0) && (geteuid() == 0)) {
 		if((statbuf.st_uid == getuid()) && (S_IRWXU == (statbuf.st_mode & S_IRWXU))) {
-			printf("setuid mount allowed\n");
+#ifndef CIFS_ALLOW_USR_SUID
+			/* Do not allow user mounts to control suid flag
+			for mount unless explicitly built that way */
+			flags |= MS_NOSUID | MS_NODEV;
+#endif						
 		} else {
 			printf("mount error: permission denied or not superuser and cifs.mount not installed SUID\n"); 
 			return -1;
@@ -745,6 +783,12 @@ int main(int argc, char ** argv)
 	if(mountpassword)
 		optlen += strlen(mountpassword) + 6;
 	options = malloc(optlen + 10);
+
+	if(options == NULL) {
+		printf("Could not allocate memory for mount options\n");
+		return -1;
+	}
+		
 
 	options[0] = 0;
 	strncat(options,"unc=",4);

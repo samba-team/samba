@@ -4,7 +4,7 @@
    Copyright (C) Andrew Bartlett      2002
    Copyright (C) Rafal Szczesniak     2002
    Copyright (C) Tim Potter           2001
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -135,38 +135,39 @@ BOOL secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
 	return True;
 }
 
-BOOL secrets_store_domain_guid(const char *domain, struct uuid *guid)
+BOOL secrets_store_domain_guid(const char *domain, GUID *guid)
 {
 	fstring key;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
 	strupper_m(key);
-	return secrets_store(key, guid, sizeof(struct uuid));
+	return secrets_store(key, guid, sizeof(GUID));
 }
 
-BOOL secrets_fetch_domain_guid(const char *domain, struct uuid *guid)
+BOOL secrets_fetch_domain_guid(const char *domain, GUID *guid)
 {
-	struct uuid *dyn_guid;
+	GUID *dyn_guid;
 	fstring key;
 	size_t size;
-	struct uuid new_guid;
+	GUID new_guid;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
 	strupper_m(key);
-	dyn_guid = (struct uuid *)secrets_fetch(key, &size);
+	dyn_guid = (GUID *)secrets_fetch(key, &size);
 
-	if ((!dyn_guid) && (lp_server_role() == ROLE_DOMAIN_PDC)) {
+	DEBUG(6,("key is %s, size is %d\n", key, (int)size));
+
+	if ((NULL == dyn_guid) && (ROLE_DOMAIN_PDC == lp_server_role())) {
 		smb_uuid_generate_random(&new_guid);
 		if (!secrets_store_domain_guid(domain, &new_guid))
 			return False;
-		dyn_guid = (struct uuid *)secrets_fetch(key, &size);
+		dyn_guid = (GUID *)secrets_fetch(key, &size);
 		if (dyn_guid == NULL)
 			return False;
 	}
 
-	if (size != sizeof(struct uuid))
+	if (size != sizeof(GUID))
 	{ 
-		DEBUG(1,("UUID size %d is wrong!\n", (int)size));
 		SAFE_FREE(dyn_guid);
 		return False;
 	}
@@ -244,7 +245,7 @@ uint32 get_default_sec_channel(void)
 /************************************************************************
  Routine to get the trust account password for a domain.
  The user of this function must have locked the trust password file using
- the above secrets_lock_trust_account_password().
+ the above call.
 ************************************************************************/
 
 BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
@@ -332,6 +333,19 @@ BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 	return True;
 }
 
+/************************************************************************
+ Routine to set the trust account password for a domain.
+************************************************************************/
+
+BOOL secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
+{
+	struct machine_acct_pass pass;
+
+	pass.mod_time = time(NULL);
+	memcpy(pass.hash, new_pwd, 16);
+
+	return secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass));
+}
 
 /**
  * Routine to store the password for trusted domain
@@ -555,8 +569,7 @@ BOOL secrets_store_ldap_pw(const char* dn, char* pw)
  * @return nt status code of rpc response
  **/ 
 
-NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned int max_num_domains,
-                                     int *num_domains, TRUSTDOM ***domains)
+NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned int max_num_domains, int *num_domains, TRUSTDOM ***domains)
 {
 	TDB_LIST_NODE *keys, *k;
 	TRUSTDOM *dom = NULL;

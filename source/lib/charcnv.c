@@ -130,21 +130,9 @@ void init_iconv(void)
 
 			conv_handles[c1][c2] = smb_iconv_open(n2,n1);
 			if (conv_handles[c1][c2] == (smb_iconv_t)-1) {
-				DEBUG(0,("init_iconv: Conversion from %s to %s not supported\n",
+				DEBUG(0,("Conversion from %s to %s not supported\n",
 					 charset_name((charset_t)c1), charset_name((charset_t)c2)));
-				if (c1 != CH_UCS2) {
-					n1 = "ASCII";
-				}
-				if (c2 != CH_UCS2) {
-					n2 = "ASCII";
-				}
-				DEBUG(0,("init_iconv: Attempting to replace with conversion from %s to %s\n",
-					n1, n2 ));
-				conv_handles[c1][c2] = smb_iconv_open(n2,n1);
-				if (!conv_handles[c1][c2]) {
-					DEBUG(0,("init_iconv: Conversion from %s to %s failed", n1, n2));
-					smb_panic("init_iconv: conv_handle initialization failed.");
-				}
+				conv_handles[c1][c2] = NULL;
 			}
 		}
 	}
@@ -489,6 +477,8 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		if (!conv_silent)
 			DEBUG(0,("convert_string_allocate: Conversion not supported.\n"));
+		if (allow_bad_conv)
+			goto use_as_is;
 		return (size_t)-1;
 	}
 

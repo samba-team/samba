@@ -35,7 +35,6 @@
 
 extern pstring user_socket_options;
 extern BOOL AllowDebugChange;
-extern BOOL override_logfile;
 
 struct user_auth_info cmdline_auth_info;
 
@@ -96,7 +95,6 @@ static void popt_common_callback(poptContext con,
 		if (arg) {
 			pstr_sprintf(logfile, "%s/log.%s", arg, pname);
 			lp_set_logfile(logfile);
-			override_logfile = True;
 		}
 		break;
 

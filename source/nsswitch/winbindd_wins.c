@@ -201,10 +201,7 @@ enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
 		    }
 		    if (i != 0) {
 			/* Clear out the newline character */
-		        /* But only if there is something in there, 
-			   otherwise we clobber something in the stack */
-			if (strlen(response))
-				response[strlen(response)-1] = ' '; 
+			response[strlen(response)-1] = ' '; 
 		    }
 		    fstrcat(response,addr);
 		    fstrcat(response,"\t");

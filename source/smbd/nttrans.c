@@ -43,7 +43,6 @@ static const char *known_nt_pipes[] = {
 	"\\spoolss",
 	"\\netdfs",
 	"\\rpcecho",
-	"\\epmapper",
 	NULL
 };
 
@@ -587,9 +586,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	SMB_BIG_UINT allocation_size = 0;
 	int smb_ofun;
 	int smb_open_mode;
+	int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
 	/* Breakout the oplock request bits so we can set the
 	   reply bits separately. */
 	int oplock_request = 0;
+	mode_t unixmode;
 	int fmode=0,rmode=0;
 	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
@@ -765,6 +766,8 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
 		
+	unixmode = unix_mode(conn,smb_attr | aARCH, fname);
+    
 	/* 
 	 * If it's a request for a directory open, deal with it separately.
 	 */
@@ -778,7 +781,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
-		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
+		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 			
 		restore_case_semantics(file_attributes);
 
@@ -808,14 +811,14 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 			fsp = open_file_shared1(conn,fname,&sbuf,
 					desired_access,
 					smb_open_mode,
-					smb_ofun,file_attributes,oplock_request,
+					smb_ofun,unixmode, oplock_request,
 					&rmode,&smb_action);
 		} else {
 			/* to open a fake_file --metze */
 			fsp = open_fake_file_shared1(fake_file_type,conn,fname,&sbuf,
 					desired_access,
 					smb_open_mode,
-					smb_ofun,file_attributes, oplock_request,
+					smb_ofun,unixmode, oplock_request,
 					&rmode,&smb_action);
 		}
 		
@@ -854,7 +857,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 				}
 	
 				oplock_request = 0;
-				fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
+				fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 				
 				if(!fsp) {
 					restore_case_semantics(file_attributes);
@@ -1131,6 +1134,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	char *data = *ppdata;
 	/* Breakout the oplock request bits so we can set the reply bits separately. */
 	int oplock_request = 0;
+	mode_t unixmode;
 	int fmode=0,rmode=0;
 	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
@@ -1150,6 +1154,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	SMB_BIG_UINT allocation_size = 0;
 	int smb_ofun;
 	int smb_open_mode;
+	int smb_attr;
 	time_t c_time;
 	NTSTATUS status;
 
@@ -1187,6 +1192,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	create_options = IVAL(params,32);
 	sd_len = IVAL(params,36);
 	root_dir_fid = (uint16)IVAL(params,4);
+	smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
 
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
 		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
@@ -1291,6 +1297,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
     
+	unixmode = unix_mode(conn,smb_attr | aARCH, fname);
+   
 	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */
@@ -1310,7 +1318,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 * CreateDirectory() call.
 		 */
 
-		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
+		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 
 		if(!fsp) {
 			restore_case_semantics(file_attributes);
@@ -1324,7 +1332,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 */
 
 		fsp = open_file_shared1(conn,fname,&sbuf,desired_access,
-						smb_open_mode,smb_ofun,file_attributes,
+						smb_open_mode,smb_ofun,unixmode,
 						oplock_request,&rmode,&smb_action);
 
 		if (!fsp) { 
@@ -1342,7 +1350,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				}
 	
 				oplock_request = 0;
-				fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
+				fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 				
 				if(!fsp) {
 					restore_case_semantics(file_attributes);

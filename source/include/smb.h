@@ -195,7 +195,6 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PIPE_NETDFS   "\\PIPE\\netdfs"
 #define PIPE_ECHO     "\\PIPE\\rpcecho"
 #define PIPE_SHUTDOWN "\\PIPE\\initshutdown"
-#define PIPE_EPM      "\\PIPE\\epmapper"
 
 #define PIPE_NETLOGON_PLAIN "\\NETLOGON"
 
@@ -210,8 +209,7 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PI_NETDFS		8
 #define PI_ECHO 		9
 #define PI_SHUTDOWN		10
-#define PI_EPM			11
-#define PI_MAX_PIPES		12
+#define PI_MAX_PIPES		11
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info
@@ -500,7 +498,6 @@ typedef struct connection_struct
 	int ngroups;
 	gid_t *groups;
 	NT_USER_TOKEN *nt_user_token;
-	PRIVILEGE_SET *privs;
 	
 	time_t lastused;
 	BOOL used;
@@ -520,7 +517,6 @@ struct current_user
 	int ngroups;
 	gid_t *groups;
 	NT_USER_TOKEN *nt_user_token;
-	PRIVILEGE_SET *privs;
 };
 
 /* Defines for the sent_oplock_break field above. */
@@ -1558,7 +1554,6 @@ typedef struct user_struct
 	gid_t *groups;
 
 	NT_USER_TOKEN *nt_user_token;
-	PRIVILEGE_SET *privs;
 
 	DATA_BLOB session_key;
 
@@ -1654,7 +1649,7 @@ struct ip_service {
 
 typedef struct smb_sign_info {
 	void (*sign_outgoing_message)(char *outbuf, struct smb_sign_info *si);
-	BOOL (*check_incoming_message)(char *inbuf, struct smb_sign_info *si, BOOL expected_ok);
+	BOOL (*check_incoming_message)(char *inbuf, struct smb_sign_info *si);
 	void (*free_signing_context)(struct smb_sign_info *si);
 	void *signing_context;
 
@@ -1662,18 +1657,6 @@ typedef struct smb_sign_info {
 	BOOL allow_smb_signing;
 	BOOL doing_signing;
 	BOOL mandatory_signing;
-	BOOL seen_valid; /* Have I ever seen a validly signed packet? */
 } smb_sign_info;
-
-struct ea_struct {
-	uint8 flags;
-	char *name;
-	DATA_BLOB value;
-};
-
-/* EA names used internally in Samba. KEEP UP TO DATE with prohibited_ea_names in trans2.c !. */
-#define SAMBA_POSIX_INHERITANCE_EA_NAME "user.SAMBA_PAI"
-/* EA to use for DOS attributes */
-#define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
 
 #endif /* _SMB_H */

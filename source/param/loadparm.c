@@ -95,7 +95,6 @@ struct _param_opt_struct {
  */
 typedef struct
 {
-	char *szConfigBackend;
 	char *smb_ports;
 	char *dos_charset;
 	char *unix_charset;
@@ -123,7 +122,6 @@ typedef struct
 	char *szSMBPasswdFile;
 	char *szPrivateDir;
 	char **szPassdbBackend;
-	char *szGumsBackend;
 	char **szPreloadModules;
 	char *szPasswordServer;
 	char *szSocketOptions;
@@ -224,7 +222,6 @@ typedef struct
 	char *szLdapUserSuffix;
 	char *szLdapIdmapSuffix;
 	char *szLdapGroupSuffix;
-	char *szLdapPrivilegeSuffix;
 #ifdef WITH_LDAP_SAMCONFIG
 	int ldap_port;
 	char *szLdapServer;
@@ -383,7 +380,6 @@ typedef struct
 	BOOL bMap_system;
 	BOOL bMap_hidden;
 	BOOL bMap_archive;
-	BOOL bStoreDosAttributes;
 	BOOL bLocking;
 	BOOL bStrictLocking;
 	BOOL bPosixLocking;
@@ -417,7 +413,6 @@ typedef struct
 	BOOL bProfileAcls;
 	BOOL bMap_acl_inherit;
 	BOOL bAfs_Share;
-	BOOL bEASupport;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -506,7 +501,6 @@ static service sDefault = {
 	False,			/* bMap_system */
 	False,			/* bMap_hidden */
 	True,			/* bMap_archive */
-	False,			/* bStoreDosAttributes */
 	True,			/* bLocking */
 	True,			/* bStrictLocking */
 	True,			/* bPosixLocking */
@@ -540,7 +534,6 @@ static service sDefault = {
 	False,			/* bProfileAcls */
 	False,			/* bMap_acl_inherit */
 	False,			/* bAfs_Share */
-	False,			/* bEASupport */
 	
 	NULL,			/* Parametric options */
 
@@ -762,7 +755,6 @@ static const struct enum_list enum_map_to_guest[] = {
 static struct parm_struct parm_table[] = {
 	{N_("Base Options"), P_SEP, P_SEPARATOR}, 
 
-	{"config backend", P_STRING, P_GLOBAL, &Globals.szConfigBackend, NULL, NULL, FLAG_ADVANCED},
 	{"dos charset", P_STRING, P_GLOBAL, &Globals.dos_charset, handle_charset, NULL, FLAG_ADVANCED}, 
 	{"unix charset", P_STRING, P_GLOBAL, &Globals.unix_charset, handle_charset, NULL, FLAG_ADVANCED}, 
 	{"display charset", P_STRING, P_GLOBAL, &Globals.display_charset, handle_charset, NULL, FLAG_ADVANCED}, 
@@ -800,7 +792,6 @@ static struct parm_struct parm_table[] = {
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED}, 
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED}, 
 	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
-	{"gums backend", P_STRING, P_GLOBAL, &Globals.szGumsBackend, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.AlgorithmicRidBase, NULL, NULL, FLAG_ADVANCED}, 
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED}, 
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_HIDE}, 
@@ -896,7 +887,6 @@ static struct parm_struct parm_table[] = {
 	{"disable netbios", P_BOOL, P_GLOBAL, &Globals.bDisableNetbios, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"acl compatibility", P_STRING, P_GLOBAL, &Globals.szAclCompat, handle_acl_compatibility,  NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{"ea support", P_BOOL, P_LOCAL, &sDefault.bEASupport, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"nt acl support", P_BOOL, P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, FLAG_ADVANCED}, 
 	{"nt status support", P_BOOL, P_GLOBAL, &Globals.bNTStatusSupport, NULL, NULL, FLAG_ADVANCED}, 
@@ -1003,7 +993,6 @@ static struct parm_struct parm_table[] = {
 	{"mangled names", P_BOOL, P_LOCAL, &sDefault.bMangledNames, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangled map", P_STRING, P_LOCAL, &sDefault.szMangledMap, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL | FLAG_DEPRECATED }, 
 	{"stat cache", P_BOOL, P_GLOBAL, &Globals.bStatCache, NULL, NULL, FLAG_ADVANCED}, 
-	{"store dos attributes", P_BOOL, P_LOCAL, &sDefault.bStoreDosAttributes, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 
 	{N_("Domain Options"), P_SEP, P_SEPARATOR}, 
 
@@ -1081,7 +1070,6 @@ static struct parm_struct parm_table[] = {
 	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap group suffix", P_STRING, P_GLOBAL, &Globals.szLdapGroupSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap idmap suffix", P_STRING, P_GLOBAL, &Globals.szLdapIdmapSuffix, NULL, NULL, FLAG_ADVANCED}, 
-	{"ldap privilege suffix", P_STRING, P_GLOBAL, &Globals.szLdapPrivilegeSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, FLAG_ADVANCED}, 
@@ -1316,8 +1304,6 @@ static void init_globals(void)
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
-	string_set(&Globals.szConfigBackend, NULL);
-
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
 
@@ -1471,7 +1457,6 @@ static void init_globals(void)
 #else
 	Globals.szPassdbBackend = str_list_make("smbpasswd", NULL);
 #endif /* WITH_LDAP_SAMCONFIG */
-	string_set(&Globals.szGumsBackend, "tdbsam2");
 
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapFilter, "(uid=%u)");
@@ -1479,7 +1464,6 @@ static void init_globals(void)
 	string_set(&Globals.szLdapUserSuffix, "");
 	string_set(&Globals.szLdapGroupSuffix, "");
 	string_set(&Globals.szLdapIdmapSuffix, "");
-	string_set(&Globals.szLdapPrivilegeSuffix, "");
 
 	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_ssl = LDAP_SSL_ON;
@@ -1622,7 +1606,6 @@ static char *lp_string(const char *s)
 #define FN_LOCAL_INTEGER(fn_name,val) \
  int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 
-FN_GLOBAL_STRING(lp_config_backend, &Globals.szConfigBackend)
 FN_GLOBAL_STRING(lp_smb_ports, &Globals.smb_ports)
 FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
 FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
@@ -1657,7 +1640,7 @@ FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
 FN_GLOBAL_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_realm, &Globals.szRealm)
-FN_GLOBAL_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
+FN_GLOBAL_CONST_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
 FN_GLOBAL_CONST_STRING(lp_logon_script, &Globals.szLogonScript)
 FN_GLOBAL_CONST_STRING(lp_logon_path, &Globals.szLogonPath)
@@ -1672,7 +1655,6 @@ FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
 static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
 FN_GLOBAL_LIST(lp_passdb_backend, &Globals.szPassdbBackend)
-FN_GLOBAL_STRING(lp_gums_backend, &Globals.szGumsBackend)
 FN_GLOBAL_LIST(lp_preload_modules, &Globals.szPreloadModules)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
@@ -1863,7 +1845,6 @@ FN_LOCAL_BOOL(lp_guest_only, bGuest_only)
 FN_LOCAL_BOOL(lp_print_ok, bPrint_ok)
 FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
-FN_LOCAL_BOOL(lp_store_dos_attributes, bStoreDosAttributes)
 FN_LOCAL_BOOL(lp_locking, bLocking)
 FN_LOCAL_BOOL(lp_strict_locking, bStrictLocking)
 FN_LOCAL_BOOL(lp_posix_locking, bPosixLocking)
@@ -1891,7 +1872,6 @@ FN_LOCAL_BOOL(lp_inherit_acls, bInheritACLS)
 FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
 FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
 FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
-FN_LOCAL_BOOL(lp_ea_support, bEASupport)
 FN_LOCAL_BOOL(_lp_use_sendfile, bUseSendfile)
 FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
 FN_LOCAL_BOOL(lp_map_acl_inherit, bMap_acl_inherit)
@@ -2677,16 +2657,7 @@ static void add_to_file_list(const char *fname, const char *subfname)
 BOOL lp_file_list_changed(void)
 {
 	struct file_lists *f = file_lists;
-	char *username;
-
- 	DEBUG(6, ("lp_file_list_changed()\n"));
-
-	/* get the username for substituion -- preference to the current_user_info */
-	if ( strlen( current_user_info.smb_name ) != 0 )
-		username = current_user_info.smb_name;
-	else
-		username = sub_get_smb_name();
-		
+	DEBUG(6, ("lp_file_list_changed()\n"));
 
 	while (f) {
 		pstring n2;
@@ -2977,14 +2948,6 @@ char *lp_ldap_idmap_suffix(void)
 {
 	if (Globals.szLdapIdmapSuffix[0])
 		return append_ldap_suffix(Globals.szLdapIdmapSuffix);
-
-	return lp_string(Globals.szLdapSuffix);
-}
-
-char *lp_ldap_privilege_suffix(void)
-{
-	if (Globals.szLdapPrivilegeSuffix[0])
-		return append_ldap_suffix(Globals.szLdapPrivilegeSuffix);
 
 	return lp_string(Globals.szLdapSuffix);
 }
@@ -3843,18 +3806,9 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	pstring n2;
 	BOOL bRetval;
 	param_opt_struct *data, *pdata;
-	char *username;
 
 	pstrcpy(n2, pszFname);
-	
-	/* get the username for substituion -- preference to the current_user_info */
-	
-	if ( strlen( current_user_info.smb_name ) != 0 )
-		username = current_user_info.smb_name;
-	else
-		username = sub_get_smb_name();
-		
-	standard_sub_basic( username, n2,sizeof(n2) );
+	standard_sub_basic(current_user_info.smb_name, n2,sizeof(n2));
 
 	add_to_file_list(pszFname, n2);
 
@@ -3896,11 +3850,6 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	if (bRetval)
 		if (iServiceIndex >= 0)
 			bRetval = service_ok(iServiceIndex);
-
-	if (*(lp_config_backend())) {
-		modconf_init(lp_config_backend());
-		modconf_load(do_section, do_parameter);
-	}	
 
 	lp_add_auto_services(lp_auto_services());
 

@@ -165,7 +165,7 @@ then
 			/^\[global\]/,/^[[:space:]]*\[/ \
 				s/^[[:space:]]*passdb backend[[:space:]]*=[[:space:]]*//pi" \
 			< /etc/samba/smb.conf \
-	 | tail -1`
+	 | tail -n 1`
 	if echo "$PASSDB" | egrep -q "(^|[[:space:]])smbpasswd"; then
 		if ! echo "$PASSDB" | egrep -q "(^|[[:space:]])tdbsam"; then
 			PASSDB=`echo $PASSDB | sed -e's/\(^\|[[:space:]]\)smbpasswd/\1tdbsam/'`

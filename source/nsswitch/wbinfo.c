@@ -436,18 +436,6 @@ static BOOL wbinfo_sid_to_gid(char *sid)
 	return True;
 }
 
-static BOOL wbinfo_allocate_rid(void)
-{
-	uint32 rid;
-
-	if (!winbind_allocate_rid(&rid))
-		return False;
-
-	d_printf("New rid: %d\n", rid);
-
-	return True;
-}
-
 /* Convert sid to string */
 
 static BOOL wbinfo_lookupsid(char *sid)
@@ -604,64 +592,6 @@ static BOOL wbinfo_auth_crap(char *username)
 			 response.data.auth.error_string);
 
         return result == NSS_STATUS_SUCCESS;
-}
-
-/* Authenticate a user with a plaintext password and set a token */
-
-static BOOL wbinfo_klog(char *username)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-        NSS_STATUS result;
-        char *p;
-
-	/* Send off request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-        p = strchr(username, '%');
-
-        if (p) {
-                *p = 0;
-                fstrcpy(request.data.auth.user, username);
-                fstrcpy(request.data.auth.pass, p + 1);
-                *p = '%';
-        } else {
-                fstrcpy(request.data.auth.user, username);
-		fstrcpy(request.data.auth.pass, getpass("Password: "));
-	}
-
-	request.flags |= WBFLAG_PAM_AFS_TOKEN;
-
-	result = winbindd_request(WINBINDD_PAM_AUTH, &request, &response);
-
-	/* Display response */
-
-        d_printf("plaintext password authentication %s\n", 
-               (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
-
-	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
-			 response.data.auth.nt_status_string, 
-			 response.data.auth.nt_status,
-			 response.data.auth.error_string);
-
-	if (result != NSS_STATUS_SUCCESS)
-		return False;
-
-	if (response.extra_data == NULL) {
-		d_printf("Did not get token data\n");
-		return False;
-	}
-
-	if (!afs_settoken_str((char *)response.extra_data)) {
-		d_printf("Could not set token\n");
-		return False;
-	}
-
-	d_printf("Successfully created AFS token\n");
-	return True;
 }
 
 /******************************************************************
@@ -1053,7 +983,6 @@ int main(int argc, char **argv)
 		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G', "Converts gid to sid", "GID" },
 		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S', "Converts sid to uid", "SID" },
 		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y', "Converts sid to gid", "SID" },
-		{ "allocate-rid", 'A', POPT_ARG_NONE, 0, 'A', "Get a new RID out of idmap" },
 		{ "create-user", 'c', POPT_ARG_STRING, &string_arg, 'c', "Create a local user account", "name" },
 		{ "delete-user", 'x', POPT_ARG_STRING, &string_arg, 'x', "Delete a local user account", "name" },
 		{ "create-group", 'C', POPT_ARG_STRING, &string_arg, 'C', "Create a local group", "name" },
@@ -1071,9 +1000,6 @@ int main(int argc, char **argv)
 		{ "get-auth-user", 0, POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER, "Retrieve user and password used by winbindd (root only)", NULL },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "Ping winbindd to see if it is alive" },
 		{ "domain", 0, POPT_ARG_STRING, &opt_domain_name, OPT_DOMAIN_NAME, "Define to the domain to restrict operation", "domain" },
-#ifdef WITH_FAKE_KASERVER
- 		{ "klog", 'k', POPT_ARG_STRING, &string_arg, 'k', "set an AFS token from winbind", "user%password" },
-#endif
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
@@ -1176,12 +1102,6 @@ int main(int argc, char **argv)
 				goto done;
 			}
 			break;
-		case 'A':
-			if (!wbinfo_allocate_rid()) {
-				d_printf("Could not allocate a RID\n");
-				goto done;
-			}
-			break;
 		case 't':
 			if (!wbinfo_check_secret()) {
 				d_printf("Could not check secret\n");
@@ -1239,12 +1159,6 @@ int main(int argc, char **argv)
 					goto done;
 				break;
 			}
-		case 'k':
-			if (!wbinfo_klog(string_arg)) {
-				d_printf("Could not klog user\n");
-				goto done;
-			}
-			break;
 		case 'c':
 			if ( !wbinfo_create_user(string_arg) ) {
 				d_printf("Could not create user account\n");

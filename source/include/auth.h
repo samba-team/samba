@@ -86,7 +86,6 @@ typedef struct auth_serversupplied_info
 	/* NT group information taken from the info3 structure */
 	
 	NT_USER_TOKEN *ptok;
-	PRIVILEGE_SET *privs;
 	
 	DATA_BLOB nt_session_key;
 	DATA_BLOB lm_session_key;

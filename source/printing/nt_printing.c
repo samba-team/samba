@@ -992,7 +992,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	fsp = open_file_shared(conn, filepath, &stat_buf,
 						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &action);
+						   0, 0, &access_mode, &action);
 	if (!fsp) {
 		/* Old file not found, so by definition new file is in fact newer */
 		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
@@ -1021,7 +1021,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	fsp = open_file_shared(conn, filepath, &stat_buf,
 						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &action);
+						   0, 0, &access_mode, &action);
 	if (!fsp) {
 		/* New file not found, this shouldn't occur if the caller did its job */
 		DEBUG(3,("file_version_is_newer: Can't open new file [%s], errno = %d\n",
@@ -1137,7 +1137,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	fsp = open_file_shared(conn, driverpath, &st,
 						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &action);
+						   0, 0, &access_mode, &action);
 	if (!fsp) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
 				driverpath, errno));
@@ -2576,8 +2576,7 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	return True;
 }
 
-static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2, 
-			       struct uuid guid)
+static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2, GUID guid)
 {
 	int i;
 	REGVAL_CTR *ctr=NULL;
@@ -2589,7 +2588,7 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 
 	regval_ctr_delvalue(ctr, "objectGUID");
 	regval_ctr_addvalue(ctr, "objectGUID", REG_BINARY, 
-			    (char *) &guid, sizeof(struct uuid));	
+			    (char *) &guid, sizeof(GUID));	
 }
 
 static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
@@ -2602,7 +2601,7 @@ static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
 	void *res = NULL;
 	ADS_STRUCT *ads;
 	const char *attrs[] = {"objectGUID", NULL};
-	struct uuid guid;
+	GUID guid;
 	WERROR win_rc = WERR_OK;
 
 	ZERO_STRUCT(guid);
@@ -2786,8 +2785,7 @@ WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 	return win_rc;
 }
 
-BOOL is_printer_published(Printer_entry *print_hnd, int snum, 
-			  struct uuid *guid)
+BOOL is_printer_published(Printer_entry *print_hnd, int snum, GUID *guid)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	REGVAL_CTR *ctr;
@@ -2815,8 +2813,8 @@ BOOL is_printer_published(Printer_entry *print_hnd, int snum,
 		return False;
 	}
 
-	if (regval_size(guid_val) == sizeof(struct uuid))
-		memcpy(guid, regval_data_p(guid_val), sizeof(struct uuid));
+	if (regval_size(guid_val) == sizeof(GUID))
+		memcpy(guid, regval_data_p(guid_val), sizeof(GUID));
 
 	return True;
 }
@@ -2826,8 +2824,7 @@ WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 {
 	return WERR_OK;
 }
-BOOL is_printer_published(Printer_entry *print_hnd, int snum, 
-			  struct uuid *guid)
+BOOL is_printer_published(Printer_entry *print_hnd, int snum, GUID *guid)
 {
 	return False;
 }
@@ -3295,7 +3292,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sh
 			info.parameters);
 
 	/* Samba has to have shared raw drivers. */
-	info.attributes = PRINTER_ATTRIBUTE_SAMBA;
+	info.attributes |= PRINTER_ATTRIBUTE_SAMBA;
 
 	/* Restore the stripped strings. */
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());

@@ -36,7 +36,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 10
+#define WINBIND_INTERFACE_VERSION 9
 
 /* Socket commands */
 
@@ -84,7 +84,6 @@ enum winbindd_cmd {
 	WINBINDD_SID_TO_GID,
 	WINBINDD_UID_TO_SID,
 	WINBINDD_GID_TO_SID,
-	WINBINDD_ALLOCATE_RID,
 
 	/* Miscellaneous other stuff */
 
@@ -157,7 +156,6 @@ typedef struct winbindd_gr {
 #define WBFLAG_QUERY_ONLY		0x0020
 #define WBFLAG_ALLOCATE_RID		0x0040
 #define WBFLAG_PAM_UNIX_NAME            0x0080
-#define WBFLAG_PAM_AFS_TOKEN            0x0100
 
 /* Winbind request structure */
 
@@ -268,7 +266,7 @@ struct winbindd_response {
 			char nt_session_key[16];
 			char first_8_lm_hash[8];
 		} auth;
-		uint32 rid;	/* create user or group or allocate rid */
+		uint32 rid;	/* create user or group */
 		struct {
 			fstring name;
 			fstring alt_name;

@@ -220,7 +220,6 @@ AC_SUBST(SMBWRAPPER)
 AC_SUBST(EXTRA_BIN_PROGS)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
-AC_SUBST(CONFIG_LIBS)
 
 AC_ARG_ENABLE(debug, 
 [  --enable-debug          Turn on compiler debugging information (default=no)],
@@ -358,10 +357,10 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss rpc_epmapper auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs charset_CP850 charset_CP437"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap charset_CP850 charset_CP437"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_echo"
@@ -1686,7 +1685,7 @@ dnl Try to find iconv(3)
 	LDFLAGS=$save_LDFLAGS
         LIB_ADD_DIR(LDFLAGS, "$i/lib")
         CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-	LIBS="$save_LIBS"
+        LIBS="$save_LIBS"
         ICONV_LOCATION=$i
         export LDFLAGS LIBS CPPFLAGS
 dnl Now, check for a working iconv ... we want to do it here because
@@ -2407,8 +2406,6 @@ AC_MSG_RESULT($with_ldap_support)
 
 SMBLDAP=""
 AC_SUBST(SMBLDAP)
-SMBLDAPUTIL=""
-AC_SUBST(SMBLDAPUTIL)
 if test x"$with_ldap_support" != x"no"; then
 
   ##################################################################
@@ -2464,9 +2461,7 @@ if test x"$with_ldap_support" != x"no"; then
   if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes" -a x"$ac_cv_func_ext_ldap_domain2hostlist" = x"yes"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
     default_static_modules="$default_static_modules pdb_ldap idmap_ldap";
-    default_shared_modules="$default_shared_modules config_ldap";
     SMBLDAP="lib/smbldap.o"
-    SMBLDAPUTIL="lib/smbldap_util.o"
     with_ldap_support=yes
     AC_MSG_CHECKING(whether LDAP support is used)
     AC_MSG_RESULT(yes)
@@ -4298,7 +4293,6 @@ MODULE_pdb_guest=STATIC
 MODULE_rpc_spoolss=STATIC
 MODULE_rpc_srv=STATIC
 MODULE_idmap_tdb=STATIC
-MODULE_gums_tdbsam2=STATIC
 
 AC_ARG_WITH(static-modules,
 [  --with-static-modules=MODULES  Comma-seperated list of names of modules to statically link in],
@@ -4336,11 +4330,7 @@ SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, "bin/ldapsam.$SHLIBEXT", PDB,
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_guest, passdb/pdb_guest.o, "bin/guest.$SHLIBEXT", PDB)
-SMB_MODULE(pdb_gums, [passdb/pdb_gums.o \$(GUMS_OBJ)], "bin/gums.$SHLIBEXT", PDB)
 SMB_SUBSYSTEM(PDB,passdb/pdb_interface.o)
-
-SMB_MODULE(gums_tdbsam2, sam/gums_tdbsam2.o, "bin/tdbsam2.$SHLIBEXT", GUMS)
-SMB_SUBSYSTEM(GUMS)
 
 SMB_MODULE(rpc_lsa, \$(RPC_LSA_OBJ), "bin/librpc_lsarpc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), "bin/librpc_winreg.$SHLIBEXT", RPC)
@@ -4352,8 +4342,6 @@ SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), "bin/librpc_srvsvc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_echo, \$(RPC_ECHO_OBJ), "bin/librpc_echo.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_epmapper, \$(RPC_EPMAPPER_OBJ), "bin/librpc_epmapper.$SHLIBEXT",
-			 RPC)
 SMB_SUBSYSTEM(RPC,smbd/server.o)
 
 SMB_MODULE(idmap_ldap, sam/idmap_ldap.o, "bin/idmap_ldap.$SHLIBEXT", IDMAP)
@@ -4383,11 +4371,7 @@ SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), "bin/fake_perms.$SHLIBEXT", V
 SMB_MODULE(vfs_default_quota, \$(VFS_DEFAULT_QUOTA_OBJ), "bin/default_quota.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_readonly, \$(VFS_READONLY_OBJ), "bin/readonly.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_cap, \$(VFS_CAP_OBJ), "bin/cap.$SHLIBEXT", VFS)
-SMB_MODULE(vfs_expand_msdfs, \$(VFS_EXPAND_MSDFS_OBJ), "bin/expand_msdfs.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
-
-SMB_MODULE(config_ldap, param/config_ldap.o, "bin/config_ldap.$SHLIBEXT", CONFIG, [ CONFIG_LIBS="$CONFIG_LIBS $LDAP_LIBS" "$SMBLDAP" ])
-SMB_SUBSYSTEM(CONFIG, param/modconf.o)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 

@@ -1662,61 +1662,6 @@ BOOL lsa_io_r_unk_get_connuser(const char *desc, LSA_R_UNK_GET_CONNUSER *r_c, pr
 	return True;
 }
 
-void init_lsa_q_create_account(LSA_Q_CREATEACCOUNT *trn, POLICY_HND *hnd, DOM_SID *sid, uint32 desired_access)
-{
-	memcpy(&trn->pol, hnd, sizeof(trn->pol));
-
-	init_dom_sid2(&trn->sid, sid);
-	trn->access = desired_access;
-}
-
-
-/*******************************************************************
- Reads or writes an LSA_Q_CREATEACCOUNT structure.
-********************************************************************/
-
-BOOL lsa_io_q_create_account(const char *desc, LSA_Q_CREATEACCOUNT *r_c, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_create_account");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
- 
-	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
-		return False;
-
-	if(!smb_io_dom_sid2("sid", &r_c->sid, ps, depth)) /* domain SID */
-		return False;
-
- 	if(!prs_uint32("access", ps, depth, &r_c->access))
-		return False;
-  
-	return True;
-}
-
-/*******************************************************************
- Reads or writes an LSA_R_CREATEACCOUNT structure.
-********************************************************************/
-
-BOOL lsa_io_r_create_account(const char *desc, LSA_R_CREATEACCOUNT  *r_c, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_r_open_account");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
- 
-	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &r_c->status))
-		return False;
-
-	return True;
-}
-
-
 void init_lsa_q_open_account(LSA_Q_OPENACCOUNT *trn, POLICY_HND *hnd, DOM_SID *sid, uint32 desired_access)
 {
 	memcpy(&trn->pol, hnd, sizeof(trn->pol));
@@ -1873,13 +1818,11 @@ NTSTATUS init_lsa_r_enum_privsaccount(TALLOC_CTX *mem_ctx, LSA_R_ENUMPRIVSACCOUN
 
 	if (!NT_STATUS_IS_OK(ret = init_priv_with_ctx(mem_ctx, &(r_u->set))))
 		return ret;
-
-	r_u->set->count = count;
 	
-	if (!NT_STATUS_IS_OK(ret = dupalloc_luid_attr(r_u->set->mem_ctx, &(r_u->set->set), set, count)))
+	if (!NT_STATUS_IS_OK(ret = dupalloc_luid_attr(r_u->set->mem_ctx, &(r_u->set->set), set)))
 		return ret;
 
-	DEBUG(10,("init_lsa_r_enum_privsaccount: %d privileges\n", r_u->count));
+	DEBUG(10,("init_lsa_r_enum_privsaccount: %d %d privileges\n", r_u->count, r_u->set->count));
 
 	return ret;
 }
@@ -2199,7 +2142,7 @@ BOOL lsa_io_dns_dom_info(const char *desc, LSA_DNS_DOM_INFO *info,
 
 	if(!prs_align(ps))
 		return False;
-	if ( !smb_io_uuid("dom_guid", &info->dom_guid, ps, depth) )
+	if (!prs_uint8s(False, "dom_guid", ps, depth, info->dom_guid.info, GUID_SIZE))
 		return False;
 
 	if(!prs_align(ps))

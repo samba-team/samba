@@ -57,9 +57,6 @@ for lib in string.split(samba_libs):
     if lib[0:2] == "-L":
         library_dirs.append(lib[2:])
         continue
-    if lib[0:2] == "-W":
-        # Skip linker flags
-        continue
     print "Unknown entry '%s' in $LIBS variable passed to setup.py" % lib
     sys.exit(1)
 

@@ -97,7 +97,6 @@ struct winbindd_domain {
 	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
 	BOOL active_directory;                 /* is this a win2k active directory ? */
 	BOOL primary;                          /* is this our primary domain ? */
-	BOOL internal;		/* BUILTIN and member SAM */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
 	struct winbindd_methods *methods;
@@ -163,7 +162,7 @@ struct winbindd_methods {
 	/* lookup user info for a given SID */
 	NTSTATUS (*query_user)(struct winbindd_domain *domain, 
 			       TALLOC_CTX *mem_ctx, 
-			       const DOM_SID *user_sid,
+			       DOM_SID *user_sid,
 			       WINBIND_USERINFO *user_info);
 
 	/* lookup all groups that a user is a member of. The backend
@@ -171,13 +170,13 @@ struct winbindd_methods {
 	   function */
 	NTSTATUS (*lookup_usergroups)(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
-				      const DOM_SID *user_sid,
+				      DOM_SID *user_sid,
 				      uint32 *num_groups, DOM_SID ***user_gids);
 
 	/* find all members of the group with the specified group_rid */
 	NTSTATUS (*lookup_groupmem)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
-				    const DOM_SID *group_sid,
+				    DOM_SID *group_sid,
 				    uint32 *num_names, 
 				    DOM_SID ***sid_mem, char ***names, 
 				    uint32 **name_types);

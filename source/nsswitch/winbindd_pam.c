@@ -211,41 +211,6 @@ done:
 	      state->response.data.auth.nt_status_string,
 	      state->response.data.auth.pam_error));	      
 
-	if ( NT_STATUS_IS_OK(result) &&
-	     (state->request.flags & WBFLAG_PAM_AFS_TOKEN) ) {
-
-		char *afsname = strdup(lp_afs_username_map());
-		char *cell;
-
-		if (afsname == NULL) goto no_token;
-
-		afsname = realloc_string_sub(afsname, "%D", name_domain);
-		afsname = realloc_string_sub(afsname, "%u", name_user);
-		afsname = realloc_string_sub(afsname, "%U", name_user);
-
-		if (afsname == NULL) goto no_token;
-
-		strlower_m(afsname);
-
-		cell = strchr(afsname, '@');
-
-		if (cell == NULL) goto no_token;
-
-		*cell = '\0';
-		cell += 1;
-
-		/* Append an AFS token string */
-		state->response.extra_data =
-			afs_createtoken_str(afsname, cell);
-
-		if (state->response.extra_data != NULL)
-			state->response.length +=
-				strlen(state->response.extra_data)+1;
-
-	no_token:
-		SAFE_FREE(afsname);
-	}
-		
 	if (mem_ctx) 
 		talloc_destroy(mem_ctx);
 	

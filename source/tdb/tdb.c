@@ -1,29 +1,24 @@
  /* 
    Unix SMB/CIFS implementation.
-
-   trivial database library
-
-   Copyright (C) Andrew Tridgell              1999-2004
+   Samba database functions
+   Copyright (C) Andrew Tridgell              1999-2000
+   Copyright (C) Luke Kenneth Casson Leighton      2000
    Copyright (C) Paul `Rusty' Russell		   2000
    Copyright (C) Jeremy Allison			   2000-2003
    
-     ** NOTE! The following LGPL license applies to the tdb
-     ** library. This does NOT imply that all of Samba is released
-     ** under the LGPL
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
    
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
    
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
 
@@ -1304,7 +1299,7 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
    if fn is NULL then it is not called
    a non-zero return value from fn() indicates that the traversal should stop
   */
-int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *private)
+int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state)
 {
 	TDB_DATA key, dbuf;
 	struct list_struct rec;
@@ -1342,7 +1337,7 @@ int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *private)
 			ret = -1;
 			goto out;
 		}
-		if (fn && fn(tdb, key, dbuf, private)) {
+		if (fn && fn(tdb, key, dbuf, state)) {
 			/* They want us to terminate traversal */
 			ret = count;
 			if (unlock_record(tdb, tl.off) != 0) {
@@ -1491,12 +1486,8 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 		/* first try in-place update, on modify or replace. */
 		if (tdb_update_hash(tdb, key, hash, dbuf) == 0)
 			goto out;
-		if (tdb->ecode == TDB_ERR_NOEXIST &&
-		    flag == TDB_MODIFY) {
-			/* if the record doesn't exist and we are in TDB_MODIFY mode then
-			 we should fail the store */
+		if (flag == TDB_MODIFY && tdb->ecode == TDB_ERR_NOEXIST)
 			goto fail;
-	}
 	}
 	/* reset the error code potentially set by the tdb_update() */
 	tdb->ecode = TDB_SUCCESS;
@@ -1519,7 +1510,9 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	if (dbuf.dsize)
 		memcpy(p+key.dsize, dbuf.dptr, dbuf.dsize);
 
-	/* we have to allocate some space */
+	/* now we're into insert / modify / replace of a record which
+	 * we know could not be optimised by an in-place store (for
+	 * various reasons).  */
 	if (!(rec_ptr = tdb_allocate(tdb, key.dsize + dbuf.dsize, &rec)))
 		goto fail;
 

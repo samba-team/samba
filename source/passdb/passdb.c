@@ -704,7 +704,7 @@ BOOL fallback_pdb_rid_is_user(uint32 rid)
  Convert a rid into a name. Used in the lookup SID rpc.
  ********************************************************************/
 
-BOOL local_lookup_sid(const DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use)
+BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use)
 {
 	uint32 rid;
 	SAM_ACCOUNT *sam_account = NULL;
@@ -799,6 +799,8 @@ BOOL local_lookup_sid(const DOM_SID *sid, char *name, enum SID_NAME_USE *psid_na
 
 		gid = pdb_group_rid_to_gid(rid);
 		gr = getgrgid(gid);
+			
+		*psid_name_use = SID_NAME_ALIAS;
 			
 		DEBUG(5,("local_lookup_sid: looking up gid %u %s\n", (unsigned int)gid,
 			 gr ? "succeeded" : "failed" ));
@@ -1890,8 +1892,6 @@ BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 
 done:
 
-	SAFE_FREE(lm_pw_ptr);
-	SAFE_FREE(nt_pw_ptr);
 	SAFE_FREE(username);
 	SAFE_FREE(domain);
 	SAFE_FREE(nt_username);
@@ -2337,52 +2337,5 @@ BOOL pdb_increment_bad_password_count(SAM_ACCOUNT *sampass)
 		return False;
 	}
 
-	return True;
-}
-
-BOOL get_sids_from_priv(const char *privname, DOM_SID **sids, int *num)
-{
-	char *sids_string;
-	char *s;
-	fstring tok;
-
-	if (!pdb_get_privilege_entry(privname, &sids_string))
-		return False;
-
-	s = sids_string;
-
-	while (next_token(&s, tok, ",", sizeof(tok))) {
-		DOM_SID sid;
-		DEBUG(10, ("converting SID %s\n", tok));
-
-		if (!string_to_sid(&sid, tok)) {
-			DEBUG(3, ("Could not convert SID\n"));
-			continue;
-		}
-
-		add_sid_to_array(&sid, sids, num);
-	}
-
-	SAFE_FREE(sids_string);
-	return True;
-}
-
-BOOL get_priv_for_sid(const DOM_SID *sid, PRIVILEGE_SET *priv)
-{
-	extern PRIVS privs[];
-	int i;
-	for (i=1; i<PRIV_ALL_INDEX-1; i++) {
-		DOM_SID *sids;
-		int j, num;
-
-		if (!get_sids_from_priv(privs[i].priv, &sids, &num))
-			continue;
-
-		for (j=0; j<num; j++) {
-			if (sid_compare(sid, &sids[j]) == 0)
-				add_privilege_by_name(priv, privs[i].priv);
-		}
-		SAFE_FREE(sids);
-	}
 	return True;
 }

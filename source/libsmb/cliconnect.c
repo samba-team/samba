@@ -325,7 +325,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			session_key = data_blob(NULL, 16);
 			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
 		}
-		cli_simple_set_signing(cli, session_key, nt_response); 
+		cli_simple_set_signing(cli, session_key, nt_response, 0); 
 	} else {
 		/* pre-encrypted password supplied.  Only used for 
 		   security=server, can't do
@@ -521,7 +521,7 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *
 	file_save("negTokenTarg.dat", negTokenTarg.data, negTokenTarg.length);
 #endif
 
-	cli_simple_set_signing(cli, session_key_krb5, null_blob); 
+	cli_simple_set_signing(cli, session_key_krb5, null_blob, 0); 
 			
 	blob2 = cli_session_setup_blob(cli, negTokenTarg);
 
@@ -588,7 +588,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 		
 			/* now send that blob on its way */
 			if (!cli_session_setup_blob_send(cli, msg1)) {
-				DEBUG(3, ("Failed to send NTLMSSP/SPNEGO blob to server!\n"));
+				DEBUG(3, ("Failed to send NTLMSSP/SPENGO blob to server!\n"));
 				nt_status = NT_STATUS_UNSUCCESSFUL;
 			} else {
 				data_blob_free(&msg1);
@@ -643,16 +643,13 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 		fstrcpy(cli->server_domain, ntlmssp_state->server_domain);
 		cli_set_session_key(cli, ntlmssp_state->session_key);
 
-		if (cli_simple_set_signing(cli, key, null_blob)) {
-			
-			/* 'resign' the last message, so we get the right sequence numbers
-			   for checking the first reply from the server */
-			cli_calculate_sign_mac(cli);
-			
-			if (!cli_check_sign_mac(cli, True)) {
-				nt_status = NT_STATUS_ACCESS_DENIED;
-			}
-		}
+		/* Using NTLMSSP session setup, signing on the net only starts
+		 * after a successful authentication and the session key has
+		 * been determined, but with a sequence number of 2. This
+		 * assumes that NTLMSSP needs exactly 2 roundtrips, for any
+		 * other SPNEGO mechanism it needs adapting. */
+
+		cli_simple_set_signing(cli, key, null_blob, 2);
 	}
 
 	/* we have a reference conter on ntlmssp_state, if we are signing
@@ -721,7 +718,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			int ret;
 			
 			use_in_memory_ccache();
-			ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */, NULL);
+			ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */);
 			
 			if (ret){
 				DEBUG(0, ("Kinit failed: %s\n", error_message(ret)));
@@ -820,7 +817,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 	if (cli->capabilities & CAP_EXTENDED_SECURITY) {
 		ADS_STATUS status = cli_session_setup_spnego(cli, user, pass, workgroup);
 		if (!ADS_ERR_OK(status)) {
-			DEBUG(3, ("SPNEGO login failed: %s\n", ads_errstr(status)));
+			DEBUG(3, ("SPENGO login failed: %s\n", ads_errstr(status)));
 			return False;
 		}
 		return True;
@@ -1091,8 +1088,6 @@ BOOL cli_negprot(struct cli_state *cli)
 			}
 			cli->sign_info.negotiated_smb_signing = True;
 			cli->sign_info.mandatory_signing = True;
-		} else if (cli->sign_info.allow_smb_signing && cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) {
-			cli->sign_info.negotiated_smb_signing = True;
 		}
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
@@ -1610,8 +1605,8 @@ struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip,
 struct cli_state *get_ipc_connect_master_ip(struct ip_service * mb_ip, pstring workgroup, struct user_auth_info *user_info)
 {
         static fstring name;
-        struct cli_state *cli;
-        struct in_addr server_ip; 
+	struct cli_state *cli;
+	struct in_addr server_ip; 
 
         DEBUG(99, ("Looking up name of master browser %s\n",
                    inet_ntoa(mb_ip->ip)));
@@ -1640,14 +1635,14 @@ struct cli_state *get_ipc_connect_master_ip(struct ip_service * mb_ip, pstring w
                 return NULL;
         }
 
-        pstrcpy(workgroup, name);
+                pstrcpy(workgroup, name);
 
-        DEBUG(4, ("found master browser %s, %s\n", 
+                DEBUG(4, ("found master browser %s, %s\n", 
                   name, inet_ntoa(mb_ip->ip)));
 
-        cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info);
+		cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info);
 
-        return cli;
+		return cli;
     
 }
 

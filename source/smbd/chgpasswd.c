@@ -991,7 +991,7 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 		if (!push_sec_ctx())
 			return NT_STATUS_UNSUCCESSFUL;
 		
-		set_sec_ctx(pass->pw_uid, pass->pw_gid, 0, NULL, NULL, NULL);
+		set_sec_ctx(pass->pw_uid, pass->pw_gid, 0, NULL, NULL);
 		set_re_uid();
 	}
 

@@ -102,10 +102,13 @@ ADS_STRUCT *ads_init(const char *realm,
 		ads->server.foreign = 1;
 	}
 
-	/* the caller will own the memory by default */
-	ads->is_mine = 1;
-
 	return ads;
+}
+
+/* a simpler ads_init() interface using all defaults */
+ADS_STRUCT *ads_init_simple(void)
+{
+	return ads_init(NULL, NULL, NULL);
 }
 
 /*
@@ -114,9 +117,6 @@ ADS_STRUCT *ads_init(const char *realm,
 void ads_destroy(ADS_STRUCT **ads)
 {
 	if (ads && *ads) {
-		BOOL is_mine;
-
-		is_mine = (*ads)->is_mine;
 #if HAVE_LDAP
 		if ((*ads)->ld) ldap_unbind((*ads)->ld);
 #endif
@@ -133,11 +133,8 @@ void ads_destroy(ADS_STRUCT **ads)
 		SAFE_FREE((*ads)->config.realm);
 		SAFE_FREE((*ads)->config.bind_path);
 		SAFE_FREE((*ads)->config.ldap_server_name);
-		
-		
-		ZERO_STRUCTP(*ads);
 
-		if ( is_mine )
-			SAFE_FREE(*ads);
+		ZERO_STRUCTP(*ads);
+		SAFE_FREE(*ads);
 	}
 }

@@ -1405,7 +1405,10 @@ WERROR _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, S
 
 static char *valid_share_pathname(char *dos_pathname)
 {
+	pstring saved_pathname;
+	pstring unix_pathname;
 	char *ptr;
+	int ret;
 
 	/* Convert any '\' paths to '/' */
 	unix_format(dos_pathname);
@@ -1420,29 +1423,21 @@ static char *valid_share_pathname(char *dos_pathname)
 	if (*ptr != '/')
 		return NULL;
 
-	return ptr;
-}
-
-static BOOL exist_share_pathname(char *unix_pathname)
-{
-	pstring saved_pathname;
-	int ret;
-
 	/* Can we cd to it ? */
 
 	/* First save our current directory. */
 	if (getcwd(saved_pathname, sizeof(saved_pathname)) == NULL)
 		return False;
 
+	pstrcpy(unix_pathname, ptr);
+	
 	ret = chdir(unix_pathname);
 
 	/* We *MUST* be able to chdir back. Abort if we can't. */
 	if (chdir(saved_pathname) == -1)
 		smb_panic("valid_share_pathname: Unable to restore current directory.\n");
 
-	if (ret == -1) return False;
-
-	return True;
+	return (ret != -1) ? ptr : NULL;
 }
 
 /*******************************************************************
@@ -1459,7 +1454,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	int type;
 	int snum;
 	int ret;
-	char *path;
+	char *ptr;
 	SEC_DESC *psd = NULL;
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
@@ -1554,12 +1549,12 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		return WERR_ACCESS_DENIED;
 		
 	/* Check if the pathname is valid. */
-	if (!(path = valid_share_pathname( pathname )))
+	if (!(ptr = valid_share_pathname( pathname )))
 		return WERR_OBJECT_PATH_INVALID;
 
 	/* Ensure share name, pathname and comment don't contain '"' characters. */
 	string_replace(share_name, '"', ' ');
-	string_replace(path, '"', ' ');
+	string_replace(ptr, '"', ' ');
 	string_replace(comment, '"', ' ');
 
 	DEBUG(10,("_srv_net_share_set_info: change share command = %s\n",
@@ -1567,23 +1562,17 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	/* Only call modify function if something changed. */
 
-	if (strcmp(path, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) ) {
+	if (strcmp(ptr, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) ) {
 		if (!lp_change_share_cmd() || !*lp_change_share_cmd())
 			return WERR_ACCESS_DENIED;
 
 		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
-				lp_change_share_cmd(), dyn_CONFIGFILE, share_name, path, comment);
+				lp_change_share_cmd(), dyn_CONFIGFILE, share_name, ptr, comment);
 
 		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
 		if ((ret = smbrun(command, NULL)) != 0) {
 			DEBUG(0,("_srv_net_share_set_info: Running [%s] returned (%d)\n", command, ret ));
 			return WERR_ACCESS_DENIED;
-		}
-
-		/* Check if the new share pathname exist, if not return an error */
-		if (!exist_share_pathname(path)) {
-			DEBUG(1, ("_srv_net_share_set_info: change share command was ok but path (%s) has not been created!\n", path));
-			return WERR_OBJECT_PATH_INVALID;
 		}
 
 		/* Tell everyone we updated smb.conf. */
@@ -1626,7 +1615,7 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	int type;
 	int snum;
 	int ret;
-	char *path;
+	char *ptr;
 	SEC_DESC *psd = NULL;
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
@@ -1700,16 +1689,16 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		return WERR_ACCESS_DENIED;
 		
 	/* Check if the pathname is valid. */
-	if (!(path = valid_share_pathname( pathname )))
+	if (!(ptr = valid_share_pathname( pathname )))
 		return WERR_OBJECT_PATH_INVALID;
 
 	/* Ensure share name, pathname and comment don't contain '"' characters. */
 	string_replace(share_name, '"', ' ');
-	string_replace(path, '"', ' ');
+	string_replace(ptr, '"', ' ');
 	string_replace(comment, '"', ' ');
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
-			lp_add_share_cmd(), dyn_CONFIGFILE, share_name, path, comment);
+			lp_add_share_cmd(), dyn_CONFIGFILE, share_name, ptr, comment);
 
 	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
 	if ((ret = smbrun(command, NULL)) != 0) {
@@ -1717,33 +1706,10 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		return WERR_ACCESS_DENIED;
 	}
 
-	/* Check if the new share pathname exist, if not try to delete the
-	 * share and return an error */
-	if (!exist_share_pathname(path)) {
-		DEBUG(1, ("_srv_net_share_add: add share command was ok but path (%s) has not been created!\n", path));
-		DEBUG(1, ("_srv_net_share_add: trying to rollback and delete the share\n"));
-
-		if (!lp_delete_share_cmd() || !*lp_delete_share_cmd()) {
-			DEBUG(1, ("_srv_net_share_add: Error! delete share command is not defined! Please check share (%s) in the config file\n", share_name));
-			return WERR_OBJECT_PATH_INVALID;
-		}
-
-		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
-				lp_delete_share_cmd(), dyn_CONFIGFILE, share_name);
-
-		DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
-		if ((ret = smbrun(command, NULL)) != 0) {
-			DEBUG(0,("_srv_net_share_add: Running [%s] returned (%d)\n", command, ret ));
-			DEBUG(1, ("_srv_net_share_add: Error! delete share command failed! Please check share (%s) in the config file\n", share_name));
-		}
-
-		return WERR_OBJECT_PATH_INVALID;
-	}
-
 	if (psd) {
-		if (!set_share_security(p->mem_ctx, share_name, psd)) {
-			DEBUG(0,("_srv_net_share_add: Failed to add security info to share %s.\n", share_name ));
-		}
+		if (!set_share_security(p->mem_ctx, share_name, psd))
+			DEBUG(0,("_srv_net_share_add: Failed to add security info to share %s.\n",
+				share_name ));
 	}
 
 	/* Tell everyone we updated smb.conf. */
@@ -1921,13 +1887,13 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
 	unix_convert(filename, conn, NULL, &bad_path, &st);
 	fsp = open_file_shared(conn, filename, &st, SET_OPEN_MODE(DOS_OPEN_RDONLY),
-				(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &action);
+				(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &action);
 
 	if (!fsp) {
 		/* Perhaps it is a directory */
 		if (errno == EISDIR)
 			fsp = open_directory(conn, filename, &st,FILE_READ_ATTRIBUTES,0,
-					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), &action);
+					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
 
 		if (!fsp) {
 			DEBUG(3,("_srv_net_file_query_secdesc: Unable to open file %s\n", filename));
@@ -2025,13 +1991,13 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	unix_convert(filename, conn, NULL, &bad_path, &st);
 
 	fsp = open_file_shared(conn, filename, &st, SET_OPEN_MODE(DOS_OPEN_RDWR),
-			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &action);
+			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &action);
 
 	if (!fsp) {
 		/* Perhaps it is a directory */
 		if (errno == EISDIR)
 			fsp = open_directory(conn, filename, &st,FILE_READ_ATTRIBUTES,0,
-						(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), &action);
+						(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
 
 		if (!fsp) {
 			DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", filename));
