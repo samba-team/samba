@@ -304,8 +304,10 @@ if test x"$with_krb5_support" != x"no"; then
 
 	########################################################
 	# now see if we can find the gssapi libs in standard paths
-	AC_CHECK_LIB_EXT(gssapi_krb5, KRB5_LIBS,gss_display_status,[],[],
+	if test x"$ac_cv_lib_ext_gssapi_gss_display_status" != x"yes"; then
+	   AC_CHECK_LIB_EXT(gssapi_krb5, KRB5_LIBS,gss_display_status,[],[],
 		AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available]))
+        fi
 
 	AC_CHECK_FUNC_EXT(krb5_set_real_time, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_set_default_in_tkt_etypes, $KRB5_LIBS)
