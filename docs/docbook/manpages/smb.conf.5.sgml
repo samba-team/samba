@@ -1188,10 +1188,10 @@
 		<term><anchor id="ANNOUNCEVERSION">announce version (G)</term>
 		<listitem><para>This specifies the major and minor version numbers 
 		that nmbd will use when announcing itself as a server. The default 
-		is 4.5.  Do not change this parameter unless you have a specific 
+		is 4.9.  Do not change this parameter unless you have a specific 
 		need to set a Samba server to be a downlevel server.</para>
 
-		<para>Default: <command>announce version = 4.5</command></para>
+		<para>Default: <command>announce version = 4.9</command></para>
 
 		<para>Example: <command>announce version = 2.0</command></para>
 		</listitem>
