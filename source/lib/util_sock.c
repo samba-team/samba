@@ -324,8 +324,6 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
   if (maxcnt <= 0)
     return(0);
 
-  smb_read_error = 0;
-
   /* Blocking read */
   if (time_out <= 0) {
     if (mincnt == 0) mincnt = maxcnt;
@@ -341,17 +339,9 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
       readret = read(fd, buf + nread, maxcnt - nread);
 #endif /* WITH_SSL */
 
-      if (readret == 0) {
-        DEBUG(5,("read_with_timeout: blocking read. EOF from client.\n"));
-        smb_read_error = READ_EOF;
-        return -1;
-      }
+      if (readret <= 0)
+	return readret;
 
-      if (readret == -1) {
-        DEBUG(0,("read_with_timeout: read error = %s.\n", strerror(errno) ));
-        smb_read_error = READ_ERROR;
-        return -1;
-      }
       nread += readret;
     }
     return((ssize_t)nread);
@@ -373,20 +363,8 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
       
     selrtn = sys_select(fd+1,&fds,&timeout);
 
-    /* Check if error */
-    if(selrtn == -1) {
-      /* something is wrong. Maybe the socket is dead? */
-      DEBUG(0,("read_with_timeout: timeout read. select error = %s.\n", strerror(errno) ));
-      smb_read_error = READ_ERROR;
-      return -1;
-    }
-
-    /* Did we timeout ? */
-    if (selrtn == 0) {
-      DEBUG(10,("read_with_timeout: timeout read. select timed out.\n"));
-      smb_read_error = READ_TIMEOUT;
-      return -1;
-    }
+    if(selrtn <= 0)
+      return selrtn;
       
 #ifdef WITH_SSL
     if(fd == sslFd){
@@ -398,20 +376,9 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
     readret = read(fd, buf+nread, maxcnt-nread);
 #endif /* WITH_SSL */
 
-    if (readret == 0) {
-      /* we got EOF on the file descriptor */
-      DEBUG(5,("read_with_timeout: timeout read. EOF from client.\n"));
-      smb_read_error = READ_EOF;
-      return -1;
-    }
+    if (readret <= 0)
+      return readret;
 
-    if (readret == -1) {
-      /* the descriptor is probably dead */
-      DEBUG(0,("read_with_timeout: timeout read. read error = %s.\n", strerror(errno) ));
-      smb_read_error = READ_ERROR;
-      return -1;
-    }
-      
     nread += readret;
   }
 

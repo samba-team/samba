@@ -191,8 +191,6 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
   return(True);
 }
 
-extern int smb_read_error;
-
 static int expect(int master, char *issue, char *expected)
 {
 	pstring buffer;
@@ -233,8 +231,11 @@ static int expect(int master, char *issue, char *expected)
 		if (match)
 			break;
 
-		if (smb_read_error != READ_TIMEOUT)
+		if (len < 0)
+		{
+			DEBUG(2, ("expect: %s\n", strerror(errno)));
 			return False;
+		}
 	}
 
 	return match;
