@@ -298,75 +298,75 @@ be relevant. These are:
 startit()
 
 label(percentS) 
-dit(bf(%S)) = the name of the current service, if any.
+it() bf(%S) = the name of the current service, if any.
 
 label(percentP)
-dit(bf(%P)) = the root directory of the current service, if any.
+it() bf(%P) = the root directory of the current service, if any.
 
 label(percentu)
-dit(bf(%u)) = user name of the current service, if any.
+it() bf(%u) = user name of the current service, if any.
 
 label(percentg)
-dit(bf(%g)) = primary group name of link(bf(%u))(percentu).
+it() bf(%g) = primary group name of link(bf(%u))(percentu).
 
 label(percentU) 
-dit(bf(%U)) = session user name (the user name that
+it() bf(%U) = session user name (the user name that
 the client wanted, not necessarily the same as the one they got).
 
 label(percentG)
-dit(bf(%G)) = primary group name of link(bf(%U))(percentU).
+it() bf(%G) = primary group name of link(bf(%U))(percentU).
 
 label(percentH)
-dit(bf(%H)) = the home directory of the user given by link(bf(%u))(percentu).
+it() bf(%H) = the home directory of the user given by link(bf(%u))(percentu).
 
 label(percentv)
-dit(bf(%v)) = the Samba version.
+it() bf(%v) = the Samba version.
 
 label(percenth)
-dit(bf(%h)) = the internet hostname that Samba is running on.
+it() bf(%h) = the internet hostname that Samba is running on.
 
 label(percentm)
-dit(bf(%m)) = the netbios name of the client machine (very useful).
+it() bf(%m) = the netbios name of the client machine (very useful).
 
 label(percentL)
-%L = the netbios name of the server. This allows you to change your
+it() bf(%L) = the netbios name of the server. This allows you to change your
 config based on what the client calls you. Your server can have a "dual
 personality".
 
 label(percentM) 
-dit(bf(%M)) = the internet name of the client machine.
+it() bf(%M) = the internet name of the client machine.
 
 label(percentN)
-dit(bf(%N)) = the name of your NIS home directory server.  This is
+it() bf(%N) = the name of your NIS home directory server.  This is
 obtained from your NIS auto.map entry.  If you have not compiled Samba
 with the bf(--with-automount) option then this value will be the same
 as link(bf(%L))(percentL).
 
 label(percentp)
-dit(bf(%p)) = the path of the service's home directory, obtained from your NIS
+it() bf(%p) = the path of the service's home directory, obtained from your NIS
 auto.map entry. The NIS auto.map entry is split up as "%N:%p".
 
 label(percentR) 
-dit(bf(%R)) = the selected protocol level after protocol
+it() bf(%R) = the selected protocol level after protocol
 negotiation. It can be one of CORE, COREPLUS, LANMAN1, LANMAN2 or NT1.
 
 label(percentd)
-dit(bf(%d) = The process id of the current server process.
+it() bf(%d) = The process id of the current server process.
 
 label(percenta)
-dit(bf(%a)) = the architecture of the remote machine. Only some are recognised,
+it() bf(%a) = the architecture of the remote machine. Only some are recognised,
 and those may not be 100% reliable. It currently recognises Samba,
 WfWg, WinNT and Win95. Anything else will be known as "UNKNOWN". If it
 gets it wrong then sending a level 3 log to
 email(samba-bugs@samba.anu.edu.au) should allow it to be fixed.
 
 label(percentI)
-dit(bf(%I)) = The IP address of the client machine.
+it() bf(%I) = The IP address of the client machine.
 
 label(percentT)
-dit(bf(%T)) = the current date and time.
+it() bf(%T) = the current date and time.
 
-enddit()
+endit()
 
 There are some quite creative things that can be done with these
 substitutions and other smb.conf options.
@@ -387,429 +387,539 @@ globally, of course).
 
 The options are:
 
-"mangle case = yes/no" controls if names that have characters that
+label(manglecaseoption)
+bf("mangle case = yes/no") controls if names that have characters that
 aren't of the "default" case are mangled. For example, if this is yes
-then a name like "Mail" would be mangled. Default no.
+then a name like tt("Mail") would be mangled. Default em(no).
 
-"case sensitive = yes/no" controls whether filenames are case
+label(casesensitiveoption)
+bf("case sensitive = yes/no") controls whether filenames are case
 sensitive. If they aren't then Samba must do a filename search and
-match on passed names. Default no.
+match on passed names. Default em(no).
 
-"default case = upper/lower" controls what the default case is for new
-filenames. Default lower.
+label(defaultcaseoption)
+bf("default case = upper/lower") controls what the default case is for new
+filenames. Default em(lower).
 
-"preserve case = yes/no" controls if new files are created with the
-case that the client passes, or if they are forced to be the "default"
-case. Default no.
+label(preservecaseoption)
+bf("preserve case = yes/no") controls if new files are created with the
+case that the client passes, or if they are forced to be the tt("default")
+case. Default em(Yes).
 
-"short preserve case = yes/no" controls if new files which conform to 8.3
-syntax, that is all in upper case and of suitable length, are created
-upper case, or if they are forced to be the "default" case. This option can
-be use with "preserve case = yes" to permit long filenames to retain their
-case, while short names are lowered. Default no.
+label(shortpreservecaseoption)
 
-.SS COMPLETE LIST OF GLOBAL PARAMETERS
+bf("short preserve case = yes/no") controls if new files which conform
+to 8.3 syntax, that is all in upper case and of suitable length, are
+created upper case, or if they are forced to be the tt("default")
+case. This option can be use with link(bf("preserve case =
+yes"))(preservecaseoption) to permit long filenames to retain their
+case, while short names are lowered. Default em(Yes).
+
+label(COMPLETELISTOFGLOBALPARAMETERS)
+manpagesection(COMPLETE LIST OF GLOBAL PARAMETERS)
 
 Here is a list of all global parameters. See the section of each
 parameter for details.  Note that some are synonyms.
 
-announce as
+startit()
 
-announce version
+it() link(bf(announce as))(announceas)
 
-auto services
+it() link(bf(announce version))(announceversion)
 
-bind interfaces only
+it() link(bf(auto services))(autoservices)
 
-browse list
+it() link(bf(bind interfaces only))(bindinterfacesonly)
 
-character set
+it() link(bf(browse list))(browselist)
 
-client code page
+it() link(bf(change notify timeout))(changenotifytimeout)
 
-config file
+it() link(bf(character set))(characterset)
 
-deadtime
+it() link(bf(client code page))(clientcodepage)
 
-debuglevel
+it() link(bf(coding system))(codingsystem)
 
-default
+it() link(bf(config file))(configfile)
 
-default service
+it() link(bf(deadtime))(deadtime)
 
-dfree command
+it() link(bf(debug timestamp))(debugtimestamp)
 
-dns proxy
+it() link(bf(debuglevel))(debuglevel)
 
-domain controller
+it() link(bf(default))(default)
 
-domain logons
+it() link(bf(default service))(defaultservice)
 
-domain master
+it() link(bf(dfree command))(dfreecommand)
 
-encrypt passwords
+it() link(bf(dns proxy))(dns proxy)
 
-getwd cache
+it() link(bf(domain admin group))(domainadmingroup)
 
-hide files
+it() link(bf(domain admin users))(domainadminusers)
 
-hide dot files
+it() link(bf(domain controller))(domaincontroller)
 
-homedir map
+it() link(bf(domain groups))(domaingroups)
 
-hosts equiv
+it() link(bf(domain guest group))(domainguestgroup)
 
-include
+it() link(bf(domain guest users))(domainguestusers)
 
-interfaces
+it() link(bf(domain logons))(domainlogons)
 
-keepalive
+it() link(bf(domain master))(domainmaster)
 
-lm announce
+it() link(bf(domain sid))(domainsid)
 
-lm interval
+it() link(bf(encrypt passwords))(encryptpasswords)
 
-lock dir
+it() link(bf(getwd cache))(getwdcache)
 
-load printers
+it() link(bf(homedir map))(homedirmap)
 
-local master
+it() link(bf(hosts equiv))(hostsequiv)
 
-lock directory
+it() link(bf(interfaces))(interfaces)
 
-log file
+it() link(bf(keepalive))(keepalive)
 
-log level
+it() link(bf(kernel oplocks))(kerneloplocks)
 
-logon drive
+it() link(bf(ldap filter))(ldapfilter)
 
-logon home
+it() link(bf(ldap port))(ldapport)
 
-logon path
+it() link(bf(ldap root))(ldaproot)
 
-logon script
+it() link(bf(ldap root passwd))(ldaprootpasswd)
 
-lpq cache time
+it() link(bf(ldap server))(ldapserver)
 
-mangled stack
+it() link(bf(ldap suffix))(ldapsuffix)
 
-max log size
+it() link(bf(lm announce))(lmannounce)
 
-max mux
+it() link(bf(lm interval))(lminterval)
 
-max packet
+it() link(bf(load printers))(loadprinters)
 
-max ttl
+it() link(bf(local master))(localmaster)
 
-max xmit
+it() link(bf(lock dir))(lockdir)
 
-max wins ttl
+it() link(bf(lock directory))(lockdirectory)
 
-message command
+it() link(bf(log file))(logfile)
 
-min wins ttl
+it() link(bf(log level))(loglevel)
 
-name resolve order
+it() link(bf(logon drive))(logondrive)
 
-netbios aliases
+it() link(bf(logon home))(logonhome)
 
-netbios name
+it() link(bf(logon path))(logonpath)
 
-networkstation user login
+it() link(bf(logon script))(logonscript)
 
-nis homedir
+it() link(bf(lpq cache time))(lpqcachetime)
 
-null passwords
+it() link(bf(machine password timeout))(machinepasswordtimeout)
 
-ole locking compatibility
+it() link(bf(mangled stack))(mangledstack)
 
-os level
+it() link(bf(max disk size))(maxdisksize)
 
-packet size
+it() link(bf(max log size))(maxlogsize)
 
-passwd chat
+it() link(bf(max mux))(maxmux)
 
-passwd chat debug
+it() link(bf(max open files))(maxopenfiles)
 
-passwd program
+it() link(bf(max packet))(maxpacket)
 
-password level
+it() link(bf(max ttl))(maxttl)
 
-password server
+it() link(bf(max wins ttl))(maxwinsttl)
 
-preferred master
+it() link(bf(max xmit))(maxxmit)
 
-preload
+it() link(bf(message command))(messagecommand)
 
-printcap name
+it() link(bf(min wins ttl))(minwinsttl)
 
-printer driver file
+it() link(bf(name resolve order))(nameresolveorder)
 
-protocol
+it() link(bf(netbios aliases))(netbiosaliases)
 
-read bmpx
+it() link(bf(netbios name))(netbiosname)
 
-read prediction
+it() link(bf(networkstation user login))(networkstationuserlogin)
 
-read raw
+it() link(bf(NIS homedir))(NIShomedir)
 
-read size
+it() link(bf(nt pipe support))(ntpipesupport)
 
-remote announce
+it() link(bf(nt smb support))(ntsmbsupport)
 
-remote browse sync
+it() link(bf(null passwords))(nullpasswords)
 
-root
+it() link(bf(ole locking compatibility))(olelockingcompatibility)
 
-root dir
+it() link(bf(os level))(oslevel)
 
-root directory
+it() link(bf(packet size))(packetsize)
 
-security
+it() link(bf(panic action))(panicaction)
 
-server string
+it() link(bf(passwd chat))(passwdchat)
 
-shared file entries
+it() link(bf(passwd chat debug))(passwdchatdebug)
 
-shared mem size
+it() link(bf(passwd program))(passwdprogram)
 
-smb passwd file
+it() link(bf(password level))(passwordlevel)
 
-smbrun
+it() link(bf(password server))(passwordserver)
 
-socket address
+it() link(bf(prefered master))(preferedmaster)
 
-socket options
+it() link(bf(preferred master))(preferredmaster)
 
-status
+it() link(bf(preload))(preload)
 
-strip dot
+it() link(bf(printcap))(printcap)
 
-syslog
+it() link(bf(printcap name))(printcapname)
 
-syslog only
+it() link(bf(printer driver file))(printerdriverfile)
 
-time offset
+it() link(bf(protocol))(protocol)
 
-time server
+it() link(bf(read bmpx))(readbmpx)
 
-unix password sync
+it() link(bf(read prediction))(readprediction)
 
-unix realname
+it() link(bf(read raw))(readraw)
 
-update encrypted
+it() link(bf(read size))(readsize)
 
-username level
+it() link(bf(remote announce))(remoteannounce)
 
-username map
+it() link(bf(remote browse sync))(remotebrowsesync)
 
-use rhosts
+it() link(bf(root))(root)
 
-valid chars
+it() link(bf(root dir))(rootdir)
 
-wins proxy
+it() link(bf(root directory))(rootdirectory)
 
-wins server
+it() link(bf(security))(security)
 
-wins support
+it() link(bf(server string))(serverstring)
 
-workgroup
+it() link(bf(shared mem size))(sharedmemsize)
 
-write raw
+it() link(bf(smb passwd file))(smbpasswdfile)
 
-.SS COMPLETE LIST OF SERVICE PARAMETERS
+it() link(bf(smbrun))(smbrun)
+
+it() link(bf(socket address))(socketaddress)
+
+it() link(bf(socket options))(socketoptions)
+
+it() link(bf(ssl))(ssl)
+
+it() link(bf(ssl CA certDir))(sslCAcertDir)
+
+it() link(bf(ssl CA certFile))(sslCAcertFile)
+
+it() link(bf(ssl ciphers))(sslciphers)
+
+it() link(bf(ssl client cert))(sslclientcert)
+
+it() link(bf(ssl client key))(sslclientkey)
+
+it() link(bf(ssl compatibility))(sslcompatibility)
+
+it() link(bf(ssl hosts))(sslhosts)
+
+it() link(bf(ssl hosts resign))(sslhostsresign)
+
+it() link(bf(ssl require clientcert))(sslrequireclientcert)
+
+it() link(bf(ssl require servercert))(sslrequireservercert)
+
+it() link(bf(ssl server cert))(sslservercert)
+
+it() link(bf(ssl server key))(sslserverkey)
+
+it() link(bf(ssl version))(sslversion)
+
+it() link(bf(stat cache))(statcache)
+
+it() link(bf(stat cache size))(statcachesize)
+
+it() link(bf(strip dot))(stripdot)
+
+it() link(bf(syslog))(syslog)
+
+it() link(bf(syslog only))(syslogonly)
+
+it() link(bf(time offset))(timeoffset)
+
+it() link(bf(time server))(timeserver)
+
+it() link(bf(timestamp logs))(timestamplogs)
+
+it() link(bf(unix password sync))(unixpasswordsync)
+
+it() link(bf(unix realname))(unixrealname)
+
+it() link(bf(update encrypted))(updateencrypted)
+
+it() link(bf(use rhosts))(userhosts)
+
+it() link(bf(username level))(usernamelevel)
+
+it() link(bf(username map))(usernamemap)
+
+it() link(bf(valid chars))(validchars)
+
+it() link(bf(wins proxy))(winsproxy)
+
+it() link(bf(wins server))(winsserver)
+
+it() link(bf(wins support))(winssupport)
+
+it() link(bf(workgroup))(workgroup)
+
+it() link(bf(write raw))(writeraw)
+
+endit()
+
+label(COMPLETELISTOFSERVICEPARAMETERS)
+manpagesection(COMPLETE LIST OF SERVICE PARAMETERS)
 
 Here is a list of all service parameters. See the section of each
 parameter for details. Note that some are synonyms.
 
-admin users
+startit()
 
-allow hosts
+it() link(bf(admin users))(adminusers)
 
-alternate permissions
+it() link(bf(allow hosts))(allowhosts)
 
-available
+it() link(bf(alternate permissions))(alternatepermissions)
 
-browseable
+it() link(bf(available))(available)
 
-case sensitive
+it() link(bf(blocking locks))(blockinglocks)
 
-case sig names
+it() link(bf(browsable))(browsable)
 
-copy
+it() link(bf(browseable))(browseable)
 
-create mask
+it() link(bf(case sensitive))(casesensitive)
 
-create mode
+it() link(bf(casesignames))(casesignames)
 
-comment
+it() link(bf(comment))(comment)
 
-default case
+it() link(bf(copy))(copy)
 
-delete readonly
+it() link(bf(create mask))(createmask)
 
-delete veto files
+it() link(bf(create mode))(createmode)
 
-deny hosts
+it() link(bf(default case))(defaultcase)
 
-directory
+it() link(bf(delete readonly))(deletereadonly)
 
-directory mask
+it() link(bf(delete veto files))(deletevetofiles)
 
-directory mode
+it() link(bf(deny hosts))(denyhosts)
 
-dont descend
+it() link(bf(directory))(directory)
 
-dos filetimes
+it() link(bf(directory mask))(directorymask)
 
-dos filetime resolution
+it() link(bf(directory mode))(directorymode)
 
-exec
+it() link(bf(dont descend))(dontdescend)
 
-fake directory create times
+it() link(bf(dos filetime resolution))(dosfiletimeresolution)
 
-fake oplocks
+it() link(bf(dos filetimes))(dosfiletimes)
 
-follow symlinks
+it() link(bf(exec))(exec)
 
-force create mode
+it() link(bf(fake directory create times))(fakedirectorycreatetimes)
 
-force directory mode
+it() link(bf(fake oplocks))(fakeoplocks)
 
-force group
+it() link(bf(follow symlinks))(followsymlinks)
 
-force user
+it() link(bf(force create mode))(forcecreatemode)
 
-guest account
+it() link(bf(force directory mode))(forcedirectorymode)
 
-guest ok
+it() link(bf(force group))(forcegroup)
 
-guest only
+it() link(bf(force user))(forceuser)
 
-hide dot files
+it() link(bf(fstype))(fstype)
 
-hosts allow
+it() link(bf(group))(group)
 
-hosts deny
+it() link(bf(guest account))(guestaccount)
 
-invalid users
+it() link(bf(guest ok))(guestok)
 
-locking
+it() link(bf(guest only))(guestonly)
 
-lppause command
+it() link(bf(hide dot files))(hidedotfiles)
 
-lpq command
+it() link(bf(hide files))(hidefiles)
 
-lpresume command
+it() link(bf(hosts allow))(hostsallow)
 
-lprm command
+it() link(bf(hosts deny))(hostsdeny)
 
-magic output
+it() link(bf(include))(include)
 
-magic script
+it() link(bf(invalid users))(invalidusers)
 
-mangle case
+it() link(bf(locking))(locking)
 
-mangled names
+it() link(bf(lppause command))(lppausecommand)
 
-mangling char
+it() link(bf(lpq command))(lpqcommand)
 
-map archive
+it() link(bf(lpresume command))(lpresumecommand)
 
-map hidden
+it() link(bf(lprm command))(lprmcommand)
 
-map system
+it() link(bf(magic output))(magicoutput)
 
-max connections
+it() link(bf(magic script))(magicscript)
 
-min print space
+it() link(bf(mangle case))(manglecase)
 
-only guest
+it() link(bf(mangled map))(mangledmap)
 
-only user
+it() link(bf(mangled names))(manglednames)
 
-oplocks
+it() link(bf(mangling char))(manglingchar)
 
-path
+it() link(bf(map archive))(maparchive)
 
-postexec
+it() link(bf(map hidden))(maphidden)
 
-postscript
+it() link(bf(map system))(mapsystem)
 
-preserve case
+it() link(bf(max connections))(maxconnections)
 
-print command
+it() link(bf(min print space))(minprintspace)
 
-printer driver
+it() link(bf(only guest))(onlyguest)
 
-printer driver location
+it() link(bf(only user))(onlyuser)
 
-printing
+it() link(bf(oplocks))(oplocks)
 
-print ok
+it() link(bf(path))(path)
 
-printable
+it() link(bf(postexec))(postexec)
 
-printer
+it() link(bf(postscript))(postscript)
 
-printer name
+it() link(bf(preexec))(preexec)
 
-public
+it() link(bf(preserve case))(preservecase)
 
-queuepause command
+it() link(bf(print command))(printcommand)
 
-queueresume command
+it() link(bf(print ok))(printok)
 
-read only
+it() link(bf(printable))(printable)
 
-read list
+it() link(bf(printer))(printer)
 
-revalidate
+it() link(bf(printer driver))(printerdriver)
 
-root postexec
+it() link(bf(printer driver location))(printerdriverlocation)
 
-root preexec
+it() link(bf(printer name))(printername)
 
-set directory
+it() link(bf(printing))(printing)
 
-share modes
+it() link(bf(public))(public)
 
-short preserve case
+it() link(bf(queuepause command))(queuepausecommand)
 
-strict locking
+it() link(bf(queueresume command))(queueresumecommand)
 
-strict sync
+it() link(bf(read list))(readlist)
 
-sync always
+it() link(bf(read only))(readonly)
 
-user
+it() link(bf(revalidate))(revalidate)
 
-username
+it() link(bf(root postexec))(rootpostexec)
 
-users
+it() link(bf(root preexec))(rootpreexec)
 
-valid users
+it() link(bf(set directory))(setdirectory)
 
-veto files
+it() link(bf(share modes))(sharemodes)
 
-veto oplock files
+it() link(bf(short preserve case))(shortpreservecase)
 
-volume
+it() link(bf(status))(status)
 
-wide links
+it() link(bf(strict locking))(strictlocking)
 
-writable
+it() link(bf(strict sync))(strictsync)
 
-write ok
+it() link(bf(sync always))(syncalways)
 
-writeable
+it() link(bf(user))(user)
 
-write list
+it() link(bf(username))(username)
 
-.SS EXPLANATION OF EACH PARAMETER
-.RS 3
+it() link(bf(users))(users)
 
-.SS admin users (S)
+it() link(bf(valid users))(validusers)
+
+it() link(bf(veto files))(vetofiles)
+
+it() link(bf(veto oplock files))(vetooplockfiles)
+
+it() link(bf(volume))(volume)
+
+it() link(bf(wide links))(wide links)
+
+it() link(bf(writable))(writable)
+
+it() link(bf(write list))(write list)
+
+it() link(bf(write ok))(write ok)
+
+it() link(bf(writeable))(writeable)
+
+endit()
+
+label(EXPLANATIONOFEACHPARAMETER)
+manpagesection(EXPLANATION OF EACH PARAMETER)
+
+startdit()
+
+label(adminusers)
+dit(bf(admin users (S)))
 
 This is a list of users who will be granted administrative privileges
 on the share. This means that they will do all file operations as the
@@ -819,178 +929,205 @@ You should use this option very carefully, as any user in this list
 will be able to do anything they like on the share, irrespective of
 file permissions.
 
-.B Default:
-	no admin users
+  bf(Default:) nl()
+          no admin users
 
-.B Example:
+  bf(Example:) nl()
 	admin users = jason
 
-.SS announce as (G)
+label(allow hosts)
+dit(bf(allow hosts (S)))
 
-This specifies what type of server nmbd will announce itself as in
-browse lists. By default this is set to Windows NT. The valid options
-are "NT", "Win95" or "WfW" meaining Windows NT, Windows 95 and
-Windows for Workgroups respectively. Do not change this parameter
-unless you have a specific need to stop Samba appearing as an NT
-server as this may prevent Samba servers from participating as
-browser servers correctly.
+A synonym for this parameter is link(bf('hosts allow'))(hostsallow)
 
-.B Default:
+This parameter is a comma, space, or tab delimited set of hosts which
+are permitted to access a service.
+
+If specified in the link(bf([global]))(global) section then it will
+apply to all services, regardless of whether the individual service
+has a different setting.
+
+You can specify the hosts by name or IP number. For example, you could
+restrict access to only the hosts on a Class C subnet with something
+like tt("allow hosts = 150.203.5."). The full syntax of the list is
+described in the man page bf(hosts_access (5)). Note that this man
+page may not be present on your system, so a brief description will
+be given here also.
+
+em(NOTE:) IF you wish to allow the url(bf(smbpasswd
+(8)))(smbpasswd.html.8) program to be run by local users to change
+their Samba passwords using the local url(bf(smbd (8)))(smbd.8.html)
+daemon, then you em(MUST) ensure that the localhost is listed in your
+bf(allow hosts) list, as url(bf(smbpasswd (8)))(smbpasswd.html.8) runs
+in client-server mode and is seen by the local
+url(bf(smbd))(smbd.8.html) process as just another client.
+
+You can also specify hosts by network/netmask pairs and by netgroup
+names if your system supports netgroups. The em(EXCEPT) keyword can also
+be used to limit a wildcard list. The following examples may provide
+some help:
+
+bf(Example 1): allow localhost and all IPs in 150.203.*.* except one
+
+tt(	hosts allow = localhost, 150.203. EXCEPT 150.203.6.66)
+
+bf(Example 2): allow localhost and hosts that match the given network/netmask
+
+tt(	hosts allow = localhost, 150.203.15.0/255.255.255.0)
+
+bf(Example 3): allow a localhost plus a couple of hosts
+
+tt(	hosts allow = localhost, lapland, arvidsjaur)
+
+bf(Example 4): allow only hosts in NIS netgroup "foonet" or localhost, but 
+deny access from one particular host
+
+tt( 	hosts allow = @foonet, localhost)
+tt( 	hosts deny = pirate)
+
+Note that access still requires suitable user-level passwords.
+
+See utl(bf(testparm (1)))(testparm.1.html) for a way of testing your
+host access to see if it does what you expect.
+
+  bf(Default:)
+ 	none (i.e., all hosts permitted access)
+
+  bf(Example:)
+ 	allow hosts = 150.203.5. localhost myhost.mynet.edu.au
+
+label(alternatepermissions)
+dit(bf(alternate permissions (S)))
+
+This is a deprecated parameter. It no longer has any effect in Samba2.0.
+In previous versions of Samba it affected the way the DOS "read only"
+attribute was mapped for a file. In Samba2.0 a file is marked "read only"
+if the UNIX file does not have the 'w' bit set for the owner of the file,
+regardless if the owner of the file is the currently logged on user or not.
+
+label(announceas)
+dit(bf(announce as (G)))
+
+This specifies what type of server url(bf(nmbd))(nmbd.8.html) will
+announce itself as, to a network neighborhood browse list. By default
+this is set to Windows NT. The valid options are : "NT", "Win95" or
+"WfW" meaining Windows NT, Windows 95 and Windows for Workgroups
+respectively. Do not change this parameter unless you have a specific
+need to stop Samba appearing as an NT server as this may prevent Samba
+servers from participating as browser servers correctly.
+
+  bf(Default:)
     announce as = NT
 
-.B Example
+  bf(Example)
     announce as = Win95
 
-.SS announce version (G)
+label(announceversion)
+dit(bf(announce version (G)))
 
-This specifies the major and minor version numbers that nmbd
-will use when announcing itself as a server. The default is 4.2.
-Do not change this parameter unless you have a specific need to
-set a Samba server to be a downlevel server.
+This specifies the major and minor version numbers that nmbd will use
+when announcing itself as a server. The default is 4.2.  Do not change
+this parameter unless you have a specific need to set a Samba server
+to be a downlevel server.
 
-.B Default:
+  bf(Default:)
    announce version = 4.2
 
-.B Example:
+  bf(Example:)
    announce version = 2.0
 
-.SS auto services (G)
+
+label(autoservices)
+dit(bf(auto services (G)))
+
 This is a list of services that you want to be automatically added to
 the browse lists. This is most useful for homes and printers services
 that would otherwise not be visible.
 
 Note that if you just want all printers in your printcap file loaded
-then the "load printers" option is easier.
+then the link(bf("load printers"))(loadprinters) option is easier.
 
-.B Default:
+  bf(Default:)
 	no auto services
 
-.B Example:
+  bf(Example:)
 	auto services = fred lp colorlp
 
-.SS allow hosts (S)
-A synonym for this parameter is 'hosts allow'.
+label(available)
+dit(bf(available (S)))
 
-This parameter is a comma delimited set of hosts which are permitted to access
-a service. 
+This parameter lets you em('turn off') a service. If tt('available = no'),
+then em(ALL) attempts to connect to the service will fail. Such failures
+are logged.
 
-If specified in the [global] section then it will apply to all
-services, regardless of whether the individual service has a different
-setting. 
-
-You can specify the hosts by name or IP number. For example, you could
-restrict access to only the hosts on a Class C subnet with something like
-"allow hosts = 150.203.5.". The full syntax of the list is described in
-the man page
-.BR hosts_access (5).
-
-You can also specify hosts by network/netmask pairs and by netgroup
-names if your system supports netgroups. The EXCEPT keyword can also
-be used to limit a wildcard list. The following examples may provide
-some help:
-
-Example 1: allow all IPs in 150.203.*.* except one
-
-	hosts allow = 150.203. EXCEPT 150.203.6.66
-
-Example 2: allow hosts that match the given network/netmask
-
-	hosts allow = 150.203.15.0/255.255.255.0
-
-Example 3: allow a couple of hosts
-
-	hosts allow = lapland, arvidsjaur
-
-Example 4: allow only hosts in netgroup "foonet" or localhost, but 
-deny access from one particular host
-
- 	hosts allow = @foonet, localhost
- 	hosts deny = pirate
-
-Note that access still requires suitable user-level passwords.
-
-See
-.BR testparm (1)
-for a way of testing your host access to see if it
-does what you expect.
-
-.B Default:
- 	none (i.e., all hosts permitted access)
-
-.B Example:
- 	allow hosts = 150.203.5. myhost.mynet.edu.au
-
-.SS alternate permissions (S)
-
-This option affects the way the "read only" DOS attribute is produced
-for UNIX files. If this is false then the read only bit is set for
-files on writeable shares which the user cannot write to.
-
-If this is true then it is set for files whos user write bit is not set.
-
-The latter behaviour is useful for when users copy files from each
-others directories, and use a file manager that preserves
-permissions. Without this option they may get annoyed as all copied
-files will have the "read only" bit set.
-
-.B Default:
-	alternate permissions = no
-
-.B Example:
-	alternate permissions = yes
-
-.SS available (S)
-This parameter lets you 'turn off' a service. If 'available = no', then
-ALL attempts to connect to the service will fail. Such failures are logged.
-
-.B Default:
+  bf(Default:)
  	available = yes
 
-.B Example:
+  bf(Example:)
  	available = no
 
-.SS bind interfaces only (G)
-This global parameter (new for 1.9.18) allows the Samba admin to limit
-what interfaces on a machine will serve smb requests. If affects file service
-(smbd) and name service (nmbd) in slightly different ways.
+label(bindinterfacesonly)
+dit(bf(bind interfaces only (G)))
 
-For name service it causes nmbd to bind to ports 137 and 138 on
-the interfaces listed in the 'interfaces' parameter. nmbd also binds
-to the 'all addresses' interface (0.0.0.0) on ports 137 and 138
-for the purposes of reading broadcast messages. If this option is
-not set then nmbd will service name requests on all of these
-sockets. If "bind interfaces only" is set then nmbd will check
-the source address of any packets coming in on the broadcast
-sockets and discard any that don't match the broadcast addresses
-of the interfaces in the 'interfaces' parameter list. As unicast
-packets are received on the other sockets it allows nmbd to
-refuse to serve names to machines that send packets that arrive
-through any interfaces not listed in the 'interfaces' list.
-IP Source address spoofing does defeat this simple check, however
-so it must not be used seriously as a security feature for nmbd.
+This global parameter allows the Samba admin to limit what interfaces
+on a machine will serve smb requests. If affects file service
+url(bf(smbd))(smbd.8.html) and name service url(bf(nmbd))(nmbd.8.html)
+in slightly different ways.
 
-For file service it causes smbd to bind only to the interface
-list given in the 'interfaces' parameter. This restricts the
-networks that smbd will serve to packets coming in those interfaces.
-Note that you should not use this parameter for machines that
-are serving ppp or other intermittant or non-broadcast network
+For name service it causes url(bf(nmbd))(nmbd.8.html) to bind to ports
+137 and 138 on the interfaces listed in the
+link(bf('interfaces'))(interfaces) parameter. nmbd also binds to the
+'all addresses' interface (0.0.0.0) on ports 137 and 138 for the
+purposes of reading broadcast messages. If this option is not set then
+nmbd will service name requests on all of these sockets. If bf("bind
+interfaces only") is set then nmbd will check the source address of
+any packets coming in on the broadcast sockets and discard any that
+don't match the broadcast addresses of the interfaces in the
+link(bf('interfaces'))(interfaces) parameter list. As unicast packets
+are received on the other sockets it allows nmbd to refuse to serve
+names to machines that send packets that arrive through any interfaces
+not listed in the 'interfaces' list.  IP Source address spoofing does
+defeat this simple check, however so it must not be used seriously as
+a security feature for nmbd.
+
+For file service it causes smbd to bind only to the interface list
+given in the link(bf('interfaces'))(interfaces) parameter. This
+restricts the networks that smbd will serve to packets coming in those
+interfaces.  Note that you should not use this parameter for machines
+that are serving PPP or other intermittant or non-broadcast network
 interfaces as it will not cope with non-permanent interfaces.
 
-.B Default:
+In addition, to change a users SMB password, the
+url(bf(smbpasswd))(smbpasswd.8.html) by default connects to the
+em("localhost" - 127.0.0.1) address as an SMB client to issue the
+password change request. If bf("bind interfaces only") is set then
+unless the network address em(127.0.0.1) is added to the
+link(bf('interfaces'))(interfaces) parameter list then
+url(bf(smbpasswd))(smbpasswd.8.html) will fail to connect in it's
+default mode. url(bf(smbpasswd))(smbpasswd.8.html) can be forced to
+use the primary IP interface of the local host by using its
+url(bf("-r remote machine"))(smbpasswd.8.html#minusr) parameter, with
+bf("remote machine") set to the IP name of the primary interface
+of the local host.
+
+  bf(Default:)
        bind interfaces only = False
 
-.B Example:
+  bf(Example:)
        bind interfaces only = True
 
-.SS browseable (S)
+label(browseable)
+dit(bf(browseable (S)))
+
 This controls whether this share is seen in the list of available
 shares in a net view and in the browse list.
 
-.B Default:
+  bf(Default:)
 	browseable = Yes
 
-.B Example: 
+  bf(Example:)
 	browseable = No
+
 .SS browse list(G)
 This controls whether the smbd will serve a browse list to a client
 doing a NetServerEnum call. Normally set to true. You should never
