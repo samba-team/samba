@@ -276,7 +276,7 @@ static PyObject *lsa_enum_trust_dom(PyObject *self, PyObject *args)
 {
 	lsa_policy_hnd_object *hnd = (lsa_policy_hnd_object *)self;
 	NTSTATUS ntstatus;
-	uint32 enum_ctx = 0, num_domains, i, pref_num_domains = 0;
+	uint32 enum_ctx = 0, num_domains, i;
 	char **domain_names;
 	DOM_SID *domain_sids;
 	PyObject *result;
@@ -286,7 +286,7 @@ static PyObject *lsa_enum_trust_dom(PyObject *self, PyObject *args)
 	
 	ntstatus = cli_lsa_enum_trust_dom(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, &enum_ctx,
-		&pref_num_domains, &num_domains, &domain_names, &domain_sids);
+		&num_domains, &domain_names, &domain_sids);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
