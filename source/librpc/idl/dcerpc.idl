@@ -105,6 +105,10 @@ interface dcerpc
 	const uint8 DCERPC_AUTH_TYPE_KRB5     = 1;
 	const uint8 DCERPC_AUTH_TYPE_SPNEGO   = 9;
 	const uint8 DCERPC_AUTH_TYPE_NTLMSSP  = 10;
+	/* I'm not 100% sure but type 16(0x10)
+	 * seems to be raw krb5 --metze
+	 */
+	const uint8 DCERPC_AUTH_TYPE_KRB5_16  = 16;
 	const uint8 DCERPC_AUTH_TYPE_SCHANNEL = 68;
 	
 	const uint8 DCERPC_AUTH_LEVEL_NONE      = 1;
