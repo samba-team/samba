@@ -36,7 +36,7 @@ void get_random_grouplist(int *ngroups, gid_t **groups)
 
 	if (!groups) {
 		printf("FAIL: malloc random grouplist\n");
-		return 1;
+		return;
 	}
 
 	for (i = 0; i < *ngroups; i++) {
