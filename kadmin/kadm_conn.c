@@ -211,7 +211,7 @@ start_server(krb5_context context)
 	tmp = realloc(socks, (num_socks + i) * sizeof(*socks));
 	if(tmp == NULL) {
 	    krb5_warnx(context, "failed to reallocate %lu bytes", 
-		       (num_socks + i) * sizeof(*socks));
+		       (unsigned long)(num_socks + i) * sizeof(*socks));
 	    continue;
 	}
 	socks = tmp;
