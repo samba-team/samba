@@ -4001,32 +4001,32 @@ void standard_sub_basic(char *str)
 {
 	char *s, *p;
 	char pidstr[10];
-        struct passwd *pass;
-        char *username = sam_logon_in_ssb ? samlogon_user : sesssetup_user;
+	struct passwd *pass;
+	char *username = sam_logon_in_ssb ? samlogon_user : sesssetup_user;
 
 	for (s = str ; s && *s && (p = strchr(s,'%')); s = p )
 	{
 		switch (*(p+1))
 		{
-                        case 'G' :
-                        {
-                                if ((pass = Get_Pwnam(username,False))!=NULL)
-                                {
-                                        string_sub(p,"%G",gidtoname(pass->pw_gid));
-                                }
-                                else
-                                {
-                                        p += 2;
-                                }
-                                break;
-                        }
-                        case 'N' : string_sub(p,"%N", automount_server(username)); break;
+			case 'G' :
+			{
+				if ((pass = Get_Pwnam(username,False))!=NULL)
+				{
+					string_sub(p,"%G",gidtoname(pass->pw_gid));
+				}
+				else
+				{
+					p += 2;
+				}
+				break;
+			}
+			case 'N' : string_sub(p,"%N", automount_server(username)); break;
 			case 'I' : string_sub(p,"%I", client_addr(Client)); break;
 			case 'L' : string_sub(p,"%L", local_machine); break;
 			case 'M' : string_sub(p,"%M", client_name(Client)); break;
 			case 'R' : string_sub(p,"%R", remote_proto); break;
 			case 'T' : string_sub(p,"%T", timestring()); break;
-                        case 'U' : string_sub(p,"%U", username); break;
+			case 'U' : string_sub(p,"%U", username); break;
 			case 'a' : string_sub(p,"%a", remote_arch); break;
 			case 'd' :
 			{
@@ -4037,38 +4037,46 @@ void standard_sub_basic(char *str)
 			case 'h' : string_sub(p,"%h", myhostname); break;
 			case 'm' : string_sub(p,"%m", remote_machine); break;
 			case 'v' : string_sub(p,"%v", VERSION); break;
-                        case '$' : /* Expand environment variables */
-                        {
-                          /* Contributed by Branko Cibej <branko.cibej@hermes.si> */
-                          fstring envname;
-                          char *envval;
-                          char *q, *r;
-                          int copylen;
- 
-                          if (*(p+2) != '(') { p+=2; break; }
-                          if ((q = strchr(p,')')) == NULL)
-                          {
-                            DEBUG(0,("standard_sub_basic: Unterminated environment \
-variable [%s]\n", p));
-                            p+=2; break;
-                          }
- 
-                          r = p+3;
-                          copylen = MIN((q-r),(sizeof(envname)-1));
-                          strncpy(envname,r,copylen);
-                          envname[copylen] = '\0';
-                          if ((envval = getenv(envname)) == NULL)
-                          {
-                            DEBUG(0,("standard_sub_basic: Environment variable [%s] not set\n",
-                                     envname));
-                            p+=2; break;
-                          }
-                          copylen = MIN((q+1-p),(sizeof(envname)-1));
-                          strncpy(envname,p,copylen);
-                          envname[copylen] = '\0';
-                          string_sub(p,envname,envval);
-                          break;
-                        }
+			case '$' : /* Expand environment variables */
+			{
+				/* Contributed by Branko Cibej <branko.cibej@hermes.si> */
+				fstring envname;
+				char *envval;
+				char *q, *r;
+				int copylen;
+
+				if (*(p+2) != '(')
+				{
+					p+=2;
+					break;
+				}
+				if ((q = strchr(p,')')) == NULL)
+				{
+					DEBUG(0,("standard_sub_basic: Unterminated environment \
+					variable [%s]\n", p));
+					p+=2;
+					break;
+				}
+
+				r = p+3;
+				copylen = MIN((q-r),(sizeof(envname)-1));
+				strncpy(envname,r,copylen);
+				envname[copylen] = '\0';
+
+				if ((envval = getenv(envname)) == NULL)
+				{
+					DEBUG(0,("standard_sub_basic: Environment variable [%s] not set\n",
+					envname));
+					p+=2;
+					break;
+				}
+
+				copylen = MIN((q+1-p),(sizeof(envname)-1));
+				strncpy(envname,p,copylen);
+				envname[copylen] = '\0';
+				string_sub(p,envname,envval);
+				break;
+			}
 			case '\0': p++; break; /* don't run off end if last character is % */
 			default  : p+=2; break;
 		}
