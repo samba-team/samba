@@ -68,6 +68,12 @@ static char *parse_slash(char *p, char *end) {
 	}
 }
 
+#define LDAP_PARSE_DN_INVALID(x) do {\
+	if (x) { \
+		dn->comp_num = -1; \
+		return dn; \
+	} \
+} while(0)
 
 struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
 {
@@ -75,7 +81,7 @@ struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
 	struct dn_component *component;
 	struct dn_attribute *attribute;
 	char *p, *start, *separator, *src, *dest, *dn_copy, *dn_end;
-	int i, size;
+	int i, size, orig_len;
 
 	dn = talloc_p(mem_ctx, struct ldap_dn);
 	dn->comp_num = 0;
@@ -83,8 +89,14 @@ struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
 	component = talloc_p(dn, struct dn_component);
 	component->attr_num = 0;
 
+	orig_len = strlen(orig_dn);
+	if (orig_len == 0) {
+		dn->dn = talloc_strdup(dn, orig_dn);
+		return dn;
+	}
+
 	dn_copy = p = talloc_strdup(mem_ctx, orig_dn);
-	dn_end = dn_copy + strlen(orig_dn) + 1;
+	dn_end = dn_copy + orig_len + 1;
 	do {
 		component->attributes = talloc_array_p(component, struct dn_attribute *, 1);
 		attribute = talloc_p(component, struct dn_attribute);
@@ -113,6 +125,7 @@ struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
 			}
 
 			/* save key name */
+			LDAP_PARSE_DN_INVALID((p - start) < 1);
 			attribute->name = talloc_strndup(attribute, start, p - start);
 			DEBUG(10, ("attribute name: [%s]\n", attribute->name));
 
@@ -157,6 +170,7 @@ struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
 			}
 
 			/* save the value */
+			LDAP_PARSE_DN_INVALID((p - start) < 1);
 			attribute->value = talloc_strndup(attribute, start, p - start);
 			DEBUG(10, ("attribute value: [%s]\n", attribute->value));
 
