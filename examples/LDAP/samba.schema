@@ -111,6 +111,15 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.15 NAME 'primaryGroupID'
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
 ##
+## SID, of any type
+##
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.20 NAME 'ntSid'
+	DESC 'Security ID'
+	EQUALITY caseIgnoreIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{64} SINGLE-VALUE )
+
+##
 ## group mapping attributes
 ##
 attributetype ( 1.3.6.1.4.1.7165.2.1.19 NAME 'ntGroupType'
@@ -118,10 +127,19 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.19 NAME 'ntGroupType'
 	EQUALITY integerMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
-attributetype ( 1.3.6.1.4.1.7165.2.1.20 NAME 'ntSid'
-	DESC 'Security ID'
-	EQUALITY caseIgnoreIA5Match
-	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{64} SINGLE-VALUE )
+##
+## Store info on the domain
+##
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.21 NAME 'nextUserRid'
+	DESC 'Next NT rid to give our for users'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.22 NAME 'nextGroupRid'
+	DESC 'Next NT rid to give out for groups'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
 ##
 ## The smbPasswordEntry objectclass has been depreciated in favor of the
@@ -146,7 +164,7 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.20 NAME 'ntSid'
 
 objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
 	DESC 'Samba Auxilary Account'
-	MUST ( uid $ rid ) 
+	MUST ( uid $ ntSid ) 
 	MAY  ( cn $ lmPassword $ ntPassword $ pwdLastSet $ logonTime $
                logoffTime $ kickoffTime $ pwdCanChange $ pwdMustChange $ acctFlags $ 
                displayName $ smbHome $ homeDrive $ scriptPath $ profilePath $
@@ -159,6 +177,17 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
 ##
 ############################################################################
 
+##
+## Whole-of-domain info
+##
+
+objectclass ( 1.3.6.1.4.1.7165.2.2.5 NAME 'sambaDomain' SUP top STRUCTURAL
+	DESC 'Samba Domain Information'
+	MUST ( domain $ nextGroupRid $ nextUserRid $ ntSid)) 
+
+##
+## Group mapping info
+##
 objectclass ( 1.3.6.1.4.1.7165.2.2.4 NAME 'sambaGroupMapping' SUP top AUXILIARY
 	DESC 'Samba Group Mapping'
 	MUST ( gidNumber $ ntSid $ ntGroupType ) 
