@@ -87,11 +87,13 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	/* we use a mutex to prevent two connections at once - when a NT PDC gets
 	   two connections where one hasn't completed a negprot yet it will send a 
 	   TCP reset to the first connection (tridge) */
-	if (!message_named_mutex(server)) {
-		DEBUG(1,("domain mutex failed for %s\n", server));
+	if (!message_named_mutex(server, 20)) {
+		DEBUG(1,("connect_to_domain_password_server: domain mutex failed for %s\n", server));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
+	DEBUG(10,("connect_to_domain_password_server: got mutex for %s\n", server));
+
 	/* Attempt connection */
 	result = cli_full_connection(cli, global_myname, server,
 				     &dest_ip, 0, "IPC$", "IPC", "", "", "", 0);
