@@ -557,9 +557,9 @@
 	NTSTATUS lsa_QuerySecret (
 		[in,ref]     policy_handle *handle,
 		[in,out]     lsa_DATA_BUF_PTR  *new_val,
-		[in,out]     NTTIME            *new_mtime,
+		[in,out]     NTTIME_hyper      *new_mtime,
 		[in,out]     lsa_DATA_BUF_PTR  *old_val,
-		[in,out]     NTTIME            *old_mtime
+		[in,out]     NTTIME_hyper      *old_mtime
 		);
 
 	/* Function:     0x1f */
