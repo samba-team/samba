@@ -744,7 +744,11 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 
 	open_mode = SVAL(params, 2);
 	open_attr = SVAL(params,6);
-	oplock_request = (((SVAL(params,0)|(1<<1))>>1) | ((SVAL(params,0)|(1<<2))>>1));
+        oplock_request = (SVAL(params,0) & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+        if (oplock_request) {
+                oplock_request |= (SVAL(params,0) & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+        }
+
 #if 0
 	return_additional_info = BITSETW(params,0);
 	open_sattr = SVAL(params, 4);
