@@ -436,10 +436,13 @@ static int msg_delete_element(struct ldb_context *ldb,
 					sizeof(el->values[i])*(el->num_values-(i+1)));
 			}
 			el->num_values--;
+			if (el->num_values == 0) {
+				return msg_delete_attribute(ldb, msg, name);
+			}
 			return 0;
 		}
 	}
-	
+
 	return -1;
 }
 
@@ -488,7 +491,7 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 			   already exists */
 			ret = find_element(&msg2, msg->elements[i].name);
 			if (ret != -1) {
-				errno = EEXIST;
+				ltdb->last_err_string = "Attribute exists";
 				goto failed;
 			}
 			if (msg_add_element(ldb, &msg2, &msg->elements[i]) != 0) {
@@ -500,6 +503,7 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 			/* replace all elements of this attribute name with the elements
 			   listed */
 			if (msg_delete_attribute(ldb, &msg2, msg->elements[i].name) != 0) {
+				ltdb->last_err_string = "No such attribute";
 				goto failed;
 			}
 			/* add the replacement element */
@@ -514,6 +518,7 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 			if (msg->elements[i].num_values == 0) {
 				if (msg_delete_attribute(ldb, &msg2, 
 							 msg->elements[i].name) != 0) {
+					ltdb->last_err_string = "No such attribute";
 					goto failed;
 				}
 				break;
@@ -523,6 +528,7 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 						       &msg2, 
 						       msg->elements[i].name,
 						       &msg->elements[i].values[j]) != 0) {
+					ltdb->last_err_string = "No such attribute";
 					goto failed;
 				}
 			}

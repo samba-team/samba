@@ -12,3 +12,9 @@ telephonenumber: +61 412 666 929
 -
 delete: telephonenumber
 telephonenumber: +61 2 6260 6012
+-
+delete: telephonenumber
+telephonenumber: +61 412 666 929
+-
+add: telephonenumber
+telephonenumber: +61 412 666 929

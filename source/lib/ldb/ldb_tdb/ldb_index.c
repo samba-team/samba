@@ -496,7 +496,7 @@ static int ldb_index_filter(struct ldb_context *ldb, struct ldb_parse_tree *tree
 			    const char *base,
 			    enum ldb_scope scope,
 			    const struct dn_list *dn_list, 
-			    char * const attrs[], struct ldb_message ***res)
+			    const char * const attrs[], struct ldb_message ***res)
 {
 	int i;
 	unsigned int count = 0;
@@ -536,7 +536,7 @@ int ltdb_search_indexed(struct ldb_context *ldb,
 			const char *base,
 			enum ldb_scope scope,
 			struct ldb_parse_tree *tree,
-			char * const attrs[], struct ldb_message ***res)
+			const char * const attrs[], struct ldb_message ***res)
 {
 	struct ltdb_private *ltdb = ldb->private_data;
 	struct dn_list dn_list;

@@ -144,6 +144,10 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 	ldb_close(ldb);
 
 	printf("Modified %d records with %d failures\n", count, failures);
+
+	if (failures != 0) {
+		return -1;
+	}
 	
 	return 0;
 }

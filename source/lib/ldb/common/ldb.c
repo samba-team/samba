@@ -82,7 +82,7 @@ int ldb_search(struct ldb_context *ldb,
 	       const char *base,
 	       enum ldb_scope scope,
 	       const char *expression,
-	       char * const *attrs, struct ldb_message ***res)
+	       const char * const *attrs, struct ldb_message ***res)
 {
 	int ret;
 	ret = ldb->ops->search(ldb, base, scope, expression, attrs, res);

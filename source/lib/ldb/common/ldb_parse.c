@@ -56,10 +56,12 @@ a filter is defined by:
                <filtertype> ::= '=' | '~=' | '<=' | '>='
 */
 
+#define LDB_ALL_SEP "()&|=!"
+
 /*
   return next token element. Caller frees
 */
-static char *ldb_parse_lex(struct ldb_context *ldb, const char **s)
+static char *ldb_parse_lex(struct ldb_context *ldb, const char **s, const char *sep)
 {
 	const char *p = *s;
 	char *ret;
@@ -73,7 +75,7 @@ static char *ldb_parse_lex(struct ldb_context *ldb, const char **s)
 		return NULL;
 	}
 
-	if (strchr("()&|=!", *p)) {
+	if (strchr(sep, *p)) {
 		(*s) = p+1;
 		ret = ldb_strndup(ldb, p, 1);
 		if (!ret) {
@@ -82,7 +84,7 @@ static char *ldb_parse_lex(struct ldb_context *ldb, const char **s)
 		return ret;
 	}
 
-	while (*p && (isalnum(*p) || !strchr("()&|=!", *p))) {
+	while (*p && (isalnum(*p) || !strchr(sep, *p))) {
 		p++;
 	}
 
@@ -132,7 +134,7 @@ static struct ldb_parse_tree *ldb_parse_simple(struct ldb_context *ldb, const ch
 	char *eq, *val, *l;
 	struct ldb_parse_tree *ret;
 
-	l = ldb_parse_lex(ldb, &s);
+	l = ldb_parse_lex(ldb, &s, LDB_ALL_SEP);
 	if (!l) {
 		return NULL;
 	}
@@ -142,7 +144,7 @@ static struct ldb_parse_tree *ldb_parse_simple(struct ldb_context *ldb, const ch
 		return NULL;
 	}
 
-	eq = ldb_parse_lex(ldb, &s);
+	eq = ldb_parse_lex(ldb, &s, LDB_ALL_SEP);
 	if (!eq || strcmp(eq, "=") != 0) {
 		ldb_free(ldb, l);
 		if (eq) ldb_free(ldb, eq);
@@ -150,8 +152,8 @@ static struct ldb_parse_tree *ldb_parse_simple(struct ldb_context *ldb, const ch
 	}
 	ldb_free(ldb, eq);
 
-	val = ldb_parse_lex(ldb, &s);
-	if (val && strchr("()&|=", *val)) {
+	val = ldb_parse_lex(ldb, &s, ")");
+	if (val && strchr("()&|", *val)) {
 		ldb_free(ldb, l);
 		if (val) ldb_free(ldb, val);
 		return NULL;
@@ -288,7 +290,7 @@ static struct ldb_parse_tree *ldb_parse_filter(struct ldb_context *ldb, const ch
 	const char *p, *p2;
 	struct ldb_parse_tree *ret;
 
-	l = ldb_parse_lex(ldb, s);
+	l = ldb_parse_lex(ldb, s, LDB_ALL_SEP);
 	if (!l) {
 		return NULL;
 	}
