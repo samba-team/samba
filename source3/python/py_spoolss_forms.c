@@ -26,7 +26,8 @@ PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
-	PyObject *py_form;
+	PyObject *py_form, *py_form_name;
+	char *form_name;
 	FORM form;
 	int level = 1;
 	static char *kwlist[] = {"form", "level", NULL};
@@ -39,23 +40,17 @@ PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
 	
 	/* Call rpc function */
 
-	switch (level) {
-	case 1: {
-		PyObject *py_form_name;
-		char *form_name;
-
-		if (!py_to_FORM(&form, py_form)) {
-			PyErr_SetString(spoolss_error, "invalid form");
-			return NULL;
-		}
-
-		py_form_name = PyDict_GetItemString(py_form, "name");
-		form_name = PyString_AsString(py_form_name);
-
-		init_unistr2(&form.name, form_name, strlen(form_name) + 1);
-
-		break;
+	if (!py_to_FORM(&form, py_form) ||
+	    !(py_form_name = PyDict_GetItemString(py_form, "name")) ||
+	    !(form_name = PyString_AsString(py_form_name))) {
+		PyErr_SetString(spoolss_error, "invalid form");
+		return NULL;
 	}
+
+	switch (level) {
+	case 1:
+		init_unistr2(&form.name, form_name, strlen(form_name) + 1);
+		break;
 	default:
 		PyErr_SetString(spoolss_error, "unsupported info level");
 		return NULL;
@@ -126,22 +121,23 @@ PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
-	PyObject *py_form;
+	PyObject *py_form, *py_form_name;
 	int level = 1;
-	static char *kwlist[] = {"form_name", "form", "level", NULL};
+	static char *kwlist[] = {"form", "level", NULL};
 	char *form_name;
 	FORM form;
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "sO!|i", kwlist, 
-					 &form_name, &PyDict_Type, &py_form,
-					 &level))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!|i", kwlist, 
+					 &PyDict_Type, &py_form, &level))
 		return NULL;
 	
 	/* Call rpc function */
 
-	if (!py_to_FORM(&form, py_form)) {
+	if (!py_to_FORM(&form, py_form) ||
+	    !(py_form_name = PyDict_GetItemString(py_form, "name")) ||
+	    !(form_name = PyString_AsString(py_form_name))) {
 		PyErr_SetString(spoolss_error, "invalid form");
 		return NULL;
 	}
