@@ -98,6 +98,7 @@ SOURCES = \
 	snprintf.c \
 	socket.c \
 	strcasecmp.c \
+	strcollect.c \
 	strdup.c \
 	strerror.c \
 	strftime.c \
@@ -153,6 +154,7 @@ OBJECTS = \
 	simple_exec.o \
 	snprintf.o \
 	socket.o \
+	strcollect.o \
 	tm2time.o \
 	verify.o \
 	warnerr.o \
