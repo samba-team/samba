@@ -1279,6 +1279,7 @@ fix_transited_encoding(krb5_boolean check_policy,
 	}
 	et->flags.transited_policy_checked = 1;
     }
+    et->transited.tr_type = DOMAIN_X500_COMPRESS;
     ret = krb5_domain_x500_encode(realms, num_realms, &et->transited.contents);
     if(ret)
 	krb5_warn(context, ret, "Encoding transited encoding");
