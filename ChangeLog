@@ -1,3 +1,11 @@
+2000-07-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* configure.in: fix some typos
+
+	* appl/Makefile.am: dceutil*s*
+
+	* missing: update to missing from automake 1.4a
+
 2000-07-17  Johan Danielsson  <joda@pdc.kth.se>
 
 	* configure.in: subst AIX compiler flags

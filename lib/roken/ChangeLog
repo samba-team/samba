@@ -1,3 +1,7 @@
+2000-07-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* configure.in: AM_PROG_LIBTOOL -> AC_PROG_LIBTOOL
+
 2000-07-09  Assar Westerlund  <assar@sics.se>
 
 	* rtbl.c (rtbl_add_column): initialize `col' completely

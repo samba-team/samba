@@ -1,3 +1,10 @@
+2000-07-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* check-netinet-ip-and-tcp.m4: use cache_check, and make this work
+	with new autoconf
+
+	* aix.m4: don't subst AFS_EXTRA_LD
+
 2000-07-15  Johan Danielsson  <joda@pdc.kth.se>
 
 	* check-var.m4: workaround feature of newer autoconf
