@@ -2405,48 +2405,6 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
                                   const struct ntuser_creds *ntc,
                                   BOOL reuse, BOOL *is_new_connection);
 
-/*The following definitions come from  rpc_parse/parse_creds.c  */
-
-BOOL make_creds_unix(CREDS_UNIX *r_u, const char* user_name,
-				const char* requested_name,
-				const char* real_name,
-				BOOL guest);
-BOOL creds_io_unix(char *desc, CREDS_UNIX *r_u, prs_struct *ps, int depth);
-void creds_free_unix(CREDS_UNIX *r_u);
-BOOL make_creds_unix_sec(CREDS_UNIX_SEC *r_u,
-		uint32 uid, uint32 gid, uint32 num_grps, gid_t *grps);
-BOOL creds_io_unix_sec(char *desc, CREDS_UNIX_SEC *r_u, prs_struct *ps, int depth);
-void creds_free_unix_sec(CREDS_UNIX_SEC *r_u);
-BOOL make_creds_nt_sec(CREDS_NT_SEC *r_u,
-		DOM_SID *sid, uint32 num_grps, uint32 *grps);
-BOOL creds_io_nt_sec(char *desc, CREDS_NT_SEC *r_u, prs_struct *ps, int depth);
-void creds_free_nt_sec(CREDS_NT_SEC *r_u);
-BOOL creds_io_pwd_info(char *desc, struct pwd_info *pwd, prs_struct *ps, int depth);
-BOOL creds_io_nt(char *desc, CREDS_NT *r_u, prs_struct *ps, int depth);
-void creds_free_nt(CREDS_NT *r_u);
-BOOL creds_io_hybrid(char *desc, CREDS_HYBRID *r_u, prs_struct *ps, int depth);
-void copy_unix_creds(CREDS_UNIX *to, const CREDS_UNIX *from);
-void copy_nt_sec_creds(CREDS_NT_SEC *to, const CREDS_NT_SEC *from);
-void copy_unix_sec_creds(CREDS_UNIX_SEC *to, const CREDS_UNIX_SEC *from);
-void create_ntc_from_cli_state (CREDS_NT *to, const struct cli_state *cli_from);
-void copy_nt_creds(struct ntuser_creds *to,
-				const struct ntuser_creds *from);
-void copy_user_creds(struct user_creds *to,
-				const struct user_creds *from);
-void free_user_creds(struct user_creds *creds);
-BOOL creds_io_cmd(char *desc, CREDS_CMD *r_u, prs_struct *ps, int depth);
-BOOL create_ntuser_creds( prs_struct *ps,
-				const char* name, 
-				uint16 version, uint16 command,
-				uint32 pid,
-				const struct ntuser_creds *ntu,
-				BOOL reuse);
-BOOL create_user_creds( prs_struct *ps,
-				const char* name, 
-				uint16 version, uint16 command,
-				uint32 pid,
-				struct user_creds *usr);
-
 /*The following definitions come from  rpc_parse/parse_dfs.c  */
 
 BOOL dfs_io_q_dfs_exist(char *desc, DFS_Q_DFS_EXIST *q_d, prs_struct *ps, int depth);
