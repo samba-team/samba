@@ -26,6 +26,9 @@
 struct test_spoolss_context {
 	struct dcerpc_pipe *p;
 
+	/* print server handle */
+	struct policy_handle server_handle;
+
 	/* for EnumPorts */
 	uint32_t port_count[3];
 	union spoolss_PortInfo **ports[3];
@@ -88,6 +91,35 @@ struct test_spoolss_context {
 #define COMPARE_SEC_DESC(c,r,e)
 #define COMPARE_SPOOLSS_TIME(c,r,e)
 #define COMPARE_STRING_ARRAY(c,r,e)
+
+static BOOL test_OpenPrinter_server(struct test_spoolss_context *ctx)
+{
+	NTSTATUS status;
+	struct spoolss_OpenPrinter op;
+	BOOL ret = True;
+
+	op.in.printername	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(ctx->p));
+	op.in.datatype		= NULL;
+	op.in.devmode_ctr.size	= 0;
+	op.in.devmode_ctr.devmode= NULL;
+	op.in.access_mask	= 0;
+	op.out.handle		= &ctx->server_handle;
+
+	printf("\nTesting OpenPrinter(%s)\n", op.in.printername);
+
+	status = dcerpc_spoolss_OpenPrinter(ctx->p, ctx, &op);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("dcerpc_spoolss_OpenPrinter failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+	if (!W_ERROR_IS_OK(op.out.result)) {
+		printf("OpenPrinter(%s) failed - %s\n",
+			op.in.printername, win_errstr(op.out.result));
+		ret = False;
+	}
+
+	return ret;
+}
 
 static BOOL test_EnumPorts(struct test_spoolss_context *ctx)
 {
@@ -700,14 +732,14 @@ static BOOL test_ClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 static BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle, 
-			 const char *formname)
+			 const char *form_name)
 {
 	NTSTATUS status;
 	struct spoolss_GetForm r;
 	uint32_t buf_size;
 
 	r.in.handle = handle;
-	r.in.formname = formname;
+	r.in.form_name = form_name;
 	r.in.level = 1;
 	r.in.buffer = NULL;
 	buf_size = 0;
@@ -780,7 +812,7 @@ static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		info = *r.out.info;
 
 		for (j = 0; j < r.out.count; j++) {
-			test_GetForm(p, mem_ctx, handle, info[j].info1.formname);
+			test_GetForm(p, mem_ctx, handle, info[j].info1.form_name);
 		}
 	}
 
@@ -799,13 +831,13 @@ static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 static BOOL test_DeleteForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			    struct policy_handle *handle, 
-			    const char *formname)
+			    const char *form_name)
 {
 	NTSTATUS status;
 	struct spoolss_DeleteForm r;
 
 	r.in.handle = handle;
-	r.in.formname = formname;
+	r.in.form_name = form_name;
 
 	status = dcerpc_spoolss_DeleteForm(p, mem_ctx, &r);
 
@@ -826,23 +858,23 @@ static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		  struct policy_handle *handle)
 {
 	struct spoolss_AddForm r;
-	struct spoolss_AddFormInfo1 form;
+	struct spoolss_AddFormInfo1 addform;
+	const char *form_name = "testform3";
 	NTSTATUS status;
-	const char *formname = "testform3";
 	BOOL ret = True;
 
-	r.in.handle = handle;
-	r.in.level = 1;
-	form.flags = 2;		/* User form */
-	form.formname = formname;
-	form.width = 1;
-	form.length = 2;
-	form.left = 3;
-	form.top = 4;
-	form.right = 5;
-	form.bottom = 6;
-	r.in.info.info1 = &form;
-	
+	r.in.handle	= handle;
+	r.in.level	= 1;
+	r.in.info.info1 = &addform;
+	addform.flags		= SPOOLSS_FORM_USER;
+	addform.form_name	= form_name;
+	addform.size.width	= 50;
+	addform.size.height	= 25;
+	addform.area.left	= 5;
+	addform.area.top	= 10;
+	addform.area.right	= 45;
+	addform.area.bottom	= 15;
+
 	status = dcerpc_spoolss_AddForm(p, mem_ctx, &r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -857,12 +889,18 @@ static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	{
 		struct spoolss_SetForm sf;
+		struct spoolss_SetFormInfo1 setform;
 
-		sf.in.handle = handle;
-		sf.in.formname = formname;
-		sf.in.level = 1;
-		sf.in.info.info1 = &form;
-		form.width = 1234;
+		sf.in.handle	= handle;
+		sf.in.form_name = form_name;
+		sf.in.level	= 1;
+		sf.in.info.info1= &setform;
+		setform.flags		= addform.flags;
+		setform.form_name	= addform.form_name;
+		setform.size		= addform.size;
+		setform.area		= addform.area;
+
+		setform.size.width	= 1234;
 
 		status = dcerpc_spoolss_SetForm(p, mem_ctx, &sf);
 
@@ -881,7 +919,7 @@ static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
  done:
-	if (!test_DeleteForm(p, mem_ctx, handle, formname)) {
+	if (!test_DeleteForm(p, mem_ctx, handle, form_name)) {
 		printf("DeleteForm failed\n");
 		ret = False;
 	}
@@ -1785,6 +1823,12 @@ BOOL torture_rpc_spoolss(void)
 
 	ctx = talloc_zero(mem_ctx, struct test_spoolss_context);
 	ctx->p	= p;
+
+	ret &= test_OpenPrinter_server(ctx);
+
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, SPOOLSS_ARCHITECTURE);
+
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DefaultSpoolDirectory");
 
 	ret &= test_EnumPorts(ctx);
 
