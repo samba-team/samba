@@ -1696,6 +1696,7 @@ typedef struct {
 
 extern struct poptOption popt_common_debug[];
 extern struct poptOption popt_common_configfile[];
+extern struct poptOption popt_common_socket_options[];
 
 /* Module support */
 typedef NTSTATUS (init_module_function) (void);
