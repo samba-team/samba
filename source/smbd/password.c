@@ -1471,7 +1471,7 @@ BOOL domain_client_validate( char *user, char *domain,
   unsigned char local_lm_response[24];
   unsigned char local_nt_response[24];
   unsigned char trust_passwd[16];
-  fstring remote_machine;
+  fstring remote_machine, dos_domain;
   char *p, *pserver;
   NET_ID_INFO_CTR ctr;
   NET_USER_INFO_3 info3;
@@ -1638,7 +1638,14 @@ BOOL domain_client_validate( char *user, char *domain,
         return False;
       }
 
-      if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
+      /* Note that for hysterical raisins, the argument to
+	 secrets_fetch_domain_sid() must be in dos codepage format.  
+	 Aargh! */
+
+      fstrcpy(dos_domain, lp_workgroup());
+      unix_to_dos(dos_domain, True);
+
+      if (!secrets_fetch_domain_sid(dos_domain, &domain_sid)) {
         DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
         delete_nt_token(&ptok);
         return False;
@@ -1655,8 +1662,7 @@ BOOL domain_client_validate( char *user, char *domain,
   /* 
    * We don't actually need to do this - plus it fails currently with
    * NT_STATUS_INVALID_INFO_CLASS - we need to know *exactly* what to
-   * send here. JRA.
-   */
+   * send here. JRA.  */
 
   if(cli_nt_logoff(&cli, &ctr) == False) {
     DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
