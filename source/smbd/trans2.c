@@ -216,7 +216,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	int16 open_ofun;
 	int32 open_size;
 	char *pname;
-	int16 namelen;
 
 	pstring fname;
 	mode_t unixmode;
@@ -246,9 +245,8 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	open_ofun = SVAL(params,12);
 	open_size = IVAL(params,14);
 	pname = &params[28];
-	namelen = strlen(pname)+1;
 
-	StrnCpy(fname,pname,namelen);
+	pstrcpy(fname,pname);
 
 	DEBUG(3,("trans2open %s mode=%d attr=%d ofun=%d size=%d\n",
 		fname,open_mode, open_attr, open_ofun, open_size));
