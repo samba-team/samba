@@ -47,12 +47,14 @@ BOOL become_vuser(const vuser_key *k)
 		return False;
 	}
 
+#if 0
 	if (!check_vuser_ok(&vcache, vuser, -1))
 	{
 		DEBUG(2,("become_vuser: check_vuser rejected access\n"));
 		vuid_free_user_struct(vuser);
 		return False;
 	}
+#endif
 
 	ret = become_unix_sec_ctx(k, NULL, vuser->uid, vuser->gid,
 	                           vuser->n_groups, vuser->groups);
