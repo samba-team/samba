@@ -4,8 +4,9 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Jeremy Allison                    1998.
+ *  Copyright (C) Paul Ashton                       1997,
+ *  Copyright (C) Jeremy Allison                    1998,
+ *  Copyright (C) Sander Striker                    2000
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,9 +23,12 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#if 0
+
+void gen_next_creds( struct ntdom_info *nt, DOM_CRED *new_clnt_cred);
+#endif
 
 #include "includes.h"
-#include "rpc_parse.h"
 #include "nterr.h"
 #include "sids.h"
 
@@ -33,196 +37,686 @@ extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 /*************************************************************************
- make_net_r_req_chal:
+ _net_req_chal
  *************************************************************************/
-static void make_net_r_req_chal(NET_R_REQ_CHAL *r_c,
-                                DOM_CHAL *srv_chal, int status)
+/*
+uint32 cli_net_req_chal( const char *srv_name, const char* myhostname,
+				DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
+
+typedef struct net_q_req_chal_info
 {
-	DEBUG(6,("make_net_r_req_chal: %d\n", __LINE__));
-	memcpy(r_c->srv_chal.data, srv_chal->data, sizeof(srv_chal->data));
-	r_c->status = status;
+    uint32  undoc_buffer; /* undocumented buffer pointer */
+    UNISTR2 uni_logon_srv; /* logon server unicode string */
+    UNISTR2 uni_logon_clnt; /* logon client unicode string */
+    DOM_CHAL clnt_chal; /* client challenge */
+
+} NET_Q_REQ_CHAL;
+
+typedef struct net_r_req_chal_info
+{
+    DOM_CHAL srv_chal; /* server challenge */
+
+  uint32 status; /* return code */
+
+} NET_R_REQ_CHAL;
+
+static void net_reply_req_chal(NET_Q_REQ_CHAL *q_c, prs_struct *rdata,
+					DOM_CHAL *srv_chal, uint32 srv_time)
+*/
+uint32 _net_req_chal(	const UNISTR2 *uni_logon_server,
+				const UNISTR *uni_logon_client,
+				const DOM_CHAL *clnt_chal,
+				DOM_CHAL *server_challenge,
+				uint16 remote_pid	); /* strikerXXXX added this parameter */
+{
+	fstring trust_acct;
+	fstring trust_name;
+
+	struct dcinfo dc;
+
+	ZERO_STRUCT(dc);
+
+	unistr2_to_ascii(trust_acct, uni_logon_clnt, sizeof(trust_acct)-1);
+
+	fstrcpy(trust_name, trust_acct);
+	strlower(trust_name);
+
+	fstrcat(trust_acct, "$");
+
+	if (!get_md4pw((char *)dc.md4pw, trust_name, trust_acct))
+	{
+		/* lkclXXXX take a guess at a good error message to return :-) */
+		return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
+	}
+
+	/* copy the client credentials */
+	memcpy(dc.clnt_chal.data          , clnt_chal->data, sizeof(clnt_chal->data));
+	memcpy(dc.clnt_cred.challenge.data, clnt_chal->data, sizeof(clnt_chal->data));
+
+	/* create a server challenge for the client */
+	/* Set these to random values. */
+      generate_random_buffer(srv_chal->data, sizeof(srv_chal->data), False);
+
+	/* copy the server credentials */
+	memcpy(dc.clnt_chal.data          , srv_chal->data, sizeof(srv_chal->data));
+	memcpy(dc.clnt_cred.challenge.data, srv_chal->data, sizeof(srv_chal->data));
+
+	bzero(dc.sess_key, sizeof(dc.sess_key));
+
+	/* from client / server challenges and md4 password, generate sess key */
+	cred_session_key(&(dc.clnt_chal), &(dc.srv_chal),
+				 (char *)dc.md4pw, dc.sess_key);
+
+	if (!cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*************************************************************************
- net_reply_req_chal:
+ api_net_req_chal
  *************************************************************************/
-static void net_reply_req_chal(NET_Q_REQ_CHAL *q_c, prs_struct *rdata,
-					DOM_CHAL *srv_chal, uint32 srv_time)
+static void api_net_req_chal( rpcsrv_struct *p,
+                              prs_struct *data,
+                              prs_struct *rdata)
 {
+	NET_Q_REQ_CHAL q_r;
 	NET_R_REQ_CHAL r_c;
 
-	DEBUG(6,("net_reply_req_chal: %d\n", __LINE__));
+	ZERO_STRUCT(q_r);
+	ZERO_STRUCT(r_c);
 
-	/* set up the LSA REQUEST CHALLENGE response */
-	make_net_r_req_chal(&r_c, srv_chal, srv_time);
+	/* grab the challenge... */
+	net_io_q_req_chal("", &q_r, data, 0);
+	r_c.status = _net_req_chal(&q_r.uni_logon_srv, &q_r.uni_logon_clnt, 
+					   &q_r.clnt_chal, &r_c.srv_chal,
+					   p->remote_pid); /* strikerXXXX have to pass this parameter */
 
 	/* store the response in the SMB stream */
 	net_io_r_req_chal("", &r_c, rdata, 0);
-
-	DEBUG(6,("net_reply_req_chal: %d\n", __LINE__));
-
 }
 
 /*************************************************************************
- net_reply_logon_ctrl2:
+ _net_logon_ctrl2
  *************************************************************************/
-static void net_reply_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, prs_struct *rdata,
+/*
+BOOL cli_net_logon_ctrl2(const char* srv_name, uint32 status_level);
+
+typedef struct net_q_logon_ctrl2_info
+{
+	uint32       ptr;             /* undocumented buffer pointer */
+	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
+	
+	uint32       function_code; /* 0x1 */
+	uint32       query_level;   /* 0x1, 0x3 */
+	uint32       switch_value;  /* 0x1 */
+
+} NET_Q_LOGON_CTRL2;
+
+typedef struct net_r_logon_ctrl2_info
+{
+	uint32       switch_value;  /* 0x1, 0x3 */
+	uint32       ptr;
+
+	NETLOGON_INFO logon;
+
+	uint32 status; /* return code */
+
+} NET_R_LOGON_CTRL2;
+
+
+uint32 _net_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, prs_struct *rdata,
 			uint32 flags, uint32 pdc_status, uint32 logon_attempts,
 			uint32 tc_status, char *trust_domain_name)
+*/
+uint32 _net_logon_ctrl2(const	UNISTR2 *uni_server_name, /* server name, starting with two '\'s */
+				uint32 function_code,
+				uint32 query_level,
+				uint32 switch_value,
+				uint32 *reply_switch_value,
+				NETLOGON_INFO *logon_info)
 {
+	/* lkclXXXX - guess what - absolutely no idea what these are! */
+	uint32 flags = 0x0;
+	uint32 pdc_connection_status = 0x0;
+	uint32 logon_attempts = 0x0;
+	uint32 tc_status = ERROR_NO_LOGON_SERVERS;
+	char *trusted_domain = "test_domain";
+
+	*reply_switch_value = query_level;
+
+	switch (query_level)
+	{
+		case 1:
+		{
+			make_netinfo_1(&(logon_info->info1), flags, pdc_status);	
+			break;
+		}
+		case 2:
+		{
+			make_netinfo_2(&(logon_info->info2), flags, pdc_status,
+			               tc_status, trusted_domain_name);	
+			break;
+		}
+		case 3:
+		{
+			make_netinfo_3(&(logon_info->info3), flags, logon_attempts);	
+			break;
+		}
+		default:
+		{
+			/* take a guess at an error code... */
+			return NT_STATUS_INVALID_INFO_CLASS;
+			break;
+		}
+	}
+
+	return NT_STATUS_NOPROBLEMO;
+}
+
+/*************************************************************************
+ api_net_logon_ctrl2
+ *************************************************************************/
+static void api_net_logon_ctrl2( rpcsrv_struct *p,
+                                 prs_struct *data,
+                                 prs_struct *rdata)
+{
+	NET_Q_LOGON_CTRL2 q_l;
 	NET_R_LOGON_CTRL2 r_l;
 
-	DEBUG(6,("net_reply_logon_ctrl2: %d\n", __LINE__));
+	NETLOGON_INFO logon_info;
+	uint32 switch_value;
+	uint32 status;
 
-	/* set up the Logon Control2 response */
-	make_r_logon_ctrl2(&r_l, q_l->query_level,
-	                   flags, pdc_status, logon_attempts,
-	                   tc_status, trust_domain_name);
+	ZERO_STRUCT(q_l);
+	ZERO_STRUCT(r_l);
+
+	/* grab the lsa netlogon ctrl2 query... */
+	net_io_q_logon_ctrl2("", &q_l, data, 0);
+	status = _net_logon_ctrl2(&q_l.uni_server_name,
+					  q_l.function_code,
+					  q_l.query_level,
+					  q_l.switch_value,
+					  &switch_value,
+					  &logon_info);
+	make_r_logon_ctrl2(&r_l, switch_value, &logon_info, status);
 
 	/* store the response in the SMB stream */
 	net_io_r_logon_ctrl2("", &r_l, rdata, 0);
-
-	DEBUG(6,("net_reply_logon_ctrl2: %d\n", __LINE__));
-
 }
 
 /*************************************************************************
- net_reply_trust_dom_list:
+ _net_trust_dom_list
  *************************************************************************/
+/*
+typedef struct net_q_trust_dom_info
+{
+	uint32       ptr;             /* undocumented buffer pointer */
+	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
+	
+	uint32       function_code; /* 0x31 */
+
+} NET_Q_TRUST_DOM_LIST;
+
+typedef struct net_r_trust_dom_info
+{
+	BUFFER2 uni_trust_dom_name;
+
+	uint32 status; /* return code */
+
+} NET_R_TRUST_DOM_LIST;
+
 static void net_reply_trust_dom_list(NET_Q_TRUST_DOM_LIST *q_t, prs_struct *rdata,
 			uint32 num_trust_domains, char **trust_domain_name)
+*/
+uint32 _net_reply_trust_dom_list(const UNISTR2 *uni_server_name,
+					   uint32 function_code,
+					   BUFFER2 *uni_trust_dom_name)
 {
+	char **doms = NULL;
+	uint32 num_doms = 0;
+
+	enumtrustdoms(&doms, &num_doms);
+
+	make_buffer2_multi(uni_trust_dom_name,
+			dom_name, num_doms);
+
+	if (num_doms == 0)
+	{
+		uni_trust_dom_name->buf_max_len = 0x2;
+		uni_trust_dom_name->buf_len = 0x2;
+	}
+	uni_trust_dom_name->undoc = 0x1;
+	
+	free_char_array(num_doms, doms);
+
+	return NT_STATUS_NO_PROBLEMO;
+}
+
+/*************************************************************************
+ api_net_trust_dom_list
+ *************************************************************************/
+static void api_net_trust_dom_list( rpcsrv_struct *p,
+                                    prs_struct *data,
+                                    prs_struct *rdata)
+{
+	NET_Q_TRUST_DOM_LIST q_t;
 	NET_R_TRUST_DOM_LIST r_t;
 
-	DEBUG(6,("net_reply_trust_dom_list: %d\n", __LINE__));
+	ZERO_STRUCT(q_t);
+	ZERO_STRUCT(r_t);
 
-	/* set up the Trusted Domain List response */
-	make_r_trust_dom(&r_t, num_trust_domains, trust_domain_name);
-
+	/* grab the lsa trusted domain list query... */
+	net_io_q_trust_dom("", &q_t, data, 0);
+	r_t.status = _net_trust_dom_list(&q_t.uni_server_name,
+						   q_t.function_code,
+						   &r_t.uni_trust_dom_name);
+	
 	/* store the response in the SMB stream */
 	net_io_r_trust_dom("", &r_t, rdata, 0);
-
-	DEBUG(6,("net_reply_trust_dom_list: %d\n", __LINE__));
-
 }
 
-
 /*************************************************************************
- make_net_r_auth:
+ _net_auth
  *************************************************************************/
-static void make_net_r_auth(NET_R_AUTH *r_a,
-                              DOM_CHAL *resp_cred, int status)
+/*
+typedef struct net_q_auth_info
 {
-	memcpy(  r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
-	r_a->status = status;
-}
+    DOM_LOG_INFO clnt_id; /* client identification info */
+    DOM_CHAL clnt_chal;     /* client-calculated credentials */
 
-/*************************************************************************
- net_reply_auth:
- *************************************************************************/
+
+} NET_Q_AUTH;
+
+typedef struct net_r_auth_info
+{
+    DOM_CHAL srv_chal;     /* server-calculated credentials */
+
+  uint32 status; /* return code */
+
+} NET_R_AUTH;
+
 static void net_reply_auth(NET_Q_AUTH *q_a, prs_struct *rdata,
 				DOM_CHAL *resp_cred, int status)
+*/
+uint32 _net_auth(const DOM_LOG_INFO *clnt_id,
+		     const DOM_CHAL *clnt_chal,
+		     DOM_CHAL *srv_chal,
+		     uint16 remote_pid); /* strikerXXXX added this parameter */
 {
-	NET_R_AUTH r_a;
+	UTIME srv_time;
+	fstring trust_name;
+	struct dcinfo dc;
+
+	ZERO_STRUCT(dc);
+
+	srv_time.time = 0;
+
+	unistr2_to_ascii(trust_name, clnt_id->uni_comp_name,
+	                             sizeof(trust_name)-1);
+
+	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* check that the client credentials are valid */
+	if (!cred_assert(clnt_chal, dc.sess_key, &(dc.clnt_cred.challenge), srv_time))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* create server challenge for inclusion in the reply */
+	cred_create(dc.sess_key, &(dc.srv_cred.challenge), srv_time, srv_chal);
+
+	/* copy the received client credentials for use next time */
+	memcpy(dc.clnt_cred.challenge.data, clnt_chal->data, sizeof(clnt_chal->data));
+	memcpy(dc.srv_cred .challenge.data, clnt_chal->data, sizeof(clnt_chal->data));
+
+	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	return NT_STATUS_NOPROBLEMO;
+}
 
 	/* set up the LSA AUTH 2 response */
 
 	make_net_r_auth(&r_a, resp_cred, status);
 
+
+}
+
+/*************************************************************************
+ api_net_auth
+ *************************************************************************/
+static void api_net_auth( rpcsrv_struct *p,
+                            prs_struct *data,
+                            prs_struct *rdata)
+{
+	NET_Q_AUTH q_a;
+	NET_R_AUTH r_a;
+
+	ZERO_STRUCT(q_a);
+	ZERO_STRUCT(r_a);
+
+	/* grab the challenge... */
+	net_io_q_auth("", &q_a, data, 0);
+	r_a.status = _net_auth(&q_a.clnt_id,
+				     &q_a.clnt_chal,
+				     &r_a.srv_chal,
+				     p->remote_pid); /* strikerXXXX have to pass this parameter */
+
 	/* store the response in the SMB stream */
 	net_io_r_auth("", &r_a, rdata, 0);
-
 }
 
 /*************************************************************************
- make_net_r_auth_2:
+ _net_auth_2
  *************************************************************************/
-static void make_net_r_auth_2(NET_R_AUTH_2 *r_a,
-                              DOM_CHAL *resp_cred, NEG_FLAGS *flgs, int status)
+/*
+uint32 cli_net_auth2(const char *srv_name,
+				const char *trust_acct, 
+				const char *acct_name, 
+				uint16 sec_chan, 
+				uint32 *neg_flags, DOM_CHAL *srv_chal);
+
+typedef struct net_q_auth2_info
 {
-	memcpy(  r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
-	memcpy(&(r_a->srv_flgs)    , flgs           , sizeof(r_a->srv_flgs));
-	r_a->status = status;
-}
+    DOM_LOG_INFO clnt_id; /* client identification info */
+    DOM_CHAL clnt_chal;     /* client-calculated credentials */
 
-/*************************************************************************
- net_reply_auth_2:
- *************************************************************************/
+    NEG_FLAGS clnt_flgs; /* usually 0x0000 01ff */
+
+} NET_Q_AUTH_2;
+
+typedef struct net_r_auth2_info
+{
+    DOM_CHAL srv_chal;     /* server-calculated credentials */
+    NEG_FLAGS srv_flgs; /* usually 0x0000 01ff */
+
+  uint32 status; /* return code */
+
+} NET_R_AUTH_2;
+
 static void net_reply_auth_2(NET_Q_AUTH_2 *q_a, prs_struct *rdata,
 				DOM_CHAL *resp_cred, int status)
+*/
+uint32 _net_auth_2(const DOM_LOG_INFO *clnt_id,
+			 const DOM_CHAL *clnt_chal,
+			 const NEG_FLAGS *clnt_flgs,
+			 DOM_CHAL *srv_chal,
+			 NEG_FLAGS *srv_flgs,
+			 uint16 remote_pid); /* strikerXXXX added this parameter */
 {
-	NET_R_AUTH_2 r_a;
-	NEG_FLAGS srv_flgs;
+	UTIME srv_time;
+	fstring trust_name;
+	struct dcinfo dc;
+
+	ZERO_STRUCT(dc);
+
+	srv_time.time = 0;
+
+	unistr2_to_ascii(trust_name, &(clnt_id->uni_comp_name),
+	                             sizeof(trust_name)-1);
+
+	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* check that the client credentials are valid */
+	if (!cred_assert(clnt_chal, dc.sess_key,
+			    &(dc.clnt_cred.challenge), srv_time))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* create server challenge for inclusion in the reply */
+	cred_create(dc.sess_key, &(dc.srv_cred.challenge), srv_time, srv_chal);
+
+	/* copy the received client credentials for use next time */
+	memcpy(dc.clnt_cred.challenge.data, clnt_chal->data, sizeof(clnt_chal->data));
+	memcpy(dc.srv_cred .challenge.data, clnt_chal->data, sizeof(clnt_chal->data));
+
+	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	/* mask out unsupported bits */
-	srv_flgs.neg_flags = q_a->clnt_flgs.neg_flags & 0x400001ff;
+	srv_flgs->neg_flags = clnt_flgs->neg_flags & 0x400001ff;
 
 	/* minimum bits required */
-	if (status == NT_STATUS_NOPROBLEMO && !IS_BITS_SET_ALL(srv_flgs.neg_flags, 0x000000ff))
+	if (!IS_BITS_SET_ALL(srv_flgs->neg_flags, 0x000000ff))
 	{
-		status = NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* secure channel NOT to be used */
-	if (status == NT_STATUS_NOPROBLEMO && !lp_server_schannel())
+	if (!lp_server_schannel())
 	{
-		srv_flgs.neg_flags &= ~0x40000000;
+		srv_flgs->neg_flags &= ~0x40000000;
+	}
+	else
+	{
+		/* secure channel MUST be used */
+		if (IS_BITS_CLR_ALL(srv_flgs->neg_flags, 0x40000000))
+		{
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
-	/* secure channel MUST be used */
-	if (status == NT_STATUS_NOPROBLEMO && lp_server_schannel() == True &&
-	    IS_BITS_CLR_ALL(srv_flgs.neg_flags, 0x40000000))
-	{
-		status = NT_STATUS_ACCESS_DENIED;
-	}
+	return NT_STATUS_NOPROBLEMO;
+}
 
-	/* set up the LSA AUTH 2 response */
-	make_net_r_auth_2(&r_a, resp_cred, &srv_flgs, status);
+/*************************************************************************
+ api_net_auth_2:
+ *************************************************************************/
+static void api_net_auth_2( rpcsrv_struct *p,
+                            prs_struct *data,
+                            prs_struct *rdata)
+{
+	NET_Q_AUTH_2 q_a;
+	NET_R_AUTH_2 r_a;
+
+	ZERO_STRUCT(q_a);
+	ZERO_STRUCT(r_a);
+
+	/* grab the challenge... */
+	net_io_q_auth_2("", &q_a, data, 0);
+	r_a.status = _net_auth2(&q_a.clnt_id,
+					&q_a.clnt_chal,
+					&q_a.clnt_flgs,
+					&r_a.srv_chal,
+					&r_a.srv_flgs,
+					p->remote_pid); /* strikerXXXX have to pass this parameter */
 
 	/* store the response in the SMB stream */
 	net_io_r_auth_2("", &r_a, rdata, 0);
 }
 
 /*************************************************************************
- make_net_r_srv_pwset:
+ _net_srv_pwset
  *************************************************************************/
-static void make_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
-                             DOM_CRED *srv_cred, int status)  
+/*
+BOOL cli_net_srv_pwset(const char* srv_name,
+				const char* myhostname,
+				const char* trust_acct,
+				uint8 hashed_trust_pwd[16],
+				uint16 sec_chan_type);
+
+typedef struct net_q_srv_pwset_info
 {
-	DEBUG(5,("make_net_r_srv_pwset: %d\n", __LINE__));
+    DOM_CLNT_INFO clnt_id; /* client identification/authentication info */
+    uint8 pwd[16]; /* new password - undocumented. */
 
-	memcpy(&(r_s->srv_cred), srv_cred, sizeof(r_s->srv_cred));
-	r_s->status = status;
+} NET_Q_SRV_PWSET;
+    
+typedef struct net_r_srv_pwset_info
+{
+    DOM_CRED srv_cred;     /* server-calculated credentials */
 
-	DEBUG(5,("make_net_r_srv_pwset: %d\n", __LINE__));
+  uint32 status; /* return code */
+
+} NET_R_SRV_PWSET;
+
+static void net_reply_srv_pwset(NET_Q_SRV_PWSET *q_s, prs_struct *rdata,
+				DOM_CRED *srv_cred, int status)
+*/
+uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
+			    const uint8 *pwd,
+			    DOM_CRED *srv_cred,
+			    uint16 remote_pid); /* strikerXXXX added this parameter */
+{
+	pstring trust_acct;
+	struct smb_passwd *smb_pass;
+	unsigned char hash3_pwd[16];
+	BOOL ret;
+
+	fstring trust_name;
+	struct dcinfo dc;
+
+	ZERO_STRUCT(dc);
+
+	unistr2_to_ascii(trust_name, &(clnt_id->login.uni_comp_name),
+	                             sizeof(trust_name)-1);
+
+	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* checks and updates credentials.  creates reply credentials */
+	if (!deal_with_creds(dc.sess_key, &(dc.clnt_cred), &(clnt_id->cred), srv_cred))
+	{
+		/* lkclXXXX take a guess at a sensible error code to return... */
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
+
+	unistr2_to_ascii(trust_acct, &(clnt_id->login.uni_acct_name),
+				 sizeof(trust_acct)-1);
+
+	DEBUG(3,("Server Password Set Wksta:[%s]\n", trust_acct));
+
+	become_root(True);
+	smb_pass = getsmbpwnam(trust_acct);
+	unbecome_root(True);
+
+	if (smb_pass == NULL)
+	{
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* Some debug output, needed an iterater variable */
+	{
+		int i;
+
+		DEBUG(100,("Server password set : new given value was :\n"));
+		for(i = 0; i < 16; i++)
+		{
+			DEBUG(100,("%02X ", pwd[i]));
+		}
+		DEBUG(100,("\n"));
+	}
+
+	cred_hash3( hash3_pwd, pwd, dc.sess_key, 0);
+
+	/* lies!  nt and lm passwords are _not_ the same: don't care */
+	smb_pass->smb_passwd    = hash3_pwd;
+	smb_pass->smb_nt_passwd = hash3_pwd;
+	smb_pass->acct_ctrl     = ACB_WSTRUST;
+
+	become_root(True);
+	ret = mod_smbpwd_entry(smb_pass,False);
+	unbecome_root(True);
+
+	if (!ret)
+	{
+		/* bogus! */
+		/* strikerXXXX Luke could you have a look at this and make up some
+               reasonable return code? */
+	}
+
+	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*************************************************************************
- net_reply_srv_pwset:
+ api_net_srv_pwset:
  *************************************************************************/
-static void net_reply_srv_pwset(NET_Q_SRV_PWSET *q_s, prs_struct *rdata,
-				DOM_CRED *srv_cred, int status)
+static void api_net_srv_pwset( rpcsrv_struct *p,
+                               prs_struct *data,
+                               prs_struct *rdata)
 {
+	NET_Q_SRV_PWSET q_a;
 	NET_R_SRV_PWSET r_s;
 
-	DEBUG(5,("net_srv_pwset: %d\n", __LINE__));
+	ZERO_STRUCT(q_a);
+	ZERO_STRUCT(r_s);
 
-	/* set up the LSA Server Password Set response */
-	make_net_r_srv_pwset(&r_s, srv_cred, status);
+	/* grab the challenge and encrypted password ... */
+	net_io_q_srv_pwset("", &q_a, data, 0);
+	r_s.status = _net_srv_pwset(&q_a.clnt_id,
+					    q_a.pwd,
+					    r_s.srv_cred,
+					    p->remote_pid); /* strikerXXXX have to pass this parameter */
 
 	/* store the response in the SMB stream */
 	net_io_r_srv_pwset("", &r_s, rdata, 0);
-
-	DEBUG(5,("net_srv_pwset: %d\n", __LINE__));
-
 }
 
+/* strikerXXXX GOT TO HERE!!!!!!!! */
+
 /*************************************************************************
- net_reply_sam_logon:
+ _net_sam_logon
  *************************************************************************/
+/*
+uint32 cli_net_sam_logon(const char* srv_name, const char* myhostname,
+				NET_ID_INFO_CTR *ctr, 
+				NET_USER_INFO_3 *user_info3);
+
+typedef struct net_q_sam_logon_info
+{
+	DOM_SAM_INFO sam_id;
+	uint16          validation_level;
+
+} NET_Q_SAM_LOGON;
+
+typedef struct net_r_sam_logon_info
+{
+    uint32 buffer_creds; /* undocumented buffer pointer */
+    DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
+    
+	uint16 switch_value; /* 3 - indicates type of USER INFO */
+    NET_USER_INFO_3 *user;
+
+    uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
+
+  uint32 status; /* return code */
+
+} NET_R_SAM_LOGON;
+
 static void net_reply_sam_logon(NET_Q_SAM_LOGON *q_s, prs_struct *rdata,
 				DOM_CRED *srv_cred, NET_USER_INFO_3 *user_info,
 				uint32 status)
+*/
+uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
+			    uint16 validation_level,
+			    DOM_CRED *srv_creds,
+			    uint16 *switch_value,
+			    NET_USER_INFO_3 *user,
+			    uint32 *auth_resp,
+			    uint16 remote_pid); /* strikerXXXX added this parameter */
 {
 	NET_R_SAM_LOGON r_s;
 
@@ -232,7 +726,7 @@ static void net_reply_sam_logon(NET_Q_SAM_LOGON *q_s, prs_struct *rdata,
 
 	/* store the user information, if there is any. */
 	r_s.user = user_info;
-	if (status == NT_STATUS_NOPROBLEMO && user_info != NULL && user_info->ptr_user_info != 0)
+	if (status == 0x0 && user_info != NULL && user_info->ptr_user_info != 0)
 	{
 		r_s.switch_value = 3; /* indicates type of validation user info */
 	}
@@ -249,10 +743,34 @@ static void net_reply_sam_logon(NET_Q_SAM_LOGON *q_s, prs_struct *rdata,
 
 }
 
+/*************************************************************************
+ api_net_sam_logon
+ *************************************************************************/
+static void api_net_sam_logon( rpcsrv_struct *p,
+                               prs_struct *data,
+                               prs_struct *rdata)
+{
+	NET_Q_SAM_LOGON q_l;
+	NET_ID_INFO_CTR ctr;	
+	NET_USER_INFO_3 usr_info;
+	uint32 status = 0x0;
+	DOM_CRED srv_cred;
+
+	q_l.sam_id.ctr = &ctr;
+	net_io_q_sam_logon("", &q_l, data, 0);
+
+	status = reply_net_sam_logon(p->remote_pid, &q_l, &srv_cred, &usr_info);
+	net_reply_sam_logon(&q_l, rdata, &srv_cred, &usr_info, status);
+}
+
 
 /*************************************************************************
  net_reply_sam_logoff:
  *************************************************************************/
+/*
+BOOL cli_net_sam_logoff(const char* srv_name, const char* myhostname,
+				NET_ID_INFO_CTR *ctr);
+*/
 static void net_reply_sam_logoff(NET_Q_SAM_LOGOFF *q_s, prs_struct *rdata,
 				DOM_CRED *srv_cred, 
 				uint32 status)
@@ -273,6 +791,13 @@ static void net_reply_sam_logoff(NET_Q_SAM_LOGOFF *q_s, prs_struct *rdata,
 /*************************************************************************
  net_reply_sam_sync:
  *************************************************************************/
+/*
+BOOL cli_net_sam_sync( const char* srv_name, const char* myhostname,
+				uint32 database_id,
+				uint32 *num_deltas,
+				SAM_DELTA_HDR *hdr_deltas,
+				SAM_DELTA_CTR *deltas);
+*/
 static void net_reply_sam_sync(NET_Q_SAM_SYNC *q_s, prs_struct *rdata,
 				uint8 sess_key[16],
 				DOM_CRED *srv_creds, uint32 status)
@@ -286,7 +811,7 @@ static void net_reply_sam_sync(NET_Q_SAM_SYNC *q_s, prs_struct *rdata,
 	r_s.sync_context = 1;
 	r_s.ptr_deltas = 0;
 
-	if ((status == NT_STATUS_NOPROBLEMO) && ((vp = startsmbpwent(False)) != NULL))
+	if ((status == 0x0) && ((vp = startsmbpwent(False)) != NULL))
 	{
 		/* Give the poor BDC some accounts */
 
@@ -364,278 +889,6 @@ static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 }
 
 /*************************************************************************
- api_net_req_chal:
- *************************************************************************/
-static void api_net_req_chal( rpcsrv_struct *p,
-                              prs_struct *data,
-                              prs_struct *rdata)
-{
-	NET_Q_REQ_CHAL q_r;
-	uint32 status = NT_STATUS_NOPROBLEMO;
-
-	fstring trust_acct;
-	fstring trust_name;
-
-	struct dcinfo dc;
-
-	ZERO_STRUCT(dc);
-
-	DEBUG(5,("api_net_req_chal(%d)\n", __LINE__));
-
-	/* grab the challenge... */
-	net_io_q_req_chal("", &q_r, data, 0);
-
-	unistr2_to_ascii(trust_acct, &q_r.uni_logon_clnt, sizeof(trust_acct)-1);
-
-	fstrcpy(trust_name, trust_acct);
-	strlower(trust_name);
-
-	fstrcat(trust_acct, "$");
-
-	if (status == NT_STATUS_NOPROBLEMO &&
-	    get_md4pw((char *)dc.md4pw, trust_name, trust_acct))
-	{
-		/* copy the client credentials */
-		memcpy(dc.clnt_chal.data          , q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
-		memcpy(dc.clnt_cred.challenge.data, q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
-
-		/* create a server challenge for the client */
-		/* Set these to random values. */
-                generate_random_buffer(dc.srv_chal.data, 8, False);
-
-		memcpy(dc.srv_cred.challenge.data, dc.srv_chal.data, 8);
-
-		bzero(dc.sess_key, sizeof(dc.sess_key));
-
-		/* from client / server challenges and md4 password, generate sess key */
-		cred_session_key(&(dc.clnt_chal), &(dc.srv_chal),
-				 (char *)dc.md4pw, dc.sess_key);
-	}
-	else if (status == NT_STATUS_NOPROBLEMO)
-	{
-		/* lkclXXXX take a guess at a good error message to return :-) */
-		status = NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
-	}
-
-	if (status == NT_STATUS_NOPROBLEMO && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
-	{
-		status = NT_STATUS_INVALID_HANDLE;
-	}
-
-	/* construct reply. */
-	net_reply_req_chal(&q_r, rdata,
-					&(dc.srv_chal), status);
-
-}
-
-/*************************************************************************
- api_net_auth:
- *************************************************************************/
-static void api_net_auth( rpcsrv_struct *p,
-                            prs_struct *data,
-                            prs_struct *rdata)
-{
-	NET_Q_AUTH q_a;
-	uint32 status = NT_STATUS_NOPROBLEMO;
-
-	DOM_CHAL srv_cred;
-	UTIME srv_time;
-
-	fstring trust_name;
-	struct dcinfo dc;
-
-	srv_time.time = 0;
-
-	/* grab the challenge... */
-	net_io_q_auth("", &q_a, data, 0);
-
-	unistr2_to_ascii(trust_name, &q_a.clnt_id.uni_comp_name,
-	                             sizeof(trust_name)-1);
-
-	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
-	{
-		status = NT_STATUS_INVALID_HANDLE;
-	}
-
-	/* check that the client credentials are valid */
-	if (status == NT_STATUS_NOPROBLEMO && cred_assert(&(q_a.clnt_chal), dc.sess_key,
-                    &(dc.clnt_cred.challenge), srv_time))
-	{
-
-		/* create server challenge for inclusion in the reply */
-		cred_create(dc.sess_key, &(dc.srv_cred.challenge), srv_time, &srv_cred);
-
-		/* copy the received client credentials for use next time */
-		memcpy(dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
-		memcpy(dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
-	}
-	else if (status == NT_STATUS_NOPROBLEMO)
-	{
-		status = NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (status == NT_STATUS_NOPROBLEMO && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
-	{
-		status = NT_STATUS_INVALID_HANDLE;
-	}
-	/* construct reply. */
-	net_reply_auth(&q_a, rdata, &srv_cred, status);
-}
-
-/*************************************************************************
- api_net_auth_2:
- *************************************************************************/
-static void api_net_auth_2( rpcsrv_struct *p,
-                            prs_struct *data,
-                            prs_struct *rdata)
-{
-	NET_Q_AUTH_2 q_a;
-	uint32 status = NT_STATUS_NOPROBLEMO;
-
-	DOM_CHAL srv_cred;
-	UTIME srv_time;
-
-	fstring trust_name;
-	struct dcinfo dc;
-
-	srv_time.time = 0;
-
-	/* grab the challenge... */
-	net_io_q_auth_2("", &q_a, data, 0);
-
-	unistr2_to_ascii(trust_name, &q_a.clnt_id.uni_comp_name,
-	                             sizeof(trust_name)-1);
-
-	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
-	{
-		status = NT_STATUS_INVALID_HANDLE;
-	}
-
-	if (status == NT_STATUS_NOPROBLEMO)
-	{
-		/* check that the client credentials are valid */
-		if (cred_assert(&(q_a.clnt_chal), dc.sess_key,
-			    &(dc.clnt_cred.challenge), srv_time))
-		{
-
-			/* create server challenge for inclusion in the reply */
-			cred_create(dc.sess_key, &(dc.srv_cred.challenge), srv_time, &srv_cred);
-
-			/* copy the received client credentials for use next time */
-			memcpy(dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
-			memcpy(dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
-		}
-		else
-		{
-			status = NT_STATUS_ACCESS_DENIED;
-		}
-	}
-
-	if (status == NT_STATUS_NOPROBLEMO && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
-	{
-		status = NT_STATUS_INVALID_HANDLE;
-	}
-	/* construct reply. */
-	net_reply_auth_2(&q_a, rdata, &srv_cred, status);
-}
-
-/*************************************************************************
- api_net_srv_pwset:
- *************************************************************************/
-static void api_net_srv_pwset( rpcsrv_struct *p,
-                               prs_struct *data,
-                               prs_struct *rdata)
-{
-	NET_Q_SRV_PWSET q_a;
-	uint32 status = NT_STATUS_NOPROBLEMO;
-	DOM_CRED srv_cred;
-	pstring trust_acct;
-	struct smb_passwd *smb_pass;
-	BOOL ret;
-
-	fstring trust_name;
-	struct dcinfo dc;
-
-	/* grab the challenge and encrypted password ... */
-	net_io_q_srv_pwset("", &q_a, data, 0);
-
-	unistr2_to_ascii(trust_name, &q_a.clnt_id.login.uni_comp_name,
-	                             sizeof(trust_name)-1);
-
-	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
-	{
-		status = NT_STATUS_INVALID_HANDLE;
-	}
-
-	/* checks and updates credentials.  creates reply credentials */
-	if (status == NT_STATUS_NOPROBLEMO && deal_with_creds(dc.sess_key, &(dc.clnt_cred), 
-	                    &(q_a.clnt_id.cred), &srv_cred))
-	{
-		memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
-
-		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
-
-		unistr2_to_ascii(trust_acct, &q_a.clnt_id.login.uni_acct_name,
-				 sizeof(trust_acct)-1);
-
-		DEBUG(3,("Server Password Set Wksta:[%s]\n", trust_acct));
-
-		become_root(True);
-		smb_pass = getsmbpwnam(trust_acct);
-		unbecome_root(True);
-
-		if (smb_pass != NULL)
-		{
-			unsigned char pwd[16];
-			int i;
-
-			DEBUG(100,("Server password set : new given value was :\n"));
-			for(i = 0; i < 16; i++)
-			{
-				DEBUG(100,("%02X ", q_a.pwd[i]));
-			}
-			DEBUG(100,("\n"));
-
-			cred_hash3( pwd, q_a.pwd, dc.sess_key, 0);
-
-			/* lies!  nt and lm passwords are _not_ the same: don't care */
-			smb_pass->smb_passwd    = pwd;
-			smb_pass->smb_nt_passwd = pwd;
-			smb_pass->acct_ctrl     = ACB_WSTRUST;
-
-			become_root(True);
-			ret = mod_smbpwd_entry(smb_pass,False);
-			unbecome_root(True);
-
-			if (ret)
-			{
-				/* hooray! */
-				status = NT_STATUS_NOPROBLEMO;
-			}
-		}
-		else
-		{
-			status = NT_STATUS_WRONG_PASSWORD;
-		}
-		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
-
-	}
-	else if (status == NT_STATUS_NOPROBLEMO)
-	{
-		/* lkclXXXX take a guess at a sensible error code to return... */
-		status = NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (status == NT_STATUS_NOPROBLEMO && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
-	{
-		status = NT_STATUS_INVALID_HANDLE;
-	}
-	/* Construct reply. */
-	net_reply_srv_pwset(&q_a, rdata, &srv_cred, status);
-}
-
-
-/*************************************************************************
  api_net_sam_logoff:
  *************************************************************************/
 static void api_net_sam_logoff( rpcsrv_struct *p,
@@ -646,7 +899,7 @@ static void api_net_sam_logoff( rpcsrv_struct *p,
 	NET_ID_INFO_CTR ctr;	
 
 	DOM_CRED srv_cred;
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = 0x0;
 
 	fstring trust_name;
 	struct dcinfo dc;
@@ -663,7 +916,7 @@ static void api_net_sam_logoff( rpcsrv_struct *p,
 
 	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = NT_STATUS_INVALID_HANDLE;
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
@@ -671,9 +924,9 @@ static void api_net_sam_logoff( rpcsrv_struct *p,
 	                &(q_l.sam_id.client.cred), &srv_cred);
 	memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
 
-	if (status == NT_STATUS_NOPROBLEMO && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
+	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = NT_STATUS_INVALID_HANDLE;
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 	/* construct reply.  always indicate success */
 	net_reply_sam_logoff(&q_l, rdata, &srv_cred, status);
@@ -688,7 +941,7 @@ static void api_net_sam_sync( rpcsrv_struct *p,
 {
 	NET_Q_SAM_SYNC q_s;
 	DOM_CRED srv_creds;
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = 0x0;
 
 	fstring trust_name;
 	struct dcinfo dc;
@@ -701,10 +954,10 @@ static void api_net_sam_sync( rpcsrv_struct *p,
 
 	if (!cred_get(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = NT_STATUS_INVALID_HANDLE;
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == NT_STATUS_NOPROBLEMO)
+	if (status == 0x0)
 	{
 		/* checks and updates credentials.  creates reply credentials */
 		if (deal_with_creds(dc.sess_key, &(dc.clnt_cred), 
@@ -715,13 +968,13 @@ static void api_net_sam_sync( rpcsrv_struct *p,
 		}
 		else
 		{
-			status = NT_STATUS_ACCESS_DENIED;
+			status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
-	if (status == NT_STATUS_NOPROBLEMO && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
+	if (status == 0x0 && !cred_store(p->remote_pid, global_sam_name, trust_name, &dc))
 	{
-		status = NT_STATUS_INVALID_HANDLE;
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* construct reply. */
@@ -736,7 +989,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 				struct sam_passwd *smb_pass,
 				struct dcinfo *dc)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 status = 0x0;
 
 	char nt_pwd[16];
 	char lm_pwd[16];
@@ -776,7 +1029,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 	    smb_pass->smb_nt_passwd == NULL ||
 	    memcmp(smb_pass->smb_nt_passwd, nt_pwd, 16) != 0)
 	{
-		status = NT_STATUS_WRONG_PASSWORD;
+		status = 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
 	}
 
 	return status;
@@ -828,10 +1081,10 @@ static uint32 net_login_general(NET_ID_INFO_4 *id4,
 		dump_data(100, usr_sess_key, 16);
 #endif
 
-                  return NT_STATUS_NOPROBLEMO;
+                  return 0x0;
 	}
 
-	return NT_STATUS_WRONG_PASSWORD;
+	return 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
 }
 
 /*************************************************************************
@@ -889,10 +1142,10 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 		dump_data(100, lm_pw8, 16);
 #endif
 
-		return NT_STATUS_NOPROBLEMO;
+		return 0x0;
 	}
 
-	return NT_STATUS_WRONG_PASSWORD;
+	return 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
 }
 
 /*************************************************************************
@@ -940,14 +1193,14 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
 	if (!deal_with_creds(dc.sess_key, &dc.clnt_cred, 
 	                     &(q_l->sam_id.client.cred), srv_cred))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 	
 	memcpy(&dc.srv_cred, &dc.clnt_cred, sizeof(dc.clnt_cred));
@@ -983,7 +1236,7 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 		default:
 		{
 			DEBUG(2,("SAM Logon: unsupported switch value\n"));
-			return NT_STATUS_INVALID_INFO_CLASS;
+			return 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
 		}
 	} 
 
@@ -1006,11 +1259,11 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 	if (q_l->sam_id.logon_level == GENERAL_LOGON_TYPE)
 	{
 		/* general login.  cleartext password */
-		uint32 status = NT_STATUS_NOPROBLEMO;
+		uint32 status = 0x0;
 		status = net_login_general(&q_l->sam_id.ctr->auth.id4, &dc, usr_sess_key);
 		enc_user_sess_key = usr_sess_key;
 
-		if (status != NT_STATUS_NOPROBLEMO)
+		if (status != 0x0)
 		{
 			return status;
 		}
@@ -1026,12 +1279,12 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 
 	if (sam_pass == NULL)
 	{
-		return NT_STATUS_NO_SUCH_USER;
+		return 0xC0000000 | NT_STATUS_NO_SUCH_USER;
 	}
 	else if (IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_DISABLED) &&
 		 IS_BITS_CLR_ALL(sam_pass->acct_ctrl, ACB_PWNOTREQ))
 	{
-		return NT_STATUS_ACCOUNT_DISABLED;
+		return 0xC0000000 | NT_STATUS_ACCOUNT_DISABLED;
 	}
 	else if (IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_DOMTRUST))
 	{
@@ -1067,7 +1320,7 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 
 	if (!(IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_PWNOTREQ)))
 	{
-		uint32 status = NT_STATUS_NOPROBLEMO;
+		uint32 status = 0x0;
 		switch (q_l->sam_id.logon_level)
 		{
 			case INTERACTIVE_LOGON_TYPE:
@@ -1090,7 +1343,7 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 				break;
 			}
 		}
-		if (status != NT_STATUS_NOPROBLEMO)
+		if (status != 0x0)
 		{
 			return status;
 		}
@@ -1108,7 +1361,7 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 
 	if (!getusergroupsntnam(nt_username, &grp_mem, &num_gids))
 	{
-		return NT_STATUS_INVALID_PRIMARY_GROUP;
+		return 0xC0000000 | NT_STATUS_INVALID_PRIMARY_GROUP;
 	}
 
 	num_gids = make_dom_gids(grp_mem, num_gids, &gids);
@@ -1155,59 +1408,12 @@ static uint32 reply_net_sam_logon(uint32 remote_pid,
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
-	return NT_STATUS_NOPROBLEMO;
+	return 0x0;
 }
 
-/*************************************************************************
- api_net_sam_logon:
- *************************************************************************/
-static void api_net_sam_logon( rpcsrv_struct *p,
-                               prs_struct *data,
-                               prs_struct *rdata)
-{
-	NET_Q_SAM_LOGON q_l;
-	NET_ID_INFO_CTR ctr;	
-	NET_USER_INFO_3 usr_info;
-	uint32 status = NT_STATUS_NOPROBLEMO;
-	DOM_CRED srv_cred;
-
-	q_l.sam_id.ctr = &ctr;
-	net_io_q_sam_logon("", &q_l, data, 0);
-
-	status = reply_net_sam_logon(p->remote_pid, &q_l, &srv_cred, &usr_info);
-	net_reply_sam_logon(&q_l, rdata, &srv_cred, &usr_info, status);
-}
-
-
-/*************************************************************************
- api_net_trust_dom_list:
- *************************************************************************/
-static void api_net_trust_dom_list( rpcsrv_struct *p,
-                                    prs_struct *data,
-                                    prs_struct *rdata)
-{
-	NET_Q_TRUST_DOM_LIST q_t;
-	char **doms = NULL;
-	uint32 num_doms = 0;
-
-	enumtrustdoms(&doms, &num_doms);
-
-	DEBUG(6,("api_net_trust_dom_list: %d\n", __LINE__));
-
-	/* grab the lsa trusted domain list query... */
-	net_io_q_trust_dom("", &q_t, data, 0);
-
-	/* construct reply. */
-	net_reply_trust_dom_list(&q_t, rdata,
-				num_doms, doms);
-
-	free_char_array(num_doms, doms);
-
-	DEBUG(6,("api_net_trust_dom_list: %d\n", __LINE__));
-}
 
 
 /*************************************************************************
@@ -1216,34 +1422,6 @@ static void api_net_trust_dom_list( rpcsrv_struct *p,
 #define ERROR_NO_SUCH_DOMAIN   0x54b
 #define ERROR_NO_LOGON_SERVERS 0x51f
 
-/*************************************************************************
- api_net_logon_ctrl2:
- *************************************************************************/
-static void api_net_logon_ctrl2( rpcsrv_struct *p,
-                                 prs_struct *data,
-                                 prs_struct *rdata)
-{
-	NET_Q_LOGON_CTRL2 q_l;
-
-	/* lkclXXXX - guess what - absolutely no idea what these are! */
-	uint32 flags = 0x0;
-	uint32 pdc_connection_status = 0x0;
-	uint32 logon_attempts = 0x0;
-	uint32 tc_status = ERROR_NO_LOGON_SERVERS;
-	char *trusted_domain = "test_domain";
-
-	DEBUG(6,("api_net_logon_ctrl2: %d\n", __LINE__));
-
-	/* grab the lsa netlogon ctrl2 query... */
-	net_io_q_logon_ctrl2("", &q_l, data, 0);
-
-	/* construct reply. */
-	net_reply_logon_ctrl2(&q_l, rdata,
-				flags, pdc_connection_status, logon_attempts,
-				tc_status, trusted_domain);
-
-	DEBUG(6,("api_net_logon_ctrl2: %d\n", __LINE__));
-}
 
 /*******************************************************************
  array of \PIPE\NETLOGON operations

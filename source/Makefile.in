@@ -328,7 +328,7 @@ SMBD_OBJ = $(SMBD_OBJ1) \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) 
-
+SMBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
 
 SRVSVCD_OBJ = $(MSRPCD_OBJ) $(SRVSVCD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
@@ -355,6 +355,7 @@ LSARPCD_OBJ = $(MSRPCD_OBJ) $(LSARPCD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(SIDDB_OBJ) $(LOCKING_OBJ) \
 		$(PROFILE_OBJ) 
+LSARPCD_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
 
 SPOOLSSD_OBJ = $(MSRPCD_OBJ) $(SPOOLSSD_OBJ1) \
 		$(PRINTING_OBJ) \
@@ -366,6 +367,7 @@ NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
+NETLOGOND_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
 
 SAMRTDBD_OBJ = $(MSRPCD_OBJ) $(SAMRTDBD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
@@ -378,6 +380,7 @@ SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
 		$(PROFILE_OBJ) 
+SAMRD_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \
@@ -393,17 +396,18 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o
 
 NMBD_OBJ = $(NMBD_OBJ1)
+NMBD_LIBS = $(SMBLIB) $(NMBLIB) $(SAMBALIB) $(UBIQXLIB)
 
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o libsmb/passchange.o $(LOCKING_OBJ) \
            \
            $(SIDDB_OBJ) \
            $(STUB_UID_OBJ)
+SWAT_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
 
 SMBRUN_OBJ = utils/smbrun.o
 
-SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
-            $(RPC_PARSE_OBJ2)
+SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o
 
 MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o
 
@@ -420,6 +424,7 @@ SMBPASSWD_OBJ = utils/smbpasswd.o libsmb/passchange.o \
 		libsmb/clienttrust.o \
 		rpc_client/cli_netlogon_sync.o \
            $(SIDDB_OBJ) $(STUB_UID_OBJ)
+SMBPASSWD_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
 
 RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 		rpcclient/display_at.o \
@@ -444,12 +449,14 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 		rpcclient/cmd_eventlog.o \
            $(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
+RPCCLIENT_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
 
 SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
 		smbwrapper/realcalls.o smbwrapper/shared.o
 
 CLIENT_OBJ = client/client.o client/clitar.o 
+CLIENT_LIBS = $(SMBLIB) $(NMBLIB) $(SAMBALIB)
 
 MOUNT_OBJ = client/smbmount.o client/clientutil.o \
               $(RPC_PARSE_OBJ2)
@@ -657,17 +664,17 @@ bin/libsamba.la: $(LIBSAMBA_LTOBJS) bin/.dummy
 	@$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBSAMBA_LTOBJS)
 
-bin/smbd: $(UBIQXLIB) $(SAMBA_LIBS) $(SMBD_OBJ) bin/.dummy
+bin/smbd: $(SMBD_LIBS) $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SMBD_OBJ) $(UBIQXLIB) $(SAMBA_LIBS) $(LIBS)
+	@$(LINK) -o $@ $(SMBD_OBJ) $(SMBD_LIBS) $(LIBS)
 
 bin/svcctld: $(SAMBA_LIBS) $(SVCCTLD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SVCCTLD_OBJ) $(SAMBA_LIBS) $(LIBS)
 
-bin/lsarpcd: $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(LSARPCD_OBJ) bin/.dummy
+bin/lsarpcd: $(LSARPCD_LIBS) $(LSARPCD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(LSARPCD_OBJ) $(UBIQXLIB) $(SMBPWLIB) $(SAMBA_LIBS) $(LIBS)
+	@$(LINK) -o $@ $(LSARPCD_OBJ) $(LSARPCD_LIBS) $(LIBS)
 
 bin/spoolssd: $(SAMBA_LIBS) $(SPOOLSSD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -689,37 +696,37 @@ bin/winregd: $(SAMBA_LIBS) $(WINREGD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINREGD_OBJ) $(SAMBA_LIBS) $(LIBS)
 
-bin/netlogond: $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(NETLOGOND_OBJ) bin/.dummy
+bin/netlogond: $(NETLOGOND_LIBS) $(NETLOGOND_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(NETLOGOND_OBJ) $(UBIQXLIB) $(SMBPWLIB) $(SAMBA_LIBS) $(LIBS)
+	@$(LINK) -o $@ $(NETLOGOND_OBJ) $(NETLOGOND_LIBS) $(LIBS)
 
-bin/samrd: $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(SAMRD_OBJ) bin/.dummy
+bin/samrd: $(SAMRD_LIBS) $(SAMRD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SAMRD_OBJ) $(SMBPWLIB) $(SAMBA_LIBS) $(UBIQXLIB) $(LIBS)
+	@$(LINK) -o $@ $(SAMRD_OBJ) $(SAMRD_LIBS) $(LIBS)
 
 bin/samrtdbd: $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SAMRTDBD_OBJ) $(SAMBA_LIBS) $(UBIQXLIB) $(LIBS)
 
-bin/nmbd: $(SMBLIB) $(SAMBALIB) $(UBIQXLIB) $(NMBLIB) $(NMBD_OBJ) bin/.dummy
+bin/nmbd: $(NMBD_LIBS) $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(NMBD_OBJ) $(SMBLIB) $(UBIQXLIB) $(SAMBALIB) $(NMBLIB) $(LIBS)
+	@$(LINK) -o $@ $(NMBD_OBJ) $(NMBD_LIBS) $(LIBS)
 
-bin/swat: $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(SWAT_OBJ) bin/.dummy
+bin/swat: $(SWAT_LIBS) $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SWAT_OBJ) $(UBIQXLIB) $(SMBPWLIB) $(SAMBA_LIBS) $(LIBS)
+	@$(LINK) -o $@ $(SWAT_OBJ) $(SWAT_LIBS) $(LIBS)
 
 bin/smbrun: $(SMBRUN_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SMBRUN_OBJ) $(LIBS)
 
-bin/rpcclient: $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(RPCCLIENT_OBJ) bin/.dummy
+bin/rpcclient: $(RPCCLIENT_LIBS) $(RPCCLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(RPCCLIENT_OBJ) $(UBIQXLIB) $(SMBPWLIB) $(SAMBA_LIBS) $(LIBS)
+	@$(LINK) -o $@ $(RPCCLIENT_OBJ) $(RPCCLIENT_LIBS) $(LIBS)
 
-bin/smbclient: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(CLIENT_OBJ) bin/.dummy
+bin/smbclient: $(CLIENT_LIBS) $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(CLIENT_OBJ) $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(LIBS)
+	@$(LINK) -o $@ $(CLIENT_OBJ) $(CLIENT_LIBS) $(LIBS)
 
 #bin/smbmount: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(MOUNT_OBJ) bin/.dummy
 #	@echo Linking $@
@@ -741,13 +748,13 @@ bin/testprns: $(SAMBALIB) $(TESTPRNS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(TESTPRNS_OBJ) $(SAMBALIB) $(LIBS)
 
-bin/smbstatus: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(STATUS_OBJ) bin/.dummy
+bin/smbstatus: $(SAMBALIB) $(STATUS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(STATUS_OBJ) $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(LIBS)
+	@$(LINK) -o $@ $(STATUS_OBJ) $(SAMBALIB) $(LIBS)
 
-bin/smbpasswd: $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(SMBPASSWD_OBJ) bin/.dummy
+bin/smbpasswd: $(SMBPASSWD_LIBS) $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SMBPASSWD_OBJ) $(UBIQXLIB) $(SAMBA_LIBS) $(SMBPWLIB) $(LIBS)
+	@$(LINK) -o $@ $(SMBPASSWD_OBJ) $(SMBPASSWD_LIBS) $(LIBS)
 
 bin/make_smbcodepage: $(SAMBALIB) $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
 	@echo Linking $@
@@ -797,9 +804,9 @@ bin/smbwrapper.32.so: $(SMBWRAPPERPICOBJS32)
 	@echo Linking smbwrapper shared library $@
 	@$(LD) -32 @LDSHFLAGS@ -o $@ $(SMBWRAPPERPICOBJS32) $(LIBS)
 
-bin/smbsh: $(SAMBA_LIBS) $(SMBSH_OBJ) bin/.dummy
+bin/smbsh: $(SAMBALIB) $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SMBSH_OBJ) $(SAMBA_LIBS) $(LIBS)
+	@$(LINK) -o $@ $(SMBSH_OBJ) $(SAMBALIB) $(LIBS)
 
 install: install-libs installbin installman installscripts installcp installswat
 

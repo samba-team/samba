@@ -2411,7 +2411,7 @@ uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
 BOOL req_user_info( const POLICY_HND *pol_dom,
 				const char *domain,
 				const DOM_SID *sid,
-				uint32 user_rid,
+				uint32 user_rid, uint16 info_level,
 				USER_INFO_FN(usr_inf));
 uint32 sam_query_usergroups( const POLICY_HND *pol_dom,
 				const char *domain,
@@ -2427,7 +2427,7 @@ void msrpc_sam_user( const POLICY_HND *pol_dom, const POLICY_HND *pol_blt,
 			const char* domain,
 			const DOM_SID *sid1,
 			const DOM_SID *blt_sid1,
-			uint32 user_rid,
+			uint32 user_rid, uint16 info_level,
 			char  *user_name,
 			USER_FN(usr_fn),
 			USER_INFO_FN(usr_inf_fn),
@@ -2594,17 +2594,6 @@ BOOL at_io_r_enum_jobs(char *desc, AT_R_ENUM_JOBS *r_e, prs_struct *ps, int dept
 BOOL make_at_q_query_job(AT_Q_QUERY_JOB *q_q, char *server, uint32 jobid);
 BOOL at_io_q_query_job(char *desc, AT_Q_QUERY_JOB *q_q, prs_struct *ps, int depth);
 BOOL at_io_r_query_job(char *desc, AT_R_QUERY_JOB *r_q, prs_struct *ps, int depth);
-
-/*The following definitions come from  rpc_parse/parse_brs.c  */
-
-BOOL make_brs_q_query_info(BRS_Q_QUERY_INFO *q_u,
-				const char *server, uint16 switch_value)  ;
-BOOL brs_io_q_query_info(char *desc, BRS_Q_QUERY_INFO *q_u, prs_struct *ps, int depth);
-BOOL make_brs_info_100(BRS_INFO_100 *inf);
-BOOL make_brs_r_query_info(BRS_R_QUERY_INFO *r_u,
-				uint32 switch_value, void *inf,
-				int status)  ;
-BOOL brs_io_r_query_info(char *desc,  BRS_R_QUERY_INFO *r_u, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_creds.c  */
 
@@ -2998,87 +2987,6 @@ int prs_tdb_store(TDB_CONTEXT *tdb, int flgs, prs_struct *pk, prs_struct *pd);
 void prs_tdb_fetch(TDB_CONTEXT *tdb, prs_struct *pk, prs_struct *pd);
 
 /*The following definitions come from  rpc_parse/parse_reg.c  */
-
-BOOL make_reg_q_open_hkcr(REG_Q_OPEN_HKCR *q_o,
-				uint16 unknown_0, uint32 level);
-BOOL reg_io_q_open_hkcr(char *desc,  REG_Q_OPEN_HKCR *r_q, prs_struct *ps, int depth);
-BOOL reg_io_r_open_hkcr(char *desc,  REG_R_OPEN_HKCR *r_r, prs_struct *ps, int depth);
-BOOL make_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
-				uint16 unknown_0, uint32 access_mask);
-BOOL reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int depth);
-BOOL reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int depth);
-BOOL make_reg_q_flush_key(REG_Q_FLUSH_KEY *q_u, POLICY_HND *pol);
-BOOL reg_io_q_flush_key(char *desc,  REG_Q_FLUSH_KEY *r_q, prs_struct *ps, int depth);
-BOOL reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int depth);
-BOOL make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
-				char *key_name, char *key_class,
-				SEC_ACCESS *sam_access,
-				SEC_DESC_BUF *sec_buf,
-				int sec_len, SEC_DESC *sec);
-BOOL reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int depth);
-BOOL reg_io_r_create_key(char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int depth);
-BOOL make_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
-				char *name);
-BOOL reg_io_q_delete_val(char *desc,  REG_Q_DELETE_VALUE *r_q, prs_struct *ps, int depth);
-BOOL reg_io_r_delete_val(char *desc,  REG_R_DELETE_VALUE *r_r, prs_struct *ps, int depth);
-BOOL make_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
-				char *name);
-BOOL reg_io_q_delete_key(char *desc,  REG_Q_DELETE_KEY *r_q, prs_struct *ps, int depth);
-BOOL reg_io_r_delete_key(char *desc,  REG_R_DELETE_KEY *r_r, prs_struct *ps, int depth);
-BOOL make_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd,
-				uint32 max_class_len);
-BOOL reg_io_q_query_key(char *desc,  REG_Q_QUERY_KEY *r_q, prs_struct *ps, int depth);
-BOOL reg_io_r_query_key(char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps, int depth);
-BOOL make_reg_q_unk_1a(REG_Q_UNK_1A *q_o, POLICY_HND *hnd);
-BOOL reg_io_q_unk_1a(char *desc,  REG_Q_UNK_1A *r_q, prs_struct *ps, int depth);
-BOOL reg_io_r_unk_1a(char *desc,  REG_R_UNK_1A *r_r, prs_struct *ps, int depth);
-BOOL make_reg_q_open_hku(REG_Q_OPEN_HKU *q_o,
-				uint16 unknown_0, uint32 level);
-BOOL reg_io_q_open_hku(char *desc,  REG_Q_OPEN_HKU *r_q, prs_struct *ps, int depth);
-BOOL reg_io_r_open_hku(char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, int depth);
-BOOL make_reg_q_close(REG_Q_CLOSE *q_c, POLICY_HND *hnd);
-BOOL reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth);
-BOOL reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth);
-BOOL make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol,
-				uint32 sec_info,
-				uint32 buf_len, SEC_DESC *sec_desc);
-BOOL reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, int depth);
-BOOL reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, int depth);
-BOOL make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
-				uint32 sec_info,
-				uint32 buf_len, SEC_DESC_BUF *sec_buf);
-BOOL reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
-BOOL reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
-BOOL make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, const char *val_name,
-				uint8 major, uint8 minor);
-BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth);
-BOOL make_reg_r_info(REG_R_INFO *r_r,
-				uint32 *type, BUFFER2 *buf,
-				uint32 status);
-BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth);
-BOOL make_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
-				uint32 val_idx, uint32 max_val_len,
-				uint32 max_buf_len);
-BOOL reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int depth);
-BOOL reg_io_r_enum_val(char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps, int depth);
-BOOL make_reg_q_create_val(REG_Q_CREATE_VALUE *q_i, POLICY_HND *pol,
-				char *val_name, uint32 type,
-				BUFFER3 *val);
-BOOL reg_io_q_create_val(char *desc,  REG_Q_CREATE_VALUE *q_q, prs_struct *ps, int depth);
-BOOL reg_io_r_create_val(char *desc,  REG_R_CREATE_VALUE *r_q, prs_struct *ps, int depth);
-BOOL make_reg_q_enum_key(REG_Q_ENUM_KEY *q_i, POLICY_HND *pol, uint32 key_idx);
-BOOL reg_io_q_enum_key(char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int depth);
-BOOL reg_io_r_enum_key(char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int depth);
-BOOL make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
-				char *key_name, uint32 access_mask);
-BOOL reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int depth);
-BOOL make_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
-				POLICY_HND *pol, uint32 status);
-BOOL reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int depth);
-BOOL make_reg_q_shutdown(REG_Q_SHUTDOWN *q_i,
-				const char *msg, uint32 timeout, uint16 flags);
-BOOL reg_io_q_shutdown(char *desc,  REG_Q_SHUTDOWN *q_q, prs_struct *ps, int depth);
-BOOL reg_io_r_shutdown(char *desc,  REG_R_SHUTDOWN *r_q, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_rpc.c  */
 
@@ -5061,7 +4969,6 @@ msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  spoolssd/srv_spoolss_nt.c  */
 
-void init_printer_hnd(void);
 uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 
 				uint32  unknown0, uint32  cbbuf,

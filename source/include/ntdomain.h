@@ -41,12 +41,10 @@
 /* different dce/rpc pipes */
 #include "rpc_lsa.h"
 #include "rpc_netlogon.h"
-#include "rpc_reg.h"
 #include "rpc_samr.h"
 #include "rpc_srvsvc.h"
 #include "rpc_svcctl.h"
 #include "rpc_wkssvc.h"
-#include "rpc_brs.h"
 #include "rpc_atsvc.h"
 #include "rpc_spoolss.h"
 #include "rpc_eventlog.h"
@@ -254,8 +252,8 @@ struct acct_info
 #define USER_FN(fn)\
 	void (*fn)(const char*, const DOM_SID*, uint32, const char*)
 #define USER_INFO_FN(fn)\
-	void (*fn)(const char*, const DOM_SID*, uint32,\
-	           SAM_USER_INFO_21 *const)
+	void (*fn)(const char*, const DOM_SID*, uint32, \
+	           SAM_USERINFO_CTR *const)
 #define USER_MEM_FN(fn)\
 	void (*fn)(const char*, const DOM_SID*, uint32, const char*,\
 	           uint32, const uint32*, char *const *const, uint32* const)

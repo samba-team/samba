@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "rpc_parse.h"
 
 
 #define	PIPE		"\\PIPE\\"

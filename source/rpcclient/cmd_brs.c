@@ -27,6 +27,7 @@
 #endif
 
 #include "includes.h"
+#include "rpc_brs.h"
 #include "nterr.h"
 
 extern int DEBUGLEVEL;

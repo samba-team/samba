@@ -88,55 +88,6 @@ static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 
 
 /***************************************************************************
-make_dom_ref - adds a domain if it's not already in, returns the index
- ***************************************************************************/
-static int make_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
-                         
-{
-	int num = 0;
-	int len;
-
-	if (dom_name != NULL)
-	{
-		for (num = 0; num < ref->num_ref_doms_1; num++)
-		{
-			fstring domname;
-			unistr2_to_ascii(domname, &ref->ref_dom[num].uni_dom_name, sizeof(domname)-1);
-			if (strequal(domname, dom_name))
-			{	
-				return num;
-			}
-		}
-
-	}
-	else
-	{
-		num = ref->num_ref_doms_1;
-	}
-
-	if (num >= MAX_REF_DOMAINS)
-	{
-		/* index not found, already at maximum domain limit */
-		return -1;
-	}
-
-	ref->num_ref_doms_1 = num+1;
-	ref->ptr_ref_dom  = 1;
-	ref->max_entries = MAX_REF_DOMAINS;
-	ref->num_ref_doms_2 = num+1;
-
-	len = dom_name != NULL ? strlen(dom_name) : 0;
-
-	make_uni_hdr(&(ref->hdr_ref_dom[num].hdr_dom_name), len);
-	ref->hdr_ref_dom[num].ptr_dom_sid = dom_sid != NULL ? 1 : 0;
-
-	make_unistr2 (&(ref->ref_dom[num].uni_dom_name), dom_name, len);
-	make_dom_sid2(&(ref->ref_dom[num].ref_dom     ), dom_sid );
-
-	return num;
-}
-
-/***************************************************************************
 make_lsa_rid2s
  ***************************************************************************/
 static uint32 get_remote_sid(const char *dom_name, char *find_name,

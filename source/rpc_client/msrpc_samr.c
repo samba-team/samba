@@ -270,17 +270,17 @@ uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
 BOOL req_user_info( const POLICY_HND *pol_dom,
 				const char *domain,
 				const DOM_SID *sid,
-				uint32 user_rid,
+				uint32 user_rid, uint16 info_level,
 				USER_INFO_FN(usr_inf))
 {
 	SAM_USERINFO_CTR ctr;
 	/* send user info query, level 0x15 */
 	if (get_samr_query_userinfo( pol_dom,
-				    0x15, user_rid, &ctr))
+				    info_level, user_rid, &ctr))
 	{
 		if (usr_inf != NULL)
 		{
-			usr_inf(domain, sid, user_rid, ctr.info.id21);
+			usr_inf(domain, sid, user_rid, &ctr);
 		}
 		return True;
 	}
@@ -447,7 +447,7 @@ void msrpc_sam_user( const POLICY_HND *pol_dom, const POLICY_HND *pol_blt,
 			const char* domain,
 			const DOM_SID *sid1,
 			const DOM_SID *blt_sid1,
-			uint32 user_rid,
+			uint32 user_rid, uint16 info_level,
 			char  *user_name,
 			USER_FN(usr_fn),
 			USER_INFO_FN(usr_inf_fn),
@@ -463,7 +463,7 @@ void msrpc_sam_user( const POLICY_HND *pol_dom, const POLICY_HND *pol_blt,
 	{
 		req_user_info(pol_dom,
 				  domain, sid1,
-				  user_rid, 
+				  user_rid, info_level,
 				  usr_inf_fn);
 	}
 
@@ -528,7 +528,7 @@ BOOL msrpc_sam_query_user( const char* srv_name,
 		msrpc_sam_user( &pol_dom, NULL,
 				domain,
 				sid, NULL,
-				rid[0],
+				rid[0], 0x15,
 				user_name,
 				usr_fn, usr_inf_fn,
 		                usr_grp_fn, usr_als_fn);
@@ -625,7 +625,7 @@ int msrpc_sam_enum_users( const char* srv_name,
 			msrpc_sam_user( &pol_dom, &pol_blt,
 					domain,
 					sid1, &sid_1_5_20,
-					user_rid, user_name,
+					user_rid, 0x15, user_name,
 					usr_fn, usr_inf_fn,
 					usr_grp_fn, usr_als_fn);
 		}

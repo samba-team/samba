@@ -27,7 +27,7 @@
 #endif
 
 #include "includes.h"
-#include "nterr.h"
+#include "rpc_parse.h"
 
 extern int DEBUGLEVEL;
 
@@ -111,12 +111,16 @@ static void sam_display_group_members(const char *domain, const DOM_SID *sid,
 }
 
 static void sam_display_user_info(const char *domain, const DOM_SID *sid,
-				uint32 user_rid, 
-				SAM_USER_INFO_21 *const usr)
+				uint32 user_rid,
+				SAM_USERINFO_CTR  *const ctr)
 {
-	display_sam_user_info_21(out_hnd, ACTION_HEADER   , usr);
-	display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, usr);
-	display_sam_user_info_21(out_hnd, ACTION_FOOTER   , usr);
+	if (ctr->switch_value == 21)
+	{
+		SAM_USER_INFO_21 *const usr = ctr->info.id21;
+		display_sam_user_info_21(out_hnd, ACTION_HEADER   , usr);
+		display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, usr);
+		display_sam_user_info_21(out_hnd, ACTION_FOOTER   , usr);
+	}
 }
 
 static void sam_display_user(const char *domain, const DOM_SID *sid,
@@ -1856,6 +1860,7 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	uint32 *types;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
+	uint16 info_level = 0x15;
 
 	BOOL request_user_info  = False;
 	BOOL request_group_info = False;
@@ -1881,7 +1886,7 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	argc--;
 	argv++;
 
-	while ((opt = getopt(argc, argv, "uga")) != EOF)
+	while ((opt = getopt(argc, argv, "ugai:")) != EOF)
 	{
 		switch (opt)
 		{
@@ -1898,6 +1903,11 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 			case 'a':
 			{
 				request_alias_info = True;
+				break;
+			}
+			case 'i':
+			{
+				info_level = get_number(optarg);
 				break;
 			}
 		}
@@ -1933,7 +1943,7 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 		msrpc_sam_user( &pol_dom, NULL,
 				domain,
 				&sid, NULL,
-				rids[0], user_name,
+				rids[0], info_level, user_name,
 	            sam_display_user,
 	            request_user_info  ? sam_display_user_info     : NULL,
 	            request_group_info ? sam_display_group_members : NULL,

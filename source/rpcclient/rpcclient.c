@@ -24,6 +24,7 @@
 #endif
 
 #include "includes.h"
+#include "rpc_parse.h"
 
 #ifndef REGISTER
 #define REGISTER 0

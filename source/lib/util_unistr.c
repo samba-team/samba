@@ -303,6 +303,10 @@ copies a UNISTR2 structure.
 ********************************************************************/
 BOOL copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 {
+	if (str == NULL)
+	{
+		return False;
+	}
 	if (from != NULL)
 	{
 		ZERO_STRUCTP(str);
