@@ -34,7 +34,7 @@ enum handle_types {HTYPE_LOOKUP};
 /* a endpoint combined with an interface description */
 struct dcesrv_ep_iface {
 	const char *name;
-	struct dcerpc_binding ep_description;
+	struct epm_tower ep;
 };
 
 /*
@@ -58,11 +58,13 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 {
 	struct dcesrv_endpoint *d;
 	uint32_t total = 0;
+	NTSTATUS status;
 
 	*eps = NULL;
 
 	for (d=endpoint_list; d; d=d->next) {
 		struct dcesrv_if_list *iface;
+		struct dcerpc_binding description;
 
 		for (iface=d->interface_list;iface;iface=iface->next) {
 			(*eps) = talloc_realloc_p(mem_ctx, 
@@ -73,9 +75,16 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 				return 0;
 			}
 			(*eps)[total].name = iface->iface.name;
-			(*eps)[total].ep_description = d->ep_description;
-			GUID_from_string(iface->iface.uuid, &(*eps)[total].ep_description.object);
-			(*eps)[total].ep_description.object_version = iface->iface.if_version;
+
+			description = d->ep_description;
+			GUID_from_string(iface->iface.uuid, &description.object);
+			description.object_version = iface->iface.if_version;
+
+			status = dcerpc_binding_build_tower(mem_ctx, &description, &(*eps)[total].ep);
+			if (NT_STATUS_IS_ERR(status)) {
+				DEBUG(1, ("Unable to build tower for %s\n", iface->iface.name));
+				continue;
+			}
 			total++;
 		}
 	}
@@ -110,7 +119,6 @@ static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		struct dcesrv_ep_iface *e;
 	} *eps;
 	uint32_t num_ents;
-	NTSTATUS status;
 	int i;
 
 	h = dcesrv_handle_fetch(dce_call->conn, r->in.entry_handle, HTYPE_LOOKUP);
@@ -158,11 +166,7 @@ static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		if (!r->out.entries[i].tower) {
 			return EPMAPPER_STATUS_NO_MEMORY;
 		}
-
-		status = dcerpc_binding_build_tower(mem_ctx, &eps->e[i].ep_description, &r->out.entries[i].tower->tower);
-		if (NT_STATUS_IS_ERR(status)) {
-			return EPMAPPER_STATUS_NO_MEMORY;
-		}
+		r->out.entries[i].tower->tower = eps->e[i].ep;
 	}
 
 	eps->count -= num_ents;
@@ -184,7 +188,6 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	struct dcesrv_ep_iface *eps;
 	struct epm_floor *floors;
 	enum dcerpc_transport_t transport;
-	NTSTATUS status;
 
 	count = build_ep_list(mem_ctx, dce_call->conn->dce_ctx->endpoint_list, &eps);
 
@@ -206,8 +209,7 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 	floors = r->in.map_tower->tower.floors;
 
-	if (floors[0].lhs.protocol != EPM_PROTOCOL_UUID ||
-	    floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
+	if (floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
 	    guid_cmp(mem_ctx, &floors[1].lhs.info.uuid.uuid, NDR_GUID) != 0 ||
 	    floors[1].lhs.info.uuid.version != NDR_GUID_VERSION) {
 		goto failed;
@@ -222,26 +224,17 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		}
 		goto failed;
 	}
-	
-	for (i=0;i<count;i++) {
-		struct epm_tower t;
-		if (!GUID_equal(&floors[0].lhs.info.uuid.uuid, &eps[i].ep_description.object) ||
-		    floors[0].lhs.info.uuid.version != eps[i].ep_description.object_version) {
-			continue;
-		}
 
-		if (transport != eps[i].ep_description.transport) {
+	for (i=0;i<count;i++) {
+		if (!GUID_equal(&r->in.map_tower->tower.floors[0].lhs.info.uuid.uuid,
+					   &eps[i].ep.floors[0].lhs.info.uuid.uuid) ||
+			r->in.map_tower->tower.floors[0].lhs.info.uuid.version != 
+				eps[i].ep.floors[0].lhs.info.uuid.version ||
+				transport != dcerpc_transport_by_tower(&eps[i].ep)) {
 			continue;
 		}
 		
-		status = dcerpc_binding_build_tower(mem_ctx, 
-						&eps[i].ep_description, 
-						&t);
-
-		if (NT_STATUS_IS_ERR(status)) {
-			return EPMAPPER_STATUS_NO_MEMORY;
-		}
-		r->out.towers->twr->tower = t;
+		r->out.towers->twr->tower = eps[i].ep;
 		r->out.towers->twr->tower_length = 0;
 		return EPMAPPER_STATUS_OK;
 	}
