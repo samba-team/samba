@@ -1,3 +1,7 @@
+Sun Jun  8 03:51:55 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib: Added editline,sl,roken.
+
 Mon Jun  2 00:37:48 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/fcache.c: Move file cache from cache.c.
