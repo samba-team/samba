@@ -191,7 +191,25 @@ hdb_free_entry(krb5_context context, hdb_entry *ent)
     free_hdb_entry(ent);
 }
 
-
+krb5_error_code
+hdb_foreach(krb5_context context,
+	    HDB *db,
+	    hdb_foreach_func_t func,
+	    void *data)
+{
+    krb5_error_code ret;
+    hdb_entry entry;
+    ret = db->firstkey(context, db, &entry);
+    while(ret == 0){
+	ret = (*func)(context, db, &entry, data);
+	hdb_free_entry(context, &entry);
+	if(ret == 0)
+	    ret = db->nextkey(context, db, &entry);
+    }
+    if(ret == HDB_ERR_NOENTRY)
+	ret = 0;
+    return ret;
+}
 
 krb5_error_code
 hdb_open(krb5_context context, HDB **db, 
