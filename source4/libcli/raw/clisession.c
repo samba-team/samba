@@ -263,8 +263,8 @@ static NTSTATUS smb_raw_session_setup_generic_old(struct smbcli_session *session
 
 	/* use the old interface */
 	s2.generic.level = RAW_SESSSETUP_OLD;
-	s2.old.in.bufsize = ~0;
-	s2.old.in.mpx_max = 50;
+	s2.old.in.bufsize = session->transport->options.max_xmit;
+	s2.old.in.mpx_max = session->transport->options.max_mux;
 	s2.old.in.vc_num = 1;
 	s2.old.in.sesskey = parms->generic.in.sesskey;
 	s2.old.in.domain = parms->generic.in.domain;
@@ -311,8 +311,8 @@ static NTSTATUS smb_raw_session_setup_generic_nt1(struct smbcli_session *session
 	union smb_sesssetup s2;
 
 	s2.generic.level = RAW_SESSSETUP_NT1;
-	s2.nt1.in.bufsize = ~0;
-	s2.nt1.in.mpx_max = 50;
+	s2.nt1.in.bufsize = session->transport->options.max_xmit;
+	s2.nt1.in.mpx_max = session->transport->options.max_mux;
 	s2.nt1.in.vc_num = 1;
 	s2.nt1.in.sesskey = parms->generic.in.sesskey;
 	s2.nt1.in.capabilities = parms->generic.in.capabilities;
@@ -371,8 +371,8 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct smbcli_session *sess
 	const char *chosen_oid;
 
 	s2.generic.level = RAW_SESSSETUP_SPNEGO;
-	s2.spnego.in.bufsize = ~0;
-	s2.spnego.in.mpx_max = 50;
+	s2.spnego.in.bufsize = session->transport->options.max_xmit;
+	s2.spnego.in.mpx_max = session->transport->options.max_mux;
 	s2.spnego.in.vc_num = 1;
 	s2.spnego.in.sesskey = parms->generic.in.sesskey;
 	s2.spnego.in.capabilities = parms->generic.in.capabilities;
