@@ -26,7 +26,9 @@ extern DOM_SID global_sam_sid;
 
 static TDB_CONTEXT *tdb; /* used for driver files */
 
-#define DATABASE_VERSION 1
+#define DATABASE_VERSION_V1 1 /* native byte format. */
+#define DATABASE_VERSION_V2 2 /* le format. */
+
 #define GROUP_PREFIX "UNIXGROUP/"
 
 PRIVS privs[] = {
@@ -166,15 +168,15 @@ BOOL init_group_mapping(void)
 
 	/* Cope with byte-reversed older versions of the db. */
 	vers_id = tdb_fetch_int32(tdb, vstring);
-	if ((vers_id != DATABASE_VERSION) && (IREV(vers_id) == DATABASE_VERSION)) {
+	if ((vers_id == DATABASE_VERSION_V1) || (IREV(vers_id) == DATABASE_VERSION_V1)) {
 		/* Written on a bigendian machine with old fetch_int code. Save as le. */
-		tdb_store_int32(tdb, vstring, DATABASE_VERSION);
-		vers_id = DATABASE_VERSION;
+		tdb_store_int32(tdb, vstring, DATABASE_VERSION_V2);
+		vers_id = DATABASE_VERSION_V2;
 	}
 
-	if (vers_id != DATABASE_VERSION) {
+	if (vers_id != DATABASE_VERSION_V2) {
 		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
-		tdb_store_int32(tdb, vstring, DATABASE_VERSION);
+		tdb_store_int32(tdb, vstring, DATABASE_VERSION_V2);
 	}
 
 	tdb_unlock_bystring(tdb, vstring);
