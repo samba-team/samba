@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "26 September 2001" "" ""
+.TH "SMB.CONF" "5" "06 October 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -975,6 +975,12 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIwinbind cache time\fR
+.TP 0.2i
+\(bu
+\fIwinbind enum users\fR
+.TP 0.2i
+\(bu
+\fIwinbind enum groups\fR
 .TP 0.2i
 \(bu
 \fIwinbind gid\fR
@@ -6986,6 +6992,41 @@ user and group information before querying a Windows NT server
 again.
 
 Default: \fBwinbind cache type = 15\fR
+.TP
+\fBwinbind enum users\fR
+On large installations using
+winbindd(8)it may be
+necessary to suppress the enumeration of users through the
+\fBsetpwent()\fR,
+\fBgetpwent()\fR and
+\fBendpwent()\fR group of system calls. If
+the \fIwinbind enum users\fR parameter is
+false, calls to the \fBgetpwent\fR system call
+will not return any data. 
+
+\fBWarning:\fR Turning off user
+enumeration may cause some programs to behave oddly. For
+example, the finger program relies on having access to the
+full user list when searching for matching
+usernames. 
+
+Default: \fBwinbind enum users = yes \fR
+.TP
+\fBwinbind enum groups\fR
+On large installations using
+winbindd(8)it may be
+necessary to suppress the enumeration of groups through the
+\fBsetgrent()\fR,
+\fBgetgrent()\fR and
+\fBendgrent()\fR group of system calls. If
+the \fIwinbind enum groups\fR parameter is
+false, calls to the \fBgetgrent()\fR system
+call will not return any data. 
+
+\fBWarning:\fR Turning off group
+enumeration may cause some programs to behave oddly.
+
+Default: \fBwinbind enum groups = no \fR
 .TP
 \fBwinbind gid\fR
 The winbind gid parameter specifies the range of group 

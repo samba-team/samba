@@ -7948,7 +7948,7 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term><anchor id="WINBINDENUMGROPS">winbind enum
+		<term><anchor id="WINBINDENUMGROUPS">winbind enum
 		groups</term> <listitem><para>On large installations using
 		<ulink url="winbindd.8.html">winbindd(8)</ulink> it may be
 		necessary to suppress the enumeration of groups through the

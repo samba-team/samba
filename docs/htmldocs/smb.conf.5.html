@@ -2757,6 +2757,30 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#WINBINDENUMUSERS"
+><TT
+CLASS="PARAMETER"
+><I
+>winbind enum users</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#WINBINDENUMGROUPS"
+><TT
+CLASS="PARAMETER"
+><I
+>winbind enum groups</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#WINBINDGID"
 ><TT
 CLASS="PARAMETER"
@@ -2867,7 +2891,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN926"
+NAME="AEN934"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4274,7 +4298,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1394"
+NAME="AEN1402"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -18298,6 +18322,109 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="WINBINDENUMUSERS"
+></A
+>winbind enum
+		users</DT
+><DD
+><P
+>On large installations using
+		<A
+HREF="winbindd.8.html"
+TARGET="_top"
+>winbindd(8)</A
+> it may be
+		necessary to suppress the enumeration of users through the
+		<B
+CLASS="COMMAND"
+> setpwent()</B
+>,
+		<B
+CLASS="COMMAND"
+>getpwent()</B
+> and
+		<B
+CLASS="COMMAND"
+>endpwent()</B
+> group of system calls.  If
+		the <TT
+CLASS="PARAMETER"
+><I
+>winbind enum users</I
+></TT
+> parameter is
+		false, calls to the <B
+CLASS="COMMAND"
+>getpwent</B
+> system call
+		will not return any data. </P
+><P
+><EM
+>Warning:</EM
+> Turning off user
+		enumeration may cause some programs to behave oddly.  For
+		example, the finger program relies on having access to the
+		full user list when searching for matching
+		usernames. </P
+><P
+>Default: <B
+CLASS="COMMAND"
+>winbind enum users = yes </B
+></P
+></DD
+><DT
+><A
+NAME="WINBINDENUMGROUPS"
+></A
+>winbind enum
+		groups</DT
+><DD
+><P
+>On large installations using
+		<A
+HREF="winbindd.8.html"
+TARGET="_top"
+>winbindd(8)</A
+> it may be
+		necessary to suppress the enumeration of groups through the
+		<B
+CLASS="COMMAND"
+> setgrent()</B
+>,
+		<B
+CLASS="COMMAND"
+>getgrent()</B
+> and
+		<B
+CLASS="COMMAND"
+>endgrent()</B
+> group of system calls.  If
+		the <TT
+CLASS="PARAMETER"
+><I
+>winbind enum groups</I
+></TT
+> parameter is
+		false, calls to the <B
+CLASS="COMMAND"
+>getgrent()</B
+> system
+		call will not return any data. </P
+><P
+><EM
+>Warning:</EM
+> Turning off group
+		enumeration may cause some programs to behave oddly.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>winbind enum groups = no </B
+>
+		</P
+></DD
+><DT
+><A
 NAME="WINBINDGID"
 ></A
 >winbind gid</DT
@@ -18759,7 +18886,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5917"
+NAME="AEN5955"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18789,7 +18916,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5923"
+NAME="AEN5961"
 ></A
 ><H2
 >VERSION</H2
@@ -18800,7 +18927,7 @@ NAME="AEN5923"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5926"
+NAME="AEN5964"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18879,7 +19006,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5946"
+NAME="AEN5984"
 ></A
 ><H2
 >AUTHOR</H2
