@@ -35,13 +35,12 @@
 
 RCSID("$Id$");
 
-#if defined(HAVE_DB_H) && DB_VERSION_MAJOR < 3
-
+#if defined(HAVE_DB_H) && DB_VERSION_MAJOR == 3
 static krb5_error_code
 DB_close(krb5_context context, HDB *db)
 {
     DB *d = (DB*)db->db;
-    d->close(d);
+    d->close(d, 0);
     return 0;
 }
 
@@ -60,8 +59,8 @@ static krb5_error_code
 DB_lock(krb5_context context, HDB *db, int operation)
 {
     DB *d = (DB*)db->db;
-    int fd = (*d->fd)(d);
-    if(fd < 0)
+    int fd;
+    if ((*d->fd)(d, &fd))
 	return HDB_ERR_CANT_LOCK_DB;
     return hdb_lock(fd, operation);
 }
@@ -70,8 +69,8 @@ static krb5_error_code
 DB_unlock(krb5_context context, HDB *db)
 {
     DB *d = (DB*)db->db;
-    int fd = (*d->fd)(d);
-    if(fd < 0)
+    int fd;
+    if ((*d->fd)(d, &fd))
 	return HDB_ERR_CANT_LOCK_DB;
     return hdb_unlock(fd);
 }
@@ -83,25 +82,31 @@ DB_seq(krb5_context context, HDB *db,
 {
     DB *d = (DB*)db->db;
     DBT key, value;
+    DBC *dbcp;
     krb5_data key_data, data;
     int code;
 
-    code = db->lock(context, db, HDB_RLOCK);
-    if(code == -1)
+    memset(&key, 0, sizeof(DBT));
+    memset(&value, 0, sizeof(DBT));
+    if (db->lock(context, db, HDB_RLOCK))
 	return HDB_ERR_DB_INUSE;
-    code = d->seq(d, &key, &value, flag);
+    code = d->cursor(d, NULL, (DBC **)&db->dbc, 0);
+    if (code)
+	return code;
+    dbcp=db->dbc;
+    code = dbcp->c_get(dbcp, &key, &value, flag);
     db->unlock(context, db); /* XXX check value */
-    if(code == -1)
-	return errno;
-    if(code == 1)
+    if (code == DB_NOTFOUND)
 	return HDB_ERR_NOENTRY;
+    if (code)
+	return code;
 
     key_data.data = key.data;
     key_data.length = key.size;
     data.data = value.data;
     data.length = value.size;
     if (hdb_value2entry(context, &data, entry))
-	return DB_seq(context, db, flags, entry, R_NEXT);
+	return DB_seq(context, db, flags, entry, DB_NEXT);
     if (db->master_key_set && (flags & HDB_F_DECRYPT))
 	hdb_unseal_keys (db, entry);
     if (entry->principal == NULL) {
@@ -115,14 +120,14 @@ DB_seq(krb5_context context, HDB *db,
 static krb5_error_code
 DB_firstkey(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 {
-    return DB_seq(context, db, flags, entry, R_FIRST);
+    return DB_seq(context, db, flags, entry, DB_FIRST);
 }
 
 
 static krb5_error_code
 DB_nextkey(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 {
-    return DB_seq(context, db, flags, entry, R_NEXT);
+    return DB_seq(context, db, flags, entry, DB_NEXT);
 }
 
 static krb5_error_code
@@ -151,18 +156,20 @@ DB__get(krb5_context context, HDB *db, krb5_data key, krb5_data *reply)
     DBT k, v;
     int code;
 
+    memset(&k, 0, sizeof(DBT));
+    memset(&v, 0, sizeof(DBT));
     k.data = key.data;
     k.size = key.length;
-    code = db->lock(context, db, HDB_RLOCK);
+    k.flags = 0;
+    if ((code = db->lock(context, db, HDB_RLOCK)))
+	return code;
+    code = d->get(d, NULL, &k, &v, 0);
+    db->unlock(context, db);
+    if(code == DB_NOTFOUND)
+	return HDB_ERR_NOENTRY;
     if(code)
 	return code;
-    code = d->get(d, &k, &v, 0);
-    db->unlock(context, db);
-    if(code < 0)
-	return errno;
-    if(code == 1)
-	return HDB_ERR_NOENTRY;
-    
+
     krb5_data_copy(reply, v.data, v.size);
     return 0;
 }
@@ -175,19 +182,22 @@ DB__put(krb5_context context, HDB *db, int replace,
     DBT k, v;
     int code;
 
+    memset(&k, 0, sizeof(DBT));
+    memset(&v, 0, sizeof(DBT));
     k.data = key.data;
     k.size = key.length;
+    k.flags = 0;
     v.data = value.data;
     v.size = value.length;
-    code = db->lock(context, db, HDB_WLOCK);
-    if(code)
+    v.flags = 0;
+    if ((code = db->lock(context, db, HDB_WLOCK)))
 	return code;
-    code = d->put(d, &k, &v, replace ? 0 : R_NOOVERWRITE);
+    code = d->put(d, NULL, &k, &v, replace ? 0 : DB_NOOVERWRITE);
     db->unlock(context, db);
-    if(code < 0)
-	return errno;
-    if(code == 1)
+    if(code == DB_KEYEXIST)
 	return HDB_ERR_EXISTS;
+    if(code)
+	return errno;
     return 0;
 }
 
@@ -197,17 +207,19 @@ DB__del(krb5_context context, HDB *db, krb5_data key)
     DB *d = (DB*)db->db;
     DBT k;
     krb5_error_code code;
+    memset(&k, 0, sizeof(DBT));
     k.data = key.data;
     k.size = key.length;
+    k.flags = 0;
     code = db->lock(context, db, HDB_WLOCK);
     if(code)
 	return code;
-    code = d->del(d, &k, 0);
+    code = d->del(d, NULL, &k, 0);
     db->unlock(context, db);
-    if(code == 1)
+    if(code == DB_NOTFOUND)
 	return HDB_ERR_NOENTRY;
-    if(code < 0)
-	return errno;
+    if(code)
+	return code;
     return 0;
 }
 
@@ -216,17 +228,35 @@ DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
     char *fn;
     krb5_error_code ret;
+    DB *d;
+    int myflags = 0;
+
+    if (flags & O_CREAT)
+      myflags |= DB_CREATE;
+
+    if (flags & O_EXCL)
+      myflags |= DB_EXCL;
+
+    if (flags & O_RDONLY)
+      myflags |= DB_RDONLY;
+
+    if (flags & O_TRUNC)
+      myflags |= DB_TRUNCATE;
 
     asprintf(&fn, "%s.db", db->name);
     if (fn == NULL)
 	return ENOMEM;
-    db->db = dbopen(fn, flags, mode, DB_BTREE, NULL);
+    db_create(&d, NULL, 0);
+    db->db = d;
+    if ((ret = d->open(db->db, fn, NULL, DB_BTREE, myflags, mode))) {
+      if(ret == ENOENT)
+	/* try to open without .db extension */
+	if (d->open(db->db, db->name, NULL, DB_BTREE, myflags, mode)) {
+	  free(fn);
+	  return ret;
+	}
+    }
     free(fn);
-    /* try to open without .db extension */
-    if(db->db == NULL && errno == ENOENT)
-	db->db = dbopen(db->name, flags, mode, DB_BTREE, NULL);
-    if(db->db == NULL)
-	return errno;
     if((flags & O_ACCMODE) == O_RDONLY)
 	ret = hdb_check_db_format(context, db);
     else
@@ -264,5 +294,4 @@ hdb_db_create(krb5_context context, HDB **db,
     (*db)->destroy = DB_destroy;
     return 0;
 }
-
 #endif

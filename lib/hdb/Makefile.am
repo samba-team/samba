@@ -28,6 +28,7 @@ libhdb_la_SOURCES = 				\
 		    hdb.c			\
 		    common.c			\
 		    db.c			\
+		    db3.c			\
 		    ndbm.c			\
 		    hdb-ldap.c			\
 		    print.c			\
