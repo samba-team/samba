@@ -178,6 +178,9 @@
 /* Define if you have a readline compatible library */
 #undef HAVE_READLINE
 
+/* Define if you have hesiod */
+#undef HESIOD
+
 #define RCSID(msg) \
 static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
 
