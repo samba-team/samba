@@ -170,16 +170,6 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 	struct group unix_grp;
 	struct unix_entries *grps = (struct unix_entries *)vp;
 
-	if (lp_server_role() == ROLE_DOMAIN_NONE)
-	{
-		/*
-		 * no domain role, no domain aliases (or domain groups,
-		 * but that's dealt with by groupdb...).
-		 */
-
-		return NULL;
-	}
-
 	aldb_init_als(&gp_buf);
 
 	/* get array of unix names + gids.  this function does NOT

@@ -177,7 +177,7 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 		return NULL;
 	}
 
-	if (lp_server_role() == ROLE_DOMAIN_NONE || 
+	if (lp_server_role() == ROLE_STANDALONE || 
 	    lp_server_role() == ROLE_DOMAIN_MEMBER)
 	{
 		/*

@@ -1662,7 +1662,7 @@ enum security_types
 /* server roles */
 enum server_types
 {
-	ROLE_DOMAIN_NONE,
+	ROLE_STANDALONE,
 	ROLE_DOMAIN_MEMBER,
 	ROLE_DOMAIN_BDC,
 	ROLE_DOMAIN_PDC

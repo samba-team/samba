@@ -174,8 +174,7 @@ static void *ldapgroup_enumfirst(BOOL update)
 {
 	int server_role = lp_server_role();
 
-        if (server_role == ROLE_DOMAIN_NONE ||
-			server_role == ROLE_DOMAIN_MEMBER)
+        if (server_role == ROLE_STANDALONE || server_role == ROLE_DOMAIN_MEMBER)
                 return NULL;
 
 	if (!ldap_connect())

@@ -47,9 +47,6 @@ nt5ldapbuiltin_enumfirst (BOOL update)
 	LDAPDB_DECLARE_HANDLE (hds);
 	fstring filter;
 
-	if (lp_server_role () == ROLE_DOMAIN_NONE)
-		return NULL;
-
 	if (!ldapdb_open (&hds))
 	{
 		return NULL;

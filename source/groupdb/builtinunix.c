@@ -175,16 +175,6 @@ static LOCAL_GRP *getbltunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 		return NULL;
 	}
 
-	if (lp_server_role() == ROLE_DOMAIN_NONE)
-	{
-		/*
-		 * no domain role, no domain aliases (or domain groups,
-		 * but that's dealt with by groupdb...).
-		 */
-
-		return NULL;
-	}
-
 	bidb_init_blt(&gp_buf);
 
 	/* get array of unix names + gids.  this function does NOT

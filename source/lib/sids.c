@@ -193,7 +193,7 @@ static void get_sam_domain_name(void)
 			break;
 		}
 		case ROLE_DOMAIN_MEMBER:
-		case ROLE_DOMAIN_NONE:
+		case ROLE_STANDALONE:
 		{
 			/* we are a "PDC", but FOR LOCAL SAM DATABASE ONLY */
 			fstrcpy(global_sam_name, global_myname);
@@ -220,7 +220,7 @@ BOOL get_member_domain_sid(void)
 	DEBUG(10,("get_member_domain_sid: "));
 	switch (lp_server_role())
 	{
-		case ROLE_DOMAIN_NONE:
+		case ROLE_STANDALONE:
 		{
 			ZERO_STRUCT(global_member_sid);
 			DEBUG(10,("none\n"));

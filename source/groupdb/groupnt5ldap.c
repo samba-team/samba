@@ -46,8 +46,7 @@ nt5ldapgroup_enumfirst (BOOL update)
 	int server_role = lp_server_role ();
 	LDAPDB_DECLARE_HANDLE (hds);
 
-	if (server_role == ROLE_DOMAIN_NONE ||
-	    server_role == ROLE_DOMAIN_MEMBER)
+	if (server_role == ROLE_STANDALONE || server_role == ROLE_DOMAIN_MEMBER)
 	{
 		return NULL;
 	}

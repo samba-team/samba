@@ -2967,7 +2967,7 @@ static void lp_save_defaults(void)
 ********************************************************************/
 static void set_server_role(void)
 {
-	server_role = ROLE_DOMAIN_NONE;
+	server_role = ROLE_STANDALONE;
 
 	switch (lp_security())
 	{
@@ -3199,7 +3199,7 @@ static void set_default_server_announce_type(void)
 			default_server_announce |= SV_TYPE_DOMAIN_BAKCTRL;
 			break;
 		}
-		case ROLE_DOMAIN_NONE:
+		case ROLE_STANDALONE:
 		default:
 		{
 			break;

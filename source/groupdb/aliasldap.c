@@ -166,9 +166,6 @@ static BOOL ldapalias_memmods(DOM_SID *user_sid, LDAPMod ***mods,
 
 static void *ldapalias_enumfirst(BOOL update)
 {
-	if (lp_server_role() == ROLE_DOMAIN_NONE)
-		return NULL;
-
 	if (!ldap_connect())
 		return NULL;
 
