@@ -72,6 +72,7 @@ int ads_connect(ADS_STRUCT *ads)
 
 	if (ads->password) {
 		/* the machine acct password might have changed */
+		free(ads->password);
 		ads->password = secrets_fetch_machine_password();
 		kerberos_kinit_password(ads);
 	}
