@@ -395,11 +395,15 @@ static void usage(void)
 "Usage:\n\
   masktest //server/share [options..]\n\
   options:\n\
+	-d debuglevel\n\
         -W workgroup\n\
         -U user%%pass\n\
         -s seed\n\
+	-M max protocol\n\
         -f filechars (default %s)\n\
         -m maskchars (default %s)\n\
+        -v                             verbose mode\n\
+        -E                             die on error\n\
         -a                             show all tests\n\
 \n\
   This program tests wildcard matching between two servers. It generates\n\
@@ -424,6 +428,7 @@ static void usage(void)
 	char *p;
 	int seed;
 	static pstring servicesf = CONFIGFILE;
+	extern int Protocol;
 
 	setlinebuf(stdout);
 
@@ -513,6 +518,7 @@ static void usage(void)
 		DEBUG(0,("Failed to connect to %s\n", share));
 		exit(1);
 	}
+	Protocol = cli->protocol;
 
 	/* need to init seed after connect as clientgen uses random numbers */
 	DEBUG(0,("seed=%d\n", seed));
