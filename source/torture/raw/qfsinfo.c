@@ -54,7 +54,8 @@ static union smb_fsinfo *find(const char *name)
 {
 	int i;
 	for (i=0; levels[i].name; i++) {
-		if (strcmp(name, levels[i].name) == 0) {
+		if (strcmp(name, levels[i].name) == 0 &&
+		    NT_STATUS_IS_OK(levels[i].status)) {
 			return &levels[i].fsinfo;
 		}
 	}
