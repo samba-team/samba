@@ -5,14 +5,16 @@
                  xmlns:samba="http://samba.org/common">
 <description>
     <para>This parameter determines whether or not <citerefentry><refentrytitle>smbd</refentrytitle>
-    <manvolnum>8</manvolnum></citerefentry> will attempt to authenticate users 
+    <manvolnum>8</manvolnum></citerefentry> will attempt to
+    authenticate users or permit password changes
     using the LANMAN password hash. If disabled, only clients which support NT 
-    password hashes (e.g. Windows NT/2000 clients, smbclient, etc... but not 
-    Windows 95/98 or the MS DOS network client) will be able to connect to the Samba host.</para>
+    password hashes (e.g. Windows NT/2000 clients, smbclient, but not 
+    Windows 95/98 or the MS DOS network client) will be able to
+    connect to the Samba host.</para>
 
     <para>The LANMAN encrypted response is easily broken, due to it's
     case-insensitive nature, and the choice of algorithm.  Servers
-    without Windows 95/98 or MS DOS clients are advised to disable
+    without Windows 95/98/ME or MS DOS clients are advised to disable
     this option.  </para>
 		
     <para>Unlike the <command moreinfo="none">encypt
@@ -24,7 +26,7 @@
     <para>If this option, and <command moreinfo="none">ntlm
     auth</command> are both disabled, then only NTLMv2 logins will be
     permited.  Not all clients support NTLMv2, and most will require
-    special configuration to us it.</para>
+    special configuration to use it.</para>
 </description>
 
 <value type="default">yes</value>
