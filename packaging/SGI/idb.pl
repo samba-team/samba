@@ -368,7 +368,7 @@ sub get_line {
     $_ = <MAKEFILE>;
     chomp;
     s/^\s*/ /;
-    substr($line,$cont,1,$_);
+    substr($line,$cont,1) = $_;
   }
   $line =~ s/\$\(EXEEXT\)/$EXEEXT/g;
   $line =~ s/\$\(srcdir\)/$srcdir/g;
