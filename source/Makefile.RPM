@@ -10,9 +10,9 @@ MANDIR = /usr/man
 # The directories to put things in. If you use multiple
 # architectures or share the samba binaries across NFS then
 # you will probably want to change this layout.
-BASEDIR = /
-BINDIR = $(BASEDIR)usr/bin
-SBINDIR = $(BASEDIR)usr/sbin
+BASEDIR = /usr
+BINDIR = $(BASEDIR)/bin
+SBINDIR = $(BASEDIR)/sbin
 LIBDIR = /etc
 VARDIR = /var
 
@@ -24,7 +24,7 @@ INSTALLPERMS = 0755
 # RPM_OPT_FLAGS is needed when building an RPM distribution package
 # for RedHat Linux.
 FLAGS1 = $(RPM_OPT_FLAGS)
-FLAGS1 = -O
+#FLAGS1 = -O
 LIBS1 = 
 
 # You will need to use a ANSI C compiler. This means under SunOS 4 you can't 
@@ -194,9 +194,15 @@ LIBSM =
 # LIBSM = -lshadow
 
 
-# This is for SUNOS5 (also known as Solaris 2)
+# This is for SUNOS5.4 and later (also known as Solaris 2.4 and later)
 # contributed by Andrew.Tridgell@anu.edu.au
 # FLAGSM = -DSUNOS5 -DSHADOW_PWD -DNETGROUP 
+# LIBSM = -lsocket -lnsl
+# AWK = nawk 
+
+# This is for SUNOS 5.2 and 5.3 (also known as Solaris 2.2 and 2.3)
+# contributed by hdsi@newtech.net
+# FLAGSM = -DSUNOS5 -DSHADOW_PWD -DNETGROUP -DNO_STRFTIME
 # LIBSM = -lsocket -lnsl
 # AWK = nawk 
 
@@ -521,14 +527,14 @@ LIBSM =
 
 
 # This for Amiga using GCC and ixemul.library 43.0 or later.
-# contributed by Rask Ingemann Lambertsen <rask@kampsax.dtu.dk>
+# contributed by Rask Ingemann Lambertsen <rask@k4315.kampsax.dtu.dk>
 # The binaries will support both AmiTCP and AS225R2 compatible
 # protocol stacks because of the use of ixnet.library.
 # Other protocol stacks will be supported automatically if
 # support for them is added to ixnet.library.
 # The binaries will have automatic stack extension :-)
-# Doesn't work in stand-alone mode, must be run from inetd :-(
-# FLAGSM = -DFreeBSD -mstackextend
+# smbd must be run from inetd :-(
+# FLAGSM = -DAMIGA -Dfork=vfork -mstackextend
 # LIBSM =
 
 
