@@ -2123,7 +2123,6 @@ void data_blob_free(DATA_BLOB *d)
 		if (d->free) {
 			(d->free)(d);
 		}
-		ZERO_STRUCTP(d);
 	}
 }
 
