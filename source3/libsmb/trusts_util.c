@@ -144,7 +144,7 @@ BOOL enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 
 	/* lookup a DC first */
 
-	if ( !get_dc_name(domain, dc_name, &dc_ip) ) {
+	if ( !get_dc_name(domain, NULL, dc_name, &dc_ip) ) {
 		DEBUG(3,("enumerate_domain_trusts: can't locate a DC for domain %s\n",
 			domain));
 		return False;

@@ -165,6 +165,9 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
+			return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
+		}
 		return nt_status;
 	}
 
@@ -290,7 +293,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 
 	/* we need our DC to send the net_sam_logon() request to */
 
-	if ( !get_dc_name(domain, dc_name, &dc_ip) ) {
+	if ( !get_dc_name(domain, NULL, dc_name, &dc_ip) ) {
 		DEBUG(5,("check_trustdomain_security: unable to locate a DC for domain %s\n",
 			user_info->domain.str));
 		return NT_STATUS_NO_LOGON_SERVERS;
@@ -385,7 +388,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	/* use get_dc_name() for consistency even through we know that it will be 
 	   a netbios name */
 	   
-	if ( !get_dc_name(user_info->domain.str, dc_name, &dc_ip) ) {
+	if ( !get_dc_name(user_info->domain.str, NULL, dc_name, &dc_ip) ) {
 		DEBUG(5,("check_trustdomain_security: unable to locate a DC for domain %s\n",
 			user_info->domain.str));
 		return NT_STATUS_NO_LOGON_SERVERS;

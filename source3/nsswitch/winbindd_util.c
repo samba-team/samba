@@ -82,7 +82,6 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 						  DOM_SID *sid)
 {
 	struct winbindd_domain *domain;
-	char *contact_name;
 	const char *alternative_name = NULL;
 	
 	/* ignore alt_name if we are not in an AD domain */
@@ -135,12 +134,11 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		sid_copy(&domain->sid, sid);
 	}
 	
-	/* see if this is a native mode win2k domain (use realm name if possible) */
+	/* see if this is a native mode win2k domain */
 	   
-	contact_name = *domain->alt_name ? domain->alt_name : domain->name;
-	domain->native_mode = cm_check_for_native_mode_win2k( contact_name );
+	domain->native_mode = cm_check_for_native_mode_win2k( domain );
 	
-	DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", contact_name,
+	DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", domain->name,
 		domain->native_mode ? "native" : "mixed (or NT4)" ));
 
 	/* Link to domain list */
@@ -298,7 +296,7 @@ BOOL init_domain_list(void)
  *
  * @note Do *not* pass lp_workgroup() to this function.  domain_list
  *       may modify it's value, and free that pointer.  Instead, our local
- *       domain may be found by looking at the first entry in domain_list()
+ *       domain may be found by calling find_our_domain().
  *       directly.
  *
  *
