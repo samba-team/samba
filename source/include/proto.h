@@ -2476,6 +2476,8 @@ void make_sam_user_info11(SAM_USER_INFO_11 *usr,
 				uint32 rid_group,
 				uint16 acct_ctrl);
 void sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int depth);
+void make_sam_user_info_24(SAM_USER_INFO_24 *usr,
+	char newpass[516]);
 void make_sam_user_info23(SAM_USER_INFO_23 *usr,
 
 	NTTIME *logon_time, /* all zeros */

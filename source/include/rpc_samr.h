@@ -200,6 +200,13 @@ typedef struct sam_user_info_23
 
 } SAM_USER_INFO_23;
 
+/* SAM_USER_INFO_24 */
+typedef struct sam_user_info_24
+{
+	uint8 pass[516];
+
+} SAM_USER_INFO_24;
+
 
 /* SAM_USER_INFO_21 */
 typedef struct sam_user_info_21
@@ -1116,6 +1123,7 @@ typedef struct q_samr_set_user_info
 	union
 	{
 		SAM_USER_INFO_23 *id23; /* auth-level 0x17 */
+		SAM_USER_INFO_24 *id24; /* auth-level 0x18 */
 		void* id; /* to make typecasting easy */
 
 	} info;
