@@ -647,8 +647,8 @@ bin/net: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
 bin/profiles: utils/profiles.o bin/.dummy
-        @echo Linking $@
-        @$(CC) $(FLAGS) -o $@ utils/profiles.o $(LDFLAGS) $(LIBS)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ utils/profiles.o $(LDFLAGS) $(LIBS)
 
 bin/smbspool: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
