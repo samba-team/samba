@@ -118,16 +118,20 @@ PyObject *py_setup_logging(PyObject *self, PyObject *args, PyObject *kw)
 	return Py_None;
 }
 
+/* Return a cli_state to a RPC pipe on the given server.  Use the
+   credentials passed if not NULL.  Set an exception and return NULL if
+   there was an error creating the connection. */
+
 struct cli_state *open_pipe_creds(char *system_name, PyObject *creds, 
-				  cli_pipe_fn *connect_fn,
-				  struct cli_state *cli)
+				  cli_pipe_fn *connect_fn)
 {
 	struct ntuser_creds nt_creds;
-
+	struct cli_state *cli;
+	
+	cli = (struct cli_state *)malloc(sizeof(struct cli_state));
 	if (!cli) {
-		cli = (struct cli_state *)malloc(sizeof(struct cli_state));
-		if (!cli)
-			return NULL;
+		PyErr_SetString(PyExc_RuntimeError, "out of memory");
+		return NULL;
 	}
 
 	ZERO_STRUCTP(cli);
@@ -151,7 +155,7 @@ struct cli_state *open_pipe_creds(char *system_name, PyObject *creds,
 		password_obj = PyDict_GetItemString(creds, "password");
 
 		if (!username_obj || !domain_obj || !password_obj) {
-		error:
+		creds_error:
 
 			/* TODO: Either pass in the exception for the
 			   module calling open_pipe_creds() or have a
@@ -165,14 +169,14 @@ struct cli_state *open_pipe_creds(char *system_name, PyObject *creds,
 		if (!PyString_Check(username_obj) || 
 		    !PyString_Check(domain_obj) || 
 		    !PyString_Check(password_obj))
-			goto error;
+			goto creds_error;
 
 		username = PyString_AsString(username_obj);
 		domain = PyString_AsString(domain_obj);
 		password = PyString_AsString(password_obj);
 
 		if (!username || !domain || !password)
-			goto error;
+			goto creds_error;
 
 		/* Initialise nt_creds structure with passed creds */
 

@@ -66,8 +66,7 @@ static PyObject *lsa_open_policy(PyObject *self, PyObject *args,
 		&creds, &desired_access))
 		return NULL;
 
-	if (!(cli = open_pipe_creds(server_name, creds, cli_lsa_initialise,
-				    NULL))) {
+	if (!(cli = open_pipe_creds(server_name, creds, cli_lsa_initialise))) {
 		fprintf(stderr, "could not initialise cli state\n");
 		return NULL;
 	}

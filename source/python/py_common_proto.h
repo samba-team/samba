@@ -13,8 +13,7 @@ PyObject *get_debuglevel(PyObject *self, PyObject *args);
 PyObject *set_debuglevel(PyObject *self, PyObject *args);
 PyObject *py_setup_logging(PyObject *self, PyObject *args, PyObject *kw);
 struct cli_state *open_pipe_creds(char *system_name, PyObject *creds, 
-				  cli_pipe_fn *connect_fn,
-				  struct cli_state *cli);
+				  cli_pipe_fn *connect_fn);
 
 /* The following definitions come from python/py_ntsec.c  */
 

@@ -50,13 +50,9 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 		*c = 0;
 	}
 
-	if (!(cli = open_pipe_creds(computer_name, creds, 
-				    cli_spoolss_initialise, NULL))) {
-
-		/* Error state set in open_pipe_creds() */
-
+	if (!(cli = open_pipe_creds(
+		      computer_name, creds, cli_spoolss_initialise)))
 		goto done;
-	}
 
 	if (!(mem_ctx = talloc_init())) {
 		PyErr_SetString(spoolss_error, 
@@ -294,7 +290,7 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 		server += 2;
 
 	mem_ctx = talloc_init();
-	cli = open_pipe_creds(server, creds, cli_spoolss_initialise, NULL);
+	cli = open_pipe_creds(server, creds, cli_spoolss_initialise);
 
 	/* Call rpc function */
 	
@@ -386,14 +382,13 @@ PyObject *spoolss_addprinterex(PyObject *self, PyObject *args, PyObject *kw)
 		    &PyDict_Type, &info, &PyDict_Type, &creds))
 		return NULL;
 
-	if (!(cli = open_pipe_creds(server, creds, 
-				    cli_spoolss_initialise, NULL)))
+	if (!(cli = open_pipe_creds(
+		      server, creds, cli_spoolss_initialise)))
 		goto done;
 
 	mem_ctx = talloc_init();
 
-	if (!(cli = open_pipe_creds(server, creds, cli_spoolss_initialise,
-				    NULL)))
+	if (!(cli = open_pipe_creds(server, creds, cli_spoolss_initialise)))
 		goto done;
 
 	if (!py_to_PRINTER_INFO_2(&info2, info, mem_ctx)) {
