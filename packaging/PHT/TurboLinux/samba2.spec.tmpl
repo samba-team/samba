@@ -114,7 +114,7 @@ SMB servers.
 
 %build
 cd source
-CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-smbwrapper --with-automount --with-quotas --with-smbmount
+CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-smbwrapper --with-automount --with-quotas --with-smbmount --with-pam
 make all smbwrapper
 
 %install
