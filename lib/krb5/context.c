@@ -129,6 +129,23 @@ krb5_init_context(krb5_context *context)
     if(tmp) 
 	roken_gethostby_setup(p->http_proxy, tmp);
     krb5_set_default_realm(p, NULL);
+
+    {
+	krb5_addresses addresses;
+	char **adr, **a;
+	adr = krb5_config_get_strings(p, NULL, 
+				      "libdefaults", 
+				      "extra_addresses", 
+				      NULL);
+	memset(&addresses, 0, sizeof(addresses));
+	for(a = adr; a && *a; a++) {
+	    krb5_parse_address(p, *a, &addresses);
+	    krb5_add_extra_addresses(p, &addresses);
+	    krb5_free_addresses(p, &addresses);
+	}
+	krb5_config_free_strings(adr);
+    }
+
     *context = p;
     return 0;
 }
@@ -242,4 +259,40 @@ krb5_boolean
 krb5_get_use_admin_kdc (krb5_context context)
 {
     return context->use_admin_kdc;
+}
+
+krb5_error_code
+krb5_add_extra_addresses(krb5_context context, krb5_addresses *addresses)
+{
+
+    if(context->extra_addresses)
+	return krb5_append_addresses(context, 
+				     context->extra_addresses, addresses);
+    else
+	return krb5_set_extra_addresses(context, addresses);
+}
+
+krb5_error_code
+krb5_set_extra_addresses(krb5_context context, krb5_addresses *addresses)
+{
+    if(context->extra_addresses) {
+	krb5_free_addresses(context, context->extra_addresses);
+	free(context->extra_addresses);
+    }
+    if(context->extra_addresses == NULL) {
+	context->extra_addresses = malloc(sizeof(*context->extra_addresses));
+	if(context->extra_addresses == NULL)
+	    return ENOMEM;
+    }
+    return copy_HostAddresses(addresses, context->extra_addresses);
+}
+
+krb5_error_code
+krb5_get_extra_addresses(krb5_context context, krb5_addresses *addresses)
+{
+    if(context->extra_addresses == NULL) {
+	memset(addresses, 0, sizeof(*addresses));
+	return 0;
+    }
+    return copy_HostAddresses(context->extra_addresses, addresses);
 }

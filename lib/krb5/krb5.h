@@ -363,6 +363,7 @@ typedef struct krb5_context_data {
     krb5_boolean log_utc;
     const char *default_keytab;
     krb5_boolean use_admin_kdc;
+    krb5_addresses *extra_addresses;
 } krb5_context_data;
 
 enum {
