@@ -57,7 +57,8 @@ install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man1
 	(cd $(srcdir); \
 	for x in $(MAN1); do \
-	  $(INSTALL_DATA) $$x $(DESTDIR)$(mandir)/man1/`echo $$x | sed '$(transform)' | sed 's/\.man/.1/'`; \
+	  b=`echo $$x | sed -e 's/\.man//' -e '$(transform);`.1; \
+	  $(INSTALL_DATA) $$x $(DESTDIR)$(mandir)/man1/$$b; \
 	done)
 
 uninstall:
@@ -65,7 +66,8 @@ uninstall:
 	  rm -f $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 	for x in $(MAN1); do \
-	  rm -f $(DESTDIR)$(mandir)/man1/`echo $$x | sed '$(transform)' | sed 's/\.man/.1/'`; \
+	  b=`echo $$x | sed -e 's/\.man//' -e '$(transform);`.1; \
+	  rm -f $(DESTDIR)$(mandir)/man1/$$b; \
 	done
 
 TAGS: $(SOURCES)
