@@ -983,6 +983,10 @@ struct passwd *smb_getpwnam( char *domuser )
 		map_username( mapped_username );	
 		pw = Get_Pwnam(mapped_username);
 		if (!pw) {
+			/* Don't add a machine account. */
+			if (mapped_username[strlen(mapped_username)-1] == '$')
+				return NULL;
+
 			/* Create local user if requested. */
 			p = strchr( mapped_username, *lp_winbind_separator() );
 			if (p)
