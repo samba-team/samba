@@ -531,6 +531,7 @@ void exit_server(char *reason)
 	}    
 
 	locking_end();
+	printing_end();
 
 	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
 	exit(0);
