@@ -45,6 +45,9 @@ for Shadow passwords and quotas. Do NOT recompile with the
 SHADOW_PWD option enabled
 
 %changelog
+* Sun Jun 2 2002 Gerald Carter <jerry@samba.org>
+  - include audit and recycle VFS modules in /usr/lib/samba
+
 * Mon May 6 2002 Gerald Carter <jerry@samba.org>
   - moved findsmb to a standard component in samba's 
     "make install".  Removed from specfile.
@@ -151,6 +154,7 @@ SHADOW_PWD option enabled
 %setup
 
 %build
+## Build main Samba source
 cd source
 
 %ifarch ia64
@@ -180,6 +184,11 @@ make -j${NUMCPU} all nsswitch/libnss_wins.so
 make -j${NUMCPU} debug2html
 make -j${NUMCPU} bin/smbspool
 
+## Build VFS modules
+cd ../examples/VFS
+make
+
+
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -197,6 +206,7 @@ mkdir -p $RPM_BUILD_ROOT/var/cache/samba
 mkdir -p $RPM_BUILD_ROOT/var/{log,run}/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 mkdir -p $RPM_BUILD_ROOT/lib/security
+mkdir -p $RPM_BUILD_ROOT%{prefix}/lib/samba
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
@@ -249,6 +259,10 @@ install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 # Install winbind shared libraries
 install -m755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/lib
 install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
+
+# Install the VFS modules
+install -m755 examples/VFS/recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba
+install -m755 examples/VFS/audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba
 
 # Install SWAT helper files
 for i in swat/help/*.html docs/htmldocs/*.html
@@ -501,6 +515,7 @@ fi
 %{prefix}/bin/smbcacls
 %{prefix}/bin/wbinfo
 %attr(755,root,root) /lib/libnss_wins.s*
+%attr(755,root,root) %{prefix}/lib/samba/*.so
 %{prefix}/share/swat/help/*
 %{prefix}/share/swat/images/*
 %{prefix}/share/swat/include/header.html
