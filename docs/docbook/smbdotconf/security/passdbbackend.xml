@@ -65,7 +65,7 @@
 	</itemizedlist>
     </para>
 
-	<para>Default: <command moreinfo="none">passdb backend = smbpasswd guest</command></para>
+    <para>Default: <command moreinfo="none">passdb backend = smbpasswd</command></para>
 
     <para>Example: <command moreinfo="none">passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd guest</command></para>
 
