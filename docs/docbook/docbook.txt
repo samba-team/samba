@@ -54,8 +54,19 @@ The Tools
 To generate the docs, you need to have the following packages installed:
 
 * docbook-utils
-* htmldoc
+* pdflatex
 
 This directory now contains a ./configure script and Makefile to 
 support the automated building of man pages (including HTML versions), and 
-the building of the Samba-HOWTO-Collection (HTML,PDF,PS,Text versions).
+the building of the Samba-HOWTO-Collection (HTML,PDF versions).
+
+In order to be able to build some other (more rarely used) formats, you need:
+
+- PostScript:
+  * LaTeX
+  * dvips
+- Text
+  * xmlto
+
+Another good tool is 'xmllint' that can be used to check the syntax of 
+XML files.
