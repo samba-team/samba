@@ -665,8 +665,7 @@ The sambaAccount objectclass is composed of the following attributes:
 	</para></listitem>
 
 	<listitem><para><constant>acctFlags</constant>: string of 11 characters surrounded by square brackets []
-	representing account flags such as U (user), W(workstation), X(no password expiration), and
-	D(disabled).</para></listitem>
+			representing account flags such as U (user), W(workstation), X(no password expiration), I(Domain trust account), H(Home dir required), S(Server trust account), N(Password not required) and D(disabled).</para></listitem>
 
 	<listitem><para><constant>logonTime</constant>: Integer value currently unused</para></listitem>
 
