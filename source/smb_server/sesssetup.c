@@ -136,7 +136,10 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 				 &sess->nt1.out.domain);
 	
 	req->session = smbsrv_session_find(req->smb_conn, sess->nt1.out.vuid);
-	srv_setup_signing(req->smb_conn, &session_info->session_key, &sess->nt1.in.password2);
+	if (!session_info->server_info->guest) {
+		srv_setup_signing(req->smb_conn, &session_info->session_key, &sess->nt1.in.password2);
+	}
+
 	return NT_STATUS_OK;
 }
 
