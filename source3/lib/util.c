@@ -3403,13 +3403,6 @@ char *readdirname(void *p)
 
   dname = ptr->d_name;
 
-  {
-    static pstring buf;
-    strcpy(buf, dname);
-    unix_to_dos(buf, True);
-    dname = buf;
-  }
-
 #ifdef NEXT2
   if (telldir(p) < 0) return(NULL);
 #endif
@@ -3425,9 +3418,16 @@ char *readdirname(void *p)
 	broken_readdir = True;
       }
     if (broken_readdir)
-      return(dname-2);
+      dname = dname - 2;
   }
 #endif
+
+  {
+    static pstring buf;
+    strcpy(buf, dname);
+    unix_to_dos(buf, True);
+    dname = buf;
+  }
 
   return(dname);
 }
