@@ -185,7 +185,7 @@ static BOOL connect_servers(void)
 			}
 
 			cli_oplock_handler(servers[i].cli[j]->transport, oplock_handler, NULL);
-			cli_transport_idle_handler(servers[i].cli[j]->transport, idle_func, 10, NULL);
+			cli_transport_idle_handler(servers[i].cli[j]->transport, idle_func, 1, NULL);
 		}
 	}
 
@@ -764,13 +764,8 @@ static void idle_func(struct cli_transport *transport, void *private)
 	for (i=0;i<NSERVERS;i++) {
 		for (j=0;j<NINSTANCES;j++) {
 			if (servers[i].cli[j] &&
-			    transport != servers[i].cli[j]->transport &&
-			    cli_transport_pending(servers[i].cli[j]->transport)) {
-				if (!cli_request_receive_next(servers[i].cli[j]->transport)) {
-					printf("Connection to server %d instance %d died!\n",
-					       i, j);
-					exit(1);
-				}
+			    transport != servers[i].cli[j]->transport) {
+				cli_transport_process(servers[i].cli[j]->transport);
 			}
 		}
 	}
@@ -808,13 +803,7 @@ static void check_pending(void)
 
 	for (j=0;j<NINSTANCES;j++) {
 		for (i=0;i<NSERVERS;i++) {
-			if (cli_transport_pending(servers[i].cli[j]->transport)) {
-				if (!cli_request_receive_next(servers[i].cli[j]->transport)) {
-					printf("Connection to server %d instance %d died!\n",
-					       i, j);
-					exit(1);					
-				}
-			}
+			cli_transport_process(servers[i].cli[j]->transport);
 		}
 	}	
 }

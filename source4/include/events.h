@@ -67,6 +67,8 @@ struct event_context {
 		BOOL exit_now;
 		int code;
 	} exit;
+
+	int ref_count;
 };
 
 
