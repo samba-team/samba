@@ -1,5 +1,5 @@
 !==
-!== Win95.txt for Samba release TNG-alpha 25 Apr 2000
+!== Win95.txt for Samba release TNG-alpha 01 May 2000
 !==
 Copyright (C) 1997 - Samba-Team
 Contributed Date:	August 20, 1997
