@@ -238,12 +238,19 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 			char *name_dom, *name_user, *the_name;
 			struct winbindd_domain *name_domain;
 			
+			the_name = names[i];
+
+			/* Don't bother with machine accounts */
+
+			if (the_name[strlen(the_name) - 1] == '$') {
+				continue;
+			}
+
 			/* Lookup name */
 			
 			ZERO_STRUCT(name_part1);
 			ZERO_STRUCT(name_part2);
 			
-			the_name = names[i];
 			parse_domain_user(the_name, name_part1, name_part2);
 			
 			if (strcmp(name_part1, "") != 0) {
