@@ -127,5 +127,5 @@ NTSTATUS pdb_init_unixsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 
 NTSTATUS pdb_unix_init(void)
 {
-	return smb_register_passdb("unixsam", pdb_init_unixsam, PASSDB_INTERFACE_VERSION);
+	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "unixsam", pdb_init_unixsam);
 }
