@@ -1228,7 +1228,7 @@ static void do_cancel(int job)
 	if (cli_printjob_del(cli, job)) {
 		printf("Job %d cancelled\n",job);
 	} else {
-		printf("Error calcelling job %d : %s\n",job,cli_errstr(cli));
+		printf("Error cancelling job %d : %s\n",job,cli_errstr(cli));
 	}
 }
 
