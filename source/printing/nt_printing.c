@@ -3357,7 +3357,8 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 {
 	pstring key;
 	NT_PRINTER_INFO_LEVEL_2 info;
-	int 		len = 0;
+	int len = 0;
+	int snum = lp_servicenumber(sharename);
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
 	char adevice[MAXDEVICENAME];
@@ -3403,7 +3404,12 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 
 	/* Restore the stripped strings. */
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", servername);
-	slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, info.printername);
+
+	if ( lp_force_printername(snum) )
+		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, sharename );
+	else 
+		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, info.printername);
+
 	fstrcpy(info.printername, printername);
 
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
@@ -3416,7 +3422,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 	 * See comments in get_a_printer_2_default()
 	 */
 
-	if (lp_default_devmode(lp_servicenumber(sharename)) && !info.devmode) {
+	if (lp_default_devmode(snum) && !info.devmode) {
 		DEBUG(8,("get_a_printer_2: Constructing a default device mode for [%s]\n",
 			printername));
 		info.devmode = construct_nt_devicemode(printername);
