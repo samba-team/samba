@@ -51,6 +51,7 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
   lock.l_pid = 0;
 
   alarm(waitsecs);
+  /* Note we must *NOT* use sys_fcntl here ! JRA */
   ret = fcntl(fd, SMB_F_SETLKW, &lock);
   alarm(0);
   CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
