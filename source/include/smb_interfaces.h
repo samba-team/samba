@@ -1644,7 +1644,7 @@ struct smb_notify {
 
 	struct {
 		uint32_t num_changes;
-		struct {
+		struct notify_changes {
 			uint32_t action;
 			WIRE_STRING name;
 		} *changes;

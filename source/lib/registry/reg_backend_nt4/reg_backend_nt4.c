@@ -540,7 +540,7 @@ static SEC_DESC *nt_create_def_sec_desc(struct registry_hive *regf)
 {
   SEC_DESC *tmp;
 
-  tmp = (SEC_DESC *)malloc(sizeof(SEC_DESC));
+  tmp = malloc_p(SEC_DESC);
 
   tmp->revision = 1;
   tmp->type = SEC_DESC_SELF_RELATIVE | SEC_DESC_DACL_PRESENT;
@@ -577,7 +577,7 @@ static KEY_SEC_DESC *nt_create_init_sec(struct registry_hive *h)
 	REGF *regf = h->backend_data;
 	KEY_SEC_DESC *tsec = NULL;
 
-	tsec = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
+	tsec = malloc_p(KEY_SEC_DESC);
 
 	tsec->ref_cnt = 1;
 	tsec->state = SEC_DESC_NBK;
@@ -682,7 +682,7 @@ static SK_MAP *alloc_sk_map_entry(struct registry_hive *h, KEY_SEC_DESC *tmp, in
 {
 	REGF *regf = h->backend_data;
 	if (!regf->sk_map) { /* Allocate a block of 10 */
-		regf->sk_map = (SK_MAP *)malloc(sizeof(SK_MAP) * 10);
+		regf->sk_map = malloc_array_p(SK_MAP, 10);
 		regf->sk_map_size = 10;
 		regf->sk_count = 1;
 		(regf->sk_map)[0].sk_off = sk_off;
@@ -742,7 +742,7 @@ static KEY_SEC_DESC *lookup_create_sec_key(struct registry_hive *h, SK_MAP *sk_m
 		return tmp;
 	}
 	else { /* Allocate a new one */
-		tmp = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
+		tmp = malloc_p(KEY_SEC_DESC);
 		memset(tmp, 0, sizeof(KEY_SEC_DESC)); /* Neatly sets offset to 0 */
 		tmp->state = SEC_DESC_RES;
 		if (!alloc_sk_map_entry(h, tmp, sk_off)) {
@@ -756,7 +756,7 @@ static SEC_DESC *process_sec_desc(struct registry_hive *regf, SEC_DESC *sec_desc
 {
 	SEC_DESC *tmp = NULL;
 
-	tmp = (SEC_DESC *)malloc(sizeof(SEC_DESC));
+	tmp = malloc_p(SEC_DESC);
 
 	tmp->revision = SVAL(&sec_desc->revision,0);
 	tmp->type = SVAL(&sec_desc->type,0);
@@ -838,7 +838,7 @@ static KEY_SEC_DESC *process_sk(struct registry_hive *regf, SK_HDR *sk_hdr, int 
 	 */
 
 	if (!tmp) {
-		tmp = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
+		tmp = malloc_p(KEY_SEC_DESC);
 		memset(tmp, 0, sizeof(KEY_SEC_DESC));
 
 		/*
@@ -1154,7 +1154,7 @@ static HBIN_BLK *nt_create_hbin_blk(struct registry_hive *h, int size)
 
 	size = (size + (REGF_HDR_BLKSIZ - 1)) & ~(REGF_HDR_BLKSIZ - 1);
 
-	tmp = (HBIN_BLK *)malloc(sizeof(HBIN_BLK));
+	tmp = malloc_p(HBIN_BLK);
 	memset(tmp, 0, sizeof(HBIN_BLK));
 
 	tmp->data = malloc(size);
@@ -1553,7 +1553,7 @@ static REGF_HDR *nt_get_reg_header(struct registry_hive *h) {
 	REGF *regf = h->backend_data;
 	HBIN_BLK *tmp = NULL;
 
-	tmp = (HBIN_BLK *)malloc(sizeof(HBIN_BLK));
+	tmp = malloc_p(HBIN_BLK);
 
 	memset(tmp, 0, sizeof(HBIN_BLK));
 	tmp->type = REG_OUTBLK_HDR;

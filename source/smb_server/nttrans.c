@@ -383,7 +383,7 @@ void reply_nttrans(struct smbsrv_request *req)
 	}
 
 	/* parse out the setup words */
-	trans.in.setup = talloc(req, trans.in.setup_count * sizeof(uint16_t));
+	trans.in.setup = talloc_array_p(req, uint16_t, trans.in.setup_count);
 	if (!trans.in.setup) {
 		req_reply_error(req, NT_STATUS_NO_MEMORY);
 		return;

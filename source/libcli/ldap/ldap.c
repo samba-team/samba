@@ -130,7 +130,7 @@ static struct ldap_parse_tree *ldap_parse_simple(TALLOC_CTX *mem_ctx,
 	if (val && strchr("()&|", *val))
 		return NULL;
 	
-	ret = talloc(mem_ctx, sizeof(*ret));
+	ret = talloc_p(mem_ctx, struct ldap_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -157,8 +157,7 @@ static struct ldap_parse_tree *ldap_parse_filterlist(TALLOC_CTX *mem_ctx,
 {
 	struct ldap_parse_tree *ret, *next;
 
-	ret = talloc(mem_ctx, sizeof(*ret));
-
+	ret = talloc_p(mem_ctx, struct ldap_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -166,7 +165,7 @@ static struct ldap_parse_tree *ldap_parse_filterlist(TALLOC_CTX *mem_ctx,
 
 	ret->operation = op;
 	ret->u.list.num_elements = 1;
-	ret->u.list.elements = talloc(mem_ctx, sizeof(*ret->u.list.elements));
+	ret->u.list.elements = talloc_p(mem_ctx, struct ldap_parse_tree *);
 	if (!ret->u.list.elements) {
 		errno = ENOMEM;
 		return NULL;
@@ -206,7 +205,7 @@ static struct ldap_parse_tree *ldap_parse_not(TALLOC_CTX *mem_ctx, const char *s
 {
 	struct ldap_parse_tree *ret;
 
-	ret = talloc(mem_ctx, sizeof(*ret));
+	ret = talloc_p(mem_ctx, struct ldap_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;

@@ -73,8 +73,7 @@ NTSTATUS smb_raw_changenotify_recv(struct smbcli_request *req,
 	}
 
 	/* allocate array */
-	parms->out.changes = talloc(mem_ctx, sizeof(parms->out.changes[0]) * 
-				    parms->out.num_changes);
+	parms->out.changes = talloc_array_p(mem_ctx, struct notify_changes, parms->out.num_changes);
 	if (!parms->out.changes) {
 		return NT_STATUS_NO_MEMORY;
 	}

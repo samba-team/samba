@@ -247,7 +247,7 @@ static char **reg_complete_command(const char *text, int end)
 	char **matches;
 	int i, len, samelen=0, count=1;
 
-	matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
+	matches = malloc_array_p(char *, MAX_COMPLETIONS);
 	if (!matches) return NULL;
 	matches[0] = NULL;
 
@@ -301,7 +301,7 @@ static char **reg_complete_key(const char *text, int end)
 	TALLOC_CTX *mem_ctx;
 	/* Complete argument */
 
-	matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
+	matches = malloc_array_p(char *, MAX_COMPLETIONS);
 	if (!matches) return NULL;
 	matches[0] = NULL;
 

@@ -48,7 +48,7 @@ static void gen_aliases(struct smbcli_state *cli, struct smb_trans2 *t2, int lev
 		status = smb_raw_trans2(cli->tree, mem_ctx, t2);
 		if (!NT_STATUS_IS_OK(status)) continue;
 
-		t2b = talloc(mem_ctx, sizeof(*t2b));
+		t2b = talloc_p(mem_ctx, struct trans2_blobs);
 		t2b->level = level;
 		t2b->params = t2->out.params;
 		t2b->data = t2->out.data;
@@ -278,7 +278,7 @@ static void gen_set_aliases(struct smbcli_state *cli, struct smb_trans2 *t2, int
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) continue;
 
-		t2b = talloc(mem_ctx, sizeof(*t2b));
+		t2b = talloc_p(mem_ctx, struct trans2_blobs);
 		t2b->level = level;
 		t2b->params = t2->out.params;
 		t2b->data = t2->out.data;
