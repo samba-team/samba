@@ -42,3 +42,7 @@
 #endif
 
 
+#ifndef MAP_FILE
+#define MAP_FILE 0
+#endif
+

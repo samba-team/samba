@@ -20,6 +20,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifdef SUNOS4
+/* on SUNOS4 termios.h conflicts with sys/ioctl.h */
+#undef HAVE_TERMIOS_H
+#endif
+
+
 #if defined(HAVE_TERMIOS_H)
 /* POSIX terminal handling. */
 #include <termios.h>

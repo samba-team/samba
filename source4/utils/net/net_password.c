@@ -20,6 +20,8 @@
 */
 
 #include "includes.h"
+#include "utils/net/net.h"
+#include "libnet/libnet.h"
 #include "system/passwd.h"
 
 /*
