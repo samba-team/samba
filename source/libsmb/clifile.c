@@ -141,7 +141,7 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,0, 2 + strlen(dname),True);
+	set_message(cli->outbuf,0, 0, True);
 
 	CVAL(cli->outbuf,smb_com) = SMBrmdir;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -149,8 +149,9 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
-	pstrcpy(p,dname);
-	unix_to_dos(p,True);
+	p += clistr_push(cli, p, dname, -1, CLISTR_TERMINATE|CLISTR_CONVERT);
+
+	set_message(cli->outbuf,0, PTR_DIFF(p, smb_buf(cli->outbuf)), False);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
@@ -301,7 +302,7 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,15,1 + strlen(fname),True);
+	set_message(cli->outbuf,15,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBopenX;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -323,9 +324,9 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	}
   
 	p = smb_buf(cli->outbuf);
-	pstrcpy(p,fname);
-	unix_to_dos(p,True);
-	p = skip_string(p,1);
+	p += clistr_push(cli, p, fname, -1, CLISTR_TERMINATE | CLISTR_CONVERT);
+
+	set_message(cli->outbuf,15, PTR_DIFF(p, smb_buf(cli->outbuf)), False);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
