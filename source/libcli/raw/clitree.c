@@ -33,18 +33,13 @@
 struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session)
 {
 	struct smbcli_tree *tree;
-	TALLOC_CTX *mem_ctx = talloc_init("smbcli_tree");
-	if (mem_ctx == NULL) {
-		return NULL;
-	}
 
-	tree = talloc_zero(mem_ctx, sizeof(*tree));
+	tree = talloc_named(NULL, sizeof(*tree), "smbcli_tree");
 	if (!tree) {
-		talloc_destroy(mem_ctx);
 		return NULL;
 	}
 
-	tree->mem_ctx = mem_ctx;
+	ZERO_STRUCTP(tree);
 	tree->session = session;
 	tree->session->reference_count++;
 
@@ -60,7 +55,7 @@ void smbcli_tree_close(struct smbcli_tree *tree)
 	tree->reference_count--;
 	if (tree->reference_count <= 0) {
 		smbcli_session_close(tree->session);
-		talloc_destroy(tree->mem_ctx);
+		talloc_free(tree);
 	}
 }
 
@@ -295,10 +290,10 @@ NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree,
 
 	tree->tid = tcon.tconx.out.cnum;
 	if (tcon.tconx.out.dev_type) {
-		tree->device = talloc_strdup(tree->mem_ctx, tcon.tconx.out.dev_type);
+		tree->device = talloc_strdup(tree, tcon.tconx.out.dev_type);
 	}
 	if (tcon.tconx.out.fs_type) {
-		tree->fs_type = talloc_strdup(tree->mem_ctx, tcon.tconx.out.fs_type);
+		tree->fs_type = talloc_strdup(tree, tcon.tconx.out.fs_type);
 	}
 
 	talloc_destroy(mem_ctx);

@@ -88,7 +88,7 @@ char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 */
 void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, struct dom_sid *sid)
 {
-	ndr->print(ndr, "%-25s: %s", name, dom_sid_string(ndr->mem_ctx, sid));
+	ndr->print(ndr, "%-25s: %s", name, dom_sid_string(ndr, sid));
 }
 
 void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, struct dom_sid2 *sid)

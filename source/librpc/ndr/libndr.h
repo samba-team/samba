@@ -45,7 +45,6 @@ struct ndr_pull {
 	char *data;
 	uint32_t data_size;
 	uint32_t offset;
-	TALLOC_CTX *mem_ctx;
 
 	struct ndr_token_list *relative_list;
 
@@ -66,7 +65,6 @@ struct ndr_push {
 	char *data;
 	uint32_t alloc_size;
 	uint32_t offset;
-	TALLOC_CTX *mem_ctx;
 
 	struct ndr_token_list *relative_list;
 
@@ -83,7 +81,6 @@ struct ndr_push_save {
 /* structure passed to functions that print IDL structures */
 struct ndr_print {
 	uint32_t flags; /* LIBNDR_FLAG_* */
-	TALLOC_CTX *mem_ctx;
 	uint32_t depth;
 	void (*print)(struct ndr_print *, const char *, ...);
 	void *private;
@@ -191,7 +188,7 @@ enum ndr_err_code {
 
 
 #define NDR_ALLOC_SIZE(ndr, s, size) do { \
-	                       (s) = talloc(ndr->mem_ctx, size); \
+	                       (s) = talloc(ndr, size); \
                                if ((size) && !(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, \
 							       "Alloc %u failed\n", \
 							       size); \
@@ -204,7 +201,7 @@ enum ndr_err_code {
 				if ((n) == 0) { \
 					(s) = NULL; \
 				} else { \
-					(s) = talloc(ndr->mem_ctx, (n) * elsize); \
+					(s) = talloc(ndr, (n) * elsize); \
                                		if (!(s)) return ndr_pull_error(ndr, \
 									NDR_ERR_ALLOC, \
 									"Alloc %u * %u failed\n", \
@@ -216,7 +213,7 @@ enum ndr_err_code {
 
 
 #define NDR_PUSH_ALLOC_SIZE(ndr, s, size) do { \
-	                       (s) = talloc(ndr->mem_ctx, size); \
+	                       (s) = talloc(ndr, size); \
                                if ((size) && !(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, \
 							       "push alloc %u failed\n",\
 							       size); \

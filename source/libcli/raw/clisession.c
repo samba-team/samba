@@ -32,18 +32,13 @@
 struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport)
 {
 	struct smbcli_session *session;
-	TALLOC_CTX *mem_ctx = talloc_init("smbcli_session");
-	if (mem_ctx == NULL) {
-		return NULL;
-	}
 
-	session = talloc_zero(mem_ctx, sizeof(*session));
+	session = talloc_named(NULL, sizeof(*session), "smbcli_session");
 	if (!session) {
-		talloc_destroy(mem_ctx);
 		return NULL;
 	}
 
-	session->mem_ctx = mem_ctx;
+	ZERO_STRUCTP(session);
 	session->transport = transport;
 	session->pid = (uint16_t)getpid();
 	session->vuid = UID_FIELD_INVALID;
@@ -60,7 +55,7 @@ void smbcli_session_close(struct smbcli_session *session)
 	session->reference_count--;
 	if (session->reference_count <= 0) {
 		smbcli_transport_close(session->transport);
-		talloc_destroy(session->mem_ctx);
+		talloc_free(session);
 	}
 }
 
@@ -242,7 +237,7 @@ static DATA_BLOB nt_blob(const char *pass, DATA_BLOB challenge)
 void smbcli_session_set_user_session_key(struct smbcli_session *session,
 				   const DATA_BLOB *session_key)
 {
-	session->user_session_key = data_blob_talloc(session->mem_ctx, 
+	session->user_session_key = data_blob_talloc(session, 
 						     session_key->data, 
 						     session_key->length);
 }

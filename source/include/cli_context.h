@@ -63,8 +63,6 @@ struct smbcli_negotiate {
 	
 /* this is the context for a SMB socket associated with the socket itself */
 struct smbcli_socket {
-	TALLOC_CTX *mem_ctx;  	/* life of socket pool */
-
 	/* when the reference count reaches zero then the socket is destroyed */
 	int reference_count;
 
@@ -101,8 +99,6 @@ struct smbcli_options {
 
 /* this is the context for the client transport layer */
 struct smbcli_transport {
-	TALLOC_CTX *mem_ctx;
-
 	/* when the reference count reaches zero then the transport is destroyed */
 	int reference_count;
 
@@ -188,8 +184,6 @@ struct smbcli_transport {
 
 /* this is the context for the session layer */
 struct smbcli_session {	
-	TALLOC_CTX *mem_ctx;  	/* life of session */
-
 	/* when the reference count reaches zero then the session is destroyed */
 	int reference_count;	
 	
@@ -213,9 +207,6 @@ struct smbcli_session {
    smbcli_tree context: internal state for a tree connection. 
  */
 struct smbcli_tree {
-	/* life of tree tree */
-	TALLOC_CTX *mem_ctx;
-
 	/* when the reference count reaches zero then the tree is destroyed */
 	int reference_count;	
 
@@ -296,7 +287,6 @@ struct smbcli_request {
    i.e. a single session on a single socket. 
  */
 struct smbcli_state {
-	TALLOC_CTX *mem_ctx;  	/* life of client pool */
 	struct smbcli_transport *transport;
 	struct smbcli_session *session;
 	struct smbcli_tree *tree;

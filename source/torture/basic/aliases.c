@@ -119,7 +119,7 @@ static void qfileinfo_aliases(struct smbcli_state *cli)
 	t2.in.data = data_blob(NULL, 0);
 
 	smbcli_unlink(cli->tree, fname);
-	fnum = create_complex_file(cli, cli->mem_ctx, fname);
+	fnum = create_complex_file(cli, cli, fname);
 	if (fnum == -1) {
 		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
@@ -159,7 +159,7 @@ static void qpathinfo_aliases(struct smbcli_state *cli)
 	t2.in.data = data_blob(NULL, 0);
 
 	smbcli_unlink(cli->tree, fname);
-	fnum = create_complex_file(cli, cli->mem_ctx, fname);
+	fnum = create_complex_file(cli, cli, fname);
 	if (fnum == -1) {
 		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
@@ -203,7 +203,7 @@ static void findfirst_aliases(struct smbcli_state *cli)
 	t2.in.data = data_blob(NULL, 0);
 
 	smbcli_unlink(cli->tree, fname);
-	fnum = create_complex_file(cli, cli->mem_ctx, fname);
+	fnum = create_complex_file(cli, cli, fname);
 	if (fnum == -1) {
 		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
@@ -315,7 +315,7 @@ static void setfileinfo_aliases(struct smbcli_state *cli)
 	t2.in.data = data_blob(NULL, 0);
 
 	smbcli_unlink(cli->tree, fname);
-	fnum = create_complex_file(cli, cli->mem_ctx, fname);
+	fnum = create_complex_file(cli, cli, fname);
 	if (fnum == -1) {
 		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
@@ -356,7 +356,7 @@ static void setpathinfo_aliases(struct smbcli_state *cli)
 
 	smbcli_unlink(cli->tree, fname);
 
-	fnum = create_complex_file(cli, cli->mem_ctx, fname);
+	fnum = create_complex_file(cli, cli, fname);
 	if (fnum == -1) {
 		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
