@@ -74,6 +74,9 @@ int net_rpc_join(int argc, const char **argv)
 	NTSTATUS result;
 	int retval = 1;
 	fstring domain;
+	uint32 num_rids, *name_types, *user_rids;
+	uint32 flags = 0x3e8;
+	char *names;
 	
 	/* Connect to remote machine */
 
@@ -107,7 +110,6 @@ int net_rpc_join(int argc, const char **argv)
 	cli_nt_session_close(cli); /* Done with this pipe */
 
 	/* Create domain user */
-
 	if (!cli_nt_session_open(cli, PIPE_SAMR)) {
 		DEBUG(0, ("Error connecting to SAM pipe\n"));
 		goto done;
@@ -125,68 +127,50 @@ int net_rpc_join(int argc, const char **argv)
 		      "could not open domain");
 
 	/* Create domain user */
-
 	fstrcpy(acct_name, global_myname);
 	fstrcat(acct_name, "$");
-
 	strlower(acct_name);
 
-        acb_info = (lp_server_role() == ROLE_DOMAIN_BDC) ? ACB_SVRTRUST :
-                ACB_WSTRUST;
+        acb_info = (lp_server_role() == ROLE_DOMAIN_BDC) ? ACB_SVRTRUST : ACB_WSTRUST;
 
-	{
-		uint32 unknown = 0xe005000b;
+	result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
+					  acct_name, acb_info,
+					  0xe005000b, &user_pol, 
+					  &user_rid);
 
-		result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
-						  acct_name, acb_info,
-						  unknown, &user_pol, 
-						  &user_rid);
+	/* We *must* do this.... don't ask... */
+	if (!NT_STATUS_IS_OK(result) && 
+	    !NT_STATUS_EQUAL(result, NT_STATUS_USER_EXISTS)) {
+		d_printf("Create of workstation account failed\n");
+		goto done;
+	}
+	cli_samr_close(cli, mem_ctx, &user_pol);
 
-		/* We *must* do this.... don't ask... */
+	names = (char *)&acct_name[0];
 
-		CHECK_RPC_ERR_DEBUG(cli_samr_close(cli, mem_ctx, &user_pol), ("error closing user policy"));
-		result = NT_STATUS_USER_EXISTS;
-	}	
+	CHECK_RPC_ERR_DEBUG(cli_samr_lookup_names(cli, mem_ctx,
+						  &domain_pol, flags,
+						  1, &names, &num_rids,
+						  &user_rids, &name_types),
+			    ("error looking up rid for user %s: %s\n",
+			     acct_name, get_nt_error_msg(result)));
 
-	if (NT_STATUS_EQUAL(result, NT_STATUS_USER_EXISTS)) {
-		uint32 num_rids, *name_types, *user_rids;
-		uint32 flags = 0x3e8;
-		char *names;
-		
-		/* Look up existing rid */
-		
-		names = (char *)&acct_name[0];
-
-		CHECK_RPC_ERR_DEBUG(
-			cli_samr_lookup_names(cli, mem_ctx,
-					      &domain_pol, flags,
-					      1, &names, &num_rids,
-					      &user_rids, &name_types),
-			("error looking up rid for user %s: %s\n",
-			 acct_name, get_nt_error_msg(result)));
-
-		if (name_types[0] != SID_NAME_USER) {
-			DEBUG(0, ("%s is not a user account\n", acct_name));
-			goto done;
-		}
-
-		user_rid = user_rids[0];
-		
-		/* Open handle on user */
-
-		CHECK_RPC_ERR_DEBUG(
-			cli_samr_open_user(cli, mem_ctx, &domain_pol,
-					   SEC_RIGHTS_MAXIMUM_ALLOWED,
-					   user_rid, &user_pol),
-			("could not re-open existing user %s: %s\n",
-			 acct_name, get_nt_error_msg(result)));
-		
-	} else if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0, ("error creating domain user: %s\n",
-			  get_nt_error_msg(result)));
+	if (name_types[0] != SID_NAME_USER) {
+		DEBUG(0, ("%s is not a user account\n", acct_name));
 		goto done;
 	}
 
+	user_rid = user_rids[0];
+		
+	/* Open handle on user */
+
+	CHECK_RPC_ERR_DEBUG(
+		cli_samr_open_user(cli, mem_ctx, &domain_pol,
+				   SEC_RIGHTS_MAXIMUM_ALLOWED,
+				   user_rid, &user_pol),
+		("could not re-open existing user %s: %s\n",
+		 acct_name, get_nt_error_msg(result)));
+	
 	/* Create a random machine account password */
 
 	{ 
@@ -199,15 +183,6 @@ int net_rpc_join(int argc, const char **argv)
 				clear_trust_password, 
 				sizeof(ucs2_trust_password), 0);
 		  
-#if DEBUG_PASSWORD
-	DEBUG(100, ("machine password is being set to:\n"));
-	dump_data(100, clear_trust_password, 6);
-
-	DEBUG(100, ("machine password unicode is (len %d):\n", ucs2_pw_len));
-	dump_data(100, ucs2_trust_password, ucs2_pw_len);
-
-#endif
-
 	encode_pw_buffer((char *)pwbuf, ucs2_trust_password,
 			 ucs2_pw_len);
 
