@@ -50,20 +50,20 @@ static int show_brl;
 const char *username = NULL;
 
 /* added by OH */
-static void Ucrit_addUsername(const char *username)
+static void Ucrit_addUsername(const char *user_name)
 {
-	pstrcpy(Ucrit_username, username);
+	pstrcpy(Ucrit_username, user_name);
 	
 	if ( strlen(Ucrit_username) > 0 )
 		Ucrit_IsActive = 1;
 }
 
-static unsigned int Ucrit_checkUsername(const char *username)
+static unsigned int Ucrit_checkUsername(const char *user_name)
 {
 	if ( !Ucrit_IsActive ) 
 		return 1;
 	
-	if ( strcmp(Ucrit_username,username) == 0 ) 
+	if ( strcmp(Ucrit_username,user_name) == 0 ) 
 		return 1;
 	
 	return 0;
