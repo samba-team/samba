@@ -1,3 +1,8 @@
+2001-08-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* getaddrinfo.c: include a definition of in6addr_loopback if it
+	doesn't exist
+
 2001-08-10  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libroken_la_LDFLAGS): update to 14:2:5

@@ -1,3 +1,7 @@
+2001-08-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* krb-ipv6.m4: add test for non-existant in6addr_loopback in AIX
+
 2001-08-15  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken-frag.m4: test for getaddrinfo's that doesn't like numeric
