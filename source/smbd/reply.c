@@ -592,7 +592,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       }
     }
 
-    if (passlen1 != 24 && passlen2 <= 24)
+    if (passlen1 != 24 && passlen2 < 24)
 	    doencrypt = False;
 
     if (passlen1 > MAX_PASS_LEN) {
