@@ -281,6 +281,7 @@ SAMTEST_OBJ = torture/samtest.o torture/cmd_sam.o $(SAM_OBJ) $(LIB_OBJ) $(PARAM_
 GROUPDB_OBJ = groupdb/mapping.o
 
 PROFILE_OBJ = profile/profile.o
+PROFILES_OBJ = utils/profiles.o
 
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
@@ -725,9 +726,9 @@ bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
-bin/profiles@EXEEXT@: utils/profiles.o bin/.dummy
+bin/profiles@EXEEXT@: $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ utils/profiles.o $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
 bin/editreg@EXEEXT@: utils/editreg.o bin/.dummy
 	@echo Linking $@
