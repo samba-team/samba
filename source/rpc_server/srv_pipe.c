@@ -312,9 +312,9 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	 * Allow guest access. Patch from Shirish Kalele <kalele@veritas.com>.
 	 */
 
-	if((strlen(user_name) == 0) && (ntlmssp_resp->hdr_lm_resp.str_str_len==0) && 
-       (ntlmssp_resp->hdr_nt_resp.str_str_len==0)) {
-
+	if((strlen(user_name) == 0) && 
+	   (ntlmssp_resp->hdr_nt_resp.str_str_len==0))
+	  {
 		guest_user = True;
 
         fstrcpy(unix_user_name, lp_guestaccount(-1));
