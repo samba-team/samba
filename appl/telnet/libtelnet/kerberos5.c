@@ -306,7 +306,7 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 
 	  skey.type = SK_DES;
 	  skey.length = 8;
-	  skey.data = key_block->contents.data;
+	  skey.data = key_block->keyvalue.data;
 	  encrypt_session_key(&skey, 0);
 #if 0
 	    memcpy(&session_key, key_block->contents.data,
@@ -419,7 +419,7 @@ kerberos5_reply(Authenticator *ap, unsigned char *data, int cnt)
 	      
 	      skey.type = SK_DES;
 	      skey.length = 8;
-	      skey.data = keyblock->contents.data;
+	      skey.data = keyblock->keyvalue.data;
 	      encrypt_session_key(&skey, 0);
 	      krb5_free_keyblock (context, keyblock);
 	    }
