@@ -438,6 +438,8 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 	TDB_CONTEXT *tdb_usr = NULL;
 	SAM_USER_INFO_21 usr;
 
+	DEBUG(10,("_samr_query_userinfo: %d\n", __LINE__));
+
 	/* find the policy handle.  open a policy on it. */
 	if (!get_tdbsam(get_global_hnd_cache(), pol, &tdb_usr))
 	{

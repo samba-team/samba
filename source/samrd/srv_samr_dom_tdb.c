@@ -92,7 +92,7 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 			 const DOM_SID * sid, POLICY_HND *domain_pol)
 {
 	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbsam(get_global_hnd_cache(), connect_pol, NULL))
+	if (!get_tdbsid(get_global_hnd_cache(), connect_pol, NULL, NULL))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
