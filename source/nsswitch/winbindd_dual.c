@@ -42,7 +42,7 @@ int dual_daemon_pipe = -1;
 
 /* a list of requests ready to be sent to the dual daemon */
 struct dual_list {
-	struct dual_list *next;
+	struct dual_list *next, *prev;
 	char *data;
 	int length;
 };
@@ -60,7 +60,6 @@ struct dual_child {
 static struct dual_child *child_list;
 
 static struct dual_list *dual_list;
-static struct dual_list *dual_list_end;
 
 static BOOL dual_schedule_request(void)
 {
@@ -71,7 +70,7 @@ static BOOL dual_schedule_request(void)
 		return False;
 
 	for (child = child_list; child != NULL; child = child->next) {
-		struct dual_list *next;
+		struct dual_list *this;
 
 		if (child->busy) {
 			extern int max_busy_children;
@@ -81,16 +80,20 @@ static BOOL dual_schedule_request(void)
 			continue;
 		}
 
+		SMB_ASSERT(child->data == NULL);
+
+		DEBUG(10, ("scheduling %d\n",
+			   ((struct winbindd_request *)(dual_list->data))->cmd));
+
 		child->data = dual_list->data;
 		child->length = dual_list->length;
 		child->offset = 0;
 		child->busy = True;
 
-		next = dual_list->next;
-		free(dual_list);
-		dual_list = next;
-		if (dual_list == NULL)
-			dual_list_end = NULL;
+		this = dual_list;
+
+		DLIST_REMOVE(dual_list, this);
+		free(this);
 
 		return True;
 	}
@@ -133,16 +136,12 @@ int dual_select_setup(fd_set *fds, int maxfd)
 
 static void resend_request(char *data, int length)
 {
-	struct dual_list *list;
+	struct dual_list *req;
 
-	list = malloc(sizeof(*list));
-	list->next = dual_list;
-	list->data = data;
-	list->length = length;
-	dual_list = list;
-
-	if (dual_list_end == NULL)
-		dual_list_end = list;
+	req = malloc(sizeof(*req));
+	req->data = data;
+	req->length = length;
+	DLIST_ADD(dual_list, req);
 }
 
 /*
@@ -209,24 +208,20 @@ void dual_select(fd_set *fds)
 */
 void dual_send_request(struct winbindd_cli_state *state)
 {
-	struct dual_list *list;
+	struct dual_list *req, *tmp;
 
 	if (!background_process) return;
 
-	list = malloc(sizeof(*list));
-	if (!list) return;
+	DEBUG(10, ("dual_send_request: cmd=%d, msgid=%d\n",
+		   state->request.cmd, state->request.msgid));
 
-	list->next = NULL;
-	list->data = memdup(&state->request, sizeof(state->request));
-	list->length = sizeof(state->request);
-	
-	if (!dual_list_end) {
-		dual_list = list;
-		dual_list_end = list;
-	} else {
-		dual_list_end->next = list;
-		dual_list_end = list;
-	}
+	req = malloc(sizeof(*req));
+	if (!req) return;
+
+	req->next = NULL;
+	req->data = memdup(&state->request, sizeof(state->request));
+	req->length = sizeof(state->request);
+	DLIST_ADD_END(dual_list, req, tmp);
 
 	background_process = False;
 }
@@ -322,8 +317,8 @@ void do_dual_daemon(void)
 						     &state.response);
 
 			message_send_pid(getppid(), MSG_WINBIND_FINISHED,
-					 &state.request.client_fd,
-					 sizeof(state.request.client_fd),
+					 &state.request.msgid,
+					 sizeof(state.request.msgid),
 					 True);
 			SAFE_FREE(state.response.extra_data);
 

@@ -170,7 +170,7 @@ struct winbindd_request {
 	uint32 flags;            /* flags relavant to a given request */
 	fstring domain_name;	/* name of domain for which the request applies */
 
-	int client_fd; 		/* Uniquely identify a request, used in
+	int msgid; 		/* Uniquely identify a request, used in
 				 * MSG_WINBINDD_FINISHED from dual daemon to
 				 * parent. */
 

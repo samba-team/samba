@@ -208,26 +208,26 @@ static void msg_shutdown(int msg_type, pid_t src, void *buf, size_t len)
 static void msg_finished(int msg_type, pid_t src, void *buf, size_t len)
 {
 	struct winbindd_cli_state *state;
-	int *fd;
+	int *msgid;
 
 	DEBUG(5, ("Got finished message\n"));
 
-	if (len != sizeof(*fd)) {
+	if (len != sizeof(*msgid)) {
 		DEBUG(0, ("Wrong buffer size in message: %d\n", len));
 		return;
 	}
 
 	dual_finished(src);
 
-	fd = (int *)buf;
+	msgid = (int *)buf;
 
-	DEBUGADD(10, ("fd = %d\n", *fd));
+	DEBUGADD(10, ("got msgid %d\n", *msgid));
 
 	for (state = winbindd_client_list(); state; state = state->next) {
 		if (state->response.result != WINBINDD_PENDING)
 			continue;
 
-		if (state->sock != *fd)
+		if (state->msgid != *msgid)
 			continue;
 
 		state->response.result = state->continuation(state, src);
@@ -236,7 +236,6 @@ static void msg_finished(int msg_type, pid_t src, void *buf, size_t len)
 			if (state->send_to_background) {
 				extern BOOL background_process;
 				background_process = True;
-				state->request.client_fd = state->sock;
 				dual_send_request(state);
 			}
 			return;
@@ -570,7 +569,6 @@ void winbind_process_packet(struct winbindd_cli_state *state)
 	if (opt_dual_daemon && state->send_to_background) {
 		extern BOOL background_process;
 		background_process = True;
-		state->request.client_fd = state->sock;
 		dual_send_request(state);
 	}
 }
@@ -899,6 +897,10 @@ static void process_loop(void)
                     
 					if (state->read_buf_len == 
 					    sizeof(state->request)) {
+						static int msgid;
+						msgid += 1;
+						state->msgid = msgid;
+						state->request.msgid = msgid;
 						winbind_process_packet(state);
 						winbindd_demote_client(state);
 						goto again;
