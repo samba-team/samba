@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -140,7 +140,9 @@ krb5_compare_creds(krb5_context context, krb5_flags whichfields,
     else
 	match = krb5_principal_compare(context, mcreds->server, creds->server);
     if(match && (whichfields & KRB5_TC_MATCH_KEYTYPE) &&
-       mcreds->session.keytype != creds->session.keytype)
+       !krb5_enctypes_comptible_keys (context,
+				      mcreds->session.keytype,
+				      creds->session.keytype))
 	match = FALSE;
     return match;
 }
