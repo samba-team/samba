@@ -319,7 +319,6 @@ case "$host_os" in
 						;;
 				esac
 			else
-				DYNEXP="-dc -dp"
 				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 				AC_DEFINE(_LARGEFILE64_SOURCE)
 				AC_DEFINE(_FILE_OFFSET_BITS,64)
