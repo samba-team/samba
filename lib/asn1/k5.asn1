@@ -66,7 +66,7 @@ TicketFlags ::=   BIT STRING {
 		hw-authent(11),
 		transited-policy-checked(12),
 		ok-as-delegate(13),
-		anonymous(14),
+		anonymous(14)
 }
 
 KDCOptions ::=   BIT STRING {
