@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -76,7 +76,7 @@ krb5_mk_priv(krb5_context context,
   usec2          = usec;
   part.usec      = &usec2;
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
-    tmp_seq = ++auth_context->local_seqnumber;
+    tmp_seq = auth_context->local_seqnumber;
     part.seq_number = &tmp_seq;
   } else {
     part.seq_number = NULL;
@@ -159,6 +159,9 @@ krb5_mk_priv(krb5_context context,
   }
   memcpy (outbuf->data, buf + buf_size - len, len);
   free (buf);
+  if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE)
+      auth_context->local_seqnumber =
+	  (auth_context->local_seqnumber + 1) & 0xFFFFFFFF;
   return 0;
 
 fail:
