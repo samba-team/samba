@@ -866,7 +866,11 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		DEBUG(5,("open_file_shared: create new requested for file %s and file already exists.\n",
 			fname ));
 		file_free(fsp);
-		errno = EEXIST;
+		if (S_ISDIR(psbuf->st_mode)) {
+			errno = EISDIR;
+		} else {
+			errno = EEXIST;
+		}
 		return NULL;
 	}
       

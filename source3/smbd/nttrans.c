@@ -895,6 +895,12 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 #endif
 	if (allocation_size && (allocation_size > (SMB_BIG_UINT)file_len)) {
 		fsp->initial_allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
+		if (fsp->is_directory) {
+			close_file(fsp,False);
+			END_PROFILE(SMBntcreateX);
+			/* Can't set allocation size on a directory. */
+			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+		}
 		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
 			close_file(fsp,False);
 			END_PROFILE(SMBntcreateX);
@@ -1404,6 +1410,12 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 #endif
 	if (allocation_size && (allocation_size > file_len)) {
 		fsp->initial_allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
+		if (fsp->is_directory) {
+			close_file(fsp,False);
+			END_PROFILE(SMBntcreateX);
+			/* Can't set allocation size on a directory. */
+			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+		}
 		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
 			close_file(fsp,False);
 			return ERROR_NT(NT_STATUS_DISK_FULL);
