@@ -936,7 +936,7 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		if ((local_flags & LOCAL_ADD_USER) || (local_flags & LOCAL_DELETE_USER)) {
 			/* Might not exist in /etc/passwd.  Use rid algorithm here */
 			if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pass, user_name, 0))) {
-				slprintf(err_str, err_str_len-1, "Failed initialise SAM_ACCOUNT for user %s.\n", user_name);
+				slprintf(err_str, err_str_len-1, "Failed to initialise SAM_ACCOUNT for user %s.\n", user_name);
 				return False;
 			}
 		} else {
