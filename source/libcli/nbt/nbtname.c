@@ -202,12 +202,13 @@ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name 
 	/* combine the remaining components into the scope */
 	scope = components[1];
 	for (i=2;i<num_components;i++) {
-		talloc_asprintf_append(scope, ".%s", components[i]);
+		scope = talloc_asprintf_append(scope, ".%s", components[i]);
+		NT_STATUS_HAVE_NO_MEMORY(scope);
 	}
 
 	if (scope) {
 		ret = convert_string_talloc(ndr, CH_DOS, CH_UNIX, scope, 
-					    strlen(r->scope)+1, &p);
+					    strlen(scope)+1, &p);
 		if (ret <= 0) {
 			return NT_STATUS_BAD_NETWORK_NAME;
 		}
@@ -265,9 +266,11 @@ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, struct nbt_name 
 	       num_components < MAX_COMPONENTS) {
 		*p = 0;
 		components[num_components] = dscope;
-		NT_STATUS_HAVE_NO_MEMORY(components[num_components]);
 		dscope = p+1;
 		num_components++;
+	}
+	if (dscope && num_components < MAX_COMPONENTS) {
+		components[num_components++] = dscope;
 	}
 	if (num_components == MAX_COMPONENTS) {
 		return NT_STATUS_BAD_NETWORK_NAME;
