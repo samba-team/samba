@@ -69,7 +69,7 @@ static int add_time_element(struct ldb_module *module, struct ldb_message *msg,
 	int i;
 
 	for (i = 0; i < msg->num_elements; i++) {
-		if (strcasecmp(msg->elements[i].name, attr_name) == 0) {
+		if (ldb_attr_cmp(msg->elements[i].name, attr_name) == 0) {
 			return 0;
 		}
 	}
