@@ -83,6 +83,7 @@ print_arg (char *string, size_t len, int mdoc, int longp, struct getargs *arg)
 static void
 mandoc_template(struct getargs *args,
 		size_t num_args,
+		const char *progname,
 		const char *extra_string)
 {
     int i;
@@ -99,8 +100,8 @@ mandoc_template(struct getargs *args,
     t = time(NULL);
     strftime(timestr, sizeof(timestr), "%B %e, %Y", localtime(&t));
     printf(".Dd %s\n", timestr);
-    p = strrchr(__progname, '/');
-    if(p) p++; else p = __progname;
+    p = strrchr(progname, '/');
+    if(p) p++; else p = progname;
     strcpy_truncate(cmd, p, sizeof(cmd));
     strupr(cmd);
        
@@ -194,6 +195,7 @@ check_column(FILE *f, int col, int len, int columns)
 void
 arg_printusage (struct getargs *args,
 		size_t num_args,
+		const char *progname,
 		const char *extra_string)
 {
     int i;
@@ -202,8 +204,11 @@ arg_printusage (struct getargs *args,
     int col = 0, columns;
     struct winsize ws;
 
+    if (progname == NULL)
+	progname = __progname;
+
     if(getenv("GETARGMANDOC")){
-	mandoc_template(args, num_args, extra_string);
+	mandoc_template(args, num_args, progname, extra_string);
 	return;
     }
     if(get_window_size(2, &ws) == 0)
@@ -211,7 +216,7 @@ arg_printusage (struct getargs *args,
     else
 	columns = 80;
     col = 0;
-    col += fprintf (stderr, "Usage: %s", __progname);
+    col += fprintf (stderr, "Usage: %s", progname);
     for (i = 0; i < num_args; ++i) {
 	size_t len = 0;
 
@@ -477,6 +482,6 @@ int main(int argc, char **argv)
     printf("foo_flag = %d\n", foo_flag);  
     printf("bar_int = %d\n", bar_int);
     printf("baz_flag = %s\n", baz_string);
-    arg_printusage (args, 5, "nothing here");
+    arg_printusage (args, 5, argv[0], "nothing here");
 }
 #endif
