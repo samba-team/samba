@@ -285,7 +285,7 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam pdb_guest rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin idmap_winbind"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin idmap_winbind"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms"
@@ -2349,23 +2349,39 @@ fi
 ########################################################
 # Compile experimental passdb backends?
 # (pdb_xml, pdb_mysql)
-build_expsam=0
 AC_MSG_CHECKING(whether to build experimental passdb libraries)
 AC_ARG_WITH(expsam,
-[  --with-expsam           Include experimental passdb libraries (default=no)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    build_expsam=1
-    AM_PATH_XML2([2.0.0],[default_shared_modules="$default_shared_modules pdb_xml"],[])
-    CFLAGS="$CFLAGS $XML_CFLAGS"
-    AM_PATH_MYSQL([0.11.0],[default_shared_modules="$default_shared_modules pdb_mysql"],[])
-    CFLAGS="$CFLAGS $MYSQL_CFLAGS"
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
+[  --with-expsam=<list>    Include experimental passdb libraries (default=no)]
+[                          Valid choices include (comma separated list): ]
+[                              xml, mysql, & nisplussam ],
+[ expsam_pdb_modules=`echo "$withval" | sed 's/,/ /g'`
+  if test "z$expsam_pdb_modules" = "zyes"; then
+    expsam_pdb_modules="xml mysql nisplussam"
+  fi
+  AC_MSG_RESULT($expsam_pdb_modules)
+  for i in $expsam_pdb_modules
+  do 
+    case "$i" in
+    xml)
+      ## pdb_xml
+      AM_PATH_XML2([2.0.0],[default_shared_modules="$default_shared_modules pdb_xml"],[])
+      CFLAGS="$CFLAGS $XML_CFLAGS"
+      ;;
+    mysql)
+      ## pdb_mysql
+      AM_PATH_MYSQL([0.11.0],[default_shared_modules="$default_shared_modules pdb_mysql"],[])
+      CFLAGS="$CFLAGS $MYSQL_CFLAGS"
+      ;;
+    nisplussam)
+      ## pdb_nisplussam
+      MODULE_pdb_nisplussam=SHARED
+      ;;
+    *)
+      echo "Unknown module name \"$i\"!  Exiting..."
+      exit 1
+      ;;
+    esac
+  done ],
   AC_MSG_RESULT(no)
 )
 
@@ -3702,18 +3718,15 @@ AC_ARG_WITH(shared-modules,
 fi ])
 
 ###########################################################################
-## experimental pdb_modules
+## contributed pdb_modules
 
-if test $build_expsam; then
-
-    SMB_MODULE(pdb_xml, passdb/pdb_xml.o, "bin/xml.$SHLIBEXT", PDB,
+SMB_MODULE(pdb_xml, passdb/pdb_xml.o, "bin/xml.$SHLIBEXT", PDB,
 		  [ PASSDBLIBS="$PASSDBLIBS $XML_LIBS" ] )
-    SMB_MODULE(pdb_mysql, passdb/pdb_mysql.o, "bin/mysql.$SHLIBEXT", PDB, 
+SMB_MODULE(pdb_mysql, passdb/pdb_mysql.o, "bin/mysql.$SHLIBEXT", PDB, 
 		   [ PASSDBLIBS="$PASSDBLIBS $MYSQL_LIBS" ]	)
-    SMB_MODULE(pdb_nisplussam, passdb/pdb_nisplus.o, "bin/nisplussam.$SHLIBEXT", PDB)
-fi
+SMB_MODULE(pdb_nisplussam, passdb/pdb_nisplus.o, "bin/nisplussam.$SHLIBEXT", PDB)
 
-## end of experiementlal pdb_modules
+## end of contributed pdb_modules
 ###########################################################################
 
 SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, "bin/ldapsam.$SHLIBEXT", PDB, 
