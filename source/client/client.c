@@ -219,6 +219,7 @@ static int do_dskattr(void)
 
 	if ( !cli_resolve_path( "", cli, cur_dir, &targetcli, targetpath ) ) {
 		d_printf("Error in dskattr: %s\n", cli_errstr(cli));
+		return 1;
 	}
 
 	if (!cli_dskattr(targetcli, &bsize, &total, &avail)) {
