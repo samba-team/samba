@@ -170,6 +170,11 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	int sock;
 	BOOL result = False;
 
+	if (lp_disable_netbios()) {
+		DEBUG(5,("name_status_find(%s#%02x): netbios is disabled\n", q_name, q_type));
+		return False;
+	}
+
 	DEBUG(10, ("name_status_find: looking up %s#%02x at %s\n", q_name, 
 		   q_type, inet_ntoa(to_ip)));
 
@@ -272,6 +277,11 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 	struct packet_struct *p2;
 	struct nmb_packet *nmb = &p.packet.nmb;
 	struct in_addr *ip_list = NULL;
+
+	if (lp_disable_netbios()) {
+		DEBUG(5,("name_query(%s#%02x): netbios is disabled\n", name, name_type));
+		return NULL;
+	}
 
 	if (timed_out) {
 		*timed_out = False;
@@ -556,6 +566,11 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 	int sock, i;
 	int num_interfaces = iface_count();
 
+	if (lp_disable_netbios()) {
+		DEBUG(5,("name_resolve_bcast(%s#%02x): netbios is disabled\n", name, name_type));
+		return False;
+	}
+
 	*return_ip_list = NULL;
 	*return_count = 0;
 	
@@ -601,6 +616,11 @@ BOOL resolve_wins(const char *name, int name_type,
 	int sock, t, i;
 	char **wins_tags;
 	struct in_addr src_ip;
+
+	if (lp_disable_netbios()) {
+		DEBUG(5,("resolve_wins(%s#%02x): netbios is disabled\n", name, name_type));
+		return False;
+	}
 
 	*return_iplist = NULL;
 	*return_count = 0;
@@ -935,6 +955,11 @@ BOOL find_master_ip(const char *group, struct in_addr *master_ip)
 	struct in_addr *ip_list = NULL;
 	int count = 0;
 
+	if (lp_disable_netbios()) {
+		DEBUG(5,("find_master_ip(%s): netbios is disabled\n", group));
+		return False;
+	}
+
 	if (internal_resolve_name(group, 0x1D, &ip_list, &count)) {
 		*master_ip = ip_list[0];
 		SAFE_FREE(ip_list);
@@ -957,10 +982,14 @@ BOOL find_master_ip(const char *group, struct in_addr *master_ip)
 BOOL lookup_dc_name(const char *srcname, const char *domain, 
 		    struct in_addr *dc_ip, char *ret_name)
 {
-#if !defined(I_HATE_WINDOWS_REPLY_CODE)
-	
+#if !defined(I_HATE_WINDOWS_REPLY_CODE)	
 	fstring dc_name;
 	BOOL ret;
+
+	if (lp_disable_netbios()) {
+		DEBUG(5,("lookup_dc_name(%s): netbios is disabled\n", domain));
+		return False;
+	}
 	
 	/*
 	 * Due to the fact win WinNT *sucks* we must do a node status
