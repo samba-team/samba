@@ -77,30 +77,28 @@ AC_TEST_PACKAGE_NEW(krb4,[#include <krb.h>],-lkrb,-ldes,/usr/athena)
 
 LIB_kdb=
 if test "$with_krb4" != "no"; then
+	save_CFLAGS="$CFLAGS"
+	CFLAGS="$CFLAGS $INCLUDE_krb4"
+	save_LIBS="$LIBS"
+	LIBS="$LIB_krb4 $LIBS"
 	EXTRA_LIB45=lib45.a
 	AC_SUBST(EXTRA_LIB45)
 	AC_CACHE_CHECK(for four valued krb_put_int, ac_cv_func_krb_put_int_four,
-		[save_CFLAGS="$CFLAGS"
-		CFLAGS="$CFLAGS $INCLUDE_krb4"
-		AC_TRY_COMPILE([#include <krb.h>],[
+		[AC_TRY_COMPILE([#include <krb.h>],[
 		char tmp[4];
 		krb_put_int(17, tmp, 4, sizeof(tmp));],
 		ac_cv_func_krb_put_int_four=yes,
 		ac_cv_func_krb_put_int_four=no)
-		CFLAGS="$save_CFLAGS"
 	])
 	if test "$ac_cv_func_krb_put_int_four" = yes; then
 		AC_DEFINE(HAVE_FOUR_VALUED_KRB_PUT_INT, 1,
-			[Define if krb_put_int takes four arguments.])
+			[define if krb_put_int takes four arguments.])
 	fi
 	AC_CACHE_CHECK(for KRB_VERIFY_SECURE, ac_cv_func_krb_verify_secure,
-		[save_CFLAGS="$CFLAGS"
-		CFLAGS="$CFLAGS $INCLUDE_krb4"
-		AC_TRY_COMPILE([#include <krb.h>],[
+		[AC_TRY_COMPILE([#include <krb.h>],[
 		int x = KRB_VERIFY_SECURE],
 		ac_cv_func_krb_verify_secure=yes,
 		ac_cv_func_krb_verify_secure=no)
-		CFLAGS="$save_CFLAGS"
 	])
 	if test "$ac_cv_func_krb_verify_secure" != yes; then
 		AC_DEFINE(KRB_VERIFY_SECURE, 1,
@@ -110,23 +108,20 @@ if test "$with_krb4" != "no"; then
 	fi
 	AC_CACHE_CHECK(for KRB_VERIFY_NOT_SECURE,
 		ac_cv_func_krb_verify_not_secure,
-		[save_CFLAGS="$CFLAGS"
-		CFLAGS="$CFLAGS $INCLUDE_krb4"
-		AC_TRY_COMPILE([#include <krb.h>],[
+		[AC_TRY_COMPILE([#include <krb.h>],[
 		int x = KRB_VERIFY_NOT_SECURE],
 		ac_cv_func_krb_verify_not_secure=yes,
 		ac_cv_func_krb_verify_not_secure=no)
-		CFLAGS="$save_CFLAGS"
 	])
 	if test "$ac_cv_func_krb_verify_not_secure" != yes; then
 		AC_DEFINE(KRB_VERIFY_NOT_SECURE, 0,
 			[Define to zero if your krb.h doesn't])
 	fi
-	save_LIBS="$LIBS"
-	LIBS="$LIB_krb4 $LIBS"
 	AC_FIND_FUNC(krb_enable_debug)
 	AC_FIND_FUNC(krb_disable_debug)
+	AC_FIND_FUNC(krb_get_our_ip_for_realm)
 	LIBS="$save_LIBS"
+	CFLAGS="$save_CFLAGS"
 	LIB_kdb="-lkdb -lkrb"
 	if test "$krb4_libdir"; then
 		LIB_krb4="-rpath $krb4_libdir $LIB_krb4"
