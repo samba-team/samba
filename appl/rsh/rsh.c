@@ -869,6 +869,8 @@ main(int argc, char **argv)
     }
 
     if (optind == argc) {
+	close (priv_socket1);
+	close (priv_socket2);
 	argv[0] = "rlogin";
 	execvp ("rlogin", argv);
 	err (1, "execvp rlogin");
