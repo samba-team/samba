@@ -99,7 +99,7 @@ static BOOL create_conn_struct( connection_struct *conn, int snum, char *path)
 	conn->service = snum;
 	conn->connectpath = path;
 
-	if (!vfs_init(conn)) {
+	if (!smbd_vfs_init(conn)) {
 		DEBUG(0,("create_conn_struct: vfs init failed.\n"));
 		return False;
 	}

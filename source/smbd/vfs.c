@@ -154,7 +154,7 @@ static BOOL vfs_init_custom(connection_struct *conn)
  Generic VFS init.
 ******************************************************************/
 
-BOOL vfs_init(connection_struct *conn)
+BOOL smbd_vfs_init(connection_struct *conn)
 {
 	if (*lp_vfsobj(SNUM(conn))) {
 #ifdef HAVE_LIBDL
@@ -162,13 +162,13 @@ BOOL vfs_init(connection_struct *conn)
 		/* Loadable object file */
  
 		if (!vfs_init_custom(conn)) {
-			DEBUG(0, ("vfs_init: vfs_init_custom failed\n"));
+			DEBUG(0, ("smbd_vfs_init: vfs_init_custom failed\n"));
 			return False;
 		}
 
 		return True;
 #else
-		DEBUG(0, ("vfs_init: No libdl present - cannot use VFS objects\n"));
+		DEBUG(0, ("smbd_vfs_init: No libdl present - cannot use VFS objects\n"));
 		return False;
 #endif
 	}
