@@ -70,7 +70,7 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
  int main(int argc, char **argv)
 {
 	int opt, i;
-	const char *backend = "dir";
+	const char *backend = "rpc";
 	const char *credentials = NULL;
 	poptContext pc;
 	struct registry_context *h;
