@@ -256,13 +256,15 @@ sub ParseArrayPull($$$)
 		}
 	}
 
+	pidl "\t{\n";
+
 	if (my $length = util::has_property($e, "length_is")) {
 		$length = find_size_var($e, $length);
 		pidl "\t\tuint32 _offset, _length;\n";
 		pidl "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_offset));\n";
 		pidl "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_length));\n";
 		pidl "\t\tif (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, \"Bad array offset 0x%08x\", _offset);\n";
-		pidl "\t\tif (_length > $size || _length != $length) return ndr_pull_error(ndr, NDR_ERR_LENGTH, \"Bad array length 0x%08x > size 0x%08x\", _offset, $size);\n";
+		pidl "\t\tif (_length > $size || _length != $length) return ndr_pull_error(ndr, NDR_ERR_LENGTH, \"Bad array length 0x%08x > size 0x%08x\", _offset, $size);\n\n";
 		$size = "_length";
 	}
 
@@ -271,6 +273,8 @@ sub ParseArrayPull($$$)
 	} else {
 		pidl "\t\tNDR_CHECK(ndr_pull_array(ndr, $ndr_flags, (void **)$var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
 	}
+
+	pidl "\t}\n";
 }
 
 
