@@ -1047,6 +1047,15 @@ uint32 _samr_query_groupmem(const POLICY_HND *group_pol,
 	return NT_STATUS_NOPROBLEMO;
 }
 
+/*******************************************************************
+ samr_set_groupinfo
+ ********************************************************************/
+uint32 _samr_set_groupinfo(const POLICY_HND *pol,
+				uint16 switch_level,
+				const GROUP_INFO_CTR* ctr)
+{
+	return NT_STATUS_ACCESS_DENIED;
+}
 
 /*******************************************************************
  samr_reply_query_groupinfo

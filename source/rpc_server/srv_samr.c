@@ -390,6 +390,26 @@ static void api_samr_query_groupmem( rpcsrv_struct *p, prs_struct *data, prs_str
 /*******************************************************************
  api_samr_query_groupinfo
  ********************************************************************/
+static void api_samr_set_groupinfo( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
+{
+	SAMR_Q_SET_GROUPINFO q_e;
+	SAMR_R_SET_GROUPINFO r_e;
+	GROUP_INFO_CTR ctr;
+
+	ZERO_STRUCT(q_e);
+	ZERO_STRUCT(r_e);
+	ZERO_STRUCT(ctr);
+
+	q_e.ctr = &ctr;
+	samr_io_q_set_groupinfo("", &q_e, data, 0);
+	r_e.status = _samr_set_groupinfo(&q_e.pol, ctr.switch_value1, &ctr);
+	samr_io_r_set_groupinfo("", &r_e, rdata, 0);
+}
+
+
+/*******************************************************************
+ api_samr_query_groupinfo
+ ********************************************************************/
 static void api_samr_query_groupinfo( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_GROUPINFO q_e;
@@ -947,6 +967,7 @@ static const struct api_struct api_samr_cmds [] =
 	{ "SAMR_QUERY_DISPINFO4"  , SAMR_QUERY_DISPINFO4  , api_samr_query_dispinfo   },
 	{ "SAMR_QUERY_ALIASINFO"  , SAMR_QUERY_ALIASINFO  , api_samr_query_aliasinfo  },
 	{ "SAMR_QUERY_GROUPINFO"  , SAMR_QUERY_GROUPINFO  , api_samr_query_groupinfo  },
+	{ "SAMR_SET_GROUPINFO"    , SAMR_SET_GROUPINFO    , api_samr_set_groupinfo  },
 	{ "SAMR_CREATE_USER"      , SAMR_CREATE_USER      , api_samr_create_user      },
 	{ "SAMR_LOOKUP_RIDS"      , SAMR_LOOKUP_RIDS      , api_samr_lookup_rids      },
 	{ "SAMR_GET_DOM_PWINFO"   , SAMR_GET_DOM_PWINFO   , api_samr_get_dom_pwinfo       },

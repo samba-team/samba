@@ -3640,6 +3640,9 @@ uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
 uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
 				uint16 switch_value,
 				SAM_UNK_CTR *ctr);
+uint32 _samr_set_groupinfo(const POLICY_HND *pol,
+				uint16 switch_level,
+				const GROUP_INFO_CTR* ctr);
 
 /*The following definitions come from  samrd/srv_samr_dom_tdb.c  */
 
@@ -3699,13 +3702,16 @@ uint32 _samr_query_groupmem(const POLICY_HND *group_pol,
 					uint32 *num_mem,
 					uint32 **rid,
 					uint32 **attr);
+uint32 _samr_set_groupinfo(const POLICY_HND *pol,
+				uint16 switch_level,
+				const GROUP_INFO_CTR* ctr);
 uint32 _samr_query_groupinfo(const POLICY_HND *pol,
 				uint16 switch_level,
 				GROUP_INFO_CTR* ctr);
 uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 				const UNISTR2 *uni_acct_name,
 				uint32 access_mask,
-				POLICY_HND *group_pol, uint32 *rid);
+				POLICY_HND *group_pol, uint32 *group_rid);
 uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
 				uint32 group_rid,
 				POLICY_HND *group_pol);
@@ -3782,6 +3788,9 @@ uint32 _samr_query_groupmem(const POLICY_HND *group_pol,
 					uint32 *num_mem,
 					uint32 **rid,
 					uint32 **attr);
+uint32 _samr_set_groupinfo(const POLICY_HND *pol,
+				uint16 switch_level,
+				const GROUP_INFO_CTR* ctr);
 uint32 _samr_query_groupinfo(const POLICY_HND *pol,
 				uint16 switch_level,
 				GROUP_INFO_CTR* ctr);

@@ -29,41 +29,151 @@
 
 extern int DEBUGLEVEL;
 
-
-/*******************************************************************
- opens a samr group by rid, returns a policy handle.
- ********************************************************************/
-static uint32 samr_open_by_tdbsid(TDB_CONTEXT *ptdb,
-				const POLICY_HND *parent_pol,
-				const DOM_SID *dom_sid,
-				POLICY_HND *pol,
-				uint32 access_mask,
-				uint32 rid)
+static BOOL tdb_lookup_group_mem(TDB_CONTEXT *tdb,
+				uint32 rid,
+				uint32 *num_rids,
+				uint32 **rids,
+				uint32 *num_types,
+				uint32 **types)
 {
-	DOM_SID sid;
+	prs_struct key;
+	prs_struct data;
 
-	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd_link(get_global_hnd_cache(),
-		parent_pol, pol, access_mask))
+	prs_init(&key, 0, 4, False);
+	if (!_prs_uint32("sid", &key, 0, &rid))
 	{
-		return NT_STATUS_ACCESS_DENIED;
+		return False;
 	}
 
-	DEBUG(0,("TODO: verify that the rid exists\n"));
+	prs_tdb_fetch(tdb, &key, &data);
 
-	/* associate a SID with the (unique) handle. */
-	sid_copy(&sid, dom_sid);
-	sid_append_rid(&sid, rid);
-
-	/* associate an group SID with the (unique) handle. */
-	if (!set_tdbsid(get_global_hnd_cache(), pol, ptdb, &sid))
+	if (!samr_io_rids("rids", num_rids, rids, &data, 0) ||
+	    !samr_io_rids("types", num_types, types, &data, 0))
 	{
-		/* close the policy in case we can't associate a group SID */
-		close_policy_hnd(get_global_hnd_cache(), pol);
-		return NT_STATUS_ACCESS_DENIED;
+		prs_free_data(&key);
+		prs_free_data(&data);
+		return False;
 	}
 
-	return NT_STATUS_NOPROBLEMO;
+	prs_free_data(&key);
+	prs_free_data(&data);
+
+	return True;
+}
+
+static BOOL tdb_lookup_group(TDB_CONTEXT *tdb,
+				uint32 rid,
+				GROUP_INFO1 *grp)
+{
+	prs_struct key;
+	prs_struct data;
+
+	prs_init(&key, 0, 4, False);
+	if (!_prs_uint32("rid", &key, 0, &rid))
+	{
+		return False;
+	}
+
+	prs_tdb_fetch(tdb, &key, &data);
+
+	if (!samr_io_group_info1("grp", grp, &data, 0))
+	{
+		prs_free_data(&key);
+		prs_free_data(&data);
+		return False;
+	}
+
+	prs_free_data(&key);
+	prs_free_data(&data);
+
+	return True;
+}
+
+static BOOL tdb_store_group_mem(TDB_CONTEXT *tdb,
+				uint32 rid,
+				uint32 *num_rids,
+				uint32 **rids,
+				uint32 *num_types,
+				uint32 **types)
+{
+	prs_struct key;
+	prs_struct data;
+
+	if (DEBUGLVL(10))
+	{
+		DEBUG(10,("storing group members %x\n", rid));
+	}
+
+	prs_init(&key, 0, 4, False);
+	prs_init(&data, 0, 4, False);
+
+	if (!_prs_uint32("sid", &key, 0, &rid) ||
+	    !samr_io_rids("rids", num_rids, rids, &data, 0) ||
+	    !samr_io_rids("types", num_types, types, &data, 0) ||
+	     prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
+	{
+		prs_free_data(&key);
+		prs_free_data(&data);
+		return False;
+	}
+
+	prs_free_data(&key);
+	prs_free_data(&data);
+	return True;
+}
+
+static BOOL tdb_store_group(TDB_CONTEXT *tdb, uint32 rid, GROUP_INFO1 *grp)
+{
+	prs_struct key;
+	prs_struct data;
+
+	DEBUG(10,("storing group %x\n", rid));
+
+	prs_init(&key, 0, 4, False);
+	prs_init(&data, 0, 4, False);
+
+	if (!_prs_uint32("rid", &key, 0, &rid) ||
+	    !samr_io_group_info1("grp", grp, &data, 0) ||
+	     prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
+	{
+		prs_free_data(&key);
+		prs_free_data(&data);
+		return False;
+	}
+
+	prs_free_data(&key);
+	prs_free_data(&data);
+	return True;
+}
+
+static BOOL tdb_set_groupinfo_4(TDB_CONTEXT *tdb,
+				uint32 rid,
+				const UNISTR2 *uni_acct_desc)
+{
+	GROUP_INFO1 grp;
+
+	if (tdb_writelock(tdb) != 0)
+	{
+		return False;
+	}
+
+	if (!tdb_lookup_group(tdb, rid, &grp))
+	{
+		tdb_writeunlock(tdb);
+		return False;
+	}
+
+	copy_unistr2(&grp.uni_acct_desc, uni_acct_desc);
+	make_uni_hdr(&grp.hdr_acct_desc, uni_acct_desc->uni_str_len);
+
+	if (!tdb_store_group(tdb, rid, &grp))
+	{
+		tdb_writeunlock(tdb);
+		return False;
+	}
+
+	tdb_writeunlock(tdb);
+	return True;
 }
 
 
@@ -72,28 +182,14 @@ static uint32 samr_open_by_tdbsid(TDB_CONTEXT *ptdb,
  ********************************************************************/
 uint32 _samr_add_groupmem(const POLICY_HND *pol, uint32 rid, uint32 unknown)
 {
-	DOM_SID group_sid;
 	uint32 group_rid;
-	fstring group_sid_str;
 	TDB_CONTEXT *tdb = NULL;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbsid(get_global_hnd_cache(), pol, &tdb, &group_sid))
+	if (!get_tdbrid(get_global_hnd_cache(), pol, NULL, &tdb, NULL, &group_rid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
-
-	sid_to_string(group_sid_str, &group_sid);
-	sid_split_rid(&group_sid, &group_rid);
-
-	DEBUG(10,("sid is %s\n", group_sid_str));
-
-	if (!sid_equal(&group_sid, &global_sam_sid))
-	{
-		return NT_STATUS_NO_SUCH_GROUP;
-	}
-
-	DEBUG(10,("lookup on Domain SID\n"));
 
 #if 0
 	if (!add_group_member(group_rid, rid))
@@ -110,27 +206,14 @@ uint32 _samr_add_groupmem(const POLICY_HND *pol, uint32 rid, uint32 unknown)
  ********************************************************************/
 uint32 _samr_del_groupmem(const POLICY_HND *pol, uint32 rid)
 {
-	DOM_SID group_sid;
 	uint32 group_rid;
-	fstring group_sid_str;
 	TDB_CONTEXT *tdb = NULL;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbsid(get_global_hnd_cache(), pol, &tdb, &group_sid))
+	if (!get_tdbrid(get_global_hnd_cache(), pol, NULL, &tdb, NULL, &group_rid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
-
-	sid_to_string(group_sid_str, &group_sid);
-	sid_split_rid(&group_sid, &group_rid);
-
-	DEBUG(10,("sid is %s\n", group_sid_str));
-
-	if (!sid_equal(&group_sid, &global_sam_sid))
-	{
-		return NT_STATUS_NO_SUCH_GROUP;
-	}
-	DEBUG(10,("lookup on Domain SID\n"));
 
 #if 0
 	if (!del_group_member(group_rid, rid))
@@ -147,30 +230,16 @@ uint32 _samr_del_groupmem(const POLICY_HND *pol, uint32 rid)
  ********************************************************************/
 uint32 _samr_delete_dom_group(POLICY_HND *group_pol)
 {
-	DOM_SID group_sid;
 	uint32 group_rid;
-	fstring group_sid_str;
 	TDB_CONTEXT *tdb = NULL;
 
 	DEBUG(5,("samr_delete_dom_group: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbsid(get_global_hnd_cache(), group_pol, &tdb, &group_sid))
+	if (!get_tdbrid(get_global_hnd_cache(), group_pol, NULL, &tdb, NULL, &group_rid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
-	sid_to_string(group_sid_str, &group_sid);
-	sid_split_rid(&group_sid, &group_rid);
-
-	DEBUG(10,("sid is %s\n", group_sid_str));
-
-	if (!sid_equal(&group_sid, &global_sam_sid))
-	{
-		return NT_STATUS_NO_SUCH_GROUP;
-	}
-
-	DEBUG(10,("lookup on Domain SID\n"));
-
 #if 0
 	if (!del_group_entry(group_rid))
 #endif
@@ -191,12 +260,8 @@ uint32 _samr_query_groupmem(const POLICY_HND *group_pol,
 					uint32 **attr)
 {
 	TDB_CONTEXT *g_tdb = NULL;
-	DOMAIN_GRP_MEMBER *mem_grp = NULL;
-	DOMAIN_GRP *grp = NULL;
 	int num_rids = 0;
-	DOM_SID group_sid;
 	uint32 group_rid;
-	fstring group_sid_str;
 
 	DEBUG(5,("samr_query_groupmem: %d\n", __LINE__));
 
@@ -205,33 +270,22 @@ uint32 _samr_query_groupmem(const POLICY_HND *group_pol,
 	(*num_mem) = 0;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbsid(get_global_hnd_cache(), group_pol, &g_tdb, &group_sid))
+	if (!get_tdbrid(get_global_hnd_cache(), group_pol, NULL, &g_tdb, NULL, &group_rid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
-	}
-	sid_to_string(group_sid_str, &group_sid);
-	sid_split_rid(&group_sid, &group_rid);
-
-	DEBUG(10,("sid is %s\n", group_sid_str));
-
-	if (!sid_equal(&group_sid, &global_sam_sid))
-	{
-		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
 	DEBUG(10,("lookup on Domain SID\n"));
 
-	become_root(True);
 #if 0
 	grp = getgrouprid(group_rid, &mem_grp, &num_rids);
 #endif
-	unbecome_root(True);
 
- 	if (grp == NULL)
  	{
  		return NT_STATUS_NO_SUCH_GROUP;
  	}
 
+#if 0
 	if (num_rids > 0)
 	{
 		(*rid)  = malloc(num_rids * sizeof(uint32));
@@ -247,8 +301,8 @@ uint32 _samr_query_groupmem(const POLICY_HND *group_pol,
 		}
 	}
 
-	safe_free(mem_grp);
-	
+#endif
+
 	(*num_mem) = num_rids;
 
 	return NT_STATUS_NOPROBLEMO;
@@ -256,14 +310,17 @@ uint32 _samr_query_groupmem(const POLICY_HND *group_pol,
 
 
 /*******************************************************************
- samr_reply_query_groupinfo
+ samr_set_groupinfo
  ********************************************************************/
-uint32 _samr_query_groupinfo(const POLICY_HND *pol,
+uint32 _samr_set_groupinfo(const POLICY_HND *pol,
 				uint16 switch_level,
-				GROUP_INFO_CTR* ctr)
+				const GROUP_INFO_CTR* ctr)
 {
+	uint32 group_rid;
+	TDB_CONTEXT *tdb = NULL;
+
 	/* find the policy handle.  open a policy on it. */
-	if ((find_policy_by_hnd(get_global_hnd_cache(), pol) == -1))
+	if (!get_tdbrid(get_global_hnd_cache(), pol, NULL, &tdb, NULL, &group_rid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -272,17 +329,67 @@ uint32 _samr_query_groupinfo(const POLICY_HND *pol,
 	{
 		case 1:
 		{
+			if (!tdb_store_group(tdb, group_rid, &ctr->group.info1))
+			{
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+		}
+		case 4:
+		{
+			if (!tdb_set_groupinfo_4(tdb, group_rid,
+			                     &ctr->group.info1.uni_acct_desc))
+			{
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+		}
+		default:
+		{
+			return NT_STATUS_INVALID_INFO_CLASS;
+		}
+	}
+
+	return NT_STATUS_NOPROBLEMO;
+}
+
+/*******************************************************************
+ samr_reply_query_groupinfo
+ ********************************************************************/
+uint32 _samr_query_groupinfo(const POLICY_HND *pol,
+				uint16 switch_level,
+				GROUP_INFO_CTR* ctr)
+{
+	uint32 group_rid;
+	TDB_CONTEXT *tdb = NULL;
+	GROUP_INFO1 grp;
+
+	/* find the policy handle.  open a policy on it. */
+	if (!get_tdbrid(get_global_hnd_cache(), pol, NULL, &tdb, NULL, &group_rid))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!tdb_lookup_group(tdb, group_rid, &grp))
+	{
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	switch (switch_level)
+	{
+		case 1:
+		{
 			ctr->switch_value1 = 1;
-			make_samr_group_info1(&ctr->group.info1,
-			                      "fake account name",
-			                      "fake account description", 2);
+			memcpy(&ctr->group.info1, &grp, sizeof(grp));
 			break;
 		}
 		case 4:
 		{
 			ctr->switch_value1 = 4;
-			make_samr_group_info4(&ctr->group.info4,
-			                     "fake account description");
+			copy_unistr2(&ctr->group.info1.uni_acct_desc,
+			              &grp.uni_acct_desc);
+			make_uni_hdr(&ctr->group.info1.hdr_acct_desc,
+			              grp.uni_acct_desc.uni_str_len);
 			break;
 		}
 		default:
@@ -300,55 +407,116 @@ uint32 _samr_query_groupinfo(const POLICY_HND *pol,
 uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 				const UNISTR2 *uni_acct_name,
 				uint32 access_mask,
-				POLICY_HND *group_pol, uint32 *rid)
+				POLICY_HND *group_pol, uint32 *group_rid)
 {
-	uint32 status;
 	DOM_SID dom_sid;
-	DOMAIN_GRP grp;
-	TDB_CONTEXT *dom_tdb = NULL;
+	DOM_SID grp_sid;
+	DOM_SID sid;
 	TDB_CONTEXT *tdb_grp = NULL;
 
-	bzero(group_pol, POL_HND_SIZE);
+	GROUP_INFO1 grp;
+	uint32 status1;
+	uint32 rid;
+	uint32 type;
+	uint32 num_rids;
+	uint32 num_types;
 
-	/* find the policy handle.  open a policy on it. */
-	if (find_policy_by_hnd(get_global_hnd_cache(), domain_pol) == -1)
+	struct group *uxgrp = NULL;
+
+	(*group_rid) = 0x0;
+
+	/* find the machine account: tell the caller if it exists.
+	   lkclXXXX i have *no* idea if this is a problem or not
+	   or even if you are supposed to construct a different
+	   reply if the account already exists...
+	 */
+
+	/* find the domain sid associated with the policy handle */
+	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol,
+					NULL, &tdb_grp, NULL,
+					NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	/* find the domain sid */
-	if (!get_tdbsid(get_global_hnd_cache(), domain_pol, &dom_tdb, &dom_sid))
+	status1 = _samr_lookup_names(domain_pol, 1,  0x3e8, 1, uni_acct_name,
+			&num_rids,
+			&rid,
+			&num_types,
+			&type);
+
+	if (status1 == NT_STATUS_NOPROBLEMO)
 	{
-		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+		switch (type)
+		{
+			case SID_NAME_USER: return NT_STATUS_USER_EXISTS;
+			case SID_NAME_ALIAS: return NT_STATUS_ALIAS_EXISTS;
+			case SID_NAME_DOM_GRP:
+			case SID_NAME_WKN_GRP: return NT_STATUS_GROUP_EXISTS;
+			case SID_NAME_DOMAIN: return NT_STATUS_DOMAIN_EXISTS;
+			default:
+			{
+				DEBUG(3,("create group: unknown, ignoring\n"));
+				break;
+			}
+		}
 	}
 
-	if (!sid_equal(&dom_sid, &global_sam_sid))
 	{
+		fstring grp_name;
+		unistr2_to_ascii(grp_name, uni_acct_name, sizeof(grp_name)-1);
+		uxgrp = getgrnam(grp_name);
+		DEBUG(10,("create group: %s\n", grp_name));
+		if (uxgrp == NULL)
+		{
+			DEBUG(0,("create group: no unix group named %s\n",
+			          grp_name));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	/* create a User SID for the unix group */
+	if (!sursalg_unixid_to_sam_sid(uxgrp->gr_gid, SID_NAME_DOM_GRP,
+	                               &grp_sid, True))
+	{
+		DEBUG(0,("create group: unix gid %d to RID failed\n",
+		          uxgrp->gr_gid));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	unistr2_to_ascii(grp.name, uni_acct_name, sizeof(grp.name)-1);
-	fstrcpy(grp.comment, "");
-	*rid = grp.rid = 0xffffffff;
-	grp.attr = 0x07;
+	sid_copy(&sid, &grp_sid);
 
-	*rid = grp.rid;
-	status = samr_open_by_tdbsid(tdb_grp, domain_pol, 
-	               &dom_sid, group_pol,
-	               access_mask, grp.rid);
-	if (status != NT_STATUS_NOPROBLEMO)
+	if (!sid_split_rid(&sid, group_rid) ||
+	    !sid_equal(&dom_sid, &sid))
 	{
-		return status;
+		fstring tmp;
+		DEBUG(0,("create group: invalid Group SID %s\n",
+		         sid_to_string(tmp, &grp_sid)));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	ZERO_STRUCT(grp);
+	copy_unistr2(&grp.uni_acct_name, uni_acct_name);
+	make_uni_hdr(&grp.hdr_acct_name, uni_acct_name->uni_str_len);
+	grp.unknown_1 = 0x3;
+	grp.num_members = 0x0;
+
+	if (!tdb_store_group(tdb_grp, (*group_rid), &grp))
+	{
+		/* account doesn't exist: say so */
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 #if 0
-	if (!add_group_entry(&grp))
-#endif
+	if (!tdb_store_group_mem(tdb_usg, (*group_rid), 0, NULL, 0, NULL))
 	{
+		/* account doesn't exist: say so */
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return NT_STATUS_NOPROBLEMO;
+#endif
+	return samr_open_by_tdbrid(domain_pol, NULL, tdb_grp, NULL,
+	                           group_pol, access_mask, *group_rid);
 }
 
 /*******************************************************************
@@ -358,23 +526,25 @@ uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
 				uint32 group_rid,
 				POLICY_HND *group_pol)
 {
-	DOM_SID sid;
-	TDB_CONTEXT *tdb = NULL;
+	DOM_SID dom_sid;
 	TDB_CONTEXT *tdb_grp = NULL;
+	GROUP_INFO1 grp;
 
-	/* find the domain sid associated with the policy handle */
-	if (!get_tdbsid(get_global_hnd_cache(), domain_pol, &tdb, &sid))
+	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol,
+					NULL, NULL, NULL,
+					&tdb_grp, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	/* this should not be hard-coded like this */
-	if (!sid_equal(&sid, &global_sam_sid))
+	if (!tdb_lookup_group(tdb_grp, group_rid, &grp))
 	{
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
-	return samr_open_by_tdbsid(tdb_grp, domain_pol,
-	               &sid, group_pol, access_mask, group_rid);
+	return samr_open_by_tdbrid(domain_pol,
+	                           NULL, tdb_grp, NULL, 
+	                           group_pol, access_mask, group_rid);
 }
+
 
