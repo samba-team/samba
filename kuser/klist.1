@@ -9,13 +9,21 @@
 list the current tickets
 .Sh SYNOPSIS
 .Nm
+.Op Fl t | Fl -test
 .Op Fl v | Fl -verbose
 .Sh DESCRIPTION
 .Nm
-reads and displays the current tickets in the ticket file.
+reads and displays the current tickets in the crential cache (also
+knows as the ticket file).
 .Pp
 Options supported:
 .Bl -tag -width Ds
+.It Xo
+.Fl t Ns ,
+.Fl -test
+.Xc
+Test for there being an active and valid TGT for the local realm of
+the user in the credential cache.
 .It Xo
 .Fl v Ns ,
 .Fl -verbose
