@@ -23,7 +23,7 @@
 #define CTRLZ 26
 extern int DEBUGLEVEL;
 
-static char cvtbuf[1024];
+static char cvtbuf[sizeof(pstring)];
 
 static BOOL mapsinited = 0;
 
@@ -205,19 +205,22 @@ update_map("\370\234\371\233\372\207\373\230\374\235\375\231\376\227\377\232");
  */
 char *unix2dos_format(char *str,BOOL overwrite)
 {
-    char *p;
-    char *dp;
+  char *p;
+  char *dp;
 
-    if (!mapsinited) initmaps();
+  if (!mapsinited)
+    initmaps();
 
-      if (overwrite) {
-          for (p = str; *p; p++) *p = unix2dos[(unsigned char)*p];
-          return str;
-      } else {
-          for (p = str, dp = cvtbuf; *p; p++,dp++) *dp = unix2dos[(unsigned char)*p];
-          *dp = 0;
-          return cvtbuf;
-      }
+  if (overwrite) {
+    for (p = str; *p; p++)
+      *p = unix2dos[(unsigned char)*p];
+    return str;
+  } else {
+    for (p = str, dp = cvtbuf;*p && (dp - cvtbuf < sizeof(cvtbuf) - 1); p++,dp++)
+      *dp = unix2dos[(unsigned char)*p];
+    *dp = 0;
+    return cvtbuf;
+  }
 }
 
 /*
@@ -225,19 +228,22 @@ char *unix2dos_format(char *str,BOOL overwrite)
  */
 char *dos2unix_format(char *str, BOOL overwrite)
 {
-    char *p;
-    char *dp;
+  char *p;
+  char *dp;
 
-    if (!mapsinited) initmaps();
+  if (!mapsinited)
+    initmaps();
 
-      if (overwrite) {
-          for (p = str; *p; p++) *p = dos2unix[(unsigned char)*p];
-          return str;
-      } else {
-          for (p = str, dp = cvtbuf; *p; p++,dp++) *dp = dos2unix[(unsigned char)*p];
-          *dp = 0;
-          return cvtbuf;
-      }
+  if (overwrite) {
+    for (p = str; *p; p++)
+      *p = dos2unix[(unsigned char)*p];
+    return str;
+  } else {
+    for (p = str, dp = cvtbuf;*p && (dp - cvtbuf < sizeof(cvtbuf) - 1); p++,dp++)
+      *dp = dos2unix[(unsigned char)*p];
+    *dp = 0;
+    return cvtbuf;
+  }
 }
 
 
