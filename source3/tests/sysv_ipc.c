@@ -6,15 +6,27 @@
 #include <sys/stat.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/sem.h>
 
 #define KEY 0x963796
+#define SEMKEY 0x963797
 #define SIZE (32*1024)
+
+#ifndef HAVE_UNION_SEMUN
+union semun {
+	int val;
+	struct semid_ds *buf;
+	unsigned short *array;
+};
+#endif
+
 
 main()
 {
-	int id;
+	int id, sem_id;
 	int *buf;
 	int count=7;
+	union semun su;
 
 #ifdef LINUX
 	if (sizeof(struct shmid_ds) == 52) {
@@ -22,6 +34,14 @@ main()
 		exit(1);
 	}
 #endif
+
+
+	sem_id = semget(SEMKEY, 1, IPC_CREAT|IPC_EXCL|0600);
+
+	if (sem_id == -1) exit(1);
+
+	su.val = 1;
+	semctl(sem_id, 0, IPC_RMID, su);
 
 	id = shmget(KEY, 0, 0);
 	if (id != -1) {
