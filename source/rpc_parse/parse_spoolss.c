@@ -96,18 +96,18 @@ static BOOL smb_io_doc_info_1(char *desc, DOC_INFO_1 *info_1, prs_struct *ps, in
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("p_docname",    ps, depth, &(info_1->p_docname)))
+	if(!prs_uint32("p_docname",    ps, depth, &info_1->p_docname))
 		return False;
-	if(!prs_uint32("p_outputfile", ps, depth, &(info_1->p_outputfile)))
+	if(!prs_uint32("p_outputfile", ps, depth, &info_1->p_outputfile))
 		return False;
-	if(!prs_uint32("p_datatype",   ps, depth, &(info_1->p_datatype)))
+	if(!prs_uint32("p_datatype",   ps, depth, &info_1->p_datatype))
 		return False;
 
-	if(!smb_io_unistr2("", &(info_1->docname),    info_1->p_docname,    ps, depth))
+	if(!smb_io_unistr2("", &info_1->docname,    info_1->p_docname,    ps, depth))
 		return False;
-	if(!smb_io_unistr2("", &(info_1->outputfile), info_1->p_outputfile, ps, depth))
+	if(!smb_io_unistr2("", &info_1->outputfile, info_1->p_outputfile, ps, depth))
 		return False;
-	if(!smb_io_unistr2("", &(info_1->datatype),   info_1->p_datatype,   ps, depth))
+	if(!smb_io_unistr2("", &info_1->datatype,   info_1->p_datatype,   ps, depth))
 		return False;
 
 	return True;
@@ -128,16 +128,16 @@ static BOOL smb_io_doc_info(char *desc, DOC_INFO *info, prs_struct *ps, int dept
 	if(!prs_align(ps))
 		return False;
         
-	if(!prs_uint32("switch_value", ps, depth, &(info->switch_value)))
+	if(!prs_uint32("switch_value", ps, depth, &info->switch_value))
 		return False;
 	
-	if(!prs_uint32("doc_info_X ptr", ps, depth, &(useless_ptr)))
+	if(!prs_uint32("doc_info_X ptr", ps, depth, &useless_ptr))
 		return False;
 
 	switch (info->switch_value)
 	{
 		case 1:	
-			if(!smb_io_doc_info_1("",&(info->doc_info_1), ps, depth))
+			if(!smb_io_doc_info_1("",&info->doc_info_1, ps, depth))
 				return False;
 			break;
 		case 2:
@@ -151,7 +151,7 @@ static BOOL smb_io_doc_info(char *desc, DOC_INFO *info, prs_struct *ps, int dept
 			  Maybe one day with Windows for dishwasher 2037 ...
 			  
 			*/
-			/* smb_io_doc_info_2("",&(info->doc_info_2), ps, depth); */
+			/* smb_io_doc_info_2("",&info->doc_info_2, ps, depth); */
 			break;
 		default:
 			DEBUG(0,("Something is obviously wrong somewhere !\n"));
@@ -1446,6 +1446,8 @@ static uint32 size_of_relative_string(UNISTR *string)
 	size=str_len_uni(string);	/* the string length       */
 	size=size+1;			/* add the leading zero    */
 	size=size*2;			/* convert in char         */
+	/* Ensure size is 4 byte multiple (prs_align is being called...). */
+	size += ((4 - (size & 3)) & 3);
 	size=size+4;			/* add the size of the ptr */	
 
 	return size;
@@ -1474,28 +1476,6 @@ static uint32 size_of_systemtime(SYSTEMTIME *systime)
 }
 
 /*******************************************************************
- * write a UNICODE string.
- * used by all the RPC structs passing a buffer
- ********************************************************************/
-static BOOL spoolss_smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int depth)
-{
-	if (uni == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "spoolss_smb_io_unistr");
-	depth++;
-	
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_unistr("unistr", ps, depth, uni))
-		return False;
-
-	return True;
-}
-
-
-/*******************************************************************
  * write a UNICODE string and its relative pointer.
  * used by all the RPC structs passing a buffer
  *
@@ -1522,12 +1502,15 @@ static BOOL new_smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR 
 		uint32 struct_offset = prs_offset(ps);
 		uint32 relative_offset;
 		
-		buffer->string_at_end -= 2*(str_len_uni(string)+1);
+		buffer->string_at_end -= (size_of_relative_string(string) - 4);
 		if(!prs_set_offset(ps, buffer->string_at_end))
 			return False;
+		if (!prs_align(ps))
+			return False;
+		buffer->string_at_end = prs_offset(ps);
 		
 		/* write the string */
-		if (!spoolss_smb_io_unistr(desc, string, ps, depth))
+		if (!smb_io_unistr(desc, string, ps, depth))
 			return False;
 
 		if(!prs_set_offset(ps, struct_offset))
@@ -1550,7 +1533,7 @@ static BOOL new_smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR 
 			return False;
 
 		/* read the string */
-		if (!spoolss_smb_io_unistr(desc, string, ps, depth))
+		if (!smb_io_unistr(desc, string, ps, depth))
 			return False;
 
 		if(!prs_set_offset(ps, old_offset))
@@ -1605,7 +1588,7 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 			}
 
 			/* write the string */
-			if (!spoolss_smb_io_unistr(desc, &chaine, ps, depth)) {
+			if (!smb_io_unistr(desc, &chaine, ps, depth)) {
 				free(chaine.buffer);
 				return False;
 			}
@@ -1640,7 +1623,7 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 			return False;
 	
 		do {
-			if (!spoolss_smb_io_unistr(desc, &chaine, ps, depth))
+			if (!smb_io_unistr(desc, &chaine, ps, depth))
 				return False;
 			
 			l_chaine=str_len_uni(&chaine);
@@ -1686,15 +1669,10 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		}
 		
 		if (*secdesc != NULL) {
-#if 0 /* JRATEST */
-			if(!prs_set_offset(ps, 0x54))
-				return False;
-#else
 			buffer->string_at_end -= sec_desc_size(*secdesc);
 
 			if(!prs_set_offset(ps, buffer->string_at_end))
 				return False;
-#endif
 			/* write the secdesc */
 			if (!sec_io_desc(desc, secdesc, ps, depth))
 				return False;
@@ -1705,9 +1683,6 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 
 		relative_offset=buffer->string_at_end - buffer->struct_start;
 		/* write its offset */
-#if 0 /* JRATEST */
-		relative_offset = 0x54;
-#endif
 
 		if (!prs_uint32("offset", ps, depth, &relative_offset))
 			return False;
@@ -2418,7 +2393,7 @@ BOOL new_smb_io_driverdir_1(char *desc, NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *
 
 	buffer->struct_start=prs_offset(ps);
 
-	if (!spoolss_smb_io_unistr(desc, &info->name, ps, depth))
+	if (!smb_io_unistr(desc, &info->name, ps, depth))
 		return False;
 
 	return True;
