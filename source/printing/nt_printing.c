@@ -3816,7 +3816,7 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 {
 	pstring 	key;
 	fstring		arch;
-	TDB_DATA 	kbuf;
+	TDB_DATA 	kbuf, dbuf;
 	NT_PRINTER_DRIVER_INFO_LEVEL	ctr;
 
 	/* delete the tdb data first */
@@ -3833,7 +3833,17 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 
 	kbuf.dptr=key;
 	kbuf.dsize=strlen(key)+1;
-
+	
+	/* check if the driver actually exists for this environment */
+	
+	dbuf = tdb_fetch( tdb_drivers, kbuf );
+	if ( !dbuf.dptr )
+		return WERR_UNKNOWN_PRINTER_DRIVER;
+		
+	SAFE_FREE( dbuf.dptr );
+	
+	/* ok... the driver exists so the delete should return success */
+		
 	if (tdb_delete(tdb_drivers, kbuf) == -1) {
 		DEBUG (0,("delete_printer_driver: fail to delete %s!\n", key));
 		return WERR_ACCESS_DENIED;
@@ -3847,9 +3857,9 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 
 	if ( delete_files )
 		delete_driver_files( i, user );
+		
 
-	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n",
-		i->name));
+	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n", i->name));
 
 	return WERR_OK;
 }
@@ -3862,22 +3872,33 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct current_user *user,
                               uint32 version, BOOL delete_files )
 {
-	int ver;
 	WERROR err;
 
-	/* see if we should delete all versions of this driver */
+	/*
+	 * see if we should delete all versions of this driver 
+	 * (DRIVER_ANY_VERSION uis only set for "Windows NT x86")
+	 */
 
-	if ( version == DRIVER_ANY_VERSION ) {
-		for ( ver=0; ver<DRIVER_MAX_VERSION; ver++ ) {
-			err = delete_printer_driver_internal(i, user, ver, delete_files );
-			if ( !W_ERROR_IS_OK(err) )
-				return err;
-		}
+	if ( version == DRIVER_ANY_VERSION ) 
+	{
+		/* Windows NT 4.0 */
+		
+		err = delete_printer_driver_internal(i, user, 2, delete_files );
+		if ( !W_ERROR_IS_OK(err) && (W_ERROR_V(err) != ERRunknownprinterdriver ) )
+			return err;
+			
+		/* Windows 2000/XP  */
+		
+		err = delete_printer_driver_internal(i, user, 3, delete_files );
+		if ( !W_ERROR_IS_OK(err) && (W_ERROR_V(err) != ERRunknownprinterdriver ) )
+			return err;
+			
+		return WERR_OK;
 	}
-	else
-		delete_printer_driver_internal(i, user, version, delete_files );
-
-	return WERR_OK;
+	
+	/* just delete what they asked for */
+	
+	return delete_printer_driver_internal(i, user, version, delete_files );
 }
 
 
