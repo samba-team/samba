@@ -277,17 +277,22 @@ void close_cnum(struct smbsrv_tcon *tcon)
 NTSTATUS tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 {
 	NTSTATUS status;
+	uint16_t vuid = UID_FIELD_INVALID;
 
 	/* can only do bare tcon in share level security */
-	if (req->user_ctx == NULL && lp_security() != SEC_SHARE) {
+	if (req->session == NULL && lp_security() != SEC_SHARE) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (req->session) {
+		vuid = req->session->vuid;
 	}
 
 	if (con->generic.level == RAW_TCON_TCON) {
 		DATA_BLOB password;
 		password = data_blob(con->tcon.in.password, strlen(con->tcon.in.password) + 1);
 
-		status = make_connection(req, con->tcon.in.service, password, con->tcon.in.dev, req->user_ctx->vuid);
+		status = make_connection(req, con->tcon.in.service, password, con->tcon.in.dev, vuid);
 		
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -300,7 +305,7 @@ NTSTATUS tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 	} 
 
 	status = make_connection(req, con->tconx.in.path, con->tconx.in.password, 
-				 con->tconx.in.device, req->user_ctx->vuid);
+				 con->tconx.in.device, vuid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
