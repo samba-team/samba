@@ -55,13 +55,15 @@ static NTSTATUS cmd_ds_enum_domain_trusts(struct cli_state *cli,
 	uint32 			flags = 0x1;
 	struct ds_domain_trust	 *trusts = NULL;
 	unsigned int 			num_domains = 0;
+	int i;
 	
 	result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, flags, 
 		&trusts, &num_domains );
 	
 	printf( "%d domains returned\n", num_domains );
-	
-	SAFE_FREE( trusts );
+
+	for (i=0; i<num_domains; i++ ) 
+		printf("%s (%s)\n", trusts[i].dns_domain, trusts[i].netbios_domain);
 	
 	return result;
 }
