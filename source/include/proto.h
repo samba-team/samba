@@ -1796,9 +1796,6 @@ char *lp_ldap_suffix(void);
 char *lp_ldap_filter(void);
 char *lp_ldap_root(void);
 char *lp_ldap_rootpasswd(void);
-int lp_ldap_schema(void);
-int lp_ldap_port(void);
-int lp_ldap_ssl(void);
 char *lp_add_share_cmd(void);
 char *lp_change_share_cmd(void);
 char *lp_delete_share_cmd(void);
@@ -1887,6 +1884,7 @@ int lp_stat_cache_size(void);
 int lp_map_to_guest(void);
 int lp_min_passwd_length(void);
 int lp_oplock_break_wait_time(void);
+int lp_ldap_port(void);
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );
@@ -1948,6 +1946,7 @@ BOOL lp_map_archive(int );
 BOOL lp_locking(int );
 BOOL lp_strict_locking(int );
 BOOL lp_posix_locking(int );
+BOOL lp_share_modes(int );
 BOOL lp_oplocks(int );
 BOOL lp_level2_oplocks(int );
 BOOL lp_onlyuser(int );
@@ -2133,19 +2132,6 @@ BOOL pdb_set_unknown_3 (SAM_ACCOUNT *sampass, uint32 unkn);
 BOOL pdb_set_unknown_5 (SAM_ACCOUNT *sampass, uint32 unkn);
 BOOL pdb_set_unknown_6 (SAM_ACCOUNT *sampass, uint32 unkn);
 BOOL pdb_set_hours (SAM_ACCOUNT *sampass, uint8 *hours);
-
-/*The following definitions come from  passdb/pdb_ldap.c  */
-
-BOOL pdb_setsampwent(BOOL update);
-void pdb_endsampwent(void);
-BOOL pdb_getsampwent(SAM_ACCOUNT * user);
-BOOL pdb_getsampwnam(SAM_ACCOUNT * user, char *sname);
-BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid);
-BOOL pdb_getsampwuid(SAM_ACCOUNT * user, uid_t uid);
-BOOL pdb_delete_sam_account(char *sname);
-BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override);
-BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd);
-void dummy_function(void);
 
 /*The following definitions come from  passdb/pdb_smbpasswd.c  */
 
@@ -2502,7 +2488,7 @@ BOOL init_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM * q_e, POLICY_HND *pol,
 			   uint32 enum_context, uint32 preferred_len);
 BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e, 
 			     prs_struct *ps, int depth);
-void init_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e, uint32 enum_context, 
+void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *r_e, uint32 enum_context, 
 			   char *domain_name, DOM_SID *domain_sid,
                            uint32 status);
 BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e, 
@@ -4029,7 +4015,7 @@ char *dptr_wcard(int key);
 BOOL dptr_set_wcard(int key, char *wcard);
 BOOL dptr_set_attr(int key, uint16 attr);
 uint16 dptr_attr(int key);
-void dptr_close(int *key);
+BOOL dptr_close(int *key);
 void dptr_closecnum(connection_struct *conn);
 void dptr_idlecnum(connection_struct *conn);
 void dptr_closepath(char *path,uint16 spid);
