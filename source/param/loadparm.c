@@ -1053,6 +1053,9 @@ static void init_globals(void)
 	do_parameter("nbt port", "137");
 
 	do_parameter("nt status support", "True");
+
+	do_parameter("max wins ttl", "432000");
+	do_parameter("min wins ttl", "10");
 }
 
 static TALLOC_CTX *lp_talloc;
