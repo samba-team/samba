@@ -477,7 +477,7 @@ static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli,
 
 	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (servername);
-	slprintf (printername, sizeof(fstring)-1, "%s\\%s", servername, argv[1]);
+	fstrcpy (printername, argv[1]);
 	fstrcpy  (user, cli->user_name);
 	
 	/* get a printer handle */
@@ -1265,10 +1265,10 @@ struct cmd_set spoolss_commands[] = {
 	{ "getdriver",		cmd_spoolss_getdriver,		PIPE_SPOOLSS, "Get print driver information",        "" },
 	{ "getdriverdir",	cmd_spoolss_getdriverdir,	PIPE_SPOOLSS, "Get print driver upload directory",   "" },
 	{ "getprinter", 	cmd_spoolss_getprinter, 	PIPE_SPOOLSS, "Get printer info",                    "" },
+	{ "getprintprocdir",	cmd_spoolss_getprintprocdir,    PIPE_SPOOLSS, "Get print processor directory",       "" },
 	{ "openprinter",	cmd_spoolss_open_printer_ex,	PIPE_SPOOLSS, "Open printer handle",                 "" },
 	{ "setdriver",		cmd_spoolss_setdriver,		PIPE_SPOOLSS, "Set printer driver",                  "" },
-	{ "getprintprocdir",	cmd_spoolss_getprintprocdir,    PIPE_SPOOLSS, "Get print processor directory",          "" },
-	{ "setprinterdata",	cmd_spoolss_setprinterdata,     PIPE_SPOOLSS, "Set REG_SZ printer data",          "" },
+	{ "setprinterdata",	cmd_spoolss_setprinterdata,     PIPE_SPOOLSS, "Set REG_SZ printer data",             "" },
 
 	{ NULL }
 };
