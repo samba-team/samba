@@ -622,35 +622,6 @@ static NTSTATUS context_enum_alias_memberships(struct pdb_context *context,
 				       num_members, aliases, num);
 }
 
-static NTSTATUS context_get_account_policy(struct pdb_context *context,
-					   int policy_index, int *value)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->get_account_policy(context->pdb_methods,
-							policy_index, value);
-}
-
-static NTSTATUS context_set_account_policy(struct pdb_context *context,
-					   int policy_index, int value)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->set_account_policy(context->pdb_methods,
-							policy_index, value);
-}
-
-	
 /******************************************************************
   Free and cleanup a pdb context, any associated data and anything
   that the attached modules might have associated.
@@ -778,9 +749,6 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_del_aliasmem = context_del_aliasmem;
 	(*context)->pdb_enum_aliasmem = context_enum_aliasmem;
 	(*context)->pdb_enum_alias_memberships = context_enum_alias_memberships;
-
-	(*context)->pdb_get_account_policy = context_get_account_policy;
-	(*context)->pdb_set_account_policy = context_set_account_policy;
 
 	(*context)->free_fn = free_pdb_context;
 
@@ -1234,30 +1202,6 @@ BOOL pdb_enum_alias_memberships(const DOM_SID *members, int num_members,
 							  aliases, num));
 }
 
-BOOL pdb_get_account_policy(int policy_index, int *value)
-{
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
-
-	if (!pdb_context) {
-		return False;
-	}
-
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_get_account_policy(pdb_context, policy_index, value));
-}
-
-BOOL pdb_set_account_policy(int policy_index, int value)
-{
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
-
-	if (!pdb_context) {
-		return False;
-	}
-
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_set_account_policy(pdb_context, policy_index, value));
-}
-
 /***************************************************************
   Initialize the static context (at smbd startup etc). 
 
@@ -1315,16 +1259,6 @@ static void pdb_default_endsampwent(struct pdb_methods *methods)
 	return; /* NT_STATUS_NOT_IMPLEMENTED; */
 }
 
-static NTSTATUS pdb_default_get_account_policy(struct pdb_methods *methods, int policy_index, int *value)
-{
-	return account_policy_get(policy_index, value) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-static NTSTATUS pdb_default_set_account_policy(struct pdb_methods *methods, int policy_index, int value)
-{
-	return account_policy_set(policy_index, value) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
 NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods) 
 {
 	*methods = TALLOC_P(mem_ctx, struct pdb_methods);
@@ -1362,8 +1296,6 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->del_aliasmem = pdb_default_del_aliasmem;
 	(*methods)->enum_aliasmem = pdb_default_enum_aliasmem;
 	(*methods)->enum_alias_memberships = pdb_default_alias_memberships;
-	(*methods)->get_account_policy = pdb_default_get_account_policy;
-	(*methods)->set_account_policy = pdb_default_set_account_policy;
 
 	return NT_STATUS_OK;
 }

@@ -2092,19 +2092,19 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	switch (q_u->switch_value) {
 		case 0x01:
 			
-			pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &account_policy_temp);
+			account_policy_get(AP_MIN_PASSWORD_LEN, &account_policy_temp);
 			min_pass_len = account_policy_temp;
 
-			pdb_get_account_policy(AP_PASSWORD_HISTORY, &account_policy_temp);
+			account_policy_get(AP_PASSWORD_HISTORY, &account_policy_temp);
 			pass_hist = account_policy_temp;
 
-			pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
+			account_policy_get(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
 			flag = account_policy_temp;
 
-			pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
+			account_policy_get(AP_MAX_PASSWORD_AGE, &account_policy_temp);
 			u_expire = account_policy_temp;
 
-			pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &account_policy_temp);
+			account_policy_get(AP_MIN_PASSWORD_AGE, &account_policy_temp);
 			u_min_age = account_policy_temp;
 			
 			unix_to_nt_time_abs(&nt_expire, u_expire);
@@ -2132,7 +2132,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			num_groups=info->disp_info.num_group_account;
 			free_samr_db(info);
 
-			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
+			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
 			u_logout = account_policy_temp;
 
 			unix_to_nt_time_abs(&nt_logout, u_logout);
@@ -2146,7 +2146,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 				       num_users, num_groups, num_aliases, nt_logout, server_role);
 			break;
 		case 0x03:
-			pdb_get_account_policy(AP_TIME_TO_LOGOUT, (unsigned int *)&u_logout);
+			account_policy_get(AP_TIME_TO_LOGOUT, (unsigned int *)&u_logout);
 			unix_to_nt_time_abs(&nt_logout, u_logout);
 			
 			init_unk_info3(&ctr->info.inf3, nt_logout);
@@ -2168,15 +2168,15 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			init_unk_info8(&ctr->info.inf8, (uint32) time(NULL));
 			break;
 		case 0x0c:
-			pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
+			account_policy_get(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
 			u_lock_duration = account_policy_temp;
 			if (u_lock_duration != -1)
 				u_lock_duration *= 60;
 
-			pdb_get_account_policy(AP_RESET_COUNT_TIME, &account_policy_temp);
+			account_policy_get(AP_RESET_COUNT_TIME, &account_policy_temp);
 			u_reset_time = account_policy_temp * 60;
 
-			pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
+			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
 			lockout = account_policy_temp;
 
 			unix_to_nt_time_abs(&nt_lock_duration, u_lock_duration);
@@ -4572,19 +4572,19 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 
 	switch (q_u->switch_value) {
 		case 0x01:
-			pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &account_policy_temp);
+			account_policy_get(AP_MIN_PASSWORD_LEN, &account_policy_temp);
 			min_pass_len = account_policy_temp;
 
-			pdb_get_account_policy(AP_PASSWORD_HISTORY, &account_policy_temp);
+			account_policy_get(AP_PASSWORD_HISTORY, &account_policy_temp);
 			pass_hist = account_policy_temp;
 
-			pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
+			account_policy_get(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
 			flag = account_policy_temp;
 
-			pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
+			account_policy_get(AP_MAX_PASSWORD_AGE, &account_policy_temp);
 			u_expire = account_policy_temp;
 
-			pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &account_policy_temp);
+			account_policy_get(AP_MIN_PASSWORD_AGE, &account_policy_temp);
 			u_min_age = account_policy_temp;
 
 			unix_to_nt_time_abs(&nt_expire, u_expire);
@@ -4612,7 +4612,7 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			num_groups=info->disp_info.num_group_account;
 			free_samr_db(info);
 
-			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
+			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
 			u_logout = account_policy_temp;
 
 			unix_to_nt_time_abs(&nt_logout, u_logout);
@@ -4626,7 +4626,7 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 				       num_users, num_groups, num_aliases, nt_logout, server_role);
 			break;
 		case 0x03:
-			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
+			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
 			u_logout = account_policy_temp;
 
 			unix_to_nt_time_abs(&nt_logout, u_logout);
@@ -4649,15 +4649,15 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			init_unk_info8(&ctr->info.inf8, (uint32) time(NULL));
 			break;
 		case 0x0c:
-			pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
+			account_policy_get(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
 			u_lock_duration = account_policy_temp;
 			if (u_lock_duration != -1)
 				u_lock_duration *= 60;
 
-			pdb_get_account_policy(AP_RESET_COUNT_TIME, &account_policy_temp);
+			account_policy_get(AP_RESET_COUNT_TIME, &account_policy_temp);
 			u_reset_time = account_policy_temp * 60;
 
-			pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
+			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
 			lockout = account_policy_temp;
 	
 			unix_to_nt_time_abs(&nt_lock_duration, u_lock_duration);
@@ -4701,17 +4701,17 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 			u_expire=nt_time_to_unix_abs(&q_u->ctr->info.inf1.expire);
 			u_min_age=nt_time_to_unix_abs(&q_u->ctr->info.inf1.min_passwordage);
 			
-			pdb_set_account_policy(AP_MIN_PASSWORD_LEN, (uint32)q_u->ctr->info.inf1.min_length_password);
-			pdb_set_account_policy(AP_PASSWORD_HISTORY, (uint32)q_u->ctr->info.inf1.password_history);
-			pdb_set_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, (uint32)q_u->ctr->info.inf1.flag);
-			pdb_set_account_policy(AP_MAX_PASSWORD_AGE, (int)u_expire);
-			pdb_set_account_policy(AP_MIN_PASSWORD_AGE, (int)u_min_age);
+			account_policy_set(AP_MIN_PASSWORD_LEN, (uint32)q_u->ctr->info.inf1.min_length_password);
+			account_policy_set(AP_PASSWORD_HISTORY, (uint32)q_u->ctr->info.inf1.password_history);
+			account_policy_set(AP_USER_MUST_LOGON_TO_CHG_PASS, (uint32)q_u->ctr->info.inf1.flag);
+			account_policy_set(AP_MAX_PASSWORD_AGE, (int)u_expire);
+			account_policy_set(AP_MIN_PASSWORD_AGE, (int)u_min_age);
             		break;
         	case 0x02:
 			break;
 		case 0x03:
 			u_logout=nt_time_to_unix_abs(&q_u->ctr->info.inf3.logout);
-			pdb_set_account_policy(AP_TIME_TO_LOGOUT, (int)u_logout);
+			account_policy_set(AP_TIME_TO_LOGOUT, (int)u_logout);
 			break;
 		case 0x05:
 			break;
@@ -4726,9 +4726,9 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 
 			u_reset_time=nt_time_to_unix_abs(&q_u->ctr->info.inf12.reset_count)/60;
 			
-			pdb_set_account_policy(AP_LOCK_ACCOUNT_DURATION, (int)u_lock_duration);
-			pdb_set_account_policy(AP_RESET_COUNT_TIME, (int)u_reset_time);
-			pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT, (uint32)q_u->ctr->info.inf12.bad_attempt_lockout);
+			account_policy_set(AP_LOCK_ACCOUNT_DURATION, (int)u_lock_duration);
+			account_policy_set(AP_RESET_COUNT_TIME, (int)u_reset_time);
+			account_policy_set(AP_BAD_ATTEMPT_LOCKOUT, (uint32)q_u->ctr->info.inf12.bad_attempt_lockout);
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;

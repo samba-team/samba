@@ -380,7 +380,7 @@ WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 			return WERR_NOMEM;
 		}
 
-		if (!pdb_get_account_policy(AP_REFUSE_MACHINE_PW_CHANGE, &dwValue))
+		if (!account_policy_get(AP_REFUSE_MACHINE_PW_CHANGE, &dwValue))
 			dwValue = 0;
 		regval_ctr_addvalue(&regvals, "RefusePasswordChange", 
 				    REG_DWORD,
