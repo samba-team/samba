@@ -190,10 +190,10 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 			name->dos.alloc_size = 
 				pvfs_round_alloc_size(pvfs, info1->alloc_size);
 		}
-		if (info1->create_time != 0) {
+		if (!null_nttime(info1->create_time)) {
 			name->dos.create_time = info1->create_time;
 		}
-		if (info1->change_time != 0) {
+		if (!null_nttime(info1->change_time)) {
 			name->dos.change_time = info1->change_time;
 		}
 		name->dos.flags = 0;
@@ -207,10 +207,10 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 			name->dos.alloc_size = 
 				pvfs_round_alloc_size(pvfs, info2->alloc_size);
 		}
-		if (info2->create_time != 0) {
+		if (!null_nttime(info2->create_time)) {
 			name->dos.create_time = info2->create_time;
 		}
-		if (info2->change_time != 0) {
+		if (!null_nttime(info2->change_time)) {
 			name->dos.change_time = info2->change_time;
 		}
 		name->dos.flags = info2->flags;
