@@ -119,7 +119,6 @@ typedef struct
 	char *szSMBPasswdFile;
 	char *szPrivateDir;
 	char **szPassdbBackend;
-	char **szSamBackend;
 	char **szPreloadModules;
 	char *szPasswordServer;
 	char *szSocketOptions;
