@@ -313,7 +313,7 @@ void DATA_BLOB_ptr_from_python(TALLOC_CTX *mem_ctx, DATA_BLOB **s,
 		return;
 	}
 
-	*s = talloc(mem_ctx, sizeof(DATA_BLOB));
+	*s = talloc_p(mem_ctx, DATA_BLOB);
 
 	(*s)->length = PyString_Size(obj);
 	(*s)->data = PyString_AsString(obj);
