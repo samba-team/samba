@@ -169,7 +169,7 @@ main (int argc, char **argv)
     ret = krb5_cc_default (context, &ccache);
     if (ret)
 	errx (1, "krb5_cc_default: %s", krb5_get_err_text(context, ret));
-  
+
     if (argv[0]) {
 	ret = krb5_parse_name (context, argv[0], &principal);
 	if (ret)
@@ -188,10 +188,16 @@ main (int argc, char **argv)
 					&opt);
     if (ret)
 	errx (1, "krb5_get_init_creds: %s", krb5_get_err_text(context, ret));
+
+    ret = krb5_cc_initialize (context, ccache, cred.client);
+    if (ret)
+	errx (1, "krb5_cc_initialize: %s",
+	      krb5_get_err_text(context, ret));
+  
     ret = krb5_cc_store_cred (context, ccache, &cred);
     if (ret)
 	errx (1, "krb5_cc_store_cred: %s", krb5_get_err_text(context, ret));
-    krb5_free_creds (context, &cred);
+    krb5_free_creds_contents (context, &cred);
 
 #if 0
     ret = krb5_get_default_realm (context, &realm);
@@ -280,7 +286,7 @@ main (int argc, char **argv)
     krb5_free_principal (context, principal);
     krb5_free_principal (context, server);
 #endif
-    krb5_free_ccache (context, ccache);
+    krb5_cc_close (context, ccache);
     krb5_free_context (context);
     return 0;
 }
