@@ -1,5 +1,8 @@
 2003-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss_acquire_cred.3: more about difference between comparing IN
+	and MN
+
 	* gss_acquire_cred.3: more about name type and access control
 	
 2003-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
