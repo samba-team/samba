@@ -51,6 +51,7 @@ libroken_la_SOURCES =		\
 	getarg.c		\
 	getnameinfo_verified.c	\
 	getprogname.c		\
+	h_errno.c		\
 	hostent_find_fqdn.c	\
 	issuid.c		\
 	k_getpwnam.c		\
