@@ -1111,6 +1111,16 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 							  pipe_version, NULL, 
 							  NULL, NULL);
 		break;
+
+	case NCALRPC:
+		status = dcerpc_parse_binding(p, p->binding_string, &b);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		b.flags &= ~DCERPC_AUTH_OPTIONS;
+		status = dcerpc_pipe_connect_ncalrpc(p2, &b, pipe_uuid, pipe_version, NULL, NULL, NULL);
+		break;
+
 	default:
 		return NT_STATUS_NOT_SUPPORTED;
 	}
