@@ -173,6 +173,17 @@ static NTSTATUS svfs_chkpath(struct ntvfs_module_context *ntvfs,
 }
 
 /*
+  build a file_id from a stat struct
+*/
+static uint64_t svfs_file_id(struct stat *st)
+{
+	uint64_t ret = st->st_ino;
+	ret <<= 32;
+	ret |= st->st_dev;
+	return ret;
+}
+
+/*
   approximately map a struct stat to a generic fileinfo struct
 */
 static NTSTATUS svfs_map_fileinfo(struct ntvfs_module_context *ntvfs,

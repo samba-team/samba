@@ -44,16 +44,15 @@ const char *tmpdir(void)
 /*******************************************************************
  Check if a file exists - call vfs_file_exist for samba files.
 ********************************************************************/
-BOOL file_exist(const char *fname, struct stat *sbuf)
+BOOL file_exist(const char *fname)
 {
 	struct stat st;
-	if (!sbuf)
-		sbuf = &st;
-  
-	if (stat(fname,sbuf) != 0) 
-		return(False);
 
-	return((S_ISREG(sbuf->st_mode)) || (S_ISFIFO(sbuf->st_mode)));
+	if (stat(fname, &st) != 0) {
+		return False;
+	}
+
+	return ((S_ISREG(st.st_mode)) || (S_ISFIFO(st.st_mode)));
 }
 
 /*******************************************************************
@@ -74,18 +73,16 @@ time_t file_modtime(const char *fname)
  Check if a directory exists.
 ********************************************************************/
 
-BOOL directory_exist(const char *dname,struct stat *st)
+BOOL directory_exist(const char *dname)
 {
-	struct stat st2;
+	struct stat st;
 	BOOL ret;
 
-	if (!st)
-		st = &st2;
+	if (stat(dname,&st) != 0) {
+		return False;
+	}
 
-	if (stat(dname,st) != 0) 
-		return(False);
-
-	ret = S_ISDIR(st->st_mode);
+	ret = S_ISDIR(st.st_mode);
 	if(!ret)
 		errno = ENOTDIR;
 	return ret;
@@ -687,7 +684,7 @@ char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
 	dname = talloc_strdup(mem_ctx, lp_lockdir());
 	trim_string(dname,"","/");
 	
-	if (!directory_exist(dname,NULL)) {
+	if (!directory_exist(dname)) {
 		mkdir(dname,0755);
 	}
 	
@@ -738,7 +735,7 @@ char *smbd_tmp_path(TALLOC_CTX *mem_ctx, const char *name)
 	char *fname, *dname;
 
 	dname = lock_path(mem_ctx, "smbd.tmp");
-	if (!directory_exist(dname,NULL)) {
+	if (!directory_exist(dname)) {
 		mkdir(dname,0755);
 	}
 

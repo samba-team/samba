@@ -1338,7 +1338,7 @@ void dcerpc_log_packet(const struct dcerpc_interface_table *ndr,
 		if (name == NULL) {
 			return;
 		}
-		if (!file_exist(name, NULL)) {
+		if (!file_exist(name)) {
 			if (file_save(name, pkt->data, pkt->length)) {
 				DEBUG(10,("Logged rpc packet to %s\n", name));
 			}
