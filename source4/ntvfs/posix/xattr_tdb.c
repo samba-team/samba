@@ -47,8 +47,7 @@ static NTSTATUS xattr_tdb_add_list(struct pvfs_state *pvfs, const char *attr_nam
 	status = pull_xattr_blob_tdb(pvfs, mem_ctx, XATTR_LIST_ATTR, 
 				     fname, fd, 100, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return NT_STATUS_OK;
+		blob = data_blob(NULL, 0);
 	}
 
 	for (s=blob.data; s < (char *)(blob.data+blob.length); s += strlen(s) + 1) {
