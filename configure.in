@@ -572,7 +572,7 @@ if test "$ac_cv_func_des_cbc_encrypt" = "yes" -a \
 "$ac_cv_func_RC4" = "yes"; then
   DIR_des=''
   LIB_des=''
-  if test "$krb4_libdir" != ""; then
+  if test "$krb4_libdir" != "" -a "$ac_cv_funclib_des_cbc_encrypt" = "-ldes"; then
     LIB_des="-R $krb4_libdir -L$krb4_libdir"
   fi
   LIB_des="$LIB_des $ac_cv_funclib_MD4_Init"
