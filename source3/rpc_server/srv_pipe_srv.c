@@ -94,7 +94,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	p->hdr.pkt_type = RPC_RESPONSE;
 
 	/* Set up rpc header flags. */
-	if (p->data_sent_length == 0)
+	if (p->out_data.data_sent_length == 0)
 		p->hdr.flags = RPC_FLG_FIRST;
 	else
 		p->hdr.flags = 0;
@@ -103,7 +103,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	 * Work out how much we can fit in a sigle PDU.
 	 */
 
-	data_space_available = sizeof(p->current_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
+	data_space_available = sizeof(p->out_data.current_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
 	if(p->ntlmssp_auth_validated)
 		data_space_available -= (RPC_HDR_AUTH_LEN + RPC_AUTH_NTLMSSP_CHK_LEN);
 
@@ -112,7 +112,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	 * space and the amount left to send.
 	 */
 
-	data_len_left = prs_offset(&p->rdata) - p->data_sent_length;
+	data_len_left = prs_offset(&p->out_data.rdata) - p->out_data.data_sent_length;
 
 	/*
 	 * Ensure there really is data left to send.
@@ -149,7 +149,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	 * Work out if this PDU will be the last.
 	 */
 
-	if(p->data_sent_length + data_len >= prs_offset(&p->rdata))
+	if(p->out_data.data_sent_length + data_len >= prs_offset(&p->out_data.rdata))
 		p->hdr.flags |= RPC_FLG_LAST;
 
 	/*
@@ -158,7 +158,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	 */
 
 	prs_init( &outgoing_pdu, 0, 4, MARSHALL);
-	prs_give_memory( &outgoing_pdu, (char *)p->current_pdu, sizeof(p->current_pdu), False);
+	prs_give_memory( &outgoing_pdu, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/* Store the header in the data stream. */
 	if(!smb_io_rpc_hdr("hdr", &p->hdr, &outgoing_pdu, 0)) {
@@ -175,7 +175,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	data_pos = prs_offset(&outgoing_pdu);
 
 	/* Copy the data into the PDU. */
-	data_from = prs_data_p(&p->rdata) + p->data_sent_length;
+	data_from = prs_data_p(&p->out_data.rdata) + p->out_data.data_sent_length;
 
 	if(!prs_append_data(&outgoing_pdu, data_from, data_len)) {
 		DEBUG(0,("create_next_pdu: failed to copy %u bytes of data.\n", (unsigned int)data_len));
@@ -230,9 +230,9 @@ BOOL create_next_pdu(pipes_struct *p)
 	 * Setup the counts for this PDU.
 	 */
 
-	p->data_sent_length += data_len;
-	p->current_pdu_len = p->hdr.frag_len;
-	p->current_pdu_sent = 0;
+	p->out_data.data_sent_length += data_len;
+	p->out_data.current_pdu_len = p->hdr.frag_len;
+	p->out_data.current_pdu_sent = 0;
 
 	return True;
 }
@@ -549,7 +549,7 @@ static BOOL setup_bind_nak(pipes_struct *p, prs_struct *pd)
 	 */
 
 	prs_init( &outgoing_rpc, 0, 4, MARSHALL);
-	prs_give_memory( &outgoing_rpc, (char *)p->current_pdu, sizeof(p->current_pdu), False);
+	prs_give_memory( &outgoing_rpc, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 
 	/*
@@ -575,9 +575,9 @@ static BOOL setup_bind_nak(pipes_struct *p, prs_struct *pd)
 	if(!prs_uint16("reject code", &outgoing_rpc, 0, &zero))
         return False;
 
-	p->data_sent_length = 0;
-	p->current_pdu_len = prs_offset(&outgoing_rpc);
-	p->current_pdu_sent = 0;
+	p->out_data.data_sent_length = 0;
+	p->out_data.current_pdu_len = prs_offset(&outgoing_rpc);
+	p->out_data.current_pdu_sent = 0;
 
 	return True;
 }
@@ -710,7 +710,7 @@ static BOOL api_pipe_bind_and_alt_req(pipes_struct *p, prs_struct *pd, enum RPC_
 	 */
 
 	prs_init( &outgoing_rpc, 0, 4, MARSHALL);
-	prs_give_memory( &outgoing_rpc, (char *)p->current_pdu, sizeof(p->current_pdu), False);
+	prs_give_memory( &outgoing_rpc, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/*
 	 * Setup the memory to marshall the ba header, and the
@@ -828,9 +828,9 @@ static BOOL api_pipe_bind_and_alt_req(pipes_struct *p, prs_struct *pd, enum RPC_
 	 * Setup the lengths for the initial reply.
 	 */
 
-	p->data_sent_length = 0;
-	p->current_pdu_len = prs_offset(&outgoing_rpc);
-	p->current_pdu_sent = 0;
+	p->out_data.data_sent_length = 0;
+	p->out_data.current_pdu_len = prs_offset(&outgoing_rpc);
+	p->out_data.current_pdu_sent = 0;
 
 	prs_mem_free(&out_hdr_ba);
 	prs_mem_free(&out_auth);
@@ -1038,7 +1038,7 @@ BOOL rpc_command(pipes_struct *p, char *input_data, int data_len)
 	 * Create the response data buffer.
 	 */
 
-	if(!pipe_init_outgoing_data(p)) {
+	if(!pipe_init_outgoing_data(&p->out_data)) {
 		DEBUG(0,("rpc_command: failed to unmarshall RPC_HDR.\n"));
 		return False;
 	}
@@ -1104,9 +1104,9 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 	}
 
 	/* do the actual command */
-	if(!api_rpc_cmds[fn_num].fn(p->vuid, rpc_in, &p->rdata)) {
+	if(!api_rpc_cmds[fn_num].fn(p->vuid, rpc_in, &p->out_data.rdata)) {
 		DEBUG(0,("api_rpcTNP: %s: failed.\n", rpc_name));
-		prs_mem_free(&p->rdata);
+		prs_mem_free(&p->out_data.rdata);
 		return False;
 	}
 

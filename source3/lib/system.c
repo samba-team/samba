@@ -968,7 +968,6 @@ FILE *sys_popen(const char *command, const char *mode)
 	int parent_end, child_end;
 	int pipe_fds[2];
     popen_list *entry = NULL;
-	pid_t child_pid;
 	char **argl = NULL;
 
 	if (pipe(pipe_fds) < 0)

@@ -78,27 +78,27 @@ void init_rpc_pipe_hnd(void)
  Initialise an outgoing packet.
 ****************************************************************************/
 
-BOOL pipe_init_outgoing_data( pipes_struct *p)
+BOOL pipe_init_outgoing_data(output_data *out_data)
 {
 
-	memset(p->current_pdu, '\0', sizeof(p->current_pdu));
+	memset(out_data->current_pdu, '\0', sizeof(out_data->current_pdu));
 
 	/* Free any memory in the current return data buffer. */
-	prs_mem_free(&p->rdata);
+	prs_mem_free(&out_data->rdata);
 
 	/*
 	 * Initialize the outgoing RPC data buffer.
 	 * we will use this as the raw data area for replying to rpc requests.
 	 */	
-	if(!prs_init(&p->rdata, 1024, 4, MARSHALL)) {
+	if(!prs_init(&out_data->rdata, 1024, 4, MARSHALL)) {
 		DEBUG(0,("pipe_init_outgoing_data: malloc fail.\n"));
 		return False;
 	}
 
 	/* Reset the offset counters. */
-	p->data_sent_length = 0;
-	p->current_pdu_len = 0;
-	p->current_pdu_sent = 0;
+	out_data->data_sent_length = 0;
+	out_data->current_pdu_len = 0;
+	out_data->current_pdu_sent = 0;
 
 	return True;
 }
@@ -188,7 +188,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	/*
 	 * Initialize the RPC and PDU data buffers with no memory.
 	 */	
-	prs_init(&p->rdata, 0, 4, MARSHALL);
+	prs_init(&p->out_data.rdata, 0, 4, MARSHALL);
 	
 	DLIST_ADD(Pipes, p);
 
@@ -213,9 +213,9 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	p->ntlmssp_auth_validated = False;
 	p->ntlmssp_auth_requested = False;
 
-	p->current_pdu_len = 0;
-	p->current_pdu_sent = 0;
-	p->data_sent_length = 0;
+	p->out_data.current_pdu_len = 0;
+	p->out_data.current_pdu_sent = 0;
+	p->out_data.data_sent_length = 0;
 
 	p->uid = (uid_t)-1;
 	p->gid = (gid_t)-1;
@@ -303,15 +303,15 @@ only service %d sized reads.\n", n, p->name, MAX_PDU_FRAG_LEN ));
 	 * PDU.
 	 */
 
-	if((pdu_remaining = p->current_pdu_len - p->current_pdu_sent) > 0) {
+	if((pdu_remaining = p->out_data.current_pdu_len - p->out_data.current_pdu_sent) > 0) {
 		data_returned = MIN(n, pdu_remaining);
 
 		DEBUG(10,("read_from_pipe: %s: current_pdu_len = %u, current_pdu_sent = %u \
-returning %d bytes.\n", p->name, (unsigned int)p->current_pdu_len, 
-			(unsigned int)p->current_pdu_sent, (int)data_returned));
+returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len, 
+			(unsigned int)p->out_data.current_pdu_sent, (int)data_returned));
 
-		memcpy( data, &p->current_pdu[p->current_pdu_sent], (size_t)data_returned);
-		p->current_pdu_sent += (uint32)data_returned;
+		memcpy( data, &p->out_data.current_pdu[p->out_data.current_pdu_sent], (size_t)data_returned);
+		p->out_data.current_pdu_sent += (uint32)data_returned;
 		return data_returned;
 	}
 
@@ -320,10 +320,10 @@ returning %d bytes.\n", p->name, (unsigned int)p->current_pdu_len,
 	 * may of course be zero if this is the first return fragment.
 	 */
 
-	DEBUG(10,("read_from_pipe: %s: data_sent_length = %u, prs_offset(&p->rdata) = %u.\n",
-		p->name, (unsigned int)p->data_sent_length, (unsigned int)prs_offset(&p->rdata) ));
+	DEBUG(10,("read_from_pipe: %s: data_sent_length = %u, prs_offset(&p->out_data.rdata) = %u.\n",
+		p->name, (unsigned int)p->out_data.data_sent_length, (unsigned int)prs_offset(&p->out_data.rdata) ));
 
-	if(p->data_sent_length >= prs_offset(&p->rdata)) {
+	if(p->out_data.data_sent_length >= prs_offset(&p->out_data.rdata)) {
 		/*
 		 * We have sent all possible data. Return 0.
 		 */
@@ -343,10 +343,10 @@ returning %d bytes.\n", p->name, (unsigned int)p->current_pdu_len,
 		return -1;
 	}
 
-	data_returned = MIN(n, p->current_pdu_len);
+	data_returned = MIN(n, p->out_data.current_pdu_len);
 
-	memcpy( data, p->current_pdu, (size_t)data_returned);
-	p->current_pdu_sent += (uint32)data_returned;
+	memcpy( data, p->out_data.current_pdu, (size_t)data_returned);
+	p->out_data.current_pdu_sent += (uint32)data_returned;
 	return data_returned;
 }
 
@@ -409,7 +409,7 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 		return False;
 	}
 
-	prs_mem_free(&p->rdata);
+	prs_mem_free(&p->out_data.rdata);
 
 	bitmap_clear(bmap, p->pnum - pipe_handle_offset);
 
