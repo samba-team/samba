@@ -1464,7 +1464,7 @@ BOOL torture_denytest1(int dummy)
 		}
 
 		if (torture_showall || res != denytable1[i].result) {
-			long long tdif;
+			int64_t tdif;
 			GetTimeOfDay(&tv);
 			tdif = usec_time_diff(&tv, &tv_start);
 			tdif /= 1000;
@@ -1558,7 +1558,7 @@ BOOL torture_denytest2(int dummy)
 		}
 
 		if (torture_showall || res != denytable2[i].result) {
-			long long tdif;
+			int64_t tdif;
 			GetTimeOfDay(&tv);
 			tdif = usec_time_diff(&tv, &tv_start);
 			tdif /= 1000;
