@@ -895,7 +895,7 @@ may want to create the machine account within a particular organizational unit. 
 this to be done using the following syntax:
 <screen>
 &rootprompt; <userinput>kinit Administrator@your.kerberos.REALM</userinput>
-&rootprompt; <userinput>net ads join <quote>organizational_unit</quote></userinput>
+&rootprompt; <userinput>net ads join "organizational_unit"</userinput>
 </screen>
 </para>
 
