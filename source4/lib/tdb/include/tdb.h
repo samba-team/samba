@@ -100,7 +100,6 @@ typedef struct tdb_context {
 	enum TDB_ERROR ecode; /* error code for last tdb error */
 	struct tdb_header header; /* a cached copy of the header */
 	u32 flags; /* the flags passed to tdb_open */
-	u32 *lockedkeys; /* array of locked keys: first is #keys */
 	struct tdb_traverse_lock travlocks; /* current traversal locks */
 	struct tdb_context *next; /* all tdbs to avoid multiple opens */
 	dev_t device;	/* uniquely identifies this tdb */
@@ -135,8 +134,6 @@ TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
 TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *);
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[]);
-void tdb_unlockkeys(TDB_CONTEXT *tdb);
 int tdb_lockall(TDB_CONTEXT *tdb);
 void tdb_unlockall(TDB_CONTEXT *tdb);
 
