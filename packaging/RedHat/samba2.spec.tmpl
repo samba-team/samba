@@ -245,6 +245,7 @@ ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 cd source
 make BASEDIR=$RPM_BUILD_ROOT/usr \
 	LIBDIR=$RPM_BUILD_ROOT/etc/samba \
+	VARDIR=$RPM_BUILD_ROOT/var \
 	SBINDIR=$RPM_BUILD_ROOT%{prefix}/sbin \
 	BINDIR=$RPM_BUILD_ROOT%{prefix}/bin \
 	MANDIR=$RPM_BUILD_ROOTMANDIR_MACRO \
