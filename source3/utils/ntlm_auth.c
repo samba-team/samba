@@ -221,7 +221,7 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 
 	if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0)) {
 		nt_status = NT_STATUS_UNSUCCESSFUL;
-		if (error_message)
+		if (error_string)
 			*error_string = smb_xstrdup("Reading winbind reply failed!");
 		return nt_status;
 	}
