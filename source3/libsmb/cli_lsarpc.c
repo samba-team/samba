@@ -787,6 +787,8 @@ NTSTATUS cli_lsa_enum_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	if (r.sids.num_entries==0)
+		goto done;
 
 	/* Return output parameters */
 

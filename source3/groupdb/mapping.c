@@ -30,11 +30,13 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 #define GROUP_PREFIX "UNIXGROUP/"
 
 PRIVS privs[] = {
-	{SE_PRIV_NONE, "no_privs", "No privilege"},
-	{SE_PRIV_ADD_USERS, "add_users", "add users"},
-	{SE_PRIV_ADD_MACHINES, "add_computers", "add computers to domain"},
-	{SE_PRIV_PRINT_OPERATOR, "print_op", "printer operator"},
-	{SE_PRIV_ALL, "all_privs", "all privileges"}
+	{SE_PRIV_NONE,           "no_privs",                  "No privilege"                    }, /* this one MUST be first */
+	{SE_PRIV_ADD_MACHINES,   "SeMachineAccountPrivilege", "Add workstations to the domain"  },
+	{SE_PRIV_SEC_PRIV,       "SeSecurityPrivilege",       "Manage the audit logs"           },
+	{SE_PRIV_TAKE_OWNER,     "SeTakeOwnershipPrivilege",  "Take ownership of file"          },
+	{SE_PRIV_ADD_USERS,      "SaAddUsers",                "Add users to the domain - Samba" },
+	{SE_PRIV_PRINT_OPERATOR, "SaPrintOp",                 "Add or remove printers - Samba"  },
+	{SE_PRIV_ALL,            "SaAllPrivs",                "all privileges"                  }
 };
 /*
 PRIVS privs[] = {
@@ -61,6 +63,9 @@ PRIVS privs[] = {
 	{ 22, "SeSystemEnvironmentPrivilege" },
 	{ 23, "SeChangeNotifyPrivilege" },
 	{ 24, "SeRemoteShutdownPrivilege" },
+	{ 25, "SeUndockPrivilege" },
+	{ 26, "SeSyncAgentPrivilege" },
+	{ 27, "SeEnableDelegationPrivilege" },
 };
 */
 
@@ -157,11 +162,15 @@ BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 	pstring key, buf;
 	fstring string_sid="";
 	int len;
+	int i;
 	
 	sid_to_string(string_sid, &map->sid);
 
-	len = tdb_pack(buf, sizeof(buf), "ddffd",
-			map->gid, map->sid_name_use, map->nt_name, map->comment, map->privilege);
+	len = tdb_pack(buf, sizeof(buf), "ddff",
+			map->gid, map->sid_name_use, map->nt_name, map->comment);
+
+	for (i=0; i<PRIV_ALL_INDEX; i++)
+		len += tdb_pack(buf+len, sizeof(buf)-len, "d", map->privileges[i]);
 
 	if (len > sizeof(buf)) return False;
 
@@ -180,20 +189,95 @@ BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 initialise first time the mapping list
 ****************************************************************************/
 BOOL add_initial_entry(gid_t gid, fstring sid, enum SID_NAME_USE sid_name_use,
-			      fstring nt_name, fstring comment, uint32 privilege)
+			      fstring nt_name, fstring comment, uint32 *privilege)
 {
 	GROUP_MAP map;
+	int i;
 
 	map.gid=gid;
 	string_to_sid(&map.sid, sid);
 	map.sid_name_use=sid_name_use;
 	fstrcpy(map.nt_name, nt_name);
 	fstrcpy(map.comment, comment);
-	map.privilege=privilege;
+	for (i=0; i<PRIV_ALL_INDEX; i++)
+		map.privileges[i]=privilege[i];
 
 	add_mapping_entry(&map, TDB_INSERT);
 
 	return True;
+}
+
+/****************************************************************************
+initialise a privilege list
+****************************************************************************/
+void init_privilege(uint32 *privilege)
+{
+	int i;
+
+	for (i=0; i<PRIV_ALL_INDEX; i++)
+		privilege[i]=0;
+}
+
+/****************************************************************************
+add a privilege to a privilege array
+****************************************************************************/
+BOOL add_privilege(uint32 *privilege, uint32 priv)
+{
+	int i;
+
+	while (i<PRIV_ALL_INDEX && privilege[i]!=0 && privilege[i]!=priv)
+		i++;
+
+	if (i==PRIV_ALL_INDEX) {
+		DEBUG(10,("add_privilege: the privilege array is full, can't add new priv\n"));
+		return False;
+	}
+
+	if (privilege[i]==priv) {
+		DEBUG(10,("add_privilege: privilege already in array\n"));
+		return False;
+	}
+
+	if (privilege[i]==0)
+		privilege[i]=priv;
+	
+	return True;	
+}
+
+/****************************************************************************
+add all the privileges to a privilege array
+****************************************************************************/
+BOOL add_all_privilege(uint32 *privilege)
+{
+	add_privilege(privilege, SE_PRIV_ADD_USERS);
+	add_privilege(privilege, SE_PRIV_ADD_MACHINES);
+	add_privilege(privilege, SE_PRIV_PRINT_OPERATOR);
+}
+
+/****************************************************************************
+check if the privilege list is empty
+****************************************************************************/
+BOOL check_empty_privilege(uint32 *privilege)
+{
+	int i;
+
+	for (i=0; i<PRIV_ALL_INDEX; i++)
+		if(privilege[i]!=0)
+			return False;
+	return True;
+}
+
+/****************************************************************************
+check if the privilege is in the privilege list
+****************************************************************************/
+BOOL check_priv_in_privilege(uint32 *privilege, uint32 priv)
+{
+	int i;
+
+	for (i=0; i<PRIV_ALL_INDEX; i++)
+		if(privilege[i]==priv)
+			return True;
+	return False;
 }
 
 /****************************************************************************
@@ -207,38 +291,50 @@ BOOL default_group_mapping(void)
 	fstring str_admins;
 	fstring str_users;
 	fstring str_guests;
+	int i;
 
+	uint32 privilege_none[PRIV_ALL_INDEX];
+	uint32 privilege_all[PRIV_ALL_INDEX];
+	uint32 privilege_print_op[PRIV_ALL_INDEX];
+
+	init_privilege(privilege_none);
+	init_privilege(privilege_all);
+	init_privilege(privilege_print_op);
+
+	add_privilege(privilege_print_op, SE_PRIV_PRINT_OPERATOR);
+
+	add_all_privilege(privilege_all);
 
 	/* Add the Wellknown groups */
 
-	add_initial_entry(-1, "S-1-5-32-544", SID_NAME_WKN_GRP, "Administrators", "", SE_PRIV_ALL);
-	add_initial_entry(-1, "S-1-5-32-545", SID_NAME_WKN_GRP, "Users", "", SE_PRIV_NONE);
-	add_initial_entry(-1, "S-1-5-32-546", SID_NAME_WKN_GRP, "Guests", "", SE_PRIV_NONE);
-	add_initial_entry(-1, "S-1-5-32-547", SID_NAME_WKN_GRP, "Power Users", "", SE_PRIV_NONE);
+	add_initial_entry(-1, "S-1-5-32-544", SID_NAME_WKN_GRP, "Administrators", "", privilege_all);
+	add_initial_entry(-1, "S-1-5-32-545", SID_NAME_WKN_GRP, "Users", "", privilege_none);
+	add_initial_entry(-1, "S-1-5-32-546", SID_NAME_WKN_GRP, "Guests", "", privilege_none);
+	add_initial_entry(-1, "S-1-5-32-547", SID_NAME_WKN_GRP, "Power Users", "", privilege_none);
 
-	add_initial_entry(-1, "S-1-5-32-548", SID_NAME_WKN_GRP, "Account Operators", "", SE_PRIV_NONE);
-	add_initial_entry(-1, "S-1-5-32-549", SID_NAME_WKN_GRP, "System Operators", "", SE_PRIV_NONE);
-	add_initial_entry(-1, "S-1-5-32-550", SID_NAME_WKN_GRP, "Print Operators", "", SE_PRIV_PRINT_OPERATOR);
-	add_initial_entry(-1, "S-1-5-32-551", SID_NAME_WKN_GRP, "Backup Operators", "", SE_PRIV_NONE);
+	add_initial_entry(-1, "S-1-5-32-548", SID_NAME_WKN_GRP, "Account Operators", "", privilege_none);
+	add_initial_entry(-1, "S-1-5-32-549", SID_NAME_WKN_GRP, "System Operators", "", privilege_none);
+	add_initial_entry(-1, "S-1-5-32-550", SID_NAME_WKN_GRP, "Print Operators", "", privilege_print_op);
+	add_initial_entry(-1, "S-1-5-32-551", SID_NAME_WKN_GRP, "Backup Operators", "", privilege_none);
 
-	add_initial_entry(-1, "S-1-5-32-552", SID_NAME_WKN_GRP, "Replicators", "", SE_PRIV_NONE);
+	add_initial_entry(-1, "S-1-5-32-552", SID_NAME_WKN_GRP, "Replicators", "", privilege_none);
 
 	/* Add the defaults domain groups */
 
 	sid_copy(&sid_admins, &global_sam_sid);
 	sid_append_rid(&sid_admins, DOMAIN_GROUP_RID_ADMINS);
 	sid_to_string(str_admins, &sid_admins);
-	add_initial_entry(-1, str_admins, SID_NAME_DOM_GRP, "Domain Admins", "", SE_PRIV_ALL);
+	add_initial_entry(-1, str_admins, SID_NAME_DOM_GRP, "Domain Admins", "", privilege_all);
 
 	sid_copy(&sid_users,  &global_sam_sid);
 	sid_append_rid(&sid_users,  DOMAIN_GROUP_RID_USERS);
 	sid_to_string(str_users, &sid_users);
-	add_initial_entry(-1, str_users,  SID_NAME_DOM_GRP, "Domain Users",  "", SE_PRIV_NONE);
+	add_initial_entry(-1, str_users,  SID_NAME_DOM_GRP, "Domain Users",  "", privilege_none);
 
 	sid_copy(&sid_guests, &global_sam_sid);
 	sid_append_rid(&sid_guests, DOMAIN_GROUP_RID_GUESTS);
 	sid_to_string(str_guests, &sid_guests);
-	add_initial_entry(-1, str_guests, SID_NAME_DOM_GRP, "Domain Guests", "", SE_PRIV_NONE);
+	add_initial_entry(-1, str_guests, SID_NAME_DOM_GRP, "Domain Guests", "", privilege_none);
 
 	return True;
 }
@@ -253,6 +349,7 @@ BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 	pstring key;
 	fstring string_sid;
 	int ret;
+	int i;
 	
 	/* the key is the SID, retrieving is direct */
 
@@ -265,12 +362,15 @@ BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 	dbuf = tdb_fetch(tdb, kbuf);
 	if (!dbuf.dptr) return False;
 
-	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddffd",
-				&map->gid, &map->sid_name_use, &map->nt_name, &map->comment, &map->privilege);
+	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddff",
+				&map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
+
+	for (i=0; i<PRIV_ALL_INDEX; i++)
+		ret += tdb_unpack(dbuf.dptr+ret, dbuf.dsize-ret, "d", &map->privileges[i]);
 
 	SAFE_FREE(dbuf.dptr);
 	if (ret != dbuf.dsize) {
-		DEBUG(0,("get_group_map_from_sid: mapping TDB corrupted ?\n"));
+		DEBUG(0,("get_group_map_from_sid: group mapping TDB corrupted ?\n"));
 		return False;
 	}
 
@@ -288,6 +388,7 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
 	int ret;
+	int i;
 
 	/* we need to enumerate the TDB to find the GID */
 
@@ -304,8 +405,11 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 
 		string_to_sid(&map->sid, string_sid);
 		
-		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddffd",
-				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment, &map->privilege);
+		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddff",
+				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
+
+		for (i=0; i<PRIV_ALL_INDEX; i++)
+			ret += tdb_unpack(dbuf.dptr+ret, dbuf.dsize-ret, "d", &map->privileges[i]);
 
 		SAFE_FREE(dbuf.dptr);
 		if (ret != dbuf.dsize) continue;
@@ -325,8 +429,9 @@ BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map)
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
 	int ret;
+	int i;
 
-	/* we need to enumerate the TDB to find the GID */
+	/* we need to enumerate the TDB to find the SID */
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
@@ -341,8 +446,11 @@ BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map)
 
 		string_to_sid(&map->sid, string_sid);
 		
-		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddffd",
-				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment, &map->privilege);
+		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddff",
+				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
+
+		for (i=0; i<PRIV_ALL_INDEX; i++)
+			ret += tdb_unpack(dbuf.dptr+ret, dbuf.dsize-ret, "d", &map->privileges[i]);
 
 		SAFE_FREE(dbuf.dptr);
 		if (ret != dbuf.dsize) continue;
@@ -397,6 +505,7 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 	GROUP_MAP *mapt;
 	int ret;
 	int entries=0;
+	int i;
 
 	*num_entries=0;
 	*rmap=NULL;
@@ -414,8 +523,11 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 
 		fstrcpy(string_sid, kbuf.dptr+strlen(GROUP_PREFIX));
 				
-		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddffd",
-				 &map.gid, &map.sid_name_use, &map.nt_name, &map.comment, &map.privilege);
+		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddff",
+				 &map.gid, &map.sid_name_use, &map.nt_name, &map.comment);
+
+		for (i=0; i<PRIV_ALL_INDEX; i++)
+			ret += tdb_unpack(dbuf.dptr+ret, dbuf.dsize-ret, "d", &map.privileges[i]);
 
 		SAFE_FREE(dbuf.dptr);
 		if (ret != dbuf.dsize)
@@ -445,7 +557,8 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 		mapt[entries].sid_name_use = map.sid_name_use;
 		fstrcpy(mapt[entries].nt_name, map.nt_name);
 		fstrcpy(mapt[entries].comment, map.comment);
-		mapt[entries].privilege = map.privilege;
+		for (i=0; i<PRIV_ALL_INDEX; i++)
+			mapt[entries].privileges[i] = map.privileges[i];
 
 		entries++;
 	}
@@ -456,7 +569,7 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 
 
 /****************************************************************************
-convert a privilege list to a privilege value
+convert a privilege string to a privilege array
 ****************************************************************************/
 void convert_priv_from_text(uint32 *se_priv, char *privilege)
 {
@@ -465,46 +578,44 @@ void convert_priv_from_text(uint32 *se_priv, char *privilege)
 	int i;
 
 	/* By default no privilege */
-	(*se_priv)=0x0;
-
+	init_privilege(se_priv);
+	
 	if (privilege==NULL)
 		return;
 
 	while(next_token(&p, tok, " ", sizeof(tok)) ) {
 		for (i=0; i<=PRIV_ALL_INDEX; i++) {
 			if (StrCaseCmp(privs[i].priv, tok)==0)
-				(*se_priv)+=privs[i].se_priv;
+				add_privilege(se_priv, privs[i].se_priv);
 		}		
 	}
 }
 
 /****************************************************************************
-convert a privilege value to a privilege list
+convert a privilege array to a privilege string
 ****************************************************************************/
-void convert_priv_to_text(uint32 se_priv, char *privilege)
+void convert_priv_to_text(uint32 *se_priv, char *privilege)
 {
-	int i;
+	int i=0,j;
 
 	if (privilege==NULL)
 		return;
 
 	ZERO_STRUCTP(privilege);
 
-	if (se_priv==SE_PRIV_NONE) {
-		fstrcat(privilege, privs[0].priv);
+	if (check_empty_privilege(se_priv)) {
+		fstrcat(privilege, "No privilege");
 		return;
 	}
 
-	if (se_priv==SE_PRIV_ALL) {
-		fstrcat(privilege, privs[PRIV_ALL_INDEX].priv);
-		return;
-	}
+	while(i<PRIV_ALL_INDEX && se_priv[i]!=0) {
+		j=1;
+		while (privs[j].se_priv!=se_priv[i])
+			j++;
 
-	for (i=1; privs[i].se_priv!=SE_PRIV_ALL; i++) {
-		if ( (se_priv & privs[i].se_priv) == privs[i].se_priv) {
-			fstrcat(privilege, privs[i].priv);
-			fstrcat(privilege, " ");
-		}
+		fstrcat(privilege, privs[j].priv);
+		fstrcat(privilege, " ");
+		i++;
 	}
 }
 
@@ -585,7 +696,7 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 		fstrcpy(map->nt_name, grp->gr_name);
 		fstrcpy(map->comment, "Local Unix Group");
 
-		map->privilege=SE_PRIV_NONE;
+		init_privilege(map->privileges);
 
 		sid_copy(&map->sid, &sid);
 	}
@@ -632,7 +743,7 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 	if (!get_group_map_from_gid(gid, map)) {
 		map->gid=gid;
 		map->sid_name_use=SID_NAME_ALIAS;
-		map->privilege=SE_PRIV_NONE;
+		init_privilege(map->privileges);
 
 		sid_copy(&map->sid, &global_sam_sid);
 		sid_append_rid(&map->sid, pdb_gid_to_group_rid(gid));

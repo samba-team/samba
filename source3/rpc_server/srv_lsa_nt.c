@@ -543,7 +543,7 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (enum_context >= PRIV_ALL_INDEX)
-		return NT_STATUS_UNABLE_TO_FREE_VM;
+		return NT_STATUS_NO_MORE_ENTRIES;
 
 	entries = (LSA_PRIV_ENTRY *)talloc_zero(p->mem_ctx, sizeof(LSA_PRIV_ENTRY) * (PRIV_ALL_INDEX));
 	if (entries==NULL)
@@ -624,6 +624,9 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 	/* get the list of mapped groups (domain, local, builtin) */
 	if(!enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED))
 		return NT_STATUS_OK;
+
+	if (q_u->enum_context >= num_entries)
+		return NT_STATUS_NO_MORE_ENTRIES;
 
 	sids->ptr_sid = (uint32 *)talloc_zero(p->mem_ctx, (num_entries-q_u->enum_context)*sizeof(uint32));
 	sids->sid = (DOM_SID2 *)talloc_zero(p->mem_ctx, (num_entries-q_u->enum_context)*sizeof(DOM_SID2));
@@ -707,7 +710,7 @@ NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENAC
 }
 
 /***************************************************************************
- 
+ For a given SID, enumerate all the privilege this account has.
  ***************************************************************************/
 
 NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LSA_R_ENUMPRIVSACCOUNT *r_u)
@@ -729,7 +732,7 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LS
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	for (i=1; privs[i].se_priv!=SE_PRIV_ALL; i++) {
-		if ( (map.privilege & privs[i].se_priv) == privs[i].se_priv) {
+		if ( check_priv_in_privilege(map.privileges, privs[i].se_priv)) {
 			
 			set=(LUID_ATTR *)talloc_realloc(p->mem_ctx, set, (count+1)*sizeof(LUID_ATTR));
 			if (set == NULL) return NT_STATUS_NO_MEMORY;
@@ -738,8 +741,7 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LS
 			set[count].luid.high=1;
 			set[count].attr=0;
 			
-			count++;
-		
+			count++;		
 		}
 	}
 
