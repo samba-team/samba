@@ -466,7 +466,7 @@ void ndr_print_bad_level(struct ndr_print *ndr, const char *name, uint16 level)
 }
 
 void ndr_print_array_uint32(struct ndr_print *ndr, const char *name, 
-			    uint32 *data, uint32 count)
+			    const uint32 *data, uint32 count)
 {
 	int i;
 
@@ -484,7 +484,7 @@ void ndr_print_array_uint32(struct ndr_print *ndr, const char *name,
 }
 
 void ndr_print_array_uint8(struct ndr_print *ndr, const char *name, 
-			   uint8 *data, uint32 count)
+			   const uint8 *data, uint32 count)
 {
 	int i;
 
@@ -501,7 +501,7 @@ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 	ndr->depth--;	
 }
 
-void ndr_print_GUID(struct ndr_print *ndr, const char *name, struct GUID *guid)
+void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid)
 {
 	ndr->print(ndr, "%-25s: %08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x", 
 		   name,
@@ -513,73 +513,50 @@ void ndr_print_GUID(struct ndr_print *ndr, const char *name, struct GUID *guid)
 
 
 /*
-  pull a spoolss style "relative string"
+  pull a null terminated UCS2 string
 */
-NTSTATUS ndr_pull_relstr(struct ndr_pull *ndr, int ndr_flags, const char **s)
+NTSTATUS ndr_pull_nstring(struct ndr_pull *ndr, int ndr_flags, const char **s)
 {
-	uint32 ofs;
 	int ret;
-	struct ndr_pull_save save;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
 
-	NDR_CHECK(ndr_pull_uint32(ndr, &ofs));
-	ndr_pull_save(ndr, &save);
-	NDR_CHECK(ndr_pull_set_offset(ndr, ofs));
 	ret = convert_string_talloc(ndr->mem_ctx, CH_UCS2, CH_UNIX, 
 				    ndr->data+ndr->offset, 
 				    ndr->data_size - ndr->offset,
 				    (const void **)s);
 	if (ret == -1) {
-		return ndr_pull_error(ndr, NDR_ERR_RELSTR, "Bad relative string");
+		return ndr_pull_error(ndr, NDR_ERR_CHARCNV, "Bad character conversion");
 	}
-	ndr_pull_restore(ndr, &save);
+	ndr->offset += ret;
 	return NT_STATUS_OK;
 }
 
 /*
   push a spoolss style "relative string"
 */
-NTSTATUS ndr_push_relstr(struct ndr_push *ndr, int ndr_flags, const char **s)
+NTSTATUS ndr_push_nstring(struct ndr_push *ndr, int ndr_flags, const char **s)
 {
-	struct ndr_push_save *save;
-	if (ndr_flags & NDR_SCALARS) {
-		save = talloc(ndr->mem_ctx, sizeof(*save));
-		if (!save) return NT_STATUS_NO_MEMORY;
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		ndr_push_save(ndr, save);
-		NDR_CHECK(ndr_push_uint32(ndr, 0xFFFFFFFF));
-		save->next = ndr->relstr_list;
-		ndr->relstr_list = save;
+	uint32 len;
+	int ret;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
 	}
-	if (ndr_flags & NDR_BUFFERS) {
-		struct ndr_push_save save2;
-		uint32 len;
-		int ret;
-		save = ndr->relstr_list;
-		if (!save) {
-			return ndr_push_error(ndr, NDR_ERR_RELSTR, "Empty relstr stack");
-		}
-		ndr->relstr_list = save->next;
-		NDR_CHECK(ndr_push_align(ndr, 2));
-		ndr_push_save(ndr, &save2);
-		ndr_push_restore(ndr, save);
-		NDR_CHECK(ndr_push_uint32(ndr, save2.offset));
-		ndr_push_restore(ndr, &save2);
-		len = 2*(strlen_m(*s)+1);
-		NDR_PUSH_NEED_BYTES(ndr, len);
-		ret = push_ucs2(NULL, ndr->data + ndr->offset, *s, len, STR_TERMINATE);
-		if (ret == -1) {
-			return ndr_push_error(ndr, NDR_ERR_CHARCNV, "Bad string conversion");
-		}
-		ndr->offset += len;
+
+	len = 2*(strlen_m(*s)+1);
+	NDR_PUSH_NEED_BYTES(ndr, len);
+	ret = push_ucs2(NULL, ndr->data + ndr->offset, *s, len, STR_TERMINATE);
+	if (ret == -1) {
+		return ndr_push_error(ndr, NDR_ERR_CHARCNV, "Bad string conversion");
 	}
+	ndr->offset += len;
 	return NT_STATUS_OK;
 }
 
-void ndr_print_relstr(struct ndr_print *ndr, const char *name, const char **s)
+void ndr_print_nstring(struct ndr_print *ndr, const char *name, const char **s)
 {
 	ndr_print_unistr(ndr, name, *s);
 }

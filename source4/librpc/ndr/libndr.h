@@ -53,8 +53,8 @@ struct ndr_push {
 	uint32 offset;
 	TALLOC_CTX *mem_ctx;
 
-	/* this list is used by the relstr code to find the offsets */
-	struct ndr_push_save *relstr_list;
+	/* this list is used by the [relative] code to find the offsets */
+	struct ndr_push_save *relative_list;
 };
 
 struct ndr_push_save {
@@ -85,7 +85,7 @@ enum ndr_err_code {
 	NDR_ERR_ARRAY_SIZE,
 	NDR_ERR_BAD_SWITCH,
 	NDR_ERR_OFFSET,
-	NDR_ERR_RELSTR,
+	NDR_ERR_RELATIVE,
 	NDR_ERR_CHARCNV,
 	NDR_ERR_LENGTH
 };
@@ -150,6 +150,7 @@ typedef NTSTATUS (*ndr_push_fn_t)(struct ndr_push *, void *);
 typedef NTSTATUS (*ndr_pull_fn_t)(struct ndr_pull *, void *);
 
 typedef NTSTATUS (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, void *);
+typedef NTSTATUS (*ndr_push_const_fn_t)(struct ndr_push *, int ndr_flags, const void *);
 typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *);
 typedef NTSTATUS (*ndr_push_union_fn_t)(struct ndr_push *, int ndr_flags, uint16, void *);
 typedef NTSTATUS (*ndr_pull_union_fn_t)(struct ndr_pull *, int ndr_flags, uint16 *, void *);

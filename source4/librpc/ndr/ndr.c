@@ -207,8 +207,8 @@ NTSTATUS ndr_push_set_offset(struct ndr_push *ndr, uint32 ofs)
   push a generic array
 */
 NTSTATUS ndr_push_array(struct ndr_push *ndr, int ndr_flags, void *base, 
-			      size_t elsize, uint32 count, 
-			      NTSTATUS (*push_fn)(struct ndr_push *, int, void *))
+			size_t elsize, uint32 count, 
+			NTSTATUS (*push_fn)(struct ndr_push *, int, void *))
 {
 	int i;
 	char *p = base;
@@ -417,5 +417,77 @@ NTSTATUS ndr_pull_subcontext_union_fn(struct ndr_pull *ndr,
 	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, size));
 	NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, level, base));
 	NDR_CHECK(ndr_pull_advance(ndr, size));
+	return NT_STATUS_OK;
+}
+
+
+/*
+  pull a relative structure
+*/
+NTSTATUS ndr_pull_relative(struct ndr_pull *ndr, const void **buf, size_t size, 
+			   NTSTATUS (*fn)(struct ndr_pull *, int ndr_flags, void *))
+{
+	struct ndr_pull ndr2;
+	uint32 ofs;
+	struct ndr_pull_save save;
+	void *p;
+
+	NDR_CHECK(ndr_pull_uint32(ndr, &ofs));
+	if (ofs == 0) {
+		(*buf) = NULL;
+		return NT_STATUS_OK;
+	}
+	ndr_pull_save(ndr, &save);
+	NDR_CHECK(ndr_pull_set_offset(ndr, ofs));
+	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, ndr->data_size - ndr->offset));
+	if (size == 1) {
+		/* oh what a hack! */
+		NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, (void *)&p));
+	} else {
+		NDR_ALLOC_SIZE(ndr, p, size);
+		NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, p));
+	}
+	(*buf) = p;
+	ndr_pull_restore(ndr, &save);
+	return NT_STATUS_OK;
+}
+
+/*
+  push a relative structure
+*/
+NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p, 
+			   NTSTATUS (*fn)(struct ndr_push *, int , const void *))
+{
+	struct ndr_push_save *save;
+	if (ndr_flags & NDR_SCALARS) {
+		if (!p) {
+			NDR_CHECK(ndr_push_uint32(ndr, 0));
+			return NT_STATUS_OK;
+		}
+		save = talloc(ndr->mem_ctx, sizeof(*save));
+		if (!save) return NT_STATUS_NO_MEMORY;
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		ndr_push_save(ndr, save);
+		NDR_CHECK(ndr_push_uint32(ndr, 0xFFFFFFFF));
+		save->next = ndr->relative_list;
+		ndr->relative_list = save;
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		struct ndr_push_save save2;
+		if (!p) {
+			return NT_STATUS_OK;
+		}
+		save = ndr->relative_list;
+		if (!save) {
+			return ndr_push_error(ndr, NDR_ERR_RELATIVE, "Empty relative stack");
+		}
+		ndr->relative_list = save->next;
+		NDR_CHECK(ndr_push_align(ndr, 8));
+		ndr_push_save(ndr, &save2);
+		ndr_push_restore(ndr, save);
+		NDR_CHECK(ndr_push_uint32(ndr, save2.offset));
+		ndr_push_restore(ndr, &save2);
+		NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
+	}
 	return NT_STATUS_OK;
 }

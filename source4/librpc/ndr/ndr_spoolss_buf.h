@@ -23,4 +23,5 @@
 
 union spoolss_PrinterEnum {
 	/* [case(1)] */ struct spoolss_PrinterEnum1 info1;
+	/* [case(2)] */ struct spoolss_PrinterEnum2 info2;
 };
