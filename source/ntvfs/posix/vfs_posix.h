@@ -60,6 +60,12 @@ struct pvfs_state {
 
 	/* if posix:eadb is set, then this gets setup */
 	struct tdb_wrap *ea_db;
+
+	/* used to accelerate acl mapping */
+	struct {
+		const struct dom_sid *creator_owner;
+		const struct dom_sid *creator_group;		
+	} sid_cache;
 };
 
 /* this is the basic information needed about a file from the filesystem */

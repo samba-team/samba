@@ -26,6 +26,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 
 /*
@@ -82,6 +83,9 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
 		pvfs->fs_attribs |= FS_ATTR_PERSISTANT_ACLS;
 	}
+
+	pvfs->sid_cache.creator_owner = dom_sid_parse_talloc(pvfs, SID_CREATOR_OWNER);
+	pvfs->sid_cache.creator_group = dom_sid_parse_talloc(pvfs, SID_CREATOR_GROUP);
 }
 
 
