@@ -40,6 +40,17 @@ uint16 global_smbpid;
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
 
+struct locking_data {
+        union {
+                int num_share_mode_entries;
+                share_mode_entry dummy; /* Needed for alignment. */
+        } u;
+        /* the following two entries are implicit
+           share_mode_entry modes[num_share_mode_entries];
+           char file_name[];
+        */
+};
+
 /****************************************************************************
  Debugging aid :-).
 ****************************************************************************/
@@ -432,6 +443,7 @@ int get_share_modes(connection_struct *conn,
 	data = (struct locking_data *)dbuf.dptr;
 	num_share_modes = data->u.num_share_mode_entries;
 	if(num_share_modes) {
+		pstring fname;
 		int i;
 		int del_count = 0;
 
@@ -442,6 +454,9 @@ int get_share_modes(connection_struct *conn,
 			SAFE_FREE(dbuf.dptr);
 			return 0;
 		}
+
+		/* Save off the associated filename. */
+		pstrcpy(fname, dbuf.dptr + sizeof(*data) + num_share_modes * sizeof(share_mode_entry));
 
 		/*
 		 * Ensure that each entry has a real process attached.
@@ -467,17 +482,28 @@ int get_share_modes(connection_struct *conn,
 		if (del_count) {
 			data->u.num_share_mode_entries = num_share_modes;
 			
-			if (num_share_modes)
+			if (num_share_modes) {
 				memcpy(dbuf.dptr + sizeof(*data), shares,
 						num_share_modes * sizeof(share_mode_entry));
+				/* Append the filename. */
+				pstrcpy(dbuf.dptr + sizeof(*data) + num_share_modes * sizeof(share_mode_entry), fname);
+			}
 
 			/* The record has shrunk a bit */
 			dbuf.dsize -= del_count * sizeof(share_mode_entry);
 
-			if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1) {
-				SAFE_FREE(shares);
-				SAFE_FREE(dbuf.dptr);
-				return 0;
+			if (data->u.num_share_mode_entries == 0) {
+				if (tdb_delete(tdb, key) == -1) {
+					SAFE_FREE(shares);
+					SAFE_FREE(dbuf.dptr);
+					return 0;
+				}
+			} else {
+				if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1) {
+					SAFE_FREE(shares);
+					SAFE_FREE(dbuf.dptr);
+					return 0;
+				}
 			}
 		}
 	}
@@ -847,6 +873,358 @@ BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close)
 	return True;
 }
 
+/*******************************************************************
+ Print out a deferred open entry.
+********************************************************************/
+
+char *deferred_open_str(int num, deferred_open_entry *e)
+{
+	static pstring de_str;
+
+	slprintf(de_str, sizeof(de_str)-1, "deferred_open_entry[%d]: \
+pid = %lu, mid = %u, dev = 0x%x, inode = %.0f, port = %u, time = [%u.%06u]",
+		num, (unsigned long)e->pid, (unsigned int)e->mid, (unsigned int)e->dev, (double)e->inode,
+		(unsigned int)e->port,
+		(unsigned int)e->time.tv_sec, (unsigned int)e->time.tv_usec );
+
+	return de_str;
+}
+
+/* Internal data structures for deferred opens... */
+
+struct de_locking_key {
+	char name[4];
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+};
+
+struct deferred_open_data {
+        union {
+                int num_deferred_open_entries;
+                deferred_open_entry dummy; /* Needed for alignment. */
+        } u;
+        /* the following two entries are implicit
+           deferred_open_entry de_entries[num_deferred_open_entries];
+           char file_name[];
+        */
+};
+
+/*******************************************************************
+ Print out a deferred open table.
+********************************************************************/
+
+static void print_deferred_open_table(struct deferred_open_data *data)
+{
+	int num_de_entries = data->u.num_deferred_open_entries;
+	deferred_open_entry *de_entries = (deferred_open_entry *)(data + 1);
+	int i;
+
+	for (i = 0; i < num_de_entries; i++) {
+		deferred_open_entry *entry_p = &de_entries[i];
+		DEBUG(10,("print_deferred_open_table: %s\n", deferred_open_str(i, entry_p) ));
+	}
+}
+
+
+/*******************************************************************
+ Form a static deferred open locking key for a dev/inode pair.
+******************************************************************/
+
+static TDB_DATA deferred_open_locking_key(SMB_DEV_T dev, SMB_INO_T inode)
+{
+	static struct de_locking_key key;
+	TDB_DATA kbuf;
+
+	memset(&key, '\0', sizeof(key));
+	memcpy(&key.name[0], "DOE", 4);
+	key.dev = dev;
+	key.inode = inode;
+	kbuf.dptr = (char *)&key;
+	kbuf.dsize = sizeof(key);
+	return kbuf;
+}
+
+/*******************************************************************
+ Get all deferred open entries for a dev/inode pair.
+********************************************************************/
+
+int get_deferred_opens(connection_struct *conn, 
+		    SMB_DEV_T dev, SMB_INO_T inode, 
+		    deferred_open_entry **pp_de_entries)
+{
+	TDB_DATA dbuf;
+	struct deferred_open_data *data;
+	int num_de_entries;
+	deferred_open_entry *de_entries = NULL;
+	TDB_DATA key = deferred_open_locking_key(dev, inode);
+
+	*pp_de_entries = NULL;
+
+	dbuf = tdb_fetch(tdb, key);
+	if (!dbuf.dptr)
+		return 0;
+
+	data = (struct deferred_open_data *)dbuf.dptr;
+	num_de_entries = data->u.num_deferred_open_entries;
+	if(num_de_entries) {
+		pstring fname;
+		int i;
+		int del_count = 0;
+
+		de_entries = (deferred_open_entry *)memdup(dbuf.dptr + sizeof(*data),	
+						num_de_entries * sizeof(deferred_open_entry));
+
+		if (!de_entries) {
+			SAFE_FREE(dbuf.dptr);
+			return 0;
+		}
+
+		/* Save off the associated filename. */
+		pstrcpy(fname, dbuf.dptr + sizeof(*data) + num_de_entries * sizeof(deferred_open_entry));
+
+		/*
+		 * Ensure that each entry has a real process attached.
+		 */
+
+		for (i = 0; i < num_de_entries; ) {
+			deferred_open_entry *entry_p = &de_entries[i];
+			if (process_exists(entry_p->pid)) {
+				DEBUG(10,("get_deferred_opens: %s\n", deferred_open_str(i, entry_p) ));
+				i++;
+			} else {
+				DEBUG(10,("get_deferred_opens: deleted %s\n", deferred_open_str(i, entry_p) ));
+				if (num_de_entries - i - 1 > 0) {
+					memcpy( &de_entries[i], &de_entries[i+1],
+						sizeof(deferred_open_entry) * (num_de_entries - i - 1));
+				}
+				num_de_entries--;
+				del_count++;
+			}
+		}
+
+		/* Did we delete any ? If so, re-store in tdb. */
+		if (del_count) {
+			data->u.num_deferred_open_entries = num_de_entries;
+			
+			if (num_de_entries) {
+				memcpy(dbuf.dptr + sizeof(*data), de_entries,
+						num_de_entries * sizeof(deferred_open_entry));
+				/* Append the filename. */
+				pstrcpy(dbuf.dptr + sizeof(*data) + num_de_entries * sizeof(deferred_open_entry), fname);
+			}
+
+			/* The record has shrunk a bit */
+			dbuf.dsize -= del_count * sizeof(deferred_open_entry);
+
+			if (data->u.num_deferred_open_entries == 0) {
+				if (tdb_delete(tdb, key) == -1) {
+					SAFE_FREE(de_entries);
+					SAFE_FREE(dbuf.dptr);
+					return 0;
+				}
+			} else {
+				if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1) {
+					SAFE_FREE(de_entries);
+					SAFE_FREE(dbuf.dptr);
+					return 0;
+				}
+			}
+		}
+	}
+
+	SAFE_FREE(dbuf.dptr);
+	*pp_de_entries = de_entries;
+	return num_de_entries;
+}
+
+/*******************************************************************
+ Check if two deferred open entries are identical.
+********************************************************************/
+
+static BOOL deferred_open_entries_identical( deferred_open_entry *e1, deferred_open_entry *e2)
+{
+#if 1 /* JRA PARANOIA TEST - REMOVE LATER */
+	if (e1->pid == e2->pid &&
+		e1->port == e2->port &&
+		e1->dev == e2->dev &&
+		e1->inode == e2->inode &&
+		((e1->time.tv_sec != e2->time.tv_sec) ||
+		 (e1->time.tv_usec != e2->time.tv_usec) ||
+		 (e1->mid != e2->mid))) {
+		smb_panic("PANIC: deferred_open_entries_identical: logic error.\n");
+	}
+#endif
+
+	return (e1->pid == e2->pid &&
+		e1->mid == e2->mid &&
+		e1->port == e2->port &&
+		e1->dev == e2->dev &&
+		e1->inode == e2->inode &&
+		e1->time.tv_sec == e2->time.tv_sec &&
+		e1->time.tv_usec == e2->time.tv_usec);
+}
+
+
+/*******************************************************************
+ Delete a specific deferred open entry.
+ Ignore if no entry deleted.
+********************************************************************/
+
+BOOL delete_deferred_open_entry(deferred_open_entry *entry)
+{
+	TDB_DATA dbuf;
+	struct deferred_open_data *data;
+	int i, del_count=0;
+	deferred_open_entry *de_entries;
+	BOOL ret = True;
+	TDB_DATA key = deferred_open_locking_key(entry->dev, entry->inode);
+
+	/* read in the existing share modes */
+	dbuf = tdb_fetch(tdb, key);
+	if (!dbuf.dptr)
+		return -1;
+
+	data = (struct deferred_open_data *)dbuf.dptr;
+	de_entries = (deferred_open_entry *)(dbuf.dptr + sizeof(*data));
+
+	/*
+	 * Find any with this pid and delete it
+	 * by overwriting with the rest of the data 
+	 * from the record.
+	 */
+
+	DEBUG(10,("delete_deferred_open_entry: num_deferred_open_entries = %d\n",
+		data->u.num_deferred_open_entries ));
+
+	for (i=0;i<data->u.num_deferred_open_entries;) {
+		if (deferred_open_entries_identical(&de_entries[i], entry)) {
+			DEBUG(10,("delete_deferred_open_entry: deleted %s\n",
+				deferred_open_str(i, &de_entries[i]) ));
+
+			data->u.num_deferred_open_entries--;
+			if ((dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*de_entries))) > 0) {
+				memmove(&de_entries[i], &de_entries[i+1], 
+					dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*de_entries)));
+			}
+			del_count++;
+
+			DEBUG(10,("delete_deferred_open_entry: deleting entry %d\n", i ));
+
+		} else {
+			i++;
+		}
+	}
+
+	SMB_ASSERT(del_count == 0 || del_count == 1);
+
+	if (del_count) {
+		/* the record may have shrunk a bit */
+		dbuf.dsize -= del_count * sizeof(*de_entries);
+
+		/* store it back in the database */
+		if (data->u.num_deferred_open_entries == 0) {
+			if (tdb_delete(tdb, key) == -1)
+				ret = False;
+		} else {
+			if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
+				ret = False;
+		}
+	}
+	DEBUG(10,("delete_deferred_open_entry: Remaining table.\n"));
+	print_deferred_open_table((struct deferred_open_data*)dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
+	return ret;
+}
+
+/*******************************************************************
+ Fill a deferred open entry.
+********************************************************************/
+
+static void fill_deferred_open(char *p, uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T inode, uint16 port)
+{
+	deferred_open_entry *e = (deferred_open_entry *)p;
+	void *x = &e->time; /* Needed to force alignment. p may not be aligned.... */
+
+	memset(e, '\0', sizeof(deferred_open_entry));
+	e->mid = mid;
+	e->pid = sys_getpid();
+	memcpy(x, ptv, sizeof(struct timeval));
+	e->dev = dev;
+	e->inode = inode;
+	e->port = port;
+}
+
+/*******************************************************************
+ Add a deferred open record. Return False on fail, True on success.
+********************************************************************/
+
+BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T inode, uint16 port, const char *fname)
+{
+	TDB_DATA dbuf;
+	struct deferred_open_data *data;
+	char *p=NULL;
+	int size;
+	TDB_DATA key = deferred_open_locking_key(dev, inode);
+	BOOL ret = True;
+		
+	/* read in the existing deferred open records if any */
+	dbuf = tdb_fetch(tdb, key);
+	if (!dbuf.dptr) {
+		size_t offset;
+		/* we'll need to create a new record */
+
+		size = sizeof(*data) + sizeof(deferred_open_entry) + strlen(fname) + 1;
+		p = (char *)malloc(size);
+		if (!p)
+			return False;
+		data = (struct deferred_open_data *)p;
+		data->u.num_deferred_open_entries = 1;
+	
+		DEBUG(10,("add_deferred_open: creating entry for file %s. num_deferred_open_entries = 1\n",
+			fname ));
+
+		offset = sizeof(*data) + sizeof(deferred_open_entry);
+		safe_strcpy(p + offset, fname, size - offset - 1);
+		fill_deferred_open(p + sizeof(*data), mid, ptv, dev, inode, port);
+		dbuf.dptr = p;
+		dbuf.dsize = size;
+		if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
+			ret = False;
+
+		print_deferred_open_table((struct deferred_open_data *)p);
+
+		SAFE_FREE(p);
+		return ret;
+	}
+
+	/* we're adding to an existing entry - this is a bit fiddly */
+	data = (struct deferred_open_data *)dbuf.dptr;
+
+	data->u.num_deferred_open_entries++;
+	
+	DEBUG(10,("add_deferred_open: adding entry for file %s. new num_deferred_open_entries = %d\n",
+		fname, data->u.num_deferred_open_entries ));
+
+	size = dbuf.dsize + sizeof(deferred_open_entry);
+	p = malloc(size);
+	if (!p) {
+		SAFE_FREE(dbuf.dptr);
+		return False;
+	}
+	memcpy(p, dbuf.dptr, sizeof(*data));
+	fill_deferred_open(p + sizeof(*data), mid, ptv, dev, inode, port);
+	memcpy(p + sizeof(*data) + sizeof(deferred_open_entry), dbuf.dptr + sizeof(*data),
+	       dbuf.dsize - sizeof(*data));
+	SAFE_FREE(dbuf.dptr);
+	dbuf.dptr = p;
+	dbuf.dsize = size;
+	if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
+		ret = False;
+	print_deferred_open_table((struct deferred_open_data *)p);
+	SAFE_FREE(p);
+	return ret;
+}
+
 /****************************************************************************
  Traverse the whole database with this function, calling traverse_callback
  on each share mode
@@ -861,6 +1239,10 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	int i;
 
 	SHAREMODE_FN(traverse_callback) = (SHAREMODE_FN_CAST())state;
+
+	/* Ensure this is a locking_key record. */
+	if (kbuf.dsize != sizeof(struct locking_key))
+		return 0;
 
 	data = (struct locking_data *)dbuf.dptr;
 	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));

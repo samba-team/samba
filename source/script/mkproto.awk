@@ -124,7 +124,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^smb_iconv_t|^long|^char|^uint|^NTSTATUS|^WERROR|^CLI_POLICY_HND|^struct|^BOOL|^void|^time|^smb_shm_offset_t|^shm_offset_t|^FILE|^XFILE|^SMB_OFF_T|^size_t|^ssize_t|^SMB_BIG_UINT/ ) {
+  if( $0 ~ /^smb_iconv_t|^long|^char|^uint|^NTSTATUS|^WERROR|^CLI_POLICY_HND|^struct|^BOOL|^void|^time|^smb_shm_offset_t|^shm_offset_t|^FILE|^XFILE|^SMB_OFF_T|^size_t|^ssize_t|^SMB_BIG_UINT|^SMB_BIG_INT/ ) {
     gotstart = 1;
   }
 

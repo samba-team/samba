@@ -863,6 +863,10 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 
 				restore_case_semantics(conn, file_attributes);
 				END_PROFILE(SMBntcreateX);
+				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+					/* We have re-scheduled this call. */
+					return -1;
+				}
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 			}
 		} 
@@ -1347,6 +1351,10 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				}
 			} else {
 				restore_case_semantics(conn, file_attributes);
+				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+					/* We have re-scheduled this call. */
+					return -1;
+				}
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 			}
 		} 

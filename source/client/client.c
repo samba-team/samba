@@ -1571,7 +1571,7 @@ static int cmd_open(void)
 	}
 	pstrcat(mask,buf);
 
-	cli_open(cli, mask, O_RDWR, DENY_ALL);
+	cli_nt_create(cli, mask, FILE_READ_DATA);
 
 	return 0;
 }
