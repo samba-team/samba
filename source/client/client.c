@@ -2346,7 +2346,7 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	char *sharename;
 	
 	/* make a copy so we don't modify the global string 'service' */
-	safe_strcpy(servicename, share, sizeof(servicename)-1);
+	fstrcpy(servicename, share);
 	sharename = servicename;
 	if (*sharename == '\\') {
 		server = sharename+2;
@@ -2621,9 +2621,9 @@ static int do_message_op(void)
 	make_nmb_name(&calling, global_myname(), 0x0);
 	make_nmb_name(&called , desthost, name_type);
 
-	safe_strcpy(server_name, desthost, sizeof(server_name));
+	fstrcpy(server_name, desthost);
 	snprintf(name_type_hex, sizeof(name_type_hex), "#%X", name_type);
-	safe_strcat(server_name, name_type_hex, sizeof(server_name));
+	fstrcat(server_name, name_type_hex);
 
         zero_ip(&ip);
 	if (have_ip) ip = dest_ip;
