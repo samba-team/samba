@@ -13,6 +13,8 @@
 #include <sys/bitypes.h>
 #endif
 
+#include <bits.h>
+
 #include "config_file.h"
 
 /* simple constants */
@@ -20,17 +22,6 @@
 #ifndef TRUE
 #define TRUE  1
 #define FALSE 0
-#endif
-
-#if 1
-/* types */
-typedef int	int32_t;
-typedef short	int16_t;
-typedef char	int8_t;
-
-typedef unsigned int u_int32_t;
-typedef unsigned short u_int16_t;
-typedef unsigned char u_int8_t;
 #endif
 
 typedef int krb5_boolean;
@@ -222,7 +213,7 @@ typedef struct krb5_auth_context{
 
 typedef u_int32_t krb5_flags;
 
-#include <foo.h>
+#include <asn1.h>
 
 typedef struct {
   KDC_REP part1;

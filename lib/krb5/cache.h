@@ -2,9 +2,9 @@
 #define __CACHE_H__
 
 krb5_error_code
-krb5_cc_resolve (krb5_context context,
-		 char *residual,
-		 krb5_ccache *id);
+krb5_cc_resolve(krb5_context context,
+		const char *residual,
+		krb5_ccache *id);
 
 char *
 krb5_cc_get_name (krb5_context context,

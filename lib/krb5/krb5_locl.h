@@ -1,6 +1,10 @@
 #ifndef __KRB5_LOCL_H__
 #define __KRB5_LOCL_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <errno.h>
 #include <ctype.h>
 #include <string.h>
@@ -11,9 +15,6 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
-
-extern int ioctl(int, int, ...);
-
 
 #include <sys/param.h>
 #include <time.h>
@@ -60,7 +61,5 @@ krb5_sendto_kdc (krb5_context context,
 
 #define ALLOC(N, X) ((X*)malloc((N) * sizeof(X)))
 #define FREE(X) do{if(X)free(X);}while(0)
-
-#define RCSID(X) static char *rcsid[] = { (char*)rcsid, X }
 
 #endif /* __KRB5_LOCL_H__ */
