@@ -345,65 +345,22 @@ static BOOL delete_posix_lock_entry_by_index(files_struct *fsp, size_t entry)
 }
 
 /****************************************************************************
- Add an entry into the POSIX locking tdb. Returns the number of records that
- completely overlap this request, or -1 on error. entry_num gets set to the
- index number of the added lock (used in case we need to delete *exactly*
- this entry).
+ Add an entry into the POSIX locking tdb. We return the index number of the
+ added lock (used in case we need to delete *exactly* this entry). Returns
+ False on fail, True on success.
 ****************************************************************************/
 
-static int add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T size, int lock_type, size_t *entry_num)
+static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T size, int lock_type, size_t *pentry_num)
 {
 	TDB_DATA kbuf = locking_key_fsp(fsp);
 	TDB_DATA dbuf;
 	struct posix_lock pl;
-	struct posix_lock *entries;
-	size_t i, count;
-	int num_overlapping_records = 0;
 
-	*entry_num = 0;
-
-	/*
-	 * Windows is very strange. It allows read locks to be overlayed on 
-	 * a write lock, but leaves the write lock in force until the first
-	 * unlock. It also reference counts the locks. This means the following sequence :
-	 *
-	 * process1                                      process2
-	 * ------------------------------------------------------------------------
-	 * WRITE LOCK : start = 0, len = 10
-	 *                                            READ LOCK: start =0, len = 10 - FAIL
-	 * READ LOCK : start = 5, len = 2 
-	 *                                            READ LOCK: start =0, len = 10 - FAIL
-	 * UNLOCK : start = 0, len = 10
-	 *                                            READ LOCK: start =0, len = 10 - OK
-	 *
-	 * Under POSIX, the same sequence in steps 1 and 2 would not be reference counted, but
-	 * would leave a single read lock over the 0-10 region. In order to
-	 * re-create Windows semantics mapped to POSIX locks, we create multiple TDB
-	 * entries, one for each overlayed lock request. We are guarenteed by the brlock
-	 * semantics that if a write lock is added, then it will be first in the array.
-	 */
-	
 	dbuf.dptr = NULL;
 
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
-	count = (size_t)(dbuf.dsize / sizeof(pl));
-	entries = (struct posix_lock *)dbuf.dptr;
-
-	/*
-	 * Ensure we look for overlapping entries *before*
-	 * we add this entry. Count the number of entries
-	 * that completely overlap this request.
-	 */
-
-	for (i = 0; i < count; i++) {
-		struct posix_lock *entry = &entries[i];
-
-		if (fsp->fd == entry->fd &&
-			start >= entry->start &&
-			start + size <= entry->start + entry->size)
-				num_overlapping_records++;
-	}
+	*pentry_num = (size_t)(dbuf.dsize / sizeof(pl));
 
 	/*
 	 * Add new record.
@@ -423,8 +380,6 @@ static int add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T si
 	memcpy(dbuf.dptr + dbuf.dsize, &pl, sizeof(pl));
 	dbuf.dsize += sizeof(pl);
 
-	*entry_num = count;
-
 	if (tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
 		DEBUG(0,("add_posix_lock: Failed to add lock entry on file %s\n", fsp->fsp_name));
 		goto fail;
@@ -432,23 +387,36 @@ static int add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T si
 
     free(dbuf.dptr);
 
-	DEBUG(10,("add_posix_lock: File %s: type = %s: start=%.0f size=%.0f: num_records = %d : dev=%.0f inode=%.0f\n",
-			fsp->fsp_name, posix_lock_type_name(lock_type), (double)start, (double)size, num_overlapping_records,
+	DEBUG(10,("add_posix_lock: File %s: type = %s: start=%.0f size=%.0f: dev=%.0f inode=%.0f\n",
+			fsp->fsp_name, posix_lock_type_name(lock_type), (double)start, (double)size,
 			(double)fsp->dev, (double)fsp->inode ));
 
-    return num_overlapping_records;
+    return True;
 
  fail:
     if (dbuf.dptr)
 		free(dbuf.dptr);
-	*entry_num = 0;
-    return -1;
+    return False;
+}
+
+/****************************************************************************
+ Calculate if locks have any overlap at all.
+****************************************************************************/
+
+static BOOL does_lock_overlap(SMB_OFF_T start1, SMB_OFF_T size1, SMB_OFF_T start2, SMB_OFF_T size2)
+{
+	if (start1 >= start2 && start1 <= start2 + size2)
+		return True;
+
+	if (start1 < start2 && start1 + size1 > start2);
+		return True;
+
+	return False;
 }
 
 /****************************************************************************
  Delete an entry from the POSIX locking tdb. Returns a copy of the entry being
- deleted and the number of records that are completely overlapped by this one,
- or -1 on error.
+ deleted and the number of records that are overlapped by this one, or -1 on error.
 ****************************************************************************/
 
 static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T size, struct posix_lock *pl)
@@ -510,23 +478,20 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 
 	/*
 	 * Count the number of entries that are
-	 * overlapped completely by this unlock request.
-	 * (Note that this is the reverse of the test in
-	 * add_posix_lock).
+	 * overlapped by this unlock request.
 	 */
 
 	for (i = 0; i < count; i++) {
 		struct posix_lock *entry = &locks[i];
 
 		if (fsp->fd == entry->fd &&
-			entry->start >= start &&
-			entry->start + entry->size <= start + size)
+			does_lock_overlap( start, size, entry->start, entry->size))
 				num_overlapping_records++;
 	}
 
-		DEBUG(10,("delete_posix_lock_entry: type = %s: start=%.0f size=%.0f, num_records = %d\n",
-				posix_lock_type_name(pl->lock_type), (double)pl->start, (double)pl->size,
-					(unsigned int)num_overlapping_records ));
+	DEBUG(10,("delete_posix_lock_entry: type = %s: start=%.0f size=%.0f, num_records = %d\n",
+			posix_lock_type_name(pl->lock_type), (double)pl->start, (double)pl->size,
+				(unsigned int)num_overlapping_records ));
 
     if (dbuf.dptr)
 		free(dbuf.dptr);
@@ -579,23 +544,55 @@ static int map_posix_lock_type( files_struct *fsp, enum brl_type lock_type)
 static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 								SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
 {
-	SMB_OFF_T offset;
-	SMB_OFF_T count;
+	SMB_OFF_T offset = (SMB_OFF_T)u_offset;
+	SMB_OFF_T count = (SMB_OFF_T)u_count;
+
+	/*
+	 * For the type of system we are, attempt to
+	 * find the maximum positive lock offset as an SMB_OFF_T.
+	 */
 
 #if defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
-
-    SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
-    SMB_OFF_T mask = (mask2<<1);
-    SMB_OFF_T neg_mask = ~mask;
 
 	/*
 	 * In this case SMB_OFF_T is 64 bits,
 	 * and the underlying system can handle 64 bit signed locks.
-	 * Cast to signed type.
 	 */
 
-	offset = (SMB_OFF_T)u_offset;
-	count = (SMB_OFF_T)u_count;
+    SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
+    SMB_OFF_T mask = (mask2<<1);
+    SMB_OFF_T max_positive_lock_offset = ~mask;
+
+#else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
+
+	/*
+	 * In this case either SMB_OFF_T is 32 bits,
+	 * or the underlying system cannot handle 64 bit signed locks.
+	 * All offsets & counts must be 2^31 or less.
+	 */
+
+    SMB_OFF_T max_positive_lock_offset = 0x7FFFFFFF;
+
+#endif /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
+
+	/*
+	 * If the given offset was > max_positive_lock_offset then we cannot map this at all
+	 * ignore this lock.
+	 */
+
+	if (u_offset & ~((SMB_BIG_UINT)max_positive_lock_offset)) {
+		DEBUG(10,("posix_lock_in_range: (offset = %.0f) offset > %.0f and we cannot handle this. Ignoring lock.\n",
+				(double)u_offset, (double)((SMB_BIG_UINT)max_positive_lock_offset) ));
+		return False;
+	}
+
+	/*
+	 * We must truncate the offset and count to less than max_positive_lock_offset.
+	 */
+
+	offset &= max_positive_lock_offset;
+	count &= max_positive_lock_offset;
+
 
 	/*
 	 * Deal with a very common case of count of all ones.
@@ -603,152 +600,24 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 */
 
 	if(count == (SMB_OFF_T)-1)
-		count &= ~mask;
+		count = max_positive_lock_offset;
 
 	/*
-	 * POSIX lock ranges cannot be negative.
-	 * Fail if any combination becomes negative.
+	 * Truncate count to end at max lock offset.
 	 */
 
-	if(offset < 0 || count < 0 || (offset + count < 0)) {
-		DEBUG(10,("posix_lock_in_range: negative range: offset = %.0f, count = %.0f. Ignoring lock.\n",
-				(double)offset, (double)count ));
-		return False;
-	}
+	if (offset + count < 0 || offset + count > max_positive_lock_offset)
+		count = max_positive_lock_offset - offset;
 
 	/*
-	 * In this case SMB_OFF_T is 64 bits, the offset and count
-	 * fit within the positive range, and the underlying
-	 * system can handle 64 bit locks. Just return as the
-	 * cast values are ok.
+	 * If we ate all the count, ignore this lock.
 	 */
 
-#else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
-
-	/*
-	 * In this case either SMB_OFF_T is 32 bits,
-	 * or the underlying system cannot handle 64 bit signed locks.
-	 * Either way we have to try and mangle to fit within 31 bits.
-	 * This is difficult.
-	 */
-
-#if defined(HAVE_BROKEN_FCNTL64_LOCKS)
-
-	/*
-	 * SMB_OFF_T is 64 bits, but we need to use 31 bits due to
-	 * broken large locking.
-	 */
-
-	/*
-	 * Deal with a very common case of count of all ones.
-	 * (lock entire file).
-	 */
-
-	if(u_count == (SMB_BIG_UINT)-1)
-		count = 0x7FFFFFFF;
-
-	if(((u_offset >> 32) & 0xFFFFFFFF) || ((u_count >> 32) & 0xFFFFFFFF)) {
-		DEBUG(10,("posix_lock_in_range: top 32 bits not zero. offset = %.0f, count = %.0f. Ignoring lock.\n",
-				(double)u_offset, (double)u_count ));
-		/* Top 32 bits of offset or count were not zero. */
-		return False;
-	}
-
-	/* Cast from 64 bits unsigned to 64 bits signed. */
-	offset = (SMB_OFF_T)u_offset;
-	count = (SMB_OFF_T)u_count;
-
-	/*
-	 * Check if we are within the 2^31 range.
-	 */
-
-	{
-		int32 low_offset = (int32)offset;
-		int32 low_count = (int32)count;
-
-		if(low_offset < 0 || low_count < 0 || (low_offset + low_count < 0)) {
-			DEBUG(10,("posix_lock_in_range: not within 2^31 range. low_offset = %d, low_count = %d. Ignoring lock.\n",
-					low_offset, low_count ));
-			return False;
-		}
-	}
-
-	/*
-	 * Ok - we can map from a 64 bit number to a 31 bit lock.
-	 */
-
-#else /* HAVE_BROKEN_FCNTL64_LOCKS */
-
-	/*
-	 * SMB_OFF_T is 32 bits.
-	 */
-
-#if defined(HAVE_LONGLONG)
-
-	/*
-	 * SMB_BIG_UINT is 64 bits, we can do a 32 bit shift.
-	 */
-
-	/*
-	 * Deal with a very common case of count of all ones.
-	 * (lock entire file).
-	 */
-
-	if(u_count == (SMB_BIG_UINT)-1)
-		count = 0x7FFFFFFF;
-
-	if(((u_offset >> 32) & 0xFFFFFFFF) || ((u_count >> 32) & 0xFFFFFFFF)) {
-		DEBUG(10,("posix_lock_in_range: top 32 bits not zero. u_offset = %.0f, u_count = %.0f. Ignoring lock.\n",
+	if (count == 0) {
+		DEBUG(10,("posix_lock_in_range: Count = 0. Ignoring lock u_offset = %.0f, u_count = %.0f\n",
 				(double)u_offset, (double)u_count ));
 		return False;
 	}
-
-	/* Cast from 64 bits unsigned to 32 bits signed. */
-	offset = (SMB_OFF_T)u_offset;
-	count = (SMB_OFF_T)u_count;
-
-	/*
-	 * Check if we are within the 2^31 range.
-	 */
-
-	if(offset < 0 || count < 0 || (offset + count < 0)) {
-		DEBUG(10,("posix_lock_in_range: not within 2^31 range. offset = %d, count = %d. Ignoring lock.\n",
-				(int)offset, (int)count ));
-		return False;
-	}
-
-#else /* HAVE_LONGLONG */
-
-	/*
-	 * SMB_BIG_UINT and SMB_OFF_T are both 32 bits,
-	 * just cast.
-	 */
-
-	/*
-	 * Deal with a very common case of count of all ones.
-	 * (lock entire file).
-	 */
-
-	if(u_count == (SMB_BIG_UINT)-1)
-		count = 0x7FFFFFFF;
-
-	/* Cast from 32 bits unsigned to 32 bits signed. */
-	offset = (SMB_OFF_T)u_offset;
-	count = (SMB_OFF_T)u_count;
-
-	/*
-	 * Check if we are within the 2^31 range.
-	 */
-
-	if(offset < 0 || count < 0 || (offset + count < 0)) {
-		DEBUG(10,("posix_lock_in_range: not within 2^31 range. offset = %d, count = %d. Ignoring lock.\n",
-				(int)offset, (int)count ));
-		return False;
-	}
-
-#endif /* HAVE_LONGLONG */
-#endif /* LARGE_SMB_OFF_T */
-#endif /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
 
 	/*
 	 * The mapping was successful.
@@ -914,6 +783,242 @@ BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_co
 	return posix_fcntl_lock(fsp,SMB_F_GETLK,offset,count,posix_lock_type);
 }
 
+/*
+ * Structure used when splitting a lock range
+ * into a POSIX lock range. Doubly linked list.
+ */
+
+struct lock_list {
+    struct lock_list *next;
+    struct lock_list *prev;
+    SMB_OFF_T start;
+    SMB_OFF_T size;
+};
+
+/****************************************************************************
+ Create a list of lock ranges that don't overlap a given range. Used in calculating
+ POSIX locks and unlocks. This is a difficult function that requires ASCII art to
+ understand it :-).
+****************************************************************************/
+
+static struct lock_list *posix_lock_list(TALLOC_CTX *ctx, struct lock_list *lhead, files_struct *fsp)
+{
+	TDB_DATA kbuf = locking_key_fsp(fsp);
+	TDB_DATA dbuf;
+	struct posix_lock *locks;
+	size_t num_locks, i;
+
+	dbuf.dptr = NULL;
+
+	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
+
+	if (!dbuf.dptr)
+		return lhead;
+	
+	locks = (struct posix_lock *)dbuf.dptr;
+	num_locks = (size_t)(dbuf.dsize / sizeof(*locks));
+
+	/*
+	 * Check the current lock list on this dev/inode pair.
+	 * Quit if the list is deleted.
+	 */
+
+	DEBUG(10,("posix_lock_list: curr: start=%.0f,size=%.0f\n",
+		(double)lhead->start, (double)lhead->size ));
+
+	for (i=0; i<num_locks && lhead; i++) {
+
+		struct posix_lock *lock = &locks[i];
+		struct lock_list *l_curr;
+
+		/*
+		 * Walk the lock list, checking for overlaps. Note that
+		 * the lock list can expand within this loop if the current
+		 * range being examined needs to be split.
+		 */
+
+		for (l_curr = lhead; l_curr;) {
+
+			DEBUG(10,("posix_lock_list: lock: fd=%d: start=%.0f,size=%.0f:type=%s", lock->fd,
+				(double)lock->start, (double)lock->size, posix_lock_type_name(lock->lock_type) ));
+
+			if ( (l_curr->start >= (lock->start + lock->size)) ||
+				 (lock->start >= (l_curr->start + l_curr->size))) {
+
+				/* No overlap with this lock - leave this range alone. */
+/*********************************************
+                                             +---------+
+                                             | l_curr  |
+                                             +---------+
+                                +-------+
+                                | lock  |
+                                +-------+
+OR....
+             +---------+
+             |  l_curr |
+             +---------+
+**********************************************/
+
+				DEBUG(10,("no overlap case.\n" ));
+
+				l_curr = l_curr->next;
+
+			} else if ( (l_curr->start >= lock->start) &&
+						(l_curr->start + l_curr->size <= lock->start + lock->size) ) {
+
+				/*
+				 * This unlock is completely overlapped by this existing lock range
+				 * and thus should have no effect (not be unlocked). Delete it from the list.
+				 */
+/*********************************************
+                +---------+
+                |  l_curr |
+                +---------+
+        +---------------------------+
+        |       lock                |
+        +---------------------------+
+**********************************************/
+				/* Save the next pointer */
+				struct lock_list *ul_next = l_curr->next;
+
+				DEBUG(10,("delete case.\n" ));
+
+				DLIST_REMOVE(lhead, l_curr);
+				if(lhead == NULL)
+					break; /* No more list... */
+
+				l_curr = ul_next;
+				
+			} else if ( (l_curr->start >= lock->start) &&
+						(l_curr->start < lock->start + lock->size) &&
+						(l_curr->start + l_curr->size > lock->start + lock->size) ) {
+
+				/*
+				 * This unlock overlaps the existing lock range at the high end.
+				 * Truncate by moving start to existing range end and reducing size.
+				 */
+/*********************************************
+                +---------------+
+                |  l_curr       |
+                +---------------+
+        +---------------+
+        |    lock       |
+        +---------------+
+BECOMES....
+                        +-------+
+                        | l_curr|
+                        +-------+
+**********************************************/
+
+				l_curr->size = (l_curr->start + l_curr->size) - (lock->start + lock->size);
+				l_curr->start = lock->start + lock->size;
+
+				DEBUG(10,("truncate high case: start=%.0f,size=%.0f\n",
+								(double)l_curr->start, (double)l_curr->size ));
+
+				l_curr = l_curr->next;
+
+			} else if ( (l_curr->start < lock->start) &&
+						(l_curr->start + l_curr->size > lock->start) &&
+						(l_curr->start + l_curr->size <= lock->start + lock->size) ) {
+
+				/*
+				 * This unlock overlaps the existing lock range at the low end.
+				 * Truncate by reducing size.
+				 */
+/*********************************************
+   +---------------+
+   |  l_curr       |
+   +---------------+
+           +---------------+
+           |    lock       |
+           +---------------+
+BECOMES....
+   +-------+
+   | l_curr|
+   +-------+
+**********************************************/
+
+				l_curr->size = lock->start - l_curr->start;
+
+				DEBUG(10,("truncate low case: start=%.0f,size=%.0f\n",
+								(double)l_curr->start, (double)l_curr->size ));
+
+				l_curr = l_curr->next;
+		
+			} else if ( (l_curr->start < lock->start) &&
+						(l_curr->start + l_curr->size > lock->start + lock->size) ) {
+				/*
+				 * Worst case scenario. Unlock request completely overlaps an existing
+				 * lock range. Split the request into two, push the new (upper) request
+				 * into the dlink list, and continue with the entry after ul_new (as we
+				 * know that ul_new will not overlap with this lock).
+				 */
+/*********************************************
+        +---------------------------+
+        |        l_curr             |
+        +---------------------------+
+                +---------+
+                | lock    |
+                +---------+
+BECOMES.....
+        +-------+         +---------+
+        | l_curr|         | l_new   |
+        +-------+         +---------+
+**********************************************/
+				struct lock_list *l_new = (struct lock_list *)talloc(ctx,
+													sizeof(struct lock_list));
+
+				if(l_new == NULL) {
+					DEBUG(0,("posix_lock_list: talloc fail.\n"));
+					return NULL; /* The talloc_destroy takes care of cleanup. */
+				}
+
+				ZERO_STRUCTP(l_new);
+				l_new->start = lock->start + lock->size;
+				l_new->size = l_curr->start + l_curr->size - l_new->start;
+
+				/* Truncate the l_curr. */
+				l_curr->size = lock->start - l_curr->start;
+
+				DEBUG(10,("split case: curr: start=%.0f,size=%.0f \
+new: start=%.0f,size=%.0f\n", (double)l_curr->start, (double)l_curr->size,
+								(double)l_new->start, (double)l_new->size ));
+
+				/*
+				 * Add into the dlink list after the l_curr point - NOT at lhead. 
+				 * Note we can't use DLINK_ADD here as this inserts at the head of the given list.
+				 */
+
+				l_new->prev = l_curr;
+				l_new->next = l_curr->next;
+				l_curr->next = l_new;
+
+				/* And move after the link we added. */
+				l_curr = l_new->next;
+
+			} else {
+
+				/*
+				 * This logic case should never happen. Ensure this is the
+				 * case by forcing an abort.... Remove in production.
+				 */
+				pstring msg;
+
+				slprintf(msg, sizeof(msg)-1, "logic flaw in cases: l_curr: start = %.0f, size = %.0f : \
+lock: start = %.0f, size = %.0f\n", (double)l_curr->start, (double)l_curr->size, (double)lock->start, (double)lock->size );
+
+				smb_panic(msg);
+			}
+		} /* end for ( l_curr = lhead; l_curr;) */
+	} /* end for (i=0; i<num_locks && ul_head; i++) */
+
+	if (dbuf.dptr)
+		free(dbuf.dptr);
+	
+	return lhead;
+}
+
 /****************************************************************************
  POSIX function to acquire a lock. Returns True if the
  lock could be granted, False if not.
@@ -925,8 +1030,11 @@ BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_cou
 	SMB_OFF_T count;
 	BOOL ret = True;
 	size_t entry_num = 0;
+	size_t lock_count;
+	TALLOC_CTX *l_ctx = NULL;
+	struct lock_list *llist = NULL;
+	struct lock_list *ll = NULL;
 	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
-	int num_overlapping_records;
 
 	DEBUG(5,("set_posix_lock: File %s, offset = %.0f, count = %.0f, type = %s\n",
 			fsp->fsp_name, (double)u_offset, (double)u_count, posix_lock_type_name(lock_type) ));
@@ -940,279 +1048,116 @@ BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_cou
 		return True;
 
 	/*
-	 * Note that setting multiple overlapping locks on different
-	 * file descriptors will not be held separately by the kernel (POSIX
-	 * braindamage), but will be merged into one continuous lock
-	 * range. We cope with this case in the release_posix_lock code
-	 * below. We need to add the posix lock entry into the tdb before
-	 * doing the real posix lock call to deal with the locking overlay
-	 * case described above in add_posix_lock_entry().
+	 * Windows is very strange. It allows read locks to be overlayed
+	 * (even over a write lock), but leaves the write lock in force until the first
+	 * unlock. It also reference counts the locks. This means the following sequence :
+	 *
+	 * process1                                      process2
+	 * ------------------------------------------------------------------------
+	 * WRITE LOCK : start = 2, len = 10
+	 *                                            READ LOCK: start =0, len = 10 - FAIL
+	 * READ LOCK : start = 0, len = 14 
+	 *                                            READ LOCK: start =0, len = 10 - FAIL
+	 * UNLOCK : start = 2, len = 10
+	 *                                            READ LOCK: start =0, len = 10 - OK
+	 *
+	 * Under POSIX, the same sequence in steps 1 and 2 would not be reference counted, but
+	 * would leave a single read lock over the 0-14 region. In order to
+	 * re-create Windows semantics mapped to POSIX locks, we create multiple TDB
+	 * entries, one for each overlayed lock request. We are guarenteed by the brlock
+	 * semantics that if a write lock is added, then it will be first in the array.
+	 */
+	
+	if ((l_ctx = talloc_init()) == NULL) {
+		DEBUG(0,("set_posix_lock: unable to init talloc context.\n"));
+		return True; /* Not a fatal error. */
+	}
+
+	if ((ll = (struct lock_list *)talloc(l_ctx, sizeof(struct lock_list))) == NULL) {
+		DEBUG(0,("set_posix_lock: unable to talloc unlock list.\n"));
+		talloc_destroy(l_ctx);
+		return True; /* Not a fatal error. */
+	}
+
+	/*
+	 * Create the initial list entry containing the
+	 * lock we want to add.
 	 */
 
-	num_overlapping_records = add_posix_lock_entry(fsp,offset,count,posix_lock_type,&entry_num);
+	ZERO_STRUCTP(ll);
+	ll->start = offset;
+	ll->size = count;
 
-	if (num_overlapping_records == -1) {
+	DLIST_ADD(llist, ll);
+
+	/*
+	 * The following call calculates if there are any
+	 * overlapping locks held by this process on
+	 * fd's open on the same file and splits this list
+	 * into a list of lock ranges that do not overlap with existing
+	 * POSIX locks.
+	 */
+
+	llist = posix_lock_list(l_ctx, llist, fsp);
+
+	/*
+	 * Now we have the list of ranges to lock it is safe to add the
+	 * entry into the POSIX lock tdb. We take note of the entry we
+	 * added here in case we have to remove it on POSIX lock fail.
+	 */
+
+	if (!add_posix_lock_entry(fsp,offset,count,posix_lock_type,&entry_num)) {
 		DEBUG(0,("set_posix_lock: Unable to create posix lock entry !\n"));
+		talloc_destroy(l_ctx);
 		return False;
 	}
 
 	/*
-	 * num_overlapping_records is the count of lock records that
-	 * completely contain this request on the same fsp. Only bother
-	 * with the real lock request if there are none, otherwise ignore.
+	 * Add the POSIX locks on the list of ranges returned.
+	 * As the lock is supposed to be added atomically, we need to
+	 * back out all the locks if any one of these calls fail.
 	 */
 
-	if (num_overlapping_records == 0) {
-		/*
-		 * First lock entry for this range created. Do a real POSIX lock.
-		 */
-	    ret = posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,posix_lock_type);
+	for (lock_count = 0, ll = llist; ll; ll = ll->next, lock_count++) {
+		offset = ll->start;
+		count = ll->size;
 
-		/*
-		 * Oops, POSIX lock failed, delete the tdb entry we just added.
-		 */
-		if (!ret)
-			delete_posix_lock_entry_by_index(fsp,entry_num);
+		DEBUG(5,("set_posix_lock: Real lock: Type = %s: offset = %.0f, count = %.0f\n",
+			posix_lock_type_name(posix_lock_type), (double)offset, (double)count ));
+
+		if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,posix_lock_type)) {
+			DEBUG(5,("set_posix_lock: Lock fail !: Type = %s: offset = %.0f, count = %.0f\n",
+				posix_lock_type_name(posix_lock_type), (double)offset, (double)count ));
+			ret = False;
+			break;
+		}
 	}
 
+	if (!ret) {
+
+		/*
+		 * Back out all the POSIX locks we have on fail.
+		 */
+
+		for (ll = llist; lock_count; ll = ll->next, lock_count--) {
+			offset = ll->start;
+			count = ll->size;
+
+			DEBUG(5,("set_posix_lock: Backing out locks: Type = %s: offset = %.0f, count = %.0f\n",
+				posix_lock_type_name(posix_lock_type), (double)offset, (double)count ));
+
+			posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_UNLCK);
+		}
+
+		/*
+		 * Remove the tdb entry for this lock.
+		 */
+
+		delete_posix_lock_entry_by_index(fsp,entry_num);
+	}
+
+	talloc_destroy(l_ctx);
 	return ret;
-}
-
-/*
- * Structure used when splitting a lock range
- * into a POSIX lock range. Doubly linked list.
- */
-
-struct unlock_list {
-    struct unlock_list *next;
-    struct unlock_list *prev;
-    SMB_OFF_T start;
-    SMB_OFF_T size;
-};
-
-/****************************************************************************
- Create a list of lock ranges that don't overlap a given range. Used in calculating
- POSIX lock unlocks. This is a difficult function that requires ASCII art to
- understand it :-).
-****************************************************************************/
-
-static struct unlock_list *posix_unlock_list(TALLOC_CTX *ctx, struct unlock_list *ulhead, files_struct *fsp)
-{
-	TDB_DATA kbuf = locking_key_fsp(fsp);
-	TDB_DATA dbuf;
-	struct posix_lock *locks;
-	size_t num_locks, i;
-
-	dbuf.dptr = NULL;
-
-	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
-
-	if (!dbuf.dptr) {
-		return ulhead;
-	}
-	
-	locks = (struct posix_lock *)dbuf.dptr;
-	num_locks = (size_t)(dbuf.dsize / sizeof(*locks));
-
-	/*
-	 * Check the current lock list on this dev/inode pair.
-	 * Quit if the list is deleted.
-	 */
-
-	DEBUG(10,("posix_unlock_list: curr: start=%.0f,size=%.0f\n",
-		(double)ulhead->start, (double)ulhead->size ));
-
-	for (i=0; i<num_locks && ulhead; i++) {
-
-		struct posix_lock *lock = &locks[i];
-		struct unlock_list *ul_curr;
-
-		/*
-		 * Walk the unlock list, checking for overlaps. Note that
-		 * the unlock list can expand within this loop if the current
-		 * range being examined needs to be split.
-		 */
-
-		for (ul_curr = ulhead; ul_curr;) {
-
-			DEBUG(10,("posix_unlock_list: lock: fd=%d: start=%.0f,size=%.0f:type=%s", lock->fd,
-				(double)lock->start, (double)lock->size, posix_lock_type_name(lock->lock_type) ));
-
-			if ( (ul_curr->start >= (lock->start + lock->size)) ||
-				 (lock->start >= (ul_curr->start + ul_curr->size))) {
-
-				/* No overlap with this lock - leave this range alone. */
-/*********************************************
-                                             +---------+
-                                             | ul_curr |
-                                             +---------+
-                                +-------+
-                                | lock  |
-                                +-------+
-OR....
-             +---------+
-             | ul_curr |
-             +---------+
-**********************************************/
-
-				DEBUG(10,("no overlap case.\n" ));
-
-				ul_curr = ul_curr->next;
-
-			} else if ( (ul_curr->start >= lock->start) &&
-						(ul_curr->start + ul_curr->size <= lock->start + lock->size) ) {
-
-				/*
-				 * This unlock is completely overlapped by this existing lock range
-				 * and thus should have no effect (not be unlocked). Delete it from the list.
-				 */
-/*********************************************
-                +---------+
-                | ul_curr |
-                +---------+
-        +---------------------------+
-        |       lock                |
-        +---------------------------+
-**********************************************/
-				/* Save the next pointer */
-				struct unlock_list *ul_next = ul_curr->next;
-
-				DEBUG(10,("delete case.\n" ));
-
-				DLIST_REMOVE(ulhead, ul_curr);
-				if(ulhead == NULL)
-					break; /* No more list... */
-
-				ul_curr = ul_next;
-				
-			} else if ( (ul_curr->start >= lock->start) &&
-						(ul_curr->start < lock->start + lock->size) &&
-						(ul_curr->start + ul_curr->size > lock->start + lock->size) ) {
-
-				/*
-				 * This unlock overlaps the existing lock range at the high end.
-				 * Truncate by moving start to existing range end and reducing size.
-				 */
-/*********************************************
-                +---------------+
-                | ul_curr       |
-                +---------------+
-        +---------------+
-        |    lock       |
-        +---------------+
-BECOMES....
-                        +-------+
-                        |ul_curr|
-                        +-------+
-**********************************************/
-
-				ul_curr->size = (ul_curr->start + ul_curr->size) - (lock->start + lock->size);
-				ul_curr->start = lock->start + lock->size;
-
-				DEBUG(10,("truncate high case: start=%.0f,size=%.0f\n",
-								(double)ul_curr->start, (double)ul_curr->size ));
-
-				ul_curr = ul_curr->next;
-
-			} else if ( (ul_curr->start < lock->start) &&
-						(ul_curr->start + ul_curr->size > lock->start) &&
-						(ul_curr->start + ul_curr->size <= lock->start + lock->size) ) {
-
-				/*
-				 * This unlock overlaps the existing lock range at the low end.
-				 * Truncate by reducing size.
-				 */
-/*********************************************
-   +---------------+
-   | ul_curr       |
-   +---------------+
-           +---------------+
-           |    lock       |
-           +---------------+
-BECOMES....
-   +-------+
-   |ul_curr|
-   +-------+
-**********************************************/
-
-				ul_curr->size = lock->start - ul_curr->start;
-
-				DEBUG(10,("truncate low case: start=%.0f,size=%.0f\n",
-								(double)ul_curr->start, (double)ul_curr->size ));
-
-				ul_curr = ul_curr->next;
-		
-			} else if ( (ul_curr->start < lock->start) &&
-						(ul_curr->start + ul_curr->size > lock->start + lock->size) ) {
-				/*
-				 * Worst case scenario. Unlock request completely overlaps an existing
-				 * lock range. Split the request into two, push the new (upper) request
-				 * into the dlink list, and continue with the entry after ul_new (as we
-				 * know that ul_new will not overlap with this lock).
-				 */
-/*********************************************
-        +---------------------------+
-        |       ul_curr             |
-        +---------------------------+
-                +---------+
-                | lock    |
-                +---------+
-BECOMES.....
-        +-------+         +---------+
-        |ul_curr|         |ul_new   |
-        +-------+         +---------+
-**********************************************/
-				struct unlock_list *ul_new = (struct unlock_list *)talloc(ctx,
-													sizeof(struct unlock_list));
-
-				if(ul_new == NULL) {
-					DEBUG(0,("posix_unlock_list: talloc fail.\n"));
-					return NULL; /* The talloc_destroy takes care of cleanup. */
-				}
-
-				ZERO_STRUCTP(ul_new);
-				ul_new->start = lock->start + lock->size;
-				ul_new->size = ul_curr->start + ul_curr->size - ul_new->start;
-
-				/* Truncate the ul_curr. */
-				ul_curr->size = lock->start - ul_curr->start;
-
-				DEBUG(10,("split case: curr: start=%.0f,size=%.0f \
-new: start=%.0f,size=%.0f\n", (double)ul_curr->start, (double)ul_curr->size,
-								(double)ul_new->start, (double)ul_new->size ));
-
-				/*
-				 * Add into the dlink list after the ul_curr point - NOT at ulhead. 
-				 * Note we can't use DLINK_ADD here as this inserts at the head of the given list.
-				 */
-
-				ul_new->prev = ul_curr;
-				ul_new->next = ul_curr->next;
-				ul_curr->next = ul_new;
-
-				/* And move after the link we added. */
-				ul_curr = ul_new->next;
-
-			} else {
-
-				/*
-				 * This logic case should never happen. Ensure this is the
-				 * case by forcing an abort.... Remove in production.
-				 */
-				pstring msg;
-
-				slprintf(msg, sizeof(msg)-1, "logic flaw in cases: ul_curr: start = %.0f, size = %.0f : \
-lock: start = %.0f, size = %.0f\n", (double)ul_curr->start, (double)ul_curr->size, (double)lock->start, (double)lock->size );
-
-				smb_panic(msg);
-			}
-		} /* end for ( ul_curr = ulhead; ul_curr;) */
-	} /* end for (i=0; i<num_locks && ul_head; i++) */
-
-	if (dbuf.dptr)
-		free(dbuf.dptr);
-	
-	return ulhead;
 }
 
 /****************************************************************************
@@ -1226,8 +1171,8 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 	SMB_OFF_T count;
 	BOOL ret = True;
 	TALLOC_CTX *ul_ctx = NULL;
-	struct unlock_list *ulist = NULL;
-	struct unlock_list *ul = NULL;
+	struct lock_list *ulist = NULL;
+	struct lock_list *ul = NULL;
 	struct posix_lock deleted_lock;
 	int num_overlapped_entries;
 
@@ -1245,6 +1190,8 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 	/*
 	 * We treat this as one unlock request for POSIX accounting purposes even
 	 * if it may later be split into multiple smaller POSIX unlock ranges.
+	 * num_overlapped_entries is the number of existing locks that have any
+	 * overlap with this unlock request.
 	 */ 
 
 	num_overlapped_entries = delete_posix_lock_entry(fsp, offset, count, &deleted_lock);
@@ -1256,7 +1203,8 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 	/*
 	 * If num_overlapped_entries is > 0, and the lock_type we just deleted from the tdb was
 	 * a POSIX write lock, then before doing the unlock we need to downgrade
-	 * the POSIX lock to a read lock.
+	 * the POSIX lock to a read lock. This allows any overlapping read locks
+	 * to be atomically maintained.
 	 */
 
 	if (num_overlapped_entries > 0 && deleted_lock.lock_type == F_WRLCK) {
@@ -1267,11 +1215,11 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 	}
 
 	if ((ul_ctx = talloc_init()) == NULL) {
-        DEBUG(0,("release_posix_lock: unable to init talloc context.\n"));
+		DEBUG(0,("release_posix_lock: unable to init talloc context.\n"));
 		return True; /* Not a fatal error. */
 	}
 
-	if ((ul = (struct unlock_list *)talloc(ul_ctx, sizeof(struct unlock_list))) == NULL) {
+	if ((ul = (struct lock_list *)talloc(ul_ctx, sizeof(struct lock_list))) == NULL) {
 		DEBUG(0,("release_posix_lock: unable to talloc unlock list.\n"));
 		talloc_destroy(ul_ctx);
 		return True; /* Not a fatal error. */
@@ -1297,7 +1245,7 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 	 * unlocks are performed.
 	 */
 
-	ulist = posix_unlock_list(ul_ctx, ulist, fsp);
+	ulist = posix_lock_list(ul_ctx, ulist, fsp);
 
 	/*
 	 * Release the POSIX locks on the list of ranges returned.
@@ -1306,16 +1254,6 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 	for(; ulist; ulist = ulist->next) {
 		offset = ulist->start;
 		count = ulist->size;
-
-		if(u_count == 0) {
-
-			/*
-			 * This lock must overlap with an existing lock.
-			 * Don't do any POSIX call.
-			 */
-
-			continue;
-		}
 
 		DEBUG(5,("release_posix_lock: Real unlock: offset = %.0f, count = %.0f\n",
 			(double)offset, (double)count ));
