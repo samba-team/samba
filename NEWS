@@ -6,6 +6,8 @@ Changes in release 0.3b
 
  * hprop: handle more types of MIT salts
 
+ * lib/krb5: fix memory leak
+
  * bug fixes
 
 Changes in release 0.3a:
