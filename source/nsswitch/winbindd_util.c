@@ -223,11 +223,17 @@ BOOL domain_handles_open(struct winbindd_domain *domain)
 void winbindd_kill_connections(struct winbindd_domain *domain)
 {
 	BOOL is_server = False;
-	struct winbindd_domain *server_domain;
+	struct winbindd_domain *server_domain = NULL, *tmp;
 
 	/* Find pointer to domain of pdc */
 
-	server_domain = find_domain_from_name(lp_workgroup());
+	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
+		if (strequal(domain->name, tmp->name)) {
+			server_domain = tmp;
+			break;
+		}
+	}
+
 	if (!server_domain) return;
 
 	/* If NULL passed, use pdc */
