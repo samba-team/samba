@@ -507,14 +507,13 @@ void reply_name_query(struct packet_struct *p)
   /* directed queries are for WINS server: broadcasts are local SELF queries.
      the exception is Domain Master names.  */
 
-  int search = bcast ? FIND_LOCAL | FIND_SELF : FIND_WINS;
-  
-  if (name_type == 0x1b)
-  {
-    search |= FIND_WINS;
+  int search = bcast ? FIND_LOCAL | FIND_WINS: FIND_WINS;
+
+  if (!lp_wins_proxy()) {
+    search |= FIND_SELF;
   }
 
-  if (search | FIND_LOCAL)
+  if (search & FIND_LOCAL)
   {
     if (!(d = find_req_subnet(p->ip, bcast)))
     {

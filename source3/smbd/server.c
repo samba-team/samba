@@ -714,6 +714,7 @@ open a file
 ****************************************************************************/
 void open_file(int fnum,int cnum,char *fname1,int flags,int mode)
 {
+  extern struct current_user current_user;
   pstring fname;
 
   Files[fnum].open = False;
@@ -826,6 +827,7 @@ void open_file(int fnum,int cnum,char *fname1,int flags,int mode)
       fstat(Files[fnum].fd,&st);
       Files[fnum].mode = st.st_mode;
       Files[fnum].open_time = time(NULL);
+      Files[fnum].uid = current_user.id;
       Files[fnum].size = 0;
       Files[fnum].pos = -1;
       Files[fnum].open = True;
@@ -2157,10 +2159,10 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   unbecome_user();
 
   {
-    extern struct from_host Client_info;
     DEBUG(IS_IPC(cnum)?3:1,("%s %s (%s) connect to service %s as user %s (uid=%d,gid=%d) (pid %d)\n",
 			    timestring(),
-			    Client_info.name,Client_info.addr,
+			    remote_machine,
+			    client_addr(),
 			    lp_servicename(SNUM(cnum)),user,
 			    pcon->uid,
 			    pcon->gid,
@@ -2597,8 +2599,6 @@ close a cnum
 ****************************************************************************/
 void close_cnum(int cnum, int uid)
 {
-  extern struct from_host Client_info;
-
   DirCacheFlush(SNUM(cnum));
 
   unbecome_user();
@@ -2611,7 +2611,7 @@ void close_cnum(int cnum, int uid)
 
   DEBUG(IS_IPC(cnum)?3:1,("%s %s (%s) closed connection to service %s\n",
 			  timestring(),
-			  Client_info.name,Client_info.addr,
+			  remote_machine,client_addr(),
 			  lp_servicename(SNUM(cnum))));
 
   yield_connection(cnum,
@@ -2825,11 +2825,8 @@ BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear)
   StrnCpy(crec.name,lp_servicename(snum),sizeof(crec.name)-1);
   crec.start = time(NULL);
 
-  {
-    extern struct from_host Client_info;
-    StrnCpy(crec.machine,Client_info.name,sizeof(crec.machine)-1);
-    StrnCpy(crec.addr,Client_info.addr,sizeof(crec.addr)-1);
-  }
+  StrnCpy(crec.machine,remote_machine,sizeof(crec.machine)-1);
+  StrnCpy(crec.addr,client_addr(),sizeof(crec.addr)-1);
   
   /* make our mark */
   if (fseek(f,foundi*sizeof(crec),SEEK_SET) != 0 ||
@@ -2977,7 +2974,7 @@ struct smb_message_struct
    {SMBecho,"SMBecho",reply_echo,0},
    {SMBsesssetupX,"SMBsesssetupX",reply_sesssetup_and_X,0},
    {SMBtconX,"SMBtconX",reply_tcon_and_X,0},
-   {SMBulogoffX, "SMBulogoffX", reply_ulogoffX, 0}, 
+   {SMBulogoffX, "SMBulogoffX", reply_ulogoffX, AS_USER}, 
    {SMBgetatr,"SMBgetatr",reply_getatr,AS_USER},
    {SMBsetatr,"SMBsetatr",reply_setatr,AS_USER | NEED_WRITE},
    {SMBchkpth,"SMBchkpth",reply_chkpth,AS_USER},
@@ -3350,11 +3347,8 @@ static void process(void)
 {
   static int trans_num = 0;
   int nread;
-  extern struct from_host Client_info;
   extern int Client;
 
-  fromhost(Client,&Client_info);
-  
   InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   if ((InBuffer == NULL) || (OutBuffer == NULL)) 

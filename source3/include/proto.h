@@ -4,8 +4,7 @@
 /*The following definitions come from  access.c  */
 
 BOOL check_access(int snum);
-BOOL allow_access(char *deny_list,char *allow_list,struct from_host *client);
-BOOL fromhost(int sock,struct from_host *f);
+BOOL allow_access(char *deny_list,char *allow_list,char *cname,char *caddr);
 
 /*The following definitions come from  charcnv.c  */
 
@@ -234,6 +233,7 @@ BOOL lp_widelinks(int );
 BOOL lp_syncalways(int );
 BOOL lp_map_system(int );
 BOOL lp_delete_readonly(int );
+BOOL lp_fake_oplocks(int );
 int lp_create_mode(int );
 int lp_max_connections(int );
 int lp_defaultcase(int );
@@ -913,6 +913,8 @@ int interpret_security(char *str,int def);
 uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
+char *client_name(void);
+char *client_addr(void);
 void standard_sub_basic(char *s);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 int PutUniCode(char *dst,char *src);

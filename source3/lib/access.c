@@ -19,7 +19,6 @@ extern int DEBUGLEVEL;
 #endif
 
 
-#define FROM_ADDRLEN  (4*3+3+1)
 #define Good True
 #define Bad False
 
@@ -40,17 +39,13 @@ static int list_match(char *list,char *item, int (*match_fn)());
 static int client_match(char *tok,char *item);
 static int string_match(char *tok,char *s);
 static int masked_match(char *tok, char *slash, char *s);
-static int matchname(char *remotehost,struct in_addr  addr);
 
 /* Size of logical line buffer. */
 #define	BUFLEN 2048
 
-
 /* return true if access should be allowed to a service*/
 BOOL check_access(int snum)
 {
-  extern int Client;
-  extern struct from_host Client_info;
   char *denyl,*allowl;
   BOOL ret = False;
 
@@ -60,32 +55,24 @@ BOOL check_access(int snum)
   allowl = lp_hostsallow(snum);
   if (allowl) allowl = strdup(allowl);
 
-
-  fromhost(Client,&Client_info);
-
   if ((!denyl || *denyl==0) && (!allowl || *allowl==0))
     ret = True;
 
   if (!ret)
     {
-      if (!fromhost(Client,&Client_info))
-	DEBUG(0,("ERROR: Can't get from_host info\n"));
-      else
+      if (allow_access(denyl,allowl,client_name(),client_addr()))
 	{
-	  if (allow_access(denyl,allowl,&Client_info))
-	    {
-	      if (snum >= 0)
-		DEBUG(2,("Allowed connection from %s (%s) to %s\n",
-			 Client_info.name,Client_info.addr,
-			 lp_servicename(snum)));
-	      ret = True;
-	    }
-	  else
-	    if (snum >= 0)
-	      DEBUG(0,("Denied connection from %s (%s) to %s\n",
-		       Client_info.name,Client_info.addr,
-		       lp_servicename(snum)));
+	  if (snum >= 0)
+	    DEBUG(2,("Allowed connection from %s (%s) to %s\n",
+		     client_name(),client_addr(),
+		     lp_servicename(snum)));
+	  ret = True;
 	}
+      else
+	if (snum >= 0)
+	  DEBUG(0,("Denied connection from %s (%s) to %s\n",
+		   client_name(),client_addr(),
+		   lp_servicename(snum)));
     }
 
   if (denyl) free(denyl);
@@ -95,8 +82,13 @@ BOOL check_access(int snum)
 
 
 /* return true if access should be allowed */
-BOOL allow_access(char *deny_list,char *allow_list,struct from_host *client)
+BOOL allow_access(char *deny_list,char *allow_list,char *cname,char *caddr)
 {
+  char *client[2];
+
+  client[0] = cname;
+  client[1] = caddr;  
+
   /* if theres no deny list and no allow list then allow access */
   if ((!deny_list || *deny_list == 0) && (!allow_list || *allow_list == 0))
     return(True);  
@@ -171,7 +163,7 @@ static int list_match(char *list,char *item, int (*match_fn)())
 /* client_match - match host name and address against token */
 static int client_match(char *tok,char *item)
 {
-    struct from_host *client = (struct from_host *) item;
+    char **client = (char **)item;
     int     match;
 
     /*
@@ -179,9 +171,9 @@ static int client_match(char *tok,char *item)
      * name if available.
      */
 
-    if ((match = string_match(tok, client->addr)) == 0)
-	if (client->name[0] != 0)
-	    match = string_match(tok, client->name);
+    if ((match = string_match(tok, client[1])) == 0)
+	if (client[0][0] != 0)
+	    match = string_match(tok, client[0]);
     return (match);
 }
 
@@ -289,97 +281,5 @@ static int masked_match(char *tok, char *slash, char *s)
 }
 
 
-/* fromhost - find out what is at the other end of a socket */
-BOOL fromhost(int sock,struct from_host *f)
-{
-    static struct sockaddr sa;
-    struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-    struct hostent *hp;
-    int     length = sizeof(sa);
-    static char addr_buf[FROM_ADDRLEN];
-    static char name_buf[MAXHOSTNAMELEN];
-    BOOL   takeAddressAsHostname = False;
-
-    if (getpeername(sock, &sa, &length) < 0) 
-      {
-	DEBUG(0,("getpeername failed\n"));
-	return(False);
-      }
-
-    f->sin = sockin;
-    f->addr = strcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
-
-    /* Look up the remote host name. */
-    if ((hp = gethostbyaddr((char *) &sockin->sin_addr,
-			    sizeof(sockin->sin_addr),
-			    AF_INET)) == 0) {
-      DEBUG(1,("Gethostbyaddr failed for %s\n",addr_buf));
-#ifdef ALLOW_PURE_ADDRESSES
-      takeAddressAsHostname = True;
-#else
-      return(False);
-#endif
-    }
-
-    /* Save the host name. A later gethostbyxxx() call may clobber it. */
-    f->name = StrnCpy(name_buf,
-                      takeAddressAsHostname? f->addr : hp->h_name,
-                      sizeof(name_buf) - 1);
-
-    /*
-     * Verify that the host name does not belong to someone else. If host
-     * name verification fails, pretend that the host name lookup failed.
-     */
-    if (!takeAddressAsHostname && !matchname(f->name, sockin->sin_addr))
-      {
-	DEBUG(0,("Matchname failed\n"));
-	return(False);
-      }
-
-    return(True);	
-}
-
-/* matchname - determine if host name matches IP address */
-static int matchname(char *remotehost,struct in_addr  addr)
-{
-  struct hostent *hp;
-  int     i;
-  
-  if ((hp = Get_Hostbyname(remotehost)) == 0) {
-    DEBUG(0,("Get_Hostbyname(%s): lookup failure", remotehost));
-    return (Bad);
-  } 
-
-    /*
-     * Make sure that gethostbyname() returns the "correct" host name.
-     * Unfortunately, gethostbyname("localhost") sometimes yields
-     * "localhost.domain". Since the latter host name comes from the
-     * local DNS, we just have to trust it (all bets are off if the local
-     * DNS is perverted). We always check the address list, though.
-     */
-  
-  if (strcasecmp(remotehost, hp->h_name)
-      && strcasecmp(remotehost, "localhost")) {
-    DEBUG(0,("host name/name mismatch: %s != %s",
-	  remotehost, hp->h_name));
-    return (Bad);
-  }
-	
-  /* Look up the host address in the address list we just got. */
-  for (i = 0; hp->h_addr_list[i]; i++) {
-    if (memcmp(hp->h_addr_list[i], (caddr_t) & addr, sizeof(addr)) == 0)
-      return (Good);
-  }
-
-  /*
-   * The host name does not map to the original host address. Perhaps
-   * someone has compromised a name server. More likely someone botched
-   * it, but that could be dangerous, too.
-   */
-  
-  DEBUG(0,("host name/address mismatch: %s != %s",
-	inet_ntoa(addr), hp->h_name));
-  return (Bad);
-}
 
 

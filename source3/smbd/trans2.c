@@ -163,6 +163,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   char *params = *pparams;
   int16 open_mode = SVAL(params, 2);
   int16 open_attr = SVAL(params,6);
+  BOOL oplock_request = BITSETW(params,1);
 #if 0
   BOOL return_additional_info = BITSETW(params,0);
   int16 open_sattr = SVAL(params, 4);
@@ -231,6 +232,10 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   put_dos_date2(params,4, mtime);
   SIVAL(params,8, size);
   SSVAL(params,12,rmode);
+
+  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
+    smb_action |= (1<<15);
+  }
 
   SSVAL(params,18,smb_action);
   SIVAL(params,20,inode);

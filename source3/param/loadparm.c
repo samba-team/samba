@@ -242,6 +242,7 @@ typedef struct
   char magic_char;
   BOOL *copymap;
   BOOL bDeleteReadonly;
+  BOOL bFakeOplocks;
   char dummy[3]; /* for alignment */
 } service;
 
@@ -315,6 +316,7 @@ static service sDefault =
   '~',   /* magic char */
   NULL,  /* copymap */
   False, /* bDeleteReadonly */
+  False, /* bFakeOplocks */
   ""     /* dummy */
 };
 
@@ -493,6 +495,7 @@ struct parm_struct
   {"wide links",       P_BOOL,    P_LOCAL,  &sDefault.bWidelinks,       NULL},
   {"sync always",      P_BOOL,    P_LOCAL,  &sDefault.bSyncAlways,      NULL},
   {"mangled names",    P_BOOL,    P_LOCAL,  &sDefault.bMangledNames,    NULL},
+  {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL},
   {"print command",    P_STRING,  P_LOCAL,  &sDefault.szPrintcommand,   NULL},
   {"lpq command",      P_STRING,  P_LOCAL,  &sDefault.szLpqcommand,     NULL},
   {"lprm command",     P_STRING,  P_LOCAL,  &sDefault.szLprmcommand,    NULL},
@@ -838,6 +841,7 @@ FN_LOCAL_BOOL(lp_widelinks,bWidelinks)
 FN_LOCAL_BOOL(lp_syncalways,bSyncAlways)
 FN_LOCAL_BOOL(lp_map_system,bMap_system)
 FN_LOCAL_BOOL(lp_delete_readonly,bDeleteReadonly)
+FN_LOCAL_BOOL(lp_fake_oplocks,bFakeOplocks)
 
 FN_LOCAL_INTEGER(lp_create_mode,iCreate_mode)
 FN_LOCAL_INTEGER(lp_max_connections,iMaxConnections)

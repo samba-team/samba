@@ -1207,20 +1207,15 @@ BOOL check_hosts_equiv(char *user)
   pstring rhostsfile;
   struct passwd *pass = Get_Pwnam(user,True);
 
-  extern struct from_host Client_info;
-  extern int Client;
-
   if (!pass) 
     return(False);
-
-  fromhost(Client,&Client_info);
 
   fname = lp_hosts_equiv();
 
   /* note: don't allow hosts.equiv on root */
   if (fname && *fname && (pass->pw_uid != 0))
     {
-      if (check_user_equiv(user,Client_info.name,fname))
+      if (check_user_equiv(user,client_name(),fname))
 	return(True);
     }
   
@@ -1230,7 +1225,7 @@ BOOL check_hosts_equiv(char *user)
       if (home)
 	{
 	  sprintf(rhostsfile, "%s/.rhosts", home);
-	  if (check_user_equiv(user,Client_info.name,rhostsfile))
+	  if (check_user_equiv(user,client_name(),rhostsfile))
 	    return(True);
 	}
     }

@@ -150,7 +150,8 @@ struct name_record *find_name(struct name_record *n,
 		if (name_equal(&ret->name,name))
 		{
 			/* self search: self names only */
-			if ((search&FIND_SELF) == FIND_SELF && ret->source != SELF)
+			if ((search&FIND_SELF) == FIND_SELF && 
+			    ret->source != SELF)
 				continue;
 	  
 			return ret;
@@ -528,13 +529,18 @@ struct name_record *search_for_name(struct subnet_record **d,
   
   if (*d == NULL) return NULL;
 
+  if (!n && (search & FIND_SELF)) {
+    DEBUG(3,("FIND_SELF set - failing lookup\n"));
+    return NULL;
+  }
+
   DEBUG(4,("subnet %s ", inet_ntoa((*d)->bcast_ip)));
 
   /* now try DNS lookup. */
   if (!n)
     {
       struct in_addr dns_ip;
-      uint32 a;
+      uint32 a;      
       
       /* only do DNS lookups if the query is for type 0x20 or type 0x0 */
       if (!dns_type && name_type != 0x1b)
