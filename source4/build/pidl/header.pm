@@ -57,7 +57,8 @@ sub HeaderElement($)
 	    }
     }
     if (defined $element->{ARRAY_LEN} && 
-	!util::is_constant($element->{ARRAY_LEN})) {
+	!util::is_constant($element->{ARRAY_LEN}) &&
+	!$element->{POINTERS}) {
 	    # conformant arrays are ugly! I choose to implement them with
 	    # pointers instead of the [1] method
 	    $res .= "*";
@@ -105,7 +106,9 @@ sub HeaderEnum($$)
     my $e = ${$els}[$#{$els}];
     tabs();
     chomp $e;
-    $e =~ /^(.*?)\s*$/;
+    if ($e !~ /^(.*?)\s*$/) {
+	    die "Bad enum $name\n";
+    }
     $res .= "$1\n";
     $tab_depth--;
     $res .= "}";
