@@ -716,9 +716,9 @@ static void run_locktest3(int dummy)
 static void run_denytest(int dummy)
 {
 	static struct cli_state cli1, cli2;
-	char *fname = "\\lockt1.lck";
 	int fnum1, fnum2;
-	int d1, d2, o1, o2, x=0;
+	int f, d1, d2, o1, o2, x=0;
+	char *fnames[] = {"denytest.exe", "denytest.dat", NULL};
 	struct {
 		int v;
 		char *name; 
@@ -747,49 +747,55 @@ static void run_denytest(int dummy)
 
 	printf("starting denytest\n");
 
-	cli_unlink(&cli1, fname);
+	for (f=0;fnames[f];f++) {
+		cli_unlink(&cli1, fnames[f]);
 
-	fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT, DENY_NONE);
-	cli_write(&cli1, fnum1, 0, fname, 0, strlen(fname));
-	cli_close(&cli1, fnum1);
-
-	for (d1=0;deny_modes[d1].name;d1++) for (o1=0;open_modes[o1].name;o1++) 
-	for (d2=0;deny_modes[d2].name;d2++) for (o2=0;open_modes[o2].name;o2++) {
-
-		fnum1 = cli_open(&cli1, fname, open_modes[o1].v, deny_modes[d1].v);
-		fnum2 = cli_open(&cli2, fname, 
-				 open_modes[o2].v | O_CREAT, 
-				 deny_modes[d2].v);
-
-		printf("%8s %10s    %8s %10s     ",
-		       open_modes[o1].name,
-		       deny_modes[d1].name,
-		       open_modes[o2].name,
-		       deny_modes[d2].name);
-
-		if (fnum1 == -1) {
-			printf("X");
-		} else if (fnum2 == -1) {
-			printf("-");
-		} else {
-			if (cli_read(&cli2, fnum2, (void *)&x, 0, 1) == 1) {
-				printf("R");
-			}
-			if (cli_write(&cli2, fnum2, 0, (void *)&x, 0, 1) == 1) {
-				printf("W");
-			}
-		}
-
-		printf("\n");
+		fnum1 = cli_open(&cli1, fnames[f], O_RDWR|O_CREAT, DENY_NONE);
+		cli_write(&cli1, fnum1, 0, fnames[f], 0, strlen(fnames[f]));
 		cli_close(&cli1, fnum1);
-		cli_close(&cli2, fnum2);
-	}
 
-	cli_unlink(&cli1, fname);
+		for (d1=0;deny_modes[d1].name;d1++) 
+		for (o1=0;open_modes[o1].name;o1++) 
+		for (d2=0;deny_modes[d2].name;d2++) 
+		for (o2=0;open_modes[o2].name;o2++) {
+			fnum1 = cli_open(&cli1, fnames[f], 
+					 open_modes[o1].v, 
+					 deny_modes[d1].v);
+			fnum2 = cli_open(&cli2, fnames[f], 
+					 open_modes[o2].v, 
+					 deny_modes[d2].v);
+
+			printf("%s %8s %10s    %8s %10s     ",
+			       fnames[f],
+			       open_modes[o1].name,
+			       deny_modes[d1].name,
+			       open_modes[o2].name,
+			       deny_modes[d2].name);
+
+			if (fnum1 == -1) {
+				printf("X");
+			} else if (fnum2 == -1) {
+				printf("-");
+			} else {
+				if (cli_read(&cli2, fnum2, (void *)&x, 0, 1) == 1) {
+					printf("R");
+				}
+				if (cli_write(&cli2, fnum2, 0, (void *)&x, 0, 1) == 1) {
+					printf("W");
+				}
+			}
+
+			printf("\n");
+			cli_close(&cli1, fnum1);
+			cli_close(&cli2, fnum2);
+		}
+		
+		cli_unlink(&cli1, fnames[f]);
+	}
 
 	close_connection(&cli1);
 	close_connection(&cli2);
-
+	
 	printf("finshed denytest\n");
 }
 
