@@ -189,4 +189,6 @@
 #define SESSION_TEMPLATE "smb/%d"
 #endif
 
+/* Allocation roundup. */
+#define SMB_ROUNDUP_ALLOCATION_SIZE 0x100000
 #endif

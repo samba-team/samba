@@ -259,9 +259,6 @@ Byte offset   Type     name                description
 #define TYPE_MOUNTED			0x20
 #define TYPE_VIRTUAL			0x40
 
-/* Allocation roundup. */
-#define SMB_ROUNDUP_ALLOCATION_SIZE 0x100000
-
 /* NT passthrough levels... */
 
 #define SMB_FILE_DIRECTORY_INFORMATION			1001
@@ -303,6 +300,3 @@ Byte offset   Type     name                description
 #define SMB_FILE_MAXIMUM_INFORMATION			1037
 
 #endif
-
-
-

@@ -1923,20 +1923,21 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
     case SMB_SET_FILE_ALLOCATION_INFO:
     {
       int ret = -1;
-      size = IVAL(pdata,0);
+      SMB_OFF_T allocation_size = IVAL(pdata,0);
 #ifdef LARGE_SMB_OFF_T
-      size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+      allocation_size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
       if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
          return(ERROR(ERRDOS,ERRunknownlevel));
 #endif /* LARGE_SMB_OFF_T */
       DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n",
-                           fname, (double)size ));
+                           fname, (double)allocation_size ));
 
-      if(size != sbuf.st_size) {
+      if(allocation_size != sbuf.st_size) {
+        SMB_STRUCT_STAT new_sbuf;
  
-        DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new size to %.0f\n",
-            fname, (double)size ));
+        DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new allocation size to %.0f\n",
+            fname, (double)allocation_size ));
  
         if (fd == -1) {
           files_struct *new_fsp = NULL;
@@ -1960,13 +1961,23 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
  
           if (new_fsp == NULL)
             return(UNIXERROR(ERRDOS,ERRbadpath));
-          ret = vfs_allocate_file_space(new_fsp, size);
+          ret = vfs_allocate_file_space(new_fsp, allocation_size);
+          if (vfs_fstat(new_fsp,new_fsp->fd,&new_sbuf) != 0) {
+            DEBUG(3,("fstat of fnum %d failed (%s)\n",new_fsp->fnum, strerror(errno)));
+            ret = -1;
+          }
           close_file(new_fsp,True);
         } else {
-          ret = vfs_allocate_file_space(fsp, size);
+          ret = vfs_allocate_file_space(fsp, allocation_size);
+          if (vfs_fstat(fsp,fd,&new_sbuf) != 0) {
+            DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
+            ret = -1;
+          }
         }
         if (ret == -1)
           return allocate_space_error(inbuf, outbuf, errno);
+        /* Allocate can trucate size... */
+        size = new_sbuf.st_size;
       }
 
       break;
