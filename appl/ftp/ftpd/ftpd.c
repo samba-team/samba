@@ -136,7 +136,7 @@ static void	 myoob (int);
 static int	 checkuser (char *, char *);
 static int	 checkaccess (char *);
 static FILE	*dataconn (const char *, off_t, const char *);
-static void	 dolog (struct sockaddr *);
+static void	 dolog (struct sockaddr *sa, int sa_len);
 static void	 end_login (void);
 static FILE	*getdatasock (const char *);
 static char	*gunique (char *);
