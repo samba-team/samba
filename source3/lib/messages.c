@@ -92,8 +92,16 @@ void ping_message(int msg_type, pid_t src, void *buf, size_t len)
 
 void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
 {
+	char *debug_level_classes;
 	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %u\n",(unsigned int)src));
-	message_send_pid(src, MSG_DEBUGLEVEL, DEBUGLEVEL_CLASS, sizeof(DEBUGLEVEL_CLASS), True);
+
+	if (debug_level_classes = debug_list_class_names_and_levels()) {
+	/*{ debug_level_classes = "test:1000";*/
+		message_send_pid(src, MSG_DEBUGLEVEL, debug_level_classes, strlen(debug_level_classes) + 1, True);
+		SAFE_FREE(debug_level_classes);
+	} else {
+		DEBUG(0, ("debuglevel_message: error retrieving class levels!\n"));
+	}
 }
 
 /****************************************************************************

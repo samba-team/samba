@@ -24,6 +24,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_PASSDB
+
 static TDB_CONTEXT *tdb;
 
 /* open up the secrets database */

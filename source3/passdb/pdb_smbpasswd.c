@@ -23,6 +23,8 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_PASSDB
 
 /* 
    smb_passwd is analogous to sam_passwd used everywhere

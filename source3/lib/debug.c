@@ -2,6 +2,8 @@
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Elrond               2002
+   Copyright (C) Simo Sorce           2002
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -81,11 +83,23 @@
 XFILE   *dbf        = NULL;
 pstring debugf     = "";
 BOOL    append_log = False;
+BOOL    debug_warn_unknown_class = True;
+BOOL    debug_auto_add_unknown_class = True;
+BOOL    AllowDebugChange = True;
 
-int     DEBUGLEVEL_CLASS[DBGC_LAST];
-BOOL    DEBUGLEVEL_CLASS_ISSET[DBGC_LAST];
-int     DEBUGLEVEL = DEBUGLEVEL_CLASS;
-BOOL	AllowDebugChange = True;
+/*
+ * This is to allow assignment to DEBUGLEVEL before the debug
+ * system has been initialised.
+ */
+static int debug_all_class_hack = 1;
+static BOOL debug_all_class_isset_hack = True;
+
+static int debug_num_classes = 0;
+int     *DEBUGLEVEL_CLASS = &debug_all_class_hack;
+BOOL    *DEBUGLEVEL_CLASS_ISSET = &debug_all_class_isset_hack;
+
+/* DEBUGLEVEL is #defined to *debug_level */
+int     DEBUGLEVEL = &debug_all_class_hack;
 
 
 /* -------------------------------------------------------------------------- **
@@ -129,7 +143,7 @@ static BOOL    log_overflow   = False;
  * white space. There must be one name for each DBGC_<class name>, and they 
  * must be in the table in the order of DBGC_<class name>.. 
  */
-char *classname_table[] = {
+static const char *default_classname_table[] = {
 	"all",               /* DBGC_ALL; index refs traditional DEBUGLEVEL */
 	"tdb",               /* DBGC_TDB	  */
 	"printdrivers",      /* DBGC_PRINTDRIVERS */
@@ -137,36 +151,219 @@ char *classname_table[] = {
 	"smb",               /* DBGC_SMB          */
 	"rpc",               /* DBGC_RPC          */
 	"rpc_hdr",           /* DBGC_RPC_HDR      */
+	"passdb",            /* DBGC_PASSDB       */
+	"auth",              /* DBGC_AUTH         */
 	"bdc",               /* DBGC_BDC          */
+	NULL
 };
+
+static char **classname_table = NULL;
 
 
 /* -------------------------------------------------------------------------- **
  * Functions...
  */
 
+
 /****************************************************************************
-utility access to debug class names's
+utility lists registered debug class names's
 ****************************************************************************/
-char* debug_classname_from_index(int ndx)
+
+#define MAX_CLASS_NAME_SIZE 1024
+
+char *debug_list_class_names_and_levels()
 {
-	return classname_table[ndx];
+	int i, dim;
+	char **list;
+	char *buf = NULL;
+	char *b;
+	BOOL err = False;
+
+	if (DEBUGLEVEL_CLASS == &debug_all_class_hack)
+		return NULL;
+
+	list = calloc(debug_num_classes + 1, sizeof(char *));
+	if (!list)
+		return NULL;
+
+	/* prepare strings */
+	for (i = 0, dim = 0; i < debug_num_classes; i++) {
+		int l = asprintf(&list[i],
+				"%s:%d ",
+				classname_table[i],
+				DEBUGLEVEL_CLASS_ISSET[i]?DEBUGLEVEL_CLASS[i]:DEBUGLEVEL);
+		if (l < 0 || l > MAX_CLASS_NAME_SIZE) {
+			err = True;
+			goto done;
+		}
+		dim += l;
+	}
+
+	/* create single string list */
+	b = buf = malloc(dim);
+	if (!buf) {
+		err = True;
+		goto done;
+	}
+	for (i = 0; i < debug_num_classes; i++) {
+		int l = strlen(list[i]);
+		strncpy(b, list[i], l);
+		b = b + l;
+	}
+	b[-1] = '\0';
+
+done:
+	/* free strings list */
+	for (i = 0; i < debug_num_classes; i++)
+		if (list[i]) free(list[i]);
+	free(list);
+
+	if (err) {
+		if (buf)
+			free(buf);
+		return NULL;
+	} else {
+		return buf;
+	}
 }
 
 /****************************************************************************
-utility to translate names to debug class index's
+utility access to debug class names's
 ****************************************************************************/
-int debug_lookup_classname(char* classname)
+const char *debug_classname_from_index(int ndx)
+{
+	if (ndx < 0 || ndx >= debug_num_classes)
+		return NULL;
+	else
+		return classname_table[ndx];
+}
+
+/****************************************************************************
+utility to translate names to debug class index's (internal version)
+****************************************************************************/
+static int debug_lookup_classname_int(const char* classname)
 {
 	int i;
 
 	if (!classname) return -1;
 
-	for (i=0; i<DBGC_LAST; i++) {
+	for (i=0; i < debug_num_classes; i++) {
 		if (strcmp(classname, classname_table[i])==0)
 			return i;
 	}
 	return -1;
+}
+
+/****************************************************************************
+Add a new debug class to the system
+****************************************************************************/
+int debug_add_class(const char *classname)
+{
+	int ndx;
+	void *new_ptr;
+
+	if (!classname)
+		return -1;
+
+	/* check the init has yet been called */
+	debug_init();
+
+	ndx = debug_lookup_classname_int(classname);
+	if (ndx >= 0)
+		return ndx;
+	ndx = debug_num_classes;
+
+	new_ptr = DEBUGLEVEL_CLASS;
+	if (DEBUGLEVEL_CLASS == &debug_all_class_hack)
+	{
+		/* Initial loading... */
+		new_ptr = NULL;
+	}
+	new_ptr = Realloc(new_ptr,
+			  sizeof(int) * (debug_num_classes + 1));
+	if (!new_ptr)
+		return -1;
+	DEBUGLEVEL_CLASS = new_ptr;
+	DEBUGLEVEL_CLASS[ndx] = 0;
+
+	/* debug_level is the pointer used for the DEBUGLEVEL-thingy */
+	if (ndx==0)
+	{
+		/* Transfer the initial level from debug_all_class_hack */
+		DEBUGLEVEL_CLASS[ndx] = DEBUGLEVEL;
+	}
+	debug_level = DEBUGLEVEL_CLASS;
+
+	new_ptr = DEBUGLEVEL_CLASS_ISSET;
+	if (new_ptr == &debug_all_class_isset_hack)
+	{
+		new_ptr = NULL;
+	}
+	new_ptr = Realloc(new_ptr,
+			  sizeof(BOOL) * (debug_num_classes + 1));
+	if (!new_ptr)
+		return -1;
+	DEBUGLEVEL_CLASS_ISSET = new_ptr;
+	DEBUGLEVEL_CLASS_ISSET[ndx] = False;
+
+	new_ptr = Realloc(classname_table,
+			  sizeof(char *) * (debug_num_classes + 1));
+	if (!new_ptr)
+		return -1;
+	classname_table = new_ptr;
+
+	classname_table[ndx] = strdup(classname);
+	if (! classname_table[ndx])
+		return -1;
+	
+	debug_num_classes++;
+
+	return ndx;
+}
+
+/****************************************************************************
+utility to translate names to debug class index's (public version)
+****************************************************************************/
+int debug_lookup_classname(const char *classname)
+{
+	int ndx;
+       
+	if (!classname || !*classname) return -1;
+
+	ndx = debug_lookup_classname_int(classname);
+
+	if (ndx != -1)
+		return ndx;
+
+	if (debug_warn_unknown_class)
+	{
+		DEBUG(0, ("debug_lookup_classname(%s): Unknown class\n",
+			  classname));
+	}
+	if (debug_auto_add_unknown_class)
+	{
+		return debug_add_class(classname);
+	}
+	return -1;
+}
+
+
+/****************************************************************************
+dump the current registered denug levels
+****************************************************************************/
+static void debug_dump_status(int level)
+{
+	int q;
+
+	DEBUG(level, ("INFO: Current debug levels:\n"));
+	for (q = 0; q < debug_num_classes; q++)
+	{
+		DEBUGADD(level, ("  %s: %s/%d\n",
+				 classname_table[q],
+				 (DEBUGLEVEL_CLASS_ISSET[q]
+				  ? "True" : "False"),
+				 DEBUGLEVEL_CLASS[q]));
+	}
 }
 
 /****************************************************************************
@@ -179,9 +376,9 @@ BOOL debug_parse_params(char **params, int *debuglevel_class,
 	int   i, ndx;
 	char *class_name;
 	char *class_level;
-	
-	/* Set the new debug level array to the current DEBUGLEVEL array */
-	memcpy(debuglevel_class, DEBUGLEVEL_CLASS, sizeof(DEBUGLEVEL_CLASS));
+
+	if (!params)
+		return False;
 
 	/* Allow DBGC_ALL to be specified w/o requiring its class name e.g."10"  
 	 * v.s. "all:10", this is the traditional way to set DEBUGLEVEL 
@@ -195,7 +392,7 @@ BOOL debug_parse_params(char **params, int *debuglevel_class,
 		i = 0; /* DBGC_ALL not specified OR class name was included */
 
 	/* Fill in new debug class levels */
-	for (; i < DBGC_LAST && params[i]; i++) {
+	for (; i < debug_num_classes && params[i]; i++) {
 		if ((class_name=strtok(params[i],":")) &&
 			(class_level=strtok(NULL, "\0")) &&
             ((ndx = debug_lookup_classname(class_name)) != -1)) {
@@ -215,83 +412,80 @@ parse the debug levels from smb.conf. Example debug level string:
   3 tdb:5 printdrivers:7
 Note: the 1st param has no "name:" preceeding it.
 ****************************************************************************/
-BOOL debug_parse_levels(char *params_str)
+BOOL debug_parse_levels(const char *params_str)
 {
-	int  i;
-	char *params[DBGC_LAST];
-	int  debuglevel_class[DBGC_LAST];	
-	BOOL debuglevel_class_isset[DBGC_LAST];
+	char **params;
 
 	if (AllowDebugChange == False)
-		return True;
-	ZERO_ARRAY(params);
-	ZERO_ARRAY(debuglevel_class);
-	ZERO_ARRAY(debuglevel_class_isset);
+        return True;
 
-	if ((params[0]=strtok(params_str," ,"))) {
-		for (i=1; i<DBGC_LAST;i++) {
-			if ((params[i]=strtok(NULL," ,"))==NULL)
-				break;
-		}
+	params = lp_list_make(params_str);
+
+	if (debug_parse_params(params, DEBUGLEVEL_CLASS,
+			       DEBUGLEVEL_CLASS_ISSET))
+	{
+		debug_dump_status(5);
+		lp_list_free(&params);
+		return True;
+	} else {
+		lp_list_free(&params);
+		return False;
 	}
-	else
-		return False;
-
-	if (debug_parse_params(params, debuglevel_class, 
-			       debuglevel_class_isset)) {
-		debug_message(0, sys_getpid(), (void*)debuglevel_class, sizeof(debuglevel_class));
-
-		memcpy(DEBUGLEVEL_CLASS, debuglevel_class, 
-		       sizeof(debuglevel_class));
-
-		memcpy(DEBUGLEVEL_CLASS_ISSET, debuglevel_class_isset,
-		       sizeof(debuglevel_class_isset));
-
-		{
-			int q;
-
-			for (q = 0; q < DBGC_LAST; q++)
-				DEBUG(5, ("%s: %d/%d\n",
-					  classname_table[q],
-					  DEBUGLEVEL_CLASS[q],
-					  DEBUGLEVEL_CLASS_ISSET[q]));
-		}
-
-		return True;
-	} else
-		return False;
 }
 
 /****************************************************************************
 receive a "set debug level" message
 ****************************************************************************/
-void debug_message(int msg_type, pid_t src, void *buf, size_t len)
+static void debug_message(int msg_type, pid_t src, void *buf, size_t len)
 {
-	struct debuglevel_message *dm = (struct debuglevel_message *)buf;
-	int i;
+	const char *params_str = buf;
 
-	/* Set the new DEBUGLEVEL_CLASS array from the passed message */
-	memcpy(DEBUGLEVEL_CLASS, dm->debuglevel_class, sizeof(dm->debuglevel_class));
-	memcpy(DEBUGLEVEL_CLASS_ISSET, dm->debuglevel_class_isset, sizeof(dm->debuglevel_class_isset));
-
-	DEBUG(3,("INFO: Debug class %s level = %d   (pid %u from pid %u)\n",
-			classname_table[DBGC_ALL],
-			DEBUGLEVEL_CLASS[DBGC_ALL], (unsigned int)sys_getpid(), (unsigned int)src));
-
-	for (i=1; i<DBGC_LAST; i++) {
-		if (DEBUGLEVEL_CLASS[i])
-			 DEBUGADD(3,("INFO: Debug class %s level = %d\n", 
-						classname_table[i], DEBUGLEVEL_CLASS[i]));
+	/* Check, it's a proper string! */
+	if (params_str[len-1] != '\0')
+	{
+		DEBUG(1, ("Invalid debug message from pid %u to pid %u\n",
+			  (unsigned int)src, (unsigned int)getpid()));
+		return;
 	}
+
+	DEBUG(3, ("INFO: Remote set of debug to `%s'  (pid %u from pid %u)\n",
+		  params_str, (unsigned int)getpid(), (unsigned int)src));
+
+	debug_parse_levels(params_str);
 }
 
 
 /****************************************************************************
 send a "set debug level" message
 ****************************************************************************/
-void debug_message_send(pid_t pid, int level)
+void debug_message_send(pid_t pid, const char *params_str)
 {
-	message_send_pid(pid, MSG_DEBUG, &level, sizeof(int), False);
+	if (!params_str)
+		return;
+	message_send_pid(pid, MSG_DEBUG, params_str, strlen(params_str) + 1,
+			 False);
+}
+
+
+/****************************************************************************
+Init debugging (one time stuff)
+****************************************************************************/
+void debug_init(void)
+{
+	static BOOL initialised = False;
+	const char **p;
+
+	if (initialised)
+		return;
+	
+	initialised = True;
+
+	message_register(MSG_DEBUG, debug_message);
+
+	for(p = default_classname_table; *p; p++)
+	{
+		debug_add_class(*p);
+	}
 }
 
 
@@ -301,7 +495,7 @@ void debug_message_send(pid_t pid, int level)
  */
 void setup_logging(char *pname, BOOL interactive)
 {
-	message_register(MSG_DEBUG, debug_message);
+	debug_init();
 
 	/* reset to allow multiple setup calls, going from interactive to
 	   non-interactive */

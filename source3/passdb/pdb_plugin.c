@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_PASSDB
+
 NTSTATUS pdb_init_plugin(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	void * dl_handle;

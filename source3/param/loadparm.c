@@ -55,7 +55,6 @@ BOOL in_client = False;		/* Not in the client by default */
 BOOL bLoaded = False;
 
 extern userdom_struct current_user_info;
-extern int DEBUGLEVEL_CLASS[DBGC_LAST];
 extern pstring user_socket_options;
 extern pstring global_myname;
 pstring global_scope = "";
@@ -757,8 +756,8 @@ static struct parm_struct parm_table[] = {
 	{"Logging Options", P_SEP, P_SEPARATOR},
 
 	{"admin log", P_BOOL, P_GLOBAL, &Globals.bAdminLog, NULL, NULL, 0},
-	{"log level", P_INTEGER, P_GLOBAL, &DEBUGLEVEL_CLASS[DBGC_ALL], handle_debug_list, NULL, 0},
-	{"debuglevel", P_INTEGER, P_GLOBAL, &DEBUGLEVEL_CLASS[DBGC_ALL], handle_debug_list, NULL, 0},
+	{"log level", P_STRING, P_GLOBAL, NULL, handle_debug_list, NULL, 0},
+	{"debuglevel", P_STRING, P_GLOBAL, NULL, handle_debug_list, NULL, 0},
 	{"syslog", P_INTEGER, P_GLOBAL, &Globals.syslog, NULL, NULL, 0},
 	{"syslog only", P_BOOL, P_GLOBAL, &Globals.bSyslogOnly, NULL, NULL, 0},
 	{"log file", P_STRING, P_GLOBAL, &Globals.szLogFile, NULL, NULL, 0},

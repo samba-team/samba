@@ -24,6 +24,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_PASSDB
+
 #ifdef HAVE_LDAP
 /* TODO:
 *  persistent connections: if using NSS LDAP, many connections are made

@@ -22,6 +22,8 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_PASSDB
 
 /****************************************************************************
  Read a SID from a file. This is for compatibility with the old MACHINE.SID
