@@ -676,6 +676,7 @@ char *mktemp(char *); /* No standard include */
 #include <sys/netinet/ip.h>
 #include <dirent.h>
 #include <string.h>
+#include <termios.h>
 #include <fcntl.h>
 #include <sys/statfs.h>
 #include <sys/stropts.h>
