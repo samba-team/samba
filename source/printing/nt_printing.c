@@ -262,15 +262,27 @@ BOOL nt_printing_init(void)
  
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb_drivers, vstring);
-	if (tdb_fetch_int(tdb_drivers, vstring) != NTDRIVERS_DATABASE_VERSION) {
- 
-		if (tdb_fetch_int(tdb_drivers, vstring) == NTDRIVERS_DATABASE_VERSION_1) {
-			if (!upgrade_to_version_2())
-				return False;
-		} else
-			tdb_traverse(tdb_drivers, tdb_traverse_delete_fn, NULL);
- 
-		tdb_store_int(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
+	{
+		int32 vers_id;
+
+		/* Cope with byte-reversed older versions of the db. */
+		vers_id = tdb_fetch_int32(tdb_drivers, vstring);
+		if ((vers_id != NTDRIVERS_DATABASE_VERSION) && (IREV(vers_id) == NTDRIVERS_DATABASE_VERSION)) {
+			/* Written on a bigendian machine with old fetch_int code. Save as le. */
+			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
+			vers_id = NTDRIVERS_DATABASE_VERSION;
+		}
+
+		if (vers_id != NTDRIVERS_DATABASE_VERSION) {
+
+			if ((vers_id == NTDRIVERS_DATABASE_VERSION_1) || (IREV(vers_id) == NTDRIVERS_DATABASE_VERSION_1)) { 
+				if (!upgrade_to_version_2())
+					return False;
+			} else
+				tdb_traverse(tdb_drivers, tdb_traverse_delete_fn, NULL);
+			 
+			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
+		}
 	}
 	tdb_unlock_bystring(tdb_drivers, vstring);
 

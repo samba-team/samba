@@ -224,7 +224,7 @@ void standard_sub_basic(char *str)
 ****************************************************************************/
 void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str)
 {
-	char *p, *s, *home;
+	char *p, *s;
 	struct passwd *pw;
 
 	for (s=str; (p=strchr(s, '%'));s=p) {
