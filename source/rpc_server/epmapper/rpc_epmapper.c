@@ -117,13 +117,13 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr,
   build a list of all interfaces handled by all endpoint servers
 */
 static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
-			    struct dcesrv_endpoint *endpoint_list,
-			    struct dcesrv_ep_iface **eps)
+			      struct dcesrv_endpoint *endpoint_list,
+			      struct dcesrv_ep_iface **eps)
 {
 	struct dcesrv_endpoint *d;
 	uint32_t total = 0;
 
-	(*eps) = NULL;
+	(*eps) = talloc(mem_ctx, 0);
 	
 	for (d=endpoint_list; d; d=d->next) {
 		struct dcesrv_if_list *iface;
