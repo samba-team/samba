@@ -385,10 +385,12 @@ list_dir(FILE *out, const char *directory, int flags)
     }
     while((ent = readdir(d)) != NULL) {
 	if(ent->d_name[0] == '.') {
-	    if((ent->d_namlen == 1) ||
-	       (ent->d_namlen == 2 && ent->d_name[1] == '.') ||
-	       (flags & LS_IGNORE_DOT))
-		continue;
+	    if (flags & LS_IGNORE_DOT)
+	        continue;
+	    if (ent->d_name[1] == 0) /* Ignore . */
+	        continue;
+	    if (ent->d_name[1] == '.' && ent->d_name[2] == 0) /* Ignore .. */
+	        continue;
 	}
 	files = realloc(files, (n_files + 1) * sizeof(*files));
 	asprintf(&files[n_files++], "%s/%s", directory, ent->d_name);
