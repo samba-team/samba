@@ -5293,7 +5293,7 @@
 		to the logs and exit.
 		</para>
 
-		<para>Default: <command>paranoid server security = no</command></para>
+		<para>Default: <command>paranoid server security = yes</command></para>
 
 		</listitem>
 		</varlistentry>
