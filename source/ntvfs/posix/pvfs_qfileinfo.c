@@ -42,6 +42,10 @@ static uint32_t pvfs_fileinfo_access(enum smb_fileinfo_level level)
 		needed = 0;
 		break;
 
+	case RAW_FILEINFO_SEC_DESC:
+		needed = SEC_STD_READ_CONTROL;
+		break;
+
 	default:
 		needed = SEC_FILE_READ_ATTRIBUTE;
 		break;
