@@ -611,7 +611,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 
 	*session_info_out = NULL;
 
-	nt_status = make_server_info(&server_info, gensec_krb5_state->peer_principal);
+	nt_status = make_server_info(gensec_security, &server_info, gensec_krb5_state->peer_principal);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

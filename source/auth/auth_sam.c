@@ -304,7 +304,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return nt_status;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = make_server_info(server_info, username))) {		
+	if (!NT_STATUS_IS_OK(nt_status = make_server_info(auth_context, server_info, username))) {		
 		DEBUG(0,("check_sam_security: make_server_info_sam() failed with '%s'\n", nt_errstr(nt_status)));
 		return nt_status;
 	}
