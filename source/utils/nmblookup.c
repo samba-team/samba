@@ -130,6 +130,8 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 		printf("\n");
 	}
 
+	if (ip_list) free(ip_list);
+
 	return (ip_list != NULL);
 }
 
