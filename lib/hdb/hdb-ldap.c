@@ -39,7 +39,7 @@
 
 RCSID("$Id$");
 
-#ifdef HAVE_LDAP
+#ifdef OPENLDAP
 
 #include <ldap.h>
 #include <lber.h>
@@ -1337,4 +1337,4 @@ hdb_ldap_create(krb5_context context, HDB ** db, const char *filename)
     return 0;
 }
 
-#endif				/* HAVE_LDAP */
+#endif				/* OPENLDAP */
