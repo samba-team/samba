@@ -209,7 +209,8 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
-	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o 
+	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o \
+          lib/mutex.o
 #	  lib/genparser.o lib/genparser_samba.o
 
 LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o 
@@ -348,8 +349,10 @@ LIBCLI_OBJ1 = libcli/cliconnect.o libcli/clideltree.o \
              libcli/clifile.o libcli/clilist.o libcli/climessage.o \
              libcli/clireadwrite.o libcli/clitrans2.o
 
-LIBCLI_OBJ = $(LIBCLI_OBJ1) $(LIBCLI_UTILS_OBJ) $(LIBCLI_AUTH_OBJ) \
-             $(LIBCLI_RAW_OBJ)
+LIBCLI_OBJ2 = lib/select.o lib/genrand.o
+
+LIBCLI_OBJ = $(LIBCLI_OBJ1) $(LIBCLI_OBJ2) $(LIBCLI_UTILS_OBJ) $(LIBCLI_AUTH_OBJ) \
+             $(LIBCLI_RAW_OBJ) 
 
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o \
@@ -524,8 +527,23 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_subnetdb.o nmbd/nmbd_winsproxy.o nmbd/nmbd_winsserver.o \
             nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o
 
-NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(UBIQX_OBJ) \
+TALLOC_OBJ = lib/talloc.o lib/mutex.o lib/tallocmsg.o
+
+NMBD_OBJ2 = lib/fault.o lib/cmdline/popt_common.o lib/debug.o \
+            lib/util_str.o lib/util.o lib/wins_srv.o lib/util_sock.o \
+            lib/charcnv.o lib/util_file.o lib/interface.o lib/time.o \
+            lib/system.o lib/signal.o lib/data_blob.o lib/gencache.o \
+            lib/md5.o lib/md4.o lib/hmacmd5.o lib/sock_exec.o lib/util_unistr.o \
+            lib/substitute.o lib/crc32.o lib/xfile.o lib/interfaces.o \
+            lib/ms_fnmatch.o lib/iconv.o \
+            $(TALLOC_OBJ)
+
+NMBD_OBJ = $(NMBD_OBJ1) $(NMBD_OBJ2) $(PARAM_OBJ) $(LIBCLI_OBJ) $(KRBCLIENT_OBJ) $(UBIQX_OBJ) \
            $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
+
+NMBD_OBJ = $(NMBD_OBJ1) $(BASIC_OBJ) $(PARAM_OBJ) $(LIBCLI_OBJ) $(PROFILE_OBJ) \
+           $(UBIQX_OBJ) $(LIBRPC_OBJ) $(LIBNMB_OBJ) $(TDB_OBJ) nsswitch/wb_client.o \
+           nsswitch/wb_common.o lib/cmdline/popt_common.o lib/fault.o
 
 WREPL_OBJ1 = wrepld/server.o wrepld/process.o wrepld/parser.o wrepld/socket.o \
              wrepld/partners.o
@@ -632,13 +650,13 @@ BASIC_OBJ = lib/util_str.o lib/debug.o lib/xfile.o lib/util.o \
             lib/charcnv.o lib/data_blob.o lib/util_unistr.o lib/iconv.o \
             lib/util_sock.o lib/module.o lib/substitute.o lib/gencache.o \
             lib/wins_srv.o lib/version.o lib/hmacmd5.o lib/username.o \
-            lib/md5.o lib/util_pw.o lib/select.o lib/util_getent.o lib/sock_exec.o \
+            lib/md5.o lib/util_pw.o lib/util_getent.o lib/sock_exec.o \
             lib/util_file.o lib/interface.o lib/interfaces.o lib/ms_fnmatch.o \
-            lib/util_sid.o lib/signal.o lib/genrand.o lib/md4.o lib/crc32.o \
+            lib/util_sid.o lib/signal.o lib/md4.o lib/crc32.o \
             intl/lang_tdb.o lib/dummysmbd.o lib/clobber.o lib/smbrun.o \
             lib/util_sec.o lib/getsmbpass.o lib/pidfile.o \
-			lib/replace.o lib/bitmap.o lib/util_uuid.o lib/fsusage.o  \
-			lib/messages.o lib/tallocmsg.o lib/dmallocmsg.o lib/pam_errors.o \
+            lib/replace.o lib/bitmap.o lib/util_uuid.o lib/fsusage.o  \
+            lib/messages.o lib/tallocmsg.o lib/dmallocmsg.o lib/pam_errors.o 
 			
 
 

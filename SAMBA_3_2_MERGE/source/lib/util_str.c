@@ -603,9 +603,11 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 	 * or fstring) then this should cause an error under a memory
 	 * checker. */
 	dest[maxlength] = '\0';
+#if 0	/* JERRY -- temporary */
 	if (PTR_DIFF(&len, dest) > 0) {  /* check if destination is on the stack, ok if so */
 		log_suspicious_usage("safe_strcpy", src);
 	}
+#endif
 #endif
 
 	if (!src) {
@@ -644,9 +646,11 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 		return dest;
 	
 #ifdef DEVELOPER
+#if 0	/* JERRY -- temporary */
 	if (PTR_DIFF(&src_len, dest) > 0) {  /* check if destination is on the stack, ok if so */
 		log_suspicious_usage("safe_strcat", src);
 	}
+#endif
 #endif
 	src_len = strlen(src);
 	dest_len = strlen(dest);

@@ -67,6 +67,10 @@ char * __unsafe_string_function_usage_here__(void);
 
 #else
 
+/* String copy functions - macro hell below adds 'type checking' (limited,
+   but the best we can do in C) and may tag with function name/number to
+   record the last 'clobber region' on that string */
+
 #define pstrcpy(d,s) safe_strcpy((d), (s),sizeof(pstring)-1)
 #define pstrcat(d,s) safe_strcat((d), (s),sizeof(pstring)-1)
 #define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
@@ -81,6 +85,20 @@ char * __unsafe_string_function_usage_here__(void);
 #define wfstrcat(d,s) safe_strcat_w((d),(s),sizeof(wfstring))
 
 #endif
+
+                                                                                                                               #define safe_strcpy_base(dest, src, base, size) \
+    safe_strcpy(dest, src, size-PTR_DIFF(dest,base)-1)
+
+#define nstrcpy(d,s) safe_strcpy((d), (s),sizeof(nstring)-1)
+#define unstrcpy(d,s) safe_strcpy((d), (s),sizeof(unstring)-1)
+
+/* overmalloc_safe_strcpy: DEPRECATED!  Used when you know the
+ * destination buffer is longer than maxlength, but you don't know how
+ * long.  This is not a good situation, because we can't do the normal
+ * sanity checks. Don't use in new code! */
+
+#define overmalloc_safe_strcpy(dest,src,maxlength)      safe_strcpy(dest,src,maxlength)
+
 
 /* replace some string functions with multi-byte
    versions */

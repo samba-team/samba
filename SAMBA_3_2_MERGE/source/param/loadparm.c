@@ -4273,6 +4273,17 @@ void get_private_directory(pstring privdir)
 	pstrcpy (privdir, lp_private_dir());
 }
 
+/***********************************************************
+ Allow daemons such as winbindd to fix their logfile name.
+************************************************************/
+
+void lp_set_logfile(const char *name)
+{
+	string_set(&Globals.szLogFile, name);
+	pstrcpy(debugf, name);
+}
+
+
 /*******************************************************************
  Return the NetBIOS called name, or my IP - but never global_myname().
 ********************************************************************/

@@ -1076,6 +1076,16 @@ void zero_ip(struct in_addr *ip)
 	return;
 }
 
+/*******************************************************************
+ Set an IP to 255.255.255.255
+******************************************************************/
+
+void one_ip(struct in_addr *ip)
+{
+        *ip = inet_makeaddr(0xffffffff,0xffffffff);
+	return;
+}
+
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 /******************************************************************
  Remove any mount options such as -rsize=2048,wsize=2048 etc.

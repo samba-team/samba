@@ -183,7 +183,7 @@ void session_yield(user_struct *vuser)
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	client_ip = interpret_addr2(sessionid.ip_addr);
+	client_ip = interpret_addr2_x(sessionid.ip_addr);
 
 	SAFE_FREE(dbuf.dptr);
 
