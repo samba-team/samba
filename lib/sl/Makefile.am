@@ -10,6 +10,9 @@ lib_LTLIBRARIES = libsl.la libss.la
 libsl_la_LDFLAGS = -version-info 1:0:1
 libss_la_LDFLAGS = -version-info 1:1:1
 
+libsl_la_LIBADD = @LIB_readline@
+libss_la_LIBADD = @LIB_readline@
+
 RENAME_SRC = roken_rename.h strtok_r.c snprintf.c
 
 libsl_la_SOURCES = sl_locl.h sl.c
@@ -34,8 +37,8 @@ CLEANFILES = lex.c parse.c parse.h snprintf.c strtok_r.c
 
 $(mk_cmds_OBJECTS): parse.h
 
-LDADD = \
-	$(LIB_roken) \
+LDADD =						\
+	$(LIB_roken)				\
 	$(LEXLIB)
 
 strtok_r.c:
