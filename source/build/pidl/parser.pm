@@ -288,14 +288,18 @@ sub CheckArraySizes($$)
 
 	if (util::has_property($e, "size_is")) {
 		my $size = find_size_var($e, util::array_size($e), $var_prefix);
+		pidl "\tif ($var_prefix$e->{NAME}) {\n";
 		check_null_pointer($size);
-		pidl "\tNDR_CHECK(ndr_check_array_size(ndr, (void*)&$var_prefix$e->{NAME}, $size));\n";
+		pidl "\t\tNDR_CHECK(ndr_check_array_size(ndr, (void*)&$var_prefix$e->{NAME}, $size));\n";
+		pidl "\t}\n";
 	}
 
 	if (my $length = util::has_property($e, "length_is")) {
 		$length = find_size_var($e, $length, $var_prefix);
+		pidl "\tif ($var_prefix$e->{NAME}) {\n";
 		check_null_pointer($length);
-		pidl "\tNDR_CHECK(ndr_check_array_length(ndr, (void*)&$var_prefix$e->{NAME}, $length));\n";
+		pidl "\t\tNDR_CHECK(ndr_check_array_length(ndr, (void*)&$var_prefix$e->{NAME}, $length));\n";
+		pidl "\t}\n";
 	}
 }
 
