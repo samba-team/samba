@@ -1,3 +1,8 @@
+2000-05-15  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/principal.c (krb5_524_conv_principal): comment-ize, and
+	simplify string copying
+
 2000-05-12  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/fcache.c (scrub_file): new function
