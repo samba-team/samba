@@ -29,6 +29,10 @@
 #include "includes.h"
 #include "svfs.h"
 
+#ifndef O_DIRECTORY
+#define O_DIRECTORY 0
+#endif
+
 /*
   connect to a share - used when a tree_connect operation comes
   in. For a disk based backend we needs to ensure that the base
