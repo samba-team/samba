@@ -84,13 +84,13 @@ NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name)
 	/* for now just use the simple samba mapping */
 	unix_to_nt_time(&name->dos.create_time, name->st.st_ctime);
 	unix_to_nt_time(&name->dos.access_time, name->st.st_atime);
-	unix_to_nt_time(&name->dos.write_time, name->st.st_mtime);
-	unix_to_nt_time(&name->dos.change_time, name->st.st_mtime);
+	unix_to_nt_time(&name->dos.write_time,  name->st.st_mtime);
+	unix_to_nt_time(&name->dos.change_time, name->st.st_ctime);
 #ifdef HAVE_STAT_TV_NSEC
 	name->dos.create_time += name->st.st_ctim.tv_nsec / 100;
 	name->dos.access_time += name->st.st_atim.tv_nsec / 100;
 	name->dos.write_time  += name->st.st_mtim.tv_nsec / 100;
-	name->dos.change_time += name->st.st_mtim.tv_nsec / 100;
+	name->dos.change_time += name->st.st_ctim.tv_nsec / 100;
 #endif
 	name->dos.attrib = dos_mode_from_stat(pvfs, &name->st);
 	name->dos.alloc_size = name->st.st_size;
