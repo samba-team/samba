@@ -1,3 +1,8 @@
+1999-12-16  Assar Westerlund  <assar@sics.se>
+
+	* rsh.c (doit): addrinfo returned from getaddrinfo() is not usable
+	directly as hints.  copy it and set AI_PASSIVE.
+
 1999-11-20  Assar Westerlund  <assar@sics.se>
 
 	* rsh.c (main): remember to close the priviledged sockets before

@@ -1,3 +1,12 @@
+1999-12-16  Assar Westerlund  <assar@sics.se>
+
+	* appl/test/tcp_server.c: print messages to stderr
+	* appl/test/nt_gss_server.c: print messages to stderr
+	* appl/test/gssapi_server.c: print messages to stderr
+
+	* appl/test/tcp_client.c (proto): remove shadowing `context'
+	* appl/test/common.c (client_doit): add forgotten ntohs
+
 1999-12-13  Assar Westerlund  <assar@sics.se>
 
 	* configure.in (VERISON): bump to 0.2g-pre
