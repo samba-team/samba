@@ -232,7 +232,28 @@ char* lsa_io_r_lookup_rids(BOOL io, LSA_R_LOOKUP_RIDS *r_r, char *q, char *base,
 }
 
 /*******************************************************************
-reads or writes a structure.
+makes an LSA_Q_REQ_CHAL structure.
+********************************************************************/
+void make_q_req_chal(LSA_Q_REQ_CHAL *q_c,
+				char *logon_srv, char *logon_clnt,
+				DOM_CHAL *clnt_chal)
+{
+	if (q_c == NULL) return;
+
+	DEBUG(5,("make_q_req_chal: %d\n", __LINE__));
+
+	q_c->undoc_buffer = 1; /* don't know what this buffer is */
+
+	make_unistr2(&(q_c->uni_logon_srv ), logon_srv , strlen(logon_srv ));
+	make_unistr2(&(q_c->uni_logon_clnt), logon_clnt, strlen(logon_clnt));
+
+	memcpy(q_c->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
+
+	DEBUG(5,("make_q_req_chal: %d\n", __LINE__));
+}
+
+/*******************************************************************
+reads or writes an LSA_Q_REQ_CHAL structure.
 ********************************************************************/
 char* lsa_io_q_req_chal(BOOL io, LSA_Q_REQ_CHAL *q_c, char *q, char *base, int align, int depth)
 {

@@ -624,12 +624,14 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len)
 {
-	uint16 opnum = SVAL(data,22);
-	int pkttype  = CVAL(data, 2);
+	/* really should decode these using an RPC_HDR structure */
+	int pkttype    = CVAL(data, 2);
+	uint32 call_id = SVAL(data,12);
+	uint16 opnum   = SVAL(data,22);
 
 	user_struct *vuser;
 
-	if (pkttype == 0x0b) /* RPC BIND */
+	if (pkttype == RPC_BIND) /* RPC BIND */
 	{
 		DEBUG(4,("netlogon rpc bind %x\n",pkttype));
 		LsarpcTNP1(data,rdata,rdata_len);
@@ -648,7 +650,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_REQCHAL\n"));
 			api_lsa_req_chal(cnum, uid, vuser, param, data, rdata, rdata_len);
-			make_rpc_reply(data, *rdata, *rdata_len);
+			create_rpc_reply(call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -656,7 +658,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_AUTH2\n"));
 			api_lsa_auth_2(vuser, param, data, rdata, rdata_len);
-			make_rpc_reply(data, *rdata, *rdata_len);
+			create_rpc_reply(call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -664,7 +666,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_SRVPWSET\n"));
 			api_lsa_srv_pwset(vuser, param, data, rdata, rdata_len);
-			make_rpc_reply(data, *rdata, *rdata_len);
+			create_rpc_reply(call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -672,7 +674,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_SAMLOGON\n"));
 			api_lsa_sam_logon(vuser, param, data, rdata, rdata_len);
-			make_rpc_reply(data, *rdata, *rdata_len);
+			create_rpc_reply(call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -680,6 +682,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_SAMLOGOFF\n"));
 			api_lsa_sam_logoff(vuser, param, data, rdata, rdata_len);
+			create_rpc_reply(call_id, *rdata, *rdata_len);
 			break;
 		}
 

@@ -188,15 +188,14 @@ BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len)
 {
-  uint16 opnum;
-  char *q;
-  int pkttype;
+  int    pkttype = CVAL(data, 2);
+  uint32 call_id = SVAL(data,12);
+  uint16 opnum   = SVAL(data,22);
+
   extern pstring myname;
+  char *q;
 
-  opnum = SVAL(data,22);
-
-  pkttype = CVAL(data, 2);
-  if (pkttype == 0x0b) /* RPC BIND */
+  if (pkttype == RPC_BIND) /* RPC BIND */
   {
     DEBUG(4,("srvsvc rpc bind %x\n",pkttype));
     LsarpcTNP1(data,rdata,rdata_len);
@@ -214,7 +213,7 @@ BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
 	{
 	  api_srv_net_share_info( param, data, rdata, rdata_len);
 
-      make_rpc_reply(data, *rdata, *rdata_len);
+      create_rpc_reply(call_id, *rdata, *rdata_len);
       break;
     }
 

@@ -23,7 +23,6 @@
 
 extern int DEBUGLEVEL;
 
-
 /*******************************************************************
 reads or writes a UTIME type.
 ********************************************************************/
@@ -60,6 +59,56 @@ char* smb_io_time(BOOL io, NTTIME *nttime, char *q, char *base, int align, int d
 }
 
 /*******************************************************************
+creates a DOM_SID structure.
+
+BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 
+identauth >= 2^32 can be detected because it will be specified in hex
+
+********************************************************************/
+void make_dom_sid(DOM_SID *sid, char *domsid)
+{
+	int identauth;
+	char *p;
+
+	if (sid == NULL) return;
+
+	if (domsid == NULL)
+	{
+		DEBUG(4,("netlogon domain SID: none\n"));
+		sid->sid_rev_num = 0;
+		sid->num_auths = 0;
+		return;
+	}
+		
+	DEBUG(4,("netlogon domain SID: %s\n", domsid));
+
+	/* assume, but should check, that domsid starts "S-" */
+	p = strtok(domsid+2,"-");
+	sid->sid_rev_num = atoi(p);
+
+	/* identauth in decimal should be <  2^32 */
+	/* identauth in hex     should be >= 2^32 */
+	identauth = atoi(strtok(0,"-"));
+
+	DEBUG(4,("netlogon rev %d\n", sid->sid_rev_num));
+	DEBUG(4,("netlogon %s ia %d\n", p, identauth));
+
+	sid->id_auth[0] = 0;
+	sid->id_auth[1] = 0;
+	sid->id_auth[2] = (identauth & 0xff000000) >> 24;
+	sid->id_auth[3] = (identauth & 0x00ff0000) >> 16;
+	sid->id_auth[4] = (identauth & 0x0000ff00) >> 8;
+	sid->id_auth[5] = (identauth & 0x000000ff);
+
+	sid->num_auths = 0;
+
+	while ((p = strtok(0, "-")) != NULL)
+	{
+		sid->sub_auths[sid->num_auths++] = atoi(p);
+	}
+}
+
+/*******************************************************************
 reads or writes a DOM_SID structure.
 ********************************************************************/
 char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int depth)
@@ -93,6 +142,16 @@ char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int 
 }
 
 /*******************************************************************
+creates a UNIHDR structure.
+********************************************************************/
+void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint16 terminate)
+{
+	hdr->uni_max_len = 2 * max_len;
+	hdr->uni_str_len = 2 * len;
+	hdr->undoc       = terminate;
+}
+
+/*******************************************************************
 reads or writes a UNIHDR structure.
 ********************************************************************/
 char* smb_io_unihdr(BOOL io, UNIHDR *hdr, char *q, char *base, int align, int depth)
@@ -116,6 +175,15 @@ char* smb_io_unihdr(BOOL io, UNIHDR *hdr, char *q, char *base, int align, int de
 }
 
 /*******************************************************************
+creates a UNIHDR2 structure.
+********************************************************************/
+void make_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate)
+{
+	make_uni_hdr(&(hdr->unihdr), max_len, len, terminate);
+	hdr->undoc_buffer = len > 0 ? 1 : 0;
+}
+
+/*******************************************************************
 reads or writes a UNIHDR2 structure.
 ********************************************************************/
 char* smb_io_unihdr2(BOOL io, UNIHDR2 *hdr2, char *q, char *base, int align, int depth)
@@ -131,6 +199,15 @@ char* smb_io_unihdr2(BOOL io, UNIHDR2 *hdr2, char *q, char *base, int align, int
 	DBG_RW_IVAL("undoc_buffer", depth, base, io, q, hdr2->undoc_buffer); q += 4;
 
 	return q;
+}
+
+/*******************************************************************
+creates a UNISTR structure.
+********************************************************************/
+void make_unistr(UNISTR *str, char *buf)
+{
+	/* store the string (null-terminated copy) */
+	PutUniCode((char *)(str->buffer), buf);
 }
 
 /*******************************************************************
@@ -157,6 +234,20 @@ char* smb_io_unistr(BOOL io, UNISTR *uni, char *q, char *base, int align, int de
 		q += 2 * unistrcpy(q, (char*)uni->buffer);
 	}
 	return q;
+}
+
+/*******************************************************************
+creates a UNISTR2 structure.
+********************************************************************/
+void make_unistr2(UNISTR2 *str, char *buf, int len)
+{
+	/* set up string lengths. add one if string is not null-terminated */
+	str->uni_max_len = len;
+	str->undoc       = 0;
+	str->uni_str_len = len;
+
+	/* store the string (null-terminated copy) */
+	PutUniCode((char *)str->buffer, buf);
 }
 
 /*******************************************************************
@@ -193,6 +284,19 @@ char* smb_io_unistr2(BOOL io, UNISTR2 *uni2, char *q, char *base, int align, int
 }
 
 /*******************************************************************
+creates a DOM_SID2 structure.
+********************************************************************/
+void make_dom_sid2(DOM_SID2 *sid2, char *sid_str)
+{
+	int len_sid_str = strlen(sid_str);
+
+	sid2->type = 0x5;
+	sid2->undoc = 0;
+	make_uni_hdr2(&(sid2->hdr), len_sid_str, len_sid_str, 0);
+	make_unistr  (&(sid2->str), sid_str);
+}
+
+/*******************************************************************
 reads or writes a DOM_SID2 structure.
 ********************************************************************/
 char* smb_io_dom_sid2(BOOL io, DOM_SID2 *sid2, char *q, char *base, int align, int depth)
@@ -217,6 +321,17 @@ char* smb_io_dom_sid2(BOOL io, DOM_SID2 *sid2, char *q, char *base, int align, i
 	q = smb_io_unistr (io, &(sid2->str), q, base, align, depth);
 
 	return q;
+}
+
+/*******************************************************************
+creates a DOM_RID2 structure.
+********************************************************************/
+void make_dom_rid2(DOM_RID2 *rid2, uint32 rid)
+{
+	rid2->type    = 0x5;
+	rid2->undoc   = 0x5;
+	rid2->rid     = rid;
+	rid2->rid_idx = 0;
 }
 
 /*******************************************************************
@@ -494,6 +609,28 @@ char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int dept
 }
 
 /*******************************************************************
+creates an RPC_HDR structure.
+********************************************************************/
+void make_rpc_header(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
+				uint32 call_id, int data_len, int opnum)
+{
+	if (hdr == NULL) return;
+
+	hdr->major        = 5;               /* RPC version 5 */
+	hdr->minor        = 0;               /* minor version 0 */
+	hdr->pkt_type     = pkt_type;        /* RPC packet type */
+	hdr->frag         = 3;               /* first frag + last frag */
+	hdr->pack_type    = 0x10;            /* packed data representation */
+	hdr->frag_len     = data_len;        /* fragment length, fill in later */
+	hdr->auth_len     = 0;               /* authentication length */
+	hdr->call_id      = call_id;         /* call identifier - match incoming RPC */
+	hdr->alloc_hint   = data_len - 0x18; /* allocation hint (no idea) */
+	hdr->context_id   = 0;               /* presentation context identifier */
+	hdr->cancel_count = opnum;           /* cancel count.  or opnum.  XXXX CHEAT! */
+	hdr->reserved     = 0;               /* reserved */
+}
+
+/*******************************************************************
 reads or writes an RPC_HDR structure.
 ********************************************************************/
 char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int depth)
@@ -516,6 +653,7 @@ char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int 
 	DBG_RW_IVAL("call_id   ", depth, base, io, q, rpc->call_id); q += 4;
 	DBG_RW_IVAL("alloc_hint", depth, base, io, q, rpc->alloc_hint); q += 4;
 	DBG_RW_CVAL("context_id", depth, base, io, q, rpc->context_id); q++;
+	DBG_RW_CVAL("cancel_ct ", depth, base, io, q, rpc->cancel_count); q++;
 	DBG_RW_CVAL("reserved  ", depth, base, io, q, rpc->reserved); q++;
 
 	return q;
