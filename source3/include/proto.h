@@ -1588,6 +1588,19 @@ void load_printers(void);
 
 BOOL profile_setup(BOOL rdonly);
 
+/*The following definitions come from  rpc_client/cli_atsvc.c  */
+
+BOOL at_add_job(struct cli_state *cli, uint16 fnum, 
+		char *server_name, AT_JOB_INFO *info, char *command,
+		uint32 *jobid);
+BOOL at_del_job(struct cli_state *cli, uint16 fnum, 
+		char *server_name, uint32 min_jobid, uint32 max_jobid);
+BOOL at_enum_jobs(struct cli_state *cli, uint16 fnum, 
+		  char *server_name, uint32 *num_jobs,
+		  AT_ENUM_INFO *jobs, fstring *commands);
+BOOL at_query_job(struct cli_state *cli, uint16 fnum, char *server_name,
+		  uint32 jobid, AT_JOB_INFO *job, fstring command);
+
 /*The following definitions come from  rpc_client/cli_login.c  */
 
 BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
@@ -1892,6 +1905,24 @@ BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
 BOOL do_wks_query_info(struct cli_state *cli, uint16 fnum, 
 			char *server_name, uint32 switch_value,
 			WKS_INFO_100 *wks100);
+
+/*The following definitions come from  rpc_parse/parse_at.c  */
+
+void make_at_q_add_job(AT_Q_ADD_JOB *q_a, char *server,
+			AT_JOB_INFO *info, char *command);
+void at_io_job_info(char *desc, AT_JOB_INFO *info, prs_struct *ps, int depth);
+void at_io_q_add_job(char *desc, AT_Q_ADD_JOB *q_a, prs_struct *ps, int depth);
+void at_io_r_add_job(char *desc, AT_R_ADD_JOB *r_a, prs_struct *ps, int depth);
+void make_at_q_del_job(AT_Q_DEL_JOB *q_a, char *server, uint32 min_jobid,
+		       uint32 max_jobid);
+void at_io_q_del_job(char *desc, AT_Q_DEL_JOB *q_d, prs_struct *ps, int depth);
+void at_io_r_del_job(char *desc, AT_R_DEL_JOB *r_d, prs_struct *ps, int depth);
+void make_at_q_enum_jobs(AT_Q_ENUM_JOBS *q_e, char *server);
+void at_io_q_enum_jobs(char *desc, AT_Q_ENUM_JOBS *q_e, prs_struct *ps, int depth);
+void at_io_r_enum_jobs(char *desc, AT_R_ENUM_JOBS *r_e, prs_struct *ps, int depth);
+void make_at_q_query_job(AT_Q_QUERY_JOB *q_q, char *server, uint32 jobid);
+void at_io_q_query_job(char *desc, AT_Q_QUERY_JOB *q_q, prs_struct *ps, int depth);
+void at_io_r_query_job(char *desc, AT_R_QUERY_JOB *r_q, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
@@ -2842,6 +2873,10 @@ BOOL api_svcctl_rpc(pipes_struct *p, prs_struct *data);
 
 BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
 
+/*The following definitions come from  rpcclient/cmd_atsvc.c  */
+
+void cmd_at(struct client_info *info);
+
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 
 void cmd_lsa_query_info(struct client_info *info);
@@ -2977,6 +3012,10 @@ char *get_svc_start_type_str(uint32 type);
 void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
 				QUERY_SERVICE_CONFIG *cfg);
 void display_svc_info(FILE *out_hnd, enum action_type action, ENUM_SRVC_STATUS *svc);
+void display_at_enum_info(FILE *out_hnd, enum action_type action,
+		     uint32 num_jobs, AT_ENUM_INFO *jobs, fstring *commands);
+void display_at_job_info(FILE *out_hnd, enum action_type action,
+		     AT_JOB_INFO *job, fstring command);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 

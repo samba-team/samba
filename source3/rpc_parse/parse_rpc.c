@@ -122,6 +122,16 @@ interface/version dce/rpc pipe identification
 	}, 0x01                       \
 }                                 \
 
+#define SYNT_ATSVC_V1            \
+{                                 \
+	{                             \
+		0x82, 0x06, 0xf7, 0x1f,   \
+		0x51, 0x0a, 0xe8, 0x30,   \
+		0x07, 0x6d, 0x74, 0x0b,   \
+		0xe8, 0xce, 0xe9, 0x8b    \
+	}, 0x01                       \
+}                                 \
+
 #define SYNT_NONE_V0              \
 {                                 \
 	{                             \
@@ -142,6 +152,7 @@ struct pipe_id_info pipe_names [] =
 	{ PIPE_SVCCTL  , SYNT_SVCCTL_V2  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_WKSSVC  , SYNT_WKSSVC_V1  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_WINREG  , SYNT_WINREG_V1  , PIPE_WINREG   , TRANS_SYNT_V2 },
+	{ PIPE_ATSVC   , SYNT_ATSVC_V1   , PIPE_ATSVC    , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0    , NULL          , SYNT_NONE_V0  }
 };
 

@@ -514,6 +514,7 @@ nt_err_code_struct nt_errs[] =
 	{ "NT_STATUS_TOO_MANY_LINKS", NT_STATUS_TOO_MANY_LINKS },
 	{ "NT_STATUS_QUOTA_LIST_INCONSISTENT", NT_STATUS_QUOTA_LIST_INCONSISTENT },
 	{ "NT_STATUS_FILE_IS_OFFLINE", NT_STATUS_FILE_IS_OFFLINE },
+	{ "NT_STATUS_NO_SUCH_JOB", NT_STATUS_NO_SUCH_JOB },
 	{ NULL, 0 }
 };
 
@@ -525,7 +526,7 @@ char *get_nt_error_msg(uint32 nt_code)
 	static pstring msg;
 	int idx = 0;
 
-	pstrcpy(msg, "Unknown NT error");
+	snprintf(msg, sizeof(msg), "%08x", nt_code);
 
         nt_code &= 0xFFFF;
 
