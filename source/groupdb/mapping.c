@@ -975,7 +975,7 @@ int smb_create_group(char *unix_group, gid_t *new_gid)
 		pstrcpy(add_script, lp_addgroup_script());
 		pstring_sub(add_script, "%g", unix_group);
 		ret = smbrun(add_script, (new_gid!=NULL) ? &fd : NULL);
-		DEBUG(3,("smb_create_group: Running the command `%s' gave %d\n",add_script,ret));
+		DEBUG(ret ? 0 : 3,("smb_create_group: Running the command `%s' gave %d\n",add_script,ret));
 		if (ret != 0)
 			return ret;
 			
@@ -1022,7 +1022,7 @@ int smb_delete_group(char *unix_group)
 		pstrcpy(del_script, lp_delgroup_script());
 		pstring_sub(del_script, "%g", unix_group);
 		ret = smbrun(del_script,NULL);
-		DEBUG(3,("smb_delete_group: Running the command `%s' gave %d\n",del_script,ret));
+		DEBUG(ret ? 0 : 3,("smb_delete_group: Running the command `%s' gave %d\n",del_script,ret));
 		return ret;
 	}
 
@@ -1050,7 +1050,7 @@ int smb_set_primary_group(const char *unix_group, const char* unix_user)
 		all_string_sub(add_script, "%g", unix_group, sizeof(add_script));
 		all_string_sub(add_script, "%u", unix_user, sizeof(add_script));
 		ret = smbrun(add_script,NULL);
-		DEBUG(3,("smb_set_primary_group: "
+		DEBUG(ret ? 0 : 3,("smb_set_primary_group: "
 			 "Running the command `%s' gave %d\n",add_script,ret));
 		return ret;
 	}
@@ -1082,7 +1082,7 @@ int smb_add_user_group(char *unix_group, char *unix_user)
 		pstring_sub(add_script, "%g", unix_group);
 		pstring_sub(add_script, "%u", unix_user);
 		ret = smbrun(add_script,NULL);
-		DEBUG(3,("smb_add_user_group: Running the command `%s' gave %d\n",add_script,ret));
+		DEBUG(ret ? 0 : 3,("smb_add_user_group: Running the command `%s' gave %d\n",add_script,ret));
 		return ret;
 	}
 	
@@ -1113,7 +1113,7 @@ int smb_delete_user_group(const char *unix_group, const char *unix_user)
 		pstring_sub(del_script, "%g", unix_group);
 		pstring_sub(del_script, "%u", unix_user);
 		ret = smbrun(del_script,NULL);
-		DEBUG(3,("smb_delete_user_group: Running the command `%s' gave %d\n",del_script,ret));
+		DEBUG(ret ? 0 : 3,("smb_delete_user_group: Running the command `%s' gave %d\n",del_script,ret));
 		return ret;
 	}
 	
