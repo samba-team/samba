@@ -109,15 +109,19 @@ fdprintf(int s, const char *fmt, ...)
 static int help_flag;
 static int version_flag;
 static int verbose_flag;
+static int mutual_flag = 1;
+static int delegate_flag;
 static char *port_str;
 static char *service = "HTTP";
 static char *gss_mech = "SPNEGO";
 
 static struct getargs args[] = {
-    { "verbose", 'v', arg_flag, &verbose_flag, "verbose logging", "port" },
+    { "verbose", 'v', arg_flag, &verbose_flag, "verbose logging", },
     { "port", 'p', arg_string, &port_str, "port to listen to", "port" },
     { "service", 's', arg_string, &service, "service to use", "service" },
     { "mech", 'm', arg_string, &gss_mech, "gssapi mech to use", "mech" },
+    { "mutual", 0, arg_negative_flag, &mutual_flag, "no gssapi mutual auth" },
+    { "delegate", 0, arg_flag, &delegate_flag, "gssapi delegate credential" },
     { "help", 'h', arg_flag, &help_flag },
     { "version", 0, arg_flag, &version_flag }
 };
@@ -286,6 +290,7 @@ main(int argc, char **argv)
     gss_name_t server = GSS_C_NO_NAME;
     int optind = 0;
     gss_OID mech;
+    OM_uint32 flags;
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage(1);
@@ -310,6 +315,12 @@ main(int argc, char **argv)
 	page = argv[1];
     else
 	page = "/";
+
+    flags = 0;
+    if (delegate_flag)
+	flags |= GSS_C_DELEG_FLAG;
+    if (mutual_flag)
+	flags |= GSS_C_MUTUAL_FLAG;
 
     done = 0;
     num_headers = 0;
@@ -388,7 +399,7 @@ main(int argc, char **argv)
 					 &context_hdl,
 					 server,
 					 mech,
-					 0,
+					 flags,
 					 0,
 					 GSS_C_NO_CHANNEL_BINDINGS,
 					 &input_token,
