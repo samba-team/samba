@@ -79,7 +79,7 @@ NTSTATUS sam_get_methods_by_name(const SAM_CONTEXT *context, SAM_METHODS **sam_m
 	tmp_methods = context->methods;
 
 	while (tmp_methods) {
-		if (strcmp(domainname, tmp_methods->domain_name))
+		if (!strcmp(domainname, tmp_methods->domain_name))
 		{
 			(*sam_method) = tmp_methods;
 			return NT_STATUS_OK;
@@ -256,6 +256,7 @@ NTSTATUS context_sam_enum_domains(const SAM_CONTEXT *context, const NT_USER_TOKE
 	}
 
 	tmp_methods= context->methods;
+	*domain_count = 0;
 
 	while (tmp_methods) {
 		(*domain_count)++;
@@ -264,15 +265,19 @@ NTSTATUS context_sam_enum_domains(const SAM_CONTEXT *context, const NT_USER_TOKE
 
 	DEBUG(6,("context_sam_enum_domains: enumerating %d domains\n", (*domain_count)));
 
+	if (*domain_count == 0) {
+		return NT_STATUS_OK;
+	}
+
 	tmp_methods = context->methods;
 
 	if (((*domains) = malloc( sizeof(DOM_SID) * (*domain_count))) == NULL) {
-		DEBUG(0,("context_sam_enum_domains: Out of memory allocating domain list\n"));
+		DEBUG(0,("context_sam_enum_domains: Out of memory allocating domain SID list\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (((*domain_names) = malloc( sizeof(char*) * (*domain_count))) == NULL) {
-		DEBUG(0,("context_sam_enum_domains: Out of memory allocating domain list\n"));
+		DEBUG(0,("context_sam_enum_domains: Out of memory allocating domain name list\n"));
 		SAFE_FREE((*domains));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -280,13 +285,7 @@ NTSTATUS context_sam_enum_domains(const SAM_CONTEXT *context, const NT_USER_TOKE
 	while (tmp_methods) {
 		DEBUGADD(7,("    [%d] %s: %s\n", i, tmp_methods->domain_name, sid_string_static(&tmp_methods->domain_sid)));
 		sid_copy(domains[i],&tmp_methods->domain_sid);
-		if(asprintf(&(*domain_names[i]),"%s",tmp_methods->domain_name) < 0) {
-			DEBUG(0,("context_sam_enum_domains: asprintf failed"));
-			SAFE_FREE((*domains));
-			SAFE_FREE((*domain_names));
-			return NT_STATUS_NO_MEMORY;
-		}
-
+		*domain_names[i] = smb_xstrdup(tmp_methods->domain_name);
 		i++;
 		tmp_methods= tmp_methods->next;
 	}

@@ -26,12 +26,16 @@ static NTSTATUS cmd_load_module(struct samtest_state *st, TALLOC_CTX *mem_ctx, i
 {
 	char *plugin_arg[2];
 	NTSTATUS status;
-	if (argc != 2) {
-		printf("Usage: load <module path>\n");
+	if (argc != 2 && argc != 3) {
+		printf("Usage: load <module path> [domain-sid]\n");
 		return NT_STATUS_OK;
 	}
 
-	asprintf(&plugin_arg[0], "plugin:%s", argv[1]);
+	if (argc == 3)
+		asprintf(&plugin_arg[0], "%s|plugin:%s", argv[2], argv[1]);
+	else
+		asprintf(&plugin_arg[0], "plugin:%s", argv[1]);
+
 	plugin_arg[1] = NULL;
 	
 	if(!NT_STATUS_IS_OK(status = make_sam_context_list(&st->context, plugin_arg))) {
@@ -61,7 +65,7 @@ static NTSTATUS cmd_lookup_sid(struct samtest_state *st, TALLOC_CTX *mem_ctx, in
 	uint32 type;
 	NTSTATUS status;
 	DOM_SID sid;
-	if(argc != 2) {
+	if (argc != 2) {
 		printf("Usage: lookup_sid <sid>\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -71,21 +75,36 @@ static NTSTATUS cmd_lookup_sid(struct samtest_state *st, TALLOC_CTX *mem_ctx, in
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if(!NT_STATUS_IS_OK(status = context_sam_lookup_sid(st->context, st->token, &sid, &name, &type))) {
+	if (!NT_STATUS_IS_OK(status = context_sam_lookup_sid(st->context, st->token, &sid, &name, &type))) {
 		printf("context_sam_lookup_sid failed!\n");
 		return status;
 	}
+
+	printf("Name: %s\n", name);
+	printf("Type: %d\n", type); /* FIXME: What kind of an integer is type ? */
 
 	return NT_STATUS_OK;
 }
 
 static NTSTATUS cmd_lookup_name(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
-	if(argc != 2) {
-		printf("Usage: lookup_name <name>\n");
+	DOM_SID *sid;
+	uint32 type;
+	NTSTATUS status;
+	if (argc != 3) {
+		printf("Usage: lookup_name <domain> <name>\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	return NT_STATUS_NOT_IMPLEMENTED;
+
+	if (!NT_STATUS_IS_OK(status = context_sam_lookup_name(st->context, st->token, argv[1], argv[2], &sid, &type))) {
+		printf("context_sam_lookup_name failed!\n");
+		return status;
+	}
+
+	printf("SID: %s\n", sid_string_static(sid));
+	printf("Type: %d\n", type);
+	
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS cmd_lookup_account(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
@@ -96,6 +115,47 @@ static NTSTATUS cmd_lookup_account(struct samtest_state *st, TALLOC_CTX *mem_ctx
 static NTSTATUS cmd_lookup_group(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS cmd_lookup_domain(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	DOM_SID *sid;
+	NTSTATUS status;
+	if (argc != 2) {
+		printf("Usage: lookup_domain <domain>\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!NT_STATUS_IS_OK(status = context_sam_lookup_domain(st->context, st->token, argv[1], &sid))) {
+		printf("context_sam_lookup_name failed!\n");
+		return status;
+	}
+
+	printf("SID: %s\n", sid_string_static(sid));
+	
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_enum_domains(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
+{
+	int32 domain_count, i;
+	DOM_SID *domain_sids;
+	char **domain_names;
+	NTSTATUS status;
+
+	if (!NT_STATUS_IS_OK(status = context_sam_enum_domains(st->context, st->token, &domain_count, &domain_sids, &domain_names))) {
+		printf("context_sam_enum_domains failed!\n");
+		return status;
+	}
+
+	for (i = 0; i < domain_count; i++) {
+		printf("%s %s\n", domain_names[i], sid_string_static(&domain_sids[i]));
+	}
+
+	SAFE_FREE(domain_sids);
+	SAFE_FREE(domain_names);
+	
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS cmd_update_domain(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
@@ -194,7 +254,7 @@ struct cmd_set sam_general_commands[] = {
 
 	{ "General SAM Commands" },
 
-	{ "load", cmd_load_module, "Load a module", "load <module.so>" },
+	{ "load", cmd_load_module, "Load a module", "load <module.so> [domain-sid]" },
 	{ "get_sec_desc", cmd_get_sec_desc, "Get security descriptor info", "get_sec_desc <access-token> <sid>" },
 	{ "set_sec_desc", cmd_set_sec_desc, "Set security descriptor info", "set_sec_desc <access-token> <sid>" },
 	{ "lookup_sid", cmd_lookup_sid, "Lookup type of specified SID", "lookup_sid <sid>" },
@@ -206,6 +266,8 @@ struct cmd_set sam_domain_commands[] = {
 	{ "Domain Commands" },
 	{ "update_domain", cmd_update_domain, "Update domain information", "update_domain [domain-options] domain-name | domain-sid" },
 	{ "show_domain", cmd_show_domain, "Show domain information", "show_domain domain-sid | domain-name" },
+	{ "enum_domains", cmd_enum_domains, "Enumerate all domains", "enum_domains <token> <acct-ctrl>" },
+	{ "lookup_domain", cmd_lookup_domain, "Lookup a domain by name", "lookup_domain domain-name" },
 	{ NULL }
 };
 
