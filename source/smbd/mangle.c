@@ -576,15 +576,6 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
   s2 = (char *)&(s1[mangled_len + 1]);
   (void)StrnCpy( s1, mangled_name, mangled_len );
   (void)StrnCpy( s2, raw_name,     raw_len );
-
-  /* possibly delete an old entry - this avoids a memory leak in the
-     ubi code to do with overwriting existing entries.
-
-     remove this test when ubi gets fixed */
-  if (ubi_cacheGet(mangled_cache, s1)) {
-	  ubi_cacheDelete(mangled_cache, s1);
-  }
-
   ubi_cachePut( mangled_cache, i, new_entry, s1 );
   } /* cache_mangled_name */
 
