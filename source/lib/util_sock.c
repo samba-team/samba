@@ -798,6 +798,142 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 }
 
 /****************************************************************************
+ Create an outgoing TCP socket to any of the addrs. This is for
+ simultaneous connects to port 445 and 139 of a host or even a variety
+ of DC's all of which are equivalent for our purposes.
+**************************************************************************/
+
+BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
+			 int timeout, int *fd_index, int *fd)
+{
+	int i, resulting_index, res;
+	int *sockets;
+	BOOL good_connect;
+
+	fd_set wr_fds;
+	struct timeval tv;
+	int maxfd;
+
+	int connect_loop = 10000; /* 10 milliseconds */
+
+	timeout *= 1000; 	/* convert to microseconds */
+
+	sockets = malloc(num_addrs * sizeof(*sockets));
+
+	if (sockets == NULL)
+		return False;
+
+	resulting_index = -1;
+
+	for (i=0; i<num_addrs; i++)
+		sockets[i] = -1;
+
+	for (i=0; i<num_addrs; i++) {
+		sockets[i] = socket(PF_INET, SOCK_STREAM, 0);
+		if (sockets[i] < 0)
+			goto done;
+		set_blocking(sockets[i], False);
+	}
+
+ connect_again:
+	good_connect = False;
+
+	for (i=0; i<num_addrs; i++) {
+
+		if (connect(sockets[i], (struct sockaddr *)&(addrs[i]),
+			    sizeof(*addrs)) == 0) {
+			/* Rather unlikely as we are non-blocking, but it
+			 * might actually happen. */
+			resulting_index = i;
+			goto done;
+		}
+
+		if (errno == EINPROGRESS || errno == EALREADY ||
+		    errno == EAGAIN) {
+			/* These are the error messages that something is
+			   progressing. */
+			good_connect = True;
+		}
+	}
+
+	if (!good_connect) {
+		/* All of the connect's resulted in real error conditions */
+		goto done;
+	}
+
+	/* Lets see if any of the connect attempts succeeded */
+
+	maxfd = 0;
+	FD_ZERO(&wr_fds);
+
+	for (i=0; i<num_addrs; i++) {
+		FD_SET(sockets[i], &wr_fds);
+		if (sockets[i]>maxfd)
+			maxfd = sockets[i];
+	}
+
+	tv.tv_sec = 0;
+	tv.tv_usec = connect_loop;
+
+	res = sys_select(maxfd+1, NULL, &wr_fds, NULL, &tv);
+
+	if (res < 0)
+		goto done;
+
+	if (res == 0)
+		goto next_round;
+
+	for (i=0; i<num_addrs; i++) {
+
+		int sockerr, sockerr_len;
+		
+		if (!FD_ISSET(sockets[i], &wr_fds))
+			continue;
+
+		sockerr_len = sizeof(sockerr);
+
+		res = getsockopt(sockets[i], SOL_SOCKET, SO_ERROR, &sockerr,
+				 &sockerr_len);
+
+		if (res < 0)
+			goto done;
+
+		if (sockerr == 0) {
+			/* Hey, we got a connection */
+			resulting_index = i;
+			goto done;
+		}
+	}
+
+ next_round:
+
+	timeout -= connect_loop;
+	if (timeout <= 0)
+		goto done;
+	connect_loop *= 1.5;
+	if (connect_loop > timeout)
+		connect_loop = timeout;
+	goto connect_again;
+
+ done:
+	for (i=0; i<num_addrs; i++) {
+		if (i == resulting_index)
+			continue;
+		if (sockets[i] >= 0)
+			close(sockets[i]);
+	}
+
+	if (resulting_index >= 0) {
+		*fd_index = resulting_index;
+		*fd = sockets[*fd_index];
+		set_blocking(*fd, True);
+	}
+
+	free(sockets);
+
+	return (resulting_index >= 0);
+}
+/****************************************************************************
  Open a connected UDP socket to host on port
 **************************************************************************/
 
