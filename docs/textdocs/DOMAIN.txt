@@ -1,5 +1,5 @@
 !==
-!== DOMAIN.txt for Samba release 1.9.18 08 Jan 1998
+!== DOMAIN.txt for Samba release 1.9.18p1 13 Jan 1998
 !==
 Contributor:	Samba Team
 Updated:	June 27, 1997

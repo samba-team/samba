@@ -1,5 +1,5 @@
 !==
-!== MIRRORS.txt for Samba release 1.9.18 08 Jan 1998
+!== MIRRORS.txt for Samba release 1.9.18p1 13 Jan 1998
 !==
 The main Samba ftp site is samba.anu.edu.au in pub/samba/. Contact
 samba-bugs@samba.anu.edu.au for help with this site.
