@@ -3,7 +3,7 @@ AC_REVISION($Revision$)
 AC_INIT(lib/krb5/send_to_kdc.c)
 AM_CONFIG_HEADER(include/config.h)
 
-AM_INIT_AUTOMAKE(heimdal,0.1g)
+AM_INIT_AUTOMAKE(heimdal,0.1h)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
 
@@ -205,10 +205,8 @@ AC_TEST_PACKAGE_NEW(hesiod,[#include <hesiod.h>],-lhesiod)
 AC_C_BIGENDIAN
 AC_C_INLINE
 
-dnl 
-dnl See if there is any X11 present
-dnl
-AC_PATH_XTRA
+KRB_CHECK_X
+
 if test "$no_x" = "yes" ; then
 	MAKE_X_PROGS_BIN=""
 	MAKE_X_PROGS_LIBEXEC=""
