@@ -61,6 +61,10 @@ server. Please use it with care. If you do not need it then do NOT
 install.
 
 %changelog
+* Mon May 29 2000 John H Terpstra <jht@turbolinux.com>
+- moved linkage of libnss_wins.so.2 to %post
+- added removal step to %postun
+
 * Fri Apr 14 2000 John H Terpstra <jht@turbolinux.com>
 - Added unicode pages
 
@@ -218,7 +222,6 @@ done
 
 # Install the nsswitch library extension file
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
-ln -s $RPM_BUILD_ROOT/lib/libnss_wins.so $RPM_BUILD_ROOT/lib/libnss_wins.so.2
 
 # Install SWAT helper files
 for i in swat/help/*.html
@@ -318,6 +321,8 @@ if [ -f /etc/xinetd.conf ]; then
 	mv /etc/xinetd.conf /etc/xinetd.conf.presamba
 	/usr/sbin/itox --daemon_dir /usr/sbin < /etc/inetd.conf > /etc/xinetd.conf
 fi
+# Make link for wins resolver
+ln -s /lib/libnss_wins.so /lib/libnss_wins.so.2
 
 %preun
 if [ $1 = 0 ] ; then
@@ -365,6 +370,7 @@ fi
 if [ -f /sbin/mount.smb ]; then
 	rm -f /sbin/mount.smb
 fi
+rm -f /lib/libnss_wins.so.2
 
 %triggerpostun -- samba < samba-2.0.0
 if [ $0 != 0 ]; then
