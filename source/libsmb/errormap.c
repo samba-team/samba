@@ -1396,8 +1396,8 @@ void ntstatus_to_dos(NTSTATUS ntstatus, uint8 *eclass, uint32 *ecode)
 			return;
 		}
 	}
-	*eclass = ERRSRV;
-	*ecode = ERRerror;
+	*eclass = ERRHRD;
+	*ecode = ERRgeneral;
 }
 
 
