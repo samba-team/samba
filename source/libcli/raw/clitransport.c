@@ -76,7 +76,10 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock)
 	transport->socket = talloc_reference(transport, sock);
 	transport->negotiate.protocol = PROTOCOL_NT1;
 	transport->options.use_spnego = lp_use_spnego();
-	transport->negotiate.max_xmit = ~0;
+	transport->options.max_xmit = lp_max_xmit();
+	transport->options.max_mux = lp_maxmux();
+
+	transport->negotiate.max_xmit = transport->options.max_xmit;
 	
 	smbcli_init_signing(transport);
 

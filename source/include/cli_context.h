@@ -91,6 +91,8 @@ struct smbcli_options {
 	uint_t use_oplocks:1;
 	uint_t use_level2_oplocks:1;
 	uint_t use_spnego:1;
+	uint32_t max_xmit;
+	uint16_t max_mux;
 };
 
 /* this is the context for the client transport layer */

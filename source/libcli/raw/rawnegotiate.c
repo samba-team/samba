@@ -169,7 +169,7 @@ NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport)
 		/* the old core protocol */
 		transport->negotiate.sec_mode = 0;
 		transport->negotiate.server_time = time(NULL);
-		transport->negotiate.max_xmit = ~0;
+		transport->negotiate.max_xmit = transport->options.max_xmit;
 		transport->negotiate.server_zone = get_time_zone(transport->negotiate.server_time);
 	}
 
