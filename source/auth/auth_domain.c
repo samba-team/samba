@@ -41,7 +41,8 @@ extern BOOL global_machine_password_needs_changing;
  **/
 
 static NTSTATUS connect_to_domain_password_server(struct cli_state **cli, 
-						  const char *dc_name, struct in_addr dc_ip, 
+						  const char *domain, const char *dc_name,
+						  struct in_addr dc_ip, 
 						  const char *setup_creds_as,
 						  uint16 sec_chan,
 						  const unsigned char *trust_passwd,
@@ -111,6 +112,10 @@ machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* This must be the remote domain (not ours) for schannel */
+
+	fstrcpy( (*cli)->domain, domain ); 
+
 	result = cli_nt_establish_netlogon(*cli, sec_chan, trust_passwd);
 
         if (!NT_STATUS_IS_OK(result)) {
@@ -162,8 +167,8 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	/* rety loop for robustness */
 	
 	for (i = 0; !NT_STATUS_IS_OK(nt_status) && retry && (i < 3); i++) {
-		nt_status = connect_to_domain_password_server(&cli, dc_name, dc_ip, setup_creds_as,
-			sec_chan, trust_passwd, &retry);
+		nt_status = connect_to_domain_password_server(&cli, domain, dc_name, 
+			dc_ip, setup_creds_as, sec_chan, trust_passwd, &retry);
 	}
 
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
@@ -297,7 +302,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	/* we need our DC to send the net_sam_logon() request to */
 
 	if ( !get_dc_name(domain, NULL, dc_name, &dc_ip) ) {
-		DEBUG(5,("check_trustdomain_security: unable to locate a DC for domain %s\n",
+		DEBUG(5,("check_ntdomain_security: unable to locate a DC for domain %s\n",
 			user_info->domain.str));
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
