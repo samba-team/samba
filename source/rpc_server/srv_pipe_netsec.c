@@ -242,7 +242,7 @@ static BOOL api_netsec_verify(rpcsrv_struct *l,
 
 	memset(password, 0, sizeof(password));
 
-	DEBUG(5,("api_netsec_verify: checking user details\n"));
+	DEBUG(5,("api_netsec_verify: checking netlogon details\n"));
 
 	lm_owf_len = netsec_resp->hdr_lm_resp.str_str_len;
 	nt_owf_len = netsec_resp->hdr_nt_resp.str_str_len;
