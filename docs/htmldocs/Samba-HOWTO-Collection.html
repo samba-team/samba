@@ -1,0 +1,3018 @@
+<HTML
+><HEAD
+><TITLE
+>SAMBA Project Documentation</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="BOOK"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="BOOK"
+><A
+NAME="SAMBA-PROJECT-DOCUMENTATION"
+></A
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="SAMBA-PROJECT-DOCUMENTATION"
+>SAMBA Project Documentation</A
+></H1
+><H3
+CLASS="AUTHOR"
+><A
+NAME="AEN4"
+>SAMBA Team</A
+></H3
+><HR></DIV
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>1. <A
+HREF="#AEN10"
+>How to Install and Test SAMBA</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="#AEN12"
+>Step 0: Read the man pages</A
+></DT
+><DT
+><A
+HREF="#AEN20"
+>Building the Binaries</A
+></DT
+><DT
+><A
+HREF="#AEN48"
+>Step 2: The all important step</A
+></DT
+><DT
+><A
+HREF="#AEN52"
+>Step 3: Create the smb configuration file.</A
+></DT
+><DT
+><A
+HREF="#AEN66"
+>Step 4: Test your config file with 
+	<B
+CLASS="COMMAND"
+>testparm</B
+></A
+></DT
+><DT
+><A
+HREF="#AEN72"
+>Step 5: Starting the smbd and nmbd</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="#AEN82"
+>Step 5a: Starting from inetd.conf</A
+></DT
+><DT
+><A
+HREF="#AEN111"
+>Step 5b. Alternative: starting it as a daemon</A
+></DT
+></DL
+></DD
+><DT
+><A
+HREF="#AEN127"
+>Step 6: Try listing the shares available on your 
+	server</A
+></DT
+><DT
+><A
+HREF="#AEN136"
+>Step 7: Try connecting with the unix client</A
+></DT
+><DT
+><A
+HREF="#AEN152"
+>Step 8: Try connecting from a DOS, WfWg, Win9x, WinNT, 
+	Win2k, OS/2, etc... client</A
+></DT
+><DT
+><A
+HREF="#AEN166"
+>What If Things Don't Work?</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="#AEN171"
+>DIAGNOSING PROBLEMS</A
+></DT
+><DT
+><A
+HREF="#AEN175"
+>SCOPE IDs</A
+></DT
+><DT
+><A
+HREF="#AEN178"
+>CHOOSING THE PROTOCOL LEVEL</A
+></DT
+><DT
+><A
+HREF="#AEN187"
+>PRINTING FROM UNIX TO A CLIENT PC</A
+></DT
+><DT
+><A
+HREF="#AEN191"
+>LOCKING</A
+></DT
+><DT
+><A
+HREF="#AEN201"
+>MAPPING USERNAMES</A
+></DT
+><DT
+><A
+HREF="#AEN204"
+>OTHER CHARACTER SETS</A
+></DT
+></DL
+></DD
+></DL
+></DD
+><DT
+>2. <A
+HREF="#AEN207"
+>Hosting a Microsoft Distributed File System tree on Samba</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="#AEN209"
+>HOWTO</A
+></DT
+><DT
+><A
+HREF="#AEN243"
+>NOTES</A
+></DT
+></DL
+></DD
+><DT
+>3. <A
+HREF="#AEN252"
+>Printing Support in Samba 2.2.x</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="#AEN254"
+>Introduction</A
+></DT
+><DT
+><A
+HREF="#AEN271"
+>Configuration</A
+></DT
+><DT
+><A
+HREF="#AEN325"
+>The Imprints Toolset</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="#AEN329"
+>What is Imprints?</A
+></DT
+><DT
+><A
+HREF="#AEN339"
+>Creating Printer Driver Packages</A
+></DT
+><DT
+><A
+HREF="#AEN342"
+>The Imprints server</A
+></DT
+><DT
+><A
+HREF="#AEN346"
+>The Installation Client</A
+></DT
+></DL
+></DD
+><DT
+><A
+HREF="#AEN368"
+><A
+NAME="MIGRATION"
+></A
+>Migration to from Samba 2.0.x to 
+	2.2.x</A
+></DT
+></DL
+></DD
+><DT
+>4. <A
+HREF="#AEN396"
+>security = domain in Samba 2.x</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="#AEN398"
+>Joining an NT Domain with Samba 2.2</A
+></DT
+><DT
+><A
+HREF="#AEN461"
+>Why is this better than security = server?</A
+></DT
+></DL
+></DD
+><DT
+>5. <A
+HREF="#AEN475"
+>UNIX Permission Bits and WIndows NT Access Control Lists</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="#AEN477"
+>Viewing and changing UNIX permissions using the NT 
+	security dialogs</A
+></DT
+><DT
+><A
+HREF="#AEN486"
+>How to view file security on a Samba share</A
+></DT
+><DT
+><A
+HREF="#AEN497"
+>Viewing file ownership</A
+></DT
+><DT
+><A
+HREF="#AEN517"
+>Viewing file or directory permissions</A
+></DT
+><DD
+><DL
+><DT
+><A
+HREF="#AEN532"
+>File Permissions</A
+></DT
+><DT
+><A
+HREF="#AEN546"
+>Directory Permissions</A
+></DT
+></DL
+></DD
+><DT
+><A
+HREF="#AEN553"
+>Modifying file or directory permissions</A
+></DT
+><DT
+><A
+HREF="#AEN575"
+>Interaction with the standard Samba create mask 
+	parameters</A
+></DT
+><DT
+><A
+HREF="#AEN639"
+>Interaction with the standard Samba file attribute 
+	mapping</A
+></DT
+></DL
+></DD
+></DL
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="AEN10"
+>Chapter 1. How to Install and Test SAMBA</A
+></H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN12"
+>Step 0: Read the man pages</A
+></H1
+><P
+>The man pages distributed with SAMBA contain 
+	lots of useful info that will help to get you started. 
+	If you don't know how to read man pages then try 
+	something like:</P
+><P
+><TT
+CLASS="PROMPT"
+>$ </TT
+><TT
+CLASS="USERINPUT"
+><B
+>nroff -man smbd.8 | more
+	</B
+></TT
+></P
+><P
+>Other sources of information are pointed to 
+	by the Samba web site,<A
+HREF="http://www.samba.org/"
+TARGET="_top"
+>	http://www.samba.org</A
+></P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN20"
+>Building the Binaries</A
+></H1
+><P
+>To do this, first run the program <B
+CLASS="COMMAND"
+>./configure
+	</B
+> in the source directory. This should automatically 
+	configure Samba for your operating system. If you have unusual 
+	needs then you may wish to run</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>./configure --help
+	</B
+></TT
+></P
+><P
+>first to see what special options you can enable.
+	Then exectuting</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>make</B
+></TT
+></P
+><P
+>will create the binaries. Once it's successfully 
+	compiled you can use </P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>make install</B
+></TT
+></P
+><P
+>to install the binaries and manual pages. You can 
+	separately install the binaries and/or man pages using</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>make installbin
+	</B
+></TT
+></P
+><P
+>and</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>make installman
+	</B
+></TT
+></P
+><P
+>Note that if you are upgrading for a previous version 
+	of Samba you might like to know that the old versions of 
+	the binaries will be renamed with a ".old" extension. You 
+	can go back to the previous version with</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>make revert
+	</B
+></TT
+></P
+><P
+>if you find this version a disaster!</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN48"
+>Step 2: The all important step</A
+></H1
+><P
+>At this stage you must fetch yourself a 
+	coffee or other drink you find stimulating. Getting the rest 
+	of the install right can sometimes be tricky, so you will 
+	probably need it.</P
+><P
+>If you have installed samba before then you can skip 
+	this step.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN52"
+>Step 3: Create the smb configuration file.</A
+></H1
+><P
+>There are sample configuration files in the examples 
+	subdirectory in the distribution. I suggest you read them 
+	carefully so you can see how the options go together in 
+	practice. See the man page for all the options.</P
+><P
+>The simplest useful configuration file would be 
+	something like this:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	[global]
+	   workgroup = MYGROUP
+
+	   [homes]
+	      guest ok = no
+	      read only = no
+	</PRE
+></P
+><P
+>which would allow connections by anyone with an 
+	account on the server, using either their login name or 
+	"homes" as the service name. (Note that I also set the 
+	workgroup that Samba is part of. See BROWSING.txt for defails)</P
+><P
+>Note that <B
+CLASS="COMMAND"
+>make install</B
+> will not install 
+	a <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file. You need to create it 
+	yourself. </P
+><P
+>Make sure you put the smb.conf file in the same place 
+	you specified in the<TT
+CLASS="FILENAME"
+>Makefile</TT
+> (the default is to 
+	look for it in <TT
+CLASS="FILENAME"
+>/usr/local/samba/lib/</TT
+>).</P
+><P
+>For more information about security settings for the 
+	[homes] share please refer to the document UNIX_SECURITY.txt.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN66"
+>Step 4: Test your config file with 
+	<B
+CLASS="COMMAND"
+>testparm</B
+></A
+></H1
+><P
+>It's important that you test the validity of your
+	<TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file using the testparm program. 
+	If testparm runs OK then it will list the loaded services. If 
+	not it will give an error message.</P
+><P
+>Make sure it runs OK and that the services look 
+	resonable before proceeding. </P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN72"
+>Step 5: Starting the smbd and nmbd</A
+></H1
+><P
+>You must choose to start smbd and nmbd either 
+	as daemons or from <B
+CLASS="COMMAND"
+>inetd</B
+>. Don't try 
+	to do both!  Either you can put them in <TT
+CLASS="FILENAME"
+>	inetd.conf</TT
+> and have them started on demand 
+	by <B
+CLASS="COMMAND"
+>inetd</B
+>, or you can start them as
+	daemons either from the command line or in <TT
+CLASS="FILENAME"
+>	/etc/rc.local</TT
+>. See the man pages for details 
+	on the command line options. Take particular care to read 
+	the bit about what user you need to be in order to start 
+	Samba.  In many cases you must be root.</P
+><P
+>The main advantage of starting <B
+CLASS="COMMAND"
+>smbd</B
+>
+	and <B
+CLASS="COMMAND"
+>nmbd</B
+> as a daemon is that they will 
+	respond slightly more quickly to an initial connection
+	request. This is, however, unlikely to be a problem.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN82"
+>Step 5a: Starting from inetd.conf</A
+></H2
+><P
+>NOTE; The following will be different if 
+		you use NIS or NIS+ to distributed services maps.</P
+><P
+>Look at your <TT
+CLASS="FILENAME"
+>/etc/services</TT
+>. 
+		What is defined at port 139/tcp. If nothing is defined 
+		then add a line like this:</P
+><P
+><TT
+CLASS="USERINPUT"
+><B
+>netbios-ssn     139/tcp</B
+></TT
+></P
+><P
+>similarly for 137/udp you should have an entry like:</P
+><P
+><TT
+CLASS="USERINPUT"
+><B
+>netbios-ns	137/udp</B
+></TT
+></P
+><P
+>Next edit your <TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+> 
+		and add two lines something like this:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>		netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd smbd 
+		netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd 
+		</PRE
+></P
+><P
+>The exact syntax of <TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+> 
+		varies between unixes. Look at the other entries in inetd.conf 
+		for a guide.</P
+><P
+>NOTE: Some unixes already have entries like netbios_ns 
+		(note the underscore) in <TT
+CLASS="FILENAME"
+>/etc/services</TT
+>. 
+		You must either edit <TT
+CLASS="FILENAME"
+>/etc/services</TT
+> or
+		<TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+> to make them consistant.</P
+><P
+>NOTE: On many systems you may need to use the 
+		"interfaces" option in smb.conf to specify the IP address 
+		and netmask of your interfaces. Run <B
+CLASS="COMMAND"
+>ifconfig</B
+> 
+		as root if you don't know what the broadcast is for your
+		net. <B
+CLASS="COMMAND"
+>nmbd</B
+> tries to determine it at run 
+		time, but fails on somunixes. See the section on "testing nmbd" 
+		for a method of finding if you need to do this.</P
+><P
+>!!!WARNING!!! Many unixes only accept around 5 
+		parameters on the command line in <TT
+CLASS="FILENAME"
+>inetd.conf</TT
+>. 
+		This means you shouldn't use spaces between the options and 
+		arguments, or you should use a script, and start the script 
+		from <B
+CLASS="COMMAND"
+>inetd</B
+>.</P
+><P
+>Restart <B
+CLASS="COMMAND"
+>inetd</B
+>, perhaps just send 
+		it a HUP. If you have installed an earlier version of <B
+CLASS="COMMAND"
+>		nmbd</B
+> then you may need to kill nmbd as well.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN111"
+>Step 5b. Alternative: starting it as a daemon</A
+></H2
+><P
+>To start the server as a daemon you should create 
+		a script something like this one, perhaps calling 
+		it <TT
+CLASS="FILENAME"
+>startsmb</TT
+>.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>		#!/bin/sh
+		/usr/local/samba/bin/smbd -D 
+		/usr/local/samba/bin/nmbd -D 
+		</PRE
+></P
+><P
+>then make it executable with <B
+CLASS="COMMAND"
+>chmod 
+		+x startsmb</B
+></P
+><P
+>You can then run <B
+CLASS="COMMAND"
+>startsmb</B
+> by 
+		hand or execute it from <TT
+CLASS="FILENAME"
+>/etc/rc.local</TT
+>
+		</P
+><P
+>To kill it send a kill signal to the processes 
+		<B
+CLASS="COMMAND"
+>nmbd</B
+> and <B
+CLASS="COMMAND"
+>smbd</B
+>.</P
+><P
+>NOTE: If you use the SVR4 style init system then 
+		you may like to look at the <TT
+CLASS="FILENAME"
+>examples/svr4-startup</TT
+>
+		script to make Samba fit into that system.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN127"
+>Step 6: Try listing the shares available on your 
+	server</A
+></H1
+><P
+><TT
+CLASS="PROMPT"
+>$ </TT
+><TT
+CLASS="USERINPUT"
+><B
+>smbclient -L 
+	<TT
+CLASS="REPLACEABLE"
+><I
+>yourhostname</I
+></TT
+></B
+></TT
+></P
+><P
+>Your should get back a list of shares available on 
+	your server. If you don't then something is incorrectly setup. 
+	Note that this method can also be used to see what shares 
+	are available on other LanManager clients (such as WfWg).</P
+><P
+>If you choose user level security then you may find 
+	that Samba requests a password before it will list the shares. 
+	See the <B
+CLASS="COMMAND"
+>smbclient</B
+> man page for details. (you 
+	can force it to list the shares without a password by
+	adding the option -U% to the command line. This will not work 
+	with non-Samba servers)</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN136"
+>Step 7: Try connecting with the unix client</A
+></H1
+><P
+><TT
+CLASS="PROMPT"
+>$ </TT
+><TT
+CLASS="USERINPUT"
+><B
+>smbclient <TT
+CLASS="REPLACEABLE"
+><I
+>	//yourhostname/aservice</I
+></TT
+></B
+></TT
+></P
+><P
+>Typically the <TT
+CLASS="REPLACEABLE"
+><I
+>yourhostname</I
+></TT
+> 
+	would be the name of the host where you installed <B
+CLASS="COMMAND"
+>	smbd</B
+>. The <TT
+CLASS="REPLACEABLE"
+><I
+>aservice</I
+></TT
+> is 
+	any service you have defined in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> 
+	file. Try your user name if you just have a [homes] section
+	in <TT
+CLASS="FILENAME"
+>smb.conf</TT
+>.</P
+><P
+>For example if your unix host is bambi and your login 
+	name is fred you would type:</P
+><P
+><TT
+CLASS="PROMPT"
+>$ </TT
+><TT
+CLASS="USERINPUT"
+><B
+>smbclient //bambi/fred
+	</B
+></TT
+></P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN152"
+>Step 8: Try connecting from a DOS, WfWg, Win9x, WinNT, 
+	Win2k, OS/2, etc... client</A
+></H1
+><P
+>Try mounting disks. eg:</P
+><P
+><TT
+CLASS="PROMPT"
+>C:\WINDOWS\&#62; </TT
+><TT
+CLASS="USERINPUT"
+><B
+>net use d: \\servername\service
+	</B
+></TT
+></P
+><P
+>Try printing. eg:</P
+><P
+><TT
+CLASS="PROMPT"
+>C:\WINDOWS\&#62; </TT
+><TT
+CLASS="USERINPUT"
+><B
+>net use lpt1:
+	\\servername\spoolservice</B
+></TT
+></P
+><P
+><TT
+CLASS="PROMPT"
+>C:\WINDOWS\&#62; </TT
+><TT
+CLASS="USERINPUT"
+><B
+>print filename
+	</B
+></TT
+></P
+><P
+>Celebrate, or send me a bug report!</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN166"
+>What If Things Don't Work?</A
+></H1
+><P
+>If nothing works and you start to think "who wrote 
+	this pile of trash" then I suggest you do step 2 again (and 
+	again) till you calm down.</P
+><P
+>Then you might read the file DIAGNOSIS.txt and the 
+	FAQ. If you are still stuck then try the mailing list or 
+	newsgroup (look in the README for details). Samba has been 
+	successfully installed at thousands of sites worldwide, so maybe 
+	someone else has hit your problem and has overcome it. You could 
+	also use the WWW site to scan back issues of the samba-digest.</P
+><P
+>When you fix the problem PLEASE send me some updates to the
+	documentation (or source code) so that the next person will find it
+	easier. </P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN171"
+>DIAGNOSING PROBLEMS</A
+></H2
+><P
+>If you have instalation problems then go to 
+		<TT
+CLASS="FILENAME"
+>DIAGNOSIS.txt</TT
+> to try to find the 
+		problem.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN175"
+>SCOPE IDs</A
+></H2
+><P
+>By default Samba uses a blank scope ID. This means 
+		all your windows boxes must also have a blank scope ID. 
+		If you really want to use a non-blank scope ID then you will 
+		need to use the -i &lt;scope&gt; option to nmbd, smbd, and 
+		smbclient. All your PCs will need to have the same setting for 
+		this to work. I do not recommend scope IDs.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN178"
+>CHOOSING THE PROTOCOL LEVEL</A
+></H2
+><P
+>The SMB protocol has many dialects. Currently 
+		Samba supports 5, called CORE, COREPLUS, LANMAN1, 
+		LANMAN2 and NT1.</P
+><P
+>You can choose what maximum protocol to support 
+		in the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file. The default is 
+		NT1 and that is the best for the vast majority of sites.</P
+><P
+>In older versions of Samba you may have found it 
+		necessary to use COREPLUS. The limitations that led to 
+		this have mostly been fixed. It is now less likely that you 
+		will want to use less than LANMAN1. The only remaining advantage 
+		of COREPLUS is that for some obscure reason WfWg preserves 
+		the case of passwords in this protocol, whereas under LANMAN1, 
+		LANMAN2 or NT1 it uppercases all passwords before sending them,
+		forcing you to use the "password level=" option in some cases.</P
+><P
+>The main advantage of LANMAN2 and NT1 is support for 
+		long filenames with some clients (eg: smbclient, Windows NT 
+		or Win95). </P
+><P
+>See the smb.conf(5) manual page for more details.</P
+><P
+>Note: To support print queue reporting you may find 
+		that you have to use TCP/IP as the default protocol under 
+		WfWg. For some reason if you leave Netbeui as the default 
+		it may break the print queue reporting on some systems. 
+		It is presumably a WfWg bug.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN187"
+>PRINTING FROM UNIX TO A CLIENT PC</A
+></H2
+><P
+>To use a printer that is available via a smb-based 
+		server from a unix host you will need to compile the 
+		smbclient program. You then need to install the script 
+		"smbprint". Read the instruction in smbprint for more details.
+		</P
+><P
+>There is also a SYSV style script that does much 
+		the same thing called smbprint.sysv. It contains instructions.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN191"
+>LOCKING</A
+></H2
+><P
+>One area which sometimes causes trouble is locking.</P
+><P
+>There are two types of locking which need to be 
+		performed by a SMB server. The first is "record locking" 
+		which allows a client to lock a range of bytes in a open file. 
+		The second is the "deny modes" that are specified when a file 
+		is open.</P
+><P
+>Samba supports "record locking" using the fcntl() unix system
+		call. This is often implemented using rpc calls to a rpc.lockd process
+		running on the system that owns the filesystem. Unfortunately many
+		rpc.lockd implementations are very buggy, particularly when made to
+		talk to versions from other vendors. It is not uncommon for the
+		rpc.lockd to crash.</P
+><P
+>There is also a problem translating the 32 bit lock 
+		requests generated by PC clients to 31 bit requests supported 
+		by most unixes. Unfortunately many PC applications (typically 
+		OLE2 applications) use byte ranges with the top bit set 
+		as semaphore sets. Samba attempts translation to support 
+		these types of applications, and the translation has proved 
+		to be quite successful.</P
+><P
+>Strictly a SMB server should check for locks before 
+		every read and write call on a file. Unfortunately with the 
+		way fcntl() works this can be slow and may overstress the 
+		rpc.lockd. It is also almost always unnecessary as clients 
+		are supposed to independently make locking calls before reads 
+		and writes anyway if locking is important to them. By default 
+		Samba only makes locking calls when explicitly asked
+		to by a client, but if you set "strict locking = yes" then it will
+		make lock checking calls on every read and write. </P
+><P
+>You can also disable by range locking completely 
+		using "locking = no". This is useful for those shares that 
+		don't support locking or don't need it (such as cdroms). In 
+		this case Samba fakes the return codes of locking calls to 
+		tell clients that everything is OK.</P
+><P
+>The second class of locking is the "deny modes". These 
+		are set by an application when it opens a file to determine 
+		what types of access should be allowed simultaneously with 
+		its open. A client may ask for DENY_NONE, DENY_READ, DENY_WRITE 
+		or DENY_ALL. There are also special compatability modes called 
+		DENY_FCB and  DENY_DOS.</P
+><P
+>You can disable share modes using "share modes = no". 
+		This may be useful on a heavily loaded server as the share 
+		modes code is very slow. See also the FAST_SHARE_MODES 
+		option in the Makefile for a way to do full share modes 
+		very fast using shared memory (if your OS supports it).</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN201"
+>MAPPING USERNAMES</A
+></H2
+><P
+>If you have different usernames on the PCs and 
+		the unix server then take a look at the "username map" option. 
+		See the smb.conf man page for details.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN204"
+>OTHER CHARACTER SETS</A
+></H2
+><P
+>If you have problems using filenames with accented 
+		characters in them (like the German, French or Scandinavian 
+		character sets) then I recommmend you look at the "valid chars" 
+		option in smb.conf and also take a look at the validchars 
+		package in the examples directory.</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="AEN207"
+>Chapter 2. Hosting a Microsoft Distributed File System tree on Samba</A
+></H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN209"
+>HOWTO</A
+></H1
+><P
+>The Distributed File System (or Dfs) provides a means of 
+	separating the logical view of files and directories that users 
+	see from the actual physical locations of these resources on the 
+	network. It allows for higher availability, smoother storage expansion, 
+	load balancing etc. For more information about Dfs, refer to  <A
+HREF="http://www.microsoft.com/NTServer/nts/downloads/winfeatures/NTSDistrFile/AdminGuide.asp"
+TARGET="_top"
+>	Microsoft documentation</A
+>. </P
+><P
+>This document explains how to host a Dfs tree on a Unix 
+	machine (for Dfs-aware clients to browse) using Samba.</P
+><P
+>A Samba server can be made a Dfs server by setting the global 
+	boolean <A
+HREF="smb.conf.5.html#HOSTMSDFS"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>	host msdfs</I
+></TT
+></A
+> parameter in the <TT
+CLASS="FILENAME"
+>smb.conf
+	</TT
+> file. You designate a share as a Dfs root using the share 
+	level boolean <A
+HREF="smb.conf.5.html#MSDFSROOT"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>	msdfs root</I
+></TT
+></A
+> parameter. A Dfs root directory on 
+	Samba hosts Dfs links in the form of symbolic links that point 
+	to other servers. For example, a symbolic link
+	<TT
+CLASS="FILENAME"
+>junction-&gt;msdfs:storage1&bsol;share1</TT
+> in 
+	the share directory acts as the Dfs junction. When Dfs-aware 
+	clients attempt to access the junction link, they are redirected 
+	to the storage location (in this case, \\storage1\share1).</P
+><P
+>Dfs trees on Samba work with all Dfs-aware clients ranging 
+	from Windows 95 to 2000.</P
+><P
+>Here's an example of setting up a Dfs tree on a Samba 
+	server.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+># The smb.conf file:
+[global]
+	netbios name = SAMBA
+	host msdfs   = yes
+
+[dfs]
+	path = /export/dfsroot
+	msdfs root = yes
+	</PRE
+></P
+><P
+>In the /export/dfsroot directory we set up our dfs links to 
+	other servers on the network.</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>cd /export/dfsroot</B
+></TT
+></P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>chown root /export/dfsroot</B
+></TT
+></P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>chmod 755 /export/dfsroot</B
+></TT
+></P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>ln -s msdfs:storageA\\shareA linka</B
+></TT
+></P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>ln -s msdfs:serverB\\share,serverC\\share linkb</B
+></TT
+></P
+><P
+>You should set up the permissions and ownership of 
+	the directory acting as the Dfs root such that only designated 
+	users can create, delete or modify the msdfs links. Also note 
+	that symlink names should be all lowercase. This limitation exists 
+	to have Samba avoid trying all the case combinations to get at 
+	the link name. Finally set up the symbolic links to point to the 
+	network shares you want, and start Samba.</P
+><P
+>Users on Dfs-aware clients can now browse the Dfs tree 
+	on the Samba server at \\samba\dfs. Accessing 
+	links linka or linkb (which appear as directories to the client) 
+	takes users directly to the appropriate shares on the network.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN243"
+>NOTES</A
+></H1
+><P
+></P
+><UL
+><LI
+><P
+>Windows clients need to be rebooted 
+		if a previously mounted non-dfs share is made a dfs 
+		root or vice versa. A better way is to introduce a 
+		new share and make it the dfs root.</P
+></LI
+><LI
+><P
+>Currently there's a restriction that msdfs 
+		symlink names should all be lowercase.</P
+></LI
+><LI
+><P
+>For security purposes, the directory 
+		acting as the root of the Dfs tree should have ownership 
+		and permissions set so that only designated users can 
+		modify the symbolic links in the directory.</P
+></LI
+></UL
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="AEN252"
+>Chapter 3. Printing Support in Samba 2.2.x</A
+></H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN254"
+>Introduction</A
+></H1
+><P
+>Beginning with the 2.2.0 release, Samba now supports 
+	the native Windows NT printing mechanisms implemented via 
+	MS-RPC (i.e. the SPOOLSS named pipe).  Previous versions of 
+	Samba only supported the LanMan printing calls.</P
+><P
+>The additional functionality provided by the new 
+	SPOOLSS support includes:</P
+><P
+></P
+><UL
+><LI
+><P
+>Support for downloading printer driver 
+		files to Windows 95/98/NT/2000 clients upon demand.
+		</P
+></LI
+><LI
+><P
+>Uploading of printer drivers via the 
+		Windows NT Add Printer Wizard (APW) or the <A
+HREF="http://imprints.sourceforge.net"
+TARGET="_top"
+>Imprints tool set
+		</A
+></P
+></LI
+><LI
+><P
+>Support for the native MS-RPC printing 
+		calls such as StartDocPrinter, EnumJobs(), etc...  (See 
+		the <A
+HREF="http://msdn.microsoft.com/"
+TARGET="_top"
+>MSDN documentation
+		</A
+> for more information on the Win32 printing API)
+		</P
+></LI
+><LI
+><P
+>Support for NT Access Control Lists (ACL) 
+		on printer objects</P
+></LI
+><LI
+><P
+>Improved support for printer queue manipulation 
+		through the use of an internal database for spooled job 
+		information</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN271"
+>Configuration</A
+></H1
+><P
+>In order to support the uploading of printer driver 
+	files, you must first configure a file share named [print$].  
+	The name of this share is hard coded in Samba's internals so 
+	the name is very important (print$ is the service used by 
+	Windows NT print servers to provide support for printer driver 
+	download.</P
+><DIV
+CLASS="WARNING"
+><P
+></P
+><TABLE
+CLASS="WARNING"
+BORDER="1"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="CENTER"
+><B
+>Warning</B
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+><P
+>Previous versions of Samba recommended using 
+		a share named [printer$].  This name was taken from the 
+		printer$ service created by Windows 9x clients when a 
+		printer was shared.  Windows 9x printer servers always have 
+		a printer$ service which provides read-only access via no 
+		password in order to support printer driver downloads.</P
+><P
+>However, the initial implementation allowed for a 
+		parameter named <TT
+CLASS="PARAMETER"
+><I
+>printer driver location</I
+></TT
+> 
+		to be used on a per share basis to specify the location of 
+		the driver files associated with that printer.  Another 
+		parameter named <TT
+CLASS="PARAMETER"
+><I
+>printer driver</I
+></TT
+> provided 
+		a means of defining the printer driver name to be sent to 
+		the client.</P
+><P
+>These parameters, including <TT
+CLASS="PARAMETER"
+><I
+>printer driver 
+		file</I
+></TT
+> parameter, are being depreciated and should not 
+		be used in new installations.  For more information on this change, 
+		you should refer to the <A
+HREF="#MIGRATION"
+>Migration section 
+		</A
+>of this document.</P
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>You should modify the server's smb.conf file to create the 
+	following file share (of course, some of the parameter values,
+	such as 'path' are arbitrary and should be replaced with
+	appropriate values for your site):</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>[print$]
+	path = /usr/local/samba/printers
+	guest ok = yes
+	browseable = yes
+	read only = yes
+	write list = ntadmin
+	</PRE
+></P
+><P
+>The <A
+HREF="smb./conf.5.html#WRITELIST"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>	write list</I
+></TT
+></A
+> is used to allow administrative 
+	level user accounts to have write access in order to update files 
+	on the share.  See the <A
+HREF="smb./conf.5.html"
+TARGET="_top"
+>	smb.conf(5) man page</A
+> for more information on 
+	configuring file shares.</P
+><P
+>The requirement for <A
+HREF="smb.conf.5.html#GUESTOK"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>	guest ok = yes</B
+></A
+> depends upon how your
+	site is configured.  If users will be guaranteed to have 
+	an account on the Samba host, then this is a non-issue.</P
+><P
+><I
+CLASS="EMPHASIS"
+>author's note: </I
+>The non-issue is that 
+	if all your Windows NT users are guarenteed to be authenticated 
+	by the Samba server (such as a domain member server and the NT 
+	user has already been validated by the Domain Controller in 
+	order to logon to the Windows NT console), then guest access 
+	is not necessary.  Of course, in a workgroup environment where 
+	you just want to be able to print without worrying about 
+	silly accounts and security, then configure the share for 
+	guest access.  You'll probably want to add <A
+HREF="smb.conf.5.html#MAPTOGUEST"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>map to guest = Bad User
+	</B
+></A
+> in the [global] section as well.  Make sure 
+	you understand what this parameter does before using it 
+	though. --jerry]</P
+><P
+>In order for a Windows NT print server to support 
+	the downloading of driver files by multiple client architectures,
+	it must create subdirectories within the [print$] service
+	which correspond to each of the supported client architectures.
+	Samba follows this model as well.</P
+><P
+>Next create the directory tree below the [print$] share 
+	for each architecture you wish to support.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	[print$]-----
+		|-W32X86		; "Windows NT x86"
+		|-WIN40			; "Windows 95/98"
+		|-W32ALPHA		; "Windows NT Alpha_AXP"
+		|-W32MIPS		; "Windows NT R4000"
+		|-W32PPC		; "Windows NT PowerPC"
+	</PRE
+></P
+><DIV
+CLASS="WARNING"
+><P
+></P
+><TABLE
+CLASS="WARNING"
+BORDER="1"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="CENTER"
+><B
+>Warning</B
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+><P
+><I
+CLASS="EMPHASIS"
+>ATTENTION!  REQUIRED PERMISSIONS</I
+></P
+><P
+>In order to currently add a new driver to you Samba host, 
+		one of two conditions must hold true:</P
+><P
+></P
+><UL
+><LI
+><P
+>The account used to connect to the Samba host 
+			must have a uid of 0 (i.e. a root account)</P
+></LI
+><LI
+><P
+>The account used to connect to the Samba host
+			must be a member of the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>			printer admin</I
+></TT
+></A
+> list.</P
+></LI
+></UL
+><P
+>Of course, the connected account must still possess access
+		to add files to the sibdirectories beneath [print$].</P
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>Once you have created the required [print$] service and 
+	associated subdirectories, simply log onto the Samba server using 
+	a root (or <TT
+CLASS="PARAMETER"
+><I
+>printer admin</I
+></TT
+>) account
+	from a Windows NT 4.0 client.  Navigate to the "Printers" folder
+	on the Samba server.  You should see an initial listing of printers
+	that matches the printer shares defined on your Samba host.</P
+><P
+>It is possible on a Windows NT print server to have printers
+	listed in the Printers folder which are not shared.  Samba does
+	not make this distinction.  By definition, the only printers of
+	which Samba is aware are those which are specified as shares in
+	<TT
+CLASS="FILENAME"
+>smb.conf</TT
+>.</P
+><P
+>Another interesting side note is that Windows NT clients do
+	not use the SMB printer share, but rather can print directly 
+	to any printer on another Windows NT host using MS-RPC.  This
+	of course assumes that the printing client has the necessary
+	privileges on the remote host serving the printer.  The default
+	permissions assigned by Windows NT to a printer gives the "Print"
+	permissions to the "Everyone" well-known group.</P
+><P
+>The initial listing of printers in the Samba host's 
+	Printers folder will have no printer driver assigned to them.  
+	The way assign a driver to a printer is to view the Properties 
+	of the printer and either</P
+><P
+></P
+><UL
+><LI
+><P
+>Use the "New Driver..." button to install 
+		a new printer driver, or</P
+></LI
+><LI
+><P
+>Select a driver from the popup list of 
+		installed drivers.  Initially this list will be empty.</P
+></LI
+></UL
+><P
+>If you wish to install printer drivers for client 
+	operating systems other than "Windows NT x86", you will need 
+	to use the "Sharing" tab of the printer properties dialog.</P
+><P
+>Assuming you have connected with a root account, you 
+	will also be able modify other printer properties such as 
+	ACLs and device settings using this dialog box.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN325"
+>The Imprints Toolset</A
+></H1
+><P
+>The Imprints tool set provides a UNIX equivalent of the 
+	Windows NT Add Printer Wizard.  For complete information, please 
+	refer to the Imprints web site at <A
+HREF="http://imprints.sourceforge.net/"
+TARGET="_top"
+>	http://imprints.sourceforge.net/</A
+> as well as the documentation 
+	included with the imprints source distribution.  This section will 
+	only provide a brief introduction to the features of Imprints.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN329"
+>What is Imprints?</A
+></H2
+><P
+>Imprints is a collection of tools for supporting the goals 
+		of</P
+><P
+></P
+><UL
+><LI
+><P
+>Providing a central repository information 
+			regarding Windows NT and 95/98 printer driver packages</P
+></LI
+><LI
+><P
+>Providing the tools necessary for creating 
+			the Imprints printer driver packages.</P
+></LI
+><LI
+><P
+>Providing an installation client which 
+			will obtain and install printer drivers on remote Samba 
+			and Windows NT 4 print servers.</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN339"
+>Creating Printer Driver Packages</A
+></H2
+><P
+>The process of creating printer driver packages is beyond
+		the scope of this document (refer to Imprints.txt also included
+		with the Samba distribution for more information).  In short,
+		an Imprints driver package is a gzipped tarball containing the
+		driver files, related INF files, and a control file needed by the
+		installation client.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN342"
+>The Imprints server</A
+></H2
+><P
+>The Imprints server is really a database server that 
+		may be queried via standard HTTP mechanisms.  Each printer 
+		entry in the database has an associated URL for the actual
+		downloading of the package.  Each package is digitally signed
+		via GnuPG which can be used to verify that package downloaded
+		is actually the one referred in the Imprints database.  It is 
+		<I
+CLASS="EMPHASIS"
+>not</I
+> recommended that this security check 
+		be disabled.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN346"
+>The Installation Client</A
+></H2
+><P
+>More information regarding the Imprints installation client 
+		is available in the <TT
+CLASS="FILENAME"
+>Imprints-Client-HOWTO.ps</TT
+> 
+		file included with the imprints source package.</P
+><P
+>The Imprints installation client comes in two forms.</P
+><P
+></P
+><UL
+><LI
+><P
+>a set of command line Perl scripts</P
+></LI
+><LI
+><P
+>a GTK+ based graphical interface to 
+			the command line perl scripts</P
+></LI
+></UL
+><P
+>The installation client (in both forms) provides a means
+		of querying the Imprints database server for a matching
+		list of known printer model names as well as a means to 
+		download and install the drivers on remote Samba and Windows
+		NT print servers.</P
+><P
+>The basic installation process is in four steps and 
+		perl code is wrapped around <B
+CLASS="COMMAND"
+>smbclient</B
+> 
+		and <B
+CLASS="COMMAND"
+>rpcclient</B
+>.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	
+		foreach (supported architecture for a given driver)
+		{
+			1.	rpcclient: Get the appropriate upload directory 
+				on the remote server
+			2.	smbclient: Upload the driver files
+			3.	rpcclient: Issues an AddPrinterDriver() MS-RPC
+		}
+	
+		4.	rpcclient: Issue an AddPrinterEx() MS-RPC to actually
+			create the printer
+		</PRE
+></P
+><P
+>One of the problems encountered when implementing 
+		the Imprints tool set was the name space issues between 
+		various supported client architectures.  For example, Windows 
+		NT includes a driver named "Apple LaserWriter II NTX v51.8" 
+		and Windows 95 callsits version of this driver "Apple 
+		LaserWriter II NTX"</P
+><P
+>The problem is how to know what client drivers have 
+		been uploaded for a printer.  As astute reader will remember 
+		that the Windows NT Printer Properties dialog only includes 
+		space for one printer driver name.  A quick look in the 
+		Windows NT 4.0 system registry at</P
+><P
+><TT
+CLASS="FILENAME"
+>HKLM\System\CurrentControlSet\Control\Print\Environment
+		</TT
+></P
+><P
+>will reveal that Windows NT always uses the NT driver 
+		name.  The is ok as Windows NT always requires that at least 
+		the Windows NT version of the printer driver is present.  
+		However, Samba does not have the requirement internally.  
+		Therefore, how can you use the NT driver name if is has not 
+		already been installed?</P
+><P
+>The way of sidestepping this limitation is to require 
+		that all Imprints printer driver packages include both the Intel 
+		Windows NT and 95/98 printer drivers and that NT driver is 
+		installed first.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN368"
+><A
+NAME="MIGRATION"
+></A
+>Migration to from Samba 2.0.x to 
+	2.2.x</A
+></H1
+><P
+>Given that printer driver management has changed
+	(we hope improved :) ) in 2.2.0 over prior releases,
+	migration from an existing setup to 2.2.0 can follow
+	several paths.</P
+><DIV
+CLASS="WARNING"
+><P
+></P
+><TABLE
+CLASS="WARNING"
+BORDER="1"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="CENTER"
+><B
+>Warning</B
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+><P
+>The following smb.conf parameters are considered to be
+		depreciated and will be removed soon.  Do not use them
+		in new installations</P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>printer driver file (G)</I
+></TT
+>
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>printer driver (S)</I
+></TT
+>
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>printer driver location (S)</I
+></TT
+>
+			</P
+></LI
+></UL
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>Here are the possible scenarios for supporting migration:</P
+><P
+></P
+><UL
+><LI
+><P
+>If you does not desire the new Windows NT 
+		print driver support, nothing needs to be done.  
+		All existing parameters work the same.</P
+></LI
+><LI
+><P
+>If you want to take advantage of NT printer 
+		driver support but does not want to migrate the 
+		9x drivers to the new setup, the leave the existing 
+		printers.def file.  When smbd attempts to locate a 
+		9x driver for the printer in the TDB and fails it 
+		will drop down to using the printers.def (and all 
+		associated parameters).  The <B
+CLASS="COMMAND"
+>make_printerdef</B
+> 
+		tool will also remain for backwards compatibility but will 
+		be moved to the "this tool is the old way of doing it" 
+		pile.</P
+></LI
+><LI
+><P
+>If you install a Windows 9x driver for a printer 
+		on your Samba host (in the printing TDB), this information will 
+		take precedence and the three old printing parameters
+		will be ignored (including print driver location).</P
+></LI
+><LI
+><P
+>If you want to migrate an existing <TT
+CLASS="FILENAME"
+>		printers.def</TT
+> file into the new setup, the current only 
+		solution is to use the Windows NT APW to install the NT drivers 
+		and the 9x  drivers.  (comment: this could possibly be scripted 
+		using smbclient and rpcclient, but I haven't had time  --jerry)
+		</P
+></LI
+></UL
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="AEN396"
+>Chapter 4. security = domain in Samba 2.x</A
+></H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN398"
+>Joining an NT Domain with Samba 2.2</A
+></H1
+><P
+>In order for a Samba-2 server to join an NT domain, 
+	you must first add the NetBIOS name of the Samba server to the 
+	NT domain on the PDC using Server Manager for Domains.  This creates 
+	the machine account in the domain (PDC) SAM. Note that you should 
+	add the Samba server as a "Windows NT Workstation or Server", 
+	<I
+CLASS="EMPHASIS"
+>NOT</I
+> as a Primary or backup domain controller.</P
+><P
+>Assume you have a Samba-2 server with a NetBIOS name of 
+	<TT
+CLASS="CONSTANT"
+>SERV1</TT
+> and are joining an NT domain called
+	<TT
+CLASS="CONSTANT"
+>DOM</TT
+>, which has a PDC with a NetBIOS name
+	of <TT
+CLASS="CONSTANT"
+>DOMPDC</TT
+> and two backup domain controllers 
+	with NetBIOS names <TT
+CLASS="CONSTANT"
+>DOMBDC1</TT
+> and <TT
+CLASS="CONSTANT"
+>DOMBDC2
+	</TT
+>.</P
+><P
+>In order to join the domain, first stop all Samba daemons 
+	and run the command:</P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+><TT
+CLASS="USERINPUT"
+><B
+>smbpasswd -j DOM -r DOMPDC
+	</B
+></TT
+></P
+><P
+>as we are joining the domain DOM and the PDC for that domain 
+	(the only machine that has write access to the domain SAM database) 
+	is DOMPDC. If this is successful you will see the message:</P
+><P
+><TT
+CLASS="COMPUTEROUTPUT"
+>smbpasswd: Joined domain DOM.</TT
+>
+	</P
+><P
+>in your terminal window. See the <A
+HREF="smbpasswd.8.html"
+TARGET="_top"
+>	smbpasswd(8)</A
+> man page for more details.</P
+><P
+>This command goes through the machine account password 
+	change protocol, then writes the new (random) machine account 
+	password for this Samba server into a file in the same directory 
+	in which an smbpasswd file would be stored - normally :</P
+><P
+><TT
+CLASS="FILENAME"
+>/usr/local/samba/private</TT
+></P
+><P
+>In Samba 2.0.x, the filename looks like this:</P
+><P
+><TT
+CLASS="FILENAME"
+><TT
+CLASS="REPLACEABLE"
+><I
+>&lt;NT DOMAIN NAME&gt;</I
+></TT
+>.
+	<TT
+CLASS="REPLACEABLE"
+><I
+>&lt;Samba Server Name&gt;</I
+></TT
+>.mac</TT
+></P
+><P
+>The <TT
+CLASS="FILENAME"
+>.mac</TT
+> suffix stands for machine account 
+	password file. So in our example above, the file would be called:</P
+><P
+><TT
+CLASS="FILENAME"
+>DOM.SERV1.mac</TT
+></P
+><P
+>In Samba 2.2, this file has been replaced with a TDB 
+	(Trivial Database) file named <TT
+CLASS="FILENAME"
+>secrets.tdb</TT
+>.
+	</P
+><P
+>This file is created and owned by root and is not 
+	readable by any other user. It is the key to the domain-level 
+	security for your system, and should be treated as carefully 
+	as a shadow password file.</P
+><P
+>Now, before restarting the Samba daemons you must 
+	edit your <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+>
+	</A
+> file to tell Samba it should now use domain security.</P
+><P
+>Change (or add) your <A
+HREF="smb.conf.5.html#SECURITY"
+TARGET="_top"
+>	<TT
+CLASS="PARAMETER"
+><I
+>security =</I
+></TT
+></A
+> line in the [global] section 
+	of your smb.conf to read:</P
+><P
+><B
+CLASS="COMMAND"
+>security = domain</B
+></P
+><P
+>Next change the <A
+HREF="smb.conf.5.html#WORKGROUP"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>	workgroup =</I
+></TT
+></A
+> line in the [global] section to read: </P
+><P
+><B
+CLASS="COMMAND"
+>workgroup = DOM</B
+></P
+><P
+>as this is the name of the domain we are joining. </P
+><P
+>You must also have the parameter <A
+HREF="smb.conf.5.html#ENCRYPTPASSWORDS"
+TARGET="_top"
+>	<TT
+CLASS="PARAMETER"
+><I
+>encrypt passwords</I
+></TT
+></A
+> set to <TT
+CLASS="CONSTANT"
+>yes
+	</TT
+> in order for your users to authenticate to the NT PDC.</P
+><P
+>Finally, add (or modify) a <A
+HREF="smb.conf.5.html#PASSWORDSERVER"
+TARGET="_top"
+>	<TT
+CLASS="PARAMETER"
+><I
+>password server =</I
+></TT
+></A
+> line in the [global]
+	section to read: </P
+><P
+><B
+CLASS="COMMAND"
+>password server = DOMPDC DOMBDC1 DOMBDC2</B
+></P
+><P
+>These are the primary and backup domain controllers Samba 
+	will attempt to contact in order to authenticate users. Samba will 
+	try to contact each of these servers in order, so you may want to 
+	rearrange this list in order to spread out the authentication load 
+	among domain controllers.</P
+><P
+>Alternatively, if you want smbd to automatically determine 
+	the list of Domain controllers to use for authentication, you may 
+	set this line to be :</P
+><P
+><B
+CLASS="COMMAND"
+>password server = *</B
+></P
+><P
+>This method, which was introduced in Samba 2.0.6, 
+	allows Samba to use exactly the same mechanism that NT does. This 
+	method either broadcasts or uses a WINS database in order to
+	find domain controllers to authenticate against.</P
+><P
+>Finally, restart your Samba daemons and get ready for 
+	clients to begin using domain security!</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN461"
+>Why is this better than security = server?</A
+></H1
+><P
+>Currently, domain security in Samba doesn't free you from 
+	having to create local Unix users to represent the users attaching 
+	to your server. This means that if domain user <TT
+CLASS="CONSTANT"
+>DOM\fred
+	</TT
+> attaches to your domain security Samba server, there needs 
+	to be a local Unix user fred to represent that user in the Unix 
+	filesystem. This is very similar to the older Samba security mode 
+	<A
+HREF="smb.conf.5.html#SECURITYEQUALSERVER"
+TARGET="_top"
+>security = server</A
+>, 
+	where Samba would pass through the authentication request to a Windows 
+	NT server in the same way as a Windows 95 or Windows 98 server would.
+	</P
+><P
+>The advantage to domain-level security is that the 
+	authentication in domain-level security is passed down the authenticated 
+	RPC channel in exactly the same way that an NT server would do it. This 
+	means Samba servers now participate in domain trust relationships in 
+	exactly the same way NT servers do (i.e., you can add Samba servers into 
+	a resource domain and have the authentication passed on from a resource
+	domain PDC to an account domain PDC.</P
+><P
+>In addition, with <B
+CLASS="COMMAND"
+>security = server</B
+> every Samba 
+	daemon on a server has to keep a connection open to the 
+	authenticating server for as long as that daemon lasts. This can drain 
+	the connection resources on a Microsoft NT server and cause it to run 
+	out of available connections. With <B
+CLASS="COMMAND"
+>security = domain</B
+>, 
+	however, the Samba daemons connect to the PDC/BDC only for as long 
+	as is necessary to authenticate the user, and then drop the connection, 
+	thus conserving PDC connection resources.</P
+><P
+>And finally, acting in the same manner as an NT server 
+	authenticating to a PDC means that as part of the authentication 
+	reply, the Samba server gets the user identification information such 
+	as the user SID, the list of NT groups the user belongs to, etc. All 
+	this information will allow Samba to be extended in the future into 
+	a mode the developers currently call appliance mode. In this mode, 
+	no local Unix users will be necessary, and Samba will generate Unix 
+	uids and gids from the information passed back from the PDC when a 
+	user is authenticated, making a Samba server truly plug and play 
+	in an NT domain environment. Watch for this code soon.</P
+><P
+><I
+CLASS="EMPHASIS"
+>NOTE:</I
+> Much of the text of this document 
+	was first published in the Web magazine <A
+HREF="http://www.linuxworld.com"
+TARGET="_top"
+> 	
+	LinuxWorld</A
+> as the article <A
+HREF="http://www.linuxworld.com/linuxworld/lw-1998-10/lw-10-samba.html"
+TARGET="_top"
+>Doing 
+	the NIS/NT Samba</A
+>.</P
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="AEN475"
+>Chapter 5. UNIX Permission Bits and WIndows NT Access Control Lists</A
+></H1
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN477"
+>Viewing and changing UNIX permissions using the NT 
+	security dialogs</A
+></H1
+><P
+>New in the Samba 2.0.4 release is the ability for Windows 
+	NT clients to use their native security settings dialog box to 
+	view and modify the underlying UNIX permissions.</P
+><P
+>Note that this ability is careful not to compromise 
+	the security of the UNIX host Samba is running on, and 
+	still obeys all the file permission rules that a Samba 
+	administrator can set.</P
+><P
+>In Samba 2.0.4 and above the default value of the 
+	parameter <A
+HREF="smb.conf.5.html#NTACLSUPPOR"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>	nt acl support</I
+></TT
+></A
+> has been changed from 
+	<TT
+CLASS="CONSTANT"
+>false</TT
+> to <TT
+CLASS="CONSTANT"
+>true</TT
+>, so 
+ 	manipulation of permissions is turned on by default.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN486"
+>How to view file security on a Samba share</A
+></H1
+><P
+>From an NT 4.0 client, single-click with the right 
+	mouse button on any file or directory in a Samba mounted 
+	drive letter or UNC path. When the menu pops-up, click 
+	on the <I
+CLASS="EMPHASIS"
+>Properties</I
+> entry at the bottom of 
+	the menu. This brings up the normal file properties dialog
+	box, but with Samba 2.0.4 this will have a new tab along the top
+	marked <I
+CLASS="EMPHASIS"
+>Security</I
+>. Click on this tab and you 
+	will see three buttons, <I
+CLASS="EMPHASIS"
+>Permissions</I
+>, 	
+	<I
+CLASS="EMPHASIS"
+>Auditing</I
+>, and <I
+CLASS="EMPHASIS"
+>Ownership</I
+>. 
+	The <I
+CLASS="EMPHASIS"
+>Auditing</I
+> button will cause either 
+	an error message <SPAN
+CLASS="ERRORNAME"
+>A requested privilege is not held 
+	by the client</SPAN
+> to appear if the user is not the 
+	NT Administrator, or a dialog which is intended to allow an 
+	Administrator to add auditing requirements to a file if the 
+	user is logged on as the NT Administrator. This dialog is 
+	non-functional with a Samba share at this time, as the only 
+	useful button, the <B
+CLASS="COMMAND"
+>Add</B
+> button will not currently 
+	allow a list of users to be seen.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN497"
+>Viewing file ownership</A
+></H1
+><P
+>Clicking on the <B
+CLASS="COMMAND"
+>"Ownership"</B
+> button 
+	brings up a dialog box telling you who owns the given file. The 
+	owner name will be of the form :</P
+><P
+><B
+CLASS="COMMAND"
+>"SERVER\user (Long name)"</B
+></P
+><P
+>Where <TT
+CLASS="REPLACEABLE"
+><I
+>SERVER</I
+></TT
+> is the NetBIOS name of 
+	the Samba server, <TT
+CLASS="REPLACEABLE"
+><I
+>user</I
+></TT
+> is the user name of 
+	the UNIX user who owns the file, and <TT
+CLASS="REPLACEABLE"
+><I
+>(Long name)</I
+></TT
+>
+	is the discriptive string identifying the user (normally found in the
+	GECOS field of the UNIX password database). Click on the <B
+CLASS="COMMAND"
+>Close
+	</B
+> button to remove this dialog.</P
+><P
+>If the parameter <TT
+CLASS="PARAMETER"
+><I
+>nt acl support</I
+></TT
+>
+	is set to <TT
+CLASS="CONSTANT"
+>false</TT
+> then the file owner will 
+	be shown as the NT user <B
+CLASS="COMMAND"
+>"Everyone"</B
+>.</P
+><P
+>The <B
+CLASS="COMMAND"
+>Take Ownership</B
+> button will not allow 
+	you to change the ownership of this file to yourself (clicking on 
+	it will display a dialog box complaining that the user you are 
+	currently logged onto the NT client cannot be found). The reason 
+	for this is that changing the ownership of a file is a privilaged 
+	operation in UNIX, available only to the <I
+CLASS="EMPHASIS"
+>root</I
+> 
+	user. As clicking on this button causes NT to attempt to change 
+	the ownership of a file to the current user logged into the NT 
+	client this will not work with Samba at this time.</P
+><P
+>There is an NT chown command that will work with Samba 
+	and allow a user with Administrator privillage connected 
+	to a Samba 2.0.4 server as root to change the ownership of 
+	files on both a local NTFS filesystem or remote mounted NTFS 
+	or Samba drive. This is available as part of the <I
+CLASS="EMPHASIS"
+>Seclib
+	</I
+> NT security library written by Jeremy Allison of 
+	the Samba Team, available from the main Samba ftp site.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN517"
+>Viewing file or directory permissions</A
+></H1
+><P
+>The third button is the <B
+CLASS="COMMAND"
+>"Permissions"</B
+> 
+	button. Clicking on this brings up a dialog box that shows both 
+	the permissions and the UNIX owner of the file or directory. 
+	The owner is displayed in the form :</P
+><P
+><B
+CLASS="COMMAND"
+>"SERVER\user (Long name)"</B
+></P
+><P
+>Where <TT
+CLASS="REPLACEABLE"
+><I
+>SERVER</I
+></TT
+> is the NetBIOS name of 
+	the Samba server, <TT
+CLASS="REPLACEABLE"
+><I
+>user</I
+></TT
+> is the user name of 
+	the UNIX user who owns the file, and <TT
+CLASS="REPLACEABLE"
+><I
+>(Long name)</I
+></TT
+>
+	is the discriptive string identifying the user (normally found in the
+	GECOS field of the UNIX password database).</P
+><P
+>If the parameter <TT
+CLASS="PARAMETER"
+><I
+>nt acl support</I
+></TT
+>
+	is set to <TT
+CLASS="CONSTANT"
+>false</TT
+> then the file owner will 
+	be shown as the NT user <B
+CLASS="COMMAND"
+>"Everyone"</B
+> and the 
+	permissions will be shown as NT "Full Control".</P
+><P
+>The permissions field is displayed differently for files 
+	and directories, so I'll describe the way file permissions 
+	are displayed first.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN532"
+>File Permissions</A
+></H2
+><P
+>The standard UNIX user/group/world triple and 
+		the correspinding "read", "write", "execute" permissions 
+		triples are mapped by Samba into a three element NT ACL 
+		with the 'r', 'w', and 'x' bits mapped into the corresponding 
+		NT permissions. The UNIX world permissions are mapped into 
+		the global NT group <B
+CLASS="COMMAND"
+>Everyone</B
+>, followed 
+		by the list of permissions allowed for UNIX world. The UNIX 
+		owner and group permissions are displayed as an NT 
+		<B
+CLASS="COMMAND"
+>user</B
+> icon and an NT <B
+CLASS="COMMAND"
+>local 
+		group</B
+> icon respectively followed by the list 
+	 	of permissions allowed for the UNIX user and group.</P
+><P
+>As many UNIX permission sets don't map into common 
+		NT names such as <B
+CLASS="COMMAND"
+>"read"</B
+>, <B
+CLASS="COMMAND"
+>		"change"</B
+> or <B
+CLASS="COMMAND"
+>"full control"</B
+> then 
+		usually the permissions will be prefixed by the words <B
+CLASS="COMMAND"
+>		"Special Access"</B
+> in the NT display list.</P
+><P
+>But what happens if the file has no permissions allowed 
+		for a particular UNIX user group or world component ? In order 
+		to  allow "no permissions" to be seen and modified then Samba 
+		overloads the NT <B
+CLASS="COMMAND"
+>"Take Ownership"</B
+> ACL attribute 
+		(which has no meaning in UNIX) and reports a component with 
+		no permissions as having the NT <B
+CLASS="COMMAND"
+>"O"</B
+> bit set. 
+		This was chosen of course to make it look like a zero, meaning 
+		zero permissions. More details on the decision behind this will 
+		be given below.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN546"
+>Directory Permissions</A
+></H2
+><P
+>Directories on an NT NTFS file system have two 
+		different sets of permissions. The first set of permissions 
+		is the ACL set on the directory itself, this is usually displayed 
+		in the first set of parentheses in the normal <B
+CLASS="COMMAND"
+>"RW"</B
+> 
+		NT style. This first set of permissions is created by Samba in 
+		exactly the same way as normal file permissions are, described 
+		above, and is displayed in the same way.</P
+><P
+>The second set of directory permissions has no real meaning 
+		in the UNIX permissions world and represents the <B
+CLASS="COMMAND"
+>		"inherited"</B
+> permissions that any file created within 
+		this directory would inherit.</P
+><P
+>Samba synthesises these inherited permissions for NT by 
+		returning as an NT ACL the UNIX permission mode that a new file 
+		created by Samba on this share would receive.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN553"
+>Modifying file or directory permissions</A
+></H1
+><P
+>Modifying file and directory permissions is as simple 
+	as changing the displayed permissions in the dialog box, and 
+	clicking the <B
+CLASS="COMMAND"
+>OK</B
+> button. However, there are 
+	limitations that a user needs to be aware of, and also interactions 
+	with the standard Samba permission masks and mapping of DOS 
+	attributes that need to also be taken into account.</P
+><P
+>If the parameter <TT
+CLASS="PARAMETER"
+><I
+>nt acl support</I
+></TT
+>
+	is set to <TT
+CLASS="CONSTANT"
+>false</TT
+> then any attempt to set 
+	security permissions will fail with an <B
+CLASS="COMMAND"
+>"Access Denied"
+	</B
+> message.</P
+><P
+>The first thing to note is that the <B
+CLASS="COMMAND"
+>"Add"</B
+> 
+	button will not return a list of users in Samba 2.0.4 (it will give 
+	an error message of <B
+CLASS="COMMAND"
+>"The remote proceedure call failed 
+	and did not execute"</B
+>). This means that you can only 
+	manipulate the current user/group/world permissions listed in 
+	the dialog box. This actually works quite well as these are the 
+	only permissions that UNIX actually has.</P
+><P
+>If a permission triple (either user, group, or world) 
+	is removed from the list of permissions in the NT dialog box, 
+	then when the <B
+CLASS="COMMAND"
+>"OK"</B
+> button is pressed it will 
+	be applied as "no permissions" on the UNIX side. If you then 
+	view the permissions again the "no permissions" entry will appear 
+	as the NT <B
+CLASS="COMMAND"
+>"O"</B
+> flag, as described above. This 
+	allows you to add permissions back to a file or directory once 
+	you have removed them from a triple component.</P
+><P
+>As UNIX supports only the "r", "w" and "x" bits of 
+	an NT ACL then if other NT security attributes such as "Delete 
+	access" are selected then they will be ignored when applied on 
+	the Samba server.</P
+><P
+>When setting permissions on a directory the second 
+	set of permissions (in the second set of parentheses) is 
+	by default applied to all files within that directory. If this 
+	is not what you want you must uncheck the <B
+CLASS="COMMAND"
+>"Replace 
+	permissions on existing files"</B
+> checkbox in the NT 
+	dialog before clicking <B
+CLASS="COMMAND"
+>"OK"</B
+>.</P
+><P
+>If you wish to remove all permissions from a 
+	user/group/world  component then you may either highlight the 
+	component and click the <B
+CLASS="COMMAND"
+>"Remove"</B
+> button, 
+	or set the component to only have the special <B
+CLASS="COMMAND"
+>"Take
+	Ownership"</B
+> permission (dsplayed as <B
+CLASS="COMMAND"
+>"O"
+	</B
+>) highlighted.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN575"
+>Interaction with the standard Samba create mask 
+	parameters</A
+></H1
+><P
+>Note that with Samba 2.0.5 there are four new parameters 
+	to control this interaction.  These are :</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>security mask</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>force security mode</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>directory security mask</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>force directory security mode</I
+></TT
+></P
+><P
+>Once a user clicks <B
+CLASS="COMMAND"
+>"OK"</B
+> to apply the 
+	permissions Samba maps the given permissions into a user/group/world 
+	r/w/x triple set, and then will check the changed permissions for a 
+	file against the bits set in the <A
+HREF="smb.conf.5.html#SECURITYMASK"
+TARGET="_top"
+> 
+	<TT
+CLASS="PARAMETER"
+><I
+>security mask</I
+></TT
+></A
+> parameter. Any bits that 
+	were changed that are not set to '1' in this parameter are left alone 
+	in the file permissions.</P
+><P
+>Essentially, zero bits in the <TT
+CLASS="PARAMETER"
+><I
+>security mask</I
+></TT
+>
+	mask may be treated as a set of bits the user is <I
+CLASS="EMPHASIS"
+>not</I
+> 
+	allowed to change, and one bits are those the user is allowed to change.
+	</P
+><P
+>If not set explicitly this parameter is set to the same value as 
+	the <A
+HREF="smb.conf.5.html#CREATEMASK"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>create mask
+	</I
+></TT
+></A
+> parameter to provide compatibility with Samba 2.0.4 
+	where this permission change facility was introduced. To allow a user to 
+	modify all the user/group/world permissions on a file, set this parameter 
+	to 0777.</P
+><P
+>Next Samba checks the changed permissions for a file against 
+	the bits set in the <A
+HREF="smb.conf.5.html#FORCESECURITYMODE"
+TARGET="_top"
+>	<TT
+CLASS="PARAMETER"
+><I
+>force security mode</I
+></TT
+></A
+> parameter. Any bits 
+	that were changed that correspond to bits set to '1' in this parameter 
+	are forced to be set.</P
+><P
+>Essentially, bits set in the <TT
+CLASS="PARAMETER"
+><I
+>force security mode
+	</I
+></TT
+> parameter may be treated as a set of bits that, when 
+	modifying security on a file, the user has always set to be 'on'.</P
+><P
+>If not set explicitly this parameter is set to the same value 
+	as the <A
+HREF="smb.conf.5.html#FORCECREATEMODE"
+TARGET="_top"
+><TT
+CLASS="PARAMETER"
+><I
+>force 
+	create mode</I
+></TT
+></A
+> parameter to provide compatibility
+	with Samba 2.0.4 where the permission change facility was introduced.
+	To allow a user to modify all the user/group/world permissions on a file,
+	with no restrictions set this parameter to 000.</P
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>security mask</I
+></TT
+> and <TT
+CLASS="PARAMETER"
+><I
+>force 
+	security mode</I
+></TT
+> parameters are applied to the change 
+	request in that order.</P
+><P
+>For a directory Samba will perform the same operations as 
+	described above for a file except using the parameter <TT
+CLASS="PARAMETER"
+><I
+>	directory security mask</I
+></TT
+> instead of <TT
+CLASS="PARAMETER"
+><I
+>security 
+	mask</I
+></TT
+>, and <TT
+CLASS="PARAMETER"
+><I
+>force directory security mode
+	</I
+></TT
+> parameter instead of <TT
+CLASS="PARAMETER"
+><I
+>force security mode
+	</I
+></TT
+>.</P
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>directory security mask</I
+></TT
+> parameter 
+	by default is set to the same value as the <TT
+CLASS="PARAMETER"
+><I
+>directory mask
+	</I
+></TT
+> parameter and the <TT
+CLASS="PARAMETER"
+><I
+>force directory security 
+	mode</I
+></TT
+> parameter by default is set to the same value as 
+ 	the <TT
+CLASS="PARAMETER"
+><I
+>force directory mode</I
+></TT
+> parameter to provide 
+	compatibility with Samba 2.0.4 where the permission change facility 
+	was introduced.</P
+><P
+>In this way Samba enforces the permission restrictions that 
+	an administrator can set on a Samba share, whilst still allowing users 
+	to modify the permission bits within that restriction.</P
+><P
+>If you want to set up a share that allows users full control
+	in modifying the permission bits on their files and directories and
+	doesn't force any particular bits to be set 'on', then set the following
+	parameters in the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)
+	</TT
+></A
+> file in that share specific section :</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>security mask = 0777</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>force security mode = 0</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>directory security mask = 0777</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>force directory security mode = 0</I
+></TT
+></P
+><P
+>As described, in Samba 2.0.4 the parameters :</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>create mask</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>force create mode</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>directory mask</I
+></TT
+></P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>force directory mode</I
+></TT
+></P
+><P
+>were used instead of the parameters discussed here.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN639"
+>Interaction with the standard Samba file attribute 
+	mapping</A
+></H1
+><P
+>Samba maps some of the DOS attribute bits (such as "read 
+	only") into the UNIX permissions of a file. This means there can 
+	be a conflict between the permission bits set via the security 
+	dialog and the permission bits set by the file attribute mapping.
+	</P
+><P
+>One way this can show up is if a file has no UNIX read access
+	for the owner it will show up as "read only" in the standard 
+	file attributes tabbed dialog. Unfortunately this dialog is
+	the same one that contains the security info in another tab.</P
+><P
+>What this can mean is that if the owner changes the permissions
+	to allow themselves read access using the security dialog, clicks
+	<B
+CLASS="COMMAND"
+>"OK"</B
+> to get back to the standard attributes tab 
+	dialog, and then clicks <B
+CLASS="COMMAND"
+>"OK"</B
+> on that dialog, then 
+	NT will set the file permissions back to read-only (as that is what 
+	the attributes still say in the dialog). This means that after setting 
+	permissions and clicking <B
+CLASS="COMMAND"
+>"OK"</B
+> to get back to the 
+	attributes dialog you should always hit <B
+CLASS="COMMAND"
+>"Cancel"</B
+> 
+	rather than <B
+CLASS="COMMAND"
+>"OK"</B
+> to ensure that your changes 
+	are not overridden.</P
+></DIV
+></DIV
+></DIV
+></BODY
+></HTML
+>
