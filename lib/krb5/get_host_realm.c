@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999, 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -142,7 +142,7 @@ config_find_realm(krb5_context context,
 krb5_error_code
 krb5_get_host_realm_int (krb5_context context,
 			 const char *host,
-			 unsigned int use_dns,
+			 krb5_boolean use_dns,
 			 krb5_realm **realms)
 {
     const char *p;
