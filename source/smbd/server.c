@@ -3886,6 +3886,9 @@ static void process(void)
       int deadtime = lp_deadtime()*60;
       int counter;
       int last_keepalive=0;
+      int service_load_counter = 0;
+      int share_check_counter = 0;
+      int share_clean_counter = 0;
 
       if (deadtime <= 0)
 	deadtime = DEFAULT_SMBD_TIMEOUT;
@@ -3904,6 +3907,14 @@ static void process(void)
 	  BOOL allidle = True;
 	  extern int keepalive;
 
+      if (counter > 365 * 3600) /* big number of seconds. */
+      {
+        counter = 0;
+        share_check_counter = 0;
+        share_clean_counter = 0;
+        service_load_counter = 0;
+      }
+
 	  if (smb_read_error == READ_EOF) {
 	    DEBUG(3,("end of file from client\n"));
 	    return;
@@ -3921,17 +3932,31 @@ static void process(void)
 	  unbecome_user();
 
 	  /* check for smb.conf reload */
-	  if (!(counter%SMBD_RELOAD_CHECK))
+	  if (counter >= service_load_counter + SMBD_RELOAD_CHECK)
+      {
+        service_load_counter = counter;
+
+        /* remove all unused services.  reduce some of that memory overhead. */
+        lp_killunused(snum_used);
+
+        /* reload services, if files have changed. */
 	    reload_services(True);
+      }
 
 #if 0 /* JRA */
 	  /* check the share modes every 10 secs */
-	  if (!(counter%SHARE_MODES_CHECK))
+	  if (counter >= share_check_counter + SHARE_MODES_CHECK)
+      {
+        share_check_counter = counter;
 	    check_share_modes();
+      }
 
 	  /* clean the share modes every 5 minutes */
-	  if (!(counter%SHARE_MODES_CLEAN))
+	  if (counter >= share_clean_counter + SHARE_MODES_CLEAN)
+      {
+        share_clean_counter = counter;
 	    clean_share_modes();
+      }
 #endif /* JRA */
 
 	  /* automatic timeout if all connections are closed */      
