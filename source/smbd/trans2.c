@@ -945,6 +945,16 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 
       SeekDir(dirptr, current_pos);
       dname = ReadDirName(dirptr);
+
+      /*
+       * Remember, name_map_mangle is called by
+       * get_lanman2_dir_entry(), so the resume name
+       * could be mangled. Ensure we do the same
+       * here.
+       */
+
+      name_map_mangle( dname, False, SNUM(cnum));
+
       if(dname && strcsequal( resume_name, dname))
       {
         SeekDir(dirptr, current_pos+1);
@@ -963,6 +973,15 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
       SeekDir(dirptr, start_pos);
       for(current_pos = start_pos; (dname = ReadDirName(dirptr)) != NULL; SeekDir(dirptr,++current_pos))
       {
+        /*
+         * Remember, name_map_mangle is called by
+         * get_lanman2_dir_entry(), so the resume name
+         * could be mangled. Ensure we do the same
+         * here.
+         */
+
+        name_map_mangle( dname, False, SNUM(cnum));
+
         if(strcsequal( resume_name, dname))
         {
           SeekDir(dirptr, current_pos+1);
