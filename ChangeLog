@@ -1,3 +1,7 @@
+1999-05-09  Assar Westerlund  <assar@hella.pdc.kth.se>
+
+	* Release 0.1f
+
 1999-05-09  Assar Westerlund  <assar@sics.se>
 
 	* kuser/kinit.c: add --noaddresses
