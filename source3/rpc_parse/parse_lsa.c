@@ -448,14 +448,12 @@ void lsa_io_secret_value(char *desc, LSA_SECRET_VALUE *value, prs_struct *ps, in
 	prs_align(ps);
 	prs_uint32("ptr_secret", ps, depth, &(value->ptr_secret));
 
-	if (value->ptr_secret == 0)
+	if (value->ptr_secret != 0)
 	{
-		return;
+		smb_io_strhdr2("hdr_secret", &(value->hdr_secret), ps, depth);
+		smb_io_string2("secret"    , &(value->enc_secret),
+			       value->hdr_secret.buffer, ps, depth);
 	}
-
-	smb_io_strhdr2("hdr_secret", &(value->hdr_secret), ps, depth);
-	smb_io_string2("secret"    , &(value->secret    ),
-		       value->hdr_secret.buffer, ps, depth);
 }
 
 /*******************************************************************
