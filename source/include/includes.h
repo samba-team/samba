@@ -350,6 +350,16 @@
 #define MYSQL_ROW void
 #endif
 
+/*
+ * Define SIG_ATOMIC_T if needed.
+ */
+
+#if defined(HAVE_SIG_ATOMIC_T_TYPE)
+#define SIG_ATOMIC_T sig_atomic_t
+#else
+#define SIG_ATOMIC_T int
+#endif
+
 #ifndef uchar
 #define uchar unsigned char
 #endif
