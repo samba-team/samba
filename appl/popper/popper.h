@@ -125,6 +125,7 @@
 #define POP_FACILITY    LOG_LOCAL0
 #define POP_PRIORITY    LOG_NOTICE
 #define POP_DEBUG       LOG_DEBUG
+#define POP_INFO	LOG_INFO
 #define POP_LOGOPTS     0
 
 #ifdef HAVE_PATHS_H
