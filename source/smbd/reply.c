@@ -1910,7 +1910,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   /* We should fail if file does not exist. */
   fsp = open_file_shared(conn,fname,&sbuf,
 			 SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
-			 FILE_FAIL_IF_NOT_EXIST, 
+			 FILE_EXISTS_OPEN|FILE_FAIL_IF_NOT_EXIST, 
 			 unixmode, oplock_request, NULL, NULL);
   /* close fd from smb_mkstemp() */
   close(tmpfd);
