@@ -71,7 +71,7 @@ fatal (int fd, des_cblock *key, des_key_schedule schedule,
     va_start(args, format);
     p = msg;
     *p++ = ERROR;
-    vsprintf (p + 4, format, args);
+    vsnprintf (p + 4, sizeof(msg) - 5, format, args);
     syslog (LOG_ERR, p + 4);
     len = strlen (p + 4);
     p += krb_put_int (len, p, 4);
@@ -132,9 +132,21 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
      if (status != KSUCCESS)
 	 syslog (LOG_ERR, "krb_recvauth: %s",
 		 krb_get_err_text(status));
-     if( strncmp(version, KX_VERSION, KRB_SENDAUTH_VLEN) != 0)
+     if( strncmp(version, KX_VERSION, KRB_SENDAUTH_VLEN) != 0) {
+	 /* Try to be nice to old kx's */
+	 if (strncmp (version, KX_OLD_VERSION, KRB_SENDAUTH_VLEN) == 0) {
+	     char *old_errmsg = "\001Old version of kx. Please upgrade.";
+
+	     syslog (LOG_ERR, "Old version client (%s)", version);
+
+	     krb_net_read (sock, user, sizeof(user));
+	     krb_net_write (sock, old_errmsg, strlen(old_errmsg) + 1);
+	     exit (1);
+	 }
+
 	 fatal(sock, key, schedule, thisaddr, thataddr,
 	       "Bad version %s", version);
+     }
      memcpy(key, &auth.session, sizeof(des_cblock));
 
      len = read_encrypted (sock, msg, sizeof(msg), &ret,
