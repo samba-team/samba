@@ -846,18 +846,19 @@ static BOOL print_domain_groups(const char *domain)
 
 static BOOL wbinfo_set_auth_user(char *username)
 {
-	char *password;
+	const char *password;
+	char *p;
 	fstring user, domain;
 
 	/* Separate into user and password */
 
 	parse_wbinfo_domain_user(username, domain, user);
 
-	password = strchr(user, '%');
+	p = strchr(user, '%');
 
-	if (password) {
-		*password = 0;
-		password++;
+	if (p != NULL) {
+		*p = 0;
+		password = p+1;
 	} else {
 		char *thepass = getpass("Password: ");
 		if (thepass) {
