@@ -473,7 +473,6 @@ krb5_error_code
 encode_v4_ticket(void *buf, size_t len, EncTicketPart *et, 
 		 PrincipalName *service, size_t *size)
 {
-    unsigned char *p = buf;
     krb5_storage *sp;
     krb5_error_code ret;
     char name[40], inst[40], realm[40];
@@ -548,8 +547,8 @@ encode_v4_ticket(void *buf, size_t len, EncTicketPart *et,
 	*size = (data.length + 7) & ~7; /* pad to 8 bytes */
 	if(*size > len)
 	    return -1;
-	memset(buf - *size + 1, 0, *size);
-	memcpy(buf - *size + 1, data.data, data.length);
+	memset((unsigned char*)buf - *size + 1, 0, *size);
+	memcpy((unsigned char*)buf - *size + 1, data.data, data.length);
 	krb5_data_free(&data);
     }
     return 0;
