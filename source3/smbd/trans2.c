@@ -1183,24 +1183,24 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 			SeekDir(dirptr, current_pos);
 			dname = ReadDirName(dirptr);
 			if (dname) {
-			/*
-			 * Remember, mangle_map is called by
-			 * get_lanman2_dir_entry(), so the resume name
-			 * could be mangled. Ensure we do the same
-			 * here.
-			 */
-
+				/*
+				 * Remember, mangle_map is called by
+				 * get_lanman2_dir_entry(), so the resume name
+				 * could be mangled. Ensure we do the same
+				 * here.
+				 */
+				
 				/* make sure we get a copy that mangle_map can modify */
 
 				pstrcpy(dname_pstring, dname);
 				mangle_map( dname_pstring, False, True, SNUM(conn));
-
+				
 				if(strcsequal( resume_name, dname_pstring)) {
-				SeekDir(dirptr, current_pos+1);
-				DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
-				break;
+					SeekDir(dirptr, current_pos+1);
+					DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
+					break;
+				}
 			}
-		}
 		}
 
 		/*
@@ -1221,15 +1221,15 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 
 				if(dname) {
 					/* make sure we get a copy that mangle_map can modify */
-
+					
 					pstrcpy(dname_pstring, dname);
 					mangle_map(dname_pstring, False, True, SNUM(conn));
 
 					if(strcsequal( resume_name, dname_pstring)) {
-					SeekDir(dirptr, current_pos+1);
-					DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
-					break;
-				}
+						SeekDir(dirptr, current_pos+1);
+						DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
+						break;
+					}
 				}
 			} /* end for */
 		} /* end if current_pos */
