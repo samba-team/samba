@@ -224,10 +224,10 @@ wide strchr()
 smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 {
 	while (*s != 0) {
-		if (c == *s) return s;
+		if (c == *s) return discard_const_p(smb_ucs2_t, s);
 		s++;
 	}
-	if (c == *s) return s;
+	if (c == *s) return discard_const_p(smb_ucs2_t, s);
 
 	return NULL;
 }
@@ -244,7 +244,7 @@ smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 	if (len == 0) return NULL;
 	p += (len - 1);
 	do {
-		if (c == *p) return p;
+		if (c == *p) return discard_const_p(smb_ucs2_t, p);
 	} while (p-- != s);
 	return NULL;
 }

@@ -687,10 +687,10 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 }
 
 NTSTATUS dcerpc_generic_session_key(struct dcerpc_pipe *p,
-				  DATA_BLOB *session_key)
+				    DATA_BLOB *session_key)
 {
 	/* this took quite a few CPU cycles to find ... */
-	session_key->data = "SystemLibraryDTC";
+	session_key->data = discard_const_p(char, "SystemLibraryDTC");
 	session_key->length = 16;
 	return NT_STATUS_OK;
 }
