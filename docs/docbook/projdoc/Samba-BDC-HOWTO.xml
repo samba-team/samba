@@ -5,24 +5,15 @@
 	<pubdate> (26 Apr 2001) </pubdate>
 </chapterinfo>
 
-<title>
-Samba Backup Domain Controller to Samba Domain Control
-</title>
-
-<sect1>
-<title>Prerequisite Reading</title>
+<title>Backup Domain Control</title>
 
 <para>
-Before you continue reading in this chapter, please make sure
+Before you continue reading in this section, please make sure
 that you are comfortable with configuring a Samba PDC
 as described in the <ulink url="Samba-PDC-HOWTO.html">Samba-PDC-HOWTO</ulink>.
 </para>
 
-
-</sect1>
-
 <sect1>
-
 <title>Background</title>
 
 <para>
@@ -68,10 +59,7 @@ set along with settings for the profile path, the users home drive and
 others. This will not be covered in this document.
 </para>
 
-</sect1>
-
-
-<sect1>
+<sect2>
 <title>What qualifies a Domain Controller on the network?</title>
 
 <para>
@@ -85,6 +73,7 @@ Microsoft Domain implementation requires the domain master browser to
 be on the same machine as the PDC.
 </para>
 
+</sect2>
 
 <sect2>
 <title>How does a Workstation find its domain controller?</title>
@@ -236,6 +225,7 @@ password.
 
 
 </sect2>
+
 <sect2>
 <title>Can I do this all with LDAP?</title>
 <para>The simple answer is YES.  Samba's pdb_ldap code supports

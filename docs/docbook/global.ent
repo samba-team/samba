@@ -406,16 +406,16 @@ an Active Directory environment.
 <!ENTITY ID-Samba-LDAP SYSTEM "samba-ldap-howto">
 <!ENTITY ID-Diagnosis SYSTEM "diagnosis">
 <!ENTITY ID-BUGS SYSTEM "bugreport">
-<!ENTITY ID-SECURITY-LEVEL SYSTEM "securitylevels">
+<!ENTITY ID-StandAloneServer SYSTEM "standaloneserver">
 <!ENTITY ID-SPEED SYSTEM "speed">
 <!ENTITY ID-NetworkBrowsing SYSTEM "network-browsing">
 <!ENTITY ID-GROUP-MAPPING-HOWTO SYSTEM "groupmapping">
 <!ENTITY ID-Portability SYSTEM "Portability">
 <!ENTITY ID-Other-Clients SYSTEM "Other-Clients">
-<!ENTITY ID-ADS-HOWTO SYSTEM "ADS">
 <!ENTITY ID-pdb-mysql SYSTEM "pdb-mysql">
 <!ENTITY ID-pdb-xml SYSTEM "pdb-xml">
 <!ENTITY ID-VFS SYSTEM "VFS">
+<!ENTITY ID-Further-Resources SYSTEM "further-resources">
 
 <!ENTITY MANUALPAGES SYSTEM "manpages/manuals.xml">
 <!ENTITY MAN-FINDSMB SYSTEM "manpages/findsmb.1.xml">
@@ -450,9 +450,7 @@ an Active Directory environment.
 <!ENTITY MAN-WINBINDD SYSTEM "manpages/winbindd.8.xml">
 
 
-<!ENTITY ADS-HOWTO SYSTEM "projdoc/ADS-HOWTO.xml">
 <!ENTITY AdvancedNetworkAdmin SYSTEM "projdoc/AdvancedNetworkAdmin.xml">
-<!ENTITY NetworkBrowsing SYSTEM "projdoc/NetworkBrowsing.xml">
 <!ENTITY BUGS SYSTEM "projdoc/Bugs.xml">
 <!ENTITY CUPS SYSTEM "projdoc/CUPS-printing.xml">
 <!ENTITY CVS-Access SYSTEM "projdoc/CVS-Access.xml">
@@ -460,20 +458,20 @@ an Active Directory environment.
 <!ENTITY DOMAIN-MEMBER SYSTEM "projdoc/DOMAIN_MEMBER.xml">
 <!ENTITY Diagnosis SYSTEM "projdoc/Diagnosis.xml">
 <!ENTITY ENCRYPTION SYSTEM "projdoc/ENCRYPTION.xml">
+<!ENTITY Further-Resources SYSTEM "projdoc/Further-Resources.xml">
 <!ENTITY GROUP-MAPPING-HOWTO SYSTEM "projdoc/GROUP-MAPPING-HOWTO.xml">
 <!ENTITY IntegratingWithWindows SYSTEM "projdoc/Integrating-with-Windows.xml">
 <!ENTITY IntroSMB SYSTEM "projdoc/IntroSMB.xml">
-<!ENTITY locking SYSTEM "projdoc/locking.xml">
 <!ENTITY MS-Dfs-Setup SYSTEM "projdoc/msdfs_setup.xml">
 <!ENTITY NT-Security SYSTEM "projdoc/NT_Security.xml">
 <!ENTITY NT4Migration SYSTEM "projdoc/NT4Migration.xml">
+<!ENTITY NetworkBrowsing SYSTEM "projdoc/NetworkBrowsing.xml">
 <!ENTITY Other-Clients SYSTEM "projdoc/Other-Clients.xml">
 <!ENTITY PRINTER-DRIVER2 SYSTEM "projdoc/printer_driver2.xml">
 <!ENTITY Passdb SYSTEM "projdoc/passdb.xml">
 <!ENTITY PolicyMgmt SYSTEM "projdoc/PolicyMgmt.xml">
 <!ENTITY Portability SYSTEM "projdoc/Portability.xml">
 <!ENTITY ProfileMgmt SYSTEM "projdoc/ProfileMgmt.xml">
-<!ENTITY SECURITY-LEVEL SYSTEM "projdoc/security_level.xml">
 <!ENTITY SPEED SYSTEM "projdoc/Speed.xml">
 <!ENTITY SWAT SYSTEM "projdoc/SWAT.xml">
 <!ENTITY Samba-BDC-HOWTO SYSTEM "projdoc/Samba-BDC-HOWTO.xml">
@@ -482,10 +480,12 @@ an Active Directory environment.
 <!ENTITY Samba-PDC-HOWTO SYSTEM "projdoc/Samba-PDC-HOWTO.xml">
 <!ENTITY SecuringSamba SYSTEM "projdoc/securing-samba.xml">
 <!ENTITY ServerType SYSTEM "projdoc/ServerType.xml">
+<!ENTITY StandAloneServer SYSTEM "projdoc/StandAloneServer.xml">
 <!ENTITY Trusts SYSTEM "projdoc/InterdomainTrusts.xml">
 <!ENTITY UNIX-INSTALL SYSTEM "projdoc/UNIX_INSTALL.xml">
 <!ENTITY VFS SYSTEM "projdoc/VFS.xml">
 <!ENTITY WINBIND SYSTEM "projdoc/winbind.xml">
+<!ENTITY locking SYSTEM "projdoc/locking.xml">
 <!ENTITY pdb-mysql SYSTEM "projdoc/pdb_mysql.xml">
 <!ENTITY pdb.xml SYSTEM "projdoc/pdb.xml.xml">
 <!ENTITY problems SYSTEM "projdoc/Problems.xml">
