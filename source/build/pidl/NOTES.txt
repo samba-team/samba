@@ -1,3 +1,17 @@
+midl types
+----------
+
+pidl uses slightly different types to midl by default. The following
+defines in your MS IDL may make things easier to use the same IDL on
+both platforms.
+
+#define unistr [string] wchar_t *
+#define uint8 char
+#define uint16 short
+#define uint32 long
+#define HYPER_T hyper
+
+
 FIXED ARRAY
 -----------
 
