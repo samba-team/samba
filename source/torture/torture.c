@@ -94,10 +94,10 @@ BOOL torture_open_connection_share(struct smbcli_state **c,
 		flags |= SMBCLI_FULL_CONNECTION_USE_KERBEROS;
 
 	status = smbcli_full_connection(c, lp_netbios_name(),
-				     hostname, NULL, 
-				     sharename, "?????", 
-				     username, username[0]?userdomain:"",
-				     password, flags, &retry);
+					hostname, NULL, 
+					sharename, "?????", 
+					username, username[0]?userdomain:"",
+					password, flags, &retry);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
 		return False;
@@ -858,10 +858,10 @@ static BOOL run_tcon_devtype_test(int dummy)
 	const char *password = lp_parm_string(-1, "torture", "password");
 	
 	status = smbcli_full_connection(&cli1, lp_netbios_name(),
-				     host, NULL, 
-				     share, "?????",
-				     username, userdomain,
-				     password, flags, &retry);
+					host, NULL, 
+					share, "?????",
+					username, userdomain,
+					password, flags, &retry);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("could not open connection\n");
@@ -4247,6 +4247,7 @@ static struct {
 	/* local (no server) testers */
 	{"LOCAL-NTLMSSP", torture_ntlmssp_self_check, 0},
 	{"LOCAL-ICONV", torture_local_iconv, 0},
+	{"LOCAL-TALLOC", torture_local_talloc, 0},
 
 	/* ldap testers */
 	{"LDAP-BASIC", torture_ldap_basic, 0},

@@ -32,13 +32,20 @@
 
 static const void *null_context;
 
+struct talloc_reference_handle {
+	struct talloc_reference_handle *next, *prev;
+	void *ptr;
+};
+
+typedef int (*talloc_destructor_t)(void *);
+
 struct talloc_chunk {
 	struct talloc_chunk *next, *prev;
 	struct talloc_chunk *parent, *child;
+	struct talloc_reference_handle *refs;
 	size_t size;
 	uint_t magic;
-	uint_t ref_count;
-	int (*destructor)(void *);
+	talloc_destructor_t destructor;
 	const char *name;
 };
 
@@ -78,10 +85,10 @@ void *_talloc(const void *context, size_t size)
 
 	tc->size = size;
 	tc->magic = TALLOC_MAGIC;
-	tc->ref_count = 1;
 	tc->destructor = NULL;
 	tc->child = NULL;
 	tc->name = NULL;
+	tc->refs = NULL;
 
 	if (context) {
 		struct talloc_chunk *parent = talloc_chunk_from_ptr(context);
@@ -114,14 +121,11 @@ void talloc_set_destructor(const void *ptr, int (*destructor)(void *))
 }
 
 /*
-  increase the reference count on a piece of memory. To decrease the 
-  reference count call talloc_free(), which will free the memory if 
-  the reference count reaches zero
+  increase the reference count on a piece of memory. 
 */
 void talloc_increase_ref_count(const void *ptr)
 {
-	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
-	tc->ref_count++;
+	talloc_reference(null_context, ptr);
 }
 
 /*
@@ -129,8 +133,14 @@ void talloc_increase_ref_count(const void *ptr)
 */
 static int talloc_reference_destructor(void *ptr)
 {
-	void **handle = ptr;
-	talloc_free(*handle);
+	struct talloc_reference_handle *handle = ptr;
+	struct talloc_chunk *tc1 = talloc_chunk_from_ptr(ptr);
+	struct talloc_chunk *tc2 = talloc_chunk_from_ptr(handle->ptr);
+	if (tc1->destructor != (talloc_destructor_t)-1) {
+		tc1->destructor = NULL;
+	}
+	DLIST_REMOVE(tc2->refs, handle);
+	talloc_free(handle);
 	return 0;
 }
 
@@ -145,8 +155,9 @@ static int talloc_reference_destructor(void *ptr)
 */
 void *talloc_reference(const void *context, const void *ptr)
 {
-	void **handle;
-	handle = talloc_named_const(context, sizeof(void *), ".reference");
+	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
+	struct talloc_reference_handle *handle;
+	handle = talloc_named_const(context, sizeof(*handle), ".reference");
 	if (handle == NULL) {
 		return NULL;
 	}
@@ -154,9 +165,9 @@ void *talloc_reference(const void *context, const void *ptr)
 	   main context as that allows the caller to still setup their
 	   own destructor on the context if they want to */
 	talloc_set_destructor(handle, talloc_reference_destructor);
-	talloc_increase_ref_count(ptr);
-	*handle = discard_const(ptr);
-	return *handle;
+	handle->ptr = discard_const(ptr);
+	DLIST_ADD(tc->refs, handle);
+	return handle->ptr;
 }
 
 
@@ -280,7 +291,7 @@ void *talloc_init(const char *fmt, ...) _PRINTF_ATTRIBUTE(1,2)
 */
 int talloc_free(void *ptr)
 {
-	struct talloc_chunk *tc, *tc2, *next;
+	struct talloc_chunk *tc;
 
 	if (ptr == NULL) {
 		return -1;
@@ -288,26 +299,29 @@ int talloc_free(void *ptr)
 
 	tc = talloc_chunk_from_ptr(ptr);
 
-	if (tc->ref_count > 1) {
-		tc->ref_count--;
-		return -1;
+	if (tc->refs) {
+		talloc_reference_destructor(tc->refs);
+		return 0;
 	}
 
-	/* while processing the free, increase the reference count
-	   so we don't recurse into this function */
-	tc->ref_count++;
 	if (tc->destructor) {
-		if (tc->destructor(ptr) == -1) {
-			tc->ref_count--;
+		talloc_destructor_t d = tc->destructor;
+		if (d == (talloc_destructor_t)-1) {
 			return -1;
 		}
+		tc->destructor = (talloc_destructor_t)-1;
+		if (d(ptr) == -1) {
+			tc->destructor = d;
+			return -1;
+		}
+		tc->destructor = NULL;
 	}
 
-	for (tc2=tc->child;tc2;tc2=next) {
-		next = tc2->next;
-		talloc_free(tc2 + 1);
+	while (tc->child) {
+		talloc_free(talloc_steal(tc->parent?tc->parent+1:null_context, 
+					 tc->child+1));
 	}
-	
+
 	if (tc->parent) {
 		DLIST_REMOVE(tc->parent->child, tc);
 		if (tc->parent->child) {
@@ -316,10 +330,6 @@ int talloc_free(void *ptr)
 	} else {
 		if (tc->prev) tc->prev->next = tc->next;
 		if (tc->next) tc->next->prev = tc->prev;
-	}
-
-	if (tc->child) {
-		tc->child->parent = tc->parent;
 	}
 
 	tc->magic = TALLOC_MAGIC_FREE;
@@ -352,6 +362,11 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 
 	tc = talloc_chunk_from_ptr(ptr);
 
+	/* don't allow realloc on referenced pointers */
+	if (tc->refs) {
+		return NULL;
+	}
+
 	/* by resetting magic we catch users of the old memory */
 	tc->magic = TALLOC_MAGIC_FREE;
 
@@ -382,7 +397,7 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 
 /* 
    move a lump of memory from one talloc context to another return the
-   ptr on success, or NUL if it could not be transferred
+   ptr on success, or NULL if it could not be transferred
 */
 void *talloc_steal(const void *new_ctx, const void *ptr)
 {
@@ -393,10 +408,26 @@ void *talloc_steal(const void *new_ctx, const void *ptr)
 	}
 
 	tc = talloc_chunk_from_ptr(ptr);
+
+	if (new_ctx == NULL) {
+		if (tc->parent) {
+			DLIST_REMOVE(tc->parent->child, tc);
+			if (tc->parent->child) {
+				tc->parent->child->parent = tc->parent;
+			}
+		} else {
+			if (tc->prev) tc->prev->next = tc->next;
+			if (tc->next) tc->next->prev = tc->prev;
+		}
+		
+		tc->parent = tc->next = tc->prev = NULL;
+		return discard_const(ptr);
+	}
+
 	new_tc = talloc_chunk_from_ptr(new_ctx);
 
 	if (tc == new_tc) {
-		discard_const(ptr);
+		return discard_const(ptr);
 	}
 
 	if (tc->parent) {
@@ -419,10 +450,19 @@ void *talloc_steal(const void *new_ctx, const void *ptr)
 /*
   return the total size of a talloc pool (subtree)
 */
-static off_t talloc_total_size(const void *ptr)
+off_t talloc_total_size(const void *ptr)
 {
 	off_t total = 0;
-	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
+	struct talloc_chunk *c, *tc;
+	
+	if (ptr == NULL) {
+		ptr = null_context;
+	}
+	if (ptr == NULL) {
+		return 0;
+	}
+
+	tc = talloc_chunk_from_ptr(ptr);
 
 	total = tc->size;
 	for (c=tc->child;c;c=c->next) {
@@ -447,6 +487,21 @@ static off_t talloc_total_blocks(const void *ptr)
 }
 
 /*
+  return the number of external references to a pointer
+*/
+static int talloc_reference_count(const void *ptr)
+{
+	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
+	struct talloc_reference_handle *h;
+	int ret = 0;
+
+	for (h=tc->refs;h;h=h->next) {
+		ret++;
+	}
+	return ret;
+}
+
+/*
   report on memory usage by all children of a pointer, giving a full tree view
 */
 static void talloc_report_depth(const void *ptr, FILE *f, int depth)
@@ -456,8 +511,8 @@ static void talloc_report_depth(const void *ptr, FILE *f, int depth)
 	for (c=tc->child;c;c=c->next) {
 		const char *name = talloc_get_name(c+1);
 		if (strcmp(name, ".reference") == 0) {
-			void **handle = (void *)(c+1);
-			const char *name2 = talloc_get_name(*handle);
+			struct talloc_reference_handle *handle = (void *)(c+1);
+			const char *name2 = talloc_get_name(handle->ptr);
 			fprintf(f, "%*sreference to: %s\n", depth*4, "", name2);
 		} else {
 			fprintf(f, "%*s%-30s contains %6lu bytes in %3lu blocks (ref %d)\n", 
@@ -465,7 +520,7 @@ static void talloc_report_depth(const void *ptr, FILE *f, int depth)
 				name,
 				(unsigned long)talloc_total_size(c+1),
 				(unsigned long)talloc_total_blocks(c+1),
-				c->ref_count);
+				talloc_reference_count(c+1));
 			talloc_report_depth(c+1, f, depth+1);
 		}
 	}
