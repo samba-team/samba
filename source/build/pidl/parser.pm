@@ -705,7 +705,6 @@ sub ParseElementPullBuffer($$$)
 sub ParseStructPush($)
 {
 	my($struct) = shift;
-	my $conform_e;
 	
 	if (! defined $struct->{ELEMENTS}) {
 		return;
@@ -722,8 +721,12 @@ sub ParseStructPush($)
 	if (defined $e->{ARRAY_LEN} && $e->{ARRAY_LEN} eq "*") {
 		my $size = find_size_var($e, util::array_size($e), "r->");
 		$e->{CONFORMANT_SIZE} = $size;
-		$conform_e = $e;
 		pidl "\tNDR_CHECK(ndr_push_uint32(ndr, $size));\n";
+	}
+
+	if (defined $e->{TYPE} && $e->{TYPE} eq "string" 
+	    &&  util::property_matches($e, "flag", ".*LIBNDR_FLAG_STR_CONFORMANT.*")) {
+		pidl "\tNDR_CHECK(ndr_push_uint32(ndr, ndr_string_array_size(ndr, r->$e->{NAME})));\n";
 	}
 
 	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
@@ -789,6 +792,15 @@ sub ParseStructPull($)
 	# alignment)
 	my $e = $struct->{ELEMENTS}[-1];
 	if (defined $e->{ARRAY_LEN} && $e->{ARRAY_LEN} eq "*") {
+		$conform_e = $e;
+	}
+
+	if (defined $e->{TYPE} && $e->{TYPE} eq "string"
+	    &&  util::property_matches($e, "flag", ".*LIBNDR_FLAG_STR_CONFORMANT.*")) {
+		$conform_e = $e;
+	}
+
+	if (defined $conform_e) {
 		$conform_e = $e;
 		pidl "\tuint32_t _conformant_size;\n";
 		$conform_e->{CONFORMANT_SIZE} = "_conformant_size";

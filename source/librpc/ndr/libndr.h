@@ -89,36 +89,39 @@ struct ndr_print {
 #define LIBNDR_FLAG_BIGENDIAN  (1<<0)
 #define LIBNDR_FLAG_NOALIGN    (1<<1)
 
-#define LIBNDR_FLAG_STR_ASCII    (1<<2)
-#define LIBNDR_FLAG_STR_LEN4     (1<<3)
-#define LIBNDR_FLAG_STR_SIZE4    (1<<4)
-#define LIBNDR_FLAG_STR_NOTERM   (1<<5)
-#define LIBNDR_FLAG_STR_NULLTERM (1<<6)
-#define LIBNDR_FLAG_STR_SIZE2    (1<<7)
-#define LIBNDR_FLAG_STR_BYTESIZE (1<<8)
-#define LIBNDR_FLAG_STR_FIXLEN32 (1<<9)
-#define LIBNDR_STRING_FLAGS      (0x3FC)
+#define LIBNDR_FLAG_STR_ASCII		(1<<2)
+#define LIBNDR_FLAG_STR_LEN4		(1<<3)
+#define LIBNDR_FLAG_STR_SIZE4		(1<<4)
+#define LIBNDR_FLAG_STR_NOTERM		(1<<5)
+#define LIBNDR_FLAG_STR_NULLTERM	(1<<6)
+#define LIBNDR_FLAG_STR_SIZE2		(1<<7)
+#define LIBNDR_FLAG_STR_BYTESIZE	(1<<8)
+#define LIBNDR_FLAG_STR_FIXLEN32	(1<<9)
+#define LIBNDR_FLAG_STR_CONFORMANT	(1<<10)
+#define LIBNDR_FLAG_STR_CHARLEN		(1<<11)
+#define LIBNDR_STRING_FLAGS		(0xFFC)
 
-#define LIBNDR_FLAG_REF_ALLOC    (1<<10)
-#define LIBNDR_FLAG_REMAINING    (1<<11)
-#define LIBNDR_FLAG_ALIGN2       (1<<12)
-#define LIBNDR_FLAG_ALIGN4       (1<<13)
-#define LIBNDR_FLAG_ALIGN8       (1<<14)
+
+#define LIBNDR_FLAG_REF_ALLOC    (1<<20)
+#define LIBNDR_FLAG_REMAINING    (1<<21)
+#define LIBNDR_FLAG_ALIGN2       (1<<22)
+#define LIBNDR_FLAG_ALIGN4       (1<<23)
+#define LIBNDR_FLAG_ALIGN8       (1<<24)
 
 #define LIBNDR_ALIGN_FLAGS (LIBNDR_FLAG_ALIGN2|LIBNDR_FLAG_ALIGN4|LIBNDR_FLAG_ALIGN8)
 
-#define LIBNDR_PRINT_ARRAY_HEX   (1<<15)
-#define LIBNDR_PRINT_SET_VALUES  (1<<16)
+#define LIBNDR_PRINT_ARRAY_HEX   (1<<25)
+#define LIBNDR_PRINT_SET_VALUES  (1<<26)
 
 /* used to force a section of IDL to be little-endian */
-#define LIBNDR_FLAG_LITTLE_ENDIAN (1<<17)
+#define LIBNDR_FLAG_LITTLE_ENDIAN (1<<27)
 
 /* used to check if alignment padding is zero */
-#define LIBNDR_FLAG_PAD_CHECK     (1<<18)
+#define LIBNDR_FLAG_PAD_CHECK     (1<<28)
 
 /* used to indicate spoolss style relative pointers (relative to current
    offset, not base) */
-#define LIBNDR_FLAG_RELATIVE_CURRENT  (1<<19)
+#define LIBNDR_FLAG_RELATIVE_CURRENT  (1<<29)
 
 
 /* useful macro for debugging */

@@ -522,6 +522,9 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		flags &= ~LIBNDR_FLAG_STR_ASCII;
 	}
 
+	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
+	flags &= ~LIBNDR_FLAG_STR_CHARLEN;
+
 	switch (flags & LIBNDR_STRING_FLAGS) {
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4:
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
@@ -740,6 +743,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 	int chset = CH_UTF16;
 	unsigned flags = ndr->flags;
 	unsigned byte_mul = 2;
+	unsigned c_len_term = 1;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
@@ -758,11 +762,18 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		flags &= ~LIBNDR_FLAG_STR_ASCII;
 	}
 
+	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
+
+	if (flags & LIBNDR_FLAG_STR_CHARLEN) {
+		c_len_term = 0;
+		flags &= ~LIBNDR_FLAG_STR_CHARLEN;
+	}
+
 	switch (flags & LIBNDR_STRING_FLAGS) {
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4:
-		NDR_CHECK(ndr_push_uint32(ndr, c_len+1));
+		NDR_CHECK(ndr_push_uint32(ndr, c_len+c_len_term));
 		NDR_CHECK(ndr_push_uint32(ndr, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, c_len+1));
+		NDR_CHECK(ndr_push_uint32(ndr, c_len+c_len_term));
 		NDR_PUSH_NEED_BYTES(ndr, byte_mul*(c_len+1));
 		ret = convert_string(CH_UNIX, chset, 
 				     s, s_len+1,
@@ -792,7 +803,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 
 	case LIBNDR_FLAG_STR_LEN4:
 		NDR_CHECK(ndr_push_uint32(ndr, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, c_len + 1));
+		NDR_CHECK(ndr_push_uint32(ndr, c_len + c_len_term));
 		NDR_PUSH_NEED_BYTES(ndr, byte_mul*(c_len+1));
 		ret = convert_string(CH_UNIX, chset, 
 				     s, s_len + 1,
@@ -805,7 +816,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		break;
 
 	case LIBNDR_FLAG_STR_SIZE4:
-		NDR_CHECK(ndr_push_uint32(ndr, c_len + 1));
+		NDR_CHECK(ndr_push_uint32(ndr, c_len + c_len_term));
 		NDR_PUSH_NEED_BYTES(ndr, byte_mul*(c_len+1));
 		ret = convert_string(CH_UNIX, chset, 
 				     s, s_len + 1,
@@ -818,7 +829,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		break;
 
 	case LIBNDR_FLAG_STR_SIZE2:
-		NDR_CHECK(ndr_push_uint16(ndr, c_len + 1));
+		NDR_CHECK(ndr_push_uint16(ndr, c_len + c_len_term));
 		NDR_PUSH_NEED_BYTES(ndr, byte_mul*(c_len+1));
 		ret = convert_string(CH_UNIX, chset, 
 				     s, s_len + 1,
@@ -874,6 +885,40 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 
 	return NT_STATUS_OK;
 }
+
+/*
+  push a general string onto the wire
+*/
+size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
+{
+	size_t c_len;
+	unsigned flags = ndr->flags;
+	unsigned byte_mul = 2;
+	unsigned c_len_term = 1;
+
+	if (flags & LIBNDR_FLAG_STR_FIXLEN32) {
+		return 32;
+	}
+	
+	c_len = s?strlen_m(s):0;
+
+	if (flags & LIBNDR_FLAG_STR_ASCII) {
+		byte_mul = 1;
+	}
+
+	if (flags & LIBNDR_FLAG_STR_NOTERM) {
+		c_len_term = 0;
+	}
+
+	c_len = c_len + c_len_term;
+
+	if (flags & LIBNDR_FLAG_STR_BYTESIZE) {
+		c_len = c_len * byte_mul;
+	}
+
+	return c_len;
+}
+
 
 /*
   push a NTTIME
