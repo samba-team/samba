@@ -1,8 +1,12 @@
+2004-09-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: make variable shorter, make error messages
+	from pkinit, make freeing easier
+	
 2004-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/asn1/der_get.c (decode_*): name all tag-length variables the
 	same
-	
 	(decode_enumerated): check that the tag-length is not longer the length
 
 	* lib/asn1/der_get.c (decode_boolean): fail if length of tag is
