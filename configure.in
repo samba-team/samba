@@ -4,9 +4,6 @@ AC_INIT(lib/krb5/send_to_kdc.c)
 AM_CONFIG_HEADER(include/config.h)
 
 AC_CONFIG_AUX_DIR_DEFAULT
-if test "`uname`" = AIX; then
-	INSTALL="$ac_install_sh"
-fi
 AM_INIT_AUTOMAKE(heimdal,0.1c)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
