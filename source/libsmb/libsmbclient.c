@@ -65,6 +65,7 @@ static int smbc_max_fd = 10000;
 static struct smbc_file **smbc_file_table;
 static struct smbc_server *smbc_srvs;
 static pstring  my_netbios_name;
+static pstring smbc_user;
 
 /*
  * Clean up a filename by removing redundent stuff 
@@ -174,14 +175,15 @@ smbc_clean_fname(char *name)
 static const char *smbc_prefix = "smb:";
 
 static int
-smbc_parse_path(const char *fname, char *server, char *share, char *path)
+smbc_parse_path(const char *fname, char *server, char *share, char *path,
+		char *user, char *password) /* FIXME, lengths of strings */
 {
   static pstring s;
   char *p;
   int len;
   fstring workgroup;
 
-  server[0] = share[0] = path[0] = (char)0;
+  server[0] = share[0] = path[0] = user[0] = password[0] = (char)0;
   pstrcpy(s, fname);
 
   /*  clean_fname(s);  causing problems ... */
@@ -257,15 +259,21 @@ int smbc_errno(struct cli_state *c)
 
 /*
  * Connect to a server, possibly on an existing connection
+ *
+ * Here, what we want to do is: If the server and username
+ * match an existing connection, reuse that, otherwise, establish a 
+ * new connection.
+ *
+ * If we have to create a new connection, call the auth_fn to get the
+ * info we need, unless the username and password were passed in.
  */
 
-struct smbc_server *smbc_server(char *server, char *share)
+struct smbc_server *smbc_server(char *server, char *share, 
+				char *workgroup, char *username, 
+				char *password)
 {
   struct smbc_server *srv=NULL;
   struct cli_state c;
-  char *username = NULL;
-  char *password = NULL;
-  char *workgroup = NULL;
   struct nmb_name called, calling;
   char *p, *server_n = server;
   fstring group;
@@ -275,16 +283,6 @@ struct smbc_server *smbc_server(char *server, char *share)
   
   ip = ipzero;
   ZERO_STRUCT(c);
-
-  if (strncmp(share, "IPC$", 4))  /* IPC$ should not need a pwd ... */
-    smbc_auth_fn(server, share, &workgroup, &username, &password);
-  else {
-
-    workgroup = lp_workgroup();  /* Is this relevant here? */
-    username = "";
-    password = "";
-
-  }
 
   /* try to use an existing connection */
   for (srv=smbc_srvs;srv;srv=srv->next) {
@@ -298,6 +296,24 @@ struct smbc_server *smbc_server(char *server, char *share)
   if (server[0] == 0) {
     errno = EPERM;
     return NULL;
+  }
+
+  /* Pick up the auth info here, once we know we need to connect */
+
+  smbc_auth_fn(server, share, workgroup, sizeof(fstring),
+	       username, sizeof(fstring), password, sizeof(fstring));
+
+  /* 
+   * However, smbc_auth_fn may have picked up info relating to an 
+   * existing connection, so try for and existing connection again ...
+   */
+
+  for (srv=smbc_srvs;srv;srv=srv->next) {
+    if (strcmp(server,srv->server_name)==0 &&
+	strcmp(share,srv->share_name)==0 &&
+	strcmp(workgroup,srv->workgroup)==0 &&
+	strcmp(username, srv->username) == 0) 
+      return srv;
   }
 
   make_nmb_name(&calling, my_netbios_name, 0x0);
@@ -443,7 +459,12 @@ int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
    */
 
   user = getenv("USER");
-  if (!user) user = "";
+  if (!user) user = "";  /* FIXME: What to do about this? */
+
+  /*
+   * FIXME: Is this the best way to get the user info? */
+
+  pstrcpy(smbc_user, user); /* Save for use elsewhere */
 
   pid = getpid();
 
@@ -533,7 +554,7 @@ int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
 
 int smbc_open(const char *fname, int flags, mode_t mode)
 {
-  fstring server, share;
+  fstring server, share, user, password;
   pstring path;
   struct smbc_server *srv = NULL;
   struct smbc_file *file = NULL;
@@ -553,9 +574,11 @@ int smbc_open(const char *fname, int flags, mode_t mode)
 
   }
 
-  smbc_parse_path(fname, server, share, path); /* FIXME, check errors */
+  smbc_parse_path(fname, server, share, path, user, password); /* FIXME, check errors */
 
-  srv = smbc_server(server, share);
+  if (user[0] == (char)0) pstrcpy(user, smbc_user);
+
+  srv = smbc_server(server, share, lp_workgroup(), user, password);
 
   if (!srv) {
 
@@ -787,7 +810,7 @@ int smbc_close(int fd)
 
 int smbc_unlink(const char *fname)
 {
-  fstring server, share;
+  fstring server, share, user, password;
   pstring path;
   struct smbc_server *srv = NULL;
 
@@ -805,9 +828,11 @@ int smbc_unlink(const char *fname)
 
   }
 
-  smbc_parse_path(fname, server, share, path); /* FIXME, check errors */
+  smbc_parse_path(fname, server, share, path, user, password); /* FIXME, check errors */
 
-  srv = smbc_server(server, share);
+  if (user[0] == (char)0) pstrcpy(user, smbc_user);
+
+  srv = smbc_server(server, share, lp_workgroup(), user, password);
 
   if (!srv) {
 
@@ -847,7 +872,7 @@ int smbc_unlink(const char *fname)
 
 int smbc_rename(const char *oname, const char *nname)
 {
-  fstring server1, share1, server2, share2;
+  fstring server1, share1, server2, share2, user1, user2, password1, password2;
   pstring path1, path2;
   struct smbc_server *srv = NULL;
 
@@ -867,19 +892,25 @@ int smbc_rename(const char *oname, const char *nname)
   
   DEBUG(4, ("smbc_rename(%s,%s)\n", oname, nname));
 
-  smbc_parse_path(oname, server1, share1, path1);
-  smbc_parse_path(nname, server2, share2, path2);
+  smbc_parse_path(oname, server1, share1, path1, user1, password1);
 
-  if (strcmp(server1, server2) || strcmp(share1, share2)) {
+  if (user1[0] == (char)0) pstrcpy(user1, smbc_user);
 
-    /* Can't rename across file systems */
+  smbc_parse_path(nname, server2, share2, path2, user2, password2);
+
+  if (user2[0] == (char)0) pstrcpy(user2, smbc_user);
+
+  if (strcmp(server1, server2) || strcmp(share1, share2) ||
+      strcmp(user1, user2)) {
+
+    /* Can't rename across file systems, or users?? */
 
     errno = EXDEV;
     return -1;
 
   }
 
-  srv = smbc_server(server1, share1);
+  srv = smbc_server(server1, share1, lp_workgroup(), user1, password1);
   if (!srv) {
 
     return -1;
@@ -1059,7 +1090,7 @@ BOOL smbc_getatr(struct smbc_server *srv, char *path,
 int smbc_stat(const char *fname, struct stat *st)
 {
   struct smbc_server *srv;
-  fstring server, share;
+  fstring server, share, user, password;
   pstring path;
   time_t m_time = 0, a_time = 0, c_time = 0;
   size_t size = 0;
@@ -1082,9 +1113,11 @@ int smbc_stat(const char *fname, struct stat *st)
   
   DEBUG(4, ("stat(%s)\n", fname));
 
-  smbc_parse_path(fname, server, share, path);
+  smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
 
-  srv = smbc_server(server, share);
+  if (user[0] == (char)0) pstrcpy(user, smbc_user);
+
+  srv = smbc_server(server, share, lp_workgroup(), user, password);
 
   if (!srv) {
 
@@ -1353,7 +1386,7 @@ dir_list_fn(file_info *finfo, const char *mask, void *state)
 int smbc_opendir(const char *fname)
 {
   struct in_addr addr;
-  fstring server, share;
+  fstring server, share, user, password;
   pstring path;
   struct smbc_server *srv = NULL;
   struct in_addr rem_ip;
@@ -1373,12 +1406,14 @@ int smbc_opendir(const char *fname)
 
   }
 
-  if (smbc_parse_path(fname, server, share, path)) {
+  if (smbc_parse_path(fname, server, share, path, user, password)) {
 
     errno = EINVAL;
     return -1;
 
   }
+
+  if (user[0] == (char)0) pstrcpy(user, smbc_user);
 
   /* Get a file entry ... */
 
@@ -1433,7 +1468,7 @@ int smbc_opendir(const char *fname)
    * Get a connection to IPC$ on the server if we do not already have one
    */
 
-    srv = smbc_server(server, "IPC$");
+    srv = smbc_server(server, "IPC$", lp_workgroup(), user, password);
 
     if (!srv) {
 
@@ -1486,7 +1521,7 @@ int smbc_opendir(const char *fname)
 	 * Get a connection to IPC$ on the server if we do not already have one
 	 */
 
-	srv = smbc_server(buserver, "IPC$");
+	srv = smbc_server(buserver, "IPC$", lp_workgroup(), user, password);
 
 	if (!srv) {
 
@@ -1518,7 +1553,7 @@ int smbc_opendir(const char *fname)
 
 	  smbc_file_table[slot]->dir_type = SMBC_FILE_SHARE;
 
-	  srv = smbc_server(server, "IPC$");
+	  srv = smbc_server(server, "IPC$", lp_workgroup(), user, password);
 
 	  if (!srv) {
 
@@ -1560,7 +1595,7 @@ int smbc_opendir(const char *fname)
 
       smbc_file_table[slot]->dir_type = SMBC_FILE_SHARE;
 
-      srv = smbc_server(server, share);
+      srv = smbc_server(server, share, lp_workgroup(), user, password);
 
       if (!srv) {
 
@@ -1636,6 +1671,70 @@ int smbc_closedir(int fd)
 
 /*
  * Routine to get a directory entry
+ */
+
+static char smbc_local_dirent[512];  /* Make big enough */
+
+struct smbc_dirent *smbc_readdir(unsigned int fd)
+{
+  struct smbc_file *fe;
+  struct smbc_dirent *dirp, *dirent;
+
+  /* Check that all is ok first ... */
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return NULL;
+
+  }
+
+  if (fd < smbc_start_fd || fd >= (smbc_start_fd + smbc_max_fd)) {
+
+    errno = EBADF;
+    return NULL;
+
+  }
+
+  fe = smbc_file_table[fd - smbc_start_fd];
+
+  if (fe->file != False) { /* FIXME, should be dir, perhaps */
+
+    errno = ENOTDIR;
+    return NULL;
+
+  }
+
+  if (!fe->dir_next)
+    return NULL;
+  else {
+
+    dirent = fe->dir_next->dirent;
+
+    if (!dirent) {
+
+      errno = ENOENT;
+      return NULL;
+
+    }
+
+    /* Hmmm, do I even need to copy it? */
+
+    bcopy(dirent, smbc_local_dirent, dirent->dirlen); /* Copy the dirent */
+
+    dirp = (struct smbc_dirent *)smbc_local_dirent;
+
+    dirp->comment = (char *)(&dirp->name + dirent->namelen + 1);
+    
+    fe->dir_next = fe->dir_next->next;
+
+    return (struct smbc_dirent *)smbc_local_dirent;
+  }
+
+}
+
+/*
+ * Routine to get directory entries
  */
 
 int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)

@@ -26,30 +26,36 @@
 #include <libsmbclient.h>
 
 void auth_fn(char *server, char *share,
-	     char **workgroup, char **username, char **password)
+	     char *workgroup, int wgmaxlen, char *username, int unmaxlen,
+	     char *password, int pwmaxlen)
 {
-  static char wg[128], un[128], pw[128];
-  /* DO nothing for now ... change later */
+  char temp[128];
 
-  fprintf(stdout, "Enter workgroup: ");
-  fgets(wg, sizeof(wg), stdin);
+  fprintf(stdout, "Need password for //%s/%s\n", server, share);
 
-  if (wg[strlen(wg) - 1] == 0x0a) /* A new line? */
-    wg[strlen(wg) - 1] = 0x00;
+  fprintf(stdout, "Enter workgroup: [%s] ", workgroup);
+  fgets(temp, sizeof(temp), stdin);
 
-  fprintf(stdout, "Enter username: ");
-  fgets(un, sizeof(un), stdin);
+  if (temp[strlen(temp) - 1] == 0x0a) /* A new line? */
+    temp[strlen(temp) - 1] = 0x00;
 
-  if (un[strlen(un) - 1] == 0x0a) /* A new line? */
-    un[strlen(un) - 1] = 0x00;
+  if (temp[0]) strncpy(workgroup, temp, wgmaxlen - 1);
 
-  fprintf(stdout, "Enter password: ");
-  fgets(pw, sizeof(pw), stdin);
+  fprintf(stdout, "Enter username: [%s] ", username);
+  fgets(temp, sizeof(temp), stdin);
 
-  if (pw[strlen(pw) - 1] == 0x0a) /* A new line? */
-    pw[strlen(pw) - 1] = 0x00;
+  if (temp[strlen(temp) - 1] == 0x0a) /* A new line? */
+    temp[strlen(temp) - 1] = 0x00;
 
-  *workgroup = wg; *password = pw; *username = un;
+  if (temp[0]) strncpy(username, temp, unmaxlen - 1);
+
+  fprintf(stdout, "Enter password: [%s] ", password);
+  fgets(temp, sizeof(temp), stdin);
+
+  if (temp[strlen(temp) - 1] == 0x0a) /* A new line? */
+    temp[strlen(temp) - 1] = 0x00;
+
+  if (temp[0]) strncpy(password, temp, pwmaxlen - 1);
 
 }
 
@@ -122,7 +128,7 @@ int main(int argc, char *argv[])
 
     while (dirc > 0) {
 
-      dsize = sizeof(struct smbc_dirent) + dirp->namelen + dirp->commentlen + 1;
+      dsize = dirp->dirlen;
       fprintf(stdout, "Dir Ent, Type: %u, Name: %s, Comment: %s\n",
 	      dirp->smbc_type, dirp->name, dirp->comment);
 
@@ -148,7 +154,7 @@ int main(int argc, char *argv[])
 
     while (dirc > 0) {
 
-      dsize = sizeof(struct smbc_dirent) + dirp->namelen + dirp->commentlen + 1;
+      dsize = dirp->dirlen;
       fprintf(stdout, "Dir Ent, Type: %u, Name: %s, Comment: %s\n",
 	      dirp->smbc_type, dirp->name, dirp->comment);
 
@@ -174,7 +180,7 @@ int main(int argc, char *argv[])
 
     while (dirc > 0) {
 
-      dsize = sizeof(struct smbc_dirent) + dirp->namelen + dirp->commentlen + 1;
+      dsize = dirp->dirlen;
       fprintf(stdout, "\nDir Ent, Type: %u, Name: %s, Comment: %s\n",
 	      dirp->smbc_type, dirp->name, dirp->comment);
 
@@ -330,7 +336,9 @@ int main(int argc, char *argv[])
 
   fprintf(stdout, "Stat'ed file:   %s. Size = %d, mode = %04X\n", file2, 
 	  st2.st_size, st2.st_mode);
+  fprintf(stdout, "    time: %s\n", ctime(&st2.st_atime));
   fprintf(stdout, "Earlier stat:   %s, Size = %d, mode = %04X\n", file, 
 	  st1.st_size, st1.st_mode);
+  fprintf(stdout, "    time: %s\n", ctime(&st1.st_atime));
 
 }
