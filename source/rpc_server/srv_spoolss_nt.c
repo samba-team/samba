@@ -48,6 +48,13 @@ static const char * drv_ver_to_os[] = {
 	"WIN2K",   /* driver version/cversion 3 */
 };
 
+static const char *get_drv_ver_to_os(int ver)
+{
+	if (ver < 0 || ver > 3)
+		return "";
+	return drv_ver_to_os[ver];
+}
+
 struct table_node {
 	const char    *long_archi;
 	const char    *short_archi;
@@ -7464,14 +7471,14 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	/* BEGIN_ADMIN_LOG */
         switch(level) {
 	    case 3:
+		fstrcpy(driver_name, driver.info_3->name ? driver.info_3->name : "");
 		sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
-			driver.info_3->name,drv_ver_to_os[driver.info_3->cversion],uidtoname(user.uid));
-		fstrcpy(driver_name, driver.info_3->name);
+			driver_name, get_drv_ver_to_os(driver.info_3->cversion),uidtoname(user.uid));
 		break;
 	    case 6:   
+		fstrcpy(driver_name, driver.info_6->name ?  driver.info_6->name : "");
 		sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
-			driver.info_6->name,drv_ver_to_os[driver.info_6->version],uidtoname(user.uid));
-		fstrcpy(driver_name, driver.info_6->name);
+			driver_name, get_drv_ver_to_os(driver.info_6->version),uidtoname(user.uid));
 		break;
         }
 	/* END_ADMIN_LOG */
