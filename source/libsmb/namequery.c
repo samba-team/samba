@@ -638,8 +638,8 @@ BOOL name_resolve_bcast(const char *name, int name_type,
  Resolve via "wins" method.
 *********************************************************/
 
-static BOOL resolve_wins(const char *name, int name_type,
-                         struct in_addr **return_iplist, int *return_count)
+BOOL resolve_wins(const char *name, int name_type,
+		  struct in_addr **return_iplist, int *return_count)
 {
 	int sock, t, i;
 	char **wins_tags;
