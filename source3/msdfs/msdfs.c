@@ -189,7 +189,7 @@ static BOOL read_target_host(const char *mapfile, pstring targethost)
 	DEBUG(10, ("Scanning mapfile [%s]\n", mapfile));
 
 	while ((s=fgets_slash(buf, sizeof(buf), f)) != NULL) {
-		space = strchr(buf, ' ');
+		space = strchr_m(buf, ' ');
 
 		if (space == NULL) {
 			DEBUG(0, ("Ignoring invalid line %s\n", buf));
@@ -234,7 +234,7 @@ static BOOL read_target_host(const char *mapfile, pstring targethost)
 static BOOL expand_msdfs_target(connection_struct* conn, pstring target)
 {
 	pstring mapfilename;
-	char *filename_start = strchr(target, '@');
+	char *filename_start = strchr_m(target, '@');
 	char *filename_end;
 	int filename_len;
 	pstring targethost;
@@ -245,7 +245,7 @@ static BOOL expand_msdfs_target(connection_struct* conn, pstring target)
 		return False;
 	}
 
-	filename_end = strchr(filename_start+1, '@');
+	filename_end = strchr_m(filename_start+1, '@');
 
 	if (filename_end == NULL) {
 		DEBUG(10, ("No filename end in %s\n", target));
@@ -322,7 +322,7 @@ static BOOL parse_symlink(connection_struct* conn, char* buf,
 
 		pstrcpy(target, alt_path[i]);
 
-		if (strchr(target, '@') != NULL) {
+		if (strchr_m(target, '@') != NULL) {
 			if (!expand_msdfs_target(conn, target))
 				return False;
 		}
