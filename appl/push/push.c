@@ -539,7 +539,6 @@ parse_pobox (char *a0, char *a1,
 		errx (1, "Who are you?");
 	    u = strdup(pwd->pw_name);
 	}
-    errx(0, "h = %s, u = %s", h, u);
     *host = h;
     *user = u;
     *filename = f;
