@@ -198,10 +198,10 @@ void add_my_names(void)
 	add_netbios_entry(d,"__SAMBA__",0x20,nb_type|NB_ACTIVE,0,SELF,ip,False,wins);
 	add_netbios_entry(d,"__SAMBA__",0x00,nb_type|NB_ACTIVE,0,SELF,ip,False,wins);
 
-    if (!wins_iface && lp_domain_logons() && lp_domain_master()) {
-	/* XXXX the 0x1c is apparently something to do with domain logons */
+	if (lp_domain_logons()) {
+	  /* 0x1c is used to find logon servers for a domain */
 	  add_my_name_entry(d, my_workgroup(),0x1c,nb_type|NB_ACTIVE|NB_GROUP);
-    }
+	}
   }
   if (lp_domain_master() && (d = find_subnet(ipgrp)))
   {
