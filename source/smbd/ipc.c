@@ -60,9 +60,6 @@ extern fstring local_machine;
 #define SNLEN 15		/* service name length */
 #define QNLEN 12		/* queue name maximum length */
 
-#define MAJOR_VERSION 4
-#define MINOR_VERSION 1
-
 extern int Client;
 
 static BOOL api_Unsupported(int cnum,uint16 vuid, char *param,char *data,

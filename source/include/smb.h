@@ -794,7 +794,15 @@ char *Strstr(char *s, char *p);
 #define SV_TYPE_DOMAIN_ENUM         0x80000000
 #define SV_TYPE_ALL                 0xFFFFFFFF  
 
-/* what server type are we currently */
+/* what server type are we currently  - JHT Says we ARE 4.10 */
+/* this was set by JHT in liaison with Andrew Tridgell early 1996 */
+/* setting to 4.10 at same time as announcing ourselves as NT Server */
+#define MAJOR_VERSION 0x04
+#define MINOR_VERSION 0x01
+
+/* Browser Election Values */
+#define BROWSER_ELECT_VERSION	0x010f
+#define BROWSER_CONSTANT	0xaa55
 
 
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
