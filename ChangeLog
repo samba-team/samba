@@ -1,14 +1,26 @@
+2003-05-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c: protect the random initiator with a mutex
+	
+	* lib/krb5/mcache.c: protect the mcc_head with a mutex
+	
+	* lib/krb5/krb5_locl.h: include heim_threads.h
+	
+	* lib/krb5/heim_threads.h: wrapper macros for thread
+	synchronization primitives
+
 2003-05-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* lib/krb5/krb5_build_principal.3
-	lib/krb5/krb5_free_principal.3
-	lib/krb5/krb5_sname_to_principal.3
-	lib/krb5/krb5_principal_get_realm.3
-	lib/krb5/krb5_principal.3
+	* lib/krb5/krb5_principal.3
 	lib/krb5/Makefile.am:
 	Add all Kerberos principal function to one manpage, add a few more
 	principal function to it, remove old now dup manpages
 	
+	* lib/krb5/krb5_build_principal.3: remove file
+	* lib/krb5/krb5_free_principal.3: remove file
+	* lib/krb5/krb5_sname_to_principal.3: remove file
+	* lib/krb5/krb5_principal_get_realm.3: remove file
+
 2003-05-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/verify_krb5_conf.8: sort sections, from netbsd
