@@ -228,34 +228,16 @@ static struct ea_list *get_ea_list(TALLOC_CTX *mem_ctx, connection_struct *conn,
  that was filled.
 ****************************************************************************/
 
-static unsigned int fill_ea_buffer(char *pdata, unsigned int total_data_size,
-	connection_struct *conn, files_struct *fsp, const char *fname)
+static unsigned int fill_ea_buffer(TALLOC_CTX *mem_ctx, char *pdata, unsigned int total_data_size,
+	connection_struct *conn, struct ea_list *ea_list)
 {
 	unsigned int ret_data_size = 4;
 	char *p = pdata;
-	size_t total_ea_len;
-	TALLOC_CTX *mem_ctx;
-	struct ea_list *ea_list;
 
 	SMB_ASSERT(total_data_size >= 4);
 
 	SIVAL(pdata,0,0);
 	if (!lp_ea_support(SNUM(conn))) {
-		return 4;
-	}
-	mem_ctx = talloc_init("fill_ea_buffer");
-	if (!mem_ctx) {
-		return 4;
-	}
-
-	ea_list = get_ea_list(mem_ctx, conn, fsp, fname, &total_ea_len);
-	if (!ea_list) {
-		talloc_destroy(mem_ctx);
-		return 4;
-	}
-
-	if (total_ea_len > total_data_size) {
-		talloc_destroy(mem_ctx);
 		return 4;
 	}
 
@@ -286,9 +268,7 @@ static unsigned int fill_ea_buffer(char *pdata, unsigned int total_data_size,
 	}
 
 	ret_data_size = PTR_DIFF(p, pdata);
-	DEBUG(10,("fill_ea_buffer: data_size = %u, total_ea_len = %u\n",
-			ret_data_size, total_ea_len ));
-	talloc_destroy(mem_ctx);
+	DEBUG(10,("fill_ea_buffer: data_size = %u\n", ret_data_size ));
 	SIVAL(pdata,0,ret_data_size);
 	return ret_data_size;
 }
@@ -425,6 +405,38 @@ static NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *f
 	}
 
 	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Read a list of EA's from an incoming data buffer. Create an ea_list with them.
+****************************************************************************/
+
+static struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size)
+{
+	struct ea_list *ea_list_head = NULL;
+	size_t offset = 4;
+
+	while (offset + 2 < data_size) {
+		struct ea_list *tmp;
+		struct ea_list *eal = TALLOC_ZERO_P(ctx, struct ea_list);
+		unsigned int namelen = CVAL(pdata,offset);
+
+		offset++; /* Go past the namelen byte. */
+		if (offset + namelen >= data_size) {
+			break;
+		}
+		eal->ea.name = TALLOC_ARRAY(ctx, char, namelen + 1);
+		if (!eal->ea.name) {
+			break;
+		}
+		memcpy(eal->ea.name, pdata + offset, namelen);
+		eal->ea.name[namelen] = '\0';
+
+		offset += (namelen + 1); /* Go past the name + terminating zero. */
+		DLIST_ADD_END(ea_list_head, eal, tmp);
+	}
+
+	return ea_list_head;
 }
 
 /****************************************************************************
@@ -1038,6 +1050,15 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += len;
 			SCVAL(p,0,0); p += 1; /* Extra zero byte ? - why.. */
 			break;
+
+#if 0
+		case SMB_FIND_EA_LIST:
+			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_EA_SIZE\n"));
+			if(requires_resume_key) {
+				SIVAL(p,0,reskey);
+				p += 4;
+			}
+#endif
 
 		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_BOTH_DIRECTORY_INFO\n"));
@@ -2333,7 +2354,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	int mode=0;
 	SMB_OFF_T file_size=0;
 	SMB_BIG_UINT allocation_size=0;
-	unsigned int data_size;
+	unsigned int data_size = 0;
 	unsigned int param_size = 2;
 	SMB_STRUCT_STAT sbuf;
 	pstring fname, dos_fname;
@@ -2346,6 +2367,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	int len;
 	time_t c_time;
 	files_struct *fsp = NULL;
+	TALLOC_CTX *ea_ctx = NULL;
+	struct ea_list *ea_list = NULL;
 	uint32 desired_access = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
 
 	if (!params)
@@ -2471,22 +2494,46 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		file_size = 0;
 	}
 
+	/* Pull any EA list from the data portion. */
+	if (info_level == SMB_INFO_QUERY_EAS_FROM_LIST) {
+		uint32 ea_size = IVAL(pdata,0);
+
+		if (total_data > 0 && ea_size != total_data) {
+			DEBUG(4,("call_trans2qfilepathinfo: Rejecting EA request with incorrect \
+total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pdata,0) ));
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
+		if (!lp_ea_support(SNUM(conn))) {
+			return ERROR_DOS(ERRDOS,ERReasnotsupported);
+		}
+
+		if ((ea_ctx = talloc_init("ea_list")) == NULL) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+
+		/* Pull out the list of names. */
+		ea_list = read_ea_list(ea_ctx, pdata, ea_size);
+		if (!ea_list) {
+			talloc_destroy(ea_ctx);
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+	}
+
 	params = SMB_REALLOC(*pparams,2);
-	if (params == NULL)
-	  return ERROR_DOS(ERRDOS,ERRnomem);
+	if (params == NULL) {
+		talloc_destroy(ea_ctx);
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 	*pparams = params;
 	memset((char *)params,'\0',2);
 	data_size = max_data_bytes + DIR_ENTRY_SAFETY_MARGIN;
 	pdata = SMB_REALLOC(*ppdata, data_size); 
-	if ( pdata == NULL )
-		return ERROR_DOS(ERRDOS,ERRnomem);
-	*ppdata = pdata;
-
-	if (total_data > 0 && IVAL(pdata,0) == total_data) {
-		/* uggh, EAs for OS2 */
-		DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
-		return ERROR_DOS(ERRDOS,ERReasnotsupported);
+	if ( pdata == NULL ) {
+		talloc_destroy(ea_ctx);
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
+	*ppdata = pdata;
 
 	memset((char *)pdata,'\0',data_size);
 
@@ -2560,6 +2607,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			break;
 			
 		case SMB_INFO_QUERY_EAS_FROM_LIST:
+		{
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_EAS_FROM_LIST\n"));
 			data_size = 24;
 			put_dos_date2(pdata,0,c_time);
@@ -2568,13 +2616,33 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			SIVAL(pdata,12,(uint32)file_size);
 			SIVAL(pdata,16,(uint32)allocation_size);
 			SIVAL(pdata,20,mode);
+			talloc_destroy(ea_ctx);
 			break;
+		}
 
 		case SMB_INFO_QUERY_ALL_EAS:
-			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_ALL_EAS\n"));
+		{
 			/* We have data_size bytes to put EA's into. */
-			data_size = fill_ea_buffer(pdata, data_size, conn, fsp, fname);
+			size_t total_ea_len = 0;
+
+			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_ALL_EAS\n"));
+
+			ea_ctx = talloc_init("ea_ctx");
+			if (!ea_ctx) {
+				return ERROR_NT(NT_STATUS_NO_MEMORY);
+			}
+
+			ea_list = get_ea_list(ea_ctx, conn, fsp, fname, &total_ea_len);
+			if (!ea_list || (total_ea_len > data_size)) {
+				talloc_destroy(ea_ctx);
+				data_size = 4;
+				break;
+			}
+
+			data_size = fill_ea_buffer(ea_ctx, pdata, data_size, conn, ea_list);
+			talloc_destroy(ea_ctx);
 			break;
+		}
 
 		case SMB_FILE_BASIC_INFORMATION:
 		case SMB_QUERY_FILE_BASIC_INFO:
