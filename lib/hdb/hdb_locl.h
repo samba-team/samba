@@ -54,6 +54,9 @@
 #ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
 #endif
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
 #include <roken.h>
 
 #include "crypto-headers.h"
