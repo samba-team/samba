@@ -1,0 +1,56 @@
+!==
+!== README File for storing smbpasswd in LDAP
+!==
+!== written by Gerald Carter <jerry@samba.org>
+!==
+
+This is a quick and dirty means of storing smbpasswd entries
+in smbpasswd.  Samba 2.2.x does not have any ability to grab
+this information directly from LDAP so you will need to
+periodically generate an smbpasswd from an ldapsearch 
+"(objectclass=smbPasswordEntry)".
+
+Be aware of search limits on your client or server which prevent
+all entries from being returned in the search result.
+
+OpenLDAP 2.0.x
+--------------
+
+A sample schema file (samba.schema) has been included for use 
+with OpenLDAP 2.0.x.  The OIDs used in this file are owned by 
+the Samba team and generated from its own Enterprise number 
+of 7165 (as issued by IANA).
+
+
+import_smnbpasswd.pl
+--------------------
+
+Make sure you customize the local site variable in the perl script
+(i.e. ldapserver, rootdn, rootpw, etc...).  The script reads from
+standard input and requires that user entries already exist
+in your directories containing the 'objectclass: posixAccount'
+value pair.  For more information on this object and related schema,
+refer to RFC2307 and http://www.padl.com/software.html).
+
+The following will import an smbpasswd file into an LDAP directory
+
+	$ cat smbpasswd | import_smbpasswd.pl
+
+export_smbpasswd.pl
+-------------------
+
+Make sure you customize the local site variable in the perl script
+(i.e. ldapserver, rootdn, rootpw, etc...).  You can then generate
+an smbpasswd file by executing
+
+	$ export_smbpasswd.pl > smbpasswd
+
+NOTE: Server side (or client side) search limites may prevent
+all users from being listed.  Check you directory server documentation
+for details.
+
+
+
+!==
+!== end of README
+!==
