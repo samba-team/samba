@@ -414,6 +414,21 @@ creation of this man page the source code is still too fluid to warrant
 describing each and every diagnostic. At this stage your best bet is still
 to grep the source code and inspect the conditions that gave rise to the 
 diagnostics you are seeing.
+
+.SH SIGNALS
+
+In version 1.9.18 and above the debug log level of smbd may be raised 
+by sending it a SIGUSR1 (kill -USR1 <smbd-pid>) and lowered by sending 
+it a SIGUSR2 (kill -USR2 <smbd-pid>). This is to allow transient problems
+to be diagnosed, whilst still running at a normally low log level.
+
+Note that as the signal handlers send a debug write, they are not
+re-entrant in smbd. This you should wait until smbd is in a state of
+waiting for an incoming smb before issuing them. It is possible to
+make the signal handlers safe by un-blocking the signals before the
+select call and re-blocking them after, however this would affect
+performance.
+
 .SH BUGS
 None known.
 .SH CREDITS

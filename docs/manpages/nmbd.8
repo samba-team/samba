@@ -216,6 +216,17 @@ See
 .BR smb.conf (5)
 for more information.
 .RE
+.SH SIGNALS
+
+In version 1.9.18 and above, nmbd will accept SIGHUP, which will cause it to dump out
+it's namelists into the file namelist.debug in the SAMBA/var/locks directory. This
+will also cause nmbd to dump out it's server database in the log.nmb file.
+Also new in version 1.9.18 and above is the ability to raise the debug log
+level of nmbd by sending it a SIGUSR1 (kill -USR1 <nmbd-pid>) and to lower
+the nmbd log level by sending it a SIGUSR2 (kill -USR2 <nmbd-pid>). This
+is to allow transient problems to be diagnosed, whilst still running at
+a normally low log level.
+
 .SH VERSION
 
 This man page is (mostly) correct for version 1.9.16 of the Samba
