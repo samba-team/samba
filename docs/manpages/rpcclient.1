@@ -391,13 +391,16 @@ list the events
 .IP 
 .IP "Service Control" 
 .IP 
+These commands provide functionality similar to the Windows
+NT Service Control Manager\&.
+.IP 
 It is possible to use command-line completion (if you have
 the GNU readline library) for Service names, by pressing the
 tab key\&.
 .IP 
 .IP 
 .IP "\fBsvcenum\fP" 
-[-i] Lists Services Manager
+[-i] Lists Services\&.
 .IP 
 .IP "\fBsvcinfo\fP" 
 <service> Service Information
@@ -462,13 +465,17 @@ pressing the tab key\&.
 .IP 
 .IP 
 .IP "\fBspoolenum\fP" 
-Enumerate Printers
+Enumerate Printers\&.  This experimental command lists
+all printers available on a remote spooler service\&.
 .IP 
 .IP "\fBspooljobs\fP" 
-<printer name> Enumerate Printer Jobs
+<printer name> Enumerate Printer Jobs\&.  This
+experimental command lists all jobs, and their
+status, currently queued on a remote spooler
+service\&.
 .IP 
 .IP "\fBspoolopen\fP" 
-<printer name> Spool Printer Open Test
+<printer name> Spool Printer Open Test\&.  Experimental\&.
 .IP 
 .IP 
 .IP "Server" 
@@ -506,32 +513,84 @@ List files on a server
 .IP 
 .IP 
 .IP "\fBlsaquery\fP" 
-Query Info Policy (domain member or server)
+Query Info Policy (domain member or server)\&.  Obtains
+the SID and name of the SAM database that a server
+is responsible for (i\&.e a workstation\'s local SAM
+database or the PDC SAM database)\&.  Also obtains the
+SID and name of the SAM database that a server is
+a member of\&.
 .IP 
 .IP "\fBlsaenumdomains\fP" 
-Enumerate Trusted Domains
+Enumerate Trusted Domains\&.  Lists all Trusted and
+Trusting Domains with which the remote PDC has
+trust relationships established\&.
 .IP 
 .IP "\fBlookupsids\fP" 
-Resolve names from SIDs
+<rid1 or sid1> <rid1 or sid2> \&.\&.\&. Resolve names from SIDs\&.
+Mostly to be used by developers or for troubleshooting,
+this command can take either Security Identifiers or Relative
+Identifiers, and look them up in the local SAM database
+(or look them up in a remote Trusting or Trusted PDC\'s SAM
+database if there is an appropriate Trust Relationship
+established)\&.  The result is a list of names, of the
+format: 
+.br 
+\f(CW[TRUST_DOMAIN\e]name\fP\&. 
+.br 
+the \fBlsaquery\fP command must have been
+issued first if you wish to use lookupsids to resolve
+RIDs\&.  The only RIDs that will be resolved will be those
+in the SAM database of the server to which you are connected\&.
 .IP 
 .IP "\fBlookupnames\fP" 
-Resolve SIDs from names
+<name1> <name2> \&.\&.\&. Resolve SIDs from names\&.
+Mostly to be used by developers or for troubleshooting,
+this command can take names of the following format: 
+.br 
+\f(CW[DOMAIN_NAME\e]name\fP\&. 
+.br 
+The names, which can be user, group or alias names, will
+either be looked up in the local SAM database or in a remote
+Trusting or Trusted PDC\'s SAM database, if there is an
+appropriate Trust Relationship established\&.  The optional
+Domain name component is the name of a SAM database, which
+can include a workstation\'s local SAM database or a Trusted
+Domain\&.
+Example Usage: 
+.br 
+\f(CWlookupnames WKSTANAME\eAdministrator "Domain Guests"\fP 
+.br 
 .IP 
 .IP "\fBquerysecret\fP" 
-LSA Query Secret (developer use)
+LSA Query Secret (developer use)\&.  This command only appears
+to work against NT4 SP3 and below\&.  Due to its potential
+for misuse, it looks like Microsoft modified their
+implementation of the LsaRetrievePrivateData call to
+always return NT_STATUS_ACCESS_DENIED\&.
 .IP 
 .IP 
 .IP "NETLOGON" 
 .IP 
 .IP 
 .IP "\fBntlogin\fP" 
-[username] [password] NT Domain login test
+[username] [password] NT Domain login test\&.  Demonstrates
+how NT-style logins work\&.  Mainly for developer usage,
+it can also be used to verify that a user can log in
+from a workstation\&.  If you cannot ever get pam_ntdom
+to work, try this command first\&.
 .IP 
 .IP "\fBdomtrust\fP" 
-<domain> NT Inter-Domain test
+<domain> NT Inter-Domain test\&.  Demonstrates how NT-style
+Inter-Domain Trust relationships work\&.  Mainly for
+developer usage, it can also be used to verify that a
+Trust Relationship is correctly established with a
+remote PDC\&.
 .IP 
 .IP "\fBsamsync\fP" 
-SAM Synchronization Test (experimental)
+SAM Synchronisation Test (experimental)\&.  This command
+is used to manually synchronise a SAM database from a
+remote PDC, when Samba is set up as a Backup Domain
+Controller\&.
 .IP 
 .IP 
 .IP "SAM Database" 
@@ -707,17 +766,25 @@ illegal, accidental, deliberate, intentional, malicious, curious, etc\&.
 .IP "Command Completion" 
 Command-completion (available if you have the GNU readline library) used on
 certain commands may not operate correctly if the word being completed (such as a registry key) contains a space\&.  Typically, the name will be completed, but
-you will have to go back and put quotes round it, yourself\&.
+you will have to go back and put quotes round it, yourself\&.  
 .IP 
 .IP "SAM Database command-completion" 
 Command-completion (available if you have the GNU readline library) of user,
 group and alias names does not work on remote Domains, which would normally
 be specified like this: 
 .br 
-\f(CWDOMAIN_name\e\euser_name\fP\&. 
+\f(CWDOMAIN_name\euser_name\fP\&. 
 .br 
 The only names that can be completed in this fashion are the local names
 in the SAM database of the target server\&.
+.IP 
+.IP "\fBspoolenum\fP" 
+Due to current limitations in the rpcclient MSRPC / SMB code, and due to
+the extremely poor MSRPC implementation (by Microsoft) of the spooler
+service, if there are a large number of printers (or the names / comment
+fields associated with the printers), this command will fail\&.  The
+limitations require further research to be carried out; we\'re stuck with
+the poor \ePIPE\espoolss design\&.
 .IP 
 .PP 
 .SH "AUTHOR" 

@@ -324,12 +324,14 @@ server to server, depending on how the server was implemented.
 		list the events
 <p><br></ul>
 <p><br><li><strong>Service Control</strong>
+<p><br>These commands provide functionality similar to the Windows
+	NT Service Control Manager.
 <p><br>It is possible to use command-line completion (if you have
 	the GNU readline library) for Service names, by pressing the
 	tab key.
 <p><br><ul>
 <p><br><a name="svcenum"></a>	<li><strong><strong>svcenum</strong></strong>
-		[-i] Lists Services Manager
+		[-i] Lists Services.
 <p><br><a name="svcinfo"></a>	<li><strong><strong>svcinfo</strong></strong>
 		&lt;service&gt; Service Information
 <p><br><a name="svcstart"></a>	<li><strong><strong>svcstart</strong></strong>
@@ -374,11 +376,15 @@ server to server, depending on how the server was implemented.
 	pressing the tab key.
 <p><br><ul>
 <p><br><a name="spoolenum"></a>	<li><strong><strong>spoolenum</strong></strong>
-		Enumerate Printers
+		Enumerate Printers.  This experimental command lists
+		all printers available on a remote spooler service.
 <p><br><a name="spooljobs"></a>	<li><strong><strong>spooljobs</strong></strong>
-		&lt;printer name&gt; Enumerate Printer Jobs
+		&lt;printer name&gt; Enumerate Printer Jobs.  This
+		experimental command lists all jobs, and their
+		status, currently queued on a remote spooler
+		service.
 <p><br><a name="spoolopen"></a>	<li><strong><strong>spoolopen</strong></strong>
-		&lt;printer name&gt; Spool Printer Open Test
+		&lt;printer name&gt; Spool Printer Open Test.  Experimental.
 <p><br></ul>
 <p><br><li><strong>Server</strong>
 <p><br><ul>
@@ -404,24 +410,70 @@ server to server, depending on how the server was implemented.
 <p><br><li><strong>Local Security Authority</strong>
 <p><br><ul>
 <p><br><a name="lsaquery"></a>	<li><strong><strong>lsaquery</strong></strong>
-		Query Info Policy (domain member or server)
+		Query Info Policy (domain member or server).  Obtains
+		the SID and name of the SAM database that a server
+		is responsible for (i.e a workstation's local SAM
+		database or the PDC SAM database).  Also obtains the
+		SID and name of the SAM database that a server is
+		a member of.
 <p><br><a name="lsaenumdomains"></a>	<li><strong><strong>lsaenumdomains</strong></strong>
-		Enumerate Trusted Domains
+		Enumerate Trusted Domains.  Lists all Trusted and
+		Trusting Domains with which the remote PDC has
+		trust relationships established.
 <p><br><a name="lookupsids"></a>	<li><strong><strong>lookupsids</strong></strong>
-		Resolve names from SIDs
+		&lt;rid1 or sid1&gt; &lt;rid1 or sid2&gt; ... Resolve names from SIDs.
+		Mostly to be used by developers or for troubleshooting,
+		this command can take either Security Identifiers or Relative
+		Identifiers, and look them up in the local SAM database
+		(or look them up in a remote Trusting or Trusted PDC's SAM
+		database if there is an appropriate Trust Relationship
+		established).  The result is a list of names, of the
+		format: <br>
+		<code>[TRUST_DOMAIN\]name</code>. <br>
+		the <a href="rpcclient.1.html#lsaquery"><strong>lsaquery</strong></a> command must have been
+		issued first if you wish to use lookupsids to resolve
+		RIDs.  The only RIDs that will be resolved will be those
+		in the SAM database of the server to which you are connected.
 <p><br><a name="lookupnames"></a>	<li><strong><strong>lookupnames</strong></strong>
-		Resolve SIDs from names
+		&lt;name1&gt; &lt;name2&gt; ... Resolve SIDs from names.
+		Mostly to be used by developers or for troubleshooting,
+		this command can take names of the following format: <br>
+		<code>[DOMAIN_NAME\]name</code>. <br>
+		The names, which can be user, group or alias names, will
+		either be looked up in the local SAM database or in a remote
+		Trusting or Trusted PDC's SAM database, if there is an
+		appropriate Trust Relationship established.  The optional
+		Domain name component is the name of a SAM database, which
+		can include a workstation's local SAM database or a Trusted
+		Domain.
+		Example Usage: <br>
+		<code>lookupnames WKSTANAME\Administrator "Domain Guests"</code> <br>
 <p><br><a name="querysecret"></a>	<li><strong><strong>querysecret</strong></strong>
-		LSA Query Secret (developer use)
+		LSA Query Secret (developer use).  This command only appears
+		to work against NT4 SP3 and below.  Due to its potential
+		for misuse, it looks like Microsoft modified their
+		implementation of the LsaRetrievePrivateData call to
+		always return NT_STATUS_ACCESS_DENIED.
 <p><br></ul>
 <p><br><li><strong>NETLOGON</strong>
 <p><br><ul>
 <p><br><a name="ntlogin"></a>	<li><strong><strong>ntlogin</strong></strong>
-		[username] [password] NT Domain login test
+		[username] [password] NT Domain login test.  Demonstrates
+		how NT-style logins work.  Mainly for developer usage,
+		it can also be used to verify that a user can log in
+		from a workstation.  If you cannot ever get pam_ntdom
+		to work, try this command first.
 <p><br><a name="domtrust"></a>	<li><strong><strong>domtrust</strong></strong>
-		&lt;domain&gt; NT Inter-Domain test
+		&lt;domain&gt; NT Inter-Domain test.  Demonstrates how NT-style
+		Inter-Domain Trust relationships work.  Mainly for
+		developer usage, it can also be used to verify that a
+		Trust Relationship is correctly established with a
+		remote PDC.
 <p><br><a name="samsync"></a>	<li><strong><strong>samsync</strong></strong>
-		SAM Synchronization Test (experimental)
+		SAM Synchronisation Test (experimental).  This command
+		is used to manually synchronise a SAM database from a
+		remote PDC, when Samba is set up as a Backup Domain
+		Controller.
 <p><br></ul>
 <p><br><li><strong>SAM Database</strong>
 <p><br>It is possible to use command-line completion (if you have
@@ -561,14 +613,21 @@ illegal, accidental, deliberate, intentional, malicious, curious, etc.
 <p><br><li><strong>Command Completion</strong>
 Command-completion (available if you have the GNU readline library) used on
 certain commands may not operate correctly if the word being completed (such as a registry key) contains a space.  Typically, the name will be completed, but
-you will have to go back and put quotes round it, yourself.
+you will have to go back and put quotes round it, yourself.  
 <p><br><li><strong>SAM Database command-completion</strong>
 Command-completion (available if you have the GNU readline library) of user,
 group and alias names does not work on remote Domains, which would normally
 be specified like this: <br>
-<code>DOMAIN_name\\user_name</code>. <br>
+<code>DOMAIN_name\user_name</code>. <br>
 The only names that can be completed in this fashion are the local names
 in the SAM database of the target server.
+<p><br><li><strong><a href="rpcclient.1.html#spoolenum"><strong>spoolenum</strong></a></strong>
+Due to current limitations in the rpcclient MSRPC / SMB code, and due to
+the extremely poor MSRPC implementation (by Microsoft) of the spooler
+service, if there are a large number of printers (or the names / comment
+fields associated with the printers), this command will fail.  The
+limitations require further research to be carried out; we're stuck with
+the poor \PIPE\spoolss design.
 <p><br></ul>
 <p><br><a name="AUTHOR"></a>
 <h2>AUTHOR</h2>
