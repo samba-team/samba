@@ -595,6 +595,10 @@ void process_smb(char *inbuf, char *outbuf)
   int32 len = smb_len(inbuf);
   int nread = len + 4;
 
+#ifdef WITH_PROFILE
+  profile_p->smb_count++;
+#endif
+
   if (trans_num == 0) {
 	  /* on the first packet, check the global hosts allow/ hosts
 	     deny parameters before doing any parsing of the packet

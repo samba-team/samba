@@ -1332,6 +1332,10 @@ void printjob_decode(int jobid, int *snum, int *job);
 void status_printqueue(connection_struct *conn,int snum,int status);
 void load_printers(void);
 
+/*The following definitions come from  profile/profile.c  */
+
+BOOL profile_setup(BOOL rdonly);
+
 /*The following definitions come from  rpc_client/cli_login.c  */
 
 BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16]);

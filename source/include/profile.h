@@ -23,7 +23,13 @@
 /* this file defines the profile structure in the profile shared
    memory area */
 
+#define PROF_SHMEM_KEY ((key_t)0x07021999)
+#define PROF_SHM_MAGIC 0x6349985
+#define PROF_SHM_VERSION 1
+
 struct profile_struct {
+	int prof_shm_magic;
+	int prof_shm_version;
 	unsigned smb_count; /* how many SMB packets we have processed */
 	unsigned uid_changes; /* how many times we change our effective uid */
 };

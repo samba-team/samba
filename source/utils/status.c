@@ -140,6 +140,27 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 }
 
 
+/*******************************************************************
+ dump the elements of the profile structure
+  ******************************************************************/
+static int profile_dump(void)
+{
+#ifndef WITH_PROFILE
+	fprintf(stderr,"ERROR: not compiled with profile support\n");
+	return -1;
+#else
+	if (!profile_setup(True)) {
+		fprintf(stderr,"Failed to initialise profile memory\n");
+		return -1;
+	}
+
+	printf("smb_count:\t%u\n", profile_p->smb_count);
+	printf("uid_changes:\t%u\n", profile_p->uid_changes);
+	return 0;
+#endif
+}
+
+
 
  int main(int argc, char *argv[])
 {
@@ -152,7 +173,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
   BOOL processes_only=False;
   pid_t last_pid=(pid_t)0;
   struct session_record *ptr;
-
+  int profile_only = 0;
 
   TimeInit();
   setup_logging(argv[0],True);
@@ -167,7 +188,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
     return(1);
   }
 
-  while ((c = getopt(argc, argv, "pdLSs:u:b")) != EOF) {
+  while ((c = getopt(argc, argv, "pdLSs:u:bP")) != EOF) {
     switch (c) {
     case 'b':
       brief = 1;
@@ -181,6 +202,9 @@ static void print_share_mode(share_mode_entry *e, char *fname)
     case 'p':
       processes_only = 1;
       break;
+    case 'P':
+      profile_only = 1;
+      break;
     case 'S':
       shares_only = 1;
       break;
@@ -191,7 +215,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
       Ucrit_addUsername(optarg);                    /* added by OH */
       break;
     default:
-      fprintf(stderr, "Usage: %s [-d] [-L] [-p] [-S] [-s configfile] [-u username]\n", *argv); /* changed by OH */
+      fprintf(stderr, "Usage: %s [-P] [-d] [-L] [-p] [-S] [-s configfile] [-u username]\n", *argv); /* changed by OH */
       return (-1);
     }
   }
@@ -204,6 +228,10 @@ static void print_share_mode(share_mode_entry *e, char *fname)
   if (verbose) {
     printf("using configfile = %s\n", servicesf);
     printf("lockdir = %s\n", *lp_lockdir() ? lp_lockdir() : "NULL");
+  }
+
+  if (profile_only) {
+	return profile_dump();
   }
 
   pstrcpy(fname,lp_lockdir());

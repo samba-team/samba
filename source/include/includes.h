@@ -640,6 +640,10 @@ extern int errno;
 
 #include "nterr.h"
 
+#ifdef WITH_PROFILE
+#include "profile.h"
+#endif
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif
