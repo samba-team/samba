@@ -30,7 +30,7 @@
 	</userinput></para>
 	
 	<para>first to see what special options you can enable.
-	Then exectuting</para>
+	Then executing</para>
 	
 	<para><prompt>root# </prompt><userinput>make</userinput></para>
 	
@@ -96,7 +96,7 @@
 	<para>which would allow connections by anyone with an 
 	account on the server, using either their login name or 
 	"homes" as the service name. (Note that I also set the 
-	workgroup that Samba is part of. See BROWSING.txt for defails)</para>
+	workgroup that Samba is part of. See BROWSING.txt for details)</para>
 	
 	<para>Note that <command>make install</command> will not install 
 	a <filename>smb.conf</filename> file. You need to create it 
@@ -120,7 +120,7 @@
 	not it will give an error message.</para>
 
 	<para>Make sure it runs OK and that the services look 
-	resonable before proceeding. </para>
+	reasonable before proceeding. </para>
 
 </sect1>
 
@@ -174,14 +174,14 @@
 		<para>NOTE: Some unixes already have entries like netbios_ns 
 		(note the underscore) in <filename>/etc/services</filename>. 
 		You must either edit <filename>/etc/services</filename> or
-		<filename>/etc/inetd.conf</filename> to make them consistant.</para>
+		<filename>/etc/inetd.conf</filename> to make them consistent.</para>
 
 		<para>NOTE: On many systems you may need to use the 
 		"interfaces" option in smb.conf to specify the IP address 
 		and netmask of your interfaces. Run <command>ifconfig</command> 
 		as root if you don't know what the broadcast is for your
 		net. <command>nmbd</command> tries to determine it at run 
-		time, but fails on somunixes. See the section on "testing nmbd" 
+		time, but fails on some unixes. See the section on "testing nmbd" 
 		for a method of finding if you need to do this.</para>
 
 		<para>!!!WARNING!!! Many unixes only accept around 5 
@@ -305,7 +305,7 @@
 	<sect2>
 		<title>Diagnosing Problems</title>
 
-		<para>If you have instalation problems then go to 
+		<para>If you have installation problems then go to 
 		<filename>DIAGNOSIS.txt</filename> to try to find the 
 		problem.</para>
 	</sect2>
@@ -414,7 +414,7 @@
 		are set by an application when it opens a file to determine 
 		what types of access should be allowed simultaneously with 
 		its open. A client may ask for DENY_NONE, DENY_READ, DENY_WRITE 
-		or DENY_ALL. There are also special compatability modes called 
+		or DENY_ALL. There are also special compatibility modes called 
 		DENY_FCB and  DENY_DOS.</para>
 
 		<para>You can disable share modes using "share modes = no". 
@@ -437,7 +437,7 @@
 
 		<para>If you have problems using filenames with accented 
 		characters in them (like the German, French or Scandinavian 
-		character sets) then I recommmend you look at the "valid chars" 
+		character sets) then I recommend you look at the "valid chars" 
 		option in smb.conf and also take a look at the validchars 
 		package in the examples directory.</para>
 	</sect2>

@@ -345,7 +345,7 @@ Add Printer Wizard icon.  The APW will be show only if
 <itemizedlist>
 	<listitem><para>The connected user is able to successfully
 	execute an OpenPrinterEx(\\server) with administrative
-	priviledges (i.e. root or <parameter>printer admin</parameter>).
+	privileges (i.e. root or <parameter>printer admin</parameter>).
 	</para></listitem>
 	
 	<listitem><para><ulink url="smb.conf.5.html#SHOWADDPRINTERWIZARD"><parameter>show 
@@ -513,7 +513,7 @@ foreach (supported architecture for a given driver)
 		the Imprints tool set was the name space issues between 
 		various supported client architectures.  For example, Windows 
 		NT includes a driver named "Apple LaserWriter II NTX v51.8" 
-		and Windows 95 callsits version of this driver "Apple 
+		and Windows 95 calls its version of this driver "Apple 
 		LaserWriter II NTX"</para>
 		
 		<para>The problem is how to know what client drivers have 
@@ -559,7 +559,7 @@ the NT client will still remember the previous setting.
 </para>
 
 <para>
-In order to give an NT client printing "amesia" (only necessary if you 
+In order to give an NT client printing "amnesia" (only necessary if you 
 want to use the newer MSRPC printing functionality in Samba), delete 
 the registry keys associated with the print server contained in 
 <constant>[HKLM\SYSTEM\CurrentControlSet\Control\Print]</constant>.  The 
@@ -686,8 +686,8 @@ Here are the possible scenarios for supporting migration:
                  * NT4:
                  * 
                  * On NT4, you only have a global devicemode. This global devicemode can be changed
-                 * by the administrator (or by a user with enough privs). Everytime a user
-                 * wants to print, the devicemode is resetted to the default. In Word, everytime
+                 * by the administrator (or by a user with enough privs). Every time a user
+                 * wants to print, the devicemode is reset to the default. In Word, every time
                  * you print, the printer's characteristics are always reset to the global devicemode.
                  *
                  * NT 2000:
@@ -695,7 +695,7 @@ Here are the possible scenarios for supporting migration:
                  * In W2K, there is the notion of per-user devicemode. The first time you use
                  * a printer, a per-user devicemode is build from the global devicemode.
                  * If you change your per-user devicemode, it is saved in the registry, under the
-                 * H_KEY_CURRENT_KEY sub_tree. So that everytime you print, you have your default
+                 * H_KEY_CURRENT_KEY sub_tree. So that every time you print, you have your default
                  * printer preferences available.
                  *
                  * To change the per-user devicemode: it's the "Printing Preferences ..." button

@@ -287,11 +287,11 @@
 	a SIGTERM (-15) signal and wait for it to die on its own.</para>
 
 	<para><command>nmbd</command> will accept SIGHUP, which will cause 
-	it to dump out it's namelists into the file <filename>namelist.debug
+	it to dump out its namelists into the file <filename>namelist.debug
 	</filename> in the <filename>/usr/local/samba/var/locks</filename> 
 	directory (or the <filename>var/locks</filename> directory configured 
 	under wherever Samba was configured to install itself). This will also 
-	cause <command>nmbd</command> to dump out it's server database in
+	cause <command>nmbd</command> to dump out its server database in
 	the <filename>log.nmb</filename> file. In addition, the debug log level 
 	of nmbd may be raised by sending it a SIGUSR1 (<command>kill -USR1
 	&lt;nmbd-pid&gt;</command>) and lowered by sending it a

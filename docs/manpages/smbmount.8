@@ -16,17 +16,17 @@ is usually invoked as \fBmount.smb\fR from
 the \fBmount(8)\fR command when using the 
 "-t smb" option. The kernel must support the smbfs filesystem. 
 .PP
-Options to smbmount are specified as a comma separated
+Options to \fBsmbmount\fR are specified as a comma-separated
 list of key=value pairs. It is possible to send options other
 than those listed here, assuming that smbfs supports them. If
 you get mount failures, check your kernel log for errors on
 unknown options.
 .PP
-smbmount is a daemon. After mounting it keeps running until
+\fBsmbmount\fR is a daemon. After mounting it keeps running until
 the mounted smbfs is umounted. It will log things that happen
 when in daemon mode using the "machine name" smbmount, so
-typically this output will end up in log.smbmount. The
-smbmount process may also be called mount.smbfs.
+typically this output will end up in \fIlog.smbmount\fR. The
+\fBsmbmount\fR process may also be called mount.smbfs.
 .PP
 \fBNOTE:\fR \fBsmbmount\fR 
 calls \fBsmbmnt(8)\fR to do the actual mount. You 
@@ -68,7 +68,7 @@ and/or password. The format of the file is:
 .fi
 
 This is preferred over having passwords in plaintext in a
-shared file, such as /etc/fstab. Be sure to protect any
+shared file, such as \fI/etc/fstab\fR. Be sure to protect any
 credentials file properly.
 .TP
 \fBnetbiosname=<arg>\fR
@@ -96,7 +96,7 @@ permissions that remote files have in the local filesystem.
 The default is based on the current umask. 
 .TP
 \fBdmask=<arg>\fR
-sets the directory mask. This deterines the 
+sets the directory mask. This determines the 
 permissions that remote directories have in the local filesystem. 
 The default is based on the current umask. 
 .TP
@@ -127,7 +127,7 @@ mount read-only
 mount read-write 
 .TP
 \fBiocharset=<arg>\fR
-sets the charset used by the linux side for codepage
+sets the charset used by the Linux side for codepage
 to charset translations (NLS). Argument should be the
 name of a charset, like iso8859-1. (Note: only kernel
 2.4.0 or later)
@@ -162,7 +162,7 @@ passwords.
 .PP
 The variable \fBPASSWD_FILE\fR may contain the pathname of
 a file to read the password from. A single line of input is
-read and used as password.
+read and used as the password.
 .SH "BUGS"
 .PP
 Not many known smbmount bugs. But one smbfs bug is
@@ -175,7 +175,7 @@ reconnect when the server disconnects, the mount will go
 dead. A re-mount normally fixes this. At least 2 ways to
 trigger this bug are known.
 .PP
-Note that the typical response to a bugreport is suggestion
+Note that the typical response to a bug report is suggestion
 to try the latest version first. So please try doing that first,
 and always include which versions you use of relevant software
 when reporting bugs (minimum: samba, kernel, distribution)

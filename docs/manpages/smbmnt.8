@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBMNT" "8" "03 May 2001" "" ""
+.TH "SMBMNT" "8" "22 June 2001" "" ""
 .SH NAME
 smbmnt \- helper utility for mounting SMB filesystems
 .SH SYNOPSIS
@@ -14,7 +14,7 @@ smbmnt \- helper utility for mounting SMB filesystems
 \fBsmbmnt\fR is a helper application used 
 by the smbmount program to do the actual mounting of SMB shares. 
 \fBsmbmnt\fR is meant to be installed setuid root 
-so that normal users can mount their smb shares. It checks 
+so that normal users can mount their SMB shares. It checks 
 whether the user has write permissions on the mount point and 
 then mounts the directory.
 .PP
@@ -43,7 +43,7 @@ applied
 .TP
 \fB-o options\fR
 list of options that are passed as-is to smbfs, if this
-command is run on a 2.4 or higher linux kernel.
+command is run on a 2.4 or higher Linux kernel.
 .SH "AUTHOR"
 .PP
 Volker Lendecke, Andrew Tridgell, Michael H. Warfield 

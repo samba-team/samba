@@ -60,17 +60,29 @@ CLASS="COMMAND"
 > command when using the 
 	"-t smb" option. The kernel must support the smbfs filesystem. </P
 ><P
->Options to smbmount are specified as a comma separated
+>Options to <B
+CLASS="COMMAND"
+>smbmount</B
+> are specified as a comma-separated
 	list of key=value pairs. It is possible to send options other
 	than those listed here, assuming that smbfs supports them. If
 	you get mount failures, check your kernel log for errors on
 	unknown options.</P
 ><P
->smbmount is a daemon. After mounting it keeps running until
+><B
+CLASS="COMMAND"
+>smbmount</B
+> is a daemon. After mounting it keeps running until
 	the mounted smbfs is umounted. It will log things that happen
 	when in daemon mode using the "machine name" smbmount, so
-	typically this output will end up in log.smbmount. The
-	smbmount process may also be called mount.smbfs.</P
+	typically this output will end up in <TT
+CLASS="FILENAME"
+>log.smbmount</TT
+>. The
+	<B
+CLASS="COMMAND"
+>smbmount</B
+> process may also be called mount.smbfs.</P
 ><P
 ><EM
 >NOTE:</EM
@@ -91,7 +103,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN27"
+NAME="AEN31"
 ></A
 ><H2
 >OPTIONS</H2
@@ -162,7 +174,10 @@ CLASS="PROGRAMLISTING"
 		</P
 ><P
 >This is preferred over having passwords in plaintext in a
-		shared file, such as /etc/fstab. Be sure to protect any
+		shared file, such as <TT
+CLASS="FILENAME"
+>/etc/fstab</TT
+>. Be sure to protect any
 		credentials file properly.
 		</P
 ></DD
@@ -210,7 +225,7 @@ CLASS="PROGRAMLISTING"
 >dmask=&#60;arg&#62;</DT
 ><DD
 ><P
->sets the directory mask. This deterines the 
+>sets the directory mask. This determines the 
 		permissions that remote directories have in the local filesystem. 
 		The default is based on the current umask. </P
 ></DD
@@ -282,7 +297,7 @@ CLASS="PARAMETER"
 >iocharset=&#60;arg&#62;</DT
 ><DD
 ><P
->		sets the charset used by the linux side for codepage
+>		sets the charset used by the Linux side for codepage
 		to charset translations (NLS). Argument should be the
 		name of a charset, like iso8859-1. (Note: only kernel
 		2.4.0 or later)
@@ -318,7 +333,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN120"
+NAME="AEN125"
 ></A
 ><H2
 >ENVIRONMENT VARIABLES</H2
@@ -345,12 +360,12 @@ CLASS="ENVAR"
 >PASSWD_FILE</TT
 > may contain the pathname of
 	a file to read the password from. A single line of input is
-	read and used as password.</P
+	read and used as the password.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN128"
+NAME="AEN133"
 ></A
 ><H2
 >BUGS</H2
@@ -370,7 +385,7 @@ NAME="AEN128"
 ></LI
 ></UL
 ><P
->Note that the typical response to a bugreport is suggestion
+>Note that the typical response to a bug report is suggestion
 	to try the latest version first. So please try doing that first,
 	and always include which versions you use of relevant software
 	when reporting bugs (minimum: samba, kernel, distribution)</P
@@ -378,7 +393,7 @@ NAME="AEN128"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN135"
+NAME="AEN140"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -389,7 +404,7 @@ NAME="AEN135"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN138"
+NAME="AEN143"
 ></A
 ><H2
 >AUTHOR</H2

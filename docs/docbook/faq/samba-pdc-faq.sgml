@@ -17,9 +17,9 @@
 
 	<para>
 	This is the FAQ for Samba 2.2 as an NTDomain controller. 
-	This document is derived from the origional FAQ that was built and 
+	This document is derived from the original FAQ that was built and 
 	maintained by Gerald Carter from the early days of Samba NTDomain development 
-	up until recently.  It is now being updated as significent changes are 
+	up until recently.  It is now being updated as significant changes are 
 	made to 2.2.0.
 	</para> 
 
@@ -48,13 +48,13 @@
 <title id=stateofplay>State of Play</title>
 
 	<para>Much of the related code does work. For example, if an NT is removed from the 
-	domain and then rejoins, the <filename>Create a Computer Account in the Domain</> dialog
+	domain and then rejoins, the <filename>Create a Computer Account in the Domain</filename> dialog
 	will let you reset the smbpasswd. That is you don't need to do it from
 	the unix box. However, at the present, you do need to have root as an 
-	administrator and use the root user name and password.</para> 
+	administrator and use the root username and password.</para> 
 
     <para><command>Policies</command> do work on a W2K machine. MS says that recent 
-	builds of W2K dont observe an NT policy but it appears it does in 'legacy' 
+	builds of W2K don't observe an NT policy but it appears it does in 'legacy' 
 	mode.</para>
   
 </sect1>
@@ -63,7 +63,7 @@
 <title>Introduction</title>
 
 	<para>
-	This FAQ was origionally compiled by Jerry Carter (gc) chiefly dealing 
+	This FAQ was originally compiled by Jerry Carter (gc) chiefly dealing 
 	with the 'old HEAD' version of Samba and its NTDomain facilities. It is 
 	being rewritten by David Bannon (drb) so that it addresses more 
 	accurately the Samba 2.2.x release. 
@@ -78,7 +78,7 @@
 	</para> 
 
 	<para>Hopefully, as we all become familiar with the Samba 2.2 as a 
-	PDC this document will become much more usefull.</para>
+	PDC this document will become much more useful.</para>
 
 </sect1>
 
@@ -133,7 +133,7 @@
 
 
 	<para>
-	These things are note expected to work in the forseeable future:
+	These things are not expected to work in the foreseeable future:
 	</para>
 	
 	<itemizedlist>
@@ -148,7 +148,7 @@ controlled domain?</title>
 
 	<para>
 	The 2.2 release branch of Samba  supports Windows 2000 domain 
-	clients in legacy mode, ie as if the PDC is a NTServer, not a
+	clients in legacy mode, i.e. as if the PDC is a NTServer, not a
 	W2K server.
 	</para>
 </sect2>
@@ -159,7 +159,7 @@ controlled domain?</title>
 <title>CVS</title>
 
 	<para>
-	CVS is a programme (publically available) that the Samba developers 
+	CVS is a program (publicly available) that the Samba developers 
 	use to maintain the central source code. Non developers can get 
 	access to the source in a read only capacity. Many flavours of unix 
 	now arrive with cvs installed.</>
@@ -181,7 +181,7 @@ controlled domain?</title>
 		<term>HEAD</term> 
 		<listitem><para>Samba 3.0 ? This code boasts all the main 
 		development work in Samba. Due to its developmental
-		nature, its not really suitable for production work.
+		nature, it's not really suitable for production work.
 		</para></listitem></varlistentry>
 		
 		<varlistentry>
@@ -235,7 +235,7 @@ controlled Domain?</>
 
 	<para>
 	There is a comprehensive Samba PDC <ulink
-	url="samba-pdc-howto.html">HOWTO</ulink> accessable from the samba web 
+	url="samba-pdc-howto.html">HOWTO</ulink> accessible from the samba web 
 	site under 'Documentation'. Read it.
 	</para>
 </sect2>
@@ -257,11 +257,11 @@ controlled Domain?</>
 
 <sect2>
 <title>"The machine account for this computer either does not 
-exist or is not accessable."</>
+exist or is not accessible."</>
 
 	<para>
 	When I try to join the domain I get the message "The machine account 
-	for this computer either does not exist or is not accessable". Whats 
+	for this computer either does not exist or is not accessible". Whats 
 	wrong ?
 	</para>
 
@@ -315,7 +315,7 @@ exist or is not accessable."</>
 
 	<para>
 	Then you need to add that entry to smbpasswd, assuming you have a suitable
-	path to the <command>smbpasswd</> programme, do this :
+	path to the <command>smbpasswd</> program, do this :
 	</para>
 
 	<para>
@@ -324,7 +324,7 @@ exist or is not accessable."</>
 
 	<para>
 	The entry will be created with a well known password, so any machine that 
-	says its doppy could join the domain as long as it gets in first. So 
+	says it's doppy could join the domain as long as it gets in first. So 
 	don't create the accounts any earlier than you need them.
 	</para>
 </sect2> 
@@ -353,7 +353,7 @@ when creating a machine account.</title>
 	<para>
 	This happens if you try to create a machine account from the 
 	machine itself and use a user	name that does not work (for whatever 
-	reason) and then try another (possibly valid) user name.
+	reason) and then try another (possibly valid) username.
 	Exit out of the network applet to close the initial connection 
 	and try again.
 	</para>
@@ -380,7 +380,7 @@ conflict with an existing set.."</title>
 
 	<para>I joined the domain successfully but after upgrading 
 	to a newer version of the Samba code I get the message, "The system 
-	can not log you on (C000019B), Please try a gain or consult your 
+	can not log you on (C000019B), Please try again or consult your 
 	system administrator" when attempting to logon.
 	</para>
 
@@ -483,15 +483,15 @@ server.</title>
 	</para>
 
 	<para>
-	Make sure that the "logon path" is writeable by the user and make sure 
+	Make sure that the "logon path" is writable by the user and make sure 
 	that the connection to the logon path location is by the current user.   
-	Sometimes Windows client do not drop the connection immediately upon 
+	Sometimes Windows clients do not drop the connection immediately upon 
 	logoff.
 	</para> 
 
     <para>
 	Some people have reported that the logon path location should 
-	also be browseable.  I (GC) have yet to emperically verify this, 
+	also be browseable.  I (GC) have yet to empirically verify this, 
 	but you can try.</para> 
 </sect2>
 </sect1>
@@ -499,13 +499,13 @@ server.</title>
 <sect1><title>Policies</title>
 
 <sect2>
-<title>What are 'Policies' ?.</title>
+<title>What are 'Policies' ?</title>
 
     <para>
 	When a user logs onto the domain via a client machine, the PDC 
 	sends the client machine a list of things contained in the 
 	'policy' (if it exists).  This list may do things like suppress 
-	a splach screen, format the dates the way you like them or perhaps 
+	a splash screen, format the dates the way you like them or perhaps 
 	remove locally stored profiles.
 	</para>
 
@@ -513,7 +513,7 @@ server.</title>
 	On a samba PDC this list is obtained from a file called 
 	<filename>ntconfig.pol</filename> and located in the [netlogon] 
 	share. The file is created with a policy editor and must be readable 
-	by anyone and writeable by only root. See <link linkend=policyeditor>
+	by anyone and writable by only root. See <link linkend=policyeditor>
     below</link> for how  to get a suitable editor.
 	</para>  
 </sect2>
@@ -538,7 +538,7 @@ server.</title>
 
     <para>
 	A policy file must be in the [netlogon] share and must be 
-    readable by everyone and writeable by only root. The file 
+    readable by everyone and writable by only root. The file 
 	must be created by an NTServer <link linkend=policyeditor>Policy 
 	Editor</link>.
 	</para>
@@ -572,7 +572,7 @@ server.</title>
     but it is not suitable for creating <emphasis>Domain Policies</emphasis>. 
     Further, although the Windows 95 
 	Policy Editor can be installed on an NT Workstation/Server, it will not
-	work with NT policies because the registry key that are set by the policy templates. 
+	work with NT policies because of the registry keys that are set by the policy templates. 
 	However, the files from the NT Server will run happily enough on an NTws. 
 	You need <filename>poledit.exe, common.adm</> and <filename>winnt.adm</>. It is convenient
     to put the two *.adm files in <filename>c:\winnt\inf</> which is where
@@ -582,10 +582,10 @@ server.</title>
 
 	<para>The Windows NT policy editor is also included with the 
 	Service Pack 3 (and later) for Windows NT 4.0. Extract the files using 
-    <command>servicepackname /x</command>, ie thats <command>Nt4sp6ai.exe 
+    <command>servicepackname /x</command>, i.e. that's <command>Nt4sp6ai.exe 
 	/x</command> for service pack 6a.  The policy editor, <command>poledt.exe</command> and the 
 	associated template files (*.adm) should
-	be extracted as well.  It is also possible to downloaded the policy template 
+	be extracted as well.  It is also possible to download the policy template 
 	files for Office97 and get a copy of the policy editor.  Another possible 
 	location is with the Zero Administration Kit available for download from Microsoft.
     </para>
@@ -624,7 +624,7 @@ server.</title>
 	NTws users can change their domain password by pressing Ctrl-Alt-Del 
 	and choosing 'Change Password'. By default however, this does not change the unix password 
     (typically in <filename>/etc/passwd</filename> or <filename>/etc/shadow</filename>). 
-	In lots of situations thats OK, for example :
+	In lots of situations that's OK, for example :
 	</para>
 
 	<itemizedlist>
@@ -636,10 +636,10 @@ server.</title>
     </itemizedlist>
 
     <para>
-	But sometimes you really do need to maintain two seperate password 
+	But sometimes you really do need to maintain two separate password 
 	databases and there are good reasons to keep then in sync.  Trying 
 	to explain to users that they need to change their passwords in two 
-	seperate places or use two seperate passwords is not fun.
+	separate places or use two separate passwords is not fun.
 	</para>
 
     <para>
@@ -699,10 +699,10 @@ server.</title>
 
 <sect2>
 <title>What editor can I use in DOS/Windows that won't 
-mess with my unix EOF</title>
+mess with my unix EOF ?</title>
 
     <para>There are a number of Windows or DOS based editors that will 
-	understand, and leave intact, the unix eof (as opposed to a DOS CL/LF). 
+	understand, and leave intact, the unix eof (as opposed to a DOS CR/LF). 
 	List members suggested :
 	</para>
 
@@ -713,7 +713,7 @@ mess with my unix EOF</title>
         home.snafu.de/ramo/WinViEn.htm</ulink></para></listitem>
 
 		<listitem><para>The author prefers PFE at <ulink url="http://www.lancs.ac.uk/people/cpaap/pfe/">
-		www.lancs.ac.uk/people/cpaap/pfe/</ulink> but its no longer being developed...</para></listitem>
+		www.lancs.ac.uk/people/cpaap/pfe/</ulink> but it's no longer being developed...</para></listitem>
     </itemizedlist>
 </sect2>
 
@@ -721,7 +721,7 @@ mess with my unix EOF</title>
 
 
 <sect2>
-<title>How do I get 'User Manager' and 'Server Manager'</title>
+<title>How do I get 'User Manager' and 'Server Manager' ?</title>
 
 	<para>
 	Since I don't need to buy an NT Server CD now, how do I get 
@@ -731,7 +731,7 @@ mess with my unix EOF</title>
 	<para>
 	Microsoft distributes a version of 
 	these tools called nexus for installation on Windows 95 systems.  The 
-	tools set includes
+	tool set includes
 	</para>
 	
 	<itemizedlist>
@@ -774,7 +774,7 @@ mess with my unix EOF</title>
 
 </sect2>
 
-<sect2><title>How do I get my samba server to become a member ( not PDC ) of an NT domain?</title>
+<sect2><title>How do I get my samba server to become a member ( not PDC ) of an NT domain ?</title>
 
 
 	<para>
@@ -796,11 +796,11 @@ mess with my unix EOF</title>
 <sect1><title>Diagnostic tools</title>
 
 <sect2><title>What are some diagnostics tools I can use to debug the domain logon process and where can I
-	find them? </title>
+	find them ?</title>
 
     <para>
 	One of the best diagnostic tools for debugging problems is Samba itself.  
-	You can use the -d option for both smbd and nmbd to specifiy what 
+	You can use the -d option for both smbd and nmbd to specify what 
 	'debug level' at which to run.  See the man pages on smbd, nmbd  and 
 	smb.conf for more information on debugging options.  The debug 
 	level can range from 1 (the default) to 10 (100 for debugging passwords).
@@ -809,20 +809,20 @@ mess with my unix EOF</title>
 	<para>
 	Another helpful method of debugging is to compile samba using the 
 	<command>gcc -g </command> flag.   This will include debug 
-	information in the binaries and allow you to attch gdb to the 
+	information in the binaries and allow you to attach gdb to the 
 	running smbd / nmbd process.  In order to attach gdb to an smbd 
 	process for an NT workstation, first get the workstation to make the 
-	connection. Pressing ctrl-alt-delete and going down to the domain box 
+	connection. Pressing Ctrl-Alt-Del and going down to the domain box 
 	is sufficient (at least, on the first time you join the domain) to 
 	generate a 'LsaEnumTrustedDomains'. Thereafter, the workstation 
 	maintains an open connection, and therefore there will be an smbd 
 	process running (assuming that you haven't set a really short smbd 
-	idle timeout)  So, in between pressing ctrl alt delete, and actually 
+	idle timeout)  So, in between pressing Ctrl-Alt-Del, and actually 
 	typing in your password, you can gdb attach and continue.
 	</para>
 
 	<para>
-	Some usefull samba commands worth investigating:
+	Some useful samba commands worth investigating:
 	</para>
 	
 	<itemizedlist>
@@ -832,18 +832,18 @@ mess with my unix EOF</title>
     
     <para>
 	An SMB enabled version of tcpdump is available from 
-    <ulink url="http://www.tcpdump.org/">http://www.tcpdup.org/</ulink>.
+    <ulink url="http://www.tcpdump.org/">http://www.tcpdump.org/</ulink>.
 	Ethereal, another good packet sniffer for UNIX and Win32
 	hosts, can be downloaded from <ulink 
 	url="http://www.ethereal.com/">http://www.ethereal.com</ulink>.
 	</para>
 	
 	<para>
-	For tracing things on the Microsoft Windows NT, Network Monitor 
+	For tracing things on Microsoft Windows NT, Network Monitor 
 	(aka. netmon) is available on the Microsoft Developer Network CD's, 
 	the Windows NT Server install CD and the SMS CD's.  The version of 
 	netmon that ships with SMS allows for dumping packets between any two 
-	computers (ie. placing the network interface in promiscuous mode).  
+	computers (i.e. placing the network interface in promiscuous mode).  
 	The version on the NT Server install CD will only allow monitoring 
 	of network traffic directed to the local NT box and broadcasts on the 
 	local subnet.  Be aware that Ethereal can read and write netmon 
@@ -854,7 +854,7 @@ mess with my unix EOF</title>
 
 <sect2>
 <title>How do I install 'Network Monitor' on an NT Workstation 
-or a Windows 9x box?</title>
+or a Windows 9x box ?</title>
 
 	<para>
 	Installing netmon on an NT workstation requires a couple 
@@ -953,10 +953,10 @@ or a Windows 9x box?</title>
 		on the Samba mirrors might mention your problem. If so,
 		it might mean that the developers are working on it.</para></listitem>
  
-	<listitem><para> Ignacio Coupeau has a very comprehesive look at LDAP with Samba at 
+	<listitem><para> Ignacio Coupeau has a very comprehensive look at LDAP with Samba at 
 		<ulink url="http://www.unav.es/cti/ldap-smb-howto.html">
 		http://www.unav.es/cti/ldap-smb-howto.html</ulink> 
-		Be a little carefull however, I suspect that it does not specificly 
+		Be a little careful however, I suspect that it does not specifically 
 		address samba 2.2.x. The HEAD pre-2.1 may possibly be the best
 		stream to look at.</para></listitem>
 
@@ -964,7 +964,7 @@ or a Windows 9x box?</title>
         Samba-TNG</ulink> at 
 		<ulink url="http://www.kneschke.de/projekte/samba_tng">
 		http://www.kneschke.de/projekte/samba_tng</ulink>, but again, a 
-		lot of it does not apply to the main stream Samba.</para></listitem>
+		lot of it does not apply to the mainstream Samba.</para></listitem>
 
     <listitem><para>See how Scott Merrill simulates a BDC behaviour at 
         <ulink url="http://www.skippy.net/linux/smb-howto.html">
@@ -1006,7 +1006,7 @@ or a Windows 9x box?</title>
     <para>For questions relating to Samba TNG go to
         <ulink url="http://www.samba-tng.org/">http://www.samba-tng.org/</ulink> 
 	    It has been requested that you don't post questions about Samba-TNG to the
-        main stream Samba lists.</para>
+        mainstream Samba lists.</para>
 	 
 <itemizedlist><title>If you post a message to one of the lists please
 	 observe the following guide lines :</title>
@@ -1027,14 +1027,14 @@ or a Windows 9x box?</title>
 	<listitem><para> Try and make your question clear and brief, lots of long, 
 		convoluted questions get deleted before	they are completely read ! 
 		Don't post html encoded messages (if you can select colour or font 
-		size its html).</para></listitem>
+		size it's html).</para></listitem>
 
-	<listitem><para> If you run one of those niffy 'I'm on holidays' things when 
+	<listitem><para> If you run one of those nifty 'I'm on holidays' things when 
 		you are away, make sure its configured	to not answer mailing lists.
 		</para></listitem> 
 
 	<listitem><para> Don't cross post. Work out which is the best list to post to 
-		and see what happens, ie don't post to both samba-ntdom and samba-technical.
+		and see what happens, i.e. don't post to both samba-ntdom and samba-technical.
         Many people active on the lists subscribe to more 
 		than one list and get annoyed to see the same message two or more times. 
 		Often someone will see a message and thinking it would be better dealt 
@@ -1069,7 +1069,7 @@ or a Windows 9x box?</title>
 
     <para>
 	Please don't post messages to the list asking to be removed, you will just
-        be refered to the above address (unless that process failed in some way...)
+        be referred to the above address (unless that process failed in some way...)
     </para>
 </sect2>
       

@@ -52,18 +52,24 @@ TARGET="_top"
 >	Samba</A
 > suite.</P
 ><P
->The smbcacls program manipulates NT Access Control Lists 
+>The <B
+CLASS="COMMAND"
+>smbcacls</B
+> program manipulates NT Access Control Lists 
 	(ACLs) on SMB file shares. </P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN27"
+NAME="AEN28"
 ></A
 ><H2
 >OPTIONS</H2
 ><P
->The following options are available to the smbcacls program.  
+>The following options are available to the <B
+CLASS="COMMAND"
+>smbcacls</B
+> program.  
 	The format of ACLs is described in the section ACL FORMAT </P
 ><P
 ></P
@@ -90,7 +96,7 @@ CLASS="VARIABLELIST"
 >-D acls</DT
 ><DD
 ><P
->Delete any ACLs specfied on the command line.  
+>Delete any ACLs specified on the command line.  
 		An error will be printed for each ACL specified that was not 
 		already present in the ACL list. </P
 ></DD
@@ -175,7 +181,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN73"
+NAME="AEN75"
 ></A
 ><H2
 >ACL FORMAT</H2
@@ -322,7 +328,7 @@ ACL:&#60;sid or name&#62;:&#60;type&#62;/&#60;flags&#62;/&#60;mask&#62;
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN123"
+NAME="AEN125"
 ></A
 ><H2
 >EXIT STATUS</H2
@@ -334,8 +340,11 @@ CLASS="COMMAND"
 	depending on the success or otherwise of the operations performed.  
 	The exit status may be one of the following values. </P
 ><P
->If the operation succeded, smbcacls returns and exit 
-	status of 0.  If smbcacls couldn't connect to the specified server, 
+>If the operation succeeded, smbcacls returns and exit 
+	status of 0.  If <B
+CLASS="COMMAND"
+>smbcacls</B
+> couldn't connect to the specified server, 
 	or there was an error getting or setting the ACLs, an exit status 
 	of 1 is returned.  If there was an error parsing any command line 
 	arguments, an exit status of 2 is returned. </P
@@ -343,7 +352,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN128"
+NAME="AEN131"
 ></A
 ><H2
 >VERSION</H2
@@ -354,7 +363,7 @@ NAME="AEN128"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN131"
+NAME="AEN134"
 ></A
 ><H2
 >AUTHOR</H2

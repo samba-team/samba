@@ -630,7 +630,7 @@ HREF="#AEN1494"
 ><DT
 >8. <A
 HREF="#AEN1519"
->Unifed Logons between Windows NT and UNIX using Winbind</A
+>Unified Logons between Windows NT and UNIX using Winbind</A
 ></DT
 ><DD
 ><DL
@@ -712,7 +712,7 @@ HREF="#AEN1623"
 ><DT
 >9. <A
 HREF="#AEN1626"
->UNIX Permission Bits and WIndows NT Access Control Lists</A
+>UNIX Permission Bits and Windows NT Access Control Lists</A
 ></DT
 ><DD
 ><DL
@@ -915,7 +915,7 @@ CLASS="USERINPUT"
 ></P
 ><P
 >first to see what special options you can enable.
-	Then exectuting</P
+	Then executing</P
 ><P
 ><TT
 CLASS="PROMPT"
@@ -1042,7 +1042,7 @@ CLASS="PROGRAMLISTING"
 >which would allow connections by anyone with an 
 	account on the server, using either their login name or 
 	"homes" as the service name. (Note that I also set the 
-	workgroup that Samba is part of. See BROWSING.txt for defails)</P
+	workgroup that Samba is part of. See BROWSING.txt for details)</P
 ><P
 >Note that <B
 CLASS="COMMAND"
@@ -1089,7 +1089,7 @@ CLASS="FILENAME"
 	not it will give an error message.</P
 ><P
 >Make sure it runs OK and that the services look 
-	resonable before proceeding. </P
+	reasonable before proceeding. </P
 ></DIV
 ><DIV
 CLASS="SECT1"
@@ -1207,7 +1207,7 @@ CLASS="FILENAME"
 		<TT
 CLASS="FILENAME"
 >/etc/inetd.conf</TT
-> to make them consistant.</P
+> to make them consistent.</P
 ><P
 >NOTE: On many systems you may need to use the 
 		"interfaces" option in smb.conf to specify the IP address 
@@ -1220,7 +1220,7 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >nmbd</B
 > tries to determine it at run 
-		time, but fails on somunixes. See the section on "testing nmbd" 
+		time, but fails on some unixes. See the section on "testing nmbd" 
 		for a method of finding if you need to do this.</P
 ><P
 >!!!WARNING!!! Many unixes only accept around 5 
@@ -1495,7 +1495,7 @@ NAME="AEN176"
 >1.10.1. Diagnosing Problems</A
 ></H2
 ><P
->If you have instalation problems then go to 
+>If you have installation problems then go to 
 		<TT
 CLASS="FILENAME"
 >DIAGNOSIS.txt</TT
@@ -1629,7 +1629,7 @@ NAME="AEN196"
 		are set by an application when it opens a file to determine 
 		what types of access should be allowed simultaneously with 
 		its open. A client may ask for DENY_NONE, DENY_READ, DENY_WRITE 
-		or DENY_ALL. There are also special compatability modes called 
+		or DENY_ALL. There are also special compatibility modes called 
 		DENY_FCB and  DENY_DOS.</P
 ><P
 >You can disable share modes using "share modes = no". 
@@ -1662,7 +1662,7 @@ NAME="AEN209"
 ><P
 >If you have problems using filenames with accented 
 		characters in them (like the German, French or Scandinavian 
-		character sets) then I recommmend you look at the "valid chars" 
+		character sets) then I recommend you look at the "valid chars" 
 		option in smb.conf and also take a look at the validchars 
 		package in the examples directory.</P
 ></DIV
@@ -2857,7 +2857,7 @@ NAME="AEN446"
 ><P
 >The unix and SMB password encryption techniques seem similar 
 	on the surface. This similarity is, however, only skin deep. The unix 
-	scheme typically sends clear text passwords over the nextwork when 
+	scheme typically sends clear text passwords over the network when 
 	logging in. This is bad. The SMB encryption scheme never sends the 
 	cleartext password over the network but it does store the 16 byte 
 	hashed values on disk. This is also bad. Why? Because the 16 byte hashed 
@@ -2933,7 +2933,7 @@ ALIGN="LEFT"
 		Microsoft SMB/CIFS clients support authentication via the
 		SMB Challenge/Response mechanism described here.  Enabling
 		clear text authentication does not disable the ability
-		of the client to particpate in encrypted authentication.</P
+		of the client to participate in encrypted authentication.</P
 ></TD
 ></TR
 ></TABLE
@@ -4123,7 +4123,7 @@ Add Printer Wizard icon.  The APW will be show only if</P
 ><P
 >The connected user is able to successfully
 	execute an OpenPrinterEx(\\server) with administrative
-	priviledges (i.e. root or <TT
+	privileges (i.e. root or <TT
 CLASS="PARAMETER"
 ><I
 >printer admin</I
@@ -4405,7 +4405,7 @@ foreach (supported architecture for a given driver)
 		the Imprints tool set was the name space issues between 
 		various supported client architectures.  For example, Windows 
 		NT includes a driver named "Apple LaserWriter II NTX v51.8" 
-		and Windows 95 callsits version of this driver "Apple 
+		and Windows 95 calls its version of this driver "Apple 
 		LaserWriter II NTX"</P
 ><P
 >The problem is how to know what client drivers have 
@@ -4455,7 +4455,7 @@ it will remember the server as a LanMan printer server.  Upgrading
 the Samba host to 2.2 makes support for MSRPC printing possible, but 
 the NT client will still remember the previous setting.</P
 ><P
->In order to give an NT client printing "amesia" (only necessary if you 
+>In order to give an NT client printing "amnesia" (only necessary if you 
 want to use the newer MSRPC printing functionality in Samba), delete 
 the registry keys associated with the print server contained in 
 <TT
@@ -4973,9 +4973,9 @@ NAME="AEN989"
 >7.1. Prerequisite Reading</A
 ></H1
 ><P
->Before you continue readingin this chapter, please make sure 
+>Before you continue reading in this chapter, please make sure 
 that you are comfortable with configuring basic files services
-in smb.conf and how to enable and administrate password 
+in smb.conf and how to enable and administer password 
 encryption in Samba.  Theses two topics are covered in the
 <A
 HREF="smb.conf.5.html"
@@ -4986,7 +4986,7 @@ CLASS="FILENAME"
 ></A
 > 
 manpage and the <A
-HREF="EMCRYPTION.html"
+HREF="ENCRYPTION.html"
 TARGET="_top"
 >Encryption chapter</A
 > 
@@ -5011,7 +5011,7 @@ CLASS="NOTE"
 >Author's Note :</EM
 > This document is a combination 
 of David Bannon's Samba 2.2 PDC HOWTO and the Samba NT Domain FAQ. 
-Both documents are superceeded by this one.</P
+Both documents are superseded by this one.</P
 ></BLOCKQUOTE
 ></DIV
 ><P
@@ -5384,7 +5384,7 @@ to the Domain</A
 >A machine trust account is a samba user account owned by a computer.  
 The account password acts as the shared secret for secure 
 communication with the Domain Controller.  This is a security feature
-to prevent an unauthorized machine with the same netbios name from 
+to prevent an unauthorized machine with the same NetBIOS name from 
 joining the domain and gaining access to domain user/group accounts.  
 Hence a Windows 9x host is never a true member of a domain because it does 
 not posses a machine trust account, and thus has no shared secret with the DC.</P
@@ -5417,7 +5417,7 @@ CLASS="FILENAME"
 ><P
 >	Manual creation before joining the client to the domain.  In this case, 
 	the password is set to a known value -- the lower case of the 
-	machine's netbios name.
+	machine's NetBIOS name.
 	</P
 ></LI
 ><LI
@@ -5504,7 +5504,7 @@ CLASS="REPLACEABLE"
 >machine_name</I
 ></TT
 > absolutely must be 
-the netbios name of the pc to be added to the domain.  The "$" must append the netbios
+the NetBIOS name of the pc to be added to the domain.  The "$" must append the NetBIOS
 name of the pc or samba will not recognize this as a machine account</P
 ><P
 >Now that the UNIX account has been created, the next step is to create 
@@ -5534,7 +5534,7 @@ CLASS="REPLACEABLE"
 ><I
 >machine_name</I
 ></TT
-> is the machine's netbios
+> is the machine's NetBIOS
 name. </P
 ><DIV
 CLASS="WARNING"
@@ -5560,7 +5560,7 @@ ALIGN="LEFT"
 	the "Server Manager".  From the time at which the account is created
 	to the time which th client joins the domain and changes the password,
 	your domain is vulnerable to an intruder joining your domain using a
-	a machine with the same netbios name.  A PDC inherently trusts
+	a machine with the same NetBIOS name.  A PDC inherently trusts
 	members of the domain and will serve out a large degree of user 
 	information to such clients.  You have been warned!
 	</P
@@ -5741,8 +5741,8 @@ CLASS="PARAMETER"
 	have not been created correctly. Make sure that you have the entry 
 	correct for the machine account in smbpasswd file on the Samba PDC. 
 	If you added the account using an editor rather than using the smbpasswd 
-	utility, make sure that the account name is the machine netbios name 
-	with a '$' appended to it ( ie. computer_name$ ). There must be an entry 
+	utility, make sure that the account name is the machine NetBIOS name 
+	with a '$' appended to it ( i.e. computer_name$ ). There must be an entry 
 	in both /etc/passwd and the smbpasswd file. Some people have reported 
 	that inconsistent subnet masks between the Samba server and the NT 
 	client have caused this problem.   Make sure that these are consistent 
@@ -5767,7 +5767,7 @@ CLASS="PARAMETER"
 CLASS="COMMAND"
 >smbpasswd -e 
 	%user%</B
->, this is normaly done, when you create an account.
+>, this is normally done, when you create an account.
 	</P
 ><P
 >	In order to work around this problem in 2.2.0, configure the 
@@ -5885,7 +5885,7 @@ CLASS="FILENAME"
 CLASS="COMMAND"
 >servicepackname /x</B
 >, 
-	ie thats <B
+	i.e. that's <B
 CLASS="COMMAND"
 >Nt4sp6ai.exe /x</B
 > for service pack 6a.  The policy editor, 
@@ -5998,7 +5998,7 @@ general SMB topics such as browsing.</P
 	</P
 ><P
 >	One of the best diagnostic tools for debugging problems is Samba itself.  
-	You can use the -d option for both smbd and nmbd to specifiy what 
+	You can use the -d option for both smbd and nmbd to specify what 
 	'debug level' at which to run.  See the man pages on smbd, nmbd  and 
 	smb.conf for more information on debugging options.  The debug 
 	level can range from 1 (the default) to 10 (100 for debugging passwords).
@@ -6054,7 +6054,7 @@ TARGET="_top"
 	(aka. netmon) is available on the Microsoft Developer Network CD's, 
 	the Windows NT Server install CD and the SMS CD's.  The version of 
 	netmon that ships with SMS allows for dumping packets between any two 
-	computers (ie. placing the network interface in promiscuous mode).  
+	computers (i.e. placing the network interface in promiscuous mode).  
 	The version on the NT Server install CD will only allow monitoring 
 	of network traffic directed to the local NT box and broadcasts on the 
 	local subnet.  Be aware that Ethereal can read and write netmon 
@@ -6306,7 +6306,7 @@ TARGET="_top"
 ><LI
 ><P
 > Don't cross post. Work out which is the best list to post to 
-		and see what happens, ie don't post to both samba-ntdom and samba-technical.
+		and see what happens, i.e. don't post to both samba-ntdom and samba-technical.
         Many people active on the lists subscribe to more 
 		than one list and get annoyed to see the same message two or more times. 
 		Often someone will see a message and thinking it would be better dealt 
@@ -6412,7 +6412,7 @@ profiles for MS Windows for workgroups and MS Windows 9X clients.</P
 logon server.  The first one to reply gets the job, and validates its
 password using whatever mechanism the Samba administrator has installed.
 It is possible (but very stupid) to create a domain where the user
-database is not shared between servers, ie they are effectively workgroup
+database is not shared between servers, i.e. they are effectively workgroup
 servers advertising themselves as participating in a domain.  This
 demonstrates how authentication is quite different from but closely
 involved with domains.</P
@@ -6492,7 +6492,7 @@ TYPE="1"
 ><LI
 ><P
 >	The client then connects to the user's home share and searches for the 
-	user's profile. As it turns out, you can specify the users home share as
+	user's profile. As it turns out, you can specify the user's home share as
 	a sharename and path. For example, \\server\fred\.profile.
 	If the profiles are found, they are implemented.
 	</P
@@ -6620,7 +6620,7 @@ CLASS="PROGRAMLISTING"
 ></LI
 ><LI
 ><P
->	you will probabaly find that your clients automatically mount the
+>	you will probably find that your clients automatically mount the
 	\\SERVER\NETLOGON share as drive z: while logging in. You can put
 	some useful programs there to execute from the batch files.
 	</P
@@ -6670,7 +6670,7 @@ or not Samba must be the domain master browser for its workgroup
 when operating as a DC.  While it may technically be possible
 to configure a server as such (after all, browsing and domain logons
 are two distinctly different functions), it is not a good idea to
-so.  You should remember that the DC must register the DOMAIN#1b netbios 
+so.  You should remember that the DC must register the DOMAIN#1b NetBIOS 
 name.  This is the name used by Windows clients to locate the DC.
 Windows clients do not distinguish between the DC and the DMB.
 For this reason, it is very wise to configure the Samba DC as the DMB.</P
@@ -6735,7 +6735,7 @@ Win9X and WinNT clients implement these features.</P
 ><P
 >Win9X clients send a NetUserGetInfo request to the server to get the user's
 profiles location. However, the response does not have room for a separate 
-profiles location field, only the users home share. This means that Win9X 
+profiles location field, only the user's home share. This means that Win9X 
 profiles are restricted to being in the user's home directory.</P
 ><P
 >WinNT clients send a NetSAMLogon RPC request, which contains many fields, 
@@ -6992,7 +6992,7 @@ TYPE="1"
 ></LI
 ><LI
 ><P
->	search for the user's .PWL password-cacheing file in the c:\windows
+>	search for the user's .PWL password-caching file in the c:\windows
 	directory, and delete it.
 	</P
 ></LI
@@ -7086,11 +7086,11 @@ case, or whether there is some configuration issue, as yet unknown,
 that makes NT Workstation _think_ that the link is a slow one is a
 matter to be resolved].</P
 ><P
->[lkcl 20aug97 - after samba digest correspondance, one user found, and
+>[lkcl 20aug97 - after samba digest correspondence, one user found, and
 another confirmed, that profiles cannot be loaded from a samba server
 unless "security = user" and "encrypt passwords = yes" (see the file
 ENCRYPTION.txt) or "security = server" and "password server = ip.address.
-of.yourNTserver" are used.  either of these options will allow the NT
+of.yourNTserver" are used.  Either of these options will allow the NT
 workstation to access the samba server using LAN manager encrypted
 passwords, without the user intervention normally required by NT
 workstation for clear-text passwords].</P
@@ -7282,7 +7282,7 @@ plain Servers.</P
 ><P
 >The User database is called the SAM (Security Access Manager) database and
 is used for all user authentication as well as for authentication of inter-
-process authentication (ie: to ensure that the service action a user has
+process authentication (i.e. to ensure that the service action a user has
 requested is permitted within the limits of that user's privileges).</P
 ><P
 >The Samba team have produced a utility that can dump the Windows NT SAM into 
@@ -7293,7 +7293,7 @@ to Samba systems.</P
 ><P
 >Windows for Workgroups, Windows 95, and Windows NT Workstations and Servers
 can participate in a Domain security system that is controlled by Windows NT
-servers that have been correctly configured. At most every domain will have
+servers that have been correctly configured. Almost every domain will have
 ONE Primary Domain Controller (PDC). It is desirable that each domain will
 have at least one Backup Domain Controller (BDC).</P
 ><P
@@ -7307,7 +7307,7 @@ CLASS="CHAPTER"
 ><HR><H1
 ><A
 NAME="AEN1519"
->Chapter 8. Unifed Logons between Windows NT and UNIX using Winbind</A
+>Chapter 8. Unified Logons between Windows NT and UNIX using Winbind</A
 ></H1
 ><DIV
 CLASS="SECT1"
@@ -7324,7 +7324,7 @@ NAME="AEN1537"
 >winbind
 	</EM
 >, a component of the Samba suite of programs as a 
-	solution to the unied logon problem. Winbind uses a UNIX implementation 
+	solution to the unified logon problem. Winbind uses a UNIX implementation 
 	of Microsoft RPC calls, Pluggable Authentication Modules, and the Name 
 	Service Switch to allow Windows NT domain users to appear and operate 
 	as UNIX users on a UNIX machine. This paper describes the winbind 
@@ -7355,7 +7355,7 @@ NAME="AEN1541"
 	can lead to synchronization problems between the UNIX and Windows 
 	systems and confusion for users.</P
 ><P
->We divide the unifed logon problem for UNIX machines into 
+>We divide the unified logon problem for UNIX machines into 
 	three smaller problems:</P
 ><P
 ></P
@@ -7382,7 +7382,7 @@ NAME="AEN1541"
 	information on the UNIX machines and without creating additional 
 	tasks for the system administrator when maintaining users and 
 	groups on either system. The winbind system provides a simple 
-	and elegant solution to all three components of the unifed logon 
+	and elegant solution to all three components of the unified logon 
 	problem.</P
 ></DIV
 ><DIV
@@ -7509,7 +7509,7 @@ NAME="AEN1574"
 >The Name Service Switch, or NSS, is a feature that is 
 		present in many UNIX operating systems. It allows system 
 		information such as hostnames, mail aliases and user information 
-		to be resolved from dierent sources. For example, a standalone 
+		to be resolved from different sources. For example, a standalone 
 		UNIX workstation may resolve system information from a series of 
 		flat files stored on the local lesystem. A networked workstation 
 		may first attempt to resolve system information from local files, 
@@ -7538,7 +7538,7 @@ CLASS="FILENAME"
 		for a line which matches the service type being requested, for 
 		example the "passwd" service type is used when user or group names 
 		are looked up. This	config line species which implementations 
-		of that service should be tried andin what order. If the passwd 
+		of that service should be tried and in what order. If the passwd 
 		config line is:</P
 ><P
 ><B
@@ -7588,7 +7588,7 @@ NAME="AEN1590"
 >Pluggable Authentication Modules, also known as PAM, 
 		is a system for abstracting authentication and authorization 
 		technologies. With a PAM module it is possible to specify different 
-		authentication methods for dierent system applications without 
+		authentication methods for different system applications without 
 		having to recompile these applications. PAM is also useful
 		for implementing a particular policy for authorization. For example, 
 		a system administrator may only allow console logins from users 
@@ -7603,7 +7603,7 @@ NAME="AEN1590"
 		this change take eect directly on the Primary Domain Controller.
 		</P
 ><P
->PAM is congured by providing control files in the directory 
+>PAM is configured by providing control files in the directory 
 		<TT
 CLASS="FILENAME"
 >/etc/pam.d/</TT
@@ -7635,11 +7635,11 @@ NAME="AEN1598"
 ></H2
 ><P
 >When a user or group is created under Windows NT 
-		is it allocated a numerical relative identier (RID). This is 
-		slightly dierent to UNIX which has a range of numbers which are 
+		is it allocated a numerical relative identifier (RID). This is 
+		slightly different to UNIX which has a range of numbers which are 
 		used to identify users, and the same range in which to identify 
 		groups. It is winbind's job to convert RIDs to UNIX id numbers and
-		vice versa.  When winbind is congured it is given part of the UNIX 
+		vice versa.  When winbind is configured it is given part of the UNIX 
 		user id space and a part of the UNIX group id space in which to 
 		store Windows NT users and groups. If a Windows NT user is 
 		resolved for the first time, it is allocated the next UNIX id from 
@@ -7666,7 +7666,7 @@ NAME="AEN1602"
 		by NT domain controllers.  User or group information returned 
 		by a PDC is cached by winbind along with a sequence number also 
 		returned by the PDC. This sequence number is incremented by 
-		Windows NT whenever any user or group information is modied. If 
+		Windows NT whenever any user or group information is modified. If 
 		a cached entry has expired, the sequence number is requested from 
 		the PDC and compared against the sequence number of the cached entry. 
 		If the sequence numbers do not match, then the cached information 
@@ -7700,7 +7700,7 @@ CLASS="FILENAME"
 CLASS="COMMAND"
 >winbindd(8)</B
 > man page which will provide you 
-	with conguration information and give you sample conguration files. 
+	with configuration information and give you sample configuration files. 
 	You may also wish to update the main Samba daemons smbd and nmbd) 
 	with a more recent development release, such as the recently
 	announced Samba 2.2 alpha release.</P
@@ -7775,7 +7775,7 @@ CLASS="CHAPTER"
 ><HR><H1
 ><A
 NAME="AEN1626"
->Chapter 9. UNIX Permission Bits and WIndows NT Access Control Lists</A
+>Chapter 9. UNIX Permission Bits and Windows NT Access Control Lists</A
 ></H1
 ><DIV
 CLASS="SECT1"
@@ -7901,7 +7901,7 @@ CLASS="REPLACEABLE"
 >(Long name)</I
 ></TT
 >
-	is the discriptive string identifying the user (normally found in the
+	is the descriptive string identifying the user (normally found in the
 	GECOS field of the UNIX password database). Click on the <B
 CLASS="COMMAND"
 >Close
@@ -7930,7 +7930,7 @@ CLASS="COMMAND"
 	you to change the ownership of this file to yourself (clicking on 
 	it will display a dialog box complaining that the user you are 
 	currently logged onto the NT client cannot be found). The reason 
-	for this is that changing the ownership of a file is a privilaged 
+	for this is that changing the ownership of a file is a privileged 
 	operation in UNIX, available only to the <EM
 >root</EM
 > 
@@ -7939,7 +7939,7 @@ CLASS="COMMAND"
 	client this will not work with Samba at this time.</P
 ><P
 >There is an NT chown command that will work with Samba 
-	and allow a user with Administrator privillage connected 
+	and allow a user with Administrator privilege connected 
 	to a Samba 2.0.4 server as root to change the ownership of 
 	files on both a local NTFS filesystem or remote mounted NTFS 
 	or Samba drive. This is available as part of the <EM
@@ -7988,7 +7988,7 @@ CLASS="REPLACEABLE"
 >(Long name)</I
 ></TT
 >
-	is the discriptive string identifying the user (normally found in the
+	is the descriptive string identifying the user (normally found in the
 	GECOS field of the UNIX password database).</P
 ><P
 >If the parameter <TT
@@ -8020,7 +8020,7 @@ NAME="AEN1692"
 ></H2
 ><P
 >The standard UNIX user/group/world triple and 
-		the correspinding "read", "write", "execute" permissions 
+		the corresponding "read", "write", "execute" permissions 
 		triples are mapped by Samba into a three element NT ACL 
 		with the 'r', 'w', and 'x' bits mapped into the corresponding 
 		NT permissions. The UNIX world permissions are mapped into 
@@ -8146,7 +8146,7 @@ CLASS="COMMAND"
 	button will not return a list of users in Samba 2.0.4 (it will give 
 	an error message of <B
 CLASS="COMMAND"
->"The remote proceedure call failed 
+>"The remote procedure call failed 
 	and did not execute"</B
 >). This means that you can only 
 	manipulate the current user/group/world permissions listed in 
@@ -8196,7 +8196,7 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >"Take
 	Ownership"</B
-> permission (dsplayed as <B
+> permission (displayed as <B
 CLASS="COMMAND"
 >"O"
 	</B
@@ -8327,7 +8327,7 @@ CLASS="PARAMETER"
 ></A
 > parameter to provide compatibility
 	with Samba 2.0.4 where the permission change facility was introduced.
-	To allow a user to modify all the user/group/world permissions on a file,
+	To allow a user to modify all the user/group/world permissions on a file
 	with no restrictions set this parameter to 000.</P
 ><P
 >The <TT
@@ -8689,7 +8689,7 @@ NAME="AEN1850"
 		driver from an OS/2 system.</P
 ><P
 >Install the NT driver first for that printer.  Then, 
-		add to your smb.conf a paramater, "os2 driver map = 
+		add to your smb.conf a parameter, "os2 driver map = 
 		<TT
 CLASS="REPLACEABLE"
 ><I
@@ -8737,10 +8737,10 @@ NAME="AEN1866"
 >11.1. Introduction</A
 ></H1
 ><P
->Samba is developed in an open environnment.  Developers use CVS
+>Samba is developed in an open environment.  Developers use CVS
 (Concurrent Versioning System) to "checkin" (also known as 
 "commit") new source code.  Samba's various CVS branches can
-be accessed via anonymouns CVS using the instructions
+be accessed via anonymous CVS using the instructions
 detailed in this chapter.</P
 ><P
 >This document is a modified version of the instructions found at
@@ -8796,7 +8796,7 @@ NAME="AEN1879"
 >You can also access the source code via a 
 normal cvs client.  This gives you much more control over you can 
 do with the repository and allows you to checkout whole source trees 
-and keep them uptodate via normal cvs commands. This is the 
+and keep them up to date via normal cvs commands. This is the 
 preferred method of access if you are a developer and not
 just a casual browser.</P
 ><P

@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBD" "8" "03 May 2001" "" ""
+.TH "NMBD" "8" "22 June 2001" "" ""
 .SH NAME
 nmbd \- NetBIOS name server to provide NetBIOS  over IP naming services to clients
 .SH SYNOPSIS
@@ -203,11 +203,11 @@ The correct way to terminate \fBnmbd\fR is to send it
 a SIGTERM (-15) signal and wait for it to die on its own.
 .PP
 \fBnmbd\fR will accept SIGHUP, which will cause 
-it to dump out it's namelists into the file \fInamelist.debug
+it to dump out its namelists into the file \fInamelist.debug
 \fRin the \fI/usr/local/samba/var/locks\fR 
 directory (or the \fIvar/locks\fR directory configured 
 under wherever Samba was configured to install itself). This will also 
-cause \fBnmbd\fR to dump out it's server database in
+cause \fBnmbd\fR to dump out its server database in
 the \fIlog.nmb\fR file. In addition, the debug log level 
 of nmbd may be raised by sending it a SIGUSR1 (\fBkill -USR1
 <nmbd-pid>\fR) and lowered by sending it a
