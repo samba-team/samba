@@ -260,11 +260,13 @@ _kadm5_set_keys_randomly (kadm5_server_context *context,
 					   &keys[i]);
 	if (ret)
 	    goto out;
+	keys[i].keytype = des_types[i];
 	ret = krb5_copy_keyblock_contents (context->context,
 					   &keys[0],
 					   &hkeys[i].key);
 	if (ret)
 	    goto out;
+	hkeys[i].key.keytype = des_types[i];
     }
 
     ret = krb5_generate_random_keyblock (context->context,
