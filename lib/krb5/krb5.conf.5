@@ -330,7 +330,7 @@ List of ports the kdc should listen to.
 .It addresses = Va "list of interfaces"
 List of addresses the kdc should bind to.
 .It enable-kerberos4 = Va BOOL
-Turn on kerberos4 support.
+Turn on Kerberos 4 support.
 .It v4-realm = Va REALM
 To what realm v4 requests should be mapped.
 .It enable-524 = Va BOOL
@@ -380,10 +380,10 @@ default string (for that principal).
 Additional special values of keytypes are:
 .Bl -tag -width "xxx" -offset indent
 .It v5
-The kerberos 5 salt
+The Kerberos 5 salt
 .Va pw-salt
 .It v4
-The kerberos 4 type
+The Kerberos 4 salt
 .Va des:pw-salt:
 .El
 .It use_v4_salt = Va BOOL
