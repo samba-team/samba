@@ -295,7 +295,7 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 		goto done;
 	}
 
-	values = ldap_get_values(ldap_state->smbldap_state->ldap_struct, entry, (char *)attrs[0]);
+	values = ldap_get_values(ldap_state->smbldap_state->ldap_struct, entry, attrs[0]);
 	if (values == NULL) {
 		DEBUG(3,("ldapsam_get_seq_num: no values\n"));
 		goto done;
@@ -317,7 +317,7 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 	if (!strncmp(p, "csn=", strlen("csn=")))
 		p += strlen("csn=");
 
-	DEBUG(10,("ldapsam_get_seq_num: got %s: %s\n", (char *)attrs[0], p));
+	DEBUG(10,("ldapsam_get_seq_num: got %s: %s\n", attrs[0], p));
 
 	*seq_num = generalized_to_unix_time(p);
 
