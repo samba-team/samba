@@ -3,6 +3,9 @@
    Version 1.9.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1997
+
+   SMB Version handling
+   Copyright (C) John H Terpstra 1995-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
