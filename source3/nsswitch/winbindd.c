@@ -729,7 +729,6 @@ static void process_loop(void)
 	}
 }
 
-
 /* Main function */
 
 struct winbindd_state server_state;   /* Server state information */
