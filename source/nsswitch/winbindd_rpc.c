@@ -734,12 +734,6 @@ static int get_ldap_seq(const char *server, uint32 *seq)
 	if ((ldp = ldap_open_with_timeout(server, LDAP_PORT, 10)) == NULL)
 		return -1;
 
-#if 0
-	/* As per tridge comment this doesn't seem to be needed. JRA */
-	if ((err = ldap_simple_bind_s(ldp, NULL, NULL)) != 0)
-		goto done;
-#endif
-
 	/* Timeout if no response within 20 seconds. */
 	to.tv_sec = 10;
 	to.tv_usec = 0;
@@ -786,38 +780,10 @@ int get_ldap_sequence_number( const char* domain, uint32 *seq)
 		return False;
 	}
 
-	if ( !list_ordered )
-	{
-		/* 
-		 * Pick a nice close server. Look for DC on local net 
-		 * (assuming we don't have a list of preferred DC's)
-		 */
-
-		for (i = 0; i < count; i++) {
-			if (is_zero_ip(ip_list[i]))
-				continue;
-
-			if ( !is_local_net(ip_list[i]) )
-				continue;
-		
-			if ( (ret = get_ldap_seq( inet_ntoa(ip_list[i]), seq)) == 0 )
-				goto done;
-		
-			zero_ip(&ip_list[i]);
-		}
+	/* sort the list so we can pick a close server */
 	
-
-		/*
-		 * Secondly try and contact a random PDC/BDC.
-		 */
-
-		i = (sys_random() % count);
-
-		if ( !is_zero_ip(ip_list[i]) ) {
-			if ( (ret = get_ldap_seq( inet_ntoa(ip_list[i]), seq)) == 0 )
-				goto done;
-		}
-		zero_ip(&ip_list[i]); /* Tried and failed. */
+	if (!list_ordered && (count > 1) ) {
+		qsort(ip_list, count, sizeof(struct in_addr), QSORT_CAST ip_compare);
 	}
 
 	/* Finally return first DC that we can contact */

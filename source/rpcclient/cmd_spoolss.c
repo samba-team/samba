@@ -487,7 +487,7 @@ static WERROR cmd_spoolss_setprinter(struct cli_state *cli,
 
 	/* get a printer handle */
 	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
-				MAXIMUM_ALLOWED_ACCESS, servername,
+				PRINTER_ALL_ACCESS, servername,
 				user, &pol);
 				
 	if (!W_ERROR_IS_OK(result))

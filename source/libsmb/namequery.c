@@ -1379,10 +1379,17 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, int *
 			}
 		}
 		
+		if ( DEBUGLEVEL >= 4 ) {
+			DEBUG(4,("get_dc_list: returning %d ip addresses in an %sordered list\n", local_count, 
+				*ordered ? "":"un"));
+			DEBUG(4,("get_dc_list: "));
+			for ( i=0; i<local_count; i++ )
+				DEBUGADD(4,("%s ", inet_ntoa(return_iplist[i])));
+			DEBUGADD(4,("\n"));
+		}
+			
 		*ip_list = return_iplist;
 		*count = local_count;
-		
-		DEBUG(8,("get_dc_list: return %d ip addresses\n", *count));
 
 		return (*count != 0);
 	}

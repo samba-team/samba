@@ -296,20 +296,20 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	if ( !((name_type==SID_NAME_DOM_GRP) ||
-		((name_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
-	{
-		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
-			  group_name, name_type));
-		return WINBINDD_ERROR;
-	}
-
 	/* Fill in group structure */
 
 	domain = find_domain_from_sid(&group_sid);
 
 	if (!domain) {
 		DEBUG(1,("Can't find domain from sid\n"));
+		return WINBINDD_ERROR;
+	}
+
+	if ( !((name_type==SID_NAME_DOM_GRP) ||
+		((name_type==SID_NAME_ALIAS) && strequal(lp_workgroup(), domain->name))) )
+	{
+		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
+			  group_name, name_type));
 		return WINBINDD_ERROR;
 	}
 
