@@ -132,7 +132,6 @@ extern int errno;
 #include "smb_interfaces.h"
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
-#include "ads.h"
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
