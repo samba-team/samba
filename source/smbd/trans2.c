@@ -3497,7 +3497,8 @@ int reply_trans2(connection_struct *conn,
 		unsigned int psoff = SVAL(inbuf, smb_psoff);
 		if ((psoff + num_params < psoff) || (psoff + num_params < num_params))
 			goto bad_param;
-		if (smb_base(inbuf) + psoff + num_params > inbuf + length)
+		if ((smb_base(inbuf) + psoff + num_params > inbuf + length) ||
+				(smb_base(inbuf) + psoff + num_params < smb_base(inbuf)))
 			goto bad_param;
 		memcpy( params, smb_base(inbuf) + psoff, num_params);
 	}
@@ -3505,7 +3506,8 @@ int reply_trans2(connection_struct *conn,
 		unsigned int dsoff = SVAL(inbuf, smb_dsoff);
 		if ((dsoff + num_data < dsoff) || (dsoff + num_data < num_data))
 			goto bad_param;
-		if (smb_base(inbuf) + dsoff + num_data > inbuf + length)
+		if ((smb_base(inbuf) + dsoff + num_data > inbuf + length) ||
+				(smb_base(inbuf) + dsoff + num_data < smb_base(inbuf)))
 			goto bad_param;
 		memcpy( data, smb_base(inbuf) + dsoff, num_data);
 	}
@@ -3566,7 +3568,10 @@ int reply_trans2(connection_struct *conn,
 				if ((param_disp + num_params < param_disp) ||
 						(param_disp + num_params < num_params))
 					goto bad_param;
-				if (smb_base(inbuf) + param_off + num_params >= inbuf + bufsize)
+				if (param_disp > total_params)
+					goto bad_param;
+				if ((smb_base(inbuf) + param_off + num_params >= inbuf + bufsize) ||
+						(smb_base(inbuf) + param_off + num_params < smb_base(inbuf)))
 					goto bad_param;
 				if (params + param_disp < params)
 					goto bad_param;
@@ -3579,7 +3584,10 @@ int reply_trans2(connection_struct *conn,
 				if ((data_disp + num_data < data_disp) ||
 						(data_disp + num_data < num_data))
 					goto bad_param;
-				if (smb_base(inbuf) + data_off + num_data >= inbuf + bufsize)
+				if (data_disp > total_data)
+					goto bad_param;
+				if ((smb_base(inbuf) + data_off + num_data >= inbuf + bufsize) ||
+						(smb_base(inbuf) + data_off + num_data < smb_base(inbuf)))
 					goto bad_param;
 				if (data + data_disp < data)
 					goto bad_param;
