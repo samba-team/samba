@@ -51,3 +51,24 @@ AC_CACHE_CHECK([that the C compiler understands volatile],samba_cv_volatile, [
 if test x"$samba_cv_volatile" = x"yes"; then
 	AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
 fi
+
+############################################
+# check if the compiler can do immediate structures
+AC_CACHE_CHECK([for immediate structures],samba_cv_immediate_structures, [
+    AC_TRY_COMPILE([
+#include <stdio.h>],
+[
+   typedef struct {unsigned x;} FOOBAR;
+   #define X_FOOBAR(x) ((FOOBAR) { x })
+   #define FOO_ONE X_FOOBAR(1)
+   FOOBAR f = FOO_ONE;   
+   static struct {
+	FOOBAR y; 
+	} f2[] = {
+		{FOO_ONE}
+	};   
+],
+	samba_cv_immediate_structures=yes,samba_cv_immediate_structures=no)])
+if test x"$samba_cv_immediate_structures" = x"yes"; then
+   AC_DEFINE(HAVE_IMMEDIATE_STRUCTURES,1,[Whether the compiler supports immediate structures])
+fi
