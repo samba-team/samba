@@ -1,0 +1,15 @@
+Thu Oct 16 11:07:18 CDT 1997
+
+Files in the source directory which begin with the prefix "ubi_" are
+licensed under the terms of the GNU LIBRARY GENERAL PUBLIC LICENSE
+(LGPL).  A copy of the LGPL should also be included in this directory
+under the name COPYING.LGPL.  If this file is not present, you can
+obtain a copy of the LGPL by writing to the Free Software Foundation,
+Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+See http://www.interads.co.uk/~crh/ubiqx/ for additional available
+modules.
+
+Chris Hertel
+Samba Team
+samba-bugs@samba.anu.edu.au
