@@ -69,7 +69,7 @@ dump_krb4(krb5_context context, hdb_entry *ent, int fd)
 	return -1;
     }
 
-    if (strcmp(context->default_realm, ent->principal->realm) != 0)
+    if (strcmp(context->default_realms[0], ent->principal->realm) != 0)
         return -1;
 
     snprintf (buf, sizeof(buf), "%s %s ", name,
