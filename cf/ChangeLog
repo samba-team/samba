@@ -1,3 +1,8 @@
+2002-12-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken-frag.m4: res_nsearch takes 6 parameters; spotted by Howard
+	Chu
+
 2002-10-25  Johan Danielsson  <joda@pdc.kth.se>
 
 	* crypto.m4: do a better job at matching headers to libraries
