@@ -2693,7 +2693,7 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_
 	if (num   ) *num = 0;
 	if (nt_rpc_error) *nt_rpc_error = 0;
 
-	if(cli->initialised)
+	if(!cli->initialised)
 		return EINVAL;
 
 	if(!cli->inbuf)
