@@ -888,10 +888,6 @@ static void usage(char *pname)
 	if (!init_oplocks())
 		exit(1);
 	
-	/* Setup mangle */
-	if (!init_mangle_tdb())
-		exit(1);
-
 	/* Setup change notify */
 	if (!init_change_notify())
 		exit(1);

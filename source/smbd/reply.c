@@ -3021,10 +3021,10 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BO
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-#if 0
+#if 1
 	if (!rc && is_mangled(mask))
 		check_mangled_cache( mask );
-#endif
+#else
 	if (!rc)
 	{
 		char *unmangled;
@@ -3035,6 +3035,7 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BO
 			
 		SAFE_FREE(unmangled);
 	}
+#endif
 
 	has_wild = ms_has_wild(mask);
 
@@ -3437,10 +3438,10 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
    * Tine Smukavec <valentin.smukavec@hermes.si>.
    */
 
-#if 0
+#if 1
 	if (!rc && is_mangled(mask))
 		check_mangled_cache( mask );
-#endif
+#else
 	if (!rc)
 	{
 		char *unmangled;
@@ -3451,7 +3452,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 			
 		SAFE_FREE(unmangled);
 	}
-
+#endif
 
   has_wild = ms_has_wild(mask);
 
