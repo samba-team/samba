@@ -784,9 +784,11 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 /*******************************************************************
  api_samr_enum_dom_aliases
  ********************************************************************/
-static BOOL api_samr_enum_dom_aliases(prs_struct *data, prs_struct *rdata)
+static BOOL api_samr_enum_dom_aliases(pipes_struct *p)
 {
 	SAMR_Q_ENUM_DOM_ALIASES q_e;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	/* grab the samr open */
 	if(!samr_io_q_enum_dom_aliases("", &q_e, data, 0))
