@@ -65,7 +65,8 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
      the empty packet */
   if(params_to_send == 0 && data_to_send == 0)
   {
-    send_smb(smbd_server_fd(),outbuf);
+    if (!send_smb(smbd_server_fd(),outbuf))
+      exit_server("send_trans2_replies: send_smb failed.\n");
     return 0;
   }
 
@@ -160,7 +161,8 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
           params_to_send, data_to_send, paramsize, datasize));
 
     /* Send the packet */
-    send_smb(smbd_server_fd(),outbuf);
+    if (!send_smb(smbd_server_fd(),outbuf))
+		exit_server("send_trans2_replies: send_smb failed.\n");
 
     pp += params_sent_thistime;
     pd += data_sent_thistime;
@@ -2340,7 +2342,8 @@ int reply_trans2(connection_struct *conn,
 		/* We need to send an interim response then receive the rest
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf,0,0,True);
-		send_smb(smbd_server_fd(),outbuf);
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("reply_trans2: send_smb failed.\n");
 
 		while (num_data_sofar < total_data || 
 		       num_params_sofar < total_params) {

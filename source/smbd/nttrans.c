@@ -96,7 +96,8 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
    */
 
   if(params_to_send == 0 && data_to_send == 0) {
-    send_smb(smbd_server_fd(),outbuf);
+    if (!send_smb(smbd_server_fd(),outbuf))
+		exit_server("send_nt_replies: send_smb failed.\n");
     return 0;
   }
 
@@ -225,7 +226,8 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
           params_to_send, data_to_send, paramsize, datasize));
     
     /* Send the packet */
-    send_smb(smbd_server_fd(),outbuf);
+    if (!send_smb(smbd_server_fd(),outbuf))
+		exit_server("send_nt_replies: send_smb failed.\n");
     
     pp += params_sent_thistime;
     pd += data_sent_thistime;
@@ -1780,7 +1782,8 @@ due to being in oplock break state.\n" ));
     /* We need to send an interim response then receive the rest
        of the parameter/data bytes */
     outsize = set_message(outbuf,0,0,True);
-    send_smb(smbd_server_fd(),outbuf);
+    if (!send_smb(smbd_server_fd(),outbuf))
+      exit_server("reply_nttrans: send_smb failed.\n");
 
     while( num_data_sofar < total_data_count || num_params_sofar < total_parameter_count) {
       BOOL ret;

@@ -2056,12 +2056,25 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 			}
 		}
 
-		if (acl_perms && acl_set_support && fsp->is_directory && dir_ace_list) {
-			if (!set_canon_ace_list(fsp, dir_ace_list, True, &acl_set_support)) {
-				DEBUG(3,("set_nt_acl: failed to set default acl on directory %s (%s).\n", fsp->fsp_name, strerror(errno) ));
-				free_canon_ace_list(file_ace_list);
-				free_canon_ace_list(dir_ace_list); 
-				return False;
+		if (acl_perms && acl_set_support && fsp->is_directory) {
+			if (dir_ace_list) {
+				if (!set_canon_ace_list(fsp, dir_ace_list, True, &acl_set_support)) {
+					DEBUG(3,("set_nt_acl: failed to set default acl on directory %s (%s).\n", fsp->fsp_name, strerror(errno) ));
+					free_canon_ace_list(file_ace_list);
+					free_canon_ace_list(dir_ace_list); 
+					return False;
+				}
+			} else {
+
+				/*
+				 * No default ACL - delete one if it exists.
+				 */
+
+				if (sys_acl_delete_def_file(dos_to_unix(fsp->fsp_name,False)) == -1) {
+					DEBUG(3,("set_nt_acl: sys_acl_delete_def_file failed (%s)\n", strerror(errno)));
+					free_canon_ace_list(file_ace_list);
+					return False;
+				}
 			}
 		}
 
