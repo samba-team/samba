@@ -88,6 +88,13 @@ krb5_decrypt (krb5_context context,
 	      krb5_keyblock *keyblock,
 	      krb5_data *result);
 
+krb5_error_code
+krb5_create_checksum (krb5_context context,
+		      krb5_cksumtype type,
+		      void *ptr,
+		      size_t len,
+		      Checksum *result);
+
 #define ALLOC(N, X) ((X*)malloc((N) * sizeof(X)))
 #define FREE(X) do{if(X)free(X);}while(0)
 
