@@ -758,7 +758,8 @@ BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
 	if (password) password[pwlen] = 0;
 
 #if DEBUG_PASSWORD
-	DEBUG(100,("checking user=[%s] pass=[%s]\n",user,password));
+	DEBUG(100,("checking user=[%s] pass=",user));
+	dump_data(100, password, strlen(password));
 #endif
 
 	if (!password) {
