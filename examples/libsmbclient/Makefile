@@ -11,7 +11,7 @@ all: testsmbc tree
 
 testsmbc: testsmbc.o 
 	@echo Linking testsmbc
-	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lsmbclient
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lsmbclient -L/usr/local/lib
 
 testsmbc-static: testsmbc.o 
 	@echo Linking testsmbc
