@@ -380,7 +380,7 @@ static int session_trust_account(char *inbuf, char *outbuf, char *user,
         struct smb_passwd *smb_trust_acct = NULL; /* check if trust account exists */
         if (lp_security() == SEC_USER)
         {
-                smb_trust_acct = get_smbpwd_entry(user, 0);
+                smb_trust_acct = getsmbpwnam(user);
         }
         else
         {

@@ -43,7 +43,7 @@ static BOOL get_smbpwd_entries(SAM_USER_INFO_21 *pw_buf,
                                 int max_num_entries,
                                 uint16 acb_mask)
 {
-	FILE *fp = NULL;
+	void *vp = NULL;
 	struct smb_passwd *pwd = NULL;
  
         (*num_entries) = 0;
@@ -51,14 +51,14 @@ static BOOL get_smbpwd_entries(SAM_USER_INFO_21 *pw_buf,
 
         if (pw_buf == NULL) return False;
 
-        fp = startsmbpwent(False);
-        if (!fp)
+        vp = startsmbpwent(False);
+        if (!vp)
         {
                 DEBUG(0, ("get_smbpwd_entries: Unable to open SMB password file.\n"));
                 return False;
         }
 
-        while (((pwd = getsmbpwent(fp)) != NULL) && (*num_entries) < max_num_entries)
+        while (((pwd = getsmbpwent(vp)) != NULL) && (*num_entries) < max_num_entries)
         {
                 int user_name_len = strlen(pwd->smb_name);
                 make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len);
@@ -91,7 +91,7 @@ static BOOL get_smbpwd_entries(SAM_USER_INFO_21 *pw_buf,
                 (*total_entries)++;
         }
 
-        endsmbpwent(fp);
+        endsmbpwent(vp);
 
         return (*num_entries) > 0;
 }
@@ -806,7 +806,7 @@ static void samr_reply_open_user(SAMR_Q_OPEN_USER *q_u,
 	}
 
 	become_root(True);
-	smb_pass = get_smbpwd_entry(NULL, q_u->user_rid);
+	smb_pass = getsmbpwuid(q_u->user_rid);
 	unbecome_root(True);
 
 	/* check that the RID exists in our domain. */
@@ -877,7 +877,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 	struct smb_passwd *smb_pass;
 
 	become_root(True);
-	smb_pass = get_smbpwd_entry(NULL, rid);
+	smb_pass = getsmbpwuid(rid);
 	unbecome_root(True);
 
 	if (smb_pass == NULL)
@@ -1095,7 +1095,7 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 	if (status == 0x0)
 	{
 		become_root(True);
-		smb_pass = get_smbpwd_entry(NULL, rid);
+		smb_pass = getsmbpwuid(rid);
 		unbecome_root(True);
 
 		if (smb_pass == NULL)
@@ -1191,7 +1191,7 @@ static void api_samr_unknown_32( int uid, prs_struct *data, prs_struct *rdata)
 	                            q_u.uni_mach_acct.uni_str_len));
 
 	become_root(True);
-	smb_pass = get_smbpwd_entry(mach_acct, 0);
+	smb_pass = getsmbpwnam(mach_acct);
 	unbecome_root(True);
 
 	if (smb_pass != NULL)

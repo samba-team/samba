@@ -452,12 +452,12 @@ BOOL check_lanman_password(char *user, unsigned char *pass1,
   *psmbpw = NULL;
 
   become_root(0);
-  smbpw = get_smbpwd_entry(user, 0);
+  smbpw = getsmbpwnam(user);
   unbecome_root(0);
 
   if(smbpw == NULL)
   {
-    DEBUG(0,("check_lanman_password: get_smbpwd_entry returned NULL\n"));
+    DEBUG(0,("check_lanman_password: getsmbpwnam returned NULL\n"));
     return False;
   }
 
@@ -509,7 +509,7 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsi
 
   if(smbpw == NULL)
   { 
-    DEBUG(0,("change_lanman_password: get_smbpwd_entry returned NULL\n"));
+    DEBUG(0,("change_lanman_password: no smb password entry.\n"));
     return False;
   }
 
@@ -560,12 +560,12 @@ BOOL check_oem_password(char *user, unsigned char *data,
   unsigned char null_pw[16];
 
   become_root(0);
-  *psmbpw = smbpw = get_smbpwd_entry(user, 0);
+  *psmbpw = smbpw = getsmbpwnam(user);
   unbecome_root(0);
 
   if(smbpw == NULL)
   {
-    DEBUG(0,("check_oem_password: get_smbpwd_entry returned NULL\n"));
+    DEBUG(0,("check_oem_password: getsmbpwnam returned NULL\n"));
     return False;
   }
 

@@ -238,7 +238,7 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 	}
 
 	become_root(True);
-	smb_pass = get_smbpwd_entry(mach_acct, 0);
+	smb_pass = getsmbpwnam(mach_acct);
 	unbecome_root(True);
 
 	if (smb_pass != NULL)
@@ -637,7 +637,7 @@ static void api_net_sam_logon( int uid,
 		DEBUG(3,("User:[%s]\n", samlogon_user));
 
 		become_root(True);
-		smb_pass = get_smbpwd_entry(samlogon_user, 0);
+		smb_pass = getsmbpwnam(samlogon_user);
 		unbecome_root(True);
 
 		if (smb_pass == NULL)

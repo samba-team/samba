@@ -89,10 +89,11 @@ int pw_file_unlock(int fd)
 }
 
 /***************************************************************
- Open the smbpasswd file - get ready to enumerate it.
+ Start to enumerate the smbpasswd list. Returns a void pointer
+ to ensure no modification outside this module.
 ****************************************************************/
 
-FILE *startsmbpwent(BOOL update)
+void *startsmbpwent(BOOL update)
 {
   FILE *fp = NULL;
   char *pfile = lp_smb_passwd_file();
@@ -123,15 +124,17 @@ FILE *startsmbpwent(BOOL update)
   chmod(pfile, 0600);
 
   /* We have a lock on the file. */
-  return fp;
+  return (void *)fp;
 }
 
 /***************************************************************
- Close the smbpasswd file - end enumeration.
+ End enumeration of the smbpasswd list.
 ****************************************************************/
 
-void endsmbpwent(FILE *fp)
+void endsmbpwent(void *vp)
 {
+  FILE *fp = (FILE *)vp;
+
   pw_file_unlock(fileno(fp));
   fclose(fp);
   DEBUG(7, ("endsmbpwent: closed password file.\n"));
@@ -166,16 +169,17 @@ static int gethexpwd(char *p, char *pwd)
 }
 
 /*************************************************************************
- Routine to return the next entry in the smbpasswd file.
+ Routine to return the next entry in the smbpasswd list.
  *************************************************************************/
 
-struct smb_passwd *getsmbpwent(FILE *fp)
+struct smb_passwd *getsmbpwent(void *vp)
 {
   /* Static buffers we will return. */
   static struct smb_passwd pw_buf;
   static pstring  user_name;
   static unsigned char smbpwd[16];
   static unsigned char smbntpwd[16];
+  FILE *fp = (FILE *)vp;
   char            linebuf[256];
   unsigned char   c;
   unsigned char  *p;
@@ -429,11 +433,31 @@ struct smb_passwd *getsmbpwent(FILE *fp)
 }
 
 /*************************************************************************
+ Return the current position in the smbpasswd list as an unsigned long.
+ This must be treated as an opaque token.
+*************************************************************************/
+
+unsigned long getsmbpwpos(void *vp)
+{
+  return (unsigned long)ftell((FILE *)vp);
+}
+
+/*************************************************************************
+ Set the current position in the smbpasswd list from unsigned long.
+ This must be treated as an opaque token.
+*************************************************************************/
+
+BOOL setsmbpwpos(void *vp, unsigned long tok)
+{
+  return !fseek((FILE *)vp, tok, SEEK_SET);
+}
+
+/*************************************************************************
  Routine to search the smbpasswd file for an entry matching the username
  or user id.  if the name is NULL, then the smb_uid is used instead.
  *************************************************************************/
 
-struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
+static struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 {
   struct smb_passwd *pwd = NULL;
   FILE *fp = NULL;
@@ -475,6 +499,24 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 
   endsmbpwent(fp);
   return pwd;
+}
+
+/************************************************************************
+ Routine to search smbpasswd by name.
+*************************************************************************/
+
+struct smb_passwd *getsmbpwnam(char *name)
+{
+  return get_smbpwd_entry(name, 0);
+}
+
+/************************************************************************
+ Routine to search smbpasswd by uid.
+*************************************************************************/
+
+struct smb_passwd *getsmbpwuid(unsigned int uid)
+{
+  return get_smbpwd_entry(NULL, uid);
 }
 
 /************************************************************************

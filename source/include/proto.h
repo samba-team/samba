@@ -1690,10 +1690,13 @@ char *smb_errstr(char *inbuf);
 
 int pw_file_lock(int fd, int type, int secs);
 int pw_file_unlock(int fd);
-FILE *startsmbpwent(BOOL update);
-void endsmbpwent(FILE *fp);
-struct smb_passwd *getsmbpwent(FILE *fp);
-struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid);
+void *startsmbpwent(BOOL update);
+void endsmbpwent(void *vp);
+struct smb_passwd *getsmbpwent(void *vp);
+unsigned long getsmbpwpos(void *vp);
+BOOL setsmbpwpos(void *vp, unsigned long tok);
+struct smb_passwd *getsmbpwnam(char *name);
+struct smb_passwd *getsmbpwuid(unsigned int uid);
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd);
 
