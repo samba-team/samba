@@ -1,11 +1,6 @@
 <?xml version="1.0"?>
-<!DOCTYPE book PUBLIC "-//Samba//DTD Samba XML V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc" [
+<!DOCTYPE book PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 
-  <!-- entities files to use -->
-  <!ENTITY % global_entities SYSTEM '../entities/global.entities'>
-  %global_entities;
-
-]>
 <book id="S3bE"
 	xmlns:xi="http://www.w3.org/2003/XInclude">
 	<title>Samba-3 by Example</title>

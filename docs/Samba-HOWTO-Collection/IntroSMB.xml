@@ -1,13 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-		"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-  <!-- entities files to use -->
-  <!ENTITY % global_entities SYSTEM '../entities/global.entities'>
-  %global_entities;
-
-]>
-
+<!DOCTYPE book PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <preface id="IntroSMB">
 <chapterinfo>
 	&author.jht;
