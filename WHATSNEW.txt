@@ -27,15 +27,15 @@ New features included in the 3.0.8pre1 release are:
 Change in Username Map
 ----------------------
 
-Previous Samba releases would only support reading the fully 
-qualified username (e.g. DOMAIN\user) when performing a kerberos
-login from a 200x/XP client.  However, when looking up a map entry
-for a user authenticated by NTLM[SSP], only the login name would be
+Previous Samba releases would only support reading the fully qualified 
+username (e.g. DOMAIN\user) from the username map when performing a 
+kerberos login from a client.  However, when looking up a map 
+entry for a user authenticated by NTLM[SSP], only the login name would be
 used for matches.  This resulted in inconsistent behavior sometimes
 even on the same server.
 
 Samba 3.0.8pre2 obeys the following rules when applying the username
-map functionality.
+map functionality:
 
   * When performing local authentication, the username map is 
     applied to the login name before attempting to authenticate 
