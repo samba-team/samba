@@ -61,6 +61,10 @@
 #include <netinet/in.h>
 #endif
 
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
 #endif
