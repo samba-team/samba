@@ -87,6 +87,7 @@ install -m644 %{head_build_dir}/docs/manpages/smbpasswd.5 $RPM_BUILD_ROOT%{prefi
 install -m644 %{head_build_dir}/docs/manpages/samba.7 $RPM_BUILD_ROOT%{prefix}/man/man7
 install -m644 %{head_build_dir}/docs/manpages/smbd.8 $RPM_BUILD_ROOT%{prefix}/man/man8
 install -m644 %{head_build_dir}/docs/manpages/nmbd.8 $RPM_BUILD_ROOT%{prefix}/man/man8
+install -m644 %{head_build_dir}/docs/manpages/winbindd.8 $RPM_BUILD_ROOT%{prefix}/man/man8
 install -m644 %{head_build_dir}/docs/manpages/swat.8 $RPM_BUILD_ROOT%{prefix}/man/man8
 install -m644 %{head_build_dir}/docs/manpages/smbpasswd.8 $RPM_BUILD_ROOT%{prefix}/man/man8
 install -m644 %{head_build_dir}/packaging/RedHat/smb.conf $RPM_BUILD_ROOT/%{prefix}/lib/smb.conf
@@ -165,6 +166,7 @@ rm -f /lib/libnss_winbind.so.2
 %attr(-,root,root) %{prefix}/man/man7/samba.7
 %attr(-,root,root) %{prefix}/man/man8/smbd.8
 %attr(-,root,root) %{prefix}/man/man8/nmbd.8
+%attr(-,root,root) %{prefix}/man/man8/winbindd.8
 %attr(-,root,root) %{prefix}/man/man8/smbpasswd.8
 %attr(-,root,root) %{prefix}/lib/codepages/src/codepage_def.437
 %attr(-,root,root) %{prefix}/lib/codepages/src/codepage_def.737
