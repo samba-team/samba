@@ -107,7 +107,7 @@ the client.
  
 <para>
 These parameters, including <parameter>printer driver
-file</parameter> parameter, are being depreciated and should not 
+file</parameter> parameter, are being deprecated and should not 
 be used in new installations.  For more information on this change, 
 you should refer to the <link linkend="MIGRATION">Migration section</link>
 of this document.
@@ -260,7 +260,7 @@ driver now?</emphasis>
 
 <para>
 Click "No" in the error dialog and you will be presented with
-the printer properties window.  The way assign a driver to a 
+the printer properties window.  The way to assign a driver to a 
 printer is to either
 </para>
 	
