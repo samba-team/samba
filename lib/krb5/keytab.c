@@ -183,6 +183,7 @@ krb5_kt_ret_string(krb5_storage *sp,
 	return ret;
     *data = malloc(size + 1);
     ret = sp->fetch(sp, *data, size);
+    (*data)[size] = '\0';
     if(ret != size)
 	return (ret < 0)? errno : KRB5_CC_END;
     return 0;
