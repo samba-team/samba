@@ -14,6 +14,7 @@ ktutil_SOURCES = add.c				\
 		 get.c				\
 		 ktutil.c			\
 		 list.c				\
+		 purge.c			\
 		 remove.c			\
 		 srvconvert.c			\
 		 srvcreate.c
