@@ -30,12 +30,12 @@ definition : cpp_prefix
              | function { $item[1] }
              | const { $item[1] }
 
-const : 'const' <commit> identifier identifier '=' constant ';' 
+const : 'const' <commit> identifier identifier '=' anytext ';' 
         {{
                      "TYPE"  => "CONST", 
 		     "DTYPE"  => $item[3],
 		     "NAME"  => $item[4],
-		     "VALUE" => $item{constant}
+		     "VALUE" => $item{anytext}
         }}
         | <error?>
 
@@ -166,7 +166,7 @@ type :
 
 text: /[\w\s\..?-]*/
 
-text2: /[\|\w\s,\*\>\/\..?-]*/
+text2: /[\|\w\s,\*\>"\/\..?-]*/
 
 anytext: text2 '(' <commit> anytext ')' anytext
 	 {{ "$item[1]($item[4])$item[6]" }}
