@@ -749,7 +749,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Creating %d files\n", num_files);
 
-	for (i=0;i<num_files;i++) {
+	for (i=num_files-1;i>=0;i--) {
 		asprintf(&fname, BASEDIR "\\t%03d-%d.txt", i, i);
 		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
@@ -761,7 +761,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		smbcli_close(cli->tree, fnum);
 	}
 
-	printf("pulling the first 10 files\n");
+	printf("pulling the first 2 files\n");
 	ZERO_STRUCT(result);
 	result.mem_ctx = talloc(mem_ctx, 0);
 
@@ -779,7 +779,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	
 	io2.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
 	io2.t2fnext.in.handle = io.t2ffirst.out.handle;
-	io2.t2fnext.in.max_count = num_files/2 - 1;
+	io2.t2fnext.in.max_count = 1;
 	io2.t2fnext.in.resume_key = 0;
 	io2.t2fnext.in.flags = 0;
 	if (result.count == 0) {
@@ -791,7 +791,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_search_next(cli->tree, mem_ctx,
 				     &io2, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(result.count, num_files/2);
+	CHECK_VALUE(result.count, 2);
 
 	printf("Changing attributes and deleting\n");
 	smbcli_open(cli->tree, BASEDIR "\\T003-03.txt.2", O_CREAT|O_RDWR, DENY_NONE);
@@ -809,7 +809,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	io2.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
 	io2.t2fnext.in.handle = io.t2ffirst.out.handle;
-	io2.t2fnext.in.max_count = num_files/2;
+	io2.t2fnext.in.max_count = num_files - 2;
 	io2.t2fnext.in.resume_key = 0;
 	io2.t2fnext.in.flags = 0;
 	io2.t2fnext.in.last_name = result.list[result.count-1].both_directory_info.name.s;
@@ -817,7 +817,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_search_next(cli->tree, mem_ctx,
 				     &io2, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(result.count, 19);
+	CHECK_VALUE(result.count, 20);
 
 	ret &= check_result(&result, "t009-9.txt", True, FILE_ATTRIBUTE_ARCHIVE);
 	ret &= check_result(&result, "t014-14.txt", False, 0);
@@ -838,6 +838,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			       result.list[i].both_directory_info.attrib);
 		}
 	}
+	exit(1);
 
 done:
 	smb_raw_exit(cli->session);
