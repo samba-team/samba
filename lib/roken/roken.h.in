@@ -140,13 +140,13 @@ struct sockaddr_dl;
 #endif
 #endif
 
-#include <roken-common.h>
-
-ROKEN_CPP_START
-
 #ifndef HAVE_SSIZE_T
 typedef int ssize_t;
 #endif
+
+#include <roken-common.h>
+
+ROKEN_CPP_START
 
 #if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
 #define setsid _setsid
