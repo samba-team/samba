@@ -611,24 +611,11 @@ rk_CHECK_VAR([__progname],
 #include <err.h>
 #endif])
 
-AC_CHECK_DECLARATION([#include <stdlib.h>
+AC_CHECK_DECLS([optarg, optind, opterr, optopt, environ],[],[][
+#include <stdlib.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif], optarg)
-AC_CHECK_DECLARATION([#include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif], optind)
-AC_CHECK_DECLARATION([#include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif], opterr)
-AC_CHECK_DECLARATION([#include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif], optopt)
-
-AC_CHECK_DECLARATION([#include <stdlib.h>], environ)
+#endif])
 
 dnl
 dnl Check for fields in struct tm
