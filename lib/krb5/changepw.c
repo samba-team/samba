@@ -55,7 +55,9 @@ get_kdc_address (krb5_context context,
     error = roken_getaddrinfo_hostspec(*hostlist, port, ai);
 
     krb5_free_krbhst (context, hostlist);
-    return error;
+    if(error)
+	return krb5_eai_to_heim_errno(error);
+    return 0;
 }
 
 static krb5_error_code

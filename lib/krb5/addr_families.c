@@ -523,7 +523,7 @@ krb5_parse_address(krb5_context context,
 
     error = getaddrinfo (string, NULL, NULL, &ai);
     if (error)
-	return -1;
+	return krb5_eai_to_heim_errno(error);
     
     n = 0;
     for (a = ai; a != NULL; a = a->ai_next)

@@ -257,7 +257,7 @@ send_via_proxy (krb5_context context,
     ret = getaddrinfo (proxy, portstr, NULL, &ai);
     free (proxy);
     if (ret)
-	return ret;
+	return krb5_eai_to_heim_errno(ret);
 
     for (a = ai; a != NULL; a = a->ai_next) {
 	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);

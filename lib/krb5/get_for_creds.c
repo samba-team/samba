@@ -144,7 +144,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
 
     ret = getaddrinfo (hostname, NULL, NULL, &ai);
     if (ret)
-	return ret;
+	return krb5_eai_to_heim_errno(ret);
 
     ret = add_addrs (context, &addrs, ai);
     freeaddrinfo (ai);
