@@ -84,10 +84,10 @@ static void *tdb_mmap(tdb_len size, int readonly, int fd)
 	void *ret = NULL;
 #ifdef HAVE_MMAP
 	ret = mmap(NULL, size, PROT_READ | (readonly ? 0 : PROT_WRITE), MAP_SHARED|MAP_FILE, fd, 0);
-#endif
-        if (ret == (void *)-1)
-                ret = NULL;
 
+	if (ret == (void *)-1)
+		ret = NULL;
+#endif
 	return ret;
 }
 
@@ -302,7 +302,8 @@ static int update_tailer(TDB_CONTEXT *tdb, tdb_off offset,
 #ifdef TDB_DEBUG
 void tdb_printfreelist(TDB_CONTEXT *tdb)
 {
-	tdb_off offset, rec_ptr, last_ptr;
+	long total_free = 0;
+    tdb_off offset, rec_ptr, last_ptr;
 	struct list_struct rec, lastrec, newrec;
 
 	tdb_lock(tdb, -1, F_WRLCK);
@@ -326,11 +327,13 @@ void tdb_printfreelist(TDB_CONTEXT *tdb)
 			return;
 		}
 
-		printf("entry offset=[0x%08x], rec.rec_len = [0x%08x]\n", rec.next, rec.rec_len );
+		printf("entry offset=[0x%08x], rec.rec_len = [0x%08x (%d)]\n", rec.next, rec.rec_len, rec.rec_len );
+		total_free += rec.rec_len;
 
 		/* move to the next record */
 		rec_ptr = rec.next;
 	}
+	printf("total rec_len = [0x%08x (%d)]\n", total_free, total_free );
 
 	tdb_unlock(tdb, -1, F_WRLCK);
 }
@@ -1013,6 +1016,17 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
            coalescing with `allocated' block before it's updated. */
 	if (flag != TDB_INSERT) tdb_delete(tdb, key);
 
+	/* Copy key+value *before* allocating free space in case malloc
+	   fails and we are left with a dead spot in the tdb. */
+
+	if (!(p = (char *)malloc(key.dsize + dbuf.dsize))) {
+		tdb->ecode = TDB_ERR_OOM;
+		goto fail;
+	}
+
+	memcpy(p, key.dptr, key.dsize);
+	memcpy(p+key.dsize, dbuf.dptr, dbuf.dsize);
+
 	/* now we're into insert / modify / replace of a record which
 	 * we know could not be optimised by an in-place store (for
 	 * various reasons).  */
@@ -1027,18 +1041,12 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	rec.full_hash = hash;
 	rec.magic = TDB_MAGIC;
 
-	if (!(p = (char *)malloc(key.dsize + dbuf.dsize))) {
-		tdb->ecode = TDB_ERR_OOM;
-		goto fail;
-	}
-
-	memcpy(p, key.dptr, key.dsize);
-	memcpy(p+key.dsize, dbuf.dptr, dbuf.dsize);
 	/* write out and point the top of the hash chain at it */
 	if (rec_write(tdb, rec_ptr, &rec) == -1
 	    || tdb_write(tdb, rec_ptr+sizeof(rec), p, key.dsize+dbuf.dsize)==-1
 	    || ofs_write(tdb, TDB_HASH_TOP(hash), &rec_ptr) == -1) {
 	fail:
+		/* Need to tdb_unallocate() here */
 		ret = -1;
 	}
  out:

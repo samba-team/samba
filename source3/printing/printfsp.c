@@ -82,9 +82,9 @@ files_struct *print_fsp_open(connection_struct *conn,char *jobname)
 /****************************************************************************
 print a file - called on closing the file
 ****************************************************************************/
-void print_fsp_end(files_struct *fsp)
+void print_fsp_end(files_struct *fsp, BOOL normal_close)
 {
-	print_job_end(fsp->print_jobid);
+	print_job_end(fsp->print_jobid, normal_close);
 
 	if (fsp->fsp_name) {
 		string_free(&fsp->fsp_name);
