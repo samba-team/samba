@@ -35,14 +35,15 @@ struct file_list {
 	char *file;
 };
 
-static BOOL file_find(TALLOC_CTX *mem_ctx, struct file_list **list,
-		      const char *directory) 
+static BOOL file_find(TALLOC_CTX *mem_ctx, const char *directory,
+		      struct file_list **list, int *num_files)
 {
 	DIR *dir;
 	struct file_list *entry;
 	char *path, *filename;
 	const char *dname;
-	int num_files = 0;
+
+	*num_files = 0;
 
 	*list = TALLOC_ZERO_P(mem_ctx, struct file_list);
 	if (*list == NULL)
@@ -75,15 +76,15 @@ static BOOL file_find(TALLOC_CTX *mem_ctx, struct file_list **list,
 		entry->file = filename;
 		DLIST_ADD(*list, entry);
 
-		++num_files;
+		++(*num_files);
         }
 
 	closedir(dir);
 
-	if (num_files == 0)
+	if (*num_files == 0)
 		return False;
 
-	DEBUG(0,("found: %d files\n", num_files));
+	DEBUG(0,("found: %d files\n", *num_files));
 
 	return True;
 }
@@ -339,12 +340,13 @@ uint32 file_get_c_setprinter(void)
 uint32 file_update_c_setprinter(BOOL initialize) 
 {
 	TALLOC_CTX *mem_ctx = talloc_init("file_update_c_setprinter");
-	char *filename;
+	char *filename, *printerdir;
 	int len;
 	uint8_t *buf;
 	uint32 result = 0;
 	uint32 c_setprinter;
-	uint32 printer_count = 23;
+	uint32 printer_count = 0;
+	struct file_list *file_list;
 
 	if (mem_ctx == NULL)
 		goto done;
@@ -354,7 +356,15 @@ uint32 file_update_c_setprinter(BOOL initialize)
 	if (filename == NULL)
 		goto done;
 
-	/* FIXME */
+	printerdir = talloc_asprintf(mem_ctx, "%s/%s", file_root, PRINTERS_PREFIX);
+
+	if (printerdir == NULL)
+		goto done;
+
+	file_list = NULL;
+
+	if (!file_find(mem_ctx, printerdir, &file_list, &printer_count))
+		goto done;
 
 	if (!initialize)
 		c_setprinter = file_get_c_setprinter() + printer_count;
@@ -388,6 +398,7 @@ int file_get_forms(nt_forms_struct **list)
 	int i;
 	int n = 0;
 	char *dirname;
+	int num_files;
 	struct file_list *file_list, *temp_list;
 
 	if (mem_ctx == NULL)
@@ -399,7 +410,7 @@ int file_get_forms(nt_forms_struct **list)
 
 	file_list = NULL;
 
-	if (!file_find(mem_ctx, &file_list, dirname))
+	if (!file_find(mem_ctx, dirname, &file_list, &num_files))
 		goto done;
 		
 	for (temp_list = file_list; temp_list; temp_list = temp_list->next) {
@@ -433,7 +444,6 @@ int file_get_forms(nt_forms_struct **list)
 	if (mem_ctx != NULL)
 		talloc_destroy(mem_ctx);
 
-	DEBUG(0,("file_get_forms: found %d forms\n", n));
 	return n;
 }
 
@@ -545,6 +555,7 @@ int file_get_drivers(fstring **list, const char *short_archi, uint32 version)
 	struct file_list *file_list, *temp_list;
 	int n = 0;
 	fstring *loc_list;
+	int num_files;
 
 	/* never return -1 */
 
@@ -563,7 +574,7 @@ int file_get_drivers(fstring **list, const char *short_archi, uint32 version)
 
 	file_list = NULL;
 
-	if (!file_find(mem_ctx, &file_list, filename)) {
+	if (!file_find(mem_ctx, filename, &file_list, &num_files)) {
 		goto done;
 	}
 
