@@ -806,7 +806,11 @@
 
 	/************************/
 	/* Function    0x39     */
-	NTSTATUS samr_CONNECT2();
+	NTSTATUS samr_Connect2(
+		[in] unistr *system_name,
+		[in] uint32 access_mask,
+		[out,ref]  policy_handle *handle
+		);
 
 	/************************/
 	/* Function    0x3a     */

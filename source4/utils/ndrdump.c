@@ -24,6 +24,15 @@ struct dcerpc_interface_table *pipes[] = {
 	&dcerpc_table_samr,
 	&dcerpc_table_lsarpc,
 	&dcerpc_table_netdfs,
+	&dcerpc_table_atsvc,
+	&dcerpc_table_dcerpc,
+	&dcerpc_table_rpcecho,
+	&dcerpc_table_epmapper,
+	&dcerpc_table_eventlog,
+	&dcerpc_table_spoolss,
+	&dcerpc_table_srvsvc,
+	&dcerpc_table_winreg,
+	&dcerpc_table_wkssvc,
 	NULL
 };
 
@@ -175,5 +184,13 @@ int main(int argc, char *argv[])
 	pr.depth = 1;
 	f->ndr_print(&pr, function, flags, st);
 
+	if (!NT_STATUS_IS_OK(status) ||
+	    ndr->offset != ndr->data_size) {
+		printf("dump FAILED\n");
+		exit(1);
+	}
+
+	printf("dump OK\n");
+	
 	return 0;
 }
