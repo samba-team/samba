@@ -51,7 +51,6 @@ extern int  workgroup_count;
 
 /* what server type are we currently */
 
-#define MSBROWSE "\001\002__MSBROWSE__\002"
 #define BROWSE_MAILSLOT "\\MAILSLOT\\BROWSE"
 
 /****************************************************************************
@@ -124,7 +123,7 @@ void announce_backup(void)
   int tok;
   
   if (!lastrun) lastrun = t;
-  if (t < lastrun + 1*60) return;
+  if (t < lastrun + CHECK_TIME_ANNOUNCE_BACKUP * 60) return;
   lastrun = t;
   
   for (tok = 0; tok <= workgroup_count; tok++)
@@ -215,7 +214,8 @@ void announce_host(void)
 	  if (work->needannounce) {
 	    /* drop back to a max 3 minute announce - this is to prevent a
 	       single lost packet from stuffing things up for too long */
-	    work->announce_interval = MIN(work->announce_interval,3*60);
+	    work->announce_interval = MIN(work->announce_interval, 
+					  CHECK_TIME_MIN_HOST_ANNCE*60);
 	    work->lastannounce_time = t - (work->announce_interval+1);
 	  }
 	  
@@ -224,7 +224,7 @@ void announce_host(void)
 	      (t - work->lastannounce_time) < work->announce_interval)
 	    continue;
 	  
-	  if (work->announce_interval < 12*60) 
+	  if (work->announce_interval < CHECK_TIME_MAX_HOST_ANNCE * 60) 
 	    work->announce_interval += 60;
 	  
 	  work->lastannounce_time = t;
@@ -343,11 +343,8 @@ void announce_master(void)
   time_t t = time(NULL);
   BOOL am_master = False; /* are we a master of some sort? :-) */
 
-#ifdef TEST_CODE
-  if (last && (t-last < 2*60)) return;
-#else
-  if (last && (t-last < 15*60)) return; 
-#endif
+  if (last && (t-last < CHECK_TIME_MST_ANNOUNCE * 60)) 
+    return; 
 
   last = t;
 
@@ -425,7 +422,7 @@ void announce_master(void)
 	      ip = *interpret_addr2(lp_domain_controller());
 	      
 	      if (zero_ip(ip)) {
-		ip = *iface_bcast(d->bcast_ip);
+		ip = d->bcast_ip;
 		bcast = True;
 	      }
 
