@@ -568,7 +568,7 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 
 kadm5_ret_t
 kadm5_log_foreach (kadm5_server_context *context,
-		   void (*func)(krb5_context context,
+		   void (*func)(kadm5_server_context *server_context,
 				u_int32_t ver,
 				time_t timestamp,
 				enum kadm_ops op,
@@ -588,7 +588,7 @@ kadm5_log_foreach (kadm5_server_context *context,
 	krb5_ret_int32 (sp, &timestamp);
 	krb5_ret_int32 (sp, &op);
 	krb5_ret_int32 (sp, &len);
-	(*func)(context->context, ver, timestamp, op, len, sp);
+	(*func)(context, ver, timestamp, op, len, sp);
 	sp->seek(sp, 8, SEEK_CUR);
     }
     return 0;
