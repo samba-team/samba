@@ -416,6 +416,11 @@ static BOOL test_OpenHKU(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("OpenHKU failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
 	return ret;
 }
 
@@ -442,6 +447,10 @@ static BOOL test_OpenHKCR(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("OpenHKU failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
 	return ret;
 }
 
