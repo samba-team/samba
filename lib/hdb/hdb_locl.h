@@ -81,4 +81,8 @@ int hdb_value2entry(krb5_context, krb5_data*, hdb_entry*);
 krb5_error_code hdb_lock(int, int);
 krb5_error_code hdb_unlock(int);
 
+krb5_error_code _hdb_fetch(krb5_context, HDB*, hdb_entry*);
+krb5_error_code _hdb_store(krb5_context, HDB*, int, hdb_entry*);
+krb5_error_code _hdb_delete(krb5_context, HDB*, hdb_entry*);
+
 #endif /* __HDB_LOCL_H__ */
