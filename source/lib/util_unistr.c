@@ -3,6 +3,7 @@
    Version 3.0
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-2001
+   Copyright (C) Simo Sorce 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -476,6 +477,7 @@ smb_ucs2_t *strcat_w(smb_ucs2_t *dest, const smb_ucs2_t *src)
 	return dest;
 }
 
+
 /*******************************************************************
 replace any occurence of oldc with newc in unicode string
 ********************************************************************/
@@ -495,7 +497,7 @@ BOOL trim_string_w(smb_ucs2_t *s, const smb_ucs2_t *front,
 				  const smb_ucs2_t *back)
 {
 	BOOL ret = False;
-	size_t len, lw, front_len, flw, back_len, blw;
+	size_t len, front_len, back_len;
 
 	if (!s || !*s) return False;
 
@@ -503,24 +505,18 @@ BOOL trim_string_w(smb_ucs2_t *s, const smb_ucs2_t *front,
 
 	if (front && *front) {
 		front_len = strlen_w(front);
-		flw = front_len * sizeof(smb_ucs2_t);
-		lw = (len + 1) * sizeof(smb_ucs2_t);
 		while (len && strncmp_w(s, front, front_len) == 0) {
-			memcpy(s, s + flw, lw - flw);
+			memmove(s, (s + front_len), (len - front_len + 1) * sizeof(smb_ucs2_t));
 			len -= front_len;
-			lw -= flw;
 			ret = True;
 		}
 	}
 	
 	if (back && *back) {
 		back_len = strlen_w(back);
-		blw = back_len * sizeof(smb_ucs2_t);
-		lw = len * sizeof(smb_ucs2_t);
-		while (len && strncmp_w(s + lw - blw, back, back_len) == 0) {
+		while (len && strncmp_w((s + (len - back_len)), back, back_len) == 0) {
 			s[len - back_len] = 0;
 			len -= back_len;
-			lw -= blw;
 			ret = True;
 		}
 	}
