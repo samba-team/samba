@@ -616,7 +616,7 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
     char *lmode;
 
     if (verbose && printnames) {
-	if (local && *local != '-')
+	if (local && strcmp(local, "-") != 0)
 	    printf("local: %s ", local);
 	if (remote)
 	    printf("remote: %s\n", remote);
@@ -847,7 +847,7 @@ recvrequest(char *cmd, char *local, char *remote,
 
     is_retr = strcmp(cmd, "RETR") == 0;
     if (is_retr && verbose && printnames) {
-	if (local && *local != '-')
+	if (local && strcmp(local, "-") != 0)
 	    printf("local: %s ", local);
 	if (remote)
 	    printf("remote: %s\n", remote);
