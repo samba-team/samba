@@ -27,31 +27,103 @@
 static const struct {
 	enum sec_privilege privilege;
 	const char *name;
+	const char *display_name;
 } privilege_names[] = {
-	{SEC_PRIV_SECURITY,                   "SeSecurityPrivilege"},
-	{SEC_PRIV_BACKUP,                     "SeBackupPrivilege"},
-	{SEC_PRIV_RESTORE,                    "SeRestorePrivilege"},
-	{SEC_PRIV_SYSTEMTIME,                 "SeSystemtimePrivilege"},
-	{SEC_PRIV_SHUTDOWN,                   "SeShutdownPrivilege"},
-	{SEC_PRIV_REMOTE_SHUTDOWN,            "SeRemoteShutdownPrivilege"},
-	{SEC_PRIV_TAKE_OWNERSHIP,             "SeTakeOwnershipPrivilege"},
-	{SEC_PRIV_DEBUG,                      "SeDebugPrivilege"},
-	{SEC_PRIV_SYSTEM_ENVIRONMENT,         "SeSystemEnvironmentPrivilege"},
-	{SEC_PRIV_SYSTEM_PROFILE,             "SeSystemProfilePrivilege"},
-	{SEC_PRIV_PROFILE_SINGLE_PROCESS,     "SeProfileSingleProcessPrivilege"},
-	{SEC_PRIV_INCREASE_BASE_PRIORITY,     "SeIncreaseBasePriorityPrivilege"},
-	{SEC_PRIV_LOAD_DRIVER,                "SeLoadDriverPrivilege"},
-	{SEC_PRIV_CREATE_PAGEFILE,            "SeCreatePagefilePrivilege"},
-	{SEC_PRIV_INCREASE_QUOTA,             "SeIncreaseQuotaPrivilege"},
-	{SEC_PRIV_CHANGE_NOTIFY,              "SeChangeNotifyPrivilege"},
-	{SEC_PRIV_UNDOCK,                     "SeUndockPrivilege"},
-	{SEC_PRIV_MANAGE_VOLUME,              "SeManageVolumePrivilege"},
-	{SEC_PRIV_IMPERSONATE,                "SeImpersonatePrivilege"},
-	{SEC_PRIV_CREATE_GLOBAL,              "SeCreateGlobalPrivilege"},
-	{SEC_PRIV_ENABLE_DELEGATION,          "SeEnableDelegationPrivilege"},
-	{SEC_PRIV_INTERACTIVE_LOGON,          "SeInteractiveLogonRight"},
-	{SEC_PRIV_NETWORK_LOGON,              "SeNetworkLogonRight"},
-	{SEC_PRIV_REMOTE_INTERACTIVE_LOGON,   "SeRemoteInteractiveLogonRight"}
+	{SEC_PRIV_SECURITY,                   
+	 "SeSecurityPrivilege",
+	"System security"},
+
+	{SEC_PRIV_BACKUP,                     
+	 "SeBackupPrivilege",
+	 "Backup files and directories"},
+
+	{SEC_PRIV_RESTORE,                    
+	 "SeRestorePrivilege",
+	"Restore files and directories"},
+
+	{SEC_PRIV_SYSTEMTIME,                 
+	 "SeSystemtimePrivilege",
+	"Set the system clock"},
+
+	{SEC_PRIV_SHUTDOWN,                   
+	 "SeShutdownPrivilege",
+	"Shutdown the system"},
+
+	{SEC_PRIV_REMOTE_SHUTDOWN,            
+	 "SeRemoteShutdownPrivilege",
+	"Shutdown the system remotely"},
+
+	{SEC_PRIV_TAKE_OWNERSHIP,             
+	 "SeTakeOwnershipPrivilege",
+	"Take ownership of files and directories"},
+
+	{SEC_PRIV_DEBUG,                      
+	 "SeDebugPrivilege",
+	"Debug processes"},
+
+	{SEC_PRIV_SYSTEM_ENVIRONMENT,         
+	 "SeSystemEnvironmentPrivilege",
+	"Modify system environment"},
+
+	{SEC_PRIV_SYSTEM_PROFILE,             
+	 "SeSystemProfilePrivilege",
+	"Profile the system"},
+
+	{SEC_PRIV_PROFILE_SINGLE_PROCESS,     
+	 "SeProfileSingleProcessPrivilege",
+	"Profile one process"},
+
+	{SEC_PRIV_INCREASE_BASE_PRIORITY,     
+	 "SeIncreaseBasePriorityPrivilege",
+	 "Increase base priority"},
+
+	{SEC_PRIV_LOAD_DRIVER,
+	 "SeLoadDriverPrivilege",
+	"Load drivers"},
+
+	{SEC_PRIV_CREATE_PAGEFILE,            
+	 "SeCreatePagefilePrivilege",
+	"Create page files"},
+
+	{SEC_PRIV_INCREASE_QUOTA,
+	 "SeIncreaseQuotaPrivilege",
+	"Increase quota"},
+
+	{SEC_PRIV_CHANGE_NOTIFY,              
+	 "SeChangeNotifyPrivilege",
+	"Register for change notify"},
+
+	{SEC_PRIV_UNDOCK,                     
+	 "SeUndockPrivilege",
+	"Undock devices"},
+
+	{SEC_PRIV_MANAGE_VOLUME,              
+	 "SeManageVolumePrivilege",
+	"Manage system volumes"},
+
+	{SEC_PRIV_IMPERSONATE,                
+	 "SeImpersonatePrivilege",
+	"Impersonate users"},
+
+	{SEC_PRIV_CREATE_GLOBAL,              
+	 "SeCreateGlobalPrivilege",
+	"Create global"},
+
+	{SEC_PRIV_ENABLE_DELEGATION,          
+	 "SeEnableDelegationPrivilege",
+	"Enable Delegation"},
+
+	{SEC_PRIV_INTERACTIVE_LOGON,          
+	 "SeInteractiveLogonRight",
+	"Interactive logon"},
+
+	{SEC_PRIV_NETWORK_LOGON,
+	 "SeNetworkLogonRight",
+	"Network logon"},
+
+	{SEC_PRIV_REMOTE_INTERACTIVE_LOGON,   
+	 "SeRemoteInteractiveLogonRight",
+	"Remote Interactive logon"}
 };
 
 
@@ -64,6 +136,22 @@ const char *sec_privilege_name(unsigned int privilege)
 	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
 		if (privilege_names[i].privilege == privilege) {
 			return privilege_names[i].name;
+		}
+	}
+	return NULL;
+}
+
+/*
+  map a privilege id to a privilege display name. Return NULL if not found
+  
+  TODO: this should use language mappings
+*/
+const char *sec_privilege_display_name(int privilege, uint16_t *language)
+{
+	int i;
+	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
+		if (privilege_names[i].privilege == privilege) {
+			return privilege_names[i].display_name;
 		}
 	}
 	return NULL;
