@@ -137,23 +137,6 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		}
 	}
 
-	/*
-	 * WINS server line sanity checks.
-	 */
-
-	if(*lp_wins_server()) {
-		fstring server;
-		int count = 0;
-		char *p = lp_wins_server();
-
-		while(next_token(&p,server,LIST_SEP,sizeof(server)))
-			count++;
-		if(count > 1) {
-			printf("ERROR: the 'wins server' parameter must only contain one WINS server.\n");
-			ret = -1;
-		}
-	}
-
 	return ret;
 }   
 
