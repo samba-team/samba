@@ -183,10 +183,15 @@ struct cli_state *open_pipe_creds(char *server, PyObject *creds,
 		&cli, global_myname, server, &server_ip, 0, "IPC$", "IPC",
 		username, domain, password, strlen(password));
 	
-	if (!NT_STATUS_IS_OK(result) || !cli_nt_session_open(cli, pipe_name)) {
+	if (!NT_STATUS_IS_OK(result)) {
+		*errstr = strdup("error connecting to IPC$ pipe");
+		return NULL;
+	}
+
+	if (!cli_nt_session_open(cli, pipe_name)) {
 		cli_shutdown(cli);
 		free(cli);
-		*errstr = strdup("pipe not available");
+		asprintf(errstr, "error opening %s", pipe_name);
 		return NULL;
 	}
 
