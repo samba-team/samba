@@ -387,13 +387,13 @@ NTSTATUS create_nt_user_token(TALLOC_CTX *mem_ctx,
 	 * don't really support) is the addition of Authenticated_Users.
 	 */
 	ptoken->user_sids[2] = dom_sid_parse_talloc(mem_ctx, SID_WORLD);
-	ptoken->user_sids[3] = dom_sid_parse_talloc(mem_ctx, SID_NETWORK);
+	ptoken->user_sids[3] = dom_sid_parse_talloc(mem_ctx, SID_NT_NETWORK);
 
 	if (is_guest) {
 		ptoken->user_sids[4] = dom_sid_parse_talloc(mem_ctx, SID_BUILTIN_GUESTS);
 		ptoken->num_sids++;
 	} else {
-		ptoken->user_sids[4] = dom_sid_parse_talloc(mem_ctx, SID_AUTHENTICATED_USERS);
+		ptoken->user_sids[4] = dom_sid_parse_talloc(mem_ctx, SID_NT_AUTHENTICATED_USERS);
 		ptoken->num_sids++;
 	}
 
@@ -453,7 +453,7 @@ NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx, struct auth_serversupplied_
 	
 	(*server_info)->guest = True;
 
-	(*server_info)->user_sid = dom_sid_parse_talloc((*server_info), SID_ANONYMOUS);
+	(*server_info)->user_sid = dom_sid_parse_talloc((*server_info), SID_NT_ANONYMOUS);
 	(*server_info)->primary_group_sid = dom_sid_parse_talloc((*server_info), SID_BUILTIN_GUESTS);
 	(*server_info)->n_domain_groups = 0;
 	(*server_info)->domain_groups = NULL;
