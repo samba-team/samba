@@ -188,28 +188,32 @@ interface security
 		uint32 sub_auths[num_auths];
 	} dom_sid;
 
-	const int SEC_ACE_FLAG_OBJECT_INHERIT		= 0x001;
-	const int SEC_ACE_FLAG_CONTAINER_INHERIT	= 0x002;
-	const int SEC_ACE_FLAG_NO_PROPAGATE_INHERIT	= 0x004;
-	const int SEC_ACE_FLAG_INHERIT_ONLY		= 0x008;
-	const int SEC_ACE_FLAG_INHERITED_ACE		= 0x010;
-	const int SEC_ACE_FLAG_VALID_INHERIT		= 0x00f;
-	const int SEC_ACE_FLAG_SUCCESSFUL_ACCESS	= 0x040;
-	const int SEC_ACE_FLAG_FAILED_ACCESS		= 0x080;
+	typedef [bitmap8bit] bitmap {
+		SEC_ACE_FLAG_OBJECT_INHERIT		= 0x01,
+		SEC_ACE_FLAG_CONTAINER_INHERIT		= 0x02,
+		SEC_ACE_FLAG_NO_PROPAGATE_INHERIT	= 0x04,
+		SEC_ACE_FLAG_INHERIT_ONLY		= 0x08,
+		SEC_ACE_FLAG_INHERITED_ACE		= 0x10,
+		SEC_ACE_FLAG_VALID_INHERIT		= 0x0f,
+		SEC_ACE_FLAG_SUCCESSFUL_ACCESS		= 0x40,
+		SEC_ACE_FLAG_FAILED_ACCESS		= 0x80
+	} security_ace_flags;
 
-	const int SEC_ACE_TYPE_ACCESS_ALLOWED		= 0x0;
-	const int SEC_ACE_TYPE_ACCESS_DENIED		= 0x1;
-	const int SEC_ACE_TYPE_SYSTEM_AUDIT		= 0x2;
-	const int SEC_ACE_TYPE_SYSTEM_ALARM		= 0x3;
-	const int SEC_ACE_TYPE_ALLOWED_COMPOUND		= 0x4;
-	const int SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT	= 0x5;
-	const int SEC_ACE_TYPE_ACCESS_DENIED_OBJECT     = 0x6;
-	const int SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT      = 0x7;
-	const int SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT	= 0x8;
+	typedef [enum8bit] enum {
+		SEC_ACE_TYPE_ACCESS_ALLOWED		= 0,
+		SEC_ACE_TYPE_ACCESS_DENIED		= 1,
+		SEC_ACE_TYPE_SYSTEM_AUDIT		= 2,
+		SEC_ACE_TYPE_SYSTEM_ALARM		= 3,
+		SEC_ACE_TYPE_ALLOWED_COMPOUND		= 4,
+		SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT	= 5,
+		SEC_ACE_TYPE_ACCESS_DENIED_OBJECT	= 6,
+		SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT	= 7,
+		SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT	= 8
+	} security_ace_type;
 
 	typedef [public] struct {
-		uint8 type;  /* SEC_ACE_TYPE_* */
-		uint8 flags; /* SEC_ACE_FLAG_* */
+		security_ace_type type;  /* SEC_ACE_TYPE_* */
+		security_ace_flags flags; /* SEC_ACE_FLAG_* */
 		[value(ndr_size_security_ace(r))] uint16 size;
 		uint32 access_mask;
 
@@ -225,35 +229,43 @@ interface security
 		dom_sid trustee;
 	} security_ace;
 
-	const int NT4_ACL_REVISION  = 0x2;
+	typedef enum {
+		NT4_ACL_REVISION  = 2
+	} security_acl_revision;
 
 	typedef [public] struct {
-		uint16 revision;
+		security_acl_revision revision;
 		[value(ndr_size_security_acl(r))] uint16 size;
 		[range(0,1000)] uint32 num_aces;
 		security_ace aces[num_aces];
 	} security_acl;
 
 	/* default revision for new ACLs */
-	const int SD_REVISION                    = 1;
+	typedef [enum8bit] enum {
+		SEC_DESC_REVISION_1 = 1
+	} security_descriptor_revision;
+
+	const int SD_REVISION                    = SEC_DESC_REVISION_1;
 
 	/* security_descriptor->type bits */
-	const int SEC_DESC_OWNER_DEFAULTED	 = 0x0001;
-	const int SEC_DESC_GROUP_DEFAULTED	 = 0x0002;
-	const int SEC_DESC_DACL_PRESENT		 = 0x0004;
-	const int SEC_DESC_DACL_DEFAULTED	 = 0x0008;
-	const int SEC_DESC_SACL_PRESENT		 = 0x0010;
-	const int SEC_DESC_SACL_DEFAULTED	 = 0x0020;
-	const int SEC_DESC_DACL_TRUSTED		 = 0x0040;
-	const int SEC_DESC_SERVER_SECURITY	 = 0x0080;
-	const int SEC_DESC_DACL_AUTO_INHERIT_REQ = 0x0100;
-	const int SEC_DESC_SACL_AUTO_INHERIT_REQ = 0x0200;
-	const int SEC_DESC_DACL_AUTO_INHERITED	 = 0x0400;
-	const int SEC_DESC_SACL_AUTO_INHERITED	 = 0x0800;
-	const int SEC_DESC_DACL_PROTECTED	 = 0x1000;
-	const int SEC_DESC_SACL_PROTECTED	 = 0x2000;
-	const int SEC_DESC_RM_CONTROL_VALID	 = 0x4000;
-	const int SEC_DESC_SELF_RELATIVE	 = 0x8000;
+	typedef [bitmap16bit] bitmap {
+		SEC_DESC_OWNER_DEFAULTED	= 0x0001,
+		SEC_DESC_GROUP_DEFAULTED	= 0x0002,
+		SEC_DESC_DACL_PRESENT		= 0x0004,
+		SEC_DESC_DACL_DEFAULTED		= 0x0008,
+		SEC_DESC_SACL_PRESENT		= 0x0010,
+		SEC_DESC_SACL_DEFAULTED		= 0x0020,
+		SEC_DESC_DACL_TRUSTED		= 0x0040,
+		SEC_DESC_SERVER_SECURITY	= 0x0080,
+		SEC_DESC_DACL_AUTO_INHERIT_REQ	= 0x0100,
+		SEC_DESC_SACL_AUTO_INHERIT_REQ	= 0x0200,
+		SEC_DESC_DACL_AUTO_INHERITED	= 0x0400,
+		SEC_DESC_SACL_AUTO_INHERITED	= 0x0800,
+		SEC_DESC_DACL_PROTECTED		= 0x1000,
+		SEC_DESC_SACL_PROTECTED		= 0x2000,
+		SEC_DESC_RM_CONTROL_VALID	= 0x4000,
+		SEC_DESC_SELF_RELATIVE		= 0x8000
+	} security_descriptor_type;
 
 	/* bits that determine which parts of a security descriptor
 	   are being queried/set */
@@ -264,8 +276,8 @@ interface security
 
 
 	typedef [public,flag(NDR_LITTLE_ENDIAN)] struct {
-		uint8 revision;
-		uint16 type;     /* SEC_DESC_xxxx flags */
+		security_descriptor_revision revision;
+		security_descriptor_type type;     /* SEC_DESC_xxxx flags */
 		[relative] dom_sid *owner_sid; 
 		[relative] dom_sid *group_sid;
 		[relative] security_acl *sacl; /* system ACL */
