@@ -1892,15 +1892,15 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	
 	switch (function) {
 	case 81:		/* delete */ 
-		if (print_job_delete(&current_user, jobid)) 
+		if (print_job_delete(&current_user, jobid, &errcode)) 
 			errcode = NERR_Success;
 		break;
 	case 82:		/* pause */
-		if (print_job_pause(&current_user, jobid)) 
+		if (print_job_pause(&current_user, jobid, &errcode)) 
 			errcode = NERR_Success;
 		break;
 	case 83:		/* resume */
-		if (print_job_resume(&current_user, jobid)) 
+		if (print_job_resume(&current_user, jobid, &errcode)) 
 			errcode = NERR_Success;
 		break;
 	}
