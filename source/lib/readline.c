@@ -26,7 +26,7 @@
 #  define RL_COMPLETION_CAST (rl_completion_func_t *)
 #else
 /* This type is missing from libreadline<4.0  (approximately) */
-#  define RL_COMPLETION_FUNC_T 
+#  define RL_COMPLETION_CAST
 #endif /* HAVE_NEW_LIBREADLINE */
 
 
