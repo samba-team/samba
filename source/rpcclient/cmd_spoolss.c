@@ -512,7 +512,6 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	fstring		srv_port_name;
 	BOOL		valid_port = False;
 	TALLOC_CTX	*mem_ctx = NULL;
-	uint32		result;
 
         fstrcpy(srv_name, "\\\\");
         fstrcat(srv_name, info->dest_host);
@@ -620,8 +619,9 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 
 	/* if successful, spoolss_addprinterex() should return True and hnd 
 	   should be a valid handle to an open printer */
-	if ((result = spoolss_addprinterex(&hnd, srv_name, &print_info_2)) == NT_STATUS_NOPROBLEMO)
+	if (spoolss_addprinterex(&hnd, srv_name, &print_info_2))
 	{
+		DEBUG(0,("cmd_spoolss_addprinterex: [%s] added successfully.\n", printer_name));
 		if (!spoolss_closeprinter( &hnd ))
 		{
 			report (out_hnd, "cmd_spoolss_addprinterex: spoolss_closeprinter FAILED!\n");
@@ -629,7 +629,7 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	}
 	else
 	{
-		report (out_hnd, "cmd_spoolss_addprinterex: spoolss_addprinterex FAILED! [%d]\n", result);
+		report (out_hnd, "cmd_spoolss_addprinterex: spoolss_addprinterex FAILED!\n");
 	}
 
 	

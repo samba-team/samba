@@ -545,17 +545,16 @@ BOOL spoolss_open_printer_ex(  const char *printername,
  do a SPOOLSS AddPrinterEx()
  **ALWAYS** uses as PRINTER_INFO level 2 struct
 ****************************************************************************/
-uint32 spoolss_addprinterex(POLICY_HND *hnd,const char* srv_name, PRINTER_INFO_2 *info2)
+BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 *info2)
 {
         prs_struct rbuf;
         prs_struct buf;
         SPOOL_Q_ADDPRINTEREX q_o;
         SPOOL_R_ADDPRINTEREX r_o;
-        BOOL valid_pol = False;
-        char *s = NULL;
 	struct cli_connection *con = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
         fstring client_name;
+	BOOL valid_pol = True;
 
 
 
@@ -587,35 +586,38 @@ uint32 spoolss_addprinterex(POLICY_HND *hnd,const char* srv_name, PRINTER_INFO_2
         make_spoolss_q_addprinterex(&q_o, srv_name, client_name, 
 				    "Administrator", 2, info2);
 
-        /* turn parameters into data stream */
-        if (!spoolss_io_q_addprinterex("", &q_o, &buf, 0) ) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
+        /* turn parameters into data stream and send the request */
+        if (spoolss_io_q_addprinterex("", &q_o, &buf, 0) &&
+	    rpc_con_pipe_req(con, SPOOLSS_ADDPRINTEREX, &buf, &rbuf)) 
+	{
+        	ZERO_STRUCT(r_o);
 
-                cli_connection_unlink(con);
+        	if(!spoolss_io_r_addprinterex("", &r_o, &rbuf, 0)) 
+		{
+                        /* report error code */
+                        DEBUG(5,("SPOOLSS_ADDPRINTEREX: %s\n", get_nt_error_msg(r_o.status)));
+                        valid_pol = False;
+        	}
+		
+		if (valid_pol)
+		{
+                        /* ok, at last: we're happy. return the policy handle */
+                        copy_policy_hnd( hnd, &r_o.handle);
+
+			/* associate the handle returned with the current 
+			   state of the clienjt connection */
+			RpcHndList_set_connection(hnd, con);
+		}
         }
 
-        if(!rpc_con_pipe_req(con, SPOOLSS_ADDPRINTEREX, &buf, &rbuf)) {
-                prs_mem_free(&rbuf);
-                prs_mem_free(&buf );
-
-                cli_connection_unlink(con);
-        }
-
-        prs_mem_free(&buf );
-        ZERO_STRUCT(r_o);
-
-        if(!spoolss_io_r_addprinterex("", &r_o, &rbuf, 0)) {
-                prs_mem_free(&rbuf);
-                cli_connection_unlink(con);
-        }
 
         prs_mem_free(&rbuf);
         prs_mem_free(&buf );
 
-        cli_connection_unlink(con);
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
 
-        return r_o.status;
+        return valid_pol;
 }
 
 /****************************************************************************
