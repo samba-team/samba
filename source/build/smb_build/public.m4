@@ -109,6 +109,10 @@ dnl		1: inputfile
 dnl		2: comment
 dnl		)
 dnl
+dnl SMB_ENV_CHECK(
+dnl		1:dummy
+dnl		)
+dnl
 dnl SMB_AC_OUTPUT(
 dnl		1: outputfile
 dnl		)
@@ -510,6 +514,14 @@ AC_DEFUN([SMB_INCLUDE_M4],
 sinclude($1)
 # End Include $1
 ###################################
+])
+
+dnl SMB_ENV_CHECK(
+dnl		1:dummy
+dnl		)
+AC_DEFUN([SMB_ENV_CHECK],
+[
+	_SMB_BUILD_ENV($1)
 ])
 
 dnl SMB_AC_OUTPUT(
