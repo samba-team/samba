@@ -102,9 +102,11 @@ REQUIRED_SUBSYSTEMS = \
 [SUBSYSTEM::TORTURE_LOCAL]
 ADD_OBJ_FILES = \
 		torture/local/iconv.o \
-		torture/local/talloc.o
+		torture/local/talloc.o \
+		torture/local/messaging.o
 REQUIRED_SUBSYSTEMS = \
-		LIBSMB
+		LIBSMB \
+		MESSAGING
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
 

@@ -360,7 +360,7 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 
 	tcp->fd = fd;
 	tcp->server_name = talloc_strdup((*p), server);
-	tcp->event_ctx = event_context_init();
+	tcp->event_ctx = event_context_init(tcp);
 	tcp->pending_send = NULL;
 	tcp->recv.received = 0;
 	tcp->recv.data = data_blob(NULL, 0);

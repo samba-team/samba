@@ -29,6 +29,7 @@ static NTSTATUS unixdom_init(struct socket_context *sock)
 	if (sock->fd == -1) {
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
+	sock->private_data = NULL;
 
 	return NT_STATUS_OK;
 }
@@ -36,6 +37,11 @@ static NTSTATUS unixdom_init(struct socket_context *sock)
 static void unixdom_close(struct socket_context *sock)
 {
 	close(sock->fd);
+	/* if we were listening, then don't leave the socket lying
+	   around in the filesystem */
+	if (sock->private_data) {
+		unlink((const char *)sock->private_data);
+	}
 }
 
 static NTSTATUS unixdom_connect(struct socket_context *sock,
@@ -82,6 +88,9 @@ static NTSTATUS unixdom_listen(struct socket_context *sock,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	/* delete if it already exists */
+	unlink(my_address);
+
 	ZERO_STRUCT(my_addr);
 	my_addr.sun_family = AF_UNIX;
 	strncpy(my_addr.sun_path, my_address, sizeof(my_addr.sun_path));
@@ -104,6 +113,7 @@ static NTSTATUS unixdom_listen(struct socket_context *sock,
 	}
 
 	sock->state = SOCKET_STATE_SERVER_LISTEN;
+	sock->private_data = (void *)talloc_strdup(sock, my_address);
 
 	return NT_STATUS_OK;
 }

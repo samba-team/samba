@@ -124,6 +124,8 @@ struct server_connection {
 	struct server_socket *server_socket;
 
 	struct server_service *service;
+
+	void *messaging_ctx;
 };
 
 #endif /* _SERVER_SERVICE_H */

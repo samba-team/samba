@@ -48,7 +48,7 @@ struct server_context *server_service_startup(const char *model)
 
 	ZERO_STRUCTP(srv_ctx);
 
-	srv_ctx->events = event_context_init();
+	srv_ctx->events = event_context_init(srv_ctx);
 	if (!srv_ctx->events) {
 		DEBUG(0,("event_context_init() failed\n"));
 		return NULL;	
@@ -246,6 +246,9 @@ struct server_connection *server_setup_connection(struct event_context *ev,
 		server_terminate_connection(srv_conn, "denied by access rules");
 		return NULL;
 	}
+
+	/* setup to receive internal messages on this connection */
+	srv_conn->messaging_ctx = messaging_init(srv_conn, srv_conn->server_id, ev);
 
 	return srv_conn;
 }

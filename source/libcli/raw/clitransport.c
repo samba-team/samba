@@ -68,7 +68,7 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock)
 
 	ZERO_STRUCTP(transport);
 
-	transport->event.ctx = event_context_init();
+	transport->event.ctx = event_context_init(transport);
 	if (transport->event.ctx == NULL) {
 		talloc_free(transport);
 		return NULL;

@@ -72,7 +72,7 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 	   main event_context is continued.
 	*/
 
-	ev = event_context_init();
+	ev = event_context_init(server_socket);
 	if (!ev) {
 		DEBUG(0,("thread_accept_connection: failed to create event_context!\n"));
 		socket_destroy(sock);
@@ -87,6 +87,7 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 		return;
 	}
 
+	talloc_steal(conn, ev);
 	talloc_steal(conn, sock);
 
 	/* TODO: is this MUTEX_LOCK in the right place here?
