@@ -682,15 +682,21 @@ checkuser(char *fname, char *name)
  * If the user is not found in the file, but the pseudo-user `*' is,
  * the permission is taken from that line.
  *
- * This is probably not the best way to do this, but it preserves
- * the old semantics where if a user was listed in the file he was
- * denied, otherwise he was allowed.
+ * This preserves the old semantics where if a user was listed in the
+ * file he was denied, otherwise he was allowed.
  *
- * There is one change in the semantics, however; ftpd will now `fail
- * safe' and deny all access if there's no /etc/ftpusers file.
- *
- * Return 1 if the user is denied, or 0 if he is allowed.
- */
+ * Return 1 if the user is denied, or 0 if he is allowed.  */
+
+static int
+match(const char *pattern, const char *string)
+{
+#ifdef HAVE_FNMATCH
+    return fnmatch(pattern, string, FNM_NOESCAPE);
+#else
+    return strcmp(pattern, "*") != 0 && strcmp(pattern, string) != 0;
+#endif
+}
+
 static int
 checkaccess(char *name)
 {
@@ -700,29 +706,26 @@ checkaccess(char *name)
     int allowed = ALLOWED;
     char *user, *perm, line[BUFSIZ];
     
-    if ((fd = fopen(_PATH_FTPUSERS, "r")) == NULL)
-	return NOT_ALLOWED;
+    fd = fopen(_PATH_FTPUSERS, "r");
     
+    if(fd == NULL)
+	return allowed;
+
     while (fgets(line, sizeof(line), fd) != NULL)  {
 	user = strtok(line, " \t\n");
 	if (user[0] == '#')
 	    continue;
 	perm = strtok(NULL, " \t\n");
-	if (strcmp(user, "*") == 0)  {
-	    if (perm != NULL && strcmp(perm, "allow") == 0)
+	if (match(user, name) == 0){
+	    if(perm && strcmp(perm, "allow") == 0)
 		allowed = ALLOWED;
 	    else
 		allowed = NOT_ALLOWED;
-	}
-	if (strcmp(user, name) == 0)  {
-	    if (perm != NULL && strcmp(perm, "allow") == 0)
-		return ALLOWED;
-	    else
-		return NOT_ALLOWED;
+	    break;
 	}
     }
     fclose(fd);
-    return (allowed);
+    return allowed;
 }
 #undef	ALLOWED
 #undef	NOT_ALLOWED
