@@ -9,6 +9,9 @@
 /* Define if you have the gethostbyname function.  */
 #undef HAVE_GETHOSTBYNAME
 
+/* Define if you have the mmap function.  */
+#undef HAVE_MMAP
+
 /* Define if you have the setproctitle function.  */
 #undef HAVE_SETPROCTITLE
 
@@ -20,6 +23,9 @@
 
 /* Define if you have the <paths.h> header file.  */
 #undef HAVE_PATHS_H
+
+/* Define if you have the <sys/mman.h> header file.  */
+#undef HAVE_SYS_MMAN_H
 
 /* Define if you have the <sys/select.h> header file.  */
 #undef HAVE_SYS_SELECT_H

@@ -872,7 +872,7 @@ else
 fi
  LD_FLAGS="$krb_cv_ld_flags"
    
-for ac_hdr in sys/select.h paths.h bsd/bsd.h
+for ac_hdr in sys/select.h paths.h bsd/bsd.h sys/mman.h
 do
 ac_safe=`echo "$ac_hdr" | tr './\055' '___'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -1067,7 +1067,7 @@ EOF
 esac
 
 
-for ac_func in setproctitle
+for ac_func in setproctitle mmap
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
