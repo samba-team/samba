@@ -445,9 +445,10 @@ Authentication database back end
 	Winbind (external Samba or NT4/200x server)
 	Can use pam_mkhomedir.so to auto-create home dirs
 	External server could use Active Directory or NT4 Domain
+
 Database type
 	smbpasswd, tdbsam, ldapsam, MySQLsam
-		With local accounts or with No Unix Accounts (NUA option)
+
 Access Control Points
 	On the Share itself (Use NT4 Server Manager)
 	On the file system
@@ -455,19 +456,24 @@ Access Control Points
 	Posix ACLs enablement in file system?
 	Through Samba share parameters
 		Not recommended - except as only resort
+
 Policies (migrate or create new ones)
 	Group Policy Editor (NT4)
 	Watch out for Tattoo effect
+
 User and Group Profiles
 	Platform specific so use platform tool to change from a Local to a Roaming profile
 	Can use new profiles tool to change SIDs (NTUser.DAT)
+
 Logon Scripts (Know how they work)
+
 User and Group mapping to Unix/Linux
 	username map facility may be needed
 	Use smbgroupedit to connect NT4 groups to Unix groups
 	Use pdbedit to set/change user configuration
 NOTE:
 If migrating to LDAP back end it may be easier to dump initial LDAP database to LDIF, then edit, then reload into LDAP
+
 	OS specific scripts / programs may be needed
 		Add / delete Users
 			Note OS limits on size of name (Linux 8 chars)
@@ -481,23 +487,16 @@ If migrating to LDAP back end it may be easier to dump initial LDAP database to 
 Migration Tools
 	Domain Control (NT4 Style)
 	Profiles, Policies, Access Controls, Security
+
 Migration Tools
 	Samba: net, rpcclient, smbpasswd, pdbedit, smbgroupedit, profiles
 	Windows: NT4 Domain User Manager, Server Manager (NEXUS)
+
 Authentication
 	New SAM back end (smbpasswd, tdbsam, ldapsam, mysqlsam)
-		With of without Unix Accounts (NUA)
 </programlisting>
 </para>
 
 </sect1>
 
-<sect1>
-<title>Managing Samba-3 Domain Control</title>
-
-<para>
-Lots of blah blah here.
-</para>
-
-</sect1>
 </chapter>
