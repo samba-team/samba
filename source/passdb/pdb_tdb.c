@@ -25,7 +25,7 @@
 #ifdef WITH_TDB_SAM
 
 #define PDB_VERSION		"20010830"
-#define PASSDB_FILE_NAME	"/passdb.tdb"
+#define PASSDB_FILE_NAME	"passdb.tdb"
 #define TDB_FORMAT_STRING	"ddddddBBBBBBBBBBBBddBBwdwdBdd"
 #define USERPREFIX		"USER_"
 #define RIDPREFIX		"RID_"
@@ -445,7 +445,8 @@ BOOL pdb_setsampwent(BOOL update)
 	pstring		tdbfile;
 	
 	get_private_directory(tdbfile);
-	pstrcat (tdbfile, PASSDB_FILE_NAME);
+	pstrcat(tdbfile, "/");
+	pstrcat(tdbfile, PASSDB_FILE_NAME);
 	
 	/* Open tdb passwd */
 	if (!(global_tdb_ent.passwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, update?(O_RDWR|O_CREAT):O_RDONLY, 0600)))
@@ -603,7 +604,8 @@ BOOL pdb_getsampwrid (SAM_ACCOUNT *user, uint32 rid)
 	}
 
 	get_private_directory(tdbfile);
-	pstrcat (tdbfile, PASSDB_FILE_NAME);
+	pstrcat(tdbfile, "/");
+	pstrcat(tdbfile, PASSDB_FILE_NAME);
 	
 	/* set search key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX, rid);
@@ -651,7 +653,8 @@ BOOL pdb_delete_sam_account(char *sname)
 	strlower(name);
 	
 	get_private_directory(tdbfile);
-	pstrcat (tdbfile, PASSDB_FILE_NAME);
+	pstrcat(tdbfile, "/");
+	pstrcat(tdbfile, PASSDB_FILE_NAME);
 
 	/* open the TDB */
 	if (!(pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR, 0600))) {
@@ -734,7 +737,8 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	BOOL		ret = True;
 	
 	get_private_directory(tdbfile);
-	pstrcat (tdbfile, PASSDB_FILE_NAME);
+	pstrcat(tdbfile, "/");
+	pstrcat(tdbfile, PASSDB_FILE_NAME);
 	
 	if ( (!newpwd->uid) || (!newpwd->gid) )
 		DEBUG (0,("tdb_update_sam: Storing a SAM_ACCOUNT for [%s] with uid %d and gid %d!\n",
