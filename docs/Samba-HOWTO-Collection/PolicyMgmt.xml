@@ -99,7 +99,7 @@ be a step forward, but improved functionality comes at a great price.
 <para>
 Before embarking on the configuration of network and system policies, it is highly
 advisable to read the documentation available from Microsoft's Web site regarding
-<ulink url="http://www.microsoft.com/ntserver/management/deployment/planguide/prof_policies.asp">
+<ulink url="http://www.microsoft.com/ntserver/techresources/management/prof_policies.asp">
 Implementing Profiles and Policies in Windows NT 4.0</ulink> available from Microsoft.
 There are a large number of documents in addition to this old one that should also
 be read and understood. Try searching on the Microsoft Web site for <quote>Group Policies</quote>.
