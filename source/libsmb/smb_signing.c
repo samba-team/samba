@@ -275,7 +275,7 @@ static BOOL cli_ntlmssp_check_incoming_message(struct cli_state *cli)
 {
 	BOOL good;
 	NTSTATUS nt_status;
-	DATA_BLOB sig = data_blob(&cli->outbuf[smb_ss_field], 8);
+	DATA_BLOB sig = data_blob(&cli->inbuf[smb_ss_field], 8);
 
 	NTLMSSP_CLIENT_STATE *ntlmssp_state = cli->sign_info.signing_context;
 
