@@ -28,7 +28,7 @@
 ADS_STATUS ads_mod_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 				 const ADS_PRINTER_ENTRY *prt)
 {
-	LDAPMod **mods;
+	void **mods;
 	ADS_STATUS status;
 
 	/* allocate the list */
