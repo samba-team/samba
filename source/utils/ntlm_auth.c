@@ -369,6 +369,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		if (error_string)
 			*error_string = smb_xstrdup("Reading winbind reply failed!");
+		free_response(&response);
 		return nt_status;
 	}
 	
@@ -376,6 +377,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		if (error_string) 
 			*error_string = smb_xstrdup(response.data.auth.error_string);
+		free_response(&response);
 		return nt_status;
 	}
 
@@ -390,10 +392,12 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 
 	if (flags & WBFLAG_PAM_UNIX_NAME) {
 		if (pull_utf8_allocate(unix_name, (char *)response.extra_data) == -1) {
+			free_response(&response);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
+	free_response(&response);
 	return nt_status;
 }
 				   
