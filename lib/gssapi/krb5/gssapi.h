@@ -117,6 +117,14 @@ typedef OM_uint32 gss_qop_t;
 #define GSS_C_TRANS_FLAG 256
 
 /*
+ * GSS_C_EXPECTING_MECH_LIST_MIC_FLAG - Setting this flag causes the
+ * initiator to insist that the acceptor integrity protect the mechanism
+ * list when using SPNEGO. This can be forced on by setting the 
+ * [gssapi]require_mechlist_mic option in krb5.conf.
+ */
+#define GSS_C_EXPECTING_MECH_LIST_MIC_FLAG 0x10000
+
+/*
  * Credential usage options
  */
 #define GSS_C_BOTH 0
