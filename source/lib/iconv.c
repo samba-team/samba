@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    minimal iconv implementation
    Copyright (C) Andrew Tridgell 2001
-   Copyright (C) Jelmer Vernooij 2002
+   Copyright (C) Jelmer Vernooij 2002,2003,2003,2003,2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -63,6 +63,17 @@ static struct charset_functions builtin_functions[] = {
 
 static struct charset_functions *charsets = NULL;
 
+static struct charset_functions *find_charset_functions(const char *name) 
+{
+	struct charset_functions *c = charsets;
+	while(c) {
+		if (strcasecmp(name, c->name) == 0)return c;
+		c = c->next;
+	}
+
+	return NULL;
+}
+
 BOOL smb_register_charset(struct charset_functions *funcs) 
 {
 	struct charset_functions *c = charsets;
@@ -93,6 +104,8 @@ void lazy_initialize_iconv(void)
 		for(i = 0; builtin_functions[i].name; i++) 
 			smb_register_charset(&builtin_functions[i]);
 	}
+
+	static_init_charset;
 }
 
 /* if there was an error then reset the internal state,
@@ -178,49 +191,70 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	ret->to_name = strdup(tocode);
 
 	/* check for the simplest null conversion */
-	if (strcmp(fromcode, tocode) == 0) {
+	if (strcasecmp(fromcode, tocode) == 0) {
 		ret->direct = iconv_copy;
 		return ret;
 	}
 
-	while (from) {
-		if (strcasecmp(from->name, fromcode) == 0) break;
-		from = from->next;
-	}
+	/* check if we have a builtin function for this conversion */
+	from = find_charset_functions(fromcode);
+	if(from)ret->pull = from->pull;
+	
+	to = find_charset_functions(tocode);
+	if(to)ret->push = to->push;
 
-	while (to) {
-		if (strcasecmp(to->name, tocode) == 0) break;
-		to = to->next;
-	}
-
+	/* check if we can use iconv for this conversion */
 #ifdef HAVE_NATIVE_ICONV
-	if (!from) {
-		ret->pull = sys_iconv;
+	if (!ret->pull) {
 		ret->cd_pull = iconv_open("UCS-2LE", fromcode);
-		if (ret->cd_pull == (iconv_t)-1) goto failed;
+		if (ret->cd_pull != (iconv_t)-1)
+			ret->pull = sys_iconv;
 	}
 
-	if (!to) {
-		ret->push = sys_iconv;
+	if (!ret->push) {
 		ret->cd_push = iconv_open(tocode, "UCS-2LE");
-		if (ret->cd_push == (iconv_t)-1) goto failed;
-	}
-#else
-	if (!from || !to) {
-		goto failed;
+		if (ret->cd_push != (iconv_t)-1)
+			ret->push = sys_iconv;
 	}
 #endif
+	
+	/* check if there is a module available that can do this conversion */
+	if (!ret->pull && smb_probe_module("charset", fromcode)) {
+		if(!(from = find_charset_functions(fromcode)))
+			DEBUG(0, ("Module %s doesn't provide charset %s!\n", fromcode, fromcode));
+		else 
+			ret->pull = from->pull;
+	}
+
+	if (!ret->push && smb_probe_module("charset", tocode)) {
+		if(!(to = find_charset_functions(tocode)))
+			DEBUG(0, ("Module %s doesn't provide charset %s!\n", tocode, tocode));
+		else 
+			ret->push = to->push;
+	}
+
+	if (!ret->push || !ret->pull) {
+		SAFE_FREE(ret->from_name);
+		SAFE_FREE(ret->to_name);
+		SAFE_FREE(ret);
+		errno = EINVAL;
+		return (smb_iconv_t)-1;
+	}
 
 	/* check for conversion to/from ucs2 */
 	if (strcasecmp(fromcode, "UCS-2LE") == 0 && to) {
 		ret->direct = to->push;
-		return ret;
-	}
-	if (strcasecmp(tocode, "UCS-2LE") == 0 && from) {
-		ret->direct = from->pull;
+		ret->push = ret->pull = NULL;
 		return ret;
 	}
 
+	if (strcasecmp(tocode, "UCS-2LE") == 0 && from) {
+		ret->direct = from->pull;
+		ret->push = ret->pull = NULL;
+		return ret;
+	}
+
+	/* Check if we can do the conversion direct */
 #ifdef HAVE_NATIVE_ICONV
 	if (strcasecmp(fromcode, "UCS-2LE") == 0) {
 		ret->direct = sys_iconv;
@@ -236,15 +270,7 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	}
 #endif
 
-	/* the general case has to go via a buffer */
-	if (!ret->pull) ret->pull = from->pull;
-	if (!ret->push) ret->push = to->push;
 	return ret;
-
-failed:
-	SAFE_FREE(ret);
-	errno = EINVAL;
-	return (smb_iconv_t)-1;
 }
 
 /*

@@ -54,6 +54,7 @@ LIBDIR = @libdir@
 VFSLIBDIR = $(LIBDIR)/vfs
 PDBLIBDIR = $(LIBDIR)/pdb
 RPCLIBDIR = $(LIBDIR)/rpc
+CHARSETLIBDIR = $(LIBDIR)/charset
 CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
@@ -138,7 +139,8 @@ VFS_MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_extd_audit.@SHLIBEXT@ bin/vfs_rec
 	bin/vfs_netatalk.@SHLIBEXT@ bin/vfs_fake_perms.@SHLIBEXT@
 PDB_MODULES = @PDB_MODULES@
 RPC_MODULES = @RPC_MODULES@
-MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES)
+CHARSET_MODULES = @CHARSET_MODULES@
+MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(CHARSET_MODULES)
 
 ######################################################################
 # object file lists
@@ -166,7 +168,7 @@ LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/genparser.o lib/genparser_samba.o \
-	  lib/ldap_escape.o
+	  lib/ldap_escape.o @CHARSET_STATIC@
 
 LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o
 
@@ -703,11 +705,11 @@ bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/nmbd@EXEEXT@: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
 
 bin/wrepld@EXEEXT@: $(WREPL_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(WREPL_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(WREPL_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
 
 bin/swat@EXEEXT@: $(SWAT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -720,7 +722,7 @@ bin/rpcclient@EXEEXT@: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @BUILD_POPT@
 
 bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -752,23 +754,23 @@ bin/smbumount@EXEEXT@: $(UMOUNT_OBJ) bin/.dummy
 
 bin/testparm@EXEEXT@: $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
 
 bin/testprns@EXEEXT@: $(TESTPRNS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(PRINTLIBS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) $(LIBS)
 
 bin/smbstatus@EXEEXT@: $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
 
 bin/smbcontrol@EXEEXT@: $(SMBCONTROL_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) -DUSING_SMBCONTROL $(FLAGS) -o $@ $(SMBCONTROL_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) -DUSING_SMBCONTROL $(FLAGS) -o $@ $(SMBCONTROL_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS)
 
 bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
 
 bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
@@ -780,19 +782,19 @@ bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/samtest@EXEEXT@: $(SAMTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(SAMTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @BUILD_POPT@
 
 bin/smbgroupedit@EXEEXT@: $(SMBGROUPEDIT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBGROUPEDIT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBGROUPEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
 
 bin/nmblookup@EXEEXT@: $(NMBLOOKUP_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
 
 bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
 
 bin/talloctort@EXEEXT@: $(TALLOCTORT_OBJ) bin/.dummy
 	@echo Linking $@
@@ -844,7 +846,7 @@ bin/smbw_sample@EXEEXT@: $(SMBW_OBJ) utils/smbw_sample.o bin/.dummy
 
 bin/smbsh@EXEEXT@: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBSH_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
 
 bin/smbwrapper.@SHLIBEXT@: $(PICOBJS) bin/.dummy
 	@echo Linking shared library $@
@@ -971,7 +973,7 @@ bin/nisplussam.@SHLIBEXT@: passdb/pdb_nisplus.o
 	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_nisplus.o \
 		@SONAMEFLAG@`basename $@`
 
-bin/developer.@SHLIBEXT@: $(DEVEL_HELP_OBJ)
+bin/weird.@SHLIBEXT@: $(DEVEL_HELP_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_OBJ) \
 		@SONAMEFLAG@`basename $@`
@@ -1060,6 +1062,7 @@ installmodules: all installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(VFSLIBDIR) $(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(PDBLIBDIR) $(PDB_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(RPC_MODULES)
+	@$(SHEEL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(CHARSETLIBDIR) $(CHARSET_MODULES)
 
 installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
@@ -1134,6 +1137,7 @@ uninstallmodules:
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(VFSLIBDIR) $(DESTDIR)$(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(PDBLIBDIR) $(DESTDIR)$(PDB_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(DESTDIR)$(RPC_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(CHARSETLIBDIR) $(DESTDIR)$(CHARSET_MODULES)
 
 uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)

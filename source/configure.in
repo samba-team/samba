@@ -3398,6 +3398,9 @@ SMB_MODULE($MODULE_rpc_spoolss, rpc_spoolss, \$(RPC_SPOOLSS_OBJ), bin/librpc_spo
 SMB_MODULE($MODULE_rpc_samr, rpc_samr, \$(RPC_SAMR_OBJ), bin/librpc_samr.so, RPC)
 SMB_SUBSYSTEM(RPC)
 
+SMB_MODULE($MODULE_charset_weird, charset_weird, modules/developer.o, bin/developer.so, CHARSET)
+SMB_SUBSYSTEM(CHARSET)
+
 #################################################
 # do extra things if we are running insure
 
