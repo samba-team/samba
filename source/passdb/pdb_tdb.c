@@ -789,7 +789,6 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS) {
 		DEBUG(0, ("Unable to modify passwd TDB!"));
 		DEBUGADD(0, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
-		tdb_close (pwd_tdb);
 		ret = False;
 		goto done;
 	}
