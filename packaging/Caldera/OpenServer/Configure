@@ -46,7 +46,6 @@ then
 	--with-utmp \
 	--with-vfs \
 	--with-msdfs \
-	--with-netatalk \
 	--with-sambabook=${PREFIX}/swat/using_samba \
         2>&1 | tee mout-config"
 else
@@ -57,7 +56,6 @@ else
 	--with-utmp \
 	--with-vfs \
 	--with-msdfs \
-	--with-netatalk \
 	--with-sambabook=${PREFIX}/swat/using_samba \
         2>&1 | tee mout-config
 fi

@@ -280,7 +280,6 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-smbmount \
 	--with-pam \
        --with-pam_smbpass \
-	--with-netatalk \
 	--with-quotas \
 	--with-syslog \
 	--with-utmp 
@@ -358,7 +357,7 @@ done
 ln -s make_smbcodepage  $DESTDIR/usr/bin/mksmbcodepage
 #ln -s make_smbpasswd $DESTDIR/usr/bin/mksmbpasswd
 #ln -sf convert_smbpasswd $DESTDIR/usr/bin/convertsmbpasswd
-ln -s ../usr/bin/smbmnt $DESTDIR/sbin/mount.smbfs
+ln -s ../usr/bin/smbmount $DESTDIR/sbin/mount.smbfs
 
 cat <<-'EoH' > $DESTDIR%{EtcSamba}/lmhosts
 	127.0.0.1 localhost
@@ -481,3 +480,4 @@ lisa --inetd disable swat $1
 
 %ChangeLog
 * Mon Jan 01 1997 ...
+ - nothing here for now

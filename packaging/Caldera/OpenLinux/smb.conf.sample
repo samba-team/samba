@@ -137,6 +137,9 @@
 # Where to store roving profiles (only for Win95 and WinNT)
 #        %L substitutes for this servers netbios name, %U is username
 #        You must uncomment the [Profiles] share below
+# Note: "logon home" is for Win9X/ME clients
+#       "logon path" is for WinNT/2K/XP clients
+   logon home = \\%L\Profiles\%U
    logon path = \\%L\Profiles\%U
 
 # All NetBIOS names must be resolved to IP Addresses
@@ -200,7 +203,7 @@
   path = @samba_home@/netlogon
   guest ok = yes
   writable = no
-  share modes = no
+  admin users = root
 
 
 # Un-comment the following to provide a specific roving profile share

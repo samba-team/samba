@@ -17,7 +17,7 @@ Summary(fr) 	: Client et serveur SMB Samba.
 Summary(it) 	: Client e server SMB.
 Summary(pt) 	: Cliente e servidor SMB Samba.
 
-Copyright       : Andrew Tridgell, John H Terpstra; GPL Version 2
+Copyright       : Andrew Tridgell, John H Terpstra; GPL
 Packager        : Klaus Singvogel <klaus@caldera.de>
 #Icon            : Caldera-daemon.gif
 URL             : http://samba.org/samba
@@ -31,6 +31,7 @@ Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}.tar.gz
 #Patch0: %{Name}-%{Version}-smbmount.patch
 #Patch1: %{Name}-%{Version}-install.patch
 #Patch2: %{Name}-%{Version}-smbconf.patch
+#Patch6: %{Name}-2.2.2-libsmbclient.patch
 
 %Package doc
 Group       	: Server/Network
@@ -62,6 +63,11 @@ Summary(es) 	: Utilidad de administración Samba.
 Summary(fr) 	: Outil d'administration Internet pour Samba.
 Summary(it) 	: Strumento per l'amministrazione di Samba via Web.
 Summary(pt) 	: Ferramenta Web de administração de Samba (Samba Web Administration Tool).
+
+%Package -n libsmbclient
+Group           : System/Network
+ 
+Summary         : Samba Client Library.
 
 
 %Description
@@ -180,12 +186,16 @@ smb.conf através de uma interface Web. Fornece também referências para
 todas as opções configuraveis no smb.conf, permitindo a um admnistrador
 verificar rapidamente o efeite de qualquer alteração.
 
+%Description -n libsmbclient
+SMB Client Library allows for POSIX like SMB client calls providing developers
+a clean and stable API for SMB client application development.
 
 %Prep
 %setup
 #%patch0 -p1
 #%patch1 -p1
 #%patch2 -p1
+%patch6 -p1
 
 # instead of patch (to help configuration) ...   ;^)
 %{fixUP} -vbT source/Makefile.in -e '
@@ -274,16 +284,19 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-configdir='$(DESTDIR)'%{EtcSamba} \
 	--with-codepagedir='$(DESTDIR)'/usr/share/samba/codepages \
 	--without-smbwrapper \
+	--with-libsmbclient \
 	--with-smbmount \
 	--with-pam \
 	--with-pam_smbpass \
-	--with-netatalk \
 	--with-quotas \
 	--with-utmp \
+	--with-winbind \
 	--with-syslog 
+# The following will go back later - JHT
+#	--with-tdbsam
 
 make LOGFILEBASE=/var/log/samba.d all nsswitch/libnss_wins.so debug2html bin/smbspool
-
+ 
 
 %Install
 %{mkDESTDIR}
@@ -297,6 +310,7 @@ mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
 mkdir -p $DESTDIR/etc/skel/Samba
 mkdir -p $DESTDIR/usr/share/samba/codepages/src $DESTDIR/sbin
 mkdir -p $DESTDIR/%{SVIdir}
+mkdir -p $DESTDIR/usr/{include,lib}
 
 make LOGFILEBASE=/var/log/samba.d -C source  install
 
@@ -311,28 +325,34 @@ install -m 755 source/nsswitch/libnss_wins.so $DESTDIR/lib/libnss_wins.so.2.0
 ln -s libnss_wins.so.2.0 $DESTDIR/lib/libnss_wins.so.2
 ln -s libnss_wins.so.2.0 $DESTDIR/lib/libnss_wins.so
 
-# install -m 755 source/nsswitch/libnss_winbind.so $DESTDIR/lib/libnss_winbind.so.2.0
-# # Make link for winbind resolver
-# ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so.2
-# ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so
+# Add PAM smbpass and winbind facilities
+install -m 755 source/bin/pam_smbpass.so $DESTDIR/lib/security
+install -m 755 source/nsswitch/libnss_winbind.so $DESTDIR/lib/libnss_winbind.so.2.0
 
-# install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
+# Make link for winbind resolver
+ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so.2
+ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so
 
-# install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
-
+install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
+install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
 install -m 755 source/bin/debug2html $DESTDIR/usr/sbin/debug2html
 
-#lsb: cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
-ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
+install -m 755 source/bin/libsmbclient.so $DESTDIR/usr/lib
+install -m 755 source/bin/libsmbclient.a $DESTDIR/usr/lib
+ln -s libsmbclient.so $DESTDIR/usr/lib/libsmbclient.so.0
+ln -s libsmbclient.so $DESTDIR/usr/lib/libsmbclient.so.0.1
+install -m 644 source/include/libsmbclient.h $DESTDIR/usr/include
 
 cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf.sample
 cp -p $VVS/smb.conf $DESTDIR%{EtcSamba}/smb.conf
 cp -p $VVS/smbusers $DESTDIR%{EtcSamba}
 cp -p $VVS/smbprint $DESTDIR/usr/bin
+
 #cp -p $VVS/smbadduser.perl $DESTDIR/usr/bin/smbadduser
 #cp -p $VVS/make_smbpasswd.perl $DESTDIR/usr/bin/make_smbpasswd
 #cp -p $VVS/convertsmbpasswd.perl $DESTDIR/usr/bin/convertsmbpasswd
 #cp -p $VVS/updatesmbpasswd.perl $DESTDIR/usr/bin/updatesmbpasswd
+
 cp -p $VVS/findsmb $DESTDIR/usr/bin
 cp -p $VVS/samba.daemon $DESTDIR/etc/sysconfig/daemons/samba
 cp -p $VVS/samba.pam $DESTDIR/etc/pam.d/samba
@@ -341,19 +361,21 @@ cp -p $VVS/README.home $DESTDIR/etc/skel/Samba/README.txt
 cp -p $VVS/README.Public $DESTDIR/%{LSBservedir}/Public/README.txt
 cp -p $VVS/README.profiles $DESTDIR/%{LSBservedir}/profiles/README.txt
 
-# Add PAM smbpass facility
-mv $DESTDIR/usr/bin/pam_smbpass.so $DESTDIR/lib/security
 
+#lsb: cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
 install -m 755 $VVS/samba.init-lsb $DESTDIR/%{SVIdir}/%{Name}
+ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 
 for f in testparm testprns; do
   ln -s $f $DESTDIR/usr/bin/smb$f
   ln -s $f.1 $DESTDIR/usr/man/man1/smb$f.1
 done
+
 #ln -s make_smbcodepage  $DESTDIR/usr/bin/mksmbcodepage
 #ln -s make_smbpasswd $DESTDIR/usr/bin/mksmbpasswd
 #ln -sf convert_smbpasswd $DESTDIR/usr/bin/convertsmbpasswd
-ln -s ../usr/bin/smbmnt $DESTDIR/sbin/mount.smbfs
+
+ln -s ../usr/bin/smbmount $DESTDIR/sbin/mount.smbfs
 
 
 cat <<-'EoH' > $DESTDIR%{EtcSamba}/lmhosts
@@ -366,10 +388,16 @@ cat <<EoI >$DESTDIR%{NKinetdir}/swat
 swat	stream	tcp	nowait.400 root	/usr/sbin/tcpd	swat
 EoI
 
+pushd $DESTDIR/usr/sbin
+rm -f *.so
+popd
+
 # -------------------- Documentation -------------------------------
 DOCD="$DESTDIR/%{_defaultdocdir}/samba-%{Version}"; mkdir -p $DOCD
 ln -sf ../Copyrights/GPL-2.0  $DOCD/COPYING
+
 #cp -p README README-smbmount Manifest Read-Manifest-Now $DOCD
+
 cp -p README Manifest Read-Manifest-Now $DOCD
 cp -p WHATSNEW.txt Roadmap $DOCD
 cp -a docs examples $DOCD
@@ -407,6 +435,7 @@ done
 %{mkLists} -c samba
 cat << 'EOF' | %{mkLists} -d samba
 Samba					base
+/lib/$					base
 %{LSBservedir}				config-IGNORED
 ^/(etc|var|home|tmp)			config-IGNORED
 swat					swat
@@ -414,7 +443,6 @@ swat					swat
 %{_defaultdocdir}/samba- 		doc
 tmp					IGNORED
 man					IGNORED
-lib/security				IGNORED
 /src/$					IGNORED
 /usr/private/$				IGNORED
 @default@
@@ -424,13 +452,14 @@ cat << 'EOF' | %{mkLists} -f -a samba
 Samba/README.txt			base
 ^/etc					config-IGNORED
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
-libnss_wins.*				base
-pam_smbpass.so				base
+libnss_*				base
+pam_*					base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
 %{_defaultdocdir}/samba- 		doc
 smb(mount|mnt|umount)			smbfs
 mount.smbfs				smbfs
 swat					swat
+libsmbclient                            libsmbclient 
 @default@
 EOF
 
@@ -500,6 +529,10 @@ test "$1" = "0" || exit 0
 %Files -n swat  -f files-samba-swat
 %defattr(-,root,root)
 %config %attr(644,root,root) %{NKinetdir}/swat
+ 
+%Files -n libsmbclient -f files-samba-libsmbclient
+%defattr(-,root,root)
 
 %ChangeLog
 * Mon Jan 01 1997 ...
+ - nothing here for now
