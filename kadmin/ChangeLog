@@ -1,3 +1,7 @@
+2000-12-15  Johan Danielsson  <joda@pdc.kth.se>
+
+	* get.c: avoid asprintf'ing NULL strings
+
 2000-12-14  Johan Danielsson  <joda@pdc.kth.se>
 
 	* load.c: fix option parsing
