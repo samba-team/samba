@@ -118,7 +118,7 @@ sub process_file($)
 	if ($opt_parse) {
 		$pidl = IdlParse($idl_file);
 		defined $pidl || die "Failed to parse $idl_file";
-#		IdlValidator::Validate($pidl);
+		IdlValidator::Validate($pidl);
 		if ($opt_keep && !util::SaveStructure($pidl_file, $pidl)) {
 			    die "Failed to save $pidl_file\n";
 		}
