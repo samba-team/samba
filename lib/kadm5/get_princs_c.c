@@ -48,6 +48,10 @@ kadm5_c_get_principals(void *server_handle,
     int32_t tmp;
     krb5_data reply;
 
+    ret = _kadm5_connect(server_handle);
+    if(ret)
+	return ret;
+
     sp = krb5_storage_from_mem(buf, sizeof(buf));
     if (sp == NULL)
 	return ENOMEM;
