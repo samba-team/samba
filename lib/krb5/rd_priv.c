@@ -76,7 +76,7 @@ krb5_rd_priv(krb5_context context,
 
   r = decode_EncKrbPrivPart (plain.data, plain.length, &part, &len);
   if (r) 
-      return r;
+      goto failure;
   
   /* check sender address */
 
