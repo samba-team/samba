@@ -443,7 +443,7 @@ NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs,
 	}
 
 	if (! ((*access_mask) & SEC_DIR_ADD_FILE)) {
-		return pvfs_access_check_simple(pvfs, req, name, SEC_DIR_ADD_FILE);
+		return pvfs_access_check_simple(pvfs, req, parent, SEC_DIR_ADD_FILE);
 	}
 
 	return status;
@@ -464,7 +464,7 @@ NTSTATUS pvfs_access_check_create_nomask(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	return pvfs_access_check_simple(pvfs, req, name, SEC_DIR_ADD_FILE);
+	return pvfs_access_check_simple(pvfs, req, parent, SEC_DIR_ADD_FILE);
 }
 
 
