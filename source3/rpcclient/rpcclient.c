@@ -566,10 +566,26 @@ static void usage(void)
 	struct cmd_set **cmd_set;
 	struct in_addr server_ip;
 	NTSTATUS nt_status;
+	extern BOOL AllowDebugChange;
 
 	setlinebuf(stdout);
 
 	DEBUGLEVEL = 1;
+	AllowDebugChange = False;
+
+	/* Parse options */
+	if (argc == 0) {
+		usage();
+		return 0;
+	}
+	
+	if (strncmp("//", argv[1], 2) == 0 || strncmp("\\\\", argv[1], 2) == 0)
+		argv[1] += 2;
+
+	pstrcpy(server, argv[1]);
+
+	argv++;
+	argc--;
 
 	while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:l:h")) != EOF) {
 		switch (opt) {
@@ -624,20 +640,6 @@ static void usage(void)
 			exit(1);
 		}
 	}
-
-	argv += optind;
-	argc -= optind;
-
-	/* Parse options */
-	if (argc == 0) {
-		usage();
-		return 0;
-	}
-	
-	if (strncmp("//", argv[0], 2) == 0 || strncmp("\\\\", argv[0], 2) == 0)
-		argv[0] += 2;
-
-	pstrcpy(server, argv[0]);
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
