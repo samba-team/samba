@@ -174,7 +174,7 @@ krb5_get_salt (krb5_principal princ,
     strncpy (p, princ->realm.data, princ->realm.length);
     p += princ->realm.length;
     for (i = 0; i < princ->ncomp; ++i) {
-	strncat (p, princ->comp[i].data, princ->comp[i].length);
+	strncpy (p, princ->comp[i].data, princ->comp[i].length);
 	p += princ->comp[i].length;
     }
 #endif
