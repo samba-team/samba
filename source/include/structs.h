@@ -159,6 +159,7 @@ struct nbt_name_register;
 struct nbt_name_refresh;
 struct nbt_name_register_bcast;
 struct nbt_name_refresh_wins;
+struct nbt_name_register_wins;
 
 struct messaging_context;
 struct stream_connection;

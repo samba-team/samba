@@ -141,8 +141,8 @@ NTSTATUS nbt_name_refresh(struct nbt_name_socket *nbtsock,
 struct refresh_wins_state {
 	struct nbt_name_socket *nbtsock;
 	struct nbt_name_refresh *io;
-	char **wins_servers;
-	char **addresses;
+	const char **wins_servers;
+	const char **addresses;
 	int address_idx;
 	struct nbt_name_request *req;
 };

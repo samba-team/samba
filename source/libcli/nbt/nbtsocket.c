@@ -82,10 +82,10 @@ static void nbt_name_socket_send(struct nbt_name_socket *nbtsock)
 		}
 
 		DLIST_REMOVE(nbtsock->send_queue, req);
+		req->state = NBT_REQUEST_WAIT;
 		if (req->is_reply) {
 			talloc_free(req);
 		} else {
-			req->state = NBT_REQUEST_WAIT;
 			EVENT_FD_READABLE(nbtsock->fde);
 			nbtsock->num_pending++;
 		}
@@ -122,7 +122,11 @@ static void nbt_name_socket_timeout(struct event_context *ev, struct timed_event
 		req->te = event_add_timed(req->nbtsock->event_ctx, req, 
 					  timeval_add(&t, req->timeout, 0),
 					  nbt_name_socket_timeout, req);
-		DLIST_ADD_END(req->nbtsock->send_queue, req, struct nbt_name_request *);
+		if (req->state != NBT_REQUEST_SEND) {
+			req->state = NBT_REQUEST_SEND;
+			DLIST_ADD_END(req->nbtsock->send_queue, req, 
+				      struct nbt_name_request *);
+		}
 		EVENT_FD_WRITEABLE(req->nbtsock->fde);
 		return;
 	}
@@ -206,8 +210,12 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	/* find the matching request */
 	req = idr_find(nbtsock->idr, packet->name_trn_id);
 	if (req == NULL) {
-		DEBUG(2,("Failed to match request for incoming name packet id 0x%04x\n",
-			 packet->name_trn_id));
+		if (nbtsock->unexpected.handler) {
+			nbtsock->unexpected.handler(nbtsock, packet, src_addr, src_port);
+		} else {
+			DEBUG(2,("Failed to match request for incoming name packet id 0x%04x on %p\n",
+				 packet->name_trn_id, nbtsock));
+		}
 		talloc_free(tmp_ctx);
 		return;
 	}
@@ -227,13 +235,11 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		req->num_retries   = 0;
 		req->received_wack = True;
 		if (packet->answers[0].ttl != 0) {
-			req->timeout       = MIN(packet->answers[0].ttl, 20);
+			req->timeout = MIN(packet->answers[0].ttl, 20);
 		}
-		req->te            = event_add_timed(req->nbtsock->event_ctx, req, 
-						     timeval_current_ofs(req->timeout, 0),
-						     nbt_name_socket_timeout, req);
-		DLIST_ADD_END(req->nbtsock->send_queue, req, struct nbt_name_request *);
-		EVENT_FD_WRITEABLE(req->nbtsock->fde);
+		req->te = event_add_timed(req->nbtsock->event_ctx, req, 
+					  timeval_current_ofs(req->timeout, 0),
+					  nbt_name_socket_timeout, req);
 		talloc_free(tmp_ctx);
 		return;
 	}
@@ -319,6 +325,7 @@ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 	nbtsock->send_queue = NULL;
 	nbtsock->num_pending = 0;
 	nbtsock->incoming.handler = NULL;
+	nbtsock->unexpected.handler = NULL;
 
 	nbtsock->fde = event_add_fd(nbtsock->event_ctx, nbtsock, 
 				    socket_get_fd(nbtsock->sock), 0,
@@ -375,6 +382,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 				       UINT16_MAX);
 	}
 	if (id == -1) goto failed;
+
 	request->name_trn_id = id;
 	req->name_trn_id     = id;
 
