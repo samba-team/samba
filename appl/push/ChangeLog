@@ -1,3 +1,7 @@
+Mon Mar 22 22:19:40 1999  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: hesoid -> hesiod
+
 Sun Mar 21 18:02:10 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: bindir -> libexecdir
