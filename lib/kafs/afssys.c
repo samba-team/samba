@@ -41,9 +41,18 @@ k_afsklog(char *realm)
   CREDENTIALS c;
   KTEXT_ST ticket;
   char username[256];
+  char krealm[REALM_SZ];
 
   if (!k_hasafs())
     return KSUCCESS;
+
+  if (realm == 0 || realm[0] == 0)
+    {
+      k_errno = krb_get_lrealm(krealm, 0);
+      if (k_errno != KSUCCESS)
+	return k_errno;
+      realm = krealm;
+    }
 
   k_errno = krb_get_cred(AUTH_SUPERUSER, "", realm, &c);
   if (k_errno != KSUCCESS)
