@@ -367,7 +367,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
           q += 2;               /* LMNT token (0xff) */
           q += 2;               /* LM20 token (0xff) */
 
-          free(db_info);        /* Not sure whether we need to do anything
+          SAFE_FREE(db_info);        /* Not sure whether we need to do anything
                                    useful with these */
 
           /* Send message to smbd */

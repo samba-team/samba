@@ -56,7 +56,7 @@ ubi_dlNewList( lmb_browserlist );
  */
 static void remove_lmb_browser_entry( struct browse_cache_record *browc )
   {
-  free( (char *)ubi_dlRemThis( lmb_browserlist, browc ) );
+  safe_free( ubi_dlRemThis( lmb_browserlist, browc ) );
   } /* remove_lmb_browser_entry */
 
 /* ************************************************************************** **
