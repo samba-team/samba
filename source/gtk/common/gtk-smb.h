@@ -41,6 +41,7 @@ struct _GtkRpcBindingDialog
 	GtkWidget *entry_username;
 	GtkWidget *entry_password;
 	GtkWidget *krb5_chk_button;
+	GtkWidget *frame_credentials;
 	TALLOC_CTX *mem_ctx;
 	struct sam_pipe *sam_pipe;
 };
