@@ -215,7 +215,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 {
 	char *machine_password, *machine_krb5_principal;
 	char *ipc_username, *ipc_domain, *ipc_password;
-	struct ntuser_creds creds;
 
 	BOOL got_mutex;
 	BOOL add_failed_connection = True;
@@ -372,9 +371,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		cli_shutdown(*cli);
 		goto done;
 	}
-
-	init_creds(&creds, ipc_username, ipc_domain, ipc_password);
-	cli_init_creds(*cli, &creds);
 
 	secrets_named_mutex_release(controller);
 	got_mutex = False;
