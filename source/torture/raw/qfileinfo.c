@@ -661,6 +661,9 @@ BOOL torture_raw_qfileinfo(int dummy)
 	NAME_PATH_CHECK("INTERNAL_INFORMATION", internal_information, device);
 	NAME_PATH_CHECK("INTERNAL_INFORMATION", internal_information, inode);
 	NAME_PATH_CHECK("POSITION_INFORMATION", position_information, position);
+	printf("fnum pos = %.0f, fname pos = %.0f\n",
+		(double)s2->position_information.out.position,
+		(double)s1->position_information.out.position );
 	NAME_PATH_CHECK("MODE_INFORMATION", mode_information, mode);
 	NAME_PATH_CHECK("ALIGNMENT_INFORMATION", alignment_information, alignment_requirement);
 	NAME_PATH_CHECK("ATTRIBUTE_TAG_INFORMATION", attribute_tag_information, attrib);
