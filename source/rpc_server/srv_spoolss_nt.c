@@ -4150,7 +4150,7 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 		for (i = 0; i < the_acl->num_aces; i++) {
 			fstring sid_str;
 
-			sid_to_string(sid_str, &the_acl->ace[i].sid);
+			sid_to_string(sid_str, &the_acl->ace[i].trustee);
 
 			DEBUG(10, ("%s 0x%08x\n", sid_str, 
 				  the_acl->ace[i].info.mask));
@@ -4165,7 +4165,7 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 			for (i = 0; i < the_acl->num_aces; i++) {
 				fstring sid_str;
 				
-				sid_to_string(sid_str, &the_acl->ace[i].sid);
+				sid_to_string(sid_str, &the_acl->ace[i].trustee);
 				
 				DEBUG(10, ("%s 0x%08x\n", sid_str, 
 					   the_acl->ace[i].info.mask));
