@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -60,6 +60,9 @@ encode_type (const char *name, const Type *t)
     break;
   case TInteger:
     encode_primitive ("integer", name);
+    break;
+  case TUInteger:
+    encode_primitive ("unsigned", name);
     break;
   case TOctetString:
     encode_primitive ("octet_string", name);
@@ -218,6 +221,9 @@ generate_type_encode (const Symbol *s)
   switch (s->type->type) {
   case TInteger:
     fprintf (codefile, "return encode_integer (p, len, data, size);\n");
+    break;
+  case TUInteger:
+    fprintf (codefile, "return encode_unsigned (p, len, data, size);\n");
     break;
   case TOctetString:
     fprintf (codefile, "return encode_octet_string (p, len, data, size);\n");
