@@ -13,6 +13,8 @@ CFLAGS = @CFLAGS@
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
 
+AIX_SYSCALL_MAGIC=@AIX_SYSCALL_MAGIC@
+
 prefix = @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
@@ -27,7 +29,7 @@ all: $(LIB)
 
 Wall:
 	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
-		
+
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
 
@@ -62,7 +64,7 @@ dist: $(DISTFILES)
 
 $(LIB): $(OBJECTS)
 	rm -f $@
-	$(AR) cr $@ $(OBJECTS)
+	$(AR) cr $@ $(OBJECTS) $(AIX_SYSCALL_MAGIC)
 	-$(RANLIB) $@
 
 $(OBJECTS): ../../config.h
