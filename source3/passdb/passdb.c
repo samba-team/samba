@@ -27,9 +27,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data,
-				 const struct passwd *pwd);
-
 /******************************************************************
  get the default domain/netbios name to be used when 
  testing authentication.  For example, if you connect
@@ -167,7 +164,7 @@ NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, SAM_ACCOUNT **user)
 
 
 /*************************************************************
- Alloc memory and initialises a struct sam_passwd.
+ Allocates memory and initialises a struct sam_passwd.
  ************************************************************/
 
 NTSTATUS pdb_init_sam(SAM_ACCOUNT **user)
@@ -192,6 +189,68 @@ NTSTATUS pdb_init_sam(SAM_ACCOUNT **user)
 	return NT_STATUS_OK;
 }
 
+/**************************************************************************
+ * This function will take care of all the steps needed to correctly
+ * allocate and set the user SID, please do use this function to create new
+ * users, messing with SIDs is not good.
+ *
+ * account_data must be provided initialized, pwd may be null.
+ * 									SSS
+ ***************************************************************************/
+
+static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
+{
+	const char *guest_account = lp_guestaccount();
+	GROUP_MAP map;
+	BOOL ret;
+	
+	if (!account_data || !pwd) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* this is a hack this thing should not be set
+	   this way --SSS */
+	if (!(guest_account && *guest_account)) {
+		DEBUG(1, ("NULL guest account!?!?\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	} else {
+		/* Ensure this *must* be set right */
+		if (strcmp(pwd->pw_name, guest_account) == 0) {
+			if (!pdb_set_user_sid_from_rid(account_data, DOMAIN_USER_RID_GUEST, PDB_DEFAULT)) {
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			if (!pdb_set_group_sid_from_rid(account_data, DOMAIN_GROUP_RID_GUESTS, PDB_DEFAULT)) {
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			return NT_STATUS_OK;
+		}
+	}
+
+	if (!pdb_set_user_sid_from_rid(account_data, fallback_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
+		DEBUG(0,("Can't set User SID from RID!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	/* call the mapping code here */
+	become_root();
+	ret = pdb_getgrgid(&map, pwd->pw_gid);
+	unbecome_root();
+	
+	if( ret ) {
+		if (!pdb_set_group_sid(account_data, &map.sid, PDB_SET)){
+			DEBUG(0,("Can't set Group SID!\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	} 
+	else {
+		if (!pdb_set_group_sid_from_rid(account_data, pdb_gid_to_group_rid(pwd->pw_gid), PDB_SET)) {
+			DEBUG(0,("Can't set Group SID\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
 
 /*************************************************************
  Initialises a struct sam_passwd with sane values.
@@ -404,69 +463,6 @@ NTSTATUS pdb_free_sam(SAM_ACCOUNT **user)
 	}
 
 	return NT_STATUS_OK;	
-}
-
-/**************************************************************************
- * This function will take care of all the steps needed to correctly
- * allocate and set the user SID, please do use this function to create new
- * users, messing with SIDs is not good.
- *
- * account_data must be provided initialized, pwd may be null.
- * 									SSS
- ***************************************************************************/
-
-static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
-{
-	const char *guest_account = lp_guestaccount();
-	GROUP_MAP map;
-	BOOL ret;
-	
-	if (!account_data || !pwd) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* this is a hack this thing should not be set
-	   this way --SSS */
-	if (!(guest_account && *guest_account)) {
-		DEBUG(1, ("NULL guest account!?!?\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	} else {
-		/* Ensure this *must* be set right */
-		if (strcmp(pwd->pw_name, guest_account) == 0) {
-			if (!pdb_set_user_sid_from_rid(account_data, DOMAIN_USER_RID_GUEST, PDB_DEFAULT)) {
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-			if (!pdb_set_group_sid_from_rid(account_data, DOMAIN_GROUP_RID_GUESTS, PDB_DEFAULT)) {
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-			return NT_STATUS_OK;
-		}
-	}
-
-	if (!pdb_set_user_sid_from_rid(account_data, fallback_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
-		DEBUG(0,("Can't set User SID from RID!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	
-	/* call the mapping code here */
-	become_root();
-	ret = pdb_getgrgid(&map, pwd->pw_gid);
-	unbecome_root();
-	
-	if( ret ) {
-		if (!pdb_set_group_sid(account_data, &map.sid, PDB_SET)){
-			DEBUG(0,("Can't set Group SID!\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	} 
-	else {
-		if (!pdb_set_group_sid_from_rid(account_data, pdb_gid_to_group_rid(pwd->pw_gid), PDB_SET)) {
-			DEBUG(0,("Can't set Group SID\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	}
-
-	return NT_STATUS_OK;
 }
 
 /**********************************************************
