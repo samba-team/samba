@@ -32,8 +32,8 @@ static void display_print_info_0(FILE *out_hnd, PRINTER_INFO_0 *i1)
 	if (i1 == NULL)
 		return;
 
-	unistr_to_ascii(name, i1->printername.buffer, sizeof(name)-1);
-	unistr_to_ascii(server, i1->servername.buffer, sizeof(server)-1);
+	rpcstr_pull(name, i1->printername.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(server, i1->servername.buffer, sizeof(server), 0, STR_TERMINATE);
 
 	report(out_hnd, "\tprintername:[%s]\n", name);
 	report(out_hnd, "\tservername:[%s]\n", server);
@@ -85,9 +85,9 @@ static void display_print_info_1(FILE *out_hnd, PRINTER_INFO_1 *i1)
 	if (i1 == NULL)
 		return;
 
-	unistr_to_ascii(desc, i1->description.buffer, sizeof(desc)-1);
-	unistr_to_ascii(name, i1->name       .buffer, sizeof(name)-1);
-	unistr_to_ascii(comm, i1->comment    .buffer, sizeof(comm)-1);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(desc, i1->description.buffer, sizeof(desc), 0, STR_TERMINATE);
+	rpcstr_pull(comm, i1->comment.buffer, sizeof(comm), 0, STR_TERMINATE);
 
 	report(out_hnd, "\tflags:[%x]\n", i1->flags);
 	report(out_hnd, "\tname:[%s]\n", name);
@@ -115,18 +115,18 @@ static void display_print_info_2(FILE *out_hnd, PRINTER_INFO_2 *i2)
 	if (i2 == NULL)
 		return;
 
-	unistr_to_ascii(servername, i2->servername.buffer, sizeof(servername)-1);
-	unistr_to_ascii(printername, i2->printername.buffer, sizeof(printername)-1);
-	unistr_to_ascii(sharename, i2->sharename.buffer, sizeof(sharename)-1);
-	unistr_to_ascii(portname, i2->portname.buffer, sizeof(portname)-1);
-	unistr_to_ascii(drivername, i2->drivername.buffer, sizeof(drivername)-1);
-	unistr_to_ascii(comment, i2->comment.buffer, sizeof(comment)-1);
-	unistr_to_ascii(location, i2->location.buffer, sizeof(location)-1);
-	unistr_to_ascii(sepfile, i2->sepfile.buffer, sizeof(sepfile)-1);
-	unistr_to_ascii(printprocessor, i2->printprocessor.buffer, sizeof(printprocessor)-1);
-	unistr_to_ascii(datatype, i2->datatype.buffer, sizeof(datatype)-1);
-	unistr_to_ascii(parameters, i2->parameters.buffer, sizeof(parameters)-1);
-
+	rpcstr_pull(servername, i2->servername.buffer,sizeof(servername), 0, STR_TERMINATE);
+	rpcstr_pull(printername, i2->printername.buffer,sizeof(printername), 0, STR_TERMINATE);
+	rpcstr_pull(sharename, i2->sharename.buffer,sizeof(sharename), 0, STR_TERMINATE);
+	rpcstr_pull(portname, i2->portname.buffer,sizeof(portname), 0, STR_TERMINATE);
+	rpcstr_pull(drivername, i2->drivername.buffer,sizeof(drivername), 0, STR_TERMINATE);
+	rpcstr_pull(comment, i2->comment.buffer,sizeof(comment), 0, STR_TERMINATE);
+	rpcstr_pull(location, i2->location.buffer,sizeof(location), 0, STR_TERMINATE);
+	rpcstr_pull(sepfile, i2->sepfile.buffer,sizeof(sepfile), 0, STR_TERMINATE);
+	rpcstr_pull(printprocessor, i2->printprocessor.buffer,sizeof(printprocessor), 0, STR_TERMINATE);
+	rpcstr_pull(datatype, i2->datatype.buffer,sizeof(datatype), 0, STR_TERMINATE);
+	rpcstr_pull(parameters, i2->parameters.buffer,sizeof(parameters), 0, STR_TERMINATE);
+	
 	report(out_hnd, "\tservername:[%s]\n", servername);
 	report(out_hnd, "\tprintername:[%s]\n", printername);
 	report(out_hnd, "\tsharename:[%s]\n", sharename);
@@ -371,7 +371,7 @@ void display_port_info_1(FILE *out_hnd, enum action_type action, PORT_INFO_1 *i1
 			report(out_hnd, "Port:\n");
 			break;
 		case ACTION_ENUMERATE:
-			unistr_to_ascii(buffer, i1->port_name.buffer, sizeof(buffer)-1);
+			rpcstr_pull(buffer, i1->port_name.buffer, sizeof(bufferi), 0, STR_TERMINATE);
 			fprintf (out_hnd, "\tPort Name:\t[%s]\n\n", buffer);
 			break;
 		case ACTION_FOOTER:
@@ -393,11 +393,12 @@ void display_port_info_2(FILE *out_hnd, enum action_type action, PORT_INFO_2 *i2
 			report(out_hnd, "Port:\n");
 			break;
 		case ACTION_ENUMERATE:
-			unistr_to_ascii(buffer, i2->port_name.buffer, sizeof(buffer)-1);
+			rpcstr_pull(buffer, i2->port_name.buffer, sizeof(buffer), 0, STR_TERMINATE);
 			fprintf (out_hnd, "\tPort Name:\t[%s]\n", buffer);
-			unistr_to_ascii(buffer, i2->monitor_name.buffer, sizeof(buffer)-1);
+			rpcstr_pull(buffer, i2->monitor_name.buffer, sizeof(buffer), 0, STR_TERMINATE);
+
 			fprintf (out_hnd, "\tMonitor Name:\t[%s]\n", buffer);
-			unistr_to_ascii(buffer, i2->description.buffer, sizeof(buffer)-1);
+			rpcstr_pull(buffer, i2->description.buffer, sizeof(buffer), 0, STR_TERMINATE);
 			fprintf (out_hnd, "\tDescription:\t[%s]\n", buffer);
 			fprintf (out_hnd, "\tPort Type:\t[%d]\n", i2->port_type);
 			fprintf (out_hnd, "\tReserved:\t[%d]\n", i2->reserved);
@@ -429,7 +430,7 @@ void display_printer_enumdata(FILE *out_hnd, enum action_type action, uint32 idx
 		case ACTION_ENUMERATE:
 			report(out_hnd, "[%d]", idx);
 			report(out_hnd, "\t[%d]", valuelen);
-			unistr_to_ascii(buffer, value, sizeof(buffer)-1);
+			rpcstr_pull(buffer, value, sizeof(buffer), 0, STR_TERMINATE);
 			report(out_hnd, "\t[%s]", buffer);
 			report(out_hnd, "\t[%d]", rvaluelen);
 			report(out_hnd, "\t\t[%d]", type);
@@ -467,29 +468,27 @@ void display_job_info_2(FILE *out_hnd, enum action_type action,
 			fstring tmp;
 
 			report(out_hnd, "\tjob id:\t%d\n", i2->jobid);
-			unistr_to_ascii(tmp, i2->printername.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i2->printername.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tprinter name:\t%s\n", tmp);
-			unistr_to_ascii(tmp, i2->machinename.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i2->machinename.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tmachine name:\t%s\n", tmp);
-			unistr_to_ascii(tmp, i2->username.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i2->username.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tusername:\t%s\n", tmp);
-			unistr_to_ascii(tmp, i2->document.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i2->document.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tdocument:\t%s\n", tmp);
-			unistr_to_ascii(tmp, i2->notifyname.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i2->notifyname.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tnotify name:\t%s\n", tmp);
-			unistr_to_ascii(tmp, i2->datatype.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i2->datatype.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tdata type:\t%s\n", tmp);
-			unistr_to_ascii(tmp, i2->printprocessor.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i2->printprocessor.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tprint processor:\t%s\n", tmp);
-			unistr_to_ascii(tmp, i2->parameters.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i2->parameters.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tparameters:\t%s\n", tmp);
-			unistr_to_ascii(tmp, i2->drivername.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i2->drivername.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tdriver name:\t%s\n", tmp);
 			report(out_hnd, "\tDevice Mode:\tNOT DISPLAYED YET\n");
-/*
-			DEVICEMODE *devmode;
-*/
-			unistr_to_ascii(tmp, i2->text_status.buffer, sizeof(tmp)-1);
+
+			rpcstr_pull(tmp, i2->text_status.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\ttext status:\t%s\n", tmp);
 		/*	SEC_DESC sec_desc;*/
 			report(out_hnd, "\tstatus:\t%d\n", i2->status);
@@ -539,17 +538,17 @@ void display_job_info_1(FILE *out_hnd, enum action_type action,
 			fstring tmp;
 
 			report(out_hnd, "\tjob id:\t%d\n", i1->jobid);
-			unistr_to_ascii(tmp, i1->printername.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i1->printername.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tprinter name:\t%s\n", tmp);
-			unistr_to_ascii(tmp, i1->machinename.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i1->machinename.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tmachine name:\t%s\n", tmp);
-			unistr_to_ascii(tmp, i1->username.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i1->username.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tusername:\t%s\n", tmp);
-			unistr_to_ascii(tmp, i1->document.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i1->document.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tdocument:\t%s\n", tmp);
-			unistr_to_ascii(tmp, i1->datatype.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i1->datatype.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\tdata type:\t%s\n", tmp);
-			unistr_to_ascii(tmp, i1->text_status.buffer, sizeof(tmp)-1);
+			rpcstr_pull(tmp, i1->text_status.buffer, sizeof(tmp), 0, STR_TERMINATE);
 			report(out_hnd, "\ttext status:\t%s\n", tmp);
 			report(out_hnd, "\tstatus:\t%d\n", i1->status);
 			report(out_hnd, "\tpriority:\t%d\n", i1->priority);
@@ -690,7 +689,7 @@ static void display_print_driver_1(FILE *out_hnd, DRIVER_INFO_1 *i1)
 	if (i1 == NULL)
 		return;
 
-	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
 
 	report(out_hnd, "\tname:[%s]\n", name);
 }
@@ -708,11 +707,11 @@ static void display_print_driver_2(FILE *out_hnd, DRIVER_INFO_2 *i1)
 	if (i1 == NULL)
 		return;
 
-	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
-	unistr_to_ascii(architecture, i1->architecture.buffer, sizeof(architecture)-1);
-	unistr_to_ascii(driverpath, i1->driverpath.buffer, sizeof(driverpath)-1);
-	unistr_to_ascii(datafile, i1->datafile.buffer, sizeof(datafile)-1);
-	unistr_to_ascii(configfile, i1->configfile.buffer, sizeof(configfile)-1);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(architecture, i1->architecture.buffer, sizeof(architecture), 0, STR_TERMINATE);
+	rpcstr_pull(driverpath, i1->driverpath.buffer, sizeof(driverpath), 0, STR_TERMINATE);
+	rpcstr_pull(datafile, i1->datafile.buffer, sizeof(datafile), 0, STR_TERMINATE);
+	rpcstr_pull(configfile, i1->conigfile.buffer, sizeof(configfile), 0, STR_TERMINATE);
 
 	report(out_hnd, "\tversion:[%x]\n", i1->version);
 	report(out_hnd, "\tname:[%s]\n", name);
@@ -743,18 +742,17 @@ static void display_print_driver_3(FILE *out_hnd, DRIVER_INFO_3 *i1)
 	if (i1 == NULL)
 		return;
 
-	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
-	unistr_to_ascii(architecture, i1->architecture.buffer, sizeof(architecture)-1);
-	unistr_to_ascii(driverpath, i1->driverpath.buffer, sizeof(driverpath)-1);
-	unistr_to_ascii(datafile, i1->datafile.buffer, sizeof(datafile)-1);
-	unistr_to_ascii(configfile, i1->configfile.buffer, sizeof(configfile)-1);
-	unistr_to_ascii(helpfile, i1->helpfile.buffer, sizeof(helpfile)-1);
-	
-	unistr_to_ascii(monitorname, i1->monitorname.buffer, sizeof(monitorname)-1);
-	unistr_to_ascii(defaultdatatype, i1->defaultdatatype.buffer, sizeof(defaultdatatype)-1);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(architecture, i1->architecture.buffer, sizeof(architecture), 0, STR_TERMINATE);
+	rpcstr_pull(driverpath, i1->driverpath.buffer, sizeof(driverpath), 0, STR_TERMINATE);
+	rpcstr_pull(datafile, i1->datafile.buffer, sizeof(datafile), 0, STR_TERMINATE);
+	rpcstr_pull(configfile, i1->configfile.buffer, sizeof(configfile), 0, STR_TERMINATE);
+	rpcstr_pull(helpfile, i1->helpfile.buffer, sizeof(helpfile), 0, STR_TERMINATE);
+	rpcstr_pull(monitorname, i1->monitorname.buffer, sizeof(monitorname), 0, STR_TERMINATE);
+	rpcstr_pull(defaultdatatype, i1->defaultdatatype.buffer, sizeof(defaultdatatype), 0, STR_TERMINATE);
 
 	report(out_hnd, "\tversion:[%x]\n", i1->version);
-	report(out_hnd, "\tname:[%s]\n",name );
+	report(out_hnd, "\tname:[%s]\n",name);
 	report(out_hnd, "\tarchitecture:[%s]\n", architecture);
 	report(out_hnd, "\tdriverpath:[%s]\n", driverpath);
 	report(out_hnd, "\tdatafile:[%s]\n", datafile);
@@ -763,7 +761,7 @@ static void display_print_driver_3(FILE *out_hnd, DRIVER_INFO_3 *i1)
 
 	while (valid)
 	{
-		unistr_to_ascii(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles)-1);
+		rpcstr_pull(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles), 0, STR_TERMINATE);
 		length+=strlen(dependentfiles)+1;
 		
 		if (strlen(dependentfiles) > 0)
@@ -888,7 +886,7 @@ static void display_printdriverdir_info_1(FILE *out_hnd, DRIVER_DIRECTORY_1 *i1)
 	if (i1 == NULL)
 		return;
 
-	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
 
 	report(out_hnd, "\tname:[%s]\n", name);
 }

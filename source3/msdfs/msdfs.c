@@ -234,7 +234,7 @@ BOOL is_msdfs_link(connection_struct* conn, char* path)
 
 	strlower(path);
 
-	if(conn->vfs_ops.lstat(conn,dos_to_unix(path,False),&st) != 0) {
+	if(conn->vfs_ops.lstat(conn,path,&st) != 0) {
 		DEBUG(5,("is_msdfs_link: %s does not exist.\n",path));
 		return False;
 	}
@@ -271,7 +271,7 @@ BOOL get_referred_path(struct junction_map* junction)
 
 	DEBUG(5,("get_referred_path: lstat target: %s\n", path));
   
-	if(conn->vfs_ops.lstat(conn,dos_to_unix(path, False),&st) != 0) {
+	if(conn->vfs_ops.lstat(conn,path,&st) != 0) {
 		DEBUG(5,("get_referred_path: %s does not exist.\n",path));
 		return False;
 	}
@@ -698,7 +698,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 		jn[cnt].referral_l
 	*/
 
-	dirp = conn->vfs_ops.opendir(conn, dos_to_unix(connect_path,False));
+	dirp = conn->vfs_ops.opendir(conn, connect_path);
 	if(!dirp)
 		return False;
 
@@ -716,7 +716,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 			continue;
 		}
 		if(S_ISLNK(st.st_mode)) {
-			buflen = conn->vfs_ops.readlink(conn, dos_to_unix(pathreal,False), buf, sizeof(fstring));
+			buflen = conn->vfs_ops.readlink(conn, pathreal, buf, sizeof(fstring));
 			buf[buflen] = '\0';
 			if(parse_symlink(buf, &(jn[cnt].referral_list), &(jn[cnt].referral_count))) {
 				pstrcpy(jn[cnt].service_name, service_name);

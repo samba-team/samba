@@ -103,7 +103,6 @@ static void sync_child(char *name, int nm_type,
 
 	/* All the cli_XX functions take UNIX character set. */
 	fstrcpy(unix_workgroup, cli.server_domain?cli.server_domain:workgroup);
-	dos_to_unix(unix_workgroup, True);
 
 	/* Fetch a workgroup list. */
 	cli_NetServerEnum(&cli, unix_workgroup,
@@ -113,7 +112,6 @@ static void sync_child(char *name, int nm_type,
 	/* Now fetch a server list. */
 	if (servers) {
 		fstrcpy(unix_workgroup, workgroup);
-		dos_to_unix(unix_workgroup, True);
 		cli_NetServerEnum(&cli, unix_workgroup, 
 				  local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
 				  callback, NULL);
@@ -253,9 +251,6 @@ static void complete_sync(struct sync_record *s)
 		if (!fgets_slash(line,sizeof(pstring),f)) continue;
 		
 		ptr = line;
-
-		/* The line is written in UNIX character set. Convert to DOS codepage. */
-		unix_to_dos(line,True);
 
 		if (!next_token(&ptr,server,NULL,sizeof(server)) ||
 		    !next_token(&ptr,type_str,NULL, sizeof(type_str)) ||

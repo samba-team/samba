@@ -45,16 +45,12 @@ static char *trust_keystr(char *domain)
  Routine to get the trust account password for a domain
 ************************************************************************/
 BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
-					time_t *pass_last_set_time)
+				 time_t *pass_last_set_time)
 {
 	struct machine_acct_pass *pass;
-	fstring dos_domain;
 	size_t size;
 
-	fstrcpy(dos_domain, domain);
-	unix_to_dos(dos_domain, True);
-
-	if (!(pass = secrets_fetch(trust_keystr(dos_domain), &size)) ||
+	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) ||
 	    size != sizeof(*pass)) return False;
 
 	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;

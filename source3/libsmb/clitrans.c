@@ -28,7 +28,7 @@
   send a SMB trans or trans2 request
   ****************************************************************************/
 BOOL cli_send_trans(struct cli_state *cli, int trans, 
-		    char *pipe_name, 
+		    const char *pipe_name, 
 		    int fid, int flags,
 		    uint16 *setup, int lsetup, int msetup,
 		    char *param, int lparam, int mparam,

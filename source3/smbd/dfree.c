@@ -66,7 +66,7 @@ static void disk_norm(BOOL small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,
   return number of 1K blocks available on a path and total number 
 ****************************************************************************/
 
-static SMB_BIG_UINT disk_free(char *path, BOOL small_query, 
+static SMB_BIG_UINT disk_free(const char *path, BOOL small_query, 
                               SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	int dfree_retval;
@@ -91,7 +91,7 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 		slprintf(syscmd, sizeof(syscmd)-1, "%s %s", dfree_command, path);
 		DEBUG (3, ("disk_free: Running command %s\n", syscmd));
 
-		lines = file_lines_pload(syscmd, NULL, True);
+		lines = file_lines_pload(syscmd, NULL);
 		if (lines) {
 			char *line = lines[0];
 
@@ -161,8 +161,8 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 /****************************************************************************
 wrap it to get filenames right
 ****************************************************************************/
-SMB_BIG_UINT sys_disk_free(char *path, BOOL small_query, 
+SMB_BIG_UINT sys_disk_free(const char *path, BOOL small_query, 
                            SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
-	return(disk_free(dos_to_unix(path,False),small_query, bsize,dfree,dsize));
+	return disk_free(path,small_query, bsize,dfree,dsize);
 }

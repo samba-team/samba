@@ -83,8 +83,6 @@ static int print_run_command(int snum,char *command, int *outfd, ...)
 	pstring_sub(syscmd, "%p", p);
 	standard_sub_snum(snum,syscmd);
 
-	/* Convert script args to unix-codepage */
-	dos_to_unix(syscmd, True);
 	ret = smbrun(syscmd,outfd);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
@@ -195,9 +193,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 	print_queue_struct *queue = NULL;
 	fstring printer_name;
               
-	/* Convert printer name (i.e. share name) to unix-codepage */
 	fstrcpy(printer_name, lp_servicename(snum));
-	dos_to_unix(printer_name, True);
 	
 	print_run_command(snum, lp_lpqcommand(snum), &fd, NULL);
 
@@ -208,7 +204,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 	}
 	
 	numlines = 0;
-	qlines = fd_lines_load(fd, &numlines, True);
+	qlines = fd_lines_load(fd, &numlines);
 	close(fd);
 
 	/* turn the lpq output into a series of job structures */

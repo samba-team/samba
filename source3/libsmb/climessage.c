@@ -41,11 +41,9 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 	
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
-	p += clistr_push(cli, p, username, -1, 
-			 STR_TERMINATE|STR_CONVERT);
+	p += clistr_push(cli, p, username, -1, STR_TERMINATE);
 	*p++ = 4;
-	p += clistr_push(cli, p, host, -1, 
-			 STR_TERMINATE|STR_CONVERT);
+	p += clistr_push(cli, p, host, -1, STR_TERMINATE);
 	
 	cli_setup_bcc(cli, p);
 	

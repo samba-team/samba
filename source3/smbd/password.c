@@ -946,7 +946,7 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
   int plus_allowed = 1;
   char *file_host;
   char *file_user;
-  char **lines = file_lines_load(equiv_file, NULL, False);
+  char **lines = file_lines_load(equiv_file, NULL);
   int i;
 
   DEBUG(5, ("check_user_equiv %s %s %s\n", user, remote, equiv_file));

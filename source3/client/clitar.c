@@ -421,31 +421,12 @@ static void dotareof(int f)
 ****************************************************************************/
 static void fixtarname(char *tptr, char *fp, int l)
 {
-  /* add a '.' to start of file name, convert from ugly dos \'s in path
-   * to lovely unix /'s :-} */
+	/* add a '.' to start of file name, convert from ugly dos \'s in path
+	 * to lovely unix /'s :-} */
+	*tptr++='.';
 
-  *tptr++='.';
-
-  while (l > 0) {
-    int skip = get_character_len(*fp);
-    if(skip != 0) {
-      if (skip == 2) {
-        *tptr++ = *fp++;
-        *tptr++ = *fp++;
-        l -= 2;
-      } else if (skip == 1) {
-        *tptr++ = *fp++;
-        l--;
-      }
-    } else if (*fp == '\\') {
-      *tptr++ = '/';
-      fp++;
-      l--;
-    } else {
-      *tptr++ = *fp++;
-      l--;
-    }
-  }
+	safe_strcpy(tptr, fp, l);
+	string_replace(tptr, '\\', '/');
 }
 
 /****************************************************************************
@@ -877,43 +858,25 @@ Convert from UNIX to DOS file names
 ***************************************************************************/
 static void unfixtarname(char *tptr, char *fp, int l, BOOL first)
 {
-  /* remove '.' from start of file name, convert from unix /'s to
-   * dos \'s in path. Kill any absolute path names. But only if first!
-   */
+	/* remove '.' from start of file name, convert from unix /'s to
+	 * dos \'s in path. Kill any absolute path names. But only if first!
+	 */
 
-  DEBUG(5, ("firstb=%lX, secondb=%lX, len=%i\n", (long)tptr, (long)fp, l));
+	DEBUG(5, ("firstb=%lX, secondb=%lX, len=%i\n", (long)tptr, (long)fp, l));
 
-  if (first) {
-    if (*fp == '.') {
-      fp++;
-      l--;
-    }
-    if (*fp == '\\' || *fp == '/') {
-      fp++;
-      l--;
-    }
-  }
+	if (first) {
+		if (*fp == '.') {
+			fp++;
+			l--;
+		}
+		if (*fp == '\\' || *fp == '/') {
+			fp++;
+			l--;
+		}
+	}
 
-  while (l > 0) {
-    int skip = get_character_len(*fp);
-    if(skip != 0) {
-      if (skip == 2) {
-        *tptr++ = *fp++;
-        *tptr++ = *fp++;
-        l -= 2;
-      } else if (skip == 1) {
-        *tptr++ = *fp++;
-        l--;
-      }
-    } else if (*fp == '/') {
-      *tptr++ = '\\';
-      fp++;
-      l--;
-    } else {
-      *tptr++ = *fp++;
-      l--;
-    }
-  }
+	safe_strcpy(tptr, fp, l);
+	string_replace(tptr, '/', '\\');
 }
 
 
@@ -1718,7 +1681,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 	SMB_STRUCT_STAT stbuf;
 	extern time_t newer_than;
 	
-	if (dos_stat(argv[Optind], &stbuf) == 0) {
+	if (sys_stat(argv[Optind], &stbuf) == 0) {
 	  newer_than = stbuf.st_mtime;
 	  DEBUG(1,("Getting files newer than %s",
 		   asctime(LocalTime(&newer_than))));

@@ -204,9 +204,9 @@ static void display_print_info_0(PRINTER_INFO_0 *i1)
 	fstring 	name;
 	fstring 	servername;
 
-	unistr_to_ascii(name, i1->printername.buffer, sizeof(name) - 1);
-	unistr_to_ascii(servername, i1->servername.buffer, sizeof(servername) - 1);
-
+	rpcstr_pull(name, i1->printername.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(servername, i1->servername.buffer, sizeof(servername), 0,STR_TERMINATE);
+  
 	printf("\tprintername:[%s]\n", name);
 	printf("\tservername:[%s]\n", servername);
 	printf("\tcjobs:[0x%x]\n", i1->cjobs);
@@ -257,9 +257,9 @@ static void display_print_info_1(PRINTER_INFO_1 *i1)
 	fstring name;
 	fstring comm;
 
-	unistr_to_ascii(desc, i1->description.buffer, sizeof(desc) - 1);
-	unistr_to_ascii(name, i1->name       .buffer, sizeof(name) - 1);
-	unistr_to_ascii(comm, i1->comment    .buffer, sizeof(comm) - 1);
+	rpcstr_pull(desc, i1->description.buffer, sizeof(desc), 0, STR_TERMINATE);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(comm, i1->comment.buffer, sizeof(comm), 0, STR_TERMINATE);
 
 	printf("\tflags:[0x%x]\n", i1->flags);
 	printf("\tname:[%s]\n", name);
@@ -284,23 +284,17 @@ static void display_print_info_2(PRINTER_INFO_2 *i2)
 	fstring datatype;
 	fstring parameters;
 	
-	unistr_to_ascii(servername, i2->servername.buffer, 
-			sizeof(servername) - 1);
-	unistr_to_ascii(printername, i2->printername.buffer, 
-			sizeof(printername) - 1);
-	unistr_to_ascii(sharename, i2->sharename.buffer,
-			sizeof(sharename) - 1);
-	unistr_to_ascii(portname, i2->portname.buffer, sizeof(portname) - 1);
-	unistr_to_ascii(drivername, i2->drivername.buffer, 
-			sizeof(drivername) - 1);
-	unistr_to_ascii(comment, i2->comment.buffer, sizeof(comment) - 1);
-	unistr_to_ascii(location, i2->location.buffer, sizeof(location) - 1);
-	unistr_to_ascii(sepfile, i2->sepfile.buffer, sizeof(sepfile) - 1);
-	unistr_to_ascii(printprocessor, i2->printprocessor.buffer, 
-			sizeof(printprocessor) - 1);
-	unistr_to_ascii(datatype, i2->datatype.buffer, sizeof(datatype) - 1);
-	unistr_to_ascii(parameters, i2->parameters.buffer, 
-			sizeof(parameters) - 1);
+	rpcstr_pull(servername, i2->servername.buffer,sizeof(servername), 0, STR_TERMINATE);
+	rpcstr_pull(printername, i2->printername.buffer,sizeof(printername), 0, STR_TERMINATE);
+	rpcstr_pull(sharename, i2->sharename.buffer,sizeof(sharename), 0, STR_TERMINATE);
+	rpcstr_pull(portname, i2->portname.buffer,sizeof(portname), 0, STR_TERMINATE);
+	rpcstr_pull(drivername, i2->drivername.buffer,sizeof(drivername), 0, STR_TERMINATE);
+	rpcstr_pull(comment, i2->comment.buffer,sizeof(comment), 0, STR_TERMINATE);
+	rpcstr_pull(location, i2->location.buffer,sizeof(location), 0, STR_TERMINATE);
+	rpcstr_pull(sepfile, i2->sepfile.buffer,sizeof(sepfile), 0, STR_TERMINATE);
+	rpcstr_pull(printprocessor, i2->printprocessor.buffer,sizeof(printprocessor), 0, STR_TERMINATE);
+	rpcstr_pull(datatype, i2->datatype.buffer,sizeof(datatype), 0, STR_TERMINATE);
+	rpcstr_pull(parameters, i2->parameters.buffer,sizeof(parameters), 0, STR_TERMINATE);
 
 	printf("\tservername:[%s]\n", servername);
 	printf("\tprintername:[%s]\n", printername);
@@ -420,7 +414,7 @@ static void display_port_info_1(PORT_INFO_1 *i1)
 {
 	fstring buffer;
 	
-	unistr_to_ascii(buffer, i1->port_name.buffer, sizeof(buffer)-1);
+	rpcstr_pull(buffer, i1->port_name.buffer, sizeof(buffer), 0, STR_TERMINATE);
 	printf("\tPort Name:\t[%s]\n", buffer);
 }
 
@@ -431,11 +425,13 @@ static void display_port_info_2(PORT_INFO_2 *i2)
 {
 	fstring buffer;
 	
-	unistr_to_ascii(buffer, i2->port_name.buffer, sizeof(buffer) - 1);
+	rpcstr_pull(buffer, i2->port_name.buffer, sizeof(buffer), 0, STR_TERMINATE);
 	printf("\tPort Name:\t[%s]\n", buffer);
-	unistr_to_ascii(buffer, i2->monitor_name.buffer, sizeof(buffer) - 1);
+	rpcstr_pull(buffer, i2->monitor_name.buffer, sizeof(buffer), 0, STR_TERMINATE);
+
 	printf("\tMonitor Name:\t[%s]\n", buffer);
-	unistr_to_ascii(buffer, i2->description.buffer, sizeof(buffer) - 1);
+	rpcstr_pull(buffer, i2->description.buffer, sizeof(buffer), 0, STR_TERMINATE);
+
 	printf("\tDescription:\t[%s]\n", buffer);
 	printf("\tPort Type:\t[%d]\n", i2->port_type);
 	printf("\tReserved:\t[%d]\n", i2->reserved);
@@ -600,7 +596,7 @@ static void display_print_driver_1(DRIVER_INFO_1 *i1)
 	if (i1 == NULL)
 		return;
 
-	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
 
 	printf ("Printer Driver Info 1:\n");
 	printf ("\tDriver Name: [%s]\n\n", name);
@@ -621,11 +617,11 @@ static void display_print_driver_2(DRIVER_INFO_2 *i1)
 	if (i1 == NULL)
 		return;
 
-	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
-	unistr_to_ascii(architecture, i1->architecture.buffer, sizeof(architecture)-1);
-	unistr_to_ascii(driverpath, i1->driverpath.buffer, sizeof(driverpath)-1);
-	unistr_to_ascii(datafile, i1->datafile.buffer, sizeof(datafile)-1);
-	unistr_to_ascii(configfile, i1->configfile.buffer, sizeof(configfile)-1);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(architecture, i1->architecture.buffer, sizeof(architecture), 0, STR_TERMINATE);
+	rpcstr_pull(driverpath, i1->driverpath.buffer, sizeof(driverpath), 0, STR_TERMINATE);
+	rpcstr_pull(datafile, i1->datafile.buffer, sizeof(datafile), 0, STR_TERMINATE);
+	rpcstr_pull(configfile, i1->configfile.buffer, sizeof(configfile), 0, STR_TERMINATE);
 
 	printf ("Printer Driver Info 2:\n");
 	printf ("\tVersion: [%x]\n", i1->version);
@@ -659,19 +655,18 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 	if (i1 == NULL)
 		return;
 
-	unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
-	unistr_to_ascii(architecture, i1->architecture.buffer, sizeof(architecture)-1);
-	unistr_to_ascii(driverpath, i1->driverpath.buffer, sizeof(driverpath)-1);
-	unistr_to_ascii(datafile, i1->datafile.buffer, sizeof(datafile)-1);
-	unistr_to_ascii(configfile, i1->configfile.buffer, sizeof(configfile)-1);
-	unistr_to_ascii(helpfile, i1->helpfile.buffer, sizeof(helpfile)-1);
-	
-	unistr_to_ascii(monitorname, i1->monitorname.buffer, sizeof(monitorname)-1);
-	unistr_to_ascii(defaultdatatype, i1->defaultdatatype.buffer, sizeof(defaultdatatype)-1);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
+	rpcstr_pull(architecture, i1->architecture.buffer, sizeof(architecture), 0, STR_TERMINATE);
+	rpcstr_pull(driverpath, i1->driverpath.buffer, sizeof(driverpath), 0, STR_TERMINATE);
+	rpcstr_pull(datafile, i1->datafile.buffer, sizeof(datafile), 0, STR_TERMINATE);
+	rpcstr_pull(configfile, i1->configfile.buffer, sizeof(configfile), 0, STR_TERMINATE);
+	rpcstr_pull(helpfile, i1->helpfile.buffer, sizeof(helpfile), 0, STR_TERMINATE);
+	rpcstr_pull(monitorname, i1->monitorname.buffer, sizeof(monitorname), 0, STR_TERMINATE);
+	rpcstr_pull(defaultdatatype, i1->defaultdatatype.buffer, sizeof(defaultdatatype), 0, STR_TERMINATE);
 
 	printf ("Printer Driver Info 3:\n");
 	printf ("\tVersion: [%x]\n", i1->version);
-	printf ("\tDriver Name: [%s]\n",name );
+	printf ("\tDriver Name: [%s]\n",name);
 	printf ("\tArchitecture: [%s]\n", architecture);
 	printf ("\tDriver Path: [%s]\n", driverpath);
 	printf ("\tDatafile: [%s]\n", datafile);
@@ -680,7 +675,8 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 
 	while (valid)
 	{
-		unistr_to_ascii(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles)-1);
+		rpcstr_pull(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles), 0, STR_TERMINATE);
+		
 		length+=strlen(dependentfiles)+1;
 		
 		if (strlen(dependentfiles) > 0)
@@ -913,7 +909,7 @@ static void display_printdriverdir_1(DRIVER_DIRECTORY_1 *i1)
         if (i1 == NULL)
                 return;
  
-        unistr_to_ascii(name, i1->name.buffer, sizeof(name)-1);
+	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
  
 	printf ("\tDirectory Name:[%s]\n", name);
 }
@@ -1139,7 +1135,7 @@ static uint32 cmd_spoolss_addprinterdriver (struct cli_state *cli, int argc, cha
 		return result;
 	}
 
-	unistr_to_ascii (driver_name, info3.name.buffer, sizeof(driver_name)-1);
+	rpcstr_pull(driver_name, info3.name.buffer, sizeof(driver_name), 0, STR_TERMINATE);
 	printf ("Printer Driver %s successfully installed.\n", driver_name);
 
 	/* cleanup */

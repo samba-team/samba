@@ -66,7 +66,6 @@ static void msg_deliver(void)
 
   if(msgpos > 0) {
     msgbuf[msgpos] = '\0'; /* Ensure null terminated. */
-    pstrcpy(msgbuf,dos_to_unix(msgbuf,False));
   }
 
   for (i=0;i<msgpos;) {
@@ -121,8 +120,8 @@ int reply_sends(connection_struct *conn,
   outsize = set_message(outbuf,0,0,True);
 
   p = smb_buf(inbuf)+1;
-  p += srvstr_pull(inbuf, msgfrom, p, sizeof(msgfrom), -1, STR_TERMINATE|STR_CONVERT) + 1;
-  p += srvstr_pull(inbuf, msgto, p, sizeof(msgto), -1, STR_TERMINATE|STR_CONVERT) + 1;
+  p += srvstr_pull(inbuf, msgfrom, p, sizeof(msgfrom), -1, STR_TERMINATE) + 1;
+  p += srvstr_pull(inbuf, msgto, p, sizeof(msgto), -1, STR_TERMINATE) + 1;
 
   msg = p;
 
@@ -163,8 +162,8 @@ int reply_sendstrt(connection_struct *conn,
   msgpos = 0;
 
   p = smb_buf(inbuf)+1;
-  p += srvstr_pull(inbuf, msgfrom, p, sizeof(msgfrom), -1, STR_TERMINATE|STR_CONVERT) + 1;
-  p += srvstr_pull(inbuf, msgto, p, sizeof(msgto), -1, STR_TERMINATE|STR_CONVERT) + 1;
+  p += srvstr_pull(inbuf, msgfrom, p, sizeof(msgfrom), -1, STR_TERMINATE) + 1;
+  p += srvstr_pull(inbuf, msgto, p, sizeof(msgto), -1, STR_TERMINATE) + 1;
 
   DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", msgfrom, msgto ) );
 

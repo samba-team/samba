@@ -831,9 +831,7 @@ void make_nmb_name( struct nmb_name *n, const char *name, int type)
 {
 	extern pstring global_scope;
 	memset( (char *)n, '\0', sizeof(struct nmb_name) );
-	StrnCpy( n->name, name, 15 );
-	unix_to_dos(n->name, True);
-	strupper( n->name );
+	push_ascii(n->name, name, 15, STR_TERMINATE|STR_UPPER);
 	n->name_type = (unsigned int)type & 0xFF;
 	StrnCpy( n->scope, global_scope, 63 );
 	strupper( n->scope );

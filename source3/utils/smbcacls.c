@@ -836,10 +836,8 @@ You can string acls together with spaces, commas or newlines\n\
 	argv += 2;
 
 	TimeInit();
-	charset_initialise();
 
 	lp_load(servicesf,True,False,False);
-	codepage_initialise(lp_client_code_page());
 	load_interfaces();
 
 	if (getenv("USER")) {

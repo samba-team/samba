@@ -246,7 +246,7 @@ static char *unmap_unixname(char *unix_user_name, int name_idx)
 	if (!*unix_user_name) return NULL;
 	if (!*mapfile) return NULL;
 
-	lines = file_lines_load(mapfile, NULL,False);
+	lines = file_lines_load(mapfile, NULL);
 	if (!lines) {
 		DEBUG(0,("unmap_unixname: can't open username map %s\n", mapfile));
 		return NULL;
@@ -1253,7 +1253,7 @@ uint32 _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOK
         rid [i] = 0xffffffff;
         type[i] = SID_NAME_UNKNOWN;
 
-        fstrcpy(name, dos_unistrn2(q_u->uni_name[i].buffer, q_u->uni_name[i].uni_str_len));
+	rpcstr_pull(name, q_u->uni_name[i].buffer, sizeof(name), q_u->uni_name[i].uni_str_len*2, 0);
 
         if(sid_equal(&pol_sid, &global_sam_sid)) {
             DOM_SID sid;
@@ -1284,8 +1284,8 @@ uint32 _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_R_
 
     r_u->status = NT_STATUS_NOPROBLEMO;
 
-    fstrcpy(user_name, dos_unistrn2(q_u->uni_user_name.buffer, q_u->uni_user_name.uni_str_len));
-    fstrcpy(wks      , dos_unistrn2(q_u->uni_dest_host.buffer, q_u->uni_dest_host.uni_str_len));
+    rpcstr_pull(user_name, q_u->uni_user_name.buffer, sizeof(user_name), q_u->uni_user_name.uni_str_len*2, 0);
+    rpcstr_pull(wks, q_u->uni_dest_host.buffer, sizeof(wks), q_u->uni_dest_host.uni_str_len,0);
 
     DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
 
@@ -1810,7 +1810,7 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
 	  reply if the account already exists...
 	 */
 
-	fstrcpy(mach_acct, dos_unistrn2(user_account.buffer, user_account.uni_str_len));
+	rpcstr_pull(mach_acct, user_account.buffer, sizeof(mach_acct), user_account.uni_str_len*2, 0);
 	strlower(mach_acct);
 
 	pdb_init_sam(&sam_pass);

@@ -385,7 +385,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	START_PROFILE(SMBtrans);
 
 	memset(name, '\0',sizeof(name));
-	srvstr_pull(inbuf, name, smb_buf(inbuf), sizeof(name), -1, STR_TERMINATE|STR_CONVERT);
+	srvstr_pull(inbuf, name, smb_buf(inbuf), sizeof(name), -1, STR_TERMINATE);
 
 	if (dscnt > tdscnt || pscnt > tpscnt) {
 		exit_server("invalid trans parameters\n");

@@ -445,8 +445,6 @@ static void usage(void)
 	argv += 1;
 
 	TimeInit();
-	charset_initialise();
-	codepage_initialise(lp_client_code_page());
 
 	lp_load(servicesf,True,False,False);
 	load_interfaces();

@@ -342,7 +342,6 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 	TimeInit();
 	setup_logging(argv[0],True);
 	
-	charset_initialise();
 	lp_load(servicesf,False,False,False);
 
 	if (!message_init()) exit(1);

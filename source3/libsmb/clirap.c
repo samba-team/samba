@@ -181,8 +181,8 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
 					char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
 					pstring s1, s2;
 
-					pstrcpy(s1, dos_to_unix(sname, False));
-					pstrcpy(s2, dos_to_unix(cmnt, False));
+					pull_ascii_pstring(s1, sname);
+					pull_ascii_pstring(s2, cmnt);
 
 					fn(s1, type, s2, state);
 				}
@@ -237,8 +237,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	SIVAL(p,0,stype);
 	p += 4;
 
-	p += clistr_push(cli, p, workgroup, -1, 
-			 STR_TERMINATE | STR_CONVERT | STR_ASCII);
+	p += push_pstring(p, workgroup);
 	
 	if (cli_api(cli, 
                     param, PTR_DIFF(p,param), 8,        /* params, length, max */
@@ -265,8 +264,8 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 
 				stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
 
-				pstrcpy(s1, dos_to_unix(sname, False));
-				pstrcpy(s2, dos_to_unix(cmnt, False));
+				pull_ascii_pstring(s1, sname);
+				pull_ascii_pstring(s2, cmnt);
 				fn(s1, stype, s2, state);
 			}
 		}
@@ -325,13 +324,10 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
    * use this as the key to make_oem_passwd_hash().
    */
   memset(upper_case_old_pw, '\0', sizeof(upper_case_old_pw));
-  fstrcpy(upper_case_old_pw, old_password);
-  unix_to_dos(upper_case_old_pw,True);
-  strupper(upper_case_old_pw);
+  clistr_push(cli, upper_case_old_pw, old_password, -1,STR_TERMINATE|STR_UPPER);
   E_P16((uchar *)upper_case_old_pw, old_pw_hash);
 
-  pstrcpy(dos_new_password, new_password);
-  unix_to_dos(dos_new_password, True);
+  clistr_push(cli, dos_new_password, new_password, -1, STR_TERMINATE);
 
   if (!make_oem_passwd_hash( data, dos_new_password, old_pw_hash, False))
     return False;
@@ -340,9 +336,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
    * Now place the old password hash in the data.
    */
   memset(upper_case_new_pw, '\0', sizeof(upper_case_new_pw));
-  fstrcpy(upper_case_new_pw, new_password);
-  unix_to_dos(upper_case_new_pw,True);
-  strupper(upper_case_new_pw);
+  clistr_push(cli, upper_case_new_pw, new_password, -1, STR_TERMINATE|STR_UPPER);
 
   E_P16((uchar *)upper_case_new_pw, new_pw_hash);
 
@@ -399,7 +393,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 	memset(p, 0, 6);
 	SSVAL(p, 0, SMB_INFO_STANDARD);
 	p += 6;
-	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE | STR_CONVERT);
+	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE);
 
 	param_len = PTR_DIFF(p, param);
 
@@ -475,7 +469,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	memset(p, 0, 6);
 	SSVAL(p, 0, SMB_QUERY_FILE_ALL_INFO);
 	p += 6;
-	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE | STR_CONVERT);
+	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE);
 
 	param_len = PTR_DIFF(p, param);
 

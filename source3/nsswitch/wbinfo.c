@@ -356,14 +356,12 @@ int main(int argc, char **argv)
 	}
 
 	TimeInit();
-	charset_initialise();
 
 	if (!lp_load(CONFIGFILE, True, False, False)) {
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
 	}
 	
-	codepage_initialise(lp_client_code_page());
 	load_interfaces();
 
 	/* Parse command line options */

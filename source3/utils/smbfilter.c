@@ -210,8 +210,6 @@ int main(int argc, char *argv[])
 
 	setup_logging(argv[0],True);
   
-	charset_initialise();
-
 	pstrcpy(configfile,CONFIGFILE);
  
 	if (argc < 2) {

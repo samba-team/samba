@@ -49,22 +49,6 @@
 
 #include "includes.h"
 
-/* Set default coding system for KANJI if none specified in Makefile. */
-/* 
- * We treat KANJI specially due to historical precedent (it was the
- * first non-english codepage added to Samba). With the new dynamic
- * codepage support this is not needed anymore.
- *
- * The define 'KANJI' is being overloaded to mean 'use kanji codepage
- * by default' and also 'this is the filename-to-disk conversion 
- * method to use'. This really should be removed and all control
- * over this left in the smb.conf parameters 'client codepage'
- * and 'coding system'.
- */
-#ifndef KANJI
-#define KANJI "sbcs"
-#endif /* KANJI */
-
 BOOL in_client = False;		/* Not in the client by default */
 BOOL bLoaded = False;
 
@@ -101,6 +85,8 @@ static BOOL defaults_saved = False;
  */
 typedef struct
 {
+	char *dos_charset;
+	char *unix_charset;
 	char *szPrintcapname;
 	char *szEnumPortsCommand;
 	char *szAddPrinterCommand;
@@ -123,7 +109,6 @@ typedef struct
 	char *szPassdbModulePath;
 	char *szPasswordServer;
 	char *szSocketOptions;
-	char *szValidChars;
 	char *szWorkGroup;
 	char *szDomainAdminGroup;
 	char *szDomainGuestGroup;
@@ -135,14 +120,11 @@ typedef struct
 #ifdef USING_GROUPNAME_MAP
 	char *szGroupnameMap;
 #endif				/* USING_GROUPNAME_MAP */
-	char *szCharacterSet;
-	char *szCodePageDir;
 	char *szLogonScript;
 	char *szLogonPath;
 	char *szLogonDrive;
 	char *szLogonHome;
 	char *szWINSserver;
-	char *szCodingSystem;
 	char **szInterfaces;
 	char *szRemoteAnnounce;
 	char *szRemoteBrowseSync;
@@ -207,7 +189,6 @@ typedef struct
 	int ReadSize;
 	int lm_announce;
 	int lm_interval;
-	int client_code_page;
 	int announce_as;	/* This is initialised in init_globals */
 	int machine_password_timeout;
 	int change_notify_timeout;
@@ -526,12 +507,8 @@ static int default_server_announce;
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 /* prototypes for the special type handlers */
-static BOOL handle_valid_chars(char *pszParmValue, char **ptr);
 static BOOL handle_include(char *pszParmValue, char **ptr);
 static BOOL handle_copy(char *pszParmValue, char **ptr);
-static BOOL handle_character_set(char *pszParmValue, char **ptr);
-static BOOL handle_coding_system(char *pszParmValue, char **ptr);
-static BOOL handle_client_code_page(char *pszParmValue, char **ptr);
 static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
 static BOOL handle_source_env(char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(char *pszParmValue, char **ptr);
@@ -652,18 +629,17 @@ static struct enum_list enum_ssl_version[] = {
 /* note that we do not initialise the defaults union - it is not allowed in ANSI C */
 static struct parm_struct parm_table[] = {
 	{"Base Options", P_SEP, P_SEPARATOR},
-	
-	{"coding system", P_STRING, P_GLOBAL, &Globals.szCodingSystem, handle_coding_system, NULL, 0},
-	{"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page, handle_client_code_page, NULL, 0},
-	{"code page directory", P_STRING, P_GLOBAL, &Globals.szCodePageDir,   NULL,   NULL,  0},
-	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING},
-	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING},
-	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_DOS_STRING},
-	{"workgroup", P_USTRING, P_GLOBAL, &Globals.szWorkGroup, NULL, NULL, FLAG_BASIC | FLAG_DOS_STRING},
-	{"netbios name", P_UGSTRING, P_GLOBAL, global_myname, handle_netbios_name, NULL, FLAG_BASIC | FLAG_DOS_STRING},
-	{"netbios aliases", P_LIST, P_GLOBAL, &Globals.szNetbiosAliases, NULL, NULL, FLAG_DOS_STRING},
-	{"netbios scope", P_UGSTRING, P_GLOBAL, global_scope, NULL, NULL, FLAG_DOS_STRING},
-	{"server string", P_STRING, P_GLOBAL, &Globals.szServerString, NULL, NULL, FLAG_BASIC | FLAG_DOS_STRING},
+
+	{"dos charset", P_STRING, P_GLOBAL, &Globals.dos_charset, NULL, NULL, 0},
+	{"unix charset", P_STRING, P_GLOBAL, &Globals.unix_charset, NULL, NULL, 0},
+	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT},
+	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT},
+	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, 0},
+	{"workgroup", P_USTRING, P_GLOBAL, &Globals.szWorkGroup, NULL, NULL, FLAG_BASIC},
+	{"netbios name", P_UGSTRING, P_GLOBAL, global_myname, handle_netbios_name, NULL, FLAG_BASIC},
+	{"netbios aliases", P_LIST, P_GLOBAL, &Globals.szNetbiosAliases, NULL, NULL, 0},
+	{"netbios scope", P_UGSTRING, P_GLOBAL, global_scope, NULL, NULL, 0},
+	{"server string", P_STRING, P_GLOBAL, &Globals.szServerString, NULL, NULL, FLAG_BASIC },
 	{"interfaces", P_LIST, P_GLOBAL, &Globals.szInterfaces, NULL, NULL, FLAG_BASIC},
 	{"bind interfaces only", P_BOOL, P_GLOBAL, &Globals.bBindInterfacesOnly, NULL, NULL, 0},
 
@@ -851,8 +827,8 @@ static struct parm_struct parm_table[] = {
 	{"show add printer wizard", P_BOOL, P_GLOBAL, &Globals.bMsAddPrinterWizard, NULL, NULL, 0},
     {"os2 driver map", P_STRING, P_GLOBAL, &Globals.szOs2DriverMap, NULL, NULL, 0},
 	
-	{"printer name", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_PRINT|FLAG_DOS_STRING},
-	{"printer", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_DOS_STRING},
+	{"printer name", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_PRINT},
+	{"printer", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, 0},
 	{"printer driver", P_STRING, P_LOCAL, &sDefault.szPrinterDriver, NULL, NULL, FLAG_PRINT},
 	{"printer driver file", P_STRING, P_LOCAL, &sDefault.szDriverFile, NULL, NULL, FLAG_PRINT},
 	{"printer driver location", P_STRING, P_LOCAL, &sDefault.szPrinterDriverLocation, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
@@ -860,7 +836,6 @@ static struct parm_struct parm_table[] = {
 	{"Filename Handling", P_SEP, P_SEPARATOR},
 	{"strip dot", P_BOOL, P_GLOBAL, &Globals.bStripDot, NULL, NULL, 0},
 	
-	{"character set", P_STRING, P_GLOBAL, &Globals.szCharacterSet, handle_character_set, NULL, 0},
 	{"mangled stack", P_INTEGER, P_GLOBAL, &Globals.mangled_stack, NULL, NULL, 0},
 	{"default case", P_ENUM, P_LOCAL, &sDefault.iDefaultCase, NULL, enum_case, FLAG_SHARE},
 	{"case sensitive", P_BOOL, P_LOCAL, &sDefault.bCaseSensitive, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
@@ -872,9 +847,9 @@ static struct parm_struct parm_table[] = {
 	{"hide dot files", P_BOOL, P_LOCAL, &sDefault.bHideDotFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"hide unreadable", P_BOOL, P_LOCAL, &sDefault.bHideUnReadable, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"delete veto files", P_BOOL, P_LOCAL, &sDefault.bDeleteVetoFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
-	{"veto files", P_STRING, P_LOCAL, &sDefault.szVetoFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL | FLAG_DOS_STRING},
-	{"hide files", P_STRING, P_LOCAL, &sDefault.szHideFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL | FLAG_DOS_STRING},
-	{"veto oplock files", P_STRING, P_LOCAL, &sDefault.szVetoOplockFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL | FLAG_DOS_STRING},
+	{"veto files", P_STRING, P_LOCAL, &sDefault.szVetoFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL },
+	{"hide files", P_STRING, P_LOCAL, &sDefault.szHideFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL },
+	{"veto oplock files", P_STRING, P_LOCAL, &sDefault.szVetoOplockFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL },
 	{"map system", P_BOOL, P_LOCAL, &sDefault.bMap_system, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"map hidden", P_BOOL, P_LOCAL, &sDefault.bMap_hidden, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"map archive", P_BOOL, P_LOCAL, &sDefault.bMap_archive, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
@@ -902,10 +877,10 @@ static struct parm_struct parm_table[] = {
 	{"add user to group script", P_STRING, P_GLOBAL, &Globals.szAddUserToGroupScript, NULL, NULL, 0},
 	{"delete user from group script", P_STRING, P_GLOBAL, &Globals.szDelUserToGroupScript, NULL, NULL, 0},
 
-	{"logon script", P_STRING, P_GLOBAL, &Globals.szLogonScript, NULL, NULL, FLAG_DOS_STRING},
-	{"logon path", P_STRING, P_GLOBAL, &Globals.szLogonPath, NULL, NULL, FLAG_DOS_STRING},
+	{"logon script", P_STRING, P_GLOBAL, &Globals.szLogonScript, NULL, NULL, 0},
+	{"logon path", P_STRING, P_GLOBAL, &Globals.szLogonPath, NULL, NULL, 0},
 	{"logon drive", P_STRING, P_GLOBAL, &Globals.szLogonDrive, NULL, NULL, 0},
-	{"logon home", P_STRING, P_GLOBAL, &Globals.szLogonHome, NULL, NULL, FLAG_DOS_STRING},
+	{"logon home", P_STRING, P_GLOBAL, &Globals.szLogonHome, NULL, NULL, 0},
 	{"domain logons", P_BOOL, P_GLOBAL, &Globals.bDomainLogons, NULL, NULL, 0},
 
 	{"Browse Options", P_SEP, P_SEPARATOR},
@@ -962,8 +937,8 @@ static struct parm_struct parm_table[] = {
 	{"delete share command", P_STRING, P_GLOBAL, &Globals.szDeleteShareCommand, NULL, NULL, 0},
 	
 	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE},
-	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_DOS_STRING},
-	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_DOS_STRING},
+	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, 0},
+	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, 0},
 	{"lock dir", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, 0}, 
 	{"lock directory", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, 0},
 #ifdef WITH_UTMP
@@ -973,11 +948,10 @@ static struct parm_struct parm_table[] = {
 	{"utmp",          P_BOOL, P_GLOBAL, &Globals.bUtmp, NULL, NULL, 0},
 #endif
 	
-	{"default service", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_DOS_STRING},
-	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_DOS_STRING},
+	{"default service", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, 0},
+	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, 0},
 	{"message command", P_STRING, P_GLOBAL, &Globals.szMsgCommand, NULL, NULL, 0},
 	{"dfree command", P_STRING, P_GLOBAL, &Globals.szDfree, NULL, NULL, 0},
-	{"valid chars", P_STRING, P_GLOBAL, &Globals.szValidChars, handle_valid_chars, NULL, 0},
 	{"remote announce", P_STRING, P_GLOBAL, &Globals.szRemoteAnnounce, NULL, NULL, 0},
 	{"remote browse sync", P_STRING, P_GLOBAL, &Globals.szRemoteBrowseSync, NULL, NULL, 0},
 	{"socket address", P_STRING, P_GLOBAL, &Globals.szSocketAddress, NULL, NULL, 0},
@@ -997,7 +971,7 @@ static struct parm_struct parm_table[] = {
 	{"root preexec close", P_BOOL, P_LOCAL, &sDefault.bRootpreexecClose, NULL, NULL, FLAG_SHARE},
 	{"root postexec", P_STRING, P_LOCAL, &sDefault.szRootPostExec, NULL, NULL, FLAG_SHARE | FLAG_PRINT},
 	{"available", P_BOOL, P_LOCAL, &sDefault.bAvailable, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT},
-	{"volume", P_STRING, P_LOCAL, &sDefault.volume, NULL, NULL, FLAG_SHARE | FLAG_DOS_STRING},
+	{"volume", P_STRING, P_LOCAL, &sDefault.volume, NULL, NULL, FLAG_SHARE },
 	{"fstype", P_STRING, P_LOCAL, &sDefault.fstype, NULL, NULL, FLAG_SHARE},
 	{"set directory", P_BOOLREV, P_LOCAL, &sDefault.bNo_set_dir, NULL, NULL, FLAG_SHARE},
 	{"source environment", P_STRING, P_GLOBAL, &Globals.szSourceEnv, handle_source_env, NULL, 0},
@@ -1222,7 +1196,6 @@ static void init_globals(void)
 	string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
 
 	string_set(&Globals.szNameResolveOrder, "lmhosts host wins bcast");
-	string_set(&Globals.szCodePageDir, CODEPAGEDIR);
 
 	Globals.bLoadPrinters = True;
 	Globals.bUseRhosts = False;
@@ -1275,7 +1248,6 @@ static void init_globals(void)
 	string_set(&Globals.szNISHomeMapName, "auto.home");
 #endif
 #endif
-	Globals.client_code_page = DEFAULT_CLIENT_CODE_PAGE;
 	Globals.bTimeServer = False;
 	Globals.bBindInterfacesOnly = False;
 	Globals.bUnixPasswdSync = False;
@@ -1352,13 +1324,6 @@ static void init_globals(void)
 	Globals.winbind_cache_time = 15;
 	Globals.bWinbindEnumUsers = True;
 	Globals.bWinbindEnumGroups = True;
-
-	/*
-	 * This must be done last as it checks the value in 
-	 * client_code_page.
-	 */
-
-	interpret_coding_system(KANJI);
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1496,7 +1461,6 @@ FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
-FN_GLOBAL_STRING(lp_codepagedir,&Globals.szCodePageDir)
 #ifdef WITH_LDAP
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
@@ -1587,7 +1551,6 @@ FN_GLOBAL_INTEGER(lp_lpqcachetime, &Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_max_smbd_processes, &Globals.iMaxSmbdProcesses)
 FN_GLOBAL_INTEGER(lp_totalprintjobs, &Globals.iTotalPrintJobs)
 FN_GLOBAL_INTEGER(lp_syslog, &Globals.syslog)
-FN_GLOBAL_INTEGER(lp_client_code_page, &Globals.client_code_page)
 static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce, &Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval, &Globals.lm_interval)
@@ -1767,7 +1730,7 @@ static void free_service(service * pservice)
 
 /***************************************************************************
 add a new service to the services array initialising it with the given 
-service. name must be in DOS codepage.
+service. 
 ***************************************************************************/
 static int add_a_service(service * pservice, char *name)
 {
@@ -1822,7 +1785,7 @@ static int add_a_service(service * pservice, char *name)
 
 /***************************************************************************
 add a new home service, with the specified home directory, defaults coming 
-from service ifrom. homename must be in DOS codepage.
+from service ifrom.
 ***************************************************************************/
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
 {
@@ -1851,7 +1814,7 @@ BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
 }
 
 /***************************************************************************
-add a new service, based on an old one. pszService must be in DOS codepage.
+add a new service, based on an old one.
 ***************************************************************************/
 int lp_add_service(char *pszService, int iDefaultService)
 {
@@ -1894,7 +1857,6 @@ static BOOL lp_add_ipc(char *ipc_name, BOOL guest_ok)
 
 /***************************************************************************
 add a new printer service, with defaults coming from service iFrom.
-printername must be in DOS codepage.
 ***************************************************************************/
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 {
@@ -2209,11 +2171,6 @@ static BOOL handle_netbios_name(char *pszParmValue, char **ptr)
 	standard_sub_basic(netbios_name);
 	strupper(netbios_name);
 
-	/*
-	 * Convert from UNIX to DOS string - the UNIX to DOS converter
-	 * isn't called on the special handlers.
-	 */
-	unix_to_dos(netbios_name, True);
 	pstrcpy(global_myname, netbios_name);
 
 	DEBUG(4,
@@ -2305,11 +2262,11 @@ static BOOL handle_source_env(char *pszParmValue, char **ptr)
 
 	if (*p == '|')
 	{
-		lines = file_lines_pload(p + 1, NULL, True);
+		lines = file_lines_pload(p + 1, NULL);
 	}
 	else
 	{
-		lines = file_lines_load(fname, NULL, True);
+		lines = file_lines_load(fname, NULL);
 	}
 
 	if (!lines)
@@ -2341,67 +2298,6 @@ static BOOL handle_vfs_object(char *pszParmValue, char **ptr)
 	return True;
 }
 
-/***************************************************************************
-  handle the interpretation of the coding system parameter
-  *************************************************************************/
-static BOOL handle_coding_system(char *pszParmValue, char **ptr)
-{
-	string_set(ptr, pszParmValue);
-	interpret_coding_system(pszParmValue);
-	return (True);
-}
-
-/***************************************************************************
- Handle the interpretation of the character set system parameter.
-***************************************************************************/
-
-static char *saved_character_set = NULL;
-
-static BOOL handle_character_set(char *pszParmValue, char **ptr)
-{
-	/* A dependency here is that the parameter client code page should be
-	   set before this is called.
-	 */
-	string_set(ptr, pszParmValue);
-	strupper(*ptr);
-	saved_character_set = strdup(*ptr);
-	interpret_character_set(*ptr, lp_client_code_page());
-	return (True);
-}
-
-/***************************************************************************
- Handle the interpretation of the client code page parameter.
- We handle this separately so that we can reset the character set
- parameter in case this came before 'client code page' in the smb.conf.
-***************************************************************************/
-
-static BOOL handle_client_code_page(char *pszParmValue, char **ptr)
-{
-	Globals.client_code_page = atoi(pszParmValue);
-	if (saved_character_set != NULL)
-		interpret_character_set(saved_character_set,
-					lp_client_code_page());
- 	codepage_initialise(lp_client_code_page());
-	return (True);
-}
-
-/***************************************************************************
-handle the valid chars lines
-***************************************************************************/
-
-static BOOL handle_valid_chars(char *pszParmValue, char **ptr)
-{
-	string_set(ptr, pszParmValue);
-
-	/* A dependency here is that the parameter client code page must be
-	   set before this is called - as calling codepage_initialise()
-	   would overwrite the valid char lines.
-	 */
-	codepage_initialise(lp_client_code_page());
-
-	add_char_string(pszParmValue);
-	return (True);
-}
 
 /***************************************************************************
 handle the include operation
@@ -2651,27 +2547,19 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 
 		case P_STRING:
 			string_set(parm_ptr, pszParmValue);
-			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos(*(char **)parm_ptr, True);
 			break;
 
 		case P_USTRING:
 			string_set(parm_ptr, pszParmValue);
-			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos(*(char **)parm_ptr, True);
 			strupper(*(char **)parm_ptr);
 			break;
 
 		case P_GSTRING:
 			pstrcpy((char *)parm_ptr, pszParmValue);
-			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos((char *)parm_ptr, True);
 			break;
 
 		case P_UGSTRING:
 			pstrcpy((char *)parm_ptr, pszParmValue);
-			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos((char *)parm_ptr, True);
 			strupper((char *)parm_ptr);
 			break;
 
@@ -2715,7 +2603,7 @@ static BOOL do_parameter(char *pszParmName, char *pszParmValue)
 /***************************************************************************
 print a parameter of the specified type
 ***************************************************************************/
-static void print_parameter(struct parm_struct *p, void *ptr, FILE * f,  char *(*dos_to_ext)(char *, BOOL))
+static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 {
 	int i;
 	switch (p->type)
@@ -2756,34 +2644,23 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f,  char *(
 			if ((char ***)ptr && *(char ***)ptr) {
 				char **list = *(char ***)ptr;
 				
-				if (p->flags & FLAG_DOS_STRING)
-					for (; *list; list++)
-						fprintf(f, "%s%s", dos_to_ext(*list, False),
-								   ((*(list+1))?", ":""));
-				else
-					for (; *list; list++)
-						fprintf(f, "%s%s", *list,
-								   ((*(list+1))?", ":""));
+				for (; *list; list++)
+					fprintf(f, "%s%s", *list,
+						((*(list+1))?", ":""));
 			}
 			break;
 
 		case P_GSTRING:
 		case P_UGSTRING:
 			if ((char *)ptr) {
-				if (p->flags & FLAG_DOS_STRING)
-					fprintf(f, "%s", dos_to_ext((char *)ptr, False));
-				else
-					fprintf(f, "%s", (char *)ptr);
+				fprintf(f, "%s", (char *)ptr);
 			}
 			break;
 
 		case P_STRING:
 		case P_USTRING:
 			if (*(char **)ptr) {
-				if(p->flags & FLAG_DOS_STRING)
-					fprintf(f,"%s",dos_to_ext(*(char **)ptr, False));
-				else
-					fprintf(f, "%s", *(char **)ptr);
+				fprintf(f, "%s", *(char **)ptr);
 			}
 			break;
 		case P_SEP:
@@ -2852,7 +2729,7 @@ void init_locals(void)
 /***************************************************************************
 Process a new section (service). At this stage all sections are services.
 Later we'll have special sections that permit server parameters to be set.
-Returns True on success, False on failure. SectionName must be in DOS codepage.
+Returns True on success, False on failure. 
 ***************************************************************************/
 static BOOL do_section(char *pszSectionName)
 {
@@ -2945,7 +2822,7 @@ static BOOL is_default(int i)
 /***************************************************************************
 Display the contents of the global structure.
 ***************************************************************************/
-static void dump_globals(FILE *f, char *(*dos_to_ext)(char *, BOOL))
+static void dump_globals(FILE *f)
 {
 	int i;
 	fprintf(f, "# Global parameters\n[global]\n");
@@ -2958,7 +2835,7 @@ static void dump_globals(FILE *f, char *(*dos_to_ext)(char *, BOOL))
 			if (defaults_saved && is_default(i))
 				continue;
 			fprintf(f, "\t%s = ", parm_table[i].label);
-			print_parameter(&parm_table[i], parm_table[i].ptr, f, dos_to_ext);
+			print_parameter(&parm_table[i], parm_table[i].ptr, f);
 			fprintf(f, "\n");
 		}
 }
@@ -2979,7 +2856,7 @@ BOOL lp_is_default(int snum, struct parm_struct *parm)
 /***************************************************************************
 Display the contents of a single services record.
 ***************************************************************************/
-static void dump_a_service(service * pService, FILE * f, char *(*dos_to_ext)(char *, BOOL))
+static void dump_a_service(service * pService, FILE * f)
 {
 	int i;
 	if (pService != &sDefault)
@@ -3010,7 +2887,7 @@ static void dump_a_service(service * pService, FILE * f, char *(*dos_to_ext)(cha
 
 			fprintf(f, "\t%s = ", parm_table[i].label);
 			print_parameter(&parm_table[i],
-					((char *)pService) + pdiff, f, dos_to_ext);
+					((char *)pService) + pdiff, f);
 			fprintf(f, "\n");
 		}
 }
@@ -3158,7 +3035,6 @@ void lp_add_one_printer(char *name, char *comment)
 		if ((i = lp_servicenumber(name)) >= 0)
 		{
 			string_set(&ServicePtrs[i]->comment, comment);
-            unix_to_dos(ServicePtrs[i]->comment, True);
 			ServicePtrs[i]->autoloaded = True;
 		}
 	}
@@ -3353,13 +3229,11 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 
 	/* Now we check bWINSsupport and set szWINSserver to 127.0.0.1 */
 	/* if bWINSsupport is true and we are in the client            */
-
-	if (in_client && Globals.bWINSsupport)
-	{
-
+	if (in_client && Globals.bWINSsupport) {
 		string_set(&Globals.szWINSserver, "127.0.0.1");
-
 	}
+
+	init_iconv(Globals.unix_charset, Globals.dos_charset);
 
 	return (bRetval);
 }
@@ -3384,7 +3258,7 @@ int lp_numservices(void)
 /***************************************************************************
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
-void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint, char *(*dos_to_ext)(char *, BOOL))
+void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint)
 {
 	int iService;
 
@@ -3393,24 +3267,24 @@ void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint, char *(*dos_to_ext)(ch
 		defaults_saved = False;
 	}
 
-	dump_globals(f, dos_to_ext);
+	dump_globals(f);
 
-	dump_a_service(&sDefault, f, dos_to_ext);
+	dump_a_service(&sDefault, f);
 
 	for (iService = 0; iService < maxtoprint; iService++)
-		lp_dump_one(f, show_defaults, iService, dos_to_ext);
+		lp_dump_one(f, show_defaults, iService);
 }
 
 /***************************************************************************
 Display the contents of one service in human-readable form.
 ***************************************************************************/
-void lp_dump_one(FILE * f, BOOL show_defaults, int snum, char *(*dos_to_ext)(char *, BOOL))
+void lp_dump_one(FILE * f, BOOL show_defaults, int snum)
 {
 	if (VALID(snum))
 	{
 		if (ServicePtrs[snum]->szService[0] == '\0')
 			return;
-		dump_a_service(ServicePtrs[snum], f, dos_to_ext);
+		dump_a_service(ServicePtrs[snum], f);
 	}
 }
 
@@ -3429,7 +3303,6 @@ int lp_servicenumber(char *pszServiceName)
 		if (VALID(iService) &&
 		    strequal(lp_servicename(iService), pszServiceName))
 			break;
-
 	if (iService < 0)
 		DEBUG(7,
 		      ("lp_servicenumber: couldn't find %s\n",
@@ -3573,7 +3446,7 @@ void lp_remove_service(int snum)
 }
 
 /*******************************************************************
-copy a service. new_name must be in dos codepage
+copy a service. 
 ********************************************************************/
 void lp_copy_service(int snum, char *new_name)
 {
@@ -3781,4 +3654,3 @@ void lp_list_free(char **list)
 	for(; *tlist; tlist++) free(*tlist);
 	free (list);
 }
-

@@ -182,9 +182,7 @@ BOOL name_status_find(int type, struct in_addr to_ip, char *name)
 	}
 	if (i == count) return False;
 
-	StrnCpy(name, status[i].name, 15);
-
-	dos_to_unix(name, True);
+	pull_ascii(name, status[i].name, 15, 0, STR_TERMINATE);
 
 	free(status);
 	return True;
@@ -1025,7 +1023,8 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 	mailslot_name = bufp;
 	bufp += (strlen(bufp) + 1);
 	bufp = ALIGN2(bufp, buffer);
-	bufp += dos_PutUniCode(bufp, srcname, sizeof(buffer) - (bufp - buffer) - 1, True);
+	bufp += push_ucs2(NULL, bufp, srcname, sizeof(buffer) - (bufp - buffer), STR_TERMINATE);	
+	
 	SIVAL(bufp,0,1);
 	SSVAL(bufp,4,0xFFFF); 
 	SSVAL(bufp,6,0xFFFF); 

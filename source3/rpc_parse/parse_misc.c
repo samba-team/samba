@@ -539,8 +539,7 @@ void init_unistr(UNISTR *str, const char *buf)
 	if (str->buffer == NULL)
 		smb_panic("init_unistr: malloc fail\n");
 
-	/* store the string (null-terminated copy) */
-	dos_struni2((char *)str->buffer, buf, len);
+	rpcstr_push(str->buffer, buf, len, STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -605,12 +604,12 @@ void init_buffer3_str(BUFFER3 *str, char *buf, int len)
 
 	/* set up string lengths. */
 	str->buf_max_len = len * 2;
-	str->buf_len     = len * 2;
+	str->buf_len = len * 2;
 
 	create_buffer3(str, str->buf_max_len);
 
-	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
-	dos_struni2((char *)str->buffer, buf, str->buf_max_len);
+	rpcstr_push(str->buffer, buf, str->buf_max_len, STR_TERMINATE);
+	
 }
 
 /*******************************************************************
@@ -911,8 +910,7 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 		return;
 	}
 
-	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
-	dos_struni2((char *)str->buffer, buf, len);
+	rpcstr_push((char *)str->buffer, buf, len, STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -1483,8 +1481,7 @@ void init_unistr3(UNISTR3 *str, const char *buf)
 	if (str->str.buffer == NULL)
 		smb_panic("init_unistr3: malloc fail\n");
 
-	/* store the string (null-terminated copy) */
-	dos_struni2((char *)str->str.buffer, buf, len);
+	rpcstr_push((char *)str->str.buffer, buf, len, STR_TERMINATE);
 }
 
 /*******************************************************************

@@ -361,6 +361,10 @@
 #include <sys/shm.h>
 #endif /* HAVE_SYS_SHM_H */
 
+#ifdef HAVE_NATIVE_ICONV
+#include <iconv.h>
+#endif
+
 /*
  * Define VOLATILE if needed.
  */
@@ -655,9 +659,6 @@ extern int errno;
 #include "nameserv.h"
 
 #include "byteorder.h"
-
-#include "kanji.h"
-#include "charset.h"
 
 #include "ntdomain.h"
 
@@ -1015,6 +1016,7 @@ extern int DEBUGLEVEL;
 #define F_SETLK 13
 #define F_SETLKW 14
 #endif
+
 
 /* Needed for sys_dlopen/sys_dlsym/sys_dlclose */
 #ifndef RTLD_GLOBAL

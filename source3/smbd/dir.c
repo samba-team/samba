@@ -625,7 +625,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
       pstrcpy(pathreal,path);
       pstrcat(path,fname);
       pstrcat(pathreal,dname);
-      if (conn->vfs_ops.stat(conn,dos_to_unix(pathreal, False), &sbuf) != 0)
+      if (conn->vfs_ops.stat(conn, pathreal, &sbuf) != 0)
       {
         DEBUG(5,("Couldn't stat 1 [%s]. Error = %s\n",path, strerror(errno) ));
         continue;
@@ -701,7 +701,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 {
   Dir *dirp;
   char *n;
-  DIR *p = conn->vfs_ops.opendir(conn,dos_to_unix(name,False));
+  DIR *p = conn->vfs_ops.opendir(conn,name);
   int used=0;
 
   if (!p) return(NULL);
@@ -719,9 +719,6 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
     int l;
 
     l = strlen(n)+1;
-
-    /* Return value of vfs_readdirname has already gone through 
-       unix_to_dos() */
 
     /* If it's a vetoed file, pretend it doesn't even exist */
     if (use_veto && conn && IS_VETO_PATH(conn, n)) continue;

@@ -85,7 +85,7 @@ uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	fstrcpy(name, dos_unistrn2(q_u->uni_name.buffer, q_u->uni_name.uni_str_len));
+	rpcstr_pull(name,q_u->uni_name.buffer,sizeof(name),q_u->uni_name.uni_str_len*2,0);
 
 	DEBUG(5,("reg_open_entry: %s\n", name));
 
@@ -129,7 +129,7 @@ uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	if (find_policy_by_hnd(p, &q_u->pol, NULL) == -1)
 		return NT_STATUS_INVALID_HANDLE;
 
-	fstrcpy(name, dos_unistrn2(q_u->uni_type.buffer, q_u->uni_type.uni_str_len));
+	rpcstr_pull(name, q_u->uni_type.buffer, sizeof(name), q_u->uni_type.uni_str_len*2, 0);
 
 	DEBUG(5,("reg_info: checking key: %s\n", name));
 

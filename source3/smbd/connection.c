@@ -53,7 +53,6 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	key.pid = sys_getpid();
 	key.cnum = conn?conn->cnum:-1;
 	fstrcpy(key.name, name);
-	dos_to_unix(key.name, True);           /* Convert key to unix-codepage */
 
 	kbuf.dptr = (char *)&key;
 	kbuf.dsize = sizeof(key);
@@ -174,7 +173,6 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	key.pid = sys_getpid();
 	key.cnum = conn?conn->cnum:-1;
 	fstrcpy(key.name, name);
-	dos_to_unix(key.name, True);           /* Convert key to unix-codepage */
 
 	kbuf.dptr = (char *)&key;
 	kbuf.dsize = sizeof(key);

@@ -46,8 +46,6 @@ void pong_message(int msg_type, pid_t src, void *buf, size_t len)
 	TimeInit();
 	setup_logging(argv[0],True);
 	
-	charset_initialise();
-
 	lp_load(servicesf,False,False,False);
 
 	message_init();

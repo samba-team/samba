@@ -417,7 +417,7 @@ char *file_load(char *fname, size_t *size)
 /****************************************************************************
 parse a buffer into lines
 ****************************************************************************/
-static char **file_lines_parse(char *p, size_t size, int *numlines, BOOL convert)
+static char **file_lines_parse(char *p, size_t size, int *numlines)
 {
 	int i;
 	char *s, **ret;
@@ -446,21 +446,15 @@ static char **file_lines_parse(char *p, size_t size, int *numlines, BOOL convert
 		if (s[0] == '\r') s[0] = 0;
 	}
 
-	if (convert) {
-		for (i = 0; ret[i]; i++)
-			unix_to_dos(ret[i], True);
-	}
-
 	return ret;
 }
 
 
 /****************************************************************************
 load a file into memory and return an array of pointers to lines in the file
-must be freed with file_lines_free(). If convert is true calls unix_to_dos on
-the list.
+must be freed with file_lines_free(). 
 ****************************************************************************/
-char **file_lines_load(char *fname, int *numlines, BOOL convert)
+char **file_lines_load(char *fname, int *numlines)
 {
 	char *p;
 	size_t size;
@@ -468,7 +462,7 @@ char **file_lines_load(char *fname, int *numlines, BOOL convert)
 	p = file_load(fname, &size);
 	if (!p) return NULL;
 
-	return file_lines_parse(p, size, numlines, convert);
+	return file_lines_parse(p, size, numlines);
 }
 
 /****************************************************************************
@@ -476,7 +470,7 @@ load a fd into memory and return an array of pointers to lines in the file
 must be freed with file_lines_free(). If convert is true calls unix_to_dos on
 the list.
 ****************************************************************************/
-char **fd_lines_load(int fd, int *numlines, BOOL convert)
+char **fd_lines_load(int fd, int *numlines)
 {
 	char *p;
 	size_t size;
@@ -484,16 +478,15 @@ char **fd_lines_load(int fd, int *numlines, BOOL convert)
 	p = fd_load(fd, &size);
 	if (!p) return NULL;
 
-	return file_lines_parse(p, size, numlines, convert);
+	return file_lines_parse(p, size, numlines);
 }
 
 
 /****************************************************************************
 load a pipe into memory and return an array of pointers to lines in the data
-must be freed with file_lines_free(). If convert is true calls unix_to_dos on
-the list.
+must be freed with file_lines_free(). 
 ****************************************************************************/
-char **file_lines_pload(char *syscmd, int *numlines, BOOL convert)
+char **file_lines_pload(char *syscmd, int *numlines)
 {
 	char *p;
 	size_t size;
@@ -501,7 +494,7 @@ char **file_lines_pload(char *syscmd, int *numlines, BOOL convert)
 	p = file_pload(syscmd, &size);
 	if (!p) return NULL;
 
-	return file_lines_parse(p, size, numlines, convert);
+	return file_lines_parse(p, size, numlines);
 }
 
 /****************************************************************************

@@ -6,6 +6,75 @@ understood by anyone wishing to add features to Samba.
 
 
 
+=============================================================================
+This section describes character set handling in Samba, as implemented in
+Samba 3.0 and above
+
+In the past Samba had very ad-hoc character set handling. Scattered
+throughout the code were numerous calls which converted particular
+strings to/from DOS codepages. The problem is that there was no way of
+telling if a particular char* is in dos codepage or unix
+codepage. This led to a nightmare of code that tried to cope with
+particular cases without handlingt the general case.
+
+The new system works like this:
+
+- all char* strings inside Samba are "unix" strings. These are
+  multi-byte strings that are in the charset defined by the "unix
+  charset" option in smb.conf. 
+
+- there is no single fixed character set for unix strings, but any
+  character set that is used does need the following properties:
+    * must not contain NULLs except for termination
+    * must be 7-bit compatible with C strings, so that a constant
+      string or character in C will be byte-for-byte identical to the
+      equivalent string in the chosen character set. 
+    * when you uppercase or lowercase a string it does not become
+      longer than the original string
+    * must be able to correctly hold all characters that your client
+      will throw at it
+  For example, UTF-8 is fine, and most multi-byte asian character sets
+  are fine, but UCS2 could not be used for unix strings as they
+  contain nulls.
+
+- when you need to put a string into a buffer that will be sent on the
+  wire, or you need a string in a character set format that is
+  compatible with the clients character set then you need to use a
+  pull_ or push_ function. The pull_ functions pull a string from a
+  wire buffer into a (multi-byte) unix string. The push_ functions
+  push a string out to a wire buffer. 
+
+- the two main pull_ and push_ functions you need to understand are
+  pull_string and push_string. These functions take a base pointer
+  that should point at the start of the SMB packet that the string is
+  in. The functions will check the flags field in this packet to
+  automatically determine if the packet is marked as a unicode packet,
+  and they will choose whether to use unicode for this string based on
+  that flag. You may also force this decision using the STR_UNICODE or
+  STR_ASCII flags. For use in smbd/ and libsmb/ there are wrapper
+  functions clistr_ and srvstr_ that call the pull_/push_ functions
+  with the appropriate first argument.
+
+  You may also call the pull_ascii/pull_ucs2 or push_ascii/push_ucs2
+  functions if you know that a particular string is ascii or
+  unicode. There are also a number of other convenience functions in
+  charcnv.c that call the pull_/push_ functions with particularly
+  common arguments, such as pull_ascii_pstring()
+
+The biggest thing to remember is that internal (unix) strings in Samba
+may now contain multi-byte characters. This means you cannot assume
+that characters are always 1 byte long. Often this means that you will
+have to convert strings to ucs2 and back again in order to do some
+(seemingly) simple task. For examples of how to do this see functions
+like strchr_m(). I know this is very slow, and we will eventually
+speed it up but right now we want this stuff correct not fast.
+
+Other rules:
+
+  - all lp_ functions now return unix strings. The magic "DOS" flag on
+    parameters is gone.
+  - all vfs functions take unix strings. Don't convert when passing to
+    them
 
 
 =============================================================================

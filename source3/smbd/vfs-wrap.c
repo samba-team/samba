@@ -29,7 +29,7 @@
    is sure to try and execute them.  These stubs are used to prevent
    this possibility. */
 
-int vfswrap_dummy_connect(connection_struct *conn, char *service, char *user)
+int vfswrap_dummy_connect(connection_struct *conn, const char *service, const char *user)
 {
     return 0;    /* Return >= 0 for success */
 }
@@ -40,7 +40,7 @@ void vfswrap_dummy_disconnect(connection_struct *conn)
 
 /* Disk operations */
 
-SMB_BIG_UINT vfswrap_disk_free(connection_struct *conn, char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
+SMB_BIG_UINT vfswrap_disk_free(connection_struct *conn, const char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 			       SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
     SMB_BIG_UINT result;
@@ -59,7 +59,7 @@ SMB_BIG_UINT vfswrap_disk_free(connection_struct *conn, char *path, BOOL small_q
     
 /* Directory operations */
 
-DIR *vfswrap_opendir(connection_struct *conn, char *fname)
+DIR *vfswrap_opendir(connection_struct *conn, const char *fname)
 {
     DIR *result;
 
@@ -93,7 +93,7 @@ struct dirent *vfswrap_readdir(connection_struct *conn, DIR *dirp)
     return result;
 }
 
-int vfswrap_mkdir(connection_struct *conn, char *path, mode_t mode)
+int vfswrap_mkdir(connection_struct *conn, const char *path, mode_t mode)
 {
     int result;
 
@@ -126,7 +126,7 @@ int vfswrap_mkdir(connection_struct *conn, char *path, mode_t mode)
     return result;
 }
 
-int vfswrap_rmdir(connection_struct *conn, char *path)
+int vfswrap_rmdir(connection_struct *conn, const char *path)
 {
     int result;
 
@@ -162,7 +162,7 @@ int vfswrap_closedir(connection_struct *conn, DIR *dirp)
 
 /* File operations */
     
-int vfswrap_open(connection_struct *conn, char *fname, int flags, mode_t mode)
+int vfswrap_open(connection_struct *conn, const char *fname, int flags, mode_t mode)
 {
     int result;
 
@@ -207,7 +207,7 @@ ssize_t vfswrap_read(files_struct *fsp, int fd, char *data, size_t n)
     return result;
 }
 
-ssize_t vfswrap_write(files_struct *fsp, int fd, char *data, size_t n)
+ssize_t vfswrap_write(files_struct *fsp, int fd, const char *data, size_t n)
 {
     ssize_t result;
 
@@ -235,7 +235,7 @@ SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int wh
     return result;
 }
 
-int vfswrap_rename(connection_struct *conn, char *old, char *new)
+int vfswrap_rename(connection_struct *conn, const char *old, const char *new)
 {
     int result;
 
@@ -267,7 +267,7 @@ int vfswrap_fsync(files_struct *fsp, int fd)
 #endif
 }
 
-int vfswrap_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *sbuf)
+int vfswrap_stat(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *sbuf)
 {
     int result;
 
@@ -301,7 +301,7 @@ int vfswrap_fstat(files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf)
     return result;
 }
 
-int vfswrap_lstat(connection_struct *conn, char *path, SMB_STRUCT_STAT *sbuf)
+int vfswrap_lstat(connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf)
 {
     int result;
 
@@ -318,7 +318,7 @@ int vfswrap_lstat(connection_struct *conn, char *path, SMB_STRUCT_STAT *sbuf)
     return result;
 }
 
-int vfswrap_unlink(connection_struct *conn, char *path)
+int vfswrap_unlink(connection_struct *conn, const char *path)
 {
     int result;
 
@@ -335,7 +335,7 @@ int vfswrap_unlink(connection_struct *conn, char *path)
     return result;
 }
 
-int vfswrap_chmod(connection_struct *conn, char *path, mode_t mode)
+int vfswrap_chmod(connection_struct *conn, const char *path, mode_t mode)
 {
     int result;
 
@@ -397,7 +397,7 @@ int vfswrap_fchmod(files_struct *fsp, int fd, mode_t mode)
     return result;
 }
 
-int vfswrap_chown(connection_struct *conn, char *path, uid_t uid, gid_t gid)
+int vfswrap_chown(connection_struct *conn, const char *path, uid_t uid, gid_t gid)
 {
     int result;
 
@@ -425,7 +425,7 @@ int vfswrap_fchown(files_struct *fsp, int fd, uid_t uid, gid_t gid)
     return result;
 }
 
-int vfswrap_chdir(connection_struct *conn, char *path)
+int vfswrap_chdir(connection_struct *conn, const char *path)
 {
     int result;
 
@@ -459,7 +459,7 @@ char *vfswrap_getwd(connection_struct *conn, char *path)
     return result;
 }
 
-int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times)
+int vfswrap_utime(connection_struct *conn, const char *path, struct utimbuf *times)
 {
     int result;
 
@@ -595,7 +595,7 @@ size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc)
 	return get_nt_acl(fsp, ppdesc);
 }
 
-size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc)
+size_t vfswrap_get_nt_acl(files_struct *fsp, const char *name, SEC_DESC **ppdesc)
 {
 	return get_nt_acl(fsp, ppdesc);
 }
@@ -605,12 +605,12 @@ BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, S
 	return set_nt_acl(fsp, security_info_sent, psd);
 }
 
-BOOL vfswrap_set_nt_acl(files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd)
+BOOL vfswrap_set_nt_acl(files_struct *fsp, const char *name, uint32 security_info_sent, SEC_DESC *psd)
 {
 	return set_nt_acl(fsp, security_info_sent, psd);
 }
 
-int vfswrap_chmod_acl(connection_struct *conn, char *name, mode_t mode)
+int vfswrap_chmod_acl(connection_struct *conn, const char *name, mode_t mode)
 {
 	return chmod_acl(name, mode);
 }

@@ -877,14 +877,15 @@ void init_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 	memcpy(rsp->nt_resp, nt_resp, 24);
 
 	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
-		dos_struni2(rsp->domain, domain, sizeof(rsp->domain));
-		dos_struni2(rsp->user, user, sizeof(rsp->user));
-		dos_struni2(rsp->wks, wks, sizeof(rsp->wks));
+		rpcstr_push(rsp->domain, domain, sizeof(rsp->domain), 0);
+		rpcstr_push(rsp->user, user, sizeof(rsp->user), 0);
+		rpcstr_push(rsp->wks, wks, sizeof(rsp->wks), 0);
 	} else {
 		fstrcpy(rsp->domain, domain);
 		fstrcpy(rsp->user, user);
 		fstrcpy(rsp->wks, wks);
 	}
+	
 	rsp->sess_key[0] = 0;
 }
 

@@ -1293,8 +1293,6 @@ int command_main(int argc, char *argv[])
 
 	DEBUGLEVEL = 2;
 
-	charset_initialise();
-
 	/* add in the internal command set and the various
 	   client RPC groups--spoolss, lsa, etc... */
 	add_command_set(general_commands);
@@ -1356,8 +1354,6 @@ int command_main(int argc, char *argv[])
 	cmd_set_options &= ~CMD_NOPW;
 	cmd_set_options &= ~CMD_USER;
 	cmd_set_options &= ~CMD_PASS;
-
-	codepage_initialise(lp_client_code_page());
 
 	/*  parse the command line args
 	    init the first connection if possible

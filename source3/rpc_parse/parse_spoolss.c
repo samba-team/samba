@@ -4713,7 +4713,7 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 	*ar = NULL;
 
 	while (src < ((char *)buf5->buffer) + buf5->buf_len*2) {
-		unistr_to_dos(f, src, sizeof(f)-1);
+		rpcstr_pull(f, src, sizeof(f)-1, -1, 0);
 		src = skip_unibuf(src, 2*buf5->buf_len - PTR_DIFF(src,buf5->buffer));
 		*ar = (fstring *)Realloc(*ar, sizeof(fstring)*(n+2));
 		fstrcpy((*ar)[n], f);

@@ -574,7 +574,7 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 	int pnum = -1;
 	char *p = NULL;
 
-	srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE|STR_CONVERT);
+	srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE);
 
 	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
 		return ret;
@@ -682,7 +682,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
          * Check to see if this is a mac fork of some kind.
          */
 
-	srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE|STR_CONVERT);
+	srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE);
 
         if( strchr(fname, ':')) {
           SSVAL(outbuf, smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
@@ -710,10 +710,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
       }
 
       srvstr_pull(inbuf, &fname[dir_name_len], smb_buf(inbuf), sizeof(fname)-dir_name_len, 
-		  -1, STR_TERMINATE|STR_CONVERT);
+		  -1, STR_TERMINATE);
     } else {
       srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), 
-		  -1, STR_TERMINATE|STR_CONVERT);
+		  -1, STR_TERMINATE);
     }
 	
 	/*
@@ -971,7 +971,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 		return(ERROR(ERRDOS,ERRbadaccess));
 	}
 
-	srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE|STR_CONVERT);
+	srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE);
 
     if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
       return ret;
@@ -1188,7 +1188,7 @@ static int call_nt_transact_create(connection_struct *conn,
        * Check to see if this is a mac fork of some kind.
        */
 
-      srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE|STR_CONVERT);
+      srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE);
 
       if( strchr(fname, ':')) {
           SSVAL(outbuf, smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
@@ -1215,9 +1215,9 @@ static int call_nt_transact_create(connection_struct *conn,
     }
 
     srvstr_pull(inbuf, &fname[dir_name_len], params+53, sizeof(fname)-dir_name_len, 
-		-1, STR_TERMINATE|STR_CONVERT);
+		-1, STR_TERMINATE);
   } else {
-    srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE|STR_CONVERT);
+    srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE);
   }
 
   /*
@@ -1511,7 +1511,7 @@ static int call_nt_transact_rename(connection_struct *conn,
   int outsize = 0;
 
   CHECK_FSP(fsp, conn);
-  srvstr_pull(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE|STR_CONVERT);
+  srvstr_pull(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE);
 
   outsize = rename_internals(conn, inbuf, outbuf, fsp->fsp_name,
                              new_name, replace_if_exists);

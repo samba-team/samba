@@ -354,13 +354,13 @@ static BOOL load_config(BOOL save_def)
 /****************************************************************************
   write a config file 
 ****************************************************************************/
-static void write_config(FILE *f, BOOL show_defaults, char *(*dos_to_ext)(char *, BOOL))
+static void write_config(FILE *f, BOOL show_defaults)
 {
 	fprintf(f, "# Samba config file created using SWAT\n");
 	fprintf(f, "# from %s (%s)\n", cgi_remote_host(), cgi_remote_addr());
 	fprintf(f, "# Date: %s\n\n", timestring(False));
 	
-	lp_dump(f, show_defaults, iNumNonAutoPrintServices, dos_to_ext);	
+	lp_dump(f, show_defaults, iNumNonAutoPrintServices);
 }
 
 /****************************************************************************
@@ -383,9 +383,9 @@ static int save_reload(int snum)
 		fchmod(fileno(f), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 	}
 
-	write_config(f, False, _dos_to_unix);
+	write_config(f, False);
 	if (snum)
-		lp_dump_one(f, False, snum, _dos_to_unix);
+		lp_dump_one(f, False, snum);
 	fclose(f);
 
 	lp_killunused(NULL);
@@ -407,10 +407,6 @@ static void commit_parameter(int snum, struct parm_struct *parm, char *v)
 {
 	int i;
 	char *s;
-
-	/* lp_do_parameter() will do unix_to_dos(v). */
-	if(parm->flags & FLAG_DOS_STRING)
-		dos_to_unix(v, True);
 
 	if (snum < 0 && parm->class == P_LOCAL) {
 		/* this handles the case where we are changing a local
@@ -511,7 +507,7 @@ static void viewconfig_page(void)
 	}
 
 	printf("<p><pre>");
-	write_config(stdout, full_view, _dos_to_dos);
+	write_config(stdout, full_view);
 	printf("</pre>");
 	printf("</form>\n");
 }
@@ -591,12 +587,8 @@ static void shares_page(void)
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
-		/* add_a_service() which is called by lp_copy_service()
-			will do unix_to_dos() conversion, so we need dos_to_unix() before the lp_copy_service(). */
-		pstring unix_share;
-		pstrcpy(unix_share, dos_to_unix(share, False));
 		load_config(False);
-		lp_copy_service(GLOBALS_SNUM, unix_share);
+		lp_copy_service(GLOBALS_SNUM, share);
 		iNumNonAutoPrintServices = lp_numservices();
 		save_reload(0);
 		snum = lp_servicenumber(share);
@@ -930,12 +922,8 @@ static void printers_page(void)
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
-		/* add_a_service() which is called by lp_copy_service()
-			will do unix_to_dos() conversion, so we need dos_to_unix() before the lp_copy_service(). */
-		pstring unix_share;
-		pstrcpy(unix_share, dos_to_unix(share, False));
 		load_config(False);
-		lp_copy_service(GLOBALS_SNUM, unix_share);
+		lp_copy_service(GLOBALS_SNUM, share);
 		iNumNonAutoPrintServices = lp_numservices();
 		snum = lp_servicenumber(share);
 		lp_do_parameter(snum, "print ok", "Yes");
@@ -1047,7 +1035,6 @@ static void printers_page(void)
 	}
 
 	setup_logging(argv[0],False);
-	charset_initialise();
 	load_config(True);
 	iNumNonAutoPrintServices = lp_numservices();
 	load_printers();

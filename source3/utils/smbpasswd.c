@@ -901,8 +901,6 @@ int main(int argc, char **argv)
 	
 	setup_logging("smbpasswd", True);
 	
-	charset_initialise();
-	
 	if(!initialize_password_db(True)) {
 		fprintf(stderr, "Can't setup password database vectors.\n");
 		exit(1);
@@ -926,8 +924,6 @@ int main(int argc, char **argv)
 		if (p) *p = 0;
 	}           
 	strupper(global_myname);
-
-	codepage_initialise(lp_client_code_page());
 
 	secrets_init();
 

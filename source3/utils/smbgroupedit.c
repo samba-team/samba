@@ -220,8 +220,6 @@ int main (int argc, char **argv)
 	
 	setup_logging("groupedit", True);
 
-	charset_initialise();
-
 	if (argc < 2) {
 		usage();
 		return 0;

@@ -235,7 +235,7 @@ static int reply_nt1(char *outbuf)
   if (doencrypt) memcpy(p, cryptkey, 8);
   p += 8;
   p += srvstr_push(outbuf, p, global_myworkgroup, -1, 
-		   STR_UNICODE|STR_CONVERT|STR_TERMINATE|STR_NOALIGN);
+		   STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 
   SSVAL(outbuf,smb_vwv17, p - q); /* length of challenge+domain strings */
   set_message_end(outbuf, p);

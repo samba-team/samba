@@ -592,8 +592,6 @@ int main (int argc, char **argv)
 	
 	setup_logging("tdbedit", True);
 
-	charset_initialise();
-
 	if (argc < 2)
 
 	{

@@ -135,7 +135,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	  else
 		printf("NONE            ");
 
-	  printf(" %s   %s",dos_to_unix(fname,False),
+	  printf(" %s   %s",fname,
              asctime(LocalTime((time_t *)&e->time.tv_sec)));
 	}
 }
@@ -251,8 +251,6 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 
 	TimeInit();
 	setup_logging(argv[0],True);
-	
-	charset_initialise();
 	
 	DEBUGLEVEL = 0;
 	dbf = stderr;

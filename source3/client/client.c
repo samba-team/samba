@@ -190,13 +190,6 @@ static void send_message(void)
 			msg[l] = c;   
 		}
 
-		/*
-		 * The message is in UNIX codepage format. Convert to
-		 * DOS before sending.
-		 */
-
-		unix_to_dos(msg, True);
-
 		if (!cli_message_text(cli, msg, l, grp_id)) {
 			printf("SMBsendtxt failed (%s)\n",cli_errstr(cli));
 			return;
@@ -1645,9 +1638,8 @@ static void browse_fn(const char *name, uint32 m,
           case STYPE_IPC:
             fstrcpy(typestr,"IPC"); break;
         }
-
-        printf("\t%-15.15s%-10.10s%s\n",
-               name, typestr,comment);
+	printf("\t%-15.15s%-10.10s%s\n",
+               name,typestr,comment);
 }
 
 
@@ -1682,7 +1674,7 @@ try and browse available connections on a host
 static BOOL list_servers(char *wk_grp)
 {
 	if (!cli->server_domain) return False;
-
+	
         printf("\n\tServer               Comment\n");
         printf("\t---------            -------\n");
 
@@ -1928,14 +1920,17 @@ static void process_stdin(void)
 	while (1) {
 		fstring tok;
 		fstring the_prompt;
-		char *line;
+		char *cline;
+		pstring line;
 		int i;
 		
 		/* display a prompt */
 		slprintf(the_prompt, sizeof(the_prompt)-1, "smb: %s> ", cur_dir);
-		line = smb_readline(the_prompt, readline_callback, completion_fn);
-
-		if (!line) break;
+		cline = smb_readline(the_prompt, readline_callback, completion_fn);
+			
+		if (!cline) break;
+		
+		pstrcpy(line, cline);
 
 		/* special case - first char is ! */
 		if (*line == '!') {
@@ -1961,11 +1956,11 @@ static void process_stdin(void)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-struct cli_state *do_connect(char *server, char *share)
+struct cli_state *do_connect(const char *server, const char *share)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
-	char *server_n;
+	const char *server_n;
 	struct in_addr ip;
 	extern struct in_addr ipzero;
 	fstring servicename;
@@ -2058,9 +2053,10 @@ struct cli_state *do_connect(char *server, char *share)
 	 * mode to turn these on/off ? JRA.
 	 */
 
-	if (*c->server_domain || *c->server_os || *c->server_type)
+	if (*c->server_domain || *c->server_os || *c->server_type){
 		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
 			c->server_domain,c->server_os,c->server_type));
+	}		
 	
 	DEBUG(4,(" session setup ok\n"));
 
@@ -2329,7 +2325,6 @@ static int do_message_op(void)
 	}
 
 	TimeInit();
-	charset_initialise();
 
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
@@ -2339,8 +2334,6 @@ static int do_message_op(void)
 	}
 	DEBUGLEVEL = old_debug;
 	
-	codepage_initialise(lp_client_code_page());
-
 #ifdef WITH_SSL
 	sslutil_init(0);
 #endif
@@ -2582,9 +2575,6 @@ static int do_message_op(void)
 
 	if(*new_name_resolve_order)
 		lp_set_name_resolve_order(new_name_resolve_order);
-
-	if (*term_code)
-		interpret_coding_system(term_code);
 
 	if (!tar_type && !*query_host && !*service && !message) {
 		usage(pname);

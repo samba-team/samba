@@ -818,7 +818,6 @@ static void parse_mount_smb(int argc, char **argv)
 	setup_logging("mount.smbfs",True);
 
 	TimeInit();
-	charset_initialise();
 	
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
@@ -860,8 +859,6 @@ static void parse_mount_smb(int argc, char **argv)
 	}
 
 	DEBUG(3,("mount.smbfs started (version %s)\n", VERSION));
-
-	codepage_initialise(lp_client_code_page());
 
 	if (*workgroup == 0) {
 		pstrcpy(workgroup,lp_workgroup());

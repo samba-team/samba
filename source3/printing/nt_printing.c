@@ -288,7 +288,6 @@ int write_ntforms(nt_forms_struct **list, int number)
 			       (*list)[i].bottom);
 		if (len > sizeof(buf)) break;
 		slprintf(key, sizeof(key)-1, "%s%s", FORMS_PREFIX, (*list)[i].name);
-        dos_to_unix(key, True);            /* Convert key to unix-codepage */
 		kbuf.dsize = strlen(key)+1;
 		kbuf.dptr = key;
 		dbuf.dsize = len;
@@ -371,7 +370,6 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32
 	}
 
 	slprintf(key, sizeof(key)-1, "%s%s", FORMS_PREFIX, (*list)[n].name);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 	kbuf.dsize = strlen(key)+1;
 	kbuf.dptr = key;
 	if (tdb_delete(tdb, kbuf) != 0) {
@@ -1461,7 +1459,6 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	}
 
 	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX, architecture, driver->cversion, driver->name);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 
 	DEBUG(5,("add_a_printer_driver_3: Adding driver with key %s\n", key ));
 
@@ -1826,7 +1823,6 @@ uint32 del_a_printer(char *sharename)
 	TDB_DATA kbuf;
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 
 	kbuf.dptr=key;
 	kbuf.dsize=strlen(key)+1;
@@ -1913,7 +1909,6 @@ static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, info->sharename);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
@@ -2287,7 +2282,7 @@ static void map_to_os2_driver(fstring drivername)
 		return;
 	}
 
-	lines = file_lines_load(mapfile, &numlines, True);
+	lines = file_lines_load(mapfile, &numlines);
 	if (numlines == 0) {
 		DEBUG(0,("No entries in OS/2 driver map %s\n",mapfile));
 		return;
@@ -2439,7 +2434,6 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	ZERO_STRUCT(info);
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;

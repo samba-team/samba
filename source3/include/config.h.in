@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
 
 /* Define if on AIX 3.
    System headers sometimes define this.
@@ -216,6 +216,7 @@
 #undef HAVE_VASPRINTF_DECL
 #undef HAVE_SNPRINTF_DECL
 #undef HAVE_VSNPRINTF_DECL
+#undef HAVE_NATIVE_ICONV
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT

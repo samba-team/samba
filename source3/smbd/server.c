@@ -635,8 +635,6 @@ static void usage(char *pname)
 
 	setup_logging(argv[0],False);
 
-	charset_initialise();
-
 	/* we want to re-seed early to prevent time delays causing
            client problems at a later date. (tridge) */
 	generate_random_buffer(NULL, 0, False);
@@ -711,8 +709,6 @@ static void usage(char *pname)
 			sslutil_init(True);
 	}
 #endif        /* WITH_SSL */
-
-	codepage_initialise(lp_client_code_page());
 
 	fstrcpy(global_myworkgroup, lp_workgroup());
 

@@ -120,7 +120,7 @@ char *cli_errstr(struct cli_state *cli)
 	{
 		if (rap_errmap[i].err == cli->rap_error)
 		{
-			fstrcpy( error_message, rap_errmap[i].message);
+			fstrcpy(error_message, rap_errmap[i].message);
 			break;
 		}
 	} 
