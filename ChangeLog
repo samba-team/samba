@@ -1,5 +1,7 @@
 Mon Jan  5 23:34:44 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/hdb/ndbm.c: Implement locking of database.
+
 	* kdc/kerberos5.c: Process AuthorizationData.
 
 Sat Jan  3 22:07:07 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
