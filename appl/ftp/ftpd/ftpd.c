@@ -183,7 +183,7 @@ static char ttyline[20];
 #define AUTH_OTP	(1 << 1) /* passwords are one-time */
 #define AUTH_FTP	(1 << 2) /* allow anonymous login */
 
-static int auth_level = AUTH_FTP;
+static int auth_level = 0; /* Only allow kerberos login by default */
 
 /*
  * Timeout intervals for retrying connections
@@ -256,9 +256,7 @@ parse_auth_level(char *str)
     int ret = 0;
     p = strtok(str, ",");
     while(p){
-	if(strcmp(p, "krb4") == 0 ||
-	   strcmp(p, "user") == 0)
-	    ;
+	if(strcmp(p, "user") == 0) ;
 	else if(strcmp(p, "otp") == 0)
 	    ret |= AUTH_PLAIN|AUTH_OTP;
 	else if(strcmp(p, "ftp") == 0 ||
