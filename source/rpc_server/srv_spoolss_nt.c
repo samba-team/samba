@@ -37,6 +37,15 @@
 #define PRINTER_HANDLE_IS_PRINTER	0
 #define PRINTER_HANDLE_IS_PRINTSERVER	1
 
+/* Table to map the driver version */
+/* to OS */
+char * drv_ver_to_os[] = {
+	"WIN9X",   /* driver version/cversion 0 */
+	"",        /* unused ? */
+	"WINNT",   /* driver version/cversion 2 */
+	"WIN2K",   /* driver version/cversion 3 */
+};
+
 struct table_node {
 	char    *long_archi;
 	char    *short_archi;
@@ -6569,15 +6578,20 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 		goto done;
 	}
 
-        switch(level)
-	{
+	/* BEGIN_ADMIN_LOG */
+        switch(level) {
 	    case 3:
+		sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
+			driver.info_3->name,drv_ver_to_os[driver.info_3->cversion],uidtoname(user.uid));
 		fstrcpy(driver_name, driver.info_3->name);
 		break;
 	    case 6:   
+		sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
+			driver.info_6->name,drv_ver_to_os[driver.info_6->version],uidtoname(user.uid));
 		fstrcpy(driver_name, driver.info_6->name);
 		break;
         }
+	/* END_ADMIN_LOG */
 
 	/* 
 	 * I think this is where he DrvUpgradePrinter() hook would be
@@ -6591,6 +6605,16 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 			driver_name));
 	}
 
+	/* if driver is not 9x, delete existing driver init data */
+
+	if ((level == 3 && driver.info_3->cversion != 0) ||
+				(level == 6 && driver.info_6->version  != 0)) {
+		if (!del_driver_init(driver_name))
+			DEBUG(3,("_spoolss_addprinterdriver: del_driver_init(%s) failed!\n", driver_name));
+	} else {
+		DEBUG(10,("_spoolss_addprinterdriver: init data not deleted for 9x driver [%s]\n", driver_name));
+	}
+	
 done:
 	free_a_printer_driver(driver, level);
 	return err;

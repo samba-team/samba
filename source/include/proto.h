@@ -2407,6 +2407,7 @@ void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr);
 void get_printer_subst_params(int snum, fstring *printername, fstring *sharename, fstring *portname);
 WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 BOOL set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level);
+BOOL del_driver_init(char *drivername);
 uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_PRINTER_PARAM *param);
 WERROR get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring sharename);
