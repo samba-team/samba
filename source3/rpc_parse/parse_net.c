@@ -2369,6 +2369,140 @@ static BOOL net_io_sam_dom_info(char *desc, SAM_DELTA_DOM *info,
 	if(!smb_io_dom_sid2("domain_sid", &info->domain_sid, ps, depth))
 		return False;
 
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static BOOL net_io_sam_unk0e_info(char *desc, SAM_DELTA_UNK0E *info,
+				      prs_struct *ps, int depth)
+{
+	int i;
+
+	prs_debug(ps, depth, desc, "net_io_sam_unk0e_info");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("buf_size", ps, depth, &info->buf_size))
+                return False;
+
+	if(!sec_io_desc("sec_desc", &info->sec_desc, ps, depth))
+		return False;
+
+	if(!smb_io_dom_sid2("sid", &info->sid, ps, depth))
+		return False;
+
+	if(!smb_io_unihdr("hdr_domain", &info->hdr_domain, ps, depth))
+		return False;
+
+	if(!prs_uint32("unknown0", ps, depth, &info->unknown0))
+                return False;
+	if(!prs_uint32("unknown1", ps, depth, &info->unknown1))
+                return False;
+	if(!prs_uint32("unknown2", ps, depth, &info->unknown2))
+                return False;
+
+	if(!prs_uint32("buf_size2", ps, depth, &info->buf_size2))
+                return False;
+	if(!prs_uint32("ptr", ps, depth, &info->ptr))
+                return False;
+
+	for (i=0; i<12; i++)
+		if(!prs_uint32("unknown3", ps, depth, &info->unknown3))
+                	return False;
+
+	if (!smb_io_unistr2("domain", &info->domain, True, ps, depth))
+                return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static BOOL net_io_sam_unk12_info(char *desc, SAM_DELTA_UNK12 *info,
+				      prs_struct *ps, int depth)
+{
+	int i;
+
+	prs_debug(ps, depth, desc, "net_io_sam_unk12_info");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("buf_size", ps, depth, &info->buf_size))
+                return False;
+
+	if(!sec_io_desc("sec_desc", &info->sec_desc, ps, depth))
+		return False;
+
+	if (!smb_io_unistr2("secret", &info->secret, True, ps, depth))
+                return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("count1", ps, depth, &info->count1))
+                return False;
+	if(!prs_uint32("count2", ps, depth, &info->count2))
+                return False;
+	if(!prs_uint32("ptr", ps, depth, &info->ptr))
+                return False;
+
+
+	if(!smb_io_time("time1", &info->time1, ps, depth)) /* logon time */
+		return False;
+	if(!prs_uint32("count3", ps, depth, &info->count3))
+                return False;
+	if(!prs_uint32("count4", ps, depth, &info->count4))
+                return False;
+	if(!prs_uint32("ptr2", ps, depth, &info->ptr2))
+                return False;
+	if(!smb_io_time("time2", &info->time2, ps, depth)) /* logon time */
+		return False;
+	if(!prs_uint32("unknow1", ps, depth, &info->unknow1))
+                return False;
+
+
+	if(!prs_uint32("buf_size2", ps, depth, &info->buf_size2))
+                return False;
+	if(!prs_uint32("ptr3", ps, depth, &info->ptr3))
+                return False;
+	for(i=0; i<12; i++)
+		if(!prs_uint32("unknow2", ps, depth, &info->unknow2))
+                	return False;
+
+	if(!prs_uint32("chal_len", ps, depth, &info->chal_len))
+                return False;
+	if(!prs_uint32("reserved1", ps, depth, &info->reserved1))
+                return False;
+	if(!prs_uint32("chal_len2", ps, depth, &info->chal_len2))
+                return False;
+
+	if(!prs_uint8s (False, "chal", ps, depth, info->chal, info->chal_len2))
+		return False;
+
+	if(!prs_uint32("key_len", ps, depth, &info->key_len))
+                return False;
+	if(!prs_uint32("reserved2", ps, depth, &info->reserved2))
+                return False;
+	if(!prs_uint32("key_len2", ps, depth, &info->key_len2))
+                return False;
+
+	if(!prs_uint8s (False, "key", ps, depth, info->key, info->key_len2))
+		return False;
+
+
+	if(!prs_uint32("buf_size3", ps, depth, &info->buf_size3))
+                return False;
+
+	if(!sec_io_desc("sec_desc2", &info->sec_desc2, ps, depth))
+		return False;
+
 
 	return True;
 }
@@ -2514,6 +2648,16 @@ static BOOL net_io_sam_delta_ctr(char *desc, uint8 sess_key[16],
 
 		case SAM_DELTA_PRIVS_INFO:
 			if (!net_io_sam_privs_info("", &delta->privs_info, ps, depth))
+                                return False;
+			break;
+
+		case SAM_DELTA_UNK0E_INFO:
+			if (!net_io_sam_unk0e_info("", &delta->unk0e_info, ps, depth))
+                                return False;
+			break;
+
+		case SAM_DELTA_UNK12_INFO:
+			if (!net_io_sam_unk12_info("", &delta->unk12_info, ps, depth))
                                 return False;
 			break;
 
