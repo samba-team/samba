@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -63,7 +63,7 @@ _krb5_crc_init_table(void)
 }
 
 u_int32_t
-_krb5_crc_update (char *p, size_t len, u_int32_t res)
+_krb5_crc_update (const char *p, size_t len, u_int32_t res)
 {
     while (len--)
 	res = table[(res ^ *p++) & 0xFF] ^ (res >> 8);
