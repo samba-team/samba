@@ -45,9 +45,6 @@
 #define TDB_LEN_MULTIPLIER 10
 #define FREELIST_TOP (sizeof(struct tdb_header))
 
-#define LOCK_SET 1
-#define LOCK_CLEAR 0
-
 /* lock offsets */
 #define GLOBAL_LOCK 0
 #define ACTIVE_LOCK 4
@@ -86,7 +83,7 @@ static TDB_DATA null_data;
 /* a byte range locking function - return 0 on success
    this functions locks/unlocks 1 byte at the specified offset */
 static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset, 
-		      int set, int rw_type, int lck_type)
+		      int rw_type, int lck_type)
 {
 	struct flock fl;
 
@@ -94,7 +91,7 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 
 	if (tdb->read_only) return -1;
 
-	fl.l_type = set==LOCK_SET?rw_type:F_UNLCK;
+	fl.l_type = rw_type;
 	fl.l_whence = SEEK_SET;
 	fl.l_start = offset;
 	fl.l_len = 1;
@@ -103,8 +100,8 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 	if (fcntl(tdb->fd, lck_type, &fl) != 0) {
 #if TDB_DEBUG
 		if (lck_type == F_SETLKW) {
-			printf("lock %d failed at %d (%s)\n", 
-			       set, offset, strerror(errno));
+			printf("lock failed at %d (%s)\n", 
+			       offset, strerror(errno));
 		}
 #endif
 		tdb->ecode = TDB_ERR_LOCK;
@@ -114,7 +111,7 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 }
 
 /* lock a list in the database. list -1 is the alloc list */
-static int tdb_lock(TDB_CONTEXT *tdb, int list)
+static int tdb_lock(TDB_CONTEXT *tdb, int list, int locktype)
 {
 	if (list < -1 || list >= (int)tdb->header.hash_size) {
 #if TDB_DEBUG
@@ -125,13 +122,17 @@ static int tdb_lock(TDB_CONTEXT *tdb, int list)
 
 	if (tdb->flags & TDB_NOLOCK) return 0;
 
-	if (tdb->locked[list+1] == 0) {
-		if (tdb_brlock(tdb, LIST_LOCK_BASE + 4*list, LOCK_SET, 
-			       F_WRLCK, F_SETLKW) != 0) {
+	if (tdb->locked[list+1].count == 0 ||
+	    (tdb->locked[list+1].ltype == F_RDLCK && 
+	     locktype == F_WRLCK)) {
+		if (tdb_brlock(tdb, LIST_LOCK_BASE + 4*list, 
+			       locktype, F_SETLKW) != 0) {
 			return -1;
 		}
+		tdb->locked[list+1].ltype = locktype;
 	}
-	tdb->locked[list+1]++;
+
+	tdb->locked[list+1].count++;
 	return 0;
 }
 
@@ -147,20 +148,20 @@ static int tdb_unlock(TDB_CONTEXT *tdb, int list)
 
 	if (tdb->flags & TDB_NOLOCK) return 0;
 
-	if (tdb->locked[list+1] == 0) {
+	if (tdb->locked[list+1].count == 0) {
 #if TDB_DEBUG
 		printf("not locked %d\n", list);
 #endif
 		tdb->ecode = TDB_ERR_LOCK;
 		return -1;
 	}
-	if (tdb->locked[list+1] == 1) {
-		if (tdb_brlock(tdb, LIST_LOCK_BASE + 4*list, LOCK_CLEAR, 
-			       F_WRLCK, F_SETLKW) != 0) {
+	if (tdb->locked[list+1].count == 1) {
+		if (tdb_brlock(tdb, LIST_LOCK_BASE + 4*list, 
+			       F_UNLCK, F_SETLKW) != 0) {
 			return -1;
 		}
 	}
-	tdb->locked[list+1]--;
+	tdb->locked[list+1].count--;
 	return 0;
 }
 
@@ -332,7 +333,7 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
 	tdb_off offset, ptr;
 	char b = 0;
 
-	tdb_lock(tdb,-1);
+	tdb_lock(tdb,-1, F_WRLCK);
 
 	/* make sure we know about any previous expansions by another
            process */
@@ -407,7 +408,7 @@ static tdb_off tdb_allocate(TDB_CONTEXT *tdb, tdb_len length)
 	tdb_off offset, rec_ptr, last_ptr;
 	struct list_struct rec, lastrec, newrec;
 
-	tdb_lock(tdb, -1);
+	tdb_lock(tdb, -1, F_WRLCK);
 
  again:
 	last_ptr = 0;
@@ -645,7 +646,7 @@ int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
-	tdb_lock(tdb, BUCKET(hash));
+	tdb_lock(tdb, BUCKET(hash), F_WRLCK);
 	rec_ptr = tdb_find(tdb, key, hash, &rec);
 
 	if (!rec_ptr) {
@@ -691,7 +692,7 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
-	tdb_lock(tdb, BUCKET(hash));
+	tdb_lock(tdb, BUCKET(hash), F_RDLCK);
 	rec_ptr = tdb_find(tdb, key, hash, &rec);
 
 	if (rec_ptr) {
@@ -727,7 +728,7 @@ int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key)
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
-	tdb_lock(tdb, BUCKET(hash));
+	tdb_lock(tdb, BUCKET(hash), F_RDLCK);
 	rec_ptr = tdb_find(tdb, key, hash, &rec);
 	tdb_unlock(tdb, BUCKET(hash));
 
@@ -757,7 +758,7 @@ int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB
 
 	/* loop over all hash chains */
 	for (h = 0; h < tdb->header.hash_size; h++) {
-		tdb_lock(tdb, BUCKET(h));
+		tdb_lock(tdb, BUCKET(h), F_RDLCK);
 
 		/* read in the hash top */
 		offset = tdb_hash_top(tdb, h);
@@ -831,7 +832,7 @@ TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb)
 		/* find the top of the hash chain */
 		offset = tdb_hash_top(tdb, hash);
 
-		tdb_lock(tdb, BUCKET(hash));
+		tdb_lock(tdb, BUCKET(hash), F_RDLCK);
 
 		/* read in the hash top */
 		if (ofs_read(tdb, offset, &rec_ptr) == -1) {
@@ -880,7 +881,7 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key)
 	hash = tdb_hash(&key);
 	hbucket = BUCKET(hash);
 	
-	tdb_lock(tdb, hbucket);
+	tdb_lock(tdb, hbucket, F_RDLCK);
 	rec_ptr = tdb_find(tdb, key, hash, &rec);
 	if (rec_ptr) {
 		/* we want the next record after this one */
@@ -895,7 +896,7 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key)
 			return null_data;
 
 		offset = tdb_hash_top(tdb, hbucket);
-		tdb_lock(tdb, hbucket);
+		tdb_lock(tdb, hbucket, F_RDLCK);
 		/* read in the hash top */
 		if (ofs_read(tdb, offset, &rec_ptr) == -1) {
 			tdb_unlock(tdb, hbucket);
@@ -934,7 +935,7 @@ int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
-	tdb_lock(tdb, BUCKET(hash));
+	tdb_lock(tdb, BUCKET(hash), F_WRLCK);
 
 	/* find the top of the hash chain */
 	offset = tdb_hash_top(tdb, hash);
@@ -974,7 +975,7 @@ int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
 					}					
 				}
 				tdb_unlock(tdb, BUCKET(hash));
-				tdb_lock(tdb, -1);
+				tdb_lock(tdb, -1, F_WRLCK);
 				/* and recover the space */
 				offset = FREELIST_TOP;
 				if (ofs_read(tdb, offset, &rec.next) == -1) {
@@ -1039,20 +1040,23 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
+	tdb_lock(tdb, BUCKET(hash), F_WRLCK);
+
 	/* check for it existing, on insert. */
 	if (flag == TDB_INSERT && tdb_exists(tdb, key)) {
 		tdb->ecode = TDB_ERR_EXISTS;
-		return -1;
+		goto fail;
 	}
 
 	/* first try in-place update, on modify or replace. */
 	if (flag != TDB_INSERT && tdb_update(tdb, key, dbuf) == 0) {
+		tdb_unlock(tdb, BUCKET(hash));
 		return 0;
 	}
 
 	/* check for it _not_ existing, from error code of the update. */
 	if (flag == TDB_MODIFY && tdb->ecode == TDB_ERR_NOEXIST) {
-		return -1;
+		goto fail;
 	}
 
 	/* reset the error code potentially set by the tdb_update() */
@@ -1066,10 +1070,8 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 
 	rec_ptr = tdb_allocate(tdb, key.dsize + dbuf.dsize);
 	if (rec_ptr == 0) {
-		return -1;
+		goto fail;
 	}
-
-	tdb_lock(tdb, BUCKET(hash));
 
 	/* delete any existing record - if it doesn't exist we don't care */
 	if (flag != TDB_INSERT) {
@@ -1179,19 +1181,19 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	}
 
 	/* ensure there is only one process initialising at once */
-	tdb_brlock(&tdb, GLOBAL_LOCK, LOCK_SET, F_WRLCK, F_SETLKW);
+	tdb_brlock(&tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW);
 	
 	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
 		/* we need to zero the database if we are the only
 		   one with it open */
-		if (tdb_brlock(&tdb, ACTIVE_LOCK, LOCK_SET, F_WRLCK, F_SETLK) == 0) {
+		if (tdb_brlock(&tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK) == 0) {
 			ftruncate(tdb.fd, 0);
-			tdb_brlock(&tdb, ACTIVE_LOCK, LOCK_CLEAR, F_WRLCK, F_SETLK);
+			tdb_brlock(&tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK);
 		}
 	}
 
 	/* leave this lock in place */
-	tdb_brlock(&tdb, ACTIVE_LOCK, LOCK_SET, F_RDLCK, F_SETLKW);
+	tdb_brlock(&tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW);
 
 	if (read(tdb.fd, &tdb.header, sizeof(tdb.header)) != sizeof(tdb.header) ||
 	    strcmp(tdb.header.magic_food, TDB_MAGIC_FOOD) != 0 ||
@@ -1213,8 +1215,8 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	tdb.name = (char *)strdup(name);
 	tdb.map_size = st.st_size;
 
-        tdb.locked = (int *)calloc(tdb.header.hash_size+1, 
-                                   sizeof(tdb.locked[0]));
+        tdb.locked = (struct tdb_lock_type *)calloc(tdb.header.hash_size+1, 
+						    sizeof(tdb.locked[0]));
         if (!tdb.locked) {
 		goto fail;
         }
@@ -1238,7 +1240,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	       hash_size, tdb.map_size);
 #endif
 
-	tdb_brlock(&tdb, GLOBAL_LOCK, LOCK_CLEAR, F_WRLCK, F_SETLKW);
+	tdb_brlock(&tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW);
 	return ret;
 
  fail:
@@ -1282,7 +1284,7 @@ int tdb_writelock(TDB_CONTEXT *tdb)
             return -1;
         }
 
-	return tdb_lock(tdb, -1);
+	return tdb_lock(tdb, -1, F_WRLCK);
 }
 
 /* unlock the database. */
@@ -1309,7 +1311,7 @@ int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key)
             return -1;
         }
 
-	return tdb_lock(tdb, BUCKET(tdb_hash(&key)));
+	return tdb_lock(tdb, BUCKET(tdb_hash(&key)), F_WRLCK);
 }
 
 

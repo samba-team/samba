@@ -37,6 +37,11 @@ typedef struct {
 	size_t dsize;
 } TDB_DATA;
 
+struct tdb_lock_type {
+	unsigned count;
+	unsigned ltype;
+};
+
 /* this is the context structure that is returned from a db open */
 typedef struct {
 	char *name; /* the name of the database */
@@ -44,7 +49,7 @@ typedef struct {
 	int fd; /* open file descriptor for the database */
 	tdb_len map_size; /* how much space has been mapped */
 	int read_only; /* opened read-only */
-	int *locked; /* set if we have a chain locked */
+	struct tdb_lock_type *locked; /* set if we have a chain locked */
 	int ecode; /* error code for last tdb error */
 	struct tdb_header header; /* a cached copy of the header */
 	unsigned flags; /* the flags passed to tdb_open */

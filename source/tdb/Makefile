@@ -2,7 +2,7 @@
 # Makefile for tdb directory
 #
 
-CFLAGS = -DSTANDALONE -DTDB_DEBUG -g -DMMAP
+CFLAGS = -DSTANDALONE -DTDB_DEBUG -g -DHAVE_MMAP=1
 CC = gcc
 PROGS = tdbtest tdbtool tdbtorture
 
@@ -16,6 +16,9 @@ tdbtool: tdbtool.o tdb.o
 
 tdbtorture: tdbtorture.o tdb.o
 	$(CC) $(CFLAGS) -o tdbtorture tdbtorture.o tdb.o
+
+tdbexport: tdbexport.o tdb.o
+	$(CC) $(CFLAGS) -o tdbexport tdbexport.o tdb.o
 
 clean:
 	rm -f $(PROGS) *.o *~ *% core test.db test.tdb test.gdbm

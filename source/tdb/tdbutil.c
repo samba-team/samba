@@ -250,5 +250,3 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
  no_space:
 	return -1;
 }
-
-
