@@ -118,7 +118,8 @@ auth_login(pam_handle_t *pamh, int flags, char *user, struct pam_conv *conv)
 	struct passwd *pw = getpwnam(user);
 
 	if(pw){
-	    snprintf(tkt, sizeof(tkt), "%s%d", TKT_ROOT, pw->pw_uid);
+	    snprintf(tkt, sizeof(tkt),
+		     "%s%u", TKT_ROOT, (unsigned)pw->pw_uid);
 	    ret = doit(pamh, user, "", resp->resp, tkt);
 	    if(ret == PAM_SUCCESS)
 		chown(tkt, pw->pw_uid, pw->pw_gid);
@@ -167,7 +168,8 @@ auth_su(pam_handle_t *pamh, int flags, char *user, struct pam_conv *conv)
     {
 	char tkt[1024];
 
-	snprintf(tkt, sizeof(tkt),"%s_%s_to_%s", TKT_ROOT, pw->pw_name, user);
+	snprintf(tkt, sizeof(tkt),"%s_%s_to_%s",
+		 TKT_ROOT, pw->pw_name, user);
 	ret = doit(pamh, pr.name, pr.instance, resp->resp, tkt);
 	if(ret == PAM_SUCCESS)
 	    chown(tkt, pw->pw_uid, pw->pw_gid);

@@ -199,8 +199,10 @@ siad_ses_authent(sia_collect_func_t *collect,
 	if(getpwnam_r(entity->name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0)
 	    return SIADFAIL;
 	snprintf((char*)entity->mech[pkgind], sizeof(entity->mech[pkgind]),
-		 "%s%d_%d", 
-		 TKT_ROOT, pwd->pw_uid, getpid());
+		 "%s%u_%u", 
+		 TKT_ROOT,
+		 (unsigned)pwd->pw_uid,
+		 (unsigned)getpid());
 	krb_set_tkt_string((char*)entity->mech[pkgind]);
 	
 	krb_get_lrealm(realm, 1);
