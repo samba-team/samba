@@ -259,22 +259,26 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 	return NT_STATUS_OK;
 }
 
-
 /****************************************************************************
  readonly share?
 ****************************************************************************/
+
 static void set_read_only(connection_struct *conn, gid_t *groups, size_t n_groups)
 {
 	char **list;
-	char *service = lp_servicename(conn->service);
+	const char *service = lp_servicename(conn->service);
 	conn->read_only = lp_readonly(conn->service);
 
-	if (!service) return;
+	if (!service)
+		return;
 
 	str_list_copy(&list, lp_readlist(conn->service));
 	if (list) {
-		if ( !str_list_sub_basic(list, current_user_info.smb_name) ) {
+		if (!str_list_sub_basic(list, current_user_info.smb_name) ) {
 			DEBUG(0, ("ERROR: read list substitution failed\n"));
+		}
+		if (!str_list_substitute(list, "%S", service)) {
+			DEBUG(0, ("ERROR: read list service substitution failed\n"));
 		}
 		if (user_in_list(conn->user, (const char **)list, groups, n_groups))
 			conn->read_only = True;
@@ -283,8 +287,11 @@ static void set_read_only(connection_struct *conn, gid_t *groups, size_t n_group
 	
 	str_list_copy(&list, lp_writelist(conn->service));
 	if (list) {
-		if ( !str_list_sub_basic(list, current_user_info.smb_name) ) {
+		if (!str_list_sub_basic(list, current_user_info.smb_name) ) {
 			DEBUG(0, ("ERROR: write list substitution failed\n"));
+		}
+		if (!str_list_substitute(list, "%S", service)) {
+			DEBUG(0, ("ERROR: write list service substitution failed\n"));
 		}
 		if (user_in_list(conn->user, (const char **)list, groups, n_groups))
 			conn->read_only = False;
@@ -292,10 +299,10 @@ static void set_read_only(connection_struct *conn, gid_t *groups, size_t n_group
 	}
 }
 
-
 /****************************************************************************
   admin user check
 ****************************************************************************/
+
 static void set_admin_user(connection_struct *conn, gid_t *groups, size_t n_groups)
 {
 	/* admin user check */
