@@ -35,7 +35,7 @@ Region                             Number of entries
     AMERICA - USA                                35
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
-    CANADA                                        8
+    CANADA                                        9
     EUROPE                                       36
     MIDDLE EAST                                   1
 
@@ -1147,6 +1147,21 @@ special focus on internetworking (extensive Samba experience),
 security, high-performance Web applications, and Intranets. Please
 email us at info@fscinternet.com or call us at (416) 921-4280 for
 further information. 
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ONTARIO - CANADA
+
+MIS Incorporated, London Ontario CANADA
+Tel:   +1 (519) 673-3777   Fax:   +1 (519) 673-4292
+Email: samba-support@netcontech.com 
+
+MIS Incorporated is a Microsoft Certified Solution Provider,
+and system support group specializing in applying Windows
+front ends to high end relational database servers. Samba
+support available on any unix platform in conjunction with
+WFW, Windows-NT, Win95, OS/2. Dial-in support
+nation-wide, or on-site anywhere in Ontario.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------

@@ -45,14 +45,14 @@ How To:
 	Copy also all the files into the directory you created in step 1     
 	
 	Third, you need to add 2 new parameters in smb.conf. One is in the
-	[global] section, called 'driver file' pointing to the file description,
-	and the other in each printer share, called 'driver location' pointing
+	[global] section, called 'printer driver file' pointing to the file description,
+	and the other in each printer share, called 'printer driver location' pointing
 	to where the client will get the drivers. Don't forget to set correctly
 	the printer driver parameter to the Windows printer name.
 	Example:
 	
 		[global]
-  		  driver file=/usr/local/samba/lib/printers.def
+  		  printer driver file=/usr/local/samba/lib/printers.def
 
 		[lp]
 		   comment = My old printer laser
@@ -62,7 +62,7 @@ How To:
 		   writable = no
 		   create mode = 0700
 		   printer driver=Apple LaserWriter
-		   driver location=\\JOKER\PRINTER$
+		   printer driver location=\\JOKER\PRINTER$
 
 	JOKER is in my case my computer name, and PRINTER$ is the name of the
 	share created in step one.
