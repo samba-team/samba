@@ -410,7 +410,6 @@ static void usage(char *pname)
   int opt;
   extern FILE *dbf;
   extern char *optarg;
-  fstring group;
 
   *host_file = 0;
 
@@ -497,9 +496,6 @@ static void usage(char *pname)
     return(-1);	
 
   set_samba_nb_type();
-
-  if (*group)
-    add_my_subnets(group);
 
   if (!is_daemon && !is_a_socket(0)) {
     DEBUG(0,("standard input is not a socket, assuming -D option\n"));

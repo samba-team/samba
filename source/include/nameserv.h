@@ -126,7 +126,7 @@ struct nmb_name {
 struct nmb_ip
 {
   struct in_addr ip; /* ip address of host that owns this name */
-  int nb_flags;      /* netbios flags */
+  uint16 nb_flags;      /* netbios flags */
 };
 
 /* this is the structure used for the local netbios name list */
