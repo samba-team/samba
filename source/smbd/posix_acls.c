@@ -23,6 +23,13 @@
 
 #include "includes.h"
 
+typedef struct canon_ace {
+	struct canon_ace *next, *prev;
+	acl_tag_t type;
+	acl_perm_t perms;
+	DOM_SID sid;
+} canon_ace;
+
 /****************************************************************************
  Function to create owner and group SIDs from a SMB_STRUCT_STAT.
 ****************************************************************************/
@@ -323,29 +330,167 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
 }
 
 /****************************************************************************
+ Create a linked list of canonical ACE entries. This is sorted so that DENY
+ entries are at the front of the list, as NT requires.
+****************************************************************************/
+
+canon_ace *canonicalise_acl( acl_t posix_acl, SMB_STRUCT_STAT *psbuf)
+{
+	extern DOM_SID global_sid_World;
+	acl_permset_t acl_mask = (ACL_READ|ACL_WRITE|ACL_EXECUTE);
+	canon_ace *list_head = NULL;
+	canon_ace *ace = NULL;
+	canon_ace *next_ace = NULL;
+	int entry_id = ACL_FIRST_ENTRY;
+
+	if (posix_acl == NULL)
+		return default_canonicalise_acl(psbuf);
+
+	while ( acl_get_entry(posix_acl, entry_id, &entry) == 1) {
+		acl_tag_t tagtype;
+		acl_permset_t permset;
+		DOM_SID sid;
+
+		/* get_next... */
+		if (entry_id == ACL_FIRST_ENTRY)
+			entry_id = ACL_NEXT_ENTRY;
+
+		/* Is this a MASK entry ? */
+		if (acl_get_tag_type(entry, &tagtype) == -1)
+			continue;
+
+		if (acl_get_permset(entry, &permset) == -1)
+			continue;
+
+		/* Decide which SID to use based on the ACL type. */
+		switch(tagtype) {
+			ACL_USER_OBJ:
+				/* Get the SID from the owner. */
+				uid_to_sid( &sid, psbuf->st_uid );
+				break;
+			ACL_USER:
+				{
+					uid_t *puid = (uid_t *)acl_get_qualifier(entry);
+					if (puid == NULL) {
+						DEBUG(0,("canonicalise_acl: Failed to get uid.\n"));
+						continue;
+					}
+					uid_to_sid( &sid, *puid);
+					break;
+				}
+			ACL_GROUP_OBJ:
+				/* Get the SID from the owning group. */
+				gid_to_sid( &sid, psbuf->st_gid );
+				break;
+			ACL_GROUP:
+				{
+					gid_t *pgid = (gid_t *)acl_get_qualifier(entry);
+					if (pgid == NULL) {
+						DEBUG(0,("canonicalise_acl: Failed to get gid.\n"));
+						continue;
+					}
+					gid_to_sid( &sid, *pgid);
+					break;
+				}
+			ACL_MASK:
+				acl_mask = permset;
+				continue; /* Don't count the mask as an entry. */
+			ACL_OTHER_OBJ:
+				/* Use the Everyone SID */
+				sid = global_sid_World;
+				break;
+			default:
+				DEBUG(0,("canonicalise_acl: Unknown tagtype %u\n", (unsigned int)tagtype));
+				continue;
+		}	
+
+		/*
+		 * Add this entry to the list.
+		 */
+
+		if ((ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
+			goto fail;
+
+		ZERO_STRUCTP(ace);
+		ace->type = tagtype;
+		ace->perms = permset;
+		ace->sid = sid;
+		 
+		DLIST_ADD(list_head, ace);
+	}
+
+	/*
+	 * Now go through the list, masking the permissions with the
+	 * acl_mask. If the permissions are 0 and the type is ACL_USER
+	 * or ACL_GROUP then it's a DENY entry and should be listed
+	 * first. If the permissions are 0 and the type is ACL_USER_OBJ,
+	 * ACL_GROUP_OBJ or ACL_OTHER_OBJ then remove the entry as they
+	 * can never apply.
+	 */
+
+	for ( ace = list_head; ace; ace = next_ace) {
+		next_ace = ace_next;
+		ace->perms &= acl_mask;
+
+		if (ace->perms == 0) {
+			switch (ace->type) {
+				ACL_USER_OBJ:
+				ACL_GROUP_OBJ:
+				ACL_OTHER_OBJ:
+					DLIST_REMOVE(list_head, ace);
+					break;
+				ACL_USER:
+				ACL_GROUP:
+					DLIST_PROMOTE(list_head, ace);
+					break;
+			}
+		}
+	}
+
+	return list_head;
+}
+
+/****************************************************************************
  Go through the ACL entries one by one, count them and extract the permset
  of the mask entry as we scan the acl.
 ****************************************************************************/
 
-static size_t get_num_posix_entries(acl_t posix_acl, acl_permset_t *posix_mask)
+static size_t get_num_entries(acl_t posix_acl, acl_permset_t *file_mask)
 {
 	size_t num_entries;
 	acl_entry_t entry;
 	int entry_id = ACL_FIRST_ENTRY;
 
-	*posix_mask = (ACL_READ|ACL_WRITE|ACL_EXECUTE);
+	*file_mask = (ACL_READ|ACL_WRITE|ACL_EXECUTE);
 
-	for( num_entries = 0; acl_get_entry(posix_acl, entry_id, &entry) != -1; num_entries++) {
+	/*
+	 * If the acl is NULL, then return 3 as we will fake this using UNIX
+	 * permissions.
+	 */
+
+	if (posix_acl == NULL)
+		return 3;
+
+	num_entries = 0;
+	while ( acl_get_entry(posix_acl, entry_id, &entry) == 1) {
 		acl_tag_t tagtype;
 		acl_permset_t permset;
 
-		entry_id = ACL_NEXT_ENTRY;
+		/* get_next... */
+		if (entry_id == ACL_FIRST_ENTRY)
+			entry_id = ACL_NEXT_ENTRY;
+
+		/* Is this a MASK entry ? */
 		if (acl_get_tag_type(entry, &tagtype) == -1)
 			continue;
 
-		if (tagtype == ACL_MASK)
+		if (tagtype == ACL_MASK) {
 			if (acl_get_permset(entry, &permset) == 0)
-				*posix_mask = permset;
+				*file_mask = permset;
+			continue; /* Don't count the mask as an entry. */
+		}
+
+		num_entries++;
 	}
 
 	return num_entries;
@@ -375,12 +520,17 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	int other_acl_type;
 	size_t num_acls = 0;
 	size_t num_dir_acls = 0;
+	size _t i;
 	acl_t posix_acl = NULL;
 	acl_t directory_acl = NULL;
+	acl_permset_t file_mask = 0;
+	acl_permset_t directory_mask = 0;
 	 
 	*ppdesc = NULL;
 
 	if(fsp->is_directory || fsp->fd == -1) {
+
+		/* Get the stat struct for the owner info. */
 		if(vfs_stat(fsp,fsp->fsp_name, &sbuf) != 0) {
 			return 0;
 		}
@@ -388,25 +538,25 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		 * Get the ACL from the path.
 		 */
 
-		if ((posix_acl = acl_get_file( dos_to_unix(fsp->fsp_name, False), ACL_TYPE_ACCESS)) == NULL)
-			return 0;
+		posix_acl = acl_get_file( dos_to_unix(fsp->fsp_name, False), ACL_TYPE_ACCESS);
 
 		/*
 		 * If it's a directory get the default POSIX ACL.
 		 */
 
-		if(fsp->is_directory) {
-		}
+		if(fsp->is_directory)
+			directory_acl = acl_get_file( dos_to_unix(fsp->fsp_name, False), ACL_TYPE_DEFAULT);
 
 	} else {
+
+		/* Get the stat struct for the owner info. */
 		if(fsp->conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
 			return 0;
 		}
 		/*
 		 * Get the ACL from the fd.
 		 */
-		if ((posix_acl = acl_get_fd( fsp->fd)) == NULL)
-			return 0;
+		posix_acl = acl_get_fd(fsp->fd);
 	}
 
 	/*
@@ -420,18 +570,44 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	 * the mask.
 	 */
 
-	num_posix_entries = get_num_posix_entries(posix_acl, &posix_mask);
+	num_acls = get_num_entries(posix_acl, &file_mask);
+	if (fsp->is_directory)
+		num_dir_acls = get_num_entries(directory_acl, &directory_mask);
 
-	/*
-	 * Create the generic 3 element UNIX acl.
-	 */
+	/* Allocate the ace list. */
+	if ((ace_list = (SEC_ACE *)malloc((num_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
+		goto fail:
+	}
 
-	owner_access = map_unix_perms(&owner_acl_type, sbuf.st_mode,
-					S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory);
-	group_access = map_unix_perms(&grp_acl_type, sbuf.st_mode,
-							S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory);
-	other_access = map_unix_perms(&other_acl_type, sbuf.st_mode,
-					S_IROTH, S_IWOTH, S_IXOTH, fsp->is_directory);
+	memset(ace_list, '\0', (num_acls + num_dir_acls) * sizeof(SEC_ACE) );
+
+	for (i = 0; i < num_acls; i++) {
+		SEC_ACCESS acc = map_unix_perms();
+	}
+
+	for (i = 0; i < num_dir_acls; i++) {
+		SEC_ACCESS acc = map_unix_perms();
+	}
+
+  done:
+
+	if (posix_acl)	
+		acl_free(posix_acl);
+	if (directory_acl)
+		acl_free(directory_acl);
+
+	} else {
+
+		/*
+		 * Fall back to the generic 3 element UNIX permissions.
+		 */
+
+		owner_access = map_unix_perms(&owner_acl_type, sbuf.st_mode,
+						S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory);
+		group_access = map_unix_perms(&grp_acl_type, sbuf.st_mode,
+								S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory);
+		other_access = map_unix_perms(&other_acl_type, sbuf.st_mode,
+						S_IROTH, S_IWOTH, S_IXOTH, fsp->is_directory);
 
 	if(owner_access.mask)
 		init_sec_ace(&ace_list[num_acls++], &owner_sid, owner_acl_type, owner_access, 0);
