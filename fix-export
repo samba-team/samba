@@ -23,6 +23,21 @@ autoreconf --force --install
 automake lib/roken/Makefile ## stupid automake gets this wrong
 (cd doc; makeinfo heimdal.texi)
 
+find . -name Makefile.am | while read f; do
+	for i in `sed -n -e '/^man_MANS/{
+			:loop
+			p
+			/[^\\]$/tquit
+			tloop
+			}
+		:quit' $f | sed 's/man_MANS//;s/=//;s/[	\\][	\\]*/ /g'`; do 
+		x=`dirname $f`/$i
+		y=`dirname $f`/`echo $i | sed 's/[0-9]$/cat&/'`
+		echo `grog -Tascii $x` \> $y
+		`grog -Tascii $x` > $y
+	done
+done
+
 make_proto () {
 	   (top=`pwd`
 	   cd $1
