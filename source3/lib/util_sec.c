@@ -42,6 +42,7 @@ extern int DEBUGLEVEL;
 
 #define DEBUG(x, y) printf y
 #define smb_panic(x) exit(1)
+#define BOOL int
 #endif
 
 /* are we running as non-root? This is used by the regresison test code,
