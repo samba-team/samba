@@ -62,7 +62,7 @@ afskrb5_c = afskrb5.c
 endif
 
 if do_roken_rename
-ROKEN_SRCS = resolve.c
+ROKEN_SRCS = resolve.c strtok_r.c
 endif
 
 libkafs_la_SOURCES =				\
@@ -92,3 +92,6 @@ $(OBJECTS): ../../include/config.h
 
 resolve.c:
 	$(LN_S) $(srcdir)/../roken/resolve.c .
+
+strtok_r.c:
+	$(LN_S) $(srcdir)/../roken/strtok_r.c .
