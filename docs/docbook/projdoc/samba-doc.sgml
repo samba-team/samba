@@ -93,6 +93,7 @@ for various environments.
 &BROWSING;
 &SecuringSamba;
 &unicode;
+&locking;
 </part>
 
 <part id="troubleshooting">
