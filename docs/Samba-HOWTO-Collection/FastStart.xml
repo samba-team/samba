@@ -1032,7 +1032,7 @@ net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
 			Idealx</ulink> Web site. They may also be obtained from the Samba tarball. Linux
 			distributions tend to install the Idealx scripts in the 
 			<filename>/usr/share/doc/packages/sambaXXXXXX/examples/LDAP/smbldap-tools</filename> directory.
-			Idealx scripts version <constant>smbldap-tools-0.8.2</constant> are known to work well.
+			Idealx scripts version <constant>smbldap-tools-0.8.7</constant> are known to work well.
 			</para>
 
 			<procedure>
@@ -1149,14 +1149,14 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 <smbconfoption name="passdb backend">ldapsam:ldap://localhost</smbconfoption>
 <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
 <smbconfoption name="printcap name">cups</smbconfoption>
-<smbconfoption name="add user script">/usr/local/sbin/smbldap-useradd.pl -m '%u'</smbconfoption>
-<smbconfoption name="delete user script">/usr/local/sbin/smbldap-userdel.pl %u</smbconfoption>
-<smbconfoption name="add group script">/usr/local/sbin/smbldap-groupadd.pl -p '%g'</smbconfoption>
-<smbconfoption name="delete group script">/usr/local/sbin/smbldap-groupdel.pl '%g'</smbconfoption>
-<smbconfoption name="add user to group script">/usr/local/sbin/smbldap-groupmod.pl -m '%g' '%u'</smbconfoption>
-<smbconfoption name="delete user from group script">/usr/local/sbin/smbldap-groupmod.pl -x '%g' '%u'</smbconfoption>
-<smbconfoption name="set primary group script">/usr/local/sbin/smbldap-usermod.pl -g '%g' '%u'</smbconfoption>
-<smbconfoption name="add machine script">/usr/local/sbin/smbldap-useradd.pl -w '%u'</smbconfoption>
+<smbconfoption name="add user script">/usr/local/sbin/smbldap-useradd -m '%u'</smbconfoption>
+<smbconfoption name="delete user script">/usr/local/sbin/smbldap-userdel %u</smbconfoption>
+<smbconfoption name="add group script">/usr/local/sbin/smbldap-groupadd -p '%g'</smbconfoption>
+<smbconfoption name="delete group script">/usr/local/sbin/smbldap-groupdel '%g'</smbconfoption>
+<smbconfoption name="add user to group script">/usr/local/sbin/smbldap-groupmod -m '%u' '%g'</smbconfoption>
+<smbconfoption name="delete user from group script">/usr/local/sbin/smbldap-groupmod -x '%u' '%g'</smbconfoption>
+<smbconfoption name="set primary group script">/usr/local/sbin/smbldap-usermod -g '%g' '%u'</smbconfoption>
+<smbconfoption name="add machine script">/usr/local/sbin/smbldap-useradd -w '%u'</smbconfoption>
 <smbconfoption name="logon script">scripts\logon.bat</smbconfoption>
 <smbconfoption name="logon path">\\%L\Profiles\%U</smbconfoption>
 <smbconfoption name="logon drive">H:</smbconfoption>
