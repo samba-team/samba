@@ -560,6 +560,8 @@ sub ParseSubcontextPushStart($$)
 {
 	my $e = shift;
 	my $ndr_flags = shift;
+	my $compression = util::has_property($e, "compression");
+	my $retndr;
 
 	pidl "if (($ndr_flags) & NDR_SCALARS) {";
 	indent;
@@ -570,7 +572,13 @@ sub ParseSubcontextPushStart($$)
 	pidl "_ndr_$e->{NAME}->flags = ndr->flags;";
 	pidl "";
 	
-	return "_ndr_$e->{NAME}";
+	$retndr = "_ndr_$e->{NAME}";
+
+	if (defined $compression) {
+		$retndr = ParseCompressionPushStart($e, $retndr, "NDR_SCALARS");
+	}
+	
+	return $retndr
 }
 
 sub ParseSubcontextPushEnd($)
@@ -578,13 +586,19 @@ sub ParseSubcontextPushEnd($)
 	my $e = shift;
 	my $header_size = util::has_property($e, "subcontext");
 	my $size_is = util::has_property($e, "subcontext_size");
+	my $compression = util::has_property($e, "compression");
+	my $ndr = "_ndr_$e->{NAME}";
+
+	if (defined $compression) {
+		ParseCompressionPushEnd($e, $ndr);
+	}
 
 	if (not defined($size_is)) {
 		$size_is = "-1";
 	}
 
-	pidl "NDR_CHECK(ndr_push_subcontext_header(ndr, $header_size, $size_is, _ndr_$e->{NAME}));";
-	pidl "NDR_CHECK(ndr_push_bytes(ndr, _ndr_$e->{NAME}->data, _ndr_$e->{NAME}->offset));";
+	pidl "NDR_CHECK(ndr_push_subcontext_header(ndr, $header_size, $size_is, $ndr));";
+	pidl "NDR_CHECK(ndr_push_bytes(ndr, $ndr->data, $ndr->offset));";
 	deindent;
 	pidl "}";
 }
@@ -595,6 +609,8 @@ sub ParseSubcontextPullStart($$)
 	my $ndr_flags = shift;	
 	my $header_size = util::has_property($e, "subcontext");
 	my $size_is = util::has_property($e, "subcontext_size");
+	my $retndr = "_ndr_$e->{NAME}";
+	my $compression = util::has_property($e, "compression");
 
 	if (not defined($size_is)) {
 		$size_is = "-1";
@@ -602,10 +618,15 @@ sub ParseSubcontextPullStart($$)
 
 	pidl "if (($ndr_flags) & NDR_SCALARS) {";
 	indent;
-	pidl "struct ndr_pull *_ndr_$e->{NAME};";
-	pidl "NDR_ALLOC(ndr, _ndr_$e->{NAME});";
-	pidl "NDR_CHECK(ndr_pull_subcontext_header(ndr, $header_size, $size_is, _ndr_$e->{NAME}));"; 
-	return "_ndr_$e->{NAME}";
+	pidl "struct ndr_pull *$retndr;";
+	pidl "NDR_ALLOC(ndr, $retndr);";
+	pidl "NDR_CHECK(ndr_pull_subcontext_header(ndr, $header_size, $size_is, $retndr));"; 
+
+	if (defined $compression) {
+		$retndr = ParseCompressionPullStart($e, $retndr, $ndr_flags);
+	}
+	
+	return $retndr;
 }
 
 sub ParseSubcontextPullEnd($)
@@ -613,14 +634,20 @@ sub ParseSubcontextPullEnd($)
 	my $e = shift;
 	my $header_size = util::has_property($e, "subcontext");
 	my $size_is = util::has_property($e, "subcontext_size");
+	my $subndr = "_ndr_$e->{NAME}";
+	my $compression = util::has_property($e, "compression");
+
+	if (defined $compression) {
+		ParseCompressionPullEnd($e, $subndr);
+	}
 
 	my $advance;
 	if (defined ($size_is)) {
 		$advance = "$size_is";	
 	} elsif ($header_size) {
-		$advance = "_ndr_$e->{NAME}->data_size";
+		$advance = "$subndr->data_size";
 	} else {
-		$advance = "_ndr_$e->{NAME}->offset";
+		$advance = "$subndr->offset";
 	}
 	pidl "NDR_CHECK(ndr_pull_advance(ndr, $advance));";
 	deindent;
@@ -637,10 +664,8 @@ sub ParseElementPushScalar($$$)
 	my $cprefix = c_push_prefix($e);
 	my $ptr_prefix = c_ptr_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
-	my $compression = util::has_property($e, "compression");
 	my $ndr = "ndr";
 	my $subndr = undef;
-	my $comndr = undef;
 
 	start_flags($e);
 
@@ -651,10 +676,6 @@ sub ParseElementPushScalar($$$)
 	if (defined $sub_size and $e->{POINTERS} == 0) {
 		$subndr = ParseSubcontextPushStart($e, "NDR_SCALARS");
 		$ndr = $subndr;
-		if (defined $compression) {
-			$comndr = ParseCompressionPushStart($e, $subndr, "NDR_SCALARS");
-			$ndr = $comndr;
-		}
 	}
 
 	if (Ndr::need_wire_pointer($e)) {
@@ -672,9 +693,6 @@ sub ParseElementPushScalar($$$)
 	}
 
 	if (defined $sub_size and $e->{POINTERS} == 0) {
-		if (defined $compression) {
-			ParseCompressionPushEnd($e, $subndr);
-		}
 		ParseSubcontextPushEnd($e);
 	}
 
@@ -795,10 +813,8 @@ sub ParseElementPullScalar($$$)
 	my $cprefix = c_pull_prefix($e);
 	my $ptr_prefix = c_ptr_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
-	my $compression = util::has_property($e, "compression");
 	my $ndr = "ndr";
 	my $subndr = undef;
-	my $comndr = undef;
 
 	start_flags($e);
 
@@ -806,10 +822,6 @@ sub ParseElementPullScalar($$$)
 		$subndr = ParseSubcontextPullStart($e, $ndr_flags);
 		$ndr = $subndr;
 		$ndr_flags = "NDR_SCALARS|NDR_BUFFERS";
-		if (defined $compression) {
-			$comndr = ParseCompressionPullStart($e, $subndr, $ndr_flags);
-			$ndr = $comndr;
-		}
 	}
 
 	if (Ndr::is_inline_array($e)) {
@@ -833,9 +845,6 @@ sub ParseElementPullScalar($$$)
 	}
 
 	if (defined $sub_size && $e->{POINTERS} == 0) {
-		if (defined $compression) {
-			ParseCompressionPullEnd($e, $subndr);
-		}
 		ParseSubcontextPullEnd($e);
 	}
 
@@ -874,10 +883,8 @@ sub ParseElementPushBuffer($$)
 	my($var_prefix) = shift;
 	my $cprefix = c_push_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
-	my $compression = util::has_property($e, "compression");
 	my $ndr = "ndr";
 	my $subndr = undef;
-	my $comndr = undef;
 
 	return unless (need_buffers_section($e));
 
@@ -907,10 +914,6 @@ sub ParseElementPushBuffer($$)
 		$subndr = ParseSubcontextPushStart($e, $ndr_flags);
 		$ndr = $subndr;
 		$ndr_flags = "NDR_SCALARS|NDR_BUFFERS";
-		if (defined $compression) {
-			$comndr = ParseCompressionPushStart($e, $subndr, $ndr_flags);
-			$ndr = $comndr;
-		}
 	}
 
 	if (util::array_size($e)) {
@@ -924,9 +927,6 @@ sub ParseElementPushBuffer($$)
 	}
 
 	if (defined $sub_size) {
-		if (defined $compression) {
-			ParseCompressionPushEnd($e, $subndr);
-		}
 		ParseSubcontextPushEnd($e);
 	}
 
@@ -946,10 +946,8 @@ sub ParseElementPullBuffer($$)
 	my($var_prefix) = shift;
 	my $cprefix = c_pull_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
-	my $compression = util::has_property($e, "compression");
 	my $ndr = "ndr";
 	my $subndr = undef;
-	my $comndr = undef;
 
 	return unless (need_buffers_section($e));
 
@@ -981,10 +979,6 @@ sub ParseElementPullBuffer($$)
 		$subndr = ParseSubcontextPullStart($e, $ndr_flags);
 		$ndr = $subndr;
 		$ndr_flags = "NDR_SCALARS|NDR_BUFFERS";
-		if (defined $compression) {
-			$comndr = ParseCompressionPullStart($e, $subndr, $ndr_flags);
-			$ndr = $comndr;
-		}
 	}
 
 	if (util::array_size($e)) {
@@ -998,9 +992,6 @@ sub ParseElementPullBuffer($$)
 	}
 
 	if (defined $sub_size) {
-		if (defined $compression) {
-			ParseCompressionPullEnd($e, $subndr);
-		}
 		ParseSubcontextPullEnd($e);
 	}
 
