@@ -1185,7 +1185,7 @@ showlayout:
 	@echo "  mandir:  $(MANDIR)"
 
 
-uninstall: uninstallman uninstallbin uninstallscripts
+uninstall: uninstallman uninstallbin uninstallscripts uninstallmodules
 
 uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) $(man_langs)
