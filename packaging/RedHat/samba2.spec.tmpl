@@ -38,6 +38,9 @@ for Shadow passwords. Do NOT recompile with the SHADOW_PWD option
 enabled. Red Hat Linux has built in support for quotas in PAM.
 
 %changelog
+* Fri Mar 26 1999 Andrew Tridgell <tridge@samba.org>
+ - added --with-pam as pam is no longer used by default
+
 * Sat Jan 27 1999 Jeremy Allison <jra@samba.org>
  - Removed smbrun binary and tidied up some loose ends
 
@@ -100,7 +103,7 @@ enabled. Red Hat Linux has built in support for quotas in PAM.
 
 %build
 cd source
-./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-smbwrapper --with-automount --with-quotas
+./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-smbwrapper --with-automount --with-quotas --with-pam
 make all smbwrapper
 
 %install
