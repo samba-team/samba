@@ -152,7 +152,6 @@ void conn_free(struct server_context *smb, struct tcon_context *conn)
 	bitmap_clear(smb->tree.bmap, conn->cnum);
 	smb->tree.num_open--;
 
-	ZERO_STRUCTP(conn);
-	SAFE_FREE(conn);
+	talloc_destroy(conn->mem_ctx);
 }
 
