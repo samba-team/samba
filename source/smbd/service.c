@@ -272,7 +272,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	struct passwd *pass = NULL;
 	BOOL guest = False;
 	connection_struct *conn;
-	struct stat st;
+	SMB_STRUCT_STAT st;
 	fstring user;
 	fstring dev;
 
