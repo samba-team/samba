@@ -24,13 +24,4 @@ for p in $*; do
  chmod $INSTALLPERMS $LIBDIR/$p2
 done
 
-
-cat << EOF
-======================================================================
-The modules are installed.  You may uninstall the modules using the 
-command "make uninstallmodules" or "make uninstall" to uninstall
-binaries, man pages, shell scripts and modules.
-======================================================================
-EOF
-
 exit 0
