@@ -241,64 +241,52 @@ create_mainwindow (void)
 	gtk_window_set_title (GTK_WINDOW (mainwindow), "Task Scheduler");
 
 	vbox = gtk_vbox_new (FALSE, 0);
-	gtk_widget_show (vbox);
 	gtk_container_add (GTK_CONTAINER (mainwindow), vbox);
 
 	menubar = gtk_menu_bar_new ();
-	gtk_widget_show (menubar);
 	gtk_box_pack_start (GTK_BOX (vbox), menubar, FALSE, FALSE, 0);
 
 	menuitem4 = gtk_menu_item_new_with_mnemonic ("_File");
-	gtk_widget_show (menuitem4);
 	gtk_container_add (GTK_CONTAINER (menubar), menuitem4);
 
 	menuitem4_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem4), menuitem4_menu);
 
 	mnu_connect = gtk_menu_item_new_with_mnemonic ("_Connect");
-	gtk_widget_show (mnu_connect);
 	gtk_container_add (GTK_CONTAINER (menuitem4_menu), mnu_connect);
 	g_signal_connect ((gpointer) mnu_connect, "activate",
 	  G_CALLBACK (on_connect_activate), NULL);
 
 	separatormenuitem1 = gtk_separator_menu_item_new ();
-	gtk_widget_show (separatormenuitem1);
 	gtk_container_add (GTK_CONTAINER (menuitem4_menu), separatormenuitem1);
 	gtk_widget_set_sensitive (separatormenuitem1, FALSE);
 
 	quit = gtk_image_menu_item_new_from_stock ("gtk-quit", accel_group);
-	gtk_widget_show (quit);
 	gtk_container_add (GTK_CONTAINER (menuitem4_menu), quit);
 
 	task = gtk_menu_item_new_with_mnemonic ("_Task");
-	gtk_widget_show (task);
 	gtk_container_add (GTK_CONTAINER (menubar), task);
 
 	task_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (task), task_menu);
 
 	new = gtk_menu_item_new_with_mnemonic ("_New");
-	gtk_widget_show (new);
 	gtk_container_add (GTK_CONTAINER (task_menu), new);
 
 	delete = gtk_menu_item_new_with_mnemonic ("_Delete");
 	gtk_widget_set_sensitive(delete, FALSE);
-	gtk_widget_show (delete);
 	gtk_container_add (GTK_CONTAINER (task_menu), delete);
 
 	menuitem7 = gtk_menu_item_new_with_mnemonic ("_Help");
-	gtk_widget_show (menuitem7);
 	gtk_container_add (GTK_CONTAINER (menubar), menuitem7);
 
 	menuitem7_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem7), menuitem7_menu);
 
 	about = gtk_menu_item_new_with_mnemonic ("_About");
-	gtk_widget_show (about);
 	gtk_container_add (GTK_CONTAINER (menuitem7_menu), about);
 
 	scrolledwindow = gtk_scrolled_window_new (NULL, NULL);
-	gtk_widget_show (scrolledwindow);
 	gtk_box_pack_start (GTK_BOX (vbox), scrolledwindow, TRUE, TRUE, 0);
 
 	tasks = gtk_tree_view_new ();
@@ -342,13 +330,11 @@ create_mainwindow (void)
 	gtk_tree_view_set_model(GTK_TREE_VIEW(tasks), GTK_TREE_MODEL(store_jobs));
 	g_object_unref(store_jobs);
 
-	gtk_widget_show (tasks);
 	gtk_container_add (GTK_CONTAINER (scrolledwindow), tasks);
 
 	g_signal_connect (gtk_tree_view_get_selection(GTK_TREE_VIEW(tasks)) , "changed", G_CALLBACK (on_job_select), NULL);
 
 	statusbar = gtk_statusbar_new ();
-	gtk_widget_show (statusbar);
 	gtk_box_pack_start (GTK_BOX (vbox), statusbar, FALSE, FALSE, 0);
 
 
@@ -408,25 +394,20 @@ static GtkWidget*create_new_job_dialog (void)
 	gtk_window_set_title (GTK_WINDOW (new_job_dialog), "New job");
 
 	dialog_vbox1 = GTK_DIALOG (new_job_dialog)->vbox;
-	gtk_widget_show (dialog_vbox1);
 
 	frame1 = gtk_frame_new (NULL);
-	gtk_widget_show (frame1);
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), frame1, TRUE, TRUE, 0);
 
 	table1 = gtk_table_new (4, 2, FALSE);
-	gtk_widget_show (table1);
 	gtk_container_add (GTK_CONTAINER (frame1), table1);
 
 	label4 = gtk_label_new ("Time:");
-	gtk_widget_show (label4);
 	gtk_table_attach (GTK_TABLE (table1), label4, 0, 1, 1, 2,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 	gtk_misc_set_alignment (GTK_MISC (label4), 0, 0.5);
 
 	cal_day = gtk_calendar_new ();
-	gtk_widget_show (cal_day);
 	gtk_table_attach (GTK_TABLE (table1), cal_day, 1, 2, 0, 1,
 					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
 					  (GtkAttachOptions) (GTK_FILL), 0, 0);
@@ -435,77 +416,62 @@ static GtkWidget*create_new_job_dialog (void)
 								  | GTK_CALENDAR_SHOW_DAY_NAMES);
 
 	label3 = gtk_label_new ("Date");
-	gtk_widget_show (label3);
 	gtk_table_attach (GTK_TABLE (table1), label3, 0, 1, 0, 1,
 					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 	gtk_misc_set_alignment (GTK_MISC (label3), 0, 0.5);
 
 	entry_time = gtk_entry_new ();
-	gtk_widget_show (entry_time);
 	gtk_table_attach (GTK_TABLE (table1), entry_time, 1, 2, 1, 2,
 					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 
 	chk_weekly = gtk_check_button_new_with_mnemonic ("Repeat weekly");
-	gtk_widget_show (chk_weekly);
 	gtk_table_attach (GTK_TABLE (table1), chk_weekly, 0, 1, 2, 3,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 
 	entry_repeat_weekly = gtk_entry_new ();
-	gtk_widget_show (entry_repeat_weekly);
 	gtk_table_attach (GTK_TABLE (table1), entry_repeat_weekly, 1, 2, 2, 3,
 					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 
 	chk_monthly = gtk_check_button_new_with_mnemonic ("Repeat monthly");
-	gtk_widget_show (chk_monthly);
 	gtk_table_attach (GTK_TABLE (table1), chk_monthly, 0, 1, 3, 4,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 
 	entry_repeat_monthly = gtk_entry_new ();
-	gtk_widget_show (entry_repeat_monthly);
 	gtk_table_attach (GTK_TABLE (table1), entry_repeat_monthly, 1, 2, 3, 4,
 					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 
 	label1 = gtk_label_new ("Moment");
-	gtk_widget_show (label1);
 	gtk_frame_set_label_widget (GTK_FRAME (frame1), label1);
 
 	frame2 = gtk_frame_new (NULL);
-	gtk_widget_show (frame2);
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), frame2, TRUE, TRUE, 0);
 
 	hbox1 = gtk_hbox_new (FALSE, 0);
-	gtk_widget_show (hbox1);
 	gtk_container_add (GTK_CONTAINER (frame2), hbox1);
 
 	label5 = gtk_label_new ("Command to execute");
-	gtk_widget_show (label5);
 	gtk_box_pack_start (GTK_BOX (hbox1), label5, TRUE, TRUE, 0);
 
 	entry_cmd = gtk_entry_new ();
-	gtk_widget_show (entry_cmd);
 	gtk_box_pack_start (GTK_BOX (hbox1), entry_cmd, TRUE, TRUE, 0);
 
 	label2 = gtk_label_new ("Command");
-	gtk_widget_show (label2);
 	gtk_frame_set_label_widget (GTK_FRAME (frame2), label2);
 
 	dialog_action_area1 = GTK_DIALOG (new_job_dialog)->action_area;
-	gtk_widget_show (dialog_action_area1);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area1), GTK_BUTTONBOX_END);
 
 	cancelbutton1 = gtk_button_new_from_stock ("gtk-cancel");
-	gtk_widget_show (cancelbutton1);
 	gtk_dialog_add_action_widget (GTK_DIALOG (new_job_dialog), cancelbutton1, GTK_RESPONSE_CANCEL);
 	GTK_WIDGET_SET_FLAGS (cancelbutton1, GTK_CAN_DEFAULT);
 
 	okbutton1 = gtk_button_new_from_stock ("gtk-ok");
-	gtk_widget_show (okbutton1);
 	gtk_dialog_add_action_widget (GTK_DIALOG (new_job_dialog), okbutton1, GTK_RESPONSE_OK);
 	GTK_WIDGET_SET_FLAGS (okbutton1, GTK_CAN_DEFAULT);
 
@@ -528,7 +494,7 @@ static GtkWidget*create_new_job_dialog (void)
 
 	gtk_init(&argc, &argv);
 	mainwin = create_mainwindow();
-	gtk_widget_show(mainwin);
+	gtk_widget_show_all(mainwin);
 	gtk_main();
 
 	return 0;

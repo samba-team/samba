@@ -94,36 +94,29 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_window_set_title (GTK_WINDOW (gtk_rpc_binding_dialog), "Connect");
 
 	dialog_vbox1 = GTK_DIALOG (gtk_rpc_binding_dialog)->vbox;
-	gtk_widget_show (dialog_vbox1);
 
 	vbox1 = gtk_vbox_new (FALSE, 0);
-	gtk_widget_show (vbox1);
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), vbox1, TRUE, TRUE, 0);
 
 	frame_transport = gtk_frame_new (NULL);
-	gtk_widget_show (frame_transport);
 	gtk_box_pack_start (GTK_BOX (vbox1), frame_transport, TRUE, TRUE, 0);
 
 	vbox6 = gtk_vbox_new (FALSE, 0);
-	gtk_widget_show (vbox6);
 	gtk_container_add (GTK_CONTAINER (frame_transport), vbox6);
 
 	gtk_rpc_binding_dialog->transport_ncalrpc = gtk_radio_button_new_with_mnemonic (NULL, "Local Host");
-	gtk_widget_show (gtk_rpc_binding_dialog->transport_ncalrpc);
 	gtk_box_pack_start (GTK_BOX (vbox6), gtk_rpc_binding_dialog->transport_ncalrpc, FALSE, FALSE, 0);
 	gtk_radio_button_set_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_ncalrpc), transport_smb_group);
 	transport_smb_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_ncalrpc));
 
 
 	gtk_rpc_binding_dialog->transport_smb = gtk_radio_button_new_with_mnemonic (NULL, "RPC over SMB over TCP/IP");
-	gtk_widget_show (gtk_rpc_binding_dialog->transport_smb);
 	gtk_box_pack_start (GTK_BOX (vbox6), gtk_rpc_binding_dialog->transport_smb, FALSE, FALSE, 0);
 	gtk_radio_button_set_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_smb), transport_smb_group);
 	transport_smb_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_smb));
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (gtk_rpc_binding_dialog->transport_smb), TRUE);
 
 	gtk_rpc_binding_dialog->transport_tcp_ip = gtk_radio_button_new_with_mnemonic (NULL, "RPC over TCP/IP");
-	gtk_widget_show (gtk_rpc_binding_dialog->transport_tcp_ip);
 	gtk_box_pack_start (GTK_BOX (vbox6), gtk_rpc_binding_dialog->transport_tcp_ip, FALSE, FALSE, 0);
 	gtk_radio_button_set_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_tcp_ip), transport_smb_group);
 	transport_smb_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_tcp_ip));
@@ -131,29 +124,23 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 
 
 	label1 = gtk_label_new ("Transport");
-	gtk_widget_show (label1);
 	gtk_frame_set_label_widget (GTK_FRAME (frame_transport), label1);
 
 	gtk_rpc_binding_dialog->frame_host = gtk_frame_new (NULL);
-	gtk_widget_show (gtk_rpc_binding_dialog->frame_host);
 	gtk_box_pack_start (GTK_BOX (vbox1), gtk_rpc_binding_dialog->frame_host, TRUE, TRUE, 0);
 
 	hbox1 = gtk_hbox_new (FALSE, 0);
-	gtk_widget_show (hbox1);
 	gtk_container_add (GTK_CONTAINER (gtk_rpc_binding_dialog->frame_host), hbox1);
 
 	lbl_name = gtk_label_new ("Name");
-	gtk_widget_show (lbl_name);
 	gtk_box_pack_start (GTK_BOX (hbox1), lbl_name, TRUE, TRUE, 0);
 
 	gtk_rpc_binding_dialog->entry_host = gtk_entry_new ();
-	gtk_widget_show (gtk_rpc_binding_dialog->entry_host);
 	gtk_box_pack_start (GTK_BOX (hbox1), gtk_rpc_binding_dialog->entry_host, TRUE, TRUE, 0);
 
 	if(gtk_rpc_binding_dialog->sam_pipe)
 	{
 		btn_browse = gtk_button_new_with_label ("Browse");
-		gtk_widget_show (btn_browse);
 		gtk_box_pack_start (GTK_BOX (hbox1), btn_browse, TRUE, TRUE, 0);
 
 		g_signal_connect ((gpointer) btn_browse, "pressed",
@@ -162,53 +149,42 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	}
 
 	label2 = gtk_label_new ("Host");
-	gtk_widget_show (label2);
 	gtk_frame_set_label_widget (GTK_FRAME (gtk_rpc_binding_dialog->frame_host), label2);
 
 	frame_security = gtk_frame_new (NULL);
-	gtk_widget_show (frame_security);
 	gtk_box_pack_start (GTK_BOX (vbox1), frame_security, TRUE, TRUE, 0);
 
 	vbox2 = gtk_vbox_new (FALSE, 0);
-	gtk_widget_show (vbox2);
 	gtk_container_add (GTK_CONTAINER (frame_security), vbox2);
 
 	gtk_rpc_binding_dialog->chk_sign = gtk_check_button_new_with_mnemonic ("S_ign");
-	gtk_widget_show (gtk_rpc_binding_dialog->chk_sign);
 	gtk_box_pack_start (GTK_BOX (vbox2), gtk_rpc_binding_dialog->chk_sign, FALSE, FALSE, 0);
 
 	gtk_rpc_binding_dialog->chk_seal = gtk_check_button_new_with_mnemonic ("_Seal");
-	gtk_widget_show (gtk_rpc_binding_dialog->chk_seal);
 	gtk_box_pack_start (GTK_BOX (vbox2), gtk_rpc_binding_dialog->chk_seal, FALSE, FALSE, 0);
 
 	label3 = gtk_label_new ("Security");
-	gtk_widget_show (label3);
 	gtk_frame_set_label_widget (GTK_FRAME (frame_security), label3);
 
 	gtk_rpc_binding_dialog->frame_credentials = gtk_frame_new (NULL);
-	gtk_widget_show (gtk_rpc_binding_dialog->frame_credentials);
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), gtk_rpc_binding_dialog->frame_credentials, TRUE, TRUE, 0);
 
 	table1 = gtk_table_new (3, 2, FALSE);
-	gtk_widget_show (table1);
 	gtk_container_add (GTK_CONTAINER (gtk_rpc_binding_dialog->frame_credentials), table1);
 
 	lbl_username = gtk_label_new ("Username:");
-	gtk_widget_show (lbl_username);
 	gtk_table_attach (GTK_TABLE (table1), lbl_username, 0, 1, 0, 1,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 	gtk_misc_set_alignment (GTK_MISC (lbl_username), 0, 0.5);
 
 	lbl_password = gtk_label_new ("Password:");
-	gtk_widget_show (lbl_password);
 	gtk_table_attach (GTK_TABLE (table1), lbl_password, 0, 1, 1, 2,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 	gtk_misc_set_alignment (GTK_MISC (lbl_password), 0, 0.5);
 
 	label9 = gtk_label_new ("");
-	gtk_widget_show (label9);
 	gtk_table_attach (GTK_TABLE (table1), label9, 0, 1, 2, 3,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
@@ -216,13 +192,11 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 
 	gtk_rpc_binding_dialog->entry_password = gtk_entry_new ();
 	gtk_entry_set_visibility (GTK_ENTRY (gtk_rpc_binding_dialog->entry_password), FALSE);
-	gtk_widget_show (gtk_rpc_binding_dialog->entry_password);
 	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->entry_password, 1, 2, 1, 2,
 					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 
 	gtk_rpc_binding_dialog->entry_username = gtk_entry_new ();
-	gtk_widget_show (gtk_rpc_binding_dialog->entry_username);
 	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->entry_username, 1, 2, 0, 1,
 					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
@@ -230,7 +204,6 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_entry_set_text(GTK_ENTRY(gtk_rpc_binding_dialog->entry_username), getenv("LOGNAME"));
 
 	gtk_rpc_binding_dialog->krb5_chk_button = gtk_check_button_new_with_mnemonic ("_Use kerberos");
-	gtk_widget_show (gtk_rpc_binding_dialog->krb5_chk_button);
 	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->krb5_chk_button, 1, 2, 2, 3,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
@@ -245,20 +218,16 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	}
 
 	lbl_credentials = gtk_label_new ("Credentials");
-	gtk_widget_show (lbl_credentials);
 	gtk_frame_set_label_widget (GTK_FRAME (gtk_rpc_binding_dialog->frame_credentials), lbl_credentials);
 
 	dialog_action_area1 = GTK_DIALOG (gtk_rpc_binding_dialog)->action_area;
-	gtk_widget_show (dialog_action_area1);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area1), GTK_BUTTONBOX_END);
 
 	btn_cancel = gtk_button_new_from_stock ("gtk-cancel");
-	gtk_widget_show (btn_cancel);
 	gtk_dialog_add_action_widget (GTK_DIALOG (gtk_rpc_binding_dialog), btn_cancel, GTK_RESPONSE_CANCEL);
 	GTK_WIDGET_SET_FLAGS (btn_cancel, GTK_CAN_DEFAULT);
 
 	btn_connect = gtk_button_new_with_mnemonic ("_Connect");
-	gtk_widget_show (btn_connect);
 	gtk_dialog_add_action_widget (GTK_DIALOG (gtk_rpc_binding_dialog), btn_connect, GTK_RESPONSE_ACCEPT);
 	gtk_container_set_border_width (GTK_CONTAINER (btn_connect), 1);
 	GTK_WIDGET_SET_FLAGS (btn_connect, GTK_CAN_DEFAULT);
@@ -269,6 +238,7 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 
 
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(gtk_rpc_binding_dialog->transport_ncalrpc), TRUE);
+	gtk_widget_show_all(dialog_vbox1);
 
 	gtk_widget_grab_focus (btn_connect);
 	gtk_widget_grab_default (btn_connect);
@@ -365,44 +335,38 @@ const char *gtk_rpc_binding_dialog_get_binding_string(GtkRpcBindingDialog *d, TA
 
 GtkWidget *create_gtk_samba_about_dialog (const char *appname)
 {
-  GtkWidget *samba_about_dialog;
-  GtkWidget *dialog_vbox1;
-  GtkWidget *label1;
-  GtkWidget *label3;
-  GtkWidget *label2;
-  GtkWidget *dialog_action_area1;
-  GtkWidget *okbutton1;
+	GtkWidget *samba_about_dialog;
+	GtkWidget *dialog_vbox1;
+	GtkWidget *label1;
+	GtkWidget *label3;
+	GtkWidget *label2;
+	GtkWidget *dialog_action_area1;
+	GtkWidget *okbutton1;
 
-  samba_about_dialog = gtk_dialog_new ();
-  gtk_window_set_title (GTK_WINDOW (samba_about_dialog), "About");
+	samba_about_dialog = gtk_dialog_new ();
+	gtk_window_set_title (GTK_WINDOW (samba_about_dialog), "About");
 
-  dialog_vbox1 = GTK_DIALOG (samba_about_dialog)->vbox;
-  gtk_widget_show (dialog_vbox1);
+	dialog_vbox1 = GTK_DIALOG (samba_about_dialog)->vbox;
 
-/* FIXME image1 = create_pixmap (samba_about_dialog, "slmed.png");
-  gtk_widget_show (image1);
-  gtk_box_pack_start (GTK_BOX (dialog_vbox1), image1, TRUE, TRUE, 0);*/
+	/* FIXME image1 = create_pixmap (samba_about_dialog, "slmed.png");
+	   gtk_box_pack_start (GTK_BOX (dialog_vbox1), image1, TRUE, TRUE, 0);*/
 
-  label1 = gtk_label_new (appname);
-  gtk_widget_show (label1);
-  gtk_box_pack_start (GTK_BOX (dialog_vbox1), label1, FALSE, FALSE, 0);
+	label1 = gtk_label_new (appname);
+	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label1, FALSE, FALSE, 0);
 
-  label3 = gtk_label_new_with_mnemonic ("Part of Samba <http://www.samba.org/>");
-  gtk_widget_show (label3);
-  gtk_box_pack_start (GTK_BOX (dialog_vbox1), label3, FALSE, FALSE, 0);
+	label3 = gtk_label_new_with_mnemonic ("Part of Samba <http://www.samba.org/>");
+	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label3, FALSE, FALSE, 0);
 
-  label2 = gtk_label_new ("\302\251 1992-2004 The Samba Team");
-  gtk_widget_show (label2);
-  gtk_box_pack_start (GTK_BOX (dialog_vbox1), label2, FALSE, FALSE, 0);
+	label2 = gtk_label_new ("\302\251 1992-2004 The Samba Team");
+	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label2, FALSE, FALSE, 0);
 
-  dialog_action_area1 = GTK_DIALOG (samba_about_dialog)->action_area;
-  gtk_widget_show (dialog_action_area1);
-  gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area1), GTK_BUTTONBOX_END);
+	dialog_action_area1 = GTK_DIALOG (samba_about_dialog)->action_area;
+	gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area1), GTK_BUTTONBOX_END);
 
-  okbutton1 = gtk_button_new_from_stock ("gtk-ok");
-  gtk_widget_show (okbutton1);
-  gtk_dialog_add_action_widget (GTK_DIALOG (samba_about_dialog), okbutton1, GTK_RESPONSE_OK);
-  GTK_WIDGET_SET_FLAGS (okbutton1, GTK_CAN_DEFAULT);
+	okbutton1 = gtk_button_new_from_stock ("gtk-ok");
+	gtk_dialog_add_action_widget (GTK_DIALOG (samba_about_dialog), okbutton1, GTK_RESPONSE_OK);
+	GTK_WIDGET_SET_FLAGS (okbutton1, GTK_CAN_DEFAULT);
+	gtk_widget_show_all(dialog_vbox1);
 
-  return samba_about_dialog;
+	return samba_about_dialog;
 }
