@@ -5,7 +5,7 @@
 !==
 
 This is a quick and dirty means of storing smbpasswd entries
-in smbpasswd.  Samba 2.2.x does not have any ability to grab
+in LDAP.  Samba 2.2.x does not have any ability to grab
 this information directly from LDAP so you will need to
 periodically generate an smbpasswd from an ldapsearch
 "(objectclass=smbPasswordEntry)".
