@@ -8,12 +8,16 @@ srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@
 VPATH		= @srcdir@
 
+topdir		= ../../..
+
 CC 	= @CC@
 RANLIB 	= @RANLIB@
 DEFS 	= @DEFS@
 CFLAGS 	= @CFLAGS@
+CPPFLAGS= @CPPFLAGS@ -I. -I$(srcdir) -I$(topdir) -I$(top_srcdir) -I$(topdir)/include -I$(top_srcdir)/include -I$(srcdir)/../common  @INCLUDE_readline@
 LD_FLAGS = @LD_FLAGS@
-LIBS	 = @LIBS@
+LIB_tgetent = @LIB_tgetent@
+LIBS	 = @LIBS@ @LIB_readline@
 MKINSTALLDIRS = $(top_srcdir)/mkinstalldirs
 
 INSTALL = @INSTALL@
@@ -25,11 +29,9 @@ bindir = @bindir@
 transform=@program_transform_name@
 EXECSUFFIX=@EXECSUFFIX@
 
-ATHENA = ../../..
+INCTOP = $(topdir)/include
 
-INCTOP = $(ATHENA)/include
-
-LIBTOP = $(ATHENA)/lib
+LIBTOP = $(topdir)/lib
 
 PROGS = ftp$(EXECSUFFIX)
 
@@ -45,7 +47,7 @@ SOURCES = $(ftp_SOURCES)
 all: $(PROGS)
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I$(srcdir) -I../../.. -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(DEFS) $<
 
 install: all
 	$(MKINSTALLDIRS) $(bindir)
