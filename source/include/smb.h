@@ -580,7 +580,8 @@ typedef struct connection_struct
 	char *origpath;
 
 	struct vfs_ops vfs_ops;                   /* Filesystem operations */
-	struct vfs_connection_struct *vfs_conn;   /* VFS specific connection stuff */
+	/* Handle on dlopen() call */
+	void *dl_handle;
 
 	char *user; /* name of user who *opened* this connection */
 	uid_t uid; /* uid of user who *opened* this connection */

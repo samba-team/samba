@@ -892,13 +892,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 		
 	if(fsp->is_directory) {
-		if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False), &sbuf) != 0) {
+		if(conn->vfs_ops.stat(conn,dos_to_unix(fsp->fsp_name, False), &sbuf) != 0) {
 			close_file(fsp,True);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
 		}
 	} else {
-		if (conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
+		if (conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0) {
 			close_file(fsp,False);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
@@ -1223,7 +1223,7 @@ static int call_nt_transact_create(connection_struct *conn,
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
 
-    if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False),
+    if(conn->vfs_ops.stat(conn,dos_to_unix(fsp->fsp_name, False),
 	     &sbuf) != 0) {
       close_file(fsp,True);
       restore_case_semantics(file_attributes);
@@ -1293,13 +1293,13 @@ static int call_nt_transact_create(connection_struct *conn,
       } 
   
       if(fsp->is_directory) {
-          if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf) != 0) {
+          if(conn->vfs_ops.stat(conn,dos_to_unix(fsp->fsp_name,False), &sbuf) != 0) {
               close_file(fsp,True);
               restore_case_semantics(file_attributes);
               return(ERROR(ERRDOS,ERRnoaccess));
           }
       } else {
-          if (!fsp->stat_open && conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
+          if (!fsp->stat_open && conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0) {
               close_file(fsp,False);
               restore_case_semantics(file_attributes);
               return(ERROR(ERRDOS,ERRnoaccess));

@@ -214,13 +214,7 @@ int reply_tcon(connection_struct *conn,
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int pwlen=0;
 	int ecode = -1;
-#ifdef WITH_PROFILE
-	struct timeval starttime;
-	struct timeval endtime;
-
-	GetTimeOfDay(&starttime);
-	INC_PROFILE_COUNT(SMBtcon_count);
-#endif
+	START_PROFILE(SMBtcon);
 
 	*service = *user = *password = *dev = 0;
 
@@ -249,10 +243,7 @@ int reply_tcon(connection_struct *conn,
 	conn = make_connection(service,user,password,pwlen,dev,vuid,&ecode);
   
 	if (!conn) {
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBtcon_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBtcon);
 		return(connection_error(inbuf,outbuf,ecode));
 	}
   
@@ -264,10 +255,7 @@ int reply_tcon(connection_struct *conn,
 	DEBUG(3,("tcon service=%s user=%s cnum=%d\n", 
 		 service, user, conn->cnum));
   
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBtcon_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBtcon);
 	return(outsize);
 }
 
@@ -286,13 +274,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	int passlen = SVAL(inbuf,smb_vwv3);
 	char *path;
 	char *p;
-#ifdef WITH_PROFILE
-	struct timeval starttime;
-	struct timeval endtime;
-
-	GetTimeOfDay(&starttime);
-	INC_PROFILE_COUNT(SMBtconX_count);
-#endif
+	START_PROFILE(SMBtconX);
 	
 	*service = *user = *password = *devicename = 0;
 
@@ -317,10 +299,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	
 	p = strchr(path+2,'\\');
 	if (!p) {
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBtconX_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBtconX);
 		return(ERROR(ERRDOS,ERRnosuchshare));
 	}
 	fstrcpy(service,p+1);
@@ -355,10 +334,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	conn = make_connection(service,user,password,passlen,devicename,vuid,&ecode);
 	
 	if (!conn) {
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBtconX_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBtconX);
 		return(connection_error(inbuf,outbuf,ecode));
 	}
 
@@ -391,10 +367,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	SSVAL(inbuf,smb_tid,conn->cnum);
 	SSVAL(outbuf,smb_tid,conn->cnum);
 
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBtconX_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBtconX);
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
@@ -426,13 +399,7 @@ int reply_ioctl(connection_struct *conn,
 	int replysize, outsize;
 	char *p;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-	struct timeval starttime;
-	struct timeval endtime;
-
-	GetTimeOfDay(&starttime);
-	INC_PROFILE_COUNT(SMBioctl_count);
-#endif
+	START_PROFILE(SMBioctl);
 
 	DEBUG(4, ("Received IOCTL (code 0x%x)\n", ioctl_code));
 
@@ -442,10 +409,7 @@ int reply_ioctl(connection_struct *conn,
 		replysize = 32;
 		break;
 	    default:
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBioctl_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBioctl);
 		return(ERROR(ERRSRV,ERRnosupport));
 	}
 
@@ -464,10 +428,7 @@ int reply_ioctl(connection_struct *conn,
 		break;
 	}
 
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBioctl_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBioctl);
 	return outsize;
 }
 
@@ -704,13 +665,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
   char *domain = "";
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBsesssetupX_count);
-#endif
+  START_PROFILE(SMBsesssetupX);
 
   *smb_apasswd = 0;
   *smb_ntpasswd = 0;
@@ -859,10 +814,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   /* say yes to everything ending in $. */
 
   if (*user && (user[strlen(user) - 1] == '$') && (smb_apasslen == 24) && (smb_ntpasslen == 24)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBsesssetupX_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBsesssetupX);
     return session_trust_account(conn, inbuf, outbuf, user, 
                                  smb_apasswd, smb_apasslen,
                                  smb_ntpasswd, smb_ntpasslen);
@@ -878,10 +830,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      */
     if (!*user && !*smb_apasswd && !*domain) {
       DEBUG(0, ("restrict anonymous is True and anonymous connection attempted. Denying access.\n"));
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBsesssetupX_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBsesssetupX);
       return(ERROR(ERRDOS,ERRnoaccess));
     }
   }
@@ -979,10 +928,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
         if (lp_map_to_guest() == NEVER_MAP_TO_GUEST)
         {
           DEBUG(1,("Rejecting user '%s': authentication failed\n", user));
-#ifdef WITH_PROFILE
-	  GetTimeOfDay(&endtime);
-	  ADD_PROFILE_COUNT(SMBsesssetupX_time,TvalDiff(&starttime,&endtime));
-#endif
+		  END_PROFILE(SMBsesssetupX);
           return bad_password_error(inbuf,outbuf);
         }
 
@@ -991,10 +937,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
           if (smb_getpwnam(user,True))
           {
             DEBUG(1,("Rejecting user '%s': bad password\n", user));
-#ifdef WITH_PROFILE
-	    GetTimeOfDay(&endtime);
-	    ADD_PROFILE_COUNT(SMBsesssetupX_time,TvalDiff(&starttime,&endtime));
-#endif
+	    	END_PROFILE(SMBsesssetupX);
             return bad_password_error(inbuf,outbuf);
           }
         }
@@ -1050,10 +993,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     const struct passwd *pw = smb_getpwnam(user,False);
     if (!pw) {
       DEBUG(1,("Username %s is invalid on this system\n",user));
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBsesssetupX_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBsesssetupX);
       return bad_password_error(inbuf,outbuf);
     }
     gid = pw->pw_gid;
@@ -1078,10 +1018,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   done_sesssetup = True;
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBsesssetupX_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBsesssetupX);
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
@@ -1097,13 +1034,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL ok = False;
   BOOL bad_path = False;
   SMB_STRUCT_STAT st;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBchkpth_count);
-#endif
+  START_PROFILE(SMBchkpth_count);
  
   pstrcpy(name,smb_buf(inbuf) + 1);
 
@@ -1150,10 +1081,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   DEBUG(3,("chkpth %s mode=%d\n", name, mode));
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBchkpth_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBchkpth);
   return(outsize);
 }
 
@@ -1171,13 +1099,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   SMB_OFF_T size=0;
   time_t mtime=0;
   BOOL bad_path = False;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBgetatr_count);
-#endif
+  START_PROFILE(SMBgetatr);
  
   pstrcpy(fname,smb_buf(inbuf) + 1);
 
@@ -1222,10 +1144,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
       unix_ERR_code = ERRbadpath;
     }
 
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBgetatr_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBgetatr);
     return(UNIXERROR(ERRDOS,ERRbadfile));
   }
  
@@ -1248,10 +1167,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
   DEBUG( 3, ( "getatr name=%s mode=%d size=%d\n", fname, mode, (uint32)size ) );
   
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBgetatr_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBgetatr);
   return(outsize);
 }
 
@@ -1268,13 +1184,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   time_t mtime;
   SMB_STRUCT_STAT st;
   BOOL bad_path = False;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBsetatr_count);
-#endif
+  START_PROFILE(SMBsetatr);
  
   pstrcpy(fname,smb_buf(inbuf) + 1);
   unix_convert(fname,conn,0,&bad_path,&st);
@@ -1297,10 +1207,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
       unix_ERR_code = ERRbadpath;
     }
 
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBsetatr_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBsetatr);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
  
@@ -1308,10 +1215,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
   DEBUG( 3, ( "setatr name=%s mode=%d\n", fname, mode ) );
   
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBsetatr_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBsetatr);
   return(outsize);
 }
 
@@ -1323,15 +1227,9 @@ int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 {
   int outsize = 0;
   SMB_BIG_UINT dfree,dsize,bsize;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBdskattr_count);
-#endif
+  START_PROFILE(SMBdskattr);
   
-  conn->vfs_ops.disk_free(".",True,&bsize,&dfree,&dsize);
+  conn->vfs_ops.disk_free(conn,".",True,&bsize,&dfree,&dsize);
   
   outsize = set_message(outbuf,5,0,True);
   
@@ -1342,10 +1240,7 @@ int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 
   DEBUG(3,("dskattr dfree=%d\n", (unsigned int)dfree));
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBdskattr_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBdskattr);
   return(outsize);
 }
 
@@ -1378,13 +1273,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL expect_close = False;
   BOOL can_open = True;
   BOOL bad_path = False;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBsearch_count);
-#endif
+  START_PROFILE(SMBsearch);
 
   *mask = *directory = *fname = 0;
 
@@ -1465,16 +1354,10 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
             unix_ERR_class = ERRDOS;
             unix_ERR_code = ERRbadpath;
           }
-#ifdef WITH_PROFILE
-	  GetTimeOfDay(&endtime);
-	  ADD_PROFILE_COUNT(SMBsearch_time,TvalDiff(&starttime,&endtime));
-#endif
+	 	 END_PROFILE(SMBsearch);
           return (UNIXERROR(ERRDOS,ERRnofids));
         }
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBsearch_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBsearch);
         return(ERROR(ERRDOS,ERRnofids));
       }
       dptr_set_wcard(dptr_num, strdup(mask));
@@ -1565,10 +1448,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
         smb_fn_name(CVAL(inbuf,smb_com)), 
         mask, directory, dirtype, numentries, maxentries ) );
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBsearch_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBsearch);
   return(outsize);
 }
 
@@ -1583,13 +1463,7 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   char *path;
   char status[21];
   int dptr_num= -2;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBfclose_count);
-#endif
+  START_PROFILE(SMBfclose);
 
   outsize = set_message(outbuf,1,0,True);
   path = smb_buf(inbuf) + 1;
@@ -1597,10 +1471,7 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   
   if (status_len == 0) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBfclose_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBfclose);
     return(ERROR(ERRSRV,ERRsrverror));
   }
 
@@ -1615,10 +1486,7 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   DEBUG(3,("search close\n"));
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBfclose_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBfclose);
   return(outsize);
 }
 
@@ -1641,13 +1509,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   BOOL bad_path = False;
   files_struct *fsp;
   int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBopen_count);
-#endif
+  START_PROFILE(SMBopen);
  
   share_mode = SVAL(inbuf,smb_vwv0);
 
@@ -1669,19 +1531,13 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBopen_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBopen);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fsp->conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
+  if (vfs_fstat(fsp,fsp->fd,&sbuf) != 0) {
     close_file(fsp,False);
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBopen_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBopen);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
     
@@ -1692,10 +1548,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   if (fmode & aDIR) {
     DEBUG(3,("attempt to open a directory %s\n",fname));
     close_file(fsp,False);
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBopen_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBopen);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
   
@@ -1715,10 +1568,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     
   if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBopen_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBopen);
   return(outsize);
 }
 
@@ -1749,27 +1599,15 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   int smb_action = 0;
   BOOL bad_path = False;
   files_struct *fsp;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBopenX_count);
-#endif
+  START_PROFILE(SMBopenX);
 
   /* If it's an IPC, pass off the pipe handler. */
   if (IS_IPC(conn)) {
     if (lp_nt_pipe_support()) {
-#ifdef WITH_PROFILE
-	    GetTimeOfDay(&endtime);
-	    ADD_PROFILE_COUNT(SMBopenX_time,TvalDiff(&starttime,&endtime));
-#endif
+	    END_PROFILE(SMBopenX);
 	    return reply_open_pipe_and_X(conn, inbuf,outbuf,length,bufsize);
     } else {
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBopenX_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBopenX);
         return (ERROR(ERRSRV,ERRaccess));
     }
   }
@@ -1794,19 +1632,13 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBopenX_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBopenX);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fsp->conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
+  if (vfs_fstat(fsp,fsp->fd,&sbuf) != 0) {
     close_file(fsp,False);
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBopenX_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBopenX);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1815,10 +1647,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   mtime = sbuf.st_mtime;
   if (fmode & aDIR) {
     close_file(fsp,False);
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBopenX_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBopenX);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1859,10 +1688,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   SSVAL(outbuf,smb_vwv8,rmode);
   SSVAL(outbuf,smb_vwv11,smb_action);
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBopenX_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBopenX);
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
@@ -1874,13 +1700,7 @@ int reply_ulogoffX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 {
   uint16 vuid = SVAL(inbuf,smb_uid);
   user_struct *vuser = get_valid_user_struct(vuid);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBulogoffX_count);
-#endif
+  START_PROFILE(SMBulogoffX);
 
   if(vuser == 0) {
     DEBUG(3,("ulogoff, vuser id %d does not map to user.\n", vuid));
@@ -1898,10 +1718,7 @@ int reply_ulogoffX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 
   DEBUG( 3, ( "ulogoffX vuid=%d\n", vuid ) );
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBulogoffX_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBulogoffX);
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
@@ -1920,13 +1737,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   BOOL bad_path = False;
   files_struct *fsp;
   int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBcreate_count);
-#endif
+  START_PROFILE(SMBcreate);
  
   com = SVAL(inbuf,smb_com);
 
@@ -1966,10 +1777,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBcreate_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBcreate);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
  
@@ -1987,10 +1795,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   DEBUG( 3, ( "mknew %s fd=%d dmode=%d umode=%o\n",
         fname, fsp->fd, createmode, (int)unixmode ) );
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBcreate_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBcreate);
   return(outsize);
 }
 
@@ -2008,13 +1813,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   BOOL bad_path = False;
   files_struct *fsp;
   int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBctemp_count);
-#endif
+  START_PROFILE(SMBctemp);
  
   createmode = SVAL(inbuf,smb_vwv0);
   pstrcpy(fname,smb_buf(inbuf)+1);
@@ -2040,10 +1839,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBctemp_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBctemp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -2063,10 +1859,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   DEBUG( 3, ( "ctemp %s fd=%d dmode=%d umode=%o\n",
         fname2, fsp->fd, createmode, (int)unixmode ) );
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBctemp_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBctemp);
   return(outsize);
 }
 
@@ -2081,7 +1874,7 @@ static BOOL can_delete(char *fname,connection_struct *conn, int dirtype)
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (conn->vfs_ops.lstat(dos_to_unix(fname,False),&sbuf) != 0) return(False);
+  if (conn->vfs_ops.lstat(conn,dos_to_unix(fname,False),&sbuf) != 0) return(False);
   fmode = dos_mode(conn,fname,&sbuf);
   if (fmode & aDIR) return(False);
   if (!lp_delete_readonly(SNUM(conn))) {
@@ -2111,13 +1904,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL exists=False;
   BOOL bad_path = False;
   BOOL rc = True;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBunlink_count);
-#endif
+  START_PROFILE(SMBunlink);
 
   *directory = *mask = 0;
 
@@ -2191,7 +1978,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	    error = ERRnoaccess;
 	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 	    if (!can_delete(fname,conn,dirtype)) continue;
-	    if (!conn->vfs_ops.unlink(dos_to_unix(fname,False))) count++;
+	    if (!vfs_unlink(conn,fname)) count++;
 	    DEBUG(3,("reply_unlink : doing unlink on %s\n",fname));
 	  }
 	CloseDir(dirptr);
@@ -2200,10 +1987,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
   if (count == 0) {
     if (exists) {
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBunlink_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBunlink);
       return(ERROR(ERRDOS,error));
     } else
     {
@@ -2212,20 +1996,14 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
         unix_ERR_class = ERRDOS;
         unix_ERR_code = ERRbadpath;
       }
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBunlink_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBunlink);
       return(UNIXERROR(ERRDOS,error));
     }
   }
   
   outsize = set_message(outbuf,0,0,True);
   
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBunlink_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBunlink);
   return(outsize);
 }
 
@@ -2242,13 +2020,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   char *header = outbuf;
   ssize_t ret=0;
   files_struct *fsp;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBreadbraw_count);
-#endif
+  START_PROFILE(SMBreadbraw);
 
   /*
    * Special check if an oplock break has been issued
@@ -2261,10 +2033,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
     _smb_setlen(header,0);
     transfer_file(0,smbd_server_fd(),(SMB_OFF_T)0,header,4,0);
     DEBUG(5,("readbraw - oplock break finished\n"));
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBreadbraw_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBreadbraw);
     return -1;
   }
 
@@ -2277,10 +2046,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	  DEBUG(3,("fnum %d not open in readbraw - cache prime?\n",(int)SVAL(inbuf,smb_vwv0)));
 	  _smb_setlen(header,0);
 	  transfer_file(0,smbd_server_fd(),(SMB_OFF_T)0,header,4,0);
-#ifdef WITH_PROFILE
-	  GetTimeOfDay(&endtime);
-	  ADD_PROFILE_COUNT(SMBreadbraw_time,TvalDiff(&starttime,&endtime));
-#endif
+	  END_PROFILE(SMBreadbraw);
 	  return(-1);
   }
 
@@ -2308,10 +2074,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv8) ));
       _smb_setlen(header,0);
       transfer_file(0,smbd_server_fd(),(SMB_OFF_T)0,header,4,0);
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBreadbraw_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBreadbraw);
       return(-1);
     }
 
@@ -2322,10 +2085,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
             (double)startpos ));
 	  _smb_setlen(header,0);
 	  transfer_file(0,smbd_server_fd(),(SMB_OFF_T)0,header,4,0);
-#ifdef WITH_PROFILE
-	  GetTimeOfDay(&endtime);
-	  ADD_PROFILE_COUNT(SMBreadbraw_time,TvalDiff(&starttime,&endtime));
-#endif
+	  END_PROFILE(SMBreadbraw);
 	  return(-1);
     }      
   }
@@ -2344,7 +2104,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
     if (size < sizeneeded)
     {
       SMB_STRUCT_STAT st;
-      if (fsp->conn->vfs_ops.fstat(fsp->fd,&st) == 0)
+      if (vfs_fstat(fsp,fsp->fd,&st) == 0)
         size = st.st_size;
       if (!fsp->can_write) 
         fsp->size = size;
@@ -2367,7 +2127,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
     _smb_setlen(header,nread);
 
     if ((nread-predict) > 0) {
-      if(conn->vfs_ops.seek(fsp,startpos + predict) == -1) {
+      if(conn->vfs_ops.seek(fsp,fsp->fd,startpos + predict) == -1) {
         DEBUG(0,("reply_readbraw: ERROR: seek_file failed.\n"));
         ret = 0;
         seek_fail = True;
@@ -2375,7 +2135,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
     }
 
     if(!seek_fail)
-      ret = (ssize_t)vfs_transfer_file(-1, fsp->fd, Client, NULL,
+      ret = (ssize_t)vfs_transfer_file(-1, fsp, fsp->fd, Client, NULL,
                                    (SMB_OFF_T)(nread-predict),header,4+predict, 
                                    startpos+predict);
   }
@@ -2393,10 +2153,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 #endif /* UNSAFE_READRAW */
 
   DEBUG(5,("readbraw finished\n"));
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBreadbraw_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBreadbraw);
   return -1;
 }
 
@@ -2414,13 +2171,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
   int eclass;
   uint32 ecode;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBlockread_count);
-#endif
+  START_PROFILE(SMBlockread);
 
   CHECK_FSP(fsp,conn);
   CHECK_READ(fsp);
@@ -2448,26 +2199,17 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
        * onto the blocking lock queue.
        */
       if(push_blocking_lock_request(inbuf, length, -1, 0))
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBlockread_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBlockread);
         return -1;
     }
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBlockread_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBlockread);
     return (ERROR(eclass,ecode));
   }
 
   nread = read_file(fsp,data,startpos,numtoread);
 
   if (nread < 0) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBlockread_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBlockread);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -2479,10 +2221,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
   DEBUG( 3, ( "lockread fnum=%d num=%d nread=%d\n",
             fsp->fnum, (int)numtoread, (int)nread ) );
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBlockread_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBlockread);
   return(outsize);
 }
 
@@ -2499,13 +2238,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
   SMB_OFF_T startpos;
   int outsize = 0;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBread_count);
-#endif
+  START_PROFILE(SMBread);
 
   CHECK_FSP(fsp,conn);
   CHECK_READ(fsp);
@@ -2519,10 +2252,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
   data = smb_buf(outbuf) + 3;
   
   if (is_locked(fsp,conn,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBread_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBread);
     return(ERROR(ERRDOS,ERRlock));	
   }
 
@@ -2530,10 +2260,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
     nread = read_file(fsp,data,startpos,numtoread);
   
   if (nread < 0) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBread_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBread);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
   
@@ -2546,10 +2273,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
   DEBUG( 3, ( "read fnum=%d num=%d nread=%d\n",
             fsp->fnum, (int)numtoread, (int)nread ) );
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBread_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBread);
   return(outsize);
 }
 
@@ -2565,20 +2289,11 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   size_t smb_mincnt = SVAL(inbuf,smb_vwv6);
   ssize_t nread = -1;
   char *data;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBreadX_count);
-#endif
+  START_PROFILE(SMBreadX);
 
   /* If it's an IPC, pass off the pipe handler. */
   if (IS_IPC(conn)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBreadX_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBreadX);
     return reply_pipe_read_and_X(inbuf,outbuf,length,bufsize);
   }
 
@@ -2605,10 +2320,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     if(IVAL(inbuf,smb_vwv10) != 0) {
       DEBUG(0,("reply_read_and_X - large offset (%x << 32) used and we don't support \
 64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv10) ));
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBreadX_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBreadX);
       return(ERROR(ERRDOS,ERRbadaccess));
     }
 
@@ -2617,19 +2329,13 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   }
 
   if (is_locked(fsp,conn,(SMB_BIG_UINT)smb_maxcnt,(SMB_BIG_UINT)startpos, READ_LOCK)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBreadX_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBreadX);
     return(ERROR(ERRDOS,ERRlock));
   }
   nread = read_file(fsp,data,startpos,smb_maxcnt);
   
   if (nread < 0) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBreadX_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBreadX);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
   
@@ -2640,10 +2346,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   DEBUG( 3, ( "readX fnum=%d min=%d max=%d nread=%d\n",
 	      fsp->fnum, (int)smb_mincnt, (int)smb_maxcnt, (int)nread ) );
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBreadX_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBreadX);
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
@@ -2662,13 +2365,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
   BOOL write_through;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
   int outsize = 0;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBwritebraw_count);
-#endif
+  START_PROFILE(SMBwritebraw);
 
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
@@ -2693,10 +2390,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
   CVAL(outbuf,smb_com) = SMBwritec;
 
   if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwritebraw_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwritebraw);
     return(ERROR(ERRDOS,ERRlock));
   }
 
@@ -2707,10 +2401,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	   fsp->fnum, (double)startpos, (int)numtowrite, (int)nwritten, (int)write_through));
 
   if (nwritten < numtowrite)  {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwritebraw_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwritebraw);
     return(UNIXERROR(ERRHRD,ERRdiskfull));
   }
 
@@ -2761,10 +2452,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 
   /* we won't return a status if write through is not selected - this 
      follows what WfWg does */
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBwritebraw_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBwritebraw);
   if (!write_through && total_written==tcount) {
     return(-1);
   }
@@ -2786,13 +2474,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
   uint32 ecode;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
   int outsize = 0;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBwriteunlock_count);
-#endif
+  START_PROFILE(SMBwriteunlock);
 
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
@@ -2803,10 +2485,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
   data = smb_buf(inbuf) + 3;
   
   if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwriteunlock_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwriteunlock);
     return(ERROR(ERRDOS,ERRlock));
   }
 
@@ -2822,18 +2501,12 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
       sync_file(conn,fsp);
 
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwriteunlock_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwriteunlock);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
   if(!do_unlock(fsp, conn, (SMB_BIG_UINT)numtowrite, (SMB_BIG_UINT)startpos, &eclass, &ecode)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwriteunlock_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwriteunlock);
     return(ERROR(eclass,ecode));
   }
 
@@ -2844,10 +2517,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
   DEBUG( 3, ( "writeunlock fnum=%d num=%d wrote=%d\n",
 	      fsp->fnum, (int)numtowrite, (int)nwritten ) );
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBwriteunlock_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBwriteunlock);
   return(outsize);
 }
 
@@ -2862,20 +2532,11 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   char *data;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
   int outsize = 0;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBwrite_count);
-#endif
+  START_PROFILE(SMBwrite);
 
   /* If it's an IPC, pass off the pipe handler. */
   if (IS_IPC(conn)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwrite_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwrite);
     return reply_pipe_write(inbuf,outbuf,size,dum_buffsize);
   }
 
@@ -2888,10 +2549,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   data = smb_buf(inbuf) + 3;
   
   if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwrite_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwrite);
     return(ERROR(ERRDOS,ERRlock));
   }
 
@@ -2908,10 +2566,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
     sync_file(conn,fsp);
 
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwrite_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwrite);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -2927,10 +2582,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   DEBUG(3,("write fnum=%d num=%d wrote=%d\n",
 	   fsp->fnum, (int)numtowrite, (int)nwritten));
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBwrite_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBwrite);
   return(outsize);
 }
 
@@ -2947,20 +2599,11 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   ssize_t nwritten = -1;
   unsigned int smb_doff = SVAL(inbuf,smb_vwv11);
   char *data;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBwriteX_count);
-#endif
+  START_PROFILE(SMBwriteX);
 
   /* If it's an IPC, pass off the pipe handler. */
   if (IS_IPC(conn)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwriteX_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwriteX);
     return reply_pipe_write_and_X(inbuf,outbuf,length,bufsize);
   }
 
@@ -2969,10 +2612,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   CHECK_ERROR(fsp);
 
   if(smb_doff > smb_len(inbuf)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwriteX_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwriteX);
     return(ERROR(ERRDOS,ERRbadmem));
   }
 
@@ -2994,10 +2634,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
     if(IVAL(inbuf,smb_vwv12) != 0) {
       DEBUG(0,("reply_write_and_X - large offset (%x << 32) used and we don't support \
 64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv12) ));
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBwriteX_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBwriteX);
       return(ERROR(ERRDOS,ERRbadaccess));
     }
 
@@ -3005,10 +2642,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   }
 
   if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwriteX_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwriteX);
     return(ERROR(ERRDOS,ERRlock));
   }
 
@@ -3022,10 +2656,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
     nwritten = write_file(fsp,data,startpos,numtowrite);
   
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwriteX_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwriteX);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -3044,10 +2675,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   if (lp_syncalways(SNUM(conn)) || write_through)
     sync_file(conn,fsp);
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBwriteX_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBwriteX);
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
@@ -3063,13 +2691,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
   int mode,umode;
   int outsize = 0;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBlseek_count);
-#endif
+  START_PROFILE(SMBlseek);
 
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
@@ -3087,7 +2709,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
       umode = SEEK_SET; break;
   }
 
-  if((res = conn->vfs_ops.lseek(fsp->fd,startpos,umode)) == -1) {
+  if((res = conn->vfs_ops.lseek(fsp,fsp->fd,startpos,umode)) == -1) {
     /*
      * Check for the special case where a seek before the start
      * of the file sets the offset to zero. Added in the CIFS spec,
@@ -3099,11 +2721,8 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 
       if(umode == SEEK_CUR) {
 
-        if((current_pos = conn->vfs_ops.lseek(fsp->fd,0,SEEK_CUR)) == -1) {
-#ifdef WITH_PROFILE
-	  GetTimeOfDay(&endtime);
-	  ADD_PROFILE_COUNT(SMBlseek_time,TvalDiff(&starttime,&endtime));
-#endif
+        if((current_pos = conn->vfs_ops.lseek(fsp,fsp->fd,0,SEEK_CUR)) == -1) {
+	  		END_PROFILE(SMBlseek);
           return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
@@ -3113,11 +2732,8 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 
         SMB_STRUCT_STAT sbuf;
 
-        if(conn->vfs_ops.fstat(fsp->fd, &sbuf) == -1) {
-#ifdef WITH_PROFILE
-	  GetTimeOfDay(&endtime);
-	  ADD_PROFILE_COUNT(SMBlseek_time,TvalDiff(&starttime,&endtime));
-#endif
+        if(vfs_fstat(fsp,fsp->fd, &sbuf) == -1) {
+		  END_PROFILE(SMBlseek);
           return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
@@ -3125,14 +2741,11 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
       }
  
       if(current_pos < 0)
-        res = conn->vfs_ops.lseek(fsp->fd,0,SEEK_SET);
+        res = conn->vfs_ops.lseek(fsp,fsp->fd,0,SEEK_SET);
     }
 
     if(res == -1) {
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBlseek_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBlseek);
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
   }
@@ -3145,10 +2758,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
   DEBUG(3,("lseek fnum=%d ofs=%.0f newpos = %.0f mode=%d\n",
 	   fsp->fnum, (double)startpos, (double)res, mode));
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBlseek_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBlseek);
   return(outsize);
 }
 
@@ -3160,13 +2770,7 @@ int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 {
   int outsize = set_message(outbuf,0,0,True);
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBflush_count);
-#endif
+  START_PROFILE(SMBflush);
 
   if (fsp) {
 	  CHECK_FSP(fsp,conn);
@@ -3180,10 +2784,7 @@ int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int
   }
 
   DEBUG(3,("flush\n"));
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBflush_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBflush);
   return(outsize);
 }
 
@@ -3195,21 +2796,12 @@ int reply_exit(connection_struct *conn,
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
 	int outsize;
-#ifdef WITH_PROFILE
-	struct timeval starttime;
-	struct timeval endtime;
-
-	GetTimeOfDay(&starttime);
-	INC_PROFILE_COUNT(SMBexit_count);
-#endif
+	START_PROFILE(SMBexit);
 	outsize = set_message(outbuf,0,0,True);
 
 	DEBUG(3,("exit\n"));
 
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBexit_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBexit);
 	return(outsize);
 }
 
@@ -3224,22 +2816,13 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	time_t mtime;
 	int32 eclass = 0, err = 0;
 	files_struct *fsp = NULL;
-#ifdef WITH_PROFILE
-	struct timeval starttime;
-	struct timeval endtime;
-
-	GetTimeOfDay(&starttime);
-	INC_PROFILE_COUNT(SMBclose_count);
-#endif
+	START_PROFILE(SMBclose);
 
 	outsize = set_message(outbuf,0,0,True);
 
 	/* If it's an IPC, pass off to the pipe handler. */
 	if (IS_IPC(conn)) {
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBclose_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBclose);
 		return reply_pipe_close(conn, inbuf,outbuf);
 	}
 
@@ -3250,10 +2833,7 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	 */
 
 	if(!fsp || (fsp->conn != conn)) {
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBclose_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBclose);
 		return(ERROR(ERRDOS,ERRbadfid));
 	}
 
@@ -3302,27 +2882,18 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
  
 		if((close_err = close_file(fsp,True)) != 0) {
 			errno = close_err;
-#ifdef WITH_PROFILE
-			GetTimeOfDay(&endtime);
-			ADD_PROFILE_COUNT(SMBclose_time,TvalDiff(&starttime,&endtime));
-#endif
+			END_PROFILE(SMBclose);
 			return (UNIXERROR(ERRHRD,ERRgeneral));
 		}
 	}  
 
 	/* We have a cached error */
 	if(eclass || err) {
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBclose_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBclose);
 		return(ERROR(eclass,err));
 	}
 
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBclose_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBclose);
 	return(outsize);
 }
 
@@ -3342,13 +2913,7 @@ int reply_writeclose(connection_struct *conn,
 	char *data;
 	time_t mtime;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-	struct timeval starttime;
-	struct timeval endtime;
-
-	GetTimeOfDay(&starttime);
-	INC_PROFILE_COUNT(SMBwriteclose_count);
-#endif
+	START_PROFILE(SMBwriteclose);
 
 	CHECK_FSP(fsp,conn);
 	CHECK_WRITE(fsp);
@@ -3360,10 +2925,7 @@ int reply_writeclose(connection_struct *conn,
 	data = smb_buf(inbuf) + 1;
   
 	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBwriteclose_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBwriteclose);
 		return(ERROR(ERRDOS,ERRlock));
 	}
   
@@ -3378,29 +2940,20 @@ int reply_writeclose(connection_struct *conn,
 		 conn->num_files_open));
   
 	if (nwritten <= 0) {
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBwriteclose_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBwriteclose);
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
  
 	if(close_err != 0) {
 		errno = close_err;
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBwriteclose_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBwriteclose);
 		return(UNIXERROR(ERRHRD,ERRgeneral));
 	}
  
 	outsize = set_message(outbuf,1,0,True);
   
 	SSVAL(outbuf,smb_vwv0,nwritten);
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBwriteclose_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBwriteclose);
 	return(outsize);
 }
 
@@ -3416,13 +2969,7 @@ int reply_lock(connection_struct *conn,
 	int eclass;
 	uint32 ecode;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-	struct timeval starttime;
-	struct timeval endtime;
-
-	GetTimeOfDay(&starttime);
-	INC_PROFILE_COUNT(SMBlock_count);
-#endif
+	START_PROFILE(SMBlock);
 
 	CHECK_FSP(fsp,conn);
 	CHECK_ERROR(fsp);
@@ -3441,24 +2988,15 @@ int reply_lock(connection_struct *conn,
              * onto the blocking lock queue.
              */
             if(push_blocking_lock_request(inbuf, length, -1, 0)) {
-#ifdef WITH_PROFILE
-	      GetTimeOfDay(&endtime);
-	      ADD_PROFILE_COUNT(SMBlock_time,TvalDiff(&starttime,&endtime));
-#endif
+	      END_PROFILE(SMBlock);
               return -1;
 	    }
           }
-#ifdef WITH_PROFILE
-	  GetTimeOfDay(&endtime);
-	  ADD_PROFILE_COUNT(SMBlock_time,TvalDiff(&starttime,&endtime));
-#endif
+	  END_PROFILE(SMBlock);
 	  return (ERROR(eclass,ecode));
 	}
 
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBlock_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBlock);
 	return(outsize);
 }
 
@@ -3473,13 +3011,7 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, in
   int eclass;
   uint32 ecode;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBunlock_count);
-#endif
+  START_PROFILE(SMBunlock);
 
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
@@ -3488,20 +3020,14 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, in
   offset = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv3);
 
   if(!do_unlock(fsp, conn, count, offset, &eclass, &ecode)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBunlock_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBunlock);
     return (ERROR(eclass,ecode));
   }
 
   DEBUG( 3, ( "unlock fd=%d fnum=%d offset=%.0f count=%.0f\n",
         fsp->fd, fsp->fnum, (double)offset, (double)count ) );
   
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBunlock_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBunlock);
   return(outsize);
 }
 
@@ -3514,22 +3040,13 @@ int reply_tdis(connection_struct *conn,
 {
 	int outsize = set_message(outbuf,0,0,True);
 	uint16 vuid;
-#ifdef WITH_PROFILE
-	struct timeval starttime;
-	struct timeval endtime;
-
-	GetTimeOfDay(&starttime);
-	INC_PROFILE_COUNT(SMBtdis_count);
-#endif
+	START_PROFILE(SMBtdis);
 
 	vuid = SVAL(inbuf,smb_uid);
 
 	if (!conn) {
 		DEBUG(4,("Invalid connection in tdis\n"));
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBtdis_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBtdis);
 		return(ERROR(ERRSRV,ERRinvnid));
 	}
 
@@ -3537,10 +3054,7 @@ int reply_tdis(connection_struct *conn,
 
 	close_cnum(conn,vuid);
   
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBtdis_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBtdis);
 	return outsize;
 }
 
@@ -3556,13 +3070,7 @@ int reply_echo(connection_struct *conn,
 	int seq_num;
 	unsigned int data_len = smb_buflen(inbuf);
 	int outsize = set_message(outbuf,1,data_len,True);
-#ifdef WITH_PROFILE
-	struct timeval starttime;
-	struct timeval endtime;
-
-	GetTimeOfDay(&starttime);
-	INC_PROFILE_COUNT(SMBecho_count);
-#endif
+	START_PROFILE(SMBecho);
 
 	data_len = MIN(data_len, (sizeof(inbuf)-(smb_buf(inbuf)-inbuf)));
 
@@ -3587,10 +3095,7 @@ int reply_echo(connection_struct *conn,
 
 	smb_echo_count++;
 
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBecho_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBecho);
 	return -1;
 }
 
@@ -3603,19 +3108,10 @@ int reply_printopen(connection_struct *conn,
 {
 	int outsize = 0;
 	files_struct *fsp;
-#ifdef WITH_PROFILE
-	struct timeval starttime;
-	struct timeval endtime;
-
-	GetTimeOfDay(&starttime);
-	INC_PROFILE_COUNT(SMBsplopen_count);
-#endif
+	START_PROFILE(SMBsplopen);
 	
 	if (!CAN_PRINT(conn)) {
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBsplopen_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBsplopen);
 		return(ERROR(ERRDOS,ERRnoaccess));
 	}
 
@@ -3623,10 +3119,7 @@ int reply_printopen(connection_struct *conn,
 	fsp = print_fsp_open(conn,"dos.prn");
 
 	if (!fsp) {
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBsplopen_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBsplopen);
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
@@ -3636,10 +3129,7 @@ int reply_printopen(connection_struct *conn,
 	DEBUG(3,("openprint fd=%d fnum=%d\n",
 		 fsp->fd, fsp->fnum));
 
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBsplopen_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBsplopen);
 	return(outsize);
 }
 
@@ -3653,22 +3143,13 @@ int reply_printclose(connection_struct *conn,
 	int outsize = set_message(outbuf,0,0,True);
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	int close_err = 0;
-#ifdef WITH_PROFILE
-	struct timeval starttime;
-	struct timeval endtime;
-
-	GetTimeOfDay(&starttime);
-	INC_PROFILE_COUNT(SMBsplclose_count);
-#endif
+	START_PROFILE(SMBsplclose);
 
 	CHECK_FSP(fsp,conn);
 	CHECK_ERROR(fsp);
 
 	if (!CAN_PRINT(conn)) {
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBsplclose_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBsplclose);
 		return(ERROR(ERRDOS,ERRnoaccess));
 	}
   
@@ -3679,17 +3160,11 @@ int reply_printclose(connection_struct *conn,
 
 	if(close_err != 0) {
 		errno = close_err;
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBsplclose_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBsplclose);
 		return(UNIXERROR(ERRHRD,ERRgeneral));
 	}
 
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBsplclose_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBsplclose);
 	return(outsize);
 }
 
@@ -3703,23 +3178,14 @@ int reply_printqueue(connection_struct *conn,
 	int outsize = set_message(outbuf,2,3,True);
 	int max_count = SVAL(inbuf,smb_vwv0);
 	int start_index = SVAL(inbuf,smb_vwv1);
-#ifdef WITH_PROFILE
-	struct timeval starttime;
-	struct timeval endtime;
-
-	GetTimeOfDay(&starttime);
-	INC_PROFILE_COUNT(SMBsplretq_count);
-#endif
+	START_PROFILE(SMBsplretq);
 
 	/* we used to allow the client to get the cnum wrong, but that
 	   is really quite gross and only worked when there was only
 	   one printer - I think we should now only accept it if they
 	   get it right (tridge) */
 	if (!CAN_PRINT(conn)) {
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBsplretq_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBsplretq);
 		return(ERROR(ERRDOS,ERRnoaccess));
 	}
 
@@ -3768,10 +3234,7 @@ int reply_printqueue(connection_struct *conn,
 		DEBUG(3,("%d entries returned in queue\n",count));
 	}
   
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBsplretq_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBsplretq);
 	return(outsize);
 }
 
@@ -3785,19 +3248,10 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
   int outsize = set_message(outbuf,0,0,True);
   char *data;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBsplwr_count);
-#endif
+  START_PROFILE(SMBsplwr);
   
   if (!CAN_PRINT(conn)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBsplwr_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBsplwr);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -3809,19 +3263,13 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
   data = smb_buf(inbuf) + 3;
   
   if (write_file(fsp,data,-1,numtowrite) != numtowrite) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBsplwr_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBsplwr);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
   DEBUG( 3, ( "printwrite fnum=%d num=%d\n", fsp->fnum, numtowrite ) );
   
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBsplwr_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBsplwr);
   return(outsize);
 }
 
@@ -3838,8 +3286,7 @@ int mkdir_internal(connection_struct *conn, char *inbuf, char *outbuf, pstring d
   unix_convert(directory,conn,0,&bad_path,NULL);
   
   if (check_name(directory, conn))
-    ret = conn->vfs_ops.mkdir(dos_to_unix(directory,False),
-			      unix_mode(conn,aDIR,directory));
+    ret = vfs_mkdir(conn,directory,unix_mode(conn,aDIR,directory));
   
   if (ret < 0)
   {
@@ -3861,13 +3308,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 {
   pstring directory;
   int outsize;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBmkdir_count);
-#endif
+  START_PROFILE(SMBmkdir);
  
   pstrcpy(directory,smb_buf(inbuf) + 1);
 
@@ -3877,10 +3318,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
   DEBUG( 3, ( "mkdir %s ret=%d\n", directory, outsize ) );
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBmkdir_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBmkdir);
   return(outsize);
 }
 
@@ -3917,7 +3355,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
     pstrcat(fullname, "/");
     pstrcat(fullname, dname);
 
-    if(conn->vfs_ops.lstat(dos_to_unix(fullname,False), &st) != 0)
+    if(conn->vfs_ops.lstat(conn,dos_to_unix(fullname,False), &st) != 0)
     {
       ret = True;
       break;
@@ -3930,13 +3368,13 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
         ret = True;
         break;
       }
-      if(conn->vfs_ops.rmdir(dos_to_unix(fullname,False)) != 0)
+      if(vfs_rmdir(conn,fullname) != 0)
       {
         ret = True;
         break;
       }
     }
-    else if(conn->vfs_ops.unlink(dos_to_unix(fullname,False)) != 0)
+    else if(vfs_unlink(conn,fullname) != 0)
     {
       ret = True;
       break;
@@ -3954,7 +3392,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 {
   BOOL ok;
 
-  ok = (conn->vfs_ops.rmdir(dos_to_unix(directory, False)) == 0);
+  ok = (vfs_rmdir(conn,directory) == 0);
   if(!ok && ((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn)))
   {
     /* 
@@ -4001,7 +3439,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
           pstrcat(fullname, "/");
           pstrcat(fullname, dname);
                      
-          if(conn->vfs_ops.lstat(dos_to_unix(fullname, False), &st) != 0)
+          if(conn->vfs_ops.lstat(conn,dos_to_unix(fullname, False), &st) != 0)
             break;
           if(st.st_mode & S_IFDIR)
           {
@@ -4010,15 +3448,15 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
               if(recursive_rmdir(conn, fullname) != 0)
                 break;
             }
-            if(conn->vfs_ops.rmdir(dos_to_unix(fullname, False)) != 0)
+            if(vfs_rmdir(conn,fullname) != 0)
               break;
           }
-          else if(conn->vfs_ops.unlink(dos_to_unix(fullname, False)) != 0)
+          else if(vfs_unlink(conn,fullname) != 0)
             break;
         }
         CloseDir(dirptr);
         /* Retry the rmdir */
-        ok = (conn->vfs_ops.rmdir(dos_to_unix(directory, False)) == 0);
+        ok = (vfs_rmdir(conn,directory) == 0);
       }
       else
         CloseDir(dirptr);
@@ -4044,13 +3482,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   int outsize = 0;
   BOOL ok = False;
   BOOL bad_path = False;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBrmdir_count);
-#endif
+  START_PROFILE(SMBrmdir);
 
   pstrcpy(directory,smb_buf(inbuf) + 1);
 
@@ -4071,10 +3503,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBrmdir_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBrmdir);
     return(UNIXERROR(ERRDOS,ERRbadpath));
   }
  
@@ -4082,10 +3511,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
   DEBUG( 3, ( "rmdir %s\n", directory ) );
   
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBrmdir_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBrmdir);
   return(outsize);
 }
 
@@ -4163,7 +3589,7 @@ static BOOL can_rename(char *fname,connection_struct *conn)
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (conn->vfs_ops.lstat(dos_to_unix(fname,False),&sbuf) != 0) return(False);
+  if (conn->vfs_ops.lstat(conn,dos_to_unix(fname,False),&sbuf) != 0) return(False);
   if (!check_file_sharing(conn,fname,True)) return(False);
 
   return(True);
@@ -4295,14 +3721,14 @@ int rename_internals(connection_struct *conn,
 			 */
 			if(resolve_wildcards(directory,newname) &&
 			   can_rename(directory,conn) &&
-			   !conn->vfs_ops.rename(zdirectory,
+			   !conn->vfs_ops.rename(conn,zdirectory,
 						 dos_to_unix(newname,False)))
 				count++;
 		} else {
 			if (resolve_wildcards(directory,newname) && 
 			    can_rename(directory,conn) && 
 			    !vfs_file_exist(conn,newname,NULL) &&
-			    !conn->vfs_ops.rename(zdirectory,
+			    !conn->vfs_ops.rename(conn,zdirectory,
 						  dos_to_unix(newname,False)))
 				count++;
 		}
@@ -4361,7 +3787,7 @@ int rename_internals(connection_struct *conn,
 					continue;
 				}
 				
-				if (!conn->vfs_ops.rename(dos_to_unix(fname,False),
+				if (!conn->vfs_ops.rename(conn,dos_to_unix(fname,False),
                                                           dos_to_unix(destname,False)))
 					count++;
 				DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
@@ -4394,13 +3820,7 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, in
   int outsize = 0;
   pstring name;
   pstring newname;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBmv_count);
-#endif
+  START_PROFILE(SMBmv);
 
   pstrcpy(name,smb_buf(inbuf) + 1);
   pstrcpy(newname,smb_buf(inbuf) + 3 + strlen(name));
@@ -4423,10 +3843,7 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, in
     outsize = set_message(outbuf,0,0,True);
   }
   
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBmv_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBmv);
   return(outsize);
 }
 
@@ -4478,7 +3895,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
   }
 
   if ((ofun&3) == 1) {
-    if(conn->vfs_ops.lseek(fsp2->fd,0,SEEK_END) == -1) {
+    if(conn->vfs_ops.lseek(fsp2,fsp2->fd,0,SEEK_END) == -1) {
       DEBUG(0,("copy_file: error - sys_lseek returned error %s\n",
                strerror(errno) ));
       /*
@@ -4528,13 +3945,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   BOOL bad_path1 = False;
   BOOL bad_path2 = False;
   BOOL rc = True;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBcopy_count);
-#endif
+  START_PROFILE(SMBcopy);
 
   *directory = *mask = 0;
 
@@ -4546,10 +3957,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   if (tid2 != conn->cnum) {
     /* can't currently handle inter share copies XXXX */
     DEBUG(3,("Rejecting inter-share copy\n"));
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBcopy_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBcopy);
     return(ERROR(ERRSRV,ERRinvdevice));
   }
 
@@ -4562,28 +3970,19 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   target_is_directory = vfs_directory_exist(conn,False,NULL);
 
   if ((flags&1) && target_is_directory) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBcopy_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBcopy);
     return(ERROR(ERRDOS,ERRbadfile));
   }
 
   if ((flags&2) && !target_is_directory) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBcopy_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBcopy);
     return(ERROR(ERRDOS,ERRbadpath));
   }
 
   if ((flags&(1<<5)) && vfs_directory_exist(conn,name,NULL)) {
     /* wants a tree copy! XXXX */
     DEBUG(3,("Rejecting tree copy\n"));
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBcopy_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBcopy);
     return(ERROR(ERRSRV,ERRerror));    
   }
 
@@ -4619,10 +4018,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		  count,target_is_directory,&err)) count++;
     if(!count && err) {
 		errno = err;
-#ifdef WITH_PROFILE
-		GetTimeOfDay(&endtime);
-		ADD_PROFILE_COUNT(SMBcopy_time,TvalDiff(&starttime,&endtime));
-#endif
+		END_PROFILE(SMBcopy);
 		return(UNIXERROR(ERRHRD,ERRgeneral));
 	}
     if (!count) exists = vfs_file_exist(conn,directory,NULL);
@@ -4663,18 +4059,12 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     if(err) {
       /* Error on close... */
       errno = err;
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBcopy_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBcopy);
       return(UNIXERROR(ERRHRD,ERRgeneral));
     }
 
     if (exists) {
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBcopy_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBcopy);
       return(ERROR(ERRDOS,error));
     } else
     {
@@ -4683,10 +4073,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
         unix_ERR_class = ERRDOS;
         unix_ERR_code = ERRbadpath;
       }
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBcopy_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBcopy);
       return(UNIXERROR(ERRDOS,error));
     }
   }
@@ -4694,10 +4081,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   outsize = set_message(outbuf,1,0,True);
   SSVAL(outbuf,smb_vwv0,count);
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBcopy_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBcopy);
   return(outsize);
 }
 
@@ -4710,20 +4094,11 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   int outsize = 0;
   BOOL ok = False;
   pstring newdir;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(pathworks_setdir_count);
-#endif
+  START_PROFILE(pathworks_setdir);
   
   snum = SNUM(conn);
   if (!CAN_SETDIR(snum)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(pathworks_setdir_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(pathworks_setdir);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
   
@@ -4740,10 +4115,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   }
   
   if (!ok) {
-#ifdef WITH_PROFILE
-	  GetTimeOfDay(&endtime);
-	  ADD_PROFILE_COUNT(pathworks_setdir_time,TvalDiff(&starttime,&endtime));
-#endif
+	  END_PROFILE(pathworks_setdir);
 	  return(ERROR(ERRDOS,ERRbadpath));
   }
   
@@ -4752,10 +4124,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
   DEBUG(3,("setdir %s\n", newdir));
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(pathworks_setdir_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(pathworks_setdir);
   return(outsize);
 }
 
@@ -4867,13 +4236,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
   int eclass=0, dummy1;
   BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
   BOOL err;
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBlockingX_count);
-#endif
+  START_PROFILE(SMBlockingX);
 
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
@@ -4899,16 +4262,10 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 
       /* if this is a pure oplock break request then don't send a reply */
       if (num_locks == 0 && num_ulocks == 0) {
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBlockingX_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBlockingX);
         return -1;
       } else {
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBlockingX_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBlockingX);
         return ERROR(ERRDOS,ERRlock);
       }
     }
@@ -4926,10 +4283,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
       if(CVAL(inbuf,smb_vwv0) != 0xff)
         DEBUG(0,("reply_lockingX: Error : pure oplock break is a chained %d request !\n",
                  (unsigned int)CVAL(inbuf,smb_vwv0) ));
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBlockingX_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBlockingX);
       return -1;
     }
   }
@@ -4944,10 +4298,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
      * There is no error code marked "stupid client bug".... :-).
      */
     if(err) {
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBlockingX_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBlockingX);
       return ERROR(ERRDOS,ERRnoaccess);
     }
 
@@ -4955,10 +4306,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
           (double)offset, (double)count, fsp->fsp_name ));
 
     if(!do_unlock(fsp,conn,count,offset, &eclass, &ecode)) {
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBlockingX_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBlockingX);
       return ERROR(eclass,ecode);
     }
   }
@@ -4980,10 +4328,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
      * There is no error code marked "stupid client bug".... :-).
      */
     if(err) {
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBlockingX_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBlockingX);
       return ERROR(ERRDOS,ERRnoaccess);
     }
  
@@ -4999,10 +4344,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
          * onto the blocking lock queue.
          */
         if(push_blocking_lock_request(inbuf, length, lock_timeout, i)) {
-#ifdef WITH_PROFILE
-	  GetTimeOfDay(&endtime);
-	  ADD_PROFILE_COUNT(SMBlockingX_time,TvalDiff(&starttime,&endtime));
-#endif
+	  END_PROFILE(SMBlockingX);
           return -1;
 	}
       }
@@ -5026,19 +4368,13 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
        * There is no error code marked "stupid client bug".... :-).
        */
       if(err) {
-#ifdef WITH_PROFILE
-	GetTimeOfDay(&endtime);
-	ADD_PROFILE_COUNT(SMBlockingX_time,TvalDiff(&starttime,&endtime));
-#endif
+	END_PROFILE(SMBlockingX);
         return ERROR(ERRDOS,ERRnoaccess);
       }
  
       do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
     }
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBlockingX_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBlockingX);
     return ERROR(eclass,ecode);
   }
 
@@ -5047,10 +4383,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
   DEBUG( 3, ( "lockingX fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
 	fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks ) );
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBlockingX_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBlockingX);
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
@@ -5070,20 +4403,11 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
   size_t tcount;
   int pad;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBreadBmpx_count);
-#endif
+  START_PROFILE(SMBreadBmpx);
 
   /* this function doesn't seem to work - disable by default */
   if (!lp_readbmpx()) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBreadBmpx_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBreadBmpx);
     return(ERROR(ERRSRV,ERRuseSTD));
   }
 
@@ -5106,10 +4430,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
   total_read = 0;
 
   if (is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBreadBmpx_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBreadBmpx);
     return(ERROR(ERRDOS,ERRlock));
   }
 
@@ -5137,10 +4458,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
     }
   while (total_read < (ssize_t)tcount);
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBreadBmpx_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBreadBmpx);
   return(-1);
 }
 
@@ -5159,13 +4477,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
   int smb_doff;
   char *data;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBwriteBmpx_count);
-#endif
+  START_PROFILE(SMBwriteBmpx);
 
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
@@ -5184,10 +4496,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
   CVAL(outbuf,smb_com) = SMBwritec;
 
   if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwriteBmpx_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwriteBmpx);
     return(ERROR(ERRDOS,ERRlock));
   }
 
@@ -5197,10 +4506,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
       sync_file(conn,fsp);
   
   if(nwritten < (ssize_t)numtowrite) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwriteBmpx_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwriteBmpx);
     return(UNIXERROR(ERRHRD,ERRdiskfull));
   }
 
@@ -5218,10 +4524,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
     if(!wbms)
     {
       DEBUG(0,("Out of memory in reply_readmpx\n"));
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBwriteBmpx_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBwriteBmpx);
       return(ERROR(ERRSRV,ERRnoresource));
     }
     wbms->wr_mode = write_through;
@@ -5254,10 +4557,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
     SSVAL(outbuf,smb_vwv0,nwritten);
   }
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBwriteBmpx_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBwriteBmpx);
   return(outsize);
 }
 
@@ -5278,13 +4578,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   write_bmpx_struct *wbms;
   BOOL send_response = False; 
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBwriteBs_count);
-#endif
+  START_PROFILE(SMBwriteBs);
 
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
@@ -5303,10 +4597,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
      check that it does */
   wbms = fsp->wbmpx_ptr;
   if(!wbms) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwriteBs_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwriteBs);
     return(-1);
   }
 
@@ -5316,10 +4607,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 
   /* Check for an earlier error */
   if(wbms->wr_discard) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwriteBs_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwriteBs);
     return -1; /* Just discard the packet */
   }
 
@@ -5335,16 +4623,10 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
       /* We are returning an error - we can delete the aux struct */
       if (wbms) free((char *)wbms);
       fsp->wbmpx_ptr = NULL;
-#ifdef WITH_PROFILE
-      GetTimeOfDay(&endtime);
-      ADD_PROFILE_COUNT(SMBwriteBs_time,TvalDiff(&starttime,&endtime));
-#endif
+      END_PROFILE(SMBwriteBs);
       return(ERROR(ERRHRD,ERRdiskfull));
     }
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwriteBs_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwriteBs);
     return(CACHE_ERROR(wbms,ERRHRD,ERRdiskfull));
   }
 
@@ -5365,17 +4647,11 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   }
 
   if(send_response) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBwriteBs_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBwriteBs);
     return(outsize);
   }
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBwriteBs_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBwriteBs);
   return(-1);
 }
 
@@ -5389,13 +4665,7 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
   struct utimbuf unix_times;
   int outsize = 0;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBsetattrE_count);
-#endif
+  START_PROFILE(SMBsetattrE);
 
   outsize = set_message(outbuf,0,0,True);
 
@@ -5421,10 +4691,7 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
       dbgtext( "reply_setattrE fnum=%d ", fsp->fnum);
       dbgtext( "ignoring zero request - not setting timestamps of 0\n" );
       }
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBsetattrE_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBsetattrE);
     return(outsize);
   }
   else if ((unix_times.actime != 0) && (unix_times.modtime == 0)) 
@@ -5435,20 +4702,14 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 
   /* Set the date on this file */
   if(file_utime(conn, fsp->fsp_name, &unix_times)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBsetattrE_time,TvalDiff(&starttime,&endtime));
-#endif
+    END_PROFILE(SMBsetattrE);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
   
   DEBUG( 3, ( "reply_setattrE fnum=%d actime=%d modtime=%d\n",
             fsp->fnum, (int)unix_times.actime, (int)unix_times.modtime ) );
 
-#ifdef WITH_PROFILE
-  GetTimeOfDay(&endtime);
-  ADD_PROFILE_COUNT(SMBsetattrE_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBsetattrE);
   return(outsize);
 }
 
@@ -5463,13 +4724,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
   int outsize = 0;
   int mode;
   files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-#ifdef WITH_PROFILE
-  struct timeval starttime;
-  struct timeval endtime;
-
-  GetTimeOfDay(&starttime);
-  INC_PROFILE_COUNT(SMBgetattrE_count);
-#endif
+  START_PROFILE(SMBgetattrE);
 
   outsize = set_message(outbuf,11,0,True);
 
@@ -5477,11 +4732,8 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
   CHECK_ERROR(fsp);
 
   /* Do an fstat on this file */
-  if(fsp->conn->vfs_ops.fstat(fsp->fd, &sbuf)) {
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBgetattrE_time,TvalDiff(&starttime,&endtime));
-#endif
+  if(vfs_fstat(fsp,fsp->fd, &sbuf)) {
+    END_PROFILE(SMBgetattrE);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
   
@@ -5507,10 +4759,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
   
   DEBUG( 3, ( "reply_getattrE fnum=%d\n", fsp->fnum));
   
-#ifdef WITH_PROFILE
-    GetTimeOfDay(&endtime);
-    ADD_PROFILE_COUNT(SMBgetattrE_time,TvalDiff(&starttime,&endtime));
-#endif
+  END_PROFILE(SMBgetattrE);
   return(outsize);
 }
 #undef OLD_NTDOMAIN

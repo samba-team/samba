@@ -170,19 +170,11 @@ void conn_free(connection_struct *conn)
 	/* Free vfs_connection_struct */
 	    
 #ifdef HAVE_LIBDL
-	if (conn->vfs_conn != NULL) {
+	if (conn->dl_handle != NULL) {
 		/* Close dlopen() handle */
-		if (conn->vfs_conn->dl_handle) {
-			dlclose(conn->vfs_conn->dl_handle);
-		}
-#endif /* HAVE_LIBDL */
-
-		if (conn->vfs_conn->groups != NULL) {
-			free(conn->vfs_conn->groups);
-		}
-		delete_nt_token(&conn->vfs_conn->nt_user_token);
-		free(conn->vfs_conn);
+		dlclose(conn->dl_handle);
 	}
+#endif /* HAVE_LIBDL */
 
 	DLIST_REMOVE(Connections, conn);
 

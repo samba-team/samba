@@ -211,7 +211,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
    * stat the name - if it exists then we are all done!
    */
 
-  if (conn->vfs_ops.stat(dos_to_unix(name,False),&st) == 0) {
+  if (conn->vfs_ops.stat(conn,dos_to_unix(name,False),&st) == 0) {
     stat_cache_add(orig_path, name);
     DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
     if(pst)
@@ -277,7 +277,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
        * Check if the name exists up to this point.
        */
 
-      if (conn->vfs_ops.stat(dos_to_unix(name,False), &st) == 0) {
+      if (conn->vfs_ops.stat(conn,dos_to_unix(name,False), &st) == 0) {
         /*
          * It exists. it must either be a directory or this must be
          * the last part of the path for it to be OK.
@@ -429,7 +429,7 @@ BOOL check_name(char *name,connection_struct *conn)
   if (!lp_symlinks(SNUM(conn)))
     {
       SMB_STRUCT_STAT statbuf;
-      if ( (conn->vfs_ops.lstat(dos_to_unix(name,False),&statbuf) != -1) &&
+      if ( (conn->vfs_ops.lstat(conn,dos_to_unix(name,False),&statbuf) != -1) &&
           (S_ISLNK(statbuf.st_mode)) )
         {
           DEBUG(3,("check_name: denied: file path name %s is a symlink\n",name));

@@ -1,3 +1,5 @@
+#ifndef _PROFILE_H_
+#define _PROFILE_H_
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -310,3 +312,15 @@ extern struct profile_struct *profile_p;
 #define INC_PROFILE_COUNT(x) if (profile_p) profile_p->x++
 #define DEC_PROFILE_COUNT(x) if (profile_p) profile_p->x--
 #define ADD_PROFILE_COUNT(x,y) if (profile_p) profile_p->x += (y)
+
+#define START_PROFILE(x) \
+	struct timeval starttime; \
+	struct timeval endtime; \
+	GetTimeOfDay(&starttime); \
+	INC_PROFILE_COUNT(x##_count)
+
+#define END_PROFILE(y) \
+	GetTimeOfDay(&endtime); \
+	ADD_PROFILE_COUNT((y##_time),TvalDiff(&starttime,&endtime))
+
+#endif
