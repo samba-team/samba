@@ -191,8 +191,10 @@ struct vfs_ops {
 	int (*ftruncate)(int fd, SMB_OFF_T offset);
 	BOOL (*lock)(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 #if 0
-	size_t (*get_nt_acl)(files_struct *fsp, SEC_DESC **ppdesc);
-	BOOL (*set_nt_acl)(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
+	size_t (*fget_nt_acl)(int fd, SEC_DESC **ppdesc);
+	size_t (*get_nt_acl)(char *name, SEC_DESC **ppdesc);
+	BOOL (*fset_nt_acl)(int fd, uint32 security_info_sent, SEC_DESC *psd);
+	BOOL (*set_nt_acl)(char *name, uint32 security_info_sent, SEC_DESC *psd);
 #endif
 };
 

@@ -112,6 +112,7 @@ int dos_lstat(char *fname,SMB_STRUCT_STAT *sbuf)
   return(sys_lstat(dos_to_unix(fname,False),sbuf));
 }
 
+#if 0 /* VFS */
 /*******************************************************************
  Mkdir() that calls dos_to_unix.
  Cope with UNIXes that don't allow high order mode bits on mkdir.
@@ -128,6 +129,7 @@ int dos_mkdir(char *dname,mode_t mode)
   else
     return ret;
 }
+#endif
 
 /*******************************************************************
  Rmdir() - call dos_to_unix.

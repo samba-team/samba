@@ -267,6 +267,30 @@ BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *
 }
 
 /*******************************************************************
+ vfs mkdir wrapper that calls dos_to_unix.
+********************************************************************/
+
+int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode)
+{
+	int ret;
+	pstring name;
+	SMB_STRUCT_STAT sbuf;
+
+	pstrcpy(name,dos_to_unix(fname,False)); /* paranoia copy */
+	if(!(ret=conn->vfs_ops.mkdir(name,mode))) {
+		/* 
+		 * Check if high bits should have been set,
+		 * then (if bits are missing): add them.
+		 * Consider bits automagically set by UNIX, i.e. SGID bit from parent dir.
+		 */
+		if(mode & ~(S_IRWXU|S_IRWXG|S_IRWXO) &&
+				!vfs_stat(conn,name,&sbuf) && (mode & ~sbuf.st_mode))
+			vfs_chmod(conn,name,sbuf.st_mode | (mode & ~sbuf.st_mode));
+	}
+	return ret;
+}
+
+/*******************************************************************
  vfs Unlink wrapper that calls dos_to_unix.
 ********************************************************************/
 
