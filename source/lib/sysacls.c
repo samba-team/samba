@@ -194,7 +194,7 @@ int sys_acl_free_acl(SMB_ACL_T the_acl)
 /*
  * until official facl() support shows up in UW 7.1.2
  */
-int facl(int fd, int cmd, int nentries, struct acl *aclbufp)
+ int facl(int fd, int cmd, int nentries, struct acl *aclbufp)
 {
 	return syscall(188, fd, cmd, nentries, aclbufp);
 }

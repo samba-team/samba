@@ -265,7 +265,6 @@ int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
 int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T the_acl) ;
-int facl(int fd, int cmd, int nentries, struct acl *aclbufp);
 int sys_acl_get_entry(SMB_ACL_T acl_d, int entry_id, SMB_ACL_ENTRY_T *entry_p);
 int sys_acl_get_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *type_p);
 int sys_acl_get_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);

@@ -802,9 +802,9 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 			}
 
 			trid = pdb_gid_to_group_rid(grp->gr_gid);
-			for( i = 0; i <= num_entries; i++)
+			for( i = 0; i < num_entries; i++)
 				if ( pass[i].user_rid == trid ) break;
-			if ( i <= num_entries )
+			if ( i < num_entries )
 				continue; /* rid was there, dup! */
 
 			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)+1);
