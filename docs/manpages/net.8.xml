@@ -210,16 +210,16 @@ account in server manager first.</para>
 <title>[RPC|ADS] USER</title>
 
 <refsect3>
-<title>[RPC|ADS] USER DELETE <replaceable>target</replaceable></title>
+<title>[RPC|ADS] USER</title>
 
-<para>Delete specified user</para>
+<para>List all users</para>
 
 </refsect3>
 
 <refsect3>
-<title>[RPC|ADS] USER LIST</title>
+<title>[RPC|ADS] USER DELETE <replaceable>target</replaceable></title>
 
-<para>List all users</para>
+<para>Delete specified user</para>
 
 </refsect3>
 
