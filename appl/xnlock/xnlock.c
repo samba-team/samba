@@ -574,15 +574,13 @@ verify_krb5(const char *password)
 				 NULL)) {
 	    CREDENTIALS c;
 	    krb5_creds mcred, cred;
-	    krb5_realm realm;
 	    char krb4tkfile[MAXPATHLEN];
 
-	    krb5_get_default_realm(context, &realm);
-	    krb5_make_principal(context, &mcred.server, realm,
+	    krb5_make_principal(context, &mcred.server,
+				client->realm,
 				"krbtgt",
-				realm,
+				client->realm,
 				NULL);
-	    free (realm);
 	    ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
 	    if(ret == 0) {
 		ret = krb524_convert_creds_kdc(context, id, &cred, &c);
