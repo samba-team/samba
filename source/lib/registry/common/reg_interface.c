@@ -44,7 +44,7 @@ NTSTATUS registry_register(const void *_hive_ops)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	entry = talloc_p(NULL, struct reg_init_function_entry);
+	entry = talloc_p(talloc_autofree_context(), struct reg_init_function_entry);
 	entry->hive_functions = hive_ops;
 
 	DLIST_ADD(backends, entry);

@@ -490,3 +490,9 @@ implementation encapsulates the functionality of malloc(), free() and
 realloc() in one call, which is why it is useful to be able to pass
 around a single function pointer.
 
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void *talloc_autofree_context(void);
+
+This is a handy utility function that returns a talloc context
+which will be automatically freed on program exit. This can be used
+to reduce the noise in memory leak reports.

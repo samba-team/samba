@@ -27,21 +27,22 @@
 
 struct dcerpc_interface_list *dcerpc_pipes = NULL;
 
-NTSTATUS librpc_register_interface (const struct dcerpc_interface_table *interface)
+NTSTATUS librpc_register_interface(const struct dcerpc_interface_table *interface)
 {
-	struct dcerpc_interface_list *l = talloc_p(NULL, struct dcerpc_interface_list);
+	struct dcerpc_interface_list *l = talloc_p(talloc_autofree_context(),
+						   struct dcerpc_interface_list);
 		
 	if (idl_iface_by_name (interface->name) != NULL) {
 		DEBUG(0, ("Attempt to register interface %s twice\n", interface->name));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 	l->table = interface;
-	
+
 	DLIST_ADD(dcerpc_pipes, l);
 	
   	return NT_STATUS_OK;
 }
-  
+
 /* initialise a dcerpc pipe. */
 struct dcerpc_pipe *dcerpc_pipe_init(void)
 {
