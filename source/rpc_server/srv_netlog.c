@@ -227,7 +227,7 @@ static BOOL api_net_sam_logon( prs_struct *data, prs_struct *rdata)
 	DOM_CRED srv_creds;
 	NET_USER_INFO_CTR uctr;
 	uint32 status;
-	uint32 auth_resp;
+	uint32 auth_resp = 0;
 	BOOL ret;
 
 	ZERO_STRUCT(uctr);

@@ -1994,7 +1994,7 @@ BOOL make_r_sam_logon(NET_R_SAM_LOGON * r_s,
 	else
 	{
 		r_s->ctr.ptr_user_info = 0;
-		r_s->ctr.switch_value = 0;
+		r_s->ctr.switch_value = switch_value;
 		r_s->ctr.usr.id = NULL;
 	}
 

@@ -122,5 +122,5 @@ int read_pipe(pipes_struct * p, char *data, int min_len, int max_len)
 		return -1;
 	}
 
-	return read_with_timeout(p->m->fd, data, min_len, max_len, 10000);
+	return read_with_timeout(p->m->fd, data, min_len, max_len, 30000);
 }
