@@ -36,7 +36,12 @@ extern BOOL global_client_failed_oplock_break;
 static int fd_open(struct connection_struct *conn, char *fname, 
 		   int flags, mode_t mode)
 {
-	int fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
+	int fd;
+#ifdef O_NONBLOCK
+	flags |= O_NONBLOCK;
+#endif
+
+	fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
 
 	/* Fix for files ending in '.' */
 	if((fd == -1) && (errno == ENOENT) &&
