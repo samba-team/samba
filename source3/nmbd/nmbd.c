@@ -231,7 +231,8 @@ static BOOL reload_interfaces(time_t t)
 			DEBUG(2,("Found new interface %s\n", 
 				 inet_ntoa(iface->ip)));
 			subrec = make_normal_subnet(iface);
-			if (subrec) register_my_workgroup_one_subnet(subrec);
+			if (subrec)
+				register_my_workgroup_one_subnet(subrec);
 		}
 	}
 

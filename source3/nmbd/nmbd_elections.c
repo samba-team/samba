@@ -51,6 +51,7 @@ static void send_election_dgram(struct subnet_record *subrec, const char *workgr
 	p += 13;
 	fstrcpy(srv_name, server_name);
 	strupper_m(srv_name);
+	/* The following call does UNIX -> DOS charset conversion. */
 	pstrcpy_base(p, srv_name, outbuf);
 	p = skip_string(p,1);
   

@@ -3,7 +3,7 @@
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
-   Copyright (C) Jeremy Allison 1994-1998
+   Copyright (C) Jeremy Allison 1994-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,18 +33,18 @@ Send a name release response.
 
 static void send_name_release_response(int rcode, struct packet_struct *p)
 {
-  struct nmb_packet *nmb = &p->packet.nmb;
-  char rdata[6];
+	struct nmb_packet *nmb = &p->packet.nmb;
+	char rdata[6];
 
-  memcpy(&rdata[0], &nmb->additional->rdata[0], 6);
+	memcpy(&rdata[0], &nmb->additional->rdata[0], 6);
   
-  reply_netbios_packet(p,                            /* Packet to reply to. */
-                       rcode,                        /* Result code. */
-                       NMB_REL,                      /* nmbd type code. */
-                       NMB_NAME_RELEASE_OPCODE,      /* opcode. */
-                       0,                            /* ttl. */
-                       rdata,                        /* data to send. */
-                       6);                           /* data length. */
+	reply_netbios_packet(p,                       /* Packet to reply to. */
+			rcode,                        /* Result code. */
+			NMB_REL,                      /* nmbd type code. */
+			NMB_NAME_RELEASE_OPCODE,      /* opcode. */
+			0,                            /* ttl. */
+			rdata,                        /* data to send. */
+			6);                           /* data length. */
 }
 
 /****************************************************************************
@@ -55,76 +55,74 @@ Ignore it if it's not one of our names.
 void process_name_release_request(struct subnet_record *subrec, 
                                   struct packet_struct *p)
 {
-  struct nmb_packet *nmb = &p->packet.nmb;
-  struct in_addr owner_ip;
-  struct nmb_name *question = &nmb->question.question_name;
-  BOOL bcast = nmb->header.nm_flags.bcast;
-  uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
-  BOOL group = (nb_flags & NB_GROUP) ? True : False;
-  struct name_record *namerec;
-  int rcode = 0;
+	struct nmb_packet *nmb = &p->packet.nmb;
+	struct in_addr owner_ip;
+	struct nmb_name *question = &nmb->question.question_name;
+	nstring qname;
+	BOOL bcast = nmb->header.nm_flags.bcast;
+	uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
+	BOOL group = (nb_flags & NB_GROUP) ? True : False;
+	struct name_record *namerec;
+	int rcode = 0;
   
-  putip((char *)&owner_ip,&nmb->additional->rdata[2]);  
+	putip((char *)&owner_ip,&nmb->additional->rdata[2]);  
   
-  if(!bcast)
-  {
-    /* We should only get broadcast name release packets here.
-       Anyone trying to release unicast should be going to a WINS
-       server. If the code gets here, then either we are not a wins
-       server and they sent it anyway, or we are a WINS server and
-       the request was malformed. Either way, log an error here.
-       and send an error reply back.
-     */
-    DEBUG(0,("process_name_release_request: unicast name release request \
+	if(!bcast) {
+		/* We should only get broadcast name release packets here.
+		   Anyone trying to release unicast should be going to a WINS
+		   server. If the code gets here, then either we are not a wins
+		   server and they sent it anyway, or we are a WINS server and
+		   the request was malformed. Either way, log an error here.
+		   and send an error reply back.
+		*/
+		DEBUG(0,("process_name_release_request: unicast name release request \
 received for name %s from IP %s on subnet %s. Error - should be sent to WINS server\n",
-          nmb_namestr(question), inet_ntoa(owner_ip), subrec->subnet_name));      
+			nmb_namestr(question), inet_ntoa(owner_ip), subrec->subnet_name));      
 
-    send_name_release_response(FMT_ERR, p);
-    return;
-  }
+		send_name_release_response(FMT_ERR, p);
+		return;
+	}
 
-  DEBUG(3,("process_name_release_request: Name release on name %s, \
+	DEBUG(3,("process_name_release_request: Name release on name %s, \
 subnet %s from owner IP %s\n",
-           nmb_namestr(&nmb->question.question_name),
-           subrec->subnet_name, inet_ntoa(owner_ip)));
+		nmb_namestr(&nmb->question.question_name),
+		subrec->subnet_name, inet_ntoa(owner_ip)));
   
-  /* If someone is releasing a broadcast group name, just ignore it. */
-  if( group && !ismyip(owner_ip) )
-    return;
+	/* If someone is releasing a broadcast group name, just ignore it. */
+	if( group && !ismyip(owner_ip) )
+		return;
 
-  /*
-   * Code to work around a bug in FTP OnNet software NBT implementation.
-   * They do a broadcast name release for WORKGROUP<0> and WORKGROUP<1e>
-   * names and *don't set the group bit* !!!!!
-   */
+	/*
+	 * Code to work around a bug in FTP OnNet software NBT implementation.
+	 * They do a broadcast name release for WORKGROUP<0> and WORKGROUP<1e>
+	 * names and *don't set the group bit* !!!!!
+	 */
 
-  if( !group && !ismyip(owner_ip) && strequal(question->name, lp_workgroup()) && 
-      ((question->name_type == 0x0) || (question->name_type == 0x1e)))
-  {
-    DEBUG(6,("process_name_release_request: FTP OnNet bug workaround. Ignoring \
+	pull_ascii_nstring(qname, question->name);
+	if( !group && !ismyip(owner_ip) && strequal(qname, lp_workgroup()) && 
+			((question->name_type == 0x0) || (question->name_type == 0x1e))) {
+		DEBUG(6,("process_name_release_request: FTP OnNet bug workaround. Ignoring \
 group release name %s from IP %s on subnet %s with no group bit set.\n",
-        nmb_namestr(question), inet_ntoa(owner_ip), subrec->subnet_name ));
-    return;
-  }
+			nmb_namestr(question), inet_ntoa(owner_ip), subrec->subnet_name ));
+		return;
+	}
 
-  namerec = find_name_on_subnet(subrec, &nmb->question.question_name, FIND_ANY_NAME);
+	namerec = find_name_on_subnet(subrec, question, FIND_ANY_NAME);
 
-  /* We only care about someone trying to release one of our names. */
-  if( namerec
-   && ( (namerec->data.source == SELF_NAME)
-     || (namerec->data.source == PERMANENT_NAME) ) )
-  {
-    rcode = ACT_ERR;
-    DEBUG(0, ("process_name_release_request: Attempt to release name %s from IP %s \
+	/* We only care about someone trying to release one of our names. */
+	if( namerec && ( (namerec->data.source == SELF_NAME)
+			|| (namerec->data.source == PERMANENT_NAME) ) ) {
+		rcode = ACT_ERR;
+		DEBUG(0, ("process_name_release_request: Attempt to release name %s from IP %s \
 on subnet %s being rejected as it is one of our names.\n", 
-          nmb_namestr(&nmb->question.question_name), inet_ntoa(owner_ip), subrec->subnet_name));
-  }
+		nmb_namestr(&nmb->question.question_name), inet_ntoa(owner_ip), subrec->subnet_name));
+	}
 
-  if(rcode == 0)
-    return;
+	if(rcode == 0)
+		return;
 
-  /* Send a NAME RELEASE RESPONSE (pos/neg) see rfc1002.txt 4.2.10-11 */
-  send_name_release_response(rcode, p);
+	/* Send a NAME RELEASE RESPONSE (pos/neg) see rfc1002.txt 4.2.10-11 */
+	send_name_release_response(rcode, p);
 }
 
 /****************************************************************************
@@ -133,18 +131,18 @@ Send a name registration response.
 
 static void send_name_registration_response(int rcode, int ttl, struct packet_struct *p)
 {
-  struct nmb_packet *nmb = &p->packet.nmb;
-  char rdata[6];
+	struct nmb_packet *nmb = &p->packet.nmb;
+	char rdata[6];
 
-  memcpy(&rdata[0], &nmb->additional->rdata[0], 6);
+	memcpy(&rdata[0], &nmb->additional->rdata[0], 6);
   
-  reply_netbios_packet(p,                             /* Packet to reply to. */
-                       rcode,                         /* Result code. */
-                       NMB_REG,                       /* nmbd type code. */
-                       NMB_NAME_REG_OPCODE,           /* opcode. */
-                       ttl,                           /* ttl. */
-                       rdata,                         /* data to send. */
-                       6);                            /* data length. */
+	reply_netbios_packet(p,                                /* Packet to reply to. */
+				rcode,                         /* Result code. */
+				NMB_REG,                       /* nmbd type code. */
+				NMB_NAME_REG_OPCODE,           /* opcode. */
+				ttl,                           /* ttl. */
+				rdata,                         /* data to send. */
+				6);                            /* data length. */
 }
 
 /****************************************************************************
@@ -154,38 +152,34 @@ Process a name refresh request on a broadcast subnet.
 void process_name_refresh_request(struct subnet_record *subrec,
                                   struct packet_struct *p)
 {    
-     
-  struct nmb_packet *nmb = &p->packet.nmb;
-  struct nmb_name *question = &nmb->question.question_name;
-  BOOL bcast = nmb->header.nm_flags.bcast;
-  struct in_addr from_ip;
+	struct nmb_packet *nmb = &p->packet.nmb;
+	struct nmb_name *question = &nmb->question.question_name;
+	BOOL bcast = nmb->header.nm_flags.bcast;
+	struct in_addr from_ip;
   
-  putip((char *)&from_ip,&nmb->additional->rdata[2]);
+	putip((char *)&from_ip,&nmb->additional->rdata[2]);
 
-  if(!bcast)
-  { 
-    /* We should only get broadcast name refresh packets here.
-       Anyone trying to refresh unicast should be going to a WINS
-       server. If the code gets here, then either we are not a wins
-       server and they sent it anyway, or we are a WINS server and
-       the request was malformed. Either way, log an error here.
-       and send an error reply back.
-     */
-    DEBUG(0,("process_name_refresh_request: unicast name registration request \
+	if(!bcast) { 
+		/* We should only get broadcast name refresh packets here.
+		   Anyone trying to refresh unicast should be going to a WINS
+		   server. If the code gets here, then either we are not a wins
+		   server and they sent it anyway, or we are a WINS server and
+		   the request was malformed. Either way, log an error here.
+		   and send an error reply back.
+		*/
+		DEBUG(0,("process_name_refresh_request: unicast name registration request \
 received for name %s from IP %s on subnet %s.\n",
-          nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
-    DEBUG(0,("Error - should be sent to WINS server\n"));
+			nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
+		DEBUG(0,("Error - should be sent to WINS server\n"));
     
-    send_name_registration_response(FMT_ERR, 0, p);
-    return;
-  } 
+		send_name_registration_response(FMT_ERR, 0, p);
+		return;
+	} 
 
-  /* Just log a message. We really don't care about broadcast name
-     refreshes. */
+	/* Just log a message. We really don't care about broadcast name refreshes. */
      
-  DEBUG(3,("process_name_refresh_request: Name refresh for name %s \
+	DEBUG(3,("process_name_refresh_request: Name refresh for name %s \
 IP %s on subnet %s\n", nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
-     
 }
     
 /****************************************************************************
@@ -195,92 +189,83 @@ Process a name registration request on a broadcast subnet.
 void process_name_registration_request(struct subnet_record *subrec, 
                                        struct packet_struct *p)
 {
-  struct nmb_packet *nmb = &p->packet.nmb;
-  struct nmb_name *question = &nmb->question.question_name;
-  BOOL bcast = nmb->header.nm_flags.bcast;
-  uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
-  BOOL group = (nb_flags & NB_GROUP) ? True : False;
-  struct name_record *namerec = NULL;
-  int ttl = nmb->additional->ttl;
-  struct in_addr from_ip;
+	struct nmb_packet *nmb = &p->packet.nmb;
+	struct nmb_name *question = &nmb->question.question_name;
+	BOOL bcast = nmb->header.nm_flags.bcast;
+	uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
+	BOOL group = (nb_flags & NB_GROUP) ? True : False;
+	struct name_record *namerec = NULL;
+	int ttl = nmb->additional->ttl;
+	struct in_addr from_ip;
   
-  putip((char *)&from_ip,&nmb->additional->rdata[2]);
+	putip((char *)&from_ip,&nmb->additional->rdata[2]);
   
-  if(!bcast)
-  {
-    /* We should only get broadcast name registration packets here.
-       Anyone trying to register unicast should be going to a WINS
-       server. If the code gets here, then either we are not a wins
-       server and they sent it anyway, or we are a WINS server and
-       the request was malformed. Either way, log an error here.
-       and send an error reply back.
-     */
-    DEBUG(0,("process_name_registration_request: unicast name registration request \
+	if(!bcast) {
+		/* We should only get broadcast name registration packets here.
+		   Anyone trying to register unicast should be going to a WINS
+		   server. If the code gets here, then either we are not a wins
+		   server and they sent it anyway, or we are a WINS server and
+		   the request was malformed. Either way, log an error here.
+		   and send an error reply back.
+		*/
+		DEBUG(0,("process_name_registration_request: unicast name registration request \
 received for name %s from IP %s on subnet %s. Error - should be sent to WINS server\n",
-          nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));      
+			nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));      
 
-    send_name_registration_response(FMT_ERR, 0, p);
-    return;
-  }
+		send_name_registration_response(FMT_ERR, 0, p);
+		return;
+	}
 
-  DEBUG(3,("process_name_registration_request: Name registration for name %s \
+	DEBUG(3,("process_name_registration_request: Name registration for name %s \
 IP %s on subnet %s\n", nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
   
-  /* See if the name already exists. */
-  namerec = find_name_on_subnet(subrec, question, FIND_ANY_NAME);
+	/* See if the name already exists. */
+	namerec = find_name_on_subnet(subrec, question, FIND_ANY_NAME);
  
-  /* 
-   * If the name being registered exists and is a WINS_PROXY_NAME 
-   * then delete the WINS proxy name entry so we don't reply erroneously
-   * later to queries.
-   */
+	/* 
+	 * If the name being registered exists and is a WINS_PROXY_NAME 
+	 * then delete the WINS proxy name entry so we don't reply erroneously
+	 * later to queries.
+	 */
 
-  if((namerec != NULL) && (namerec->data.source == WINS_PROXY_NAME))
-  {
-    remove_name_from_namelist( subrec, namerec );
-    namerec = NULL;
-  }
+	if((namerec != NULL) && (namerec->data.source == WINS_PROXY_NAME)) {
+		remove_name_from_namelist( subrec, namerec );
+		namerec = NULL;
+	}
 
-  if (!group)
-  {
-    /* Unique name. */
+	if (!group) {
+		/* Unique name. */
 
-    if( (namerec != NULL)
-     && ( (namerec->data.source == SELF_NAME)
-       || (namerec->data.source == PERMANENT_NAME)
-       || NAME_GROUP(namerec) ) )
-    {
-      /* No-one can register one of Samba's names, nor can they
-         register a name that's a group name as a unique name */
+		if( (namerec != NULL)
+				&& ( (namerec->data.source == SELF_NAME)
+				|| (namerec->data.source == PERMANENT_NAME)
+				|| NAME_GROUP(namerec) ) ) {
+			/* No-one can register one of Samba's names, nor can they
+				register a name that's a group name as a unique name */
 
-      send_name_registration_response(ACT_ERR, 0, p);
-      return;
-    }
-    else if(namerec != NULL)
-    {
-      /* Update the namelist record with the new information. */
-      namerec->data.ip[0] = from_ip;
-      update_name_ttl(namerec, ttl);
+			send_name_registration_response(ACT_ERR, 0, p);
+			return;
+		} else if(namerec != NULL) {
+			/* Update the namelist record with the new information. */
+			namerec->data.ip[0] = from_ip;
+			update_name_ttl(namerec, ttl);
 
-      DEBUG(3,("process_name_registration_request: Updated name record %s \
+			DEBUG(3,("process_name_registration_request: Updated name record %s \
 with IP %s on subnet %s\n",nmb_namestr(&namerec->name),inet_ntoa(from_ip), subrec->subnet_name));
-      return;
-    }
-  }
-  else
-  {
-    /* Group name. */
+			return;
+		}
+	} else {
+		/* Group name. */
 
-    if( (namerec != NULL)
-     && !NAME_GROUP(namerec)
-     && ( (namerec->data.source == SELF_NAME)
-       || (namerec->data.source == PERMANENT_NAME) ) )
-    {
-      /* Disallow group names when we have a unique name. */
-      send_name_registration_response(ACT_ERR, 0, p);  
-      return;  
-    }  
-  }
+		if( (namerec != NULL)
+				&& !NAME_GROUP(namerec)
+				&& ( (namerec->data.source == SELF_NAME)
+				|| (namerec->data.source == PERMANENT_NAME) ) ) {
+			/* Disallow group names when we have a unique name. */
+			send_name_registration_response(ACT_ERR, 0, p);  
+			return;  
+		}  
+	}
 }
 
 /****************************************************************************
@@ -290,24 +275,31 @@ We put our own names first, then in alphabetical order.
 
 static int status_compare(char *n1,char *n2)
 {
-  int l1,l2,l3;
+	nstring name1, name2;
+	int l1,l2,l3;
 
-  /* It's a bit tricky because the names are space padded */
-  for (l1=0;l1<15 && n1[l1] && n1[l1] != ' ';l1++) ;
-  for (l2=0;l2<15 && n2[l2] && n2[l2] != ' ';l2++) ;
-  l3 = strlen(global_myname());
+	pull_ascii_nstring(name1, n1);
+	pull_ascii_nstring(name2, n2);
+	n1 = name1;
+	n2 = name2;
 
-  if ((l1==l3) && strncmp(n1,global_myname(),l3) == 0 && 
-      (l2!=l3 || strncmp(n2,global_myname(),l3) != 0))
-    return -1;
+	/* It's a bit tricky because the names are space padded */
+	for (l1=0;l1<15 && n1[l1] && n1[l1] != ' ';l1++)
+		;
+	for (l2=0;l2<15 && n2[l2] && n2[l2] != ' ';l2++)
+		;
+	l3 = strlen(global_myname());
 
-  if ((l2==l3) && strncmp(n2,global_myname(),l3) == 0 && 
-      (l1!=l3 || strncmp(n1,global_myname(),l3) != 0))
-    return 1;
+	if ((l1==l3) && strncmp(n1,global_myname(),l3) == 0 && 
+			(l2!=l3 || strncmp(n2,global_myname(),l3) != 0))
+		return -1;
 
-  return memcmp(n1,n2,18);
+	if ((l2==l3) && strncmp(n2,global_myname(),l3) == 0 && 
+			(l1!=l3 || strncmp(n1,global_myname(),l3) != 0))
+		return 1;
+
+	return memcmp(n1,n2,sizeof(nstring));
 }
-
 
 /****************************************************************************
   Process a node status query
@@ -315,122 +307,118 @@ static int status_compare(char *n1,char *n2)
 
 void process_node_status_request(struct subnet_record *subrec, struct packet_struct *p)
 {
-  struct nmb_packet *nmb = &p->packet.nmb;
-  char *qname   = nmb->question.question_name.name;
-  int ques_type = nmb->question.question_name.name_type;
-  char rdata[MAX_DGRAM_SIZE];
-  char *countptr, *buf, *bufend, *buf0;
-  int names_added,i;
-  struct name_record *namerec;
+	struct nmb_packet *nmb = &p->packet.nmb;
+	nstring qname;
+	int ques_type = nmb->question.question_name.name_type;
+	char rdata[MAX_DGRAM_SIZE];
+	char *countptr, *buf, *bufend, *buf0;
+	int names_added,i;
+	struct name_record *namerec;
 
-  DEBUG(3,("process_node_status_request: status request for name %s from IP %s on \
-subnet %s.\n", nmb_namestr(&nmb->question.question_name), inet_ntoa(p->ip),
-          subrec->subnet_name));
+	pull_ascii_nstring(qname, nmb->question.question_name.name);
 
-  if((namerec = find_name_on_subnet(subrec, &nmb->question.question_name,
-                                    FIND_SELF_NAME)) == 0)
-  {
-    DEBUG(1,("process_node_status_request: status request for name %s from IP %s on \
+	DEBUG(3,("process_node_status_request: status request for name %s from IP %s on \
+subnet %s.\n", nmb_namestr(&nmb->question.question_name), inet_ntoa(p->ip), subrec->subnet_name));
+
+	if((namerec = find_name_on_subnet(subrec, &nmb->question.question_name, FIND_SELF_NAME)) == 0) {
+		DEBUG(1,("process_node_status_request: status request for name %s from IP %s on \
 subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
-          inet_ntoa(p->ip), subrec->subnet_name));
+			inet_ntoa(p->ip), subrec->subnet_name));
 
-    return;
-  }
+		return;
+	}
  
-  /* this is not an exact calculation. the 46 is for the stats buffer
-     and the 60 is to leave room for the header etc */
-  bufend = &rdata[MAX_DGRAM_SIZE] - (18 + 46 + 60);
-  countptr = buf = rdata;
-  buf += 1;
-  buf0 = buf;
+	/* this is not an exact calculation. the 46 is for the stats buffer
+		and the 60 is to leave room for the header etc */
+	bufend = &rdata[MAX_DGRAM_SIZE] - (18 + 46 + 60);
+	countptr = buf = rdata;
+	buf += 1;
+	buf0 = buf;
 
-  names_added = 0;
+	names_added = 0;
 
-  namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
+	namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
 
-  while (buf < bufend) 
-  {
-    if( (namerec->data.source == SELF_NAME)
-     || (namerec->data.source == PERMANENT_NAME) )
-    {
-      int name_type = namerec->name.name_type;
-      
-      if (!strequal(namerec->name.name,"*") &&
-          !strequal(namerec->name.name,"__SAMBA__") &&
-          (name_type < 0x1b || name_type >= 0x20 || 
-           ques_type < 0x1b || ques_type >= 0x20 ||
-           strequal(qname, namerec->name.name)))
-      {
-        /* Start with the name. */
-        memset(buf,'\0',18);
-        slprintf(buf, 17, "%-15.15s",namerec->name.name);
-        strupper_m(buf);
-        
-        /* Put the name type and netbios flags in the buffer. */
-        buf[15] = name_type;
-        set_nb_flags( &buf[16],namerec->data.nb_flags );
-        buf[16] |= NB_ACTIVE; /* all our names are active */
+	while (buf < bufend) {
+		if( (namerec->data.source == SELF_NAME) || (namerec->data.source == PERMANENT_NAME) ) {
+			int name_type = namerec->name.name_type;
+     			nstring name;
 
-        buf += 18;
+			pull_ascii_nstring(name, namerec->name.name);
+			strupper_m(name);
+			if (!strequal(name,"*") &&
+					!strequal(name,"__SAMBA__") &&
+					(name_type < 0x1b || name_type >= 0x20 || 
+					ques_type < 0x1b || ques_type >= 0x20 ||
+					strequal(qname, name))) {
+				/* Start with the name. */
+				nstring tmp_name;
+				memset(tmp_name,'\0',sizeof(tmp_name));
+				snprintf(tmp_name, sizeof(tmp_name), "%-15.15s",name);
+        			push_ascii_nstring(buf, tmp_name);
 
-        names_added++;
-      }
-    }
+				/* Put the name type and netbios flags in the buffer. */
 
-    /* Remove duplicate names. */
-    if (names_added > 1) {
-	    qsort( buf0, names_added, 18, QSORT_CAST status_compare );
-    }
+				buf[15] = name_type;
+				set_nb_flags( &buf[16],namerec->data.nb_flags );
+				buf[16] |= NB_ACTIVE; /* all our names are active */
 
-    for( i=1; i < names_added ; i++ )
-    {
-      if (memcmp(buf0 + 18*i,buf0 + 18*(i-1),16) == 0) 
-      {
-        names_added--;
-        if (names_added == i)
-          break;
-        memmove(buf0 + 18*i,buf0 + 18*(i+1),18*(names_added-i));
-        i--;
-      }
-    }
+				buf += 18;
 
-    buf = buf0 + 18*names_added;
+				names_added++;
+			}
+		}
 
-    namerec = (struct name_record *)ubi_trNext( namerec );
+		/* Remove duplicate names. */
+		if (names_added > 1) {
+			qsort( buf0, names_added, 18, QSORT_CAST status_compare );
+		}
 
-    if (!namerec)
-    {
-      /* End of the subnet specific name list. Now 
-         add the names on the unicast subnet . */
-      struct subnet_record *uni_subrec = unicast_subnet;
+		for( i=1; i < names_added ; i++ ) {
+			if (memcmp(buf0 + 18*i,buf0 + 18*(i-1),16) == 0) {
+				names_added--;
+				if (names_added == i)
+					break;
+				memmove(buf0 + 18*i,buf0 + 18*(i+1),18*(names_added-i));
+				i--;
+			}
+		}
 
-      if (uni_subrec != subrec)
-      {
-        subrec = uni_subrec;
-        namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
-      }
-    }
-    if (!namerec)
-      break;
+		buf = buf0 + 18*names_added;
 
-  }
+		namerec = (struct name_record *)ubi_trNext( namerec );
+
+		if (!namerec) {
+			/* End of the subnet specific name list. Now 
+				add the names on the unicast subnet . */
+			struct subnet_record *uni_subrec = unicast_subnet;
+
+			if (uni_subrec != subrec) {
+				subrec = uni_subrec;
+				namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
+			}
+		}
+		if (!namerec)
+			break;
+
+	}
   
-  SCVAL(countptr,0,names_added);
+	SCVAL(countptr,0,names_added);
   
-  /* We don't send any stats as they could be used to attack
-     the protocol. */
-  memset(buf,'\0',46);
+	/* We don't send any stats as they could be used to attack
+		the protocol. */
+	memset(buf,'\0',46);
   
-  buf += 46;
+	buf += 46;
   
-  /* Send a NODE STATUS RESPONSE */
-  reply_netbios_packet(p,                            /* Packet to reply to. */
-                       0,                            /* Result code. */
-                       NMB_STATUS,                   /* nmbd type code. */
-                       NMB_NAME_QUERY_OPCODE,        /* opcode. */
-		       0,                            /* ttl. */
-                       rdata,                        /* data to send. */
-                       PTR_DIFF(buf,rdata));         /* data length. */
+	/* Send a NODE STATUS RESPONSE */
+	reply_netbios_packet(p,                               /* Packet to reply to. */
+				0,                            /* Result code. */
+				NMB_STATUS,                   /* nmbd type code. */
+				NMB_NAME_QUERY_OPCODE,        /* opcode. */
+				0,                            /* ttl. */
+				rdata,                        /* data to send. */
+				PTR_DIFF(buf,rdata));         /* data length. */
 }
 
 

@@ -26,26 +26,25 @@
 
 static struct name_record *add_dns_result(struct nmb_name *question, struct in_addr addr)
 {
-  int name_type = question->name_type;
-  char *qname = question->name;
-  
-  
-  if (!addr.s_addr) {
-    /* add the fail to WINS cache of names. give it 1 hour in the cache */
-    DEBUG(3,("add_dns_result: Negative DNS answer for %s\n", qname));
-    (void)add_name_to_subnet( wins_server_subnet, qname, name_type,
-                              NB_ACTIVE, 60*60, DNSFAIL_NAME, 1, &addr );
-    return( NULL );
-  }
+	int name_type = question->name_type;
+	nstring qname;
 
-  /* add it to our WINS cache of names. give it 2 hours in the cache */
-  DEBUG(3,("add_dns_result: DNS gave answer for %s of %s\n", qname, inet_ntoa(addr)));
+	pull_ascii_nstring(qname, question->name);
+  
+	if (!addr.s_addr) {
+		/* add the fail to WINS cache of names. give it 1 hour in the cache */
+		DEBUG(3,("add_dns_result: Negative DNS answer for %s\n", qname));
+		(void)add_name_to_subnet( wins_server_subnet, qname, name_type,
+				NB_ACTIVE, 60*60, DNSFAIL_NAME, 1, &addr );
+		return( NULL );
+	}
 
-  return( add_name_to_subnet( wins_server_subnet, qname, name_type,
+	/* add it to our WINS cache of names. give it 2 hours in the cache */
+	DEBUG(3,("add_dns_result: DNS gave answer for %s of %s\n", qname, inet_ntoa(addr)));
+
+	return( add_name_to_subnet( wins_server_subnet, qname, name_type,
                               NB_ACTIVE, 2*60*60, DNS_NAME, 1, &addr ) );
 }
-
-
 
 #ifndef SYNC_DNS
 
@@ -70,6 +69,7 @@ static struct packet_struct *dns_current;
   return the fd used to gather async dns replies. This is added to the select
   loop
   ****************************************************************************/
+
 int asyncdns_fd(void)
 {
 	return fd_in;
@@ -110,7 +110,7 @@ static void asyncdns_process(void)
 
 static void sig_term(int sig)
 {
-  _exit(0);
+	_exit(0);
 }
 
 /***************************************************************************
@@ -224,10 +224,10 @@ void run_dns_queue(void)
 		if (query_current(&r)) {
 			DEBUG(3,("DNS calling send_wins_name_query_response\n"));
 			in_dns = 1;
-                        if(namerec == NULL)
-                          send_wins_name_query_response(NAM_ERR, dns_current, NULL);
-                        else
-			  send_wins_name_query_response(0,dns_current,namerec);
+			if(namerec == NULL)
+				send_wins_name_query_response(NAM_ERR, dns_current, NULL);
+			else
+				send_wins_name_query_response(0,dns_current,namerec);
 			in_dns = 0;
 		}
 
@@ -245,10 +245,10 @@ void run_dns_queue(void)
 		if (nmb_name_equal(question, &r.name)) {
 			DEBUG(3,("DNS calling send_wins_name_query_response\n"));
 			in_dns = 1;
-                        if(namerec == NULL)
-			  send_wins_name_query_response(NAM_ERR, p, NULL);
-                        else
-                          send_wins_name_query_response(0,p,namerec);
+			if(namerec == NULL)
+				send_wins_name_query_response(NAM_ERR, p, NULL);
+			else
+				send_wins_name_query_response(0,p,namerec);
 			in_dns = 0;
 			p->locked = False;
 
@@ -269,7 +269,8 @@ void run_dns_queue(void)
 	if (dns_queue) {
 		dns_current = dns_queue;
 		dns_queue = dns_queue->next;
-		if (dns_queue) dns_queue->prev = NULL;
+		if (dns_queue)
+			dns_queue->prev = NULL;
 		dns_current->next = NULL;
 
 		if (!write_child(dns_current)) {
@@ -277,12 +278,12 @@ void run_dns_queue(void)
 			return;
 		}
 	}
-
 }
 
 /***************************************************************************
 queue a DNS query
   ****************************************************************************/
+
 BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		     struct name_record **n)
 {
@@ -315,11 +316,14 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 /***************************************************************************
   we use this when we can't do async DNS lookups
   ****************************************************************************/
+
 BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		     struct name_record **n)
 {
-	char *qname = question->name;
 	struct in_addr dns_ip;
+	nstring qname;
+
+	pull_ascii_nstring(qname, question->name);
 
 	DEBUG(3,("DNS search for %s - ", nmb_namestr(question)));
 
@@ -332,18 +336,19 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
         BlockSignals(True, SIGTERM);
 
 	*n = add_dns_result(question, dns_ip);
-        if(*n == NULL)
-          send_wins_name_query_response(NAM_ERR, p, NULL);
-        else
-          send_wins_name_query_response(0, p, *n);
+	if(*n == NULL)
+		send_wins_name_query_response(NAM_ERR, p, NULL);
+	else
+		send_wins_name_query_response(0, p, *n);
 	return False;
 }
 
 /***************************************************************************
  With sync dns there is no child to kill on SIGTERM.
   ****************************************************************************/
+
 void kill_async_dns_child(void)
 {
-  return;
+	return;
 }
 #endif
