@@ -2044,7 +2044,7 @@ BOOL samr_query_dispinfo(struct cli_state *cli, uint16 fnum,
 /*The following definitions come from  rpc_client/cli_spoolss.c  */
 
 BOOL spoolss_enum_printers(struct cli_state *cli, uint16 fnum,
-			uint32 flags, char *servername,
+			uint32 flags, const char *servername,
 			uint32 level,
 			uint32 *count,
 			void ***printers);
@@ -3431,6 +3431,11 @@ void cmd_sam_enum_groups(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
+BOOL msrpc_spoolss_enum_printers(struct cli_state *cli,
+				uint32 level,
+				uint32 *num,
+				void ***ctr,
+				PRINT_INFO_FN(fn));
 void cmd_spoolss_enum_printers(struct client_info *info);
 void cmd_spoolss_open_printer_ex(struct client_info *info);
 
