@@ -714,9 +714,7 @@ AC_CONFIG_FILES(Makefile 		\
 	appl/dceutils/Makefile		\
 	doc/Makefile			\
 	tools/Makefile			\
-	tools/krb5-config		\
 )
-AC_CONFIG_COMMANDS(tools/krb5-config, [chmod +x tools/krb5-config])
 
 AC_OUTPUT
 
