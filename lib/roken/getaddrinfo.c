@@ -227,22 +227,23 @@ add_hostent (int port, int protocol, int socktype,
 
     if (*flags & AI_CANONNAME) {
 	struct hostent *he2 = NULL;
+	const char *tmp_canon;
 
-	canonname = hostent_find_fqdn (he);
-	if (strchr (canonname, '.') == NULL) {
+	tmp_canon = hostent_find_fqdn (he);
+	if (strchr (tmp_canon, '.') == NULL) {
 	    int error;
 
 	    he2 = getipnodebyaddr (he->h_addr_list[0], he->h_length,
 				   he->h_addrtype, &error);
 	    if (he2 != NULL) {
-		char *tmp = hostent_find_fqdn (he2);
+		const char *tmp = hostent_find_fqdn (he2);
 
 		if (strchr (tmp, '.') != NULL)
-		    canonname = tmp;
+		    tmp_canon = tmp;
 	    }
 	}
 
-	canonname = strdup (canonname);
+	canonname = strdup (tmp_canon);
 	if (he2 != NULL)
 	    freehostent (he2);
 	if (canonname == NULL)
