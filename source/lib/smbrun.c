@@ -171,7 +171,10 @@ int smbrun(char *cmd, int *outfd, char *template)
 #ifndef __INSURE__
 	/* close all other file descriptors, leaving only 0, 1 and 2. 0 and
 	   2 point to /dev/null from the startup code */
+	{
+	int fd;
 	for (fd=3;fd<256;fd++) close(fd);
+	}
 #endif
 
 	execl("/bin/sh","sh","-c",cmd,NULL);  
