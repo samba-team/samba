@@ -124,7 +124,7 @@ BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *da
 		case REG_DWORD:
 			(*value)->data_len = sizeof(uint32);
 			(*value)->data_blk = talloc_p(mem_ctx, uint32);
-			*((uint32 *)(*value)->data_blk) = atol(data_str);
+			*((uint32 *)(*value)->data_blk) = strtol(data_str, NULL, 0);
 			break;
 
 		case REG_NONE:
