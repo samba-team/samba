@@ -40,8 +40,12 @@
 
 RCSID("$Id$");
 
-char **env;
-int num_env;
+/*
+ * the environment we will sent to execle and the shell.
+ */
+
+static char **env;
+static int num_env;
 
 static void
 extend_env(char *str)
@@ -101,12 +105,12 @@ exec_shell(const char *shell, int fallback)
     err(1, "%s", shell);
 }
 
-int f_flag;
-int p_flag;
-int r_flag;
-int version_flag;
-int help_flag;
-char *remote_host;
+static int f_flag;
+static int p_flag;
+static int r_flag;
+static int version_flag;
+static int help_flag;
+static char *remote_host;
 
 struct getargs args[] = {
 #if 0
@@ -244,7 +248,55 @@ krb5_verify(struct passwd *pwd, const char *password)
     krb5_free_context(context);
     return ret;
 }
+#endif /* KRB5 */
+
+#ifdef KRB4
+
+/*
+ * It's ugly duplicating these here but we would like it to build with
+ * old krb4 code.
+ */
+
+#ifndef KRB_VERIFY_SECURE_FAIL
+
+/* flags for krb_verify_user() */
+#define KRB_VERIFY_NOT_SECURE	0
+#define KRB_VERIFY_SECURE	1
+#define KRB_VERIFY_SECURE_FAIL	2
+
 #endif
+
+static int
+krb4_verify(struct passwd *pwd, const char *password)
+{
+    char lrealm[REALM_SZ];
+    int ret;
+    char ticket_file[MaxPathLen];
+
+    ret = krb_get_lrealm (lrealm, 1);
+    if (ret)
+	return 1;
+
+    snprintf (ticket_file, sizeof(ticket_file),
+	      "%s%u_%u",
+	      TKT_ROOT, (unsigned)pwd->pw_uid, (unsigned)getpid());
+
+    krb_set_tkt_string (ticket_file);
+
+    ret = krb_verify_user (pwd->pw_name, "", lrealm, (char *)password,
+			   KRB_VERIFY_SECURE_FAIL, NULL);
+    if (ret)
+	return 1;
+
+    if (chown (ticket_file, pwd->pw_uid, pwd->pw_gid) < 0) {
+	dest_tkt();
+	return 1;
+    }
+	
+    add_env ("KRBTKFILE", ticket_file);
+    return 0;
+}
+#endif /* KRB4 */
 
 static int
 check_password(struct passwd *pwd, const char *password)
@@ -265,6 +317,8 @@ check_password(struct passwd *pwd, const char *password)
 	return 0;
 #endif
 #ifdef KRB4
+    if (krb4_verify (pwd, password) == 0)
+	return 0;
 #endif
     return 1;
 }
