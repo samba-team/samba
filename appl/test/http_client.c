@@ -111,17 +111,18 @@ static int version_flag;
 static int verbose_flag;
 static int mutual_flag = 1;
 static int delegate_flag;
-static char *port_str;
+static char *port_str = "http";
 static char *service = "HTTP";
 static char *gss_mech = "SPNEGO";
 
 static struct getargs args[] = {
     { "verbose", 'v', arg_flag, &verbose_flag, "verbose logging", },
-    { "port", 'p', arg_string, &port_str, "port to listen to", "port" },
-    { "service", 's', arg_string, &service, "service to use", "service" },
+    { "port", 'p', arg_string, &port_str, "port to connect to", "port" },
+    { "delegate", 0, arg_flag, &delegate_flag, "gssapi delegate credential" },
+    { "gss-service", 's', arg_string, &service, "gssapi service to use",
+      "service" },
     { "mech", 'm', arg_string, &gss_mech, "gssapi mech to use", "mech" },
     { "mutual", 0, arg_negative_flag, &mutual_flag, "no gssapi mutual auth" },
-    { "delegate", 0, arg_flag, &delegate_flag, "gssapi delegate credential" },
     { "help", 'h', arg_flag, &help_flag },
     { "version", 0, arg_flag, &version_flag }
 };
@@ -197,7 +198,7 @@ http_query(const char *host, const char *page,
 
     http_req_zero(req);
 
-    s = do_connect(host, "http");
+    s = do_connect(host, port_str);
     if (s < 0)
 	errx(1, "connection failed");
 
