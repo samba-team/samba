@@ -7929,7 +7929,7 @@ done:
 
 WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u, SPOOL_R_SETPRINTERDATAEX *r_u)
 {
-	POLICY_HND 		*handle = &q_u->handle;
+	POLICY_HND 		*handle = &q_u->handle; 
 	uint32 			type = q_u->type;
 	uint8 			*data = q_u->data;
 	uint32 			real_len = q_u->real_len;

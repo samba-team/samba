@@ -2672,8 +2672,8 @@ WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key, char *value,
 	regval_ctr_addvalue( &p2->data.keys[key_index].values, value,
 		type, data, real_len );
 	
-	DEBUG(8,("add_printer_data: Added key => [%s], value => [%s], size => [%d]\n",
-		key, value, real_len ));
+	DEBUG(8,("add_printer_data: Added key => [%s], value => [%s], type=> [%d], size => [%d]\n",
+		key, value, type, real_len  ));
 	
 	return result;
 }
