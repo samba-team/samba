@@ -4,6 +4,7 @@
 # released under the GNU GPL
 
 package IdlValidator;
+use Data::Dumper;
 
 use strict;
 
@@ -66,8 +67,19 @@ sub ValidStruct($)
 sub ValidUnion($)
 {
 	my($union) = shift;
-	foreach my $e (@{$union->{DATA}}) {
+	foreach my $e (@{$union->{ELEMENTS}}) {
 		$e->{PARENT} = $union;
+
+		if (defined($e->{PROPERTIES}->{default}) and 
+			defined($e->{PROPERTIES}->{case})) {
+			fatal "Union member $e->{NAME} can not have both default and case properties!\n";
+		}
+		
+		unless (defined ($e->{PROPERTIES}->{default}) or 
+				defined ($e->{PROPERTIES}->{case})) {
+			fatal "Union member $e->{NAME} must have default or case property\n";
+		}
+
 		ValidElement($e);
 	}
 }

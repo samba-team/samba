@@ -98,11 +98,11 @@ sub DumpUnionElement($)
     my($element) = shift;
     my($res);
 
-    if ($element->{CASE} eq "default") {
+    if (util::has_property($element, "default")) {
 	$res .= "[default] ;\n";
     } else {
-	$res .= "[case($element->{CASE})] ";
-	$res .= DumpElement($element->{DATA}), if defined($element->{DATA});
+	$res .= "[case($element->{PROPERTIES}->{case})] ";
+	$res .= DumpElement($element), if defined($element);
 	$res .= ";\n";
     }
 
@@ -119,7 +119,7 @@ sub DumpUnion($)
     (defined $union->{PROPERTIES}) && 
 	($res .= DumpProperties($union->{PROPERTIES}));
     $res .= "union {\n";
-    foreach my $e (@{$union->{DATA}}) {
+    foreach my $e (@{$union->{ELEMENTS}}) {
 	$res .= DumpUnionElement($e);
     }
     $res .= "}";

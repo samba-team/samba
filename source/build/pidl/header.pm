@@ -153,12 +153,12 @@ sub HeaderUnion($$)
 	(defined $union->{PROPERTIES}) && HeaderProperties($union->{PROPERTIES});
 	$res .= "\nunion $name {\n";
 	$tab_depth++;
-	foreach my $e (@{$union->{DATA}}) {
-		if ($e->{TYPE} eq "UNION_ELEMENT") {
-			if (! defined $done{$e->{DATA}->{NAME}}) {
-				HeaderElement($e->{DATA});
+	foreach my $e (@{$union->{ELEMENTS}}) {
+		if ($e->{TYPE} ne "EMPTY") {
+			if (! defined $done{$e->{NAME}}) {
+				HeaderElement($e);
 			}
-			$done{$e->{DATA}->{NAME}} = 1;
+			$done{$e->{NAME}} = 1;
 		}
 	}
 	$tab_depth--;
