@@ -134,7 +134,7 @@ find_all_addresses (krb5_context context, krb5_addresses *res, int flags)
     /* Allocate storage for them. */
     res->val = calloc(num, sizeof(*res->val));
     if (res->val == NULL) {
-	krb5_free_addresses(context, ignore_addresses);
+	krb5_free_addresses(context, &ignore_addresses);
 	freeifaddrs(ifa0);
 	krb5_set_error_string (context, "malloc: out of memory");
 	return (ENOMEM);
@@ -211,7 +211,7 @@ find_all_addresses (krb5_context context, krb5_addresses *res, int flags)
     }
 
     if (flags & EXTRA_ADDRESSES)
-	krb5_free_addresses(context, ignore_addresses);
+	krb5_free_addresses(context, &ignore_addresses);
     freeifaddrs(ifa0);
     if (ret)
 	free(res->val);
