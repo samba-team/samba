@@ -531,8 +531,11 @@ int msrpc_main(int argc,char *argv[])
 		mkdir(lp_lockdir(), 0755);
 	}
 
-	if (is_daemon) {
-		pidfile_create(pipe_name);
+	if (is_daemon)
+	{
+		fstring prog_name;
+		split_at_last_component(argv[0], NULL, '/', prog_name);
+		pidfile_create(prog_name);
 	}
 
 	ClientMSRPC = open_sockets(is_daemon);

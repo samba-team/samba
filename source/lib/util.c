@@ -1155,6 +1155,40 @@ void msleep(int t)
   }
 }
 
+/****************************************************************************
+open the directory and look-up the matching names
+****************************************************************************/
+BOOL get_file_match(const char* dirname, const char* regexp,
+				uint32 *total, char ***list)
+{
+	DIR *dirp;
+	char *dpname;
+
+	dirp = opendir(dirname);
+
+	if (dirp == NULL)
+	{
+		DEBUG(2,("Error opening directory [%s]\n",dirp)); 
+		return False;
+	}
+	
+	DEBUG(5,("get_dir_match: %s with %s\n", dirname, regexp));
+
+	while ((dpname = readdirname(dirp)) != NULL)
+	{
+		if (do_match(dpname, regexp, False))
+		{
+			DEBUGADD(7,("Found: [%s]\n", dpname));
+			
+			add_chars_to_array(total, list, dpname);
+			DEBUGADD(6,("Added: [%s]\n", dpname));		
+		}
+	}
+
+	closedir(dirp);
+
+	return True;
+}
 
 /*********************************************************
 * Recursive routine that is called by unix_mask_match.
@@ -1288,9 +1322,9 @@ static BOOL unix_mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
 * False if failed. This is the 'new' NT style matcher.
 *********************************************************/
 
-BOOL do_match(char *str, char *regexp, int case_sig)
+BOOL do_match(char *str, const char *regexp, int case_sig)
 {
-  char *p;
+  const char *p;
 
   for( p = regexp; *p && *str; ) {
     switch(*p) {

@@ -35,6 +35,13 @@ extern int DEBUGLEVEL;
 #define POL_REG_INFO 1
 #define POL_SAMR_INFO 2
 #define POL_CLI_INFO 3
+#define POL_SVC_INFO 4
+
+struct svc_info
+{
+    /* for use by \PIPE\svcctl */
+	fstring name; /* name of service */
+};
 
 struct reg_info
 {
@@ -67,6 +74,7 @@ static struct policy
 	union {
 		struct samr_info *samr;
 		struct reg_info *reg;
+		struct svc_info *svc;
 		struct con_info *con;
 
 	} dev;
@@ -317,6 +325,56 @@ uint32 get_policy_samr_rid(POLICY_HND *hnd)
 }
 
 /****************************************************************************
+  get svc name 
+****************************************************************************/
+BOOL get_policy_svc_name(POLICY_HND *hnd, fstring name)
+{
+	struct policy *p = find_policy(hnd);
+
+	if (p && p->open)
+	{
+		DEBUG(3,("Setting policy pnum=%x name=%s\n",
+			 p->pnum, name));
+
+		fstrcpy(name, p->dev.svc->name);
+		DEBUG(5,("getting policy svc name=%s\n", name));
+		return True;
+	}
+
+	DEBUG(3,("Error getting policy svc name\n"));
+	return False;
+}
+
+/****************************************************************************
+  set svc name 
+****************************************************************************/
+BOOL set_policy_svc_name(POLICY_HND *hnd, fstring name)
+{
+	struct policy *p = find_policy(hnd);
+
+	if (p && p->open)
+	{
+		DEBUG(3,("Getting policy pnum=%x\n",
+			 p->pnum));
+
+		if (p->dev.svc == NULL)
+		{
+			p->type = POL_SVC_INFO;
+			p->dev.svc = (struct svc_info*)malloc(sizeof(*p->dev.svc));
+		}
+		if (p->dev.svc == NULL)
+		{
+			return False;
+		}
+		fstrcpy(p->dev.svc->name, name);
+		return True;
+	}
+
+	DEBUG(3,("Error setting policy name=%s\n", name));
+	return False;
+}
+
+/****************************************************************************
   set reg name 
 ****************************************************************************/
 BOOL set_policy_reg_name(POLICY_HND *hnd, fstring name)
@@ -346,7 +404,7 @@ BOOL set_policy_reg_name(POLICY_HND *hnd, fstring name)
 }
 
 /****************************************************************************
-  set reg name 
+  get reg name 
 ****************************************************************************/
 BOOL get_policy_reg_name(POLICY_HND *hnd, fstring name)
 {
@@ -444,6 +502,11 @@ BOOL close_policy_hnd(POLICY_HND *hnd)
 
 	switch (p->type)
 	{
+		case POL_SVC_INFO:
+		{
+			free(p->dev.svc);
+			break;
+		}
 		case POL_REG_INFO:
 		{
 			free(p->dev.reg);

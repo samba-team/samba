@@ -1110,6 +1110,10 @@ void split_at_last_component(char *path, char *front, char sep, char *back)
 	{
 		pstrcpy(front, path);
 	}
+	else if (back != NULL)
+	{
+		pstrcpy(back, path);
+	}
 	if (p != NULL)
 	{
 		if (back != NULL)
@@ -1120,7 +1124,7 @@ void split_at_last_component(char *path, char *front, char sep, char *back)
 	}
 	else
 	{
-		if (back != NULL)
+		if (back != NULL && front != NULL)
 		{
 			back[0] = 0;
 		}

@@ -101,7 +101,7 @@ static void svc_reply_open_service(SVC_Q_OPEN_SERVICE *q_u,
 		/* lkcl XXXX do a check on the name, here */
 	}
 
-	if (status == 0x0 && !set_policy_reg_name(&pol, name))
+	if (status == 0x0 && !set_policy_svc_name(&pol, name))
 	{
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
@@ -126,23 +126,85 @@ static void api_svc_open_service( rpcsrv_struct *p, prs_struct *data,
 }
 
 /*******************************************************************
+ svc_reply_stop_service
+ ********************************************************************/
+static void svc_reply_stop_service(SVC_Q_STOP_SERVICE *q_s,
+				prs_struct *rdata)
+{
+	fstring svc_name;
+	fstring script;
+
+	SVC_R_STOP_SERVICE r_s;
+
+	DEBUG(5,("svc_stop_service: %d\n", __LINE__));
+
+	r_s.status = 0x0;
+
+	if (find_policy_by_hnd(&q_s->pol) == -1 ||
+		!get_policy_svc_name(&q_s->pol, svc_name))
+	{
+		r_s.status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
+	slprintf(script, sizeof(script)-1, "%s/rc.service stop %s/%s.pid %s/%s",
+			SBINDIR, LOCKDIR, svc_name, BINDIR, svc_name);
+	
+	DEBUG(10,("start_service: %s\n", script));
+
+	/* start the service here */
+	if (smbrun(script, "/tmp/foo", False) == 0)
+	{
+		r_s.status = 0xC000000 | NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* store the response in the SMB stream */
+	svc_io_r_stop_service("", &r_s, rdata, 0);
+
+	DEBUG(5,("svc_stop_service: %d\n", __LINE__));
+}
+
+/*******************************************************************
+ api_svc_stop_service
+ ********************************************************************/
+static void api_svc_stop_service( rpcsrv_struct *p, prs_struct *data,
+                                    prs_struct *rdata )
+{
+	SVC_Q_STOP_SERVICE q_u;
+	svc_io_q_stop_service("", &q_u, data, 0);
+	svc_reply_stop_service(&q_u, rdata);
+}
+
+/*******************************************************************
  svc_reply_start_service
  ********************************************************************/
 static void svc_reply_start_service(SVC_Q_START_SERVICE *q_s,
 				prs_struct *rdata)
 {
+	fstring svc_name;
+	pstring script;
+
 	SVC_R_START_SERVICE r_s;
 
 	DEBUG(5,("svc_start_service: %d\n", __LINE__));
 
 	r_s.status = 0x0;
 
-	if (find_policy_by_hnd(&q_s->pol) == -1)
+	if (find_policy_by_hnd(&q_s->pol) == -1 ||
+		!get_policy_svc_name(&q_s->pol, svc_name))
 	{
 		r_s.status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
+	slprintf(script, sizeof(script)-1, "%s/rc.service start %s/%s.pid %s/%s",
+			SBINDIR, LOCKDIR, svc_name, BINDIR, svc_name);
+	
+	DEBUG(10,("svc_start_service: %s\n", script));
+
 	/* start the service here */
+	if (smbrun(script, "/tmp/foo", False) == 0)
+	{
+		r_s.status = 0xC000000 | NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* store the response in the SMB stream */
 	svc_io_r_start_service("", &r_s, rdata, 0);
@@ -187,7 +249,7 @@ static void svc_reply_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
 		/* lkcl XXXX do a check on the name, here */
 	}
 
-	if (status == 0x0 && !set_policy_reg_name(&pol, name))
+	if (status == 0x0 && !set_policy_svc_name(&pol, name))
 	{
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
@@ -211,18 +273,6 @@ static void api_svc_open_sc_man( rpcsrv_struct *p, prs_struct *data,
 	svc_reply_open_sc_man(&q_u, rdata);
 }
 
-static char *dummy_services[] =
-{
-	"imapd",
-	"popd",
-	"smbd",
-	"nmbd",
-	"httpd",
-	"inetd",
-	"syslogd",
-	NULL
-};
-
 /*******************************************************************
  svc_reply_enum_svcs_status
  ********************************************************************/
@@ -237,6 +287,20 @@ static void svc_reply_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_u,
 	int i = get_enum_hnd(&q_u->resume_hnd);
 	uint32 resume_hnd = 0;
 	int max_buf_size = 0x10000;
+	uint32 num_entries = 10;
+	char *services[] =
+	{
+		"lsarpcd",
+		"srvsvcd",
+		"wkssvcd",
+		"smbd",
+		"nmbd",
+		"svcctld",
+		"samrd",
+		"spoolssd",
+		"browserd",
+		"winregd"
+	};
 
 	ZERO_STRUCT(r_u);
 
@@ -247,49 +311,64 @@ static void svc_reply_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_u,
 		dos_status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
+#if 0
 	if (dos_status == 0x0)
 	{
 		DEBUG(5,("svc_enum_svcs_status:\n"));
-		while (dummy_services[i] != NULL)
+
+		if (!get_file_match(LOCKDIR, "*.pid", &num_entries, &services))
 		{
-			ENUM_SRVC_STATUS *svc = NULL;
-
-			buf_size += strlen(dummy_services[i] + 1) * 2;
-			buf_size += 9 * sizeof(uint32);
-
-			DEBUG(10,("buf_size: %d q_u->buf_size: %d\n",
-			           buf_size, q_u->buf_size));
-
-			if (buf_size >= max_buf_size)
-			{
-				resume_hnd = i;
-				break;
-			}
-
-			if (buf_size > q_u->buf_size)
-			{
-				dos_status = ERRmoredata;
-				break;
-			}
-
-			num_svcs++;
-			svcs = Realloc(svcs, num_svcs * sizeof(ENUM_SRVC_STATUS));
-			if (svcs == NULL)
-			{
-				dos_status = ERRnomem;
-				num_svcs = 0;
-				break;
-			}
-
-			svc = &svcs[num_svcs-1];
-			ZERO_STRUCTP(svc);
-
-			make_unistr(&svc->uni_srvc_name, dummy_services[i]);
-			make_unistr(&svc->uni_disp_name, dummy_services[i]);
-
-			DEBUG(10,("show service: %s\n", dummy_services[i]));
-			i++;
+			dos_status = ERRnoaccess;
 		}
+	}
+#endif
+	for (i = 0; i < num_entries; i++)
+	{
+		ENUM_SRVC_STATUS *svc = NULL;
+		fstring svc_name;
+		int len;
+
+		fstrcpy(svc_name, services[i]);
+		len = strlen(services[i]);
+#if 0
+		svc_name[len-4] = 0;
+		len -= 4;
+#endif
+
+		buf_size += (len+1) * 2;
+		buf_size += 9 * sizeof(uint32);
+
+		DEBUG(10,("buf_size: %d q_u->buf_size: %d\n",
+			   buf_size, q_u->buf_size));
+
+		if (buf_size >= max_buf_size)
+		{
+			resume_hnd = i;
+			break;
+		}
+
+		if (buf_size > q_u->buf_size)
+		{
+			dos_status = ERRmoredata;
+			break;
+		}
+
+		num_svcs++;
+		svcs = Realloc(svcs, num_svcs * sizeof(ENUM_SRVC_STATUS));
+		if (svcs == NULL)
+		{
+			dos_status = ERRnomem;
+			num_svcs = 0;
+			break;
+		}
+
+		svc = &svcs[num_svcs-1];
+		ZERO_STRUCTP(svc);
+
+		make_unistr(&svc->uni_srvc_name, svc_name);
+		make_unistr(&svc->uni_disp_name, svc_name);
+
+		DEBUG(10,("show service: %s\n", svc_name));
 	}
 
 	/*
@@ -311,6 +390,10 @@ static void svc_reply_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_u,
 	{
 		free(svcs);
 	}
+
+#if 0
+	free_char_array(num_entries, services);
+#endif
 
 	DEBUG(5,("svc_enum_svcs_status: %d\n", __LINE__));
 }
@@ -375,6 +458,7 @@ static struct api_struct api_svc_cmds[] =
 	{ "SVC_ENUM_SVCS_STATUS", SVC_ENUM_SVCS_STATUS, api_svc_enum_svcs_status },
 	{ "SVC_QUERY_DISP_NAME" , SVC_QUERY_DISP_NAME , api_svc_query_disp_name  },
 	{ "SVC_START_SERVICE"   , SVC_START_SERVICE   , api_svc_start_service    },
+	{ "SVC_STOP_SERVICE"    , SVC_STOP_SERVICE    , api_svc_stop_service     },
 	{ NULL                  , 0                   , NULL                     }
 };
 

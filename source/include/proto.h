@@ -484,7 +484,9 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,
 int name_extract(char *buf,int ofs,char *name);
 int name_len(char *s1);
 void msleep(int t);
-BOOL do_match(char *str, char *regexp, int case_sig);
+BOOL get_file_match(const char* dirname, const char* regexp,
+				uint32 *total, char ***list);
+BOOL do_match(char *str, const char *regexp, int case_sig);
 BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2);
 void become_daemon(void);
 BOOL yesno(char *p);
@@ -603,6 +605,8 @@ BOOL set_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status);
 BOOL set_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
 BOOL get_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
 uint32 get_policy_samr_rid(POLICY_HND *hnd);
+BOOL get_policy_svc_name(POLICY_HND *hnd, fstring name);
+BOOL set_policy_svc_name(POLICY_HND *hnd, fstring name);
 BOOL set_policy_reg_name(POLICY_HND *hnd, fstring name);
 BOOL get_policy_reg_name(POLICY_HND *hnd, fstring name);
 BOOL set_policy_con(POLICY_HND *hnd, struct cli_connection *con,
@@ -618,7 +622,6 @@ uint32 lookup_wk_user_name(const char *user_name, const char *domain,
 				DOM_SID *sid, uint8 *type);
 uint32 lookup_builtin_alias_name(const char *alias_name, const char *domain,
 				DOM_SID *sid, uint8 *type);
-BOOL pwdb_initialise(BOOL is_server);
 char *lookup_wk_alias_rid(uint32 rid);
 char *lookup_wk_user_rid(uint32 rid);
 char *lookup_wk_group_rid(uint32 rid);
@@ -1077,6 +1080,8 @@ void msrpcd_process(int c, pipes_struct *p);
 
 /*The following definitions come from  netlogond/netlogond.c  */
 
+void msrpc_service_init(void);
+BOOL reload_services(BOOL test);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 
