@@ -77,26 +77,6 @@ struct private_data {
 	const char *error_string;
 };
 
-/* close */
-static int schema_close(struct ldb_module *module)
-{
-	return ldb_next_close(module);
-}
-
-/* search */
-static int schema_search(struct ldb_module *module, const char *base,
-		       enum ldb_scope scope, const char *expression,
-		       const char * const *attrs, struct ldb_message ***res)
-{
-	return ldb_next_search(module, base, scope, expression, attrs, res); 
-}
-
-/* search_free */
-static int schema_search_free(struct ldb_module *module, struct ldb_message **res)
-{
-	return ldb_next_search_free(module, res);
-}
-
 struct attribute_list {
 	int flags;
 	char *name;
@@ -112,6 +92,30 @@ struct schema_structures {
 	int must_num;
 	int may_num;
 };
+
+/* This function embedds the knowledge of aliased names.
+   Currently it handles only dn vs distinguishedNAme as a special case as AD
+   only have this special alias case, in future we should read the schema
+   to find out which names have an alias and check for them */
+static int schema_attr_cmp(const char *attr1, const char *attr2)
+{
+	int ret;
+
+	ret = ldb_attr_cmp(attr1, attr2);
+	if (ret != 0) {
+		if (tolower(*attr1) == 'd' && tolower(*attr2) == 'd') {
+			if ((ldb_attr_cmp("dn", attr1) == 0) &&
+			    (ldb_attr_cmp("distinguishedName", attr2) == 0)) {
+				return 0;
+			}
+			if ((ldb_attr_cmp("dn", attr2) == 0) &&
+			    (ldb_attr_cmp("distinguishedName", attr1) == 0)) {
+				return 0;
+			}
+		}
+	}
+	return ret;
+}
 
 static int get_object_objectclasses(struct ldb_context *ldb, const char *dn, struct schema_structures *schema_struct)
 {
@@ -167,7 +171,7 @@ static int get_check_list(struct ldb_module *module, struct schema_structures *s
 		return -1;
 	}
 	for (i = 0, j = 0; i < msg->num_elements; i++) {
-		if (ldb_attr_cmp(msg->elements[i].name, "objectclass") == 0) {
+		if (schema_attr_cmp(msg->elements[i].name, "objectclass") == 0) {
 			schema_struct->objectclass_list_num = msg->elements[i].num_values;
 			schema_struct->objectclass_list = talloc_array(schema_struct,
 									 struct attribute_list,
@@ -294,11 +298,11 @@ static int get_attr_list_recursive(struct ldb_module *module, struct ldb_context
 
 			is_aux = 0;
 			is_class = 0;
-			if (ldb_attr_cmp((*srch)->elements[j].name, "systemAuxiliaryclass") == 0) {
+			if (schema_attr_cmp((*srch)->elements[j].name, "systemAuxiliaryclass") == 0) {
 				is_aux = SCHEMA_FLAG_AUXCLASS;
 				is_class = 1;
 			}
-			if (ldb_attr_cmp((*srch)->elements[j].name, "subClassOf") == 0) {
+			if (schema_attr_cmp((*srch)->elements[j].name, "subClassOf") == 0) {
 				is_class = 1;
 			}
 
@@ -312,8 +316,8 @@ static int get_attr_list_recursive(struct ldb_module *module, struct ldb_context
 				}
 			} else {
 
-				if (ldb_attr_cmp((*srch)->elements[j].name, "mustContain") == 0 ||
-					ldb_attr_cmp((*srch)->elements[j].name, "SystemMustContain") == 0) {
+				if (schema_attr_cmp((*srch)->elements[j].name, "mustContain") == 0 ||
+					schema_attr_cmp((*srch)->elements[j].name, "SystemMustContain") == 0) {
 					if (add_attribute_uniq(&schema_struct->must,
 								&schema_struct->must_num,
 								SCHEMA_FLAG_RESET,
@@ -323,8 +327,8 @@ static int get_attr_list_recursive(struct ldb_module *module, struct ldb_context
 					}
 				}
 
-				if (ldb_attr_cmp((*srch)->elements[j].name, "mayContain") == 0 ||
-				    ldb_attr_cmp((*srch)->elements[j].name, "SystemMayContain") == 0) {
+				if (schema_attr_cmp((*srch)->elements[j].name, "mayContain") == 0 ||
+				    schema_attr_cmp((*srch)->elements[j].name, "SystemMayContain") == 0) {
 
 					if (add_attribute_uniq(&schema_struct->may,
 								&schema_struct->may_num,
@@ -341,6 +345,26 @@ static int get_attr_list_recursive(struct ldb_module *module, struct ldb_context
 	}
 
 	return 0;
+}
+
+/* close */
+static int schema_close(struct ldb_module *module)
+{
+	return ldb_next_close(module);
+}
+
+/* search */
+static int schema_search(struct ldb_module *module, const char *base,
+		       enum ldb_scope scope, const char *expression,
+		       const char * const *attrs, struct ldb_message ***res)
+{
+	return ldb_next_search(module, base, scope, expression, attrs, res); 
+}
+
+/* search_free */
+static int schema_search_free(struct ldb_module *module, struct ldb_message **res)
+{
+	return ldb_next_search_free(module, res);
 }
 
 /* add_record */
@@ -382,7 +406,7 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 
 		found = 0;
 		for (j = 0; j < entry_structs->check_list_num; j++) {
-			if (ldb_attr_cmp(entry_structs->must[i].name, entry_structs->check_list[j].name) == 0) {
+			if (schema_attr_cmp(entry_structs->must[i].name, entry_structs->check_list[j].name) == 0) {
 				entry_structs->check_list[j].flags = SCHEMA_FLAG_CHECKED;
 				found = 1;
 				break;
@@ -390,7 +414,6 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 		}
 
 		if ( ! found ) {
-			/* TODO: set the error string */
 			data->error_string = "Objectclass violation, a required attribute is mischema_structing";
 			talloc_free(entry_structs);
 			return -1;
@@ -405,7 +428,7 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 
 			found = 0;
 			for (j = 0; j < entry_structs->may_num; j++) {
-				if (ldb_attr_cmp(entry_structs->may[j].name, entry_structs->check_list[i].name) == 0) {
+				if (schema_attr_cmp(entry_structs->may[j].name, entry_structs->check_list[i].name) == 0) {
 					entry_structs->check_list[i].flags = SCHEMA_FLAG_CHECKED;
 					found = 1;
 					break;
@@ -493,7 +516,7 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 
 		found = 0;
 		for (j = 0; j < entry_structs->must_num; j++) {
-			if (ldb_attr_cmp(entry_structs->must[j].name, modify_structs->check_list[i].name) == 0) {
+			if (schema_attr_cmp(entry_structs->must[j].name, modify_structs->check_list[i].name) == 0) {
 				if ((modify_structs->check_list[i].flags & SCHEMA_FLAG_MOD_MASK) == SCHEMA_FLAG_MOD_DELETE) {
 					data->error_string = "Objectclass violation: trying to delete a required attribute";
 					talloc_free(entry_structs);
@@ -506,7 +529,7 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 		}
 		if ( ! found) {
 			for (j = 0; j < entry_structs->may_num; j++) {
-				if (ldb_attr_cmp(entry_structs->may[j].name, modify_structs->check_list[i].name) == 0) {
+				if (schema_attr_cmp(entry_structs->may[j].name, modify_structs->check_list[i].name) == 0) {
 					modify_structs->check_list[i].flags |= SCHEMA_FLAG_CHECKED;
 					break;
 				}
@@ -520,7 +543,7 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 
 		found = 0;
 		for (j = 0; j < modify_structs->check_list_num; j++) {
-			if (ldb_attr_cmp(modify_structs->must[i].name, modify_structs->check_list[j].name) == 0) {
+			if (schema_attr_cmp(modify_structs->must[i].name, modify_structs->check_list[j].name) == 0) {
 				if ((modify_structs->check_list[i].flags & SCHEMA_FLAG_MOD_MASK) == SCHEMA_FLAG_MOD_DELETE) {
 					data->error_string = "Objectclass violation: trying to delete a required attribute";
 					talloc_free(entry_structs);
@@ -533,7 +556,6 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 		}
 
 		if ( ! found ) {
-			/* TODO: set the error string */
 			data->error_string = "Objectclass violation, a required attribute is missing";
 			talloc_free(entry_structs);
 			return -1;
@@ -549,7 +571,7 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 
 			found = 0;
 			for (j = 0; j < modify_structs->may_num; j++) {
-				if (ldb_attr_cmp(modify_structs->may[j].name, modify_structs->check_list[i].name) == 0) {
+				if (schema_attr_cmp(modify_structs->may[j].name, modify_structs->check_list[i].name) == 0) {
 					modify_structs->check_list[i].flags |= SCHEMA_FLAG_CHECKED;
 					found = 1;
 					break;
