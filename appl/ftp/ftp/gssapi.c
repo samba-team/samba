@@ -214,18 +214,28 @@ gss_adat(void *app_data, void *buf, size_t len)
     if(maj_stat == GSS_S_COMPLETE){
 	char *name;
 	gss_buffer_desc export_name;
-	maj_stat = gss_export_name(&min_stat, client_name, &export_name);
+	gss_OID oid;
+
+	maj_stat = gss_display_name(&min_stat, client_name,
+				    &export_name, &oid);
 	if(maj_stat != 0) {
-	    reply(500, "Error exporting name");
+	    reply(500, "Error displaying name");
+	    goto out;
+	}
+	/* XXX kerberos */
+	if(oid != GSS_KRB5_NT_PRINCIPAL_NAME) {
+	    reply(500, "OID not kerberos principal name");
+	    gss_release_buffer(&min_stat, &export_name);
 	    goto out;
 	}
 	name = realloc(export_name.value, export_name.length + 1);
 	if(name == NULL) {
 	    reply(500, "Out of memory");
-	    free(export_name.value);
+	    gss_release_buffer(&min_stat, &export_name);
 	    goto out;
 	}
 	name[export_name.length] = '\0';
+	gss_release_buffer(&min_stat, &export_name);
 	d->client_name = name;
 	if(p)
 	    reply(235, "ADAT=%s", p);
