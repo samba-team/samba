@@ -1,3 +1,0 @@
-This is a simple utility to manipulate an smb.conf file from the command line.
-It preserves comments and whitespace when making changes.  See --help for
-invocation instructions.
