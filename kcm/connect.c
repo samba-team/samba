@@ -1,0 +1,460 @@
+/*
+ * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden). 
+ * All rights reserved. 
+ *
+ * Redistribution and use in source and binary forms, with or without 
+ * modification, are permitted provided that the following conditions 
+ * are met: 
+ *
+ * 1. Redistributions of source code must retain the above copyright 
+ *    notice, this list of conditions and the following disclaimer. 
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright 
+ *    notice, this list of conditions and the following disclaimer in the 
+ *    documentation and/or other materials provided with the distribution. 
+ *
+ * 3. Neither the name of the Institute nor the names of its contributors 
+ *    may be used to endorse or promote products derived from this software 
+ *    without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE. 
+ */
+
+#include "kcm_locl.h"
+
+RCSID("$Id$");
+
+struct descr {
+    int s;
+    int type;
+    char *path;
+    unsigned char *buf;
+    size_t size;
+    size_t len;
+    time_t timeout;
+    struct sockaddr_storage __ss;
+    struct sockaddr *sa;
+    socklen_t sock_len;
+    struct ucred peercred;
+};
+
+static void
+init_descr(struct descr *d)
+{
+    memset(d, 0, sizeof(*d));
+    d->sa = (struct sockaddr *)&d->__ss;
+    d->s = -1;
+}
+
+/*
+ * re-initialize all `n' ->sa in `d'.
+ */
+
+static void
+reinit_descrs (struct descr *d, int n)
+{
+    int i;
+
+    for (i = 0; i < n; ++i)
+	d[i].sa = (struct sockaddr *)&d[i].__ss;
+}
+
+/*
+ * Create the socket (family, type, port) in `d'
+ */
+
+static void 
+init_socket(struct descr *d)
+{
+    struct sockaddr_un sun;
+    struct sockaddr *sa = (struct sockaddr *)&sun;
+    krb5_socklen_t sa_size = sizeof(sun);
+
+    init_descr (d);
+
+    sun.sun_family = AF_UNIX;
+
+    if (socket_path != NULL)
+	d->path = socket_path;
+    else
+	d->path = _PATH_KCM_SOCKET;
+
+    strlcpy(sun.sun_path, d->path, sizeof(sun.sun_path));
+
+    d->s = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (d->s < 0){
+	krb5_warn(kcm_context, errno, "socket(%d, %d, 0)", AF_UNIX, SOCK_STREAM);
+	d->s = -1;
+	return;
+    }
+#if defined(HAVE_SETSOCKOPT) && defined(SOL_SOCKET) && defined(SO_REUSEADDR)
+    {
+	int one = 1;
+	setsockopt(d->s, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof(one));
+    }
+#endif
+    d->type = SOCK_STREAM;
+
+    unlink(d->path);
+
+    if (bind(d->s, sa, sa_size) < 0) {
+	krb5_warn(kcm_context, errno, "bind %s", sun.sun_path);
+	close(d->s);
+	d->s = -1;
+	return;
+    }
+
+    if (listen(d->s, SOMAXCONN) < 0) {
+	krb5_warn(kcm_context, errno, "listen %s", sun.sun_path);
+	close(d->s);
+	d->s = -1;
+	return;
+    }
+
+    chmod(d->path, 0777);
+
+    return;
+}
+
+/*
+ * Allocate descriptors for all the sockets that we should listen on
+ * and return the number of them.
+ */
+
+static int
+init_sockets(struct descr **desc)
+{
+    struct descr *d;
+    size_t num = 0;
+
+    d = (struct descr *)malloc(sizeof(*d));
+    if (d == NULL) {
+	krb5_errx(kcm_context, 1, "malloc failed");
+    }
+
+    init_socket(d);
+    if (d->s != -1) {
+	kcm_log(5, "listening on domain socket %s", d->path);
+	num++;
+    }
+
+    reinit_descrs (d, num);
+    *desc = d;
+
+    return num;
+}
+
+/*
+ * handle the request in `buf, len', from `addr' (or `from' as a string),
+ * sending a reply in `reply'.
+ */
+
+static int
+process_request(unsigned char *buf, 
+		size_t len, 
+		krb5_data *reply,
+		kcm_client *client)
+{
+    krb5_data request;
+   
+    if (len < 4) {
+	kcm_log(1, "malformed request from process %d (too short)", client->pid);
+	return -1;
+    }
+
+    if (buf[0] != KCM_PROTOCOL_VERSION_MAJOR ||
+	buf[1] != KCM_PROTOCOL_VERSION_MINOR) {
+	kcm_log(1, "incorrect protocol version %d.%d from process %d",
+		buf[0], buf[1], client->pid);
+	return -1;
+    }
+
+    buf += 2;
+    len -= 2;
+
+    /* buf is now pointing at opcode */
+
+    request.data = buf;
+    request.length = len;
+
+    return kcm_dispatch(kcm_context, client, &request, reply);
+}
+
+/*
+ * Handle the request in `buf, len' to socket `d'
+ */
+
+static void
+do_request(void *buf, size_t len, struct descr *d)
+{
+    krb5_error_code ret;
+    krb5_data reply;
+    kcm_client client;
+
+    client.pid = d->peercred.pid;
+    client.uid = d->peercred.uid;
+    client.gid = d->peercred.gid;
+
+    reply.length = 0;
+
+    ret = process_request(buf, len, &reply, &client);
+    if (reply.length != 0) {
+	unsigned char len[4];
+
+	kcm_log(5, "sending %lu bytes to process %d", (unsigned long)reply.length,
+		client.pid);
+
+	len[0] = (reply.length >> 24) & 0xff;
+	len[1] = (reply.length >> 16) & 0xff;
+	len[2] = (reply.length >> 8) & 0xff;
+	len[3] = reply.length & 0xff;
+
+	if (sendto(d->s, len, sizeof(len), 0, NULL, 0) < 0) {
+	    kcm_log (0, "sendto(%d): %d %s", d->peercred.pid, strerror(errno));
+	    krb5_data_free(&reply);
+	    return;
+	}
+	if (sendto(d->s, reply.data, reply.length, 0, NULL, 0) < 0) {
+	    kcm_log (0, "sendto(%d): %s", d->peercred.pid, strerror(errno));
+	    krb5_data_free(&reply);
+	    return;
+	}
+
+	krb5_data_free(&reply);
+    }
+
+    if (ret) {
+	kcm_log(0, "Failed processing %lu byte request from process %d", 
+		(unsigned long)len, d->peercred.pid);
+    }
+}
+
+static void
+clear_descr(struct descr *d)
+{
+    if(d->buf)
+	memset(d->buf, 0, d->size);
+    d->len = 0;
+    if(d->s != -1)
+	close(d->s);
+    d->s = -1;
+}
+
+#define STREAM_TIMEOUT 4
+
+/*
+ * accept a new stream connection on `d[parent]' and store it in `d[child]'
+ */
+
+static void
+add_new_stream (struct descr *d, int parent, int child)
+{
+    int s;
+
+    if (child == -1)
+	return;
+
+    d[child].sock_len = sizeof(d[child].__ss);
+    s = accept(d[parent].s, d[child].sa, &d[child].sock_len);
+    if(s < 0) {
+	krb5_warn(kcm_context, errno, "accept");
+	return;
+    }
+
+    if (s >= FD_SETSIZE) {
+	krb5_warnx(kcm_context, "socket FD too large");
+	close (s);
+	return;
+    }
+
+    d[child].s = s;
+    d[child].timeout = time(NULL) + STREAM_TIMEOUT;
+    d[child].type = SOCK_STREAM;
+}
+
+/*
+ * Grow `d' to handle at least `n'.
+ * Return != 0 if fails
+ */
+
+static int
+grow_descr (struct descr *d, size_t n)
+{
+    if (d->size - d->len < n) {
+	unsigned char *tmp;
+	size_t grow;
+
+	grow = max(1024, d->len + n);
+	if (d->size + grow > max_request) {
+	    kcm_log(0, "Request exceeds max request size (%lu bytes).",
+		    (unsigned long)d->size + grow);
+	    clear_descr(d);
+	    return -1;
+	}
+	tmp = realloc (d->buf, d->size + grow);
+	if (tmp == NULL) {
+	    kcm_log(0, "Failed to re-allocate %lu bytes.",
+		    (unsigned long)d->size + grow);
+	    clear_descr(d);
+	    return -1;
+	}
+	d->size += grow;
+	d->buf = tmp;
+    }
+    return 0;
+}
+
+/*
+ * Handle incoming data to the stream socket in `d[index]'
+ */
+
+static void
+handle_stream(struct descr *d, int index, int min_free)
+{
+    unsigned char buf[1024];
+    int n;
+    int ret = 0;
+    socklen_t peercredlen;
+
+    if (d[index].timeout == 0) {
+	add_new_stream (d, index, min_free);
+	return;
+    }
+
+    d[index].peercred.pid = 0;
+    d[index].peercred.uid = -1;
+    d[index].peercred.gid = -1;
+
+    if (getsockopt(d[index].s, SOL_SOCKET, SO_PEERCRED, (void *)&d[index].peercred,
+		   &peercredlen) != 0) {
+	krb5_warn(kcm_context, errno, "failed to determine peer identity");
+	return;
+    }
+
+    n = recvfrom(d[index].s, buf, sizeof(buf), 0, NULL, NULL);
+    if (n < 0) {
+	krb5_warn(kcm_context, errno, "recvfrom");
+	return;
+    } else if (n == 0) {
+	krb5_warnx(kcm_context, "connection closed before end of data after %lu "
+		   "bytes from process %d",
+		   (unsigned long)d[index].len, d[index].peercred.pid);
+	clear_descr (d + index);
+	return;
+    }
+    if (grow_descr (&d[index], n))
+	return;
+    memcpy(d[index].buf + d[index].len, buf, n);
+    d[index].len += n;
+    if (d[index].len > 4) {
+	krb5_storage *sp;
+	int32_t len;
+
+	sp = krb5_storage_from_mem(d[index].buf, d[index].len);
+	if (sp == NULL) {
+	    kcm_log (0, "krb5_storage_from_mem failed");
+	    ret = -1;
+	} else {
+	    krb5_ret_int32(sp, &len);
+	    krb5_storage_free(sp);
+	    if (d[index].len - 4 >= len) {
+		memmove(d[index].buf, d[index].buf + 4, d[index].len - 4);
+		ret = 1;
+	    } else
+		ret = 0;
+	}
+    }
+    if (ret < 0)
+	return;
+    else if (ret == 1) {
+	do_request(d[index].buf, d[index].len, &d[index]);
+	clear_descr(d + index);
+    }
+}
+
+void
+kcm_loop(void)
+{
+    struct descr *d;
+    int ndescr;
+
+    ndescr = init_sockets(&d);
+    if (ndescr <= 0)
+	krb5_errx(kcm_context, 1, "No sockets!");
+    while (exit_flag == 0){
+	struct timeval tmout;
+	fd_set fds;
+	int min_free = -1;
+	int max_fd = 0;
+	int i;
+
+	FD_ZERO(&fds);
+	for(i = 0; i < ndescr; i++) {
+	    if (d[i].s >= 0){
+		if(d[i].type == SOCK_STREAM && 
+		   d[i].timeout && d[i].timeout < time(NULL)) {
+		    kcm_log(1, "Stream connection from %d expired after %lu bytes",
+			    d[i].peercred.pid, (unsigned long)d[i].len);
+		    clear_descr(&d[i]);
+		    continue;
+		}
+		if (max_fd < d[i].s)
+		    max_fd = d[i].s;
+		if (max_fd >= FD_SETSIZE)
+		    krb5_errx(kcm_context, 1, "fd too large");
+		FD_SET(d[i].s, &fds);
+	    } else if (min_free < 0 || i < min_free)
+		min_free = i;
+	}
+	if (min_free == -1) {
+	    struct descr *tmp;
+	    tmp = realloc(d, (ndescr + 4) * sizeof(*d));
+	    if(tmp == NULL)
+		krb5_warnx(kcm_context, "No memory");
+	    else {
+		d = tmp;
+		reinit_descrs (d, ndescr);
+		memset(d + ndescr, 0, 4 * sizeof(*d));
+		for(i = ndescr; i < ndescr + 4; i++)
+		    init_descr (&d[i]);
+		min_free = ndescr;
+		ndescr += 4;
+	    }
+	}
+
+	tmout.tv_sec = STREAM_TIMEOUT;
+	tmout.tv_usec = 0;
+	switch (select(max_fd + 1, &fds, 0, 0, &tmout)){
+	case 0:
+	    kcm_run_events(kcm_context, time(NULL));
+	    break;
+	case -1:
+	    if (errno != EINTR)
+		krb5_warn(kcm_context, errno, "select");
+	    break;
+	default:
+	    for(i = 0; i < ndescr; i++) {
+		if(d[i].s >= 0 && FD_ISSET(d[i].s, &fds)) {
+		    if (d[i].type == SOCK_STREAM)
+			handle_stream(d, i, min_free);
+		}
+	    }
+	    kcm_run_events(kcm_context, time(NULL));
+	}
+    }
+    if (d->path != NULL)
+	unlink(d->path);
+    free(d);
+}
+
