@@ -66,7 +66,7 @@
 		uint32 bottom;
 	} spoolss_FormInfo1;
 
-	typedef struct {
+	typedef [public] struct {
 		[relative] nstring *servername;
 		[relative] nstring *printername;
 		[relative] nstring *sharename;
@@ -101,7 +101,7 @@
 		uint32 attributes;
 	} spoolss_PrinterInfo4;
 
-	typedef struct {
+	typedef [public] struct {
 		[relative] nstring *printername;
 		[relative] nstring *portname;
 		uint32 attributes;
