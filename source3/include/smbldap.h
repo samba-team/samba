@@ -139,6 +139,7 @@ BOOL smbldap_get_single_pstring (LDAP * ldap_struct, LDAPMessage * entry,
 
 struct smbldap_state {
 	LDAP *ldap_struct;
+	pid_t pid;
 	time_t last_ping;
 	/* retrive-once info */
 	const char *uri;

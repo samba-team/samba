@@ -780,6 +780,9 @@ void build_options(BOOL screen);
 
 	init_structs();
 
+	if (!init_guest_info())
+		return -1;
+
 #ifdef WITH_PROFILE
 	if (!profile_setup(False)) {
 		DEBUG(0,("ERROR: failed to setup profiling\n"));

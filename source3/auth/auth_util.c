@@ -884,7 +884,7 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
  Make (and fill) a user_info struct for a guest login.
 ***************************************************************************/
 
-NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
+static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
 	SAM_ACCOUNT *sampass = NULL;
@@ -917,6 +917,49 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 	}
 
 	return nt_status;
+}
+
+static auth_serversupplied_info *copy_serverinfo(auth_serversupplied_info *src)
+{
+	auth_serversupplied_info *dst;
+
+	if (!NT_STATUS_IS_OK(make_server_info(&dst)))
+		return NULL;
+
+	dst->guest = src->guest;
+	dst->uid = src->uid;
+	dst->gid = src->gid;
+	dst->n_groups = src->n_groups;
+	if (src->n_groups != 0)
+		dst->groups = memdup(src->groups, sizeof(gid_t)*dst->n_groups);
+	else
+		dst->groups = NULL;
+	dst->ptok = dup_nt_token(src->ptok);
+	dst->user_session_key = data_blob(src->user_session_key.data,
+					  src->user_session_key.length);
+	dst->lm_session_key = data_blob(src->lm_session_key.data,
+					  src->lm_session_key.length);
+	pdb_copy_sam_account(src->sam_account, &dst->sam_account);
+	dst->pam_handle = NULL;
+	dst->unix_name = smb_xstrdup(src->unix_name);
+
+	return dst;
+}
+
+static auth_serversupplied_info *guest_info = NULL;
+
+BOOL init_guest_info(void)
+{
+	if (guest_info != NULL)
+		return True;
+
+	return NT_STATUS_IS_OK(make_new_server_info_guest(&guest_info));
+}
+
+NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
+{
+	*server_info = copy_serverinfo(guest_info);
+	return (*server_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
 /***************************************************************************
