@@ -415,14 +415,14 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	pstrcpy(p, workstation); 
 	strupper(p);
 	p += 16;
-	SSVAL(p, 0, BUFFER_SIZE);
+	SSVAL(p, 0, CLI_BUFFER_SIZE);
 	p += 2;
-	SSVAL(p, 0, BUFFER_SIZE);
+	SSVAL(p, 0, CLI_BUFFER_SIZE);
 	p += 2;
 	
 	if (cli_api(cli, 
                     param, PTR_DIFF(p,param),1024,  /* param, length, max */
-                    NULL, 0, BUFFER_SIZE,           /* data, length, max */
+                    NULL, 0, CLI_BUFFER_SIZE,           /* data, length, max */
                     &rparam, &rprcnt,               /* return params, return size */
                     &rdata, &rdrcnt                 /* return data, return size */
                    )) {
@@ -466,12 +466,12 @@ BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, c
   pstrcpy(p,"B13BWz");
   p = skip_string(p,1);
   SSVAL(p,0,1);
-  SSVAL(p,2,BUFFER_SIZE);
+  SSVAL(p,2,CLI_BUFFER_SIZE);
   p += 4;
 
   if (cli_api(cli, 
               param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
-              NULL, 0, BUFFER_SIZE,            /* data, length, maxlen */
+              NULL, 0, CLI_BUFFER_SIZE,            /* data, length, maxlen */
               &rparam, &rprcnt,                /* return params, length */
               &rdata, &rdrcnt))                /* return data, length */
     {
@@ -533,7 +533,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
   
 	p = skip_string(p,1);
 	SSVAL(p,0,uLevel);
-	SSVAL(p,2,BUFFER_SIZE);
+	SSVAL(p,2,CLI_BUFFER_SIZE);
 	p += 4;
 	SIVAL(p,0,stype);
 	p += 4;
@@ -543,7 +543,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	
 	if (cli_api(cli, 
                     param, PTR_DIFF(p,param), 8,        /* params, length, max */
-                    NULL, 0, BUFFER_SIZE,               /* data, length, max */
+                    NULL, 0, CLI_BUFFER_SIZE,               /* data, length, max */
                     &rparam, &rprcnt,                   /* return params, return size */
                     &rdata, &rdrcnt                     /* return data, return size */
                    )) {
@@ -669,7 +669,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		cli_setup_packet(cli);
 		
 		CVAL(cli->outbuf,smb_vwv0) = 0xFF;
-		SSVAL(cli->outbuf,smb_vwv2,BUFFER_SIZE);
+		SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
 		SSVAL(cli->outbuf,smb_vwv3,2);
 		SSVAL(cli->outbuf,smb_vwv4,cli->pid);
 		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
@@ -2097,6 +2097,8 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->serverzone = TimeDiff(time(NULL));
 	}
 
+	cli->max_xmit = MIN(cli->max_xmit, CLI_BUFFER_SIZE);
+
 	return True;
 }
 
@@ -2199,8 +2201,8 @@ BOOL cli_initialise(struct cli_state *cli)
 	cli->vuid = UID_FIELD_INVALID;
 	cli->protocol = PROTOCOL_NT1;
 	cli->timeout = 20000;
-	cli->bufsize = 0x10000;
-	cli->max_xmit = cli->bufsize - 4;
+	cli->bufsize = CLI_BUFFER_SIZE+4;
+	cli->max_xmit = cli->bufsize;
 	cli->outbuf = (char *)malloc(cli->bufsize);
 	cli->inbuf = (char *)malloc(cli->bufsize);
 	if (!cli->outbuf || !cli->inbuf)
