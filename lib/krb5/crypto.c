@@ -147,6 +147,7 @@ static krb5_error_code hmac(krb5_context context,
 			    struct key_data *keyblock,
 			    Checksum *result);
 static void free_key_data(krb5_context context, struct key_data *key);
+static krb5_error_code usage2arcfour (krb5_context, int *);
 
 /************************************************************
  *                                                          *
@@ -1822,18 +1823,18 @@ get_checksum_key(krb5_context context,
 }
 
 static krb5_error_code
-do_checksum (krb5_context context,
-	     struct checksum_type *ct,
-	     krb5_crypto crypto,
-	     unsigned usage,
-	     void *data,
-	     size_t len,
-	     Checksum *result)
+create_checksum (krb5_context context,
+		 struct checksum_type *ct,
+		 krb5_crypto crypto,
+		 unsigned usage,
+		 void *data,
+		 size_t len,
+		 Checksum *result)
 {
     krb5_error_code ret;
     struct key_data *dkey;
     int keyed_checksum;
-
+    
     keyed_checksum = (ct->flags & F_KEYED) != 0;
     if(keyed_checksum && crypto == NULL) {
 	krb5_clear_error_string (context);
@@ -1851,17 +1852,26 @@ do_checksum (krb5_context context,
     return 0;
 }
 
-static krb5_error_code
-create_checksum(krb5_context context,
-		krb5_crypto crypto,
-		unsigned usage, /* not krb5_key_usage */
-		krb5_cksumtype type, /* 0 -> pick from crypto */
-		void *data,
-		size_t len,
-		Checksum *result)
+static int
+arcfour_checksum_p(struct checksum_type *ct, krb5_crypto crypto)
+{
+    return (ct->type == CKSUMTYPE_HMAC_MD5) &&
+	(crypto->key.key->keytype != KEYTYPE_ARCFOUR);
+}
+
+krb5_error_code
+krb5_create_checksum(krb5_context context,
+		     krb5_crypto crypto,
+		     krb5_key_usage usage,
+		     int type,
+		     void *data,
+		     size_t len,
+		     Checksum *result)
 {
     struct checksum_type *ct = NULL;
+    unsigned keyusage;
 
+    /* type 0 -> pick from crypto */
     if (type) {
 	ct = _find_checksum(type);
     } else if (crypto) {
@@ -1875,21 +1885,15 @@ create_checksum(krb5_context context,
 			       type);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
-    return do_checksum (context, ct, crypto, usage, data, len, result);
-}
 
-krb5_error_code
-krb5_create_checksum(krb5_context context,
-		     krb5_crypto crypto,
-		     krb5_key_usage usage,
-		     int type,
-		     void *data,
-		     size_t len,
-		     Checksum *result)
-{
-    return create_checksum(context, crypto, 
-			   CHECKSUM_USAGE(usage), 
-			   type, data, len, result);
+    if (arcfour_checksum_p(ct, crypto)) {
+	keyusage = usage;
+	usage2arcfour(context, &keyusage);
+    } else
+	keyusage = CHECKSUM_USAGE(usage);
+
+    return create_checksum(context, ct, crypto, keyusage,
+			   data, len, result);
 }
 
 static krb5_error_code
@@ -1907,7 +1911,7 @@ verify_checksum(krb5_context context,
     struct checksum_type *ct;
 
     ct = _find_checksum(cksum->cksumtype);
-    if(ct == NULL) {
+    if (ct == NULL) {
 	krb5_set_error_string (context, "checksum type %d not supported",
 			       cksum->cksumtype);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
@@ -1953,8 +1957,24 @@ krb5_verify_checksum(krb5_context context,
 		     size_t len,
 		     Checksum *cksum)
 {
-    return verify_checksum(context, crypto, 
-			   CHECKSUM_USAGE(usage), data, len, cksum);
+    struct checksum_type *ct;
+    unsigned keyusage;
+
+    ct = _find_checksum(cksum->cksumtype);
+    if(ct == NULL) {
+	krb5_set_error_string (context, "checksum type %d not supported",
+			       cksum->cksumtype);
+	return KRB5_PROG_SUMTYPE_NOSUPP;
+    }
+
+    if (arcfour_checksum_p(ct, crypto)) {
+	keyusage = usage;
+	usage2arcfour(context, &keyusage);
+    } else
+	keyusage = CHECKSUM_USAGE(usage);
+
+    return verify_checksum(context, crypto, keyusage,
+			   data, len, cksum);
 }
 
 krb5_error_code
@@ -2388,6 +2408,12 @@ usage2arcfour (krb5_context context, int *usage)
     case KRB5_KU_KRB_PRIV :
 	*usage = 0;
 	return 0;
+    case KRB5_KU_USAGE_SEAL :
+	*usage = 13;
+	return 0;
+    case KRB5_KU_USAGE_SIGN :
+	*usage = 15;
+	return 0;
     case KRB5_KU_KRB_CRED :
     case KRB5_KU_KRB_SAFE_CKSUM :
     case KRB5_KU_OTHER_ENCRYPTED :
@@ -2396,8 +2422,6 @@ usage2arcfour (krb5_context context, int *usage)
     case KRB5_KU_AD_KDC_ISSUED :
     case KRB5_KU_MANDATORY_TICKET_EXTENSION :
     case KRB5_KU_AUTH_DATA_TICKET_EXTENSION :
-    case KRB5_KU_USAGE_SEAL :
-    case KRB5_KU_USAGE_SIGN :
     case KRB5_KU_USAGE_SEQ :
     default :
 	krb5_set_error_string(context, "unknown arcfour usage type %d", *usage);
@@ -2837,9 +2861,9 @@ encrypt_internal_derived(krb5_context context,
     memcpy(q, data, len);
     
     ret = create_checksum(context, 
+			  et->keyed_checksum,
 			  crypto, 
 			  INTEGRITY_USAGE(usage),
-			  et->keyed_checksum->type,
 			  p, 
 			  block_sz,
 			  &cksum);
@@ -2906,9 +2930,9 @@ encrypt_internal(krb5_context context,
     memcpy(q, data, len);
 
     ret = create_checksum(context, 
+			  et->checksum,
 			  crypto,
 			  0,
-			  et->checksum->type,
 			  p, 
 			  block_sz,
 			  &cksum);
