@@ -70,7 +70,7 @@ typedef struct smb_sign_info {
 struct cli_state {
 	int port;
 	int fd;
-	int smb_read_error; /* Copy of last read error. */
+	int smb_rw_error; /* Copy of last read or write error. */
 	uint16 cnum;
 	uint16 pid;
 	uint16 mid;
