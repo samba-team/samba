@@ -53,7 +53,7 @@ int smbd_server_fd(void)
 	return server_fd;
 }
 
-void smbd_set_server_fd(int fd)
+static void smbd_set_server_fd(int fd)
 {
 	server_fd = fd;
 	client_setfd(fd);
