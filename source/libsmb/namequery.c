@@ -748,7 +748,7 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 
 	DEBUG(3,("resolve_lmhosts: Attempting lmhosts lookup for name %s<0x%x>\n", name, name_type));
 
-	fp = startlmhosts( LMHOSTSFILE );
+	fp = startlmhosts(dyn_LMHOSTSFILE);
 	if(fp) {
 		while (getlmhostsent(fp, lmhost_name, &name_type2, &return_ip)) {
 			if (strequal(name, lmhost_name) && 

@@ -28,4 +28,4 @@ extern char const *dyn_SBINDIR,
 	*dyn_SWATDIR;
 
 extern pstring dyn_CONFIGFILE;
-extern pstring dyn_LOGFILEBASE;
+extern pstring dyn_LOGFILEBASE, dyn_LMHOSTSFILE;
