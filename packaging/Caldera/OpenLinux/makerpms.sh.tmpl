@@ -24,27 +24,27 @@ fi
 
 # Start preparing the packages...
 if [ $devel -ne 0 ]; then
-        ( cd ../../../.. ; chown -R ${USERID}.${GRPID} samba; mv samba samba-PVERSION )
-        ( cd ../../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba-PVERSION; mv samba-PVERSION samba )
+        ( cd ../../../.. ; chown -R ${USERID}.${GRPID} samba3; mv samba3 samba-PVERSION )
+        ( cd ../../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba-PVERSION; mv samba-PVERSION samba3 )
 else
         ( cd ../../../.. ; chown -R ${USERID}.${GRPID} samba-PVERSION )
         ( cd ../../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba-PVERSION )
 fi
 
 cp -af *.spec *.spec-lsb $SPECDIR
-if [ $team -ne 0 ]; then
-	cp *.spec-team $SPECDIR
-fi
+#if [ $team -ne 0 ]; then
+#	cp *.spec-team $SPECDIR
+#fi
 for i in `ls *.patch`
 do
 	cp $i $SRCDIR/
 done
 # Start building the package
 cd $SPECDIR
-if [ $old -eq 0 ]; then
-mv -f samba2.spec samba2.spec-nonlsb
-ln -f samba2.spec-lsb samba3.spec
-fi
+#if [ $old -eq 0 ]; then
+#mv -f samba2.spec samba2.spec-nonlsb
+#ln -f samba2.spec-lsb samba3.spec
+#fi
 if [ $team -ne 0 ]; then
 #	mv -f samba3.spec samba3.spec-lsb
 #	ln -f samba3.spec-team samba3.spec
