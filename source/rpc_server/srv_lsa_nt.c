@@ -174,7 +174,7 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 			(*mapped_count)++;
 		} else {
 			dom_idx = -1;
-			rid = 0xffffffff;
+			rid = 0;
 			name_type = SID_NAME_UNKNOWN;
 		}
 
@@ -202,11 +202,6 @@ static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 	r_l->dom_rid      = rid2;
 
 	r_l->mapped_count = mapped_count;
-
-	if (mapped_count == 0)
-		r_l->status = NT_STATUS_NONE_MAPPED;
-	else
-		r_l->status = NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -252,9 +247,6 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 
 		/* Lookup sid from winbindd */
 
-		memset(dom_name, '\0', sizeof(dom_name));
-		memset(name, '\0', sizeof(name));
-
 		status = lookup_sid(&find_sid, dom_name, name, &sid_name_use);
 
 		DEBUG(5, ("init_lsa_trans_names: %s\n", status ? "found" : 
@@ -262,20 +254,24 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 
 		if (!status) {
 			sid_name_use = SID_NAME_UNKNOWN;
+			memset(dom_name, '\0', sizeof(dom_name));
+			sid_to_string(name, &find_sid);
+			dom_idx = -1;
+
+			DEBUG(10,("init_lsa_trans_names: added unknown user '%s' to "
+				  "referenced list.\n", name ));
 		} else {
 			(*mapped_count)++;
+			/* Store domain sid in ref array */
+			if (find_sid.num_auths == 5) {
+				sid_split_rid(&find_sid, &rid);
+			}
+			dom_idx = init_dom_ref(ref, dom_name, &find_sid);
+
+			DEBUG(10,("init_lsa_trans_names: added user '%s\\%s' to "
+				  "referenced list.\n", dom_name, name ));
+
 		}
-
-		/* Store domain sid in ref array */
-
-		if (find_sid.num_auths == 5) {
-			sid_split_rid(&find_sid, &rid);
-		}
-
-		dom_idx = init_dom_ref(ref, dom_name, &find_sid);
-
-		DEBUG(10,("init_lsa_trans_names: added user '%s\\%s' to "
-			  "referenced list.\n", dom_name, name ));
 
 		init_lsa_trans_name(&trn->name[total], &trn->uni_name[total],
 					sid_name_use, name, dom_idx);
@@ -301,11 +297,6 @@ static void init_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 	r_l->dom_ref      = ref;
 	r_l->names        = names;
 	r_l->mapped_count = mapped_count;
-
-	if (mapped_count == 0)
-		r_l->status = NT_STATUS_NONE_MAPPED;
-	else
-		r_l->status = NT_STATUS_OK;
 }
 
 static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *sd_size)
@@ -665,6 +656,12 @@ done:
 
 	/* set up the LSA Lookup SIDs response */
 	init_lsa_trans_names(p->mem_ctx, ref, names, num_entries, sid, &mapped_count);
+	if (mapped_count == 0)
+		r_u->status = NT_STATUS_NONE_MAPPED;
+	else if (mapped_count != num_entries)
+		r_u->status = STATUS_SOME_UNMAPPED;
+	else
+		r_u->status = NT_STATUS_OK;
 	init_reply_lookup_sids(r_u, ref, names, mapped_count);
 
 	return r_u->status;
@@ -709,6 +706,12 @@ done:
 
 	/* set up the LSA Lookup RIDs response */
 	init_lsa_rid2s(ref, rids, num_entries, names, &mapped_count, p->endian);
+	if (mapped_count == 0)
+		r_u->status = NT_STATUS_NONE_MAPPED;
+	else if (mapped_count != num_entries)
+		r_u->status = STATUS_SOME_UNMAPPED;
+	else
+		r_u->status = NT_STATUS_OK;
 	init_reply_lookup_names(r_u, ref, num_entries, rids, mapped_count);
 
 	return r_u->status;
@@ -1250,7 +1253,7 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 
 				/* This should be a 'netbios domain -> DNS domain' mapping */
 				dnsdomname[0] = '\0';
-				get_mydomname(dnsdomname);
+				get_mydnsdomname(dnsdomname);
 				strlower_m(dnsdomname);
 				
 				dns_name = dnsdomname;

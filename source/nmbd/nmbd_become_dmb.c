@@ -37,11 +37,11 @@ static void become_domain_master_fail(struct subnet_record *subrec,
                                       struct response_record *rrec,
                                       struct nmb_name *fail_name)
 {
-	nstring failname;
+	unstring failname;
 	struct work_record *work;
 	struct server_record *servrec;
 
-	pull_ascii_nstring(failname, fail_name->name);
+	pull_ascii_nstring(failname, sizeof(failname), fail_name->name);
 	work = find_workgroup_on_subnet(subrec, failname);
 	if(!work) {
 		DEBUG(0,("become_domain_master_fail: Error - cannot find \
@@ -80,11 +80,11 @@ static void become_domain_master_stage2(struct subnet_record *subrec,
                                         uint16 nb_flags,
                                         int ttl, struct in_addr registered_ip)
 {
-	nstring regname;
+	unstring regname;
 	struct work_record *work;
 	struct server_record *servrec;
 
-	pull_ascii_nstring(regname, registered_name->name);
+	pull_ascii_nstring(regname, sizeof(regname), registered_name->name);
 	work = find_workgroup_on_subnet( subrec, regname);
 
 	if(!work) {
@@ -200,8 +200,8 @@ static void become_domain_master_query_success(struct subnet_record *subrec,
                         struct nmb_name *nmbname, struct in_addr ip, 
                         struct res_rec *rrec)
 {
-	nstring name;
-	pull_ascii_nstring(name, nmbname->name);
+	unstring name;
+	pull_ascii_nstring(name, sizeof(name), nmbname->name);
 
 	/* If the given ip is not ours, then we can't become a domain
 		controler as the name is already registered.
@@ -241,7 +241,7 @@ static void become_domain_master_query_fail(struct subnet_record *subrec,
                                     struct response_record *rrec,
                                     struct nmb_name *question_name, int fail_code)
 {
-	nstring name;
+	unstring name;
 
 	/* If the query was unicast, and the error is not NAM_ERR (name didn't exist),
 		then this is a failure. Otherwise, not finding the name is what we want. */
@@ -254,7 +254,7 @@ querying WINS server for name %s.\n",
 	}
 
 	/* Otherwise - not having the name allows us to register it. */
-	pull_ascii_nstring(name, question_name->name);
+	pull_ascii_nstring(name, sizeof(name), question_name->name);
 	become_domain_master_stage1(subrec, name);
 }
 

@@ -219,7 +219,7 @@ static WINBINDD_GR* string2group( char *string )
 		if ( num_gr_members ) {
 			fstring buffer;
 			
-			gr_members = (char**)smb_xmalloc(sizeof(char*)*num_gr_members+1);
+			gr_members = (char**)smb_xmalloc(sizeof(char*)*(num_gr_members+1));
 			
 			i = 0;
 			while ( next_token(&str, buffer, ",", sizeof(buffer)) && i<num_gr_members ) {
@@ -436,7 +436,7 @@ WINBINDD_PW* wb_getpwuid( const uid_t uid )
 /**********************************************************************
 **********************************************************************/
 
-BOOL wb_storepwnam( const WINBINDD_PW *pw )
+static BOOL wb_storepwnam( const WINBINDD_PW *pw )
 {
 	char *namekey, *uidkey;
 	TDB_DATA data;
@@ -566,7 +566,7 @@ WINBINDD_GR* wb_getgrgid( gid_t gid )
 /**********************************************************************
 **********************************************************************/
 
-BOOL wb_storegrnam( const WINBINDD_GR *grp )
+static BOOL wb_storegrnam( const WINBINDD_GR *grp )
 {
 	char *namekey, *gidkey;
 	TDB_DATA data;
@@ -661,9 +661,11 @@ static BOOL wb_delgrpmember( WINBINDD_GR *grp, const char *user )
 	if ( !grp || !user )
 		return False;
 	
-	for ( i=0; i<grp->num_gr_mem && !found; i++ ) {
-		if ( StrCaseCmp( grp->gr_mem[i], user ) == 0 ) 
+	for ( i=0; i<grp->num_gr_mem; i++ ) {
+		if ( StrCaseCmp( grp->gr_mem[i], user ) == 0 ) {
 			found = True;
+			break;
+		}
 	}
 	
 	if ( !found ) 
@@ -672,8 +674,10 @@ static BOOL wb_delgrpmember( WINBINDD_GR *grp, const char *user )
 	/* still some remaining members */
 
 	if ( grp->num_gr_mem > 1 ) {
-		memmove( grp->gr_mem[i], grp->gr_mem[i+1], sizeof(char*)*(grp->num_gr_mem-(i+1)) );
+		SAFE_FREE(grp->gr_mem[i]);
 		grp->num_gr_mem--;
+		grp->gr_mem[i] = grp->gr_mem[grp->num_gr_mem];
+		grp->gr_mem[grp->num_gr_mem] = NULL;
 	}
 	else {	/* last one */
 		free_winbindd_gr( grp );
@@ -853,7 +857,7 @@ enum winbindd_result winbindd_create_user(struct winbindd_cli_state *state)
 {
 	char *user, *group;
 	unid_t id;
-	WINBINDD_PW pw;
+	WINBINDD_PW pw, *pw_check;
 	WINBINDD_GR *wb_grp;
 	struct group *unix_grp;
 	gid_t primary_gid;
@@ -874,6 +878,13 @@ enum winbindd_result winbindd_create_user(struct winbindd_cli_state *state)
 	
 	DEBUG(3, ("[%5lu]: create_user: user=>(%s), group=>(%s)\n", 
 		(unsigned long)state->pid, user, group));
+
+	if ( (pw_check=wb_getpwnam(user)) != NULL ) {
+		DEBUG(0,("winbindd_create_user: Refusing to create user that already exists (%s)\n", 
+			user));
+		return WINBINDD_ERROR;
+	}
+
 		
 	if ( !*group )
 		group = lp_template_primary_group();
@@ -949,7 +960,7 @@ enum winbindd_result winbindd_create_group(struct winbindd_cli_state *state)
 {
 	char *group;
 	unid_t id;
-	WINBINDD_GR grp;
+	WINBINDD_GR grp, *grp_check;
 	uint32 flags = state->request.flags;
 	uint32 rid;
 	
@@ -964,7 +975,13 @@ enum winbindd_result winbindd_create_group(struct winbindd_cli_state *state)
 	
 	DEBUG(3, ("[%5lu]: create_group: (%s)\n", (unsigned long)state->pid, group));
 	
-	/* get a new uid */
+	if ( (grp_check=wb_getgrnam(group)) != NULL ) {
+		DEBUG(0,("winbindd_create_group: Refusing to create group that already exists (%s)\n", 
+			group));
+		return WINBINDD_ERROR;
+	}
+	
+	/* get a new gid */
 	
 	if ( !NT_STATUS_IS_OK(idmap_allocate_id( &id, ID_GROUPID)) ) {
 		DEBUG(0,("winbindd_create_group: idmap_allocate_id() failed!\n"));
@@ -1070,7 +1087,7 @@ enum winbindd_result winbindd_remove_user_from_group(struct winbindd_cli_state *
 	group = state->request.data.acct_mgt.groupname;
 	user = state->request.data.acct_mgt.username;
 	
-	DEBUG(3, ("[%5lu]:  remove_user_to_group: delete %s from %s\n", (unsigned long)state->pid, 
+	DEBUG(3, ("[%5lu]:  remove_user_from_group: delete %s from %s\n", (unsigned long)state->pid, 
 		user, group));
 	
 	/* don't worry about checking the username since we're removing it anyways */
@@ -1078,7 +1095,7 @@ enum winbindd_result winbindd_remove_user_from_group(struct winbindd_cli_state *
 	/* make sure it is a valid group */
 	
 	if ( !(grp = wb_getgrnam( group )) ) {
-		DEBUG(4,("winbindd_remove_user_to_group: Cannot remove a user to a non-extistent group\n"));
+		DEBUG(4,("winbindd_remove_user_from_group: Cannot remove a user from a non-extistent group\n"));
 		return WINBINDD_ERROR;	
 	}
 	

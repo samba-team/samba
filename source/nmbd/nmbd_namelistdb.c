@@ -45,13 +45,13 @@ void set_samba_nb_type(void)
 static void upcase_name( struct nmb_name *target, struct nmb_name *source )
 {
 	int i;
-	nstring targ;
+	unstring targ;
 	fstring scope;
 
 	if( NULL != source )
 		memcpy( target, source, sizeof( struct nmb_name ) );
 
-	pull_ascii_nstring(targ, target->name);
+	pull_ascii_nstring(targ, sizeof(targ), target->name);
 	strupper_m( targ );
 	push_ascii_nstring( target->name, targ);
 
@@ -255,8 +255,8 @@ void standard_success_register(struct subnet_record *subrec,
 
 	namerec = find_name_on_subnet( subrec, nmbname, FIND_SELF_NAME );
 	if( NULL == namerec ) {
-		nstring name;
-		pull_ascii_nstring(name, nmbname->name);
+		unstring name;
+		pull_ascii_nstring(name, sizeof(name), nmbname->name);
 		add_name_to_subnet( subrec, name, nmbname->name_type,
 			nb_flags, ttl, SELF_NAME, 1, &registered_ip );
 	} else {

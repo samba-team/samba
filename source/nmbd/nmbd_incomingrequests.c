@@ -58,7 +58,7 @@ void process_name_release_request(struct subnet_record *subrec,
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct in_addr owner_ip;
 	struct nmb_name *question = &nmb->question.question_name;
-	nstring qname;
+	unstring qname;
 	BOOL bcast = nmb->header.nm_flags.bcast;
 	uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
 	BOOL group = (nb_flags & NB_GROUP) ? True : False;
@@ -98,7 +98,7 @@ subnet %s from owner IP %s\n",
 	 * names and *don't set the group bit* !!!!!
 	 */
 
-	pull_ascii_nstring(qname, question->name);
+	pull_ascii_nstring(qname, sizeof(qname), question->name);
 	if( !group && !ismyip(owner_ip) && strequal(qname, lp_workgroup()) && 
 			((question->name_type == 0x0) || (question->name_type == 0x1e))) {
 		DEBUG(6,("process_name_release_request: FTP OnNet bug workaround. Ignoring \
@@ -275,11 +275,13 @@ We put our own names first, then in alphabetical order.
 
 static int status_compare(char *n1,char *n2)
 {
-	nstring name1, name2;
+	unstring name1, name2;
 	int l1,l2,l3;
 
-	pull_ascii_nstring(name1, n1);
-	pull_ascii_nstring(name2, n2);
+	memset(name1, '\0', sizeof(name1));
+	memset(name2, '\0', sizeof(name2));
+	pull_ascii_nstring(name1, sizeof(name1), n1);
+	pull_ascii_nstring(name2, sizeof(name2), n2);
 	n1 = name1;
 	n2 = name2;
 
@@ -298,7 +300,7 @@ static int status_compare(char *n1,char *n2)
 			(l1!=l3 || strncmp(n1,global_myname(),l3) != 0))
 		return 1;
 
-	return memcmp(n1,n2,sizeof(nstring));
+	return memcmp(n1,n2,sizeof(name1));
 }
 
 /****************************************************************************
@@ -308,14 +310,14 @@ static int status_compare(char *n1,char *n2)
 void process_node_status_request(struct subnet_record *subrec, struct packet_struct *p)
 {
 	struct nmb_packet *nmb = &p->packet.nmb;
-	nstring qname;
+	unstring qname;
 	int ques_type = nmb->question.question_name.name_type;
 	char rdata[MAX_DGRAM_SIZE];
 	char *countptr, *buf, *bufend, *buf0;
 	int names_added,i;
 	struct name_record *namerec;
 
-	pull_ascii_nstring(qname, nmb->question.question_name.name);
+	pull_ascii_nstring(qname, sizeof(qname), nmb->question.question_name.name);
 
 	DEBUG(3,("process_node_status_request: status request for name %s from IP %s on \
 subnet %s.\n", nmb_namestr(&nmb->question.question_name), inet_ntoa(p->ip), subrec->subnet_name));
@@ -342,9 +344,9 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
 	while (buf < bufend) {
 		if( (namerec->data.source == SELF_NAME) || (namerec->data.source == PERMANENT_NAME) ) {
 			int name_type = namerec->name.name_type;
-     			nstring name;
+			unstring name;
 
-			pull_ascii_nstring(name, namerec->name.name);
+			pull_ascii_nstring(name, sizeof(name), namerec->name.name);
 			strupper_m(name);
 			if (!strequal(name,"*") &&
 					!strequal(name,"__SAMBA__") &&
@@ -352,10 +354,11 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
 					ques_type < 0x1b || ques_type >= 0x20 ||
 					strequal(qname, name))) {
 				/* Start with the name. */
-				nstring tmp_name;
-				memset(tmp_name,'\0',sizeof(tmp_name));
-				snprintf(tmp_name, sizeof(tmp_name), "%-15.15s",name);
-        			push_ascii_nstring(buf, tmp_name);
+				size_t len;
+				push_ascii_nstring(buf, name);
+				len = strlen(buf);
+				memset(buf + len, ' ', MAX_NETBIOSNAME_LEN - len - 1);
+				buf[MAX_NETBIOSNAME_LEN - 1] = '\0';
 
 				/* Put the name type and netbios flags in the buffer. */
 

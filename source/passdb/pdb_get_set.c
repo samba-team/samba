@@ -72,6 +72,14 @@ time_t pdb_get_kickoff_time (const SAM_ACCOUNT *sampass)
 		return (-1);
 }
 
+time_t pdb_get_bad_password_time (const SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return (sampass->private.bad_password_time);
+	else
+		return (-1);
+}
+
 time_t pdb_get_pass_last_set_time (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
@@ -306,10 +314,10 @@ const char* pdb_get_munged_dial (const SAM_ACCOUNT *sampass)
 		return (NULL);
 }
 
-uint32 pdb_get_unknown_3 (const SAM_ACCOUNT *sampass)
+uint32 pdb_get_fields_present (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
-		return (sampass->private.unknown_3);
+		return (sampass->private.fields_present);
 	else
 		return (-1);
 }
@@ -388,6 +396,17 @@ BOOL pdb_set_kickoff_time (SAM_ACCOUNT *sampass, time_t mytime, enum pdb_value_s
 	sampass->private.kickoff_time = mytime;
 
 	return pdb_set_init_flags(sampass, PDB_KICKOFFTIME, flag);
+}
+
+BOOL pdb_set_bad_password_time (SAM_ACCOUNT *sampass, time_t mytime, 
+				enum pdb_value_state flag)
+{
+	if (!sampass)
+		return False;
+
+	sampass->private.bad_password_time = mytime;
+
+	return pdb_set_init_flags(sampass, PDB_BAD_PASSWORD_TIME, flag);
 }
 
 BOOL pdb_set_pass_can_change_time (SAM_ACCOUNT *sampass, time_t mytime, enum pdb_value_state flag)
@@ -990,14 +1009,14 @@ BOOL pdb_set_plaintext_pw_only (SAM_ACCOUNT *sampass, const char *password, enum
 	return pdb_set_init_flags(sampass, PDB_PLAINTEXT_PW, flag);
 }
 
-BOOL pdb_set_unknown_3 (SAM_ACCOUNT *sampass, uint32 unkn, enum pdb_value_state flag)
+BOOL pdb_set_fields_present (SAM_ACCOUNT *sampass, uint32 fields_present, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private.unknown_3 = unkn;
+	sampass->private.fields_present = fields_present;
 	
-	return pdb_set_init_flags(sampass, PDB_UNKNOWN3, flag);
+	return pdb_set_init_flags(sampass, PDB_FIELDS_PRESENT, flag);
 }
 
 BOOL pdb_set_bad_password_count(SAM_ACCOUNT *sampass, uint16 bad_password_count, enum pdb_value_state flag)
@@ -1084,7 +1103,7 @@ BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
 		return False;
 
 	if (!account_policy_get(AP_MAX_PASSWORD_AGE, &expire) 
-	    || (expire==(uint32)-1)) {
+	    || (expire==(uint32)-1) || (expire == 0)) {
 		if (!pdb_set_pass_must_change_time (sampass, get_time_t_max(), PDB_CHANGED))
 			return False;
 	} else {
@@ -1120,13 +1139,24 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 	if (!sampass || !plaintext)
 		return False;
 	
-	nt_lm_owf_gen (plaintext, new_nt_p16, new_lanman_p16);
+	/* Calculate the MD4 hash (NT compatible) of the password */
+	E_md4hash(plaintext, new_nt_p16);
 
 	if (!pdb_set_nt_passwd (sampass, new_nt_p16, PDB_CHANGED)) 
 		return False;
 
-	if (!pdb_set_lanman_passwd (sampass, new_lanman_p16, PDB_CHANGED)) 
-		return False;
+	if (!E_deshash(plaintext, new_lanman_p16)) {
+		/* E_deshash returns false for 'long' passwords (> 14
+		   DOS chars).  This allows us to match Win2k, which
+		   does not store a LM hash for these passwords (which
+		   would reduce the effective password length to 14 */
+
+		if (!pdb_set_lanman_passwd (sampass, NULL, PDB_CHANGED)) 
+			return False;
+	} else {
+		if (!pdb_set_lanman_passwd (sampass, new_lanman_p16, PDB_CHANGED)) 
+			return False;
+	}
 
 	if (!pdb_set_plaintext_pw_only (sampass, plaintext, PDB_CHANGED)) 
 		return False;
@@ -1135,4 +1165,11 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 		return False;
 
 	return True;
+}
+
+/* check for any PDB_SET/CHANGED field and fill the appropriate mask bit */
+uint32 pdb_build_fields_present (SAM_ACCOUNT *sampass)
+{
+	/* value set to all for testing */
+	return 0x00ffffff;
 }

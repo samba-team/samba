@@ -1,7 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    tdb utility functions
-   Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Andrew Tridgell   1992-1998
+   Copyright (C) Rafal Szczesniak  2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -826,5 +827,3 @@ void tdb_search_list_free(TDB_LIST_NODE* node)
 		node = next_node;
 	};
 }
-
-

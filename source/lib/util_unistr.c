@@ -109,9 +109,9 @@ static int check_dos_char_slowly(smb_ucs2_t c)
 	char buf[10];
 	smb_ucs2_t c2 = 0;
 	int len1, len2;
-	len1 = convert_string(CH_UCS2, CH_DOS, &c, 2, buf, sizeof(buf));
+	len1 = convert_string(CH_UCS2, CH_DOS, &c, 2, buf, sizeof(buf),False);
 	if (len1 == 0) return 0;
-	len2 = convert_string(CH_DOS, CH_UCS2, buf, len1, &c2, 2);
+	len2 = convert_string(CH_DOS, CH_UCS2, buf, len1, &c2, 2,False);
 	if (len2 != 2) return 0;
 	return (c == c2);
 }

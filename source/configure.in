@@ -14,22 +14,29 @@ AC_ENABLE_SHARED
 # ones...
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
+lockdir="\${VARDIR}/locks"
+piddir="\${VARDIR}/locks"
+mandir="\${prefix}/man"
+logfilebase="\${VARDIR}"
+privatedir="\${prefix}/private"
+libdir="\${prefix}/lib"
+configdir="\${LIBDIR}"
+swatdir="\${prefix}/swat"
+
 AC_ARG_WITH(fhs, 
 [  --with-fhs              Use FHS-compliant paths (default=no)],
-    configdir="${sysconfdir}/samba"
+[ case "$withval" in
+  yes)
     lockdir="\${VARDIR}/lib/samba"
     piddir="\${VARDIR}/run"
     mandir="\${prefix}/share/man"
     logfilebase="\${VARDIR}/log/samba"
     privatedir="\${CONFIGDIR}/private"
     libdir="\${prefix}/lib/samba"
-    swatdir="\${DATADIR}/samba/swat",
-    configdir="\${LIBDIR}"
-    logfilebase="\${VARDIR}"
-    lockdir="\${VARDIR}/locks"
-    piddir="\${VARDIR}/locks"
-    privatedir="\${prefix}/private"
-    swatdir="\${prefix}/swat")
+    configdir="${sysconfdir}/samba"
+    swatdir="\${DATADIR}/samba/swat"
+    ;;
+  esac])
 
 #################################################
 # set private directory location
@@ -624,7 +631,7 @@ AC_CHECK_HEADERS(shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/
 AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h security/pam_appl.h security/pam_modules.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
-AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/cdefs.h glob.h)
+AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/cdefs.h glob.h)
 
 # For experimental utmp support (lastlog on some BSD-like systems)
 AC_CHECK_HEADERS(utmp.h utmpx.h lastlog.h)
@@ -919,6 +926,8 @@ AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
 # setbuffer, shmget, shm_open are needed for smbtorture
 AC_CHECK_FUNCS(setbuffer shmget shm_open backtrace_symbols)
+AC_CHECK_HEADERS(libexc.h)
+AC_CHECK_LIB(exc, trace_back_stack)
 
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
@@ -2210,7 +2219,9 @@ fi
 esac
 
 AC_CACHE_CHECK([for broken nisplus include files],samba_cv_BROKEN_NISPLUS_INCLUDE_FILES,[
-AC_TRY_COMPILE([#include <sys/acl.h>
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/acl.h>
 #if defined(HAVE_RPCSVC_NIS_H)
 #include <rpcsvc/nis.h>
 #endif],
@@ -2728,28 +2739,6 @@ if test x"$with_ads_support" != x"no"; then
                [Whether krb5_princ_component is available])
   fi
 
-  AC_CACHE_CHECK([for memory keytab support],
-		 samba_cv_HAVE_MEMORY_KEYTAB,[
-    AC_TRY_RUN([
-#include<krb5.h>
-  main()
-  {
-    krb5_context context;
-    krb5_keytab keytab;
-    
-    krb5_init_context(&context);
-    if (krb5_kt_resolve(context, "MEMORY:", &keytab))
-      exit(1);
-    exit(0);
-  }], 
-  samba_cv_HAVE_MEMORY_KEYTAB=yes,
-  samba_cv_HAVE_MEMORY_KEYTAB=no)])
-
-  if test x"$samba_cv_HAVE_MEMORY_KEYTAB" = x"yes"; then
-      AC_DEFINE(HAVE_MEMORY_KEYTAB,1,
-               [Whether in-memory keytabs are supported])
-  fi
-
   AC_CACHE_CHECK([for key in krb5_keytab_entry],
                  samba_cv_HAVE_KRB5_KEYTAB_ENTRY_KEY,[
     AC_TRY_COMPILE([#include <krb5.h>],
@@ -2958,6 +2947,64 @@ LIBS="$crypt_LIBS"])
 if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
 	AC_DEFINE(HAVE_TRUNCATED_SALT,1,[Whether crypt needs truncated salt])
 fi
+fi
+
+
+dictpath="/usr/lib/cracklib_dict"
+with_cracklib=yes
+###############################################
+# test for where we get FaciestCheck from
+AC_MSG_CHECKING(where to use cracklib from (default=$dictpath))
+AC_ARG_WITH(cracklib,
+[  --with-cracklib[=DIR]     Look for cracklib dictionary in this location ],
+[  case "$withval" in
+  yes)
+    AC_MSG_RESULT(${dictpath})
+    ;;
+  no)
+    AC_MSG_RESULT(no)
+      dictpath=""
+    ;;
+  *)
+      dictpath="$withval"
+    AC_MSG_RESULT(${dictpath})
+    ;;
+  esac ],
+  dictpath=""
+  AC_MSG_RESULT(no)
+)
+
+if test x$dictpath != x""; then
+     AC_SEARCH_LIBS(FascistCheck, [crack],
+                    [test "$ac_cv_search_crack" = "none required" || samba_cv_found_crack="yes"
+                    AC_DEFINE(HAVE_CRACK,1,[Whether the system has the FaciestCheck function from cracklib])])
+
+     crack_saved_libs=$LIBS;
+
+     if test x$samba_cv_found_crack=x"yes"; then
+        AC_SEARCH_LIBS(CRACKLIB_DICTPATH, [crypt],
+            AC_DEFINE(HAVE_CRACKLIB_DICTPATH, 1, [Whether we have given a CRACKLIB_DICTPATH in our headers])
+        )
+
+	AC_DEFINE_UNQUOTED(SAMBA_CRACKLIB_DICTPATH, "$dictpath", [Where the cracklib dictionay is])
+        AC_MSG_CHECKING(Whether we have a working cracklib)
+        AC_TRY_RUN([
+		#include "${srcdir-.}/tests/crack.c"],
+              AC_MSG_RESULT(yes)
+              AC_DEFINE(HAVE_WORKING_CRACKLIB,1,[Whether we have a working cracklib])
+	      AUTH_LIBS="-lcrack $AUTH_LIBS",
+
+              AC_MSG_RESULT(no)
+	      AC_MSG_WARN(cracklib exists - but does not function correctly),
+
+              AC_MSG_RESULT(no)
+	      AC_MSG_WARN(cannot test-run when cross-compiling)
+	      )
+    else
+        AC_MSG_CHECKING(Whether we have cracklib)
+        AC_MSG_RESULT(no)
+    fi
+    LIBS=$crack_saved_libs
 fi
 
 ########################################################################################

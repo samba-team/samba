@@ -37,6 +37,7 @@ static const char *remote_machine = NULL;
 
 static fstring ldap_secret;
 
+
 /*********************************************************
  Print command usage on stderr and die.
 **********************************************************/
@@ -340,14 +341,22 @@ static int process_root(int local_flags)
 	int result = 0;
 	char *old_passwd = NULL;
 
-	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW)
-	{
+	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW) {
 		printf("Setting stored password for \"%s\" in secrets.tdb\n", 
 			lp_ldap_admin_dn());
 		if (!store_ldap_admin_pw(ldap_secret))
 			DEBUG(0,("ERROR: Failed to store the ldap admin password!\n"));
 		goto done;
 	}
+
+	/* Ensure passdb startup(). */
+	if(!initialize_password_db(False)) {
+		DEBUG(0, ("Failed to open passdb!\n"));
+		exit(1);
+	}
+		
+	/* Ensure we have a SAM sid. */
+	get_global_sam_sid();
 
 	/*
 	 * Ensure both add/delete user are not set

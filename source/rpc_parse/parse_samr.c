@@ -2271,10 +2271,11 @@ BOOL samr_io_group_info3(const char *desc, GROUP_INFO3 *gr3, prs_struct *ps, int
 inits a GROUP_INFO4 structure.
 ********************************************************************/
 
-void init_samr_group_info4(GROUP_INFO4 * gr4, char *acct_desc)
+void init_samr_group_info4(GROUP_INFO4 * gr4, const char *acct_desc)
 {
 	DEBUG(5, ("init_samr_group_info4\n"));
 
+	gr4->level = 4;
 	init_unistr2(&gr4->uni_acct_desc, acct_desc, UNI_FLAGS_NONE);
 	init_uni_hdr(&gr4->hdr_acct_desc, &gr4->uni_acct_desc);
 }
@@ -2292,9 +2293,8 @@ BOOL samr_io_group_info4(const char *desc, GROUP_INFO4 * gr4,
 	prs_debug(ps, depth, desc, "samr_io_group_info4");
 	depth++;
 
-	if(!prs_align(ps))
+	if(!prs_uint16("hdr_level", ps, depth, &gr4->level))
 		return False;
-
 	if(!smb_io_unihdr("hdr_acct_desc", &gr4->hdr_acct_desc, ps, depth))
 		return False;
 	if(!smb_io_unistr2("uni_acct_desc", &gr4->uni_acct_desc,
@@ -2349,7 +2349,7 @@ inits a SAMR_Q_CREATE_DOM_GROUP structure.
 ********************************************************************/
 
 void init_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP * q_e,
-				  POLICY_HND *pol, char *acct_desc,
+				  POLICY_HND *pol, const char *acct_desc,
 				  uint32 access_mask)
 {
 	DEBUG(5, ("init_samr_q_create_dom_group\n"));
@@ -3521,7 +3521,7 @@ BOOL samr_io_alias_info1(const char *desc, ALIAS_INFO1 * al1,
 inits a ALIAS_INFO3 structure.
 ********************************************************************/
 
-void init_samr_alias_info3(ALIAS_INFO3 * al3, char *acct_desc)
+void init_samr_alias_info3(ALIAS_INFO3 * al3, const char *acct_desc)
 {
 	DEBUG(5, ("init_samr_alias_info3\n"));
 
@@ -4232,7 +4232,7 @@ inits a SAMR_Q_CREATE_DOM_ALIAS structure.
 ********************************************************************/
 
 void init_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS * q_u,
-				  POLICY_HND *hnd, char *acct_desc)
+				  POLICY_HND *hnd, const char *acct_desc)
 {
 	DEBUG(5, ("init_samr_q_create_dom_alias\n"));
 
@@ -4241,7 +4241,7 @@ void init_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS * q_u,
 	init_unistr2(&q_u->uni_acct_desc, acct_desc, UNI_FLAGS_NONE);
 	init_uni_hdr(&q_u->hdr_acct_desc, &q_u->uni_acct_desc);
 
-	q_u->access_mask = 0x001f000f;
+	q_u->access_mask = MAXIMUM_ALLOWED_ACCESS;
 }
 
 /*******************************************************************
@@ -5316,7 +5316,6 @@ static BOOL sam_io_user_info11(const char *desc, SAM_USER_INFO_11 * usr,
 /*************************************************************************
  init_sam_user_infoa
 
- unknown_3 = 0x09f8 27fa
  unknown_5 = 0x0001 0000
  unknown_6 = 0x0000 04ec 
 
@@ -5362,7 +5361,6 @@ static BOOL sam_io_user_info24(const char *desc, SAM_USER_INFO_24 * usr,
 /*************************************************************************
  init_sam_user_info23
 
- unknown_3 = 0x09f8 27fa
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
@@ -5386,7 +5384,7 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 			uint32 user_rid,	/* 0x0000 0000 */
 			uint32 group_rid,
 			uint32 acb_info,
-			uint32 unknown_3,
+			uint32 fields_present,
 			uint16 logon_divs,
 			LOGON_HRS * hrs,
 			uint16 bad_password_count,
@@ -5406,7 +5404,7 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	usr->user_rid = user_rid;	/* 0x0000 0000 */
 	usr->group_rid = group_rid;
 	usr->acb_info = acb_info;
-	usr->unknown_3 = unknown_3;	/* 09f8 27fa */
+	usr->fields_present = fields_present;	/* 09f8 27fa */
 
 	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
@@ -5464,7 +5462,6 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 /*************************************************************************
  init_sam_user_info23
 
- unknown_3 = 0x09f8 27fa
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
@@ -5481,7 +5478,7 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 			   char *prof_path, const char *desc, char *wkstas,
 			   char *unk_str, char *mung_dial, uint32 user_rid,	/* 0x0000 0000 */
 			   uint32 group_rid, uint32 acb_info,
-			   uint32 unknown_3, uint16 logon_divs,
+			   uint32 fields_present, uint16 logon_divs,
 			   LOGON_HRS * hrs, uint16 bad_password_count, uint16 logon_count,
 			   char newpass[516], uint32 unknown_6)
 {
@@ -5500,7 +5497,7 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	usr->user_rid = user_rid;	/* 0x0000 0000 */
 	usr->group_rid = group_rid;
 	usr->acb_info = acb_info;
-	usr->unknown_3 = unknown_3;	/* 09f8 27fa */
+	usr->fields_present = fields_present;	/* 09f8 27fa */
 
 	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
@@ -5619,7 +5616,7 @@ static BOOL sam_io_user_info23(const char *desc, SAM_USER_INFO_23 * usr,
 	if(!prs_uint32("acb_info      ", ps, depth, &usr->acb_info))
 		return False;
 
-	if(!prs_uint32("unknown_3     ", ps, depth, &usr->unknown_3))
+	if(!prs_uint32("fields_present ", ps, depth, &usr->fields_present))
 		return False;
 	if(!prs_uint16("logon_divs    ", ps, depth, &usr->logon_divs))	/* logon divisions per week */
 		return False;
@@ -5816,7 +5813,6 @@ static BOOL sam_io_user_info25(const char *desc, SAM_USER_INFO_25 * usr, prs_str
 /*************************************************************************
  init_sam_user_info21W
 
- unknown_3 = 0x00ff ffff
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
@@ -5843,7 +5839,7 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 			   uint32 user_rid,
 			   uint32 group_rid,
 			   uint32 acb_info,
-			   uint32 unknown_3,
+			   uint32 fields_present,
 			   uint16 logon_divs,
 			   LOGON_HRS * hrs,
 			   uint16 bad_password_count,
@@ -5863,7 +5859,7 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 	usr->user_rid = user_rid;
 	usr->group_rid = group_rid;
 	usr->acb_info = acb_info;
-	usr->unknown_3 = unknown_3;	/* 0x00ff ffff */
+	usr->fields_present = fields_present;	/* 0x00ff ffff */
 
 	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
@@ -5918,7 +5914,6 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 /*************************************************************************
  init_sam_user_info21
 
- unknown_3 = 0x00ff ffff
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
@@ -6005,14 +6000,14 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 
 	/*
 	  Look at a user on a real NT4 PDC with usrmgr, press
-	  'ok'. Then you will see that unknown_3 is set to
+	  'ok'. Then you will see that fields_present is set to
 	  0x08f827fa. Look at the user immediately after that again,
 	  and you will see that 0x00fffff is returned. This solves
 	  the problem that you get access denied after having looked
 	  at the user.
 	  -- Volker
 	*/
-	usr->unknown_3 = 0x00ffffff;
+	usr->fields_present = pdb_build_fields_present(pw);
 
 	usr->logon_divs = pdb_get_logon_divs(pw); 
 	usr->ptr_logon_hrs = pdb_get_hours(pw) ? 1 : 0;
@@ -6133,7 +6128,7 @@ static BOOL sam_io_user_info21(const char *desc, SAM_USER_INFO_21 * usr,
 	if(!prs_uint32("acb_info      ", ps, depth, &usr->acb_info))
 		return False;
 
-	if(!prs_uint32("unknown_3     ", ps, depth, &usr->unknown_3))
+	if(!prs_uint32("fields_present ", ps, depth, &usr->fields_present))
 		return False;
 	if(!prs_uint16("logon_divs    ", ps, depth, &usr->logon_divs))	/* logon divisions per week */
 		return False;
@@ -6954,7 +6949,7 @@ BOOL samr_io_r_get_dom_pwinfo(const char *desc, SAMR_R_GET_DOM_PWINFO * r_u,
 make a SAMR_ENC_PASSWD structure.
 ********************************************************************/
 
-void init_enc_passwd(SAMR_ENC_PASSWD * pwd, char pass[512])
+void init_enc_passwd(SAMR_ENC_PASSWD * pwd, const char pass[512])
 {
 	ZERO_STRUCTP(pwd);
 
@@ -6997,7 +6992,7 @@ BOOL samr_io_enc_passwd(const char *desc, SAMR_ENC_PASSWD * pwd,
 inits a SAMR_ENC_HASH structure.
 ********************************************************************/
 
-void init_enc_hash(SAMR_ENC_HASH * hsh, uchar hash[16])
+void init_enc_hash(SAMR_ENC_HASH * hsh, const uchar hash[16])
 {
 	ZERO_STRUCTP(hsh);
 
@@ -7040,11 +7035,11 @@ inits a SAMR_R_GET_DOM_PWINFO structure.
 ********************************************************************/
 
 void init_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER * q_u,
-				char *dest_host, char *user_name,
-				char nt_newpass[516],
-				uchar nt_oldhash[16],
-				char lm_newpass[516],
-				uchar lm_oldhash[16])
+				const char *dest_host, const char *user_name,
+				const char nt_newpass[516],
+				const uchar nt_oldhash[16],
+				const char lm_newpass[516],
+				const uchar lm_oldhash[16])
 {
 	DEBUG(5, ("init_samr_q_chgpasswd_user\n"));
 

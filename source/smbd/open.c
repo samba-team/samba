@@ -866,7 +866,11 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		DEBUG(5,("open_file_shared: create new requested for file %s and file already exists.\n",
 			fname ));
 		file_free(fsp);
-		errno = EEXIST;
+		if (S_ISDIR(psbuf->st_mode)) {
+			errno = EISDIR;
+		} else {
+			errno = EEXIST;
+		}
 		return NULL;
 	}
       
@@ -1302,6 +1306,15 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 				unix_ERR_class = ERRDOS;
 				unix_ERR_code = ERRinvalidname;
 				unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_INVALID;
+				return NULL;
+			}
+
+			if( strchr_m(fname, ':')) {
+				file_free(fsp);
+				DEBUG(5,("open_directory: failing create on filename %s with colon in name\n", fname));
+				unix_ERR_class = ERRDOS;
+				unix_ERR_code = ERRinvalidname;
+				unix_ERR_ntstatus = NT_STATUS_NOT_A_DIRECTORY;
 				return NULL;
 			}
 

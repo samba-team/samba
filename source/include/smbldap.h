@@ -91,6 +91,7 @@
 #define LDAP_ATTR_BAD_PASSWORD_COUNT	35
 #define LDAP_ATTR_LOGON_COUNT		36
 #define LDAP_ATTR_MUNGED_DIAL		37
+#define LDAP_ATTR_BAD_PASSWORD_TIME	38
 
 typedef struct _attrib_map_entry {
 	int		attrib;
@@ -119,7 +120,10 @@ void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,
 		      LDAPMod ***mods,
 		      const char *attribute, const char *newval);
 BOOL smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
-				   const char *attribute, pstring value);
+				   const char *attribute, char *value,
+				   int max_len);
+BOOL smbldap_get_single_pstring (LDAP * ldap_struct, LDAPMessage * entry,
+				 const char *attribute, pstring value);
 
 /**
  * Struct to keep the state for all the ldap stuff 

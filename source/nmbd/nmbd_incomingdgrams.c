@@ -97,21 +97,21 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
-	nstring announce_name;
+	unstring announce_name;
 	uint32 servertype = IVAL(buf,23);
 	fstring comment;
 	struct work_record *work;
 	struct server_record *servrec;
-	nstring work_name;
-	nstring source_name;
+	unstring work_name;
+	unstring source_name;
 
 	START_PROFILE(host_announce);
 
 	pull_ascii_fstring(comment, buf+31);
 	comment[42] = 0;
   
-	pull_ascii_nstring(announce_name, buf+5);
-	pull_ascii_nstring(source_name, dgram->source_name.name);
+	pull_ascii_nstring(announce_name, sizeof(announce_name), buf+5);
+	pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
 
 	DEBUG(3,("process_host_announce: from %s<%02x> IP %s to \
 %s for server %s.\n", source_name, source_name[15], inet_ntoa(p->ip),
@@ -133,7 +133,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 	}
 
 	/* For a host announce the workgroup name is the destination name. */
-	pull_ascii_nstring(work_name, dgram->dest_name.name);
+	pull_ascii_nstring(work_name, sizeof(work_name), dgram->dest_name.name);
 
 	/*
 	 * Syntax servers version 5.1 send HostAnnounce packets to
@@ -144,7 +144,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 	 */
 
 	if(strequal(work_name, global_myname()))
-		nstrcpy(work_name,lp_workgroup());
+		unstrcpy(work_name,lp_workgroup());
 
 	/*
 	 * We are being very agressive here in adding a workgroup
@@ -198,19 +198,19 @@ void process_workgroup_announce(struct subnet_record *subrec, struct packet_stru
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
-	nstring workgroup_announce_name;
-	nstring master_name;
+	unstring workgroup_announce_name;
+	unstring master_name;
 	uint32 servertype = IVAL(buf,23);
 	struct work_record *work;
-	nstring source_name;
-	nstring dest_name;
+	unstring source_name;
+	unstring dest_name;
 
 	START_PROFILE(workgroup_announce);
 
-	pull_ascii_nstring(workgroup_announce_name,buf+5);
-	pull_ascii_nstring(master_name,buf+31);
-	pull_ascii_nstring(source_name,dgram->source_name.name);
-	pull_ascii_nstring(dest_name,dgram->dest_name.name);
+	pull_ascii_nstring(workgroup_announce_name,sizeof(workgroup_announce_name),buf+5);
+	pull_ascii_nstring(master_name,sizeof(master_name),buf+31);
+	pull_ascii_nstring(source_name,sizeof(source_name),dgram->source_name.name);
+	pull_ascii_nstring(dest_name,sizeof(dest_name),dgram->dest_name.name);
 
 	DEBUG(3,("process_workgroup_announce: from %s<%02x> IP %s to \
 %s for workgroup %s.\n", source_name, source_name[15], inet_ntoa(p->ip),
@@ -255,21 +255,21 @@ void process_local_master_announce(struct subnet_record *subrec, struct packet_s
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
-	nstring server_name;
+	unstring server_name;
 	uint32 servertype = IVAL(buf,23);
 	fstring comment;
-	nstring work_name;
+	unstring work_name;
 	struct work_record *work;
 	struct server_record *servrec;
-	nstring source_name;
+	unstring source_name;
 
 	START_PROFILE(local_master_announce);
 
-	pull_ascii_nstring(server_name,buf+5);
+	pull_ascii_nstring(server_name,sizeof(server_name),buf+5);
 	pull_ascii_fstring(comment, buf+31);
 	comment[42] = 0;
-	pull_ascii_nstring(source_name, dgram->source_name.name);
-	pull_ascii_nstring(work_name, dgram->dest_name.name);
+	pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
+	pull_ascii_nstring(work_name, sizeof(work_name), dgram->dest_name.name);
 
 	DEBUG(3,("process_local_master_announce: from %s<%02x> IP %s to \
 %s for server %s.\n", source_name, source_name[15], inet_ntoa(p->ip),
@@ -369,13 +369,13 @@ done:
 void process_master_browser_announce(struct subnet_record *subrec, 
                                      struct packet_struct *p,char *buf)
 {
-	nstring local_master_name;
+	unstring local_master_name;
 	struct work_record *work;
 	struct browse_cache_record *browrec;
 
 	START_PROFILE(master_browser_announce);
 
-	pull_ascii_nstring(local_master_name,buf);
+	pull_ascii_nstring(local_master_name,sizeof(local_master_name),buf);
   
 	DEBUG(3,("process_master_browser_announce: Local master announce from %s IP %s.\n",
 		local_master_name, inet_ntoa(p->ip)));
@@ -425,11 +425,11 @@ void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct
 	int osmajor=CVAL(buf,5);           /* major version of node software */
 	int osminor=CVAL(buf,6);           /* minor version of node software */
 	int ttl = SVAL(buf,7);
-	nstring announce_name;
+	unstring announce_name;
 	struct work_record *work;
 	struct server_record *servrec;
-	nstring work_name;
-	nstring source_name;
+	unstring work_name;
+	unstring source_name;
 	fstring comment;
 	char *s = buf+9;
 
@@ -437,10 +437,10 @@ void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct
 	s = skip_string(s,1);
 	pull_ascii(comment, s, sizeof(fstring), 43, STR_TERMINATE);
 
-	pull_ascii_nstring(announce_name,buf+9);
-	pull_ascii_nstring(source_name,dgram->source_name.name);
+	pull_ascii_nstring(announce_name,sizeof(announce_name),buf+9);
+	pull_ascii_nstring(source_name,sizeof(source_name),dgram->source_name.name);
 	/* For a LanMan host announce the workgroup name is the destination name. */
-	pull_ascii_nstring(work_name,dgram->dest_name.name);
+	pull_ascii_nstring(work_name,sizeof(work_name),dgram->dest_name.name);
 
 	DEBUG(3,("process_lm_host_announce: LM Announcement from %s IP %s to \
 %s for server %s.\n", nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
@@ -479,7 +479,7 @@ originate from OS/2 Warp client. Ignoring packet.\n"));
 	 */
 
 	if(strequal(work_name, global_myname()))
-		nstrcpy(work_name,lp_workgroup());
+		unstrcpy(work_name,lp_workgroup());
 
 	/*
 	 * We are being very agressive here in adding a workgroup
@@ -541,11 +541,11 @@ static void send_backup_list_response(struct subnet_record *subrec,
 	char outbuf[1024];
 	char *p, *countptr;
 	unsigned int count = 0;
-	nstring send_to_namestr;
+	unstring send_to_namestr;
 #if 0
   struct server_record *servrec;
 #endif
-	fstring myname;
+	unstring myname;
 
 	memset(outbuf,'\0',sizeof(outbuf));
 
@@ -565,7 +565,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
   
 	/* We always return at least one name - our own. */
 	count = 1;
-	fstrcpy(myname, global_myname());
+	unstrcpy(myname, global_myname());
 	strupper_m(myname);
 	myname[15]='\0';
 	push_pstring_base(p, myname, outbuf);
@@ -612,7 +612,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 
 	SCVAL(countptr, 0, count);
 
-	pull_ascii_nstring(send_to_namestr, send_to_name->name);
+	pull_ascii_nstring(send_to_namestr, sizeof(send_to_namestr), send_to_name->name);
 
 	DEBUG(4,("send_backup_list_response: sending response to %s<00> IP %s with %d servers.\n",
 		send_to_namestr, inet_ntoa(sendto_ip), count));
@@ -642,11 +642,11 @@ void process_get_backup_list_request(struct subnet_record *subrec,
 	unsigned char max_number_requested = CVAL(buf,0);
 	uint32 token = IVAL(buf,1); /* Sender's key index for the workgroup. */
 	int name_type = dgram->dest_name.name_type;
-	nstring workgroup_name;
+	unstring workgroup_name;
 	struct subnet_record *search_subrec = subrec;
 
 	START_PROFILE(get_backup_list);
-	pull_ascii_nstring(workgroup_name, dgram->dest_name.name);
+	pull_ascii_nstring(workgroup_name, sizeof(workgroup_name), dgram->dest_name.name);
 
 	DEBUG(3,("process_get_backup_list_request: request from %s IP %s to %s.\n",
 		nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
@@ -774,11 +774,11 @@ void process_announce_request(struct subnet_record *subrec, struct packet_struct
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	struct work_record *work;
-	nstring workgroup_name;
+	unstring workgroup_name;
  
 	START_PROFILE(announce_request);
 
-	pull_ascii_nstring(workgroup_name, dgram->dest_name.name);
+	pull_ascii_nstring(workgroup_name, sizeof(workgroup_name), dgram->dest_name.name);
 	DEBUG(3,("process_announce_request: Announce request from %s IP %s to %s.\n",
 		nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
 		nmb_namestr(&dgram->dest_name)));
@@ -814,11 +814,11 @@ done:
 void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
-	nstring workgroup_name;
+	unstring workgroup_name;
 
 	START_PROFILE(lm_announce_request);
 
-	pull_ascii_nstring(workgroup_name, dgram->dest_name.name);
+	pull_ascii_nstring(workgroup_name, sizeof(workgroup_name), dgram->dest_name.name);
 	DEBUG(3,("process_lm_announce_request: Announce request from %s IP %s to %s.\n",
 		nmb_namestr(&dgram->source_name), inet_ntoa(p->ip),
 		nmb_namestr(&dgram->dest_name)));

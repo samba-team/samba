@@ -32,7 +32,7 @@
 
 static TALLOC_CTX *current_rpc_talloc = NULL;
 
-TALLOC_CTX *get_current_rpc_talloc(void)
+static TALLOC_CTX *get_current_rpc_talloc(void)
 {
     return current_rpc_talloc;
 }

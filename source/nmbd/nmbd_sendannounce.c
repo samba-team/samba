@@ -92,6 +92,7 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
                               const char *server_name, int server_type, const char *server_comment)
 {
 	pstring outbuf;
+	unstring upper_server_name;
 	char *p;
 
 	memset(outbuf,'\0',sizeof(outbuf));
@@ -103,7 +104,9 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
 	SCVAL(p,0,updatecount);
 	SIVAL(p,1,announce_interval*1000); /* Milliseconds - despite the spec. */
 
-	push_string(NULL, p+5, server_name, 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
+	safe_strcpy(upper_server_name, server_name, sizeof(upper_server_name)-1);
+	strupper_m(upper_server_name);
+	push_string(NULL, p+5, upper_server_name, 16, STR_ASCII|STR_TERMINATE);
 
 	SCVAL(p,21,lp_major_announce_version()); /* Major version. */
 	SCVAL(p,22,lp_minor_announce_version()); /* Minor version. */
@@ -525,7 +528,7 @@ void browse_sync_remote(time_t t)
 	struct work_record *work;
 	pstring outbuf;
 	char *p;
-	fstring myname;
+	unstring myname;
  
 	if (last_time && (t < (last_time + REMOTE_ANNOUNCE_INTERVAL)))
 		return;
@@ -558,7 +561,7 @@ for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
 	SCVAL(p,0,ANN_MasterAnnouncement);
 	p++;
 
-	fstrcpy(myname, global_myname());
+	unstrcpy(myname, global_myname());
 	strupper_m(myname);
 	myname[15]='\0';
 	push_pstring_base(p, myname, outbuf);

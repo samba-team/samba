@@ -27,9 +27,9 @@
 static struct name_record *add_dns_result(struct nmb_name *question, struct in_addr addr)
 {
 	int name_type = question->name_type;
-	nstring qname;
+	unstring qname;
 
-	pull_ascii_nstring(qname, question->name);
+	pull_ascii_nstring(qname, sizeof(qname), question->name);
   
 	if (!addr.s_addr) {
 		/* add the fail to WINS cache of names. give it 1 hour in the cache */
@@ -81,7 +81,7 @@ int asyncdns_fd(void)
 static void asyncdns_process(void)
 {
 	struct query_record r;
-	fstring qname;
+	unstring qname;
 
 	DEBUGLEVEL = -1;
 
@@ -89,8 +89,7 @@ static void asyncdns_process(void)
 		if (read_data(fd_in, (char *)&r, sizeof(r)) != sizeof(r)) 
 			break;
 
-		fstrcpy(qname, r.name.name);
-
+		pull_ascii_nstring( qname, sizeof(qname), r.name.name);
 		r.result.s_addr = interpret_addr(qname);
 
 		if (write_data(fd_out, (char *)&r, sizeof(r)) != sizeof(r))
@@ -321,7 +320,7 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		     struct name_record **n)
 {
 	struct in_addr dns_ip;
-	nstring qname;
+	unstring qname;
 
 	pull_ascii_nstring(qname, question->name);
 

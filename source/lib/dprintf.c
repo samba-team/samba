@@ -59,7 +59,7 @@ again:
 		SAFE_FREE(p);
 		return -1;
 	}
-	clen = convert_string(CH_UNIX, CH_DISPLAY, p, ret, p2, maxlen);
+	clen = convert_string(CH_UNIX, CH_DISPLAY, p, ret, p2, maxlen, True);
 
 	if (clen >= maxlen) {
 		/* it didn't fit - try a larger buffer */

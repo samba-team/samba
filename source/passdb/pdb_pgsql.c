@@ -98,7 +98,6 @@ static NTSTATUS row_to_sam_account ( PGresult *r, long row, SAM_ACCOUNT *u )
   pdb_set_munged_dial          ( u, PQgetvalue( r, row, 17 ), PDB_SET ) ;
   
   pdb_set_acct_ctrl            ( u, PQgetlong ( r, row, 23 ), PDB_SET ) ;
-  pdb_set_unknown_3            ( u, PQgetlong ( r, row, 24 ), PDB_SET ) ;
   pdb_set_logon_divs           ( u, PQgetlong ( r, row, 25 ), PDB_SET ) ;
   pdb_set_hours_len            ( u, PQgetlong ( r, row, 26 ), PDB_SET ) ;
   pdb_set_logon_count            ( u, PQgetlong ( r, row, 27 ), PDB_SET ) ;

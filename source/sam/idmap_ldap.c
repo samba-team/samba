@@ -204,7 +204,7 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 		   algorithmic_rid_base.  The other two are to avoid stomping on the
 		   different sets of algorithmic RIDs */
 		
-		if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry,
+		if (smbldap_get_single_pstring(state->smbldap_state->ldap_struct, entry,
 					 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE),
 					 algorithmic_rid_base_string)) {
 			
@@ -224,7 +224,7 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 		if (alg_rid_base > BASE_RID) {
 			/* we have a non-default 'algorithmic rid base', so we have 'low' rids that we 
 			   can allocate to new users */
-			if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry,
+			if (smbldap_get_single_pstring(state->smbldap_state->ldap_struct, entry,
 						 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_RID),
 						 old_rid_string)) {
 				*rid = (uint32)atol(old_rid_string);
@@ -250,14 +250,14 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 		if (!next_rid) { /* not got one already */
 			switch (rid_type) {
 			case USER_RID_TYPE:
-				if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry,
+				if (smbldap_get_single_pstring(state->smbldap_state->ldap_struct, entry,
 							 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID),
 							 old_rid_string)) {
 					*rid = (uint32)atol(old_rid_string);					
 				}
 				break;
 			case GROUP_RID_TYPE:
-				if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry, 
+				if (smbldap_get_single_pstring(state->smbldap_state->ldap_struct, entry, 
 							 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID),
 							 old_rid_string)) {
 					*rid = (uint32)atol(old_rid_string);
@@ -297,7 +297,7 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 			pstring domain_sid_string;
 			int error = 0;
 
-			if (!smbldap_get_single_attribute(state->smbldap_state->ldap_struct, domain_result,
+			if (!smbldap_get_single_pstring(state->smbldap_state->ldap_struct, domain_result,
 					get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOM_SID),
 					domain_sid_string)) {
 				ldap_mods_free(mods, True);
@@ -351,7 +351,7 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 			attempts += 1;
 			
 			sleeptime %= 100;
-			msleep(sleeptime);
+			smb_msleep(sleeptime);
 		}
 	}
 
@@ -420,7 +420,7 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	}
 	entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
 
-	if (!smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, type, id_str)) {
+	if (!smbldap_get_single_pstring(ldap_state.smbldap_state->ldap_struct, entry, type, id_str)) {
 		DEBUG(0,("ldap_allocate_id: %s attribute not found\n",
 			 type));
 		goto out;
@@ -528,7 +528,7 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	
 	entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
 	
-	if ( !smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, LDAP_ATTRIBUTE_SID, sid_str) )
+	if ( !smbldap_get_single_pstring(ldap_state.smbldap_state->ldap_struct, entry, LDAP_ATTRIBUTE_SID, sid_str) )
 		goto out;
 	   
 	if (!string_to_sid(sid, sid_str))
@@ -642,7 +642,7 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 
 	DEBUG(10, ("Found mapping entry at dn=%s, looking for %s\n", dn, type));
 		
-	if ( smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, type, id_str) ) {
+	if ( smbldap_get_single_pstring(ldap_state.smbldap_state->ldap_struct, entry, type, id_str) ) {
 		if ( (*id_type & ID_USERID) )
 			id->uid = strtoul(id_str, NULL, 10);
 		else

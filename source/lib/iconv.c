@@ -105,7 +105,7 @@ NTSTATUS smb_register_charset(struct charset_functions *funcs)
 	return NT_STATUS_OK;
 }
 
-void lazy_initialize_iconv(void)
+static void lazy_initialize_iconv(void)
 {
 	static BOOL initialized;
 	int i;
@@ -589,4 +589,3 @@ toobig:
 	errno = E2BIG;
 	return -1;
 }
-

@@ -12,14 +12,15 @@ URL: http://www.samba.org/
 Source: ftp://www.samba.org/pub/samba/%{name}-%{version}.tar.bz2
 
 # Red Hat specific replacement-files
-Source1: samba.log
-Source2: samba.xinetd
-Source3: swat.desktop
-Source4: samba.sysconfig
-Source5: smb.init
-Source6: samba.pamd
-Source7: smbprint
-Source8: winbind.init
+Source1:  samba.log
+Source2:  samba.xinetd
+Source4:  samba.sysconfig
+Source5:  smb.init
+Source6:  winbind.init
+Source7:  samba.pamd
+Source8:  smbprint
+Source9:  smbusers
+Source10: smb.conf
 
 # Don't depend on Net::LDAP
 Source999: filter-requires-samba.sh
@@ -144,20 +145,25 @@ make DESTDIR=$RPM_BUILD_ROOT \
 cd ..
 
 # Install other stuff
-install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT%{_sysconfdir}/samba/smb.conf
+install -m644 %{SOURCE10} $RPM_BUILD_ROOT%{_sysconfdir}/samba/smb.conf
+install -m644 %{SOURCE8} $RPM_BUILD_ROOT/etc/samba/smbusers
+install -m755 %{SOURCE8} $RPM_BUILD_ROOT%{_bindir}
+install -m644 %{SOURCE7} $RPM_BUILD_ROOT/etc/pam.d/samba
+install -m644 %{SOURCE1} $RPM_BUILD_ROOT/etc/logrotate.d/samba
 install -m755 source/script/mksmbpasswd.sh $RPM_BUILD_ROOT%{_bindir}
-install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
-install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{_bindir}
-install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT%{initdir}/smb
-install -m755 packaging/RedHat/winbind.init $RPM_BUILD_ROOT%{initdir}/winbind
+
+install -m755 %{SOURCE5} $RPM_BUILD_ROOT%{initdir}/smb
+install -m755 %{SOURCE6} $RPM_BUILD_ROOT%{initdir}/winbind
 ln -s ../..%{initdir}/smb  $RPM_BUILD_ROOT%{_sbindir}/samba
-install -m644 packaging/RedHat/samba.pamd.stack $RPM_BUILD_ROOT/etc/pam.d/samba
-install -m644 $RPM_SOURCE_DIR/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
+ln -s ../..%{initdir}/winbind  $RPM_BUILD_ROOT%{_sbindir}/winbind
+
 ln -s ../usr/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 ## Samba's Makefile is breaking this currently.  Remove it and set our own
 /bin/rm -f $RPM_BUILD_ROOT/sbin/mount.smbfs
 ln -s ../usr/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
+
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT%{_sysconfdir}/samba/lmhosts
+
 
 # pam_smbpass
 mkdir -p $RPM_BUILD_ROOT/%{_lib}/security

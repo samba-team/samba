@@ -36,16 +36,7 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_N
 	/* If we are looking up a domain user, make sure it is
 	   for the local machine only */
 	
-	if (strequal(global_myname(), domain)) {
-		local_lookup = True;
-	} else if (lp_server_role() == ROLE_DOMAIN_PDC || 
-		   lp_server_role() == ROLE_DOMAIN_BDC) {
-		if (strequal(domain, lp_workgroup())) {
-			local_lookup = True;
-		}
-	}
-		
-	if (local_lookup) {
+	if (strequal(domain, get_global_sam_name())) {
 		if (local_lookup_name(name, psid, name_type)) {
 			DEBUG(10,
 			      ("lookup_name: (local) [%s]\\[%s] -> SID %s (type %s: %u)\n",

@@ -1480,7 +1480,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->driverpath);	
 		if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 			NTSTATUS status;
-			status = rename_internals(conn, new_name, old_name, True);
+			status = rename_internals(conn, new_name, old_name, 0, True);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 						new_name, old_name));
@@ -1499,7 +1499,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->datafile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				NTSTATUS status;
-				status = rename_internals(conn, new_name, old_name, True);
+				status = rename_internals(conn, new_name, old_name, 0, True);
 				if (!NT_STATUS_IS_OK(status)) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
@@ -1520,7 +1520,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->configfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				NTSTATUS status;
-				status = rename_internals(conn, new_name, old_name, True);
+				status = rename_internals(conn, new_name, old_name, 0, True);
 				if (!NT_STATUS_IS_OK(status)) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
@@ -1542,7 +1542,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->helpfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				NTSTATUS status;
-				status = rename_internals(conn, new_name, old_name, True);
+				status = rename_internals(conn, new_name, old_name, 0, True);
 				if (!NT_STATUS_IS_OK(status)) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
@@ -1573,7 +1573,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 				slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->dependentfiles[i]);	
 				if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 					NTSTATUS status;
-					status = rename_internals(conn, new_name, old_name, True);
+					status = rename_internals(conn, new_name, old_name, 0, True);
 					if (!NT_STATUS_IS_OK(status)) {
 						DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 								new_name, old_name));
@@ -2537,7 +2537,7 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	map_sz_into_ctr(ctr, SPOOL_REG_PRINTERNAME, info2->sharename);
 	map_sz_into_ctr(ctr, SPOOL_REG_SHORTSERVERNAME, global_myname());
 
-	get_myfullname(longname);
+	get_mydnsfullname(longname);
 	map_sz_into_ctr(ctr, SPOOL_REG_SERVERNAME, longname);
 
 	asprintf(&allocated_string, "\\\\%s\\%s", longname, info2->sharename);

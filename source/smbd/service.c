@@ -112,105 +112,96 @@ int add_home_service(const char *service, const char *username, const char *home
 
 
 /**
- * Find a service entry. service is always in dos codepage.
+ * Find a service entry.
  *
  * @param service is modified (to canonical form??)
  **/
+
 int find_service(fstring service)
 {
-   int iService;
+	int iService;
 
-   all_string_sub(service,"\\","/",0);
+	all_string_sub(service,"\\","/",0);
 
-   iService = lp_servicenumber(service);
+	iService = lp_servicenumber(service);
 
-   /* now handle the special case of a home directory */
-   if (iService < 0)
-   {
-      char *phome_dir = get_user_home_dir(service);
+	/* now handle the special case of a home directory */
+	if (iService < 0) {
+		char *phome_dir = get_user_home_dir(service);
 
-      if(!phome_dir)
-      {
-        /*
-         * Try mapping the servicename, it may
-         * be a Windows to unix mapped user name.
-         */
-        if(map_username(service))
-          phome_dir = get_user_home_dir(service);
-      }
+		if(!phome_dir) {
+			/*
+			 * Try mapping the servicename, it may
+			 * be a Windows to unix mapped user name.
+			 */
+			if(map_username(service))
+				phome_dir = get_user_home_dir(service);
+		}
 
-      DEBUG(3,("checking for home directory %s gave %s\n",service,
-            phome_dir?phome_dir:"(NULL)"));
+		DEBUG(3,("checking for home directory %s gave %s\n",service,
+			phome_dir?phome_dir:"(NULL)"));
 
-      iService = add_home_service(service,service /* 'username' */, phome_dir);
-   }
+		iService = add_home_service(service,service /* 'username' */, phome_dir);
+	}
 
-   /* If we still don't have a service, attempt to add it as a printer. */
-   if (iService < 0)
-   {
-      int iPrinterService;
+	/* If we still don't have a service, attempt to add it as a printer. */
+	if (iService < 0) {
+		int iPrinterService;
 
-      if ((iPrinterService = lp_servicenumber(PRINTERS_NAME)) >= 0)
-      {
-         char *pszTemp;
+		if ((iPrinterService = lp_servicenumber(PRINTERS_NAME)) >= 0) {
+			char *pszTemp;
 
-         DEBUG(3,("checking whether %s is a valid printer name...\n", service));
-         pszTemp = lp_printcapname();
-         if ((pszTemp != NULL) && pcap_printername_ok(service, pszTemp))
-         {
-            DEBUG(3,("%s is a valid printer name\n", service));
-            DEBUG(3,("adding %s as a printer service\n", service));
-            lp_add_printer(service, iPrinterService);
-            iService = lp_servicenumber(service);
-            if (iService < 0)
-               DEBUG(0,("failed to add %s as a printer service!\n", service));
-         }
-         else
-            DEBUG(3,("%s is not a valid printer name\n", service));
-      }
-   }
+			DEBUG(3,("checking whether %s is a valid printer name...\n", service));
+			pszTemp = lp_printcapname();
+			if ((pszTemp != NULL) && pcap_printername_ok(service, pszTemp)) {
+				DEBUG(3,("%s is a valid printer name\n", service));
+				DEBUG(3,("adding %s as a printer service\n", service));
+				lp_add_printer(service, iPrinterService);
+				iService = lp_servicenumber(service);
+				if (iService < 0) {
+					DEBUG(0,("failed to add %s as a printer service!\n", service));
+				}
+			} else {
+				DEBUG(3,("%s is not a valid printer name\n", service));
+			}
+		}
+	}
 
-   /* Check for default vfs service?  Unsure whether to implement this */
-   if (iService < 0)
-   {
-   }
+	/* Check for default vfs service?  Unsure whether to implement this */
+	if (iService < 0) {
+	}
 
-   /* just possibly it's a default service? */
-   if (iService < 0) 
-   {
-     char *pdefservice = lp_defaultservice();
-     if (pdefservice && *pdefservice && 
-	 !strequal(pdefservice,service) &&
-	 !strstr(service,".."))
-     {
-       /*
-        * We need to do a local copy here as lp_defaultservice() 
-        * returns one of the rotating lp_string buffers that
-        * could get overwritten by the recursive find_service() call
-        * below. Fix from Josef Hinteregger <joehtg@joehtg.co.at>.
-        */
-       pstring defservice;
-       pstrcpy(defservice, pdefservice);
-       iService = find_service(defservice);
-       if (iService >= 0)
-       {
-         all_string_sub(service, "_","/",0);
-         iService = lp_add_service(service, iService);
-       }
-     }
-   }
+	/* just possibly it's a default service? */
+	if (iService < 0) {
+		char *pdefservice = lp_defaultservice();
+		if (pdefservice && *pdefservice && !strequal(pdefservice,service) && !strstr_m(service,"..")) {
+			/*
+			 * We need to do a local copy here as lp_defaultservice() 
+			 * returns one of the rotating lp_string buffers that
+			 * could get overwritten by the recursive find_service() call
+			 * below. Fix from Josef Hinteregger <joehtg@joehtg.co.at>.
+			 */
+			pstring defservice;
+			pstrcpy(defservice, pdefservice);
+			iService = find_service(defservice);
+			if (iService >= 0) {
+				all_string_sub(service, "_","/",0);
+				iService = lp_add_service(service, iService);
+			}
+		}
+	}
 
-   if (iService >= 0)
-     if (!VALID_SNUM(iService))
-     {
-       DEBUG(0,("Invalid snum %d for %s\n",iService, service));
-       iService = -1;
-     }
+	if (iService >= 0) {
+		if (!VALID_SNUM(iService)) {
+			DEBUG(0,("Invalid snum %d for %s\n",iService, service));
+			iService = -1;
+		}
+	}
 
-   if (iService < 0)
-     DEBUG(3,("find_service() failed to find service %s\n", service));
+	if (iService < 0)
+		DEBUG(3,("find_service() failed to find service %s\n", service));
 
-   return (iService);
+	return (iService);
 }
 
 
@@ -218,6 +209,7 @@ int find_service(fstring service)
  do some basic sainity checks on the share.  
  This function modifies dev, ecode.
 ****************************************************************************/
+
 static NTSTATUS share_sanity_checks(int snum, fstring dev) 
 {
 	
@@ -257,78 +249,6 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 	}
 
 	return NT_STATUS_OK;
-}
-
-/****************************************************************************
- readonly share?
-****************************************************************************/
-
-static void set_read_only(connection_struct *conn, gid_t *groups, size_t n_groups)
-{
-	char **list;
-	const char *service = lp_servicename(conn->service);
-	conn->read_only = lp_readonly(conn->service);
-
-	if (!service)
-		return;
-
-	str_list_copy(&list, lp_readlist(conn->service));
-	if (list) {
-		if (!str_list_sub_basic(list, current_user_info.smb_name) ) {
-			DEBUG(0, ("ERROR: read list substitution failed\n"));
-		}
-		if (!str_list_substitute(list, "%S", service)) {
-			DEBUG(0, ("ERROR: read list service substitution failed\n"));
-		}
-		if (user_in_list(conn->user, (const char **)list, groups, n_groups))
-			conn->read_only = True;
-		str_list_free(&list);
-	}
-	
-	str_list_copy(&list, lp_writelist(conn->service));
-	if (list) {
-		if (!str_list_sub_basic(list, current_user_info.smb_name) ) {
-			DEBUG(0, ("ERROR: write list substitution failed\n"));
-		}
-		if (!str_list_substitute(list, "%S", service)) {
-			DEBUG(0, ("ERROR: write list service substitution failed\n"));
-		}
-		if (user_in_list(conn->user, (const char **)list, groups, n_groups))
-			conn->read_only = False;
-		str_list_free(&list);
-	}
-}
-
-/****************************************************************************
-  admin user check
-****************************************************************************/
-
-static void set_admin_user(connection_struct *conn, gid_t *groups, size_t n_groups)
-{
-	/* admin user check */
-	
-	/* JRA - original code denied admin user if the share was
-	   marked read_only. Changed as I don't think this is needed,
-	   but old code left in case there is a problem here.
-	*/
-	if (user_in_list(conn->user,lp_admin_users(conn->service), groups, n_groups) 
-#if 0
-	    && !conn->read_only
-#endif
-	    ) {
-		conn->admin_user = True;
-		conn->force_user = True;  /* Admin users are effectivly 'forced' */
-		DEBUG(0,("%s logged in as admin user (root privileges)\n",conn->user));
-	} else {
-		conn->admin_user = False;
-	}
-
-#if 0 /* This done later, for now */    
-	/* admin users always run as uid=0 */
-	if (conn->admin_user) {
-		conn->uid = 0;
-	}
-#endif
 }
 
 /****************************************************************************
@@ -443,10 +363,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
 	conn->nt_user_token = NULL;
-	
-	set_read_only(conn, vuser ? vuser->groups : NULL, vuser ? vuser->n_groups : 0);
-	
-	set_admin_user(conn, vuser ? vuser->groups : NULL, vuser ? vuser->n_groups : 0);
+
+	conn->read_only = lp_readonly(conn->service);
+	conn->admin_user = False;
 
 	/*
 	 * If force user is true, then store the
@@ -476,11 +395,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			*status = NT_STATUS_NO_SUCH_USER;
 			return NULL;
 		}
-	}
-
-	/* admin users always run as uid=0 */
-	if (conn->admin_user) {
-		conn->uid = 0;
 	}
 
 #ifdef HAVE_GETGRNAM 

@@ -38,7 +38,7 @@ extern int winbindd_fd;
    are the pointers passed in by the C library to the _nss_ntdom_*
    functions. */
 
-static char *get_static(char **buffer, int *buflen, int len)
+static char *get_static(char **buffer, size_t *buflen, size_t len)
 {
 	char *result;
 
@@ -1080,7 +1080,7 @@ _nss_winbind_uidtosid(uid_t uid, char **sid, char *buffer,
 	struct winbindd_request request;
 
 #ifdef DEBUG_NSS
-	fprintf(stderr, "[%5d]: uidtosid %s\n", getpid(), name);
+	fprintf(stderr, "[%5u]: uidtosid %u\n", (unsigned int)getpid(), (unsigned int)uid);
 #endif
 
 	ZERO_STRUCT(response);
@@ -1119,7 +1119,7 @@ _nss_winbind_gidtosid(gid_t gid, char **sid, char *buffer,
 	struct winbindd_request request;
 
 #ifdef DEBUG_NSS
-	fprintf(stderr, "[%5d]: gidtosid %s\n", getpid(), name);
+	fprintf(stderr, "[%5u]: gidtosid %u\n", (unsigned int)getpid(), (unsigned int)gid);
 #endif
 
 	ZERO_STRUCT(response);

@@ -293,7 +293,7 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		return api_no_reply(outbuf, mdrcnt);
 	}
 
-	DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)", subcommand, p->name, pnum));
+	DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)\n", subcommand, p->name, pnum));
 
 	/* record maximum data length that can be transmitted in an SMBtrans */
 	p->max_trans_reply = mdrcnt;

@@ -73,6 +73,10 @@ int opt_flags = -1;
 int opt_timeout = 0;
 const char *opt_target_workgroup = NULL;
 int opt_machine_pass = 0;
+BOOL opt_localgroup = False;
+BOOL opt_domaingroup = False;
+const char *opt_newntname = "";
+int opt_rid = 0;
 
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
@@ -146,8 +150,7 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	} else {
-		DEBUG(1,("Cannot connect to server.  Error was %s\n", 
-			 nt_errstr(nt_status)));
+		d_printf("Could not connect to server %s\n", server_name);
 
 		/* Display a nicer message depending on the result */
 
@@ -418,6 +421,14 @@ static int net_getlocalsid(int argc, const char **argv)
 		name = global_myname();
 	}
 
+	if(!initialize_password_db(False)) {
+		DEBUG(0, ("WARNING: Could not open passdb - local sid may not reflect passdb\n"
+			  "backend knowlege (such as the sid stored in LDAP)\n"));
+	}
+
+	/* Generate one, if it doesn't exist */
+	get_global_sam_sid();
+
 	if (!secrets_fetch_domain_sid(name, &sid)) {
 		DEBUG(0, ("Can't fetch domain SID for name: %s\n", name));	
 		return 1;
@@ -451,6 +462,14 @@ static int net_getdomainsid(int argc, const char **argv)
 {
 	DOM_SID domain_sid;
 	fstring sid_str;
+
+	if(!initialize_password_db(False)) {
+		DEBUG(0, ("WARNING: Could not open passdb - domain sid may not reflect passdb\n"
+			  "backend knowlege (such as the sid stored in LDAP)\n"));
+	}
+
+	/* Generate one, if it doesn't exist */
+	get_global_sam_sid();
 
 	if (!secrets_fetch_domain_sid(global_myname(), &domain_sid)) {
 		d_printf("Could not fetch local SID\n");
@@ -664,6 +683,13 @@ static struct functable net_func[] = {
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
 		{"myworkgroup", 'W', POPT_ARG_STRING, &opt_workgroup},
+
+		/* Options for 'net groupmap set' */
+		{"local",       'L', POPT_ARG_NONE,   &opt_localgroup},
+		{"domain",      'D', POPT_ARG_NONE,   &opt_domaingroup},
+		{"ntname",      'N', POPT_ARG_STRING, &opt_newntname},
+		{"rid",         'R', POPT_ARG_INT,    &opt_rid},
+
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
 	};

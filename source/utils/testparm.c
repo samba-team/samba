@@ -150,7 +150,7 @@ parameter.\n");
 		 */
 
 		if(lp_encrypted_passwords()) {
-			if(strstr( lp_passwd_chat(), "%o")!=NULL) {
+			if(strstr_m( lp_passwd_chat(), "%o")!=NULL) {
 				fprintf(stderr, "ERROR: the 'passwd chat' script [%s] expects to use the old plaintext password \
 via the %%o substitution. With encrypted passwords this is not possible.\n", lp_passwd_chat() );
 				ret = 1;

@@ -41,7 +41,7 @@ off_t total_bytes = 0;
 #define SMB_DEFAULT_BLOCKSIZE 					64000
 
 const char *username = NULL, *password = NULL, *workgroup = NULL;
-int nonprompt = 0, quiet = 0, dots = 0, keep_permissions = 0, verbose = 0;
+int nonprompt = 0, quiet = 0, dots = 0, keep_permissions = 0, verbose = 0, send_stdout = 0;
 int blocksize = SMB_DEFAULT_BLOCKSIZE;
 
 int smb_download_file(const char *base, const char *name, int recursive, int resume, char *outfile);
@@ -51,7 +51,6 @@ int get_num_cols(void)
 #ifdef TIOCGWINSZ
 	struct winsize ws;
 	if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) < 0) {
-		perror("ioctl");
 		return 0;
 	}
 	return ws.ws_col;
@@ -219,7 +218,7 @@ void print_progress(const char *name, time_t start, time_t now, off_t start_pos,
 	char *status, *filename;
 	int len;
 	if(now - start)avg = 1.0 * (pos - start_pos) / (now - start);
-	eta = (total - pos - start_pos) / avg;
+	eta = (total - pos) / avg;
 	if(total)prcnt = 100.0 * pos / total;
 
 	human_readable(pos, hpos, sizeof(hpos));
@@ -300,74 +299,81 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 	if(newpath[0] == '/')newpath++;
 	
 	/* Open local file and, if necessary, resume */
-	localhandle = open(newpath, O_CREAT | O_NONBLOCK | O_RDWR | (!resume?O_EXCL:0), 0755);
-	if(localhandle < 0) {
-		fprintf(stderr, "Can't open %s: %s\n", newpath, strerror(errno));
-		smbc_close(remotehandle);
-		return 0;
-	}
+	if(!send_stdout) {
+		localhandle = open(newpath, O_CREAT | O_NONBLOCK | O_RDWR | (!resume?O_EXCL:0), 0755);
+		if(localhandle < 0) {
+			fprintf(stderr, "Can't open %s: %s\n", newpath, strerror(errno));
+			smbc_close(remotehandle);
+			return 0;
+		}
 	
-	fstat(localhandle, &localstat);
+		fstat(localhandle, &localstat);
 
-	start_offset = localstat.st_size;
+		start_offset = localstat.st_size;
 
-	if(localstat.st_size && localstat.st_size == remotestat.st_size) {
-		if(verbose)fprintf(stderr, "%s is already downloaded completely.\n", path);
-		else if(!quiet)fprintf(stderr, "%s\n", path);
-		smbc_close(remotehandle);
-		close(localhandle);
-		return 1;
-	}
-
-	if(localstat.st_size > RESUME_CHECK_OFFSET && remotestat.st_size > RESUME_CHECK_OFFSET) {
-		offset_download = localstat.st_size - RESUME_DOWNLOAD_OFFSET;
-		offset_check = localstat.st_size - RESUME_CHECK_OFFSET;
-		if(verbose)printf("Trying to start resume of %s at "OFF_T_FORMAT"\n"
-			   "At the moment "OFF_T_FORMAT" of "OFF_T_FORMAT" bytes have been retrieved\n", newpath, offset_check, 
-			   localstat.st_size, remotestat.st_size);
-	}
-
-	if(offset_check) { 
-		off_t off1, off2;
-		/* First, check all bytes from offset_check to offset_download */
-		off1 = lseek(localhandle, offset_check, SEEK_SET);
-		if(off1 < 0) {
-			fprintf(stderr, "Can't seek to "OFF_T_FORMAT" in local file %s\n", offset_check, newpath);
-			smbc_close(remotehandle); close(localhandle);
-			return 0;
+		if(localstat.st_size && localstat.st_size == remotestat.st_size) {
+			if(verbose)fprintf(stderr, "%s is already downloaded completely.\n", path);
+			else if(!quiet)fprintf(stderr, "%s\n", path);
+			smbc_close(remotehandle);
+			close(localhandle);
+			return 1;
 		}
 
-		off2 = smbc_lseek(remotehandle, offset_check, SEEK_SET); 
-		if(off2 < 0) {
-			fprintf(stderr, "Can't seek to "OFF_T_FORMAT" in remote file %s\n", offset_check, newpath);
-			smbc_close(remotehandle); close(localhandle);
-			return 0;
+		if(localstat.st_size > RESUME_CHECK_OFFSET && remotestat.st_size > RESUME_CHECK_OFFSET) {
+			offset_download = localstat.st_size - RESUME_DOWNLOAD_OFFSET;
+			offset_check = localstat.st_size - RESUME_CHECK_OFFSET;
+			if(verbose)printf("Trying to start resume of %s at "OFF_T_FORMAT"\n"
+				   "At the moment "OFF_T_FORMAT" of "OFF_T_FORMAT" bytes have been retrieved\n", newpath, offset_check, 
+				   localstat.st_size, remotestat.st_size);
 		}
 
-		if(off1 != off2) {
-			fprintf(stderr, "Offset in local and remote files is different (local: "OFF_T_FORMAT", remote: "OFF_T_FORMAT")\n", off1, off2);
-			return 0;
-		}
+		if(offset_check) { 
+			off_t off1, off2;
+			/* First, check all bytes from offset_check to offset_download */
+			off1 = lseek(localhandle, offset_check, SEEK_SET);
+			if(off1 < 0) {
+				fprintf(stderr, "Can't seek to "OFF_T_FORMAT" in local file %s\n", offset_check, newpath);
+				smbc_close(remotehandle); close(localhandle);
+				return 0;
+			}
 
-		if(smbc_read(remotehandle, checkbuf[0], RESUME_CHECK_SIZE) != RESUME_CHECK_SIZE) {
-			fprintf(stderr, "Can't read %d bytes from remote file %s\n", RESUME_CHECK_SIZE, path);
-			smbc_close(remotehandle); close(localhandle);
-			return 0;
-		}
+			off2 = smbc_lseek(remotehandle, offset_check, SEEK_SET); 
+			if(off2 < 0) {
+				fprintf(stderr, "Can't seek to "OFF_T_FORMAT" in remote file %s\n", offset_check, newpath);
+				smbc_close(remotehandle); close(localhandle);
+				return 0;
+			}
 
-		if(read(localhandle, checkbuf[1], RESUME_CHECK_SIZE) != RESUME_CHECK_SIZE) {
-			fprintf(stderr, "Can't read %d bytes from local file %s\n", RESUME_CHECK_SIZE, name);
-			smbc_close(remotehandle); close(localhandle);
-			return 0;
-		}
+			if(off1 != off2) {
+				fprintf(stderr, "Offset in local and remote files is different (local: "OFF_T_FORMAT", remote: "OFF_T_FORMAT")\n", off1, off2);
+				return 0;
+			}
 
-		if(memcmp(checkbuf[0], checkbuf[1], RESUME_CHECK_SIZE) == 0) {
-			if(verbose)printf("Current local and remote file appear to be the same. Starting download from offset "OFF_T_FORMAT"\n", offset_download);
-		} else {
-			fprintf(stderr, "Local and remote file appear to be different, not doing resume for %s\n", path);
-			smbc_close(remotehandle); close(localhandle);
-			return 0;
+			if(smbc_read(remotehandle, checkbuf[0], RESUME_CHECK_SIZE) != RESUME_CHECK_SIZE) {
+				fprintf(stderr, "Can't read %d bytes from remote file %s\n", RESUME_CHECK_SIZE, path);
+				smbc_close(remotehandle); close(localhandle);
+				return 0;
+			}
+
+			if(read(localhandle, checkbuf[1], RESUME_CHECK_SIZE) != RESUME_CHECK_SIZE) {
+				fprintf(stderr, "Can't read %d bytes from local file %s\n", RESUME_CHECK_SIZE, name);
+				smbc_close(remotehandle); close(localhandle);
+				return 0;
+			}
+
+			if(memcmp(checkbuf[0], checkbuf[1], RESUME_CHECK_SIZE) == 0) {
+				if(verbose)printf("Current local and remote file appear to be the same. Starting download from offset "OFF_T_FORMAT"\n", offset_download);
+			} else {
+				fprintf(stderr, "Local and remote file appear to be different, not doing resume for %s\n", path);
+				smbc_close(remotehandle); close(localhandle);
+				return 0;
+			}
 		}
+	} else {
+		localhandle = STDOUT_FILENO;
+		start_offset = 0;
+		offset_download = 0;
+		offset_check = 0;
 	}
 
 	readbuf = malloc(blocksize);
@@ -377,7 +383,8 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 		ssize_t bytesread = smbc_read(remotehandle, readbuf, blocksize);
 		if(bytesread < 0) {
 			fprintf(stderr, "Can't read %d bytes at offset "OFF_T_FORMAT", file %s\n", blocksize, curpos, path);
-			smbc_close(remotehandle); close(localhandle);
+			smbc_close(remotehandle);
+			if (localhandle != STDOUT_FILENO) close(localhandle);
 			free(readbuf);
 			return 0;
 		}
@@ -387,7 +394,8 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 		if(write(localhandle, readbuf, bytesread) < 0) {
 			fprintf(stderr, "Can't write %d bytes to local file %s at offset "OFF_T_FORMAT"\n", bytesread, path, curpos);
 			free(readbuf);
-			smbc_close(remotehandle); close(localhandle);
+			smbc_close(remotehandle);
+			if (localhandle != STDOUT_FILENO) close(localhandle);
 			return 0;
 		}
 
@@ -413,7 +421,7 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 		fputc('\n', stderr);
 	}
 
-	if(keep_permissions) {
+	if(keep_permissions && !send_stdout) {
 		if(fchmod(localhandle, remotestat.st_mode) < 0) {
 			fprintf(stderr, "Unable to change mode of local file %s to %o\n", path, remotestat.st_mode);
 			smbc_close(remotehandle);
@@ -421,8 +429,9 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 			return 0;
 		}
 	}
+
 	smbc_close(remotehandle);
-	close(localhandle);
+	if (localhandle != STDOUT_FILENO) close(localhandle);
 	return 1;
 }
 
@@ -514,6 +523,7 @@ int main(int argc, const char **argv)
 		{"nonprompt", 'n', POPT_ARG_NONE, &nonprompt, 'n', "Don't ask anything (non-interactive)" },
 		{"debuglevel", 'd', POPT_ARG_INT, &debuglevel, 'd', "Debuglevel to use" },
 		{"outputfile", 'o', POPT_ARG_STRING, &outputfile, 'o', "Write downloaded data to specified file" },
+		{"stdout", 'O', POPT_ARG_NONE, &send_stdout, 'O', "Write data to stdout" },
 		{"dots", 'D', POPT_ARG_NONE, &dots, 'D', "Show dots as progress indication" },
 		{"quiet", 'q', POPT_ARG_NONE, &quiet, 'q', "Be quiet" },
 		{"verbose", 'v', POPT_ARG_NONE, &verbose, 'v', "Be verbose" },
@@ -549,8 +559,13 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	if(outputfile && recursive) {
-		fprintf(stderr, "The -o and -R options can not be used together.\n");
+	if((send_stdout || outputfile) && recursive) {
+		fprintf(stderr, "The -o or -O and -R options can not be used together.\n");
+		return 1;
+	}
+
+	if(outputfile && send_stdout) {
+		fprintf(stderr, "The -o and -O options cannot be used together.\n");
 		return 1;
 	}
 

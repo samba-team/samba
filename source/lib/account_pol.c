@@ -55,8 +55,8 @@ BOOL init_account_policy(void)
 		account_policy_set(AP_USER_MUST_LOGON_TO_CHG_PASS, 0);	    /* don't force user to logon   */
 		account_policy_set(AP_MAX_PASSWORD_AGE, (uint32)-1);        /* don't expire		   */
 		account_policy_set(AP_MIN_PASSWORD_AGE, 0);		    /* 0 days                      */
-		account_policy_set(AP_LOCK_ACCOUNT_DURATION, 0);	    /* lockout for 0 minutes       */
-		account_policy_set(AP_RESET_COUNT_TIME, 0);		    /* reset immediatly            */
+		account_policy_set(AP_LOCK_ACCOUNT_DURATION, 30);	    /* lockout for 30 minutes      */
+		account_policy_set(AP_RESET_COUNT_TIME, 30);		    /* reset after 30 minutes      */
 		account_policy_set(AP_BAD_ATTEMPT_LOCKOUT, 0);		    /* don't lockout               */
 		account_policy_set(AP_TIME_TO_LOGOUT, -1);		    /* don't force logout          */
 	}

@@ -35,11 +35,11 @@ static void become_logon_server_fail(struct subnet_record *subrec,
                                       struct response_record *rrec,
                                       struct nmb_name *fail_name)
 {
-	nstring failname;
+	unstring failname;
 	struct work_record *work;
 	struct server_record *servrec;
 
-	pull_ascii_nstring(failname, fail_name->name);
+	pull_ascii_nstring(failname, sizeof(failname), fail_name->name);
 	work = find_workgroup_on_subnet(subrec, failname);
 	if(!work) {
 		DEBUG(0,("become_logon_server_fail: Error - cannot find \
@@ -76,11 +76,11 @@ static void become_logon_server_success(struct subnet_record *subrec,
                                         uint16 nb_flags,
                                         int ttl, struct in_addr registered_ip)
 {
-	nstring reg_name;
+	unstring reg_name;
 	struct work_record *work;
 	struct server_record *servrec;
 
-	pull_ascii_nstring(reg_name, registered_name->name);
+	pull_ascii_nstring(reg_name, sizeof(reg_name), registered_name->name);
 	work = find_workgroup_on_subnet( subrec, reg_name);
 	if(!work) {
 		DEBUG(0,("become_logon_server_success: Error - cannot find \

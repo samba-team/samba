@@ -42,7 +42,7 @@
  * @return A shell status integer (0 for success)
  *
  **/
-int net_rpc_join_ok(const char *domain)
+static int net_rpc_join_ok(const char *domain)
 {
 	struct cli_state *cli;
 	uchar stored_md4_trust_password[16];
@@ -115,8 +115,6 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* Password stuff */
 
 	char *clear_trust_password = NULL;
-	fstring ucs2_trust_password;
-	int ucs2_pw_len;
 	uchar pwbuf[516];
 	SAM_USERINFO_CTR ctr;
 	SAM_USER_INFO_24 p24;
@@ -264,12 +262,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		E_md4hash(clear_trust_password, md4_trust_password);
 	}
 
-	ucs2_pw_len = push_ucs2(NULL, ucs2_trust_password, 
-				clear_trust_password, 
-				sizeof(ucs2_trust_password), 0);
-		  
-	encode_pw_buffer((char *)pwbuf, ucs2_trust_password,
-			 ucs2_pw_len);
+	encode_pw_buffer(pwbuf, clear_trust_password, STR_UNICODE);
 
 	/* Set password on machine account */
 

@@ -377,18 +377,17 @@ use this machine as the password server.\n"));
 	cli_ulogoff(cli);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		struct passwd *pass = Get_Pwnam(user_info->internal_username.str);
-		if (pass) {
-			nt_status = make_server_info_pw(server_info, pass);
-		} else {
-			auth_add_user_script(user_info->domain.str, user_info->internal_username.str);
-			pass = Get_Pwnam(user_info->internal_username.str);
+		fstring real_username;
+		struct passwd *pass;
 
-			if (pass) {
-				nt_status = make_server_info_pw(server_info, pass);
-			} else {
-				nt_status = NT_STATUS_NO_SUCH_USER;
-			}
+		if ( (pass = smb_getpwnam( user_info->internal_username.str, 
+			real_username, True )) != NULL ) 
+		{
+			nt_status = make_server_info_pw(server_info, pass->pw_name, pass);
+		}
+		else
+		{
+			nt_status = NT_STATUS_NO_SUCH_USER;
 		}
 	}
 

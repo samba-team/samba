@@ -213,6 +213,7 @@ typedef struct
 	int change_notify_timeout;
 	int map_to_guest;
 	int min_passwd_length;
+	BOOL use_cracklib;
 	int oplock_break_wait_time;
 	int winbind_cache_time;
 	int iLockSpinCount;
@@ -783,6 +784,7 @@ static struct parm_struct parm_table[] = {
 	{"hosts equiv", P_STRING, P_GLOBAL, &Globals.szHostsEquiv, NULL, NULL, FLAG_ADVANCED}, 
 	{"min passwd length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, FLAG_ADVANCED}, 
 	{"min password length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, FLAG_ADVANCED}, 
+	{"use cracklib", P_BOOL, P_GLOBAL, &Globals.use_cracklib, NULL, NULL, FLAG_ADVANCED}, 
 	{"map to guest", P_ENUM, P_GLOBAL, &Globals.map_to_guest, NULL, enum_map_to_guest, FLAG_ADVANCED}, 
 	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, FLAG_ADVANCED}, 
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, FLAG_ADVANCED}, 
@@ -849,7 +851,7 @@ static struct parm_struct parm_table[] = {
 	{"guest ok", P_BOOL, P_LOCAL, &sDefault.bGuest_ok, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"public", P_BOOL, P_LOCAL, &sDefault.bGuest_ok, NULL, NULL, FLAG_HIDE}, 
 
-	{"only user", P_BOOL, P_LOCAL, &sDefault.bOnlyUser, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
+	{"only user", P_BOOL, P_LOCAL, &sDefault.bOnlyUser, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_DEPRECATED}, 
 	{"hosts allow", P_LIST, P_LOCAL, &sDefault.szHostsallow, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"allow hosts", P_LIST, P_LOCAL, &sDefault.szHostsallow, NULL, NULL, FLAG_HIDE}, 
 	{"hosts deny", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
@@ -1170,61 +1172,66 @@ static struct parm_struct parm_table[] = {
  Initialise the sDefault parameter structure for the printer values.
 ***************************************************************************/
 
-static void init_printer_values(void)
+static void init_printer_values(service *pService)
 {
+	if ( pService == NULL ) {
+		DEBUG(0,("init_printer_values: NULL pointer\n"));
+		return;
+	}
+		
 	/* choose defaults depending on the type of printing */
-	switch (sDefault.iPrinting) {
+	switch (pService->iPrinting) {
 		case PRINT_BSD:
 		case PRINT_AIX:
 		case PRINT_LPRNT:
 		case PRINT_LPROS2:
-			string_set(&sDefault.szLpqcommand, "lpq -P'%p'");
-			string_set(&sDefault.szLprmcommand, "lprm -P'%p' %j");
-			string_set(&sDefault.szPrintcommand,
+			string_set(&pService->szLpqcommand, "lpq -P'%p'");
+			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
+			string_set(&pService->szPrintcommand,
 				   "lpr -r -P'%p' %s");
 			break;
 
 		case PRINT_LPRNG:
 		case PRINT_PLP:
-			string_set(&sDefault.szLpqcommand, "lpq -P'%p'");
-			string_set(&sDefault.szLprmcommand, "lprm -P'%p' %j");
-			string_set(&sDefault.szPrintcommand,
+			string_set(&pService->szLpqcommand, "lpq -P'%p'");
+			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
+			string_set(&pService->szPrintcommand,
 				   "lpr -r -P'%p' %s");
-			string_set(&sDefault.szQueuepausecommand,
+			string_set(&pService->szQueuepausecommand,
 				   "lpc stop '%p'");
-			string_set(&sDefault.szQueueresumecommand,
+			string_set(&pService->szQueueresumecommand,
 				   "lpc start '%p'");
-			string_set(&sDefault.szLppausecommand,
+			string_set(&pService->szLppausecommand,
 				   "lpc hold '%p' %j");
-			string_set(&sDefault.szLpresumecommand,
+			string_set(&pService->szLpresumecommand,
 				   "lpc release '%p' %j");
 			break;
 
 		case PRINT_CUPS:
 #ifdef HAVE_CUPS
-			string_set(&sDefault.szLpqcommand, "");
-			string_set(&sDefault.szLprmcommand, "");
-			string_set(&sDefault.szPrintcommand, "");
-			string_set(&sDefault.szLppausecommand, "");
-			string_set(&sDefault.szLpresumecommand, "");
-			string_set(&sDefault.szQueuepausecommand, "");
-			string_set(&sDefault.szQueueresumecommand, "");
+			string_set(&pService->szLpqcommand, "");
+			string_set(&pService->szLprmcommand, "");
+			string_set(&pService->szPrintcommand, "");
+			string_set(&pService->szLppausecommand, "");
+			string_set(&pService->szLpresumecommand, "");
+			string_set(&pService->szQueuepausecommand, "");
+			string_set(&pService->szQueueresumecommand, "");
 
 	                string_set(&Globals.szPrintcapname, "cups");
 #else
-			string_set(&sDefault.szLpqcommand,
+			string_set(&pService->szLpqcommand,
 			           "/usr/bin/lpstat -o '%p'");
-			string_set(&sDefault.szLprmcommand,
+			string_set(&pService->szLprmcommand,
 			           "/usr/bin/cancel '%p-%j'");
-			string_set(&sDefault.szPrintcommand,
+			string_set(&pService->szPrintcommand,
 			           "/usr/bin/lp -d '%p' %s; rm %s");
-			string_set(&sDefault.szLppausecommand,
+			string_set(&pService->szLppausecommand,
 				   "lp -i '%p-%j' -H hold");
-			string_set(&sDefault.szLpresumecommand,
+			string_set(&pService->szLpresumecommand,
 				   "lp -i '%p-%j' -H resume");
-			string_set(&sDefault.szQueuepausecommand,
+			string_set(&pService->szQueuepausecommand,
 			           "/usr/bin/disable '%p'");
-			string_set(&sDefault.szQueueresumecommand,
+			string_set(&pService->szQueueresumecommand,
 			           "/usr/bin/enable '%p'");
 			string_set(&Globals.szPrintcapname, "lpstat");
 #endif /* HAVE_CUPS */
@@ -1232,38 +1239,38 @@ static void init_printer_values(void)
 
 		case PRINT_SYSV:
 		case PRINT_HPUX:
-			string_set(&sDefault.szLpqcommand, "lpstat -o%p");
-			string_set(&sDefault.szLprmcommand, "cancel %p-%j");
-			string_set(&sDefault.szPrintcommand,
+			string_set(&pService->szLpqcommand, "lpstat -o%p");
+			string_set(&pService->szLprmcommand, "cancel %p-%j");
+			string_set(&pService->szPrintcommand,
 				   "lp -c -d%p %s; rm %s");
-			string_set(&sDefault.szQueuepausecommand,
+			string_set(&pService->szQueuepausecommand,
 				   "disable %p");
-			string_set(&sDefault.szQueueresumecommand,
+			string_set(&pService->szQueueresumecommand,
 				   "enable %p");
 #ifndef HPUX
-			string_set(&sDefault.szLppausecommand,
+			string_set(&pService->szLppausecommand,
 				   "lp -i %p-%j -H hold");
-			string_set(&sDefault.szLpresumecommand,
+			string_set(&pService->szLpresumecommand,
 				   "lp -i %p-%j -H resume");
 #endif /* HPUX */
 			break;
 
 		case PRINT_QNX:
-			string_set(&sDefault.szLpqcommand, "lpq -P%p");
-			string_set(&sDefault.szLprmcommand, "lprm -P%p %j");
-			string_set(&sDefault.szPrintcommand, "lp -r -P%p %s");
+			string_set(&pService->szLpqcommand, "lpq -P%p");
+			string_set(&pService->szLprmcommand, "lprm -P%p %j");
+			string_set(&pService->szPrintcommand, "lp -r -P%p %s");
 			break;
 
 #ifdef DEVELOPER
 	case PRINT_TEST:
 	case PRINT_VLP:
-		string_set(&sDefault.szPrintcommand, "vlp print %p %s");
-		string_set(&sDefault.szLpqcommand, "vlp lpq %p");
-		string_set(&sDefault.szLprmcommand, "vlp lprm %p %j");
-		string_set(&sDefault.szLppausecommand, "vlp lppause %p %j");
-		string_set(&sDefault.szLpresumecommand, "vlp lpresum %p %j");
-		string_set(&sDefault.szQueuepausecommand, "vlp queuepause %p");
-		string_set(&sDefault.szQueueresumecommand, "vlp queueresume %p");
+		string_set(&pService->szPrintcommand, "vlp print %p %s");
+		string_set(&pService->szLpqcommand, "vlp lpq %p");
+		string_set(&pService->szLprmcommand, "vlp lprm %p %j");
+		string_set(&pService->szLppausecommand, "vlp lppause %p %j");
+		string_set(&pService->szLpresumecommand, "vlp lpresum %p %j");
+		string_set(&pService->szQueuepausecommand, "vlp queuepause %p");
+		string_set(&pService->szQueueresumecommand, "vlp queueresume %p");
 		break;
 #endif /* DEVELOPER */
 
@@ -1290,8 +1297,6 @@ static void init_globals(void)
 				string_set(parm_table[i].ptr, "");
 
 		string_set(&sDefault.fstype, FSTYPE_STRING);
-
-		init_printer_values();
 
 		done_init = True;
 	}
@@ -1429,6 +1434,7 @@ static void init_globals(void)
 
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
 	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */
+	Globals.use_cracklib = False; 
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
 	Globals.enhanced_browsing = True; 
 	Globals.iLockSpinCount = 3; /* Try 3 times. */
@@ -1777,6 +1783,7 @@ FN_GLOBAL_INTEGER(lp_machine_password_timeout, &Globals.machine_password_timeout
 FN_GLOBAL_INTEGER(lp_change_notify_timeout, &Globals.change_notify_timeout)
 FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
 FN_GLOBAL_INTEGER(lp_min_passwd_length, &Globals.min_passwd_length)
+FN_GLOBAL_BOOL(lp_use_cracklib, &Globals.use_cracklib)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_count, &Globals.iLockSpinCount)
 FN_GLOBAL_INTEGER(lp_lock_sleep_time, &Globals.iLockSpinTime)
@@ -2383,7 +2390,7 @@ BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
 	ServicePtrs[i]->bOpLocks = False;
 	/* Printer services must be printable. */
 	ServicePtrs[i]->bPrint_ok = True;
-
+	
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
 	return (True);
@@ -3866,6 +3873,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	}
 
 	init_iconv();
+	init_printer_values(&sDefault);
 
 	return (bRetval);
 }

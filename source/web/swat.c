@@ -51,6 +51,7 @@ static int iNumNonAutoPrintServices = 0;
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
 
+
 /****************************************************************************
 ****************************************************************************/
 static int enum_index(int value, const struct enum_list *enumlist)
@@ -197,7 +198,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
-	printf("<tr><td>%s</td><td>", get_parm_translated(stripspaceupper(parm->label), _("Help"), parm->label));
+	d_printf("<tr><td>%s</td><td>", get_parm_translated(stripspaceupper(parm->label), _("Help"), parm->label));
 	switch (parm->type) {
 	case P_CHAR:
 		d_printf("<input type=text size=2 name=\"parm_%s\" value=\"%c\">",

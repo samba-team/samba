@@ -1418,7 +1418,12 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 				
 			if (sid_equal(&sid, &pol_sid)) {
 				rid[i]=local_rid;
-				type[i]=local_type;
+
+				/* Windows does not return WKN_GRP here, even
+				 * on lookups in builtin */
+				type[i] = (local_type == SID_NAME_WKN_GRP) ?
+					SID_NAME_ALIAS : local_type;
+
                 		r_u->status = NT_STATUS_OK;
 			}
             	}
@@ -2076,10 +2081,10 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			break;
 		case 0x0c:
 			account_policy_get(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
-			u_lock_duration = account_policy_temp;
+			u_lock_duration = account_policy_temp * 60;
 
 			account_policy_get(AP_RESET_COUNT_TIME, &account_policy_temp);
-			u_reset_time = account_policy_temp;
+			u_reset_time = account_policy_temp * 60;
 
 			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
 			lockout = account_policy_temp;
@@ -2815,7 +2820,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, DOM_SID *sid)
 
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
-	if (!decode_pw_buffer((char*)id23->pass, plaintext_buf, 256, &len)) {
+	if (!decode_pw_buffer((char*)id23->pass, plaintext_buf, 256, &len, STR_UNICODE)) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -2834,11 +2839,17 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, DOM_SID *sid)
 		DEBUG(5, ("Changing trust account or non-unix-user password, not updating /etc/passwd\n"));
 	} else  {
 		/* update the UNIX password */
-		if (lp_unix_password_sync() )
-			if(!chgpasswd(pdb_get_username(pwd), "", plaintext_buf, True)) {
+		if (lp_unix_password_sync() ) {
+			struct passwd *passwd = Get_Pwnam(pdb_get_username(pwd));
+			if (!passwd) {
+				DEBUG(1, ("chgpasswd: Username does not exist in system !?!\n"));
+			}
+			
+			if(!chgpasswd(pdb_get_username(pwd), passwd, "", plaintext_buf, True)) {
 				pdb_free_sam(&pwd);
 				return False;
 			}
+		}
 	}
  
 	ZERO_STRUCT(plaintext_buf);
@@ -2881,7 +2892,7 @@ static BOOL set_user_info_pw(char *pass, DOM_SID *sid)
 
 	ZERO_STRUCT(plaintext_buf);
  
-	if (!decode_pw_buffer(pass, plaintext_buf, 256, &len)) {
+	if (!decode_pw_buffer(pass, plaintext_buf, 256, &len, STR_UNICODE)) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -2899,7 +2910,12 @@ static BOOL set_user_info_pw(char *pass, DOM_SID *sid)
 	} else {
 		/* update the UNIX password */
 		if (lp_unix_password_sync()) {
-			if(!chgpasswd(pdb_get_username(pwd), "", plaintext_buf, True)) {
+			struct passwd *passwd = Get_Pwnam(pdb_get_username(pwd));
+			if (!passwd) {
+				DEBUG(1, ("chgpasswd: Username does not exist in system !?!\n"));
+			}
+			
+			if(!chgpasswd(pdb_get_username(pwd), passwd, "", plaintext_buf, True)) {
 				pdb_free_sam(&pwd);
 				return False;
 			}
@@ -3252,7 +3268,6 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 	int final_num_sids = 0;
 	int i;
 	DOM_SID group_sid;
-	uint32 group_rid;
 	fstring group_sid_str;
 	DOM_SID *sids=NULL;
 	
@@ -3271,17 +3286,14 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 		return r_u->status;
 	}
 		
-	/* todo: change to use sid_compare_front */
-
-	sid_split_rid(&group_sid, &group_rid);
 	sid_to_string(group_sid_str, &group_sid);
 	DEBUG(10, ("sid is %s\n", group_sid_str));
 
-	/* can we get a query for an SID outside our domain ? */
-	if (!sid_equal(&group_sid, get_global_sam_sid()))
+	if (!sid_check_is_in_our_domain(&group_sid)) {
+		DEBUG(3, ("sid %s is not in our domain\n", group_sid_str));
 		return NT_STATUS_NO_SUCH_GROUP;
+	}
 
-	sid_append_rid(&group_sid, group_rid);
 	DEBUG(10, ("lookup on Domain SID\n"));
 
 	if(!get_domain_group_from_sid(group_sid, &map))
@@ -3465,7 +3477,7 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	/* if the user is not in the group */
 	if(!user_in_unix_group_list(pdb_get_username(sam_pass), grp_name)) {
 		pdb_free_sam(&sam_pass);
-		return NT_STATUS_MEMBER_IN_ALIAS;
+		return NT_STATUS_MEMBER_NOT_IN_ALIAS;
 	}
 
 	smb_delete_user_group(grp_name, pdb_get_username(sam_pass));
@@ -3952,7 +3964,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 
 	/* check if group already exists */
 	if ( (grp=getgrnam(name)) != NULL)
-		return NT_STATUS_GROUP_EXISTS;
+		return NT_STATUS_ALIAS_EXISTS;
 
 	/* we can create the UNIX group */
 	if (smb_create_group(name, &gid) != 0)
@@ -4104,7 +4116,8 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 		return r_u->status;
 	}
 		
-	if (!get_local_group_from_sid(&group_sid, &map))
+	if (!get_local_group_from_sid(&group_sid, &map) &&
+	    !get_builtin_group_from_sid(&group_sid, &map))
 		return NT_STATUS_NO_SUCH_GROUP;
 	
 	ctr=&q_u->ctr;
@@ -4421,10 +4434,10 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			break;
 		case 0x0c:
 			account_policy_get(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
-			u_lock_duration = account_policy_temp;
+			u_lock_duration = account_policy_temp * 60;
 
 			account_policy_get(AP_RESET_COUNT_TIME, &account_policy_temp);
-			u_reset_time = account_policy_temp;
+			u_reset_time = account_policy_temp * 60;
 
 			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
 			lockout = account_policy_temp;
@@ -4489,8 +4502,8 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 		case 0x07:
 			break;
 		case 0x0c:
-			u_lock_duration=nt_time_to_unix_abs(&q_u->ctr->info.inf12.duration);
-			u_reset_time=nt_time_to_unix_abs(&q_u->ctr->info.inf12.reset_count);
+			u_lock_duration=nt_time_to_unix_abs(&q_u->ctr->info.inf12.duration)/60;
+			u_reset_time=nt_time_to_unix_abs(&q_u->ctr->info.inf12.reset_count)/60;
 			
 			account_policy_set(AP_LOCK_ACCOUNT_DURATION, (int)u_lock_duration);
 			account_policy_set(AP_RESET_COUNT_TIME, (int)u_reset_time);

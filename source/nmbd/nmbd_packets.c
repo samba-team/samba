@@ -1034,7 +1034,7 @@ static void process_browse_packet(struct packet_struct *p, char *buf,int len)
 	int command = CVAL(buf,0);
 	struct subnet_record *subrec = find_subnet_for_dgram_browse_packet(p);
 	char scope[64];
-	nstring src_name;
+	unstring src_name;
 
 	/* Drop the packet if it's a different NetBIOS scope, or the source is from one of our names. */
 	pull_ascii(scope, dgram->dest_name.scope, 64, 64, STR_TERMINATE);
@@ -1044,7 +1044,7 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), scope, global_scope()));
 		return;
 	}
 
-	pull_ascii_nstring(src_name, dgram->source_name.name);
+	pull_ascii_nstring(src_name, sizeof(src_name), dgram->source_name.name);
 	if (is_myname(src_name)) {
 		DEBUG(0,("process_browse_packet: Discarding datagram from IP %s. Source name \
 %s is one of our names !\n", inet_ntoa(p->ip), nmb_namestr(&dgram->source_name)));
@@ -1121,7 +1121,7 @@ static void process_lanman_packet(struct packet_struct *p, char *buf,int len)
 	int command = SVAL(buf,0);
 	struct subnet_record *subrec = find_subnet_for_dgram_browse_packet(p);
 	char scope[64];
-	nstring src_name;
+	unstring src_name;
 
 	/* Drop the packet if it's a different NetBIOS scope, or the source is from one of our names. */
 
@@ -1132,7 +1132,7 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), scope, global_scope()));
 		return;
 	}
 
-	pull_ascii_nstring(src_name, dgram->source_name.name);
+	pull_ascii_nstring(src_name, sizeof(src_name), dgram->source_name.name);
 	if (is_myname(src_name)) {
 		DEBUG(0,("process_lanman_packet: Discarding datagram from IP %s. Source name \
 %s is one of our names !\n", inet_ntoa(p->ip), nmb_namestr(&dgram->source_name)));

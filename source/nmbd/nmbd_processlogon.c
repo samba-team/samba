@@ -141,7 +141,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 		case QUERYFORPDC:
 			{
 				fstring mach_str, getdc_str;
-				nstring source_name;
+				fstring source_name;
 				char *q = buf + 2;
 				char *machine = q;
 
@@ -220,7 +220,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
 				pull_ascii_fstring(getdc_str, getdc);
-				pull_ascii_nstring(source_name, dgram->source_name.name);
+				pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
 
 				send_mailslot(True, getdc_str,
 					outbuf,PTR_DIFF(q,outbuf),
@@ -235,7 +235,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
 			{
 				fstring getdc_str;
-				nstring source_name;
+				fstring source_name;
 				char *q = buf + 2;
 				fstring asccomp;
 
@@ -321,7 +321,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					char *q_orig = q;
 					int str_offset;
 
-					get_mydomname(domain);
+					get_mydnsdomname(domain);
 					get_myname(hostname);
 	
 					if (SVAL(uniuser, 0) == 0) {
@@ -432,12 +432,12 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
 				pull_ascii_fstring(getdc_str, getdc);
-				pull_ascii_nstring(source_name, dgram->source_name.name);
+				pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
 
 				send_mailslot(True, getdc,
 					outbuf,PTR_DIFF(q,outbuf),
 					global_myname(), 0x0,
-					dgram->source_name.name,
+					source_name,
 					dgram->source_name.name_type,
 					p->ip, *iface_ip(p->ip), p->port);  
 				break;

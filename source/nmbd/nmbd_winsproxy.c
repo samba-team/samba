@@ -30,7 +30,7 @@ static void wins_proxy_name_query_request_success( struct subnet_record *subrec,
                         struct userdata_struct *userdata,
                         struct nmb_name *nmbname, struct in_addr ip, struct res_rec *rrec)
 {
-	nstring name;
+	unstring name;
 	struct packet_struct *original_packet;
 	struct subnet_record *orig_broadcast_subnet;
 	struct name_record *namerec;
@@ -73,7 +73,7 @@ returned for name %s.\n", nmb_namestr(nmbname) ));
 	if(rrec == PERMANENT_TTL)
 		ttl = lp_max_ttl();
 
-	pull_ascii_nstring(name, nmbname->name);
+	pull_ascii_nstring(name, sizeof(name), nmbname->name);
 	namerec = add_name_to_subnet( orig_broadcast_subnet, name,
 					nmbname->name_type, nb_flags, ttl,
 					WINS_PROXY_NAME, num_ips, iplist );
@@ -193,7 +193,7 @@ void make_wins_proxy_name_query_request( struct subnet_record *subrec,
 	long *ud[(sizeof(struct userdata_struct) + sizeof(struct subrec *) + 
 		sizeof(struct packet_struct *))/sizeof(long *) + 1];
 	struct userdata_struct *userdata = (struct userdata_struct *)ud;
-	nstring qname;
+	unstring qname;
 
 	memset(ud, '\0', sizeof(ud));
  
@@ -205,7 +205,7 @@ void make_wins_proxy_name_query_request( struct subnet_record *subrec,
 			sizeof(struct packet_struct *));
 
 	/* Now use the unicast subnet to query the name with the WINS server. */
-	pull_ascii_nstring(qname, question_name->name);
+	pull_ascii_nstring(qname, sizeof(qname), question_name->name);
 	query_name( unicast_subnet, qname, question_name->name_type,
 		wins_proxy_name_query_request_success,
 		wins_proxy_name_query_request_fail,

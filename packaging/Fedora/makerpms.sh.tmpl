@@ -46,7 +46,8 @@ esac
 ##
 for file in samba.pamd samba.sysconfig samba.spec \
 	smb.init swat.desktop filter-requires-samba.sh \
-	samba.log samba.xinetd smbprint winbind.init
+	samba.log samba.xinetd smbprint winbind.init \
+	smb.conf smbusers
 do
 	cp -p $file ${SRCDIR}
 

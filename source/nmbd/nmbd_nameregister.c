@@ -85,8 +85,8 @@ static void register_name_response(struct subnet_record *subrec,
 		 */
 		
 #if 1 /* OLD_SAMBA_SERVER_HACK */
-		nstring ans_name;
-		pull_ascii_nstring(ans_name, answer_name->name);
+		unstring ans_name;
+		pull_ascii_nstring(ans_name, sizeof(ans_name), answer_name->name);
 		if((nmb->header.rcode == ACT_ERR) && strequal(lp_workgroup(), ans_name) &&
 		   (answer_name->name_type == 0x1b)) {
 			/* Pretend we did not get this. */
@@ -418,7 +418,7 @@ static void multihomed_register_name(struct nmb_name *nmbname, uint16 nb_flags,
 	struct subnet_record *subrec;
 	char **wins_tags;
 	struct in_addr *ip_list;
-	nstring name;
+	unstring name;
 
 	for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec) )
 		num_ips++;
@@ -434,7 +434,7 @@ static void multihomed_register_name(struct nmb_name *nmbname, uint16 nb_flags,
 		ip_list[i] = subrec->myip;
 	}
 
-	pull_ascii_nstring(name, nmbname->name);
+	pull_ascii_nstring(name, sizeof(name), nmbname->name);
 	add_name_to_subnet(unicast_subnet, name, nmbname->name_type,
 			   nb_flags, lp_max_ttl(), SELF_NAME,
 			   num_ips, ip_list);
@@ -473,16 +473,17 @@ void register_name(struct subnet_record *subrec,
 	struct nmb_name nmbname;
 	nstring nname;
 
-        if (strlen(name)+1 > sizeof(nstring)) {
-		memcpy(nname, name,sizeof(nstring)-1);
-		nname[sizeof(nstring)-1] = '\0';
+	errno = 0;
+	push_ascii_nstring(nname, name);
+        if (errno == E2BIG) {
+		unstring tname;
+		pull_ascii_nstring(tname, sizeof(tname), nname);
 		DEBUG(0,("register_name: NetBIOS name %s is too long. Truncating to %s\n",
-			name, nname));
+			name, tname));
+		make_nmb_name(&nmbname, tname, type);
 	} else {
-		nstrcpy(nname,name);
+		make_nmb_name(&nmbname, name, type);
 	}
-
-	make_nmb_name(&nmbname, nname, type);
 
 	/* Always set the NB_ACTIVE flag on the name we are
 	   registering. Doesn't make sense without it.

@@ -199,8 +199,9 @@ BOOL conn_idle_all(time_t t, int deadtime)
 }
 
 /****************************************************************************
-clear a vuid out of the validity cache, and as the 'owner' of a connection.
+ Clear a vuid out of the validity cache, and as the 'owner' of a connection.
 ****************************************************************************/
+
 void conn_clear_vuid_cache(uint16 vuid)
 {
 	connection_struct *conn;
@@ -212,8 +213,11 @@ void conn_clear_vuid_cache(uint16 vuid)
 		}
 
 		for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
-			if (conn->vuid_cache.list[i] == vuid) {
-				conn->vuid_cache.list[i] = UID_FIELD_INVALID;
+			if (conn->vuid_cache.array[i].vuid == vuid) {
+				struct vuid_cache_entry *ent = &conn->vuid_cache.array[i];
+				ent->vuid = UID_FIELD_INVALID;
+				ent->read_only = False;
+				ent->admin_user = False;
 			}
 		}
 	}

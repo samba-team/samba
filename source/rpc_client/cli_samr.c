@@ -322,6 +322,143 @@ NTSTATUS cli_samr_open_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Create domain group */
+
+NTSTATUS cli_samr_create_dom_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				   POLICY_HND *domain_pol,
+				   const char *group_name,
+				   uint32 access_mask, POLICY_HND *group_pol)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_CREATE_DOM_GROUP q;
+	SAMR_R_CREATE_DOM_GROUP r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_create_dom_group\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_create_dom_group(&q, domain_pol, group_name, access_mask);
+
+	if (!samr_io_q_create_dom_group("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_CREATE_DOM_GROUP, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_create_dom_group("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result))
+		*group_pol = r.pol;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Add a domain group member */
+
+NTSTATUS cli_samr_add_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *group_pol, uint32 rid)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_ADD_GROUPMEM q;
+	SAMR_R_ADD_GROUPMEM r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_add_groupmem\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_add_groupmem(&q, group_pol, rid);
+
+	if (!samr_io_q_add_groupmem("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_ADD_GROUPMEM, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_add_groupmem("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Delete a domain group member */
+
+NTSTATUS cli_samr_del_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			       POLICY_HND *group_pol, uint32 rid)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_DEL_GROUPMEM q;
+	SAMR_R_DEL_GROUPMEM r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_del_groupmem\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_del_groupmem(&q, group_pol, rid);
+
+	if (!samr_io_q_del_groupmem("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_DEL_GROUPMEM, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_del_groupmem("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* Query user info */
 
 NTSTATUS cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
@@ -360,6 +497,50 @@ NTSTATUS cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 	*ctr = r.ctr;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Set group info */
+
+NTSTATUS cli_samr_set_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *group_pol, GROUP_INFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_SET_GROUPINFO q;
+	SAMR_R_SET_GROUPINFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_set_groupinfo\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_set_groupinfo(&q, group_pol, ctr);
+
+	if (!samr_io_q_set_groupinfo("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_SET_GROUPINFO, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_set_groupinfo("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
 
  done:
 	prs_mem_free(&qbuf);
@@ -455,6 +636,50 @@ NTSTATUS cli_samr_query_usergroups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		*num_groups = r.num_entries;
 		*gid = r.gid;
 	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Set alias info */
+
+NTSTATUS cli_samr_set_aliasinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_SET_ALIASINFO q;
+	SAMR_R_SET_ALIASINFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_set_aliasinfo\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_set_aliasinfo(&q, alias_pol, ctr);
+
+	if (!samr_io_q_set_aliasinfo("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_SET_ALIASINFO, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_set_aliasinfo("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
 
  done:
 	prs_mem_free(&qbuf);
@@ -941,6 +1166,149 @@ NTSTATUS cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Create an alias */
+
+NTSTATUS cli_samr_create_dom_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				   POLICY_HND *domain_pol, const char *name,
+				   POLICY_HND *alias_pol)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_CREATE_DOM_ALIAS q;
+	SAMR_R_CREATE_DOM_ALIAS r;
+	NTSTATUS result;
+
+	DEBUG(10,("cli_samr_create_dom_alias named %s\n", name));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_create_dom_alias(&q, domain_pol, name);
+
+	if (!samr_io_q_create_dom_alias("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_CREATE_DOM_ALIAS, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_create_dom_alias("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if (NT_STATUS_IS_OK(result = r.status)) {
+		*alias_pol = r.alias_pol;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Add an alias member */
+
+NTSTATUS cli_samr_add_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			       POLICY_HND *alias_pol, DOM_SID *member)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_ADD_ALIASMEM q;
+	SAMR_R_ADD_ALIASMEM r;
+	NTSTATUS result;
+
+	DEBUG(10,("cli_samr_add_aliasmem"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_add_aliasmem(&q, alias_pol, member);
+
+	if (!samr_io_q_add_aliasmem("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_ADD_ALIASMEM, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_add_aliasmem("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Delete an alias member */
+
+NTSTATUS cli_samr_del_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			       POLICY_HND *alias_pol, DOM_SID *member)
+{
+	prs_struct qbuf, rbuf;
+ 	SAMR_Q_DEL_ALIASMEM q;
+ 	SAMR_R_DEL_ALIASMEM r;
+ 	NTSTATUS result;
+
+ 	DEBUG(10,("cli_samr_del_aliasmem"));
+
+ 	ZERO_STRUCT(q);
+ 	ZERO_STRUCT(r);
+
+ 	/* Initialise parse structures */
+
+ 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+ 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+ 	/* Marshall data and send request */
+
+ 	init_samr_q_del_aliasmem(&q, alias_pol, member);
+
+	if (!samr_io_q_del_aliasmem("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_DEL_ALIASMEM, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_del_aliasmem("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* Query alias info */
 
 NTSTATUS cli_samr_query_alias_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
@@ -1027,6 +1395,96 @@ NTSTATUS cli_samr_query_dom_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	r.ctr = ctr;
 
 	if (!samr_io_r_query_dom_info("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* User change password */
+
+NTSTATUS cli_samr_chgpasswd_user(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				 const char *username, 
+				 const char *newpassword, 
+				 const char *oldpassword )
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_CHGPASSWD_USER q;
+	SAMR_R_CHGPASSWD_USER r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	uchar new_nt_password[516];
+	uchar new_lm_password[516];
+	uchar old_nt_hash[16];
+	uchar old_lanman_hash[16];
+	uchar old_nt_hash_enc[16];
+	uchar old_lanman_hash_enc[16];
+
+	uchar new_nt_hash[16];
+	uchar new_lanman_hash[16];
+
+	DEBUG(10,("cli_samr_query_dom_info\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Calculate the MD4 hash (NT compatible) of the password */
+	E_md4hash(oldpassword, old_nt_hash);
+	E_md4hash(newpassword, new_nt_hash);
+
+	if (lp_client_lanman_auth() 
+	    && E_deshash(newpassword, new_lanman_hash) 
+	    && E_deshash(oldpassword, old_lanman_hash)) {
+		/* E_deshash returns false for 'long' passwords (> 14
+		   DOS chars).  This allows us to match Win2k, which
+		   does not store a LM hash for these passwords (which
+		   would reduce the effective password length to 14) */
+
+		encode_pw_buffer(new_lm_password, newpassword, STR_UNICODE);
+
+		SamOEMhash( new_lm_password, old_nt_hash, 516);
+		E_old_pw_hash( new_nt_hash, old_lanman_hash, old_lanman_hash_enc);
+	} else {
+		ZERO_STRUCT(new_lm_password);
+		ZERO_STRUCT(old_lanman_hash_enc);
+	}
+
+	encode_pw_buffer(new_nt_password, newpassword, STR_UNICODE);
+	
+	SamOEMhash( new_nt_password, old_nt_hash, 516);
+	E_old_pw_hash( new_nt_hash, old_nt_hash, old_nt_hash_enc);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_chgpasswd_user(&q, cli->srv_name_slash, username, 
+				   new_nt_password, 
+				   old_nt_hash_enc, 
+				   new_lm_password,
+				   old_lanman_hash_enc);
+
+	if (!samr_io_q_chgpasswd_user("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_CHGPASSWD_USER, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_chgpasswd_user("", &r, &rbuf, 0)) {
 		goto done;
 	}
 

@@ -1223,6 +1223,7 @@ static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, const int pipe_idx, RPC_IFAC
 {
 	int i = 0;
 
+# if 0	/* JERRY -- apparently ASU forgets to fill in the server pipe name sometimes */
 	if ( hdr_ba->addr.len <= 0)
 		return False;
 		
@@ -1240,6 +1241,7 @@ static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, const int pipe_idx, RPC_IFAC
 		DEBUG(2,("bind_rpc_pipe: pipe name %s unsupported\n", hdr_ba->addr.str));
 		return False;
 	}
+#endif 	/* JERRY */
 
 	/* check the transfer syntax */
 	if ((hdr_ba->transfer.version != transfer->version) ||
@@ -1465,6 +1467,8 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 		cli_close(cli, cli->nt_pipe_fnum);
 		return False;
 	}
+
+	cli->pipe_idx = pipe_idx;
 
 	/* 
 	 * Setup the remote server name prefixed by \ and the machine account name.

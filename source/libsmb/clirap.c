@@ -291,7 +291,6 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   char *rparam = NULL;
   char *rdata = NULL;
   unsigned int rprcnt, rdrcnt;
-  pstring dos_new_password;
 
   if (strlen(user) >= sizeof(fstring)-1) {
     DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
@@ -317,10 +316,13 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
    */
   E_deshash(old_password, old_pw_hash);
 
-  clistr_push(cli, dos_new_password, new_password, sizeof(dos_new_password), STR_TERMINATE|STR_ASCII);
-
-  if (!make_oem_passwd_hash( data, dos_new_password, old_pw_hash, False))
-    return False;
+  encode_pw_buffer(data, new_password, STR_ASCII);
+  
+#ifdef DEBUG_PASSWORD
+  DEBUG(100,("make_oem_passwd_hash\n"));
+  dump_data(100, data, 516);
+#endif
+  SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, 516);
 
   /* 
    * Now place the old password hash in the data.
@@ -406,7 +408,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 			uint32 ecode;
 			cli_dos_error(cli, &eclass, &ecode);
 			if (eclass != ERRSRV || ecode != ERRerror) break;
-			msleep(100);
+			smb_msleep(100);
 		}
 	} while (count-- && ret==False);
 
@@ -629,7 +631,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 /****************************************************************************
 send a qfileinfo call
 ****************************************************************************/
-BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdata)
+BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char **poutdata, uint32 *poutlen)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -637,9 +639,13 @@ BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdat
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
 
+	*poutdata = NULL;
+	*poutlen = 0;
+
 	/* if its a win95 server then fail this - win95 totally screws it
 	   up */
-	if (cli->win95) return False;
+	if (cli->win95)
+		return False;
 
 	param_len = 4;
 
@@ -663,7 +669,8 @@ BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdat
 		return False;
 	}
 
-	memcpy(outdata, rdata, data_len);
+	*poutdata = memdup(rdata, data_len);
+	*poutlen = data_len;
 
 	SAFE_FREE(rdata);
 	SAFE_FREE(rparam);
@@ -713,7 +720,7 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 			uint32 ecode;
 			cli_dos_error(cli, &eclass, &ecode);
 			if (eclass != ERRSRV || ecode != ERRerror) break;
-			msleep(100);
+			smb_msleep(100);
 		}
 	} while (count-- && ret==False);
 

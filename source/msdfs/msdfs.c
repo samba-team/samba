@@ -45,16 +45,16 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 
 	/* now tokenize */
 	/* parse out hostname */
-	p = strchr(temp,'\\');
+	p = strchr_m(temp,'\\');
 	if(p == NULL)
 		return False;
 	*p = '\0';
 	pstrcpy(pdp->hostname,temp);
-	DEBUG(10,("hostname: %s\n",pdp->hostname));
+	DEBUG(10,("parse_dfs_path: hostname: %s\n",pdp->hostname));
 
 	/* parse out servicename */
 	temp = p+1;
-	p = strchr(temp,'\\');
+	p = strchr_m(temp,'\\');
 	if(p == NULL) {
 		pstrcpy(pdp->servicename,temp);
 		pdp->reqpath[0] = '\0';
@@ -62,17 +62,58 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 	}
 	*p = '\0';
 	pstrcpy(pdp->servicename,temp);
-	DEBUG(10,("servicename: %s\n",pdp->servicename));
+	DEBUG(10,("parse_dfs_path: servicename: %s\n",pdp->servicename));
 
 	/* rest is reqpath */
-	pstrcpy(pdp->reqpath, p+1);
-	p = pdp->reqpath;
-	while (*p) {
-		if (*p == '\\') *p = '/';
-		p++;
-	}
+	check_path_syntax(pdp->reqpath, p+1);
 
-	DEBUG(10,("rest of the path: %s\n",pdp->reqpath));
+	DEBUG(10,("parse_dfs_path: rest of the path: %s\n",pdp->reqpath));
+	return True;
+}
+
+/**********************************************************************
+  Parse the pathname  of the form /hostname/service/reqpath
+  into the dfs_path structure 
+ **********************************************************************/
+
+static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path* pdp)
+{
+	pstring pathname_local;
+	char* p,*temp;
+
+	pstrcpy(pathname_local,pathname);
+	p = temp = pathname_local;
+
+	ZERO_STRUCTP(pdp);
+
+	trim_char(temp,'/','/');
+	DEBUG(10,("temp in parse_processed_dfs_path: .%s. after trimming \\'s\n",temp));
+
+	/* now tokenize */
+	/* parse out hostname */
+	p = strchr_m(temp,'/');
+	if(p == NULL)
+		return False;
+	*p = '\0';
+	pstrcpy(pdp->hostname,temp);
+	DEBUG(10,("parse_processed_dfs_path: hostname: %s\n",pdp->hostname));
+
+	/* parse out servicename */
+	temp = p+1;
+	p = strchr_m(temp,'/');
+	if(p == NULL) {
+		pstrcpy(pdp->servicename,temp);
+		pdp->reqpath[0] = '\0';
+		return True;
+	}
+	*p = '\0';
+	pstrcpy(pdp->servicename,temp);
+	DEBUG(10,("parse_processed_dfs_path: servicename: %s\n",pdp->servicename));
+
+	/* rest is reqpath */
+	check_path_syntax(pdp->reqpath, p+1);
+
+	DEBUG(10,("parse_processed_dfs_path: rest of the path: %s\n",pdp->reqpath));
 	return True;
 }
 
@@ -100,6 +141,13 @@ static BOOL create_conn_struct( connection_struct *conn, int snum, char *path)
 		talloc_destroy( conn->mem_ctx );
 		return False;
 	}
+
+	/*
+	 * Windows seems to insist on doing trans2getdfsreferral() calls on the IPC$
+	 * share as the anonymous user. If we try to chdir as that user we will
+	 * fail.... WTF ? JRA.
+	 */
+
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
 		DEBUG(3,("create_conn_struct: Can't ChDir to new conn path %s. Error was %s\n",
 					conn->connectpath, strerror(errno) ));
@@ -114,6 +162,7 @@ static BOOL create_conn_struct( connection_struct *conn, int snum, char *path)
  Parse the contents of a symlink to verify if it is an msdfs referral
  A valid referral is of the form: msdfs:server1\share1,server2\share2
  **********************************************************************/
+
 static BOOL parse_symlink(char* buf,struct referral** preflist, 
 				 int* refcount)
 {
@@ -147,13 +196,21 @@ static BOOL parse_symlink(char* buf,struct referral** preflist,
 	}
 	
 	for(i=0;i<count;i++) {
-		/* replace / in the alternate path by a \ */
-		char* p = strchr(alt_path[i],'/');
-		if(p)
+		char *p;
+
+		/* replace all /'s in the alternate path by a \ */
+		for(p = alt_path[i]; *p && ((p = strchr_m(p,'/'))!=NULL); p++) {
 			*p = '\\'; 
+		}
+
+		/* Remove leading '\\'s */
+		p = alt_path[i];
+		while (*p && (*p == '\\')) {
+			p++;
+		}
 
 		pstrcpy(reflist[i].alternate_path, "\\");
-		pstrcat(reflist[i].alternate_path, alt_path[i]);
+		pstrcat(reflist[i].alternate_path, p);
 		reflist[i].proximity = 0;
 		reflist[i].ttl = REFERRAL_TTL;
 		DEBUG(10, ("parse_symlink: Created alt path: %s\n", reflist[i].alternate_path));
@@ -270,7 +327,7 @@ static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp,
 
 	/* redirect if any component in the path is a link */
 	pstrcpy(reqpath, dp->reqpath);
-	p = strrchr(reqpath, '/');
+	p = strrchr_m(reqpath, '/');
 	while (p) {
 		*p = '\0';
 		pstrcpy(localpath, reqpath);
@@ -288,7 +345,7 @@ static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp,
 				pstrcpy(buf, dfspath);
 				trim_char(buf, '\0', '\\');
 				for (; consumed_level; consumed_level--) {
-					q = strrchr(buf, '\\');
+					q = strrchr_m(buf, '\\');
 					if (q)
 						*q = 0;
 				}
@@ -298,7 +355,7 @@ static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp,
 			
 			return True;
 		}
-		p = strrchr(reqpath, '/');
+		p = strrchr_m(reqpath, '/');
 		consumed_level++;
 	}
 	
@@ -318,7 +375,7 @@ BOOL dfs_redirect(pstring pathname, connection_struct* conn,
 	if (!conn || !pathname)
 		return False;
 
-	parse_dfs_path(pathname, &dp);
+	parse_processed_dfs_path(pathname, &dp);
 
 	/* if dfs pathname for a non-dfs share, convert to tcon-relative
 	   path and return false */
@@ -348,12 +405,40 @@ BOOL dfs_redirect(pstring pathname, connection_struct* conn,
 }
 
 /**********************************************************************
+ Return a self referral.
+**********************************************************************/
+
+static BOOL self_ref(char *pathname, struct junction_map *jucn,
+			int *consumedcntp, BOOL *self_referralp)
+{
+	struct referral *ref;
+
+	if (self_referralp != NULL)
+		*self_referralp = True;
+
+	jucn->referral_count = 1;
+	if((ref = (struct referral*) malloc(sizeof(struct referral))) == NULL) {
+		DEBUG(0,("self_ref: malloc failed for referral\n"));
+		return False;
+	}
+
+	pstrcpy(ref->alternate_path,pathname);
+	ref->proximity = 0;
+	ref->ttl = REFERRAL_TTL;
+	jucn->referral_list = ref;
+	if (consumedcntp)
+		*consumedcntp = strlen(pathname);
+
+	return True;
+}
+
+/**********************************************************************
  Gets valid referrals for a dfs path and fills up the
  junction_map structure
- **********************************************************************/
+**********************************************************************/
 
-BOOL get_referred_path(char *pathname, struct junction_map* jucn,
-		       int* consumedcntp, BOOL* self_referralp)
+BOOL get_referred_path(char *pathname, struct junction_map *jucn,
+		       int *consumedcntp, BOOL *self_referralp)
 {
 	struct dfs_path dp;
 
@@ -362,11 +447,12 @@ BOOL get_referred_path(char *pathname, struct junction_map* jucn,
 	pstring conn_path;
 	int snum;
 	BOOL ret = False;
-
 	BOOL self_referral = False;
 
 	if (!pathname || !jucn)
 		return False;
+
+	ZERO_STRUCT(conns);
 
 	if (self_referralp)
 		*self_referralp = False;
@@ -394,7 +480,18 @@ BOOL get_referred_path(char *pathname, struct junction_map* jucn,
 		if ((snum = find_service(jucn->service_name)) < 0)
 			return False;
 	}
-	
+
+	/*
+	 * Self referrals are tested with a anonymous IPC connection and
+	 * a GET_DFS_REFERRAL call to \\server\share. (which means dp.reqpath[0] points
+	 * to an empty string). create_conn_struct cd's into the directory and will
+	 * fail if it cannot (as the anonymous user). Cope with this.
+	 */
+
+	if (dp.reqpath[0] == '\0') {
+		return self_ref(pathname, jucn, consumedcntp, self_referralp);
+	}
+
 	pstrcpy(conn_path, lp_pathname(snum));
 	if (!create_conn_struct(conn, snum, conn_path))
 		return False;
@@ -437,24 +534,16 @@ BOOL get_referred_path(char *pathname, struct junction_map* jucn,
 	
 	/* if self_referral, fill up the junction map */
 	if (*self_referralp) {
-		struct referral* ref;
-		jucn->referral_count = 1;
-		if((ref = (struct referral*) malloc(sizeof(struct referral))) == NULL) {
-			DEBUG(0,("malloc failed for referral\n"));
+		if (self_ref(pathname, jucn, consumedcntp, self_referralp) == False) {
 			goto out;
 		}
-      
-		pstrcpy(ref->alternate_path,pathname);
-		ref->proximity = 0;
-		ref->ttl = REFERRAL_TTL;
-		jucn->referral_list = ref;
-		if (consumedcntp)
-			*consumedcntp = strlen(pathname);
 	}
 	
 	ret = True;
+
 out:
-	talloc_destroy( conn->mem_ctx );
+	if (conn->mem_ctx)
+		talloc_destroy( conn->mem_ctx );
 	
 	return ret;
 }
@@ -526,7 +615,7 @@ static int setup_ver2_dfs_referral(char* pathname, char** ppdata,
 	offset = 8;
 	/* add the referral elements */
 	for(i=0;i<junction->referral_count;i++) {
-		struct referral* ref = &(junction->referral_list[i]);
+		struct referral* ref = &junction->referral_list[i];
 		int unilen;
 
 		SSVAL(pdata,offset,2); /* version 2 */
@@ -769,7 +858,7 @@ static BOOL junction_to_local_path(struct junction_map* jucn, char* path,
 	return True;
 }
 
-BOOL create_msdfs_link(struct junction_map* jucn, BOOL exists)
+BOOL create_msdfs_link(struct junction_map *jucn, BOOL exists)
 {
 	pstring path;
 	pstring msdfs_link;

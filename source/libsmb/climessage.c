@@ -87,7 +87,7 @@ int cli_message_text_build(struct cli_state *cli, char *msg, int len, int grp)
 	p = smb_buf(cli->outbuf);
 	*p++ = 1;
 
-	if ((lendos = convert_string_allocate(NULL,CH_UNIX, CH_DOS, msg,len, (void **) &msgdos)) < 0 || !msgdos) {
+	if ((lendos = (int)convert_string_allocate(NULL,CH_UNIX, CH_DOS, msg,len, (void **) &msgdos, True)) < 0 || !msgdos) {
 		DEBUG(3,("Conversion failed, sending message in UNIX charset\n"));
 		SSVAL(p, 0, len); p += 2;
 		memcpy(p, msg, len);

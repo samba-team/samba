@@ -24,7 +24,6 @@
 #include "printing.h"
 
 /* Current printer interface */
-static struct printif *current_printif = &generic_printif;
 static BOOL remove_from_jobs_changed(int snum, uint32 jobid);
 
 /* 
@@ -206,12 +205,6 @@ BOOL print_backend_init(void)
 
 	close_all_print_db(); /* Don't leave any open. */
 
-	/* select the appropriate printing interface... */
-#ifdef HAVE_CUPS
-	if (strcmp(lp_printcapname(), "cups") == 0)
-		current_printif = &cups_printif;
-#endif /* HAVE_CUPS */
-
 	/* do NT print initialization... */
 	return nt_printing_init();
 }
@@ -223,6 +216,28 @@ BOOL print_backend_init(void)
 void printing_end(void)
 {
 	close_all_print_db(); /* Don't leave any open. */
+}
+
+/****************************************************************************
+ Retrieve the set of printing functions for a given service.  This allows 
+ us to set the printer function table based on the value of the 'printing'
+ service parameter.
+ 
+ Use the generic interface as the default and only use cups interface only
+ when asked for (and only when supported)
+****************************************************************************/
+
+static struct printif *get_printer_fns( int snum )
+{
+	struct printif *printer_fns = &generic_printif;
+
+#ifdef HAVE_CUPS
+	if ( lp_printing(snum) == PRINT_CUPS ) {
+		printer_fns = &cups_printif;
+	}
+#endif /* HAVE_CUPS */
+	
+	return printer_fns;
 }
 
 /****************************************************************************
@@ -519,8 +534,22 @@ static BOOL pjob_store(int snum, uint32 jobid, struct printjob *pjob)
 
 	/* Send notify updates for what has changed */
 
-	if ( ret && (old_data.dsize == 0 || old_data.dsize == sizeof(*pjob)) )
-		pjob_store_notify( snum, jobid, (struct printjob *)old_data.dptr, pjob );
+	if ( ret ) {
+		struct printjob old_pjob;
+
+		if ( old_data.dsize )
+		{
+			if ( unpack_pjob( old_data.dptr, old_data.dsize, &old_pjob ) != -1 )
+			{
+				pjob_store_notify( snum, jobid, &old_pjob , pjob );
+				free_nt_devicemode( &old_pjob.nt_devmode );
+			}
+		}
+		else {
+			/* new job */
+			pjob_store_notify( snum, jobid, NULL, pjob );
+		}
+	}
 
 done:
 	SAFE_FREE( old_data.dptr );
@@ -643,7 +672,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	struct traverse_struct *ts = (struct traverse_struct *)state;
 	struct printjob pjob;
 	uint32 jobid;
-	int i;
+	int i = 0;
 
 	if (  key.dsize != sizeof(jobid) )
 		return 0;
@@ -803,6 +832,8 @@ static void set_updating_pid(const fstring printer_name, BOOL delete)
 	TDB_DATA key;
 	TDB_DATA data;
 	pid_t updating_pid = sys_getpid();
+	uint8 buffer[4];
+	
 	struct tdb_print_db *pdb = get_print_db_byname(printer_name);
 
 	if (!pdb)
@@ -818,8 +849,9 @@ static void set_updating_pid(const fstring printer_name, BOOL delete)
 		return;
 	}
 	
-	data.dptr = (void *)&updating_pid;
-	data.dsize = sizeof(pid_t);
+	SIVAL( buffer, 0, updating_pid);
+	data.dptr = (void *)buffer;
+	data.dsize = 4;		/* we always assume this is a 4 byte value */
 
 	tdb_store(pdb->tdb, key, data, TDB_REPLACE);	
 	release_print_db(pdb);
@@ -951,6 +983,7 @@ static void print_queue_update(int snum)
 	TDB_DATA data, key;
 	TDB_DATA jcdata;
 	struct tdb_print_db *pdb;
+	struct printif *current_printif = get_printer_fns( snum );
 
 	fstrcpy(printer_name, lp_const_servicename(snum));
 	pdb = get_print_db_byname(printer_name);
@@ -1448,6 +1481,7 @@ static BOOL print_job_delete1(int snum, uint32 jobid)
 {
 	struct printjob *pjob = print_job_find(snum, jobid);
 	int result = 0;
+	struct printif *current_printif = get_printer_fns( snum );
 
 	if (!pjob)
 		return False;
@@ -1589,6 +1623,7 @@ BOOL print_job_pause(struct current_user *user, int snum, uint32 jobid, WERROR *
 {
 	struct printjob *pjob = print_job_find(snum, jobid);
 	int ret = -1;
+	struct printif *current_printif = get_printer_fns( snum );
 	
 	if (!pjob || !user) 
 		return False;
@@ -1639,6 +1674,7 @@ BOOL print_job_resume(struct current_user *user, int snum, uint32 jobid, WERROR 
 {
 	struct printjob *pjob = print_job_find(snum, jobid);
 	int ret;
+	struct printif *current_printif = get_printer_fns( snum );
 	
 	if (!pjob || !user)
 		return False;
@@ -2040,6 +2076,7 @@ BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
 	struct printjob *pjob = print_job_find(snum, jobid);
 	int ret;
 	SMB_STRUCT_STAT sbuf;
+	struct printif *current_printif = get_printer_fns( snum );
 
 	if (!pjob)
 		return False;
@@ -2183,7 +2220,7 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 		uint32 jobid;
 		struct printjob *pjob;
 
-		jobid = IVAL(&cgdata.dptr, i*4);
+		jobid = IVAL(cgdata.dptr, i*4);
 		DEBUG(5,("get_stored_queue_info: changed job = %u\n", (unsigned int)jobid));
 		pjob = print_job_find(snum, jobid);
 		if (!pjob) {
@@ -2296,6 +2333,7 @@ int print_queue_status(int snum,
 BOOL print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
 {
 	int ret;
+	struct printif *current_printif = get_printer_fns( snum );
 	
 	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
 		*errcode = WERR_ACCESS_DENIED;
@@ -2326,6 +2364,7 @@ BOOL print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
 BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
 {
 	int ret;
+	struct printif *current_printif = get_printer_fns( snum );
 
 	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
 		*errcode = WERR_ACCESS_DENIED;

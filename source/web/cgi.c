@@ -91,7 +91,7 @@ static char *grab_line(FILE *f, int *cl)
  (This was in rfc1738_unescape(), but that broke the squid helper)
 **/
 
-void plus_to_space_unescape(char *buf)
+static void plus_to_space_unescape(char *buf)
 {
 	char *p=buf;
 
@@ -203,13 +203,13 @@ void cgi_load_variables(void)
 
 		convert_string(CH_DISPLAY, CH_UNIX, 
 			       variables[i].name, -1, 
-			       dest, sizeof(dest));
+			       dest, sizeof(dest), True);
 		free(variables[i].name);
 		variables[i].name = strdup(dest);
 
 		convert_string(CH_DISPLAY, CH_UNIX, 
 			       variables[i].value, -1,
-			       dest, sizeof(dest));
+			       dest, sizeof(dest), True);
 		free(variables[i].value);
 		variables[i].value = strdup(dest);
 	}
@@ -336,11 +336,11 @@ static BOOL cgi_handle_authorization(char *line)
 
 	convert_string(CH_DISPLAY, CH_UNIX, 
 		       line, -1, 
-		       user, sizeof(user));
+		       user, sizeof(user), True);
 
 	convert_string(CH_DISPLAY, CH_UNIX, 
 		       p+1, -1, 
-		       user_pass, sizeof(user_pass));
+		       user_pass, sizeof(user_pass), True);
 
 	/*
 	 * Try and get the user from the UNIX password file.

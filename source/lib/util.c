@@ -551,7 +551,7 @@ void dos_clean_name(char *s)
 	/* remove any double slashes */
 	all_string_sub(s, "\\\\", "\\", 0);
 
-	while ((p = strstr(s,"\\..\\")) != NULL) {
+	while ((p = strstr_m(s,"\\..\\")) != NULL) {
 		pstring s1;
 
 		*p = 0;
@@ -589,7 +589,7 @@ void unix_clean_name(char *s)
 			pstrcpy(s,"./");
 	}
 
-	while ((p = strstr(s,"/../")) != NULL) {
+	while ((p = strstr_m(s,"/../")) != NULL) {
 		pstring s1;
 
 		*p = 0;
@@ -769,7 +769,7 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n)
  Sleep for a specified number of milliseconds.
 ********************************************************************/
 
-void msleep(unsigned int t)
+void smb_msleep(unsigned int t)
 {
 	unsigned int tdiff=0;
 	struct timeval tval,t1,t2;  
@@ -932,26 +932,33 @@ BOOL get_myname(char *my_name)
 }
 
 /****************************************************************************
- Get my own name, including domain.
+ Get my own canonical name, including domain.
 ****************************************************************************/
 
-BOOL get_myfullname(char *my_name)
+BOOL get_mydnsfullname(fstring my_dnsname)
 {
-	pstring hostname;
+	static fstring dnshostname;
+	struct hostent *hp;
 
-	*hostname = 0;
+	if (!*dnshostname) {
+		/* get my host name */
+		if (gethostname(dnshostname, sizeof(dnshostname)) == -1) {
+			*dnshostname = '\0';
+			DEBUG(0,("gethostname failed\n"));
+			return False;
+		} 
 
-	/* get my host name */
-	if (gethostname(hostname, sizeof(hostname)) == -1) {
-		DEBUG(0,("gethostname failed\n"));
-		return False;
-	} 
+		/* Ensure null termination. */
+		dnshostname[sizeof(dnshostname)-1] = '\0';
 
-	/* Ensure null termination. */
-	hostname[sizeof(hostname)-1] = '\0';
-
-	if (my_name)
-		fstrcpy(my_name, hostname);
+		/* Ensure we get the cannonical name. */
+		if (!(hp = sys_gethostbyname(dnshostname))) {
+			*dnshostname = '\0';
+			return False;
+		}
+		fstrcpy(dnshostname, hp->h_name);
+	}
+	fstrcpy(my_dnsname, dnshostname);
 	return True;
 }
 
@@ -959,44 +966,19 @@ BOOL get_myfullname(char *my_name)
  Get my own domain name.
 ****************************************************************************/
 
-BOOL get_mydomname(fstring my_domname)
+BOOL get_mydnsdomname(fstring my_domname)
 {
-	pstring hostname;
+	fstring domname;
 	char *p;
-	struct hostent *hp;
 
-	*hostname = 0;
-	/* get my host name */
-	if (gethostname(hostname, sizeof(hostname)) == -1) {
-		DEBUG(0,("gethostname failed\n"));
+	*my_domname = '\0';
+	if (!get_mydnsfullname(domname)) {
 		return False;
-	} 
-
-	/* Ensure null termination. */
-	hostname[sizeof(hostname)-1] = '\0';
-
-		
-	p = strchr_m(hostname, '.');
-
+	}	
+	p = strchr_m(domname, '.');
 	if (p) {
 		p++;
-		
-		if (my_domname)
-			fstrcpy(my_domname, p);
-	}
-
-	if (!(hp = sys_gethostbyname(hostname))) {
-		return False;
-	}
-	
-	p = strchr_m(hp->h_name, '.');
-
-	if (p) {
-		p++;
-		
-		if (my_domname)
-			fstrcpy(my_domname, p);
-		return True;
+		fstrcpy(my_domname, p);
 	}
 
 	return False;
@@ -1359,10 +1341,22 @@ gid_t nametogid(const char *name)
 }
 
 /*******************************************************************
+ legacy wrapper for smb_panic2()
+********************************************************************/
+void smb_panic( const char *why )
+{
+	smb_panic2( why, True );
+}
+
+/*******************************************************************
  Something really nasty happened - panic !
 ********************************************************************/
 
-void smb_panic(const char *why)
+#ifdef HAVE_LIBEXC_H
+#include <libexc.h>
+#endif
+
+void smb_panic2(const char *why, BOOL decrement_pid_count )
 {
 	char *cmd;
 	int result;
@@ -1384,6 +1378,10 @@ void smb_panic(const char *why)
 		} 
 	}
 #endif
+
+	/* only smbd needs to decrement the smbd counter in connections.tdb */
+	if ( decrement_pid_count )
+		decrement_smbd_process_count();
 
 	cmd = lp_panic_action();
 	if (cmd && *cmd) {
@@ -1416,6 +1414,42 @@ void smb_panic(const char *why)
 		SAFE_FREE(backtrace_strings);
 	}
 
+#elif HAVE_LIBEXC
+
+#define NAMESIZE 32 /* Arbitrary */
+
+	/* The IRIX libexc library provides an API for unwinding the stack. See
+	 * libexc(3) for details. Apparantly trace_back_stack leaks memory, but
+	 * since we are about to abort anyway, it hardly matters.
+	 *
+	 * Note that if we paniced due to a SIGSEGV or SIGBUS (or similar) this
+	 * will fail with a nasty message upon failing to open the /proc entry.
+	 */
+	{
+		__uint64_t	addrs[BACKTRACE_STACK_SIZE];
+		char *      	names[BACKTRACE_STACK_SIZE];
+		char		namebuf[BACKTRACE_STACK_SIZE * NAMESIZE];
+
+		int		i;
+		int		levels;
+
+		ZERO_ARRAY(addrs);
+		ZERO_ARRAY(names);
+		ZERO_ARRAY(namebuf);
+
+		for (i = 0; i < BACKTRACE_STACK_SIZE; i++) {
+			names[i] = namebuf + (i * NAMESIZE);
+		}
+
+		levels = trace_back_stack(0, addrs, names,
+				BACKTRACE_STACK_SIZE, NAMESIZE);
+
+		DEBUG(0, ("BACKTRACE: %d stack frames:\n", levels));
+		for (i = 0; i < levels; i++) {
+			DEBUGADD(0, (" #%d 0x%llx %s\n", i, addrs[i], names[i]));
+		}
+     }
+#undef NAMESIZE
 #endif
 
 	dbgflush();

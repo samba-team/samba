@@ -54,33 +54,97 @@ BOOL change_to_guest(void)
 	return True;
 }
 
+/****************************************************************************
+ Readonly share for this user ?
+****************************************************************************/
+
+static BOOL is_share_read_only_for_user(connection_struct *conn, user_struct *vuser)
+{
+	char **list;
+	const char *service = lp_servicename(conn->service);
+	BOOL read_only_ret = lp_readonly(conn->service);
+
+	if (!service)
+		return read_only_ret;
+
+	str_list_copy(&list, lp_readlist(conn->service));
+	if (list) {
+		if (!str_list_sub_basic(list, vuser->user.smb_name) ) {
+			DEBUG(0, ("is_share_read_only_for_user: ERROR: read list substitution failed\n"));
+		}
+		if (!str_list_substitute(list, "%S", service)) {
+			DEBUG(0, ("is_share_read_only_for_user: ERROR: read list service substitution failed\n"));
+		}
+		if (user_in_list(vuser->user.unix_name, (const char **)list, vuser->groups, vuser->n_groups)) {
+			read_only_ret = True;
+		}
+		str_list_free(&list);
+	}
+
+	str_list_copy(&list, lp_writelist(conn->service));
+	if (list) {
+		if (!str_list_sub_basic(list, vuser->user.smb_name) ) {
+			DEBUG(0, ("is_share_read_only_for_user: ERROR: write list substitution failed\n"));
+		}
+		if (!str_list_substitute(list, "%S", service)) {
+			DEBUG(0, ("is_share_read_only_for_user: ERROR: write list service substitution failed\n"));
+		}
+		if (user_in_list(vuser->user.unix_name, (const char **)list, vuser->groups, vuser->n_groups)) {
+			read_only_ret = False;
+		}
+		str_list_free(&list);
+	}
+
+	DEBUG(10,("is_share_read_only_for_user: share %s is %s for unix user %s\n",
+		service, read_only_ret ? "read-only" : "read-write", vuser->user.unix_name ));
+
+	return read_only_ret;
+}
+
 /*******************************************************************
  Check if a username is OK.
 ********************************************************************/
 
 static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 {
-	unsigned i;
-	for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++)
-		if (conn->vuid_cache.list[i] == vuser->vuid)
-			return(True);
+	unsigned int i;
+	struct vuid_cache_entry *ent = NULL;
+	BOOL readonly_share;
 
-	if ((conn->force_user || conn->force_group) 
-	    && (conn->vuid != vuser->vuid)) {
-		return False;
+	for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
+		if (conn->vuid_cache.array[i].vuid == vuser->vuid) {
+			ent = &conn->vuid_cache.array[i];
+			conn->read_only = ent->read_only;
+			conn->admin_user = ent->admin_user;
+			return(True);
+		}
 	}
-	
+
 	if (!user_ok(vuser->user.unix_name,snum, vuser->groups, vuser->n_groups))
 		return(False);
 
-	if (!share_access_check(conn, snum, vuser, conn->read_only ? FILE_READ_DATA : FILE_WRITE_DATA)) {
+	readonly_share = is_share_read_only_for_user(conn, vuser);
+
+	if (!share_access_check(conn, snum, vuser, readonly_share ? FILE_READ_DATA : FILE_WRITE_DATA)) {
 		return False;
 	}
 
 	i = conn->vuid_cache.entries % VUID_CACHE_SIZE;
-	conn->vuid_cache.list[i] = vuser->vuid;
+	if (conn->vuid_cache.entries < VUID_CACHE_SIZE)
+		conn->vuid_cache.entries++;
 
-	conn->vuid_cache.entries++;
+	ent = &conn->vuid_cache.array[i];
+	ent->vuid = vuser->vuid;
+	ent->read_only = readonly_share;
+
+	if (user_in_list(vuser->user.unix_name ,lp_admin_users(conn->service), vuser->groups, vuser->n_groups)) {
+		ent->admin_user = True;
+	} else {
+		ent->admin_user = False;
+	}
+
+	conn->read_only = ent->read_only;
+	conn->admin_user = ent->admin_user;
 
 	return(True);
 }
@@ -132,7 +196,7 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		current_user.ngroups = conn->ngroups;
 		token = conn->nt_user_token;
 	} else if ((vuser) && check_user_ok(conn, vuser, snum)) {
-		uid = vuser->uid;
+		uid = conn->admin_user ? 0 : vuser->uid;
 		gid = vuser->gid;
 		current_user.ngroups = vuser->n_groups;
 		current_user.groups  = vuser->groups;
@@ -310,17 +374,6 @@ static void pop_conn_ctx(void)
 	ctx_p->vuid = UID_FIELD_INVALID;
 }
 
-void init_conn_ctx(void)
-{
-    int i;
- 
-    /* Initialise connection context stack */
-	for (i = 0; i < MAX_SEC_CTX_DEPTH; i++) {
-		conn_ctx_stack[i].conn = NULL;
-		conn_ctx_stack[i].vuid = UID_FIELD_INVALID;
-    }
-}
-
 /****************************************************************************
  Temporarily become a root user.  Must match with unbecome_root(). Saves and
  restores the connection context.
@@ -368,73 +421,4 @@ BOOL unbecome_user(void)
 	pop_conn_ctx();
 	return True;
 }
-
-/*****************************************************************
- Convert the supplementary SIDs returned in a netlogon into UNIX
- group gid_t's. Add to the total group array.
-*****************************************************************/
- 
-void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER_TOKEN **pptok)
-{
-	int total_groups;
-	int current_n_groups = *n_groups;
-	gid_t *final_groups = NULL;
-	size_t i;
-	NT_USER_TOKEN *ptok = *pptok;
-	NT_USER_TOKEN *new_tok = NULL;
- 
-	if (!ptok || (ptok->num_sids == 0))
-		return;
-
-	new_tok = dup_nt_token(ptok);
-	if (!new_tok) {
-		DEBUG(0,("add_supplementary_nt_login_groups: Failed to malloc new token\n"));
-		return;
-	}
-	/* Leave the allocated space but empty the number of SIDs. */
-	new_tok->num_sids = 0;
-
-	total_groups = current_n_groups + ptok->num_sids;
- 
-	final_groups = (gid_t *)malloc(total_groups * sizeof(gid_t));
-	if (!final_groups) {
-		DEBUG(0,("add_supplementary_nt_login_groups: Failed to malloc new groups.\n"));
-		delete_nt_token(&new_tok);
-		return;
-	}
- 
-	memcpy(final_groups, *pp_groups, current_n_groups * sizeof(gid_t));
-	for (i = 0; i < ptok->num_sids; i++) {
-		gid_t new_grp;
- 
-		if (NT_STATUS_IS_OK(sid_to_gid(&ptok->user_sids[i], &new_grp))) {
-			/*
-			 * Don't add the gid_t if it is already in the current group
-			 * list. Some UNIXen don't like the same group more than once.
-			 */
-			int j;
-
-			for (j = 0; j < current_n_groups; j++)
-				if (final_groups[j] == new_grp)
-					break;
-		
-			if ( j == current_n_groups) {
-				/* Group not already present. */
-				final_groups[current_n_groups++] = new_grp;
-			}
-		} else {
-			/* SID didn't map. Copy to the new token to be saved. */
-			sid_copy(&new_tok->user_sids[new_tok->num_sids++], &ptok->user_sids[i]);
-		}
-	}
- 
-	SAFE_FREE(*pp_groups);
-	*pp_groups = final_groups;
-	*n_groups = current_n_groups;
-
-	/* Replace the old token with the truncated one. */
-	delete_nt_token(&ptok);
-	*pptok = new_tok;
-}
-
 

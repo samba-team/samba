@@ -98,10 +98,12 @@ ATTRIB_MAP_ENTRY attrib_map_v30[] = {
 	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
 	{ LDAP_ATTR_ACB_INFO,		"sambaAcctFlags"	},
 	{ LDAP_ATTR_MUNGED_DIAL,	"sambaMungedDial"	},
+	{ LDAP_ATTR_BAD_PASSWORD_COUNT,	"sambaBadPasswordCount" },
+	{ LDAP_ATTR_BAD_PASSWORD_TIME,	"sambaBadPasswordTime" 	},
 	{ LDAP_ATTR_LIST_END,		NULL 			}
 };
 
-/* attributes used for alalocating RIDs */
+/* attributes used for allocating RIDs */
 
 ATTRIB_MAP_ENTRY dominfo_attr_list[] = {
 	{ LDAP_ATTR_DOMAIN,		"sambaDomainName"	},
@@ -221,7 +223,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 /*******************************************************************
  find the ldap password
 ******************************************************************/
-BOOL fetch_ldap_pw(char **dn, char** pw)
+static BOOL fetch_ldap_pw(char **dn, char** pw)
 {
 	char *key = NULL;
 	size_t size;
@@ -288,7 +290,8 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 ******************************************************************/
 
  BOOL smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
-				   const char *attribute, pstring value)
+				    const char *attribute, char *value,
+				    int max_len)
 {
 	char **values;
 	
@@ -303,7 +306,7 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 		return False;
 	}
 	
-	if (convert_string(CH_UTF8, CH_UNIX,values[0], -1, value, sizeof(pstring)) == (size_t)-1) {
+	if (convert_string(CH_UTF8, CH_UNIX,values[0], -1, value, max_len, False) == (size_t)-1) {
 		DEBUG(1, ("smbldap_get_single_attribute: string conversion of [%s] = [%s] failed!\n", 
 			  attribute, values[0]));
 		ldap_value_free(values);
@@ -315,6 +318,14 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 	DEBUG (100, ("smbldap_get_single_attribute: [%s] = [%s]\n", attribute, value));
 #endif	
 	return True;
+}
+
+ BOOL smbldap_get_single_pstring (LDAP * ldap_struct, LDAPMessage * entry,
+				  const char *attribute, pstring value)
+{
+	return smbldap_get_single_attribute(ldap_struct, entry,
+					    attribute, value, 
+					    sizeof(pstring));
 }
 
 /************************************************************************
@@ -413,11 +424,11 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 		      LDAPMod ***mods,
 		      const char *attribute, const char *newval)
 {
-	pstring oldval;
+	char oldval[2048]; /* current largest allowed value is mungeddial */
 	BOOL existed;
 
 	if (existing != NULL) {
-		existed = smbldap_get_single_attribute(ldap_struct, existing, attribute, oldval);
+		existed = smbldap_get_single_attribute(ldap_struct, existing, attribute, oldval, sizeof(oldval));
 	} else {
 		existed = False;
 		*oldval = '\0';
@@ -425,7 +436,7 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 
 	/* all of our string attributes are case insensitive */
 	
-	if (existed && (StrCaseCmp(oldval, newval) == 0)) {
+	if (existed && newval && (StrCaseCmp(oldval, newval) == 0)) {
 		
 		/* Believe it or not, but LDAP will deny a delete and
 		   an add at the same time if the values are the
@@ -433,26 +444,26 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 		return;
 	}
 
+	if (existed) {
+		/* There has been no value before, so don't delete it.
+		 * Here's a possible race: We might end up with
+		 * duplicate attributes */
+		/* By deleting exactly the value we found in the entry this
+		 * should be race-free in the sense that the LDAP-Server will
+		 * deny the complete operation if somebody changed the
+		 * attribute behind our back. */
+		/* This will also allow modifying single valued attributes 
+		 * in Novell NDS. In NDS you have to first remove attribute and then
+		 * you could add new value */
+		
+		smbldap_set_mod(mods, LDAP_MOD_DELETE, attribute, oldval);
+	}
+
 	/* Regardless of the real operation (add or modify)
 	   we add the new value here. We rely on deleting
 	   the old value, should it exist. */
 
 	if ((newval != NULL) && (strlen(newval) > 0)) {
-		if (existed) {
-		        /* There has been no value before, so don't delete it.
-			 * Here's a possible race: We might end up with
-			 * duplicate attributes */
-			/* By deleting exactly the value we found in the entry this
-			 * should be race-free in the sense that the LDAP-Server will
-			 * deny the complete operation if somebody changed the
-			 * attribute behind our back. */
-			/* This will also allow modifying single valued attributes 
-			 * in Novell NDS. In NDS you have to first remove attribute and then
-			 * you could add new value */
-
-	                 smbldap_set_mod(mods, LDAP_MOD_DELETE, attribute, oldval);
-	        }
-
 		smbldap_set_mod(mods, LDAP_MOD_ADD, attribute, newval);
 	}
 }
@@ -888,7 +899,7 @@ int smbldap_retry_open(struct smbldap_state *ldap_state, int *attempts)
 		 */
 		DEBUG(3, ("Sleeping for %u milliseconds before reconnecting\n", 
 			  sleep_time));
-		msleep(sleep_time);
+		smb_msleep(sleep_time);
 	}
 	(*attempts)++;
 
@@ -935,7 +946,7 @@ int smbldap_search(struct smbldap_state *ldap_state,
 		if (sleep_time > 0) {
 			/* we wait for the LDAP replication */
 			DEBUG(5,("smbldap_search: waiting %d milliseconds for LDAP replication.\n",sleep_time));
-			msleep(sleep_time);
+			smb_msleep(sleep_time);
 			DEBUG(5,("smbldap_search: go on!\n"));
 			ZERO_STRUCT(ldap_state->last_rebind);
 		}

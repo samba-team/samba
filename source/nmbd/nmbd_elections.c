@@ -34,7 +34,7 @@ static void send_election_dgram(struct subnet_record *subrec, const char *workgr
                                 uint32 criterion, int timeup,const char *server_name)
 {
 	pstring outbuf;
-	fstring srv_name;
+	unstring srv_name;
 	char *p;
 
 	DEBUG(2,("send_election_dgram: Sending election packet for workgroup %s on subnet %s\n",
@@ -49,7 +49,7 @@ static void send_election_dgram(struct subnet_record *subrec, const char *workgr
 	SIVAL(p,1,criterion);
 	SIVAL(p,5,timeup*1000); /* ms - Despite what the spec says. */
 	p += 13;
-	fstrcpy(srv_name, server_name);
+	unstrcpy(srv_name, server_name);
 	strupper_m(srv_name);
 	/* The following call does UNIX -> DOS charset conversion. */
 	pstrcpy_base(p, srv_name, outbuf);
@@ -70,8 +70,8 @@ static void check_for_master_browser_success(struct subnet_record *subrec,
                                  struct nmb_name *answer_name,
                                  struct in_addr answer_ip, struct res_rec *rrec)
 {
-	nstring aname;
-	pull_ascii_nstring(aname, answer_name->name);
+	unstring aname;
+	pull_ascii_nstring(aname, sizeof(aname), answer_name->name);
 	DEBUG(3,("check_for_master_browser_success: Local master browser for workgroup %s exists at \
 IP %s (just checking).\n", aname, inet_ntoa(answer_ip) ));
 }
@@ -85,10 +85,10 @@ static void check_for_master_browser_fail( struct subnet_record *subrec,
                                            struct nmb_name *question_name,
                                            int fail_code)
 {
-	nstring workgroup_name;
+	unstring workgroup_name;
 	struct work_record *work;
 
-	pull_ascii_nstring(workgroup_name,question_name->name);
+	pull_ascii_nstring(workgroup_name,sizeof(workgroup_name),question_name->name);
 
 	work = find_workgroup_on_subnet(subrec, workgroup_name);
 	if(work == NULL) {
@@ -97,7 +97,7 @@ static void check_for_master_browser_fail( struct subnet_record *subrec,
 		return;
 	}
 
-	if (strnequal(work->work_group, lp_workgroup(), sizeof(nstring)-1)) {
+	if (strequal(work->work_group, lp_workgroup())) {
 
 		if (lp_local_master()) {
 			/* We have discovered that there is no local master
@@ -145,7 +145,7 @@ void check_master_browser_exists(time_t t)
 		struct work_record *work;
 
 		for (work = subrec->workgrouplist; work; work = work->next) {
-			if (strnequal(work->work_group, workgroup_name, sizeof(nstring)-1) && !AM_LOCAL_MASTER_BROWSER(work)) {
+			if (strequal(work->work_group, workgroup_name) && !AM_LOCAL_MASTER_BROWSER(work)) {
 				/* Do a name query for the local master browser on this net. */
 				query_name( subrec, work->work_group, 0x1d,
 					check_for_master_browser_success,
@@ -263,12 +263,12 @@ void process_election(struct subnet_record *subrec, struct packet_struct *p, cha
 	int version = CVAL(buf,0);
 	uint32 criterion = IVAL(buf,1);
 	int timeup = IVAL(buf,5)/1000;
-	nstring server_name;
+	unstring server_name;
 	struct work_record *work;
-	nstring workgroup_name;
+	unstring workgroup_name;
 
-	pull_ascii_nstring(server_name, buf+13);
-	pull_ascii_nstring(workgroup_name, dgram->dest_name.name);
+	pull_ascii_nstring(server_name, sizeof(server_name), buf+13);
+	pull_ascii_nstring(workgroup_name, sizeof(workgroup_name), dgram->dest_name.name);
 
 	START_PROFILE(election);
 	server_name[15] = 0;  
@@ -284,7 +284,7 @@ void process_election(struct subnet_record *subrec, struct packet_struct *p, cha
 		goto done;
 	}
 
-	if (!strnequal(work->work_group, lp_workgroup(), sizeof(nstring)-1)) {
+	if (!strequal(work->work_group, lp_workgroup())) {
 		DEBUG(3,("process_election: ignoring election request for workgroup %s on subnet %s as this \
 is not my workgroup.\n", work->work_group, subrec->subnet_name ));
 		goto done;
@@ -381,7 +381,7 @@ void nmbd_message_election(int msg_type, pid_t src, void *buf, size_t len)
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		struct work_record *work;
 		for (work = subrec->workgrouplist; work; work = work->next) {
-			if (strnequal(work->work_group, lp_workgroup(), sizeof(nstring)-1)) {
+			if (strequal(work->work_group, lp_workgroup())) {
 				work->needelection = True;
 				work->ElectionCount=0;
 				work->mst_state = lp_local_master() ? MST_POTENTIAL : MST_NONE;

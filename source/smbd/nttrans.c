@@ -55,7 +55,7 @@ struct generic_mapping file_generic_mapping = {
 	FILE_GENERIC_ALL
 };
 
-char *nttrans_realloc(char **ptr, size_t size)
+static char *nttrans_realloc(char **ptr, size_t size)
 {
 	char *tptr = NULL;
 	if (ptr==NULL)
@@ -353,6 +353,7 @@ static int map_share_mode( char *fname, uint32 create_options,
 			uint32 *desired_access, uint32 share_access, uint32 file_attributes)
 {
 	int smb_open_mode = -1;
+	uint32 original_desired_access = *desired_access;
 
 	/*
 	 * Convert GENERIC bits to specific bits.
@@ -424,6 +425,10 @@ static int map_share_mode( char *fname, uint32 create_options,
 		DEBUG(10,("map_share_mode: FILE_SHARE_DELETE requested. open_mode = 0x%x\n", smb_open_mode));
 	}
 
+	if(*desired_access & DELETE_ACCESS) {
+		DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = 0x%x\n", smb_open_mode));
+	}
+
 	/*
 	 * We need to store the intent to open for Delete. This
 	 * is what determines if a delete on close flag can be set.
@@ -431,11 +436,19 @@ static int map_share_mode( char *fname, uint32 create_options,
 	 * is the only practical way. JRA.
 	 */
 
-	if(*desired_access & DELETE_ACCESS) {
-		DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = 0x%x\n", smb_open_mode));
-	}
-
 	if (create_options & FILE_DELETE_ON_CLOSE) {
+		/*
+		 * W2K3 bug compatibility mode... To set delete on close
+		 * the redirector must have *specifically* set DELETE_ACCESS
+		 * in the desired_access field. Just asking for GENERIC_ALL won't do. JRA.
+		 */
+
+		if (!(original_desired_access & DELETE_ACCESS)) {
+			DEBUG(5,("map_share_mode: FILE_DELETE_ON_CLOSE requested without \
+DELETE_ACCESS for file %s. (desired_access = 0x%lx)\n",
+				fname, (unsigned long)*desired_access));
+			return -1;
+		}
 		/* Implicit delete access is *NOT* requested... */
 		smb_open_mode |= DELETE_ON_CLOSE_FLAG;
 		DEBUG(10,("map_share_mode: FILE_DELETE_ON_CLOSE requested. open_mode = 0x%x\n", smb_open_mode));
@@ -522,11 +535,8 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 	int ret;
 	int pnum = -1;
 	char *p = NULL;
-	NTSTATUS status;
 
-	srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE,&status);
-	if (!NT_STATUS_IS_OK(status))
-		return ERROR_NT(status);
+	srvstr_pull_buf(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE);
 
 	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
 		return ret;
@@ -645,7 +655,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 
 		if(!dir_fsp->is_directory) {
 
-			srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE,&status);
+			srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				END_PROFILE(SMBntcreateX);
 				return ERROR_NT(status);
@@ -660,14 +670,12 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 			}
 
-
 			/*
 			  we need to handle the case when we get a
 			  relative open relative to a file and the
 			  pathname is blank - this is a reopen!
 			  (hint from demyn plantenberg)
 			*/
-			
 
 			END_PROFILE(SMBntcreateX);
 			return(ERROR_DOS(ERRDOS,ERRbadfid));
@@ -689,13 +697,13 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 			dir_name_len++;
 		}
 
-		srvstr_get_path(inbuf, &fname[dir_name_len], smb_buf(inbuf), sizeof(fname)-dir_name_len, STR_TERMINATE,&status);
+		srvstr_get_path(inbuf, &fname[dir_name_len], smb_buf(inbuf), sizeof(fname)-dir_name_len, 0, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
 		}
 	} else {
-		srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE,&status);
+		srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
@@ -738,7 +746,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 					   share_access, 
 					   file_attributes)) == -1) {
 		END_PROFILE(SMBntcreateX);
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
@@ -884,6 +892,12 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 #endif
 	if (allocation_size && (allocation_size > (SMB_BIG_UINT)file_len)) {
 		fsp->initial_allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
+		if (fsp->is_directory) {
+			close_file(fsp,False);
+			END_PROFILE(SMBntcreateX);
+			/* Can't set allocation size on a directory. */
+			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+		}
 		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
 			close_file(fsp,False);
 			END_PROFILE(SMBntcreateX);
@@ -963,9 +977,12 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	SOFF_T(p, 0, get_allocation_size(fsp,&sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
-	p += 12;
+	p += 8;
+	if (flags & EXTENDED_RESPONSE_REQUIRED)
+		SSVAL(p,2,0x7);
+	p += 4;
 	SCVAL(p,0,fsp->is_directory ? 1 : 0);
-	
+
 	DEBUG(5,("reply_ntcreate_and_X: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
 
 	result = chain_reply(inbuf,outbuf,length,bufsize);
@@ -998,8 +1015,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
-	srvstr_pull(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE);
-	status = check_path_syntax(fname);
+	srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
@@ -1140,7 +1156,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	int smb_open_mode;
 	int smb_attr;
 	time_t c_time;
-	NTSTATUS nt_status;
+	NTSTATUS status;
 
 	DEBUG(5,("call_nt_transact_create\n"));
 
@@ -1206,11 +1222,9 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			return ERROR_DOS(ERRDOS,ERRbadfid);
 
 		if(!dir_fsp->is_directory) {
-
-			srvstr_pull(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE);
-			nt_status = check_path_syntax(fname);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				return ERROR_NT(nt_status);
+			srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
 			}
 
 			/*
@@ -1239,17 +1253,18 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			dir_name_len++;
 		}
 
-		srvstr_pull(inbuf, &fname[dir_name_len], params+53, sizeof(fname)-dir_name_len, 
-				parameter_count-53, STR_TERMINATE);
-		nt_status = check_path_syntax(fname);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return ERROR_NT(nt_status);
+		{
+			pstring tmpname;
+			srvstr_get_path(inbuf, tmpname, params+53, sizeof(tmpname), parameter_count-53, STR_TERMINATE, &status);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
+			}
+			pstrcat(fname, tmpname);
 		}
 	} else {
-		srvstr_pull(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE);
-		nt_status = check_path_syntax(fname);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return ERROR_NT(nt_status);
+		srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ERROR_NT(status);
 		}
 
 		/*
@@ -1267,7 +1282,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 	if((smb_open_mode = map_share_mode( fname, create_options, &desired_access,
 						share_access, file_attributes)) == -1)
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
 	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
@@ -1375,10 +1390,10 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	 * Now try and apply the desired SD.
 	 */
 
-	if (sd_len && !NT_STATUS_IS_OK(nt_status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
+	if (sd_len && !NT_STATUS_IS_OK(status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
 		close_file(fsp,False);
 		restore_case_semantics(file_attributes);
-		return ERROR_NT(nt_status);
+		return ERROR_NT(status);
 	}
 	
 	restore_case_semantics(file_attributes);
@@ -1390,6 +1405,12 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 #endif
 	if (allocation_size && (allocation_size > file_len)) {
 		fsp->initial_allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
+		if (fsp->is_directory) {
+			close_file(fsp,False);
+			END_PROFILE(SMBntcreateX);
+			/* Can't set allocation size on a directory. */
+			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+		}
 		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
 			close_file(fsp,False);
 			return ERROR_NT(NT_STATUS_DISK_FULL);
@@ -1443,6 +1464,11 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	SOFF_T(p, 0, get_allocation_size(fsp,&sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
+	p += 8;
+	if (flags & EXTENDED_RESPONSE_REQUIRED)
+		SSVAL(p,2,0x7);
+	p += 4;
+	SCVAL(p,0,fsp->is_directory ? 1 : 0);
 
 	DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
@@ -1473,6 +1499,75 @@ int reply_ntcancel(connection_struct *conn,
 
 	END_PROFILE(SMBntcancel);
 	return(-1);
+}
+
+/****************************************************************************
+ Reply to a NT rename request.
+****************************************************************************/
+
+int reply_ntrename(connection_struct *conn,
+		   char *inbuf,char *outbuf,int length,int bufsize)
+{
+	int outsize = 0;
+	pstring name;
+	pstring newname;
+	char *p;
+	NTSTATUS status;
+	uint16 attrs = SVAL(inbuf,smb_vwv0);
+	uint16 rename_type = SVAL(inbuf,smb_vwv1);
+
+	START_PROFILE(SMBntrename);
+
+	if ((rename_type != RENAME_FLAG_RENAME) && (rename_type != RENAME_FLAG_HARD_LINK)) {
+		END_PROFILE(SMBntrename);
+		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+	}
+
+	p = smb_buf(inbuf) + 1;
+	p += srvstr_get_path(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBntrename);
+		return ERROR_NT(status);
+	}
+
+	if( strchr_m(name, ':')) {
+		/* Can't rename a stream. */
+		END_PROFILE(SMBntrename);
+		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+	}
+
+	p++;
+	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBntrename);
+		return ERROR_NT(status);
+	}
+	
+	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
+	
+	DEBUG(3,("reply_ntrename : %s -> %s\n",name,newname));
+	
+	if (rename_type == RENAME_FLAG_RENAME) {
+		status = rename_internals(conn, name, newname, attrs, False);
+	} else {
+		status = hardlink_internals(conn, name, newname);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBntrename);
+		return ERROR_NT(status);
+	}
+
+	/*
+	 * Win2k needs a changenotify request response before it will
+	 * update after a rename..
+	 */	
+	process_pending_change_notify_queue((time_t)0);
+	outsize = set_message(outbuf,0,0,True);
+  
+	END_PROFILE(SMBntrename);
+	return(outsize);
 }
 
 /****************************************************************************
@@ -1546,14 +1641,13 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	fsp = file_fsp(params, 0);
 	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
 	CHECK_FSP(fsp, conn);
-	srvstr_pull(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE);
-	status = check_path_syntax(new_name);
+	srvstr_get_path(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
 
 	status = rename_internals(conn, fsp->fsp_name,
-				  new_name, replace_if_exists);
+				  new_name, 0, replace_if_exists);
 	if (!NT_STATUS_IS_OK(status))
 		return ERROR_NT(status);
 
@@ -2021,11 +2115,12 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 	SMB_NTQUOTA_STRUCT qt;
 	SMB_NTQUOTA_LIST *tmp_list;
 	SMB_NTQUOTA_HANDLE *qt_handle = NULL;
+	extern struct current_user current_user;
 
 	ZERO_STRUCT(qt);
 
 	/* access check */
-	if (conn->admin_user != True) {
+	if (current_user.uid != 0) {
 		DEBUG(1,("set_user_quota: access_denied service [%s] user [%s]\n",
 			lp_servicename(SNUM(conn)),conn->user));
 		return ERROR_DOS(ERRDOS,ERRnoaccess);

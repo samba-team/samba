@@ -71,6 +71,108 @@ static int net_idmap_dump(int argc, const char **argv)
 }
 
 /***********************************************************
+ Fix up the HWMs after a idmap restore.
+ **********************************************************/
+
+struct hwms {
+	BOOL ok;
+	int user_hwm;
+	int group_hwm;
+};
+
+static int net_idmap_find_max_id(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data,
+				 void *handle)
+{
+	struct hwms *hwms = (struct hwms *)handle;
+	int *idptr = NULL;
+	int id;
+
+	if (strncmp(key.dptr, "S-", 2) != 0)
+		return 0;
+
+	if (sscanf(data.dptr, "GID %d", &id) == 1) {
+		idptr = &hwms->group_hwm;
+	}
+
+	if (sscanf(data.dptr, "UID %d", &id) == 1) {
+		idptr = &hwms->user_hwm;
+	}
+
+	if (idptr == NULL) {
+		d_printf("Illegal idmap entry: [%s]->[%s]\n",
+			 key.dptr, data.dptr);
+		hwms->ok = False;
+		return -1;
+	}
+
+	if (*idptr <= id)
+		*idptr = id+1;
+
+	return 0;
+}
+
+static NTSTATUS net_idmap_fixup_hwm(void)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	TDB_CONTEXT *idmap_tdb;
+	char *tdbfile = NULL;
+
+	struct hwms hwms;
+	struct hwms highest;
+
+	if (!lp_idmap_uid(&hwms.user_hwm, &highest.user_hwm) ||
+	    !lp_idmap_gid(&hwms.group_hwm, &highest.group_hwm)) {
+		d_printf("idmap range missing\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	tdbfile = strdup(lock_path("winbindd_idmap.tdb"));
+	if (!tdbfile) {
+		DEBUG(0, ("idmap_init: out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	idmap_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR, 0);
+
+	if (idmap_tdb == NULL) {
+		d_printf("Could not open idmap: %s\n", tdbfile);
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+	hwms.ok = True;
+
+	tdb_traverse(idmap_tdb, net_idmap_find_max_id, &hwms);
+
+	if (!hwms.ok) {
+		goto done;
+	}
+
+	d_printf("USER HWM: %d  GROUP HWM: %d\n",
+		 hwms.user_hwm, hwms.group_hwm);
+
+	if (hwms.user_hwm >= highest.user_hwm) {
+		d_printf("Highest UID out of uid range\n");
+		goto done;
+	}
+
+	if (hwms.group_hwm >= highest.group_hwm) {
+		d_printf("Highest GID out of gid range\n");
+		goto done;
+	}
+
+	if ((tdb_store_int32(idmap_tdb, "USER HWM", hwms.user_hwm) != 0) ||
+	    (tdb_store_int32(idmap_tdb, "GROUP HWM", hwms.group_hwm) != 0)) {
+		d_printf("Could not store HWMs\n");
+		goto done;
+	}
+
+	result = NT_STATUS_OK;
+ done:
+	tdb_close(idmap_tdb);
+	return result;
+}
+
+/***********************************************************
  Write entries from stdin to current local idmap
  **********************************************************/
 static int net_idmap_restore(int argc, const char **argv)
@@ -129,7 +231,8 @@ static int net_idmap_restore(int argc, const char **argv)
 	}
 
 	idmap_close();
-	return 0;
+
+	return NT_STATUS_IS_OK(net_idmap_fixup_hwm()) ? 0 : -1;
 }
 
 int net_help_idmap(int argc, const char **argv)

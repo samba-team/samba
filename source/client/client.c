@@ -47,7 +47,7 @@ static int io_bufsize = 64512;
 static int name_type = 0x20;
 static int max_protocol = PROTOCOL_NT1;
 
-static int process_tok(fstring tok);
+static int process_tok(pstring tok);
 static int cmd_help(void);
 
 /* 30 second timeout on most commands */
@@ -284,7 +284,7 @@ static int do_cd(char *newdir)
 
 static int cmd_cd(void)
 {
-	fstring buf;
+	pstring buf;
 	int rc = 0;
 
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
@@ -572,14 +572,18 @@ static int cmd_dir(void)
 {
 	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
 	pstring mask;
-	fstring buf;
+	pstring buf;
 	char *p=buf;
 	int rc;
 	
 	dir_total = 0;
-	pstrcpy(mask,cur_dir);
-	if(mask[strlen(mask)-1]!='\\')
-		pstrcat(mask,"\\");
+	if (strcmp(cur_dir, "\\") != 0) {
+		pstrcpy(mask,cur_dir);
+		if(mask[strlen(mask)-1]!='\\')
+			pstrcat(mask,"\\");
+	} else {
+		*mask = '\0';
+	}
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		dos_format(p);
@@ -608,7 +612,7 @@ static int cmd_du(void)
 {
 	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
 	pstring mask;
-	fstring buf;
+	pstring buf;
 	char *p=buf;
 	int rc;
 	
@@ -862,13 +866,13 @@ static void do_mget(file_info *finfo)
 
 static int cmd_more(void)
 {
-	fstring rname,lname,pager_cmd;
+	pstring rname,lname,pager_cmd;
 	char *pager;
 	int fd;
 	int rc = 0;
 
-	fstrcpy(rname,cur_dir);
-	fstrcat(rname,"\\");
+	pstrcpy(rname,cur_dir);
+	pstrcat(rname,"\\");
 	
 	slprintf(lname,sizeof(lname)-1, "%s/smbmore.XXXXXX",tmpdir());
 	fd = smb_mkstemp(lname);
@@ -905,7 +909,7 @@ static int cmd_mget(void)
 {
 	uint16 attribute = aSYSTEM | aHIDDEN;
 	pstring mget_mask;
-	fstring buf;
+	pstring buf;
 	char *p=buf;
 
 	*mget_mask = 0;
@@ -959,7 +963,7 @@ static BOOL do_mkdir(char *name)
 
 static BOOL do_altname(char *name)
 {
-	fstring altname;
+	pstring altname;
 	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli, name, altname))) {
 		d_printf("%s getting alt name for %s\n",
 			 cli_errstr(cli),name);
@@ -989,7 +993,7 @@ static int cmd_quit(void)
 static int cmd_mkdir(void)
 {
 	pstring mask;
-	fstring buf;
+	pstring buf;
 	char *p=buf;
   
 	pstrcpy(mask,cur_dir);
@@ -1031,7 +1035,7 @@ static int cmd_mkdir(void)
 static int cmd_altname(void)
 {
 	pstring name;
-	fstring buf;
+	pstring buf;
 	char *p=buf;
   
 	pstrcpy(name,cur_dir);
@@ -1183,7 +1187,7 @@ static int cmd_put(void)
 {
 	pstring lname;
 	pstring rname;
-	fstring buf;
+	pstring buf;
 	char *p=buf;
 	
 	pstrcpy(rname,cur_dir);
@@ -1345,7 +1349,7 @@ static int file_find(struct file_list **list, const char *directory,
 
 static int cmd_mput(void)
 {
-	fstring buf;
+	pstring buf;
 	char *p=buf;
 	
 	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
@@ -1443,7 +1447,7 @@ static int do_cancel(int job)
 
 static int cmd_cancel(void)
 {
-	fstring buf;
+	pstring buf;
 	int job; 
 
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
@@ -1532,7 +1536,7 @@ static void do_del(file_info *finfo)
 static int cmd_del(void)
 {
 	pstring mask;
-	fstring buf;
+	pstring buf;
 	uint16 attribute = aSYSTEM | aHIDDEN;
 
 	if (recurse)
@@ -1557,7 +1561,7 @@ static int cmd_del(void)
 static int cmd_open(void)
 {
 	pstring mask;
-	fstring buf;
+	pstring buf;
 	
 	pstrcpy(mask,cur_dir);
 	
@@ -1580,7 +1584,7 @@ static int cmd_open(void)
 static int cmd_rmdir(void)
 {
 	pstring mask;
-	fstring buf;
+	pstring buf;
   
 	pstrcpy(mask,cur_dir);
 	
@@ -1605,7 +1609,7 @@ static int cmd_rmdir(void)
 static int cmd_link(void)
 {
 	pstring src,dest;
-	fstring buf,buf2;
+	pstring buf,buf2;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
@@ -1615,8 +1619,8 @@ static int cmd_link(void)
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
   
-	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
 		d_printf("link <src> <dest>\n");
 		return 1;
 	}
@@ -1639,7 +1643,7 @@ static int cmd_link(void)
 static int cmd_symlink(void)
 {
 	pstring src,dest;
-	fstring buf,buf2;
+	pstring buf,buf2;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
@@ -1649,8 +1653,8 @@ static int cmd_symlink(void)
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
 	
-	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
 		d_printf("symlink <src> <dest>\n");
 		return 1;
 	}
@@ -1675,7 +1679,7 @@ static int cmd_chmod(void)
 {
 	pstring src;
 	mode_t mode;
-	fstring buf, buf2;
+	pstring buf, buf2;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
@@ -1684,8 +1688,8 @@ static int cmd_chmod(void)
 
 	pstrcpy(src,cur_dir);
 	
-	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
 		d_printf("chmod mode file\n");
 		return 1;
 	}
@@ -1711,7 +1715,7 @@ static int cmd_chown(void)
 	pstring src;
 	uid_t uid;
 	gid_t gid;
-	fstring buf, buf2, buf3;
+	pstring buf, buf2, buf3;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
@@ -1720,9 +1724,9 @@ static int cmd_chown(void)
 
 	pstrcpy(src,cur_dir);
 	
-	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token(NULL,buf2,NULL, sizeof(buf2)) ||
-	    !next_token(NULL,buf3,NULL, sizeof(buf3))) {
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2)) ||
+	    !next_token_nr(NULL,buf3,NULL, sizeof(buf3))) {
 		d_printf("chown uid gid file\n");
 		return 1;
 	}
@@ -1747,7 +1751,7 @@ static int cmd_chown(void)
 static int cmd_rename(void)
 {
 	pstring src,dest;
-	fstring buf,buf2;
+	pstring buf,buf2;
   
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
@@ -1763,6 +1767,35 @@ static int cmd_rename(void)
 
 	if (!cli_rename(cli, src, dest)) {
 		d_printf("%s renaming files\n",cli_errstr(cli));
+		return 1;
+	}
+	
+	return 0;
+}
+
+/****************************************************************************
+ Hard link files using the NT call.
+****************************************************************************/
+
+static int cmd_hardlink(void)
+{
+	pstring src,dest;
+	pstring buf,buf2;
+  
+	pstrcpy(src,cur_dir);
+	pstrcpy(dest,cur_dir);
+	
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
+		d_printf("hardlink <src> <dest>\n");
+		return 1;
+	}
+
+	pstrcat(src,buf);
+	pstrcat(dest,buf2);
+
+	if (!cli_nt_hardlink(cli, src, dest)) {
+		d_printf("%s doing an NT hard link of files\n",cli_errstr(cli));
 		return 1;
 	}
 	
@@ -1787,7 +1820,7 @@ static int cmd_prompt(void)
 
 static int cmd_newer(void)
 {
-	fstring buf;
+	pstring buf;
 	BOOL ok;
 	SMB_STRUCT_STAT sbuf;
 
@@ -1814,7 +1847,7 @@ static int cmd_newer(void)
 
 static int cmd_archive(void)
 {
-	fstring buf;
+	pstring buf;
 
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		archive_level = atoi(buf);
@@ -1904,7 +1937,7 @@ static int cmd_printmode(void)
 
 static int cmd_lcd(void)
 {
-	fstring buf;
+	pstring buf;
 	pstring d;
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
@@ -1949,7 +1982,7 @@ static int cmd_reput(void)
 {
 	pstring local_name;
 	pstring remote_name;
-	fstring buf;
+	pstring buf;
 	char *p = buf;
 	SMB_STRUCT_STAT st;
 	
@@ -2003,7 +2036,7 @@ static void browse_fn(const char *name, uint32 m,
 	   in any of these fields, they can corrupt the output.  We
 	   should remove them. */
 	if (!grepable) {
-		d_printf("\t%-15.15s%-10.10s%s\n",
+		d_printf("\t%-15s %-10.10s%s\n",
                		name,typestr,comment);
 	} else {
 		d_printf ("%s|%s|%s\n",typestr,name,comment);
@@ -2018,8 +2051,8 @@ static BOOL browse_host(BOOL sort)
 {
 	int ret;
 	if (!grepable) {
-	        d_printf("\n\tSharename      Type      Comment\n");
-	        d_printf("\t---------      ----      -------\n");
+	        d_printf("\n\tSharename       Type      Comment\n");
+	        d_printf("\t---------       ----      -------\n");
 	}
 
 	if((ret = cli_RNetShareEnum(cli, browse_fn, NULL)) == -1)
@@ -2037,7 +2070,7 @@ static void server_fn(const char *name, uint32 m,
 {
 	
 	if (!grepable){
-		d_printf("\t%-16.16s     %s\n", name, comment);
+		d_printf("\t%-16s     %s\n", name, comment);
 	} else {
 		d_printf("%s|%s|%s\n",(char *)state, name, comment);
 	}
@@ -2067,6 +2100,61 @@ static BOOL list_servers(const char *wk_grp)
 	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM,
 			  server_fn, "Workgroup");
 	return True;
+}
+
+/****************************************************************************
+ Print or set current VUID
+****************************************************************************/
+
+static int cmd_vuid(void)
+{
+	fstring buf;
+	
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("Current VUID is %d\n", cli->vuid);
+		return 0;
+	}
+
+	cli->vuid = atoi(buf);
+	return 0;
+}
+
+/****************************************************************************
+ Setup a new VUID, by issuing a session setup
+****************************************************************************/
+
+static int cmd_logon(void)
+{
+	pstring l_username, l_password;
+	pstring buf,buf2;
+  
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("logon <username> [<password>]\n");
+		return 0;
+	}
+
+	pstrcpy(l_username, buf);
+
+	if (!next_token_nr(NULL,buf2,NULL,sizeof(buf))) {
+		char *pass = getpass("Password: ");
+		if (pass) {
+			pstrcpy(l_password, pass);
+			got_pass = 1;
+		}
+	} else {
+		pstrcpy(l_password, buf2);
+	}
+
+	if (!cli_session_setup(cli, l_username, 
+			       l_password, strlen(l_password),
+			       l_password, strlen(l_password),
+			       lp_workgroup())) {
+		d_printf("session setup failed: %s\n", cli_errstr(cli));
+		return -1;
+	}
+
+	d_printf("Current VUID is %d\n", cli->vuid);
+	return 0;
 }
 
 /* Some constants for completing filename arguments */
@@ -2100,6 +2188,7 @@ static struct
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"exit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
   {"get",cmd_get,"<remote name> [local name] get a file",{COMPL_REMOTE,COMPL_LOCAL}},
+  {"hardlink",cmd_hardlink,"<src> <dest> create a Windows hard link",{COMPL_REMOTE,COMPL_REMOTE}},
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
@@ -2134,6 +2223,8 @@ static struct
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
+  {"vuid",cmd_vuid,"change current vuid",{COMPL_NONE,COMPL_NONE}},
+  {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
   
   /* Yes, this must be here, see crh's comment above. */
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
@@ -2145,7 +2236,7 @@ static struct
  abbreviations.
 ******************************************************************/
 
-static int process_tok(fstring tok)
+static int process_tok(pstring tok)
 {
 	int i = 0, matches = 0;
 	int cmd=0;
@@ -2178,7 +2269,7 @@ static int process_tok(fstring tok)
 static int cmd_help(void)
 {
 	int i=0,j;
-	fstring buf;
+	pstring buf;
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		if ((i = process_tok(buf)) >= 0)
@@ -2215,7 +2306,7 @@ static int process_command_string(char *cmd)
 	
 	while (cmd[0] != '\0')    {
 		char *p;
-		fstring tok;
+		pstring tok;
 		int i;
 		
 		if ((p = strchr_m(cmd, ';')) == 0) {
@@ -2478,8 +2569,8 @@ static void process_stdin(void)
 	const char *ptr;
 
 	while (1) {
-		fstring tok;
-		fstring the_prompt;
+		pstring tok;
+		pstring the_prompt;
 		char *cline;
 		pstring line;
 		int i;
@@ -2522,11 +2613,11 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	struct nmb_name called, calling;
 	const char *server_n;
 	struct in_addr ip;
-	fstring servicename;
+	pstring servicename;
 	char *sharename;
 	
 	/* make a copy so we don't modify the global string 'service' */
-	fstrcpy(servicename, share);
+	pstrcpy(servicename, share);
 	sharename = servicename;
 	if (*sharename == '\\') {
 		server = sharename+2;
@@ -2615,7 +2706,6 @@ static struct cli_state *do_connect(const char *server, const char *share)
 		DEBUG(1,("OS=[%s] Server=[%s]\n",
 			 c->server_os,c->server_type));
 	}		
-	
 	DEBUG(4,(" session setup ok\n"));
 
 	if (!cli_send_tconX(c, sharename, "?????",
@@ -2756,27 +2846,6 @@ static int do_message_op(void)
 }
 
 
-/**
- * Process "-L hostname" option.
- *
- * We don't actually do anything yet -- we just stash the name in a
- * global variable and do the query when all options have been read.
- **/
-
-static void remember_query_host(const char *arg,
-				pstring query_host)
-{
-	char *slash;
-	
-	while (*arg == '\\' || *arg == '/')
-		arg++;
-	pstrcpy(query_host, arg);
-	if ((slash = strchr(query_host, '/'))
-	    || (slash = strchr(query_host, '\\'))) {
-		*slash = 0;
-	}
-}
-
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -2784,7 +2853,7 @@ static void remember_query_host(const char *arg,
  int main(int argc,char *argv[])
 {
 	extern BOOL AllowDebugChange;
-	fstring base_directory;
+	pstring base_directory;
 	int opt;
 	pstring query_host;
 	BOOL message = False;
@@ -2871,7 +2940,7 @@ static void remember_query_host(const char *arg,
 			break;
 
 		case 'L':
-			remember_query_host(poptGetOptArg(pc), query_host);
+			pstrcpy(query_host, poptGetOptArg(pc));
 			break;
 		case 't':
 			pstrcpy(term_code, poptGetOptArg(pc));
@@ -2902,7 +2971,7 @@ static void remember_query_host(const char *arg,
 			}
 			break;
 		case 'D':
-			fstrcpy(base_directory,poptGetOptArg(pc));
+			pstrcpy(base_directory,poptGetOptArg(pc));
 			break;
 		case 'g':
 			grepable=True;
@@ -2979,14 +3048,25 @@ static void remember_query_host(const char *arg,
 		return do_tar_op(base_directory);
 	}
 
-	if ((p=strchr_m(query_host,'#'))) {
-		*p = 0;
-		p++;
-		sscanf(p, "%x", &name_type);
-	}
-  
 	if (*query_host) {
-		return do_host_query(query_host);
+		char *qhost = query_host;
+		char *slash;
+
+		while (*qhost == '\\' || *qhost == '/')
+			qhost++;
+
+		if ((slash = strchr_m(qhost, '/'))
+		    || (slash = strchr_m(qhost, '\\'))) {
+			*slash = 0;
+		}
+
+		if ((p=strchr_m(qhost, '#'))) {
+			*p = 0;
+			p++;
+			sscanf(p, "%x", &name_type);
+		}
+  
+		return do_host_query(qhost);
 	}
 
 	if (message) {
