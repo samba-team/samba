@@ -514,36 +514,15 @@ BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd);
 struct cli_state *cli_spoolss_initialise(struct cli_state *cli, 
 					 char *system_name,
 					 struct ntuser_creds *creds);
-NTSTATUS cli_spoolss_open_printer_ex(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	char *printername,
-	char *datatype, 
-	uint32 access_required,
-	char *station, 
-	char *username,
-	POLICY_HND *pol
-);
-NTSTATUS cli_spoolss_close_printer(
-	struct cli_state *cli,
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol
-);
-NTSTATUS cli_spoolss_enum_printers(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	uint32 flags,
-	uint32 level, 
-	int *returned, 
-	PRINTER_INFO_CTR *ctr
-);
-NTSTATUS cli_spoolss_enum_ports(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	uint32 level, 
-	int *returned, 
-	PORT_INFO_CTR *ctr
-);
+NTSTATUS cli_spoolss_open_printer_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				char *printername, char *datatype, uint32 access_required,
+				char *station, char *username, POLICY_HND *pol);
+NTSTATUS cli_spoolss_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *pol);
+NTSTATUS cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			uint32 flags, uint32 level, int *returned, PRINTER_INFO_CTR *ctr);
+NTSTATUS cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx, uint32 level,
+			int *returned, PORT_INFO_CTR *ctr);
 NTSTATUS cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				POLICY_HND *pol, uint32 level, PRINTER_INFO_CTR *ctr);
 NTSTATUS cli_spoolss_setprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
@@ -552,48 +531,21 @@ NTSTATUS cli_spoolss_setprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 NTSTATUS cli_spoolss_getprinterdriver (struct cli_state *cli, TALLOC_CTX *mem_ctx,
 					POLICY_HND *pol, uint32 level, char* env,
 					PRINTER_DRIVER_CTR *ctr);
-NTSTATUS cli_spoolss_enumprinterdrivers (
-	struct cli_state 	*cli, 
-	TALLOC_CTX		*mem_ctx,
-	uint32 			level,
-	char* 			env,
-	uint32			*returned,
-	PRINTER_DRIVER_CTR  	*ctr
-);
-NTSTATUS cli_spoolss_getprinterdriverdir (
-	struct cli_state 	*cli, 
-	TALLOC_CTX		*mem_ctx,
-	uint32 			level,
-	char* 			env,
-	DRIVER_DIRECTORY_CTR  	*ctr
-);
-NTSTATUS cli_spoolss_addprinterdriver (
-	struct cli_state 	*cli, 
-	TALLOC_CTX		*mem_ctx,
-	uint32 			level,
-	PRINTER_DRIVER_CTR  	*ctr
-);
-NTSTATUS cli_spoolss_addprinterex (
-	struct cli_state 	*cli, 
-	TALLOC_CTX		*mem_ctx,
-	uint32 			level,
-	PRINTER_INFO_CTR  	*ctr
-);
-NTSTATUS cli_spoolss_deleteprinterdriver (
-	struct cli_state 	*cli, 
-	TALLOC_CTX		*mem_ctx,
-	char			*arch,
-	char			*driver
-);
-NTSTATUS cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
-						TALLOC_CTX *mem_ctx,
-						char *name,
-						char *environment,
-						fstring procdir);
+NTSTATUS cli_spoolss_enumprinterdrivers (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				uint32 level, char* env, uint32 *returned,
+				PRINTER_DRIVER_CTR *ctr);
+NTSTATUS cli_spoolss_getprinterdriverdir (struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					uint32 level, char*  env, DRIVER_DIRECTORY_CTR *ctr);
+NTSTATUS cli_spoolss_addprinterdriver (struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					uint32 level, PRINTER_DRIVER_CTR *ctr);
+NTSTATUS cli_spoolss_addprinterex (struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					uint32 level, PRINTER_INFO_CTR *ctr);
+NTSTATUS cli_spoolss_deleteprinterdriver (struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					char *arch, char *driver);
+NTSTATUS cli_spoolss_getprintprocessordirectory(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+						char *name, char *environment, fstring procdir);
 NTSTATUS cli_spoolss_setprinterdata (struct cli_state *cli, TALLOC_CTX *mem_ctx,
 					POLICY_HND *pol, char* valname, char* value);
-NTSTATUS cli_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CTX *mem_ctx,
-					POLICY_HND *pol, uint32 condition, uint32 changd_id);
 
 /*The following definitions come from  libsmb/cli_srvsvc.c  */
 
@@ -1164,6 +1116,7 @@ void free_userlist(struct sys_userlist *list_head);
 /*The following definitions come from  lib/util_seaccess.c  */
 
 void se_map_generic(uint32 *access_mask, struct generic_mapping *mapping);
+void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping);
 BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted, 
 		     NTSTATUS *status);
@@ -2440,9 +2393,16 @@ void cli_nt_session_close(struct cli_state *cli);
 
 BOOL spoolss_disconnect_from_client( struct cli_state *cli);
 BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine);
-BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32 localprinter, uint32 type, WERROR *status, POLICY_HND *handle);
-BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, 
-				     WERROR *status);
+NTSTATUS cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				char *printer, uint32 localprinter, uint32 type, 
+				POLICY_HND *handle);
+NTSTATUS cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					POLICY_HND *handle);
+NTSTATUS cli_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					POLICY_HND *pol, uint32 condition, uint32 changd_id);
+NTSTATUS cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					POLICY_HND *handle, PRINTER_MESSAGE_INFO *info,
+					NT_PRINTER_INFO_LEVEL *printer);
 
 /*The following definitions come from  rpc_client/cli_trust.c  */
 
