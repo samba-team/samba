@@ -902,7 +902,7 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 	BOOL hide_unwriteable = lp_hideunwriteable_files(SNUM(conn));
 	BOOL hide_special = lp_hide_special_files(SNUM(conn));
 
-	ZERO_STRUCT(pst);
+	ZERO_STRUCTP(pst);
 
 	if ((strcmp(".",name) == 0) || (strcmp("..",name) == 0)) {
 		return True; /* . and .. are always visible. */
