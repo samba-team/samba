@@ -266,7 +266,10 @@ struct smb_passwd *pwdb_smb_map_names(struct smb_passwd *smb)
 	static fstring unix_name;
 	static fstring nt_name;
 
-	DEBUG(10,("pwdb_smb_map_names\n"));
+	DEBUG(10,("pwdb_smb_map_names: unix %s nt %s unix %d nt%d\n",
+	           smb->unix_name != NULL ? smb->unix_name : "NULL",
+	           smb->nt_name   != NULL ? smb->nt_name   : "NULL",
+	           smb->unix_uid, smb->user_rid));
 
 	if (smb == NULL)
 	{
