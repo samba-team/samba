@@ -4401,7 +4401,7 @@ else
 fi
 done
 
-for ac_func in _write __write
+for ac_func in _write __write _fork __fork
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:4408: checking for $ac_func" >&5

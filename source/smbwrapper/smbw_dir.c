@@ -664,3 +664,4 @@ off_t smbw_telldir(DIR *dirp)
 	struct smbw_dir *d = (struct smbw_dir *)dirp;
 	return smbw_dir_lseek(d->fd,0,SEEK_CUR);
 }
+

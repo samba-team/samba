@@ -1229,3 +1229,72 @@ int smbw_dup2(int fd, int fd2)
 	return -1;
 }
 
+
+/***************************************************** 
+close a connection to a server
+*******************************************************/
+static void smbw_srv_close(struct smbw_server *srv)
+{
+	smbw_busy++;
+
+	cli_shutdown(&srv->cli);
+
+	free(srv->server_name);
+	free(srv->share_name);
+
+	DLIST_REMOVE(smbw_srvs, srv);
+
+	ZERO_STRUCTP(srv);
+
+	free(srv);
+	
+	smbw_busy--;
+}
+
+/***************************************************** 
+when we fork we have to close all connections and files
+in the child
+*******************************************************/
+int smbw_fork(void)
+{
+	pid_t child;
+	int p[2];
+	char c=0;
+
+	struct smbw_file *file, *next_file;
+	struct smbw_server *srv, *next_srv;
+
+	if (pipe(p)) return real_fork();
+
+	child = real_fork();
+
+	if (child) {
+		/* block the parent for a moment until the sockets are
+                   closed */
+		close(p[1]);
+		read(p[0], &c, 1);
+		close(p[0]);
+		return child;
+	}
+
+	close(p[0]);
+
+	/* close all files */
+	for (file=smbw_files;file;file=next_file) {
+		next_file = file->next;
+		close(file->fd);
+	}
+
+	/* close all server connections */
+	for (srv=smbw_srvs;srv;srv=next_srv) {
+		next_srv = srv->next;
+		smbw_srv_close(srv);
+	}
+
+	/* unblock the parent */
+	write(p[1], &c, 1);
+	close(p[1]);
+
+	/* and continue in the child */
+	return 0;
+}
