@@ -23,9 +23,12 @@
 #include "includes.h"
 
 /* Handle command line options:
- *		-d,--debuglevel 
- *		-s,--configfile 
- *		-O,--socket-options 
+ *		d,--debuglevel 
+ *		s,--configfile 
+ *		O,--socket-options 
+ *		V,--version
+ *		l,--log-base
+ *		n,--netbios-name
  */
 
 extern pstring user_socket_options;
@@ -37,6 +40,22 @@ static void popt_common_callback(poptContext con,
 			   const struct poptOption *opt,
 			   const char *arg, const void *data)
 {
+	pstring logfile;
+	char *pname;
+	
+	/* Find out basename of current program */
+	pname = strrchr_m(poptGetInvocationName(con),'/');
+
+	if(!pname)pname = poptGetInvocationName(con);
+	else pname++;
+
+	if (reason == POPT_CALLBACK_REASON_PRE) {
+		pstring logfile;
+		pstr_sprintf(logfile, "%s/log.%s", dyn_LOGFILEBASE, pname);
+		lp_set_logfile(logfile);
+		return;
+	}
+
 	switch(opt->val) {
 	case 'd':
 		if (arg) {
@@ -51,18 +70,38 @@ static void popt_common_callback(poptContext con,
 		break;
 
 	case 'O':
-		pstrcpy(user_socket_options,arg);
+		if (arg) {
+			pstrcpy(user_socket_options,arg);
+		}
 		break;
 
 	case 's':
-		pstrcpy(dyn_CONFIGFILE, arg);
+		if (arg) {
+			pstrcpy(dyn_CONFIGFILE, arg);
+		}
 		break;
 
 	case 'n':
-		pstrcpy(global_myname,arg);
-		strupper(global_myname);
+		if (arg) {
+			pstrcpy(global_myname,arg);
+			strupper(global_myname);
+		}
+		break;
+
+	case 'l':
+		if (arg) {
+			pstr_sprintf(logfile, "%s/log.%s", arg, pname);
+			lp_set_logfile(logfile);
+		}
 		break;
 	}
+}
+
+static void popt_common_init_log(poptContext con,
+			enum poptCallbackReason reason,
+			const struct poptOption *opt,
+			const char *arg, const void *data)
+{
 }
 
 struct poptOption popt_common_debug[] = {
@@ -93,5 +132,11 @@ struct poptOption popt_common_version[] = {
 struct poptOption popt_common_netbios_name[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
 	{"netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name"},
+	{ 0 }
+};
+
+struct poptOption popt_common_log_base[] = {
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, popt_common_callback },
+	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Basename for log/debug files"},
 	{ 0 }
 };

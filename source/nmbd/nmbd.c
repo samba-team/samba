@@ -675,15 +675,12 @@ static BOOL init_structs(void)
  	{"port", 'p', POPT_ARG_INT, &global_nmb_port, NMB_PORT, "Listen on the specified port" },
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
-	/* Various obsolete options */
- 	{NULL, 'N', POPT_ARG_NONE | POPT_ARGFLAG_DOC_HIDDEN },
- 	{NULL, 'B', POPT_ARG_NONE | POPT_ARGFLAG_DOC_HIDDEN },
- 	{NULL, 'I', POPT_ARG_NONE | POPT_ARGFLAG_DOC_HIDDEN },
- 	{NULL, 'C', POPT_ARG_NONE | POPT_ARGFLAG_DOC_HIDDEN },
- 	{NULL, 'G', POPT_ARG_NONE | POPT_ARGFLAG_DOC_HIDDEN },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_socket_options },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_netbios_name },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_log_base },
  	{ NULL }
   };
-  extern BOOL  append_log;
   int opt;
   pstring logfile;
 
@@ -719,24 +716,13 @@ static BOOL init_structs(void)
 #if defined(SIGUSR2)
   BlockSignals(True, SIGUSR2);
 #endif
-  pc = poptGetContext(argv[0], argc, argv, long_options, 0);
+  pc = poptGetContext("nmbd", argc, argv, long_options, 0);
   
   while((opt = poptGetNextOpt(pc)) != -1)
-    {
-      switch (opt)
-        {
-        case 'N':
-        case 'B':
-        case 'I':
-        case 'C':
-        case 'G':
-          DEBUG(0,("Obsolete option '%c' used\n",opt));
-          break;
-        }
-    }
+    { }
 
   poptFreeContext(pc);
-
+  
   setup_logging( argv[0], opt_interactive );
 
   reopen_logs();
