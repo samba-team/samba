@@ -4,7 +4,7 @@
                  xmlns:samba="http://samba.org/common">
 <listitem>
     <para>This parameter applies only to Windows NT/2000
-    clients.  It has no affect on Windows 95/98/ME clients.  When 
+    clients.  It has no effect on Windows 95/98/ME clients.  When 
     serving a printer to Windows NT/2000 clients without first installing
     a valid printer driver on the Samba host, the client will be required
     to install a local printer driver.  From this point on, the client
