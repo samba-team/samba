@@ -50,13 +50,9 @@ proto (int sock, const char *service)
     krb5_ccache ccache;
     krb5_auth_context auth_context;
     krb5_error_code status;
-    krb5_principal server;
-    krb5_ticket *ticket;
-    char *name;
     char hostname[MAXHOSTNAMELEN];
     krb5_data packet;
     krb5_data data;
-    u_int32_t len, net_len;
     krb5_data client_name;
     krb5_creds in_creds, *out_creds;
 
@@ -134,7 +130,8 @@ proto (int sock, const char *service)
     if (status)
 	krb5_err(context, 1, status, "krb5_sendauth");
     
-    printf ("User is `%s'\n", client_name.data);
+    printf ("User is `%.*s'\n", (int)client_name.length,
+	    (char *)client_name.data);
 
     krb5_data_zero (&data);
     krb5_data_zero (&packet);

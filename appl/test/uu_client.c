@@ -54,7 +54,6 @@ proto (int sock, const char *hostname, const char *service)
     krb5_principal client, server;
     krb5_data data;
     krb5_data packet;
-    u_int32_t len, net_len;
     krb5_creds mcred, cred;
 
     addrlen = sizeof(local);
