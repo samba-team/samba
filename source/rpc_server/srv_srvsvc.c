@@ -30,251 +30,6 @@ extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 /*******************************************************************
- fill in a share info level 1 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- see ipc.c:fill_share_info()
-
- ********************************************************************/
-static void make_srv_share_1_info(SH_INFO_1    *sh1,
-                                  SH_INFO_1_STR *str1, int snum)
-{
-	int len_net_name;
-	pstring net_name;
-	pstring remark;
-	uint32 type;
-
-	pstrcpy(net_name, lp_servicename(snum));
-	pstrcpy(remark  , lp_comment    (snum));
-	len_net_name = strlen(net_name);
-
-	/* work out the share type */
-	type = STYPE_DISKTREE;
-		
-	if (lp_print_ok(snum))             type = STYPE_PRINTQ;
-	if (strequal("IPC$", net_name))    type = STYPE_IPC;
-	if (net_name[len_net_name] == '$') type |= STYPE_HIDDEN;
-
-	make_srv_share_info1    (sh1 , net_name, type, remark);
-	make_srv_share_info1_str(str1, net_name,       remark);
-}
-
-/*******************************************************************
- fill in a share info level 1 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- ********************************************************************/
-static void make_srv_share_info_1(SRV_SHARE_INFO_1 *sh1, uint32 *snum, uint32 *svcs)
-{
-	uint32 num_entries = 0;
-	(*svcs) = lp_numservices();
-
-	if (sh1 == NULL)
-	{
-		(*snum) = 0;
-		return;
-	}
-
-	DEBUG(5,("make_srv_share_1_sh1\n"));
-
-	for (; (*snum) < (*svcs) && num_entries < MAX_SHARE_ENTRIES; (*snum)++)
-	{
-		if (lp_browseable((*snum)) && lp_snum_ok((*snum)))
-		{
-			make_srv_share_1_info(&(sh1->info_1    [num_entries]),
-				                  &(sh1->info_1_str[num_entries]), (*snum));
-
-			/* move on to creating next share */
-			num_entries++;
-		}
-	}
-
-	sh1->num_entries_read  = num_entries;
-	sh1->ptr_share_info    = num_entries > 0 ? 1 : 0;
-	sh1->num_entries_read2 = num_entries;
-	
-	if ((*snum) >= (*svcs))
-	{
-		(*snum) = 0;
-	}
-}
-
-/*******************************************************************
- fill in a share info level 2 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- see ipc.c:fill_share_info()
-
- ********************************************************************/
-static void make_srv_share_2_info(SH_INFO_2     *sh2,
-                                  SH_INFO_2_STR *str2, int snum)
-{
-	int len_net_name;
-	pstring net_name;
-	pstring remark;
-	pstring path;
-	pstring passwd;
-	uint32 type;
-
-	pstrcpy(net_name, lp_servicename(snum));
-	pstrcpy(remark  , lp_comment    (snum));
-	pstrcpy(path    , lp_pathname   (snum));
-	pstrcpy(passwd  , "");
-	len_net_name = strlen(net_name);
-
-	/* work out the share type */
-	type = STYPE_DISKTREE;
-		
-	if (lp_print_ok(snum))             type = STYPE_PRINTQ;
-	if (strequal("IPC$", net_name))    type = STYPE_IPC;
-	if (net_name[len_net_name] == '$') type |= STYPE_HIDDEN;
-
-	make_srv_share_info2    (sh2 , net_name, type, remark, 0, 0xffffffff, 1, path, passwd);
-	make_srv_share_info2_str(str2, net_name,       remark,                   path, passwd);
-}
-
-/*******************************************************************
- fill in a share info level 2 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- ********************************************************************/
-static void make_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, uint32 *snum, uint32 *svcs)
-{
-	uint32 num_entries = 0;
-	(*svcs) = lp_numservices();
-
-	if (sh2 == NULL)
-	{
-		(*snum) = 0;
-		return;
-	}
-
-	DEBUG(5,("make_srv_share_2_sh1\n"));
-
-	for (; (*snum) < (*svcs) && num_entries < MAX_SHARE_ENTRIES; (*snum)++)
-	{
-		if (lp_browseable((*snum)) && lp_snum_ok((*snum)))
-		{
-			make_srv_share_2_info(&(sh2->info_2    [num_entries]),
-				                  &(sh2->info_2_str[num_entries]), (*snum));
-
-			/* move on to creating next share */
-			num_entries++;
-		}
-	}
-
-	sh2->num_entries_read  = num_entries;
-	sh2->ptr_share_info    = num_entries > 0 ? 1 : 0;
-	sh2->num_entries_read2 = num_entries;
-	
-	if ((*snum) >= (*svcs))
-	{
-		(*snum) = 0;
-	}
-}
-
-/*******************************************************************
- makes a SRV_R_NET_SHARE_ENUM structure.
-********************************************************************/
-static uint32 make_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr,
-				int switch_value, uint32 *resume_hnd, uint32 *total_entries)  
-{
-	uint32 status = 0x0;
-	DEBUG(5,("make_srv_share_info_ctr: %d\n", __LINE__));
-
-	ctr->switch_value = switch_value;
-
-	switch (switch_value)
-	{
-		case 1:
-		{
-			make_srv_share_info_1(&(ctr->share.info1), resume_hnd, total_entries);
-			ctr->ptr_share_ctr = 1;
-			break;
-		}
-		case 2:
-		{
-			make_srv_share_info_2(&(ctr->share.info2), resume_hnd, total_entries);
-			ctr->ptr_share_ctr = 2;
-			break;
-		}
-		default:
-		{
-			DEBUG(5,("make_srv_share_info_ctr: unsupported switch value %d\n",
-			          switch_value));
-			(*resume_hnd = 0);
-			(*total_entries) = 0;
-			ctr->ptr_share_ctr = 0;
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
-			break;
-		}
-	}
-
-	return status;
-}
-
-/*******************************************************************
- makes a SRV_R_NET_SHARE_ENUM structure.
-********************************************************************/
-static void make_srv_r_net_share_enum(SRV_R_NET_SHARE_ENUM *r_n,
-				uint32 resume_hnd, int share_level, int switch_value)  
-{
-	DEBUG(5,("make_srv_r_net_share_enum: %d\n", __LINE__));
-
-	r_n->share_level  = share_level;
-	if (share_level == 0)
-	{
-		r_n->status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
-	}
-	else
-	{
-		r_n->status = make_srv_share_info_ctr(r_n->ctr, switch_value, &resume_hnd, &(r_n->total_entries));
-	}
-	if (r_n->status != 0x0)
-	{
-		resume_hnd = 0;
-	}
-	make_enum_hnd(&(r_n->enum_hnd), resume_hnd);
-}
-
-/*******************************************************************
-net share enum
-********************************************************************/
-static void srv_reply_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n,
-				prs_struct *rdata)
-{
-	SRV_R_NET_SHARE_ENUM r_n;
-	SRV_SHARE_INFO_CTR ctr;
-
-	r_n.ctr = &ctr;
-
-	DEBUG(5,("srv_net_share_enum: %d\n", __LINE__));
-
-	/* set up the */
-	make_srv_r_net_share_enum(&r_n,
-				get_enum_hnd(&q_n->enum_hnd),
-				q_n->share_level,
-				q_n->ctr->switch_value);
-
-	/* store the response in the SMB stream */
-	srv_io_r_net_share_enum("", &r_n, rdata, 0);
-
-	DEBUG(5,("srv_net_share_enum: %d\n", __LINE__));
-}
-
-/*******************************************************************
  fill in a sess info level 1 structure.
 
  this function breaks the rule that i'd like to be in place, namely
@@ -996,16 +751,31 @@ static void api_srv_net_sess_enum( rpcsrv_struct *p, prs_struct *data,
 static void api_srv_net_share_enum( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
-	SRV_Q_NET_SHARE_ENUM q_n;
-	SRV_SHARE_INFO_CTR ctr;
+        SRV_Q_NET_SHARE_ENUM q_n;
+	SRV_R_NET_SHARE_ENUM r_n;
+        SRV_SHARE_INFO_CTR ctr;
 
-	q_n.ctr = &ctr;
+	ZERO_STRUCT(q_n);
+	ZERO_STRUCT(r_n);
 
-	/* grab the net server get enum */
-	srv_io_q_net_share_enum("", &q_n, data, 0);
+        q_n.ctr = &ctr;
+	r_n.ctr = &ctr;
 
-	/* construct reply.  always indicate success */
-	srv_reply_net_share_enum(&q_n, rdata);
+        /* grab the net server get enum */
+        srv_io_q_net_share_enum("", &q_n, data, 0);
+
+	r_n.share_level = q_n.share_level;
+
+	r_n.status = _srv_net_srv_share_enum( &q_n.uni_srv_name, 
+				ctr.switch_value, &ctr,
+				q_n.preferred_len, q_n.enum_hnd,
+				&(r_n.total_entries),
+				q_n.share_level );
+
+	memcpy(&r_n.enum_hnd, &q_n.enum_hnd, sizeof(r_n.enum_hnd));
+
+	/* store the response in the SMB stream */
+	srv_io_r_net_share_enum("", &r_n, rdata, 0);
 }
 
 /*******************************************************************
