@@ -1,12 +1,5 @@
 Changes in release 0.5
 
- * fixed an inverted logic in the krb5_verify_init_creds function,
-   effectively inverting its meaning; this affects you if you have
-   third-party applications using the krb5_verify_init_creds function;
-   applications using the krb5_verify_user_* set of functions should
-   be ok (and this includes all programs included in our
-   distribution), because of another logic swap
-
  * accept addresses with or without ports in krb5_rd_cred
 
  * make it work with modern openssl
