@@ -188,62 +188,92 @@ tail(filename)
 }
 */
 
+#ifndef HAVE_READLINE
+
+static char *
+readline(char *prompt)
+{
+    char buf[BUFSIZ];
+    printf ("%s", prompt);
+    fflush (stdout);
+    if(fgets(buf, sizeof(buf), stdin) == NULL)
+	return NULL;
+    if (buf[strlen(buf) - 1] == '\n')
+	buf[strlen(buf) - 1] = '\0';
+    return strdup(buf);
+}
+
+static void
+add_history(char *p)
+{
+}
+
+#endif
+
 /*
  * Command parser.
  */
 void
 cmdscanner(int top)
 {
-	struct cmd *c;
-	int l;
+    struct cmd *c;
+    int l;
 
-	if (!top)
-		putchar('\n');
-	for (;;) {
-		if (fromatty) {
-			printf("ftp> ");
-			fflush(stdout);
-		}
-		if (fgets(line, sizeof line, stdin) == NULL)
-			quit(0, 0);
-		l = strlen(line);
-		if (l == 0)
-			break;
-		if (line[--l] == '\n') {
-			if (l == 0)
-				break;
-			line[l] = '\0';
-		} else if (l == sizeof(line) - 2) {
-			printf("sorry, input line too long\n");
-			while ((l = getchar()) != '\n' && l != EOF)
-				/* void */;
-			break;
-		} /* else it was a line without a newline */
-		makeargv();
-		if (margc == 0) {
-			continue;
-		}
-		c = getcmd(margv[0]);
-		if (c == (struct cmd *)-1) {
-			printf("?Ambiguous command\n");
-			continue;
-		}
-		if (c == 0) {
-			printf("?Invalid command\n");
-			continue;
-		}
-		if (c->c_conn && !connected) {
-			printf("Not connected.\n");
-			continue;
-		}
-		(*c->c_handler)(margc, margv);
-		if (bell && c->c_bell)
-			putchar('\007');
-		if (c->c_handler != help)
-			break;
+    if (!top)
+	putchar('\n');
+    for (;;) {
+	if (fromatty) {
+	    char *p;
+	    p = readline("ftp> ");
+	    if(p == NULL)
+		quit(0, 0);
+	    strncpy(line, p, sizeof(line));
+	    line[sizeof(line) - 1] = 0;
+	    add_history(p);
+	    free(p);
+	} else{
+	    if (fgets(line, sizeof line, stdin) == NULL)
+		quit(0, 0);
 	}
-	signal(SIGINT, intr);
-	signal(SIGPIPE, lostpeer);
+	/* XXX will break on long lines */
+	l = strlen(line);
+	if (l == 0)
+	    break;
+	if (line[--l] == '\n') {
+	    if (l == 0)
+		break;
+	    line[l] = '\0';
+	} else if (l == sizeof(line) - 2) {
+	    printf("sorry, input line too long\n");
+	    while ((l = getchar()) != '\n' && l != EOF)
+		/* void */;
+	    break;
+	} /* else it was a line without a newline */
+	makeargv();
+	if (margc == 0) {
+	    continue;
+	}
+	c = getcmd(margv[0]);
+	if (c == (struct cmd *)-1) {
+	    printf("?Ambiguous command\n");
+	    continue;
+	}
+	if (c == 0) {
+	    printf("?Invalid command\n");
+	    continue;
+	}
+	if (c->c_conn && !connected) {
+	    printf("Not connected.\n");
+	    continue;
+	}
+	(*c->c_handler)(margc, margv);
+	if (bell && c->c_bell)
+	    putchar('\007');
+	if (c->c_handler != help)
+	    break;
+    }
+    signal(SIGINT, intr);
+    signal(SIGPIPE, lostpeer);
 }
 
 struct cmd *
