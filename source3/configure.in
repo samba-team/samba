@@ -2041,6 +2041,10 @@ fi
   # Heimdal checks.
   AC_CHECK_LIB(crypto, des_set_key, [LIBS="$LIBS -lcrypto"])
   AC_CHECK_LIB(asn1, copy_Authenticator, [LIBS="$LIBS -lasn1 -lroken"])
+  AC_CHECK_LIB(krb5, krb5_set_real_time, [AC_DEFINE(HAVE_KRB5_SET_REAL_TIME,1,[Whether krb5_set_real_time is available])])
+  AC_CHECK_LIB(krb5, krb5_set_default_in_tkt_etypes, [AC_DEFINE(HAVE_KRB5_SET_DEFAULT_IN_TKT_ETYPES,1,[Whether krb5_set_default_in_tkt_etypes, is available])])
+  AC_CHECK_LIB(krb5, krb5_set_default_tgs_ktypes, [AC_DEFINE(HAVE_KRB5_SET_DEFAULT_TGS_KTYPES,1,[Whether krb5_set_default_tgs_ktypes is available])])
+
 
   ########################################################
   # now see if we can find the krb5 libs in standard paths
