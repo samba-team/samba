@@ -76,9 +76,17 @@ such helper agent is the NetBIOS Name Server (NBNS) or as Microsoft called it
 in their Windows NT Server implementation WINS (Windows Internet Name Server).
 
 A client needs to be configured so that it has a unique Machine (Computer)
-Name. This can NOT be done via DHCP and must be assigned when MS Windows
-networking is first installed. All remaining TCP/IP networking parameters can
-be assigned via DHCP. These include:
+Name. 
+
+This can be done, but needs a few NT registry hacks and you need to be able to
+speak UNICODE, which is of course no problem for a True Wizzard(tm) :)
+Instructions on how to do this (including a small util for less capable
+Wizzards) can be found at 
+
+	http://www.unixtools.org/~nneul/sw/nt/dhcp-netbios-hostname.html
+
+
+All remaining TCP/IP networking parameters can be assigned via DHCP. These include:
 
 a) IP Address,
 b) Netmask,
