@@ -668,7 +668,9 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		server_info->logon_count = logon_info->logon_count;
 		/* TODO: bad password count */
 
+#if ABARTLET_HAS_FIXED_BUILD
 		server_info->acct_flags = logon_info->acct_flags;
+#endif
 
 		if (!server_info->domain || !server_info->account_name || !server_info->realm) {
 			free_server_info(&server_info);

@@ -48,6 +48,7 @@ struct samr_LogonHours;
 
 struct netr_SamInfo3;
 struct netr_Authenticator;
+union netr_Validation;
 
 struct iface_struct;
 

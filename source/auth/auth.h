@@ -76,6 +76,7 @@ struct auth_serversupplied_info
 
 	const char *account_name;
 	const char *domain;
+	const char *realm;
 
 	const char *full_name;
 	const char *logon_script;
