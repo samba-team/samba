@@ -765,8 +765,8 @@ void init_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
 				char *user_name, char *wksta_name,
 				unsigned char lm_challenge[8],
-				unsigned char lm_chal_resp[24],
-				unsigned char nt_chal_resp[24])
+				unsigned char *lm_chal_resp,
+				unsigned char *nt_chal_resp)
 {
 	int len_domain_name = strlen(domain_name);
 	int len_user_name   = strlen(user_name  );
