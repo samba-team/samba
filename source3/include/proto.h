@@ -183,6 +183,8 @@ int interpret_coding_system(char *str, int def);
 
 /*The following definitions come from  loadparm.c  */
 
+char	*chomp(char *s);
+char	*read_string_external(char *fname);
 char *lp_string(char *s);
 char *lp_logfile(void);
 char *lp_smbrun(void);
@@ -329,6 +331,7 @@ BOOL lp_syncalways(int );
 BOOL lp_map_system(int );
 BOOL lp_delete_readonly(int );
 BOOL lp_fake_oplocks(int );
+BOOL lp_online(int );
 BOOL lp_recursive_veto_delete(int );
 BOOL lp_dos_filetimes(int );
 int lp_create_mode(int );
@@ -1271,3 +1274,4 @@ char *align_offset(char *q, char *base, int align_offset_len);
 void print_asc(int level, unsigned char *buf,int len);
 void dump_data(int level,char *buf1,int len);
 char *tab_depth(int depth);
+char *string_buffer(int sz);

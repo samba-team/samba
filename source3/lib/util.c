@@ -4561,3 +4561,44 @@ char *tab_depth(int depth)
 }
 
 
+/*******************************************************************
+A convenience routine to grab string parameters into a rotating
+buffer. The buffers can be written to by callers without affecting
+the source string.
+********************************************************************/
+char *string_buffer(int sz)
+{
+  static char *bufs[10];
+  static int buflen[10];
+  static int next = -1;  
+  char *ret;
+  int i, len;
+
+  if (next == -1) {
+    /* initialisation */
+    for (i=0;i<10;i++) {
+      bufs[i] = NULL;
+      buflen[i] = 0;
+    }
+    next = 0;
+  }
+
+  len = MAX(sz+100,sizeof(pstring)); /* the +100 is for some
+					 	substitution room */
+
+  if (buflen[next] != len) {
+    buflen[next] = len;
+    if (bufs[next]) free(bufs[next]);
+    bufs[next] = (char *)malloc(len);
+    if (!bufs[next]) {
+      DEBUG(0,("out of memory in lp_string_buffer()"));
+      exit(1);
+    }
+  } 
+
+  ret = &bufs[next][0];
+  next = (next+1)%10;
+  *ret = 0;
+
+  return(ret);
+}
