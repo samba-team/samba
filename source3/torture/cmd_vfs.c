@@ -213,7 +213,9 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	       	printf("         A = O_APPEND\n");
 	       	printf("         N = O_NONBLOCK/O_NDELAY\n");
 	       	printf("         S = O_SYNC\n");
+#ifdef O_NOFOLLOW
 	       	printf("         F = O_NOFOLLOW\n");
+#endif
 		printf("  mode: see open.2\n");
 		printf("        mode is ignored if C flag not present\n");
 		printf("        mode defaults to 00400\n");
@@ -250,9 +252,11 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		case 'S':
 			flags |= O_SYNC;
 			break;
+#ifdef O_NOFOLLOW
 		case 'F':
 			flags |= O_NOFOLLOW;
 			break;
+#endif
 		default:
 			printf("open: error=-1 (invalid flag!)\n");
 			return NT_STATUS_UNSUCCESSFUL;
