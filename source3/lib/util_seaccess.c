@@ -51,32 +51,6 @@ static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, 
 {
 	uint32 mask = ace->info.mask;
 
-#if 0
-
-	/* I think there is some aspect of inheritable ACEs that we don't
-	   understand.  A 'Manage Documents' permission has the following
-	   ACE entries (after generic mapping has been applied):
-
-	   S-1-5-21-1067277791-1719175008-3000797951-1033 0 9 0x000f000c
-	   S-1-5-21-1067277791-1719175008-3000797951-1033 0 2 0x00020000
-
-	   Now a user wanting to print calls se_access_check() with desired
-	   access PRINTER_ACCESS_USE (0x00000008).  This is only allowed if
-	   the inherit only ACE, flags & SEC_ACE_FLAG_INHERIT_ONLY (0x8) is
-	   checked.  A similar argument is used to explain how a user with
-	   'Full Control' permission can print.
-
-	   Having both the flags SEC_ACE_FLAG_INHERIT_ONLY and
-	   SEC_ACE_FLAG_OBJECT_INHERIT set in an ACE doesn't seem to make
-	   sense.  According to the MSDN, an inherit only ACE "indicates an
-	   [...] ACE which does not control access to the object to which
-	   it is attached" and an object inherit ACE for "non-container
-	   child objects [they] inherit the ACE as an effective ACE".
-	   These two flags don't seem to make sense when combined.  Does
-	   the object inherit override the inherit only flag?  We are also
-	   talking about access to a printer object, not a printer job so
-	   inheritance shouldn't even be involved.  -tpot */
-
 	/*
 	 * Inherit only is ignored.
 	 */
@@ -84,8 +58,6 @@ static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, 
 	if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
 		return acc_desired;
 	}
-
-#endif
 
 	/*
 	 * If this ACE has no SID in common with the token,
@@ -327,4 +299,123 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 	*status = NT_STATUS_ACCESS_DENIED;
 	DEBUG(5,("se_access_check: access (%x) denied.\n", (unsigned int)acc_desired ));
 	return False;
+}
+
+/* Create a child security descriptor using another security descriptor as
+   the parent container.  This child object can either be a container or
+   non-container object. */
+
+SEC_DESC_BUF *se_create_child_secdesc(SEC_DESC *parent_ctr, 
+				      BOOL child_container)
+{
+	SEC_DESC_BUF *sdb;
+	SEC_DESC *sd;
+	SEC_ACL *new_dacl, *acl;
+	SEC_ACE *new_ace_list = NULL;
+	int new_ace_list_ndx = 0, i;
+	size_t size;
+
+	/* Currently we only process the dacl when creating the child.  The
+	   sacl should also be processed but this is left out as sacls are
+	   not implemented in Samba at the moment.*/
+
+	acl = parent_ctr->dacl;
+
+	if (!(new_ace_list = malloc(sizeof(SEC_ACE) * acl->num_aces))) 
+		return NULL;
+
+	for (i = 0; acl && i < acl->num_aces; i++) {
+		SEC_ACE *ace = &acl->ace[i];
+		SEC_ACE *new_ace = &new_ace_list[new_ace_list_ndx];
+		uint8 new_flags = 0;
+		BOOL inherit = False;
+		fstring sid_str;
+
+		/* The OBJECT_INHERIT_ACE flag causes the ACE to be
+		   inherited by non-container children objects.  Container
+		   children objects will inherit it as an INHERIT_ONLY
+		   ACE. */
+
+		if (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT) {
+
+			if (!child_container) {
+				new_flags |= SEC_ACE_FLAG_OBJECT_INHERIT;
+			} else {
+				new_flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+			}
+
+			inherit = True;
+		}
+
+		/* The CONAINER_INHERIT_ACE flag means all child container
+		   objects will inherit and use the ACE. */
+
+		if (ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
+			if (!child_container) {
+				inherit = False;
+			} else {
+				new_flags |= SEC_ACE_FLAG_CONTAINER_INHERIT;
+			}
+		}
+
+		/* The INHERIT_ONLY_ACE is not used by the se_access_check()
+		   function for the parent container, but is inherited by
+		   all child objects as a normal ACE. */
+
+		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+			/* Move along, nothing to see here */
+		}
+
+		/* The SEC_ACE_FLAG_NO_PROPAGATE_INHERIT flag means the ACE
+		   is inherited by child objects but not grandchildren
+		   objects.  We clear the object inherit and container
+		   inherit flags in the inherited ACE. */
+
+		if (ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
+			new_flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT |
+				       SEC_ACE_FLAG_CONTAINER_INHERIT);
+		}
+
+		/* Add ACE to ACE list */
+
+		if (!inherit)
+			continue;
+
+		init_sec_access(&new_ace->info, ace->info.mask);
+		init_sec_ace(new_ace, &ace->sid, ace->type,
+			     new_ace->info, new_flags);
+
+		sid_to_string(sid_str, &ace->sid);
+
+		DEBUG(5, ("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x "
+			  " inherited as %s:%d/0x%02x/0x%08x\n", sid_str,
+			  ace->type, ace->flags, ace->info.mask,
+			  sid_str, new_ace->type, new_ace->flags,
+			  new_ace->info.mask));
+
+		new_ace_list_ndx++;
+	}
+
+	/* Create child security descriptor to return */
+	
+	new_dacl = make_sec_acl(ACL_REVISION, new_ace_list_ndx, new_ace_list);
+	safe_free(new_ace_list);
+
+	/* Use the existing user and group sids.  I don't think this is
+	   correct.  Perhaps the user and group should be passed in as
+	   parameters by the caller? */
+
+	sd = make_sec_desc(SEC_DESC_REVISION,
+			   parent_ctr->owner_sid,
+			   parent_ctr->grp_sid,
+			   parent_ctr->sacl,
+			   new_dacl, &size);
+
+	free_sec_acl(&new_dacl);
+
+	sdb = make_sec_desc_buf(size, sd);
+
+	free_sec_desc(&sd);
+
+	return sdb;
 }
