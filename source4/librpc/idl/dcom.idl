@@ -26,10 +26,10 @@ interface ObjectRpcBaseTypes
 {
 	WERROR stub();
 	
-	/* Machine Identifier */
+	// Machine Identifier
 #define MID HYPER_T
 
-	 /* Object Exporter Identifier */
+	 // Object Exporter Identifier
 #define OXID HYPER_T
 	
 	 // Object Identifer
