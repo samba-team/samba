@@ -146,6 +146,11 @@ BOOL pdb_generate_sam_sid(void)
 				return False;
 			}
 		}
+
+		/* Stored the old sid from MACHINE.SID successfully.
+			Patch from Stefan "metze" Metzmacher <metze@metzemix.de>*/
+		SAFE_FREE(fname);
+		return True;
 	}
 
 	SAFE_FREE(fname);
