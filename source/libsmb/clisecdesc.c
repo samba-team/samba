@@ -30,6 +30,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 	char *rparam=NULL, *rdata=NULL;
 	unsigned int rparam_count=0, rdata_count=0;
 	prs_struct pd;
+	BOOL pd_initialized = False;
 	SEC_DESC *psd = NULL;
 
 	SIVAL(param, 0, fnum);
@@ -56,7 +57,10 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 	if (cli_is_error(cli))
 		goto cleanup;
 
-	prs_init(&pd, rdata_count, mem_ctx, UNMARSHALL);
+	if (!prs_init(&pd, rdata_count, mem_ctx, UNMARSHALL)) {
+		goto cleanup;
+	}
+	pd_initialized = True;
 	prs_copy_data_in(&pd, rdata, rdata_count);
 	prs_set_offset(&pd,0);
 
@@ -70,7 +74,8 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 	SAFE_FREE(rparam);
 	SAFE_FREE(rdata);
 
-	prs_mem_free(&pd);
+	if (pd_initialized)
+		prs_mem_free(&pd);
 	return psd;
 }
 

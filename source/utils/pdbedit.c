@@ -694,8 +694,8 @@ int main (int argc, char **argv)
 		{"force-initialized-passwords", 0, POPT_ARG_NONE, &force_initialised_password, 0, "Force initialization of corrupt password strings in a passdb backend", NULL},
 		{"bad-password-count-reset", 'z', POPT_ARG_NONE, &badpw_reset, 0, "reset bad password count", NULL},
 		{"logon-hours-reset", 'Z', POPT_ARG_NONE, &hours_reset, 0, "reset logon hours", NULL},
-		{"pwd-can-change-time", 0, POPT_ARG_STRING, &pwd_can_change_time, 0, "Set password can change time (unix time if time format no provided)", NULL },
-		{"pwd-must-change-time", 0, POPT_ARG_STRING, &pwd_must_change_time, 0, "Set password can change time (unix time if time format no provided)", NULL },
+		{"pwd-can-change-time", 0, POPT_ARG_STRING, &pwd_can_change_time, 0, "Set password can change time (unix time in seconds since 1970 if time format no provided)", NULL },
+		{"pwd-must-change-time", 0, POPT_ARG_STRING, &pwd_must_change_time, 0, "Set password can change time (unix time in seconds since 1970 if time format no provided)", NULL },
 		{"time-format", 0, POPT_ARG_STRING, &pwd_time_format, 0, "The time format for time parameters", NULL },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
