@@ -419,7 +419,7 @@ BOOL make_oem_passwd_hash(uchar data[516],
 
 	if (new_pw_len > 512)
 	{
-		DEBUG(0,("make_oem_pwrd_hash: new password is too long.\n"));
+		DEBUG(0,("make_oem_passwd_hash: new password is too long.\n"));
 		return False;
 	}
 
@@ -441,7 +441,7 @@ BOOL make_oem_passwd_hash(uchar data[516],
 	SIVAL(data, 512, new_pw_len);
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("make_oem_pwrd_hash\n"));
+	DEBUG(100,("make_oem_passwd_hash\n"));
 	dump_data(100, data, 516);
 #endif
 	if (old_pw_hash != NULL)
