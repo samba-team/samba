@@ -45,7 +45,7 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para>smbget is a simple utility with wget-like semantics, that can download files from SMB servers. You can specify the files you would like to download on the command-line. 

@@ -28,7 +28,7 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry> suite.</para>
 
 	<para><command>tdbbackup</command> is a tool that may be used to backup samba .tdb

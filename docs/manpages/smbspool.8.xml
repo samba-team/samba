@@ -31,7 +31,7 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para>smbspool is a very small print spooling program that 
@@ -105,7 +105,7 @@
 <refsect1>
 	<title>SEE ALSO</title>
 	<para><citerefentry><refentrytitle>smbd</refentrytitle>
-	<manvolnum>8</manvolnum></citerefentry> and <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> and <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry>.</para>
 </refsect1>
 
