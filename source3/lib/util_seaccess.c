@@ -224,7 +224,7 @@ void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping)
  "Access-Checking" document in MSDN.
 *****************************************************************************/ 
 
-BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
+BOOL se_access_check(SEC_DESC *sd, const NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted, 
 		     NTSTATUS *status)
 {
