@@ -18,13 +18,12 @@ $1 == "error_table" {
 	number = 0
 	print "/* Generated from " FILENAME " */" > c_file
 	print "#include <krb5_locl.h>" > c_file
-	print "#include <krb5_error.h>" > c_file
 #	print "#include \"" h_file "\"\n" > c_file
 	print "" > c_file
 	print "static const char *text[] = {" > c_file
 
 	print "/* Generated from " FILENAME " */" > h_file
-	print "#include <krb5_error.h>" > h_file
+#	print "#include <krb5.h>" > h_file
 	print "" > h_file
 	print "void initialize_" name "_error_table(struct error_list**);" > h_file
 	print "" > h_file
@@ -48,6 +47,7 @@ function end_file(c_file, h_file){
 	print "\t}" > c_file
 	print "}" > c_file
 	close(c_file)
+	print "\t" name "_num_errors = " number > h_file
 	print "};" > h_file
 	close(h_file)
 }
