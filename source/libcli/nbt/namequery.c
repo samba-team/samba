@@ -102,7 +102,7 @@ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 	}
 	
 	for (i=0;i<io->out.num_addrs;i++) {
-		in.s_addr = htonl(packet->answers[0].rdata.netbios.addresses[i].ipaddr);
+		in.s_addr = htonl(packet->answers[0].rdata.netbios.addresses[i].ipaddr.addr);
 		addr = inet_ntoa(in);
 		if (addr == NULL) {
 			talloc_free(req);

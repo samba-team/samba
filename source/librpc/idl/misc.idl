@@ -6,6 +6,10 @@
 
 interface misc
 {
+	typedef [public,noprint] struct {
+		uint32 addr;
+	} ipv4_addr;
+
 	typedef [public,noprint,gensize] struct {
 		uint32 time_low;
 		uint16 time_mid;

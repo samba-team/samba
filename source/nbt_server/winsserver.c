@@ -32,4 +32,7 @@ void nbt_query_wins(struct nbt_name_socket *nbtsock,
 		    const char *src_address, int src_port)
 {
 	DEBUG(0,("WINS query from %s\n", src_address));
+	if (DEBUGLVL(10)) {
+		NDR_PRINT_DEBUG(nbt_name_packet, packet);		
+	}
 }

@@ -67,7 +67,7 @@ struct nbt_name_request *nbt_name_register_send(struct nbt_name_socket *nbtsock,
 								     struct nbt_rdata_address, 1);
 	if (packet->additional[0].rdata.netbios.addresses == NULL) goto failed;
 	packet->additional[0].rdata.netbios.addresses[0].nb_flags = io->in.nb_flags;
-	packet->additional[0].rdata.netbios.addresses[0].ipaddr   = htonl(inet_addr(io->in.address));
+	packet->additional[0].rdata.netbios.addresses[0].ipaddr.addr   = htonl(inet_addr(io->in.address));
 	
 	req = nbt_name_request_send(nbtsock, io->in.dest_addr, lp_nbt_port(), packet,
 				    timeval_current_ofs(io->in.timeout, 0), False);
@@ -115,7 +115,7 @@ NTSTATUS nbt_name_register_recv(struct nbt_name_request *req,
 		talloc_free(req);
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
-	in.s_addr = htonl(packet->answers[0].rdata.netbios.addresses[0].ipaddr);
+	in.s_addr = htonl(packet->answers[0].rdata.netbios.addresses[0].ipaddr.addr);
 	addr = inet_ntoa(in);
 	if (addr == NULL) {
 		talloc_free(req);
