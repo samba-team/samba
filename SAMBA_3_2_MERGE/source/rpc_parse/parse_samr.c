@@ -503,8 +503,7 @@ inits a structure.
 
 void init_unk_info3(SAM_UNK_INFO_3 *u_3, NTTIME nt_logout)
 {
-	u_3->logout.low = nt_logout.low;
-	u_3->logout.high = nt_logout.high;
+	u_3->logout = nt_logout;
 }
 
 /*******************************************************************
@@ -594,10 +593,8 @@ inits a structure.
 
 void init_unk_info12(SAM_UNK_INFO_12 * u_12, NTTIME nt_lock_duration, NTTIME nt_reset_time, uint16 lockout)
 {
-	u_12->duration.low = nt_lock_duration.low;
-	u_12->duration.high = nt_lock_duration.high;
-	u_12->reset_count.low = nt_reset_time.low;
-	u_12->reset_count.high = nt_reset_time.high;
+	u_12->duration = nt_lock_duration;
+	u_12->reset_count = nt_reset_time;
 
 	u_12->bad_attempt_lockout = lockout;
 }
@@ -767,12 +764,10 @@ void init_unk_info1(SAM_UNK_INFO_1 *u_1, uint16 min_pass_len, uint16 pass_hist,
 	u_1->flag = flag;
 	
 	/* password never expire */
-	u_1->expire.high = nt_expire.high;
-	u_1->expire.low = nt_expire.low;
+	u_1->expire = nt_expire;
 	
 	/* can change the password now */
-	u_1->min_passwordage.high = nt_min_age.high;
-	u_1->min_passwordage.low = nt_min_age.low;
+	u_1->min_passwordage = nt_min_age;
 	
 }
 
@@ -5451,7 +5446,7 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
 
-	if (nt_time_is_zero(pass_must_change_time)) {
+	if ( pass_must_change_time == 0 ) {
 		usr->passmustchange=PASS_MUST_CHANGE_AT_NEXT_LOGON;
 	} else {
 		usr->passmustchange=0;
@@ -5544,7 +5539,7 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
 
-	if (nt_time_is_zero(pass_must_change_time)) {
+	if ( pass_must_change_time == 0 ) {
 		usr->passmustchange=PASS_MUST_CHANGE_AT_NEXT_LOGON;
 	} else {
 		usr->passmustchange=0;
@@ -5908,7 +5903,7 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 	usr->bad_password_count = bad_password_count;
 	usr->logon_count = logon_count;
 
-	if (nt_time_is_zero(pass_must_change_time)) {
+	if (pass_must_change_time == 0) {
 		usr->passmustchange=PASS_MUST_CHANGE_AT_NEXT_LOGON;
 	} else {
 		usr->passmustchange=0;

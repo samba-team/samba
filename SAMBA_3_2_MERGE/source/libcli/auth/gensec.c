@@ -71,12 +71,12 @@ const struct gensec_security_ops *gensec_security_by_authtype(uint8_t auth_type)
 	return NULL;
 }
 
-const struct gensec_security_ops *gensec_security_by_oid(const char *oid)
+const struct gensec_security_ops *gensec_security_by_oid(const char *poid)
 {
 	int i;
 	for (i=0; generic_security_ops[i]; i++) {
 		if (generic_security_ops[i]->oid &&
-		    (strcmp(generic_security_ops[i]->oid, oid) == 0)) {
+		    (strcmp(generic_security_ops[i]->oid, poid) == 0)) {
 			return generic_security_ops[i];
 		}
 	}

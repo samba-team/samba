@@ -59,7 +59,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 	int fd = x_fileno(x_stdin);
 	char *ret;
 
-	do_debug("%s", prompt);
+	d_printf("%s", prompt);
 
 	while (1) {
 		timeout.tv_sec = 5;

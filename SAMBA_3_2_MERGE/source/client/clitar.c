@@ -34,6 +34,7 @@
       will skip all .obj and .exe files
 */
 
+#define NEW_DEBUG_SYSTEM
 
 #include "includes.h"
 #include "clitar.h"
@@ -1822,7 +1823,7 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
      * tar output
     */
     if (tarhandle == 1) 
-	    setup_logging("clitar", DEBUG_STDERR);
+	    setup_logging("clitar", True);
   } else {
     if (tar_type=='c' && (dry_run || strcmp(argv[Optind], "/dev/null")==0))
       {

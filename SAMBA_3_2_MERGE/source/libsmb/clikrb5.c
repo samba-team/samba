@@ -246,10 +246,15 @@ static BOOL ads_cleanup_expired_creds(krb5_context context,
 				      krb5_creds  *credsp)
 {
 	krb5_error_code retval;
+	TALLOC_CTX *mem_ctx;
 
-	DEBUG(3, ("Ticket in ccache[%s] expiration %s\n",
-		  krb5_cc_default_name(context),
-		  http_timestring(credsp->times.endtime)));
+	mem_ctx = talloc_init( "ads_cleanup_expired_creds" );
+	if ( mem_ctx ) {
+		DEBUG(3, ("Ticket in ccache[%s] expiration %s\n",
+			krb5_cc_default_name(context),
+			http_timestring(mem_ctx, credsp->times.endtime)));
+		talloc_destroy( mem_ctx );
+	}
 
 	/* we will probably need new tickets if the current ones
 	   will expire within 10 seconds.
@@ -334,10 +339,19 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 			creds_ready = True;
 	}
 
-	DEBUG(10,("Ticket (%s) in ccache (%s) is valid until: (%s - %d)\n",
-		  principal, krb5_cc_default_name(context),
-		  http_timestring((unsigned)credsp->times.endtime), 
-		  (unsigned)credsp->times.endtime));
+	if ( DEBUGLEVEL >= 10 ) {
+		TALLOC_CTX *mem_ctx;
+
+		mem_ctx = talloc_init( "ads_krb5_mk_req" );
+
+		if ( mem_ctx ) {
+			DEBUG(10,("Ticket (%s) in ccache (%s) is valid until: (%s - %d)\n",
+				principal, krb5_cc_default_name(context),
+				http_timestring(mem_ctx, (unsigned)credsp->times.endtime), 
+				(unsigned)credsp->times.endtime));
+			talloc_destroy( mem_ctx );
+		}
+	}
 
 	in_data.length = 0;
 	retval = krb5_mk_req_extended(context, auth_context, ap_req_options, 

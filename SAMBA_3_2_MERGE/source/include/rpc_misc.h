@@ -435,12 +435,6 @@ typedef struct rpc_hnd_node {
 
 } RPC_HND_NODE;
 
-typedef struct uint64_s
-{
-	uint32 low;
-	uint32 high;
-} UINT64_S;
-
 /* BUFHDR2 - another buffer header, with info level */
 typedef struct bufhdr2_info
 {

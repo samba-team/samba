@@ -199,4 +199,4 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
             DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
        && (dbgtext body) )
 
-#endif
+#endif	/* _DEBUG_H */

@@ -2974,7 +2974,7 @@ makes a NET_Q_SAM_DELTAS structure.
 ********************************************************************/
 BOOL init_net_q_sam_deltas(NET_Q_SAM_DELTAS *q_s, const char *srv_name, 
                            const char *cli_name, DOM_CRED *cli_creds, 
-                           uint32 database_id, UINT64_S dom_mod_count)
+                           uint32 database_id, uint64_t dom_mod_count)
 {
 	DEBUG(5, ("init_net_q_sam_deltas\n"));
 
@@ -2985,8 +2985,7 @@ BOOL init_net_q_sam_deltas(NET_Q_SAM_DELTAS *q_s, const char *srv_name,
 	memset(&q_s->ret_creds, 0, sizeof(q_s->ret_creds));
 
 	q_s->database_id = database_id;
-        q_s->dom_mod_count.low = dom_mod_count.low;
-        q_s->dom_mod_count.high = dom_mod_count.high;
+        q_s->dom_mod_count = dom_mod_count;
 	q_s->max_size = 0xffff;
 
 	return True;

@@ -591,12 +591,12 @@ typedef struct sam_domain_info_info
 	UNIHDR hdr_dom_name;
 	UNIHDR hdr_oem_info;
 
-	UINT64_S force_logoff;
+	uint64_t force_logoff;
 	uint16   min_pwd_len;
 	uint16   pwd_history_len;
-	UINT64_S max_pwd_age;
-	UINT64_S min_pwd_age;
-	UINT64_S dom_mod_count;
+	uint64_t max_pwd_age;
+	uint64_t min_pwd_age;
+	uint64_t dom_mod_count;
 	NTTIME   creation_time;
 
 	BUFHDR2 hdr_sec_desc; /* security descriptor */
@@ -758,7 +758,7 @@ typedef struct sam_alias_mem_info_info
 typedef struct
 {
 	uint32   max_log_size; /* 0x5000 */
-	UINT64_S audit_retention_period; /* 0 */
+	uint64_t audit_retention_period; /* 0 */
 	uint32   auditing_mode; /* 0 */
 	uint32   num_events;
 	uint32   ptr_events;
@@ -770,7 +770,7 @@ typedef struct
 	uint32   min_workset_size; /* 0x00010000 */
 	uint32   max_workset_size; /* 0x0f000000 */
 	uint32   page_file_limit; /* 0 */
-	UINT64_S time_limit; /* 0 */
+	uint64_t time_limit; /* 0 */
 	NTTIME   modify_time; /* 0x3c*/
 	NTTIME   create_time; /* a7080110 */
 	BUFHDR2  hdr_sec_desc;
@@ -820,7 +820,7 @@ typedef struct
 	uint32   min_workset_size; /* 0x00010000 */
 	uint32   max_workset_size; /* 0x0f000000 */
 	uint32   page_file_limit; /* 0 */
-	UINT64_S time_limit; /* 0 */
+	uint64_t time_limit; /* 0 */
 	uint32   system_flags; /* 1 */
 	BUFHDR2  hdr_sec_desc;
 	
@@ -877,7 +877,7 @@ typedef struct
 {
         uint32 seqnum;
         uint32 dom_mod_count_ptr;
-	UINT64_S dom_mod_count;  /* domain mod count at last sync */
+	uint64_t dom_mod_count;  /* domain mod count at last sync */
 } SAM_DELTA_MOD_COUNT;
 
 typedef union sam_delta_ctr_info
@@ -922,7 +922,7 @@ typedef struct net_q_sam_deltas_info
 	DOM_CRED ret_creds;
 
 	uint32 database_id;
-	UINT64_S dom_mod_count;  /* domain mod count at last sync */
+	uint64_t dom_mod_count;  /* domain mod count at last sync */
 
 	uint32 max_size;       /* preferred maximum length */
 
@@ -933,7 +933,7 @@ typedef struct net_r_sam_deltas_info
 {
 	DOM_CRED srv_creds;
 
-	UINT64_S dom_mod_count;   /* new domain mod count */
+	uint64_t dom_mod_count;   /* new domain mod count */
 
 	uint32 ptr_deltas;
 	uint32 num_deltas;

@@ -21,6 +21,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#define NEW_DEBUG_SYSTEM
+
 #include "includes.h"
 #ifndef REGISTER
 #define REGISTER 0
@@ -3026,7 +3028,7 @@ static void remember_query_host(const char *arg,
 	*query_host = 0;
 	*base_directory = 0;
 
-	setup_logging(argv[0],DEBUG_STDOUT);
+	setup_logging(argv[0], True);
 	mem_ctx = talloc_init("client.c/main");
 	if (!mem_ctx) {
 		d_printf("\nclient.c: Not enough memory\n");
@@ -3065,7 +3067,7 @@ static void remember_query_host(const char *arg,
 			}
 			break;
 		case 'E':
-			setup_logging("client", DEBUG_STDERR);
+			setup_logging("client", True);
 			break;
 
 		case 'L':
