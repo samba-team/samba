@@ -150,15 +150,25 @@ BOOL torture_open_connection(struct cli_state **c)
 {
 	BOOL retry;
 	int flags = 0;
+	NTSTATUS status;
+
 	if (use_kerberos)
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
 	
-	return (NT_STATUS_IS_OK(
-			cli_full_connection(c, myname,
-					    host, NULL, port_to_use, 
-					    share, "?????", 
-					    username, workgroup, 
-					    password, flags, &retry)));
+	status = cli_full_connection(c, myname,
+				     host, NULL, port_to_use, 
+				     share, "?????", 
+				     username, workgroup, 
+				     password, flags, &retry);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	if (use_oplocks) (*c)->use_oplocks = True;
+	if (use_level_II_oplocks) (*c)->use_level_II_oplocks = True;
+	(*c)->timeout = 120000; /* set a really long timeout (2 minutes) */
+
+	return True;
 }
 
 
