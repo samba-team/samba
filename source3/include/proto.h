@@ -1857,8 +1857,8 @@ time_t pdb_get_pass_must_change_time (SAM_ACCOUNT *sampass);
 uint16 pdb_get_logon_divs (SAM_ACCOUNT *sampass);
 uint32 pdb_get_hours_len (SAM_ACCOUNT *sampass);
 uint8* pdb_get_hours (SAM_ACCOUNT *sampass);
-BYTE* pdb_get_nt_passwd (SAM_ACCOUNT *sampass);
-BYTE* pdb_get_lanman_passwd (SAM_ACCOUNT *sampass);
+uint8* pdb_get_nt_passwd (SAM_ACCOUNT *sampass);
+uint8* pdb_get_lanman_passwd (SAM_ACCOUNT *sampass);
 uint32 pdb_get_user_rid (SAM_ACCOUNT *sampass);
 uint32 pdb_get_group_rid (SAM_ACCOUNT *sampass);
 uid_t pdb_get_uid (SAM_ACCOUNT *sampass);
@@ -1902,8 +1902,8 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir);
 BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, char *acct_desc);
 BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, char *workstations);
 BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, char *munged_dial);
-BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, BYTE *pwd);
-BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, BYTE *pwd);
+BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd);
+BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd);
 
 /*The following definitions come from  passdb/pdb_smbpasswd.c  */
 
