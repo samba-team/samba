@@ -125,22 +125,23 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
 			 NULL,
 			 &ticket);
     if (ret == 0) {
-	char *s;
-	ret = krb5_unparse_name(p->context, ticket->server, &s);
+	char *server;
+
+	ret = krb5_unparse_name(p->context, ticket->server, &server);
 	if(ret) {
 	    pop_log(p, POP_FAILURE, "krb5_unparse_name: %s", 
 		    krb5_get_err_text(p->context, ret));
 	    exit(1);
 	}
 	/* does this make sense? */
-	if(strncmp(s, "pop/", 4) != 0) {
+	if(strncmp(server, "pop/", 4) != 0) {
 	    pop_log(p, POP_FAILURE, 
-		    "Got ticket for service `%s'", s);
+		    "Got ticket for service `%s'", server);
 	    exit(1);
 	} else if(p->debug)
 	    pop_log(p, POP_DEBUG, 
-		    "Accepted ticket for service `%s'", s);
-	free(s);
+		    "Accepted ticket for service `%s'", server);
+	free(server);
 	krb5_auth_con_free (p->context, auth_context);
 	krb5_copy_principal (p->context, ticket->client, &p->principal);
 	krb5_free_ticket (p->context, ticket);
@@ -237,7 +238,6 @@ pop_init(POP *p,int argcount,char **argmessage)
 {
     struct sockaddr_storage cs_ss;
     struct sockaddr *cs = (struct sockaddr *)&cs_ss;
-    struct hostent      *   ch;                 /*  Client host information */
     int                     len;
     char                *   trace_file_name = "/tmp/popper-trace";
     int			    portnum = 0;
@@ -345,59 +345,13 @@ pop_init(POP *p,int argcount,char **argmessage)
     p->ipport = ntohs(socket_get_port (cs));
 
     /*  Get the canonical name of the host to whom I am speaking */
-    ch = getipnodebyaddr (socket_get_address (cs),
-			  socket_addr_size (cs),
-			  cs->sa_family,
-			  &error);
-    if (ch == NULL){
-        pop_log(p,POP_PRIORITY,
-            "Unable to get canonical name of client, err = %d",error);
+    error = getnameinfo_verified (cs, len, p->client, sizeof(p->client),
+				  NULL, 0, 0);
+    if (error) {
+	pop_log (p, POP_PRIORITY,
+		 "getnameinfo: %s", gai_strerror (error));
 	strlcpy (p->client, p->ipaddr, sizeof(p->client));
     }
-    /*  Save the cannonical name of the client host in 
-        the POP parameter block */
-    else {
-        /*  Distrust distant nameservers */
-        struct hostent      *   ch_again;
-        char            *   *   addrp;
-
-        /*  See if the name obtained for the client's IP 
-            address returns an address */
-	ch_again = getipnodebyname (ch->h_name,
-				    cs->sa_family,
-				    0,
-				    &error);
-
-        if (ch_again == NULL) {
-            pop_log(p,POP_PRIORITY,
-                "Client at \"%s\" resolves to an unknown host name \"%s\"",
-                    p->ipaddr,ch->h_name);
-	    strlcpy (p->client, p->ipaddr, sizeof(p->client));
-        }
-        else {
-            /*  Save the host name (the previous value was 
-                destroyed by gethostbyname) */
-	    strlcpy (p->client, ch->h_name, sizeof(p->client));
-
-            /*  Look for the client's IP address in the list returned 
-                for its name */
-            for (addrp=ch_again->h_addr_list; *addrp; ++addrp)
-	        if (memcmp(*addrp,
-			   socket_get_address (cs),
-			   socket_addr_size (cs)) == 0)
-		    break;
-
-            if (!*addrp) {
-                pop_log (p,POP_PRIORITY,
-                    "Client address \"%s\" not listed for its host name \"%s\"",
-                        p->ipaddr,ch->h_name);
-		strlcpy (p->client, p->ipaddr, sizeof(p->client));
-            }
-        }
-	freehostent (ch_again);
-    }
-    if(ch != NULL)
-	freehostent (ch);
 
     /*  Create input file stream for TCP/IP communication */
     if ((p->input = fdopen(STDIN_FILENO,"r")) == NULL){
