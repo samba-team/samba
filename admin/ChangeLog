@@ -1,0 +1,25 @@
+2004-09-23  Johan Danielsson  <joda@pdc.kth.se>
+
+	* purge.c: convert to slc; don't purge keys older that a certain
+	time, instead purge keys that have newer versions that are at
+	least a certain age
+
+	* rename.c: convert to slc
+	
+	* remove.c: convert to slc
+	
+	* get.c: convert to slc; warn if resetting disallow-all-tix
+	
+	* copy.c: convert to slc
+	
+	* change.c: convert to slc
+	
+	* add.c: convert to slc
+	
+	* list.c: convert to slc
+	
+	* ktutil_locl.h: convert to slc
+	
+	* ktutil.c: convert to slc
+	
+	* ktutil-commands.in: slc source file
