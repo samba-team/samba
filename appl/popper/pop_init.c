@@ -24,6 +24,10 @@ static char SccsId[] = "@(#)@(#)pop_init.c	2.1  2.1 3/18/91";
 AUTH_DAT kdata;
 #endif /* KERBEROS */
 
+#ifndef LOG_DAEMON
+#define SYSLOG42
+#endif
+
 extern int      errno;
 
 /* 
