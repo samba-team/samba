@@ -145,7 +145,6 @@ typedef struct
   char *szNISHomeMapName;
   char *szAnnounceVersion; /* This is initialised in init_globals */
   char *szNetbiosAliases;
-  char *szDomainSID;
   char *szDomainOtherSIDs;
   char *szDomainGroups;
   char *szDriverFile;
@@ -207,7 +206,6 @@ typedef struct
   BOOL bWINSproxy;
   BOOL bLocalMaster;
   BOOL bPreferredMaster;
-  BOOL bDomainController;
   BOOL bDomainMaster;
   BOOL bDomainLogons;
   BOOL bEncryptPasswords;
@@ -226,7 +224,6 @@ typedef struct
   BOOL bNISHomeMap;
   BOOL bTimeServer;
   BOOL bBindInterfacesOnly;
-  BOOL bNetWkstaUserLogon;
   BOOL bUnixPasswdSync;
   BOOL bPasswdChatDebug;
   BOOL bOleLockingCompat;
@@ -577,7 +574,6 @@ static struct parm_struct parm_table[] =
   {"read bmpx",        P_BOOL,    P_GLOBAL, &Globals.bReadbmpx,         NULL,   NULL,  0},
   {"read raw",         P_BOOL,    P_GLOBAL, &Globals.bReadRaw,          NULL,   NULL,  0},
   {"write raw",        P_BOOL,    P_GLOBAL, &Globals.bWriteRaw,         NULL,   NULL,  0},
-  {"networkstation user login", P_BOOL,P_GLOBAL, &Globals.bNetWkstaUserLogon,NULL,   NULL,  0},
   {"nt smb support",   P_BOOL,    P_GLOBAL, &Globals.bNTSmbSupport,    NULL,   NULL,  0},
   {"nt pipe support",   P_BOOL,    P_GLOBAL, &Globals.bNTPipeSupport,    NULL,   NULL,  0},
   {"announce version", P_STRING,  P_GLOBAL, &Globals.szAnnounceVersion, NULL,   NULL,  0},
@@ -659,9 +655,7 @@ static struct parm_struct parm_table[] =
   {"stat cache",       P_BOOL,    P_GLOBAL, &Globals.bStatCache,        NULL,   NULL,  0},
 
   {"Domain Options", P_SEP, P_SEPARATOR},
-  {"domain sid",       P_USTRING, P_GLOBAL, &Globals.szDomainSID,       NULL,   NULL,  0},
   {"domain groups",    P_STRING,  P_GLOBAL, &Globals.szDomainGroups,    NULL,   NULL,  0},
-  {"domain controller",P_BOOL  ,  P_GLOBAL, &Globals.bDomainController,NULL,   NULL,  0},
   {"domain admin group",P_STRING, P_GLOBAL, &Globals.szDomainAdminGroup, NULL,   NULL,  0},
   {"domain guest group",P_STRING, P_GLOBAL, &Globals.szDomainGuestGroup, NULL,   NULL,  0},
   {"domain admin users",P_STRING, P_GLOBAL, &Globals.szDomainAdminUsers, NULL,   NULL,  0},
@@ -866,8 +860,6 @@ static void init_globals(void)
   Globals.client_code_page = DEFAULT_CLIENT_CODE_PAGE;
   Globals.bTimeServer = False;
   Globals.bBindInterfacesOnly = False;
-  Globals.bNetWkstaUserLogon = False; /* This is now set to false by default as
-                                         the code in password.c protects us from this bug. */
   Globals.bUnixPasswdSync = False;
   Globals.bPasswdChatDebug = False;
   Globals.bOleLockingCompat = True;
@@ -1105,7 +1097,6 @@ FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
 FN_GLOBAL_STRING(lp_driverfile,&Globals.szDriverFile)
 FN_GLOBAL_STRING(lp_panic_action,&Globals.szPanicAction)
 
-FN_GLOBAL_STRING(lp_domain_sid,&Globals.szDomainSID)
 FN_GLOBAL_STRING(lp_domain_groups,&Globals.szDomainGroups)
 FN_GLOBAL_STRING(lp_domain_admin_group,&Globals.szDomainAdminGroup)
 FN_GLOBAL_STRING(lp_domain_guest_group,&Globals.szDomainGuestGroup)
@@ -1142,7 +1133,6 @@ FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_we_are_a_wins_server,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_wins_proxy,&Globals.bWINSproxy)
 FN_GLOBAL_BOOL(lp_local_master,&Globals.bLocalMaster)
-FN_GLOBAL_BOOL(lp_domain_controller,&Globals.bDomainController)
 FN_GLOBAL_BOOL(lp_domain_master,&Globals.bDomainMaster)
 FN_GLOBAL_BOOL(lp_domain_logons,&Globals.bDomainLogons)
 FN_GLOBAL_BOOL(lp_preferred_master,&Globals.bPreferredMaster)
@@ -1163,7 +1153,6 @@ FN_GLOBAL_BOOL(lp_unix_realname,&Globals.bUnixRealname)
 FN_GLOBAL_BOOL(lp_nis_home_map,&Globals.bNISHomeMap)
 static FN_GLOBAL_BOOL(lp_time_server,&Globals.bTimeServer)
 FN_GLOBAL_BOOL(lp_bind_interfaces_only,&Globals.bBindInterfacesOnly)
-FN_GLOBAL_BOOL(lp_net_wksta_user_logon,&Globals.bNetWkstaUserLogon)
 FN_GLOBAL_BOOL(lp_unix_password_sync,&Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug,&Globals.bPasswdChatDebug)
 FN_GLOBAL_BOOL(lp_ole_locking_compat,&Globals.bOleLockingCompat)

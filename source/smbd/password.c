@@ -1036,114 +1036,98 @@ BOOL server_validate(char *user, char *domain,
 		     char *pass, int passlen,
 		     char *ntpass, int ntpasslen)
 {
-	struct cli_state *cli;
-	extern fstring local_machine;
-        static unsigned char badpass[24];
-	cli = server_client();
+  struct cli_state *cli;
+  extern fstring local_machine;
+  static unsigned char badpass[24];
+  static BOOL tested_password_server = False;
+  static BOOL bad_password_server = False;
 
-	if (!cli->initialised) {
-		DEBUG(1,("password server %s is not connected\n", cli->desthost));
-		return(False);
-	}  
+  cli = server_client();
 
-        if(badpass[0] == 0) {
-          memset(badpass, 0x1f, sizeof(badpass));
-        }
+  if (!cli->initialised) {
+    DEBUG(1,("password server %s is not connected\n", cli->desthost));
+    return(False);
+  }  
 
-        if((passlen == sizeof(badpass)) && !memcmp(badpass, pass, passlen)) {
-          /* Very unlikely, our random bad password is the same as the users
-             password. */
-          memset(badpass, badpass[0]+1, sizeof(badpass));
-        }
+  if(badpass[0] == 0)
+    memset(badpass, 0x1f, sizeof(badpass));
 
-        /*
-         * Attempt a session setup with a totally incorrect password.
-         * If this succeeds with the guest bit *NOT* set then the password
-         * server is broken and is not correctly setting the guest bit. We
-         * need to detect this as some versions of NT4.x are broken. JRA.
-         */
+  if((passlen == sizeof(badpass)) && !memcmp(badpass, pass, passlen)) {
+    /* 
+     * Very unlikely, our random bad password is the same as the users
+     * password. */
+    memset(badpass, badpass[0]+1, sizeof(badpass));
+  }
 
-        if (cli_session_setup(cli, user, (char *)badpass, sizeof(badpass), 
+  /*
+   * Attempt a session setup with a totally incorrect password.
+   * If this succeeds with the guest bit *NOT* set then the password
+   * server is broken and is not correctly setting the guest bit. We
+   * need to detect this as some versions of NT4.x are broken. JRA.
+   */
+
+  if(!tested_password_server) {
+    if (cli_session_setup(cli, user, (char *)badpass, sizeof(badpass), 
                               (char *)badpass, sizeof(badpass), domain)) {
-	  if ((SVAL(cli->inbuf,smb_vwv2) & 1) == 0) {
-            DEBUG(0,("server_validate: password server %s allows users as non-guest \
+
+      /*
+       * We connected to the password server so we
+       * can say we've tested it.
+       */
+      tested_password_server = True;
+
+      if ((SVAL(cli->inbuf,smb_vwv2) & 1) == 0) {
+        DEBUG(0,("server_validate: password server %s allows users as non-guest \
 with a bad password.\n", cli->desthost));
-            DEBUG(0,("server_validate: This is broken (and insecure) behaviour. Please do not \
+        DEBUG(0,("server_validate: This is broken (and insecure) behaviour. Please do not \
 use this machine as the password server.\n"));
-            cli_ulogoff(cli);
-            return False;
-          }
-          cli_ulogoff(cli);
-        }
-
-        /*
-         * Now we know the password server will correctly set the guest bit, or is
-         * not guest enabled, we can try with the real password.
-         */
-
-	if (!cli_session_setup(cli, user, pass, passlen, ntpass, ntpasslen, domain)) {
-		DEBUG(1,("password server %s rejected the password\n", cli->desthost));
-		return False;
-	}
-
-	/* if logged in as guest then reject */
-	if ((SVAL(cli->inbuf,smb_vwv2) & 1) != 0) {
-		DEBUG(1,("password server %s gave us guest only\n", cli->desthost));
-                cli_ulogoff(cli);
-		return(False);
-	}
-
-        /*
-         * This patch from Rob Nielsen <ran@adc.com> makes doing
-         * the NetWksaUserLogon a dynamic, rather than compile-time
-         * parameter, defaulting to on. This is somewhat dangerous
-         * as it allows people to turn off this neccessary check,
-         * but so many people have had problems with this that I
-         * think it is a neccessary change. JRA.
-         */
-
-	if (lp_net_wksta_user_logon()) {
-		DEBUG(3,("trying NetWkstaUserLogon with password server %s\n", cli->desthost));
-
-                if (!cli_send_tconX(cli, "IPC$", "IPC", "", 1)) {
-                        DEBUG(0,("password server %s refused IPC$ connect\n", cli->desthost));
-                        cli_ulogoff(cli);
-                        return False;
-                }
-
-		if (!cli_NetWkstaUserLogon(cli,user,local_machine)) {
-			DEBUG(0,("password server %s failed NetWkstaUserLogon\n", cli->desthost));
-			cli_tdis(cli);
-                        cli_ulogoff(cli);
-			return False;
-		}
-
-		if (cli->privilages == 0) {
-			DEBUG(0,("password server %s gave guest privilages\n", cli->desthost));
-			cli_tdis(cli);
-                        cli_ulogoff(cli);
-			return False;
-		}
-
-		if (!strequal(cli->eff_name, user)) {
-			DEBUG(0,("password server %s gave different username %s\n", 
-			 	cli->desthost,
-			 	cli->eff_name));
-			cli_tdis(cli);
-                        cli_ulogoff(cli);
-			return False;
-		}
-                cli_tdis(cli);
-	}
-        else {
-		DEBUG(3,("skipping NetWkstaUserLogon with password server %s\n", cli->desthost));
-        }
-
-	DEBUG(3,("password server %s accepted the password\n", cli->desthost));
-
         cli_ulogoff(cli);
 
-	return(True);
+        /*
+         * Password server has the bug.
+         */
+        bad_password_server = True;
+        return False;
+      }
+      cli_ulogoff(cli);
+    }
+  } else {
+
+    /*
+     * We have already tested the password server.
+     * Fail immediately if it has the bug.
+     */
+
+    if(bad_password_server) {
+      DEBUG(0,("server_validate: [1] password server %s allows users as non-guest \
+with a bad password.\n", cli->desthost));
+      DEBUG(0,("server_validate: [1] This is broken (and insecure) behaviour. Please do not \
+use this machine as the password server.\n"));
+      return False;
+    }
+  }
+
+  /*
+   * Now we know the password server will correctly set the guest bit, or is
+   * not guest enabled, we can try with the real password.
+   */
+
+  if (!cli_session_setup(cli, user, pass, passlen, ntpass, ntpasslen, domain)) {
+    DEBUG(1,("password server %s rejected the password\n", cli->desthost));
+    return False;
+  }
+
+  /* if logged in as guest then reject */
+  if ((SVAL(cli->inbuf,smb_vwv2) & 1) != 0) {
+    DEBUG(1,("password server %s gave us guest only\n", cli->desthost));
+    cli_ulogoff(cli);
+    return(False);
+  }
+
+
+  cli_ulogoff(cli);
+
+  return(True);
 }
 
 /***********************************************************************

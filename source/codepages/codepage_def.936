@@ -14,7 +14,7 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 
-# Codepage definition file for IBM Code Page 949 - MS-DOS Simplified Chinese.
+# Codepage definition file for IBM Code Page 936 - MS-DOS Simplified Chinese.
 # defines lower->upper mapping.
 # Written by Jeremy Allison <jallison@whistle.com>
 
