@@ -156,26 +156,18 @@ des_rand_data(unsigned char *data, int size)
     struct sigaction sa, osa;
     int i, j;
     pid_t pid;
-  
-    /*
-     * If there is a /dev/random it's use is preferred.
-     */
-    {
-      int fd = open("/dev/random", O_RDONLY);
-      if (fd != -1 && read(fd, data, size) == size)
-	{
-	  close(fd);
-	  return;
-	}
-      close(fd);
-    }
-    {
-      int fd = open("/dev/rnd", O_RDONLY);
-      if (fd != -1 && read(fd, data, size) == size)
-	{
-	  close(fd);
-	  return;
-	}
+    char *rnd_devices[] = {"/dev/random",
+			   "/dev/srandom",
+			   NULL};
+    char **p;
+
+    for(p = rnd_devices; *p; p++) {
+      int fd = open(*p, O_RDONLY | O_NDELAY);
+      
+      if(fd >= 0 && read(fd, data, size) == size) {
+	close(fd);
+	return;
+      }
       close(fd);
     }
 
