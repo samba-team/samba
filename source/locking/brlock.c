@@ -192,13 +192,14 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 /****************************************************************************
  Open up the brlock.tdb database.
 ****************************************************************************/
+
 void brl_init(int read_only)
 {
 	BOOL check_self = False;
 
 	if (tdb)
 		return;
-	tdb = tdb_open(lock_path("brlock.tdb"), 0, TDB_CLEAR_IF_FIRST, 
+	tdb = tdb_open_log(lock_path("brlock.tdb"), 0, TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST),
 		       read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644);
 	if (!tdb) {
 		DEBUG(0,("Failed to open byte range locking database\n"));
@@ -210,6 +211,23 @@ void brl_init(int read_only)
 		tdb_traverse(tdb, delete_fn, &check_self);
 }
 
+/****************************************************************************
+ Close down the brlock.tdb database.
+****************************************************************************/
+
+void brl_shutdown(int read_only)
+{
+	BOOL check_self = True;
+
+	if (!tdb)
+		return;
+
+	/* delete any dead locks */
+	if (!read_only)
+		tdb_traverse(tdb, delete_fn, &check_self);
+
+	tdb_close(tdb);
+}
 
 /****************************************************************************
  Lock a range of bytes.
@@ -341,7 +359,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 			tdb_chainunlock(tdb, kbuf);
 			return True;
 		}
-		}
+	}
 
 	locks = (struct lock_struct *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(*locks);
@@ -377,6 +395,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	tdb_chainunlock(tdb, kbuf);
 	return False;
 }
+
 
 /****************************************************************************
  Test if we could add a lock if we wanted to.
@@ -419,7 +438,7 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 				 * Our own locks don't conflict.
 				 */
 				if (brl_conflict_other(&locks[i], &lock))
-				goto fail;
+					goto fail;
 			}
 		}
 	}

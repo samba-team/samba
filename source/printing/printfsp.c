@@ -23,25 +23,23 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
-
 
 /***************************************************************************
 open a print file and setup a fsp for it. This is a wrapper around
 print_job_start().
 ***************************************************************************/
 
-files_struct *print_fsp_open(connection_struct *conn,char *jobname)
+files_struct *print_fsp_open(connection_struct *conn)
 {
 	int jobid;
 	SMB_STRUCT_STAT sbuf;
 	extern struct current_user current_user;
-	files_struct *fsp = file_new();
+	files_struct *fsp = file_new(conn);
 
 	if(!fsp)
 		return NULL;
 
-	jobid = print_job_start(&current_user, SNUM(conn), jobname);
+	jobid = print_job_start(&current_user, SNUM(conn), "smb.prn");
 	if (jobid == -1) {
 		file_free(fsp);
 		return NULL;

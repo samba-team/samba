@@ -32,7 +32,7 @@ typedef volatile unsigned long spinlock_t;
 typedef struct {
 	spinlock_t lock;
 	volatile int count;
-} rwlock_t;
+} tdb_rwlock_t;
 
 int tdb_spinlock(TDB_CONTEXT *tdb, int list, int rw_type);
 int tdb_spinunlock(TDB_CONTEXT *tdb, int list, int rw_type);

@@ -929,6 +929,7 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 /*The following definitions come from  locking/brlock.c  */
 
 void brl_init(int read_only);
+void brl_shutdown(int read_only);
 BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	      uint16 smbpid, pid_t pid, uint16 tid,
 	      br_off start, br_off size, 
@@ -966,11 +967,14 @@ void unlock_share_entry_fsp(files_struct *fsp);
 int get_share_modes(connection_struct *conn, 
 		    SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **shares);
-void del_share_mode(files_struct *fsp);
+BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2);
+ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
+			share_mode_entry *entry, share_mode_entry **ppse);
+ssize_t del_share_mode(files_struct *fsp, share_mode_entry **ppse);
 BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type);
 BOOL remove_share_oplock(files_struct *fsp);
 BOOL downgrade_share_oplock(files_struct *fsp);
-BOOL modify_share_mode(files_struct *fsp, int new_mode, uint16 new_oplock);
+BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close);
 int share_mode_forall(SHAREMODE_FN(fn));
 
 /*The following definitions come from  locking/posix.c  */
@@ -1482,6 +1486,7 @@ BOOL lp_allow_trusted_domains(void);
 BOOL lp_restrict_anonymous(void);
 BOOL lp_host_msdfs(void);
 BOOL lp_kernel_oplocks(void);
+BOOL lp_use_mmap(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
@@ -1837,7 +1842,7 @@ int sysv_printername_ok(char *name);
 /*The following definitions come from  printing/printfsp.c  */
 
 #if OLD_NTDOMAIN
-files_struct *print_fsp_open(connection_struct *conn,char *jobname);
+files_struct *print_fsp_open(connection_struct *conn);
 void print_fsp_end(files_struct *fsp, BOOL normal_close);
 #endif
 
@@ -3601,11 +3606,12 @@ BOOL check_name(char *name,connection_struct *conn);
 /*The following definitions come from  smbd/files.c  */
 
 #if OLD_NTDOMAIN
-files_struct *file_new(void );
+files_struct *file_new(connection_struct *conn);
 void file_close_conn(connection_struct *conn);
 void file_init(void);
 void file_close_user(int vuid);
-files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval);
+files_struct *file_find_fd(int fd);
+files_struct *file_find_dif(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id);
 files_struct *file_find_fsp(files_struct *orig_fsp);
 files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode);
 files_struct *file_find_di_next(files_struct *start_fsp);
@@ -3716,6 +3722,8 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 				int share_mode,int ofun, mode_t mode,int oplock_request, int *Access,int *action);
 files_struct *open_file_stat(connection_struct *conn, char *fname,
 							SMB_STRUCT_STAT *psbuf, int smb_ofun, int *action);
+files_struct *open_file_fchmod(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf);
+int close_file_fchmod(files_struct *fsp);
 files_struct *open_directory(connection_struct *conn, char *fname,
 							SMB_STRUCT_STAT *psbuf, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
@@ -3733,8 +3741,7 @@ BOOL remove_oplock(files_struct *fsp, BOOL break_to_none);
 int setup_oplock_select_set( fd_set *fds);
 BOOL process_local_message(char *buffer, int buf_size);
 BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token);
-BOOL request_oplock_break(share_mode_entry *share_entry, 
-                          SMB_DEV_T dev, SMB_INO_T inode);
+BOOL request_oplock_break(share_mode_entry *share_entry);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
 void release_level_2_oplocks_on_change(files_struct *fsp);
 BOOL init_oplocks(void);
@@ -4124,6 +4131,7 @@ int tdb_clear_spinlocks(TDB_CONTEXT *tdb);
 
 /*The following definitions come from  tdb/tdb.c  */
 
+void tdb_dump_all(TDB_CONTEXT *tdb);
 void tdb_printfreelist(TDB_CONTEXT *tdb);
 const char *tdb_errorstr(TDB_CONTEXT *tdb);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
@@ -4142,6 +4150,9 @@ int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[]);
 void tdb_unlockkeys(TDB_CONTEXT *tdb);
 int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
 void tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
+void tdb_logging_function(TDB_CONTEXT *tdb, void (*fn)(TDB_CONTEXT *, int , const char *, ...));
+int tdb_reopen(TDB_CONTEXT *tdb);
+int tdb_reopen_all(void);
 
 /*The following definitions come from  tdb/tdbutil.c  */
 
@@ -4153,8 +4164,11 @@ int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
 int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len);
 TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr);
+int tdb_change_int_atomic(TDB_CONTEXT *tdb, char *keystr, int *oldval, int change_val);
 size_t tdb_pack(char *buf, int bufsize, char *fmt, ...);
 int tdb_unpack(char *buf, int bufsize, char *fmt, ...);
+TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,
+			  int open_flags, mode_t mode);
 
 /*The following definitions come from  utils/nbio.c  */
 

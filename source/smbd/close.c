@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
 run a file if it is a magic script
 ****************************************************************************/
@@ -91,7 +89,7 @@ static int close_filestruct(files_struct *fsp)
 }    
 
 /****************************************************************************
- Close a file - possibly invalidating the read prediction.
+ Close a file.
 
  If normal_close is 1 then this came from a normal SMBclose (or equivalent)
  operation otherwise it came as the result of some other operation such as
@@ -101,7 +99,9 @@ static int close_filestruct(files_struct *fsp)
 
 static int close_normal_file(files_struct *fsp, BOOL normal_close)
 {
-	BOOL delete_on_close = fsp->delete_on_close;
+	share_mode_entry *share_entry = NULL;
+	size_t share_entry_count = 0;
+	BOOL delete_on_close = False;
 	connection_struct *conn = fsp->conn;
 	int err = 0;
 	int err1 = 0;
@@ -122,21 +122,28 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 		return 0;
 	}
 
+	/*
+	 * Lock the share entries, and determine if we should delete
+	 * on close. If so delete whilst the lock is still in effect.
+	 * This prevents race conditions with the file being created. JRA.
+	 */
+
 	lock_share_entry_fsp(fsp);
-	del_share_mode(fsp);
-	unlock_share_entry_fsp(fsp);
+	share_entry_count = del_share_mode(fsp, &share_entry);
 
-	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
-		release_file_oplock(fsp);
+	DEBUG(10,("close_normal_file: share_entry_count = %d for file %s\n",
+		share_entry_count, fsp->fsp_name ));
 
-	locking_close_file(fsp);
+	/*
+	 * We delete on close if it's the last open, and the
+	 * delete on close flag was set in the entry we just deleted.
+	 */
 
-	err = fd_close(conn, fsp);
+	if ((share_entry_count == 0) && share_entry && 
+			GET_DELETE_ON_CLOSE_FLAG(share_entry->share_mode) )
+		delete_on_close = True;
 
-	/* check for magic scripts */
-	if (normal_close) {
-		check_magic(fsp,conn);
-	}
+	safe_free(share_entry);
 
 	/*
 	 * NT can set delete_on_close of the last open
@@ -158,6 +165,21 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 with error %s\n", fsp->fsp_name, strerror(errno) ));
         }
     }
+
+	unlock_share_entry_fsp(fsp);
+
+	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+		release_file_oplock(fsp);
+
+	locking_close_file(fsp);
+
+	err = fd_close(conn, fsp);
+
+	/* check for magic scripts */
+	if (normal_close) {
+		check_magic(fsp,conn);
+	}
+
 
 	DEBUG(2,("%s closed file %s (numopen=%d) %s\n",
 		 conn->user,fsp->fsp_name,

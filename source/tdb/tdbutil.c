@@ -46,9 +46,6 @@ void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
 	tdb_chainunlock(tdb, key);
 }
 
-/* lock a chain by string key */
-
-
 /* fetch a value by a arbitrary blob key, return -1 if not found */
 int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
 {
@@ -107,6 +104,7 @@ int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len)
 
 /* Fetch a buffer using a null terminated string key.  Don't forget to call
    free() on the result dptr. */
+
 TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
 {
     TDB_DATA key;
@@ -117,25 +115,56 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
     return tdb_fetch(tdb, key);
 }
 
+/* Atomic integer change. Returns old value. To create, set initial value in *oldval. */
+
+int tdb_change_int_atomic(TDB_CONTEXT *tdb, char *keystr, int *oldval, int change_val)
+{
+	int val;
+	int ret = -1;
+
+	if (tdb_lock_bystring(tdb, keystr) == -1)
+		return -1;
+
+	if ((val = tdb_fetch_int(tdb, keystr)) == -1) {
+		if (tdb_error(tdb) != TDB_ERR_NOEXIST)
+			goto err_out;
+
+		val = *oldval;
+
+	} else {
+		*oldval = val;
+		val += change_val;
+	}
+		
+	if (tdb_store_int(tdb, keystr, val) == -1)
+		goto err_out;
+
+	ret = 0;
+
+  err_out:
+
+	tdb_unlock_bystring(tdb, keystr);
+	return ret;
+}
 
 /* useful pair of routines for packing/unpacking data consisting of
    integers and strings */
 size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 {
+	va_list ap;
 	uint16 w;
 	uint32 d;
 	int i;
 	void *p;
 	int len;
 	char *s;
+	char c;
 	char *buf0 = buf;
 	char *fmt0 = fmt;
 	int bufsize0 = bufsize;
-	va_list ap;
-	char c;
 
 	va_start(ap, fmt);
-	
+
 	while (*fmt) {
 		switch ((c = *fmt++)) {
 		case 'w':
@@ -188,6 +217,7 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 		default:
 			DEBUG(0,("Unknown tdb_pack format %c in %s\n", 
 				 c, fmt));
+			len = 0;
 			break;
 		}
 
@@ -207,19 +237,20 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 
 /* useful pair of routines for packing/unpacking data consisting of
    integers and strings */
+
 int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 {
+	va_list ap;
 	uint16 *w;
 	uint32 *d;
 	int len;
 	int *i;
 	void **p;
 	char *s, **b;
+	char c;
 	char *buf0 = buf;
 	char *fmt0 = fmt;
 	int bufsize0 = bufsize;
-	va_list ap;
-	char c;
 
 	va_start(ap, fmt);
 	
@@ -274,6 +305,8 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 		default:
 			DEBUG(0,("Unknown tdb_unpack format %c in %s\n", 
 				 c, fmt));
+
+			len = 0;
 			break;
 		}
 
@@ -290,4 +323,43 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 
  no_space:
 	return -1;
+}
+
+/****************************************************************************
+log tdb messages via DEBUG()
+****************************************************************************/
+static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
+{
+	va_list ap;
+	char *ptr = NULL;
+
+	va_start(ap, format);
+	vasprintf(&ptr, format, ap);
+	va_end(ap);
+	
+	if (!ptr || !*ptr) return;
+
+	DEBUG(level, ("tdb(%s): %s", tdb->name, ptr));
+	free(ptr);
+}
+
+
+
+/* like tdb_open() but also setup a logging function that redirects to
+   the samba DEBUG() system */
+TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,
+			  int open_flags, mode_t mode)
+{
+	TDB_CONTEXT *tdb;
+
+	if (!lp_use_mmap())
+		tdb_flags |= TDB_NOMMAP;
+
+	tdb = tdb_open(name, hash_size, tdb_flags, 
+				    open_flags, mode);
+	if (!tdb) return NULL;
+
+	tdb_logging_function(tdb, tdb_log);
+
+	return tdb;
 }

@@ -3179,7 +3179,7 @@ int reply_printopen(connection_struct *conn,
 	}
 
 	/* Open for exclusive use, write only. */
-	fsp = print_fsp_open(conn,"dos.prn");
+	fsp = print_fsp_open(conn);
 
 	if (!fsp) {
 		END_PROFILE(SMBsplopen);

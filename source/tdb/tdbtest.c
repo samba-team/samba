@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <stdarg.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -40,6 +41,14 @@ static void fatal(char *why)
 	exit(1);
 }
 
+static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
+{
+	va_list ap;
+    
+	va_start(ap, format);
+	vfprintf(stdout, format, ap);
+	va_end(ap);
+}
 
 static void compare_db(void)
 {
@@ -230,6 +239,7 @@ int main(int argc, char *argv[])
 		fatal("db open failed");
 	}
 
+	tdb_logging_function(db, tdb_log);
 	
 #if 1
 	srand(seed);
