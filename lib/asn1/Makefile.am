@@ -9,6 +9,8 @@ YFLAGS = -d
 
 lib_LIBRARIES = libasn1.a
 
+include_HEADERS = asn1.h
+
 SUFFIXES = .x
 
 BUILT_SOURCES = asn1_APOptions.c asn1_AP_REP.c asn1_AP_REQ.c \
