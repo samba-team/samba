@@ -49,7 +49,8 @@ char *smb_readline(char *prompt, void (*callback)(void),
 	char *ret;
 #if HAVE_LIBREADLINE
 	if (completion_fn) {
-		rl_attempted_completion_function = completion_fn;
+		rl_attempted_completion_function = 
+			(rl_completion_func_t *)completion_fn;
 	}
 
 	if (callback) rl_event_hook = (Function *)callback;
