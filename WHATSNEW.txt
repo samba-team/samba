@@ -97,6 +97,9 @@ the libsmb code and clientutil.c is no longer used with it.
 has been fixed.
 3). A related bug causing a file structure leak when directory
 opens were denied has been fixed.
+4). Fix for glibc2.1 bug on 32-bit systems being reported as 64
+bit.
+5). Prevent timestamps of 0 or -1 corrupting file timestamps.
 
 Changes in 2.0.4b
 -----------------
