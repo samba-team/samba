@@ -2432,6 +2432,7 @@ static struct {
 	{"LOCAL-MESSAGING", torture_local_messaging, 0},
 	{"LOCAL-BINDING", torture_local_binding_string, 0},
 	{"LOCAL-IDTREE", torture_local_idtree, 0},
+	{"LOCAL-SOCKET", torture_local_socket, 0},
 
 	/* ldap testers */
 	{"LDAP-BASIC", torture_ldap_basic, 0},

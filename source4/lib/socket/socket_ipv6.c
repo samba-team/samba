@@ -347,8 +347,6 @@ static int ipv6_tcp_get_fd(struct socket_context *sock)
 
 static const struct socket_ops ipv6_tcp_ops = {
 	.name			= "ipv6",
-	.type			= SOCKET_TYPE_STREAM,
-
 	.fn_init		= ipv6_tcp_init,
 	.fn_connect		= ipv6_tcp_connect,
 	.fn_connect_complete	= ipv6_tcp_connect_complete,
@@ -369,7 +367,10 @@ static const struct socket_ops ipv6_tcp_ops = {
 	.fn_get_fd		= ipv6_tcp_get_fd
 };
 
-const struct socket_ops *socket_ipv6_ops(void)
+const struct socket_ops *socket_ipv6_ops(enum socket_type type)
 {
+	if (type != SOCKET_TYPE_STREAM) {
+		return NULL;
+	}
 	return &ipv6_tcp_ops;
 }

@@ -32,7 +32,9 @@ static int socket_destructor(void *ptr)
 	return 0;
 }
 
-NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_ops *ops, struct socket_context **new_sock, uint32_t flags)
+static NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_ops *ops,
+				       struct socket_context **new_sock, 
+				       enum socket_type type, uint32_t flags)
 {
 	NTSTATUS status;
 
@@ -41,7 +43,7 @@ NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_ops *op
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*new_sock)->type = ops->type;
+	(*new_sock)->type = type;
 	(*new_sock)->state = SOCKET_STATE_UNDEFINED;
 	(*new_sock)->flags = flags;
 
@@ -60,6 +62,7 @@ NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_ops *op
 	   send calls on non-blocking sockets will randomly recv/send
 	   less data than requested */
 	if (!(flags & SOCKET_FLAG_BLOCK) &&
+	    type == SOCKET_TYPE_STREAM &&
 	    lp_parm_bool(-1, "socket", "testnonblock", False)) {
 		(*new_sock)->flags |= SOCKET_FLAG_TESTNONBLOCK;
 	}
@@ -69,7 +72,8 @@ NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_ops *op
 	return NT_STATUS_OK;
 }
 
-NTSTATUS socket_create(const char *name, enum socket_type type, struct socket_context **new_sock, uint32_t flags)
+NTSTATUS socket_create(const char *name, enum socket_type type, 
+		       struct socket_context **new_sock, uint32_t flags)
 {
 	const struct socket_ops *ops;
 
@@ -78,7 +82,7 @@ NTSTATUS socket_create(const char *name, enum socket_type type, struct socket_co
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return socket_create_with_ops(NULL, ops, new_sock, flags);
+	return socket_create_with_ops(NULL, ops, new_sock, type, flags);
 }
 
 void socket_destroy(struct socket_context *sock)
@@ -92,10 +96,6 @@ NTSTATUS socket_connect(struct socket_context *sock,
 			const char *server_address, int server_port,
 			uint32_t flags)
 {
-	if (sock->type != SOCKET_TYPE_STREAM) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	if (sock->state != SOCKET_STATE_UNDEFINED) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -117,10 +117,6 @@ NTSTATUS socket_connect_complete(struct socket_context *sock, uint32_t flags)
 
 NTSTATUS socket_listen(struct socket_context *sock, const char *my_address, int port, int queue_size, uint32_t flags)
 {
-	if (sock->type != SOCKET_TYPE_STREAM) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	if (sock->state != SOCKET_STATE_UNDEFINED) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -160,10 +156,6 @@ NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_
 NTSTATUS socket_recv(struct socket_context *sock, void *buf, 
 		     size_t wantlen, size_t *nread, uint32_t flags)
 {
-	if (sock->type != SOCKET_TYPE_STREAM) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	if (sock->state != SOCKET_STATE_CLIENT_CONNECTED &&
 	    sock->state != SOCKET_STATE_SERVER_CONNECTED) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -184,13 +176,25 @@ NTSTATUS socket_recv(struct socket_context *sock, void *buf,
 	return sock->ops->fn_recv(sock, buf, wantlen, nread, flags);
 }
 
-NTSTATUS socket_send(struct socket_context *sock, 
-		     const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
+NTSTATUS socket_recvfrom(struct socket_context *sock, void *buf, 
+			 size_t wantlen, size_t *nread, uint32_t flags,
+			 const char **src_addr, int *src_port)
 {
-	if (sock->type != SOCKET_TYPE_STREAM) {
+	if (sock->type != SOCKET_TYPE_DGRAM) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (!sock->ops->fn_recvfrom) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	return sock->ops->fn_recvfrom(sock, buf, wantlen, nread, flags, 
+				      src_addr, src_port);
+}
+
+NTSTATUS socket_send(struct socket_context *sock, 
+		     const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
+{
 	if (sock->state != SOCKET_STATE_CLIENT_CONNECTED &&
 	    sock->state != SOCKET_STATE_SERVER_CONNECTED) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -211,6 +215,27 @@ NTSTATUS socket_send(struct socket_context *sock,
 	}
 
 	return sock->ops->fn_send(sock, blob, sendlen, flags);
+}
+
+
+NTSTATUS socket_sendto(struct socket_context *sock, 
+		       const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
+		       const char *dest_addr, int dest_port)
+{
+	if (sock->type != SOCKET_TYPE_DGRAM) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (sock->state == SOCKET_STATE_CLIENT_CONNECTED ||
+	    sock->state == SOCKET_STATE_SERVER_CONNECTED) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!sock->ops->fn_sendto) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	return sock->ops->fn_sendto(sock, blob, sendlen, flags, dest_addr, dest_port);
 }
 
 NTSTATUS socket_set_option(struct socket_context *sock, const char *option, const char *val)
@@ -302,7 +327,7 @@ const struct socket_ops *socket_getops_byname(const char *name, enum socket_type
 {
 	if (strcmp("ip", name) == 0 || 
 	    strcmp("ipv4", name) == 0) {
-		return socket_ipv4_ops();
+		return socket_ipv4_ops(type);
 	}
 
 #if HAVE_SOCKET_IPV6
@@ -311,12 +336,12 @@ const struct socket_ops *socket_getops_byname(const char *name, enum socket_type
 			DEBUG(3, ("IPv6 support was disabled in smb.conf"));
 			return NULL;
 		}
-		return socket_ipv6_ops();
+		return socket_ipv6_ops(type);
 	}
 #endif
 
 	if (strcmp("unix", name) == 0) {
-		return socket_unixdom_ops();
+		return socket_unixdom_ops(type);
 	}
 
 	return NULL;
