@@ -333,7 +333,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 	
 	kickoff_time = pdb_get_kickoff_time(sampass);
 	if (kickoff_time != 0 && time(NULL) > kickoff_time) {
-		DEBUG(1,("Account for user '%s' has expried.\n", pdb_get_username(sampass)));
+		DEBUG(1,("Account for user '%s' has expired.\n", pdb_get_username(sampass)));
 		DEBUG(3,("Account expired at '%ld' unix time.\n", (long)kickoff_time));
 		return NT_STATUS_ACCOUNT_EXPIRED;
 	}
