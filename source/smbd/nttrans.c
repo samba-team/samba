@@ -667,7 +667,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	chain_fsp = fsp;
 
 	DEBUG(5,("reply_ntcreate_and_X: open name = %s\n",
-		 fsp->fsp_name));
+		 fsp?fsp->fsp_name:"NULL"));
 
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
