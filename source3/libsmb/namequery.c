@@ -471,8 +471,8 @@ void endlmhosts(FILE *fp)
  Resolve via "bcast" method.
 *********************************************************/
 
-static BOOL resolve_bcast(const char *name, int name_type,
-				struct in_addr **return_ip_list, int *return_count)
+BOOL name_resolve_bcast(const char *name, int name_type,
+			struct in_addr **return_ip_list, int *return_count)
 {
 	int sock, i;
 	int num_interfaces = iface_count();
@@ -484,7 +484,7 @@ static BOOL resolve_bcast(const char *name, int name_type,
 	 * "bcast" means do a broadcast lookup on all the local interfaces.
 	 */
 
-	DEBUG(3,("resolve_bcast: Attempting broadcast lookup for name %s<0x%x>\n", name, name_type));
+	DEBUG(3,("name_resolve_bcast: Attempting broadcast lookup for name %s<0x%x>\n", name, name_type));
 
 	sock = open_socket_in( SOCK_DGRAM, 0, 3,
 			       interpret_addr(lp_socket_address()), True );
@@ -714,7 +714,7 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 			  return True;
 		  }
 	  } else if(strequal( tok, "bcast")) {
-		  if (resolve_bcast(name, name_type, return_iplist, return_count)) {
+		  if (name_resolve_bcast(name, name_type, return_iplist, return_count)) {
 			  return True;
 		  }
 	  } else {
