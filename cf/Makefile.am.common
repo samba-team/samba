@@ -33,7 +33,6 @@ LIB_logout		= @LIB_logout@
 LIB_logwtmp		= @LIB_logwtmp@
 LIB_odm_initialize	= @LIB_odm_initialize@
 LIB_pidfile		= @LIB_pidfile@
-LIB_readline		= @LIB_readline@
 LIB_res_search		= @LIB_res_search@
 LIB_setpcred		= @LIB_setpcred@
 LIB_setsockopt		= @LIB_setsockopt@
