@@ -1852,9 +1852,14 @@ BOOL strhasupper(char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      if (isupper(*s))
-        return(True);
-      s++;
+      int skip = skip_multibyte_char( *s );
+      if( skip != 0 )
+        s += skip;
+      else {
+        if (isupper(*s))
+          return(True);
+        s++;
+      }
     }
   }
   return(False);
@@ -1902,9 +1907,14 @@ BOOL strhaslower(char *s)
     else
 #endif /* KANJI_WIN95_COMPATIBILITY */
     {
-      if (islower(*s))
-        return(True);
-      s++;
+      int skip = skip_multibyte_char( *s );
+      if( skip != 0 )
+        s += skip;
+      else {
+        if (islower(*s))
+          return(True);
+        s++;
+      }
     }
   }
   return(False);
@@ -1947,9 +1957,14 @@ int count_chars(char *s,char c)
   {
     while (*s) 
     {
-      if (*s == c)
-        count++;
-      s++;
+      int skip = skip_multibyte_char( *s );
+      if( skip != 0 )
+        s += skip;
+      else {
+        if (*s == c)
+          count++;
+        s++;
+      }
     }
   }
   return(count);
