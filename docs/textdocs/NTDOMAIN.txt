@@ -1,5 +1,5 @@
 !==
-!== NTDOMAIN.txt for Samba release TNG-prealpha 18 Mar 2000
+!== NTDOMAIN.txt for Samba release TNG-prealpha 19 Mar 2000
 !==
 Contributor:	Luke Kenneth Casson Leighton (samba-bugs@samba.org)
 		Copyright (C) 1997 Luke Kenneth Casson Leighton
