@@ -698,11 +698,11 @@ static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 
 	if (argc <= 1)
 	{
-		report(out_hnd,
-		       "net [\\\\Server] [-U user%%pass] [-W domain] [-d] [-f]\n");
-		report(out_hnd, "    -d     Deletes a connection\n");
-		report(out_hnd, "    -f     Forcibly deletes a connection\n");
-		report(out_hnd, "net -u     Shows all connections\n");
+		DEBUG(0, (
+		       "net [\\\\Server] [-U user%%pass] [-W domain] [-d] [-f]\n"));
+		DEBUG(0, ("    -d     Deletes a connection\n"));
+		DEBUG(0, ("    -f     Forcibly deletes a connection\n"));
+		DEBUG(0, ("net -u     Shows all connections\n"));
 	}
 
 	if (argc > 1 && (*argv[1] != '-'))
@@ -769,9 +769,9 @@ static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 
 			default:
 			{
-				report(out_hnd,
-				       "net -S \\server [-U user%%pass] [-W domain] [-d] [-f]\n");
-				report(out_hnd, "net -u\n");
+				DEBUG(0, (
+				       "net -S \\server [-U user%%pass] [-W domain] [-d] [-f]\n"));
+				DEBUG(0, ("net -u\n"));
 				break;
 			}
 		}
@@ -797,25 +797,25 @@ static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 
 		if (num_uses == 0)
 		{
-			report(out_hnd, "No connections\n");
+			DEBUG(0, ("No connections\n"));
 		}
 		else
 		{
-			report(out_hnd, "Connections:\n");
+			DEBUG(0, ("Connections:\n"));
 
 			for (i = 0; i < num_uses; i++)
 			{
 				if (use[i] != NULL && use[i]->connected)
 				{
-					report(out_hnd, "Server:\t%s\t",
-					       use[i]->srv_name);
-					report(out_hnd, "Key:\t[%d,%x]\t",
+					DEBUG(0, ("Server:\t%s\t",
+					       use[i]->srv_name));
+					DEBUG(0, ("Key:\t[%d,%x]\t",
 					       use[i]->key.pid,
-					       use[i]->key.vuid);
-					report(out_hnd, "User:\t%s\t",
-					       use[i]->user_name);
-					report(out_hnd, "Domain:\t%s\n",
-					       use[i]->domain);
+					       use[i]->key.vuid));
+					DEBUG(0, ("User:\t%s\t",
+					       use[i]->user_name));
+					DEBUG(0, ("Domain:\t%s\n",
+					       use[i]->domain));
 				}
 			}
 		}
@@ -835,43 +835,43 @@ static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 		/* paranoia: destroy the local copy of the password */
 		ZERO_STRUCT(password);
 
-		report(out_hnd, "Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
-		       srv_name, usr.ntc.user_name, usr.ntc.domain);
-		report(out_hnd, "Connection:\t");
+		DEBUG(0, ("Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
+		       srv_name, usr.ntc.user_name, usr.ntc.domain));
+		DEBUG(0, ("Connection:\t"));
 
 		if (cli_net_use_add(srv_name, &usr.ntc, 
 				    info->reuse, &isnew) != NULL)
 		{
-			report(out_hnd, "OK\n");
+			DEBUG(0, ("OK\n"));
 		}
 		else
 		{
-			report(out_hnd, "FAILED\n");
+			DEBUG(0, ("FAILED\n"));
 		}
 	}
 	else
 	{
 		BOOL closed;
-		report(out_hnd, "Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
-		       srv_name, usr.ntc.user_name, usr.ntc.domain);
-		report(out_hnd, "Connection:\t");
+		DEBUG(0, ("Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
+		       srv_name, usr.ntc.user_name, usr.ntc.domain));
+		DEBUG(0, ("Connection:\t"));
 
 		if (!cli_net_use_del(srv_name, &usr.ntc,
 				     force_close, &closed))
 		{
-			report(out_hnd, ": Does not exist\n");
+			DEBUG(0, (": Does not exist\n"));
 		}
 		else if (force_close && closed)
 		{
-			report(out_hnd, ": Forcibly terminated\n");
+			DEBUG(0, (": Forcibly terminated\n"));
 		}
 		else if (closed)
 		{
-			report(out_hnd, ": Terminated\n");
+			DEBUG(0, (": Terminated\n"));
 		}
 		else
 		{
-			report(out_hnd, ": Unlinked\n");
+			DEBUG(0, (": Unlinked\n"));
 		}
 	}
 
@@ -956,7 +956,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 	}
 
 	while ((opt = getopt(argc, argv,
-			     "Rs:O:M:S:i:Nn:d:l:hI:EB:U:L:t:m:W:T:D:c:")) !=
+			     "aRs:O:M:S:i:Nn:d:l:hI:EB:U:L:t:m:W:T:D:c:")) !=
 	       EOF)
 	{
 		switch (opt)
@@ -1102,6 +1102,14 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 				break;
 			}
 
+                        case 'a':
+                        {
+                                extern BOOL append_log;
+                                
+                                append_log = True;
+                                break;
+                        }
+
 			default:
 			{
 				cmd_set_options |= CMD_HELP;
@@ -1186,7 +1194,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 
 		if (!resolve_srv_name(cli_info.dest_host, cli_info.dest_host,
 				      workgroup, &ip)) {
-			report(out_hnd, "ERROR: Failed to find the PDC\n");
+			DEBUG(0, ("ERROR: Failed to find the PDC\n"));
 			return 1;
 		}
 	}
@@ -1198,19 +1206,19 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 	if (auto_connect && !strequal(srv_name, "\\\\."))
 	{
 		BOOL isnew;
-		report(out_hnd, "Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
-		       srv_name, usr.ntc.user_name, usr.ntc.domain);
-		report(out_hnd, "Connection:\t");
+		DEBUG(0, ("Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
+		       srv_name, usr.ntc.user_name, usr.ntc.domain));
+		DEBUG(0, ("Connection:\t"));
 
 		if (cli_net_use_add(srv_name, &usr.ntc, info->reuse,
 					&isnew)
 		    != NULL)
 		{
-			report(out_hnd, "OK\n");
+			DEBUG(0, ("OK\n"));
 		}
 		else
 		{
-			report(out_hnd, "FAILED\n");
+			DEBUG(0, ("FAILED\n"));
 		}
 		usr_creds = NULL;
 	}
@@ -1356,7 +1364,7 @@ int command_main(int argc, char *argv[])
 	{
 		free_connections();
 
-		report(out_hnd, "Exit Status: %s\n", get_nt_error_msg(status));
+		DEBUG(0, ("Exit Status: %s\n", get_nt_error_msg(status)));
 		/* unix only has 8 bit error codes - blergh */
 		exit(status & 0xFF);
 	}
@@ -1372,7 +1380,7 @@ int command_main(int argc, char *argv[])
 	num_commands = 0;
 	commands = NULL;
 	
-	report(out_hnd, "Exit Status: %s\n", get_nt_error_msg(status));
+	DEBUG(0, ("Exit Status: %s\n", get_nt_error_msg(status)));
 
 	return status;
 }
