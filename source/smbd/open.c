@@ -649,6 +649,20 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 		num_share_modes = open_mode_check(conn, fname, dev, inode, share_mode,
 								&flags, &oplock_request, &all_current_opens_are_level_II);
 		if(num_share_modes == -1) {
+
+			/*
+			 * This next line is a subtlety we need for MS-Access. If a file open will
+			 * fail due to share permissions and also for security (access)
+			 * reasons, we need to return the access failed error, not the
+			 * share error. This means we must attempt to open the file anyway
+			 * in order to get the UNIX access error - even if we're going to
+			 * fail the open for share reasons. This is bad, as we're burning
+			 * another fd if there are existing locks but there's nothing else
+			 * we can do. We also ensure we're not going to create or tuncate
+			 * the file as we only want an access decision at this stage. JRA.
+			 */
+			open_file(fsp,conn,fname,psbuf,flags|(flags2&~(O_TRUNC|O_CREAT)),mode);
+
 			unlock_share_entry(conn, dev, inode);
 			file_free(fsp);
 			return NULL;
@@ -676,14 +690,6 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 		return NULL;
 	}
 
-	/* not that we ignore failure for the following. It is
-           basically a hack for NFS, and NFS will never set one of
-           these only read them. Nobody but Samba can ever set a deny
-           mode and we have already checked our more authoritative
-           locking database for permission to set this deny mode. If
-           the kernel refuses the operations then the kernel is wrong */
-	kernel_flock(fsp, deny_mode);
-
 	/*
 	 * Deal with the race condition where two smbd's detect the file doesn't
 	 * exist and do the create at the same time. One of them will win and
@@ -709,6 +715,14 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 		 * We exit this block with the share entry *locked*.....
 		 */
 	}
+
+	/* note that we ignore failure for the following. It is
+           basically a hack for NFS, and NFS will never set one of
+           these only read them. Nobody but Samba can ever set a deny
+           mode and we have already checked our more authoritative
+           locking database for permission to set this deny mode. If
+           the kernel refuses the operations then the kernel is wrong */
+	kernel_flock(fsp, deny_mode);
 
 	/*
 	 * At this point onwards, we can guarentee that the share entry
