@@ -2596,7 +2596,7 @@ uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
 	slprintf(tempname,sizeof(tempname)-1, "%s/smb_print.XXXXXX",lp_pathname(snum));  
 	pstrcpy(fname, (char *)mktemp(tempname));
 
-	fd=open(fname, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR );
+	fd=open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, S_IRUSR|S_IWUSR );
 	DEBUG(4,("Temp spool file created: [%s]\n", fname));
 
 	Printer->current_jobid=fd;
