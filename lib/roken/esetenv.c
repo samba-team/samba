@@ -43,6 +43,6 @@ RCSID("$Id$");
 void
 esetenv(const char *var, const char *val, int rewrite)
 {
-    if (setenv ((char *)var, val, rewrite))
+    if (setenv ((char *)var, (char *)val, rewrite))
 	errx (1, "failed setting environment variable %s", var);
 }
