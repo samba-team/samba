@@ -712,8 +712,6 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 
 /*	pdb_set_munged_dial(sampass, munged_dial, PDB_SET); */
 	
-	/* pdb_set_unknown_3(sampass, unknown3, PDB_SET); */
-
 	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_BAD_PASSWORD_COUNT), temp)) {
 			/* leave as default */
