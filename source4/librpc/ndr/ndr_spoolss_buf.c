@@ -114,7 +114,8 @@
 			char *idx=NULL;\
 			asprintf(&idx, "[%d]", i);\
 			if (idx) {\
-				ndr_print_##type(ndr, idx, r->in.level, &((*r->out.info)[i]));\
+				ndr_print_set_switch_value(ndr, &((*r->out.info)[i]), r->in.level); \
+				ndr_print_##type(ndr, idx, &((*r->out.info)[i]));\
 				free(idx);\
 			}\
 		}\
