@@ -1,4 +1,14 @@
+2003-09-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* indicate_mechs.c (gss_indicate_mechs): in case of error, free
+	mech_set
+
+	* indicate_mechs.c (gss_indicate_mechs): add SPNEGO
+
 2003-09-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_sec_context.c (spnego_initial): catch errors and return
+	them
 
 	* init_sec_context.c (spnego_initial): add #if 0 out version of
 	the CHOICE branch encoding, also where here, free no longer used
@@ -6,6 +16,15 @@
 
 2003-09-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss_acquire_cred.3: support GSS_SPNEGO_MECHANISM
+	
+	* accept_sec_context.c: SPNEGO doesn't include gss wrapping on
+	SubsequentContextToken like the Kerberos 5 mech does.
+	
+	* init_sec_context.c (spnego_reply): SPNEGO doesn't include gss
+	wrapping on SubsequentContextToken like the Kerberos 5 mech
+	does. Lets check for it anyway.
+	
 	* accept_sec_context.c: Add support for SPNEGO on the initator
 	side.  Implementation initially from Assar Westerlund, passes
 	though quite a lot of hands before I commited it.
