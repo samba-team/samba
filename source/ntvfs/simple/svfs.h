@@ -8,6 +8,8 @@ struct svfs_private {
 
 	/* next available search handle */
 	uint16 next_search_handle;
+
+	struct svfs_file *open_files;
 };
 
 struct svfs_dir {
@@ -17,6 +19,12 @@ struct svfs_dir {
 		char *name;
 		struct stat st;
 	} *files;
+};
+
+struct svfs_file {
+	struct svfs_file *next, *prev;
+	int fd;
+	char *name;
 };
 
 struct search_state {

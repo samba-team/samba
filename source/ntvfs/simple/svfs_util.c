@@ -52,18 +52,14 @@ char *svfs_unix_path(struct request_context *req, const char *name)
   returned names are separate unix and DOS names. The returned names
   are relative to the directory
 */
-struct svfs_dir *svfs_list(TALLOC_CTX *mem_ctx, struct request_context *req, const char *pattern)
+struct svfs_dir *svfs_list_unix(TALLOC_CTX *mem_ctx, struct request_context *req, const char *unix_path)
 {
-	char *unix_path;
 	char *p, *mask;
 	struct svfs_dir *dir;
 	DIR *odir;
 	struct dirent *dent;
 	uint_t allocated = 0;
 	char *low_mask;
-
-	unix_path = svfs_unix_path(req, pattern);
-	if (!unix_path) { return NULL; }
 
 	dir = talloc(mem_ctx, sizeof(struct svfs_dir));
 	if (!dir) { return NULL; }
@@ -92,6 +88,11 @@ struct svfs_dir *svfs_list(TALLOC_CTX *mem_ctx, struct request_context *req, con
 		uint_t i = dir->count;
 		char *full_name;
 		char *low_name;
+
+		if (strchr(dent->d_name, ':') && !strchr(unix_path, ':')) {
+			/* don't show streams in dir listing */
+			continue;
+		}
 
 		low_name = talloc_strdup(mem_ctx, dent->d_name);
 		if (!low_name) { continue; }
@@ -127,6 +128,21 @@ struct svfs_dir *svfs_list(TALLOC_CTX *mem_ctx, struct request_context *req, con
 	closedir(odir);
 
 	return dir;
+}
+
+/*
+  read a directory and find all matching file names and stat info
+  returned names are separate unix and DOS names. The returned names
+  are relative to the directory
+*/
+struct svfs_dir *svfs_list(TALLOC_CTX *mem_ctx, struct request_context *req, const char *pattern)
+{
+	char *unix_path;
+
+	unix_path = svfs_unix_path(req, pattern);
+	if (!unix_path) { return NULL; }
+
+	return svfs_list_unix(mem_ctx, req, unix_path);
 }
 
 

@@ -74,6 +74,20 @@ static NTSTATUS svfs_disconnect(struct tcon_context *req)
 }
 
 /*
+  find open file handle given fd
+*/
+static struct svfs_file *find_fd(struct svfs_private *private, int fd)
+{
+	struct svfs_file *f;
+	for (f=private->open_files;f;f=f->next) {
+		if (f->fd == fd) {
+			return f;
+		}
+	}
+	return NULL;
+}
+
+/*
   delete a file - the dirtype specifies the file types to include in the search. 
   The name can contain CIFS wildcards, but rarely does (except with OS/2 clients)
 */
@@ -124,8 +138,27 @@ static NTSTATUS svfs_chkpath(struct request_context *req, struct smb_chkpath *cp
 /*
   approximately map a struct stat to a generic fileinfo struct
 */
-static NTSTATUS svfs_map_fileinfo(struct request_context *req, union smb_fileinfo *info, struct stat *st)
+static NTSTATUS svfs_map_fileinfo(struct request_context *req, union smb_fileinfo *info, 
+				  struct stat *st, const char *unix_path)
 {
+	struct svfs_dir *dir = NULL;
+	char *pattern = NULL;
+	int i;
+	char *s, *short_name;
+
+	s = strrchr(unix_path, '/');
+	if (s) {
+		short_name = s+1;
+	} else {
+		short_name = "";
+	}
+
+	asprintf(&pattern, "%s:*", unix_path);
+	
+	if (pattern) {
+		dir = svfs_list_unix(req->mem_ctx, req, pattern);
+	}
+
 	unix_to_nt_time(&info->generic.out.create_time, st->st_ctime);
 	unix_to_nt_time(&info->generic.out.access_time, st->st_atime);
 	unix_to_nt_time(&info->generic.out.write_time,  st->st_mtime);
@@ -141,8 +174,8 @@ static NTSTATUS svfs_map_fileinfo(struct request_context *req, union smb_fileinf
 	info->generic.out.delete_pending = 0;
 	info->generic.out.ea_size = 0;
 	info->generic.out.num_eas = 0;
-	info->generic.out.fname.s = talloc_strdup(req->mem_ctx, "TODO - STORE FILENAME");
-	info->generic.out.alt_fname.s = talloc_strdup(req->mem_ctx, "TODO - STORE ALT_FN");
+	info->generic.out.fname.s = talloc_strdup(req->mem_ctx, short_name);
+	info->generic.out.alt_fname.s = talloc_strdup(req->mem_ctx, short_name);
 	info->generic.out.ex_attrib = 0;
 	info->generic.out.compressed_size = 0;
 	info->generic.out.format = 0;
@@ -157,15 +190,23 @@ static NTSTATUS svfs_map_fileinfo(struct request_context *req, union smb_fileinf
 	info->generic.out.reparse_tag = 0;
 	info->generic.out.num_streams = 0;
 	/* setup a single data stream */
-	info->generic.out.num_streams = 1;
-	info->generic.out.streams = talloc(req->mem_ctx, sizeof(info->stream_info.out.streams[0]));
+	info->generic.out.num_streams = 1 + (dir?dir->count:0);
+	info->generic.out.streams = talloc_array_p(req->mem_ctx, 
+						   struct stream_struct,
+						   info->generic.out.num_streams);
 	if (!info->generic.out.streams) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	info->generic.out.streams[0].size = st->st_size;
 	info->generic.out.streams[0].alloc_size = st->st_size;
 	info->generic.out.streams[0].stream_name.s = talloc_strdup(req->mem_ctx,"::$DATA");
-	/* REWRITE: end */
+
+	for (i=0;dir && i<dir->count;i++) {
+		s = strchr(dir->files[i].name, ':');
+		info->generic.out.streams[1+i].size = dir->files[i].st.st_size;
+		info->generic.out.streams[1+i].alloc_size = dir->files[i].st.st_size;
+		info->generic.out.streams[1+i].stream_name.s = s?s:dir->files[i].name;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -192,7 +233,7 @@ static NTSTATUS svfs_qpathinfo(struct request_context *req, union smb_fileinfo *
 		return map_nt_error_from_unix(errno);
 	}
 	DEBUG(19,("svfs_qpathinfo: file %s, stat done\n", unix_path));
-	return svfs_map_fileinfo(req, info, &st);
+	return svfs_map_fileinfo(req, info, &st, unix_path);
 }
 
 /*
@@ -200,10 +241,17 @@ static NTSTATUS svfs_qpathinfo(struct request_context *req, union smb_fileinfo *
 */
 static NTSTATUS svfs_qfileinfo(struct request_context *req, union smb_fileinfo *info)
 {
+	struct svfs_private *private = req->conn->ntvfs_private;
+	struct svfs_file *f;
 	struct stat st;
 
 	if (info->generic.level != RAW_FILEINFO_GENERIC) {
 		return ntvfs_map_qfileinfo(req, info);
+	}
+
+	f = find_fd(private, info->generic.in.fnum);
+	if (!f) {
+		return NT_STATUS_INVALID_HANDLE;
 	}
 	
 	if (fstat(info->generic.in.fnum, &st) == -1) {
@@ -212,7 +260,7 @@ static NTSTATUS svfs_qfileinfo(struct request_context *req, union smb_fileinfo *
 		return map_nt_error_from_unix(errno);
 	}
 
-	return svfs_map_fileinfo(req, info, &st);
+	return svfs_map_fileinfo(req, info, &st, f->name);
 }
 
 
@@ -221,9 +269,11 @@ static NTSTATUS svfs_qfileinfo(struct request_context *req, union smb_fileinfo *
 */
 static NTSTATUS svfs_open(struct request_context *req, union smb_open *io)
 {
+	struct svfs_private *private = req->conn->ntvfs_private;
 	char *unix_path;
 	struct stat st;
 	int fd, flags;
+	struct svfs_file *f;
 	
 	if (io->generic.level != RAW_OPEN_GENERIC) {
 		return ntvfs_map_open(req, io);
@@ -288,6 +338,12 @@ static NTSTATUS svfs_open(struct request_context *req, union smb_open *io)
 		close(fd);
 		return map_nt_error_from_unix(errno);
 	}
+
+	f = talloc_p(req->conn->mem_ctx, struct svfs_file);
+	f->fd = fd;
+	f->name = talloc_strdup(req->conn->mem_ctx, unix_path);
+
+	DLIST_ADD(private->open_files, f);
 
 	ZERO_STRUCT(io->generic.out);
 	
@@ -461,14 +517,26 @@ static NTSTATUS svfs_flush(struct request_context *req, struct smb_flush *io)
 */
 static NTSTATUS svfs_close(struct request_context *req, union smb_close *io)
 {
+	struct svfs_private *private = req->conn->ntvfs_private;
+	struct svfs_file *f;
+
 	if (io->generic.level != RAW_CLOSE_CLOSE) {
 		/* we need a mapping function */
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
+	f = find_fd(private, io->close.in.fnum);
+	if (!f) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	if (close(io->close.in.fnum) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
+
+	DLIST_REMOVE(private->open_files, f);
+	talloc_free(req->conn->mem_ctx, f->name);
+	talloc_free(req->conn->mem_ctx, f);
 
 	return NT_STATUS_OK;
 }
