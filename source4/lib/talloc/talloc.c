@@ -67,6 +67,7 @@
    NULL
 */
 static const void *null_context;
+static void *cleanup_context;
 
 
 struct talloc_reference_handle {
@@ -1003,4 +1004,24 @@ void *talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned 
 void *talloc_realloc_fn(const void *context, void *ptr, size_t size)
 {
 	return _talloc_realloc(context, ptr, size, NULL);
+}
+
+
+static void talloc_autofree(void)
+{
+	talloc_free(cleanup_context);
+	cleanup_context = NULL;
+}
+
+/*
+  return a context which will be auto-freed on exit
+  this is useful for reducing the noise in leak reports
+*/
+void *talloc_autofree_context(void)
+{
+	if (cleanup_context == NULL) {
+		cleanup_context = talloc_named_const(NULL, 0, "autofree_context");
+		atexit(talloc_autofree);
+	}
+	return cleanup_context;
 }
