@@ -76,7 +76,12 @@
 #include <stdlib.h>
 #endif
 
-#if !defined(HAVE_SNPRINTF) || !defined(HAVE_VSNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
+#if defined(HAVE_SNPRINTF) && defined(HAVE_VSNPRINTF) && defined(HAVE_C99_VSNPRINTF)
+/* only include stdio.h if we are not re-defining snprintf or vsnprintf */
+#include <stdio.h>
+ /* make the compiler happy with an empty file */
+ void dummy_snprintf(void) {} 
+#else
 
 #ifdef HAVE_LONG_DOUBLE
 #define LDOUBLE long double
@@ -728,32 +733,28 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 }
 #endif
 
-#else
- /* make the compiler happy with an empty file */
- void dummy_snprintf(void);
 #endif 
 
 
 #ifndef HAVE_ASPRINTF
- char *asprintf(const char *format, ...)
+ int asprintf(char **ptr, const char *format, ...)
 {
 	va_list ap;
 	int ret;
-	char *str;
 	
 	va_start(ap, format);
 	ret = vsnprintf(NULL, 0, format, ap);
 	va_end(ap);
 
-	if (ret == -1) return NULL;
+	if (ret <= 0) return ret;
 	
 	va_start(ap, format);
-	str = (char *)malloc(ret+1);
-	if (!str) return NULL;
-	ret = vsnprintf(str, ret+1, format, ap);
+	(*ptr) = (char *)malloc(ret+1);
+	if (!*ptr) return -1;
+	ret = vsnprintf(*ptr, ret+1, format, ap);
 	va_end(ap);
 
-	return str;
+	return ret;
 }
 #endif
 
