@@ -34,7 +34,7 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     4
-    AMERICA - USA                                36
+    AMERICA - USA                                37
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      19
     CANADA                                        9
@@ -570,6 +570,33 @@ http://www.ntintegrators.com/
 email: watts@sunflower.com
 
 My consulting company does NT/Linux/Samba/etc support.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+MISSOURI/KANSAS - USA
+
+DLP, Inc.
+303 N. Jeffreys Street
+Pleasant Hill, MO  64080-1331
+USA
+816-540-5167 - voice
+816-540-5218 - fax
+
+DLP, Inc. offers cost-effective networking solutions to small and
+medium-sized businesses in the greater Kansas City area using a
+combination of MS-Windows 95/NT workstations and Linux servers running
+samba.  Services offered include complete system setup and configuration
+of new installations and enhancement and administration of existing
+installations.  Other available services include installation and setup of
+intranets using the popular Apache web server.
+
+Please contact Dave Parker via email or call toll free from the greater
+Kansas City area:
+
+   540-5167 - voice
+   540-5218 - fax
+
+email: dlparker@dlpinc00.com
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
