@@ -454,7 +454,7 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32
 
 	if (n == *count) {
 		DEBUG(10,("delete_a_form, [%s] not found\n", form_name));
-		*ret = ERROR_INVALID_PARAMETER;
+		*ret = ERRinvalidparam;
 		return False;
 	}
 
@@ -462,7 +462,7 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32
 	kbuf.dsize = strlen(key)+1;
 	kbuf.dptr = key;
 	if (tdb_delete(tdb_forms, kbuf) != 0) {
-		*ret = ERROR_NOT_ENOUGH_MEMORY;
+		*ret = ERRnomem;
 		return False;
 	}
 
@@ -605,7 +605,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 		DEBUG(0,("get_correct_cversion: Unable to get passwd entry for uid %u\n",
 				(unsigned int)user->uid ));
 		unbecome_root();
-		*perr = ERROR_ACCESS_DENIED;
+		*perr = ERRnoaccess;
 		return -1;
 	}
 	unbecome_root();
@@ -630,7 +630,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 
 	if (!become_user(conn, conn->vuid)) {
 		DEBUG(0,("get_correct_cversion: Can't become user %s\n", user_name ));
-		*perr = ERROR_ACCESS_DENIED;
+		*perr = ERRnoaccess;
 		pop_sec_ctx();
 		return -1;
 	}
@@ -648,7 +648,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	if (!fsp) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
 				driverpath, errno));
-		*perr = ERROR_ACCESS_DENIED;
+		*perr = ERRnoaccess;
 		goto error_exit;
 	}
 
@@ -808,7 +808,7 @@ static uint32 clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 									driver->driverpath, user, &err)) == -1)
 		return err;
 
-	return NT_STATUS_NOPROBLEMO;
+	return ERRsuccess;
 }
 	
 /****************************************************************************
@@ -873,7 +873,7 @@ static uint32 clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 									driver->driverpath, user, &err)) == -1)
 		return err;
 
-	return NT_STATUS_NOPROBLEMO;
+	return ERRsuccess;
 }
 
 /****************************************************************************
@@ -1634,7 +1634,7 @@ static uint32 get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 	fstrcpy(info.helpfile, "");
 
 	if ((info.dependentfiles=(fstring *)malloc(2*sizeof(fstring))) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 
 	memset(info.dependentfiles, '\0', 2*sizeof(fstring));
 	fstrcpy(info.dependentfiles[0], "");
@@ -3023,7 +3023,7 @@ uint32 delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i)
 	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n",
 		i->name));
 	
-	return NT_STATUS_NOPROBLEMO;
+	return ERRsuccess;
 }
 /****************************************************************************
 ****************************************************************************/
@@ -3170,7 +3170,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 
 	if (!sec_io_desc_buf("nt_printing_setsec", &new_secdesc_ctr,
 			     &ps, 1)) {
-		status = ERROR_INVALID_FUNCTION;
+		status = ERRbadfunc;
 		goto out;
 	}
 
@@ -3180,7 +3180,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 		status = 0;
 	} else {
 		DEBUG(1,("Failed to store secdesc for %s\n", printername));
-		status = ERROR_INVALID_FUNCTION;
+		status = ERRbadfunc;
 	}
 
 	/* Free malloc'ed memory */
@@ -3551,7 +3551,7 @@ uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 		return 0;
 
 	if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 
 	/*
 	 * Just ignore it if we already have a devmode.
@@ -3569,15 +3569,15 @@ uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 	if ( (printer_default->access_required & PRINTER_ACCESS_ADMINISTER) != 
 	      PRINTER_ACCESS_ADMINISTER) {
 		DEBUG(5,("printer_write_default_dev: invalid request access to update: %x\n", printer_default->access_required));
-		result = ERROR_ACCESS_DENIED;
+		result = ERRnoaccess;
 		goto done;
 	}
 
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(5,("printer_write_default_dev: Access denied for printer %s\n",
 			lp_servicename(snum) ));
-		result = ERROR_ACCESS_DENIED;
-		/*result = NT_STATUS_NOPROBLEMO;*/
+		result = ERRnoaccess;
+		/*result = ERRsuccess;*/
 		goto done;
 	}
 
@@ -3590,7 +3590,7 @@ uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 	if (!convert_devicemode(printer->info_2->printername,
 				printer_default->devmode_cont.devmode,
 				&printer->info_2->devmode)) {
-		result = ERROR_NOT_ENOUGH_MEMORY;
+		result = ERRnomem;
 		goto done;
 	}
 
@@ -3599,7 +3599,7 @@ uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 	 */
 
 	if (add_a_printer(*printer, 2)!=0) {
-		result = ERROR_ACCESS_DENIED;
+		result = ERRnoaccess;
 		goto done;
 	}
 

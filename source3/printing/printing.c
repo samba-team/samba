@@ -617,7 +617,7 @@ BOOL print_job_delete(struct current_user *user, int jobid, int *errcode)
 	if (!owner && 
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
-		*errcode = ERROR_ACCESS_DENIED;
+		*errcode = ERRnoaccess;
 		return False;
 	}
 
@@ -656,7 +656,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
-		*errcode = ERROR_ACCESS_DENIED;
+		*errcode = ERRnoaccess;
 		return False;
 	}
 
@@ -664,7 +664,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 	ret = (*(current_printif->job_pause))(snum, pjob);
 
 	if (ret != 0) {
-		*errcode = ERROR_INVALID_PARAMETER;
+		*errcode = ERRinvalidparam;
 		return False;
 	}
 
@@ -700,14 +700,14 @@ BOOL print_job_resume(struct current_user *user, int jobid, int *errcode)
 	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
-		*errcode = ERROR_ACCESS_DENIED;
+		*errcode = ERRnoaccess;
 		return False;
 	}
 
 	ret = (*(current_printif->job_resume))(snum, pjob);
 
 	if (ret != 0) {
-		*errcode = ERROR_INVALID_PARAMETER;
+		*errcode = ERRinvalidparam;
 		return False;
 	}
 
@@ -1190,14 +1190,14 @@ BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
 	int ret;
 	
 	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
-		*errcode = ERROR_ACCESS_DENIED;
+		*errcode = ERRnoaccess;
 		return False;
 	}
 
 	ret = (*(current_printif->queue_pause))(snum);
 
 	if (ret != 0) {
-		*errcode = ERROR_INVALID_PARAMETER;
+		*errcode = ERRinvalidparam;
 		return False;
 	}
 
@@ -1222,14 +1222,14 @@ BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
 	int ret;
 
 	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
-		*errcode = ERROR_ACCESS_DENIED;
+		*errcode = ERRnoaccess;
 		return False;
 	}
 
 	ret = (*(current_printif->queue_resume))(snum);
 
 	if (ret != 0) {
-		*errcode = ERROR_INVALID_PARAMETER;
+		*errcode = ERRinvalidparam;
 		return False;
 	}
 
