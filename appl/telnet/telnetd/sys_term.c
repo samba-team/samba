@@ -1253,7 +1253,7 @@ startslave(char *host, int autologin, char *autoname)
 		 * before doing anything important.
 		 */
 		int pid = i;
-		void sigjob P((int));
+		void sigjob (int);
 
 		setpgrp();
 		utmp_sig_reset();		/* reset handler to default */
@@ -1951,7 +1951,7 @@ cleantmp(wtp)
 	struct utmp *utp;
 	static int first = 1;
 	int mask, omask, ret;
-	extern struct utmp *getutid P((const struct utmp *_Id));
+	extern struct utmp *getutid (const struct utmp *_Id);
 
 
 	mask = sigmask(WJSIGNAL);
