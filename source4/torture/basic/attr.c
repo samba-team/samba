@@ -104,8 +104,8 @@ BOOL torture_openattrtest(void)
 		smbcli_setatr(cli1->tree, fname, 0, 0);
 		smbcli_unlink(cli1->tree, fname);
 		fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SA_RIGHT_FILE_WRITE_DATA, open_attrs_table[i],
-				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
-
+					      NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
+		
 		if (fnum1 == -1) {
 			printf("open %d (1) of %s failed (%s)\n", i, fname, smbcli_errstr(cli1->tree));
 			return False;
@@ -166,13 +166,13 @@ BOOL torture_openattrtest(void)
 			for (l = 0; l < ARRAY_SIZE(attr_results); l++) {
 				if (attr_results[l].num == k) {
 					if (attr != attr_results[l].result_attr ||
-							open_attrs_table[i] != attr_results[l].init_attr ||
-							open_attrs_table[j] != attr_results[l].trunc_attr) {
+					    open_attrs_table[i] != attr_results[l].init_attr ||
+					    open_attrs_table[j] != attr_results[l].trunc_attr) {
 						printf("[%d] getatr check failed. [0x%x] trunc [0x%x] got attr 0x%x, should be 0x%x\n",
-							k, open_attrs_table[i],
-							open_attrs_table[j],
-							(uint_t)attr,
-							attr_results[l].result_attr);
+						       k, open_attrs_table[i],
+						       open_attrs_table[j],
+						       (uint_t)attr,
+						       attr_results[l].result_attr);
 						correct = False;
 						CHECK_MAX_FAILURES(error_exit);
 					}
