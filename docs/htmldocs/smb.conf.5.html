@@ -177,7 +177,7 @@ CLASS="SCREEN"
 CLASS="COMPUTEROUTPUT"
 > 	[foo]
  		path = /home/bar
- 		writeable = true
+ 		read only = no
 	</TT
 >
 	</PRE
@@ -205,9 +205,9 @@ CLASS="SCREEN"
 CLASS="COMPUTEROUTPUT"
 > 	[aprinter]
  		path = /usr/spool/public
- 		writeable = false
- 		printable = true
- 		guest ok = true
+ 		read only = yes
+ 		printable = yes
+ 		guest ok = yes
 	</TT
 >
 	</PRE
@@ -312,7 +312,7 @@ CLASS="SCREEN"
 >		<TT
 CLASS="COMPUTEROUTPUT"
 >	 	[homes]
- 			writeable = yes
+ 			read only = no
 		</TT
 >
 		</PRE
@@ -2850,6 +2850,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#USESENDFILE"
+><TT
+CLASS="PARAMETER"
+><I
+>use sendfile</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#USERNAMELEVEL"
 ><TT
 CLASS="PARAMETER"
@@ -3068,7 +3080,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN992"
+NAME="AEN996"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4571,7 +4583,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1492"
+NAME="AEN1496"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -5490,7 +5502,7 @@ TARGET="_top"
 ><P
 >If this parameter is set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 >, then 
 		Samba 2.2 will behave as previous versions of Samba would and 
 		will fail the lock request immediately if the lock range 
@@ -5539,7 +5551,7 @@ CLASS="COMMAND"
 > call. Normally 
 		set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >. You should never need to change 
 		this.</P
 ><P
@@ -7237,14 +7249,14 @@ CLASS="PARAMETER"
 >
 		option).  If this option is set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 > (the default) then if a vetoed 
 		directory contains any non-vetoed files or directories then the 
 		directory delete will fail. This is usually what you want.</P
 ><P
 >If this option is set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, then Samba 
 		will attempt to recursively delete any files and directories within 
 		the vetoed directory. This can be useful for integration with file 
@@ -7780,7 +7792,7 @@ NAME="DOMAINLOGONS"
 ><P
 >If set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, the Samba server will serve 
 		Windows 95/98 Domain logons for the <A
 HREF="#WORKGROUP"
@@ -8029,7 +8041,7 @@ CLASS="COMMAND"
 > is acting 
 		on behalf of is not the file owner. Setting this option to <TT
 CLASS="CONSTANT"
->		true</TT
+>		yes</TT
 > allows DOS semantics and <A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -8801,7 +8813,7 @@ CLASS="PARAMETER"
 		</A
 >parameter is set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 >.</P
 ><P
 >Default: <B
@@ -9086,7 +9098,7 @@ CLASS="PARAMETER"
 ></A
 > is <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, and <A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -10203,7 +10215,7 @@ CLASS="PARAMETER"
 		</A
 > parameter must be set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > on this share in order for 
 		this parameter to have any effect.</P
 ><P
@@ -10251,10 +10263,10 @@ CLASS="COMMAND"
 		the Samba server in their browse list. This parameter can have three 
 		values, <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 >, or
 		<TT
 CLASS="CONSTANT"
@@ -10265,11 +10277,11 @@ CLASS="CONSTANT"
 >.  
 		If set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 > Samba will never produce these 
 		broadcasts. If set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > Samba will produce 
 		Lanman announce broadcasts at a frequency set by the parameter 
 		<TT
@@ -10397,7 +10409,7 @@ CLASS="COMMAND"
 > to try and become a local master browser 
 		on a subnet. If set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 > then <B
 CLASS="COMMAND"
 >		nmbd</B
@@ -10405,10 +10417,10 @@ CLASS="COMMAND"
 		on a subnet and will also lose in all browsing elections. By
 		default this value is set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >. Setting this value to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > doesn't
 		mean that Samba will <EM
 >become</EM
@@ -10422,7 +10434,7 @@ CLASS="COMMAND"
 ><P
 >Setting this value to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 > will cause <B
 CLASS="COMMAND"
 >nmbd</B
@@ -13574,7 +13586,10 @@ CLASS="PARAMETER"
  		password change</I
 ></TT
 ></A
-> parameter is set to true, the chat pairs
+> parameter is set to <TT
+CLASS="CONSTANT"
+>yes</TT
+>, the chat pairs
                 may be matched in any order, and success is determined by the PAM result, 
                 not any particular output. The \n macro is ignored for PAM conversions.
   		</P
@@ -13751,7 +13766,7 @@ CLASS="PARAMETER"
 ></TT
 > parameter is set to <TT
 CLASS="CONSTANT"
->true
+>yes
 		</TT
 > then this program is called <EM
 >AS ROOT</EM
@@ -13788,7 +13803,7 @@ CLASS="PARAMETER"
 ></TT
 > is set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 >.</P
 ><P
 >See also <A
@@ -14326,7 +14341,7 @@ TARGET="_top"
 ><P
 >If this is set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, on startup, <B
 CLASS="COMMAND"
 >nmbd</B
@@ -14654,11 +14669,11 @@ CLASS="CONSTANT"
 >Note that a printable service will ALWAYS allow writing 
 		to the service path (user privileges permitting) via the spooling 
 		of print data. The <A
-HREF="#WRITEABLE"
+HREF="#READONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
->writeable
+>read only
 		</I
 ></TT
 ></A
@@ -15319,11 +15334,11 @@ NAME="READLIST"
 >This is a list of users that are given read-only 
 		access to a service. If the connecting user is in this list then 
 		they will not be given write access, no matter what the <A
-HREF="#WRITEABLE"
+HREF="#READONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
->writeable</I
+>read only</I
 ></TT
 ></A
 >
@@ -15374,15 +15389,36 @@ NAME="READONLY"
 >read only (S)</DT
 ><DD
 ><P
->Note that this is an inverted synonym for <A
+>An inverted synonym is <A
 HREF="#WRITEABLE"
-><TT
+>		<TT
 CLASS="PARAMETER"
 ><I
 >writeable</I
 ></TT
 ></A
 >.</P
+><P
+>If this parameter is <TT
+CLASS="CONSTANT"
+>yes</TT
+>, then users 
+		of a service may not create or modify files in the service's 
+		directory.</P
+><P
+>Note that a printable service (<B
+CLASS="COMMAND"
+>printable = yes</B
+>)
+		will <EM
+>ALWAYS</EM
+> allow writing to the directory 
+		(user privileges permitting), but only via spooling operations.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>read only = yes</B
+></P
 ></DD
 ><DT
 ><A
@@ -15582,13 +15618,13 @@ NAME="RESTRICTANONYMOUS"
 ><P
 >This is a boolean parameter.  If it is <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, then 
 		anonymous access to the server will be restricted, namely in the 
 		case where the server is expecting the client to send a username, 
 		but it doesn't.  Setting it to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > will force these anonymous 
  		connections to be denied, and the client will be required to always 
 		supply a username and password when connecting. Use of this parameter 
@@ -15601,7 +15637,7 @@ CLASS="CONSTANT"
 ><P
 >When restrict anonymous is <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, all anonymous connections 
 		are denied no matter what they are for.  This can effect the ability 
 		of a machine to access the Samba Primary Domain Controller to revalidate 
@@ -16294,7 +16330,7 @@ CLASS="PARAMETER"
 		</A
 > parameter to be set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >. In this 
 		mode Samba will try to validate the username/password by passing
 		it to a Windows NT Primary or Backup Domain Controller, in exactly 
@@ -17739,13 +17775,13 @@ NAME="SYNCALWAYS"
 		whether writes will always be written to stable storage before 
 		the write call returns. If this is <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 > then the server will be 
 		guided by the client's request in each write call (clients can 
 		set a bit indicating that a particular write should be synchronous). 
 		If this is <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > then every write will be followed by a <B
 CLASS="COMMAND"
 >fsync()
@@ -18014,7 +18050,7 @@ NAME="UNIXPASSWORDSYNC"
 		when the encrypted SMB password in the smbpasswd file is changed. 
 		If this is set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > the program specified in the <TT
 CLASS="PARAMETER"
 ><I
@@ -18169,7 +18205,7 @@ NAME="USEMMAP"
 		mmap/read-write system memory cache. Currently only HPUX does not have such a
 		coherent cache, and so this parameter is set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 > by
 		default on HPUX. On all other systems this parameter should be left alone. This
 		parameter is provided to help the Samba developers track down problems with
@@ -18190,7 +18226,7 @@ NAME="USERHOSTS"
 ><P
 >If this global parameter is <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, it specifies 
 		that the UNIX user's <TT
 CLASS="FILENAME"
@@ -18220,6 +18256,30 @@ CLASS="PARAMETER"
 >Default: <B
 CLASS="COMMAND"
 >use rhosts = no</B
+></P
+></DD
+><DT
+><A
+NAME="USESENDFILE"
+></A
+>use sendfile (S)</DT
+><DD
+><P
+>If this parameter is <TT
+CLASS="CONSTANT"
+>yes</TT
+>, and Samba
+		was built with the --with-sendfile-support option, and the underlying operating
+		system supports sendfile system call, then some SMB read calls (mainly ReadAndX
+		and ReadRaw) will use the more efficient sendfile system call for files that
+		are exclusively oplocked. This may make more efficient use of the system CPU's
+		and cause Samba to be faster. This is off by default as it's effects are unknown
+		as yet.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>use sendfile = no</B
 ></P
 ></DD
 ><DT
@@ -18555,7 +18615,7 @@ CLASS="COMMAND"
 >		--with-utmp</B
 >. If set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > then Samba will attempt
 		to add utmp or utmpx records (depending on the UNIX system) whenever a
 		connection is made to a Samba server. Sites may use this to record the
@@ -19073,7 +19133,10 @@ CLASS="PARAMETER"
 >winbind enum users</I
 ></TT
 > parameter is
-		false, calls to the <B
+		<TT
+CLASS="CONSTANT"
+>no</TT
+>, calls to the <B
 CLASS="COMMAND"
 >getpwent</B
 > system call
@@ -19124,7 +19187,10 @@ CLASS="PARAMETER"
 >winbind enum groups</I
 ></TT
 > parameter is
-		false, calls to the <B
+		<TT
+CLASS="CONSTANT"
+>no</TT
+>, calls to the <B
 CLASS="COMMAND"
 >getgrent()</B
 > system
@@ -19259,13 +19325,13 @@ TARGET="_top"
 ><P
 >Default: <B
 CLASS="COMMAND"
->winbind use default domain = &#60;falseg&#62; 
+>winbind use default domain = &#60;no&#62; 
 		</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->winbind use default domain = true</B
+>winbind use default domain = yes</B
 ></P
 ></DD
 ><DT
@@ -19410,7 +19476,7 @@ TARGET="_top"
 > process in Samba will act as a WINS server. You should 
 		not set this to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > unless you have a multi-subnetted network and 
 		you wish a particular <B
 CLASS="COMMAND"
@@ -19420,7 +19486,7 @@ CLASS="COMMAND"
 >NEVER</EM
 > set this to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >
 		on more than one machine in your network.</P
 ><P
@@ -19523,11 +19589,11 @@ NAME="WRITELIST"
 >This is a list of users that are given read-write 
 		access to a service. If the connecting user is in this list then 
 		they will be given write access, no matter what the <A
-HREF="#WRITEABLE"
+HREF="#READONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
->writeable</I
+>read only</I
 ></TT
 ></A
 >
@@ -19567,12 +19633,12 @@ NAME="WRITEOK"
 >write ok (S)</DT
 ><DD
 ><P
->Synonym for <A
-HREF="#WRITEABLE"
+>Inverted synonym for <A
+HREF="#READONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
->		writeable</I
+>		read only</I
 ></TT
 ></A
 >.</P
@@ -19600,36 +19666,15 @@ NAME="WRITEABLE"
 >writeable (S)</DT
 ><DD
 ><P
->An inverted synonym is <A
+>Inverted synonym for <A
 HREF="#READONLY"
->		<TT
+><TT
 CLASS="PARAMETER"
 ><I
->read only</I
+>		read only</I
 ></TT
 ></A
 >.</P
-><P
->If this parameter is <TT
-CLASS="CONSTANT"
->no</TT
->, then users 
-		of a service may not create or modify files in the service's 
-		directory.</P
-><P
->Note that a printable service (<B
-CLASS="COMMAND"
->printable = yes</B
->)
-		will <EM
->ALWAYS</EM
-> allow writing to the directory 
-		(user privileges permitting), but only via spooling operations.</P
-><P
->Default: <B
-CLASS="COMMAND"
->writeable = no</B
-></P
 ></DD
 ></DL
 ></DIV
@@ -19637,7 +19682,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6208"
+NAME="AEN6223"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19667,7 +19712,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6214"
+NAME="AEN6229"
 ></A
 ><H2
 >VERSION</H2
@@ -19678,7 +19723,7 @@ NAME="AEN6214"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6217"
+NAME="AEN6232"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19757,7 +19802,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6237"
+NAME="AEN6252"
 ></A
 ><H2
 >AUTHOR</H2
