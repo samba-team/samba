@@ -339,7 +339,9 @@ static void new_connection(int listen_sock)
 	
 	ZERO_STRUCTP(state);
 	state->sock = sock;
-	
+
+	state->last_access = time(NULL);	
+
 	/* Add to connection list */
 	
 	winbindd_add_client(state);
@@ -374,6 +376,35 @@ static void remove_client(struct winbindd_cli_state *state)
 	}
 }
 
+
+/* Shutdown client connection which has been idle for the longest time */
+
+static BOOL remove_idle_client(void)
+{
+	struct winbindd_cli_state *state, *remove_state = NULL;
+	time_t last_access = 0;
+	int nidle = 0;
+
+	for (state = winbindd_client_list(); state; state = state->next) {
+		if (state->read_buf_len == 0 && state->write_buf_len == 0 &&
+				!state->getpwent_state && !state->getgrent_state) {
+			nidle++;
+			if (!last_access || state->last_access < last_access) {
+				last_access = state->last_access;
+				remove_state = state;
+			}
+		}
+	}
+
+	if (remove_state) {
+		DEBUG(5,("Found %d idle client connections, shutting down sock %d, pid %u\n",
+			nidle, remove_state->sock, (unsigned int)remove_state->pid));
+		remove_client(remove_state);
+		return True;
+	}
+
+	return False;
+}
 
 /* Process a complete received packet from a client */
 
@@ -427,6 +458,7 @@ void winbind_client_read(struct winbindd_cli_state *state)
 	/* Update client state */
 	
 	state->read_buf_len += n;
+	state->last_access = time(NULL);
 }
 
 /* Write some data to a client connection */
@@ -477,7 +509,8 @@ static void client_write(struct winbindd_cli_state *state)
 	/* Update client state */
 	
 	state->write_buf_len -= num_written;
-	
+	state->last_access = time(NULL);
+
 	/* Have we written all data? */
 	
 	if (state->write_buf_len == 0) {
@@ -508,7 +541,7 @@ static void client_write(struct winbindd_cli_state *state)
 	}
 }
 
-/* Process incoming clients on accept_sock.  We use a tricky non-blocking,
+/* Process incoming clients on listen_sock.  We use a tricky non-blocking,
    non-forking, non-threaded model which allows us to handle many
    simultaneous connections while remaining impervious to many denial of
    service attacks. */
@@ -608,7 +641,7 @@ static void process_loop(void)
 			exit(1);
 		}
 
-		/* Create a new connection if accept_sock readable */
+		/* Create a new connection if listen_sock readable */
 
 		if (selret > 0) {
 
@@ -616,8 +649,18 @@ static void process_loop(void)
 				dual_select(&w_fds);
 			}
 
-			if (FD_ISSET(listen_sock, &r_fds))
+			if (FD_ISSET(listen_sock, &r_fds)) {
+				while (winbindd_num_clients() > WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
+					DEBUG(5,("winbindd: Exceeding %d client connections, removing idle connection.\n",
+						WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+					if (!remove_idle_client()) {
+						DEBUG(0,("winbindd: Exceeding %d client connections, no idle connection found\n",
+							WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+						break;
+					}
+				}
 				new_connection(listen_sock);
+			}
             
 			/* Process activity on client connections */
             
