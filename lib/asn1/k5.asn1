@@ -10,6 +10,10 @@ nt-srv-hst INTEGER ::= 3 -- Service with host name as instance
 nt-srv-xhst INTEGER ::= 4 -- Service with host as remaining components
 nt-uid INTEGER ::= 5 -- Unique ID
 
+-- this is sugar to make something ASN1 does not have: unsigned
+
+UNSIGNED ::= INTEGER (0..4294967295)
+
 Realm ::= GeneralString
 PrincipalName ::= SEQUENCE {
 	name-type[0]		INTEGER,
@@ -147,7 +151,7 @@ Authenticator ::= [APPLICATION 2] SEQUENCE    {
 	cusec[4]		INTEGER,
 	ctime[5]		KerberosTime,
 	subkey[6]		EncryptionKey OPTIONAL,
-	seq-number[7]		INTEGER OPTIONAL,
+	seq-number[7]		UNSIGNED OPTIONAL,
 	authorization-data[8]	AuthorizationData OPTIONAL
 	}
 
@@ -252,14 +256,14 @@ EncAPRepPart ::= [APPLICATION 27]     SEQUENCE {
 	ctime[0]		KerberosTime,
 	cusec[1]		INTEGER,
 	subkey[2]		EncryptionKey OPTIONAL,
-	seq-number[3]		INTEGER OPTIONAL
+	seq-number[3]		UNSIGNED OPTIONAL
 }
 
 KRB-SAFE-BODY ::= SEQUENCE {
 	user-data[0]		OCTET STRING,
 	timestamp[1]		KerberosTime OPTIONAL,
 	usec[2]			INTEGER OPTIONAL,
-	seq-number[3]		INTEGER OPTIONAL,
+	seq-number[3]		UNSIGNED OPTIONAL,
 	s-address[4]		HostAddress OPTIONAL,
 	r-address[5]		HostAddress OPTIONAL
 }
@@ -280,7 +284,7 @@ EncKrbPrivPart ::= [APPLICATION 28] SEQUENCE {
 	user-data[0]		OCTET STRING,
 	timestamp[1]		KerberosTime OPTIONAL,
 	usec[2]			INTEGER OPTIONAL,
-	seq-number[3]		INTEGER OPTIONAL,
+	seq-number[3]		UNSIGNED OPTIONAL,
 	s-address[4]		HostAddress OPTIONAL, -- sender's addr
 	r-address[5]		HostAddress OPTIONAL  -- recip's addr
 }
