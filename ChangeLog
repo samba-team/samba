@@ -1,3 +1,8 @@
+2005-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kstash.c: s/random_key/random_key_flag/, From Dave Love
+	<d.love@dl.ac.uk>
+
 2005-01-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/apps.texi: Texinfo fixes. Text about irix 6.5 using
