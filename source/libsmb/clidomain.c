@@ -495,6 +495,14 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 	if (!*p) 
 		p = "*";
 
+	/* If we're querying a trusted domain don't look at the password
+	   server list. */
+
+	if (!strequal(domain, lp_workgroup())) {
+		connected_ok = find_connect_pdc(domain, &dest_ip);
+		goto done;
+	}
+
 	/* Iterate over password server list */
 
 	while(!connected_ok && next_token(&p, remote_machine, LIST_SEP, 
@@ -506,8 +514,6 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 			connected_ok = find_connect_pdc(domain, &dest_ip);
 
 		} else {
-			struct in_addr *dc_ip_list = NULL;
-			int count, i;
 
 			/* Connect to specific DC */
 
@@ -517,23 +523,11 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 				continue;
 			}
 
-			if (!get_dc_list(False, domain, &dc_ip_list,
-					 &count)) {
-				DEBUG(1, ("get_any_dc_name(): Can't get "
-					  "DC list for domain %s\n",
-					  domain));
-				break;
-			}
-
-			for (i = 0; i < count; i++) {
-				if (ip_equal(dc_ip_list[i], dest_ip)) {
-					connected_ok = 
-						attempt_connect_dc(domain, 
-								   dest_ip);
-				}
-			}
+			connected_ok = attempt_connect_dc(domain, dest_ip);
 		}
 	}
+
+ done:
 
 	/* Return server name to caller */
 
