@@ -11,6 +11,12 @@ Requires: pam >= 0.64 kernel >= 2.2.1
 Prereq: chkconfig fileutils
 BuildRoot: /var/tmp/samba
 
+%package debugtools
+Version: PVERSION
+Release: PRELEASE
+Group: Networking
+Summary: Programs to debug Samba and to test SMB client integrity
+
 %package -n smbfs
 Version: PVERSION
 Release: PRELEASE
@@ -35,6 +41,7 @@ being enabled on TCP port 901 via inetd.
 
 Please refer to the WHATSNEW.txt document for fixup information.
 This binary release includes encrypted password support.
+
 Please read the smb.conf file and ENCRYPTION.txt in the
 docs directory for implementation details.
 
@@ -46,7 +53,15 @@ enabled. PHT TurboLinux has built in support for quotas in PAM.
 This package includes the tools necessary to mount filesystems from
 SMB servers.
 
+%description debugtools
+This package contains programs that can be used to crash test any SMB
+server. Please use it with care. If you do not need it then do NOT
+install.
+
 %changelog
+* Sun May 09 1999 John H Terpstra <jht@samba.org>
+- Added smbtorture et al.
+
 * Wed Mar 10 1999 Scott Stone <sstone@turbolinux.com>
 - This package now builds smbfs stuff
 - Added xinetd autosetup in the post install section
@@ -57,7 +72,7 @@ SMB servers.
 
 * Sun Oct 25 1998 John H Terpstra <jht@samba.org>
  - Added modifier to /config specifier so that smb.conf,
-	lmhosts and smbusers never get lost
+        lmhosts and smbusers never get lost
 
 * Sat Oct 24 1998 John H Terpstra <jht@samba.org>
  - removed README.smbsh file from docs area
@@ -78,7 +93,7 @@ SMB servers.
 
 * Mon Jun 08 1998 Erik Troan <ewt@redhat.com>
   - made the %postun script a tad less agressive; no reason to remove
-    the logs or lock file 
+    the logs or lock file
   - the %postun and %preun should only exectute if this is the final
     removal
   - migrated %triggerpostun from Red Hat's samba package to work around
@@ -115,7 +130,8 @@ SMB servers.
 %build
 cd source
 CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-smbwrapper --with-automount --with-quotas --with-smbmount --with-pam
-make all smbwrapper
+make all smbwrapper smbtorture rpctorture smbfilter debug2html
+
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -137,13 +153,13 @@ for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/bin
 done
-for i in addtosmbpass mksmbpasswd.sh smbtar 
+for i in addtosmbpass mksmbpasswd.sh smbtar
 do
 install -m755 source/script/$i $RPM_BUILD_ROOT/usr/bin
 done
 
 # Install secure binary files
-for i in smbd nmbd swat smbmount smbumount smbmnt
+for i in smbd nmbd swat smbmount smbumount smbmnt debug2html rpctorture smbtorture smbfilter
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/sbin
 done
@@ -213,12 +229,12 @@ done
 
 # Add swat entry to /etc/services if not already there
 if !( grep ^[:space:]*swat /etc/services > /dev/null ) then
-	echo 'swat		901/tcp				# Add swat service used via inetd' >> /etc/services
+        echo 'swat              901/tcp                         # Add swat service used via inetd' >> /etc/services
 fi
 
 # Add swat entry to /etc/inetd.conf if needed
 if !( grep ^[:space:]*swat /etc/inetd.conf > /dev/null ) then
-	echo 'swat	stream	tcp	nowait.400	root	/usr/sbin/swat swat' >> /etc/inetd.conf
+        echo 'swat      stream  tcp     nowait.400      root    /usr/sbin/swat swat' >> /etc/inetd.conf
 killall -1 inetd || :
 fi
 
@@ -231,16 +247,16 @@ if [ $1 = 0 ] ; then
     /sbin/chkconfig --del smb
 
     for n in /etc/codepages/*; do
-	if [ $n != /etc/codepages/src ]; then
-	    rm -rf $n
-	fi
+        if [ $n != /etc/codepages/src ]; then
+            rm -rf $n
+        fi
     done
     # We want to remove the browse.dat and wins.dat files so they can not interfer with a new version of samba!
     if [ -e /var/lock/samba/browse.dat ]; then
-	    rm -f /var/lock/samba/browse.dat
+            rm -f /var/lock/samba/browse.dat
     fi
     if [ -e /var/lock/samba/wins.dat ]; then
-	    rm -f /var/lock/samba/wins.dat
+            rm -f /var/lock/samba/wins.dat
     fi
 fi
 
@@ -378,3 +394,10 @@ fi
 %attr(-,root,root) /usr/man/man8/smbmnt.8
 %attr(-,root,root) /usr/man/man8/smbmount.8
 %attr(-,root,root) /usr/man/man8/smbumount.8
+
+%files debugtools
+%attr(-,root,root) /usr/sbin/smbtorture
+%attr(-,root,root) /usr/sbin/rpctorture
+%attr(-,root,root) /usr/sbin/smbfilter
+%attr(-,root,root) /usr/sbin/debug2html
+
