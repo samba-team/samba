@@ -953,7 +953,7 @@ static struct parm_struct parm_table[] = {
 	{"use mmap", P_BOOL, P_GLOBAL, &Globals.bUseMmap, NULL, NULL, FLAG_ADVANCED}, 
 	{"use sendfile", P_BOOL, P_LOCAL, &sDefault.bUseSendfile, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"hostname lookups", P_BOOL, P_GLOBAL, &Globals.bHostnameLookups, NULL, NULL, FLAG_ADVANCED}, 
-	{"write cache size", P_INTEGER, P_LOCAL, &sDefault.iWriteCacheSize, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
+	{"write cache size", P_INTEGER, P_LOCAL, &sDefault.iWriteCacheSize, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_DEPRECATED}, 
 
 	{"name cache timeout", P_INTEGER, P_GLOBAL, &Globals.name_cache_timeout, NULL, NULL, FLAG_ADVANCED}, 
 
