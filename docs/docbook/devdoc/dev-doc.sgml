@@ -12,6 +12,7 @@
 <!ENTITY wins SYSTEM "wins.sgml">
 <!ENTITY sam SYSTEM "sam.sgml">
 <!ENTITY encryption SYSTEM "encryption.sgml">
+<!ENTITY rpc-plugin SYSTEM "rpc_plugin.sgml">
 ]>
 
 <book id="Samba-Developers-Guide">
@@ -66,5 +67,6 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 &wins;
 &sam;
 &encryption;
+&rpc-plugin;
 
 </book>
