@@ -1176,7 +1176,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 
 	for (fn_num = 0; api_rpc_cmds[fn_num].name; fn_num++) {
 		if (api_rpc_cmds[fn_num].opnum == p->hdr_req.opnum && api_rpc_cmds[fn_num].fn != NULL) {
-			DEBUG(3,("api_rpcTNP: rpc command: %s\n", api_rpc_cmds[fn_num].name));
+			DEBUG(3,("api_rpcTNP: pipe %u rpc command: %s\n", (unsigned int)p->pnum, api_rpc_cmds[fn_num].name));
 			break;
 		}
 	}
