@@ -2076,6 +2076,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		case SMB_INFO_STANDARD:
 		case SMB_INFO_QUERY_EA_SIZE:
 		{
+			if (total_data < l1_cbFile+4)
+				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
 			/* access time */
 			tvs.actime = make_unix_date2(pdata+l1_fdateLastAccess);
 
@@ -2084,6 +2087,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 			mode = SVAL(pdata,l1_attrFile);
 			size = IVAL(pdata,l1_cbFile);
+
 			break;
 		}
 
