@@ -26,6 +26,7 @@ static fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
 static const char *sockops="TCP_NODELAY";
 static int nprocs=1;
+static int port_to_use=0;
 int torture_numops=100;
 static int procnum; /* records process count number when forking */
 static struct cli_state current_cli;
