@@ -128,6 +128,7 @@ typedef struct
   char *szUsernameMap;
   char *szCharacterSet;
   char *szLogonScript;
+  char *szVetoFiles;
   char *szSmbrun;
   char *szWINSserver;
   char *szInterfaces;
@@ -378,6 +379,7 @@ struct parm_struct
   {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL},
   {"netbios name",     P_UGSTRING,P_GLOBAL, myname,                     NULL},
   {"smbrun",           P_STRING,  P_GLOBAL, &Globals.szSmbrun,          NULL},
+  {"veto files",       P_STRING,  P_GLOBAL, &Globals.szVetoFiles,       NULL},
   {"log file",         P_STRING,  P_GLOBAL, &Globals.szLogFile,         NULL},
   {"config file",      P_STRING,  P_GLOBAL, &Globals.szConfigFile,      NULL},
   {"smb passwd file",  P_STRING,  P_GLOBAL, &Globals.szSMBPasswdFile,   NULL},
@@ -744,6 +746,7 @@ FN_GLOBAL_STRING(lp_domain_controller,&Globals.szDomainController)
 FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
 FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet) 
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
+FN_GLOBAL_STRING(lp_veto_files,&Globals.szVetoFiles)
 FN_GLOBAL_STRING(lp_remote_announce,&Globals.szRemoteAnnounce) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
