@@ -31,6 +31,9 @@
 /* We want to find the PDC only */
 #define NET_FLAGS_PDC 4 
 
+/* We want an anonymous connection */
+#define NET_FLAGS_ANONYMOUS 5 
+
 
 extern int opt_maxusers;
 extern char *opt_comment;
