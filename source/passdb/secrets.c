@@ -99,6 +99,7 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 	size_t size;
 
 	slprintf(key, sizeof(key), "%s/%s", SECRETS_DOMAIN_SID, domain);
+	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 	dyn_sid = (DOM_SID *)secrets_fetch(key, &size);
 
 	if (dyn_sid == NULL)
@@ -123,6 +124,7 @@ char *trust_keystr(char *domain)
 {
 	static fstring keystr;
 	slprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, domain);
+	dos_to_unix(keystr, True);         /* Convert key to unix-codepage */
 	return keystr;
 }
 
