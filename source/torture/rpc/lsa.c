@@ -181,6 +181,56 @@ static BOOL test_LookupSids(struct dcerpc_pipe *p,
 	return True;
 }
 
+static BOOL test_many_LookupSids(struct dcerpc_pipe *p, 
+				 TALLOC_CTX *mem_ctx, 
+				 struct policy_handle *handle)
+{
+	struct lsa_LookupSids r;
+	struct lsa_TransNameArray names;
+	uint32_t count;
+	NTSTATUS status;
+	struct lsa_SidArray sids;
+	int i;
+
+	printf("\nTesting LookupSids with lots of SIDs\n");
+
+	names.count = 0;
+	names.names = NULL;
+
+	sids.num_sids = 10000;
+
+	sids.sids = talloc_array_p(mem_ctx, struct lsa_SidPtr, sids.num_sids);
+
+	for (i=0; i<sids.num_sids; i++) {
+		const char *sidstr = "S-1-5-32-545";
+		sids.sids[i].sid = dom_sid_parse_talloc(mem_ctx, sidstr);
+	}
+
+	count = sids.num_sids;
+
+	r.in.handle = handle;
+	r.in.sids = &sids;
+	r.in.names = &names;
+	r.in.level = 1;
+	r.in.count = &names.count;
+	r.out.count = &count;
+	r.out.names = &names;
+
+	status = dcerpc_lsa_LookupSids(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+		printf("LookupSids failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("\n");
+
+	if (!test_LookupNames(p, mem_ctx, handle, &names)) {
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_LookupPrivName(struct dcerpc_pipe *p, 
 				TALLOC_CTX *mem_ctx, 
 				struct policy_handle *handle,
@@ -763,6 +813,10 @@ BOOL torture_rpc_lsa(int dummy)
 	}
 
 	if (!test_OpenPolicy2(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_many_LookupSids(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
