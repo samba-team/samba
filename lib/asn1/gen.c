@@ -333,6 +333,7 @@ generate_type (Symbol *s)
     generate_type_free (s);
     generate_type_length (s);
     generate_type_copy (s);
+    generate_glue (s);
     fprintf(headerfile, "\n\n");
     fclose(codefile);
 }
