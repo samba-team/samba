@@ -830,7 +830,7 @@ BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
 	}
 
 	/* make a copy of it */
-	StrnCpy(pass2, password, sizeof(pstring) - 1);
+	StrnCpy(pass2, password, sizeof(pass2) - 1);
 
 	/* try all lowercase if it's currently all uppercase */
 	if (strhasupper(password)) {
