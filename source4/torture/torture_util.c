@@ -362,11 +362,15 @@ NTSTATUS torture_check_ea(struct smbcli_state *cli,
 {
 	union smb_fileinfo info;
 	NTSTATUS status;
-	int i;
+	struct ea_name ea;
 	TALLOC_CTX *mem_ctx = talloc(cli, 0);
 
-	info.all_eas.level = RAW_FILEINFO_ALL_EAS;
-	info.all_eas.in.fname = fname;
+	info.ea_list.level = RAW_FILEINFO_EA_LIST;
+	info.ea_list.file.fname = fname;
+	info.ea_list.in.num_names = 1;
+	info.ea_list.in.ea_names = &ea;
+
+	ea.name.s = eaname;
 
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &info);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -374,38 +378,45 @@ NTSTATUS torture_check_ea(struct smbcli_state *cli,
 		return status;
 	}
 
-	for (i=0;i<info.all_eas.out.num_eas;i++) {
-		if (StrCaseCmp(eaname, info.all_eas.out.eas[i].name.s) == 0) {
-			if (value == NULL) {
-				printf("attr '%s' should not be present\n", eaname);
-				talloc_free(mem_ctx);
-				return NT_STATUS_EA_CORRUPT_ERROR;
-			}
-			if (strlen(value) == info.all_eas.out.eas[i].value.length &&
-			    memcmp(value, 
-				   info.all_eas.out.eas[i].value.data,
-				   info.all_eas.out.eas[i].value.length) == 0) {
-				talloc_free(mem_ctx);
-				return NT_STATUS_OK;
-			} else {
-				printf("attr '%s' has wrong value '%*.*s'\n", 
-				       eaname, 
-				       info.all_eas.out.eas[i].value.length,
-				       info.all_eas.out.eas[i].value.length,
-				       info.all_eas.out.eas[i].value.data);
-				talloc_free(mem_ctx);
-				return NT_STATUS_EA_CORRUPT_ERROR;
-			}
-		}
+	if (info.ea_list.out.num_eas != 1) {
+		printf("Expected 1 ea in ea_list\n");
+		talloc_free(mem_ctx);
+		return NT_STATUS_EA_CORRUPT_ERROR;
 	}
+
+	if (StrCaseCmp(eaname, info.ea_list.out.eas[0].name.s) != 0) {
+		printf("Expected ea '%s' not '%s' in ea_list\n",
+		       eaname, info.ea_list.out.eas[0].name.s);
+		talloc_free(mem_ctx);
+		return NT_STATUS_EA_CORRUPT_ERROR;
+	}
+
+	if (value == NULL) {
+		if (info.ea_list.out.eas[0].value.length != 0) {
+			printf("Expected zero length ea for %s\n", eaname);
+			talloc_free(mem_ctx);
+			return NT_STATUS_EA_CORRUPT_ERROR;
+		}
+		talloc_free(mem_ctx);
+		return NT_STATUS_OK;
+	}
+
+	if (strlen(value) == info.ea_list.out.eas[0].value.length &&
+	    memcmp(value, info.ea_list.out.eas[0].value.data,
+		   info.ea_list.out.eas[0].value.length) == 0) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_OK;
+	}
+
+	printf("Expected value '%s' not '%*.*s' for ea %s\n",
+	       value, 
+	       info.ea_list.out.eas[0].value.length,
+	       info.ea_list.out.eas[0].value.length,
+	       info.ea_list.out.eas[0].value.data,
+	       eaname);
 
 	talloc_free(mem_ctx);
 
-	if (value != NULL) {
-		printf("attr '%s' not found\n", eaname);
-		return NT_STATUS_NONEXISTENT_EA_ENTRY;
-	}
-
-	return NT_STATUS_OK;
+	return NT_STATUS_EA_CORRUPT_ERROR;
 }
 
