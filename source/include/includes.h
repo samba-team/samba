@@ -377,7 +377,7 @@
 #include <iconv.h>
 #endif
 
-#if HAVE_KRB5
+#if HAVE_KRB5_H
 #include <krb5.h>
 #endif
 
@@ -390,7 +390,7 @@
 #endif
 
 /* we support ADS if we have krb5 and ldap libs */
-#if defined(HAVE_KRB5) && defined(HAVE_LDAP) && defined(HAVE_LDAP_H) && defined(HAVE_SASL_H)
+#if defined(HAVE_KRB5) && defined(HAVE_KRB5_H) && defined(HAVE_LDAP) && defined(HAVE_LDAP_H) && defined(HAVE_SASL_H)
 #define HAVE_ADS
 #endif
 
