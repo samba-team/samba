@@ -98,6 +98,7 @@
 #define key_record		rk_key_record
 #define sig_record		rk_sig_record
 #define cert_record		rk_cert_record
+#define sshfp_record		rk_sshfp_record
 #define resource_record		rk_resource_record
 #define dns_reply		rk_dns_reply
 
