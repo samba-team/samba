@@ -60,10 +60,9 @@ hex_encode(const void *data, size_t size, char **str)
     size_t i;
     char *p;
 
-#ifdef SIZE_T_MAX
-    if (size + 1 > SIZE_T_MAX/2)
+    /* check for overflow */
+    if (size * 2 < size)
 	return -1;
-#endif
 
     p = malloc(size * 2 + 1);
     if (p == NULL)
@@ -88,7 +87,9 @@ hex_decode(const char *str, void *data, size_t len)
     size_t i;
 	
     l = strlen(str);
-    if ((l + 1) / 2 > len)
+    
+    /* check for overflow, same as (l+1)/2 but overflow safe */
+    if ((l/2) + (l&1) > len)
 	return -1;
 
     for (i = 0; i < l / 2; i++)
