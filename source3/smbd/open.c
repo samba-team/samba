@@ -152,10 +152,17 @@ Decrements the ref_count and returns it.
 uint16 fd_attempt_close(files_struct *fsp, int *err_ret)
 {
   extern struct current_user current_user;
-  file_fd_struct *fd_ptr = fsp->fd_ptr;
-  uint16 ret_ref = fd_ptr->ref_count;
+  file_fd_struct *fd_ptr;
+  uint16 ret_ref;
 
   *err_ret = 0;
+
+  if ((fsp == NULL) || (fsp->fd_ptr == NULL)) {
+      return 0;
+  }
+
+  fd_ptr = fsp->fd_ptr;
+  ret_ref = fd_ptr->ref_count;
 
   DEBUG(3,("fd_attempt_close fd = %d, dev = %x, inode = %.0f, open_flags = %d, ref_count = %d.\n",
           fd_ptr->fd, (unsigned int)fd_ptr->dev, (double)fd_ptr->inode,
