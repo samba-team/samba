@@ -1,6 +1,168 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha20
+ - Rework the 'guest account get's RID 501' code again...
+ - Change ito use NT-based session key negotiated for Win2k SPNEGO
+ - Support printer data registry keys other than the default
+   PrinterDriverData
+ - Moved internal printerdata to REGISTRY_VALUE object
+ - Corrected bug in dependentfiles list of DRIVER_INFO_3
+ - fixed logic bug in blocking locks code 
+ - Updated registry api code to work with new printer data key 
+   support
+ - Added vfstest tool
+ - round lock timeouts in lockingX upwards to multiples of 1 second
+ - Fixed bugs in Printer Change Notify code
+ - added a 'net ads lookup' command that does a CLDAP NetLogon 
+   query to a win2000 server
+ - Added script to find undocumented smb.conf parameters 
+ - Added missing parameters to smb.conf(5)
+ - receive & parse main CLDAP reply from win2k server
+ - removed "admin log" & "alternate permissions" parameters from smb.conf
+ - added a generic print_guid utility, and get the byte order handing
+ - fixed memory corruption in cli_full_connection()
+ - remove unused 'max packet' and 'packet size' options
+ - add support for the "value,OID" format described in MSDN for Printer 
+   Data values
+ - moves NT_TOKEN generation into our authenticaion code
+ - Update documentation build system
+ - Several fixes for IRIX compiler
+ - Correctly handle "max data count" value in smb transacts
+ - Fix for permissions error when adding/modifying using a Print
+   server handle
+ - Fix pam_smbpass to always check the return value of pdb_getsampwnam()
+ - Use the 'init' flag to determine if the UID is set, rather than testing 
+   the uid for -1
+ - Cope with non-unix accounts - we just won't get the groups for those users
+ - Add 'net rpc getsid' to fetch the PDC's SID into the local secrets.tdb.
+   Print domain SID on 'net rpc info'
+ - don't use lp_passwd_file() to retrieve NIS domain name, but use location
+   instead
+ - Various POSIX compatbility fixes
+ - Show only non-default values in testparm
+ - Fix longstanding bug in Win2k clients by clearing the shortname
+   buffer before returning ascii short name.
+ - Add example backtrace script
+ - Added NETLOGON NetServerAuthenticate3 include and parser file
+ - fix for difference in strsep and strtok semantics in nmbd
+ - Ensure we don't change to a user that we can't get an NT_TOKEN for
+ - Put back in BDC support in set_server_role()
+ - added a 'net rpc samdump' command for dumping the whole sam via
+   samsync operations (as a BDC)
+ - don't use spnego in the client unless enabled in smb.conf
+ - Added some new delta types discovered by Ronnie from ethereal
+ - Cope with negative cache dns entries better
+ - do not expose special files, only files, directories and links 
+ - attempts to simplify Samba's external lib dependencies
+ - support non-root-mode systems without getgrouplist()
+ - Some fixes for SMB signing
+ - Pass the object name down to the enum_printers client rpc
+ - add the netatalk VFS module
+ - Ensure we have at least smb_size bytes before processing a packet
+ - Allow us to "lock" printer tdb entries in memory to stop them being
+   re-used as cache
+ - fix 2 byte alignment/offset bug that prevented Win2k/XP clients
+   from receiving all the printer data in EnumPrinterDataEx()
+ - Add option to compile new sam system can be enabled with the
+   configure option --with-sam
+ - Added SGML/DocBook version of developer oriented docs to build process
+ - Return correct FILE_SUPERSEDED response
+ - Added example sam module (skeleton)
+ - Add plugin support for the sam system (based on passdb code)
+ - show builtin groups in samdump
+ - Adding samtest utility used to test sam backends
+ - fix connecting to a BDC when the PDC is down but in WINS and no bcast
+   can be used to find a BDC
+ - convert the LDAP/SASL code to use GSS-SPNEGO if possible
+ - added cli_net_auth_3 client code
+ - merge of phant0m key fix from APP_HEAD
+ - allow rpcclient's samlogon command to use cli_net_3()
+ - Added attribute specific OPEN tests 
+ - Fix bug with stat mode open being done on read-only open with
+   truncate
+ - Add lots of const casts to function parameters
+ - Implemented some more client side spoolss functions
+ - usrmgr expects unicode as ProductType
+ - Change JOB_INFO_CTR to return a pointer to an array rather than array of
+   pointers in client code
+ - Varios NTLMSSP fixes
+ - fixed crash bug in cli_connection code
+ - DeletePrinterDriver[Ex]() fixes from APP_HEAD
+ - remove some inet_aton() calls for portability
+ - Set default ACB attributes on 'unixsam' accounts
+ - Add bcast_msg_flags to connection struct
+ - aggregate change notify events in the smbd sender and when transmitting
+ - Added better error code on out of space in printer spool directory
+ - Removed total jobs check - not applicable any more
+ - fixed bug in share enumeration RPC code
+ - extend the ADS_STATUS system to include NTSTATUS
+ - commit trusted domain patch n+3
+ - remove block VFS module
+ - restrict readline headers to readline.c
+ - merge of various recycle bin VFS patches
+ - Winbind client-side cleanups
+ - change parametric option name to vfs_recycle_bin it is more 
+   sane and do not pollute standard options namespace too much
+ - added --enable-python configure option for building the samba-python 
+   unit tests
+ - correct trans2 bugs in client for enumerating files/directories
+ - Readd OS/2 EA error codes
+ - Added patch for required attributes in directory listsing to reply code
+ - Fix browse synchronization bug by noticing that W2K DMB's return empty 
+   NetServerEnum2 on port 445, but not on port 139
+ - Fix semantics of AbortPrinter() spoolss call in server code
+ - Ensure we've failed a lock with a lock denied message before automatically
+   pushing it onto the blocking queue
+ - Added experimental sendfile code
+ - Initialise user_rid value in WINBIND_USERINFO structure returned by
+   the rpc version of query_user()
+ - added gencache implementation
+ - Merge the cli_shutdown change from 2_2
+ - Fixes for DeletePrinterDriverEx()
+ - Fixed alignment error in spoolss code
+ - Changed Major/Minor version info reported to Server Manager to 4.9
+ - Applied new display mode FLAGS for SWAT
+ - Update to add DEVELOPER option to more parameters
+ - Added --with-ads option, defaults to yes
+ - Added --with-ldap option to configure
+ - Add clock skew handling to our kerberos code
+ - correct race condition in password change code for out machine account
+   when a member of a domain
+ - First implementation for 'net rpc vampire'
+ - store current handle's Device Mode with print job 
+ - Move functionality to check whether entries for lp_workgroup() and
+   "BUILTIN" exist and add them if necessary from check_correct_backend_entries 
+   into sam_context_check_default_backends
+ - allow --with-krb5 to override the location of the kerberos libs on
+   redhat
+ - unlink spool file after submitting rint job when using CUPS api
+ - Add framework for samtest commands
+ - Add the ability to view/set the current local domain SIDs to net command
+ - When creating a group you have to take care of the fact that the
+   underlying unix might not like the group name
+ - Don't uppercase the username and domain in a session setup
+ - Merge of "profile acls" code from SAMBA_2_2
+ - Check for existing of security descriptor in PRINTER_INFO_2 structure
+   in rpc client code
+ - Move to common user token debugging, and ensure we always print both the
+   NT_TOKEN and the unix credentials
+ - If adding a user to ldap, make sure we have the 'account' structural class,
+   or else we can't add to OpenLDAP 2.1
+ - Kill of Get_Pwnam_Modify and smb_getpwnam()
+ - add a 'ldap passwd sync' option to smb.conf
+ - Whenever we deal with adding machine/trusted domain accounts, always reset
+   the flag to what we expect
+ - Fix the circular dependency that was preventing 'domain master = auto' (the
+   default) from working
+ - move all the passdb internal interface to NTSTATUS
+ - to expand % values (ie we go \\%L\%U -> \\server\user, we don't want to
+   store \\server\user back) and to correctly notice 'not set' compared to 'null
+   string' etc.
+ - get some more of our access control bits right on the SAMR pipe
+ - Add -r parameter to smbgroupedit. With -r you can manually choose
+   a rid
+
 Changes in alpha19
  - Virtual registry framework with printing hooks (jerry)
  - Heavy registry updates (jerry)
