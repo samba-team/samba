@@ -78,6 +78,11 @@ static BOOL make_auth_info_text_list(auth_authsupplied_info **auth_info, char **
 	auth_methods *t = NULL;
 	auth_methods *tmp;
 	int i;
+
+	if (!text_list) {
+		DEBUG(2,("No auth method list!?\n"));
+		return False;
+	}
 	
 	for (;*text_list; text_list++)
 	{ 
@@ -148,6 +153,13 @@ BOOL make_auth_info_subsystem(auth_authsupplied_info **auth_info)
 			DEBUG(5,("Making default auth method list for security=share\n"));
 			auth_method_list = lp_list_make("guest local");
 			break;
+		case SEC_ADS:
+			DEBUG(5,("Making default auth method list for security=ADS\n"));
+			auth_method_list = lp_list_make("guest ads ntdomain local");
+			break;
+		default:
+			DEBUG(5,("Unknown auth method!\n"));
+			return False;
 		}
 	} else {
 		DEBUG(5,("Using specified auth order\n"));
