@@ -1,5 +1,5 @@
 # $Source: /data/src/mirror/cvs/samba/examples/LDAP/smbldap-tools/smbldap-tools.spec,v $
-%define version	0.7
+%define version	0.8
 %define release	1
 %define name 	smbldap-tools
 %define realname  smbldap-tools
@@ -13,7 +13,7 @@ License: 	GPL
 
 Vendor:		IDEALX S.A.S.
 URL:		http://samba.IDEALX.org/
-Packager:	Olivier Lemaire <olivier.lemaire@IDEALX.com>
+Packager:	Jerome Tournier <jerome.tournier@IDEALX.com>
 Source0: 	smbldap-groupadd.pl
 Source1:	smbldap-groupdel.pl
 Source2:	smbldap-groupmod.pl
@@ -60,8 +60,8 @@ make
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/%{prefix}/sbin
 mkdir -p $RPM_BUILD_ROOT/%{prefix}/share
-mkdir -p $RPM_BUILD_ROOT/%{prefix}/share/doc
-mkdir -p $RPM_BUILD_ROOT/%{prefix}/share/doc/smbldap-tools
+mkdir -p $RPM_BUILD_ROOT/usr/share/doc
+mkdir -p $RPM_BUILD_ROOT/usr/share/doc/smbldap-tools
 
 cd mkntpwd ; make PREFIX=$RPM_BUILD_ROOT/%{prefix} install
 
@@ -80,13 +80,13 @@ install -m 555 %{SOURCE10} $RPM_BUILD_ROOT/%{prefix}/sbin/smbldap_tools.pm
 install -m 550 %{SOURCE19} $RPM_BUILD_ROOT/%{prefix}/sbin/smbldap-migrate-accounts.pl
 install -m 550 %{SOURCE20} $RPM_BUILD_ROOT/%{prefix}/sbin/smbldap-migrate-groups.pl
 
-install -m 644 %{SOURCE11} $RPM_BUILD_ROOT/%{prefix}/share/doc/smbldap-tools/CONTRIBUTORS
-install -m 644 %{SOURCE12} $RPM_BUILD_ROOT/%{prefix}/share/doc/smbldap-tools/COPYING
-install -m 644 %{SOURCE13} $RPM_BUILD_ROOT/%{prefix}/share/doc/smbldap-tools/ChangeLog
-install -m 644 %{SOURCE14} $RPM_BUILD_ROOT/%{prefix}/share/doc/smbldap-tools/FILES
-install -m 644 %{SOURCE15} $RPM_BUILD_ROOT/%{prefix}/share/doc/smbldap-tools/README
-install -m 644 %{SOURCE16} $RPM_BUILD_ROOT/%{prefix}/share/doc/smbldap-tools/TODO
-install -m 644 %{SOURCE21} $RPM_BUILD_ROOT/%{prefix}/share/doc/smbldap-tools/INFRA
+install -m 644 %{SOURCE11} $RPM_BUILD_ROOT/usr/share/doc/smbldap-tools/CONTRIBUTORS
+install -m 644 %{SOURCE12} $RPM_BUILD_ROOT/usr/share/doc/smbldap-tools/COPYING
+install -m 644 %{SOURCE13} $RPM_BUILD_ROOT/usr/share/doc/smbldap-tools/ChangeLog
+install -m 644 %{SOURCE14} $RPM_BUILD_ROOT/usr/share/doc/smbldap-tools/FILES
+install -m 644 %{SOURCE15} $RPM_BUILD_ROOT/usr/share/doc/smbldap-tools/README
+install -m 644 %{SOURCE16} $RPM_BUILD_ROOT/usr/share/doc/smbldap-tools/TODO
+install -m 644 %{SOURCE21} $RPM_BUILD_ROOT/usr/share/doc/smbldap-tools/INFRA
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -102,11 +102,11 @@ perl -i -pe 's/_USERS_/Users/' %{prefix}/sbin/smbldap_conf.pm
 perl -i -pe 's/_COMPUTERS_/Computers/' %{prefix}/sbin/smbldap_conf.pm
 perl -i -pe 's/_GROUPS_/Groups/' %{prefix}/sbin/smbldap_conf.pm
 perl -i -pe 's/_LOGINSHELL_/\/bin\/bash/' %{prefix}/sbin/smbldap_conf.pm
-perl -i -pe 's/_USERHOMEPREFIX_/\/home\//' %{prefix}/sbin/smbldap_conf.pm
+perl -i -pe 's/_HOMEPREFIX_/\/home\//' %{prefix}/sbin/smbldap_conf.pm
 perl -i -pe 's/_BINDDN_/cn=Manager,\$suffix/' %{prefix}/sbin/smbldap_conf.pm
 perl -i -pe 's/_BINDPW_/secret/' %{prefix}/sbin/smbldap_conf.pm
 perl -i -pe 's/_PDCNAME_/PDC-SRV/' %{prefix}/sbin/smbldap_conf.pm
-perl -i -pe 's/_HOMEDRIVE_/D/' %{prefix}/sbin/smbldap_conf.pm
+perl -i -pe 's/_HOMEDRIVE_/H/' %{prefix}/sbin/smbldap_conf.pm
 
 # FIXME: links should not be removed on upgrade
 #%postun
@@ -121,14 +121,16 @@ perl -i -pe 's/_HOMEDRIVE_/D/' %{prefix}/sbin/smbldap_conf.pm
 %{prefix}/sbin/smbldap_tools.pm
 %config %{prefix}/sbin/smbldap_conf.pm
 %{prefix}/sbin/mkntpwd
-%doc %{prefix}/share/doc/%{name}/TODO
-%doc %{prefix}/share/doc/%{name}/README
-%doc %{prefix}/share/doc/%{name}/CONTRIBUTORS
-%doc %{prefix}/share/doc/%{name}/FILES
-%doc %{prefix}/share/doc/%{name}/COPYING
+%doc /usr/share/doc/%{name}/
 
 
 %changelog
+* Fri Aug 22 2003 Jerome Tournier <jerome.tournier@idealx.com> 0.8-1
+- support for Samba3.0
+
+* Thu Sep 26 2002 Gérald Macinenti <gmacinenti@IDEALX.com> 0.7-2
+- top and account objectclasses replaced by InetOrgPerson
+
 * Sat Jun  1 2002 Olivier Lemaire <olem@IDEALX.com> 0.7-1
 - some bugfixes about smbldap-populate
 - bugfixed the smbpasswd call in smbldap-useradd

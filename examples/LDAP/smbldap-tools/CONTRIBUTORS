@@ -4,7 +4,7 @@
 
 Have contributed directly to this tools, or are always in charge of 
 some aspects of it developments (alphabetical order):
- . Terry Davis <tdavis@approbation.org>
+ . Terry Davis <terry@terryd.net>
  . David Le Corfec <dlc@freesurf.fr>
  . Olivier Lemaire <olivier.lemaire@IDEALX.com>
  . Jérôme Tournier <jerome.tournier@IDEALX.com>
@@ -24,6 +24,6 @@ Many thanks to contributors for bug report and patches:
 	bug report for smbldap-passwd
  . Xavier Boschian <Xavier.Boschian@rtlgroup.net>
 	bug report for smbldap-populate
-
-
+ . Christophe DUBREUIL <christophe.dubreuil@laposte.net>
+	Net::LDAP support in smbldap_tools.pm
 # - The End

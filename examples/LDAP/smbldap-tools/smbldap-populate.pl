@@ -87,6 +87,7 @@ if (!defined($_ldifName)) {
 	die "can't extract first attr and value from suffix $suffix";
     }
     #print "$attr=$val\n";
+    my ($organisation,$ext) = ($suffix =~ m/dc=(\w+),dc=(\w+)$/);
 
     #my $FILE="|cat";
     my $FILE="|$ldapadd -c";
@@ -95,7 +96,9 @@ if (!defined($_ldifName)) {
     print FILE <<EOF;
 dn: $suffix
 objectClass: $objcl
+objectclass: organization
 $attr: $val
+o: $organisation
 
 dn: $usersdn
 objectClass: organizationalUnit
@@ -111,51 +114,55 @@ ou: $computersou
 
 dn: uid=$adminName,$usersdn
 cn: $adminName
-objectClass: sambaAccount
+sn: $adminName
+objectClass: inetOrgPerson
+objectClass: sambaSAMAccount
 objectClass: posixAccount
 gidNumber: 512
 uid: $adminName
 uidNumber: 998
 homeDirectory: $_userHomePrefix
-pwdLastSet: 0
-logonTime: 0
-logoffTime: 2147483647
-kickoffTime: 2147483647
-pwdCanChange: 0
-pwdMustChange: 2147483647
-smbHome: $_userSmbHome
-homeDrive: $_userHomeDrive
-profilePath: $_userProfile
-rid: 500
-primaryGroupID: 512
-lmPassword: XXX
-ntPassword: XXX
-acctFlags: [U          ]
+sambaPwdLastSet: 0
+sambaLogonTime: 0
+sambaLogoffTime: 2147483647
+sambaKickoffTime: 2147483647
+sambaPwdCanChange: 0
+sambaPwdMustChange: 2147483647
+sambaHomePath: $_userSmbHome
+sambaHomeDrive: $_userHomeDrive
+sambaProfilePath: $_userProfile
+sambaPrimaryGroupSID: 512
+sambaLMPassword: XXX
+sambaNTPassword: XXX
+sambaAcctFlags: [U          ]
+sambaSID: $smbldap_conf::SID-2996
 loginShell: /bin/false
 gecos: Netbios Domain Administrator
 
 dn: uid=$guestName,$usersdn
 cn: $guestName
-objectClass: sambaAccount
+sn: $guestName
+objectClass: inetOrgPerson
+objectClass: sambaSAMAccount
 objectClass: posixAccount
 gidNumber: 514
 uid: $guestName
 uidNumber: 999
 homeDirectory: /dev/null
-pwdLastSet: 0
-logonTime: 0
-logoffTime: 2147483647
-kickoffTime: 2147483647
-pwdCanChange: 0
-pwdMustChange: 2147483647
-smbHome: $_userSmbHome
-homeDrive: $_userHomeDrive
-profilePath: $_userProfile
-rid: 501
-primaryGroupID: 514
-lmPassword: NO PASSWORDXXXXXXXXXXXXXXXXXXXXX
-ntPassword: NO PASSWORDXXXXXXXXXXXXXXXXXXXXX
-acctFlags: [NU         ]
+sambaPwdLastSet: 0
+sambaLogonTime: 0
+sambaLogoffTime: 2147483647
+sambaKickoffTime: 2147483647
+sambaPwdCanChange: 0
+sambaPwdMustChange: 2147483647
+sambaHomePath: $_userSmbHome
+sambaHomeDrive: $_userHomeDrive
+sambaProfilePath: $_userProfile
+sambaPrimaryGroupSID: $smbldap_conf::SID-514
+sambaLMPassword: NO PASSWORDXXXXXXXXXXXXXXXXXXXXX
+sambaNTPassword: NO PASSWORDXXXXXXXXXXXXXXXXXXXXX
+sambaAcctFlags: [NU         ]
+sambaSID: $smbldap_conf::SID-2998
 loginShell: /bin/false
 
 dn: cn=Domain Admins,$groupsdn
@@ -181,7 +188,7 @@ dn: cn=Administrators,$groupsdn
 objectClass: posixGroup
 gidNumber: 544
 cn: Administrators
-description: Netbios Domain Members can fully administer the computer/domain (not implemented yet)
+description: Netbios Domain Members can fully administer the computer/sambaDomainName (not implemented yet)
 
 dn: cn=Users,$groupsdn
 objectClass: posixGroup
@@ -194,7 +201,7 @@ objectClass: posixGroup
 gidNumber: 546
 cn: Guests
 memberUid: $guestName
-description: Netbios Domain Users granted guest access to the computer/domain (not implemented yet)
+description: Netbios Domain Users granted guest access to the computer/sambaDomainName (not implemented yet)
 
 
 dn: cn=Power Users,$groupsdn
@@ -231,7 +238,7 @@ dn: cn=Replicator,$groupsdn
 objectClass: posixGroup
 gidNumber: 552
 cn: Replicator
-description: Netbios Domain Supports file replication in a domain (not implemented yet)
+description: Netbios Domain Supports file replication in a sambaDomainName (not implemented yet)
 
 dn: cn=Domain Computers,$groupsdn
 objectClass: posixGroup

@@ -50,11 +50,11 @@ if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
 	print "  -x	creates rid and primaryGroupID in hex instead of decimal (for Samba 2.2.2 unpatched only)\n";
 	print "  -A	can change password ? 0 if no, 1 if yes\n";
 	print "  -B	must change password ? 0 if no, 1 if yes\n";
-	print "  -C	smbHome (SMB home share, like '\\\\PDC-SRV\\homes')\n";
-	print "  -D	homeDrive (letter associated with home share, like 'H:')\n";
-	print "  -E	scriptPath (DOS script to execute on login)\n";
-	print "  -F	profilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')\n";
-	print "  -H	acctFlags (samba account control bits like '[NDHTUMWSLKI]')\n";
+	print "  -C	sambaHomePath (SMB home share, like '\\\\PDC-SRV\\homes')\n";
+	print "  -D	sambaHomeDrive (letter associated with home share, like 'H:')\n";
+	print "  -E	sambaLogonScript (DOS script to execute on login)\n";
+	print "  -F	sambaProfilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')\n";
+	print "  -H	sambaAcctFlags (samba account control bits like '[NDHTUMWSLKI]')\n";
 	print "  -I	disable an user. Can't be used with -H or -J\n";
 	print "  -J	enable an user. Can't be used with -H or -I\n";
 	print "  -?	show this help message\n";
@@ -201,19 +201,19 @@ if (defined($tmp = $Options{'G'})) {
 }
 
 #
-# A : pwdCanChange
-# B : pwdMustChange
-# C : smbHome
-# D : homeDrive
-# E : scriptPath
-# F : profilePath
-# H : acctFlags
+# A : sambaPwdCanChange
+# B : sambaPwdMustChange
+# C : sambaHomePath
+# D : sambaHomeDrive
+# E : sambaLogonScript
+# F : sambaProfilePath
+# H : sambaAcctFlags
 
 my $attr;
 my $winmagic = 2147483647;
 
 if (defined($tmp = $Options{'A'})) {
-    $attr = "pwdCanChange";
+    $attr = "sambaPwdCanChange";
     if ($tmp != 0) {
 	$mods .= "$attr: 0\n";
     } else {
@@ -222,7 +222,7 @@ if (defined($tmp = $Options{'A'})) {
 }
 
 if (defined($tmp = $Options{'B'})) {
-    $attr = "pwdMustChange";
+    $attr = "sambaPwdMustChange";
     if ($tmp != 0) {
 	$mods .= "$attr: 0\n";
     } else {
@@ -231,37 +231,37 @@ if (defined($tmp = $Options{'B'})) {
 }
 
 if (defined($tmp = $Options{'C'})) {
-    $attr = "smbHome";
+    $attr = "sambaHomePath";
     #$tmp =~ s/\\/\\\\/g;
     $mods .= "$attr: $tmp\n";
 }
 
 if (defined($tmp = $Options{'D'})) {
-    $attr = "homeDrive";
+    $attr = "sambaHomeDrive";
     $tmp = $tmp.":" unless ($tmp =~ /:/);
     $mods .= "$attr: $tmp\n";
 }
 
 if (defined($tmp = $Options{'E'})) {
-    $attr = "scriptPath";
+    $attr = "sambaLogonScript";
     #$tmp =~ s/\\/\\\\/g;
     $mods .= "$attr: $tmp\n";
 }
 
 if (defined($tmp = $Options{'F'})) {
-    $attr = "profilePath";
+    $attr = "sambaProfilePath";
     #$tmp =~ s/\\/\\\\/g;
     $mods .= "$attr: $tmp\n";
 }
 
 if (defined($tmp = $Options{'H'})) {
-    $attr = "acctFlags";
+    $attr = "sambaAcctFlags";
     #$tmp =~ s/\\/\\\\/g;
     $mods .= "$attr: $tmp\n";
 } elsif (defined($tmp = $Options{'I'})) {
     my $flags;
 
-    if ( $lines =~ /^acctFlags: (.*)/m ) {
+    if ( $lines =~ /^sambaAcctFlags: (.*)/m ) {
 	$flags = $1;
     }
 
@@ -272,12 +272,12 @@ if (defined($tmp = $Options{'H'})) {
 	if ($flags =~ /(\w+)/) {
 	    $letters = $1;
 	}
-	$mods .= "acctFlags: \[D$letters\]\n";
+	$mods .= "sambaAcctFlags: \[D$letters\]\n";
     }
 } elsif (defined($tmp = $Options{'J'})) {
     my $flags;
 
-    if ( $lines =~ /^acctFlags: (.*)/m ) {
+    if ( $lines =~ /^sambaAcctFlags: (.*)/m ) {
 	$flags = $1;
     }
 
@@ -289,7 +289,7 @@ if (defined($tmp = $Options{'H'})) {
 	    $letters = $1;
 	}
 	$letters =~ s/D//;
-	$mods .= "acctFlags: \[$letters\]\n";
+	$mods .= "sambaAcctFlags: \[$letters\]\n";
     }
 }
 
@@ -380,15 +380,15 @@ if ($nscd_status == 0) {
 
        -B     must change password ? 0 if no, 1 if yes
 
-       -C     smbHome (SMB home share, like '\\\\PDC-SRV\\homes')
+       -C     sambaHomePath (SMB home share, like '\\\\PDC-SRV\\homes')
 
-       -D     homeDrive (letter associated with home share, like 'H:')
+       -D     sambaHomeDrive (letter associated with home share, like 'H:')
 
-       -E     scriptPath, relative to the [netlogon] share (DOS script to execute on login, like 'foo.bat')
+       -E     sambaLogonScript, relative to the [netlogon] share (DOS script to execute on login, like 'foo.bat')
 
-       -F     profilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')
+       -F     sambaProfilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')
 
-       -H     acctFlags, spaces and trailing bracket are ignored (samba account control bits like '[NDHTUMWSLKI]')
+       -H     sambaAcctFlags, spaces and trailing bracket are ignored (samba account control bits like '[NDHTUMWSLKI]')
 
        -I     disable user. Can't be used with -H or -J
 
