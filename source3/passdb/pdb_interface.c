@@ -521,6 +521,11 @@ NTSTATUS make_pdb_context_list(struct pdb_context **context, const char **select
 		return nt_status;
 	}
 
+	if (!selected) {
+		DEBUG(0, ("ERROR: empty passdb backend list!\n"));
+		return nt_status;
+	}
+
 	while (selected[i]){
 		/* Try to initialise pdb */
 		DEBUG(5,("Trying to load: %s\n", selected[i]));
