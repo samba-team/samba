@@ -416,7 +416,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
 
       for (s=name2 ; *s ; s++)
         if (!issafe(*s)) *s = '_';
-      pstrcpy(name,(char *)mktemp(name2));	  
+      pstrcpy(name,(char *)smbd_mktemp(name2));	  
     }      
     return(True);
   }

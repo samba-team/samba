@@ -578,7 +578,7 @@ void dos_clean_name(char *s)
   DEBUG(3,("dos_clean_name [%s]\n",s));
 
   /* remove any double slashes */
-  pstring_sub(s, "\\\\", "\\");
+  all_string_sub(s, "\\\\", "\\", 0);
 
   while ((p = strstr(s,"\\..\\")) != NULL)
     {
@@ -596,7 +596,7 @@ void dos_clean_name(char *s)
 
   trim_string(s,NULL,"\\..");
 
-  pstring_sub(s, "\\.\\", "\\");
+  all_string_sub(s, "\\.\\", "\\", 0);
 }
 
 /*******************************************************************
@@ -609,7 +609,7 @@ void unix_clean_name(char *s)
   DEBUG(3,("unix_clean_name [%s]\n",s));
 
   /* remove any double slashes */
-  pstring_sub(s, "//","/");
+  all_string_sub(s, "//","/", 0);
 
   /* Remove leading ./ characters */
   if(strncmp(s, "./", 2) == 0) {
@@ -676,7 +676,7 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
   DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
 
   /* remove any double slashes */
-  pstring_sub(s,"//","/");
+  all_string_sub(s,"//","/",0);
 
   pstrcpy(base_name,s);
   p = strrchr(base_name,'/');
@@ -1043,11 +1043,7 @@ static char *name_ptr(char *buf,int ofs)
 
   if ((c & 0xC0) == 0xC0)
     {
-      uint16 l;
-      char p[2];
-      memcpy(p,buf+ofs,2);
-      p[0] &= ~0xC0;
-      l = RSVAL(p,0);
+      uint16 l = RSVAL(buf, ofs) & 0x3FFF;
       DEBUG(5,("name ptr to pos %d from %d is %s\n",l,ofs,buf+l));
       return(buf + l);
     }
@@ -1335,7 +1331,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   BOOL matched = False;
 
   /* special case - if it is exactly the same then it always matches! */
-  if (strcmp(str, regexp) == 0) return True;
+  if ((case_sig?strcmp(str,regexp):strcasecmp(str,regexp)) == 0) return True;
 
   /* Make local copies of str and regexp */
   pstrcpy(t_pattern,regexp);
@@ -3047,4 +3043,33 @@ BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name)
 	DEBUG(10, ("reg_split_key: name %s\n", key_name));
 
 	return True;
+}
+
+
+/*****************************************************************
+like mktemp() but make sure that no % characters are used
+% characters are bad for us because of the macro subs
+ *****************************************************************/  
+char *smbd_mktemp(char *template)
+{
+	char *p = mktemp(template);
+	char *p2;
+	struct stat st;
+
+	if (!p) return NULL;
+
+	while ((p2=strchr(p,'%'))) {
+		p2[0] = 'A';
+		while (stat(p,&st) == 0 && p2[0] < 'Z') {
+			/* damn, it exists */
+			p2[0]++;
+		}
+		if (p2[0] == 'Z') {
+			/* oh well ... better return something */
+			p2[0] = '%';
+			return p;
+		}
+	}
+
+	return p;
 }

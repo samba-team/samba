@@ -54,7 +54,7 @@ static void msg_deliver(void)
 
   /* put it in a temporary file */
   slprintf(s,sizeof(s)-1, "%s/msg.XXXXXX",tmpdir());
-  fstrcpy(name,(char *)mktemp(s));
+  fstrcpy(name,(char *)smbd_mktemp(s));
 
   fd = sys_open(name,O_WRONLY|O_CREAT|O_TRUNC|O_EXCL,0600);
   if (fd == -1) {

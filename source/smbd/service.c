@@ -84,7 +84,7 @@ int find_service(char *service)
 {
    int iService;
 
-   fstring_sub(service,"\\","/");
+   all_string_sub(service,"\\","/",0);
 
    iService = lp_servicenumber(service);
 
@@ -161,7 +161,7 @@ int find_service(char *service)
        iService = find_service(defservice);
        if (iService >= 0)
        {
-         fstring_sub(service,"_","/");
+         all_string_sub(service,"_","/",0);
          iService = lp_add_service(service,iService);
        }
      }

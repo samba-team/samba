@@ -926,12 +926,12 @@ static void run_browsetest(void)
 	}
 
 	printf("domain list:\n");
-	cli_NetServerEnum(&cli, cli->server_domain, 
+	cli_NetServerEnum(&cli, cli.server_domain, 
 			  SV_TYPE_DOMAIN_ENUM,
 			  browse_callback);
 
 	printf("machine list:\n");
-	cli_NetServerEnum(&cli, cli->server_domain, 
+	cli_NetServerEnum(&cli, cli.server_domain, 
 			  SV_TYPE_ALL,
 			  browse_callback);
 
@@ -1115,7 +1115,7 @@ static double create_procs(void (*fn)(int ))
 		return end_timer();
 	}
 
-	memset(child_status, 0, sizeof(int)*nprocs);
+	memset((char *)child_status, 0, sizeof(int)*nprocs);
 
 	for (i=0;i<nprocs;i++) {
 		if (fork() == 0) {
