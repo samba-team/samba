@@ -45,11 +45,11 @@ enum rwlock_id { RWLOCK_SMBD, 		/* global smbd lock */
 #define MUTEX_LOCK(mutex, name) smb_mutex_lock(mutex, #name)
 #define MUTEX_UNLOCK(mutex, name) smb_mutex_unlock(mutex, #name)
 
-#define RWLOCK_INIT(rwlock, name) rwlock_init(rwlock, #name)
-#define RWLOCK_DESTROY(rwlock, name) rwlock_destroy(rwlock, #name)
-#define RWLOCK_LOCK_WRITE(rwlock, name) rwlock_lock_write(rwlock, #name)
-#define RWLOCK_LOCK_READ(rwlock, name) rwlock_lock_read(rwlock, #name)
-#define RWLOCK_UNLOCK(rwlock, name) rwlock_unlock(rwlock, #name)
+#define RWLOCK_INIT(rwlock, name) smb_rwlock_init(rwlock, #name)
+#define RWLOCK_DESTROY(rwlock, name) smb_rwlock_destroy(rwlock, #name)
+#define RWLOCK_LOCK_WRITE(rwlock, name) smb_rwlock_lock_write(rwlock, #name)
+#define RWLOCK_LOCK_READ(rwlock, name) smb_rwlock_lock_read(rwlock, #name)
+#define RWLOCK_UNLOCK(rwlock, name) smb_rwlock_unlock(rwlock, #name)
 
 
 
