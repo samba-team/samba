@@ -637,7 +637,7 @@ command as root:
 </para>
 	
 <para>
-&rootprompt;<userinput>/usr/local/samba/bin/winbindd</userinput>
+&rootprompt;<userinput>/usr/local/samba/sbin/winbindd</userinput>
 </para>
 
 <note><para>
@@ -656,7 +656,7 @@ You can enable dual daemon mode by adding <option>-B</option> to the command-lin
 </para>
 
 <para>
-&rootprompt;<userinput>/usr/local/samba/bin/winbindd -B</userinput>
+&rootprompt;<userinput>/usr/local/samba/sbin/winbindd -B</userinput>
 </para>
 
 <para>
@@ -774,7 +774,7 @@ start() {
         echo
         KIND="Winbind"
         echo -n $"Starting $KIND services: "
-        daemon /usr/local/samba/bin/winbindd
+        daemon /usr/local/samba/sbin/winbindd
         RETVAL3=$?
         echo
         [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] &amp;&amp; \
@@ -786,13 +786,13 @@ start() {
 <para>If you would like to run winbindd in dual daemon mode, replace 
 the line :
 <programlisting>
-        daemon /usr/local/samba/bin/winbindd
+        daemon /usr/local/samba/sbin/winbindd
 </programlisting>
 
 in the example above with:
 
 <programlisting>
-        daemon /usr/local/samba/bin/winbindd -B
+        daemon /usr/local/samba/sbin/winbindd -B
 </programlisting>.
 </para>
 
@@ -874,7 +874,7 @@ usually only starts smbd and nmbd but should now start winbindd, too. If you hav
 		/usr/local/samba/var/log -s /usr/local/samba/smb.conf
 
 	echo Starting Winbind Daemon
-	   /usr/local/samba/bin/winbindd
+	   /usr/local/samba/sbin/winbindd
 	   ;;
 
 	'stop')
@@ -892,11 +892,11 @@ usually only starts smbd and nmbd but should now start winbindd, too. If you hav
 <para>
 Again, if you would like to run Samba in dual daemon mode, replace:
 <programlisting>
-	/usr/local/samba/bin/winbindd
+	/usr/local/samba/sbin/winbindd
 </programlisting>
 in the script above with:
 <programlisting>
-	/usr/local/samba/bin/winbindd -B
+	/usr/local/samba/sbin/winbindd -B
 </programlisting>
 </para>
 
