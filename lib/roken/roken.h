@@ -165,6 +165,9 @@ void mini_inetd (int port);
 #ifndef LOG_ODELAY
 #define LOG_ODELAY 0
 #endif
+#ifndef LOG_NDELAY
+#define LOG_NDELAY 0x08
+#endif
 #ifndef LOG_CONS
 #define LOG_CONS 0
 #endif
