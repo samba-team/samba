@@ -838,6 +838,7 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 /* The following definitions come from lib/substitute.c  */
 
 void sub_set_smb_name(const char *name);
+const char* get_remote_machine_name(void);
 void standard_sub_basic(char *str, int len);
 void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str, int len);
 void standard_sub_conn(connection_struct *conn, char *str, int len);
@@ -2472,6 +2473,8 @@ void pcap_printer_fn(void (*fn)(char *, char *));
 
 /* The following definitions come from printing/print_cups.c  */
 
+void cups_printer_fn(void (*fn)(char *, char *));
+int cups_printername_ok(const char *name);
 
 /* The following definitions come from printing/printfsp.c  */
 
@@ -4986,6 +4989,7 @@ TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
 TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA oldkey);
 int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
+int tdb_append(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf);
 TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
 TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
@@ -4998,6 +5002,8 @@ int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[]);
 void tdb_unlockkeys(TDB_CONTEXT *tdb);
 int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_chainlock_read(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_chainunlock_read(TDB_CONTEXT *tdb, TDB_DATA key);
 void tdb_logging_function(TDB_CONTEXT *tdb, void (*fn)(TDB_CONTEXT *, int , const char *, ...));
 int tdb_reopen(TDB_CONTEXT *tdb);
 int tdb_reopen_all(void);
