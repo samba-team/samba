@@ -135,6 +135,7 @@ static int net_help_usage(struct net_context *ctx, int argc, const char **argv)
 /* main function table */
 static const struct net_functable const net_functable[] = {
 	{"password", net_password, net_password_usage, net_password_help},
+	{"time", net_time, net_time_usage, net_time_help},
 
 	{"help", net_help, net_help_usage, net_help},
 	{NULL, NULL}
