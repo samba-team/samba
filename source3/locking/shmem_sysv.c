@@ -119,7 +119,7 @@ static BOOL sem_change(int i, int op)
 
 	sb.sem_num = i;
 	sb.sem_op = op;
-	sb.sem_flg = SEM_UNDO;
+	sb.sem_flg = 0;
 
 	ret = semop(sem_id, &sb, 1);
 
@@ -539,6 +539,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	struct semid_ds sem_ds;
 	union semun su;
 	int i;
+	int pid;
 
 	read_only = ronly;
 
@@ -595,6 +596,16 @@ struct shmem_ops *sysv_shm_open(int ronly)
 			return NULL;
 		}
 
+		if (semctl(sem_id, 0, GETVAL, su) == 0 &&
+		    !process_exists((pid=semctl(sem_id, 0, GETPID, su)))) {
+			DEBUG(0,("WARNING: clearing global IPC lock set by dead process %d\n",
+				 pid));
+			su.val = 1;
+			if (semctl(sem_id, 0, SETVAL, su) != 0) {
+				DEBUG(0,("ERROR: Failed to clear global lock\n"));
+			}
+		}
+
 		sem_ds.sem_perm.mode = SEMAPHORE_PERMS;
 		if (semctl(sem_id, 0, IPC_SET, su) != 0) {
 			DEBUG(0,("ERROR shm_open : can't IPC_SET\n"));
@@ -605,6 +616,19 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	
 	if (!global_lock())
 		return NULL;
+
+
+	for (i=1;i<hash_size+1;i++) {
+		if (semctl(sem_id, i, GETVAL, su) == 0 && 
+		    !process_exists((pid=semctl(sem_id, i, GETPID, su)))) {
+			DEBUG(1,("WARNING: clearing IPC lock %d set by dead process %d\n", 
+				 i, pid));
+			su.val = 1;
+			if (semctl(sem_id, i, SETVAL, su) != 0) {
+				DEBUG(0,("ERROR: Failed to clear IPC lock %d\n", i));
+			}
+		}
+	}
 	
 	/* try to use an existing key */
 	shm_id = shmget(SHMEM_KEY, shm_size, 0);
