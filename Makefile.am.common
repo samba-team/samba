@@ -2,8 +2,6 @@
 
 include $(top_srcdir)/cf/Makefile.am.common
 
-LEXLIB = @LEXLIB@
-
 SUFFIXES += .x
 
 .x.c:
