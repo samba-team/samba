@@ -168,7 +168,7 @@ static void fill_cache_entry(char *domain, char *name, void *buf, int len)
 void winbindd_fill_user_cache_entry(char *domain, char *user_name, 
                                     struct winbindd_pw *pw)
 {
-        if (lp_winbind_cache_time() > 0) return;
+        if (lp_winbind_cache_time() == 0) return;
 
         fill_cache_entry(domain, user_name, pw, sizeof(struct winbindd_pw));
 	set_cache_time(domain, CACHE_TYPE_USER, user_name);
@@ -180,7 +180,7 @@ void winbindd_fill_uid_cache_entry(char *domain, uid_t uid,
 {
         fstring uidstr;
 
-        if (lp_winbind_cache_time() > 0) return;
+        if (lp_winbind_cache_time() == 0) return;
 
         slprintf(uidstr, sizeof(uidstr), "#%u", (unsigned)uid);
         fill_cache_entry(domain, uidstr, pw, sizeof(struct winbindd_pw));
