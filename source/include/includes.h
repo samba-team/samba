@@ -1235,6 +1235,7 @@ krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
 krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
 void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
+BOOL krb5_get_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16]);
 #endif /* HAVE_KRB5 */
 
 #endif /* _INCLUDES_H */
