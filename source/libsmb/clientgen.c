@@ -2274,7 +2274,7 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 	if (rcls == ERRDOS) {
 		switch (code) {
 		case ERRbadfile: return ENOENT;
-		case ERRnoaccess: return EPERM;
+		case ERRnoaccess: return EACCES;
 		}
 	}
 	if (rcls == ERRSRV) {
