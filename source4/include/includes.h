@@ -679,6 +679,7 @@ extern int errno;
 /* Lists, trees, caching, database... */
 #include "xfile.h"
 #include "dlinklist.h"
+#include "lib/ldb/include/ldb.h"
 #include "lib/tdb/tdb.h"
 #include "lib/tdb/spinlock.h"
 #include "lib/tdb/tdbutil.h"
