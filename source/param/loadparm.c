@@ -1814,8 +1814,8 @@ FN_GLOBAL_BOOL(lp_debug_uid, &Globals.bDebugUid)
 FN_GLOBAL_BOOL(lp_browse_list, &Globals.bBrowseList)
 FN_GLOBAL_BOOL(lp_unix_realname, &Globals.bUnixRealname)
 FN_GLOBAL_BOOL(lp_nis_home_map, &Globals.bNISHomeMap)
-     static FN_GLOBAL_BOOL(lp_time_server, &Globals.bTimeServer)
-	FN_GLOBAL_BOOL(lp_bind_interfaces_only, &Globals.bBindInterfacesOnly)
+static FN_GLOBAL_BOOL(lp_time_server, &Globals.bTimeServer)
+FN_GLOBAL_BOOL(lp_bind_interfaces_only, &Globals.bBindInterfacesOnly)
 FN_GLOBAL_BOOL(lp_unix_password_sync, &Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug, &Globals.bPasswdChatDebug)
 FN_GLOBAL_BOOL(lp_nt_smb_support, &Globals.bNTSmbSupport)
@@ -1843,22 +1843,14 @@ FN_GLOBAL_INTEGER(lp_maxdisksize, &Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime, &Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_syslog, &Globals.syslog)
 FN_GLOBAL_INTEGER(lp_client_code_page, &Globals.client_code_page)
-     static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
-	FN_GLOBAL_INTEGER(lp_lm_announce, &Globals.lm_announce)
+static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
+FN_GLOBAL_INTEGER(lp_lm_announce, &Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval, &Globals.lm_interval)
-FN_GLOBAL_INTEGER(lp_machine_password_timeout,
-		  &Globals.
-		  machine_password_timeout)
-FN_GLOBAL_INTEGER(lp_change_notify_timeout,
-		  &Globals.
-		  change_notify_timeout) FN_GLOBAL_INTEGER(lp_stat_cache_size,
-							   &Globals.
-							   stat_cache_size)
-FN_GLOBAL_INTEGER(lp_map_to_guest,
-		  &Globals.
-		  map_to_guest) FN_GLOBAL_INTEGER(lp_min_passwd_length,
-						  &Globals.
-						  min_passwd_length)
+FN_GLOBAL_INTEGER(lp_machine_password_timeout, &Globals.machine_password_timeout)
+FN_GLOBAL_INTEGER(lp_change_notify_timeout, &Globals.change_notify_timeout)
+FN_GLOBAL_INTEGER(lp_stat_cache_size, &Globals.stat_cache_size)
+FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
+FN_GLOBAL_INTEGER(lp_min_passwd_length, &Globals.min_passwd_length)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 #if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
 FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
@@ -1901,9 +1893,9 @@ FN_LOCAL_STRING(lp_force_group, force_group)
 FN_LOCAL_STRING(lp_readlist, readlist)
 FN_LOCAL_STRING(lp_writelist, writelist)
 FN_LOCAL_STRING(lp_fstype, fstype) FN_LOCAL_STRING(lp_vfsobj, szVfsObjectFile)
-     static FN_LOCAL_STRING(lp_volume, volume)
-	FN_LOCAL_STRING(lp_mangled_map, szMangledMap)
-	FN_LOCAL_STRING(lp_veto_files, szVetoFiles)
+static FN_LOCAL_STRING(lp_volume, volume)
+FN_LOCAL_STRING(lp_mangled_map, szMangledMap)
+FN_LOCAL_STRING(lp_veto_files, szVetoFiles)
 FN_LOCAL_STRING(lp_hide_files, szHideFiles)
 FN_LOCAL_STRING(lp_veto_oplocks, szVetoOplockFiles)
 FN_LOCAL_STRING(lp_driverlocation, szPrinterDriverLocation)
@@ -1974,23 +1966,23 @@ FN_GLOBAL_STRING(lp_mysql_table, &Globals.sMysqlTable)
 #endif
  FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 /* local prototypes */
-     static int strwicmp(char *psz1, char *psz2);
-     static int map_parameter(char *pszParmName);
-     static BOOL set_boolean(BOOL *pb, char *pszParmValue);
-     static int getservicebyname(char *pszServiceName,
-				 service * pserviceDest);
-     static void copy_service(service * pserviceDest,
-			      service * pserviceSource, BOOL *pcopymapDest);
-     static BOOL service_ok(int iService);
-     static BOOL do_parameter(char *pszParmName, char *pszParmValue);
-     static BOOL do_section(char *pszSectionName);
-     static void init_copymap(service * pservice);
+static int strwicmp(char *psz1, char *psz2);
+static int map_parameter(char *pszParmName);
+static BOOL set_boolean(BOOL *pb, char *pszParmValue);
+static int getservicebyname(char *pszServiceName,
+			 service * pserviceDest);
+static void copy_service(service * pserviceDest,
+		      service * pserviceSource, BOOL *pcopymapDest);
+static BOOL service_ok(int iService);
+static BOOL do_parameter(char *pszParmName, char *pszParmValue);
+static BOOL do_section(char *pszSectionName);
+static void init_copymap(service * pservice);
 
 
 /***************************************************************************
 initialise a service to the defaults
 ***************************************************************************/
-     static void init_service(service * pservice)
+static void init_service(service * pservice)
 {
 	memset((char *)pservice, '\0', sizeof(service));
 	copy_service(pservice, &sDefault, NULL);
