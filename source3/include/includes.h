@@ -751,9 +751,7 @@ extern int errno;
 
 #include "passdb.h"
 
-#ifdef WITH_SAM
 #include "sam.h"
-#endif
 
 #include "session.h"
 
