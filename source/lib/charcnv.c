@@ -59,7 +59,7 @@ static const char *charset_name(charset_t ch)
 	return ret;
 }
 
-static void lazy_initialize_conv(void)
+void lazy_initialize_conv(void)
 {
 	static int initialized = False;
 
@@ -67,14 +67,16 @@ static void lazy_initialize_conv(void)
 		initialized = True;
 		load_case_tables();
 		init_iconv();
-		init_valid_table();
 	}
 }
 
 /**
- Initialize iconv conversion descriptors.
-**/
-
+ * Initialize iconv conversion descriptors.
+ *
+ * This is called the first time it is needed, and also called again
+ * every time the configuration is reloaded, because the charset or
+ * codepage might have changed.
+ **/
 void init_iconv(void)
 {
 	int c1, c2;
@@ -112,6 +114,10 @@ void init_iconv(void)
 	}
 
 	if (did_reload) {
+		/* XXX: Does this really get called every time the dos
+		 * codepage changes? */
+		/* XXX: Is the did_reload test too strict? */
+		init_doschar_table();
 		init_valid_table();
 	}
 }
