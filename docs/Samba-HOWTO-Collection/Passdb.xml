@@ -453,7 +453,7 @@ Samba-3 introduces a number of new password backend capabilities.
 		<listitem>
 		<para>
 		<emphasis>idmap_ad:</emphasis> An IDMAP backend that supports the Microsoft Services for
-		UNIX RFC 2307 schema available from their web
+		UNIX RFC 2307 schema available from the PADL web 
 		<ulink url="http://www.padl.com/download/xad_oss_plugins.tar.gz">site</ulink>.
 		</para>
 		</listitem>
