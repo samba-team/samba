@@ -92,9 +92,6 @@ static NTSTATUS connect_tcon(struct smbcli_composite *c,
 
 	/* all done! */
 	c->state = SMBCLI_REQUEST_DONE;
-	if (c->async.fn) {
-		c->async.fn(c);
-	}
 
 	return NT_STATUS_OK;
 }
@@ -277,35 +274,35 @@ static NTSTATUS connect_resolve(struct smbcli_composite *c,
 static void state_handler(struct smbcli_composite *c)
 {
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
-	NTSTATUS status;
 
 	switch (state->stage) {
 	case CONNECT_RESOLVE:
-		status = connect_resolve(c, state->io);
+		c->status = connect_resolve(c, state->io);
 		break;
 	case CONNECT_SOCKET:
-		status = connect_socket(c, state->io);
+		c->status = connect_socket(c, state->io);
 		break;
 	case CONNECT_SESSION_REQUEST:
-		status = connect_session_request(c, state->io);
+		c->status = connect_session_request(c, state->io);
 		break;
 	case CONNECT_NEGPROT:
-		status = connect_negprot(c, state->io);
+		c->status = connect_negprot(c, state->io);
 		break;
 	case CONNECT_SESSION_SETUP:
-		status = connect_session_setup(c, state->io);
+		c->status = connect_session_setup(c, state->io);
 		break;
 	case CONNECT_TCON:
-		status = connect_tcon(c, state->io);
+		c->status = connect_tcon(c, state->io);
 		break;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		c->status = status;
+	if (!NT_STATUS_IS_OK(c->status)) {
 		c->state = SMBCLI_REQUEST_ERROR;
-		if (c->async.fn) {
-			c->async.fn(c);
-		}
+	}
+
+	if (c->state >= SMBCLI_REQUEST_DONE &&
+	    c->async.fn) {
+		c->async.fn(c);
 	}
 }
 
