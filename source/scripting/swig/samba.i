@@ -63,6 +63,23 @@
 
 %typemap(in) struct cli_credentials * {
 	$1 = cli_credentials_init(arg1);
-	cli_credentials_set_anonymous($1);
 	cli_credentials_set_conf($1);
+	if ($input == Py_None) {
+		cli_credentials_set_anonymous($1);
+	} else {
+		if (!PyTuple_Check($input) ||
+		    PyTuple_Size($input) != 3) {
+			PyErr_SetString(PyExc_TypeError, "Expecting three element tuple");
+			return NULL;
+		}
+		if (!PyString_Check(PyTuple_GetItem($input, 0)) ||
+		    !PyString_Check(PyTuple_GetItem($input, 1)) ||
+		    !PyString_Check(PyTuple_GetItem($input, 2))) {
+			PyErr_SetString(PyExc_TypeError, "Expecting string elements");
+			return NULL;
+		}
+		cli_credentials_set_domain($1, PyString_AsString(PyTuple_GetItem($input, 0)), CRED_SPECIFIED);
+		cli_credentials_set_username($1, PyString_AsString(PyTuple_GetItem($input, 1)), CRED_SPECIFIED);
+		cli_credentials_set_password($1, PyString_AsString(PyTuple_GetItem($input, 2)), CRED_SPECIFIED);
+	}
 }
