@@ -28,25 +28,46 @@ static NTSTATUS rpc_service_list_internal( const DOM_SID *domain_sid, const char
                                            int argc, const char **argv )
 {
 	POLICY_HND hSCM;
+	ENUM_SERVICES_STATUS *services;
 	WERROR result = WERR_GENERAL_FAILURE;
+	fstring servicename;
+	fstring displayname;
+	uint32 num_services = 0;
+	int i;
 	
 	if (argc != 0 ) {
 		d_printf("Usage: net rpc service list\n");
 		return NT_STATUS_OK;
 	}
 
-	if ( !W_ERROR_IS_OK(result = cli_svcctl_open_scm( cli, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  )) ) {
+	result = cli_svcctl_open_scm( cli, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  );
+	if ( !W_ERROR_IS_OK(result) ) {
 		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 	
-	d_printf("Successfully opened Service Control Manager.\n");
+	result = cli_svcctl_enumerate_services( cli, mem_ctx, &hSCM, SVCCTL_TYPE_WIN32,
+		SVCCTL_STATE_ALL, &num_services, &services );
 	
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Failed to enumerate services.  [%s]\n", dos_errstr(result));
+		goto done;
+	}
 	
+	if ( num_services == 0 )
+		d_printf("No services returned\n");
 	
+	for ( i=0; i<num_services; i++ ) {
+		rpcstr_pull( servicename, services[i].servicename.buffer, sizeof(servicename), -1, STR_TERMINATE );
+		rpcstr_pull( displayname, services[i].displayname.buffer, sizeof(displayname), -1, STR_TERMINATE );
+		
+		d_printf("%s (%s)\n", displayname, servicename);
+	}
+
+done:	
 	close_service_handle( cli, mem_ctx, &hSCM  );
 		
-	return NT_STATUS_OK;
+	return werror_to_ntstatus(result);
 }	
 
 
