@@ -262,8 +262,6 @@ static NTSTATUS svfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 	DEBUG(19,("svfs_qpathinfo: file %s\n", unix_path));
 	if (stat(unix_path, &st) == -1) {
 		DEBUG(19,("svfs_qpathinfo: file %s errno=%d\n", unix_path, errno));
-		if (errno == 0)
-			errno = ENOENT;
 		return map_nt_error_from_unix(errno);
 	}
 	DEBUG(19,("svfs_qpathinfo: file %s, stat done\n", unix_path));
@@ -290,8 +288,6 @@ static NTSTATUS svfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 	}
 	
 	if (fstat(info->generic.in.fnum, &st) == -1) {
-		if (errno == 0)
-			errno = ENOENT;
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -372,15 +368,11 @@ static NTSTATUS svfs_open(struct ntvfs_module_context *ntvfs,
 do_open:
 	fd = open(unix_path, flags, 0644);
 	if (fd == -1) {
-		if (errno == 0)
-			errno = ENOENT;
 		return map_nt_error_from_unix(errno);
 	}
 
 	if (fstat(fd, &st) == -1) {
 		DEBUG(9,("svfs_open: fstat errno=%d\n", errno));
-		if (errno == 0)
-			errno = ENOENT;
 		close(fd);
 		return map_nt_error_from_unix(errno);
 	}
@@ -465,7 +457,7 @@ static NTSTATUS svfs_rename(struct ntvfs_module_context *ntvfs,
 	unix_path1 = svfs_unix_path(ntvfs, req, ren->rename.in.pattern1);
 	unix_path2 = svfs_unix_path(ntvfs, req, ren->rename.in.pattern2);
 
-	if (rename(unix_path1, unix_path2) != 0) {
+	if (rename(unix_path1, unix_path2) == -1) {
 		return map_nt_error_from_unix(errno);
 	}
 	
@@ -593,7 +585,7 @@ static NTSTATUS svfs_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (close(io->close.in.fnum) != 0) {
+	if (close(io->close.in.fnum) == -1) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -669,7 +661,7 @@ static NTSTATUS svfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
 		if (ftruncate(info->end_of_file_info.file.fnum, 
-			      info->end_of_file_info.in.size) != 0) {
+			      info->end_of_file_info.in.size) == -1) {
 			return map_nt_error_from_unix(errno);
 		}
 		break;
@@ -752,7 +744,7 @@ static NTSTATUS svfs_fsattr(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_fsattr(req, fs, ntvfs);
 	}
 
-	if (stat(private->connectpath, &st) != 0) {
+	if (stat(private->connectpath, &st) == -1) {
 		return map_nt_error_from_unix(errno);
 	}
 
