@@ -112,6 +112,10 @@
 #define _PATH_DEFPATH	"/usr/bin:/bin"
 #endif
 
+#ifndef _PATH_ETC_ENVIRONMENT
+#define _PATH_ETC_ENVIRONMENT "/etc/environment"
+#endif
+
 /*
  *
  */
