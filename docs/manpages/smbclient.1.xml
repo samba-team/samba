@@ -20,6 +20,25 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>smbclient</command>
+		<arg choice="opt">-b &lt;buffer size&gt;</arg>
+		<arg choice="opt">-d debuglevel</arg>
+		<arg choice="opt">-L &lt;netbios name&gt;</arg>
+		<arg choice="opt">-U username</arg>
+		<arg choice="opt">-I destinationIP</arg>
+		<arg choice="opt">-M &lt;netbios name&gt;</arg>
+		<arg choice="opt">-m maxprotocol</arg>
+		<arg choice="opt">-A authfile</arg>
+		<arg choice="opt">-N</arg>
+		<arg choice="opt">-i scope</arg>
+		<arg choice="opt">-O &lt;socket options&gt;</arg>
+		<arg choice="opt">-p port</arg>
+		<arg choice="opt">-R &lt;name resolve order&gt;</arg>
+		<arg choice="opt">-s &lt;smb config file&gt;</arg>
+		<arg choice="opt">-k</arg>
+	</cmdsynopsis>
+		
+	<cmdsynopsis>
+		<command>smbclient</command>
 		<arg choice="req">servicename</arg>
 		<arg choice="opt">password</arg>
 		<arg choice="opt">-b &lt;buffer size&gt;</arg>
@@ -32,7 +51,6 @@
 		<arg choice="opt">-A authfile</arg>
 		<arg choice="opt">-N</arg>
 		<arg choice="opt">-l logdir</arg>
-		<arg choice="opt">-L &lt;netbios name&gt;</arg>
 		<arg choice="opt">-I destinationIP</arg>
 		<arg choice="opt">-E</arg>
 		<arg choice="opt">-c &lt;command string&gt;</arg>
