@@ -1,4 +1,21 @@
+2004-12-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/heim_threads.h: NetBSD 2.99.11 (any maybe 2.1) just
+	needs pthread.h, threadlib is dead
+
+2004-12-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/config.c (configure): check for deprecated
+	enforce-transited-policy is set and fail if it is
+	
+	* lib/asn1/asn1_print.c: don't print garabage for octet strings
+	
 2004-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/main.c (main): catch sigpipe, we don't bother select()ing
+	for errors
+
+	* kdc/connect.c (handle_http_tcp): handle error from write(2)
 	
 	* doc/setup.texi: clarify credentials refreshing stuff
 	
