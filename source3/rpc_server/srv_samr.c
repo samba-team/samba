@@ -30,6 +30,8 @@ extern int DEBUGLEVEL;
 
 extern BOOL sam_logon_in_ssb;
 extern pstring samlogon_user;
+extern DOM_SID global_machine_sid;
+
 extern rid_name domain_group_rids[];
 extern rid_name domain_alias_rids[];
 
@@ -231,7 +233,7 @@ static void samr_reply_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 
 	if (status == 0x0)
 	{
-		fstrcpy(user_sid, lp_domain_sid());
+		sid_to_string(user_sid, &global_machine_sid);
 		slprintf(user_rid, sizeof(user_rid) - 1, "-%x", rid);
 		fstrcat(user_sid, user_rid);
 

@@ -28,7 +28,7 @@
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
-
+extern DOM_SID global_machine_sid;
 
 /***************************************************************************
 lsa_reply_open_policy
@@ -306,16 +306,14 @@ static void api_lsa_query_info( int uid, prs_struct *data,
 {
 	LSA_Q_QUERY_INFO q_i;
 	pstring dom_name;
-	DOM_SID dom_sid;
 
 	/* grab the info class and policy handle */
 	lsa_io_q_query("", &q_i, data, 0);
 
 	pstrcpy(dom_name, lp_workgroup());
-	string_to_sid(&dom_sid, lp_domain_sid());
 
 	/* construct reply.  return status is always 0x0 */
-	lsa_reply_query_info(&q_i, rdata, dom_name, &dom_sid);
+	lsa_reply_query_info(&q_i, rdata, dom_name, &global_machine_sid);
 }
 
 /***************************************************************************
@@ -326,7 +324,6 @@ static void api_lsa_lookup_sids( int uid, prs_struct *data,
 {
 	LSA_Q_LOOKUP_SIDS q_l;
 	pstring dom_name;
-	DOM_SID dom_sid;
 	DOM_SID sid_S_1_1;
 	DOM_SID sid_S_1_3;
 	DOM_SID sid_S_1_5;
@@ -336,7 +333,6 @@ static void api_lsa_lookup_sids( int uid, prs_struct *data,
 
 	pstrcpy(dom_name, lp_workgroup());
 
-	string_to_sid(&dom_sid , lp_domain_sid());
 	string_to_sid(&sid_S_1_1, "S-1-1");
         string_to_sid(&sid_S_1_3, "S-1-3");
         string_to_sid(&sid_S_1_5, "S-1-5");
@@ -344,7 +340,7 @@ static void api_lsa_lookup_sids( int uid, prs_struct *data,
 	/* construct reply.  return status is always 0x0 */
 	lsa_reply_lookup_sids(rdata,
                               q_l.sids.num_entries, q_l.sids.sid, /* SIDs */
-                              dom_name, &dom_sid, /* domain name, domain SID */
+                              dom_name, &global_machine_sid, /* domain name, domain SID */
                               &sid_S_1_1, &sid_S_1_3, &sid_S_1_5); /* the three other SIDs */
 }
 
@@ -357,7 +353,6 @@ static void api_lsa_lookup_names( int uid, prs_struct *data,
 	int i;
 	LSA_Q_LOOKUP_RIDS q_l;
 	pstring dom_name;
-	DOM_SID dom_sid;
 	DOM_SID sid_S_1_1;
 	DOM_SID sid_S_1_3;
 	DOM_SID sid_S_1_5;
@@ -369,7 +364,6 @@ static void api_lsa_lookup_names( int uid, prs_struct *data,
 
 	pstrcpy(dom_name, lp_workgroup());
 
-	string_to_sid(&dom_sid , lp_domain_sid());
 	string_to_sid(&sid_S_1_1, "S-1-1");
         string_to_sid(&sid_S_1_3, "S-1-3");
         string_to_sid(&sid_S_1_5, "S-1-5");
@@ -388,7 +382,7 @@ static void api_lsa_lookup_names( int uid, prs_struct *data,
 	/* construct reply.  return status is always 0x0 */
 	lsa_reply_lookup_rids(rdata,
                               q_l.num_entries, dom_rids, /* text-converted SIDs */
-                              dom_name, &dom_sid, /* domain name, domain SID */
+                              dom_name, &global_machine_sid, /* domain name, domain SID */
                               &sid_S_1_1, &sid_S_1_3, &sid_S_1_5); /* the three other SIDs */
 }
 

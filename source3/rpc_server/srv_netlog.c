@@ -32,6 +32,7 @@ extern int DEBUGLEVEL;
 extern BOOL sam_logon_in_ssb;
 extern pstring samlogon_user;
 extern pstring global_myname;
+extern DOM_SID global_machine_sid;
 
 /*************************************************************************
  make_net_r_req_chal:
@@ -680,7 +681,6 @@ static void api_net_sam_logon( int uid,
     pstring my_name;
     pstring my_workgroup;
     pstring domain_groups;
-    DOM_SID dom_sid;
     char *other_sids;
     uint32 r_uid;
     uint32 r_gid;
@@ -697,7 +697,6 @@ static void api_net_sam_logon( int uid,
 
     pstrcpy(logon_script, lp_logon_script());
     pstrcpy(profile_path, lp_logon_path());
-    string_to_sid(&dom_sid, lp_domain_sid());
 
     pstrcpy(other_sids, lp_domain_other_sids());
     pstrcpy(my_workgroup, lp_workgroup());
@@ -757,7 +756,7 @@ static void api_net_sam_logon( int uid,
                           my_name     , /* char *logon_srv */
                           my_workgroup, /* char *logon_dom */
 
-                          &dom_sid,     /* DOM_SID *dom_sid */
+                          &global_machine_sid,     /* DOM_SID *dom_sid */
                           other_sids); /* char *other_sids */
     }
     else
