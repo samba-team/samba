@@ -1206,9 +1206,9 @@ check_tgs_flags(KDC_REQ_BODY *b, EncTicketPart *tgt, EncTicketPart *et)
 }
 
 static krb5_error_code
-fix_transited_encoding(TransitedEncoding *tr, 
+fix_transited_encoding(krb5_boolean check_policy,
+		       TransitedEncoding *tr, 
 		       EncTicketPart *et, 
-		       KDCOptions *f,
 		       const char *client_realm, 
 		       const char *server_realm, 
 		       const char *tgt_realm)
@@ -1252,7 +1252,7 @@ fix_transited_encoding(TransitedEncoding *tr,
 	}
 	num_realms++;
     }
-    if(!f->disable_transited_check) {
+    if(check_policy) {
 	ret = krb5_check_transited(context, client_realm, 
 				   server_realm, 
 				   realms, num_realms, NULL);
@@ -1353,7 +1353,10 @@ tgs_make_reply(KDC_REQ_BODY *b,
     if(ret)
 	goto out;
 
-    ret = fix_transited_encoding(&tgt->transited, &et, &f, 
+    ret = fix_transited_encoding(enforce_transited_policy
+				 || server->flags.enforce_transited_policy
+				 || !f.disable_transited_check,
+				 &tgt->transited, &et,
 				 *krb5_princ_realm(context, client_principal),
 				 *krb5_princ_realm(context, server->principal),
 				 *krb5_princ_realm(context, krbtgt->principal));
