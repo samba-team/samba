@@ -182,3 +182,27 @@ done:
 
 	return result;
 }
+
+/* Convert a NULL terminated list of NULL terminated unicode strings
+   to a list of (char *) strings */
+
+PyObject *from_unistr_list(uint16 *dependentfiles)
+{
+	PyObject *list;
+	int offset = 0;
+
+	list = PyList_New(0);
+
+	while (*(dependentfiles + offset) != 0) {
+		fstring name;
+		int len;
+
+		len = rpcstr_pull(name, dependentfiles + offset,
+				  sizeof(fstring), -1, STR_TERMINATE);
+
+		offset += len / 2;
+		PyList_Append(list, PyString_FromString(name));
+	}
+
+	return list;
+}
