@@ -136,7 +136,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pword,passlen);
 		p += passlen;
-		p += clistr_push(cli, p, user, -1, STR_CONVERT|STR_UPPER|STR_TERMINATE);
+		p += clistr_push(cli, p, user, -1, STR_CONVERT|STR_TERMINATE);
 		cli_setup_bcc(cli, p);
 	}
 	else
@@ -167,7 +167,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p += SVAL(cli->outbuf,smb_vwv7);
 		memcpy(p,ntpword,ntpasslen); 
 		p += SVAL(cli->outbuf,smb_vwv8);
-		p += clistr_push(cli, p, user, -1, STR_CONVERT|STR_TERMINATE|STR_UPPER);
+		p += clistr_push(cli, p, user, -1, STR_CONVERT|STR_TERMINATE);
 		p += clistr_push(cli, p, workgroup, -1, STR_CONVERT|STR_TERMINATE|STR_UPPER);
 		p += clistr_push(cli, p, "Unix", -1, STR_CONVERT|STR_TERMINATE);
 		p += clistr_push(cli, p, "Samba", -1, STR_CONVERT|STR_TERMINATE);
