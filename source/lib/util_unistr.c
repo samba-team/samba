@@ -39,7 +39,6 @@ int dos_PutUniCode(char *dst,char *src, ssize_t len)
     src++;
   }
   SSVAL(dst,ret,0);
-  ret += 2;
   return(ret);
 }
 
