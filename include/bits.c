@@ -46,7 +46,7 @@ RCSID("$Id$");
 #include <ctype.h>
 
 static void
-strupr(char *s)
+my_strupr(char *s)
 {
     char *p = s;
     while(*p){
@@ -66,7 +66,7 @@ strupr(char *s)
         int tabs;						\
 	sprintf(tmp, "%sint%d_t" , pre, len);			\
 	sprintf(tmp2, "typedef %s %s;", #TYPE, tmp);		\
-	strupr(tmp);						\
+	my_strupr(tmp);						\
 	tabs = 5 - strlen(tmp2) / 8;				\
         fprintf(f, "%s", tmp2);					\
 	while(tabs-- > 0) fprintf(f, "\t");			\
