@@ -2186,7 +2186,7 @@ static int cmd_help(void)
 static int process_command_string(char *cmd)
 {
 	pstring line;
-	const char *ptr;
+	char *ptr;
 	int rc = 0;
 
 	/* establish the connection if not already */
@@ -2460,7 +2460,7 @@ static void readline_callback(void)
 
 static void process_stdin(void)
 {
-	const char *ptr;
+	char *ptr;
 
 	while (1) {
 		fstring tok;

@@ -35,9 +35,9 @@
  * Based on a routine by GJC@VILLAGE.COM. 
  * Extensively modified by Andrew.Tridgell@anu.edu.au
  **/
-BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
+BOOL next_token(char **ptr,char *buff, const char *sep, size_t bufsize)
 {
-	const char *s;
+	char *s;
 	char *pbuf;
 	BOOL quoted;
 	size_t len=1;
@@ -82,13 +82,13 @@ parameter so you can pass NULL. This is useful for user interface code
 but beware the fact that it is not re-entrant!
 **/
 
-static const char *last_ptr=NULL;
+static char *last_ptr=NULL;
 
-BOOL next_token_nr(const char **ptr,char *buff, const char *sep, size_t bufsize)
+BOOL next_token_nr(char **ptr,char *buff, const char *sep, size_t bufsize)
 {
 	BOOL ret;
 	if (!ptr)
-		ptr = (const char **)&last_ptr;
+		ptr = (char **)&last_ptr;
 
 	ret = next_token(ptr, buff, sep, bufsize);
 	last_ptr = *ptr;
