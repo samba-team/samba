@@ -26,7 +26,10 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_dLinkList.h,v 
+ * Log: ubi_dLinkList.h,v
+ * Revision 0.10  1998/07/24 07:30:20  crh
+ * Added the ubi_dlNewList() macro.
+ *
  * Revision 0.9  1998/06/04 21:29:27  crh
  * Upper-cased defined constants (eg UBI_BINTREE_H) in some header files.
  * This is more "standard", and is what people expect.  Weird, eh?
@@ -101,6 +104,13 @@ typedef ubi_dlList *ubi_dlListPtr;
 /* ========================================================================== **
  * Macros...
  *
+ *  ubi_dlNewList - Macro used to declare and initialize a new list in one
+ *                  swell foop.  It is used when defining a variable of
+ *                  type ubi_dlList.  The definition
+ *                    static ubi_dlNewList( gerbil );
+ *                  is translated to
+ *                    static ubi_dlList gerbil[1] = {{ NULL, NULL, 0 }};
+ *
  *  ubi_dlCount   - Return the number of entries currently in the list.
  *
  *  ubi_dlAddHead - Add a new node at the head of the list.
@@ -128,10 +138,11 @@ typedef ubi_dlList *ubi_dlListPtr;
  *  Add and Rem macros are nothing more than nice front-ends to the
  *  Insert and Remove operations.
  *
- *  Also note that there the First, Next and Last macros do no parameter
- *  checking!
+ *  Also note that the First, Next and Last macros do no parameter checking!
  *
  */
+
+#define ubi_dlNewList( L ) ubi_dlList (L)[1] = {{ NULL, NULL, 0 }}
 
 #define ubi_dlCount( L ) (((ubi_dlListPtr)(L))->count)
 
