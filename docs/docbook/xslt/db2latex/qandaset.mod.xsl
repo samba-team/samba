@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <!--############################################################################# 
-|	$Id: qandaset.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+|	$Id: qandaset.mod.xsl,v 1.1.2.1 2003/05/01 14:06:15 jelmer Exp $
 |- #############################################################################
-|	$Author: ab $
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 |   Portions (c) Norman Walsh, official DocBook XSL stylesheets.
@@ -19,7 +19,7 @@
 <!-- DOCUMENTATION                                                                -->
   <doc:reference xmlns="" id="qandaset">
     <referenceinfo>
-      <releaseinfo role="meta"> $Id: qandaset.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $ </releaseinfo>
+      <releaseinfo role="meta"> $Id: qandaset.mod.xsl,v 1.1.2.1 2003/05/01 14:06:15 jelmer Exp $ </releaseinfo>
 	<authorgroup>
       	<author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
       	<author> <firstname>James</firstname> <surname>Devenish</surname> </author>

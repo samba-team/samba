@@ -1,8 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: table.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+|	$Id: table.mod.xsl,v 1.1.2.1 2003/05/01 14:06:15 jelmer Exp $
 |- #############################################################################
-|	$Author: ab $
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -18,7 +18,7 @@
     <doc:reference id="table" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: table.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+		$Id: table.mod.xsl,v 1.1.2.1 2003/05/01 14:06:15 jelmer Exp $
 	    </releaseinfo>
 	    <authorgroup>
 		<firstname>Ramon</firstname> <surname>Casellas</surname>

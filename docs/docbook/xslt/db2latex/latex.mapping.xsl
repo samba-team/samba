@@ -1,8 +1,8 @@
 <?xml version='1.0'?>
 <!--#############################################################################
-|      $Id: latex.mapping.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+|      $Id: latex.mapping.xsl,v 1.1.2.1 2003/05/01 14:06:14 jelmer Exp $
 |- #############################################################################
-|      $Author: ab $
+|      $Author: jelmer $
 |
 |   PURPOSE:
 + ############################################################################## -->
@@ -20,7 +20,7 @@
     <doc:reference id="glossary" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: latex.mapping.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+		$Id: latex.mapping.xsl,v 1.1.2.1 2003/05/01 14:06:14 jelmer Exp $
 	    </releaseinfo>
 	    <author>
 		<firstname>Ramon</firstname><surname>Casellas</surname>

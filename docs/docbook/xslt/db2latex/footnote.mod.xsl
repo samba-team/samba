@@ -1,8 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: footnote.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+|	$Id: footnote.mod.xsl,v 1.1.2.1 2003/05/01 14:06:14 jelmer Exp $
 |- #############################################################################
-|	$Author: ab $
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -18,7 +18,7 @@
     <doc:reference id="footnote" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: footnote.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
+		$Id: footnote.mod.xsl,v 1.1.2.1 2003/05/01 14:06:14 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
