@@ -283,6 +283,34 @@ void SMBOWFencrypt_ntv2(const uchar kr[16],
 #endif
 }
 
+void SMBsesskeygen_ntv2(const uchar kr[16], 
+				const uchar *nt_resp, 
+				char sess_key[16])
+{
+	HMACMD5Context ctx;
+
+	hmac_md5_init_limK_to_64(kr, 16, &ctx);
+	hmac_md5_update(nt_resp, 16, &ctx);
+	hmac_md5_final(sess_key, &ctx);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("SMBsesskeygen_ntv2:\n"));
+	dump_data(100, sess_key, 16);
+#endif
+}
+
+void SMBsesskeygen_ntv1(const uchar kr[16], 
+				const uchar *nt_resp, 
+				char sess_key[16])
+{
+	mdfour(sess_key, kr, 16);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("SMBsesskeygen_ntv2:\n"));
+	dump_data(100, sess_key, 16);
+#endif
+}
+
 void SMBgenclientchals(char *lm_cli_chal,
 				char *nt_cli_chal, int *nt_cli_chal_len,
 				const char *srv, const char *dom)

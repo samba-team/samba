@@ -444,7 +444,7 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
 
     if (!smb_password_ok(smb_trust_acct, NULL, NULL, NULL,
 	(unsigned char *)smb_passwd, smb_passlen,
-	(unsigned char *)smb_nt_passwd, smb_nt_passlen))
+	(unsigned char *)smb_nt_passwd, smb_nt_passlen, NULL))
     {
       DEBUG(0,("session_trust_account: Trust Account %s - password failed\n", user));
       SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
