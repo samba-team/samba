@@ -4533,20 +4533,18 @@ void free_namearray(name_compare_entry *name_array)
 /****************************************************************************
 routine to do file locking
 ****************************************************************************/
-BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type)
+BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
 #if HAVE_FCNTL_LOCK
-  struct flock lock;
+  SMB_STRUCT_FLOCK lock;
   int ret;
 
-  /*
-   * FIXME.
-   * NB - this code will need re-writing to cope with large (64bit)
-   * lock requests. JRA.
-   */
-
   if(lp_ole_locking_compat()) {
-    uint32 mask = 0xC0000000;
+#ifdef LARGE_SMB_OFF_T
+    SMB_OFF_T mask = 0xC000000000000000LL;
+#else
+    SMB_OFF_T mask = 0xC0000000;
+#endif
 
     /* make sure the count is reasonable, we might kill the lockd otherwise */
     count &= ~mask;
@@ -4556,38 +4554,45 @@ BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type)
        still allows OLE2 apps to operate, but should stop lockd from
        dieing */
     if ((offset & mask) != 0)
-      offset = (offset & ~mask) | ((offset & mask) >> 2);
+#ifdef LARGE_SMB_OFF_T
+      offset = (offset & ~mask) | (((offset & mask) >> 2) & 0x3000000000000000LL);
+#else
+      offset = (offset & ~mask) | (((offset & mask) >> 2) & 0x30000000);
+#endif
   } else {
-    uint32 mask = ((unsigned)1<<31);
-    int32 s_count = (int32) count; /* Signed count. */
-    int32 s_offset = (int32)offset; /* Signed offset. */
+#ifdef LARGE_SMB_OFF_T
+    SMB_OFF_T mask = 0x8000000000000000LL;
+#else
+    SMB_OFF_T mask = 0x80000000;
+#endif
+    SMB_OFF_T neg_mask = ~mask;
 
     /* interpret negative counts as large numbers */
-    if (s_count < 0)
-      s_count &= ~mask;
+    if (count < 0)
+      count &= ~mask;
 
     /* no negative offsets */
-    if(s_offset < 0)
-      s_offset &= ~mask;
+    if(offset < 0)
+      offset &= ~mask;
 
     /* count + offset must be in range */
-    while ((s_offset < 0 || (s_offset + s_count < 0)) && mask)
+    while ((offset < 0 || (offset + count < 0)) && mask)
     {
-      s_offset &= ~mask;
-      mask = mask >> 1;
+      offset &= ~mask;
+      mask = ((mask >> 1) & neg_mask);
     }
-
-    offset = (uint32)s_offset;
-    count = (uint32)s_count;
   }
 
-
+#ifdef LARGE_SMB_OFF_T
+  DEBUG(8,("fcntl_lock %d %d %.0f %.0f %d\n",fd,op,(double)offset,(double)count,type));
+#else
   DEBUG(8,("fcntl_lock %d %d %d %d %d\n",fd,op,(int)offset,(int)count,type));
+#endif
 
   lock.l_type = type;
   lock.l_whence = SEEK_SET;
-  lock.l_start = (int)offset;
-  lock.l_len = (int)count;
+  lock.l_start = offset;
+  lock.l_len = count;
   lock.l_pid = 0;
 
   errno = 0;
@@ -4598,36 +4603,41 @@ BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type)
     DEBUG(3,("fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));
 
   /* a lock query */
-  if (op == F_GETLK)
+  if (op == SMB_F_GETLK)
+  {
+    if ((ret != -1) &&
+        (lock.l_type != F_UNLCK) && 
+        (lock.l_pid != 0) && 
+        (lock.l_pid != getpid()))
     {
-      if ((ret != -1) &&
-	  (lock.l_type != F_UNLCK) && 
-	  (lock.l_pid != 0) && 
-	  (lock.l_pid != getpid()))
-	{
-	  DEBUG(3,("fd %d is locked by pid %d\n",fd,(int)lock.l_pid));
-	  return(True);
-	}
-
-      /* it must be not locked or locked by me */
-      return(False);
+      DEBUG(3,("fd %d is locked by pid %d\n",fd,(int)lock.l_pid));
+      return(True);
     }
+
+    /* it must be not locked or locked by me */
+    return(False);
+  }
 
   /* a lock set or unset */
   if (ret == -1)
+  {
+#ifdef LARGE_SMB_OFF_T
+    DEBUG(3,("lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
+          (double)offset,(double)count,op,type,strerror(errno)));
+#else
+    DEBUG(3,("lock failed at offset %d count %d op %d type %d (%s)\n",
+          offset,count,op,type,strerror(errno)));
+#endif
+
+    /* perhaps it doesn't support this sort of locking?? */
+    if (errno == EINVAL)
     {
-      DEBUG(3,("lock failed at offset %d count %d op %d type %d (%s)\n",
-	       offset,count,op,type,strerror(errno)));
-
-      /* perhaps it doesn't support this sort of locking?? */
-      if (errno == EINVAL)
-	{
-	  DEBUG(3,("locking not supported? returning True\n"));
-	  return(True);
-	}
-
-      return(False);
+      DEBUG(3,("locking not supported? returning True\n"));
+      return(True);
     }
+
+    return(False);
+  }
 
   /* everything went OK */
   DEBUG(8,("Lock call successful\n"));
@@ -4651,7 +4661,7 @@ int file_lock(char *name,int timeout)
 #if HAVE_FCNTL_LOCK
   if (timeout) t = time(NULL);
   while (!timeout || (time(NULL)-t < timeout)) {
-    if (fcntl_lock(fd,F_SETLK,0,1,F_WRLCK)) return(fd);    
+    if (fcntl_lock(fd,SMB_F_SETLK,0,1,F_WRLCK)) return(fd);    
     msleep(LOCK_RETRY_TIMEOUT);
   }
   return(-1);
@@ -4667,7 +4677,7 @@ void file_unlock(int fd)
 {
   if (fd<0) return;
 #if HAVE_FCNTL_LOCK
-  fcntl_lock(fd,F_SETLK,0,1,F_UNLCK);
+  fcntl_lock(fd,SMB_F_SETLK,0,1,F_UNLCK);
 #endif
   close(fd);
 }

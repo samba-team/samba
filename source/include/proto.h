@@ -337,7 +337,7 @@ char *readdirname(void *p);
 BOOL is_in_path(char *name, name_compare_entry *namelist);
 void set_namearray(name_compare_entry **ppname_array, char *namelist);
 void free_namearray(name_compare_entry *name_array);
-BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type);
+BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 int file_lock(char *name,int timeout);
 void file_unlock(int fd);
 BOOL is_myname(char *s);
@@ -493,12 +493,12 @@ char *smb_errstr(char *inbuf);
 /*The following definitions come from  locking/locking.c  */
 
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
-	       uint32 count,uint32 offset, int lock_type);
+	       SMB_OFF_T count,SMB_OFF_T offset, int lock_type);
 BOOL do_lock(files_struct *fsp,connection_struct *conn,
-	     uint32 count,uint32 offset,int lock_type,
+             SMB_OFF_T count,SMB_OFF_T offset,int lock_type,
              int *eclass,uint32 *ecode);
 BOOL do_unlock(files_struct *fsp,connection_struct *conn,
-	       uint32 count,uint32 offset,int *eclass,uint32 *ecode);
+               SMB_OFF_T count,SMB_OFF_T offset,int *eclass,uint32 *ecode);
 BOOL locking_init(int read_only);
 BOOL locking_end(void);
 BOOL lock_share_entry(connection_struct *conn,

@@ -71,7 +71,7 @@ static int map_lock_type( files_struct *fsp, int lock_type)
  Utility function called to see if a file region is locked.
 ****************************************************************************/
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
-	       uint32 count,uint32 offset, int lock_type)
+	       SMB_OFF_T count,SMB_OFF_T offset, int lock_type)
 {
 	int snum = SNUM(conn);
 
@@ -87,7 +87,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	 * fd. So we don't need to use map_lock_type here.
 	 */
 	
-	return(fcntl_lock(fsp->fd_ptr->fd,F_GETLK,offset,count,lock_type));
+	return(fcntl_lock(fsp->fd_ptr->fd,SMB_F_GETLK,offset,count,lock_type));
 }
 
 
@@ -95,7 +95,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
  Utility function called by locking requests.
 ****************************************************************************/
 BOOL do_lock(files_struct *fsp,connection_struct *conn,
-	     uint32 count,uint32 offset,int lock_type,
+             SMB_OFF_T count,SMB_OFF_T offset,int lock_type,
              int *eclass,uint32 *ecode)
 {
   BOOL ok = False;
@@ -109,11 +109,16 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
     return False;
   }
 
+#ifdef LARGE_SMB_OFF_T
+  DEBUG(10,("do_lock: lock type %d start=%.0f len=%.0f requested for file %s\n",
+        lock_type, (double)offset, (double)count, fsp->fsp_name ));
+#else /* LARGE_SMB_OFF_T */
   DEBUG(10,("do_lock: lock type %d start=%d len=%d requested for file %s\n",
         lock_type, (int)offset, (int)count, fsp->fsp_name ));
+#endif /* LARGE_SMB_OFF_T */
 
   if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn))
-    ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,
+    ok = fcntl_lock(fsp->fd_ptr->fd,SMB_F_SETLK,offset,count,
                     map_lock_type(fsp,lock_type));
 
   if (!ok) {
@@ -129,18 +134,23 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
  Utility function called by unlocking requests.
 ****************************************************************************/
 BOOL do_unlock(files_struct *fsp,connection_struct *conn,
-	       uint32 count,uint32 offset,int *eclass,uint32 *ecode)
+               SMB_OFF_T count,SMB_OFF_T offset,int *eclass,uint32 *ecode)
 {
   BOOL ok = False;
 
   if (!lp_locking(SNUM(conn)))
     return(True);
 
+#ifdef LARGE_SMB_OFF_T
+  DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for file %s\n",
+        (double)offset, (double)count, fsp->fsp_name ));
+#else
   DEBUG(10,("do_unlock: unlock start=%d len=%d requested for file %s\n",
         (int)offset, (int)count, fsp->fsp_name ));
+#endif
 
   if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn))
-    ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,F_UNLCK);
+    ok = fcntl_lock(fsp->fd_ptr->fd,SMB_F_SETLK,offset,count,F_UNLCK);
    
   if (!ok) {
     *eclass = ERRDOS;
@@ -150,28 +160,27 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
   return True; /* Did unlock */
 }
 
-
-
 /****************************************************************************
  Initialise the locking functions.
 ****************************************************************************/
 
 BOOL locking_init(int read_only)
 {
-	if (share_ops) return True;
+  if (share_ops)
+    return True;
 
 #ifdef FAST_SHARE_MODES
-	share_ops = locking_shm_init(read_only);
+  share_ops = locking_shm_init(read_only);
 #else
-	share_ops = locking_slow_init(read_only);
+  share_ops = locking_slow_init(read_only);
 #endif
 
-	if (!share_ops) {
-		DEBUG(0,("ERROR: Failed to initialise share modes!\n"));
-		return False;
-	}
+  if (!share_ops) {
+    DEBUG(0,("ERROR: Failed to initialise share modes!\n"));
+    return False;
+  }
 	
-	return True;
+  return True;
 }
 
 /*******************************************************************

@@ -107,7 +107,7 @@ static BOOL smb_shm_global_lock(void)
 	   return True;
    
    /* Do an exclusive wait lock on the first byte of the file */
-   if (fcntl_lock(smb_shm_fd, F_SETLKW, 0, 1, F_WRLCK) == False)
+   if (fcntl_lock(smb_shm_fd, SMB_F_SETLKW, 0, 1, F_WRLCK) == False)
    {
       DEBUG(0,("ERROR smb_shm_global_lock : fcntl_lock failed with code %s\n",strerror(errno)));
       smb_shm_times_locked--;
@@ -144,7 +144,7 @@ static BOOL smb_shm_global_unlock(void)
 	   return True;
    
    /* Do a wait unlock on the first byte of the file */
-   if (fcntl_lock(smb_shm_fd, F_SETLKW, 0, 1, F_UNLCK) == False)
+   if (fcntl_lock(smb_shm_fd, SMB_F_SETLKW, 0, 1, F_UNLCK) == False)
    {
       DEBUG(0,("ERROR smb_shm_global_unlock : fcntl_lock failed with code %s\n",strerror(errno)));
       smb_shm_times_locked++;
@@ -682,7 +682,7 @@ static BOOL smb_shm_lock_hash_entry( unsigned int entry)
 	  return True;
 
   /* Do an exclusive wait lock on the 4 byte region mapping into this entry  */
-  if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(int), F_WRLCK) == False)
+  if (fcntl_lock(smb_shm_fd, SMB_F_SETLKW, start, sizeof(int), F_WRLCK) == False)
     {
       DEBUG(0,("ERROR smb_shm_lock_hash_entry : fcntl_lock failed with code %s\n",strerror(errno)));
       return False;
@@ -709,7 +709,7 @@ static BOOL smb_shm_unlock_hash_entry( unsigned int entry )
 	  return True;
    
   /* Do a wait lock on the 4 byte region mapping into this entry  */
-  if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(int), F_UNLCK) == False)
+  if (fcntl_lock(smb_shm_fd, SMB_F_SETLKW, start, sizeof(int), F_UNLCK) == False)
     {
       DEBUG(0,("ERROR smb_shm_unlock_hash_entry : fcntl_lock failed with code %s\n",strerror(errno)));
       return False;
