@@ -5,8 +5,8 @@
  libsmbclient: $(LIBSMBCLIENT_PICOBJS)
  	@echo Linking libsmbclient shared library bin/$@.@SHLIBEXT@
 -	@$(SHLD) @LDSHFLAGS@ -o  bin/$@.@SHLIBEXT@ \
-+        @$(SHLD) @LDSHFLAGS@ -o bin/$@.@SHLIBEXT@ \
-+                -Wl,-soname,libsmbclient.so.$(LIBSMBCLIENT_MAJOR) \
++	@$(SHLD) @LDSHFLAGS@ -o bin/$@.@SHLIBEXT@ \
++		-Wl,-soname,libsmbclient.so.$(LIBSMBCLIENT_MAJOR) \
  		$(LIBSMBCLIENT_PICOBJS) $(LIBS)
  	@echo Linking libsmbclient non-shared library bin/$@.a
  	@-$(AR) -rc bin/$@.a $(LIBSMBCLIENT_PICOBJS)
