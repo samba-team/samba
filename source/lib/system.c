@@ -623,6 +623,8 @@ static int num_lookups; /* Counter so we don't always use cache. */
 
 struct passwd *sys_getpwnam(const char *name)
 {
+	struct passwd *pw_ret;
+
 	if (!name || !name[0])
 		return NULL;
 
@@ -632,17 +634,17 @@ struct passwd *sys_getpwnam(const char *name)
 		DEBUG(2,("getpwnam(%s) avoided - using cached results\n",name));
 		num_lookups++;
 		num_lookups = (num_lookups % PW_RET_CACHE_MAX_LOOKUPS);
-		return setup_pwret(sv_pw_ret);
+		return sv_pw_ret;
 	}
 
 	/* no cache hit--use old lookup instead */
 	DEBUG(2,("getpwnam(%s) called\n",name));
-	if (!(sv_pw_ret = getpwnam(name)))
+	if (!(pw_ret = getpwnam(name)))
 		return NULL;
 
 	num_lookups = 1;
 
-	return setup_pwret(sv_pw_ret);
+	return (sv_pw_ret = setup_pwret(pw_ret));
 }
 
 /**************************************************************************
@@ -651,21 +653,23 @@ struct passwd *sys_getpwnam(const char *name)
 
 struct passwd *sys_getpwuid(uid_t uid)
 {
+	struct passwd *pw_ret;
+
 	if (num_lookups && sv_pw_ret && (uid == sv_pw_ret->pw_uid))
 	{
 		DEBUG(2,("getpwuid(%d) avoided - using cached results\n",uid));
 		num_lookups++;
 		num_lookups = (num_lookups % PW_RET_CACHE_MAX_LOOKUPS);
-		return setup_pwret(sv_pw_ret);
+		return sv_pw_ret;
 	}
 	
 	DEBUG(2,("getpwuid(%d) called\n",uid));
-	if (!(sv_pw_ret = getpwuid(uid)))
+	if (!(pw_ret = getpwuid(uid)))
 		return NULL;
 
 	num_lookups = 1;
 
-  	return setup_pwret(sv_pw_ret);
+  	return (sv_pw_ret = setup_pwret(pw_ret));
 }
 
 /**************************************************************************
