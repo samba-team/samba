@@ -1743,3 +1743,46 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 
 	return True;
 }
+
+BOOL pdb_set_unknown_3 (SAM_ACCOUNT *sampass, uint32 unkn)
+{
+	if (!sampass)
+		return False;
+
+	sampass->unknown_3 = unkn;
+	return True;
+}
+
+BOOL pdb_set_unknown_5 (SAM_ACCOUNT *sampass, uint32 unkn)
+{
+	if (!sampass)
+		return False;
+
+	sampass->unknown_5 = unkn;
+	return True;
+}
+
+BOOL pdb_set_unknown_6 (SAM_ACCOUNT *sampass, uint32 unkn)
+{
+	if (!sampass)
+		return False;
+
+	sampass->unknown_6 = unkn;
+	return True;
+}
+
+BOOL pdb_set_hours (SAM_ACCOUNT *sampass, uint8 *hours)
+{
+	if (!sampass || !sampass->mem_ctx) return False;
+
+	if (!hours) 
+	{
+		memset ((char *)sampass->hours, 0, MAX_HOURS_LEN);
+		return True;
+	}
+	
+	memcpy (sampass->hours, hours, MAX_HOURS_LEN);
+
+	return True;
+}
+
