@@ -1,3 +1,7 @@
+Fri Aug  1 16:56:12 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/hdb: Add some simple locking.
+
 Sun Jul 27 04:44:31 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/log.c: Add some general logging functions.
