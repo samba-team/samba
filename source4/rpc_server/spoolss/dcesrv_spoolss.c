@@ -897,24 +897,18 @@ static WERROR spoolss_44(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx
 }
 
 
-/* 
-  spoolss_OpenPrinterEx 
-*/
-static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct spoolss_OpenPrinterEx *r)
+static WERROR spoolss_OpenPrinterEx_server(struct dcesrv_call_state *dce_call, 
+					   TALLOC_CTX *mem_ctx,
+					   struct spoolss_OpenPrinterEx *r)
 {
 	struct spoolss_openprinter_state *state;
 	struct dcesrv_handle *handle;
 	TALLOC_CTX *op_mem_ctx;
 
-	ZERO_STRUCTP(r->out.handle);
+	/* Check printername is our name */
 
-	/* Check printername is either \\\\SERVER, \\\\SERVERIP or
-	   \\\\SERVER.FQ.DN */
-
-	if (!strequal(r->in.printername, lp_netbios_name())) {
+	if (!strequal(r->in.printername + 2, lp_netbios_name()))
 		return WERR_INVALID_PRINTER_NAME;
-	}
 
 	op_mem_ctx = talloc_init("spoolss_OpenPrinter");
 	if (!op_mem_ctx) {
@@ -940,7 +934,45 @@ static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_C
 	state->access_mask = r->in.access_required;
 	*r->out.handle = handle->wire_handle;
 
-	return WERR_OK;
+	return WERR_OK;	
+}
+
+static WERROR spoolss_OpenPrinterEx_printer(struct dcesrv_call_state *dce_call, 
+					    TALLOC_CTX *mem_ctx,
+					    struct spoolss_OpenPrinterEx *r)
+{
+	char *server = talloc_strdup(mem_ctx, r->in.printername + 2);
+	char *pos, *printer;
+
+	pos = strchr(server, '\\');
+	*pos = 0;
+	printer = talloc_strdup(mem_ctx, pos + 1);
+
+	if (!strequal(server, lp_netbios_name()))
+		return WERR_INVALID_PRINTER_NAME;
+
+	DEBUG(0, ("looking for server %s, printer %s\n", server, printer));
+	
+	return WERR_INVALID_PRINTER_NAME;
+}
+
+/* 
+  spoolss_OpenPrinterEx 
+*/
+static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_OpenPrinterEx *r)
+{
+	ZERO_STRUCTP(r->out.handle);
+	
+	/* Printername must start with \\ */
+
+	if (!strnequal(r->in.printername, "\\\\", 2))
+		return WERR_INVALID_PARAM;
+
+	if (strchr_m(r->in.printername + 2, '\\'))
+		return spoolss_OpenPrinterEx_server(dce_call, mem_ctx, r);
+	
+	return spoolss_OpenPrinterEx_printer(dce_call, mem_ctx, r);
 }
 
 
