@@ -587,11 +587,10 @@ uint32 tdb_update_c_setprinter(BOOL initialize)
 
 uint32 tdb_get_c_setprinter(void)
 {
-	return file_get_c_setprinter();
 	int32 c_setprinter = tdb_fetch_int32(tdb_printers, GLOBAL_C_SETPRINTER);
-	file_get_c_setprinter(); 
+	
 	if (c_setprinter == (int32)-1)
-		c_setprinter = update_c_setprinter(True);
+		c_setprinter = tdb_update_c_setprinter(True);
  
 	DEBUG(10,("get_c_setprinter: c_setprinter = %d\n", c_setprinter));
  
