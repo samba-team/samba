@@ -483,7 +483,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	(*p)->flags = binding->flags;
 
 	if (binding->flags & DCERPC_SCHANNEL) {
-		const char *trust_password = secrets_fetch_machine_password();
+		const char *trust_password = NULL; // samdb_fetch_member_password();
 		if (!trust_password) {
 			DEBUG(0,("Unable to fetch machine password\n"));
 			goto done;
@@ -635,9 +635,9 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **p,
 
 
 /*
-  create a secondary dcerpc connection on SMB
-  the secondary connection will be on the same SMB connection, but
-  use a new fnum
+  create a secondary dcerpc connection from a primary SMB connection
+
+  the secondary connection will be on the same SMB connection, but use a new fnum
 */
 NTSTATUS dcerpc_secondary_smb(struct dcerpc_pipe *p, struct dcerpc_pipe **p2,
 			      const char *pipe_name,

@@ -88,13 +88,17 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	ldb_msg_add_value(ldb, &msg, "sessionKey", &val);
 	ldb_msg_add_string(ldb, &msg, "expiry", s);
 
+	ldb_delete(ldb, msg.dn);
+
 	ret = ldb_add(ldb, &msg);
-	ldb_close(ldb);
 
 	if (ret != 0) {
+		DEBUG(1,("Unable to add %s to session key db - %s\n", msg.dn, ldb_errstring(ldb)));
+		ldb_close(ldb);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
+	ldb_close(ldb);
 	return NT_STATUS_OK;
 }
 
@@ -110,13 +114,20 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 	struct ldb_message **res;
 	int ret;
 	const struct ldb_val *val;
+	char *expr=NULL;
 
 	ldb = schannel_db_connect(mem_ctx);
 	if (ldb == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, "(dn=%s)", NULL, &res);
+	expr = talloc_asprintf(mem_ctx, "(dn=%s)", computer_name);
+	if (expr == NULL) {
+		ldb_close(ldb);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res);
 	if (ret != 1) {
 		ldb_close(ldb);
 		return NT_STATUS_INVALID_HANDLE;

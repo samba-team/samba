@@ -50,6 +50,11 @@
 */
 #define ascstr_noterm        [flag(STR_NOTERM|STR_ASCII|STR_SIZE4|STR_LEN4)]  string
 
+/*
+  a null terminated ascii string
+*/
+#define astring       [flag(STR_ASCII|STR_NULLTERM)]                  string
+
 
 #define NDR_NOALIGN       LIBNDR_FLAG_NOALIGN
 #define NDR_REMAINING     LIBNDR_FLAG_REMAINING

@@ -68,9 +68,9 @@ NTSTATUS dcesrv_crypto_select_type(struct dcesrv_connection *dce_conn,
 /*
   start crypto state
 */
-NTSTATUS dcesrv_crypto_start(struct dcesrv_auth *auth) 
+NTSTATUS dcesrv_crypto_start(struct dcesrv_auth *auth, DATA_BLOB *auth_blob) 
 {
-	return auth->crypto_ctx.ops->start(auth);
+	return auth->crypto_ctx.ops->start(auth, auth_blob);
 }
 
 /*
@@ -138,10 +138,8 @@ void dcesrv_crypto_end(struct dcesrv_auth *auth)
 const struct dcesrv_crypto_ops *dcesrv_crypto_backend_bytype(uint8_t auth_type)
 {
 	switch (auth_type) {
-#if 0
 		case DCERPC_AUTH_TYPE_SCHANNEL:
 			return dcesrv_crypto_schannel_get_ops();
-#endif
 		case DCERPC_AUTH_TYPE_NTLMSSP:
 			return dcesrv_crypto_ntlmssp_get_ops();
 	}
