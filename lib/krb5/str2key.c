@@ -97,16 +97,17 @@ q = (tbl[q & 0x0F] << 4) | (tbl[q >> 4])
  */
 
 static void
-xor (unsigned char *a, unsigned char *b)
+xor (des_cblock *key, unsigned char *b)
 {
-     a[0] ^= b[0];
-     a[1] ^= b[1];
-     a[2] ^= b[2];
-     a[3] ^= b[3];
-     a[4] ^= b[4];
-     a[5] ^= b[5];
-     a[6] ^= b[6];
-     a[7] ^= b[7];
+    unsigned char *a = (unsigned char*)key;
+    a[0] ^= b[0];
+    a[1] ^= b[1];
+    a[2] ^= b[2];
+    a[3] ^= b[3];
+    a[4] ^= b[4];
+    a[5] ^= b[5];
+    a[6] ^= b[6];
+    a[7] ^= b[7];
 }
 
 /*
@@ -126,18 +127,141 @@ init (unsigned char *a, unsigned char *b)
      a[7] = b[7] << 1;
 }
 
+static void
+DES_string_to_key(char *str, size_t len, des_cblock *key)
+{
+    int odd, i;
+    des_key_schedule sched;
+
+    memset (key, 0, sizeof(des_cblock));
+
+    odd = 1;
+    for (i = 0; i < len; i += 8) {
+	unsigned char tmp[8];
+
+	init (tmp, (unsigned char*)&str[i]);
+
+	if (odd == 0) {
+	    odd = 1;
+	    reverse (tmp);
+	    init (tmp, tmp);
+	} else
+	    odd = 0;
+	xor (key, tmp);
+    }
+    des_set_odd_parity (key);
+    des_set_key (key, sched);
+    des_cbc_cksum ((des_cblock *)str, key, len, sched, key);
+    des_set_odd_parity (key);
+    if (des_is_weak_key (key))
+	xor (key, (unsigned char*)"\0\0\0\0\0\0\0\xf0");
+}
+
+static int
+gcd(int a, int b)
+{
+    do{
+	int r = a % b;
+	a = b;
+	b = r;
+    }while(b);
+    return a;
+}
+
+
+static void
+rr13(unsigned char *buf, size_t len)
+{
+    unsigned char *tmp = malloc(len);
+    int i;
+    for(i = 0; i < len; i++){
+	int x = (buf[i] << 8) | buf[(i + 1) % len];
+	x >>= 5;
+	tmp[(i + 2) % len] = x & 0xff;
+    }
+    memcpy(buf, tmp, len);
+    free(tmp);
+}
+
+static void
+add1(unsigned char *a, unsigned char *b, size_t len)
+{
+    int i;
+    int carry = 0;
+    for(i = len - 1; i >= 0; i--){
+	int x = a[i] + b[i];
+	carry = x > 0xff;
+	a[i] = x & 0xff;
+    }
+    for(i = len - 1; carry && i >= 0; i--){
+	int x = a[i] + carry;
+	carry = x > 0xff;
+	a[i] = carry & 0xff;
+    }
+}
+
+static void
+fold(const unsigned char *str, size_t len, unsigned char *out)
+{
+    const int size = 24;
+    unsigned char key[24];
+    int num = 0;
+    int i;
+    int lcm = size * len / gcd(size, len);
+    unsigned char *tmp = malloc(lcm);
+    unsigned char *buf = malloc(len);
+    memcpy(buf, str, len);
+    for(; num < lcm; num += len){
+	memcpy(tmp + num, buf, len);
+	rr13(buf, len);
+    }
+    free(buf);
+    memset(key, 0, sizeof(key));
+    for(i = 0; i < lcm; i += size)
+	add1(key, tmp + i, size);
+
+    memcpy(out, key, size);
+}
+
+void
+DES3_string_to_key(char *str, size_t len, des_cblock *keys)
+{
+    unsigned char tmp[24];
+    des_cblock ivec;
+    des_key_schedule s[3];
+    int i;
+    fold(str, len, tmp);
+    for(i = 0; i < 3; i++){
+	memcpy(keys + i, tmp + 8 * i, 8);
+	des_set_odd_parity(keys + i);
+	if(des_is_weak_key(keys + i))
+	    xor(keys + i, (unsigned char*)"\0\0\0\0\0\0\0\xf0");
+	des_set_key(keys + i, s + i);
+    }
+    memset(&ivec, 0, sizeof(ivec));
+    des_ede3_cbc_encrypt((void*)tmp, (void*)tmp, sizeof(tmp), 
+			 s[0], s[1], s[2], &ivec, 1);
+    memset(s, 0, sizeof(s));
+    for(i = 0; i < 3; i++){
+	memcpy(keys + i, tmp + 8 * i, 8);
+	des_set_odd_parity(keys + i);
+	if(des_is_weak_key(keys + i))
+	    xor(keys + i, (unsigned char*)"\0\0\0\0\0\0\0\xf0");
+    }
+    memset(tmp, 0, sizeof(tmp));
+}
+
+
 static krb5_error_code
 string_to_key_internal (char *str,
 			size_t str_len,
 			krb5_data *salt,
+			krb5_keytype ktype,
 			krb5_keyblock *key)
 {
-     int odd, i;
      size_t len;
      char *s, *p;
-     des_cblock tempkey;
-     des_key_schedule sched;
-     krb5_error_code err;
+     krb5_error_code ret;
 
      len = str_len + salt->length;
 #if 1
@@ -146,57 +270,54 @@ string_to_key_internal (char *str,
      p = s = malloc (len);
      if (p == NULL)
 	  return ENOMEM;
-     err = krb5_data_alloc (&key->keyvalue, sizeof(des_cblock));
-     if (err) {
-	  free (p);
-	  return err;
-     }
      memset (s, 0, len);
      strncpy (p, str, str_len);
      p += str_len;
      memcpy (p, salt->data, salt->length);
-     odd = 1;
-     memset (tempkey, 0, sizeof(tempkey));
-     for (i = 0; i < len; i += 8) {
-	  unsigned char tmp[8];
 
-	  init (tmp, (unsigned char*)&s[i]);
-
-	  if (odd == 0) {
-	       odd = 1;
-	       reverse (tmp);
-	       init (tmp, tmp);
-	  } else
-	       odd = 0;
-	  xor (tempkey, tmp);
+     switch(ktype){
+     case KEYTYPE_DES:{
+	 des_cblock tmpkey;
+	 DES_string_to_key(s, len, &tmpkey);
+	 ret = krb5_data_copy(&key->keyvalue, tmpkey, sizeof(des_cblock));
+	 memset(&tmpkey, 0, sizeof(tmpkey));
+	 break;
      }
-     des_set_odd_parity (&tempkey);
-     des_set_key (&tempkey, sched);
-     des_cbc_cksum ((des_cblock *)s, &tempkey, len, sched, &tempkey);
-     free (s);
-     des_set_odd_parity (&tempkey);
-     if (des_is_weak_key (&tempkey))
-	 xor ((unsigned char *)&tempkey, (unsigned char*)"\0\0\0\0\0\0\0\xf0");
-     memcpy (key->keyvalue.data, &tempkey, sizeof(tempkey));
-     key->keytype = KEYTYPE_DES;
-     key->keyvalue.length = sizeof(tempkey);
+     case KEYTYPE_DES3:{
+	 des_cblock keys[3];
+	 DES3_string_to_key(s, len, keys);
+	 ret = krb5_data_copy(&key->keyvalue, keys, sizeof(keys));
+	 memset(keys, 0, sizeof(keys));
+	 break;
+     }
+     default:
+	 abort();
+	 break;
+     }
+     if(ret)
+	 return ret;
+     memset(s, 0, len);
+     free(s);
+     key->keytype = ktype;
      return 0;
 }
 
 krb5_error_code
 krb5_string_to_key (char *str,
 		    krb5_data *salt,
+		    krb5_keytype ktype,
 		    krb5_keyblock *key)
 {
-    return string_to_key_internal (str, strlen(str), salt, key);
+    return string_to_key_internal (str, strlen(str), salt, ktype, key);
 }
 
 krb5_error_code
 krb5_string_to_key_data (krb5_data *str,
 			 krb5_data *salt,
+			 krb5_keytype ktype,
 			 krb5_keyblock *key)
 {
-    return string_to_key_internal (str->data, str->length, salt, key);
+    return string_to_key_internal (str->data, str->length, salt, ktype, key);
 }
 
 krb5_error_code
