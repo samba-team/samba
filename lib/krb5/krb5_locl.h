@@ -135,7 +135,7 @@ struct sockaddr_dl;
 #include <rc4.h>
 #endif
 
-#include <asn1.h>
+#include <krb5_asn1.h>
 #include <der.h>
 
 #include <krb5.h>
