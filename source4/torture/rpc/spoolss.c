@@ -482,6 +482,56 @@ BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+BOOL test_DeletePrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			    struct policy_handle *handle, char *value_name)
+{
+	NTSTATUS status;
+	struct spoolss_DeletePrinterData r;
+
+	r.in.handle = handle;
+	r.in.value_name = value_name;
+
+	printf("Testing DeletePrinterData\n");
+
+	status = dcerpc_spoolss_DeletePrinterData(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("DeletePrinterData failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+BOOL test_SetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			 struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct spoolss_SetPrinterData r;
+	char *value_name = "spottyfoot";
+
+	r.in.handle = handle;
+	r.in.value_name = value_name;
+	r.in.type = 0;
+	r.in.buffer = data_blob_talloc(mem_ctx, "dog", 4);
+	r.in.real_len = 4;
+
+	printf("Testing SetPrinterData\n");
+
+	status = dcerpc_spoolss_SetPrinterData(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetPrinterData failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!test_DeletePrinterData(p, mem_ctx, handle, value_name)) {
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			     const char *name)
 {
@@ -579,6 +629,10 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_EnumJobs(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_SetPrinterData(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 

@@ -336,7 +336,12 @@
 
 	/******************/
 	/* Function: 0x1b */
-	WERROR spoolss_SetPrinterData(
+	WERROR spoolss_SetPrinterData(	
+		[in,ref] policy_handle *handle,
+		[in] unistr value_name,
+		[in] uint32 type,
+		[in] DATA_BLOB buffer,
+		[in] uint32 real_len
 	);
 
 	/******************/
@@ -644,7 +649,9 @@
 
 	/******************/
 	/* Function: 0x49 */
-	WERROR spoolss_49(
+	WERROR spoolss_DeletePrinterData(
+		[in,ref] policy_handle *handle,
+		[in] unistr value_name
 	);
 
 	/******************/
