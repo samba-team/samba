@@ -229,80 +229,60 @@ static void load_hosts_file(char *fname)
 
   while (!feof(f))
     {
+      pstring ip,name,flags,extra;
+      struct subnet_record *d;
+      char *ptr;
+      int count = 0;
+      struct in_addr ipaddr;
+      enum name_source source = LMHOSTS;
+
       if (!fgets_slash(line,sizeof(pstring),f)) continue;
 
       if (*line == '#') continue;
 
-      {
-	BOOL group=False;
-
-	pstring ip,name,mask,flags,extra;
-
-	char *ptr;
-	int count = 0;
-	struct in_addr ipaddr;
-	struct in_addr ipmask;
-	enum name_source source = LMHOSTS;
-
-	strcpy(ip,"");
-	strcpy(name,"");
-	strcpy(mask,"");
-	strcpy(flags,"");
-	strcpy(extra,"");
-	
-	ptr = line;
-
-	if (next_token(&ptr,ip   ,NULL)) ++count;
-	if (next_token(&ptr,name ,NULL)) ++count;
-	if (next_token(&ptr,mask ,NULL)) ++count;
-	if (next_token(&ptr,flags,NULL)) ++count;
-	if (next_token(&ptr,extra,NULL)) ++count;
-
-	if (count <= 0) continue;
-
-	if (count > 0 && count < 2) {
-	  DEBUG(0,("Ill formed hosts line [%s]\n",line));	    
-	  continue;
-	}
-
-	/* work out if we need to shuffle the tokens along due to the
-	   optional subnet mask argument */
-
-	if (strchr(mask, 'G') || strchr(mask, 'S') || strchr(mask, 'M')) {
-	  strcpy(flags, mask );
-	  /* default action for no subnet mask */
-	  strcpy(mask, "");
-	}
-
-	DEBUG(4, ("lmhost entry: %s %s %s %s\n", ip, name, mask, flags));
-
-	if (strchr(flags,'G') || strchr(flags,'S'))
-	  group = True;
-
-	if (strchr(flags,'M') && !group) {
-	  source = SELF;
-	  strcpy(myname,name);
-	}
-
-	ipaddr = *interpret_addr2(ip);
-	if (*mask)
-	  ipmask = *interpret_addr2(mask);
-	else 
-	  ipmask = *iface_nmask(ipaddr);
-
-	if (group) {
-	  add_subnet_entry(ipaddr, ipmask, name, True, True);
-	} else {
-      struct subnet_record *d = find_subnet(ipaddr);
-      if (d)
-      {
-	    add_netbios_entry(d,name,0x00,NB_ACTIVE,0,source,ipaddr,True,True);
-	    add_netbios_entry(d,name,0x20,NB_ACTIVE,0,source,ipaddr,True,True);
+      strcpy(ip,"");
+      strcpy(name,"");
+      strcpy(flags,"");
+      
+      ptr = line;
+      
+      if (next_token(&ptr,ip   ,NULL)) ++count;
+      if (next_token(&ptr,name ,NULL)) ++count;
+      if (next_token(&ptr,flags,NULL)) ++count;
+      if (next_token(&ptr,extra,NULL)) ++count;
+      
+      if (count <= 0) continue;
+      
+      if (count > 0 && count < 2) {
+	DEBUG(0,("Ill formed hosts line [%s]\n",line));	    
+	continue;
       }
-	}
+      
+      if (count >= 4) {
+	DEBUG(0,("too many columns in %s (obsolete syntax)\n",fname));
+	continue;
       }
+      
+      DEBUG(4, ("lmhost entry: %s %s %s\n", ip, name, flags));
+      
+      if (strchr(flags,'G') || strchr(flags,'S')) {
+	DEBUG(0,("group flag in %s ignored (obsolete)\n",fname));
+	continue;
+      }
+      
+      if (strchr(flags,'M')) {
+	source = SELF;
+	strcpy(myname,name);
+      }
+      
+      ipaddr = *interpret_addr2(ip);
+      d = find_subnet(ipaddr);
+      if (d) {
+	add_netbios_entry(d,name,0x00,NB_ACTIVE,0,source,ipaddr,True,True);
+	add_netbios_entry(d,name,0x20,NB_ACTIVE,0,source,ipaddr,True,True);
+      } 
     }
-
+  
   fclose(f);
 }
 
@@ -325,7 +305,7 @@ static void process(void)
 
       announce_host();
 
-#if 1
+#if 0
       /* XXXX what was this stuff supposed to do? It sent
 	 ANN_GetBackupListReq packets which I think should only be
 	 sent when trying to find out who to browse with */	 
@@ -334,6 +314,8 @@ static void process(void)
 #endif
 
       announce_master();
+
+      announce_remote();
 
       query_refresh_names();
 
@@ -468,7 +450,7 @@ static void usage(char *pname)
 	{
 	case 's':
 	  strcpy(servicesf,optarg);
-	  break;
+	  break;	  
 	case 'C':
 	  strcpy(ServerComment,optarg);
 	  break;

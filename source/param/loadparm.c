@@ -129,6 +129,7 @@ typedef struct
   char *szSmbrun;
   char *szWINSserver;
   char *szInterfaces;
+  char *szRemoteAnnounce;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -397,6 +398,7 @@ struct parm_struct
   {"username map",     P_STRING,  P_GLOBAL, &Globals.szUsernameMap,     NULL},
   {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set},
   {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL},
+  {"remote announce",  P_STRING,  P_GLOBAL, &Globals.szRemoteAnnounce,  NULL},
   {"max log size",     P_INTEGER, P_GLOBAL, &Globals.max_log_size,      NULL},
   {"mangled stack",    P_INTEGER, P_GLOBAL, &Globals.mangled_stack,     NULL},
   {"max mux",          P_INTEGER, P_GLOBAL, &Globals.max_mux,           NULL},
@@ -637,24 +639,49 @@ static void init_locals(void)
 }
 
 
-/*******************************************************************
-a convenience rooutine to grab string parameters into a rotating
-static buffer, and run standard_sub_basic on them. The buffers
-can be written to by callers
+/******************************************************************* a
+convenience routine to grab string parameters into a rotating buffer,
+and run standard_sub_basic on them. The buffers can be written to by
+callers without affecting the source string.
 ********************************************************************/
 char *lp_string(char *s)
 {
-  static pstring bufs[10];
-  static int next=0;
+  static char *bufs[10];
+  static int buflen[10];
+  static int next = -1;  
   char *ret;
-  
+  int i;
+  int len = s?strlen(s):0;
+
+  if (next == -1) {
+    /* initialisation */
+    for (i=0;i<10;i++) {
+      bufs[i] = NULL;
+      buflen[i] = 0;
+    }
+    next = 0;
+  }
+
+  len = MAX(len+100,sizeof(pstring)); /* the +100 is for some
+					 substitution room */
+
+  if (buflen[next] != len) {
+    buflen[next] = len;
+    if (bufs[next]) free(bufs[next]);
+    bufs[next] = (char *)malloc(len);
+    if (!bufs[next]) {
+      DEBUG(0,("out of memory in lp_string()"));
+      exit(1);
+    }
+  } 
+
   ret = &bufs[next][0];
   next = (next+1)%10;
 
   if (!s) 
     *ret = 0;
   else
-    StrnCpy(ret,s,sizeof(pstring)-1);
+    StrCpy(ret,s);
 
   standard_sub_basic(ret);
   return(ret);
@@ -705,6 +732,7 @@ FN_GLOBAL_STRING(lp_domain_controller,&Globals.szDomainController)
 FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
 FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet) 
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
+FN_GLOBAL_STRING(lp_remote_announce,&Globals.szRemoteAnnounce) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
 
