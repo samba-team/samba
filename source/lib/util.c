@@ -3077,8 +3077,13 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   pstrcpy(t_pattern,regexp);
   pstrcpy(t_filename,str);
 
+#if 0
+  /* 
+   * Not sure if this is a good idea. JRA.
+   */
   if(trans2 && is_8_3(t_pattern,False) && is_8_3(t_filename,False))
     trans2 = False;
+#endif
 
 #if 0
   if (!strchr(t_filename,'.')) {
@@ -3147,12 +3152,11 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
             if(fp)
               *fp = '\0';
 
-            if(do_match( cp2, cp1, case_sig)) {
-              cp1 = rp ? rp + 1 : NULL;
+            if((cp1 != NULL) && do_match( cp2, cp1, case_sig)) {
               cp2 = fp ? fp + 1 : "";
               break;
             }
-            cp2 = fp + 1;
+            cp2 = fp ? fp + 1 : "";
           }
           num_path_components -= i;
         }
