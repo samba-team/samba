@@ -246,6 +246,7 @@ struct response_record
   BOOL recurse;
   struct in_addr send_ip;
   struct in_addr reply_to_ip;
+  int reply_id;
 
   int num_msgs;
 

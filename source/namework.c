@@ -372,7 +372,8 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
 		      queue_netbios_packet(d1,ClientNMB,NMB_QUERY,NAME_QUERY_SRV_CHK,
 					   work->work_group,0x1d,
                        0,0,0,NULL,NULL,
-					   False,False,back_ip,back_ip);
+					   False,False,back_ip,back_ip,
+					   0);
 		      return;
 		  }
 		}
