@@ -609,6 +609,8 @@ static BOOL samr_reply_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_u,
 	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
 	int num_entries;
 	int total_entries;
+	
+	ZERO_STRUCT(r_e);
 
 	r_e.status = 0x0;
 	r_e.total_num_entries = 0;
@@ -669,6 +671,8 @@ static BOOL samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 	int num_entries;
 	BOOL got_grps;
 	char *dummy_group = "Domain Admins";
+	
+	ZERO_STRUCT(r_e);
 
 	r_e.status = 0x0;
 	r_e.num_entries = 0;
@@ -2076,6 +2080,8 @@ static BOOL samr_reply_enum_domains(SAMR_Q_ENUM_DOMAINS* q_u, prs_struct* rdata)
 {
   SAMR_R_ENUM_DOMAINS r_u;
   fstring dom[2];
+  
+  ZERO_STRUCT(r_u);
 
   fstrcpy(dom[0],global_myname);
   fstrcpy(dom[1],"Builtin");

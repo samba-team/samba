@@ -217,6 +217,12 @@ int getfileline(void *vp, char *linebuf, int linebuf_size)
 		 */
 
 		linebuf_len = strlen(linebuf);
+		if (linebuf_len == 0)
+		{
+			linebuf[0] = '\0';
+			return 0;
+		}
+
 		if (linebuf[linebuf_len - 1] != '\n')
 		{
 			c = '\0';

@@ -73,7 +73,7 @@ uint32 spoolss_enum_printerdrivers(const char *srv_name, const char *environment
 		{
 			if (r_o.status != NT_STATUS_NOPROBLEMO)
 			{
-				DEBUG(0,("SPOOLSS_ENUMPRINTERDRIVERS:  %s\n", get_nt_error_msg(r_o.status)));
+				DEBUG(3,("SPOOLSS_ENUMPRINTERDRIVERS:  %s\n", get_nt_error_msg(r_o.status)));
 			}
 		        *needed=r_o.needed;
 		        *returned=r_o.returned;
@@ -130,7 +130,7 @@ uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,
 			if (r_o.status != NT_STATUS_NO_PROBLEMO)
 			{
                         	/* report error code */
-                        	DEBUG(5,("SPOOLSS_ENUMPRINTERS: %s\n", get_nt_error_msg(r_o.status)));
+                        	DEBUG(3,("SPOOLSS_ENUMPRINTERS: %s\n", get_nt_error_msg(r_o.status)));
 			}
 
         		*needed=r_o.needed;
@@ -189,7 +189,7 @@ uint32 spoolss_enum_ports(fstring srv_name, uint32 level,
 		{
 			if (r_o.status != NT_STATUS_NO_PROBLEMO)
 			{
-				DEBUG(0,("SPOOLSS_ENUMPORTS: %s\n", get_nt_error_msg(r_o.status)));
+				DEBUG(3,("SPOOLSS_ENUMPORTS: %s\n", get_nt_error_msg(r_o.status)));
 			}
 			
 	        	*needed=r_o.needed;
@@ -243,7 +243,7 @@ uint32 spoolss_enum_jobs(const POLICY_HND *hnd, uint32 firstjob, uint32 numofjob
 		{
 			if (r_o.status != NT_STATUS_NO_PROBLEMO)
 			{
-				DEBUG(0,("SPOOLSS_ENUMJOBS: %s\n", get_nt_error_msg(r_o.status)));
+				DEBUG(3,("SPOOLSS_ENUMJOBS: %s\n", get_nt_error_msg(r_o.status)));
 			}
 	        	*needed=r_o.needed;
 		        *returned=r_o.returned;
@@ -301,7 +301,7 @@ uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx,
 		{
 			if (r_o.status != NT_STATUS_NO_PROBLEMO)
 			{
-				DEBUG(0,("SPOOLSS_ENUMPRINTERDATA: %s\n", get_nt_error_msg(r_o.status)));
+				DEBUG(3,("SPOOLSS_ENUMPRINTERDATA: %s\n", get_nt_error_msg(r_o.status)));
 			}
 			
 			*valuelen=r_o.valuesize;
@@ -361,7 +361,7 @@ uint32 spoolss_getprinter(const POLICY_HND *hnd, uint32 level,
 		{
 			if (r_o.status != NT_STATUS_NO_PROBLEMO)
 			{
-				DEBUG(0,("SPOOLSS_GETPRINTER: %s\n", get_nt_error_msg(r_o.status)));
+				DEBUG(3,("SPOOLSS_GETPRINTER: %s\n", get_nt_error_msg(r_o.status)));
 			}
 		        *needed=r_o.needed;
 		}
@@ -486,7 +486,7 @@ BOOL spoolss_open_printer_ex(  const char *printername,
                 if (prs_offset(&rbuf)!= 0 && r_o.status != 0)
                 {
                         /* report error code */
-                        DEBUG(5,("SPOOLSS_OPENPRINTEREX: %s\n", get_nt_error_msg(r_o.status)));
+                        DEBUG(3,("SPOOLSS_OPENPRINTEREX: %s\n", get_nt_error_msg(r_o.status)));
                         p = False;
                 }
 
@@ -565,7 +565,7 @@ BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 
 			if (r_o.status != NT_STATUS_NO_PROBLEMO)
                         {
 				/* report error code */
-                        	DEBUG(0,("SPOOLSS_ADDPRINTEREX: %s\n", get_nt_error_msg(r_o.status)));
+                        	DEBUG(3,("SPOOLSS_ADDPRINTEREX: %s\n", get_nt_error_msg(r_o.status)));
                         	valid_pol = False;
 			}
         	}
@@ -631,7 +631,7 @@ BOOL spoolss_closeprinter(POLICY_HND *hnd)
                 if (prs_offset(&rbuf)!=0 && r_c.status != 0)
                 {
                         /* report error code */
-                        DEBUG(0,("SPOOL_CLOSEPRINTER: %s\n", get_nt_error_msg(r_c.status)));
+                        DEBUG(3,("SPOOL_CLOSEPRINTER: %s\n", get_nt_error_msg(r_c.status)));
                 }
 		else
 			valid_close = True;
@@ -694,7 +694,7 @@ uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
 		{
 			if (r_o.status != NT_STATUS_NO_PROBLEMO)
 			{
-				DEBUG(0,("SPOOLSS_GETPRINTERDATA: %s\n", get_nt_error_msg(r_o.status)));
+				DEBUG(3,("SPOOLSS_GETPRINTERDATA: %s\n", get_nt_error_msg(r_o.status)));
 			}
 
 		        *type=r_o.type;
@@ -753,7 +753,7 @@ uint32 spoolss_getprinterdriverdir(fstring srv_name, fstring env_name, uint32 le
 		{
 			if (r_o.status != NT_STATUS_NO_PROBLEMO)
 			{
-				DEBUG(0,("SPOOLSS_GETPRINTERDRIVERDIRECTORY: %s\n", get_nt_error_msg(r_o.status)));
+				DEBUG(3,("SPOOLSS_GETPRINTERDRIVERDIRECTORY: %s\n", get_nt_error_msg(r_o.status)));
 			}
 
 		        *needed=r_o.needed;
@@ -805,7 +805,7 @@ uint32 spoolss_addprinterdriver(const char *srv_name, uint32 level, PRINTER_DRIV
 			if (r_o.status != NT_STATUS_NO_PROBLEMO)
 			{
                         	/* report error code */
-                        	DEBUG(0,("SPOOLSS_ADDPRINTERDRIVER: %s\n", get_nt_error_msg(r_o.status)));
+                        	DEBUG(3,("SPOOLSS_ADDPRINTERDRIVER: %s\n", get_nt_error_msg(r_o.status)));
 			}
 		}
         }
