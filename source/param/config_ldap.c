@@ -161,8 +161,8 @@ static NTSTATUS ldap_config_load(
 	int count;
 	const char *config_attr_list[] = {"description", NULL};
 	const char *share_attr_list[] = {"sambaShareName", "description", NULL};
-	char **share_dn;
-	char **share_name;
+	char **share_dn = NULL;
+	char **share_name = NULL;
 
 	mem_ctx = talloc_init("ldap_config_load");
 	
@@ -266,7 +266,7 @@ static NTSTATUS ldap_config_load(
 	}
 	if (!NT_STATUS_IS_OK(parse_section(config_dn, pfunc))) {
 		goto done;
-	} else { /* parse shares */
+	} else if (share_dn && share_name) { /* parse shares */
 		int i;
 
 		for (i = 0; share_dn[i] != NULL; i++) {
