@@ -52,8 +52,9 @@ krb5_mk_req_extended(krb5_context context,
   krb5_data authenticator;
   Checksum c;
   Checksum *c_opt;
-
+  krb5_cksumtype cksumtype;
   krb5_auth_context ac;
+
   if(auth_context) {
       if(*auth_context == NULL)
 	  r = krb5_auth_con_init(context, auth_context);
@@ -69,10 +70,15 @@ krb5_mk_req_extended(krb5_context context,
   copy_EncryptionKey (&in_creds->session,
 		      &ac->key);
 
+  if (ac->cksumtype)
+      cksumtype = ac->cksumtype;
+  else
+      krb5_keytype_to_cksumtype (context, ac->key.keytype, &cksumtype);
+
   if (in_data) {
 
       r = krb5_create_checksum (context,
-				ac->cksumtype,
+				cksumtype,
 				in_data->data,
 				in_data->length,
 				&ac->key,
