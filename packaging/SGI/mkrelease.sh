@@ -6,7 +6,8 @@
 
 doclean=""
 SGI_ABI=-n32
-export SGI_ABI
+CC=cc
+export SGI_ABI CC
 
 if [ "$1" = "clean" ]; then
   doclean=$1
