@@ -621,17 +621,7 @@ static void usage(char *pname)
 	setluid(0);
 #endif
 
-	/*
-	 * gain_root_privilege uses an assert than will cause a core
-	 * dump if euid != 0. Ensure this is the case.
-	 */
-
-#ifndef SMB_REGRESSION_TEST
-	if(geteuid() != (uid_t)0) {
-		fprintf(stderr, "%s: Version %s : Must have effective user id of zero to run.\n", argv[0], VERSION);
-		exit(1);
-	}
-#endif
+	sec_init();
 
 	append_log = True;
 
