@@ -679,6 +679,13 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 # endif
 
   r_length = strlen(result);
+
+  if (r_length == 0)
+    {
+      result[0] = '0';
+      result[1] = '\0';
+      r_length = 1;
+    }
   
   if (dec_pt <= 0)
     {
