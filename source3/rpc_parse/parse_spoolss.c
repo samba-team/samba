@@ -382,7 +382,8 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 		x=data->notify_data.data.length+1;
 		if(!prs_uint32("string length", ps, depth, &x ))
 			return False;
-		if(!prs_uint16s(True,"string",ps,depth,data->notify_data.data.string,x))
+		/* These are already in little endian format. Don't byte swap. */
+		if(!prs_uint8s(True,"string",ps,depth,(uint8 *)data->notify_data.data.string,x*2))
 			return False;
 	}
 	if(!prs_align(ps))
