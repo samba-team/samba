@@ -522,8 +522,11 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 	int ret;
 	int pnum = -1;
 	char *p = NULL;
+	NTSTATUS status;
 
-	srvstr_pull_buf(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE);
+	srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status))
+		return ERROR_NT(status);
 
 	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
 		return ret;
@@ -587,6 +590,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	char *p = NULL;
 	time_t c_time;
 	BOOL extended_oplock_granted = False;
+	NTSTATUS status;
 
 	START_PROFILE(SMBntcreateX);
 
@@ -641,7 +645,11 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 
 		if(!dir_fsp->is_directory) {
 
-			srvstr_pull_buf(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE);
+			srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE,&status);
+			if (!NT_STATUS_IS_OK(status)) {
+				END_PROFILE(SMBntcreateX);
+				return ERROR_NT(status);
+			}
 
 			/* 
 			 * Check to see if this is a mac fork of some kind.
@@ -681,9 +689,17 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 			dir_name_len++;
 		}
 
-		srvstr_pull_buf(inbuf, &fname[dir_name_len], smb_buf(inbuf), sizeof(fname)-dir_name_len, STR_TERMINATE);
+		srvstr_get_path(inbuf, &fname[dir_name_len], smb_buf(inbuf), sizeof(fname)-dir_name_len, STR_TERMINATE,&status);
+		if (!NT_STATUS_IS_OK(status)) {
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(status);
+		}
 	} else {
-		srvstr_pull_buf(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE);
+		srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE,&status);
+		if (!NT_STATUS_IS_OK(status)) {
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(status);
+		}
 
 		/* 
 		 * Check to see if this is a mac fork of some kind.
@@ -971,6 +987,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 	int ret;
 	int pnum = -1;
 	char *p = NULL;
+	NTSTATUS status;
 
 	/*
 	 * Ensure minimum number of parameters sent.
@@ -982,6 +999,10 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 	}
 
 	srvstr_pull(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE);
+	status = check_path_syntax(fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
+	}
 
 	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
 		return ret;
@@ -1158,7 +1179,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
 
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
-		END_PROFILE(SMBntcreateX);
 		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 	}
 
@@ -1188,6 +1208,10 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		if(!dir_fsp->is_directory) {
 
 			srvstr_pull(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE);
+			nt_status = check_path_syntax(fname);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				return ERROR_NT(nt_status);
+			}
 
 			/*
 			 * Check to see if this is a mac fork of some kind.
@@ -1217,8 +1241,16 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 		srvstr_pull(inbuf, &fname[dir_name_len], params+53, sizeof(fname)-dir_name_len, 
 				parameter_count-53, STR_TERMINATE);
+		nt_status = check_path_syntax(fname);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return ERROR_NT(nt_status);
+		}
 	} else {
 		srvstr_pull(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE);
+		nt_status = check_path_syntax(fname);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return ERROR_NT(nt_status);
+		}
 
 		/*
 		 * Check to see if this is a mac fork of some kind.
@@ -1260,7 +1292,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
-			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
@@ -1361,7 +1392,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		fsp->initial_allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
 		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
 			close_file(fsp,False);
-			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(NT_STATUS_DISK_FULL);
 		}
 	} else {
@@ -1517,6 +1547,10 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
 	CHECK_FSP(fsp, conn);
 	srvstr_pull(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE);
+	status = check_path_syntax(new_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
+	}
 
 	status = rename_internals(conn, fsp->fsp_name,
 				  new_name, replace_if_exists);
