@@ -1,5 +1,8 @@
 2001-02-18  Assar Westerlund  <assar@sics.se>
 
+	* accept_sec_context.c (gss_accept_sec_context): either return
+	gss_name NULL-ed or set
+
 	* import_name.c: set minor_status in some cases where it was not
 	done
 
