@@ -25,7 +25,7 @@ gettextsrcdir = $(prefix)/share/gettext/po
 subdir = po
 
 INSTALL = @INSTALL@
-INSTALL_DATA = @INSTALL_DATA@
+INSTALL_DATA = $(SHELL) @INSTALL_DATA@
 MKINSTALLDIRS = $(top_srcdir)/script/@MKINSTALLDIRS@
 
 CC = @CC@
