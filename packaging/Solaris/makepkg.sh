@@ -15,7 +15,7 @@ add_dynamic_entries()
   echo "#\n# Codepages \n#"
   echo d none samba/lib/codepages 0755 root other
 
-  CODEPAGELIST="437 737 850 852 861 932 866 949 950 936"
+  CODEPAGELIST="437 737 850 852 861 932 866 949 950 936 1251"
   # Check if make_smbcodepage exists
   if [ ! -f $DISTR_BASE/source/bin/make_smbcodepage ]; then
     echo "Could not find $DISTR_BASE/source/bin/make_smbcodepage to generate codepages.\n\
@@ -38,15 +38,26 @@ add_dynamic_entries()
       echo f none samba/bin/$binfile=source/bin/$binfile 0755 root other
     fi
   done
+
   echo "#\n# HTML documentation \n#"
-  echo d none samba/docs/htmldocs 0755 root other
-  cd $DISTR_BASE/docs/htmldocs
-  for htmldoc in *
+  # Create the directories 
+  cd $DISTR_BASE
+  list=`find docs/htmldocs -type d`
+  for docdir in $list
   do
-    if [ -f $htmldoc ]; then
-      echo f none samba/docs/htmldocs/$htmldoc=docs/htmldocs/$htmldoc 0644 root other
+    if [ -d $docdir ]; then
+      echo d none samba/$docdir 0755 root other
     fi
   done
+
+  list=`find docs/htmldocs -type f`
+  for htmldoc in $list
+  do
+    if [ -f $htmldoc ]; then
+      echo f none samba/$htmldoc=$htmldoc 0644 root other
+    fi
+  done
+
   echo "#\n# Text Docs \n#"
   echo d none samba/docs/textdocs 0755 root other
   cd $DISTR_BASE/docs/textdocs
@@ -56,6 +67,7 @@ add_dynamic_entries()
       echo f none samba/docs/textdocs/$textdoc=docs/textdocs/$textdoc 0644 root other
     fi
   done
+
   echo "#\n# SWAT \n#"
   cd $DISTR_BASE
   list=`find swat -type d`
@@ -68,6 +80,7 @@ add_dynamic_entries()
   do
     echo "f none samba/$i=$i 0644 root other"
   done
+  
   echo "#\n# HTML documentation for SWAT\n#"
   cd $DISTR_BASE/docs/htmldocs
   for htmldoc in *
@@ -76,6 +89,24 @@ add_dynamic_entries()
       echo f none samba/swat/help/$htmldoc=docs/htmldocs/$htmldoc 0644 root other
     fi
   done
+
+  echo "#\n# Using Samba Book files for SWAT\n#"
+  cd $DISTR_BASE/docs/htmldocs
+ 
+# set up a symbolic link instead of duplicating the book tree
+  echo 's none samba/swat/using_samba=../docs/htmldocs/using_samba'
+
+#  list=`find using_samba -type d`
+#  for bookdir in $list
+#  do
+#    echo d none samba/swat/$bookdir 0755 root other
+#  done
+#  
+#  list=`find using_samba -type f`
+#  for bookdoc in $list
+#  do
+#    echo f none samba/swat/$bookdoc=docs/htmldocs/$bookdoc 0644 root other
+#  done
 
 }
 

@@ -42,6 +42,7 @@ d none /usr/share/man/man5 ? ? ?
 d none /usr/share/man/man7 ? ? ?
 d none /usr/share/man/man8 ? ? ?
 f none /usr/share/man/man1/make_smbcodepage.1=docs/manpages/make_smbcodepage.1 0644 root other
+f none /usr/share/man/man1/make_unicodemap.1=docs/manpages/make_unicodemap.1 0644 root other
 f none /usr/share/man/man1/nmblookup.1=docs/manpages/nmblookup.1 0644 root other
 f none /usr/share/man/man1/smbclient.1=docs/manpages/smbclient.1 0644 root other
 f none /usr/share/man/man1/smbrun.1=docs/manpages/smbrun.1 0644 root other
