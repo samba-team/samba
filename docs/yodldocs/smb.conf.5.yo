@@ -4325,7 +4325,7 @@ debug their link(bf("passwd chat"))(passwdchat) scripts when calling
 the link(bf("passwd program"))(passwdprogram) and should be turned off
 after this has been done. This parameter is off by default.
 
-See also link(bf("passwd chat"))(passwdchat"), link(bf("passwd
+See also link(bf("passwd chat"))(passwdchat), link(bf("passwd
 program"))(passwdprogram).
 
   bf(Example:)
@@ -6770,7 +6770,7 @@ label(writecachesize)
 dit(bf(write cache size (S)))
 
 This integer parameter (new with Samba 2.0.7) if set to non-zero causes Samba to create an in-memory
-cache for each oplocked file (it does bf(not) do this for non-oplocked filed). All
+cache for each oplocked file (it does bf(not) do this for non-oplocked files). All
 writes that the client does not request to be flushed directly to disk will be
 stored in this cache if possible. The cache is flushed onto disk when a write
 comes in whose offset would not fit into the cache or when the file is closed

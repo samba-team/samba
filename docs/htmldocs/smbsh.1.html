@@ -3,6 +3,7 @@
 
 
 
+
 <html><head><title>smbsh (1)</title>
 
 <link rev="made" href="mailto:samba-bugs@samba.org">
@@ -15,27 +16,26 @@
 <h2>Samba</h2>
 <h2>23 Oct 1998</h2>
 
-    
 
     
-<p><br><a name="NAME"></a>
+<p><a name="NAME"></a>
 <h2>NAME</h2>
     smbsh - Allows access to Windows NT filesystem using UNIX commands
-<p><br><a name="SYNOPSIS"></a>
+<p><a name="SYNOPSIS"></a>
 <h2>SYNOPSIS</h2>
     
-<p><br><strong>smbsh</strong>
-<p><br><a name="DESCRIPTION"></a>
+<p><strong>smbsh</strong>
+<p><a name="DESCRIPTION"></a>
 <h2>DESCRIPTION</h2>
     
-<p><br>This program is part of the <strong>Samba</strong> suite.
-<p><br><strong>smbsh</strong> allows you to access an NT filesystem using UNIX commands
+<p>This program is part of the <strong>Samba</strong> suite.
+<p><strong>smbsh</strong> allows you to access an NT filesystem using UNIX commands
 such as <strong>ls</strong>, <strong>egrep</strong>, and <strong>rcp</strong>. You must use a shell that
 is dynmanically linked in order for <strong>smbsh</strong> to work correctly.
-<p><br>To use the <strong>smbsh</strong> command, execute <strong>smbsh</strong> from the prompt and
+<p>To use the <strong>smbsh</strong> command, execute <strong>smbsh</strong> from the prompt and
 enter the username and password that authenticate you to the
 machine running the Windows NT operating system.
-<p><br><pre>
+<p><pre>
 
 system% smbsh
 Username: user
@@ -43,49 +43,49 @@ Password:
 
 </pre>
 
-<p><br>Any dynamically linked command you execute from this shell will
+<p>Any dynamically linked command you execute from this shell will
 access the <strong>/smb</strong> directory using the smb protocol.
 For example, the command 
-<p><br><code>ls /smb</code>
-<p><br>will show all the machines in your workgroup.
+<p><code>ls /smb</code>
+<p>will show all the machines in your workgroup.
 The command 
-<p><br><code>ls /smb/&lt;machine-name&gt;</code>
-<p><br>will show the share names for that machine. You could then, for example, use the 
+<p><code>ls /smb/&lt;machine-name&gt;</code>
+<p>will show the share names for that machine. You could then, for example, use the 
 <strong>cd</strong> command to change directories, <strong>vi</strong> to edit files, and <strong>rcp</strong>
  to copy files.
-<p><br><a name="VERSION"></a>
+<p><a name="VERSION"></a>
 <h2>VERSION</h2>
     
-<p><br>This man page is correct for the 2.0.3 of the Samba suite.
-<p><br><a name="BUGS"></a>
+<p>This man page is correct for the 2.0.3 of the Samba suite.
+<p><a name="BUGS"></a>
 <h2>BUGS</h2>
     
-<p><br><strong>smbsh</strong> works by intercepting the standard libc calls with the dynamically loaded
+<p><strong>smbsh</strong> works by intercepting the standard libc calls with the dynamically loaded
 versions in <strong>smbwrapper.o</strong>. Not all calls have been "wrapped" so some programs
 may not function correctly under <strong>smbsh</strong>.
-<p><br>Programs which are not dynamically linked cannot make use of <strong>smbsh</strong>'s 
+<p>Programs which are not dynamically linked cannot make use of <strong>smbsh</strong>'s 
 functionality. Most versions of UNIX have a <strong>file</strong> command that will describe how
 a program was linked.
-<p><br><a name="SEEALSO"></a>
+<p><a name="SEEALSO"></a>
 <h2>SEE ALSO</h2>
     
-<p><br><a href="smb.conf.5.html"><strong>smb.conf (5)</strong></a>,
+<p><a href="smb.conf.5.html"><strong>smb.conf (5)</strong></a>,
 <a href="smbd.8.html"><strong>smbd (8)</strong></a>.
-<p><br><a name="AUTHOR"></a>
+<p><a name="AUTHOR"></a>
 <h2>AUTHOR</h2>
     
-<p><br>The original Samba software and related utilities were created by
+<p>The original Samba software and related utilities were created by
 Andrew Tridgell (samba-bugs@samba.org). Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
-<p><br>The original Samba man pages were written by Karl Auer. The man page
+<p>The original Samba man pages were written by Karl Auer. The man page
 sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 <a href="ftp://ftp.icce.rug.nl/pub/unix/"><strong>ftp://ftp.icce.rug.nl/pub/unix/</strong></a>)
 and updated for the Samba2.0 release by Jeremy Allison.
 <a href="mailto:samba-bugs@samba.org"><em>samba-bugs@samba.org</em></a>.
-<p><br>See <a href="samba.7.html"><strong>samba (7)</strong></a> to find out how to get a full
+<p>See <a href="samba.7.html"><strong>samba (7)</strong></a> to find out how to get a full
 list of contributors and details on how to submit bug reports,
 comments etc.
-<p><br></body>
+<p></body>
 </html>

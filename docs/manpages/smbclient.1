@@ -5,7 +5,7 @@ smbclient \- ftp-like client to access SMB/CIFS resources on servers
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBsmbclient\fP servicename [-s smb\&.conf] [-O socket options][-R name resolve order] [-M NetBIOS name] [-i scope] [-N] [-n NetBIOS name] [-d debuglevel] [-P] [-p port] [-l log basename] [-h] [-I dest IP] [-E] [-U username] [-L NetBIOS name] [-t terminal code] [-m max protocol] [-b buffersize] [-W workgroup] [-T<c|x>IXFqgbNan] [-D directory] [-c command string]
+\fBsmbclient\fP servicename [password] [-s smb\&.conf] [-O socket options][-R name resolve order] [-M NetBIOS name] [-i scope] [-N] [-n NetBIOS name] [-d debuglevel] [-P] [-p port] [-l log basename] [-h] [-I dest IP] [-E] [-U username] [-L NetBIOS name] [-t terminal code] [-m max protocol] [-b buffersize] [-W workgroup] [-T<c|x>IXFqgbNan] [-D directory] [-c command string]
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -760,7 +760,7 @@ This man page is correct for version 2\&.0 of the Samba suite\&.
 .SH "AUTHOR" 
 .PP 
 The original Samba software and related utilities were created by
-Andrew Tridgell \fIsamba-bugs@samba\&.org\fP\&. Samba is now developed
+Andrew Tridgell samba-bugs@samba\&.org\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
 .PP 
@@ -769,7 +769,7 @@ sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 \fBftp://ftp\&.icce\&.rug\&.nl/pub/unix/\fP)
 and updated for the Samba2\&.0 release by Jeremy Allison\&.
-\fIsamba-bugs@samba\&.org\fP\&.
+samba-bugs@samba\&.org\&.
 .PP 
 See \fBsamba (7)\fP to find out how to get a full
 list of contributors and details on how to submit bug reports,
