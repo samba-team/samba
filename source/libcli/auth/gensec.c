@@ -39,12 +39,12 @@ static const struct gensec_security_ops *gensec_security_by_authtype(uint8_t aut
 	return NULL;
 }
 
-static const struct gensec_security_ops *gensec_security_by_oid(const char *oid)
+static const struct gensec_security_ops *gensec_security_by_oid(const char *oid_string)
 {
 	int i;
 	for (i=0; i < num_backends; i++) {
 		if (generic_security_ops[i]->oid &&
-		    (strcmp(generic_security_ops[i]->oid, oid) == 0)) {
+		    (strcmp(generic_security_ops[i]->oid, oid_string) == 0)) {
 			return generic_security_ops[i];
 		}
 	}
