@@ -118,7 +118,7 @@ typedef struct
 	char *szPasswdChat;
 	char *szLogFile;
 	char *szConfigFile;
-#ifdef WITH_TDBPWD
+#ifdef WITH_TDBSAM
 	char *szTDBPasswdFile;
 #else
 	char *szSMBPasswdFile;
@@ -695,7 +695,7 @@ static struct parm_struct parm_table[] = {
 	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, 0},
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, 0},
 	{"password server", P_STRING, P_GLOBAL, &Globals.szPasswordServer, NULL, NULL, 0},
-#ifdef WITH_TDBPWD
+#ifdef WITH_TDBSAM
 	{"tdb passwd file", P_STRING, P_GLOBAL, &Globals.szTDBPasswdFile, NULL, NULL, 0},
 #else
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, 0},
@@ -1202,7 +1202,7 @@ static void init_globals(void)
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
-#ifdef WITH_TDBPWD
+#ifdef WITH_TDBSAM
 	string_set(&Globals.szTDBPasswdFile, TDB_PASSWD_FILE);
 #else
 	string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
@@ -1450,7 +1450,7 @@ static char *lp_string(const char *s)
 
 FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
-#ifdef WITH_TDBPWD
+#ifdef WITH_TDBSAM
 FN_GLOBAL_STRING(lp_tdb_passwd_file, &Globals.szTDBPasswdFile)
 #else
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
