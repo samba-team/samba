@@ -30,8 +30,7 @@ extern int DEBUGLEVEL;
 
 extern BOOL sam_logon_in_ssb;
 extern pstring samlogon_user;
-
-
+extern pstring global_myname;
 
 /*************************************************************************
  make_net_r_req_chal:
@@ -683,7 +682,6 @@ static void api_net_sam_logon( int uid,
 		pstring domain_groups;
 		pstring dom_sid;
 		pstring other_sids;
-		extern pstring myname;
 		uint32 r_uid;
 		uint32 r_gid;
 
@@ -706,7 +704,7 @@ static void api_net_sam_logon( int uid,
 		pstrcpy(home_drive  , lp_logon_drive      ());
 		pstrcpy(home_dir    , lp_logon_home       ());
 
-		pstrcpy(my_name     , myname                );
+		pstrcpy(my_name     , global_myname         );
 		strupper(my_name);
 
 		get_domain_user_groups(domain_groups, samlogon_user);

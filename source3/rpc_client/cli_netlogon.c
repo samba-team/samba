@@ -65,7 +65,7 @@ BOOL do_net_logon_ctrl2(struct cli_state *cli, uint16 fnum,
   net_io_q_logon_ctrl2("", &q_l,  &buf, 0);
 
   /* send the data on \PIPE\ */
-  if (rpc_api_pipe_req(cli, fnum, NET_LOGON_CTRL2, &buf, &rbuf))
+  if (rpc_api_pipe_req(cli, NET_LOGON_CTRL2, &buf, &rbuf))
   {
     NET_R_LOGON_CTRL2 r_l;
     BOOL ok;
@@ -77,6 +77,7 @@ BOOL do_net_logon_ctrl2(struct cli_state *cli, uint16 fnum,
     {
       /* report error code */
       DEBUG(0,("NET_R_LOGON_CTRL: %s\n", get_nt_error_msg(r_l.status)));
+      cli->nt_error = r_l.status;
       ok = False;
     }
 
@@ -96,38 +97,32 @@ BOOL do_net_logon_ctrl2(struct cli_state *cli, uint16 fnum,
 do a LSA Authenticate 2
 ****************************************************************************/
 
-BOOL do_net_auth2(struct cli_state *cli, uint16 fnum,
-                  char *logon_srv, char *acct_name, uint16 sec_chan, 
-                  char *comp_name, DOM_CHAL *clnt_chal, uint32 neg_flags, 
-                  DOM_CHAL *srv_chal)
+BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan, 
+                   uint32 neg_flags, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal)
 {
   prs_struct rbuf;
   prs_struct buf; 
   NET_Q_AUTH_2 q_a;
   BOOL valid_chal = False;
 
-  if (srv_chal == NULL || clnt_chal == NULL)
-    return False;
-
   prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
   prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
-
 
   /* create and send a MSRPC command with api NET_AUTH2 */
 
   DEBUG(4,("LSA Authenticate 2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %lx\n",
-         logon_srv, acct_name, sec_chan, comp_name,
+         cli->srv_name, cli->mach_acct, sec_chan, global_myname,
          credstr(clnt_chal->data), neg_flags));
 
   /* store the parameters */
-  make_q_auth_2(&q_a, logon_srv, acct_name, sec_chan, comp_name,
+  make_q_auth_2(&q_a, cli->srv_name, cli->mach_acct, sec_chan, global_myname,
                 clnt_chal, neg_flags);
 
   /* turn parameters into data stream */
   net_io_q_auth_2("", &q_a,  &buf, 0);
 
   /* send the data on \PIPE\ */
-  if (rpc_api_pipe_req(cli, fnum, NET_AUTH2, &buf, &rbuf))
+  if (rpc_api_pipe_req(cli, NET_AUTH2, &buf, &rbuf))
   {
     NET_R_AUTH_2 r_a;
     BOOL ok;
@@ -139,6 +134,7 @@ BOOL do_net_auth2(struct cli_state *cli, uint16 fnum,
     {
       /* report error code */
       DEBUG(0,("NET_AUTH2: %s\n", get_nt_error_msg(r_a.status)));
+      cli->nt_error = r_a.status;
       ok = False;
     }
 
@@ -168,9 +164,7 @@ BOOL do_net_auth2(struct cli_state *cli, uint16 fnum,
 do a LSA Request Challenge
 ****************************************************************************/
 
-BOOL do_net_req_chal(struct cli_state *cli, uint16 fnum,
-                     char *desthost, char *myhostname,
-                     DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal)
+BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal)
 {
   prs_struct rbuf;
   prs_struct buf; 
@@ -183,20 +177,19 @@ BOOL do_net_req_chal(struct cli_state *cli, uint16 fnum,
   prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
   prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
 
-
   /* create and send a MSRPC command with api NET_REQCHAL */
 
-  DEBUG(4,("LSA Request Challenge from %s to %s: %s\n",
-         desthost, myhostname, credstr(clnt_chal->data)));
+  DEBUG(4,("cli_net_req_chal: LSA Request Challenge from %s to %s: %s\n",
+         cli->desthost, global_myname, credstr(clnt_chal->data)));
 
   /* store the parameters */
-  make_q_req_chal(&q_c, desthost, myhostname, clnt_chal);
+  make_q_req_chal(&q_c, desthost, global_myname, clnt_chal);
 
   /* turn parameters into data stream */
   net_io_q_req_chal("", &q_c,  &buf, 0);
 
   /* send the data on \PIPE\ */
-  if (rpc_api_pipe_req(cli, fnum, NET_REQCHAL, &buf, &rbuf))
+  if (rpc_api_pipe_req(cli, NET_REQCHAL, &buf, &rbuf))
   {
     NET_R_REQ_CHAL r_c;
     BOOL ok;
@@ -208,6 +201,7 @@ BOOL do_net_req_chal(struct cli_state *cli, uint16 fnum,
     {
       /* report error code */
       DEBUG(0,("NET_REQ_CHAL: %s\n", get_nt_error_msg(r_c.status)));
+      cli->nt_error = r_a.status;
       ok = False;
     }
 
@@ -261,7 +255,7 @@ BOOL do_net_srv_pwset(struct cli_state *cli, uint16 fnum,
   net_io_q_srv_pwset("", &q_s,  &buf, 0);
 
   /* send the data on \PIPE\ */
-  if (rpc_api_pipe_req(cli, fnum, NET_SRVPWSET, &buf, &rbuf))
+  if (rpc_api_pipe_req(cli, NET_SRVPWSET, &buf, &rbuf))
   {
     NET_R_SRV_PWSET r_s;
     BOOL ok;
@@ -273,6 +267,7 @@ BOOL do_net_srv_pwset(struct cli_state *cli, uint16 fnum,
     {
       /* report error code */
       DEBUG(0,("NET_R_SRV_PWSET: %s\n", get_nt_error_msg(r_s.status)));
+      cli->nt_error = r_s.status;
       ok = False;
     }
 
@@ -302,8 +297,7 @@ BOOL do_net_srv_pwset(struct cli_state *cli, uint16 fnum,
 do a LSA SAM Logon
 ****************************************************************************/
 
-BOOL do_net_sam_logon(struct cli_state *cli, uint16 fnum,
-                      uchar sess_key[8], DOM_CRED *sto_clnt_cred,
+BOOL cli_net_sam_logon(struct cli_state *cli, DOM_CRED *sto_clnt_cred,
                       char *logon_srv, char *comp_name,
                       DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
                       uint16 logon_level, NET_ID_INFO_CTR *ctr,
@@ -321,24 +315,23 @@ BOOL do_net_sam_logon(struct cli_state *cli, uint16 fnum,
   prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
   prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
 
-
   /* create and send a MSRPC command with api NET_SAMLOGON */
 
   DEBUG(4,("LSA SAM Logon: srv:%s mc:%s clnt %s %lx rtn: %s %lx ll: %d\n",
-             logon_srv, comp_name, 
-             credstr(clnt_cred->challenge.data), clnt_cred->timestamp.time,
+             cli->srv_name, global_myname, 
+             credstr(cli->clnt_cred->challenge.data), cli->clnt_cred->timestamp.time,
              credstr(rtn_cred->challenge.data), rtn_cred ->timestamp.time,
              logon_level));
 
   /* store the parameters */
-  make_sam_info(&(q_s.sam_id), logon_srv, comp_name,
-         clnt_cred, rtn_cred, logon_level, ctr, validation_level);
+  make_sam_info(&(q_s.sam_id), cli->srv_name, global_myname,
+         cli->clnt_cred, rtn_cred, logon_level, ctr, validation_level);
 
   /* turn parameters into data stream */
   net_io_q_sam_logon("", &q_s,  &buf, 0);
 
   /* send the data on \PIPE\ */
-  if (rpc_api_pipe_req(cli, fnum, NET_SAMLOGON, &buf, &rbuf))
+  if (rpc_api_pipe_req(cli, NET_SAMLOGON, &buf, &rbuf))
   {
     NET_R_SAM_LOGON r_s;
     BOOL ok;
@@ -352,6 +345,7 @@ BOOL do_net_sam_logon(struct cli_state *cli, uint16 fnum,
     {
       /* report error code */
       DEBUG(0,("NET_SAMLOGON: %s\n", get_nt_error_msg(r_s.status)));
+      cli->nt_error = r_s.status;
       ok = False;
     }
 
@@ -365,7 +359,7 @@ BOOL do_net_sam_logon(struct cli_state *cli, uint16 fnum,
 
     if (ok)
     {
-      if (clnt_deal_with_creds(sess_key, sto_clnt_cred, &(r_s.srv_creds)))
+      if (clnt_deal_with_creds(cli->sess_key, sto_clnt_cred, &(r_s.srv_creds)))
       {
         DEBUG(5, ("do_net_sam_logon: server credential check OK\n"));
         /* ok, at last: we're happy. return the challenge */
@@ -423,7 +417,7 @@ BOOL do_net_sam_logoff(struct cli_state *cli, uint16 fnum,
   net_io_q_sam_logoff("", &q_s,  &buf, 0);
 
   /* send the data on \PIPE\ */
-  if (rpc_api_pipe_req(cli, fnum, NET_SAMLOGOFF, &buf, &rbuf))
+  if (rpc_api_pipe_req(cli, NET_SAMLOGOFF, &buf, &rbuf))
   {
     NET_R_SAM_LOGOFF r_s;
     BOOL ok;
@@ -435,6 +429,7 @@ BOOL do_net_sam_logoff(struct cli_state *cli, uint16 fnum,
     {
       /* report error code */
       DEBUG(0,("NET_SAMLOGOFF: %s\n", get_nt_error_msg(r_s.status)));
+      cli->nt_error = r_s.status;
       ok = False;
     }
 

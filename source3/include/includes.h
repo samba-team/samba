@@ -383,6 +383,9 @@ char *getwd(char *);
 #define USE_WAITPID
 #define USE_SETSID
 #define USE_SYSV_IPC
+#ifndef QSORT_CAST
+#define QSORT_CAST (int (*)(const void *, const void *))
+#endif /* QSORT_CAST */
 #endif
 
 

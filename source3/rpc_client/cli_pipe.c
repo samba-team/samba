@@ -46,7 +46,7 @@ uint32 get_rpc_call_id(void)
  uses SMBreadX to get rest of rpc data
  ********************************************************************/
 
-static BOOL rpc_read(struct cli_state *cli, uint16 fnum,
+static BOOL rpc_read(struct cli_state *cli, 
                      prs_struct *rdata, uint32 data_to_read,
                      uint32 rdata_offset)
 {
@@ -83,7 +83,7 @@ static BOOL rpc_read(struct cli_state *cli, uint16 fnum,
       DEBUG(5,("rpc_read: grow buffer to %d\n", rdata->data->data_used));
     }
 
-    num_read = cli_read(cli, fnum, data, file_offset + 0x100000, size);
+    num_read = cli_read(cli, cli->nt_pipe_fnum, data, file_offset + 0x100000, size);
 
     DEBUG(5,("rpc_read: read offset: %d read: %d to read: %d\n",
          file_offset, num_read, data_to_read));
@@ -153,7 +153,7 @@ static BOOL rpc_check_hdr(prs_struct *rdata, uint8 *pkt_type,
 
  ****************************************************************************/
 
-BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, uint16 fnum,
+BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, 
                   prs_struct *param , prs_struct *data,
                   prs_struct *rparam, prs_struct *rdata)
 {
@@ -184,7 +184,7 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, uint16 fnum,
 
   /* create setup parameters. */
   setup[0] = cmd; 
-  setup[1] = fnum; /* pipe file handle.  got this from an SMBcreateX. */
+  setup[1] = cli->nt_pipe_fnum; /* pipe file handle.  got this from an SMBOpenX. */
 
   /* send the data: receive a response. */
   if (!cli_api_pipe(cli, "\\PIPE\\\0\0\0", 8,
@@ -231,7 +231,7 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, uint16 fnum,
   /* err status is only informational: the _real_ check is on the length */
   if (len > 0) /* || err == (0x80000000 | STATUS_BUFFER_OVERFLOW)) */
   {
-    if (!rpc_read(cli, fnum, rdata, len, rdata->data->data_used))
+    if (!rpc_read(cli, rdata, len, rdata->data->data_used))
       return False;
   }
 
@@ -251,7 +251,7 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, uint16 fnum,
 
     prs_init(&hps, 0x18, 4, 0, True);
 	
-    num_read = cli_read(cli, fnum, hps.data->data, 0, 0x18);
+    num_read = cli_read(cli, cli->nt_pipe_fnum, hps.data->data, 0, 0x18);
     DEBUG(5,("rpc_api_pipe: read header (size:%d)\n", num_read));
 
     if (num_read != 0x18)
@@ -275,7 +275,7 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, uint16 fnum,
     }
 
     len = rhdr.frag_len - hps.offset;
-    if (!rpc_read(cli, fnum, rdata, len, rdata->data->data_used))
+    if (!rpc_read(cli, rdata, len, rdata->data->data_used))
       return False;
   }
 
@@ -400,7 +400,7 @@ static BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, int data_len)
 /****************************************************************************
  send a request on an rpc pipe.
  ****************************************************************************/
-BOOL rpc_api_pipe_req(struct cli_state *cli, uint16 fnum, uint8 op_num,
+BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
                       prs_struct *data, prs_struct *rdata)
 {
   /* fudge this, at the moment: create the header; memcpy the data.  oops. */
@@ -421,7 +421,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint16 fnum, uint8 op_num,
   hdr.data->offset.end = data_len;
   mem_buf_copy(mem_data(&(hdr.data), 0x18), data->data, 0, data->offset);
 
-  ret = rpc_api_pipe(cli, 0x0026, fnum, NULL, &hdr, &rparam, rdata);
+  ret = rpc_api_pipe(cli, 0x0026, NULL, &hdr, &rparam, rdata);
 
   prs_mem_free(&rparam);
   prs_mem_free(&hdr);
@@ -434,8 +434,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint16 fnum, uint8 op_num,
 do an rpc bind
 ****************************************************************************/
 
-BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, 
-                            uint16 fnum, uint16 device_state)
+BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, uint16 device_state)
 {
   BOOL state_set = False;
   char param[2];
@@ -448,14 +447,14 @@ BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name,
     return False;
 
   DEBUG(5,("Set Handle state Pipe[%x]: %s - device state:%x\n",
-              fnum, pipe_name, device_state));
+              cli->nt_pipe_fnum, pipe_name, device_state));
 
   /* create parameters: device state */
   SSVAL(param, 0, device_state);
 
   /* create setup parameters. */
   setup[0] = 0x0001; 
-  setup[1] = fnum; /* pipe file handle.  got this from an SMBcreateX. */
+  setup[1] = cli->nt_pipe_fnum; /* pipe file handle.  got this from an SMBOpenX. */
 
   /* send the data on \PIPE\ */
   if (cli_api_pipe(cli, "\\PIPE\\\0\0\0", 8,
@@ -575,9 +574,8 @@ static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, char *pipe_name, RPC_IFACE *
 do an rpc bind
 ****************************************************************************/
 
-BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, uint16 fnum, 
-                   RPC_IFACE *abstract, RPC_IFACE *transfer, BOOL ntlmssp_auth,
-                   char *my_name, char *domain)
+BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
+                   RPC_IFACE *abstract, RPC_IFACE *transfer, BOOL ntlmssp_auth)
 {
   prs_struct hdr;
   prs_struct hdr_rb;
@@ -591,7 +589,7 @@ BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, uint16 fnum,
   if (pipe_name == NULL || abstract == NULL || transfer == NULL)
     return False;
 
-  DEBUG(5,("Bind RPC Pipe[%x]: %s\n", fnum, pipe_name));
+  DEBUG(5,("Bind RPC Pipe[%x]: %s\n", cli->nt_pipe_fnum, pipe_name));
 
   if (!valid_pipe_name(pipe_name, abstract, transfer))
     return False;
@@ -604,14 +602,14 @@ BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, uint16 fnum,
   prs_init(&rparam, 0   , 4, SAFETY_MARGIN, True );
 
   create_rpc_bind_req(&hdr, &hdr_rb, ntlmssp_auth ? &auth_req : NULL,
-                      abstract, transfer, my_name, domain);
+                      abstract, transfer, myname, myworkgroup);
 
   /* this is a hack due to limitations in rpc_api_pipe */
   prs_init(&data, mem_buf_len(hdr.data), 4, 0x0, False);
   mem_buf_copy(data.data->data, hdr.data, 0, mem_buf_len(hdr.data));
 
   /* send data on \PIPE\.  receive a response */
-  if (rpc_api_pipe(cli, 0x0026, fnum, NULL, &data, &rparam, &rdata))
+  if (rpc_api_pipe(cli, 0x0026, NULL, &data, &rparam, &rdata))
   {
     RPC_HDR_BA hdr_ba;
 
@@ -637,67 +635,44 @@ BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, uint16 fnum,
  open a session
  ****************************************************************************/
 
-BOOL do_session_open(struct cli_state *cli, char *pipe_name, uint16 *fnum)
+BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted)
 {
   RPC_IFACE abstract;
   RPC_IFACE transfer;
+  int fnum;
 
   /******************* open the pipe *****************/
-  if (((*fnum) = cli_open(cli, pipe_name, O_CREAT|O_WRONLY, DENY_NONE)) == 0xffff)
+  if ((fnum = cli_open(cli, pipe_name, O_CREAT|O_RDWR, DENY_NONE)) == -1)
   {
-    DEBUG(1,("do_session_open: cli_open failed\n"));
+    DEBUG(1,("do_session_open: cli_open failed on pipe %s to machine %s. \
+Error was %s.\n", pipe_name, cli->desthost, cli_errstr(&cli)));
     return False;
   }
 
+  cli->nt_pipe_fnum = (uint16)fnum;
+
   /**************** Set Named Pipe State ***************/
-  if (!rpc_pipe_set_hnd_state(cli, pipe_name, (*fnum), 0x4300))
+  if (!rpc_pipe_set_hnd_state(cli, pipe_name, 0x4300))
   {
-    DEBUG(1,("do_session_open: pipe hnd state failed\n"));
+    DEBUG(1,("do_session_open: pipe hnd state failed.\n"));
     return False;
   }
 
   /******************* bind request on pipe *****************/
-  if (!rpc_pipe_bind(cli, pipe_name, (*fnum), &abstract, &transfer,
-                     False, NULL, NULL))
+  if (!rpc_pipe_bind(cli, pipe_name, &abstract, &transfer, encrypted))
   {
-    DEBUG(1,("do_session_open: rpc bind failed\n"));
+    DEBUG(1,("do_session_open: rpc bind failed.\n"));
     return False;
   }
 
-  return True;
-}
+  /* 
+   * Setup the remote server name prefixed by \ and the machine account name.
+   */
 
-/****************************************************************************
- open an encrypted session
- ****************************************************************************/
+  sprintf(cli->srv_name, "\\\\%s", cli->desthost);
+  strupper(cli->srv_name);
 
-BOOL do_ntlm_session_open(struct cli_state *cli, char *pipe_name, uint16 *fnum,
-                          char *my_name, char *domain)
-{
-  RPC_IFACE abstract;
-  RPC_IFACE transfer;
-
-  /******************* open the pipe *****************/
-  if (((*fnum) = cli_open(cli, pipe_name, O_CREAT|O_WRONLY, DENY_NONE)) == 0xffff)
-  {
-    DEBUG(1,("do_ntlm_session_open: cli_open failed\n"));
-    return False;
-  }
-
-  /**************** Set Named Pipe State ***************/
-  if (!rpc_pipe_set_hnd_state(cli, pipe_name, (*fnum), 0x4300))
-  {
-    DEBUG(1,("do_ntlm_session_open: pipe hnd state failed\n"));
-    return False;
-  }
-
-  /******************* bind request on pipe *****************/
-  if (!rpc_pipe_bind(cli, pipe_name, (*fnum), &abstract, &transfer,
-                     True, my_name, domain))
-  {
-    DEBUG(1,("do_ntlm_session_open: rpc bind failed\n"));
-    return False;
-  }
+  sprintf(cli->mach_acct, "%s$", myname);
 
   return True;
 }
@@ -706,10 +681,7 @@ BOOL do_ntlm_session_open(struct cli_state *cli, char *pipe_name, uint16 *fnum,
 close the session
 ****************************************************************************/
 
-void do_session_close(struct cli_state *cli, uint16 fnum)
+void nt_session_close(struct cli_state *cli)
 {
-  if (fnum != 0xffff)
-  {
-    cli_close(cli, fnum);
-  }
+  cli_close(cli, cli->nt_pipe_fnum);
 }

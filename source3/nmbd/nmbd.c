@@ -40,8 +40,8 @@ int global_nmb_port = -1;
 
 extern pstring myhostname;
 static pstring host_file;
-extern pstring myname;
-extern fstring myworkgroup;
+extern pstring global_myname;
+extern fstring global_myworkgroup;
 extern char **my_netbios_names;
 
 extern BOOL global_in_nmbd;
@@ -450,23 +450,23 @@ static BOOL init_structs(void)
   int nodup;
   pstring nbname;
 
-  if (! *myname)
+  if (! *global_myname)
   {
-    fstrcpy( myname, myhostname );
-    p = strchr( myname, '.' );
+    fstrcpy( global_myname, myhostname );
+    p = strchr( global_myname, '.' );
     if (p)
       *p = 0;
   }
-  strupper( myname );
+  strupper( global_myname );
 
   /* Add any NETBIOS name aliases. Ensure that the first entry
-     is equal to myname.
+     is equal to global_myname.
    */
   /* Work out the max number of netbios aliases that we have */
   ptr = lp_netbios_aliases();
   for( namecount=0; next_token(&ptr,nbname,NULL); namecount++ )
     ;
-  if ( *myname )
+  if ( *global_myname )
     namecount++;
 
   /* Allocate space for the netbios aliases */
@@ -477,10 +477,10 @@ static BOOL init_structs(void)
      return( False );
   }
  
-  /* Use the myname string first */
+  /* Use the global_myname string first */
   namecount=0;
-  if ( *myname )
-    my_netbios_names[namecount++] = myname;
+  if ( *global_myname )
+    my_netbios_names[namecount++] = global_myname;
   
   ptr = lp_netbios_aliases();
   while ( next_token( &ptr, nbname, NULL ) )
@@ -508,7 +508,7 @@ static BOOL init_structs(void)
   /* Terminate name list */
   my_netbios_names[namecount++] = NULL;
   
-  fstrcpy( local_machine, myname );
+  fstrcpy( local_machine, global_myname );
   trim_string( local_machine, " ", " " );
   p = strchr( local_machine, ' ' );
   if (p)
@@ -615,8 +615,8 @@ int main(int argc,char *argv[])
           pstrcpy(host_file,optarg);
           break;
         case 'n':
-          pstrcpy(myname,optarg);
-          strupper(myname);
+          pstrcpy(global_myname,optarg);
+          strupper(global_myname);
           break;
         case 'l':
           sprintf(debugf,"%s.nmb",optarg);
@@ -674,9 +674,9 @@ int main(int argc,char *argv[])
 
   reload_services( True );
 
-  fstrcpy( myworkgroup, lp_workgroup() );
+  fstrcpy( global_myworkgroup, lp_workgroup() );
 
-  if (strequal(myworkgroup,"*"))
+  if (strequal(global_myworkgroup,"*"))
   {
     DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
     exit(1);

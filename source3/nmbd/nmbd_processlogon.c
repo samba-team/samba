@@ -28,8 +28,8 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring myname;
-extern fstring myworkgroup;
+extern pstring global_myname;
+extern fstring global_myworkgroup;
 
 /****************************************************************************
 Process a domain logon packet
@@ -68,7 +68,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
     return;
   }
 
-  strcpy(my_name, myname);
+  strcpy(my_name, global_myname);
   strupper(my_name);
 
   code = SVAL(buf,0);
@@ -145,7 +145,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
         PutUniCode(q, my_name); /* PDC name */
         q = skip_unicode_string(q, 1); 
-        PutUniCode(q, myworkgroup); /* Domain name*/
+        PutUniCode(q, global_myworkgroup); /* Domain name*/
         q = skip_unicode_string(q, 1); 
 
         SIVAL(q, 0, ntversion); q += 4;
@@ -218,7 +218,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       else
       {
         DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
-           unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, myworkgroup,
+           unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
            SAMLOGON_R ,lmnttoken));
       }
 

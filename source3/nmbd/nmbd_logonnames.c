@@ -27,8 +27,8 @@
 extern int DEBUGLEVEL;
 
 extern pstring scope;
-extern pstring myname;
-extern fstring myworkgroup;
+extern pstring global_myname;
+extern fstring global_myworkgroup;
 extern char **my_netbios_names;
 extern struct in_addr ipzero;
 extern struct in_addr allones_ip;
@@ -52,11 +52,11 @@ workgroup %s on subnet %s\n", fail_name->name, subrec->subnet_name));
     return;
   }
 
-  if((servrec = find_server_in_workgroup( work, myname)) == NULL)
+  if((servrec = find_server_in_workgroup( work, global_myname)) == NULL)
   {
     DEBUG(0,("become_logon_server_fail: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-       myname, fail_name->name, subrec->subnet_name));
+       global_myname, fail_name->name, subrec->subnet_name));
     work->log_state = LOGON_NONE;
     return;
   }
@@ -92,11 +92,11 @@ workgroup %s on subnet %s\n", registered_name->name, subrec->subnet_name));
     return;
   }
 
-  if((servrec = find_server_in_workgroup( work, myname)) == NULL)
+  if((servrec = find_server_in_workgroup( work, global_myname)) == NULL)
   {
     DEBUG(0,("become_logon_server_success: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-       myname, registered_name->name, subrec->subnet_name));
+       global_myname, registered_name->name, subrec->subnet_name));
     work->log_state = LOGON_NONE;
     return;
   }
@@ -147,17 +147,17 @@ void add_logon_names(void)
 
   for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
   {
-    struct work_record *work = find_workgroup_on_subnet(subrec, myworkgroup);
+    struct work_record *work = find_workgroup_on_subnet(subrec, global_myworkgroup);
 
     if (work && (work->log_state == LOGON_NONE))
     {
       struct nmb_name nmbname;
-      make_nmb_name(&nmbname,myworkgroup,0x1c,scope);
+      make_nmb_name(&nmbname,global_myworkgroup,0x1c,scope);
 
       if (find_name_on_subnet(subrec, &nmbname, FIND_SELF_NAME) == NULL)
       {
         DEBUG(0,("add_domain_logon_names: At time %s attempting to become \
-logon server for workgroup %s on subnet %s\n", timestring(), myworkgroup, 
+logon server for workgroup %s on subnet %s\n", timestring(), global_myworkgroup, 
                   subrec->subnet_name));
         become_logon_server(subrec, work);
       }

@@ -31,7 +31,7 @@ extern int Protocol;
 /* users from session setup */
 static pstring session_users="";
 
-extern pstring myname;
+extern pstring global_myname;
 
 /* these are kept here to keep the string_combinations function simple */
 static char this_user[100]="";
@@ -1783,8 +1783,8 @@ BOOL server_validate(char *user, char *domain,
          * need to detect this as some versions of NT4.x are broken. JRA.
          */
 
-        if (cli_session_setup(&pw_cli, user, badpass, sizeof(badpass), badpass, sizeof(badpass), 
-                                                         domain)) {
+        if (cli_session_setup(&pw_cli, user, (char *)badpass, sizeof(badpass), 
+                              (char *)badpass, sizeof(badpass), domain)) {
 	  if ((SVAL(pw_cli.inbuf,smb_vwv2) & 1) == 0) {
             DEBUG(0,("server_validate: password server %s allows users as non-guest \
 with a bad password.\n", pw_cli.desthost));
@@ -1886,7 +1886,6 @@ BOOL domain_client_validate( char *user, char *domain,
   struct in_addr dest_ip;
   struct cli_state cli;
   BOOL connected_ok = False;
-  int fnum;
 
   /* 
    * Check that the requested domain is not our own machine name.
@@ -1894,7 +1893,7 @@ BOOL domain_client_validate( char *user, char *domain,
    * password file.
    */
 
-  if(strequal( domain, myname)) {
+  if(strequal( domain, global_myname)) {
     DEBUG(3,("domain_client_validate: Requested domain was for this machine.\n"));
     return False;
   }
@@ -1972,7 +1971,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
       continue;
     }
     
-    if (!cli_session_request(&cli, remote_machine, 0x20, myname)) {
+    if (!cli_session_request(&cli, remote_machine, 0x20, global_myname)) {
       DEBUG(0,("domain_client_validate: machine %s rejected the session setup. \
 Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
       cli_shutdown(&cli);
@@ -2033,23 +2032,23 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
     return False;
   }
 
+#if 0 /* for now... JRA */
   /*
    * Ok - we have an anonymous connection to the IPC$ share.
    * Now start the NT Domain stuff :-).
    */
 
-  /*
-   * First, open the pipe to \PIPE\NETLOGON.
-   */
-
-  if((fnum = cli_open(&cli, PIPE_NETLOGON, O_CREAT, DENY_NONE)) == -1) {
-    DEBUG(0,("domain_client_validate: cli_open on %s on machine %s failed. Error was :%s.\n",
-           PIPE_NETLOGON, remote_machine, cli_errstr(&cli)));
+  if(cli_nt_session_open(&cli, PIPE_NETLOGON, False) == False) {
+    DEBUG(0,("domain_client_validate: unable to open the domain client session to \
+machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
+    cli_close(&cli, fnum);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
-    return False;
+    return False; 
   }
 
+  if(cli_nt_setup_creds(&cli,) HERE 
+#endif
   return False;
 }
 #endif /* DOMAIN_CLIENT */

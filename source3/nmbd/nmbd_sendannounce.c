@@ -28,8 +28,8 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
-extern pstring myname;
-extern fstring myworkgroup;
+extern pstring global_myname;
+extern fstring global_myworkgroup;
 extern char **my_netbios_names;
 extern int  updatecount;
 extern BOOL found_lm_clients;
@@ -54,7 +54,7 @@ void send_browser_reset(int reset_type, char *to_name, int to_type, struct in_ad
   p++;
 
   send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-                myname, 0x0, to_name, to_type, to_ip, FIRST_SUBNET->myip);
+                global_myname, 0x0, to_name, to_type, to_ip, FIRST_SUBNET->myip);
 }
 
 /****************************************************************************
@@ -79,12 +79,12 @@ to subnet %s\n", work->work_group, subrec->subnet_name));
 
   CVAL(p,0) = work->token; /* (local) Unique workgroup token id. */
   p++;
-  StrnCpy(p,myname,15);
+  StrnCpy(p,global_myname,15);
   strupper(p);
   p = skip_string(p,1);
   
   send_mailslot(False, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-                myname, 0x0, work->work_group,0x1e, subrec->bcast_ip, subrec->myip);
+                global_myname, 0x0, work->work_group,0x1e, subrec->bcast_ip, subrec->myip);
 }
 
 /****************************************************************************
@@ -169,14 +169,14 @@ static void send_local_master_announcement(struct subnet_record *subrec, struct 
   uint32 type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
 
   DEBUG(3,("send_local_master_announcement: type %x for name %s on subnet %s for workgroup %s\n",
-            type, myname, subrec->subnet_name, work->work_group));
+            type, global_myname, subrec->subnet_name, work->work_group));
 
   send_announcement(subrec, ANN_LocalMasterAnnouncement,
-                    myname,                          /* From nbt name. */
+                    global_myname,                   /* From nbt name. */
                     work->work_group, 0x1e,          /* To nbt name. */
                     subrec->bcast_ip,                /* To ip. */
                     work->announce_interval,         /* Time until next announce. */
-                    myname,                          /* Name to announce. */
+                    global_myname,                   /* Name to announce. */
                     type,                            /* Type field. */
                     servrec->serv.comment);
 }
@@ -191,13 +191,13 @@ static void send_workgroup_announcement(struct subnet_record *subrec, struct wor
             subrec->subnet_name, work->work_group));
 
   send_announcement(subrec, ANN_DomainAnnouncement,
-                    myname,                          /* From nbt name. */
+                    global_myname,                   /* From nbt name. */
                     MSBROWSE, 0x1,                   /* To nbt name. */
                     subrec->bcast_ip,                /* To ip. */
                     work->announce_interval,         /* Time until next announce. */
                     work->work_group,                /* Name to announce. */
                     SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT,  /* workgroup announce flags. */
-                    myname);                         /* From name as comment. */
+                    global_myname);                  /* From name as comment. */
 }
 
 /****************************************************************************
@@ -256,7 +256,7 @@ static void announce_server(struct subnet_record *subrec, struct work_record *wo
   /* Only do domain announcements if we are a master and it's
      our primary name we're being asked to announce. */
 
-  if (AM_LOCAL_MASTER_BROWSER(work) && strequal(myname,servrec->serv.name))
+  if (AM_LOCAL_MASTER_BROWSER(work) && strequal(global_myname,servrec->serv.name))
   {
     send_local_master_announcement(subrec, work, servrec);
     send_workgroup_announcement(subrec, work);
@@ -278,7 +278,7 @@ void announce_my_server_names(time_t t)
 
   for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
   {
-    struct work_record *work = find_workgroup_on_subnet(subrec, myworkgroup);
+    struct work_record *work = find_workgroup_on_subnet(subrec, global_myworkgroup);
 
     if(work)
     {
@@ -342,7 +342,7 @@ void announce_my_lm_server_names(time_t t)
 
   for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
   {
-    struct work_record *work = find_workgroup_on_subnet(subrec, myworkgroup);
+    struct work_record *work = find_workgroup_on_subnet(subrec, global_myworkgroup);
 
     if(work)
     {
@@ -512,7 +512,7 @@ void announce_remote(time_t t)
     if (wgroup)
       *wgroup++ = 0;
     if (!wgroup || !*wgroup)
-      wgroup = myworkgroup;
+      wgroup = global_myworkgroup;
 
     addr = *interpret_addr2(s2);
     
@@ -568,17 +568,17 @@ void browse_sync_remote(time_t t)
    * for our workgroup on the firsst subnet.
    */
 
-  if((work = find_workgroup_on_subnet(FIRST_SUBNET, myworkgroup)) == NULL)
+  if((work = find_workgroup_on_subnet(FIRST_SUBNET, global_myworkgroup)) == NULL)
   {   
     DEBUG(0,("browse_sync_remote: Cannot find workgroup %s on subnet %s\n",
-           myworkgroup, FIRST_SUBNET->subnet_name ));
+           global_myworkgroup, FIRST_SUBNET->subnet_name ));
     return;
   }   
          
   if(!AM_LOCAL_MASTER_BROWSER(work))
   {
     DEBUG(5,("browse_sync_remote: We can only do this if we are a local master browser \
-for workgroup %s on subnet %s.\n", myworkgroup, FIRST_SUBNET->subnet_name ));
+for workgroup %s on subnet %s.\n", global_myworkgroup, FIRST_SUBNET->subnet_name ));
     return;
   } 
 
@@ -587,7 +587,7 @@ for workgroup %s on subnet %s.\n", myworkgroup, FIRST_SUBNET->subnet_name ));
   CVAL(p,0) = ANN_MasterAnnouncement;
   p++;
 
-  StrnCpy(p,myname,15);
+  StrnCpy(p,global_myname,15);
   strupper(p);
   p = skip_string(p,1);
 
@@ -597,9 +597,9 @@ for workgroup %s on subnet %s.\n", myworkgroup, FIRST_SUBNET->subnet_name ));
     addr = *interpret_addr2(s2);
 
     DEBUG(5,("announce_remote: Doing remote browse sync announce for server %s to IP %s.\n",
-                 myname, inet_ntoa(addr) ));
+                 global_myname, inet_ntoa(addr) ));
 
     send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-          myname, 0x0, "*", 0x0, addr, FIRST_SUBNET->myip);
+          global_myname, 0x0, "*", 0x0, addr, FIRST_SUBNET->myip);
   }
 }

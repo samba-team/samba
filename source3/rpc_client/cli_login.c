@@ -26,13 +26,10 @@
 extern int DEBUGLEVEL;
 
 /****************************************************************************
-Initialize domain session.
+Initialize domain session credentials.
 ****************************************************************************/
 
-BOOL do_nt_session_open(struct cli_state *cli, uint16 fnum,
-                        char *dest_host, char *myhostname,
-                        char *mach_acct,
-                        uchar sess_key[16], DOM_CRED *clnt_cred)
+BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
 {
   DOM_CHAL clnt_chal;
   DOM_CHAL srv_chal;
@@ -41,57 +38,19 @@ BOOL do_nt_session_open(struct cli_state *cli, uint16 fnum,
 
   UTIME zerotime;
 
-  char nt_owf_mach_pwd[16];
-
   RPC_IFACE abstract;
   RPC_IFACE transfer;
-
-  fstring mach_pwd;
-  fstring dest_srv;
 
   /******************** initialise ********************************/
 
   zerotime.time = 0;
 
-  DEBUG(10,("do_nt_session_open: %d\n", __LINE__));
-
-  /**************** Set Named Pipe State ***************/
-  if (!rpc_pipe_set_hnd_state(cli, PIPE_NETLOGON, fnum, 0x4300))
-  {
-    DEBUG(0,("do_nt_session_open: pipe hnd state failed\n"));
-    return False;
-  }
-
-  /******************* bind request on \PIPE\NETLOGON *****************/
-
-  if (!rpc_pipe_bind(cli, PIPE_NETLOGON, fnum, &abstract, &transfer,
-                     False, NULL, NULL))
-  {
-    DEBUG(0,("do_nt_session_open: rpc bind failed\n"));
-    return False;
-  }
-
-  /************ Check workstation trust account *******************/
-
-FIXME !!
-	/* default machine password is lower-case machine name (really secure) */
-	fstrcpy(mach_pwd, myhostname);
-	strlower(mach_pwd);
-
-	/* default machine password is lower-case machine name (really secure) */
-	fstrcpy(prev_mpd, myhostname);
-	strlower(prev_mpd);
-
   /******************* Request Challenge ********************/
 
   generate_random_buffer( clnt_chal.data, 8, False);
 	
-  strcpy(dest_srv, "\\\\");
-  strcat(dest_srv, dest_host);
-  strupper(dest_srv);
-
   /* send a client challenge; receive a server challenge */
-  if (!do_net_req_chal(cli, fnum, dest_srv, myhostname, &clnt_chal, &srv_chal))
+  if (!cli_net_req_chal(cli, &clnt_chal, &srv_chal))
   {
     DEBUG(0,("do_nt_session_open: request challenge failed\n"));
     return False;
@@ -99,17 +58,8 @@ FIXME !!
 
   /**************** Long-term Session key **************/
 
-#ifdef DEBUG_PASSWORD
-  DEBUG(100,("generating nt owf from initial machine pwd: %s\n", mach_pwd));
-#endif
-  nt_owf_gen( mach_pwd, nt_owf_mach_pwd);
-
-#ifdef DEBUG_PASSWORD
-  dump_data(6, nt_owf_mach_pwd, 16);
-#endif
-
   /* calculate the session key */
-  cred_session_key(&clnt_chal, &srv_chal, nt_owf_mach_pwd, sess_key);
+  cred_session_key(&clnt_chal, &srv_chal, mach_pwd, sess_key);
   bzero(sess_key+8, 8);
 
   /******************* Authenticate 2 ********************/
@@ -118,22 +68,22 @@ FIXME !!
   cred_create(sess_key, &clnt_chal, zerotime, &(clnt_cred->challenge));
 
   /* send client auth-2 challenge; receive an auth-2 challenge */
-  if (!do_net_auth2(cli, fnum, dest_srv, mach_acct,
-                    SEC_CHAN_WKSTA, myhostname,
-                    &(clnt_cred->challenge), 0x000001ff, &auth2_srv_chal))
+  if (!cli_net_auth2(cli, SEC_CHAN_WKSTA, 0x000001ff, 
+                     &(cli->clnt_cred->challenge), &auth2_srv_chal))
   {
-    DEBUG(0,("do_nt_session_open: request challenge failed\n"));
+    DEBUG(0,("do_nt_session_open: auth2 challenge failed\n"));
     return False;
   }
 
   return True;
 }
 
+#if 0
 /****************************************************************************
  server password set
  ****************************************************************************/
 
-BOOL do_nt_srv_pwset(struct cli_state *cli, int t_idx, uint16 fnum,
+BOOL do_nt_srv_pwset(struct cli_state *cli, 
                      uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
                      char *new_mach_pwd,
                      char *dest_host, char *mach_acct, char *myhostname)
@@ -208,14 +158,13 @@ void make_nt_login_interactive(NET_ID_INFO_CTR *ctr,
                 smb_userid, 0, username, myhostname,
                 sess_key, lm_owf_user_pwd, nt_owf_user_pwd);
 }
+#endif
 
 /****************************************************************************
  make network sam login info
  ****************************************************************************/
 
-void make_nt_login_network(NET_ID_INFO_CTR *ctr,
-                           char *workgroup, char *myhostname,
-                           uint32 smb_userid, char *username,
+void make_nt_login_network(NET_ID_INFO_CTR *ctr, uint32 smb_userid, char *username,
                            char lm_chal[8], char lm_chal_resp[24], 
                            char nt_chal_resp[24])
 {
@@ -223,7 +172,7 @@ void make_nt_login_network(NET_ID_INFO_CTR *ctr,
   ctr->switch_value = 2;
 
   /* this is used in both the SAM Logon and the SAM Logoff */
-  make_id_info2(&ctr->auth.id2, workgroup, 0, smb_userid, 0,
+  make_id_info2(&ctr->auth.id2, myworkgroup, 0, smb_userid, 0,
                 username, myhostname,
                 lm_chal, lm_chal_resp, nt_chal_resp);
 }
@@ -232,10 +181,9 @@ void make_nt_login_network(NET_ID_INFO_CTR *ctr,
 NT login.
 ****************************************************************************/
 
-BOOL do_nt_login(struct cli_state *cli, uint16 fnum,
-                 uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
-                 NET_ID_INFO_CTR *ctr, char *dest_host, char *myhostname,
-                 NET_USER_INFO_3 *user_info3)
+BOOL cli_nt_login(struct cli_state *cli,
+                 DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
+                 NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
   DOM_CRED sam_logon_rtn_cred;
   DOM_CRED cred;
@@ -246,12 +194,12 @@ BOOL do_nt_login(struct cli_state *cli, uint16 fnum,
 
   /*********************** SAM Logon **********************/
 
-  clnt_cred->timestamp.time = time(NULL);
+  cli->clnt_cred->timestamp.time = time(NULL);
 
-  memcpy(&cred, clnt_cred, sizeof(cred));
+  memcpy(&cred, cli->clnt_cred, sizeof(cred));
 
   /* calculate sam logon credentials */
-  cred_create(sess_key, &(clnt_cred->challenge),
+  cred_create(sess_key, &(cli->clnt_cred->challenge),
               cred.timestamp, &(cred.challenge));
 
   strcpy(dest_srv, "\\\\");
@@ -262,8 +210,7 @@ BOOL do_nt_login(struct cli_state *cli, uint16 fnum,
   strupper(my_host_name);
 
   /* send client sam-logon challenge */
-  return do_net_sam_logon(cli, fnum, sess_key, clnt_cred, 
-                          dest_srv, my_host_name, 
+  return cli_net_sam_logon(cli, dest_srv, my_host_name, 
                           &cred, &sam_logon_rtn_cred,
                           ctr->switch_value, ctr, 3, user_info3,
                           rtn_cred);
@@ -273,8 +220,7 @@ BOOL do_nt_login(struct cli_state *cli, uint16 fnum,
 nt sam logoff
 ****************************************************************************/
 
-BOOL do_nt_logoff(struct cli_state *cli, uint16 fnum,
-                  uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
+BOOL cli_nt_logoff(struct cli_state *cli, DOM_CRED *rtn_cred,
                   NET_ID_INFO_CTR *ctr, char *dest_host, char *myhostname)
 {
   DOM_CRED sam_logoff_rtn_cred;
@@ -288,10 +234,10 @@ BOOL do_nt_logoff(struct cli_state *cli, uint16 fnum,
 
   clnt_cred->timestamp.time = time(NULL);
 
-  memcpy(&cred, clnt_cred, sizeof(cred));
+  memcpy(&cred, cli->clnt_cred, sizeof(cred));
 
   /* calculate sam logoff credentials */
-  cred_create(sess_key, &(clnt_cred->challenge),
+  cred_create(sess_key, &(cli->clnt_cred->challenge),
               cred.timestamp, &(cred.challenge));
 
   strcpy(dest_srv, "\\\\");
@@ -302,22 +248,9 @@ BOOL do_nt_logoff(struct cli_state *cli, uint16 fnum,
   strupper(my_host_name);
 
   /* send client sam-logoff challenge; receive a sam-logoff challenge */
-  return do_net_sam_logoff(cli, fnum, sess_key, clnt_cred,
+  return cli_net_sam_logoff(cli, fnum, sess_key, clnt_cred,
                            dest_srv, my_host_name, 
                            &cred, &sam_logoff_rtn_cred,
                            ctr->switch_value, ctr, 3,
                            rtn_cred);
-}
-
-/****************************************************************************
-Close the NT pipe.
-****************************************************************************/
-
-void do_nt_session_close(struct cli_state *cli, uint16 fnum)
-{
-  /******************** close the \PIPE\NETLOGON file **************/
-  if (fnum != 0xffff)
-  {
-    cli_close(cli, fnum);
-  }
 }

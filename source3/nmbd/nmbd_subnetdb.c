@@ -33,7 +33,6 @@ extern int global_nmb_port;
 
 extern int DEBUGLEVEL;
 
-extern pstring myname;
 extern fstring myworkgroup;
 extern char **my_netbios_names;
 extern struct in_addr ipzero;
