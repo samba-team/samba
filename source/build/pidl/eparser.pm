@@ -435,9 +435,9 @@ sub RewriteC($$$)
 
 	# Add tree argument to ndr_pull_array()
 
-	s/(ndr_pull_array([^\(_]*?)\(ndr, (NDR_[^,]*?), ([^\)].*?)\);)/ndr_pull_array$2( ndr, $3, tree, $4);/smg;
+	s/(ndr_pull_array\(ndr, ([^,]*?), ([^\)].*?)\);)/ndr_pull_array( ndr, $2, tree, $3);/smg;
 
-	s/(ndr_pull_array_([^\(]*?)\(ndr, (NDR_[^,]*?), (r->((in|out).)?([^,]*?)), (.*?)\);)/ndr_pull_array_$2( ndr, $3, tree, hf_$7_$2_array, $4, $8);/smg;
+	s/(ndr_pull_array_([^\(]*?)\(ndr, ([^,]*?), (r->((in|out).)?([^,]*?)), (.*?)\);)/ndr_pull_array_$2( ndr, $3, tree, hf_$7_$2_array, $4, $8);/smg;
  
 	# Save ndr_pull_relative[12]() calls from being wrapped by the
 	# proceeding regexp.
