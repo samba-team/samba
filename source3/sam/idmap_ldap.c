@@ -795,14 +795,14 @@ static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 		suffix = lp_ldap_suffix();
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER );
 		posix_obj_class = LDAP_OBJ_POSIXACCOUNT;
-		fstr_sprintf(id_str, "%u", id.uid );	
+		fstr_sprintf(id_str, "%lu", (unsigned long)id.uid );	
 	}
 	else {
 		obj_class = LDAP_OBJ_GROUPMAP;
 		suffix = lp_ldap_group_suffix();
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
 		posix_obj_class = LDAP_OBJ_POSIXGROUP;
-		fstr_sprintf(id_str, "%u", id.gid );	
+		fstr_sprintf(id_str, "%lu", (unsigned long)id.gid );	
 	}
 	
 	sid_to_string(sid_str, sid);
@@ -915,8 +915,8 @@ static NTSTATUS ldap_idmap_init( char *params )
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
-		fstr_sprintf( uid_str, "%d", luid );
-		fstr_sprintf( gid_str, "%d", lgid );
+		fstr_sprintf( uid_str, "%lu", (unsigned long)luid );
+		fstr_sprintf( gid_str, "%lu", (unsigned long)lgid );
 
 		smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_IDPOOL );
 		smbldap_set_mod( &mods, LDAP_MOD_ADD, 
