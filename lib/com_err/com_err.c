@@ -153,3 +153,17 @@ error_table_name(int num)
     *p = '\0';
     return(buf);
 }
+
+void
+add_to_error_table(struct et_list *new_table)
+{
+    struct et_list *et;
+
+    for (et = _et_list; et; et = et->next) {
+	if (et->table->base == new_table->table->base)
+	    return;
+    }
+
+    new_table->next = _et_list;
+    _et_list = new_table;
+}
