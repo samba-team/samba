@@ -679,6 +679,31 @@ static void kernel_flock(files_struct *fsp, int deny_mode)
 }
 
 
+static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t existing_mode, mode_t new_mode)
+{
+	uint32 old_dos_mode, new_dos_mode;
+	SMB_STRUCT_STAT sbuf;
+
+	ZERO_STRUCT(sbuf);
+
+	sbuf.st_mode = existing_mode;
+	old_dos_mode = dos_mode(conn, path, &sbuf);
+
+	sbuf.st_mode = new_mode;
+	new_dos_mode = dos_mode(conn, path, &sbuf);
+
+	/* If we're mapping SYSTEM and HIDDEN ensure they match. */
+	if (lp_map_system(SNUM(conn))) {
+		if ((old_dos_mode & FILE_ATTRIBUTE_SYSTEM) != (new_dos_mode & FILE_ATTRIBUTE_SYSTEM))
+			return False;
+	}
+	if (lp_map_hidden(SNUM(conn))) {
+		if ((old_dos_mode & FILE_ATTRIBUTE_HIDDEN) != (new_dos_mode & FILE_ATTRIBUTE_HIDDEN))
+			return False;
+	}
+	return True;
+}
+
 /****************************************************************************
  Open a file with a share mode. On output from this open we are guarenteeing
  that 
@@ -772,6 +797,17 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 
 	if (CAN_WRITE(conn) && (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_TRUNCATE))
 		flags2 |= O_TRUNC;
+
+	/* We only care about matching attributes on file exists and truncate. */
+	if (file_existed && (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_TRUNCATE)) {
+		if (!open_match_attributes(conn, fname, psbuf->st_mode, mode)) {
+			DEBUG(5,("open_file_shared: attributes missmatch for file %s (0%o, 0%o)\n",
+						fname, psbuf->st_mode, mode ));
+			file_free(fsp);
+			errno = EACCES;
+			return NULL;
+		}
+	}
 
 	if (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_FAIL)
 		flags2 |= O_EXCL;
