@@ -665,8 +665,7 @@ int do_login(int code, char *passwd)
 	if (guest) {
 		reply(code, "Guest login ok, access restrictions apply.");
 #ifdef HAVE_SETPROCTITLE
-		snprintf(proctitle, sizeof(proctitle),
-		    "%s: anonymous/%.*s", remotehost,
+		sprintf(proctitle, "%s: anonymous/%.*s", remotehost,
 		    sizeof(proctitle) - sizeof(remotehost) -
 		    sizeof(": anonymous/"), passwd);
 		setproctitle(proctitle);
@@ -677,8 +676,7 @@ int do_login(int code, char *passwd)
 	} else {
 		reply(code, "User %s logged in.", pw->pw_name);
 #ifdef HAVE_SETPROCTITLE
-		snprintf(proctitle, sizeof(proctitle),
-		    "%s: %s", remotehost, pw->pw_name);
+		sprintf(proctitle, "%s: %s", remotehost, pw->pw_name);
 		setproctitle(proctitle);
 #endif /* HAVE_SETPROCTITLE */
 		if (logging)
@@ -1235,7 +1233,7 @@ statfilecmd(char *filename)
 	int c;
 	char line[LINE_MAX];
 
-	(void)snprintf(line, sizeof(line), "/bin/ls -lA %s", filename);
+	sprintf(line, "/bin/ls -lA %s", filename);
 	fin = ftpd_popen(line, "r");
 	lreply(211, "status of %s:", filename);
 	while ((c = getc(fin)) != EOF) {
@@ -1499,7 +1497,7 @@ dolog(struct sockaddr_in *sin)
 		(void) strncpy(remotehost, inet_ntoa(sin->sin_addr),
 		    sizeof(remotehost));
 #ifdef HAVE_SETPROCTITLE
-	snprintf(proctitle, sizeof(proctitle), "%s: connected", remotehost);
+	sprintf(proctitle, "%s: connected", remotehost);
 	setproctitle(proctitle);
 #endif /* HAVE_SETPROCTITLE */
 
