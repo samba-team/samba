@@ -1306,6 +1306,7 @@ char *lp_force_group(int );
 char *lp_readlist(int );
 char *lp_writelist(int );
 char *lp_fstype(int );
+char *lp_vfsobj(int );
 char *lp_mangled_map(int );
 char *lp_veto_files(int );
 char *lp_hide_files(int );
@@ -3064,7 +3065,7 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos);
 ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
 ssize_t write_file(files_struct *fsp,char *data,size_t n);
-void sync_file(connection_struct *conn, files_struct *fsp);
+void sys_sync_file(struct connection_struct *conn, files_struct *fsp);
 
 /*The following definitions come from  smbd/filename.c  */
 
@@ -3144,9 +3145,11 @@ int reply_nttrans(connection_struct *conn,
 /*The following definitions come from  smbd/open.c  */
 
 void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u);
-uint16 fd_attempt_close(file_fd_struct *fd_ptr);
-void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
-		      mode_t mode,int oplock_request, int *Access,int *action);
+uint16 fd_attempt_close(files_struct *fsp);
+void open_file_shared(files_struct *fsp, connection_struct *conn,
+			   char *fname, int share_mode, int ofun, 
+			   mode_t mode, int oplock_request, int *Access,
+			   int *action);
 int open_directory(files_struct *fsp,connection_struct *conn,
 		   char *fname, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
@@ -3204,8 +3207,8 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
 
 /*The following definitions come from  smbd/predict.c  */
 
-ssize_t read_predict(int fd,SMB_OFF_T offset,char *buf,char **ptr,size_t num);
-void do_read_prediction(void);
+ssize_t read_predict(files_struct *fsp, int fd,SMB_OFF_T offset,char *buf,char **ptr,size_t num);
+void do_read_prediction(connection_struct *conn);
 void invalidate_read_prediction(int fd);
 
 /*The following definitions come from  smbd/process.c  */
@@ -3326,6 +3329,44 @@ BOOL become_user(connection_struct *conn, uint16 vuid);
 BOOL unbecome_user(void );
 void become_root(BOOL save_dir) ;
 void unbecome_root(BOOL restore_dir);
+
+/*The following definitions come from  smbd/vfs-wrap.c  */
+
+SMB_BIG_UINT vfswrap_disk_free(char *path, SMB_BIG_UINT *bsize, 
+			       SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+DIR *vfswrap_opendir(char *fname);
+struct dirent *vfswrap_readdir(DIR *dirp);
+int vfswrap_mkdir(char *path, mode_t mode);
+int vfswrap_rmdir(char *path);
+int vfswrap_open(char *fname, int flags, mode_t mode);
+int vfswrap_close(int fd);
+ssize_t vfswrap_read(int fd, char *data, size_t n);
+ssize_t vfswrap_write(int fd, char *data, size_t n);
+SMB_OFF_T vfswrap_lseek(int filedes, SMB_OFF_T offset, int whence);
+int vfswrap_rename(char *old, char *new);
+void vfswrap_sync_file(struct connection_struct *conn, files_struct *fsp);
+int vfswrap_stat(char *fname, SMB_STRUCT_STAT *sbuf);
+int vfswrap_fstat(int fd, SMB_STRUCT_STAT *sbuf);
+int vfswrap_lstat(char *path, 
+		  SMB_STRUCT_STAT *sbuf);
+BOOL vfswrap_fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, 
+			int type);
+int vfswrap_unlink(char *path);
+int vfswrap_chmod(char *path, mode_t mode);
+int vfswrap_utime(char *path, struct utimbuf *times);
+
+/*The following definitions come from  smbd/vfs.c  */
+
+BOOL do_vfs_init(char *vfs_object);
+int vfs_init_default(connection_struct *conn);
+int vfs_init_custom(connection_struct *conn);
+BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
+ssize_t vfs_read_data(files_struct *fsp,char *buffer,size_t N);
+ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N);
+SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp, 
+			    int out_fd, files_struct *out_fsp,
+			    SMB_OFF_T n, char *header, int headlen, int align);
+char *vfs_readdirname(connection_struct *conn, void *p);
 
 /*The following definitions come from  smbwrapper/realcalls.c  */
 
