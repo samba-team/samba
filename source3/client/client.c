@@ -3897,6 +3897,11 @@ static void usage(char *pname)
       strupper(username);
     }
 
+  if (*username == 0)
+    {
+      pstrcpy(username,"GUEST");
+    }
+
   if (argc < 2)
     {
       usage(pname);
