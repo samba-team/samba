@@ -1,3 +1,8 @@
+2000-03-11  Assar Westerlund  <assar@sics.se>
+
+	* roken.h.in (_SS_PAD1SIZE): try to write an inpenetrable
+	expression that also works on Crays
+
 2000-03-09  Assar Westerlund  <assar@sics.se>
 
 	* getarg.c (arg_match_short): backup optind when there's a missing
