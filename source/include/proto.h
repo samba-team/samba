@@ -791,6 +791,8 @@ BOOL lock_share_entry(connection_struct *conn,
 		      SMB_DEV_T dev, SMB_INO_T inode);
 BOOL unlock_share_entry(connection_struct *conn,
 			SMB_DEV_T dev, SMB_INO_T inode);
+BOOL lock_share_entry_fsp(files_struct *fsp);
+BOOL unlock_share_entry_fsp(files_struct *fsp);
 int get_share_modes(connection_struct *conn, 
 		    SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **shares);
@@ -1515,6 +1517,12 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
 BOOL set_trust_account_password( unsigned char *md4_new_pwd);
 BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *myname);
 
+/*The following definitions come from  printing/lpq_parse.c  */
+
+BOOL parse_lpq_entry(int snum,char *line,
+		     print_queue_struct *buf,
+		     print_status_struct *status,BOOL first);
+
 /*The following definitions come from  printing/nt_printing.c  */
 
 int get_ntforms(nt_forms_struct **list);
@@ -1567,6 +1575,7 @@ int printjob_encode(int snum, int job);
 void printjob_decode(int jobid, int *snum, int *job);
 void status_printqueue(connection_struct *conn,int snum,int status);
 void load_printers(void);
+void print_open_file(files_struct *fsp,connection_struct *conn,char *fname);
 
 /*The following definitions come from  profile/profile.c  */
 
@@ -2978,8 +2987,6 @@ BOOL reset_stat_cache( void );
 /*The following definitions come from  smbd/files.c  */
 
 files_struct *file_new(void );
-file_fd_struct *fd_get_already_open(SMB_STRUCT_STAT *sbuf);
-file_fd_struct *fd_get_new(void);
 void file_close_conn(connection_struct *conn);
 void file_init(void);
 void file_close_user(int vuid);
@@ -2988,7 +2995,6 @@ files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode);
 files_struct *file_find_di_next(files_struct *start_fsp);
 files_struct *file_find_print(void);
 void file_sync_all(connection_struct *conn);
-void fd_ptr_free(file_fd_struct *fd_ptr);
 void file_free(files_struct *fsp);
 files_struct *file_fsp(char *buf, int where);
 void file_chain_reset(void);
@@ -3048,8 +3054,7 @@ int reply_nttrans(connection_struct *conn,
 
 /*The following definitions come from  smbd/open.c  */
 
-void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u);
-uint16 fd_attempt_close(files_struct *fsp, int *err_ret);
+void fd_close(files_struct *fsp, int *err_ret);
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
 		      mode_t mode,int oplock_request, int *Access,int *action);
 int open_file_stat(files_struct *fsp,connection_struct *conn,
@@ -3114,12 +3119,6 @@ int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize);
 int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
-
-/*The following definitions come from  smbd/predict.c  */
-
-ssize_t read_predict(files_struct *fsp, int fd,SMB_OFF_T offset,char *buf,char **ptr,size_t num);
-void do_read_prediction(connection_struct *conn);
-void invalidate_read_prediction(int fd);
 
 /*The following definitions come from  smbd/process.c  */
 
