@@ -2512,6 +2512,9 @@ due to being in oplock break state.\n" ));
     return -1;
   }
 
+  if (IS_IPC(conn) && (function_code != NT_TRANSACT_CREATE))
+    return (ERROR(ERRSRV,ERRaccess));
+
   outsize = set_message(outbuf,0,0,True);
 
   /* 

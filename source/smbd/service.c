@@ -212,7 +212,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 		DEBUG(0,("%s (%s) couldn't find service %s\n",
 			 remote_machine, client_addr(), service));
-		*ecode = ERRinvnetname;
+		*ecode = ERRnosuchshare;
 		return NULL;
 	}
 
@@ -567,7 +567,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				yield_connection(conn,"",MAXSTATUS);
 		}
 		conn_free(conn);
-		*ecode = ERRinvnetname;
+		*ecode = ERRnosuchshare;
 		return NULL;
 	}
 	
