@@ -408,7 +408,7 @@
 #endif
 
 /* we support ADS if we have krb5 and ldap libs */
-#if defined(HAVE_KRB5) && defined(HAVE_LDAP)
+#if defined(HAVE_KRB5) && defined(HAVE_LDAP) && defined(HAVE_GSSAPI)
 #define HAVE_ADS
 #endif
 
