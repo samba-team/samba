@@ -343,6 +343,8 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   extern char magic_char;
 #endif
 
+  DEBUG(5, ("unix_convert called on file \"%s\"\n", name));
+
   *dirpath = 0;
   *bad_path = False;
   if(pst) {
