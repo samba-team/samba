@@ -22,34 +22,6 @@
 */
 
 #include "winbindd.h"
-/************************************************************************
-form a key for fetching a domain trust password
-************************************************************************/
-static char *trust_keystr(char *domain)
-{
-	static fstring keystr;
-	slprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, domain);
-	return keystr;
-}
-
-/************************************************************************
- Routine to get the trust account password for a domain.
- The user of this function must have locked the trust password file.
-************************************************************************/
-static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, time_t *pass_last_set_time)
-{
-	struct machine_acct_pass *pass;
-	size_t size;
-
-	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) ||
-	    size != sizeof(*pass)) return False;
-
-	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
-	memcpy(ret_pwd, pass->hash, 16);
-	free(pass);
-	return True;
-}
-
 
 /* Return a password structure from a username.  Specify whether cached data 
    can be returned. */
@@ -59,7 +31,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	NET_USER_INFO_3 info3;
 	uchar ntpw[16];
 	uchar lmpw[16];
-	uchar trust_passwd[16];
+	uint8 trust_passwd[16];
 	uint32 status;
 	fstring server;
 	fstring name_domain, name_user;
@@ -76,7 +48,10 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	ZERO_STRUCT(info3);
 
-	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, NULL)) return WINBINDD_ERROR;
+	if (!secrets_fetch_trust_account_password(lp_workgroup(), 
+						  trust_passwd, NULL)) {
+		return WINBINDD_ERROR;
+	}
 
 	nt_lm_owf_gen(state->request.data.auth.pass, ntpw, lmpw);
 
