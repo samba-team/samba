@@ -1,8 +1,7 @@
 /*
    Unix SMB/Netbios implementation.
-   Version 1.9.
    a async DNS handler
-   Copyright (C) Andrew Tridgell 1994-1997
+   Copyright (C) Andrew Tridgell 1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,13 +16,7 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-   
-   Revision History:
-
-   14 jan 96: lkcl@pires.co.uk
-   added multiple workgroup domain master support
-
-*/
+   */
 
 #include "includes.h"
 
