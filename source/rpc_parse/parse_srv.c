@@ -1986,7 +1986,7 @@ void init_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n,
 	init_buf_unistr2(&q_n->uni_srv_name, &q_n->ptr_srv_name, srv_name);
 	init_buf_unistr2(&q_n->uni_qual_name, &q_n->ptr_qual_name, qual_name);
 
-	q_n->file_level    = file_level;
+	q_n->file_level    = q_n->ctr->switch_value = file_level;
 	q_n->preferred_len = preferred_len;
 
 	memcpy(&q_n->enum_hnd, hnd, sizeof(*hnd));
@@ -2023,6 +2023,13 @@ BOOL srv_io_q_net_file_enum(char *desc, SRV_Q_NET_FILE_ENUM *q_n, prs_struct *ps
 	if(!prs_align(ps))
 		return False;
 
+	if(!prs_uint32("ptr_user_name", ps, depth, &q_n->ptr_user_name))
+		return False;
+	if(!smb_io_unistr2("", &q_n->uni_user_name, q_n->ptr_user_name, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("file_level", ps, depth, &q_n->file_level))
 		return False;
 
