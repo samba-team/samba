@@ -1376,6 +1376,8 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		(*Access) = open_mode;
 	}
 
+	action = 0;
+
 	if (file_existed && !(flags2 & O_TRUNC))
 		action = FILE_WAS_OPENED;
 	if (file_existed && (flags2 & O_TRUNC))
