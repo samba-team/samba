@@ -389,6 +389,31 @@ system("ldbadd -H newrootdse.ldb newrootdse.ldif");
 
 print "done\n";
 
+$data = FileLoad("secrets.ldif") || die "Unable to load secrets.ldif\n";
+
+$res = "";
+
+print "applying substitutions ...\n";
+
+while ($data =~ /(.*?)\$\{(\w*)\}(.*)/s) {
+	my $sub = substitute($2);
+	$res .= "$1$sub";
+	$data = $3;
+}
+$res .= $data;
+
+print "saving ldif to newsecrets.ldif ...\n";
+
+FileSave("newsecrets.ldif", $res);
+
+unlink("newsecrets.ldb");
+
+print "creating newsecrets.ldb ...\n";
+
+system("ldbadd -H newsecrets.ldb newsecrets.ldif");
+
+print "done\n";
+
 print "generating dns zone file ...\n";
 
 $data = FileLoad("provision.zone") || die "Unable to load provision.zone\n";
@@ -424,6 +449,8 @@ Installation:
 - Please move newsam.ldb to sam.ldb in the private/ directory of your
   Samba4 installation
 - Please move newrootdse.ldb to rootdse.ldb in the private/ directory
+  of your Samba4 installation
+- Please move newsecrets.ldb to secrets.ldb in the private/ directory
   of your Samba4 installation
 - Please move newhklm.ldb to hklm.ldb in the private/ directory
   of your Samba4 installation

@@ -4,6 +4,7 @@
    endpoint server for the lsarpc pipe
 
    Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,6 +28,7 @@
 #include "rpc_server/common/common.h"
 #include "lib/ldb/include/ldb.h"
 #include "auth/auth.h"
+#include "system/time.h"
 
 /*
   this type allows us to distinguish handle types
@@ -42,11 +44,12 @@ enum lsa_handle {
 */
 struct lsa_policy_state {
 	struct dcesrv_handle *handle;
-	void *sam_ctx;
+	struct ldb_wrap *sam_ctx;
 	struct sidmap_context *sidmap;
 	uint32_t access_mask;
 	const char *domain_dn;
 	const char *builtin_dn;
+	const char *system_dn;
 	const char *domain_name;
 	struct dom_sid *domain_sid;
 	struct dom_sid *builtin_sid;
@@ -64,6 +67,16 @@ struct lsa_account_state {
 	const char *account_dn;
 };
 
+
+/*
+  state associated with a lsa_OpenSecret() operation
+*/
+struct lsa_secret_state {
+	struct lsa_policy_state *policy;
+	uint32_t access_mask;
+	const char *secret_dn;
+	struct ldb_wrap *sam_ctx;
+};
 
 /* 
   lsa_Close 
@@ -205,6 +218,15 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	state->builtin_dn = samdb_search_string(state->sam_ctx, state, NULL,
 						"dn", "objectClass=builtinDomain");
 	if (!state->builtin_dn) {
+		talloc_free(state);
+		return NT_STATUS_NO_SUCH_DOMAIN;		
+	}
+
+	/* work out the system_dn - useful for so many calls its worth
+	   fetching here */
+	state->system_dn = samdb_search_string(state->sam_ctx, state, state->domain_dn,
+					       "dn", "(&(objectClass=container)(cn=System))");
+	if (!state->system_dn) {
 		talloc_free(state);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
@@ -781,16 +803,6 @@ static NTSTATUS lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 
 /* 
-  lsa_CreateSecret 
-*/
-static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_CreateSecret *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
   lsa_OpenAccount 
 */
 static NTSTATUS lsa_OpenAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -1224,12 +1236,217 @@ static NTSTATUS lsa_SetInformationTrustedDomain(struct dcesrv_call_state *dce_ca
 
 
 /* 
+  lsa_CreateSecret 
+*/
+static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				 struct lsa_CreateSecret *r)
+{
+	struct dcesrv_handle *policy_handle;
+	struct lsa_policy_state *policy_state;
+	struct lsa_secret_state *secret_state;
+	struct dcesrv_handle *handle;
+	struct ldb_message **msgs, *msg;
+	const char *attrs[] = {
+		NULL
+	};
+
+	const char *name;
+
+	int ret;
+
+	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
+	ZERO_STRUCTP(r->out.sec_handle);
+	
+	policy_state = policy_handle->data;
+
+	if (!r->in.name.string) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	secret_state = talloc(mem_ctx, struct lsa_secret_state);
+	if (!secret_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (strncmp("G$", r->in.name.string, 2) == 0) {
+		const char *name2;
+		name = &r->in.name.string[2];
+		secret_state->sam_ctx = talloc_reference(secret_state, policy_state->sam_ctx);
+
+		if (strlen(name) < 1) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		name2 = talloc_asprintf(mem_ctx, "%s Secret", name);
+		/* search for the secret record */
+		ret = samdb_search(secret_state->sam_ctx,
+				   mem_ctx, policy_state->system_dn, &msgs, attrs,
+				   "(&(cn=%s)(objectclass=secret))", 
+				   name2);
+		if (ret > 0) {
+			return NT_STATUS_OBJECT_NAME_COLLISION;
+		}
+		
+		if (ret < 0 || ret > 1) {
+			DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		msg->dn = talloc_asprintf(mem_ctx, "cn=%s,%s", name2, policy_state->system_dn);
+		if (!name2 || !msg->dn) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		samdb_msg_add_string(secret_state->sam_ctx, mem_ctx, msg, "cn", name2);
+	
+	} else {
+		name = r->in.name.string;
+		if (strlen(name) < 1) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		secret_state->sam_ctx = talloc_reference(secret_state, secrets_db_connect(mem_ctx));
+		/* search for the secret record */
+		ret = samdb_search(secret_state->sam_ctx,
+				   mem_ctx, "cn=LSA Secrets", &msgs, attrs,
+				   "(&(cn=%s)(objectclass=secret))", 
+				   name);
+		if (ret > 0) {
+			return NT_STATUS_OBJECT_NAME_COLLISION;
+		}
+		
+		if (ret < 0 || ret > 1) {
+			DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		msg->dn = talloc_asprintf(mem_ctx, "cn=%s,cn=LSA Secrets", name);
+		samdb_msg_add_string(secret_state->sam_ctx, mem_ctx, msg, "cn", name);
+	} 
+	samdb_msg_add_string(secret_state->sam_ctx, mem_ctx, msg, "objectClass", "secret");
+	
+	secret_state->secret_dn = talloc_reference(secret_state, msg->dn);
+
+	/* create the secret */
+	ret = samdb_add(secret_state->sam_ctx, mem_ctx, msg);
+	if (ret != 0) {
+		DEBUG(0,("Failed to create secret record %s\n", msg->dn));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_SECRET);
+	if (!handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	handle->data = talloc_steal(handle, secret_state);
+	
+	secret_state->access_mask = r->in.access_mask;
+	secret_state->policy = talloc_reference(secret_state, policy_state);
+	
+	*r->out.sec_handle = handle->wire_handle;
+	
+	return NT_STATUS_OK;
+}
+
+
+/* 
   lsa_OpenSecret 
 */
 static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_OpenSecret *r)
+			       struct lsa_OpenSecret *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *policy_handle;
+	
+	struct lsa_policy_state *policy_state;
+	struct lsa_secret_state *secret_state;
+	struct dcesrv_handle *handle;
+	struct ldb_message **msgs;
+	const char *attrs[] = {
+		NULL
+	};
+
+	const char *name;
+
+	int ret;
+
+	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
+	ZERO_STRUCTP(r->out.sec_handle);
+	policy_state = policy_handle->data;
+
+	if (!r->in.name.string) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	secret_state = talloc(mem_ctx, struct lsa_secret_state);
+	if (!secret_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (strncmp("G$", r->in.name.string, 2) == 0) {
+		name = &r->in.name.string[2];
+		secret_state->sam_ctx = talloc_reference(secret_state, policy_state->sam_ctx);
+
+		if (strlen(name) < 1) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		/* search for the secret record */
+		ret = samdb_search(secret_state->sam_ctx,
+				   mem_ctx, policy_state->system_dn, &msgs, attrs,
+				   "(&(cn=%s Secret)(objectclass=secret))", 
+				   name);
+		if (ret == 0) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		
+		if (ret != 1) {
+			DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	
+	} else {
+		name = r->in.name.string;
+		if (strlen(name) < 1) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		secret_state->sam_ctx = talloc_reference(secret_state, secrets_db_connect(mem_ctx));
+		/* search for the secret record */
+		ret = samdb_search(secret_state->sam_ctx,
+				   mem_ctx, "cn=LSA Secrets", &msgs, attrs,
+				   "(&(cn=%s)(objectclass=secret))", 
+				   name);
+		if (ret == 0) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		
+		if (ret != 1) {
+			DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	} 
+
+	secret_state->secret_dn = talloc_reference(secret_state, msgs[0]->dn);
+	
+	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_SECRET);
+	if (!handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	handle->data = talloc_steal(handle, secret_state);
+	
+	secret_state->access_mask = r->in.access_mask;
+	secret_state->policy = talloc_reference(secret_state, policy_state);
+	
+	*r->out.sec_handle = handle->wire_handle;
+	
+	return NT_STATUS_OK;
 }
 
 
@@ -1237,9 +1454,145 @@ static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
   lsa_SetSecret 
 */
 static NTSTATUS lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_SetSecret *r)
+			      struct lsa_SetSecret *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+
+	struct dcesrv_handle *h;
+	struct lsa_secret_state *secret_state;
+	struct ldb_message *msg;
+	DATA_BLOB session_key;
+	DATA_BLOB crypt_secret, secret;
+	struct ldb_val val;
+	int ret;
+	NTSTATUS status = NT_STATUS_OK;
+
+	struct timeval now = timeval_current();
+	NTTIME nt_now = timeval_to_nttime(&now);
+
+	DCESRV_PULL_HANDLE(h, r->in.sec_handle, LSA_HANDLE_SECRET);
+
+	secret_state = h->data;
+
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	msg->dn = talloc_reference(mem_ctx, secret_state->secret_dn);
+	if (!msg->dn) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (r->in.old_val) {
+		/* Decrypt */
+		crypt_secret.data = r->in.old_val->data;
+		crypt_secret.length = r->in.old_val->size;
+		
+		status = sess_decrypt_blob(mem_ctx, &crypt_secret, &session_key, &secret);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		
+		val.data = secret.data;
+		val.length = secret.length;
+		
+		/* set value */
+		if (samdb_msg_add_value(secret_state->sam_ctx, 
+					mem_ctx, msg, "priorSecret", &val) != 0) {
+			return NT_STATUS_NO_MEMORY; 
+		}
+		
+		/* set old value mtime */
+		if (samdb_msg_add_uint64(secret_state->sam_ctx, 
+					 mem_ctx, msg, "priorSetTime", nt_now) != 0) { 
+			return NT_STATUS_NO_MEMORY; 
+		}
+	}
+
+	if (r->in.new_val) {
+		/* Decrypt */
+		crypt_secret.data = r->in.new_val->data;
+		crypt_secret.length = r->in.new_val->size;
+		
+		status = sess_decrypt_blob(mem_ctx, &crypt_secret, &session_key, &secret);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		
+		val.data = secret.data;
+		val.length = secret.length;
+		
+		/* set value */
+		if (samdb_msg_add_value(secret_state->sam_ctx, 
+					mem_ctx, msg, "secret", &val) != 0) {
+			return NT_STATUS_NO_MEMORY; 
+		}
+		
+		/* set new value mtime */
+		if (samdb_msg_add_uint64(secret_state->sam_ctx, 
+					 mem_ctx, msg, "lastSetTime", nt_now) != 0) { 
+			return NT_STATUS_NO_MEMORY; 
+		}
+		
+		/* If the old value is not set, then migrate the
+		 * current value to the old value */
+		if (!r->in.old_val) {
+			const struct ldb_val *new_val;
+			NTTIME last_set_time;
+			struct ldb_message **res;
+			const char *attrs[] = {
+				"secret",
+				"lastSetTime",
+				NULL
+			};
+			
+			/* search for the secret record */
+			ret = samdb_search(secret_state->sam_ctx,
+					   mem_ctx, NULL, &res, attrs,
+					   "(dn=%s)", secret_state->secret_dn);
+			if (ret == 0) {
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			}
+			
+			if (ret != 1) {
+				DEBUG(0,("Found %d records matching dn=%s\n", ret, secret_state->secret_dn));
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+
+			new_val = ldb_msg_find_ldb_val(res[0], "secret");
+			last_set_time = ldb_msg_find_uint64(res[0], "lastSetTime", 0);
+			
+			if (new_val) {
+				/* set value */
+				if (samdb_msg_add_value(secret_state->sam_ctx, 
+							mem_ctx, msg, "priorSecret", 
+							new_val) != 0) {
+					return NT_STATUS_NO_MEMORY; 
+				}
+			}
+			
+			/* set new value mtime */
+			if (ldb_msg_find_ldb_val(res[0], "lastSetTime")) {
+				if (samdb_msg_add_uint64(secret_state->sam_ctx, 
+							 mem_ctx, msg, "priorSetTime", last_set_time) != 0) { 
+					return NT_STATUS_NO_MEMORY; 
+				}
+			}
+		}
+	}
+
+	/* modify the samdb record */
+	ret = samdb_replace(secret_state->sam_ctx, mem_ctx, msg);
+	if (ret != 0) {
+		/* we really need samdb.c to return NTSTATUS */
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
@@ -1247,9 +1600,105 @@ static NTSTATUS lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
   lsa_QuerySecret 
 */
 static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_QuerySecret *r)
+				struct lsa_QuerySecret *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct lsa_secret_state *secret_state;
+	struct ldb_message *msg;
+	DATA_BLOB session_key;
+	DATA_BLOB crypt_secret, secret;
+	int ret;
+	struct ldb_message **res;
+	const char *attrs[] = {
+		"secret",
+		"priorSecret",
+		"lastSetTime",
+		"priorSetTime", 
+		NULL
+	};
+
+	NTSTATUS nt_status;
+
+	time_t now = time(NULL);
+	NTTIME now_nt;
+	unix_to_nt_time(&now_nt, now);
+
+	DCESRV_PULL_HANDLE(h, r->in.sec_handle, LSA_HANDLE_SECRET);
+
+	secret_state = h->data;
+
+	/* pull all the user attributes */
+	ret = samdb_search(secret_state->sam_ctx, mem_ctx, NULL, &res, attrs,
+			   "dn=%s", secret_state->secret_dn);
+	if (ret != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	msg = res[0];
+	
+	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+	
+	if (r->in.old_val) {
+		const struct ldb_val *prior_val;
+		/* Decrypt */
+		prior_val = ldb_msg_find_ldb_val(res[0], "priorSecret");
+		
+		if (prior_val && prior_val->length) {
+			secret.data = prior_val->data;
+			secret.length = prior_val->length;
+		
+			crypt_secret = sess_encrypt_blob(mem_ctx, &secret, &session_key);
+			if (!crypt_secret.length) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			r->out.old_val = talloc(mem_ctx, struct lsa_DATA_BUF_PTR);
+			r->out.old_val->buf = talloc(mem_ctx, struct lsa_DATA_BUF);
+			r->out.old_val->buf->size = crypt_secret.length;
+			r->out.old_val->buf->length = crypt_secret.length;
+			r->out.old_val->buf->data = crypt_secret.data;
+		}
+	}
+	
+	if (r->in.old_mtime) {
+		r->out.old_mtime = talloc(mem_ctx, NTTIME_hyper);
+		if (!r->out.old_mtime) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		*r->out.old_mtime = ldb_msg_find_uint64(res[0], "priorSetTime", 0);
+	}
+	
+	if (r->in.new_val) {
+		const struct ldb_val *new_val;
+		/* Decrypt */
+		new_val = ldb_msg_find_ldb_val(res[0], "secret");
+		
+		if (new_val && new_val->length) {
+			secret.data = new_val->data;
+			secret.length = new_val->length;
+		
+			crypt_secret = sess_encrypt_blob(mem_ctx, &secret, &session_key);
+			if (!crypt_secret.length) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			r->out.new_val = talloc(mem_ctx, struct lsa_DATA_BUF_PTR);
+			r->out.new_val->buf = talloc(mem_ctx, struct lsa_DATA_BUF);
+			r->out.new_val->buf->length = crypt_secret.length;
+			r->out.new_val->buf->size = crypt_secret.length;
+			r->out.new_val->buf->data = crypt_secret.data;
+		}
+	}
+	
+	if (r->in.new_mtime) {
+		r->out.new_mtime = talloc(mem_ctx, NTTIME_hyper);
+		if (!r->out.new_mtime) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		*r->out.new_mtime = ldb_msg_find_uint64(res[0], "lastSetTime", 0);
+	}
+	
+	return NT_STATUS_OK;
 }
 
 

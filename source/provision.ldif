@@ -140,6 +140,23 @@ systemFlags: 0x8c000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
+dn: CN=System,${BASEDN}
+objectClass: top
+objectClass: container
+cn: System
+description: Builtin system settings
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: TRUE
+name: System
+objectGUID: ${NEWGUID}
+systemFlags: 0x8c000000
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
 dn: CN=Builtin,${BASEDN}
 objectClass: top
 objectClass: builtinDomain

@@ -170,3 +170,25 @@ void secrets_named_mutex_release(const char *name, size_t *p_ref_count)
 	DEBUG(10,("secrets_named_mutex_release: ref_count for mutex %s = %u\n", name, (uint_t)ref_count ));
 }
 
+/*
+  connect to the schannel ldb
+*/
+struct ldb_wrap *secrets_db_connect(TALLOC_CTX *mem_ctx)
+{
+	char *path;
+	struct ldb_wrap *ldb;
+
+	path = private_path(mem_ctx, "secrets.ldb");
+	if (!path) {
+		return NULL;
+	}
+	
+	ldb = ldb_wrap_connect(mem_ctx, path, 0, NULL);
+	talloc_free(path);
+	if (!ldb) {
+		return NULL;
+	}
+
+	return ldb;
+}
+
