@@ -177,4 +177,8 @@ interface epmapper
 		[in]            epm_twr_t    *tower,
 		[out]           error_status_t   status
 		);
+
+	/**********************/
+	/* Function 0x07      */
+	void epm_MapAuth();
 }

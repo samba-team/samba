@@ -12,5 +12,8 @@ interface w32time
 
 	/*****************/
 	/* Function 0x00 */
-	WERROR w32time_Unknown0();
+	WERROR w32time_SyncTime();
+
+	WERROR w32time_GetNetLogonServiceBits();
+	WERROR w32time_QueryProviderStatus();
 }

@@ -1,5 +1,5 @@
 /*
-  windows zero-configuration service
+  wireless configuration service
 */
 
 [
@@ -9,20 +9,22 @@
 interface wzcsvc
 {
 
-	/*****************/
-	/* Function 0x00 */
-	WERROR wzcsvc_Unknown0();
-
-	/*****************/
-	/* Function 0x01 */
-	WERROR wzcsvc_Unknown1();
-
-	/*****************/
-	/* Function 0x02 */
-	WERROR wzcsvc_Unknown2();
-
-	/*****************/
-	/* Function 0x03 */
-	WERROR wzcsvc_Unknown3();
-
+	void wzcsvc_EnumInterfaces();
+	void wzcsvc_QueryInterface();
+	void wzcsvc_SetInterface();
+	void wzcsvc_RefreshInterface();
+	void wzcsvc_QueryContext();
+	void wzcsvc_SetContext();
+	void wzcsvc_EapolUIResponse();
+	void wzcsvc_EapolGetCustomAuthData();
+	void wzcsvc_EapolSetCustomAuthData();
+	void wzcsvc_EapolGetInterfaceParams();
+	void wzcsvc_EapolSetInterfaceParams();
+	void wzcsvc_EapolReAuthenticateInterface();
+	void wzcsvc_EapolQueryInterfaceState();
+	void wzcsvc_OpenWZCDbLogSession();
+	void wzcsvc_CloseWZCDbLogSession();
+	void wzcsvc_EnumWZCDbLogRecords();
+	void wzcsvc_FlushWZCdbLog();
+	void wzcsvc_GetWZCDbLogRecord();
 }

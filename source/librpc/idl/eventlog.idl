@@ -43,11 +43,11 @@
 
 	/******************/
 	/* Function: 0x00 */
-	NTSTATUS eventlog_Unknown0();
+	NTSTATUS eventlog_ClearEventLogW();
 
 	/******************/
 	/* Function: 0x01 */
-	NTSTATUS eventlog_Unknown1();
+	NTSTATUS eventlog_BackupEventLogW();
 	
 	/******************/
 	/* Function: 0x02 */
@@ -58,7 +58,7 @@
 
 	/******************/
 	/* Function: 0x03 */
-	NTSTATUS eventlog_Unknown3();
+	NTSTATUS eventlog_DeregisterEventSource();
 
 	/******************/
 	/* Function: 0x04 */
@@ -68,15 +68,15 @@
 								   );
 	/******************/
 	/* Function: 0x05 */
-	NTSTATUS eventlog_Unknown5();
+	NTSTATUS eventlog_GetOldestRecord();
 
 	/******************/
 	/* Function: 0x06 */
-	NTSTATUS eventlog_Unknown6();
+	NTSTATUS eventlog_ChangeNotify();
 
 	/******************/
 	/* Function: 0x07 */
-	NTSTATUS eventlog_OpenEventLog(
+	NTSTATUS eventlog_OpenEventLogW(
 								   [in]	    eventlog_OpenUnknown0 *unknown0,
 								   [in]	    eventlog_String source,
 								   [in]	    eventlog_String unknown1,
@@ -87,15 +87,15 @@
 
 	/******************/
 	/* Function: 0x08 */
-	NTSTATUS eventlog_Unknown8();
+	NTSTATUS eventlog_RegisterEventSourceW();
 
 	/******************/
 	/* Function: 0x09 */
-	NTSTATUS eventlog_Unknowna();
+	NTSTATUS eventlog_OpenBackupEventLogW();
 
 	/******************/
 	/* Function: 0x0a */
-	NTSTATUS eventlog_ReadEventLog(
+	NTSTATUS eventlog_ReadEventLogW(
 								   [in,ref]     policy_handle *handle,
 								   [in] 		uint32 flags,
 								   [in]			uint32 offset,
@@ -105,4 +105,56 @@
 								   [out]		uint32 real_size
 								  );
 
+	/*****************/
+	/* Function 0x0b */
+	NTSTATUS eventlog_ReportEventW();
+
+	/*****************/
+	/* Function 0x0c */
+	NTSTATUS eventlog_ClearEventLogA();
+	
+	/******************/
+	/* Function: 0x0d */
+	NTSTATUS eventlog_BackupEventLogA();
+
+	/*****************/
+	/* Function 0x0e */
+	NTSTATUS eventlog_OpenEventLogA();
+
+	/*****************/
+	/* Function 0x0f */
+	NTSTATUS eventlog_RegisterEventSourceA();
+
+	/*****************/
+	/* Function 0x10 */
+	NTSTATUS eventlog_OpenBackupEventLogA();
+
+	/*****************/
+	/* Function 0x11 */
+	NTSTATUS eventlog_ReadEventLogA();
+
+	/*****************/
+	/* Function 0x12 */
+	NTSTATUS eventlog_ReportEventA();
+
+	/*****************/
+	/* Function 0x13 */
+	NTSTATUS eventlog_RegisterClusterSvc();
+
+	/*****************/
+	/* Function 0x14 */
+	NTSTATUS eventlog_DeregisterClusterSvc();
+
+	/*****************/
+	/* Function 0x15 */
+	NTSTATUS eventlog_WriteClusterEvents();
+
+	/*****************/
+	/* Function 0x16 */
+	NTSTATUS eventlog_GetLogIntormation();
+
+	/*****************/
+	/* Function 0x17 */
+	NTSTATUS eventlog_FlushEventLog();
+	
 }

@@ -10,8 +10,5 @@
 ]
 interface keysvc
 {
-
-	/*****************/
-	/* Function 0x00 */
 	WERROR keysvc_Unknown0();
 }
