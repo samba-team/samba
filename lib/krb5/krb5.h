@@ -335,6 +335,15 @@ typedef union {
 /* constants for compare_creds (and cc_retrieve_cred) */
 #define KRB5_TC_DONT_MATCH_REALM	(1U << 31)
 #define KRB5_TC_MATCH_KEYTYPE		(1U << 30)
+#define KRB5_TC_MATCH_KTYPE		KRB5_TC_MATCH_KEYTYPE    /* MIT name */
+#define KRB5_TC_MATCH_SRV_NAMEONLY	(1 << 29)
+#define KRB5_TC_MATCH_FLAGS_EXACT	(1 << 28)
+#define KRB5_TC_MATCH_FLAGS		(1 << 27)
+#define KRB5_TC_MATCH_TIMES_EXACT	(1 << 26)
+#define KRB5_TC_MATCH_TIMES		(1 << 25)
+#define KRB5_TC_MATCH_AUTHDATA		(1 << 24)
+#define KRB5_TC_MATCH_2ND_TKT		(1 << 23)
+#define KRB5_TC_MATCH_IS_SKEY		(1 << 22)
 
 typedef AuthorizationData krb5_authdata;
 
