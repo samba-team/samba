@@ -2,7 +2,7 @@ Summary: Samba SMB client and server
 Name: samba
 Version: PVERSION
 Release: PRELEASE
-Copyright: GNU GPL version 2
+License: GNU GPL version 2
 Group: Networking
 Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.bz2
 Packager: Gerald Carter [Samba-Team] <jerry@samba.org>
@@ -10,7 +10,7 @@ Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
 Provides: samba = %{version}
 Obsoletes: samba-common, samba-client, samba-swat
-BuildRoot: /var/tmp/samba
+BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Prefix: /usr
 
 %description
@@ -402,6 +402,7 @@ fi
 %{prefix}/bin/smbtree
 %attr(755,root,root) /lib/libnss_wins.s*
 %attr(755,root,root) %{prefix}/lib/samba/vfs/*.so
+%attr(755,root,root) %{prefix}/lib/samba/pdb/*.so
 %attr(755,root,root) %{prefix}/lib/samba/*.dat
 %{prefix}/include/libsmbclient.h
 %{prefix}/lib/libsmbclient.a
