@@ -1,11 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
 >pdbedit</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="PDBEDIT"
-></A
->pdbedit</H1
+NAME="PDBEDIT">pdbedit</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -29,15 +28,13 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"
-></A
-><H2
+NAME="AEN8"><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >pdbedit</B
->  [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-D drive] [-S script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-b passdb-backend] [-d debuglevel] [-s configfile] [-P account-policy] [-V value]</P
+> [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-D drive] [-S script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-b passdb-backend] [-d debuglevel] [-s configfile] [-P account-policy] [-V value]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -91,11 +88,20 @@ CLASS="COMMAND"
 >pdbedit -l</B
 ></P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		sorce:500:Simo Sorce
 		samba:45:Test User
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ></DD
 ><DT
@@ -111,6 +117,12 @@ CLASS="COMMAND"
 >pdbedit -l -v</B
 ></P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		---------------
@@ -132,6 +144,9 @@ CLASS="PROGRAMLISTING"
 		Logon Script:   
 		Profile Path:   \\BERSERKER\profile
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ></DD
 ><DT
@@ -158,11 +173,20 @@ CLASS="COMMAND"
 >pdbedit -l -w</B
 ></P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		sorce:500:508818B733CE64BEAAD3B435B51404EE:D2A2418EFC466A8A0F6B1DBB5C3DB80C:[UX         ]:LCT-00000000:
 		samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX         ]:LCT-3BFA1E8D:
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ></DD
 ><DT
@@ -171,19 +195,13 @@ CLASS="PROGRAMLISTING"
 ><P
 >This option specifies the username to be
 		used for the operation requested (listing, adding, removing).
-		It is <SPAN
-CLASS="emphasis"
-><I
+		It is <I
 CLASS="EMPHASIS"
 >required</I
-></SPAN
 > in add, remove and modify
-		operations and <SPAN
-CLASS="emphasis"
-><I
+		operations and <I
 CLASS="EMPHASIS"
 >optional</I
-></SPAN
 > in list
 		operations.</P
 ></DD
@@ -269,10 +287,19 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >pdbedit -a -u sorce</B
 >
-		<PRE
+		<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
 CLASS="PROGRAMLISTING"
 >new password:
 		retype new password</PRE
+></TD
+></TR
+></TABLE
 >
                 </P
 ></DD
@@ -360,19 +387,26 @@ CLASS="COMMAND"
 ><P
 >Valid policies are: minimum password age, reset count minutes, disconnect time,
 		user must logon to change password, password history, lockout duration, min password length,
-		maximum password age and bad lockout attempt.
-
-		</P
+		maximum password age and bad lockout attempt.</P
 ><P
 >Example: <B
 CLASS="COMMAND"
 >pdbedit -P "bad lockout attempt"</B
 ></P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		account policy value for bad lockout attempt is 0
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ></DD
 ><DT
@@ -387,7 +421,6 @@ CLASS="PARAMETER"
 >-P</I
 ></TT
 > option.
-
 		</P
 ><P
 >Example: <B
@@ -395,11 +428,20 @@ CLASS="COMMAND"
 >pdbedit -P "bad lockout attempt" -V 3</B
 ></P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		account policy value for bad lockout attempt was 0
 		account policy value for bad lockout attempt is now 3
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ></DD
 ><DT
@@ -450,7 +492,7 @@ CLASS="FILENAME"
 >Print a summary of command line options.</P
 ></DD
 ><DT
->-s &lt;configuration file&gt;</DT
+>-s &#60;configuration file&#62;</DT
 ><DD
 ><P
 >The file specified contains the 

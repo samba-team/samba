@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "05 November 2002" "" ""
+.TH "SMB.CONF" "5" "26 November 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -1751,7 +1751,7 @@ Default: \fBavailable = yes\fR
 .TP
 \fBbind interfaces only (G)\fR
 This global parameter allows the Samba admin 
-to limit what interfaces on a machine will serve SMB requests. If 
+to limit what interfaces on a machine will serve SMB requests. It 
 affects file service smbd(8) and 
 name service nmbd(8) in slightly 
 different ways.
@@ -1770,7 +1770,7 @@ As unicast packets are received on the other sockets it allows
 \fBnmbd\fR to refuse to serve names to machines that 
 send packets that arrive through any interfaces not listed in the
 \fIinterfaces\fR list.  IP Source address spoofing
-does defeat this simple check, however so it must not be used
+does defeat this simple check, however, so it must not be used
 seriously as a security feature for \fBnmbd\fR.
 
 For file service it causes smbd(8)
@@ -2489,7 +2489,7 @@ Default: \fBdns proxy = yes\fR
 .TP
 \fBdomain logons (G)\fR
 If set to yes, the Samba server will serve 
-Windows 95/98 Domain logons for the   \fIworkgroup\fR it is in. Samba 2.2 also 
+Windows 95/98 Domain logons for the   \fIworkgroup\fR it is in. Samba 2.2
 has limited capability to act as a domain controller for Windows 
 NT 4 Domains.  For more details on setting up this feature see 
 the Samba-PDC-HOWTO included in the \fIhtmldocs/\fR
@@ -3633,7 +3633,7 @@ Example: \fBlog file = /usr/local/samba/var/log.%m
 The value of the parameter (a astring) allows 
 the debug level (logging level) to be specified in the 
 \fIsmb.conf\fR file. This parameter has been
-extended since 2.2.x series, now it allow to specify the debug
+extended since the 2.2.x series, now it allow to specify the debug
 level for multiple debug classes. This is to give greater 
 flexibility in the configuration of the system.
 
@@ -4862,7 +4862,7 @@ Default: \fBparanoid server security = yes\fR
 \fBpassdb backend (G)\fR
 This option allows the administrator to chose which backends to retrieve and store passwords with. This allows (for example) both 
 smbpasswd and tdbsam to be used without a recompile. 
-Multiple backends can be specified, seperated by spaces. The backends will be searched in the order they are specified. New users are always added to the first backend specified.
+Multiple backends can be specified, separated by spaces. The backends will be searched in the order they are specified. New users are always added to the first backend specified.
 Experimental backends must still be selected
 (eg --with-tdbsam) at configure time.
 
@@ -4906,9 +4906,8 @@ backend.  Takes an LDAP URL as an optional argument (defaults to
 backend, with non unix account support.  Takes an LDAP URL as an optional argument (defaults to 
 \fBldap://localhost\fR)
 
-Note:  In this module, any account
-without a matching POSIX account is regarded
-as 'non unix'.
+Note:  In this module, any account without a matching POSIX account is regarded
+as 'non unix'.  
 
 See also                         \fInon unix account
 range\fR
@@ -5145,6 +5144,12 @@ doing a query for the name WORKGROUP<1C>
 and then contacting each server returned in the list of IP 
 addresses from the name resolution source. 
 
+If the list of servers contains both names and the '*'
+character, the list is treated as a list of preferred 
+domain controllers, but an auto lookup of all remaining DC's
+will be added to the list as well.  Samba will not attempt to optimize 
+this list by locating the closest DC.
+
 If the \fIsecurity\fR parameter is 
 set to server, then there are different
 restrictions that \fBsecurity = domain\fR doesn't 
@@ -5172,7 +5177,7 @@ See also the \fIsecurity
 
 Default: \fBpassword server = <empty string>\fR
 
-Example: \fBpassword server = NT-PDC, NT-BDC1, NT-BDC2
+Example: \fBpassword server = NT-PDC, NT-BDC1, NT-BDC2, *
 \fR
 
 Example: \fBpassword server = *\fR
@@ -5819,30 +5824,12 @@ Default: \fBremote browse sync = <empty string>
 \fR
 .TP
 \fBrestrict anonymous (G)\fR
-This is a boolean parameter.  If it is yes, then 
-anonymous access to the server will be restricted, namely in the 
-case where the server is expecting the client to send a username, 
-but it doesn't.  Setting it to yes will force these anonymous 
-connections to be denied, and the client will be required to always 
-supply a username and password when connecting. Use of this parameter 
-is only recommended for homogeneous NT client environments.
+This is a integer parameter, and
+mirrors as much as possible the functinality the
+RestrictAnonymous
+registry key does on NT/Win2k.  
 
-This parameter makes the use of macro expansions that rely
-on the username (%U, %G, etc) consistent.  NT 4.0 
-likes to use anonymous connections when refreshing the share list, 
-and this is a way to work around that.
-
-When restrict anonymous is yes, all anonymous connections 
-are denied no matter what they are for.  This can effect the ability 
-of a machine to access the Samba Primary Domain Controller to revalidate 
-its machine account after someone else has logged on the client 
-interactively.  The NT client will display a message saying that 
-the machine's account in  the domain doesn't exist or the password is 
-bad.  The best way to deal  with this is to reboot NT client machines 
-between interactive logons,  using "Shutdown and Restart", rather 
-than "Close all programs and logon as a different user".
-
-Default: \fBrestrict anonymous = no\fR
+Default: \fBrestrict anonymous = 0\fR
 .TP
 \fBroot (G)\fR
 Synonym for   \fIroot directory"\fR.
@@ -7051,19 +7038,17 @@ Default: \fBvfs path = \fR
 Example: \fBvfs path = /usr/lib/samba/vfs\fR
 .TP
 \fBvfs object (S)\fR
-This parameter specifies a shared object file that 
-is used for Samba VFS I/O operations.  By default, normal 
+This parameter specifies a shared object files that 
+are used for Samba VFS I/O operations.  By default, normal 
 disk I/O operations are used but these can be overloaded 
-with a VFS object.  The Samba VFS layer is new to Samba 2.2 and 
-must be enabled at compile time with --with-vfs.
+with one or more VFS objects. 
 
 Default : \fBno value\fR
 .TP
 \fBvfs options (S)\fR
 This parameter allows parameters to be passed 
-to the vfs layer at initialization time.  The Samba VFS layer 
-is new to Samba 2.2 and must be enabled at compile time 
-with --with-vfs.  See also \fI  vfs object\fR.
+to the vfs layer at initialization time. 
+See also \fI  vfs object\fR.
 
 Default : \fBno value\fR
 .TP

@@ -1,11 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
 >testparm</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="TESTPARM"
-></A
->testparm</H1
+NAME="TESTPARM">testparm</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -30,20 +29,18 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"
-></A
-><H2
+NAME="AEN8"><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >testparm</B
->  [-s] [-h] [-v] [-L &lt;servername&gt;] {config filename} [hostname  hostIP]</P
+> [-s] [-h] [-v] [-L &#60;servername&#62;] [-t &#60;encoding&#62;] {config filename} [hostname hostIP]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN17"
+NAME="AEN18"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -69,12 +66,9 @@ CLASS="COMMAND"
 	</B
 > will successfully load the configuration file.</P
 ><P
->Note that this is <SPAN
-CLASS="emphasis"
-><I
+>Note that this is <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > a guarantee that 
 	the services specified in the configuration file will be 
 	available or will operate as expected. </P
@@ -100,7 +94,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN32"
+NAME="AEN33"
 ></A
 ><H2
 >OPTIONS</H2
@@ -150,6 +144,13 @@ CLASS="FILENAME"
 >smb.conf</TT
 > and are thus set to
 		their defaults.</P
+></DD
+><DT
+>-t encoding</DT
+><DD
+><P
+>		Output data in specified encoding.
+		</P
 ></DD
 ><DT
 >configfilename</DT
@@ -209,7 +210,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN72"
+NAME="AEN77"
 ></A
 ><H2
 >FILES</H2
@@ -238,7 +239,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN81"
+NAME="AEN86"
 ></A
 ><H2
 >DIAGNOSTICS</H2
@@ -252,18 +253,18 @@ NAME="AEN81"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN84"
+NAME="AEN89"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
+>This man page is correct for version 3.0 of 
 	the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN87"
+NAME="AEN92"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -289,7 +290,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN94"
+NAME="AEN99"
 ></A
 ><H2
 >AUTHOR</H2

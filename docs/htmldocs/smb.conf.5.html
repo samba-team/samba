@@ -1,11 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smb.conf</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMB.CONF"
-></A
->smb.conf</H1
+NAME="SMB.CONF">smb.conf</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -124,12 +123,9 @@ NAME="AEN28"
 ><P
 >There are three special sections, [global],
 	[homes] and [printers], which are
-	described under <SPAN
-CLASS="emphasis"
-><I
+	described under <I
 CLASS="EMPHASIS"
 >special sections</I
-></SPAN
 >. The
 	following notes apply to ordinary section descriptions.</P
 ><P
@@ -143,20 +139,14 @@ CLASS="EMPHASIS"
 	printable services (used by the client to access print services 
 	on the host running the server).</P
 ><P
->Sections may be designated <SPAN
-CLASS="emphasis"
-><I
+>Sections may be designated <I
 CLASS="EMPHASIS"
 >guest</I
-></SPAN
 > services,
 	in which case no password is required to access them. A specified 
-	UNIX <SPAN
-CLASS="emphasis"
-><I
+	UNIX <I
 CLASS="EMPHASIS"
 >guest account</I
-></SPAN
 > is used to define access
 	privileges in this case.</P
 ><P
@@ -178,6 +168,12 @@ CLASS="FILENAME"
 >/home/bar</TT
 >. 
 	The share is accessed via the share name "foo":</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="SCREEN"
 >	<TT
@@ -188,19 +184,25 @@ CLASS="COMPUTEROUTPUT"
 	</TT
 >
 	</PRE
+></TD
+></TR
+></TABLE
 ><P
 >The following sample section defines a printable share. 
 	The share is readonly, but printable. That is, the only write 
 	access permitted is via calls to open, write to and close a 
-	spool file. The <SPAN
-CLASS="emphasis"
-><I
+	spool file. The <I
 CLASS="EMPHASIS"
 >guest ok</I
-></SPAN
 > parameter means 
 	access will be permitted as the default guest user (specified 
 	elsewhere):</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="SCREEN"
 >	<TT
@@ -213,6 +215,9 @@ CLASS="COMPUTEROUTPUT"
 	</TT
 >
 	</PRE
+></TD
+></TR
+></TABLE
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -270,12 +275,9 @@ NAME="AEN53"
 ></LI
 ></UL
 ><P
->If you decide to use a <SPAN
-CLASS="emphasis"
-><I
+>If you decide to use a <I
 CLASS="EMPHASIS"
 >path =</I
-></SPAN
 > line 
 		in your [homes] section then you may find it useful 
 		to use the %S macro. For example :</P
@@ -304,6 +306,12 @@ CLASS="USERINPUT"
 		a normal service section can specify, though some make more sense 
 		than others. The following is a typical and suitable [homes]
 		section:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="SCREEN"
 >		<TT
@@ -313,41 +321,32 @@ CLASS="COMPUTEROUTPUT"
 		</TT
 >
 		</PRE
+></TD
+></TR
+></TABLE
 ><P
 >An important point is that if guest access is specified 
 		in the [homes] section, all home directories will be 
-		visible to all clients <SPAN
-CLASS="emphasis"
-><I
+		visible to all clients <I
 CLASS="EMPHASIS"
 >without a password</I
-></SPAN
 >. 
 		In the very unlikely event that this is actually desirable, it 
-		would be wise to also specify <SPAN
-CLASS="emphasis"
-><I
+		would be wise to also specify <I
 CLASS="EMPHASIS"
 >read only
 		access</I
-></SPAN
 >.</P
 ><P
->Note that the <SPAN
-CLASS="emphasis"
-><I
+>Note that the <I
 CLASS="EMPHASIS"
 >browseable</I
-></SPAN
 > flag for 
 		auto home directories will be inherited from the global browseable 
 		flag, not the [homes] browseable flag. This is useful as 
-		it means setting <SPAN
-CLASS="emphasis"
-><I
+		it means setting <I
 CLASS="EMPHASIS"
 >browseable = no</I
-></SPAN
 > in
 		the [homes] section will hide the [homes] share but make
 		any auto home directories visible.</P
@@ -407,6 +406,12 @@ NAME="AEN79"
 		world-writeable spool directory with the sticky bit set on 
 		it. A typical [printers] entry would look like 
 		this:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="SCREEN"
 ><TT
@@ -417,12 +422,21 @@ CLASS="COMPUTEROUTPUT"
  			printable = yes 
 		</TT
 ></PRE
+></TD
+></TR
+></TABLE
 ><P
 >All aliases given for a printer in the printcap file 
 		are legitimate printer names as far as the server is concerned. 
 		If your printing subsystem doesn't work like that, you will have 
 		to set up a pseudo-printcap. This is a file consisting of one or 
 		more lines like this:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="SCREEN"
 >		<TT
@@ -431,6 +445,9 @@ CLASS="COMPUTEROUTPUT"
 		</TT
 >
 		</PRE
+></TD
+></TR
+></TABLE
 ><P
 >Each alias should be an acceptable printer name for 
 		your printing subsystem. In the [global] section, specify 
@@ -462,44 +479,29 @@ NAME="AEN102"
 >parameters define the specific attributes of sections.</P
 ><P
 >Some parameters are specific to the [global] section
-	(e.g., <SPAN
-CLASS="emphasis"
-><I
+	(e.g., <I
 CLASS="EMPHASIS"
 >security</I
-></SPAN
 >).  Some parameters are usable 
-	in all sections (e.g., <SPAN
-CLASS="emphasis"
-><I
+	in all sections (e.g., <I
 CLASS="EMPHASIS"
 >create mode</I
-></SPAN
 >). All others 
 	are permissible only in normal sections. For the purposes of the 
 	following descriptions the [homes] and [printers]
-	sections will be considered normal.  The letter <SPAN
-CLASS="emphasis"
-><I
+	sections will be considered normal.  The letter <I
 CLASS="EMPHASIS"
 >G</I
-></SPAN
 > 
 	in parentheses indicates that a parameter is specific to the
-	[global] section. The letter <SPAN
-CLASS="emphasis"
-><I
+	[global] section. The letter <I
 CLASS="EMPHASIS"
 >S</I
-></SPAN
 >
 	indicates that a parameter can be specified in a service specific
-	section. Note that all <SPAN
-CLASS="emphasis"
-><I
+	section. Note that all <I
 CLASS="EMPHASIS"
 >S</I
-></SPAN
 > parameters can also be specified in 
 	the [global] section - in which case they will define
 	the default behavior for all services.</P
@@ -689,12 +691,9 @@ CLASS="VARIABLELIST"
 ><P
 >the name of your NIS home directory server.  
 		This is obtained from your NIS auto.map entry.  If you have 
-		not compiled Samba with the <SPAN
-CLASS="emphasis"
-><I
+		not compiled Samba with the <I
 CLASS="EMPHASIS"
 >--with-automount</I
-></SPAN
 > 
 		option then this value will be the same as %L.</P
 ></DD
@@ -744,12 +743,9 @@ CLASS="VARIABLELIST"
 > controls if names that have characters that 
 		aren't of the "default" case are mangled. For example, 
 		if this is yes then a name like "Mail" would be mangled. 
-		Default <SPAN
-CLASS="emphasis"
-><I
+		Default <I
 CLASS="EMPHASIS"
 >no</I
-></SPAN
 >.</P
 ></DD
 ><DT
@@ -758,12 +754,9 @@ CLASS="EMPHASIS"
 ><P
 >controls whether filenames are case sensitive. If 
 		they aren't then Samba must do a filename search and match on passed 
-		names. Default <SPAN
-CLASS="emphasis"
-><I
+		names. Default <I
 CLASS="EMPHASIS"
 >no</I
-></SPAN
 >.</P
 ></DD
 ><DT
@@ -771,12 +764,9 @@ CLASS="EMPHASIS"
 ><DD
 ><P
 >controls what the default case is for new 
-		filenames. Default <SPAN
-CLASS="emphasis"
-><I
+		filenames. Default <I
 CLASS="EMPHASIS"
 >lower</I
-></SPAN
 >.</P
 ></DD
 ><DT
@@ -785,12 +775,9 @@ CLASS="EMPHASIS"
 ><P
 >controls if new files are created with the 
 		case that the client passes, or if they are forced to be the 
-		"default" case. Default <SPAN
-CLASS="emphasis"
-><I
+		"default" case. Default <I
 CLASS="EMPHASIS"
 >yes</I
-></SPAN
 >.
 		</P
 ></DD
@@ -803,12 +790,9 @@ CLASS="EMPHASIS"
 		upper case, or if they are forced to be the "default" 
 		case. This option can be use with "preserve case = yes" 
 		to permit long filenames to retain their case, while short names 
-		are lowercased. Default <SPAN
-CLASS="emphasis"
-><I
+		are lowercased. Default <I
 CLASS="EMPHASIS"
 >yes</I
-></SPAN
 >.</P
 ></DD
 ></DL
@@ -4688,12 +4672,9 @@ NAME="ABORTSHUTDOWNSCRIPT"
 >abort shutdown script (G)</DT
 ><DD
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >This parameter only exists in the HEAD cvs branch</I
-></SPAN
 >
 		This a full path name to a script called by
 		<A
@@ -4716,12 +4697,9 @@ CLASS="PARAMETER"
 ><P
 >This command will be run as user.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >None</I
-></SPAN
 >.</P
 ><P
 >Example: <B
@@ -4888,12 +4866,9 @@ CLASS="PARAMETER"
 ></A
 ></P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -5032,12 +5007,9 @@ CLASS="PARAMETER"
 >.
 		</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -5066,7 +5038,7 @@ TARGET="_top"
 ><P
 >Default: <B
 CLASS="COMMAND"
->add machine script = &lt;empty string&gt;
+>add machine script = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -5106,12 +5078,9 @@ NAME="ADDUSERSCRIPT"
 ><DD
 ><P
 >This is the full pathname to a script that will 
-		be run <SPAN
-CLASS="emphasis"
-><I
+		be run <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 > by <A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -5128,12 +5097,9 @@ HREF="smbd.8.html"
 TARGET="_top"
 >smbd</A
 > to create the required UNIX users 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >ON DEMAND</I
-></SPAN
 > when a user accesses the Samba server.</P
 ><P
 >In order to use this option, <A
@@ -5141,12 +5107,9 @@ HREF="smbd.8.html"
 TARGET="_top"
 >smbd</A
 > 
-		must <SPAN
-CLASS="emphasis"
-><I
+		must <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > be set to <TT
 CLASS="PARAMETER"
 ><I
@@ -5195,12 +5158,9 @@ CLASS="PARAMETER"
 CLASS="COMMAND"
 >smbd</B
 > will
-		call the specified script <SPAN
-CLASS="emphasis"
-><I
+		call the specified script <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 >, expanding 
 		any <TT
 CLASS="PARAMETER"
@@ -5247,7 +5207,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->add user script = &lt;empty string&gt;
+>add user script = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -5265,12 +5225,9 @@ NAME="ADDGROUPSCRIPT"
 ><DD
 ><P
 >This is the full pathname to a script that will 
-		be run <SPAN
-CLASS="emphasis"
-><I
+		be run <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 > by <A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -5306,12 +5263,9 @@ NAME="ADMINUSERS"
 		this list will be able to do anything they like on the share, 
 		irrespective of file permissions.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no admin users</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -5333,12 +5287,9 @@ HREF="smbd.8.html"
 TARGET="_top"
 >smbd(8)</A
 > 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 >. Any <TT
 CLASS="PARAMETER"
 ><I
@@ -5563,7 +5514,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->auth methods = &lt;empty string&gt;</B
+>auth methods = &#60;empty string&#62;</B
 ></P
 ><P
 >Example: <B
@@ -5584,12 +5535,9 @@ CLASS="PARAMETER"
 ><I
 >available = no</I
 ></TT
->, then <SPAN
-CLASS="emphasis"
-><I
+>, then <I
 CLASS="EMPHASIS"
 >ALL</I
-></SPAN
 > 
 		attempts to connect to the service will fail. Such failures are 
 		logged.</P
@@ -5607,7 +5555,7 @@ NAME="BINDINTERFACESONLY"
 ><DD
 ><P
 >This global parameter allows the Samba admin 
-		to limit what interfaces on a machine will serve SMB requests. If 
+		to limit what interfaces on a machine will serve SMB requests. It 
 		affects file service <A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -5667,7 +5615,7 @@ CLASS="PARAMETER"
 >interfaces</I
 ></TT
 > list.  IP Source address spoofing
-		does defeat this simple check, however so it must not be used
+		does defeat this simple check, however, so it must not be used
 		seriously as a security feature for <B
 CLASS="COMMAND"
 >nmbd</B
@@ -5696,12 +5644,9 @@ CLASS="PARAMETER"
 >bind interfaces only</I
 ></TT
 > is set then 
-		unless the network address <SPAN
-CLASS="emphasis"
-><I
+		unless the network address <I
 CLASS="EMPHASIS"
 >127.0.0.1</I
-></SPAN
 > is added 
 		to the <TT
 CLASS="PARAMETER"
@@ -5730,12 +5675,9 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >smbpasswd</B
 >
-		by default connects to the <SPAN
-CLASS="emphasis"
-><I
+		by default connects to the <I
 CLASS="EMPHASIS"
 >localhost - 127.0.0.1</I
-></SPAN
 > 
 		address as an SMB client to issue the password change request. If 
 		<TT
@@ -5744,12 +5686,9 @@ CLASS="PARAMETER"
 >bind interfaces only</I
 ></TT
 > is set then unless the 
-		network address <SPAN
-CLASS="emphasis"
-><I
+		network address <I
 CLASS="EMPHASIS"
 >127.0.0.1</I
-></SPAN
 > is added to the
 		<TT
 CLASS="PARAMETER"
@@ -5798,19 +5737,13 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >nmbd</B
 > at the address 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >127.0.0.1</I
-></SPAN
 > to determine if they are running.  
-		Not adding <SPAN
-CLASS="emphasis"
-><I
+		Not adding <I
 CLASS="EMPHASIS"
 >127.0.0.1</I
-></SPAN
 >  will cause <B
 CLASS="COMMAND"
 >		smbd</B
@@ -6156,12 +6089,9 @@ CLASS="PARAMETER"
 >.
 		</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -6195,12 +6125,9 @@ CLASS="PARAMETER"
 ></A
 > parameter.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >No comment string</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -6257,12 +6184,9 @@ NAME="COPY"
 		copied must occur earlier in the configuration file than the 
 		service doing the copying.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no value</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -6293,12 +6217,9 @@ CLASS="PARAMETER"
 		calculated according to the mapping from DOS modes to UNIX 
 		permissions, and the resulting UNIX mode is then bit-wise 'AND'ed 
 		with this parameter. This parameter may be thought of as a bit-wise 
-		MASK for the UNIX modes of a file. Any bit <SPAN
-CLASS="emphasis"
-><I
+		MASK for the UNIX modes of a file. Any bit <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > 
 		set here will be removed from the modes set on a file when it is 
 		created.</P
@@ -6405,13 +6326,10 @@ NAME="CSCPOLICY"
 >csc policy (S)</DT
 ><DD
 ><P
->This stands for <SPAN
-CLASS="emphasis"
-><I
+>This stands for <I
 CLASS="EMPHASIS"
 >client-side caching 
 		policy</I
-></SPAN
 >, and specifies how clients capable of offline
 		caching will cache the files in the share. The valid values
 		are: manual, documents, programs, disable.</P
@@ -6703,12 +6621,9 @@ NAME="DEFAULTSERVICE"
 ><P
 >This parameter specifies the name of a service
 		which will be connected to if the service actually requested cannot
-		be found. Note that the square brackets are <SPAN
-CLASS="emphasis"
-><I
+		be found. Note that the square brackets are <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 >
 		given in the parameter value (see example below).</P
 ><P
@@ -6750,6 +6665,12 @@ CLASS="PARAMETER"
 ><P
 >Example:</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >[global]
@@ -6758,6 +6679,9 @@ CLASS="PROGRAMLISTING"
 [pub]
 	path = /%S
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ></DD
 ><DT
@@ -6768,12 +6692,9 @@ NAME="DELETEGROUPSCRIPT"
 ><DD
 ><P
 >This is the full pathname to a script that will 
-		be run <SPAN
-CLASS="emphasis"
-><I
+		be run <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 > by <A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -6872,12 +6793,9 @@ CLASS="PARAMETER"
 ></A
 ></P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -7013,12 +6931,9 @@ CLASS="PARAMETER"
 >.
 		</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -7058,7 +6973,7 @@ CLASS="COMMAND"
 ><P
 >Default: <B
 CLASS="COMMAND"
->delete user script = &lt;empty string&gt;
+>delete user script = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -7082,12 +6997,9 @@ HREF="smbd.8.html"
 TARGET="_top"
 >smbd(8)</A
 > 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 >. Any <TT
 CLASS="PARAMETER"
 ><I
@@ -7227,23 +7139,17 @@ CLASS="FILENAME"
 		third return value can give the block size in bytes. The default 
 		blocksize is 1024 bytes.</P
 ><P
->Note: Your script should <SPAN
-CLASS="emphasis"
-><I
+>Note: Your script should <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > be setuid or 
 		setgid and should be owned by (and writeable only by) root!</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >By default internal routines for 
 		determining the disk capacity and remaining space will be used.
 		</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -7254,22 +7160,40 @@ CLASS="COMMAND"
 ><P
 >Where the script dfree (which must be made executable) could be:</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 > 
 		#!/bin/sh
 		df $1 | tail -1 | awk '{print $2" "$4}'
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >or perhaps (on Sys V based systems):</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 > 
 		#!/bin/sh
 		/usr/bin/df -k $1 | tail -1 | awk '{print $3" "$5}'
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >Note that you may have to replace the command names 
@@ -7308,12 +7232,9 @@ NAME="DIRECTORYMASK"
 		calculated according to the mapping from DOS modes to UNIX permissions, 
 		and the resulting UNIX mode is then bit-wise 'AND'ed with this 
 		parameter. This parameter may be thought of as a bit-wise MASK for 
-		the UNIX modes of a directory. Any bit <SPAN
-CLASS="emphasis"
-><I
+		the UNIX modes of a directory. Any bit <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > set 
 		here will be removed from the modes set on a directory when it is 
 		created.</P
@@ -7439,12 +7360,9 @@ NAME="DIRECTORYSECURITYMASK"
 		meaning a user is allowed to modify all the user/group/world
 		permissions on a directory.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that users who can access the 
 		Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
@@ -7533,12 +7451,9 @@ NAME="DISABLESPOOLSS"
 		Wizard or by using the NT printer properties dialog window.  It will
 		also disable the capability of Windows NT/2000 clients to download
 		print drivers from the Samba host upon demand.
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >Be very careful about enabling this parameter.</I
-></SPAN
 >
 		</P
 ><P
@@ -7640,7 +7555,7 @@ CLASS="PARAMETER"
 >workgroup</I
 ></TT
 ></A
-> it is in. Samba 2.2 also 
+> it is in. Samba 2.2
 		has limited capability to act as a domain controller for Windows 
 		NT 4 Domains.  For more details on setting up this feature see 
 		the Samba-PDC-HOWTO included in the <TT
@@ -7792,13 +7707,10 @@ CLASS="FILENAME"
 >. 
 		Experimentation is the best policy :-)  </P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none (i.e., all directories are OK 
 		to descend)</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -8042,12 +7954,9 @@ CLASS="PARAMETER"
 		to standard output.  This listing will then be used in response
 		to the level 1 and 2 EnumPorts() RPC.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no enumports command</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -8213,12 +8122,9 @@ NAME="FORCECREATEMODE"
 ><DD
 ><P
 >This parameter specifies a set of UNIX mode bit 
-		permissions that will <SPAN
-CLASS="emphasis"
-><I
+		permissions that will <I
 CLASS="EMPHASIS"
 >always</I
-></SPAN
 > be set on a 
 		file created by Samba. This is done by bitwise 'OR'ing these bits onto 
 		the mode bits of a file that is being created or having its 
@@ -8276,12 +8182,9 @@ NAME="FORCEDIRECTORYMODE"
 ><DD
 ><P
 >This parameter specifies a set of UNIX mode bit 
-		permissions that will <SPAN
-CLASS="emphasis"
-><I
+		permissions that will <I
 CLASS="EMPHASIS"
 >always</I
-></SPAN
 > be set on a directory 
 		created by Samba. This is done by bitwise 'OR'ing these bits onto the 
 		mode bits of a directory that is being created. The default for this 
@@ -8351,12 +8254,9 @@ NAME="FORCEDIRECTORYSECURITYMODE"
 		allows a user to modify all the user/group/world permissions on a 
 		directory without restrictions.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that users who can access the 
 		Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
@@ -8466,12 +8366,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no forced group</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -8501,12 +8398,9 @@ NAME="FORCESECURITYMODE"
 		and allows a user to modify all the user/group/world permissions on a file,
 		with no restrictions.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that users who can access 
 		the Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
@@ -8585,12 +8479,9 @@ CLASS="PARAMETER"
 ></A
 ></P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no forced user</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -8729,13 +8620,10 @@ CLASS="COMMAND"
 	        many parts of the system require this value to be
 	        constant for correct operation.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >specified at compile time, usually 
 		"nobody"</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -8887,12 +8775,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no file are hidden</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -9021,12 +8906,9 @@ CLASS="COMMAND"
 		that copes with different map formats and also Amd (another 
 		automounter) maps.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE :</I
-></SPAN
 >A working NIS client is required on 
 		the system for this option to work.</P
 ><P
@@ -9052,7 +8934,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->homedir map = &lt;empty string&gt;</B
+>homedir map = &#60;empty string&#62;</B
 ></P
 ><P
 >Example: <B
@@ -9178,12 +9060,9 @@ CLASS="PARAMETER"
 ><P
 >You can also specify hosts by network/netmask pairs and 
 		by netgroup names if your system supports netgroups. The 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >EXCEPT</I
-></SPAN
 > keyword can also be used to limit a 
 		wildcard list. The following examples may provide some help:</P
 ><P
@@ -9234,13 +9113,10 @@ CLASS="COMMAND"
 > for a way of testing your host access to see if it does 
 		what you expect.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none (i.e., all hosts permitted access)
 		</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -9262,12 +9138,9 @@ CLASS="PARAMETER"
 >hosts allow</I
 ></TT
 > 
-		- hosts listed here are <SPAN
-CLASS="emphasis"
-><I
+		- hosts listed here are <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > permitted access to 
 		services unless the specific services have their own lists to override 
 		this one. Where the lists conflict, the <TT
@@ -9278,13 +9151,10 @@ CLASS="PARAMETER"
 > 
 		list takes precedence.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none (i.e., no hosts specifically excluded)
 		</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -9322,12 +9192,9 @@ CLASS="PARAMETER"
 > may be useful for NT clients which will 
 		not supply passwords to Samba.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE :</I
-></SPAN
 > The use of <TT
 CLASS="PARAMETER"
 ><I
@@ -9344,21 +9211,15 @@ CLASS="PARAMETER"
 ></TT
 > option be only used if you really 
 		know what you are doing, or perhaps on a home network where you trust 
-		your spouse and kids. And only if you <SPAN
-CLASS="emphasis"
-><I
+		your spouse and kids. And only if you <I
 CLASS="EMPHASIS"
 >really</I
-></SPAN
 > trust 
 		them :-).</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no host equivalences</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -9396,12 +9257,9 @@ CLASS="PARAMETER"
 >.
 		</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no file included</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -9511,12 +9369,9 @@ CLASS="PARAMETER"
 		</A
 > as usual.</P
 ><P
->Note that the setuid bit is <SPAN
-CLASS="emphasis"
-><I
+>Note that the setuid bit is <I
 CLASS="EMPHASIS"
 >never</I
-></SPAN
 > set via 
 		inheritance (the code explicitly prohibits this).</P
 ><P
@@ -9636,13 +9491,10 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >all active interfaces except 127.0.0.1 
 		that are broadcast capable</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -9653,12 +9505,9 @@ NAME="INVALIDUSERS"
 ><DD
 ><P
 >This is a list of users that should not be allowed 
-		to login to this service. This is really a <SPAN
-CLASS="emphasis"
-><I
+		to login to this service. This is really a <I
 CLASS="EMPHASIS"
 >paranoid</I
-></SPAN
 > 
 		check to absolutely ensure an improper setting does not breach 
 		your security.</P
@@ -9675,7 +9524,7 @@ CLASS="EMPHASIS"
 		so the value <TT
 CLASS="PARAMETER"
 ><I
->+&amp;group</I
+>+&#38;group</I
 ></TT
 > means check the 
 		UNIX group database, followed by the NIS netgroup database, and 
@@ -9707,12 +9556,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no invalid users</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -9796,12 +9642,9 @@ CLASS="COMMAND"
 >
 		</A
 > has oplocked. This allows complete data consistency between 
-		SMB/CIFS, NFS and local file access (and is a <SPAN
-CLASS="emphasis"
-><I
+		SMB/CIFS, NFS and local file access (and is a <I
 CLASS="EMPHASIS"
 >very</I
-></SPAN
 > 
 		cool feature :-).</P
 ><P
@@ -9920,12 +9763,9 @@ CLASS="COMMAND"
 		page for more information on how to accmplish this.
 		</P
 ><P
->Default : <SPAN
-CLASS="emphasis"
-><I
+>Default : <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -9949,7 +9789,7 @@ CLASS="CONSTANT"
 ><P
 >Default : <B
 CLASS="COMMAND"
->ldap filter = (&amp;(uid=%u)(objectclass=sambaAccount))</B
+>ldap filter = (&#38;(uid=%u)(objectclass=sambaAccount))</B
 ></P
 ></DD
 ><DT
@@ -9961,12 +9801,9 @@ NAME="LDAPSSL"
 ><P
 >This option is used to define whether or not Samba should
 		use SSL when connecting to the ldap server
-		This is <SPAN
-CLASS="emphasis"
-><I
+		This is <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > related to
 		Samba's previous SSL support which was enabled by specifying the 
 		<B
@@ -10059,12 +9896,9 @@ CLASS="COMMAND"
 >ldap machine suffix</B
 >. It also used as the base dn for all ldap searches. </P
 ><P
->Default : <SPAN
-CLASS="emphasis"
-><I
+>Default : <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -10077,12 +9911,9 @@ NAME="LDAPUSERSUFFIX"
 >It specifies where users are added to the tree.
 		</P
 ><P
->Default : <SPAN
-CLASS="emphasis"
-><I
+>Default : <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -10096,12 +9927,9 @@ NAME="LDAPMACHINESUFFIX"
                 added to the ldap tree.
 		</P
 ><P
->Default : <SPAN
-CLASS="emphasis"
-><I
+>Default : <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -10453,22 +10281,16 @@ CLASS="CONSTANT"
 CLASS="CONSTANT"
 >yes</TT
 > doesn't
-		mean that Samba will <SPAN
-CLASS="emphasis"
-><I
+		mean that Samba will <I
 CLASS="EMPHASIS"
 >become</I
-></SPAN
 > the local master 
 		browser on a subnet, just that <B
 CLASS="COMMAND"
 >nmbd</B
-> will <SPAN
-CLASS="emphasis"
-><I
+> will <I
 CLASS="EMPHASIS"
 >		participate</I
-></SPAN
 > in elections for local master browser.</P
 ><P
 >Setting this value to <TT
@@ -10478,12 +10300,9 @@ CLASS="CONSTANT"
 CLASS="COMMAND"
 >nmbd</B
 >
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >never</I
-></SPAN
 > to become a local master browser.</P
 ><P
 >Default: <B
@@ -10613,19 +10432,13 @@ CLASS="COMMAND"
 >, real locking will be performed 
 		by the server.</P
 ><P
->This option <SPAN
-CLASS="emphasis"
-><I
+>This option <I
 CLASS="EMPHASIS"
 >may</I
-></SPAN
 > be useful for read-only 
-		filesystems which <SPAN
-CLASS="emphasis"
-><I
+		filesystems which <I
 CLASS="EMPHASIS"
 >may</I
-></SPAN
 > not need locking (such as 
 		CDROM drives), although setting this parameter of <TT
 CLASS="CONSTANT"
@@ -10674,7 +10487,7 @@ NAME="LOGLEVEL"
 CLASS="FILENAME"
 >smb.conf</TT
 > file. This parameter has been
-		extended since 2.2.x series, now it allow to specify the debug
+		extended since the 2.2.x series, now it allow to specify the debug
 		level for multiple debug classes. This is to give greater 
 		flexibility in the configuration of the system.</P
 ><P
@@ -10850,12 +10663,9 @@ CLASS="FILENAME"
 >Thereafter, the directories and any of the contents can, 
 		if required, be made read-only.  It is not advisable that the 
 		NTuser.dat file be made read-only - rename it to NTuser.man to 
-		achieve the desired effect (a <SPAN
-CLASS="emphasis"
-><I
+		achieve the desired effect (a <I
 CLASS="EMPHASIS"
 >MAN</I
-></SPAN
 >datory 
 		profile). </P
 ><P
@@ -10945,12 +10755,9 @@ CLASS="COMMAND"
 >This option is only useful if Samba is set up as a logon 
 		server.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no logon script defined</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -11195,9 +11002,7 @@ CLASS="PARAMETER"
 ></A
 > parameter.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >depends on the setting of <TT
 CLASS="PARAMETER"
@@ -11205,7 +11010,6 @@ CLASS="PARAMETER"
 >		printing</I
 ></TT
 ></I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -11357,9 +11161,7 @@ CLASS="PARAMETER"
 ></A
 > parameter.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >depends on the setting of <TT
 CLASS="PARAMETER"
@@ -11368,7 +11170,6 @@ CLASS="PARAMETER"
 		</I
 ></TT
 ></I
-></SPAN
 ></P
 ><P
 >Example 1: <B
@@ -11457,7 +11258,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->magic output = &lt;magic script name&gt;.out
+>magic output = &#60;magic script name&#62;.out
 		</B
 ></P
 ><P
@@ -11496,36 +11297,24 @@ CLASS="PARAMETER"
 >Note that some shells are unable to interpret scripts 
 		containing CR/LF instead of CR as 
 		the end-of-line marker. Magic scripts must be executable 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >as is</I
-></SPAN
 > on the host, which for some hosts and 
 		some shells will require filtering at the DOS end.</P
 ><P
->Magic scripts are <SPAN
-CLASS="emphasis"
-><I
+>Magic scripts are <I
 CLASS="EMPHASIS"
 >EXPERIMENTAL</I
-></SPAN
 > and 
-		should <SPAN
-CLASS="emphasis"
-><I
+		should <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > be relied upon.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >None. Magic scripts disabled.</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -11592,12 +11381,9 @@ CLASS="FILENAME"
 > off the ends of filenames on some CDROMs (only visible 
 		under some UNIXes). To do this use a map of (*;1 *;).</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no mangled map</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -11784,12 +11570,9 @@ NAME="MANGLINGCHAR"
 ><DD
 ><P
 >This controls what character is used as 
-		the <SPAN
-CLASS="emphasis"
-><I
+		the <I
 CLASS="EMPHASIS"
 >magic</I
-></SPAN
 > character in <A
 HREF="#AEN205"
 >name mangling</A
@@ -11990,12 +11773,9 @@ HREF="#GUESTACCOUNT"
 			will not know the reason they cannot access files they think
 			they should - there will have been no message given to them
 			that they got their password wrong. Helpdesk services will
-			<SPAN
-CLASS="emphasis"
-><I
+			<I
 CLASS="EMPHASIS"
 >hate</I
-></SPAN
 > you if you set the <TT
 CLASS="PARAMETER"
 ><I
@@ -12014,12 +11794,9 @@ CLASS="PARAMETER"
 ></TT
 > modes other than 
 		share. This is because in these modes the name of the resource being
-		requested is <SPAN
-CLASS="emphasis"
-><I
+		requested is <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > sent to the server until after 
 		the server has successfully authenticated the client so the server 
 		cannot make authentication decisions at the correct time (connection 
@@ -12269,12 +12046,9 @@ CLASS="CONSTANT"
 ><TT
 CLASS="CONSTANT"
 >LANMAN1</TT
->: First <SPAN
-CLASS="emphasis"
-><I
+>: First <I
 CLASS="EMPHASIS"
 >			modern</I
-></SPAN
 > version of the protocol. Long filename
 			support.</P
 ></LI
@@ -12477,13 +12251,10 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >xedit</B
 >, then 
-		removes it afterwards. <SPAN
-CLASS="emphasis"
-><I
+		removes it afterwards. <I
 CLASS="EMPHASIS"
 >NOTE THAT IT IS VERY IMPORTANT 
 		THAT THIS COMMAND RETURN IMMEDIATELY</I
-></SPAN
 >. That's why I 
 		have the '&#38;' on the end. If it doesn't return immediately then 
 		your PCs may freeze when sending messages (they should recover 
@@ -12549,7 +12320,7 @@ CLASS="PARAMETER"
 ><B
 CLASS="COMMAND"
 >message command = /bin/mail -s 'message from %f on 
-		%m' root &lt; %s; rm %s</B
+		%m' root &#60; %s; rm %s</B
 ></P
 ><P
 >If you don't have a message command then the message 
@@ -12565,12 +12336,9 @@ CLASS="COMMAND"
 >message command = rm %s</B
 ></P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no message command</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -12962,12 +12730,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >empty string (no additional names)</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -13000,12 +12765,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >machine DNS name</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -13090,7 +12852,7 @@ NAME="NONUNIXACCOUNTRANGE"
 ><P
 >Default: <B
 CLASS="COMMAND"
->non unix account range = &lt;empty string&gt;
+>non unix account range = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -13317,13 +13079,10 @@ NAME="OPLOCKBREAKWAITTIME"
 		is the amount of time Samba will wait before sending an oplock break 
 		request to such (broken) clients.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
 		AND UNDERSTOOD THE SAMBA OPLOCK CODE</I
-></SPAN
 >.</P
 ><P
 >Default: <B
@@ -13338,12 +13097,9 @@ NAME="OPLOCKCONTENTIONLIMIT"
 >oplock contention limit (S)</DT
 ><DD
 ><P
->This is a <SPAN
-CLASS="emphasis"
-><I
+>This is a <I
 CLASS="EMPHASIS"
 >very</I
-></SPAN
 > advanced 
 		<A
 HREF="smbd.8.html"
@@ -13366,13 +13122,10 @@ CLASS="COMMAND"
 > to behave in a similar 
 		way to Windows NT.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
 		AND UNDERSTOOD THE SAMBA OPLOCK CODE</I
-></SPAN
 >.</P
 ><P
 >Default: <B
@@ -13498,12 +13251,9 @@ CLASS="PARAMETER"
 ></TT
 > in the local broadcast area.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note :</I
-></SPAN
 >By default, Samba will win 
 		a local master browsing election over all Microsoft operating 
 		systems except a Windows NT 4.0/2000 Domain Controller.  This 
@@ -13539,8 +13289,8 @@ NAME="OS2DRIVERMAP"
 		path to a file containing a mapping of Windows NT printer driver
 		names to OS/2 printer driver names.  The format is:</P
 ><P
->&lt;nt driver name&gt; = &lt;os2 driver 
-		name&gt;.&lt;device name&gt;</P
+>&#60;nt driver name&#62; = &#60;os2 driver 
+		name&#62;.&#60;device name&#62;</P
 ><P
 >For example, a valid entry using the HP LaserJet 5
 		printer driver would appear as <B
@@ -13565,7 +13315,7 @@ TARGET="_top"
 ><P
 >Default: <B
 CLASS="COMMAND"
->os2 driver map = &lt;empty string&gt;
+>os2 driver map = &#60;empty string&#62;
 		</B
 ></P
 ></DD
@@ -13629,7 +13379,7 @@ TARGET="_top"
 ><P
 >Default: <B
 CLASS="COMMAND"
->panic action = &lt;empty string&gt;</B
+>panic action = &#60;empty string&#62;</B
 ></P
 ><P
 >Example: <B
@@ -13664,7 +13414,7 @@ NAME="PASSDBBACKEND"
 ><P
 >This option allows the administrator to chose which backends to retrieve and store passwords with. This allows (for example) both 
                 smbpasswd and tdbsam to be used without a recompile. 
-                Multiple backends can be specified, seperated by spaces. The backends will be searched in the order they are specified. New users are always added to the first backend specified.
+                Multiple backends can be specified, separated by spaces. The backends will be searched in the order they are specified. New users are always added to the first backend specified.
                 Experimental backends must still be selected
                 (eg --with-tdbsam) at configure time.
 		</P
@@ -13772,10 +13522,8 @@ CLASS="COMMAND"
 >ldap://localhost</B
 >)</P
 ><P
->Note:  In this module, any account
-                        without a matching POSIX account is regarded
-                        as 'non unix'.
-                        </P
+>Note:  In this module, any account without a matching POSIX account is regarded
+                        as 'non unix'.  </P
 ><P
 >See also <A
 HREF="#NONUNIXACCOUNTRANGE"
@@ -13876,12 +13624,9 @@ NAME="PASSWDCHAT"
 >passwd chat (G)</DT
 ><DD
 ><P
->This string controls the <SPAN
-CLASS="emphasis"
-><I
+>This string controls the <I
 CLASS="EMPHASIS"
 >"chat"</I
-></SPAN
 > 
 		conversation that takes places between <A
 HREF="smbd.8.html"
@@ -13923,12 +13668,9 @@ CLASS="PARAMETER"
 CLASS="CONSTANT"
 >yes</TT
 >. This 
-		sequence is then called <SPAN
-CLASS="emphasis"
-><I
+		sequence is then called <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 > when the SMB password 
 		in the smbpasswd file is being changed, without access to the old 
 		password cleartext. This means that root must be able to reset the user's password
@@ -14042,12 +13784,9 @@ NAME="PASSWDCHATDEBUG"
 ><DD
 ><P
 >This boolean specifies if the passwd chat script 
-		parameter is run in <SPAN
-CLASS="emphasis"
-><I
+		parameter is run in <I
 CLASS="EMPHASIS"
 >debug</I
-></SPAN
 > mode. In this mode the 
 		strings passed to and received from the passwd chat are printed 
 		in the <A
@@ -14144,24 +13883,18 @@ CLASS="PARAMETER"
 		will be replaced with the user name. The user name is checked for 
 		existence before calling the password changing program.</P
 ><P
->Also note that many passwd programs insist in <SPAN
-CLASS="emphasis"
-><I
+>Also note that many passwd programs insist in <I
 CLASS="EMPHASIS"
 >reasonable
 		</I
-></SPAN
 > passwords, such as a minimum length, or the inclusion 
 		of mixed case chars and digits. This can pose a problem as some clients 
 		(such as Windows for Workgroups) uppercase the password before sending 
 		it.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that if the <TT
 CLASS="PARAMETER"
 ><I
@@ -14172,12 +13905,9 @@ CLASS="PARAMETER"
 CLASS="CONSTANT"
 >yes
 		</TT
-> then this program is called <SPAN
-CLASS="emphasis"
-><I
+> then this program is called <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 > 
 		before the SMB password in the <A
 HREF="smbpasswd.5.html"
@@ -14197,19 +13927,13 @@ CLASS="PARAMETER"
 >unix password sync</I
 ></TT
 > parameter 
-		is set this parameter <SPAN
-CLASS="emphasis"
-><I
+		is set this parameter <I
 CLASS="EMPHASIS"
 >MUST USE ABSOLUTE PATHS</I
-></SPAN
 > 
-		for <SPAN
-CLASS="emphasis"
-><I
+		for <I
 CLASS="EMPHASIS"
 >ALL</I
-></SPAN
 > programs called, and must be examined 
 		for security implications. Note that by default <TT
 CLASS="PARAMETER"
@@ -14348,21 +14072,15 @@ CLASS="PARAMETER"
 		the "LM1.2X002" or the "NT LM 0.12" protocol, and it must be in 
 		user level security mode.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE:</I
-></SPAN
 > Using a password server 
 		means your UNIX box (running Samba) is only as secure as your 
-		password server. <SPAN
-CLASS="emphasis"
-><I
+		password server. <I
 CLASS="EMPHASIS"
 >DO NOT CHOOSE A PASSWORD SERVER THAT 
 		YOU DON'T COMPLETELY TRUST</I
-></SPAN
 >.</P
 ><P
 >Never point a Samba server at itself for password 
@@ -14419,10 +14137,16 @@ CLASS="PARAMETER"
 		Primary or Backup Domain controllers to authenticate against by 
 		doing a query for the name <TT
 CLASS="CONSTANT"
->WORKGROUP&lt;1C&gt;</TT
+>WORKGROUP&#60;1C&#62;</TT
 > 
 		and then contacting each server returned in the list of IP 
 		addresses from the name resolution source. </P
+><P
+>If the list of servers contains both names and the '*'
+		character, the list is treated as a list of preferred 
+		domain controllers, but an auto lookup of all remaining DC's
+		will be added to the list as well.  Samba will not attempt to optimize 
+		this list by locating the closest DC.</P
 ><P
 >If the <TT
 CLASS="PARAMETER"
@@ -14491,13 +14215,13 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->password server = &lt;empty string&gt;</B
+>password server = &#60;empty string&#62;</B
 >
 		</P
 ><P
 >Example: <B
 CLASS="COMMAND"
->password server = NT-PDC, NT-BDC1, NT-BDC2
+>password server = NT-PDC, NT-BDC1, NT-BDC2, *
 		</B
 ></P
 ><P
@@ -14551,12 +14275,9 @@ CLASS="PARAMETER"
 ></A
 > if one was specified.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -14643,19 +14364,16 @@ CLASS="PARAMETER"
 		</A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none (no command executed)</I
-></SPAN
 >
 		</P
 ><P
 >Example: <B
 CLASS="COMMAND"
 >postexec = echo \"%u disconnected from %S 
-		from %m (%I)\" &gt;&gt; /tmp/log</B
+		from %m (%I)\" &#62;&#62; /tmp/log</B
 ></P
 ></DD
 ><DT
@@ -14723,18 +14441,15 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none (no command executed)</I
-></SPAN
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
 >preexec = echo \"%u connected to %S from %m
-		(%I)\" &gt;&gt; /tmp/log</B
+		(%I)\" &#62;&#62; /tmp/log</B
 ></P
 ></DD
 ><DT
@@ -14863,12 +14578,9 @@ CLASS="PARAMETER"
 ></A
 > option is easier.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no preloaded services</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -14944,12 +14656,9 @@ CLASS="COMMAND"
 >%z - the size of the spooled
 		print job (in bytes)</P
 ><P
->The print command <SPAN
-CLASS="emphasis"
-><I
+>The print command <I
 CLASS="EMPHASIS"
 >MUST</I
-></SPAN
 > contain at least 
 		one occurrence of <TT
 CLASS="PARAMETER"
@@ -15007,7 +14716,7 @@ CLASS="PARAMETER"
 ><P
 ><B
 CLASS="COMMAND"
->print command = echo Printing %s &gt;&gt; 
+>print command = echo Printing %s &#62;&#62; 
 		/tmp/print.log; lpr -P %p %s; rm %s</B
 ></P
 ><P
@@ -15207,6 +14916,12 @@ CLASS="COMMAND"
 ><P
 >A minimal printcap file would look something like this:</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		print1|My Printer 1
@@ -15215,18 +14930,18 @@ CLASS="PROGRAMLISTING"
 		print4|My Printer 4
 		print5|My Printer 5
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >where the '|' separates aliases of a printer. The fact 
 		that the second alias has a space in it gives a hint to Samba 
 		that it's a comment.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE</I
-></SPAN
 >: Under AIX the default printcap 
 		name is <TT
 CLASS="FILENAME"
@@ -15265,7 +14980,7 @@ NAME="PRINTERADMIN"
 ><P
 >Default: <B
 CLASS="COMMAND"
->printer admin = &lt;empty string&gt;</B
+>printer admin = &#60;empty string&#62;</B
 >
 		</P
 ><P
@@ -15281,12 +14996,9 @@ NAME="PRINTERDRIVER"
 >printer driver (S)</DT
 ><DD
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note :</I
-></SPAN
 >This is a deprecated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
@@ -15343,12 +15055,9 @@ NAME="PRINTERDRIVERFILE"
 >printer driver file (G)</DT
 ><DD
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note :</I
-></SPAN
 >This is a deprecated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
@@ -15401,12 +15110,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >None (set in compile).</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -15422,12 +15128,9 @@ NAME="PRINTERDRIVERLOCATION"
 >printer driver location (S)</DT
 ><DD
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note :</I
-></SPAN
 >This is a deprecated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
@@ -15496,16 +15199,13 @@ NAME="PRINTERNAME"
 		name given will be used for any printable service that does 
 		not have its own printer name specified.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none (but may be <TT
 CLASS="CONSTANT"
 >lp</TT
 > 
 		on many systems)</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -15707,9 +15407,7 @@ CLASS="PARAMETER"
 		path in the command as the PATH may not be available to the 
 		server.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >depends on the setting of <TT
 CLASS="PARAMETER"
@@ -15718,7 +15416,6 @@ CLASS="PARAMETER"
 		</I
 ></TT
 ></I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -15767,9 +15464,7 @@ CLASS="PARAMETER"
 		path in the command as the PATH may not be available to the 
 		server.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >depends on the setting of <A
 HREF="#PRINTING"
@@ -15780,7 +15475,6 @@ CLASS="PARAMETER"
 ></TT
 ></A
 ></I
-></SPAN
 >
 		</P
 ><P
@@ -15864,7 +15558,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->read list = &lt;empty string&gt;</B
+>read list = &#60;empty string&#62;</B
 ></P
 ><P
 >Example: <B
@@ -15900,12 +15594,9 @@ CLASS="CONSTANT"
 CLASS="COMMAND"
 >printable = yes</B
 >)
-		will <SPAN
-CLASS="emphasis"
-><I
+		will <I
 CLASS="EMPHASIS"
 >ALWAYS</I
-></SPAN
 > allow writing to the directory 
 		(user privileges permitting), but only via spooling operations.</P
 ><P
@@ -16074,7 +15765,7 @@ CLASS="FILENAME"
 ><P
 >Default: <B
 CLASS="COMMAND"
->remote announce = &lt;empty string&gt;
+>remote announce = &#60;empty string&#62;
 		</B
 ></P
 ></DD
@@ -16124,7 +15815,7 @@ CLASS="COMMAND"
 ><P
 >Default: <B
 CLASS="COMMAND"
->remote browse sync = &lt;empty string&gt;
+>remote browse sync = &#60;empty string&#62;
 		</B
 ></P
 ></DD
@@ -16135,41 +15826,17 @@ NAME="RESTRICTANONYMOUS"
 >restrict anonymous (G)</DT
 ><DD
 ><P
->This is a boolean parameter.  If it is <TT
+>This is a integer parameter, and
+		mirrors as much as possible the functinality the
+		<TT
 CLASS="CONSTANT"
->yes</TT
->, then 
-		anonymous access to the server will be restricted, namely in the 
-		case where the server is expecting the client to send a username, 
-		but it doesn't.  Setting it to <TT
-CLASS="CONSTANT"
->yes</TT
-> will force these anonymous 
- 		connections to be denied, and the client will be required to always 
-		supply a username and password when connecting. Use of this parameter 
-		is only recommended for homogeneous NT client environments.</P
-><P
->This parameter makes the use of macro expansions that rely
-		on the username (%U, %G, etc) consistent.  NT 4.0 
-		likes to use anonymous connections when refreshing the share list, 
-		and this is a way to work around that.</P
-><P
->When restrict anonymous is <TT
-CLASS="CONSTANT"
->yes</TT
->, all anonymous connections 
-		are denied no matter what they are for.  This can effect the ability 
-		of a machine to access the Samba Primary Domain Controller to revalidate 
-		its machine account after someone else has logged on the client 
-		interactively.  The NT client will display a message saying that 
-		the machine's account in  the domain doesn't exist or the password is 
-		bad.  The best way to deal  with this is to reboot NT client machines 
-		between interactive logons,  using "Shutdown and Restart", rather 
-		than "Close all programs and logon as a different user".</P
+>RestrictAnonymous</TT
+>
+                registry key does on NT/Win2k.  </P
 ><P
 >Default: <B
 CLASS="COMMAND"
->restrict anonymous = no</B
+>restrict anonymous = 0</B
 ></P
 ></DD
 ><DT
@@ -16247,12 +15914,9 @@ CLASS="PARAMETER"
 >root directory</I
 ></TT
 > 
-		option, <SPAN
-CLASS="emphasis"
-><I
+		option, <I
 CLASS="EMPHASIS"
 >including</I
-></SPAN
 > some files needed for 
 		complete operation of the server. To maintain full operability 
 		of the server you will need to mirror some system files 
@@ -16309,7 +15973,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->root postexec = &lt;empty string&gt;
+>root postexec = &#60;empty string&#62;
 		</B
 ></P
 ></DD
@@ -16350,7 +16014,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->root preexec = &lt;empty string&gt;
+>root preexec = &#60;empty string&#62;
 		</B
 ></P
 ></DD
@@ -16485,12 +16149,9 @@ CLASS="PARAMETER"
 >It is possible to use <B
 CLASS="COMMAND"
 >smbd</B
-> in a <SPAN
-CLASS="emphasis"
-><I
+> in a <I
 CLASS="EMPHASIS"
 >		hybrid mode</I
-></SPAN
 > where it is offers both user and share 
 		level security under different <A
 HREF="#NETBIOSALIASES"
@@ -16507,13 +16168,10 @@ CLASS="PARAMETER"
 ><A
 NAME="SECURITYEQUALSSHARE"
 ></A
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >SECURITY = SHARE
 		</I
-></SPAN
 ></P
 ><P
 >When clients connect to a share level security server they 
@@ -16531,12 +16189,9 @@ CLASS="COMMAND"
 >Note that <B
 CLASS="COMMAND"
 >smbd</B
-> <SPAN
-CLASS="emphasis"
-><I
+> <I
 CLASS="EMPHASIS"
 >ALWAYS</I
-></SPAN
 > 
 		uses a valid UNIX user to act on behalf of the client, even in
 		<B
@@ -16596,13 +16251,10 @@ CLASS="PARAMETER"
 ></LI
 ><LI
 ><P
->If the client did a previous <SPAN
-CLASS="emphasis"
-><I
+>If the client did a previous <I
 CLASS="EMPHASIS"
 >logon
 			</I
-></SPAN
 > request (the SessionSetup SMB call) then the 
 			username sent in this SMB will be added as a potential username.
 			</P
@@ -16657,12 +16309,9 @@ CLASS="PARAMETER"
 >, then this 
 		guest user will be used, otherwise access is denied.</P
 ><P
->Note that it can be <SPAN
-CLASS="emphasis"
-><I
+>Note that it can be <I
 CLASS="EMPHASIS"
 >very</I
-></SPAN
 > confusing 
 		in share-level security as to which UNIX username will eventually
 		be used in granting access.</P
@@ -16675,13 +16324,10 @@ HREF="#AEN238"
 ><A
 NAME="SECURITYEQUALSUSER"
 ></A
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >SECURITY = USER
 		</I
-></SPAN
 ></P
 ><P
 >This is the default security setting in Samba 2.2. 
@@ -16724,19 +16370,13 @@ CLASS="PARAMETER"
 		may change the UNIX user to use on this connection, but only after 
 		the user has been successfully authenticated.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that the name of the resource being 
-		requested is <SPAN
-CLASS="emphasis"
-><I
+		requested is <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > sent to the server until after 
 		the server has successfully authenticated the client. This is why 
 		guest shares don't work in user level security without allowing 
@@ -16768,13 +16408,10 @@ HREF="#AEN238"
 ><A
 NAME="SECURITYEQUALSSERVER"
 ></A
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >SECURITY = SERVER
 		</I
-></SPAN
 ></P
 ><P
 >In this mode Samba will try to validate the username/password 
@@ -16799,12 +16436,9 @@ CLASS="FILENAME"
 > for details on how to set this 
 		up.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that from the client's point of 
 		view <B
 CLASS="COMMAND"
@@ -16816,19 +16450,13 @@ CLASS="COMMAND"
 		with the authentication, it does not in any way affect what the 
 		client sees.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that the name of the resource being 
-		requested is <SPAN
-CLASS="emphasis"
-><I
+		requested is <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > sent to the server until after 
 		the server has successfully authenticated the client. This is why 
 		guest shares don't work in user level security without allowing 
@@ -16880,13 +16508,10 @@ CLASS="PARAMETER"
 ><A
 NAME="SECURITYEQUALSDOMAIN"
 ></A
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >SECURITY = DOMAIN
 		</I
-></SPAN
 ></P
 ><P
 >This mode will only work correctly if <A
@@ -16911,22 +16536,16 @@ CLASS="CONSTANT"
 		it to a Windows NT Primary or Backup Domain Controller, in exactly 
 		the same way that a Windows NT Server would do.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that a valid UNIX user must still 
 		exist as well as the account on the Domain Controller to allow 
 		Samba to have a valid UNIX account to map file access to.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that from the client's point 
 		of view <B
 CLASS="COMMAND"
@@ -16938,19 +16557,13 @@ CLASS="COMMAND"
 >. It only affects how the server deals with the authentication, 
 		it does not in any way affect what the client sees.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that the name of the resource being 
-		requested is <SPAN
-CLASS="emphasis"
-><I
+		requested is <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > sent to the server until after 
 		the server has successfully authenticated the client. This is why 
 		guest shares don't work in user level security without allowing 
@@ -16974,12 +16587,9 @@ CLASS="PARAMETER"
 		</A
 > parameter for details on doing this.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >BUG:</I
-></SPAN
 > There is currently a bug in the 
 		implementation of <B
 CLASS="COMMAND"
@@ -17048,12 +16658,9 @@ NAME="SECURITYMASK"
 		a user to modify all the user/group/world permissions on a file.
 		</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that users who can access the 
 		Samba server through other means can easily bypass this 
 		restriction, so it is primarily useful for standalone 
@@ -17220,12 +16827,9 @@ CLASS="CONSTANT"
 >This option gives full share compatibility and enabled 
 		by default.</P
 ><P
->You should <SPAN
-CLASS="emphasis"
-><I
+>You should <I
 CLASS="EMPHASIS"
 >NEVER</I
-></SPAN
 > turn this parameter 
 		off as many Windows applications will break if you do so.</P
 ><P
@@ -17308,12 +16912,9 @@ CLASS="PARAMETER"
 ></TT
 >
 		parameter will always cause the OpenPrinterEx() on the server
-		to fail.  Thus the APW icon will never be displayed. <SPAN
-CLASS="emphasis"
-><I
+		to fail.  Thus the APW icon will never be displayed. <I
 CLASS="EMPHASIS"
 >		Note :</I
-></SPAN
 >This does not prevent the same user from having 
 		administrative privilege on an individual printer.</P
 ><P
@@ -17356,12 +16957,9 @@ NAME="SHUTDOWNSCRIPT"
 >shutdown script (G)</DT
 ><DD
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >This parameter only exists in the HEAD cvs branch</I
-></SPAN
 >
 		This a full path name to a script called by
 		<A
@@ -17402,12 +17000,9 @@ CLASS="PARAMETER"
 >%r</I
 ></TT
 > will be substituted with the
-		switch <SPAN
-CLASS="emphasis"
-><I
+		switch <I
 CLASS="EMPHASIS"
 >-r</I
-></SPAN
 >. It means reboot after shutdown
 		for NT.
 		</P
@@ -17418,21 +17013,15 @@ CLASS="PARAMETER"
 >%f</I
 ></TT
 > will be substituted with the
-		switch <SPAN
-CLASS="emphasis"
-><I
+		switch <I
 CLASS="EMPHASIS"
 >-f</I
-></SPAN
 >. It means force the shutdown
 		even if applications do not respond for NT.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >None</I
-></SPAN
 >.</P
 ><P
 >Example: <B
@@ -17441,7 +17030,13 @@ CLASS="COMMAND"
 ></P
 ><P
 >Shutdown script example:
-		<PRE
+		<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
 CLASS="PROGRAMLISTING"
 >		#!/bin/bash
 		
@@ -17451,6 +17046,9 @@ CLASS="PROGRAMLISTING"
 
 		/sbin/shutdown $3 $4 +$time $1 &#38;
 		</PRE
+></TD
+></TR
+></TABLE
 >
 		Shutdown does not return so we need to launch it in background.
 		</P
@@ -17610,12 +17208,9 @@ TARGET="_top"
 ></LI
 ></UL
 ><P
->Those marked with a <SPAN
-CLASS="emphasis"
-><I
+>Those marked with a <I
 CLASS="EMPHASIS"
 >'*'</I
-></SPAN
 > take an integer 
 		argument. The others can optionally take a 1 or 0 argument to enable 
 		or disable the option, by default they will be enabled if you 
@@ -17687,12 +17282,9 @@ CLASS="COMMAND"
 >SAMBA_NETBIOS_NAME = myhostname</B
 ></P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >No default value</I
-></SPAN
 ></P
 ><P
 >Examples: <B
@@ -17716,12 +17308,9 @@ NAME="SPNEGO"
 ><P
 > This variable controls controls whether samba will try to use Simple and Protected NEGOciation (as specified by rfc2478) with WindowsXP and Windows2000sp2 clients to agree upon an authentication mechanism.  As of samba 3.0alpha it must be set to "no" for these clients to join a samba domain controller.  It can be set to "yes" to allow samba to participate in an AD domain controlled by a Windows2000 domain controller.</P
 ><P
->Default:  <SPAN
-CLASS="emphasis"
-><I
+>Default:  <I
 CLASS="EMPHASIS"
 >use spnego = yes</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -18227,12 +17816,9 @@ CLASS="PARAMETER"
 >passwd
 		program</I
 ></TT
->parameter is called <SPAN
-CLASS="emphasis"
-><I
+>parameter is called <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 > - 
 		to allow the new UNIX password to be set without access to the 
 		old UNIX password (as the SMB password change code has no 
@@ -18350,14 +17936,11 @@ CLASS="COMMAND"
 >If this parameter is enabled for a printer, then any attempt
 		to open the printer with the PRINTER_ACCESS_ADMINISTER right is mapped
 		to PRINTER_ACCESS_USE instead.  Thus allowing the OpenPrinterEx()
-		call to succeed.  <SPAN
-CLASS="emphasis"
-><I
+		call to succeed.  <I
 CLASS="EMPHASIS"
 >This parameter MUST not be able enabled
 		on a print share which has valid print driver installed on the Samba 
 		server.</I
-></SPAN
 ></P
 ><P
 >See also <A
@@ -18413,12 +17996,9 @@ CLASS="FILENAME"
 		will be read to find the names of hosts and users who will be allowed 
 		access without specifying a password.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE:</I
-></SPAN
 > The use of <TT
 CLASS="PARAMETER"
 ><I
@@ -18563,7 +18143,7 @@ HREF="#AEN238"
 >Default: <B
 CLASS="COMMAND"
 >The guest account if a guest service, 
-		else &lt;empty string&gt;.</B
+		else &#60;empty string&#62;.</B
 ></P
 ><P
 >Examples:<B
@@ -18700,11 +18280,20 @@ CLASS="COMMAND"
 		'!' to tell Samba to stop processing if it gets a match on
 		that line.</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		!sys = mary fred
 		guest = *
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >Note that the remapping is applied to all occurrences
@@ -18741,12 +18330,9 @@ CLASS="PARAMETER"
 		trouble deleting print jobs as PrintManager under WfWg will think
 		they don't own the print job.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no username map</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -18848,12 +18434,9 @@ CLASS="FILENAME"
 >/var/run/utmp</TT
 > on Linux).</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no utmp directory</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -18894,12 +18477,9 @@ CLASS="FILENAME"
 >/var/run/wtmp</TT
 > on Linux).</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no wtmp directory</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -18952,13 +18532,10 @@ CLASS="PARAMETER"
 ></A
 ></P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >No valid users list (anyone can login)
 		</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -18980,12 +18557,9 @@ NAME="VETOFILES"
 		or directories as in DOS wildcards.</P
 ><P
 >Each entry must be a unix path, not a DOS path and 
-		must <SPAN
-CLASS="emphasis"
-><I
+		must <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > include the  unix directory 
 		separator '/'.</P
 ><P
@@ -19001,12 +18575,9 @@ CLASS="PARAMETER"
 		is important to be aware of is Samba's behaviour when
 		trying to delete a directory. If a directory that is
 		to be deleted contains nothing but veto files this
-		deletion will <SPAN
-CLASS="emphasis"
-><I
+		deletion will <I
 CLASS="EMPHASIS"
 >fail</I
-></SPAN
 > unless you also set
 		the <TT
 CLASS="PARAMETER"
@@ -19044,16 +18615,19 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >No files or directories are vetoed.
 		</I
-></SPAN
 ></P
 ><P
->Examples:<PRE
+>Examples:<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
 CLASS="PROGRAMLISTING"
 >; Veto any files containing the word Security, 
 ; any ending in .tmp, and any directory containing the
@@ -19063,6 +18637,9 @@ veto files = /*Security*/*.tmp/*root*/
 ; Veto the Apple specific files that a NetAtalk server
 ; creates.
 veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/</PRE
+></TD
+></TR
+></TABLE
 ></P
 ></DD
 ><DT
@@ -19095,13 +18672,10 @@ CLASS="PARAMETER"
 > 
 		parameter.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >No files are vetoed for oplock 
 		grants</I
-></SPAN
 ></P
 ><P
 >You might want to do this on files that you know will 
@@ -19153,18 +18727,14 @@ NAME="VFSOBJECT"
 >vfs object (S)</DT
 ><DD
 ><P
->This parameter specifies a shared object file that 
-		is used for Samba VFS I/O operations.  By default, normal 
+>This parameter specifies a shared object files that 
+		are used for Samba VFS I/O operations.  By default, normal 
 		disk I/O operations are used but these can be overloaded 
-		with a VFS object.  The Samba VFS layer is new to Samba 2.2 and 
-		must be enabled at compile time with --with-vfs.</P
+		with one or more VFS objects. </P
 ><P
->Default : <SPAN
-CLASS="emphasis"
-><I
+>Default : <I
 CLASS="EMPHASIS"
 >no value</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -19175,9 +18745,8 @@ NAME="VFSOPTIONS"
 ><DD
 ><P
 >This parameter allows parameters to be passed 
-		to the vfs layer at initialization time.  The Samba VFS layer 
-		is new to Samba 2.2 and must be enabled at compile time 
-		with --with-vfs.  See also <A
+		to the vfs layer at initialization time. 
+		See also <A
 HREF="#VFSOBJECT"
 ><TT
 CLASS="PARAMETER"
@@ -19187,12 +18756,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default : <SPAN
-CLASS="emphasis"
-><I
+>Default : <I
 CLASS="EMPHASIS"
 >no value</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -19206,12 +18772,9 @@ NAME="VOLUME"
 		returned for a share. Useful for CDROMs with installation programs 
 		that insist on a particular volume label.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >the name of the share</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -19298,12 +18861,9 @@ CLASS="COMMAND"
 > system call
 		will not return any data. </P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Warning:</I
-></SPAN
 > Turning off user
 		enumeration may cause some programs to behave oddly.  For
 		example, the finger program relies on having access to the
@@ -19356,12 +18916,9 @@ CLASS="COMMAND"
 > system
 		call will not return any data. </P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Warning:</I
-></SPAN
 > Turning off group
 		enumeration may cause some programs to behave oddly.
 		</P
@@ -19390,7 +18947,7 @@ TARGET="_top"
 ><P
 >Default: <B
 CLASS="COMMAND"
->winbind gid = &lt;empty string&gt;
+>winbind gid = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -19461,7 +19018,7 @@ TARGET="_top"
 ><P
 >Default: <B
 CLASS="COMMAND"
->winbind uid = &lt;empty string&gt;
+>winbind uid = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -19489,7 +19046,7 @@ TARGET="_top"
 ><P
 >Default: <B
 CLASS="COMMAND"
->winbind use default domain = &lt;no&gt; 
+>winbind use default domain = &#60;no&#62; 
 		</B
 ></P
 ><P
@@ -19604,12 +19161,9 @@ TARGET="_top"
 >You should point this at your WINS server if you have a
 		multi-subnetted network.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE</I
-></SPAN
 >. You need to set up Samba to point 
 		to a WINS server if you have multiple subnets and wish cross-subnet 
 		browsing to work correctly.</P
@@ -19620,12 +19174,9 @@ CLASS="FILENAME"
 > 
 		in the docs/ directory of your Samba source distribution.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >not enabled</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -19654,12 +19205,9 @@ CLASS="CONSTANT"
 CLASS="COMMAND"
 >nmbd</B
 > to be your WINS server. 
-		Note that you should <SPAN
-CLASS="emphasis"
-><I
+		Note that you should <I
 CLASS="EMPHASIS"
 >NEVER</I
-></SPAN
 > set this to <TT
 CLASS="CONSTANT"
 >yes</TT
@@ -19689,12 +19237,9 @@ CLASS="COMMAND"
 >
 		setting.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >set at compile time to WORKGROUP</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -19728,12 +19273,9 @@ NAME="WRITECACHESIZE"
 ><P
 >If this integer parameter is set to non-zero value,
 		Samba will create an in-memory cache for each oplocked file 
-		(it does <SPAN
-CLASS="emphasis"
-><I
+		(it does <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > do this for 
 		non-oplocked files). All writes that the client does not request 
 		to be flushed directly to disk will be stored in this cache if possible. 
@@ -19800,7 +19342,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->write list = &lt;empty string&gt;
+>write list = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -19890,7 +19432,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6150"
+NAME="AEN6147"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19920,7 +19462,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6156"
+NAME="AEN6153"
 ></A
 ><H2
 >VERSION</H2
@@ -19931,7 +19473,7 @@ NAME="AEN6156"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6159"
+NAME="AEN6156"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -20010,7 +19552,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6179"
+NAME="AEN6176"
 ></A
 ><H2
 >AUTHOR</H2
