@@ -1,29 +1,27 @@
+/* 
+   Python wrappers for DCERPC/SMB client routines.
+
+   Copyright (C) Tim Potter, 2002
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
 #include "includes.h"
 #include "Python.h"
 
 #include "python/py_lsa.h"
-static void py_policy_hnd_dealloc(PyObject* self)
-{
-	PyObject_Del(self);
-}
-
-PyTypeObject lsa_policy_hnd_type = {
-	PyObject_HEAD_INIT(NULL)
-	0,
-	"LSA Policy Handle",
-	sizeof(lsa_policy_hnd_object),
-	0,
-	py_policy_hnd_dealloc, /*tp_dealloc*/
-	0,          /*tp_print*/
-	0,          /*tp_getattr*/
-	0,          /*tp_setattr*/
-	0,          /*tp_compare*/
-	0,          /*tp_repr*/
-	0,          /*tp_as_number*/
-	0,          /*tp_as_sequence*/
-	0,          /*tp_as_mapping*/
-	0,          /*tp_hash */
-};
 
 PyObject *new_lsa_policy_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				    POLICY_HND *pol)
@@ -54,7 +52,7 @@ PyObject *lsa_ntstatus;		/* This exception is raised when a RPC call
  * Open/close lsa handles
  */
 
-static PyObject *lsa_openpolicy(PyObject *self, PyObject *args, 
+static PyObject *lsa_open_policy(PyObject *self, PyObject *args, 
 				PyObject *kw) 
 {
 	static char *kwlist[] = { "servername", "creds", "access", NULL };
@@ -114,7 +112,7 @@ static PyObject *lsa_close(PyObject *self, PyObject *args, PyObject *kw)
 
 	result = cli_lsa_close(hnd->cli, hnd->mem_ctx, &hnd->pol);
 
-	/* Cleanup samba stuf */
+	/* Cleanup samba stuff */
 
 	cli_shutdown(hnd->cli);
 	talloc_destroy(hnd->mem_ctx);
@@ -125,39 +123,156 @@ static PyObject *lsa_close(PyObject *self, PyObject *args, PyObject *kw)
 	return Py_None;	
 }
 
-static PyObject *lsa_lookupnames(PyObject *self, PyObject *args, 
-				 PyObject *kw) 
+static PyObject *lsa_lookup_names(PyObject *self, PyObject *args)
 {
-	return NULL;
+	PyObject *py_names, *result;
+	NTSTATUS ntstatus;
+	lsa_policy_hnd_object *hnd = (lsa_policy_hnd_object *)self;
+	int num_names, i;
+	const char **names;
+	DOM_SID *sids;
+	uint32 *name_types;
+
+	if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &py_names))
+		return NULL;
+
+	/* Convert dictionary to char ** array */
+
+	num_names = PyList_Size(py_names);
+	names = (const char **)talloc(
+		hnd->mem_ctx, num_names * sizeof(char *));
+
+	for (i = 0; i < num_names; i++) {
+		PyObject *obj = PyList_GetItem(py_names, i);
+
+		names[i] = talloc_strdup(hnd->mem_ctx, PyString_AsString(obj));
+	}
+
+	ntstatus = cli_lsa_lookup_names(hnd->cli, hnd->mem_ctx, &hnd->pol,
+					num_names, names, &sids, &name_types);
+
+	if (!NT_STATUS_IS_OK(ntstatus) && NT_STATUS_V(ntstatus) != 0x107) {
+		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
+		return NULL;
+	}
+
+	result = PyList_New(num_names);
+
+	for (i = 0; i < num_names; i++) {
+		PyObject *sid_obj, *obj;
+
+		py_from_SID(&sid_obj, &sids[i]);
+
+		obj = Py_BuildValue("(Oi)", sid_obj, name_types[i]);
+
+		PyList_SetItem(result, i, obj);
+	}
+	
+	return result;
 }
 
-static PyObject *lsa_lookupsids(PyObject *self, PyObject *args, 
-				PyObject *kw) 
+static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args, 
+				 PyObject *kw) 
 {
-	return NULL;
+	PyObject *py_sids, *result;
+	NTSTATUS ntstatus;
+	int num_sids, i;
+	char **domains, **names;
+	uint32 *types;
+	lsa_policy_hnd_object *hnd = (lsa_policy_hnd_object *)self;
+	DOM_SID *sids;
+
+	if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &py_sids))
+		return NULL;
+
+	/* Convert dictionary to char ** array */
+
+	num_sids = PyList_Size(py_sids);
+	sids = (DOM_SID *)talloc(hnd->mem_ctx, num_sids * sizeof(DOM_SID));
+
+	memset(sids, 0, num_sids * sizeof(DOM_SID));
+
+	for (i = 0; i < num_sids; i++) {
+		PyObject *obj = PyList_GetItem(py_sids, i);
+
+		string_to_sid(&sids[i], PyString_AsString(obj));
+	}
+
+	ntstatus = cli_lsa_lookup_sids(hnd->cli, hnd->mem_ctx, &hnd->pol,
+				       num_sids, sids, &domains, &names, 
+				       &types);
+
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
+		return NULL;
+	}
+
+	result = PyList_New(num_sids);
+
+	for (i = 0; i < num_sids; i++) {
+		PyObject *name_obj, *obj;
+
+		obj = Py_BuildValue("{sssssi}", "username", names[i],
+				    "domain", domains[i], "name_type", 
+				    types[i]);
+
+		PyList_SetItem(result, i, obj);
+	}
+	
+	return result;
 }
 
 /*
- * Method dispatch table
+ * Method dispatch tables
  */
+
+static PyMethodDef lsa_hnd_methods[] = {
+
+	{ "lookup_sids", lsa_lookup_sids, METH_VARARGS | METH_KEYWORDS,
+	  "Convert sids to names." },
+
+	{ "lookup_names", lsa_lookup_names, METH_VARARGS | METH_KEYWORDS,
+	  "Convert names to sids." },
+
+	{ NULL }
+};
+
+static void py_lsa_policy_hnd_dealloc(PyObject* self)
+{
+	PyObject_Del(self);
+}
+
+static PyObject *py_lsa_policy_hnd_getattr(PyObject *self, char *attrname)
+{
+	return Py_FindMethod(lsa_hnd_methods, self, attrname);
+}
+
+PyTypeObject lsa_policy_hnd_type = {
+	PyObject_HEAD_INIT(NULL)
+	0,
+	"LSA Policy Handle",
+	sizeof(lsa_policy_hnd_object),
+	0,
+	py_lsa_policy_hnd_dealloc, /*tp_dealloc*/
+	0,          /*tp_print*/
+	py_lsa_policy_hnd_getattr,          /*tp_getattr*/
+	0,          /*tp_setattr*/
+	0,          /*tp_compare*/
+	0,          /*tp_repr*/
+	0,          /*tp_as_number*/
+	0,          /*tp_as_sequence*/
+	0,          /*tp_as_mapping*/
+	0,          /*tp_hash */
+};
 
 static PyMethodDef lsa_methods[] = {
 
 	/* Open/close lsa handles */
 	
-	{ "openpolicy", lsa_openpolicy, METH_VARARGS | METH_KEYWORDS, 
+	{ "open_policy", lsa_open_policy, METH_VARARGS | METH_KEYWORDS, 
 	  "Open a policy handle" },
 	
-	{ "close", lsa_close, METH_VARARGS, 
-	  "Close a policy handle" },
-
-	/* Name <-> SID resolution */
-
-	{ "lookupnames", lsa_lookupnames, METH_VARARGS | METH_KEYWORDS,
-	  "Look up SIDS from a list of names" },
-
-	{ "lookupsids", lsa_lookupsids, METH_VARARGS | METH_KEYWORDS,
-	  "Look up names from a list of SIDS" },
+	{ "close", lsa_close, METH_VARARGS, "Close a policy handle" },
 
 	{ NULL }
 };
@@ -192,4 +307,7 @@ void initlsa(void)
 	/* Do samba initialisation */
 
 	py_samba_init();
+
+	setup_logging("lsa", True);
+	DEBUGLEVEL = 10;
 }
