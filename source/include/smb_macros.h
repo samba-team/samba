@@ -162,17 +162,4 @@ copy an IP address from one buffer to another
 
 #define SERVER_HAS_UNIX_CIFS(c) (cli_state_has_unix_cifs(c))
 
-/****************************************************************************
- Make a filename into unix format.
-****************************************************************************/
-
-#define unix_format(fname) string_replace(fname,'\\','/')
-#define unix_format_w(fname) string_replace_w(fname, UCS2_CHAR('\\'), UCS2_CHAR('/'))
-
-/****************************************************************************
- Make a file into DOS format.
-****************************************************************************/
-
-#define dos_format(fname) string_replace(fname,'/','\\')
-
 #endif /* _SMB_MACROS_H */
