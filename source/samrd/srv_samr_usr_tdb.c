@@ -921,3 +921,11 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	                           user_pol, access_mask, *user_rid);
 }
 
+/*******************************************************************
+ samr_reply_delete_dom_user
+ ********************************************************************/
+uint32 _samr_delete_dom_user(POLICY_HND *user_pol)
+{
+	DEBUG(0,("samr_delete_dom_user: not implemented\n"));
+	return NT_STATUS_ACCESS_DENIED;
+}

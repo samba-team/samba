@@ -384,6 +384,27 @@ static BOOL api_samr_query_dispinfo( rpcsrv_struct *p, prs_struct *data, prs_str
 }
 
 /*******************************************************************
+ api_samr_delete_dom_user
+ ********************************************************************/
+static BOOL api_samr_delete_dom_user( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
+{
+	SAMR_Q_DELETE_DOM_USER q_u;
+	SAMR_R_DELETE_DOM_USER r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if (!samr_io_q_delete_dom_user("", &q_u, data, 0))
+	{
+		return False;
+	}
+
+	r_u.status = _samr_delete_dom_user(&q_u.user_pol);
+	memcpy(&r_u.pol, &q_u.user_pol, sizeof(q_u.user_pol));
+	return samr_io_r_delete_dom_user("", &r_u, rdata, 0);
+}
+
+/*******************************************************************
  api_samr_delete_dom_group
  ********************************************************************/
 static BOOL api_samr_delete_dom_group( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
@@ -1097,6 +1118,7 @@ static const struct api_struct api_samr_cmds [] =
 	{ "SAMR_DEL_ALIASMEM"     , SAMR_DEL_ALIASMEM     , api_samr_del_aliasmem     },
 	{ "SAMR_ADD_GROUPMEM"     , SAMR_ADD_GROUPMEM     , api_samr_add_groupmem     },
 	{ "SAMR_DEL_GROUPMEM"     , SAMR_DEL_GROUPMEM     , api_samr_del_groupmem     },
+	{ "SAMR_DELETE_DOM_USER"  , SAMR_DELETE_DOM_USER  , api_samr_delete_dom_user  },
 	{ "SAMR_DELETE_DOM_GROUP" , SAMR_DELETE_DOM_GROUP , api_samr_delete_dom_group },
 	{ "SAMR_DELETE_DOM_ALIAS" , SAMR_DELETE_DOM_ALIAS , api_samr_delete_dom_alias },
 	{ "SAMR_CREATE_DOM_GROUP" , SAMR_CREATE_DOM_GROUP , api_samr_create_dom_group },

@@ -3905,6 +3905,7 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 					uint32 *data_size,
 					uint32 *num_entries,
 					SAM_DISPINFO_CTR *ctr);
+uint32 _samr_delete_dom_user(POLICY_HND *user_pol);
 uint32 _samr_delete_dom_group(POLICY_HND *group_pol);
 uint32 _samr_query_groupmem(const POLICY_HND *group_pol, 
 					uint32 *num_mem,
@@ -4091,6 +4092,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 				uint16 acb_info, uint32 access_mask, 
 				POLICY_HND *user_pol,
 				uint32 *unknown_0, uint32 *user_rid);
+uint32 _samr_delete_dom_user(POLICY_HND *user_pol);
 
 /*The following definitions come from  samrd/srv_samr_usr_tdb.c  */
 
@@ -4117,6 +4119,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 				uint16 acb_info, uint32 access_mask, 
 				POLICY_HND *user_pol,
 				uint32 *unknown_0, uint32 *user_rid);
+uint32 _samr_delete_dom_user(POLICY_HND *user_pol);
 
 /*The following definitions come from  smbd/blocking.c  */
 
