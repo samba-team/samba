@@ -1194,8 +1194,10 @@ BOOL net_io_r_sam_logoff(char *desc,  NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int
 /*******************************************************************
 makes a NET_Q_SAM_SYNC structure.
 ********************************************************************/
-BOOL make_q_sam_sync(NET_Q_SAM_SYNC *q_s, char *srv_name, char *cli_name,
-		     DOM_CRED *cli_creds, uint32 database_id)
+BOOL make_q_sam_sync(NET_Q_SAM_SYNC *q_s,
+				const char *srv_name,
+				const char *cli_name,
+				DOM_CRED *cli_creds, uint32 database_id)
 {
 	if (q_s == NULL) return False;
 
