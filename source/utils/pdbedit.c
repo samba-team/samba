@@ -205,23 +205,25 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 **********************************************************/
 static int new_user (char *username, char *fullname, char *homedir, char *drive, char *script, char *profile)
 {
-	SAM_ACCOUNT sam_pwent;
+	SAM_ACCOUNT *sam_pwent=NULL;
 	struct passwd  *pwd = NULL;
-	uchar new_p16[16];
-	uchar new_nt_p16[16];
 	char *password1, *password2;
 	
 	ZERO_STRUCT(sam_pwent);
 
-	if (pdb_getsampwnam (&sam_pwent, username))
+	pdb_init_sam (&sam_pwent);
+
+	if (pdb_getsampwnam (sam_pwent, username))
 	{
 		fprintf (stderr, "Username already exist in database!\n");
+		pdb_free_sam (sam_pwent);
 		return -1;
 	}
 
 	if (!(pwd = sys_getpwnam(username)))
 	{
 		fprintf (stderr, "User %s does not exist in system passwd!\n", username);
+		pdb_free_sam (sam_pwent);
 		return -1;
 	}
 	
@@ -230,32 +232,35 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 	if (strcmp (password1, password2))
 	{
 		 fprintf (stderr, "Passwords does not match!\n");
+		 pdb_free_sam (sam_pwent);
 		 return -1;
 	}
-	nt_lm_owf_gen (password1, new_nt_p16, new_p16);
-	
-	pdb_set_username(&sam_pwent, username);
-	if (fullname) pdb_set_fullname(&sam_pwent, fullname);
-	if (homedir) pdb_set_homedir (&sam_pwent, homedir);
-	if (drive) pdb_set_dir_drive (&sam_pwent, drive);
-	if (script) pdb_set_logon_script(&sam_pwent, script);
-	if (profile) pdb_set_profile_path (&sam_pwent, profile);
+
+	pdb_set_plaintext_passwd(sam_pwent, password1);
+
+	pdb_set_username(sam_pwent, username);
+	if (fullname) pdb_set_fullname(sam_pwent, fullname);
+	if (homedir) pdb_set_homedir (sam_pwent, homedir);
+	if (drive) pdb_set_dir_drive (sam_pwent, drive);
+	if (script) pdb_set_logon_script(sam_pwent, script);
+	if (profile) pdb_set_profile_path (sam_pwent, profile);
 	
 	/* TODO: Check uid not being in MACHINE UID range!! */
-	sam_pwent.uid = pwd->pw_uid;
-	sam_pwent.gid = pwd->pw_gid;
-	sam_pwent.user_rid = pdb_uid_to_user_rid (pwd->pw_uid);
-	sam_pwent.group_rid = pdb_gid_to_group_rid (pwd->pw_gid);
-	sam_pwent.lm_pw = new_p16;
-	sam_pwent.nt_pw = new_nt_p16;
-	sam_pwent.acct_ctrl = ACB_NORMAL;
+	pdb_set_uid (sam_pwent, pwd->pw_uid);
+	pdb_set_gid (sam_pwent, pwd->pw_gid);
+	pdb_set_user_rid (sam_pwent, pdb_uid_to_user_rid (pwd->pw_uid));
+	pdb_set_group_rid (sam_pwent, pdb_gid_to_group_rid (pwd->pw_gid));
+
+	pdb_set_acct_ctrl (sam_pwent, ACB_NORMAL);
 	
-	if (pdb_add_sam_account (&sam_pwent)) print_user_info (username, True, False);
-	else
-	{
+	if (pdb_add_sam_account (sam_pwent)) { 
+		print_user_info (username, True, False);
+	} else {
 		fprintf (stderr, "Unable to add user!\n");
+		pdb_free_sam (sam_pwent);
 		return -1;
 	}
+	pdb_free_sam (sam_pwent);
 	return 0;
 }
 
@@ -264,13 +269,13 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 **********************************************************/
 static int new_machine (char *machinename)
 {
-	SAM_ACCOUNT sam_pwent;
-	SAM_ACCOUNT sam_trust;
-	uchar new_p16[16];
-	uchar new_nt_p16[16];
+	SAM_ACCOUNT *sam_pwent=NULL;
+	SAM_ACCOUNT *sam_trust=NULL;
 	char name[16];
 	char *password = NULL;
 	uid_t uid;
+	
+	pdb_init_sam (&sam_pwent);
 
 	if (machinename[strlen (machinename) -1] == '$') machinename[strlen (machinename) -1] = '\0';
 	
@@ -279,33 +284,40 @@ static int new_machine (char *machinename)
 	
 	string_set (&password, machinename);
 	strlower(password);
-	nt_lm_owf_gen (password, new_nt_p16, new_p16);
 	
-	pdb_set_username(&sam_pwent, name);
+	pdb_set_plaintext_passwd(sam_pwent, password);
+
+	pdb_set_username(sam_pwent, name);
 	
-	for (uid=BASE_MACHINE_UID; uid<=MAX_MACHINE_UID; uid++)
-		if (!(pdb_getsampwuid (&sam_trust, uid)))
+	for (uid=BASE_MACHINE_UID; uid<=MAX_MACHINE_UID; uid++) {
+		pdb_init_sam (&sam_trust);
+		if (pdb_getsampwuid (sam_trust, uid)) {
+			pdb_free_sam (sam_trust);
+		} else {
 			break;
+		}
+	}
 
 	if (uid>MAX_MACHINE_UID) {
 		fprintf (stderr, "No more free UIDs available to Machine accounts!\n");
+		pdb_free_sam(sam_pwent);		
 		return -1;
 	}
 
-	sam_pwent.uid = uid;
-	sam_pwent.gid = BASE_MACHINE_UID; /* TODO: set there more appropriate value!! */
-	sam_pwent.user_rid = pdb_uid_to_user_rid (uid);
-	sam_pwent.group_rid = pdb_gid_to_group_rid (BASE_MACHINE_UID);
-	sam_pwent.lm_pw = new_p16;
-	sam_pwent.nt_pw = new_nt_p16;
-	sam_pwent.acct_ctrl = ACB_WSTRUST;
+	pdb_set_uid(sam_pwent, uid);
+	pdb_set_gid(sam_pwent, BASE_MACHINE_UID); /* TODO: set there more appropriate value!! */
+	pdb_set_user_rid (sam_pwent,pdb_uid_to_user_rid (uid));
+	pdb_set_group_rid (sam_pwent, pdb_gid_to_group_rid (BASE_MACHINE_UID));
+	pdb_set_acct_ctrl (sam_pwent, ACB_WSTRUST);
 	
-	if (pdb_add_sam_account (&sam_pwent))
+	if (pdb_add_sam_account (sam_pwent)) {
 		print_user_info (name, True, False);
-	else {
+	} else {
 		fprintf (stderr, "Unable to add machine!\n");
+		pdb_free_sam (sam_pwent);
 		return -1;
 	}
+	pdb_free_sam (sam_pwent);
 	return 0;
 }
 
