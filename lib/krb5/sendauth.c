@@ -19,7 +19,7 @@ RCSID("$Id$");
  * AP-REQ
  *
  * server -> client
- * 4 bytes - 00 00 00 00 (?)
+ * 4 bytes - 00 00 00 00 (this probably forwarding related?)
  * 4 bytes - length
  * AP-REP
  */

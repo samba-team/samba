@@ -3,7 +3,7 @@
 RCSID("$Id$");
 
 /*
- *
+ * See `sendauth.c' for the format.
  */
 
 krb5_error_code
