@@ -216,9 +216,11 @@ krb5_to4 (krb5_ccache id)
 				  "krbtgt",
 				  princ->realm,
 				  NULL);
-	krb5_free_principal (context, princ);
-	if (ret)
+	if (ret) {
+	    krb5_free_principal(context, princ);
 	    return ret;
+	}
+	mcred.client = princ;
 
 	ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
 	if(ret == 0) {
@@ -233,6 +235,7 @@ krb5_to4 (krb5_ccache id)
 	    krb5_free_creds_contents(context, &cred);
 	}
 	krb5_free_principal(context, mcred.server);
+	krb5_free_principal(context, mcred.client);
     }
     return 0;
 }
