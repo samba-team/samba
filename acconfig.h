@@ -1,6 +1,5 @@
 @BOTTOM@
 
-/* This should be handled by automake */
 #undef VERSION
 #undef PACKAGE
 
