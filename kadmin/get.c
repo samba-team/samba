@@ -83,7 +83,7 @@ print_entry(kadm5_principal_ent_t princ)
     char *str, buf[1024];
     
     krb5_unparse_name(context, princ->principal, &str);
-    printf("%20s: %s\n", "Principal", str);
+    printf("%24s: %s\n", "Principal", str);
     free(str);
     timeval2str(princ->princ_expire_time, buf, sizeof(buf));
     printf("%24s: %s\n", "Principal expires", buf);
