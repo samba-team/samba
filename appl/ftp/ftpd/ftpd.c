@@ -400,8 +400,10 @@ main(int argc, char **argv)
 	/*	freopen(_PATH_DEVNULL, "w", stderr); */
 	signal(SIGPIPE, lostconn);
 	signal(SIGCHLD, SIG_IGN);
+#ifdef SIGURG
 	if (signal(SIGURG, myoob) == SIG_ERR)
 	    syslog(LOG_ERR, "signal: %m");
+#endif
 
 	auth_init();
 
