@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -247,6 +247,9 @@ save_krb5_creds (int s,
   
     krb5_cc_initialize(context,ccache,client);
     ret = krb5_rd_cred2(context, auth_context, ccache, &remote_cred);
+    if(ret != 0)
+	syslog(LOG_INFO|LOG_AUTH,
+	       "reading creds: %s", krb5_get_err_text(context, ret));
     krb5_data_free (&remote_cred);
     if (ret)
 	return 0;
