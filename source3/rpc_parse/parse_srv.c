@@ -2909,3 +2909,14 @@ BOOL srv_io_r_net_file_set_secdesc(char *desc, SRV_R_NET_FILE_SET_SECDESC *r_n, 
 
 	return True;
 }
+
+/*******************************************************************
+ Inits a structure
+********************************************************************/
+
+void init_srv_q_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_u, char *server)
+{
+	q_u->ptr_srv_name = 1;
+	init_unistr2(&q_u->uni_srv_name, server, strlen(server) + 1);
+}
+
