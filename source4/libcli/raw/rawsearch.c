@@ -23,7 +23,7 @@
 /****************************************************************************
  Old style search backend - process output.
 ****************************************************************************/
-static void smb_raw_search_backend(struct cli_request *req,
+static void smb_raw_search_backend(struct smbcli_request *req,
 				   TALLOC_CTX *mem_ctx,
 				   uint16_t count, 
 				   void *private,
@@ -42,12 +42,12 @@ static void smb_raw_search_backend(struct cli_request *req,
 	p = req->in.data + 3;
 
 	for (i=0; i < count; i++) {
-		search_data.search.search_id  = cli_req_pull_blob(req, mem_ctx, p, 21);
+		search_data.search.search_id  = smbcli_req_pull_blob(req, mem_ctx, p, 21);
 		search_data.search.attrib     = CVAL(p,            21);
 		search_data.search.write_time = raw_pull_dos_date(req->transport,
 								  p + 22);
 		search_data.search.size       = IVAL(p,            26);
-		cli_req_pull_ascii(req, mem_ctx, &search_data.search.name, p+30, 13, STR_ASCII);
+		smbcli_req_pull_ascii(req, mem_ctx, &search_data.search.name, p+30, 13, STR_ASCII);
 		if (!callback(private, &search_data)) {
 			break;
 		}
@@ -58,27 +58,27 @@ static void smb_raw_search_backend(struct cli_request *req,
 /****************************************************************************
  Old style search first.
 ****************************************************************************/
-static NTSTATUS smb_raw_search_first_old(struct cli_tree *tree,
+static NTSTATUS smb_raw_search_first_old(struct smbcli_tree *tree,
 					 TALLOC_CTX *mem_ctx,
 					 union smb_search_first *io, void *private,
 					 BOOL (*callback)(void *private, union smb_search_data *file))
 
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 	
-	req = cli_request_setup(tree, SMBsearch, 2, 0);
+	req = smbcli_request_setup(tree, SMBsearch, 2, 0);
 	if (!req) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	
 	SSVAL(req->out.vwv, VWV(0), io->search_first.in.max_count);
 	SSVAL(req->out.vwv, VWV(1), io->search_first.in.search_attrib);
-	cli_req_append_ascii4(req, io->search_first.in.pattern, STR_TERMINATE);
-	cli_req_append_var_block(req, NULL, 0);
+	smbcli_req_append_ascii4(req, io->search_first.in.pattern, STR_TERMINATE);
+	smbcli_req_append_var_block(req, NULL, 0);
 
-	if (!cli_request_send(req) || 
-	    !cli_request_receive(req)) {
-		return cli_request_destroy(req);
+	if (!smbcli_request_send(req) || 
+	    !smbcli_request_receive(req)) {
+		return smbcli_request_destroy(req);
 	}
 
 	if (NT_STATUS_IS_OK(req->status)) {
@@ -86,33 +86,33 @@ static NTSTATUS smb_raw_search_first_old(struct cli_tree *tree,
 		smb_raw_search_backend(req, mem_ctx, io->search_first.out.count, private, callback);
 	}
 
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
 /****************************************************************************
  Old style search next.
 ****************************************************************************/
-static NTSTATUS smb_raw_search_next_old(struct cli_tree *tree,
+static NTSTATUS smb_raw_search_next_old(struct smbcli_tree *tree,
 					TALLOC_CTX *mem_ctx,
 					union smb_search_next *io, void *private,
 					BOOL (*callback)(void *private, union smb_search_data *file))
 
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 	
-	req = cli_request_setup(tree, SMBsearch, 2, 0);
+	req = smbcli_request_setup(tree, SMBsearch, 2, 0);
 	if (!req) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	
 	SSVAL(req->out.vwv, VWV(0), io->search_next.in.max_count);
 	SSVAL(req->out.vwv, VWV(1), io->search_next.in.search_attrib);
-	cli_req_append_ascii4(req, "", STR_TERMINATE);
-	cli_req_append_var_block(req, io->search_next.in.search_id.data, 21);
+	smbcli_req_append_ascii4(req, "", STR_TERMINATE);
+	smbcli_req_append_var_block(req, io->search_next.in.search_id.data, 21);
 
-	if (!cli_request_send(req) ||
-	    !cli_request_receive(req)) {
-		return cli_request_destroy(req);
+	if (!smbcli_request_send(req) ||
+	    !smbcli_request_receive(req)) {
+		return smbcli_request_destroy(req);
 	}
 
 	if (NT_STATUS_IS_OK(req->status)) {
@@ -120,13 +120,13 @@ static NTSTATUS smb_raw_search_next_old(struct cli_tree *tree,
 		smb_raw_search_backend(req, mem_ctx, io->search_next.out.count, private, callback);
 	}
 	
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
 /****************************************************************************
  Very raw search first - returns param/data blobs.
 ****************************************************************************/
-static NTSTATUS smb_raw_search_first_blob(struct cli_tree *tree,
+static NTSTATUS smb_raw_search_first_blob(struct smbcli_tree *tree,
 					  TALLOC_CTX *mem_ctx,	/* used to allocate output blobs */
 					  union smb_search_first *io,
 					  uint16_t info_level,
@@ -157,7 +157,7 @@ static NTSTATUS smb_raw_search_first_blob(struct cli_tree *tree,
 	SSVAL(tp.in.params.data, 6, info_level);
 	SIVAL(tp.in.params.data, 8, io->t2ffirst.in.storage_type);
 
-	cli_blob_append_string(tree->session, mem_ctx, &tp.in.params,
+	smbcli_blob_append_string(tree->session, mem_ctx, &tp.in.params,
 			       io->t2ffirst.in.pattern, STR_TERMINATE);
 
 	status = smb_raw_trans2(tree, mem_ctx, &tp);
@@ -178,7 +178,7 @@ static NTSTATUS smb_raw_search_first_blob(struct cli_tree *tree,
  Very raw search first - returns param/data blobs.
  Used in CIFS-on-CIFS NTVFS.
 ****************************************************************************/
-static NTSTATUS smb_raw_search_next_blob(struct cli_tree *tree,
+static NTSTATUS smb_raw_search_next_blob(struct smbcli_tree *tree,
 					 TALLOC_CTX *mem_ctx,
 					 union smb_search_next *io,
 					 uint16_t info_level,
@@ -209,7 +209,7 @@ static NTSTATUS smb_raw_search_next_blob(struct cli_tree *tree,
 	SIVAL(tp.in.params.data, 6, io->t2fnext.in.resume_key);
 	SSVAL(tp.in.params.data, 10, io->t2fnext.in.flags);
 
-	cli_blob_append_string(tree->session, mem_ctx, &tp.in.params,
+	smbcli_blob_append_string(tree->session, mem_ctx, &tp.in.params,
 			       io->t2fnext.in.last_name,
 			       STR_TERMINATE);
 
@@ -233,7 +233,7 @@ static NTSTATUS smb_raw_search_next_blob(struct cli_tree *tree,
   return 0 for success with end of list
   return -1 for a parse error
 */
-static int parse_trans2_search(struct cli_tree *tree,
+static int parse_trans2_search(struct smbcli_tree *tree,
 			       TALLOC_CTX *mem_ctx, 
 			       enum smb_search_level level,
 			       uint16_t flags,
@@ -265,7 +265,7 @@ static int parse_trans2_search(struct cli_tree *tree,
 		data->standard.size        = IVAL(blob->data, 12);
 		data->standard.alloc_size  = IVAL(blob->data, 16);
 		data->standard.attrib      = SVAL(blob->data, 20);
-		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
+		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
 					   &data->standard.name,
 					   22, 23, STR_LEN8BIT | STR_TERMINATE | STR_LEN_NOTERM);
 		return len + 23;
@@ -288,7 +288,7 @@ static int parse_trans2_search(struct cli_tree *tree,
 		data->ea_size.alloc_size  = IVAL(blob->data, 16);
 		data->ea_size.attrib      = SVAL(blob->data, 20);
 		data->ea_size.ea_size     = IVAL(blob->data, 22);
-		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
+		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
 					   &data->ea_size.name,
 					   26, 27, STR_LEN8BIT | STR_TERMINATE | STR_NOALIGN);
 		return len + 27 + 1;
@@ -297,14 +297,14 @@ static int parse_trans2_search(struct cli_tree *tree,
 		if (blob->length < 65) return -1;
 		ofs                                     = IVAL(blob->data,             0);
 		data->directory_info.file_index  = IVAL(blob->data,             4);
-		data->directory_info.create_time = cli_pull_nttime(blob->data,  8);
-		data->directory_info.access_time = cli_pull_nttime(blob->data, 16);
-		data->directory_info.write_time  = cli_pull_nttime(blob->data, 24);
-		data->directory_info.change_time = cli_pull_nttime(blob->data, 32);
+		data->directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
+		data->directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
+		data->directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
+		data->directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
 		data->directory_info.size        = BVAL(blob->data,            40);
 		data->directory_info.alloc_size  = BVAL(blob->data,            48);
 		data->directory_info.attrib      = IVAL(blob->data,            56);
-		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
+		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
 					   &data->directory_info.name,
 					   60, 64, 0);
 		if (ofs != 0 && ofs < 64+len) {
@@ -316,15 +316,15 @@ static int parse_trans2_search(struct cli_tree *tree,
 		if (blob->length < 69) return -1;
 		ofs                                   = IVAL(blob->data,             0);
 		data->full_directory_info.file_index  = IVAL(blob->data,             4);
-		data->full_directory_info.create_time = cli_pull_nttime(blob->data,  8);
-		data->full_directory_info.access_time = cli_pull_nttime(blob->data, 16);
-		data->full_directory_info.write_time  = cli_pull_nttime(blob->data, 24);
-		data->full_directory_info.change_time = cli_pull_nttime(blob->data, 32);
+		data->full_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
+		data->full_directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
+		data->full_directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
+		data->full_directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
 		data->full_directory_info.size        = BVAL(blob->data,            40);
 		data->full_directory_info.alloc_size  = BVAL(blob->data,            48);
 		data->full_directory_info.attrib      = IVAL(blob->data,            56);
 		data->full_directory_info.ea_size     = IVAL(blob->data,            64);
-		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
+		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
 					   &data->full_directory_info.name,
 					   60, 68, 0);
 		if (ofs != 0 && ofs < 68+len) {
@@ -336,7 +336,7 @@ static int parse_trans2_search(struct cli_tree *tree,
 		if (blob->length < 13) return -1;
 		ofs                         = IVAL(blob->data,             0);
 		data->name_info.file_index  = IVAL(blob->data,             4);
-		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
+		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
 					   &data->name_info.name,
 					   8, 12, 0);
 		if (ofs != 0 && ofs < 12+len) {
@@ -349,18 +349,18 @@ static int parse_trans2_search(struct cli_tree *tree,
 		if (blob->length < 95) return -1;
 		ofs                                          = IVAL(blob->data,             0);
 		data->both_directory_info.file_index  = IVAL(blob->data,             4);
-		data->both_directory_info.create_time = cli_pull_nttime(blob->data,  8);
-		data->both_directory_info.access_time = cli_pull_nttime(blob->data, 16);
-		data->both_directory_info.write_time  = cli_pull_nttime(blob->data, 24);
-		data->both_directory_info.change_time = cli_pull_nttime(blob->data, 32);
+		data->both_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
+		data->both_directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
+		data->both_directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
+		data->both_directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
 		data->both_directory_info.size        = BVAL(blob->data,            40);
 		data->both_directory_info.alloc_size  = BVAL(blob->data,            48);
 		data->both_directory_info.attrib      = IVAL(blob->data,            56);
 		data->both_directory_info.ea_size     = IVAL(blob->data,            64);
-		cli_blob_pull_string(tree->session, mem_ctx, blob,
+		smbcli_blob_pull_string(tree->session, mem_ctx, blob,
 				     &data->both_directory_info.short_name,
 				     68, 70, STR_LEN8BIT | STR_UNICODE);
-		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
+		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
 					   &data->both_directory_info.name,
 					   60, 94, 0);
 		if (ofs != 0 && ofs < 94+len) {
@@ -373,16 +373,16 @@ static int parse_trans2_search(struct cli_tree *tree,
 		if (blob->length < 81) return -1;
 		ofs                                      = IVAL(blob->data,             0);
 		data->id_full_directory_info.file_index  = IVAL(blob->data,             4);
-		data->id_full_directory_info.create_time = cli_pull_nttime(blob->data,  8);
-		data->id_full_directory_info.access_time = cli_pull_nttime(blob->data, 16);
-		data->id_full_directory_info.write_time  = cli_pull_nttime(blob->data, 24);
-		data->id_full_directory_info.change_time = cli_pull_nttime(blob->data, 32);
+		data->id_full_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
+		data->id_full_directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
+		data->id_full_directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
+		data->id_full_directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
 		data->id_full_directory_info.size        = BVAL(blob->data,            40);
 		data->id_full_directory_info.alloc_size  = BVAL(blob->data,            48);
 		data->id_full_directory_info.attrib      = IVAL(blob->data,            56);
 		data->id_full_directory_info.ea_size     = IVAL(blob->data,            64);
 		data->id_full_directory_info.file_id     = BVAL(blob->data,            72);
-		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
+		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
 					   &data->id_full_directory_info.name,
 					   60, 80, 0);
 		if (ofs != 0 && ofs < 80+len) {
@@ -394,19 +394,19 @@ static int parse_trans2_search(struct cli_tree *tree,
 		if (blob->length < 105) return -1;
 		ofs                                      = IVAL(blob->data,             0);
 		data->id_both_directory_info.file_index  = IVAL(blob->data,             4);
-		data->id_both_directory_info.create_time = cli_pull_nttime(blob->data,  8);
-		data->id_both_directory_info.access_time = cli_pull_nttime(blob->data, 16);
-		data->id_both_directory_info.write_time  = cli_pull_nttime(blob->data, 24);
-		data->id_both_directory_info.change_time = cli_pull_nttime(blob->data, 32);
+		data->id_both_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
+		data->id_both_directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
+		data->id_both_directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
+		data->id_both_directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
 		data->id_both_directory_info.size        = BVAL(blob->data,            40);
 		data->id_both_directory_info.alloc_size  = BVAL(blob->data,            48);
 		data->id_both_directory_info.attrib      = SVAL(blob->data,            56);
 		data->id_both_directory_info.ea_size     = IVAL(blob->data,            64);
-		cli_blob_pull_string(tree->session, mem_ctx, blob,
+		smbcli_blob_pull_string(tree->session, mem_ctx, blob,
 				     &data->id_both_directory_info.short_name,
 				     68, 70, STR_LEN8BIT | STR_UNICODE);
 		data->id_both_directory_info.file_id     = BVAL(blob->data,            96);
-		len = cli_blob_pull_string(tree->session, mem_ctx, blob,
+		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
 					   &data->id_both_directory_info.name,
 					   60, 104, 0);
 		if (ofs != 0 && ofs < 104+len) {
@@ -420,9 +420,9 @@ static int parse_trans2_search(struct cli_tree *tree,
 		data->unix_info.file_index           = IVAL(blob->data,             4);
 		data->unix_info.size                 = BVAL(blob->data,             8);
 		data->unix_info.alloc_size           = BVAL(blob->data,            16);
-		data->unix_info.status_change_time   = cli_pull_nttime(blob->data, 24);
-		data->unix_info.access_time          = cli_pull_nttime(blob->data, 32);
-		data->unix_info.change_time          = cli_pull_nttime(blob->data, 40);
+		data->unix_info.status_change_time   = smbcli_pull_nttime(blob->data, 24);
+		data->unix_info.access_time          = smbcli_pull_nttime(blob->data, 32);
+		data->unix_info.change_time          = smbcli_pull_nttime(blob->data, 40);
 		data->unix_info.uid                  = IVAL(blob->data,            48);
 		data->unix_info.gid                  = IVAL(blob->data,            56);
 		data->unix_info.file_type            = IVAL(blob->data,            64);
@@ -432,7 +432,7 @@ static int parse_trans2_search(struct cli_tree *tree,
 		data->unix_info.permissions          = IVAL(blob->data,            92);
 		data->unix_info.nlink                = IVAL(blob->data,           100);
 		/* There is no length field for this name but we know it's null terminated. */
-		len = cli_blob_pull_unix_string(tree->session, mem_ctx, blob,
+		len = smbcli_blob_pull_unix_string(tree->session, mem_ctx, blob,
 					   &data->unix_info.name, 108, 0);
 		if (ofs != 0 && ofs < 108+len) {
 			return -1;
@@ -447,7 +447,7 @@ static int parse_trans2_search(struct cli_tree *tree,
 /****************************************************************************
  Trans2 search backend - process output.
 ****************************************************************************/
-static NTSTATUS smb_raw_t2search_backend(struct cli_tree *tree,
+static NTSTATUS smb_raw_t2search_backend(struct smbcli_tree *tree,
 					 TALLOC_CTX *mem_ctx,
 					 enum smb_search_level level,
 					 uint16_t flags,
@@ -490,7 +490,7 @@ static NTSTATUS smb_raw_t2search_backend(struct cli_tree *tree,
 
 /* Implements trans2findfirst2 and old search
  */
-NTSTATUS smb_raw_search_first(struct cli_tree *tree,
+NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 			      TALLOC_CTX *mem_ctx,
 			      union smb_search_first *io, void *private,
 			      BOOL (*callback)(void *private, union smb_search_data *file))
@@ -534,7 +534,7 @@ NTSTATUS smb_raw_search_first(struct cli_tree *tree,
 
 /* Implements trans2findnext2 and old smbsearch
  */
-NTSTATUS smb_raw_search_next(struct cli_tree *tree,
+NTSTATUS smb_raw_search_next(struct smbcli_tree *tree,
 			     TALLOC_CTX *mem_ctx,
 			     union smb_search_next *io, void *private,
 			     BOOL (*callback)(void *private, union smb_search_data *file))
@@ -578,21 +578,21 @@ NTSTATUS smb_raw_search_next(struct cli_tree *tree,
 /* 
    Implements trans2findclose2
  */
-NTSTATUS smb_raw_search_close(struct cli_tree *tree,
+NTSTATUS smb_raw_search_close(struct smbcli_tree *tree,
 			      union smb_search_close *io)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 	
-	req = cli_request_setup(tree, SMBfindclose, 1, 0);
+	req = smbcli_request_setup(tree, SMBfindclose, 1, 0);
 	if (!req) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	SSVAL(req->out.vwv, VWV(0), io->findclose.in.handle);
 
-	if (cli_request_send(req)) {
-		cli_request_receive(req);
+	if (smbcli_request_send(req)) {
+		smbcli_request_receive(req);
 	}
 
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }

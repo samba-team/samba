@@ -190,20 +190,20 @@ void SMBNTencrypt(const char *passwd, uint8_t *c8, uint8_t *p24)
 /* Does the md5 encryption from the Key Response for NTLMv2. */
 void SMBOWFencrypt_ntv2(const uint8_t kr[16],
 			const DATA_BLOB *srv_chal,
-			const DATA_BLOB *cli_chal,
+			const DATA_BLOB *smbcli_chal,
 			uint8_t resp_buf[16])
 {
 	HMACMD5Context ctx;
 
 	hmac_md5_init_limK_to_64(kr, 16, &ctx);
 	hmac_md5_update(srv_chal->data, srv_chal->length, &ctx);
-	hmac_md5_update(cli_chal->data, cli_chal->length, &ctx);
+	hmac_md5_update(smbcli_chal->data, smbcli_chal->length, &ctx);
 	hmac_md5_final(resp_buf, &ctx);
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100, ("SMBOWFencrypt_ntv2: srv_chal, cli_chal, resp_buf\n"));
+	DEBUG(100, ("SMBOWFencrypt_ntv2: srv_chal, smbcli_chal, resp_buf\n"));
 	dump_data(100, srv_chal->data, srv_chal->length);
-	dump_data(100, cli_chal->data, cli_chal->length);
+	dump_data(100, smbcli_chal->data, smbcli_chal->length);
 	dump_data(100, resp_buf, 16);
 #endif
 }

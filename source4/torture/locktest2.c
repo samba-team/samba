@@ -60,13 +60,13 @@ struct record {
 
 static struct record *recorded;
 
-static int try_open(struct cli_state *c, char *nfs, int fstype, const char *fname, int flags)
+static int try_open(struct smbcli_state *c, char *nfs, int fstype, const char *fname, int flags)
 {
 	pstring path;
 
 	switch (fstype) {
 	case FSTYPE_SMB:
-		return cli_open(c, fname, flags, DENY_NONE);
+		return smbcli_open(c, fname, flags, DENY_NONE);
 
 	case FSTYPE_NFS:
 		slprintf(path, sizeof(path), "%s%s", nfs, fname);
@@ -77,11 +77,11 @@ static int try_open(struct cli_state *c, char *nfs, int fstype, const char *fnam
 	return -1;
 }
 
-static BOOL try_close(struct cli_state *c, int fstype, int fd)
+static BOOL try_close(struct smbcli_state *c, int fstype, int fd)
 {
 	switch (fstype) {
 	case FSTYPE_SMB:
-		return cli_close(c, fd);
+		return smbcli_close(c, fd);
 
 	case FSTYPE_NFS:
 		return close(fd) == 0;
@@ -90,7 +90,7 @@ static BOOL try_close(struct cli_state *c, int fstype, int fd)
 	return False;
 }
 
-static BOOL try_lock(struct cli_state *c, int fstype, 
+static BOOL try_lock(struct smbcli_state *c, int fstype, 
 		     int fd, uint_t start, uint_t len,
 		     enum brl_type op)
 {
@@ -98,7 +98,7 @@ static BOOL try_lock(struct cli_state *c, int fstype,
 
 	switch (fstype) {
 	case FSTYPE_SMB:
-		return cli_lock(c, fd, start, len, LOCK_TIMEOUT, op);
+		return smbcli_lock(c, fd, start, len, LOCK_TIMEOUT, op);
 
 	case FSTYPE_NFS:
 		lock.l_type = (op==READ_LOCK) ? F_RDLCK:F_WRLCK;
@@ -112,14 +112,14 @@ static BOOL try_lock(struct cli_state *c, int fstype,
 	return False;
 }
 
-static BOOL try_unlock(struct cli_state *c, int fstype, 
+static BOOL try_unlock(struct smbcli_state *c, int fstype, 
 		       int fd, uint_t start, uint_t len)
 {
 	struct flock lock;
 
 	switch (fstype) {
 	case FSTYPE_SMB:
-		return cli_unlock(c, fd, start, len);
+		return smbcli_unlock(c, fd, start, len);
 
 	case FSTYPE_NFS:
 		lock.l_type = F_UNLCK;
@@ -147,9 +147,9 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct cli_state *connect_one(char *share)
+static struct smbcli_state *connect_one(char *share)
 {
-	struct cli_state *c;
+	struct smbcli_state *c;
 	char *server_n;
 	fstring server;
 	fstring myname;
@@ -173,12 +173,12 @@ static struct cli_state *connect_one(char *share)
 
 	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), count++);
 
-	nt_status = cli_full_connection(&c, myname, server_n, NULL, 0, share, "?????", 
+	nt_status = smbcli_full_connection(&c, myname, server_n, NULL, 0, share, "?????", 
 					username, lp_workgroup(), password, 0,
 					NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("cli_full_connection failed with error %s\n", nt_errstr(nt_status)));
+		DEBUG(0, ("smbcli_full_connection failed with error %s\n", nt_errstr(nt_status)));
 		return NULL;
 	}
 
@@ -188,7 +188,7 @@ static struct cli_state *connect_one(char *share)
 }
 
 
-static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static void reconnect(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
 		      char *nfs[NSERVERS], 
 		      int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES],
 		      char *share1, char *share2)
@@ -204,10 +204,10 @@ static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	for (conn=0;conn<NCONNECTIONS;conn++) {
 		if (cli[server][conn]) {
 			for (f=0;f<NFILES;f++) {
-				cli_close(cli[server][conn], fnum[server][fstype][conn][f]);
+				smbcli_close(cli[server][conn], fnum[server][fstype][conn][f]);
 			}
-			cli_ulogoff(cli[server][conn]);
-			cli_shutdown(cli[server][conn]);
+			smbcli_ulogoff(cli[server][conn]);
+			smbcli_shutdown(cli[server][conn]);
 		}
 		cli[server][conn] = connect_one(share[server]);
 		if (!cli[server][conn]) {
@@ -219,7 +219,7 @@ static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 
 
 
-static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static BOOL test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
 		     char *nfs[NSERVERS],
 		     int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES],
 		     struct record *rec)
@@ -292,7 +292,7 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	return True;
 }
 
-static void close_files(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static void close_files(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
 			char *nfs[NSERVERS],
 			int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES])
 {
@@ -308,11 +308,11 @@ static void close_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		}
 	}
 	for (server=0;server<NSERVERS;server++) {
-		cli_unlink(cli[server][0], FILENAME);
+		smbcli_unlink(cli[server][0], FILENAME);
 	}
 }
 
-static void open_files(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static void open_files(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
 		       char *nfs[NSERVERS],
 		       int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES])
 {
@@ -333,7 +333,7 @@ static void open_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 }
 
 
-static int retest(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static int retest(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
 		  char *nfs[NSERVERS],
 		  int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES],
 		  int n)
@@ -360,7 +360,7 @@ static int retest(struct cli_state *cli[NSERVERS][NCONNECTIONS],
  */
 static void test_locks(char *share1, char *share2, char *nfspath1, char *nfspath2)
 {
-	struct cli_state *cli[NSERVERS][NCONNECTIONS];
+	struct smbcli_state *cli[NSERVERS][NCONNECTIONS];
 	char *nfs[NSERVERS];
 	int fnum[NSERVERS][NUMFSTYPES][NCONNECTIONS][NFILES];
 	int n, i, n1; 

@@ -105,7 +105,7 @@ int net_run_function(int argc, const char **argv, struct functable *table,
 /****************************************************************************
 connect to \\server\ipc$  
 ****************************************************************************/
-NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
+NTSTATUS connect_to_ipc(struct smbcli_state **c, struct in_addr *server_ip,
 					const char *server_name)
 {
 	NTSTATUS nt_status;
@@ -117,7 +117,7 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 		}
 	}
 	
-	nt_status = cli_full_connection(c, opt_requester_name, server_name, 
+	nt_status = smbcli_full_connection(c, opt_requester_name, server_name, 
 					server_ip, opt_port,
 					"IPC$", "IPC",  
 					opt_user_name, opt_workgroup,
@@ -142,12 +142,12 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 /****************************************************************************
 connect to \\server\ipc$ anonymously
 ****************************************************************************/
-NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
+NTSTATUS connect_to_ipc_anonymous(struct smbcli_state **c,
 			struct in_addr *server_ip, const char *server_name)
 {
 	NTSTATUS nt_status;
 
-	nt_status = cli_full_connection(c, opt_requester_name, server_name, 
+	nt_status = smbcli_full_connection(c, opt_requester_name, server_name, 
 					server_ip, opt_port,
 					"IPC$", "IPC",  
 					"", "",
@@ -248,11 +248,11 @@ BOOL net_find_dc(struct in_addr *server_ip, fstring server_name, const char *dom
 }
 
 
-struct cli_state *net_make_ipc_connection(uint_t flags)
+struct smbcli_state *net_make_ipc_connection(uint_t flags)
 {
 	char *server_name = NULL;
 	struct in_addr server_ip;
-	struct cli_state *cli = NULL;
+	struct smbcli_state *cli = NULL;
 	NTSTATUS nt_status;
 
 	if (!net_find_server(flags, &server_ip, &server_name)) {

@@ -23,7 +23,7 @@
 /****************************************************************************
 change notify (async send)
 ****************************************************************************/
-struct cli_request *smb_raw_changenotify_send(struct cli_tree *tree, struct smb_notify *parms)
+struct smbcli_request *smb_raw_changenotify_send(struct smbcli_tree *tree, struct smb_notify *parms)
 {
 	struct smb_nttrans nt;
 	uint16_t setup[4];
@@ -46,13 +46,13 @@ struct cli_request *smb_raw_changenotify_send(struct cli_tree *tree, struct smb_
 /****************************************************************************
 change notify (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_changenotify_recv(struct cli_request *req, 
+NTSTATUS smb_raw_changenotify_recv(struct smbcli_request *req, 
 				   TALLOC_CTX *mem_ctx, struct smb_notify *parms)
 {
 	struct smb_nttrans nt;
 	NTSTATUS status;
 	uint32_t ofs, i;
-	struct cli_session *session = req?req->session:NULL;
+	struct smbcli_session *session = req?req->session:NULL;
 
 	status = smb_raw_nttrans_recv(req, mem_ctx, &nt);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -80,7 +80,7 @@ NTSTATUS smb_raw_changenotify_recv(struct cli_request *req,
 
 	for (i=ofs=0; i<parms->out.num_changes; i++) {
 		parms->out.changes[i].action = IVAL(nt.out.params.data, ofs+4);
-		cli_blob_pull_string(session, mem_ctx, &nt.out.params, 
+		smbcli_blob_pull_string(session, mem_ctx, &nt.out.params, 
 				     &parms->out.changes[i].name, 
 				     ofs+8, ofs+12, STR_UNICODE);
 		ofs += IVAL(nt.out.params.data, ofs);
@@ -95,11 +95,11 @@ NTSTATUS smb_raw_changenotify_recv(struct cli_request *req,
  used to cancel a pending change notify request
  note that this request does not expect a response!
 ****************************************************************************/
-NTSTATUS smb_raw_ntcancel(struct cli_request *oldreq)
+NTSTATUS smb_raw_ntcancel(struct smbcli_request *oldreq)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 
-	req = cli_request_setup_transport(oldreq->transport, SMBntcancel, 0, 0);
+	req = smbcli_request_setup_transport(oldreq->transport, SMBntcancel, 0, 0);
 
 	SSVAL(req->out.hdr, HDR_MID, SVAL(oldreq->out.hdr, HDR_MID));	
 	SSVAL(req->out.hdr, HDR_PID, SVAL(oldreq->out.hdr, HDR_PID));	
@@ -111,7 +111,7 @@ NTSTATUS smb_raw_ntcancel(struct cli_request *oldreq)
 	req->sign_single_increment = 1;
 	req->one_way_request = 1;
 
-	cli_request_send(req);
+	smbcli_request_send(req);
 
 	return NT_STATUS_OK;
 }

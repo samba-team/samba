@@ -26,7 +26,7 @@
 put a dos date into a buffer (time/date format)
 This takes GMT time and puts local time for zone_offset in the buffer
 ********************************************************************/
-void raw_push_dos_date(struct cli_transport *transport,
+void raw_push_dos_date(struct smbcli_transport *transport,
 		      uint8_t *buf, int offset, time_t unixdate)
 {
 	push_dos_date(buf, offset, unixdate, transport->negotiate.server_zone);
@@ -36,7 +36,7 @@ void raw_push_dos_date(struct cli_transport *transport,
 put a dos date into a buffer (date/time format)
 This takes GMT time and puts local time in the buffer
 ********************************************************************/
-void raw_push_dos_date2(struct cli_transport *transport,
+void raw_push_dos_date2(struct smbcli_transport *transport,
 		       char *buf, int offset, time_t unixdate)
 {
 	push_dos_date2(buf, offset, unixdate, transport->negotiate.server_zone);
@@ -46,7 +46,7 @@ void raw_push_dos_date2(struct cli_transport *transport,
 put a dos 32 bit "unix like" date into a buffer. This routine takes
 GMT and converts it to LOCAL time in zone_offset before putting it
 ********************************************************************/
-void raw_push_dos_date3(struct cli_transport *transport,
+void raw_push_dos_date3(struct smbcli_transport *transport,
 		       char *buf, int offset, time_t unixdate)
 {
 	push_dos_date3(buf, offset, unixdate, transport->negotiate.server_zone);
@@ -55,7 +55,7 @@ void raw_push_dos_date3(struct cli_transport *transport,
 /*******************************************************************
 convert a dos date
 ********************************************************************/
-time_t raw_pull_dos_date(struct cli_transport *transport, 
+time_t raw_pull_dos_date(struct smbcli_transport *transport, 
 			 const uint8_t *date_ptr)
 {
 	return pull_dos_date(date_ptr, transport->negotiate.server_zone);
@@ -64,7 +64,7 @@ time_t raw_pull_dos_date(struct cli_transport *transport,
 /*******************************************************************
 like raw_pull_dos_date() but the words are reversed
 ********************************************************************/
-time_t raw_pull_dos_date2(struct cli_transport *transport, 
+time_t raw_pull_dos_date2(struct smbcli_transport *transport, 
 			  const uint8_t *date_ptr)
 {
 	return pull_dos_date2(date_ptr, transport->negotiate.server_zone);
@@ -74,7 +74,7 @@ time_t raw_pull_dos_date2(struct cli_transport *transport,
   create a unix GMT date from a dos date in 32 bit "unix like" format
   these arrive in server zone, with corresponding DST
   ******************************************************************/
-time_t raw_pull_dos_date3(struct cli_transport *transport,
+time_t raw_pull_dos_date3(struct smbcli_transport *transport,
 			  const uint8_t *date_ptr)
 {
 	return pull_dos_date3(date_ptr, transport->negotiate.server_zone);

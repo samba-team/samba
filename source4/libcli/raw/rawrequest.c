@@ -20,7 +20,7 @@
 */
 
 /*
-  this file implements functions for manipulating the 'struct cli_request' structure in libsmb
+  this file implements functions for manipulating the 'struct smbcli_request' structure in libsmb
 */
 
 #include "includes.h"
@@ -32,7 +32,7 @@
 #define MAX_BYTES_PER_CHAR 3
 
 /* destroy a request structure and return final status */
-NTSTATUS cli_request_destroy(struct cli_request *req)
+NTSTATUS smbcli_request_destroy(struct smbcli_request *req)
 {
 	NTSTATUS status;
 
@@ -58,28 +58,28 @@ NTSTATUS cli_request_destroy(struct cli_request *req)
   low-level function to setup a request buffer for a non-SMB packet 
   at the transport level
 */
-struct cli_request *cli_request_setup_nonsmb(struct cli_transport *transport, uint_t size)
+struct smbcli_request *smbcli_request_setup_nonsmb(struct smbcli_transport *transport, uint_t size)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 	TALLOC_CTX *mem_ctx;
 	
 	/* each request gets its own talloc context. The request
 	   structure itself is also allocated inside this context,
 	   so we need to allocate it before we construct the request
 	*/
-	mem_ctx = talloc_init("cli_request");
+	mem_ctx = talloc_init("smbcli_request");
 	if (!mem_ctx) {
 		return NULL;
 	}
 
-	req = talloc(mem_ctx, sizeof(struct cli_request));
+	req = talloc(mem_ctx, sizeof(struct smbcli_request));
 	if (!req) {
 		return NULL;
 	}
 	ZERO_STRUCTP(req);
 
 	/* setup the request context */
-	req->state = CLI_REQUEST_INIT;
+	req->state = SMBCLI_REQUEST_INIT;
 	req->mem_ctx = mem_ctx;
 	req->transport = transport;
 	req->session = NULL;
@@ -103,12 +103,12 @@ struct cli_request *cli_request_setup_nonsmb(struct cli_transport *transport, ui
 /*
   setup a SMB packet at transport level
 */
-struct cli_request *cli_request_setup_transport(struct cli_transport *transport,
+struct smbcli_request *smbcli_request_setup_transport(struct smbcli_transport *transport,
 						uint8_t command, uint_t wct, uint_t buflen)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 
-	req = cli_request_setup_nonsmb(transport, NBT_HDR_SIZE + MIN_SMB_SIZE + wct*2 + buflen);
+	req = smbcli_request_setup_nonsmb(transport, NBT_HDR_SIZE + MIN_SMB_SIZE + wct*2 + buflen);
 
 	if (!req) return NULL;
 	
@@ -129,7 +129,7 @@ struct cli_request *cli_request_setup_transport(struct cli_transport *transport,
 	SSVAL(req->out.hdr,HDR_FLG2, 0);
 
 	/* assign a mid */
-	req->mid = cli_transport_next_mid(transport);
+	req->mid = smbcli_transport_next_mid(transport);
 
 	/* copy the pid, uid and mid to the request */
 	SSVAL(req->out.hdr, HDR_PID, 0);
@@ -146,17 +146,17 @@ struct cli_request *cli_request_setup_transport(struct cli_transport *transport,
 /*
   setup a reply in req->out with the given word count and initial data
   buffer size.  the caller will then fill in the command words and
-  data before calling cli_request_send() to send the reply on its
+  data before calling smbcli_request_send() to send the reply on its
   way. This interface is used before a session is setup.
 */
-struct cli_request *cli_request_setup_session(struct cli_session *session,
+struct smbcli_request *smbcli_request_setup_session(struct smbcli_session *session,
 					      uint8_t command, uint_t wct, uint_t buflen)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 	uint16_t flags2;
 	uint32_t capabilities;
 
-	req = cli_request_setup_transport(session->transport, command, wct, buflen);
+	req = smbcli_request_setup_transport(session->transport, command, wct, buflen);
 
 	if (!req) return NULL;
 
@@ -189,13 +189,13 @@ struct cli_request *cli_request_setup_session(struct cli_session *session,
 /*
   setup a request for tree based commands
 */
-struct cli_request *cli_request_setup(struct cli_tree *tree,
+struct smbcli_request *smbcli_request_setup(struct smbcli_tree *tree,
 				      uint8_t command, 
 				      uint_t wct, uint_t buflen)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 
-	req = cli_request_setup_session(tree->session, command, wct, buflen);
+	req = smbcli_request_setup_session(tree->session, command, wct, buflen);
 	if (req) {
 		req->tree = tree;
 		SSVAL(req->out.hdr,HDR_TID,tree->tid);
@@ -211,7 +211,7 @@ struct cli_request *cli_request_setup(struct cli_tree *tree,
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
 */
-static void cli_req_grow_allocation(struct cli_request *req, uint_t new_size)
+static void smbcli_req_grow_allocation(struct smbcli_request *req, uint_t new_size)
 {
 	int delta;
 	char *buf2;
@@ -252,11 +252,11 @@ static void cli_req_grow_allocation(struct cli_request *req, uint_t new_size)
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
 */
-static void cli_req_grow_data(struct cli_request *req, uint_t new_size)
+static void smbcli_req_grow_data(struct smbcli_request *req, uint_t new_size)
 {
 	int delta;
 
-	cli_req_grow_allocation(req, new_size);
+	smbcli_req_grow_allocation(req, new_size);
 
 	delta = new_size - req->out.data_size;
 
@@ -271,15 +271,15 @@ static void cli_req_grow_data(struct cli_request *req, uint_t new_size)
 /*
   send a message
 */
-BOOL cli_request_send(struct cli_request *req)
+BOOL smbcli_request_send(struct smbcli_request *req)
 {
 	if (IVAL(req->out.buffer, 0) == 0) {
 		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
-	cli_request_calculate_sign_mac(req);
+	smbcli_request_calculate_sign_mac(req);
 
-	cli_transport_send(req);
+	smbcli_transport_send(req);
 
 	return True;
 }
@@ -288,14 +288,14 @@ BOOL cli_request_send(struct cli_request *req)
 /*
   receive a response to a packet
 */
-BOOL cli_request_receive(struct cli_request *req)
+BOOL smbcli_request_receive(struct smbcli_request *req)
 {
 	/* req can be NULL when a send has failed. This eliminates lots of NULL
 	   checks in each module */
 	if (!req) return False;
 
 	/* keep receiving packets until this one is replied to */
-	while (req->state <= CLI_REQUEST_RECV) {
+	while (req->state <= SMBCLI_REQUEST_RECV) {
 		event_loop_once(req->transport->event.ctx);
 	}
 
@@ -307,12 +307,12 @@ BOOL cli_request_receive(struct cli_request *req)
   receive another reply to a request - this is used for requests that
   have multi-part replies (such as SMBtrans2)
 */
-BOOL cli_request_receive_more(struct cli_request *req)
+BOOL smbcli_request_receive_more(struct smbcli_request *req)
 {
-	req->state = CLI_REQUEST_RECV;
+	req->state = SMBCLI_REQUEST_RECV;
 	DLIST_ADD(req->transport->pending_recv, req);
 
-	return cli_request_receive(req);
+	return smbcli_request_receive(req);
 }
 
 
@@ -320,7 +320,7 @@ BOOL cli_request_receive_more(struct cli_request *req)
   handle oplock break requests from the server - return True if the request was
   an oplock break
 */
-BOOL handle_oplock_break(struct cli_transport *transport, uint_t len, const char *hdr, const char *vwv)
+BOOL handle_oplock_break(struct smbcli_transport *transport, uint_t len, const char *hdr, const char *vwv)
 {
 	/* we must be very fussy about what we consider an oplock break to avoid
 	   matching readbraw replies */
@@ -347,15 +347,15 @@ BOOL handle_oplock_break(struct cli_transport *transport, uint_t len, const char
   wait for a reply to be received for a packet that just returns an error
   code and nothing more
 */
-NTSTATUS cli_request_simple_recv(struct cli_request *req)
+NTSTATUS smbcli_request_simple_recv(struct smbcli_request *req)
 {
-	cli_request_receive(req);
-	return cli_request_destroy(req);
+	smbcli_request_receive(req);
+	return smbcli_request_destroy(req);
 }
 
 
 /* Return true if the last packet was in error */
-BOOL cli_request_is_error(struct cli_request *req)
+BOOL smbcli_request_is_error(struct smbcli_request *req)
 {
 	return NT_STATUS_IS_ERR(req->status);
 }
@@ -365,7 +365,7 @@ BOOL cli_request_is_error(struct cli_request *req)
 
   return the number of bytes added to the packet
 */
-size_t cli_req_append_string(struct cli_request *req, const char *str, uint_t flags)
+size_t smbcli_req_append_string(struct smbcli_request *req, const char *str, uint_t flags)
 {
 	size_t len;
 
@@ -376,17 +376,17 @@ size_t cli_req_append_string(struct cli_request *req, const char *str, uint_t fl
 
 	len = (strlen(str)+2) * MAX_BYTES_PER_CHAR;		
 
-	cli_req_grow_allocation(req, len + req->out.data_size);
+	smbcli_req_grow_allocation(req, len + req->out.data_size);
 
 	len = push_string(NULL, req->out.data + req->out.data_size, str, len, flags);
 
-	cli_req_grow_data(req, len + req->out.data_size);
+	smbcli_req_grow_data(req, len + req->out.data_size);
 
 	return len;
 }
 
 /*
-  this is like cli_req_append_string but it also return the
+  this is like smbcli_req_append_string but it also return the
   non-terminated string byte length, which can be less than the number
   of bytes consumed in the packet for 2 reasons:
 
@@ -396,7 +396,7 @@ size_t cli_req_append_string(struct cli_request *req, const char *str, uint_t fl
  this is used in places where the non-terminated string byte length is
  placed in the packet as a separate field  
 */
-size_t cli_req_append_string_len(struct cli_request *req, const char *str, uint_t flags, int *len)
+size_t smbcli_req_append_string_len(struct smbcli_request *req, const char *str, uint_t flags, int *len)
 {
 	int diff = 0;
 	size_t ret;
@@ -412,7 +412,7 @@ size_t cli_req_append_string_len(struct cli_request *req, const char *str, uint_
 	}
 
 	/* do the hard work */
-	ret = cli_req_append_string(req, str, flags);
+	ret = smbcli_req_append_string(req, str, flags);
 
 	/* see if we need to subtract the termination */
 	if (flags & STR_TERMINATE) {
@@ -437,11 +437,11 @@ size_t cli_req_append_string_len(struct cli_request *req, const char *str, uint_
 
   if dest_len is -1 then no limit applies
 */
-size_t cli_req_append_ascii4(struct cli_request *req, const char *str, uint_t flags)
+size_t smbcli_req_append_ascii4(struct smbcli_request *req, const char *str, uint_t flags)
 {
 	size_t size;
-	cli_req_append_bytes(req, (const uint8_t *)"\4", 1);
-	size = cli_req_append_string(req, str, flags);
+	smbcli_req_append_bytes(req, (const uint8_t *)"\4", 1);
+	size = smbcli_req_append_string(req, str, flags);
 	return size + 1;
 }
 
@@ -452,11 +452,11 @@ size_t cli_req_append_ascii4(struct cli_request *req, const char *str, uint_t fl
 
   if dest is NULL, then put the blob at the end of the data portion of the packet
 */
-size_t cli_req_append_blob(struct cli_request *req, const DATA_BLOB *blob)
+size_t smbcli_req_append_blob(struct smbcli_request *req, const DATA_BLOB *blob)
 {
-	cli_req_grow_allocation(req, req->out.data_size + blob->length);
+	smbcli_req_grow_allocation(req, req->out.data_size + blob->length);
 	memcpy(req->out.data + req->out.data_size, blob->data, blob->length);
-	cli_req_grow_data(req, req->out.data_size + blob->length);
+	smbcli_req_grow_data(req, req->out.data_size + blob->length);
 	return blob->length;
 }
 
@@ -464,11 +464,11 @@ size_t cli_req_append_blob(struct cli_request *req, const DATA_BLOB *blob)
   append raw bytes into the data portion of the request packet
   return the number of bytes added
 */
-size_t cli_req_append_bytes(struct cli_request *req, const uint8_t *bytes, size_t byte_len)
+size_t smbcli_req_append_bytes(struct smbcli_request *req, const uint8_t *bytes, size_t byte_len)
 {
-	cli_req_grow_allocation(req, byte_len + req->out.data_size);
+	smbcli_req_grow_allocation(req, byte_len + req->out.data_size);
 	memcpy(req->out.data + req->out.data_size, bytes, byte_len);
-	cli_req_grow_data(req, byte_len + req->out.data_size);
+	smbcli_req_grow_data(req, byte_len + req->out.data_size);
 	return byte_len;
 }
 
@@ -476,15 +476,15 @@ size_t cli_req_append_bytes(struct cli_request *req, const uint8_t *bytes, size_
   append variable block (type 5 buffer) into the data portion of the request packet
   return the number of bytes added
 */
-size_t cli_req_append_var_block(struct cli_request *req, const uint8_t *bytes, uint16_t byte_len)
+size_t smbcli_req_append_var_block(struct smbcli_request *req, const uint8_t *bytes, uint16_t byte_len)
 {
-	cli_req_grow_allocation(req, byte_len + 3 + req->out.data_size);
+	smbcli_req_grow_allocation(req, byte_len + 3 + req->out.data_size);
 	SCVAL(req->out.data + req->out.data_size, 0, 5);
 	SSVAL(req->out.data + req->out.data_size, 1, byte_len);		/* add field length */
 	if (byte_len > 0) {
 		memcpy(req->out.data + req->out.data_size + 3, bytes, byte_len);
 	}
-	cli_req_grow_data(req, byte_len + 3 + req->out.data_size);
+	smbcli_req_grow_data(req, byte_len + 3 + req->out.data_size);
 	return byte_len + 3;
 }
 
@@ -502,7 +502,7 @@ size_t cli_req_append_var_block(struct cli_request *req, const uint8_t *bytes, u
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-static size_t cli_req_pull_ucs2(struct cli_request *req, TALLOC_CTX *mem_ctx,
+static size_t smbcli_req_pull_ucs2(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 				char **dest, const char *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2, alignment=0;
@@ -559,7 +559,7 @@ static size_t cli_req_pull_ucs2(struct cli_request *req, TALLOC_CTX *mem_ctx,
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-size_t cli_req_pull_ascii(struct cli_request *req, TALLOC_CTX *mem_ctx,
+size_t smbcli_req_pull_ascii(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 			  char **dest, const char *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2;
@@ -602,15 +602,15 @@ size_t cli_req_pull_ascii(struct cli_request *req, TALLOC_CTX *mem_ctx,
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-size_t cli_req_pull_string(struct cli_request *req, TALLOC_CTX *mem_ctx, 
+size_t smbcli_req_pull_string(struct smbcli_request *req, TALLOC_CTX *mem_ctx, 
 			   char **dest, const char *src, int byte_len, uint_t flags)
 {
 	if (!(flags & STR_ASCII) && 
 	    (((flags & STR_UNICODE) || (req->flags2 & FLAGS2_UNICODE_STRINGS)))) {
-		return cli_req_pull_ucs2(req, mem_ctx, dest, src, byte_len, flags);
+		return smbcli_req_pull_ucs2(req, mem_ctx, dest, src, byte_len, flags);
 	}
 
-	return cli_req_pull_ascii(req, mem_ctx, dest, src, byte_len, flags);
+	return smbcli_req_pull_ascii(req, mem_ctx, dest, src, byte_len, flags);
 }
 
 
@@ -620,7 +620,7 @@ size_t cli_req_pull_string(struct cli_request *req, TALLOC_CTX *mem_ctx,
 
   if byte_len is -1 then limit the blob only by packet size
 */
-DATA_BLOB cli_req_pull_blob(struct cli_request *req, TALLOC_CTX *mem_ctx, const char *src, int byte_len)
+DATA_BLOB smbcli_req_pull_blob(struct smbcli_request *req, TALLOC_CTX *mem_ctx, const char *src, int byte_len)
 {
 	int src_len;
 
@@ -639,7 +639,7 @@ DATA_BLOB cli_req_pull_blob(struct cli_request *req, TALLOC_CTX *mem_ctx, const 
 
 /* check that a lump of data in a request is within the bounds of the data section of
    the packet */
-static BOOL cli_req_data_oob(struct cli_request *req, const char *ptr, uint32_t count)
+static BOOL smbcli_req_data_oob(struct smbcli_request *req, const char *ptr, uint32_t count)
 {
 	/* be careful with wraparound! */
 	if (ptr < req->in.data ||
@@ -656,11 +656,11 @@ static BOOL cli_req_data_oob(struct cli_request *req, const char *ptr, uint32_t 
 
   return False if any part is outside the data portion of the packet
 */
-BOOL cli_raw_pull_data(struct cli_request *req, const char *src, int len, char *dest)
+BOOL smbcli_raw_pull_data(struct smbcli_request *req, const char *src, int len, char *dest)
 {
 	if (len == 0) return True;
 
-	if (cli_req_data_oob(req, src, len)) {
+	if (smbcli_req_data_oob(req, src, len)) {
 		return False;
 	}
 
@@ -672,7 +672,7 @@ BOOL cli_raw_pull_data(struct cli_request *req, const char *src, int len, char *
 /*
   put a NTTIME into a packet
 */
-void cli_push_nttime(void *base, uint16_t offset, NTTIME t)
+void smbcli_push_nttime(void *base, uint16_t offset, NTTIME t)
 {
 	SBVAL(base, offset, t);
 }
@@ -680,7 +680,7 @@ void cli_push_nttime(void *base, uint16_t offset, NTTIME t)
 /*
   pull a NTTIME from a packet
 */
-NTTIME cli_pull_nttime(void *base, uint16_t offset)
+NTTIME smbcli_pull_nttime(void *base, uint16_t offset)
 {
 	NTTIME ret = BVAL(base, offset);
 	return ret;
@@ -699,7 +699,7 @@ NTTIME cli_pull_nttime(void *base, uint16_t offset)
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the blob is returned
 */
-static size_t cli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
+static size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 				 DATA_BLOB *blob, const char **dest, 
 				 const char *src, int byte_len, uint_t flags)
 {
@@ -758,7 +758,7 @@ static size_t cli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the blob is returned
 */
-static size_t cli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
+static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 				  DATA_BLOB *blob, const char **dest, 
 				  const char *src, int byte_len, uint_t flags)
 {
@@ -804,7 +804,7 @@ static size_t cli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
   on failure zero is returned and dest->s is set to NULL, otherwise the number
   of bytes consumed in the blob is returned
 */
-size_t cli_blob_pull_string(struct cli_session *session,
+size_t smbcli_blob_pull_string(struct smbcli_session *session,
 			    TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *blob, 
 			    WIRE_STRING *dest, 
@@ -834,7 +834,7 @@ size_t cli_blob_pull_string(struct cli_session *session,
 		if (flags & STR_LEN_NOTERM) {
 			extra = 2;
 		}
-		return align + extra + cli_blob_pull_ucs2(mem_ctx, blob, &dest->s, 
+		return align + extra + smbcli_blob_pull_ucs2(mem_ctx, blob, &dest->s, 
 							  blob->data+str_offset+align, 
 							  dest->private_length, flags);
 	}
@@ -843,7 +843,7 @@ size_t cli_blob_pull_string(struct cli_session *session,
 		extra = 1;
 	}
 
-	return extra + cli_blob_pull_ascii(mem_ctx, blob, &dest->s, 
+	return extra + smbcli_blob_pull_ascii(mem_ctx, blob, &dest->s, 
 					   blob->data+str_offset, dest->private_length, flags);
 }
 
@@ -859,7 +859,7 @@ size_t cli_blob_pull_string(struct cli_session *session,
   on failure zero is returned and dest->s is set to NULL, otherwise the number
   of bytes consumed in the blob is returned
 */
-size_t cli_blob_pull_unix_string(struct cli_session *session,
+size_t smbcli_blob_pull_unix_string(struct smbcli_session *session,
 			    TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *blob, 
 			    const char **dest, 
@@ -879,7 +879,7 @@ size_t cli_blob_pull_unix_string(struct cli_session *session,
 		if (flags & STR_LEN_NOTERM) {
 			extra = 2;
 		}
-		return align + extra + cli_blob_pull_ucs2(mem_ctx, blob, dest, 
+		return align + extra + smbcli_blob_pull_ucs2(mem_ctx, blob, dest, 
 							  blob->data+str_offset+align, 
 							  -1, flags);
 	}
@@ -888,7 +888,7 @@ size_t cli_blob_pull_unix_string(struct cli_session *session,
 		extra = 1;
 	}
 
-	return extra + cli_blob_pull_ascii(mem_ctx, blob, dest,
+	return extra + smbcli_blob_pull_ascii(mem_ctx, blob, dest,
 					   blob->data+str_offset, -1, flags);
 }
 
@@ -896,7 +896,7 @@ size_t cli_blob_pull_unix_string(struct cli_session *session,
 /*
   append a string into a blob
 */
-size_t cli_blob_append_string(struct cli_session *session,
+size_t smbcli_blob_append_string(struct smbcli_session *session,
 			      TALLOC_CTX *mem_ctx, DATA_BLOB *blob, 
 			      const char *str, uint_t flags)
 {

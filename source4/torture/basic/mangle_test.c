@@ -26,7 +26,7 @@ static TDB_CONTEXT *tdb;
 
 static uint_t total, collisions, failures;
 
-static BOOL test_one(struct cli_state *cli, const char *name)
+static BOOL test_one(struct smbcli_state *cli, const char *name)
 {
 	int fnum;
 	const char *shortname;
@@ -36,48 +36,48 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 
 	total++;
 
-	fnum = cli_open(cli->tree, name, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	fnum = smbcli_open(cli->tree, name, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum == -1) {
-		printf("open of %s failed (%s)\n", name, cli_errstr(cli->tree));
+		printf("open of %s failed (%s)\n", name, smbcli_errstr(cli->tree));
 		return False;
 	}
 
-	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum))) {
-		printf("close of %s failed (%s)\n", name, cli_errstr(cli->tree));
+	if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnum))) {
+		printf("close of %s failed (%s)\n", name, smbcli_errstr(cli->tree));
 		return False;
 	}
 
 	/* get the short name */
-	status = cli_qpathinfo_alt_name(cli->tree, name, &shortname);
+	status = smbcli_qpathinfo_alt_name(cli->tree, name, &shortname);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("query altname of %s failed (%s)\n", name, cli_errstr(cli->tree));
+		printf("query altname of %s failed (%s)\n", name, smbcli_errstr(cli->tree));
 		return False;
 	}
 
 	snprintf(name2, sizeof(name2), "\\mangle_test\\%s", shortname);
-	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, name2))) {
+	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, name2))) {
 		printf("unlink of %s  (%s) failed (%s)\n", 
-		       name2, name, cli_errstr(cli->tree));
+		       name2, name, smbcli_errstr(cli->tree));
 		return False;
 	}
 
 	/* recreate by short name */
-	fnum = cli_open(cli->tree, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	fnum = smbcli_open(cli->tree, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum == -1) {
-		printf("open2 of %s failed (%s)\n", name2, cli_errstr(cli->tree));
+		printf("open2 of %s failed (%s)\n", name2, smbcli_errstr(cli->tree));
 		return False;
 	}
-	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum))) {
-		printf("close of %s failed (%s)\n", name, cli_errstr(cli->tree));
+	if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnum))) {
+		printf("close of %s failed (%s)\n", name, smbcli_errstr(cli->tree));
 		return False;
 	}
 
 	/* and unlink by long name */
-	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, name))) {
+	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, name))) {
 		printf("unlink2 of %s  (%s) failed (%s)\n", 
-		       name, name2, cli_errstr(cli->tree));
+		       name, name2, smbcli_errstr(cli->tree));
 		failures++;
-		cli_unlink(cli->tree, name2);
+		smbcli_unlink(cli->tree, name2);
 		return True;
 	}
 
@@ -151,7 +151,7 @@ static void gen_name(char *name)
 BOOL torture_mangle(int dummy)
 {
 	extern int torture_numops;
-	static struct cli_state *cli;
+	static struct smbcli_state *cli;
 	int i;
 
 	printf("starting mangle test\n");
@@ -167,10 +167,10 @@ BOOL torture_mangle(int dummy)
 		return False;
 	}
 
-	cli_unlink(cli->tree, "\\mangle_test\\*");
-	cli_rmdir(cli->tree, "\\mangle_test");
+	smbcli_unlink(cli->tree, "\\mangle_test\\*");
+	smbcli_rmdir(cli->tree, "\\mangle_test");
 
-	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, "\\mangle_test"))) {
+	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, "\\mangle_test"))) {
 		printf("ERROR: Failed to make directory\n");
 		return False;
 	}
@@ -189,8 +189,8 @@ BOOL torture_mangle(int dummy)
 		}
 	}
 
-	cli_unlink(cli->tree, "\\mangle_test\\*");
-	if (NT_STATUS_IS_ERR(cli_rmdir(cli->tree, "\\mangle_test"))) {
+	smbcli_unlink(cli->tree, "\\mangle_test\\*");
+	if (NT_STATUS_IS_ERR(smbcli_rmdir(cli->tree, "\\mangle_test"))) {
 		printf("ERROR: Failed to remove directory\n");
 		return False;
 	}

@@ -118,7 +118,7 @@ static NTSTATUS rpc_resolve_dc(const char *server,
  *
  **/
 
-static NTSTATUS connect_to_domain_password_server(struct cli_state **cli, 
+static NTSTATUS connect_to_domain_password_server(struct smbcli_state **cli, 
 						  const char *server, 
 						  const char *setup_creds_as,
 						  uint16_t sec_chan,
@@ -169,7 +169,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 		return NT_STATUS_NO_LOGON_SERVERS;
 	
 	/* Attempt connection */
-	result = cli_full_connection(cli, lp_netbios_name(), remote_machine,
+	result = smbcli_full_connection(cli, lp_netbios_name(), remote_machine,
 				     &dest_ip, 0, "IPC$", "IPC", "", "", "",0, retry);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -190,12 +190,12 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	 * into account also. This patch from "Bjart Kvarme" <bjart.kvarme@usit.uio.no>.
 	 */
 
-	if(cli_nt_session_open(*cli, PI_NETLOGON) == False) {
+	if(smbcli_nt_session_open(*cli, PI_NETLOGON) == False) {
 		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
-machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
-		cli_nt_session_close(*cli);
-		cli_ulogoff(*cli);
-		cli_shutdown(*cli);
+machine %s. Error was : %s.\n", remote_machine, smbcli_errstr(*cli)));
+		smbcli_nt_session_close(*cli);
+		smbcli_ulogoff(*cli);
+		smbcli_shutdown(*cli);
 		release_server_mutex();
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
@@ -207,14 +207,14 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result = cli_nt_setup_creds(*cli, sec_chan, trust_passwd, &neg_flags, 2);
+	result = smbcli_nt_setup_creds(*cli, sec_chan, trust_passwd, &neg_flags, 2);
 
         if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("connect_to_domain_password_server: unable to setup the NETLOGON credentials to machine \
 %s. Error was : %s.\n", remote_machine, nt_errstr(result)));
-		cli_nt_session_close(*cli);
-		cli_ulogoff(*cli);
-		cli_shutdown(*cli);
+		smbcli_nt_session_close(*cli);
+		smbcli_ulogoff(*cli);
+		smbcli_shutdown(*cli);
 		release_server_mutex();
 		return result;
 	}
@@ -228,7 +228,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
  Utility function to attempt a connection to an IP address of a DC.
 ************************************************************************/
 
-static NTSTATUS attempt_connect_to_dc(struct cli_state **cli, 
+static NTSTATUS attempt_connect_to_dc(struct smbcli_state **cli, 
 				      const char *domain, 
 				      struct in_addr *ip, 
 				      const char *setup_creds_as, 
@@ -260,7 +260,7 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
  We have been asked to dynamically determine the IP addresses of
  the PDC and BDC's for DOMAIN, and query them in turn.
 ************************************************************************/
-static NTSTATUS find_connect_dc(struct cli_state **cli, 
+static NTSTATUS find_connect_dc(struct smbcli_state **cli, 
 				 const char *domain,
 				 const char *setup_creds_as,
 				 uint16_t sec_chan,
@@ -297,7 +297,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 {
 	fstring remote_machine;
 	NET_USER_INFO_3 info3;
-	struct cli_state *cli = NULL;
+	struct smbcli_state *cli = NULL;
 	NTSTATUS nt_status = NT_STATUS_NO_LOGON_SERVERS;
 
 	/*
@@ -333,7 +333,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
          * in the info3 structure.  
          */
 
-	nt_status = cli_netlogon_sam_network_logon(cli, mem_ctx,
+	nt_status = smbcli_netlogon_sam_network_logon(cli, mem_ctx,
 						   user_info->smb_name.str, user_info->domain.str, 
 						   user_info->wksta_name.str, chal, 
 						   user_info->lm_resp, user_info->nt_resp, 
@@ -366,9 +366,9 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	 */
 
 	if (NT_STATUS_IS_OK(status)) {
-		if(cli_nt_logoff(&cli, &ctr) == False) {
+		if(smbcli_nt_logoff(&cli, &ctr) == False) {
 			DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));        
+%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, smbcli_errstr(&cli)));        
 			nt_status = NT_STATUS_LOGON_FAILURE;
 		}
 	}
@@ -378,9 +378,9 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	   to allocate the other_sids and gids structures has been deleted - so
 	   these pointers are no longer valid..... */
 
-	cli_nt_session_close(cli);
-	cli_ulogoff(cli);
-	cli_shutdown(cli);
+	smbcli_nt_session_close(cli);
+	smbcli_ulogoff(cli);
+	smbcli_shutdown(cli);
 	release_server_mutex();
 	return nt_status;
 }

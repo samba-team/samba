@@ -259,7 +259,7 @@ static void map_regval_to_ads(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 }
 
 
-WERROR get_remote_printer_publishing_data(struct cli_state *cli, 
+WERROR get_remote_printer_publishing_data(struct smbcli_state *cli, 
 					  TALLOC_CTX *mem_ctx,
 					  ADS_MODLIST *mods,
 					  const char *printer)
@@ -278,7 +278,7 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 		return WERR_NOMEM;
 	}
 	
-	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
+	result = smbcli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
 					     "", MAXIMUM_ALLOWED_ACCESS, 
 					     servername, cli->user_name, &pol);
 	if (!W_ERROR_IS_OK(result)) {
@@ -287,11 +287,11 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 		return result;
 	}
 	
-	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, 0, &needed, 
+	result = smbcli_spoolss_enumprinterdataex(cli, mem_ctx, 0, &needed, 
 					       &pol, SPOOL_DSDRIVER_KEY, NULL);
 
 	if (W_ERROR_V(result) == ERRmoredata)
-		result = cli_spoolss_enumprinterdataex(cli, mem_ctx, needed, 
+		result = smbcli_spoolss_enumprinterdataex(cli, mem_ctx, needed, 
 						       NULL, &pol, 
 						       SPOOL_DSDRIVER_KEY,
 						       &dsdriver_ctr);
@@ -308,12 +308,12 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 					  dsdriver_ctr.values[i]);
 	}
 	
-	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, 0, &needed, 
+	result = smbcli_spoolss_enumprinterdataex(cli, mem_ctx, 0, &needed, 
 					       &pol, SPOOL_DSSPOOLER_KEY, 
 					       NULL);
 
 	if (W_ERROR_V(result) == ERRmoredata)
-		result = cli_spoolss_enumprinterdataex(cli, mem_ctx, needed, 
+		result = smbcli_spoolss_enumprinterdataex(cli, mem_ctx, needed, 
 						       NULL, &pol, 
 						       SPOOL_DSSPOOLER_KEY,
 						       &dsspooler_ctr);
@@ -332,7 +332,7 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 
 	if (got_dsdriver) regval_ctr_destroy(&dsdriver_ctr);
 	if (got_dsspooler) regval_ctr_destroy(&dsspooler_ctr);
-	cli_spoolss_close_printer(cli, mem_ctx, &pol);
+	smbcli_spoolss_close_printer(cli, mem_ctx, &pol);
 
 	return result;
 }

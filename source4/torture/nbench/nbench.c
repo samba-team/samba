@@ -28,7 +28,7 @@ static const char *loadfile;
 #define ival(s) strtol(s, NULL, 0)
 
 /* run a test that simulates an approximate netbench client load */
-static BOOL run_netbench(struct cli_state *cli, int client)
+static BOOL run_netbench(struct smbcli_state *cli, int client)
 {
 	int i;
 	pstring line;
@@ -164,7 +164,7 @@ BOOL torture_nbench(int dummy)
 {
 	BOOL correct = True;
 	extern int torture_nprocs;
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	const char *p;
 
 	p = lp_parm_string(-1, "torture", "timelimit");

@@ -41,7 +41,7 @@
 /*
   test seek ops
 */
-static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	struct smb_seek io;
 	union smb_fileinfo finfo;
@@ -52,15 +52,15 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname = BASEDIR "\\test.txt";
 	char c[2];
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
 		return False;
 	}
 
-	fnum = cli_open(cli->tree, fname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
+	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
 	if (fnum == -1) {
-		printf("Failed to open test.txt - %s\n", cli_errstr(cli->tree));
+		printf("Failed to open test.txt - %s\n", smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -138,8 +138,8 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("trying write to update offset\n");
 	ZERO_STRUCT(c);
-	if (cli_write(cli->tree, fnum, 0, c, 0, 2) != 2) {
-		printf("Write failed - %s\n", cli_errstr(cli->tree));
+	if (smbcli_write(cli->tree, fnum, 0, c, 0, 2) != 2) {
+		printf("Write failed - %s\n", smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;		
 	}
@@ -158,8 +158,8 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.out.offset, 2);
 	
-	if (cli_read(cli->tree, fnum, c, 0, 1) != 1) {
-		printf("Read failed - %s\n", cli_errstr(cli->tree));
+	if (smbcli_read(cli->tree, fnum, c, 0, 1) != 1) {
+		printf("Read failed - %s\n", smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;		
 	}
@@ -176,9 +176,9 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.out.offset, 1);
 
 	printf("Testing position information\n");
-	fnum2 = cli_open(cli->tree, fname, O_RDWR, DENY_NONE);
+	fnum2 = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
-		printf("2nd open failed - %s\n", cli_errstr(cli->tree));
+		printf("2nd open failed - %s\n", smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -223,7 +223,7 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 done:
 	smb_raw_exit(cli->session);
-	cli_deltree(cli->tree, BASEDIR);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -233,7 +233,7 @@ done:
 */
 BOOL torture_raw_seek(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 

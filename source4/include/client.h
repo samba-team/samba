@@ -28,7 +28,7 @@
    overlap on the wire. This size gives us a nice read/write size, which
    will be a multiple of the page size on almost any system */
 #define CLI_BUFFER_SIZE (0xFFFF)
-#define CLI_DFS_MAX_REFERRAL_LEVEL 3
+#define SMBCLI_DFS_MAX_REFERRAL_LEVEL 3
 
 #define SAFETY_MARGIN 1024
 #define LARGE_WRITEX_HDR_SIZE 65
@@ -87,8 +87,8 @@ typedef struct dfs_info
 	referral_info referrals[10];
 } dfs_info;
 
-/* Internal client error codes for cli_request_context.internal_error_code */
-#define CLI_ERR_INVALID_TRANS_RESPONSE		100
+/* Internal client error codes for smbcli_request_context.internal_error_code */
+#define SMBCLI_ERR_INVALID_TRANS_RESPONSE		100
 
 #define DFS_MAX_CLUSTER_SIZE 8
 /* client_context: used by cliraw callers to maintain Dfs
@@ -106,12 +106,12 @@ struct cli_client
 	int connection_flags;		/* see CLI_FULL_CONN.. below */
 	uint16_t max_xmit_frag;
 	uint16_t max_recv_frag;
-	struct cli_state *cli[DFS_MAX_CLUSTER_SIZE];
+	struct smbcli_state *cli[DFS_MAX_CLUSTER_SIZE];
 };
 
-#define CLI_FULL_CONNECTION_DONT_SPNEGO 0x0001
-#define CLI_FULL_CONNECTION_USE_KERBEROS 0x0002
-#define CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK 0x0004
-#define CLI_FULL_CONNECTION_USE_DFS 0x0008
+#define SMBCLI_FULL_CONNECTION_DONT_SPNEGO 0x0001
+#define SMBCLI_FULL_CONNECTION_USE_KERBEROS 0x0002
+#define SMBCLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK 0x0004
+#define SMBCLI_FULL_CONNECTION_USE_DFS 0x0008
 
 #endif /* _CLIENT_H */

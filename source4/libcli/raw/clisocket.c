@@ -23,14 +23,14 @@
 
 
 /*
-  create a cli_socket context
+  create a smbcli_socket context
 */
-struct cli_socket *cli_sock_init(void)
+struct smbcli_socket *smbcli_sock_init(void)
 {
-	struct cli_socket *sock;
+	struct smbcli_socket *sock;
 	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init("cli_socket");
+	mem_ctx = talloc_init("smbcli_socket");
 	if (!mem_ctx) return NULL;
 
 	sock = talloc_zero(mem_ctx, sizeof(*sock));
@@ -51,10 +51,10 @@ struct cli_socket *cli_sock_init(void)
 }
 
 /*
-  connect a cli_socket context to an IP/port pair
+  connect a smbcli_socket context to an IP/port pair
   if port is 0 then choose 445 then 139
 */
-BOOL cli_sock_connect(struct cli_socket *sock, struct in_addr *ip, int port)
+BOOL smbcli_sock_connect(struct smbcli_socket *sock, struct in_addr *ip, int port)
 {
 	if (getenv("LIBSMB_PROG")) {
 		sock->fd = sock_exec(getenv("LIBSMB_PROG"));
@@ -62,8 +62,8 @@ BOOL cli_sock_connect(struct cli_socket *sock, struct in_addr *ip, int port)
 	}
 
 	if (port == 0) {
-		return cli_sock_connect(sock, ip, 445) ||
-			cli_sock_connect(sock, ip, 139);
+		return smbcli_sock_connect(sock, ip, 445) ||
+			smbcli_sock_connect(sock, ip, 139);
 	}
 
 	sock->dest_ip = *ip;
@@ -85,7 +85,7 @@ BOOL cli_sock_connect(struct cli_socket *sock, struct in_addr *ip, int port)
 /****************************************************************************
  mark the socket as dead
 ****************************************************************************/
-void cli_sock_dead(struct cli_socket *sock)
+void smbcli_sock_dead(struct smbcli_socket *sock)
 {
 	if (sock->fd != -1) {
 		close(sock->fd);
@@ -96,18 +96,18 @@ void cli_sock_dead(struct cli_socket *sock)
 /****************************************************************************
  reduce socket reference count - if it becomes zero then close
 ****************************************************************************/
-void cli_sock_close(struct cli_socket *sock)
+void smbcli_sock_close(struct smbcli_socket *sock)
 {
 	sock->reference_count--;
 	if (sock->reference_count <= 0) {
-		cli_sock_dead(sock);
+		smbcli_sock_dead(sock);
 	}
 }
 
 /****************************************************************************
  Set socket options on a open connection.
 ****************************************************************************/
-void cli_sock_set_options(struct cli_socket *sock, const char *options)
+void smbcli_sock_set_options(struct smbcli_socket *sock, const char *options)
 {
 	set_socket_options(sock->fd, options);
 }
@@ -115,7 +115,7 @@ void cli_sock_set_options(struct cli_socket *sock, const char *options)
 /****************************************************************************
  Write to socket. Return amount written.
 ****************************************************************************/
-ssize_t cli_sock_write(struct cli_socket *sock, const char *data, size_t len)
+ssize_t smbcli_sock_write(struct smbcli_socket *sock, const char *data, size_t len)
 {
 	if (sock->fd == -1) {
 		errno = EIO;
@@ -129,7 +129,7 @@ ssize_t cli_sock_write(struct cli_socket *sock, const char *data, size_t len)
 /****************************************************************************
  Read from socket. return amount read
 ****************************************************************************/
-ssize_t cli_sock_read(struct cli_socket *sock, char *data, size_t len)
+ssize_t smbcli_sock_read(struct smbcli_socket *sock, char *data, size_t len)
 {
 	if (sock->fd == -1) {
 		errno = EIO;
@@ -142,7 +142,7 @@ ssize_t cli_sock_read(struct cli_socket *sock, char *data, size_t len)
 /****************************************************************************
 resolve a hostname and connect 
 ****************************************************************************/
-BOOL cli_sock_connect_byname(struct cli_socket *sock, const char *host, int port)
+BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, int port)
 {
 	int name_type = 0x20;
 	struct in_addr ip;
@@ -155,7 +155,7 @@ BOOL cli_sock_connect_byname(struct cli_socket *sock, const char *host, int port
 		return sock->fd != -1;
 	}
 
-	mem_ctx = talloc_init("cli_sock_connect_byname");
+	mem_ctx = talloc_init("smbcli_sock_connect_byname");
 	if (!mem_ctx) return False;
 
 	name = talloc_strdup(mem_ctx, host);
@@ -171,7 +171,7 @@ BOOL cli_sock_connect_byname(struct cli_socket *sock, const char *host, int port
 		return False;
 	}
 
-	ret = cli_sock_connect(sock, &ip, port);
+	ret = smbcli_sock_connect(sock, &ip, port);
 
 	if (ret) {
 		sock->hostname = talloc_steal(mem_ctx, sock->mem_ctx, name);
