@@ -99,12 +99,7 @@ BOOL torture_dirtest2(void)
 		return False;
 	}
 
-	if (smbcli_deltree(cli->tree, "\\LISTDIR") == -1) {
-		fprintf(stderr,"Failed to deltree %s, error=%s\n", "\\LISTDIR", smbcli_errstr(cli->tree));
-		return False;
-	}
-	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, "\\LISTDIR"))) {
-		fprintf(stderr,"Failed to mkdir %s, error=%s\n", "\\LISTDIR", smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, "\\LISTDIR")) {
 		return False;
 	}
 

@@ -67,11 +67,8 @@ BOOL torture_raw_notify(void)
 
 	mem_ctx = talloc_init("torture_raw_notify");
 
-	/* cleanup */
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1) {
-		printf("Failed to cleanup " BASEDIR "\n");
-		ret = False;
-		goto done;
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
 	}
 
 	/*

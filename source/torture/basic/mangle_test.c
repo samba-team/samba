@@ -167,11 +167,7 @@ BOOL torture_mangle(void)
 		return False;
 	}
 
-	smbcli_unlink(cli->tree, "\\mangle_test\\*");
-	smbcli_rmdir(cli->tree, "\\mangle_test");
-
-	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, "\\mangle_test"))) {
-		printf("ERROR: Failed to make directory\n");
+	if (!torture_setup_dir(cli, "\\mangle_test")) {
 		return False;
 	}
 

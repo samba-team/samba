@@ -70,9 +70,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("TESTING SESSION HANDLING\n");
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -213,9 +211,7 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("TESTING TREE HANDLING\n");
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -315,9 +311,7 @@ static BOOL test_pid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("TESTING PID HANDLING\n");
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 

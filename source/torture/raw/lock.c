@@ -52,9 +52,7 @@ static BOOL test_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -190,9 +188,7 @@ static BOOL test_lockx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	int fnum;
 	const char *fname = BASEDIR "\\test.txt";
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -372,9 +368,7 @@ static BOOL test_pidhigh(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname = BASEDIR "\\test.txt";
 	char c = 1;
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -456,9 +450,7 @@ static BOOL test_async(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	time_t t;
 	struct smbcli_request *req;
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -609,9 +601,7 @@ static BOOL test_changetype(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	char c = 0;
 	const char *fname = BASEDIR "\\test.txt";
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 

@@ -239,12 +239,7 @@ BOOL torture_charset(void)
 
 	printf("Starting charset tests\n");
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1) {
-		printf("Failed to clean " BASEDIR "\n");
-		return False;
-	}
-	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 

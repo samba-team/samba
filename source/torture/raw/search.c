@@ -607,9 +607,7 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		{"DIRECTORY_INFO",      "NAME",  RAW_SEARCH_DIRECTORY_INFO,      CONT_NAME}
 	};
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 || 
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -742,9 +740,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_search_next io2;
 	union smb_setfileinfo sfinfo;
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 || 
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -862,9 +858,7 @@ static BOOL test_sorted(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct multiple_result result;
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 || 
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
@@ -927,9 +921,7 @@ static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	union smb_search_data *file, *file2, *file3;
 
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1 || 
-	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
