@@ -28,20 +28,33 @@
 #include "smbd/service_task.h"
 
 
-/*
-  refresh a WINS name registration
+/* we send WINS client requests using our primary network interface 
 */
-static void nbtd_refresh_wins_refresh(struct event_context *ev, struct timed_event *te,
-				       struct timeval t, void *private)
+static struct nbt_name_socket *wins_socket(struct nbtd_interface *iface)
+{
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
+	return nbtsrv->interfaces->nbtsock;
+}
+
+
+static void nbtd_wins_refresh(struct event_context *ev, struct timed_event *te,
+			      struct timeval t, void *private);
+
+/*
+  retry a WINS name registration
+*/
+static void nbtd_wins_register_retry(struct event_context *ev, struct timed_event *te,
+				     struct timeval t, void *private)
 {
 	struct nbtd_iface_name *iname = talloc_get_type(private, struct nbtd_iface_name);
-	nbtd_winsclient_refresh(iname);
+	nbtd_winsclient_register(iname);
 }
+
 
 /*
   called when a wins name refresh has completed
 */
-static void nbtd_refresh_wins_handler(struct composite_context *c)
+static void nbtd_wins_refresh_handler(struct composite_context *c)
 {
 	NTSTATUS status;
 	struct nbt_name_refresh_wins io;
@@ -51,15 +64,11 @@ static void nbtd_refresh_wins_handler(struct composite_context *c)
 
 	status = nbt_name_refresh_wins_recv(c, tmp_ctx, &io);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		/* none of the WINS servers responded - try again 
-		   periodically */
-		int wins_retry_time = lp_parm_int(-1, "nbt", "wins_retry", 300);
-		event_add_timed(iname->iface->nbtsrv->task->event_ctx, 
-				iname,
-				timeval_current_ofs(wins_retry_time, 0),
-				nbtd_refresh_wins_refresh,
-				iname);
-		talloc_free(tmp_ctx);
+		/* our WINS server is dead - start registration over
+		   from scratch */
+		DEBUG(2,("Failed to refresh %s<%02x> with WINS server %s\n",
+			 iname->name.name, iname->name.type, iname->wins_server));
+		nbtd_winsclient_register(iname);
 		return;
 	}
 
@@ -71,8 +80,103 @@ static void nbtd_refresh_wins_handler(struct composite_context *c)
 	}	
 
 	if (io.out.rcode != 0) {
-		DEBUG(1,("WINS server %s rejected name refresh of %s<%02x> - rcode %d\n", 
-			 io.out.wins_server, iname->name.name, iname->name.type, io.out.rcode));
+		DEBUG(1,("WINS server %s rejected name refresh of %s<%02x> - %s\n", 
+			 io.out.wins_server, iname->name.name, iname->name.type, 
+			 nt_errstr(nbt_rcode_to_ntstatus(io.out.rcode))));
+		iname->nb_flags |= NBT_NM_CONFLICT;
+		talloc_free(tmp_ctx);
+		return;
+	}	
+
+	DEBUG(4,("Refreshed name %s<%02x> with WINS server %s\n",
+		 iname->name.name, iname->name.type, iname->wins_server));
+	/* success - start a periodic name refresh */
+	iname->nb_flags |= NBT_NM_ACTIVE;
+	if (iname->wins_server) {
+		talloc_free(iname->wins_server);
+	}
+	iname->wins_server = talloc_steal(iname, io.out.wins_server);
+
+	iname->registration_time = timeval_current();
+	event_add_timed(iname->iface->nbtsrv->task->event_ctx, 
+			iname,
+			timeval_add(&iname->registration_time, iname->ttl/2, 0),
+			nbtd_wins_refresh,
+			iname);
+
+	talloc_free(tmp_ctx);
+}
+
+
+/*
+  refresh a WINS name registration
+*/
+static void nbtd_wins_refresh(struct event_context *ev, struct timed_event *te,
+			      struct timeval t, void *private)
+{
+	struct nbtd_iface_name *iname = talloc_get_type(private, struct nbtd_iface_name);
+	struct nbtd_interface *iface = iname->iface;
+	struct nbt_name_refresh_wins io;
+	struct composite_context *c;
+	TALLOC_CTX *tmp_ctx = talloc_new(iname);
+
+	/* setup a wins name refresh request */
+	io.in.name            = iname->name;
+	io.in.wins_servers    = str_list_make(tmp_ctx, iname->wins_server, NULL);
+	io.in.addresses       = nbtd_address_list(iface, tmp_ctx);
+	io.in.nb_flags        = iname->nb_flags;
+	io.in.ttl             = iname->ttl;
+
+	c = nbt_name_refresh_wins_send(wins_socket(iface), &io);
+	if (c == NULL) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+	talloc_steal(c, io.in.addresses);
+
+	c->async.fn = nbtd_wins_refresh_handler;
+	c->async.private = iname;
+
+	talloc_free(tmp_ctx);
+}
+
+
+/*
+  called when a wins name register has completed
+*/
+static void nbtd_wins_register_handler(struct composite_context *c)
+{
+	NTSTATUS status;
+	struct nbt_name_register_wins io;
+	struct nbtd_iface_name *iname = talloc_get_type(c->async.private, 
+							struct nbtd_iface_name);
+	TALLOC_CTX *tmp_ctx = talloc_new(iname);
+
+	status = nbt_name_register_wins_recv(c, tmp_ctx, &io);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		/* none of the WINS servers responded - try again 
+		   periodically */
+		int wins_retry_time = lp_parm_int(-1, "nbtd", "wins_retry", 300);
+		event_add_timed(iname->iface->nbtsrv->task->event_ctx, 
+				iname,
+				timeval_current_ofs(wins_retry_time, 0),
+				nbtd_wins_register_retry,
+				iname);
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("Name register failure with WINS for %s<%02x> - %s\n", 
+			 iname->name.name, iname->name.type, nt_errstr(status)));
+		talloc_free(tmp_ctx);
+		return;
+	}	
+
+	if (io.out.rcode != 0) {
+		DEBUG(1,("WINS server %s rejected name register of %s<%02x> - %s\n", 
+			 io.out.wins_server, iname->name.name, iname->name.type, 
+			 nt_errstr(nbt_rcode_to_ntstatus(io.out.rcode))));
 		iname->nb_flags |= NBT_NM_CONFLICT;
 		talloc_free(tmp_ctx);
 		return;
@@ -89,35 +193,38 @@ static void nbtd_refresh_wins_handler(struct composite_context *c)
 	event_add_timed(iname->iface->nbtsrv->task->event_ctx, 
 			iname,
 			timeval_add(&iname->registration_time, iname->ttl/2, 0),
-			nbtd_refresh_wins_refresh,
+			nbtd_wins_refresh,
 			iname);
+
+	DEBUG(3,("Registered %s<%02x> with WINS server %s\n",
+		 iname->name.name, iname->name.type, iname->wins_server));
 
 	talloc_free(tmp_ctx);
 }
 
 /*
-  refresh a name with our WINS servers
+  register a name with our WINS servers
 */
-void nbtd_winsclient_refresh(struct nbtd_iface_name *iname)
+void nbtd_winsclient_register(struct nbtd_iface_name *iname)
 {
 	struct nbtd_interface *iface = iname->iface;
-	struct nbt_name_refresh_wins io;
+	struct nbt_name_register_wins io;
 	struct composite_context *c;
 
-	/* setup a wins name refresh request */
+	/* setup a wins name register request */
 	io.in.name            = iname->name;
 	io.in.wins_servers    = lp_wins_server_list();
 	io.in.addresses       = nbtd_address_list(iface, iname);
 	io.in.nb_flags        = iname->nb_flags;
 	io.in.ttl             = iname->ttl;
 
-	c = nbt_name_refresh_wins_send(iface->nbtsock, &io);
+	c = nbt_name_register_wins_send(wins_socket(iface), &io);
 	if (c == NULL) {
 		talloc_free(io.in.addresses);
 		return;
 	}
 	talloc_steal(c, io.in.addresses);
 
-	c->async.fn = nbtd_refresh_wins_handler;
+	c->async.fn = nbtd_wins_register_handler;
 	c->async.private = iname;
 }
