@@ -1573,27 +1573,26 @@ char *ads_pull_string(ADS_STRUCT *ads,
  * @return Result strings in talloc context
  **/
 char **ads_pull_strings(ADS_STRUCT *ads, 
-		       TALLOC_CTX *mem_ctx, void *msg, const char *field)
+			TALLOC_CTX *mem_ctx, void *msg, const char *field,
+			size_t *num_values)
 {
 	char **values;
 	char **ret = NULL;
-	int i, n;
+	int i;
 
 	values = ldap_get_values(ads->ld, msg, field);
 	if (!values)
 		return NULL;
 
-	for (i=0;values[i];i++)
-		/* noop */ ;
-	n = i;
+	*num_values = ldap_count_values(values);
 
-	ret = talloc(mem_ctx, sizeof(char *) * (n+1));
+	ret = talloc(mem_ctx, sizeof(char *) * (*num_values+1));
 	if (!ret) {
 		ldap_value_free(values);
 		return NULL;
 	}
 
-	for (i=0;i<n;i++) {
+	for (i=0;i<*num_values;i++) {
 		if (pull_utf8_talloc(mem_ctx, &ret[i], values[i]) == -1) {
 			ldap_value_free(values);
 			return NULL;
@@ -1605,6 +1604,127 @@ char **ads_pull_strings(ADS_STRUCT *ads,
 	return ret;
 }
 
+/**
+ * pull an array of strings from a ADS result 
+ *  (handle large multivalue attributes with range retrieval)
+ * @param ads connection to ads server
+ * @param mem_ctx TALLOC_CTX to use for allocating result string
+ * @param msg Results of search
+ * @param field Attribute to retrieve
+ * @param current_strings strings returned by a previous call to this function
+ * @param next_attribute The next query should ask for this attribute
+ * @param num_values How many values did we get this time?
+ * @param more_values Are there more values to get?
+ * @return Result strings in talloc context
+ **/
+char **ads_pull_strings_range(ADS_STRUCT *ads, 
+			      TALLOC_CTX *mem_ctx,
+			      void *msg, const char *field,
+			      char **current_strings,
+			      const char **next_attribute,
+			      size_t *num_strings,
+			      BOOL *more_strings)
+{
+	char *attr;
+	char *expected_range_attrib, *range_attr;
+	BerElement *ptr = NULL;
+	char **strings;
+	char **new_strings;
+	size_t num_new_strings;
+	unsigned long int range_start;
+	unsigned long int range_end;
+	
+	/* we might have been given the whole lot anyway */
+	if ((strings = ads_pull_strings(ads, mem_ctx, msg, field, num_strings))) {
+		*more_strings = False;
+		return strings;
+	}
+
+	expected_range_attrib = talloc_asprintf(mem_ctx, "%s;Range=", field);
+
+	/* look for Range result */
+	for (attr = ldap_first_attribute(ads->ld, (LDAPMessage *)msg, &ptr); 
+	     attr; 
+	     attr = ldap_next_attribute(ads->ld, (LDAPMessage *)msg, ptr)) {
+		/* we ignore the fact that this is utf8, as all attributes are ascii... */
+		if (strnequal(attr, expected_range_attrib, strlen(expected_range_attrib))) {
+			range_attr = attr;
+			break;
+		}
+		ldap_memfree(attr);
+	}
+	if (!attr) {
+		ber_free(ptr, 0);
+		/* nothing here - this feild is just empty */
+		*more_strings = False;
+		return NULL;
+	}
+	
+	if (sscanf(&range_attr[strlen(expected_range_attrib)], "%lu-%lu", 
+		   &range_start, &range_end) == 2) {
+		*more_strings = True;
+	} else {
+		if (sscanf(&range_attr[strlen(expected_range_attrib)], "%lu-*", 
+			   &range_start) == 1) {
+			*more_strings = False;
+		} else {
+			DEBUG(1, ("ads_pull_strings_range:  Cannot parse Range attriubte (%s)\n", range_attr));
+			ldap_memfree(range_attr);
+			*more_strings = False;
+			return NULL;
+		}
+	}
+
+	if ((*num_strings) != range_start) {
+		DEBUG(1, ("ads_pull_strings_range: Range attribute (%s) doesn't start at %u, but at %lu - aborting range retreival\n",
+			  range_attr, *num_strings + 1, range_start));
+		ldap_memfree(range_attr);
+		*more_strings = False;
+		return NULL;
+	}
+
+	new_strings = ads_pull_strings(ads, mem_ctx, msg, range_attr, &num_new_strings);
+	
+	if (*more_strings && ((*num_strings + num_new_strings) != (range_end + 1))) {
+		DEBUG(1, ("ads_pull_strings_range: Range attribute (%s) tells us we have %lu strings in this bunch, but we only got %lu - aborting range retreival\n",
+			  range_attr, (unsigned long int)range_end - range_start + 1, (unsigned long int)num_new_strings));
+		ldap_memfree(range_attr);
+		*more_strings = False;
+		return NULL;
+	}
+
+	strings = talloc_realloc(mem_ctx, current_strings,
+				 sizeof(*current_strings) *
+				 (*num_strings + num_new_strings));
+	
+	if (strings == NULL) {
+		ldap_memfree(range_attr);
+		*more_strings = False;
+		return NULL;
+	}
+	
+	memcpy(&strings[*num_strings], new_strings,
+	       sizeof(*new_strings) * num_new_strings);
+
+	(*num_strings) += num_new_strings;
+
+	if (*more_strings) {
+		*next_attribute = talloc_asprintf(mem_ctx,
+						  "member;range=%d-*", 
+						  *num_strings);
+		
+		if (!*next_attribute) {
+			DEBUG(1, ("talloc_asprintf for next attribute failed!\n"));
+			ldap_memfree(range_attr);
+			*more_strings = False;
+			return NULL;
+		}
+	}
+
+	ldap_memfree(range_attr);
+
+	return strings;
+}
 
 /**
  * pull a single uint32 from a ADS result
@@ -1956,6 +2076,7 @@ ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *
 	int i;
 	void *res;
 	const char *attrs[] = {"servicePrincipalName", NULL};
+	int num_principals;
 
 	(*workgroup) = NULL;
 
@@ -1968,7 +2089,8 @@ ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *
 		return rc;
 	}
 
-	principles = ads_pull_strings(ads, mem_ctx, res, "servicePrincipalName");
+	principles = ads_pull_strings(ads, mem_ctx, res,
+				      "servicePrincipalName", &num_principals);
 
 	ads_msgfree(ads, res);
 
