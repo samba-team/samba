@@ -150,7 +150,7 @@
 	    <varlistentry>
 		<term>-L libdir</term>
 		<listitem><para>This parameter specifies the location of the 
-		shared libraries used by <command>smbsh</copmmand>. The default
+		shared libraries used by <command>smbsh</command>. The default
 		value is specified at compile time.
 		</para></listitem>
 	    </varlistentry>
