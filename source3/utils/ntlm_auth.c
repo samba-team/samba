@@ -33,7 +33,8 @@ enum squid_mode {
 	SQUID_2_4_BASIC,
 	SQUID_2_5_BASIC,
 	SQUID_2_5_NTLMSSP,
-	GSS_SPNEGO
+	GSS_SPNEGO,
+	GSS_SPNEGO_CLIENT
 };
 	
 
@@ -378,7 +379,7 @@ static void offer_gss_spnego_mechs(void) {
 	}
 
 	reply_base64 = base64_encode_data_blob(token);
-	x_fprintf(x_stdout, "TT %s\n", reply_base64);
+	x_fprintf(x_stdout, "TT %s *\n", reply_base64);
 
 	SAFE_FREE(reply_base64);
 	data_blob_free(&token);
@@ -393,9 +394,11 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 	SPNEGO_DATA spnego;
 	DATA_BLOB request, token;
 	NTSTATUS status;
-	char *reply_base64;
-	pstring reply;
 	ssize_t len;
+
+	const char *reply_code;
+	char       *reply_base64;
+	pstring     reply_argument;
 
 	if (strlen(buf) < 2) {
 
@@ -430,8 +433,8 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 	}
 
 	request = base64_decode_data_blob(buf + 3);
-
 	len = read_spnego_data(request, &spnego);
+	data_blob_free(&request);
 
 	if (len == -1) {
 		DEBUG(1, ("GSS-SPNEGO query [%s] invalid", buf));
@@ -470,7 +473,6 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 			DEBUG(1, ("Client wants a new NTLMSSP challenge, but "
 				  "already got one\n"));
 			x_fprintf(x_stdout, "BH\n");
-
 			ntlmssp_server_end(&ntlmssp_state);
 			return;
 		}
@@ -488,7 +490,7 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 
 		spnego.type = SPNEGO_NEG_TOKEN_TARG;
 		spnego.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
-		spnego.negTokenTarg.supportedMech = OID_NTLMSSP;
+		spnego.negTokenTarg.supportedMech = strdup(OID_NTLMSSP);
 
 		status = ntlmssp_server_update(ntlmssp_state,
 					       spnego.negTokenInit.mechToken,
@@ -516,25 +518,20 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 
 	}
 
-	if ( !NT_STATUS_IS_OK(status) && 
-	     !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) ) {
-
-		/* Neither ok nor more work to do, so reject */
-
-		x_fprintf(x_stdout, "NA %s\n", nt_errstr(status));
-		DEBUG(10, ("NTLMSSP %s\n", nt_errstr(status)));
-		return;
-	}
-
-	pstr_sprintf(reply, "TT");
-
 	if (NT_STATUS_IS_OK(status)) {
-		pstr_sprintf(reply, "AF %s\\%s",
-			     ntlmssp_state->domain, ntlmssp_state->user);
-
 		spnego.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
-
-		DEBUG(10, ("NTLMSSP OK!\n"));
+		reply_code = "AF";
+		pstr_sprintf(reply_argument, "%s\\%s",
+			     ntlmssp_state->domain, ntlmssp_state->user);
+	} else if (NT_STATUS_EQUAL(status,
+				   NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		spnego.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
+		reply_code = "TT";
+		pstr_sprintf(reply_argument, "*");
+	} else {
+		spnego.negTokenTarg.negResult = SPNEGO_REJECT;
+		reply_code = "NA";
+		pstrcpy(reply_argument, nt_errstr(status));
 	}
 
 	len = write_spnego_data(&token, &spnego);
@@ -547,7 +544,10 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 	}
 
 	reply_base64 = base64_encode_data_blob(token);
-	x_fprintf(x_stdout, "%s %s\n", reply, reply_base64);
+
+	x_fprintf(x_stdout, "%s %s %s\n",
+		  reply_code, reply_base64, reply_argument);
+
 	SAFE_FREE(reply_base64);
 	data_blob_free(&token);
 
@@ -555,6 +555,287 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 		ntlmssp_server_end(&ntlmssp_state);
 	}
 
+	return;
+}
+
+static NTLMSSP_CLIENT_STATE *client_ntlmssp_state = NULL;
+
+static void manage_client_ntlmssp_init(SPNEGO_DATA spnego)
+{
+	NTSTATUS status;
+	DATA_BLOB null_blob = data_blob(NULL, 0);
+	DATA_BLOB to_server;
+	char *to_server_base64;
+	const char *my_mechs[] = {OID_NTLMSSP, NULL};
+
+	DEBUG(10, ("Got spnego negTokenInit with NTLMSSP\n"));
+
+	if (client_ntlmssp_state != NULL) {
+		DEBUG(1, ("Request for initial SPNEGO request where "
+			  "we already have a state\n"));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	if ( (opt_username == NULL) || (opt_domain == NULL) ) {
+		DEBUG(1, ("Need username and domain for NTLMSSP\n"));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	if (opt_password == NULL) {
+
+		/* Request a password from the calling process.  After
+		   sending it, the calling process should retry with
+		   the negTokenInit. */
+
+		DEBUG(10, ("Requesting password\n"));
+		x_fprintf(x_stdout, "PW\n");
+		return;
+	}
+
+	status = ntlmssp_client_start(&client_ntlmssp_state);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not start NTLMSSP client: %s\n",
+			  nt_errstr(status)));
+		x_fprintf(x_stdout, "BH\n");
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return;
+	}
+
+	status = ntlmssp_set_username(client_ntlmssp_state, opt_username);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not set username: %s\n",
+			  nt_errstr(status)));
+		x_fprintf(x_stdout, "BH\n");
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return;
+	}
+
+	status = ntlmssp_set_domain(client_ntlmssp_state, opt_domain);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not set domain: %s\n",
+			  nt_errstr(status)));
+		x_fprintf(x_stdout, "BH\n");
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return;
+	}
+
+	status = ntlmssp_set_password(client_ntlmssp_state, opt_password);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not set password: %s\n",
+			  nt_errstr(status)));
+		x_fprintf(x_stdout, "BH\n");
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return;
+	}
+
+	spnego.type = SPNEGO_NEG_TOKEN_INIT;
+	spnego.negTokenInit.mechTypes = my_mechs;
+	spnego.negTokenInit.reqFlags = 0;
+	spnego.negTokenInit.mechListMIC = null_blob;
+
+	status = ntlmssp_client_update(client_ntlmssp_state, null_blob,
+				       &spnego.negTokenInit.mechToken);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		DEBUG(1, ("Expected MORE_PROCESSING_REQUIRED, got: %s\n",
+			  nt_errstr(status)));
+		x_fprintf(x_stdout, "BH\n");
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return;
+	}
+
+	write_spnego_data(&to_server, &spnego);
+	data_blob_free(&spnego.negTokenInit.mechToken);
+
+	to_server_base64 = base64_encode_data_blob(to_server);
+	data_blob_free(&to_server);
+	x_fprintf(x_stdout, "KK %s\n", to_server_base64);
+	SAFE_FREE(to_server_base64);
+	return;
+}
+
+static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
+{
+	NTSTATUS status;
+	DATA_BLOB null_blob = data_blob(NULL, 0);
+	DATA_BLOB request;
+	DATA_BLOB to_server;
+	char *to_server_base64;
+
+	DEBUG(10, ("Got spnego negTokenTarg with NTLMSSP\n"));
+
+	if (client_ntlmssp_state == NULL) {
+		DEBUG(1, ("Got NTLMSSP tArg without a client state\n"));
+		x_fprintf(x_stdout, "BH\n");
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return;
+	}
+
+	if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
+		x_fprintf(x_stdout, "NA\n");
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return;
+	}
+
+	if (spnego.negTokenTarg.negResult == SPNEGO_ACCEPT_COMPLETED) {
+		x_fprintf(x_stdout, "AF\n");
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return;
+	}
+
+	status = ntlmssp_client_update(client_ntlmssp_state,
+				       spnego.negTokenTarg.responseToken,
+				       &request);
+		
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		DEBUG(1, ("Expected MORE_PROCESSING_REQUIRED from "
+			  "ntlmssp_client_update, got: %s\n",
+			  nt_errstr(status)));
+		x_fprintf(x_stdout, "BH\n");
+		data_blob_free(&request);
+		ntlmssp_client_end(&client_ntlmssp_state);
+		return;
+	}
+
+	spnego.type = SPNEGO_NEG_TOKEN_TARG;
+	spnego.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
+	spnego.negTokenTarg.supportedMech = OID_NTLMSSP;
+	spnego.negTokenTarg.responseToken = request;
+	spnego.negTokenTarg.mechListMIC = null_blob;
+	
+	write_spnego_data(&to_server, &spnego);
+	data_blob_free(&request);
+
+	to_server_base64 = base64_encode_data_blob(to_server);
+	data_blob_free(&to_server);
+	x_fprintf(x_stdout, "KK %s\n", to_server_base64);
+	SAFE_FREE(to_server_base64);
+	return;
+}
+
+static void manage_client_krb5_init(SPNEGO_DATA spnego)
+{
+	DEBUG(1, ("to be done ... \n"));
+	x_fprintf(x_stdout, "BH\n");
+	return;
+}
+
+static void manage_client_krb5_targ(SPNEGO_DATA spnego)
+{
+	DEBUG(1, ("Got a negTokenTarg with a Kerberos token. This should not "
+		  "happen!\n"));
+	x_fprintf(x_stdout, "BH\n");
+	return;
+}
+
+static void manage_gss_spnego_client_request(enum squid_mode squid_mode,
+					     char *buf, int length) 
+{
+	DATA_BLOB request;
+	SPNEGO_DATA spnego;
+	ssize_t len;
+
+	if (strlen(buf) <= 3) {
+		DEBUG(1, ("SPNEGO query [%s] too short\n", buf));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	request = base64_decode_data_blob(buf+3);
+
+	if (strncmp(buf, "PW ", 3) == 0) {
+
+		/* We asked for a password and obviously got it :-) */
+
+		opt_password = strndup(request.data, request.length);
+
+		if (opt_password == NULL) {
+			DEBUG(1, ("Out of memory\n"));
+			x_fprintf(x_stdout, "BH\n");
+			data_blob_free(&request);
+			return;
+		}
+
+		x_fprintf(x_stdout, "OK\n");
+		data_blob_free(&request);
+		return;
+	}
+
+	if ( (strncmp(buf, "TT ", 3) != 0) &&
+	     (strncmp(buf, "AF ", 3) != 0) &&
+	     (strncmp(buf, "NA ", 3) != 0) ) {
+		DEBUG(1, ("SPNEGO request [%s] invalid\n", buf));
+		x_fprintf(x_stdout, "BH\n");
+		data_blob_free(&request);
+		return;
+	}
+
+	/* So we got a server challenge to generate a SPNEGO
+           client-to-server request... */
+
+	len = read_spnego_data(request, &spnego);
+	data_blob_free(&request);
+
+	if (len == -1) {
+		DEBUG(1, ("Could not read SPNEGO data for [%s]\n", buf));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	if (spnego.type == SPNEGO_NEG_TOKEN_INIT) {
+
+		/* The server offers a list of mechanisms */
+
+		const char **mechType = spnego.negTokenInit.mechTypes;
+
+		while (*mechType != NULL) {
+
+			if (strcmp(*mechType, OID_NTLMSSP) == 0) {
+				manage_client_ntlmssp_init(spnego);
+				goto out;
+			}
+
+			if (strcmp(*mechType, OID_KERBEROS5_OLD) == 0) {
+				manage_client_krb5_init(spnego);
+				goto out;
+			}
+
+			mechType++;
+		}
+
+		DEBUG(1, ("Server offered no compatible mechanism\n"));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	if (spnego.type == SPNEGO_NEG_TOKEN_TARG) {
+
+		if (strcmp(spnego.negTokenTarg.supportedMech,
+			   OID_NTLMSSP) == 0) {
+			manage_client_ntlmssp_targ(spnego);
+			goto out;
+		}
+
+		if (strcmp(spnego.negTokenTarg.supportedMech,
+			   OID_KERBEROS5_OLD) == 0) {
+			manage_client_krb5_targ(spnego);
+			goto out;
+		}
+
+	}
+
+	DEBUG(1, ("Got an SPNEGO token I could not handle [%s]!\n", buf));
+	x_fprintf(x_stdout, "BH\n");
+	return;
+
+ out:
+	free_spnego_data(&spnego);
 	return;
 }
 
@@ -601,6 +882,8 @@ static void manage_squid_request(enum squid_mode squid_mode)
 		manage_squid_ntlmssp_request(squid_mode, buf, length);
 	} else if (squid_mode == GSS_SPNEGO) {
 		manage_gss_spnego_request(squid_mode, buf, length);
+	} else if (squid_mode == GSS_SPNEGO_CLIENT) {
+		manage_gss_spnego_client_request(squid_mode, buf, length);
 	}
 }
 
@@ -1554,6 +1837,8 @@ enum {
 			squid_stream(SQUID_2_4_BASIC);
 		} else if (strcmp(helper_protocol, "gss-spnego")== 0) {
 			squid_stream(GSS_SPNEGO);
+		} else if (strcmp(helper_protocol, "gss-spnego-client") == 0) {
+			squid_stream(GSS_SPNEGO_CLIENT);
 		} else {
 			x_fprintf(x_stderr, "unknown helper protocol [%s]\n", helper_protocol);
 			exit(1);
