@@ -305,6 +305,102 @@ static BOOL exact_match(char *str,char *mask, BOOL case_sig)
 	return strcasecmp(str,mask) == 0;
 }
 
+#if 0
+
+Not finished yet - jra.
+
+/****************************************************************************
+ Return the filetype for UNIX extensions.
+****************************************************************************/
+
+static uint32 unix_filetype(mode_t mode)
+{
+	if(S_ISREG(mode))
+		return UNIX_TYPE_FILE;
+	else if(S_ISDIR(mode))
+		return UNIX_TYPE_DIR;
+#ifdef S_ISLNK
+	else if(S_ISLNK(mode))
+		return UNIX_TYPE_SYMLINK;
+#endif
+#ifdef S_ISCHR
+	else if(S_ISCHR(mode))
+		return UNIX_TYPE_CHARDEV;
+#endif
+#ifdef S_ISBLK
+	else if(S_ISBLK(mode))
+		return UNIX_TYPE_BLKDEV;
+#endif
+#ifdef S_ISFIFO
+	else if(S_ISFIFO(mode))
+		return UNIX_TYPE_FIFO;
+#endif
+#ifdef S_ISSOCK
+	else if(S_ISSOCK(mode))
+		return UNIX_TYPE_SOCKET;
+#endif
+
+	DEBUG(0,("unix_filetype: unknown filetype %u", (unsigned)mode));
+	return UNIX_TYPE_UNKNOWN;
+}
+
+/****************************************************************************
+ Return the major devicenumber for UNIX extensions.
+****************************************************************************/
+
+static uint32 unix_dev_major(SMB_DEV_T dev)
+{
+#if defined(HAVE_DEVICE_MAJOR_FN)
+	return (uint32)major(dev);
+#else
+	return (uint32)(dev >> 8);
+#endif
+}
+
+/****************************************************************************
+ Return the minor devicenumber for UNIX extensions.
+****************************************************************************/
+
+static uint32 unix_dev_minor(SMB_DEV_T dev)
+{
+#if defined(HAVE_DEVICE_MINOR_FN)
+	return (uint32)minor(dev);
+#else
+	return (uint32)(dev & 0xff);
+#endif
+}
+
+/****************************************************************************
+ Map standard UNIX permissions onto wire representations.
+****************************************************************************/
+
+static uint32  unix_perms_to_wire(mode_t perms)
+{
+	uint ret = 0;
+
+	ret |= ((perms & S_IXOTH) ?  UNIX_X_OTH : 0);
+	ret |= ((perms & S_IWOTH) ?  UNIX_W_OTH : 0);
+	ret |= ((perms & S_IROTH) ?  UNIX_R_OTH : 0);
+	ret |= ((perms & S_IXGRP) ?  UNIX_X_GRP : 0);
+	ret |= ((perms & S_IWGRP) ?  UNIX_W_GRP : 0);
+	ret |= ((perms & S_IRGRP) ?  UNIX_R_GRP : 0);
+	ret |= ((perms & S_IXUSR) ?  UNIX_X_USR : 0);
+	ret |= ((perms & S_IWUSR) ?  UNIX_W_USR : 0);
+	ret |= ((perms & S_IRUSR) ?  UNIX_R_USR : 0);
+#ifdef S_ISVTX
+	ret |= ((perms & S_ISVTX) ?  UNIX_STICKY : 0);
+#endif
+#ifdef S_ISGID
+	ret |= ((perms & S_ISGID) ?  UNIX_SET_GID : 0);
+#endif
+#ifdef S_ISUID
+	ret |= ((perms & S_ISVTX) ?  UNIX_SET_UID : 0);
+#endif
+	return ret;
+}
+
+#endif
+
 /****************************************************************************
  Get a level dependent lanman2 dir entry.
 ****************************************************************************/
@@ -406,7 +502,13 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				pstrcat(pathreal,"/");
 			pstrcat(pathreal,dname);
 
-			if (vfs_stat(conn,pathreal,&sbuf) != 0) {
+			if (INFO_LEVEL_IS_UNIX(info_level)) {
+				if (vfs_lstat(conn,pathreal,&sbuf) != 0) {
+					DEBUG(5,("get_lanman2_dir_entry:Couldn't lstat [%s] (%s)\n",
+						pathreal,strerror(errno)));
+					continue;
+				}
+			} else if (vfs_stat(conn,pathreal,&sbuf) != 0) {
 				/* Needed to show the msdfs symlinks as directories */
 				if(!lp_host_msdfs() || !lp_msdfs_root(SNUM(conn)) 
 						|| !is_msdfs_link(conn, pathreal)) {
@@ -587,6 +689,72 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(pdata,0,len);
 			p = pdata + len;
 			break;
+
+		/* CIFS UNIX Extension. */
+
+#if 0 /* JRA - FIXME - NEEDS UNICODE CONVERSION !!! */
+		case SMB_FIND_FILE_UNIX:
+
+			len = 108+strlen(fname)+1;	/* (length of SMB_QUERY_FILE_UNIX_BASIC = 100)+4+4+strlen(fname)*/
+							/* +1 to be sure to transmit the termination of fname */
+			len = (len + 3) & ~3;
+
+			SIVAL(p,0,len); p+= 4;       /* Offset from this structure to the beginning of the next one */
+			SIVAL(p,0,reskey); p+= 4;    /* Used for continuing search. */
+
+			/* Begin of SMB_QUERY_FILE_UNIX_BASIC */
+			SOFF_T(p,0,sbuf.st_size);             /* File size 64 Bit */
+			p+= 8;
+
+#if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
+			SOFF_T(p,0,sbuf.st_blocks*STAT_ST_BLOCKSIZE); /* Number of bytes used on disk - 64 Bit */
+#else
+			/* Can't get the value - fake it using size. */
+			SOFF_T(p,0,sbuf.st_size);             /* Number of bytes used on disk - 64 Bit */
+#endif
+			p+= 8;
+
+			put_long_date(p,sbuf.st_ctime);       /* Creation Time 64 Bit */
+			put_long_date(p+8,sbuf.st_atime);     /* Last access time 64 Bit */
+			put_long_date(p+16,sbuf.st_mtime);    /* Last modification time 64 Bit */
+			p+= 24;
+
+			SIVAL(p,0,sbuf.st_uid);               /* user id for the owner */
+			SIVAL(p,4,0);
+			p+= 8;
+
+			SIVAL(p,0,sbuf.st_gid);               /* group id of owner */
+			SIVAL(p,4,0);
+			p+= 8;
+
+			SIVAL(p,0,unix_filetype(sbuf.st_mode));
+			p+= 4;
+
+			SIVAL(p,0,unix_dev_major(sbuf.st_rdev));   /* Major device number if type is device */
+			SIVAL(p,4,0);
+			p+= 8;
+
+			SIVAL(p,0,unix_dev_minor(sbuf.st_rdev));   /* Minor device number if type is device */
+			SIVAL(p,4,0);
+			p+= 8;
+
+			SINO_T(p,0,(SMB_INO_T)sbuf.st_ino);   /* inode number */
+			p+= 8;
+
+			SIVAL(p,0, unix_perms_to_wire(sbuf.st_mode));     /* Standard UNIX file permissions */
+			SIVAL(p,4,0);
+			p+= 8;
+
+			SIVAL(p,0,sbuf.st_nlink);             /* number of hard links */
+			SIVAL(p,4,0);
+			p+= 8;
+
+			/* End of SMB_QUERY_FILE_UNIX_BASIC */
+			pstrcpy(p,fname);
+			p=pdata+len;
+
+			break;
+#endif
 
 		default:      
 			return(False);
