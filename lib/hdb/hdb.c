@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -306,7 +306,7 @@ hdb_create(krb5_context context, HDB **db, const char *filename)
     krb5_error_code ret = 0;
     if(filename == NULL)
 	filename = HDB_DEFAULT_DB;
-    initialize_hdb_error_table(&context->et_list);
+    initialize_hdb_error_table_r(&context->et_list);
 #ifdef HAVE_DB_H
     ret = hdb_db_create(context, db, filename);
 #elif HAVE_NDBM_H
