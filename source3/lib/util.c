@@ -2262,8 +2262,10 @@ BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
   {
     ret = receive_smb(fd, buffer, timeout);
 
-    if(ret == False)
+    if (!ret)
+    {
       return ret;
+    }
 
     /* Ignore session keepalive packets. */
     if(CVAL(buffer,0) != 0x85)

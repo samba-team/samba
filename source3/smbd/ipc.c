@@ -3101,6 +3101,7 @@ static void api_rpc_trans_reply(char *outbuf,
 		/* all of data was sent: no need to wait for SMBreadX calls */
 		mem_free_data(p->rhdr .data);
 		mem_free_data(p->rdata.data);
+ 		mem_free_data(p->rdata_i.data);
 	}
 }
 
@@ -3190,20 +3191,12 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 	int subcommand;
 	pipes_struct *p = NULL;
 	prs_struct pd;
-	struct mem_buf data_buf;
 
 	DEBUG(5,("api_fd_reply\n"));
 
-	/* fake up a data buffer from the api_fd_reply data parameters */
-	mem_create(&data_buf, data, tdscnt, 0, False);
-	data_buf.offset.start = 0;
-	data_buf.offset.end   = tdscnt;
-
-	/* fake up a parsing structure */
-	pd.data = &data_buf;
-	pd.align = 4;
-	pd.io = True;
-	pd.offset = 0;
+ 	/* make a static data parsing structure from the api_fd_reply data */
+ 	prs_init(&pd, 0, 4, True, 0);
+ 	mem_create(pd.data, data, 0, tdscnt, 0, False);
 
 	/* First find out the name of this file. */
 	if (suwcnt != 2)
@@ -3258,6 +3251,8 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 	{
 		DEBUG(1,("api_fd_reply: INVALID PIPE HANDLE: %x\n", pnum));
 	}
+
+ 	mem_free_data(pd.data);
 
 	if (!reply)
 	{
@@ -3410,14 +3405,8 @@ static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data
 		    &rdata,&rparam,&rdata_len,&rparam_len);
 
       
-  mem_create(&rdata_buf , rdata , rdata_len , 0, False);
-  mem_create(&rparam_buf, rparam, rparam_len, 0, False);
-
-  rdata_buf.offset.start = 0;
-  rdata_buf.offset.end   = rdata_len;
-
-  rparam_buf.offset.start = 0;
-  rparam_buf.offset.end   = rparam_len;
+  mem_create(&rdata_buf , rdata , 0, rdata_len , 0, False);
+  mem_create(&rparam_buf, rparam, 0, rparam_len, 0, False);
 
   /* now send the reply */
   send_trans_reply(outbuf, &rdata_buf, &rparam_buf, NULL, 0, 0);

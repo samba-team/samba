@@ -3,8 +3,8 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
+ *  Copyright (C) Andrew Tridgell              1992-1998,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -175,7 +175,7 @@ ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
 	dump_data(50, data, n);
 
 	/* fake up a data buffer from the write_pipe data parameters */
-	mem_create(&data_buf, data, n, 0, False);
+	mem_create(&data_buf, data, 0, n, 0, False);
 	data_buf.offset.start = 0;
 	data_buf.offset.end   = n;
 
@@ -196,7 +196,7 @@ ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
  this function is called, the start of the data could possibly have been
  read by an SMBtrans (file_offset != 0).
 
- calling create_rpc_request() here is a fudge.  the data should already
+ calling create_rpc_reply() here is a fudge.  the data should already
  have been prepared into arrays of headers + data stream sections.
 
  ****************************************************************************/
@@ -268,8 +268,6 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 			mem_buf_copy(data, p->rhdr.data, 0, 0x18);
 			
 			data += 0x18;
-			p->frag_len_left = p->hdr.frag_len;
-			p->next_frag_start += p->hdr.frag_len;
 			p->hdr_offsets += 0x18;
 		}			
 	}

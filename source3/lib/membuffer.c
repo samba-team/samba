@@ -79,7 +79,7 @@ void mem_init(struct mem_buf *buf, int margin)
  dynamic indicates memory has been dynamically allocated.
  if mem_free is called, the memory will be freed.
  ********************************************************************/
-void mem_create(struct mem_buf *buf, char *data, int size, int margin, BOOL dynamic)
+void mem_create(struct mem_buf *buf, char *data, int offset, int size, int margin, BOOL dynamic)
 {
 	buf->dynamic   = dynamic;
 	buf->data      = data;
@@ -90,8 +90,8 @@ void mem_create(struct mem_buf *buf, char *data, int size, int margin, BOOL dyna
 
 	buf->next      = NULL;
 
-	buf->offset.start = 0;
-	buf->offset.end   = size;
+	buf->offset.start = offset;
+	buf->offset.end   = offset + size;
 }
 
 /*******************************************************************
@@ -109,7 +109,7 @@ BOOL mem_alloc_data(struct mem_buf *buf, int size)
 
 	buf->data = malloc(buf->data_size);
 
-	if (buf->data == NULL)
+	if (buf->data == NULL && size != 0)
 	{
 		DEBUG(3,("mem_alloc: could not malloc size %d\n",
 					  buf->data_size));

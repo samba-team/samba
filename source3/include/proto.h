@@ -122,7 +122,7 @@ void mdfour(unsigned char *out, unsigned char *in, int n);
 /*The following definitions come from  lib/membuffer.c  */
 
 void mem_init(struct mem_buf *buf, int margin);
-void mem_create(struct mem_buf *buf, char *data, int size, int margin, BOOL dynamic);
+void mem_create(struct mem_buf *buf, char *data, int offset, int size, int margin, BOOL dynamic);
 BOOL mem_alloc_data(struct mem_buf *buf, int size);
 BOOL mem_buf_copy(char *copy_into, struct mem_buf *buf,
 				uint32 offset, uint32 len);

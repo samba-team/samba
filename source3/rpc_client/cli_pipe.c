@@ -54,11 +54,9 @@ static BOOL rpc_read(struct cli_state *cli,
 	int size = cli->max_recv_frag;
 	int file_offset = rdata_offset;
 	int num_read;
-	char *data = rdata->data->data;
+	char *data;
 	uint32 err;
 	uint32 new_data_size = rdata->data->data_used + data_to_read;
-
-	data += rdata_offset;
 
 	file_offset -= rdata_offset;
 
@@ -70,6 +68,8 @@ static BOOL rpc_read(struct cli_state *cli,
 		mem_grow_data(&rdata->data, True, new_data_size, True);
 		DEBUG(5,("rpc_read: grow buffer to %d\n", rdata->data->data_used));
 	}
+
+	data = rdata->data->data + rdata_offset;
 
 	do /* read data using SMBreadX */
 	{
@@ -84,7 +84,7 @@ static BOOL rpc_read(struct cli_state *cli,
 			DEBUG(5,("rpc_read: grow buffer to %d\n", rdata->data->data_used));
 		}
 
-		num_read = cli_read(cli, cli->nt_pipe_fnum, data, file_offset + 0x100000, size);
+		num_read = cli_read(cli, cli->nt_pipe_fnum, data, file_offset, size);
 
 		DEBUG(5,("rpc_read: read offset: %d read: %d to read: %d\n",
 		          file_offset, num_read, data_to_read));
@@ -101,9 +101,10 @@ static BOOL rpc_read(struct cli_state *cli,
 	mem_realloc_data(rdata->data, file_offset + rdata_offset);
 	rdata->data->offset.end = file_offset + rdata_offset;
 
-	DEBUG(5,("rpc_read: data supposedly left to read:0x%x\n", data_to_read));
+	DEBUG(5,("rpc_read: offset end: 0x%x.  data left to read:0x%x\n",
+	          rdata->data->offset.end, data_to_read));
 
-	return data_to_read == 0;
+	return data_to_read >= 0;
 }
 
 /****************************************************************************

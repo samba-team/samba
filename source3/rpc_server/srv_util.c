@@ -165,6 +165,9 @@ int make_dom_gids(char *gids_str, DOM_GID **ppgids)
 BOOL create_rpc_reply(pipes_struct *p,
 				uint32 data_start, uint32 data_end)
 {
+	char *data;
+	uint32 data_len;
+
 	DEBUG(5,("create_rpc_reply: data_start: %d data_end: %d max_tsize: %d\n",
 	          data_start, data_end, p->hdr_ba.bba.max_tsize));
 
@@ -197,6 +200,8 @@ BOOL create_rpc_reply(pipes_struct *p,
 		p->hdr.frag_len = p->hdr_ba.bba.max_tsize;
 	}
 
+	data_len = p->hdr.frag_len;
+
 	p->rhdr.data->offset.start = 0;
 	p->rhdr.data->offset.end   = 0x18;
 
@@ -204,6 +209,20 @@ BOOL create_rpc_reply(pipes_struct *p,
 	p->rhdr.offset = 0;
 	smb_io_rpc_hdr   ("hdr", &(p->hdr   ), &(p->rhdr), 0);
 	smb_io_rpc_hdr_resp("resp", &(p->hdr_resp), &(p->rhdr), 0);
+
+	p->frag_len_left   = p->hdr.frag_len - p->file_offset;
+	p->next_frag_start = p->hdr.frag_len; 
+	
+	/* don't use rdata: use rdata_i instead, which moves... */
+	/* make a pointer to the rdata data.  NOT A COPY */
+
+	prs_init(&p->rdata_i, 0, p->rdata.align, p->rdata.data->margin, p->rdata.io);
+	data = mem_data(&(p->rdata.data), data_start);
+	mem_create(p->rdata_i.data, data, data_start, data_len, 0, False); 
+
+	/* set up the data chain */
+	prs_link(NULL    , &p->rhdr   , &p->rdata_i);
+	prs_link(&p->rhdr, &p->rdata_i, NULL       );
 
 	return p->rhdr.data != NULL && p->rhdr.offset == 0x18;
 }
@@ -702,18 +721,6 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 	{
 		return False;
 	}
-
-	p->frag_len_left   = p->hdr.frag_len - p->file_offset;
-	p->next_frag_start = p->hdr.frag_len; 
-	
-	/* set up the data chain */
-	p->rhdr.data->offset.start = 0;
-	p->rhdr.data->offset.end   = p->rhdr.offset;
-	p->rhdr.data->next = p->rdata.data;
-
-	p->rdata.data->offset.start = p->rhdr.data->offset.end;
-	p->rdata.data->offset.end   = p->rhdr.data->offset.end + p->rdata.offset;
-	p->rdata.data->next = NULL;
 
 	return True;
 }

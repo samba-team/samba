@@ -67,6 +67,7 @@ typedef struct pipes_struct
 
 	prs_struct rhdr; /* output header */
 	prs_struct rdata; /* output data */
+	prs_struct rdata_i; /* output data (intermediate, for fragments) */
 	prs_struct rauth; /* output authentication verifier */
 	prs_struct rverf; /* output verifier */
 	prs_struct rntlm; /* output ntlmssp */
