@@ -397,15 +397,20 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		break;
 
 	case LIBNDR_FLAG_STR_NULLTERM:
+		len1 = strnlen_w(ndr->data+ndr->offset, 
+				 (ndr->data_size - ndr->offset)/2);
+		if (len1*2+2 <= ndr->data_size - ndr->offset) {
+			len1++;
+		}
 		ret = convert_string_talloc(ndr->mem_ctx, CH_UCS2, CH_UNIX, 
 					    ndr->data+ndr->offset, 
-					    ndr->data_size - ndr->offset,
+					    len1*2,
 					    (const void **)s);
 		if (ret == -1) {
 			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 					      "Bad character conversion");
 		}
-		NDR_CHECK(ndr_pull_advance(ndr, ret));
+		NDR_CHECK(ndr_pull_advance(ndr, len1*2));
 		break;
 
 	case LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4:
