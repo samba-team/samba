@@ -355,3 +355,11 @@ struct in_addr *iface_ip(struct in_addr ip)
 	struct interface *i = iface_find(ip, True);
 	return(i ? &i->ip : &local_interfaces->ip);
 }
+
+/*
+  return True if a IP is directly reachable on one of our interfaces
+*/
+BOOL iface_local(struct in_addr ip)
+{
+	return iface_find(ip, True) ? True : False;
+}
