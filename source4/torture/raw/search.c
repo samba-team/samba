@@ -185,8 +185,8 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 #define CHECK_VAL(name, sname1, field1, v, sname2, field2) do { \
 	s = find(name); \
 	if (s) { \
-		if (s->sname1.field1 != v.sname2.out.field2) { \
-			printf("(%d) %s/%s [%d] != %s/%s [%d]\n", \
+		if ((s->sname1.field1) != (v.sname2.out.field2)) { \
+			printf("(%d) %s/%s [0x%x] != %s/%s [0x%x]\n", \
 			       __LINE__, \
 				#sname1, #field1, (int)s->sname1.field1, \
 				#sname2, #field2, (int)v.sname2.out.field2); \
@@ -272,9 +272,9 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}} while (0)
 	
 	/* check that all the results are as expected */
-	CHECK_VAL("SEARCH",              search,              attrib, all_info, all_info, attrib);
-	CHECK_VAL("STANDARD",            standard,            attrib, all_info, all_info, attrib);
-	CHECK_VAL("EA_SIZE",             ea_size,             attrib, all_info, all_info, attrib);
+	CHECK_VAL("SEARCH",              search,              attrib, all_info, all_info, attrib&0xFFF);
+	CHECK_VAL("STANDARD",            standard,            attrib, all_info, all_info, attrib&0xFFF);
+	CHECK_VAL("EA_SIZE",             ea_size,             attrib, all_info, all_info, attrib&0xFFF);
 	CHECK_VAL("DIRECTORY_INFO",      directory_info,      attrib, all_info, all_info, attrib);
 	CHECK_VAL("FULL_DIRECTORY_INFO", full_directory_info, attrib, all_info, all_info, attrib);
 	CHECK_VAL("BOTH_DIRECTORY_INFO", both_directory_info, attrib, all_info, all_info, attrib);
@@ -451,6 +451,10 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 					io2.t2fnext.in.resume_key = 
 						result->list[result->count-1].both_directory_info.file_index;
 				}
+				if (io2.t2fnext.in.resume_key == 0) {
+					printf("Server does not support resume by key\n");
+					return NT_STATUS_NOT_SUPPORTED;
+				}
 				io2.t2fnext.in.flags = FLAG_TRANS2_FIND_REQUIRE_RESUME |
 					FLAG_TRANS2_FIND_BACKUP_INTENT;
 				break;
@@ -599,7 +603,11 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 					 search_types[t].cont_type,
 					 &result);
 	
-		CHECK_STATUS(status, NT_STATUS_OK);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("search failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
 		CHECK_VALUE(result.count, num_files);
 
 		if (search_types[t].level == RAW_SEARCH_BOTH_DIRECTORY_INFO) {
@@ -649,6 +657,217 @@ done:
 	return ret;
 }
 
+/*
+  check a individual file result
+*/
+static BOOL check_result(struct multiple_result *result, const char *name, BOOL exist, uint32_t attrib)
+{
+	int i;
+	for (i=0;i<result->count;i++) {
+		if (strcmp(name, result->list[i].both_directory_info.name.s) == 0) break;
+	}
+	if (i == result->count) {
+		if (exist) {
+			printf("failed: '%s' should exist with attribute %s\n", 
+			       name, attrib_string(NULL, attrib));
+			return False;
+		}
+		return True;
+	}
+
+	if (!exist) {
+		printf("failed: '%s' should NOT exist (has attribute %s)\n", 
+		       name, attrib_string(NULL, result->list[i].both_directory_info.attrib));
+		return False;
+	}
+
+	if ((result->list[i].both_directory_info.attrib&0xFFF) != attrib) {
+		printf("failed: '%s' should have attribute 0x%x (has 0x%x)\n",
+		       name, 
+		       attrib, result->list[i].both_directory_info.attrib);
+		return False;
+	}
+	return True;
+}
+
+/* 
+   test what happens when the directory is modified during a search
+*/
+static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	const int num_files = 20;
+	int i, fnum;
+	char *fname;
+	BOOL ret = True;
+	NTSTATUS status;
+	struct multiple_result result;
+	union smb_search_first io;
+	union smb_search_next io2;
+	union smb_setfileinfo sfinfo;
+
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 || 
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
+		return False;
+	}
+
+	printf("Creating %d files\n", num_files);
+
+	for (i=0;i<num_files;i++) {
+		asprintf(&fname, BASEDIR "\\t%03d-%d.txt", i, i);
+		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
+		if (fnum == -1) {
+			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
+			ret = False;
+			goto done;
+		}
+		free(fname);
+		smbcli_close(cli->tree, fnum);
+	}
+
+	printf("pulling the first 10 files\n");
+	ZERO_STRUCT(result);
+
+	io.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
+	io.t2ffirst.in.search_attrib = 0;
+	io.t2ffirst.in.max_count = 0;
+	io.t2ffirst.in.flags = 0;
+	io.t2ffirst.in.storage_type = 0;
+	io.t2ffirst.in.pattern = BASEDIR "\\*.*";
+
+	status = smb_raw_search_first(cli->tree, mem_ctx,
+				      &io, &result, multiple_search_callback);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(result.count, 1);
+
+	io2.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
+	io2.t2fnext.in.handle = io.t2ffirst.out.handle;
+	io2.t2fnext.in.max_count = num_files/2 - 1;
+	io2.t2fnext.in.resume_key = 0;
+	io2.t2fnext.in.flags = 0;
+	io2.t2fnext.in.last_name = result.list[result.count-1].both_directory_info.name.s;
+
+	status = smb_raw_search_next(cli->tree, mem_ctx,
+				     &io2, &result, multiple_search_callback);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(result.count, num_files/2);
+
+	printf("Changing attributes and deleting\n");
+	smbcli_open(cli->tree, BASEDIR "\\T003-03.txt.2", O_CREAT|O_RDWR, DENY_NONE);
+	smbcli_open(cli->tree, BASEDIR "\\T013-13.txt.2", O_CREAT|O_RDWR, DENY_NONE);
+	fnum = create_complex_file(cli, mem_ctx, BASEDIR "\\T013-13.txt.3");
+	smbcli_unlink(cli->tree, BASEDIR "\\T014-14.txt");
+	torture_set_file_attribute(cli->tree, BASEDIR "\\T015-15.txt", FILE_ATTRIBUTE_HIDDEN);
+	torture_set_file_attribute(cli->tree, BASEDIR "\\T016-16.txt", FILE_ATTRIBUTE_NORMAL);
+	torture_set_file_attribute(cli->tree, BASEDIR "\\T017-17.txt", FILE_ATTRIBUTE_SYSTEM);	
+	sfinfo.generic.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	sfinfo.generic.file.fnum = fnum;
+	sfinfo.disposition_info.in.delete_on_close = 1;
+	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	io2.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
+	io2.t2fnext.in.handle = io.t2ffirst.out.handle;
+	io2.t2fnext.in.max_count = num_files/2;
+	io2.t2fnext.in.resume_key = 0;
+	io2.t2fnext.in.flags = 0;
+	io2.t2fnext.in.last_name = result.list[result.count-1].both_directory_info.name.s;
+
+	status = smb_raw_search_next(cli->tree, mem_ctx,
+				     &io2, &result, multiple_search_callback);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(result.count, 19);
+
+	ret &= check_result(&result, "t009-9.txt", True, FILE_ATTRIBUTE_ARCHIVE);
+	ret &= check_result(&result, "t014-14.txt", False, 0);
+	ret &= check_result(&result, "t015-15.txt", False, 0);
+	ret &= check_result(&result, "t016-16.txt", True, FILE_ATTRIBUTE_NORMAL);
+	ret &= check_result(&result, "t017-17.txt", False, 0);
+	ret &= check_result(&result, "t018-18.txt", True, FILE_ATTRIBUTE_ARCHIVE);
+	ret &= check_result(&result, "t019-19.txt", True, FILE_ATTRIBUTE_ARCHIVE);
+	ret &= check_result(&result, "T013-13.txt.2", True, FILE_ATTRIBUTE_ARCHIVE);
+	ret &= check_result(&result, "T003-3.txt.2", False, 0);
+	ret &= check_result(&result, "T013-13.txt.3", True, FILE_ATTRIBUTE_ARCHIVE);
+
+	if (!ret) {
+		for (i=0;i<result.count;i++) {
+			printf("%s %s (0x%x)\n", 
+			       result.list[i].both_directory_info.name.s, 
+			       attrib_string(mem_ctx, result.list[i].both_directory_info.attrib),
+			       result.list[i].both_directory_info.attrib);
+		}
+	}
+
+done:
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
+
+/* 
+   testing if directories always come back sorted
+*/
+static BOOL test_sorted(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	const int num_files = 700;
+	int i, fnum;
+	char *fname;
+	BOOL ret = True;
+	NTSTATUS status;
+	struct multiple_result result;
+
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 || 
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
+		return False;
+	}
+
+	printf("Creating %d files\n", num_files);
+
+	for (i=0;i<num_files;i++) {
+		asprintf(&fname, BASEDIR "\\%s.txt", generate_random_str(mem_ctx, 10));
+		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
+		if (fnum == -1) {
+			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
+			ret = False;
+			goto done;
+		}
+		free(fname);
+		smbcli_close(cli->tree, fnum);
+	}
+
+
+	ZERO_STRUCT(result);
+	result.mem_ctx = mem_ctx;
+	
+	status = multiple_search(cli, mem_ctx, BASEDIR "\\*.*", 
+				 RAW_SEARCH_BOTH_DIRECTORY_INFO,
+				 CONT_NAME, &result);	
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(result.count, num_files);
+
+	for (i=0;i<num_files-1;i++) {
+		const char *name1, *name2;
+		name1 = result.list[i].both_directory_info.name.s;
+		name2 = result.list[i+1].both_directory_info.name.s;
+		if (StrCaseCmp(name1, name2) > 0) {
+			printf("non-alphabetical order at entry %d  '%s' '%s'\n", 
+			       i, name1, name2);
+			printf("Server does not produce sorted directory listings\n");
+			ret = False;
+			goto done;
+		}
+	}
+
+done:
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
 
 /* 
    basic testing of all RAW_SEARCH_* calls using a single file
@@ -670,6 +889,14 @@ BOOL torture_raw_search(int dummy)
 	}
 
 	if (!test_many_files(cli, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_sorted(cli, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_modify_search(cli, mem_ctx)) {
 		ret = False;
 	}
 
