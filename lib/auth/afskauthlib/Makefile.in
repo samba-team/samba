@@ -36,7 +36,8 @@ LDSHARED = @LDSHARED@
 SHLIBEXT = @REAL_SHLIBEXT@
 LD_FLAGS = @REAL_LD_FLAGS@
  
-LIB = afskauthlib.$(SHLIBEXT)
+LIBNAME = afskauthlib
+LIB = $(LIBNAME).$(SHLIBEXT)
 
 SOURCES = verify.c
 
