@@ -92,7 +92,7 @@ mini_inetd (int port)
     int error, ret;
     struct addrinfo *ai, *a, hints;
     char portstr[NI_MAXSERV];
-    int n, i;
+    int n, nalloc, i;
     int *fds;
     fd_set orig_read_set, read_set;
     int max_fd = -1;
@@ -107,10 +107,10 @@ mini_inetd (int port)
     if (error)
 	errx (1, "getaddrinfo: %s", gai_strerror (error));
 
-    for (n = 0, a = ai; a != NULL; a = a->ai_next)
-	++n;
+    for (nalloc = 0, a = ai; a != NULL; a = a->ai_next)
+	++nalloc;
 
-    fds = malloc (n * sizeof(*fds));
+    fds = malloc (nalloc * sizeof(*fds));
     if (fds == NULL)
 	errx (1, "mini_inetd: out of memory");
 
@@ -134,6 +134,7 @@ mini_inetd (int port)
     freeaddrinfo (ai);
     if (i == 0)
 	errx (1, "no sockets");
+    n = i;
 
     do {
 	read_set = orig_read_set;
