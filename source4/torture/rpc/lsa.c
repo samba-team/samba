@@ -143,6 +143,69 @@ static BOOL test_OpenPolicy2(struct dcerpc_pipe *p, struct policy_handle *handle
 	return True;
 }
 
+static BOOL test_LookupNames(struct dcerpc_pipe *p, 
+			    TALLOC_CTX *mem_ctx, 
+			    struct policy_handle *handle,
+			    struct lsa_TransNameArray *tnames)
+{
+	struct lsa_LookupNames r;
+	struct lsa_TransSidArray sids;
+	struct lsa_Name *names;
+	uint32 count = 0;
+	NTSTATUS status;
+	int i;
+
+	printf("\nTesting LookupNames\n");
+
+	sids.count = 0;
+	sids.sids = NULL;
+
+	names = talloc(mem_ctx, tnames->count * sizeof(names[0]));
+	for (i=0;i<tnames->count;i++) {
+		names[i].name_len = 2*strlen(tnames->names[i].name.name);
+		names[i].name_size = 2*strlen(tnames->names[i].name.name);
+		names[i].name = tnames->names[i].name.name;
+	}
+
+	r.in.handle = handle;
+	r.in.num_names = tnames->count;
+	r.in.names = names;
+	r.in.sids = &sids;
+	r.in.level = 1;
+	r.in.count = &count;
+	r.out.count = &count;
+	r.out.sids = &sids;
+
+	status = dcerpc_lsa_LookupNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("LookupNames failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (r.out.domains) {
+		printf("lookup gave %d domains (max_count=%d)\n", 
+		       r.out.domains->count,
+		       r.out.domains->max_count);
+		for (i=0;i<r.out.domains->count;i++) {
+			printf("name='%s' sid=%s\n", 
+			       r.out.domains->domains[i].name.name,
+			       lsa_sid_string_talloc(mem_ctx, r.out.domains->domains[i].sid));
+		}
+	}
+
+	printf("lookup gave %d sids (sids.count=%d)\n", count, sids.count);
+	for (i=0;i<sids.count;i++) {
+		printf("sid_type=%d rid=%d sid_index=%d\n", 
+		       sids.sids[i].sid_type,
+		       sids.sids[i].rid,
+		       sids.sids[i].sid_index);
+	}
+
+	printf("\n");
+
+	return True;
+}
+
 
 static BOOL test_LookupSids(struct dcerpc_pipe *p, 
 			    TALLOC_CTX *mem_ctx, 
@@ -193,8 +256,11 @@ static BOOL test_LookupSids(struct dcerpc_pipe *p,
 		       names.names[i].name.name);
 	}
 
-
 	printf("\n");
+
+	if (!test_LookupNames(p, mem_ctx, handle, &names)) {
+		return False;
+	}
 
 	return True;
 }

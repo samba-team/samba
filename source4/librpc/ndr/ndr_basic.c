@@ -221,7 +221,7 @@ NTSTATUS ndr_push_length4_end(struct ndr_push *ndr, struct ndr_push_save *save)
 */
 NTSTATUS ndr_push_ptr(struct ndr_push *ndr, const void *p)
 {
-	return ndr_push_uint32(ndr, p?1:0);
+	return ndr_push_uint32(ndr, p?0xaabbccdd:0);
 }
 
 /*
@@ -239,6 +239,25 @@ NTSTATUS ndr_push_unistr(struct ndr_push *ndr, const char *s)
 	NDR_CHECK(ndr_push_uint32(ndr, 0));
 	NDR_CHECK(ndr_push_uint32(ndr, len/2));
 	NDR_CHECK(ndr_push_bytes(ndr, ws, len));
+	return NT_STATUS_OK;
+}
+
+/*
+  push a comformant, variable ucs2 string onto the wire from a C string
+  don't send the null
+*/
+NTSTATUS ndr_push_unistr_noterm(struct ndr_push *ndr, const char *s)
+{
+	char *ws;
+	ssize_t len;
+	len = push_ucs2_talloc(ndr->mem_ctx, (smb_ucs2_t **)&ws, s);
+	if (len == -1) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	NDR_CHECK(ndr_push_uint32(ndr, len/2 - 1));
+	NDR_CHECK(ndr_push_uint32(ndr, 0));
+	NDR_CHECK(ndr_push_uint32(ndr, len/2 - 1));
+	NDR_CHECK(ndr_push_bytes(ndr, ws, len - 2));
 	return NT_STATUS_OK;
 }
 
@@ -266,6 +285,14 @@ NTSTATUS ndr_pull_unistr(struct ndr_pull *ndr, const char **s)
 	}
 	*s = as;
 	return NT_STATUS_OK;
+}
+
+/*
+  pull a comformant, variable ucs2 string from the wire into a C string
+*/
+NTSTATUS ndr_pull_unistr_noterm(struct ndr_pull *ndr, const char **s)
+{
+	return ndr_pull_unistr(ndr, s);
 }
 
 /*

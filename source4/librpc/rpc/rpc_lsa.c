@@ -168,3 +168,23 @@ NTSTATUS dcerpc_lsa_LookupSids(struct dcerpc_pipe *p,
 	
 	return r->out.result;
 }
+
+/*
+  LookupNames interface
+*/
+NTSTATUS dcerpc_lsa_LookupNames(struct dcerpc_pipe *p,
+			       TALLOC_CTX *mem_ctx,
+			       struct lsa_LookupNames *r)
+{
+	NTSTATUS status;
+
+	status = dcerpc_ndr_request(p, LSA_LOOKUPNAMES, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_lsa_LookupNames,
+				    (ndr_pull_fn_t) ndr_pull_lsa_LookupNames,
+				    r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	
+	return r->out.result;
+}
