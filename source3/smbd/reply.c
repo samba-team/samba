@@ -271,7 +271,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	if ( IS_IPC(conn) )
 		server_devicetype = "IPC";
 	else if ( IS_PRINT(conn) )
-		server_devicetype = "LPT:";
+		server_devicetype = "LPT1:";
 	else 
 		server_devicetype = "A:";
 

@@ -229,7 +229,7 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 
 	if (dev[0] == '?' || !dev[0]) {
 		if (lp_print_ok(snum)) {
-			fstrcpy(dev,"LPT:");
+			fstrcpy(dev,"LPT1:");
 		} else if (strequal(lp_fstype(snum), "IPC")) {
 			fstrcpy(dev, "IPC");
 		} else {
@@ -240,7 +240,7 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 	strupper(dev);
 
 	if (lp_print_ok(snum)) {
-		if (!strequal(dev, "LPT:")) {
+		if (!strequal(dev, "LPT1:")) {
 			return NT_STATUS_BAD_DEVICE_TYPE;
 		}
 	} else if (strequal(lp_fstype(snum), "IPC")) {
@@ -253,7 +253,7 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 
 	/* Behave as a printer if we are supposed to */
 	if (lp_print_ok(snum) && (strcmp(dev, "A:") == 0)) {
-		fstrcpy(dev, "LPT:");
+		fstrcpy(dev, "LPT1:");
 	}
 
 	return NT_STATUS_OK;
