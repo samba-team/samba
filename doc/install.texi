@@ -43,9 +43,10 @@ instead, you can use this option.
 @item @kbd{--with-krb4=@file{dir}}
 Gives the location of Kerberos 4 libraries and headers. This enables
 Kerberos 4 support in the applications (telnet, rsh, popper, etc) and
-the KDC. If you keep libraries and headers in different places, you can
-instead give the path to each with the @kbd{--with-krb4-lib=@file{dir}},
-and @kbd{--with-krb4-include=@file{dir}} options.
+the KDC. Default is to check in @file{/usr/athena}. If you keep
+libraries and headers in different places, you can instead give the path
+to each with the @kbd{--with-krb4-lib=@file{dir}}, and
+@kbd{--with-krb4-include=@file{dir}} options.
 
 You will need a fairly recent version of our Kerberos 4 distribution for
 @code{rshd} and @code{popper} to support version 4 clients.
@@ -61,16 +62,3 @@ library will be used instead.
 By default some of the application programs will build with support for
 one-time passwords (OTP).  Use this option to disable that support.
 @end table
-
-@menu
-* Finishing the installation::  
-@end menu
-
-@node Finishing the installation,  , Building and Installing, Building and Installing
-@section Loose threads
-
-@pindex login
-There is a login program in the distribution, but it isn't built by
-default, and might not work as expected. The @code{telnetd} still
-expects to find a login in @file{/usr/heimdal/bin}, so you'll have to
-copy your favourite login program there, or use the @samp{-L} flag.
