@@ -6,8 +6,13 @@ INCLUDES += $(INCLUDE_krb4)
 
 LDADD = libkrb5.la
 
-check_PROGRAMS = n-fold-test
-TESTS = n-fold-test
+check_PROGRAMS = n-fold-test string-to-key-test
+TESTS = n-fold-test string-to-key-test
+
+string_to_key_test_LDADD = libkrb5.la \
+	$(top_builddir)/lib/des/libdes.la \
+	$(top_builddir)/lib/asn1/libasn1.la \
+	$(LIB_roken)
 
 lib_LTLIBRARIES = libkrb5.la
 
