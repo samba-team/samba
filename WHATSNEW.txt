@@ -15,10 +15,6 @@ we feel are important to make available to the Samba community
 for wider testings.  See the "Changes" section for details on
 exact updates.
 
-Common bugs fixed in this preview release include:
-
-  o <FILL THIS IN>
-
 
 ######################################################################
 Changes
@@ -26,11 +22,17 @@ Changes
 Changes since 3.0.2rc1
 ----------------------
 
+smb.conf changes
+----------------
+
     Parameter Name              Action
     --------------              ------
     read size                   removed (unused)
     source environment          removed (unused)
 
+
+commits
+-------
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details.  The list of changes per contributor are as follows:
@@ -50,12 +52,15 @@ o   Luca Bolcioni <Luca.Bolcioni@yacme.com>
       
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix bug that caused rpcclient to incorrectly retrieve 
-      the SID for a server (this casuing all calls that required 
+      the SID for a server (this causing all calls that required 
       this information to fail). 
     * BUG 977: Don't create a homes share for a user if a static 
       share already exists by the same name.
     * Removed unused smb.conf options.
-    * Set the disable flag for template accounts created by mksmbpasswd.sh.
+    * Set the disable flag for template accounts created by
+      mksmbpasswd.sh.
+    * Disable any account has no passwords and does not have the
+      ACB_PWNOTREQ bit set.
 
 
 o   LaMont Jones <lamont@debian.org>
@@ -83,6 +88,19 @@ o   MORIYAMA Masayuki <moriyama@miraclelinux.com>
 
 Changes since 3.0.2pre1
 -----------------------
+
+Common bugs fixed in this preview release include:
+
+  o Better separation of WINS and DNS queries for domain
+    controllers.
+  o Issues with nss_winbind FreeBSD and Solaris.
+  o Several crash bugs in smbd and winbindd.
+  o Output formatting fixes for smbclient for better compatibility
+    with scripts based on the 2.2 version.
+
+
+commits
+-------
 
 o   Jeremy Allison <jra@samba.org>
     * Revert change that broke Exchange clear text samlogons.
@@ -180,6 +198,21 @@ o   Jelmer Vernooij <jelmer@samba.org>
 
 Changes since 3.0.1
 ----------------------
+
+Common bugs fixed in this preview release include:
+
+  o Joining a Samba domain from Pre-SP2 Windows 2000 clients.
+  o Logging onto a Samba domain from Windows XP clients.
+  o Problems with the %U and %u smb.conf variables in relation
+    to Windows 9x/ME clients.
+  o Kerberos failures due to an invalid in memory keytab detection
+    test.
+  o Updates to the ntlm_auth tool.
+  o Fixes for various SMB signing errors.
+
+
+smb.conf changes
+----------------
 
     Parameter Name              Action
     --------------              ------
