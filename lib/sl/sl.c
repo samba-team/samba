@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -37,6 +37,7 @@ RCSID("$Id$");
 #endif
 
 #include "sl_locl.h"
+#include <setjmp.h>
 
 static size_t
 print_sl (FILE *stream, int mdoc, int longp, SL_cmd *c)
@@ -273,9 +274,28 @@ sl_make_argv(char *line, int *ret_argc, char ***ret_argv)
     return 0;
 }
 
+static jmp_buf sl_jmp;
+
+static void sl_sigint(int sig)
+{
+    longjmp(sl_jmp, 1);
+}
+
+static char *sl_readline(const char *prompt)
+{
+    char *s;
+    void (*old)(int);
+    old = signal(SIGINT, sl_sigint);
+    if(setjmp(sl_jmp))
+	printf("\n");
+    s = readline((char*)prompt);
+    signal(SIGINT, old);
+    return s;
+}
+
 /* return values: 0 on success, -1 on fatal error, or return value of command */
 int
-sl_command_loop(SL_cmd *cmds, char *prompt, void **data)
+sl_command_loop(SL_cmd *cmds, const char *prompt, void **data)
 {
     int ret = 0;
     char *buf;
@@ -283,7 +303,7 @@ sl_command_loop(SL_cmd *cmds, char *prompt, void **data)
     char **argv;
 	
     ret = 0;
-    buf = readline(prompt);
+    buf = sl_readline(prompt);
     if(buf == NULL)
 	return 1;
 
@@ -308,7 +328,7 @@ sl_command_loop(SL_cmd *cmds, char *prompt, void **data)
 }
 
 int 
-sl_loop(SL_cmd *cmds, char *prompt)
+sl_loop(SL_cmd *cmds, const char *prompt)
 {
     void *data = NULL;
     int ret;
@@ -318,7 +338,7 @@ sl_loop(SL_cmd *cmds, char *prompt)
 }
 
 void
-sl_apropos (SL_cmd *cmd, char *topic)
+sl_apropos (SL_cmd *cmd, const char *topic)
 {
     for (; cmd->name != NULL; ++cmd)
         if (cmd->usage != NULL && strstr(cmd->usage, topic) != NULL)
