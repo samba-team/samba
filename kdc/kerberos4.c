@@ -108,67 +108,6 @@ db_fetch4(const char *name, const char *instance, const char *realm,
     return ret;
 }
 
-krb5_error_code
-get_des_key(hdb_entry *principal, krb5_boolean is_server, 
-	    krb5_boolean prefer_afs_key, Key **ret_key)
-{
-    Key *v5_key = NULL, *v4_key = NULL, *afs_key = NULL, *server_key = NULL;
-    int i;
-    krb5_enctype etypes[] = { ETYPE_DES_CBC_MD5, 
-			      ETYPE_DES_CBC_MD4, 
-			      ETYPE_DES_CBC_CRC };
-
-    for(i = 0;
-	i < sizeof(etypes)/sizeof(etypes[0])
-	    && (v5_key == NULL || v4_key == NULL || 
-		afs_key == NULL || server_key == NULL);
-	++i) {
-	Key *key = NULL;
-	while(hdb_next_enctype2key(context, principal, etypes[i], &key) == 0) {
-	    if(key->salt == NULL) {
-		if(v5_key == NULL)
-		    v5_key = key;
-	    } else if(key->salt->type == hdb_pw_salt && 
-		      key->salt->salt.length == 0) {
-		if(v4_key == NULL)
-		    v4_key = key;
-	    } else if(key->salt->type == hdb_afs3_salt) {
-		if(afs_key == NULL)
-		    afs_key = key;
-	    } else if(server_key == NULL)
-		server_key = key;
-	}
-    }
-
-    if(prefer_afs_key) {
-	if(afs_key)
-	    *ret_key = afs_key;
-	else if(v4_key)
-	    *ret_key = v4_key;
-	else if(v5_key)
-	    *ret_key = v5_key;
-	else if(is_server && server_key)
-	    *ret_key = server_key;
-	else
-	    return KERB_ERR_NULL_KEY;
-    } else {
-	if(v4_key)
-	    *ret_key = v4_key;
-	else if(afs_key)
-	    *ret_key = afs_key;
-	else  if(v5_key)
-	    *ret_key = v5_key;
-	else if(is_server && server_key)
-	    *ret_key = server_key;
-	else
-	    return KERB_ERR_NULL_KEY;
-    }
-
-    if((*ret_key)->key.keyvalue.length == 0)
-	return KERB_ERR_NULL_KEY;
-    return 0;
-}
-
 #define RCHECK(X, L) if(X){make_err_reply(reply, KFAILURE, "Packet too short"); goto L;}
 
 /*
@@ -547,6 +486,12 @@ out:
     return 0;
 }
 
+#else /* KRB4 */
+
+#include <krb5-v4compat.h>
+
+#endif /* KRB4 */
+
 krb5_error_code
 encode_v4_ticket(void *buf, size_t len, const EncTicketPart *et,
 		 const PrincipalName *service, size_t *size)
@@ -634,5 +579,64 @@ encode_v4_ticket(void *buf, size_t len, const EncTicketPart *et,
     return 0;
 }
 
+krb5_error_code
+get_des_key(hdb_entry *principal, krb5_boolean is_server, 
+	    krb5_boolean prefer_afs_key, Key **ret_key)
+{
+    Key *v5_key = NULL, *v4_key = NULL, *afs_key = NULL, *server_key = NULL;
+    int i;
+    krb5_enctype etypes[] = { ETYPE_DES_CBC_MD5, 
+			      ETYPE_DES_CBC_MD4, 
+			      ETYPE_DES_CBC_CRC };
 
-#endif /* KRB4 */
+    for(i = 0;
+	i < sizeof(etypes)/sizeof(etypes[0])
+	    && (v5_key == NULL || v4_key == NULL || 
+		afs_key == NULL || server_key == NULL);
+	++i) {
+	Key *key = NULL;
+	while(hdb_next_enctype2key(context, principal, etypes[i], &key) == 0) {
+	    if(key->salt == NULL) {
+		if(v5_key == NULL)
+		    v5_key = key;
+	    } else if(key->salt->type == hdb_pw_salt && 
+		      key->salt->salt.length == 0) {
+		if(v4_key == NULL)
+		    v4_key = key;
+	    } else if(key->salt->type == hdb_afs3_salt) {
+		if(afs_key == NULL)
+		    afs_key = key;
+	    } else if(server_key == NULL)
+		server_key = key;
+	}
+    }
+
+    if(prefer_afs_key) {
+	if(afs_key)
+	    *ret_key = afs_key;
+	else if(v4_key)
+	    *ret_key = v4_key;
+	else if(v5_key)
+	    *ret_key = v5_key;
+	else if(is_server && server_key)
+	    *ret_key = server_key;
+	else
+	    return KERB_ERR_NULL_KEY;
+    } else {
+	if(v4_key)
+	    *ret_key = v4_key;
+	else if(afs_key)
+	    *ret_key = afs_key;
+	else  if(v5_key)
+	    *ret_key = v5_key;
+	else if(is_server && server_key)
+	    *ret_key = server_key;
+	else
+	    return KERB_ERR_NULL_KEY;
+    }
+
+    if((*ret_key)->key.keyvalue.length == 0)
+	return KERB_ERR_NULL_KEY;
+    return 0;
+}
+
