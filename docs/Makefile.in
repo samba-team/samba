@@ -147,7 +147,7 @@ Samba-Developers-Guide.xml: $(DEVDOCDIR)/index.xml $(DEVDOCDIR_DEPS)
 	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
 $(HOWTODIR)/attributions.xml: $(HOWTODIR)/index.xml
-	@echo > $@ # Make sure we don't get recursive dependencies, etc!
+	@echo "<empty/>" > $@ # Make sure we don't get recursive dependencies, etc!
 	$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
 
 $(DEVDOCDIR)/attributions.xml: $(DEVDOCDIR)/index.xml

@@ -502,53 +502,6 @@ an Active Directory environment.
 <!ENTITY MAN-WBINFO SYSTEM "../manpages/wbinfo.1.xml">
 <!ENTITY MAN-WINBINDD SYSTEM "../manpages/winbindd.8.xml">
 
-
-<!ENTITY AccessControls SYSTEM "../howto/AccessControls.xml">
-<!ENTITY AdvancedNetworkAdmin SYSTEM "../howto/AdvancedNetworkAdmin.xml">
-<!ENTITY BUGS SYSTEM "../howto/Bugs.xml">
-<!ENTITY Backup SYSTEM "../howto/Backup.xml">
-<!ENTITY CUPS SYSTEM "../howto/CUPS-printing.xml">
-<!ENTITY Compiling SYSTEM "../howto/Compiling.xml">
-<!ENTITY DNS-DHCP-Configuration SYSTEM "../howto/DNS-DHCP-Configuration.xml">
-<!ENTITY DOMAIN-MEMBER SYSTEM "../howto/DomainMember.xml">
-<!ENTITY Diagnosis SYSTEM "../howto/Diagnosis.xml">
-<!ENTITY FastStart SYSTEM "../howto/FastStart.xml">
-<!ENTITY Further-Resources SYSTEM "../howto/Further-Resources.xml">
-<!ENTITY GROUP-MAPPING-HOWTO SYSTEM "../howto/Group-Mapping.xml">
-<!ENTITY HighAvailability SYSTEM "../howto/HighAvailability.xml">
-<!ENTITY IntegratingWithWindows SYSTEM "../howto/Integrating-with-Windows.xml">
-<!ENTITY IntroSMB SYSTEM "../howto/IntroSMB.xml">
-<!ENTITY MS-Dfs-Setup SYSTEM "../howto/msdfs.xml">
-<!ENTITY NT4Migration SYSTEM "../howto/NT4Migration.xml">
-<!ENTITY NetworkBrowsing SYSTEM "../howto/NetworkBrowsing.xml">
-<!ENTITY Other-Clients SYSTEM "../howto/Other-Clients.xml">
-<!ENTITY PRINTER-DRIVER2 SYSTEM "../howto/Printing.xml">
-<!ENTITY Passdb SYSTEM "../howto/Passdb.xml">
-<!ENTITY PolicyMgmt SYSTEM "../howto/PolicyMgmt.xml">
-<!ENTITY Portability SYSTEM "../howto/Portability.xml">
-<!ENTITY ProfileMgmt SYSTEM "../howto/ProfileMgmt.xml">
-<!ENTITY SPEED SYSTEM "../howto/Speed.xml">
-<!ENTITY SWAT SYSTEM "../howto/SWAT.xml">
-<!ENTITY Samba-BDC-HOWTO SYSTEM "../howto/BDC.xml">
-<!ENTITY Samba-PAM SYSTEM "../howto/PAM.xml">
-<!ENTITY Samba-PDC-HOWTO SYSTEM "../howto/PDC.xml">
-<!ENTITY SecuringSamba SYSTEM "../howto/Securing.xml">
-<!ENTITY ServerType SYSTEM "../howto/ServerType.xml">
-<!ENTITY StandAloneServer SYSTEM "../howto/StandAloneServer.xml">
-<!ENTITY Trusts SYSTEM "../howto/InterdomainTrusts.xml">
-<!ENTITY UNIX-INSTALL SYSTEM "../howto/Install.xml">
-<!ENTITY upgrading SYSTEM "../howto/upgrading-to-3.0.xml">
-<!ENTITY VFS SYSTEM "../howto/VFS.xml">
-<!ENTITY WINBIND SYSTEM "../howto/Winbind.xml">
-<!ENTITY ClientConfig SYSTEM "../howto/WindowsClientConfig.xml">
-<!ENTITY locking SYSTEM "../howto/locking.xml">
-<!ENTITY problems SYSTEM "../howto/Problems.xml">
-<!ENTITY unicode SYSTEM "../howto/Unicode.xml">
-<!ENTITY attributions SYSTEM "../howto/attributions.xml">
-<!ENTITY attributions-dev SYSTEM "../devel/attributions.xml">
-<!ENTITY glossary SYSTEM "../howto/glossary.xml">
-<!ENTITY foreword-tridge SYSTEM "../howto/foreword-tridge.xml">
-
 <!ENTITY not.implemented "<note><para>Currently NOT implemented.</para></note>">
 <!ENTITY rootprompt "<prompt>root# </prompt>">
 <!ENTITY prompt "<prompt>$ </prompt>">
