@@ -2,6 +2,14 @@
 
 RCSID("$Id$");
 
+char x_socket[MaxPathLen];
+
+u_int32_t display_num;
+char xauthfile[MaxPathLen];
+int xauthfile_size = sizeof(xauthfile);
+u_char cookie[16];
+size_t cookie_len = sizeof(cookie);
+
 static int
 do_enccopy (int fd1, int fd2, int mode, des_cblock *iv,
 	    des_key_schedule schedule, int *num)
@@ -72,8 +80,6 @@ copy_encrypted (int fd1, int fd2, des_cblock *iv,
 #define X_UNIX_PATH "/tmp/.X11-unix/X"
 #endif
 
-char x_socket[MaxPathLen];
-
 /*
  * Allocate and listen on a local X server socket and a TCP socket.
  * Return the display number.
@@ -98,6 +104,7 @@ get_xsockets (int *unix_socket, int *tcp_socket)
 
      oldmask = umask(0);
      mkdir (dir, 01777);
+     chmod (dir, 01777);
      umask (oldmask);
      free (dir);
 
@@ -128,6 +135,8 @@ get_xsockets (int *unix_socket, int *tcp_socket)
 	 }
 
 	 if (tcp_socket) {
+	     int one = 1;
+
 	     tcpfd = socket (AF_INET, SOCK_STREAM, 0);
 	     if (tcpfd < 0) {
 		 fprintf (stderr, "%s: socket: %s\n", prog,
@@ -135,6 +144,9 @@ get_xsockets (int *unix_socket, int *tcp_socket)
 		 close (unixfd);
 		 return -1;
 	     }
+#ifdef TCP_NODELAY
+	     setsockopt (tcpfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+#endif
 	     memset (&tcpaddr, 0, sizeof(tcpaddr));
 	     tcpaddr.sin_family = AF_INET;
 	     tcpaddr.sin_addr = local;
@@ -196,4 +208,88 @@ connect_local_xsocket (unsigned dnr)
 	  return -1;
      }
      return fd;
+}
+
+#ifndef INADDR_LOOPBACK
+#define INADDR_LOOPBACK 0x7f000001
+#endif
+
+int
+create_and_write_cookie (char *xauthfile,
+			 u_char *cookie,
+			 size_t sz)
+{
+     Xauth auth;
+     char tmp[64];
+     FILE *f;
+     char hostname[MaxHostNameLen];
+     struct in_addr loopback;
+     struct hostent *h;
+
+     k_gethostname (hostname, sizeof(hostname));
+     loopback.s_addr = htonl(INADDR_LOOPBACK);
+     
+     auth.family = FamilyLocal;
+     auth.address = hostname;
+     auth.address_length = strlen(auth.address);
+     sprintf (tmp, "%d", display_num);
+     auth.number_length = strlen(tmp);
+     auth.number = tmp;
+     auth.name = COOKIE_TYPE;
+     auth.name_length = strlen(auth.name);
+     auth.data_length = sz;
+     auth.data = (char*)cookie;
+     des_rand_data (cookie, sz);
+
+     f = fopen(xauthfile, "w");
+     if (f == NULL)
+          return 1;
+     if(XauWriteAuth(f, &auth) == 0) {
+	  fclose(f);
+	  return 1;
+     }
+
+     h = gethostbyname (hostname);
+     if (h == NULL) {
+	  fclose (f);
+	  return 1;
+     }
+
+     /*
+      * I would like to write a cookie for localhost:n here, but some
+      * stupid code in libX11 will not look for cookies of that type,
+      * so we are forced to use FamilyWild instead.
+      */
+
+     auth.family  = FamilyWild;
+     auth.address_length = 0;
+
+#if 0 /* XXX */
+     auth.address = (char *)&loopback;
+     auth.address_length = sizeof(loopback);
+#endif
+
+     if (XauWriteAuth(f, &auth) == 0) {
+	  fclose (f);
+	  return 1;
+     }
+
+     if(fclose(f))
+	  return 1;
+     return 0;
+}
+
+/*
+ * Some simple controls on the address and corresponding socket
+ */
+
+int
+suspicious_address (int sock, struct sockaddr_in addr)
+{
+    char data[40];
+    int len = sizeof(data);
+
+    return addr.sin_addr.s_addr != htonl(INADDR_LOOPBACK)
+	|| getsockopt (sock, IPPROTO_IP, IP_OPTIONS, data, &len) < 0
+	|| len != 0;
 }
