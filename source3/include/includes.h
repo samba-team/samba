@@ -1259,9 +1259,13 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(
 
 /* we need to use __va_copy() on some platforms */
 #ifdef HAVE_VA_COPY
+#define VA_COPY(dest, src) va_copy(dest, src)
+#else
+#ifdef HAVE___VA_COPY
 #define VA_COPY(dest, src) __va_copy(dest, src)
 #else
 #define VA_COPY(dest, src) (dest) = (src)
+#endif
 #endif
 
 #ifndef HAVE_TIMEGM
