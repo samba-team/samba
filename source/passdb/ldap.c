@@ -24,14 +24,17 @@
 
 #include "includes.h"
 
+#define ADD_USER 1
+#define MODIFY_USER 2
+
 extern int DEBUGLEVEL;
 
 /*******************************************************************
  open a connection to the ldap serve.
 ******************************************************************/	
-static BOOL ldap_open_connection(LDAP **ldap_struct)
+BOOL ldap_open_connection(LDAP **ldap_struct)
 {
-	if ( (*ldap_struct = ldap_open(lp_ldap_server(),lp_ldap_port()) )== NULL)
+	if ( (*ldap_struct = ldap_open(lp_ldap_server(),lp_ldap_port()) ) == NULL)
 	{
 		DEBUG(0,("%s: The LDAP server is not responding !\n",timestring()));
 		return(False);
@@ -47,7 +50,7 @@ static BOOL ldap_open_connection(LDAP **ldap_struct)
 ******************************************************************/	
 static BOOL ldap_connect_anonymous(LDAP *ldap_struct)
 {
-	if ( ldap_simple_bind_s(ldap_struct,lp_ldap_root(),lp_ldap_rootpasswd()) != LDAP_SUCCESS)
+	if ( ldap_simple_bind_s(ldap_struct,lp_ldap_root(),lp_ldap_rootpasswd()) ! = LDAP_SUCCESS)
 	{
 		DEBUG(0,("%s: Couldn't bind to the LDAP server !\n", timestring() ));
 		return(False);
@@ -61,12 +64,12 @@ static BOOL ldap_connect_anonymous(LDAP *ldap_struct)
 ******************************************************************/	
 static BOOL ldap_connect_system(LDAP *ldap_struct)
 {
-	if ( ldap_simple_bind_s(ldap_struct,lp_ldap_root(),lp_ldap_rootpasswd()) != LDAP_SUCCESS)
+	if ( ldap_simple_bind_s(ldap_struct,lp_ldap_root(),lp_ldap_rootpasswd()) ! = LDAP_SUCCESS)
 	{
 		DEBUG(0,("%s: Couldn't bind to the LDAP server !\n", timestring() ));
 		return(False);
 	}
-	DEBUG(2,("ldap_connect_system: succesfull connection to the LDAP server\n"));
+	DEBUG(2,("ldap_connect_system: succesful connection to the LDAP server\n"));
 	return (True);
 }
 
@@ -75,12 +78,12 @@ static BOOL ldap_connect_system(LDAP *ldap_struct)
 ******************************************************************/	
 static BOOL ldap_connect_user(LDAP *ldap_struct, char *user, char *password)
 {
-	if ( ldap_simple_bind_s(ldap_struct,lp_ldap_root(),lp_ldap_rootpasswd()) != LDAP_SUCCESS)
+	if ( ldap_simple_bind_s(ldap_struct,lp_ldap_root(),lp_ldap_rootpasswd()) ! = LDAP_SUCCESS)
 	{
 		DEBUG(0,("%s: Couldn't bind to the LDAP server !\n", timestring() ));
 		return(False);
 	}
-	DEBUG(2,("ldap_connect_user: succesfull connection to the LDAP server\n"));
+	DEBUG(2,("ldap_connect_user: succesful connection to the LDAP server\n"));
 	return (True);
 }
 
@@ -94,9 +97,9 @@ static BOOL ldap_search_one_user(LDAP *ldap_struct, char *filter, LDAPMessage **
 		
 	DEBUG(2,("ldap_search_one_user: searching for:[%s]\n", filter));
 		
-	rc=ldap_search_s(ldap_struct, lp_ldap_suffix(), scope, filter, NULL, 0, result);
+	rc = ldap_search_s(ldap_struct, lp_ldap_suffix(), scope, filter, NULL, 0, result);
 
-	if (rc != LDAP_SUCCESS )
+	if (rc ! = LDAP_SUCCESS )
 	{
 		DEBUG(0,("%s: Problem during the LDAP search\n",timestring()));
 		return(False);
@@ -130,11 +133,8 @@ static BOOL ldap_search_one_user_by_name(LDAP *ldap_struct, char *user, LDAPMess
 static BOOL ldap_search_one_user_by_uid(LDAP *ldap_struct, int uid, LDAPMessage **result)
 {	
 	pstring filter;
-	/*
-	   in the filter expression, replace %u with the real name
-	   so in ldap filter, %u MUST exist :-)
-	*/
-	snprintf(filter, sizeof(pstring), "uidAccount=%d", uid);
+	
+	snprintf(filter, sizeof(pstring), "uidAccount = %d", uid);
 	
 	if ( !ldap_search_one_user(ldap_struct, filter, result) )
 	{	
@@ -150,15 +150,15 @@ static void get_single_attribute(LDAP *ldap_struct, LDAPMessage *entry, char *at
 {
 	char **valeurs;
 	
-	if ( (valeurs=ldap_get_values(ldap_struct, entry, attribute)) != NULL) 
+	if ( (valeurs = ldap_get_values(ldap_struct, entry, attribute)) ! = NULL) 
 	{
 		pstrcpy(value, valeurs[0]);
 		ldap_value_free(valeurs);
-		DEBUG(3,("get_single_attribute:	[%s]=[%s]\n", attribute, value));	
+		DEBUG(3,("get_single_attribute:	[%s] = [%s]\n", attribute, value));	
 	}
 	else
 	{
-		value=NULL;
+		value = NULL;
 	}
 }
 
@@ -167,17 +167,17 @@ static void get_single_attribute(LDAP *ldap_struct, LDAPMessage *entry, char *at
 ******************************************************************/	
 static BOOL ldap_check_user(LDAP *ldap_struct, LDAPMessage *entry)
 {
-	BOOL sambaAccount=False;
+	BOOL sambaAccount = False;
 	char **valeur;
 	int i;
 
 	DEBUG(2,("ldap_check_user: "));
-	valeur=ldap_get_values(ldap_struct, entry, "objectclass");
-	if (valeur!=NULL)
+	valeur = ldap_get_values(ldap_struct, entry, "objectclass");
+	if (valeur! = NULL)
 	{
-		for (i=0;valeur[i]!=NULL;i++)
+		for (i = 0;valeur[i]! = NULL;i++)
 		{
-			if (!strcmp(valeur[i],"sambaAccount")) sambaAccount=True;
+			if (!strcmp(valeur[i],"sambaAccount")) sambaAccount = True;
 		}
 	}
 	DEBUG(2,("%s\n",sambaAccount?"yes":"no"));
@@ -186,26 +186,26 @@ static BOOL ldap_check_user(LDAP *ldap_struct, LDAPMessage *entry)
 }
 
 /*******************************************************************
- check if the returned entry is a sambaMachine objectclass.
+ check if the returned entry is a sambaTrust objectclass.
 ******************************************************************/	
 static BOOL ldap_check_trust(LDAP *ldap_struct, LDAPMessage *entry)
 {
-	BOOL sambaMachine=False;
+	BOOL sambaTrust = False;
 	char **valeur;
 	int i;
 	
 	DEBUG(2,("ldap_check_trust: "));
-	valeur=ldap_get_values(ldap_struct, entry, "objectclass");
-	if (valeur!=NULL)
+	valeur = ldap_get_values(ldap_struct, entry, "objectclass");
+	if (valeur! = NULL)
 	{
-		for (i=0;valeur[i]!=NULL;i++)
+		for (i = 0;valeur[i]! = NULL;i++)
 		{
-			if (!strcmp(valeur[i],"sambaMachine")) sambaMachine=True;
+			if (!strcmp(valeur[i],"sambaTrust")) sambaTrust = True;
 		}
 	}	
-	DEBUG(2,("%s\n",sambaMachine?"yes":"no"));
+	DEBUG(2,("%s\n",sambaTrust?"yes":"no"));
 	ldap_value_free(valeur);	
-	return (sambaMachine);
+	return (sambaTrust);
 }
 
 /*******************************************************************
@@ -224,7 +224,10 @@ static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry,
 	user->smb_passwd = NULL;
 	user->smb_nt_passwd = NULL;
 	user->smb_userid = 0;
-	user->pass_last_set_time    = (time_t)-1;
+	user->pass_last_set_time  = (time_t)-1;
+
+	bzero(smblmpwd, sizeof(smblmpwd));
+	bzero(smbntpwd, sizeof(smbntpwd));
 
 	get_single_attribute(ldap_struct, entry, "cn", user_name);
 	DEBUG(2,("ldap_get_smb_passwd: user: %s\n",user_name));
@@ -234,16 +237,17 @@ static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry,
 	nt_lm_owf_gen(temp, user->smb_nt_passwd, user->smb_passwd);
 	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
 #else
-	get_single_attribute(ldap_struct, entry, "ntPasswordHash", temp);
-	pdb_gethexpwd(temp, user->smb_nt_passwd);		
+	get_single_attribute(ldap_struct, entry, "unicodePwd", temp);
+	pdb_gethexpwd(temp, smbntpwd);		
+	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
 
-	get_single_attribute(ldap_struct, entry, "lmPasswordHash", temp);
-	pdb_gethexpwd(temp, user->smb_passwd);		
+	get_single_attribute(ldap_struct, entry, "dBCSPwd", temp);
+	pdb_gethexpwd(temp, smblmpwd);		
 	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
 #endif
-			
+	
 	get_single_attribute(ldap_struct, entry, "userAccountControl", temp);
-	user->acct_ctrl=decode_acct_ctrl(temp);
+	user->acct_ctrl = pdb_decode_acct_ctrl(temp);
 
 	get_single_attribute(ldap_struct, entry, "pwdLastSet", temp);
 	user->pass_last_set_time = (time_t)strtol(temp, NULL, 16);
@@ -251,7 +255,7 @@ static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry,
 	get_single_attribute(ldap_struct, entry, "rid", temp);
 
 	/* the smb (unix) ids are not stored: they are created */
-	user->smb_userid = user_rid_to_uid (atoi(temp));
+	user->smb_userid = pdb_user_rid_to_uid (atoi(temp));
 
 	if (user->acct_ctrl & (ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST) )
 	{
@@ -343,23 +347,23 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
 	user->munged_dial = NULL; /* "munged" dial-back telephone number */
 
 	get_single_attribute(ldap_struct, entry, "rid", temp);
-	user->user_rid=atoi(temp);
+	user->user_rid = atoi(temp);
 
 	get_single_attribute(ldap_struct, entry, "primaryGroupID", temp);
-	user->group_rid=atoi(temp);
+	user->group_rid = atoi(temp);
 
 	/* the smb (unix) ids are not stored: they are created */
 	user->smb_userid = pw_buf.smb_userid;
-	user->smb_grpid  = group_rid_to_uid(user->group_rid);
+	user->smb_grpid = group_rid_to_uid(user->group_rid);
 
 	user->acct_ctrl = pw_buf.acct_ctrl;
 
-	user->unknown_3  = 0xffffff; /* don't know */
+	user->unknown_3 = 0xffffff; /* don't know */
 	user->logon_divs = 168; /* hours per week */
-	user->hours_len  = 21; /* 21 times 8 bits = 168 */
+	user->hours_len = 21; /* 21 times 8 bits = 168 */
 	memset(user->hours, 0xff, user->hours_len); /* available at all hours */
-	user->unknown_5  = 0x00020000; /* don't know */
-	user->unknown_5  = 0x000004ec; /* don't know */
+	user->unknown_5 = 0x00020000; /* don't know */
+	user->unknown_5 = 0x000004ec; /* don't know */
 
 	if (user->acct_ctrl & (ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST) )
 	{
@@ -374,14 +378,350 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
 }
 
 /************************************************************************
- Routine to add an entry to the ldap passwd file.
+ Routine to manage the LDAPMod structure array
+ manage memory used by the array, by each struct, and values
 
- do not call this function directly.  use passdb.c instead.
+************************************************************************/
+static void make_a_mod(LDAPMod ***modlist,int modop, char *attribute, char *value)
+{
+	LDAPMod **mods;
+	int i;
+	int j;
+	
+	mods = *modlist;
+	
+	if (mods == NULL)
+	{
+		mods = (LDAPMod **)malloc( sizeof(LDAPMod *) );
+		mods[0] = NULL;
+	}
+	
+	for ( i = 0; mods[ i ] ! = NULL; ++i )
+	{
+		if ( mods[ i ]->mod_op == modop && 
+		    !strcasecmp( mods[ i ]->mod_type, attribute ) )
+		{
+			break;
+		}
+	}
+	
+	if (mods[i] == NULL)
+	{
+		mods = (LDAPMod **)realloc( mods,  (i+2) * sizeof( LDAPMod * ) );	
+		mods[i] = (LDAPMod *)malloc( sizeof( LDAPMod ) );
+		mods[i]->mod_op = modop;
+		mods[i]->mod_values = NULL;
+		mods[i]->mod_type = strdup( attribute );
+		mods[i+1] = NULL;
+	}
+
+	if (value ! = NULL )
+	{
+		j = 0;
+		if ( mods[ i ]->mod_values ! = NULL )
+		{
+			for ( ; mods[ i ]->mod_values[ j ] ! = NULL; j++ );
+		}
+		mods[ i ]->mod_values = (char **)realloc(mods[ i ]->mod_values,
+		                                          (j+2) * sizeof( char * ));
+		mods[ i ]->mod_values[ j ] = strdup(value);	
+		mods[ i ]->mod_values[ j + 1 ] = NULL;		
+	}
+	*modlist = mods;
+}
+
+/************************************************************************
+ Add or modify an entry. Only the smb struct values
 
 *************************************************************************/
-BOOL add_ldap21pwd_entry(struct smb_passwd *newpwd)
+static BOOL modadd_ldappwd_entry(struct smb_passwd *newpwd, int flag)
 {
-	DEBUG(0,("add_ldap21pwd_entry - currently not supported\n"));
+	
+	/* assume the struct is correct and filled
+	   that's the job of passdb.c to check */
+	int scope = LDAP_SCOPE_ONELEVEL;
+	int rc;
+	char *smb_name;
+	int trust = False;
+	int ldap_state;
+	pstring filter;
+	pstring dn;
+	pstring lmhash;
+	pstring nthash;
+	pstring rid;
+	pstring lst;
+	pstring temp;
+
+	LDAP *ldap_struct;
+	LDAPMessage *result;
+	LDAPMod **mods;
+	
+	smb_name = newpwd->smb_name;
+
+	if (!ldap_open_connection(&ldap_struct)) /* open a connection to the server */
+	{
+		return False;
+	}
+
+	if (!ldap_connect_system(ldap_struct)) /* connect as system account */
+	{
+		ldap_unbind(ldap_struct);
+		return False;
+	}
+	
+	if (smb_name[strlen(smb_name)-1] == '$' )
+	{
+		smb_name[strlen(smb_name)-1] = '\0';
+		trust = True;
+	}
+
+	slprintf(filter, sizeof(filter)-1,
+	         "(&(cn = %s)(|(objectclass = sambaTrust)(objectclass = sambaAccount)))",
+	         smb_name);
+	
+	rc = ldap_search_s(ldap_struct, lp_ldap_suffix(), scope, filter, NULL, 0, &result);
+
+	switch (flag)
+	{
+		case ADD_USER:
+		{
+			if (ldap_count_entries(ldap_struct, result) ! = 0)
+			{
+				DEBUG(0,("User already in the base, with samba properties\n"));		
+				ldap_unbind(ldap_struct);
+				return False;
+			}
+			ldap_state = LDAP_MOD_ADD;
+			break;
+		}
+		case MODIFY_USER:
+		{
+			if (ldap_count_entries(ldap_struct, result) ! = 1)
+			{
+				DEBUG(0,("No user to modify !\n"));		
+				ldap_unbind(ldap_struct);
+				return False;
+			}
+			ldap_state = LDAP_MOD_REPLACE;
+			break;
+		}
+		default:
+		{
+			DEBUG(0,("How did you come here? \n"));		
+			ldap_unbind(ldap_struct);
+			return False;
+			break;
+		}
+	}
+	slprintf(dn, sizeof(dn)-1, "cn = %s, %s",smb_name, lp_ldap_suffix() );
+
+	if (newpwd->smb_passwd ! = NULL)
+	{
+		int i;
+		for( i = 0; i < 16; i++)
+		{
+			slprintf(&temp[2*i], sizeof(temp) - 1, "%02X", newpwd->smb_passwd[i]);
+		}
+    	
+	}
+	else
+	{
+		if (newpwd->acct_ctrl & ACB_PWNOTREQ)
+		{
+			slprintf(temp, sizeof(temp) - 1, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+		}
+		else
+		{
+			slprintf(temp, sizeof(temp) - 1, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+		}
+	}
+	slprintf(lmhash, sizeof(lmhash)-1, "%s", temp);
+
+	if (newpwd->smb_nt_passwd ! = NULL)
+	{
+		int i;
+   		for( i = 0; i < 16; i++)
+		{
+			slprintf(&temp[2*i], sizeof(temp) - 1, "%02X", newpwd->smb_nt_passwd[i]);
+		}
+    	
+	}
+	else
+	{
+		if (newpwd->acct_ctrl & ACB_PWNOTREQ)
+		{
+			slprintf(temp, sizeof(temp) - 1, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+		}
+		else
+		{
+			slprintf(temp, sizeof(temp) - 1, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+		}
+	}
+	slprintf(nthash, sizeof(nthash)-1, "%s", temp);
+
+	slprintf(rid, sizeof(rid)-1, "%d", uid_to_user_rid(newpwd->smb_userid) );
+	slprintf(lst, sizeof(lst)-1, "%08X", newpwd->pass_last_set_time);
+	
+	mods = NULL; 
+
+	if (trust)
+	{
+		make_a_mod(&mods, ldap_state, "objectclass", "sambaTrust");
+		make_a_mod(&mods, ldap_state, "netbiosTrustName", smb_name);
+		make_a_mod(&mods, ldap_state, "trustPassword", nthash);
+	}
+	else
+	{
+		make_a_mod(&mods, ldap_state, "objectclass", "sambaAccount");
+		make_a_mod(&mods, ldap_state, "dBCSPwd", lmhash);
+		make_a_mod(&mods, ldap_state, "uid", smb_name);
+		make_a_mod(&mods, ldap_state, "unicodePwd", nthash);
+	}
+	
+	make_a_mod(&mods, ldap_state, "cn", smb_name);
+	
+	make_a_mod(&mods, ldap_state, "rid", rid);
+	make_a_mod(&mods, ldap_state, "pwdLastSet", lst);
+	make_a_mod(&mods, ldap_state, "userAccountControl", pdb_encode_acct_ctrl(newpwd->acct_ctrl));
+	
+	switch(flag)
+	{
+		case ADD_USER:
+		{
+			ldap_add_s(ldap_struct, dn, mods);
+			DEBUG(2,("modadd_ldappwd_entry: added: cn = %s in the LDAP database\n",smb_name));
+			break;
+		}
+		case MODIFY_USER:
+		{
+			ldap_modify_s(ldap_struct, dn, mods);
+			DEBUG(2,("modadd_ldappwd_entry: changed: cn = %s in the LDAP database_n",smb_name));
+			break;
+		}
+		default:
+		{
+			DEBUG(2,("modadd_ldappwd_entry: How did you come here? \n"));		
+			ldap_unbind(ldap_struct);
+			return False;
+			break;
+		}
+	}
+	
+	ldap_mods_free(mods, 1);
+	
+	ldap_unbind(ldap_struct);
+	
+	return True;
+}
+
+/************************************************************************
+ Add or modify an entry. everything except the smb struct
+
+*************************************************************************/
+static BOOL modadd_ldap21pwd_entry(struct sam_passwd *newpwd, int flag)
+{
+	
+	/* assume the struct is correct and filled
+	   that's the job of passdb.c to check */
+	int scope = LDAP_SCOPE_ONELEVEL;
+	int rc;
+	char *smb_name;
+	int trust = False;
+	int ldap_state;
+	pstring filter;
+	pstring dn;
+	pstring lmhash;
+	pstring nthash;
+	pstring rid;
+	pstring lst;
+	pstring temp;
+
+	LDAP *ldap_struct;
+	LDAPMessage *result;
+	LDAPMod **mods;
+	
+	smb_name = newpwd->smb_name;
+
+	if (!ldap_open_connection(&ldap_struct)) /* open a connection to the server */
+	{
+		return False;
+	}
+
+	if (!ldap_connect_system(ldap_struct)) /* connect as system account */
+	{
+		ldap_unbind(ldap_struct);
+		return False;
+	}
+	
+	if (smb_name[strlen(smb_name)-1] == '$' )
+	{
+		smb_name[strlen(smb_name)-1] = '\0';
+		trust = True;
+	}
+
+	slprintf(filter, sizeof(filter)-1,
+	         "(&(cn = %s)(|(objectclass = sambaTrust)(objectclass = sambaAccount)))",
+	         smb_name);
+	
+	rc = ldap_search_s(ldap_struct, lp_ldap_suffix(), scope, filter, NULL, 0, &result);
+
+	switch (flag)
+	{
+		case ADD_USER:
+		{
+			if (ldap_count_entries(ldap_struct, result) ! = 1)
+			{
+				DEBUG(2,("User already in the base, with samba properties\n"));		
+				ldap_unbind(ldap_struct);
+				return False;
+			}
+			ldap_state = LDAP_MOD_ADD;
+			break;
+		}
+
+		case MODIFY_USER:
+		{
+			if (ldap_count_entries(ldap_struct, result) ! = 1)
+			{
+				DEBUG(2,("No user to modify !\n"));		
+				ldap_unbind(ldap_struct);
+				return False;
+			}
+			ldap_state = LDAP_MOD_REPLACE;
+			break;
+		}
+
+		default:
+		{
+			DEBUG(2,("How did you come here? \n"));		
+			ldap_unbind(ldap_struct);
+			return False;
+			break;
+		}
+	}
+	slprintf(dn, sizeof(dn)-1, "cn = %s, %s",smb_name, lp_ldap_suffix() );
+	
+	mods = NULL; 
+
+	if (trust)
+	{
+	}
+	else
+	{
+	}
+	
+	make_a_mod(&mods, ldap_state, "cn", smb_name);
+	
+	make_a_mod(&mods, ldap_state, "rid", rid);
+	make_a_mod(&mods, ldap_state, "pwdLastSet", lst);
+	make_a_mod(&mods, ldap_state, "userAccountControl", pdb_encode_acct_ctrl(newpwd->acct_ctrl));
+	
+	ldap_modify_s(ldap_struct, dn, mods);
+	
+	ldap_mods_free(mods, 1);
+	
+	ldap_unbind(ldap_struct);
+	
 	return True;
 }
 
@@ -393,8 +733,7 @@ BOOL add_ldap21pwd_entry(struct smb_passwd *newpwd)
 *************************************************************************/
 BOOL add_ldappwd_entry(struct smb_passwd *newpwd)
 {
-	DEBUG(0,("add_ldappwd_entry - currently not supported\n"));
-	return True;
+	return (modadd_ldappwd_entry(newpwd, ADD_USER) );
 }
 
 /************************************************************************
@@ -408,10 +747,21 @@ BOOL add_ldappwd_entry(struct smb_passwd *newpwd)
  do not call this function directly.  use passdb.c instead.
 
 ************************************************************************/
-BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override)
+BOOL mod_ldappwd_entry(struct smb_passwd *pwd, BOOL override)
 {
-	DEBUG(0,("mod_ldappwd_entry - currently not supported\n"));
-    return False;
+	return (modadd_ldappwd_entry(pwd, MODIFY_USER) );
+}
+
+/************************************************************************
+ Routine to add an entry to the ldap passwd file.
+
+ do not call this function directly.  use passdb.c instead.
+
+*************************************************************************/
+BOOL add_ldap21pwd_entry(struct sam_passwd *newpwd)
+{	
+	return( modadd_ldappwd_entry(newpwd, ADD_USER)?
+	modadd_ldap21pwd_entry(newpwd, ADD_USER):False);
 }
 
 /************************************************************************
@@ -425,19 +775,11 @@ BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override)
  do not call this function directly.  use passdb.c instead.
 
 ************************************************************************/
-BOOL mod_ldap21pwd_entry(struct smb_passwd* pwd, BOOL override)
+BOOL mod_ldap21pwd_entry(struct sam_passwd *pwd, BOOL override)
 {
-	DEBUG(0,("mod_ldap21pwd_entry - currently not supported\n"));
-    return False;
+	return( modadd_ldappwd_entry(pwd, MODIFY_USER)?
+	modadd_ldap21pwd_entry(pwd, MODIFY_USER):False);
 }
-
-/***************************************************************
- Start to enumerate the ldap passwd list. Returns a void pointer
- to ensure no modification outside this module.
-
- do not call this function directly.  use passdb.c instead.
-
- ****************************************************************/
 
 struct ldap_enum_info
 {
@@ -448,6 +790,13 @@ struct ldap_enum_info
 
 static struct ldap_enum_info ldap_ent;
 
+/***************************************************************
+ Start to enumerate the ldap passwd list. Returns a void pointer
+ to ensure no modification outside this module.
+
+ do not call this function directly.  use passdb.c instead.
+
+ ****************************************************************/
 void *startldappwent(BOOL update)
 {
 	int scope = LDAP_SCOPE_ONELEVEL;
@@ -456,32 +805,36 @@ void *startldappwent(BOOL update)
 	pstring filter;
 
 	if (!ldap_open_connection(&ldap_ent.ldap_struct)) /* open a connection to the server */
+	{
 		return NULL;
+	}
 
 	if (!ldap_connect_system(ldap_ent.ldap_struct)) /* connect as system account */
+	{
 		return NULL;
+	}
 
 	/* when the class is known the search is much faster */
 	switch (0)
 	{
 		case 1:
 		{
-			pstrcpy(filter, "objectclass=sambaAccount");
+			pstrcpy(filter, "objectclass = sambaAccount");
 			break;
 		}
 		case 2:
 		{
-			pstrcpy(filter, "objectclass=sambaMachine");
+			pstrcpy(filter, "objectclass = sambaTrust");
 			break;
 		}
 		default:
 		{
-			pstrcpy(filter, "(|(objectclass=sambaMachine)(objectclass=sambaAccount))");
+			pstrcpy(filter, "(|(objectclass = sambaTrust)(objectclass = sambaAccount))");
 			break;
 		}
 	}
 
-	rc=ldap_search_s(ldap_ent.ldap_struct, lp_ldap_suffix(), scope, filter, NULL, 0, &ldap_ent.result);
+	rc = ldap_search_s(ldap_ent.ldap_struct, lp_ldap_suffix(), scope, filter, NULL, 0, &ldap_ent.result);
 
 	DEBUG(2,("%d entries in the base!\n", ldap_count_entries(ldap_ent.ldap_struct, ldap_ent.result) ));
 
@@ -503,7 +856,7 @@ struct smb_passwd *getldappwent(void *vp)
 
 	ldap_vp->entry = ldap_next_entry(ldap_vp->ldap_struct, ldap_vp->entry);
 
-	if (ldap_vp->entry != NULL)
+	if (ldap_vp->entry ! = NULL)
 	{
 		ldap_get_smb_passwd(ldap_vp->ldap_struct, ldap_vp->entry, &user);
 		return &user;
@@ -524,7 +877,7 @@ struct sam_passwd *getldap21pwent(void *vp)
 
 	ldap_vp->entry = ldap_next_entry(ldap_vp->ldap_struct, ldap_vp->entry);
 
-	if (ldap_vp->entry != NULL)
+	if (ldap_vp->entry ! = NULL)
 	{
 		ldap_get_sam_passwd(ldap_vp->ldap_struct, ldap_vp->entry, &user);
 		return &user;

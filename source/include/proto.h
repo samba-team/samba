@@ -225,10 +225,11 @@ void initialize_multibyte_vectors( int client_codepage);
 
 /*The following definitions come from  ldap.c  */
 
-BOOL add_ldap21pwd_entry(struct smb_passwd *newpwd);
+BOOL ldap_open_connection(LDAP **ldap_struct);
 BOOL add_ldappwd_entry(struct smb_passwd *newpwd);
-BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override);
-BOOL mod_ldap21pwd_entry(struct smb_passwd* pwd, BOOL override);
+BOOL mod_ldappwd_entry(struct smb_passwd *pwd, BOOL override);
+BOOL add_ldap21pwd_entry(struct sam_passwd *newpwd);
+BOOL mod_ldap21pwd_entry(struct sam_passwd *pwd, BOOL override);
 void *startldappwent(BOOL update);
 struct smb_passwd *getldappwent(void *vp);
 struct sam_passwd *getldap21pwent(void *vp);
@@ -1827,7 +1828,6 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  smbpass.c  */
 
-BOOL do_file_lock(int fd, int waitsecs, int type);
 void *startsmbpwent(BOOL update);
 void endsmbpwent(void *vp);
 struct sam_passwd *getsmb21pwent(void *vp);
@@ -1838,6 +1838,12 @@ BOOL add_smb21pwd_entry(struct sam_passwd *newpwd);
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
 BOOL mod_smb21pwd_entry(struct sam_passwd* pwd, BOOL override);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
+
+/*The following definitions come from  smbpassfile.c  */
+
+BOOL do_file_lock(int fd, int waitsecs, int type);
+BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth);
+BOOL pw_file_unlock(int fd, int *plock_depth);
 BOOL trust_password_lock( char *domain, char *name, BOOL update);
 BOOL trust_password_unlock(void);
 BOOL trust_password_delete( char *domain, char *name );
