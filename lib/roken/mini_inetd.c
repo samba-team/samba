@@ -116,7 +116,7 @@ mini_inetd (int port)
 
     FD_ZERO(&orig_read_set);
 
-    for (i = 0, a = ai; a != NULL; a = a->ai_next, ++i) {
+    for (i = 0, a = ai; a != NULL; a = a->ai_next) {
 	fds[i] = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	if (fds[i] < 0) {
 	    warn (1, "socket");
@@ -129,8 +129,11 @@ mini_inetd (int port)
 	    err (1, "listen");
 	FD_SET(fds[i], &orig_read_set);
 	max_fd = max(max_fd, fds[i]);
+	++i;
     }
     freeaddrinfo (ai);
+    if (i == 0)
+	errx (1, "no sockets");
 
     do {
 	read_set = orig_read_set;
