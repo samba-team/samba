@@ -607,12 +607,15 @@ struct ldb_context *ltdb_connect(const char *url,
 	struct ldb_context *ldb;
 
 	/* parse the url */
-	if (strncmp(url, "tdb://", 6) != 0) {
-		errno = EINVAL;
-		return NULL;
+	if (strchr(url, ':')) {
+		if (strncmp(url, "tdb://", 6) != 0) {
+			errno = EINVAL;
+			return NULL;
+		}
+		path = url+6;
+	} else {
+		path = url;
 	}
-
-	path = url+6;
 
 	tdb_flags = TDB_DEFAULT;
 
