@@ -81,6 +81,7 @@
 #include <parse_units.h>
 #include <des.h>
 #include <krb5.h>
+#include <krb5_locl.h>
 #include <hdb.h>
 #include <hdb_err.h>
 #include <der.h> /* copy_octet_string */
@@ -92,6 +93,7 @@
 #include <krb_db.h>
 #endif
 
+#undef ALLOC
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
 #define ALLOC_SEQ(X, N) do { (X)->len = (N); \
 (X)->val = calloc((X)->len, sizeof(*(X)->val)); } while(0)

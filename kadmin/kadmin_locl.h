@@ -75,6 +75,7 @@
 #include <roken.h>
 #include <des.h>
 #include <krb5.h>
+#include <krb5_locl.h>
 #include <hdb.h>
 #include <hdb_err.h>
 #include <kadm5/admin.h>
@@ -106,6 +107,7 @@ DECL(dump);
 DECL(load);
 DECL(merge);
 
+#undef ALLOC
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
 
 /* util.c */
