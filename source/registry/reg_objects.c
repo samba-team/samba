@@ -234,8 +234,8 @@ TALLOC_CTX* regval_ctr_getctx( REGVAL_CTR *val )
  Add a new registry value to the array
  **********************************************************************/
 
-int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type, 
-                         char *data_p, size_t size )
+int regval_ctr_addvalue( REGVAL_CTR *ctr, const char *name, uint16 type, 
+                         const char *data_p, size_t size )
 {
 	REGISTRY_VALUE **ppreg;
 	
@@ -308,7 +308,7 @@ int regval_ctr_copyvalue( REGVAL_CTR *ctr, REGISTRY_VALUE *val )
  No need to free memory since it is talloc'd.
  **********************************************************************/
 
-int regval_ctr_delvalue( REGVAL_CTR *ctr, char *name )
+int regval_ctr_delvalue( REGVAL_CTR *ctr, const char *name )
 {
 	int 	i;
 	
