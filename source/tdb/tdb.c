@@ -1406,11 +1406,15 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
 			 tdb_log_func log_fn)
 {
-	TDB_CONTEXT tdb[1], *ret;
+	TDB_CONTEXT *tdb;
 	struct stat st;
 	int rev = 0, locked;
 
-	memset(tdb, 0, sizeof(*tdb));
+	if (!(tdb = calloc(1, sizeof *tdb))) {
+		/* Can't log this */
+		errno = ENOMEM;
+		goto fail;
+	}
 	tdb->fd = -1;
 	tdb->name = NULL;
 	tdb->map_ptr = NULL;
@@ -1420,6 +1424,8 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 	tdb->log_fn = log_fn;
 
 	if ((open_flags & O_ACCMODE) == O_WRONLY) {
+		TDB_LOG((tdb, 0, "tdb_open_ex: can't open tdb %s write-only\n",
+			 name));
 		errno = EINVAL;
 		goto fail;
 	}
@@ -1441,12 +1447,18 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 		goto internal;
 	}
 
-	if ((tdb->fd = open(name, open_flags, mode)) == -1)
+	if ((tdb->fd = open(name, open_flags, mode)) == -1) {
+		TDB_LOG((tdb, 0, "tdb_open_ex: could not open file %s: %s\n",
+			 name, strerror(errno)));
 		goto fail;	/* errno set by open(2) */
+	}
 
 	/* ensure there is only one process initialising at once */
-	if (tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0) == -1)
+	if (tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0) == -1) {
+		TDB_LOG((tdb, 0, "tdb_open_ex: failed to get global lock on %s: %s\n",
+			 name, strerror(errno)));
 		goto fail;	/* errno set by tdb_brlock */
+	}
 
 	/* we need to zero database if we are the only one with it open */
 	if ((locked = (tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))
@@ -1478,8 +1490,8 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 
 	/* Is it already in the open list?  If so, fail. */
 	if (tdb_already_open(st.st_dev, st.st_ino)) {
-		TDB_LOG((tdb, 2,
-			 "tdb_open_ex: %s (%d,%d) is already open\n",
+		TDB_LOG((tdb, 2, "tdb_open_ex: "
+			 "%s (%d,%d) is already open in this process\n",
 			 name, st.st_dev, st.st_ino));
 		errno = EBUSY;
 		goto fail;
@@ -1511,19 +1523,20 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 		goto fail;
 
  internal:
-	if (!(ret = malloc(sizeof(*tdb)))) {
-		errno = ENOMEM;
-		goto fail;
-	}
-	*ret = *tdb;
+	/* Internal (memory-only) databases skip all the code above to
+	 * do with disk files, and resume here by releasing their
+	 * global lock and hooking into the active list. */
 	if (tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0) == -1)
 		goto fail;
-	ret->next = tdbs;
-	tdbs = ret;
-	return ret;
+	tdb->next = tdbs;
+	tdbs = tdb;
+	return tdb;
 
  fail:
 	{ int save_errno = errno;
+
+	if (!tdb)
+		return NULL;
 	
 	if (tdb->map_ptr) {
 		if (tdb->flags & TDB_INTERNAL)
