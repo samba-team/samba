@@ -1,3 +1,10 @@
+2004-12-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check-symbols.sh: add exported symbols test
+	
+	* Makefile.am.common: add CHECK_SYMBOLS tests, so that we don't
+	export to much stuff
+	
 2004-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* make-proto.pl: add cpluscplus extern "C" support
