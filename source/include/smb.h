@@ -24,18 +24,6 @@
 #ifndef _SMB_H
 #define _SMB_H
 
-#ifndef MAX_CONNECTIONS
-#define MAX_CONNECTIONS 127
-#endif
-
-#ifndef MAX_OPEN_FILES
-#define MAX_OPEN_FILES 50
-#endif
-
-#ifndef GUEST_ACCOUNT
-#define GUEST_ACCOUNT "nobody"
-#endif
-
 #define BUFFER_SIZE (0xFFFF)
 #define SAFETY_MARGIN 1024
 
