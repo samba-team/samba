@@ -2176,6 +2176,7 @@ fi
   AC_CHECK_LIB(crypto, des_set_key, [LIBS="$LIBS -lcrypto"])
   AC_CHECK_LIB(asn1, copy_Authenticator, [LIBS="$LIBS -lasn1"])
   AC_CHECK_LIB(roken, roken_getaddrinfo_hostspec, [LIBS="$LIBS -lroken"])
+  AC_CHECK_LIB(resolv, dn_expand, [LIBS="$LIBS -lresolv"])
   # Heimdal checks. On static Heimdal gssapi must be linked before krb5.
   AC_CHECK_LIB(gssapi, gss_display_status, [LIBS="$LIBS -lgssapi -lkrb5";
         AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
