@@ -4368,7 +4368,6 @@ static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR *ctr, prs_struct *
 		default:
 			DEBUG(2, ("samr_io_userinfo_ctr: unknown switch level 0x%x\n", ctr->switch_value));
 			return False;
-			break;
 
 	}
 

@@ -2337,7 +2337,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	copy_sam_passwd(&new_pwd, pwd);
 	copy_id23_to_sam_passwd(&new_pwd, id23);
 
-	if (!decode_pw_buffer(id23->pass, buf, 256, &len))
+	if (!decode_pw_buffer((const char *)id23->pass, buf, 256, &len))
 		return False;
 
 	nt_lm_owf_gen(buf, nt_hash, lm_hash);
@@ -2376,7 +2376,7 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 *id24, uint32 rid)
 	pdb_init_sam(&new_pwd);
 	copy_sam_passwd(&new_pwd, pwd);
 
-	if (!decode_pw_buffer(id24->pass, buf, 256, &len))
+	if (!decode_pw_buffer((const char *)id24->pass, buf, 256, &len))
 		return False;
 
 	nt_lm_owf_gen(buf, nt_hash, lm_hash);
