@@ -438,6 +438,14 @@
 #include <valgrind.h>
 #endif
 
+/* If we have --enable-developer and the valgrind header is present,
+ * then we're OK to use it.  Set a macro so this logic can be done only
+ * once. */
+#if defined(DEVELOPER) && HAVE_VALGRIND_H
+#define VALGRIND
+#endif
+
+
 /* we support ADS if we want it and have krb5 and ldap libs */
 #if defined(WITH_ADS) && defined(HAVE_KRB5) && defined(HAVE_LDAP)
 #define HAVE_ADS
