@@ -34,6 +34,7 @@ prots[] =
       {PROTOCOL_LANMAN1,"LANMAN1.0"},
       {PROTOCOL_LANMAN1,"Windows for Workgroups 3.1a"},
       {PROTOCOL_LANMAN2,"LM1.2X002"},
+      {PROTOCOL_NT1,"Samba"},
       {PROTOCOL_NT1,"LANMAN2.1"},
       {PROTOCOL_NT1,"NT LM 0.12"},
       {-1,NULL}
@@ -315,16 +316,177 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 	return True;
 }
 
+
+/****************************************************************************
+send a extended security session setup blob, returning a reply blob
+****************************************************************************/
+static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
+{
+	uint32 capabilities = cli_session_setup_capabilities(cli);
+	char *p;
+	DATA_BLOB blob2;
+
+	blob2 = data_blob(NULL, 0);
+
+	capabilities |= CAP_EXTENDED_SECURITY;
+
+	/* send a session setup command */
+	memset(cli->outbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,12,0,True);
+	CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
+	cli_setup_packet(cli);
+			
+	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
+	SSVAL(cli->outbuf,smb_vwv3,2);
+	SSVAL(cli->outbuf,smb_vwv4,0);
+	SIVAL(cli->outbuf,smb_vwv5,0);
+	SSVAL(cli->outbuf,smb_vwv7,blob.length);
+	SIVAL(cli->outbuf,smb_vwv10,capabilities); 
+	p = smb_buf(cli->outbuf);
+	memcpy(p, blob.data, blob.length);
+	p += blob.length;
+	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+		return blob2;
+
+	show_msg(cli->inbuf);
+
+	if (cli_is_error(cli) && !NT_STATUS_EQUAL(cli_nt_error(cli),
+						  NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		return blob2;
+	}
+	
+	/* use the returned vuid from now on */
+	cli->vuid = SVAL(cli->inbuf,smb_uid);
+	
+	p = smb_buf(cli->inbuf);
+
+	blob2 = data_blob(p, SVAL(cli->inbuf, smb_vwv3));
+
+	p += blob2.length;
+	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
+
+	return blob2;
+}
+
+
 #if HAVE_KRB5
+/****************************************************************************
+do a spnego/kerberos encrypted session setup
+****************************************************************************/
+static BOOL cli_session_setup_kerberos(struct cli_state *cli, char *principle, char *workgroup)
+{
+	DATA_BLOB blob2, negTokenTarg;
+
+	/* generate the encapsulated kerberos5 ticket */
+	negTokenTarg = spnego_gen_negTokenTarg(cli, principle);
+
+	if (!negTokenTarg.data) return False;
+
+	blob2 = cli_session_setup_blob(cli, negTokenTarg);
+
+	/* we don't need this blob for kerberos */
+	data_blob_free(blob2);
+
+	return !cli_is_error(cli);
+}
+#endif
+
+/****************************************************************************
+do a spnego/NTLMSSP encrypted session setup
+****************************************************************************/
+static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user, 
+				      char *pass, char *workgroup)
+{
+	const char *mechs[] = {"1 3 6 1 4 1 311 2 2 10", NULL};
+	DATA_BLOB msg1;
+	DATA_BLOB blob, chal1, chal2, auth;
+	uint8 challenge[8];
+	uint8 nthash[24], lmhash[24], sess_key[16];
+	uint32 neg_flags;
+
+	neg_flags = NTLMSSP_NEGOTIATE_UNICODE | 
+		NTLMSSP_NEGOTIATE_LM_KEY | 
+		NTLMSSP_NEGOTIATE_NTLM;
+
+	memset(sess_key, 0, 16);
+
+	/* generate the ntlmssp negotiate packet */
+	msrpc_gen(&blob, "CddB",
+		  "NTLMSSP",
+		  NTLMSSP_NEGOTIATE,
+		  neg_flags,
+		  sess_key, 16);
+
+	/* and wrap it in a SPNEGO wrapper */
+	msg1 = gen_negTokenTarg(mechs, blob);
+	data_blob_free(blob);		
+
+	/* now send that blob on its way */
+	blob = cli_session_setup_blob(cli, msg1);
+
+	data_blob_free(msg1); 
+
+	if (!NT_STATUS_EQUAL(cli_nt_error(cli), NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		return False;
+	}
+
+	/* the server gives us back two challenges */
+	if (!spnego_parse_challenge(blob, &chal1, &chal2)) {
+		return False;
+	}
+
+	data_blob_free(blob);		
+
+	/* encrypt the password with the challenge */
+	memcpy(challenge, chal1.data + 24, 8);
+	SMBencrypt(pass, challenge,lmhash);
+	SMBNTencrypt(pass, challenge,nthash);
+
+	data_blob_free(chal1);
+	data_blob_free(chal2);
+
+	/* this generates the actual auth packet */
+	msrpc_gen(&blob, "CdBBUUUBd", 
+		  "NTLMSSP", 
+		  NTLMSSP_AUTH, 
+		  lmhash, 24,
+		  nthash, 24,
+		  workgroup, 
+		  user, 
+		  cli->calling.name,
+		  sess_key, 16,
+		  neg_flags);
+
+	/* wrap it in SPNEGO */
+	auth = spnego_gen_auth(blob);
+
+	data_blob_free(blob);
+
+	/* now send the auth packet and we should be done */
+	blob = cli_session_setup_blob(cli, auth);
+
+	data_blob_free(auth);
+	data_blob_free(blob);
+
+	return !cli_is_error(cli);
+}
+
+
 /****************************************************************************
 do a spnego encrypted session setup
 ****************************************************************************/
 static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user, 
 				     char *pass, char *workgroup)
 {
-	uint32 capabilities = cli_session_setup_capabilities(cli);
-	char *p;
-	DATA_BLOB blob2, negTokenTarg;
 	char *principle;
 	char *OIDs[ASN1_MAX_OIDS];
 	uint8 guid[16];
@@ -347,73 +509,18 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 	}
 	DEBUG(3,("got principle=%s\n", principle));
 
-	if (!got_kerberos_mechanism) {
-		DEBUG(1,("Server didn't offer kerberos5 mechanism!?\n"));
-		return False;
-	}
+	fstrcpy(cli->user_name, user);
 
-	/* generate the encapsulated kerberos5 ticket */
-	negTokenTarg = spnego_gen_negTokenTarg(cli, principle);
+#if HAVE_KRB5
+	if (got_kerberos_mechanism && cli->use_kerberos) {
+		return cli_session_setup_kerberos(cli, principle, workgroup);
+	}
+#endif
 
 	free(principle);
 
-	if (!negTokenTarg.data) return False;
-
-	capabilities |= CAP_EXTENDED_SECURITY;
-
-	/* send a session setup command */
-	memset(cli->outbuf,'\0',smb_size);
-
-	set_message(cli->outbuf,12,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
-	cli_setup_packet(cli);
-			
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
-	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
-	SSVAL(cli->outbuf,smb_vwv3,2);
-	SSVAL(cli->outbuf,smb_vwv4,0);
-	SIVAL(cli->outbuf,smb_vwv5,0);
-	SSVAL(cli->outbuf,smb_vwv7,negTokenTarg.length);
-	SIVAL(cli->outbuf,smb_vwv10,capabilities); 
-	p = smb_buf(cli->outbuf);
-	memcpy(p, negTokenTarg.data, negTokenTarg.length);
-	p += negTokenTarg.length;
-	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
-	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
-	cli_setup_bcc(cli, p);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli))
-		return False;
-
-	show_msg(cli->inbuf);
-
-	if (cli_is_error(cli)) {
-		return False;
-	}
-	
-	/* use the returned vuid from now on */
-	cli->vuid = SVAL(cli->inbuf,smb_uid);
-	
-	p = smb_buf(cli->inbuf);
-
-	blob2 = data_blob(p, SVAL(cli->inbuf, smb_vwv3));
-
-	p += blob2.length;
-	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
-	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
-	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
-
-	fstrcpy(cli->user_name, user);
-
-	data_blob_free(negTokenTarg);
-
-	/* we don't need this blob until we do NTLMSSP */
-	data_blob_free(blob2);
-
-	return True;
+	return cli_session_setup_ntlmssp(cli, user, pass, workgroup);
 }
-#endif
 
 
 /****************************************************************************
@@ -673,11 +780,6 @@ BOOL cli_negprot(struct cli_state *cli)
 	cli_setup_packet(cli);
 
 	CVAL(smb_buf(cli->outbuf),0) = 2;
-
-	if (cli->use_spnego) {
-		SSVAL(cli->outbuf, smb_flg2, 
-		      SVAL(cli->outbuf, smb_flg2) | FLAGS2_EXTENDED_SECURITY);
-	}
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli))

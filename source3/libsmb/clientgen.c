@@ -112,10 +112,7 @@ void cli_setup_packet(struct cli_state *cli)
 		if (cli->capabilities & CAP_STATUS32) {
 			flags2 |= FLAGS2_32_BIT_ERROR_CODES;
 		}
-		if (cli->use_spnego) {
-			/* once we have NTLMSSP we can enable this unconditionally */
-			flags2 |= FLAGS2_EXTENDED_SECURITY;
-		}
+		flags2 |= FLAGS2_EXTENDED_SECURITY;
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }
