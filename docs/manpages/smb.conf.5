@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "01 February 2002" "" ""
+.TH "SMB.CONF" "5" "06 February 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -1333,6 +1333,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIset directory\fR
+.TP 0.2i
+\(bu
+\fIshare modes\fR
 .TP 0.2i
 \(bu
 \fIshort preserve case\fR
@@ -2879,7 +2882,7 @@ would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
 .TP
-\fBforce directory\fR
+\fBforce directory  security mode (S)\fR
 This parameter controls what UNIX permission bits 
 can be modified when a Windows NT client is manipulating the UNIX 
 permission on a directory using the native NT security dialog box.
@@ -6007,6 +6010,29 @@ for details.
 
 Default: \fBset directory = no\fR
 .TP
+\fBshare modes (S)\fR
+This enables or disables the honoring of 
+the \fIshare modes\fR during a file open. These 
+modes are used by clients to gain exclusive read or write access 
+to a file.
+
+These open modes are not directly supported by UNIX, so
+they are simulated using shared memory, or lock files if your 
+UNIX doesn't support shared memory (almost all do).
+
+The share modes that are enabled by this option are 
+DENY_DOS, DENY_ALL,
+DENY_READ, DENY_WRITE,
+DENY_NONE and DENY_FCB.
+
+This option gives full share compatibility and enabled 
+by default.
+
+You should \fBNEVER\fR turn this parameter 
+off as many Windows applications will break if you do so.
+
+Default: \fBshare modes = yes\fR
+.TP
 \fBshort preserve case (S)\fR
 This boolean parameter controls if new files 
 which conform to 8.3 syntax, that is all in upper case and of 
@@ -7143,7 +7169,7 @@ again.
 
 Default: \fBwinbind cache type = 15\fR
 .TP
-\fBwinbind enum\fR
+\fBwinbind enum users\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of users through the
@@ -7162,7 +7188,7 @@ usernames.
 
 Default: \fBwinbind enum users = yes \fR
 .TP
-\fBwinbind enum\fR
+\fBwinbind enum groups\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of groups through the

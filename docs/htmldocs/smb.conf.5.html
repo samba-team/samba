@@ -4188,6 +4188,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#SHAREMODES"
+><TT
+CLASS="PARAMETER"
+><I
+>share modes</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#SHORTPRESERVECASE"
 ><TT
 CLASS="PARAMETER"
@@ -4454,7 +4466,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1454"
+NAME="AEN1458"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -16170,6 +16182,64 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="SHAREMODES"
+></A
+>share modes (S)</DT
+><DD
+><P
+>This enables or disables the honoring of 
+		the <TT
+CLASS="PARAMETER"
+><I
+>share modes</I
+></TT
+> during a file open. These 
+		modes are used by clients to gain exclusive read or write access 
+		to a file.</P
+><P
+>These open modes are not directly supported by UNIX, so
+		they are simulated using shared memory, or lock files if your 
+		UNIX doesn't support shared memory (almost all do).</P
+><P
+>The share modes that are enabled by this option are 
+		<TT
+CLASS="CONSTANT"
+>DENY_DOS</TT
+>, <TT
+CLASS="CONSTANT"
+>DENY_ALL</TT
+>,
+		<TT
+CLASS="CONSTANT"
+>DENY_READ</TT
+>, <TT
+CLASS="CONSTANT"
+>DENY_WRITE</TT
+>,
+		<TT
+CLASS="CONSTANT"
+>DENY_NONE</TT
+> and <TT
+CLASS="CONSTANT"
+>DENY_FCB</TT
+>.
+		</P
+><P
+>This option gives full share compatibility and enabled 
+		by default.</P
+><P
+>You should <EM
+>NEVER</EM
+> turn this parameter 
+		off as many Windows applications will break if you do so.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>share modes = yes</B
+></P
+></DD
+><DT
+><A
 NAME="SHORTPRESERVECASE"
 ></A
 >short preserve case (S)</DT
@@ -19287,7 +19357,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6082"
+NAME="AEN6105"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19317,7 +19387,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6088"
+NAME="AEN6111"
 ></A
 ><H2
 >VERSION</H2
@@ -19328,7 +19398,7 @@ NAME="AEN6088"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6091"
+NAME="AEN6114"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19407,7 +19477,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6111"
+NAME="AEN6134"
 ></A
 ><H2
 >AUTHOR</H2
