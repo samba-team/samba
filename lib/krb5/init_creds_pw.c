@@ -393,7 +393,6 @@ krb5_get_init_creds_password(krb5_context context,
     krb5_data password_data;
     int done;
 
-    memset(&kdc_reply, 0, sizeof(kdc_reply));
     ret = get_init_creds_common(context, creds, client, start_time,
 				in_tkt_service, options,
 				&addrs, &etypes, &this_cred, &pre_auth_types,
@@ -425,6 +424,7 @@ krb5_get_init_creds_password(krb5_context context,
 
     done = 0;
     while(!done) {
+	memset(&kdc_reply, 0, sizeof(kdc_reply));
 	ret = krb5_get_in_cred (context,
 				flags.i,
 				addrs,
@@ -503,7 +503,6 @@ krb5_get_init_creds_password(krb5_context context,
 	default:
 	    goto out;
 	}
-	memset(&kdc_reply, 0, sizeof(kdc_reply));
     }
 
     if (prompter)
