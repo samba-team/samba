@@ -326,7 +326,13 @@ static BOOL exact_match(char *str,char *mask, BOOL case_sig)
 		return False;
 	if (case_sig)	
 		return strcmp(str,mask)==0;
-	return StrCaseCmp(str,mask) == 0;
+	if (StrCaseCmp(str,mask) != 0) {
+		return False;
+	}
+	if (ms_has_wild(str)) {
+		return False;
+	}
+	return True;
 }
 
 /****************************************************************************
