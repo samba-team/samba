@@ -1889,13 +1889,18 @@ struct cli_state *do_connect(char *server, char *share)
 	char *server_n;
 	struct in_addr ip;
 	extern struct in_addr ipzero;
-
-	if (*share == '\\') {
-		server = share+2;
-		share = strchr(server,'\\');
-		if (!share) return NULL;
-		*share = 0;
-		share++;
+	fstring servicename;
+	char *sharename;
+	
+	/* make a copy so we don't modify the global string 'service' */
+	safe_strcpy(servicename, share, sizeof(servicename)-1);
+	sharename = servicename;
+	if (*sharename == '\\') {
+		server = sharename+2;
+		sharename = strchr(server,'\\');
+		if (!sharename) return NULL;
+		*sharename = 0;
+		sharename++;
 	}
 
 	server_n = server;
@@ -1978,7 +1983,7 @@ struct cli_state *do_connect(char *server, char *share)
 	
 	DEBUG(4,(" session setup ok\n"));
 
-	if (!cli_send_tconX(c, share, "?????",
+	if (!cli_send_tconX(c, sharename, "?????",
 			    password, strlen(password)+1)) {
 		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
@@ -2040,6 +2045,7 @@ static void usage(char *pname)
   DEBUG(0,("\t-L host               get a list of shares available on a host\n"));
   DEBUG(0,("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n"));
   DEBUG(0,("\t-m max protocol       set the max protocol level\n"));
+  DEBUG(0,("\t-A filename           get the credentials from a file\n"));
   DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
   DEBUG(0,("\t-T<c|x>IXFqgbNan      command line tar\n"));
   DEBUG(0,("\t-D directory          start from directory\n"));
@@ -2329,7 +2335,7 @@ static int do_message_op(void)
 	}
 
 	while ((opt = 
-		getopt(argc, argv,"s:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:")) != EOF) {
+		getopt(argc, argv,"s:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:A:")) != EOF) {
 		switch (opt) {
 		case 's':
 			pstrcpy(servicesf, optarg);
@@ -2400,6 +2406,62 @@ static int do_message_op(void)
 				}
 			}
 			break;
+
+		case 'A':
+			{
+ 	 			FILE *auth;
+        	                fstring buf;
+                        	uint16 len = 0;
+				char *ptr, *val, *param;
+                               
+	                        if ((auth=sys_fopen(optarg, "r")) == NULL)
+				{
+					/* fail if we can't open the credentials file */
+					DEBUG(0,("ERROR: Unable to open credentials file!\n"));
+					exit (-1);
+				}
+                                
+				while (!feof(auth))
+				{  
+					/* get a line from the file */
+					if (!fgets (buf, sizeof(buf), auth))
+						continue;
+					len = strlen(buf);
+					
+					if ((len) && (buf[len-1]=='\n'))
+					{
+						buf[len-1] = '\0';
+						len--;
+					}	
+					if (len == 0)
+						continue;
+					
+					/* break up the line into parameter & value.
+					   will need to eat a little whitespace possibly */
+					param = buf;
+					if (!(ptr = strchr (buf, '=')))
+						continue;
+					val = ptr+1;
+					*ptr = '\0';
+					
+					/* eat leading white space */
+					while ((*val!='\0') && ((*val==' ') || (*val=='\t')))
+						val++;
+					
+					if (strwicmp("password", param) == 0)
+					{
+						pstrcpy(password, val);
+						got_pass = True;
+					}
+					else if (strwicmp("username", param) == 0)
+						pstrcpy(username, val);
+						
+					memset(buf, 0, sizeof(buf));
+				}
+				fclose(auth);
+			}
+			break;
+
 		case 'L':
 			p = optarg;
 			while(*p == '\\' || *p == '/')
