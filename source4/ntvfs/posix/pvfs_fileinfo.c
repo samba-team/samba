@@ -95,7 +95,7 @@ NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	name->dos.attrib = dos_mode_from_stat(pvfs, &name->st);
 	name->dos.alloc_size = pvfs_round_alloc_size(pvfs, name->st.st_size);
 	name->dos.nlink = name->st.st_nlink;
-	name->dos.ea_size = 0;
+	name->dos.ea_size = 4;
 	name->dos.file_id = (((uint64_t)name->st.st_dev)<<32) | name->st.st_ino;
 	name->dos.flags = 0;
 
