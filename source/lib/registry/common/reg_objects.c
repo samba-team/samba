@@ -85,7 +85,7 @@ char *reg_val_name( REG_VAL *val )
 /**********************************************************************
  *********************************************************************/
 
-uint32 reg_val_type( REG_VAL *val )
+uint32_t reg_val_type( REG_VAL *val )
 {
 	return val->data_type;
 }

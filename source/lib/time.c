@@ -164,10 +164,10 @@ static uint16 make_dos_time1(struct tm *t)
   create a 32 bit dos packed date/time from some parameters
   This takes a GMT time and returns a packed localtime structure
 ********************************************************************/
-static uint32 make_dos_date(time_t unixdate, int zone_offset)
+static uint32_t make_dos_date(time_t unixdate, int zone_offset)
 {
 	struct tm *t;
-	uint32 ret=0;
+	uint32_t ret=0;
 
 	if (unixdate == 0) {
 		return 0;
@@ -192,7 +192,7 @@ This takes GMT time and puts local time in the buffer
 ********************************************************************/
 void push_dos_date(char *buf, int offset, time_t unixdate, int zone_offset)
 {
-	uint32 x = make_dos_date(unixdate, zone_offset);
+	uint32_t x = make_dos_date(unixdate, zone_offset);
 	SIVAL(buf,offset,x);
 }
 
@@ -202,7 +202,7 @@ This takes GMT time and puts local time in the buffer
 ********************************************************************/
 void push_dos_date2(char *buf,int offset,time_t unixdate, int zone_offset)
 {
-	uint32 x;
+	uint32_t x;
 	x = make_dos_date(unixdate, zone_offset);
 	x = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
 	SIVAL(buf,offset,x);
@@ -224,9 +224,9 @@ void push_dos_date3(char *buf,int offset,time_t unixdate, int zone_offset)
 /*******************************************************************
   interpret a 32 bit dos packed date/time to some parameters
 ********************************************************************/
-static void interpret_dos_date(uint32 date,int *year,int *month,int *day,int *hour,int *minute,int *second)
+static void interpret_dos_date(uint32_t date,int *year,int *month,int *day,int *hour,int *minute,int *second)
 {
-	uint32 p0,p1,p2,p3;
+	uint32_t p0,p1,p2,p3;
 
 	p0=date&0xFF; p1=((date&0xFF00)>>8)&0xFF; 
 	p2=((date&0xFF0000)>>16)&0xFF; p3=((date&0xFF000000)>>24)&0xFF;
@@ -245,7 +245,7 @@ static void interpret_dos_date(uint32 date,int *year,int *month,int *day,int *ho
 ********************************************************************/
 time_t pull_dos_date(const uint8 *date_ptr, int zone_offset)
 {
-	uint32 dos_date=0;
+	uint32_t dos_date=0;
 	struct tm t;
 	time_t ret;
 
@@ -269,7 +269,7 @@ like make_unix_date() but the words are reversed
 ********************************************************************/
 time_t pull_dos_date2(const uint8 *date_ptr, int zone_offset)
 {
-	uint32 x,x2;
+	uint32_t x,x2;
 
 	x = IVAL(date_ptr,0);
 	x2 = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);

@@ -37,10 +37,10 @@
 /*
  * This function is not in the Heimdal mainline.
  */
- krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds)
+ krb5_error_code krb5_set_real_time(krb5_context context, int32_t_t seconds, int32_t_t microseconds)
 {
 	krb5_error_code ret;
-	int32_t sec, usec;
+	int32_t_t sec, usec;
 
 	ret = krb5_us_timeofday(context, &sec, &usec);
 	if (ret)

@@ -443,7 +443,7 @@ typedef int socklen_t;
 #endif
 
 /*
-   Samba needs type definitions for int16, int32, uint16 and uint32.
+   Samba needs type definitions for int16, int32_t, uint16 and uint32_t.
 
    Normally these are signed and unsigned 16 and 32 bit integers, but
    they actually only need to be at least 16 and 32 bits
@@ -473,38 +473,19 @@ typedef int socklen_t;
 #endif
 
 #if !defined(int32)
-#if (SIZEOF_INT == 4)
-#define int32 int
-#elif (SIZEOF_LONG == 4)
-#define int32 long
-#elif (SIZEOF_SHORT == 4)
-#define int32 short
-#else
-/* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
-#define int32 int
+#define int32 int32_t
 #endif
-#endif
-
 
 #if !defined(uint32)
-#if (SIZEOF_INT == 4)
-#define uint32 unsigned int
-#elif (SIZEOF_LONG == 4)
-#define uint32 unsigned long
-#elif (SIZEOF_SHORT == 4)
-#define uint32 unsigned short
-#else
-/* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
-#define uint32 unsigned
-#endif
-#endif
-
-#if !defined(uint64)
-#define uint64 uint64_t
+#define uint32 uint32_t
 #endif
 
 #if !defined(int64)
 #define int64 int64_t
+#endif
+
+#if !defined(uint64)
+#define uint64 uint64_t
 #endif
 
 /*

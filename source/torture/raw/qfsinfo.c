@@ -24,7 +24,7 @@
 static struct {
 	const char *name;
 	enum fsinfo_level level;
-	uint32 capability_mask;
+	uint32_t capability_mask;
 	NTSTATUS status;
 	union smb_fsinfo fsinfo;
 } levels[] = {
@@ -131,7 +131,7 @@ BOOL torture_raw_qfsinfo(int dummy)
 
 	/* check for completely broken levels */
 	for (count=i=0; levels[i].name; i++) {
-		uint32 cap = cli->transport->negotiate.capabilities;
+		uint32_t cap = cli->transport->negotiate.capabilities;
 		/* see if this server claims to support this level */
 		if ((cap & levels[i].capability_mask) != levels[i].capability_mask) {
 			continue;

@@ -21,7 +21,7 @@
 #include "includes.h"
 
 static struct perm_mask_str {
-	uint32  mask;
+	uint32_t  mask;
 	const char   *str;
 } perms[] = {
 	{SEC_RIGHTS_FULL_CTRL,		"[Full Control]"},
@@ -50,7 +50,7 @@ static struct perm_mask_str {
 };
 
 /* convert a security permissions into a string */
-static void ads_disp_perms(uint32 type)
+static void ads_disp_perms(uint32_t type)
 {
 	int i = 0;
 	int j = 0;

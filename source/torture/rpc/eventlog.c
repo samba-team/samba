@@ -50,7 +50,7 @@ static BOOL test_GetNumRecords(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struc
 	return True;
 }
 
-static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32 offset)
+static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t offset)
 {
 	NTSTATUS status;
 	struct eventlog_ReadEventLog r;

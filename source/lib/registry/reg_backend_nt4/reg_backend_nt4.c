@@ -501,7 +501,7 @@ static DWORD str_to_dword(const char *a) {
 /*
  * Create an ACE
  */
-static BOOL nt_create_ace(SEC_ACE *ace, int type, int flags, uint32 perms, const char *sid)
+static BOOL nt_create_ace(SEC_ACE *ace, int type, int flags, uint32_t perms, const char *sid)
 {
   DOM_SID s;
   SEC_ACCESS access;

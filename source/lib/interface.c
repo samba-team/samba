@@ -28,7 +28,7 @@ struct in_addr loopback_ip;
 
 static struct interface *local_interfaces;
 
-#define ALLONES  ((uint32)0xFFFFFFFF)
+#define ALLONES  ((uint32_t)0xFFFFFFFF)
 #define MKBCADDR(_IP, _NM) ((_IP & _NM) | (_NM ^ ALLONES))
 #define MKNETADDR(_IP, _NM) (_IP & _NM)
 

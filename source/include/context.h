@@ -280,7 +280,7 @@ struct negotiate_context {
 	BOOL spnego_negotiated;
 
 	/* client capabilities */
-	uint32 client_caps;
+	uint32_t client_caps;
 
 	/* the timezone we sent to the client */
 	int zone_offset;

@@ -67,7 +67,7 @@ static NTSTATUS nttrans_ioctl(struct request_context *req,
 		struct smb_nttrans *trans)
 {
 	union smb_ioctl nt;
-	uint32 function;
+	uint32_t function;
 	uint16 fnum;
 	uint8 filter;
 	BOOL fsctl;

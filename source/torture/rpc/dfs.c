@@ -26,7 +26,7 @@ static BOOL test_Exist(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct dfs_Exist r;
-	uint32 exist = 0;
+	uint32_t exist = 0;
 
 	r.out.exist_flag = &exist;
 
@@ -78,14 +78,14 @@ static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16 le
 {
 	NTSTATUS status;
 	struct dfs_Enum r;
-	uint32 total=0;
+	uint32_t total=0;
 	struct dfs_EnumStruct e;
 	struct dfs_Info1 s;
 	struct dfs_EnumArray1 e1;
 	BOOL ret = True;
 	
 	r.in.level = level;
-	r.in.bufsize = (uint32)-1;
+	r.in.bufsize = (uint32_t)-1;
 	r.in.total = &total;
 	r.in.unknown = &total;
 	r.in.info = &e;

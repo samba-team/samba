@@ -469,7 +469,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 	struct dcerpc_packet pkt;
 	NTSTATUS status;
 	DATA_BLOB blob, payload;
-	uint32 remaining, chunk_size;
+	uint32_t remaining, chunk_size;
 
 	/* allow the application to tell when a fault has happened */
 	p->last_fault_code = 0;
@@ -560,7 +560,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 
 	/* continue receiving fragments */
 	while (!(pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
-		uint32 length;
+		uint32_t length;
 
 		status = p->transport.secondary_request(p, mem_ctx, &blob);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -764,7 +764,7 @@ static NTSTATUS dcerpc_ndr_validate_out(TALLOC_CTX *mem_ctx,
   standard format
 */
 NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
-			    uint32 opnum,
+			    uint32_t opnum,
 			    TALLOC_CTX *mem_ctx,
 			    NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
 			    NTSTATUS (*ndr_pull)(struct ndr_pull *, int, void *),

@@ -47,9 +47,9 @@ struct dcerpc_security {
 struct dcerpc_pipe {
 	TALLOC_CTX *mem_ctx;
 	int reference_count;
-	uint32 call_id;
-	uint32 srv_max_xmit_frag;
-	uint32 srv_max_recv_frag;
+	uint32_t call_id;
+	uint32_t srv_max_xmit_frag;
+	uint32_t srv_max_recv_frag;
 	unsigned flags;
 	struct dcerpc_security *security_state;
 	struct dcerpc_auth *auth_info;
@@ -67,7 +67,7 @@ struct dcerpc_pipe {
 	} transport;
 
 	/* the last fault code from a DCERPC fault */
-	uint32 last_fault_code;
+	uint32_t last_fault_code;
 };
 
 /* dcerpc pipe flags */
@@ -99,15 +99,15 @@ struct dcerpc_interface_call {
 };
 
 struct dcerpc_endpoint_list {
-	uint32 count;
+	uint32_t count;
 	const char * const *names;
 };
 
 struct dcerpc_interface_table {
 	const char *name;
 	const char *uuid;
-	uint32 if_version;
-	uint32 num_calls;
+	uint32_t if_version;
+	uint32_t num_calls;
 	const struct dcerpc_interface_call *calls;
 	const struct dcerpc_endpoint_list *endpoints;
 };
@@ -118,5 +118,5 @@ struct dcerpc_binding {
 	enum dcerpc_transport_t transport;
 	const char *host;
 	const char **options;
-	uint32 flags;
+	uint32_t flags;
 };

@@ -44,7 +44,7 @@ BOOL share_info_db_init(void)
 BOOL init_registry(void)
 { return True; }
 
-BOOL share_access_check(struct request_context *req, struct tcon_context *conn, int snum, uint32 desired_access)
+BOOL share_access_check(struct request_context *req, struct tcon_context *conn, int snum, uint32_t desired_access)
 { return True; }
 
 BOOL init_names(void)

@@ -445,7 +445,7 @@ static const char *gen_pattern(void)
 /*
   generate a bitmask
 */
-static uint32 gen_bits_mask(uint_t mask)
+static uint32_t gen_bits_mask(uint_t mask)
 {
 	uint_t ret = random();
 	return ret & mask;
@@ -455,7 +455,7 @@ static uint32 gen_bits_mask(uint_t mask)
   generate a bitmask with high probability of the first mask
   and low of the second
 */
-static uint32 gen_bits_mask2(uint32 mask1, uint32 mask2)
+static uint32_t gen_bits_mask2(uint32_t mask1, uint32_t mask2)
 {
 	if (gen_chance(10)) return gen_bits_mask(mask2);
 	return gen_bits_mask(mask1);
@@ -511,7 +511,7 @@ static SMB_OFF_T gen_lock_count(void)
 /*
   generate a ntcreatex flags field
 */
-static uint32 gen_ntcreatex_flags(void)
+static uint32_t gen_ntcreatex_flags(void)
 {
 	if (gen_chance(70)) return NTCREATEX_FLAGS_EXTENDED;
 	return gen_bits_mask2(0x1F, 0xFFFFFFFF);
@@ -520,7 +520,7 @@ static uint32 gen_ntcreatex_flags(void)
 /*
   generate a NT access mask
 */
-static uint32 gen_access_mask(void)
+static uint32_t gen_access_mask(void)
 {
 	if (gen_chance(50)) return SEC_RIGHT_MAXIMUM_ALLOWED;
 	if (gen_chance(20)) return GENERIC_RIGHTS_FILE_ALL_ACCESS;
@@ -530,7 +530,7 @@ static uint32 gen_access_mask(void)
 /*
   generate a ntcreatex create options bitfield
 */
-static uint32 gen_create_options(void)
+static uint32_t gen_create_options(void)
 {
 	if (gen_chance(20)) return gen_bits_mask(0xFFFFFFFF);
 	if (gen_chance(50)) return 0;
@@ -540,7 +540,7 @@ static uint32 gen_create_options(void)
 /*
   generate a ntcreatex open disposition
 */
-static uint32 gen_open_disp(void)
+static uint32_t gen_open_disp(void)
 {
 	if (gen_chance(10)) return gen_bits_mask(0xFFFFFFFF);
 	return gen_int_range(0, 5);
@@ -577,7 +577,7 @@ static uint16 gen_openx_func(void)
 /*
   generate a file attrib combination
 */
-static uint32 gen_attrib(void)
+static uint32_t gen_attrib(void)
 {
 	if (gen_chance(20)) return gen_bits_mask(0xFFFFFFFF);
 	return gen_bits_mask(FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_DIRECTORY);
@@ -605,7 +605,7 @@ static NTTIME gen_nttime(void)
 /*
   generate a milliseconds protocol timeout
 */
-static uint32 gen_timeout(void)
+static uint32_t gen_timeout(void)
 {
 	if (gen_chance(98)) return 0;
 	return random() % 50;

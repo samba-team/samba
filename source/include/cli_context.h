@@ -53,12 +53,12 @@ struct cli_negotiate {
 
 	int sec_mode;		/* security mode returned by negprot */
 	DATA_BLOB secblob;      /* cryptkey or negTokenInit blob */
-	uint32 sesskey;
+	uint32_t sesskey;
 	
 	smb_sign_info sign_info;
 
 	/* capabilities that the server reported */
-	uint32 capabilities;
+	uint32_t capabilities;
 	
 	int server_zone;
 	time_t server_time;
@@ -184,7 +184,7 @@ struct cli_session {
 	uint16 vuid;
 
 	/* default pid for this session */
-	uint32 pid;
+	uint32_t pid;
 
 	DATA_BLOB user_session_key;
 };

@@ -107,7 +107,7 @@ struct registry_ops {
 	WERROR (*request_value_change_notify) (REG_VAL *, value_notification_function);
 
 	/* Key management */
-	WERROR (*add_key)(REG_KEY *, const char *name, uint32 access_mask, SEC_DESC *, REG_KEY **);
+	WERROR (*add_key)(REG_KEY *, const char *name, uint32_t access_mask, SEC_DESC *, REG_KEY **);
 	WERROR (*del_key)(REG_KEY *);
 
 	/* Value management */

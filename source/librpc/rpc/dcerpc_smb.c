@@ -105,7 +105,7 @@ static NTSTATUS dcerpc_raw_recv(struct dcerpc_pipe *p,
 
 	/* the rest of the data is available via SMBreadX */
 	while (frag_length > payload.length) {
-		uint32 n;
+		uint32_t n;
 		union smb_read io;
 
 		n = frag_length - payload.length;
@@ -169,8 +169,8 @@ static NTSTATUS smb_secondary_request(struct dcerpc_pipe *p,
 {
 	struct smb_private *smb = p->transport.private;
 	union smb_read io;
-	uint32 n = 0x2000;
-	uint32 frag_length;
+	uint32_t n = 0x2000;
+	uint32_t frag_length;
 	NTSTATUS status;
 
 	*blob = data_blob_talloc(mem_ctx, NULL, n);

@@ -153,7 +153,7 @@ struct cli_request *cli_request_setup_session(struct cli_session *session,
 {
 	struct cli_request *req;
 	uint16 flags2;
-	uint32 capabilities;
+	uint32_t capabilities;
 
 	req = cli_request_setup_transport(session->transport, command, wct, buflen);
 
@@ -798,7 +798,7 @@ DATA_BLOB cli_req_pull_blob(struct cli_request *req, TALLOC_CTX *mem_ctx, const 
 
 /* check that a lump of data in a request is within the bounds of the data section of
    the packet */
-static BOOL cli_req_data_oob(struct cli_request *req, const char *ptr, uint32 count)
+static BOOL cli_req_data_oob(struct cli_request *req, const char *ptr, uint32_t count)
 {
 	/* be careful with wraparound! */
 	if (ptr < req->in.data ||

@@ -132,7 +132,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 {
 	NTSTATUS status;
 	char new_pass[512];
-	uint32 new_pass_len;
+	uint32_t new_pass_len;
 	struct samr_CryptPassword *pwbuf = r->in.password;
 	void *sam_ctx;
 	const char *user_dn, *domain_dn;
@@ -248,7 +248,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 {	
 	NTSTATUS status;
 	char new_pass[512];
-	uint32 new_pass_len;
+	uint32_t new_pass_len;
 	void *sam_ctx = NULL;
 	const char *user_dn, *domain_dn = NULL;
 	int ret;
@@ -261,7 +261,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	struct samr_Hash *ntPwdHash;
 	struct samr_DomInfo1 *dominfo;
 	struct samr_ChangeReject *reject;
-	uint32 reason = 0;
+	uint32_t reason = 0;
 
 	ZERO_STRUCT(r->out);
 
@@ -424,7 +424,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 			    struct samr_Hash *lmNewHash, 
 			    struct samr_Hash *ntNewHash,
 			    BOOL user_change,
-			    uint32 *reject_reason)
+			    uint32_t *reject_reason)
 {
 	const char * const user_attrs[] = { "userAccountControl", "lmPwdHistory", 
 					    "ntPwdHistory", "unicodePwd", 
@@ -677,7 +677,7 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 			   struct samr_CryptPassword *pwbuf)
 {
 	char new_pass[512];
-	uint32 new_pass_len;
+	uint32_t new_pass_len;
 	DATA_BLOB session_key = dce_call->conn->session_key;
 
 	SamOEMhashBlob(pwbuf->data, 516, &session_key);

@@ -27,7 +27,7 @@
 */
 
 /* This hardcoded value should go into a ldb database! */
-uint32 dcesrv_common_get_platform_id(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+uint32_t dcesrv_common_get_platform_id(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return 500;
 }
@@ -43,13 +43,13 @@ const char *dcesrv_common_get_domain_name(TALLOC_CTX *mem_ctx, struct dcesrv_con
 }
 
 /* This hardcoded value should go into a ldb database! */
-uint32 dcesrv_common_get_version_major(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+uint32_t dcesrv_common_get_version_major(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return 5;
 }
 
 /* This hardcoded value should go into a ldb database! */
-uint32 dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+uint32_t dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return 2;
 }

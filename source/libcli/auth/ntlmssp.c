@@ -62,7 +62,7 @@ static const struct ntlmssp_callbacks {
  * @param neg_flags The flags from the packet
  */
 
-void debug_ntlmssp_flags(uint32 neg_flags)
+void debug_ntlmssp_flags(uint32_t neg_flags)
 {
 	DEBUG(3,("Got NTLMSSP neg_flags=0x%08x\n", neg_flags));
 	
@@ -222,7 +222,7 @@ NTSTATUS ntlmssp_update(NTLMSSP_STATE *ntlmssp_state,
 			const DATA_BLOB in, DATA_BLOB *out) 
 {
 	DATA_BLOB input;
-	uint32 ntlmssp_command;
+	uint32_t ntlmssp_command;
 	int i;
 
 	*out = data_blob(NULL, 0);
@@ -317,7 +317,7 @@ void ntlmssp_end(NTLMSSP_STATE **ntlmssp_state)
  */
 
 static const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
-				       uint32 neg_flags, uint32 *chal_flags) 
+				       uint32_t neg_flags, uint32_t *chal_flags) 
 {
 	if (neg_flags & NTLMSSP_REQUEST_TARGET) {
 		*chal_flags |= NTLMSSP_CHAL_TARGET_INFO;
@@ -335,7 +335,7 @@ static const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
 }
 
 static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
-				      uint32 neg_flags, BOOL allow_lm) {
+				      uint32_t neg_flags, BOOL allow_lm) {
 	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_OEM;
@@ -427,8 +427,8 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 {
 	DATA_BLOB struct_blob;
 	fstring dnsname, dnsdomname;
-	uint32 neg_flags = 0;
-	uint32 ntlmssp_command, chal_flags;
+	uint32_t neg_flags = 0;
+	uint32_t ntlmssp_command, chal_flags;
 	char *cliname=NULL, *domname=NULL;
 	const uint8 *cryptkey;
 	const char *target_name;
@@ -545,7 +545,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 				       const DATA_BLOB request) 
 {
-	uint32 ntlmssp_command, auth_flags;
+	uint32_t ntlmssp_command, auth_flags;
 	NTSTATUS nt_status;
 
 	uchar session_nonce_hash[16];
@@ -978,7 +978,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 					 TALLOC_CTX *out_mem_ctx,
 					 const DATA_BLOB in, DATA_BLOB *out) 
 {
-	uint32 chal_flags, ntlmssp_command, unkn1, unkn2;
+	uint32_t chal_flags, ntlmssp_command, unkn1, unkn2;
 	DATA_BLOB server_domain_blob;
 	DATA_BLOB challenge_blob;
 	DATA_BLOB struct_blob = data_blob(NULL, 0);

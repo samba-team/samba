@@ -57,14 +57,14 @@ int net_rap_file_usage(int argc, const char **argv)
   list info on an open file
 ***************************************************************************/
 static void file_fn(const char * pPath, const char * pUser, uint16 perms, 
-		    uint16 locks, uint32 id)
+		    uint16 locks, uint32_t id)
 {
 	d_printf("%-7.1d %-20.20s 0x%-4.2x %-6.1d %s\n",
 		 id, pUser, perms, locks, pPath);
 }
 
 static void one_file_fn(const char *pPath, const char *pUser, uint16 perms, 
-			uint16 locks, uint32 id)
+			uint16 locks, uint32_t id)
 {
 	d_printf("File ID          %d\n"\
 		 "User name        %s\n"\
@@ -150,14 +150,14 @@ int net_rap_share_usage(int argc, const char **argv)
 	return net_help_share(argc, argv);
 }
 
-static void long_share_fn(const char *share_name, uint32 type, 
+static void long_share_fn(const char *share_name, uint32_t type, 
 			  const char *comment, void *state)
 {
 	d_printf("%-12.12s %-8.8s %-50.50s\n",
 		 share_name, share_type[type], comment);
 }
 
-static void share_fn(const char *share_name, uint32 type, 
+static void share_fn(const char *share_name, uint32_t type, 
 		     const char *comment, void *state)
 {
 	d_printf("%-12.12s\n", share_name);
@@ -266,8 +266,8 @@ int net_rap_session_usage(int argc, const char **argv)
 }
     
 static void list_sessions_func(char *wsname, char *username, uint16 conns,
-			uint16 opens, uint16 users, uint32 sess_time,
-			uint32 idle_time, uint32 user_flags, char *clitype)
+			uint16 opens, uint16 users, uint32_t sess_time,
+			uint32_t idle_time, uint32_t user_flags, char *clitype)
 {
 	int hrs = idle_time / 3600;
 	int min = (idle_time / 60) % 60;
@@ -279,8 +279,8 @@ static void list_sessions_func(char *wsname, char *username, uint16 conns,
 
 static void display_session_func(const char *wsname, const char *username, 
 				 uint16 conns, uint16 opens, uint16 users, 
-				 uint32 sess_time, uint32 idle_time, 
-				 uint32 user_flags, const char *clitype)
+				 uint32_t sess_time, uint32_t idle_time, 
+				 uint32_t user_flags, const char *clitype)
 {
 	int ihrs = idle_time / 3600;
 	int imin = (idle_time / 60) % 60;
@@ -300,7 +300,7 @@ static void display_session_func(const char *wsname, const char *username,
 }
 
 static void display_conns_func(uint16 conn_id, uint16 conn_type, uint16 opens,
-			       uint16 users, uint32 conn_time,
+			       uint16 users, uint32_t conn_time,
 			       const char *username, const char *netname)
 {
 	d_printf("%-14.14s %-8.8s %5d\n",
@@ -382,7 +382,7 @@ int net_rap_session(int argc, const char **argv)
 /****************************************************************************
 list a server name
 ****************************************************************************/
-static void display_server_func(const char *name, uint32 m,
+static void display_server_func(const char *name, uint32_t m,
 				const char *comment, void * reserved)
 {
 	d_printf("\t%-16.16s     %s\n", name, comment);

@@ -500,7 +500,7 @@ static NTSTATUS trans2_fileinfo_fill(struct request_context *req, struct smb_tra
 			SSVAL(trans->out.params.data, 0, 0);
 			SIVAL(trans->out.data.data,  0, 0);
 		} else {
-			uint32 list_size = ea_list_size(st->all_eas.out.num_eas,
+			uint32_t list_size = ea_list_size(st->all_eas.out.num_eas,
 							st->all_eas.out.eas);
 			trans2_setup_reply(req, trans, 2, list_size, 0);
 			SSVAL(trans->out.params.data, 0, 0);
@@ -694,7 +694,7 @@ static NTSTATUS trans2_parse_sfileinfo(struct request_context *req,
 				       union smb_setfileinfo *st,
 				       const DATA_BLOB *blob)
 {
-	uint32 len;
+	uint32_t len;
 
 	switch (st->generic.level) {
 	case RAW_SFILEINFO_GENERIC:

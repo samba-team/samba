@@ -410,7 +410,7 @@ struct hostent *sys_gethostbyname(const char *name)
 /**************************************************************************
  Try and abstract process capabilities (for systems that have them).
 ****************************************************************************/
-static BOOL set_process_capability( uint32 cap_flag, BOOL enable )
+static BOOL set_process_capability( uint32_t cap_flag, BOOL enable )
 {
 	if(cap_flag == KERNEL_OPLOCK_CAPABILITY) {
 		cap_t cap = cap_get_proc();
@@ -444,7 +444,7 @@ static BOOL set_process_capability( uint32 cap_flag, BOOL enable )
  Try and abstract inherited process capabilities (for systems that have them).
 ****************************************************************************/
 
-static BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable )
+static BOOL set_inherited_process_capability( uint32_t cap_flag, BOOL enable )
 {
 	if(cap_flag == KERNEL_OPLOCK_CAPABILITY) {
 		cap_t cap = cap_get_proc();

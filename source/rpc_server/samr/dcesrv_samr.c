@@ -405,7 +405,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	struct dcesrv_handle *h;
 	const char *name;
 	struct ldb_message msg;
-	uint32 rid;
+	uint32_t rid;
 	const char *groupname, *sidstr;
 	time_t now = time(NULL);
 	TALLOC_CTX *mem_ctx2;
@@ -549,7 +549,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct dcesrv_handle *h;
 	const char *name;
 	struct ldb_message msg;
-	uint32 rid;
+	uint32_t rid;
 	const char *username, *sidstr;
 	time_t now = time(NULL);
 	TALLOC_CTX *mem_ctx2;
@@ -718,7 +718,7 @@ static NTSTATUS samr_CreateUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 				struct samr_CreateUser *r)
 {
 	struct samr_CreateUser2 r2;
-	uint32 access_granted;
+	uint32_t access_granted;
 
 
 	/* a simple wrapper around samr_CreateUser2 works nicely */
@@ -873,8 +873,8 @@ static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_OK;
 	}
 
-	r->out.rids.ids = talloc_array_p(mem_ctx, uint32, r->in.num_names);
-	r->out.types.ids = talloc_array_p(mem_ctx, uint32, r->in.num_names);
+	r->out.rids.ids = talloc_array_p(mem_ctx, uint32_t, r->in.num_names);
+	r->out.types.ids = talloc_array_p(mem_ctx, uint32_t, r->in.num_names);
 	if (!r->out.rids.ids || !r->out.types.ids) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -885,7 +885,7 @@ static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		struct ldb_message **res;
 		struct dom_sid2 *sid;
 		const char *sidstr;
-		uint32 atype, rtype;
+		uint32_t atype, rtype;
 
 		r->out.rids.ids[i] = 0;
 		r->out.types.ids[i] = SID_NAME_UNKNOWN;

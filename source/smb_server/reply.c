@@ -671,7 +671,7 @@ void reply_readbraw(struct request_context *req)
 
 	/* the 64 bit varient */
 	if (req->in.wct == 10) {
-		uint32 offset_high = IVAL(req->in.vwv, VWV(8));
+		uint32_t offset_high = IVAL(req->in.vwv, VWV(8));
 		io.readbraw.in.offset |= (((SMB_OFF_T)offset_high) << 32);
 	}
 
@@ -877,7 +877,7 @@ void reply_read_and_X(struct request_context *req)
 	
 	/* the 64 bit varient */
 	if (req->in.wct == 12) {
-		uint32 offset_high = IVAL(req->in.vwv, VWV(10));
+		uint32_t offset_high = IVAL(req->in.vwv, VWV(10));
 		io->readx.in.offset |= (((uint64_t)offset_high) << 32);
 	}
 
@@ -1064,10 +1064,10 @@ void reply_write_and_X(struct request_context *req)
 	io->writex.in.data      = req->in.hdr + SVAL(req->in.vwv, VWV(11));
 
 	if (req->in.wct == 14) {
-		uint32 offset_high = IVAL(req->in.vwv, VWV(12));
+		uint32_t offset_high = IVAL(req->in.vwv, VWV(12));
 		uint16 count_high = SVAL(req->in.vwv, VWV(9));
 		io->writex.in.offset |= (((uint64_t)offset_high) << 32);
-		io->writex.in.count |= ((uint32)count_high) << 16;
+		io->writex.in.count |= ((uint32_t)count_high) << 16;
 	}
 
 	/* make sure the data is in bounds */
@@ -1754,7 +1754,7 @@ void reply_lockingX(struct request_context *req)
 
 	/* construct the locks array */
 	for (i=0;i<total_locks;i++) {
-		uint32 ofs_high=0, count_high=0;
+		uint32_t ofs_high=0, count_high=0;
 
 		lck->lockx.in.locks[i].pid = SVAL(p, 0);
 

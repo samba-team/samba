@@ -100,7 +100,7 @@ static const struct dcesrv_interface *find_interface(const struct dcesrv_endpoin
   see if a uuid and if_version match to an interface
 */
 static BOOL interface_match_by_uuid(const struct dcesrv_interface *iface,
-							const char *uuid, uint32 if_version)
+							const char *uuid, uint32_t if_version)
 {
 	if (iface->ndr->if_version != if_version) {
 		return False;
@@ -117,7 +117,7 @@ static BOOL interface_match_by_uuid(const struct dcesrv_interface *iface,
   find the interface operations on an endpoint by uuid
 */
 static const struct dcesrv_interface *find_interface_by_uuid(const struct dcesrv_endpoint *endpoint,
-						       const char *uuid, uint32 if_version)
+						       const char *uuid, uint32_t if_version)
 {
 	struct dcesrv_if_list *ifl;
 	for (ifl=endpoint->interface_list; ifl; ifl=ifl->next) {
@@ -347,7 +347,7 @@ static void dcesrv_init_hdr(struct dcerpc_packet *pkt)
 /*
   return a dcerpc fault
 */
-static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
+static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
 {
 	struct dcerpc_packet pkt;
 	struct dcesrv_call_reply *rep;
@@ -386,7 +386,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
 /*
   return a dcerpc bind_nak
 */
-static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32 reason)
+static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 {
 	struct dcerpc_packet pkt;
 	struct dcesrv_call_reply *rep;
@@ -426,11 +426,11 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32 reason)
 static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 {
 	const char *uuid, *transfer_syntax;
-	uint32 if_version, transfer_syntax_version;
+	uint32_t if_version, transfer_syntax_version;
 	struct dcerpc_packet pkt;
 	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
-	uint32 result=0, reason=0;
+	uint32_t result=0, reason=0;
 
 	if (call->pkt.u.bind.num_contexts != 1 ||
 	    call->pkt.u.bind.ctx_list[0].num_transfer_syntaxes < 1) {
@@ -558,7 +558,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	void *r;
 	NTSTATUS status;
 	DATA_BLOB stub;
-	uint32 total_length;
+	uint32_t total_length;
 
 
 	if (!call->conn->iface) {
@@ -619,7 +619,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	total_length = stub.length;
 
 	do {
-		uint32 length;
+		uint32_t length;
 		struct dcesrv_call_reply *rep;
 		struct dcerpc_packet pkt;
 
@@ -688,7 +688,7 @@ static BOOL dce_full_packet(const DATA_BLOB *data)
 /*
   we might have consumed only part of our input - advance past that part
 */
-static void dce_partial_advance(struct dcesrv_connection *dce_conn, uint32 offset)
+static void dce_partial_advance(struct dcesrv_connection *dce_conn, uint32_t offset)
 {
 	DATA_BLOB blob;
 
@@ -761,7 +761,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	/* see if this is a continued packet */
 	if (!(call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST)) {
 		struct dcesrv_call_state *call2 = call;
-		uint32 alloc_size;
+		uint32_t alloc_size;
 
 		/* we only allow fragmented requests, no other packet types */
 		if (call->pkt.ptype != DCERPC_PKT_REQUEST) {

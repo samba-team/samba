@@ -508,7 +508,7 @@ WERROR reg_key_add_name_recursive(REG_KEY *parent, const char *path)
 	return WERR_OK;
 }
 
-WERROR reg_key_add_name(REG_KEY *parent, const char *name, uint32 access_mask, SEC_DESC *desc, REG_KEY **newkey)
+WERROR reg_key_add_name(REG_KEY *parent, const char *name, uint32_t access_mask, SEC_DESC *desc, REG_KEY **newkey)
 {
 	WERROR error;
 	

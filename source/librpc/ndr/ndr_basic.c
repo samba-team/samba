@@ -54,9 +54,9 @@ NTSTATUS ndr_pull_uint16(struct ndr_pull *ndr, uint16 *v)
 
 
 /*
-  parse a uint32
+  parse a uint32_t
 */
-NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, uint32 *v)
+NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, uint32_t *v)
 {
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 4);
@@ -100,7 +100,7 @@ NTSTATUS ndr_pull_HYPER_T(struct ndr_pull *ndr, HYPER_T *v)
 */
 NTSTATUS ndr_pull_NTSTATUS(struct ndr_pull *ndr, NTSTATUS *status)
 {
-	uint32 v;
+	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, &v));
 	*status = NT_STATUS(v);
 	return NT_STATUS_OK;
@@ -124,7 +124,7 @@ void ndr_print_NTSTATUS(struct ndr_print *ndr, const char *name, NTSTATUS *r)
 */
 NTSTATUS ndr_pull_WERROR(struct ndr_pull *ndr, WERROR *status)
 {
-	uint32 v;
+	uint32_t v;
 	NDR_CHECK(ndr_pull_uint32(ndr, &v));
 	*status = W_ERROR(v);
 	return NT_STATUS_OK;
@@ -146,7 +146,7 @@ void ndr_print_WERROR(struct ndr_print *ndr, const char *name, WERROR *r)
 /*
   parse a set of bytes
 */
-NTSTATUS ndr_pull_bytes(struct ndr_pull *ndr, char *data, uint32 n)
+NTSTATUS ndr_pull_bytes(struct ndr_pull *ndr, char *data, uint32_t n)
 {
 	NDR_PULL_NEED_BYTES(ndr, n);
 	memcpy(data, ndr->data + ndr->offset, n);
@@ -157,7 +157,7 @@ NTSTATUS ndr_pull_bytes(struct ndr_pull *ndr, char *data, uint32 n)
 /*
   pull an array of uint8
 */
-NTSTATUS ndr_pull_array_uint8(struct ndr_pull *ndr, int ndr_flags, char *data, uint32 n)
+NTSTATUS ndr_pull_array_uint8(struct ndr_pull *ndr, int ndr_flags, char *data, uint32_t n)
 {
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
@@ -169,9 +169,9 @@ NTSTATUS ndr_pull_array_uint8(struct ndr_pull *ndr, int ndr_flags, char *data, u
 /*
   pull an array of uint16
 */
-NTSTATUS ndr_pull_array_uint16(struct ndr_pull *ndr, int ndr_flags, uint16 *data, uint32 n)
+NTSTATUS ndr_pull_array_uint16(struct ndr_pull *ndr, int ndr_flags, uint16 *data, uint32_t n)
 {
-	uint32 i;
+	uint32_t i;
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
@@ -182,11 +182,11 @@ NTSTATUS ndr_pull_array_uint16(struct ndr_pull *ndr, int ndr_flags, uint16 *data
 }
 
 /*
-  pull a const array of uint32
+  pull a const array of uint32_t
 */
-NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, int ndr_flags, uint32 *data, uint32 n)
+NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *data, uint32_t n)
 {
-	uint32 i;
+	uint32_t i;
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
@@ -220,9 +220,9 @@ NTSTATUS ndr_push_uint16(struct ndr_push *ndr, uint16 v)
 }
 
 /*
-  push a uint32
+  push a uint32_t
 */
-NTSTATUS ndr_push_uint32(struct ndr_push *ndr, uint32 v)
+NTSTATUS ndr_push_uint32(struct ndr_push *ndr, uint32_t v)
 {
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 4);
@@ -276,7 +276,7 @@ NTSTATUS ndr_pull_align(struct ndr_pull *ndr, size_t size)
 /*
   push some bytes
 */
-NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const char *data, uint32 n)
+NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const char *data, uint32_t n)
 {
 	NDR_PUSH_NEED_BYTES(ndr, n);
 	memcpy(ndr->data + ndr->offset, data, n);
@@ -287,7 +287,7 @@ NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const char *data, uint32 n)
 /*
   push some zero bytes
 */
-NTSTATUS ndr_push_zero(struct ndr_push *ndr, uint32 n)
+NTSTATUS ndr_push_zero(struct ndr_push *ndr, uint32_t n)
 {
 	NDR_PUSH_NEED_BYTES(ndr, n);
 	memset(ndr->data + ndr->offset, 0, n);
@@ -298,7 +298,7 @@ NTSTATUS ndr_push_zero(struct ndr_push *ndr, uint32 n)
 /*
   push an array of uint8
 */
-NTSTATUS ndr_push_array_uint8(struct ndr_push *ndr, int ndr_flags, const char *data, uint32 n)
+NTSTATUS ndr_push_array_uint8(struct ndr_push *ndr, int ndr_flags, const char *data, uint32_t n)
 {
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
@@ -309,7 +309,7 @@ NTSTATUS ndr_push_array_uint8(struct ndr_push *ndr, int ndr_flags, const char *d
 /*
   push an array of uint16
 */
-NTSTATUS ndr_push_array_uint16(struct ndr_push *ndr, int ndr_flags, const uint16 *data, uint32 n)
+NTSTATUS ndr_push_array_uint16(struct ndr_push *ndr, int ndr_flags, const uint16 *data, uint32_t n)
 {
 	int i;
 	if (!(ndr_flags & NDR_SCALARS)) {
@@ -322,9 +322,9 @@ NTSTATUS ndr_push_array_uint16(struct ndr_push *ndr, int ndr_flags, const uint16
 }
 
 /*
-  push an array of uint32
+  push an array of uint32_t
 */
-NTSTATUS ndr_push_array_uint32(struct ndr_push *ndr, int ndr_flags, const uint32 *data, uint32 n)
+NTSTATUS ndr_push_array_uint32(struct ndr_push *ndr, int ndr_flags, const uint32_t *data, uint32_t n)
 {
 	int i;
 	if (!(ndr_flags & NDR_SCALARS)) {
@@ -357,7 +357,7 @@ void ndr_push_restore(struct ndr_push *ndr, struct ndr_push_save *save)
 */
 NTSTATUS ndr_push_ptr(struct ndr_push *ndr, const void *p)
 {
-	uint32 ptr = 0;
+	uint32_t ptr = 0;
 	if (p) {
 		/* we do this to ensure that we generate unique ref ids,
 		   which means we can handle the case where a MS programmer
@@ -375,7 +375,7 @@ NTSTATUS ndr_push_ptr(struct ndr_push *ndr, const void *p)
 NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 {
 	char *as=NULL;
-	uint32 len1, ofs, len2;
+	uint32_t len1, ofs, len2;
 	uint16 len3;
 	int ret;
 	int chset = CH_UCS2;
@@ -666,7 +666,7 @@ NTSTATUS ndr_push_time_t(struct ndr_push *ndr, time_t t)
 */
 NTSTATUS ndr_pull_time_t(struct ndr_pull *ndr, time_t *t)
 {
-	uint32 tt;
+	uint32_t tt;
 	NDR_CHECK(ndr_pull_uint32(ndr, &tt));
 	*t = tt;
 	return NT_STATUS_OK;
@@ -688,27 +688,27 @@ void ndr_print_uint16(struct ndr_print *ndr, const char *name, uint16 v)
 	ndr->print(ndr, "%-25s: 0x%04x (%u)", name, v, v);
 }
 
-void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32 v)
+void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32_t v)
 {
 	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
 }
 
 void ndr_print_uint64(struct ndr_print *ndr, const char *name, uint64 v)
 {
-	ndr->print(ndr, "%-25s: 0x%08x%08x", name, (uint32)(v >> 32), (uint32)(v & 0xFFFFFFFF));
+	ndr->print(ndr, "%-25s: 0x%08x%08x", name, (uint32_t)(v >> 32), (uint32_t)(v & 0xFFFFFFFF));
 }
 
 void ndr_print_int64(struct ndr_print *ndr, const char *name, int64 v)
 {
 	ndr->print(ndr, "%-25s: 0x%08x%08x (%lld)", name, 
-		   (uint32)(v >> 32), 
-		   (uint32)(v & 0xFFFFFFFF),
+		   (uint32_t)(v >> 32), 
+		   (uint32_t)(v & 0xFFFFFFFF),
 		   v);
 }
 
 void ndr_print_HYPER_T(struct ndr_print *ndr, const char *name, HYPER_T v)
 {
-	ndr->print(ndr, "%-25s: 0x%08x%08x", name, (uint32)(v >> 32), (uint32)(v & 0xFFFFFFFF));
+	ndr->print(ndr, "%-25s: 0x%08x%08x", name, (uint32_t)(v >> 32), (uint32_t)(v & 0xFFFFFFFF));
 }
 
 void ndr_print_ptr(struct ndr_print *ndr, const char *name, const void *p)
@@ -754,7 +754,7 @@ void ndr_print_bad_level(struct ndr_print *ndr, const char *name, uint16 level)
 }
 
 void ndr_print_array_uint32(struct ndr_print *ndr, const char *name, 
-			    const uint32 *data, uint32 count)
+			    const uint32_t *data, uint32_t count)
 {
 	int i;
 
@@ -772,7 +772,7 @@ void ndr_print_array_uint32(struct ndr_print *ndr, const char *name,
 }
 
 void ndr_print_array_uint16(struct ndr_print *ndr, const char *name, 
-			    const uint16 *data, uint32 count)
+			    const uint16 *data, uint32_t count)
 {
 	int i;
 
@@ -790,7 +790,7 @@ void ndr_print_array_uint16(struct ndr_print *ndr, const char *name,
 }
 
 void ndr_print_array_uint8(struct ndr_print *ndr, const char *name, 
-			   const uint8 *data, uint32 count)
+			   const uint8 *data, uint32_t count)
 {
 	int i;
 
@@ -822,10 +822,10 @@ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 */
 NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
 {
-        uint32 time_low;
-        uint32 time_mid, time_hi_and_version;
-        uint32 clock_seq[2];
-        uint32 node[6];
+        uint32_t time_low;
+        uint32_t time_mid, time_hi_and_version;
+        uint32_t clock_seq[2];
+        uint32_t node[6];
         int i;
 
         if (11 != sscanf(s, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
@@ -904,7 +904,7 @@ NTSTATUS ndr_push_DATA_BLOB(struct ndr_push *ndr, DATA_BLOB blob)
 */
 NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, DATA_BLOB *blob)
 {
-	uint32 length;
+	uint32_t length;
 
 	if (ndr->flags & LIBNDR_ALIGN_FLAGS) {
 		if (ndr->flags & LIBNDR_FLAG_ALIGN2) {

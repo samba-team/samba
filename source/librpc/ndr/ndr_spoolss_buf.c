@@ -25,7 +25,7 @@
 #include "includes.h"
 
 NTSTATUS pull_spoolss_PrinterInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
-				       uint32 level, uint32 count,
+				       uint32_t level, uint32_t count,
 				       union spoolss_PrinterInfo **info)
 {
 	int i;
@@ -42,7 +42,7 @@ NTSTATUS pull_spoolss_PrinterInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS pull_spoolss_FormInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
-				    uint32 level, uint32 count,
+				    uint32_t level, uint32_t count,
 				    union spoolss_FormInfo **info)
 {
 	int i;
@@ -59,7 +59,7 @@ NTSTATUS pull_spoolss_FormInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS pull_spoolss_JobInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
-				   uint32 level, uint32 count,
+				   uint32_t level, uint32_t count,
 				   union spoolss_JobInfo **info)
 {
 	int i;
@@ -76,7 +76,7 @@ NTSTATUS pull_spoolss_JobInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS pull_spoolss_DriverInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
-				      uint32 level, uint32 count,
+				      uint32_t level, uint32_t count,
 				      union spoolss_DriverInfo **info)
 {
 	int i;

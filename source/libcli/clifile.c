@@ -51,7 +51,7 @@ static NTSTATUS cli_link_internal(struct cli_tree *tree,
 /****************************************************************************
  Map standard UNIX permissions onto wire representations.
 ****************************************************************************/
-static uint32 unix_perms_to_wire(mode_t perms)
+static uint32_t unix_perms_to_wire(mode_t perms)
 {
         unsigned int ret = 0;
 
@@ -100,8 +100,8 @@ NTSTATUS cli_unix_hardlink(struct cli_tree *tree, const char *fname_src,
 ****************************************************************************/
 static NTSTATUS cli_unix_chmod_chown_internal(struct cli_tree *tree, 
 					      const char *fname, 
-					      uint32 mode, uint32 uid, 
-					      uint32 gid)
+					      uint32_t mode, uint32_t uid, 
+					      uint32_t gid)
 {
 	union smb_setfileinfo parms;
 	NTSTATUS status;
@@ -136,7 +136,7 @@ NTSTATUS cli_unix_chown(struct cli_tree *tree, const char *fname, uid_t uid,
 			gid_t gid)
 {
 	return cli_unix_chmod_chown_internal(tree, fname, SMB_MODE_NO_CHANGE, 
-					     (uint32)uid, (uint32)gid);
+					     (uint32_t)uid, (uint32_t)gid);
 }
 
 
@@ -224,9 +224,9 @@ NTSTATUS cli_nt_delete_on_close(struct cli_tree *tree, int fnum, BOOL flag)
  Used in CIFS-on-CIFS NTVFS.
 ****************************************************************************/
 int cli_nt_create_full(struct cli_tree *tree, const char *fname,
-		       uint32 CreatFlags, uint32 DesiredAccess,
-		       uint32 FileAttributes, uint32 ShareAccess,
-		       uint32 CreateDisposition, uint32 CreateOptions,
+		       uint32_t CreatFlags, uint32_t DesiredAccess,
+		       uint32_t FileAttributes, uint32_t ShareAccess,
+		       uint32_t CreateDisposition, uint32_t CreateOptions,
 		       uint8 SecurityFlags)
 {
 	union smb_open open_parms;
@@ -347,7 +347,7 @@ NTSTATUS cli_close(struct cli_tree *tree, int fnum)
  this is used for testing LOCKING_ANDX_CANCEL_LOCK
 ****************************************************************************/
 NTSTATUS cli_locktype(struct cli_tree *tree, int fnum, 
-		      uint32 offset, uint32 len, int timeout, 
+		      uint32_t offset, uint32_t len, int timeout, 
 		      unsigned char locktype)
 {
 	union smb_lock parms;
@@ -375,7 +375,7 @@ NTSTATUS cli_locktype(struct cli_tree *tree, int fnum,
  Lock a file.
 ****************************************************************************/
 NTSTATUS cli_lock(struct cli_tree *tree, int fnum, 
-		  uint32 offset, uint32 len, int timeout, 
+		  uint32_t offset, uint32_t len, int timeout, 
 		  enum brl_type lock_type)
 {
 	union smb_lock parms;
@@ -402,7 +402,7 @@ NTSTATUS cli_lock(struct cli_tree *tree, int fnum,
 /****************************************************************************
  Unlock a file.
 ****************************************************************************/
-NTSTATUS cli_unlock(struct cli_tree *tree, int fnum, uint32 offset, uint32 len)
+NTSTATUS cli_unlock(struct cli_tree *tree, int fnum, uint32_t offset, uint32_t len)
 {
 	union smb_lock parms;
 	struct smb_lock_entry lock[1];

@@ -29,7 +29,7 @@
 */
 NTSTATUS ndr_pull_dom_sid2(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid)
 {
-	uint32 num_auths;
+	uint32_t num_auths;
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
@@ -56,7 +56,7 @@ NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, struct dom_sid *
 char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 {
 	int i, ofs, maxlen;
-	uint32 ia;
+	uint32_t ia;
 	char *ret;
 	
 	if (!sid) {
@@ -110,7 +110,7 @@ size_t ndr_size_dom_sid(struct dom_sid *sid)
 */
 struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx, 
 				const struct dom_sid *domain_sid, 
-				uint32 rid)
+				uint32_t rid)
 {
 	struct dom_sid *sid;
 
@@ -118,11 +118,11 @@ struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx,
 	if (!sid) return NULL;
 
 	*sid = *domain_sid;
-	sid->sub_auths = talloc_array_p(mem_ctx, uint32, sid->num_auths+1);
+	sid->sub_auths = talloc_array_p(mem_ctx, uint32_t, sid->num_auths+1);
 	if (!sid->sub_auths) {
 		return NULL;
 	}
-	memcpy(sid->sub_auths, domain_sid->sub_auths, sid->num_auths*sizeof(uint32));
+	memcpy(sid->sub_auths, domain_sid->sub_auths, sid->num_auths*sizeof(uint32_t));
 	sid->sub_auths[sid->num_auths] = rid;
 	sid->num_auths++;
 	return sid;

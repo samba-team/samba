@@ -77,7 +77,7 @@ typedef struct ntlmssp_state
 	unsigned int ref_count;
 	enum NTLMSSP_ROLE role;
 	enum server_types server_role;
-	uint32 expected_state;
+	uint32_t expected_state;
 
 	BOOL unicode;
 	BOOL use_ntlmv2;
@@ -103,7 +103,7 @@ typedef struct ntlmssp_state
 	DATA_BLOB nt_resp;
 	DATA_BLOB session_key;
 	
-	uint32 neg_flags; /* the current state of negotiation with the NTLMSSP partner */
+	uint32_t neg_flags; /* the current state of negotiation with the NTLMSSP partner */
 
 	/* internal variables used by NTLM2 */
 	BOOL doing_ntlm2; 
@@ -163,7 +163,7 @@ typedef struct ntlmssp_state
 
 	/* SMB Signing */
 	
-	uint32 ntlmssp_seq_num;
+	uint32_t ntlmssp_seq_num;
 
 	/* ntlmv2 */
 	char send_sign_key[16];

@@ -635,7 +635,7 @@ static BOOL test_GetUserPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 static NTSTATUS test_LookupName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				struct policy_handle *domain_handle, const char *name,
-				uint32 *rid)
+				uint32_t *rid)
 {
 	NTSTATUS status;
 	struct samr_LookupNames n;
@@ -677,7 +677,7 @@ static NTSTATUS test_OpenUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_OpenUser r;
-	uint32 rid;
+	uint32_t rid;
 
 	status = test_LookupName(p, mem_ctx, domain_handle, name, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1111,7 +1111,7 @@ BOOL test_DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_DeleteUser d;
 	struct policy_handle acct_handle;
-	uint32 rid;
+	uint32_t rid;
 
 	status = test_LookupName(p, mem_ctx, handle, name, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1145,7 +1145,7 @@ static BOOL test_DeleteGroup_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_OpenGroup r;
 	struct samr_DeleteDomainGroup d;
 	struct policy_handle group_handle;
-	uint32 rid;
+	uint32_t rid;
 
 	status = test_LookupName(p, mem_ctx, handle, name, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1183,7 +1183,7 @@ static BOOL test_DeleteAlias_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_OpenAlias r;
 	struct samr_DeleteDomAlias d;
 	struct policy_handle alias_handle;
-	uint32 rid;
+	uint32_t rid;
 
 	printf("testing DeleteAlias_byname\n");
 
@@ -1243,7 +1243,7 @@ static BOOL test_CreateAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_CreateDomAlias r;
 	struct samr_Name name;
-	uint32 rid;
+	uint32_t rid;
 	BOOL ret = True;
 
 	init_samr_Name(&name, TEST_ALIASNAME);
@@ -1315,11 +1315,11 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_CreateUser r;
 	struct samr_QueryUserInfo q;
-	uint32 rid;
+	uint32_t rid;
 	char *password = NULL;
 
 	/* This call creates a 'normal' account - check that it really does */
-	const uint32 acct_flags = ACB_NORMAL;
+	const uint32_t acct_flags = ACB_NORMAL;
 	struct samr_Name name;
 	BOOL ret = True;
 
@@ -1433,13 +1433,13 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_QueryUserInfo q;
 	struct samr_DeleteUser d;
 	struct policy_handle acct_handle;
-	uint32 rid;
+	uint32_t rid;
 	struct samr_Name name;
 	BOOL ret = True;
 	int i;
 
 	struct {
-		uint32 acct_flags;
+		uint32_t acct_flags;
 		const char *account_name;
 		NTSTATUS nt_status;
 	} account_types[] = {
@@ -1461,8 +1461,8 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	};
 
 	for (i = 0; account_types[i].account_name; i++) {
-		uint32 acct_flags = account_types[i].acct_flags;
-		uint32 access_granted;
+		uint32_t acct_flags = account_types[i].acct_flags;
+		uint32_t access_granted;
 
 		init_samr_Name(&name, account_types[i].account_name);
 
@@ -1700,7 +1700,7 @@ static BOOL test_QueryUserInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			  struct policy_handle *handle, uint32 rid)
+			  struct policy_handle *handle, uint32_t rid)
 {
 	NTSTATUS status;
 	struct samr_OpenUser r;
@@ -1748,7 +1748,7 @@ static BOOL test_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_OpenGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			   struct policy_handle *handle, uint32 rid)
+			   struct policy_handle *handle, uint32_t rid)
 {
 	NTSTATUS status;
 	struct samr_OpenGroup r;
@@ -1784,7 +1784,7 @@ static BOOL test_OpenGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_OpenAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			   struct policy_handle *handle, uint32 rid)
+			   struct policy_handle *handle, uint32_t rid)
 {
 	NTSTATUS status;
 	struct samr_OpenAlias r;
@@ -1828,7 +1828,7 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_EnumDomainUsers r;
-	uint32 resume_handle=0;
+	uint32_t resume_handle=0;
 	int i;
 	BOOL ret = True;
 	struct samr_LookupNames n;
@@ -1839,7 +1839,7 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.handle = handle;
 	r.in.resume_handle = &resume_handle;
 	r.in.acct_flags = 0;
-	r.in.max_size = (uint32)-1;
+	r.in.max_size = (uint32_t)-1;
 	r.out.resume_handle = &resume_handle;
 
 	status = dcerpc_samr_EnumDomainUsers(p, mem_ctx, &r);
@@ -1879,7 +1879,7 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing LookupRids\n");
 	lr.in.handle = handle;
 	lr.in.num_rids = r.out.sam->count;
-	lr.in.rids = talloc(mem_ctx, r.out.sam->count * sizeof(uint32));
+	lr.in.rids = talloc(mem_ctx, r.out.sam->count * sizeof(uint32_t));
 	for (i=0;i<r.out.sam->count;i++) {
 		lr.in.rids[i] = r.out.sam->entries[i].idx;
 	}
@@ -1897,7 +1897,7 @@ static BOOL test_EnumDomainGroups(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_EnumDomainGroups r;
-	uint32 resume_handle=0;
+	uint32_t resume_handle=0;
 	int i;
 	BOOL ret = True;
 
@@ -1905,7 +1905,7 @@ static BOOL test_EnumDomainGroups(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.handle = handle;
 	r.in.resume_handle = &resume_handle;
-	r.in.max_size = (uint32)-1;
+	r.in.max_size = (uint32_t)-1;
 	r.out.resume_handle = &resume_handle;
 
 	status = dcerpc_samr_EnumDomainGroups(p, mem_ctx, &r);
@@ -1932,7 +1932,7 @@ static BOOL test_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_EnumDomainAliases r;
-	uint32 resume_handle=0;
+	uint32_t resume_handle=0;
 	int i;
 	BOOL ret = True;
 
@@ -1940,7 +1940,7 @@ static BOOL test_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.handle = handle;
 	r.in.resume_handle = &resume_handle;
-	r.in.max_size = (uint32)-1;
+	r.in.max_size = (uint32_t)-1;
 	r.out.resume_handle = &resume_handle;
 
 	status = dcerpc_samr_EnumDomainAliases(p, mem_ctx, &r);
@@ -2058,7 +2058,7 @@ static BOOL test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.level = levels[i];
 		r.in.start_idx = 0;
 		r.in.max_entries = 1000;
-		r.in.buf_size = (uint32)-1;
+		r.in.buf_size = (uint32_t)-1;
 
 		status = dcerpc_samr_QueryDisplayInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2087,7 +2087,7 @@ static BOOL test_QueryDisplayInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.level = levels[i];
 		r.in.start_idx = 0;
 		r.in.max_entries = 1000;
-		r.in.buf_size = (uint32)-1;
+		r.in.buf_size = (uint32_t)-1;
 
 		status = dcerpc_samr_QueryDisplayInfo2(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2116,7 +2116,7 @@ static BOOL test_QueryDisplayInfo3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.level = levels[i];
 		r.in.start_idx = 0;
 		r.in.max_entries = 1000;
-		r.in.buf_size = (uint32)-1;
+		r.in.buf_size = (uint32_t)-1;
 
 		status = dcerpc_samr_QueryDisplayInfo3(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2240,7 +2240,7 @@ static BOOL test_GroupList(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_EnumDomainGroups q1;
 	struct samr_QueryDisplayInfo q2;
 	NTSTATUS status;
-	uint32 resume_handle=0;
+	uint32_t resume_handle=0;
 	int i;
 	BOOL ret = True;
 
@@ -2282,7 +2282,7 @@ static BOOL test_GroupList(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	q2.in.level = 5;
 	q2.in.start_idx = 0;
 	q2.in.max_entries = 5;
-	q2.in.buf_size = (uint32)-1;
+	q2.in.buf_size = (uint32_t)-1;
 
 	status = STATUS_MORE_ENTRIES;
 	while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
@@ -2436,7 +2436,7 @@ static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_QueryGroupMember q;
 	struct samr_SetMemberAttributesOfGroup s;
 	BOOL ret = True;
-	uint32 rid;
+	uint32_t rid;
 
 	status = test_LookupName(p, mem_ctx, domain_handle, TEST_USERNAME, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2513,7 +2513,7 @@ static BOOL test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_CreateDomainGroup r;
-	uint32 rid;
+	uint32_t rid;
 	struct samr_Name name;
 	BOOL ret = True;
 
@@ -2769,13 +2769,13 @@ static BOOL test_EnumDomains(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_EnumDomains r;
-	uint32 resume_handle = 0;
+	uint32_t resume_handle = 0;
 	int i;
 	BOOL ret = True;
 
 	r.in.handle = handle;
 	r.in.resume_handle = &resume_handle;
-	r.in.buf_size = (uint32)-1;
+	r.in.buf_size = (uint32_t)-1;
 	r.out.resume_handle = &resume_handle;
 
 	status = dcerpc_samr_EnumDomains(p, mem_ctx, &r);

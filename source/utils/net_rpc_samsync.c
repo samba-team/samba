@@ -26,7 +26,7 @@
 
 extern DOM_SID global_sid_Builtin; 
 
-static void display_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *g)
+static void display_group_mem_info(uint32_t rid, SAM_GROUP_MEM_INFO *g)
 {
 	int i;
 	d_printf("Group mem %u: ", rid);
@@ -36,13 +36,13 @@ static void display_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *g)
 	d_printf("\n");
 }
 
-static void display_alias_info(uint32 rid, SAM_ALIAS_INFO *a)
+static void display_alias_info(uint32_t rid, SAM_ALIAS_INFO *a)
 {
 	d_printf("Alias '%s' ", unistr2_static(&a->uni_als_name));
 	d_printf("desc='%s' rid=%u\n", unistr2_static(&a->uni_als_desc), a->als_rid);
 }
 
-static void display_alias_mem(uint32 rid, SAM_ALIAS_MEM_INFO *a)
+static void display_alias_mem(uint32_t rid, SAM_ALIAS_MEM_INFO *a)
 {
 	int i;
 	d_printf("Alias rid %u: ", rid);
@@ -52,7 +52,7 @@ static void display_alias_mem(uint32 rid, SAM_ALIAS_MEM_INFO *a)
 	d_printf("\n");
 }
 
-static void display_account_info(uint32 rid, SAM_ACCOUNT_INFO *a)
+static void display_account_info(uint32_t rid, SAM_ACCOUNT_INFO *a)
 {
 	fstring hex_nt_passwd, hex_lm_passwd;
 	uchar lm_passwd[16], nt_passwd[16];
@@ -84,7 +84,7 @@ static void display_domain_info(SAM_DOMAIN_INFO *a)
 	d_printf("Domain name: %s\n", unistr2_static(&a->uni_dom_name));
 }
 
-static void display_group_info(uint32 rid, SAM_GROUP_INFO *a)
+static void display_group_info(uint32_t rid, SAM_GROUP_INFO *a)
 {
 	d_printf("Group '%s' ", unistr2_static(&a->uni_grp_name));
 	d_printf("desc='%s', rid=%u\n", unistr2_static(&a->uni_grp_desc), rid);
@@ -126,7 +126,7 @@ static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret
         TALLOC_CTX *mem_ctx;
         SAM_DELTA_HDR *hdr_deltas;
         SAM_DELTA_CTR *deltas;
-        uint32 num_deltas;
+        uint32_t num_deltas;
 
 	if (!(mem_ctx = talloc_init("dump_database"))) {
 		return;
@@ -155,7 +155,7 @@ int rpc_samdump(int argc, const char **argv)
 	struct cli_state *cli = NULL;
 	uchar trust_password[16];
 	DOM_CRED ret_creds;
-	uint32 neg_flags = 0x000001ff;
+	uint32_t neg_flags = 0x000001ff;
 
 
 	ZERO_STRUCT(ret_creds);
@@ -278,7 +278,7 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 }
 
 static NTSTATUS
-fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
+fetch_account_info(uint32_t rid, SAM_ACCOUNT_INFO *delta)
 {
 	NTSTATUS nt_ret;
 	fstring account;
@@ -357,7 +357,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 }
 
 static NTSTATUS
-fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
+fetch_group_info(uint32_t rid, SAM_GROUP_INFO *delta)
 {
 	fstring name;
 	fstring comment;
@@ -413,7 +413,7 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 }
 
 static NTSTATUS
-fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
+fetch_group_mem_info(uint32_t rid, SAM_GROUP_MEM_INFO *delta)
 {
 	int i;
 	TALLOC_CTX *t = NULL;
@@ -536,7 +536,7 @@ fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
+static NTSTATUS fetch_alias_info(uint32_t rid, SAM_ALIAS_INFO *delta,
 				 DOM_SID dom_sid)
 {
 	fstring name;
@@ -597,7 +597,7 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 }
 
 static NTSTATUS
-fetch_alias_mem(uint32 rid, SAM_ALIAS_MEM_INFO *delta, DOM_SID dom_sid)
+fetch_alias_mem(uint32_t rid, SAM_ALIAS_MEM_INFO *delta, DOM_SID dom_sid)
 {
 	
 	return NT_STATUS_OK;
@@ -644,7 +644,7 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
         TALLOC_CTX *mem_ctx;
         SAM_DELTA_HDR *hdr_deltas;
         SAM_DELTA_CTR *deltas;
-        uint32 num_deltas;
+        uint32_t num_deltas;
 
 	if (!(mem_ctx = talloc_init("fetch_database"))) {
 		return;
@@ -675,7 +675,7 @@ int rpc_vampire(int argc, const char **argv)
 	struct cli_state *cli = NULL;
 	uchar trust_password[16];
 	DOM_CRED ret_creds;
-	uint32 neg_flags = 0x000001ff;
+	uint32_t neg_flags = 0x000001ff;
 	DOM_SID dom_sid;
 
 	ZERO_STRUCT(ret_creds);

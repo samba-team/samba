@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "lib/registry/common/registry.h"
 
-static WERROR reg_dir_add_key(REG_KEY *parent, const char *name, uint32 access_mask, SEC_DESC *desc, REG_KEY **result)
+static WERROR reg_dir_add_key(REG_KEY *parent, const char *name, uint32_t access_mask, SEC_DESC *desc, REG_KEY **result)
 {
 	char *path;
 	int ret;

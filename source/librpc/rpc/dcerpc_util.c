@@ -53,7 +53,7 @@ size_t ndr_size_epm_towers(struct epm_towers *towers)
 */
 NTSTATUS dcerpc_epm_map_tcp_port(const char *server, 
 				 const char *uuid, unsigned version,
-				 uint32 *port)
+				 uint32_t *port)
 {
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
@@ -160,7 +160,7 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 /*
   find the pipe name for a local IDL interface
 */
-const char *idl_pipe_name(const char *uuid, uint32 if_version)
+const char *idl_pipe_name(const char *uuid, uint32_t if_version)
 {
 	int i;
 	for (i=0;dcerpc_pipes[i];i++) {
@@ -175,7 +175,7 @@ const char *idl_pipe_name(const char *uuid, uint32 if_version)
 /*
   find the number of calls defined by local IDL
 */
-int idl_num_calls(const char *uuid, uint32 if_version)
+int idl_num_calls(const char *uuid, uint32_t if_version)
 {
 	int i;
 	for (i=0;dcerpc_pipes[i];i++) {
@@ -271,7 +271,7 @@ static const struct {
 
 static const struct {
 	const char *name;
-	uint32 flag;
+	uint32_t flag;
 } ncacn_options[] = {
 	{"sign", DCERPC_SIGN},
 	{"seal", DCERPC_SEAL},
@@ -429,7 +429,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p, 
 					     struct dcerpc_binding *binding,
 					     const char *pipe_uuid, 
-					     uint32 pipe_version,
+					     uint32_t pipe_version,
 					     const char *domain,
 					     const char *username,
 					     const char *password)
@@ -514,13 +514,13 @@ done:
 static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p, 
 						 struct dcerpc_binding *binding,
 						 const char *pipe_uuid, 
-						 uint32 pipe_version,
+						 uint32_t pipe_version,
 						 const char *domain,
 						 const char *username,
 						 const char *password)
 {
 	NTSTATUS status;
-	uint32 port = 0;
+	uint32_t port = 0;
 
 	if (binding->options && binding->options[0]) {
 		port = atoi(binding->options[0]);
@@ -574,7 +574,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 NTSTATUS dcerpc_pipe_connect_b(struct dcerpc_pipe **p, 
 			       struct dcerpc_binding *binding,
 			       const char *pipe_uuid, 
-			       uint32 pipe_version,
+			       uint32_t pipe_version,
 			       const char *domain,
 			       const char *username,
 			       const char *password)
@@ -606,7 +606,7 @@ NTSTATUS dcerpc_pipe_connect_b(struct dcerpc_pipe **p,
 NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **p, 
 			     const char *binding,
 			     const char *pipe_uuid, 
-			     uint32 pipe_version,
+			     uint32_t pipe_version,
 			     const char *domain,
 			     const char *username,
 			     const char *password)
@@ -642,7 +642,7 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **p,
 NTSTATUS dcerpc_secondary_smb(struct dcerpc_pipe *p, struct dcerpc_pipe **p2,
 			      const char *pipe_name,
 			      const char *pipe_uuid,
-			      uint32 pipe_version)
+			      uint32_t pipe_version)
 {
 	NTSTATUS status;
 	struct cli_tree *tree;

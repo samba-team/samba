@@ -205,7 +205,7 @@ BOOL torture_rpc_mgmt(int dummy)
 		printf("\nTesting pipe '%s'\n", dcerpc_pipes[i]->name);
 
 		if (b.transport == NCACN_IP_TCP) {
-			uint32 port;
+			uint32_t port;
 			status = dcerpc_epm_map_tcp_port(b.host, 
 							 dcerpc_pipes[i]->uuid,
 							 dcerpc_pipes[i]->if_version,

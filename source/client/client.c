@@ -2208,7 +2208,7 @@ static int cmd_reput(void)
 /*
   return a string representing a share type
 */
-static const char *share_type_str(uint32 type)
+static const char *share_type_str(uint32_t type)
 {
 	switch (type & 0xF) {
 	case STYPE_DISKTREE: 
@@ -2253,7 +2253,7 @@ static BOOL browse_host(const char *query_host)
 	char *binding;
 	NTSTATUS status;
 	struct srvsvc_NetShareEnumAll r;
-	uint32 resume_handle = 0;
+	uint32_t resume_handle = 0;
 	TALLOC_CTX *mem_ctx = talloc_init("browse_host");
 	struct srvsvc_NetShareCtr1 ctr1;
 

@@ -118,7 +118,7 @@ static BOOL map_dword(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 
 	if (value->type != REG_DWORD)
 		return False;
-	str_value = talloc_asprintf(ctx, "%d", *((uint32 *) value->data_p));
+	str_value = talloc_asprintf(ctx, "%d", *((uint32_t *) value->data_p));
 	status = ads_mod_str(ctx, mods, value->valuename, str_value);
 	return ADS_ERR_OK(status);
 }
@@ -148,7 +148,7 @@ static BOOL map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 {
 	char **str_values = NULL;
 	smb_ucs2_t *cur_str = (smb_ucs2_t *) value->data_p;
-        uint32 size = 0, num_vals = 0, i=0;
+        uint32_t size = 0, num_vals = 0, i=0;
 	ADS_STATUS status;
 
 	if (value->type != REG_MULTI_SZ)
@@ -268,7 +268,7 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 	char *printername, *servername;
 	REGVAL_CTR dsdriver_ctr, dsspooler_ctr;
 	BOOL got_dsdriver = False, got_dsspooler = False;
-	uint32 needed, i;
+	uint32_t needed, i;
 	POLICY_HND pol;
 
 	asprintf(&servername, "\\\\%s", cli->desthost);
@@ -341,7 +341,7 @@ BOOL get_local_printer_publishing_data(TALLOC_CTX *mem_ctx,
 				       ADS_MODLIST *mods,
 				       NT_PRINTER_DATA *data)
 {
-	uint32 key,val;
+	uint32_t key,val;
 
 	for (key=0; key < data->num_keys; key++) {
 		REGVAL_CTR ctr = data->keys[key].values;

@@ -75,7 +75,7 @@ NTSTATUS cli_nt_error(struct cli_tree *tree)
 
 /* Return the DOS error from the last packet - an error class and an error
    code. */
-void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
+void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32_t *ecode)
 {
 	if (cli->transport->error.etype == ETYPE_DOS) {
 		ntstatus_to_dos(cli->transport->error.e.nt_status, 

@@ -25,7 +25,7 @@ static struct {
 	enum fileinfo_level level;
 	unsigned only_paths:1;
 	unsigned only_handles:1;
-	uint32 capability_mask;
+	uint32_t capability_mask;
 	NTSTATUS fnum_status, fname_status;
 	union smb_fileinfo fnum_finfo, fname_finfo;
 } levels[] = {
@@ -159,7 +159,7 @@ BOOL torture_raw_qfileinfo(int dummy)
 	const char *fname = "\\torture_qfileinfo.txt";
 	NTTIME correct_time;
 	uint64_t correct_size;
-	uint32 correct_attrib;
+	uint32_t correct_attrib;
 	const char *correct_name;
 	BOOL skip_streams = False;
 
@@ -196,7 +196,7 @@ BOOL torture_raw_qfileinfo(int dummy)
 
 	/* check for completely broken levels */
 	for (count=i=0; levels[i].name; i++) {
-		uint32 cap = cli->transport->negotiate.capabilities;
+		uint32_t cap = cli->transport->negotiate.capabilities;
 		/* see if this server claims to support this level */
 		if ((cap & levels[i].capability_mask) != levels[i].capability_mask) {
 			continue;

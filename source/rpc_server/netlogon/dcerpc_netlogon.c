@@ -30,7 +30,7 @@ struct server_pipe_state {
 	BOOL authenticated;
 	char *account_name;
 	char *computer_name;  /* for logging only */
-	uint32 acct_flags;
+	uint32_t acct_flags;
 	uint16 sec_chan_type;
 	struct creds_CredentialState *creds;
 };
@@ -139,10 +139,10 @@ static NTSTATUS netr_ServerAuthenticateInternals(struct server_pipe_state *pipe_
 						 const char *account_name, 
 						 const char *computer_name, 
 						 uint16 secure_channel_type,
-						 uint32 in_flags,
+						 uint32_t in_flags,
 						 const struct netr_Credential *client_credentials,
 						 struct netr_Credential *server_credentials,
-						 uint32 *out_flags) 
+						 uint32_t *out_flags) 
 {
 	void *sam_ctx;
 	uint8 *mach_pwd;

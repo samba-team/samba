@@ -27,7 +27,7 @@ translated the ACB_CTRL Flags to UserFlags (userAccountControl)
 */ 
 /* mapping between ADS userAccountControl and SAMR acct_flags */
 static const struct {
-	uint32 uf;
+	uint32_t uf;
 	uint16 acb;
 } acct_flags_map[] = {
 	{ UF_ACCOUNTDISABLE, ACB_DISABLED },
@@ -43,9 +43,9 @@ static const struct {
 	{ UF_LOCKOUT, ACB_AUTOLOCK }
 };
 
-uint32 samdb_acb2uf(uint16 acb)
+uint32_t samdb_acb2uf(uint16 acb)
 {
-	uint32 i, ret = 0;
+	uint32_t i, ret = 0;
 	for (i=0;i<ARRAY_SIZE(acct_flags_map);i++) {
 		if (acct_flags_map[i].acb & acb) {
 			ret |= acct_flags_map[i].uf;
@@ -57,9 +57,9 @@ uint32 samdb_acb2uf(uint16 acb)
 /*
 translated the UserFlags (userAccountControl) to ACB_CTRL Flags
 */
-uint16 samdb_uf2acb(uint32 uf)
+uint16 samdb_uf2acb(uint32_t uf)
 {
-	uint32 i;
+	uint32_t i;
 	uint16 ret = 0;
 	for (i=0;i<ARRAY_SIZE(acct_flags_map);i++) {
 		if (acct_flags_map[i].uf & uf) {
@@ -72,9 +72,9 @@ uint16 samdb_uf2acb(uint32 uf)
 /* 
 get the accountType from the UserFlags
 */
-uint32 samdb_uf2atype(uint32 uf)
+uint32_t samdb_uf2atype(uint32_t uf)
 {
-	uint32 atype = 0x00000000;
+	uint32_t atype = 0x00000000;
 		
 	if (uf & UF_NORMAL_ACCOUNT)			atype = ATYPE_NORMAL_ACCOUNT;
 	else if (uf & UF_TEMP_DUPLICATE_ACCOUNT)	atype = ATYPE_NORMAL_ACCOUNT;
@@ -88,9 +88,9 @@ uint32 samdb_uf2atype(uint32 uf)
 /* 
 get the accountType from the groupType
 */
-uint32 samdb_gtype2atype(uint32 gtype)
+uint32_t samdb_gtype2atype(uint32_t gtype)
 {
-	uint32 atype = 0x00000000;
+	uint32_t atype = 0x00000000;
 	
 	switch(gtype) {
 		case GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
@@ -118,7 +118,7 @@ uint32 samdb_gtype2atype(uint32 gtype)
 }
 
 /* turn a sAMAccountType into a SID_NAME_USE */
-enum SID_NAME_USE samdb_atype_map(uint32 atype)
+enum SID_NAME_USE samdb_atype_map(uint32_t atype)
 {
 	switch (atype & 0xF0000000) {
 	case ATYPE_GLOBAL_GROUP:

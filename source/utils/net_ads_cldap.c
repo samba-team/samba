@@ -25,14 +25,14 @@
 #ifdef HAVE_ADS
 
 struct netlogon_string {
-	uint32 comp_len;
+	uint32_t comp_len;
 	char **component;
 	uint8 extra_flag;
 };
 
 struct cldap_netlogon_reply {
-	uint32 type;
-	uint32 flags;
+	uint32_t type;
+	uint32_t flags;
 	GUID guid;
 
 	struct netlogon_string forest;
@@ -47,7 +47,7 @@ struct cldap_netlogon_reply {
 
 	struct netlogon_string unk0;
 
-	uint32 version;
+	uint32_t version;
 	uint16 lmnt_token;
 	uint16 lm20_token;
 };
@@ -160,7 +160,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	ASN1_DATA data;
 	DATA_BLOB blob;
 	DATA_BLOB os1, os2, os3;
-	uint32 i1;
+	uint32_t i1;
 	char *p;
 
 	blob = data_blob(NULL, 8192);

@@ -474,7 +474,7 @@ void message_deregister(int msg_type)
 
 struct msg_all {
 	int msg_type;
-	uint32 msg_flag;
+	uint32_t msg_flag;
 	const void *buf;
 	size_t len;
 	BOOL duplicates;

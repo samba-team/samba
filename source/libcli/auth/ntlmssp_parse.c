@@ -191,8 +191,8 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 	DATA_BLOB *b;
 	size_t head_ofs = 0;
 	uint16 len1, len2;
-	uint32 ptr;
-	uint32 *v;
+	uint32_t ptr;
+	uint32_t *v;
 	pstring p;
 
 	va_start(ap, format);
@@ -296,7 +296,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 			head_ofs += len1;
 			break;
 		case 'd':
-			v = va_arg(ap, uint32 *);
+			v = va_arg(ap, uint32_t *);
 			NEED_DATA(4);
 			*v = IVAL(blob->data, head_ofs); head_ofs += 4;
 			break;

@@ -96,7 +96,7 @@ NTSTATUS ads_ntstatus(ADS_STATUS status)
 */
 const char *ads_errstr(ADS_STATUS status)
 {
-	uint32 msg_ctx;
+	uint32_t msg_ctx;
 	static char *ret;
 
 	SAFE_FREE(ret);
@@ -116,7 +116,7 @@ const char *ads_errstr(ADS_STATUS status)
 #ifdef HAVE_GSSAPI
 	case ENUM_ADS_ERROR_GSS:
 	{
-		uint32 minor;
+		uint32_t minor;
 		
 		gss_buffer_desc msg1, msg2;
 		msg1.value = NULL;

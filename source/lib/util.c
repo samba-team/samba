@@ -426,10 +426,10 @@ BOOL is_ipaddress(const char *str)
  Interpret an internet address or name into an IP address in 4 byte form.
 ****************************************************************************/
 
-uint32 interpret_addr(const char *str)
+uint32_t interpret_addr(const char *str)
 {
 	struct hostent *hp;
-	uint32 res;
+	uint32_t res;
 
 	if (strcmp(str,"0.0.0.0") == 0)
 		return(0);
@@ -454,7 +454,7 @@ uint32 interpret_addr(const char *str)
 		putip((char *)&res,(char *)hp->h_addr);
 	}
 
-	if (res == (uint32)-1)
+	if (res == (uint32_t)-1)
 		return(0);
 
 	return(res);
@@ -467,7 +467,7 @@ uint32 interpret_addr(const char *str)
 struct in_addr *interpret_addr2(TALLOC_CTX *mem_ctx, const char *str)
 {
 	struct in_addr *ret;
-	uint32 a = interpret_addr(str);
+	uint32_t a = interpret_addr(str);
 	
 	ret = talloc(mem_ctx, sizeof(struct in_addr));
 	if (!ret) return NULL;
@@ -481,7 +481,7 @@ struct in_addr *interpret_addr2(TALLOC_CTX *mem_ctx, const char *str)
 
 BOOL is_zero_ip(struct in_addr ip)
 {
-	uint32 a;
+	uint32_t a;
 	putip((char *)&a,(char *)&ip);
 	return(a == 0);
 }
@@ -503,7 +503,7 @@ void zero_ip(struct in_addr *ip)
 
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
 {
-	uint32 net1,net2,nmask;
+	uint32_t net1,net2,nmask;
 
 	nmask = ntohl(mask.s_addr);
 	net1  = ntohl(ip1.s_addr);

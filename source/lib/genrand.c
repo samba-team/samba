@@ -23,7 +23,7 @@
 #include "includes.h"
 
 static unsigned char hash[258];
-static uint32 counter;
+static uint32_t counter;
 static unsigned char *reseed_data;
 static size_t reseed_data_size;
 
@@ -134,7 +134,7 @@ static void do_filehash(const char *fname, unsigned char *the_hash)
 static int do_reseed(BOOL use_fd, int fd)
 {
 	unsigned char seed_inbuf[40];
-	uint32 v1, v2; struct timeval tval; pid_t mypid;
+	uint32_t v1, v2; struct timeval tval; pid_t mypid;
 
 	if (use_fd) {
 		if (fd != -1)

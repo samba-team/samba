@@ -60,7 +60,7 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct winreg_CreateKey r;
 	struct policy_handle newhandle;
 	NTSTATUS status;
-	uint32 sec_info = 0;
+	uint32_t sec_info = 0;
 
 	printf("\ntesting CreateKey\n");
 
@@ -267,7 +267,7 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct winreg_EnumValue r;
     struct winreg_Uint8buf vb;
     struct winreg_EnumValueName vn;
-	uint32 type = 0, requested_len = max_valbufsize, returned_len = 0;
+	uint32_t type = 0, requested_len = max_valbufsize, returned_len = 0;
 	NTSTATUS status;
 
     r.in.handle = handle;
@@ -381,7 +381,7 @@ static BOOL test_OpenHKCR(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_InitiateSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			const char *msg, uint32 timeout)
+			const char *msg, uint32_t timeout)
 {
 	struct winreg_InitiateSystemShutdown r;
 	NTSTATUS status;

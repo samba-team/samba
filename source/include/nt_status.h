@@ -35,21 +35,21 @@
 */
 
 #if defined(HAVE_IMMEDIATE_STRUCTURES)
-typedef struct {uint32 v;} NTSTATUS;
+typedef struct {uint32_t v;} NTSTATUS;
 #define NT_STATUS(x) ((NTSTATUS) { x })
 #define NT_STATUS_V(x) ((x).v)
 #else
-typedef uint32 NTSTATUS;
+typedef uint32_t NTSTATUS;
 #define NT_STATUS(x) (x)
 #define NT_STATUS_V(x) (x)
 #endif
 
 #if defined(HAVE_IMMEDIATE_STRUCTURES)
-typedef struct {uint32 v;} WERROR;
+typedef struct {uint32_t v;} WERROR;
 #define W_ERROR(x) ((WERROR) { x })
 #define W_ERROR_V(x) ((x).v)
 #else
-typedef uint32 WERROR;
+typedef uint32_t WERROR;
 #define W_ERROR(x) (x)
 #define W_ERROR_V(x) (x)
 #endif

@@ -34,7 +34,7 @@ static void creds_init(struct creds_CredentialState *creds,
 		       const uint8 machine_password[16])
 {
 	struct netr_Credential time_cred;
-	uint32 sum[2];
+	uint32_t sum[2];
 	uint8 sum2[8];
 
 	dump_data_pw("Client chall", client_challenge->data, sizeof(client_challenge->data));

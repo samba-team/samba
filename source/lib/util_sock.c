@@ -250,7 +250,7 @@ BOOL send_nbt_keepalive(int sock_fd)
 /****************************************************************************
  Open a socket of the specified type, port, and address for incoming data.
 ****************************************************************************/
-int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL rebind )
+int open_socket_in( int type, int port, int dlevel, uint32_t socket_addr, BOOL rebind )
 {
 	struct sockaddr_in sock;
 	int res;

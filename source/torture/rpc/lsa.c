@@ -108,7 +108,7 @@ static BOOL test_LookupNames(struct dcerpc_pipe *p,
 	struct lsa_LookupNames r;
 	struct lsa_TransSidArray sids;
 	struct lsa_Name *names;
-	uint32 count = 0;
+	uint32_t count = 0;
 	NTSTATUS status;
 	int i;
 
@@ -150,7 +150,7 @@ static BOOL test_LookupSids(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupSids r;
 	struct lsa_TransNameArray names;
-	uint32 count = sids->num_sids;
+	uint32_t count = sids->num_sids;
 	NTSTATUS status;
 
 	printf("\nTesting LookupSids\n");
@@ -528,7 +528,7 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct lsa_EnumAccounts r;
 	struct lsa_SidArray sids1, sids2;
-	uint32 resume_handle = 0;
+	uint32_t resume_handle = 0;
 	int i;
 
 	printf("\ntesting EnumAccounts\n");
@@ -588,7 +588,7 @@ static BOOL test_EnumPrivs(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct lsa_EnumPrivs r;
 	struct lsa_PrivArray privs1;
-	uint32 resume_handle = 0;
+	uint32_t resume_handle = 0;
 
 	printf("\ntesting EnumPrivs\n");
 
@@ -615,7 +615,7 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 {
 	struct lsa_EnumTrustDom r;
 	NTSTATUS status;
-	uint32 resume_handle = 0;
+	uint32_t resume_handle = 0;
 	struct lsa_DomainList domains;
 
 	printf("\nTesting EnumTrustDom\n");

@@ -2193,7 +2193,7 @@ static BOOL handle_copy(const char *pszParmValue, char **ptr)
 
 static uid_t winbind_uid_low, winbind_uid_high;
 static gid_t winbind_gid_low, winbind_gid_high;
-static uint32 non_unix_account_low, non_unix_account_high;
+static uint32_t non_unix_account_low, non_unix_account_high;
 
 BOOL lp_winbind_uid(uid_t *low, uid_t *high)
 {
@@ -2223,7 +2223,7 @@ BOOL lp_winbind_gid(gid_t *low, gid_t *high)
         return True;
 }
 
-BOOL lp_non_unix_account_range(uint32 *low, uint32 *high)
+BOOL lp_non_unix_account_range(uint32_t *low, uint32_t *high)
 {
         if (non_unix_account_low == 0 || non_unix_account_high == 0)
                 return False;
@@ -2241,7 +2241,7 @@ BOOL lp_non_unix_account_range(uint32 *low, uint32 *high)
 
 static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr)
 {
-	uint32 low, high;
+	uint32_t low, high;
 
 	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
 		return False;
@@ -2258,7 +2258,7 @@ static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr)
 
 static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr)
 {
-	uint32 low, high;
+	uint32_t low, high;
 
 	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
 		return False;
@@ -2279,7 +2279,7 @@ static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr)
 
 static BOOL handle_non_unix_account_range(const char *pszParmValue, char **ptr)
 {
-	uint32 low, high;
+	uint32_t low, high;
 
 	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
 		return False;

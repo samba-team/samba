@@ -16,7 +16,7 @@ interface mgmt
 	} dcerpc_syntax_id_p;
 
 	typedef struct {
-		unsigned32              count;
+		uint32              count;
 		[size_is(count)] dcerpc_syntax_id_p if_id[*];
 	} rpc_if_id_vector_t;
 

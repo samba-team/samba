@@ -54,7 +54,7 @@ struct ipc_private {
 static uint16 find_next_fnum(struct ipc_private *ipc)
 {
 	struct pipe_state *p;
-	uint32 ret;
+	uint32_t ret;
 
 	if (ipc->num_open == 0xFFFF) {
 		return 0;

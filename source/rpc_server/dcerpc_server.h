@@ -39,7 +39,7 @@ struct dcesrv_ep_description {
 	enum endpoint_type type;
 	union {
 		const char *smb_pipe;
-		uint32 tcp_port;
+		uint32_t tcp_port;
 	} info;
 };
 
@@ -79,7 +79,7 @@ struct dcesrv_call_state {
 	} *replies;
 
 	/* this is used by the boilerplate code to generate DCERPC faults */
-	uint32 fault_code;
+	uint32_t fault_code;
 };
 
 #define DCESRV_HANDLE_ANY 255
@@ -117,7 +117,7 @@ struct dcesrv_connection {
 	struct dcesrv_call_state *call_list;
 
 	/* the maximum size the client wants to receive */
-	uint32 cli_max_recv_frag;
+	uint32_t cli_max_recv_frag;
 
 	/* private data for the interface implementation */
 	void *private;
@@ -149,7 +149,7 @@ struct dcesrv_endpoint_server {
 	 * ask for a dcesrv_interface implementation
 	 * - iface must be referenz to an allready existent struct !
 	 */
-	BOOL (*interface_by_uuid)(struct dcesrv_interface *iface, const char *, uint32);
+	BOOL (*interface_by_uuid)(struct dcesrv_interface *iface, const char *, uint32_t);
 
 	/* this function can be used by other endpoint servers to
 	 * ask for a dcesrv_interface implementation
