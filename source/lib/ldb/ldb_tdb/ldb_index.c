@@ -70,7 +70,7 @@ static char *ldb_dn_key(struct ldb_context *ldb,
 		return ret;
 	}
 
-	ldb_asprintf(ldb, &ret, "%s:%s:%s", LTDB_INDEX, attr, (char *)value->data);
+	ldb_asprintf(ldb, &ret, "%s:%s:%.*s", LTDB_INDEX, attr, value->length, (char *)value->data);
 	return ret;
 }
 
