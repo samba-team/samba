@@ -259,7 +259,7 @@ reinstall it. The install time choices offered are:
 <itemizedlist>
 	<listitem><para>Primary Domain Controller - The one that seeds the domain SAM</para></listitem>
 	<listitem><para>Backup Domain Controller - One that obtains a copy of the domain SAM</para></listitem>
-	<listitem><para>Domain Controller - One that has NO copy of the domain SAM, rather it obtains authentication from a Domain Controller for all access controls.</para></listitem>
+	<listitem><para>Domain Member Server - One that has NO copy of the domain SAM, rather it obtains authentication from a Domain Controller for all access controls.</para></listitem>
 	<listitem><para>Stand-Alone Server - One that plays NO part is SAM synchronisation, has it's own authentication database and plays no role in Domain security.</para></listitem>
 </itemizedlist>
 
