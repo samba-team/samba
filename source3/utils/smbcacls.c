@@ -20,8 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 static fstring password;
@@ -34,6 +32,29 @@ static int numeric;
 
 enum acl_mode {ACL_SET, ACL_DELETE, ACL_MODIFY, ACL_ADD};
 
+struct perm_value {
+	char *perm;
+	uint32 mask;
+};
+
+/* These values discovered by inspection */
+
+static struct perm_value special_values[] = {
+	{ "R", 0x00120089 },
+	{ "W", 0x00120116 },
+	{ "X", 0x001200a0 },
+	{ "D", 0x00010000 },
+	{ "P", 0x00040000 },
+	{ "O", 0x00080000 },
+	{ NULL, 0 },
+};
+
+static struct perm_value standard_values[] = {
+	{ "READ",   0x001200a9 },
+	{ "CHANGE", 0x001301bf },
+	{ "FULL",   0x001f01ff },
+	{ NULL, 0 },
+};
 
 /* convert a SID to a string, either numeric or username/group */
 static void SidToString(fstring str, DOM_SID *sid)
@@ -61,34 +82,51 @@ static BOOL StringToSid(DOM_SID *sid, fstring str)
 /* print an ACE on a FILE, using either numeric or ascii representation */
 static void print_ace(FILE *f, SEC_ACE *ace)
 {
+	struct perm_value *v;
 	fstring sidstr;
-	char *perm;
 
 	SidToString(sidstr, &ace->sid);
 
 	fprintf(f, "%s:", sidstr);
 
 	if (numeric) {
-		fprintf(f, "%x/%x/%08x\n", 
+		fprintf(f, "%d/%d/0x%08x\n", 
 			ace->type, ace->flags, ace->info.mask);
 		return;
 	}
 
-	/* this interpretation is almost certainly wrong, Tim, please
-	   have a look at these */
-	if (ace->info.mask == 0x001f01ff) {
-		perm = "F";
-	} else if (ace->info.mask == 0x001301bf) {
-		perm = "C";
-	} else if (ace->info.mask == 0x001200a9) {
-		perm = "R";
-	} else if (ace->info.mask == 0x00080000) {
-		perm = "N";
+	/* Ace type */
+
+	if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED) {
+		fprintf(f, "ALLOWED");
+	} else if (ace->type == SEC_ACE_TYPE_ACCESS_DENIED) {
+		fprintf(f, "DENIED");
 	} else {
-		perm = "?";
+		fprintf(f, "%d", ace->type);
 	}
 
-	fprintf(f,"%s\n", perm);
+	/* Not sure what flags can be set in a file ACL */
+
+	fprintf(f, "/%d/", ace->flags);
+
+	/* Standard permissions */
+
+	for (v = standard_values; v->perm; v++) {
+		if (ace->info.mask == v->mask) {
+			fprintf(f, "%s\n", v->perm);
+			return;
+		}
+	}
+
+	/* Special permissions */
+
+	for (v = special_values; v->perm; v++) {
+		if ((ace->info.mask & v->mask) == v->mask) {
+			fprintf(f, "%s", v->perm);
+		}
+	}
+
+	fprintf(f, "\n");
 }
 
 
@@ -112,8 +150,6 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 	init_sec_ace(ace, &sid, atype, mask, aflags);
 	return True;
 }
-
-
 
 /* add an ACE to a list of ACEs in a SEC_ACL */
 static BOOL add_ace(SEC_ACL **acl, SEC_ACE *ace)
@@ -202,7 +238,7 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 	fstring sidstr;
 	int i;
 
-	printf("REVISION:%x TYPE:%x\n", sd->revision, sd->type);
+	printf("REVISION:%d\nTYPE:0x%x\n", sd->revision, sd->type);
 
 	/* Print owner and group sid */
 
@@ -439,16 +475,18 @@ struct cli_state *connect_one(char *share)
 static void usage(void)
 {
 	printf(
-"Usage:\n\
-  smbcacls //server1/share1 filename [options]\n\n\
+"Usage: smbcacls //server1/share1 filename [options]\n\n\
 \n\
-  -D <acls>               delete an acl\n\
-  -M <acls>               modify an acl\n\
-  -A <acls>               add an acl\n\
-  -S <acls>               set acls\n\
+\t-D <acls>               delete an acl\n\
+\t-M <acls>               modify an acl\n\
+\t-A <acls>               add an acl\n\
+\t-S <acls>               set acls\n\
+\t-U username             set the network username\n\
+\t-n                      don't resolve sids or masks to names\n\
+\t-h                      print help\n\
 \n\
-  an acl is of the form SID:type/flags/mask\n\
-  you can string acls together with spaces, commas or newlines\n\
+An acl is of the form SID:type/flags/mask\n\
+You can string acls together with spaces, commas or newlines\n\
 ");
 }
 
@@ -540,6 +578,7 @@ static void usage(void)
 		case 'h':
 			usage();
 			exit(1);
+
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
 			exit(1);
