@@ -468,6 +468,20 @@ void debug_message_send(pid_t pid, const char *params_str)
 }
 
 /****************************************************************************
+ Return current debug level.
+****************************************************************************/
+
+static void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
+{
+	char *message = debug_list_class_names_and_levels();
+
+	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %u\n",(unsigned int)src));
+	message_send_pid(src, MSG_DEBUGLEVEL, message, strlen(message) + 1, True);
+
+	SAFE_FREE(message);
+}
+
+/****************************************************************************
 Init debugging (one time stuff)
 ****************************************************************************/
 void debug_init(void)
