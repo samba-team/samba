@@ -28,7 +28,7 @@ static struct {
   struct winbindd_idmap_methods *methods;
 } builtin_winbindd_idmap_functions[] = {
   { "tdb", winbind_idmap_reg_tdb, NULL },
-  /*  { "ldap", winbind_idmap_reg_ldap, NULL },*/
+  { "ldap", winbind_idmap_reg_ldap, NULL },
   { NULL, NULL, NULL }
 };
 

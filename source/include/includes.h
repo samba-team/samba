@@ -856,6 +856,10 @@ struct functable {
 
 struct printjob;
 
+struct smb_ldap_privates;
+
+struct smb_ldap_privates;
+
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"
