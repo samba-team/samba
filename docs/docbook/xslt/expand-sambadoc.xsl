@@ -169,6 +169,9 @@
 	</xsl:element>
 </xsl:template>
 
+<xsl:template match="smbconfexample/title">
+</xsl:template>
+
 <xsl:template match="smbconfblock">
 	<xsl:element name="simplelist">
 		<xsl:apply-templates/>

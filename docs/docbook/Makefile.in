@@ -203,5 +203,8 @@ $(MANDIR):
 $(MANDIR)/%: $(MANPROJDOC)/%.xml
 	@$(XSLTPROC) xslt/expand-sambadoc.xsl $< | $(XSLTPROC) xslt/man.xsl - > $@
 
+$(MANDIR)/smb.conf.5: smb.conf.5.xml
+	@$(XSLTPROC) xslt/man.xsl $< > $@
+
 undocumented: $(SMBDOTCONFDOC)/parameters.all.xml
 	$(PERL) scripts/find_missing_doc.pl ../..
