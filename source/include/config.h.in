@@ -117,22 +117,16 @@
 #undef STAT_STATFS4
 #undef STAT_STATVFS
 #undef STAT_STATVFS64
-#undef HAVE_PAM_AUTHENTICATE
-#undef HAVE_NETMASK_IFCONF
-#undef HAVE_NETMASK_IFREQ
-#undef HAVE_NETMASK_AIX
 #undef HAVE_IFACE_AIX
 #undef HAVE_IFACE_IFCONF
 #undef HAVE_IFACE_IFREQ
 #undef HAVE_CRYPT
 #undef HAVE_PUTPRPWNAM
 #undef HAVE_SET_AUTH_PARAMETERS
-#undef WITH_MMAP
 #undef WITH_SYSLOG
 #undef WITH_PROFILE
 #undef WITH_SSL
 #undef WITH_LDAP
-#undef WITH_TDBSURS
 #undef WITH_NISPLUS
 #undef WITH_PAM
 #undef WITH_NISPLUS_HOME
@@ -145,9 +139,6 @@
 #undef HAVE_FUNCTION_MACRO
 #undef HAVE_SETRESUID_DECL
 #undef HAVE_SETRESUID
-#undef HAVE_SETRESGID_DECL
-#undef HAVE_SETRESGID
-#undef HAVE_CRYPT_DECL
 #undef WITH_NETATALK
 #undef WITH_UTMP
 #undef MS_DFS
@@ -157,7 +148,6 @@
 #undef SIZEOF_OFF_T
 #undef STAT_STATVFS64
 #undef HAVE_LIBREADLINE
-#undef HAVE_READLINE_FCF_PROTO
 #undef HAVE_KERNEL_OPLOCKS
 #undef HAVE_IRIX_SPECIFIC_CAPABILITIES
 #undef HAVE_INT16_FROM_RPC_RPC_H
@@ -171,23 +161,37 @@
 #undef HAVE_GETSPNAM
 #undef HAVE_BIGCRYPT
 #undef HAVE_GETPRPWNAM
+#undef HAVE_FSTAT64
+#undef HAVE_LSTAT64
+#undef HAVE_STAT64
+#undef HAVE_SETRESGID
+#undef HAVE_SETRESGID_DECL
 #undef HAVE_SHADOW_H
 #undef HAVE_MEMSET
+#undef HAVE_STRCASECMP
+#undef HAVE_STRUCT_DIRENT64
+#undef HAVE_TRUNCATED_SALT
+#undef BROKEN_NISPLUS_INCLUDE_FILES
+#undef HAVE_RPC_AUTH_ERROR_CONFLICT
+#undef HAVE_EXPLICIT_LARGEFILE_SUPPORT
 #undef USE_BOTH_CRYPT_CALLS
-
-#undef USE_SETEGID
-#undef USE_SETRESGID
-#undef USE_SETREGID
-#undef USE_SETGIDX
+#undef HAVE_BROKEN_FCNTL64_LOCKS
+#undef HAVE_FNMATCH
 #undef USE_SETEUID
 #undef USE_SETRESUID
 #undef USE_SETREUID
 #undef USE_SETUIDX
+#undef HAVE_LIBDL
+#undef NEED_SGI_SEMUN_HACK
 #undef SYSCONF_SC_NGROUPS_MAX
-#undef USE_KRB4_DEFINE_WORK_AROUND
+#undef HAVE_UX_UT_SYSLEN
+#undef USE_SETEGID
+#undef USE_SETRESGID
+#undef USE_SETREGID
+#undef USE_SETGIDX
 #undef USE_RENEWABLE_AFS_TICKET
-
 #undef WITH_NT5LDAP
+#undef WITH_TDBSURS
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -459,6 +463,9 @@
 /* Define if you have the fseek64 function.  */
 #undef HAVE_FSEEK64
 
+/* Define if you have the fseeko64 function.  */
+#undef HAVE_FSEEKO64
+
 /* Define if you have the fstat function.  */
 #undef HAVE_FSTAT
 
@@ -470,6 +477,9 @@
 
 /* Define if you have the ftell64 function.  */
 #undef HAVE_FTELL64
+
+/* Define if you have the ftello64 function.  */
+#undef HAVE_FTELLO64
 
 /* Define if you have the ftruncate function.  */
 #undef HAVE_FTRUNCATE
@@ -485,6 +495,9 @@
 
 /* Define if you have the getdents function.  */
 #undef HAVE_GETDENTS
+
+/* Define if you have the getgrent function.  */
+#undef HAVE_GETGRENT
 
 /* Define if you have the getgrnam function.  */
 #undef HAVE_GETGRNAM
@@ -540,9 +553,6 @@
 /* Define if you have the open64 function.  */
 #undef HAVE_OPEN64
 
-/* Define if you have the pam_authenticate function.  */
-#undef HAVE_PAM_AUTHENTICATE
-
 /* Define if you have the pathconf function.  */
 #undef HAVE_PATHCONF
 
@@ -588,6 +598,9 @@
 /* Define if you have the setenv function.  */
 #undef HAVE_SETENV
 
+/* Define if you have the setgidx function.  */
+#undef HAVE_SETGIDX
+
 /* Define if you have the setgroups function.  */
 #undef HAVE_SETGROUPS
 
@@ -596,6 +609,9 @@
 
 /* Define if you have the setnetgrent function.  */
 #undef HAVE_SETNETGRENT
+
+/* Define if you have the setpriv function.  */
+#undef HAVE_SETPRIV
 
 /* Define if you have the setsid function.  */
 #undef HAVE_SETSID
@@ -648,8 +664,8 @@
 /* Define if you have the syscall function.  */
 #undef HAVE_SYSCALL
 
-/* Define if you have the tputs function.  */
-#undef HAVE_TPUTS
+/* Define if you have the sysconf function.  */
+#undef HAVE_SYSCONF
 
 /* Define if you have the usleep function.  */
 #undef HAVE_USLEEP
@@ -699,17 +715,11 @@
 /* Define if you have the <memory.h> header file.  */
 #undef HAVE_MEMORY_H
 
-/* Define if you have the <mysql.h> header file.  */
-#undef HAVE_MYSQL_H
-
 /* Define if you have the <ndir.h> header file.  */
 #undef HAVE_NDIR_H
 
 /* Define if you have the <net/if.h> header file.  */
 #undef HAVE_NET_IF_H
-
-/* Define if you have the <net/route.h> header file.  */
-#undef HAVE_NET_ROUTE_H
 
 /* Define if you have the <netinet/in_ip.h> header file.  */
 #undef HAVE_NETINET_IN_IP_H
@@ -737,6 +747,9 @@
 
 /* Define if you have the <rpc/rpc.h> header file.  */
 #undef HAVE_RPC_RPC_H
+
+/* Define if you have the <rpcsvc/nis.h> header file.  */
+#undef HAVE_RPCSVC_NIS_H
 
 /* Define if you have the <rpcsvc/yp_prot.h> header file.  */
 #undef HAVE_RPCSVC_YP_PROT_H
@@ -813,6 +826,9 @@
 /* Define if you have the <sys/param.h> header file.  */
 #undef HAVE_SYS_PARAM_H
 
+/* Define if you have the <sys/priv.h> header file.  */
+#undef HAVE_SYS_PRIV_H
+
 /* Define if you have the <sys/resource.h> header file.  */
 #undef HAVE_SYS_RESOURCE_H
 
@@ -837,6 +853,9 @@
 /* Define if you have the <sys/syscall.h> header file.  */
 #undef HAVE_SYS_SYSCALL_H
 
+/* Define if you have the <sys/termio.h> header file.  */
+#undef HAVE_SYS_TERMIO_H
+
 /* Define if you have the <sys/time.h> header file.  */
 #undef HAVE_SYS_TIME_H
 
@@ -855,6 +874,9 @@
 /* Define if you have the <syscall.h> header file.  */
 #undef HAVE_SYSCALL_H
 
+/* Define if you have the <termio.h> header file.  */
+#undef HAVE_TERMIO_H
+
 /* Define if you have the <termios.h> header file.  */
 #undef HAVE_TERMIOS_H
 
@@ -872,9 +894,6 @@
 
 /* Define if you have the cups library (-lcups).  */
 #undef HAVE_LIBCUPS
-
-/* Define if you have the dl library (-ldl).  */
-#undef HAVE_LIBDL
 
 /* Define if you have the gen library (-lgen).  */
 #undef HAVE_LIBGEN
