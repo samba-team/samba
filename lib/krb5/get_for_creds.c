@@ -168,29 +168,45 @@ krb5_get_forwarded_creds (krb5_context	    context,
     struct addrinfo *ai;
     int save_errno;
     krb5_keyblock *key;
+    krb5_creds *krbtgt;
 
     addrs.len = 0;
     addrs.val = NULL;
 
-    ret = getaddrinfo (hostname, NULL, NULL, &ai);
-    if (ret) {
-	save_errno = errno;
-	krb5_set_error_string(context, "resolving %s: %s",
-			      hostname, gai_strerror(ret));
-	return krb5_eai_to_heim_errno(ret, save_errno);
-    }
-
-    ret = add_addrs (context, &addrs, ai);
-    freeaddrinfo (ai);
-    if (ret)
+    ret = _krb5_get_krbtgt (context,
+			    ccache,
+			    in_creds->server->realm,
+			    &krbtgt);
+    if(ret)
 	return ret;
+
+    /*
+     * If tickets are address-less, forward address-less tickets.
+     */
+
+    if (krbtgt->addresses.len != 0) {
+
+	ret = getaddrinfo (hostname, NULL, NULL, &ai);
+	if (ret) {
+	    save_errno = errno;
+	    krb5_set_error_string(context, "resolving %s: %s",
+				  hostname, gai_strerror(ret));
+	    return krb5_eai_to_heim_errno(ret, save_errno);
+	}
+	
+	ret = add_addrs (context, &addrs, ai);
+	freeaddrinfo (ai);
+	if (ret)
+	    return ret;
+    }
+    krb5_free_creds (context, krbtgt);
     
     kdc_flags.i = flags;
 
     ret = krb5_get_kdc_cred (context,
 			     ccache,
 			     kdc_flags,
-			     &addrs,
+			     addrs.len != 0 ? &addrs : NULL,
 			     NULL,
 			     in_creds,
 			     &out_creds);
@@ -373,11 +389,11 @@ krb5_get_forwarded_creds (krb5_context	    context,
     out_data->length = len;
     out_data->data   = buf;
     return 0;
-out4:
+ out4:
     free_EncKrbCredPart(&enc_krb_cred_part);
-out3:
+ out3:
     free_KRB_CRED(&cred);
-out2:
+ out2:
     krb5_free_creds (context, out_creds);
     return ret;
 }
