@@ -35,7 +35,9 @@
 
 RCSID("$Id$");
 
-#ifdef KRB4
+#ifndef KRB4
+#include <krb5-v4compat.h>
+#endif
 
 /*
  * fetch the server from `t', returning the name in malloced memory in
@@ -361,5 +363,3 @@ out:
 	free_ent (server);
     return ret;
 }
-
-#endif /* KRB4 */
