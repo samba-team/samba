@@ -1,5 +1,7 @@
 2003-03-17  Love Hörnquist Åstrand <lha@it.su.se>
 
+	* lib/krb5/Makefile.am (man_MANS) += krb5_aname_to_localname.3
+	
 	* lib/krb5/krb5_aname_to_localname.3: manpage for
 	krb5_aname_to_localname
 
