@@ -24,8 +24,12 @@
    Boston, MA  02111-1307, USA.
 */
  
+#ifdef HAVE_SYNCH_H
 #include <synch.h>
+#endif
+#ifdef HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
  
 typedef enum {
 	NSS_SUCCESS,

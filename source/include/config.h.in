@@ -861,6 +861,9 @@
 /* Define if you have the <poll.h> header file.  */
 #undef HAVE_POLL_H
 
+/* Define if you have the <pthread.h> header file.  */
+#undef HAVE_PTHREAD_H
+
 /* Define if you have the <readline.h> header file.  */
 #undef HAVE_READLINE_H
 
@@ -908,6 +911,9 @@
 
 /* Define if you have the <stropts.h> header file.  */
 #undef HAVE_STROPTS_H
+
+/* Define if you have the <synch.h> header file.  */
+#undef HAVE_SYNCH_H
 
 /* Define if you have the <sys/acl.h> header file.  */
 #undef HAVE_SYS_ACL_H

@@ -680,8 +680,8 @@ installclientlib:
 
 # revert to the previously installed version
 revert:
-	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SPROGS) 
-	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(PROGS) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SPROGS) ${WINBIND_SPROGS}
+	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(PROGS) $(SCRIPTS) ${WINBIND_PROGS}
 
 installman:
 	@$(SHELL) $(srcdir)/script/installman.sh $(MANDIR) $(srcdir) "@ROFF@"

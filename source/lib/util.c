@@ -46,10 +46,6 @@
 
 #include <rpcsvc/nis.h>
 
-#else /* !WITH_NISPLUS_HOME */
-
-#include "rpcsvc/ypclnt.h"
-
 #endif /* WITH_NISPLUS_HOME */
 #endif /* HAVE_NETGROUP && WITH_AUTOMOUNT */
 
