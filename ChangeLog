@@ -1,3 +1,22 @@
+2000-12-06  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/Makefile.am: actually build replay cache code
+
+	* lib/krb5/replay.c: implement krb5_get_server_rcache
+
+	* kpasswd/kpasswdd.c: de-pointerise auth_context parameter to
+	krb5_mk_rep
+
+	* lib/krb5/recvauth.c: de-pointerise auth_context parameter to
+	krb5_mk_rep
+
+	* lib/krb5/mk_rep.c: auth_context should not be a pointer
+
+	* lib/krb5/auth_context.c: implement krb5_auth_con_genaddrs, and
+	make setaddrs_from_fd use that
+
+	* lib/krb5/krb5.h: add some more KRB5_AUTH_CONTEXT_* flags
+
 2000-12-05  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/Makefile.am: add kerberos.8 manpage
