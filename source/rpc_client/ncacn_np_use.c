@@ -345,14 +345,6 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 		return cli->cli;
 	}
 
-	/* reuse an existing connection requested, and one was not found */
-	if (reuse)
-	{
-		DEBUG(0,
-		      ("ncacn_np_use_add: reuse requested, but one not found\n"));
-		return False;
-	}
-
 	/*
 	 * allocate
 	 */
