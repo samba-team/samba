@@ -10,6 +10,7 @@ AC_SUBST(RUNPROG)
 AC_SUBST(MPROGS)
 AC_SUBST(LDSHFLAGS)
 AC_SUBST(HOST_OS)
+AC_SUBST(PAM_MOD)
 AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
@@ -265,7 +266,7 @@ case "$host_os" in
 	;;
 esac
 AC_CHECK_HEADERS(shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
-AC_CHECK_HEADERS(nss.h sys/security.h security/pam_appl.h)
+AC_CHECK_HEADERS(nss.h sys/security.h security/pam_appl.h security/pam_modules.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h acl/acl.h)
@@ -1524,6 +1525,39 @@ AC_ARG_WITH(pam,
     AC_DEFINE(WITH_PAM)
     LIBS="$LIBS -lpam"
     with_pam_for_crypt=yes
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+# we can't build a pam module if we don't have pam.
+AC_CHECK_LIB(pam, pam_get_data, [AC_DEFINE(HAVE_LIBPAM)])
+
+#################################################
+# check for pam_smbpass support
+AC_MSG_CHECKING(whether to use pam_smbpass)
+AC_ARG_WITH(pam_smbpass,
+[  --with-pam_smbpass     Include the smbpass PAM module
+  --without-pam_smbpass  Don't include the smbpass PAM module (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+
+# Conditions under which pam_smbpass should not be built.
+
+       if test x$PICFLAG = x; then
+          AC_MSG_RESULT([No support for PIC code - disabling pam_smbpass])
+          PAM_MOD=""
+       elif test x$ac_cv_lib_pam_pam_get_data = xno; then
+          AC_MSG_RESULT([No libpam found -- disabling pam_smbpass])
+          PAM_MOD=""
+       else
+          AC_DEFINE(WITH_PAM_SMBPASS)
+          PAM_MOD="bin/pam_smbpass.so"
+       fi
     ;;
   *)
     AC_MSG_RESULT(no)
