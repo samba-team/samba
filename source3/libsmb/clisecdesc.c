@@ -54,8 +54,8 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 	}
 
 	prs_init(&pd, rdata_count, mem_ctx, UNMARSHALL);
-	prs_append_data(&pd, rdata, rdata_count);
-	pd.data_offset = 0;
+	prs_copy_data_in(&pd, rdata, rdata_count);
+	prs_set_offset(&pd,0);
 
 	if (!sec_io_desc("sd data", &psd, &pd, 1)) {
 		DEBUG(1,("Failed to parse secdesc\n"));
@@ -104,7 +104,7 @@ BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 			       0, 
 			       NULL, 0, 0,
 			       param, 8, 0,
-			       pd.data_p, pd.data_offset, 0)) {
+			       prs_data_p(&pd), prs_offset(&pd), 0)) {
 		DEBUG(1,("Failed to send NT_TRANSACT_SET_SECURITY_DESC\n"));
 		goto cleanup;
 	}

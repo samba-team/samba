@@ -618,16 +618,11 @@ authentication failed. Denying the request.\n", p->name));
 	 * Append the data portion into the buffer and return.
 	 */
 
-	{
-		char *data_from = prs_data_p(rpc_in_p) + prs_offset(rpc_in_p);
-
-		if(!prs_append_data(&p->in_data.data, data_from, data_len)) {
-			DEBUG(0,("process_request_pdu: Unable to append data size %u to parse buffer of size %u.\n",
-					(unsigned int)data_len, (unsigned int)prs_data_size(&p->in_data.data) ));
-			set_incoming_fault(p);
-			return False;
-		}
-
+	if(!prs_append_some_prs_data(&p->in_data.data, rpc_in_p, prs_offset(rpc_in_p), data_len)) {
+		DEBUG(0,("process_request_pdu: Unable to append data size %u to parse buffer of size %u.\n",
+				(unsigned int)data_len, (unsigned int)prs_data_size(&p->in_data.data) ));
+		set_incoming_fault(p);
+		return False;
 	}
 
 	if(p->hdr.flags & RPC_FLG_LAST) {
