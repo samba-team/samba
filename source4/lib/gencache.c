@@ -363,7 +363,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 
 int gencache_lock_entry( const char *key )
 {
-	return tdb_lock_bystring(cache->tdb, key, 0);
+	return tdb_lock_bystring(cache->tdb, key);
 }
 
 /********************************************************************
