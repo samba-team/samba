@@ -123,13 +123,12 @@ void *torture_join_domain(const char *machine_name,
 
 	join->mem_ctx = mem_ctx;
 
-	printf("Connecting to SAMR (forced ncacn_np)\n");
+	printf("Connecting to SAMR\n");
 
-	status = torture_rpc_connection_transport(&join->p, 
-						  DCERPC_SAMR_NAME,
-						  DCERPC_SAMR_UUID,
-						  DCERPC_SAMR_VERSION,
-						  NCACN_NP);
+	status = torture_rpc_connection(&join->p, 
+					DCERPC_SAMR_NAME,
+					DCERPC_SAMR_UUID,
+					DCERPC_SAMR_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
