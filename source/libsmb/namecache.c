@@ -118,6 +118,7 @@ BOOL namecache_store(const char *name, int name_type,
 	time_t expiry;
 	char *key, *value_string;
 	int i;
+	BOOL ret;
 
 	/*
 	 * we use gecache call to avoid annoying debug messages about
@@ -152,10 +153,17 @@ BOOL namecache_store(const char *name, int name_type,
 	 * First, store the number of ip addresses and then
 	 * place each single ip
 	 */
-	ipstr_list_make(&value_string, ip_list, num_names);
+	if (!ipstr_list_make(&value_string, ip_list, num_names)) {
+		SAFE_FREE(key);
+		SAFE_FREE(value_string);
+		return False;
+	}
 	
 	/* set the entry */
-	return (gencache_set(key, value_string, expiry));
+	ret = gencache_set(key, value_string, expiry);
+	SAFE_FREE(key);
+	SAFE_FREE(value_string);
+	return ret;
 }
 
 

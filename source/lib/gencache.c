@@ -114,6 +114,9 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 	if (!gencache_init()) return False;
 	
 	asprintf(&valstr, CACHE_DATA_FMT, (int)timeout, value);
+	if (!valstr)
+		return False;
+
 	keybuf.dptr = strdup(keystr);
 	keybuf.dsize = strlen(keystr)+1;
 	databuf.dptr = strdup(valstr);
@@ -241,6 +244,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	keybuf.dptr = strdup(keystr);
 	keybuf.dsize = strlen(keystr)+1;
 	databuf = tdb_fetch(cache, keybuf);
+	SAFE_FREE(keybuf.dptr);
 	
 	if (databuf.dptr && databuf.dsize > TIMEOUT_LEN) {
 		char* entry_buf = strndup(databuf.dptr, databuf.dsize);
