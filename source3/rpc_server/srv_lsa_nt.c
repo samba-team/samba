@@ -61,7 +61,12 @@ Init dom_query
 
 static void init_dom_query(DOM_QUERY *d_q, const char *dom_name, DOM_SID *dom_sid)
 {
-	int domlen = (dom_name != NULL) ? strlen(dom_name) : 0;
+	d_q->buffer_dom_name = (dom_name != NULL) ? 1 : 0; /* domain buffer pointer */
+	d_q->buffer_dom_sid = (dom_sid != NULL) ? 1 : 0;  /* domain sid pointer */
+
+	/* this string is supposed to be non-null terminated. */
+	/* But the maxlen in this UNISTR2 must include the terminating null. */
+	init_unistr2(&d_q->uni_domain_name, dom_name, UNI_MAXLEN_TERMINATE);
 
 	/*
 	 * I'm not sure why this really odd combination of length
@@ -71,14 +76,15 @@ static void init_dom_query(DOM_QUERY *d_q, const char *dom_name, DOM_SID *dom_si
 	 * a domain with both odd and even length names... JRA.
 	 */
 
-	d_q->uni_dom_str_len = domlen ? ((domlen + 1) * 2) : 0;
-	d_q->uni_dom_max_len = domlen * 2;
-	d_q->buffer_dom_name = domlen != 0 ? 1 : 0; /* domain buffer pointer */
-	d_q->buffer_dom_sid = dom_sid != NULL ? 1 : 0;  /* domain sid pointer */
+	/*
+	 * IMPORTANT NOTE !!!!
+	 * The two fields below probably are reversed in meaning, ie.
+	 * the first field is probably the str_len, the second the max
+	 * len. Both are measured in bytes anyway.
+	 */
 
-	/* this string is supposed to be character short */
-	init_unistr2(&d_q->uni_domain_name, dom_name, domlen);
-	d_q->uni_domain_name.uni_max_len++;
+	d_q->uni_dom_str_len = d_q->uni_domain_name.uni_max_len * 2;
+	d_q->uni_dom_max_len = d_q->uni_domain_name.uni_str_len * 2;
 
 	if (dom_sid != NULL)
 		init_dom_sid2(&d_q->dom_sid, dom_sid);
@@ -91,7 +97,6 @@ static void init_dom_query(DOM_QUERY *d_q, const char *dom_name, DOM_SID *dom_si
 static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 {
 	int num = 0;
-	int len;
 
 	if (dom_name != NULL) {
 		for (num = 0; num < ref->num_ref_doms_1; num++) {
@@ -114,14 +119,11 @@ static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 	ref->max_entries = MAX_REF_DOMAINS;
 	ref->num_ref_doms_2 = num+1;
 
-	len = (dom_name != NULL) ? strlen(dom_name) : 0;
-	if(dom_name != NULL && len == 0)
-		len = 1;
-
-	init_uni_hdr(&ref->hdr_ref_dom[num].hdr_dom_name, len);
 	ref->hdr_ref_dom[num].ptr_dom_sid = dom_sid != NULL ? 1 : 0;
 
-	init_unistr2(&ref->ref_dom[num].uni_dom_name, dom_name, len);
+	init_unistr2(&ref->ref_dom[num].uni_dom_name, dom_name, UNI_FLAGS_NONE);
+	init_uni_hdr(&ref->hdr_ref_dom[num].hdr_dom_name, &ref->ref_dom[num].uni_dom_name);
+
 	init_dom_sid2(&ref->ref_dom[num].ref_dom, dom_sid );
 
 	return num;
@@ -349,25 +351,22 @@ static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 			      GUID *dom_guid, DOM_SID *dom_sid)
 {
 	if (nb_name && *nb_name) {
-		init_uni_hdr(&r_l->hdr_nb_dom_name, strlen(nb_name));
-		init_unistr2(&r_l->uni_nb_dom_name, nb_name, 
-			     strlen(nb_name));
+		init_unistr2(&r_l->uni_nb_dom_name, nb_name, UNI_FLAGS_NONE);
+		init_uni_hdr(&r_l->hdr_nb_dom_name, &r_l->uni_nb_dom_name);
 		r_l->hdr_nb_dom_name.uni_max_len += 2;
 		r_l->uni_nb_dom_name.uni_max_len += 1;
 	}
 	
 	if (dns_name && *dns_name) {
-		init_uni_hdr(&r_l->hdr_dns_dom_name, strlen(dns_name));
-		init_unistr2(&r_l->uni_dns_dom_name, dns_name,
-			     strlen(dns_name));
+		init_unistr2(&r_l->uni_dns_dom_name, dns_name, UNI_FLAGS_NONE);
+		init_uni_hdr(&r_l->hdr_dns_dom_name, &r_l->uni_dns_dom_name);
 		r_l->hdr_dns_dom_name.uni_max_len += 2;
 		r_l->uni_dns_dom_name.uni_max_len += 1;
 	}
 
 	if (forest_name && *forest_name) {
-		init_uni_hdr(&r_l->hdr_forest_name, strlen(forest_name));
-		init_unistr2(&r_l->uni_forest_name, forest_name,
-			     strlen(forest_name));
+		init_unistr2(&r_l->uni_forest_name, forest_name, UNI_FLAGS_NONE);
+		init_uni_hdr(&r_l->hdr_forest_name, &r_l->uni_forest_name);
 		r_l->hdr_forest_name.uni_max_len += 2;
 		r_l->uni_forest_name.uni_max_len += 1;
 	}
@@ -774,13 +773,13 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 
 	for (i = 0; i < PRIV_ALL_INDEX; i++, entry++) {
 		if( i<enum_context) {
-			init_uni_hdr(&entry->hdr_name, 0);
-			init_unistr2(&entry->name, NULL, 0 );
+			init_unistr2(&entry->name, NULL, UNI_FLAGS_NONE);
+			init_uni_hdr(&entry->hdr_name, &entry->name);
 			entry->luid_low = 0;
 			entry->luid_high = 0;
 		} else {
-			init_uni_hdr(&entry->hdr_name, strlen(privs[i+1].priv));
-			init_unistr2(&entry->name, privs[i+1].priv, strlen(privs[i+1].priv) );
+			init_unistr2(&entry->name, privs[i+1].priv, UNI_FLAGS_NONE);
+			init_uni_hdr(&entry->hdr_name, &entry->name);
 			entry->luid_low = privs[i+1].se_priv;
 			entry->luid_high = 0;
 		}
@@ -822,8 +821,8 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 	
 	if (privs[i].se_priv!=SE_PRIV_ALL) {
 		DEBUG(10,(": %s\n", privs[i].description));
-		init_uni_hdr(&r_u->hdr_desc, strlen(privs[i].description));
-		init_unistr2(&r_u->desc, privs[i].description, strlen(privs[i].description) );
+		init_unistr2(&r_u->desc, privs[i].description, UNI_FLAGS_NONE);
+		init_uni_hdr(&r_u->hdr_desc, &r_u->desc);
 
 		r_u->ptr_info=0xdeadbeef;
 		r_u->lang_id=q_u->lang_id;
@@ -890,7 +889,6 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R_UNK_GET_CONNUSER *r_u)
 {
 	fstring username, domname;
-	int ulen, dlen;
 	user_struct *vuser = get_valid_user_struct(p->vuid);
   
 	if (vuser == NULL)
@@ -899,18 +897,15 @@ NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA
 	fstrcpy(username, vuser->user.smb_name);
 	fstrcpy(domname, vuser->user.domain);
   
-	ulen = strlen(username) + 1;
-	dlen = strlen(domname) + 1;
-  
-	init_uni_hdr(&r_u->hdr_user_name, ulen);
 	r_u->ptr_user_name = 1;
-	init_unistr2(&r_u->uni2_user_name, username, ulen);
+	init_unistr2(&r_u->uni2_user_name, username, UNI_STR_TERMINATE);
+	init_uni_hdr(&r_u->hdr_user_name, &r_u->uni2_user_name);
 
 	r_u->unk1 = 1;
   
-	init_uni_hdr(&r_u->hdr_dom_name, dlen);
 	r_u->ptr_dom_name = 1;
-	init_unistr2(&r_u->uni2_dom_name, domname, dlen);
+	init_unistr2(&r_u->uni2_dom_name, domname,  UNI_STR_TERMINATE);
+	init_uni_hdr(&r_u->hdr_dom_name, &r_u->uni2_dom_name);
 
 	r_u->status = NT_STATUS_OK;
   

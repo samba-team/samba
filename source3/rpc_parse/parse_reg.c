@@ -281,18 +281,15 @@ void init_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 				char *name, char *class, SEC_ACCESS *sam_access,
 				SEC_DESC_BUF *sec_buf)
 {
-	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
-	int len_class = class != NULL ? strlen(class) + 1: 0;
-
 	ZERO_STRUCTP(q_c);
 
 	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
 
-	init_uni_hdr(&q_c->hdr_name, len_name);
-	init_unistr2(&q_c->uni_name, name, len_name);
+	init_unistr2(&q_c->uni_name, name, UNI_STR_TERMINATE);
+	init_uni_hdr(&q_c->hdr_name, &q_c->uni_name);
 
-	init_uni_hdr(&q_c->hdr_class, len_class);
-	init_unistr2(&q_c->uni_class, class, len_class);
+	init_unistr2(&q_c->uni_class, class, UNI_STR_TERMINATE);
+	init_uni_hdr(&q_c->hdr_class, &q_c->uni_class);
 
 	q_c->reserved = 0x00000000;
 	memcpy(&q_c->sam_access, sam_access, sizeof(q_c->sam_access));
@@ -397,13 +394,12 @@ BOOL reg_io_r_create_key(const char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *p
 void init_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
 				char *name)
 {
-	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
 	ZERO_STRUCTP(q_c);
 
 	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
 
-	init_uni_hdr(&q_c->hdr_name, len_name);
-	init_unistr2(&q_c->uni_name, name, len_name);
+	init_unistr2(&q_c->uni_name, name, UNI_STR_TERMINATE);
+	init_uni_hdr(&q_c->hdr_name, &q_c->uni_name);
 }
 
 /*******************************************************************
@@ -463,13 +459,12 @@ BOOL reg_io_r_delete_val(const char *desc,  REG_R_DELETE_VALUE *r_r, prs_struct 
 void init_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
 				char *name)
 {
-	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
 	ZERO_STRUCTP(q_c);
 
 	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
 
-	init_uni_hdr(&q_c->hdr_name, len_name);
-	init_unistr2(&q_c->uni_name, name, len_name);
+	init_unistr2(&q_c->uni_name, name, UNI_STR_TERMINATE);
+	init_uni_hdr(&q_c->hdr_name, &q_c->uni_name);
 }
 
 /*******************************************************************
@@ -525,14 +520,12 @@ BOOL reg_io_r_delete_key(const char *desc,  REG_R_DELETE_KEY *r_r, prs_struct *p
  Inits a structure.
 ********************************************************************/
 
-void init_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd,
-				uint32 max_class_len)
+void init_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd, UNISTR2 *uni2)
 {
 	ZERO_STRUCTP(q_o);
 
 	memcpy(&q_o->pol, hnd, sizeof(q_o->pol));
-	init_uni_hdr(&q_o->hdr_class, max_class_len);
-	q_o->uni_class.uni_max_len = max_class_len;
+	init_uni_hdr(&q_o->hdr_class, uni2);
 }
 
 /*******************************************************************
@@ -1010,15 +1003,13 @@ makes a structure.
 
 BOOL init_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char* val_name)
 {
-        int len_type = val_name != NULL ? strlen(val_name) + 1 : 0;
-
         if (q_i == NULL)
                 return False;
 
         q_i->pol = *pol;
 
-        init_uni_hdr(&(q_i->hdr_type), len_type);
-        init_unistr2(&(q_i->uni_type), val_name, len_type);
+        init_unistr2(&q_i->uni_type, val_name, UNI_STR_TERMINATE);
+        init_uni_hdr(&q_i->hdr_type, &q_i->uni_type);
 
         q_i->ptr_reserved = 1;
         q_i->ptr_buf = 1;
@@ -1230,7 +1221,7 @@ makes a structure.
 ********************************************************************/
 
 void init_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
-				uint32 val_idx, uint32 max_val_len,
+				uint32 val_idx, UNISTR2 *uni2,
 				uint32 max_buf_len)
 {
 	ZERO_STRUCTP(q_i);
@@ -1238,8 +1229,7 @@ void init_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
 	memcpy(&q_i->pol, pol, sizeof(q_i->pol));
 
 	q_i->val_index = val_idx;
-	init_uni_hdr(&q_i->hdr_name, max_val_len);
-	q_i->uni_name.uni_max_len = max_val_len;
+	init_uni_hdr(&q_i->hdr_name, uni2);
 	
 	q_i->ptr_type = 1;
 	q_i->type = 0x0;
@@ -1270,8 +1260,8 @@ void init_reg_r_enum_val(REG_R_ENUM_VALUE *r_u, REGISTRY_VALUE *val )
 
 	DEBUG(10,("init_reg_r_enum_val: Valuename => [%s]\n", val->valuename));
 	
-	init_uni_hdr( &r_u->hdr_name, strlen(val->valuename)+1 );
-	init_unistr2( &r_u->uni_name, val->valuename, strlen(val->valuename)+1 );
+	init_unistr2( &r_u->uni_name, val->valuename, UNI_STR_TERMINATE);
+	init_uni_hdr( &r_u->hdr_name, &r_u->uni_name);
 		
 	/* type */
 	
@@ -1418,14 +1408,12 @@ void init_reg_q_create_val(REG_Q_CREATE_VALUE *q_i, POLICY_HND *pol,
 				char *val_name, uint32 type,
 				BUFFER3 *val)
 {
-	int val_len = strlen(val_name) + 1;
-
 	ZERO_STRUCTP(q_i);
 
 	memcpy(&q_i->pol, pol, sizeof(q_i->pol));
 
-	init_uni_hdr(&q_i->hdr_name, val_len);
-	init_unistr2(&q_i->uni_name, val_name, val_len);
+	init_unistr2(&q_i->uni_name, val_name, UNI_STR_TERMINATE);
+	init_uni_hdr(&q_i->hdr_name, &q_i->uni_name);
 	
 	q_i->type      = type;
 	q_i->buf_value = val;
@@ -1650,12 +1638,10 @@ makes a structure.
 void init_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
 				char *key_name, uint32 access_desired)
 {
-	int len_name = strlen(key_name)+1;
-
 	memcpy(&r_q->pol, pol, sizeof(r_q->pol));
 
-	init_uni_hdr(&r_q->hdr_name, len_name);
-	init_unistr2(&r_q->uni_name, key_name, len_name);
+	init_unistr2(&r_q->uni_name, key_name, UNI_STR_TERMINATE);
+	init_uni_hdr(&r_q->hdr_name, &r_q->uni_name);
 
 	r_q->unknown_0 = 0x00000000;
 	r_q->access_desired = access_desired;
@@ -1736,29 +1722,27 @@ BOOL reg_io_r_open_entry(const char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *p
 /*******************************************************************
 Inits a structure.
 ********************************************************************/
+
 void init_reg_q_shutdown(REG_Q_SHUTDOWN * q_s, const char *msg,
 			uint32 timeout, BOOL do_reboot, BOOL force)
 {
-	int msg_len;
-	msg_len = strlen(msg);
-
 	q_s->ptr_0 = 1;
 	q_s->ptr_1 = 1;
 	q_s->ptr_2 = 1;
 
-	init_uni_hdr(&(q_s->hdr_msg), msg_len);
-	init_unistr2(&(q_s->uni_msg), msg, msg_len);
+	init_unistr2(&q_s->uni_msg, msg, UNI_FLAGS_NONE);
+	init_uni_hdr(&q_s->hdr_msg, &q_s->uni_msg);
 
 	q_s->timeout = timeout;
 
 	q_s->reboot = do_reboot ? 1 : 0;
 	q_s->force = force ? 1 : 0;
-
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL reg_io_q_shutdown(const char *desc, REG_Q_SHUTDOWN * q_s, prs_struct *ps,
 		       int depth)
 {

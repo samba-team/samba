@@ -916,12 +916,12 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 {
 	DEBUG(5,("make_spoolss_q_open_printer_ex\n"));
 	q_u->printername_ptr = (printername!=NULL)?1:0;
-	init_unistr2(&q_u->printername, printername, strlen(printername)+1);
+	init_unistr2(&q_u->printername, printername, UNI_STR_TERMINATE);
 
 	q_u->printer_default.datatype_ptr = 0;
 /*
 	q_u->printer_default.datatype_ptr = (datatype!=NULL)?1:0;
-	init_unistr2(&q_u->printer_default.datatype, datatype, strlen(datatype));
+	init_unistr2(&q_u->printer_default.datatype, datatype, UNI_FLAGS_NONE);
 */
 	q_u->printer_default.devmode_cont.size=0;
 	q_u->printer_default.devmode_cont.devmode_ptr=0;
@@ -937,8 +937,8 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 	q_u->user_ctr.user1.major=2;
 	q_u->user_ctr.user1.minor=0;
 	q_u->user_ctr.user1.processor=0;
-	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, strlen(clientname)+1);
-	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, strlen(user_name)+1);
+	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, UNI_STR_TERMINATE);
+	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, UNI_STR_TERMINATE);
 	
 	return True;
 }
@@ -963,7 +963,7 @@ BOOL make_spoolss_q_addprinterex(
 	ZERO_STRUCTP(q_u);
 
 	q_u->server_name_ptr = (srv_name!=NULL)?1:0;
-	init_unistr2(&q_u->server_name, srv_name, strlen(srv_name));
+	init_unistr2(&q_u->server_name, srv_name, UNI_FLAGS_NONE);
 
 	q_u->level = level;
 	
@@ -991,8 +991,8 @@ BOOL make_spoolss_q_addprinterex(
 	q_u->user_ctr.user1.major=2;
 	q_u->user_ctr.user1.minor=0;
 	q_u->user_ctr.user1.processor=0;
-	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, strlen(clientname)+1);
-	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, strlen(user_name)+1);
+	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, UNI_STR_TERMINATE);
+	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, UNI_STR_TERMINATE);
 	q_u->user_ctr.user1.size=q_u->user_ctr.user1.user_name.uni_str_len +
 	                         q_u->user_ctr.user1.client_name.uni_str_len + 2;
 	
@@ -1187,14 +1187,12 @@ BOOL make_spoolss_q_deleteprinterdriver(
 
 	/* these must be NULL terminated or else NT4 will
 	   complain about invalid parameters --jerry */
-	init_unistr2(&q_u->server, server, strlen(server)+1);
-	init_unistr2(&q_u->arch, arch, strlen(arch)+1);
-	init_unistr2(&q_u->driver, driver, strlen(driver)+1);
-
+	init_unistr2(&q_u->server, server, UNI_STR_TERMINATE);
+	init_unistr2(&q_u->arch, arch, UNI_STR_TERMINATE);
+	init_unistr2(&q_u->driver, driver, UNI_STR_TERMINATE);
 	
 	return True;
 }
-
 
 /*******************************************************************
  * make a structure.
@@ -1209,7 +1207,7 @@ BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
         DEBUG(5,("make_spoolss_q_getprinterdata\n"));
 
         q_u->handle = *handle;
-	init_unistr2(&q_u->valuename, valuename, strlen(valuename) + 1);
+	init_unistr2(&q_u->valuename, valuename, UNI_STR_TERMINATE);
         q_u->size = size;
 
         return True;
@@ -1229,8 +1227,8 @@ BOOL make_spoolss_q_getprinterdataex(SPOOL_Q_GETPRINTERDATAEX *q_u,
         DEBUG(5,("make_spoolss_q_getprinterdataex\n"));
 
         q_u->handle = *handle;
-	init_unistr2(&q_u->valuename, valuename, strlen(valuename) + 1);
-	init_unistr2(&q_u->keyname, keyname, strlen(keyname) + 1);
+	init_unistr2(&q_u->valuename, valuename, UNI_STR_TERMINATE);
+	init_unistr2(&q_u->keyname, keyname, UNI_STR_TERMINATE);
         q_u->size = size;
 
         return True;
@@ -5317,7 +5315,7 @@ BOOL smb_io_unibuffer(const char *desc, UNISTR2 *buffer, prs_struct *ps, int dep
 {
 	if (buffer==NULL) return False;
 
-	buffer->undoc=0;
+	buffer->offset=0;
 	buffer->uni_str_len=buffer->uni_max_len;
 	
 	if(!prs_uint32("buffer_size", ps, depth, &buffer->uni_max_len))
@@ -5374,7 +5372,7 @@ BOOL make_spoolss_q_addprinterdriver(TALLOC_CTX *mem_ctx,
 	DEBUG(5,("make_spoolss_q_addprinterdriver\n"));
 	
 	q_u->server_name_ptr = (srv_name!=NULL)?1:0;
-	init_unistr2(&q_u->server_name, srv_name, strlen(srv_name)+1);
+	init_unistr2(&q_u->server_name, srv_name, UNI_STR_TERMINATE);
 	
 	q_u->level = level;
 	
@@ -6162,7 +6160,7 @@ BOOL make_spoolss_q_enumprinterdataex(SPOOL_Q_ENUMPRINTERDATAEX *q_u,
 				      uint32 size)
 {
 	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-	init_unistr2(&q_u->key, key, strlen(key)+1);
+	init_unistr2(&q_u->key, key, UNI_STR_TERMINATE);
 	q_u->size = size;
 
 	return True;
@@ -6175,7 +6173,7 @@ BOOL make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, const POLICY_HND
 {
 	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
 	q_u->type = data_type;
-	init_unistr2(&q_u->value, value, strlen(value)+1);
+	init_unistr2(&q_u->value, value, UNI_STR_TERMINATE);
 
 	q_u->max_len = q_u->real_len = data_size;
 	q_u->data = (unsigned char *)data;
@@ -6191,8 +6189,8 @@ BOOL make_spoolss_q_setprinterdataex(SPOOL_Q_SETPRINTERDATAEX *q_u, const POLICY
 {
 	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
 	q_u->type = data_type;
-	init_unistr2(&q_u->value, value, strlen(value)+1);
-	init_unistr2(&q_u->key, key, strlen(key)+1);
+	init_unistr2(&q_u->value, value, UNI_STR_TERMINATE);
+	init_unistr2(&q_u->key, key, UNI_STR_TERMINATE);
 
 	q_u->max_len = q_u->real_len = data_size;
 	q_u->data = (unsigned char *)data;
@@ -6589,7 +6587,7 @@ BOOL make_spoolss_q_replyopenprinter(SPOOL_Q_REPLYOPENPRINTER *q_u,
 	if (q_u == NULL)
 		return False;
 
-	init_unistr2(&q_u->string, string, strlen(string)+1);
+	init_unistr2(&q_u->string, string, UNI_STR_TERMINATE);
 
 	q_u->printer=printer;
 	q_u->type=type;
@@ -7092,7 +7090,7 @@ BOOL make_spoolss_q_enumprinterkey(SPOOL_Q_ENUMPRINTERKEY *q_u,
 	DEBUG(5,("make_spoolss_q_enumprinterkey\n"));
 
 	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-	init_unistr2(&q_u->key, key, strlen(key)+1);
+	init_unistr2(&q_u->key, key, UNI_STR_TERMINATE);
 	q_u->size = size;
 
 	return True;
@@ -7161,7 +7159,7 @@ BOOL make_spoolss_q_deleteprinterkey(SPOOL_Q_DELETEPRINTERKEY *q_u,
 	DEBUG(5,("make_spoolss_q_deleteprinterkey\n"));
 
 	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-	init_unistr2(&q_u->keyname, keyname, strlen(keyname)+1);
+	init_unistr2(&q_u->keyname, keyname, UNI_STR_TERMINATE);
 
 	return True;
 }
@@ -7382,8 +7380,8 @@ BOOL make_spoolss_q_getprintprocessordirectory(SPOOL_Q_GETPRINTPROCESSORDIRECTOR
 {
 	DEBUG(5,("make_spoolss_q_getprintprocessordirectory\n"));
 
-	init_unistr2(&q_u->name, name, strlen(name)+1);
-	init_unistr2(&q_u->environment, environment, strlen(environment)+1);
+	init_unistr2(&q_u->name, name, UNI_STR_TERMINATE);
+	init_unistr2(&q_u->environment, environment, UNI_STR_TERMINATE);
 
 	q_u->level = level;
 
@@ -7509,7 +7507,7 @@ BOOL make_spoolss_q_setform(SPOOL_Q_SETFORM *q_u, POLICY_HND *handle,
 	q_u->level = level;
 	q_u->level2 = level;
 	memcpy(&q_u->form, form, sizeof(FORM));
-	init_unistr2(&q_u->name, form_name, strlen(form_name) + 1);
+	init_unistr2(&q_u->name, form_name, UNI_STR_TERMINATE);
 
 	return True;
 }
@@ -7522,7 +7520,7 @@ BOOL make_spoolss_q_deleteform(SPOOL_Q_DELETEFORM *q_u, POLICY_HND *handle,
 			       const char *form)
 {
 	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
-	init_unistr2(&q_u->name, form, strlen(form) + 1);
+	init_unistr2(&q_u->name, form, UNI_STR_TERMINATE);
 	return True;
 }
 
@@ -7536,7 +7534,7 @@ BOOL make_spoolss_q_getform(SPOOL_Q_GETFORM *q_u, POLICY_HND *handle,
 {
         memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
         q_u->level = level;
-        init_unistr2(&q_u->formname, formname, strlen(formname) + 1);
+        init_unistr2(&q_u->formname, formname, UNI_STR_TERMINATE);
         q_u->buffer=buffer;
         q_u->offered=offered;
 
@@ -7642,17 +7640,9 @@ BOOL make_spoolss_q_startdocprinter(SPOOL_Q_STARTDOCPRINTER *q_u,
 		ctr->docinfo.doc_info_1.p_outputfile = outputfile ? 1 : 0;
 		ctr->docinfo.doc_info_1.p_datatype = datatype ? 1 : 0;
 
-		if (docname)
-			init_unistr2(&ctr->docinfo.doc_info_1.docname, docname,
-				     strlen(docname) + 1);
-
-		if (outputfile)
-			init_unistr2(&ctr->docinfo.doc_info_1.outputfile, outputfile,
-				     strlen(outputfile) + 1);
-
-		if (datatype)
-			init_unistr2(&ctr->docinfo.doc_info_1.datatype, datatype,
-				     strlen(datatype) + 1);
+		init_unistr2(&ctr->docinfo.doc_info_1.docname, docname, UNI_STR_TERMINATE);
+		init_unistr2(&ctr->docinfo.doc_info_1.outputfile, outputfile, UNI_STR_TERMINATE);
+		init_unistr2(&ctr->docinfo.doc_info_1.datatype, datatype, UNI_STR_TERMINATE);
 
 		break;
 	case 2:
@@ -7701,7 +7691,7 @@ BOOL make_spoolss_q_deleteprinterdata(SPOOL_Q_DELETEPRINTERDATA *q_u,
 				 POLICY_HND *handle, char *valuename)
 {
         memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
-	init_unistr2(&q_u->valuename, valuename, strlen(valuename) + 1);
+	init_unistr2(&q_u->valuename, valuename, UNI_STR_TERMINATE);
 
 	return True;
 }
@@ -7715,8 +7705,8 @@ BOOL make_spoolss_q_deleteprinterdataex(SPOOL_Q_DELETEPRINTERDATAEX *q_u,
 					char *value)
 {
         memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
-	init_unistr2(&q_u->valuename, value, strlen(value) + 1);
-	init_unistr2(&q_u->keyname, key, strlen(key) + 1);
+	init_unistr2(&q_u->valuename, value, UNI_STR_TERMINATE);
+	init_unistr2(&q_u->keyname, key, UNI_STR_TERMINATE);
 
 	return True;
 }
@@ -7736,8 +7726,7 @@ BOOL make_spoolss_q_rffpcnex(SPOOL_Q_RFFPCNEX *q_u, POLICY_HND *handle,
 
 	q_u->localmachine_ptr = 1;
 
-	init_unistr2(&q_u->localmachine, localmachine, 
-		     strlen(localmachine) + 1);
+	init_unistr2(&q_u->localmachine, localmachine, UNI_STR_TERMINATE);
 
 	q_u->printerlocal = printerlocal;
 
