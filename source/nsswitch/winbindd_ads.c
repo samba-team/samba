@@ -346,6 +346,8 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	uint32 atype;
 	char *escaped_dn = escape_ldap_string_alloc(dn);
 
+	DEBUG(3,("ads: dn_lookup\n"));
+
 	if (!escaped_dn) {
 		return False;
 	}
@@ -464,6 +466,8 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	char *exp;
 	ADS_STRUCT *ads;
 	const char *group_attrs[] = {"objectSid", NULL};
+
+	DEBUG(3,("ads: lookup_usergroups_alt\n"));
 
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
@@ -656,6 +660,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	int i, num_members;
 	fstring sid_string;
 
+	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name, sid_string_static(group_sid)));
+
 	*num_names = 0;
 
 	ads = ads_cached_connection(domain);
@@ -730,6 +736,8 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS rc;
 
+	DEBUG(3,("ads: fetch sequence_number for %s\n", domain->name));
+
 	*seq = DOM_SEQUENCE_NONE;
 
 	ads = ads_cached_connection(domain);
@@ -755,6 +763,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 
+	DEBUG(3,("ads: trusted_domains\n"));
+
 	*num_domains = 0;
 	*names = NULL;
 
@@ -771,6 +781,8 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
+
+	DEBUG(3,("ads: domain_sid\n"));
 
 	ads = ads_cached_connection(domain);
 	if (!ads) return NT_STATUS_UNSUCCESSFUL;
@@ -795,6 +807,8 @@ static NTSTATUS alternate_name(struct winbindd_domain *domain)
 	ADS_STATUS rc;
 	TALLOC_CTX *ctx;
 	char *workgroup;
+
+	DEBUG(3,("ads: alternate_name\n"));
 
 	ads = ads_cached_connection(domain);
 	if (!ads) return NT_STATUS_UNSUCCESSFUL;
