@@ -32,6 +32,5 @@ enum spoolss_handle_type {
   state asscoiated with a spoolss_OpenPrinter{,Ex}() operation
 */
 struct spoolss_handle_server {
-	enum spoolss_handle_type handle_type;
 	uint32_t access_mask;
 };

@@ -947,8 +947,7 @@ static WERROR spoolss_OpenPrinterEx_server(struct dcesrv_call_state *dce_call,
 
 	handle->data = state;
 
-	state->handle_type	= SPOOLSS_HANDLE_SERVER;
-	state->access_mask	= r->in.access_mask;
+	state->access_mask = r->in.access_mask;
 
 	*r->out.handle	= handle->wire_handle;
 
