@@ -1565,7 +1565,7 @@ static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state,
 	if (!get_single_attribute(ldap_state->ldap_struct, entry, "gidNumber", temp))
 		return False;
 	
-	gid = (gid_t)atol(temp);
+	*gid = (gid_t)atol(temp);
 
 	pdb_set_unix_homedir(sampass, homedir, PDB_SET);
 	
