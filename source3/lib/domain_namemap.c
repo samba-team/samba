@@ -1070,7 +1070,7 @@ BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP *gmep)
 /*************************************************************************
  looks up by NT name, returns User Information.  
 *************************************************************************/
-BOOL lookupsmbpwntnam(char *fullntname, DOM_NAME_MAP *gmep)
+BOOL lookupsmbpwntnam(const char *fullntname, DOM_NAME_MAP *gmep)
 {
 	DEBUG(10,("lookupsmbpwntnam: nt user name %s\n", fullntname));
 

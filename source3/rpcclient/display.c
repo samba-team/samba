@@ -192,8 +192,8 @@ void display_srv_info_101(FILE *out_hnd, enum action_type action,
 			fstring name;
 			fstring comment;
 
-			fstrcpy(name    , unistrn2(sv101->uni_name    .buffer, sv101->uni_name    .uni_str_len));
-			fstrcpy(comment , unistrn2(sv101->uni_comment .buffer, sv101->uni_comment .uni_str_len));
+			fstrcpy(name    , unistr2_to_str(&sv101->uni_name    ));
+			fstrcpy(comment , unistr2_to_str(&sv101->uni_comment ));
 
 			display_server(out_hnd, action, name, sv101->srv_type, comment);
 
@@ -234,9 +234,9 @@ void display_srv_info_102(FILE *out_hnd, enum action_type action,SRV_INFO_102 *s
 			fstring comment;
 			fstring usr_path;
 
-			fstrcpy(name    , unistrn2(sv102->uni_name    .buffer, sv102->uni_name    .uni_str_len));
-			fstrcpy(comment , unistrn2(sv102->uni_comment .buffer, sv102->uni_comment .uni_str_len));
-			fstrcpy(usr_path, unistrn2(sv102->uni_usr_path.buffer, sv102->uni_usr_path.uni_str_len));
+			fstrcpy(name    , unistr2_to_str(&sv102->uni_name    ));
+			fstrcpy(comment , unistr2_to_str(&sv102->uni_comment ));
+			fstrcpy(usr_path, unistr2_to_str(&sv102->uni_usr_path));
 
 			display_server(out_hnd, action, name, sv102->srv_type, comment);
 
@@ -347,8 +347,8 @@ void display_conn_info_1(FILE *out_hnd, enum action_type action,
 			fstring usr_name;
 			fstring net_name;
 
-			fstrcpy(usr_name, unistrn2(str1->uni_usr_name.buffer, str1->uni_usr_name.uni_str_len));
-			fstrcpy(net_name, unistrn2(str1->uni_net_name.buffer, str1->uni_net_name.uni_str_len));
+			fstrcpy(usr_name, unistr2_to_str(&str1->uni_usr_name));
+			fstrcpy(net_name, unistr2_to_str(&str1->uni_net_name));
 
 			fprintf(out_hnd, "\tid       :\t%d\n", info1->id);
 			fprintf(out_hnd, "\ttype     :\t%s\n", get_share_type_str(info1->type));
@@ -503,8 +503,8 @@ void display_share_info_1(FILE *out_hnd, enum action_type action,
 			fstring remark  ;
 			fstring net_name;
 
-			fstrcpy(net_name, unistrn2(str1->uni_netname.buffer, str1->uni_netname.uni_str_len));
-			fstrcpy(remark  , unistrn2(str1->uni_remark .buffer, str1->uni_remark .uni_str_len));
+			fstrcpy(net_name, unistr2_to_str(&str1->uni_netname));
+			fstrcpy(remark  , unistr2_to_str(&str1->uni_remark ));
 
 			display_share(out_hnd, action, net_name, info1->type, remark);
 
@@ -545,10 +545,10 @@ void display_share_info_2(FILE *out_hnd, enum action_type action,
 			fstring path    ;
 			fstring passwd  ;
 
-			fstrcpy(net_name, unistrn2(str2->uni_netname.buffer, str2->uni_netname.uni_str_len));
-			fstrcpy(remark  , unistrn2(str2->uni_remark .buffer, str2->uni_remark .uni_str_len));
-			fstrcpy(path    , unistrn2(str2->uni_path   .buffer, str2->uni_path   .uni_str_len));
-			fstrcpy(passwd  , unistrn2(str2->uni_passwd .buffer, str2->uni_passwd .uni_str_len));
+			fstrcpy(net_name, unistr2_to_str(&str2->uni_netname));
+			fstrcpy(remark  , unistr2_to_str(&str2->uni_remark ));
+			fstrcpy(path    , unistr2_to_str(&str2->uni_path   ));
+			fstrcpy(passwd  , unistr2_to_str(&str2->uni_passwd ));
 
 			display_share2(out_hnd, action, net_name, info2->type, remark,
 			                                      info2->perms, info2->max_uses, info2->num_uses,
@@ -698,8 +698,8 @@ void display_file_info_3(FILE *out_hnd, enum action_type action,
 			fstring path_name;
 			fstring user_name;
 
-			fstrcpy(path_name, unistrn2(str3->uni_path_name.buffer, str3->uni_path_name.uni_str_len));
-			fstrcpy(user_name, unistrn2(str3->uni_user_name.buffer, str3->uni_user_name.uni_str_len));
+			fstrcpy(path_name, unistr2_to_str(&str3->uni_path_name));
+			fstrcpy(user_name, unistr2_to_str(&str3->uni_user_name));
 
 			fprintf(out_hnd, "\tid       :\t%d\n", info3->id);
 			fprintf(out_hnd, "\tperms    :\t%s\n", get_file_mode_str(info3->perms));
@@ -1148,16 +1148,16 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\t\tUser Name   :\t%s\n", unistrn2(usr->uni_user_name   .buffer, usr->uni_user_name   .uni_str_len)); /* username unicode string */
-			fprintf(out_hnd, "\t\tFull Name   :\t%s\n", unistrn2(usr->uni_full_name   .buffer, usr->uni_full_name   .uni_str_len)); /* user's full name unicode string */
-			fprintf(out_hnd, "\t\tHome Drive  :\t%s\n", unistrn2(usr->uni_home_dir    .buffer, usr->uni_home_dir    .uni_str_len)); /* home directory unicode string */
-			fprintf(out_hnd, "\t\tDir Drive   :\t%s\n", unistrn2(usr->uni_dir_drive   .buffer, usr->uni_dir_drive   .uni_str_len)); /* home directory drive unicode string */
-			fprintf(out_hnd, "\t\tProfile Path:\t%s\n", unistrn2(usr->uni_profile_path.buffer, usr->uni_profile_path.uni_str_len)); /* profile path unicode string */
-			fprintf(out_hnd, "\t\tLogon Script:\t%s\n", unistrn2(usr->uni_logon_script.buffer, usr->uni_logon_script.uni_str_len)); /* logon script unicode string */
-			fprintf(out_hnd, "\t\tDescription :\t%s\n", unistrn2(usr->uni_acct_desc   .buffer, usr->uni_acct_desc   .uni_str_len)); /* user description unicode string */
-			fprintf(out_hnd, "\t\tWorkstations:\t%s\n", unistrn2(usr->uni_workstations.buffer, usr->uni_workstations.uni_str_len)); /* workstaions unicode string */
-			fprintf(out_hnd, "\t\tUnknown Str :\t%s\n", unistrn2(usr->uni_unknown_str .buffer, usr->uni_unknown_str .uni_str_len)); /* unknown string unicode string */
-			fprintf(out_hnd, "\t\tRemote Dial :\t%s\n", unistrn2(usr->uni_munged_dial .buffer, usr->uni_munged_dial .uni_str_len)); /* munged remote access unicode string */
+			fprintf(out_hnd, "\t\tUser Name   :\t%s\n", unistr2_to_str(&usr->uni_user_name   )); /* username unicode string */
+			fprintf(out_hnd, "\t\tFull Name   :\t%s\n", unistr2_to_str(&usr->uni_full_name   )); /* user's full name unicode string */
+			fprintf(out_hnd, "\t\tHome Drive  :\t%s\n", unistr2_to_str(&usr->uni_home_dir    )); /* home directory unicode string */
+			fprintf(out_hnd, "\t\tDir Drive   :\t%s\n", unistr2_to_str(&usr->uni_dir_drive   )); /* home directory drive unicode string */
+			fprintf(out_hnd, "\t\tProfile Path:\t%s\n", unistr2_to_str(&usr->uni_profile_path)); /* profile path unicode string */
+			fprintf(out_hnd, "\t\tLogon Script:\t%s\n", unistr2_to_str(&usr->uni_logon_script)); /* logon script unicode string */
+			fprintf(out_hnd, "\t\tDescription :\t%s\n", unistr2_to_str(&usr->uni_acct_desc   )); /* user description unicode string */
+			fprintf(out_hnd, "\t\tWorkstations:\t%s\n", unistr2_to_str(&usr->uni_workstations)); /* workstaions unicode string */
+			fprintf(out_hnd, "\t\tUnknown Str :\t%s\n", unistr2_to_str(&usr->uni_unknown_str )); /* unknown string unicode string */
+			fprintf(out_hnd, "\t\tRemote Dial :\t%s\n", unistr2_to_str(&usr->uni_munged_dial )); /* munged remote access unicode string */
 
 			fprintf(out_hnd, "\t\tLogon Time               :\t%s\n", http_timestring(nt_time_to_unix(&(usr->logon_time           ))));
 			fprintf(out_hnd, "\t\tLogoff Time              :\t%s\n", http_timestring(nt_time_to_unix(&(usr->logoff_time          ))));

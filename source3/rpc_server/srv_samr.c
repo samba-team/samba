@@ -1527,8 +1527,8 @@ static void samr_reply_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 	fstring user_name;
 	fstring wks;
 
-	fstrcpy(user_name, unistrn2(q_u->uni_user_name.buffer, q_u->uni_user_name.uni_str_len));
-	fstrcpy(wks      , unistrn2(q_u->uni_dest_host.buffer, q_u->uni_dest_host.uni_str_len));
+	fstrcpy(user_name, unistr2_to_str(&q_u->uni_user_name));
+	fstrcpy(wks      , unistr2_to_str(&q_u->uni_dest_host));
 
 	DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
 
@@ -2340,8 +2340,7 @@ static void api_samr_unknown_32( uint16 vuid, prs_struct *data, prs_struct *rdat
 	   reply if the account already exists...
 	 */
 
-	fstrcpy(mach_acct, unistrn2(q_u.uni_mach_acct.buffer,
-	                            q_u.uni_mach_acct.uni_str_len));
+	fstrcpy(mach_acct, unistr2_to_str(&q_u.uni_mach_acct));
 
 	become_root(True);
 	sam_pass = getsam21pwntnam(mach_acct);

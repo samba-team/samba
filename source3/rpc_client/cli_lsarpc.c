@@ -427,9 +427,7 @@ BOOL lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
 				{
 					if (r_q.dom.id3.buffer_dom_name != 0)
 					{
-						char *dom_name = unistrn2(r_q.dom.id3.uni_domain_name.buffer,
-									  r_q.dom.id3.uni_domain_name.uni_str_len);
-						fstrcpy(domain_name, dom_name);
+						fstrcpy(domain_name, unistr2_to_str(&r_q.dom.id3.uni_domain_name));
 					}
 					if (r_q.dom.id3.buffer_dom_sid != 0)
 					{
@@ -443,9 +441,7 @@ BOOL lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
 				{
 					if (r_q.dom.id5.buffer_dom_name != 0)
 					{
-						char *dom_name = unistrn2(r_q.dom.id5.uni_domain_name.buffer,
-									  r_q.dom.id5.uni_domain_name.uni_str_len);
-						fstrcpy(domain_name, dom_name);
+						fstrcpy(domain_name, unistr2_to_str(&r_q.dom.id5.uni_domain_name));
 					}
 					if (r_q.dom.id5.buffer_dom_sid != 0)
 					{

@@ -136,7 +136,7 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
-	fstrcpy(name, unistrn2(q_u->uni_name.buffer, q_u->uni_name.uni_str_len));
+	fstrcpy(name, unistr2_to_str(&q_u->uni_name));
 
 	if (status == 0x0)
 	{

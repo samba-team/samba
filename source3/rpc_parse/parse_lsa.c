@@ -688,9 +688,10 @@ void make_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
 
 	for (i = 0; i < num_names; i++)
 	{
-		int len = strlen(names[i]);
+		const char* name = names[i];
+		int len = strlen(name);
 		make_uni_hdr(&q_l->hdr_name[i], len, len, len != 0);
-		make_unistr2(&q_l->uni_name[i], names[i], len);
+		make_unistr2(&q_l->uni_name[i], name, len);
 	}
 
 	q_l->num_trans_entries  = 0;
