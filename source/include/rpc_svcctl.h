@@ -33,6 +33,7 @@
 #define SVC_OPEN_SERVICE     0x10
 #define SVC_START_SERVICE    0x13
 #define SVC_STOP_SERVICE     0x01
+#define SVC_UNKNOWN_1B       0x1b
 #define SVC_CLOSE            0x00
 
 
@@ -243,6 +244,30 @@ typedef struct r_svc_close_info
 
 } SVC_R_CLOSE;
 
+/* SVC_Q_UNKNOWN_1B */
+typedef struct q_svc_unk_1b_info
+{
+	POLICY_HND pol; /* service policy handle */
+	uint32 switch_value;	/* 0x01 */
+	uint32 unknown_1;	/* 0x0000 0228 */
+
+} SVC_Q_UNKNOWN_1B;
+
+/* SVC_R_UNKNOWN_1B */
+typedef struct r_svc_unk_1b_info
+{
+	uint32 switch_value1;	/* 0x01 */
+	uint32 ptr;
+	uint32 switch_value2;	/* 0x01 */
+	uint32 unknown_1;	/* 0x0000 0228 */
+	uint32 num_items1;
+	uint32 *ptr_items;
+	uint32 num_items2;
+	uint32 **items;
+
+	uint32 status;
+
+} SVC_R_UNKNOWN_1B;
 
 #endif /* _RPC_SVCCTL_H */
 

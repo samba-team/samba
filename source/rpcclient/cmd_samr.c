@@ -657,6 +657,84 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 }
 
 
+#if 0
+/****************************************************************************
+SAM create domain user.
+****************************************************************************/
+void cmd_sam_create_dom_trusting(struct client_info *info, int argc, char *argv[])
+{
+	fstring local_domain;
+	fstring local_pdc;
+
+	char *trusting_domain;
+	char *trusting_pdc;
+	fstring password;
+
+	fstring sid;
+	DOM_SID sid1;
+	uint32 user_rid; 
+
+	sid_copy(&sid1, &info->dom.level5_sid);
+	sid_to_string(sid, &sid1);
+	fstrcpy(domain, info->dom.level5_dom);
+
+	if (sid1.num_auths == 0)
+	{
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	if (argc < 3)
+	{
+		report(out_hnd, "createtrusting: <Domain Name> <PDC Name> [password]\n");
+		return;
+	}
+
+	argc--;
+	argv++;
+
+	trusting_domain = argv[0];
+
+	argc--;
+	argv++;
+
+	trusting_pdc = argv[0];
+
+	argc--;
+	argv++;
+
+	if (argc > 0)
+	{
+		safe_strcpy(password, argv[0], sizeof(password)-1);
+	}
+	else
+	{
+		fstring pass_str;
+		char *pass;
+		slprintf(pass_str, sizeof(pass_str)-1, "Enter %s's Password:",
+		         user_name);
+		pass = (char*)getpass(pass_str);
+
+		if (pass != NULL)
+		{
+			safe_strcpy(password, pass, sizeof(password)-1);
+			set_passwd = True;
+		}
+	}
+	report(out_hnd, "SAM Create Domain Trusting Account\n");
+
+	if (msrpc_sam_create_dom_user(smb_cli, &sid1,
+	                              acct_name, ACB_WSTRUST, &user_rid))
+	{
+		report(out_hnd, "Create Domain User: OK\n");
+	}
+	else
+	{
+		report(out_hnd, "Create Domain User: FAILED\n");
+	}
+}
+#endif
+
 /****************************************************************************
 SAM create domain user.
 ****************************************************************************/
