@@ -1937,6 +1937,8 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 * id24, uint32 rid)
 	static uchar lm_hash[16];
 	UNISTR2 new_pw;
 	uint32 len;
+	pstring buf;
+	int i;
 
 	if (pwd == NULL)
 	{
@@ -1946,13 +1948,18 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 * id24, uint32 rid)
 	pwdb_init_sam(&new_pwd);
 	copy_sam_passwd(&new_pwd, pwd);
 
-	if (!decode_pw_buffer(id24->pass, (char *)new_pw.buffer, 256, &len))
+	if (!decode_pw_buffer(id24->pass, buf, 256, &len))
 	{
 		return False;
 	}
 
 	new_pw.uni_max_len = len / 2;
 	new_pw.uni_str_len = len / 2;
+
+	for (i = 0; i < new_pw.uni_str_len; i++)
+	{
+		new_pw.buffer[i] = SVAL(buf, i*2);
+	}
 
 	nt_lm_owf_genW(&new_pw, nt_hash, lm_hash);
 
@@ -1972,7 +1979,9 @@ static BOOL set_user_info_23(const SAM_USER_INFO_23 * id23, uint32 rid)
 	static uchar nt_hash[16];
 	static uchar lm_hash[16];
 	UNISTR2 new_pw;
+	pstring buf;
 	uint32 len;
+	int i;
 
 	if (id23 == NULL)
 	{
@@ -1988,13 +1997,18 @@ static BOOL set_user_info_23(const SAM_USER_INFO_23 * id23, uint32 rid)
 	copy_sam_passwd(&new_pwd, pwd);
 	copy_id23_to_sam_passwd(&new_pwd, id23);
 
-	if (!decode_pw_buffer(id23->pass, (char *)new_pw.buffer, 256, &len))
+	if (!decode_pw_buffer(id23->pass, buf, 256, &len))
 	{
 		return False;
 	}
 
 	new_pw.uni_max_len = len / 2;
 	new_pw.uni_str_len = len / 2;
+
+	for (i = 0; i < new_pw.uni_str_len; i++)
+	{
+		new_pw.buffer[i] = SVAL(buf, i*2);
+	}
 
 	nt_lm_owf_genW(&new_pw, nt_hash, lm_hash);
 
