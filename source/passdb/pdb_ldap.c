@@ -1433,13 +1433,14 @@ static NTSTATUS ldapsam_modify_trustpw(struct pdb_methods *methods,
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)methods->private_data;
 	int rc;
 
+	/* Sanity checks */
 	if (!methods || !trustpw || !dn) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!mod) {
 		DEBUG(5, ("ldapsam_modify_trustpw: mod is empty: nothing to modify\n"));
-		return NT_STATUS_OK;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Do modify or add a new trust password object */
@@ -3179,6 +3180,16 @@ done:
 }
 
 
+/**
+ * Init LDAP structures passed to ldap calls from trust password structure.
+ *
+ * @param ldap_state LDAP state structure required by ldap calls
+ * @param entry LDAPMessage structure returned from ldap calls
+ * @param mod modification passed eventually to ldap calls (like ldap_modify(3))
+ * @param trustpw trust password structure used by password backend
+ * @return true if initialised successfully, otherwise false
+ */
+
 static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMessage *entry,
                                    LDAPMod ***mod, SAM_TRUST_PASSWD *trustpw)
 {
@@ -3241,6 +3252,14 @@ static BOOL init_trustpw_from_ldap(struct ldapsam_privates* ldap_state, SAM_TRUS
 }
 
 
+/**
+ * Starts trust passwords enumeration. Makes ldap search operation and holds
+ * returned result in ldap structures associated to current pdb context
+ *
+ * @param methods passdb backend methods related to current context
+ * @return nt status code of operation
+ */
+
 static NTSTATUS ldapsam_settrustpwent(struct pdb_methods *methods)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates*)methods->private_data;
@@ -3273,6 +3292,14 @@ static void ldapsam_endtrustpwent(struct pdb_methods *methods)
 {
 }
 
+
+/**
+ * Gets single ldap object returned by the former search. Object is returned one in turn.
+ *
+ * @param methods passdb backend methods related to current context
+ * @param trust trust password structure used by password backend
+ * @return nt status code of operation
+ */
 
 static NTSTATUS ldapsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust)
 {
@@ -3307,6 +3334,14 @@ static NTSTATUS ldapsam_gettrustpwsid(struct pdb_methods *methods, SAM_TRUST_PAS
 }
 
 
+/**
+ * Adds new trust password structure to LDAP directory.
+ *
+ * @param methods passdb backend methods related to current context
+ * @param trust trust password being added
+ * @return nt status code of operation
+ */
+
 static NTSTATUS ldapsam_add_trust_passwd(struct pdb_methods* methods, const SAM_TRUST_PASSWD *trust)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)methods->private_data;
@@ -3325,16 +3360,19 @@ static NTSTATUS ldapsam_add_trust_passwd(struct pdb_methods* methods, const SAM_
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	/* Creating a local copy of the password and, btw, ensuring const argument */
 	memcpy(&trustpw, trust, sizeof(trustpw));
 	attr_list = get_attr_list(trustpw_attr_list);
 
+	/* char* domain name is needed for a few next calls */
 	dom_name = pdb_get_tp_domain_name_c(&trustpw);
 	if (!dom_name) {
 		DEBUG(0, ("ldapsam_add_trust_passwd: Couldn't get char-converted domain name\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	/* Checking if such trust password already exists in the directory */
+	/* Checking if such trust password already exists in the directory
+	   - search and count the results */
 	rc = ldapsam_search_trustpw_by_name(ldap_state, dom_name, &res, attr_list);
 	
 	if (rc != LDAP_SUCCESS) {
@@ -3372,6 +3410,7 @@ static NTSTATUS ldapsam_add_trust_passwd(struct pdb_methods* methods, const SAM_
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	/* Do the actual modify operation on LDAP directory */
 	nt_status = ldapsam_modify_trustpw(methods, &trustpw, dn, mod, ldap_op);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("ldapsam_add_trust_passwd: failed to modify/add trustpw with sambaDomainName = %s (dn = %s)\n",
@@ -3379,7 +3418,8 @@ static NTSTATUS ldapsam_add_trust_passwd(struct pdb_methods* methods, const SAM_
 		ldap_mods_free(mod, True);
 		return nt_status;
 	}
-
+	
+	/* Everything seems to have gone well */
 	DEBUG(2, ("ldapsam_add_trust_passwd: added: sambaDomainName == %s in the LDAP database\n", dom_name));
 	ldap_mods_free(mod, True);
 
