@@ -87,6 +87,108 @@ BOOL test_ClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		  struct policy_handle *handle, char *formname)
+{
+	NTSTATUS status;
+	struct spoolss_GetForm r;
+	uint32 buf_size;
+
+	r.in.handle = handle;
+	r.in.formname = formname;
+	r.in.level = 1;
+	r.in.buffer = NULL;
+	buf_size = 0;
+	r.in.buf_size = r.out.buf_size = &buf_size;
+
+	printf("Testing GetForm\n");
+
+	status = dcerpc_spoolss_GetForm(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetForm failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
+
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+
+		status = dcerpc_spoolss_GetForm(p, mem_ctx, &r);
+
+		if (!r.out.info) {
+			printf("No form info returned");
+			return False;
+		}
+	}
+
+	return True;
+}
+
+BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		    struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct spoolss_EnumForms r;
+	uint32 buf_size;
+
+	r.in.handle = handle;
+	r.in.level = 1;
+	r.in.buffer = NULL;
+	buf_size = 0;
+	r.in.buf_size = &buf_size;
+	r.out.buf_size = &buf_size;
+
+	printf("Testing EnumForms\n");
+
+	status = dcerpc_spoolss_EnumForms(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumForms failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
+		union spoolss_FormInfo *info;
+		int j;
+
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+
+		status = dcerpc_spoolss_EnumForms(p, mem_ctx, &r);
+
+		if (!r.out.buffer) {
+			printf("No forms returned");
+			return False;
+		}
+
+		status = pull_spoolss_FormInfoArray(r.out.buffer, mem_ctx, r.in.level, r.out.count, &info);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("EnumFormsArray parse failed - %s\n", nt_errstr(status));
+			return False;
+		}
+
+		for (j=0;j<r.out.count;j++) {
+			printf("Form %d\n", j);
+			NDR_PRINT_UNION_DEBUG(spoolss_FormInfo, r.in.level, &info[j]);
+		}
+
+		for (j = 0; j < r.out.count; j++)
+			test_GetForm(p, mem_ctx, handle, info[j].info1.name);
+	}
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		printf("EnumForms failed - %s/%s\n", 
+		       nt_errstr(status), win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
 BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *handle)
 {
@@ -209,6 +311,10 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_GetPrinter(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_EnumForms(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
