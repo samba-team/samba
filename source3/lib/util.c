@@ -3731,6 +3731,7 @@ char *automount_server(char *user_name)
 			home_server_len = sizeof(pstring);
 		}
 		strncpy(server_name, nis_result, home_server_len);
+                server_name[home_server_len] = '\0';
 	}
 #else
 	/* use the local machine name instead of the auto-map server */

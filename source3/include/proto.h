@@ -45,6 +45,9 @@ void add_char_string(char *s);
 BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence);
 BOOL chgpasswd(char *name,char *oldpass,char *newpass);
 BOOL chgpasswd(char *name,char *oldpass,char *newpass);
+BOOL check_lanman_password(char *user, unsigned char *pass1, 
+                           unsigned char *pass2, struct smb_passwd **psmbpw);
+BOOL change_lanman_password(struct smb_passwd *smbpw, char *pass1, char *pass2);
 
 /*The following definitions come from  client.c  */
 
@@ -1268,6 +1271,7 @@ struct shmem_ops *sysv_shm_open(int ronly);
 
 void E_P16(unsigned char *p14,unsigned char *p16);
 void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24);
+void D_P16(unsigned char *p14, unsigned char *in, unsigned char *out);
 void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key);
 void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
 
