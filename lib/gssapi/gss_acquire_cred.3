@@ -567,14 +567,16 @@ are part of the GSS-API V1 interface and are obsolete. The functions
 should not be used for new applications.
 They are provided so that version 1 applications can link against the
 library.
-.Pp
+.Sh EXTENSIONS
 .Fn gss_krb5_copy_ccache
-is an extension to the GSS-API API.
-The function will extract the krb5 credential that are transfered from
-the initiator to the acceptor when using token delegation in the
-Kerberos mechanism.
+will extract the krb5 credential that are transfered from the
+initiator to the acceptor when using token delegation in the Kerberos
+mechanism.
 The acceptor receives the delegated token in the last argument to
 .Fn gss_accept_sec_context .
+.Pp
+.Fn gsskrb5_register_acceptor_identity
+sets the Kerberos 5 principal that the acceptor will use.
 .Pp
 .Fn gss_krb5_compat_des3_mic
 turns on or off the compatibly with older version of Heimdal using
