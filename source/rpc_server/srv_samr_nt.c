@@ -4236,7 +4236,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 	struct samr_info *info;
 	SEC_DESC         *psd = NULL;
 	uint32            acc_granted;
-	uint32            des_access;
+	uint32            des_access = q_u->access_mask;
 	size_t            sd_size;
 	NTSTATUS          status;
 	fstring sid_string;
