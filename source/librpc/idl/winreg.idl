@@ -69,6 +69,14 @@
 	/******************/
 	/* Function: 0x06 */
 	WERROR winreg_CreateKey(
+		[in,out,ref] policy_handle *handle,
+		[in] winreg_String key,
+		[in] winreg_String class,
+		[in,out] uint32 reserved,
+		[in] uint32 access_mask,
+		[in] uint32 sec_info,
+		[in] sec_desc_buf data,
+		[in] uint32 reserved2
 	);
 
 	/******************/

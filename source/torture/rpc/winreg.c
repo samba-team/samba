@@ -53,6 +53,36 @@ static BOOL test_GetVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			  struct policy_handle *handle, const char *name, const char *class)
+{
+	struct winreg_CreateKey r;
+	struct policy_handle newhandle;
+	NTSTATUS status;
+
+	printf("\ntesting CreateKey\n");
+
+	r.in.handle = handle;
+	r.out.handle = &newhandle;
+	init_winreg_String(&r.in.key, name);	
+	init_winreg_String(&r.in.class, class);	
+	r.in.reserved = 0x0;
+	r.in.reserved2 = 0x0;
+	r.in.access_mask = 0x02000000;
+	r.out.reserved = 0x0;
+	r.in.sec_info = 0x0;
+	r.in.data = 0;
+
+	status = dcerpc_winreg_CreateKey(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("CreateKey failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_CloseKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct policy_handle *handle)
 {
@@ -384,6 +414,7 @@ typedef BOOL winreg_open_fn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 {
 	struct policy_handle handle;
+	BOOL ret = True;
 	winreg_open_fn *open_fn = (winreg_open_fn *)fn;
 
 	if (!open_fn(p, mem_ctx, &handle))
@@ -391,25 +422,37 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 
 	if (!test_GetVersion(p, mem_ctx, &handle)) {
 		printf("GetVersion failed\n");
-		return False;
+		ret = False;
 	}
 
 	if (!test_FlushKey(p, mem_ctx, &handle)) {
 		printf("FlushKey failed\n");
-		return False;
+		ret = False;
+	}
+
+	if (!test_CreateKey(p, mem_ctx, &handle, "spottyfoot", "foo")) {
+		printf("CreateKey failed\n");
+		ret = False;
 	}
 
 	if (!test_DeleteKey(p, mem_ctx, &handle, "spottyfoot")) {
 		printf("DeleteKey failed\n");
-		return False;
+		ret = False;
 	}
 
 	/* The HKCR hive has a very large fanout */
 
-	if (open_fn == test_OpenHKCR) 
-		return test_key(p, mem_ctx, &handle, MAX_DEPTH - 1);
+	if (open_fn == test_OpenHKCR) {
+		if(!test_key(p, mem_ctx, &handle, MAX_DEPTH - 1)) {
+			ret = False;
+		}
+	}
 
-	return test_key(p, mem_ctx, &handle, 0);
+	if(!test_key(p, mem_ctx, &handle, 0)) {
+		ret = False;
+	}
+
+	return ret;
 }
 
 BOOL torture_rpc_winreg(int dummy)
