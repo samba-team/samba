@@ -105,6 +105,7 @@ struct dcerpc_interface_table {
 	const char *name;
 	const char *uuid;
 	uint32_t if_version;
+	const char *helpstring;
 	uint32_t num_calls;
 	const struct dcerpc_interface_call *calls;
 	const struct dcerpc_endpoint_list *endpoints;
