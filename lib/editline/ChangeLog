@@ -1,3 +1,7 @@
+Fri May 29 19:03:38 1998  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in (strdup.c): remove dependency
+
 Mon May 25 05:25:16 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (clean): try to remove shared library debris
