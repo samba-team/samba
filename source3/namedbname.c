@@ -513,12 +513,12 @@ void expire_names(time_t t)
   reply to a name query
   ****************************************************************************/
 struct name_record *search_for_name(struct subnet_record **d,
-					struct nmb_name *question,
+				    struct nmb_name *question,
 				    struct in_addr ip, int Time, int search)
 {
   int name_type = question->name_type;
   char *qname = question->name;
-  BOOL dns_type = name_type == 0x20 || name_type == 0;
+  BOOL dns_type = (name_type == 0x20 || name_type == 0);
   
   struct name_record *n;
   

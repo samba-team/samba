@@ -841,7 +841,7 @@ void open_file(int fnum,int cnum,char *fname1,int flags,int mode)
       Files[fnum].print_file = Connections[cnum].printer;
       Files[fnum].modified = False;
       Files[fnum].cnum = cnum;
-      string_set(&Files[fnum].name,fname);
+      string_set(&Files[fnum].name,dos_to_unix(fname,False));
       Files[fnum].wbmpx_ptr = NULL;      
 
       /*

@@ -333,7 +333,7 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
   for (buf1 = buf+5; *buf1 && count; buf1 = skip_string(buf1, 1), --count)
   {
     struct in_addr back_ip;
-    struct subnet_record *d;
+    /* struct subnet_record *d; */
       
     DEBUG(4,("Searching for backup browser %s at %s...\n",
 	       buf1, inet_ntoa(ip)));
@@ -352,8 +352,9 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
       DEBUG(4,("Found browser server at %s\n", inet_ntoa(back_ip)));
       DEBUG(4,("END THIS LOOP: CODE NEEDS UPDATING\n"));
       
+#if 0
       /* XXXX function needs work */
-	  continue;
+      continue;
 
     if ((d = find_subnet(back_ip)))
 	{
@@ -374,6 +375,7 @@ static void process_rcv_backup_list(struct packet_struct *p,char *buf)
 		}
 	  }
 	}
+#endif
   }
 }
 

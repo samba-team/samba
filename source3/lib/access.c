@@ -239,7 +239,7 @@ static int string_match(char *tok,char *s)
       
       if (netgroup_ok) return(YES);
 #else
-      DEBUG(0,("access: netgroup support is not configured"));
+      DEBUG(0,("access: netgroup support is not configured\n"));
       return (NO);
 #endif
     } else if (strcasecmp(tok, "ALL") == 0) {	/* all: match any */
