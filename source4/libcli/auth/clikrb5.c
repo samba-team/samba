@@ -154,11 +154,11 @@
  	 		    DATA_BLOB *auth_data, krb5_ticket *tkt)
 {
 #if defined(HAVE_KRB5_TKT_ENC_PART2)
-	if (tkt->enc_part2)
+	if (tkt && tkt->enc_part2)
 		*auth_data = data_blob(tkt->enc_part2->authorization_data[0]->contents,
 			tkt->enc_part2->authorization_data[0]->length);
 #else
-	if (tkt->ticket.authorization_data && tkt->ticket.authorization_data->len)
+	if (tkt && tkt->ticket.authorization_data && tkt->ticket.authorization_data->len)
 		*auth_data = data_blob(tkt->ticket.authorization_data->val->ad_data.data,
 			tkt->ticket.authorization_data->val->ad_data.length);
 #endif
