@@ -273,6 +273,7 @@ wrap_des3
   ret = krb5_create_checksum (gssapi_krb5_context,
 			      crypto,
 			      KRB5_KU_USAGE_SIGN,
+			      0,
 			      p + 20,
 			      datalen + 8,
 			      &cksum);
