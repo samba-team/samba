@@ -1456,7 +1456,7 @@ BOOL domain_client_validate( char *user, char *domain,
 	char *p, *pserver;
 	NET_ID_INFO_CTR ctr;
 	NET_USER_INFO_3 info3;
-	struct cli_state cli;
+	struct cli_state *pcli = NULL;
 	uint32 smb_uid_low;
 	BOOL connected_ok = False;
 	time_t last_change_time;
@@ -1532,8 +1532,6 @@ BOOL domain_client_validate( char *user, char *domain,
 	 * see if they were valid.
 	 */
 
-	ZERO_STRUCT(cli);
-
 	/*
 	 * Treat each name in the 'password server =' line as a potential
 	 * PDC/BDC. Contact each in turn and try and authenticate.
@@ -1547,15 +1545,16 @@ BOOL domain_client_validate( char *user, char *domain,
 	while (!connected_ok &&
 			next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
 		if(strequal(remote_machine, "*")) {
-			connected_ok = find_connect_pdc(&cli, trust_passwd, last_change_time);
+			connected_ok = find_connect_pdc(pcli, trust_passwd, last_change_time);
 		} else {
-			connected_ok = connect_to_domain_password_server(&cli, remote_machine, trust_passwd);
+			connected_ok = connect_to_domain_password_server(pcli, remote_machine, trust_passwd);
 		}
 	}
 
 	if (!connected_ok) {
 		DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
-		cli_shutdown(&cli);
+		if (pcli)
+			cli_shutdown(pcli);
 		return False;
 	}
 
@@ -1564,7 +1563,7 @@ BOOL domain_client_validate( char *user, char *domain,
 
 	ZERO_STRUCT(info3);
 
-	status = cli_nt_login_network(&cli, domain, user, smb_uid_low, (char *)local_challenge,
+	status = cli_nt_login_network(pcli, domain, user, smb_uid_low, (char *)local_challenge,
 				((smb_apasslen != 0) ? smb_apasswd : NULL),
 				((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
 				&ctr, &info3);
@@ -1573,9 +1572,9 @@ BOOL domain_client_validate( char *user, char *domain,
 
 		DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, get_nt_error_msg(status) ));
-		cli_nt_session_close(&cli);
-		cli_ulogoff(&cli);
-		cli_shutdown(&cli);
+		cli_nt_session_close(pcli);
+		cli_ulogoff(pcli);
+		cli_shutdown(pcli);
 
 		if((NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NO_SUCH_USER)) && (user_exists != NULL))
 			*user_exists = False;
@@ -1624,12 +1623,12 @@ BOOL domain_client_validate( char *user, char *domain,
 	 * send here. JRA.
 	 */
 
-	if(cli_nt_logoff(&cli, &ctr) == False) {
+	if(cli_nt_logoff(pcli, &ctr) == False) {
 		DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));        
-		cli_nt_session_close(&cli);
-		cli_ulogoff(&cli);
-		cli_shutdown(&cli);
+%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(pcli)));        
+		cli_nt_session_close(pcli);
+		cli_ulogoff(pcli);
+		cli_shutdown(pcli);
 		return False;
 	}
 #endif /* 0 */
@@ -1638,8 +1637,8 @@ BOOL domain_client_validate( char *user, char *domain,
 	to allocate the other_sids and gids structures has been deleted - so
 	these pointers are no longer valid..... */
 
-	cli_nt_session_close(&cli);
-	cli_ulogoff(&cli);
-	cli_shutdown(&cli);
+	cli_nt_session_close(pcli);
+	cli_ulogoff(pcli);
+	cli_shutdown(pcli);
 	return True;
 }
