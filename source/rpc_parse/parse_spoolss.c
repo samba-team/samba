@@ -656,7 +656,7 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 		{ "panningheight",	NULL }
 	};
 
-	/* assign at run time to keep non-gcc vompilers happy */
+	/* assign at run time to keep non-gcc compilers happy */
 
 	opt_fields[0].field = &devmode->icmmethod;
 	opt_fields[1].field = &devmode->icmintent;
@@ -1341,7 +1341,7 @@ BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 	
 	if (UNMARSHALLING(ps) && r_u->size) {
 		r_u->data = prs_alloc_mem(ps, r_u->size);
-		if(r_u->data)
+		if(!r_u->data)
 			return False;
 	}
 
@@ -6866,6 +6866,12 @@ BOOL spoolss_io_r_getprinterdataex(char *desc, SPOOL_R_GETPRINTERDATAEX *r_u, pr
 	if (!prs_uint32("size", ps, depth, &r_u->size))
 		return False;
 	
+	if (UNMARSHALLING(ps) && r_u->size) {
+		r_u->data = prs_alloc_mem(ps, r_u->size);
+		if(!r_u->data)
+			return False;
+	}
+
 	if (!prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size))
 		return False;
 		
@@ -7074,6 +7080,7 @@ BOOL spoolss_io_q_enumprinterdataex(char *desc, SPOOL_Q_ENUMPRINTERDATAEX *q_u, 
 
 /*******************************************************************
 ********************************************************************/  
+
 static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps, 
 				PRINTER_ENUM_VALUES_CTR *ctr, int depth)
 {
@@ -7086,9 +7093,6 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	prs_debug(ps, depth, desc, "spoolss_io_printer_enum_values_ctr");
 	depth++;	
 	
-	if (!prs_uint32("size", ps, depth, &ctr->size))
-		return False;
-	
 	/* 
 	 * offset data begins at 20 bytes per structure * size_of_array.
 	 * Don't forget the uint32 at the beginning 
@@ -7098,8 +7102,14 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	
 	/* first loop to write basic enum_value information */
 	
-	for (i=0; i<ctr->size_of_array; i++) 
-	{
+	if (UNMARSHALLING(ps)) {
+		ctr->values = (PRINTER_ENUM_VALUES *)prs_alloc_mem(
+			ps, ctr->size_of_array * sizeof(PRINTER_ENUM_VALUES));
+		if (!ctr->values)
+			return False;
+	}
+
+	for (i=0; i<ctr->size_of_array; i++) {
 		valuename_offset = current_offset;
 		if (!prs_uint32("valuename_offset", ps, depth, &valuename_offset))
 			return False;
@@ -7128,12 +7138,18 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	 * attention to 2-byte alignment here....
 	 */
 	
-	for (i=0; i<ctr->size_of_array; i++) 
-	{
+	for (i=0; i<ctr->size_of_array; i++) {
 	
 		if (!prs_unistr("valuename", ps, depth, &ctr->values[i].valuename))
 			return False;
 		
+		if (UNMARSHALLING(ps)) {
+			ctr->values[i].data = (uint8 *)prs_alloc_mem(
+				ps, ctr->values[i].data_len);
+			if (!ctr->values[i].data)
+				return False;
+		}
+
 		if (!prs_uint8s(False, "data", ps, depth, ctr->values[i].data, ctr->values[i].data_len))
 			return False;
 			
@@ -7144,35 +7160,53 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	return True;	
 }
 
-
 /*******************************************************************
  * write a structure.
  ********************************************************************/  
 
 BOOL spoolss_io_r_enumprinterdataex(char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, prs_struct *ps, int depth)
 {
+	uint32 data_offset, end_offset;
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinterdataex");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;
-		
-	if (!spoolss_io_printer_enum_values_ctr("", ps, &r_u->ctr, depth ))
+
+	if (!prs_uint32("size", ps, depth, &r_u->ctr.size))
 		return False;
-	
+
+	data_offset = prs_offset(ps);
+
+	if (!prs_set_offset(ps, data_offset + r_u->ctr.size))
+		return False;
+
 	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("needed",     ps, depth, &r_u->needed))
 		return False;
-		
+
 	if(!prs_uint32("returned",   ps, depth, &r_u->returned))
 		return False;
 
 	if(!prs_werror("status",     ps, depth, &r_u->status))
 		return False;
 
-	return True;
+	r_u->ctr.size_of_array = r_u->returned;
+
+	end_offset = prs_offset(ps);
+
+	if (!prs_set_offset(ps, data_offset))
+		return False;
+
+	if (r_u->ctr.size)
+		if (!spoolss_io_printer_enum_values_ctr("", ps, &r_u->ctr, depth ))
+			return False;
+
+	if (!prs_set_offset(ps, end_offset))
+		return False;
+																	        	return True;
 }
 
 
