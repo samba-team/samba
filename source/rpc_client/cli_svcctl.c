@@ -28,13 +28,13 @@ struct svc_state_msg {
 };
 
 static struct svc_state_msg state_msg_table[] = {
-	{ SVCCTL_STOPPED,            "SVCCTL_STOPPED" },
-	{ SVCCTL_START_PENDING,      "SVCCTL_START_PENDING" },
-	{ SVCCTL_STOP_PENDING,       "SVCCTL_STOP_PENDING" },
-	{ SVCCTL_RUNNING,            "SVCCTL_RUNNING" },
-	{ SVCCTL_CONTINUE_PENDING,   "SVCCTL_CONTINUE_PENDING" },
-	{ SVCCTL_PAUSE_PENDING,      "SVCCTL_PAUSE_PENDING" },
-	{ SVCCTL_PAUSED,             "SVCCTL_PAUSED" },
+	{ SVCCTL_STOPPED,            "stopped" },
+	{ SVCCTL_START_PENDING,      "start pending" },
+	{ SVCCTL_STOP_PENDING,       "stop pending" },
+	{ SVCCTL_RUNNING,            "running" },
+	{ SVCCTL_CONTINUE_PENDING,   "resume pending" },
+	{ SVCCTL_PAUSE_PENDING,      "pause pending" },
+	{ SVCCTL_PAUSED,             "paused" },
 	{ 0,                          NULL }
 };
 	
@@ -136,7 +136,7 @@ WERROR cli_svcctl_open_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /********************************************************************
 ********************************************************************/
 
-WERROR close_service_handle( struct cli_state *cli, TALLOC_CTX *mem_ctx, POLICY_HND *hService )
+WERROR cli_svcctl_close_service( struct cli_state *cli, TALLOC_CTX *mem_ctx, POLICY_HND *hService )
 {
 	SVCCTL_Q_CLOSE_SERVICE in;
 	SVCCTL_R_CLOSE_SERVICE out;
@@ -310,19 +310,62 @@ WERROR cli_svcctl_query_config(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /*******************************************************************
 *******************************************************************/
 
-WERROR cli_svcctl_start_service(struct cli_state *cli, TALLOC_CTX *mem_ctx )
+WERROR cli_svcctl_start_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                 POLICY_HND *hService,
+                                 const char **parm_array, uint32 parmcount )
 {
-
-	return WERR_OK;
+	SVCCTL_Q_START_SERVICE in;
+	SVCCTL_R_START_SERVICE out;
+	prs_struct qbuf, rbuf;
+	
+	ZERO_STRUCT(in);
+	ZERO_STRUCT(out);
+	
+	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
+	
+	in.parmcount = 0;
+	in.parameters.ref_id = 0x0;
+	
+	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_START_SERVICE_W,
+	            in, out, 
+	            qbuf, rbuf,
+	            svcctl_io_q_start_service,
+	            svcctl_io_r_start_service,
+	            WERR_GENERAL_FAILURE );
+	
+	return out.status;
 }
 
 /*******************************************************************
 *******************************************************************/
 
-WERROR cli_svcctl_control_service(struct cli_state *cli, TALLOC_CTX *mem_ctx )
+WERROR cli_svcctl_control_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                   POLICY_HND *hService, uint32 control,
+				   SERVICE_STATUS *status )
 {
+	SVCCTL_Q_CONTROL_SERVICE in;
+	SVCCTL_R_CONTROL_SERVICE out;
+	prs_struct qbuf, rbuf;
+	
+	ZERO_STRUCT(in);
+	ZERO_STRUCT(out);
+	
+	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
+	in.control = control;
+	
+	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_CONTROL_SERVICE, 
+	            in, out, 
+	            qbuf, rbuf,
+	            svcctl_io_q_control_service,
+	            svcctl_io_r_control_service,
+	            WERR_GENERAL_FAILURE );
+	
+	if ( !W_ERROR_IS_OK( out.status ) )
+		return out.status;
 
-	return WERR_OK;
+	memcpy( status, &out.svc_status, sizeof(SERVICE_STATUS) );
+	
+	return out.status;
 }
 
 
