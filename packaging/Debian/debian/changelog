@@ -1,15 +1,33 @@
-samba (3.0beta1-1) unstable; urgency=low
+samba (3.0.0beta2-1) unstable; urgency=low
 
   * Local build.
 
- -- Debian User <somebody@somewhere>  Sat, 31 May 2003 22:49:18 -0400
+ -- Eloy A. Paris <peloy@debian.org>  Thu, 19 Jun 2003 13:17:39 -0400
 
-samba (2.999+3.0.alpha24-4) unstable; urgency=low
+samba (3.0.0beta1-2) unstable; urgency=low
 
+  * Update build-deps to libacl1-dev (>= 2.2.11-1), libacl1 (>= 2.2.11-1)
+    to make sure we get the right shlib dependencies (closes: #193149).
+  * Update the dhcp config hooks so they're suitable for sourcing (i.e.,
+    don't call "exit"). (closes: #196477)
+
+ -- Steve Langasek <vorlon@debian.org>  Thu, 12 Jun 2003 15:02:00 -0500
+
+samba (3.0.0beta1-1) unstable; urgency=low
+
+  * New upstream version.
+    - fix for empty browselist bug (closes: #194553)
+    - fix for tab completion segfault in smbclient (closes: #194776)
+    - Samba now works as a domain member again without segfaulting
+      (closes: #194134, #194394, #194775)
+    - WinXP machines can join a Samba-controlled domain again
+      (closes: #195362)
   * Build-depend on python-dev >= 2.2 instead of on just python-dev
     (without version).
+  * Added Vorlon'n patch to source/lib/time.c to fix #194075.
+    (closes: #194075)
 
- -- Eloy A. Paris <peloy@debian.org>  Sat, 31 May 2003 18:46:05 -0400
+ -- Eloy A. Paris <peloy@debian.org>  Sun,  8 Jun 2003 22:26:43 -0400
 
 samba (2.999+3.0.alpha24-3) unstable; urgency=low
 
