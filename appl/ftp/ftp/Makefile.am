@@ -34,6 +34,8 @@ ftp_SOURCES = \
 
 EXTRA_ftp_SOURCES = krb4.c kauth.c gssapi.c
 
+man_MANS = ftp.1
+
 LDADD = \
 	../common/libcommon.a \
 	$(LIB_gssapi) \
