@@ -39,6 +39,8 @@
 RCSID("$Id$");
 
 #include "misc.h"
+#include "auth.h"
+#include "encrypt.h"
 #include <string.h>
 #include <roken.h>
 

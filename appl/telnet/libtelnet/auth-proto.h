@@ -107,6 +107,7 @@ void kerberos4_is (Authenticator *, unsigned char *, int);
 void kerberos4_reply (Authenticator *, unsigned char *, int);
 int kerberos4_status (Authenticator *, char *, int);
 void kerberos4_printsub (unsigned char *, int, unsigned char *, int);
+int kerberos4_forward(Authenticator *ap);
 #endif
 
 #ifdef	KRB5

@@ -32,6 +32,7 @@
  */
 
 #include <config.h>
+#include "misc-proto.h"
 
 RCSID("$Id$");
 
