@@ -1569,11 +1569,14 @@ dnl there might be a working iconv further down the list of LOOK_DIRS
 main(){
     iconv_t cd = iconv_open("ASCII", "UCS-2LE");
     if (cd == 0 || cd == (iconv_t)-1) {
-       cd = iconv_open("ISO-8859-1", "UCS-2LE");
+       cd = iconv_open("CP850", "UCS-2LE");
        if (cd == 0 || cd == (iconv_t)-1) {
           cd = iconv_open("IBM850", "UCS-2LE"); /* Solaris has this */
           if (cd == 0 || cd == (iconv_t)-1) {
-             return -1;
+             cd = iconv_open("ISO-8859-1", "UCS-2LE"); /* Solaris has this */
+             if (cd == 0 || cd == (iconv_t)-1) {
+                return -1;
+	     }
           }
        }
     }
