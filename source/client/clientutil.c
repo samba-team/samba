@@ -519,7 +519,9 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
   Protocol = prots[SVAL(inbuf,smb_vwv0)].prot;
 
 
-  if (Protocol < PROTOCOL_NT1) {    
+  if (Protocol < PROTOCOL_LANMAN1) {    
+	  /* no extra params */
+  } else if (Protocol < PROTOCOL_NT1) {
     sec_mode = SVAL(inbuf,smb_vwv1);
     max_xmit = SVAL(inbuf,smb_vwv2);
     sesskey = IVAL(inbuf,smb_vwv6);
