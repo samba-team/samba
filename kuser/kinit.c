@@ -470,6 +470,7 @@ get_new_tickets(krb5_context context,
 						 pk_key_file,
 						 pk_x509_anchors,
 						 flags,
+						 NULL,
 						 NULL);
 	if (ret)
 	    krb5_err(context, 1, ret, "set_pkinit");
