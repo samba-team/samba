@@ -295,14 +295,14 @@ static int status_compare(char *n1,char *n2)
   /* It's a bit tricky because the names are space padded */
   for (l1=0;l1<15 && n1[l1] && n1[l1] != ' ';l1++) ;
   for (l2=0;l2<15 && n2[l2] && n2[l2] != ' ';l2++) ;
-  l3 = strlen(global_myname_dos());
+  l3 = strlen(global_myname_unix());
 
-  if ((l1==l3) && strncmp(n1,global_myname_dos(),l3) == 0 && 
-      (l2!=l3 || strncmp(n2,global_myname_dos(),l3) != 0))
+  if ((l1==l3) && strncmp(n1,global_myname_unix(),l3) == 0 && 
+      (l2!=l3 || strncmp(n2,global_myname_unix(),l3) != 0))
     return -1;
 
-  if ((l2==l3) && strncmp(n2,global_myname_dos(),l3) == 0 && 
-      (l1!=l3 || strncmp(n1,global_myname_dos(),l3) != 0))
+  if ((l2==l3) && strncmp(n2,global_myname_unix(),l3) == 0 && 
+      (l1!=l3 || strncmp(n1,global_myname_unix(),l3) != 0))
     return 1;
 
   return memcmp(n1,n2,18);
@@ -355,16 +355,16 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
     {
       int name_type = namerec->name.name_type;
       
-      if (!strequal(namerec->name.name,"*") &&
-          !strequal(namerec->name.name,"__SAMBA__") &&
+      if (!strequal_unix(namerec->name.name,"*") &&
+          !strequal_unix(namerec->name.name,"__SAMBA__") &&
           (name_type < 0x1b || name_type >= 0x20 || 
            ques_type < 0x1b || ques_type >= 0x20 ||
-           strequal(qname, namerec->name.name)))
+           strequal_unix(qname, namerec->name.name)))
       {
         /* Start with the name. */
         memset(buf,'\0',18);
         slprintf(buf, 17, "%-15.15s",namerec->name.name);
-        strupper(buf);
+        strupper_unix(buf);
         
         /* Put the name type and netbios flags in the buffer. */
         buf[15] = name_type;

@@ -34,7 +34,6 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
                           char *mailslot)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
-  pstring my_name;
   fstring reply_name;
   pstring outbuf;
   int code;
@@ -59,8 +58,6 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
     goto done;
   }
 
-  pstrcpy(my_name, global_myname_dos());
-
   code = SVAL(buf,0);
   DEBUG(1,("process_logon_packet: Logon from %s: code = 0x%x\n", inet_ntoa(p->ip), code));
 
@@ -76,7 +73,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       q = skip_string(getdc,1);
       token = SVAL(q,3);
 
-      fstrcpy(reply_name,my_name); 
+      fstrcpy(reply_name,global_myname_dos()); 
 
       DEBUG(3,("process_logon_packet: Domain login request from %s at IP %s user=%s token=%x\n",
              machine,inet_ntoa(p->ip),user,token));
@@ -86,7 +83,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       q += 2;
 
       fstrcpy(reply_name, "\\\\");
-      fstrcat(reply_name, my_name);
+      fstrcat(reply_name, global_myname_dos());
       fstrcpy(q, reply_name); q = skip_string(q, 1); /* PDC name */
 
       SSVAL(q, 0, token);
@@ -96,7 +93,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       send_mailslot(True, getdc, 
                     outbuf,PTR_DIFF(q,outbuf),
-		    global_myname_dos(), 0x0,
+		    global_myname_unix(), 0x0,
 			machine,
                     dgram->source_name.name_type,
                     p->ip, *iface_ip(p->ip), p->port);  
@@ -153,7 +150,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       SSVAL(q, 0, QUERYFORPDC_R);
       q += 2;
 
-      fstrcpy(reply_name,my_name);
+      fstrcpy(reply_name,global_myname_dos());
       fstrcpy(q, reply_name);
       q = skip_string(q, 1); /* PDC name */
 
@@ -162,7 +159,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       {
         q = ALIGN2(q, outbuf);
 
-        q += dos_PutUniCode(q, my_name, sizeof(pstring), True); /* PDC name */
+        q += dos_PutUniCode(q, global_myname_dos(), sizeof(pstring), True); /* PDC name */
         q += dos_PutUniCode(q, lp_workgroup_dos(),sizeof(pstring), True); /* Domain name*/
 
         SIVAL(q, 0, 1); /* our nt version */
@@ -183,7 +180,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       send_mailslot(True, getdc,
                   outbuf,PTR_DIFF(q,outbuf),
-		    global_myname_dos(), 0x0,
+		    global_myname_unix(), 0x0,
                   dgram->source_name.name,
                   dgram->source_name.name_type,
                   p->ip, *iface_ip(p->ip), p->port);  
@@ -242,7 +239,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
 
       fstrcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
-      fstrcpy(reply_name+2,my_name); 
+      fstrcpy(reply_name+2,global_myname_dos()); 
 
       DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
 	       dos_unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, lp_workgroup_unix(),
@@ -272,7 +269,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
       send_mailslot(True, getdc,
                    outbuf,PTR_DIFF(q,outbuf),
-		    global_myname_dos(), 0x0,
+		    global_myname_unix(), 0x0,
                    dgram->source_name.name,
                    dgram->source_name.name_type,
                    p->ip, *iface_ip(p->ip), p->port);  

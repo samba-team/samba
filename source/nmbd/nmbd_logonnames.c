@@ -44,7 +44,7 @@ workgroup %s on subnet %s\n", fail_name->name, subrec->subnet_name));
     return;
   }
 
-  if((servrec = find_server_in_workgroup( work, global_myname_dos())) == NULL)
+  if((servrec = find_server_in_workgroup( work, global_myname_unix())) == NULL)
   {
     DEBUG(0,("become_logon_server_fail: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
@@ -84,7 +84,7 @@ workgroup %s on subnet %s\n", registered_name->name, subrec->subnet_name));
     return;
   }
 
-  if((servrec = find_server_in_workgroup( work, global_myname_dos())) == NULL)
+  if((servrec = find_server_in_workgroup( work, global_myname_unix())) == NULL)
   {
     DEBUG(0,("become_logon_server_success: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",

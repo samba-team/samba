@@ -50,7 +50,7 @@ void send_browser_reset(int reset_type, char *to_name, int to_type, struct in_ad
   p++;
 
   send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-                global_myname_dos(), 0x0, to_name, to_type, to_ip, 
+                global_myname_unix(), 0x0, to_name, to_type, to_ip, 
 		FIRST_SUBNET->myip, DGRAM_PORT);
 }
 
@@ -80,7 +80,7 @@ to subnet %s\n", work->work_group, subrec->subnet_name));
   p = skip_string(p,1);
   
   send_mailslot(False, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-                global_myname_dos(), 0x0, work->work_group,0x1e, subrec->bcast_ip, 
+                global_myname_unix(), 0x0, work->work_group,0x1e, subrec->bcast_ip, 
 		subrec->myip, DGRAM_PORT);
 }
 
@@ -105,7 +105,7 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
   SCVAL(p,0,updatecount);
   SIVAL(p,1,announce_interval*1000); /* Milliseconds - despite the spec. */
 
-  StrnCpy(p+5,server_name,15);
+  StrnCpy(p+5,unix_to_dos_static(server_name),15);
   strupper(p+5);
 
   SCVAL(p,21,lp_major_announce_version()); /* Major version. */
@@ -116,7 +116,7 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
   SSVAL(p,27,BROWSER_ELECTION_VERSION);
   SSVAL(p,29,BROWSER_CONSTANT); /* Browse signature. */
 
-  pstrcpy(p+31,server_comment);
+  pstrcpy(p+31,unix_to_dos_static(server_comment));
   p += 31;
   p = skip_string(p,1);
 
@@ -171,11 +171,11 @@ static void send_local_master_announcement(struct subnet_record *subrec, struct 
             type, global_myname_unix(), subrec->subnet_name, work->work_group));
 
   send_announcement(subrec, ANN_LocalMasterAnnouncement,
-                    global_myname_dos(),             /* From nbt name. */
+                    global_myname_unix(),             /* From nbt name. */
                     work->work_group, 0x1e,          /* To nbt name. */
                     subrec->bcast_ip,                /* To ip. */
                     work->announce_interval,         /* Time until next announce. */
-                    global_myname_dos(),             /* Name to announce. */
+                    global_myname_unix(),             /* Name to announce. */
                     type,                            /* Type field. */
                     servrec->serv.comment);
 }
@@ -190,13 +190,13 @@ static void send_workgroup_announcement(struct subnet_record *subrec, struct wor
             subrec->subnet_name, work->work_group));
 
   send_announcement(subrec, ANN_DomainAnnouncement,
-                    global_myname_dos(),             /* From nbt name. */
+                    global_myname_unix(),             /* From nbt name. */
                     MSBROWSE, 0x1,                   /* To nbt name. */
                     subrec->bcast_ip,                /* To ip. */
                     work->announce_interval,         /* Time until next announce. */
                     work->work_group,                /* Name to announce. */
                     SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT,  /* workgroup announce flags. */
-                    global_myname_dos());            /* From name as comment. */
+                    global_myname_unix());            /* From name as comment. */
 }
 
 /****************************************************************************
@@ -255,7 +255,7 @@ static void announce_server(struct subnet_record *subrec, struct work_record *wo
   /* Only do domain announcements if we are a master and it's
      our primary name we're being asked to announce. */
 
-  if (AM_LOCAL_MASTER_BROWSER(work) && strequal(global_myname_dos(),servrec->serv.name))
+  if (AM_LOCAL_MASTER_BROWSER(work) && strequal_unix(global_myname_unix(),servrec->serv.name))
   {
     send_local_master_announcement(subrec, work, servrec);
     send_workgroup_announcement(subrec, work);
@@ -602,6 +602,6 @@ for workgroup %s on subnet %s.\n", lp_workgroup_unix(), FIRST_SUBNET->subnet_nam
                  global_myname_unix(), inet_ntoa(addr) ));
 
     send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-          global_myname_dos(), 0x0, "*", 0x0, addr, FIRST_SUBNET->myip, DGRAM_PORT);
+          global_myname_unix(), 0x0, "*", 0x0, addr, FIRST_SUBNET->myip, DGRAM_PORT);
   }
 }

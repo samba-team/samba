@@ -50,7 +50,7 @@ workgroup %s on subnet %s\n", fail_name->name, subrec->subnet_name));
   /* Set the state back to DOMAIN_NONE. */
   work->dom_state = DOMAIN_NONE;
 
-  if((servrec = find_server_in_workgroup( work, global_myname_dos())) == NULL)
+  if((servrec = find_server_in_workgroup( work, global_myname_unix())) == NULL)
   {
     DEBUG(0,("become_domain_master_fail: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
@@ -89,7 +89,7 @@ workgroup %s on subnet %s\n", registered_name->name, subrec->subnet_name));
     return;
   }
 
-  if((servrec = find_server_in_workgroup( work, global_myname_dos())) == NULL)
+  if((servrec = find_server_in_workgroup( work, global_myname_unix())) == NULL)
   {
     DEBUG(0,("become_domain_master_stage2: Error - cannot find server %s \
 in workgroup %s on subnet %s\n", 

@@ -87,7 +87,7 @@ subnet %s.\n", workgroup_name, subrec->subnet_name ));
     return;
   }
 
-  if((servrec = find_server_in_workgroup( work, global_myname_dos())) == NULL)
+  if((servrec = find_server_in_workgroup( work, global_myname_unix())) == NULL)
   {
     DEBUG(0,("reset_workgroup_state: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
@@ -283,7 +283,7 @@ void unbecome_local_master_browser(struct subnet_record *subrec, struct work_rec
   DEBUG(2,("unbecome_local_master_browser: unbecoming local master for workgroup %s \
 on subnet %s\n",work->work_group, subrec->subnet_name));
   
-  if(find_server_in_workgroup( work, global_myname_dos()) == NULL)
+  if(find_server_in_workgroup( work, global_myname_unix()) == NULL)
   {
     DEBUG(0,("unbecome_local_master_browser: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
@@ -344,7 +344,7 @@ workgroup %s on subnet %s\n", registered_name->name, subrec->subnet_name));
     return;
   }
 
-  if((servrec = find_server_in_workgroup( work, global_myname_dos())) == NULL)
+  if((servrec = find_server_in_workgroup( work, global_myname_unix())) == NULL)
   {
     DEBUG(0,("become_local_master_stage2: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
@@ -366,7 +366,7 @@ on subnet %s\n", work->work_group, subrec->subnet_name));
   subrec->work_changed = True;
 
   /* Add this name to the workgroup as local master browser. */
-  set_workgroup_local_master_browser_name( work, global_myname_dos());
+  set_workgroup_local_master_browser_name( work, global_myname_unix());
 
   /* Count the number of servers we have on our list. If it's
      less than 10 (just a heuristic) request the servers
@@ -491,7 +491,7 @@ workgroup %s on subnet %s\n", work_name, subrec->subnet_name));
     return;
   }
 
-  if(find_server_in_workgroup(work, global_myname_dos()) == NULL)
+  if(find_server_in_workgroup(work, global_myname_unix()) == NULL)
   {
     DEBUG(0,("become_local_master_fail1: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
@@ -534,7 +534,7 @@ void become_local_master_browser(struct subnet_record *subrec, struct work_recor
     return;
   }
 
-  if(find_server_in_workgroup( work, global_myname_dos()) == NULL)
+  if(find_server_in_workgroup( work, global_myname_unix()) == NULL)
   {
     DEBUG(0,("become_local_master_browser: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",

@@ -138,7 +138,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
   }
 
   send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-		global_myname_dos(), 0x0, work->dmb_name.name, 0x0, 
+		global_myname_unix(), 0x0, work->dmb_name.name, 0x0, 
 		work->dmb_addr, FIRST_SUBNET->myip, DGRAM_PORT);
 
 }
