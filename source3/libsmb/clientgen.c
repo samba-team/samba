@@ -1372,7 +1372,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 	SIVAL(p, 6, len);
 	cli_send_smb(cli);
 
-        cli->timeout = (timeout == -1) ? 0x7FFFFFFF : timeout;
+        cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
 
 	if (!cli_receive_smb(cli)) {
                 cli->timeout = saved_timeout;
@@ -1391,8 +1391,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 /****************************************************************************
   unlock a file
 ****************************************************************************/
-BOOL cli_unlock(struct cli_state *cli, int fnum, 
-		uint32 offset, uint32 len, int timeout)
+BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 {
 	char *p;
 
@@ -1408,7 +1407,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum,
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 	CVAL(cli->outbuf,smb_vwv3) = 0;
-	SIVALS(cli->outbuf, smb_vwv4, timeout);
+	SIVALS(cli->outbuf, smb_vwv4, 0);
 	SSVAL(cli->outbuf,smb_vwv6,1);
 	SSVAL(cli->outbuf,smb_vwv7,0);
 

@@ -242,7 +242,7 @@ static BOOL rw_torture(struct cli_state *c)
 			printf("unlink failed (%s)\n", cli_errstr(c));
 		}
 
-		if (!cli_unlock(c, fnum2, n*sizeof(int), sizeof(int), -1)) {
+		if (!cli_unlock(c, fnum2, n*sizeof(int), sizeof(int))) {
 			printf("unlock failed (%s)\n", cli_errstr(c));
 		}
 	}
@@ -550,8 +550,6 @@ static void run_locktest2(int dummy)
 
 	cli_setpid(&cli, 1);
 
-	sleep(10);
-
 	if (!cli_lock(&cli, fnum1, 0, 4, 0, WRITE_LOCK)) {
 		printf("lock1 failed (%s)\n", cli_errstr(&cli));
 		return;
@@ -565,7 +563,7 @@ static void run_locktest2(int dummy)
 
 	cli_setpid(&cli, 2);
 
-	if (cli_unlock(&cli, fnum1, 0, 4, 0)) {
+	if (cli_unlock(&cli, fnum1, 0, 8)) {
 		printf("unlock1 succeeded! This is a locking bug\n");
 	}
 
@@ -677,14 +675,14 @@ static void run_locktest3(int dummy)
 	for (offset=i=0;i<numops;i++) {
 		NEXT_OFFSET;
 
-		if (!cli_unlock(&cli1, fnum1, offset-1, 1, 0)) {
+		if (!cli_unlock(&cli1, fnum1, offset-1, 1)) {
 			printf("unlock1 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(&cli1));
 			return;
 		}
 
-		if (!cli_unlock(&cli2, fnum2, offset-2, 1, 0)) {
+		if (!cli_unlock(&cli2, fnum2, offset-2, 1)) {
 			printf("unlock2 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(&cli1));
@@ -802,7 +800,7 @@ static void run_locktest4(int dummy)
 
 	ret = cli_lock(&cli1, fnum1, 110, 4, 0, READ_LOCK) &&
 	      cli_lock(&cli1, fnum1, 112, 4, 0, READ_LOCK) &&
-	      cli_unlock(&cli1, fnum1, 110, 6, 0);
+	      cli_unlock(&cli1, fnum1, 110, 6);
 	EXPECTED(ret, False);
 	printf("the same process %s coalesce read locks\n", ret?"can":"cannot");
 
@@ -820,30 +818,30 @@ static void run_locktest4(int dummy)
 
 	ret = cli_lock(&cli1, fnum1, 140, 4, 0, READ_LOCK) &&
 	      cli_lock(&cli1, fnum1, 140, 4, 0, READ_LOCK) &&
-	      cli_unlock(&cli1, fnum1, 140, 4, 0) &&
-	      cli_unlock(&cli1, fnum1, 140, 4, 0);
+	      cli_unlock(&cli1, fnum1, 140, 4) &&
+	      cli_unlock(&cli1, fnum1, 140, 4);
 	EXPECTED(ret, True);
 	printf("this server %s do recursive read locking\n", ret?"does":"doesn't");
 
 
 	ret = cli_lock(&cli1, fnum1, 150, 4, 0, WRITE_LOCK) &&
 	      cli_lock(&cli1, fnum1, 150, 4, 0, READ_LOCK) &&
-	      cli_unlock(&cli1, fnum1, 150, 4, 0) &&
+	      cli_unlock(&cli1, fnum1, 150, 4) &&
 	      (cli_read(&cli2, fnum2, buf, 150, 4) == 4) &&
 	      !(cli_write(&cli2, fnum2, 0, buf, 150, 4) == 4) &&
-	      cli_unlock(&cli1, fnum1, 150, 4, 0);
+	      cli_unlock(&cli1, fnum1, 150, 4);
 	EXPECTED(ret, True);
 	printf("this server %s do recursive lock overlays\n", ret?"does":"doesn't");
 
 	ret = cli_lock(&cli1, fnum1, 160, 4, 0, READ_LOCK) &&
-	      cli_unlock(&cli1, fnum1, 160, 4, 0) &&
+	      cli_unlock(&cli1, fnum1, 160, 4) &&
 	      (cli_write(&cli2, fnum2, 0, buf, 160, 4) == 4) &&		
 	      (cli_read(&cli2, fnum2, buf, 160, 4) == 4);		
 	EXPECTED(ret, True);
 	printf("the same process %s remove a read lock using write locking\n", ret?"can":"cannot");
 
 	ret = cli_lock(&cli1, fnum1, 170, 4, 0, WRITE_LOCK) &&
-	      cli_unlock(&cli1, fnum1, 170, 4, 0) &&
+	      cli_unlock(&cli1, fnum1, 170, 4) &&
 	      (cli_write(&cli2, fnum2, 0, buf, 170, 4) == 4) &&		
 	      (cli_read(&cli2, fnum2, buf, 170, 4) == 4);		
 	EXPECTED(ret, True);
@@ -851,7 +849,7 @@ static void run_locktest4(int dummy)
 
 	ret = cli_lock(&cli1, fnum1, 190, 4, 0, WRITE_LOCK) &&
 	      cli_lock(&cli1, fnum1, 190, 4, 0, READ_LOCK) &&
-	      cli_unlock(&cli1, fnum1, 190, 4, 0) &&
+	      cli_unlock(&cli1, fnum1, 190, 4) &&
 	      !(cli_write(&cli2, fnum2, 0, buf, 190, 4) == 4) &&		
 	      (cli_read(&cli2, fnum2, buf, 190, 4) == 4);		
 	EXPECTED(ret, True);
