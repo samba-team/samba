@@ -85,9 +85,23 @@ OM_uint32 gss_acquire_cred
     	krb5_get_init_creds_opt opt;
 
  try_keytab:
-	kret = krb5_kt_default(gssapi_krb5_context, &handle->keytab);
-	if (kret != 0)
-	    goto krb5_bad;
+	if (gssapi_krb5_keytab != NULL) {
+	    char kt_name[256];
+
+	    kret = krb5_kt_get_name(gssapi_krb5_context,
+				    gssapi_krb5_keytab,
+				    kt_name, sizeof(kt_name));
+	    if (kret)
+		goto krb5_bad;
+	    kret = krb5_kt_resolve(gssapi_krb5_context, kt_name,
+				   &handle->keytab);
+	    if (kret)
+		goto krb5_bad;
+	} else {
+	    kret = krb5_kt_default(gssapi_krb5_context, &handle->keytab);
+	    if (kret != 0)
+		goto krb5_bad;
+	}
 
 	krb5_get_init_creds_opt_init(&opt);
 	memset(&cred, 0, sizeof(cred));

@@ -46,6 +46,8 @@
 
 extern krb5_context gssapi_krb5_context;
 
+extern krb5_keytab gssapi_krb5_keytab;
+
 void gssapi_krb5_init (void);
 
 krb5_error_code
