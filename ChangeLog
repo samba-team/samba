@@ -1,3 +1,13 @@
+2004-11-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/get_in_tkt.c (krb5_get_in_cred): clear pointer after
+	freeing data
+
+2004-11-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_get_init_creds.3: add more text describing the
+	krb5_get_init_creds functions
+
 2004-11-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/init_creds_pw.c: make krb5_get_init_creds_keytab work
