@@ -1,9 +1,35 @@
+2003-06-17  Love  <lha@stacken.kth.se>
+
+	* verify_mic.c: reorder code so sequence numbers can can be used
+	
+	* unwrap.c: reorder code so sequence numbers can can be used
+	
+	* sequence.c: remove unused function, indent, add
+	gssapi_msg_order_f that filter gss flags to gss_msg_order flags
+	
+	* gssapi_locl.h: prototypes for
+	gssapi_{encode_om_uint32,decode_om_uint32} add sequence number
+	verifier prototypes
+
+	* delete_sec_context.c: destroy sequence number verifier
+	
+	* init_sec_context.c: remember to free data use sequence number
+	verifier
+	
+	* accept_sec_context.c: don't clear output_token twice remember to
+	free data use sequence number verifier
+	
+	* 8003.c: export and rename encode_om_uint32/decode_om_uint32 and
+	start to use them
+
 2003-06-09  Johan Danielsson  <joda@pdc.kth.se>
 
 	* Makefile.am: can't have sequence.c in two different places
 
 2003-06-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_sequence.c: check rollover, print summery
+	
 	* wrap.c (sub_wrap_size): gss_wrap_size_limit() has
 	req_output_size and max_input_size around the wrong way -- it
 	returns the output token size for a given input size, rather than
