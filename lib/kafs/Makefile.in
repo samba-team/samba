@@ -81,8 +81,8 @@ $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(OBJECTS)
 
 # AIX: this almost works with gcc, but somehow it fails to use the
-# correct ld, use cc for now
+# correct ld, use ld instead
 afslib.so: afslib.o
-	cc -o $@ -Wl,-bM:SRE,-bI:$(srcdir)/afsl.exp,-bE:$(srcdir)/afslib.exp,-bnoentry afslib.o
+	ld -o $@ -Wl,-bM:SRE,-bI:$(srcdir)/afsl.exp,-bE:$(srcdir)/afslib.exp,-bnoentry afslib.o
 
 $(OBJECTS): ../../config.h
