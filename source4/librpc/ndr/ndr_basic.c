@@ -413,6 +413,18 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 					      "Bad character conversion");
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, len2*2));
+
+		/* this is a way of detecting if a string is sent with the wrong
+		   termination */
+		if (ndr->flags & LIBNDR_FLAG_STR_NOTERM) {
+			if (strlen(as) < len2) {
+				DEBUG(6,("short string '%s'\n", as));
+			}
+		} else {
+			if (strlen(as) == len2) {
+				DEBUG(6,("long string '%s'\n", as));
+			}
+		}
 		*s = as;
 		break;
 

@@ -9,6 +9,7 @@
 [
   uuid(12345678-1234-abcd-ef00-01234567cffb),
   version(1.0),
+  endpoints(netlogon,TCP-0),
   pointer_default(unique)
 ]
 
@@ -854,4 +855,141 @@ interface netlogon
 		[in][switch_is(function_code)] netr_CONTROL_DATA_INFORMATION  data,
 		[out][switch_is(level)]        netr_CONTROL_QUERY_INFORMATION query
 		);
+
+	/*****************/
+	/* Function 0x13 */
+	WERROR netr_NETRENUMERATETRUSTEDDOMAINS() ;
+
+	/*****************/
+	/* Function 0x14 */		
+	WERROR netr_DSRGETDCNAME() ;
+
+	/*****************/
+	/* Function 0x15 */
+	WERROR netr_NETRLOGONDUMMYROUTINE1();
+
+	/****************/
+	/* Function 0x16 */
+	WERROR netr_NETRLOGONSETSERVICEBITS();
+
+	/****************/
+	/* Function 0x17 */
+	WERROR netr_NETRLOGONGETTRUSTRID();
+
+	/****************/
+	/* Function 0x18 */
+	WERROR netr_NETRLOGONCOMPUTESERVERDIGEST();
+
+	/****************/
+	/* Function 0x19 */
+	WERROR netr_NETRLOGONCOMPUTECLIENTDIGEST();
+
+	/****************/
+	/* Function 0x1a */
+	WERROR netr_NETRSERVERAUTHENTICATE3();
+
+	/****************/
+	/* Function 0x1b */
+	WERROR netr_DSRGETDCNAMEX();
+
+	/****************/
+	/* Function 0x1c */
+	WERROR netr_DSRGETSITENAME();
+
+	/****************/
+	/* Function 0x1d */
+	WERROR netr_NETRLOGONGETDOMAININFO();
+
+	/****************/
+	/* Function 0x1e */
+	WERROR netr_NETRSERVERPASSWORDSET2();
+
+	/****************/
+	/* Function 0x1f */
+	WERROR netr_NETRSERVERPASSWORDGET();
+
+	/****************/
+	/* Function 0x20 */
+	WERROR netr_NETRLOGONSENDTOSAM();
+
+	/****************/
+	/* Function 0x21 */
+	WERROR netr_DSRADDRESSTOSITENAMESW();
+
+	/****************/
+	/* Function 0x22 */
+	WERROR netr_DSRGETDCNAMEEX2();
+
+	/****************/
+	/* Function 0x23 */
+	WERROR netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN();
+
+	/****************/
+	/* Function 0x24 */
+	WERROR netr_NETRENUMERATETRUSTEDDOMAINSEX();
+
+	/****************/
+	/* Function 0x25 */
+	WERROR netr_DSRADDRESSTOSITENAMESEXW();
+
+	/****************/
+	/* Function 0x26 */
+	WERROR netr_DSRGETDCSITECOVERAGEW();
+
+	/****************/
+	/* Function 0x27 */
+	WERROR netr_NETRLOGONSAMLOGONEX();
+
+	/****************/
+	/* Function 0x28 */
+
+	const int NETR_TRUST_FLAG_IN_FOREST = 0x01;
+	const int NETR_TRUST_FLAG_OUTBOUND  = 0x02;
+	const int NETR_TRUST_FLAG_TREEROOT  = 0x04;
+	const int NETR_TRUST_FLAG_PRIMARY   = 0x08;
+	const int NETR_TRUST_FLAG_NATIVE    = 0x10;
+	const int NETR_TRUST_FLAG_INBOUND   = 0x20;
+
+	typedef struct {
+		unistr *netbios_name;
+		unistr *dns_name;
+		uint32 trust_flags;
+		uint32 parent_index;
+		uint32 trust_type;
+		uint32 trust_attributes;
+		dom_sid2 *sid;
+		GUID   guid;
+	} netr_DomainTrust;
+
+	WERROR netr_DsrEnumerateDomainTrusts(
+		[in]                 unistr           *server_name,
+		[in]                 uint32           trust_flags,
+		[out]                uint32           count,
+		[out,size_is(count)] netr_DomainTrust *trusts
+		);
+
+
+	/****************/
+	/* Function 0x29 */
+	WERROR netr_DSRDEREGISTERDNSHOSTRECORDS();
+
+	/****************/
+	/* Function 0x2a */
+	WERROR netr_NETRSERVERTRUSTPASSWORDSGET();
+
+	/****************/
+	/* Function 0x2b */
+	WERROR netr_DSRGETFORESTTRUSTINFORMATION();
+
+	/****************/
+	/* Function 0x2c */
+	WERROR netr_NETRGETFORESTTRUSTINFORMATION();
+
+	/****************/
+	/* Function 0x2d */
+	WERROR netr_NETRLOGONSAMLOGONWITHFLAGS();
+
+	/****************/
+	/* Function 0x2e */
+	WERROR netr_NETRSERVERGETTRUSTINFO();
 }

@@ -965,3 +965,14 @@ int samdb_replace(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 	return samdb_modify(ctx, mem_ctx, msg);
 }
 
+/*
+  return a default security descriptor
+*/
+struct security_descriptor *samdb_default_security_descriptor(TALLOC_CTX *mem_ctx)
+{
+	struct security_descriptor *sd;
+
+	sd = sd_initialise(mem_ctx);
+
+	return sd;
+}
