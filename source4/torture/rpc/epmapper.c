@@ -179,10 +179,10 @@ BOOL torture_rpc_epmapper(int dummy)
 
 	mem_ctx = talloc_init("torture_rpc_epmapper");
 
-	status = torture_rpc_connection(&p, 
-					DCERPC_EPMAPPER_NAME,
-					DCERPC_EPMAPPER_UUID,
-					DCERPC_EPMAPPER_VERSION);
+	status = torture_rpc_tcp(&p, 
+				 DCERPC_EPMAPPER_NAME,
+				 DCERPC_EPMAPPER_UUID,
+				 DCERPC_EPMAPPER_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

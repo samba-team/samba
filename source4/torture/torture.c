@@ -157,6 +157,30 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
         return status;
 }
 
+/* open a rpc connection to a named pipe */
+NTSTATUS torture_rpc_tcp(struct dcerpc_pipe **p, 
+			 const char *pipe_name,
+			 const char *pipe_uuid, 
+			 uint32 pipe_version)
+{
+        NTSTATUS status;
+
+	status = dcerpc_pipe_open_tcp(p, 
+				      lp_parm_string(-1, "torture", "host"),
+				      lp_parm_int(-1, "torture", "share"), 
+				      pipe_uuid, pipe_version);
+	if (!NT_STATUS_IS_OK(status)) {
+                printf("Open of pipe '%s' failed with error (%s)\n",
+		       pipe_name, nt_errstr(status));
+                return status;
+        }
+
+	/* always do NDR validation in smbtorture */
+	(*p)->flags |= DCERPC_DEBUG_VALIDATE_BOTH;
+ 
+        return status;
+}
+
 /* close a rpc connection to a named pipe */
 NTSTATUS torture_rpc_close(struct dcerpc_pipe *p)
 {

@@ -1,6 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
-   raw dcerpc operations
+
+   dcerpc over SMB transport
 
    Copyright (C) Tim Potter 2003
    Copyright (C) Andrew Tridgell 2003
@@ -348,7 +349,7 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
                 return status;
         }
 
-        if (!(*p = dcerpc_pipe_init(tree))) {
+        if (!(*p = dcerpc_pipe_init())) {
                 return NT_STATUS_NO_MEMORY;
 	}
  
@@ -381,5 +382,5 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 		dcerpc_pipe_close(*p);
 	}
 
-        return status;
+        return NT_STATUS_OK;
 }

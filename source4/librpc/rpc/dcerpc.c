@@ -24,7 +24,7 @@
 
 /* initialise a dcerpc pipe. This currently assumes a SMB named pipe
    transport */
-struct dcerpc_pipe *dcerpc_pipe_init(struct cli_tree *tree)
+struct dcerpc_pipe *dcerpc_pipe_init(void)
 {
 	struct dcerpc_pipe *p;
 
