@@ -2107,8 +2107,6 @@ static void usage(void)
 
 	setup_logging(argv[0], DEBUG_STDOUT);
 
-	gentest_init_subsystems;
-
 	for (i=0;i<NSERVERS;i++) {
 		const char *share = argv[1+i];
 		if (!split_unc_name(share, &servers[i].server_name, &servers[i].share_name)) {
@@ -2184,6 +2182,8 @@ static void usage(void)
 			exit(1);
 		}
 	}
+
+	gentest_init_subsystems;
 
 	if (!servers[0].username) {
 		usage();

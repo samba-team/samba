@@ -3022,8 +3022,6 @@ static void remember_query_host(const char *arg,
 		POPT_TABLEEND
 	};
 	
-	smbclient_init_subsystems;
-
 #ifdef KANJI
 	pstrcpy(term_code, KANJI);
 #else /* KANJI */
@@ -3091,6 +3089,8 @@ static void remember_query_host(const char *arg,
 	}
 
 	load_interfaces();
+
+	smbclient_init_subsystems;
 
 	if(poptPeekArg(pc)) {
 		pstrcpy(service,poptGetArg(pc));  
