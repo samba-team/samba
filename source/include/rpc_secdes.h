@@ -153,7 +153,7 @@ typedef struct security_descriptor_info
 typedef struct sec_desc_buf_info
 {
 	uint32 max_len;
-	uint32 undoc;
+	uint32 ptr;
 	uint32 len;
 
 	SEC_DESC *sec;

@@ -731,7 +731,7 @@ SEC_DESC_BUF *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc)
 		return NULL;
 	}
 
-	dst->undoc = 0x1;
+	dst->ptr = 0x1;
 
 	return dst;
 }
@@ -781,7 +781,7 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 	if(!prs_uint32_pre("max_len", ps, depth, &psdb->max_len, &off_max_len))
 		return False;
 
-	if(!prs_uint32    ("undoc  ", ps, depth, &psdb->undoc))
+	if(!prs_uint32    ("ptr  ", ps, depth, &psdb->ptr))
 		return False;
 
 	if(!prs_uint32_pre("len    ", ps, depth, &psdb->len, &off_len))

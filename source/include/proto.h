@@ -535,6 +535,7 @@ BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
 void sid_copy(DOM_SID *dst, const DOM_SID *src);
 DOM_SID *sid_dup(DOM_SID *src);
 BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid);
+int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2);
 BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2);
 size_t sid_size(DOM_SID *sid);
 
@@ -3746,6 +3747,7 @@ void add_lsa_commands(void);
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
+BOOL get_short_archi(char *short_archi, char *long_archi);
 uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_enum_ports(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_enum_printerdata(struct client_info *info, int argc, char *argv[]);
