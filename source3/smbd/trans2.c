@@ -2354,6 +2354,7 @@ static BOOL marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 				DEBUG(0,("marshall_posix_acl: unknown tagtype.\n"));
 				return False;
 		}
+		pdata += SMB_POSIX_ACL_ENTRY_SIZE;
 	}
 
 	return True;
