@@ -69,6 +69,12 @@ NTSTATUS dupalloc_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *
 {
 	NTSTATUS ret;
 
+	/* don't crash if the source pointer is NULL (since we don't
+	   do priviledges now anyways) */
+
+	if ( !old_la )
+		return NT_STATUS_OK;
+
 	*new_la = (LUID_ATTR *)talloc(mem_ctx, sizeof(LUID_ATTR));
 	ALLOC_CHECK(new_la, ret, done, "dupalloc_luid_attr");
 
