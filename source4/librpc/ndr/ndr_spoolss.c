@@ -5,6 +5,7 @@
 NTSTATUS ndr_push_spoolss_DeviceMode(struct ndr_push *ndr, int ndr_flags, struct spoolss_DeviceMode *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_nstring(ndr, NDR_SCALARS, &r->devicename));
 	NDR_CHECK(ndr_push_uint16(ndr, r->specversion));
@@ -40,6 +41,7 @@ NTSTATUS ndr_push_spoolss_DeviceMode(struct ndr_push *ndr, int ndr_flags, struct
 	NDR_CHECK(ndr_push_uint32(ndr, r->reserved2));
 	NDR_CHECK(ndr_push_uint32(ndr, r->panningwidth));
 	NDR_CHECK(ndr_push_uint32(ndr, r->panningheight));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_push_nstring(ndr, NDR_BUFFERS, &r->devicename));
@@ -51,11 +53,13 @@ done:
 NTSTATUS ndr_push_spoolss_PrinterEnum1(struct ndr_push *ndr, int ndr_flags, struct spoolss_PrinterEnum1 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->flags));
 	NDR_CHECK(ndr_push_relative(ndr, NDR_SCALARS, r->name, (ndr_push_const_fn_t) ndr_push_nstring));
 	NDR_CHECK(ndr_push_relative(ndr, NDR_SCALARS, r->description, (ndr_push_const_fn_t) ndr_push_nstring));
 	NDR_CHECK(ndr_push_relative(ndr, NDR_SCALARS, r->comment, (ndr_push_const_fn_t) ndr_push_nstring));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	NDR_CHECK(ndr_push_relative(ndr, NDR_BUFFERS, &r->name, (ndr_push_const_fn_t) ndr_push_nstring));
@@ -68,6 +72,7 @@ done:
 NTSTATUS ndr_push_spoolss_PrinterEnum2(struct ndr_push *ndr, int ndr_flags, struct spoolss_PrinterEnum2 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_relative(ndr, NDR_SCALARS, r->servername, (ndr_push_const_fn_t) ndr_push_nstring));
 	NDR_CHECK(ndr_push_relative(ndr, NDR_SCALARS, r->printername, (ndr_push_const_fn_t) ndr_push_nstring));
@@ -90,6 +95,7 @@ NTSTATUS ndr_push_spoolss_PrinterEnum2(struct ndr_push *ndr, int ndr_flags, stru
 	NDR_CHECK(ndr_push_uint32(ndr, r->status));
 	NDR_CHECK(ndr_push_uint32(ndr, r->cjobs));
 	NDR_CHECK(ndr_push_uint32(ndr, r->averageppm));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	NDR_CHECK(ndr_push_relative(ndr, NDR_BUFFERS, &r->servername, (ndr_push_const_fn_t) ndr_push_nstring));
@@ -113,6 +119,41 @@ done:
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_push_spoolss_PrinterEnum(struct ndr_push *ndr, int ndr_flags, uint16 level, union spoolss_PrinterEnum *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
+	switch (level) {
+	case 1:
+	NDR_CHECK(ndr_push_spoolss_PrinterEnum1(ndr, NDR_SCALARS, &r->info1));
+	break;
+
+	case 2:
+	NDR_CHECK(ndr_push_spoolss_PrinterEnum2(ndr, NDR_SCALARS, &r->info2));
+	break;
+
+	default:
+		return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+	}
+	ndr_push_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	switch (level) {
+	case 1:
+		NDR_CHECK(ndr_push_spoolss_PrinterEnum1(ndr, ndr_flags, &r->info1));
+	break;
+
+	case 2:
+		NDR_CHECK(ndr_push_spoolss_PrinterEnum2(ndr, ndr_flags, &r->info2));
+	break;
+
+	default:
+		return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+	}
+done:
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ndr_push_spoolss_EnumPrinters(struct ndr_push *ndr, struct spoolss_EnumPrinters *r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.flags));
@@ -121,12 +162,11 @@ NTSTATUS ndr_push_spoolss_EnumPrinters(struct ndr_push *ndr, struct spoolss_Enum
 		NDR_CHECK(ndr_push_unistr(ndr, r->in.server));
 	}
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
-	NDR_CHECK(ndr_push_ptr(ndr, r->in.buf));
-	if (r->in.buf) {
-		NDR_CHECK(ndr_push_uint32(ndr, r->in.offered));
-		NDR_CHECK(ndr_push_array_uint8(ndr, r->in.buf, r->in.offered));
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.buffer));
+	if (r->in.buffer) {
+		NDR_CHECK(ndr_push_DATA_BLOB(ndr, *r->in.buffer));
 	}
-	NDR_CHECK(ndr_push_uint32(ndr, r->in.offered));
+	NDR_CHECK(ndr_push_uint32(ndr, *r->in.buf_size));
 
 	return NT_STATUS_OK;
 }
@@ -561,8 +601,10 @@ NTSTATUS ndr_push_spoolss_44(struct ndr_push *ndr, struct spoolss_44 *r)
 NTSTATUS ndr_push_spoolss_Devmode(struct ndr_push *ndr, int ndr_flags, struct spoolss_Devmode *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->foo));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -572,9 +614,11 @@ done:
 NTSTATUS ndr_push_spoolss_DevmodeContainer(struct ndr_push *ndr, int ndr_flags, struct spoolss_DevmodeContainer *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->size));
 	NDR_CHECK(ndr_push_ptr(ndr, r->devmode));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->devmode) {
@@ -587,6 +631,7 @@ done:
 NTSTATUS ndr_push_spoolss_UserLevel1(struct ndr_push *ndr, int ndr_flags, struct spoolss_UserLevel1 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->size));
 	NDR_CHECK(ndr_push_ptr(ndr, r->client));
@@ -595,6 +640,7 @@ NTSTATUS ndr_push_spoolss_UserLevel1(struct ndr_push *ndr, int ndr_flags, struct
 	NDR_CHECK(ndr_push_uint32(ndr, r->major));
 	NDR_CHECK(ndr_push_uint32(ndr, r->minor));
 	NDR_CHECK(ndr_push_uint32(ndr, r->processor));
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	if (r->client) {
@@ -610,6 +656,7 @@ done:
 NTSTATUS ndr_push_spoolss_UserLevel(struct ndr_push *ndr, int ndr_flags, uint16 level, union spoolss_UserLevel *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_uint16(ndr, level));
 	switch (level) {
 	case 1:
@@ -619,6 +666,7 @@ NTSTATUS ndr_push_spoolss_UserLevel(struct ndr_push *ndr, int ndr_flags, uint16 
 	default:
 		return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
+	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 	switch (level) {
@@ -815,6 +863,7 @@ NTSTATUS ndr_push_spoolss_5f(struct ndr_push *ndr, struct spoolss_5f *r)
 
 NTSTATUS ndr_pull_spoolss_DeviceMode(struct ndr_pull *ndr, int ndr_flags, struct spoolss_DeviceMode *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_nstring(ndr, NDR_SCALARS, &r->devicename));
@@ -851,6 +900,7 @@ NTSTATUS ndr_pull_spoolss_DeviceMode(struct ndr_pull *ndr, int ndr_flags, struct
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->reserved2));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->panningwidth));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->panningheight));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_nstring(ndr, NDR_BUFFERS, &r->devicename));
@@ -861,12 +911,14 @@ done:
 
 NTSTATUS ndr_pull_spoolss_PrinterEnum1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterEnum1 *r)
 {
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->flags));
 	NDR_CHECK(ndr_pull_relative(ndr, (const void **)&r->name, sizeof(*r->name), (ndr_pull_flags_fn_t)ndr_pull_nstring));
 	NDR_CHECK(ndr_pull_relative(ndr, (const void **)&r->description, sizeof(*r->description), (ndr_pull_flags_fn_t)ndr_pull_nstring));
 	NDR_CHECK(ndr_pull_relative(ndr, (const void **)&r->comment, sizeof(*r->comment), (ndr_pull_flags_fn_t)ndr_pull_nstring));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -877,6 +929,7 @@ NTSTATUS ndr_pull_spoolss_PrinterEnum2(struct ndr_pull *ndr, int ndr_flags, stru
 {
 	uint32 _ptr_devmode;
 	uint32 _ptr_secdesc;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_relative(ndr, (const void **)&r->servername, sizeof(*r->servername), (ndr_pull_flags_fn_t)ndr_pull_nstring));
@@ -900,29 +953,62 @@ NTSTATUS ndr_pull_spoolss_PrinterEnum2(struct ndr_pull *ndr, int ndr_flags, stru
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->status));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->cjobs));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->averageppm));
+	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_pull_spoolss_PrinterEnum(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union spoolss_PrinterEnum *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	switch (*level) {
+	case 1: {
+	NDR_CHECK(ndr_pull_spoolss_PrinterEnum1(ndr, NDR_SCALARS, &r->info1));
+	break; }
+
+	case 2: {
+	NDR_CHECK(ndr_pull_spoolss_PrinterEnum2(ndr, NDR_SCALARS, &r->info2));
+	break; }
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	switch (*level) {
+	case 1:
+		NDR_CHECK(ndr_pull_spoolss_PrinterEnum1(ndr, NDR_BUFFERS, &r->info1));
+	break;
+
+	case 2:
+		NDR_CHECK(ndr_pull_spoolss_PrinterEnum2(ndr, NDR_BUFFERS, &r->info2));
+	break;
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+done:
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ndr_pull_spoolss_EnumPrinters(struct ndr_pull *ndr, struct spoolss_EnumPrinters *r)
 {
-	uint32 _ptr_info;
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_info));
-	if (_ptr_info) {
-		NDR_ALLOC(ndr, r->out.info);
+	uint32 _ptr_buffer;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_buffer));
+	if (_ptr_buffer) {
+		NDR_ALLOC(ndr, r->out.buffer);
 	} else {
-		r->out.info = NULL;
+		r->out.buffer = NULL;
 	}
-	if (r->out.info) {
-	{ uint16 _level = r->in.level;
-	NDR_CHECK(ndr_pull_subcontext_union_fn(ndr, &_level, r->out.info, (ndr_pull_union_fn_t) ndr_pull_spoolss_PrinterEnum));
-	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	if (r->out.buffer) {
+		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, r->out.buffer));
 	}
-	}
-	NDR_CHECK(ndr_pull_uint32(ndr, r->out.needed));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.returned));
+	NDR_CHECK(ndr_pull_uint32(ndr, r->out.buf_size));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.count));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -1722,6 +1808,23 @@ void ndr_print_spoolss_PrinterEnum2(struct ndr_print *ndr, const char *name, str
 	ndr_print_uint32(ndr, "cjobs", r->cjobs);
 	ndr_print_uint32(ndr, "averageppm", r->averageppm);
 	ndr->depth--;
+}
+
+void ndr_print_spoolss_PrinterEnum(struct ndr_print *ndr, const char *name, uint16 level, union spoolss_PrinterEnum *r)
+{
+	ndr_print_union(ndr, name, level, "spoolss_PrinterEnum");
+	switch (level) {
+	case 1:
+	ndr_print_spoolss_PrinterEnum1(ndr, "info1", &r->info1);
+	break;
+
+	case 2:
+	ndr_print_spoolss_PrinterEnum2(ndr, "info2", &r->info2);
+	break;
+
+	default:
+		ndr_print_bad_level(ndr, name, level);
+	}
 }
 
 void ndr_print_spoolss_Devmode(struct ndr_print *ndr, const char *name, struct spoolss_Devmode *r)

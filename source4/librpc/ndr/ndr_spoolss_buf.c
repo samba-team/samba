@@ -24,34 +24,19 @@
 
 #include "includes.h"
 
-NTSTATUS ndr_pull_spoolss_PrinterEnum(struct ndr_pull *ndr, int ndr_flags, 
-				      uint16 *level, union spoolss_PrinterEnum *info)
+NTSTATUS pull_spoolss_PrinterEnumArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
+				       uint16 level, uint32 count,
+				       union spoolss_PrinterEnum **info)
 {
-	switch (*level) {
-	case 1:
-		NDR_CHECK(ndr_pull_spoolss_PrinterEnum1(ndr, NDR_SCALARS|NDR_BUFFERS, &info->info1));
-		break;
-	case 2:
-		NDR_CHECK(ndr_pull_spoolss_PrinterEnum2(ndr, NDR_SCALARS|NDR_BUFFERS, &info->info2));
-		break;
-	default:
-		return NT_STATUS_INVALID_LEVEL;
+	int i;
+	struct ndr_pull *ndr;
+	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	NDR_ALLOC_N(ndr, *info, count);
+	for (i=0;i<count;i++) {
+		NDR_CHECK(ndr_pull_spoolss_PrinterEnum(ndr, NDR_SCALARS|NDR_BUFFERS, &level, &(*info)[i]));
 	}
 	return NT_STATUS_OK;
-}
-
-
-void ndr_print_spoolss_PrinterEnum(struct ndr_print *ndr, const char *name, uint16 level,
-				   union spoolss_PrinterEnum *info)
-{
-	ndr_print_struct(ndr, name, "spoolss_PrinterEnum");
-
-	switch (level) {
-	case 1:
-		ndr_print_spoolss_PrinterEnum1(ndr, "info1", &info->info1);
-		break;
-	case 2:
-		ndr_print_spoolss_PrinterEnum2(ndr, "info2", &info->info2);
-		break;
-	}
 }

@@ -48,14 +48,14 @@
 //		uint8  private[driverextra];
 	} spoolss_DeviceMode;
 
-	typedef [public] struct {
+	typedef struct {
 		uint32 flags;
 		[relative] nstring name;
 		[relative] nstring description;
 		[relative] nstring comment;
 	} spoolss_PrinterEnum1;
 
-	typedef [public] struct {
+	typedef struct {
 		[relative] nstring servername;
 		[relative] nstring printername;
 		[relative] nstring sharename;
@@ -79,15 +79,18 @@
 		uint32 averageppm;
 	} spoolss_PrinterEnum2;
 
+	typedef [nodiscriminant,public] union {
+		case(1) spoolss_PrinterEnum1 info1;
+		case(2) spoolss_PrinterEnum2 info2;
+	} spoolss_PrinterEnum;
+
 	NTSTATUS spoolss_EnumPrinters(
 		[in]	     uint32 flags,
 		[in]	     unistr *server,
 		[in]	     uint32 level,
-		[in,size_is(offered)]  uint8 *buf,
-		[in]         uint32 offered,
-		[out,subcontext,switch_is(level)] spoolss_PrinterEnum *info,
-		[out,ref]    uint32 *needed,
-		[out]	     uint32 returned
+		[in,out]     DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size,
+		[out]	     uint32 count
 		);
 
 	/******************/

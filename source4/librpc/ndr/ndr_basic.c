@@ -440,14 +440,18 @@ void ndr_print_ptr(struct ndr_print *ndr, const char *name, const void *p)
 	}
 }
 
-void ndr_print_unistr_noterm(struct ndr_print *ndr, const char *name, const char *s)
-{
-	ndr->print(ndr, "%-25s: '%s'", name, s);
-}
-
 void ndr_print_unistr(struct ndr_print *ndr, const char *name, const char *s)
 {
-	ndr->print(ndr, "%-25s: '%s'", name, s);
+	if (s) {
+		ndr->print(ndr, "%-25s: '%s'", name, s);
+	} else {
+		ndr->print(ndr, "%-25s: NULL", name);
+	}
+}
+
+void ndr_print_unistr_noterm(struct ndr_print *ndr, const char *name, const char *s)
+{
+	ndr_print_unistr(ndr, name, s);
 }
 
 void ndr_print_NTTIME(struct ndr_print *ndr, const char *name, NTTIME t)
@@ -559,4 +563,28 @@ NTSTATUS ndr_push_nstring(struct ndr_push *ndr, int ndr_flags, const char **s)
 void ndr_print_nstring(struct ndr_print *ndr, const char *name, const char **s)
 {
 	ndr_print_unistr(ndr, name, *s);
+}
+
+
+/*
+  push a DATA_BLOB onto the wire. 
+*/
+NTSTATUS ndr_push_DATA_BLOB(struct ndr_push *ndr, DATA_BLOB blob)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, blob.length));
+	NDR_CHECK(ndr_push_bytes(ndr, blob.data, blob.length));
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a DATA_BLOB from the wire. 
+*/
+NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, DATA_BLOB *blob)
+{
+	uint32 length;
+	NDR_CHECK(ndr_pull_uint32(ndr, &length));
+	NDR_PULL_NEED_BYTES(ndr, length);
+	*blob = data_blob_talloc(ndr->mem_ctx, ndr->data+ndr->offset, length);
+	ndr->offset += length;
+	return NT_STATUS_OK;
 }
