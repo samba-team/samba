@@ -23,8 +23,31 @@
 #include "includes.h"
 
 
+#if 1
 /*
-  get a handle - doesn't really matter what type
+  get a DRSUAPI policy handle
+*/
+static BOOL get_policy_handle(struct dcerpc_pipe *p,
+			      TALLOC_CTX *mem_ctx, 
+			      struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct drsuapi_Bind r;
+
+	ZERO_STRUCT(r);
+	r.out.handle = handle;
+
+	status = dcerpc_drsuapi_Bind(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("drsuapi_Bind failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+#else
+/*
+  get a SAMR handle
 */
 static BOOL get_policy_handle(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			      struct policy_handle *handle)
@@ -44,6 +67,7 @@ static BOOL get_policy_handle(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	return True;
 }
+#endif
 
 static void fill_blob_handle(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
 			     struct policy_handle *handle)
@@ -227,7 +251,7 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_ta
 
 static void test_auto_scan(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table *iface)
 {
-	test_scan_call(mem_ctx, iface, 0x42);
+	test_scan_call(mem_ctx, iface, 2);
 }
 
 BOOL torture_rpc_autoidl(int dummy)
@@ -235,7 +259,7 @@ BOOL torture_rpc_autoidl(int dummy)
 	TALLOC_CTX *mem_ctx;
 	const struct dcerpc_interface_table *iface;
 		
-	iface = idl_iface_by_name("samr");
+	iface = idl_iface_by_name("drsuapi");
 	if (!iface) {
 		printf("Unknown interface!\n");
 		return False;
