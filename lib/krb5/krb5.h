@@ -411,14 +411,8 @@ typedef Authenticator krb5_donot_replay;
 #define KRB5_STORAGE_BYTEORDER_LE			0x20
 #define KRB5_STORAGE_BYTEORDER_HOST			0x40
 
-typedef struct krb5_storage {
-    void *data;
-    ssize_t (*fetch)(struct krb5_storage*, void*, size_t);
-    ssize_t (*store)(struct krb5_storage*, const void*, size_t);
-    off_t (*seek)(struct krb5_storage*, off_t, int);
-    void (*free)(struct krb5_storage*);
-    krb5_flags flags;
-} krb5_storage;
+struct krb5_storage_data;
+typedef struct krb5_storage_data krb5_storage;
 
 typedef struct krb5_keytab_entry {
     krb5_principal principal;

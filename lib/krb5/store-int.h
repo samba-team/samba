@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,54 +31,17 @@
  * SUCH DAMAGE. 
  */
 
-#include "krb5_locl.h"
-#include "store-int.h"
+#ifndef __store_int_h__
+#define __store_int_h__
 
-RCSID("$Id$");
+struct krb5_storage_data {
+    void *data;
+    ssize_t (*fetch)(struct krb5_storage_data*, void*, size_t);
+    ssize_t (*store)(struct krb5_storage_data*, const void*, size_t);
+    off_t (*seek)(struct krb5_storage_data*, off_t, int);
+    void (*free)(struct krb5_storage_data*);
+    krb5_flags flags;
+    int eof_code;
+};
 
-typedef struct fd_storage{
-    int fd;
-}fd_storage;
-
-#define FD(S) (((fd_storage*)(S)->data)->fd)
-
-static ssize_t
-fd_fetch(krb5_storage *sp, void *data, size_t size)
-{
-    return net_read(FD(sp), data, size);
-}
-
-static ssize_t
-fd_store(krb5_storage *sp, const void *data, size_t size)
-{
-    return net_write(FD(sp), data, size);
-}
-
-static off_t
-fd_seek(krb5_storage *sp, off_t offset, int whence)
-{
-    return lseek(FD(sp), offset, whence);
-}
-
-krb5_storage *
-krb5_storage_from_fd(int fd)
-{
-    krb5_storage *sp = malloc(sizeof(krb5_storage));
-
-    if (sp == NULL)
-	return NULL;
-
-    sp->data = malloc(sizeof(fd_storage));
-    if (sp->data == NULL) {
-	free(sp);
-	return NULL;
-    }
-    sp->flags = 0;
-    sp->eof_code = HEIM_ERR_EOF;
-    FD(sp) = fd;
-    sp->fetch = fd_fetch;
-    sp->store = fd_store;
-    sp->seek = fd_seek;
-    sp->free = NULL;
-    return sp;
-}
+#endif /* __store_int_h__ */

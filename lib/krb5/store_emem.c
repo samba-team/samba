@@ -32,6 +32,7 @@
  */
 
 #include "krb5_locl.h"
+#include "store-int.h"
 
 RCSID("$Id$");
 
@@ -116,6 +117,7 @@ krb5_storage_emem(void)
     emem_storage *s = malloc(sizeof(*s));
     sp->data = s;
     sp->flags = 0;
+    sp->eof_code = HEIM_ERR_EOF;
     s->size = 1024;
     s->base = malloc(s->size);
     s->len = 0;
