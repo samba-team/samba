@@ -67,13 +67,16 @@ static BOOL api_ntlmssp_create_pdu(rpcsrv_struct * l, uint32 data_start,
 
 	BOOL ret;
 	BOOL auth_verify = IS_BITS_SET_ALL(a->ntlmssp_chal.neg_flags,
-				NTLMSSP_NEGOTIATE_SIGN);
+					   NTLMSSP_NEGOTIATE_SIGN);
 	BOOL auth_seal = IS_BITS_SET_ALL(a->ntlmssp_chal.neg_flags,
-				NTLMSSP_NEGOTIATE_SEAL);
+					 NTLMSSP_NEGOTIATE_SEAL);
 	uint32 data_len;
 	uint32 auth_len;
+	uint32 frag_len;
 	uint32 data_end = l->rdata.offset + (l->auth ? (8 + 16) : 0);
 	uint32 crc32 = 0;
+	uint8 flags;
+	uint32 call_id = l->hdr.call_id;
 	char *data;
 
 	prs_struct rhdr;
@@ -98,16 +101,14 @@ static BOOL api_ntlmssp_create_pdu(rpcsrv_struct * l, uint32 data_start,
 
 	prs_init(&rhdr, 0, 4, False);
 
-	l->hdr.pkt_type = RPC_RESPONSE;	/* mark header as an rpc response */
-
 	/* set up rpc header (fragmentation issues) */
 	if (data_start == 0)
 	{
-		l->hdr.flags = RPC_FLG_FIRST;
+		flags = RPC_FLG_FIRST;
 	}
 	else
 	{
-		l->hdr.flags = 0;
+		flags = 0;
 	}
 
 	hdr_resp.alloc_hint = data_end - data_start;	/* calculate remaining data to be sent */
@@ -119,22 +120,28 @@ static BOOL api_ntlmssp_create_pdu(rpcsrv_struct * l, uint32 data_start,
 
 	if (hdr_resp.alloc_hint + 0x18 <= l->hdr_ba.bba.max_tsize)
 	{
-		l->hdr.flags |= RPC_FLG_LAST;
-		l->hdr.frag_len = hdr_resp.alloc_hint + 0x18;
+		flags |= RPC_FLG_LAST;
+		frag_len = hdr_resp.alloc_hint + 0x18;
 	}
 	else
 	{
-		l->hdr.frag_len = l->hdr_ba.bba.max_tsize;
+		frag_len = l->hdr_ba.bba.max_tsize;
 	}
 
 	hdr_resp.alloc_hint -= auth_len + 8;
 
-	data_len = l->hdr.frag_len - auth_len - (auth_verify ? 8 : 0) - 0x18;
+	data_len = frag_len - auth_len - (auth_verify ? 8 : 0) - 0x18;
 
 	rhdr.start = 0;
 	rhdr.end = 0x18;
 
-	DEBUG(10, ("hdr flags: %x\n", l->hdr.flags));
+	DEBUG(10, ("hdr flags: %x\n", flags));
+
+	if (!make_rpc_hdr(&l->hdr, RPC_RESPONSE, flags, call_id,
+			  frag_len, auth_len))
+	{
+		return False;
+	}
 
 	/* store the header in the data stream */
 	smb_io_rpc_hdr("rhdr", &(l->hdr), &(rhdr), 0);
@@ -195,8 +202,7 @@ static BOOL api_ntlmssp_create_pdu(rpcsrv_struct * l, uint32 data_start,
 	prs_free_data(&rverf);
 	prs_free_data(&rhdr);
 
-	if (IS_BITS_SET_ALL(l->hdr.flags, RPC_FLG_LAST) ||
-	    l->hdr.pkt_type == RPC_BINDACK)
+	if (IS_BITS_SET_ALL(flags, RPC_FLG_LAST))
 	{
 		DEBUG(10, ("create_ntlmssp_reply: finished sending\n"));
 		prs_free_data(&l->rdata);
@@ -474,7 +480,7 @@ static BOOL api_ntlmssp_auth_chk(rpcsrv_struct * l,
 		{
 			RPC_AUTH_VERIFIER auth_verifier;
 			if (!smb_io_rpc_auth_verifier("", &auth_verifier,
-						 &l->data_i, 0))
+						      &l->data_i, 0))
 			{
 				return False;
 			}
@@ -572,9 +578,9 @@ static BOOL api_ntlmssp_decode_pdu(rpcsrv_struct * l)
 {
 	ntlmssp_auth_struct *a = (ntlmssp_auth_struct *) l->auth_info;
 	BOOL auth_verify = IS_BITS_SET_ALL(a->ntlmssp_chal.neg_flags,
-				NTLMSSP_NEGOTIATE_SIGN);
+					   NTLMSSP_NEGOTIATE_SIGN);
 	BOOL auth_seal = IS_BITS_SET_ALL(a->ntlmssp_chal.neg_flags,
-				NTLMSSP_NEGOTIATE_SEAL);
+					 NTLMSSP_NEGOTIATE_SEAL);
 	int data_len;
 	int auth_len;
 	uint32 old_offset;

@@ -2053,87 +2053,109 @@ BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_stru
 
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 
-void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name);
-void prs_debug_out(const prs_struct *ps, char *msg, int level);
-void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io);
-void prs_set_packtype(prs_struct *ps, const uint8 *pack_type);
-void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io);
-BOOL prs_copy(prs_struct *ps, const prs_struct *from);
-BOOL prs_alloc_data(prs_struct *buf, int size);
-BOOL prs_buf_copy(char *copy_into, const prs_struct *buf,
-				uint32 offset, uint32 len);
-void prs_struct_free(prs_struct **buf);
-void prs_free_data(prs_struct *buf);
-BOOL prs_realloc_data(prs_struct *buf, size_t new_size);
-BOOL prs_grow_data(prs_struct *buf, BOOL io, int new_size, BOOL force_grow);
-uint32 prs_buf_len(const prs_struct *buf);
-char *prs_data(const prs_struct *buf, uint32 offset);
-void prs_link(prs_struct *prev, prs_struct *ps, prs_struct *next);
-void prs_align(prs_struct *ps);
-BOOL prs_grow(prs_struct *ps, uint32 new_size);
-BOOL prs_append_data(prs_struct *ps, const char *data, int len);
-BOOL prs_add_data(prs_struct *ps, const char *data, int len);
-BOOL _prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8);
-BOOL _prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16);
-BOOL _prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16]);
-BOOL _prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32);
-BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
-BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
-BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
-BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str);
-BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str);
-BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str);
-BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth);
-BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str);
-BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size);
-BOOL _prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset);
-BOOL _prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
-				uint32 ptr_uint16, uint32 start_offset);
-BOOL _prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset);
-BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
-				uint32 ptr_uint32, uint32 data_size);
-int prs_tdb_delete(TDB_CONTEXT *tdb, prs_struct *pk);
-int prs_tdb_store(TDB_CONTEXT *tdb, int flgs, prs_struct *pk, prs_struct *pd);
-void prs_tdb_fetch(TDB_CONTEXT *tdb, prs_struct *pk, prs_struct *pd);
+void prs_debug(prs_struct * ps, int depth, const char *desc,
+	       const char *fn_name);
+void prs_debug_out(const prs_struct * ps, char *msg, int level);
+void prs_init(prs_struct * ps, uint32 size, uint8 align, BOOL io);
+void prs_set_packtype(prs_struct * ps, const uint8 * pack_type);
+void prs_create(prs_struct * ps, char *data, uint32 size, uint8 align,
+		BOOL io);
+BOOL prs_copy(prs_struct * ps, const prs_struct * from);
+BOOL prs_alloc_data(prs_struct * buf, int size);
+BOOL prs_buf_copy(char *copy_into, const prs_struct * buf,
+		  uint32 offset, uint32 len);
+void prs_struct_free(prs_struct ** buf);
+void prs_free_data(prs_struct * buf);
+BOOL prs_realloc_data(prs_struct * buf, size_t new_size);
+BOOL prs_grow_data(prs_struct * buf, BOOL io, int new_size, BOOL force_grow);
+uint32 prs_buf_len(const prs_struct * buf);
+char *prs_data(const prs_struct * buf, uint32 offset);
+void prs_link(prs_struct * prev, prs_struct * ps, prs_struct * next);
+void prs_align(prs_struct * ps);
+BOOL prs_grow(prs_struct * ps, uint32 new_size);
+BOOL prs_append_data(prs_struct * ps, const char *data, int len);
+BOOL prs_add_data(prs_struct * ps, const char *data, int len);
+BOOL _prs_uint8(char *name, prs_struct * ps, int depth, uint8 * data8);
+BOOL _prs_uint16(char *name, prs_struct * ps, int depth, uint16 * data16);
+BOOL _prs_hash1(prs_struct * ps, uint32 offset, uint8 sess_key[16]);
+BOOL _prs_uint32(char *name, prs_struct * ps, int depth, uint32 * data32);
+BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct * ps, int depth,
+		 uint8 * data8s, int len);
+BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  uint16 * data16s, int len);
+BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  uint32 * data32s, int len);
+BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  BUFFER2 * str);
+BOOL _prs_string2(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  STRING2 * str);
+BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  UNISTR2 * str);
+BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 * str, prs_struct * ps,
+		  int depth);
+BOOL _prs_unistr(char *name, prs_struct * ps, int depth, UNISTR * str);
+BOOL _prs_string(char *name, prs_struct * ps, int depth, char *str,
+		 uint16 len, uint16 max_buf_size);
+BOOL _prs_uint16_pre(char *name, prs_struct * ps, int depth, uint16 * data16,
+		     uint32 * offset);
+BOOL _prs_uint16_post(char *name, prs_struct * ps, int depth, uint16 * data16,
+		      uint32 ptr_uint16, uint32 start_offset);
+BOOL _prs_uint32_pre(char *name, prs_struct * ps, int depth, uint32 * data32,
+		     uint32 * offset);
+BOOL _prs_uint32_post(char *name, prs_struct * ps, int depth, uint32 * data32,
+		      uint32 ptr_uint32, uint32 data_size);
+int prs_tdb_delete(TDB_CONTEXT * tdb, prs_struct * pk);
+int prs_tdb_store(TDB_CONTEXT * tdb, int flgs, prs_struct * pk,
+		  prs_struct * pd);
+void prs_tdb_fetch(TDB_CONTEXT * tdb, prs_struct * pk, prs_struct * pd);
 
 /*The following definitions come from  rpc_parse/parse_rpc.c  */
 
-BOOL make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
-				uint32 call_id, int data_len, int auth_len);
-BOOL smb_io_rpc_hdr(char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth);
-BOOL is_complete_pdu(prs_struct *ps);
-BOOL smb_io_rpc_hdr_nack(char *desc,  RPC_HDR_NACK *rpc, prs_struct *ps, int depth);
-BOOL smb_io_rpc_hdr_fault(char *desc,  RPC_HDR_FAULT *rpc, prs_struct *ps, int depth);
-BOOL make_rpc_hdr_rb(RPC_HDR_RB *rpc, 
-				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-				uint32 num_elements, uint16 context_id, uint8 num_syntaxes,
-				RPC_IFACE *abstract, RPC_IFACE *transfer);
-BOOL smb_io_rpc_hdr_rb(char *desc,  RPC_HDR_RB *rpc, prs_struct *ps, int depth);
-BOOL make_rpc_hdr_ba(RPC_HDR_BA *rpc, 
-				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-				const char *pipe_addr,
-				uint8 num_results, uint16 result, uint16 reason,
-				RPC_IFACE *transfer);
-BOOL smb_io_rpc_hdr_ba(char *desc,  RPC_HDR_BA *rpc, prs_struct *ps, int depth);
-BOOL make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 vuid,
-				uint16 opnum);
-BOOL smb_io_rpc_hdr_req(char *desc,  RPC_HDR_REQ *rpc, prs_struct *ps, int depth);
-BOOL smb_io_rpc_hdr_resp(char *desc,  RPC_HDR_RESP *rpc, prs_struct *ps, int depth);
-BOOL make_rpc_hdr_autha(RPC_HDR_AUTHA *rai,
-				uint16 max_tsize, uint16 max_rsize,
-				uint8 auth_type, uint8 auth_level,
-				uint8 stub_type_len);
-BOOL smb_io_rpc_hdr_autha(char *desc, RPC_HDR_AUTHA *rai, prs_struct *ps, int depth);
-BOOL make_rpc_hdr_auth(RPC_HDR_AUTH *rai,
-				uint8 auth_type, uint8 auth_level,
-				uint8 stub_type_len,
-				uint32 ptr);
-BOOL smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int depth);
-BOOL make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
-				char *signature, uint32 msg_type);
-BOOL smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth);
-BOOL rpc_auth_verifier_chk(RPC_AUTH_VERIFIER *rav,
-				char *signature, uint32 msg_type);
+BOOL make_rpc_hdr(RPC_HDR * hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
+		  uint32 call_id, int frag_len, int auth_len);
+BOOL smb_io_rpc_hdr(char *desc, RPC_HDR * rpc, prs_struct * ps, int depth);
+BOOL is_complete_pdu(prs_struct * ps);
+BOOL smb_io_rpc_hdr_nack(char *desc, RPC_HDR_NACK * rpc, prs_struct * ps,
+			 int depth);
+BOOL smb_io_rpc_hdr_fault(char *desc, RPC_HDR_FAULT * rpc, prs_struct * ps,
+			  int depth);
+BOOL make_rpc_hdr_rb(RPC_HDR_RB * rpc,
+		     uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
+		     uint32 num_elements, uint16 context_id,
+		     uint8 num_syntaxes, RPC_IFACE * abstract,
+		     RPC_IFACE * transfer);
+BOOL smb_io_rpc_hdr_rb(char *desc, RPC_HDR_RB * rpc, prs_struct * ps,
+		       int depth);
+BOOL make_rpc_hdr_ba(RPC_HDR_BA * rpc,
+		     uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
+		     const char *pipe_addr,
+		     uint8 num_results, uint16 result, uint16 reason,
+		     RPC_IFACE * transfer);
+BOOL smb_io_rpc_hdr_ba(char *desc, RPC_HDR_BA * rpc, prs_struct * ps,
+		       int depth);
+BOOL make_rpc_hdr_req(RPC_HDR_REQ * hdr, uint32 alloc_hint, uint16 vuid,
+		      uint16 opnum);
+BOOL smb_io_rpc_hdr_req(char *desc, RPC_HDR_REQ * rpc, prs_struct * ps,
+			int depth);
+BOOL smb_io_rpc_hdr_resp(char *desc, RPC_HDR_RESP * rpc, prs_struct * ps,
+			 int depth);
+BOOL make_rpc_hdr_autha(RPC_HDR_AUTHA * rai,
+			uint16 max_tsize, uint16 max_rsize,
+			uint8 auth_type, uint8 auth_level,
+			uint8 stub_type_len);
+BOOL smb_io_rpc_hdr_autha(char *desc, RPC_HDR_AUTHA * rai, prs_struct * ps,
+			  int depth);
+BOOL make_rpc_hdr_auth(RPC_HDR_AUTH * rai,
+		       uint8 auth_type, uint8 auth_level,
+		       uint8 stub_type_len, uint32 ptr);
+BOOL smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH * rai, prs_struct * ps,
+			 int depth);
+BOOL make_rpc_auth_verifier(RPC_AUTH_VERIFIER * rav,
+			    char *signature, uint32 msg_type);
+BOOL smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER * rav,
+			      prs_struct * ps, int depth);
+BOOL rpc_auth_verifier_chk(RPC_AUTH_VERIFIER * rav,
+			   char *signature, uint32 msg_type);
 
 /*The following definitions come from  rpc_parse/parse_samr.c  */
 
@@ -2269,14 +2291,16 @@ BOOL make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
 		uint32 num_gids, DOM_GID *gid, uint32 status);
 BOOL samr_io_gids(char *desc, uint32 *num_gids, DOM_GID **gid, prs_struct *ps, int depth);
 BOOL samr_io_r_query_usergroups(char *desc, SAMR_R_QUERY_USERGROUPS *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_enum_domains(SAMR_Q_ENUM_DOMAINS *q_e, POLICY_HND *pol,
-				uint32 start_idx, uint32 size);
+BOOL make_samr_q_enum_domains(SAMR_Q_ENUM_DOMAINS *q_e,
+			      const POLICY_HND *pol,
+			      uint32 start_idx, uint32 size);
 BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS *q_e, prs_struct *ps, int depth);
 BOOL make_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS *r_u,
 		uint32 next_idx, uint32 num_sam_entries);
 BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol,
-				uint32 start_idx, uint32 size);
+BOOL make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e,
+				 const POLICY_HND *pol,
+				 uint32 start_idx, uint32 size);
 BOOL samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS *q_e, prs_struct *ps, int depth);
 BOOL make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
 		uint32 next_idx, uint32 num_sam_entries);
@@ -2292,19 +2316,20 @@ BOOL make_samr_alias_info3(ALIAS_INFO3 *al3, const char *acct_desc);
 BOOL samr_io_alias_info3(char *desc,  ALIAS_INFO3 *al3, prs_struct *ps, int depth);
 BOOL samr_alias_info_ctr(char *desc,  ALIAS_INFO_CTR *ctr, prs_struct *ps, int depth);
 BOOL make_samr_q_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_e,
-				POLICY_HND *pol,
-				uint16 switch_level);
+				 const POLICY_HND *pol, uint16 switch_level);
 BOOL samr_io_q_query_aliasinfo(char *desc,  SAMR_Q_QUERY_ALIASINFO *q_e, prs_struct *ps, int depth);
-BOOL make_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u, ALIAS_INFO_CTR *ctr,
-		uint32 status);
+BOOL make_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u,
+				 ALIAS_INFO_CTR *ctr, uint32 status);
 BOOL samr_io_r_query_aliasinfo(char *desc,  SAMR_R_QUERY_ALIASINFO *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_set_aliasinfo(SAMR_Q_SET_ALIASINFO *q_u, POLICY_HND *hnd,
-				ALIAS_INFO_CTR *ctr);
+BOOL make_samr_q_set_aliasinfo(SAMR_Q_SET_ALIASINFO *q_u,
+			       const POLICY_HND *hnd,
+			       ALIAS_INFO_CTR *ctr);
 BOOL samr_io_q_set_aliasinfo(char *desc,  SAMR_Q_SET_ALIASINFO *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_set_aliasinfo(char *desc,  SAMR_R_SET_ALIASINFO *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
-				const POLICY_HND *hnd,
-				uint32 *ptr_sid, DOM_SID2 *sid);
+				   const POLICY_HND *hnd,
+				   uint32  num_sids,
+				   uint32 *ptr_sid, DOM_SID2 *sid);
 BOOL samr_io_q_query_useraliases(char *desc,  SAMR_Q_QUERY_USERALIASES *q_u, prs_struct *ps, int depth);
 void samr_free_q_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u);
 BOOL make_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u,

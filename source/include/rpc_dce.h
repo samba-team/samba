@@ -45,10 +45,23 @@ enum RPC_PKT_TYPE
 #define RPC_FLG_NOCALL 0x20
 
 
+/*
+ * Actual structure of a DCE UUID
+ */
+
+typedef struct rpc_uuid
+{
+  uint32 time_low;
+  uint16 time_mid;
+  uint16 time_hi_and_version;
+  uint8 remaining[8];
+} RPC_UUID;
+
+
 /* RPC_IFACE */
 typedef struct rpc_iface_info
 {
-  uint8 data[16];    /* 16 bytes of rpc interface identification */
+  RPC_UUID uuid;    /* 16 bytes of rpc interface identification */
   uint32 version;    /* the interface version number */
 
 } RPC_IFACE;

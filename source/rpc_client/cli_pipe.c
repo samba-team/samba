@@ -910,8 +910,8 @@ static BOOL check_bind_response(RPC_HDR_BA * hdr_ba, const char *pipe_name,
 
 	/* check the transfer syntax */
 	if (!((hdr_ba->transfer.version == transfer->version) &&
-	      (memcmp(hdr_ba->transfer.data, transfer->data,
-		      sizeof(transfer->version)) == 0)))
+	      (memcmp(&hdr_ba->transfer.uuid, &transfer->uuid,
+		      sizeof(transfer->uuid)) == 0)))
 	{
 		DEBUG(0, ("bind_rpc_pipe: transfer syntax differs\n"));
 		return False;

@@ -28,21 +28,24 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  debug output for parsing info.
  ********************************************************************/
-void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name)
+void prs_debug(prs_struct * ps, int depth, const char *desc,
+	       const char *fn_name)
 {
 	CHECK_STRUCT(ps);
-	DEBUG(5+depth, ("%s%06x %s %s\n", tab_depth(depth), ps->offset, fn_name, desc));
+	DEBUG(5 + depth,
+	      ("%s%06x %s %s\n", tab_depth(depth), ps->offset, fn_name,
+	       desc));
 }
 
 /*******************************************************************
  debug a parse structure
  ********************************************************************/
-void prs_debug_out(const prs_struct *ps, char *msg, int level)
+void prs_debug_out(const prs_struct * ps, char *msg, int level)
 {
 	CHECK_STRUCT(ps);
-	DEBUG(level,("%s ps: io %s align %d offset %d err %d data %p\n",
-		msg, BOOLSTR(ps->io), ps->align, ps->offset, ps->error,
-		ps->data));
+	DEBUG(level, ("%s ps: io %s align %d offset %d err %d data %p\n",
+		      msg, BOOLSTR(ps->io), ps->align, ps->offset, ps->error,
+		      ps->data));
 
 	if (ps->data != NULL)
 	{
@@ -53,7 +56,7 @@ void prs_debug_out(const prs_struct *ps, char *msg, int level)
 /*******************************************************************
  initialise a parse structure
  ********************************************************************/
-void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io)
+void prs_init(prs_struct * ps, uint32 size, uint8 align, BOOL io)
 {
 	ps->struct_start = 0xfefefefe;
 	ps->io = io;
@@ -66,7 +69,7 @@ void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io)
 	ps->data_size = 0;
 
 	ps->start = 0;
-	ps->end   = 0;
+	ps->end = 0;
 
 	ps->next = NULL;
 
@@ -75,7 +78,7 @@ void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io)
 	if (size != 0)
 	{
 		prs_realloc_data(ps, size);
-		ps->end   = 0xffffffff;
+		ps->end = 0xffffffff;
 	}
 
 	CHECK_STRUCT(ps);
@@ -84,19 +87,22 @@ void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io)
 /*******************************************************************
  set the packed data representation type in a parse structure
  ********************************************************************/
-void prs_set_packtype(prs_struct *ps, const uint8 *pack_type)
+void prs_set_packtype(prs_struct * ps, const uint8 * pack_type)
 {
 	CHECK_STRUCT(ps);
 	ps->bigendian = pack_type[0] == 0x0;
+	DEBUG(10,
+	      ("prs_set_packtype: bigendian: %s\n", BOOLSTR(ps->bigendian)));
 }
 
 /*******************************************************************
  create a parse structure
  ********************************************************************/
-void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io)
+void prs_create(prs_struct * ps, char *data, uint32 size, uint8 align,
+		BOOL io)
 {
-	DEBUG(200,("prs_create: data:%p size:%d align:%d io:%s\n",
-	            data, size, align, BOOLSTR(io)));
+	DEBUG(200, ("prs_create: data:%p size:%d align:%d io:%s\n",
+		    data, size, align, BOOLSTR(io)));
 
 	prs_init(ps, 0, align, io);
 	ps->data = data;
@@ -109,7 +115,7 @@ void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io)
 /*******************************************************************
  copy a parse structure
  ********************************************************************/
-BOOL prs_copy(prs_struct *ps, const prs_struct *from)
+BOOL prs_copy(prs_struct * ps, const prs_struct * from)
 {
 	int len = prs_buf_len(from);
 	CHECK_STRUCT(ps);
@@ -135,24 +141,24 @@ BOOL prs_copy(prs_struct *ps, const prs_struct *from)
 /*******************************************************************
  allocate a memory buffer.  assume it's empty
  ********************************************************************/
-BOOL prs_alloc_data(prs_struct *buf, int size)
+BOOL prs_alloc_data(prs_struct * buf, int size)
 {
 	CHECK_STRUCT(buf);
 
 	buf->data_size = size;
-	buf->data = (char*)malloc(buf->data_size);
+	buf->data = (char *)malloc(buf->data_size);
 
 	if (buf->data == NULL && size != 0)
 	{
-		DEBUG(3,("prs_alloc: could not malloc size %d\n",
-					  buf->data_size));
+		DEBUG(3, ("prs_alloc: could not malloc size %d\n",
+			  buf->data_size));
 		buf->data_size = 0;
 
 		return False;
 	}
 
 	bzero(buf->data, buf->data_size);
-	buf->end   = buf->start + size;
+	buf->end = buf->start + size;
 
 	CHECK_STRUCT(buf);
 	return True;
@@ -161,27 +167,29 @@ BOOL prs_alloc_data(prs_struct *buf, int size)
 /*******************************************************************
  search for a memory buffer that falls within the specified offset
  ********************************************************************/
-static const prs_struct *prs_find(const prs_struct *buf, uint32 offset)
+static const prs_struct *prs_find(const prs_struct * buf, uint32 offset)
 {
 	const prs_struct *f;
-	if (buf == NULL) return False;
+	if (buf == NULL)
+		return False;
 
 	f = buf;
 
 	CHECK_STRUCT(f);
-	DEBUG(200,("prs_find: data[%d..%d] offset: %d\n",
-	      f->start, f->end, offset));
+	DEBUG(200, ("prs_find: data[%d..%d] offset: %d\n",
+		    f->start, f->end, offset));
 
 	while (f != NULL && offset >= f->end)
 	{
-		DEBUG(200,("prs_find: next[%d..%d]\n", f->start, f->end));
+		DEBUG(200, ("prs_find: next[%d..%d]\n", f->start, f->end));
 
 		f = f->next;
 	}
 
 	if (f != NULL)
 	{
-		DEBUG(200,("prs_find: found data[%d..%d]\n", f->start, f->end));
+		DEBUG(200,
+		      ("prs_find: found data[%d..%d]\n", f->start, f->end));
 	}
 
 	return f;
@@ -190,20 +198,21 @@ static const prs_struct *prs_find(const prs_struct *buf, uint32 offset)
 /*******************************************************************
  allocates a memory buffer structure
  ********************************************************************/
-BOOL prs_buf_copy(char *copy_into, const prs_struct *buf,
-				uint32 offset, uint32 len)
+BOOL prs_buf_copy(char *copy_into, const prs_struct * buf,
+		  uint32 offset, uint32 len)
 {
 	uint32 end = offset + len;
 	char *q = NULL;
 	uint32 data_len = prs_buf_len(buf);
 	uint32 start_offset = offset;
 	const prs_struct *bcp = buf;
-	
-	if (buf == NULL || copy_into == NULL) return False;
+
+	if (buf == NULL || copy_into == NULL)
+		return False;
 
 	CHECK_STRUCT(buf);
-	DEBUG(200,("prs_struct_copy: data[%d..%d] offset %d len %d\n",
-	            buf->start, data_len, offset, len));
+	DEBUG(200, ("prs_struct_copy: data[%d..%d] offset %d len %d\n",
+		    buf->start, data_len, offset, len));
 
 	prs_debug_out(bcp, "prs_struct_copy", 200);
 
@@ -214,23 +223,24 @@ BOOL prs_buf_copy(char *copy_into, const prs_struct *buf,
 		bcp = prs_find(bcp, offset);
 		copy_len = bcp->end - offset;
 
-		DEBUG(200,("\tdata[%d..%d] - offset %d len %d\n",
-		        bcp->start, bcp->end,
-		        offset, copy_len));
+		DEBUG(200, ("\tdata[%d..%d] - offset %d len %d\n",
+			    bcp->start, bcp->end, offset, copy_len));
 
 		memcpy(copy_into, q, copy_len);
-	
-		offset    += copy_len;
+
+		offset += copy_len;
 		copy_into += copy_len;
 	}
 
 	if (bcp != NULL)
 	{
-		DEBUG(200,("prs_struct_copy: copied %d bytes\n", offset - start_offset));
+		DEBUG(200,
+		      ("prs_struct_copy: copied %d bytes\n",
+		       offset - start_offset));
 	}
 	else
 	{
-		DEBUG(200,("prs_struct_copy: failed\n"));
+		DEBUG(200, ("prs_struct_copy: failed\n"));
 	}
 
 	return buf != NULL;
@@ -239,29 +249,33 @@ BOOL prs_buf_copy(char *copy_into, const prs_struct *buf,
 /*******************************************************************
  frees up a memory buffer.
  ********************************************************************/
-void prs_struct_free(prs_struct **buf)
+void prs_struct_free(prs_struct ** buf)
 {
-	if (buf == NULL) return;
-	if ((*buf) == NULL) return;
+	if (buf == NULL)
+		return;
+	if ((*buf) == NULL)
+		return;
 
 	CHECK_STRUCT(*buf);
-	prs_free_data(*buf);            /* delete memory data */
-	free(*buf);                     /* delete item */
+	prs_free_data(*buf);	/* delete memory data */
+	free(*buf);		/* delete item */
 	(*buf) = NULL;
 }
 
 /*******************************************************************
  frees a memory buffer chain.  assumes that all items are malloced.
  ********************************************************************/
-static void prs_free_chain(prs_struct **buf)
+static void prs_free_chain(prs_struct ** buf)
 {
-	if (buf == NULL) return;
-	if ((*buf) == NULL) return;
+	if (buf == NULL)
+		return;
+	if ((*buf) == NULL)
+		return;
 
 	CHECK_STRUCT(*buf);
 	if ((*buf)->next != NULL)
 	{
-		prs_free_chain(&((*buf)->next)); /* delete all other items in chain */
+		prs_free_chain(&((*buf)->next));	/* delete all other items in chain */
 	}
 	prs_struct_free(buf);
 }
@@ -269,14 +283,15 @@ static void prs_free_chain(prs_struct **buf)
 /*******************************************************************
  frees a memory buffer.
  ********************************************************************/
-void prs_free_data(prs_struct *buf)
+void prs_free_data(prs_struct * buf)
 {
-	if (buf == NULL) return;
+	if (buf == NULL)
+		return;
 
 	if (buf->data != NULL)
 	{
 		CHECK_STRUCT(buf);
-		free(buf->data);     /* delete data in this structure */
+		free(buf->data);	/* delete data in this structure */
 		buf->data = NULL;
 	}
 	buf->data_size = 0;
@@ -291,8 +306,10 @@ static void *prs_realloc(void *p, size_t size)
 		return NULL;
 	}
 	ret = (void *)malloc(size);
-	if (!ret) return NULL;
-	if (p) {
+	if (!ret)
+		return NULL;
+	if (p)
+	{
 		memcpy(ret, p, size);
 		memset(p, 0, 1);
 	}
@@ -303,7 +320,7 @@ static void *prs_realloc(void *p, size_t size)
 /*******************************************************************
  reallocate a memory buffer
 ********************************************************************/
-BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
+BOOL prs_realloc_data(prs_struct * buf, size_t new_size)
 {
 	char *new_data;
 
@@ -317,32 +334,35 @@ BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 		return True;
 	}
 
-	new_data = (char*)Realloc(buf->data, new_size);
+	new_data = (char *)Realloc(buf->data, new_size);
 
 	if (new_data != NULL)
 	{
 		if (new_size > buf->data_size)
 		{
-			memset(&new_data[buf->data_size], 0, new_size - buf->data_size);
+			memset(&new_data[buf->data_size], 0,
+			       new_size - buf->data_size);
 		}
 		buf->data = new_data;
 		buf->data_size = new_size;
 	}
 	else if (buf->data_size >= new_size)
 	{
-		DEBUG(3,("prs_realloc_data: warning - could not realloc to %d\n",
-				  new_size));
+		DEBUG(3,
+		      ("prs_realloc_data: warning - could not realloc to %d\n",
+		       new_size));
 	}
-	else 
+	else
 	{
-		DEBUG(3,("prs_realloc_data: error - could not realloc to %d\n",
-				  new_size));
+		DEBUG(3,
+		      ("prs_realloc_data: error - could not realloc to %d\n",
+		       new_size));
 
 		prs_free_data(buf);
 		return False;
 	}
 
-	buf->end   = buf->start + new_size;
+	buf->end = buf->start + new_size;
 
 	prs_debug_out(buf, "prs_realloc_data - after", 200);
 	return True;
@@ -351,7 +371,7 @@ BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 /*******************************************************************
  reallocate a memory buffer, retrospectively :-)
  ********************************************************************/
-BOOL prs_grow_data(prs_struct *buf, BOOL io, int new_size, BOOL force_grow)
+BOOL prs_grow_data(prs_struct * buf, BOOL io, int new_size, BOOL force_grow)
 {
 	if (buf == NULL)
 	{
@@ -378,7 +398,7 @@ BOOL prs_grow_data(prs_struct *buf, BOOL io, int new_size, BOOL force_grow)
 /*******************************************************************
  add up the lengths of all sections.
  ********************************************************************/
-uint32 prs_buf_len(const prs_struct *buf)
+uint32 prs_buf_len(const prs_struct * buf)
 {
 	int len = 0;
 	CHECK_STRUCT(buf);
@@ -393,7 +413,7 @@ uint32 prs_buf_len(const prs_struct *buf)
 /*******************************************************************
  return the memory location specified by   may return NULL.
  ********************************************************************/
-char *prs_data(const prs_struct *buf, uint32 offset)
+char *prs_data(const prs_struct * buf, uint32 offset)
 {
 	CHECK_STRUCT(buf);
 	buf = prs_find(buf, offset);
@@ -408,7 +428,7 @@ char *prs_data(const prs_struct *buf, uint32 offset)
 /*******************************************************************
  link one parsing structure to another
  ********************************************************************/
-void prs_link(prs_struct *prev, prs_struct *ps, prs_struct *next)
+void prs_link(prs_struct * prev, prs_struct * ps, prs_struct * next)
 {
 	CHECK_STRUCT(ps);
 	if (next != NULL)
@@ -420,23 +440,24 @@ void prs_link(prs_struct *prev, prs_struct *ps, prs_struct *next)
 		CHECK_STRUCT(prev);
 	}
 	ps->start = prev != NULL ? prev->end : 0;
-	ps->end   = ps->start + ps->offset;
+	ps->end = ps->start + ps->offset;
 
 	ps->next = next;
 
-	DEBUG(150,("prs_link: start %d end %d\n", ps->start, ps->end));
+	DEBUG(150, ("prs_link: start %d end %d\n", ps->start, ps->end));
 }
 
 /*******************************************************************
  align a pointer to a multiple of align_offset bytes.  looks like it
  will work for offsets of 0, 2 and 4...
  ********************************************************************/
-void prs_align(prs_struct *ps)
+void prs_align(prs_struct * ps)
 {
 	int mod;
 	CHECK_STRUCT(ps);
-	if (ps->error) return;
-	mod = ps->offset & (ps->align-1);
+	if (ps->error)
+		return;
+	mod = ps->offset & (ps->align - 1);
 	if (ps->align != 0 && mod != 0)
 	{
 		ps->offset += ps->align - mod;
@@ -449,24 +470,25 @@ void prs_align(prs_struct *ps)
 
  depends on the data stream mode (io)
  ********************************************************************/
-BOOL prs_grow(prs_struct *ps, uint32 new_size)
+BOOL prs_grow(prs_struct * ps, uint32 new_size)
 {
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 	return prs_grow_data(ps, ps->io, new_size, False);
 }
 
 /*******************************************************************
  lengthens a buffer by len bytes and copies data into it.
  ********************************************************************/
-BOOL prs_append_data(prs_struct *ps, const char *data, int len)
+BOOL prs_append_data(prs_struct * ps, const char *data, int len)
 {
 	int prev_size = ps->data_size;
-	int new_size  = prev_size + len;
+	int new_size = prev_size + len;
 	char *to;
 
-	DEBUG(200,("prs_append_data: prev_size: %d new_size: %d\n",
-	            prev_size, new_size));
+	DEBUG(200, ("prs_append_data: prev_size: %d new_size: %d\n",
+		    prev_size, new_size));
 
 	CHECK_STRUCT(ps);
 	prs_realloc_data(ps, new_size);
@@ -481,7 +503,7 @@ BOOL prs_append_data(prs_struct *ps, const char *data, int len)
 	return True;
 }
 
-BOOL prs_add_data(prs_struct *ps, const char *data, int len)
+BOOL prs_add_data(prs_struct * ps, const char *data, int len)
 {
 	int prev_size;
 	int new_size;
@@ -491,10 +513,10 @@ BOOL prs_add_data(prs_struct *ps, const char *data, int len)
 
 	if (ps->data == NULL)
 	{
-		DEBUG(10,("prs_add_data: new_size: %d\n", len));
+		DEBUG(10, ("prs_add_data: new_size: %d\n", len));
 		prs_init(ps, len, 4, True);
 		prev_size = 0;
-		new_size  = len;
+		new_size = len;
 		if (ps->data == NULL)
 		{
 			return False;
@@ -503,28 +525,28 @@ BOOL prs_add_data(prs_struct *ps, const char *data, int len)
 	else
 	{
 		prev_size = ps->data_size;
-		new_size  = prev_size + len;
-		DEBUG(10,("prs_add_data: prev_size: %d new_size: %d\n",
-				prev_size, new_size));
+		new_size = prev_size + len;
+		DEBUG(10, ("prs_add_data: prev_size: %d new_size: %d\n",
+			   prev_size, new_size));
 		if (!prs_realloc_data(ps, new_size))
 		{
 			return False;
 		}
 	}
 
-	DEBUG(10,("ps->start: %d\n", ps->start));
+	DEBUG(10, ("ps->start: %d\n", ps->start));
 	ps->start = 0x0;
 
 	to = prs_data(ps, prev_size);
 	if (to == NULL)
 	{
-		DEBUG(10,("prs_add_data: data could not be found\n"));
+		DEBUG(10, ("prs_add_data: data could not be found\n"));
 		return False;
 	}
 	if (ps->data_size != new_size)
 	{
-		DEBUG(10,("prs_add_data: ERROR: data used %d new_size %d\n",
-				ps->data_size, new_size));
+		DEBUG(10, ("prs_add_data: ERROR: data used %d new_size %d\n",
+			   ps->data_size, new_size));
 		return False;
 	}
 	memcpy(to, data, len);
@@ -534,11 +556,12 @@ BOOL prs_add_data(prs_struct *ps, const char *data, int len)
 /*******************************************************************
  stream a uint8
  ********************************************************************/
-BOOL _prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8)
+BOOL _prs_uint8(char *name, prs_struct * ps, int depth, uint8 * data8)
 {
 	char *q;
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 	prs_grow(ps, ps->offset + 1);
 	q = prs_data(ps, ps->offset);
 	if (q == NULL)
@@ -549,7 +572,7 @@ BOOL _prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8)
 	}
 
 	DBG_RW_CVAL(name, depth, ps->offset, ps->io, q, *data8)
-	ps->offset += 1;
+		ps->offset += 1;
 
 
 	return True;
@@ -558,11 +581,12 @@ BOOL _prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8)
 /*******************************************************************
  stream a uint16
  ********************************************************************/
-BOOL _prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
+BOOL _prs_uint16(char *name, prs_struct * ps, int depth, uint16 * data16)
 {
 	char *q;
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 	prs_grow(ps, ps->offset + 2);
 	q = prs_data(ps, ps->offset);
 	if (q == NULL)
@@ -572,7 +596,7 @@ BOOL _prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
 		return False;
 	}
 
-	DBG_RW_SVAL(name, depth, ps->offset, ps->io, ps->bigendian, q, *data16)
+	DBG_RW_SVAL(name, depth, ps->offset, ps->io, ps->bigendian, q, *data16);
 	ps->offset += 2;
 
 	return True;
@@ -581,11 +605,12 @@ BOOL _prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
 /*******************************************************************
  hash a stream.
  ********************************************************************/
-BOOL _prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
+BOOL _prs_hash1(prs_struct * ps, uint32 offset, uint8 sess_key[16])
 {
 	char *q;
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 	q = prs_data(ps, ps->offset);
 	if (q == NULL)
 	{
@@ -595,11 +620,11 @@ BOOL _prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
 	}
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("prs_hash1\n"));
+	DEBUG(100, ("prs_hash1\n"));
 	dump_data(100, sess_key, 16);
 	dump_data(100, q, 68);
 #endif
-	SamOEMhash((uchar*)q, sess_key, 2);
+	SamOEMhash((uchar *) q, sess_key, 2);
 #ifdef DEBUG_PASSWORD
 	dump_data(100, q, 68);
 #endif
@@ -610,23 +635,25 @@ BOOL _prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
 /*******************************************************************
  stream a uint32
  ********************************************************************/
-BOOL _prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
+BOOL _prs_uint32(char *name, prs_struct * ps, int depth, uint32 * data32)
 {
 	char *q;
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 	prs_grow(ps, ps->offset + 4);
 	q = prs_data(ps, ps->offset);
 	if (q == NULL)
 	{
 		fstring str;
-		slprintf(str, sizeof(str)-1, "_prs_uint32 error (%s)", name);
+		slprintf(str, sizeof(str) - 1, "_prs_uint32 error (%s)",
+			 name);
 		ps->error = True;
 		prs_debug_out(ps, str, 5);
 		return False;
 	}
 
-	DBG_RW_IVAL(name, depth, ps->offset, ps->io, ps->bigendian, q, *data32)
+	DBG_RW_IVAL(name, depth, ps->offset, ps->io, ps->bigendian, q, *data32);
 	ps->offset += 4;
 
 	return True;
@@ -636,7 +663,8 @@ BOOL _prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 /******************************************************************
  stream an array of uint8s.  length is number of uint8s
  ********************************************************************/
-BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len)
+BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct * ps, int depth,
+		 uint8 * data8s, int len)
 {
 	char *q;
 	int end_offset;
@@ -648,21 +676,22 @@ BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *da
 		return True;
 	}
 
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 	end_offset = ps->offset + len * sizeof(uint8);
 	prs_grow(ps, end_offset);
 	q = prs_data(ps, ps->offset);
-	e = prs_data(ps, end_offset-1);
+	e = prs_data(ps, end_offset - 1);
 
-	if (q == NULL || e == NULL) 
+	if (q == NULL || e == NULL)
 	{
 		ps->error = True;
 		prs_debug_out(ps, "_prs_uint8s error", 5);
 		return False;
 	}
 
-	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, data8s, len)
-	ps->offset = end_offset;
+	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, data8s,
+		     len) ps->offset = end_offset;
 
 	return True;
 }
@@ -670,13 +699,15 @@ BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *da
 /******************************************************************
  stream an array of uint16s.  length is number of uint16s
  ********************************************************************/
-BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
+BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  uint16 * data16s, int len)
 {
 	char *q;
 	int end_offset;
 	char *e;
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 
 	if (len == 0)
 	{
@@ -686,7 +717,7 @@ BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *
 	end_offset = ps->offset + len * sizeof(uint16);
 	prs_grow(ps, end_offset);
 	q = prs_data(ps, ps->offset);
-	e = prs_data(ps, end_offset-1);
+	e = prs_data(ps, end_offset - 1);
 
 	if (q == NULL || e == NULL)
 	{
@@ -695,7 +726,7 @@ BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *
 		return False;
 	}
 
-	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian, q, data16s, len)
+	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian, q, data16s, len);
 	ps->offset = end_offset;
 
 	return True;
@@ -704,13 +735,15 @@ BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *
 /******************************************************************
  stream an array of uint32s.  length is number of uint32s
  ********************************************************************/
-BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len)
+BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  uint32 * data32s, int len)
 {
 	char *q;
 	int end_offset;
 	char *e;
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 
 	if (len == 0)
 	{
@@ -720,7 +753,7 @@ BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *
 	end_offset = ps->offset + len * sizeof(uint32);
 	prs_grow(ps, end_offset);
 	q = prs_data(ps, ps->offset);
-	e = prs_data(ps, end_offset-1);
+	e = prs_data(ps, end_offset - 1);
 
 	if (q == NULL || e == NULL)
 	{
@@ -729,7 +762,7 @@ BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *
 		return False;
 	}
 
-	DBG_RW_PIVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian, q, data32s, len)
+	DBG_RW_PIVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian, q, data32s, len);
 	ps->offset = end_offset;
 
 	return True;
@@ -739,13 +772,15 @@ BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *
  stream a "not" unicode string, length/buffer specified separately,
  in byte chars
  ********************************************************************/
-BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str)
+BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  BUFFER2 * str)
 {
 	char *q;
 	int end_offset;
 	char *e;
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 
 	if (str->buf_len == 0)
 	{
@@ -755,7 +790,7 @@ BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 
 	end_offset = ps->offset + str->buf_len * sizeof(uint8);
 	prs_grow(ps, end_offset);
 	q = prs_data(ps, ps->offset);
-	e = prs_data(ps, end_offset-1);
+	e = prs_data(ps, end_offset - 1);
 
 	if (q == NULL || e == NULL)
 	{
@@ -764,8 +799,8 @@ BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 
 		return False;
 	}
 
-	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->buf_len)
-	ps->offset = end_offset;
+	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q,
+		     str->buffer, str->buf_len) ps->offset = end_offset;
 
 	return True;
 }
@@ -774,13 +809,15 @@ BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 
  stream a string, length/buffer specified separately,
  in uint8 chars.
  ********************************************************************/
-BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str)
+BOOL _prs_string2(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  STRING2 * str)
 {
 	char *q;
 	int end_offset;
 	char *e;
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 
 	if (str->str_str_len == 0)
 	{
@@ -790,7 +827,7 @@ BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 
 	end_offset = ps->offset + str->str_str_len * sizeof(uint8);
 	prs_grow(ps, end_offset);
 	q = prs_data(ps, ps->offset);
-	e = prs_data(ps, end_offset-1);
+	e = prs_data(ps, end_offset - 1);
 
 	if (q == NULL || e == NULL)
 	{
@@ -799,8 +836,8 @@ BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 
 		return False;
 	}
 
-	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->str_str_len)
-	ps->offset = end_offset;
+	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q,
+		     str->buffer, str->str_str_len) ps->offset = end_offset;
 
 	return True;
 }
@@ -809,13 +846,15 @@ BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 
  stream a unicode string, length/buffer specified separately,
  in uint16 chars.
  ********************************************************************/
-BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str)
+BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct * ps, int depth,
+		  UNISTR2 * str)
 {
 	char *q;
 	int end_offset;
 	char *e;
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 
 	if (str->uni_str_len == 0)
 	{
@@ -825,7 +864,7 @@ BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 
 	end_offset = ps->offset + str->uni_str_len * sizeof(uint16);
 	prs_grow(ps, end_offset);
 	q = prs_data(ps, ps->offset);
-	e = prs_data(ps, end_offset-1);
+	e = prs_data(ps, end_offset - 1);
 
 	if (q == NULL || e == NULL)
 	{
@@ -834,7 +873,7 @@ BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 
 		return False;
 	}
 
-	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian, q, str->buffer, str->uni_str_len)
+	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian, q, str->buffer, str->uni_str_len);
 	ps->offset = end_offset;
 
 	return True;
@@ -844,13 +883,15 @@ BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 
  stream a unicode string, length/buffer specified separately,
  in uint16 chars.
  ********************************************************************/
-BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth)
+BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 * str, prs_struct * ps,
+		  int depth)
 {
 	char *q;
 	int end_offset;
 	char *e;
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 
 	if (str->uni_str_len == 0)
 	{
@@ -860,7 +901,7 @@ BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int d
 	end_offset = ps->offset + str->uni_str_len * sizeof(uint16);
 	prs_grow(ps, end_offset);
 	q = prs_data(ps, ps->offset);
-	e = prs_data(ps, end_offset-1);
+	e = prs_data(ps, end_offset - 1);
 
 	if (q == NULL || e == NULL)
 	{
@@ -869,7 +910,7 @@ BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int d
 		return False;
 	}
 
-	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian, q, str->str.buffer, str->uni_str_len)
+	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian, q, str->str.buffer, str->uni_str_len);
 	ps->offset = end_offset;
 
 	return True;
@@ -878,35 +919,36 @@ BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int d
 /*******************************************************************
  stream a unicode  null-terminated string
  ********************************************************************/
-BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
+BOOL _prs_unistr(char *name, prs_struct * ps, int depth, UNISTR * str)
 {
 	int i = -1;
 	uint8 *start;
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
-	start = (uint8*)prs_data(ps, ps->offset);
+	if (ps->error)
+		return False;
+	start = (uint8 *) prs_data(ps, ps->offset);
 
 	do
 	{
 		char *q;
 		i++;
-		prs_grow(ps, ps->offset + (i+1)*2);
-		q = prs_data(ps, ps->offset + i*2);
-		if (q == NULL) 
+		prs_grow(ps, ps->offset + (i + 1) * 2);
+		q = prs_data(ps, ps->offset + i * 2);
+		if (q == NULL)
 		{
 			ps->error = True;
 			prs_debug_out(ps, "_prs_unistr error", 5);
 			return False;
 		}
-		RW_SVAL(ps->io, ps->bigendian, q, str->buffer[i],0);
+		RW_SVAL(ps->io, ps->bigendian, q, str->buffer[i], 0);
 	}
-	while ((((size_t)i) < sizeof(str->buffer) / sizeof(str->buffer[0])) &&
-		     (str->buffer[i] != 0));
+	while ((((size_t) i) < sizeof(str->buffer) / sizeof(str->buffer[0]))
+	       && (str->buffer[i] != 0));
 
 
-	ps->offset += (i+1)*2;
+	ps->offset += (i + 1) * 2;
 
-	dump_data(5+depth, (char *)start, i * 2);
+	dump_data(5 + depth, (char *)start, i * 2);
 
 	return True;
 }
@@ -919,31 +961,35 @@ BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
  (up to max size of pstring - 1024 chars).
 
  ********************************************************************/
-BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size)
+BOOL _prs_string(char *name, prs_struct * ps, int depth, char *str,
+		 uint16 len, uint16 max_buf_size)
 {
-	int i = -1; /* start off at zero after 1st i++ */
+	int i = -1;		/* start off at zero after 1st i++ */
 	BOOL len_limited;
 
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 
 	len_limited = len == 0 || !ps->io;
 
-	DEBUG(200,("_prs_string: string %s len %d max %d\n",
-			str, len, max_buf_size));
+	DEBUG(200, ("_prs_string: string %s len %d max %d\n",
+		    str, len, max_buf_size));
 
-	DEBUG(10,("%s%04x %s: ", tab_depth(depth), ps->offset, name != NULL ? name : ""));
+	DEBUG(10,
+	      ("%s%04x %s: ", tab_depth(depth), ps->offset,
+	       name != NULL ? name : ""));
 	do
 	{
 		char *q;
 		i++;
 
-		prs_grow(ps, ps->offset + i+1);
+		prs_grow(ps, ps->offset + i + 1);
 		q = prs_data(ps, ps->offset + i);
 		if (q == NULL)
 		{
 			ps->error = True;
-			DEBUG(10,("%s\n", str));
+			DEBUG(10, ("%s\n", str));
 			prs_debug_out(ps, "_prs_string error", 5);
 			return False;
 		}
@@ -955,14 +1001,15 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
 		else
 		{
 			uint8 dummy = 0;
-			RW_CVAL(ps->io, q, dummy,0);
+			RW_CVAL(ps->io, q, dummy, 0);
 		}
 
-	} while (i < max_buf_size && (len_limited ? str[i] != 0 : i < len) );
+	}
+	while (i < max_buf_size && (len_limited ? str[i] != 0 : i < len));
 
-	ps->offset += i+1;
+	ps->offset += i + 1;
 
-	DEBUG(10,("%s\n", str));
+	DEBUG(10, ("%s\n", str));
 
 	return True;
 }
@@ -971,10 +1018,12 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
  prs_uint16 wrapper.  call this and it sets up a pointer to where the
  uint16 should be stored, or gets the size if reading
  ********************************************************************/
-BOOL _prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset)
+BOOL _prs_uint16_pre(char *name, prs_struct * ps, int depth, uint16 * data16,
+		     uint32 * offset)
 {
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 	(*offset) = ps->offset;
 	if (ps->io)
 	{
@@ -992,11 +1041,12 @@ BOOL _prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint
  prs_uint16 wrapper.  call this and it retrospectively stores the size.
  does nothing on reading, as that is already handled by ...._pre()
  ********************************************************************/
-BOOL _prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
-				uint32 ptr_uint16, uint32 start_offset)
+BOOL _prs_uint16_post(char *name, prs_struct * ps, int depth, uint16 * data16,
+		      uint32 ptr_uint16, uint32 start_offset)
 {
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 	if (!ps->io)
 	{
 		/* storing: go back and do a retrospective job.  i hate this */
@@ -1018,10 +1068,12 @@ BOOL _prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
  prs_uint32 wrapper.  call this and it sets up a pointer to where the
  uint32 should be stored, or gets the size if reading
  ********************************************************************/
-BOOL _prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset)
+BOOL _prs_uint32_pre(char *name, prs_struct * ps, int depth, uint32 * data32,
+		     uint32 * offset)
 {
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 	(*offset) = ps->offset;
 	if (ps->io)
 	{
@@ -1039,11 +1091,12 @@ BOOL _prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint
  prs_uint32 wrapper.  call this and it retrospectively stores the size.
  does nothing on reading, as that is already handled by ...._pre()
  ********************************************************************/
-BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
-				uint32 ptr_uint32, uint32 data_size)
+BOOL _prs_uint32_post(char *name, prs_struct * ps, int depth, uint32 * data32,
+		      uint32 ptr_uint32, uint32 data_size)
 {
 	CHECK_STRUCT(ps);
-	if (ps->error) return False;
+	if (ps->error)
+		return False;
 	if (!ps->io)
 	{
 		/* storing: go back and do a retrospective job.  i hate this */
@@ -1062,11 +1115,11 @@ BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 /*******************************************************************
  prs_tdb_store.  stores prs_struct data by prs_struct key 
  ********************************************************************/
-int prs_tdb_delete(TDB_CONTEXT *tdb, prs_struct *pk)
+int prs_tdb_delete(TDB_CONTEXT * tdb, prs_struct * pk)
 {
 	TDB_DATA key;
 
-	key.dptr = (char*)prs_data(pk, 0);
+	key.dptr = (char *)prs_data(pk, 0);
 	key.dsize = prs_buf_len(pk);
 
 	return tdb_delete(tdb, key);
@@ -1075,12 +1128,13 @@ int prs_tdb_delete(TDB_CONTEXT *tdb, prs_struct *pk)
 /*******************************************************************
  prs_tdb_store.  stores prs_struct data by prs_struct key 
  ********************************************************************/
-int prs_tdb_store(TDB_CONTEXT *tdb, int flgs, prs_struct *pk, prs_struct *pd)
+int prs_tdb_store(TDB_CONTEXT * tdb, int flgs, prs_struct * pk,
+		  prs_struct * pd)
 {
 	TDB_DATA key;
 	TDB_DATA data;
 
-	key.dptr = (char*)prs_data(pk, 0);
+	key.dptr = (char *)prs_data(pk, 0);
 	key.dsize = prs_buf_len(pk);
 
 	data.dptr = prs_data(pd, 0);
@@ -1092,12 +1146,12 @@ int prs_tdb_store(TDB_CONTEXT *tdb, int flgs, prs_struct *pk, prs_struct *pd)
 /*******************************************************************
  prs_tdb_fetch.  fetches prs_struct data by prs_struct key 
  ********************************************************************/
-void prs_tdb_fetch(TDB_CONTEXT *tdb, prs_struct *pk, prs_struct *pd)
+void prs_tdb_fetch(TDB_CONTEXT * tdb, prs_struct * pk, prs_struct * pd)
 {
 	TDB_DATA key;
 	TDB_DATA data;
 
-	key.dptr = (char*)prs_data(pk, 0);
+	key.dptr = (char *)prs_data(pk, 0);
 	key.dsize = prs_buf_len(pk);
 
 	data = tdb_fetch(tdb, key);

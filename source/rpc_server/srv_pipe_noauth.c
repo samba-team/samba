@@ -3,9 +3,9 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1998
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
- *  Copyright (C) Paul Ashton                  1997-1998.
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+ *  Copyright (C) Paul Ashton                  1997-2000.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,104 +33,107 @@ extern int DEBUGLEVEL;
 /*******************************************************************
 turns a DCE/RPC request into a DCE/RPC reply
 ********************************************************************/
-static BOOL api_noauth_create_pdu(rpcsrv_struct *l, uint32 data_start,
-				prs_struct *resp)
+static BOOL api_noauth_create_pdu(rpcsrv_struct * l, uint32 data_start,
+				  prs_struct * resp)
 {
 	BOOL ret;
 	uint32 data_len;
-	uint32 auth_len;
+	uint32 frag_len;
 	uint32 data_end = l->rdata.offset;
 	prs_struct rhdr;
 	prs_struct rdata_i;
-	RPC_HDR_RESP  hdr_resp;
+	RPC_HDR_RESP hdr_resp;
+	uint8 flags = 0x0;
+	uint32 call_id = l->hdr.call_id;
 
-	DEBUG(5,("create_noauth_reply: data_start: %d data_end: %d max_tsize: %d\n",
-	          data_start, data_end, l->hdr_ba.bba.max_tsize));
+	DEBUG(5,
+	      ("create_noauth_reply: data_start: %d data_end: %d max_tsize: %d\n",
+	       data_start, data_end, l->hdr_ba.bba.max_tsize));
 
-	auth_len = l->hdr.auth_len;
-
-	if (auth_len != 0)
+	if (l->hdr.auth_len != 0)
 	{
 		return False;
 	}
 
-	prs_init(&rhdr , 0, 4, False);
-
-	l->hdr.pkt_type = RPC_RESPONSE; /* mark header as an rpc response */
+	prs_init(&rhdr, 0, 4, False);
 
 	/* set up rpc header (fragmentation issues) */
 	if (data_start == 0)
 	{
-		l->hdr.flags = RPC_FLG_FIRST;
+		flags = RPC_FLG_FIRST;
 	}
 	else
 	{
-		l->hdr.flags = 0;
+		flags = 0;
 	}
 
-	hdr_resp.alloc_hint = data_end - data_start; /* calculate remaining data to be sent */
+	hdr_resp.alloc_hint = data_end - data_start;	/* calculate remaining data to be sent */
 	hdr_resp.cancel_count = 0x0;
-	hdr_resp.context_id   = 0x0;
-	hdr_resp.reserved     = 0x0;
+	hdr_resp.context_id = 0x0;
+	hdr_resp.reserved = 0x0;
 
-	DEBUG(10,("alloc_hint: %d\n", hdr_resp.alloc_hint));
+	DEBUG(10, ("alloc_hint: %d\n", hdr_resp.alloc_hint));
 
 	if (hdr_resp.alloc_hint + 0x18 <= l->hdr_ba.bba.max_tsize)
 	{
-		l->hdr.flags |= RPC_FLG_LAST;
-		l->hdr.frag_len = hdr_resp.alloc_hint + 0x18;
+		flags |= RPC_FLG_LAST;
+		frag_len = hdr_resp.alloc_hint + 0x18;
 	}
 	else
 	{
-		l->hdr.frag_len = l->hdr_ba.bba.max_tsize;
+		frag_len = l->hdr_ba.bba.max_tsize;
 	}
 
-	data_len = l->hdr.frag_len - 0x18;
+	data_len = frag_len - 0x18;
 
 	rhdr.start = 0;
-	rhdr.end   = 0x18;
+	rhdr.end = 0x18;
 
-	DEBUG(10,("hdr flags: %x\n", l->hdr.flags));
+	if (!make_rpc_hdr(&l->hdr, RPC_RESPONSE, flags, call_id, frag_len, 0))
+	{
+		return False;
+	}
+
+	DEBUG(10, ("hdr flags: %x\n", flags));
 
 	/* store the header in the data stream */
-	smb_io_rpc_hdr     ("rhdr", &(l->hdr     ), &(rhdr), 0);
+	smb_io_rpc_hdr("rhdr", &(l->hdr), &(rhdr), 0);
 	smb_io_rpc_hdr_resp("resp", &(hdr_resp), &(rhdr), 0);
 
 	/* don't use rdata: use rdata_i instead, which moves... */
 	/* make a pointer to the rdata data, NOT A COPY */
 
 	prs_create(&rdata_i, prs_data(&l->rdata, data_start),
-	                     data_len, l->rdata.align, rdata_i.io); 
+		   data_len, l->rdata.align, rdata_i.io);
 	rdata_i.offset = data_len;
 	l->rdata_offset += data_len;
 
 	prs_debug_out(&rdata_i, "rdata_i", 200);
 	prs_debug_out(&l->rdata, "rdata", 200);
 
-	prs_link(NULL , &rhdr   , &rdata_i);
-	prs_link(&rhdr, &rdata_i, NULL    );
+	prs_link(NULL, &rhdr, &rdata_i);
+	prs_link(&rhdr, &rdata_i, NULL);
 
 	prs_init(resp, 0, 4, False);
 	ret = prs_copy(resp, &rhdr);
 
-	prs_free_data(&rhdr );
+	prs_free_data(&rhdr);
 
 	return ret;
 }
 
-static BOOL api_noauth_auth_gen(rpcsrv_struct *l, prs_struct *resp,
+static BOOL api_noauth_auth_gen(rpcsrv_struct * l, prs_struct * resp,
 				enum RPC_PKT_TYPE pkt_type)
 {
 	prs_struct rhdr;
 	BOOL ret;
 
-	DEBUG(10,("api_noauth_auth_gen\n"));
+	DEBUG(10, ("api_noauth_auth_gen\n"));
 
 	prs_init(&rhdr, 0, 4, False);
 
 	make_rpc_hdr(&l->hdr, pkt_type, RPC_FLG_FIRST | RPC_FLG_LAST,
-		     l->hdr.call_id,
-		     l->rdata.offset + 0x10, 0);
+		     l->hdr.call_id, l->rdata.offset + 0x10, 0);
 
 	smb_io_rpc_hdr("", &l->hdr, &rhdr, 0);
 	prs_realloc_data(&rhdr, l->rdata.offset);
@@ -139,36 +142,34 @@ static BOOL api_noauth_auth_gen(rpcsrv_struct *l, prs_struct *resp,
 	/*** link rpc header and bind acknowledgment ***/
 	/***/
 
-	prs_link(NULL    , &rhdr , &l->rdata);
-	prs_link(&rhdr, &l->rdata, NULL     );
+	prs_link(NULL, &rhdr, &l->rdata);
+	prs_link(&rhdr, &l->rdata, NULL);
 
 	prs_init(resp, 0, 4, False);
 	ret = prs_copy(resp, &rhdr);
 
 	prs_free_data(&l->rdata);
-	prs_free_data(&rhdr );
+	prs_free_data(&rhdr);
 
 	return ret;
 }
 
-static BOOL api_noauth_auth_chk(rpcsrv_struct *l, enum RPC_PKT_TYPE pkt_type)
+static BOOL api_noauth_auth_chk(rpcsrv_struct * l, enum RPC_PKT_TYPE pkt_type)
 {
 	l->auth_validated = True;
 
 	return True;
 }
 
-static BOOL api_noauth_decode_pdu(rpcsrv_struct *l)
+static BOOL api_noauth_decode_pdu(rpcsrv_struct * l)
 {
 	return True;
 }
 
-srv_auth_fns noauth_fns = 
-{
+srv_auth_fns noauth_fns = {
 	NULL,
 	api_noauth_auth_chk,
 	api_noauth_auth_gen,
 	api_noauth_decode_pdu,
 	api_noauth_create_pdu,
 };
-
