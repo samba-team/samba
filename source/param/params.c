@@ -252,13 +252,16 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
     /* Check that the buffer is big enough for the next character. */
     if( i > (bSize - 2) )
       {
-      bSize += BUFR_INC;
-      bufr   = Realloc( bufr, bSize );
-      if( NULL == bufr )
+      char *tb;
+
+      tb = Realloc( bufr, bSize +BUFR_INC );
+      if( NULL == tb )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );
         return( False );
         }
+      bufr = tb;
+      bSize += BUFR_INC;
       }
 
     /* Handle a single character. */
@@ -346,13 +349,16 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
 
     if( i > (bSize - 2) )       /* Ensure there's space for next char.    */
       {
-      bSize += BUFR_INC;
-      bufr   = Realloc( bufr, bSize );
-      if( NULL == bufr )
+      char *tb;
+ 
+      tb = Realloc( bufr, bSize + BUFR_INC );
+      if( NULL == tb )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );
         return( False );
         }
+      bufr = tb;
+      bSize += BUFR_INC;
       }
 
     switch( c )

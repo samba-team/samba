@@ -414,10 +414,20 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 						 &num_entries, &ctr);
 		
 		if (num_entries) {
-			name_list = Realloc(name_list, 
+			struct getpwent_user *tnl;
+
+			tnl = (struct getpwent_user *)Realloc(name_list, 
 					    sizeof(struct getpwent_user) *
 					    (ent->num_sam_entries + 
 					     num_entries));
+
+			if (!tnl) {
+				DEBUG(0,("get_sam_user_entries: Realloc failed.\n"));
+				if (name_list)
+					free(name_list);
+				return WINBINDD_ERROR;
+			} else
+				name_list = tnl;
 		}
 
 		for (i = 0; i < num_entries; i++) {
@@ -590,20 +600,20 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 
 enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 {
-        struct winbindd_domain *domain;
-        SAM_DISPINFO_CTR ctr;
+	struct winbindd_domain *domain;
+	SAM_DISPINFO_CTR ctr;
 	SAM_DISPINFO_1 info1;
-        uint32 num_entries = 0, total_entries = 0;
-	char *extra_data = NULL;
+	uint32 num_entries = 0, total_entries = 0;
+	char *ted, *extra_data = NULL;
 	int extra_data_len = 0;
 
 	DEBUG(3, ("[%5d]: list users\n", state->pid));
 
-        /* Enumerate over trusted domains */
+	/* Enumerate over trusted domains */
 
 	ctr.sam.info1 = &info1;
 
-        for (domain = domain_list; domain; domain = domain->next) {
+	for (domain = domain_list; domain; domain = domain->next) {
 		uint32 status, start_ndx = 0;
 
 		/* Skip domains other than WINBINDD_DOMAIN environment
@@ -618,7 +628,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 			continue;
 		}
 
-                /* Query display info */
+		/* Query display info */
 
 		do {
 			int i;
@@ -635,12 +645,16 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 
 			total_entries += num_entries;
 			
-			extra_data = Realloc(extra_data, sizeof(fstring) * 
+			ted = Realloc(extra_data, sizeof(fstring) * 
 					     total_entries);
-			
-			if (!extra_data) {
+
+			if (!ted) {
+				DEBUG(0,("winbindd_list_users: failed to enlarge buffer!\n"));
+				if (extra_data)
+					free(extra_data);
 				return WINBINDD_ERROR;
-			}
+            } else
+				extra_data = ted;
 			
 			/* Pack user list into extra data fields */
 			
