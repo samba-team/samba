@@ -270,7 +270,6 @@ int read_reply(struct winbindd_response *response)
 
         if ((result2 = read_sock(response->extra_data, extra_data_len))
             == -1) {
-
             return -1;
         }
     }
@@ -304,10 +303,26 @@ enum nss_status generic_request(int req_type,
 		return NSS_STATUS_UNAVAIL;
 	}
 
+	/* Throw away extra data if client didn't request it */
+	if (response == &lresponse) {
+		free_response(response);
+	}
+
 	/* Copy reply data from socket */
 	if (response->result != WINBINDD_OK) {
 		return NSS_STATUS_NOTFOUND;
 	}
 	
 	return NSS_STATUS_SUCCESS;
+}
+
+/* Free a response structure */
+
+void free_response(struct winbindd_response *response)
+{
+	/* Free any allocated extra_data */
+
+	if (response && response->extra_data) {
+		free(response->extra_data);
+	}
 }
