@@ -1,3 +1,7 @@
+Tue Jun  9 21:01:59 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* ftp/krb4.c: pass client address to krb_rd_req
+
 Sat May 16 00:02:07 1998  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/Makefile.am: link with DBLIB
