@@ -683,7 +683,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 		uint16 session_tag = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
 		connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 
-		DEBUG(3,("switch message %s (pid %d)\n",smb_fn_name(type),(int)pid));
+		DEBUG(3,("switch message %s (pid %d) conn 0x%x\n",smb_fn_name(type),(int)pid,(unsigned int)conn));
 
 		smb_dump(smb_fn_name(type), 1, inbuf, size);
 		if(global_oplock_break) {
