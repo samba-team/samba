@@ -80,7 +80,9 @@ generate_requests (const char *filename, unsigned nreq)
     char **words;
     unsigned nwords;
 
-    krb5_init_context (&context);
+    ret = krb5_init_context (&context);
+    if (ret)
+	errx (1, "krb5_init_context failed: %d", ret);
 
     nwords = read_words (filename, &words);
 
