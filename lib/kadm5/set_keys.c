@@ -104,6 +104,7 @@ make_keys(krb5_context context, krb5_principal principal, const char *password,
     Key key;
 
     int i;
+    char *v4_ktypes[] = {"des3:pw-salt", "v4", NULL};
 
     ktypes = krb5_config_get_strings(context, NULL, "kadmin", 
 				     "default_keys", NULL);
@@ -113,9 +114,14 @@ make_keys(krb5_context context, krb5_principal principal, const char *password,
        [(des|des3|etype):](pw|afs3)[:string], if etype is omitted it
        means everything, and if string is omitted is means the default
        string (for that principal). Additional special values:
-       v5 == pw, and
-       v4 == pw: 
+       v5 == pw-salt, and
+       v4 == pw-salt:
     */
+
+    if (ktypes == NULL
+	&& krb5_config_get_bool (context, NULL, "kadmin",
+				 "use_v4_salt", NULL))
+	ktypes = v4_ktypes;
 
     for(kp = ktypes; kp && *kp; kp++) {
 	krb5_enctype *etypes;
