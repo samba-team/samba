@@ -39,6 +39,7 @@ endif
 
 else
 AFSL_EXP =
+AIX_SRC =
 endif # AIX
 
 
