@@ -134,7 +134,7 @@ struct security_descriptor *security_descriptor_ptr_from_python(TALLOC_CTX *mem_
 
 PyObject *security_descriptor_to_python(struct security_descriptor *obj)
 {
-	return Py_None;
+	return PyDict_New();
 }
 
 struct dom_sid2 *dom_sid2_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
@@ -144,7 +144,7 @@ struct dom_sid2 *dom_sid2_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
 
 PyObject *dom_sid2_to_python(struct dom_sid2 *obj)
 {
-	return Py_None;
+	return PyDict_New();
 }
 
 char *string_from_python(PyObject *obj)
