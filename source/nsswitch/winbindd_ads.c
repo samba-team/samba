@@ -657,6 +657,41 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	return NT_STATUS_OK;
 }
 
+/* get a list of trusted domains */
+static NTSTATUS trusted_domains(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 *num_domains,
+				char ***names,
+				DOM_SID **dom_sids)
+{
+	*num_domains = 0;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/* find the domain sid for a domain */
+static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	const char *attrs[] = {"objectSid", NULL};
+	ADS_STRUCT *ads = NULL;
+	void *res;
+	int rc;
+
+	ads = ads_cached_connection(domain);
+	if (!ads) goto done;
+
+	rc = ads_do_search(ads, ads->bind_path, LDAP_SCOPE_BASE, "(objectclass=*)", 
+			   attrs, &res);
+	if (rc) goto done;
+	if (ads_pull_sid(ads, res, "objectSid", sid)) {
+		status = NT_STATUS_OK;
+	}
+	ads_msgfree(ads, res);
+
+done:
+	return status;
+}
+
 /* the ADS backend methods are exposed via this structure */
 struct winbindd_methods ads_methods = {
 	query_user_list,
@@ -666,7 +701,9 @@ struct winbindd_methods ads_methods = {
 	query_user,
 	lookup_usergroups,
 	lookup_groupmem,
-	sequence_number
+	sequence_number,
+	trusted_domains,
+	domain_sid
 };
 
 #endif

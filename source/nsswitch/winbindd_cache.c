@@ -706,6 +706,27 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	return NT_STATUS_OK;
 }
 
+/* enumerate trusted domains */
+static NTSTATUS trusted_domains(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 *num_domains,
+				char ***names,
+				DOM_SID **dom_sids)
+{
+	struct winbind_cache *cache = get_cache(domain);
+
+	return cache->backend->trusted_domains(domain, mem_ctx, num_domains, 
+					       names, dom_sids);
+}
+
+/* find the domain sid */
+static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
+{
+	struct winbind_cache *cache = get_cache(domain);
+
+	return cache->backend->domain_sid(domain, sid);
+}
+
 /* the ADS backend methods are exposed via this structure */
 struct winbindd_methods cache_methods = {
 	query_user_list,
@@ -715,7 +736,9 @@ struct winbindd_methods cache_methods = {
 	query_user,
 	lookup_usergroups,
 	lookup_groupmem,
-	sequence_number
+	sequence_number,
+	trusted_domains,
+	domain_sid
 };
 
 

@@ -460,6 +460,49 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	return result;
 }
 
+/* get a list of trusted domains */
+static NTSTATUS trusted_domains(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 *num_domains,
+				char ***names,
+				DOM_SID **dom_sids)
+{
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 enum_ctx = 0;
+
+	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+		goto done;
+
+	result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
+					&hnd->pol, &enum_ctx, num_domains, 
+					names, dom_sids);
+done:
+	return result;
+}
+
+/* find the domain sid for a domain */
+static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	TALLOC_CTX *mem_ctx;
+	CLI_POLICY_HND *hnd;
+	fstring level5_dom;
+
+	if (!(mem_ctx = talloc_init()))
+		return NT_STATUS_NO_MEMORY;
+
+	/* Get sam handle */
+	if (!(hnd = cm_get_lsa_handle(domain->name)))
+		goto done;
+
+	status = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
+					   &hnd->pol, 0x05, level5_dom, sid);
+
+done:
+	talloc_destroy(mem_ctx);
+	return status;
+}
 
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
@@ -470,6 +513,7 @@ struct winbindd_methods msrpc_methods = {
 	query_user,
 	lookup_usergroups,
 	lookup_groupmem,
-	sequence_number
+	sequence_number,
+	trusted_domains,
+	domain_sid
 };
-
