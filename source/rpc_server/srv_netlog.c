@@ -538,7 +538,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 	dump_data(100, nt_pwd, 16);
 #endif
 
-	if (memcmp(smb_pass->smb_passwd   , lm_pwd, 16) != 0 &&
+	if (memcmp(smb_pass->smb_passwd   , lm_pwd, 16) != 0 ||
 	    memcmp(smb_pass->smb_nt_passwd, nt_pwd, 16) != 0)
 	{
 		status = 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
