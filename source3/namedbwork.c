@@ -203,16 +203,11 @@ struct work_record *find_workgroupstruct(struct subnet_record *d,
   if ((work = make_workgroup(name)))
     {
       if (lp_preferred_master() &&
-	  strequal(lp_workgroup(), name) &&
-	  d->my_interface)
+	  strequal(lp_workgroup(), name))
 	{
 	  DEBUG(3, ("preferred master startup for %s\n", work->work_group));
 	  work->needelection = True;
 	  work->ElectionCriterion |= (1<<3);
-	}
-      if (!d->my_interface)
-	{
-	  work->needelection = False;
 	}
       add_workgroup(work, d);
       return(work);

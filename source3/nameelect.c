@@ -100,7 +100,7 @@ void browser_gone(char *work_name, struct in_addr ip)
   /* i don't know about this workgroup, therefore i don't care */
   if (!work || !d) return;
  
-  if (strequal(work->work_group, lp_workgroup()) && d->my_interface)
+  if (strequal(work->work_group, lp_workgroup()))
   {
 
       DEBUG(2,("Forcing election on %s %s\n",
@@ -112,16 +112,12 @@ void browser_gone(char *work_name, struct in_addr ip)
   else
   {
      /* local interfaces: force an election */
-     if (d->my_interface)
-       send_election(d, work->work_group, 0, 0, myname);
+    send_election(d, work->work_group, 0, 0, myname);
 
-     /* only removes workgroup completely on a local interface or
-        if there are no server entries on the remote interface.
-        (persistent lmhost entries on a remote interface will stop
-        the workgroup being removed. persistent lmhosts entries on
-        a local interface _will_ be removed).
+     /* only removes workgroup completely on a local interface 
+        persistent lmhosts entries on a local interface _will_ be removed).
       */
-     remove_workgroup(d, work, d->my_interface);      
+     remove_workgroup(d, work,True);
   }
 }
 
@@ -300,7 +296,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
       work->ServerType |= SV_TYPE_MASTER_BROWSER;
       add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
 
-      if (d->my_interface && work->serverlist == NULL) /* no servers! */
+      if (work->serverlist == NULL) /* no servers! */
       {
         /* ask all servers on our local net to announce to us */
         announce_request(work, d->bcast_ip);
@@ -568,8 +564,7 @@ void process_election(struct packet_struct *p,char *buf)
   for (work = d->workgrouplist; work; work = work->next)
     {
       if (listening_name(work, &dgram->dest_name) && 
-	  strequal(work->work_group, lp_workgroup()) &&
-	  d->my_interface)
+	  strequal(work->work_group, lp_workgroup()))
 	{
 	  if (win_election(work, version,criterion,timeup,name))
 	    {

@@ -142,7 +142,6 @@ char *lp_character_set(void);
 char *lp_logon_script(void);
 char *lp_wins_server(void);
 char *lp_interfaces(void);
-char *lp_remote_interfaces(void);
 BOOL lp_wins_support(void);
 BOOL lp_wins_proxy(void);
 BOOL lp_domain_master(void);

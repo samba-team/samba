@@ -656,8 +656,6 @@ static void process_announce_request(struct packet_struct *p,char *buf)
 
   if (!d) return;
   
-  if (!d->my_interface) return;
-  
   for (work = d->workgrouplist; work; work = work->next)
     {
      /* XXXX BUG: the destination name type should also be checked,
