@@ -2,7 +2,10 @@
    Unix SMB/Netbios implementation.
    Version 3.0
    byte range locking code
-   Copyright (C) Andrew Tridgell 1992-1998
+   Updated to handle range splits/merges.
+
+   Copyright (C) Andrew Tridgell 1992-2000
+   Copyright (C) Jeremy Allison 1992-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,7 +22,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* this module implements a tdb based byte range locking service,
+/* This module implements a tdb based byte range locking service,
    replacing the fcntl() based byte range locking previously
    used. This allows us to provide the same semantics as NT */
 
@@ -27,18 +30,20 @@
 
 extern int DEBUGLEVEL;
 
-/* this contains elements that differentiate locks. The smbpid is a
+/* This contains elements that differentiate locks. The smbpid is a
    client supplied pid, and is essentially the locking context for
    this client */
+
 struct lock_context {
 	uint16 smbpid;
 	uint16 tid;
 	pid_t pid;
 };
 
-/* the data in brlock records is an unsorted linear array of these
+/* The data in brlock records is an unsorted linear array of these
    records.  It is unnecessary to store the count as tdb provides the
    size of the record */
+
 struct lock_struct {
 	struct lock_context context;
 	br_off start;
@@ -47,19 +52,21 @@ struct lock_struct {
 	enum brl_type lock_type;
 };
 
-/* the key used in the brlock database */
+/* The key used in the brlock database. */
+
 struct lock_key {
 	SMB_DEV_T device;
 	SMB_INO_T inode;
 };
 
-/* the open brlock.tdb database */
+/* The open brlock.tdb database. */
+
 static TDB_CONTEXT *tdb;
 
-
 /****************************************************************************
-see if two locking contexts are equal
+ See if two locking contexts are equal.
 ****************************************************************************/
+
 static BOOL brl_same_context(struct lock_context *ctx1, 
 			     struct lock_context *ctx2)
 {
@@ -69,8 +76,9 @@ static BOOL brl_same_context(struct lock_context *ctx1,
 }
 
 /****************************************************************************
-see if lock2 can be added when lock1 is in place
+ See if lock2 can be added when lock1 is in place.
 ****************************************************************************/
+
 static BOOL brl_conflict(struct lock_struct *lck1, 
 			 struct lock_struct *lck2)
 {
@@ -88,8 +96,9 @@ static BOOL brl_conflict(struct lock_struct *lck1,
 
 
 /****************************************************************************
-open up the brlock.tdb database 
+ Open up the brlock.tdb database.
 ****************************************************************************/
+
 void brl_init(int read_only)
 {
 	if (tdb) return;
@@ -102,8 +111,9 @@ void brl_init(int read_only)
 
 
 /****************************************************************************
-lock a range of bytes
+ Lock a range of bytes.
 ****************************************************************************/
+
 BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	      uint16 smbpid, pid_t pid, uint16 tid,
 	      br_off start, br_off size, 
@@ -160,10 +170,238 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	return False;
 }
 
+/****************************************************************************
+ Create a list of lock ranges that don't overlap a given range. Used in calculating
+ POSIX lock unlocks. This is a difficult function that requires ASCII art to
+ understand it :-).
+****************************************************************************/
+
+struct unlock_list *brl_unlock_list(TALLOC_CTX *ctx, struct unlock_list *ulhead,
+							pid_t pid, SMB_DEV_T dev, SMB_INO_T ino)
+{
+	struct lock_key key;
+	TDB_DATA kbuf, dbuf;
+	struct lock_struct *locks;
+	int num_locks, i;
+
+	/*
+	 * Setup the key for this fetch.
+	 */
+	key.device = dev;
+	key.inode = ino;
+	kbuf.dptr = (char *)&key;
+	kbuf.dsize = sizeof(key);
+
+	dbuf.dptr = NULL;
+
+	tdb_lockchain(tdb, kbuf);
+	dbuf = tdb_fetch(tdb, kbuf);
+
+	if (!dbuf.dptr) {
+		tdb_unlockchain(tdb, kbuf);
+		return ulhead;
+	}
+	
+	locks = (struct lock_struct *)dbuf.dptr;
+	num_locks = dbuf.dsize / sizeof(*locks);
+
+	/*
+	 * Check the current lock list on this dev/inode pair.
+	 * Quit if the list is deleted.
+	 */
+
+	for (i=0; i<num_locks && ulhead; i++) {
+
+		struct lock_struct *lock = &locks[i];
+		struct unlock_list *ul_curr;
+
+		/* If it's not this process, ignore it. */
+		if (lock->context.pid != pid)
+			continue;
+
+		/*
+		 * Walk the unlock list, checking for overlaps. Note that
+		 * the unlock list can expand within this loop if the current
+		 * range being examined needs to be split.
+		 */
+
+		for (ul_curr = ulhead; ul_curr;) {
+
+			DEBUG(10,("brl_unlock_list: curr: start=%.0f,size=%.0f \
+lock: start=%.0f,size=%.0f\n", (double)ul_curr->start, (double)ul_curr->size,
+								(double)lock->start, (double)lock->size ));
+
+			if ( (ul_curr->start >= (lock->start + lock->size)) ||
+				 (lock->start > (ul_curr->start + ul_curr->size))) {
+
+				/* No overlap with this lock - leave this range alone. */
+/*********************************************
+                                             +---------+
+                                             | ul_curr |
+                                             +---------+
+                                +-------+
+                                | lock  |
+                                +-------+
+OR....
+             +---------+
+             | ul_curr |
+             +---------+
+**********************************************/
+
+				DEBUG(10,("brl_unlock_list: no overlap case.\n" ));
+
+				ul_curr = ul_curr->next;
+
+			} else if ( (ul_curr->start >= lock->start) &&
+						(ul_curr->start + ul_curr->size <= lock->start + lock->size) ) {
+
+				/*
+				 * This unlock is completely overlapped by this existing lock range
+				 * and thus should have no effect (not be unlocked). Delete it from the list.
+				 */
+/*********************************************
+                +---------+
+                | ul_curr |
+                +---------+
+        +---------------------------+
+        |       lock                |
+        +---------------------------+
+**********************************************/
+				/* Save the next pointer */
+				struct unlock_list *ul_next = ul_curr->next;
+
+				DEBUG(10,("brl_unlock_list: delete case.\n" ));
+
+				DLIST_REMOVE(ulhead, ul_curr);
+				if(ulhead == NULL)
+					break; /* No more list... */
+
+				ul_curr = ul_next;
+				
+			} else if ( (ul_curr->start >= lock->start) &&
+						(ul_curr->start < lock->start + lock->size) &&
+						(ul_curr->start + ul_curr->size > lock->start + lock->size) ) {
+
+				/*
+				 * This unlock overlaps the existing lock range at the high end.
+				 * Truncate by moving start to existing range end and reducing size.
+				 */
+/*********************************************
+                +---------------+
+                | ul_curr       |
+                +---------------+
+        +---------------+
+        |    lock       |
+        +---------------+
+BECOMES....
+                        +-------+
+                        |ul_curr|
+                        +-------+
+**********************************************/
+
+				ul_curr->size = (ul_curr->start + ul_curr->size) - (lock->start + lock->size);
+				ul_curr->start = lock->start + lock->size;
+
+				DEBUG(10,("brl_unlock_list: truncate high case: start=%.0f,size=%.0f\n",
+								(double)ul_curr->start, (double)ul_curr->size ));
+
+				ul_curr = ul_curr->next;
+
+			} else if ( (ul_curr->start < lock->start) &&
+						(ul_curr->start + ul_curr->size > lock->start) ) {
+
+				/*
+				 * This unlock overlaps the existing lock range at the low end.
+				 * Truncate by reducing size.
+				 */
+/*********************************************
+   +---------------+
+   | ul_curr       |
+   +---------------+
+           +---------------+
+           |    lock       |
+           +---------------+
+BECOMES....
+   +-------+
+   |ul_curr|
+   +-------+
+**********************************************/
+
+				ul_curr->size = lock->start - ul_curr->start;
+
+				DEBUG(10,("brl_unlock_list: truncate low case: start=%.0f,size=%.0f\n",
+								(double)ul_curr->start, (double)ul_curr->size ));
+
+				ul_curr = ul_curr->next;
+		
+			} else if ( (ul_curr->start < lock->start) &&
+						(ul_curr->start + ul_curr->size > lock->start + lock->size) ) {
+				/*
+				 * Worst case scenario. Unlock request completely overlaps an existing
+				 * lock range. Split the request into two, push the new (upper) request
+				 * into the dlink list, and continue with the entry after ul_new (as we
+				 * know that ul_new will not overlap with this lock).
+				 */
+/*********************************************
+        +---------------------------+
+        |       ul_curr             |
+        +---------------------------+
+                +---------+
+                | lock    |
+                +---------+
+BECOMES.....
+        +-------+         +---------+
+        |ul_curr|         |ul_new   |
+        +-------+         +---------+
+**********************************************/
+				struct unlock_list *ul_new = (struct unlock_list *)talloc(ctx,
+													sizeof(struct unlock_list));
+
+				if(ul_new == NULL) {
+					DEBUG(0,("brl_unlock_list: talloc fail.\n"));
+					return NULL; /* The talloc_destroy takes care of cleanup. */
+				}
+
+				ZERO_STRUCTP(ul_new);
+				ul_new->start = lock->start + lock->size;
+				ul_new->size = ul_curr->start + ul_curr->size - ul_new->start;
+
+				/* Add into the dlink list after the ul_curr point - NOT at ulhead. */
+				DLIST_ADD(ul_curr, ul_new);
+
+				/* Truncate the ul_curr. */
+				ul_curr->size = lock->start - ul_curr->start;
+
+				DEBUG(10,("brl_unlock_list: split case: curr: start=%.0f,size=%.0f \
+new: start=%.0f,size=%.0f\n", (double)ul_curr->start, (double)ul_curr->size,
+								(double)ul_new->start, (double)ul_new->size ));
+
+				ul_curr = ul_new->next;
+
+			} else {
+
+				/*
+				 * This logic case should never happen. Ensure this is the
+				 * case by forcing an abort.... Remove in production.
+				 */
+
+				smb_panic("brl_unlock_list: logic flaw in cases...\n");
+			}
+		} /* end for ( ul_curr = ulhead; ul_curr;) */
+	} /* end for (i=0; i<num_locks && ul_head; i++) */
+
+	tdb_unlockchain(tdb, kbuf);
+
+	if (dbuf.dptr)
+		free(dbuf.dptr);
+	
+	return ulhead;
+}
 
 /****************************************************************************
-unlock a range of bytes
+ Unlock a range of bytes.
 ****************************************************************************/
+
 BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		uint16 smbpid, pid_t pid, uint16 tid,
 		br_off start, br_off size)
@@ -194,10 +432,13 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	locks = (struct lock_struct *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(*locks);
 	for (i=0; i<count; i++) {
-		if (brl_same_context(&locks[i].context, &context) &&
-		    locks[i].fnum == fnum &&
-		    locks[i].start == start &&
-		    locks[i].size == size) {
+
+		struct lock_struct *lock = &locks[i];
+
+		if (brl_same_context(&lock->context, &context) &&
+		    lock->fnum == fnum &&
+		    lock->start == start &&
+		    lock->size == size) {
 			/* found it - delete it */
 			if (count == 1) {
 				tdb_delete(tdb, kbuf);
@@ -224,11 +465,10 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	return False;
 }
 
-
-
 /****************************************************************************
-test if we could add a lock if we wanted to
+ Test if we could add a lock if we wanted to.
 ****************************************************************************/
+
 BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, 
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
@@ -278,10 +518,10 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino,
 	return False;
 }
 
-
 /****************************************************************************
-remove any locks associated with a open file
+ Remove any locks associated with a open file.
 ****************************************************************************/
+
 void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 {
 	struct lock_key key;
@@ -305,9 +545,11 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 	locks = (struct lock_struct *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(*locks);
 	for (i=0; i<count; i++) {
-		if (locks[i].context.tid == tid &&
-		    locks[i].context.pid == pid &&
-		    locks[i].fnum == fnum) {
+		struct lock_struct *lock = &locks[i];
+
+		if (lock->context.tid == tid &&
+		    lock->context.pid == pid &&
+		    lock->fnum == fnum) {
 			/* found it - delete it */
 			if (count > 1 && i < count-1) {
 				memmove(&locks[i], &locks[i+1], 
@@ -330,11 +572,73 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 	tdb_unlockchain(tdb, kbuf);
 }
 
+/****************************************************************************
+ Return a lock list associated with an open file.
+****************************************************************************/
+
+struct unlock_list *brl_getlocklist( TALLOC_CTX *ctx, SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
+{
+	struct lock_key key;
+	TDB_DATA kbuf, dbuf;
+	int i, count;
+	struct lock_struct *locks;
+	struct unlock_list *ulist = NULL;
+
+	key.device = dev;
+	key.inode = ino;
+	kbuf.dptr = (char *)&key;
+	kbuf.dsize = sizeof(key);
+
+	dbuf.dptr = NULL;
+
+	tdb_lockchain(tdb, kbuf);
+	dbuf = tdb_fetch(tdb, kbuf);
+
+	if (!dbuf.dptr) {
+		tdb_unlockchain(tdb, kbuf);
+		return NULL;
+	}
+
+	/* There are existing locks - allocate an entry for each one. */
+	locks = (struct lock_struct *)dbuf.dptr;
+	count = dbuf.dsize / sizeof(*locks);
+
+	for (i=0; i<count; i++) {
+		struct lock_struct *lock = &locks[i];
+
+		if (lock->context.tid == tid &&
+		    lock->context.pid == pid &&
+		    lock->fnum == fnum) {
+
+				struct unlock_list *ul_new = (struct unlock_list *)talloc(ctx,
+													sizeof(struct unlock_list));
+
+				if(ul_new == NULL) {
+					DEBUG(0,("brl_getlocklist: talloc fail.\n"));
+					return NULL; /* The talloc_destroy takes care of cleanup. */
+				}
+
+				ZERO_STRUCTP(ul_new);
+				ul_new->start = lock->start;
+				ul_new->size = lock->size;
+
+				DLIST_ADD(ulist, ul_new);
+		}
+	}
+
+	if (dbuf.dptr)
+		free(dbuf.dptr);
+	tdb_unlockchain(tdb, kbuf);
+
+	return ulist;
+}
+
 
 /****************************************************************************
-traverse the whole database with this function, calling traverse_callback
-on each lock
+ Traverse the whole database with this function, calling traverse_callback
+ on each lock.
 ****************************************************************************/
+
 static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct lock_struct *locks;
@@ -357,8 +661,9 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 }
 
 /*******************************************************************
- Call the specified function on each lock in the database
+ Call the specified function on each lock in the database.
 ********************************************************************/
+
 int brl_forall(BRLOCK_FN(fn))
 {
 	if (!tdb) return 0;

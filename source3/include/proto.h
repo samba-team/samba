@@ -816,6 +816,8 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	      uint16 smbpid, pid_t pid, uint16 tid,
 	      br_off start, br_off size, 
 	      enum brl_type lock_type);
+struct unlock_list *brl_unlock_list(TALLOC_CTX *ctx, struct unlock_list *ulhead,
+							pid_t pid, SMB_DEV_T dev, SMB_INO_T ino);
 BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		uint16 smbpid, pid_t pid, uint16 tid,
 		br_off start, br_off size);
@@ -824,11 +826,11 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino,
 		  br_off start, br_off size, 
 		  enum brl_type lock_type);
 void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum);
+struct unlock_list *brl_getlocklist( TALLOC_CTX *ctx, SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum);
 int brl_forall(BRLOCK_FN(fn));
 
 /*The following definitions come from  locking/locking.c  */
 
-void locking_close_file(files_struct *fsp);
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       enum brl_type lock_type);
@@ -838,6 +840,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 BOOL do_unlock(files_struct *fsp,connection_struct *conn,
                SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       int *eclass,uint32 *ecode);
+void locking_close_file(files_struct *fsp);
 BOOL locking_init(int read_only);
 BOOL locking_end(void);
 BOOL lock_share_entry(connection_struct *conn,
