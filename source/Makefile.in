@@ -702,29 +702,29 @@ bin/tdbdump: $(TDBDUMP_OBJ)  bin/.dummy
 install: installbin installman installscripts installcp installswat
 
 installdirs:
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(BASEDIR)
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(SBINDIR)
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(BINDIR)
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(LIBDIR)
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(VARDIR)
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(PIDDIR)
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(CODEPAGEDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(BASEDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(SBINDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(BINDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(LIBDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(VARDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(PIDDIR)
+	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $(DESTDIR)$(CODEPAGEDIR)
 
 installservers: all installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SPROGS)
 
 installbin: all installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS) $(WINBIND_SPROGS)
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS) $(WINBIND_PROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SPROGS) $(WINBIND_SPROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(PROGS) $(WINBIND_PROGS)
 
 installscripts: installdirs
-	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
 
 installcp: installdirs installbin
-	@$(SHELL) $(srcdir)/script/installcp.sh $(srcdir) $(LIBDIR) $(CODEPAGEDIR) $(BINDIR) $(CODEPAGELIST)
+	@$(SHELL) $(srcdir)/script/installcp.sh $(srcdir) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(CODEPAGEDIR) $(DESTDIR)$(BINDIR) $(CODEPAGELIST)
 
 installswat: installdirs
-	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
 installclientlib:
 	-$(INSTALLCLIENTCMD_SH) bin/libsmbclient.@SHLIBEXT@
@@ -734,26 +734,26 @@ installclientlib:
 
 # revert to the previously installed version
 revert:
-	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SPROGS) ${WINBIND_SPROGS}
-	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(PROGS) $(SCRIPTS) ${WINBIND_PROGS}
+	@$(SHELL) $(srcdir)/script/revert.sh $(DESTDIR)$(SBINDIR) $(SPROGS) ${WINBIND_SPROGS}
+	@$(SHELL) $(srcdir)/script/revert.sh $(DESTDIR)$(BINDIR) $(PROGS) $(SCRIPTS) ${WINBIND_PROGS}
 
 installman:
-	@$(SHELL) $(srcdir)/script/installman.sh $(MANDIR) $(srcdir) "@ROFF@"
+	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) "@ROFF@"
 
 uninstall: uninstallman uninstallbin uninstallscripts uninstallcp
 
 uninstallman:
-	@$(SHELL) $(srcdir)/script/uninstallman.sh $(MANDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir)
 
 uninstallbin:
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS) $(WINBIND_SPROGS)
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS) $(WINBIND_PROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SPROGS) $(WINBIND_SPROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(PROGS) $(WINBIND_PROGS)
 
 uninstallscripts:
-	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
 
 uninstallcp:
-	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
+	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(DESTDIR)$(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@* */*.a
