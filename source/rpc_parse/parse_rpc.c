@@ -542,8 +542,6 @@ reads or writes an RPC_HDR_BA structure.
 BOOL smb_io_rpc_hdr_ba(char *desc, RPC_HDR_BA * rpc, prs_struct * ps,
 		       int depth)
 {
-	uint32 zero=0x0;
-
 	if (rpc == NULL)
 		return False;
 
@@ -552,7 +550,6 @@ BOOL smb_io_rpc_hdr_ba(char *desc, RPC_HDR_BA * rpc, prs_struct * ps,
 
 	smb_io_rpc_hdr_bba("", &(rpc->bba), ps, depth);
 	smb_io_rpc_addr_str("", &(rpc->addr), ps, depth);
-	prs_uint32("PADDING", ps, depth, &zero);
 	smb_io_rpc_results("", &(rpc->res), ps, depth);
 	smb_io_rpc_iface("", &(rpc->transfer), ps, depth);
 
