@@ -1,6 +1,7 @@
 2001-01-30  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libroken_la_LDFLAGS): bump version to 11:1:2
+	* print_version.c (print_version): add 2001
 
 2001-01-29  Assar Westerlund  <assar@sics.se>
 
