@@ -1,3 +1,20 @@
+Fri Aug  1 17:23:56 1997  Assar Westerlund  <assar@sics.se>
+
+	* kuser/kinit.c: check for and print expiry information in the
+ 	`kdc_rep'
+
+	* lib/krb5/get_in_tkt.c: Set `ret_as_reply' if != NULL
+
+	* kdc/kerberos5.c: Check the valid times on client and server.
+  	Check the password expiration.
+	Check the require_preauth flag.
+  	Send an lr_type == 6 with pw_end.
+	Set key.expiration to min(valid_end, pw_end)
+	
+	* lib/hdb/hdb.asn1: new flags `require_preauth' and `change_pw'
+
+	* admin/util.c, admin/load.c: handle the new flags.
+
 Fri Aug  1 16:56:12 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/hdb: Add some simple locking.
