@@ -156,6 +156,12 @@ void do_dual_daemon(void)
 		return;
 	}
 	close(fdpair[1]);
+	
+	/* tdb needs special fork handling */
+	if (tdb_reopen_all() == -1) {
+		DEBUG(0,("tdb_reopen_all failed.\n"));
+		_exit(0);
+	}
 
 	if (!winbind_setup_common()) 
 		_exit(0);
