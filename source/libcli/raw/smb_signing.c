@@ -299,6 +299,56 @@ BOOL cli_null_set_signing(struct cli_transport *transport)
 	return True;
 }
 
+/***********************************************************
+ SMB signing - TEMP implementation - calculate a MAC to send.
+************************************************************/
+static void cli_request_temp_sign_outgoing_message(struct cli_request *req)
+{
+	/* mark the packet as signed - BEFORE we sign it...*/
+	mark_packet_signed(req);
+
+	/* I wonder what BSRSPYL stands for - but this is what MS 
+	   actually sends! */
+	memcpy((req->out.hdr + HDR_SS_FIELD), "BSRSPYL ", 8);
+	return;
+}
+
+/***********************************************************
+ SMB signing - TEMP implementation - check a MAC sent by server.
+************************************************************/
+static BOOL cli_request_temp_check_incoming_message(struct cli_request *req)
+{
+	return True;
+}
+
+/***********************************************************
+ SMB signing - NULL implementation - free signing context
+************************************************************/
+static void cli_temp_free_signing_context(struct cli_transport *transport)
+{
+	return;
+}
+
+/**
+ SMB signing - TEMP implementation - setup the MAC key.
+
+ @note Used as an initialisation only - it will not correctly
+       shut down a real signing mechanism
+*/
+BOOL cli_temp_set_signing(struct cli_transport *transport)
+{
+	if (!set_smb_signing_common(transport)) {
+		return False;
+	}
+
+	transport->negotiate.sign_info.signing_context = NULL;
+	
+	transport->negotiate.sign_info.sign_outgoing_message = cli_request_temp_sign_outgoing_message;
+	transport->negotiate.sign_info.check_incoming_message = cli_request_temp_check_incoming_message;
+	transport->negotiate.sign_info.free_signing_context = cli_temp_free_signing_context;
+
+	return True;
+}
 
 /**
  * Free the signing context

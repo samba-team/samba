@@ -121,10 +121,12 @@ struct cli_request *smb_raw_session_setup_send(struct cli_session *session, unio
 		SSVAL(req->out.vwv, VWV(4), parms->spnego.in.vc_num);
 		SIVAL(req->out.vwv, VWV(5), parms->spnego.in.sesskey);
 		SSVAL(req->out.vwv, VWV(7), parms->spnego.in.secblob.length);
+		SIVAL(req->out.vwv, VWV(8), 0); /* reserved */
 		SIVAL(req->out.vwv, VWV(10), parms->spnego.in.capabilities);
 		cli_req_append_blob(req, &parms->spnego.in.secblob);
 		cli_req_append_string(req, parms->spnego.in.os, STR_TERMINATE);
 		cli_req_append_string(req, parms->spnego.in.lanman, STR_TERMINATE);
+		cli_req_append_string(req, parms->spnego.in.domain, STR_TERMINATE);
 		break;
 	}
 
@@ -369,6 +371,109 @@ static NTSTATUS smb_raw_session_setup_generic_nt1(struct cli_session *session,
 	return NT_STATUS_OK;
 }
 
+/****************************************************************************
+ Perform a session setup (sync interface) using generic interface and the SPNEGO
+ style sesssetup call
+****************************************************************************/
+static NTSTATUS smb_raw_session_setup_generic_spnego(struct cli_session *session, 
+						  TALLOC_CTX *mem_ctx,
+						  union smb_sesssetup *parms) 
+{
+	NTSTATUS status;
+	union smb_sesssetup s2;
+
+	s2.generic.level = RAW_SESSSETUP_SPNEGO;
+	s2.spnego.in.bufsize = ~0;
+	s2.spnego.in.mpx_max = 50;
+	s2.spnego.in.vc_num = 1;
+	s2.spnego.in.sesskey = parms->generic.in.sesskey;
+	s2.spnego.in.capabilities = parms->generic.in.capabilities;
+	s2.spnego.in.domain = parms->generic.in.domain;
+	s2.spnego.in.os = "Unix";
+	s2.spnego.in.lanman = "Samba";
+
+	cli_temp_set_signing(session->transport);
+
+	status = gensec_client_start(&session->gensec);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start GENSEC client mode: %s\n", nt_errstr(status)));
+		goto done;
+	}
+
+	status = gensec_set_domain(session->gensec, parms->generic.in.domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC client domain to %s: %s\n", 
+			  parms->generic.in.domain, nt_errstr(status)));
+		goto done;
+	}
+
+	status = gensec_set_username(session->gensec, parms->generic.in.user);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC client username to %s: %s\n", 
+			  parms->generic.in.user, nt_errstr(status)));
+		goto done;
+	}
+
+	status = gensec_set_password(session->gensec, parms->generic.in.password);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC client password: %s\n", 
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	status = gensec_start_mech_by_name(session->gensec, "spnego");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC client SPNEGO mechanism: %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	status = gensec_update(session->gensec, mem_ctx,
+			       session->transport->negotiate.secblob,
+			       &s2.spnego.in.secblob);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		goto done;
+	}
+
+	while(1) {
+		status = smb_raw_session_setup(session, mem_ctx, &s2);
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			goto done;
+		}
+
+		status = gensec_update(session->gensec, mem_ctx,
+				       s2.spnego.out.secblob,
+				       &s2.spnego.in.secblob);
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			goto done;
+		}
+	}
+
+done:
+	if (NT_STATUS_IS_OK(status)) {
+		DATA_BLOB null_data_blob = data_blob(NULL, 0);
+		DATA_BLOB session_key = data_blob(NULL, 0);
+		
+		status = gensec_session_key(session->gensec, &session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		cli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
+
+		cli_session_set_user_session_key(session, &session_key);
+
+		parms->generic.out.vuid = s2.spnego.out.vuid;
+		parms->generic.out.os = s2.spnego.out.os;
+		parms->generic.out.lanman = s2.spnego.out.lanman;
+		parms->generic.out.domain = s2.spnego.out.domain;
+	}
+
+	return status;
+}
 
 /****************************************************************************
  Perform a session setup (sync interface) using generic interface
@@ -389,14 +494,12 @@ static NTSTATUS smb_raw_session_setup_generic(struct cli_session *session,
 	}
 
 	/* see if we should use the NT1 interface */
-	if (!(session->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) ||
-	    !session->transport->options.use_spnego) {
+	if (!(session->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY)) {
 		return smb_raw_session_setup_generic_nt1(session, mem_ctx, parms);
 	}
 
 	/* default to using SPNEGO/NTLMSSP */
-	DEBUG(0,("Need to add client SPNEGO code back in\n"));
-	return NT_STATUS_UNSUCCESSFUL;
+	return smb_raw_session_setup_generic_spnego(session, mem_ctx, parms);
 }
 
 

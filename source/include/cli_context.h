@@ -29,21 +29,12 @@ struct cli_request;  /* forward declare */
 struct cli_session;  /* forward declare */
 struct cli_transport;  /* forward declare */
 
-typedef struct smb_sign_info {
-	void (*sign_outgoing_message)(struct cli_request *req);
-	BOOL (*check_incoming_message)(struct cli_request *req);
-	void (*free_signing_context)(struct cli_transport *transport);
-	void *signing_context;
-
-	BOOL doing_signing;
-} smb_sign_info;
-
 /* context that will be and has been negotiated between the client and server */
 struct cli_negotiate {
 	/* 
 	 * negotiated maximum transmit size - this is given to us by the server
 	 */
-	uint_t max_xmit;
+	uint32_t max_xmit;
 
 	/* maximum number of requests that can be multiplexed */
 	uint16_t max_mux;
@@ -51,16 +42,24 @@ struct cli_negotiate {
 	/* the negotiatiated protocol */
 	enum protocol_types protocol;
 
-	int sec_mode;		/* security mode returned by negprot */
+	uint8_t sec_mode;		/* security mode returned by negprot */
+	uint8_t key_len;
+	DATA_BLOB server_guid;      /* server_guid */
 	DATA_BLOB secblob;      /* cryptkey or negTokenInit blob */
 	uint32_t sesskey;
 	
-	smb_sign_info sign_info;
+	struct {
+		void (*sign_outgoing_message)(struct cli_request *req);
+		BOOL (*check_incoming_message)(struct cli_request *req);
+		void (*free_signing_context)(struct cli_transport *transport);
+		void *signing_context;
+		BOOL doing_signing;
+	} sign_info;
 
 	/* capabilities that the server reported */
 	uint32_t capabilities;
 	
-	int server_zone;
+	int16_t server_zone;
 	time_t server_time;
 	uint_t readbraw_supported:1;
 	uint_t writebraw_supported:1;
@@ -187,6 +186,9 @@ struct cli_session {
 	uint32_t pid;
 
 	DATA_BLOB user_session_key;
+
+	/* the spnego context if we use extented security */
+	struct gensec_security *gensec;
 };
 
 /* 
