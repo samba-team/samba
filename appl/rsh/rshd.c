@@ -919,7 +919,7 @@ struct getargs args[] = {
       "port" },
     { "vacuous",	'v',	arg_flag, &do_vacuous,
       "Don't accept non-kerberised connections" },
-#ifdef KRB4
+#if defined(KRB4) || defined(KRB5)
     { NULL,		'P',	arg_negative_flag, &do_newpag,
       "Don't put process in new PAG" },
 #endif
