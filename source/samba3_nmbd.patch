@@ -1,0 +1,178 @@
+This is a extremely rough patch that 'fixes' Samba3 nmbd to allow a
+join from a WinXP client to a Samba4 server. Note that it hard-codes
+the domain GUID. Please only use for testing Samba4 - do not apply
+this to Samba3 svn.
+
+
+Index: nmbd/nmbd_processlogon.c
+===================================================================
+--- nmbd/nmbd_processlogon.c	(revision 4247)
++++ nmbd/nmbd_processlogon.c	(working copy)
+@@ -58,10 +58,37 @@
+         tdb_close(tdb);
+ }
+ 
++
++int push_components(unsigned char *q, const char *s)
++{
++	char *p;
++	int l, len = 0;
++
++	if (*s == 0) {
++		q[0] = 0;
++		return 1;
++	}
++
++	while ((p = strchr(s, '.'))) {
++		l = (p-s);
++		q[0] = l;
++		memcpy(q+1, s, l);
++		s += l + 1;
++		q += l+1;
++		len += l+1;
++	}
++
++	l = strlen(s);
++	q[0] = l;
++	memcpy(q+1, s, l+1);
++	len += strlen(s)+2;
++
++	return len;
++}
++
+ /****************************************************************************
+ Process a domain logon packet
+ **************************************************************************/
+-
+ void process_logon_packet(struct packet_struct *p, char *buf,int len, 
+                           const char *mailslot)
+ {
+@@ -393,6 +420,8 @@
+ 
+ 					get_mydnsdomname(domain);
+ 					get_myname(hostname);
++
++					pstrcpy(domain, "bludom.tridgell.net");
+ 	
+ 					if (SVAL(uniuser, 0) == 0) {
+ 						SIVAL(q, 0, SAMLOGON_AD_UNK_R);	/* user unknown */
+@@ -403,6 +432,9 @@
+ 
+ 					SIVAL(q, 0, ADS_PDC|ADS_GC|ADS_LDAP|ADS_DS|
+ 						ADS_KDC|ADS_TIMESERV|ADS_CLOSEST|ADS_WRITABLE);
++					SIVAL(q, 0, 0x3fd);
++					SIVAL(q, 0, ADS_PDC|ADS_DS|
++						ADS_TIMESERV|ADS_CLOSEST|ADS_WRITABLE);
+ 					q += 4;
+ 
+ 					/* Push Domain GUID */
+@@ -411,80 +443,34 @@
+ 						return;
+ 					}
+ 
++					smb_string_to_uuid("b0eac516-4a33-8675-4127-6bf058911234", &domain_guid);
++
++					dump_data(0, domain_guid.node, 6);
++
+ 					smb_uuid_pack(domain_guid, &flat_guid);
+ 					memcpy(q, &flat_guid.info, UUID_FLAT_SIZE);
+-					q += UUID_FLAT_SIZE;
+ 
+-					/* Forest */
+-					str_offset = q - q_orig;
+-					dc = domain;
+-					q1 = q;
+-					while ((component = strtok(dc, "."))) {
+-						dc = NULL;
+-						size = push_ascii(&q[1], component, -1, 0);
+-						SCVAL(q, 0, size);
+-						q += (size + 1);
+-					}
++					dump_data(0, q, 16);
+ 
+-					/* Unk0 */
+-					SCVAL(q, 0, 0);
+-					q++;
++					q += UUID_FLAT_SIZE;
+ 
+-					/* Domain */
+-					SCVAL(q, 0, 0xc0 | ((str_offset >> 8) & 0x3F));
+-					SCVAL(q, 1, str_offset & 0xFF);
+-					q += 2;
++					const char *dnsname = "192.168.115.1";
+ 
+-					/* Hostname */
+-					size = push_ascii(&q[1], hostname, -1, 0);
+-					SCVAL(q, 0, size);
+-					q += (size + 1);
+-					SCVAL(q, 0, 0xc0 | ((str_offset >> 8) & 0x3F));
+-					SCVAL(q, 1, str_offset & 0xFF);
+-					q += 2;
+-
+-					/* NETBIOS of domain */
+-					size = push_ascii(&q[1], lp_workgroup(), -1, STR_UPPER);
+-					SCVAL(q, 0, size);
+-					q += (size + 1);
+-
+-					/* Unk1 */
+-					SCVAL(q, 0, 0);
+-					q++;
+-
+-					/* NETBIOS of hostname */
+-					size = push_ascii(&q[1], my_name, -1, 0);
+-					SCVAL(q, 0, size);
+-					q += (size + 1);
+-
+-					/* Unk2 */
+-					SCVAL(q, 0, 0);
+-					q++;
+-
+-					/* User name */
+-					if (SVAL(uniuser, 0) != 0) {
+-						size = push_ascii(&q[1], ascuser, -1, 0);
+-						SCVAL(q, 0, size);
+-						q += (size + 1);
++					q += push_components(q, domain);
++					q += push_components(q, domain);
++					q += push_components(q, dnsname);
++					q += push_components(q, lp_workgroup());
++					q += push_components(q, my_name);
++					q += push_components(q, "");
++					if (SVAL(uniuser, 0)) {
++						q += push_components(q, ascuser);
+ 					}
++					q += push_components(q, "Default-First-Site-Name");
++					q += push_components(q, "Default-First-Site-Name");
+ 
+-					q_orig = q;
+-					/* Site name */
+-					size = push_ascii(&q[1], "Default-First-Site-Name", -1, 0);
+-					SCVAL(q, 0, size);
+-					q += (size + 1);
+-
+-					/* Site name (2) */
+-					str_offset = q - q_orig;
+-					SCVAL(q, 0, 0xc0 | ((str_offset >> 8) & 0x3F));
+-					SCVAL(q, 1, str_offset & 0xFF);
+-					q += 2;
+-
+-					SCVAL(q, 0, PTR_DIFF(q,q1));
+-					SCVAL(q, 1, 0x10); /* unknown */
+-
+-					SIVAL(q, 0, 0x00000002);
+-					q += 4; /* unknown */
++					SCVAL(q, 0, 0x10); /* unknown */
++					SIVAL(q, 1, 0x00000002);
++					q += 5;
+ 					SIVAL(q, 0, (iface_ip(p->ip))->s_addr);
+ 					q += 4;
+ 					SIVAL(q, 0, 0x00000000);
+@@ -495,7 +481,7 @@
+ #endif
+ 
+ 				/* tell the client what version we are */
+-				SIVAL(q, 0, ((ntversion < 11) || (SEC_ADS != lp_security())) ? 1 : 13); 
++				SIVAL(q, 0, 13);
+ 				/* our ntversion */
+ 				SSVAL(q, 4, 0xffff); /* our lmnttoken */ 
+ 				SSVAL(q, 6, 0xffff); /* our lm20token */
