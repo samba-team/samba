@@ -150,7 +150,7 @@ int kafs_settoken_rxkad __P((const char *, struct ClearToken *,
 int kafs_settoken __P((const char*, uid_t, CREDENTIALS*));
 #endif
 #ifdef KRB5_H_INCLUDED
-int kafs_settoken5 __P((const char*, uid_t, krb5_creds*));
+int kafs_settoken5 __P((krb5_context, const char*, uid_t, krb5_creds*));
 #endif
 
 
