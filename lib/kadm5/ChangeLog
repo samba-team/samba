@@ -1,3 +1,9 @@
+2002-03-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* init_c.c (get_cred_cache): when getting the default_client from
+	the cred cache, make sure the instance part is "admin"; this
+	should require fewer uses of -p
+
 2002-03-11  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libkadm5srv_la_LDFLAGS): set version to 7:5:0
