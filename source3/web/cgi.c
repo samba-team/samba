@@ -665,3 +665,24 @@ char *cgi_pathinfo(void)
 	return r;
 }
 
+/***************************************************************************
+return the hostname of the client
+  ***************************************************************************/
+char *cgi_remote_host(void)
+{
+	if (baseurl) {
+		return client_name(1);
+	}
+	return getenv("REMOTE_HOST");
+}
+
+/***************************************************************************
+return the hostname of the client
+  ***************************************************************************/
+char *cgi_remote_addr(void)
+{
+	if (baseurl) {
+		return client_addr(1);
+	}
+	return getenv("REMOTE_ADDR");
+}

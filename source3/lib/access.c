@@ -60,18 +60,19 @@ BOOL check_access(int snum)
 
   if (!ret)
     {
-      if (allow_access(denyl,allowl,client_name(),client_addr()))
+      extern int Client;
+      if (allow_access(denyl,allowl,client_name(Client),client_addr(Client)))
 	{
 	  if (snum >= 0)
 	    DEBUG(2,("Allowed connection from %s (%s) to %s\n",
-		     client_name(),client_addr(),
+		     client_name(Client),client_addr(Client),
 		     lp_servicename(snum)));
 	  ret = True;
 	}
       else
 	if (snum >= 0)
 	  DEBUG(0,("%s Denied connection from %s (%s) to %s\n",
-		   timestring(), client_name(),client_addr(),
+		   timestring(), client_name(Client),client_addr(Client),
 		   lp_servicename(snum)));
     }
 

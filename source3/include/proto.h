@@ -1873,8 +1873,8 @@ uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
 void reset_globals_after_fork();
-char *client_name(void);
-char *client_addr(void);
+char *client_name(int fd);
+char *client_addr(int fd);
 char *automount_server(char *user_name);
 char *automount_path(char *user_name);
 void standard_sub_basic(char *str);
@@ -1927,6 +1927,8 @@ void cgi_setup(char *rootdir, int auth_required);
 char *cgi_baseurl(void);
 char *cgi_rooturl(void);
 char *cgi_pathinfo(void);
+char *cgi_remote_host(void);
+char *cgi_remote_addr(void);
 
 /*The following definitions come from  web/diagnose.c  */
 

@@ -2625,7 +2625,7 @@ static void process_smb(char *inbuf, char *outbuf)
 		   name" */
 		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 		  DEBUG(1,("%s Connection denied from %s\n",
-			   timestring(),client_addr()));
+			   timestring(),client_addr(Client)));
 		  send_smb(Client,(char *)buf);
 		  exit_server("connection denied");
 	  }
@@ -3597,10 +3597,11 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   }
 
   {
+    extern int Client;
     DEBUG(IS_IPC(cnum)?3:1,("%s %s (%s) connect to service %s as user %s (uid=%d,gid=%d) (pid %d)\n",
 			    timestring(),
 			    remote_machine,
-			    client_addr(),
+			    client_addr(Client),
 			    lp_servicename(SNUM(cnum)),user,
 			    pcon->uid,
 			    pcon->gid,
@@ -4143,6 +4144,7 @@ close a cnum
 ****************************************************************************/
 void close_cnum(int cnum, uint16 vuid)
 {
+  extern int Client;
   DirCacheFlush(SNUM(cnum));
 
   unbecome_user();
@@ -4155,7 +4157,7 @@ void close_cnum(int cnum, uint16 vuid)
 
   DEBUG(IS_IPC(cnum)?3:1,("%s %s (%s) closed connection to service %s\n",
 			  timestring(),
-			  remote_machine,client_addr(),
+			  remote_machine,client_addr(Client),
 			  lp_servicename(SNUM(cnum))));
 
   yield_connection(cnum,
