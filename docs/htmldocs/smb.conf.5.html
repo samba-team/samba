@@ -3874,18 +3874,6 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#RESTRICTACLWITHMASK"
-><TT
-CLASS="PARAMETER"
-><I
->restrict acl with mask</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
 HREF="#ROOTPOSTEXEC"
 ><TT
 CLASS="PARAMETER"
@@ -4212,7 +4200,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1373"
+NAME="AEN1369"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -6037,18 +6025,17 @@ CLASS="PARAMETER"
 ></A
 > parameter.</P
 ><P
->Note that by default this parameter does not apply to permissions
+>Note that this parameter does not apply to permissions
 		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-		this mask on access control lists also, they need to set the <A
-HREF="#RESTRICTACLWITHMASK"
+		a mask on access control lists also, they need to set the <A
+HREF="#SECURITYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
->restrict acl with 
-		mask</I
+>security mask</I
 ></TT
 ></A
-> to true.</P
+>.</P
 ><P
 >Default: <B
 CLASS="COMMAND"
@@ -6987,18 +6974,17 @@ CLASS="PARAMETER"
 > parameter. This parameter is set to 000 by 
 		default (i.e. no extra mode bits are added).</P
 ><P
->Note that by default this parameter does not apply to permissions
+>Note that this parameter does not apply to permissions
 		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-		this mask on access control lists also, they need to set the <A
-HREF="#RESTRICTACLWITHMASK"
+		a mask on access control lists also, they need to set the <A
+HREF="#DIRECTORYSECURITYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
->restrict acl with 
-		mask</I
+>directory security mask</I
 ></TT
 ></A
-> to true.</P
+>.</P
 ><P
 >See the <A
 HREF="#FORCEDIRECTORYMODE"
@@ -7088,27 +7074,17 @@ NAME="DIRECTORYSECURITYMASK"
 		mask may be treated as a set of bits the user is not allowed 
 		to change.</P
 ><P
->If not set explicitly this parameter is set to the same 
-		value as the <A
-HREF="#DIRECTORYMASK"
-><TT
-CLASS="PARAMETER"
-><I
->directory 
-		mask</I
-></TT
-></A
-> parameter. To allow a user to
-		modify all the user/group/world permissions on a directory, set 
-		this parameter to 0777.</P
+>If not set explicitly this parameter is set to 0777
+		meaning a user is allowed to modify all the user/group/world
+		permissions on a directory.</P
 ><P
 ><EM
 >Note</EM
 > that users who can access the 
 		Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
-		Administrators of most normal systems will probably want to set 
-		it to 0777.</P
+		Administrators of most normal systems will probably want to leave
+		it as the default of 0777.</P
 ><P
 >See also the <A
 HREF="#FORCEDIRECTORYSECURITYMODE"
@@ -7140,13 +7116,12 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->directory security mask = &#60;same as 
-		directory mask&#62;</B
+>directory security mask = 0777</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->directory security mask = 0777</B
+>directory security mask = 0700</B
 ></P
 ></DD
 ><DT
@@ -8001,27 +7976,17 @@ NAME="FORCEDIRECTORYSECURITYMODE"
 		mask may be treated as a set of bits that, when modifying security 
 		on a directory, the user has always set to be 'on'.</P
 ><P
->If not set explicitly this parameter is set to the same 
-		value as the <A
-HREF="#FORCEDIRECTORYMODE"
-><TT
-CLASS="PARAMETER"
-><I
->force 
-		directory mode</I
-></TT
-></A
-> parameter. To allow
-		a user to modify all the user/group/world permissions on a 
-		directory without restrictions, set this parameter to 000.</P
+>If not set explicitly this parameter is 000, which 
+		allows a user to modify all the user/group/world permissions on a 
+		directory without restrictions.</P
 ><P
 ><EM
 >Note</EM
 > that users who can access the 
 		Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
-		Administrators of most normal systems will probably want to set 
-		it to 0000.</P
+		Administrators of most normal systems will probably want to leave
+		it set as 0000.</P
 ><P
 >See also the <A
 HREF="#DIRECTORYSECURITYMASK"
@@ -8053,13 +8018,12 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->force directory security mode = &#60;same as 
-		force directory mode&#62;</B
+>force directory security mode = 0</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->force directory security mode = 0</B
+>force directory security mode = 700</B
 ></P
 ></DD
 ><DT
@@ -8154,27 +8118,17 @@ NAME="FORCESECURITYMODE"
 		mask may be treated as a set of bits that, when modifying security 
 		on a file, the user has always set to be 'on'.</P
 ><P
->If not set explicitly this parameter is set to the same 
-		value as the <A
-HREF="#FORCECREATEMODE"
-><TT
-CLASS="PARAMETER"
-><I
->force 
-		create mode</I
-></TT
-></A
-> parameter. To allow a user to 
-		modify all the user/group/world permissions on a file, with no 
-		restrictions set this parameter to 000.</P
+>If not set explicitly this parameter is set to 0,
+		and allows a user to modify all the user/group/world permissions on a file,
+		with no restrictions.</P
 ><P
 ><EM
 >Note</EM
 > that users who can access 
 		the Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
-		Administrators of most normal systems will probably want to set 
-		it to 0000.</P
+		Administrators of most normal systems will probably want to leave
+		this set to 0000.</P
 ><P
 >See also the <A
 HREF="#FORCEDIRECTORYSECURITYMODE"
@@ -8206,13 +8160,12 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->force security mode = &#60;same as force 
-		create mode&#62;</B
+>force security mode = 0</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->force security mode = 0</B
+>force security mode = 700</B
 ></P
 ></DD
 ><DT
@@ -15401,19 +15354,9 @@ NAME="SECURITYMASK"
 		mask may be treated as a set of bits the user is not allowed 
 		to change.</P
 ><P
->If not set explicitly this parameter is set to the same
-		value as the <A
-HREF="#CREATEMASK"
-><TT
-CLASS="PARAMETER"
-><I
->create mask
-		</I
-></TT
-></A
-> parameter. To allow a user to modify all the 
-		user/group/world permissions on a file, set this parameter to 
-		0777.</P
+>If not set explicitly this parameter is 0777, allowing
+		a user to modify all the user/group/world permissions on a file.
+		</P
 ><P
 ><EM
 >Note</EM
@@ -15421,7 +15364,7 @@ CLASS="PARAMETER"
 		Samba server through other means can easily bypass this 
 		restriction, so it is primarily useful for standalone 
 		"appliance" systems.  Administrators of most normal systems will 
-		probably want to set it to 0777.</P
+		probably want to leave it set to 0777.</P
 ><P
 >See also the <A
 HREF="#FORCEDIRECTORYSECURITYMODE"
@@ -15453,13 +15396,12 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->security mask = &#60;same as create mask&#62;
-		</B
+>security mask = 0777</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->security mask = 0777</B
+>security mask = 0770</B
 ></P
 ></DD
 ><DT
@@ -18363,7 +18305,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5798"
+NAME="AEN5786"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18393,7 +18335,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5804"
+NAME="AEN5792"
 ></A
 ><H2
 >VERSION</H2
@@ -18404,7 +18346,7 @@ NAME="AEN5804"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5807"
+NAME="AEN5795"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18483,7 +18425,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5827"
+NAME="AEN5815"
 ></A
 ><H2
 >AUTHOR</H2

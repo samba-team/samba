@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "07 May 2001" "" ""
+.TH "SMB.CONF" "5" "10 May 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -1257,9 +1257,6 @@ each parameter for details. Note that some are synonyms.
 \fIread only\fR
 .TP 0.2i
 \(bu
-\fIrestrict acl with mask\fR
-.TP 0.2i
-\(bu
 \fIroot postexec\fR
 .TP 0.2i
 \(bu
@@ -2006,10 +2003,9 @@ create mode\fR parameter for forcing particular mode
 bits to be set on created files. See also the  \fIdirectory mode"\fR parameter for masking 
 mode bits on created directories. See also the  \fIinherit permissions\fR parameter.
 
-Note that by default this parameter does not apply to permissions
+Note that this parameter does not apply to permissions
 set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-this mask on access control lists also, they need to set the \fIrestrict acl with 
-mask\fR to true.
+a mask on access control lists also, they need to set the \fIsecurity mask\fR.
 
 Default: \fBcreate mask = 0744\fR
 
@@ -2372,10 +2368,9 @@ created from this parameter with the value of the \fIforce directory mode
 \fRparameter. This parameter is set to 000 by 
 default (i.e. no extra mode bits are added).
 
-Note that by default this parameter does not apply to permissions
+Note that this parameter does not apply to permissions
 set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-this mask on access control lists also, they need to set the \fIrestrict acl with 
-mask\fR to true.
+a mask on access control lists also, they need to set the \fIdirectory security mask\fR.
 
 See the \fIforce 
 directory mode\fR parameter to cause particular mode 
@@ -2407,26 +2402,23 @@ this mask from being modified. Essentially, zero bits in this
 mask may be treated as a set of bits the user is not allowed 
 to change.
 
-If not set explicitly this parameter is set to the same 
-value as the \fIdirectory 
-mask\fR parameter. To allow a user to
-modify all the user/group/world permissions on a directory, set 
-this parameter to 0777.
+If not set explicitly this parameter is set to 0777
+meaning a user is allowed to modify all the user/group/world
+permissions on a directory.
 
 \fBNote\fR that users who can access the 
 Samba server through other means can easily bypass this restriction, 
 so it is primarily useful for standalone "appliance" systems. 
-Administrators of most normal systems will probably want to set 
-it to 0777.
+Administrators of most normal systems will probably want to leave
+it as the default of 0777.
 
 See also the \fI force directory security mode\fR, \fIsecurity mask\fR, 
 \fIforce security mode
 \fRparameters.
 
-Default: \fBdirectory security mask = <same as 
-directory mask>\fR
+Default: \fBdirectory security mask = 0777\fR
 
-Example: \fBdirectory security mask = 0777\fR
+Example: \fBdirectory security mask = 0700\fR
 .TP
 \fBdns proxy (G)\fR
 Specifies that nmbd(8)
@@ -2786,26 +2778,23 @@ the user may have modified to be on. Essentially, one bits in this
 mask may be treated as a set of bits that, when modifying security 
 on a directory, the user has always set to be 'on'.
 
-If not set explicitly this parameter is set to the same 
-value as the \fIforce 
-directory mode\fR parameter. To allow
-a user to modify all the user/group/world permissions on a 
-directory without restrictions, set this parameter to 000.
+If not set explicitly this parameter is 000, which 
+allows a user to modify all the user/group/world permissions on a 
+directory without restrictions.
 
 \fBNote\fR that users who can access the 
 Samba server through other means can easily bypass this restriction, 
 so it is primarily useful for standalone "appliance" systems. 
-Administrators of most normal systems will probably want to set 
-it to 0000.
+Administrators of most normal systems will probably want to leave
+it set as 0000.
 
 See also the \fI directory security mask\fR,  \fIsecurity mask\fR, 
 \fIforce security mode
 \fRparameters.
 
-Default: \fBforce directory security mode = <same as 
-force directory mode>\fR
+Default: \fBforce directory security mode = 0\fR
 
-Example: \fBforce directory security mode = 0\fR
+Example: \fBforce directory security mode = 700\fR
 .TP
 \fBforce group (S)\fR
 This specifies a UNIX group name that will be 
@@ -2853,26 +2842,23 @@ the user may have modified to be on. Essentially, one bits in this
 mask may be treated as a set of bits that, when modifying security 
 on a file, the user has always set to be 'on'.
 
-If not set explicitly this parameter is set to the same 
-value as the \fIforce 
-create mode\fR parameter. To allow a user to 
-modify all the user/group/world permissions on a file, with no 
-restrictions set this parameter to 000.
+If not set explicitly this parameter is set to 0,
+and allows a user to modify all the user/group/world permissions on a file,
+with no restrictions.
 
 \fBNote\fR that users who can access 
 the Samba server through other means can easily bypass this restriction, 
 so it is primarily useful for standalone "appliance" systems. 
-Administrators of most normal systems will probably want to set 
-it to 0000.
+Administrators of most normal systems will probably want to leave
+this set to 0000.
 
 See also the \fI force directory security mode\fR,
 \fIdirectory security
 mask\fR, \fI security mask\fR parameters.
 
-Default: \fBforce security mode = <same as force 
-create mode>\fR
+Default: \fBforce security mode = 0\fR
 
-Example: \fBforce security mode = 0\fR
+Example: \fBforce security mode = 700\fR
 .TP
 \fBforce user (S)\fR
 This specifies a UNIX user name that will be 
@@ -5762,25 +5748,22 @@ this mask from being modified. Essentially, zero bits in this
 mask may be treated as a set of bits the user is not allowed 
 to change.
 
-If not set explicitly this parameter is set to the same
-value as the \fIcreate mask
-\fRparameter. To allow a user to modify all the 
-user/group/world permissions on a file, set this parameter to 
-0777.
+If not set explicitly this parameter is 0777, allowing
+a user to modify all the user/group/world permissions on a file.
 
 \fBNote\fR that users who can access the 
 Samba server through other means can easily bypass this 
 restriction, so it is primarily useful for standalone 
 "appliance" systems. Administrators of most normal systems will 
-probably want to set it to 0777.
+probably want to leave it set to 0777.
 
 See also the  \fIforce directory security mode\fR, 
 \fIdirectory 
 security mask\fR,  \fIforce security mode\fR parameters.
 
-Default: \fBsecurity mask = <same as create mask>
-\fR
-Example: \fBsecurity mask = 0777\fR
+Default: \fBsecurity mask = 0777\fR
+
+Example: \fBsecurity mask = 0770\fR
 .TP
 \fBserver string (G)\fR
 This controls what string will show up in the 
