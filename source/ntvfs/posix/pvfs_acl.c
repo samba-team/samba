@@ -36,32 +36,109 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 				 struct xattr_NTACL *acl)
 {
 	struct security_descriptor *sd;
-	struct nt_user_token *token = req->session->session_info->nt_user_token;
 	int i;
+	struct security_ace ace;
+	NTSTATUS status;
+	const char *sid_names[] = {
+		SID_BUILTIN_ADMINISTRATORS,
+		SID_CREATOR_OWNER,
+		SID_CREATOR_GROUP,
+		SID_WORLD
+	};
+	uint32_t access_masks[4];
+	mode_t mode;
 
 	sd = security_descriptor_initialise(req);
 	if (sd == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* nasty hack to get a reasonable sec desc - should be based on posix uid/gid
-	   and perms */
-	if (token->num_sids > 0) {
-		sd->owner_sid = token->user_sids[0];
+	status = sidmap_uid_to_sid(pvfs->sidmap, sd, name->st.st_uid, &sd->owner_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	if (token->num_sids > 1) {
-		sd->group_sid = token->user_sids[1];
+	status = sidmap_gid_to_sid(pvfs->sidmap, sd, name->st.st_gid, &sd->group_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
+
 	sd->type |= SEC_DESC_DACL_PRESENT;
 
-	for (i=0;i<token->num_sids;i++) {
-		struct security_ace ace;
-		NTSTATUS status;
+	/*
+	  we provide 4 ACEs
+	    - Administrator
+	    - Owner
+	    - Group
+	    - Everyone
+	 */
+	access_masks[0] = SEC_RIGHTS_FULL_CTRL | STD_RIGHT_ALL_ACCESS;
+	access_masks[1] = 0;
+	access_masks[2] = 0;
+	access_masks[3] = 0;
 
-		ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
-		ace.flags = 0;
-		ace.access_mask = SEC_RIGHTS_FULL_CTRL | STD_RIGHT_ALL_ACCESS;
-		ace.trustee = *token->user_sids[i];
+	mode = name->st.st_mode;
+
+	if (mode & S_IRUSR) {
+		access_masks[1] |= 
+			SA_RIGHT_FILE_READ_DATA | 
+			SA_RIGHT_FILE_READ_EA |
+			SA_RIGHT_FILE_READ_ATTRIBUTES |
+			SA_RIGHT_FILE_EXECUTE;
+	}
+	if (mode & S_IWUSR) {
+		access_masks[1] |= 
+			SA_RIGHT_FILE_WRITE_DATA | 
+			SA_RIGHT_FILE_APPEND_DATA |
+			SA_RIGHT_FILE_WRITE_EA |
+			SA_RIGHT_FILE_DELETE_CHILD |
+			SA_RIGHT_FILE_WRITE_ATTRIBUTES;
+	}
+
+	if (mode & S_IRGRP) {
+		access_masks[2] |= 
+			SA_RIGHT_FILE_READ_DATA | 
+			SA_RIGHT_FILE_READ_EA |
+			SA_RIGHT_FILE_READ_ATTRIBUTES |
+			SA_RIGHT_FILE_EXECUTE;
+	}
+	if (mode & S_IWGRP) {
+		access_masks[2] |= 
+			SA_RIGHT_FILE_WRITE_DATA | 
+			SA_RIGHT_FILE_APPEND_DATA |
+			SA_RIGHT_FILE_WRITE_EA |
+			SA_RIGHT_FILE_DELETE_CHILD |
+			SA_RIGHT_FILE_WRITE_ATTRIBUTES;
+	}
+
+	if (mode & S_IROTH) {
+		access_masks[3] |= 
+			SA_RIGHT_FILE_READ_DATA | 
+			SA_RIGHT_FILE_READ_EA |
+			SA_RIGHT_FILE_READ_ATTRIBUTES |
+			SA_RIGHT_FILE_EXECUTE;
+	}
+	if (mode & S_IWOTH) {
+		access_masks[3] |= 
+			SA_RIGHT_FILE_WRITE_DATA | 
+			SA_RIGHT_FILE_APPEND_DATA |
+			SA_RIGHT_FILE_WRITE_EA |
+			SA_RIGHT_FILE_DELETE_CHILD |
+			SA_RIGHT_FILE_WRITE_ATTRIBUTES;
+	}
+
+	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	ace.flags = 0;
+
+	for (i=0;i<ARRAY_SIZE(sid_names);i++) {
+		struct dom_sid *sid;
+
+		ace.access_mask = access_masks[i];
+
+		sid = dom_sid_parse_talloc(sd, sid_names[i]);
+		if (sid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		ace.trustee = *sid;
 
 		status = security_descriptor_dacl_add(sd, &ace);
 		if (!NT_STATUS_IS_OK(status)) {

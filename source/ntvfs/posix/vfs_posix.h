@@ -40,6 +40,7 @@ struct pvfs_state {
 
 	struct brl_context *brl_context;
 	struct odb_context *odb_context;
+	struct sidmap_context *sidmap;
 
 	/* an id tree mapping open search ID to a pvfs_search_state structure */
 	struct idr_context *idtree_search;
