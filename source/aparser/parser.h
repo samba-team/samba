@@ -63,4 +63,5 @@ void dump_data(int level,char *buf1,int len);
 BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
 BOOL prs_pointer(char *desc, prs_struct *ps, int depth, void **p);
+BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16);
 
