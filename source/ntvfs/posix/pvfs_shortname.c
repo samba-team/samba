@@ -25,11 +25,21 @@
 
 
 /*
+  return the short name for a component of a full name
+  TODO: this is obviously not very useful in its current form !
+*/
+char *pvfs_short_name_component(struct pvfs_state *pvfs, const char *name)
+{
+	return talloc_strndup(pvfs, name, 12);
+}
+
+
+/*
   return the short name for a given entry in a directory
   TODO: this is obviously not very useful in its current form !
 */
 char *pvfs_short_name(struct pvfs_state *pvfs, struct pvfs_filename *name)
 {
 	char *p = strrchr(name->full_name, '/');
-	return talloc_strndup(name, p+1, 12);
+	return pvfs_short_name_component(pvfs, p+1);
 }

@@ -98,11 +98,20 @@ NTSTATUS pvfs_list(struct pvfs_state *pvfs, struct pvfs_filename *name, struct p
 	while ((dent = readdir(odir))) {
 		uint_t i = dir->count;
 		const char *dname = dent->d_name;
+		char *short_name;
+
+		short_name = pvfs_short_name_component(pvfs, dname);
 
 		/* check it matches the wildcard pattern */
-		if (ms_fnmatch(pattern, dname, PROTOCOL_NT1) != 0) {
+		if (ms_fnmatch(pattern, dname, 
+			       pvfs->tcon->smb_conn->negotiate.protocol) != 0 &&
+		    ms_fnmatch(pattern, short_name, 
+			       pvfs->tcon->smb_conn->negotiate.protocol) != 0) {
+			talloc_free(short_name);
 			continue;
 		}
+
+		talloc_free(short_name);
 		
 		if (dir->count >= allocated) {
 			allocated = (allocated + 100) * 1.2;
