@@ -24,6 +24,7 @@
 #undef AIX
 #undef BSD
 #undef IRIX
+#undef IRIX6
 #undef HPUX
 #undef QNX
 #undef SCO
@@ -31,6 +32,7 @@
 #undef NEXT2
 #undef RELIANTUNIX
 #undef HAVE_SHARED_MMAP
+#undef HAVE_MMAP
 #undef HAVE_SYSV_IPC
 #undef HAVE_FCNTL_LOCK
 #undef HAVE_FTRUNCATE_EXTEND

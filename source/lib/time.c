@@ -516,7 +516,7 @@ char *timestring(void )
 		slprintf(TimeBuf,sizeof(TimeBuf)-1,"%ld seconds since the Epoch",(long)t);
 	} else {
 #ifdef HAVE_STRFTIME
-		strftime(TimeBuf,100,"%Y/%m/%d %T",tm);
+		strftime(TimeBuf,100,"%Y/%m/%d %H:%M:%S",tm);
 #else
 		fstrcpy(TimeBuf, asctime(tm));
 #endif

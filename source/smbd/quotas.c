@@ -440,7 +440,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
   return (True);
 }
 
-#elif defined (SGI6)
+#elif defined (IRIX6)
 /****************************************************************************
 try to get the disk space from disk quotas (IRIX 6.2 version)
 ****************************************************************************/
