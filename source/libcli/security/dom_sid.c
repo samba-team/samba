@@ -1,11 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
    Samba utility functions
-   Copyright (C) Andrew Tridgell 		1992-2004
-   Copyright (C) Luke Kenneth Caseson Leighton 	1998-1999
-   Copyright (C) Jeremy Allison  		1999
+
    Copyright (C) Stefan (metze) Metzmacher 	2002-2004
-   Copyright (C) Simo Sorce 			2002
+   Copyright (C) Andrew Tridgell 		1992-2004
+   Copyright (C) Jeremy Allison  		1999
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
