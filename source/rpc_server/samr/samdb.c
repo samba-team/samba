@@ -24,6 +24,7 @@
 
 struct samdb_context {
 	struct ldb_context *ldb;
+	struct samdb_context **static_ptr;
 };
 
 
@@ -42,12 +43,12 @@ void samdb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_
 	free(s);
 }
 
-/* close a connection to the sam */
+/* destroy the last connection to the sam */
 int samdb_destructor(void *ctx)
 {
 	struct samdb_context *sam_ctx = ctx;
-	/* we don't actually close due to broken posix locking semantics */
-	sam_ctx->ldb = NULL;
+	ldb_close(sam_ctx->ldb);
+	*(sam_ctx->static_ptr) = NULL;
 	return 0;
 }				 
 
@@ -57,7 +58,7 @@ int samdb_destructor(void *ctx)
  */
 void *samdb_connect(TALLOC_CTX *mem_ctx)
 {
-	struct samdb_context *ctx;
+	static struct samdb_context *ctx;
 	/*
 	  the way that unix fcntl locking works forces us to have a
 	  static ldb handle here rather than a much more sensible
@@ -66,25 +67,27 @@ void *samdb_connect(TALLOC_CTX *mem_ctx)
 	  the ldb more than once, and tdb would rightly refuse the
 	  second open due to the broken nature of unix locking.
 	*/
-	static struct ldb_context *static_sam_db;
-
-	if (static_sam_db == NULL) {
-		static_sam_db = ldb_connect(lp_sam_url(), 0, NULL);
-		if (static_sam_db == NULL) {
-			return NULL;
-		}
+	if (ctx != NULL) {
+		talloc_increase_ref_count(ctx);
+		return ctx;
 	}
 
-	ldb_set_debug(static_sam_db, samdb_debug, NULL);
-
 	ctx = talloc_p(mem_ctx, struct samdb_context);
-	if (!ctx) {
+	if (ctx == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	ctx->ldb = static_sam_db;
+	ctx->static_ptr = &ctx;
+
+	ctx->ldb = ldb_connect(lp_sam_url(), 0, NULL);
+	if (ctx->ldb == NULL) {
+		talloc_free(ctx);
+		return NULL;
+	}
+
 	talloc_set_destructor(ctx, samdb_destructor);
+	ldb_set_debug(ctx->ldb, samdb_debug, NULL);
 
 	return ctx;
 }
