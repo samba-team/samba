@@ -220,6 +220,7 @@ const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bindi
 		s = talloc_asprintf_append(s, ",%s", b->options[i]);
 		if (!s) return NULL;
 	}
+
 	for (i=0;i<ARRAY_SIZE(ncacn_options);i++) {
 		if (b->flags & ncacn_options[i].flag) {
 			s = talloc_asprintf_append(s, ",%s", ncacn_options[i].name);
@@ -325,14 +326,6 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	b->options[i] = options;
 	b->options[i+1] = NULL;
 
-	/* Endpoint is first option */
-	b->endpoint = b->options[0];
-	if (strlen(b->endpoint) == 0) b->endpoint = NULL;
-
-	for (i=0;b->options[i];i++) {
-		b->options[i] = b->options[i+1];
-	}
-
 	/* some options are pre-parsed for convenience */
 	for (i=0;b->options[i];i++) {
 		for (j=0;j<ARRAY_SIZE(ncacn_options);j++) {
@@ -345,6 +338,16 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 				i--;
 				break;
 			}
+		}
+	}
+
+	if (b->options[0]) {
+		/* Endpoint is first option */
+		b->endpoint = b->options[0];
+		if (strlen(b->endpoint) == 0) b->endpoint = NULL;
+
+		for (i=0;b->options[i];i++) {
+			b->options[i] = b->options[i+1];
 		}
 	}
 

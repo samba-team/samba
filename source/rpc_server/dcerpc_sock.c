@@ -90,8 +90,10 @@ static void add_socket_rpc_ncalrpc(struct server_service *service,
 	char *full_path;
 
 	if (!e->ep_description.endpoint) {
-		/* No identifier specified: generate one */
-		e->ep_description.endpoint = generate_random_str(dce_ctx, 10);
+		/* No identifier specified: use DEFAULT. 
+		 * DO NOT hardcode this value anywhere else. Rather, specify 
+		 * no endpoint and let the epmapper worry about it. */
+		e->ep_description.endpoint = talloc_strdup(dce_ctx, "DEFAULT");
 	}
 
 	full_path = talloc_asprintf(dce_ctx, "%s/%s", lp_ncalrpc_dir(), e->ep_description.endpoint);
