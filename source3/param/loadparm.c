@@ -155,6 +155,7 @@ typedef struct
   int shmem_size;
   int shmem_hash_size;
   int client_code_page;
+  BOOL bDNSproxy;
   BOOL bWINSsupport;
   BOOL bWINSproxy;
   BOOL bLocalMaster;
@@ -444,6 +445,7 @@ struct parm_struct
   {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	NULL},
   {"os level",         P_INTEGER, P_GLOBAL, &Globals.os_level,          NULL},
   {"max ttl",          P_INTEGER, P_GLOBAL, &Globals.max_ttl,           NULL},
+  {"dns proxy",        P_BOOL,    P_GLOBAL, &Globals.bDNSproxy,         NULL},
   {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL},
   {"wins proxy",       P_BOOL,    P_GLOBAL, &Globals.bWINSproxy,        NULL},
   {"wins server",      P_STRING,  P_GLOBAL, &Globals.szWINSserver,      NULL},
@@ -650,6 +652,19 @@ static void init_globals(void)
   Globals.bBrowseList = True;
   Globals.bWINSsupport = False;
   Globals.bWINSproxy = False;
+
+/* this parameter is currently set to the default functionality
+   in samba.  given that w95 and NT is starting to use DNS for
+   server resolution, i expect that at some point it would be
+   sensible to default this to False.
+
+   this parameter is added because nmbd is a single process, and
+   gethostbyname is a blocking call, which can take out nmbd for
+   several seconds while a dns lookup is performed.
+
+ */
+
+  Globals.bDNSproxy = True;
 }
 
 /***************************************************************************
@@ -802,6 +817,7 @@ FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address,&Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name,&Globals.szNISHomeMapName)
 
+FN_GLOBAL_BOOL(lp_dns_proxy,&Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_wins_proxy,&Globals.bWINSproxy)
 FN_GLOBAL_BOOL(lp_local_master,&Globals.bLocalMaster)

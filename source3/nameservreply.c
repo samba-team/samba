@@ -559,12 +559,13 @@ void reply_name_query(struct packet_struct *p)
     }
    
     /* do we want to do dns lookups? */
-    /* XXXX this DELAYS nmbd while it does a search. not a good idea
-       but there's no pleasant alternative. phil@hands.com suggested
-       making the name a full DNS name, which would succeed / fail
-       much quicker.
+    /* XXXX this DELAYS nmbd while it does a search.  lp_dns_proxy()
+       can be switched off, to ensure that the blocking doesn't occur.
+       a better solution would be to fork, but this will require a
+       mechanism to carry on processing after the query is resolved
+       (similar to the netbios queue).
      */
-    if (success && !n && (lp_wins_proxy() || !bcast))
+    if (success && !n && (lp_dns_proxy() || !bcast))
     {
       n = dns_name_search(question, p->timestamp);
     }
