@@ -5064,8 +5064,11 @@ void samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct
 
 	smb_io_unihdr ("", &(q_u->hdr_dest_host), ps, depth); 
 	smb_io_unistr2("", &(q_u->uni_dest_host), q_u->hdr_dest_host.buffer, ps, depth); 
+	prs_align(ps);
+
 	smb_io_unihdr ("", &(q_u->hdr_user_name), ps, depth); 
 	smb_io_unistr2("", &(q_u->uni_user_name), q_u->hdr_user_name.buffer, ps, depth); 
+	prs_align(ps);
 
 	samr_io_enc_passwd("nt_newpass", &(q_u->nt_newpass), ps, depth); 
 	prs_grow(ps);
