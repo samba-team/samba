@@ -107,7 +107,7 @@ void debug_ntlmssp_flags(uint32_t neg_flags)
    
 static const uint8_t *get_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
-	static uchar chal[8];
+	static uint8_t chal[8];
 	generate_random_buffer(chal, sizeof(chal), False);
 
 	return chal;
@@ -548,7 +548,7 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 	uint32_t ntlmssp_command, auth_flags;
 	NTSTATUS nt_status;
 
-	uchar session_nonce_hash[16];
+	uint8_t session_nonce_hash[16];
 
 	const char *parse_string;
 	char *domain = NULL;
@@ -735,7 +735,7 @@ static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
   			} else {
 				
 				/* When there is no LM response, just use zeros */
- 				static const uchar zeros[24];
+ 				static const uint8_t zeros[24];
  				session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
  				SMBsesskeygen_lm_sess_key(zeros, zeros, 
  							  session_key.data);
@@ -985,7 +985,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	char *server_domain;
 	const char *chal_parse_string;
 	const char *auth_gen_string;
-	uchar lm_hash[16];
+	uint8_t lm_hash[16];
 	DATA_BLOB lm_response = data_blob(NULL, 0);
 	DATA_BLOB nt_response = data_blob(NULL, 0);
 	DATA_BLOB session_key = data_blob(NULL, 0);
@@ -1053,7 +1053,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	if (!ntlmssp_state->password) {
-		static const uchar zeros[16];
+		static const uint8_t zeros[16];
 		/* do nothing - blobs are zero length */
 
 		/* session key is all zeros */
@@ -1088,10 +1088,10 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 	} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		struct MD5Context md5_session_nonce_ctx;
-		uchar nt_hash[16];
-		uchar session_nonce[16];
-		uchar session_nonce_hash[16];
-		uchar user_session_key[16];
+		uint8_t nt_hash[16];
+		uint8_t session_nonce[16];
+		uint8_t session_nonce_hash[16];
+		uint8_t user_session_key[16];
 		E_md4hash(ntlmssp_state->password, nt_hash);
 		
 		lm_response = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 24);
@@ -1124,7 +1124,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		/* LM Key is incompatible... */
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	} else {
-		uchar nt_hash[16];
+		uint8_t nt_hash[16];
 
 		if (ntlmssp_state->use_nt_response) {
 			nt_response = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 24);
@@ -1170,7 +1170,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 			SMBsesskeygen_lm_sess_key(lm_session_key.data, lm_response.data, 
 						  new_session_key.data);
 		} else {
-			static const uchar zeros[24];
+			static const uint8_t zeros[24];
 			SMBsesskeygen_lm_sess_key(lm_session_key.data, zeros,
 						  new_session_key.data);
 		}

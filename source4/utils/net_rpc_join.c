@@ -45,7 +45,7 @@
 int net_rpc_join_ok(const char *domain)
 {
 	struct cli_state *cli;
-	uchar stored_md4_trust_password[16];
+	uint8_t stored_md4_trust_password[16];
 	int retval = 1;
 	uint32_t channel;
 	NTSTATUS result;
@@ -121,7 +121,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	char *clear_trust_password = NULL;
 	fstring ucs2_trust_password;
 	int ucs2_pw_len;
-	uchar pwbuf[516], sess_key[16];
+	uint8_t pwbuf[516], sess_key[16];
 	SAM_USERINFO_CTR ctr;
 	SAM_USER_INFO_24 p24;
 	SAM_USER_INFO_10 p10;

@@ -118,15 +118,15 @@ enum ntlmssp_direction {
 
 static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 					      TALLOC_CTX *sig_mem_ctx, 
-					      const uchar *data, size_t length, 
+					      const uint8_t *data, size_t length, 
 					      enum ntlmssp_direction direction,
 					      DATA_BLOB *sig) 
 {
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 
 		HMACMD5Context ctx;
-		uchar seq_num[4];
-		uchar digest[16];
+		uint8_t seq_num[4];
+		uint8_t digest[16];
 		SIVAL(seq_num, 0, ntlmssp_state->ntlmssp_seq_num);
 
 		switch (direction) {
@@ -174,7 +174,7 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 
 NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
 			     TALLOC_CTX *sig_mem_ctx, 
-			     const uchar *data, size_t length, 
+			     const uint8_t *data, size_t length, 
 			     DATA_BLOB *sig) 
 {
 	NTSTATUS nt_status;
@@ -199,7 +199,7 @@ NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
 
 NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
 			      TALLOC_CTX *sig_mem_ctx, 
-			      const uchar *data, size_t length, 
+			      const uint8_t *data, size_t length, 
 			      const DATA_BLOB *sig) 
 {
 	DATA_BLOB local_sig;
@@ -265,7 +265,7 @@ NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
 
 NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
 			     TALLOC_CTX *sig_mem_ctx, 
-			     uchar *data, size_t length,
+			     uint8_t *data, size_t length,
 			     DATA_BLOB *sig)
 {	
 	if (!ntlmssp_state->session_key.length) {
@@ -277,8 +277,8 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
 	dump_data_pw("ntlmssp clear data\n", data, length);
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		HMACMD5Context ctx;
-		uchar seq_num[4];
-		uchar digest[16];
+		uint8_t seq_num[4];
+		uint8_t digest[16];
 		SIVAL(seq_num, 0, ntlmssp_state->ntlmssp_seq_num);
 
 		hmac_md5_init_limK_to_64(ntlmssp_state->send_sign_key, 
@@ -335,7 +335,7 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
 
 NTSTATUS ntlmssp_unseal_packet(NTLMSSP_STATE *ntlmssp_state,
 			       TALLOC_CTX *sig_mem_ctx, 
-			       uchar *data, size_t length,
+			       uint8_t *data, size_t length,
 			       DATA_BLOB *sig)
 {
 	if (!ntlmssp_state->session_key.length) {
