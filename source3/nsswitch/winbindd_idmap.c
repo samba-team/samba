@@ -306,7 +306,7 @@ BOOL winbindd_idmap_init(void)
     /* Open tdb cache */
 
     if (!(idmap_tdb = tdb_open_log(lock_path("winbindd_idmap.tdb"), 0,
-                               TDB_NOLOCK, O_RDWR | O_CREAT, 0600))) {
+				   TDB_DEFAULT, O_RDWR | O_CREAT, 0600))) {
         DEBUG(0, ("Unable to open idmap database\n"));
         return False;
     }
