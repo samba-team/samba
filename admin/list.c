@@ -31,50 +31,53 @@
  * SUCH DAMAGE. 
  */
 
-/* 
- * $Id$
- */
+#include "ktutil_locl.h"
 
-#ifndef __KTUTIL_LOCL_H__
-#define __KTUTIL_LOCL_H__
+RCSID("$Id$");
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <roken.h>
+int
+kt_list(int argc, char **argv)
+{
+    krb5_error_code ret;
+    krb5_kt_cursor cursor;
+    krb5_keytab_entry entry;
 
-#include <krb5.h>
-#include <kadm5/admin.h>
-#include <kadm5/kadm5_err.h>
+    ret = krb5_kt_start_seq_get(context, keytab, &cursor);
+    if(ret){
+	krb5_warn(context, ret, "krb5_kt_start_seq_get");
+	return 1;
+    }
+    printf("%s", "Version");
+    printf("  ");
+    printf("%-15s", "Type");
+    printf("  ");
+    printf("%s", "Principal");
+    printf("\n");
+    while((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0){
+	char *p;
+	printf("   %3d ", entry.vno);
+	printf("  ");
+	ret = krb5_enctype_to_string(context, entry.keyblock.keytype, &p);
+	if (ret != 0) 
+	    asprintf(&p, "unknown (%d)", entry.keyblock.keytype);
+	printf("%-15s", p);
+	free(p);
+	printf("  ");
+	krb5_unparse_name(context, entry.principal, &p);
+	printf("%s ", p);
+	free(p);
+	printf("\n");
+	if (verbose_flag) {
+	    char tstamp[256];
+	    struct tm *tm;
+	    time_t ts = entry.timestamp;
 
-#include <sl.h>
-#include <getarg.h>
-
-extern krb5_context context;
-extern krb5_keytab keytab;
-
-extern int help_flag;
-extern int version_flag;
-extern int verbose_flag;
-extern char *keytab_string; 
-
-int kt_add (int argc, char **argv);
-int kt_change (int argc, char **argv);
-int kt_copy (int argc, char **argv);
-int kt_get (int argc, char **argv);
-int kt_list(int argc, char **argv);
-int kt_remove(int argc, char **argv);
-int srvconv(int argc, char **argv);
-int srvcreate(int argc, char **argv);
-
-#endif /* __KTUTIL_LOCL_H__ */
+	    tm = gmtime (&ts);
+	    strftime (tstamp, sizeof(tstamp), "%Y-%m-%d %H:%M:%S UTC", tm);
+	    printf("   Timestamp: %s\n", tstamp);
+	}
+	krb5_kt_free_entry(context, &entry);
+    }
+    ret = krb5_kt_end_seq_get(context, keytab, &cursor);
+    return 0;
+}
