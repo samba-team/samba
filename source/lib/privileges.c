@@ -87,24 +87,25 @@ typedef struct priv_sid_list {
  Retrieve the privilege mask (set) for a given SID
 ****************************************************************************/
 
-static uint32 get_privileges( const DOM_SID *sid )
+static uint32 get_privileges( const DOM_SID *sid, uint32 *mask )
 {
 	TDB_CONTEXT *tdb = get_account_pol_tdb();
 	fstring keystr;
 	uint32 priv_mask;
 	
 	if ( !tdb )
-		return 0;
+		return False;
 
 	fstr_sprintf( keystr, "%s%s", PRIVPREFIX, sid_string_static(sid) );
 
 	if ( !tdb_fetch_uint32( tdb, keystr, &priv_mask ) ) {
 		DEBUG(3,("get_privileges: No privileges assigned to SID [%s]\n",
 			sid_string_static(sid)));
-		return 0;
+		return False;
 	}
 	
-	return priv_mask;
+	*mask = priv_mask;
+	return True;
 }
 
 /***************************************************************************
@@ -241,13 +242,11 @@ void get_privileges_for_sids(PRIVILEGE_SET *privset, DOM_SID *slist, int scount)
 	int i;
 	
 	for ( i=0; i<scount; i++ ) {
-		priv_mask = get_privileges( &slist[i] );
-
 		/* don't add unless we actually have a privilege assigned */
 
-		if ( priv_mask == 0 )
+		if ( !get_privileges( &slist[i], &priv_mask ) )
 			continue;
-		
+
 		DEBUG(5,("get_privileges_for_sids: sid = %s, privilege mask = 0x%x\n",
 			sid_string_static(&slist[i]), priv_mask));
 			
@@ -350,14 +349,34 @@ BOOL grant_privilege(const DOM_SID *sid, uint32 priv_mask)
 {
 	uint32 old_mask, new_mask;
 	
-	old_mask = get_privileges( sid );
-	
-	new_mask = old_mask | priv_mask;
+	if ( get_privileges( sid, &old_mask ) )
+		new_mask = old_mask | priv_mask;
+	else
+		new_mask = priv_mask;
 
 	DEBUG(10,("grant_privilege: %s, orig priv set = 0x%x, new privilege set = 0x%x\n",
 		sid_string_static(sid), old_mask, new_mask ));
 	
 	return set_privileges( sid, new_mask );
+}
+
+/*********************************************************************
+ Add a privilege based on its name
+*********************************************************************/
+
+BOOL grant_privilege_by_name(DOM_SID *sid, const char *name)
+{
+	int i;
+
+	for ( i = 0; privs[i].se_priv != SE_END; i++ ) {
+		if ( strequal(privs[i].name, name) ) {
+			return grant_privilege( sid, privs[i].se_priv );
+                }
+        }
+
+        DEBUG(3, ("grant_privilege_by_name: No Such Privilege Found (%s)\n", name));
+
+        return False;
 }
 
 /***************************************************************************
@@ -368,7 +387,10 @@ BOOL revoke_privilege(const DOM_SID *sid, uint32 priv_mask)
 {
 	uint32 old_mask, new_mask;
 	
-	old_mask = get_privileges( sid );
+	if ( get_privileges( sid, &old_mask ) )
+		new_mask = old_mask | priv_mask;
+	else
+		new_mask = priv_mask;
 	
 	new_mask = old_mask & ~priv_mask;
 
@@ -376,6 +398,25 @@ BOOL revoke_privilege(const DOM_SID *sid, uint32 priv_mask)
                 sid_string_static(sid), old_mask, new_mask ));
 	
 	return set_privileges( sid, new_mask );
+}
+
+/*********************************************************************
+ Add a privilege based on its name
+*********************************************************************/
+
+BOOL revoke_privilege_by_name(DOM_SID *sid, const char *name)
+{
+	int i;
+
+	for ( i = 0; privs[i].se_priv != SE_END; i++ ) {
+		if ( strequal(privs[i].name, name) ) {
+			return revoke_privilege( sid, privs[i].se_priv );
+                }
+        }
+
+        DEBUG(3, ("revoke_privilege_by_name: No Such Privilege Found (%s)\n", name));
+
+        return False;
 }
 
 /***************************************************************************
@@ -558,5 +599,17 @@ int count_all_privileges( void )
 	for ( count=0; privs[count].se_priv != SE_END; count++ ) ;
 
 	return count;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+BOOL is_privileged_sid( DOM_SID *sid ) 
+{
+	int mask;
+
+	/* check if the lookup succeeds */
+
+	return get_privileges( sid, &mask );
 }
 
