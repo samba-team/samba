@@ -4171,6 +4171,7 @@ static void usage(char *pname)
   pstring query_host;
   BOOL message = False;
   extern char tar_type;
+  static pstring servicesf = CONFIGFILE;
 
   *query_host = 0;
   *base_directory = 0;
@@ -4244,7 +4245,7 @@ static void usage(char *pname)
   setup_term_code (KANJI);
 #endif
   while ((opt = 
-	  getopt(argc, argv,"B:O:M:i:Nn:d:Pp:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
+	  getopt(argc, argv,"s:B:O:M:i:Nn:d:Pp:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
     switch (opt)
       {
       case 'm':
@@ -4334,6 +4335,9 @@ static void usage(char *pname)
 	usage(pname);
 	exit(0);
 	break;
+      case 's':
+	strcpy(servicesf, optarg);
+	break;
       case 't':
 #ifdef KANJI
 	if (!setup_term_code (optarg)) {
@@ -4356,6 +4360,11 @@ static void usage(char *pname)
 
 
   DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
+
+  if (!lp_load(servicesf,True)) {
+    fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+    return (-1);
+  }
 
   load_interfaces();
   get_myname(*myname?NULL:myname,NULL);  
