@@ -1861,8 +1861,8 @@ AC_ARG_WITH(syslog,
 # check for a shared memory profiling support
 AC_MSG_CHECKING(whether to use profiling)
 AC_ARG_WITH(profile,
-[  --with-profile     Include profile support
-  --without-profile  Don't include profile support (default)],
+[  --with-profiling-data     Include gathering source code profile information
+  --without-profiling-data  Don't include support for gathering source code profile information (default)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
