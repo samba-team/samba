@@ -235,7 +235,7 @@ static BOOL test_lockread(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Trying empty file read\n");
 	io.lockread.in.fnum = fnum;
 	io.lockread.in.count = 1;
-	io.lockread.in.offset = 0;
+	io.lockread.in.offset = 1;
 	io.lockread.in.remaining = 0;
 	io.lockread.out.data = buf;
 	status = smb_raw_read(cli->tree, &io);
@@ -252,7 +252,9 @@ static BOOL test_lockread(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Trying zero file read\n");
 	io.lockread.in.count = 0;
 	status = smb_raw_read(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smbcli_unlock(cli->tree, fnum, 1, 1);
 
 	printf("Trying bad fnum\n");
 	io.lockread.in.fnum = fnum+1;
@@ -268,9 +270,9 @@ static BOOL test_lockread(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.lockread.in.remaining = 0;
 	io.lockread.in.count = strlen(test_data);
 	status = smb_raw_read(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
-	smbcli_unlock(cli->tree, fnum, 0, 1);
+	smbcli_unlock(cli->tree, fnum, 1, 0);
 
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
