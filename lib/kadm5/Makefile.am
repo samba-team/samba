@@ -14,7 +14,7 @@ buildkadm5include = $(buildinclude)/kadm5
 
 kadm5include_HEADERS = kadm5_err.h admin.h private.h
 
-install-build-headers::
+install-build-headers:: $(kadm5include_HEADERS)
 	@foo='$(kadm5include_HEADERS)'; \
 	for f in $$foo; do \
 		f=`basename $$f`; \
