@@ -1,5 +1,10 @@
 2004-05-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* private.h: add kadm5_ad_context
+	
+	* ipropd_master.c (prop_one): store the opcode in the begining of
+	the blob, not the end
+	
 	* ad.c: try all ldap servers in dns, generate a random password,
 	base64(random_block(64)), XXX must make it support other then
 	ARCFOUR
