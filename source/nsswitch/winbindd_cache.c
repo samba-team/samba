@@ -94,6 +94,13 @@ static uint32 cached_sequence_number(char *domain_name)
 	memcpy(&rec, dbuf.dptr, sizeof(rec));
 	free(dbuf.dptr);
 
+	/* check for difference in the system clock */
+	if (t < rec.mod_time) {
+		DEBUG(1,("cached_sequence_number: rec.mod_time in the future! %d > %d\n",
+			(uint16)rec.mod_time, (uint16)t));
+		goto refetch;
+	}
+
 	if (t < (rec.mod_time + lp_winbind_cache_time())) {
 		DEBUG(3,("cached sequence number for %s is %u\n",
 			 domain_name, (unsigned)rec.seq_num));
