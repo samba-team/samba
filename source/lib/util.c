@@ -4857,10 +4857,6 @@ int set_maxfiles(int requested_max)
 #if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
 	struct rlimit rlp;
 	getrlimit(RLIMIT_NOFILE, &rlp);
-	/* Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
-	 * account for the extra fd we need 
-	 * as well as the log files and standard
-	 * handles etc.  */
 	rlp.rlim_cur = MIN(requested_max,rlp.rlim_max);
 	setrlimit(RLIMIT_NOFILE, &rlp);
 	getrlimit(RLIMIT_NOFILE, &rlp);
