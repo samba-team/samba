@@ -488,7 +488,7 @@ NTSTATUS odb_can_open(struct odb_context *odb, DATA_BLOB *key,
 	int i, count;
 	struct odb_entry e;
 
-	kbuf.dptr = key->data;
+	kbuf.dptr = (char *)key->data;
 	kbuf.dsize = key->length;
 
 	dbuf = tdb_fetch(odb->w->tdb, kbuf);

@@ -234,7 +234,7 @@ NTSTATUS brl_lock(struct brl_context *brl,
 	char *tp;
 	NTSTATUS status;
 
-	kbuf.dptr = file_key->data;
+	kbuf.dptr = (char *)file_key->data;
 	kbuf.dsize = file_key->length;
 
 	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
@@ -379,7 +379,7 @@ NTSTATUS brl_unlock(struct brl_context *brl,
 	struct lock_context context;
 	NTSTATUS status;
 
-	kbuf.dptr = file_key->data;
+	kbuf.dptr = (char *)file_key->data;
 	kbuf.dsize = file_key->length;
 
 	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
@@ -463,7 +463,7 @@ NTSTATUS brl_remove_pending(struct brl_context *brl,
 	struct lock_struct *locks;
 	NTSTATUS status;
 
-	kbuf.dptr = file_key->data;
+	kbuf.dptr = (char *)file_key->data;
 	kbuf.dsize = file_key->length;
 
 	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
@@ -534,7 +534,7 @@ NTSTATUS brl_locktest(struct brl_context *brl,
 	int count, i;
 	struct lock_struct lock, *locks;
 
-	kbuf.dptr = file_key->data;
+	kbuf.dptr = (char *)file_key->data;
 	kbuf.dsize = file_key->length;
 
 	dbuf = tdb_fetch(brl->w->tdb, kbuf);
@@ -577,7 +577,7 @@ NTSTATUS brl_close(struct brl_context *brl,
 	struct lock_struct *locks;
 	NTSTATUS status;
 
-	kbuf.dptr = file_key->data;
+	kbuf.dptr = (char *)file_key->data;
 	kbuf.dsize = file_key->length;
 
 	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
