@@ -252,7 +252,7 @@ void req_send_reply_nosign(struct smbsrv_request *req)
 	tmp_blob.data = req->out.buffer;
 	tmp_blob.length = req->out.size;
 
-	status = socket_send(req->smb_conn->connection->socket, req, &tmp_blob, &sendlen, SOCKET_FLAG_BLOCK);
+	status = socket_send(req->smb_conn->connection->socket, &tmp_blob, &sendlen, SOCKET_FLAG_BLOCK);
 	if (!NT_STATUS_IS_OK(status) || (req->out.size != sendlen)) {
 		smbsrv_terminate_connection(req->smb_conn, "failed to send reply\n");
 		return;

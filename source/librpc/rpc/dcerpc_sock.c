@@ -83,7 +83,7 @@ static void sock_process_send(struct dcerpc_pipe *p)
 		struct sock_blob *blob = sock->pending_send;
 		NTSTATUS status;
 		size_t sent;
-		status = socket_send(sock->sock, blob, &blob->data, &sent, 0);
+		status = socket_send(sock->sock, &blob->data, &sent, 0);
 		if (NT_STATUS_IS_ERR(status)) {
 			sock_dead(p, NT_STATUS_NET_WRITE_FAULT);
 			break;
@@ -116,7 +116,7 @@ static void sock_process_recv(struct dcerpc_pipe *p)
 {
 	struct sock_private *sock = p->transport.private;
 	NTSTATUS status;
-	DATA_BLOB blob;
+	size_t nread;
 
 	if (sock->recv.data.data == NULL) {
 		sock->recv.data = data_blob_talloc(sock, NULL, MIN_HDR_SIZE);
@@ -126,19 +126,19 @@ static void sock_process_recv(struct dcerpc_pipe *p)
 	if (sock->recv.received < MIN_HDR_SIZE) {
 		uint32_t frag_length;
 
-		status = socket_recv(sock->sock, sock, &blob, MIN_HDR_SIZE - sock->recv.received, 0);
+		status = socket_recv(sock->sock, 
+				     sock->recv.data.data + sock->recv.received, 
+				     MIN_HDR_SIZE - sock->recv.received, 
+				     &nread, 0);
 		if (NT_STATUS_IS_ERR(status)) {
 			sock_dead(p, NT_STATUS_NET_WRITE_FAULT);
 			return;
 		}
-		if (blob.length == 0) {
+		if (nread == 0) {
 			return;
 		}
 		
-		memcpy(sock->recv.data.data + sock->recv.received,
-		       blob.data, blob.length);
-		sock->recv.received += blob.length;
-		talloc_free(blob.data);
+		sock->recv.received += nread;
 
 		if (sock->recv.received != MIN_HDR_SIZE) {
 			return;
@@ -155,18 +155,18 @@ static void sock_process_recv(struct dcerpc_pipe *p)
 	}
 
 	/* read in the rest of the packet */
-	status = socket_recv(sock->sock, sock, &blob, sock->recv.data.length - sock->recv.received, 0);
+	status = socket_recv(sock->sock, 
+			     sock->recv.data.data + sock->recv.received, 
+			     sock->recv.data.length - sock->recv.received, 
+			     &nread, 0);
 	if (NT_STATUS_IS_ERR(status)) {
 		sock_dead(p, NT_STATUS_NET_WRITE_FAULT);
 		return;
 	}
-	if (blob.length == 0) {
+	if (nread == 0) {
 		return;
 	}
-	memcpy(sock->recv.data.data + sock->recv.received,
-	       blob.data, blob.length);
-	sock->recv.received += blob.length;
-	talloc_free(blob.data);
+	sock->recv.received += nread;
 
 	if (sock->recv.received != sock->recv.data.length) {
 		return;

@@ -123,22 +123,21 @@ static void messaging_recv_handler(struct event_context *ev, struct fd_event *fd
 
 	if (rec->ndone < sizeof(rec->header)) {
 		/* receive the header */
-		DATA_BLOB blob;
-		blob.length = 0;
-		status = socket_recv(rec->sock, rec, 
-				     &blob, sizeof(rec->header) - rec->ndone, 0);
+		size_t nread;
+
+		status = socket_recv(rec->sock, 
+				     rec->ndone + (char *)&rec->header,
+				     sizeof(rec->header) - rec->ndone, &nread, 0);
 		if (NT_STATUS_IS_ERR(status)) {
 			talloc_free(rec);
 			return;
 		}
 
-		if (blob.length == 0) {
+		if (nread == 0) {
 			return;
 		}
 
-		memcpy(rec->ndone + (char *)&rec->header, blob.data, blob.length);
-		rec->ndone += blob.length;
-		data_blob_free(&blob);
+		rec->ndone += nread;
 
 		if (rec->ndone == sizeof(rec->header)) {
 			if (rec->header.version != MESSAGING_VERSION) {
@@ -158,23 +157,22 @@ static void messaging_recv_handler(struct event_context *ev, struct fd_event *fd
 	if (rec->ndone >= sizeof(rec->header) && 
 	    rec->ndone < sizeof(rec->header) + rec->header.length) {
 		/* receive the body, if any */
-		DATA_BLOB blob;
-		blob.length = 0;
-		status = socket_recv(rec->sock, rec, 
-				     &blob, sizeof(rec->header) + rec->header.length - rec->ndone, 0);
+		size_t nread;
+
+		status = socket_recv(rec->sock, 
+				     rec->data.data + (rec->ndone - sizeof(rec->header)),
+				     sizeof(rec->header) + rec->header.length - rec->ndone, 
+				     &nread, 0);
 		if (NT_STATUS_IS_ERR(status)) {
 			talloc_free(rec);
 			return;
 		}
 
-		if (blob.length == 0) {
+		if (nread == 0) {
 			return;
 		}
 
-		memcpy(rec->data.data + (rec->ndone - sizeof(rec->header)), 
-		       blob.data, blob.length);
-
-		rec->ndone += blob.length;
+		rec->ndone += nread;
 	}
 
 	if (rec->ndone == sizeof(rec->header) + rec->header.length) {
@@ -283,7 +281,7 @@ static void messaging_send_handler(struct event_context *ev, struct fd_event *fd
 		blob.data = rec->ndone + (char *)&rec->header;
 		blob.length = sizeof(rec->header) - rec->ndone;
 
-		status = socket_send(rec->sock, rec, &blob, &nsent, 0);
+		status = socket_send(rec->sock, &blob, &nsent, 0);
 		if (NT_STATUS_IS_ERR(status)) {
 			talloc_free(rec);
 			return;
@@ -305,7 +303,7 @@ static void messaging_send_handler(struct event_context *ev, struct fd_event *fd
 		blob.data = rec->data.data + (rec->ndone - sizeof(rec->header));
 		blob.length = rec->header.length - (rec->ndone - sizeof(rec->header));
 
-		status = socket_send(rec->sock, rec, &blob, &nsent, 0);
+		status = socket_send(rec->sock, &blob, &nsent, 0);
 		if (NT_STATUS_IS_ERR(status)) {
 			talloc_free(rec);
 			return;
