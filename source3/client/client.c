@@ -2162,17 +2162,12 @@ struct cli_state *do_connect(const char *server, const char *share)
 		d_printf("Anonymous login successful\n");
 	}
 
-	/*
-	 * These next two lines are needed to emulate
-	 * old client behaviour for people who have
-	 * scripts based on client output.
-	 * QUESTION ? Do we want to have a 'client compatibility
-	 * mode to turn these on/off ? JRA.
-	 */
-
-	if (*c->server_domain || *c->server_os || *c->server_type){
+	if (*c->server_domain) {
 		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
 			c->server_domain,c->server_os,c->server_type));
+	} else if (*c->server_os || *c->server_type){
+		DEBUG(1,("OS=[%s] Server=[%s]\n",
+			 c->server_os,c->server_type));
 	}		
 	
 	DEBUG(4,(" session setup ok\n"));
