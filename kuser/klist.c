@@ -38,6 +38,8 @@
 
 #include "kuser_locl.h"
 
+RCSID("$Id$");
+
 static char*
 printable_time(time_t t)
 {
