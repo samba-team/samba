@@ -3825,7 +3825,6 @@ BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LE
 				return False;
 			break;		
 	default:
-		prs_dump("spool_io_printer_driver_info_level", il->level, ps);
 		return False;
 	}
 
