@@ -35,6 +35,8 @@
 
 #include "includes.h"
 
+#include "module_dummy.h"
+
 static pstring Ucrit_username = "";                   /* added by OH */
 static pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
 static int            Ucrit_MaxPid=0;                        /* added by OH */

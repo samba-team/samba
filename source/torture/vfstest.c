@@ -27,6 +27,12 @@
 #include "includes.h"
 #include "vfstest.h"
 
+#define HAVE_SMB_REGISTER_AUTH
+#define HAVE_SMB_REGISTER_PASSDB
+#define HAVE_RPC_PIPE_REGISTER_COMMANDS
+#define HAVE_SMB_REGISTER_VFS
+#include "module_dummy.h"
+
 /* List to hold groups of commands */
 static struct cmd_list {
 	struct cmd_list *prev, *next;

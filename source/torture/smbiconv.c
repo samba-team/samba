@@ -23,6 +23,8 @@
 
 #include "includes.h"
 
+#include "module_dummy.h"
+
 static int
 process_block (smb_iconv_t cd, char *addr, size_t len, FILE *output)
 {
