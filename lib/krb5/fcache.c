@@ -91,11 +91,12 @@ erase_file(const char *filename)
     char *p;
 
     fd = open(filename, O_RDWR | O_BINARY);
-    if(fd < 0)
+    if(fd < 0){
 	if(errno == ENOENT)
 	    return 0;
 	else
 	    return errno;
+    }
     pos = lseek(fd, 0, SEEK_END);
     lseek(fd, 0, SEEK_SET);
     p = (char*) malloc(pos);
@@ -110,7 +111,29 @@ erase_file(const char *filename)
 static krb5_error_code
 fcc_gen_new(krb5_context context, krb5_ccache *id)
 {
-    abort();
+    krb5_fcache *f;
+    int fd;
+    char *file;
+    f = malloc(sizeof(*f));
+    if(f == NULL)
+	return KRB5_CC_NOMEM;
+    asprintf(&file, "/tmp/krb5cc_XXXXXX"); /* XXX */
+    if(file == NULL) {
+	free(f);
+	return KRB5_CC_NOMEM;
+    }
+    fd = mkstemp(file);
+    if(fd < 0) {
+	free(f);
+	free(file);
+	return errno;
+    }
+    close(fd);
+    f->filename = file;
+    f->version = 0;
+    (*id)->data.data = f;
+    (*id)->data.length = sizeof(*f);
+    return 0;
 }
 
 static krb5_error_code
