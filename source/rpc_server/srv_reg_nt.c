@@ -370,23 +370,29 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	}
 
 	if ( strequal(name, REGSTR_PRODUCTTYPE) ) {
+		UNISTR2		product;
+		
 		/* This makes the server look like a member server to clients */
 		/* which tells clients that we have our own local user and    */
 		/* group databases and helps with ACL support.                */
 		
-	switch (lp_server_role()) {
-	case ROLE_DOMAIN_PDC:
-	case ROLE_DOMAIN_BDC:
-				regval_ctr_addvalue( &regvals, REGSTR_PRODUCTTYPE, REG_SZ, REG_PT_LANMANNT, strlen(REG_PT_LANMANNT)+1 );
-		break;
-	case ROLE_STANDALONE:
-				regval_ctr_addvalue( &regvals, REGSTR_PRODUCTTYPE, REG_SZ, REG_PT_SERVERNT, strlen(REG_PT_SERVERNT)+1 );
-		break;
-	case ROLE_DOMAIN_MEMBER:
-				regval_ctr_addvalue( &regvals, REGSTR_PRODUCTTYPE, REG_SZ, REG_PT_WINNT, strlen(REG_PT_WINNT)+1 );
-		break;
-	}
+		switch (lp_server_role()) 
+		{
+			case ROLE_DOMAIN_PDC:
+			case ROLE_DOMAIN_BDC:
+				init_unistr2( &product, REG_PT_LANMANNT, strlen(REG_PT_LANMANNT)+1 );
+				break;
+			
+			case ROLE_STANDALONE:
+				init_unistr2( &product, REG_PT_SERVERNT, strlen(REG_PT_SERVERNT)+1 );
+				break;
+			
+			case ROLE_DOMAIN_MEMBER:
+				init_unistr2( &product, REG_PT_WINNT, strlen(REG_PT_WINNT)+1 );
+				break;
+		}
 
+		regval_ctr_addvalue( &regvals, REGSTR_PRODUCTTYPE, REG_SZ, (char*)product.buffer, product.uni_str_len*sizeof(uint16) );
 		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
 		
 		status = NT_STATUS_OK;
