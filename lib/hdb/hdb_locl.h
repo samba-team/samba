@@ -48,6 +48,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/file.h>
+#include <roken.h>
 
 #include <krb5.h>
 #include <hdb.h>
