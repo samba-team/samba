@@ -48,6 +48,11 @@ static NTSTATUS cmd_epm_map(struct cli_state *cli,
 	init_epm_floor_uuid(&floors[0], &if_uuid, 4);
 	init_epm_floor_uuid(&floors[1], &syn_uuid, 2);
 	init_epm_floor_rpc(&floors[2]);
+
+	/* sample for netbios named pipe query 	
+	init_epm_floor_np(&floors[3], "\\PIPE\\lsass");
+	init_epm_floor_nb(&floors[4], "\\\\psflinux"); 
+	*/
 	init_epm_floor_tcp(&floors[3], 135);
 	init_epm_floor_ip(&floors[4], addr);
 	towers = talloc(mem_ctx, sizeof(EPM_TOWER));
