@@ -148,6 +148,7 @@ AC_SUBST(SHLIBEXT)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
 AC_SUBST(PRINTLIBS)
+AC_SUBST(AUTHLIBS)
 
 # compile with optimization and without debugging by default
 CFLAGS="-O ${CFLAGS}"
@@ -613,7 +614,7 @@ AC_FUNC_MEMCMP
 # test for where we get crypt() from
 AC_CHECK_FUNCS(crypt)
 if test x"$ac_cv_func_crypt" = x"no"; then
-    AC_CHECK_LIB(crypt, crypt, [LIBS="$LIBS -lcrypt";
+    AC_CHECK_LIB(crypt, crypt, [AUTHLIBS="$AUTHLIBS -lcrypt";
 	AC_DEFINE(HAVE_CRYPT)])
 fi
 
@@ -2123,7 +2124,7 @@ AC_ARG_WITH(pam,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_PAM)
-    LIBS="$LIBS -lpam"
+    AUTHLIBS="$AUTHLIBS -lpam"
     with_pam_for_crypt=yes
     ;;
   *)
@@ -2171,7 +2172,7 @@ AC_ARG_WITH(pam_smbpass,
 if test x"$with_pam_for_crypt" = x"no"; then
 AC_CHECK_FUNCS(crypt)
 if test x"$ac_cv_func_crypt" = x"no"; then
-    AC_CHECK_LIB(crypt, crypt, [LIBS="$LIBS -lcrypt";
+    AC_CHECK_LIB(crypt, crypt, [AUTHLIBS="$AUTHLIBS -lcrypt";
 	AC_DEFINE(HAVE_CRYPT)])
 fi
 fi
@@ -2184,8 +2185,11 @@ fi
 ##
 if test $with_pam_for_crypt = no; then
 AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
+crypt_LIBS="$LIBS"
+LIBS="$AUTHLIBS $LIBS"
 AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
-	samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)])
+	samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)
+LIBS="$crypt_LIBS"])
 if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
 	AC_DEFINE(HAVE_TRUNCATED_SALT)
 fi
