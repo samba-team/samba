@@ -11,7 +11,7 @@ endif
 
 TDBDIR=../tdb
 
-CFLAGS=-Wall -g -Iinclude -I. -I.. -DSTANDALONE=1 -DUSE_MMAP=1 $(LDAP_FLAGS)
+CFLAGS=-Wall -O3 -Iinclude -I. -I.. -DSTANDALONE=1 -DUSE_MMAP=1 $(LDAP_FLAGS)
 LIB_FLAGS=-Llib -lldb $(LDAP_LIBS)
 
 TDB_OBJ=$(TDBDIR)/tdb.o $(TDBDIR)/spinlock.o
@@ -58,6 +58,9 @@ bin/ldbmodify: tools/ldbmodify.o $(LIBS)
 
 bin/ldbedit: tools/ldbedit.o $(LIBS)
 	$(CC) -o bin/ldbedit tools/ldbedit.o $(LIB_FLAGS)
+
+bin/ldbtest: tools/ldbtest.o $(LIBS)
+	$(CC) -o bin/ldbtest tools/ldbtest.o $(LIB_FLAGS)
 
 clean:
 	rm -f */*.o *~ */*~ $(BINS) $(LDB_LIB)
