@@ -131,55 +131,6 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 }
 
 /****************************************************************************
- Do a NT1 guest session setup.
-****************************************************************************/
-
-static BOOL cli_session_setup_guest(struct cli_state *cli)
-{
-	char *p;
-	uint32 capabilities = cli_session_setup_capabilities(cli);
-
-	set_message(cli->outbuf,13,0,True);
-	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
-	cli_setup_packet(cli);
-			
-	SCVAL(cli->outbuf,smb_vwv0,0xFF);
-	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
-	SSVAL(cli->outbuf,smb_vwv3,2);
-	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
-	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
-	SSVAL(cli->outbuf,smb_vwv7,0);
-	SSVAL(cli->outbuf,smb_vwv8,0);
-	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
-	p = smb_buf(cli->outbuf);
-	p += clistr_push(cli, p, "", -1, STR_TERMINATE); /* username */
-	p += clistr_push(cli, p, "", -1, STR_TERMINATE); /* workgroup */
-	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
-	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
-	cli_setup_bcc(cli, p);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli))
-	      return False;
-	
-	show_msg(cli->inbuf);
-	
-	if (cli_is_error(cli))
-		return False;
-
-	cli->vuid = SVAL(cli->inbuf,smb_uid);
-
-	p = smb_buf(cli->inbuf);
-	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
-	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
-	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
-
-	fstrcpy(cli->user_name, "");
-
-	return True;
-}
-
-/****************************************************************************
  Do a NT1 plaintext session setup.
 ****************************************************************************/
 
@@ -267,7 +218,9 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	BOOL ret = False;
 	char *p;
 
-	if (passlen != 24) {
+	if (passlen == 0) {
+		/* do nothing - guest login */
+	} else if (passlen != 24) {
 		if ((cli->capabilities & CAP_EXTENDED_SECURITY) && lp_client_ntlmv2_auth()) {
 			DATA_BLOB server_chal;
 			DATA_BLOB names_blob;
@@ -678,7 +631,7 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	 * and do not store results */
 
 	if (got_kerberos_mechanism && cli->use_kerberos) {
-		if (*pass) {
+		if (pass && *pass) {
 			int ret;
 			
 			use_in_memory_ccache();
@@ -751,18 +704,23 @@ BOOL cli_session_setup(struct cli_state *cli,
 		return cli_session_setup_lanman2(cli, user, pass, passlen, workgroup);
 	}
 
-	/* if no user is supplied then we have to do an anonymous connection.
-	   passwords are ignored */
-
-	if (!user || !*user)
-		return cli_session_setup_guest(cli);
-
 	/* if the server is share level then send a plaintext null
            password at this point. The password is sent in the tree
            connect */
 
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) == 0) 
 		return cli_session_setup_plaintext(cli, user, "", workgroup);
+
+	/* if no user is supplied then we have to do an anonymous connection.
+	   passwords are ignored */
+
+	if (!user || !*user) {
+		user = "";
+		pass = NULL;
+		ntpass = NULL;
+		passlen = 0;
+		ntpasslen = 0;
+	}
 
 	/* if the server doesn't support encryption then we have to use 
 	   plaintext. The second password is ignored */

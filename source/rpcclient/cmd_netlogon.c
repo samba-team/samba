@@ -308,6 +308,8 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
 	
         result = cli_netlogon_sam_logon(cli, mem_ctx, &ret_creds, username, password, logon_type);
 
+	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
+
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 

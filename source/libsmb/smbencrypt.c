@@ -247,7 +247,7 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 	return True;
 }
 
-/* Does the md5 encryption from the NT hash for NTLMv2. */
+/* Does the md5 encryption from the Key Response for NTLMv2. */
 void SMBOWFencrypt_ntv2(const uchar kr[16],
 			const DATA_BLOB *srv_chal,
 			const DATA_BLOB *cli_chal,
