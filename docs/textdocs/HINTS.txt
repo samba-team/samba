@@ -49,6 +49,9 @@ windows. Just drag your file onto the icon and it converts the file.
 Get it from
 ftp://samba.org/pub/samba/contributed/fixcrlf.zip
 
+The utilities unix2dos and dos2unix(in the mtools package) should do 
+the job under unix.
+
 ---------------------- 
 HINT: Use the "username map" option
 
