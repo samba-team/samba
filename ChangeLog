@@ -1,5 +1,8 @@
 Fri Aug 29 02:45:46 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/45/mk_req.c: implementation of krb_mk_req that uses 524
+ 	protocol
+
 	* lib/krb5/init_creds_pw.c: make change_password and
  	get_init_creds_common static
 
