@@ -50,7 +50,10 @@
 #define T_AFSDB		18
 #endif
 #ifndef T_SRV
-#define T_SRV		 33
+#define T_SRV		33
+#endif
+#ifndef T_NAPTR
+#define T_NAPTR		35
 #endif
 
 struct dns_query{
@@ -100,7 +103,6 @@ struct dns_reply{
 
 
 struct dns_reply* dns_lookup(const char *, const char *);
-
-void dns_free_data(struct dns_reply *r);
+void dns_free_data(struct dns_reply *);
 
 #endif /* __RESOLVE_H__ */
