@@ -269,7 +269,7 @@ BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddffd",
 				&map->gid, &map->sid_name_use, &map->nt_name, &map->comment, &map->privilege);
 
-	safe_free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	if (ret != dbuf.dsize) {
 		DEBUG(0,("get_group_map_from_sid: mapping TDB corrupted ?\n"));
 		return False;
@@ -294,7 +294,7 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
 
 		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
 		
@@ -308,7 +308,7 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddffd",
 				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment, &map->privilege);
 
-		safe_free(dbuf.dptr);
+		SAFE_FREE(dbuf.dptr);
 		if (ret != dbuf.dsize) continue;
 
 		if (gid==map->gid)
@@ -331,7 +331,7 @@ BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map)
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
 
 		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
 		
@@ -345,7 +345,7 @@ BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map)
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddffd",
 				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment, &map->privilege);
 
-		safe_free(dbuf.dptr);
+		SAFE_FREE(dbuf.dptr);
 		if (ret != dbuf.dsize) continue;
 
 		if (StrCaseCmp(name, map->nt_name)==0)
@@ -376,7 +376,7 @@ BOOL group_map_remove(DOM_SID sid)
 	dbuf = tdb_fetch(tdb, kbuf);
 	if (!dbuf.dptr) return False;
 	
-	safe_free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 
 	if(tdb_delete(tdb, kbuf) != TDB_SUCCESS)
 		return False;
@@ -404,7 +404,7 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb, kbuf), SAFE_FREE(kbuf.dptr), kbuf=newkey) {
 
 		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0)
 			continue;
@@ -418,7 +418,7 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddffd",
 				 &map.gid, &map.sid_name_use, &map.nt_name, &map.comment, &map.privilege);
 
-		safe_free(dbuf.dptr);
+		SAFE_FREE(dbuf.dptr);
 		if (ret != dbuf.dsize)
 			continue;
 
@@ -436,8 +436,7 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 		mapt=(GROUP_MAP *)Realloc((*rmap), (entries+1)*sizeof(GROUP_MAP));
 		if (!mapt) {
 			DEBUG(0,("enum_group_mapping: Unable to enlarge group map!\n"));
-			if (*rmap) free(*rmap);
-			*rmap=NULL;
+			SAFE_FREE(*rmap);
 			return False;
 		}
 		else (*rmap) = mapt;

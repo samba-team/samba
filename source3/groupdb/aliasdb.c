@@ -147,8 +147,7 @@ BOOL add_domain_alias(LOCAL_GRP **alss, int *num_alss, LOCAL_GRP *als)
 
 	talss = Realloc((*alss), ((*num_alss)+1) * sizeof(LOCAL_GRP));
 	if (talss == NULL) {
-		if (*alss)
-			free(*alss);
+		SAFE_FREE(*alss);
 		return False;
 	} else
 		(*alss) = talss;
@@ -228,8 +227,7 @@ BOOL iterate_getuseraliasnam(char *user_name, LOCAL_GRP **alss, int *num_alss)
 				ret = add_domain_alias(alss, num_alss, als);
 			}
 
-			free(mem);
-			mem = NULL;
+			SAFE_FREE(mem);
 			num_mem = 0;
 
 			if (!ret)

@@ -145,8 +145,7 @@ BOOL add_domain_group(DOMAIN_GRP **grps, int *num_grps, DOMAIN_GRP *grp)
 
 	tgrps = Realloc((*grps), ((*num_grps)+1) * sizeof(DOMAIN_GRP));
 	if (tgrps == NULL) {
-		if (*grps)
-			free(*grps);
+		SAFE_FREE(*grps);
 		return False;
 	} else
 		(*grps) = tgrps;
@@ -224,8 +223,7 @@ BOOL iterate_getusergroupsnam(char *user_name, DOMAIN_GRP **grps, int *num_grps)
 				ret = add_domain_group(grps, num_grps, grp);
 			}
 
-			free(mem);
-			mem = NULL;
+			SAFE_FREE(mem);
 			num_mem = 0;
 
 			if (!ret)
