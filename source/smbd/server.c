@@ -1326,6 +1326,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
       fsp->print_file = Connections[cnum].printer;
       fsp->modified = False;
       fsp->granted_oplock = False;
+      fsp->sent_oplock_break = False;
       fsp->cnum = cnum;
       string_set(&fsp->name,dos_to_unix(fname,False));
       fsp->wbmpx_ptr = NULL;      
@@ -1475,6 +1476,8 @@ void close_file(int fnum, BOOL normal_close)
 
   if(fs_p->granted_oplock == True)
     global_oplocks_open--;
+
+  fs_p->sent_oplock_break = False;
 
   DEBUG(2,("%s %s closed file %s (numopen=%d)\n",
 	   timestring(),Connections[cnum].user,fs_p->name,
@@ -2773,22 +2776,6 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   DEBUG(3,("%s oplock_break: called for dev = %x, inode = %x. Current \
 global_oplocks_open = %d\n", timestring(), dev, inode, global_oplocks_open));
 
-  if(inbuf == NULL)
-  {
-    inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-    if(inbuf == NULL) {
-      DEBUG(0,("oplock_break: malloc fail for input buffer.\n"));
-      return False;
-    } 
-    outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-    if(outbuf == NULL) {
-      DEBUG(0,("oplock_break: malloc fail for output buffer.\n"));
-      free(inbuf);
-      inbuf = NULL;
-      return False;
-    }
-  } 
-
   /* We need to search the file open table for the
      entry containing this dev and inode, and ensure
      we have an oplock on it. */
@@ -2831,15 +2818,34 @@ allowing break to succeed.\n", timestring(), dev, inode, fnum));
   /* mark the oplock break as sent - we don't want to send twice! */
   if (fsp->sent_oplock_break)
   {
-    DEBUG(0,("%s ERROR: oplock_break already sent for file %s (fnum = %d, dev = %x, inode = %x)\n", timestring(), fsp->name, fnum, dev, inode));
-    return True;
-  }
+    DEBUG(0,("%s oplock_break: ERROR: oplock_break already sent for file %s (fnum = %d, dev = %x, inode = %x)\n", timestring(), fsp->name, fnum, dev, inode));
 
-  fsp->sent_oplock_break = True;
+    /* We have to fail the open here as we cannot send another oplock break on this
+       file whilst we are awaiting a response from the client - neither can we
+       allow another open to succeed while we are waiting for the client. */
+    return False;
+  }
 
   /* Now comes the horrid part. We must send an oplock break to the client,
      and then process incoming messages until we get a close or oplock release.
+     At this point we know we need a new inbuf/outbuf buffer pair.
+     We cannot use these staticaly as we may recurse into here due to
+     messages crossing on the wire.
    */
+
+  if((inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN))==NULL)
+  {
+    DEBUG(0,("oplock_break: malloc fail for input buffer.\n"));
+    return False;
+  }
+
+  if((outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN))==NULL)
+  {
+    DEBUG(0,("oplock_break: malloc fail for output buffer.\n"));
+    free(inbuf);
+    inbuf = NULL;
+    return False;
+  }
 
   /* Prepare the SMBlockingX message. */
   bzero(outbuf,smb_size);
@@ -2857,6 +2863,9 @@ allowing break to succeed.\n", timestring(), dev, inode, fnum));
   SCVAL(outbuf,smb_vwv3+1,OPLOCKLEVEL_NONE);
  
   send_smb(Client, outbuf);
+
+  /* Remember we just sent an oplock break on this file. */
+  fsp->sent_oplock_break = True;
 
   /* We need this in case a readraw crosses on the wire. */
   global_oplock_break = True;
@@ -2909,6 +2918,10 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
     }
   }
 
+  /* Free the buffers we've been using to recurse. */
+  free(inbuf);
+  free(outbuf);
+
   /* We need this in case a readraw crossed on the wire. */
   if(global_oplock_break)
     global_oplock_break = False;
@@ -2932,6 +2945,7 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
        from the sharemode. */
     /* Paranoia.... */
     fsp->granted_oplock = False;
+    fsp->sent_oplock_break = False;
     global_oplocks_open--;
   }
 

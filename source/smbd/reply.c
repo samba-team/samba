@@ -1257,7 +1257,11 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int fnum = -1;
   int smb_mode = SVAL(inbuf,smb_vwv3);
   int smb_attr = SVAL(inbuf,smb_vwv5);
-  BOOL oplock_request = EXTENDED_OPLOCK_REQUEST(inbuf);
+  /* Breakout the oplock request bits so we can set the
+     reply bits separately. */
+  BOOL ex_oplock_request = EXTENDED_OPLOCK_REQUEST(inbuf);
+  BOOL core_oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+  BOOL oplock_request = ex_oplock_request | core_oplock_request;
 #if 0
   int open_flags = SVAL(inbuf,smb_vwv2);
   int smb_sattr = SVAL(inbuf,smb_vwv4); 
@@ -1324,13 +1328,29 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
+  /* If the caller set the extended oplock request bit
+     and we granted one (by whatever means) - set the
+     correct bit for extended oplock reply.
+   */
+
+  if (ex_oplock_request && lp_fake_oplocks(SNUM(cnum))) {
     smb_action |= EXTENDED_OPLOCK_GRANTED;
+  }
+
+  if(ex_oplock_request && fsp->granted_oplock) {
+    smb_action |= EXTENDED_OPLOCK_GRANTED;
+  }
+
+  /* If the caller set the core oplock request bit
+     and we granted one (by whatever means) - set the
+     correct bit for core oplock reply.
+   */
+
+  if (core_oplock_request && lp_fake_oplocks(SNUM(cnum))) {
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
 
-  if(fsp->granted_oplock) {
-    smb_action |= EXTENDED_OPLOCK_GRANTED;
+  if(core_oplock_request && fsp->granted_oplock) {
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
 

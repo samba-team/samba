@@ -574,6 +574,43 @@ BOOL cli_tdis(struct cli_state *cli)
 }
 
 /****************************************************************************
+rename a file
+****************************************************************************/
+BOOL cli_mv(struct cli_state *cli, char *fname_src, char *fname_dst)
+{
+        char *p;
+
+        bzero(cli->outbuf,smb_size);
+        bzero(cli->inbuf,smb_size);
+
+        set_message(cli->outbuf,1, 4 + strlen(fname_src) + strlen(fname_dst), True);
+
+        CVAL(cli->outbuf,smb_com) = SMBmv;
+        SSVAL(cli->outbuf,smb_tid,cli->cnum);
+        cli_setup_packet(cli);
+
+        SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN);
+
+        p = smb_buf(cli->outbuf);
+        *p++ = 4;
+        strcpy(p,fname_src);
+        p = skip_string(p,1);
+        *p++ = 4;
+        strcpy(p,fname_dst);
+
+        send_smb(cli->fd,cli->outbuf);
+        if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+                return False;
+        }
+
+        if (CVAL(cli->inbuf,smb_rcls) != 0) {
+                return False;
+        }
+
+        return True;
+}
+
+/****************************************************************************
 delete a file
 ****************************************************************************/
 BOOL cli_unlink(struct cli_state *cli, char *fname)
