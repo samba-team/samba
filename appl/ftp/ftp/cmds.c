@@ -771,25 +771,24 @@ remglob(char **argv, int doswitch)
 	    return (NULL);
 	}
     }
-next:
-    if (fgets(buf, sizeof (buf), ftemp) == NULL) {
-	fclose(ftemp);
-	ftemp = NULL;
-	return (NULL);
-    }
-    if ((cp = strchr(buf, '\n')) != NULL)
-	*cp = '\0';
-    if(strncmp(buf, "../", 3) == 0 || *buf == '/'){
-	if(interactive == 0){
-	    printf("Ignoring remote globbed file `%s'\n", buf);
-	    goto next;
+    while(fgets(buf, sizeof (buf), ftemp)) {
+	if ((cp = strchr(buf, '\n')) != NULL)
+	    *cp = '\0';
+	if(strncmp(buf, "../", 3) == 0 || *buf == '/'){
+	    if(interactive == 0){
+		printf("Ignoring remote globbed file `%s'\n", buf);
+		continue;
+	    }
+	    if(!confirm(buf, *buf == '/' ? 
+			" - retrieve file starting with `/'" : 
+			" - retrieve file starting with `..'"))
+		continue;
 	}
-	if(!confirm(buf, *buf == '/' ? 
-		    " - retrieve file starting with `/'" : 
-		    " - retrieve file starting with `..'"))
-	    goto next;
+	return buf;
     }
-    return (buf);
+    fclose(ftemp);
+    ftemp = NULL;
+    return (NULL);
 }
 
 char *
@@ -1133,7 +1132,7 @@ ls(int argc, char **argv)
 		code = -1;
 		return;
 	    }
-	recvrequest(cmd, argv[2], argv[1], "w", 0, 0, 1);
+	recvrequest(cmd, argv[2], argv[1], "w", 0, 1);
 }
 
 /*
