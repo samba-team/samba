@@ -1,104 +1,94 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 2.0
+
    Winbind daemon for ntdom nss module
+
    Copyright (C) Tim Potter 2000
    
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Library General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
    
-   This program is distributed in the hope that it will be useful,
+   This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
    
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   You should have received a copy of the GNU Library General Public
+   License along with this library; if not, write to the
+   Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA  02111-1307, USA.   
 */
 
 #ifndef _WINBINDD_H
 #define _WINBINDD_H
 
-#define WINBINDD_SOCKET_NAME "/tmp/winbindd"    /* Name of PF_UNIX socket */
-#define SERVER "nt4pdc"                     /* NT machine to contact */
+#include "includes.h"
+#include "nterr.h"
 
-#define WINBINDD_TIMEOUT 2                      /* Read/write timeout on socket */
+#include "winbindd_ntdom.h"
 
 /* Naughty global stuff */
 
 extern int DEBUGLEVEL;
-extern pstring debugf;
 
-/* Socket commands */
+/* Client state structure */
 
-enum winbindd_cmd {
-    WINBINDD_GETPWNAM_FROM_USER,     /* getpwnam stuff */
-    WINBINDD_GETPWNAM_FROM_UID,
-    WINBINDD_GETGRNAM_FROM_GROUP,    /* getgrnam stuff */
-    WINBINDD_GETGRNAM_FROM_GID,
-    WINBINDD_SETPWENT,               /* get/set/endpwent */
-    WINBINDD_ENDPWENT,
-    WINBINDD_GETPWENT,
-    WINBINDD_SETGRENT,               /* get/set/endgrent */
-    WINBINDD_ENDGRENT,
-    WINBINDD_GETGRENT
+struct winbindd_state {
+    struct winbindd_state *prev, *next;       /* Linked list pointers */
+    int sock;                                 /* Open socket from client */
+    pid_t pid;                                /* pid of client */
+    int read_buf_len, write_buf_len;          /* Indexes in request/response */
+    BOOL finished;                            /* Can delete from list */
+    struct winbindd_request request;          /* Request from client */
+    struct winbindd_response response;        /* Respose to client */
+    struct getent_state *getpwent_state;      /* State for getpwent() */
+    struct getent_state *getgrent_state;      /* State for getgrent() */
 };
 
-/* Winbind request structure */
-
-struct winbindd_request {
-    enum winbindd_cmd cmd;
-
-    union {
-        char username[1024];
-        char groupname[1024];
-        uid_t uid;
-        gid_t gid;
-    } data;
+struct getent_state {
+    struct getent_state *prev, *next;
+    struct acct_info *sam_entries;
+    uint32 sam_entry_index, num_sam_entries;  
+    struct winbindd_domain *domain;
+    BOOL got_sam_entries;
 };
 
-/* Response values */
+extern struct winbindd_domain *domain_list;
 
-enum winbindd_result {
-    WINBINDD_ERROR,
-    WINBINDD_OK
-};
+/* Structures to hold domain list */
 
-/* Winbind response structure */
+struct winbindd_domain {
 
-struct winbindd_response {
-    enum winbindd_result result;
+    /* Domain information */
 
-    union {
-        
-        /* getpwnam_from_user, getpwnam_from_uid */
+    fstring name;                          /* Domain name */
 
-        struct winbindd_pw {
-            char pw_name[1024];
-            char pw_passwd[1024];
-            uid_t pw_uid;
-            gid_t pw_gid;
-            char pw_gecos[1024];
-            char pw_dir[1024];
-            char pw_shell[1024];
-        } pw;
+    fstring controller;                    /* NetBIOS name of DC */
+    DOM_SID sid;                           /* SID for this domain */
+    BOOL got_domain_info;                  /* Got controller and sid */
 
-        /* getgrnam_from_group, get_grnam_from_gid */
+    uid_t uid_low, uid_high;               /* Range of uids to allocate */
+    gid_t gid_low, gid_high;               /* Range of gids to allocate */
 
-        struct winbindd_gr {
-            char gr_name[1024];
-            char gr_passwd[1024];
-            gid_t gr_gid;
-            char gr_mem[1024];
-            int num_gr_mem;
-        } gr;
+    /* Cached handle to lsa pipe */
 
-    } data;
+    POLICY_HND lsa_handle;
+    BOOL lsa_handle_open;
+
+    /* Cached handles to samr pipe */
+
+    POLICY_HND sam_handle, sam_dom_handle;
+    BOOL sam_handle_open, sam_dom_handle_open;
+
+    struct winbindd_domain *prev, *next;   /* Linked list info */
 };
 
 #include "winbindd_proto.h"
+
+#include "rpc_parse.h"
+#include "rpc_client.h"
 
 #endif /* _WINBINDD_H */
