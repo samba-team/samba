@@ -209,7 +209,16 @@
 
 	/************************/
 	/* Function    0x09     */
-	NTSTATUS samr_SET_DOMAIN_INFO();
+	/*
+	  only levels 1, 3, 4, 6, 7, 9, 12 are valid for this 
+	  call in w2k3
+	*/
+	NTSTATUS samr_SetDomainInfo(
+		[in,ref]      policy_handle *handle,
+		[in]          uint16 level,
+		[in,switch_is(level),ref] samr_DomainInfo *info
+		);
+
 
 	/************************/
 	/* Function    0x0a     */
