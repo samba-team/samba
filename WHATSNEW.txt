@@ -1,9 +1,10 @@
-                  WHATS NEW IN Samba 3.0.0 beta1
-                           June 7 2003
+                  WHATS NEW IN Samba 3.0.0 beta2
+                           July 1 2003
                   ==============================
 
-This is a beta release of Samba 3.0.0. This is a non-production release 
-intended for testing purposes.  Use at your own risk. 
+This is the second beta release of Samba 3.0.0. This is a 
+non-production release intended for testing purposes.  Use 
+at your own risk. 
 
 The purpose of this beta release is to get wider testing of the major
 new pieces of code in the current Samba 3.0 development tree. We have
@@ -75,6 +76,105 @@ and maintaining Samba 3.0 servers and clients.  It is advised to
 begin with the Samba-HOWTO-Collection for overviews and specific 
 tasks (the current book is up to approximately 400 pages) and to 
 refer to the various man pages for information on individual options.
+
+######################################################################
+Changes since 3.0beta1
+######################
+
+Please refer to the CVS log for the SAMBA_3_0 branch for complete 
+details
+
+1)  Rework our smb signing code again, this factors out some of 
+    the common MAC calcuation code, and now supports multiple 
+    outstanding packets (bug #40)
+2)  Enforce 'client plaintext auth', 'client lanman auth' and 'client
+    ntlmv2 auth'
+3)  Correct timestamp problem on 64-bit machines (bug #140)
+4)  Add extra debugging staements to winbindd for tracking down
+    failures
+5)  Fix bug when aliased 'winbind uid/gid' parameters
+6)  Added an auth flag that indicates if we should be allowed 
+    to fallback to NTLMSSP for SASL if krb5 fails
+7)  Fixed the bug that forced us not to use the winbindd cache when 
+    we have a primary ADS domain and a secondary (trusted) NT4 domain. 
+8)  Use lp_realm() to find the default realm for 'net ads password'
+9)  Removed editreg from standard build until it is portable.
+10) Fix domain membership for servers not running winbindd
+11) Correct race condition in determining the high water make 
+    in the idmap backend (bug #181)
+12) Set the user's primary unix group from usrmgr.exe (partial 
+    fix for bug #45)
+13) Show comments when doing 'net group -l' (bug #3)
+14) Add trivial extension to 'net' to dump current local idmap
+    and restore mappings as well
+15) Modify 'net rpc vampire' to add new and existing users to
+    both the idmap and the SAM.
+16) Fix crash bug in ADS searches 
+17) Build libnss_wins.so as part of nsswitch target (bug #160)
+18) Make net rpc vampire return an error if the sam sync RPC 
+    returns an error
+19) Fail to join an NT 4 domain as a BDC if an workstation account
+    using our name exists
+20) Fix various memory leaks in server and client code
+21) Remove the short option to --set-auth-user for wbinfo (-A) to 
+    prevent confusion with the -a option (bug #158)
+22) Added new 'map acl inheritence' parameter
+23) Removed unused 'privileges' code from group mapping database
+24) Don't segfault on empty passdb backend list (bug #136)
+25) Fixed acl sorting algorithm forWwindows 2000 clients
+26) Replace universal group cache with netsamlogon_cache 
+    from APPLIANCE_HEAD branch
+27) Fix autoconf detection issues surrounding --with-ads=yes
+    but no Krb5 header files installed (bug #152)
+28) Add LDAP lookup for domain sequence number in case we are 
+    joined using NT4 protocols to a native mode AD domain
+29) Fix backend method selection for trusted NT 4 (or 2k 
+    mixed mode) domains 
+30) Fixed bug that caused us to enuemrate dmain local groups
+    from native mode AD domains other than our own
+31) Correct group enumeration for viewing in the Windows 
+    security tab (bug #110)
+32) Consolidate the DC location code
+33) Moved 'ads server' functionality into 'password server' for
+    backwards compatibility
+34) Fix winbindd_idmap tdb upgrades from a 2.2 installation
+    ( if you installed beta1, be sure to 
+      'mv idmap.tdb winbindd_idamap.tdb' )
+35) Fix pdb_ldap segfaults, and wrong default values for 
+    ldapsam_compat
+36) Enable negative connection cache for winbindd's ADS backend 
+    functions
+37) Enable address caching for active directory DC's so we don't 
+    have to hit DNS so much
+38) Fix bug in idmap code that caused mapping to randomly be 
+    redefined
+39) Add tdb locking code to prevent race condition when adding a 
+    new mapping to idmap
+40) Fix 'map to guest = bad user' when acting as a PDC supporting 
+    trust relationships
+41) Prevent deadlock issues when running winbindd on a Samba PDC 
+    to handle allocating uids & gids for trusted users and groups
+42) added LOCALE patch from Steve Langasek (bug #122)
+43) Add the 'guest' passdb backend automatically to the end of 
+    the 'passdb backend' list if 'guest account' has a valid 
+    username.
+44) Remove samstrict_dc auth method.  Rework 'samstrict' to only 
+    handle our local names (or domain name if we are a PDC).  
+    Move existing permissive 'sam' method to 'sam_ignoredomain' 
+    and make 'samstrict' the new default 'sam' auth method.
+45) Match Windows NT4/2k behavior when authenticating a user with
+    and unknown domain (default to our domain if we are a DC or 
+    domain member; default to our local name if we are a 
+    standalone server)
+46) Fix Get_Pwnam() to always fall back to lookup 'user' if the 
+    'DOMAIN\user' lookup fails.  This matches 2.2. behavior.
+47) Fix the trustdom_cache code to update the list of trusted 
+    domains when operating as a domain member and not using 
+    winbindd
+48) Remove 'nisplussam' passdb backend since it has suffered for 
+    too long without a maintainer
+    
+
 
 
 ######################################################################
@@ -162,7 +262,6 @@ New Parameters (new parameters have been grouped by function):
   Authentication
   --------------
   * auth methods
-  * ads server
   * realm
 
   Protocol Options
@@ -187,6 +286,7 @@ New Parameters (new parameters have been grouped by function):
   * hostname lookups
   * kernel change notify
   * mangle prefix
+  * map acl inheritence
   * msdfs proxy
   * set quota command
   * use sendfile
@@ -248,25 +348,24 @@ ${lock directory}/*tdb before upgrading to Samba 3.0.  Samba will
 upgrade databases as they are opened (if necessary), but downgrading 
 from 3.0 to 2.2 is an unsupported path.
 
-Name		Description				Backup?
-----		-----------				-------
-account_policy	User policy settings			yes
-gencache	Generic caching db			no
-group_mapping	Mapping table from Windows		yes
-		groups/SID to unix groups	
-idmap		new ID map table from SIDS		yes
-		to UNIX uids/gids.
-namecache	Name resolution cache entries		no
-netlogon_unigrp	Cache of universal group 		no
-		membership obtained when 
-		operating as a member of a 
-		Windows domain
-printing/*.tdb	Cached output from 'lpq 		no
-		command' created on a per print 
-		service basis
-registry	Read-only samba registry skeleton	no
-		that provides support for exporting
-		various db tables via the winreg RPCs
+Name			Description				Backup?
+----			-----------				-------
+account_policy		User policy settings			yes
+gencache		Generic caching db			no
+group_mapping		Mapping table from Windows		yes
+			groups/SID to unix groups	
+idmap			new ID map table from SIDS		yes
+			to UNIX uids/gids.
+namecache		Name resolution cache entries		no
+netsamlogon_cache	Cache of NET_USER_INFO_3 structure	no
+			returned as part of a successful
+			net_sam_logon request 
+printing/*.tdb		Cached output from 'lpq 		no
+			command' created on a per print 
+			service basis
+registry		Read-only samba registry skeleton	no
+			that provides support for exporting
+			various db tables via the winreg RPCs
 
 
 Changes in Behavior
@@ -425,13 +524,6 @@ with NFS that were present in Samba 2.2.
 ######################################################################
 Known Issues
 ############
-
-* One such limitation that is worth mentioning (and will be corrected 
-  before the actual stable 3.0.0 release is the dead lock problem with
-  running winbindd on a Samba PDC in order to allocate uids and gids for 
-  users and groups in a trusted domain.  When the Samba domain is acting 
-  as the trusted domain to a Windows NT 4.0 domain, there are no known 
-  issues.
 
 * The smbldap perl scripts for managing user entries in an LDAP 
   directory have not be updated to function with the Samba 3.0
