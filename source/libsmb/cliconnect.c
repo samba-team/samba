@@ -942,7 +942,10 @@ BOOL cli_negprot(struct cli_state *cli)
 				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
 		}
 
-		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED))
+		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED))
+			cli->sign_info.negotiated_smb_signing = True;
+
+		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) && cli->sign_info.allow_smb_signing)
 			cli->sign_info.negotiated_smb_signing = True;
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {

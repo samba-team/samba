@@ -362,10 +362,12 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
  SMB signing - setup the MAC key.
 ************************************************************/
 
-void cli_calculate_mac_key(struct cli_state *cli, const char *ntpasswd, const uchar resp[24])
+void cli_calculate_mac_key(struct cli_state *cli, const char *plain_passwd, const uchar resp[24])
 {
-	/* Get first 16 bytes. */
-	E_md4hash(ntpasswd,&cli->sign_info.mac_key[0]);
+	uchar nt_hash[16];
+	E_md4hash(plain_passwd, nt_hash);
+	
+	mdfour(&cli->sign_info.mac_key[0], nt_hash, sizeof(nt_hash));
 	memcpy(&cli->sign_info.mac_key[16],resp,24);
 	cli->sign_info.mac_key_len = 40;
 	cli->sign_info.use_smb_signing = True;
@@ -375,7 +377,7 @@ void cli_calculate_mac_key(struct cli_state *cli, const char *ntpasswd, const uc
 	cli->writebraw_supported = False;    
 
 	/* Reset the sequence number in case we had a previous (aborted) attempt */
-	cli->sign_info.send_seq_num = 0;
+	cli->sign_info.send_seq_num = 2;
 }
 
 /***********************************************************
@@ -411,6 +413,7 @@ void cli_caclulate_sign_mac(struct cli_state *cli)
 	MD5Final(calc_md5_mac, &md5_ctx);
 
 	memcpy(&cli->outbuf[smb_ss_field], calc_md5_mac, 8);
+
 /*	cli->outbuf[smb_ss_field+2]=0; 
 	Uncomment this to test if the remote server actually verifies signitures...*/
 	cli->sign_info.send_seq_num++;
