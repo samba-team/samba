@@ -79,7 +79,8 @@ void reset_server(char *name, int state, struct in_addr ip)
   DEBUG(2,("sending reset to %s %s of state %d\n",
 	   name,inet_ntoa(ip),state));
 
-  send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
+  send_mailslot_reply(False,BROWSE_MAILSLOT,ClientDGRAM,
+              outbuf,PTR_DIFF(p,outbuf),
 		      myname,name,0x20,0x1d,ip,*iface_ip(ip));
 }
 
@@ -488,7 +489,8 @@ static void send_backup_list(char *work_name, struct nmb_name *src_name,
     int len = PTR_DIFF(p, outbuf);
     debug_browse_data(outbuf, len);
   }
-  send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
+  send_mailslot_reply(False,BROWSE_MAILSLOT,ClientDGRAM,
+              outbuf,PTR_DIFF(p,outbuf),
 		      myname,theirname,0x0,0x0,ip,*iface_ip(ip));
 }
 
@@ -570,7 +572,7 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
 	    {
 	      if (AM_MASTER(work))
 		{
-		  become_nonmaster(d,work,SV_TYPE_DOMAIN_MASTER|SV_TYPE_MASTER_BROWSER);
+		  unbecome_local_master(d,work,SV_TYPE_MASTER_BROWSER);
 		}
 	    }
 	}

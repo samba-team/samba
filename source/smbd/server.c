@@ -2659,31 +2659,66 @@ int reply_lanman2(char *outbuf)
   return (smb_len(outbuf)+4);
 }
 
+
 /****************************************************************************
 reply for the nt protocol
 ****************************************************************************/
 int reply_nt1(char *outbuf)
 {
-  int capabilities=0x300; /* has dual names + lock_and_read */
+  /* dual names + lock_and_read + nt SMBs + remote API calls */
+  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ;
+/*
+  other valid capabilities which we may support at some time...
+                     CAP_LARGE_FILES|CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
+                     CAP_LARGE_FILES|CAP_LARGE_READX|
+                     CAP_STATUS32|CAP_LEVEL_II_OPLOCKS;
+ */
+
   int secword=0;
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
+  int data_len;
+  int encrypt_len;
+  char challenge_len = 8;
+
+  if (lp_readraw() && lp_writeraw())
+  {
+    capabilities |= CAP_RAW_MODE;
+  }
 
   if (lp_security()>=SEC_USER) secword |= 1;
   if (doencrypt) secword |= 2;
 
-  set_message(outbuf,17,doencrypt?8:0,True);
+  /* decide where (if) to put the encryption challenge, and
+     follow it with the OEM'd domain name
+   */
+  encrypt_len = doencrypt?challenge_len:0;
+#if UNICODE
+  data_len = encrypt_len + 2*(strlen(lp_workgroup())+1);
+#else
+  data_len = encrypt_len + strlen(lp_workgroup()) + 1;
+#endif
+
+  set_message(outbuf,17,data_len,True);
+
+#if UNICODE
+  /* put the OEM'd domain name */
+  PutUniCode(smb_buf(outbuf)+encrypt_len,lp_workgroup());
+#else
+  strcpy(smb_buf(outbuf)+encrypt_len, lp_workgroup());
+#endif
+
   CVAL(outbuf,smb_vwv1) = secword;
 #ifdef SMB_PASSWD
   /* Create a token value and add it to the outgoing packet. */
-  if (doencrypt) {
+  if (doencrypt)
+  {
     generate_next_challenge(smb_buf(outbuf));
+
     /* Tell the nt machine how long the challenge is. */
-    SSVALS(outbuf,smb_vwv16+1,8);
+    SSVALS(outbuf,smb_vwv16+1,challenge_len);
   }
 #endif
-
-  SIVAL(outbuf,smb_vwv7+1,getpid()); /* session key */
 
   Protocol = PROTOCOL_NT1;
 
@@ -2694,20 +2729,18 @@ int reply_nt1(char *outbuf)
 #endif
   }
 
-  if (lp_readraw() && lp_writeraw())
-    capabilities |= 1;
-
   SSVAL(outbuf,smb_vwv1+1,lp_maxmux()); /* maxmpx */
   SSVAL(outbuf,smb_vwv2+1,1); /* num vcs */
-  SIVAL(outbuf,smb_vwv3+1,0xFFFF); /* max buffer */
-  SIVAL(outbuf,smb_vwv5+1,0xFFFF); /* raw size */
+  SIVAL(outbuf,smb_vwv3+1,0xffff); /* max buffer. LOTS! */
+  SIVAL(outbuf,smb_vwv5+1,0xffff); /* raw size. LOTS! */
+  SIVAL(outbuf,smb_vwv7+1,getpid()); /* session key */
   SIVAL(outbuf,smb_vwv9+1,capabilities); /* capabilities */
   put_long_date(outbuf+smb_vwv11+1,t);
   SSVALS(outbuf,smb_vwv15+1,TimeDiff(t)/60);
+  SSVAL(outbuf,smb_vwv17,data_len); /* length of challenge+domain strings */
 
   return (smb_len(outbuf)+4);
 }
-
 
 /* these are the protocol lists used for auto architecture detection:
 

@@ -797,6 +797,21 @@ char *Strstr(char *s, char *p);
 /* what server type are we currently */
 
 
+/* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
+
+#define CAP_RAW_MODE         0x0001
+#define CAP_MPX_MODE         0x0002
+#define CAP_UNICODE          0x0004
+#define CAP_LARGE_FILES      0x0008
+#define CAP_NT_SMBS          0x0010
+#define CAP_RPC_REMOTE_APIS  0x0020
+#define CAP_STATUS32         0x0040
+#define CAP_LEVEL_II_OPLOCKS 0x0080
+#define CAP_LOCK_AND_READ    0x0100
+#define CAP_NT_FIND          0x0200
+#define CAP_DFS              0x1000
+#define CAP_LARGE_READX      0x4000
+
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets */
 enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANMAN1,PROTOCOL_LANMAN2,PROTOCOL_NT1};

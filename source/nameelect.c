@@ -51,6 +51,7 @@ extern struct subnet_record *subnetlist;
 
 extern uint16 nb_type; /* samba's NetBIOS name type */
 
+
 /*******************************************************************
   occasionally check to see if the master browser is around
   ******************************************************************/
@@ -167,7 +168,8 @@ void send_election(struct subnet_record *d, char *group,uint32 criterion,
   strupper(p);
   p = skip_string(p,1);
   
-  send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
+  send_mailslot_reply(False,BROWSE_MAILSLOT,ClientDGRAM,
+              outbuf,PTR_DIFF(p,outbuf),
 		      name,group,0,0x1e,d->bcast_ip,*iface_ip(d->bcast_ip));
 }
 
@@ -183,26 +185,39 @@ void send_election(struct subnet_record *d, char *group,uint32 criterion,
 void name_unregister_work(struct subnet_record *d, char *name, int name_type)
 {
     struct work_record *work;
+    int remove_type_local  = 0;
+    int remove_type_domain = 0;
+    int remove_type_logon  = 0;
 
     remove_netbios_name(d,name,name_type,SELF,ipzero);
 
     if (!(work = find_workgroupstruct(d, name, False))) return;
 
-    if (ms_browser_name(name, name_type) ||
-        (AM_MASTER(work) && strequal(name, lp_workgroup()) == 0 &&
-         (name_type == 0x1d || name_type == 0x1b)))
-    {
-      int remove_type = 0;
+    /* work out what to unbecome, from the name type being removed */
 
-      if (ms_browser_name(name, name_type))
-        remove_type = SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER;
-      if (name_type == 0x1d)
-        remove_type = SV_TYPE_MASTER_BROWSER;
-      if (name_type == 0x1b)
-        remove_type = SV_TYPE_DOMAIN_MASTER;
-			
-      become_nonmaster(d, work, remove_type);
+    if (ms_browser_name(name, name_type))
+    {
+      remove_type_local |= SV_TYPE_MASTER_BROWSER;
     }
+    if (AM_MASTER(work) && strequal(name, lp_workgroup()) == 0 &&
+         name_type == 0x1d)
+    {
+      remove_type_local |= SV_TYPE_MASTER_BROWSER;
+    }
+    if (AM_DOMMST(work) && strequal(name, lp_workgroup()) == 0 &&
+         name_type == 0x1b)
+    {
+      remove_type_domain |= SV_TYPE_DOMAIN_MASTER;
+    }
+    if (AM_DOMMEM(work) && strequal(name, lp_workgroup()) == 0 &&
+         name_type == 0x1c)
+    {
+      remove_type_logon|= SV_TYPE_DOMAIN_MEMBER;
+    }
+
+    if (remove_type_local ) unbecome_local_master (d, work, remove_type_local );
+    if (remove_type_domain) unbecome_domain_master(d, work, remove_type_domain);
+    if (remove_type_logon ) unbecome_logon_server (d, work, remove_type_logon );
 }
 
 
@@ -227,12 +242,28 @@ void name_register_work(struct subnet_record *d, char *name, int name_type,
 
     if (work)
     {
-      if (work->state != MST_NONE)
+      if (work->mst_state != MST_POTENTIAL)
       {
-        /* samba is in the process of working towards master browser-ness.
+        /* samba is working towards local master browser-ness.
            initiate the next stage.
          */
-        become_master(d, work);
+        become_local_master(d, work);
+        return;
+      }
+      if (work->dom_state != DOMAIN_NONE)
+      {
+        /* samba is working towards domain master browser-ness.
+           initiate the next stage.
+         */
+        become_domain_master(d, work);
+        return;
+      }
+      if (work->log_state != LOGON_NONE)
+      {
+        /* samba is working towards domain master browser-ness.
+           initiate the next stage.
+         */
+        become_logon_server(d, work);
         return;
       }
     }
@@ -241,29 +272,28 @@ void name_register_work(struct subnet_record *d, char *name, int name_type,
 
 
 /*******************************************************************
-  become the master browser.
+  become the local master browser.
 
   this is done in stages. note that this could take a while, 
   particularly on a broadcast subnet, as we have to wait for
   the implicit registration of each name to be accepted.
 
-  as each name is successfully registered, become_master() is
+  as each name is successfully registered, become_local_master() is
   called again, in order to initiate the next stage. see
   dead_netbios_entry() - deals with implicit name registration
   and response_name_reg() - deals with explicit registration
   with a WINS server.
 
-  stage 1: was MST_NONE - go to MST_NONE and register ^1^2__MSBROWSE__^2^1.
-  stage 2: was MST_WON  - go to MST_MSB  and register WORKGROUP(0x1d)
-  stage 3: was MST_MSB  - go to MST_BROWSER and register WORKGROUP(0x1b)
-  stage 4: was MST_BROWSER - go to MST_DOMAIN (do not pass GO, do not...)
+  stage 1: was MST_POTENTIAL - go to MST_POTENTIAL and register ^1^2__MSBROWSE__^2^1.
+  stage 2: was MST_BACK  - go to MST_MSB  and register WORKGROUP(0x1d)
+  stage 3: was MST_MSB  - go to MST_BROWSER and stay there 
 
   XXXX note: this code still does not cope with the distinction
   between different types of nodes, particularly between M and P
   nodes. that comes later.
 
   ******************************************************************/
-void become_master(struct subnet_record *d, struct work_record *work)
+void become_local_master(struct subnet_record *d, struct work_record *work)
 {
   /* domain type must be limited to domain enum + server type. it must
      not have SV_TYPE_SERVER or anything else with SERVER in it, else
@@ -272,17 +302,17 @@ void become_master(struct subnet_record *d, struct work_record *work)
    */
   uint32 domain_type = SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT;
 
-  if (!work) return;
+  if (!work || !d) return;
   
   DEBUG(2,("Becoming master for %s %s (currently at stage %d)\n",
-					work->work_group,inet_ntoa(d->bcast_ip),work->state));
+					work->work_group,inet_ntoa(d->bcast_ip),work->mst_state));
   
-  switch (work->state)
+  switch (work->mst_state)
   {
-    case MST_NONE: /* while we were nothing but a server... */
+    case MST_POTENTIAL: /* while we were nothing but a server... */
     {
       DEBUG(3,("go to first stage: register ^1^2__MSBROWSE__^2^1\n"));
-      work->state = MST_WON; /* ... an election win was successful */
+      work->mst_state = MST_BACK; /* ... an election win was successful */
 
       work->ElectionCriterion |= 0x5;
 
@@ -294,12 +324,13 @@ void become_master(struct subnet_record *d, struct work_record *work)
       add_my_name_entry(d,MSBROWSE        ,0x01,nb_type|NB_ACTIVE|NB_GROUP);
 
       /* DON'T do anything else after calling add_my_name_entry() */
-      return;
+      break;
     }
-    case MST_WON: /* while nothing had happened except we won an election... */
+
+    case MST_BACK: /* while nothing had happened except we won an election... */
     {
       DEBUG(3,("go to second stage: register as master browser\n"));
-      work->state = MST_MSB; /* ... registering MSBROWSE was successful */
+      work->mst_state = MST_MSB; /* ... registering MSBROWSE was successful */
 
       /* add server entry on successful registration of MSBROWSE */
       add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
@@ -308,12 +339,13 @@ void become_master(struct subnet_record *d, struct work_record *work)
       add_my_name_entry(d,work->work_group,0x1d,nb_type|NB_ACTIVE);
   
       /* DON'T do anything else after calling add_my_name_entry() */
-      return;
+      break;
     }
+
     case MST_MSB: /* while we were still only registered MSBROWSE state... */
     {
       DEBUG(3,("2nd stage complete: registered as master browser\n"));
-      work->state = MST_BROWSER; /* ... registering WORKGROUP(1d) succeeded */
+      work->mst_state = MST_BROWSER; /* ... registering WORKGROUP(1d) succeeded */
 
       /* update our server status */
       work->ServerType |= SV_TYPE_MASTER_BROWSER;
@@ -322,114 +354,17 @@ void become_master(struct subnet_record *d, struct work_record *work)
       if (work->serverlist == NULL) /* no servers! */
       {
         /* ask all servers on our local net to announce to us */
+        /* XXXX OOPS! add_server_entry will always add one entry - our own. */
         announce_request(work, d->bcast_ip);
       }
       break;
-   }
+    }
 
-   case MST_BROWSER:
-   {
+    case MST_BROWSER:
+    {
       /* don't have to do anything: just report success */
       DEBUG(3,("3rd stage: become master browser!\n"));
 
-      break;
-   }
-
-   case MST_DOMAIN_NONE:
-   {
-      if (lp_domain_master())
-      {
-        work->state = MST_DOMAIN_MEM; /* ... become domain member */
-        DEBUG(3,("domain first stage: register as domain member\n"));
-
-        /* add domain member name */
-        add_my_name_entry(d,work->work_group,0x1e,nb_type|NB_ACTIVE|NB_GROUP);
-
-        /* DON'T do anything else after calling add_my_name_entry() */
-        return;
-      }
-      else
-      {
-        DEBUG(4,("samba not configured as a domain master.\n"));
-      }
-  
-      break;
-   }
-
-   case MST_DOMAIN_MEM:
-   {
-      if (lp_domain_master())
-      {
-        work->state = MST_DOMAIN_TST; /* ... possibly become domain master */
-        DEBUG(3,("domain second stage: register as domain master\n"));
-
-        if (lp_domain_logons())
-	    {
-          work->ServerType |= SV_TYPE_DOMAIN_MEMBER;
-          add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
-        }
-
-        /* add domain master name */
-        add_my_name_entry(d,work->work_group,0x1b,nb_type|NB_ACTIVE         );
-
-        /* DON'T do anything else after calling add_my_name_entry() */
-        return;
-      }
-      else
-      {
-        DEBUG(4,("samba not configured as a domain master.\n"));
-      }
-  
-      break;
-    }
-
-    case MST_DOMAIN_TST: /* while we were still a master browser... */
-    {
-      /* update our server status */
-      if (lp_domain_master())
-      {
-        struct subnet_record *d1;
-		uint32 update_type = 0;
-
-        DEBUG(3,("domain third stage: samba is now a domain master.\n"));
-        work->state = MST_DOMAIN; /* ... registering WORKGROUP(1b) succeeded */
-
-        update_type |= DFLT_SERVER_TYPE | SV_TYPE_DOMAIN_MASTER | 
-	  SV_TYPE_POTENTIAL_BROWSER;
-
-		work->ServerType |= update_type;
-		add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
-
-		for (d1 = subnetlist; d1; d1 = d1->next)
-		{
-        	struct work_record *w;
-			if (ip_equal(d1->bcast_ip, d->bcast_ip)) continue;
-
-        	for (w = d1->workgrouplist; w; w = w->next)
-			{
-				struct server_record *s = find_server(w, myname);
-				if (strequal(w->work_group, work->work_group))
-				{
-					w->ServerType |= update_type;
-				}
-				if (s)
-				{
-					s->serv.type |= update_type;
-					DEBUG(4,("found server %s on %s: update to %8x\n",
-									s->serv.name, inet_ntoa(d1->bcast_ip),
-									s->serv.type));
-				}
-			}
-		}
-      }
-  
-      break;
-    }
-
-    case MST_DOMAIN:
-    {
-      /* don't have to do anything: just report success */
-      DEBUG(3,("fifth stage: there isn't one yet!\n"));
       break;
     }
   }
@@ -437,52 +372,250 @@ void become_master(struct subnet_record *d, struct work_record *work)
 
 
 /*******************************************************************
-  unbecome the master browser. initates removal of necessary netbios 
-  names, and tells the world that we are no longer a master browser.
+  become the domain master browser.
+
+  this is done in stages. note that this could take a while, 
+  particularly on a broadcast subnet, as we have to wait for
+  the implicit registration of each name to be accepted.
+
+  as each name is successfully registered, become_domain_master() is
+  called again, in order to initiate the next stage. see
+  dead_netbios_entry() - deals with implicit name registration
+  and response_name_reg() - deals with explicit registration
+  with a WINS server.
+
+  stage 1: was DOMAIN_NONE - go to DOMAIN_MST 
+
+  XXXX note: this code still does not cope with the distinction
+  between different types of nodes, particularly between M and P
+  nodes. that comes later.
+
   ******************************************************************/
-void become_nonmaster(struct subnet_record *d, struct work_record *work,
+void become_domain_master(struct subnet_record *d, struct work_record *work)
+{
+  /* domain type must be limited to domain enum + server type. it must
+     not have SV_TYPE_SERVER or anything else with SERVER in it, else
+     clients get confused and start thinking this entry is a server
+     not a workgroup
+   */
+
+  if (!work || !d) return;
+  
+  DEBUG(2,("Becoming domain master for %s %s (currently at stage %d)\n",
+					work->work_group,inet_ntoa(d->bcast_ip),work->dom_state));
+  
+  switch (work->dom_state)
+  {
+    case DOMAIN_NONE: /* while we were nothing but a server... */
+    {
+      if (lp_domain_master())
+      {
+		  DEBUG(3,("go to first stage: register <1b> name\n"));
+		  work->dom_state = DOMAIN_WAIT;
+
+		  /* XXXX the 0x1b is domain master browser name */
+		  add_my_name_entry(d, lp_workgroup(),0x1b,nb_type|NB_ACTIVE|NB_GROUP);
+
+		  /* DON'T do anything else after calling add_my_name_entry() */
+		  break;
+      }
+      else
+      {
+        DEBUG(4,("samba not configured as a domain master.\n"));
+      }
+  
+      break;
+    }
+
+   case DOMAIN_WAIT:
+   {
+      if (lp_domain_master())
+      {
+        work->dom_state = DOMAIN_MST; /* ... become domain master */
+        DEBUG(3,("domain first stage: register as domain member\n"));
+ 
+        /* update our server status */
+        work->ServerType |= SV_TYPE_NT|SV_TYPE_DOMAIN_MASTER;
+        add_server_entry(d,work,myname,work->ServerType,0,
+                         lp_serverstring(),True);
+
+        DEBUG(4,("samba is now a domain master\n"));
+
+        break;
+      }
+      else
+      {
+        DEBUG(4,("samba not configured as a domain master.\n"));
+      }
+  
+      break;
+   }
+
+    case DOMAIN_MST:
+    {
+      /* don't have to do anything: just report success */
+      DEBUG(3,("domain second stage: there isn't one!\n"));
+      break;
+    }
+  }
+}
+
+
+/*******************************************************************
+  become a logon server.
+  ******************************************************************/
+void become_logon_server(struct subnet_record *d, struct work_record *work)
+{
+  if (!work || !d) return;
+  
+  DEBUG(2,("Becoming logon server for %s %s (currently at stage %d)\n",
+					work->work_group,inet_ntoa(d->bcast_ip),work->log_state));
+  
+  switch (work->log_state)
+  {
+    case LOGON_NONE: /* while we were nothing but a server... */
+    {
+      if (lp_domain_logons())
+      {
+		  DEBUG(3,("go to first stage: register <1c> name\n"));
+		  work->log_state = LOGON_WAIT;
+
+          /* XXXX the 0x1c is apparently something to do with domain logons */
+          add_my_name_entry(d, lp_workgroup(),0x1c,nb_type|NB_ACTIVE|NB_GROUP);
+
+		  /* DON'T do anything else after calling add_my_name_entry() */
+		  break;
+      }
+      {
+        DEBUG(4,("samba not configured as a logon master.\n"));
+      }
+  
+      break;
+    }
+
+   case LOGON_WAIT:
+   {
+      if (lp_domain_logons())
+      {
+        work->log_state = LOGON_SRV; /* ... become logon server */
+        DEBUG(3,("logon second stage: register \n"));
+ 
+        /* update our server status */
+        work->ServerType |= SV_TYPE_NT|SV_TYPE_DOMAIN_MEMBER;
+        add_server_entry(d,work,myname,work->ServerType,0,
+                         lp_serverstring(),True);
+
+        /* DON'T do anything else after calling add_my_name_entry() */
+        break;
+      }
+      else
+      {
+        DEBUG(4,("samba not configured as a logon server.\n"));
+      }
+  
+      break;
+   }
+
+   case LOGON_SRV:
+   {
+      DEBUG(3,("logon third stage: there isn't one!\n"));
+      break;
+   }
+
+  }
+}
+
+
+/*******************************************************************
+  unbecome the local master browser. initates removal of necessary netbios 
+  names, and tells the world that we are no longer a master browser.
+
+  XXXX this _should_ be used to demote to a backup master browser, without
+  going straight to non-master browser.  another time.
+
+  ******************************************************************/
+void unbecome_local_master(struct subnet_record *d, struct work_record *work,
 				int remove_type)
 {
   int new_server_type = work->ServerType;
 
-  DEBUG(2,("Becoming non-master for %s\n",work->work_group));
-  
-  /* can only remove master or domain types with this function */
-  remove_type &= SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER;
-
-  /* unbecome a master browser; unbecome a domain master, too :-( */
-  if (remove_type & SV_TYPE_MASTER_BROWSER)
-    remove_type |= SV_TYPE_DOMAIN_MASTER;
+  /* can only remove master types with this function */
+  remove_type &= SV_TYPE_MASTER_BROWSER;
 
   new_server_type &= ~remove_type;
 
-  if (!(new_server_type & (SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER)))
+  if (remove_type)
   {
+    DEBUG(2,("Becoming local non-master for %s\n",work->work_group));
+  
     /* no longer a master browser of any sort */
 
     work->ServerType |= SV_TYPE_POTENTIAL_BROWSER;
     work->ElectionCriterion &= ~0x4;
-    work->state = MST_NONE;
+    work->mst_state = MST_POTENTIAL;
 
 	/* announce ourselves as no longer active as a master browser. */
     announce_server(d, work, work->work_group, myname, 0, 0);
     remove_name_entry(d,MSBROWSE        ,0x01);
+    remove_name_entry(d,work->work_group,0x1d);
   }
-  
-  work->ServerType = new_server_type;
+}
 
-  if (!(work->ServerType & SV_TYPE_DOMAIN_MASTER))
+
+/*******************************************************************
+  unbecome the domain master browser. initates removal of necessary netbios 
+  names, and tells the world that we are no longer a domain browser.
+  ******************************************************************/
+void unbecome_domain_master(struct subnet_record *d, struct work_record *work,
+				int remove_type)
+{
+  int new_server_type = work->ServerType;
+
+  DEBUG(2,("Becoming domain non-master for %s\n",work->work_group));
+  
+  /* can only remove master or domain types with this function */
+  remove_type &= SV_TYPE_DOMAIN_MASTER;
+
+  new_server_type &= ~remove_type;
+
+  if (remove_type)
   {
-    if (work->state == MST_DOMAIN)
-      work->state = MST_BROWSER;
+    /* no longer a domain master browser of any sort */
+
+    work->dom_state = DOMAIN_NONE;
+
+	/* announce ourselves as no longer active as a master browser. */
+    announce_server(d, work, work->work_group, myname, 0, 0);
     remove_name_entry(d,work->work_group,0x1b);    
   }
+}
 
-  if (!(work->ServerType & SV_TYPE_MASTER_BROWSER))
+
+/*******************************************************************
+  unbecome the logon server. initates removal of necessary netbios 
+  names, and tells the world that we are no longer a logon server.
+  ******************************************************************/
+void unbecome_logon_server(struct subnet_record *d, struct work_record *work,
+				int remove_type)
+{
+  int new_server_type = work->ServerType;
+
+  DEBUG(2,("Becoming logon non-server for %s\n",work->work_group));
+  
+  /* can only remove master or domain types with this function */
+  remove_type &= SV_TYPE_DOMAIN_MEMBER;
+
+  new_server_type &= ~remove_type;
+
+  if (remove_type)
   {
-    if (work->state >= MST_BROWSER)
-      work->state = MST_NONE;
-    remove_name_entry(d,work->work_group,0x1d);
+    /* no longer a master browser of any sort */
+
+    work->log_state = LOGON_NONE;
+
+	/* announce ourselves as no longer active as a master browser. */
+    announce_server(d, work, work->work_group, myname, 0, 0);
+    remove_name_entry(d,work->work_group,0x1c);    
   }
 }
 
@@ -518,9 +651,9 @@ void run_elections(time_t t)
 			   work->work_group,inet_ntoa(d->bcast_ip)));
 		  
 		  work->RunningElection = False;
-		  work->state = MST_NONE;
+		  work->mst_state = MST_POTENTIAL;
 
-		  become_master(d, work);
+		  become_local_master(d, work);
 		}
 	  }
 	}
@@ -598,7 +731,7 @@ void process_election(struct packet_struct *p,char *buf)
 	if (!work->RunningElection) {
 	  work->needelection = True;
 	  work->ElectionCount=0;
-	  work->state = MST_NONE;
+	  work->mst_state = MST_POTENTIAL;
 	}
       } else {
 	work->needelection = False;
@@ -608,9 +741,7 @@ void process_election(struct packet_struct *p,char *buf)
 	  DEBUG(3,(">>> Lost election on %s %s <<<\n",
 		   work->work_group,inet_ntoa(d->bcast_ip)));
 	  if (AM_MASTER(work))
-	    become_nonmaster(d, work,
-			     SV_TYPE_MASTER_BROWSER|
-			     SV_TYPE_DOMAIN_MASTER);
+	    unbecome_local_master(d, work, SV_TYPE_MASTER_BROWSER);
 	}
       }
     }

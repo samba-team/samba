@@ -300,9 +300,7 @@ static void process(void)
       run_elections(t);
 
       announce_host(t);
-
       announce_master(t);
-
       announce_remote(t);
 
       query_refresh_names(t);
@@ -314,6 +312,7 @@ static void process(void)
       write_browse_list(t);
       do_browser_lists(t);
       check_master_browser(t);
+      add_domain_names(t);
     }
 }
 

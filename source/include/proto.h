@@ -411,8 +411,14 @@ void send_election(struct subnet_record *d, char *group,uint32 criterion,
 void name_unregister_work(struct subnet_record *d, char *name, int name_type);
 void name_register_work(struct subnet_record *d, char *name, int name_type,
 				int nb_flags, time_t ttl, struct in_addr ip, BOOL bcast);
-void become_master(struct subnet_record *d, struct work_record *work);
-void become_nonmaster(struct subnet_record *d, struct work_record *work,
+void become_local_master(struct subnet_record *d, struct work_record *work);
+void become_domain_master(struct subnet_record *d, struct work_record *work);
+void become_logon_server(struct subnet_record *d, struct work_record *work);
+void unbecome_local_master(struct subnet_record *d, struct work_record *work,
+				int remove_type);
+void unbecome_domain_master(struct subnet_record *d, struct work_record *work,
+				int remove_type);
+void unbecome_logon_server(struct subnet_record *d, struct work_record *work,
 				int remove_type);
 void run_elections(time_t t);
 void process_election(struct packet_struct *p,char *buf);
@@ -436,7 +442,8 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
 void queue_packet(struct packet_struct *packet);
 void run_packet_queue();
 void listen_for_packets(BOOL run_election);
-BOOL send_mailslot_reply(char *mailslot,int fd,char *buf,int len,char *srcname,
+BOOL send_mailslot_reply(BOOL unique, char *mailslot,int fd,
+             char *buf,int len,char *srcname,
 			 char *dstname,int src_type,int dest_type,
 			 struct in_addr dest_ip,struct in_addr src_ip);
 
@@ -469,6 +476,7 @@ struct response_record *queue_netbios_packet(struct subnet_record *d,
 
 void remove_name_entry(struct subnet_record *d, char *name,int type);
 void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags);
+void add_domain_names(time_t t);
 void add_my_names(void);
 void remove_my_names();
 void refresh_my_names(time_t t);
