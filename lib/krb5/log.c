@@ -57,7 +57,7 @@ log_realloc(krb5_log_facility *f)
 }
 
 struct s2i {
-    char *s;
+    const char *s;
     int val;
 };
 
@@ -204,8 +204,8 @@ open_syslog(krb5_context context,
 }
 
 struct file_data{
-    char *filename;
-    char *mode;
+    const char *filename;
+    const char *mode;
     FILE *fd;
     int keep_open;
 };
@@ -236,7 +236,7 @@ close_file(void *data)
 
 static krb5_error_code
 open_file(krb5_context context, krb5_log_facility *fac, int min, int max,
-	  char *filename, char *mode, FILE *f, int keep_open)
+	  const char *filename, const char *mode, FILE *f, int keep_open)
 {
     struct file_data *fd = malloc(sizeof(*fd));
     if(fd == NULL) {
