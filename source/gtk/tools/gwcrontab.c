@@ -54,7 +54,7 @@ void update_joblist(void)
 	
 	status = dcerpc_atsvc_JobEnum(at_pipe, mem_ctx, &r);
 	if(!NT_STATUS_IS_OK(status)) {
-		gtk_show_ntstatus(mainwin, status);
+		gtk_show_ntstatus(mainwin, "Error while enumerating first job", status);
 		return;
 	}
 
@@ -110,7 +110,7 @@ on_connect_activate                    (GtkMenuItem     *menuitem,
 				       gtk_rpc_binding_dialog_get_credentials(d));
 
 	if(!NT_STATUS_IS_OK(status)) {
-		gtk_show_ntstatus(mainwin, status);
+		gtk_show_ntstatus(mainwin, "Error while connecting to at service", status);
 		at_pipe = NULL;
 		gtk_widget_destroy(GTK_WIDGET(d));
 		talloc_free(mem_ctx);
@@ -163,7 +163,7 @@ on_new_activate                        (GtkMenuItem     *menuitem,
 	status = dcerpc_atsvc_JobAdd(at_pipe, mem_ctx, &r);
 	if(!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		gtk_show_ntstatus(mainwin, status);
+		gtk_show_ntstatus(mainwin, "Error while adding job", status);
 		return;
 	}
 	
@@ -200,7 +200,7 @@ on_delete_activate                     (GtkMenuItem     *menuitem,
 		status = dcerpc_atsvc_JobDel(at_pipe, mem_ctx, &r);
 		talloc_free(mem_ctx);
 		if(!NT_STATUS_IS_OK(status)) {
-			gtk_show_ntstatus(mainwin, status);
+			gtk_show_ntstatus(mainwin, "Error deleting job", status);
 			return;
 		}
 

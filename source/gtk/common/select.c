@@ -141,7 +141,7 @@ GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe)
 
 	status = dcerpc_samr_Connect(sam_pipe, mem_ctx, &cr);
 	if (!NT_STATUS_IS_OK(status)) {
-		gtk_show_ntstatus(NULL, status);
+		gtk_show_ntstatus(NULL, "Running Connect on SAMR", status);
 		talloc_free(mem_ctx);
 		return GTK_WIDGET(d);
 	}
@@ -153,7 +153,7 @@ GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe)
 
 	status = dcerpc_samr_EnumDomains(sam_pipe, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		gtk_show_ntstatus(NULL, status);
+		gtk_show_ntstatus(NULL, "Enumerating domains", status);
 	} else if (r.out.sam) {
 		for (i=0;i<r.out.sam->count;i++) {
 			GtkTreeIter iter;
@@ -167,7 +167,7 @@ GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe)
 
 	status = dcerpc_samr_Close(sam_pipe, mem_ctx, &dr);
 	if (!NT_STATUS_IS_OK(status)) {
-		gtk_show_ntstatus(NULL, status);
+		gtk_show_ntstatus(NULL, "Closing SAMR connection", status);
 		talloc_free(mem_ctx);
 		return GTK_WIDGET ( d );
 	}

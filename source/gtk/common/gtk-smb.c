@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    SMB-related GTK+ functions
    
-   Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) Jelmer Vernooij 2004-2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,25 +23,25 @@
 #include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
 
-void gtk_show_werror(GtkWidget *win, WERROR err) 
+void gtk_show_werror(GtkWidget *win, const char *message, WERROR err) 
 {
 	GtkWidget *dialog = gtk_message_dialog_new( GTK_WINDOW(win), 
 						    GTK_DIALOG_DESTROY_WITH_PARENT,
 						    GTK_MESSAGE_ERROR,
     						    GTK_BUTTONS_CLOSE,
-						    "Windows error: %s\n",
+						    "%s: %s\n", message?message: "Windows error",
 						    win_errstr(err));
 	gtk_dialog_run (GTK_DIALOG (dialog));
  	gtk_widget_destroy (dialog);
 }
                    
-void gtk_show_ntstatus(GtkWidget *win, NTSTATUS status) 
+void gtk_show_ntstatus(GtkWidget *win, const char *message, NTSTATUS status) 
 {
 	GtkWidget *dialog = gtk_message_dialog_new( GTK_WINDOW(win), 
 						    GTK_DIALOG_DESTROY_WITH_PARENT,
 						    GTK_MESSAGE_ERROR,
 						    GTK_BUTTONS_CLOSE,
-						    "Windows error: %s\n",
+						    "%s: %s\n", message?message:"Windows error",
 						    nt_errstr(status));
 	gtk_dialog_run (GTK_DIALOG (dialog));
  	gtk_widget_destroy (dialog);
@@ -94,6 +94,10 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	GSList *transport_smb_group = NULL;
 
 	gtk_rpc_binding_dialog->mem_ctx = talloc_init("gtk_rcp_binding_dialog");
+
+	gtk_rpc_binding_dialog->credentials = talloc(gtk_rpc_binding_dialog->mem_ctx, struct cli_credentials);
+
+	cli_credentials_guess(gtk_rpc_binding_dialog->credentials);
 	
 	gtk_window_set_title (GTK_WINDOW (gtk_rpc_binding_dialog), "Connect");
 
@@ -205,20 +209,25 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 
-	gtk_entry_set_text(GTK_ENTRY(gtk_rpc_binding_dialog->entry_username), getenv("LOGNAME"));
+	gtk_entry_set_text(GTK_ENTRY(gtk_rpc_binding_dialog->entry_username), 
+					   cli_credentials_get_username(gtk_rpc_binding_dialog->credentials));
 
 	gtk_rpc_binding_dialog->entry_userdomain = gtk_entry_new ();
 	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->entry_userdomain, 1,2, 1,2,
 					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 
-	gtk_entry_set_text(GTK_ENTRY(gtk_rpc_binding_dialog->entry_userdomain), lp_workgroup());
+	gtk_entry_set_text(GTK_ENTRY(gtk_rpc_binding_dialog->entry_userdomain), 
+					   cli_credentials_get_domain(gtk_rpc_binding_dialog->credentials));
 
 	gtk_rpc_binding_dialog->entry_password = gtk_entry_new ();
 	gtk_entry_set_visibility (GTK_ENTRY (gtk_rpc_binding_dialog->entry_password), FALSE);
 	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->entry_password, 1,2, 2,3,
 					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
+
+	gtk_entry_set_text(GTK_ENTRY(gtk_rpc_binding_dialog->entry_password), 
+					   cli_credentials_get_password(gtk_rpc_binding_dialog->credentials));
 
 	gtk_rpc_binding_dialog->krb5_chk_button = gtk_check_button_new_with_mnemonic ("_Use kerberos");
 	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->krb5_chk_button, 1,2, 3,4,
@@ -299,12 +308,11 @@ GtkWidget *gtk_rpc_binding_dialog_new (BOOL nocredentials, struct sam_pipe *sam_
 
 struct cli_credentials *gtk_rpc_binding_dialog_get_credentials(GtkRpcBindingDialog *d)
 {
-	struct cli_credentials *ret = talloc(d->mem_ctx, struct cli_credentials);
-	cli_credentials_set_username(ret, gtk_entry_get_text(GTK_ENTRY(d->entry_username)), CRED_SPECIFIED);
-	cli_credentials_set_password(ret, gtk_entry_get_text(GTK_ENTRY(d->entry_password)), CRED_SPECIFIED);
-	cli_credentials_set_domain(ret, gtk_entry_get_text(GTK_ENTRY(d->entry_userdomain)), CRED_SPECIFIED);
+	cli_credentials_set_username(d->credentials, gtk_entry_get_text(GTK_ENTRY(d->entry_username)), CRED_SPECIFIED);
+	cli_credentials_set_password(d->credentials, gtk_entry_get_text(GTK_ENTRY(d->entry_password)), CRED_SPECIFIED);
+	cli_credentials_set_domain(d->credentials, gtk_entry_get_text(GTK_ENTRY(d->entry_userdomain)), CRED_SPECIFIED);
 	
-	return ret;
+	return d->credentials;
 }
 
 const char *gtk_rpc_binding_dialog_get_host(GtkRpcBindingDialog *d)
@@ -378,7 +386,7 @@ GtkWidget *create_gtk_samba_about_dialog (const char *appname)
 	label3 = gtk_label_new_with_mnemonic ("Part of Samba <http://www.samba.org/>");
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label3, FALSE, FALSE, 0);
 
-	label4 = gtk_label_new ("\302\251 1992-2004 The Samba Team");
+	label4 = gtk_label_new ("\302\251 1992-2005 The Samba Team");
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label4, FALSE, FALSE, 0);
 
 	dialog_action_area1 = GTK_DIALOG (samba_about_dialog)->action_area;

@@ -85,7 +85,7 @@ static void add_epm_entry(TALLOC_CTX *mem_ctx, const char *annotation, struct ep
 
 	status = dcerpc_binding_from_tower(mem_ctx, t, &bd);
 	if (!NT_STATUS_IS_OK(status)) {
-		gtk_show_ntstatus(mainwin, status);
+		gtk_show_ntstatus(mainwin, "Error creating binding from tower", status);
 		return;
 	}
 	
@@ -155,7 +155,7 @@ static void refresh_eps(void)
 		 r.out.num_ents == r.in.max_ents);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		gtk_show_ntstatus(mainwin, status);
+		gtk_show_ntstatus(mainwin, "Error adding endpoint mapper entry", status);
 		talloc_free(mem_ctx);
 		return;
 	}
@@ -193,7 +193,7 @@ static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 				     cmdline_credentials);
 
 	if (NT_STATUS_IS_ERR(status)) {
-		gtk_show_ntstatus(mainwin, status);
+		gtk_show_ntstatus(mainwin, "Error connecting to endpoint mapper", status);
 		goto fail;
 	}
 
@@ -203,7 +203,7 @@ static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 
 	if (NT_STATUS_IS_ERR(status)) {
 		mgmt_pipe = NULL;
-		gtk_show_ntstatus(NULL, status);
+		gtk_show_ntstatus(NULL, "Error connecting to mgmt interface over secondary connection", status);
 		goto fail;
 	}
 
@@ -231,7 +231,7 @@ static gboolean on_eps_select(GtkTreeSelection *selection,
 
 		status = dcerpc_mgmt_inq_stats(mgmt_pipe, mem_ctx, &r);
 		if (NT_STATUS_IS_ERR(status)) {
-			gtk_show_ntstatus(NULL, status);
+			gtk_show_ntstatus(NULL, "Error inquiring statistics", status);
 			return TRUE;
 		}
 

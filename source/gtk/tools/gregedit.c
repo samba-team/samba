@@ -292,7 +292,9 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
 			gtk_tree_store_append(store_keys, &tmpiter, &iter);
 	}
 
-	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) gtk_show_werror(mainwin, error);
+	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) { 
+		gtk_show_werror(mainwin, "While enumerating subkeys", error);
+	}
 }
 
 static void registry_load_hive(struct registry_key *root)
@@ -349,7 +351,7 @@ static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 		filename = strdup(gtk_file_selection_get_filename(GTK_FILE_SELECTION(openfilewin)));
 		error = reg_open_hive(NULL, user_data, filename, NULL, &root);
 		if(!W_ERROR_IS_OK(error)) {
-			gtk_show_werror(mainwin, error);
+			gtk_show_werror(mainwin, "Error while opening hive", error);
 			break;
 		}
 
@@ -371,7 +373,7 @@ static void on_open_gconf_activate(GtkMenuItem *menuitem, gpointer user_data)
 	struct registry_key *root;
 	WERROR error = reg_open_hive(NULL, "gconf", NULL, NULL, &root);
 	if(!W_ERROR_IS_OK(error)) {
-		gtk_show_werror(mainwin, error);
+		gtk_show_werror(mainwin, "Error while opening GConf", error);
 		return;
 	}
 
@@ -385,7 +387,7 @@ static void on_open_local_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	WERROR error = reg_open_local(&registry);
 	if(!W_ERROR_IS_OK(error)) {
-		gtk_show_werror(mainwin, error);
+		gtk_show_werror(mainwin, "Error while opening local registry", error);
 		return;
 	}
 	registry_load_root();
@@ -409,7 +411,7 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 			gtk_rpc_binding_dialog_get_binding_string(GTK_RPC_BINDING_DIALOG(rpcwin), mem_ctx));
 
 	if(!W_ERROR_IS_OK(error)) {
-		gtk_show_werror(mainwin, error);
+		gtk_show_werror(mainwin, "Error while opening remote registry", error);
 		gtk_widget_destroy(rpcwin);
 		return;
 	}
@@ -429,7 +431,7 @@ static void on_save_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	WERROR error = reg_save(registry, NULL);
 	if(!W_ERROR_IS_OK(error)) {
-		gtk_show_werror(mainwin, error);
+		gtk_show_werror(mainwin, "Error while saving", error);
 	}
 }
 
@@ -444,7 +446,7 @@ static void on_save_as_activate(GtkMenuItem *menuitem, gpointer user_data)
 	case GTK_RESPONSE_OK:
 		error = reg_save(registry, gtk_file_selection_get_filename(GTK_FILE_SELECTION(savefilewin)));
 		if(!W_ERROR_IS_OK(error)) {
-			gtk_show_werror(mainwin, error);
+			gtk_show_werror(mainwin, "Error while saving as", error);
 		}
 		break;
 
@@ -477,7 +479,7 @@ static void on_delete_value_activate(GtkMenuItem *menuitem, gpointer user_data)
 	error = reg_del_value(current_key, value);
 
 	if (!W_ERROR_IS_OK(error)) {
-		gtk_show_werror(NULL, error);
+		gtk_show_werror(NULL, "Error while deleting value", error);
 		return;
 	}
 }
@@ -501,7 +503,7 @@ static void on_delete_key_activate(GtkMenuItem *menuitem, gpointer user_data)
 	error = reg_key_del(parent_key, current_key->name);
 
 	if (!W_ERROR_IS_OK(error)) {
-		gtk_show_werror(NULL, error);
+		gtk_show_werror(NULL, "Error while deleting key", error);
 		return;
 	}
 }
@@ -518,7 +520,7 @@ static void on_add_key_activate(GtkMenuItem *menuitem, gpointer user_data)
 		WERROR error = reg_key_add_name(mem_ctx, current_key, gtk_entry_get_text(GTK_ENTRY(entry)), 0, NULL, &newkey);
 
 		if (!W_ERROR_IS_OK(error)) {
-			gtk_show_werror(NULL, error);
+			gtk_show_werror(NULL, "Error while adding key", error);
 		}
 	}
 
@@ -554,7 +556,7 @@ static void on_value_activate(GtkTreeView *treeview, GtkTreePath *arg1,
 		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), val->data_type, val->data_blk, val->data_len);
 
 		if (!W_ERROR_IS_OK(error)) {
-			gtk_show_werror(NULL, error);
+			gtk_show_werror(NULL, "Error while setting value", error);
 		}
 	}
 	gtk_widget_destroy(GTK_WIDGET(addwin));
@@ -575,7 +577,7 @@ static void on_set_value_activate(GtkMenuItem *menuitem, gpointer user_data)
 		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), val->data_type, val->data_blk, val->data_len);
 
 		if (!W_ERROR_IS_OK(error)) {
-			gtk_show_werror(NULL, error);
+			gtk_show_werror(NULL, "Error while setting value", error);
 		}
 	}
 	gtk_widget_destroy(GTK_WIDGET(addwin));
@@ -645,7 +647,7 @@ static gboolean on_key_activate(GtkTreeSelection *selection,
 	}
 
 	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-		 gtk_show_werror(mainwin, error);
+		 gtk_show_werror(mainwin, "Error while enumerating values",  error);
 		 return FALSE;
 	}
 	return TRUE;
@@ -952,7 +954,7 @@ static int gregedit_load_defaults(void)
 {
 	WERROR error = reg_open_local(&registry);
 	if(!W_ERROR_IS_OK(error)) {
-		gtk_show_werror(mainwin, error);
+		gtk_show_werror(mainwin, "Error while loading local registry", error);
 		return -1;
 	}
 	registry_load_root();
@@ -984,5 +986,3 @@ failed:
 	talloc_free(mem_ctx);
 	return ret;
 }
-
-
