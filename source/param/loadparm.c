@@ -1252,7 +1252,6 @@ static void init_globals(void)
 
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
-	Globals.szPassdbBackend = str_list_make("smbpasswd unixsam", NULL);
 
 	/* use the new 'hash2' method by default */
 	string_set(&Globals.szManglingMethod, "hash2");
@@ -1378,6 +1377,9 @@ static void init_globals(void)
 #ifdef WITH_LDAP_SAMCONFIG
 	string_set(&Globals.szLdapServer, "localhost");
 	Globals.ldap_port = 636;
+	Globals.szPassdbBackend = str_list_make("ldapsam unixsam", NULL);
+#else
+	Globals.szPassdbBackend = str_list_make("smbpasswd unixsam", NULL);
 #endif /* WITH_LDAP_SAMCONFIG */
 
 	string_set(&Globals.szLdapSuffix, "");
