@@ -6,6 +6,7 @@
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000.
+ *  Copyright (C) Jeremy Allison					2001.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -314,7 +315,7 @@ static uint32 delete_printer_handle(POLICY_HND *hnd)
 			path = tmpdir();
 		
 		/* Printer->dev.handlename equals portname equals sharename */
-		slprintf(command, sizeof(command), "%s \"%s\"", cmd,
+		slprintf(command, sizeof(command)-1, "%s \"%s\"", cmd,
 					Printer->dev.handlename);
 		dos_to_unix(command, True);  /* Convert printername to unix-codepage */
         slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
@@ -1893,12 +1894,13 @@ static void spoolss_notify_submitted_time(int snum,
 {
 	struct tm *t;
 	uint32 len;
+	SYSTEMTIME st;
 
 	t=gmtime(&queue->time);
 
 	len = sizeof(SYSTEMTIME);
 
-	data->notify_data.data.length = len;
+	data->notify_data.data.length = len/2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 
 	if (!data->notify_data.data.string) {
@@ -1906,7 +1908,8 @@ static void spoolss_notify_submitted_time(int snum,
 		return;
 	}
 	
-	make_systemtime((SYSTEMTIME*)(data->notify_data.data.string), t);
+	make_systemtime(&st, t);
+	memcpy(data->notify_data.data.string,&st,len);
 }
 
 #define END 65535
@@ -2073,7 +2076,7 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 	SPOOL_NOTIFY_INFO_DATA *current_data;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	print_queue_struct *queue=NULL;
-	
+
 	type=option_type->type;
 
 	DEBUG(4,("construct_notify_printer_info: Notify type: [%s], number of notify info: [%d] on printer: [%s]\n",
@@ -2090,7 +2093,7 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 		if (!search_notify(type, field, &j) )
 			continue;
 		
-		if((info->data=Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
+		if((info->data=(SPOOL_NOTIFY_INFO_DATA *)Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
 			return False;
 		}
 		current_data=&info->data[info->count];
@@ -2180,14 +2183,13 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue,
  * that's the print server case, the printer case is even worse.
  */
 
-
-
 /*******************************************************************
  *
  * enumerate all printers on the printserver
  * fill a notify_info struct with info asked
  *
  ********************************************************************/
+
 static uint32 printserver_notify_info(const POLICY_HND *hnd, 
 				      SPOOL_NOTIFY_INFO *info,
 				      TALLOC_CTX *mem_ctx)
@@ -4013,8 +4015,8 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 		 info->servername, info->printername, info->sharename, info->portname, info->drivername, info->comment, info->location));
 
 	/* we force some elements to "correct" values */
-	slprintf(info->servername, sizeof(info->servername), "\\\\%s", global_myname);
-	slprintf(info->printername, sizeof(info->printername), "\\\\%s\\%s",
+	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", global_myname);
+	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
 		 global_myname, lp_servicename(snum));
 	fstrcpy(info->sharename, lp_servicename(snum));
 	info->attributes = PRINTER_ATTRIBUTE_SHARED   \
@@ -4051,7 +4053,7 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
 	
 	slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
-	slprintf(command, sizeof(command), "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
 			printer->info_2->portname, printer->info_2->drivername,
 			printer->info_2->location, driverlocation);
@@ -4524,7 +4526,7 @@ static void fill_job_info_1(JOB_INFO_1 *job_info, print_queue_struct *queue,
 	struct tm *t;
 	
 	t=gmtime(&queue->time);
-	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
+	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
 
 	job_info->jobid=queue->job;	
 	init_unistr(&job_info->printername, lp_servicename(snum));
@@ -4553,7 +4555,7 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 	struct tm *t;
 
 	t=gmtime(&queue->time);
-	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
+	slprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
 
 	job_info->jobid=queue->job;
 	
@@ -5051,6 +5053,7 @@ uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 
 
 /****************************************************************************
 ****************************************************************************/
+
 static void fill_form_1(FORM_1 *form, nt_forms_struct *list)
 {
 	form->flag=list->flag;
@@ -5069,7 +5072,10 @@ uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
 			       NEW_BUFFER *buffer, uint32 offered,
 			       uint32 *needed, uint32 *numofforms)
 {
+	uint32 numbuiltinforms;
+
 	nt_forms_struct *list=NULL;
+	nt_forms_struct *builtinlist=NULL;
 	FORM_1 *forms_1;
 	int buffer_size=0;
 	int i;
@@ -5078,8 +5084,11 @@ uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
 	DEBUGADD(5,("Info level [%d]\n",          level));
 
+	numbuiltinforms = get_builtin_ntforms(&builtinlist);
+	DEBUGADD(5,("Number of builtin forms [%d]\n",     numbuiltinforms));
 	*numofforms = get_ntforms(&list);
-	DEBUGADD(5,("Number of forms [%d]\n",     *numofforms));
+	DEBUGADD(5,("Number of user forms [%d]\n",     *numofforms));
+	*numofforms += numbuiltinforms;
 
 	if (*numofforms == 0) return ERROR_NO_MORE_ITEMS;
 
@@ -5091,15 +5100,26 @@ uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
 		}
 
 		/* construct the list of form structures */
-		for (i=0; i<*numofforms; i++) {
+		for (i=0; i<numbuiltinforms; i++) {
 			DEBUGADD(6,("Filling form number [%d]\n",i));
-			fill_form_1(&forms_1[i], &list[i]);
+			fill_form_1(&forms_1[i], &builtinlist[i]);
+		}
+		
+		safe_free(builtinlist);
+
+		for (; i<*numofforms; i++) {
+			DEBUGADD(6,("Filling form number [%d]\n",i));
+			fill_form_1(&forms_1[i], &list[i-numbuiltinforms]);
 		}
 		
 		safe_free(list);
 
 		/* check the required size. */
-		for (i=0; i<*numofforms; i++) {
+		for (i=0; i<numbuiltinforms; i++) {
+			DEBUGADD(6,("adding form [%d]'s size\n",i));
+			buffer_size += spoolss_size_form_1(&forms_1[i]);
+		}
+		for (; i<*numofforms; i++) {
 			DEBUGADD(6,("adding form [%d]'s size\n",i));
 			buffer_size += spoolss_size_form_1(&forms_1[i]);
 		}
@@ -5112,7 +5132,11 @@ uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
 		}
 
 		/* fill the buffer with the form structures */
-		for (i=0; i<*numofforms; i++) {
+		for (i=0; i<numbuiltinforms; i++) {
+			DEBUGADD(6,("adding form [%d] to buffer\n",i));
+			new_smb_io_form_1("", buffer, &forms_1[i], 0);
+		}
+		for (; i<*numofforms; i++) {
 			DEBUGADD(6,("adding form [%d] to buffer\n",i));
 			new_smb_io_form_1("", buffer, &forms_1[i], 0);
 		}
@@ -5128,6 +5152,7 @@ uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
 			
 	default:
 		safe_free(list);
+		safe_free(builtinlist);
 		return ERROR_INVALID_LEVEL;
 	}
 
@@ -5135,13 +5160,16 @@ uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
 
 /****************************************************************************
 ****************************************************************************/
+
 uint32 _spoolss_getform( POLICY_HND *handle, uint32 level, UNISTR2 *uni_formname, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	nt_forms_struct *list=NULL;
+	nt_forms_struct builtin_form;
+	BOOL foundBuiltin;
 	FORM_1 form_1;
 	fstring form_name;
 	int buffer_size=0;
-	int numofforms, i;
+	int numofforms=0, i=0;
 
 	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name)-1);
 
@@ -5149,29 +5177,38 @@ uint32 _spoolss_getform( POLICY_HND *handle, uint32 level, UNISTR2 *uni_formname
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
 	DEBUGADD(5,("Info level [%d]\n",          level));
 
-	numofforms = get_ntforms(&list);
-	DEBUGADD(5,("Number of forms [%d]\n",     numofforms));
+	foundBuiltin = get_a_builtin_ntform(uni_formname,&builtin_form);
+	if (!foundBuiltin) {
+		numofforms = get_ntforms(&list);
+		DEBUGADD(5,("Number of forms [%d]\n",     numofforms));
 
-	if (numofforms == 0)
-		return ERROR_NO_MORE_ITEMS;
+		if (numofforms == 0)
+			return ERROR_INVALID_HANDLE;
+	}
 
 	switch (level) {
 	case 1:
+		if (foundBuiltin) {
+			fill_form_1(&form_1, &builtin_form);
+		} else {
 
-		/* Check if the requested name is in the list of form structures */
-		for (i=0; i<numofforms; i++) {
+			/* Check if the requested name is in the list of form structures */
+			for (i=0; i<numofforms; i++) {
 
-			DEBUG(4,("_spoolss_getform: checking form %s (want %s)\n", list[i].name, form_name));
+				DEBUG(4,("_spoolss_getform: checking form %s (want %s)\n", list[i].name, form_name));
 
-			if (strequal(form_name, list[i].name)) {
-				DEBUGADD(6,("Found form %s number [%d]\n", form_name, i));
-				fill_form_1(&form_1, &list[i]);
-				break;
+				if (strequal(form_name, list[i].name)) {
+					DEBUGADD(6,("Found form %s number [%d]\n", form_name, i));
+					fill_form_1(&form_1, &list[i]);
+					break;
+				}
+			}
+			
+			safe_free(list);
+			if (i == numofforms) {
+				return ERROR_INVALID_HANDLE;
 			}
 		}
-		
-		safe_free(list);
-
 		/* check the required size. */
 
 		*needed=spoolss_size_form_1(&form_1);
@@ -5238,8 +5275,8 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		else
 			path = tmpdir();
 
-		slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
-		slprintf(command, sizeof(command), "%s \"%d\"", cmd, 1);
+		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%d", path, local_pid);
+		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 1);
 
 		unlink(tmp_file);
 		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
@@ -5911,10 +5948,11 @@ uint32 _spoolss_deleteprinterdata( POLICY_HND *handle, const UNISTR2 *value)
 ****************************************************************************/
 uint32 _spoolss_addform( POLICY_HND *handle,
 				uint32 level,
-				const FORM *form)
+				FORM *form)
 {
+	nt_forms_struct tmpForm;
+
 	int count=0;
-	uint32 ret = 0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
@@ -5925,19 +5963,27 @@ uint32 _spoolss_addform( POLICY_HND *handle,
 		return ERROR_INVALID_HANDLE;
 	}
 
+	/* can't add if builtin */
+	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
+		return ERROR_INVALID_PARAMETER;
+	}
+
 	count=get_ntforms(&list);
-	if(add_a_form(&list, form, &count, &ret))
-    	write_ntforms(&list, count);
+	if(!add_a_form(&list, form, &count))
+		return ERROR_NOT_ENOUGH_MEMORY;
+	write_ntforms(&list, count);
 
 	safe_free(list);
 
-	return ret;
+	return 0x0;
 }
 
 /****************************************************************************
 ****************************************************************************/
+
 uint32 _spoolss_deleteform( POLICY_HND *handle, UNISTR2 *form_name)
 {
+	nt_forms_struct tmpForm;
 	int count=0;
 	uint32 ret = 0;
 	nt_forms_struct *list=NULL;
@@ -5950,8 +5996,14 @@ uint32 _spoolss_deleteform( POLICY_HND *handle, UNISTR2 *form_name)
 		return ERROR_INVALID_HANDLE;
 	}
 
+	/* can't delete if builtin */
+	if (get_a_builtin_ntform(form_name,&tmpForm)) {
+		return ERROR_INVALID_PARAMETER;
+	}
+
 	count = get_ntforms(&list);
-	delete_a_form(&list, form_name, &count, &ret);
+	if(!delete_a_form(&list, form_name, &count, &ret))
+		return ERROR_INVALID_PARAMETER;
 
 	safe_free(list);
 
@@ -5960,13 +6012,15 @@ uint32 _spoolss_deleteform( POLICY_HND *handle, UNISTR2 *form_name)
 
 /****************************************************************************
 ****************************************************************************/
+
 uint32 _spoolss_setform( POLICY_HND *handle,
 				const UNISTR2 *uni_name,
 				uint32 level,
-				const FORM *form)
+				FORM *form)
 {
+	nt_forms_struct tmpForm;
+
 	int count=0;
-	uint32 ret = 0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
@@ -5976,13 +6030,18 @@ uint32 _spoolss_setform( POLICY_HND *handle,
 		DEBUG(0,("_spoolss_setform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
+	/* can't set if builtin */
+	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
+		return ERROR_INVALID_PARAMETER;
+	}
+
 	count=get_ntforms(&list);
-	if (update_a_form(&list, form, count, &ret))
-    	write_ntforms(&list, count);
+	update_a_form(&list, form, count);
+	write_ntforms(&list, count);
 
 	safe_free(list);
 
-	return ret;
+	return 0x0;
 }
 
 /****************************************************************************

@@ -1773,11 +1773,13 @@ BOOL parse_lpq_entry(int snum,char *line,
 
 #if OLD_NTDOMAIN
 BOOL nt_printing_init(void);
+int get_builtin_ntforms(nt_forms_struct **list);
+BOOL get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form);
 int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
-BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count, uint32 *ret);
+BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count);
 BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32 *ret);
-BOOL update_a_form(nt_forms_struct **list, const FORM *form, int count, uint32 *ret);
+void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture, uint32 version);
 BOOL get_short_archi(char *short_archi, char *long_archi);
 uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
@@ -3410,12 +3412,12 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 uint32 _spoolss_deleteprinterdata( POLICY_HND *handle, const UNISTR2 *value);
 uint32 _spoolss_addform( POLICY_HND *handle,
 				uint32 level,
-				const FORM *form);
+				FORM *form);
 uint32 _spoolss_deleteform( POLICY_HND *handle, UNISTR2 *form_name);
 uint32 _spoolss_setform( POLICY_HND *handle,
 				const UNISTR2 *uni_name,
 				uint32 level,
-				const FORM *form);
+				FORM *form);
 uint32 _spoolss_enumprintprocessors(UNISTR2 *name, UNISTR2 *environment, uint32 level,
 				    NEW_BUFFER *buffer, uint32 offered,
 				    uint32 *needed, uint32 *returned);
