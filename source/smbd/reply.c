@@ -3834,7 +3834,7 @@ support large counts.\n", (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(da
 
       if(IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)) == (uint32)0xFFFFFFFF)
         count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset));
-      else if (SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset) == (uint32)0xFFFFFFFF)
+      else if (IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) == (uint32)0xFFFFFFFF)
         count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
       else {
         *err = True;
