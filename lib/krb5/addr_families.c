@@ -52,6 +52,7 @@ struct addr_operations {
     krb5_boolean (*uninteresting)(const struct sockaddr *);
     void (*anyaddr)(struct sockaddr *, int *, int);
     int (*print_addr)(const krb5_address *, char *, size_t);
+    int (*parse_addr)(const char*, krb5_address *);
 };
 
 /*
@@ -138,6 +139,37 @@ ipv4_print_addr (const krb5_address *addr, char *str, size_t len)
     memcpy (&ia, addr->address.data, 4);
 
     return snprintf (str, len, "IPv4:%s", inet_ntoa(ia));
+}
+
+static int
+ipv4_parse_addr (const char *address, krb5_address *addr)
+{
+    const char *p;
+    struct in_addr a;
+    p = strchr(address, ':');
+    if(p) {
+	p++;
+	if(strncasecmp(address, "ip:", p - address) != 0 &&
+	   strncasecmp(address, "ip4:", p - address) != 0 &&
+	   strncasecmp(address, "ipv4:", p - address) != 0 &&
+	   strncasecmp(address, "inet:", p - address) != 0)
+	    return -1;
+    } else
+	p = address;
+#ifdef HAVE_INET_ATON
+    if(inet_aton(p, &a) == 0)
+	return -1;
+#elif defined(HAVE_INET_ADDR)
+    a.s_addr = inet_addr(p);
+    if(a.s_addr == INADDR_NONE)
+	return -1;
+#else
+    return -1;
+#endif
+    addr->addr_type = KRB5_ADDRESS_INET;
+    krb5_data_alloc(&addr->address, 4);
+    _krb5_put_int(addr->address.data, ntohl(a.s_addr), addr->address.length);
+    return 0;
 }
 
 /*
@@ -263,6 +295,12 @@ ipv6_print_addr (const krb5_address *addr, char *str, size_t len)
     return snprintf(str, len, "IPv6:%s", buf);
 }
 
+static int
+ipv6_parse_addr (const char *address, krb5_address *addr)
+{
+    return -1;
+}
+
 #endif /* IPv6 */
 
 /*
@@ -273,12 +311,12 @@ static struct addr_operations at[] = {
     {AF_INET,	KRB5_ADDRESS_INET, sizeof(struct sockaddr_in),
      ipv4_sockaddr2addr, ipv4_addr2sockaddr,
      ipv4_h_addr2sockaddr, ipv4_h_addr2addr,
-     ipv4_uninteresting, ipv4_anyaddr, ipv4_print_addr},
+     ipv4_uninteresting, ipv4_anyaddr, ipv4_print_addr, ipv4_parse_addr},
 #ifdef HAVE_IPV6
     {AF_INET6,	KRB5_ADDRESS_INET6, sizeof(struct sockaddr_in6),
      ipv6_sockaddr2addr, ipv6_addr2sockaddr,
      ipv6_h_addr2sockaddr, ipv6_h_addr2addr,
-     ipv6_uninteresting, ipv6_anyaddr, ipv6_print_addr}
+     ipv6_uninteresting, ipv6_anyaddr, ipv6_print_addr, ipv6_parse_addr}
 #endif
 };
 
@@ -417,4 +455,43 @@ krb5_print_address (const krb5_address *addr,
     }
     *ret_len = (*a->print_addr)(addr, str, len);
     return 0;
+}
+
+krb5_error_code
+krb5_parse_address(krb5_context context,
+		   const char *string,
+		   krb5_addresses *addresses)
+{
+    int i;
+    for(i = 0; i < num_addrs; i++) {
+	if(at[i].parse_addr) {
+	    krb5_address a;
+	    if((*at[i].parse_addr)(string, &a) == 0) {
+		ALLOC_SEQ(addresses, 1);
+		addresses->val[0] = a;
+		return 0;
+	    }
+	}
+    }
+
+#ifdef HAVE_GETHOSTBYNAME
+    {
+	char **a;
+	struct hostent *hp = gethostbyname(string);
+	struct addr_operations *aop;
+	if(hp == NULL)
+	    return -1;
+	for(a = hp->h_addr_list; *a; a++);
+	ALLOC_SEQ(addresses, a - hp->h_addr_list);
+	
+	aop = find_af(hp->h_addrtype);
+	for(a = hp->h_addr_list; *a; a++) {
+	    addresses->val[a - hp->h_addr_list].addr_type = aop->atype;
+	    krb5_data_copy(&addresses->val[a - hp->h_addr_list].address, 
+			   *a,
+			   hp->h_length);
+	}
+	return 0;
+    }
+#endif
 }
