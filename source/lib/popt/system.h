@@ -1,6 +1,16 @@
 #include "config.h"
 
+#if defined (__GLIBC__) && defined(__LCLINT__)
+/*@-declundef@*/
+/*@unchecked@*/
+extern __const __int32_t *__ctype_tolower;
+/*@unchecked@*/
+extern __const __int32_t *__ctype_toupper;
+/*@=declundef@*/
+#endif
+
 #include <ctype.h>
+
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -23,6 +33,14 @@
 #include <libc.h>
 #endif
 
+#if defined(__LCLINT__)
+/*@-declundef -incondefs -redecl@*/ /* LCL: missing annotation */
+/*@only@*/ void * alloca (size_t __size)
+	/*@ensures MaxSet(result) == (__size - 1) @*/
+	/*@*/;
+/*@=declundef =incondefs =redecl@*/
+#endif
+
 /* AIX requires this to be the first thing in the file.  */ 
 #ifndef __GNUC__
 # if HAVE_ALLOCA_H
@@ -40,7 +58,10 @@ char *alloca ();
 #define alloca __builtin_alloca
 #endif
 
-/*@only@*/ char * xstrdup (const char *str);
+/*@-redecl -redef@*/
+/*@mayexit@*/ /*@only@*/ char * xstrdup (const char *str)
+	/*@*/;
+/*@=redecl =redef@*/
 
 #if HAVE_MCHECK_H && defined(__GNUC__)
 #define	vmefail()	(fprintf(stderr, "virtual memory exhausted.\n"), exit(EXIT_FAILURE), NULL)
