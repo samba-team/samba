@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -462,7 +462,7 @@ handle_udp(struct descr *d)
 
     buf = malloc(max_request);
     if(buf == NULL){
-	kdc_log(0, "Failed to allocate %u bytes", max_request);
+	kdc_log(0, "Failed to allocate %lu bytes", (unsigned long)max_request);
 	return;
     }
 
@@ -556,14 +556,15 @@ grow_descr (struct descr *d, size_t n)
 
 	d->size += max(1024, d->len + n);
 	if (d->size >= max_request) {
-	    kdc_log(0, "Request exceeds max request size (%u bytes).",
-		    d->size);
+	    kdc_log(0, "Request exceeds max request size (%lu bytes).",
+		    (unsigned long)d->size);
 	    clear_descr(d);
 	    return -1;
 	}
 	tmp = realloc (d->buf, d->size);
 	if (tmp == NULL) {
-	    kdc_log(0, "Failed to re-allocate %u bytes.", d->size);
+	    kdc_log(0, "Failed to re-allocate %lu bytes.",
+		    (unsigned long)d->size);
 	    clear_descr(d);
 	    return -1;
 	}
@@ -632,7 +633,8 @@ handle_http_tcp (struct descr *d)
     }
     data = malloc(strlen(t));
     if (data == NULL) {
-	kdc_log(0, "Failed to allocate %u bytes", strlen(t));
+	kdc_log(0, "Failed to allocate %lu bytes",
+		(unsigned long)strlen(t));
 	return -1;
     }
     if(*t == '/')
@@ -750,8 +752,8 @@ loop(void)
 	    if(d[i].s >= 0){
 		if(d[i].type == SOCK_STREAM && 
 		   d[i].timeout && d[i].timeout < time(NULL)) {
-		    kdc_log(1, "TCP-connection from %s expired after %u bytes",
-			    d[i].addr_string, d[i].len);
+		    kdc_log(1, "TCP-connection from %s expired after %lu bytes",
+			    d[i].addr_string, (unsigned long)d[i].len);
 		    clear_descr(&d[i]);
 		    continue;
 		}
