@@ -878,73 +878,6 @@ static NTSTATUS lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 }
 
-
-/* 
-  helper for lsa_AddAccountRights and lsa_RemoveAccountRights
-*/
-static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call, 
-					   TALLOC_CTX *mem_ctx,
-					   struct lsa_policy_state *state,
-					   int ldb_flag,
-					   const struct dom_sid *sid,
-					   const struct lsa_RightSet *rights)
-{
-	const char *sidstr;
-	struct ldb_message msg;
-	struct ldb_message_element el;
-	int i, ret;
-	const char *dn;
-
-	sidstr = dom_sid_string(mem_ctx, sid);
-	if (sidstr == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	dn = samdb_search_string(state->sam_ctx, mem_ctx, NULL, "dn", 
-				 "objectSid=%s", sidstr);
-	if (dn == NULL) {
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	msg.dn = talloc_strdup(mem_ctx, dn);
-	if (msg.dn == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	msg.num_elements = 1;
-	msg.elements = &el;
-	el.flags = ldb_flag;
-	el.name = talloc_strdup(mem_ctx, "privilege");
-	if (el.name == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	el.num_values = rights->count;
-	el.values = talloc_array_p(mem_ctx, struct ldb_val, el.num_values);
-	if (el.values == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	for (i=0;i<el.num_values;i++) {
-		if (sec_privilege_id(rights->names[i].string) == -1) {
-			return NT_STATUS_NO_SUCH_PRIVILEGE;
-		}
-		el.values[i].length = strlen(rights->names[i].string);
-		el.values[i].data = talloc_strdup(mem_ctx, rights->names[i].string);
-		if (el.values[i].data == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	ret = samdb_modify(state->sam_ctx, mem_ctx, &msg);
-	if (ret != 0) {
-		if (ldb_flag == LDB_FLAG_MOD_DELETE) {
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		}
-		return NT_STATUS_UNEXPECTED_IO_ERROR;
-	}
-
-	return NT_STATUS_OK;
-}
-
-
 /* 
   lsa_EnumAccountRights 
 */
@@ -996,6 +929,103 @@ static NTSTATUS lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 
 
 
+/* 
+  helper for lsa_AddAccountRights and lsa_RemoveAccountRights
+*/
+static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call, 
+					   TALLOC_CTX *mem_ctx,
+					   struct lsa_policy_state *state,
+					   int ldb_flag,
+					   struct dom_sid *sid,
+					   const struct lsa_RightSet *rights)
+{
+	const char *sidstr;
+	struct ldb_message msg;
+	struct ldb_message_element el;
+	int i, ret;
+	const char *dn;
+	struct lsa_EnumAccountRights r2;
+
+	sidstr = dom_sid_string(mem_ctx, sid);
+	if (sidstr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	dn = samdb_search_string(state->sam_ctx, mem_ctx, NULL, "dn", 
+				 "objectSid=%s", sidstr);
+	if (dn == NULL) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	msg.dn = talloc_strdup(mem_ctx, dn);
+	if (msg.dn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	msg.num_elements = 1;
+	msg.elements = &el;
+	el.flags = ldb_flag;
+	el.name = talloc_strdup(mem_ctx, "privilege");
+	if (el.name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (ldb_flag == LDB_FLAG_MOD_ADD) {
+		NTSTATUS status;
+
+		r2.in.handle = &state->handle->wire_handle;
+		r2.in.sid = sid;
+		r2.out.rights = talloc_p(mem_ctx, struct lsa_RightSet);
+
+		status = lsa_EnumAccountRights(dce_call, mem_ctx, &r2);
+		if (!NT_STATUS_IS_OK(status)) {
+			ZERO_STRUCTP(r2.out.rights);
+		}
+	}
+
+	el.num_values = 0;
+	el.values = talloc_array_p(mem_ctx, struct ldb_val, rights->count);
+	if (el.values == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0;i<rights->count;i++) {
+		if (sec_privilege_id(rights->names[i].string) == -1) {
+			return NT_STATUS_NO_SUCH_PRIVILEGE;
+		}
+
+		if (ldb_flag == LDB_FLAG_MOD_ADD) {
+			int j;
+			for (j=0;j<r2.out.rights->count;j++) {
+				if (StrCaseCmp(r2.out.rights->names[j].string, 
+					       rights->names[i].string) == 0) {
+					break;
+				}
+			}
+			if (j != r2.out.rights->count) continue;
+		}
+
+
+		el.values[el.num_values].length = strlen(rights->names[i].string);
+		el.values[el.num_values].data = talloc_strdup(mem_ctx, rights->names[i].string);
+		if (el.values[el.num_values].data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		el.num_values++;
+	}
+
+	if (el.num_values == 0) {
+		return NT_STATUS_OK;
+	}
+
+	ret = samdb_modify(state->sam_ctx, mem_ctx, &msg);
+	if (ret != 0) {
+		if (ldb_flag == LDB_FLAG_MOD_DELETE) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		return NT_STATUS_UNEXPECTED_IO_ERROR;
+	}
+
+	return NT_STATUS_OK;
+}
 
 /* 
   lsa_AddPrivilegesToAccount
