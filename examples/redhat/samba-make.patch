@@ -1,5 +1,5 @@
-*** samba-1.9.16p10/source/Makefile.orig
---- samba-1.9.16p10/source/Makefile
+*** samba-1.9.16p10/source/Makefile.orig	Sat Feb  1 01:15:46 1997
+--- samba-1.9.16p10/source/Makefile	Sat Feb  1 01:19:40 1997
 ***************
 *** 5,20 ****
   
@@ -11,7 +11,7 @@
   # architectures or share the samba binaries across NFS then
   # you will probably want to change this layout.
 ! BASEDIR = /usr/local/samba
-! BINDIR = $(BASEDIR)/bin
+  BINDIR = $(BASEDIR)/bin
 ! SBINDIR = $(BASEDIR)/bin
 ! LIBDIR = $(BASEDIR)/lib
 ! VARDIR = $(BASEDIR)/var
@@ -27,9 +27,9 @@
   # The directories to put things in. If you use multiple
   # architectures or share the samba binaries across NFS then
   # you will probably want to change this layout.
-! BASEDIR = /
-! BINDIR = $(BASEDIR)usr/bin
-! SBINDIR = $(BASEDIR)usr/sbin
+! BASEDIR = /usr
+  BINDIR = $(BASEDIR)/bin
+! SBINDIR = $(BASEDIR)/sbin
 ! LIBDIR = /etc
 ! VARDIR = /var
   
@@ -41,7 +41,7 @@
   # RPM_OPT_FLAGS is needed when building an RPM distribution package
   # for RedHat Linux.
 ! # FLAGS1 = $(RPM_OPT_FLAGS)
-  FLAGS1 = -O
+! FLAGS1 = -O
   LIBS1 = 
   
   # You will need to use a ANSI C compiler. This means under SunOS 4 you can't 
@@ -55,7 +55,7 @@
   # RPM_OPT_FLAGS is needed when building an RPM distribution package
   # for RedHat Linux.
 ! FLAGS1 = $(RPM_OPT_FLAGS)
-  FLAGS1 = -O
+! #FLAGS1 = -O
   LIBS1 = 
   
   # You will need to use a ANSI C compiler. This means under SunOS 4 you can't 
@@ -113,21 +113,19 @@
   # This is for AFS authentication.  If you use AFS then set AFS_BASE 
   # according to your system layout, and uncomment the other lines as well.
 ***************
-*** 178,185 ****
-  
-  # Use this for Linux without shadow passwords
+*** 180,187 ****
   # contributed by Andrew.Tridgell@anu.edu.au
+  # AXPROC defines DEC Alpha Processor
+  # FLAGSM = -DLINUX -DAXPROC
 ! # FLAGSM = -DLINUX
 ! # LIBSM = 
   
   # Use this for Linux with shadow passwords and quota
   # contributed by xeno@mix.hive.no
---- 178,187 ----
-  
-  # Use this for Linux without shadow passwords
+--- 180,187 ----
   # contributed by Andrew.Tridgell@anu.edu.au
-! # AXPROC defines DEC Alpha Processor
-! # FLAGSM = -DLINUX -DAXPROC
+  # AXPROC defines DEC Alpha Processor
+  # FLAGSM = -DLINUX -DAXPROC
 ! FLAGSM = -DLINUX
 ! LIBSM = 
   

@@ -6,6 +6,7 @@ Copyright: GPL
 Group: Networking
 Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.16p10.tar.gz
 Patch: samba-make.patch
+Patch2: samba-axp.patch
 Packager: John H Terpstra [Samba-Team] <jht@aquasoft.com.au>
 Requires: pamconfig
 
