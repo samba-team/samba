@@ -39,6 +39,7 @@ LIBDIR = @libdir@
 VARDIR = @localstatedir@
 CONFIGDIR = @configdir@
 MANDIR = @mandir@
+INCLUDEDIR = @includedir@
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
