@@ -1031,6 +1031,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	ADS_MODLIST mods;
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", "computer", NULL};
+	char *servicePrincipalName[3] = {NULL, NULL, NULL};
 
 	if (!(ctx = talloc_init_named("machine_account")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -1048,6 +1049,12 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	}
 	new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", hostname, ou_str, 
 				 ads->config.bind_path);
+	servicePrincipalName[0] = talloc_asprintf(ctx, "HOST/%s", hostname);
+	servicePrincipalName[1] = talloc_asprintf(ctx, "HOST/%s.%s", 
+						  hostname, 
+						  ads->config.realm);
+	strlower(&servicePrincipalName[1][5]);
+
 	free(ou_str);
 	if (!new_dn)
 		goto done;
@@ -1066,7 +1073,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	ads_mod_str(ctx, &mods, "sAMAccountName", samAccountName);
 	ads_mod_strlist(ctx, &mods, "objectClass", objectClass);
 	ads_mod_str(ctx, &mods, "userPrincipalName", host_upn);
-	ads_mod_str(ctx, &mods, "servicePrincipalName", host_spn);
+	ads_mod_strlist(ctx, &mods, "servicePrincipalName", servicePrincipalName);
 	ads_mod_str(ctx, &mods, "dNSHostName", hostname);
 	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
 	ads_mod_str(ctx, &mods, "operatingSystem", "Samba");
