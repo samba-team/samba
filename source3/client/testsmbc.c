@@ -1,0 +1,219 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 2.0
+   SMB client library test program
+   Copyright (C) Andrew Tridgell 1998
+   Copyright (C) Richard Sharpe 2000
+   Copyright (C) John Terpsra 2000
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include <stdio.h>
+#include <errno.h>
+#include <libsmbclient.h>
+
+void auth_fn(char *server, char *share,
+	     char **workgroup, char **username, char **password)
+{
+  static char wg[128], un[128], pw[128];
+  /* DO nothing for now ... change later */
+
+  fprintf(stdout, "Enter workgroup: ");
+  fgets(wg, sizeof(wg), stdin);
+
+  if (wg[strlen(wg) - 1] == 0x0a) /* A new line? */
+    wg[strlen(wg) - 1] = 0x00;
+
+  fprintf(stdout, "Enter username: ");
+  fgets(un, sizeof(un), stdin);
+
+  if (un[strlen(un) - 1] == 0x0a) /* A new line? */
+    un[strlen(un) - 1] = 0x00;
+
+  fprintf(stdout, "Enter password: ");
+  fgets(pw, sizeof(pw), stdin);
+
+  if (pw[strlen(pw) - 1] == 0x0a) /* A new line? */
+    pw[strlen(pw) - 1] = 0x00;
+
+  *workgroup = wg; *password = pw; *username = un;
+
+}
+
+int main(int argc, char *argv[])
+{
+  int err, fd;
+  const char *file = "smb://samba/public/testfile.txt";
+  const char *file2 = "smb://samba/public/testfile2.txt";
+  const char *workgroup = "sambanet";
+  char buff[256];
+  struct stat st1, st2;
+
+  err = smbc_init(auth_fn, workgroup,  10); /* Initialize things */
+
+  if (err < 0) {
+
+    fprintf(stderr, "Initializing the smbclient library ...: %s\n", strerror(errno));
+
+  }
+
+  /* For now, open a file on a server that is hard coded ... later will
+   * read from the command line ...
+   */
+
+  fd = smbc_open(file, O_RDWR | O_CREAT, 0666);
+
+  if (fd < 0) {
+
+    fprintf(stderr, "Creating file: %s: %s\n", file, strerror(errno));
+    exit(0);
+
+  }
+
+  fprintf(stdout, "Opened or created file: %s\n", file);
+
+  /* Now, write some date to the file ... */
+
+  bzero(buff, sizeof(buff));
+  strcpy(buff, "Some test data for the moment ...");
+
+  err = smbc_write(fd, buff, sizeof(buff));
+
+  if (err < 0) {
+    
+    fprintf(stderr, "writing file: %s: %s\n", file, strerror(errno));
+    exit(0);
+
+  }
+
+  fprintf(stdout, "Wrote %d bytes to file: %s\n", sizeof(buff), buff);
+
+  /* Now, seek the file back to offset 0 */
+
+  err = smbc_lseek(fd, SEEK_SET, 0);
+
+  if (err < 0) {
+
+    fprintf(stderr, "Seeking file: %s: %s\n", file, strerror(errno));
+    exit(0);
+
+  }
+
+  fprintf(stdout, "Completed lseek on file: %s\n", file);
+
+  /* Now, read the file contents back ... */
+
+  err = smbc_read(fd, buff, sizeof(buff));
+
+  if (err < 0) {
+
+    fprintf(stderr, "Reading file: %s: %s\n", file, strerror(errno));
+    exit(0);
+
+  }
+
+  fprintf(stdout, "Read file: %s\n", buff);  /* Should check the contents */
+
+  fprintf(stdout, "Now fstat'ing file: %s\n", file);
+
+  err = smbc_fstat(fd, &st1);
+
+  if (err < 0) {
+
+    fprintf(stderr, "Fstat'ing file: %s: %s\n", file, strerror(errno));
+    exit(0);
+
+  }
+
+
+  /* Now, close the file ... */
+
+  err = smbc_close(fd);
+
+  if (err < 0) {
+
+    fprintf(stderr, "Closing file: %s: %s\n", file, strerror(errno));
+
+  }
+
+  /* Now, rename the file ... */
+
+  err = smbc_rename(file, file2);
+
+  if (err < 0) {
+
+    fprintf(stderr, "Renaming file: %s to %s: %s\n", file, file2, strerror(errno));
+
+  }
+
+  fprintf(stdout, "Renamed file %s to %s\n", file, file2);
+
+  /* Now, create a file and delete it ... */
+
+  fprintf(stdout, "Now, creating file: %s so we can delete it.\n", file);
+
+  fd = smbc_open(file, O_RDWR | O_CREAT, 0666);
+
+  if (fd < 0) {
+
+    fprintf(stderr, "Creating file: %s: %s\n", file, strerror(errno));
+    exit(0);
+
+  }
+
+  fprintf(stdout, "Opened or created file: %s\n", file);
+
+  err = smbc_close(fd);
+
+  if (err < 0) {
+
+    fprintf(stderr, "Closing file: %s: %s\n", file, strerror(errno));
+    exit(0);
+
+  }
+  
+  /* Now, delete the file ... */
+
+  fprintf(stdout, "File %s created, now deleting ...\n", file);
+
+  err = smbc_unlink(file);
+
+  if (err < 0) {
+
+    fprintf(stderr, "Deleting file: %s: %s\n", file, strerror(errno));
+    exit(0);
+
+  }
+
+  /* Now, stat the file, file 2 ... */
+
+  fprintf(stdout, "Now stat'ing file: %s\n", file);
+
+  err = smbc_stat(file2, &st2);
+
+  if (err < 0) {
+
+    fprintf(stderr, "Stat'ing file: %s: %s\n", file, strerror(errno));
+    exit(0);
+
+  }
+
+  fprintf(stdout, "Stat'ed file:   %s. Size = %d, mode = %04X\n", file2, 
+	  st2.st_size, st2.st_mode);
+  fprintf(stdout, "Earlier stat:   %s, Size = %d, mode = %04X\n", file, 
+	  st1.st_size, st1.st_mode);
+
+}
