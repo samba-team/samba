@@ -171,6 +171,8 @@ BOOL prs_align(prs_struct *ps, int align)
 {
 	uint32 mod = ps->data_offset & (align-1);
 
+	return True;
+
 	if (align != 0 && mod != 0) {
 		uint32 extra_space = (align - mod);
 		if(!prs_grow(ps, extra_space))
@@ -320,6 +322,69 @@ BOOL io_pointer(char *desc, prs_struct *ps, int depth, void **p, unsigned flags)
 	return True;
 }
 
+/*******************************************************************
+ Stream a null-terminated string.  
+ ********************************************************************/
+BOOL io_fstring(char *name, prs_struct *ps, int depth, fstring *str, unsigned flags)
+{
+	char *q;
+	uint8 *start;
+	int i;
+	int len = sizeof(fstring)-1;
+
+	if (!(flags & PARSE_SCALARS)) return True;
+	
+	if (MARSHALLING(ps)) {
+		len = MIN(len, strlen(*str));
+	}
+
+	start = (uint8*)q;
+
+	for(i = 0; i < len; i++) {
+		q = prs_mem_get(ps, 1);
+		if (q == NULL)
+			return False;
+
+		RW_CVAL(ps->io, q, (*str)[i],0);
+		if ((*str)[i] == 0)
+			break;
+		ps->data_offset++;
+	}
+
+	/* The terminating null. */
+	(*str)[i] = '\0';
+
+	if (MARSHALLING(ps)) {
+		RW_CVAL(ps->io, q, (*str)[i], 0);
+	}
+
+	ps->data_offset++;
+
+	DEBUG(5,("%s %s: %s\n", tab_depth(depth), name, *str));
+	return True;
+}
+
+/******************************************************************
+ do IO on a byte array
+ ********************************************************************/
+BOOL io_uint8s(char *name, prs_struct *ps, int depth, uint8 *data8s, int len, unsigned flags)
+{
+	char *q;
+
+	if (!(flags & PARSE_SCALARS)) return True;
+
+	if (!prs_align(ps, 2)) return False;
+
+	q = prs_mem_get(ps, len * sizeof(uint8));
+	if (q == NULL) return False;
+
+	DBG_RW_PCVAL(True, name, depth, ps->data_offset, ps->io, q, data8s, len)
+	ps->data_offset += (len * sizeof(uint8));
+
+	return True;
+}
+
+
 /******************************************************************
  do IO on a unicode array
  ********************************************************************/
@@ -347,6 +412,16 @@ allocate some memory for a parse structure
 BOOL io_alloc(char *name, prs_struct *ps, void **ptr, unsigned size)
 {
 	(*ptr) = (void *)malloc(size);
+	if (*ptr) return True;
+	return False;
+}
+
+/******************************************************************
+realloc some memory for a parse structure
+ ********************************************************************/
+BOOL io_realloc(char *name, prs_struct *ps, void **ptr, unsigned size)
+{
+	(*ptr) = (void *)Realloc(*ptr, size);
 	if (*ptr) return True;
 	return False;
 }

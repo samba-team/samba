@@ -6,17 +6,33 @@ function elem_name(v, elem)
 }
 
 function parse_array(f, v, elnum, flags,
-		     LOCAL, type, elem)
+		     LOCAL, type, elem, array_len)
 {
 	type = elements[elnum, "type"];
 	elem = elements[elnum, "elem"];
+	array_len = elements[elnum, "array_len"];
 	v["ELEM"] = elem_name(v, elem);
 	v["TYPE"] = type;
 	v["FLAGS"] = flags;
-	v["ARRAY_LEN"] = elements[elnum, "array_len"];
+	v["ARRAY_LEN"] = array_len;
 
-	if (type == "wchar") {
-		print_template(f, "prs_wstring.tpl", v);
+	if (array_len=="*") {
+	  print_template(f,"prs_array_remainder.tpl", v);
+	  return;
+	}
+
+	if (type == "wchar" || type == "uint16") {
+		if (match(array_len,"[0-9]") == 1) {
+			print_template(f, "prs_wstring_fixed.tpl", v);
+		} else {
+			print_template(f, "prs_wstring.tpl", v);
+		}
+	} else if (type == "uint8") {
+		if (match(array_len,"[0-9]") == 1) {
+			print_template(f, "prs_uint8s_fixed.tpl", v);
+		} else {
+			print_template(f, "prs_uint8s.tpl", v);
+		}
 	} else {
 		print_template(f, "prs_array.tpl", v);
 	}
