@@ -159,7 +159,7 @@ retry:
         * extract the realm and convert to upper case.
         * This is only used to establish the connection.
         */
-       if (cp = strchr(ads->auth.user_name, '@')) {
+       if ((cp = strchr(ads->auth.user_name, '@'))!=0) {
                *cp++ = '\0';
                ads->auth.realm = smb_xstrdup(cp);
                strupper(ads->auth.realm);

@@ -297,7 +297,6 @@ int vfswrap_chmod(vfs_handle_struct *handle, connection_struct *conn, const char
 int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
 {
 	int result;
-	struct vfs_ops *vfs_ops = &fsp->conn->vfs;
 	
 	START_PROFILE(syscall_fchmod);
 

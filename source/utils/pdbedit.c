@@ -112,7 +112,6 @@ static int export_groups (struct pdb_context *in, struct pdb_context *out) {
 static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdstyle)
 {
 	uid_t uid;
-	gid_t gid;
 	time_t tmp;
 
 	/* TODO: chaeck if entry is a user or a workstation */
