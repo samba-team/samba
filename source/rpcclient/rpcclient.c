@@ -324,7 +324,12 @@ static BOOL process( struct client_info *info, char *cmd_str)
 	}
 	else while (!feof(stdin))
 	{
+#ifdef HAVE_LIBREADLINE
+	        pstring promptline;
+#endif
 		fstring tok;
+
+#ifndef HAVE_LIBREADLINE
 
 		/* display a prompt */
 		fprintf(out_hnd, "smb: %s> ", CNV_LANG(info->cur_dir));
@@ -351,6 +356,24 @@ static BOOL process( struct client_info *info, char *cmd_str)
 		}
 #endif
 
+#else /* HAVE_LIBREADLINE */
+
+		slprintf(promptline, sizeof(promptline) - 1, "smb: %s> ",
+			 CNV_LANG(info->cur_dir));
+
+		if (!readline(promptline))
+		    break;
+
+		/* Copy read line to samba buffer */
+
+		pstrcpy(line, rl_line_buffer);
+		pstrcat(line, "\n");
+
+		/* Add to history */
+
+		if (strlen(line) > 0) 
+		    add_history(line);
+#endif
 		/* input language code to internal one */
 		CNV_INPUT (line);
 
@@ -404,6 +427,88 @@ enum client_action
 	CLIENT_IPC,
 	CLIENT_SVC
 };
+
+#ifdef HAVE_LIBREADLINE
+
+/* Complete an rpcclient command */
+
+char *complete_cmd(char *text, int state)
+{
+    static int cmd_index;
+    char *name;
+
+    /* Initialise */
+
+    if (state == 0) {
+	cmd_index = 0;
+    }
+
+    /* Return the next name which partially matches the list of commands */
+    
+    while (strlen(name = commands[cmd_index++].name) > 0) {
+	if (strncmp(name, text, strlen(text)) == 0) {
+	    return strdup(name);
+	}
+    }
+    
+    return NULL;
+}
+
+/* Main completion function */
+
+char **completion_fn(char *text, int start, int end)
+{
+    int i, num_words, cmd_index;
+    char lastch = ' ';
+
+    /* Complete rpcclient command */
+
+    if (start == 0) {
+	return completion_matches(text, complete_cmd);
+    }
+
+    /* Count # of words in command */
+    
+    num_words = 0;
+    for (i = 0; i <= end; i++) {
+	if ((rl_line_buffer[i] != ' ') && (lastch == ' '))
+	    num_words++;
+	lastch = rl_line_buffer[i];
+    }
+    
+    if (rl_line_buffer[end] == ' ')
+	num_words++;
+
+    /* Work out which command we are completing for */
+
+    for (cmd_index = 0; strcmp(commands[cmd_index].name, "") != 0; 
+	 cmd_index++) {
+	
+	/* Check each command in array */
+	
+	if (strncmp(rl_line_buffer, commands[cmd_index].name,
+		    strlen(commands[cmd_index].name)) == 0) {
+	    
+	    /* Call appropriate completion function */
+
+	}
+    }
+
+    /* Eeek! */
+
+    return NULL;
+}
+
+/* To avoid filename completion being activated when no valid
+   completions are found, we assign this stub completion function
+   to the rl_completion_entry_function variable. */
+
+char *complete_cmd_null(char *text, int state)
+{
+    return NULL;
+}
+
+#endif /* HAVE_LIBREADLINE */
 
 /****************************************************************************
   main program
@@ -476,6 +581,20 @@ enum client_action
 	ZERO_STRUCT(cli_info.dom.level5_sid);
 	fstrcpy(cli_info.dom.level3_dom, "");
 	fstrcpy(cli_info.dom.level5_dom, "");
+
+#ifdef HAVE_LIBREADLINE
+
+	/* Initialise GNU Readline */
+	
+	rl_readline_name = "rpcclient";
+	rl_attempted_completion_function = completion_fn;
+	rl_completion_entry_function = (Function *)complete_cmd_null;
+	
+	/* Initialise history list */
+	
+	using_history();
+
+#endif /* HAVE_LIBREADLINE */
 
 	TimeInit();
 	charset_initialise();
