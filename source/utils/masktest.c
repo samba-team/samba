@@ -394,6 +394,7 @@ static void usage(void)
 	int opt;
 	char *p;
 	int seed;
+	static pstring servicesf = CONFIGFILE;
 
 	setlinebuf(stdout);
 
@@ -417,6 +418,9 @@ static void usage(void)
 
 	TimeInit();
 	charset_initialise();
+
+	lp_load(servicesf,True,False,False);
+	load_interfaces();
 
 	if (getenv("USER")) {
 		pstrcpy(username,getenv("USER"));
