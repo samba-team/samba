@@ -62,6 +62,7 @@
 #define MSG_SMB_FORCE_TDIS   3002
 #define MSG_SMB_SAM_SYNC     3003
 #define MSG_SMB_SAM_REPL     3004
+#define MSG_SMB_UNLOCK       3005
 
 /* Flags to classify messages - used in message_send_all() */
 /* Sender will filter by flag. */

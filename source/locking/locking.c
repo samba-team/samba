@@ -134,7 +134,7 @@ static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_p
 				 */
 				(void)brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
 								lock_pid, sys_getpid(), conn->cnum, 
-								offset, count);
+								offset, count, False);
 			}
 		}
 	}
@@ -203,7 +203,7 @@ NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 	 */
 
 	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-			lock_pid, sys_getpid(), conn->cnum, offset, count);
+			lock_pid, sys_getpid(), conn->cnum, offset, count, False);
    
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
