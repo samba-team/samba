@@ -1230,7 +1230,7 @@ void smbd_process(void)
 
 	/* register our message handlers */
 	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis);
-	register_msg_pool_usage();
+	talloc_init_named("dummy!");
 
 	while (True) {
 		int deadtime = lp_deadtime()*60;
