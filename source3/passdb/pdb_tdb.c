@@ -37,10 +37,12 @@ static int tdbsam_debug_level = DBGC_ALL;
 
 #endif
 
+#define TDBSAM_VERSION	1			/* Most recent TDBSAM version */
 #define PDB_VERSION		"20010830"
 #define PASSDB_FILE_NAME	"passdb.tdb"
 #define USERPREFIX		"USER_"
 #define RIDPREFIX		"RID_"
+#define tdbsamver_t 	int32
 
 struct tdbsam_privates {
 	TDB_CONTEXT 	*passwd_tdb;
@@ -49,6 +51,176 @@ struct tdbsam_privates {
 	/* retrive-once info */
 	const char *tdbsam_location;
 };
+
+/**
+ * Convert old TDBSAM to the latest version.
+ * @param pdb_tdb A pointer to the opened TDBSAM file which must be converted. 
+ *                This file must be opened with read/write access.
+ * @param from Current version of the TDBSAM file.
+ * @return True if the conversion has been successful, false otherwise. 
+ **/
+
+static BOOL tdbsam_convert(TDB_CONTEXT *pdb_tdb, tdbsamver_t from) 
+{
+	const char * vstring = "INFO/version";
+	SAM_ACCOUNT *user = NULL;
+	const char *prefix = USERPREFIX;
+	TDB_DATA 	data, key, old_key;
+	uint8		*buf = NULL;
+	BOOL 		ret;
+
+	if (pdb_tdb == NULL) {
+		DEBUG(0,("tdbsam_convert: Bad TDB Context pointer.\n"));
+		return False;
+	}
+
+	/* handle a Samba upgrade */
+	tdb_lock_bystring(pdb_tdb, vstring, 0);
+	
+	if (!NT_STATUS_IS_OK(pdb_init_sam(&user))) {
+		DEBUG(0,("tdbsam_convert: cannot initialized a SAM_ACCOUNT.\n"));
+		return False;
+	}
+
+	/* Enumerate all records and convert them */
+	key = tdb_firstkey(pdb_tdb);
+
+	while (key.dptr) {
+	
+		/* skip all non-USER entries (eg. RIDs) */
+		while ((key.dsize != 0) && (strncmp(key.dptr, prefix, strlen (prefix)))) {
+			old_key = key;
+			/* increment to next in line */
+			key = tdb_nextkey(pdb_tdb, key);
+			SAFE_FREE(old_key.dptr);
+		}
+	
+		if (key.dptr) {
+			
+			/* read from tdbsam */
+			data = tdb_fetch(pdb_tdb, key);
+			if (!data.dptr) {
+				DEBUG(0,("tdbsam_convert: database entry not found: %s.\n",key.dptr));
+				return False;
+			}
+	
+			if (!NT_STATUS_IS_OK(pdb_reset_sam(user))) {
+				DEBUG(0,("tdbsam_convert: cannot reset SAM_ACCOUNT.\n"));
+				SAFE_FREE(data.dptr);
+				return False;
+			}
+			
+			/* unpack the buffer from the former format */
+			DEBUG(10,("tdbsam_convert: Try unpacking a record with (key:%s) (version:%d)\n", key.dptr, from));
+			switch (from) {
+				case 0:
+					ret = init_sam_from_buffer_v0(user, (uint8 *)data.dptr, data.dsize);
+					break;
+				case 1:
+					ret = init_sam_from_buffer_v1(user, (uint8 *)data.dptr, data.dsize);
+					break;
+				default:
+					/* unknown tdbsam version */
+					ret = False;
+			}
+			if (!ret) {
+				DEBUG(0,("tdbsam_convert: Bad SAM_ACCOUNT entry returned from TDB (key:%s) (version:%d)\n", key.dptr, from));
+				SAFE_FREE(data.dptr);
+				return False;
+			}
+	
+			/* pack from the buffer into the new format */
+			DEBUG(10,("tdbsam_convert: Try packing a record (key:%s) (version:%d)\n", key.dptr, from));
+			if ((data.dsize=init_buffer_from_sam (&buf, user, False)) == -1) {
+				DEBUG(0,("tdbsam_convert: cannot pack the SAM_ACCOUNT into the new format\n"));
+				SAFE_FREE(data.dptr);
+				return False;
+			}
+			data.dptr = (char *)buf;
+			
+			/* Store the buffer inside the TDBSAM */
+			if (tdb_store(pdb_tdb, key, data, TDB_MODIFY) != TDB_SUCCESS) {
+				DEBUG(0,("tdbsam_convert: cannot store the SAM_ACCOUNT (key:%s) in new format\n",key.dptr));
+				SAFE_FREE(data.dptr);
+				return False;
+			}
+			
+			SAFE_FREE(data.dptr);
+			
+			/* increment to next in line */
+			old_key = key;
+			key = tdb_nextkey(pdb_tdb, key);
+			SAFE_FREE(old_key.dptr);
+		}
+		
+	}
+
+	pdb_free_sam(&user);
+	
+	/* upgrade finished */
+	tdb_store_int32(pdb_tdb, vstring, TDBSAM_VERSION);
+	tdb_unlock_bystring(pdb_tdb, vstring);
+
+	return(True);	
+}
+
+/**
+ * Open the TDB passwd database, check version and convert it if needed.
+ * @param name filename of the tdbsam file.
+ * @param open_flags file access mode.
+ * @return a TDB_CONTEXT handle on the tdbsam file.
+ **/
+
+static TDB_CONTEXT * tdbsam_tdbopen (const char *name, int open_flags)
+{
+	TDB_CONTEXT 	*pdb_tdb;
+	tdbsamver_t	version;
+	
+	/* Try to open tdb passwd */
+	if (!(pdb_tdb = tdb_open_log(name, 0, TDB_DEFAULT, open_flags, 0600)))
+		return NULL;
+
+	/* Check the version */
+	version = (tdbsamver_t) tdb_fetch_int32(pdb_tdb, "INFO/version");
+	if (version == -1)
+		version = 0;	/* Version not found, assume version 0 */
+	
+	/* Compare the version */
+	if (version > TDBSAM_VERSION) {
+		/* Version more recent than the latest known */ 
+		DEBUG(0, ("TDBSAM version unknown: %d\n", version));
+		tdb_close(pdb_tdb);
+		pdb_tdb = NULL;
+	} 
+	else if (version < TDBSAM_VERSION) {
+		/* Older version, must be converted */
+		DEBUG(1, ("TDBSAM version too old (%d), trying to convert it.\n", version));
+		
+		/* Reopen the pdb file with read-write access if needed */
+		if (!(open_flags & O_RDWR)) {
+			DEBUG(10, ("tdbsam_tdbopen: TDB file opened with read only access, reopen it with read-write access.\n"));
+			tdb_close(pdb_tdb);
+			pdb_tdb = tdb_open_log(name, 0, TDB_DEFAULT, (open_flags & 07777770) | O_RDWR, 0600);
+		}
+		
+		/* Convert */
+		if (!tdbsam_convert(pdb_tdb, version)){
+			DEBUG(0, ("tdbsam_tdbopen: Error when trying to convert tdbsam: %s\n",name));
+			tdb_close(pdb_tdb);
+			pdb_tdb = NULL;
+		} else {
+			DEBUG(1, ("TDBSAM converted successfully.\n"));
+		}
+
+		/* Reopen the pdb file as it must be */
+		if (!(open_flags & O_RDWR)) {
+			tdb_close(pdb_tdb);
+			pdb_tdb = tdb_open_log(name, 0, TDB_DEFAULT, open_flags, 0600);
+		}
+	}
+	
+	return pdb_tdb;
+}
 
 /***************************************************************
  Open the TDB passwd database for SAM account enumeration.
@@ -59,7 +231,7 @@ static NTSTATUS tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	
 	/* Open tdb passwd */
-	if (!(tdb_state->passwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, update?(O_RDWR|O_CREAT):O_RDONLY, 0600)))
+	if (!(tdb_state->passwd_tdb = tdbsam_tdbopen(tdb_state->tdbsam_location, update?(O_RDWR|O_CREAT):O_RDONLY)))
 	{
 		DEBUG(0, ("Unable to open/create TDB passwd\n"));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -179,7 +351,7 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, SAM_ACCOUNT 
 	key.dsize = strlen(keystr) + 1;
 
 	/* open the accounts TDB */
-	if (!(pwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, O_RDONLY, 0600))) {
+	if (!(pwd_tdb = tdbsam_tdbopen(tdb_state->tdbsam_location, O_RDONLY))) {
 	
 		if (errno == ENOENT) {
 			/*
@@ -251,7 +423,7 @@ static NTSTATUS tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT 
 	key.dsize = strlen (keystr) + 1;
 
 	/* open the accounts TDB */
-	if (!(pwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, O_RDONLY, 0600))) {
+	if (!(pwd_tdb = tdbsam_tdbopen(tdb_state->tdbsam_location, O_RDONLY))) {
 		DEBUG(0, ("pdb_getsampwrid: Unable to open TDB rid database!\n"));
 		return nt_status;
 	}
@@ -264,6 +436,7 @@ static NTSTATUS tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT 
 		tdb_close (pwd_tdb);
 		return nt_status;
 	}
+
 
 	fstrcpy(name, data.dptr);
 	SAFE_FREE(data.dptr);
@@ -299,7 +472,7 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods, SAM_AC
 	strlower_m(name);
 	
 	/* open the TDB */
-	if (!(pwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, O_RDWR, 0600))) {
+	if (!(pwd_tdb = tdbsam_tdbopen(tdb_state->tdbsam_location, O_RDWR))) {
 		DEBUG(0, ("Unable to open TDB passwd!"));
 		return nt_status;
 	}
@@ -363,7 +536,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 
  	/* open the account TDB passwd*/
 	
-	pwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0600);
+	pwd_tdb = tdbsam_tdbopen(tdb_state->tdbsam_location, O_RDWR | O_CREAT);
 	
   	if (!pwd_tdb) {
 		DEBUG(0, ("tdb_update_sam: Unable to open TDB passwd (%s)!\n", 
@@ -519,4 +692,3 @@ NTSTATUS pdb_tdbsam_init(void)
 {
 	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "tdbsam", pdb_init_tdbsam);
 }
-
