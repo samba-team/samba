@@ -660,6 +660,11 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,0,nt_extmode); p += 4;
 			q = p; p += 4;
 			SIVAL(p,0,0); p += 4;
+			/* Clear the short name buffer. This is
+			 * IMPORTANT as not doing so will trigger
+			 * a Win2k client bug. JRA.
+			 */
+			memset(p,'\0',26);
 			if (!was_8_3) {
 				pstring mangled_name;
 				pstrcpy(mangled_name, fname);
