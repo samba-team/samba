@@ -997,3 +997,455 @@ uint32 _api_samr_open_user(pipe_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_US
     return r_u->status;
 }
 
+/*************************************************************************
+ get_user_info_10
+ *************************************************************************/
+
+static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
+{
+    struct smb_passwd *smb_pass;
+
+    if (!pdb_rid_is_user(user_rid))
+    {
+        DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
+        return False;
+    }
+
+    become_root();
+    smb_pass = getsmbpwrid(user_rid);
+    unbecome_root();
+
+    if (smb_pass == NULL)
+    {
+        DEBUG(4,("User 0x%x not found\n", user_rid));
+        return False;
+    }
+
+    DEBUG(3,("User:[%s]\n", smb_pass->smb_name));
+
+    init_sam_user_info10(id10, smb_pass->acct_ctrl);
+
+    return True;
+}
+
+/*************************************************************************
+ get_user_info_21
+ *************************************************************************/
+static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
+{
+    NTTIME dummy_time;
+    struct sam_passwd *sam_pass;
+    LOGON_HRS hrs;
+    int i;
+
+    if (!pdb_rid_is_user(user_rid))
+    {
+        DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
+        return False;
+    }
+
+    become_root();
+    sam_pass = getsam21pwrid(user_rid);
+    unbecome_root();
+
+    if (sam_pass == NULL)
+    {
+        DEBUG(4,("User 0x%x not found\n", user_rid));
+        return False;
+    }
+
+    DEBUG(3,("User:[%s]\n", sam_pass->smb_name));
+
+    dummy_time.low  = 0xffffffff;
+    dummy_time.high = 0x7fffffff;
+
+    DEBUG(5,("get_user_info_21 - TODO: convert unix times to NTTIMEs\n"));
+
+    /* create a LOGON_HRS structure */
+    hrs.len = sam_pass->hours_len;
+    SMB_ASSERT_ARRAY(hrs.hours, hrs.len);
+    for (i = 0; i < hrs.len; i++)
+    {
+        hrs.hours[i] = sam_pass->hours[i];
+    }
+
+    init_sam_user_info21(id21,
+
+               &dummy_time, /* logon_time */
+               &dummy_time, /* logoff_time */
+               &dummy_time, /* kickoff_time */
+               &dummy_time, /* pass_last_set_time */
+               &dummy_time, /* pass_can_change_time */
+               &dummy_time, /* pass_must_change_time */
+
+               sam_pass->smb_name, /* user_name */
+               sam_pass->full_name, /* full_name */
+               sam_pass->home_dir, /* home_dir */
+               sam_pass->dir_drive, /* dir_drive */
+               sam_pass->logon_script, /* logon_script */
+               sam_pass->profile_path, /* profile_path */
+               sam_pass->acct_desc, /* description */
+               sam_pass->workstations, /* workstations user can log in from */
+               sam_pass->unknown_str, /* don't know, yet */
+               sam_pass->munged_dial, /* dialin info.  contains dialin path and tel no */
+
+               sam_pass->user_rid, /* RID user_id */
+               sam_pass->group_rid, /* RID group_id */
+               sam_pass->acct_ctrl,
+
+               sam_pass->unknown_3, /* unknown_3 */
+               sam_pass->logon_divs, /* divisions per week */
+               &hrs, /* logon hours */
+               sam_pass->unknown_5,
+               sam_pass->unknown_6);
+
+    return True;
+}
+
+/*******************************************************************
+ _samr_query_userinfo
+ ********************************************************************/
+
+uint32 _samr_query_userinfo(pipe_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_QUERY_USERINFO *r_u)
+{
+#if 0
+    SAM_USER_INFO_11 id11;
+#endif
+    SAM_USER_INFO_10 id10;
+    SAM_USER_INFO_21 id21;
+    void *info = NULL;
+    uint32 rid = 0x0;
+
+    r_u->status = NT_STATUS_NO_PROBLEMO;
+
+    DEBUG(5,("_samr_query_userinfo: %d\n", __LINE__));
+
+    /* search for the handle */
+    if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
+        return NT_STATUS_INVALID_HANDLE;
+
+    /* find the user's rid */
+    if ((rid = get_lsa_policy_samr_rid(&q_u->pol)) == 0xffffffff)
+        return NT_STATUS_OBJECT_TYPE_MISMATCH;
+
+    DEBUG(5,("_samr_query_userinfo: rid:0x%x\n", rid));
+
+    /* ok!  user info levels (there are lots: see MSDEV help), off we go... */
+
+    switch (q_u->switch_value) {
+        case 0x10:
+            info = (void*)&id10;
+            r_u->status = get_user_info_10(&id10, rid) ? 0 : NT_STATUS_NO_SUCH_USER;
+            break;
+#if 0
+/* whoops - got this wrong.  i think.  or don't understand what's happening. */
+        case 0x11:
+            {
+                NTTIME expire;
+                info = (void*)&id11;
+
+                expire.low  = 0xffffffff;
+                expire.high = 0x7fffffff;
+
+                make_sam_user_info11(&id11, &expire, "BROOKFIELDS$", 0x03ef, 0x201, 0x0080);
+
+                break;
+            }
+#endif
+        case 21:
+            info = (void*)&id21;
+            r_u->status = get_user_info_21(&id21, rid) ? 0 : NT_STATUS_NO_SUCH_USER;
+            break;
+
+        default:
+            r_u->status = NT_STATUS_INVALID_INFO_CLASS;
+            break;
+    }
+
+    init_samr_r_query_userinfo(r_u, q_u->switch_value, info, r_u->status);
+
+    DEBUG(5,("_samr_query_userinfo: %d\n", __LINE__));
+
+    return r_u->status;
+}
+
+/*******************************************************************
+ samr_reply_query_usergroups
+ ********************************************************************/
+
+uint32 _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAMR_R_QUERY_USERGROUPS *r_u)
+{
+    struct sam_passwd *sam_pass;
+    DOM_GID *gids = NULL;
+    int num_groups = 0;
+    pstring groups;
+    uint32 rid;
+	prs_struct *rdata = &p->out_data.rdata;
+
+    r_u->status = NT_STATUS_NO_PROBLEMO;
+
+    DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
+
+    /* find the policy handle.  open a policy on it. */
+    if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
+        return NT_STATUS_INVALID_HANDLE;
+
+    /* find the user's rid */
+    if ((rid = get_lsa_policy_samr_rid(&q_u->pol)) == 0xffffffff)
+        return NT_STATUS_OBJECT_TYPE_MISMATCH;
+
+    become_root();
+    sam_pass = getsam21pwrid(rid);
+    unbecome_root();
+
+    if (sam_pass == NULL)
+        return NT_STATUS_NO_SUCH_USER;
+
+    get_domain_user_groups(groups, sam_pass->smb_name);
+    gids = NULL;
+    num_groups = make_dom_gids(prs_get_mem_context(rdata), groups, &gids);
+
+    /* construct the response.  lkclXXXX: gids are not copied! */
+    init_samr_r_query_usergroups(r_u, num_groups, gids, r_u->status);
+
+    DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
+
+    return r_u->status;
+}
+
+/*******************************************************************
+ _samr_query_dom_info
+ ********************************************************************/
+
+uint32 _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR_R_QUERY_DOMAIN_INFO *r_u)
+{
+    SAM_UNK_CTR ctr;
+    uint16 switch_value = 0;
+    prs_struct *rdata = &p->out_data.rdata;
+
+    ZERO_STRUCT(ctr);
+
+    r_u->status = NT_STATUS_NO_PROBLEMO;
+
+    DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
+
+    /* find the policy handle.  open a policy on it. */
+    if (find_lsa_policy_by_hnd(&q_u.domain_pol) == -1)
+        return NT_STATUS_INVALID_HANDLE;
+
+    switch (q_u.switch_value) {
+        case 0x01:
+            switch_value = 0x1;
+            init_unk_info1(&ctr.info.inf1);
+            break;
+        case 0x02:
+            switch_value = 0x2;
+            init_unk_info2(&ctr.info.inf2, global_myworkgroup, global_myname);
+            break;
+        case 0x03:
+            switch_value = 0x3;
+            init_unk_info3(&ctr.info.inf3);
+            break;
+        case 0x06:
+            switch_value = 0x6;
+            init_unk_info6(&ctr.info.inf6);
+            break;
+        case 0x07:
+            switch_value = 0x7;
+            init_unk_info7(&ctr.info.inf7);
+            break;
+        case 0x0c:
+            switch_value = 0xc;
+            init_unk_info12(&ctr.info.inf12);
+            break;
+        default:
+            status = NT_STATUS_INVALID_INFO_CLASS;
+            break;
+    }
+
+    init_samr_r_query_dom_info(prs_get_mem_context(rdata), &r_u, switch_value, &ctr, status);
+
+    DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
+
+    return r_u->status;
+}
+
+/*******************************************************************
+ _api_samr_create_user
+ ********************************************************************/
+
+uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREATE_USER *r_u)
+{
+    struct sam_passwd *sam_pass;
+    fstring mach_acct;
+    pstring err_str;
+    pstring msg_str;
+    int local_flags=0;
+    DOM_SID sid;
+    pstring add_script;
+    POLICY_HND dom_pol = q_u->pol;
+    UNISTR2 user_account = q_u->uni_mach_acct;
+    uint32 acb_info = q_u->acb_info;
+    uint32 access_mask = q_u->access_mask;
+    POLICY_HND *user_pol = &r_u->pol;
+
+    /* find the policy handle.  open a policy on it. */
+    if (find_lsa_policy_by_hnd(&dom_pol) == -1)
+        return NT_STATUS_INVALID_HANDLE;
+
+    /* find the machine account: tell the caller if it exists.
+       lkclXXXX i have *no* idea if this is a problem or not
+       or even if you are supposed to construct a different
+       reply if the account already exists...
+     */
+
+    fstrcpy(mach_acct, dos_unistrn2(user_account.buffer, user_account.uni_str_len));
+    strlower(mach_acct);
+
+    become_root();
+    sam_pass = getsam21pwnam(mach_acct);
+    unbecome_root();
+    if (sam_pass != NULL) {
+        /* machine account exists: say so */
+        return NT_STATUS_USER_EXISTS;
+    }
+
+    /* get a (unique) handle.  open a policy on it. */
+    if (!open_lsa_policy_hnd(user_pol))
+        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+    local_flags=LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_SET_NO_PASSWORD;
+    local_flags|= (acb_info & ACB_WSTRUST) ? LOCAL_TRUST_ACCOUNT:0;
+
+    /*
+     * NB. VERY IMPORTANT ! This call must be done as the current pipe user,
+     * *NOT* surrounded by a become_root()/unbecome_root() call. This ensures
+     * that only people with write access to the smbpasswd file will be able
+     * to create a user. JRA.
+     */
+
+    /*
+     * add the user in the /etc/passwd file or the unix authority system.
+     * We don't check if the smb_create_user() function succed or not for 2 reasons:
+     * a) local_password_change() checks for us if the /etc/passwd account really exists
+     * b) smb_create_user() would return an error if the account already exists
+     * and as it could return an error also if it can't create the account, it would be tricky.
+     *
+     * So we go the easy way, only check after if the account exists.
+     * JFM (2/3/2001), to clear any possible bad understanding (-:
+     */
+
+    pstrcpy(add_script, lp_adduser_script());
+
+    if(*add_script)
+        smb_create_user(mach_acct, NULL);
+
+    /* add the user in the smbpasswd file or the Samba authority database */
+    if (!local_password_change(mach_acct, local_flags, NULL, err_str,
+         sizeof(err_str), msg_str, sizeof(msg_str)))
+    {
+        DEBUG(0, ("%s\n", err_str));
+        close_lsa_policy_hnd(user_pol);
+        return NT_STATUS_ACCESS_DENIED;
+    }
+
+    become_root();
+    sam_pass = getsam21pwnam(mach_acct);
+    unbecome_root();
+    if (sam_pass == NULL) {
+        /* account doesn't exist: say so */
+        close_lsa_policy_hnd(user_pol);
+        return NT_STATUS_ACCESS_DENIED;
+    }
+
+    /* Get the domain SID stored in the domain policy */
+    if(!get_lsa_policy_samr_sid(&dom_pol, &sid)) {
+        close_lsa_policy_hnd(user_pol);
+        return NT_STATUS_INVALID_HANDLE;
+    }
+
+    /* append the user's RID to it */
+    if(!sid_append_rid(&sid, sam_pass->user_rid)) {
+        close_lsa_policy_hnd(user_pol);
+        return NT_STATUS_NO_SUCH_USER;
+    }
+
+    /* associate the RID with the (unique) handle. */
+    if (!set_lsa_policy_samr_sid(user_pol, &sid)) {
+        /* oh, whoops.  don't know what error message to return, here */
+        close_lsa_policy_hnd(user_pol);
+        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+    }
+
+    r_u->user_rid=sam_pass->user_rid;
+    r_u->unknown0 = 0x000703ff;
+
+    return NT_STATUS_NO_PROBLEMO;
+}
+
+/*******************************************************************
+ samr_reply_connect_anon
+ ********************************************************************/
+
+uint32 _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CONNECT_ANON *r_u)
+{
+    /* set up the SAMR connect_anon response */
+
+    r_u->status = NT_STATUS_NO_PROBLEMO;
+
+    /* get a (unique) handle.  open a policy on it. */
+    if (!open_lsa_policy_hnd(&r_u->connect_pol))
+        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+    /* associate the domain SID with the (unique) handle. */
+    if (!set_lsa_policy_samr_pol_status(&r_u->connect_pol, q_u->unknown_0))
+        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+    close_lsa_policy_hnd(&r_u->connect_pol);
+
+    return r_u->status;
+}
+
+/*******************************************************************
+ samr_reply_connect
+ ********************************************************************/
+
+uint32 _samr_connect(pipes_struct *p, SAMR_Q_CONNECT *q_u, SAMR_R_CONNECT *r_u)
+{
+    DEBUG(5,("_samr_connect: %d\n", __LINE__));
+
+    r_u->status = NT_STATUS_NO_PROBLEMO;
+
+    /* get a (unique) handle.  open a policy on it. */
+    if (!open_lsa_policy_hnd(&r_u->connect_pol))
+        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+    /* associate the domain SID with the (unique) handle. */
+    if (!set_lsa_policy_samr_pol_status(&r_u->connect_pol, q_u->access_mask))
+        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+    close_lsa_policy_hnd(&r_u.connect_pol);
+
+    DEBUG(5,("_samr_connect: %d\n", __LINE__));
+
+    return r_u->status;
+}
+
+/**********************************************************************
+ api_samr_lookup_domain
+ **********************************************************************/
+
+uint32 _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_LOOKUP_DOMAIN *r_u)
+{
+    r_u->status = NT_STATUS_NO_PROBLEMO;
+
+    if (find_lsa_policy_by_hnd(&q_u->connect_pol) == -1)
+        return NT_STATUS_INVALID_HANDLE;
+
+    /* assume the domain name sent is our global_myname and
+       send global_sam_sid */
+    init_samr_r_lookup_domain(r_u, &global_sam_sid, r_u->status);
+
+    return r_u->status;
+}
+
