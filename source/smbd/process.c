@@ -61,23 +61,24 @@ uint16 get_current_mid(void)
  for processing.
 ****************************************************************************/
 
-typedef struct {
-	ubi_slNode msg_next;
+struct pending_message_list {
+	struct pending_message_list *next, *prev;
 	char *msg_buf;
 	int msg_len;
-} pending_message_list;
+};
 
-static ubi_slList smb_oplock_queue = { NULL, (ubi_slNodePtr)&smb_oplock_queue, 0};
+static struct pending_message_list *smb_oplock_queue;
 
 /****************************************************************************
  Function to push a message onto the tail of a linked list of smb messages ready
  for processing.
 ****************************************************************************/
 
-static BOOL push_message(ubi_slList *list_head, char *buf, int msg_len)
+static BOOL push_message(struct pending_message_list *list_head, char *buf, int msg_len)
 {
-	pending_message_list *msg = (pending_message_list *)
-                               malloc(sizeof(pending_message_list));
+	struct pending_message_list *tmp_msg;
+	struct pending_message_list *msg = (struct pending_message_list *)
+                               malloc(sizeof(struct pending_message_list));
 
 	if(msg == NULL) {
 		DEBUG(0,("push_message: malloc fail (1)\n"));
@@ -94,7 +95,7 @@ static BOOL push_message(ubi_slList *list_head, char *buf, int msg_len)
 	memcpy(msg->msg_buf, buf, msg_len);
 	msg->msg_len = msg_len;
 
-	ubi_slAddTail( list_head, msg);
+	DLIST_ADD_END(list_head, msg, tmp_msg);
 
 	/* Push the MID of this packet on the signing queue. */
 	srv_defer_sign_response(SVAL(buf,smb_mid));
@@ -109,7 +110,7 @@ static BOOL push_message(ubi_slList *list_head, char *buf, int msg_len)
 
 BOOL push_oplock_pending_smb_message(char *buf, int msg_len)
 {
-	return push_message(&smb_oplock_queue, buf, msg_len);
+	return push_message(smb_oplock_queue, buf, msg_len);
 }
 
 /****************************************************************************
@@ -185,11 +186,12 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	 * Check to see if we already have a message on the smb queue.
 	 * If so - copy and return it.
 	 */
-  	if(ubi_slCount(&smb_oplock_queue) != 0) {
-		pending_message_list *msg = (pending_message_list *)ubi_slRemHead(&smb_oplock_queue);
+  	if(smb_oplock_queue != NULL) {
+		struct pending_message_list *msg = smb_oplock_queue;
 		memcpy(buffer, msg->msg_buf, MIN(buffer_len, msg->msg_len));
   
 		/* Free the message we just copied. */
+		DLIST_REMOVE(smb_oplock_queue, msg);
 		SAFE_FREE(msg->msg_buf);
 		SAFE_FREE(msg);
 		
