@@ -1,3 +1,10 @@
+Changes in release 0.2r:
+
+ * use and set expiration and not password expiration when dumping
+   to/from ka server databases / krb4 databases
+
+ * follow RFC2782 and by default do not look for non-underscore SRV names
+
 Changes in release 0.2q:
 
  * bug fix in tcp-handling in kdc
