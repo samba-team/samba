@@ -426,6 +426,8 @@ BOOL load_unix_unicode_map(const char *unix_char_set);
 char *unicode_to_unix(char *dst, const smb_ucs2_t *src, size_t dst_len);
 char *unicode_to_dos(char *dst, const smb_ucs2_t *src, size_t dst_len);
 size_t wstrlen(const smb_ucs2_t *src);
+int wstrcmp(const smb_ucs2_t *s1, const smb_ucs2_t *s2);
+int wstrncmp(const smb_ucs2_t *s1, const smb_ucs2_t *s2, size_t len);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
