@@ -4,7 +4,8 @@
 
    Winbind status program.
 
-   Copyright (C) Tim Potter 2000
+   Copyright (C) Tim Potter      2000
+   Copyright (C) Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,12 +32,39 @@ NSS_STATUS winbindd_request(int req_type,
 			    struct winbindd_request *request,
 			    struct winbindd_response *response);
 
+static char get_winbind_separator(void)
+{
+	struct winbindd_response response;
+	char winbind_separator;
+
+	ZERO_STRUCT(response);
+
+	/* Send off request */
+
+	if (winbindd_request(WINBINDD_INFO, NULL, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		printf("could not obtain winbind seperator!\n");
+		exit(1);
+	}
+
+	winbind_separator = response.data.info.winbind_separator;
+
+	if (!winbind_separator) {
+		printf("winbind separator was NULL!\n");
+		exit(1);
+	}
+	
+	return winbind_separator;
+
+}
+
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
-static BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
+static BOOL parse_wbinfo_domain_user(const char *domuser, fstring domain, fstring user)
 {
-	char *p = strchr(domuser,*lp_winbind_separator());
+
+	char *p = strchr(domuser,get_winbind_separator());
 
 	if (!p)
 		return False;
@@ -265,7 +293,7 @@ static BOOL wbinfo_lookupname(char *name)
 	 * Don't do the lookup if the name has no separator.
 	 */
  
-	if (!strchr(name, *lp_winbind_separator()))
+	if (!strchr(name, get_winbind_separator()))
 		return False;
 
 	/* Send off request */
@@ -294,15 +322,6 @@ static BOOL wbinfo_auth(char *username)
 	struct winbindd_response response;
         NSS_STATUS result;
         char *p;
-
-	/*
-	 * Don't do the lookup if the name has no separator.
-	 */
- 
-	if (!strchr(username, *lp_winbind_separator())) {
-		printf("no domain seperator (%s) in username - failing\n", lp_winbind_separator());
-		return False;
-	}
 
 	/* Send off request */
 
@@ -340,13 +359,14 @@ static BOOL wbinfo_auth_crap(char *username)
         fstring name_domain;
         fstring pass;
         char *p;
+	char sep = get_winbind_separator();
 
 	/*
 	 * Don't do the lookup if the name has no separator.
 	 */
  
-	if (!strchr(username, *lp_winbind_separator())) {
-		printf("no domain seperator (%s) in username - failing\n", lp_winbind_separator());
+	if (!strchr(username, sep)) {
+		printf("no domain seperator (%c) in username - failing\n", sep);
 		return False;
 	}
 
@@ -362,7 +382,7 @@ static BOOL wbinfo_auth_crap(char *username)
                 fstrcpy(pass, p + 1);
 	}
 		
-	parse_domain_user(username, name_domain, name_user);
+	parse_wbinfo_domain_user(username, name_domain, name_user);
 
 	fstrcpy(request.data.auth_crap.user, name_user);
 
@@ -562,7 +582,7 @@ int main(int argc, char **argv)
 			dyn_CONFIGFILE, strerror(errno));
 		exit(1);
 	}
-	
+
 	load_interfaces();
 
 	/* Parse command line options */
