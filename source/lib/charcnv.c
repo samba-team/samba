@@ -150,9 +150,8 @@ char *dos2unix_format(char *str, BOOL overwrite)
 /*
  * Interpret character set.
  */
-int interpret_character_set(char *str, int def)
+void interpret_character_set(char *str)
 {
-
     if (strequal (str, "iso8859-1")) {
         init_iso8859_1();
     } else if (strequal (str, "iso8859-2")) {
@@ -160,5 +159,4 @@ int interpret_character_set(char *str, int def)
     } else {
         DEBUG(0,("unrecognized character set\n"));
     }
-    return def;
 }
