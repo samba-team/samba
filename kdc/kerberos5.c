@@ -530,7 +530,7 @@ as_rep(KDC_REQ *req,
 				   &ekey->key,
 				   &rep.enc_part);
 	hdb_free_key(ekey);
-	set_salt_padata (&rep.padata, ckey->salt);
+	set_salt_padata ((METHOD_DATA**)&rep.padata, ckey->salt);
 	
 	ret = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
 	free_AS_REP(&rep);
@@ -676,8 +676,64 @@ check_tgs_flags(KDC_REQ_BODY *b, EncTicketPart *tgt, EncTicketPart *et)
 }
 
 static krb5_error_code
+fix_transited_encoding(TransitedEncoding *tr, 
+		       const char *client_realm, 
+		       const char *server_realm, 
+		       const char *tgt_realm)
+{
+    krb5_error_code ret = 0;
+    if(strcmp(client_realm, tgt_realm) && strcmp(server_realm, tgt_realm)){
+	char **realms = NULL, **tmp;
+	int num_realms = 0;
+	int i;
+	if(tr->tr_type){
+	    if(tr->tr_type != DOMAIN_X500_COMPRESS){
+		kdc_log(0, "Unknown transited type: %u", 
+			tr->tr_type);
+		return KRB5KDC_ERR_TRTYPE_NOSUPP;
+	    }
+	    ret = krb5_domain_x500_decode(&tr->contents,
+					  &realms, 
+					  &num_realms,
+					  client_realm,
+					  server_realm);
+	    if(ret){
+		krb5_warn(context, ret, "Decoding transited encoding");
+		return ret;
+	    }
+	}
+	tmp = realloc(realms, (num_realms + 1) * sizeof(*realms));
+	if(tmp == NULL){
+	    ret = ENOMEM;
+	    goto free_realms;
+	}
+	realms = tmp;
+	realms[num_realms] = strdup(tgt_realm);
+	if(realms[num_realms] == NULL){
+	    ret = ENOMEM;
+	    goto free_realms;
+	}
+	num_realms++;
+	free_TransitedEncoding(tr);
+	tr->tr_type = DOMAIN_X500_COMPRESS;
+	ret = krb5_domain_x500_encode(realms, num_realms, &tr->contents);
+	if(ret)
+	    krb5_warn(context, ret, "Encoding transited encoding");
+    free_realms:
+	for(i = 0; i < num_realms; i++)
+	    free(realms[i]);
+	free(realms);
+    }
+    return ret;
+}
+
+
+static krb5_error_code
 tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt, 
-	       hdb_entry *server, hdb_entry *client, krb5_data *reply)
+	       hdb_entry *server, hdb_entry *client, 
+	       krb5_principal client_principal, 
+	       hdb_entry *krbtgt,
+	       krb5_data *reply)
 {
     KDC_REP rep;
     EncKDCRepPart ek;
@@ -719,6 +775,17 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
     if(ret)
 	return ret;
 
+    copy_TransitedEncoding(&tgt->transited, &et.transited);
+    ret = fix_transited_encoding(&et.transited,
+				 *krb5_princ_realm(context, client_principal),
+				 *krb5_princ_realm(context, server->principal),
+				 *krb5_princ_realm(context, krbtgt->principal));
+    if(ret){
+	free_TransitedEncoding(&et.transited);
+	return ret;
+    }
+
+
     copy_Realm(krb5_princ_realm(context, server->principal), 
 	       &rep.ticket.realm);
     krb5_principal2principalname(&rep.ticket.sname, server->principal);
@@ -733,7 +800,7 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
     {
 	time_t life;
 	life = et.endtime - *et.starttime;
-	if(client->max_life)
+	if(client && client->max_life)
 	    life = min(life, *client->max_life);
 	if(server->max_life)
 	    life = min(life, *server->max_life);
@@ -748,7 +815,7 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
     if(et.renew_till){
 	time_t renew;
 	renew = *et.renew_till - et.authtime;
-	if(client->max_renew)
+	if(client && client->max_renew)
 	    renew = min(renew, *client->max_renew);
 	if(server->max_renew)
 	    renew = min(renew, *server->max_renew);
@@ -799,6 +866,7 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
     ek.renew_till = et.renew_till;
     ek.srealm = rep.ticket.realm;
     ek.sname = rep.ticket.sname;
+
 	    
     {
 	unsigned char buf[8192]; /* XXX The data could be indefinite */
@@ -854,6 +922,7 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
 	krb5_data_copy(reply, buf + sizeof(buf) - len, len);
     out:
 	free_TGS_REP(&rep);
+	free_TransitedEncoding(&et.transited);
 	if(et.starttime)
 	    free(et.starttime);
 	if(et.renew_till)
@@ -910,12 +979,30 @@ out:
     free(auth);
     return ret;
 }
-	    
 
+static Realm 
+is_krbtgt(PrincipalName *p)
+{
+    if(p->name_string.len == 2 && strcmp(p->name_string.val[0], "krbtgt") == 0)
+	return p->name_string.val[1];
+    else
+	return NULL;
+}
+
+static Realm
+find_rpath(Realm r)
+{
+    const char *new_realm = krb5_config_get_string(context->cf, 
+						   "libdefaults", 
+						   "capath", 
+						   r, 
+						   NULL);
+    return (Realm)new_realm;
+}
+	    
 
 static krb5_error_code
 tgs_rep2(KDC_REQ_BODY *b,
-	 krb5_principal sp,
 	 PA_DATA *pa_data,
 	 krb5_data *reply,
 	 const char *from)
@@ -933,6 +1020,7 @@ tgs_rep2(KDC_REQ_BODY *b,
     EncTicketPart *tgt;
     Key *ekey;
     krb5_principal cp = NULL;
+    krb5_principal sp = NULL;
 
     memset(&ap_req, 0, sizeof(ap_req));
     ret = krb5_decode_ap_req(context, &pa_data->padata_value, &ap_req);
@@ -942,8 +1030,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	goto out2;
     }
     
-    if(ap_req.ticket.sname.name_string.len != 2 ||
-       strcmp(ap_req.ticket.sname.name_string.val[0], "krbtgt")){
+    if(!is_krbtgt(&ap_req.ticket.sname)){
 	kdc_log(0, "PA-DATA is not a ticket-granting ticket");
 	ret = KRB5KDC_ERR_POLICY; /* ? */
 	goto out2;
@@ -998,9 +1085,12 @@ tgs_rep2(KDC_REQ_BODY *b,
 	Realm r;
 	char *spn = NULL, *cpn = NULL;
 	hdb_entry *server = NULL, *client = NULL;
+	TransitedEncoding tr;
+	int loop = 0;
 
 	s = b->sname;
 	r = b->realm;
+
 	if(s == NULL)
 	    if(b->kdc_options.enc_tkt_in_skey &&
 	       b->additional_tickets && 
@@ -1022,30 +1112,47 @@ tgs_rep2(KDC_REQ_BODY *b,
 		goto out;
 	    }
 
-#if 0
 	principalname2krb5_principal(&sp, *s, r);
-#endif
-	krb5_unparse_name(context, sp, &spn);
-	server = db_fetch(sp);
-    
+	krb5_unparse_name(context, sp, &spn);	
 	principalname2krb5_principal(&cp, tgt->cname, tgt->crealm);
 	krb5_unparse_name(context, cp, &cpn);
-	client = db_fetch(cp);
-
 	kdc_log(0, "TGS-REQ %s from %s for %s", cpn, from, spn);
-	
+    server_lookup:
+	server = db_fetch(sp);
+    
+
 	if(server == NULL){
+	    Realm req_rlm, new_rlm;
+	    if(loop++ < 2 && (req_rlm = is_krbtgt(&sp->name))){
+		new_rlm = find_rpath(req_rlm);
+		if(new_rlm){
+		    kdc_log(5, "krbtgt for realm %s not found, trying %s", 
+			    req_rlm, new_rlm);
+		    krb5_free_principal(context, sp);
+		    free(spn);
+		    krb5_make_principal(context, &sp, r, 
+					"krbtgt", new_rlm, NULL);
+		    krb5_unparse_name(context, sp, &spn);	
+		    goto server_lookup;
+		}
+	    }
 	    kdc_log(0, "Server not found in database: %s", spn);
-	    /* do foreign realm stuff */
 	    ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 	    goto out;
 	}
 
+	client = db_fetch(cp);
+	if(client == NULL)
+	    kdc_log(1, "Client not found in database: %s", cpn);
+#if 0
+	/* XXX check client only if same realm as krbtgt-instance */
 	if(client == NULL){
 	    kdc_log(0, "Client not found in database: %s", cpn);
 	    ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	    goto out;
 	}
+#endif
+
 
 	if((b->kdc_options.validate || b->kdc_options.renew) && 
 	   !krb5_principal_compare(context, 
@@ -1056,7 +1163,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    goto out;
 	}
 	
-	ret = tgs_make_reply(b, tgt, server, client, reply);
+	ret = tgs_make_reply(b, tgt, server, client, cp, krbtgt, reply);
 	
     out:
 	free(spn);
@@ -1083,6 +1190,7 @@ out2:
 		      0,
 		      reply);
     krb5_free_principal(context, cp);
+    krb5_free_principal(context, sp);
     if (ticket) {
 	krb5_free_ticket(context, ticket);
 	free(ticket);
@@ -1096,27 +1204,6 @@ out2:
     return ret;
 }
 
-static krb5_error_code
-request_server(KDC_REQ *req, krb5_principal *server)
-{
-    PrincipalName *s = NULL;
-    Realm r;
-    s = req->req_body.sname;
-    r = req->req_body.realm;
-    if(s == NULL && 
-       req->req_body.additional_tickets &&
-       req->req_body.additional_tickets->len){
-	s = &req->req_body.additional_tickets->val[0].sname;
-	r = req->req_body.additional_tickets->val[0].realm;
-    }
-    if(s)
-	principalname2krb5_principal(server, *s, r);
-    else
-	krb5_build_principal(context, server, strlen(r), r, "anonymous", NULL);
-    return 0;
-}
-
-
 krb5_error_code
 tgs_rep(KDC_REQ *req, 
 	krb5_data *data,
@@ -1125,9 +1212,6 @@ tgs_rep(KDC_REQ *req,
     krb5_error_code ret;
     int i;
     PA_DATA *pa_data = NULL;
-    krb5_principal server;
-
-    request_server(req, &server);
 
     if(req->padata == NULL){
 	ret = KRB5KDC_ERR_PREAUTH_REQUIRED; /* XXX ??? */
@@ -1146,7 +1230,7 @@ tgs_rep(KDC_REQ *req,
 	kdc_log(0, "TGS-REQ from %s without PA-TGS-REQ", from);
 	goto out;
     }
-    ret = tgs_rep2(&req->req_body, server, pa_data, data, from);
+    ret = tgs_rep2(&req->req_body, pa_data, data, from);
 out:
     if(ret && data->data == NULL)
 	krb5_mk_error(context,
@@ -1154,9 +1238,8 @@ out:
 		      NULL,
 		      NULL,
 		      NULL,
-		      server,
+		      NULL,
 		      0,
 		      data);
-    krb5_free_principal(context, server);
     return ret;
 }
