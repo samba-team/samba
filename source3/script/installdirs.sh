@@ -1,20 +1,17 @@
 #!/bin/sh
 
-BASEDIR=$1
-SBINDIR=$2
-BINDIR=$3
-LIBDIR=$4
-VARDIR=$5
-PRIVATEDIR=$6
+while ( test -n "$1" ); do
+	if [ ! -d $1 ]; then
+		mkdir -p $1
+	fi
 
-for d in $BASEDIR $SBINDIR $BINDIR $LIBDIR $VARDIR $PRIVATEDIR; do
-if [ ! -d $d ]; then
-mkdir $d
-if [ ! -d $d ]; then
-  echo Failed to make directory $d
-  exit 1
-fi
-fi
+	if [ ! -d $1 ]; then
+		echo Failed to make directory $1
+		exit 1
+	fi
+
+	shift;
 done
+
 
 
