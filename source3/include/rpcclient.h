@@ -24,6 +24,8 @@
 #ifndef _RPCCLIENT_H
 #define _RPCCLIENT_H
 
+#define report fprintf
+
 struct tar_client_info
 {
     int blocksize;
@@ -83,7 +85,7 @@ struct nt_client_info
     int num_sam_entries;
 };
 
-struct client_info
+/* struct client_info
 {
     struct in_addr dest_ip;
     fstring dest_host;
@@ -117,8 +119,34 @@ struct client_info
 
     struct tar_client_info tar;
     struct nt_client_info dom;
+}; */
+
+struct client_info
+{
+    struct in_addr dest_ip;
+    fstring dest_host;
+
+    fstring myhostname;
+
+    struct tar_client_info tar;
+    struct nt_client_info dom;
+
+    BOOL reuse;
 };
 
+
 enum action_type {ACTION_HEADER, ACTION_ENUMERATE, ACTION_FOOTER};
+
+/****************************************************************************
+ This defines the commands supported by this client
+ ****************************************************************************/
+struct command_set
+{
+	char *name;
+	uint32 (*fn)(struct client_info*, int, char*[]);
+	char *description;
+	char* (*compl_args[2])(char*, int);
+};
+
 
 #endif /* _RPCCLIENT_H */
