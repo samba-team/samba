@@ -1,8 +1,8 @@
-                   WHATS NEW IN Samba 3.0.0 RC1
-                          August 15 2003
+                   WHATS NEW IN Samba 3.0.0 RC2
+                          August 28 2003
                   ==============================
 
-This is the first release candidate snapshot of Samba 3.0.0. A release 
+This is the second release candidate snapshot of Samba 3.0.0. A release 
 candidate implies that the code is very close to a final release, remember 
 that this is still a non-production release intended for testing purposes.  
 Use at your own risk. 
@@ -73,11 +73,62 @@ refer to the various man pages for information on individual options.
 
 
 ######################################################################
-Changes since 3.0beta3
-######################
+Changes since 3.0rc
+###################
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete 
-details
+details:
+
+1)  Add levels 261 and 262 to search. Found using Samba4 tester.
+2)  Correct bad errot return code in session setup reply
+3)  Fix bug where smbd returned DOS error codes from SMBsearch
+    even when NT1 protocol was negotiated.
+4)  Implement SMBxit properly.
+5)  Return group lists from a Samba PDC to a Windows 9x/ME box
+    in implementing user level access control (bug 314).
+6)  Prevent SWAT from crashing when adding shares (bug 254)
+7)  Fix various documentation issues (bugs 304 & 214)
+8)  Fix wins server listing in SWAT (bug 197)
+9)  Fix problem in rpcclient that caused enumerating printer 
+    drivers to report failure (bug 294).
+10) Use kerberos 5 authentication in our client code whenever possible
+11) Fix schannel bug that caused Active Directory DC's to downgrade our
+    machine account to an NT member.
+12) Implement missing SAMR_REMOVE_USER_FOREIGN_DOMAIN call (bug 252).
+13) Implement automatic generation of include/version.h
+14) Include initial version of smbldap-tool scripts for the Samba 
+    3.0 schema.
+15) Implement numerous fixes for multi-byte character strings.
+16) Enable unix extensions by default.
+17) Make sure we set the sid type when falling back to the rid 
+    algorithm (bug 245).
+18) Correct linking problems with pam_smbpass (bug 327).
+19) Add SYSV defines for Irix and Solaris to ensure the 'printing'
+    parameter default to the correct value (bug 230)
+20) Fix recusion bug in alloc_string+sub() (bug 289, et. al.)
+21) Ensure that 'make install' includes the static and shared 
+    versions of the libsmbclient libraries.
+22) Add CP850 and CP437 internal character set support (bug 150).
+23) Add support to examples/LDAP/convertSambaAccuont for generating
+    LDIF modify files instaed of just add (303).
+24) Fix support for -W option in smbclient (bug 39)
+25) Remove 'ldap trust ids' parameter since it could not be supported
+    by the current architecture.
+26) Don't crash when no argument is given to -T in smbclient (bug 345).
+27) Ensure smbadduser contains the same paths for the smbpasswd file 
+    as the other Samba tools (bug 290).
+28) Port of 'avalable = no' fix for [homes] from SAMBA_2_2 cvs tree.
+29) Add sanity checks to DeletePrinterData[Ex]() and ensure that the
+    modified printer is written to disk.
+30) Force winbindd to preiodically update the trusted domain cache.
+31) Remove outdate import/export script to convert an smbpasswd file
+    to and from and LDAP directory.  Use the pdbedit tool instead.
+
+
+
+
+Changes since 3.0beta3
+######################
 
 1)  Various memory leak fixes.
 2)  Provide full support for SMB signing (server and client)
@@ -526,7 +577,6 @@ New Parameters (new parameters have been grouped by function):
   * ldap idmap suffix
   * ldap machine suffix
   * ldap passwd sync
-  * ldap trust ids
   * ldap user suffix
   
   General Configuration
