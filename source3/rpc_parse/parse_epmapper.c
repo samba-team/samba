@@ -175,12 +175,12 @@ NTSTATUS init_epm_tower(TALLOC_CTX *ctx, EPM_TOWER *tower,
 
 	DEBUG(5, ("init_epm_tower\n"));
 
+	size += sizeof(uint16); /* number of floors is in tower length */
 	for (i = 0; i < num_floors; i++) {
-		size += (sizeof(uint32) * 2);
+		size += (sizeof(uint16) * 2);
 		size += floors[i].lhs.length;
 		size += floors[i].rhs.length;
 	}
-	size += sizeof(uint8); /* this could be aligning... */
 
 	tower->referent_id = ++internal_referent_id;
 	tower->max_length = tower->length = size;
@@ -345,7 +345,8 @@ NTSTATUS init_epm_q_map(TALLOC_CTX *ctx, EPM_Q_MAP *q_map,
 /*****************************************************************
   epm_io_q_map - read or write EPM_Q_MAP structure
 ******************************************************************/
-BOOL epm_io_q_map(char *desc, EPM_Q_MAP *io_map, prs_struct *ps, int depth)
+BOOL epm_io_q_map(const char *desc, EPM_Q_MAP *io_map, prs_struct *ps, 
+		  int depth)
 {
 	prs_debug(ps, depth, desc, "epm_io_q_map");
 	depth++;
@@ -373,7 +374,7 @@ BOOL epm_io_q_map(char *desc, EPM_Q_MAP *io_map, prs_struct *ps, int depth)
 /*******************************************************************
   epm_io_r_map - Read/Write EPM_R_MAP structure
 ******************************************************************/
-BOOL epm_io_r_map(char *desc, EPM_R_MAP *io_map,
+BOOL epm_io_r_map(const char *desc, EPM_R_MAP *io_map,
 		  prs_struct *ps, int depth)
 {
 	int i;
