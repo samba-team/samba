@@ -304,7 +304,6 @@ static BOOL create_ntlmssp_bind_req(struct cli_connection *con,
 	prs_struct rhdr_rb;
 	prs_struct rhdr_auth;
 	prs_struct auth_req;
-	prs_struct auth_ntlm;
 
 	RPC_HDR_RB           hdr_rb;
 	RPC_HDR              hdr;
@@ -319,7 +318,6 @@ static BOOL create_ntlmssp_bind_req(struct cli_connection *con,
 	prs_init(&rhdr_rb  , 0x0 , 4, False);
 	prs_init(&rhdr_auth, 8   , 4, False);
 	prs_init(&auth_req , 0x0 , 4, False);
-	prs_init(&auth_ntlm, 0x0 , 4, False);
 
 	/* create the bind request RPC_HDR_RB */
 	make_rpc_hdr_rb(&hdr_rb, 0x1630, 0x1630, 0x0,
@@ -343,9 +341,9 @@ static BOOL create_ntlmssp_bind_req(struct cli_connection *con,
 
 	/* create the request RPC_HDR */
 	make_rpc_hdr(&hdr, RPC_BIND, 0x0, rpc_call_id,
-	             auth_req .offset + auth_ntlm.offset +
-	             rhdr_auth.offset + rhdr_rb.offset + 0x10,
-	             auth_req .offset + auth_ntlm.offset);
+	             auth_req .offset + rhdr_auth.offset +
+	             rhdr_rb.offset + 0x10,
+	             auth_req .offset);
 
 	smb_io_rpc_hdr("hdr"   , &hdr   , &rhdr, 0);
 
@@ -358,8 +356,7 @@ static BOOL create_ntlmssp_bind_req(struct cli_connection *con,
 	prs_link(NULL      , &rhdr      , &rhdr_rb  );
 	prs_link(&rhdr     , &rhdr_rb   , &rhdr_auth);
 	prs_link(&rhdr_rb  , &rhdr_auth , &auth_req );
-	prs_link(&rhdr_auth, &auth_req  , &auth_ntlm);
-	prs_link(&auth_req , &auth_ntlm , NULL      );
+	prs_link(&rhdr_auth, &auth_req  , NULL      );
 
 	prs_init(data, prs_buf_len(&rhdr), 4, False);
 	prs_buf_copy(data->data, &rhdr, 0, prs_buf_len(&rhdr));
@@ -368,7 +365,6 @@ static BOOL create_ntlmssp_bind_req(struct cli_connection *con,
 	prs_free_data(&rhdr_rb  );
 	prs_free_data(&rhdr_auth);
 	prs_free_data(&auth_req );
-	prs_free_data(&auth_ntlm);
 
 	return cli_conn_set_auth_info(con,
 	             (void*)malloc(sizeof(struct ntlmssp_auth_struct)));
