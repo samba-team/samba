@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -290,6 +290,12 @@ main(int argc, char **argv)
     
     if(ret)
 	krb5_err(context, 1, ret, "kadm5_init_with_password");
+
+    signal(SIGINT, SIG_IGN); /* ignore signals for now, the sl command
+                                parser will handle SIGINT its own way;
+                                we should really take care of this in
+                                each function, f.i `get' might be
+                                interruptable, but not `create' */
     if (argc != 0) {
 	ret = sl_command (actual_cmds, argc, argv);
 	if(ret == -1)
