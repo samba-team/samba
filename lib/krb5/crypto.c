@@ -3530,6 +3530,15 @@ krb5_crypto_getblocksize(krb5_context context,
 }
 
 krb5_error_code
+krb5_crypto_getenctype(krb5_context context,
+		       krb5_crypto crypto,
+		       krb5_enctype *enctype)
+{
+    *enctype = crypto->et->type;
+     return 0;
+ }
+
+krb5_error_code
 krb5_string_to_key_derived(krb5_context context,
 			   const void *str,
 			   size_t len,
