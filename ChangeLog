@@ -1,5 +1,9 @@
 Fri Apr  3 03:54:54 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* lib/krb5/keytab.c: Get default keytab name from context.
+
+	* lib/krb5/context.c: Get `default_keytab_name' value.
+
 	* kadmin/util.c (foreach_principal): Print error message if
  	`kadm5_get_principals' fails.
 
