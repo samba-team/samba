@@ -233,7 +233,7 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
 	file_free(fsp);
 
 	if (err == -1 || err1 == -1)
-		return -1;
+		return errno;
 	else
 		return 0;
 }
