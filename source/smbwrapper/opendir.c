@@ -22,10 +22,6 @@
 
 #include "wrapper.h"
 
-#ifdef linux
-__asm__(".globl __opendir; __opendir = opendir");
-#endif
-
  DIR *opendir(const char *name)
 {
 	if (smbw_path(name)) {

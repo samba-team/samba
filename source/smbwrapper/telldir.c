@@ -22,10 +22,6 @@
 
 #include "wrapper.h"
 
-#ifdef linux
-__asm__(".globl __telldir; __telldir = telldir");
-#endif
-
  off_t telldir(DIR *dir)
 {
 	if (smbw_dirp(dir)) {

@@ -20,12 +20,11 @@
 #define real_prev_stat(fn, buf )	(syscall(SYS_prev_stat, (fn), (buf)))
 
 #ifdef linux
-struct dirent *__libc_readdir(DIR * dir);
-#define real_readdir(dir)		(__libc_readdir(dir))
-#define real_opendir(fn)            	(__libc_opendir(fn))
-#define real_telldir(dir)            	(__libc_telldir(dir))
-#define real_closedir(dir)            	(__libc_closedir(dir))
-#define real_seekdir(dir, ofs)          (__libc_seekdir(dir, ofs))
+#define real_readdir(dir)		(__readdir(dir))
+#define real_opendir(fn)            	(__opendir(fn))
+#define real_telldir(dir)            	(__telldir(dir))
+#define real_closedir(dir)            	(__closedir(dir))
+#define real_seekdir(dir, ofs)          (__seekdir(dir, ofs))
 #else
 #define real_readdir(dirp)		((struct dirent *)syscall(SYS_readdir,(dirp)))
 #define real_opendir(fn)		((DIR *)syscall(SYS_opendir,(fn)))
