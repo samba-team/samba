@@ -1,3 +1,15 @@
+2001-06-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/convert_creds.c: use starttime instead of authtime,
+	from Chris Chiappa
+
+	* lib/krb5/convert_creds.c: make krb524_convert_creds_kdc match
+	the MIT function by the same name; add
+	krb524_convert_creds_kdc_ccache that does what the old version did
+
+	* admin/list.c (do_list): make sure list of keys is NULL
+	terminated; similar to patch sent by Chris Chiappa
+
 2001-06-18  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/mcache.c (mcc_remove_cred): use
