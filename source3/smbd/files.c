@@ -23,17 +23,16 @@
 
 extern int DEBUGLEVEL;
 
-/* the only restriction is that this must be less than PIPE_HANDLE_OFFSET */
-#define MAX_FNUMS 4096
+static int real_max_open_files;
 
-#define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < MAX_FNUMS))
+#define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < real_max_open_files))
 
 #define FILE_HANDLE_OFFSET 0x1000
 
 static struct bitmap *file_bmap;
 
 #ifdef USE_FILES_ARRAY
-static files_struct *Files[MAX_FNUMS];
+static files_struct **Files;
 #else
 static files_struct *Files;
 #endif
@@ -66,7 +65,7 @@ files_struct *file_new(void )
 	   increases the chance that the errant client will get an error rather
 	   than causing corruption */
 	if (first_file == 0) {
-		first_file = (getpid() ^ (int)time(NULL)) % MAX_FNUMS;
+		first_file = (getpid() ^ (int)time(NULL)) % real_max_open_files;
 	}
 
 	i = bitmap_find(file_bmap, first_file);
@@ -81,7 +80,7 @@ files_struct *file_new(void )
 		 * after they have finished with them.
 		 */
 #ifdef USE_FILES_ARRAY
-                for(i = 0; i < MAX_FNUMS; i++) {
+                for(i = 0; i < real_max_open_files; i++) {
                   if((fsp = Files[i]) == NULL)
                     continue;
                   if (attempt_close_oplocked_file(fsp)) 
@@ -105,7 +104,7 @@ files_struct *file_new(void )
 
 	ZERO_STRUCTP(fsp);
 
-	first_file = (i+1) % MAX_FNUMS;
+	first_file = (i+1) % real_max_open_files;
 
 	bitmap_set(file_bmap, i);
 	files_used++;
@@ -203,7 +202,7 @@ void file_close_conn(connection_struct *conn)
 	
 #ifdef USE_FILES_ARRAY
         int i;
-        for (i = 0; i < MAX_FNUMS; i++) {
+        for (i = 0; i < real_max_open_files; i++) {
           if((fsp = Files[i]) == NULL)
             continue;
           if(fsp->conn == conn && fsp->open) {
@@ -229,30 +228,53 @@ void file_close_conn(connection_struct *conn)
 /****************************************************************************
 initialise file structures
 ****************************************************************************/
+
+#define MAX_OPEN_FUDGEFACTOR 10
+
 void file_init(void)
 {
-	file_bmap = bitmap_allocate(MAX_FNUMS);
-
-	if (!file_bmap) {
-		exit_server("out of memory in file_init");
-	}
+    real_max_open_files = lp_max_open_files();
 
 #if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
 	{
 		struct rlimit rlp;
 		getrlimit(RLIMIT_NOFILE, &rlp);
-		/* Set the fd limit to be MAX_FNUMS + 10 to
+		/* Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
 		 * account for the extra fd we need 
 		 * as well as the log files and standard
 		 * handles etc.  */
-		rlp.rlim_cur = (MAX_FNUMS+10>rlp.rlim_max)? 
-			rlp.rlim_max:MAX_FNUMS+10;
+		rlp.rlim_cur = (real_max_open_files+MAX_OPEN_FUDGEFACTOR>rlp.rlim_max)? 
+			rlp.rlim_max:real_max_open_files+MAX_OPEN_FUDGEFACTOR;
 		setrlimit(RLIMIT_NOFILE, &rlp);
 		getrlimit(RLIMIT_NOFILE, &rlp);
-		DEBUG(3,("Maximum number of open files per session is %d\n",
-			 (int)rlp.rlim_cur));
+        if(rlp.rlim_cur != (real_max_open_files + MAX_OPEN_FUDGEFACTOR))
+          DEBUG(0,("file_init: Maximum number of open files requested per session \
+was %d, actual files available  per session = %d\n", 
+                real_max_open_files, (int)rlp.rlim_cur - MAX_OPEN_FUDGEFACTOR ));
+
+        DEBUG(2,("Maximum number of open files per session is %d\n", 
+              (int)rlp.rlim_cur - MAX_OPEN_FUDGEFACTOR));
+
+        real_max_open_files = (int)rlp.rlim_cur - MAX_OPEN_FUDGEFACTOR;
 	}
 #endif
+
+	file_bmap = bitmap_allocate(real_max_open_files);
+
+	if (!file_bmap) {
+		exit_server("out of memory in file_init");
+	}
+
+#ifdef USE_FILES_ARRAY
+    Files = (files_struct **)malloc( sizeof(files_struct *) * real_max_open_files);
+    if(Files == NULL)
+      exit_server("out of memory for file array in file_init");
+#endif
+
+    /*
+     * Ensure that pipe_handle_oppset is set correctly.
+     */
+    set_pipe_handle_offset(real_max_open_files);
 }
 
 
@@ -265,7 +287,7 @@ void file_close_user(int vuid)
 
 #ifdef USE_FILES_ARRAY
         int i;
-        for(i = 0; i < MAX_FNUMS; i++) {
+        for(i = 0; i < real_max_open_files; i++) {
           if((fsp = Files[i]) == NULL)
             continue;
           if((fsp->vuid == vuid) && fsp->open) {
@@ -300,7 +322,7 @@ files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval
 	files_struct *fsp;
 
 #ifdef USE_FILES_ARRAY
-	for(count = 0; count < MAX_FNUMS; count++) {
+	for(count = 0; count < real_max_open_files; count++) {
 		if((fsp = Files[count]) == NULL)
 			continue;
 		if (fsp->open &&
@@ -338,7 +360,7 @@ files_struct *file_find_print(void)
 
 #ifdef USE_FILES_ARRAY
         int i;
-        for(i = 0; i < MAX_FNUMS; i++) {
+        for(i = 0; i < real_max_open_files; i++) {
           if((fsp = Files[i]) == NULL)
             continue;
           if (fsp->open && fsp->print_file) return fsp;
@@ -362,7 +384,7 @@ void file_sync_all(connection_struct *conn)
 
 #ifdef USE_FILES_ARRAY
         int i;
-        for(i = 0; i < MAX_FNUMS; i++) {
+        for(i = 0; i < real_max_open_files; i++) {
           if((fsp = Files[i]) == NULL)
             continue;
           if (fsp->open && conn == fsp->conn)

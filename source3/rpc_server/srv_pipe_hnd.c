@@ -28,9 +28,6 @@
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)
 
-/* this must be larger than the sum of the open files and directories */
-#define PIPE_HANDLE_OFFSET 0x7000
-
 extern int DEBUGLEVEL;
 static pipes_struct *chain_p;
 static int pipes_open;
@@ -41,6 +38,21 @@ static int pipes_open;
 
 static pipes_struct *Pipes;
 static struct bitmap *bmap;
+
+/* this must be larger than the sum of the open files and directories */
+static int pipe_handle_offset;
+
+/****************************************************************************
+ Set the pipe_handle_offset. Called from smbd/files.c
+****************************************************************************/
+
+void set_pipe_handle_offset(int max_open_files)
+{
+  if(max_open_files < 0x7000)
+    pipe_handle_offset = 0x7000;
+  else
+    pipe_handle_offset = max_open_files + 10; /* For safety. :-) */
+}
 
 /****************************************************************************
   reset pipe chain handle number
@@ -103,7 +115,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	DLIST_ADD(Pipes, p);
 
 	bitmap_set(bmap, i);
-	i += PIPE_HANDLE_OFFSET;
+	i += pipe_handle_offset;
 
 	pipes_open++;
 
@@ -283,7 +295,7 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 	mem_buf_free(&(p->rdata.data));
 	mem_buf_free(&(p->rhdr .data));
 
-	bitmap_clear(bmap, p->pnum - PIPE_HANDLE_OFFSET);
+	bitmap_clear(bmap, p->pnum - pipe_handle_offset);
 
 	pipes_open--;
 

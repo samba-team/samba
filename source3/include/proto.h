@@ -958,12 +958,12 @@ BOOL lp_passwd_chat_debug(void);
 BOOL lp_ole_locking_compat(void);
 BOOL lp_nt_smb_support(void);
 BOOL lp_stat_cache(void);
-BOOL lp_kernel_oplocks(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
 int lp_min_wins_ttl(void);
 int lp_max_log_size(void);
+int lp_max_open_files(void);
 int lp_maxxmit(void);
 int lp_maxmux(void);
 int lp_passwordlevel(void);
@@ -1086,6 +1086,7 @@ int lp_major_announce_version(void);
 int lp_minor_announce_version(void);
 void lp_set_name_resolve_order(char *new_order);
 void lp_set_kernel_oplocks(BOOL val);
+BOOL lp_kernel_oplocks(void);
 
 /*The following definitions come from  param/params.c  */
 
@@ -1733,6 +1734,7 @@ BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
+void set_pipe_handle_offset(int max_open_files);
 void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
 pipes_struct *open_rpc_pipe_p(char *pipe_name, 
