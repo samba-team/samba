@@ -174,7 +174,9 @@ UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
 
 PARAM_OBJ = param/loadparm.o param/params.o 
 
-LIBSAMBA_OBJ = $(PARAM_OBJ) $(LIB_OBJ)
+NOPROTO_OBJ = lib/sma.o
+
+LIBSAMBA_OBJ = $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ)
 
 LIBNMB_OBJ = libsmb/namequery.o libsmb/nmblib.o libsmb/unexpected.o
 
