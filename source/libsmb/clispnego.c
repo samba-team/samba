@@ -331,6 +331,9 @@ DATA_BLOB spnego_gen_negTokenTarg(const char *principal, int time_offset, unsign
 	/* get a kerberos ticket for the service and extract the session key */
 	tkt = cli_krb5_get_ticket(principal, time_offset, session_key_krb5);
 
+	if (tkt.data == NULL)
+		return tkt;
+
 	/* wrap that up in a nice GSS-API wrapping */
 	tkt_wrapped = spnego_gen_krb5_wrap(tkt, TOK_ID_KRB_AP_REQ);
 
