@@ -434,6 +434,20 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain)
 
 	return False;
 }
+/**************************************************************************
+ turns a domain SID into a domain controller name.
+***************************************************************************/
+BOOL map_domain_sid_to_any_dc(DOM_SID *sid, char *dc_name)
+{
+	fstring domain;
+
+	if (!map_domain_sid_to_name(sid, domain))
+	{
+		return False;
+	}
+
+	return get_any_dc_name(domain, dc_name);
+}
 
 /**************************************************************************
  splits a name of format \DOMAIN\name or name into its two components.

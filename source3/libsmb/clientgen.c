@@ -2935,7 +2935,7 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 establishes a connection right up to doing tconX, reading in a password.
 ****************************************************************************/
 BOOL cli_establish_connection(struct cli_state *cli, 
-				char *dest_host, struct in_addr *dest_ip,
+				const char *dest_host, struct in_addr *dest_ip,
 				struct nmb_name *calling, struct nmb_name *called,
 				char *service, char *service_type,
 				BOOL do_shutdown, BOOL do_tcon)
@@ -3328,17 +3328,45 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	return True;
 }
 
-/****************************************************************************
- connect to one of multiple servers: don't care which
-****************************************************************************/
-BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
+BOOL cli_connect_auth(struct cli_state *cli,
+				const char* desthost,
+				struct in_addr *dest_ip,
+				const struct user_credentials *usr)
 {
 	extern pstring global_myname;
 	extern pstring scope;
-	fstring remote_machine;
-	fstring desthost;
-	struct in_addr dest_ip;
-	struct nmb_name calling, called, stupid_smbserver_called;
+	struct nmb_name calling, called;
+	if (!cli_initialise(cli))
+	{
+		DEBUG(0,("unable to initialise client connection.\n"));
+		return False;
+	}
+
+	make_nmb_name(&calling, global_myname, 0x0 , scope);
+	make_nmb_name(&called , desthost     , 0x20, scope);
+
+	cli_init_creds(cli, usr);
+
+	if (!cli_establish_connection(cli, desthost, dest_ip,
+				      &calling, &called,
+				      "IPC$", "IPC", 
+				      False, True))
+	{
+		cli_shutdown(cli);
+		return False;
+	}
+
+	return True;
+}
+
+/****************************************************************************
+ connect to one of multiple servers: don't care which
+****************************************************************************/
+BOOL cli_connect_servers_auth(struct cli_state *cli,
+				char *p,
+				const struct user_credentials *usr)
+{
+	fstring remote_host;
 	BOOL connected_ok = False;
 
 	/*
@@ -3346,58 +3374,102 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 	* PDC/BDC. Contact each in turn and try and authenticate.
 	*/
 
-	while(p && next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine)))
+	while(p && next_token(&p,remote_host,LIST_SEP,sizeof(remote_host)))
+	{
+		fstring desthost;
+		struct in_addr dest_ip;
+		strupper(remote_host);
+
+		if (!resolve_srv_name( remote_host, desthost, &dest_ip))
+		{
+			DEBUG(1,("Can't resolve address for %s\n", remote_host));
+			continue;
+		}   
+
+		if (!cli_connect_auth(cli, desthost, &dest_ip, usr) &&
+		    !cli_connect_auth(cli, "*SMBSERVER", &dest_ip, usr))
+		{
+			continue;
+		}
+
+		if (cli->protocol < PROTOCOL_LANMAN2 ||
+		    !IS_BITS_SET_ALL(cli->sec_mode, 1))
+		{
+			DEBUG(1,("machine %s not in user level security mode\n",
+				  remote_host));
+			cli_shutdown(cli);
+			continue;
+		}
+
+		/*
+		 * We have an anonymous connection to IPC$.
+		 */
+
+		connected_ok = True;
+		break;
+	}
+
+	if (!connected_ok)
+	{
+		DEBUG(0,("Domain password server not available.\n"));
+		cli_shutdown(cli);
+	}
+
+	return connected_ok;
+}
+
+/****************************************************************************
+ connect to one of multiple servers: don't care which
+****************************************************************************/
+BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
+{
+	fstring remote_host;
+	fstring desthost;
+	struct in_addr dest_ip;
+	BOOL connected_ok = False;
+
+	/*
+	* Treat each name in the 'password server =' line as a potential
+	* PDC/BDC. Contact each in turn and try and authenticate.
+	*/
+
+	while(p && next_token(&p,remote_host,LIST_SEP,sizeof(remote_host)))
 	{
 		ZERO_STRUCTP(cli);
 
 		if (!cli_initialise(cli))
 		{
-			DEBUG(0,("cli_connect_serverlist: unable to initialize client connection.\n"));
+			DEBUG(0,("cli_connect_serverlist: unable to initialise client connection.\n"));
 			return False;
 		}
 
-		standard_sub_basic(remote_machine);
-		strupper(remote_machine);
+		standard_sub_basic(remote_host);
+		strupper(remote_host);
 
-		if (!resolve_srv_name( remote_machine, desthost, &dest_ip))
+		if (!resolve_srv_name( remote_host, desthost, &dest_ip))
 		{
-			DEBUG(1,("cli_connect_serverlist: Can't resolve address for %s\n", remote_machine));
+			DEBUG(1,("cli_connect_serverlist: Can't resolve address for %s\n", remote_host));
 			continue;
 		}   
 
 		if ((lp_security() != SEC_USER) && (ismyip(dest_ip)))
 		{
-			DEBUG(1,("cli_connect_serverlist: Password server loop - not using password server %s\n", remote_machine));
+			DEBUG(1,("cli_connect_serverlist: Password server loop - not using password server %s\n", remote_host));
 			continue;
 		}
 
-		make_nmb_name(&calling, global_myname, 0x0 , scope);
-		make_nmb_name(&called , desthost     , 0x20, scope);
-		/* stupid microsoft destruction of the ability of netbios
-		 * to provide multiple netbios servers on one host.
-		 */
-		make_nmb_name(&stupid_smbserver_called , "*SMBSERVER", 0x20, scope);
-
-		pwd_set_nullpwd(&cli->usr.pwd);
-
-		if (!cli_establish_connection(cli, desthost, &dest_ip,
-					      &calling, &called,
-					      "IPC$", "IPC", 
-					      False, True) &&
-		    !cli_establish_connection(cli, desthost, &dest_ip,
-					      &calling, &stupid_smbserver_called,
-					      "IPC$", "IPC", 
-					      False, True))
+		if (!cli_connect_auth(cli, remote_host , &dest_ip, NULL) &&
+		    !cli_connect_auth(cli, "*SMBSERVER", &dest_ip, NULL))
 		{
-			cli_shutdown(cli);
 			continue;
-		}      
+		}
+
 
 		if (cli->protocol < PROTOCOL_LANMAN2 ||
 		    !IS_BITS_SET_ALL(cli->sec_mode, 1))
 		{
 			DEBUG(1,("cli_connect_serverlist: machine %s isn't in user level security mode\n",
-				  remote_machine));
+				  remote_host));
 			cli_shutdown(cli);
 			continue;
 		}
@@ -3679,3 +3751,21 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	return True;
 }
 
+BOOL get_any_dc_name(const char *domain, char *srv_name)
+{
+	struct cli_state cli;
+
+	if (!cli_connect_servers_auth(&cli,
+	                              get_trusted_serverlist(domain), NULL))
+	{
+		return False;
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, cli.desthost);
+	strupper(srv_name);
+
+	cli_shutdown(&cli);
+
+	return True;
+}
