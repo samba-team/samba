@@ -137,6 +137,7 @@ $V install -m644 ${PKGDIR}/docview.html $BUILD_ROOT/doc/index.html
 $V install -m644 ${PKGDIR}/osr5config.html $BUILD_ROOT/doc
 $V install -m644 ${PKGDIR}/callogo.gif $BUILD_ROOT/doc
 $V install -m644 ${PKGDIR}/samba.desktop $BUILD_ROOT/doc
+$V install -m644 ${PKGDIR}/samba.directory $BUILD_ROOT/doc
 $V install -m644 ${PKGDIR}/swat.readme ${BLDFIX}/swat/README
 
 # The following is now done in the postinstall script
