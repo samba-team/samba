@@ -1,0 +1,105 @@
+#!/usr/bin/perl  -w
+##
+## Convert an LDIF file containing sambaAccount entries
+## to the new sambaSamAccount objectclass
+##
+## Copyright Gerald (Jerry) Carter	2003
+##
+## Usage: convertSambaAccount <Domain SID> <input ldif> <output ldif>
+##
+
+
+use strict;
+use Net::LDAP::LDIF;
+
+my ( $domain, $domsid );
+my ( $ldif, $ldif2 );
+my ( $entry, @objclasses, $obj );
+my ( $is_samba_account );
+my ( %attr_map, $key );
+
+if ( $#ARGV != 2 ) {
+	print "Usage: convertSambaAccount domain_sid input_ldif output_ldif\n";
+	exit 1;
+}
+
+%attr_map = ( 
+	lmPassword	=> 'sambaLMPassword',
+	ntPassword	=> 'sambaNTPassword',
+	pwdLastSet	=> 'sambaPwdLastSet',
+	pwdMustChange	=> 'sambaPwdMustChange',
+	pwdCanChange	=> 'sambaPwdCanChange',
+	homeDrive	=> 'sambaHomeDrive',
+	smbHome		=> 'sambaHomePath',
+	scriptPath	=> 'sambaLogonScript',
+	profilePath	=> 'sambaProfilePath',
+	kickoffTime	=> 'sambaKickoffTime',
+	logonTime	=> 'sambaLogonTime',
+	logoffTime	=> 'sambaLogoffTime',
+	userWorkstations	=> 'sambaUserWorkstations',
+	domain		=> 'sambaDomainName',
+	acctFlags	=> 'sambaAcctFlags',
+);
+
+$domsid = $ARGV[0];
+
+$ldif = Net::LDAP::LDIF->new ($ARGV[1], "r")
+	or die $!;
+$ldif2 = Net::LDAP::LDIF->new ($ARGV[2], "w")
+	or die $!;
+
+while ( !$ldif->eof ) {
+	undef ( $entry );
+	$entry = $ldif->read_entry();
+
+	## skip entry if we find an error
+	if ( $ldif->error() ) {
+		print "Error msg: ",$ldif->error(),"\n";
+		print "Error lines:\n",$ldif->error_lines(),"\n";
+		next;
+	}
+
+	##
+	## check to see if we have anything to do on this
+	## entry.  If not just write it out
+	##
+	@objclasses = $entry->get_value( "objectClass" );
+	undef ( $is_samba_account );
+	foreach $obj ( @objclasses ) {
+		if ( "$obj" eq "sambaAccount" ) {
+			$is_samba_account = 1;
+		}
+	}
+
+	if ( !defined ( $is_samba_account ) ) {
+		$ldif2->write_entry( $entry );
+		next;
+	}
+
+	##
+	## start editing the sambaAccount
+	##
+
+	$entry->delete( 'objectclass' => [ 'sambaAccount' ] );
+	$entry->add( 'objectclass' => 'sambaSamAccount' );
+
+	$entry->add( 'sambaSID' => $domsid."-".$entry->get_value( "rid" ) );
+	$entry->delete( 'rid' );
+	
+	if ( $entry->get_value( "primaryGroupID" ) ) {
+		$entry->add( 'primaryGroupSID' => $domsid."-".$entry->get_value( "primaryGroupID" ) );
+		$entry->delete( 'primaryGroupID' );
+	}
+	
+
+	foreach $key ( keys %attr_map ) {
+		if ( $entry->get_value($key) ) {
+			$entry->add( $attr_map{$key} => $entry->get_value($key) );
+			$entry->delete( $key );
+		}
+	}
+	
+	$ldif2->write_entry( $entry );
+}
+
+
