@@ -699,6 +699,14 @@ static BOOL win_election(struct work_record *work,int version,uint32 criterion,
   int mytimeup = time(NULL) - StartupTime;
   uint32 mycriterion = work->ElectionCriterion;
 
+  /* If local master is set to false then never win
+     in election broadcasts. */
+  if(lp_local_master() == False)
+  {
+    DEBUG(3,("win_election: Losing election as local master == False\n"));
+    return False;
+  }
+ 
   DEBUG(4,("election comparison: %x:%x %x:%x %d:%d %s:%s\n",
 	   version,ELECTION_VERSION,
 	   criterion,mycriterion,
@@ -748,7 +756,7 @@ void process_election(struct packet_struct *p,char *buf)
 
   DEBUG(3,("Election request from %s %s vers=%d criterion=%08x timeup=%d\n",
 	   name,inet_ntoa(p->ip),version,criterion,timeup));
-  
+ 
   if (same_context(dgram)) return;
   
   for (work = d->workgrouplist; work; work = work->next)
