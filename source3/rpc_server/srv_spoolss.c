@@ -199,7 +199,8 @@ static BOOL api_spoolss_enumprinters(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_enumprinters("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumprinters: unable to unmarshall SPOOL_Q_ENUMPRINTERS.\n"));
@@ -237,7 +238,8 @@ static BOOL api_spoolss_getprinter(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if(!spoolss_io_q_getprinter("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getprinter: unable to unmarshall SPOOL_Q_GETPRINTER.\n"));
@@ -275,7 +277,8 @@ static BOOL api_spoolss_getprinterdriver2(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if(!spoolss_io_q_getprinterdriver2("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getprinterdriver2: unable to unmarshall SPOOL_Q_GETPRINTERDRIVER2.\n"));
@@ -512,7 +515,8 @@ static BOOL api_spoolss_addjob(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if(!spoolss_io_q_addjob("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_addjob: unable to unmarshall SPOOL_Q_ADDJOB.\n"));
@@ -546,7 +550,8 @@ static BOOL api_spoolss_enumjobs(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_enumjobs("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumjobs: unable to unmarshall SPOOL_Q_ENUMJOBS.\n"));
@@ -634,7 +639,8 @@ static BOOL api_spoolss_enumprinterdrivers(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_enumprinterdrivers("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumprinterdrivers: unable to unmarshall SPOOL_Q_ENUMPRINTERDRIVERS.\n"));
@@ -670,7 +676,8 @@ static BOOL api_spoolss_enumforms(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_enumforms("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumforms: unable to unmarshall SPOOL_Q_ENUMFORMS.\n"));
@@ -706,7 +713,8 @@ static BOOL api_spoolss_enumports(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if(!spoolss_io_q_enumports("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumports: unable to unmarshall SPOOL_Q_ENUMPORTS.\n"));
@@ -807,7 +815,8 @@ static BOOL api_spoolss_getprinterdriverdirectory(prs_struct *data, prs_struct *
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if(!spoolss_io_q_getprinterdriverdir("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getprinterdriverdir: unable to unmarshall SPOOL_Q_GETPRINTERDRIVERDIR.\n"));
@@ -952,7 +961,8 @@ static BOOL api_spoolss_enumprintprocessors(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 	
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if(!spoolss_io_q_enumprintprocessors("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumprintprocessors: unable to unmarshall SPOOL_Q_ENUMPRINTPROCESSORS.\n"));
@@ -987,7 +997,8 @@ static BOOL api_spoolss_enumprintprocdatatypes(prs_struct *data, prs_struct *rda
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 	
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if(!spoolss_io_q_enumprintprocdatatypes("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumprintprocdatatypes: unable to unmarshall SPOOL_Q_ENUMPRINTPROCDATATYPES.\n"));
@@ -1022,7 +1033,8 @@ static BOOL api_spoolss_enumprintmonitors(prs_struct *data, prs_struct *rdata)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 	
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if (!spoolss_io_q_enumprintmonitors("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_enumprintmonitors: unable to unmarshall SPOOL_Q_ENUMPRINTMONITORS.\n"));
@@ -1054,7 +1066,8 @@ static BOOL api_spoolss_getjob(prs_struct *data, prs_struct *rdata)
 	SPOOL_Q_GETJOB q_u;
 	SPOOL_R_GETJOB r_u;
 	
-	new_spoolss_allocate_buffer(&q_u.buffer);
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
 
 	if(!spoolss_io_q_getjob("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getjob: unable to unmarshall SPOOL_Q_GETJOB.\n"));

@@ -148,7 +148,7 @@ int write_ntforms(nt_forms_struct **list, int number)
 /****************************************************************************
 add a form struct at the end of the list
 ****************************************************************************/
-void add_a_form(nt_forms_struct **list, const FORM *form, int *count)
+BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 {
 	int n=0;
 	BOOL update;
@@ -174,7 +174,8 @@ void add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 
 	if (update==False)
 	{
-		*list=Realloc(*list, (n+1)*sizeof(nt_forms_struct));
+		if((*list=Realloc(*list, (n+1)*sizeof(nt_forms_struct))) == NULL)
+			return False;
 		unistr2_to_ascii((*list)[n].name, &(form->name), sizeof((*list)[n].name)-1);
 		(*count)++;
 	}
@@ -186,6 +187,8 @@ void add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	(*list)[n].top=form->top;
 	(*list)[n].right=form->right;
 	(*list)[n].bottom=form->bottom;
+
+	return True;
 }
 
 /****************************************************************************
@@ -254,7 +257,10 @@ int get_ntdrivers(fstring **list, char *architecture)
 			
 			fstrcpy(driver_name, dpname+match_len);
 			all_string_sub(driver_name, "#", "/", 0);
-			*list = Realloc(*list, sizeof(fstring)*(total+1));
+
+			if((*list = Realloc(*list, sizeof(fstring)*(total+1))) == NULL)
+				return -1;
+
 			StrnCpy((*list)[total], driver_name, strlen(driver_name));
 			DEBUGADD(106,("Added: [%s]\n", driver_name));		
 			total++;
@@ -832,6 +838,8 @@ static void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr)
 	if(param == NULL)
 		return;
 
+	DEBUG(106,("free_nt_printer_param: deleting param [%s]\n", param->value));
+
 	if(param->data)
 		free(param->data);
 
@@ -849,6 +857,8 @@ static void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr)
 
 	if(nt_devmode == NULL)
 		return;
+
+	DEBUG(106,("free_nt_devicemode: deleting DEVMODE\n"));
 
 	if(nt_devmode->private)
 		free(nt_devmode->private);
@@ -868,6 +878,8 @@ static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 
 	if(info == NULL)
 		return;
+
+	DEBUG(106,("free_nt_printer_info_level_2: deleting info\n"));
 
 	free_nt_devicemode(&info->devmode);
 
@@ -1223,6 +1235,8 @@ uint32 get_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level, fstring share
 {
 	uint32 success;
 	
+	DEBUG(10,("get_a_printer: [%s] level %u\n", sharename, (unsigned int)level));
+
 	switch (level)
 	{
 		case 2: 
@@ -1237,6 +1251,9 @@ uint32 get_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level, fstring share
 	}
 	
 	dump_a_printer(*printer, level);
+
+	DEBUG(10,("get_a_printer: [%s] level %u returning %u\n", sharename, (unsigned int)level, (unsigned int)success));
+
 	return (success);
 }
 
@@ -1253,32 +1270,7 @@ uint32 free_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 		{
 			if (printer.info_2 != NULL)
 			{
-				if ((printer.info_2)->devmode != NULL)
-				{
-					DEBUG(106,("deleting DEVMODE\n"));
-					if ((printer.info_2)->devmode->private !=NULL )
-						free((printer.info_2)->devmode->private);
-					free((printer.info_2)->devmode);
-				}
-				
-				if ((printer.info_2)->specific != NULL)
-				{
-					NT_PRINTER_PARAM *param;
-					NT_PRINTER_PARAM *next_param;
-	
-					param=(printer.info_2)->specific;
-					
-					while (	param != NULL)
-					{
-						next_param=param->next;
-						DEBUG(106,("deleting param [%s]\n", param->value));
-						free(param->data);
-						free(param);
-						param=next_param;
-					}
-				}	
-				
-				free(printer.info_2);
+				free_nt_printer_info_level_2(&printer.info_2);
 				success=0;
 			}
 			else
