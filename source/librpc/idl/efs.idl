@@ -1,6 +1,7 @@
 [
 	uuid(c681d488-d850-11d0-8c52-00c04fd90f7e),
-	version(1.0)
+	version(1.0),
+	helpstring("Encrypted File System")
 ] interface efs 
 {
 	void EFS_Dummy();

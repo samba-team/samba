@@ -6,7 +6,8 @@
 
 [ uuid(4b324fc8-1670-01d3-1278-5a47bf6ee188),
   version(3.0),
-  pointer_default(unique)
+  pointer_default(unique),
+  helpstring("Server Service")
 ] interface srvsvc
 {
 /**************************/

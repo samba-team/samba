@@ -4,10 +4,10 @@
   dcerpc remote management interface
 */
 
-
 [
   uuid(afa8bd80-7d8a-11c9-bef4-08002b102989), 
-  version(1)
+  version(1.0),
+  helpstring("DCE/RPC Remote Management")
 ] 
 interface mgmt
 {
