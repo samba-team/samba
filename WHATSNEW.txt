@@ -1,36 +1,30 @@
-              WHATS NEW IN 1.9.17p1 - September 5 1997
-              ========================================
+              WHATS NEW IN 1.9.17p2 - September 26th 1997
+              ===========================================
 
-New stable patch release: Samba - version 1.9.17p1.
----------------------------------------------------
+Security fix release: Samba - version 1.9.17p2.
+----------------------------------------------
 
-This is a patch release which superceedes the
-last stable release of Samba, release 1.9.17.
-This release fixes the few bugs that users reported
-in the previous stable release (1.9.17).
+This new stable release fixes a very important security hole in all
+versions of Samba.
 
-These bugfixes are :
+The security hole allows a remote user to obtain root access on the
+Samba server. A program which exploits this bug has been posted to the
+internet.
 
-Fix for DOS and Windows 95 clients having trouble
-delting files on a Samba share in a DOS command line 
-environment.
+The security hole is only known to affect Samba servers running on
+Intel based hardware, and has only been demonstrated for Intel
+Linux. It is likley that exploits for other architectures would be
+very difficult but the possibility cannot be excluded completely.
 
-Fixes to set the 'flag' bits correctly when talking to a 
-non-Samba WINS server.
+This patch fixes the security hole for all platforms.
 
-Fix for NT clients being dropped when using security=server.
+This patch also adds a routine which will log a message when a user
+attempts to take advantage of the security hole.
 
-Fixes to the printer queue reporting code.
-
-Fix for the name map mangle bug (mangling .html -> .htm was
-not working).
-
-If you are not affected by any of these problems then there
-is no need to upgrade.
-
-The release notes from the previous stable release follow.
+A number of other minor bugs have also been fixed in this release.
 
 The Samba Team.
+
 
 -------------Previous release notes-------------------------
 
