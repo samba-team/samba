@@ -99,6 +99,7 @@
 #undef HAVE_SYSV_IPC
 #undef HAVE_FCNTL_LOCK
 #undef HAVE_FTRUNCATE_EXTEND
+#undef FTRUNCATE_NEEDS_ROOT
 #undef HAVE_TRAPDOOR_UID
 #undef HAVE_ROOT
 #undef HAVE_UNION_SEMUN
@@ -166,6 +167,7 @@
 #undef HAVE_STRUCT_DIRENT64
 #undef HAVE_TRUNCATED_SALT
 #undef BROKEN_NISPLUS_INCLUDE_FILES
+#undef HAVE_RPC_AUTH_ERROR_CONFLICT
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -652,6 +654,9 @@
 
 /* Define if you have the yp_get_default_domain function.  */
 #undef HAVE_YP_GET_DEFAULT_DOMAIN
+
+/* Define if you have the <arpa/inet.h> header file.  */
+#undef HAVE_ARPA_INET_H
 
 /* Define if you have the <compat.h> header file.  */
 #undef HAVE_COMPAT_H

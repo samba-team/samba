@@ -314,6 +314,12 @@
 #endif
 
 #if defined(HAVE_RPC_RPC_H)
+/*
+ * Check for AUTH_ERROR define conflict with rpc/rpc.h in prot.h.
+ */
+#if defined(HAVE_SYS_SECURITY_H) && defined(HAVE_RPC_AUTH_ERROR_CONFLICT)
+#undef AUTH_ERROR
+#endif
 #include <rpc/rpc.h>
 #endif
 
