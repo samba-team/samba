@@ -190,12 +190,15 @@ void make_wins_proxy_name_query_request( struct subnet_record *subrec,
                                          struct packet_struct *incoming_packet,
                                          struct nmb_name *question_name)
 {
-	long *ud[(sizeof(struct userdata_struct) + sizeof(struct subrec *) + 
-		sizeof(struct packet_struct *))/sizeof(long *) + 1];
-	struct userdata_struct *userdata = (struct userdata_struct *)ud;
+	union {
+	    struct userdata_struct ud;
+	    char c[sizeof(struct userdata_struct) + sizeof(struct subrec *) + 
+		sizeof(struct packet_struct *)+sizeof(long*)];
+	} ud;
+	struct userdata_struct *userdata = &ud.ud;
 	unstring qname;
 
-	memset(ud, '\0', sizeof(ud));
+	memset(&ud, '\0', sizeof(ud));
  
 	userdata->copy_fn = wins_proxy_userdata_copy_fn;
 	userdata->free_fn = wins_proxy_userdata_free_fn;
