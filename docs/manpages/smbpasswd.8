@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBPASSWD" "8" "01 February 2003" "" ""
+.TH "SMBPASSWD" "8" "30 March 2003" "" ""
 .SH NAME
 smbpasswd \- change a user's SMB password
 .SH SYNOPSIS
@@ -149,6 +149,13 @@ when operating in domain security mode. This is really meant to
 be used on systems that only run \fBwinbindd\fR
 Under server installations, \fBsmbd\fR
 handle the password updates automatically.
+.TP
+\fB-T\fR
+The \fI-T\fR option may be used to
+force samba to use a previously created trust account by allowing
+the trust account hash to be set in the secrets database only. 
+This way, an application can change the trust account password
+and call "smbpasswd -T" so that Samba can continue to work.
 .TP
 \fB-U username[%pass]\fR
 This option may only be used in conjunction 
