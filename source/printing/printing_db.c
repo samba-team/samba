@@ -29,7 +29,7 @@ static struct tdb_print_db *print_db_head;
   Limits the number of tdb's open to MAX_PRINT_DBS_OPEN.
 ****************************************************************************/
 
-struct tdb_print_db *get_print_db_byname(const char *printername)
+struct tdb_print_db *get_print_db_byname(const char *unix_printername)
 {
 	struct tdb_print_db *p = NULL, *last_entry = NULL;
 	int num_open = 0;
@@ -40,7 +40,7 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 		/* Ensure the list terminates... JRA. */
 		SMB_ASSERT(p->next != print_db_head);
 
-		if (p->tdb && strequal(p->printer_name, printername)) {
+		if (p->tdb && strequal_unix(p->unix_printer_name, unix_printername)) {
 			DLIST_PROMOTE(print_db_head, p);
 			p->ref_count++;
 			return p;
@@ -60,13 +60,13 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 			if (p->tdb) {
 				if (tdb_close(print_db_head->tdb)) {
 					DEBUG(0,("get_print_db: Failed to close tdb for printer %s\n",
-								print_db_head->printer_name ));
+								print_db_head->unix_printer_name ));
 					return NULL;
 				}
 			}
 			p->tdb = NULL;
 			p->ref_count = 0;
-			memset(p->printer_name, '\0', sizeof(p->printer_name));
+			memset(p->unix_printer_name, '\0', sizeof(p->unix_printer_name));
 			break;
 		}
 		if (p) {
@@ -87,7 +87,7 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 	}
 
 	pstrcpy(printdb_path, lock_path("printing/"));
-	pstrcat(printdb_path, dos_to_unix_static(printername));
+	pstrcat(printdb_path, unix_printername);
 	pstrcat(printdb_path, ".tdb");
 
 	if (geteuid() != 0) {
@@ -107,7 +107,7 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
 		SAFE_FREE(p);
 		return NULL;
 	}
-	fstrcpy(p->printer_name, printername);
+	fstrcpy(p->unix_printer_name, unix_printername);
 	p->ref_count++;
 	return p;
 }

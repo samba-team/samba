@@ -75,4 +75,20 @@ extern struct printif	cups_printif;
 #define PRINT_SPOOL_PREFIX "smbprn."
 #define PRINT_DATABASE_VERSION 5 /* 5 means all strings in UNIX charset format. */
 
+/* There can be this many printing tdb's open, plus any locked ones. */
+#define MAX_PRINT_DBS_OPEN 1
+
+struct tdb_print_db {
+	struct tdb_print_db *next, *prev;
+	TDB_CONTEXT *tdb;
+	int ref_count;
+	fstring unix_printer_name;
+};
+
+/* 
+ * Used for print notify
+ */
+
+#define NOTIFY_PID_LIST_KEY "NOTIFY_PID_LIST"
+
 #endif /* PRINTING_H_ */

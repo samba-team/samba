@@ -137,135 +137,6 @@ static pid_t local_pid;
 
 static int get_queue_status(int, print_status_struct *);
 
-/* There can be this many printing tdb's open, plus any locked ones. */
-#define MAX_PRINT_DBS_OPEN 1
-
-struct tdb_print_db {
-	struct tdb_print_db *next, *prev;
-	TDB_CONTEXT *tdb;
-	int ref_count;
-	fstring unix_printer_name;
-};
-
-static struct tdb_print_db *print_db_head;
-
-/****************************************************************************
-  Function to find or create the printer specific job tdb given a printername.
-  Limits the number of tdb's open to MAX_PRINT_DBS_OPEN.
-****************************************************************************/
-
-static struct tdb_print_db *get_print_db_byname(const char *unix_printername)
-{
-	struct tdb_print_db *p = NULL, *last_entry = NULL;
-	int num_open = 0;
-	pstring printdb_path;
-	BOOL done_become_root = False;
-
-	for (p = print_db_head, last_entry = print_db_head; p; p = p->next) {
-		/* Ensure the list terminates... JRA. */
-		SMB_ASSERT(p->next != print_db_head);
-
-		if (p->tdb && strequal_unix(p->unix_printer_name, unix_printername)) {
-			DLIST_PROMOTE(print_db_head, p);
-			p->ref_count++;
-			return p;
-		}
-		num_open++;
-		last_entry = p;
-	}
-
-	/* Not found. */
-	if (num_open >= MAX_PRINT_DBS_OPEN) {
-		/* Try and recycle the last entry. */
-		DLIST_PROMOTE(print_db_head, last_entry);
-
-		for (p = print_db_head; p; p = p->next) {
-			if (p->ref_count)
-				continue;
-			if (p->tdb) {
-				if (tdb_close(print_db_head->tdb)) {
-					DEBUG(0,("get_print_db: Failed to close tdb for printer %s\n",
-								print_db_head->unix_printer_name ));
-					return NULL;
-				}
-			}
-			p->tdb = NULL;
-			p->ref_count = 0;
-			memset(p->unix_printer_name, '\0', sizeof(p->unix_printer_name));
-			break;
-		}
-		if (p) {
-			DLIST_PROMOTE(print_db_head, p);
-			p = print_db_head;
-		}
-	}
-       
-	if (!p)	{
-		/* Create one. */
-		p = (struct tdb_print_db *)malloc(sizeof(struct tdb_print_db));
-		if (!p) {
-			DEBUG(0,("get_print_db: malloc fail !\n"));
-			return NULL;
-		}
-		ZERO_STRUCTP(p);
-		DLIST_ADD(print_db_head, p);
-	}
-
-	pstrcpy(printdb_path, lock_path("printing/"));
-	pstrcat(printdb_path, unix_printername);
-	pstrcat(printdb_path, ".tdb");
-
-	if (geteuid() != 0) {
-		become_root();
-		done_become_root = True;
-	}
-
-	p->tdb = tdb_open_log(printdb_path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-
-	if (done_become_root)
-		unbecome_root();
-
-	if (!p->tdb) {
-		DEBUG(0,("get_print_db: Failed to open printer backend database %s.\n",
-					printdb_path ));
-		DLIST_REMOVE(print_db_head, p);
-		SAFE_FREE(p);
-		return NULL;
-	}
-	fstrcpy(p->unix_printer_name, unix_printername);
-	p->ref_count++;
-	return p;
-}
-
-/***************************************************************************
- Remove a reference count.
-****************************************************************************/
-
-static void release_print_db( struct tdb_print_db *pdb)
-{
-	pdb->ref_count--;
-	SMB_ASSERT(pdb->ref_count >= 0);
-}
-
-/***************************************************************************
- Close all open print db entries.
-****************************************************************************/
-
-static void close_all_print_db(void)
-{
-	struct tdb_print_db *p = NULL, *next_p = NULL;
-
-	for (p = print_db_head; p; p = next_p) {
-		next_p = p->next;
-
-		if (p->tdb)
-			tdb_close(p->tdb);
-		DLIST_REMOVE(print_db_head, p);
-		ZERO_STRUCTP(p);
-		SAFE_FREE(p);
-	}
-}
-
 /****************************************************************************
  Initialise the printing backend. Called once at startup before the fork().
 ****************************************************************************/
@@ -1051,135 +922,6 @@ static void print_queue_update(int snum)
 }
 
 /****************************************************************************
- Fetch and clean the pid_t record list for all pids interested in notify
- messages. data needs freeing on exit.
-****************************************************************************/
-
-#define NOTIFY_PID_LIST_KEY "NOTIFY_PID_LIST"
-#define PRINT_SERVER_ENTRY_NAME "___PRINT_SERVER_ENTRY___"
-
-static TDB_DATA get_printer_notify_pid_list(TDB_CONTEXT *tdb, const char *unix_printer_name, BOOL cleanlist)
-{
-	TDB_DATA data;
-	size_t i;
-
-	ZERO_STRUCT(data);
-
-	data = tdb_fetch_by_string( tdb, NOTIFY_PID_LIST_KEY );
-
-	if (!data.dptr) {
-		ZERO_STRUCT(data);
-		return data;
-	}
-
-	if (data.dsize % 8) {
-		DEBUG(0,("get_printer_notify_pid_list: Size of record for printer %s not a multiple of 8 !\n",
-					unix_printer_name ));
-		tdb_delete_by_string(tdb, NOTIFY_PID_LIST_KEY );
-		SAFE_FREE(data.dptr);
-		ZERO_STRUCT(data);
-		return data;
-	}
-
-	if (!cleanlist)
-		return data;
-
-	/*
-	 * Weed out all dead entries.
-	 */
-
-	for( i = 0; i < data.dsize; i += 8) {
-		pid_t pid = (pid_t)IVAL(data.dptr, i);
-
-		if (pid == sys_getpid())
-			continue;
-
-		/* Entry is dead if process doesn't exist or refcount is zero. */
-
-		while ((i < data.dsize) && ((IVAL(data.dptr, i + 4) == 0) || !process_exists(pid))) {
-
-			/* Refcount == zero is a logic error and should never happen. */
-			if (IVAL(data.dptr, i + 4) == 0) {
-				DEBUG(0,("get_printer_notify_pid_list: Refcount == 0 for pid = %u printer %s !\n",
-							(unsigned int)pid, unix_printer_name ));
-			}
-
-			if (data.dsize - i > 8)
-				memmove( &data.dptr[i], &data.dptr[i+8], data.dsize - i - 8);
-			data.dsize -= 8;
-		}
-	}
-
-	return data;
-}
-
-/****************************************************************************
- Return a malloced list of pid_t's that are interested in getting update
- messages on this print queue. Used in printing/notify to send the messages.
-****************************************************************************/
-
-BOOL print_notify_pid_list(const char *unix_printername, TALLOC_CTX *mem_ctx, size_t *p_num_pids, pid_t **pp_pid_list)
-{
-	struct tdb_print_db *pdb = NULL;
-	TDB_CONTEXT *tdb = NULL;
-	TDB_DATA data;
-	BOOL ret = True;
-	size_t i, num_pids, offset;
-	pid_t *pid_list;
-
-	*p_num_pids = 0;
-	*pp_pid_list = NULL;
-
-	if (strequal_unix(unix_printername, PRINT_SERVER_ENTRY_NAME)) {
-		pdb = NULL;
-		tdb = conn_tdb_ctx();
-	} else {
-		pdb = get_print_db_byname(unix_printername);
-		if (!pdb)
-			return False;
-		tdb = pdb->tdb;
-	}
-
-	if (tdb_read_lock_bystring(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
-		DEBUG(0,("print_notify_pid_list: Failed to lock printer %s database\n",
-					unix_printername ));
-		if (pdb)
-			release_print_db(pdb);
-		return False;
-	}
-
-	data = get_printer_notify_pid_list( tdb, unix_printername, True );
-
-	if (!data.dptr) {
-		ret = True;
-		goto done;
-	}
-
-	num_pids = data.dsize / 8;
-
-	if ((pid_list = (pid_t *)talloc(mem_ctx, sizeof(pid_t) * num_pids)) == NULL) {
-		ret = False;
-		goto done;
-	}
-
-	for( i = 0, offset = 0; offset < data.dsize; offset += 8, i++)
-		pid_list[i] = (pid_t)IVAL(data.dptr, offset);
-
-	*pp_pid_list = pid_list;
-	*p_num_pids = num_pids;
-
-	ret = True;
-
-  done:
-
-	tdb_read_unlock_bystring(tdb, NOTIFY_PID_LIST_KEY);
-	if (pdb)
-		release_print_db(pdb);
-	SAFE_FREE(data.dptr);
-	return ret;
-}
-
-/****************************************************************************
  Create/Update an entry in the print tdb that will allow us to send notify
  updates only to interested smbd's. 
 ****************************************************************************/
@@ -1194,16 +936,29 @@ BOOL print_notify_register_pid(int snum)
 	BOOL ret = False;
 	size_t i;
 
-	if (snum != -1) {
-		unix_printername = lp_const_servicename_unix(snum);
-		pdb = get_print_db_byname(unix_printername);
-		if (!pdb)
-			return False;
-		tdb = pdb->tdb;
-	} else {
-		unix_printername = PRINT_SERVER_ENTRY_NAME;
-		pdb = NULL;
-		tdb = conn_tdb_ctx();
+	/* if (snum == -1), then the change notify request was
+	   on a print server handle and we need to register on
+	   all print queus */
+
+	if (snum == -1)
+	{
+		int num_services = lp_numservices();
+		int i;
+
+		for ( i=0; i<num_services; i++ ) {
+			if (lp_snum_ok(i) && lp_print_ok(i) )
+				print_notify_register_pid(i);
+		}
+
+		return True;
+	}
+	else /* register for a specific printer */
+	{
+                unix_printername = lp_const_servicename_unix(snum);
+                pdb = get_print_db_byname(unix_printername);
+                if (!pdb)
+                        return False;
+                tdb = pdb->tdb;
 	}
 
 	if (tdb_lock_bystring(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
@@ -1272,16 +1027,28 @@ BOOL print_notify_deregister_pid(int snum)
 	size_t i;
 	BOOL ret = False;
 
-	if (snum != -1) {
-		unix_printername = lp_const_servicename_unix(snum);
-		pdb = get_print_db_byname(unix_printername);
-		if (!pdb)
-			return False;
-		tdb = pdb->tdb;
-	} else {
-		unix_printername = PRINT_SERVER_ENTRY_NAME;
-		pdb = NULL;
-		tdb = conn_tdb_ctx();
+	/* if ( snum == -1 ), we are deregister a print server handle
+	   which means to deregister on all print queues */
+
+	if (snum == -1)
+	{
+		int num_services = lp_numservices();
+		int i;
+
+		for ( i=0; i<num_services; i++ ) {
+			if ( lp_snum_ok(snum) && lp_print_ok(snum) )
+				print_notify_deregister_pid(i);
+		}
+
+		return True;
+	}
+	else /* deregister a specific printer */
+	{
+                unix_printername = lp_const_servicename_unix(snum);
+                pdb = get_print_db_byname(unix_printername);
+                if (!pdb)
+                        return False;
+                tdb = pdb->tdb;
 	}
 
 	if (tdb_lock_bystring(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
@@ -2213,18 +1980,6 @@ int print_queue_status(int snum,
 
 	*queue = tstruct.queue;
 	return tstruct.qcount;
-}
-
-/****************************************************************************
- Turn a DOS queue name into a snum.
-****************************************************************************/
-
-int print_queue_snum_dos(const char *dos_qname)
-{
-	int snum = lp_servicenumber_dos(dos_qname);
-	if (snum == -1 || !lp_print_ok(snum))
-		return -1;
-	return snum;
 }
 
 /****************************************************************************

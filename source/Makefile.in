@@ -210,7 +210,8 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
 				 printing/print_cups.o printing/print_generic.o \
 				printing/lpq_parse.o printing/load.o
 
-PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o
+PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o \
+		printing/printing_db.o
 
 MSDFS_OBJ = msdfs/msdfs.o 
 
@@ -257,7 +258,8 @@ STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+	$(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) printing/notify.o \
+	printing/printing_db.o
 
 TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
