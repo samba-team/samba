@@ -494,112 +494,128 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 				int count, print_queue_struct* queue,
 				print_status_struct* status)
 {
-	int i,ok=0;
+	int i;
+	BOOL ok = False;
 	pstring tok,driver,datafile,langmon,helpfile,datatype;
 	char *p;
-	char **lines, *line;
+	char **lines;
+	char *line = NULL;
 	pstring gen_line;
 	
+	/*
+	 * Check in the tdb *first* before checking the legacy
+	 * files. This allows an NT upload to take precedence over
+	 * the existing fileset. JRA.
+	 */
+
+	if ( ok = get_a_printer_driver_9x_compatible(gen_line, lp_printerdriver(snum)) ) {
+        p = gen_line;
+		DEBUG(10,("9x compatable driver line for [%s]: [%s]\n", lp_printerdriver(snum), gen_line));
+    } else {
+		/* didn't find driver in tdb either... oh well */
+		DEBUG(10,("9x driver not found in tdb\n"));
+	}
+
 	DEBUG(10,("snum: %d\nlp_printerdriver: [%s]\nlp_driverfile: [%s]\n",
 			  snum, lp_printerdriver(snum), lp_driverfile(snum)));
+
 	lines = file_lines_load(lp_driverfile(snum),NULL);
+
 	if (!lines) {
 		DEBUG(3,("fill_printq_info: Can't open %s - %s\n",
 			 lp_driverfile(snum),strerror(errno)));
-	}
-	else
-	{
-	/* lookup the long printer driver name in the file
-	   description */
-	for (i=0;lines[i] && !ok;i++) {
-		p = lines[i];
-		if (next_token(&p,tok,":",sizeof(tok)) &&
-		    (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
-		    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
-			ok=1;
-	}
-	}
-
-	if( !ok ) {
-		/* no printers.def, or driver not found, check the NT driver tdb */
-		if ( ok = get_a_printer_driver_9x_compatible(gen_line, lp_printerdriver(snum)) ) {
-	        p = gen_line;
-			DEBUG(10,("9x compatable driver line for [%s]: [%s]\n",
-					  lp_printerdriver(snum), gen_line));
-	    } else {
-			/* didn't find driver in tdb either... oh well */
-			DEBUG(10,("9x driver not found in tdb\n"));
 		desc->errcode=NERR_notsupported;
 		return;
+	} else {
+		/* lookup the long printer driver name in the file
+			description */
+		for (i=0;lines[i] && !ok;i++) {
+			p = lines[i];
+			if (next_token(&p,tok,":",sizeof(tok)) &&
+				    (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
+				    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
+				ok = True;
 		}
 	}
 
-	line = strdup(p);
+	if (!ok)
+		goto err;
+
+	if ((line = strdup(p)) == NULL)
+		goto err;
+
 	p = line;
 	file_lines_free(lines);
 	
 	/* driver file name */
-	if (ok && !next_token(&p,driver,":",sizeof(driver))) ok = 0;
+	if (!next_token(&p,driver,":",sizeof(driver)))
+		goto err;
+
 	/* data file name */
-	if (ok && !next_token(&p,datafile,":",sizeof(datafile))) ok = 0;
+	if (!next_token(&p,datafile,":",sizeof(datafile)))
+		goto err;
+
 	/*
 	 * for the next tokens - which may be empty - I have
 	 * to check for empty tokens first because the
 	 * next_token function will skip all empty token
 	 * fields */
-	if (ok) {
-		/* help file */
-		if (*p == ':') {
-			*helpfile = '\0';
-			p++;
-		} else if (!next_token(&p,helpfile,":",sizeof(helpfile))) ok = 0;
-	}
+
+	/* help file */
+	if (*p == ':') {
+		*helpfile = '\0';
+		p++;
+	} else if (!next_token(&p,helpfile,":",sizeof(helpfile)))
+		goto err;
 	
-	if (ok) {
-		/* language monitor */
-		if (*p == ':') {
-			*langmon = '\0';
-			p++;
-		} else if (!next_token(&p,langmon,":",sizeof(langmon)))
-			ok = 0;
-	}
+	/* language monitor */
+	if (*p == ':') {
+		*langmon = '\0';
+		p++;
+	} else if (!next_token(&p,langmon,":",sizeof(langmon)))
+		goto err;
 	
 	/* default data type */
-	if (ok && !next_token(&p,datatype,":",sizeof(datatype))) 
-		ok = 0;
+	if (!next_token(&p,datatype,":",sizeof(datatype))) 
+		goto err;
 	
-	if (ok) {
-		PACKI(desc,"W",0x0400);               /* don't know */
-		PACKS(desc,"z",lp_printerdriver(snum));    /* long printer name */
-		PACKS(desc,"z",driver);                    /* Driverfile Name */
-		PACKS(desc,"z",datafile);                  /* Datafile name */
-		PACKS(desc,"z",langmon);			 /* language monitor */
-		PACKS(desc,"z",lp_driverlocation(snum));   /* share to retrieve files */
-		PACKS(desc,"z",datatype);			 /* default data type */
-		PACKS(desc,"z",helpfile);                  /* helpfile name */
-		PACKS(desc,"z",driver);                    /* driver name */
-		DEBUG(3,("Driver:%s:\n",driver));
-		DEBUG(3,("Data File:%s:\n",datafile));
-		DEBUG(3,("Language Monitor:%s:\n",langmon));
-		DEBUG(3,("Data Type:%s:\n",datatype));
-		DEBUG(3,("Help File:%s:\n",helpfile));
-		PACKI(desc,"N",count);                     /* number of files to copy */
-		for (i=0;i<count;i++) {
-				/* no need to check return value here
-				 * - it was already tested in
-				 * get_printerdrivernumber */
-			next_token(&p,tok,",",sizeof(tok));
-			PACKS(desc,"z",tok);         /* driver files to copy */
-			DEBUG(3,("file:%s:\n",tok));
-		}
-		
-		DEBUG(3,("fill_printq_info on <%s> gave %d entries\n",
-			 SERVICE(snum),count));
-	} else {
-		DEBUG(3,("fill_printq_info: Can't supply driver files\n"));
-		desc->errcode=NERR_notsupported;
+	PACKI(desc,"W",0x0400);               /* don't know */
+	PACKS(desc,"z",lp_printerdriver(snum));    /* long printer name */
+	PACKS(desc,"z",driver);                    /* Driverfile Name */
+	PACKS(desc,"z",datafile);                  /* Datafile name */
+	PACKS(desc,"z",langmon);			 /* language monitor */
+	PACKS(desc,"z",lp_driverlocation(snum));   /* share to retrieve files */
+	PACKS(desc,"z",datatype);			 /* default data type */
+	PACKS(desc,"z",helpfile);                  /* helpfile name */
+	PACKS(desc,"z",driver);                    /* driver name */
+	DEBUG(3,("Driver:%s:\n",driver));
+	DEBUG(3,("Data File:%s:\n",datafile));
+	DEBUG(3,("Language Monitor:%s:\n",langmon));
+	DEBUG(3,("Data Type:%s:\n",datatype));
+	DEBUG(3,("Help File:%s:\n",helpfile));
+	PACKI(desc,"N",count);                     /* number of files to copy */
+
+	for (i=0;i<count;i++) {
+			/* no need to check return value here
+			 * - it was already tested in
+			 * get_printerdrivernumber */
+		next_token(&p,tok,",",sizeof(tok));
+		PACKS(desc,"z",tok);         /* driver files to copy */
+		DEBUG(3,("file:%s:\n",tok));
 	}
+		
+	DEBUG(3,("fill_printq_info on <%s> gave %d entries\n",
+		 SERVICE(snum),count));
+
 	free(line);
+	return;
+
+  err:
+
+	DEBUG(3,("fill_printq_info: Can't supply driver files\n"));
+	desc->errcode=NERR_notsupported;
+	if (line)
+		free(line);
 }
 
 
