@@ -1,8 +1,13 @@
 AC_INIT(global.ent)
 
-AC_PATH_PROG(JW, jw)
-AC_PATH_PROG(PERL, perl)
-AC_PATH_PROG(HTMLDOC, htmldoc)
+AC_PATH_PROG(XSLTPROC, xsltproc)
+if test "x$XSLTPROC" = x; then
+   AC_MSG_ERROR("xsltproc is required")
+fi
+AC_PATH_PROG(PDFLATEX, pdflatex)
+if test "x$PDFLATEX" = x; then
+   AC_MSG_ERROR("pdflatex is required")
+fi
 
 DOC_BUILD_DATE=`date '+%d-%m-%Y'`
 AC_SUBST(DOC_BUILD_DATE)
