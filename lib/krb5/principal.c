@@ -333,6 +333,29 @@ build_principal(krb5_context context,
 }
 
 krb5_error_code
+krb5_make_principal(krb5_context context,
+		    krb5_principal *principal,
+		    krb5_realm realm,
+		    ...)
+{
+    krb5_error_code ret;
+    krb5_realm r = NULL;
+    va_list ap;
+    if(realm == NULL){
+	ret = krb5_get_default_realm(context, &r);
+	if(ret)
+	    return ret;
+	realm = r;
+    }
+    va_start(ap, realm);
+    ret = krb5_build_principal_va(context, principal, strlen(realm), realm, ap);
+    va_end(ap);
+    if(r)
+	free(r);
+    return ret;
+}
+
+krb5_error_code
 krb5_build_principal_va(krb5_context context, 
 			krb5_principal *principal, 
 			int rlen,
