@@ -614,6 +614,8 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 		case 0x12:
 		{
 			SAM_USER_INFO_12 *id12 = ctr->info.id12;
+			SamOEMhash(id12->lm_pwd, user_sess_key, 0);
+			SamOEMhash(id12->nt_pwd, user_sess_key, 0);
 			if (!set_user_info_12(tdb_usr, id12))
 			{
 				DEBUG(10,
@@ -676,6 +678,7 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 			   SAM_USERINFO_CTR * ctr)
 {
 	TDB_CONTEXT *tdb_usr = NULL;
+	uchar user_sess_key[16];
 
 	/* find the domain sid associated with the policy handle */
 	if (!get_tdbsam(get_global_hnd_cache(), pol, &tdb_usr))
@@ -684,6 +687,11 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 	}
 
 	DEBUG(5, ("samr_reply_set_userinfo2\n"));
+
+	if (!pol_get_usr_sesskey(get_global_hnd_cache(), pol, user_sess_key))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	if (ctr == NULL)
 	{
@@ -696,6 +704,25 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	switch (switch_value)
 	{
+		case 0x12:
+		{
+			SAM_USER_INFO_12 *id12 = ctr->info.id12;
+#if 0
+			lm_owf_gen("test", user_sess_key);
+#endif
+			dump_data_pw("user_sess_key:", user_sess_key, 16);
+			SamOEMhash(id12->lm_pwd, user_sess_key, 3);
+			SamOEMhash(id12->nt_pwd, user_sess_key, 3);
+			dump_data_pw("user_sess_key:", id12->nt_pwd, 16);
+			if (!set_user_info_12(tdb_usr, id12))
+			{
+				DEBUG(10,
+				      ("_samr_set_userinfo 0x12 failed\n"));
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+		}
+
 		case 16:
 		{
 			SAM_USER_INFO_10 *id10 = ctr->info.id10;

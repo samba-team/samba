@@ -851,16 +851,7 @@ static BOOL api_samr_set_userinfo( rpcsrv_struct *p, prs_struct *data, prs_struc
 		return False;
 	}
 
-	if (q_u.switch_value == 0x12)
-	{
-		DEBUG(0,("api_samr_set_userinfo: possible password attack (info level 0x12)\n"));
-
-		r_u.status = NT_STATUS_INVALID_INFO_CLASS;
-	}
-	else
-	{
-		r_u.status = _samr_set_userinfo(&q_u.pol, q_u.switch_value, &ctr);
-	}
+	r_u.status = _samr_set_userinfo(&q_u.pol, q_u.switch_value, &ctr);
 
 	free_samr_q_set_userinfo(&q_u);
 	return samr_io_r_set_userinfo("", &r_u, rdata, 0);

@@ -5508,10 +5508,6 @@ uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR *ctr,
 			{
 				return NT_STATUS_NO_MEMORY;
 			}
-			if (IS_BITS_SET_ALL(usr->acb_info, ACB_DISABLED))
-			{
-				return NT_STATUS_ACCESS_DENIED;
-			}
 			make_sam_user_info12(ctr->info.id12,
 			                     usr->acb_info,
 			                     usr->lm_pwd, usr->nt_pwd); 
@@ -5636,9 +5632,6 @@ BOOL samr_io_userinfo_ctr(char *desc,  SAM_USERINFO_CTR *ctr, prs_struct *ps, in
 		}
 		case 0x12:
 		{
-			DEBUG(0,("samr_io_userinfo_ctr: security breach!\n"));
-			return False;
-#if 0
 			if (ps->io)
 			{
 				/* reading */
@@ -5655,7 +5648,6 @@ BOOL samr_io_userinfo_ctr(char *desc,  SAM_USERINFO_CTR *ctr, prs_struct *ps, in
 				return False;
 			}
 			break;
-#endif
 		}
 		case 21:
 		{
