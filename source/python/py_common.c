@@ -46,10 +46,6 @@ void py_samba_init(void)
 	if (initialised)
 		return;
 
-	/* FIXME: logging doesn't work very well */
-
-	setup_logging("python", True);
-
 	/* Load configuration file */
 
 	if (!lp_load(dyn_CONFIGFILE, True, False, False))
@@ -58,7 +54,64 @@ void py_samba_init(void)
 	/* Misc other stuff */
 
 	load_interfaces();
-	DEBUGLEVEL = 10;
 	
 	initialised = True;
+}
+
+/* Debuglevel routines */
+
+PyObject *get_debuglevel(PyObject *self, PyObject *args)
+{
+	PyObject *debuglevel;
+
+	if (!PyArg_ParseTuple(args, ""))
+		return NULL;
+
+	debuglevel = PyInt_FromLong(DEBUGLEVEL);
+
+	return debuglevel;
+}
+
+PyObject *set_debuglevel(PyObject *self, PyObject *args)
+{
+	int debuglevel;
+
+	if (!PyArg_ParseTuple(args, "i", &debuglevel))
+		return NULL;
+
+	DEBUGLEVEL = debuglevel;
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+/* Initialise logging */
+
+PyObject *py_setup_logging(PyObject *self, PyObject *args, PyObject *kw)
+{
+	BOOL interactive = False;
+	char *logfilename = NULL;
+	static char *kwlist[] = {"interactive", "logfilename", NULL};
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "|is", kwlist,
+					 &interactive, &logfilename))
+		return NULL;
+	
+	if (interactive && logfilename) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"can't be interactive and set log file name");
+		return NULL;
+	}
+
+	if (interactive)
+		setup_logging("spoolss", True);
+
+	if (logfilename) {
+		lp_set_logfile(logfilename);
+		setup_logging(logfilename, False);
+		reopen_logs();
+	}
+
+	Py_INCREF(Py_None);
+	return Py_None;
 }
