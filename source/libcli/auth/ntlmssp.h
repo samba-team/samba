@@ -61,7 +61,7 @@ enum NTLM_MESSAGE_TYPE
 #define NTLMSSP_CHAL_TARGET_INFO           0x00800000
 #define NTLMSSP_NEGOTIATE_128              0x20000000 /* 128-bit encryption */
 #define NTLMSSP_NEGOTIATE_KEY_EXCH         0x40000000
-#define NTLMSSP_NEGOTIATE_080000000        0x80000000
+#define NTLMSSP_NEGOTIATE_56               0x80000000
 
 #define NTLMSSP_NAME_TYPE_SERVER      0x01
 #define NTLMSSP_NAME_TYPE_DOMAIN      0x02
@@ -80,6 +80,9 @@ typedef struct ntlmssp_state
 
 	BOOL unicode;
 	BOOL use_ntlmv2;
+	BOOL use_nt_response;  /* Set to 'NO' to debug what happens when the NT response is omited */
+	BOOL allow_lm_key;     /* The LM_KEY code is not functional at this point, and it's not 
+				  very secure anyway */
 	char *user;
 	char *domain;
 	char *workstation;
