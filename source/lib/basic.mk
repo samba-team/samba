@@ -37,9 +37,6 @@ ADD_OBJ_FILES = \
 		lib/fsusage.o \
 		lib/ms_fnmatch.o \
 		lib/select.o \
-		lib/messages.o \
-		lib/tallocmsg.o \
-		lib/dmallocmsg.o \
 		lib/pam_errors.o \
 		intl/lang_tdb.o \
 		lib/gencache.o \
