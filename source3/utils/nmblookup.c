@@ -187,8 +187,8 @@ int main(int argc,char *argv[])
   int opt;
   unsigned int lookup_type = 0x0;
   fstring lookup;
-  BOOL find_master=False;
-  BOOL lookup_by_ip = False;
+  static BOOL find_master=False;
+  static BOOL lookup_by_ip = False;
   poptContext pc;
 
   struct poptOption long_options[] = {
