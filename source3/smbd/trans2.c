@@ -1588,8 +1588,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   SMB_OFF_T size=0;
   struct utimbuf tvs;
   SMB_STRUCT_STAT sbuf;
-  pstring fname1;
-  char *fname;
+  pstring fname;
   int fd = -1;
   BOOL bad_path = False;
   files_struct *fsp = NULL;
@@ -1604,7 +1603,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
        * handle (returned from an NT SMB). NT5.0 seems
        * to do this call. JRA.
        */
-      fname = fsp->fsp_name;
+      pstrcpy(fname, fsp->fsp_name);
       unix_convert(fname,conn,0,&bad_path,&sbuf);
       if (!check_name(fname,conn) || (!VALID_STAT(sbuf))) {
         DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
@@ -1636,7 +1635,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       CHECK_FSP(fsp,conn);
       CHECK_ERROR(fsp);
 
-      fname = fsp->fsp_name;
+      pstrcpy(fname, fsp->fsp_name);
       fd = fsp->fd;
 
       if (vfs_fstat(fsp,fd,&sbuf) != 0) {
@@ -1647,8 +1646,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   } else {
     /* set path info */
     info_level = SVAL(params,0);    
-    fname = fname1;
-    pstrcpy(fname,&params[6]);
+    srvstr_pull(inbuf, fname, &params[6], sizeof(fname), -1, STR_TERMINATE);
     unix_convert(fname,conn,0,&bad_path,&sbuf);
     if(!check_name(fname, conn))
     {
@@ -2060,7 +2058,7 @@ static int call_trans2mkdir(connection_struct *conn,
   if (!CAN_WRITE(conn))
     return(ERROR(ERRSRV,ERRaccess));
 
-  pstrcpy(directory, &params[4]);
+  srvstr_pull(inbuf, directory, &params[4], sizeof(directory), -1, STR_TERMINATE);
 
   DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
@@ -2174,8 +2172,6 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
 				     char** pparams, char** ppdata)
 {
   char *params = *pparams;
-  enum remote_arch_types ra_type = get_remote_arch();
-  BOOL NT_arch = ((ra_type == RA_WINNT) || (ra_type == RA_WIN2K));
   pstring pathname;
   int reply_size = 0;
   int max_referral_level = SVAL(params,0);
@@ -2186,15 +2182,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
   if(!lp_host_msdfs())
     return(ERROR(ERRDOS,ERRbadfunc));
 
-  /* if pathname is in UNICODE, convert to DOS */
-  /* NT always sends in UNICODE, may not set UNICODE flag */
-  if(NT_arch || (SVAL(inbuf,smb_flg2) & FLAGS2_UNICODE_STRINGS))
-    {
-      unistr_to_dos(pathname, &params[2], sizeof(pathname));
-      DEBUG(10,("UNICODE referral for %s\n",pathname));
-    }
-  else
-    pstrcpy(pathname,&params[2]);
+  srvstr_pull(inbuf, pathname, &params[2], sizeof(pathname), -1, STR_TERMINATE|STR_CONVERT);
 
   if((reply_size = setup_dfs_referral(pathname,max_referral_level,ppdata)) < 0)
     return(ERROR(ERRDOS,ERRbadfile));
