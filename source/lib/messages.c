@@ -70,6 +70,7 @@ a useful function for testing the message system
 ****************************************************************************/
 void ping_message(int msg_type, pid_t src, void *buf, size_t len)
 {
+	DEBUG(1,("INFO: Received PING message from PID %d\n",src));
 	message_send_pid(src, MSG_PONG, buf, len);
 }
 
@@ -80,6 +81,7 @@ void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
 {
         int level;
 	
+	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %d\n",src));
         level = DEBUGLEVEL;
 	message_send_pid(src, MSG_DEBUGLEVEL, &level, sizeof(int));
 }
