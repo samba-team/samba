@@ -862,7 +862,7 @@ rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 				unistr2_to_ascii(desc, &(&ctr.sam.info1->str[i])->uni_acct_desc, sizeof(desc)-1);
 			
 			if (opt_long_list_entries)
-				printf("%-21.21s %-50.50s\n", user, desc);
+				printf("%-21.21s %s\n", user, desc);
 			else
 				printf("%s\n", user);
 		}
