@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -129,9 +129,7 @@
 #ifdef HAVE_GRP_H
 #include <grp.h>
 #endif
-#ifdef HAVE_FNMATCH
 #include <fnmatch.h>
-#endif
 
 #ifdef HAVE_BSD_BSD_H
 #include <bsd/bsd.h>
