@@ -488,13 +488,13 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 	sam_user = pdb_get_username(user);
 	pstrcpy(sam_subst, pdb_get_logon_script(user));
 	standard_sub_advanced(-1, sam_user, "", gid, sam_user, sam_subst);
-	pdb_set_logon_script(user, sam_subst, True);
+	if (!pdb_set_logon_script(user, sam_subst, True)) return False;
 	pstrcpy(sam_subst, pdb_get_profile_path(user));
 	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_username(user), sam_subst);
-	pdb_set_profile_path(user, sam_subst, True);
+	if (!pdb_set_profile_path(user, sam_subst, True)) return False;
 	pstrcpy(sam_subst, pdb_get_homedir(user));
 	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_username(user), sam_subst);
-	pdb_set_homedir(user, sam_subst, True);
+	if (!pdb_set_homedir(user, sam_subst, True)) return False;
 
 	/* increment to next in line */
 	global_tdb_ent.key = tdb_nextkey(global_tdb_ent.passwd_tdb, global_tdb_ent.key);
@@ -578,13 +578,13 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, const char *sname)
 		sam_user = pdb_get_username(user);
 		pstrcpy(sam_subst, pdb_get_logon_script(user));
 		standard_sub_advanced(-1, sam_user, "", gid, sam_user, sam_subst);
-		pdb_set_logon_script(user, sam_subst, True);
+		if (!pdb_set_logon_script(user, sam_subst, True)) return False;
 		pstrcpy(sam_subst, pdb_get_profile_path(user));
 		standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_username(user), sam_subst);
-		pdb_set_profile_path(user, sam_subst, True);
+		if (!pdb_set_profile_path(user, sam_subst, True)) return False;
 		pstrcpy(sam_subst, pdb_get_homedir(user));
 		standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_username(user), sam_subst);
-		pdb_set_homedir(user, sam_subst, True);
+		if (!pdb_set_homedir(user, sam_subst, True)) return False;
 	}
 	else {
 		DEBUG(0,("pdb_getsampwent: getpwnam(%s) return NULL.  User does not exist!\n", 

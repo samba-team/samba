@@ -1343,7 +1343,7 @@ static int cmd_mput(void)
 				/* if (!recurse) continue; */
 				
 				SAFE_FREE(quest);
-				asprintf(&quest, "Put directory %s? ", lname);
+				if (asprintf(&quest, "Put directory %s? ", lname) < 0) break;
 				if (prompt && !yesno(quest)) { /* No */
 					/* Skip the directory */
 					lname[strlen(lname)-1] = '/';
@@ -1351,7 +1351,7 @@ static int cmd_mput(void)
 						break;		    
 				} else { /* Yes */
 	      				SAFE_FREE(rname);
-					asprintf(&rname, "%s%s", cur_dir, lname);
+					if(asprintf(&rname, "%s%s", cur_dir, lname) < 0) break;
 					dos_format(rname);
 					if (!cli_chkpath(cli, rname) && 
 					    !do_mkdir(rname)) {
@@ -1365,13 +1365,13 @@ static int cmd_mput(void)
 				continue;
 			} else {
 				SAFE_FREE(quest);
-				asprintf(&quest,"Put file %s? ", lname);
+				if (asprintf(&quest,"Put file %s? ", lname) < 0) break;
 				if (prompt && !yesno(quest)) /* No */
 					continue;
 				
 				/* Yes */
 				SAFE_FREE(rname);
-				asprintf(&rname, "%s%s", cur_dir, lname);
+				if (asprintf(&rname, "%s%s", cur_dir, lname) < 0) break;
 			}
 
 			dos_format(rname);
