@@ -382,20 +382,20 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 		
 		unbecome_root();
 
-	        /* Quit if the account was disabled. */
-	        if((pdb_get_acct_ctrl(sampass) & ACB_DISABLED) || !pdb_get_lanman_passwd(sampass)) {
+        /* Quit if the account was disabled. */
+        if((pdb_get_acct_ctrl(sampass) & ACB_DISABLED) || !pdb_get_lanman_passwd(sampass)) {
 			DEBUG(1,("Account for user '%s' was disabled.\n", pipe_user_name));
 			pdb_free_sam(sampass);
 			return False;
- 	       }
+		}
  
 		if(!pdb_get_nt_passwd(sampass)) {
 			DEBUG(1,("Account for user '%s' has no NT password hash.\n", pipe_user_name));
 			pdb_free_sam(sampass);
 			return False;
-	        }
+		}
  
-	        smb_passwd_ptr = pdb_get_lanman_passwd(sampass);
+        smb_passwd_ptr = pdb_get_lanman_passwd(sampass);
 	}
 
 	/*

@@ -28,6 +28,23 @@ extern uint32 global_client_caps;
 int unix_ERR_class=SMB_SUCCESS;
 int unix_ERR_code=0;
 
+/****************************************************************************
+ Create an error packet from a cached error.
+****************************************************************************/
+
+int cached_error_packet(char *outbuf,files_struct *fsp,int line,const char *file)
+{
+	write_bmpx_struct *wbmpx = fsp->wbmpx_ptr;
+ 
+	int32 eclass = wbmpx->wr_errclass;
+	int32 err = wbmpx->wr_error;
+ 
+	/* We can now delete the auxiliary struct */
+	free((char *)wbmpx);
+	fsp->wbmpx_ptr = NULL;
+	return error_packet(outbuf,0,eclass,err,line,file);
+}
+
 struct {
 	int unixerror;
 	int smbclass;

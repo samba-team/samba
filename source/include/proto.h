@@ -4060,6 +4060,7 @@ BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime);
 
 /*The following definitions come from  smbd/error.c  */
 
+int cached_error_packet(char *outbuf,files_struct *fsp,int line,const char *file);
 int unix_error_packet(char *outbuf,int def_class,uint32 def_code,int line, const char *file);
 int error_packet(char *outbuf,uint32 nt_err, int error_class,uint32 error_code,int line, const char *file);
 
@@ -4340,6 +4341,9 @@ uint16 get_lock_pid( char *data, int data_offset, BOOL large_file_format);
 SMB_BIG_UINT get_lock_count( char *data, int data_offset, BOOL large_file_format);
 SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err);
 int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
+int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
+int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
 int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
 
@@ -4413,7 +4417,7 @@ void init_conn_ctx(void);
 void become_root(void);
 void unbecome_root(void);
 BOOL become_user(connection_struct *conn, uint16 vuid);
-BOOL unbecome_user();
+BOOL unbecome_user(void);
 BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type);
 BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
 DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);
