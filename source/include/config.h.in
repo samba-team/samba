@@ -755,6 +755,9 @@
 /* Define if you have the sigprocmask function.  */
 #undef HAVE_SIGPROCMASK
 
+/* Define if you have the sigset function.  */
+#undef HAVE_SIGSET
+
 /* Define if you have the snprintf function.  */
 #undef HAVE_SNPRINTF
 
@@ -1111,7 +1114,4 @@
 
 /* Define if you have working AF_LOCAL sockets */
 #undef HAVE_WORKING_AF_LOCAL
-
-/* Used for determining the compile time options */
-#undef SSL_DIR
 
