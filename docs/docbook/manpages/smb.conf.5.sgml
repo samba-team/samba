@@ -644,7 +644,6 @@
 		<listitem><para><parameter>max log size</parameter> </para></listitem>
 		<listitem><para><parameter>max mux</parameter> </para></listitem>
 		<listitem><para><parameter>max open files</parameter> </para></listitem>
-		<listitem><para><parameter>max packet</parameter> </para></listitem>
 		<listitem><para><parameter>max ttl</parameter> </para></listitem>
 		<listitem><para><parameter>max wins ttl</parameter> </para></listitem>
 		<listitem><para><parameter>max xmit</parameter> </para></listitem>
@@ -661,7 +660,6 @@
 		<listitem><para><parameter>nt pipe support</parameter> </para></listitem>
 		<listitem><para><parameter>nt smb support</parameter> </para></listitem>
 		<listitem><para><parameter>null passwords</parameter> </para></listitem>
-		<listitem><para><parameter>ole locking compatibility</parameter></para></listitem>
 		<listitem><para><parameter>oplock break wait time</parameter> </para></listitem>
 		<listitem><para><parameter>os level</parameter> </para></listitem>
 		<listitem><para><parameter>panic action</parameter> </para></listitem>
@@ -690,7 +688,6 @@
 		<listitem><para><parameter>root directory</parameter> </para></listitem>
 		<listitem><para><parameter>security</parameter> </para></listitem>
 		<listitem><para><parameter>server string</parameter> </para></listitem>
-		<listitem><para><parameter>shared mem size</parameter> </para></listitem>
 		<listitem><para><parameter>smb passwd file</parameter> </para></listitem>
 		<listitem><para><parameter>smbrun</parameter> </para></listitem>
 		<listitem><para><parameter>socket address</parameter> </para></listitem>
@@ -895,23 +892,23 @@
 		at login (session setup in the SMB protocol) time, <ulink url="smbd.8.html">
 		smbd</ulink> contacts the <parameter>password server</parameter> and 
 		attempts to authenticate the given user with the given password. If the 
-		authentication succeeds then <ulink url="smbd.8.html">smbd</ulink> 
+		authentication succeeds then <command>smbd</command> 
 		attempts to find a UNIX user in the UNIX password database to map the 
 		Windows user into. If this lookup fails, and <parameter>add user script
-		</parameter> is set then <ulink url="smbd.8.html">smbd</ulink> will
+		</parameter> is set then <command>smbd</command> will
 		call the specified script <emphasis>AS ROOT</emphasis>, expanding 
 		any <parameter>%u</parameter> argument to be the user name to create.</para>
 
-		<para>If this script successfully creates the user then <ulink 
-		url="smbd.8.html">smbd</ulink> will continue on as though the UNIX user
+		<para>If this script successfully creates the user then <command>smbd
+		</command> will continue on as though the UNIX user
 		already existed. In this way, UNIX users are dynamically created to
 		match existing Windows NT accounts.</para>
 
-		<para>See also <ulink url="smb.conf.5.html#security"><parameter>
-		security</parameter></ulink>, <ulink url="smb.conf.5.html#passwordserver">
-		<parameter>password server</parameter></ulink>, <ulink
-		url="smb.conf.5.html#deleteuserscript"><parameter>delete user 
-		script</parameter></ulink>.</para>
+		<para>See also <link linkend="SECURITY"><parameter>
+		security</parameter></link>, <link linkend="PASSWORDSERVER">
+		<parameter>password server</parameter></link>, 
+		<link linkend="DELETEUSERSCRIPT"><parameter>delete user 
+		script</parameter></link>.</para>
 
 		<para>Default: <command>add user script = &lt;empty string&gt;
 		</command></para>	
@@ -943,17 +940,17 @@
 
 		<varlistentry>
 		<term><anchor id="ALLOWHOSTS">allow hosts (S)</term>
-		<listitem><para>Synonym for <ulink url="smb.conf.5.html#hostsallow">
-		<parameter>hosts allow</parameter></ulink>.</para></listitem>
+		<listitem><para>Synonym for <link linkend="HOSTSALLOW">
+		<parameter>hosts allow</parameter></link>.</para></listitem>
 		</varlistentry>
 		
 
 
 		<varlistentry>
 		<term><anchor id="ALLOWTRUSTEDDOMAINS">allow trusted domains (G)</term>
-		<listitem><para>This option only takes effect when the <ulink 
-		url="smb.conf.5.html">security</ulink> option is set to 
-		<parameter>server</parameter> or <parameter>domain</parameter>.  
+		<listitem><para>This option only takes effect when the <link 
+		linkend="SECURITY"><parameter>security</parameter></link> option is set to 
+		<constant>server</constant> or <constant>domain</constant>.  
 		If it is set to no, then attempts to connect to a resource from 
 		a domain or workgroup other than the one which smbd is running 
 		in will fail, even if that domain is trusted by the remote server 
@@ -1014,18 +1011,8 @@
 
 		<varlistentry>
 		<term><anchor id="AUTOSERVICES">auto services (G)</term>
-		<listitem><para>This is a list of services that you want to be 
-		automatically added to the browse lists. This is most useful 
-		for homes and printers services that would otherwise not be 
-		visible.</para>
-
-		<para>Note that if you just want all printers in your 
-		printcap file loaded then the <ulink url="smb.conf.5.html#loadprinters">
-		<parameter>load printers</parameter></ulink> option is easier.</para>
-
-		<para>Default: <emphasis>no auto services</emphasis></para>
-		
-		<para>Example: <command>auto services = fred lp colorlp</command></para>
+		<listitem><para>This is a synonym for the <link linkend="PRELOAD">
+		<parameter>preload</parameter></link>.</para>
 		</listitem>
 		</varlistentry>
 		
@@ -1174,7 +1161,10 @@
 		<varlistentry>
 		<term><anchor id="CASESENSITIVE">case sensitive (S)</term>
 		<listitem><para>See the discussion in the section <link 
-		linkend="NAMEMANGLINGSECT">NAME MANGLING</link>.</para></listitem>
+		linkend="NAMEMANGLINGSECT">NAME MANGLING</link>.</para>
+		
+		<para>Default: <command>case sensitive = no</command></para>
+		</listitem>
 		</varlistentry>
 
 
@@ -1349,8 +1339,7 @@
 			<listitem><para><constant>JUNET, JUBB, JUBH, JU@B, JU@J, JU@H </constant> 
 			- Convert from incoming Shift-JIS to JUNET code with different shift-in, 
 			shift out codes.</para></listitem>
-			
-			
+						
 			<listitem><para><constant>EUC</constant> - Convert an incoming 
 			Shift-JIS character to EUC code.</para></listitem>
 			
@@ -1363,6 +1352,9 @@
 			the Columbia AppleTalk Program (CAP), i.e. <constant>:AB</constant>.  
 			This is used for compatibility between Samba and CAP.</para></listitem>
 		</itemizedlist>
+		
+		<para>Default: <command>coding system = &lt;empty value&gt;</command>
+		</para>
 		</listitem>
 		</varlistentry>
 		
@@ -1421,7 +1413,7 @@
 		copied must occur earlier in the configuration file than the 
 		service doing the copying.</para>
 
-		<para>Default: <emphasis>none</emphasis></para>
+		<para>Default: <emphasis>no value</emphasis></para>
 		<para>Example: <command>copy = otherservice</command></para></listitem>
 		</varlistentry>
 		
@@ -1515,19 +1507,6 @@
 		</listitem>
 		</varlistentry>
 		
-		
-		
-		<varlistentry>
-		<term><anchor id="DEBUGTIMESTAMP">debug timestamp (G)</term>
-		<listitem><para>Samba 2.2 debug log messages are timestamped 
-		by default. If you are running at a high <link linkend="DEBUGLEVEL">
-		<parameter>debug level</parameter></link> these timestamps
-		can be distracting. This boolean parameter allows timestamping 
-		to be turned off.</para>
-
-		<para>Default: <command>debug timestamp = yes</command></para></listitem>
-		</varlistentry>
-
 
 
 		<varlistentry>
@@ -1542,6 +1521,18 @@
 		effect.</para>
 
 		<para>Default: <command>debug pid = no</command></para></listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term><anchor id="DEBUGTIMESTAMP">debug timestamp (G)</term>
+		<listitem><para>Samba 2.2 debug log messages are timestamped 
+		by default. If you are running at a high <link linkend="DEBUGLEVEL">
+		<parameter>debug level</parameter></link> these timestamps
+		can be distracting. This boolean parameter allows timestamping 
+		to be turned off.</para>
+
+		<para>Default: <command>debug timestamp = yes</command></para></listitem>
 		</varlistentry>
 
 
@@ -1588,8 +1579,10 @@
 		<varlistentry>
 		<term><anchor id="DEFAULTCASE">default case (S)</term>
 		<listitem><para>See the section on <link linkend="NAMEMANGLINGSECT">
-		NAME MANGLING"</link>. Also note the <link linkend="SHORTPRESERVECASE">
+		NAME MANGLING</link>. Also note the <link linkend="SHORTPRESERVECASE">
 		<parameter>short preserve case"</parameter></link> parameter.</para>
+
+		<para>Default: <command>default case = lower</command></para></listitem>
 		</listitem>
 		</varlistentry>
 
@@ -1622,15 +1615,31 @@
 
 		<para>Example:</para>
 		
-		<screen><computeroutput>
-			default service = pub
+		<screen><programlisting>
+[global]
+	default service = pub
         
-			[pub]
-				path = /%S
-		</computeroutput></screen>
+[pub]
+	path = /%S
+		</programlisting></screen>
 		</listitem>
 		</varlistentry>
 		
+
+
+		<varlistentry>
+		<term><anchor id="DELETEREADONLY">delete readonly (S)</term>
+		<listitem><para>This parameter allows readonly files to be deleted.  
+		This is not normal DOS semantics, but is allowed by UNIX.</para>
+		
+		<para>This option may be useful for running applications such 
+		as rcs, where UNIX file ownership prevents changing file 
+		permissions, and DOS semantics prevent deletion of a read only file.</para>
+
+		<para>Default: <command>delete readonly = no</command></para></listitem>
+		</varlistentry>
+
+
 		
 		
 		<varlistentry>
@@ -1694,19 +1703,6 @@
 
 
 
-		<varlistentry>
-		<term><anchor id="DELETEREADONLY">delete readonly (S)</term>
-		<listitem><para>This parameter allows readonly files to be deleted.  
-		This is not normal DOS semantics, but is allowed by UNIX.</para>
-		
-		<para>This option may be useful for running applications such 
-		as rcs, where UNIX file ownership prevents changing file 
-		permissions, and DOS semantics prevent deletion of a read only file.</para>
-
-		<para>Default: <command>delete readonly = no</command></para></listitem>
-		</varlistentry>
-
-
 
 		<varlistentry>
 		<term><anchor id="DELETEVETOFILES">delete veto files (S)</term>
@@ -1736,11 +1732,13 @@
 
 
 
+
 		<varlistentry>
 		<term><anchor id="DENYHOSTS">deny hosts (S)</term>
 		<listitem><para>Synonym for <link linkend="HOSTSDENY"><parameter>hosts 
 		deny</parameter></link>.</para></listitem>
 		</varlistentry>
+
 		
 		
 		
@@ -2026,9 +2024,16 @@
 		the special name for a <parameter>workgroup</parameter> before a Windows 
 		NT PDC is able to do so then cross subnet browsing will behave 
 		strangely and may fail.</para>
+		
+		<para>If <link linkend="DOMAINLOGONS"><command>domain logons = yes</command>
+		</link>, then the default behavior is to enable the <para>domain 
+		master</para> parameter.  If <parameter>domain logons</parameter> is 
+		not enabled (the default setting), then neither will <parameter>domain 
+		master</parameter> ne enabled by default.</para>
 
-		<para>Default: <command>domain master = no</command></para></listitem>
+		<para>Default: <command>domain master = auto</command></para></listitem>
 		</varlistentry>
+		
 		
 		
 		
@@ -2269,7 +2274,8 @@
 		
 		
 		<varlistentry>
-		<term><anchor id="FORCEDIRECTORYSECURITYMODE">force directory security mode (S)</term>
+		<term><anchor id="FORCEDIRECTORYSECURITYMODE">force directory 
+		security mode (S)</term>
 		<listitem><para>This parameter controls what UNIX permission bits 
 		can be modified when a Windows NT client is manipulating the UNIX 
 		permission on a directory using the native NT security dialog box.</para>
@@ -2395,9 +2401,7 @@
 		Thus clients still need to connect as a valid user and supply a 
 		valid password. Once connected, all file operations will be performed 
 		as the "forced user", no matter what username the client connected 
-		as.</para>
-		
-			<para>This can be very useful.</para>
+		as.  This can be very useful.</para>
 
 		<para>In Samba 2.0.5 and above this parameter also causes the 
 		primary group of the forced user to be used as the primary group 
@@ -2439,7 +2443,7 @@
 		when the <link linkend="WIDELINKS"><parameter>wide links</parameter>
 		</link>parameter is set to <constant>False</constant>.</para>
 
-		<para>Default: <command>getwd cache = No</command></para>
+		<para>Default: <command>getwd cache = yes</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -2593,7 +2597,7 @@
 		</link>, <link linkend="DOMAINLOGONS"><parameter>domain logons</parameter>
 		</link>.</para>
 
-		<para>Default: <command>homedir map = auto.home</command></para>
+		<para>Default: <command>homedir map = &lt;empty string&gt;</command></para>
 		<para>Example: <command>homedir map = amd.homedir</command></para>
 		</listitem>
 		</varlistentry>
@@ -2811,7 +2815,11 @@
 		The netmasks of the latter two interfaces would be set to 255.255.255.0.</para>
 
 		<para>See also <link linkend="BINDINTERFACESONLY"><parameter>bind 
-		interfaces only</parameter></link>.</para></listitem>
+		interfaces only</parameter></link>.</para>
+		
+		<para>Default: <emphasis>all active interfaces except 127.0.0.1 
+		that are broadcast capable</emphasis></para>
+		</listitem>
 		</varlistentry>
 		
 		
@@ -2865,8 +2873,8 @@
 		linkend="SOCKETOPTIONS"><parameter>socket options</parameter></link>). 
 		Basically you should only use this option if you strike difficulties.</para>
 
-  		<para>Default: <command>keepalive = 0</command></para>
-  		<para>Example: <command>keepalive = 60</command></para>
+  		<para>Default: <command>keepalive = 300</command></para>
+  		<para>Example: <command>keepalive = 600</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -2921,8 +2929,7 @@
 		delete any read-ahead caches.</para>
 
 		<para>It is recommended that this parameter be turned on 
-		to speed access to shared executables (and also to test 
-		the code :-).</para>
+		to speed access to shared executables.</para>
 
 		<para>For more discussions on level2 oplocks see the CIFS spec.</para>
 
@@ -2937,7 +2944,7 @@
 		</link> and <link linkend="OPLOCKS"><parameter>kernel oplocks</parameter>
 		</link> parameters.</para>
 		
-		<para>Default: <command>level2 oplocks = False</command></para>
+		<para>Default: <command>level2 oplocks = yes</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -2964,7 +2971,7 @@
 		</parameter></link>.</para>
 
 		<para>Default: <command>lm announce = auto</command></para>
-		<para>Example: <command>lm announce = true</command></para>
+		<para>Example: <command>lm announce = yes</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -3039,8 +3046,8 @@
 		<link linkend="MAXCONNECTIONS"><parameter>max connections</parameter>
 		</link> option.</para>
 
-		<para>Default: <command>lock directory = /tmp/samba</command></para>
-		<para>Example: <command>lock directory = /usr/local/samba/var/locks</command>
+		<para>Default: <command>lock directory = ${prefix}/var/locks</command></para>
+		<para>Example: <command>lock directory = /var/run/samba/locks</command>
 		</para></listitem>
 		</varlistentry>
 
@@ -3132,7 +3139,7 @@
 		that roaming profiles are stored in a subdirectory of the user's 
 		home directory.  This is done in the following way:</para>
 
-		<para><command>logon home = \\%L\%U\profile</command></para>
+		<para><command>logon home = \\%N\%U\profile</command></para>
 
 		<para>This tells Samba to return the above string, with 
 		substitutions made when a client requests the info, generally 
@@ -3345,8 +3352,8 @@
 		command.</para>
 
 		<para>Note that it is good practice to include the absolute path 
-		in the <parameter>lpq command</parameter> as the PATH may not be 
-		available to the server.</para>
+		in the <parameter>lpq command</parameter> as the <envar>$PATH
+		</envar> may not be available to the server.</para>
 
 		<para>See also the <link linkend="PRINTING"><parameter>printing
 		</parameter></link> parameter.</para>
@@ -3354,7 +3361,7 @@
 		<para>Default: <emphasis>depends on the setting of <parameter>
 		printing</parameter></emphasis></para>
 
-		<para>Example: <command>lpq command = /usr/bin/lpq %p</command></para>
+		<para>Example: <command>lpq command = /usr/bin/lpq -P%p</command></para>
 		</listitem>
 		</varlistentry>
 		
@@ -3504,6 +3511,8 @@
 		<term><anchor id="MANGLECASE">mangle case (S)</term>
 		<listitem><para>See the section on <link linkend="NAMEMANGLINGSECT">
 		NAME MANGLING</link></para>
+		
+		<para>Default: <command>mangle case = no</command></para>
 		</listitem>
 		</varlistentry>
 		
@@ -3593,21 +3602,6 @@
 		</varlistentry>
 
 
-
-		<varlistentry>
-		<term><anchor id="MANGLINGCHAR">mangling char (S)</term>
-		<listitem><para>This controls what character is used as 
-		the <emphasis>magic</emphasis> character in <link 
-		linkend="NAMEMANGLINGSECT">name mangling</link>. The default is a '~'
-		but this may interfere with some software. Use this option to set 
-		it to whatever you prefer.</para>
-
-		<para>Default: <command>mangling char = ~</command></para>
-		<para>Example: <command>mangling char = ^</command></para>
-		</listitem>
-		</varlistentry>
-		
-		
 		
 		<varlistentry>
 		<term><anchor id="MANGLEDSTACK">mangled stack (G)</term>
@@ -3632,6 +3626,24 @@
   		<para>Example: <command>mangled stack = 100</command></para>
 		</listitem>
 		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="MANGLINGCHAR">mangling char (S)</term>
+		<listitem><para>This controls what character is used as 
+		the <emphasis>magic</emphasis> character in <link 
+		linkend="NAMEMANGLINGSECT">name mangling</link>. The default is a '~'
+		but this may interfere with some software. Use this option to set 
+		it to whatever you prefer.</para>
+
+		<para>Default: <command>mangling char = ~</command></para>
+		<para>Example: <command>mangling char = ^</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
 
 
 
@@ -3948,22 +3960,6 @@
 
 
 
-		<varlistentry>
-		<term><anchor id="MINPRINTSPACE">min print space (S)</term>
-		<listitem><para>This sets the minimum amount of free disk 
-		space that must be available before a user will be able to spool 
-		a print job. It is specified in kilobytes. The default is 0, which 
-		means a user can always spool a print job.</para>
-
-		<para>See also the <link linkend="PRINTING"><parameter>printing
-		</parameter></link> parameter.</para>
-
-		<para>Default: <command>min print space = 0</command></para>
-		<para>Example: <command>min print space = 2000</command></para>
-		</listitem>
-		</varlistentry>
-
-
 
 		<varlistentry>
 		<term><anchor id="MINPASSWDLENGTH">min passwd length (G)</term>
@@ -3989,6 +3985,26 @@
 		<para>Default: <command>min password length = 5</command></para>
 		</listitem>
 		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="MINPRINTSPACE">min print space (S)</term>
+		<listitem><para>This sets the minimum amount of free disk 
+		space that must be available before a user will be able to spool 
+		a print job. It is specified in kilobytes. The default is 0, which 
+		means a user can always spool a print job.</para>
+
+		<para>See also the <link linkend="PRINTING"><parameter>printing
+		</parameter></link> parameter.</para>
+
+		<para>Default: <command>min print space = 0</command></para>
+		<para>Example: <command>min print space = 2000</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
 
 
 		<varlistentry>
@@ -4179,8 +4195,10 @@
 		exactly the same SMB calls that versions prior to Samba 2.0 offered. 
 		This information may be of use if any users are having problems 
 		with NT SMB support.</para>
+		
+		<para>You should not need to ever disable this parameter.</para>
 
-		<para>Default: <command>nt support = yes</command></para>
+		<para>Default: <command>nt smb support = yes</command></para>
 		</listitem>
 		</varlistentry>
 	
@@ -4196,6 +4214,32 @@
 		<para>Default: <command>null passwords = no</command></para>
 		</listitem>
 		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="ONLYUSER">only user (S)</term>
+		<listitem><para>This is a boolean option that controls whether 
+		connections with usernames not in the <parameter>user</parameter> 
+		list will be allowed. By default this option is disabled so a client 
+		can supply a username to be used by the server.</para>
+
+		<para>Note that this also means Samba won't try to deduce 
+		usernames from the service name. This can be annoying for 
+		the [homes] section. To get around this you could use <command>user =
+		%S</command> which means your <parameter>user</parameter> list
+		will be just the service name, which for home directories is the 
+		name of the user.</para>
+
+		<para>See also the <link linkend="USER"><parameter>user</parameter>
+		</link> parameter.</para>
+
+		<para>Default: <command>only user = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
 
 
 		<varlistentry>
@@ -4225,25 +4269,44 @@
 
 
 		<varlistentry>
-		<term><anchor id="ONLYUSER">only user (S)</term>
-		<listitem><para>This is a boolean option that controls whether 
-		connections with usernames not in the <parameter>user</parameter> 
-		list will be allowed. By default this option is disabled so a client 
-		can supply a username to be used by the server.</para>
+		<term><anchor id="OPLOCKBREAKWAITTIME">oplock break wait time (G)</term>
+		<listitem><para>This is a tuning parameter added due to bugs in 
+		both Windows 9x and WinNT. If Samba responds to a client too 
+		quickly when that client issues an SMB that can cause an oplock 
+		break request, then the client redirector can fail and not respond 
+		to the break request. This tuning parameter (which is set in milliseconds) 
+		is the amount of time Samba will wait before sending an oplock break 
+		request to such (broken) clients.</para>
 
-		<para>Note that this also means Samba won't try to deduce 
-		usernames from the service name. This can be annoying for 
-		the [homes] section. To get around this you could use <command>user =
-		%S</command> which means your <parameter>user</parameter> list
-		will be just the service name, which for home directories is the 
-		name of the user.</para>
+		<para><emphasis>DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
+		AND UNDERSTOOD THE SAMBA OPLOCK CODE</emphasis>.</para>
 
-		<para>See also the <link linkend="USER"><parameter>user</parameter>
-		</link> parameter.</para>
-
-		<para>Default: <command>only user = no</command></para>
+		<para>Default: <command>oplock break wait time = 0</command></para>
 		</listitem>
 		</varlistentry>
+
+
+		<varlistentry>
+		<term><anchor id="OPLOCKCONTENTIONLIMIT">oplock contention limit (S)</term>
+		<listitem><para>This is a <emphasis>very</emphasis> advanced 
+		<ulink url="smbd.8.html">smbd(8)</ulink> tuning option to 
+		improve the efficiency of the granting of oplocks under multiple 
+		client contention for the same file.</para>
+		
+		<para>In brief it specifies a number, which causes smbd not to 
+		grant an oplock even when requested if the approximate number of 
+		clients contending for an oplock on the same file goes over this 
+		limit. This causes <command>smbd</command> to behave in a similar 
+		way to Windows NT.</para>
+
+		<para><emphasis>DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
+		AND UNDERSTOOD THE SAMBA OPLOCK CODE</emphasis>.</para>
+
+		<para>Default: <command>oplock contention limit = 2</command></para>
+		</listitem>
+		</varlistentry>
+
+
 
 
 
@@ -4278,54 +4341,20 @@
 
 
 		<varlistentry>
-		<term><anchor id="OPLOCKBREAKWAITTIME">oplock break wait time (G)</term>
-		<listitem><para>This is a tuning parameter added due to bugs in 
-		both Windows 9x and WinNT. If Samba responds to a client too 
-		quickly when that client issues an SMB that can cause an oplock 
-		break request, then the client redirector can fail and not respond 
-		to the break request. This tuning parameter (which is set in milliseconds) 
-		is the amount of time Samba will wait before sending an oplock break 
-		request to such (broken) clients.</para>
-
-		<para><emphasis>DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
-		AND UNDERSTOOD THE SAMBA OPLOCK CODE</emphasis>.</para>
-
-		<para>Default: <command>oplock break wait time = 10</command></para>
-		</listitem>
-		</varlistentry>
-
-
-		<varlistentry>
-		<term><anchor id="OPLOCKCONTENTIONLIMIT">oplock contention limit (S)</term>
-		<listitem><para>This is a <emphasis>very</emphasis> advanced 
-		<ulink url="smbd.8.html">smbd(8)</ulink> tuning option to 
-		improve the efficiency of the granting of oplocks under multiple 
-		client contention for the same file.</para>
-		
-		<para>In brief it specifies a number, which causes smbd not to 
-		grant an oplock even when requested if the approximate number of 
-		clients contending for an oplock on the same file goes over this 
-		limit. This causes <command>smbd</command> to behave in a similar 
-		way to Windows NT.</para>
-
-		<para><emphasis>DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
-		AND UNDERSTOOD THE SAMBA OPLOCK CODE</emphasis>.</para>
-
-		<para>Default: <command>oplock contention limit = 2</command></para>
-		</listitem>
-		</varlistentry>
-
-
-		<varlistentry>
 		<term><anchor id="OSLEVEL">os level (G)</term>
 		<listitem><para>This integer value controls what level Samba 
 		advertises itself as for browse elections. The value of this 
 		parameter determines whether <ulink url="nmbd.8.html">nmbd(8)</ulink> 
 		has a chance of becoming a local master browser for the <parameter>
-		WORKGROUP</parameter> in the local broadcast area. The default is 
-		zero, which means <command>nmbd</command> will lose elections to 
-		Windows machines. See <filename>BROWSING.txt</filename> in the 
-		Samba <filename>docs/</filename> directory for details.</para>
+		WORKGROUP</parameter> in the local broadcast area.</para>
+		
+		<para><emphasis>Note :</emphasis>By default, Samba will win 
+		a local master browsing election over all Microsoft operating 
+		systems except a Windows NT 4.0/2000 Domain Controller.  This 
+		means that a misconfigured Samba host can effectively isolate 
+		a subnet for browsing purposes.  See <filename>BROWSING.txt
+		</filename> in the Samba <filename>docs/</filename> directory 
+		for details.</para>
 
 		<para>Default: <command>os level = 20</command></para>
 		<para>Example: <command>os level = 65 </command></para>
@@ -4393,8 +4422,8 @@
 		passwd program</parameter></link> and <link linkend="PASSWDCHATDEBUG">
 		<parameter>passwd chat debug</parameter></link>.</para>
 
-		<para>Default: <command>passwd chat = *old*password* %o\n *new*
-		password* %n\n *new*password* %n\n *changed*</command></para>
+		<para>Default: <command>passwd chat = *new*password* %n\n 
+		*new*password* %n\n *changed*</command></para>
 		<para>Example: <command>passwd chat = "*Enter OLD password*" %o\n 
 		"*Enter NEW password*" %n\n "*Reenter NEW password*" %n\n "*Password 
 		changed*"</command></para>
@@ -4422,7 +4451,6 @@
 		</link>.</para>
 
 		<para>Default: <command>passwd chat debug = no</command></para>
-		<para>Example: <command>passwd chat debug = yes</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -4525,7 +4553,7 @@
 		by any method and order described in that parameter.</para>
 
 		<para>The password server much be a machine capable of using 
-		the "LM1.2X002" or the "LM NT 0.12" protocol, and it must be in 
+		the "LM1.2X002" or the "NT LM 0.12" protocol, and it must be in 
 		user level security mode.</para>
 
 		<para><emphasis>NOTE:</emphasis> Using a password server 
@@ -4726,7 +4754,7 @@
 		<para>See also <link linkend="OSLEVEL"><parameter>os level</parameter>
 		</link>.</para>
 
-		<para>Default: <command>preferred master = no</command></para>
+		<para>Default: <command>preferred master = auto</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -4743,8 +4771,18 @@
 
 		<varlistentry>
 		<term><anchor id="PRELOAD">preload</term>
-		<listitem><para>Synonym for <link linkend="AUTOSERVICES"><parameter>
-		auto services</parameter></link>.</para>
+		<listitem><para>This is a list of services that you want to be 
+		automatically added to the browse lists. This is most useful 
+		for homes and printers services that would otherwise not be 
+		visible.</para>
+
+		<para>Note that if you just want all printers in your 
+		printcap file loaded then the <link linkend="LOADPRINTERS">
+		<parameter>load printers</parameter></link> option is easier.</para>
+
+		<para>Default: <emphasis>no preloaded services</emphasis></para>
+		
+		<para>Example: <command>preload = fred lp colorlp</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -4753,13 +4791,13 @@
 		<term><anchor id="PRESERVECASE">preserve case (S)</term>
 		<listitem><para> This controls if new filenames are created
 		with the case that the client passes, or if they are forced to 
-		be the <link linkend="DEFAULTCASE"><parameter>derault case
+		be the <link linkend="DEFAULTCASE"><parameter>default case
 		</parameter></link>.</para>
 
 		<para>Default: <command>preserve case = yes</command></para>
 
 		<para>See the section on <link linkend="NAMEMANGLINGSECT">NAME 
-		MANGLING"</link> for a fuller discussion.</para
+		MANGLING</link> for a fuller discussion.</para>
 		</listitem>
 		</varlistentry>
 
@@ -4873,24 +4911,6 @@
 
 
 		<varlistentry>
-		<term><anchor id="PRINTERADMIN">printer admin (S)</term>
-		<listitem><para>This is a list of users that can do anything to 
-		printers via the remote administration interfaces offered by MSRPC 
-		(usually using a NT workstation). Note that the root user always 
-		has admin rights.</para>
-
-		<para>Default: <command>printer admin = &lt;empty string&gt;</command>
-		</para>
-		<para>Example: <command>printer admin = admin, @staff</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
-
-
-
-		<varlistentry>
 		<term><anchor id="PRINTCAPNAME">printcap name (G)</term>
 		<listitem><para>This parameter may be used to override the 
 		compiled-in default printcap name used by the server (usually <filename>
@@ -4933,27 +4953,38 @@
 
 
 
+
+
 		<varlistentry>
-		<term><anchor id="PRINTER">printer (S)</term>
-		<listitem><para>This parameter specifies the name of the printer 
-		to which print jobs spooled through a printable service will be sent.</para>
+		<term><anchor id="PRINTERADMIN">printer admin (S)</term>
+		<listitem><para>This is a list of users that can do anything to 
+		printers via the remote administration interfaces offered by MSRPC 
+		(usually using a NT workstation). Note that the root user always 
+		has admin rights.</para>
 
-		<para>If specified in the [global] section, the printer
-		name given will be used for any printable service that does 
-		not have its own printer name specified.</para>
-
-		<para>Default: <emphasis>none (but may be <constant>lp</constant> 
-		on many systems)</emphasis></para>
-
-		<para>Example: <command>printer name = laserwriter</command></para>
+		<para>Default: <command>printer admin = &lt;empty string&gt;</command>
+		</para>
+		<para>Example: <command>printer admin = admin, @staff</command></para>
 		</listitem>
 		</varlistentry>
+
+
+
+
 		
 
 
 		<varlistentry>
 		<term><anchor id="PRINTERDRIVER">printer driver (S)</term>
-		<listitem><para>This option allows you to control the string 
+		<listitem><emphasis>Note :</emphasis>This is a depreciated 
+		parameter and will be removed in the next major release
+		following version 2.2.  Please see the instructions in
+		<filename>PRINTER_DRIVER2.txt<filename> in the <filename>docs
+		</filename> ofthe Samba distribution for more information
+		on the new method of loading printer drivers onto a Samba server.
+		</para>
+		
+		<para>This option allows you to control the string 
 		that clients receive when they ask the server for the printer driver 
 		associated with a printer. If you are using Windows95 or WindowsNT 
 		then you can use this to automate the setup of printers on your 
@@ -4978,7 +5009,15 @@
 
 		<varlistentry>
 		<term><anchor id="PRINTERDRIVERFILE">printer driver file (G)</term>
-		<listitem><para>This parameter tells Samba where the printer driver 
+		<listitem><emphasis>Note :</emphasis>This is a depreciated 
+		parameter and will be removed in the next major release
+		following version 2.2.  Please see the instructions in
+		<filename>PRINTER_DRIVER2.txt<filename> in the <filename>docs
+		</filename> ofthe Samba distribution for more information
+		on the new method of loading printer drivers onto a Samba server.
+		</para>
+
+		<para>This parameter tells Samba where the printer driver 
 		definition file, used when serving drivers to Windows 95 clients, is 
 		to be found. If this is not set, the default is :</para>
 
@@ -5006,7 +5045,15 @@
 
 		<varlistentry>
 		<term><anchor id="PRINTERDRIVERLOCATION">printer driver location (S)</term>
-		<listitem><para>This parameter tells clients of a particular printer 
+		<listitem><emphasis>Note :</emphasis>This is a depreciated 
+		parameter and will be removed in the next major release
+		following version 2.2.  Please see the instructions in
+		<filename>PRINTER_DRIVER2.txt<filename> in the <filename>docs
+		</filename> ofthe Samba distribution for more information
+		on the new method of loading printer drivers onto a Samba server.
+		</para>
+
+		<para>This parameter tells clients of a particular printer 
 		share where to find the printer driver files for the automatic 
 		installation of drivers for Windows 95 machines. If Samba is set up 
 		to serve printer drivers to Windows 95 machines, this should be set to</para>
@@ -5032,8 +5079,25 @@
 
 		<varlistentry>
 		<term><anchor id="PRINTERNAME">printer name (S)</term>
-		<listitem><para>Synonym for <link linkend="PRINTER"><parameter>
-		printer</parameter></link>.</para>
+		<listitem><para>This parameter specifies the name of the printer 
+		to which print jobs spooled through a printable service will be sent.</para>
+
+		<para>If specified in the [global] section, the printer
+		name given will be used for any printable service that does 
+		not have its own printer name specified.</para>
+
+		<para>Default: <emphasis>none (but may be <constant>lp</constant> 
+		on many systems)</emphasis></para>
+
+		<para>Example: <command>printer name = laserwriter</command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term><anchor id="PRINTER">printer (S)</term>
+		<listitem><para>Synonym for <link linkend="PRINTERNAME"><parameter>
+		printer name</parameter></link>.</para>
 		</listitem>
 		</varlistentry>
 
@@ -5067,24 +5131,7 @@
 		</listitem>
 		</varlistentry>
 		
-		
-
-		<varlistentry>
-		<term><anchor id="PRIVATEDIR">private dir(G)</term>
-		<listitem><para>The <parameter>private dir</parameter> parameter 
-		allows an administator to define a directory path used to hold the 
-		various databases Samba will use to store things like a the machine 
-		trust account information when acting as a domain member (i.e. where 
-		the secrets.tdb file will be located), where the passdb.tbd file 
-		will stored in the case of using the experiemental tdbsam support, 
-		etc...</para>
-
-		<para>Default: <command>private dir = &lt;compile time location 
-		of smbpasswd&gt;</command></para>
-		<para>Example: <command>private dir = /etc/smbprivate</command></para>
-		</listitem>
-		</varlistentry>
-		
+				
 		
 		
 		<varlistentry>
@@ -5453,6 +5500,9 @@
 
 		<para>See also <link linkend="POSTEXEC"><parameter>
 		postexec</parameter></link>.</para>
+
+		<para>Default: <emphasis>root postexec = &lt;empty string&gt;
+		</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -5460,12 +5510,15 @@
 		<term><anchor id="ROOTPREEXEC">root preexec (S)</term>
 		<listitem><para>This is the same as the <parameter>preexec</parameter>
 		parameter except that the command is run as root. This 
-		is useful for mounting filesystems 
-		(such as cdroms) after a connection is closed.</para>
+		is useful for mounting filesystems (such as cdroms) after a 
+		connection is closed.</para>
 
 		<para>See also <link linkend="PREEXEC"><parameter>
 		preexec</parameter></link> and <link linkend="PREEXECCLOSE">
 		<parameter>preexec close</parameter></link>.</para>
+		
+		<para>Default: <emphasis>root preexec = &lt;empty string&gt;
+		</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -5479,6 +5532,8 @@
 		<para>See also <link linkend="PREEXEC"><parameter>
 		preexec</parameter></link> and <link linkend="PREEXECCLOSE">
 		<parameter>preexec close</parameter></link>.</para>
+
+		<para>Default: <emphasis>root preexec close = no</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -5830,29 +5885,6 @@
 
 
 
-		<varlistentry>
-		<term><anchor id="SHAREDMEMSIZE">shared mem size (G)</term>
-		<listitem><para>It specifies the size of the shared memory (in 
-		bytes) to use between <ulink url="smbd.8.html">smbd(8)</ulink> 
-		processes. This parameter defaults to one megabyte of shared 
-		memory. It is possible that if you have a large erver with many 
-		files open simultaneously that you may need to increase this 
-		parameter. Signs that this parameter is set too low are users 
-		reporting strange problems trying to save files (locking errors) 
-		and error messages in the smbd log looking like <emphasis>ERROR
-		smb_shm_alloc : alloc of XX bytes failed</emphasis>.</para>
-
-		<para>If your OS refuses the size that Samba asks for then 
-		Samba will try a smaller size, reducing by a factor of 0.8 until 
-		the OS accepts it.</para>
-
-		<para>Default: <command>shared mem size = 1048576</command></para>
-		<para>Example: <command>shared mem size = 5242880 ; Set to 5mb for a 
-		large number of files.</command></para>
-		</listitem>
-		</varlistentry>
-
-
 
 		<varlistentry>
 		<term><anchor id="SHORTPRESERVECASE">short preserve case (S)</term>
@@ -5880,10 +5912,10 @@
  		smbpasswd file.  By default the path to the smbpasswd file 
 		is compiled into Samba.</para>
 		
-		<para>Default: <command>smb passwd file= &lt;compiled 
-		default&gt;</command></para>
+		<para>Default: <command>smb passwd file = ${prefix}/private/smbpasswd
+		</command></para>
 
-		<para>Example: <command>smb passwd file = /usr/samba/private/smbpasswd
+		<para>Example: <command>smb passwd file = /etc/samba/smbpasswd
 		</command></para>
 		</listitem>
 		</varlistentry>
@@ -5902,7 +5934,7 @@
 		<para>You should not need to change this parameter so 
 		long as Samba is installed correctly.</para>
 
-		<para>Default: <command>smbrun=&lt;compiled default&gt;
+		<para>Default: <command>smbrun = ${prefix}/private/bin/smbrun
 		</command></para>
 
 		<para>Example: <command>smbrun = /usr/local/samba/bin/smbrun
@@ -6604,7 +6636,7 @@
 		the client. This isuseful for setting up mail clients and WWW 
 		browsers on systems used by more than one person.</para>
 
-		<para>Default: <command>unix realname = no</command></para>
+		<para>Default: <command>unix realname = yes</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -6735,7 +6767,7 @@
 		this parameter determines access to the services.</para>
 
 		<para>Default: <command>The guest account if a guest service, 
-		else the name of the service.</command></para>
+		else &ltempty string&gt;.</command></para>
 
 		<para>Examples:<command>username = fred, mary, jack, jane, 
 		@users, @pcgroup</command></para>
@@ -6891,63 +6923,6 @@
 		<filename>/var/run/utmp</filename> on Linux).</para>
 
 		<para>Default: <emphasis>no utmp directory</emphasis></para>
-		</listitem>
-		</varlistentry>
-
-
-
-		<varlistentry>
-		<term><anchor id="WINBINDCACHETIME">winbind cache time</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
-		available in Samba 3.0.</para>
-		
-		<para>This parameter specifies the number of seconds the
-		<ulink url="winbindd.8.html">winbindd(8)</ulink> daemon will cache 
-		user and group information before querying a Windows NT server 
-		again.</para>
-
-		<para>Default: <command>winbind cache type = 15</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
-	
-		<varlistentry>
-		<term><anchor id="WINBINDGID">winbind gid</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
-		available in Samba 3.0.</para>
-		
-		<para>The winbind gid parameter specifies the range of group 
-		ids that are allocated by the <ulink url="winbindd.8.html">
-		winbindd(8)</ulink> daemon.  This range of group ids should have no 
-		existing local or nis groups within it as strange conflicts can 
-		occur otherwise.</para>
-
-		<para>Default: <command>winbind gid = &lt;empty string&gt;
-		</command></para>
-
-		<para>Example: <command>winbind gid = 10000-20000</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
-		<varlistentry>
-		<term><anchor id="WINBINDUID">winbind uid</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
-		available in Samba 3.0.</para>
-		
-		<para>The winbind gid parameter specifies the range of group 
-		ids that are allocated by the <ulink url="winbindd.8.html">
-		winbindd(8)</ulink> daemon.  This range of ids should have no 
-		existing local or nis users within it as strange conflicts can 
-		occur otherwise.</para>
-
-		<para>Default: <command>winbind uid = &lt;empty string&gt;
-		</command></para>
-		
-		<para>Example: <command>winbind uid = 10000-20000</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -7147,14 +7122,57 @@
 
 
 
-		<varlistentry>
-		<term><anchor id="WINSPROXY">wins proxy (G)</term>
-		<listitem><para>This is a boolean that controls if <ulink 
-		url="nmbd.8.html">nmbd(8)</ulink> will respond to broadcast name 
-		queries on behalf of  other hosts. You may need to set this 
-		to <constant>yes</constant> for some older clients.</para>
 
-		<para>Default: <command>wins proxy = no</command></para>
+		<varlistentry>
+		<term><anchor id="WINBINDCACHETIME">winbind cache time</term>
+		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
+		available in Samba 3.0.</para>
+		
+		<para>This parameter specifies the number of seconds the
+		<ulink url="winbindd.8.html">winbindd(8)</ulink> daemon will cache 
+		user and group information before querying a Windows NT server 
+		again.</para>
+
+		<para>Default: <command>winbind cache type = 15</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+	
+		<varlistentry>
+		<term><anchor id="WINBINDGID">winbind gid</term>
+		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
+		available in Samba 3.0.</para>
+		
+		<para>The winbind gid parameter specifies the range of group 
+		ids that are allocated by the <ulink url="winbindd.8.html">
+		winbindd(8)</ulink> daemon.  This range of group ids should have no 
+		existing local or nis groups within it as strange conflicts can 
+		occur otherwise.</para>
+
+		<para>Default: <command>winbind gid = &lt;empty string&gt;
+		</command></para>
+
+		<para>Example: <command>winbind gid = 10000-20000</command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term><anchor id="WINBINDSEPARATOR">winbind separator</term>
+		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
+		available in Samba 3.0.</para>
+
+		<para>This parameter allows an admin to define the character 
+		used when listing a username of the form of <replaceable>DOMAIN
+		</replaceable>\<replaceable>user</replaceable>.  This parameter 
+		is only applizaable when using the <filename>pam_winbind.so</filename>
+		and <filename>nss_winbind.so</filename> modules for UNIX services.
+		</para>
+
+		<para>Example: <command>winbind separator = \</command></para>
+		<para>Example: <command>winbind separator = +</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -7162,26 +7180,24 @@
 
 
 		<varlistentry>
-		<term><anchor id="WINSSERVER">wins server (G)</term>
-		<listitem><para>This specifies the IP address (or DNS name: IP 
-		address for preference) of the WINS server that <ulink url="nmbd.8.html">
-		nmbd(8)</ulink> should register with. If you have a WINS server on 
-		your network then you should set this to the WINS server's IP.</para>
+		<term><anchor id="WINBINDUID">winbind uid</term>
+		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
+		available in Samba 3.0.</para>
+		
+		<para>The winbind gid parameter specifies the range of group 
+		ids that are allocated by the <ulink url="winbindd.8.html">
+		winbindd(8)</ulink> daemon.  This range of ids should have no 
+		existing local or nis users within it as strange conflicts can 
+		occur otherwise.</para>
 
-		<para>You should point this at your WINS server if you have a
-		multi-subnetted network.</para>
-
-		<para><emphasis>NOTE</emphasis>. You need to set up Samba to point 
-		to a WINS server if you have multiple subnets and wish cross-subnet 
-		browsing to work correctly.</para>
-
-		<para>See the documentation file <filename>BROWSING.txt</filename> 
-		in the docs/ directory of your Samba source distribution.</para>
-
-		<para>Default: <emphasis>not enabled</emphasis></para>
-		<para>Example: <command>wins server = 192.9.200.1</command></para>
+		<para>Default: <command>winbind uid = &lt;empty string&gt;
+		</command></para>
+		
+		<para>Example: <command>winbind uid = 10000-20000</command></para>
 		</listitem>
 		</varlistentry>
+
+
 
 
 
@@ -7231,6 +7247,46 @@
 
 
 
+
+
+		<varlistentry>
+		<term><anchor id="WINSPROXY">wins proxy (G)</term>
+		<listitem><para>This is a boolean that controls if <ulink 
+		url="nmbd.8.html">nmbd(8)</ulink> will respond to broadcast name 
+		queries on behalf of  other hosts. You may need to set this 
+		to <constant>yes</constant> for some older clients.</para>
+
+		<para>Default: <command>wins proxy = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="WINSSERVER">wins server (G)</term>
+		<listitem><para>This specifies the IP address (or DNS name: IP 
+		address for preference) of the WINS server that <ulink url="nmbd.8.html">
+		nmbd(8)</ulink> should register with. If you have a WINS server on 
+		your network then you should set this to the WINS server's IP.</para>
+
+		<para>You should point this at your WINS server if you have a
+		multi-subnetted network.</para>
+
+		<para><emphasis>NOTE</emphasis>. You need to set up Samba to point 
+		to a WINS server if you have multiple subnets and wish cross-subnet 
+		browsing to work correctly.</para>
+
+		<para>See the documentation file <filename>BROWSING.txt</filename> 
+		in the docs/ directory of your Samba source distribution.</para>
+
+		<para>Default: <emphasis>not enabled</emphasis></para>
+		<para>Example: <command>wins server = 192.9.200.1</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
 		<varlistentry>
 		<term><anchor id="WINSSUPPORT">wins support (G)</term>
 		<listitem><para>This boolean controls if the <ulink url="nmbd.8.html"> 		
@@ -7272,35 +7328,10 @@
 
 
 		<varlistentry>
-		<term><anchor id="WRITELIST">write list (S)</term>
-		<listitem><para>This is a list of users that are given read-write 
-		access to a service. If the connecting user is in this list then 
-		they will be given write access, no matter what the <link
-		linkend="WRITEABLE"><parameter>writeable</parameter></link>
-		option is set to. The list can include group names using the 
-		@group syntax.</para>
-
-		<para>Note that if a user is in both the read list and the 
-		write list then they will be given write access.</para>
-
-		<para>See also the <link linkend="READLIST"><parameter>read list
-		</parameter></link> option.</para>
-
-		<para>Default: <command>write list = &lt;empty string&gt;
-		</command></para>
-
-		<para>Example: <command>write list = admin, root, @staff
-		</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
-		<varlistentry>
 		<term><anchor id="WRITECACHESIZE">write cache size (S)</term>
-		<listitem><para>This integer parameter (new with Samba 2.0.7) 
-		if set to non-zero causes Samba to create an in-memory cache for 
-		each oplocked file (it does <emphasis>not</emphasis> do this for 
+		<listitem><para>If this integer parameter is set to non-zero value,
+		Samba will create an in-memory cache for each oplocked file 
+		(it does <emphasis>not</emphasis> do this for 
 		non-oplocked files). All writes that the client does not request 
 		to be flushed directly to disk will be stored in this cache if possible. 
 		The cache is flushed onto disk when a write comes in whose offset 
@@ -7324,6 +7355,32 @@
 		</listitem>
 		</varlistentry>
 
+
+
+
+
+		<varlistentry>
+		<term><anchor id="WRITELIST">write list (S)</term>
+		<listitem><para>This is a list of users that are given read-write 
+		access to a service. If the connecting user is in this list then 
+		they will be given write access, no matter what the <link
+		linkend="WRITEABLE"><parameter>writeable</parameter></link>
+		option is set to. The list can include group names using the 
+		@group syntax.</para>
+
+		<para>Note that if a user is in both the read list and the 
+		write list then they will be given write access.</para>
+
+		<para>See also the <link linkend="READLIST"><parameter>read list
+		</parameter></link> option.</para>
+
+		<para>Default: <command>write list = &lt;empty string&gt;
+		</command></para>
+
+		<para>Example: <command>write list = admin, root, @staff
+		</command></para>
+		</listitem>
+		</varlistentry>
 
 
 
