@@ -81,8 +81,8 @@ DATA_BLOB dcerpc_raw_bind_setup(struct dcerpc_bind *parms)
 		offset = put_uuid(data, offset, &ctx->as->if_uuid);
 		SIVAL(data, offset, ctx->as->if_version); offset += 4;
 		for (j = 0; j < ctx->num_ts; j++) {
-			offset = put_uuid(data, offset, &ctx->ts[i]->if_uuid);
-			SIVAL(data, offset, ctx->ts[i]->if_version); 
+			offset = put_uuid(data, offset, &ctx->ts[i].if_uuid);
+			SIVAL(data, offset, ctx->ts[i].if_version); 
 			offset += 4;
 		}
 	}
