@@ -548,7 +548,6 @@ static int default_server_announce;
 /* prototypes for the special type handlers */
 static BOOL handle_include(const char *pszParmValue, char **ptr);
 static BOOL handle_copy(const char *pszParmValue, char **ptr);
-static BOOL handle_vfs_object(const char *pszParmValue, char **ptr);
 static BOOL handle_source_env(const char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(const char *pszParmValue, char **ptr);
 static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr);
@@ -1104,7 +1103,7 @@ static struct parm_struct parm_table[] = {
 
 	{"VFS module options", P_SEP, P_SEPARATOR},
 	
-	{"vfs object", P_STRING, P_LOCAL, &sDefault.szVfsObjectFile, handle_vfs_object, NULL, FLAG_SHARE},
+	{"vfs object", P_LIST, P_LOCAL, &sDefault.szVfsObjectFile, NULL, NULL, FLAG_SHARE},
 	{"vfs options", P_STRING, P_LOCAL, &sDefault.szVfsOptions, NULL, NULL, FLAG_SHARE},
 	{"vfs path", P_STRING, P_LOCAL, &sDefault.szVfsPath, NULL, NULL, FLAG_SHARE},
 
@@ -1774,7 +1773,7 @@ FN_LOCAL_LIST(lp_readlist, readlist)
 FN_LOCAL_LIST(lp_writelist, writelist)
 FN_LOCAL_LIST(lp_printer_admin, printer_admin)
 FN_LOCAL_STRING(lp_fstype, fstype)
-FN_LOCAL_STRING(lp_vfsobj, szVfsObjectFile)
+FN_LOCAL_LIST(lp_vfsobj, szVfsObjectFile)
 FN_LOCAL_STRING(lp_vfs_options, szVfsOptions)
 FN_LOCAL_STRING(lp_vfs_path, szVfsPath)
 FN_LOCAL_STRING(lp_msdfs_proxy, szMSDfsProxy)
@@ -2736,22 +2735,6 @@ static BOOL handle_source_env(const char *pszParmValue, char **ptr)
 	file_lines_free(lines);
 
 	return (result);
-}
-
-/***************************************************************************
- Handle the interpretation of the vfs object parameter.
-*************************************************************************/
-
-static BOOL handle_vfs_object(const char *pszParmValue, char **ptr)
-{
-	/* Set string value */
-
-	string_set(ptr, pszParmValue);
-
-	/* Do any other initialisation required for vfs.  Note that
-	   anything done here may have linking repercussions in nmbd. */
-
-	return True;
 }
 
 /***************************************************************************
