@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -277,6 +277,125 @@ check_for_tgt (krb5_context context,
 }
 
 #ifdef KRB4
+/* prints the approximate kdc time differential as something human
+   readable */
+
+static void
+print_time_diff(int do_verbose)
+{
+    int d = abs(krb_get_kdc_time_diff());
+    char buf[80];
+
+    if ((do_verbose && d > 0) || d > 60) {
+	unparse_time_approx (d, buf, sizeof(buf));
+	printf ("Time diff:\t%s\n", buf);
+    }
+}
+
+/*
+ * return a short representation of `dp' in string form.
+ */
+
+static char *
+short_date(int32_t dp)
+{
+    char *cp;
+    time_t t = (time_t)dp;
+
+    if (t == (time_t)(-1L)) return "***  Never  *** ";
+    cp = ctime(&t) + 4;
+    cp[15] = '\0';
+    return (cp);
+}
+
+/*
+ * Print a list of all the v4 tickets
+ */
+
+static int
+display_v4_tickets (int do_verbose)
+{
+    char *file;
+    int ret;
+    krb_principal princ;
+    CREDENTIALS cred;
+    int header = 1;
+
+    file = getenv ("KRBTKFILE");
+    if (file == NULL)
+	file = TKT_FILE;
+
+    printf("v4-ticket file:	%s\n", file);
+
+    ret = krb_get_tf_realm (file, princ.realm);
+    if (ret) {
+	warnx ("%s", krb_get_err_text(ret));
+	return 1;
+    }
+
+    ret = tf_init (file, R_TKT_FIL);
+    if (ret) {
+	warnx ("tf_init: %s", krb_get_err_text(ret));
+	return 1;
+    }
+    ret = tf_get_pname (princ.name);
+    if (ret) {
+	tf_close ();
+	warnx ("tf_get_pname: %s", krb_get_err_text(ret));
+	return 1;
+    }
+    ret = tf_get_pinst (princ.instance);
+    if (ret) {
+	tf_close ();
+	warnx ("tf_get_pname: %s", krb_get_err_text(ret));
+	return 1;
+    }
+
+    printf("Principal:\t%s\n", krb_unparse_name (&princ));
+    print_time_diff(do_verbose);
+    printf("\n");
+
+    while ((ret = tf_get_cred(&cred)) == KSUCCESS) {
+	struct timeval tv;
+	char buf1[20], buf2[20];
+
+	if (header) {
+	    printf("%-15s  %-15s  %s%s\n",
+		   "  Issued", "  Expires", "  Principal", 
+		   do_verbose ? " (kvno)" : "");
+	    header = 0;
+	}
+	strlcpy(buf1,
+		short_date(cred.issue_date),
+		sizeof(buf1));
+	cred.issue_date = krb_life_to_time(cred.issue_date, cred.lifetime);
+	krb_kdctimeofday(&tv);
+	if (do_verbose || tv.tv_sec < (unsigned long) cred.issue_date)
+	    strlcpy(buf2,
+		    short_date(cred.issue_date),
+		    sizeof(buf2));
+	else
+	    strlcpy(buf2,
+		    ">>> Expired <<<",
+		    sizeof(buf2));
+	printf("%s  %s  ", buf1, buf2);
+	printf("%s", krb_unparse_name_long(cred.service,
+					   cred.instance,
+					   cred.realm));
+	if(do_verbose)
+	    printf(" (%d)", cred.kvno);
+	printf("\n");
+    }
+    if (header && ret == EOF)
+	printf("No tickets in file.\n");
+    tf_close();
+
+    /*
+     * should do NAT stuff here
+     */
+    return 0;
+}
+
 /*
  * Print a list of all AFS tokens
  */
@@ -332,72 +451,20 @@ display_tokens(int do_verbose)
 	putchar('\n');
     }
 }
-#endif
+#endif /* KRB4 */
 
-static int version_flag = 0;
-static int help_flag	= 0;
-static int do_verbose	= 0;
-static int do_test	= 0;
-#ifdef KRB4
-static int do_tokens	= 0;
-#endif
-static char *cred_cache;
+/*
+ * display the ccache in `cred_cache'
+ */
 
-static struct getargs args[] = {
-    { "cache",			'c', arg_string, &cred_cache,
-      "credentials cache to list", "cache" },
-    { "test",			't', arg_flag, &do_test,
-      "test for having tickets", NULL },
-#ifdef KRB4
-    { "tokens",			'T',   arg_flag, &do_tokens,
-      "display AFS tokens", NULL },
-#endif
-    { "verbose",		'v', arg_flag, &do_verbose,
-      "Verbose output", NULL },
-    { "version", 		0,   arg_flag, &version_flag, 
-      "print version", NULL },
-    { "help",			0,   arg_flag, &help_flag, 
-      NULL, NULL}
-};
-
-static void
-usage (int ret)
-{
-    arg_printusage (args,
-		    sizeof(args)/sizeof(*args),
-		    NULL,
-		    "");
-    exit (ret);
-}
-
-int
-main (int argc, char **argv)
+static int
+display_v5_ccache (const char *cred_cache, int do_test, int do_verbose)
 {
     krb5_error_code ret;
     krb5_context context;
     krb5_ccache ccache;
     krb5_principal principal;
-    int optind = 0;
     int exit_status = 0;
-
-    set_progname (argv[0]);
-
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
-	usage(1);
-    
-    if (help_flag)
-	usage (0);
-
-    if(version_flag){
-	print_version(NULL);
-	exit(0);
-    }
-
-    argc -= optind;
-    argv += optind;
-
-    if (argc != 0)
-	usage (1);
 
     ret = krb5_init_context (&context);
     if (ret)
@@ -435,10 +502,92 @@ main (int argc, char **argv)
 
     krb5_free_principal (context, principal);
     krb5_free_context (context);
+    return exit_status;
+}
+
+static int version_flag = 0;
+static int help_flag	= 0;
+static int do_verbose	= 0;
+static int do_test	= 0;
+#ifdef KRB4
+static int do_v4	= 0;
+static int do_tokens	= 0;
+#endif
+static int do_v5	= 1;
+static char *cred_cache;
+
+static struct getargs args[] = {
+    { "cache",			'c', arg_string, &cred_cache,
+      "credentials cache to list", "cache" },
+    { "test",			't', arg_flag, &do_test,
+      "test for having tickets", NULL },
+#ifdef KRB4
+    { "v4",			'4',	arg_flag, &do_v4,
+      "display v4 tickets", NULL },
+    { "tokens",			'T',   arg_flag, &do_tokens,
+      "display AFS tokens", NULL },
+#endif
+    { "v5",			'5',	arg_flag, &do_v5,
+      "display v5 cred cache", NULL},
+    { "verbose",		'v', arg_flag, &do_verbose,
+      "Verbose output", NULL },
+    { "version", 		0,   arg_flag, &version_flag, 
+      "print version", NULL },
+    { "help",			0,   arg_flag, &help_flag, 
+      NULL, NULL}
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args)/sizeof(*args),
+		    NULL,
+		    "");
+    exit (ret);
+}
+
+int
+main (int argc, char **argv)
+{
+    int optind = 0;
+    int exit_status = 0;
+
+    set_progname (argv[0]);
+
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+	usage(1);
+    
+    if (help_flag)
+	usage (0);
+
+    if(version_flag){
+	print_version(NULL);
+	exit(0);
+    }
+
+    argc -= optind;
+    argv += optind;
+
+    if (argc != 0)
+	usage (1);
+
+    if (do_v5)
+	exit_status = display_v5_ccache (cred_cache, do_test, do_verbose);
 
 #ifdef KRB4
-    if (!do_test && do_tokens && k_hasafs ())
-	display_tokens (do_verbose);
+    if (!do_test) {
+	if (do_v4) {
+	    if (do_v5)
+		printf ("\n");
+	    display_v4_tickets (do_verbose);
+	}
+	if (do_tokens && k_hasafs ()) {
+	    if (do_v4 || do_v5)
+		printf ("\n");
+	    display_tokens (do_verbose);
+	}
+    }
 #endif
 
     return exit_status;
