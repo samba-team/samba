@@ -1016,6 +1016,7 @@ char *lp_lockdir(void);
 char *lp_rootdir(void);
 char *lp_defaultservice(void);
 char *lp_msg_command(void);
+char *lp_dfree_command(void);
 char *lp_hosts_equiv(void);
 char *lp_auto_services(void);
 char *lp_passwd_program(void);
