@@ -1,0 +1,933 @@
+<chapter id="passdb">
+<chapterinfo>
+	<author>
+		<firstname>Jelmer</firstname><surname>Vernooij</surname>
+		<affiliation>
+			<orgname>The Samba Team</orgname>
+			<address><email>jelmer@samba.org</email></address>
+		</affiliation>
+	</author>
+	<author>
+		<firstname>Gerald (Jerry)</firstname><surname>Carter</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address><email>jerry@samba.org</email></address>
+		</affiliation>
+	</author>
+	<author>
+		<firstname>Olivier (lem)</firstname><surname>Lemaire</surname>
+		<affiliation>
+			<orgname>IDEALX</orgname>
+			<address><email>olem@IDEALX.org</email></address>
+		</affiliation>
+	</author>
+	<author>
+		<firstname>Jeremy</firstname><surname>Allison</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address>
+				<email>jra@samba.org</email>
+			</address>
+		</affiliation>
+	</author>
+	<pubdate>February 2003</pubdate>
+</chapterinfo>
+
+<title>User information database</title>
+
+<sect1>
+	<title>Introduction</title>
+	
+	<para>Newer windows clients send encrypted passwords over 
+	the wire, instead of plain text passwords. The newest clients 
+	will only send encrypted passwords and refuse to send plain text 
+	passwords, unless their registry is tweaked.</para>
+
+	<para>These passwords can't be converted to unix style encrypted 
+	passwords. Because of that you can't use the standard unix 
+	user database, and you have to store the Lanman and NT hashes 
+	somewhere else. For more information, see the documentation 
+	about the <command>passdb backend = </command> parameter.
+	</para>
+</sect1>
+
+<sect1>
+	<title>Important Notes About Security</title>
+	
+	<para>The unix and SMB password encryption techniques seem similar 
+	on the surface. This similarity is, however, only skin deep. The unix 
+	scheme typically sends clear text passwords over the network when 
+	logging in. This is bad. The SMB encryption scheme never sends the 
+	cleartext password over the network but it does store the 16 byte 
+	hashed values on disk. This is also bad. Why? Because the 16 byte hashed 
+	values are a "password equivalent". You cannot derive the user's 
+	password from them, but they could potentially be used in a modified 
+	client to gain access to a server. This would require considerable 
+	technical knowledge on behalf of the attacker but is perfectly possible. 
+	You should thus treat the smbpasswd file as though it contained the 
+	cleartext passwords of all your users. Its contents must be kept 
+	secret, and the file should be protected accordingly.</para>
+	
+	<para>Ideally we would like a password scheme which neither requires 
+	plain text passwords on the net or on disk. Unfortunately this 
+	is not available as Samba is stuck with being compatible with 
+	other SMB systems (WinNT, WfWg, Win95 etc). </para>
+
+	<warning>
+		<para>Note that Windows NT 4.0 Service pack 3 changed the 
+		default for permissible authentication so that plaintext 
+		passwords are <emphasis>never</emphasis> sent over the wire. 
+		The solution to this is either to switch to encrypted passwords 
+		with Samba or edit the Windows NT registry to re-enable plaintext 
+		passwords. See the document WinNT.txt for details on how to do 
+		this.</para>
+		
+		<para>Other Microsoft operating systems which also exhibit 
+		this behavior includes</para>
+		
+		<itemizedlist>
+			<listitem><para>MS DOS Network client 3.0 with 
+			the basic network redirector installed</para></listitem>
+			
+			<listitem><para>Windows 95 with the network redirector 
+			update installed</para></listitem>
+			
+			<listitem><para>Windows 98 [se]</para></listitem>
+			
+			<listitem><para>Windows 2000</para></listitem>
+		</itemizedlist>
+		
+		<para><emphasis>Note :</emphasis>All current release of 
+		Microsoft SMB/CIFS clients support authentication via the
+		SMB Challenge/Response mechanism described here.  Enabling
+		clear text authentication does not disable the ability
+		of the client to participate in encrypted authentication.</para>
+	</warning>
+
+	<sect2>
+		<title>Advantages of SMB Encryption</title>
+
+		<itemizedlist>
+			<listitem><para>plain text passwords are not passed across 
+			the network. Someone using a network sniffer cannot just 
+			record passwords going to the SMB server.</para>
+			</listitem>
+		 
+			<listitem><para>WinNT doesn't like talking to a server 
+			that isn't using SMB encrypted passwords. It will refuse 
+			to browse the server if the server is also in user level 
+			security mode. It will insist on prompting the user for the 
+			password on each connection, which is very annoying. The
+			only things you can do to stop this is to use SMB encryption.
+			</para></listitem>
+		</itemizedlist>
+	</sect2>
+
+
+	<sect2>
+		<title>Advantages of non-encrypted passwords</title>
+
+		<itemizedlist>
+			<listitem><para>plain text passwords are not kept 
+			on disk. </para></listitem>
+			
+			<listitem><para>uses same password file as other unix 
+			services such as login and ftp</para></listitem>
+			
+			<listitem><para>you are probably already using other 
+			services (such as telnet and ftp) which send plain text 
+			passwords over the net, so sending them for SMB isn't 
+			such a big deal.</para></listitem>
+		</itemizedlist>
+	</sect2>
+</sect1>
+
+
+<sect1>
+	<title>The smbpasswd Command</title>
+	
+	<para>The smbpasswd command maintains the two 32 byte password fields 
+	in the smbpasswd file. If you wish to make it similar to the unix 
+	<command>passwd</command> or <command>yppasswd</command> programs, 
+	install it in <filename>/usr/local/samba/bin/</filename> (or your 
+	main Samba binary directory).</para>
+
+	<para><command>smbpasswd</command> now works in a client-server mode 
+	where it contacts the local smbd to change the user's password on its 
+	behalf. This has enormous benefits - as follows.</para>
+
+	<para><command>smbpasswd</command> now has the capability 
+	to change passwords on Windows NT servers (this only works when 
+	the request is sent to the NT Primary Domain Controller if you 
+	are changing an NT Domain user's password).</para>
+	
+	<para>To run smbpasswd as a normal user just type :</para>
+	
+	<para><prompt>$ </prompt><userinput>smbpasswd</userinput></para>
+	<para><prompt>Old SMB password: </prompt><userinput>&lt;type old value here - 
+	or hit return if there was no old password&gt;</userinput></para>
+	<para><prompt>New SMB Password: </prompt><userinput>&lt;type new value&gt;
+	</userinput></para>
+	<para><prompt>Repeat New SMB Password: </prompt><userinput>&lt;re-type new value
+	</userinput></para>
+	
+	<para>If the old value does not match the current value stored for 
+	that user, or the two new values do not match each other, then the 
+	password will not be changed.</para>
+	
+	<para>If invoked by an ordinary user it will only allow the user 
+	to change his or her own Samba password.</para>
+	
+	<para>If run by the root user smbpasswd may take an optional 
+	argument, specifying the user name whose SMB password you wish to 
+	change.  Note that when run as root smbpasswd does not prompt for 
+	or check the old password value, thus allowing root to set passwords 
+	for users who have forgotten their passwords.</para>
+	
+	<para><command>smbpasswd</command> is designed to work in the same way 
+	and be familiar to UNIX users who use the <command>passwd</command> or 
+	<command>yppasswd</command> commands.</para>
+
+	<para>For more details on using <command>smbpasswd</command> refer 
+	to the man page which will always be the definitive reference.</para>
+</sect1>
+
+<!--
+<sect1>
+<title>The <command>pdbedit</command> command</title>
+FIXME
+</sect1>
+-->
+
+<sect1>
+<title>LDAP</title>
+
+<sect2>
+<title>Introduction</title>
+
+<para>
+This document describes how to use an LDAP directory for storing Samba user
+account information traditionally stored in the smbpasswd(5) file.  It is
+assumed that the reader already has a basic understanding of LDAP concepts
+and has a working directory server already installed.  For more information
+on LDAP architectures and Directories, please refer to the following sites.
+</para>
+
+<itemizedlist>
+	<listitem><para>OpenLDAP - <ulink url="http://www.openldap.org/">http://www.openldap.org/</ulink></para></listitem>
+	<listitem><para>iPlanet Directory Server - <ulink url="http://iplanet.netscape.com/directory">http://iplanet.netscape.com/directory</ulink></para></listitem>
+</itemizedlist>
+
+<para>
+Note that <ulink url="http://www.ora.com/">O'Reilly Publishing</ulink> is working on
+a guide to LDAP for System Administrators which has a planned release date of
+early summer, 2002.
+</para>
+
+<para>
+Two additional Samba resources which may prove to be helpful are
+</para>
+
+<itemizedlist>
+	<listitem><para>The <ulink url="http://www.unav.es/cti/ldap-smb/ldap-smb-3-howto.html">Samba-PDC-LDAP-HOWTO</ulink>
+	maintained by Ignacio Coupeau.</para></listitem>
+
+	<listitem><para>The NT migration scripts from <ulink url="http://samba.idealx.org/">IDEALX</ulink> that are
+	geared to manage users and group in such a Samba-LDAP Domain Controller configuration.
+	</para></listitem>
+</itemizedlist>
+
+</sect2>
+
+<sect2>
+<title>Introduction</title>
+
+<para>
+Traditionally, when configuring <ulink url="smb.conf.5.html#ENCRYPTPASSWORDS">"encrypt
+passwords = yes"</ulink> in Samba's <filename>smb.conf</filename> file, user account
+information such as username, LM/NT password hashes, password change times, and account
+flags have been stored in the <filename>smbpasswd(5)</filename> file.  There are several
+disadvantages to this approach for sites with very large numbers of users (counted
+in the thousands).
+</para>
+
+<itemizedlist>
+<listitem><para>
+The first is that all lookups must be performed sequentially.  Given that
+there are approximately two lookups per domain logon (one for a normal
+session connection such as when mapping a network drive or printer), this
+is a performance bottleneck for lareg sites.  What is needed is an indexed approach
+such as is used in databases.
+</para></listitem>
+
+<listitem><para>
+The second problem is that administrators who desired to replicate a
+smbpasswd file to more than one Samba server were left to use external
+tools such as <command>rsync(1)</command> and <command>ssh(1)</command>
+and wrote custom, in-house scripts.
+</para></listitem>
+
+<listitem><para>
+And finally, the amount of information which is stored in an
+smbpasswd entry leaves no room for additional attributes such as
+a home directory, password expiration time, or even a Relative
+Identified (RID).
+</para></listitem>
+</itemizedlist>
+
+<para>
+As a result of these defeciencies, a more robust means of storing user attributes
+used by smbd was developed.  The API which defines access to user accounts
+is commonly referred to as the samdb interface (previously this was called the passdb
+API, and is still so named in the CVS trees). In Samba 2.2.3, enabling support
+for a samdb backend (e.g. <parameter>--with-ldapsam</parameter> or
+<parameter>--with-tdbsam</parameter>) requires compile time support.
+</para>
+
+<para>
+When compiling Samba to include the <parameter>--with-ldapsam</parameter> autoconf
+option, smbd (and associated tools) will store and lookup user accounts in
+an LDAP directory.  In reality, this is very easy to understand.  If you are
+comfortable with using an smbpasswd file, simply replace "smbpasswd" with
+"LDAP directory" in all the documentation.
+</para>
+
+<para>
+There are a few points to stress about what the <parameter>--with-ldapsam</parameter>
+does not provide.  The LDAP support referred to in the this documentation does not
+include:
+</para>
+
+<itemizedlist>
+	<listitem><para>A means of retrieving user account information from
+	an Windows 2000 Active Directory server.</para></listitem>
+	<listitem><para>A means of replacing /etc/passwd.</para></listitem>
+</itemizedlist>
+
+<para>
+The second item can be accomplished by using LDAP NSS and PAM modules.  LGPL
+versions of these libraries can be obtained from PADL Software
+(<ulink url="http://www.padl.com/">http://www.padl.com/</ulink>).  However,
+the details of configuring these packages are beyond the scope of this document.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Supported LDAP Servers</title>
+
+<para>
+The LDAP samdb code in 2.2.3 has been developed and tested using the OpenLDAP
+2.0 server and client libraries.  The same code should be able to work with
+Netscape's Directory Server and client SDK. However, due to lack of testing
+so far, there are bound to be compile errors and bugs.  These should not be
+hard to fix. If you are so inclined, please be sure to forward all patches to
+<ulink url="samba-patches@samba.org">samba-patches@samba.org</ulink> and
+<ulink url="jerry@samba.org">jerry@samba.org</ulink>.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Schema and Relationship to the RFC 2307 posixAccount</title>
+
+
+<para>
+Samba 3.0 includes the necessary schema file for OpenLDAP 2.0 in
+<filename>examples/LDAP/samba.schema</filename>.  The sambaAccount objectclass is given here:
+</para>
+
+<para><programlisting>
+objectclass ( 1.3.1.5.1.4.1.7165.2.2.2 NAME 'sambaAccount' SUP top STRUCTURAL
+     DESC 'Samba Account'
+     MUST ( uid $ rid )
+     MAY  ( cn $ lmPassword $ ntPassword $ pwdLastSet $ logonTime $
+            logoffTime $ kickoffTime $ pwdCanChange $ pwdMustChange $ acctFlags $
+            displayName $ smbHome $ homeDrive $ scriptPath $ profilePath $
+            description $ userWorkstations $ primaryGroupID $ domain ))
+</programlisting></para>
+
+<para>
+The samba.schema file has been formatted for OpenLDAP 2.0.  The OID's are
+owned by the Samba Team and as such is legal to be openly published.
+If you translate the schema to be used with Netscape DS, please
+submit the modified schema file as a patch to <ulink
+url="jerry@samba.org">jerry@samba.org</ulink>
+</para>
+
+<para>
+Just as the smbpasswd file is mean to store information which supplements a
+user's <filename>/etc/passwd</filename> entry, so is the sambaAccount object
+meant to supplement the UNIX user account information.  A sambaAccount is a
+<constant>STRUCTURAL</constant> objectclass so it can be stored individually
+in the directory.  However, there are several fields (e.g. uid) which overlap
+with the posixAccount objectclass outlined in RFC2307.  This is by design.
+</para>
+
+<!--olem: we should perhaps have a note about shadowAccounts too as many
+systems use them, isn'it ? -->
+
+<para>
+In order to store all user account information (UNIX and Samba) in the directory,
+it is necessary to use the sambaAccount and posixAccount objectclasses in
+combination.  However, smbd will still obtain the user's UNIX account
+information via the standard C library calls (e.g. getpwnam(), et. al.).
+This means that the Samba server must also have the LDAP NSS library installed
+and functioning correctly.  This division of information makes it possible to
+store all Samba account information in LDAP, but still maintain UNIX account
+information in NIS while the network is transitioning to a full LDAP infrastructure.
+</para>
+</sect2>
+
+<sect2>
+<title>Configuring Samba with LDAP</title>
+
+
+<sect3>
+<title>OpenLDAP configuration</title>
+
+<para>
+To include support for the sambaAccount object in an OpenLDAP directory
+server, first copy the samba.schema file to slapd's configuration directory.
+</para>
+
+<para>
+<prompt>root# </prompt><command>cp samba.schema /etc/openldap/schema/</command>
+</para>
+
+<para>
+Next, include the <filename>samba.schema</filename> file in <filename>slapd.conf</filename>.
+The sambaAccount object contains two attributes which depend upon other schema
+files.  The 'uid' attribute is defined in <filename>cosine.schema</filename> and
+the 'displayName' attribute is defined in the <filename>inetorgperson.schema</filename>
+file.  Both of these must be included before the <filename>samba.schema</filename> file.
+</para>
+
+<para><programlisting>
+## /etc/openldap/slapd.conf
+
+## schema files (core.schema is required by default)
+include	           /etc/openldap/schema/core.schema
+
+## needed for sambaAccount
+include            /etc/openldap/schema/cosine.schema
+include            /etc/openldap/schema/inetorgperson.schema
+include            /etc/openldap/schema/samba.schema
+
+## uncomment this line if you want to support the RFC2307 (NIS) schema
+## include         /etc/openldap/schema/nis.schema
+
+....
+</programlisting></para>
+
+<para>
+It is recommended that you maintain some indices on some of the most usefull attributes,
+like in the following example, to speed up searches made on sambaAccount objectclasses
+(and possibly posixAccount and posixGroup as well).
+</para>
+<para><programlisting>
+# Indices to maintain
+## required by OpenLDAP 2.0
+index objectclass   eq
+
+## support pb_getsampwnam()
+index uid           pres,eq
+## support pdb_getsambapwrid()
+index rid           eq
+
+## uncomment these if you are storing posixAccount and
+## posixGroup entries in the directory as well
+##index uidNumber     eq
+##index gidNumber     eq
+##index cn            eq
+##index memberUid     eq
+</programlisting></para>
+</sect3>
+
+
+<sect3>
+<title>Configuring Samba</title>
+<!--lem: <title>smb.conf LDAP parameters</title> -->
+
+<para>
+The following parameters are available in smb.conf only with <parameter>--with-ldapsam</parameter>
+was included with compiling Samba.
+</para>
+
+<itemizedlist>
+	<listitem><para><ulink url="smb.conf.5.html#LDAPSSL">ldap ssl</ulink></para></listitem>
+	<listitem><para><ulink url="smb.conf.5.html#LDAPSERVER">ldap server</ulink></para></listitem>
+	<listitem><para><ulink url="smb.conf.5.html#LDAPADMINDN">ldap admin dn</ulink></para></listitem>
+	<listitem><para><ulink url="smb.conf.5.html#LDAPSUFFIX">ldap suffix</ulink></para></listitem>
+	<listitem><para><ulink url="smb.conf.5.html#LDAPFILTER">ldap filter</ulink></para></listitem>
+	<listitem><para><ulink url="smb.conf.5.html#LDAPPORT">ldap port</ulink></para></listitem>
+</itemizedlist>
+
+<para>
+These are described in the <ulink url="smb.conf.5.html">smb.conf(5)</ulink> man
+page and so will not be repeated here.  However, a sample smb.conf file for
+use with an LDAP directory could appear as
+</para>
+
+<para><programlisting>
+## /usr/local/samba/lib/smb.conf
+[global]
+     security = user
+     encrypt passwords = yes
+
+     netbios name = TASHTEGO
+     workgroup = NARNIA
+
+     # ldap related parameters
+
+     # define the DN to use when binding to the directory servers
+     # The password for this DN is not stored in smb.conf.  Rather it
+     # must be set by using 'smbpasswd -w <replaceable>secretpw</replaceable>' to store the
+     # passphrase in the secrets.tdb file.  If the "ldap admin dn" values
+     # changes, this password will need to be reset.
+     ldap admin dn = "cn=Samba Manager,ou=people,dc=samba,dc=org"
+
+     #  specify the LDAP server's hostname (defaults to locahost)
+     ldap server = ahab.samba.org
+
+     # Define the SSL option when connecting to the directory
+     # ('off', 'start tls', or 'on' (default))
+     ldap ssl = start tls
+
+     # define the port to use in the LDAP session (defaults to 636 when
+     # "ldap ssl = on")
+     ldap port = 389
+
+     # specify the base DN to use when searching the directory
+     ldap suffix = "ou=people,dc=samba,dc=org"
+
+     # generally the default ldap search filter is ok
+     # ldap filter = "(&amp;(uid=%u)(objectclass=sambaAccount))"
+</programlisting></para>
+
+
+</sect3>
+</sect2>
+
+
+<sect2>
+<title>Accounts and Groups management</title>
+
+<para>
+As users accounts are managed thru the sambaAccount objectclass, you should
+modify you existing administration tools to deal with sambaAccount attributes.
+</para>
+
+<para>
+Machines accounts are managed with the sambaAccount objectclass, just
+like users accounts. However, it's up to you to stored thoses accounts
+in a different tree of you LDAP namespace: you should use
+"ou=Groups,dc=plainjoe,dc=org" to store groups and
+"ou=People,dc=plainjoe,dc=org" to store users. Just configure your
+NSS and PAM accordingly (usually, in the /etc/ldap.conf configuration
+file).
+</para>
+
+<para>
+In Samba release 3.0, the group management system is based on posix
+groups. This means that Samba make usage of the posixGroup objectclass.
+For now, there is no NT-like group system management (global and local
+groups).
+</para>
+
+</sect2>
+
+<sect2>
+<title>Security and sambaAccount</title>
+
+
+<para>
+There are two important points to remember when discussing the security
+of sambaAccount entries in the directory.
+</para>
+
+<itemizedlist>
+	<listitem><para><emphasis>Never</emphasis> retrieve the lmPassword or
+	ntPassword attribute values over an unencrypted LDAP session.</para></listitem>
+	<listitem><para><emphasis>Never</emphasis> allow non-admin users to
+	view the lmPassword or ntPassword attribute values.</para></listitem>
+</itemizedlist>
+
+<para>
+These password hashes are clear text equivalents and can be used to impersonate
+the user without deriving the original clear text strings.  For more information
+on the details of LM/NT password hashes, refer to the <ulink
+url="ENCRYPTION.html">ENCRYPTION chapter</ulink> of the Samba-HOWTO-Collection.
+</para>
+
+<para>
+To remedy the first security issue, the "ldap ssl" smb.conf parameter defaults
+to require an encrypted session (<command>ldap ssl = on</command>) using
+the default port of 636
+when contacting the directory server.  When using an OpenLDAP 2.0 server, it
+is possible to use the use the StartTLS LDAP extended  operation in the place of
+LDAPS.  In either case, you are strongly discouraged to disable this security
+(<command>ldap ssl = off</command>).
+</para>
+
+<para>
+Note that the LDAPS protocol is deprecated in favor of the LDAPv3 StartTLS
+extended operation.  However, the OpenLDAP library still provides support for
+the older method of securing communication between clients and servers.
+</para>
+
+<para>
+The second security precaution is to prevent non-administrative users from
+harvesting password hashes from the directory.  This can be done using the
+following ACL in <filename>slapd.conf</filename>:
+</para>
+
+<para><programlisting>
+## allow the "ldap admin dn" access, but deny everyone else
+access to attrs=lmPassword,ntPassword
+     by dn="cn=Samba Admin,ou=people,dc=plainjoe,dc=org" write
+     by * none
+</programlisting></para>
+
+
+</sect2>
+
+
+
+<sect2>
+<title>LDAP specials attributes for sambaAccounts</title>
+
+<para>
+The sambaAccount objectclass is composed of the following attributes:
+</para>
+
+<itemizedlist>
+
+	<listitem><para><constant>lmPassword</constant>: the LANMAN password 16-byte hash stored as a character
+	representation of a hexidecimal string.</para></listitem>
+
+	<listitem><para><constant>ntPassword</constant>: the NT password hash 16-byte stored as a character
+	representation of a hexidecimal string.</para></listitem>
+
+	<listitem><para><constant>pwdLastSet</constant>: The integer time in seconds since 1970 when the
+	<constant>lmPassword</constant> and <constant>ntPassword</constant> attributes were last set.
+	</para></listitem>
+
+	<listitem><para><constant>acctFlags</constant>: string of 11 characters surrounded by square brackets []
+	representing account flags such as U (user), W(workstation), X(no password expiration), and
+	D(disabled).</para></listitem>
+
+	<listitem><para><constant>logonTime</constant>: Integer value currently unused</para></listitem>
+
+	<listitem><para><constant>logoffTime</constant>: Integer value currently unused</para></listitem>
+
+	<listitem><para><constant>kickoffTime</constant>: Integer value currently unused</para></listitem>
+
+	<listitem><para><constant>pwdCanChange</constant>: Integer value currently unused</para></listitem>
+
+	<listitem><para><constant>pwdMustChange</constant>: Integer value currently unused</para></listitem>
+
+	<listitem><para><constant>homeDrive</constant>: specifies the drive letter to which to map the
+	UNC path specified by homeDirectory. The drive letter must be specified in the form "X:"
+	where X is the letter of the drive to map. Refer to the "logon drive" parameter in the
+	smb.conf(5) man page for more information.</para></listitem>
+
+	<listitem><para><constant>scriptPath</constant>: The scriptPath property specifies the path of
+	the user's logon script, .CMD, .EXE, or .BAT file. The string can be null. The path
+	is relative to the netlogon share.  Refer to the "logon script" parameter in the
+	smb.conf(5) man page for more information.</para></listitem>
+
+	<listitem><para><constant>profilePath</constant>: specifies a path to the user's profile.
+	This value can be a null string, a local absolute path, or a UNC path.  Refer to the
+	"logon path" parameter in the smb.conf(5) man page for more information.</para></listitem>
+
+	<listitem><para><constant>smbHome</constant>: The homeDirectory property specifies the path of
+	the home directory for the user. The string can be null. If homeDrive is set and specifies
+	a drive letter, homeDirectory should be a UNC path. The path must be a network
+	UNC path of the form \\server\share\directory. This value can be a null string.
+	Refer to the "logon home" parameter in the smb.conf(5) man page for more information.
+	</para></listitem>
+
+	<listitem><para><constant>userWorkstation</constant>: character string value currently unused.
+	</para></listitem>
+
+	<listitem><para><constant>rid</constant>: the integer representation of the user's relative identifier
+	(RID).</para></listitem>
+
+	<listitem><para><constant>primaryGroupID</constant>: the relative identifier (RID) of the primary group
+	of the user.</para></listitem>
+
+</itemizedlist>
+
+<para>
+The majority of these parameters are only used when Samba is acting as a PDC of
+a domain (refer to the <ulink url="Samba-PDC-HOWTO.html">Samba-PDC-HOWTO</ulink> for details on
+how to configure Samba as a Primary Domain Controller). The following four attributes
+are only stored with the sambaAccount entry if the values are non-default values:
+</para>
+
+<itemizedlist>
+	<listitem><para>smbHome</para></listitem>
+	<listitem><para>scriptPath</para></listitem>
+	<listitem><para>logonPath</para></listitem>
+	<listitem><para>homeDrive</para></listitem>
+</itemizedlist>
+
+<para>
+These attributes are only stored with the sambaAccount entry if
+the values are non-default values.  For example, assume TASHTEGO has now been
+configured as a PDC and that <command>logon home = \\%L\%u</command> was defined in
+its <filename>smb.conf</filename> file. When a user named "becky" logons to the domain,
+the <parameter>logon home</parameter> string is expanded to \\TASHTEGO\becky.
+If the smbHome attribute exists in the entry "uid=becky,ou=people,dc=samba,dc=org",
+this value is used.  However, if this attribute does not exist, then the value
+of the <parameter>logon home</parameter> parameter is used in its place.  Samba
+will only write the attribute value to the directory entry is the value is
+something other than the default (e.g. \\MOBY\becky).
+</para>
+
+
+</sect2>
+
+
+
+<sect2>
+<title>Example LDIF Entries for a sambaAccount</title>
+
+
+<para>
+The following is a working LDIF with the inclusion of the posixAccount objectclass:
+</para>
+
+<para><programlisting>
+dn: uid=guest2, ou=people,dc=plainjoe,dc=org
+ntPassword: 878D8014606CDA29677A44EFA1353FC7
+pwdMustChange: 2147483647
+primaryGroupID: 1201
+lmPassword: 552902031BEDE9EFAAD3B435B51404EE
+pwdLastSet: 1010179124
+logonTime: 0
+objectClass: sambaAccount
+uid: guest2
+kickoffTime: 2147483647
+acctFlags: [UX         ]
+logoffTime: 2147483647
+rid: 19006
+pwdCanChange: 0
+</programlisting></para>
+
+<para>
+The following is an LDIF entry for using both the sambaAccount and
+posixAccount objectclasses:
+</para>
+
+<para><programlisting>
+dn: uid=gcarter, ou=people,dc=plainjoe,dc=org
+logonTime: 0
+displayName: Gerald Carter
+lmPassword: 552902031BEDE9EFAAD3B435B51404EE
+primaryGroupID: 1201
+objectClass: posixAccount
+objectClass: sambaAccount
+acctFlags: [UX         ]
+userPassword: {crypt}BpM2ej8Rkzogo
+uid: gcarter
+uidNumber: 9000
+cn: Gerald Carter
+loginShell: /bin/bash
+logoffTime: 2147483647
+gidNumber: 100
+kickoffTime: 2147483647
+pwdLastSet: 1010179230
+rid: 19000
+homeDirectory: /home/tashtego/gcarter
+pwdCanChange: 0
+pwdMustChange: 2147483647
+ntPassword: 878D8014606CDA29677A44EFA1353FC7
+</programlisting></para>
+
+</sect2>
+</sect1>
+
+<sect1>
+<title>Passdb MySQL plugin</title>
+
+<sect2>
+<title>Building</title>
+
+<para>To build the plugin, run <command>make bin/pdb_mysql.so</command>
+in the <filename>source/</filename> directory of samba distribution. 
+</para>
+
+<para>Next, copy pdb_mysql.so to any location you want. I 
+strongly recommend installing it in $PREFIX/lib or /usr/lib/samba/</para>
+
+</sect2>
+
+<sect2>
+<title>Creating the database</title>
+
+<para>
+You either can set up your own table and specify the field names to pdb_mysql (see below
+for the column names) or use the default table. The file <filename>examples/pdb/mysql/mysql.dump</filename> 
+contains the correct queries to create the required tables. Use the command :
+
+<command>mysql -u<replaceable>username</replaceable> -h<replaceable>hostname</replaceable> -p<replaceable>password</replaceable> <replaceable>databasename</replaceable> < <filename>/path/to/samba/examples/pdb/mysql/mysql.dump</filename></command>
+
+</para>
+</sect2>
+
+<sect2>
+<title>Configuring</title>
+
+<para>This plugin lacks some good documentation, but here is some short info:</para>
+
+<para>Add a the following to the <command>passdb backend</command> variable in your <filename>smb.conf</filename>:
+<programlisting>
+passdb backend = [other-plugins] plugin:/location/to/pdb_mysql.so:identifier [other-plugins]
+</programlisting>
+</para>
+
+<para>The identifier can be any string you like, as long as it doesn't collide with 
+the identifiers of other plugins or other instances of pdb_mysql. If you 
+specify multiple pdb_mysql.so entries in 'passdb backend', you also need to 
+use different identifiers!
+</para>
+
+<para>
+Additional options can be given thru the smb.conf file in the [global] section.
+</para>
+
+<para><programlisting>
+identifier:mysql host                     - host name, defaults to 'localhost'
+identifier:mysql password
+identifier:mysql user                     - defaults to 'samba'
+identifier:mysql database                 - defaults to 'samba'
+identifier:mysql port                     - defaults to 3306
+identifier:table                          - Name of the table containing users
+</programlisting></para>
+
+<para>
+<emphasis>
+WARNING: since the password for the mysql user is stored in the 
+smb.conf file, you should make the the smb.conf file 
+readable only to the user that runs samba. This is considered a security 
+bug and will be fixed soon.</emphasis>
+</para>
+
+<para>Names of the columns in this table(I've added column types those columns should have first):</para>
+
+<para><programlisting>
+identifier:logon time column             - int(9)
+identifier:logoff time column            - int(9)
+identifier:kickoff time column           - int(9)
+identifier:pass last set time column     - int(9)
+identifier:pass can change time column   - int(9)
+identifier:pass must change time column  - int(9)
+identifier:username column               - varchar(255) - unix username
+identifier:domain column                 - varchar(255) - NT domain user is part of
+identifier:nt username column            - varchar(255) - NT username
+identifier:fullname column            - varchar(255) - Full name of user
+identifier:home dir column               - varchar(255) - Unix homedir path
+identifier:dir drive column              - varchar(2) - Directory drive path (eg: 'H:')
+identifier:logon script column           - varchar(255) - Batch file to run on client side when logging on
+identifier:profile path column           - varchar(255) - Path of profile
+identifier:acct desc column              - varchar(255) - Some ASCII NT user data
+identifier:workstations column           - varchar(255) - Workstations user can logon to (or NULL for all)
+identifier:unknown string column         - varchar(255) - unknown string
+identifier:munged dial column            - varchar(255) - ?
+identifier:uid column                    - int(9) - Unix user ID (uid)
+identifier:gid column                    - int(9) - Unix user group (gid)
+identifier:user sid column               - varchar(255) - NT user SID
+identifier:group sid column              - varchar(255) - NT group ID
+identifier:lanman pass column            - varchar(255) - encrypted lanman password
+identifier:nt pass column                - varchar(255) - encrypted nt passwd
+identifier:plain pass column             - varchar(255) - plaintext password
+identifier:acct control column           - int(9) - nt user data
+identifier:unknown 3 column              - int(9) - unknown
+identifier:logon divs column             - int(9) - ?
+identifier:hours len column              - int(9) - ?
+identifier:unknown 5 column              - int(9) - unknown
+identifier:unknown 6 column              - int(9) - unknown
+</programlisting></para>
+
+<para>
+Eventually, you can put a colon (:) after the name of each column, which 
+should specify the column to update when updating the table. You can also
+specify nothing behind the colon - then the data from the field will not be 
+updated. 
+</para>
+
+</sect2>
+
+<sect2>
+<title>Using plaintext passwords or encrypted password</title>
+
+<para>
+I strongly discourage the use of plaintext passwords, however, you can use them:
+</para>
+
+<para>
+If you would like to use plaintext passwords, set 'identifier:lanman pass column' and 'identifier:nt pass column' to 'NULL' (without the quotes) and 'identifier:plain pass column' to the name of the column containing the plaintext passwords. 
+</para>
+
+<para>
+If you use encrypted passwords, set the 'identifier:plain pass column' to 'NULL' (without the quotes). This is the default.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Getting non-column data from the table</title>
+
+<para>
+It is possible to have not all data in the database and making some 'constant'.
+</para>
+
+<para>
+For example, you can set 'identifier:fullname column' to : 
+<command>CONCAT(First_name,' ',Sur_name)</command>
+</para>
+
+<para>
+Or, set 'identifier:workstations column' to :
+<command>NULL</command></para>
+
+<para>See the MySQL documentation for more language constructs.</para>
+
+</sect2>
+</sect1>
+
+<sect1>
+<title>Passdb XML plugin</title>
+
+<sect2>
+<title>Building</title>
+
+<para>This module requires libxml2 to be installed.</para>
+
+<para>To build pdb_xml, run: <command>make bin/pdb_xml.so</command> in 
+the directory <filename>source/</filename>. </para>
+
+</sect2>
+
+<sect2>
+<title>Usage</title>
+
+<para>The usage of pdb_xml is pretty straightforward. To export data, use:
+
+<command>pdbedit -e plugin:/usr/lib/samba/pdb_xml.so:filename</command>
+
+(where filename is the name of the file to put the data in)
+</para>
+
+<para>
+To import data, use:
+<command>pdbedit -i plugin:/usr/lib/samba/pdb_xml.so:filename -e current-pdb</command>
+
+Where filename is the name to read the data from and current-pdb to put it in.
+</para>
+</sect2>
+</sect1>
+
+</chapter>
