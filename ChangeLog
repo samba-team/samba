@@ -1,9 +1,12 @@
 Sat Mar 21 22:57:13 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/krb5/mk_error.c: Verify that error_code is in the range
+ 	[0,127].
+
 	* kdc/kerberos5.c: Move checking of principal flags to new
  	function `check_flags'.
 
-Sat Mar 21 14:38:51 1998  assar westerlund  <assar@sics.se>
+Sat Mar 21 14:38:51 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/kadm5/get_s.c (kadm5_s_get_principal): handle an empty salt
 
