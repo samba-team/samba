@@ -117,9 +117,11 @@ extract_ticket(krb5_context context,
 {
     krb5_error_code err;
 
+#if 0 /* XXX - Only check they're the same */
     principalname2krb5_principal(&creds->client, 
 				 rep->part1.cname, 
 				 rep->part1.crealm);
+#endif
     {
 	char buf[1024];
 	size_t len;
@@ -139,9 +141,11 @@ extract_ticket(krb5_context context,
     if (err)
 	return err;
 
+#if 0 /* XXX - see above */
     principalname2krb5_principal(&creds->server, 
 				 rep->part1.ticket.sname, 
 				 rep->part1.ticket.realm);
+#endif
 
     if (rep->part2.starttime) {
 	creds->times.starttime = *rep->part2.starttime;
