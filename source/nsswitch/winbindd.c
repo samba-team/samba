@@ -223,6 +223,7 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_SETGRENT, winbindd_setgrent, "SETGRENT" },
 	{ WINBINDD_ENDGRENT, winbindd_endgrent, "ENDGRENT" },
 	{ WINBINDD_GETGRENT, winbindd_getgrent, "GETGRENT" },
+	{ WINBINDD_GETGRLST, winbindd_getgrent, "GETGRLST" },
 
 	/* PAM auth functions */
 

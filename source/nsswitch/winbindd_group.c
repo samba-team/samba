@@ -75,7 +75,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	*num_gr_mem = 0;
 	
 	if (group_name_type != SID_NAME_DOM_GRP) {
-		DEBUG(1, ("rid %d in domain %s isn't a " "domain group\n", 
+		DEBUG(1, ("rid %d in domain %s isn't a domain group\n", 
 			  group_rid, domain->name));
                 goto done;
 	}
@@ -580,14 +580,21 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 				goto done;
 			}
 
-			/* Get group membership */
+			group_list[group_list_ndx].num_gr_mem = 0;
+			gr_mem = NULL;
+			gr_mem_len = 0;
 			
-			result = fill_grent_mem(
-				domain,
-				name_list[ent->sam_entry_index].rid,
-				SID_NAME_DOM_GRP,
-				&group_list[group_list_ndx].num_gr_mem, 
-				&gr_mem, &gr_mem_len);
+			/* Get group membership */			
+			if (state->request.cmd == WINBINDD_GETGRLST) {
+				result = True;
+			} else {
+				result = fill_grent_mem(
+					domain,
+					name_list[ent->sam_entry_index].rid,
+					SID_NAME_DOM_GRP,
+					&group_list[group_list_ndx].num_gr_mem, 
+					&gr_mem, &gr_mem_len);
+			}
 		}
 
 		if (result) {

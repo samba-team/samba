@@ -99,6 +99,9 @@ enum winbindd_cmd {
 	WINBINDD_WINS_BYIP,
 	WINBINDD_WINS_BYNAME,
 
+	/* this is like GETGRENT but gives an empty group list */
+	WINBINDD_GETGRLST,
+
 	/* Placeholder for end of cmd list */
 
 	WINBINDD_NUM_CMDS
