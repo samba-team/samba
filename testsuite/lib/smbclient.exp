@@ -42,11 +42,11 @@ proc do_smbclient { args } {
     send $action
 
     expect {
-	$smb_prompt     { set output $expect_out(0,string) }
+	$smb_prompt     {}
 	timeout         { perror "timed out $description"; return -1}
 	eof             { perror "end of file description"; return -1 }
     }
 
-    verbose $output
-    return $output
+    verbose $expect_out(buffer)
+    return $expect_out(buffer)
 }
