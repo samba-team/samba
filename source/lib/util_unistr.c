@@ -176,7 +176,7 @@ char *dos_unistr2(uint16 *src)
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; *src && (p-lbuf < MAXUNI-3); src++) {
+	for (p = lbuf; (p-lbuf < MAXUNI-3) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
 		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
@@ -205,7 +205,7 @@ char *dos_unistr2_to_str(UNISTR2 *str)
 
 	nexti = (nexti+1)%8;
 
-	for (p = lbuf; *src && p-lbuf < max_size; src++) {
+	for (p = lbuf; (p-lbuf < max_size) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
 		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
