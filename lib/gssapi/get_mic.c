@@ -115,6 +115,7 @@ mic_des
   memset (deskey, 0, sizeof(deskey));
   memset (schedule, 0, sizeof(schedule));
   
+  *minor_status = 0;
   return GSS_S_COMPLETE;
 }
 
@@ -247,6 +248,7 @@ mic_des3
 			       ++seq_number);
   
   free_Checksum (&cksum);
+  *minor_status = 0;
   return GSS_S_COMPLETE;
 }
 
