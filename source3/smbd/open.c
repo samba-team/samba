@@ -139,18 +139,20 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	 * as we always opened files read-write in that release. JRA.
 	 */
 
-	if ((accmode == O_RDONLY) && ((flags & O_TRUNC) == O_TRUNC))
+	if ((accmode == O_RDONLY) && ((flags & O_TRUNC) == O_TRUNC)) {
+		DEBUG(10,("open_file: truncate requested on read-only open for file %s\n",fname ));
 		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
-
-	/*
-	 * We can't actually truncate here as the file may be locked.
-	 * open_file_shared will take care of the truncate later. JRA.
-	 */
-
-	local_flags &= ~O_TRUNC;
+	}
 
 	if ((desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ||
-			(local_flags & O_CREAT)) {
+			(local_flags & O_CREAT) || ((local_flags & O_TRUNC) == O_TRUNC) ) {
+
+		/*
+		 * We can't actually truncate here as the file may be locked.
+		 * open_file_shared will take care of the truncate later. JRA.
+		 */
+
+		local_flags &= ~O_TRUNC;
 
 		/* actually do the open */
 		fsp->fd = fd_open(conn, fname, local_flags, mode);
