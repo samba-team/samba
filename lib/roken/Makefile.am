@@ -18,6 +18,7 @@ check_PROGRAMS = 				\
 		getaddrinfo-test		\
 		parse_bytes-test		\
 		parse_reply-test		\
+		parse_time-test			\
 		snprintf-test			\
 		strpftime-test
 
@@ -32,6 +33,8 @@ libtest_la_CFLAGS = -DTEST_SNPRINTF
 
 parse_reply_test_SOURCES = parse_reply-test.c resolve.c
 parse_reply_test_CFLAGS  = -DTEST_RESOLVE
+
+parse_time_test_SOURCES = parse_time-test.c test-mem.c
 
 strpftime_test_SOURCES	= strpftime-test.c
 strpftime_test_LDADD = libtest.la $(LDADD)
@@ -145,6 +148,8 @@ include_HEADERS = 				\
 	rtbl.h 					\
 	xdbm.h					\
 	$(XHEADERS) 
+
+build_HEADERZ = test-mem.h
 
 nodist_include_HEADERS = roken.h
 
