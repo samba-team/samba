@@ -8,9 +8,9 @@ INCLUDES=-DHOST=\"@CANONICAL_HOST@\"
 
 foodir = $(includedir)
 foo_DATA = \
-	bits.h cache.h config_file.h des.h error.h getarg.h gssapi.h \
-	hdb.h kafs.h keytab.h krb5-protos.h krb5.h md4.h md5.h otp.h \
-	parse_time.h parse_units.h roken.h sha.h sl.h store.h \
+	bits.h des.h error.h getarg.h gssapi.h \
+	hdb.h kafs.h krb5-protos.h krb5.h md4.h md5.h otp.h \
+	parse_time.h parse_units.h roken.h sha.h sl.h \
 	@EXTRA_HDRS@
 
 
