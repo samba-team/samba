@@ -166,14 +166,14 @@ to <ulink url="mailto:jht@samba.org">John Terpstra</ulink>.
 <para>
 There are several opportunities for creating a custom network startup configuration environment.
 </para>
-<
+
 <simplelist>
-	<member><para>No Logon Script</para></member>
-	<member><para>Simple universal Logon Script that applies to all users</para></member>
-	<member><para>Use of a conditional Logon Script that applies per user or per group attirbutes</para></member>
-	<member><para>Use of Samba's Preexec and Postexec functions on access to the NETLOGON share to create
-	a custom Logon Script and then execute it.</para></member>
-	<member><para>User of a tool such as KixStart</para></member>
+	<member>No Logon Script</member>
+	<member>Simple universal Logon Script that applies to all users</member>
+	<member>Use of a conditional Logon Script that applies per user or per group attirbutes</member>
+	<member>Use of Samba's Preexec and Postexec functions on access to the NETLOGON share to create
+	a custom Logon Script and then execute it.</member>
+	<member>User of a tool such as KixStart</member>
 </simplelist>
 
 <para>
@@ -184,9 +184,10 @@ The Samba source code tree includes two logon script generation/execution tools.
 The following listings are from the genlogon directory.
 </para>
 
-<programlisting<para>
+<para>
 This is the genlogon.pl file:
 
+<programlisting>
 	#!/usr/bin/perl
 	#
 	# genlogon.pl
@@ -258,15 +259,16 @@ This is the genlogon.pl file:
 
 	# All done! Close the output file.
 	close LOGON;
-</para></programlisting>
+</programlisting>
+</para>
 
 <para>
 Those wishing to use more elaborate or capable logon processing system should check out the following sites:
 </para>
 
 <simplelist>
-	<member><para>http://www.craigelachie.org/rhacer/ntlogon</para></member>
-	<member><para>http://www.kixtart.org</para></member>
+	<member>http://www.craigelachie.org/rhacer/ntlogon</member>
+	<member>http://www.kixtart.org</member>
 </simplelist>
 
 </sect1>
