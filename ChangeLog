@@ -1,3 +1,14 @@
+2003-07-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/{keytab_file.c,principal.c,mk_error.c,krb5.h,get_cred.c}:
+	prefix libasn1 types with heim_
+	
+	* lib/asn1: prefix typedefs and structs with heim_
+
+2003-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb.c: avoid unnecessary setting of variable
+	
 2003-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/klist.c (check_for_tgt): use krb5_cc_clear_mcred
