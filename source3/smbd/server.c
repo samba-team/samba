@@ -867,6 +867,7 @@ void build_options(BOOL screen);
 		exit(1);
 	}
 
+
 	if (!init_account_policy()) {
 		DEBUG(0,("Could not open account policy tdb.\n"));
 		exit(1);
