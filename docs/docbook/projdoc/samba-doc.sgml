@@ -6,6 +6,7 @@
 <!ENTITY DOMAIN-MEMBER SYSTEM "DOMAIN_MEMBER.sgml">
 <!ENTITY WINBIND SYSTEM "winbind.sgml">
 <!ENTITY NT-Security SYSTEM "NT_Security.sgml">
+<!ENTITY OS2-Client SYSTEM "OS2-Client-HOWTO.sgml">
 ]>
 
 <book id="Samba-Project-Documentation">
@@ -30,5 +31,6 @@
 &DOMAIN-MEMBER;
 &WINBIND;
 &NT-Security;
+&OS2-Client;
 
 </book>
