@@ -313,7 +313,7 @@ int winbind_initgroups(char *user, gid_t gid)
 
 		/* Set the groups */
 
-		if (setgroups(ngroups, groups) == -1) {
+		if (sys_setgroups(ngroups, groups) == -1) {
 			errno = EPERM;
 			result = -1;
 			goto done;
