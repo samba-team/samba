@@ -27,7 +27,7 @@ static int sys_waitpid(pid_t pid,int *status,int options)
 #endif /* USE_WAITPID */
 }
 
-#define DATA "conftest.fcntl"
+#define DATA "conftest.fcntl64"
 
 /* lock a byte range in a open file */
 int main(int argc, char *argv[])
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 	sys_waitpid(pid, &status, 0);
 
 #if defined(WIFEXITED) && defined(WEXITSTATUS)
-	if(WIFEXITED(status) == 0) {
+	if(WIFEXITED(status)) {
 		status = WEXITSTATUS(status);
 	} else {
 		status = 1;

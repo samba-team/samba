@@ -898,8 +898,21 @@ if test x"$samba_cv_HAVE_FCNTL_LOCK" = x"yes"; then
     AC_DEFINE(HAVE_FCNTL_LOCK)
 fi
 
-AC_CACHE_CHECK([for 64 bit fcntl locking],samba_cv_HAVE_STRUCT_FLOCK64,[
-AC_TRY_RUN([
+AC_CACHE_CHECK([for broken (glibc2.1/x86) 64 bit fcntl locking],samba_cv_HAVE_BROKEN_FCNTL64_LOCKS,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/fcntl_lock64.c"],
+           samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=yes,samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=no,samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=cross)])
+if test x"$samba_cv_HAVE_BROKEN_FCNTL64_LOCKS" = x"yes"; then
+    AC_DEFINE(HAVE_BROKEN_FCNTL64_LOCKS)
+
+else
+
+dnl
+dnl Don't check for 64 bit fcntl locking if we know that the
+dnl glibc2.1 broken check has succeeded.
+dnl 
+
+  AC_CACHE_CHECK([for 64 bit fcntl locking],samba_cv_HAVE_STRUCT_FLOCK64,[
+  AC_TRY_RUN([
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
 #endif
@@ -921,15 +934,10 @@ exit(1);
 #endif
 }],
        samba_cv_HAVE_STRUCT_FLOCK64=yes,samba_cv_HAVE_STRUCT_FLOCK64=no,samba_cv_HAVE_STRUCT_FLOCK64=cross)])
-if test x"$samba_cv_HAVE_STRUCT_FLOCK64" = x"yes"; then
-    AC_DEFINE(HAVE_STRUCT_FLOCK64)
-fi
 
-AC_CACHE_CHECK([for broken (glibc2.1/x86) 64 bit fcntl locking],samba_cv_HAVE_BROKEN_FCNTL64_LOCKS,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/fcntl_lock64.c"],
-           samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=yes,samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=no,samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=cross)])
-if test x"$samba_cv_HAVE_BROKEN_FCNTL64_LOCKS" = x"yes"; then
-    AC_DEFINE(HAVE_BROKEN_FCNTL64_LOCKS)
+  if test x"$samba_cv_HAVE_STRUCT_FLOCK64" = x"yes"; then
+      AC_DEFINE(HAVE_STRUCT_FLOCK64)
+  fi
 fi
 
 AC_CACHE_CHECK([for sysv ipc],samba_cv_HAVE_SYSV_IPC,[
