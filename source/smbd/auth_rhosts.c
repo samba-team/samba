@@ -134,7 +134,7 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 /****************************************************************************
 check for a possible hosts equiv or rhosts entry for the user
 ****************************************************************************/
-BOOL check_hosts_equiv(char *user)
+static BOOL check_hosts_equiv(char *user)
 {
   char *fname = NULL;
   pstring rhostsfile;

@@ -52,6 +52,12 @@
 extern int DEBUGLEVEL;
 extern struct passdb_ops pdb_ops;
 
+static BOOL check_oem_password(char *user,
+			       uchar * lmdata, uchar * lmhash,
+			       uchar * ntdata, uchar * nthash,
+			       SAM_ACCOUNT **hnd, char *new_passwd,
+			       int new_passwd_size);
+
 #if ALLOW_CHANGE_PASSWORD
 
 static int findpty(char **slave)
@@ -704,11 +710,11 @@ BOOL pass_oem_change(char *user,
  but does use the lm OEM password to check the nt hashed-hash.
 
 ************************************************************/
-BOOL check_oem_password(char *user,
-			uchar * lmdata, uchar * lmhash,
-			uchar * ntdata, uchar * nthash,
-			SAM_ACCOUNT **hnd, char *new_passwd,
-			int new_passwd_size)
+static BOOL check_oem_password(char *user,
+			       uchar * lmdata, uchar * lmhash,
+			       uchar * ntdata, uchar * nthash,
+			       SAM_ACCOUNT **hnd, char *new_passwd,
+			       int new_passwd_size)
 {
 	static uchar null_pw[16];
 	static uchar null_ntpw[16];
