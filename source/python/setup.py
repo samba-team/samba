@@ -65,13 +65,6 @@ setup(
     author_email = "tpot@samba.org",
     license = "GPL",
 
-    # Build info
-    
-    include_dirs = [samba_srcdir + '.', samba_srcdir + "include",
-                    samba_srcdir + "ubiqx", samba_srcdir + "smbwrapper",
-                    samba_srcdir + "popt", "/usr/kerberos/include",
-                    "/usr/local/include"],
-
     # Get the "samba" directory of Python source.  At the moment this
     # just contains the __init__ file that makes it work as a
     # subpackage.  This is needed even though everything else is an
@@ -104,6 +97,7 @@ setup(
                          ],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
+              extra_compile_args = flags_list,
               extra_objects = obj_list),
 
     # LSA pipe module
@@ -114,6 +108,7 @@ setup(
                          samba_srcdir + "python/py_ntsec.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
+              extra_compile_args = flags_list,
               extra_objects = obj_list),
 
     # SAMR pipe module
@@ -124,6 +119,7 @@ setup(
                          samba_srcdir + "python/py_common.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
+              extra_compile_args = flags_list,
               extra_objects = obj_list),
 
     # winbind client module
@@ -135,8 +131,8 @@ setup(
                          samba_srcdir + "python/py_common.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
-              extra_objects = obj_list,
-              extra_compile_args = flags_list),
+              extra_compile_args = flags_list,
+              extra_objects = obj_list),
 
     # WINREG pipe module
 
@@ -145,6 +141,7 @@ setup(
                          samba_srcdir + "python/py_common.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
+              extra_compile_args = flags_list,
               extra_objects = obj_list),
 
     # tdb module
@@ -153,6 +150,7 @@ setup(
               sources = [samba_srcdir + "python/py_tdb.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
+              extra_compile_args = flags_list,
               extra_objects = obj_list),
 
     # libsmb module
@@ -162,6 +160,7 @@ setup(
                          samba_srcdir + "python/py_common.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
+              extra_compile_args = flags_list,
               extra_objects = obj_list),
 
     # Moving to merge all individual extensions in to one big
@@ -173,6 +172,7 @@ setup(
                          samba_srcdir + "python/py_common.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
+              extra_compile_args = flags_list,
               extra_objects = obj_list),
 
     # tdbpack/unpack extensions.  Does not actually link to any Samba
