@@ -6785,7 +6785,7 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 
 	fill_job_info_2(info_2, &(queue[i-1]), i, snum, ntprinter, devmode);
 	
-	safe_free(devmode);
+	free_dev_mode(devmode);
 	free_a_printer(&ntprinter, 2);
 	safe_free(queue);
 	
