@@ -1229,8 +1229,13 @@ static void append_attr(char ***attr_list, const char *new_attr)
 {
 	int i;
 
-	for (i=0; (*attr_list)[i] != NULL; i++)
+	if (new_attr == NULL) {
+		return;
+	}
+
+	for (i=0; (*attr_list)[i] != NULL; i++) {
 		;
+	}
 
 	(*attr_list) = Realloc((*attr_list), sizeof(**attr_list) * (i+2));
 	SMB_ASSERT((*attr_list) != NULL);
