@@ -3,24 +3,18 @@
 #
 
 load_lib util-defs.exp
-load_lib "$srcdir/config/env.exp"
-load_lib "$srcdir/config/default-nt-names.exp"
+load_lib compile.exp
 
-# Compile getpwuid.c
+# Compile getgruid.c
 
-set output [target_compile "$srcdir/$subdir/getgrgid.c" \
-        "$srcdir/$subdir/getgrgid" executable {additional_flags="-g"}]
+simple_compile "getgrgid"
 
-if {$output != ""} {
-    perror "compile getgrgid"
-    puts $output
-    return
-}
-
-# Get list of uids using getent
+# Get list of gids using getent
 
 set output [util_start "getent" "group" ""]
 set got_entries 0
+
+verbose $output
 
 foreach {line} [split $output "\n"] {
 
@@ -29,7 +23,7 @@ foreach {line} [split $output "\n"] {
     set grp_entry [split $line ":"]
     set group [lindex $grp_entry 0]
 
-    if {[regexp "^($domain)/" $group]} {
+    if {[regexp {^[^/]+/} $group]} {
 
         set got_entries 1
 
@@ -40,6 +34,8 @@ foreach {line} [split $output "\n"] {
         # Test lookup of gid succeeds
 
         set output [util_start "$srcdir/$subdir/getgrgid" "$gid" ""]
+	verbose $output
+
         if {[regexp "PASS:" $output]} {
             pass "getgrgid $gid ($group)"
         } else {
