@@ -43,10 +43,10 @@ krb5_context context;
 static int help_flag;
 static int version_flag;
 static char *port_str;
-char *service = SERVICE;
-char *remote_name=NULL;
-int forwardable=0;
-char *tk_file=NULL;
+char *service     = SERVICE;
+char *remote_name = NULL;
+int forwardable   = 0;
+char *tk_file     = NULL;
 
 static struct getargs args[] = {
     { "port", 'p', arg_string, &port_str, "port to connect to", "port" },
@@ -82,7 +82,7 @@ client_setup(krb5_context *context, int *argc, char **argv)
 	exit(0);
     }
     
-    if(port_str){
+    if(port_str) {
 	struct servent *s = roken_getservbyname(port_str, "tcp");
 	if(s)
 	    port = s->s_port;
@@ -101,10 +101,15 @@ client_setup(krb5_context *context, int *argc, char **argv)
    
     if(*argc - optind < 1)
         usage(1, args, num_args);
-    *argc=optind;
+    *argc = optind;
 
     return port;
 }
+
+/*
+ * forward creds to `hostname'/`service' over `sock'
+ * return 0 iff OK
+ */
 
 static int
 proto (int sock, const char *hostname, const char *service)
@@ -125,41 +130,34 @@ proto (int sock, const char *hostname, const char *service)
     krb5_creds      creds;
     krb5_kdc_flags  flags;
     krb5_principal  principal;
-    struct passwd *pwd;
     char ret_string[10];
     char buf[1000];
 
     addrlen = sizeof(local);
     if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
-	|| addrlen != sizeof(local))
-	{warn ("getsockname(%s)", hostname);
-         return 1;
+	|| addrlen != sizeof(local)) {
+	warn ("getsockname(%s)", hostname);
+	return 1;
     }
 
     addrlen = sizeof(remote);
     if (getpeername (sock, (struct sockaddr *)&remote, &addrlen) < 0
-	|| addrlen != sizeof(remote))
-	{warn ("getpeername(%s)", hostname);
-         return 1;
+	|| addrlen != sizeof(remote)) {
+	warn ("getpeername(%s)", hostname);
+	return 1;
     }
-
-    status = krb5_init_context(&context);
-    if (status)
-	errx (1, "krb5_init_context: %s",
-	      krb5_get_err_text(context, status));
 
     status = krb5_auth_con_init (context, &auth_context);
-    if (status)
-	{warn ("krb5_auth_con_init: %s",
-	      krb5_get_err_text(context, status));
-         return 1;
+    if (status) {
+	krb5_warn (context, status, "krb5_auth_con_init");
+	return 1;
     }
 
-    local_addr.addr_type = AF_INET;
+    local_addr.addr_type      = AF_INET;
     local_addr.address.length = sizeof(local.sin_addr);
     local_addr.address.data   = &local.sin_addr;
 
-    remote_addr.addr_type = AF_INET;
+    remote_addr.addr_type      = AF_INET;
     remote_addr.address.length = sizeof(remote.sin_addr);
     remote_addr.address.data   = &remote.sin_addr;
 
@@ -167,10 +165,9 @@ proto (int sock, const char *hostname, const char *service)
 				     auth_context,
 				     &local_addr,
 				     &remote_addr);
-    if (status)
-	{warn ("krb5_auth_con_setaddr: %s",
-	      krb5_get_err_text(context, status));
-         return 1;
+    if (status) {
+	krb5_warn (context, status, "krb5_auth_con_setaddr");
+	return 1;
     }
 
     status = krb5_sname_to_principal (context,
@@ -178,11 +175,10 @@ proto (int sock, const char *hostname, const char *service)
 				      service,
 				      KRB5_NT_SRV_HST,
 				      &server);
-    if (status)
-	{warn ("krb5_sname_to_principal: %s",
-	      krb5_get_err_text(context, status));
-         return 1;
-        }
+    if (status) {
+	krb5_warn (context, status, "krb5_sname_to_principal");
+	return 1;
+    }
 
     status = krb5_sendauth (context,
 			    &auth_context,
@@ -197,65 +193,64 @@ proto (int sock, const char *hostname, const char *service)
 			    NULL,
 			    NULL,
 			    NULL);
-    if (status)
-	{warn("krb5_sendauth: %s",
-	      krb5_get_err_text(context, status));
-         return 1;
-        }
+    if (status) {
+	krb5_warn(context, status, "krb5_sendauth");
+	return 1;
+    }
 
-    if (remote_name == NULL)
-      {
-        pwd = getpwuid (getuid());
-        if (pwd == NULL)
-           errx (1, "who are you?");
-        remote_name=pwd->pw_name;
-      }
+    if (remote_name == NULL) {
+	remote_name = get_default_username ();
+	if (remote_name == NULL)
+	    errx (1, "who are you?");
+    }
 
     krb5_data_zero(&data_send);
-    data_send.data=remote_name;
-    data_send.length=strlen(remote_name) + 1;
-    status=krb5_write_message(context,&sock,&data_send);
-    if (status)
-       {err(1,"krb5_write_message");
+    data_send.data   = remote_name;
+    data_send.length = strlen(remote_name) + 1;
+    status = krb5_write_message(context, &sock, &data_send);
+    if (status) {
+	krb5_warnx (context, status, "krb5_write_message");
+	return 1;
     }
   
-    if (tk_file) snprintf (buf, sizeof(buf), "%s", tk_file);  
-      else snprintf (buf, sizeof(buf), "");
-    data_send.data=buf;
-    data_send.length=strlen(buf)+1;
-    status=krb5_write_message(context,&sock,&data_send);
-    if (status)
-       {err(1,"krb5_write_message");
+    if (tk_file)
+	snprintf (buf, sizeof(buf), "%s", tk_file);  
+    else
+	snprintf (buf, sizeof(buf), "");
+    data_send.data   = buf;
+    data_send.length = strlen(buf)+1;
+    status = krb5_write_message(context, &sock, &data_send);
+    if (status) {
+	krb5_warnx (context, status, "krb5_write_message");
+	return 1;
     }
 
     memset (&creds, 0, sizeof(creds));
 
     status = krb5_cc_default (context, &ccache);
     if (status) {
-	warn ("could not forward creds: krb5_cc_default: %s",
-	       krb5_get_err_text (context, status));
+	krb5_warn (context, status, "krb5_cc_default");
+	return 1;
     }
 
     status = krb5_cc_get_principal (context, ccache, &principal);
     if (status) {
-	warn ("could not forward creds: krb5_cc_get_principal: %s",
-	       krb5_get_err_text (context, status));
+	krb5_warn (context, status, "krb5_cc_get_principal");
 	return 1;
     }
 
     creds.client = principal;
     
     status = krb5_build_principal (context,
-				&creds.server,
-				strlen(principal->realm),
-				principal->realm,
-				"krbtgt",
-				principal->realm,
-				NULL);
+				   &creds.server,
+				   strlen(principal->realm),
+				   principal->realm,
+				   KRB5_TGS_NAME,
+				   principal->realm,
+				   NULL);
 
     if (status) {
-	warn ("could not forward creds: krb5_build_principal: %s",
-	       krb5_get_err_text (context, status));
+	krb5_warn (context, status, "krb5_build_principal");
 	return 1;
     }
 
@@ -266,15 +261,14 @@ proto (int sock, const char *hostname, const char *service)
     flags.b.forwardable = forwardable;
 
     status = krb5_get_forwarded_creds (context,
-				    auth_context,
-				    ccache,
-				    flags.i,
-				    hostname,
-				    &creds,
-				    &data);
+				       auth_context,
+				       ccache,
+				       flags.i,
+				       hostname,
+				       &creds,
+				       &data);
     if (status) {
-	warn ("could not forward creds: krb5_get_forwarded_creds: %s",
-	       krb5_get_err_text (context, status));
+	krb5_warn (context, status, "krb5_get_forwarded_creds");
 	return 1;
     }
 
@@ -283,28 +277,39 @@ proto (int sock, const char *hostname, const char *service)
                            &data,
                            &packet,
                            NULL);
-    if (status)
-        {warn ("krb5_mk_priv: %s",
-              krb5_get_err_text(context, status));
-         return 1;}
+    if (status) {
+	krb5_warn (context, status, "krb5_mk_priv");
+	return 1;
+    }
     
     len = packet.length;
     net_len = htonl(len);
 
-    if (krb5_net_write (context, &sock, &net_len, 4) != 4)
-        {warn("krb5_net_write");
-         return 1;}
-    if (krb5_net_write (context, &sock, packet.data, len) != len)
-        {warn ("krb5_net_write");
-         return 1;}
+    if (krb5_net_write (context, &sock, &net_len, 4) != 4) {
+	krb5_warn (context, status, "krb5_net_write");
+	return 1;
+    }
+    if (krb5_net_write (context, &sock, packet.data, len) != len) {
+	krb5_warn (context, status, "krb5_net_write");
+	return 1;
+    }
 
     krb5_data_free (&data);
 
-    if (krb5_net_read (context, &sock, &net_len, 4) != 4)
-        err (1, "krb5_net_read");
+    if (krb5_net_read (context, &sock, &net_len, 4) != 4) {
+	krb5_warn (context, status, "krb5_net_read");
+	return 1;
+    }
     len = ntohl(net_len);
-    if (krb5_net_read (context, &sock, ret_string, len) != len)
-        err (1, "krb5_net_read");
+    if (len >= sizeof(ret_string)) {
+	krb5_warnx (context, "too long string back from %s", hostname);
+	return 1;
+    }
+    if (krb5_net_read (context, &sock, ret_string, len) != len) {
+	krb5_warnx (context, "read too short from %s", hostname);
+	return 1;
+    }
+    ret_string[sizeof(ret_string) - 1] = '\0';
 
     return(strcmp(ret_string,"ok"));
 }
@@ -316,11 +321,11 @@ doit (const char *hostname, int port, const char *service)
     struct hostent *hostent;
 
     hostent = roken_gethostbyname (hostname);
-    if (hostent == NULL)
-	{warn ("gethostbyname '%s' failed: %s",
+    if (hostent == NULL) {
+	warn ("gethostbyname '%s' failed: %s",
 	      hostname,
 	      hstrerror(h_errno));
-         return 1;
+	return 1;
     }
 
     for (h = (struct in_addr **)hostent->h_addr_list;
@@ -349,15 +354,18 @@ doit (const char *hostname, int port, const char *service)
 
 int
 main(int argc, char **argv)
-{ int argcc,port,i;
-  int ret=0;
+{
+    int argcc,port,i;
+    int ret=0;
  
-  argcc=argc;
-  port=client_setup(&context, &argcc, argv);
+    argcc = argc;
+    port = client_setup(&context, &argcc, argv);
 
-  for (i=argcc;i<argc;i++)
-     {ret=doit (argv[i], port, service);
-      printf("%s:%s\n",argv[i],ret ? "failed" : "ok");
-     }
-  return(ret);
+    for (i = argcc;i < argc; i++) {
+	ret = doit (argv[i], port, service);
+	warn (")
+
+	printf("%s:%s\n",argv[i],ret ? "failed" : "ok");
+    }
+    return(ret);
 }
