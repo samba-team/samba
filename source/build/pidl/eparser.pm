@@ -151,19 +151,25 @@ sub field2name($)
 sub NeededFunction($)
 {
 	my $fn = shift;
+
 	$needed{"pull_$fn->{NAME}"} = 1;
+
 	foreach my $e (@{$fn->{DATA}}) {
+
 		$e->{PARENT} = $fn;
 		$needed{"pull_$e->{TYPE}"} = 1;
 
 		if (util::is_scalar_type($e->{TYPE})) {
+
 		    $needed{"hf_$e->{NAME}_$e->{TYPE}"} = {
 			'name' => field2name($e->{NAME}),
 			'type' => $e->{TYPE},
 			'ft'   => type2ft($e->{TYPE}),
 			'base' => elementbase($e)
 			}, if !defined($needed{"hf_$e->{NAME}_$e->{TYPE}"});
+
 		    $e->{PARENT} = $fn;
+
 		} else {
 		    $needed{"ett_$e->{TYPE}"} = 1;
 		}
@@ -173,6 +179,7 @@ sub NeededFunction($)
 sub NeededTypedef($)
 {
 	my $t = shift;
+
 	if (util::has_property($t, "public")) {
 		$needed{"pull_$t->{NAME}"} = 1;
 	}
@@ -180,7 +187,9 @@ sub NeededTypedef($)
 	if ($t->{DATA}->{TYPE} eq "STRUCT") {
 
 	    for my $e (@{$t->{DATA}->{ELEMENTS}}) {
+
 		$e->{PARENT} = $t->{DATA};
+
 		if ($needed{"pull_$t->{NAME}"}) {
 		    $needed{"pull_$e->{TYPE}"} = 1;
 		}
@@ -200,6 +209,7 @@ sub NeededTypedef($)
 			    };
 
 		    } else {
+
 			$needed{"hf_$e->{NAME}_$e->{TYPE}"} = {
 			    'name' => field2name($e->{NAME}),
 			    'type' => $e->{TYPE},
@@ -223,12 +233,17 @@ sub NeededTypedef($)
 	}
 
 	if ($t->{DATA}->{TYPE} eq "UNION") {
+
 		for my $e (@{$t->{DATA}->{DATA}}) {
+
 			$e->{PARENT} = $t->{DATA};
+
 			if ($e->{TYPE} eq "UNION_ELEMENT") {
+
 				if ($needed{"pull_$t->{NAME}"}) {
 					$needed{"pull_$e->{DATA}->{TYPE}"} = 1;
 				}
+
 				$needed{"ett_$e->{DATA}{TYPE}"} = 1;
 			}
 		}
@@ -237,6 +252,7 @@ sub NeededTypedef($)
 	}
 
 	if ($t->{DATA}->{TYPE} eq "ENUM") {
+
 	    $needed{"hf_$t->{NAME}"} = {
 		'name' => $t->{NAME},
 		'ft' => 'FT_UINT16',
@@ -250,11 +266,14 @@ sub NeededTypedef($)
 sub BuildNeeded($)
 {
 	my($interface) = shift;
+
 	my($data) = $interface->{DATA};
+
 	foreach my $d (@{$data}) {
 		($d->{TYPE} eq "FUNCTION") && 
 		    NeededFunction($d);
 	}
+
 	foreach my $d (reverse @{$data}) {
 		($d->{TYPE} eq "TYPEDEF") &&
 		    NeededTypedef($d);
@@ -436,12 +455,12 @@ sub RewriteC($$$)
 	# Get rid of dcerpc interface structures and functions since
 	# they are also not very interesting.
 
-next, if /^static const struct dcerpc_interface_call/ .. /^};/;
-next, if /^static const char \* const [a-z]+_endpoint_strings/ ../^};/;
-next, if /^static const struct dcerpc_endpoint_list/ .. /^};/;
-next, if /^const struct dcerpc_interface_table/ .. /^};/;
-next, if /^static NTSTATUS dcerpc_ndr_[a-z]+_init/ .. /^}/;
-next, if /^NTSTATUS dcerpc_[a-z]+_init/ .. /^}/;
+        next, if /^static const struct dcerpc_interface_call/ .. /^};/;
+        next, if /^static const char \* const [a-z]+_endpoint_strings/ ../^};/;
+        next, if /^static const struct dcerpc_endpoint_list/ .. /^};/;
+        next, if /^const struct dcerpc_interface_table/ .. /^};/;
+        next, if /^static NTSTATUS dcerpc_ndr_[a-z]+_init/ .. /^}/;
+        next, if /^NTSTATUS dcerpc_[a-z]+_init/ .. /^}/;
 
 	# Rewrite includes to packet-dcerpc-foo.h instead of ndr_foo.h
 
