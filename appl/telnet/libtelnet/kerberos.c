@@ -102,6 +102,7 @@ static	KTEXT_ST auth;
 static	char name[ANAME_SZ];
 static	AUTH_DAT adat;
 static des_cblock session_key;
+static des_cblock cred_session;
 static des_key_schedule sched;
 static des_cblock challenge;
 static int auth_done; /* XXX */
@@ -218,6 +219,7 @@ kerberos4_send(char *name, Authenticator *ap)
 	int i;
 
 	des_key_sched(&cred.session, sched);
+	memcpy (&cred_session, &cred.session, sizeof(cred_session));
 	des_init_random_number_generator(&cred.session);
 	des_new_random_key(&session_key);
 	des_ecb_encrypt(&session_key, &session_key, sched, 0);
@@ -387,6 +389,7 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	    if(cnt > sizeof(cred))
 		abort();
 
+	    memcpy (session_key, adat.session, sizeof(session_key));
 	    des_set_key(&session_key, ks);
 	    des_pcbc_encrypt((void*)data, (void*)netcred, cnt, 
 			     ks, &session_key, DES_DECRYPT);
@@ -465,7 +468,7 @@ kerberos4_reply(Authenticator *ap, unsigned char *data, int cnt)
 	    skey.data = session_key;
 	    encrypt_session_key(&skey, 0);
 #if 0
-	    kerberos4_forward(ap);
+	    kerberos4_forward(ap, &cred_session);
 #endif
 	    return;
 	}
@@ -605,16 +608,25 @@ pack_cred(CREDENTIALS *cred, unsigned char *buf)
 {
     unsigned char *p = buf;
     
-    p += krb_put_nir(cred->service, cred->instance, cred->realm, p);
+    memcpy (p, cred->service, ANAME_SZ);
+    p += ANAME_SZ;
+    memcpy (p, cred->instance, INST_SZ);
+    p += INST_SZ;
+    memcpy (p, cred->realm, REALM_SZ);
+    p += REALM_SZ;
     memcpy(p, cred->session, 8);
     p += 8;
-    *p++ = cred->lifetime;
-    *p++ = cred->kvno;
+    p += krb_put_int(cred->lifetime, p, 4);
+    p += krb_put_int(cred->kvno, p, 4);
     p += krb_put_int(cred->ticket_st.length, p, 4);
     memcpy(p, cred->ticket_st.dat, cred->ticket_st.length);
     p += cred->ticket_st.length;
+    p += krb_put_int(0, p, 4);
     p += krb_put_int(cred->issue_date, p, 4);
-    p += krb_put_nir(cred->pname, cred->pinst, NULL, p);
+    memcpy (p, cred->pname, ANAME_SZ);
+    p += ANAME_SZ;
+    memcpy (p, cred->pinst, INST_SZ);
+    p += INST_SZ;
     return p - buf;
 }
 
@@ -622,23 +634,44 @@ static int
 unpack_cred(unsigned char *buf, int len, CREDENTIALS *cred)
 {
     unsigned char *p = buf;
+    u_int32_t tmp;
 
-    p += krb_get_nir(p, cred->service, cred->instance, cred->realm);
+    strncpy (cred->service, p, ANAME_SZ);
+    cred->service[ANAME_SZ] = '\0';
+    p += ANAME_SZ;
+    strncpy (cred->instance, p, INST_SZ);
+    cred->instance[INST_SZ] = '\0';
+    p += INST_SZ;
+    strncpy (cred->realm, p, REALM_SZ);
+    cred->realm[REALM_SZ] = '\0';
+    p += REALM_SZ;
+
     memcpy(cred->session, p, 8);
     p += 8;
-    cred->lifetime = *p++;
-    cred->kvno = *p++;
+    p += krb_get_int(p, &tmp, 4, 0);
+    cred->lifetime = tmp;
+    p += krb_get_int(p, &tmp, 4, 0);
+    cred->kvno = tmp;
+
     p += krb_get_int(p, &cred->ticket_st.length, 4, 0);
     memcpy(cred->ticket_st.dat, p, cred->ticket_st.length);
+    p += cred->ticket_st.length;
+    p += krb_get_int(p, &tmp, 4, 0);
     cred->ticket_st.mbz = 0;
     p += krb_get_int(p, (u_int32_t *)&cred->issue_date, 4, 0);
-    p += krb_get_nir(p, cred->pname, cred->pinst, NULL);
+
+    strncpy (cred->pname, p, ANAME_SZ);
+    cred->pname[ANAME_SZ] = '\0';
+    p += ANAME_SZ;
+    strncpy (cred->pinst, p, ANAME_SZ);
+    cred->pinst[ANAME_SZ] = '\0';
+    p += ANAME_SZ;
     return 0;
 }
 
 
 int
-kerberos4_forward(Authenticator *ap)
+kerberos4_forward(Authenticator *ap, des_cblock *key)
 {
     CREDENTIALS cred;
     char *realm;
@@ -657,10 +690,10 @@ kerberos4_forward(Authenticator *ap)
 		       &cred);
     if(ret)
 	return ret;
-    des_set_key(&session_key, ks);
+    des_set_key(key, ks);
     len = pack_cred(&cred, netcred);
     des_pcbc_encrypt((void*)netcred, (void*)netcred, len,
-		     ks, &session_key, DES_ENCRYPT);
+		     ks, key, DES_ENCRYPT);
     memset(ks, 0, sizeof(ks));
     Data(ap, KRB_FORWARD, netcred, len);
     memset(netcred, 0, sizeof(netcred));
