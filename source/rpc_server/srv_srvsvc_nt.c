@@ -1470,6 +1470,8 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	int ret;
 	char *ptr;
 	SEC_DESC *psd = NULL;
+	SE_PRIV se_diskop = SE_DISK_OPERATOR;
+	BOOL is_disk_op;
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 
@@ -1492,7 +1494,11 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	get_current_user(&user,p);
 
-	if (user.uid != sec_initial_uid())
+	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
+	
+	/* fail out now if you are not root and not a disk op */
+	
+	if ( user.uid != sec_initial_uid() && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
 	switch (q_u->info_level) {
@@ -1575,23 +1581,36 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		lp_change_share_cmd() ? lp_change_share_cmd() : "NULL" ));
 
 	/* Only call modify function if something changed. */
-
-	if (strcmp(ptr, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) ) {
-		if (!lp_change_share_cmd() || !*lp_change_share_cmd())
+	
+	if (strcmp(ptr, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) ) 
+	{
+		if (!lp_change_share_cmd() || !*lp_change_share_cmd()) 
 			return WERR_ACCESS_DENIED;
 
 		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
 				lp_change_share_cmd(), dyn_CONFIGFILE, share_name, ptr, comment);
 
 		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
-		if ((ret = smbrun(command, NULL)) != 0) {
-			DEBUG(0,("_srv_net_share_set_info: Running [%s] returned (%d)\n", command, ret ));
+				
+		/********* BEGIN SeDiskOperatorPrivilege BLOCK *********/
+	
+		if ( is_disk_op )
+			become_root();
+			
+		ret = smbrun(command, NULL);
+		
+		if ( is_disk_op )
+			unbecome_root();
+			
+		/********* END SeDiskOperatorPrivilege BLOCK *********/
+
+		DEBUG(3,("_srv_net_share_set_info: Running [%s] returned (%d)\n", command, ret ));		
+	
+		if ( ret != 0 )
 			return WERR_ACCESS_DENIED;
-		}
 
 		/* Tell everyone we updated smb.conf. */
 		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
-
 	} else {
 		DEBUG(10,("_srv_net_share_set_info: No change to share name (%s)\n", share_name ));
 	}
@@ -1609,7 +1628,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 					share_name ));
 		}
 	}
-
+			
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 
 	return WERR_OK;
@@ -1631,6 +1650,8 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	int ret;
 	char *ptr;
 	SEC_DESC *psd = NULL;
+	SE_PRIV se_diskop = SE_DISK_OPERATOR;
+	BOOL is_disk_op;
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
@@ -1638,16 +1659,16 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	get_current_user(&user,p);
 
-	if (user.uid != sec_initial_uid()) {
-		DEBUG(10,("_srv_net_share_add: uid != sec_initial_uid(). Access denied.\n"));
+	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
+
+	if (user.uid != sec_initial_uid()  && !is_disk_op ) 
 		return WERR_ACCESS_DENIED;
-	}
 
 	if (!lp_add_share_cmd() || !*lp_add_share_cmd()) {
 		DEBUG(10,("_srv_net_share_add: No add share command\n"));
 		return WERR_ACCESS_DENIED;
 	}
-
+	
 	switch (q_u->info_level) {
 	case 0:
 		/* No path. Not enough info in a level 0 to do anything. */
@@ -1713,21 +1734,34 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
 			lp_add_share_cmd(), dyn_CONFIGFILE, share_name, ptr, comment);
-
+			
 	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
-	if ((ret = smbrun(command, NULL)) != 0) {
-		DEBUG(0,("_srv_net_share_add: Running [%s] returned (%d)\n", command, ret ));
+	
+	/********* BEGIN SeDiskOperatorPrivilege BLOCK *********/
+	
+	if ( is_disk_op )
+		become_root();
+
+	ret = smbrun(command, NULL);
+
+	if ( is_disk_op )
+		unbecome_root();
+		
+	/********* END SeDiskOperatorPrivilege BLOCK *********/
+
+	DEBUG(3,("_srv_net_share_add: Running [%s] returned (%d)\n", command, ret ));
+
+	if ( ret != 0 )
 		return WERR_ACCESS_DENIED;
-	}
+
+	/* Tell everyone we updated smb.conf. */
+	message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 
 	if (psd) {
 		if (!set_share_security(p->mem_ctx, share_name, psd))
 			DEBUG(0,("_srv_net_share_add: Failed to add security info to share %s.\n",
 				share_name ));
 	}
-
-	/* Tell everyone we updated smb.conf. */
-	message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
 
 	/*
 	 * We don't call reload_services() here, the message will
@@ -1752,6 +1786,8 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	fstring share_name;
 	int ret;
 	int snum;
+	SE_PRIV se_diskop = SE_DISK_OPERATOR;
+	BOOL is_disk_op;
 
 	DEBUG(5,("_srv_net_share_del: %d\n", __LINE__));
 
@@ -1771,26 +1807,41 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	get_current_user(&user,p);
 
-	if (user.uid != sec_initial_uid())
+	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
+
+	if (user.uid != sec_initial_uid()  && !is_disk_op ) 
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd())
 		return WERR_ACCESS_DENIED;
-
+		
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
 			lp_delete_share_cmd(), dyn_CONFIGFILE, lp_servicename(snum));
 
 	DEBUG(10,("_srv_net_share_del: Running [%s]\n", command ));
-	if ((ret = smbrun(command, NULL)) != 0) {
-		DEBUG(0,("_srv_net_share_del: Running [%s] returned (%d)\n", command, ret ));
-		return WERR_ACCESS_DENIED;
-	}
 
-	/* Delete the SD in the database. */
-	delete_share_security(snum);
+	/********* BEGIN SeDiskOperatorPrivilege BLOCK *********/
+	
+	if ( is_disk_op )
+		become_root();
+
+	ret = smbrun(command, NULL);
+
+	if ( is_disk_op )
+		unbecome_root();
+		
+	/********* END SeDiskOperatorPrivilege BLOCK *********/
+
+	DEBUG(3,("_srv_net_share_del: Running [%s] returned (%d)\n", command, ret ));
+
+	if ( ret != 0 )
+		return WERR_ACCESS_DENIED;
 
 	/* Tell everyone we updated smb.conf. */
 	message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+
+	/* Delete the SD in the database. */
+	delete_share_security(snum);
 
 	lp_killservice(snum);
 
