@@ -1,6 +1,7 @@
 Contributor:	Andrew Tridgell <samba-bugs@samba.anu.edu.au>
 Date:		Unknown
 Status:		Current
+Updated:	August 25, 1997
 
 Subject:	HOW TO INSTALL AND TEST SAMBA
 ===============================================================================
