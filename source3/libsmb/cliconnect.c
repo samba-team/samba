@@ -124,6 +124,9 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 	if (cli->capabilities & CAP_UNICODE)
 		capabilities |= CAP_UNICODE;
 
+	if (cli->capabilities & CAP_LARGE_FILES)
+		capabilities |= CAP_LARGE_FILES;
+
 	return capabilities;
 }
 
