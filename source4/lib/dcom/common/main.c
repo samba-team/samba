@@ -549,9 +549,15 @@ HYPER_T dcom_get_current_oxid(void)
 	return getpid();
 }
 
-struct dcom_interface_p *dcom_new_local_ifacep(struct dcom_context *ctx, const struct dcom_interface *iface, void *vtable, struct dcom_object *object)
+struct dcom_interface_p *dcom_new_local_ifacep(struct dcom_context *ctx, const struct GUID *iid, void *vtable, struct dcom_object *object)
 {
 	struct dcom_interface_p *ip = talloc_p(ctx, struct dcom_interface_p);
+	const struct dcom_interface *iface = dcom_interface_by_iid(iid);
+
+	if (!iface) {
+		DEBUG (1, ("Unable to find interface with IID %s\n", GUID_string(ctx, iid)));
+		return NULL;
+	}
 
 	ip->ctx = ctx;
 	ip->interface = iface;
