@@ -456,6 +456,9 @@ struct nmb_packet
 
 /* A datagram - this normally contains SMB data in the data[] array. */
 
+#define DGRAM_GROUP 0x11
+#define DGRAM_UNIQUE 0x10
+
 struct dgram_packet {
   struct {
     int msg_type;
