@@ -1,4 +1,4 @@
-2003-03-16  Love  <lha@stacken.kth.se>
+2003-03-16  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftp/gssapi.c (gss_adat): now that gss_export_name exports a
 	principal, bandaid with gss_display_name, and check that oid is
