@@ -1238,7 +1238,7 @@ void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt);
 krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
 krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
-krb5_error_code free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
+void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
 #endif /* HAVE_KRB5 */
 
 #endif /* _INCLUDES_H */

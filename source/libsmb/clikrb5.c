@@ -127,17 +127,14 @@ krb5_error_code get_kerberos_allowed_etypes(krb5_context context,
  __ERROR_XX_UNKNOWN_GET_ENCTYPES_FUNCTIONS
 #endif
 
- /* the following is defined as krb5_error_code to keep it from
-    being sucked into proto.h */
-krb5_error_code free_kerberos_etypes(krb5_context context, 
-				     krb5_enctype *enctypes)
+ void free_kerberos_etypes(krb5_context context, 
+			   krb5_enctype *enctypes)
 {
 #if defined(HAVE_KRB5_FREE_KTYPES)
-	krb5_free_ktypes(context, enctypes);
+	return krb5_free_ktypes(context, enctypes);
 #else
-	SAFE_FREE(enctypes);
+	return SAFE_FREE(enctypes);
 #endif
-	return 0;
 }
 
 #if defined(HAVE_KRB5_AUTH_CON_SETKEY) && !defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY)
