@@ -32,6 +32,7 @@ static fstring randomfname;
 static BOOL use_oplocks;
 static BOOL use_level_II_oplocks;
 static char *client_txt = "client_oplocks.txt";
+static BOOL use_kerberos;
 
 BOOL torture_showall = False;
 
@@ -106,6 +107,8 @@ static BOOL open_nbt_connection(struct cli_state *c)
 		printf("Failed to connect with %s\n", host);
 		return False;
 	}
+
+	c->use_kerberos = use_kerberos;
 
 	c->timeout = 120000; /* set a really long timeout (2 minutes) */
 	if (use_oplocks) c->use_oplocks = True;
@@ -3197,6 +3200,7 @@ static void usage(void)
 
 	printf("\t-d debuglevel\n");
 	printf("\t-U user%%pass\n");
+	printf("\t-k               use kerberos\n");
 	printf("\t-N numprocs\n");
 	printf("\t-n my_netbios_name\n");
 	printf("\t-W workgroup\n");
@@ -3276,7 +3280,7 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:Ld:Ac:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:Ld:Ac:k")) != EOF) {
 		switch (opt) {
 		case 'W':
 			fstrcpy(workgroup,optarg);
@@ -3307,6 +3311,15 @@ static void usage(void)
 			break;
 		case 'c':
 			client_txt = optarg;
+			break;
+		case 'k':
+#ifdef HAVE_KRB5
+			use_kerberos = True;
+			gotpass = True;
+#else
+			d_printf("No kerberos support compiled in\n");
+			exit(1);
+#endif
 			break;
 		case 'U':
 			pstrcpy(username,optarg);

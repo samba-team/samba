@@ -25,6 +25,7 @@
 static fstring password;
 static fstring username;
 static int got_pass;
+static BOOL use_kerberos;
 static int numops = 1000;
 static BOOL showall;
 static BOOL analyze;
@@ -172,6 +173,8 @@ struct cli_state *connect_one(char *share)
 		DEBUG(0,("Connection to %s failed\n", server_n));
 		return NULL;
 	}
+
+	c->use_kerberos = use_kerberos;
 
 	if (!cli_session_request(c, &calling, &called)) {
 		DEBUG(0,("session request to %s failed\n", called.name));
@@ -525,6 +528,7 @@ static void usage(void)
   locktest //server1/share1 //server2/share2 [options..]\n\
   options:\n\
         -U user%%pass\n\
+        -k               use kerberos\n\
         -s seed\n\
         -o numops\n\
         -u          hide unlock fails\n\
@@ -574,8 +578,17 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:ho:aAW:O")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:ho:aAW:Ok")) != EOF) {
 		switch (opt) {
+		case 'k':
+#ifdef HAVE_KRB5
+			use_kerberos = True;
+			got_pass = True;
+#else
+			d_printf("No kerberos support compiled in\n");
+			exit(1);
+#endif
+			break;
 		case 'U':
 			pstrcpy(username,optarg);
 			p = strchr_m(username,'%');
