@@ -162,8 +162,7 @@ krb5_verify(struct passwd *login_info, struct passwd *su_info,
 #endif
 	    return 1;
 	}
-	krb5_cc_initialize (context, ccache, p);
-	ret = krb5_verify_user(context, p, ccache, NULL, TRUE, NULL);
+	ret = krb5_verify_user_lrealm(context, p, ccache, NULL, TRUE, NULL);
 	if(ret) {
 	    krb5_free_principal (context, p);
 	    krb5_cc_destroy(context, ccache);

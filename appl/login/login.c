@@ -200,12 +200,12 @@ krb5_verify(struct passwd *pwd, const char *password)
 	krb5_free_context(context);
 	return 1;
     }
-    ret = krb5_verify_user(context,
-			   princ, 
-			   id,
-			   password, 
-			   1,
-			   NULL);
+    ret = krb5_verify_user_lrealm(context,
+				  princ, 
+				  id,
+				  password, 
+				  1,
+				  NULL);
     krb5_free_principal(context, princ);
     if (ret)
 	krb5_free_context (context);
@@ -240,23 +240,24 @@ krb5_start_session (struct passwd *pwd)
         char krb4tkfile[MAXPATHLEN];
 
         krb5_get_default_realm(context, &realm);
-        krb5_make_principal(context, &mcred.server, realm,
-                            "krbtgt",
-                            realm,
-                            NULL);
-        ret = krb5_cc_retrieve_cred(context, id2, 0, &mcred, &cred);
-        if(ret == 0) {
-            ret = krb524_convert_creds_kdc(context, &cred, &c);
-            if(!ret) {
-                snprintf(krb4tkfile,sizeof(krb4tkfile),"%s%d",TKT_ROOT,
+	krb5_make_principal(context, &mcred.server, realm,
+			    "krbtgt",
+			    realm,
+			    NULL);
+	free (realm);
+	ret = krb5_cc_retrieve_cred(context, id2, 0, &mcred, &cred);
+	if(ret == 0) {
+	    ret = krb524_convert_creds_kdc(context, &cred, &c);
+	    if(ret == 0) {
+		snprintf(krb4tkfile,sizeof(krb4tkfile),"%s%d",TKT_ROOT,
 			 getuid());
-                krb_set_tkt_string(krb4tkfile);
-                tf_setup(&c, c.pname, c.pinst);
-            }
-            memset(&c, 0, sizeof(c));
-            krb5_free_creds_contents(context, &cred);
-        }
-        krb5_free_principal(context, mcred.server);
+		krb_set_tkt_string(krb4tkfile);
+		tf_setup(&c, c.pname, c.pinst);
+	    }
+	    memset(&c, 0, sizeof(c));
+	    krb5_free_creds_contents(context, &cred);
+	}
+	krb5_free_principal(context, mcred.server);
     }
 #endif
     krb5_cc_close(context, id2);
