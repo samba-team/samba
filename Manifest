@@ -1,0 +1,48 @@
+Copyright (C) 1997 - Samba-Team
+
+The Samba package you have just unpacked contains the following:
+
+Directory	Notes:
+=========	======
+docs		(Samba Documentation):
+--------------------------------------
+	Note in particular two files - INSTALL.txt and DIAGNOSIS.txt
+	You should also pay close attention to all the files with a
+	.txt extension.
+
+	Most problems can be solved by reference to the two files mentioned.
+
+
+examples	(Example configuration files):
+----------------------------------------------
+	Please pay close attention to the reference smb.conf file
+	smb.conf.default that has now been included as the master guide.
+
+	Do read the smb.conf manual page in considering what settings are
+	appropriate for your site.
+
+
+packaging	(Only for those wishing to build binary distributions):
+-----------------------------------------------------------------------
+	Currently support is included only for RedHat Linux. We hope that
+	other Unix OS vendors will contribute their binary distribution
+	packaging control files - and we hope to make their binary packages
+	available on the master ftp site under:
+		samba.anu.edu.au/pub/samba/Binary_Packages/"OS_Vendor"
+
+
+source		(The official Samba source files - expect more of these!):
+--------------------------------------------------------------------------
+	To build your own binary files you will need a suitable ansi C
+	compiler. Also, you must edit the enclosed "Makefile" as required
+	for your operating system platform. Then just run:
+		a) make
+		b) make install
+	then
+		c) set up your configuration files.
+
+	NOTE: OS Vendors who provide Samba binary packages will generally
+	integrate all Samba files into their preferred directory locations.
+	These may differ from the default location ALWAYS used by the Samba
+	sources. Please be careful when upgrading a vendor provided binary
+	distribution from files you have built yourself.
