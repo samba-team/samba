@@ -1,3 +1,9 @@
+Thu Apr  1 16:59:04 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* ftpd/Makefile.am: don't run check-local
+
+	* ftp/Makefile.am: don't run check-local
+
 Mon Mar 22 22:15:18 1999  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ftpd.c (pass): fall-back for KRB_VERIFY_SECURE

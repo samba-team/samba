@@ -1,3 +1,9 @@
+Thu Apr  1 16:59:27 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* telnetd/Makefile.am: don't run check-local
+
+	* telnet/Makefile.am: don't run check-local
+
 Mon Mar 29 16:11:33 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* telnetd/sys_term.c: _CRAY -> HAVE_STRUCT_UTMP_UT_ID
