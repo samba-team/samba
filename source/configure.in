@@ -1236,7 +1236,27 @@ AC_ARG_WITH(krb4,
     AC_CHECK_LIB(resolv, dn_expand)
     LIBS="$LIBS -lkrb -ldes"
     CFLAGS="$CFLAGS -I$withval/include"
-    LDFLAGS="$LDFLAGS -L$withval/lib"],
+    LDFLAGS="$LDFLAGS -L$withval/lib"
+    AC_CHECK_HEADER(kerberos/krb.h,
+      AC_CACHE_CHECK([whether both krb.h and kerberos/krb.h can be included],
+      samba_cv_no_kerberos_inconsistency,[
+      AC_TRY_COMPILE([#include<kerberos/krb.h>
+#include<krb.h>],
+         [],samba_cv_no_kerberos_inconsistency=yes,samba_cv_no_kerberos_inconsi
+stency=no)
+    ])
+    if test x"$samba_cv_no_kerberos_inconsistency" = x"no"; then
+      AC_CACHE_CHECK([whether a Kerberos define work around is needed],
+       samba_cv_kerberos_define_workaround,[
+        AC_TRY_COMPILE([#define _KERBEROS_KRB_H
+#include<kerberos/krb.h>
+#include<krb.h>],
+           [],samba_cv_kerberos_define_workaround=yes,samba_cv_kerberos_define_workaround=no)
+      ])
+      if test x"$samba_cv_kerberos_define_workaround" = x"yes"; then
+        AC_DEFINE(USE_KRB4_DEFINE_WORK_AROUND)
+      fi
+    fi)],
   AC_MSG_RESULT(no)
 )
 
