@@ -40,7 +40,7 @@ static struct {
 	size_t (*push)(char **inbuf, size_t *inbytesleft,
 		       char **outbuf, size_t *outbytesleft);
 } charsets[] = {
-	{"UCS2",  iconv_copy, iconv_copy},
+	{"UCS-2LE",  iconv_copy, iconv_copy},
 	{"UTF8",   utf8_pull,  utf8_push},
 	{"ASCII", ascii_pull, ascii_push},
 	{"WEIRD", weird_pull, weird_push},
@@ -63,21 +63,7 @@ size_t smb_iconv(smb_iconv_t cd,
 #ifdef HAVE_NATIVE_ICONV
 	if (cd->cd) {
 		size_t ret;
-#if 0
-		char *p = *outbuf;
-		char *q = *inbuf;
-		int inlen=*inbytesleft, outlen=*outbytesleft;
-#endif
-
 		ret = iconv(cd->cd, inbuf, inbytesleft, outbuf, outbytesleft);
-
-#if 0
-		if (strstr(p, "foo") || strstr(q, "foo")) {
-			DEBUG(0,("Foo 2!\n"));
-			dump_data(0, p, outlen - *outbytesleft);
-			dump_data(0, q, inlen - *inbytesleft);
-		}
-#endif
 
 		/* if there was an error then reset the internal state,
 		   this ensures that we don't have a shift state remaining for
