@@ -1300,6 +1300,7 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	BOOL ret = True;
 	uid_t uid = -1;
 	gid_t gid = -1;
+	struct passwd *pw = NULL;
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer: NULL parameters found!\n"));
@@ -1354,6 +1355,12 @@ BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	pdb_set_domain(sampass, domain, PDB_SET);
 	pdb_set_nt_username(sampass, nt_username, PDB_SET);
 	pdb_set_fullname(sampass, fullname, PDB_SET);
+
+
+	if ( (pw=Get_Pwnam(username)) != NULL ) {
+		uid = pw->pw_uid;
+		gid = pw->pw_gid;
+	}
 
 	if (homedir) {
 		pdb_set_homedir(sampass, homedir, PDB_SET);
