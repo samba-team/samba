@@ -17,8 +17,8 @@ krb5_recvauth(krb5_context context,
 	      krb5_ticket **ticket)
 {
   krb5_error_code ret;
-  const char *version = "KRB5_SENDAUTH_V1.0";
-  char her_version[19];		/* Size ^ */
+  const char *version = KRB5_SENDAUTH_VERSION;
+  char her_version[sizeof(KRB5_SENDAUTH_VERSION)];
   char *her_appl_version;
   int fd = *((int *)p_fd);
   u_int32_t len;
@@ -26,15 +26,17 @@ krb5_recvauth(krb5_context context,
   krb5_data data;
   krb5_flags ap_options;
 
-  if (krb5_net_read (context, fd, &len, 4) != 4)
-    return errno;
-  len = ntohl(len);
-  if (len != sizeof(her_version)
-      || krb5_net_read (context, fd, her_version, len) != len
-      || strcmp (version, her_version)) {
-    repl = 1;
-    krb5_net_write (context, fd, &repl, 1);
-    return KRB5_SENDAUTH_BADAUTHVERS;
+  if(!(flags & KRB5_RECVAUTH_IGNORE_VERSION)) {
+    if (krb5_net_read (context, fd, &len, 4) != 4)
+      return errno;
+    len = ntohl(len);
+    if (len != sizeof(her_version)
+	|| krb5_net_read (context, fd, her_version, len) != len
+	|| strncmp (version, her_version, len)) {
+      repl = 1;
+      krb5_net_write (context, fd, &repl, 1);
+      return KRB5_SENDAUTH_BADAUTHVERS;
+    }
   }
 
   if (krb5_net_read (context, fd, &len, 4) != 4)
