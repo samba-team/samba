@@ -115,8 +115,11 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 		return nt_status;
 	}
 
-	nt_status = gensec_ntlmssp_state->auth_context->check_ntlm_password(gensec_ntlmssp_state->auth_context, 
-									  user_info, &gensec_ntlmssp_state->server_info); 
+	nt_status = gensec_ntlmssp_state->
+		auth_context->check_ntlm_password(gensec_ntlmssp_state->auth_context, 
+						  user_info, 
+						  gensec_ntlmssp_state, 
+						  &gensec_ntlmssp_state->server_info); 
 
 	free_user_info(&user_info);
 
