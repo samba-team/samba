@@ -432,7 +432,8 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 
 	/* Test if machine password has expired and needs to be changed */
 	if (lp_machine_password_timeout()) {
-		if (time(NULL) > (last_change_time + 
+		if (last_change_time > 0 && 
+		    time(NULL) > (last_change_time + 
 				  lp_machine_password_timeout())) {
 			global_machine_password_needs_changing = True;
 		}
