@@ -44,12 +44,12 @@ krb5_kt_close(krb5_context,
 	      krb5_keytab id);
 
 krb5_error_code
-krb5_kt_get_entry(krb5_context,
-		  krb5_keytab,
-		  krb5_principal,
-		  krb5_kvno,
-		  krb5_keytype,
-		  krb5_keytab_entry *);
+krb5_kt_get_entry(krb5_context context,
+		  krb5_keytab id,
+		  krb5_principal principal,
+		  krb5_kvno kvno,
+		  krb5_keytype keytype,
+		  krb5_keytab_entry *entry);
 
 krb5_error_code
 krb5_kt_free_entry(krb5_context,
