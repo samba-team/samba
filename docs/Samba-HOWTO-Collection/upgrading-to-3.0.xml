@@ -502,7 +502,7 @@ complete descriptions of new or modified parameters.
 		<para>
 		Under Samba-2.x the Domain SID can be obtained by executing:
 <screen>
-&prompt;<userinput>smbpasswd -S 'Domain_Name'</userinput>
+&prompt;<userinput>smbpasswd -S &lt;DOMAINNAME&gt;</userinput>
 </screen>
 		</para>
 
