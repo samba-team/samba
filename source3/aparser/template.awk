@@ -3,6 +3,7 @@
 function print_template(f, tplname, v,
 			LOCAL, i, pat, line)
 {
+	tplname="templates/"tplname;
 	if (numlines(tplname) <= 0) fatal("no template "tplname);
 	while ((getline line < tplname) > 0) {
 		while ((i = match(line,"@[a-zA-Z_]*@")) != 0) {
