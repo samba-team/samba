@@ -6,6 +6,12 @@
 BOOL check_access(int snum);
 BOOL allow_access(char *deny_list,char *allow_list,char *cname,char *caddr);
 
+/*The following definitions come from  cgi.c  */
+
+void cgi_load_variables(void);
+char *cgi_variable(char *name);
+int cgi_boolean(char *name, int def);
+
 /*The following definitions come from  charcnv.c  */
 
 char *unix2dos_format(char *str,BOOL overwrite);
@@ -263,14 +269,20 @@ BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir);
 int lp_add_service(char *pszService, int iDefaultService);
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService);
 BOOL lp_file_list_changed(void);
+BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue);
+int lp_next_parameter(int snum, int *i, char *label, 
+			   char *value, int allparameters);
 BOOL lp_snum_ok(int iService);
 BOOL lp_loaded(void);
 void lp_killunused(BOOL (*snumused)(int ));
 BOOL lp_load(char *pszFname,BOOL global_only);
 int lp_numservices(void);
-void lp_dump(void);
+void lp_dump(FILE *f);
 int lp_servicenumber(char *pszServiceName);
 char *volume_label(int snum);
+void lp_rename_service(int snum, char *new_name);
+void lp_remove_service(int snum);
+void lp_copy_service(int snum, char *new_name);
 int lp_default_server_announce(void);
 int lp_major_announce_version(void);
 int lp_minor_announce_version(void);
@@ -1001,3 +1013,11 @@ int	VT_Start(void);
 int	VT_Output(char	*Buffer);
 int	VT_Input(char	*Buffer,int		Size);
 void VT_Process(void);
+
+/*The following definitions come from  wsmbconf.c  */
+
+int main(int argc, char *argv[]);
+
+/*The following definitions come from  wsmbstatus.c  */
+
+int main(int argc, char *argv[]);
