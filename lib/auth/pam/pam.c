@@ -229,6 +229,7 @@ pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
     strcpy(var, "KRBTKFILE=");
     strcat(var, tkt);
     putenv(var);
+    pam_putenv(pamh, var);
     if(k_hasafs()){
 	k_setpag();
 	krb_afslog_home(0, 0, homedir);
