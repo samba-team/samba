@@ -348,11 +348,25 @@ LOCAL_GRP *getaliasent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem)
 
 /************************************************************************
  Routine to add an entry to the alias database file.
+ on entry, the entry is added by name.
+ on exit, the RID is expected to have been set.
 *************************************************************************/
-
-BOOL add_alias_entry(LOCAL_GRP *newals)
+BOOL add_alias_entry(LOCAL_GRP *newgrp)
 {
- 	return aldb_ops->add_alias_entry(newals);
+	BOOL ret;
+	if (newgrp->rid != 0xffffffff)
+{
+		DEBUG(0,("add_alias_entry - RID must be 0xffffffff, \
+database instance is responsible for allocating the RID, not you.\n"));
+		return False;
+	}
+ 	ret = aldb_ops->add_alias_entry(newgrp);
+	if (newgrp->rid == 0xffffffff)
+	{
+		DEBUG(0,("add_alias_entry - RID has not been set by database\n"));
+		return False;
+	}
+	return ret;
 }
 
 /************************************************************************
@@ -365,6 +379,29 @@ BOOL mod_alias_entry(LOCAL_GRP* als)
  	return aldb_ops->mod_alias_entry(als);
 }
 
+/************************************************************************
+ Routine to delete alias database entry matching by rid.
+************************************************************************/
+BOOL del_alias_entry(uint32 rid)
+{
+ 	return aldb_ops->del_alias_entry(rid);
+}
+
+/************************************************************************
+ Routine to add a member to an entry in the alias database file.
+*************************************************************************/
+BOOL add_alias_member(uint32 rid, DOM_SID *member_sid)
+{
+ 	return aldb_ops->add_alias_member(rid, member_sid);
+}
+
+/************************************************************************
+ Routine to delete a member from an entry in the alias database file.
+*************************************************************************/
+BOOL del_alias_member(uint32 rid, DOM_SID *member_sid)
+{
+ 	return aldb_ops->del_alias_member(rid, member_sid);
+}
 /************************************************************************
  Routine to search alias database by name.
 *************************************************************************/

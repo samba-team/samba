@@ -237,11 +237,7 @@ static BOOL add_grpfilegrp_entry(DOMAIN_GRP *newgrp)
 
 /************************************************************************
  Routine to search the grppasswd file for an entry matching the groupname.
- and then modify its group entry. We can't use the startgrppwent()/
- getgrppwent()/endgrppwent() interfaces here as we depend on looking
- in the actual file to decide how much room we have to write data.
- override = False, normal
- override = True, override XXXXXXXX'd out group or NO PASS
+ and then modify its group entry. 
 ************************************************************************/
 
 static BOOL mod_grpfilegrp_entry(DOMAIN_GRP* grp)

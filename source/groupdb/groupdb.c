@@ -343,21 +343,60 @@ DOMAIN_GRP *getgroupent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_mem)
 
 /************************************************************************
  Routine to add an entry to the group database file.
+ on entry, the entry is added by name.
+ on exit, the RID is expected to have been set.
 *************************************************************************/
 
 BOOL add_group_entry(DOMAIN_GRP *newgrp)
 {
- 	return gpdb_ops->add_group_entry(newgrp);
+	BOOL ret;
+	if (newgrp->rid != 0xffffffff)
+	{
+		DEBUG(0,("add_group_entry - RID must be 0xffffffff, \
+database instance is responsible for allocating the RID, not you.\n"));
+		return False;
+	}
+ 	ret = gpdb_ops->add_group_entry(newgrp);
+	if (newgrp->rid == 0xffffffff)
+	{
+		DEBUG(0,("add_group_entry - RID has not been set by database\n"));
+		return False;
+	}
+	return ret;
 }
 
 /************************************************************************
- Routine to search the group database file for an entry matching the groupname.
+ Routine to delete group database entry matching by rid.
+************************************************************************/
+BOOL del_group_entry(uint32 rid)
+{
+ 	return gpdb_ops->del_group_entry(rid);
+}
+
+/************************************************************************
+ Routine to search group database file for entry matching by rid or groupname.
  and then replace the entry.
 ************************************************************************/
 
 BOOL mod_group_entry(DOMAIN_GRP* grp)
 {
  	return gpdb_ops->mod_group_entry(grp);
+}
+
+/************************************************************************
+ Routine to add a member to an entry in the group database file.
+*************************************************************************/
+BOOL add_group_member(uint32 rid, uint32 member_rid)
+{
+ 	return gpdb_ops->add_group_member(rid, member_rid);
+}
+
+/************************************************************************
+ Routine to delete a member from an entry in the group database file.
+*************************************************************************/
+BOOL del_group_member(uint32 rid, uint32 member_rid)
+{
+ 	return gpdb_ops->del_group_member(rid, member_rid);
 }
 
 /************************************************************************

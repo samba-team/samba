@@ -77,7 +77,7 @@ static void lsa_io_dom_r_ref(char *desc,  DOM_R_REF *r_r, prs_struct *ps, int de
 	prs_uint32("max_entries   ", ps, depth, &(r_r->max_entries   )); /* 32 - max number of entries */
 	prs_uint32("num_ref_doms_2", ps, depth, &(r_r->num_ref_doms_2)); /* 4 - num referenced domains? */
 
-	SMB_ASSERT_ARRAY(r_r->hdr_ref_dom, r_r->num_ref_doms_1-1);
+	SMB_ASSERT_ARRAY(r_r->hdr_ref_dom, r_r->num_ref_doms_1);
 	SMB_ASSERT_ARRAY(r_r->ref_dom, r_r->num_ref_doms_2);
 
 	for (i = 0; i < r_r->num_ref_doms_1; i++)
@@ -668,7 +668,7 @@ void lsa_io_r_lookup_sids(char *desc,  LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, i
 makes a structure.
 ********************************************************************/
 void make_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
-				int num_names, char **names)
+				int num_names, const char **names)
 {
 	int i;
 	if (q_l == NULL) return;

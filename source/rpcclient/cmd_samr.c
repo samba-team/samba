@@ -172,9 +172,9 @@ void cmd_sam_test(struct client_info *info)
 }
 
 /****************************************************************************
-SAM add alias member.
+SAM delete alias member.
 ****************************************************************************/
-void cmd_sam_add_aliasmem(struct client_info *info)
+void cmd_sam_del_aliasmem(struct client_info *info)
 {
 	fstring srv_name;
 	fstring domain;
@@ -205,7 +205,7 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 
 	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		fprintf(out_hnd, "addaliasmem: <alias rid> [member sid1] [member sid2] ...\n");
+		fprintf(out_hnd, "delaliasmem: <alias rid> [member sid1] [member sid2] ...\n");
 		return;
 	}
 	alias_rid = get_number(tmp);
@@ -228,16 +228,258 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 	/* connect to the domain */
 	res1 = res ? samr_open_alias(smb_cli,
 	            &info->dom.samr_pol_open_domain,
-	            alias_rid, &alias_pol) : False;
+	            0x000f001f, alias_rid, &alias_pol) : False;
 
 	while (next_token(NULL, tmp, NULL, sizeof(tmp)) && res2 && res1)
 	{
-		/* get a sid, add a member to the alias */
+		/* get a sid, delete a member from the alias */
 		res2 = res2 ? string_to_sid(&member_sid, tmp) : False;
-		res2 = res2 ? samr_add_aliasmem(smb_cli, &alias_pol, &member_sid) : False;
+		res2 = res2 ? samr_del_aliasmem(smb_cli, &alias_pol, &member_sid) : False;
 
 		if (res2)
 		{
+			fprintf(out_hnd, "SID deleted from Alias 0x%x: %s\n", alias_rid, tmp);
+		}
+	}
+
+	res1 = res1 ? samr_close(smb_cli, &alias_pol) : False;
+	res  = res  ? samr_close(smb_cli, &info->dom.samr_pol_open_domain) : False;
+	res  = res  ? samr_close(smb_cli, &info->dom.samr_pol_connect) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	if (res && res1 && res2)
+	{
+		DEBUG(5,("cmd_sam_del_aliasmem: succeeded\n"));
+		fprintf(out_hnd, "Delete Domain Alias Member: OK\n");
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_del_aliasmem: failed\n"));
+		fprintf(out_hnd, "Delete Domain Alias Member: FAILED\n");
+	}
+}
+
+/****************************************************************************
+SAM delete alias.
+****************************************************************************/
+void cmd_sam_delete_dom_alias(struct client_info *info)
+{
+	fstring srv_name;
+	fstring domain;
+	fstring name;
+	fstring sid;
+	DOM_SID sid1;
+	POLICY_HND alias_pol;
+	BOOL res = True;
+	BOOL res1 = True;
+	BOOL res2 = True;
+	uint32 flags = 0x200003f3; /* absolutely no idea. */
+	uint32 alias_rid = 0;
+	const char *names[1];
+	uint32 rid [MAX_LOOKUP_SIDS];
+	uint32 type[MAX_LOOKUP_SIDS];
+	uint32 num_rids;
+
+	sid_copy(&sid1, &info->dom.level5_sid);
+	sid_to_string(sid, &sid1);
+	fstrcpy(domain, info->dom.level5_dom);
+
+	if (sid1.num_auths == 0)
+	{
+		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	if (!next_token(NULL, name, NULL, sizeof(name)))
+	{
+		fprintf(out_hnd, "delalias <alias name>\n");
+		return;
+	}
+
+	fprintf(out_hnd, "SAM Delete Domain Alias\n");
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(smb_cli, 
+				srv_name, 0x00000020,
+				&info->dom.samr_pol_connect) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain(smb_cli, 
+	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_open_domain) : False;
+
+	names[0] = name;
+
+	res1 = res ? samr_query_lookup_names(smb_cli,
+	            &info->dom.samr_pol_open_domain, 0x000003e8,
+	            1, names,
+	            &num_rids, rid, type) : False;
+
+	if (res1 && num_rids == 1)
+	{
+		alias_rid = rid[0];
+	}
+
+	/* connect to the domain */
+	res1 = res1 ? samr_open_alias(smb_cli,
+	            &info->dom.samr_pol_open_domain,
+	            0x000f001f, alias_rid, &alias_pol) : False;
+
+	res2 = res1 ? samr_delete_dom_alias(smb_cli, &alias_pol) : False;
+
+	res1 = res1 ? samr_close(smb_cli, &alias_pol) : False;
+	res  = res  ? samr_close(smb_cli, &info->dom.samr_pol_open_domain) : False;
+	res  = res  ? samr_close(smb_cli, &info->dom.samr_pol_connect) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	if (res && res1 && res2)
+	{
+		DEBUG(5,("cmd_sam_delete_dom_alias: succeeded\n"));
+		fprintf(out_hnd, "Delete Domain Alias: OK\n");
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_delete_dom_alias: failed\n"));
+		fprintf(out_hnd, "Delete Domain Alias: FAILED\n");
+	}
+}
+
+
+/****************************************************************************
+SAM add alias member.
+****************************************************************************/
+void cmd_sam_add_aliasmem(struct client_info *info)
+{
+	fstring srv_name;
+	fstring domain;
+	fstring tmp;
+	fstring sid;
+	DOM_SID sid1;
+	POLICY_HND alias_pol;
+	BOOL res = True;
+	BOOL res1 = True;
+	BOOL res2 = True;
+	BOOL res3 = True;
+	BOOL res4 = True;
+	uint32 flags = 0x200003f3; /* absolutely no idea. */
+	uint32 alias_rid;
+	const char **names = NULL;
+	uint32 num_names = 0;
+	DOM_SID *sids; 
+	uint32 num_sids;
+	int i;
+
+	sid_copy(&sid1, &info->dom.level5_sid);
+	sid_to_string(sid, &sid1);
+	fstrcpy(domain, info->dom.level5_dom);
+
+	if (sid1.num_auths == 0)
+	{
+		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	while (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	{
+		num_names++;
+		names = Realloc(names, num_names * sizeof(char*));
+		if (names == NULL)
+		{
+			DEBUG(0,("Realloc returned NULL\n"));
+			return;
+		}
+		names[num_names-1] = strdup(tmp);
+	}
+
+	if (num_names < 2)
+	{
+		fprintf(out_hnd, "addaliasmem <group name> [member name1] [member name2] ...\n");
+		return;
+	}
+	
+	fprintf(out_hnd, "SAM Domain Alias Member\n");
+
+	/* open LSARPC session. */
+	res3 = res3 ? cli_nt_session_open(smb_cli, PIPE_LSARPC) : False;
+
+	/* lookup domain controller; receive a policy handle */
+	res3 = res3 ? lsa_open_policy(smb_cli,
+				srv_name,
+				&info->dom.lsa_info_pol, True) : False;
+
+	/* send lsa lookup sids call */
+	res4 = res3 ? lsa_lookup_names(smb_cli, 
+				       &info->dom.lsa_info_pol,
+				       num_names, names, 
+				       &sids, &num_sids) : False;
+
+	res3 = res3 ? lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
+
+	cli_nt_session_close(smb_cli);
+
+	res4 = num_sids < 2 ? False : res4;
+
+	if (res4)
+	{
+		/*
+		 * accept domain sid or builtin sid
+		 */
+
+		DOM_SID sid_1_5_20;
+		string_to_sid(&sid_1_5_20, "S-1-5-32");
+		sid_split_rid(&sids[0], &alias_rid);
+
+		if (sid_equal(&sids[0], &sid_1_5_20))
+		{
+			sid_copy(&sid1, &sid_1_5_20);
+		}
+		else if (!sid_equal(&sids[0], &sid1))
+		{	
+			res4 = False;
+		}
+	}
+
+	/* open SAMR session.  negotiate credentials */
+	res = res4 ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(smb_cli, 
+				srv_name, 0x00000020,
+				&info->dom.samr_pol_connect) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain(smb_cli, 
+	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_open_domain) : False;
+
+	/* connect to the domain */
+	res1 = res ? samr_open_alias(smb_cli,
+	            &info->dom.samr_pol_open_domain,
+	            0x000f001f, alias_rid, &alias_pol) : False;
+
+	for (i = 1; i < num_sids && res2 && res1; i++)
+	{
+		/* add a member to the alias */
+		res2 = res2 ? samr_add_aliasmem(smb_cli, &alias_pol, &sids[i]) : False;
+
+		if (res2)
+		{
+			sid_to_string(tmp, &sids[i]);
 			fprintf(out_hnd, "SID added to Alias 0x%x: %s\n", alias_rid, tmp);
 		}
 	}
@@ -249,6 +491,23 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 	/* close the session */
 	cli_nt_session_close(smb_cli);
 
+	if (sids != NULL)
+	{
+		free(sids);
+	}
+	
+	if (names != NULL)
+	{
+		for (i = 0; i < num_names; i++)
+		{
+			if (names[i] != NULL)
+			{
+				free(((char**)(names))[i]);
+			}
+		}
+		free(names);
+	}
+	
 	if (res && res1 && res2)
 	{
 		DEBUG(5,("cmd_sam_add_aliasmem: succeeded\n"));
@@ -349,9 +608,9 @@ void cmd_sam_create_dom_alias(struct client_info *info)
 
 
 /****************************************************************************
-SAM add group member.
+SAM delete group member.
 ****************************************************************************/
-void cmd_sam_add_groupmem(struct client_info *info)
+void cmd_sam_del_groupmem(struct client_info *info)
 {
 	fstring srv_name;
 	fstring domain;
@@ -382,7 +641,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 
 	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		fprintf(out_hnd, "addgroupmem: <group rid> [member rid1] [member rid2] ...\n");
+		fprintf(out_hnd, "delgroupmem: <group rid> [member rid1] [member rid2] ...\n");
 		return;
 	}
 	group_rid = get_number(tmp);
@@ -409,13 +668,13 @@ void cmd_sam_add_groupmem(struct client_info *info)
 
 	while (next_token(NULL, tmp, NULL, sizeof(tmp)) && res2 && res1)
 	{
-		/* get a rid, add a member to the group */
+		/* get a rid, delete a member from the group */
 		member_rid = get_number(tmp);
-		res2 = res2 ? samr_add_groupmem(smb_cli, &group_pol, member_rid) : False;
+		res2 = res2 ? samr_del_groupmem(smb_cli, &group_pol, member_rid) : False;
 
 		if (res2)
 		{
-			fprintf(out_hnd, "RID added to Group 0x%x: 0x%x\n", group_rid, member_rid);
+			fprintf(out_hnd, "RID deleted from Group 0x%x: 0x%x\n", group_rid, member_rid);
 		}
 	}
 
@@ -426,6 +685,228 @@ void cmd_sam_add_groupmem(struct client_info *info)
 	/* close the session */
 	cli_nt_session_close(smb_cli);
 
+	if (res && res1 && res2)
+	{
+		DEBUG(5,("cmd_sam_del_groupmem: succeeded\n"));
+		fprintf(out_hnd, "Add Domain Group Member: OK\n");
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_del_groupmem: failed\n"));
+		fprintf(out_hnd, "Add Domain Group Member: FAILED\n");
+	}
+}
+
+
+/****************************************************************************
+SAM delete group.
+****************************************************************************/
+void cmd_sam_delete_dom_group(struct client_info *info)
+{
+	fstring srv_name;
+	fstring domain;
+	fstring name;
+	fstring sid;
+	DOM_SID sid1;
+	POLICY_HND group_pol;
+	BOOL res = True;
+	BOOL res1 = True;
+	BOOL res2 = True;
+	uint32 flags = 0x200003f3; /* absolutely no idea. */
+	uint32 group_rid = 0;
+	const char *names[1];
+	uint32 rid [MAX_LOOKUP_SIDS];
+	uint32 type[MAX_LOOKUP_SIDS];
+	uint32 num_rids;
+
+	sid_copy(&sid1, &info->dom.level5_sid);
+	sid_to_string(sid, &sid1);
+	fstrcpy(domain, info->dom.level5_dom);
+
+	if (sid1.num_auths == 0)
+	{
+		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	if (!next_token(NULL, name, NULL, sizeof(name)))
+	{
+		fprintf(out_hnd, "delgroup <group name>\n");
+		return;
+	}
+
+	fprintf(out_hnd, "SAM Delete Domain Group\n");
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(smb_cli, 
+				srv_name, 0x00000020,
+				&info->dom.samr_pol_connect) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain(smb_cli, 
+	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_open_domain) : False;
+
+	names[0] = name;
+
+	res1 = res ? samr_query_lookup_names(smb_cli,
+	            &info->dom.samr_pol_open_domain, 0x000003e8,
+	            1, names,
+	            &num_rids, rid, type) : False;
+
+	if (res1 && num_rids == 1)
+	{
+		group_rid = rid[0];
+	}
+
+	/* connect to the domain */
+	res1 = res1 ? samr_open_group(smb_cli,
+	            &info->dom.samr_pol_open_domain,
+	            0x0000001f, group_rid, &group_pol) : False;
+
+	res2 = res1 ? samr_delete_dom_group(smb_cli, &group_pol) : False;
+
+	res1 = res1 ? samr_close(smb_cli, &group_pol) : False;
+	res  = res  ? samr_close(smb_cli, &info->dom.samr_pol_open_domain) : False;
+	res  = res  ? samr_close(smb_cli, &info->dom.samr_pol_connect) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	if (res && res1 && res2)
+	{
+		DEBUG(5,("cmd_sam_delete_dom_group: succeeded\n"));
+		fprintf(out_hnd, "Delete Domain Group: OK\n");
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_delete_dom_group: failed\n"));
+		fprintf(out_hnd, "Delete Domain Group: FAILED\n");
+	}
+}
+
+
+/****************************************************************************
+SAM add group member.
+****************************************************************************/
+void cmd_sam_add_groupmem(struct client_info *info)
+{
+	fstring srv_name;
+	fstring domain;
+	fstring tmp;
+	fstring sid;
+	DOM_SID sid1;
+	POLICY_HND group_pol;
+	BOOL res = True;
+	BOOL res1 = True;
+	BOOL res2 = True;
+	uint32 flags = 0x200003f3; /* absolutely no idea. */
+	uint32 group_rid = 0;
+	const char **names = NULL;
+	uint32 num_names = 0;
+	uint32 rid [MAX_LOOKUP_SIDS];
+	uint32 type[MAX_LOOKUP_SIDS];
+	uint32 num_rids;
+	int i;
+
+	sid_copy(&sid1, &info->dom.level5_sid);
+	sid_to_string(sid, &sid1);
+	fstrcpy(domain, info->dom.level5_dom);
+
+	if (sid1.num_auths == 0)
+	{
+		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	while (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	{
+		num_names++;
+		names = Realloc(names, num_names * sizeof(char*));
+		if (names == NULL)
+		{
+			DEBUG(0,("Realloc returned NULL\n"));
+			return;
+		}
+		names[num_names-1] = strdup(tmp);
+	}
+
+	if (num_names < 2)
+	{
+		fprintf(out_hnd, "addgroupmem <group name> [member name1] [member name2] ...\n");
+		return;
+	}
+	
+	fprintf(out_hnd, "SAM Add Domain Group member\n");
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(smb_cli, 
+				srv_name, 0x00000020,
+				&info->dom.samr_pol_connect) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain(smb_cli, 
+	            &info->dom.samr_pol_connect, flags, &sid1,
+	            &info->dom.samr_pol_open_domain) : False;
+
+	res1 = res ? samr_query_lookup_names(smb_cli,
+	            &info->dom.samr_pol_open_domain, 0x000003e8,
+	            num_names, names,
+	            &num_rids, rid, type) : False;
+
+	if (res1 && num_rids != 0)
+	{
+		group_rid = rid[0];
+	}
+
+	/* connect to the domain */
+	res1 = res1 ? samr_open_group(smb_cli,
+	            &info->dom.samr_pol_open_domain,
+	            0x0000001f, group_rid, &group_pol) : False;
+
+	for (i = 1; i < num_rids && res2 && res1; i++)
+	{
+		res2 = res2 ? samr_add_groupmem(smb_cli, &group_pol, rid[i]) : False;
+
+		if (res2)
+		{
+			fprintf(out_hnd, "RID added to Group 0x%x: 0x%x\n", group_rid, rid[i]);
+		}
+	}
+
+	res1 = res1 ? samr_close(smb_cli, &group_pol) : False;
+	res  = res  ? samr_close(smb_cli, &info->dom.samr_pol_open_domain) : False;
+	res  = res  ? samr_close(smb_cli, &info->dom.samr_pol_connect) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	if (names != NULL)
+	{
+		for (i = 0; i < num_names; i++)
+		{
+			if (names[i] != NULL)
+			{
+				free(((char**)(names))[i]);
+			}
+		}
+		free(names);
+	}
+	
 	if (res && res1 && res2)
 	{
 		DEBUG(5,("cmd_sam_add_groupmem: succeeded\n"));
@@ -1042,10 +1523,6 @@ void cmd_sam_enum_aliases(struct client_info *info)
 				DOM_SID **sids = NULL;
 				int i;
 
-				/* jeremy, you removed all the independent fnums
-				 * i put into the nt client code.  this is the reason
-				 * why they are all needed.
-				 */
 				uint16 old_fnum = smb_cli->nt_pipe_fnum;
 
 				if (num_aliases != 0)

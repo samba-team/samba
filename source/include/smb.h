@@ -612,6 +612,34 @@ typedef struct connection_struct
 
 } connection_struct;
 
+struct unix_sec_ctxt
+{
+	uid_t uid;
+	gid_t gid;
+	int ngroups;
+	gid_t *groups;
+
+	char *name;
+};
+
+struct nt_sec_ctxt
+{
+	/* this should (will?) probably become a SEC_DESC */
+	DOM_SID user_sid;
+	DOM_SID group_sid;
+
+	char *name;
+	char *domain;
+};
+
+#if 0
+struct sec_ctxt
+{
+	struct unix_sec_ctxt unix;
+	struct nt_sec_ctxt   nt;
+};
+#endif
+
 struct current_user
 {
 	connection_struct *conn;
@@ -898,6 +926,10 @@ struct groupdb_ops
 	 */
 	BOOL (*add_group_entry)(DOMAIN_GRP *);
 	BOOL (*mod_group_entry)(DOMAIN_GRP *);
+	BOOL (*del_group_entry)(uint32);
+
+	BOOL (*add_group_member)(uint32, uint32);
+	BOOL (*del_group_member)(uint32, uint32);
 
 	/*
 	 * user group functions
@@ -937,6 +969,10 @@ struct aliasdb_ops
 	 */
 	BOOL (*add_alias_entry)(LOCAL_GRP *);
 	BOOL (*mod_alias_entry)(LOCAL_GRP *);
+	BOOL (*del_alias_entry)(uint32);
+
+	BOOL (*add_alias_member)(uint32, DOM_SID*);
+	BOOL (*del_alias_member)(uint32, DOM_SID*);
 
 	/*
 	 * user alias functions

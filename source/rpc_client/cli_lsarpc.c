@@ -104,7 +104,7 @@ do a LSA Lookup Names
 BOOL lsa_lookup_names(struct cli_state *cli,
 			POLICY_HND *hnd,
 			int num_names,
-			char **names,
+			const char **names,
 			DOM_SID **sids,
 			int *num_sids)
 {
@@ -197,7 +197,10 @@ BOOL lsa_lookup_names(struct cli_state *cli,
 				if (dom_idx != 0xffffffff)
 				{
 					sid_copy(sid, &ref.ref_dom[dom_idx].ref_dom.sid);
+					if (dom_rid != 0xffffffff)
+					{
 					sid_append_rid(sid, dom_rid);
+					}
 				}
 				else
 				{

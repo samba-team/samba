@@ -617,11 +617,11 @@ void smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, i
 /*******************************************************************
 creates a DOM_RID2 structure.
 ********************************************************************/
-void make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type)
+void make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type, uint32 idx)
 {
 	rid2->type    = type;
 	rid2->rid     = rid;
-	rid2->rid_idx = 0;
+	rid2->rid_idx = idx;
 }
 
 /*******************************************************************
