@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -47,13 +47,11 @@ RCSID("$Id$");
 #endif
 
 static char *srvtab = KEYFILE;
-static char *keytab;
 static int help_flag;
 static int verbose;
 
 static struct getargs args[] = {
-    { "srvtab", 's', arg_string, &srvtab, "Srvtab to convert", "file" },
-    { "keytab", 'k', arg_string, &keytab, "Keytab to put result in", "keytab" },
+    { "srvtab", 's', arg_string, &srvtab, "srvtab to convert", "file" },
     { "help", 'h', arg_flag, &help_flag },
     { "verbose", 'v', arg_flag, &verbose },
 };
@@ -65,10 +63,8 @@ srvconv(int argc, char **argv)
 {
     krb5_error_code ret;
     int optind = 0;
-    char keytab_name[256];
     int fd;
     krb5_storage *sp;
-    krb5_keytab id;
 
     if(getarg(args, num_args, argc, argv, &optind)){
 	arg_printusage(args, num_args, "");
@@ -87,29 +83,14 @@ srvconv(int argc, char **argv)
 	return 1;
     }
 
-    if(keytab == NULL){
-	ret = krb5_kt_default_name(context, keytab_name, sizeof(keytab_name));
-	if(ret) {
-	    krb5_warn(context, ret, "krb5_kt_default_name");
-	    return 1;
-	}
-	keytab = keytab_name;
-    }
-    ret = krb5_kt_resolve(context, keytab, &id);
-    if(ret) {
-	krb5_warn(context, ret, "krb5_kt_resolve");
-	return 1;
-    }
     fd = open(srvtab, O_RDONLY);
     if(fd < 0){
 	krb5_warn(context, errno, "%s", srvtab);
-	krb5_kt_close(context, id);
 	return 1;
     }
     sp = krb5_storage_from_fd(fd);
     if(sp == NULL){
 	close(fd);
-	krb5_kt_close(context, id);
 	return 1;
     }
     while(1){
@@ -185,7 +166,7 @@ srvconv(int argc, char **argv)
 	    }
 				    
 	}
-	ret = krb5_kt_add_entry(context, id, &entry);
+	ret = krb5_kt_add_entry(context, keytab, &entry);
 	krb5_free_principal(context, entry.principal);
 	if(ret) {
 	    krb5_warn(context, ret, "krb5_kt_add_entry");
@@ -194,6 +175,5 @@ srvconv(int argc, char **argv)
     }
     krb5_storage_free(sp);
     close(fd);
-    krb5_kt_close(context, id);
     return ret;
 }
