@@ -131,9 +131,8 @@ krb5_auth_con_setaddrs(krb5_context context,
 krb5_error_code
 krb5_auth_con_genaddrs(krb5_context context, 
 		       krb5_auth_context auth_context, 
-		       int infd, int flags)
+		       int fd, int flags)
 {
-    int fd = *((int *)p_fd);
     krb5_error_code ret;
     krb5_address local_k_address, remote_k_address;
     krb5_address *lptr = NULL, *rptr = NULL;
