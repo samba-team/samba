@@ -90,6 +90,7 @@ setup(
                          samba_srcdir + "python/py_spoolss_forms.c",
                          samba_srcdir + "python/py_spoolss_drivers.c",
                          samba_srcdir + "python/py_spoolss_printers.c",
+                         samba_srcdir + "python/py_spoolss_printers_conv.c",
                          samba_srcdir + "python/py_spoolss_ports.c",
                          ],
               libraries = lib_list,
