@@ -7,9 +7,15 @@ Group: Networking
 Source: ftp://samba.org/pub/samba/samba-PVERSION.tar.gz
 Patch: makefile-path.patch
 Patch1: smbw.patch
-Requires: pam >= 0.64
+Requires: pam >= 0.64 kernel >= 2.2.1
 Prereq: chkconfig fileutils
 BuildRoot: /var/tmp/samba
+
+%package -n smbfs
+Version: PVERSION
+Release: PRELEASE
+Group: Utilities/File
+Summary: Programs to mount SMB shares.
 
 %description
 Samba provides an SMB server which can be used to provide
@@ -36,7 +42,16 @@ NOTE: TurboLinux uses PAM which has integrated support
 for Shadow passwords. Do NOT recompile with the SHADOW_PWD option
 enabled. PHT TurboLinux has built in support for quotas in PAM.
 
+%description -n smbfs
+This package includes the tools necessary to mount filesystems from
+SMB servers.
+
 %changelog
+* Wed Mar 10 1999 Scott Stone <sstone@turbolinux.com>
+- This package now builds smbfs stuff
+- Added xinetd autosetup in the post install section
+- (todo: add remove of xinetd stuff in postuninstall section)
+
 * Sun Feb 28 1999 Jeremy Allison <jra@samba.org>
  - Removed smbrun binary and tidied up some loose ends
 
@@ -99,7 +114,7 @@ enabled. PHT TurboLinux has built in support for quotas in PAM.
 
 %build
 cd source
-CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-smbwrapper --with-automount --with-quotas
+CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-smbwrapper --with-automount --with-quotas --with-smbmount
 make all smbwrapper
 
 %install
@@ -118,6 +133,7 @@ mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
+      smbmount smbumount smbmnt \
       make_smbcodepage make_printerdef rpcclient smbsh smbwrapper.so
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/bin
@@ -169,6 +185,8 @@ install -m644 docs/manpages/smbd.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/manpages/nmbd.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/manpages/smbpasswd.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 docs/manpages/swat.8 $RPM_BUILD_ROOT/usr/man/man8
+install -m644 docs/manpages/smbmount.8 $RPM_BUILD_ROOT/usr/man/man8
+install -m644 docs/manpages/smbumount.8 $RPM_BUILD_ROOT/usr/man/man8
 install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/smb.conf
 install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/smbusers
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT/usr/bin
@@ -340,3 +358,10 @@ fi
 %attr(-,root,root) %dir /var/lock/samba
 %attr(-,root,root) %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
+
+%files -n smbfs
+%attr(-,root,root) /usr/sbin/smbmount
+%attr(-,root,root) /usr/sbin/smbumount
+%attr(-,root,root) /usr/sbin/smbmnt
+%attr(-,root,root) /usr/man/man8/smbmount.8
+%attr(-,root,root) /usr/man/man8/smbumount.8
