@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -44,7 +44,26 @@ RCSID("$Id$");
 static krb5_context context;
 static krb5_log_facility *log_facility;
 
+static struct getarg_strings addresses_str;
+krb5_addresses explicit_addresses;
+
 static sig_atomic_t exit_flag = 0;
+
+static void
+add_one_address (const char *str, int first)
+{
+    krb5_error_code ret;
+    krb5_addresses tmp;
+
+    ret = krb5_parse_address (context, str, &tmp);
+    if (ret)
+	krb5_err (context, 1, ret, "parse_address `%s'", str);
+    if (first)
+	krb5_copy_addresses(context, &tmp, &explicit_addresses);
+    else
+	krb5_append_addresses(context, &explicit_addresses, &tmp);
+    krb5_free_addresses (context, &tmp);
+}
 
 static void
 send_reply (int s,
@@ -115,7 +134,7 @@ make_result (krb5_data *data,
     if (data->data == NULL) {
 	krb5_warnx (context, "Out of memory generating error reply");
 	return 1;
-    }
+   }
     return 0;
 }
 
@@ -565,10 +584,13 @@ doit (krb5_keytab keytab, int port)
 
     free (realm);
 
-    ret = krb5_get_all_server_addrs (context, &addrs);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_get_all_server_addrs");
-
+    if (explicit_addresses.len) {
+	addrs = explicit_addresses;
+    } else {
+	ret = krb5_get_all_server_addrs (context, &addrs);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_get_all_server_addrs");
+    }
     n = addrs.len;
 
     sockets = malloc (n * sizeof(*sockets));
@@ -662,6 +684,8 @@ struct getargs args[] = {
     { "check-function", 0, arg_string, &check_function,
       "password check function to load", "function" },
 #endif
+    { "addresses",	0,	arg_strings, &addresses_str,
+      "addresses to listen on", "list of addresses" },
     { "keytab", 'k', arg_string, &keytab_str, 
       "keytab to get authentication key from", "kspec" },
     { "config-file", 'c', arg_string, &config_file },
@@ -733,6 +757,25 @@ main (int argc, char **argv)
 	krb5_err(context, 1, ret, "%s", keytab_str);
     
     kadm5_setup_passwd_quality_check (context, check_library, check_function);
+
+    explicit_addresses.len = 0;
+
+    if (addresses_str.num_strings) {
+	int i;
+
+	for (i = 0; i < addresses_str.num_strings; ++i)
+	    add_one_address (addresses_str.strings[i], i == 0);
+	free_getarg_strings (&addresses_str);
+    } else {
+	char **foo = krb5_config_get_strings (context, NULL,
+					      "kdc", "addresses", NULL);
+
+	if (foo != NULL) {
+	    add_one_address (*foo++, TRUE);
+	    while (*foo)
+		add_one_address (*foo++, FALSE);
+	}
+    }
 
 #ifdef HAVE_SIGACTION
     {
