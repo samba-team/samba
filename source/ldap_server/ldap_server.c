@@ -279,7 +279,22 @@ static void ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	part = ldapsrv_get_partition(call->conn, req->basedn);
 
 	if (!part->ops->Search) {
-		ldapsrv_unwilling(call, 2);
+		struct ldap_Result *done;
+		struct ldapsrv_reply *done_r;
+
+		done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
+		if (!done_r) {
+			ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+			return;
+		}
+
+		done = &done_r->msg.r.SearchResultDone;
+		done->resultcode = 32;
+		done->dn = NULL;
+		done->errormessage = NULL;
+		done->referral = NULL;
+
+		ldapsrv_queue_reply(call, done_r);
 		return;
 	}
 
