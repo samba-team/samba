@@ -2548,7 +2548,7 @@ max can be %d\n", num_interfaces, FD_SETSIZE));
           return True; 
         }
         close(Client); /* The parent doesn't need this socket */
-#endif /NO_FORK_DEBUG */
+#endif /* NO_FORK_DEBUG */
       } /* end for num */
     } /* end while 1 */
   } /* end if is_daemon */
