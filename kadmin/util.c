@@ -215,6 +215,14 @@ foreach_principal(const char *exp,
     krb5_error_code ret;
     krb5_principal princ_ent;
     ret = kadm5_get_principals(kadm_handle, exp, &princs, &num_princs);
+    if(ret == KADM5_AUTH_LIST) {
+	/* we might be able to perform the requested opreration even
+           if we're not allowed to list principals */
+	num_princs = 1;
+	princs = malloc(sizeof(*princs));
+	princs[0] = strdup(exp);
+	ret = 0;
+    }
     if(ret)
 	return ret;
     for(i = 0; i < num_princs; i++) {
