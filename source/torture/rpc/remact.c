@@ -57,8 +57,8 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return 0;
 	}
 
-	if(!W_ERROR_IS_OK(W_ERROR(r.out.hr))) {
-		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(W_ERROR(r.out.hr)));
+	if(!W_ERROR_IS_OK(r.out.hr)) {
+		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(r.out.hr));
 		return 0;
 	}
 

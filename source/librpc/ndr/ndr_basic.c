@@ -190,9 +190,9 @@ NTSTATUS ndr_push_WERROR(struct ndr_push *ndr, WERROR status)
 	return ndr_push_uint32(ndr, W_ERROR_V(status));
 }
 
-void ndr_print_WERROR(struct ndr_print *ndr, const char *name, WERROR *r)
+void ndr_print_WERROR(struct ndr_print *ndr, const char *name, WERROR r)
 {
-	ndr->print(ndr, "%-25s: %s", name, win_errstr(*r));
+	ndr->print(ndr, "%-25s: %s", name, win_errstr(r));
 }
 
 /*
@@ -262,6 +262,23 @@ NTSTATUS ndr_pull_array_HYPER_T(struct ndr_pull *ndr, int ndr_flags, HYPER_T *da
 	}
 	return NT_STATUS_OK;
 }
+
+/*
+  pull a const array of WERROR
+*/
+NTSTATUS ndr_pull_array_WERROR(struct ndr_pull *ndr, int ndr_flags, WERROR *data, uint32_t n)
+{
+	uint32_t i;
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+	for (i=0;i<n;i++) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, &data[i]));
+	}
+	return NT_STATUS_OK;
+}
+
+
 
 /*
   push a uint8
@@ -426,6 +443,21 @@ NTSTATUS ndr_push_array_HYPER_T(struct ndr_push *ndr, int ndr_flags, const HYPER
 	}
 	for (i=0;i<n;i++) {
 		NDR_CHECK(ndr_push_HYPER_T(ndr, data[i]));
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  push an array of HYPER_T
+*/
+NTSTATUS ndr_push_array_WERROR(struct ndr_push *ndr, int ndr_flags, const WERROR *data, uint32_t n)
+{
+	int i;
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+	for (i=0;i<n;i++) {
+		NDR_CHECK(ndr_push_WERROR(ndr, data[i]));
 	}
 	return NT_STATUS_OK;
 }
@@ -964,6 +996,24 @@ void ndr_print_union(struct ndr_print *ndr, const char *name, int level, const c
 void ndr_print_bad_level(struct ndr_print *ndr, const char *name, uint16_t level)
 {
 	ndr->print(ndr, "UNKNOWN LEVEL %u", level);
+}
+
+void ndr_print_array_WERROR(struct ndr_print *ndr, const char *name, 
+			    const WERROR *data, uint32_t count)
+{
+	int i;
+
+	ndr->print(ndr, "%s: ARRAY(%d)", name, count);
+	ndr->depth++;
+	for (i=0;i<count;i++) {
+		char *idx=NULL;
+		asprintf(&idx, "[%d]", i);
+		if (idx) {
+			ndr_print_WERROR(ndr, idx, data[i]);
+			free(idx);
+		}
+	}
+	ndr->depth--;	
 }
 
 void ndr_print_array_HYPER_T(struct ndr_print *ndr, const char *name, 
