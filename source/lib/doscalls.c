@@ -52,18 +52,23 @@ int dos_open(char *fname,int flags,mode_t mode)
 }
 
 /*******************************************************************
- Opendir() wrapper that calls dos_to_unix.
+ Opendir() wrapper that calls dos_to_unix.  Should use the 
+ vfs_ops->opendir() function instead.
 ********************************************************************/
 
+#if 0
 DIR *dos_opendir(char *dname)
 {
   return(opendir(dos_to_unix(dname,False)));
 }
+#endif
 
 /*******************************************************************
- Readdirname() wrapper that calls unix_to_dos.
+ Readdirname() wrapper that calls unix_to_dos.  Should use the 
+ vfs_readdirname() function instead.
 ********************************************************************/
 
+#if 0
 char *dos_readdirname(DIR *p)
 {
   char *dname = readdirname(p);
@@ -74,6 +79,7 @@ char *dos_readdirname(DIR *p)
   unix_to_dos(dname, True);
   return(dname);
 }
+#endif
 
 /*******************************************************************
  A chown() wrapper that calls dos_to_unix.
@@ -106,6 +112,8 @@ int dos_lstat(char *fname,SMB_STRUCT_STAT *sbuf)
  Mkdir() that calls dos_to_unix.
  Cope with UNIXes that don't allow high order mode bits on mkdir.
  Patch from gcarter@lanier.com.
+ Don't use this call unless you really want to access a file on 
+ disk.  Use the vfs_ops.mkdir() function instead.
 ********************************************************************/
 
 int dos_mkdir(char *dname,mode_t mode)
@@ -289,13 +297,15 @@ char *dos_getwd(char *unix_path)
 }
 
 /*******************************************************************
- Check if a DOS file exists.
+ Check if a DOS file exists.  Use vfs_file_exist function instead.
 ********************************************************************/
 
+#if 0
 BOOL dos_file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
 {
   return file_exist(dos_to_unix(fname, False), sbuf);
 }
+#endif
 
 /*******************************************************************
  Check if a DOS directory exists.

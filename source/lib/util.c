@@ -334,7 +334,7 @@ int name_mangle( char *In, char *Out, char name_type )
   } /* name_mangle */
 
 /*******************************************************************
-  check if a file exists
+  check if a file exists - call vfs_file_exist for samba files
 ********************************************************************/
 BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
 {
@@ -1561,6 +1561,8 @@ BOOL yesno(char *p)
 set the length of a file from a filedescriptor.
 Returns 0 on success, -1 on failure.
 ****************************************************************************/
+
+/* tpot vfs need to recode this function */
 
 int set_filelen(int fd, SMB_OFF_T len)
 {
