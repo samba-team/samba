@@ -21,7 +21,7 @@
 #include "python/py_spoolss.h"
 
 static BOOL py_from_printerdata(PyObject **dict, char *key, char *value,
-				uint32 data_type, char *data, 
+				uint16 data_type, uint8 *data, 
 				uint32 data_size) 
 {
 	*dict = PyDict_New();
@@ -36,8 +36,8 @@ static BOOL py_from_printerdata(PyObject **dict, char *key, char *value,
 	return True;
 }
 
-static BOOL py_to_printerdata(char **key, char **value, uint32 *data_type, 
-			      char **data, uint32 *data_size, 
+static BOOL py_to_printerdata(char **key, char **value, uint16 *data_type, 
+			      uint8 **data, uint32 *data_size, 
 			      PyObject *dict)
 {
 	PyObject *obj;
@@ -50,10 +50,12 @@ static BOOL py_to_printerdata(char **key, char **value, uint32 *data_type,
 			return False;
 		}
 
-		*key = PyString_AsString(obj);
+		if (key) {
+			*key = PyString_AsString(obj);
 
-		if (!key[0])
-			*key = NULL;
+			if (!key[0])
+				*key = NULL;
+		}
 	} else
 		*key = NULL;
 
@@ -107,34 +109,36 @@ PyObject *spoolss_hnd_getprinterdata(PyObject *self, PyObject *args, PyObject *k
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	static char *kwlist[] = { "value", NULL };
-	char *value;
+	char *valuename;
 	WERROR werror;
-	uint32 needed, data_type, data_size;
-	char *data;
+	uint32 needed;
 	PyObject *result;
+	REGISTRY_VALUE value;
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &value))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &valuename))
 		return NULL;
 
 	/* Call rpc function */
 
 	werror = cli_spoolss_getprinterdata(
-		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, value,
-		&data_type, &data, &data_size);
+		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, valuename,
+		&value);
 
 	if (W_ERROR_V(werror) == ERRmoredata) 
 		werror = cli_spoolss_getprinterdata(
-			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol, value,
-			&data_type, &data, &data_size);
+			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol, 
+			valuename, &value);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
 		return NULL;
 	}
 
-	py_from_printerdata(&result, NULL, value, data_type, data, needed);
+	py_from_printerdata(
+		&result, NULL, valuename, value.type, value.data_p, 
+		value.size);
 
 	return result;
 }
@@ -144,22 +148,25 @@ PyObject *spoolss_hnd_setprinterdata(PyObject *self, PyObject *args, PyObject *k
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	static char *kwlist[] = { "data", NULL };
 	PyObject *py_data;
-	char *key, *value, *data;
-	uint32 data_size, data_type;
+	char *valuename;
 	WERROR werror;
+	REGISTRY_VALUE value;
 
 	if (!PyArg_ParseTupleAndKeywords(
 		    args, kw, "O!", kwlist, &PyDict_Type, &py_data))
 		return NULL;
 	
-	if (!py_to_printerdata(&key, &value, &data_type, &data, &data_size, py_data))
+	if (!py_to_printerdata(
+		    NULL, &valuename, &value.type, &value.data_p, 
+		    &value.size, py_data))
 		return NULL;
 
+	fstrcpy(value.valuename, valuename);
+	
 	/* Call rpc function */
 
 	werror = cli_spoolss_setprinterdata(
-		hnd->cli, hnd->mem_ctx, &hnd->pol, value, data_type,
-		data, data_size);
+		hnd->cli, hnd->mem_ctx, &hnd->pol, &value);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -174,10 +181,10 @@ PyObject *spoolss_hnd_enumprinterdata(PyObject *self, PyObject *args, PyObject *
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	static char *kwlist[] = { NULL };
-	uint32 data_needed, value_needed, ndx = 0, data_size, data_type;
-	char *value, *data;
+	uint32 data_needed, value_needed, ndx = 0;
 	WERROR werror;
 	PyObject *result;
+	REGISTRY_VALUE value;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "", kwlist))
 		return NULL;
@@ -186,7 +193,7 @@ PyObject *spoolss_hnd_enumprinterdata(PyObject *self, PyObject *args, PyObject *
 
 	werror = cli_spoolss_enumprinterdata(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, ndx, 0, 0,
-		&value_needed, &data_needed, NULL, NULL, NULL, NULL);
+		&value_needed, &data_needed, NULL);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -202,12 +209,12 @@ PyObject *spoolss_hnd_enumprinterdata(PyObject *self, PyObject *args, PyObject *
 
 		werror = cli_spoolss_enumprinterdata(
 			hnd->cli, hnd->mem_ctx, &hnd->pol, ndx,
-			value_needed, data_needed, NULL, NULL,
-			&value, &data_type, &data, &data_size); 
+			value_needed, data_needed, NULL, NULL, &value);
 
 		if (py_from_printerdata(
-			    &obj, NULL, value, data_type, data, data_size))
-			PyDict_SetItemString(result, value, obj);
+			    &obj, NULL, value.valuename, value.type, 
+			    value.data_p, value.size))
+			PyDict_SetItemString(result, value.valuename, obj);
 
 		ndx++;
 	}
@@ -245,34 +252,35 @@ PyObject *spoolss_hnd_getprinterdataex(PyObject *self, PyObject *args, PyObject 
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	static char *kwlist[] = { "key", "value", NULL };
-	char *key, *value;
+	char *key, *valuename;
 	WERROR werror;
-	uint32 needed, data_type, data_size;
-	char *data;
+	uint32 needed;
 	PyObject *result;
+	REGISTRY_VALUE value;
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "ss", kwlist, &key, &value))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "ss", kwlist, &key, &valuename))
 		return NULL;
 
 	/* Call rpc function */
 
 	werror = cli_spoolss_getprinterdataex(
 		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, key,
-		value, &data_type, &data, &data_size);
+		valuename, &value);
 
 	if (W_ERROR_V(werror) == ERRmoredata) 
 		werror = cli_spoolss_getprinterdataex(
 			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol, key,
-			value, &data_type, &data, &data_size);
+			valuename, &value);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
 		return NULL;
 	}
 
-	py_from_printerdata(&result, key, value, data_type, data, needed);
+	py_from_printerdata(
+		&result, key, valuename, value.type, value.data_p, value.size);
 
 	return result;
 }
@@ -282,22 +290,24 @@ PyObject *spoolss_hnd_setprinterdataex(PyObject *self, PyObject *args, PyObject 
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	static char *kwlist[] = { "data", NULL };
 	PyObject *py_data;
-	char *key, *value, *data;
-	uint32 data_size, data_type;
+	char *keyname, *valuename;
 	WERROR werror;
+	REGISTRY_VALUE value;
 
 	if (!PyArg_ParseTupleAndKeywords(
 		    args, kw, "O!", kwlist, &PyDict_Type, &py_data))
 		return NULL;
 	
-	if (!py_to_printerdata(&key, &value, &data_type, &data, &data_size, py_data))
+	if (!py_to_printerdata(
+		    &keyname, &valuename, &value.type, &value.data_p, &value.size, py_data))
 		return NULL;
+
+	fstrcpy(value.valuename,  valuename);
 
 	/* Call rpc function */
 
 	werror = cli_spoolss_setprinterdataex(
-		hnd->cli, hnd->mem_ctx, &hnd->pol, key, value, data_type,
-		data, data_size);
+		hnd->cli, hnd->mem_ctx, &hnd->pol, keyname, &value);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -312,11 +322,11 @@ PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	static char *kwlist[] = { NULL };
-	uint32 needed, returned, i;
+	uint32 needed, i;
 	char *key;
 	WERROR werror;
 	PyObject *result;
-	PRINTER_ENUM_VALUES *values;
+	REGVAL_CTR ctr;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &key))
 		return NULL;
@@ -324,13 +334,12 @@ PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject
 	/* Get max buffer sizes for value and data */
 
 	werror = cli_spoolss_enumprinterdataex(
-		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, key,
-		&returned, &values);
+		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, key, &ctr);
 
 	if (W_ERROR_V(werror) == ERRmoredata) 
 		werror = cli_spoolss_enumprinterdataex(
-			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol, key,
-			&returned, &values);
+			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol, key, 
+			&ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -341,16 +350,17 @@ PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject
 
 	result = PyDict_New();
 
-	for (i = 0; i < returned; i++) {
+	for (i = 0; i < regval_ctr_numvals(&ctr); i++) {
+		REGISTRY_VALUE *value;
 		PyObject *item;
-		fstring value = "";
 
-		rpcstr_pull(value, values[i].valuename.buffer, sizeof(value), -1, STR_TERMINATE);
 		item = PyDict_New();
-		py_from_printerdata(&item, key, value, values[i].type, values[i].data, 
-				    values[i].data_len);
+		value = regval_ctr_specific_value(&ctr, i);
 
-		PyDict_SetItemString(result, value, item);
+		if (py_from_printerdata(
+			    &item, key, value->valuename, value->type, 
+			    value->data_p, value->size))
+			PyDict_SetItemString(result, value->valuename, item);
 	}
 	
 	return result;
