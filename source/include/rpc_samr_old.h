@@ -92,7 +92,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_UNKNOWN_12        0x12
 #define SAMR_UNKNOWN_21        0x21
 #define SAMR_UNKNOWN_2C        0x2c
-#define SAMR_UNKNOWN_32        0x32
+#define SAMR_CREATE_USER       0x32
 #define SAMR_UNKNOWN_34        0x34
 #define SAMR_CHGPASSWD_USER    0x37
 #define SAMR_UNKNOWN_38        0x38
@@ -983,32 +983,30 @@ typedef struct q_samr_unknown_21_info
 } SAMR_Q_UNKNOWN_21;
 
 
-/* SAMR_Q_UNKNOWN_32 - probably a "create SAM entry" */
-typedef struct q_samr_unknown_32_info
+/* SAMR_Q_CREATE_USER - probably a "create SAM entry" */
+typedef struct q_samr_create_user_info
 {
-    POLICY_HND pol;             /* policy handle */
+	POLICY_HND pol;             /* policy handle */
 
 	UNIHDR  hdr_mach_acct;       /* unicode machine account name header */
 	UNISTR2 uni_mach_acct;       /* unicode machine account name */
 
-	uint32 acct_ctrl;            /* 32 bit ACB_XXXX */
-	uint16 unknown_1;            /* 16 bit unknown - 0x00B0 */
-	uint16 unknown_2;            /* 16 bit unknown - 0xe005 */
+	uint32 acb_info;            /* 32 bit ACB_XXXX */
+	uint32 access_mask;         /* 0xe005 00b0 */
 
-} SAMR_Q_UNKNOWN_32;
+} SAMR_Q_CREATE_USER;
 
 
-/* SAMR_R_UNKNOWN_32 - probably a "create SAM entry" */
-typedef struct r_samr_unknown_32_info
+/* SAMR_R_CREATE_USER - probably a "create SAM entry" */
+typedef struct r_samr_create_user_info
 {
-    POLICY_HND pol;       /* policy handle */
+	POLICY_HND pol;       /* policy handle */
 
-	/* rid4.unknown - fail: 0030 success: 0x03ff */
-	DOM_RID4 rid4;         /* rid and attributes */
-
+	uint32 unknown_0;     /* 0x0007 03ff */
+	uint32 user_rid;      /* user RID */
 	uint32 status;         /* return status - fail: 0xC000 0099: user exists */
 
-} SAMR_R_UNKNOWN_32;
+} SAMR_R_CREATE_USER;
 
 /* SAMR_Q_OPEN_ALIAS - probably an open */
 typedef struct q_samr_open_alias_info

@@ -1826,55 +1826,40 @@ static BOOL api_samr_query_dom_info(pipes_struct *p)
 	return True;
 }
 
-/*******************************************************************
- samr_reply_unknown_32
- ********************************************************************/
-static BOOL samr_reply_unknown_32(SAMR_Q_UNKNOWN_32 *q_u,
-				prs_struct *rdata,
-				int status)
-{
-	int i;
-	SAMR_R_UNKNOWN_32 r_u;
-
-	/* set up the SAMR unknown_32 response */
-	memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
-	if (status == 0)
-	{
-		for (i = 4; i < POL_HND_SIZE; i++)
-		{
-			r_u.pol.data[i] = i+1;
-		}
-	}
-
-	init_dom_rid4(&(r_u.rid4), 0x0030, 0, 0);
-	r_u.status    = status;
-
-	DEBUG(5,("samr_unknown_32: %d\n", __LINE__));
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_unknown_32("", &r_u, rdata, 0))
-		return False;
-
-	DEBUG(5,("samr_unknown_32: %d\n", __LINE__));
-
-	return True;
-}
 
 /*******************************************************************
- api_samr_unknown_32
+ api_samr_create_user
  ********************************************************************/
-static BOOL api_samr_unknown_32(pipes_struct *p)
+static BOOL api_samr_create_user(pipes_struct *p)
 {
-	uint32 status = 0;
 	struct sam_passwd *sam_pass;
 	fstring mach_acct;
+	pstring err_str;
+	pstring msg_str;
+	int local_flags=0;
+	
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
-	SAMR_Q_UNKNOWN_32 q_u;
+	SAMR_Q_CREATE_USER q_u;
+	SAMR_R_CREATE_USER r_u;
 
-	/* grab the samr unknown 32 */
-	samr_io_q_unknown_32("", &q_u, data, 0);
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	DEBUG(5,("api_samr_create_user: %d\n", __LINE__));
+
+	/* grab the samr create user */
+	if (!samr_io_q_create_user("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_create_user: Unable to unmarshall SAMR_Q_CREATE_USER.\n"));
+		return False;
+	}
+
+	/* find the policy handle.  open a policy on it. */
+	if ((find_lsa_policy_by_hnd(&q_u.pol) == -1)) {
+		r_u.status = NT_STATUS_INVALID_HANDLE;
+		goto out;
+	}
 
 	/* find the machine account: tell the caller if it exists.
 	   lkclXXXX i have *no* idea if this is a problem or not
@@ -1882,28 +1867,71 @@ static BOOL api_samr_unknown_32(pipes_struct *p)
 	   reply if the account already exists...
 	 */
 
-	fstrcpy(mach_acct, dos_unistrn2(q_u.uni_mach_acct.buffer,
-	                            q_u.uni_mach_acct.uni_str_len));
+	fstrcpy(mach_acct, dos_unistrn2(q_u.uni_mach_acct.buffer, q_u.uni_mach_acct.uni_str_len));
+	strlower(mach_acct);
 
 	become_root();
 	sam_pass = getsam21pwnam(mach_acct);
 	unbecome_root();
-
-	if (sam_pass != NULL)
-	{
+	if (sam_pass != NULL) {
 		/* machine account exists: say so */
-		status = 0xC0000000 | NT_STATUS_USER_EXISTS;
-	}
-	else
-	{
-		/* this could cause trouble... */
-		DEBUG(0,("trouble!\n"));
-		status = 0;
+		r_u.status = NT_STATUS_USER_EXISTS;
+		goto out;
 	}
 
-	/* construct reply. */
-	if(!samr_reply_unknown_32(&q_u, rdata, status))
+	/* get a (unique) handle.  open a policy on it. */
+	if (!open_lsa_policy_hnd(&r_u.pol)) {
+		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto out;
+	}
+
+	local_flags=LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_SET_NO_PASSWORD;
+	local_flags|= (q_u.acb_info & ACB_WSTRUST) ? LOCAL_TRUST_ACCOUNT:0;
+
+	/*
+	 * NB. VERY IMPORTANT ! This call must be done as the current pipe user,
+	 * *NOT* surrounded by a become_root()/unbecome_root() call. This ensures
+	 * that only people with write access to the smbpasswd file will be able
+	 * to create a user. JRA.
+	 */
+
+	if (!local_password_change(mach_acct, local_flags, NULL, err_str, sizeof(err_str), msg_str, sizeof(msg_str))) {
+		DEBUG(0, ("%s\n", err_str));
+		r_u.status = NT_STATUS_ACCESS_DENIED;
+		close_lsa_policy_hnd(&r_u.pol);
+		memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
+		goto out;
+	}
+
+	become_root();
+	sam_pass = getsam21pwnam(mach_acct);
+	unbecome_root();
+	if (sam_pass == NULL) {
+		/* account doesn't exist: say so */
+		r_u.status = NT_STATUS_ACCESS_DENIED;
+		close_lsa_policy_hnd(&r_u.pol);
+		memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
+		goto out;
+	}
+
+	/* associate the RID with the (unique) handle. */
+	if (!set_lsa_policy_samr_rid(&r_u.pol, sam_pass->user_rid)) {
+		/* oh, whoops.  don't know what error message to return, here */
+		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		close_lsa_policy_hnd(&r_u.pol);
+		memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
+		goto out;
+	}
+
+	r_u.unknown_0=0x000703ff;
+	r_u.user_rid=sam_pass->user_rid;
+
+ out:	
+	/* store the response in the SMB stream */
+	if(!samr_io_r_create_user("", &r_u, rdata, 0))
 		return False;
+
+	DEBUG(5,("api_samr_create_user: %d\n", __LINE__));
 
 	return True;
 }
@@ -2197,7 +2225,7 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_QUERY_USERGROUPS" , SAMR_QUERY_USERGROUPS , api_samr_query_usergroups },
 	{ "SAMR_QUERY_DISPINFO"   , SAMR_QUERY_DISPINFO   , api_samr_query_dispinfo   },
 	{ "SAMR_QUERY_ALIASINFO"  , SAMR_QUERY_ALIASINFO  , api_samr_query_aliasinfo  },
-	{ "SAMR_0x32"             , 0x32                  , api_samr_unknown_32       },
+	{ "SAMR_CREATE_USER"      , SAMR_CREATE_USER      , api_samr_create_user      },
 	{ "SAMR_UNKNOWN_12"       , SAMR_UNKNOWN_12       , api_samr_unknown_12       },
 	{ "SAMR_UNKNOWN_38"       , SAMR_UNKNOWN_38       , api_samr_unknown_38       },
 	{ "SAMR_CHGPASSWD_USER"   , SAMR_CHGPASSWD_USER   , api_samr_chgpasswd_user   },

@@ -3058,12 +3058,12 @@ BOOL samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struc
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_q_unknown_32(char *desc,  SAMR_Q_UNKNOWN_32 *q_u, prs_struct *ps, int depth)
+BOOL samr_io_q_create_user(char *desc, SAMR_Q_CREATE_USER *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_q_unknown_32");
+	prs_debug(ps, depth, desc, "samr_io_q_create_user");
 	depth++;
 
 	if(!prs_align(ps))
@@ -3082,11 +3082,9 @@ BOOL samr_io_q_unknown_32(char *desc,  SAMR_Q_UNKNOWN_32 *q_u, prs_struct *ps, i
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("acct_ctrl", ps, depth, &q_u->acct_ctrl))
+	if(!prs_uint32("acb_info", ps, depth, &q_u->acb_info))
 		return False;
-	if(!prs_uint16("unknown_1", ps, depth, &q_u->unknown_1))
-		return False;
-	if(!prs_uint16("unknown_2", ps, depth, &q_u->unknown_2))
+	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
 		return False;
 
 	return True;
@@ -3096,7 +3094,7 @@ BOOL samr_io_q_unknown_32(char *desc,  SAMR_Q_UNKNOWN_32 *q_u, prs_struct *ps, i
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_r_unknown_32(char *desc,  SAMR_R_UNKNOWN_32 *r_u, prs_struct *ps, int depth)
+BOOL samr_io_r_create_user(char *desc, SAMR_R_CREATE_USER *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -3109,7 +3107,10 @@ BOOL samr_io_r_unknown_32(char *desc,  SAMR_R_UNKNOWN_32 *r_u, prs_struct *ps, i
 
 	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
 		return False;
-	if(!prs_align(ps))
+
+	if(!prs_uint32("unknown_0", ps, depth, &r_u->unknown_0))
+		return False;
+	if(!prs_uint32("user_rid", ps, depth, &r_u->user_rid))
 		return False;
 
 	if(!prs_uint32("status", ps, depth, &r_u->status))
