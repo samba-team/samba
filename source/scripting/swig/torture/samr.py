@@ -89,9 +89,9 @@ def test_QuerySecurity(pipe, handle):
     s['sec_info'] = 7
     s['sdbuf'] = result['sdbuf']
 
-    result = dcerpc.samr_SetSecurity(pipe, s)
+    dcerpc.samr_SetSecurity(pipe, s)
 
-    result = dcerpc.samr_QuerySecurity(pipe, r)
+    dcerpc.samr_QuerySecurity(pipe, r)
 
 def test_GetDomPwInfo(pipe, domain):
 
@@ -104,21 +104,23 @@ def test_GetDomPwInfo(pipe, domain):
     r['name']['name_size'] = 0
     r['name']['name'] = domain
 
-    result = dcerpc.samr_GetDomPwInfo(pipe, r)
+    dcerpc.samr_GetDomPwInfo(pipe, r)
 
     r['name']['name'] = '\\\\%s' % domain
 
-    result = dcerpc.samr_GetDomPwInfo(pipe, r)
+    dcerpc.samr_GetDomPwInfo(pipe, r)
 
     r['name']['name'] = '\\\\__NONAME__'
 
-    result = dcerpc.samr_GetDomPwInfo(pipe, r)
+    dcerpc.samr_GetDomPwInfo(pipe, r)
 
     r['name']['name'] = '\\\\Builtin'
 
-    result = dcerpc.samr_GetDomPwInfo(pipe, r)
+    dcerpc.samr_GetDomPwInfo(pipe, r)
 
 def test_RemoveMemberFromForeignDomain(pipe, domain_handle):
+
+    print 'test samr_RemoveMemberFromForeignDomain'
 
     r = {}
     r['domain_handle'] = domain_handle
@@ -128,12 +130,14 @@ def test_RemoveMemberFromForeignDomain(pipe, domain_handle):
     r['sid']['num_auths'] = 4
     r['sid']['sub_auths'] = [7, 8, 9, 10]
 
-    result = dcerpc.samr_RemoveMemberFromForeignDomain(pipe, r)
+    dcerpc.samr_RemoveMemberFromForeignDomain(pipe, r)
 
 def test_CreateUser2(pipe, domain_handle):
     pass
 
 def test_LookupName(pipe, domain_handle, name):
+
+    print 'test samr_LookupNames'
 
     r = {}
     r['domain_handle'] = domain_handle
@@ -150,14 +154,14 @@ def test_LookupName(pipe, domain_handle, name):
 
 
     try:
-        result = dcerpc.samr_LookupNames(pipe, r)
+        dcerpc.samr_LookupNames(pipe, r)
     except dcerpc.NTSTATUS, arg:
         if arg[0] != 0x00000107:
             raise dcerpc.NTSTATUS(arg)
 
     r['num_names'] = 0
 
-    result = dcerpc.samr_LookupNames(pipe, r)
+    dcerpc.samr_LookupNames(pipe, r)
 
     return rid
 
@@ -185,6 +189,8 @@ def test_DeleteUser_byname(pipe, domain_handle, user_name):
 
 def test_QueryUserInfo(pipe, user_handle):
 
+    print 'test samr_QueryUserInfo'
+
     levels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 20, 21]
 
     for level in levels:
@@ -192,10 +198,12 @@ def test_QueryUserInfo(pipe, user_handle):
         r['user_handle'] = user_handle
         r['level'] = level
 
-        result = dcerpc.samr_QueryUserInfo(pipe, r)
+        dcerpc.samr_QueryUserInfo(pipe, r)
 
 def test_QueryUserInfo2(pipe, user_handle):
 
+    print 'test samr_QueryUserInfo2'
+
     levels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 20, 21]
 
     for level in levels:
@@ -203,25 +211,29 @@ def test_QueryUserInfo2(pipe, user_handle):
         r['user_handle'] = user_handle
         r['level'] = level
 
-        result = dcerpc.samr_QueryUserInfo2(pipe, r)
+        dcerpc.samr_QueryUserInfo2(pipe, r)
 
 def test_SetUserInfo(pipe, user_handle):
     pass
 
 def test_GetUserPwInfo(pipe, user_handle):
 
+    print 'test samr_GetUserpwInfo'
+
     r = {}
     r['user_handle'] = user_handle
 
-    result = dcerpc.samr_GetUserPwInfo(pipe, r)
+    dcerpc.samr_GetUserPwInfo(pipe, r)
 
 def test_TestPrivateFunctionsUser(pipe, user_handle):
+
+    print 'test samr.TestPrivateFunctionsUser'
 
     r = {}
     r['user_handle'] = user_handle
 
     try:
-        result = dcerpc.samr_TestPrivateFunctionsUser(pipe, r)
+        dcerpc.samr_TestPrivateFunctionsUser(pipe, r)
     except dcerpc.NTSTATUS, arg:
         if arg[0] != 0xc0000002:
             raise dcerpc.NTSTATUS(arg)
@@ -242,6 +254,8 @@ def test_user_ops(pipe, user_handle):
 
 def test_CreateUser(pipe, domain_handle):
 
+    print 'test samr_CreateUser'
+    
     r = {}
     r['domain_handle'] = domain_handle
     r['account_name'] = {}
@@ -267,7 +281,7 @@ def test_CreateUser(pipe, domain_handle):
     q['user_handle'] = user_handle
     q['level'] = 16
 
-    result = dcerpc.samr_QueryUserInfo(pipe, q)
+    dcerpc.samr_QueryUserInfo(pipe, q)
 
     test_user_ops(pipe, user_handle)
 
@@ -294,6 +308,8 @@ def test_alias_ops(pipe, alias_handle, domain_handle, domain_sid):
 
 def test_CreateAlias(pipe, domain_handle, domain_sid):
 
+    print 'test samr_CreateAlias'    
+
     r = {}
     r['domain_handle'] = domain_handle
     r['aliasname'] = {}
@@ -314,9 +330,27 @@ def test_CreateAlias(pipe, domain_handle, domain_sid):
 
     test_alias_ops(pipe, alias_handle, domain_handle, domain_sid)
 
-    return result['alias_handle']
+    return alias_handle
+
+def test_DeleteGroup_byname(pipe, domain_handle, group_name):
+    
+    rid = test_LookupName(pipe, domain_handle, group_name)
+
+    r = {}
+    r['domain_handle'] = domain_handle
+    r['access_mask'] = 0x02000000
+    r['rid'] = rid
+
+    result = dcerpc.samr_OpenGroup(pipe, r)
+
+    s = {}
+    s['group_handle'] = result['group_handle']
+
+    dcerpc.samr_DeleteDomainGroup(pipe, s)
 
 def test_CreateDomainGroup(pipe, domain_handle):
+
+    print 'testing samr_CreateDomainGroup'
 
     r = {}
     r['domain_handle'] = domain_handle
@@ -326,27 +360,110 @@ def test_CreateDomainGroup(pipe, domain_handle):
     r['name']['name'] = 'samrtorturetestgroup'
     r['access_mask'] = 0x02000000
 
-    result = dcerpc.samr_CreateDomGroup(pipe, r)
+    try:
+        result = dcerpc.samr_CreateDomainGroup(pipe, r)
+    except dcerpc.NTSTATUS, arg:
+        if arg[0] != 0xc0000065:
+            raise dcerpc.NTSTATUS(arg)
+
+        test_DeleteGroup_byname(pipe, domain_handle, 'samrtorturetestgroup')
+
+        result = dcerpc.samr_CreateDomainGroup(pipe, r)
 
     return result['group_handle']
 
-def test_CreateDomainGroup(pipe, domain_handle):
-    pass
-
 def test_QueryDomainInfo(pipe, domain_handle):
-    pass
+
+    print 'testing samr_QueryDomainInfo'
+
+    levels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13]
+    set_ok = [1, 0, 1, 1, 0, 1, 1, 0, 1,  0,  1,  0]
     
+    for i in range(0, len(levels)):
+
+        r = {}
+        r['domain_handle'] = domain_handle
+        r['level'] = levels[i]
+
+        result = dcerpc.samr_QueryDomainInfo(pipe, r)
+
+        s = {}
+        s['domain_handle'] = domain_handle
+        s['level'] = levels[i]
+        s['info'] = result['info']
+
+        try:
+            dcerpc.samr_SetDomainInfo(pipe, s)
+        except dcerpc.NTSTATUS, arg:
+            if set_ok[i]:
+                raise dcerpc.NTSTATUS(arg)
+            if arg[0] != 0xc0000003:
+                raise dcerpc.NTSTATUS(arg)
+
 def test_QueryDomainInfo2(pipe, domain_handle):
-    pass
+
+    print 'testing samr_QueryDomainInfo'
+
+    levels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13]
+
+    for i in range(0, len(levels)):
+
+        r = {}
+        r['domain_handle'] = domain_handle
+        r['level'] = levels[i]
+
+        dcerpc.samr_QueryDomainInfo2(pipe, r)
 
 def test_EnumDomainUsers(pipe, domain_handle):
-    pass
+
+    print 'testing samr_EnumDomainUsers'
+
+    r = {}
+    r['domain_handle'] = domain_handle
+    r['resume_handle'] = 0
+    r['acct_flags'] = 0
+    r['max_size'] = -1
+
+    while 1:
+        result = dcerpc.samr_EnumDomainUsers(pipe, r)
+        if result['result'] == 0x00000105:
+            r['resume_handle'] = result['resume_handle']
+            continue
+        break
 
 def test_EnumDomainGroups(pipe, domain_handle):
-    pass
+
+    print 'testing samr_EnumDomainGroups'
+
+    r = {}
+    r['domain_handle'] = domain_handle
+    r['resume_handle'] = 0
+    r['acct_flags'] = 0
+    r['max_size'] = -1
+    
+    while 1:
+        result = dcerpc.samr_EnumDomainGroups(pipe, r)
+        if result['result'] == 0x00000105:
+            r['resume_handle'] = result['resume_handle']
+            continue
+        break
 
 def test_EnumDomainAliases(pipe, domain_handle):
-    pass
+
+    print 'testing samr_EnumDomainAliases'
+
+    r = {}
+    r['domain_handle'] = domain_handle
+    r['resume_handle'] = 0
+    r['acct_flags'] = 0
+    r['max_size'] = -1
+
+    while 1:
+        result = dcerpc.samr_EnumDomainAliases(pipe, r)
+        if result['result'] == 0x00000105:
+            r['resume_handle'] = result['resume_handle']
+            continue
+        break
 
 def test_QueryDisplayInfo(pipe, domain_handle):
     pass
@@ -410,9 +527,6 @@ def test_OpenDomain(pipe, connect_handle, domain_sid):
 
     alias_handle = test_CreateAlias(pipe, domain_handle, domain_sid)
 
-    print alias_handle
-    sys.exit(1)
-
     group_handle = test_CreateDomainGroup(pipe, domain_handle)
 
     test_QueryDomainInfo(pipe, domain_handle)
@@ -424,6 +538,8 @@ def test_OpenDomain(pipe, connect_handle, domain_sid):
     test_EnumDomainGroups(pipe, domain_handle)
 
     test_EnumDomainAliases(pipe, domain_handle)
+
+    sys.exit(1)
 
     test_QueryDisplayInfo(pipe, domain_handle)
 
@@ -463,7 +579,7 @@ def test_LookupDomain(pipe, connect_handle, domain):
     r['domain']['name'] = None
 
     try:
-        result = dcerpc.samr_LookupDomain(pipe, r)
+        dcerpc.samr_LookupDomain(pipe, r)
     except dcerpc.NTSTATUS, arg:
         if arg[0] != 0xc000000d:
             raise dcerpc.NTSTATUS(arg)
@@ -471,7 +587,7 @@ def test_LookupDomain(pipe, connect_handle, domain):
     r['domain']['name'] = 'xxNODOMAINxx'
 
     try:
-        result = dcerpc.samr_LookupDomain(pipe, r)
+        dcerpc.samr_LookupDomain(pipe, r)
     except dcerpc.NTSTATUS, arg:
         if arg[0] != 0xc00000df:
             raise dcerpc.NTSTATUS(arg)
