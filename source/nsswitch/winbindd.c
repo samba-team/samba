@@ -28,6 +28,7 @@
 
 BOOL opt_nocache = False;
 BOOL opt_dual_daemon = True;
+static BOOL interactive = False;
 
 extern BOOL override_logfile;
 
@@ -163,6 +164,15 @@ static void terminate(void)
 	pstr_sprintf(path, "%s/%s", 
 		 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
 	unlink(path);
+
+	if (interactive) {
+		TALLOC_CTX *mem_ctx = talloc_init("end_description");
+		char *description = talloc_describe_all(mem_ctx);
+
+		DEBUG(3, ("tallocs left:\n%s\n", description));
+		talloc_destroy(mem_ctx);
+	}
+
 	exit(0);
 }
 
@@ -847,7 +857,6 @@ struct winbindd_state server_state;   /* Server state information */
 int main(int argc, char **argv)
 {
 	pstring logfile;
-	static BOOL interactive = False;
 	static BOOL Fork = True;
 	static BOOL log_stdout = False;
 	struct poptOption long_options[] = {
