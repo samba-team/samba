@@ -261,7 +261,7 @@ PICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
 
 all : CHECK $(SPROGS) $(PROGS) 
 
-smbwrapper : CHECK bin/smbsh bin/smbwrapper.so @WRAP32@
+smbwrapper : CHECK bin/smbsh bin/smbwrapper.@SHLIBEXT@ @WRAP32@
 
 smbtorture : CHECK bin/smbtorture
 
@@ -420,11 +420,11 @@ bin/smbfilter: $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBFILTER_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbwrapper.so: $(PICOBJS)
+bin/smbwrapper.@SHLIBEXT@: $(PICOBJS)
 	@echo Linking shared library $@
 	@$(LD) @LDSHFLAGS@ -o $@ $(PICOBJS) $(LIBS)
 
-bin/smbwrapper.32.so: $(PICOBJS32)
+bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 	@echo Linking shared library $@
 	@$(LD) -32 @LDSHFLAGS@ -o $@ $(PICOBJS32) $(LIBS)
 
@@ -478,17 +478,17 @@ uninstallcp:
 	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
-	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.so
+	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@
 
 proto: 
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h
 
 etags:
-	etags `find . -name "*.[ch]"`
+	etags `find . -name "*.[ch]" | grep -v /CVS/`
 
 ctags:
-	ctags `find . -name "*.[ch]"`
+	ctags `find . -name "*.[ch]" | grep -v /CVS/`
 
 realclean: clean
 	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy
