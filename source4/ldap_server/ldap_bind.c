@@ -66,6 +66,8 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
 			return status;
 		}
+		
+		gensec_set_target_service(call->conn->gensec, "ldap");
 
 		/*gensec_want_feature(call->conn->gensec, GENSEC_WANT_SIGN|GENSEC_WANT_SEAL);*/
 

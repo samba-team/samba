@@ -238,6 +238,8 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 			return status;
 		}
 
+		gensec_set_target_service(gensec_ctx, "cifs");
+
 		gensec_want_feature(gensec_ctx, GENSEC_FEATURE_SESSION_KEY);
 
 		status = gensec_start_mech_by_oid(gensec_ctx, GENSEC_OID_SPNEGO);

@@ -266,6 +266,18 @@ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
 }
 		
 
+/*
+  end crypto state
+*/
+static int dcerpc_schannel_destroy(void *ptr)
+{
+	struct dcerpc_schannel_state *dce_schan_state = ptr;
+
+	schannel_end(&dce_schan_state->schannel_state);
+
+	return 0;
+}
+
 static NTSTATUS dcerpc_schannel_start(struct gensec_security *gensec_security)
 {
 	struct dcerpc_schannel_state *dce_schan_state;
@@ -281,6 +293,8 @@ static NTSTATUS dcerpc_schannel_start(struct gensec_security *gensec_security)
 		GENSEC_FEATURE_SESSION_KEY | 
 		GENSEC_FEATURE_SIGN | 
 		GENSEC_FEATURE_SEAL;
+
+	talloc_set_destructor(dce_schan_state, dcerpc_schannel_destroy);
 	
 	return NT_STATUS_OK;
 }
@@ -307,20 +321,6 @@ static NTSTATUS dcerpc_schannel_client_start(struct gensec_security *gensec_secu
 	}
 
 	return NT_STATUS_OK;
-}
-
-/*
-  end crypto state
-*/
-static void dcerpc_schannel_end(struct gensec_security *gensec_security)
-{
-	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
-
-	schannel_end(&dce_schan_state->schannel_state);
-
-	talloc_free(dce_schan_state);
-
-	gensec_security->private_data = NULL;
 }
 
 
@@ -522,7 +522,6 @@ static const struct gensec_security_ops gensec_dcerpc_schannel_security_ops = {
 	.session_key	= dcerpc_schannel_session_key,
 	.session_info	= dcerpc_schannel_session_info,
 	.sig_size	= dcerpc_schannel_sig_size,
-	.end		= dcerpc_schannel_end
 };
 
 NTSTATUS gensec_dcerpc_schannel_init(void)
