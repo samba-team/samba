@@ -94,7 +94,7 @@ afslog_uid_int(kafs_data *data, const char *cell, const char *rh, uid_t uid,
 
     trealm = krb5_princ_realm (d->context, princ);
 
-    if (strcmp (d->realm, *trealm) == 0) {
+    if (d->realm != NULL && strcmp (d->realm, *trealm) == 0) {
 	trealm = NULL;
 	krb5_free_principal (d->context, princ);
     }
