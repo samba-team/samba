@@ -419,8 +419,6 @@ static NTSTATUS cmd_samr_query_group(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	ZERO_STRUCT(group_ctr);
-
 	result = cli_samr_query_groupinfo(cli, mem_ctx, &group_pol, 
 					  info_level, &group_ctr);
 	if (!NT_STATUS_IS_OK(result)) {
