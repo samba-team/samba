@@ -91,6 +91,8 @@ childhandler (int sig)
 
 #define TMPX11 "/tmp/.X11-unix"
 
+char x_socket[MaxPathLen];
+
 int
 get_local_xsocket (int *num)
 {
@@ -106,7 +108,7 @@ get_local_xsocket (int *num)
 	  return fd;
      }    
      addr.sun_family = AF_UNIX;
-     for(dpy = 0; dpy < 256; ++dpy) {
+     for(dpy = 4; dpy < 256; ++dpy) {
 	  struct stat statbuf;
 
 	  sprintf (addr.sun_path, TMPX11 "/X%u", dpy);
@@ -127,6 +129,7 @@ get_local_xsocket (int *num)
 		   strerror(errno));
 	  return -1;
      }
+     strcpy(x_socket, addr.sun_path);
      *num = dpy;
      return fd;
 }
