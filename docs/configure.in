@@ -95,4 +95,4 @@ fi
 
 AC_SUBST(TARGETS)
 
-AC_OUTPUT( Makefile settings.xsl )
+AC_OUTPUT( Makefile.settings settings.xsl )
