@@ -2653,17 +2653,93 @@ unsigned int sec_desc_size(SEC_DESC *sd)
   return size;
 }
 
-int nt_store_SID(REGF *regf, DOM_SID *sid, char *locn)
-{
+/*
+ * Store a SID at the location provided
+ */
 
-  return 0;
+int nt_store_SID(REGF *regf, DOM_SID *sid, unsigned char *locn)
+{
+  int i;
+  unsigned char *p = locn;
+
+  if (!regf || !sid || !locn) return 0;
+
+  *p = sid->ver; p++;
+  *p = sid->auths; p++;
+  
+  for (i=0; i < 6; i++) {
+    *p = sid->auth[i]; p++;
+  }
+
+  for (i=0; i < sid->auths; i++) {
+    SIVAL(p, sid->sub_auths[i]); p+=4;
+  }
+
+  return p - locn;
   
 }
 
-int nt_store_acl(REGF *regf, ACL *acl, char *locn)
+int nt_store_ace(REGF *regf, ACE *ace, unsigned char *locn)
 {
+  int size = 0;
+  REG_ACE *reg_ace = (REG_ACE *)locn;
+  unsigned char *p;
 
-  return 0;
+  if (!regf || !ace || !locn) return 0;
+
+  reg_ace->type = ace->type;
+  reg_ace->flags = ace->flags;
+
+  /* Deal with the length when we have stored the SID */
+
+  p = (unsigned char *)&reg_ace->perms;
+
+  SIVAL(p, ace->perms); p += 4;
+
+  size = nt_store_SID(regf, ace->trustee, p);
+
+  size += 8; /* Size of the fixed header */
+
+  p = (unsigned char *)&reg_ace->length;
+
+  SSVAL(p, size);
+
+  return size;
+}
+
+/*
+ * Store an ACL at the location provided
+ */
+
+int nt_store_acl(REGF *regf, ACL *acl, unsigned char *locn)
+{
+  int size = 0, i;
+  unsigned char *p = locn, *s;
+
+  if (!regf || !acl || !locn) return 0;
+
+  /*
+   * Now store the header and then the ACEs ...
+   */
+
+  SSVAL(p, acl->rev);
+
+  p += 2; s = p; /* Save this for the size field */
+
+  p += 2;
+
+  SIVAL(p, acl->num_aces);
+
+  p += 4;
+
+  for (i = 0; i < acl->num_aces; i++) {
+    size = nt_store_ace(regf, acl->aces[i], p);
+    p += size;
+  }
+
+  size = s - locn;
+  SSVAL(s, size);
+  return size;
 }
 
 /*
