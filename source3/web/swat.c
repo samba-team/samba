@@ -31,8 +31,6 @@
 #include "includes.h"
 #include "../web/swat_proto.h"
 
-#define GLOBALS_SNUM -1
-
 static BOOL demo_mode = False;
 static BOOL have_write_access = False;
 static BOOL have_read_access = False;
@@ -579,7 +577,7 @@ static void wizard_params_page(void)
 	d_printf("<H2>Wizard Parameter Edit Page</H2>\n");
 
 	if (cgi_variable("Commit")) {
-		commit_parameters(GLOBALS_SNUM);
+		commit_parameters(GLOBAL_SECTION_SNUM);
 		save_reload(0);
 	}
 
@@ -593,7 +591,7 @@ static void wizard_params_page(void)
 	d_printf("<p>\n");
 	
 	d_printf("<table>\n");
-	show_parameters(GLOBALS_SNUM, 1, parm_filter, 0);
+	show_parameters(GLOBAL_SECTION_SNUM, 1, parm_filter, 0);
 	d_printf("</table>\n");
 	d_printf("</form>\n");
 }
@@ -603,7 +601,7 @@ static void wizard_params_page(void)
 ****************************************************************************/
 static void rewritecfg_file(void)
 {
-	commit_parameters(GLOBALS_SNUM);
+	commit_parameters(GLOBAL_SECTION_SNUM);
 	save_reload(0);
 	d_printf("<H2>Note: smb.conf %s</H2>\n", _("file has been read and rewritten"));
 }
@@ -637,37 +635,37 @@ static void wizard_page(void)
 		HomeExpo = atoi(cgi_variable("HomeExpo"));
 
 		/* Plain text passwords are too badly broken - use encrypted passwords only */
-		lp_do_parameter( GLOBALS_SNUM, "encrypt passwords", "Yes");
+		lp_do_parameter( GLOBAL_SECTION_SNUM, "encrypt passwords", "Yes");
 		
 		switch ( SerType ){
 			case 0:
 				/* Stand-alone Server */
-				lp_do_parameter( GLOBALS_SNUM, "security", "USER" );
-				lp_do_parameter( GLOBALS_SNUM, "domain logons", "No" );
+				lp_do_parameter( GLOBAL_SECTION_SNUM, "security", "USER" );
+				lp_do_parameter( GLOBAL_SECTION_SNUM, "domain logons", "No" );
 				break;
 			case 1:
 				/* Domain Member */
-				lp_do_parameter( GLOBALS_SNUM, "security", "DOMAIN" );
-				lp_do_parameter( GLOBALS_SNUM, "domain logons", "No" );
+				lp_do_parameter( GLOBAL_SECTION_SNUM, "security", "DOMAIN" );
+				lp_do_parameter( GLOBAL_SECTION_SNUM, "domain logons", "No" );
 				break;
 			case 2:
 				/* Domain Controller */
-				lp_do_parameter( GLOBALS_SNUM, "security", "USER" );
-				lp_do_parameter( GLOBALS_SNUM, "domain logons", "Yes" );
+				lp_do_parameter( GLOBAL_SECTION_SNUM, "security", "USER" );
+				lp_do_parameter( GLOBAL_SECTION_SNUM, "domain logons", "Yes" );
 				break;
 		}
 		switch ( winstype ) {
 			case 0:
-				lp_do_parameter( GLOBALS_SNUM, "wins support", "No" );
-				lp_do_parameter( GLOBALS_SNUM, "wins server", "" );
+				lp_do_parameter( GLOBAL_SECTION_SNUM, "wins support", "No" );
+				lp_do_parameter( GLOBAL_SECTION_SNUM, "wins server", "" );
 				break;
 			case 1:
-				lp_do_parameter( GLOBALS_SNUM, "wins support", "Yes" );
-				lp_do_parameter( GLOBALS_SNUM, "wins server", "" );
+				lp_do_parameter( GLOBAL_SECTION_SNUM, "wins support", "Yes" );
+				lp_do_parameter( GLOBAL_SECTION_SNUM, "wins server", "" );
 				break;
 			case 2:
-				lp_do_parameter( GLOBALS_SNUM, "wins support", "No" );
-				lp_do_parameter( GLOBALS_SNUM, "wins server", cgi_variable("WINSAddr"));
+				lp_do_parameter( GLOBAL_SECTION_SNUM, "wins support", "No" );
+				lp_do_parameter( GLOBAL_SECTION_SNUM, "wins server", cgi_variable("WINSAddr"));
 				break;
 		}
 
@@ -677,7 +675,7 @@ static void wizard_page(void)
 			
 			pstrcpy(unix_share,HOMES_NAME);
 			load_config(False);
-			lp_copy_service(GLOBALS_SNUM, unix_share);
+			lp_copy_service(GLOBAL_SECTION_SNUM, unix_share);
 			iNumNonAutoPrintServices = lp_numservices();
 			have_home = lp_servicenumber(HOMES_NAME);
 			lp_do_parameter( have_home, "read only", "No");
@@ -692,7 +690,7 @@ static void wizard_page(void)
 			have_home = -1;
 		}
 
-		commit_parameters(GLOBALS_SNUM);
+		commit_parameters(GLOBAL_SECTION_SNUM);
 		save_reload(0);
 	}
 	else
@@ -778,7 +776,7 @@ static void globals_page(void)
 	d_printf("<H2>%s</H2>\n", _("Global Variables"));
 
 	if (cgi_variable("Commit")) {
-		commit_parameters(GLOBALS_SNUM);
+		commit_parameters(GLOBAL_SECTION_SNUM);
 		save_reload(0);
 	}
 
@@ -810,7 +808,7 @@ static void globals_page(void)
 
 	d_printf("<p>\n");
 	d_printf("<table>\n");
-	show_parameters(GLOBALS_SNUM, 1, parm_filter, 0);
+	show_parameters(GLOBAL_SECTION_SNUM, 1, parm_filter, 0);
 	d_printf("</table>\n");
 	d_printf("</form>\n");
 }
@@ -847,7 +845,7 @@ static void shares_page(void)
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
 		load_config(False);
-		lp_copy_service(GLOBALS_SNUM, share);
+		lp_copy_service(GLOBAL_SECTION_SNUM, share);
 		iNumNonAutoPrintServices = lp_numservices();
 		save_reload(0);
 		snum = lp_servicenumber(share);
@@ -1186,7 +1184,7 @@ static void printers_page(void)
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
 		load_config(False);
-		lp_copy_service(GLOBALS_SNUM, share);
+		lp_copy_service(GLOBAL_SECTION_SNUM, share);
 		iNumNonAutoPrintServices = lp_numservices();
 		snum = lp_servicenumber(share);
 		lp_do_parameter(snum, "print ok", "Yes");
