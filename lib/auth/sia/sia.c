@@ -338,7 +338,7 @@ siad_ses_launch(sia_collect_func_t *collect,
 	k_setpag();
 	if(k_afs_cell_of_file(entity->pwd->pw_dir, cell, sizeof(cell)) == 0)
 	    krb_afslog(cell, 0);
-	krb_afslog(0, 0);
+	krb_afslog_home(0, 0, entity->pwd->pw_dir);
     }
     return SIADSUCCESS;
 }
@@ -395,7 +395,7 @@ siad_ses_reauthent (sia_collect_func_t *collect,
 	    if(k_afs_cell_of_file(entity->pwd->pw_dir, 
 				  cell, sizeof(cell)) == 0)
 		krb_afslog(cell, 0);
-	    krb_afslog(0, 0);
+	    krb_afslog_home(0, 0, entity->pwd->pw_dir);
 	}
     }
     return ret;
