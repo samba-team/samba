@@ -26,45 +26,6 @@
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
-extern pstring global_myname;
-
-#ifndef MAX_OPEN_PRINTER_EXS
-#define MAX_OPEN_PRINTER_EXS 50
-#endif
-
-#define PRINTER_HANDLE_IS_PRINTER	0
-#define PRINTER_HANDLE_IS_PRINTSERVER	1
-
-
-/* structure to store the printer handles */
-/* and a reference to what it's pointing to */
-/* and the notify info asked about */
-/* that's the central struct */
-static struct
-{
-  BOOL        open;
-  BOOL        document_started;
-  BOOL        page_started;
-  uint32      current_jobid;
-  uint32      document_fd;
-  uint32      document_lastwritten;
-  pstring     document_name;
-  pstring     job_name;
-  POLICY_HND printer_hnd;
-  BOOL        printer_type;
-  union
-  {
-  	fstring printername;
-	fstring printerservername;
-  } dev;
-  uint32 type;
-  uint32 access;
-  uint32 number_of_notify;
-  SPOOL_NOTIFY_OPTION_TYPE notify_info[MAX_PRINTER_NOTIFY+MAX_JOB_NOTIFY];
-} Printer[MAX_OPEN_PRINTER_EXS];
-
-#define VALID_HANDLE(pnum)   (((pnum) >= 0) && ((pnum) < MAX_OPEN_PRINTER_EXS))
-#define OPEN_HANDLE(pnum)    (VALID_HANDLE(pnum) && Printer[pnum].open)
 
 
 /********************************************************************
