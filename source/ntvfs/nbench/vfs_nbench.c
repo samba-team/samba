@@ -490,6 +490,16 @@ static NTSTATUS nbench_logoff(struct ntvfs_module_context *ntvfs,
 }
 
 /*
+  async setup
+*/
+static NTSTATUS nbench_async_setup(struct ntvfs_module_context *ntvfs,
+				   struct smbsrv_request *req,
+				   void *private)
+{
+	return NT_STATUS_OK;
+}
+
+/*
   lock a byte range
 */
 static NTSTATUS nbench_lock(struct ntvfs_module_context *ntvfs,
@@ -695,6 +705,7 @@ NTSTATUS ntvfs_nbench_init(void)
 	ops.search_close = nbench_search_close;
 	ops.trans = nbench_trans;
 	ops.logoff = nbench_logoff;
+	ops.async_setup = nbench_async_setup;
 
 	/* we don't register a trans2 handler as we want to be able to
 	   log individual trans2 requests */

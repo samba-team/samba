@@ -31,8 +31,22 @@ struct pvfs_wait {
 	int msg_type;
 	void *msg_ctx;
 	struct event_context *ev;
+	struct smbsrv_request *req;
+	BOOL timed_out;
 };
 
+/*
+  called from the ntvfs layer when we have requested setup of an async
+  call.  this ensures that async calls runs with the right state of
+  previous ntvfs handlers in the chain (such as security context)
+*/
+NTSTATUS pvfs_async_setup(struct ntvfs_module_context *ntvfs,
+			  struct smbsrv_request *req, void *private)
+{
+	struct pvfs_wait *pwait = private;
+	pwait->handler(pwait->private, pwait->timed_out);
+	return NT_STATUS_OK;
+}
 
 /*
   receive a completion message for a wait
@@ -41,6 +55,7 @@ static void pvfs_wait_dispatch(void *msg_ctx, void *private, uint32_t msg_type,
 			       servid_t src, DATA_BLOB *data)
 {
 	struct pvfs_wait *pwait = private;
+	struct smbsrv_request *req;
 
 	/* we need to check that this one is for us. This sender sends
 	   the private pointer as the body of the message. This might
@@ -50,8 +65,16 @@ static void pvfs_wait_dispatch(void *msg_ctx, void *private, uint32_t msg_type,
 	    *(void **)data->data != pwait->private) {
 		return;
 	}
+	pwait->timed_out = False;
+	req = pwait->req;
 
-	pwait->handler(pwait->private, False);
+	/* the extra reference here is to ensure that the req
+	   structure is not destroyed when the async request reply is
+	   sent, which would cause problems with the other ntvfs
+	   modules above us */
+	talloc_increase_ref_count(req);
+	ntvfs_async_setup(pwait->req, pwait);
+	talloc_free(req);
 }
 
 
@@ -61,7 +84,13 @@ static void pvfs_wait_dispatch(void *msg_ctx, void *private, uint32_t msg_type,
 static void pvfs_wait_timeout(struct event_context *ev, struct timed_event *te, time_t t)
 {
 	struct pvfs_wait *pwait = te->private;
-	pwait->handler(pwait->private, True);
+	struct smbsrv_request *req = pwait->req;
+
+	pwait->timed_out = True;
+
+	talloc_increase_ref_count(req);
+	ntvfs_async_setup(pwait->req, pwait);
+	talloc_free(req);
 }
 
 
@@ -103,6 +132,7 @@ void *pvfs_wait_message(struct pvfs_state *pvfs,
 	pwait->msg_ctx = pvfs->tcon->smb_conn->connection->messaging_ctx;
 	pwait->ev = req->tcon->smb_conn->connection->event.ctx;
 	pwait->msg_type = msg_type;
+	pwait->req = req;
 
 	/* setup a timer */
 	te.next_event = end_time;

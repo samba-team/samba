@@ -623,6 +623,16 @@ static NTSTATUS svfs_logoff(struct ntvfs_module_context *ntvfs,
 }
 
 /*
+  setup for an async call
+*/
+static NTSTATUS svfs_async_setup(struct ntvfs_module_context *ntvfs,
+				 struct smbsrv_request *req, 
+				 void *private)
+{
+	return NT_STATUS_OK;
+}
+
+/*
   lock a byte range
 */
 static NTSTATUS svfs_lock(struct ntvfs_module_context *ntvfs,
@@ -999,6 +1009,7 @@ NTSTATUS ntvfs_simple_init(void)
 	ops.search_close = svfs_search_close;
 	ops.trans = svfs_trans;
 	ops.logoff = svfs_logoff;
+	ops.async_setup = svfs_async_setup;
 
 	/* register ourselves with the NTVFS subsystem. We register
 	   under names 'simple'
