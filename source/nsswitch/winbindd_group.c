@@ -270,10 +270,8 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
                          malloc(sizeof(*entry))) != NULL) {
 
                         /* Create name */
-
-                        fstrcpy(entry->name, name_dom);
-                        fstrcat(entry->name, "/");
-                        fstrcat(entry->name, name_user);
+			slprintf(entry->name, sizeof(entry->name),
+				 "%s/%s", name_dom, name_user);
                         
                         /* Add to list */
 
@@ -436,8 +434,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
 /* Return a group structure from a group name */
 
-enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state 
-                                                  *state, BOOL allow_cached)
+enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state *state)
 {
     DOM_SID group_sid;
     struct winbindd_domain *domain;
@@ -472,19 +469,15 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
 
     /* Check for cached user entry */
 
-    if (allow_cached) {
-        if (winbindd_fetch_group_cache_entry(name_domain, name_group,
-                                             &state->response.data.gr,
-                                             &state->response.extra_data,
-                                             &extra_data_len)) {
+    if (winbindd_fetch_group_cache_entry(name_domain, name_group,
+					 &state->response.data.gr,
+					 &state->response.extra_data,
+					 &extra_data_len)) {
             state->response.length += extra_data_len;
             return WINBINDD_OK;
-        }
     }
 
-    fstrcpy(name, name_domain);
-    fstrcat(name, "\\");
-    fstrcat(name, name_group);
+    slprintf(name, sizeof(name), "%s\\%s", name_domain, name_group);
 
     /* Get rid and name type from name */
         
@@ -706,14 +699,13 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
    
             /* Prepend domain to name */
 
-            fstrcpy(domain_group_name, ent->domain->name);
-            fstrcat(domain_group_name, "/");
-            fstrcat(domain_group_name, group_name);
+	    slprintf(domain_group_name, sizeof(domain_group_name),
+		     "%s/%s", ent->domain->name, group_name);
    
             /* Get group entry from group name */
 
             fstrcpy(state->request.data.groupname, domain_group_name);
-            result = winbindd_getgrnam_from_group(state, True);
+            result = winbindd_getgrnam_from_group(state);
 
             ent->sam_entry_index++;
                                                       

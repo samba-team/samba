@@ -67,8 +67,7 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
 /* Return a password structure from a username.  Specify whether cached data 
    can be returned. */
 
-enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state 
-                                                 *state, BOOL allow_cached) 
+enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *state) 
 {
     uint32 name_type, user_rid, group_rid;
     SAM_USERINFO_CTR user_info;
@@ -97,19 +96,15 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 
     /* Check for cached user entry */
 
-    if (allow_cached) {
-        if (winbindd_fetch_user_cache_entry(name_domain, name_user,
-                                            &state->response.data.pw)) {
+    if (winbindd_fetch_user_cache_entry(name_domain, name_user,
+					&state->response.data.pw)) {
             return WINBINDD_OK;
-        }
     }
 
-    fstrcpy(name, name_domain);
-    fstrcat(name, "\\");
-    fstrcat(name, name_user);
+    slprintf(name,sizeof(name),"%s\\%s", name_domain, name_user);
 
     /* Get rid and name type from name */
-    
+    /* the following costs 1 packet */
     if (!winbindd_lookup_sid_by_name(domain, name, &user_sid, &name_type)) {
         DEBUG(1, ("user '%s' does not exist\n", name_user));
         return WINBINDD_ERROR;
@@ -126,6 +121,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
     
     sid_split_rid(&user_sid, &user_rid);
 
+    /* the following costs 3 packets */
     if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
         DEBUG(1, ("pwnam_from_user(): error getting user info for user '%s'\n",
                   name_user));
@@ -351,15 +347,14 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
             }
 
             /* Prepend domain to name */
-        
-            fstrcpy(domain_user_name, ent->domain->name);
-            fstrcat(domain_user_name, "/");
-            fstrcat(domain_user_name, user_name);
+
+	    slprintf(domain_user_name, sizeof(domain_user_name),
+		     "%s/%s", ent->domain->name, user_name);
                 
             /* Get passwd entry from user name */
                 
             fstrcpy(state->request.data.username, domain_user_name);
-            result = winbindd_getpwnam_from_user(state, True);
+            result = winbindd_getpwnam_from_user(state);
 
             ent->sam_entry_index++;
                 

@@ -46,19 +46,21 @@ void winbindd_cache_init(void)
 
 /* Reset the timestamp for a cached domain */
 
-static void set_cache_time(char *domain_name, char *cache_type)
+static void set_cache_time(char *domain_name, char *cache_type, char *subkey)
 {
     fstring keystr;
 
     /* Store timestamp for domain */
 
-    slprintf(keystr, sizeof(keystr), "%s CACHE/%s", cache_type, domain_name);
+    slprintf(keystr, sizeof(keystr), "%s CACHE/%s/%s", 
+	     cache_type, domain_name, subkey?subkey:"");
     tdb_store_int(cache_tdb, keystr, (int)time(NULL));
 }
 
 /* Check whether the timestamp for a cached domain has expired */
 
-static BOOL cache_time_expired(char *domain_name, char *cache_type)
+static BOOL cache_time_expired(char *domain_name, char *cache_type, 
+			       char *subkey)
 {
     fstring keystr;
     time_t stamp;
@@ -66,7 +68,8 @@ static BOOL cache_time_expired(char *domain_name, char *cache_type)
 
     /* Get timestamp */
 
-    slprintf(keystr, sizeof(keystr), "%s CACHE/%s", cache_type, domain_name);
+    slprintf(keystr, sizeof(keystr), "%s CACHE/%s/%s", 
+	     cache_type, domain_name, subkey?subkey:"");
     stamp = (time_t)tdb_get_int(cache_tdb, keystr);
     
     /* Has it expired? */
@@ -92,7 +95,7 @@ static void fill_cache(char *domain_name, char *cache_type,
         return;
     }
 
-    DEBUG(3, ("filling %s cache for domain %s with %d entries\n",
+    DEBUG(4, ("filling %s cache for domain %s with %d entries\n",
               cache_type, domain_name, num_sam_entries));
 
     /* Store data as a mega-huge chunk in the tdb */
@@ -110,7 +113,7 @@ static void fill_cache(char *domain_name, char *cache_type,
 
     /* Stamp cache with current time */
 
-    set_cache_time(domain_name, cache_type);
+    set_cache_time(domain_name, cache_type, NULL);
 }
 
 /* Fill the user cache with supplied data */
@@ -140,7 +143,7 @@ static void fill_cache_entry(char *domain, char *name, void *buf, int len)
 
     slprintf(keystr, sizeof(keystr), "%s/%s", domain, name);
 
-    DEBUG(3, ("filling cache entry %s\n", keystr));
+    DEBUG(4, ("filling cache entry %s\n", keystr));
 
     key.dptr = keystr;
     key.dsize = strlen(keystr) + 1;
@@ -156,9 +159,8 @@ static void fill_cache_entry(char *domain, char *name, void *buf, int len)
 void winbindd_fill_user_cache_entry(char *domain, char *user_name, 
                                     struct winbindd_pw *pw)
 {
-    if (!cache_time_expired(domain, CACHE_TYPE_USER)) {
         fill_cache_entry(domain, user_name, pw, sizeof(struct winbindd_pw));
-    }
+	set_cache_time(domain, CACHE_TYPE_USER, user_name);
 }
 
 /* Fill a group info cache entry */
@@ -167,13 +169,13 @@ void winbindd_fill_group_cache_entry(char *domain, char *group_name,
                                      struct winbindd_gr *gr, void *extra_data,
                                      int extra_data_len)
 {
-    if (!cache_time_expired(domain, CACHE_TYPE_GROUP)) {
         TDB_DATA key, data;
         fstring keystr;
 
         /* Fill group data */
 
         fill_cache_entry(domain, group_name, gr, sizeof(struct winbindd_gr));
+	set_cache_time(domain, CACHE_TYPE_GROUP, group_name);
 
         /* Fill extra data */
 
@@ -186,7 +188,6 @@ void winbindd_fill_group_cache_entry(char *domain, char *group_name,
         data.dsize = extra_data_len;
 
         tdb_store(cache_tdb, key, data, TDB_REPLACE);
-    }
 }
 
 /* Expire information in cache */
@@ -196,7 +197,7 @@ void expire_cache(char *domain_name, char *cache_type)
     TDB_DATA key;
     fstring keystr;
 
-    DEBUG(3, ("expiring cached %s data for domain %s\n", 
+    DEBUG(4, ("expiring cached %s data for domain %s\n", 
               cache_type, domain_name));
 
     slprintf(keystr, sizeof(keystr), "%s CACHE DATA/%s", cache_type,
@@ -221,7 +222,7 @@ static BOOL fetch_cache(char *domain_name, char *cache_type,
 
     /* Check cache data is current */
     
-    if (!cache_time_expired(domain_name, cache_type)) {
+    if (!cache_time_expired(domain_name, cache_type, NULL)) {
         TDB_DATA data, key;
         fstring keystr;
 
@@ -246,7 +247,7 @@ static BOOL fetch_cache(char *domain_name, char *cache_type,
             *sam_entries = (struct acct_info *)data.dptr;
             *num_sam_entries = data.dsize / sizeof(struct acct_info);
 
-            DEBUG(3, ("fetched %d cached %s entries for domain %s\n",
+            DEBUG(4, ("fetched %d cached %s entries for domain %s\n",
                       *num_sam_entries, cache_type, domain_name));
 
             return True;
@@ -296,7 +297,7 @@ static BOOL fetch_cache_entry(char *domain, char *name, void *buf, int len)
     
     if (data.dptr) {
         
-        DEBUG(3, ("returning cached entry for %s/%s\n", domain, name));
+        DEBUG(4, ("returning cached entry for %s/%s\n", domain, name));
     
         /* Copy found entry into buffer */
         
@@ -314,11 +315,10 @@ static BOOL fetch_cache_entry(char *domain, char *name, void *buf, int len)
 BOOL winbindd_fetch_user_cache_entry(char *domain, char *user, 
                                      struct winbindd_pw *pw)
 {
-    if (!cache_time_expired(domain, CACHE_TYPE_USER)) {
+    if (!cache_time_expired(domain, CACHE_TYPE_USER, user)) {
         return fetch_cache_entry(domain, user, pw, 
                                  sizeof(struct winbindd_pw));
     }
-
     return False;
 }
 
@@ -329,7 +329,7 @@ BOOL winbindd_fetch_group_cache_entry(char *domain, char *group,
                                       struct winbindd_gr *gr,
                                       void **extra_data, int *extra_data_len)
 {
-    if (!cache_time_expired(domain, CACHE_TYPE_GROUP)) {
+    if (!cache_time_expired(domain, CACHE_TYPE_GROUP, group)) {
         TDB_DATA key, data;
         fstring keystr;
 
@@ -367,7 +367,7 @@ void winbindd_flush_cache(void)
 {
     struct winbindd_domain *domain;
 
-    DEBUG(3, ("flushing all domain cache info\n"));
+    DEBUG(2, ("flushing all domain cache info\n"));
 
     for(domain = domain_list; domain; domain = domain->next) {
         expire_cache(domain->name, CACHE_TYPE_USER);

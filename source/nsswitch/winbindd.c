@@ -66,10 +66,8 @@ static void termination_handler(int signum)
 
     /* Remove socket file */
 
-    pstrcpy(path, WINBINDD_SOCKET_DIR);
-    pstrcat(path, "/");
-    pstrcat(path, WINBINDD_SOCKET_NAME);
-
+    slprintf(path, sizeof(path), "%s/%s", 
+	     WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
     unlink(path);
 
     exit(0);
@@ -151,10 +149,9 @@ static int create_sock(void)
         perror("socket");
         return -1;
     }
-    
-    pstrcpy(path, WINBINDD_SOCKET_DIR);
-    pstrcat(path, "/");
-    pstrcat(path, WINBINDD_SOCKET_NAME);
+
+    slprintf(path, sizeof(path), "%s/%s", 
+	     WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
 
     unlink(path);
     memset(&sunaddr, 0, sizeof(sunaddr));
@@ -201,7 +198,7 @@ static void process_request(struct winbindd_cli_state *state)
         /* User functions */
         
     case WINBINDD_GETPWNAM_FROM_USER: 
-        state->response.result = winbindd_getpwnam_from_user(state, False);
+        state->response.result = winbindd_getpwnam_from_user(state);
         break;
         
     case WINBINDD_GETPWNAM_FROM_UID:
@@ -223,7 +220,7 @@ static void process_request(struct winbindd_cli_state *state)
         /* Group functions */
         
     case WINBINDD_GETGRNAM_FROM_GROUP:
-        state->response.result = winbindd_getgrnam_from_group(state, False);
+        state->response.result = winbindd_getgrnam_from_group(state);
         break;
         
     case WINBINDD_GETGRNAM_FROM_GID:
