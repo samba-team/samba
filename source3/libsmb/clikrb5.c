@@ -23,7 +23,7 @@
 
 #ifdef HAVE_KRB5
 
-#ifndef KRB5_SET_REAL_TIME
+#ifndef HAVE_KRB5_SET_REAL_TIME
 /*
  * This function is not in the Heimdal mainline.
  */
