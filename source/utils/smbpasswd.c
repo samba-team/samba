@@ -569,7 +569,7 @@ static int process_root(int argc, char *argv[])
 {
 	struct passwd  *pwd;
 	int result = 0, ch;
-	BOOL joining_domain = False, got_pass = False;
+	BOOL joining_domain = False, got_pass = False, got_username = False;
 	int local_flags = 0;
 	BOOL stdin_passwd_get = False;
 	fstring user_name, user_password;
@@ -583,7 +583,7 @@ static int process_root(int argc, char *argv[])
 
 	user_name[0] = '\0';
 
-	while ((ch = getopt(argc, argv, "ax:d:e:hmnj:r:sw:R:D:U:L")) != EOF) {
+	while ((ch = getopt(argc, argv, "axdehmnj:r:sw:R:D:U:L")) != EOF) {
 		switch(ch) {
 		case 'L':
 			local_mode = True;
@@ -593,17 +593,14 @@ static int process_root(int argc, char *argv[])
 			break;
 		case 'x':
 			local_flags |= LOCAL_DELETE_USER;
-			fstrcpy(user_name, optarg);
 			new_passwd = xstrdup("XXXXXX");
 			break;
 		case 'd':
 			local_flags |= LOCAL_DISABLE_USER;
-			fstrcpy(user_name, optarg);
 			new_passwd = xstrdup("XXXXXX");
 			break;
 		case 'e':
 			local_flags |= LOCAL_ENABLE_USER;
-			fstrcpy(user_name, optarg);
 			break;
 		case 'm':
 			local_flags |= LOCAL_TRUST_ACCOUNT;
@@ -644,6 +641,7 @@ static int process_root(int argc, char *argv[])
 		case 'U': {
 			char *lp;
 
+			got_username = True;
 			fstrcpy(user_name, optarg);
 
 			if ((lp = strchr(user_name, '%'))) {
@@ -730,12 +728,17 @@ static int process_root(int argc, char *argv[])
 
 	switch(argc) {
 	case 0:
-		fstrcpy(user_name, "");
+		if (!got_username)
+			fstrcpy(user_name, "");
 		break;
 	case 1:
+		if (got_username)
+			usage();
 		fstrcpy(user_name, argv[0]);
 		break;
 	case 2:
+		if (got_username || got_pass)
+			usage();
 		fstrcpy(user_name, argv[0]);
 		new_passwd = xstrdup(argv[1]);
 		break;
