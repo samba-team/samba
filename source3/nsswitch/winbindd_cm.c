@@ -262,10 +262,22 @@ static struct failed_connection_cache *failed_connection_cache;
 
 /* Add an entry to the failed conneciton cache */
 
-static void add_failed_connection_entry(struct winbindd_cm_conn *new_conn, NTSTATUS result) {
+static void add_failed_connection_entry(struct winbindd_cm_conn *new_conn, 
+					NTSTATUS result) 
+{
 	struct failed_connection_cache *fcc;
 
 	SMB_ASSERT(!NT_STATUS_IS_OK(result));
+
+	/* Check we already aren't in the cache */
+
+	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {
+		if (strequal(fcc->domain_name, new_conn->domain)) {
+			DEBUG(10, ("domain %s already tried and failed\n",
+				   fcc->domain_name));
+			return;
+		}
+	}
 
 	/* Create negative lookup cache entry for this domain and controller */
 
