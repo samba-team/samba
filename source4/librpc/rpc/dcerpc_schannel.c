@@ -425,39 +425,23 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
   do a schannel style bind on a dcerpc pipe. The username is usually
   of the form HOSTNAME$ and the password is the domain trust password
 */
-NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
-				   const char *uuid, uint_t version,
-				   const char *domain,
-				   const char *username,
-				   const char *password)
+NTSTATUS dcerpc_bind_auth_schannel_withkey(struct dcerpc_pipe *p,
+					   const char *uuid, uint_t version,
+					   const char *domain,
+					   const char *username,
+					   const char *password,
+					   uint8_t session_key[16])
 {
 	NTSTATUS status;
-	int chan_type = 0;
 
 	status = gensec_client_start(p, &p->security_state.generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (p->flags & DCERPC_SCHANNEL_BDC) {
-		chan_type = SEC_CHAN_BDC;
-	} else if (p->flags & DCERPC_SCHANNEL_WORKSTATION) {
-		chan_type = SEC_CHAN_WKSTA;
-	} else if (p->flags & DCERPC_SCHANNEL_DOMAIN) {
-		chan_type = SEC_CHAN_DOMAIN;
-	}
+	memcpy(p->security_state.generic_state->user.schan_session_key,
+	       session_key, 16);
 
-	status = dcerpc_schannel_key(p, domain, 
-				     username,
-				     password, 
-				     chan_type, 
-				     p->security_state.generic_state->user.schan_session_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to fetch schannel session key: %s\n", nt_errstr(status)));
-		gensec_end(&p->security_state.generic_state);
-		return status;
-	}
-	
 	status = gensec_set_username(p->security_state.generic_state, username);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to set schannel username to %s: %s\n", username, nt_errstr(status)));
@@ -492,6 +476,40 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
+				   const char *uuid, uint_t version,
+				   const char *domain,
+				   const char *username,
+				   const char *password)
+{
+	NTSTATUS status;
+	int chan_type = 0;
+	uint8_t new_session_key[16];
+
+	if (p->flags & DCERPC_SCHANNEL_BDC) {
+		chan_type = SEC_CHAN_BDC;
+	} else if (p->flags & DCERPC_SCHANNEL_WORKSTATION) {
+		chan_type = SEC_CHAN_WKSTA;
+	} else if (p->flags & DCERPC_SCHANNEL_DOMAIN) {
+		chan_type = SEC_CHAN_DOMAIN;
+	}
+
+	status = dcerpc_schannel_key(p, domain, 
+				     username,
+				     password, 
+				     chan_type,
+				     new_session_key);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to fetch schannel session key: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	return dcerpc_bind_auth_schannel_withkey(p, uuid, version, domain,
+						 username, password,
+						 new_session_key);
+}
 
 static const struct gensec_security_ops gensec_dcerpc_schannel_security_ops = {
 	.name		= "dcerpc_schannel",
