@@ -1828,6 +1828,9 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
 
 int smbc_mkdir(const char *fname, mode_t mode)
 {
+  struct smbc_server *srv;
+  fstring server, share, user, password;
+  pstring path;
 
   if (!smbc_initialized) {
 
@@ -1836,7 +1839,161 @@ int smbc_mkdir(const char *fname, mode_t mode)
 
   }
 
+  if (!fname) {
+
+    errno = EINVAL;
+    return -1;
+
+  }
+  
+  DEBUG(4, ("stat(%s)\n", fname));
+
+  smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
+
+  if (user[0] == (char)0) pstrcpy(user, smbc_user);
+
+  srv = smbc_server(server, share, lp_workgroup(), user, password);
+
+  if (!srv) {
+
+    return -1;  /* errno set by smbc_server */
+
+  }
+
+  /* if (strncmp(srv->cli.dev, "IPC", 3) == 0) {
+
+     mode = aDIR | aRONLY;
+
+     }
+     else if (strncmp(srv->cli.dev, "LPT", 3) == 0) {
+
+       if (strcmp(path, "\\") == 0) {
+
+          mode = aDIR | aRONLY;
+
+       }
+       else {
+
+         mode = aRONLY;
+	 smbc_stat_printjob(srv, path, &size, &m_time);
+	 c_time = a_time = m_time;
+
+       }
+       else { */
+
+  if (!cli_mkdir(&srv->cli, path)) {
+
+    errno = smbc_errno(&srv->cli);
+    return -1;
+
+  } 
+
   return 0;
+
+}
+
+/*
+ * Routine to remove a directory
+ */
+
+int smbc_rmdir(const char *fname)
+{
+  struct smbc_server *srv;
+  fstring server, share, user, password;
+  pstring path;
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
+  if (!fname) {
+
+    errno = EINVAL;
+    return -1;
+
+  }
+  
+  DEBUG(4, ("stat(%s)\n", fname));
+
+  smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
+
+  if (user[0] == (char)0) pstrcpy(user, smbc_user);
+
+  srv = smbc_server(server, share, lp_workgroup(), user, password);
+
+  if (!srv) {
+
+    return -1;  /* errno set by smbc_server */
+
+  }
+
+  /* if (strncmp(srv->cli.dev, "IPC", 3) == 0) {
+
+     mode = aDIR | aRONLY;
+
+     }
+     else if (strncmp(srv->cli.dev, "LPT", 3) == 0) {
+
+       if (strcmp(path, "\\") == 0) {
+
+          mode = aDIR | aRONLY;
+
+       }
+       else {
+
+         mode = aRONLY;
+	 smbc_stat_printjob(srv, path, &size, &m_time);
+	 c_time = a_time = m_time;
+
+       }
+       else { */
+
+  if (!cli_rmdir(&srv->cli, path)) {
+
+    errno = smbc_errno(&srv->cli);
+    return -1;
+
+  } 
+
+  return 0;
+
+}
+
+/*
+ * Routine to return the current directory position
+ */
+
+off_t smbc_telldir(int fd)
+{
+  struct smbc_file *fe;
+
+  if (!smbc_initialized) {
+
+    errno = EUCLEAN;
+    return -1;
+
+  }
+
+  if (fd < smbc_start_fd || fd >= (smbc_start_fd + smbc_max_fd)) {
+
+    errno = EBADF;
+    return -1;
+
+  }
+
+  fe = smbc_file_table[fd - smbc_start_fd];
+
+  if (fe->file != False) { /* FIXME, should be dir, perhaps */
+
+    errno = ENOTDIR;
+    return -1;
+
+  }
+
+  return (off_t) fe->dir_next;
 
 }
 
