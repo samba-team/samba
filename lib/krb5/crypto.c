@@ -1820,150 +1820,164 @@ ARCFOUR_encrypt(struct key_data *key,
  * these should currently be in reverse preference order.
  * (only relevant for !F_PSEUDO) */
 
-static struct encryption_type etypes[] = {
-    {
-	ETYPE_NULL,
-	"null",
-	1,
-	0,
-	&keytype_null,
-	&checksum_none,
-	NULL,
-	0,
-	NULL_encrypt,
-    },
-    {
-	ETYPE_DES_CBC_CRC,
-	"des-cbc-crc",
-	8,
-	8,
-	&keytype_des,
-	&checksum_crc32,
-	NULL,
-	0,
-	DES_CBC_encrypt_key_ivec,
-    },
-    {
-	ETYPE_DES_CBC_MD4,
-	"des-cbc-md4",
-	8,
-	8,
-	&keytype_des,
-	&checksum_rsa_md4,
-	&checksum_rsa_md4_des,
-	0,
-	DES_CBC_encrypt_null_ivec,
-    },
-    {
-	ETYPE_DES_CBC_MD5,
-	"des-cbc-md5",
-	8,
-	8,
-	&keytype_des,
-	&checksum_rsa_md5,
-	&checksum_rsa_md5_des,
-	0,
-	DES_CBC_encrypt_null_ivec,
-    },
-    {
-	ETYPE_ARCFOUR_HMAC_MD5,
-	"arcfour-hmac-md5",
-	1,
-	8,
-	&keytype_arcfour,
-	&checksum_hmac_md5_enc,
-	&checksum_hmac_md5_enc,
-	F_SPECIAL,
-	ARCFOUR_encrypt
-    },
-    { 
-	ETYPE_DES3_CBC_MD5,
-	"des3-cbc-md5",
-	8,
-	8,
-	&keytype_des3,
-	&checksum_rsa_md5,
-	&checksum_rsa_md5_des3,
-	0,
- 	DES3_CBC_encrypt,
-    },
-    {
-	ETYPE_DES3_CBC_SHA1,
-	"des3-cbc-sha1",
-	8,
-	8,
-	&keytype_des3_derived,
-	&checksum_sha1,
-	&checksum_hmac_sha1_des3,
-	F_DERIVED,
- 	DES3_CBC_encrypt,
-    },
-    {
-	ETYPE_OLD_DES3_CBC_SHA1,
-	"old-des3-cbc-sha1",
-	8,
-	8,
-	&keytype_des3,
-	&checksum_sha1,
-	&checksum_hmac_sha1_des3,
-	0,
- 	DES3_CBC_encrypt,
-    },
-    {
-	ETYPE_DES_CBC_NONE,
-	"des-cbc-none",
-	8,
-	0,
-	&keytype_des,
-	&checksum_none,
-	NULL,
-	F_PSEUDO,
-	DES_CBC_encrypt_null_ivec,
-    },
-    {
-	ETYPE_DES_CFB64_NONE,
-	"des-cfb64-none",
-	1,
-	0,
-	&keytype_des,
-	&checksum_none,
-	NULL,
-	F_PSEUDO,
-	DES_CFB64_encrypt_null_ivec,
-    },
-    {
-	ETYPE_DES_PCBC_NONE,
-	"des-pcbc-none",
-	8,
-	0,
-	&keytype_des,
-	&checksum_none,
-	NULL,
-	F_PSEUDO,
-	DES_PCBC_encrypt_key_ivec,
-    },
-    {
-	ETYPE_DES3_CBC_NONE,
-	"des3-cbc-none",
-	8,
-	0,
-	&keytype_des3_derived,
-	&checksum_none,
-	NULL,
-	F_PSEUDO,
-	DES3_CBC_encrypt,
-    },
-    {
-	ETYPE_DES3_CBC_NONE_IVEC,
-	"des3-cbc-none-ivec",
-	8,
-	0,
-	&keytype_des3_derived,
-	&checksum_none,
-	NULL,
-	F_PSEUDO,
-	DES3_CBC_encrypt_ivec,
-    }
+static struct encryption_type enctype_null = {
+    ETYPE_NULL,
+    "null",
+    1,
+    0,
+    &keytype_null,
+    &checksum_none,
+    NULL,
+    0,
+    NULL_encrypt,
+};
+static struct encryption_type enctype_des_cbc_crc = {
+    ETYPE_DES_CBC_CRC,
+    "des-cbc-crc",
+    8,
+    8,
+    &keytype_des,
+    &checksum_crc32,
+    NULL,
+    0,
+    DES_CBC_encrypt_key_ivec,
+};
+static struct encryption_type enctype_des_cbc_md4 = {
+    ETYPE_DES_CBC_MD4,
+    "des-cbc-md4",
+    8,
+    8,
+    &keytype_des,
+    &checksum_rsa_md4,
+    &checksum_rsa_md4_des,
+    0,
+    DES_CBC_encrypt_null_ivec,
+};
+static struct encryption_type enctype_des_cbc_md5 = {
+    ETYPE_DES_CBC_MD5,
+    "des-cbc-md5",
+    8,
+    8,
+    &keytype_des,
+    &checksum_rsa_md5,
+    &checksum_rsa_md5_des,
+    0,
+    DES_CBC_encrypt_null_ivec,
+};
+static struct encryption_type enctype_arcfour_hmac_md5 = {
+    ETYPE_ARCFOUR_HMAC_MD5,
+    "arcfour-hmac-md5",
+    1,
+    8,
+    &keytype_arcfour,
+    &checksum_hmac_md5_enc,
+    &checksum_hmac_md5_enc,
+    F_SPECIAL,
+    ARCFOUR_encrypt
+};
+static struct encryption_type enctype_des3_cbc_md5 = { 
+    ETYPE_DES3_CBC_MD5,
+    "des3-cbc-md5",
+    8,
+    8,
+    &keytype_des3,
+    &checksum_rsa_md5,
+    &checksum_rsa_md5_des3,
+    0,
+    DES3_CBC_encrypt,
+};
+static struct encryption_type enctype_des3_cbc_sha1 = {
+    ETYPE_DES3_CBC_SHA1,
+    "des3-cbc-sha1",
+    8,
+    8,
+    &keytype_des3_derived,
+    &checksum_sha1,
+    &checksum_hmac_sha1_des3,
+    F_DERIVED,
+    DES3_CBC_encrypt,
+};
+static struct encryption_type enctype_old_des3_cbc_sha1 = {
+    ETYPE_OLD_DES3_CBC_SHA1,
+    "old-des3-cbc-sha1",
+    8,
+    8,
+    &keytype_des3,
+    &checksum_sha1,
+    &checksum_hmac_sha1_des3,
+    0,
+    DES3_CBC_encrypt,
+};
+static struct encryption_type enctype_des_cbc_none = {
+    ETYPE_DES_CBC_NONE,
+    "des-cbc-none",
+    8,
+    0,
+    &keytype_des,
+    &checksum_none,
+    NULL,
+    F_PSEUDO,
+    DES_CBC_encrypt_null_ivec,
+};
+static struct encryption_type enctype_des_cfb64_none = {
+    ETYPE_DES_CFB64_NONE,
+    "des-cfb64-none",
+    1,
+    0,
+    &keytype_des,
+    &checksum_none,
+    NULL,
+    F_PSEUDO,
+    DES_CFB64_encrypt_null_ivec,
+};
+static struct encryption_type enctype_des_pcbc_none = {
+    ETYPE_DES_PCBC_NONE,
+    "des-pcbc-none",
+    8,
+    0,
+    &keytype_des,
+    &checksum_none,
+    NULL,
+    F_PSEUDO,
+    DES_PCBC_encrypt_key_ivec,
+};
+static struct encryption_type enctype_des3_cbc_none = {
+    ETYPE_DES3_CBC_NONE,
+    "des3-cbc-none",
+    8,
+    0,
+    &keytype_des3_derived,
+    &checksum_none,
+    NULL,
+    F_PSEUDO,
+    DES3_CBC_encrypt,
+};
+static struct encryption_type enctype_des3_cbc_none_ivec = {
+    ETYPE_DES3_CBC_NONE_IVEC,
+    "des3-cbc-none-ivec",
+    8,
+    0,
+    &keytype_des3_derived,
+    &checksum_none,
+    NULL,
+    F_PSEUDO,
+    DES3_CBC_encrypt_ivec,
+};
+
+static struct encryption_type *etypes[] = {
+    &enctype_null,
+    &enctype_des_cbc_crc,
+    &enctype_des_cbc_md4,
+    &enctype_des_cbc_md5,
+    &enctype_arcfour_hmac_md5,
+    &enctype_des3_cbc_md5, 
+    &enctype_des3_cbc_sha1,
+    &enctype_old_des3_cbc_sha1,
+    &enctype_des_cbc_none,
+    &enctype_des_cfb64_none,
+    &enctype_des_pcbc_none,
+    &enctype_des3_cbc_none,
+    &enctype_des3_cbc_none_ivec
 };
 
 static unsigned num_etypes = sizeof(etypes) / sizeof(etypes[0]);
@@ -1974,8 +1988,8 @@ _find_enctype(krb5_enctype type)
 {
     int i;
     for(i = 0; i < num_etypes; i++)
-	if(etypes[i].type == type)
-	    return &etypes[i];
+	if(etypes[i]->type == type)
+	    return etypes[i];
     return NULL;
 }
 
@@ -2002,8 +2016,8 @@ krb5_string_to_enctype(krb5_context context,
 {
     int i;
     for(i = 0; i < num_etypes; i++)
-	if(strcasecmp(etypes[i].name, string) == 0){
-	    *etype = etypes[i].type;
+	if(strcasecmp(etypes[i]->name, string) == 0){
+	    *etype = etypes[i]->type;
 	    return 0;
 	}
     return KRB5_PROG_ETYPE_NOSUPP;
@@ -2047,8 +2061,8 @@ krb5_keytype_to_enctypes (krb5_context context,
     int *ret;
 
     for (i = num_etypes - 1; i >= 0; --i) {
-	if (etypes[i].keytype->type == keytype
-	    && !(etypes[i].flags & F_PSEUDO))
+	if (etypes[i]->keytype->type == keytype
+	    && !(etypes[i]->flags & F_PSEUDO))
 	    ++n;
     }
     ret = malloc(n * sizeof(int));
@@ -2056,9 +2070,9 @@ krb5_keytype_to_enctypes (krb5_context context,
 	return ENOMEM;
     n = 0;
     for (i = num_etypes - 1; i >= 0; --i) {
-	if (etypes[i].keytype->type == keytype
-	    && !(etypes[i].flags & F_PSEUDO))
-	    ret[n++] = etypes[i].type;
+	if (etypes[i]->keytype->type == keytype
+	    && !(etypes[i]->flags & F_PSEUDO))
+	    ret[n++] = etypes[i]->type;
     }
     *len = n;
     *val = ret;
@@ -2227,9 +2241,9 @@ encrypt_internal(krb5_context context,
     memcpy(q, data, len);
 
     ret = create_checksum(context, 
-			  NULL,
+			  crypto,
 			  0,
-			  CHECKSUMTYPE(et->cksumtype),
+			  0,
 			  p, 
 			  block_sz,
 			  &cksum);
