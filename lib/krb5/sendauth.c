@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -71,7 +71,7 @@ krb5_error_code
 krb5_sendauth(krb5_context context,
 	      krb5_auth_context *auth_context,
 	      krb5_pointer p_fd,
-	      char *appl_version,
+	      const char *appl_version,
 	      krb5_principal client,
 	      krb5_principal server,
 	      krb5_flags ap_req_options,
