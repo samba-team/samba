@@ -654,8 +654,13 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 					       domain->dcname,
 					       &new_conn->cli, &retry);
 
-		if (NT_STATUS_IS_OK(result))
+		if (NT_STATUS_IS_OK(result)) {
+			fstrcpy(new_conn->domain, domain->name);
+			/* Initialise SMB connection */
+			fstrcpy(new_conn->pipe_name,
+				get_pipe_name_from_index(pipe_index));
 			break;
+		}
 
 		if (!retry)
 			break;
