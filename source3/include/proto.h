@@ -2028,7 +2028,7 @@ BOOL samr_query_dispinfo(struct cli_state *cli, uint16 fnum,
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
 BOOL do_srv_net_srv_tprt_enum(struct cli_state *cli, uint16 fnum,
-			char *server_name, 
+			const char *server_name, 
 			uint32 switch_value, SRV_TPRT_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
@@ -2222,7 +2222,7 @@ BOOL make_buffer5(BUFFER5 *str, char *buf, int len);
 BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
 BOOL make_buffer2(BUFFER2 *str, const char *buf, int len);
 BOOL smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
-BOOL make_buf_unistr2(UNISTR2 *str, uint32 *ptr, char *buf);
+BOOL make_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
 BOOL make_string2(STRING2 *str, char *buf, int len);
 BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
@@ -2989,7 +2989,7 @@ BOOL make_srv_share_info2(SH_INFO_2 *sh2,
 				uint32 perms, uint32 max_uses, uint32 num_uses,
 				char *path, char *pass);
 BOOL make_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
-				char *srv_name, 
+				const char *srv_name, 
 				uint32 share_level, SRV_SHARE_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd);
@@ -3003,7 +3003,7 @@ BOOL make_srv_sess_info1(SESS_INFO_1 *ss1,
 				uint32 num_opens, uint32 open_time, uint32 idle_time,
 				uint32 user_flags);
 BOOL make_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n, 
-				char *srv_name, char *qual_name,
+				const char *srv_name, const char *qual_name,
 				char *user_name,
 				uint32 sess_level, SRV_SESS_INFO_CTR *ctr,
 				uint32 preferred_len,
@@ -3017,7 +3017,7 @@ BOOL make_srv_conn_info1(CONN_INFO_1 *ss1,
 				uint32 num_opens, uint32 num_users, uint32 open_time,
 				char *usr_name, char *net_name);
 BOOL make_srv_q_net_conn_enum(SRV_Q_NET_CONN_ENUM *q_n, 
-				char *srv_name, char *qual_name,
+				const char *srv_name, const char *qual_name,
 				uint32 conn_level, SRV_CONN_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd);
@@ -3034,7 +3034,7 @@ BOOL make_srv_tprt_info0(TPRT_INFO_0 *tp0,
 void free_srv_tprt_info_0(SRV_TPRT_INFO_0 *tp0);
 void free_srv_tprt_ctr(SRV_TPRT_INFO_CTR *ctr);
 BOOL make_srv_q_net_tprt_enum(SRV_Q_NET_TPRT_ENUM *q_n, 
-				char *srv_name, 
+				const char *srv_name, 
 				uint32 tprt_level, SRV_TPRT_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd);
@@ -3045,7 +3045,8 @@ BOOL make_srv_file_info3(FILE_INFO_3 *fl3,
 				uint32 id, uint32 perms, uint32 num_locks,
 				char *path_name, char *user_name);
 BOOL make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n, 
-				char *srv_name, char *qual_name, uint32 file_id,
+				const char *srv_name, const char *qual_name,
+				uint32 file_id,
 				uint32 file_level, SRV_FILE_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd);
@@ -3352,6 +3353,12 @@ BOOL net_srv_get_info(struct client_info *info,
 		uint32 info_level,
 		SRV_INFO_CTR *ctr);
 void cmd_srv_query_info(struct client_info *info);
+BOOL msrpc_srv_enum_tprt(struct cli_state *cli,
+				const char* dest_srv,
+				uint32 info_level,
+				SRV_TPRT_INFO_CTR *ctr,
+				uint32 pref_sz,
+				ENUM_HND *hnd);
 void cmd_srv_enum_tprt(struct client_info *info);
 void cmd_srv_enum_conn(struct client_info *info);
 void cmd_srv_enum_shares(struct client_info *info);

@@ -35,7 +35,7 @@ extern int DEBUGLEVEL;
 do a server net tprt enum
 ****************************************************************************/
 BOOL do_srv_net_srv_tprt_enum(struct cli_state *cli, uint16 fnum,
-			char *server_name, 
+			const char *server_name, 
 			uint32 switch_value, SRV_TPRT_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd)

@@ -294,7 +294,7 @@ typedef struct srv_tprt_info_ctr_info
 	uint32 ptr_tprt_ctr;       /* pointer to tprt info union */
 	union
 	{
-		SRV_TPRT_INFO_0 info0; /* tprtection info level 0 */
+		SRV_TPRT_INFO_0 info0; /* transport info level 0 */
 
 	} tprt;
 
