@@ -27,10 +27,9 @@ static fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
 static char *sockops="TCP_NODELAY";
 static int nprocs=1, numops=100;
-static pid_t master_pid;
 static struct cli_state current_cli;
 
-static double create_procs(void (*fn)(int ));
+static double create_procs(void (*fn)(int));
 
 
 static struct timeval tp1,tp2;
@@ -154,8 +153,7 @@ static BOOL check_error(struct cli_state *c,
 {
 	uint8 class;
 	uint32 num;
-	int eno;
-	eno = cli_error(c, &class, &num, NULL);
+	(void)cli_error(c, &class, &num, NULL);
 	if ((eclass != class || ecode != num) &&
 	    num != (nterr&0xFFFFFF)) {
 		printf("unexpected error code class=%d code=%d\n", 
@@ -257,7 +255,7 @@ static BOOL rw_torture(struct cli_state *c)
 	return True;
 }
 
-static void run_torture(void)
+static void run_torture(int dummy)
 {
 	struct cli_state cli;
 
@@ -374,7 +372,7 @@ static void run_netbench(int client)
 
 
 /* run a test that simulates an approximate netbench w9X client load */
-static void run_nbw95(void)
+static void run_nbw95(int dummy)
 {
 	double t;
 	t = create_procs(run_netbench);
@@ -388,7 +386,7 @@ static void run_nbw95(void)
 }
 
 /* run a test that simulates an approximate netbench wNT client load */
-static void run_nbwnt(void)
+static void run_nbwnt(int dummy)
 {
 	double t;
 	t = create_procs(run_netbench);
@@ -405,7 +403,7 @@ static void run_nbwnt(void)
      must not use posix semantics)
   2) support for lock timeouts
  */
-static void run_locktest1(void)
+static void run_locktest1(int dummy)
 {
 	static struct cli_state cli1, cli2;
 	char *fname = "\\lockt1.lck";
@@ -512,7 +510,7 @@ static void run_locktest1(void)
 
   3) the server denies unlock requests by an incorrect client PID
 */
-static void run_locktest2(void)
+static void run_locktest2(int dummy)
 {
 	static struct cli_state cli;
 	char *fname = "\\lockt2.lck";
@@ -603,7 +601,7 @@ static void run_locktest2(void)
 
   1) the server supports the full offset range in lock requests
 */
-static void run_locktest3(void)
+static void run_locktest3(int dummy)
 {
 	static struct cli_state cli1, cli2;
 	char *fname = "\\lockt3.lck";
@@ -716,7 +714,7 @@ static void run_locktest3(void)
 test whether fnums and tids open on one VC are available on another (a major
 security hole)
 */
-static void run_fdpasstest(void)
+static void run_fdpasstest(int dummy)
 {
 	static struct cli_state cli1, cli2;
 	char *fname = "\\fdpass.tst";
@@ -770,7 +768,7 @@ static void run_fdpasstest(void)
 
   1) the server does not allow an unlink on a file that is open
 */
-static void run_unlinktest(void)
+static void run_unlinktest(int dummy)
 {
 	static struct cli_state cli;
 	char *fname = "\\unlink.tst";
@@ -810,7 +808,7 @@ static void run_unlinktest(void)
 /*
 test how many open files this server supports on the one socket
 */
-static void run_maxfidtest(void)
+static void run_maxfidtest(int dummy)
 {
 	static struct cli_state cli;
 	char *template = "\\maxfid.%d.%d";
@@ -860,13 +858,13 @@ static void run_maxfidtest(void)
 static void rand_buf(char *buf, int len)
 {
 	while (len--) {
-		*buf = sys_random();
+		*buf = (char)sys_random();
 		buf++;
 	}
 }
 
 /* send random IPC commands */
-static void run_randomipc(void)
+static void run_randomipc(int dummy)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -915,7 +913,7 @@ static void browse_callback(const char *sname, uint32 stype,
   This test checks the browse list code
 
 */
-static void run_browsetest(void)
+static void run_browsetest(int dummy)
 {
 	static struct cli_state cli;
 
@@ -944,7 +942,7 @@ static void run_browsetest(void)
 /*
   This checks how the getatr calls works
 */
-static void run_attrtest(void)
+static void run_attrtest(int dummy)
 {
 	static struct cli_state cli;
 	int fnum;
@@ -998,7 +996,7 @@ static void run_attrtest(void)
 /*
   This checks a couple of trans2 calls
 */
-static void run_trans2test(void)
+static void run_trans2test(int dummy)
 {
 	static struct cli_state cli;
 	int fnum;
@@ -1097,7 +1095,7 @@ static void run_trans2test(void)
 	printf("trans2 test finished\n");
 }
 
-static double create_procs(void (*fn)(int ))
+static double create_procs(void (*fn)(int))
 {
 	int i, status;
 	volatile int *child_status;
@@ -1106,7 +1104,6 @@ static double create_procs(void (*fn)(int ))
 
 	start_timer();
 
-	master_pid = getpid();
 	synccount = 0;
 
 	child_status = (volatile int *)shm_setup(sizeof(int)*nprocs);
@@ -1179,7 +1176,7 @@ static double create_procs(void (*fn)(int ))
 
 static struct {
 	char *name;
-	void (*fn)(void);
+	void (*fn)(int);
 	unsigned flags;
 } torture_ops[] = {
 	{"FDPASS", run_fdpasstest, 0},
@@ -1217,7 +1214,7 @@ static void run_test(char *name)
 			if (torture_ops[i].flags & FLAG_MULTIPROC) {
 				create_procs(torture_ops[i].fn);
 			} else {
-				torture_ops[i].fn();
+				torture_ops[i].fn(0);
 			}
 			printf("%s took %g secs\n\n", name, end_timer());
 		}
