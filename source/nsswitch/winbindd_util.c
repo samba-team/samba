@@ -478,27 +478,6 @@ void init_domain_list(void)
  * @return The domain structure for the named domain, if it is working.
  */
 
-struct winbindd_domain *find_domain_from_name(const char *domain_name)
-{
-	struct winbindd_domain *domain;
-
-	/* Search through list */
-
-	for (domain = domain_list(); domain != NULL; domain = domain->next) {
-		if (strequal(domain_name, domain->name) ||
-		    (domain->alt_name[0] && strequal(domain_name, domain->alt_name))) {
-			if (!domain->initialized)
-				set_dc_type_and_flags(domain);
-
-			return domain;
-		}
-	}
-
-	/* Not found */
-
-	return NULL;
-}
-
 struct winbindd_domain *find_domain_from_name_noinit(const char *domain_name)
 {
 	struct winbindd_domain *domain;
@@ -516,6 +495,21 @@ struct winbindd_domain *find_domain_from_name_noinit(const char *domain_name)
 	/* Not found */
 
 	return NULL;
+}
+
+struct winbindd_domain *find_domain_from_name(const char *domain_name)
+{
+	struct winbindd_domain *domain;
+
+	domain = find_domain_from_name_noinit(domain_name);
+
+	if (domain == NULL)
+		return NULL;
+
+	if (!domain->initialized)
+		set_dc_type_and_flags(domain);
+
+	return domain;
 }
 
 /* Given a domain sid, return the struct winbindd domain info for it */
