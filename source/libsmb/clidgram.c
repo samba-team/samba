@@ -188,13 +188,13 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
   sock_out.sin_port = htons(138);
   sock_out.sin_family = AF_INET;
 
-  if (bind(dgram_sock, (struct sockaddr_in *)&sock_out, sizeof(sock_out)) < 0) {
+  if (bind(dgram_sock, (struct sockaddr *)&sock_out, sizeof(sock_out)) < 0) {
 
     /* Try again on any port ... */
 
     sock_out.sin_port = INADDR_ANY;
 
-    if (bind(dgram_sock, (struct sockaddr_in *)&sock_out, sizeof(sock_out)) < 0) {
+    if (bind(dgram_sock, (struct sockaddr *)&sock_out, sizeof(sock_out)) < 0) {
 
       DEBUG(4, ("failed to bind socket to address ...\n"));
       return False;
@@ -207,7 +207,7 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   name_size = sizeof(sock_out);
 
-  getsockname(dgram_sock, (struct sockaddr_in *)&sock_out, &name_size);
+  getsockname(dgram_sock, (struct sockaddr *)&sock_out, &name_size);
 
   DEBUG(5, ("Socket bound to IP:%s, port: %d\n", inet_ntoa(sock_out.sin_addr), ntohs(sock_out.sin_port)));
 
