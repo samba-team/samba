@@ -271,11 +271,23 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		if (jobid == qid) break;
 	}
 	
+	/* The job isn't in the system queue - we have to assume it has
+	   completed, so delete the database entry. */
+
 	if (i == ts->qcount) {
-		/* the job isn't in the system queue - we have to
-                   assume it has completed, so delete the database
-                   entry */
-		tdb_delete(t, key);
+		time_t cur_t = time(NULL);
+
+		/* A race can occur between the time a job is spooled and
+		   when it appears in the lpq output.  This happens when
+		   the job is added to printing.tdb when another smbd
+		   running print_queue_update() has completed a lpq and
+		   is currently traversing the printing tdb and deleting jobs.
+		   A workaround is to not delete the job if it has been 
+		   submitted less than lp_lpqcachetime() seconds ago. */
+
+		if ((cur_t - pjob.starttime) > lp_lpqcachetime()) {
+			tdb_delete(t, key);
+		}
 	}
 
 	return 0;
