@@ -2,25 +2,22 @@
 # @(#) Test domain/local groups resolve using getgrnam()
 #
 
-load_lib util-defs.exp
-load_lib "$srcdir/config/env.exp"
-load_lib "$srcdir/lib/default-nt-names.exp"
+load_lib "util-defs.exp"
+load_lib "compile.exp"
 
 # Compile getgrnam.c
 
-set output [target_compile "$srcdir/$subdir/getgrnam.c" \
-        "$srcdir/$subdir/getgrnam" executable {additional_flags="-g"}]
-
-if {$output != ""} {
-    perror "compile getgrnam"
-    puts $output
-    return
-}
+simple_compile "getgrnam"
 
 # Test domain groups
 
-foreach {group} $domain_groups {
+set group_list [split [util_start "bin/wbinfo" "-g"] "\n"]
+
+foreach {group} $group_list {
     set output [util_start "$srcdir/$subdir/getgrnam" "\"$group\"" ""]
+
+    verbose $output
+
     if {[regexp "PASS:" $output]} {
         pass "getgrnam $group"
     } else {
