@@ -437,7 +437,7 @@
 #include <sys/attributes.h>
 #endif
 
-## mutually exclusive (SuSE 8.2)
+/* mutually exclusive (SuSE 8.2) */
 #if HAVE_ATTR_XATTR_H
 #include <attr/xattr.h>
 #elif HAVE_SYS_XATTR_H
