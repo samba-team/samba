@@ -771,6 +771,11 @@ static BOOL resolve_hosts(const char *name,
 		*return_count = 1;
 		return True;
 	}
+	
+	/* BEGIN_ADMIN_LOG */
+	sys_adminlog(LOG_CRIT, (char *)gettext("Failed DNS name resolution. Unresolved name: %s."), name );
+        /* END_ADMIN_LOG */
+
 	return False;
 }
 
