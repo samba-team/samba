@@ -443,7 +443,7 @@ static int setup_ver2_dfs_referral(char* pathname, char** ppdata,
 	}
 	/* add in the unexplained 22 (0x16) bytes at the end */
 	memset(pdata+uni_curroffset,'\0',0x16);
-	free(junction->referral_list);
+	SAFE_FREE(junction->referral_list);
 	return reply_size;
 }
 
@@ -523,7 +523,7 @@ static int setup_ver3_dfs_referral(char* pathname, char** ppdata,
 		uni_curroffset += unilen;
 		offset += VERSION3_REFERRAL_SIZE;
 	}
-	free(junction->referral_list);
+	SAFE_FREE(junction->referral_list);
 	return reply_size;
 }
 

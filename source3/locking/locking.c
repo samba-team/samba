@@ -436,7 +436,7 @@ int get_share_modes(connection_struct *conn,
 	ret = data->num_share_mode_entries;
 	if(ret)
 		*shares = (share_mode_entry *)memdup(dbuf.dptr + sizeof(*data), ret * sizeof(**shares));
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 
 	if (! *shares)
 		return 0;
@@ -537,7 +537,7 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 				count = -1;
 		}
 	}
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	return count;
 }
 
@@ -592,7 +592,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		dbuf.dsize = size;
 		if (tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE) == -1)
 			ret = False;
-		free(p);
+		SAFE_FREE(p);
 		return ret;
 	}
 
@@ -608,12 +608,12 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 	fill_share_mode(p + sizeof(*data), fsp, port, op_type);
 	memcpy(p + sizeof(*data) + sizeof(share_mode_entry), dbuf.dptr + sizeof(*data),
 	       dbuf.dsize - sizeof(*data));
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	dbuf.dptr = p;
 	dbuf.dsize = size;
 	if (tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE) == -1)
 		ret = False;
-	free(p);
+	SAFE_FREE(p);
 	return ret;
 }
 
@@ -658,7 +658,7 @@ static BOOL mod_share_mode( SMB_DEV_T dev, SMB_INO_T inode, share_mode_entry *en
 		}
 	}
 
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	return need_store;
 }
 
@@ -748,12 +748,12 @@ BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close)
 	/* store it back */
 	if (data->num_share_mode_entries) {
 		if (tdb_store(tdb, locking_key(dev,inode), dbuf, TDB_REPLACE)==-1) {
-			free(dbuf.dptr);
+			SAFE_FREE(dbuf.dptr);
 			return False;
 		}
 	}
 
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	return True;
 }
 
