@@ -207,7 +207,7 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 	}
 
 #if DEBUG_STUFF
-	fprintf(stderr, "DB> \t returning group %s\n", result->gr_name);
+	fprintf(stderr, "DB> \t returning group %s\n", gr->gr_name);
 #endif
 
 	strcpy(result->gr_name, gr->gr_name);
@@ -395,11 +395,11 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			called_again = True;
-			*errnop = ERANGE;
+			*errnop = errno = ERANGE;
 			return ret;
 		}
 
-		*errnop = 0;
+		*errnop = errno = 0;
 		called_again = False;
 		ndx_pw_cache++;
 
@@ -445,7 +445,7 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
-				*errnop = ERANGE;
+				*errnop = errno = ERANGE;
 				return ret;
 			}
 		}
@@ -458,12 +458,12 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
-			*errnop = ERANGE;
+			*errnop = errno = ERANGE;
 			return ret;
 		}
 
 		keep_response = False;
-		*errnop = 0;
+		*errnop = errno = 0;
 	}
 
 	free_response(&response);
@@ -504,7 +504,7 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
-				*errnop = ERANGE;
+				*errnop = errno = ERANGE;
 				return ret;
 			}
 		}
@@ -517,12 +517,12 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
-			*errnop = ERANGE;
+			*errnop = errno = ERANGE;
 			return ret;
 		}
 
 		keep_response = False;
-		*errnop = 0;
+		*errnop = errno = 0;
 	}
 
 	free_response(&response);
@@ -666,7 +666,7 @@ _nss_winbind_getgrent_r(struct group *result,
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			called_again = True;
-			*errnop = ERANGE;
+			*errnop = errno = ERANGE;
 			return ret;
 		}
 
