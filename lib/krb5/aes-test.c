@@ -57,7 +57,7 @@ struct {
     int saltlen;
     int iterations;
     krb5_enctype enctype;
-    int keylen;
+    size_t keylen;
     char *pbkdf2;
     char *key;
 } keys[] = {
@@ -256,8 +256,8 @@ string_to_key_test(krb5_context context)
 	    }
 
 	    if (memcmp(key.keyvalue.data, keys[i].pbkdf2, keys[i].keylen) != 0) {
-		krb5_warnx(context, "%d: key pbkdf2 pl %d", 
-			   i, password.length);
+		krb5_warnx(context, "%d: key pbkdf2 pl %lu", 
+			   i, (unsigned long)password.length);
 		val = 1;
 		continue;
 	    }
@@ -280,8 +280,9 @@ string_to_key_test(krb5_context context)
 	}
 
 	if (key.keyvalue.length != keys[i].keylen) {
-	    krb5_warnx(context, "%d: key wrong length (%d/%d)",
-		       i, key.keyvalue.length, keys[i].keylen);
+	    krb5_warnx(context, "%d: key wrong length (%lu/%lu)",
+		       i, (unsigned long)key.keyvalue.length, 
+		       (unsigned long)keys[i].keylen);
 	    val = 1;
 	    continue;
 	}
@@ -511,7 +512,7 @@ samep(int testn, char *type, const char *p1, const char *p2, size_t len)
 }
 
 static int
-encryption_test(krb5_context context, char *key, int keylen,
+encryption_test(krb5_context context, char *key, size_t keylen,
 		struct enc_test *enc, int numenc)
 {
     char iv[AES_BLOCK_SIZE];
@@ -653,8 +654,8 @@ krb_enc_mit(krb5_context context,
 	return ret;
 
     if (len != cipher->length) {
-	krb5_warnx(context, "c_encrypt_length wrong %d != %d",
-		   len, cipher->length);
+	krb5_warnx(context, "c_encrypt_length wrong %lu != %lu",
+		   (unsigned long)len, (unsigned long)cipher->length);
 	return EINVAL;
     }
 
