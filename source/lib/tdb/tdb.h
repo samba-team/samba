@@ -105,6 +105,8 @@ typedef struct tdb_context {
 	int open_flags; /* flags used in the open - needed by reopen */
 } TDB_CONTEXT;
 
+void tdb_debug(TDB_CONTEXT *, int , const char *, ...);
+
 typedef int (*tdb_traverse_func)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *);
 typedef void (*tdb_log_func)(TDB_CONTEXT *, int , const char *, ...);
 

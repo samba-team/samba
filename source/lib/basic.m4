@@ -21,6 +21,6 @@ SMB_SUBSYSTEM(LIBBASIC,[lib/version.o],
 		lib/gencache.o lib/module.o lib/mutex.o 
 		lib/ldap_escape.o lib/events.o 
 		lib/crypto/crc32.o lib/crypto/md5.o 
-		lib/crypto/hmacmd5.o lib/crypto/md4.o 
-		lib/tdb/tdb.o lib/tdb/spinlock.o lib/tdb/tdbutil.o],[],
-		[CHARSET])
+		lib/crypto/hmacmd5.o lib/crypto/md4.o
+		lib/tdb_helper.o],[],
+		[LIBTDB CHARSET])
