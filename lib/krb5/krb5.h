@@ -288,6 +288,7 @@ typedef struct krb5_context_data {
     krb5_cc_ops *cc_ops;
     int num_ops;
     krb5_boolean ktype_is_etype;
+    const char *http_proxy;
 } krb5_context_data;
 
 enum {
