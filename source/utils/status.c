@@ -597,7 +597,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	} else {
 		if (locks_only) goto locks;
 
-		d_printf("\nSamba version %s\n",VERSION);
+		d_printf("\nSamba version %s\n",SAMBA_VERSION_STRING);
 		d_printf("PID     Username      Group         Machine                        \n");
 		d_printf("-------------------------------------------------------------------\n");
 

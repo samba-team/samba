@@ -62,7 +62,7 @@ static int add_signature(char *outbuf, char *p)
 	char *start = p;
 	fstring lanman;
 
-	fstr_sprintf( lanman, "Samba %s", VERSION );
+	fstr_sprintf( lanman, "Samba %s", SAMBA_VERSION_STRING);
 
 	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
 	p += srvstr_push(outbuf, p, lanman, -1, STR_TERMINATE);

@@ -835,7 +835,7 @@ int main(int argc, char **argv)
 	setup_logging("winbindd", log_stdout);
 	reopen_logs();
 
-	DEBUG(1, ("winbindd version %s started.\n", VERSION ) );
+	DEBUG(1, ("winbindd version %s started.\n", SAMBA_VERSION_STRING) );
 	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2003\n" ) );
 
 	if (!reload_services_file(False)) {
