@@ -2040,12 +2040,17 @@ AC_ARG_WITH(i18n-swat,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(I18N_SWAT)
+    i18n_swat="yes"
     ;;
   *)
     AC_MSG_RESULT(no)
+    i18n_swat="no"
     ;;
-  esac ],
-  AC_MSG_RESULT(no)
+  esac 
+  AC_SUBST(i18n_swat) ],
+  [ AC_MSG_RESULT(no)
+  i18n_swat="no"
+  AC_SUBST(i18n_swat) ]
 )
 
 #################################################

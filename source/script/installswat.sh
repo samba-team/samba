@@ -4,13 +4,26 @@
 SWATDIR=$1
 SRCDIR=$2/
 BOOKDIR=$SWATDIR/using_samba
+IS_I18N=$3
 
 echo Installing SWAT in $SWATDIR
 echo Installing the Samba Web Administration Tool
 
-for d in $SWATDIR $SWATDIR/help $SWATDIR/images $SWATDIR/include; do
+if [ X$IS_I18N = Xyes ]; then
+    LANGS=". `cd $SRCDIR../swat/; /bin/echo lang/??`"
+    echo Installing langs are `cd $SRCDIR../swat/lang/; /bin/echo ??`
+else
+    LANGS=.
+fi
+
+for ln in $LANGS; do 
+
+SWATLANGDIR=$SWATDIR/$ln
+
+for d in $SWATLANGDIR $SWATLANGDIR/help $SWATLANGDIR/images \
+	$SWATLANGDIR/include; do
     if [ ! -d $d ]; then
-	mkdir $d
+	mkdir -p $d
 	if [ ! -d $d ]; then
 	    echo Failed to make directory $d, does $USER have privileges?
 	    exit 1
@@ -18,10 +31,13 @@ for d in $SWATDIR $SWATDIR/help $SWATDIR/images $SWATDIR/include; do
     fi
 done
 
-# Install images
+done
 
-for f in $SRCDIR../swat/images/*.gif; do
-      FNAME=$SWATDIR/images/`basename $f`
+# Install images
+for ln in $LANGS; do
+
+for f in $SRCDIR../swat/$ln/images/*.gif; do
+      FNAME=$SWATDIR/$ln/images/`basename $f`
       echo $FNAME
       cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
       chmod 0644 $FNAME
@@ -29,8 +45,8 @@ done
 
 # Install html help
 
-for f in $SRCDIR../swat/help/*.html; do
-      FNAME=$SWATDIR/help/`basename $f`
+for f in $SRCDIR../swat/$ln/help/*.html; do
+      FNAME=$SWATDIR/$ln/help/`basename $f`
       echo $FNAME
       if [ "x$BOOKDIR" = "x" ]; then
         cat $f | sed 's/@BOOKDIR@.*$//' > $f.tmp
@@ -54,11 +70,13 @@ done
 
 # Install "server-side" includes
 
-for f in $SRCDIR../swat/include/*.html; do
-      FNAME=$SWATDIR/include/`basename $f`
+for f in $SRCDIR../swat/$ln/include/*.html; do
+      FNAME=$SWATDIR/$ln/include/`basename $f`
       echo $FNAME
       cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
       chmod 0644 $FNAME
+done
+
 done
 
 # Install Using Samba book
