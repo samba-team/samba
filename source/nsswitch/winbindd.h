@@ -85,10 +85,12 @@ typedef struct {
 } WINBIND_USERINFO;
 
 /* per-domain methods. This is how LDAP vs RPC is selected
-   This will eventually be the sole entry point to all the methods,
-   I'm just starting small
  */
 struct winbindd_methods {
+	/* does this backend provide a consistent view of the data? (ie. is the primary group
+	   always correct) */
+	BOOL consistent;
+
 	/* get a list of users, returning a WINBIND_USERINFO for each one */
 	NTSTATUS (*query_user_list)(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,

@@ -506,6 +506,7 @@ done:
 
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
+	False,
 	query_user_list,
 	enum_dom_groups,
 	name_to_sid,
