@@ -545,7 +545,7 @@ static int build_notify_data (TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printer, u
 		DEBUG(10,("build_notify_data: PRINTER_MESSAGE_DRIVER set on [%s][%d]\n",
 			printer->info_2->printername, idx));
 		if ((data=Realloc(*notify_data, (idx+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
-			DEBUG(0,("cli_spoolss_reply_rrpcn: Realloc() failed with size [%d]!\n",
+			DEBUG(0,("build_notify_data: Realloc() failed with size [%d]!\n",
 				(idx+1)*sizeof(SPOOL_NOTIFY_INFO_DATA)));
 			return -1;
 		}
@@ -622,7 +622,8 @@ static BOOL cli_spoolss_reply_rrpcn(struct cli_state *pcli, POLICY_HND *handle,
 		*status = WERR_NOMEM;
 		goto done;
 	}
-	notify_info.flags = 0x00000200;
+	notify_info.version = 0x2;
+	notify_info.flags   = 0x00020000;
 	notify_info.count = data_len;
 	notify_info.data  = notify_data;
 
@@ -671,6 +672,9 @@ done:
 	 * free the array here. JRA.
 	 */
 	SAFE_FREE(notify_data);
+
+	if (!W_ERROR_IS_OK(*status))
+		DEBUG(5,("cli_spoolss_reply_rrpcn: %s\n", get_dos_error_msg(*status)));
 
 	return W_ERROR_IS_OK(*status);
 }
@@ -1308,7 +1312,7 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return False;
-		SIVAL(*data, 0, 0x02);
+		SIVAL(*data, 0, 0x03);
 		*needed = 0x4;
 		return True;
 	}
@@ -7350,7 +7354,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 		 */
 	   
 		if (strcmp(key, "PrinterDriverData") != 0)
-			return WERR_INVALID_PARAM;
+			return WERR_BADFILE;
 
 		DEBUG(10, ("_spoolss_getprinterdataex: pass me to getprinterdata\n"));
 		found = getprinterdata_printer(p, p->mem_ctx, handle, value, 
@@ -7369,7 +7373,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 			*data = NULL;
 		}
 
-		return WERR_BADFILE;
+		return WERR_INVALID_PARAM;
 	}
 	
 	if (*needed > *out_size)
