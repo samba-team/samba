@@ -34,7 +34,7 @@ const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *
 		sep = LIST_SEP;
 	}
 
-	ret = talloc_realloc(mem_ctx, NULL, const char *, 1);
+	ret = talloc_array(mem_ctx, const char *, 1);
 	if (ret == NULL) {
 		return NULL;
 	}
