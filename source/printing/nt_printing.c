@@ -403,7 +403,67 @@ static void clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *drive
 ****************************************************************************/
 static void clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
 {
+	fstring architecture;
+	fstring new_name;
+	char *p;
+	int i;
+	
+	/* jfm:7/16/2000 the client always sends the cversion=0.
+	 * The server should check which version the driver is by reading the PE header
+	 * of driver->driverpath.
+	 *
+	 * For Windows 95/98 the version is 0 (so the value sent is correct)
+	 * For Windows NT (the architecture doesn't matter)
+	 *	NT 3.1: cversion=0
+	 *	NT 3.5/3.51: cversion=1
+	 *	NT 4: cversion=2
+	 *	NT2K: cversion=3
+	 */
 
+	get_short_archi(architecture, driver->environment);
+
+	/* if it's Windows 95/98, we keep the version at 0
+	 * jfmxxx: I need to redo that more correctly for NT2K.
+	 */
+	 
+	if (StrCaseCmp(driver->environment, "Windows 4.0")==0)
+		driver->version=0;
+	else
+		driver->version=2;
+
+	/* clean up the driver name.
+	 * we can get .\driver.dll
+	 * or worse c:\windows\system\driver.dll !
+	 */
+	/* using an intermediate string to not have overlaping memcpy()'s */
+	if ((p = strrchr(driver->driverpath,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->driverpath, new_name);
+	}
+
+	if ((p = strrchr(driver->datafile,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->datafile, new_name);
+	}
+
+	if ((p = strrchr(driver->configfile,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->configfile, new_name);
+	}
+
+	if ((p = strrchr(driver->helpfile,'\\')) != NULL) {
+		fstrcpy(new_name, p+1);
+		fstrcpy(driver->helpfile, new_name);
+	}
+
+	if (driver->dependentfiles) {
+		for (i=0; *driver->dependentfiles[i]; i++) {
+			if ((p = strrchr(driver->dependentfiles[i],'\\')) != NULL) {
+				fstrcpy(new_name, p+1);
+				fstrcpy(driver->dependentfiles[i], new_name);
+			}
+		}
+	}
 }
 
 /****************************************************************************
@@ -671,6 +731,8 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 
 	slprintf(key, sizeof(key), "%s%s/%d/%s", DRIVERS_PREFIX, architecture, driver->cversion, driver->name);
 
+	DEBUG(5,("add_a_printer_driver_3: Adding driver with key %s\n", key ));
+
 	buf = NULL;
 	len = buflen = 0;
 
@@ -708,6 +770,9 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	
 	ret = tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
+	if (ret)
+		DEBUG(0,("add_a_printer_driver_3: Adding driver with key %s failed.\n", key ));
+
 	safe_free(buf);
 	return ret;
 }
@@ -720,6 +785,7 @@ static uint32 add_a_printer_driver_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
 
 	ZERO_STRUCT(info3);
 	info3.cversion = driver->version;
+	fstrcpy(info3.name,driver->name);
 	fstrcpy(info3.environment,driver->environment);
 	fstrcpy(info3.driverpath,driver->driverpath);
 	fstrcpy(info3.datafile,driver->datafile);
@@ -1819,8 +1885,7 @@ uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
 	{
 		case 3: 
 		{
-			success=get_a_printer_driver_3(&driver->info_3, printername,
-						       architecture, version);
+			success=get_a_printer_driver_3(&driver->info_3, printername, architecture, version);
 			break;
 		}
 		default:

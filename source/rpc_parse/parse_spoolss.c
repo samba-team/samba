@@ -1509,6 +1509,14 @@ static uint32 size_of_uint32(uint32 *value)
 	return (sizeof(*value));
 }
 /*******************************************************************
+ * return the length of a NTTIME (obvious, but the code is clean)
+ ********************************************************************/
+static uint32 size_of_nttime(NTTIME *value)
+{
+	return (sizeof(*value));
+}
+
+/*******************************************************************
  * return the length of a UNICODE string in number of char, includes:
  * - the leading zero
  * - the relative pointer size
@@ -1886,7 +1894,7 @@ static BOOL new_smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEV
 ********************************************************************/  
 BOOL new_smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "smb_io_printer_info_0");
 	depth++;	
@@ -2087,7 +2095,7 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 ********************************************************************/  
 BOOL new_smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_info_3");
 	depth++;	
@@ -2107,7 +2115,7 @@ BOOL new_smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *i
 ********************************************************************/  
 BOOL new_smb_io_port_info_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_port_info_1");
 	depth++;	
@@ -2125,7 +2133,7 @@ BOOL new_smb_io_port_info_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, i
 ********************************************************************/  
 BOOL new_smb_io_port_info_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_port_info_2");
 	depth++;	
@@ -2151,7 +2159,7 @@ BOOL new_smb_io_port_info_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, i
 ********************************************************************/
 BOOL new_smb_io_printer_driver_info_1(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_1 *info, int depth) 
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_driver_info_1");
 	depth++;	
@@ -2170,7 +2178,7 @@ BOOL new_smb_io_printer_driver_info_1(char *desc, NEW_BUFFER *buffer, DRIVER_INF
 ********************************************************************/
 BOOL new_smb_io_printer_driver_info_2(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_2 *info, int depth) 
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_driver_info_2");
 	depth++;	
@@ -2199,7 +2207,7 @@ BOOL new_smb_io_printer_driver_info_2(char *desc, NEW_BUFFER *buffer, DRIVER_INF
 ********************************************************************/
 BOOL new_smb_io_printer_driver_info_3(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_3 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_driver_info_3");
 	depth++;	
@@ -2232,13 +2240,71 @@ BOOL new_smb_io_printer_driver_info_3(char *desc, NEW_BUFFER *buffer, DRIVER_INF
 	return True;
 }
 
+/*******************************************************************
+ Parse a DRIVER_INFO_6 structure.
+********************************************************************/
+BOOL new_smb_io_printer_driver_info_6(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_6 *info, int depth)
+{
+	prs_struct *ps=&buffer->prs;
+
+	prs_debug(ps, depth, desc, "new_smb_io_printer_driver_info_6");
+	depth++;	
+	
+	buffer->struct_start=prs_offset(ps);
+
+	if (!prs_uint32("version", ps, depth, &info->version))
+		return False;
+	if (!new_smb_io_relstr("name", buffer, depth, &info->name))
+		return False;
+	if (!new_smb_io_relstr("architecture", buffer, depth, &info->architecture))
+		return False;
+	if (!new_smb_io_relstr("driverpath", buffer, depth, &info->driverpath))
+		return False;
+	if (!new_smb_io_relstr("datafile", buffer, depth, &info->datafile))
+		return False;
+	if (!new_smb_io_relstr("configfile", buffer, depth, &info->configfile))
+		return False;
+	if (!new_smb_io_relstr("helpfile", buffer, depth, &info->helpfile))
+		return False;
+
+	if (!new_smb_io_relarraystr("dependentfiles", buffer, depth, &info->dependentfiles))
+		return False;
+
+	if (!new_smb_io_relstr("monitorname", buffer, depth, &info->monitorname))
+		return False;
+	if (!new_smb_io_relstr("defaultdatatype", buffer, depth, &info->defaultdatatype))
+		return False;
+
+	if (!new_smb_io_relarraystr("previousdrivernames", buffer, depth, &info->previousdrivernames))
+		return False;
+
+	if (!prs_uint32("date.low", ps, depth, &info->driver_date.low))
+		return False;
+	if (!prs_uint32("date.high", ps, depth, &info->driver_date.high))
+		return False;
+
+	if (!prs_uint32("driver_version", ps, depth, &info->driver_version))
+		return False;
+
+	if (!new_smb_io_relstr("mfgname", buffer, depth, &info->mfgname))
+		return False;
+	if (!new_smb_io_relstr("oem_url", buffer, depth, &info->oem_url))
+		return False;
+	if (!new_smb_io_relstr("hardware_id", buffer, depth, &info->hardware_id))
+		return False;
+	if (!new_smb_io_relstr("provider", buffer, depth, &info->provider))
+		return False;
+	
+	return True;
+}
+
 
 /*******************************************************************
  Parse a JOB_INFO_1 structure.
 ********************************************************************/  
 BOOL new_smb_io_job_info_1(char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_job_info_1");
 	depth++;	
@@ -2281,7 +2347,7 @@ BOOL new_smb_io_job_info_1(char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int
 BOOL new_smb_io_job_info_2(char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int depth)
 {	
 	uint pipo=0;
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 	
 	prs_debug(ps, depth, desc, "new_smb_io_job_info_2");
 	depth++;	
@@ -2346,7 +2412,7 @@ BOOL new_smb_io_job_info_2(char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int
 ********************************************************************/  
 BOOL new_smb_io_form_1(char *desc, NEW_BUFFER *buffer, FORM_1 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 	
 	prs_debug(ps, depth, desc, "new_smb_io_form_1");
 	depth++;
@@ -2496,7 +2562,7 @@ uint32 new_get_buffer_size(NEW_BUFFER *buffer)
 ********************************************************************/  
 BOOL new_smb_io_driverdir_1(char *desc, NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_driverdir_1");
 	depth++;
@@ -2514,7 +2580,7 @@ BOOL new_smb_io_driverdir_1(char *desc, NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *
 ********************************************************************/  
 BOOL new_smb_io_port_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_port_1");
 	depth++;
@@ -2532,7 +2598,7 @@ BOOL new_smb_io_port_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int de
 ********************************************************************/  
 BOOL new_smb_io_port_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_port_2");
 	depth++;
@@ -2558,7 +2624,7 @@ BOOL new_smb_io_port_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int de
 ********************************************************************/  
 BOOL smb_io_printprocessor_info_1(char *desc, NEW_BUFFER *buffer, PRINTPROCESSOR_1 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "smb_io_printprocessor_info_1");
 	depth++;	
@@ -2575,7 +2641,7 @@ BOOL smb_io_printprocessor_info_1(char *desc, NEW_BUFFER *buffer, PRINTPROCESSOR
 ********************************************************************/  
 BOOL smb_io_printprocdatatype_info_1(char *desc, NEW_BUFFER *buffer, PRINTPROCDATATYPE_1 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "smb_io_printprocdatatype_info_1");
 	depth++;	
@@ -2609,7 +2675,7 @@ BOOL smb_io_printmonitor_info_1(char *desc, NEW_BUFFER *buffer, PRINTMONITOR_1 *
 ********************************************************************/  
 BOOL smb_io_printmonitor_info_2(char *desc, NEW_BUFFER *buffer, PRINTMONITOR_2 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "smb_io_printmonitor_info_2");
 	depth++;	
@@ -2804,6 +2870,53 @@ uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info)
 
 	return size;
 }
+
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/
+uint32 spoolss_size_printer_driver_info_6(DRIVER_INFO_6 *info)
+{
+	int size=0;
+	uint16 *string;
+	int i=0;
+
+	size+=size_of_uint32( &info->version );	
+	size+=size_of_relative_string( &info->name );
+	size+=size_of_relative_string( &info->architecture );
+	size+=size_of_relative_string( &info->driverpath );
+	size+=size_of_relative_string( &info->datafile );
+	size+=size_of_relative_string( &info->configfile );
+	size+=size_of_relative_string( &info->helpfile );
+
+	string=info->dependentfiles;
+	if (string) {
+		for (i=0; (string[i]!=0x0000) || (string[i+1]!=0x0000); i++);
+	}
+
+	size+=size_of_relative_string( &info->monitorname );
+	size+=size_of_relative_string( &info->defaultdatatype );
+	
+	string=info->previousdrivernames;
+	if (string) {
+		for (i=0; (string[i]!=0x0000) || (string[i+1]!=0x0000); i++);
+	}
+
+	size+=size_of_nttime(&info->driver_date);
+	size+=size_of_uint32( &info->driver_version );	
+	size+=size_of_relative_string( &info->mfgname );
+	size+=size_of_relative_string( &info->oem_url );
+	size+=size_of_relative_string( &info->hardware_id );
+	size+=size_of_relative_string( &info->provider );
+
+	i=i+2; /* to count all chars including the leading zero */
+	i=2*i; /* because we need the value in bytes */
+	i=i+4; /* the offset pointer size */
+
+	size+=i;
+
+	return size;
+}
+
 
 /*******************************************************************
 return the size required by a struct in the stream
