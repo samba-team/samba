@@ -28,14 +28,21 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 add a job to the scheduler
 ****************************************************************************/
-BOOL at_add_job(struct cli_state *cli, uint16 fnum, 
-		char *server_name, AT_JOB_INFO *info, char *command,
+BOOL at_add_job(
+		char *srv_name, AT_JOB_INFO *info, char *command,
 		uint32 *jobid)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	AT_Q_ADD_JOB q_a;
 	BOOL p = False;
+
+	struct cli_connection *con = NULL;
+
+	if (!cli_connection_init(srv_name, PIPE_ATSVC, &con))
+	{
+		return False;
+	}
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
@@ -45,13 +52,13 @@ BOOL at_add_job(struct cli_state *cli, uint16 fnum,
 	DEBUG(4,("Scheduler Add Job\n"));
 
 	/* store the parameters */
-	make_at_q_add_job(&q_a, server_name, info, command);
+	make_at_q_add_job(&q_a, srv_name, info, command);
 
 	/* turn parameters into data stream */
 	at_io_q_add_job("", &q_a, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, AT_ADD_JOB, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, AT_ADD_JOB, &buf, &rbuf))
 	{
 		AT_R_ADD_JOB r_a;
 
@@ -74,19 +81,27 @@ BOOL at_add_job(struct cli_state *cli, uint16 fnum,
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
 
+	cli_connection_unlink(con);
+
 	return p;
 }
 
 /****************************************************************************
 dequeue a job
 ****************************************************************************/
-BOOL at_del_job(struct cli_state *cli, uint16 fnum, 
-		char *server_name, uint32 min_jobid, uint32 max_jobid)
+BOOL at_del_job( char *srv_name, uint32 min_jobid, uint32 max_jobid)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	AT_Q_DEL_JOB q_d;
 	BOOL p = False;
+
+	struct cli_connection *con = NULL;
+
+	if (!cli_connection_init(srv_name, PIPE_ATSVC, &con))
+	{
+		return False;
+	}
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
@@ -96,13 +111,13 @@ BOOL at_del_job(struct cli_state *cli, uint16 fnum,
 	DEBUG(4,("Scheduler Delete Job\n"));
 
 	/* store the parameters */
-	make_at_q_del_job(&q_d, server_name, min_jobid, max_jobid);
+	make_at_q_del_job(&q_d, srv_name, min_jobid, max_jobid);
 
 	/* turn parameters into data stream */
 	at_io_q_del_job("", &q_d, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, AT_DEL_JOB, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, AT_DEL_JOB, &buf, &rbuf))
 	{
 		AT_R_DEL_JOB r_d;
 
@@ -120,20 +135,28 @@ BOOL at_del_job(struct cli_state *cli, uint16 fnum,
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
 
+	cli_connection_unlink(con);
+
 	return p;
 }
 
 /****************************************************************************
 enumerate scheduled jobs
 ****************************************************************************/
-BOOL at_enum_jobs(struct cli_state *cli, uint16 fnum, 
-		  char *server_name, uint32 *num_jobs,
+BOOL at_enum_jobs( char *srv_name, uint32 *num_jobs,
 		  AT_ENUM_INFO *jobs, char ***commands)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	AT_Q_ENUM_JOBS q_e;
 	BOOL p = False;
+
+	struct cli_connection *con = NULL;
+
+	if (!cli_connection_init(srv_name, PIPE_ATSVC, &con))
+	{
+		return False;
+	}
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
@@ -143,13 +166,13 @@ BOOL at_enum_jobs(struct cli_state *cli, uint16 fnum,
 	DEBUG(4,("Scheduler Enumerate Jobs\n"));
 
 	/* store the parameters */
-	make_at_q_enum_jobs(&q_e, server_name);
+	make_at_q_enum_jobs(&q_e, srv_name);
 
 	/* turn parameters into data stream */
 	at_io_q_enum_jobs("", &q_e, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, AT_ENUM_JOBS, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, AT_ENUM_JOBS, &buf, &rbuf))
 	{
 		AT_R_ENUM_JOBS r_e;
 
@@ -186,19 +209,28 @@ BOOL at_enum_jobs(struct cli_state *cli, uint16 fnum,
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
 
+	cli_connection_unlink(con);
+
 	return p;
 }
 
 /****************************************************************************
 query job information
 ****************************************************************************/
-BOOL at_query_job(struct cli_state *cli, uint16 fnum, char *server_name,
+BOOL at_query_job(char *srv_name,
 		  uint32 jobid, AT_JOB_INFO *job, fstring command)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	AT_Q_QUERY_JOB q_q;
 	BOOL p = False;
+
+	struct cli_connection *con = NULL;
+
+	if (!cli_connection_init(srv_name, PIPE_ATSVC, &con))
+	{
+		return False;
+	}
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
@@ -208,13 +240,13 @@ BOOL at_query_job(struct cli_state *cli, uint16 fnum, char *server_name,
 	DEBUG(4,("Scheduler Query Job\n"));
 
 	/* store the parameters */
-	make_at_q_query_job(&q_q, server_name, jobid);
+	make_at_q_query_job(&q_q, srv_name, jobid);
 
 	/* turn parameters into data stream */
 	at_io_q_query_job("", &q_q, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, AT_QUERY_JOB, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, AT_QUERY_JOB, &buf, &rbuf))
 	{
 		AT_R_QUERY_JOB r_q;
 
@@ -238,6 +270,8 @@ BOOL at_query_job(struct cli_state *cli, uint16 fnum, char *server_name,
 
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
+
+	cli_connection_unlink(con);
 
 	return p;
 }
