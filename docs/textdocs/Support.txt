@@ -1,14 +1,17 @@
 The Samba Consultants List
 ==========================
 
-This is a list of people who are prepared to install and support Samba.
-Note that in most countries nobody should admit to "supplying" Samba, since 
-there is then an implied warranty with possibly onerous legal obligations. 
-Just downloading and installing it isn't supply in this sense, but advertising 
-"run our Samba for best results" may be so.
+This is a list of people who are prepared to commercialy support
+Samba. Being on this list does not imply any sort of endorsement by
+anyone, it is just provided in the hope that it will be useful.
 
-Being on this list does not imply any sort of endorsement by anyone, it is just
-provided in the hope that it will be useful.
+Note that the organisations listed below will expect you to pay for
+the support that they offer. I've been told that several people
+assumed this was a list of kindly companies offering free commercial
+support!
+
+For free support use the Samba mailing list and the comp.protocols.smb
+newsgroup.
 
 If you want to be added to the list, or want your entry modified then
 contact the address below. They are currently listed in the
@@ -16,7 +19,7 @@ order that they were received. If it gets too big we may organise it
 by region. Please make sure to include a header line giving the region
 and country, eg CANBERRA  - AUSTRALIA. 
 
-You can contact the maintainers at samba-bugs@anu.edu.au
+You can contact the maintainers at samba-bugs@samba.anu.edu.au
 
 
 ------------------------------------------------------------------------------
@@ -202,22 +205,15 @@ FORT COLLINS, CO - USA
 
 Granite Computing Solutions
 ATTN: Brian Grossman
-Box 270103
+P.O. Box 270103
 Fort Collins, CO  80527-0103
 U.S.A.
-(970) 225-2370
-granite@fortnet.org
+Tel:  +1 (970) 225-2370
+Email:  granite@SoftHome.Net	WWW:  http://www.SoftHome.Net/granite/
 
 Information services, including WfWG, NT, Apple <=> Unix interoperability.
-
-Our standard advertisement says:
-
->               Unix workstations, servers and custom systems           <
->>              WWW and Unix education                                   <<
->>>             Enterprise and departmental computing solutions           <<<
->>>             Backup & restore                                          <<<
->>              Software forensics                                       <<
->               Data translation                                        <
+WWW solutions.  WWW education.  Unix education.  Custom software
+development - eg. http://www.SoftHome.Net/modsim/.
 ------------------------------------------------------------------------------
 
 ----------------------------------------------------------
