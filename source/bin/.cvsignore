@@ -13,3 +13,5 @@ swat
 testparm
 testprns
 .dummy
+wbinfo
+.libs
