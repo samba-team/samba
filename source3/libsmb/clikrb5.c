@@ -475,7 +475,7 @@ failed:
 }
 #endif
 
-krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry)
+ krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry)
 {
 #if defined(HAVE_KRB5_KT_FREE_ENTRY)
 	return krb5_kt_free_entry(context, kt_entry);
