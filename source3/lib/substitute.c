@@ -206,7 +206,7 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 		int l = sizeof(pstring) - (int)(p-str);
 		
 		switch (*(p+1)) {
-		case 'U' : string_sub(p,"%U", user,l); break;
+		case 'U' : string_sub(p,"%U",sam_logon_in_ssb?samlogon_user:sesssetup_user,l); break;
 		case 'G' :
 			if ((pass = Get_Pwnam(user,False))!=NULL) {
 				string_sub(p,"%G",gidtoname(pass->pw_gid),l);
@@ -272,7 +272,18 @@ like standard_sub but by snum
 ****************************************************************************/
 void standard_sub_snum(int snum, char *str)
 {
-	standard_sub_advanced(snum, "", "", -1, str);
+	extern struct current_user current_user;
+	static uid_t cached_uid = -1;
+	static fstring cached_user;
+	/* calling uidtoname() on every substitute would be too expensive, so
+	   we cache the result here as nearly every call is for the same uid */
+
+	if (cached_uid != current_user.uid) {
+		fstrcpy(cached_user, uidtoname(current_user.uid));
+		cached_uid = current_user.uid;
+	}
+
+	standard_sub_advanced(snum, cached_user, "", -1, str);
 }
 
 /*******************************************************************
