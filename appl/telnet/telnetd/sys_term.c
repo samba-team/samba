@@ -53,13 +53,13 @@ RCSID("$Id$");
 #error NEWINIT not supported
 #endif
 
-#ifdef HAVE_UTMPX
+#ifdef HAVE_UTMPX_H
 #include <utmpx.h>
 struct	utmpx wtmp;
 #else
 #include <utmp.h>
 struct	utmp wtmp;
-#endif /* HAVE_UTMPX */
+#endif /* HAVE_UTMPX_H */
 
 #ifdef HAVE_UT_HOST
 int	utmp_len = sizeof(wtmp.ut_host);
@@ -371,7 +371,7 @@ static char *ptsname(int fd)
 }
 #endif
 
-#ifdef HAVE_UTMPX
+#ifdef HAVE_UTMPX_H
 static char utid[32]; /* XXX larger than ut_id */
 
 void
@@ -1364,14 +1364,12 @@ void start_login(char *host, int autologin, char *name)
 	struct arg_val argv;
 	struct timeval tmp;
 
-#ifdef	HAVE_UTMPX
+#ifdef	HAVE_UTMPX_H
 	char id_buf[3];
 	int ptynum;
 	int pid = getpid();
 	struct utmpx utmpx;
-#endif
 
-#ifdef	HAVE_UTMPX
 	/*
 	 * Create utmp entry for child
 	 */
@@ -1616,9 +1614,8 @@ int addarg(struct arg_val *argv, char *val)
  * remove the utmp entry for this person.
  */
 
-#ifdef	HAVE_UTMPX
-static
-void
+#ifdef	HAVE_UTMPX_H
+static void
 rmut(void)
 {
 	int f;
@@ -1641,12 +1638,17 @@ rmut(void)
 	if (utxp) {
 	    strcpy(utxp->ut_user, "");
 	    utxp->ut_type = DEAD_PROCESS;
+#ifdef __osf__ /* XXX */
+	    utxp->ut_exit.ut_termination = 0;
+	    utxp->ut_exit.ut_exit = 0;
+#else	    
 #ifdef _STRUCT___EXIT_STATUS
 	    utxp->ut_exit.__e_termination = 0;
 	    utxp->ut_exit.__e_exit = 0;
 #else
 	    utxp->ut_exit.e_termination = 0;
 	    utxp->ut_exit.e_exit = 0;
+#endif
 #endif
 	    gettimeofday(&tmp, NULL);
 	    utxp->ut_tv.tv_sec  = tmp.tv_sec;
@@ -1660,9 +1662,8 @@ rmut(void)
 }  /* end of rmut */
 #endif
 
-#if !defined(HAVE_UTMPX) && !(defined(CRAY) || defined(__hpux)) && BSD <= 43
-static
-void
+#if !defined(HAVE_UTMPX_H) && !(defined(CRAY) || defined(__hpux)) && BSD <= 43
+static void
 rmut(void)
 {
 	int f;
@@ -1718,9 +1719,8 @@ rmut(void)
 }  /* end of rmut */
 #endif	/* CRAY */
 
-#if defined(__hpux) && !defined(HAVE_UTMPX)
-static
-void
+#if defined(__hpux) && !defined(HAVE_UTMPX_H)
+static void
 rmut (char *line)
 {
 	struct utmp utmp;
@@ -1822,7 +1822,7 @@ cleanup(int sig)
 void
 cleanup(int sig)
 {
-#if defined(HAVE_UTMPX) || !defined(HAVE_LOGWTMP)
+#if defined(HAVE_UTMPX_H) || !defined(HAVE_LOGWTMP)
     rmut();
 #ifdef HAVE_VHANGUP
     vhangup(); /* XXX */
