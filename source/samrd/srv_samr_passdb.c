@@ -39,7 +39,6 @@
 	BOOL samr_open_group(  const POLICY_HND *domain_pol,
 					uint32 flags, uint32 rid,
 					POLICY_HND *group_pol);
-	BOOL samr_delete_dom_group(  POLICY_HND *group_pol);
 	BOOL samr_create_dom_group(  POLICY_HND *domain_pol, const char *acct_name,
 					POLICY_HND *group_pol, uint32 *rid);
 	BOOL samr_set_groupinfo(  POLICY_HND *group_pol, GROUP_INFO_CTR *ctr);
@@ -58,8 +57,6 @@
 	BOOL samr_query_useraliases(  const POLICY_HND *pol,
 					uint32 *ptr_sid, DOM_SID2 *sid,
 					uint32 *num_aliases, uint32 **rid);
-	BOOL samr_query_groupmem(  POLICY_HND *group_pol, 
-					uint32 *num_mem, uint32 **rid, uint32 **attr);
 	BOOL samr_query_usergroups(  POLICY_HND *pol, uint32 *num_groups,
 					DOM_GID **gid);
 	BOOL samr_query_groupinfo(  POLICY_HND *pol,
@@ -848,30 +845,32 @@ uint32 _samr_enum_dom_aliases(POLICY_HND *pol,
 	return status;
 }
 
-#if 0
-
 /*******************************************************************
  samr_reply_query_dispinfo
  ********************************************************************/
-uint32 _samr_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
-				prs_struct *rdata)
+uint32 _samr_query_dispinfo(  POLICY_HND *domain_pol, uint16 level,
+					uint32 start_idx,
+					uint32 max_entries,
+					uint32 max_size,
+					uint32 *data_size,
+					uint32 *num_entries,
+					SAM_DISPINFO_CTR *ctr)
 {
-	SAMR_R_QUERY_DISPINFO r_e;
-	SAM_DISPINFO_CTR ctr;
 	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
 	DOMAIN_GRP *grps = NULL;
 	DOMAIN_GRP *sam_grps = NULL;
-	uint32 data_size = 0;
 	uint32 status = 0x0;
 	uint16 acb_mask = ACB_NORMAL;
 	int num_sam_entries = 0;
-	int num_entries = 0;
 	int total_entries;
 
 	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
 
+	(*num_entries) = 0;
+	(*data_size) = 0;
+
 	/* find the policy handle.  open a policy on it. */
-	if (find_policy_by_hnd(get_global_hnd_cache(), &(domain_pol)) == -1)
+	if (find_policy_by_hnd(get_global_hnd_cache(), domain_pol) == -1)
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 		DEBUG(5,("samr_reply_query_dispinfo: invalid handle\n"));
@@ -882,7 +881,7 @@ uint32 _samr_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 		become_root(True);
 
 		/* Get what we need from the password database */
-		switch (switch_level)
+		switch (level)
 		{
 			case 0x2:
 			{
@@ -914,84 +913,78 @@ uint32 _samr_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 
 		unbecome_root(True);
 
-		num_entries = num_sam_entries;
+		(*num_entries) = num_sam_entries;
 
-		if (num_entries > max_entries)
+		if ((*num_entries) > max_entries)
 		{
-			num_entries = max_entries;
+			(*num_entries) = max_entries;
 		}
 
-		if (num_entries > MAX_SAM_ENTRIES)
+		if ((*num_entries) > MAX_SAM_ENTRIES)
 		{
-			num_entries = MAX_SAM_ENTRIES;
+			(*num_entries) = MAX_SAM_ENTRIES;
 			DEBUG(5,("limiting number of entries to %d\n", 
-				 num_entries));
+				 (*num_entries)));
 		}
 
-		data_size = max_size;
+		(*data_size) = max_size;
 
 		/* Now create reply structure */
-		switch (switch_level)
+		switch (level)
 		{
 			case 0x1:
 			{
-				ctr.sam.info1 = malloc(sizeof(SAM_DISPINFO_1));
-				make_sam_dispinfo_1(ctr.sam.info1,
-						    &num_entries, &data_size,
+				ctr->sam.info1 = malloc(sizeof(SAM_DISPINFO_1));
+				make_sam_dispinfo_1(ctr->sam.info1,
+						    num_entries, data_size,
 						    start_idx, pass);
 				break;
 			}
 			case 0x2:
 			{
-				ctr.sam.info2 = malloc(sizeof(SAM_DISPINFO_2));
-				make_sam_dispinfo_2(ctr.sam.info2,
-						    &num_entries, &data_size,
+				ctr->sam.info2 = malloc(sizeof(SAM_DISPINFO_2));
+				make_sam_dispinfo_2(ctr->sam.info2,
+						    num_entries, data_size,
 						    start_idx, pass);
 				break;
 			}
 			case 0x3:
 			{
-				ctr.sam.info3 = malloc(sizeof(SAM_DISPINFO_3));
-				make_sam_dispinfo_3(ctr.sam.info3,
-						    &num_entries, &data_size,
+				ctr->sam.info3 = malloc(sizeof(SAM_DISPINFO_3));
+				make_sam_dispinfo_3(ctr->sam.info3,
+						    num_entries, data_size,
 						    start_idx, grps);
 				break;
 			}
 	  		case 0x4:
 			{
-				ctr.sam.info4 = malloc(sizeof(SAM_DISPINFO_4));
-				make_sam_dispinfo_4(ctr.sam.info4,
-						    &num_entries, &data_size,
+				ctr->sam.info4 = malloc(sizeof(SAM_DISPINFO_4));
+				make_sam_dispinfo_4(ctr->sam.info4,
+						    num_entries, data_size,
 						    start_idx, pass);
 				break;
 			}
 			case 0x5:
 			{
-				ctr.sam.info5 = malloc(sizeof(SAM_DISPINFO_5));
-				make_sam_dispinfo_5(ctr.sam.info5,
-						    &num_entries, &data_size,
+				ctr->sam.info5 = malloc(sizeof(SAM_DISPINFO_5));
+				make_sam_dispinfo_5(ctr->sam.info5,
+						    num_entries, data_size,
 						    start_idx, grps);
 				break;
 			}
 			default:
 			{
-				ctr.sam.info = NULL;
+				ctr->sam.info = NULL;
 				status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
 				break;
 			}
 		}
 	}
 
-	if ((status == 0) && (num_entries < num_sam_entries))
+	if ((status == 0) && ((*num_entries) < num_sam_entries))
 	{
 		status = STATUS_MORE_ENTRIES;
 	}
-
-	make_samr_r_query_dispinfo(&r_e, num_entries, data_size,
-				   switch_level, &ctr, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_query_dispinfo("", &r_e, rdata, 0);
 
 	/* free malloc'd areas */
 	if (sam_grps != NULL)
@@ -999,20 +992,16 @@ uint32 _samr_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 		free(sam_grps);
 	}
 
-	if (ctr.sam.info != NULL)
-	{
-		free(ctr.sam.info);
-	}
-
 	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
+
+	return status;
 }
 
 
 /*******************************************************************
  samr_reply_delete_dom_group
  ********************************************************************/
-uint32 _samr_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_u,
-				prs_struct *rdata)
+uint32 _samr_delete_dom_group(POLICY_HND *group_pol)
 {
 	uint32 status = 0;
 
@@ -1020,12 +1009,10 @@ uint32 _samr_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_u,
 	uint32 group_rid;
 	fstring group_sid_str;
 
-	SAMR_R_DELETE_DOM_GROUP r_u;
-
 	DEBUG(5,("samr_delete_dom_group: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &group_pol, &group_sid))
+	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), group_pol, &group_sid))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -1051,35 +1038,34 @@ uint32 _samr_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_u,
 		}
 	}
 
-	make_samr_r_delete_dom_group(&r_u, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_delete_dom_group("", &r_u, rdata, 0);
+	return status;
 }
 
 
 /*******************************************************************
  samr_reply_query_groupmem
  ********************************************************************/
-uint32 _samr_query_groupmem(SAMR_Q_QUERY_GROUPMEM *q_u,
-				prs_struct *rdata)
+uint32 _samr_query_groupmem(POLICY_HND *group_pol, 
+					uint32 *num_mem,
+					uint32 **rid,
+					uint32 **attr);
 {
 	uint32 status = 0;
 
 	DOMAIN_GRP_MEMBER *mem_grp = NULL;
-	uint32 *rid = NULL;
-	uint32 *attr = NULL;
 	int num_rids = 0;
 	DOM_SID group_sid;
 	uint32 group_rid;
 	fstring group_sid_str;
 
-	SAMR_R_QUERY_GROUPMEM r_u;
-
 	DEBUG(5,("samr_query_groupmem: %d\n", __LINE__));
 
+	(*rid) = NULL;
+	(*attr) = NULL;
+	(*num_mem) = 0;
+
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &group_pol, &group_sid))
+	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), group_pol, &group_sid))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -1109,30 +1095,30 @@ uint32 _samr_query_groupmem(SAMR_Q_QUERY_GROUPMEM *q_u,
 
 	if (status == 0x0 && num_rids > 0)
 	{
-		rid  = malloc(num_rids * sizeof(uint32));
-		attr = malloc(num_rids * sizeof(uint32));
-		if (mem_grp != NULL && rid != NULL && attr != NULL)
+		(*rid)  = malloc(num_rids * sizeof(uint32));
+		(*attr) = malloc(num_rids * sizeof(uint32));
+		if (mem_grp != NULL && (*rid) != NULL && (*attr) != NULL)
 		{
 			int i;
 			for (i = 0; i < num_rids; i++)
 			{
-				rid [i] = mem_grp[i].rid;
-				attr[i] = mem_grp[i].attr;
+				(*rid) [i] = mem_grp[i].rid;
+				(*attr)[i] = mem_grp[i].attr;
 			}
-			free(mem_grp);
 		}
 	}
 
-	make_samr_r_query_groupmem(&r_u, num_rids, rid, attr, status);
+	if (mem_grp != NULL)
+	{
+		free(mem_grp);
+	}
+	
+	(*num_mem) = num_rids;
 
-	/* store the response in the SMB stream */
-	samr_io_r_query_groupmem("", &r_u, rdata, 0);
-
-	samr_free_r_query_groupmem(&r_u);
-
-	DEBUG(5,("samr_query_groupmem: %d\n", __LINE__));
-
+	return status;
 }
+
+#if 0
 
 
 /*******************************************************************

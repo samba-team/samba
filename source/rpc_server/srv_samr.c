@@ -35,84 +35,6 @@ extern DOM_SID global_sid_S_1_1;
 extern DOM_SID global_sid_S_1_5_20;
 
 /*******************************************************************
-  This next function should be replaced with something that
-  dynamically returns the correct user info..... JRA.
- ********************************************************************/
-
-static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
-				int start_idx,
-                                int *total_entries, int *num_entries,
-                                int max_num_entries,
-                                uint16 acb_mask)
-{
-	void *vp = NULL;
-	struct sam_passwd *pwd = NULL;
-
-	(*num_entries) = 0;
-	(*total_entries) = 0;
-
-	if (pw_buf == NULL) return False;
-
-	vp = startsmbpwent(False);
-	if (!vp)
-	{
-		DEBUG(0, ("get_sampwd_entries: Unable to open SMB password database.\n"));
-		return False;
-	}
-
-	while (((pwd = getsam21pwent(vp)) != NULL) && (*num_entries) < max_num_entries)
-	{
-		int user_name_len;
-
-		if (start_idx > 0)
-		{
-			/* skip the requested number of entries.
-			   not very efficient, but hey...
-			 */
-			if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask))
-			{
-				start_idx--;
-			}
-			continue;
-		}
-
-		user_name_len = strlen(pwd->nt_name);
-		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->nt_name, user_name_len);
-		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len);
-		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
-		bzero( pw_buf[(*num_entries)].nt_pwd , 16);
-
-		/* Now check if the NT compatible password is available. */
-		if (pwd->smb_nt_passwd != NULL)
-		{
-			memcpy( pw_buf[(*num_entries)].nt_pwd , pwd->smb_nt_passwd, 16);
-		}
-
-		pw_buf[(*num_entries)].acb_info = (uint16)pwd->acct_ctrl;
-
-		DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x",
-		          (*num_entries), pwd->nt_name,
-		          pwd->user_rid, pwd->acct_ctrl));
-
-		if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask))
-		{
-			DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
-			(*num_entries)++;
-		}
-		else
-		{
-			DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
-		}
-
-		(*total_entries)++;
-	}
-
-	endsmbpwent(vp);
-
-	return (*num_entries) > 0;
-}
-
-/*******************************************************************
  api_samr_close_hnd
  ********************************************************************/
 static void api_samr_close_hnd( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
@@ -391,224 +313,42 @@ static void api_samr_enum_dom_aliases( rpcsrv_struct *p, prs_struct *data, prs_s
 	}
 }
 
-
-/*******************************************************************
- samr_reply_query_dispinfo
- ********************************************************************/
-static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_QUERY_DISPINFO r_e;
-	SAM_DISPINFO_CTR ctr;
-	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
-	DOMAIN_GRP *grps = NULL;
-	DOMAIN_GRP *sam_grps = NULL;
-	uint32 data_size = 0;
-	uint32 status = 0x0;
-	uint16 acb_mask = ACB_NORMAL;
-	int num_sam_entries = 0;
-	int num_entries = 0;
-	int total_entries;
-
-	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
-
-	/* find the policy handle.  open a policy on it. */
-	if (find_policy_by_hnd(get_global_hnd_cache(), &(q_u->domain_pol)) == -1)
-	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-		DEBUG(5,("samr_reply_query_dispinfo: invalid handle\n"));
-	}
-
-	if (status == 0x0)
-	{
-		become_root(True);
-
-		/* Get what we need from the password database */
-		switch (q_u->switch_level)
-		{
-			case 0x2:
-			{
-				acb_mask = ACB_WSTRUST;
-				/* Fall through */
-			}
-			case 0x1:
-			case 0x4:
-			{
-				get_sampwd_entries(pass, q_u->start_idx,
-					      &total_entries, &num_sam_entries,
-					      MAX_SAM_ENTRIES, acb_mask);
-				break;
-			}
-			case 0x3:
-			case 0x5:
-			{
-				enumdomgroups(&sam_grps, &num_sam_entries);
-
-				if (q_u->start_idx < num_sam_entries) {
-					grps = sam_grps + q_u->start_idx;
-					num_sam_entries -= q_u->start_idx;
-				} else {
-					num_sam_entries = 0;
-				}
-				break;
-			}
-		}
-
-		unbecome_root(True);
-
-		num_entries = num_sam_entries;
-
-		if (num_entries > q_u->max_entries)
-		{
-			num_entries = q_u->max_entries;
-		}
-
-		if (num_entries > MAX_SAM_ENTRIES)
-		{
-			num_entries = MAX_SAM_ENTRIES;
-			DEBUG(5,("limiting number of entries to %d\n", 
-				 num_entries));
-		}
-
-		data_size = q_u->max_size;
-
-		/* Now create reply structure */
-		switch (q_u->switch_level)
-		{
-			case 0x1:
-			{
-				ctr.sam.info1 = malloc(sizeof(SAM_DISPINFO_1));
-				make_sam_dispinfo_1(ctr.sam.info1,
-						    &num_entries, &data_size,
-						    q_u->start_idx, pass);
-				break;
-			}
-			case 0x2:
-			{
-				ctr.sam.info2 = malloc(sizeof(SAM_DISPINFO_2));
-				make_sam_dispinfo_2(ctr.sam.info2,
-						    &num_entries, &data_size,
-						    q_u->start_idx, pass);
-				break;
-			}
-			case 0x3:
-			{
-				ctr.sam.info3 = malloc(sizeof(SAM_DISPINFO_3));
-				make_sam_dispinfo_3(ctr.sam.info3,
-						    &num_entries, &data_size,
-						    q_u->start_idx, grps);
-				break;
-			}
-	  		case 0x4:
-			{
-				ctr.sam.info4 = malloc(sizeof(SAM_DISPINFO_4));
-				make_sam_dispinfo_4(ctr.sam.info4,
-						    &num_entries, &data_size,
-						    q_u->start_idx, pass);
-				break;
-			}
-			case 0x5:
-			{
-				ctr.sam.info5 = malloc(sizeof(SAM_DISPINFO_5));
-				make_sam_dispinfo_5(ctr.sam.info5,
-						    &num_entries, &data_size,
-						    q_u->start_idx, grps);
-				break;
-			}
-			default:
-			{
-				ctr.sam.info = NULL;
-				status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
-				break;
-			}
-		}
-	}
-
-	if ((status == 0) && (num_entries < num_sam_entries))
-	{
-		status = STATUS_MORE_ENTRIES;
-	}
-
-	make_samr_r_query_dispinfo(&r_e, num_entries, data_size,
-				   q_u->switch_level, &ctr, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_query_dispinfo("", &r_e, rdata, 0);
-
-	/* free malloc'd areas */
-	if (sam_grps != NULL)
-	{
-		free(sam_grps);
-	}
-
-	if (ctr.sam.info != NULL)
-	{
-		free(ctr.sam.info);
-	}
-
-	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
-}
-
 /*******************************************************************
  api_samr_query_dispinfo
  ********************************************************************/
 static void api_samr_query_dispinfo( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_DISPINFO q_e;
-
-	samr_io_q_query_dispinfo("", &q_e, data, 0);
-	samr_reply_query_dispinfo(&q_e, rdata);
-}
-
-/*******************************************************************
- samr_reply_delete_dom_group
- ********************************************************************/
-static void samr_reply_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_u,
-				prs_struct *rdata)
-{
+	SAMR_R_QUERY_DISPINFO r_e;
+	SAM_DISPINFO_CTR ctr;
+	uint32 data_size = 0;
+	uint32 num_entries = 0;
 	uint32 status = 0;
 
-	DOM_SID group_sid;
-	uint32 group_rid;
-	fstring group_sid_str;
+	ZERO_STRUCT(q_e);
+	ZERO_STRUCT(r_e);
+	ZERO_STRUCT(ctr);
 
-	SAMR_R_DELETE_DOM_GROUP r_u;
+	samr_io_q_query_dispinfo("", &q_e, data, 0);
+	status = _samr_query_dispinfo(&q_e.domain_pol,
+				q_e.switch_level,
+				q_e.start_idx,
+				q_e.max_entries,
+				q_e.max_size,
+				&data_size,
+				&num_entries,
+				&ctr);
 
-	DEBUG(5,("samr_delete_dom_group: %d\n", __LINE__));
-
-	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->group_pol, &group_sid))
-	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
-	else
-	{
-		sid_to_string(group_sid_str, &group_sid     );
-		sid_split_rid(&group_sid, &group_rid);
-	}
-
-	if (status == 0x0)
-	{
-		DEBUG(10,("sid is %s\n", group_sid_str));
-
-		if (sid_equal(&group_sid, &global_sam_sid))
-		{
-			DEBUG(10,("lookup on Domain SID\n"));
-
-			become_root(True);
-			status = del_group_entry(group_rid) ? 0x0 : (0xC0000000 | NT_STATUS_NO_SUCH_GROUP);
-			unbecome_root(True);
-		}
-		else
-		{
-			status = 0xC0000000 | NT_STATUS_NO_SUCH_GROUP;
-		}
-	}
-
-	make_samr_r_delete_dom_group(&r_u, status);
+	make_samr_r_query_dispinfo(&r_e, num_entries, data_size,
+				   q_e.switch_level, &ctr, status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_delete_dom_group("", &r_u, rdata, 0);
+	samr_io_r_query_dispinfo("", &r_e, rdata, 0);
+
+	if (ctr.sam.info != NULL)
+	{
+		free(ctr.sam.info);
+	}
 }
 
 /*******************************************************************
@@ -617,8 +357,14 @@ static void samr_reply_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_u,
 static void api_samr_delete_dom_group( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_DELETE_DOM_GROUP q_u;
+	SAMR_R_DELETE_DOM_GROUP r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
 	samr_io_q_delete_dom_group("", &q_u, data, 0);
-	samr_reply_delete_dom_group(&q_u, rdata);
+	r_u.status = _samr_delete_dom_group(&q_u.group_pol);
+	samr_io_r_delete_dom_group("", &r_u, rdata, 0);
 }
 
 
@@ -631,14 +377,9 @@ static void samr_reply_query_groupmem(SAMR_Q_QUERY_GROUPMEM *q_u,
 	uint32 status = 0;
 
 	DOMAIN_GRP_MEMBER *mem_grp = NULL;
-	uint32 *rid = NULL;
-	uint32 *attr = NULL;
-	int num_rids = 0;
 	DOM_SID group_sid;
 	uint32 group_rid;
 	fstring group_sid_str;
-
-	SAMR_R_QUERY_GROUPMEM r_u;
 
 	DEBUG(5,("samr_query_groupmem: %d\n", __LINE__));
 
@@ -687,13 +428,6 @@ static void samr_reply_query_groupmem(SAMR_Q_QUERY_GROUPMEM *q_u,
 		}
 	}
 
-	make_samr_r_query_groupmem(&r_u, num_rids, rid, attr, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_query_groupmem("", &r_u, rdata, 0);
-
-	samr_free_r_query_groupmem(&r_u);
-
 	DEBUG(5,("samr_query_groupmem: %d\n", __LINE__));
 
 }
@@ -704,8 +438,21 @@ static void samr_reply_query_groupmem(SAMR_Q_QUERY_GROUPMEM *q_u,
 static void api_samr_query_groupmem( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_GROUPMEM q_u;
+	SAMR_R_QUERY_GROUPMEM r_u;
+
+	uint32 *rid = NULL;
+	uint32 *attr = NULL;
+	int num_rids = 0;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
 	samr_io_q_query_groupmem("", &q_u, data, 0);
-	samr_reply_query_groupmem(&q_u, rdata);
+	status = samr_reply_query_groupmem(&q_u.group_pol,
+	                                   &num_rids, &rid, &attr);
+	make_samr_r_query_groupmem(&r_u, num_rids, rid, attr, status);
+	samr_io_r_query_groupmem("", &r_u, rdata, 0);
+	samr_free_r_query_groupmem(&r_u);
 }
 
 
