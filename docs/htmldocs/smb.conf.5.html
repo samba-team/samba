@@ -4889,17 +4889,15 @@ HREF="smbd.8.html"
 TARGET="_top"
 >smbd</A
 > 
-		must be set to <TT
+		must <EM
+>NOT</EM
+> be set to <TT
 CLASS="PARAMETER"
 ><I
->security = server</I
+>security = share</I
 ></TT
-> or <TT
-CLASS="PARAMETER"
-><I
->		security = domain</I
-></TT
-> and <TT
+>
+		and <TT
 CLASS="PARAMETER"
 ><I
 >add user script</I
@@ -7012,53 +7010,26 @@ CLASS="PARAMETER"
 ><I
 >security = domain</I
 ></TT
+> or <TT
+CLASS="PARAMETER"
+><I
+>security =
+		user</I
+></TT
 > and <TT
 CLASS="PARAMETER"
 ><I
->delete 
-		user script</I
+>delete user script</I
 ></TT
-> must be set to a full pathname for a script 
+> 
+		must be set to a full pathname for a script 
 		that will delete a UNIX user given one argument of <TT
 CLASS="PARAMETER"
 ><I
->%u
-		</I
+>%u</I
 ></TT
->, which expands into the UNIX user name to delete.
-		<EM
->NOTE</EM
-> that this is different to the <A
-HREF="#ADDUSERSCRIPT"
-><TT
-CLASS="PARAMETER"
-><I
->add user script</I
-></TT
-></A
->
-		which will work with the <TT
-CLASS="PARAMETER"
-><I
->security = server</I
-></TT
-> option 
-		as well as <TT
-CLASS="PARAMETER"
-><I
->security = domain</I
-></TT
->. The reason for this
-		is only when Samba is a domain member does it get the information
-		on an attempted user logon that a user no longer exists. In the
-		<TT
-CLASS="PARAMETER"
-><I
->security = server</I
-></TT
-> mode a missing user
-		is treated the same as an invalid password logon attempt. Deleting
-		the user in this circumstance would not be a good idea.</P
+>, 
+		which expands into the UNIX user name to delete.</P
 ><P
 >When the Windows user attempts to access the Samba server, 
 		at <EM
@@ -19357,7 +19328,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6105"
+NAME="AEN6100"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19387,7 +19358,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6111"
+NAME="AEN6106"
 ></A
 ><H2
 >VERSION</H2
@@ -19398,7 +19369,7 @@ NAME="AEN6111"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6114"
+NAME="AEN6109"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19477,7 +19448,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6134"
+NAME="AEN6129"
 ></A
 ><H2
 >AUTHOR</H2

@@ -1071,8 +1071,8 @@
 		<emphasis>ON DEMAND</emphasis> when a user accesses the Samba server.</para>
 
 		<para>In order to use this option, <ulink url="smbd.8.html">smbd</ulink> 
-		must be set to <parameter>security = server</parameter> or <parameter>
-		security = domain</parameter> and <parameter>add user script</parameter>
+		must <emphasis>NOT</emphasis> be set to <parameter>security = share</parameter>
+		and <parameter>add user script</parameter>
 		must be set to a full pathname for a script that will create a UNIX 
 		user given one argument of <parameter>%u</parameter>, which expands into 
 		the UNIX user name to create.</para>
@@ -2049,19 +2049,11 @@
 		Windows NT user no longer exists.</para>
 		
 		<para>In order to use this option, <command>smbd</command> must be 
-		set to <parameter>security = domain</parameter> and <parameter>delete 
-		user script</parameter> must be set to a full pathname for a script 
-		that will delete a UNIX user given one argument of <parameter>%u
-		</parameter>, which expands into the UNIX user name to delete.
-		<emphasis>NOTE</emphasis> that this is different to the <link
-		linkend="ADDUSERSCRIPT"><parameter>add user script</parameter></link>
-		which will work with the <parameter>security = server</parameter> option 
-		as well as <parameter>security = domain</parameter>. The reason for this
-		is only when Samba is a domain member does it get the information
-		on an attempted user logon that a user no longer exists. In the
-		<parameter>security = server</parameter> mode a missing user
-		is treated the same as an invalid password logon attempt. Deleting
-		the user in this circumstance would not be a good idea.</para>
+		set to <parameter>security = domain</parameter> or <parameter>security =
+		user</parameter> and <parameter>delete user script</parameter> 
+		must be set to a full pathname for a script 
+		that will delete a UNIX user given one argument of <parameter>%u</parameter>, 
+		which expands into the UNIX user name to delete.</para>
 
 		<para>When the Windows user attempts to access the Samba server, 
 		at <emphasis>login</emphasis> (session setup in the SMB protocol) 

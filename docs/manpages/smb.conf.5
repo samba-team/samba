@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "06 February 2002" "" ""
+.TH "SMB.CONF" "5" "19 February 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -1554,7 +1554,8 @@ Windows NT PDC is an onerous task. This option allows smbdto create the required
 \fBON DEMAND\fR when a user accesses the Samba server.
 
 In order to use this option, smbd
-must be set to \fIsecurity = server\fR or \fI security = domain\fR and \fIadd user script\fR
+must \fBNOT\fR be set to \fIsecurity = share\fR
+and \fIadd user script\fR
 must be set to a full pathname for a script that will create a UNIX 
 user given one argument of \fI%u\fR, which expands into 
 the UNIX user name to create.
@@ -2332,18 +2333,11 @@ DEMAND\fR when a user accesses the Samba server and the
 Windows NT user no longer exists.
 
 In order to use this option, \fBsmbd\fR must be 
-set to \fIsecurity = domain\fR and \fIdelete 
-user script\fR must be set to a full pathname for a script 
-that will delete a UNIX user given one argument of \fI%u
-\fR, which expands into the UNIX user name to delete.
-\fBNOTE\fR that this is different to the \fIadd user script\fR
-which will work with the \fIsecurity = server\fR option 
-as well as \fIsecurity = domain\fR. The reason for this
-is only when Samba is a domain member does it get the information
-on an attempted user logon that a user no longer exists. In the
-\fIsecurity = server\fR mode a missing user
-is treated the same as an invalid password logon attempt. Deleting
-the user in this circumstance would not be a good idea.
+set to \fIsecurity = domain\fR or \fIsecurity =
+user\fR and \fIdelete user script\fR 
+must be set to a full pathname for a script 
+that will delete a UNIX user given one argument of \fI%u\fR, 
+which expands into the UNIX user name to delete.
 
 When the Windows user attempts to access the Samba server, 
 at \fBlogin\fR (session setup in the SMB protocol) 
