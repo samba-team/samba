@@ -1,3 +1,10 @@
+2004-03-07  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* rxtelnet.1: document new behavior
+	
+	* rxtelnet.in: even if kx failes, start anyway From: Harald Barth
+	<haba@pdc.kth.se>
+	
 2004-02-18  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* krb4.c: remove dup on
