@@ -2,6 +2,7 @@
 *.po32
 .headers.stamp
 .proto.stamp
+.proto.check
 ID
 ID
 Makefile
