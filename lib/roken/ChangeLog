@@ -1,3 +1,8 @@
+2000-12-15  Johan Danielsson  <joda@pdc.kth.se>
+
+	* snprintf.c (append_string): handle NULL strings by printing
+	`(null)'
+
 2000-12-12  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken-common.h: add c++ externs
