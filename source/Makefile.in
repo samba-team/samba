@@ -315,7 +315,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
-LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o smbd/tdbutil.o
+LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
 GUMS_OBJ = sam/gums.o sam/gums_api.o sam/gums_helper.o @GUMS_STATIC@
 
