@@ -134,10 +134,10 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 	pdb_set_domain       (sampass, domain_len?domain:NULL);
 	pdb_set_nt_username  (sampass, nt_username_len?nt_username:NULL);
 	pdb_set_fullname     (sampass, fullname_len?fullname:NULL);
-	pdb_set_homedir      (sampass, homedir_len?homedir:NULL);
-	pdb_set_dir_drive    (sampass, dir_drive_len?dir_drive:NULL);
-	pdb_set_logon_script (sampass, logon_script_len?logon_script:NULL);
-	pdb_set_profile_path (sampass, profile_path_len?profile_path:NULL);
+	pdb_set_homedir      (sampass, homedir_len?homedir:NULL, True);
+	pdb_set_dir_drive    (sampass, dir_drive_len?dir_drive:NULL, True);
+	pdb_set_logon_script (sampass, logon_script_len?logon_script:NULL, True);
+	pdb_set_profile_path (sampass, profile_path_len?profile_path:NULL, True);
 	pdb_set_acct_desc    (sampass, acct_desc_len?acct_desc:NULL);
 	pdb_set_workstations (sampass, workstations_len?workstations:NULL);
 	pdb_set_munged_dial  (sampass, munged_dial_len?munged_dial:NULL);
