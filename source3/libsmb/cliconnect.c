@@ -547,14 +547,6 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 		return False;
 	}
 
-	ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth();
-
-	if (cli->sign_info.negotiated_smb_signing 
-	    || cli->sign_info.mandatory_signing) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
-	}
-
 	do {
 		nt_status = ntlmssp_client_update(ntlmssp_state, 
 						  blob_in, &blob_out);
