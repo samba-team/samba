@@ -41,6 +41,15 @@ void pwd_init(struct pwd_info *pwd)
 }
 
 /****************************************************************************
+returns NULL password flag
+****************************************************************************/
+BOOL pwd_is_nullpwd(const struct pwd_info *pwd)
+{
+        return pwd->null_pwd;
+}
+
+
+/****************************************************************************
 compares two passwords.  hmm, not as trivial as expected.  hmm.
 ****************************************************************************/
 BOOL pwd_compare(struct pwd_info *pwd1, struct pwd_info *pwd2)
