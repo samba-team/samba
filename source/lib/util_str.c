@@ -894,7 +894,7 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 	    len = maxlength;
     }
       
-    memcpy(dest, src, len);
+    memmove(dest, src, len);
     dest[len] = 0;
     return dest;
 }  
