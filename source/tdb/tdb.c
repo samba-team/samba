@@ -575,9 +575,13 @@ char *tdb_error(TDB_CONTEXT *tdb)
 		{TDB_ERR_OOM, "Out of memory"},
 		{TDB_ERR_EXISTS, "Record exists"},
 		{-1, NULL}};
-	for (i=0;emap[i].estring;i++) {
+        if (tdb != NULL) {
+            for (i=0;emap[i].estring;i++) {
 		if (tdb->ecode == emap[i].ecode) return emap[i].estring;
-	}
+            }
+        } else {
+            return "Invalid tdb context";
+        }
 	return "Invalid error code";
 }
 
