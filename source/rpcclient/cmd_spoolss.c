@@ -327,7 +327,7 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 	if (argc == 3)
 		fstrcpy(name, argv[2]);
 	else {
-		slprintf(name, "\\\\%s", cli->desthost);
+		slprintf(name, sizeof(name)-1, "\\\\%s", cli->desthost);
 		strupper(name);
 	}
 
