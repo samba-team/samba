@@ -1939,6 +1939,12 @@ BOOL cli_nt_srv_pwset(const char* srv_name, const char* myhostname,
 				const char* trust_acct,
 				unsigned char *new_hashof_trust_pwd,
 				uint16 sec_chan);
+BOOL cli_nt_login_general(const char* srv_name, const char* myhostname,
+				const char *domain, const char *username, 
+				uint32 luid_low,
+				const char* general,
+				NET_ID_INFO_CTR *ctr,
+				NET_USER_INFO_3 *user_info3);
 BOOL cli_nt_login_interactive(const char* srv_name, const char* myhostname,
 				const char *domain, const char *username, 
 				uint32 luid_low,
@@ -2746,6 +2752,11 @@ BOOL make_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 				const char *user_name, const char *wksta_name,
 				char sess_key[16],
 				unsigned char lm_cypher[16], unsigned char nt_cypher[16]);
+BOOL make_id_info4(NET_ID_INFO_4 *id, const char *domain_name,
+				uint32 param_ctrl,
+				uint32 log_id_low, uint32 log_id_high,
+				const char *user_name, const char *wksta_name,
+				const char *general);
 BOOL make_id_info2(NET_ID_INFO_2 *id, const char *domain_name,
 				uint32 param_ctrl,
 				uint32 log_id_low, uint32 log_id_high,
@@ -4130,6 +4141,7 @@ BOOL check_oem_password(char *user,
 			uchar *ntdata, uchar *nthash,
                         struct smb_passwd **psmbpw, UNISTR2 *new_passwd);
 BOOL change_oem_password(struct smb_passwd *smbpw, UNISTR2 *new_passwd, BOOL override);
+BOOL update_smbpassword_file(char *user, char *password);
 
 /*The following definitions come from  smbd/close.c  */
 

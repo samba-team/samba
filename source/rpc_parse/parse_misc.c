@@ -779,6 +779,8 @@ creates a STRING2 structure.
 ********************************************************************/
 BOOL make_string2(STRING2 *str, const char *buf, int len)
 {
+	ZERO_STRUCTP(str);
+
 	/* set up string lengths. */
 	str->str_max_len = len;
 	str->undoc       = 0;

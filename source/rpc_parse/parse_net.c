@@ -765,6 +765,90 @@ static BOOL net_io_id_info1(char *desc,  NET_ID_INFO_1 *id, prs_struct *ps, int 
 }
 
 /*******************************************************************
+makes a NET_ID_INFO_4 structure.
+
+This is a network logon packet. The log_id parameters
+are what an NT server would generate for LUID once the
+user is logged on. I don't think we care about them.
+
+Note that this has no access to the NT and LM hashed passwords,
+so it forwards the challenge, and the NT and LM responses (24
+bytes each) over the secure channel to the Domain controller
+for it to say yea or nay. This is the preferred method of 
+checking for a logon as it doesn't export the password
+hashes to anyone who has compromised the secure channel. JRA.
+********************************************************************/
+
+BOOL make_id_info4(NET_ID_INFO_4 *id, const char *domain_name,
+				uint32 param_ctrl,
+				uint32 log_id_low, uint32 log_id_high,
+				const char *user_name, const char *wksta_name,
+				const char *general)
+{
+	int len_domain_name = strlen(domain_name);
+	int len_user_name   = strlen(user_name  );
+	int len_wksta_name  = strlen(wksta_name );
+ 	int len_general     = strlen(general);
+
+	if (id == NULL) return False;
+
+	DEBUG(5,("make_id_info4: %d\n", __LINE__));
+
+	id->ptr_id_info4 = 1;
+
+	make_uni_hdr(&(id->hdr_domain_name), len_domain_name);
+
+	id->param_ctrl = param_ctrl;
+	id->logon_id.low = log_id_low;
+	id->logon_id.high = log_id_high;
+
+	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  );
+	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name );
+	make_str_hdr(&(id->hdr_general    ), len_general, len_general, 1);
+
+	make_unistr2(&(id->uni_domain_name), domain_name, len_domain_name);
+	make_unistr2(&(id->uni_user_name  ), user_name  , len_user_name  );
+	make_unistr2(&(id->uni_wksta_name ), wksta_name , len_wksta_name );
+	make_string2(&(id->str_general    ), general    , len_general    );
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes an NET_ID_INFO_4 structure.
+********************************************************************/
+static BOOL net_io_id_info4(char *desc,  NET_ID_INFO_4 *id, prs_struct *ps, int depth)
+{
+	if (id == NULL) return False;
+
+	prs_debug(ps, depth, desc, "net_io_id_info4");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("ptr_id_info4", ps, depth, &(id->ptr_id_info4));
+
+	if (id->ptr_id_info4 != 0)
+	{
+		smb_io_unihdr("unihdr", &(id->hdr_domain_name), ps, depth);
+
+		prs_uint32("param_ctrl", ps, depth, &(id->param_ctrl));
+		smb_io_bigint("", &(id->logon_id), ps, depth);
+
+		smb_io_unihdr("hdr_user   ", &(id->hdr_user_name ), ps, depth);
+		smb_io_unihdr("hdr_wksta  ", &(id->hdr_wksta_name), ps, depth);
+		smb_io_strhdr("hdr_general", &(id->hdr_general   ), ps, depth);
+
+		smb_io_unistr2("uni_domain_name", &(id->uni_domain_name), id->hdr_domain_name .buffer, ps, depth);
+		smb_io_unistr2("uni_user_name  ", &(id->uni_user_name  ), id->hdr_user_name   .buffer, ps, depth);
+		smb_io_unistr2("uni_wksta_name ", &(id->uni_wksta_name ), id->hdr_wksta_name  .buffer, ps, depth);
+		smb_io_string2("str_general    ", &(id->str_general    ), id->hdr_general     .buffer, ps, depth);
+	}
+
+	return True;
+}
+
+/*******************************************************************
 makes a NET_ID_INFO_2 structure.
 
 This is a network logon packet. The log_id parameters
@@ -924,14 +1008,19 @@ static BOOL net_io_id_info_ctr(char *desc,  NET_ID_INFO_CTR *ctr, prs_struct *ps
 
 	switch (ctr->switch_value)
 	{
-		case 1:
+		case INTERACTIVE_LOGON_TYPE:
 		{
 			net_io_id_info1("", &(ctr->auth.id1), ps, depth);
 			break;
 		}
-		case 2:
+		case NETWORK_LOGON_TYPE:
 		{
 			net_io_id_info2("", &(ctr->auth.id2), ps, depth);
+			break;
+		}
+		case GENERAL_LOGON_TYPE:
+		{
+			net_io_id_info4("", &(ctr->auth.id4), ps, depth);
 			break;
 		}
 		default:

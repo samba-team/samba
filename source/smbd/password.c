@@ -56,42 +56,6 @@ void add_session_user(char *user)
 
 
 /****************************************************************************
-update the encrypted smbpasswd file from the plaintext username and password
-*****************************************************************************/
-static BOOL update_smbpassword_file(char *user, char *password)
-{
-	struct smb_passwd *smbpw;
-	UNISTR2 newpw;
-	BOOL ret;
-	
-	become_root(0);
-	smbpw = getsmbpwnam(user);
-	unbecome_root(0);
-
-	make_unistr2(&newpw, password, password != NULL ? strlen(password) : 0);
-
-	if(smbpw == NULL)
-	{
-		DEBUG(0,("getsmbpwnam returned NULL\n"));
-		return False;
-	}
- 
-	/* Here, the flag is one, because we want to ignore the
-           XXXXXXX'd out password */
-	ret = change_oem_password( smbpw, &newpw, True);
-	if (!ret)
-	{
-		DEBUG(3,("change_oem_password returned False\n"));
-	}
-
-	return ret;
-}
-
-
-
-
-
-/****************************************************************************
 check if a username/password pair is OK either via the system password
 database or the encrypted SMB password database
 return True if the password is correct, False otherwise
@@ -103,17 +67,20 @@ BOOL password_ok(char *orig_user, char *domain,
 				uchar user_sess_key[16])
 {
 	uchar last_chal[8];
+	BOOL cleartext = smb_apasslen != 24 && smb_ntpasslen == 0;
+	uchar *chal = NULL;
 
 	/*
 	 * SMB password check
 	 */
 
-	if ((smb_apasslen != 0 && smb_ntpasslen != 0) ||
+	if ((smb_apasslen != 0) ||
 	    (lp_encrypted_passwords() && smb_apasslen == 0 &&
 	     lp_null_passwords()))
 	{
 		/* check security = server */
-		if (check_server_security(orig_user, domain,
+		if (!cleartext &&
+		    check_server_security(orig_user, domain,
 					  smb_apasswd, smb_apasslen,
 					  smb_ntpasswd, smb_ntpasslen))
 		{
@@ -122,9 +89,13 @@ BOOL password_ok(char *orig_user, char *domain,
 		}
 
 		/* check security = user / domain */
-		if (last_challenge(last_chal) &&
+		if ((!cleartext) && last_challenge(last_chal))
+		{
+			chal = last_chal;
+		}
+		if ((cleartext || chal) &&
 		    check_domain_security(orig_user, domain,
-					  last_chal,
+					  chal,
 					  smb_apasswd, smb_apasslen,
 					  smb_ntpasswd, smb_ntpasslen,
 					  user_sess_key) == 0x0)
@@ -138,12 +109,14 @@ BOOL password_ok(char *orig_user, char *domain,
 	/*
 	 * unix password check
 	 */
-	if (pass_check(orig_user, smb_apasswd, smb_apasslen, pwd, 
-			  lp_update_encrypted() ? 
-			  update_smbpassword_file : NULL))
+
+	if (!lp_update_encrypted())
 	{
-		DEBUG(10,("password_ok: Unix auth succeeded\n"));
-		return True;
+		if (pass_check(orig_user, smb_apasswd, smb_apasslen, pwd, NULL))
+		{
+			DEBUG(10,("password_ok: Unix auth succeeded\n"));
+			return True;
+		}
 	}
 	return False;
 }

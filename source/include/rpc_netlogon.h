@@ -282,6 +282,24 @@ typedef struct net_r_srv_pwset_info
 
 } NET_R_SRV_PWSET;
 
+/* NET_ID_INFO_4 */
+typedef struct net_network_info_4
+{
+	uint32            ptr_id_info4;        /* pointer to id_info_2 */
+	UNIHDR            hdr_domain_name;     /* domain name unicode header */
+	uint32            param_ctrl;          /* param control (0x2) */
+	BIGINT            logon_id;            /* logon ID */
+	UNIHDR            hdr_user_name;       /* user name unicode header */
+	UNIHDR            hdr_wksta_name;      /* wksta name unicode header */
+	STRHDR            hdr_general;         /* general response */
+
+	UNISTR2           uni_domain_name;     /* domain name unicode string */
+	UNISTR2           uni_user_name;       /* user name unicode string */
+	UNISTR2           uni_wksta_name;      /* workgroup name unicode string */
+	STRING2           str_general;         /* general response */
+
+} NET_ID_INFO_4;
+
 /* NET_ID_INFO_2 */
 typedef struct net_network_info_2
 {
@@ -290,7 +308,7 @@ typedef struct net_network_info_2
 	uint32            param_ctrl;          /* param control (0x2) */
 	BIGINT            logon_id;            /* logon ID */
 	UNIHDR            hdr_user_name;       /* user name unicode header */
-	UNIHDR            hdr_wksta_name;      /* workstation name unicode header */
+	UNIHDR            hdr_wksta_name;      /* wksta name unicode header */
 	uint8             lm_chal[8];          /* lan manager 8 byte challenge */
 	STRHDR            hdr_nt_chal_resp;    /* nt challenge response */
 	STRHDR            hdr_lm_chal_resp;    /* lm challenge response */
@@ -311,7 +329,7 @@ typedef struct id_info_1
 	uint32            param_ctrl;          /* param control */
 	BIGINT            logon_id;            /* logon ID */
 	UNIHDR            hdr_user_name;       /* user name unicode header */
-	UNIHDR            hdr_wksta_name;      /* workstation name unicode header */
+	UNIHDR            hdr_wksta_name;      /* wksta name unicode header */
 	OWF_INFO          lm_owf;              /* LM OWF Password */
 	OWF_INFO          nt_owf;              /* NT OWF Password */
 	UNISTR2           uni_domain_name;     /* domain name unicode string */
@@ -321,7 +339,8 @@ typedef struct id_info_1
 } NET_ID_INFO_1;
 
 #define INTERACTIVE_LOGON_TYPE 1
-#define NET_LOGON_TYPE 2
+#define NETWORK_LOGON_TYPE 2
+#define GENERAL_LOGON_TYPE 4
 
 /* NET_ID_INFO_CTR */
 typedef struct net_id_info_ctr_info
@@ -331,7 +350,8 @@ typedef struct net_id_info_ctr_info
   union
   {
     NET_ID_INFO_1 id1; /* auth-level 1 - interactive user login */
-    NET_ID_INFO_2 id2; /* auth-level 2 - workstation referred login */
+    NET_ID_INFO_2 id2; /* auth-level 2 - network login */
+    NET_ID_INFO_4 id4; /* auth-level 4 - general login */
 
   } auth;
   

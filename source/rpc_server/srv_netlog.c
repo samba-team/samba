@@ -675,6 +675,59 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 /*************************************************************************
  net_login_network:
  *************************************************************************/
+static uint32 net_login_general(NET_ID_INFO_4 *id4,
+				struct dcinfo *dc,
+				char sess_key[16])
+{
+	fstring user;
+	fstring domain;
+	char *general;
+
+	int pw_len = id4->str_general.str_str_len;
+
+	unistr2_to_ascii(user  , &id4->uni_user_name, sizeof(user)-1);
+	unistr2_to_ascii(domain, &id4->uni_domain_name, sizeof(domain)-1);
+	general = id4->str_general.buffer;
+
+	DEBUG(5,("net_login_general: user:%s domain:%s", user, domain));
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("password:%s", general));
+#endif
+	DEBUG(5,("\n"));
+
+	if (pass_check(user, general, pw_len, NULL,
+	                    lp_update_encrypted() ?
+	                    update_smbpassword_file : NULL) ) 
+	{
+		unsigned char key[16];
+
+		memset(key, 0, 16);
+		memcpy(key, dc->sess_key, 8);
+
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("key:"));
+		dump_data(100, key, 16);
+
+		DEBUG(100,("user sess key:"));
+		dump_data(100, sess_key, 16);
+#endif
+
+		SamOEMhash((uchar *)sess_key, key, 0);
+
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("encrypt of user session key:"));
+		dump_data(100, sess_key, 16);
+#endif
+
+                  return 0x0;
+	}
+
+	return 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
+}
+
+/*************************************************************************
+ net_login_network:
+ *************************************************************************/
 static uint32 net_login_network(NET_ID_INFO_2 *id2,
 				struct sam_passwd *sam_pass,
 				struct dcinfo *dc,
@@ -781,12 +834,20 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 			DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", global_sam_name));
 			break;
 		}
-		case NET_LOGON_TYPE:
+		case NETWORK_LOGON_TYPE:
 		{
 			uni_samusr = &(q_l->sam_id.ctr->auth.id2.uni_user_name);
 			uni_domain        = &(q_l->sam_id.ctr->auth.id2.uni_domain_name);
 
 			DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", global_sam_name));
+			break;
+		}
+		case GENERAL_LOGON_TYPE:
+		{
+			uni_samusr = &(q_l->sam_id.ctr->auth.id4.uni_user_name);
+			uni_domain = &(q_l->sam_id.ctr->auth.id4.uni_domain_name);
+
+			DEBUG(3,("SAM Logon (General). Domain:[%s].  ", global_sam_name));
 			break;
 		}
 		default:
@@ -803,6 +864,32 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 
 	DEBUG(3,("User:[%s]\n", nt_username));
 
+	/*
+	 * IMPORTANT: do a General Login BEFORE the others,
+	 * because "update encrypted" may be enabled, which
+	 * will result in the smb password entry being added.
+	 *
+	 * calling general login AFTER the getsampwntname() is
+	 * not guaranteed to deliver.
+	 */
+
+	if (q_l->sam_id.logon_level == GENERAL_LOGON_TYPE)
+	{
+		/* general login.  cleartext password */
+		uint32 status = 0x0;
+		status = net_login_general(&q_l->sam_id.ctr->auth.id4, dc, sess_key);
+		enc_user_sess_key = sess_key;
+
+		if (status != 0x0)
+		{
+			return status;
+		}
+	}
+
+	/*
+	 * now obtain smb passwd entry, which MAY have just been
+	 * added by "update encrypted" in general login
+	 */
 	become_root(True);
 	sam_pass = getsam21pwntnam(nt_username);
 	unbecome_root(True);
@@ -859,11 +946,16 @@ static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
 				status = net_login_interactive(&q_l->sam_id.ctr->auth.id1, sam_pass, dc);
 				break;
 			}
-			case NET_LOGON_TYPE:
+			case NETWORK_LOGON_TYPE:
 			{
 				/* network login.  lm challenge and 24 byte responses */
 				status = net_login_network(&q_l->sam_id.ctr->auth.id2, sam_pass, dc, sess_key);
 				enc_user_sess_key = sess_key;
+				break;
+			}
+			case GENERAL_LOGON_TYPE:
+			{
+				/* general login type ALREADY been checked */
 				break;
 			}
 		}

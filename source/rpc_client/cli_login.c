@@ -106,6 +106,48 @@ BOOL cli_nt_srv_pwset(const char* srv_name, const char* myhostname,
 }
 
 /****************************************************************************
+NT login - general.
+*NEVER* use this code. This method of doing a logon (sending the cleartext
+password equivalents, protected by the session key) is inherently insecure
+given the current design of the NT Domain system. JRA.
+ ****************************************************************************/
+BOOL cli_nt_login_general(const char* srv_name, const char* myhostname,
+				const char *domain, const char *username, 
+				uint32 luid_low,
+				const char* general,
+				NET_ID_INFO_CTR *ctr,
+				NET_USER_INFO_3 *user_info3)
+{
+	uint8 sess_key[16];
+
+	DEBUG(5,("cli_nt_login_general: %d\n", __LINE__));
+
+#ifdef DEBUG_PASSWORD
+
+	DEBUG(100,("\"general\" user password: "));
+	dump_data(100, general, strlen(general));
+#endif
+
+	if (!cli_get_sesskey_srv(srv_name, sess_key))
+	{
+		DEBUG(1,("could not obtain session key for %s\n", srv_name));
+		return False;
+	}
+
+	/* indicate an "general" login */
+	ctr->switch_value = GENERAL_LOGON_TYPE;
+
+	/* Create the structure needed for SAM logon. */
+	make_id_info4(&ctr->auth.id4, domain, 0, 
+	                            luid_low, 0,
+	                            username, myhostname,
+	                            general);
+
+	/* Send client sam-logon request - update credentials on success. */
+	return cli_net_sam_logon(srv_name, myhostname, ctr, user_info3);
+}
+
+/****************************************************************************
 NT login - interactive.
 *NEVER* use this code. This method of doing a logon (sending the cleartext
 password equivalents, protected by the session key) is inherently insecure
@@ -189,7 +231,7 @@ BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
 	}
 
 	/* indicate a "network" login */
-	ctr->switch_value = NET_LOGON_TYPE;
+	ctr->switch_value = NETWORK_LOGON_TYPE;
 
 	/* Create the structure needed for SAM logon. */
 	make_id_info2(&ctr->auth.id2, domain, 0, 

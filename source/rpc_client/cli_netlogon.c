@@ -378,7 +378,7 @@ BOOL cli_net_srv_pwset(const char* srv_name,
 }
 
 /***************************************************************************
-LSA SAM Logon - interactive or network.
+LSA SAM Logon.
 ****************************************************************************/
 
 uint32 cli_net_sam_logon(const char* srv_name, const char* myhostname,

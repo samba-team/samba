@@ -51,6 +51,7 @@ static uint32 domain_client_validate( char *user, char *domain,
 	uint32 status;
 	fstring trust_acct;
 	fstring srv_name;
+	BOOL cleartext = smb_apasslen != 24 && smb_ntpasslen == 0;
 
 	fstrcpy(trust_acct, acct_name);
 	fstrcat(trust_acct, "$");
@@ -98,21 +99,30 @@ static uint32 domain_client_validate( char *user, char *domain,
 	                      trust_passwd, acct_type);
 	if (status != 0x0)
 	{
-		DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
-		%s.\n", srv_name));
+		DEBUG(0,("domain_client_validate: credentials failed (%s)\n",
+		          srv_name));
 		return status;
 	}
 
 	/* We really don't care what LUID we give the user. */
 	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
 
-	if (challenge == NULL)
+	if (challenge == NULL && !cleartext)
 	{
 		status = cli_nt_login_interactive(srv_name,
 			global_myname, 
 	                domain, user,
 	                smb_uid_low, 
 			smb_apasswd, smb_ntpasswd, 
+			&ctr, &info3);
+	}
+	else if (challenge == NULL)
+	{
+		status = cli_nt_login_general(srv_name,
+			global_myname, 
+	                domain, user,
+	                smb_uid_low, 
+			smb_apasswd, 
 			&ctr, &info3);
 	}
 	else
