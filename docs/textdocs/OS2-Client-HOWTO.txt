@@ -1,5 +1,5 @@
 !==
-!== OS2-Client-HOWTO.txt for Samba release TNG-prealpha 09 Mar 2000
+!== OS2-Client-HOWTO.txt for Samba release TNG-prealpha 11 Mar 2000
 !==
 
 

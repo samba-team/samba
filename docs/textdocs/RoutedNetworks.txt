@@ -1,5 +1,5 @@
 !==
-!== RoutedNetworks.txt for Samba release TNG-prealpha 09 Mar 2000
+!== RoutedNetworks.txt for Samba release TNG-prealpha 11 Mar 2000
 !==
 #NOFNR Flag in LMHosts to Communicate Across Routers
 

@@ -1,5 +1,5 @@
 !==
-!== Faxing.txt for Samba release TNG-prealpha 09 Mar 2000
+!== Faxing.txt for Samba release TNG-prealpha 11 Mar 2000
 !==
 Contributor:    Gerhard Zuber <zuber@berlin.snafu.de>
 Date:			August 5th 1997.
