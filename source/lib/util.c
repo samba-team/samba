@@ -2665,7 +2665,7 @@ char *align4(char *q, char *base)
 	int mod = PTR_DIFF(q, base) & 3;
 	if (mod != 0)
 	{
-		q += mod;
+		q += 4-mod;
 	}
 	return q;
 }
