@@ -342,7 +342,7 @@ otp_print_stddict (OtpKey key, char *str)
   str = add_word (str, ((key[4] & 0x7F) << 4) | (key[5] >> 4));
   str = add_word (str, ((key[5] & 0x0F) << 7) | (key[6] >> 1));
   str = add_word (str, ((key[6] & 0x01) << 10) | (key[7] << 2) | sum);
-  *str = '\0';
+  *--str = '\0';
 }
 
 void
