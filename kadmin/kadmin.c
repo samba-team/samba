@@ -91,7 +91,7 @@ static SL_cmd commands[] = {
     { "get_entry",	get_entry, 	"get_entry principal"},
     { "rename",		rename_entry, 	"rename source target"},
     { "modify",		mod_entry, 	"modify principal" },
-    { "privileges",	get_privs},
+    { "privileges",	get_privs,	"privileges" },
     { "list_principals",list_princs, 	"list expression..." },
     { "help",		help, "help"},
     { "?"},
