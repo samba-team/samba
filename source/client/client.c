@@ -1131,6 +1131,66 @@ static void cmd_quit(struct cli_state *cli, struct client_info *info)
 /****************************************************************************
 print browse connection on a host
 ****************************************************************************/
+static void print_server(char *sname, uint32 type, char *comment)
+{
+	fstring typestr;
+	*typestr=0;
+
+	if (type == SV_TYPE_ALL)
+	{
+		strcpy(typestr, "All");
+	}
+	else
+	{
+		int i;
+		typestr[0] = 0;
+		for (i = 0; i < 32; i++)
+		{
+			if (IS_BIT_SET(type, 1 << i)
+			{
+				switch (1 << i)
+				{
+					case SV_TYPE_WORKSTATION      : strcat(typestr, "Wk " ); break;
+					case SV_TYPE_SERVER           : strcat(typestr, "Sv " ); break;
+					case SV_TYPE_SQLSERVER        : strcat(typestr, "Sql "); break;
+					case SV_TYPE_DOMAIN_CTRL      : strcat(typestr, "PDC "); break;
+					case SV_TYPE_DOMAIN_BAKCTRL   : strcat(typestr, "BDC "); break;
+					case SV_TYPE_TIME_SOURCE      : strcat(typestr, "Tim "); break;
+					case SV_TYPE_AFP              : strcat(typestr, "AFP "); break;
+					case SV_TYPE_NOVELL           : strcat(typestr, "Nov "); break;
+					case SV_TYPE_DOMAIN_MEMBER    : strcat(typestr, "Dom "); break;
+					case SV_TYPE_PRINTQ_SERVER    : strcat(typestr, "PrQ "); break;
+					case SV_TYPE_DIALIN_SERVER    : strcat(typestr, "Din "); break;
+					case SV_TYPE_SERVER_UNIX      : strcat(typestr, "Unx "); break;
+					case SV_TYPE_NT               : strcat(typestr, "NT " ); break;
+					case SV_TYPE_WFW              : strcat(typestr, "Wfw "); break;
+					case SV_TYPE_SERVER_MFPN      : strcat(typestr, "Mfp "); break;
+					case SV_TYPE_SERVER_NT        : strcat(typestr, "SNT "); break;
+					case SV_TYPE_POTENTIAL_BROWSER: strcat(typestr, "PtB "); break;
+					case SV_TYPE_BACKUP_BROWSER   : strcat(typestr, "BMB "); break;
+					case SV_TYPE_MASTER_BROWSER   : strcat(typestr, "LMB "); break;
+					case SV_TYPE_DOMAIN_MASTER    : strcat(typestr, "DMB "); break;
+					case SV_TYPE_SERVER_OSF       : strcat(typestr, "OSF "); break;
+					case SV_TYPE_SERVER_VMS       : strcat(typestr, "VMS "); break;
+					case SV_TYPE_WIN95_PLUS       : strcat(typestr, "W95 "); break;
+					case SV_TYPE_ALTERNATE_XPORT  : strcat(typestr, "Xpt "); break;
+					case SV_TYPE_LOCAL_LIST_ONLY  : strcat(typestr, "Dom "); break;
+					case SV_TYPE_DOMAIN_ENUM      : strcat(typestr, "Loc "); break;
+				}
+			}
+		}
+		i = strlen(typestr)-1;
+		if (typestr[i] == ' ') typestr[i] = 0;
+
+	}
+
+	printf("\t%-15.15s%-16s %s\n", sname, typestr, comment);
+}
+
+
+/****************************************************************************
+print browse connection on a host
+****************************************************************************/
 static void print_share(char *sname, uint32 type, char *comment)
 {
 	fstring typestr;
@@ -1152,7 +1212,7 @@ static void print_share(char *sname, uint32 type, char *comment)
 /****************************************************************************
 try and browse available connections on a host
 ****************************************************************************/
-static BOOL browse_host(struct cli_state *cli, BOOL sort)
+static void browse_host(struct cli_state *cli, char *workgroup, BOOL sort)
 {
 	int count = 0;
 	BOOL long_share_name = False;
@@ -1172,7 +1232,17 @@ static BOOL browse_host(struct cli_state *cli, BOOL sort)
 		printf("\nNOTE: There were share names longer than 8 chars.\nOn older clients these may not be accessible or may give browsing errors\n");
 	}
 
-	return count > 0;
+	printf("\n");
+	printf("\tServer            Type               Comment\n");
+	printf("\t------            ----               -------\n");
+	
+	cli_NetServerEnum(cli, workgroup, SV_TYPE_DOMAIN_ENUM, print_server);
+
+	printf("\n");
+	printf("\tWorkgroup         Type               Master\n");
+	printf("\t---------         ----               -------\n");
+
+	cli_NetServerEnum(cli, workgroup, SV_TYPE_ALL, print_server);
 }
 
 
@@ -1881,24 +1951,20 @@ static void usage(char *pname)
 
 	if (*query_host && !nt_domain_logon)
 	{
-		sprintf(service,"\\\\%s\\IPC$",query_host);
-		strcpy(svc_type, "IPC");
 		strupper(service);
 
-		if (!cli_establish_connection(&smb_cli, desthost, name_type, &dest_ip,
+		if (!cli_establish_connection(&smb_cli, query_host, name_type, &dest_ip,
 		     myhostname,
 		     got_pass ? NULL : "Enter Password:",
 		     username, password, workgroup,
-		     service, svc_type,
+		     "IPC$", "IPC",
 		     False, True, False))
 		{
 			cli_shutdown(&smb_cli);
 			return 1;
 		}
 
-		browse_host(&smb_cli, True);
-		cli_NetServerEnum(&smb_cli, workgroup, SV_TYPE_DOMAIN_ENUM, NULL);
-		cli_NetServerEnum(&smb_cli, workgroup, SV_TYPE_ALL, NULL);
+		browse_host(&smb_cli, workgroup, True);
 
 		cli_shutdown(&smb_cli);
 

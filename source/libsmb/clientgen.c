@@ -483,8 +483,8 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	
 	if (cli_api(cli, 
 		    PTR_DIFF(p,param), /* param count */
-		    8, /*data count */
-		    0, /* mprcount */
+		    0, /*data count */
+		    8, /* mprcount */
 		    BUFFER_SIZE, /* mdrcount */
 		    &rprcnt,&rdrcnt,
 		    param, NULL, 
@@ -504,7 +504,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 
 				stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
 
-				fn(sname, stype, cmnt);
+				if (fn) fn(sname, stype, cmnt);
 			}
 		}
 	}
