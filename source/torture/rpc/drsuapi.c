@@ -755,6 +755,65 @@ static BOOL test_DsReplicaGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			struct DsPrivate *priv)
+{
+	NTSTATUS status;
+	BOOL ret = True;
+	int i;
+	struct drsuapi_DsReplicaSync r;
+	struct drsuapi_DsReplicaSyncRequest1Info info1;
+
+	struct {
+		int32 level;
+	} array[] = {
+		{	
+			1
+		}
+	};
+
+	r.in.bind_handle	= &priv->bind_handle;
+
+	for (i=0; i < ARRAY_SIZE(array); i++) {
+		printf("testing DsReplicaGetInfo level %d\n",
+			array[i].level);
+
+		r.in.level = array[i].level;
+		switch(r.in.level) {
+		case 1: {
+			uint16_t string[] = { 0x0064, 0x0063, 0x003d, 0x0073, 0x0039, 0x0000};
+			ZERO_STRUCT(r.in.req.req1);
+			r.in.req.req1.info			= &info1;
+			r.in.req.req1.info->unknown1		= 32;
+			r.in.req.req1.info->unknown2		= 120;
+			ZERO_STRUCT(r.in.req.req1.info->guid1);
+			ZERO_ARRAY(r.in.req.req1.info->unknown3);
+			r.in.req.req1.info->length		= ARRAY_SIZE(string)-1;
+			r.in.req.req1.info->nc_dn		= string;/*priv->domain_obj_dn*/;
+			r.in.req.req1.guid1			= priv->dcinfo.ntds_guid;
+			r.in.req.req1.string1			= NULL;
+			r.in.req.req1.unknown1			= 16;
+			break;
+		}
+		}
+
+		status = dcerpc_drsuapi_DsReplicaSync(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			const char *errstr = nt_errstr(status);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+				errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+			}
+			printf("dcerpc_drsuapi_DsReplicaSync failed - %s\n", errstr);
+			ret = False;
+		} else if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("DsReplicaSync failed - %s\n", win_errstr(r.out.result));
+			ret = False;
+		}
+	}
+
+	return ret;
+}
+
 static BOOL test_DsUnbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			struct DsPrivate *priv)
 {
@@ -822,6 +881,10 @@ BOOL torture_rpc_drsuapi(void)
 	}
 
 	if (!test_DsReplicaGetInfo(p, mem_ctx, &priv)) {
+		ret = False;
+	}
+
+	if (!test_DsReplicaSync(p, mem_ctx, &priv)) {
 		ret = False;
 	}
 
