@@ -31,7 +31,7 @@ enum SID_NAME_USE
 {
 	SID_NAME_USER    = 1, /* user */
 	SID_NAME_DOM_GRP = 2, /* domain group */
-	SID_NAME_DOMAIN  = 3, /* domain: don't know what this is */
+	SID_NAME_DOMAIN  = 3, /* domain sid */
 	SID_NAME_ALIAS   = 4, /* local group */
 	SID_NAME_WKN_GRP = 5, /* well-known group */
 	SID_NAME_DELETED = 6, /* deleted account: needed for c2 rating */
