@@ -719,7 +719,7 @@ NTSTATUS ndr_check_array_length(struct ndr_pull *ndr, void *p, uint32_t length)
   pull a relative object - stage1
   called during SCALARS processing
 */
-NTSTATUS ndr_pull_relative1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset)
+NTSTATUS ndr_pull_relative_ptr1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset)
 {
 	if (ndr->flags & LIBNDR_FLAG_RELATIVE_CURRENT) {
 		return ndr_token_store(ndr, &ndr->relative_list, p, 
@@ -733,7 +733,7 @@ NTSTATUS ndr_pull_relative1(struct ndr_pull *ndr, const void *p, uint32_t rel_of
   pull a relative object - stage2
   called during BUFFERS processing
 */
-NTSTATUS ndr_pull_relative2(struct ndr_pull *ndr, const void *p)
+NTSTATUS ndr_pull_relative_ptr2(struct ndr_pull *ndr, const void *p)
 {
 	uint32_t rel_offset;
 	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &rel_offset));
@@ -744,7 +744,7 @@ NTSTATUS ndr_pull_relative2(struct ndr_pull *ndr, const void *p)
   push a relative object - stage1
   this is called during SCALARS processing
 */
-NTSTATUS ndr_push_relative1(struct ndr_push *ndr, const void *p)
+NTSTATUS ndr_push_relative_ptr1(struct ndr_push *ndr, const void *p)
 {
 	if (p == NULL) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
@@ -759,7 +759,7 @@ NTSTATUS ndr_push_relative1(struct ndr_push *ndr, const void *p)
   push a relative object - stage2
   this is called during buffers processing
 */
-NTSTATUS ndr_push_relative2(struct ndr_push *ndr, const void *p)
+NTSTATUS ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p)
 {
 	struct ndr_push_save save;
 	if (p == NULL) {
