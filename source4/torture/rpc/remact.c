@@ -49,22 +49,22 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
-		fprintf(stderr, "RemoteActivation: %s\n", nt_errstr(status));
+		printf("RemoteActivation: %s\n", nt_errstr(status));
 		return 0;
 	}
 
 	if(!W_ERROR_IS_OK(r.out.result)) {
-		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(r.out.result));
+		printf("RemoteActivation: %s\n", win_errstr(r.out.result));
 		return 0;
 	}
 
 	if(!W_ERROR_IS_OK(r.out.hr)) {
-		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(r.out.hr));
+		printf("RemoteActivation: %s\n", win_errstr(r.out.hr));
 		return 0;
 	}
 
 	if(!W_ERROR_IS_OK(r.out.results[0])) {
-		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(r.out.results[0]));
+		printf("RemoteActivation: %s\n", win_errstr(r.out.results[0]));
 		return 0;
 	}
 
@@ -74,22 +74,22 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
-		fprintf(stderr, "RemoteActivation(GetClassObject): %s\n", nt_errstr(status));
+		printf("RemoteActivation(GetClassObject): %s\n", nt_errstr(status));
 		return 0;
 	}
 
 	if(!W_ERROR_IS_OK(r.out.result)) {
-		fprintf(stderr, "RemoteActivation(GetClassObject): %s\n", win_errstr(r.out.result));
+		printf("RemoteActivation(GetClassObject): %s\n", win_errstr(r.out.result));
 		return 0;
 	}
 
 	if(!W_ERROR_IS_OK(r.out.hr)) {
-		fprintf(stderr, "RemoteActivation(GetClassObject): %s\n", win_errstr(r.out.hr));
+		printf("RemoteActivation(GetClassObject): %s\n", win_errstr(r.out.hr));
 		return 0;
 	}
 
 	if(!W_ERROR_IS_OK(r.out.results[0])) {
-		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(r.out.results[0]));
+		printf("RemoteActivation: %s\n", win_errstr(r.out.results[0]));
 		return 0;
 	}
 
