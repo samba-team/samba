@@ -1,4 +1,4 @@
-##########################################################################
+#########################################################################
 # Makefile.in for Samba - rewritten for autoconf support
 # Copyright Andrew Tridgell 1992-1998
 # Copyright (C) 2001 by Martin Pool <mbp@samba.org>
@@ -177,6 +177,8 @@ LIBMSRPC_SERVER_OBJ = libsmb/trust_passwd.o
 
 LIBMSRPC_PICOBJ = $(LIBMSRPC_OBJ:.o=.po)
 
+REGISTRY_OBJ = registry/reg_frontend.o
+
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o \
                  rpc_server/srv_pipe_hnd.o rpc_server/srv_reg.o rpc_server/srv_reg_nt.o \
@@ -184,7 +186,7 @@ RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
 		 rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
                  rpc_server/srv_util.o rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o \
                  rpc_server/srv_pipe.o rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o \
-                 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o
+                 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o $(REGISTRY_OBJ)
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -261,7 +263,7 @@ SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
 	   $(LIB_OBJ) $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) \
 	   $(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ) \
 	   $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
-	   $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ)
+	   $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) 
 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
