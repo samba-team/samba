@@ -64,7 +64,7 @@ ANN_GetBackupListReq to. the protocol is a little dicey.
 
 - ANN_BecomeBackup            
 
-this is a message sent by a primary domain controller to a
+this is a message sent by a master browser to a
 potential master browser, indicating that it should become
 a backup master browser for the workgroup it is a member
 of. samba does not respond at present to such datagrams,
@@ -73,23 +73,35 @@ and it also sends out such datagrams for the wrong reasons
 
 - ANN_ResetBrowserState       
 
-this datagram is sent by a primary domain controller (or
-anyone else, for that matter) for trouble-shooting purposes.
+this datagram is sent for trouble-shooting purposes.
 it asks a browser to clear out its server lists, or to
 stop becoming a master browser altogether. NT/AS and
 samba do not implement this latter option.
 
 - ANN_MasterAnnouncement      
 
-this datagram is sent by a master browser to a primary domain
-controller. it is a way to ensure that master browsers are
-kept in sync with a primary domain controller across a wide
-area network. on receipt of an ANN_MasterAnnouncement we
-should sync browse lists with the sender.
+this datagram is sent by a master browser to a domain master
+browser. it is a way to ensure that master browsers are kept in sync
+with a domain master browser across a wide area network. on
+receipt of an ANN_MasterAnnouncement we should sync browse lists with
+the sender.
 
 (i never got the hang of this one when i was experimenting.
 i forget exactly what it's for, and i never fully worked
 out how to coax a server to send it. :-)
+
+NOTE FROM TRIDGE: The reason you didn't work out how to coax a server
+into sending it is that you can't (or shouldn't try!). Basically these
+"master announce" datagrams are the way that separate netbios subnets
+are linked together to form a complete browse net. The way it works is
+that the local master decides it is going to inform the domain master
+of its presence, then sends this master announce to the domain
+master. The domain master then syncs with the local master using a
+"local only" sync. The whole transaction is initiated by the local
+master, not the domain master, so the domain master should not do any
+of this if it does not first receive a "master announcement". The
+local domain masters need to be configured to know the IP address of
+the domain master.
 
 
 /*************************************************************************
@@ -155,7 +167,7 @@ code actually implemented.
   process_send_backup_list()
   *************************************************************************/
 
-this function is part of samba's primary domain controller functionality.
+this function is part of samba's domain master browser functionality.
 
 it is responsible for giving master browsers a list of other browsers
 that maintain backup lists of servers for that master browser's workgroup.
@@ -184,6 +196,41 @@ the list is then sent to the host that requested it by sending an
 ANN_GetBackupListResp datagram to this host.
 
 
+NOTE FROM TRIDGE: The "backup list" stuff is only relevant to 
+local subnets. It has nothing to do with PDCs or domain masters. Its
+function is twofold:
+
+1) spread the browsing load over multiple servers so one server
+doesn't get overloaded with browse requests
+2) make sure the database doesn't get lost completely if the master
+goes down
+
+To accomplish this a few things are supposed to be done:
+
+- the master browser maintains a list of "backup browsers".  
+
+- backup browsers are are machines that are just like ordinary servers
+but also maintain a browse list and respond to "NetServerEnum"
+requests
+
+- when a server initially announces itself to the master it may set
+its "maintain browse list" flag to auto. 
+
+- when a master browser sees a server announcement with "auto" set it
+may send a "become backup" to that server telling it to become a
+backup.
+
+- the master has a simple algorithm to determine how many backups it wants
+given the number of hosts on the net
+
+- when a client wishes to get a browse list it asks the master for a
+backup list. The master sends it the current list of backup browsers,
+including itself. The client caches this list. The client then sends
+the NetServerEnum to a random member of this list easch time it wants
+to browse. This spreads the load.
+
+
+
 /*************************************************************************
   process_rcv_backup_list()
   *************************************************************************/
@@ -203,8 +250,8 @@ the use of a NAME_QUERY_SRV_CHK 'state'.
   *************************************************************************/
 
 this function is responsible for synchronising browse lists with a
-master browser that contacts samba in its capacity as a primary
-domain controller.
+master browser that contacts samba in its capacity as a domain master
+browser.
 
 the function add_browser_entry() is used to add the server that
 contacts us to our list of browser to sync browse lists with at
@@ -262,7 +309,7 @@ a datagram that has been received.
   tell_become_backup()
   *************************************************************************/
 
-this function is part of samba's primary domain controller capabilities.
+this function is part of samba's domain master browser capabilities.
 it is responsible for finding appropriate servers to tell to become a
 backup master browser for the domain that samba controls.
 
