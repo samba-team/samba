@@ -4181,7 +4181,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
 	*out_value_len = (uint32)dos_PutUniCode((char *)*out_value, value, in_value_len, True);
-#if 1 /* JRATEST */
+#if 0 /* JRATEST */
 	*out_max_value_len=(*out_value_len/sizeof(uint16));
 #endif /* JRATEST */
 
@@ -4195,7 +4195,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 	}
 	memcpy(*data_out, data, (size_t)data_len);
 	*out_data_len=data_len;
-#if 1 /* JRATEST */
+#if 0 /* JRATEST */
 	*out_max_data_len=data_len;
 #endif /* JRATEST */
 
