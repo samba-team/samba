@@ -544,7 +544,7 @@ static canon_ace *canonicalise_acl( SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf)
 
 		dbgtext("canonicalize_acl: processed acl %s\n", acl_text == NULL ? "NULL" : acl_text );
 		if (acl_text)
-			sys_acl_free(acl_text);
+			sys_acl_free_text(acl_text);
 	}
 
 	return list_head;
@@ -688,9 +688,9 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
   done:
 
 	if (posix_acl)	
-		sys_acl_free(posix_acl);
+		sys_acl_free_acl(posix_acl);
 	if (dir_acl)
-		sys_acl_free(dir_acl);
+		sys_acl_free_acl(dir_acl);
 	if (file_ace)
 		free_canon_ace_list(file_ace);
 	if (dir_ace)

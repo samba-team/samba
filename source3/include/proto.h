@@ -17,9 +17,6 @@ void cmd_tar(void);
 int process_tar(void);
 int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind);
 
-/*The following definitions come from  groupdb/mapping.c  */
-
-
 /*The following definitions come from  lib/access.c  */
 
 BOOL allow_access(char *deny_list,char *allow_list,
@@ -250,22 +247,24 @@ int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
 void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
 SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
 SMB_ACL_T sys_acl_get_fd(int fd);
-int sys_acl_free( void *obj_p);
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
 int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen);
+int sys_acl_free_text(char *text);
+int sys_acl_free_acl(SMB_ACL_T the_acl) ;
 int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
 int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
 int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
 void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
 SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
 SMB_ACL_T sys_acl_get_fd(int fd);
-int sys_acl_free( void *obj_p);
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
 int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen);
+int sys_acl_free_text(char *text);
+int sys_acl_free_acl(SMB_ACL_T the_acl) ;
 
 /*The following definitions come from  lib/system.c  */
 
@@ -668,6 +667,9 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *hnd,
 uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
 			    int num_names, char **names, DOM_SID **sids,
 			    uint32 **types, int *num_sids);
+uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *hnd, 
+				 uint16 info_class, fstring domain_name, 
+				 DOM_SID * domain_sid);
 
 /*The following definitions come from  libsmb/cliconnect.c  */
 

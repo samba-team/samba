@@ -36,7 +36,6 @@ extern int DEBUGLEVEL;
  void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d)
  SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
  SMB_ACL_T sys_acl_get_fd(int fd)
- int sys_acl_free( void *obj_p)
  int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
  int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
  char *sys_acl_to_text( SMB_ACL_T acl, ssize_t *plen)
@@ -45,6 +44,18 @@ extern int DEBUGLEVEL;
  More POSIX braindamage.
 
  int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
+
+ The generic POSIX free is the following call. We split this into
+ several different free functions as we may need to add tag info
+ to structures when emulating the POSIX interface.
+
+ int sys_acl_free( void *obj_p)
+
+ The calls we actually use are :
+
+ int sys_acl_free_text(char *text) - free acl_to_text
+ int sys_acl_free_acl(SMB_ACL_T posix_acl)
+
 */
 
 #if defined(HAVE_POSIX_ACLS)
@@ -81,11 +92,6 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 	return acl_get_fd(fd);
 }
 
-int sys_acl_free( void *obj_p)
-{
-	return acl_free(obj_p);
-}
-
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset)
 {
 	return acl_clear_perms(permset);
@@ -104,6 +110,16 @@ int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen)
 {
 	return acl_to_text( the_acl, plen);
+}
+
+int sys_acl_free_text(char *text)
+{
+	return acl_free(text);
+}
+
+int sys_acl_free_acl(SMB_ACL_T the_acl) 
+{
+	return acl_free(the_acl);
 }
 
 #elif defined(HAVE_SOLARIS_ACLS)
@@ -142,11 +158,6 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 	return (SMB_ACL_T)NULL;
 }
 
-int sys_acl_free( void *obj_p)
-{
-	return -1;
-}
-
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset)
 {
 	return -1;
@@ -165,5 +176,15 @@ int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen)
 {
 	return NULL;
+}
+
+int sys_acl_free_text(char *text)
+{
+	return -1;
+}
+
+int sys_acl_free_acl(SMB_ACL_T the_acl) 
+{
+	return -1;
 }
 #endif /* No ACLs. */
