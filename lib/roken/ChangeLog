@@ -1,3 +1,7 @@
+2004-02-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* getarg.c (add_string): catch error from realloc
+	
 2004-02-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* roken-common.h: add simple_execve_timed
