@@ -1571,6 +1571,12 @@ BOOL domain_client_validate( char *user, char *domain,
 	  return False;
   }
 
+  /* Test if machine password is expired and need to be changed */
+  if (time(NULL) > last_change_time + lp_machine_password_timeout())
+  {
+	  global_machine_password_needs_changing = True;
+  }
+
   /*
    * At this point, smb_apasswd points to the lanman response to
    * the challenge in local_challenge, and smb_ntpasswd points to
