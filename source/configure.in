@@ -84,6 +84,13 @@ esac
 
 AC_VALIDATE_CACHE_SYSTEM_TYPE
 
+DYNEXP=
+
+# I'm sure gcc supports -rdynamic
+if test "$ac_cv_prog_gcc" = yes; then
+    DYNEXP="-rdynamic"
+fi
+
 #
 # Config CPPFLAG settings for strange OS's that must be set
 # before other tests.
@@ -91,6 +98,7 @@ AC_VALIDATE_CACHE_SYSTEM_TYPE
 case "$host_os" in
 # Try to work out if this is the native HPUX compiler that uses the -Ae flag.
     *hpux*)
+    
       AC_PROG_CC_FLAG(Ae)
       # mmap on HPUX is completely broken...
       AC_DEFINE(MMAP_BLACKLIST)
@@ -112,6 +120,7 @@ case "$host_os" in
 		   		AC_DEFINE(USE_BOTH_CRYPT_CALLS)
 				;;
       esac
+      DYNEXP="-Wl,-E"
       ;;
 
 #
@@ -157,6 +166,7 @@ case "$host_os" in
 						;;
 				esac
 			else
+                DYNEXP="-dc -dp"
 				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 			fi
 			;;
@@ -342,7 +352,7 @@ if test x"$ac_cv_lib_cups_httpConnect" = x"yes"; then
 fi
 
 ############################################
-# we need libdl for PAM and the new VFS code
+# we need libdl for PAM, the password database plugins and the new VFS code
 AC_CHECK_LIB(dl, dlopen, [LIBS="$LIBS -ldl";
 	AC_DEFINE(HAVE_LIBDL)])
 
@@ -700,10 +710,12 @@ case "$host_os" in
 		*linux*)   AC_DEFINE(LINUX)
 			BLDSHARED="true"
 			LDSHFLAGS="-shared" 
+            DYNEXP="-Wl,--export-dynamic"
 			PICFLAG="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
-		*solaris*) AC_DEFINE(SUNOS5)
+		*solaris*) 
+        AC_DEFINE(SUNOS5)
 			BLDSHARED="true"
 			LDSHFLAGS="-h \$@ -G"
 			if test "${ac_cv_prog_CC}" = "gcc"; then
@@ -716,6 +728,7 @@ case "$host_os" in
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 		*sunos*) AC_DEFINE(SUNOS4)
+#            WL="-Qoption ld "
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-h,\$@ -G"
 			PICFLAG="-KPIC"   # Is this correct for SunOS
@@ -755,15 +768,20 @@ case "$host_os" in
 				LDSHFLAGS="-b -z +h \$@"
 				PICFLAG="+z"
 			fi
+            DYNEXP="-Wl,-E"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192)
 		;;
 		*qnx*) AC_DEFINE(QNX);;
 		*osf*) AC_DEFINE(OSF1)
+            WL="-Wl,"
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-soname,\$@ -shared"
 			PICFLAG="-fPIC"
 		;;
-		*sco*) AC_DEFINE(SCO);;
+		*sco*) 
+        DYNEXP="-Wl,-Bexport"
+        AC_DEFINE(SCO)
+        ;;
 		*unixware*) AC_DEFINE(UNIXWARE)
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-soname,\$@ -shared"
@@ -777,17 +795,24 @@ case "$host_os" in
 									AC_DEFINE(HAVE_MEMSET)
 								fi
 								LDSHFLAGS="-G"
+                                DYNEXP="-Bexport"
 				;;
-				*mips-sni-sysv4*) AC_DEFINE(RELIANTUNIX);;
+				*mips-sni-sysv4*) 
+                    AC_DEFINE(RELIANTUNIX)
+                    WL="-LD"
+                    ;;
 			esac
 			;;
+
 		*sysv5*)
+            WL="-Wl,"
 			if [ test "$GCC" != yes ]; then
 				AC_DEFINE(HAVE_MEMSET)
 			fi
 			LDSHFLAGS="-G"
 			;;
 esac
+AC_SUBST(DYNEXP)
 AC_MSG_RESULT($BLDSHARED)
 AC_MSG_CHECKING([linker flags for shared libraries])
 AC_MSG_RESULT([$LDSHFLAGS])

@@ -82,8 +82,11 @@ typedef struct pdb_methods
 
 } PDB_METHODS;
 
+typedef NTSTATUS (*pdb_init_function)(struct pdb_context *, 
+			 struct pdb_methods **, 
+			 const char *);
 
-struct pdb_init_function {
+struct pdb_init_function_entry {
 	char *name;
 	/* Function to create a member of the authmethods list */
 	NTSTATUS (*init)(struct pdb_context *pdb_context, 
