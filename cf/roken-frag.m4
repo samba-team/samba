@@ -91,6 +91,7 @@ AC_CHECK_HEADERS([\
 	userconf.h				\
 	usersec.h				\
 	util.h					\
+	vis.h					\
 	winsock.h				\
 ])
 	
@@ -98,6 +99,7 @@ AC_REQUIRE([CHECK_NETINET_IP_AND_TCP])
 
 AM_CONDITIONAL(have_err_h, test "$ac_cv_header_err_h" = yes)
 AM_CONDITIONAL(have_fnmatch_h, test "$ac_cv_header_fnmatch_h" = yes)
+AM_CONDITIONAL(have_vis_h, test "$ac_cv_header_vis_h" = yes)
 
 dnl Check for functions and libraries
 
@@ -162,6 +164,7 @@ AC_CHECK_FUNCS([				\
 	getrlimit				\
 	getspnam				\
 	strsvis					\
+	strunvis				\
 	strvis					\
 	strvisx					\
 	strvisx					\
@@ -169,6 +172,7 @@ AC_CHECK_FUNCS([				\
 	sysconf					\
 	sysctl					\
 	uname					\
+	unvis					\
 	vasnprintf				\
 	vasprintf				\
 	vis					\
