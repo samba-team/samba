@@ -1,3 +1,7 @@
+Tue Sep 30 21:50:18 1997  Assar Westerlund  <assar@assaris.pdc.kth.se>
+
+	* Release 0.0i
+
 Mon Sep 29 15:58:43 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/rd_req.c (krb5_rd_req): redone because we don't know
