@@ -519,9 +519,10 @@ static int ldapsam_retry_open(struct ldapsam_privates *ldap_state, int *attempts
 		
 	if (*attempts != 0) {
 		unsigned int sleep_time;
-		uint8 rand_byte = 128; /* a reasonable place to start */
+		uint8 rand_byte;
 
-		generate_random_buffer(&rand_byte, 1, False);
+		/* Sleep for a random timeout */
+		rand_byte = (char)(sys_random());
 
 		sleep_time = (((*attempts)*(*attempts))/2)*rand_byte*2; 
 		/* we retry after (0.5, 1, 2, 3, 4.5, 6) seconds
@@ -3156,6 +3157,9 @@ static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
 	(*pdb_method)->private_data = ldap_state;
 
 	(*pdb_method)->free_private_data = free_private_data;
+
+	/* setup random, for our backoffs */
+	sys_srandom(sys_getpid() ^ time(NULL));
 
 	return NT_STATUS_OK;
 }
