@@ -1191,7 +1191,7 @@ static NTSTATUS samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 	struct ldb_message mod, *msg = &mod;
-	int i, ret;
+	int ret;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_GROUP);
 
@@ -1219,13 +1219,8 @@ static NTSTATUS samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
-	for (i=0;i<mod.num_elements;i++) {
-		mod.elements[i].flags = LDB_FLAG_MOD_REPLACE;
-	}
-
 	/* modify the samdb record */
-	ret = samdb_modify(a_state->sam_ctx, mem_ctx, &mod);
+	ret = samdb_replace(a_state->sam_ctx, mem_ctx, &mod);
 	if (ret != 0) {
 		/* we really need samdb.c to return NTSTATUS */
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1707,7 +1702,7 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 	struct ldb_message mod, *msg = &mod;
-	int i, ret;
+	int ret;
 	NTSTATUS status = NT_STATUS_OK;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
@@ -1812,16 +1807,8 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return status;
 	}
 
-	/* mark all the message elements as LDB_FLAG_MOD_REPLACE, 
-	   unless they are already marked with some other flag */
-	for (i=0;i<mod.num_elements;i++) {
-		if (mod.elements[i].flags == 0) {
-			mod.elements[i].flags = LDB_FLAG_MOD_REPLACE;
-		}
-	}
-
 	/* modify the samdb record */
-	ret = samdb_modify(a_state->sam_ctx, mem_ctx, msg);
+	ret = samdb_replace(a_state->sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
 		/* we really need samdb.c to return NTSTATUS */
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1840,7 +1827,7 @@ static NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALL
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 	struct ldb_message **res, mod, *msg;
-	int i, ret;
+	int ret;
 	struct samr_Hash *lmPwdHash=NULL, *ntPwdHash=NULL;
 	struct samr_Hash new_lmPwdHash, new_ntPwdHash, checkHash;
 	NTSTATUS status = NT_STATUS_OK;
@@ -1921,12 +1908,8 @@ static NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALL
 		return status;
 	}
 
-	for (i=0;i<mod.num_elements;i++) {
-		mod.elements[i].flags = LDB_FLAG_MOD_REPLACE;
-	}
-
 	/* modify the samdb record */
-	ret = samdb_modify(a_state->sam_ctx, mem_ctx, &mod);
+	ret = samdb_replace(a_state->sam_ctx, mem_ctx, &mod);
 	if (ret != 0) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -1946,7 +1929,7 @@ static NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 	struct samr_CryptPassword *pwbuf = r->in.password;
 	void *sam_ctx;
 	const char *user_dn, *domain_dn;
-	int ret, i;
+	int ret;
 	struct ldb_message **res, mod;
 	const char * const attrs[] = { "objectSid", "lmPwdHash", NULL };
 	const char *domain_sid;
@@ -2027,13 +2010,8 @@ static NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 		return status;
 	}
 
-	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
-	for (i=0;i<mod.num_elements;i++) {
-		mod.elements[i].flags = LDB_FLAG_MOD_REPLACE;
-	}
-
 	/* modify the samdb record */
-	ret = samdb_modify(sam_ctx, mem_ctx, &mod);
+	ret = samdb_replace(sam_ctx, mem_ctx, &mod);
 	if (ret != 0) {
 		samdb_close(sam_ctx);
 		return NT_STATUS_UNSUCCESSFUL;

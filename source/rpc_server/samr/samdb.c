@@ -705,7 +705,9 @@ int samdb_msg_add_delete(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 		return -1;
 	}
 	ldb_set_alloc(sam_ctx->ldb, samdb_alloc, mem_ctx);
-	return ldb_msg_add_empty(sam_ctx->ldb, msg, a, LDB_FLAG_MOD_DELETE);
+	/* we use an empty replace rather than a delete, as it allows for 
+	   samdb_replace() to be used everywhere */
+	return ldb_msg_add_empty(sam_ctx->ldb, msg, a, LDB_FLAG_MOD_REPLACE);
 }
 
 /*
@@ -852,6 +854,22 @@ int samdb_modify(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 
 	ldb_set_alloc(sam_ctx->ldb, samdb_alloc, mem_ctx);
 	return ldb_modify(sam_ctx->ldb, msg);
+}
+
+/*
+  replace elements in a record
+*/
+int samdb_replace(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
+{
+	int i;
+
+	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
+	for (i=0;i<msg->num_elements;i++) {
+		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	/* modify the samdb record */
+	return samdb_modify(ctx, mem_ctx, msg);
 }
 
 /*
