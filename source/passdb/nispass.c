@@ -137,6 +137,54 @@ static char *make_nisname_from_name(char *user_name, char *pfile)
 	return nisname;
 }
 
+/*************************************************************************
+ gets a NIS+ attribute
+ *************************************************************************/
+static void get_single_attribute(nis_object *new_obj, int col,
+				char *val, int len)
+{
+	int entry_len;
+
+	if (new_obj == NULL || val == NULL) return;
+	
+	entry_len = ENTRY_LEN(new_obj, col);
+	if (len > entry_len)
+	{
+		DEBUG(10,("get_single_attribute: entry length truncated\n"));
+		len = entry_len;
+	}
+
+	safe_strcpy(val, len, ENTRY_VAL(new_obj, col));
+}
+
+/***************************************************************
+ calls nis_list, returns results.
+ ****************************************************************/
+static nis_result *nisp_get_nis_list(char *nis_name)
+{
+	nis_result *result;
+	result = nis_list(nis_name, FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP,NULL,NULL);
+
+	alarm(0);
+	signal(SIGALRM, SIGNAL_CAST SIG_DFL);
+
+	if (gotalarm)
+	{
+		DEBUG(0,("nisp_get_nis_list: NIS+ lookup time out\n"));
+		nis_freeresult(result);
+		return NULL;
+	}
+	return result;
+}
+
+
+
+struct nisp_enum_info
+{
+	nis_result *result;
+	int enum_entry;
+};
+
 /***************************************************************
  Start to enumerate the nisplus passwd list. Returns a void pointer
  to ensure no modification outside this module.
@@ -146,7 +194,10 @@ static char *make_nisname_from_name(char *user_name, char *pfile)
  ****************************************************************/
 static void *startnisppwent(BOOL update)
 {
-	return NULL;
+	static struct nisp_enum_info res;
+	res.result = nisp_get_nis_list(lp_smb_pass_file());
+	res.enum_entry = 0;
+	return res.result != NULL ? &res : NULL;
 }
 
 /***************************************************************
@@ -254,7 +305,7 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	pfile = lp_smb_passwd_file();
 
 	nisname = make_nisname_from_name(newpwd->smb_name, pfile);
-	result = nis_list(nisname, FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP,NULL,NULL);
+	result = nisp_get_nis_list(nisname);
 	if (result->status != NIS_SUCCESS && result->status != NIS_NOTFOUND)
 	{
 		DEBUG(3, ( "add_nisppwd_entry: nis_list failure: %s: %s\n",
@@ -299,7 +350,7 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 
 	new_obj.zo_name   = NIS_RES_OBJECT(tblresult)->zo_name;
 	new_obj.zo_domain = NIS_RES_OBJECT(tblresult)->zo_domain;
-	new_obj.zo_owner  = NIS_RES_OBJECT(nis_user)->zo_owner;
+	new_obj.zo_owner  = NIS_RES_OBJECT(tblresult)->zo_owner;
 	new_obj.zo_group  = NIS_RES_OBJECT(tblresult)->zo_group;
 	new_obj.zo_access = NIS_RES_OBJECT(tblresult)->zo_access;
 	new_obj.zo_ttl    = NIS_RES_OBJECT(tblresult)->zo_ttl;
