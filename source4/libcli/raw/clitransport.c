@@ -49,7 +49,7 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock)
 	struct smbcli_transport *transport;
 	struct fd_event fde;
 
-	transport = talloc_named(NULL, sizeof(*transport), "smbcli_transport");
+	transport = talloc_p(sock, struct smbcli_transport);
 	if (!transport) return NULL;
 
 	ZERO_STRUCTP(transport);
