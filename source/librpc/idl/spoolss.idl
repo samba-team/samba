@@ -101,7 +101,7 @@
 
 	typedef struct {
 		uint32 flags;
-		[relative] nstring *name;
+		[relative] nstring *formname;
 		uint32 width;
 		uint32 length;
 		uint32 left;
@@ -444,7 +444,7 @@
 
 	typedef struct {
 		uint32 flags;
-		[relative] unistr *name;
+		[relative] unistr *formname;
 		uint32 width;
 		uint32 length;
 		uint32 left;
