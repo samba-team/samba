@@ -252,6 +252,8 @@ struct passwd *k_getpwnam (char *user);
 struct passwd *k_getpwuid (uid_t uid);
 #endif
 
+const char *get_default_username (void);
+
 #ifndef HAVE_SETEUID
 int seteuid(uid_t euid);
 #endif
