@@ -1,3 +1,7 @@
+1999-08-01  Assar Westerlund  <assar@sics.se>
+
+	* rsh.c: const fixes
+
 1999-07-29  Assar Westerlund  <assar@sics.se>
 
 	* rshd.c: v6-ify

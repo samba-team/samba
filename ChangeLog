@@ -1,3 +1,16 @@
+1999-08-01  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/mk_req.c (krb5_mk_req): use krb5_expand_hostname
+
+1999-07-31  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_host_realm.c (krb5_get_host_realm_int): new
+ 	function that takes a FQDN
+
+	* lib/krb5/Makefile.am (libkrb5_la_SOURCES): add exapnd_hostname.c
+
+	* lib/krb5/expand_hostname.c: new file
+
 1999-07-28  Assar Westerlund  <assar@sics.se>
 
 	* lib/asn1/Makefile.am: bump version to 1:2:0

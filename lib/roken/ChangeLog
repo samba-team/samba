@@ -1,3 +1,7 @@
+1999-08-01  Assar Westerlund  <assar@sics.se>
+
+	* mini_inetd.c (socket_set_reuseaddr): remove duplicate
+
 1999-07-29  Assar Westerlund  <assar@sics.se>
 
 	* mini_inetd.c (mini_inetd): fix my stupid bugs
