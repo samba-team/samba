@@ -71,32 +71,34 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	}
 	count++;
 
-	printf("%-5d  ",e->pid);
-	switch ((e->share_mode>>4)&0xF) {
-	case DENY_NONE: printf("DENY_NONE  "); break;
-	case DENY_ALL:  printf("DENY_ALL   "); break;
-	case DENY_DOS:  printf("DENY_DOS   "); break;
-	case DENY_READ: printf("DENY_READ  "); break;
-	case DENY_WRITE:printf("DENY_WRITE "); break;
-	}
-	switch (e->share_mode&0xF) {
-	case 0: printf("RDONLY     "); break;
-	case 1: printf("WRONLY     "); break;
-	case 2: printf("RDWR       "); break;
-	}
+	if (Ucrit_checkPid(e->pid)) {
+          printf("%-5d  ",e->pid);
+	  switch ((e->share_mode>>4)&0xF) {
+	  case DENY_NONE: printf("DENY_NONE  "); break;
+	  case DENY_ALL:  printf("DENY_ALL   "); break;
+	  case DENY_DOS:  printf("DENY_DOS   "); break;
+	  case DENY_READ: printf("DENY_READ  "); break;
+	  case DENY_WRITE:printf("DENY_WRITE "); break;
+	  }
+	  switch (e->share_mode&0xF) {
+	  case 0: printf("RDONLY     "); break;
+	  case 1: printf("WRONLY     "); break;
+	  case 2: printf("RDWR       "); break;
+	  }
 
-	if((e->op_type & 
-	    (EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) == 
-	   (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
+	  if((e->op_type & 
+	     (EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) == 
+	      (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
 		printf("EXCLUSIVE+BATCH ");
-	else if (e->op_type & EXCLUSIVE_OPLOCK)
+	  else if (e->op_type & EXCLUSIVE_OPLOCK)
 		printf("EXCLUSIVE       ");
-	else if (e->op_type & BATCH_OPLOCK)
+	  else if (e->op_type & BATCH_OPLOCK)
 		printf("BATCH           ");
-	else
+	  else
 		printf("NONE            ");
 
-	printf(" %s   %s",fname,asctime(LocalTime((time_t *)&e->time.tv_sec)));
+	  printf(" %s   %s",fname,asctime(LocalTime((time_t *)&e->time.tv_sec)));
+	}
 }
 
 
