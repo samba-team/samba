@@ -84,6 +84,7 @@ static SL_cmd commands[] = {
     { "rename",		rename_entry, 	"rename source target"},
     { "get_privileges",	get_privs, 	"show maximum privileges" },
     { "privileges" },
+    { "list_principals",list_princs, 	"list principals matching expression" },
     { "help",		help, "help"},
     { "?"},
     { "exit",		exit_kadmin, "exit"},
