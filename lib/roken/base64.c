@@ -63,6 +63,8 @@ int base64_encode(const void *data, int size, char **str)
   unsigned char *q;
 
   p = s = (char*)malloc(size*4/3+4);
+  if (p == NULL)
+      return -1;
   q = (unsigned char*)data;
   i=0;
   for(i = 0; i < size;){
