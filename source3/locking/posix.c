@@ -442,7 +442,7 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 				*pl = *entry;
 
 			DEBUG(10,("delete_posix_lock_entry: type = %s: start=%.0f size=%.0f, num_records = %d\n",
-					posix_lock_type_name(pl->lock_type), (double)pl->start, (double)pl->size,
+					posix_lock_type_name(entry->lock_type), (double)entry->start, (double)entry->size,
 					(unsigned int)num_records ));
 
 			/* Found it - delete it. */
