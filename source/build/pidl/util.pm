@@ -214,7 +214,7 @@ sub type_align($)
     return 2, if ($type eq "wchar_t");
     return 4, if ($type eq "DATA_BLOB");
 
-    return 0;
+    return 4;
 }
 
 # this is used to determine if the ndr push/pull functions will need
