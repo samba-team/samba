@@ -379,7 +379,8 @@ krb5_rd_req(krb5_context context,
 				  server,
 				  keytab,
 				  &keyblock);
-	goto out;
+	if(ret)
+	    goto out;
     }
 	
 
@@ -394,8 +395,8 @@ krb5_rd_req(krb5_context context,
     if(keyblock != NULL)
 	krb5_free_keyblock(context, keyblock);
 
-    free_AP_REQ(&ap_req);
 out:
+    free_AP_REQ(&ap_req);
     if(service)
 	krb5_free_principal(context, service);
     return ret;
