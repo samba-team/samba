@@ -703,10 +703,12 @@ static void usage(char *pname)
 
 	init_structs();
 	
+#ifdef WITH_PROFILE
 	if (!profile_setup(False)) {
 		DEBUG(0,("ERROR: failed to setup profiling shared memory\n"));
 		return -1;
 	}
+#endif /* WITH_PROFILE */
 
 #ifdef WITH_SSL
 	{
