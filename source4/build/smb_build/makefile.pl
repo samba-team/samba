@@ -540,26 +540,13 @@ binary_$ctx->{BINARY}: basics bin/$ctx->{BINARY}
 # $proto_ctx->{OBJ_LIST} -	the list of objectfiles which sould be scanned by make proto
 #
 # $output -		the resulting output buffer
-sub _prepare_proto_obj_list($$)
+sub _prepare_proto_obj_list($)
 {
 	my $ctx = shift;
-	my $noproto = shift;
 	my $tmplist;
 	my $output;
-	my %proto_obj;
-	use Data::Dumper;
 
-	foreach my $str (@{$ctx->{OBJ_LIST}}) {
-		$proto_obj{$str} = 1;
-	}
-	foreach my $str (keys %{$noproto}) {
-		if ($noproto->{$str}) {
-			delete $proto_obj{"\$(SUBSYSTEM_$str\_OBJS)"};
-		}
-	}
-
-	my @proto_list = (keys %proto_obj);
-	$tmplist = array2oneperline(\@proto_list);
+	$tmplist = array2oneperline($ctx->{OBJ_LIST});
 
 	$output = "
 ###################################
@@ -669,7 +656,7 @@ sub _prepare_obj_lists($)
 		$output .= _prepare_binary_obj_list(\%{$CTX->{OUTPUT}{BINARIES}{$key}});
 	}
 
-	$output .= _prepare_proto_obj_list(\%{$CTX->{OUTPUT}{PROTO}}, \%{$CTX->{INPUT}{SUBSYSTEMS}{NOPROTO}});
+	$output .= _prepare_proto_obj_list(\%{$CTX->{OUTPUT}{PROTO}});
 
 	return $output;
 }
