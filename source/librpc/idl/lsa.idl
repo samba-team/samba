@@ -176,6 +176,21 @@
 		dom_sid2 *sid;
 	} lsa_DnsDomainInfo;
 
+	typedef enum {
+		LSA_POLICY_INFO_AUDIT_LOG=1,
+		LSA_POLICY_INFO_AUDIT_EVENTS=2,
+		LSA_POLICY_INFO_DOMAIN=3,
+		LSA_POLICY_INFO_PD=4,
+		LSA_POLICY_INFO_ACCOUNT_DOMAIN=5,
+		LSA_POLICY_INFO_ROLE=6,
+		LSA_POLICY_INFO_REPLICA=7,
+		LSA_POLICY_INFO_QUOTA=8,
+		LSA_POLICY_INFO_DB=9,
+		LSA_POLICY_INFO_AUDIT_FULL_SET=10,
+		LSA_POLICY_INFO_AUDIT_FULL_QUERY=11,
+		LSA_POLICY_INFO_DNS=12
+	} lsaPolicyInfo;
+
 	typedef union {
 		[case(1)]  lsa_AuditLogInfo audit_log;
 		[case(2)]  lsa_AuditEventsInfo audit_events;
@@ -207,8 +222,12 @@
 
 	/******************/
 	/* Function: 0x0a */
-	NTSTATUS lsa_CreateAccount ();
-
+	NTSTATUS lsa_CreateAccount (
+		[in,ref]    policy_handle *handle,
+		[in,ref]    dom_sid2 *sid,
+		[in]        uint32 access,
+		[out,ref]   policy_handle *acct_handle
+		);
 
 	/******************/
 	/* Function: 0x0b */
