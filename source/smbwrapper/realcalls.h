@@ -65,7 +65,7 @@
 #elif HAVE___FORK
 #define real_fork()            	(__fork())
 #elif SYS_fork
-#define real_fork()		(syscall(SYS_fork,()))
+#define real_fork()		(syscall(SYS_fork))
 #endif
 
 #ifdef HAVE__OPENDIR
