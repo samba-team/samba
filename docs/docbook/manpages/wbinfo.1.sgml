@@ -17,8 +17,8 @@
 		<command>wbinfo</command>
 		<arg choice="opt">-u</arg>
 		<arg choice="opt">-g</arg>
-		<arg choice="opt">-i ip</arg>
 		<arg choice="opt">-N netbios-name</arg>
+		<arg choice="opt">-I ip</arg>
 		<arg choice="opt">-n name</arg>
 		<arg choice="opt">-s sid</arg>
 		<arg choice="opt">-U uid</arg>
@@ -27,9 +27,11 @@
 		<arg choice="opt">-Y sid</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">-m</arg>
+		<arg choice="opt">--sequence</arg>
 		<arg choice="opt">-r user</arg>
 		<arg choice="opt">-a user%password</arg>
 		<arg choice="opt">-A user%password</arg>
+		<arg choice="opt">--get-auth-user</arg>
 		<arg choice="opt">-p</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -176,6 +178,11 @@
 		</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>--sequence</term>
+		<listitem><para>Show sequence numbers of 
+		all known domains</para></listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term>-r username</term>
@@ -203,6 +210,23 @@
 		Windows 2000 servers only).
 		</para></listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term>--get-auth-user</term>
+		<listitem><para>Print username and password used by winbindd
+		during session setup to a domain controller. Username 
+		and password can be set using '-A'. Only available for 
+		root.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-p</term>
+		<listitem><para>Check whether winbindd is still alive. 
+		Prints out either 'succeeded' or 'failed'.
+		</para></listitem>
+		</varlistentry>
+
+
 	</variablelist>
 </refsect1>
 
