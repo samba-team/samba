@@ -52,7 +52,7 @@ struct nbt_name_request *nbt_name_query_send(struct nbt_name_socket *nbtsock,
 	packet->questions[0].question_type = NBT_QTYPE_NETBIOS;
 	packet->questions[0].question_class = NBT_QCLASS_IP;
 	
-	req = nbt_name_request_send(nbtsock, io->in.dest_addr, NBT_NAME_SERVICE_PORT, packet,
+	req = nbt_name_request_send(nbtsock, io->in.dest_addr, lp_nbt_port(), packet,
 				    timeval_current_ofs(io->in.timeout, 0), False);
 	if (req == NULL) goto failed;
 
@@ -142,7 +142,7 @@ struct nbt_name_request *nbt_name_status_send(struct nbt_name_socket *nbtsock,
 	packet->questions[0].question_type = NBT_QTYPE_STATUS;
 	packet->questions[0].question_class = NBT_QCLASS_IP;
 	
-	req = nbt_name_request_send(nbtsock, io->in.dest_addr, NBT_NAME_SERVICE_PORT, packet,
+	req = nbt_name_request_send(nbtsock, io->in.dest_addr, lp_nbt_port(), packet,
 				    timeval_current_ofs(io->in.timeout, 0), False);
 	if (req == NULL) goto failed;
 

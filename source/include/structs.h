@@ -157,3 +157,5 @@ struct stream_connection;
 struct task_server;
 struct model_ops;
 struct stream_server_ops;
+
+struct nbt_server;

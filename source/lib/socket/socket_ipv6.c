@@ -125,6 +125,8 @@ static NTSTATUS ipv6_tcp_listen(struct socket_context *sock,
 	struct in6_addr ip_addr;
 	int ret;
 
+	socket_set_option(sock, "SO_REUSEADDR=1", NULL);
+
 	ip_addr = interpret_addr6(my_address);
 
 	ZERO_STRUCT(my_addr);

@@ -139,6 +139,8 @@ static NTSTATUS ipv4_listen(struct socket_context *sock,
 	struct ipv4_addr ip_addr;
 	int ret;
 
+	socket_set_option(sock, "SO_REUSEADDR=1", NULL);
+
 	ip_addr = interpret_addr2(my_address);
 
 	ZERO_STRUCT(my_addr);
