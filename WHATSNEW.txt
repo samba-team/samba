@@ -94,6 +94,7 @@ o   Volker Lendecke <vl@samba.org>
     * Add expand_msdfs VFS module for providing referrals based on the
       the client's IP address.
     * Implement client side NETLOGON GetDCName function.
+    * Fix caching of name->sid lookups.
 
 
 o   Jianliang Lu <j.lu@tiesse.com>
