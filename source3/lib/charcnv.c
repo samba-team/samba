@@ -90,10 +90,28 @@ void init_iconv(void)
 	if (!conv_handles[CH_UCS2][CH_UNIX])
 		conv_handles[CH_UCS2][CH_UNIX] = smb_iconv_open("ASCII", "UCS-2LE");
 
+#ifdef HAVE_SETLOCALE
+	setlocale(LC_ALL, "");
+#endif
+
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		for (c2=0;c2<NUM_CHARSETS;c2++) {
 			const char *n1 = charset_name((charset_t)c1);
 			const char *n2 = charset_name((charset_t)c2);
+#ifdef HAVE_NL_LANGINFO
+			const char *ln = nl_langinfo(CODESET);
+
+			if (c1==CH_DISPLAY && conv_handles[c1][c2] &&
+			    strcmp(ln, conv_handles[c1][c2]->from_name) == 0 &&
+			    strcmp(n2, conv_handles[c1][c2]->to_name) == 0)
+				continue;
+			   
+			if (c2==CH_DISPLAY && conv_handles[c1][c2] &&
+			    strcmp(n1, conv_handles[c1][c2]->from_name) == 0 &&
+			    strcmp(ln, conv_handles[c1][c2]->to_name) == 0)
+				continue;
+			   
+#endif
 			if (conv_handles[c1][c2] &&
 			    strcmp(n1, conv_handles[c1][c2]->from_name) == 0 &&
 			    strcmp(n2, conv_handles[c1][c2]->to_name) == 0)
@@ -104,6 +122,25 @@ void init_iconv(void)
 			if (conv_handles[c1][c2])
 				smb_iconv_close(conv_handles[c1][c2]);
 
+#ifdef HAVE_NL_LANGINFO
+			if (c1==CH_DISPLAY && c2==CH_DISPLAY) {
+				conv_handles[c1][c2] = smb_iconv_open(ln,ln);
+				if (conv_handles[c1][c2] != (smb_iconv_t)-1) {
+					continue;
+				}
+			} else if (c1==CH_DISPLAY) {
+				conv_handles[c1][c2] = smb_iconv_open(n2,ln);
+				if (conv_handles[c1][c2] != (smb_iconv_t)-1) {
+					continue;
+				}
+			} else if (c2==CH_DISPLAY) {
+				conv_handles[c1][c2] = smb_iconv_open(ln,n1);
+				if (conv_handles[c1][c2] != (smb_iconv_t)-1) {
+					continue;
+				}
+			}
+			/* Fall back to the configured charset. */
+#endif
 			conv_handles[c1][c2] = smb_iconv_open(n2,n1);
 			if (conv_handles[c1][c2] == (smb_iconv_t)-1) {
 				DEBUG(0,("Conversion from %s to %s not supported\n",
