@@ -44,7 +44,7 @@ main (int argc, char **argv)
 	       abort ();
 	  printf ("%s\t", str);
 	  free (str);
-	  printf ("%s\t", ctime(&creds.times.starttime));
+	  printf ("%s\t", ctime(&creds.times.authtime));
 	  printf ("%s\n", ctime(&creds.times.endtime));
      }
      err = krb5_cc_end_seq_get (context, ccache, &cursor);
