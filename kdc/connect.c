@@ -252,6 +252,7 @@ init_sockets(struct descr **desc)
 	    }
 	}
     }
+    krb5_free_addresses (context, &addresses);
     d = realloc(d, num * sizeof(*d));
     if (d == NULL && num != 0)
 	krb5_errx(context, 1, "realloc(%u) failed", num * sizeof(*d));
