@@ -243,7 +243,7 @@ static void tdb_unlock(TDB_CONTEXT *tdb, int list, int ltype)
 	tdb->locked[list+1].count--;
 }
 
-/* This is based on the hash agorithm from gdbm */
+/* This is based on the hash algorithm from gdbm */
 static u32 tdb_hash(TDB_DATA *key)
 {
 	u32 value;	/* Used to compute the hash value.  */
