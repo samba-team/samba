@@ -240,7 +240,10 @@ char *
 gssapi_krb5_get_error_string (void);
 
 OM_uint32
-_gss_DES3_get_mic_compat(OM_uint32 *minor_status, gss_ctx_id_t ctx);
+_gss_DES3_get_mic_compat(OM_uint32 *, gss_ctx_id_t);
+
+OM_uint32
+_gss_spnego_require_mechlist_mic(OM_uint32 *, gss_ctx_id_t, krb5_boolean *);
 
 OM_uint32
 gssapi_lifetime_left(OM_uint32 *, OM_uint32, OM_uint32 *);
