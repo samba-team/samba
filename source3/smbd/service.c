@@ -347,7 +347,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 
 	if (lp_guest_only(snum)) {
-		char *guestname = lp_guestaccount();
+		const char *guestname = lp_guestaccount();
 		guest = True;
 		force = True;
 		pass = getpwnam_alloc(guestname);
