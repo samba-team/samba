@@ -5,6 +5,7 @@
 load_lib util-defs.exp
 load_lib "$srcdir/config/env.exp"
 load_lib "$srcdir/lib/default-nt-names.exp"
+load_lib compile.exp
 
 #
 # Test getent passwd
@@ -34,4 +35,30 @@ foreach {group} $domain_groups {
     } else {
         pass "getent group $group"
     }
+}
+
+#
+# Some tricky tests in C
+#
+
+set getent_tests [list \
+	{ "out of order pwent operations" "getent_pwent" } \
+	{ "out of order grent operations" "getent_grent" } \
+	]
+
+foreach { test } $getent_tests {
+    set test_desc [lindex $test 0]
+    set test_file [lindex $test 1]
+
+    simple_compile $test_file
+    set output [util_start "$srcdir/$subdir/$test_file" ]
+
+    if { [regexp "PASS" $output] } {
+        pass $test_desc
+        file delete "$srcdir/$subdir/$test_file" "$srcdir/$subdir/$test_file.o"
+    } else {
+        fail $test_desc
+        puts $output
+    }
+
 }

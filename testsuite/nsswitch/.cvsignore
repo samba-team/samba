@@ -6,3 +6,5 @@ getpwnam
 wbtorture
 leaktest?
 getpwuid
+getent_pwent
+getent_grent
