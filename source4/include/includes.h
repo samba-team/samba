@@ -638,6 +638,7 @@ extern int errno;
 #include "dynconfig.h"
 
 #include "version.h"
+#include "rewrite.h"
 #include "smb.h"
 #include "ads.h"
 #include "nameserv.h"
