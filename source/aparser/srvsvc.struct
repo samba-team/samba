@@ -1,7 +1,4 @@
 module srvsvc
-test SRV_R_NET_SHARE_ENUM
-test SRV_R_NET_SERVER_INFO
-test SRV_Q_NET_SERVER_INFO
 
 #define SRV_NETCONNENUM        0x08
 #define SRV_NETFILEENUM        0x09
@@ -42,20 +39,77 @@ struct CONN_INFO_1 {
 	LPWSTR net_name; 
 };
 
-struct SRV_R_NET_CONN_ENUM {
+struct CONN_ENUM_CTR {
 	uint32 level;
-	uint32 level2;
 	uint32 num_entries;
 	union *info[level] {
 		case 0 CONN_INFO_0 info0[num_entries]; 
 		case 1 CONN_INFO_1 info1[num_entries]; 
 	}
+};
+
+struct SRV_R_NET_CONN_ENUM {
         .trailer;
-        uint32 count;
+	uint32 level;
+	CONN_ENUM_CTR ctr;
         ENUM_HND handle;
-        uint32 status1;
+        uint32 num_entries;
+        uint32 status;
         uint32 status2;
 };
+
+struct SRV_Q_NET_CONN_ENUM {
+       .trailer;
+       LPWSTR dest_srv;
+       LPWSTR qual_srv;
+       uint32 level;
+       uint32 level2;
+       CONN_ENUM_CTR *ctr;
+       uint32 max_len;
+       ENUM_HND handle;
+};
+
+/* function 9 */
+struct FILE_INFO_3 {
+	uint32 id;            /* file index */
+	uint32 perms;         /* file permissions. don't know what format */
+	uint32 num_locks;     /* file locks */
+	LPWSTR path_name; /* file name */
+	LPWSTR user_name; /* file owner */
+};
+
+struct SRV_FILE_INFO_CTR {
+	uint32 level;
+	uint32 num_entries;
+	uint32 dummy;
+	union *file[level] {
+	      case 3 FILE_INFO_3 info3[num_entries];
+	}
+};
+
+struct SRV_Q_NET_FILE_ENUM {
+       .trailer;
+       LPWSTR srv_name;
+       LPWSTR qual_name;
+       uint32 dummy;
+       uint32 level;
+       SRV_FILE_INFO_CTR ctr;
+       uint32 *status;
+       uint32 preferred_len;
+       ENUM_HND enum_hnd;
+};
+
+
+struct SRV_R_NET_FILE_ENUM {
+       .trailer;
+       uint32 level;
+       uint32 dummy;
+       SRV_FILE_INFO_CTR *ctr;
+       uint32 total_entries;                    /* total number of files */
+       ENUM_HND enum_hnd;
+       uint32 status;        /* return status */
+};
+
 
 /* function 15 */
 struct SRV_SHARE_INFO_1 {

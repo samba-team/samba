@@ -30,11 +30,14 @@ int main(int argc, char *argv[])
 	prs_init(&ps, 0, 4, MARSHALL);
 	ps.is_dynamic=True;
 	prs_read(&ps, fd, st.st_size, 0);
-	ps.data_offset = 0;
+	ps.data_offset = 0;	
+	ps.buffer_size = ps.grow_size;
 	ps.io = UNMARSHALL;
 	ret = run_test(test, &ps);
 	printf("\nret=%s\n", ret?"OK":"Bad");
 	printf("Trailer is %d bytes\n\n", ps.grow_size - ps.data_offset);
-	dump_data(0, ps.data_p, ps.grow_size);
+	if (ps.grow_size - ps.data_offset > 0) {
+		dump_data(0, ps.data_p + ps.data_offset, ps.grow_size - ps.data_offset);
+	}
 	return !ret;
 }

@@ -20,6 +20,9 @@ function start_struct(name)
 
 function end_struct() 
 {
+	printf("struct %s with %d elements\n", 
+	       structs[num_structs, "name"],
+	       structs[num_structs, "num_elems"]);
 	num_structs++;
 	current_struct="";
 }
