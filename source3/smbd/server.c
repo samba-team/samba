@@ -22,13 +22,6 @@
 
 #include "includes.h"
 
-#define HAVE_SMB_REGISTER_AUTH
-#define HAVE_SMB_REGISTER_PASSDB
-#define HAVE_RPC_PIPE_REGISTER_COMMANDS
-#define HAVE_SMB_REGISTER_VFS
-#include "module_dummy.h"
-
-
 int am_parent = 1;
 
 /* the last message the was processed */

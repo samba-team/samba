@@ -436,10 +436,10 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 	/* Try to find a module that contains this module */
 	if (!entry) { 
 		DEBUG(2,("No builtin backend found, trying to load plugin\n"));
-		if(NT_STATUS_IS_OK(nt_status = smb_probe_module("pdb", module_name)) && !(entry = pdb_find_backend_entry(module_name))) {
+		if(NT_STATUS_IS_OK(smb_probe_module("pdb", module_name)) && !(entry = pdb_find_backend_entry(module_name))) {
 			DEBUG(0,("Plugin is available, but doesn't register passdb backend %s\n", module_name));
 			SAFE_FREE(module_name);
-			return nt_status;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 	

@@ -19,9 +19,6 @@
 
 #include "includes.h"
 
-#define HAVE_SMB_REGISTER_PASSDB
-#include "module_dummy.h"
-
 extern BOOL AllowDebugChange;
 
 /*
