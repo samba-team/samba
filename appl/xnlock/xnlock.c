@@ -579,6 +579,7 @@ verify_krb5(const char *password)
 {
     krb5_error_code ret;
     krb5_ccache id;
+    krb5_boolean get_v4_tgt;
     
     krb5_cc_default(context, &id);
     ret = krb5_verify_user(context,
@@ -589,10 +590,10 @@ verify_krb5(const char *password)
 			   NULL);
     if (ret == 0){
 #ifdef KRB4
-	if (krb5_config_get_bool(context, NULL,
-				 "libdefaults",
-				 "krb4_get_tickets",
-				 NULL)) {
+	krb5_appdefault_boolean(context, "xnlock", 
+				krb5_principal_get_realm(context, client),
+				"krb4_get_tickets", FALSE, &get_v4_tgt);
+	if(get_v4_tgt) {
 	    CREDENTIALS c;
 	    krb5_creds mcred, cred;
 
