@@ -36,9 +36,6 @@ struct user_context {
 	   access) */
 	uint16_t vuid;
 
-	/* the domain name, user name etc - mostly used in % substitutions */
-	struct userdom_struct *user;
-
 	struct user_struct *vuser;
 };
 
