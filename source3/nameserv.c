@@ -111,7 +111,7 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
       /* local interface: release them on the network */
       queue_netbios_packet(d,ClientNMB,NMB_REL,NAME_RELEASE,
 			 name, type, 0, 0,0,NULL,NULL,
-			 True, False, d->bcast_ip, d->bcast_ip);
+			 True, False, d->bcast_ip, d->bcast_ip, 0);
   }
 }
 
@@ -172,7 +172,7 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
     queue_netbios_packet(d,ClientNMB,
 	 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
          name, type, nb_flags, GET_TTL(0),0,NULL,NULL,
-	 True, False, d->bcast_ip, ipzero);
+	 True, False, d->bcast_ip, ipzero, 0);
   }
 }
 
@@ -249,7 +249,7 @@ for domain master on workgroup %s\n",
 									 myworkgroup, 0x1b,
 									 0, 0,0,NULL,NULL,
 									 True, False,
-									 d->bcast_ip, d->bcast_ip);
+									 d->bcast_ip, d->bcast_ip, 0);
 			}
 		}
 	}
@@ -488,7 +488,8 @@ void query_refresh_names(time_t t)
     	  queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_CONFIRM,
 				n->name.name, n->name.name_type,
 				0,0,0,NULL,NULL,
-				False,False,n->ip_flgs[0].ip,n->ip_flgs[0].ip);
+				False,False,n->ip_flgs[0].ip,n->ip_flgs[0].ip,
+			        0);
 		  count++;
 		}
 

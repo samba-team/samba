@@ -95,7 +95,8 @@ struct response_record *make_response_queue_record(enum state_type state,
 				int quest_type, char *name,int type, int nb_flags, time_t ttl,
 				int server_type, char *my_name, char *my_comment,
 				BOOL bcast,BOOL recurse,
-				struct in_addr send_ip, struct in_addr reply_to_ip)
+				struct in_addr send_ip, struct in_addr reply_to_ip,
+				int reply_id)
 {
   struct response_record *n;
 	
@@ -118,6 +119,7 @@ struct response_record *make_response_queue_record(enum state_type state,
   n->recurse = recurse;
   n->send_ip = send_ip;
   n->reply_to_ip = reply_to_ip;
+  n->reply_id = reply_id;
   if(my_name)
     StrnCpy(n->my_name, my_name, sizeof(n->my_name)-1);
   else

@@ -97,7 +97,7 @@ void check_master_browser(time_t t)
 
           queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_MST_CHK,
                     work->work_group,0x1d,0,0,0,NULL,NULL,
-                    True,False,d->bcast_ip,d->bcast_ip);
+                    True,False,d->bcast_ip,d->bcast_ip, 0);
         }
       }
     }

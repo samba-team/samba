@@ -199,7 +199,7 @@ workgroup %s\n",
   queue_netbios_packet(d,ClientNMB,NMB_QUERY,
 	 b->local?NAME_QUERY_SYNC_LOCAL:NAME_QUERY_SYNC_REMOTE,
 	 b->name,0x20,0,0,0,NULL,b->group,
-	 False,False,b->ip,b->ip);
+	 False,False,b->ip,b->ip, 0);
 
   b->synced = True;
 }
