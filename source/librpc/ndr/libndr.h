@@ -61,6 +61,12 @@ struct ndr_push_save {
 #define LIBNDR_FLAG_BIGENDIAN 1
 
 
+/*
+  flags passed to control parse flow
+*/
+#define NDR_SCALARS 1
+#define NDR_BUFFERS 2
+
 /* these are used to make the error checking on each element in libndr
    less tedious, hopefully making the code more readable */
 #define NDR_CHECK(call) do { NTSTATUS _status; \
@@ -75,18 +81,22 @@ struct ndr_push_save {
                                if (!(s)) return NT_STATUS_NO_MEMORY; \
                            } while (0)
 
-#define NDR_ALLOC_N(ndr, s, n) do { \
+#define NDR_ALLOC_N_SIZE(ndr, s, n, elsize) do { \
 				if ((n) == 0) { \
 					(s) = NULL; \
 				} else { \
-					(s) = talloc(ndr->mem_ctx, (n) * sizeof(*(s))); \
+					(s) = talloc(ndr->mem_ctx, (n) * elsize); \
 					if (!(s)) return NT_STATUS_NO_MEMORY; \
 				} \
                            } while (0)
+#define NDR_ALLOC_N(ndr, s, n) NDR_ALLOC_N_SIZE(ndr, s, n, sizeof(*(s)))
 
 /* these are used when generic fn pointers are needed for ndr push/pull fns */
 typedef NTSTATUS (*ndr_push_fn_t)(struct ndr_push *, void *);
 typedef NTSTATUS (*ndr_pull_fn_t)(struct ndr_pull *, void *);
+
+typedef NTSTATUS (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, void *);
+typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *);
 
 /* now pull in the individual parsers */
 #include "librpc/ndr/ndr_sec.h"

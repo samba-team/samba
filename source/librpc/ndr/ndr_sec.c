@@ -174,16 +174,14 @@ NTSTATUS ndr_pull_dom_sid_ofs(struct ndr_pull *ndr, struct dom_sid **sid)
   parse a security descriptor 
 */
 NTSTATUS ndr_pull_security_descriptor(struct ndr_pull *ndr, 
-				      struct security_descriptor **sd)
+				      struct security_descriptor *sd)
 {
-	NDR_ALLOC(ndr, *sd);
-
-	NDR_CHECK(ndr_pull_uint8(ndr, &(*sd)->revision));
-	NDR_CHECK(ndr_pull_uint16(ndr, &(*sd)->type));
-	NDR_CHECK(ndr_pull_dom_sid_ofs(ndr, &(*sd)->owner_sid));
-	NDR_CHECK(ndr_pull_dom_sid_ofs(ndr, &(*sd)->group_sid));
-	NDR_CHECK(ndr_pull_security_acl_ofs(ndr, &(*sd)->sacl));
-	NDR_CHECK(ndr_pull_security_acl_ofs(ndr, &(*sd)->dacl));
+	NDR_CHECK(ndr_pull_uint8(ndr, &sd->revision));
+	NDR_CHECK(ndr_pull_uint16(ndr, &sd->type));
+	NDR_CHECK(ndr_pull_dom_sid_ofs(ndr, &sd->owner_sid));
+	NDR_CHECK(ndr_pull_dom_sid_ofs(ndr, &sd->group_sid));
+	NDR_CHECK(ndr_pull_security_acl_ofs(ndr, &sd->sacl));
+	NDR_CHECK(ndr_pull_security_acl_ofs(ndr, &sd->dacl));
 
 	return NT_STATUS_OK;
 }
@@ -263,6 +261,15 @@ NTSTATUS ndr_push_dom_sid(struct ndr_push *ndr, struct dom_sid *sid)
 	}
 
 	return NT_STATUS_OK;
+}
+
+/*
+  parse a dom_sid2 - this is a dom_sid but with an extra copy of the num_auths field
+*/
+NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, struct dom_sid *sid)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, sid->num_auths));
+	return ndr_push_dom_sid(ndr, sid);
 }
 
 

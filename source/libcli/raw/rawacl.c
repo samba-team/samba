@@ -78,7 +78,11 @@ NTSTATUS smb_raw_query_secdesc_recv(struct cli_request *req,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = ndr_pull_security_descriptor(ndr, &query->out.sd);
+	query->out.sd = talloc(mem_ctx, sizeof(query->out.sd));
+	if (!query->out.sd) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = ndr_pull_security_descriptor(ndr, query->out.sd);
 
 	return NT_STATUS_OK;
 }

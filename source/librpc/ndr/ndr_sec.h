@@ -31,6 +31,9 @@ struct dom_sid {
 	uint32 *sub_auths;
 };
 
+/* use the same structure for dom_sid2 as dom_sid */
+#define dom_sid2 dom_sid
+
 /* an access control element */
 struct security_ace {
 	uint8 type;  /* xxxx_xxxx_ACE_TYPE - e.g allowed / denied etc */

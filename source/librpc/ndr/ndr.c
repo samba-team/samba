@@ -185,3 +185,53 @@ NTSTATUS ndr_push_set_offset(struct ndr_push *ndr, uint32 ofs)
 	ndr->offset = ofs;
 	return NT_STATUS_OK;
 }
+
+/*
+  push a generic array
+*/
+NTSTATUS ndr_push_array(struct ndr_push *ndr, int ndr_flags, void *base, 
+			size_t elsize, uint32 count, 
+			NTSTATUS (*push_fn)(struct ndr_push *, int, void *))
+{
+	int i;
+	char *p = base;
+	NDR_CHECK(ndr_push_uint32(ndr, count));
+	for (i=0;i<count;i++) {
+		NDR_CHECK(push_fn(ndr, ndr_flags, p));
+		p += elsize;
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a generic array
+*/
+NTSTATUS ndr_pull_array(struct ndr_pull *ndr, int ndr_flags, void **base, 
+			size_t elsize, uint32 count, 
+			NTSTATUS (*pull_fn)(struct ndr_pull *, int, void *))
+{
+	int i;
+	uint32 max_count;
+	char *p;
+	NDR_ALLOC_N_SIZE(ndr, *base, count, elsize);
+	p = *base;
+	NDR_CHECK(ndr_pull_uint32(ndr, &max_count));
+	if (max_count != count) {
+		/* maybe we can cope with this? */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	for (i=0;i<count;i++) {
+		NDR_CHECK(pull_fn(ndr, NDR_SCALARS, p));
+		p += elsize;
+	}
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+buffers:
+	p = *base;
+	for (i=0;i<count;i++) {
+		NDR_CHECK(pull_fn(ndr, NDR_BUFFERS, p));
+		p += elsize;
+	}
+done:
+	return NT_STATUS_OK;
+}
