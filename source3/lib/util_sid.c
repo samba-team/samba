@@ -404,6 +404,9 @@ BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
 {
 	int i;
 
+	if (sid1 == sid2) return True;
+	if (!sid1 || !sid2) return False;
+
 	/* compare most likely different rids, first: i.e start at end */
 	for (i = sid1->num_auths-1; i >= 0; --i)
 		if (sid1->sub_auths[i] != sid2->sub_auths[i])
