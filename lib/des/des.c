@@ -45,13 +45,15 @@
  * [including the GNU Public Licence.]
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
-#ifndef MSDOS
+#include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#else
-#include <io.h>
-#define RAND
 #endif
 
 #include <time.h>
@@ -60,22 +62,16 @@
 #ifdef VMS
 #include <types.h>
 #include <stat.h>
-#else
-#ifndef _IRIX
+#endif
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
-#endif
-#if defined(NOCONST)
-#define const
 #endif
 #include "des.h"
 
-#if defined(__STDC__) || defined(VMS) || defined(M_XENIX) || defined(MSDOS)
-#include <string.h>
-#endif
-
-#ifdef RAND
+#ifndef HAVE_RANDOM
 #define random rand
 #define srandom(s) srand(s)
 #endif

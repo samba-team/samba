@@ -45,14 +45,16 @@
  * [including the GNU Public Licence.]
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
-#ifndef MSDOS
-#include <unistd.h>
-#else
-#include <io.h>
-#endif
 #include <string.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include "des.h"
 
 /* tisk tisk - the test keys don't all have odd parity :-( */
