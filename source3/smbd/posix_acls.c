@@ -3860,6 +3860,11 @@ match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "can
 			goto check_stat;
 		}
 
+		/* If we don't have write permission this entry never matches. */
+		if (have_write == 0) {
+			continue;
+		}
+
 		switch(tagtype) {
 			case SMB_ACL_GROUP:
 			{
@@ -3870,9 +3875,9 @@ match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "can
 				for (i = 0; i < current_user.ngroups; i++) {
 					if (current_user.groups[i] == *pgid) {
 						/* We're done now we have a gid match. */
-						ret = have_write;
+						ret = 1;
 						DEBUG(10,("check_posix_acl_group_write: file %s \
-match on group %u -> %s.\n", fname, (unsigned int)*pgid, ret ? "can write" : "cannot write"));
+match on group %u -> can write.\n", fname, (unsigned int)*pgid ));
 						goto done;
 					}
 				}
@@ -3886,11 +3891,22 @@ match on group %u -> %s.\n", fname, (unsigned int)*pgid, ret ? "can write" : "ca
 
   check_stat:
 
+	/* If we get here we know ret == 0. */
+	SMB_ASSERT(ret == 0);
+
 	for (i = 0; i < current_user.ngroups; i++) {
 		if (current_user.groups[i] == psbuf->st_gid) {
 			ret = (psbuf->st_mode & S_IWGRP) ? 1 : 0;
+			DEBUG(10,("check_posix_acl_group_write: file %s \
+match on owning group %u -> %s.\n", fname, (unsigned int)psbuf->st_gid, ret ? "can write" : "cannot write"));
 			break;
 		}
+	}
+
+	if (i == current_user.ngroups) {
+		SMB_ASSERT(ret == 0);
+		DEBUG(10,("check_posix_acl_group_write: file %s \
+failed to match on user or group in token.\n", fname ));
 	}
 
   done:
