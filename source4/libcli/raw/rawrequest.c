@@ -48,8 +48,11 @@ NTSTATUS smbcli_request_destroy(struct smbcli_request *req)
 		DLIST_REMOVE(req->transport->pending_recv, req);
 	}
 
-	/* ahh, its so nice to destroy a complex structure in such a
-	   simple way! */
+	if (req->state == SMBCLI_REQUEST_ERROR &&
+	    NT_STATUS_IS_OK(req->status)) {
+		req->status = NT_STATUS_INTERNAL_ERROR;
+	}
+
 	status = req->status;
 	talloc_free(req);
 	return status;
@@ -95,7 +98,7 @@ struct smbcli_request *smbcli_request_setup_nonsmb(struct smbcli_transport *tran
   setup a SMB packet at transport level
 */
 struct smbcli_request *smbcli_request_setup_transport(struct smbcli_transport *transport,
-						uint8_t command, uint_t wct, uint_t buflen)
+						      uint8_t command, uint_t wct, uint_t buflen)
 {
 	struct smbcli_request *req;
 
@@ -119,8 +122,10 @@ struct smbcli_request *smbcli_request_setup_transport(struct smbcli_transport *t
 	SCVAL(req->out.hdr,HDR_FLG, FLAG_CASELESS_PATHNAMES);
 	SSVAL(req->out.hdr,HDR_FLG2, 0);
 
-	/* assign a mid */
-	req->mid = smbcli_transport_next_mid(transport);
+	if (command != SMBtranss && command != SMBtranss2) {
+		/* assign a mid */
+		req->mid = smbcli_transport_next_mid(transport);
+	}
 
 	/* copy the pid, uid and mid to the request */
 	SSVAL(req->out.hdr, HDR_PID, 0);
