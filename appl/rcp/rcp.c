@@ -52,7 +52,6 @@
 #include <string.h>
 #include <string.h>
 #include <unistd.h>
-#include <libutil.h>
 
 #include "pathnames.h"
 #include "extern.h"
@@ -71,13 +70,13 @@ char    *port;
 #define	CMDNEEDS	64
 char cmd[CMDNEEDS];		/* must hold "rcp -r -p -d\0" */
 
-int	 response __P((void));
-void	 rsource __P((char *, struct stat *));
-void	 sink __P((int, char *[]));
-void	 source __P((int, char *[]));
-void	 tolocal __P((int, char *[]));
-void	 toremote __P((char *, int, char *[]));
-void	 usage __P((void));
+int	 response (void);
+void	 rsource (char *, struct stat *);
+void	 sink (int, char *[]);
+void	 source (int, char *[]);
+void	 tolocal (int, char *[]);
+void	 toremote (char *, int, char *[]);
+void	 usage (void);
 
 int      do_cmd(char *host, char *remuser, char *cmd, int *fdin, int *fdout);
 
@@ -347,8 +346,8 @@ syserr:			run_err("%s: %s", name, strerror(errno));
 			 * versions expecting microseconds.
 			 */
 			(void)snprintf(buf, sizeof(buf), "T%ld 0 %ld 0\n",
-			    (long)stb.st_mtimespec.tv_sec,
-			    (long)stb.st_atimespec.tv_sec);
+			    (long)stb.st_mtime,
+			    (long)stb.st_atime);
 			(void)write(remout, buf, strlen(buf));
 			if (response() < 0)
 				goto next;
@@ -412,8 +411,8 @@ rsource(name, statp)
 		last++;
 	if (pflag) {
 		(void)snprintf(path, sizeof(path), "T%ld 0 %ld 0\n",
-		    (long)statp->st_mtimespec.tv_sec,
-		    (long)statp->st_atimespec.tv_sec);
+		    (long)statp->st_mtime,
+		    (long)statp->st_atime);
 		(void)write(remout, path, strlen(path));
 		if (response() < 0) {
 			closedir(dirp);
