@@ -130,7 +130,7 @@ PASSDB_OBJ = passdb.o ldap.o smbpass.o nisppass.o smbpassfile.o
 # general utility object files
 UTILOBJ1 = util.o system.o charset.o kanji.o fault.o smbencrypt.o smbdes.o charcnv.o genrand.o
 UTILOBJ2 = $(UTILOBJ1) md4.o loadparm.o params.o pcap.o username.o time.o membuffer.o namequery.o nmblib.o
-UTILOBJ3 = $(UTILOBJ2) signal.o netmask.o dfree.o
+UTILOBJ3 = $(UTILOBJ2) signal.o netmask.o dfree.o debug.o
 UTILOBJ = $(UTILOBJ3) credentials.o interface.o replace.o print_svid.o smberr.o pidfile.o slprintf.o \
           $(SSL_OBJ) $(UBIOBJ)
 

@@ -160,6 +160,15 @@ BOOL deal_with_creds(uchar sess_key[8],
 		     DOM_CRED *sto_clnt_cred, 
 		     DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred);
 
+/*The following definitions come from  debug.c  */
+
+int sig_usr2( void );
+int sig_usr1( void );
+void setup_logging( char *pname, BOOL interactive );
+void reopen_logs( void );
+void force_check_log_size( void );
+BOOL dbghdr( int level, char *file, char *func, int line );
+
 /*The following definitions come from  dfree.c  */
 
 int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize);
@@ -1972,11 +1981,6 @@ BOOL user_in_list(char *user,char *list);
 
 /*The following definitions come from  util.c  */
 
-int sig_usr2(void);
-int sig_usr1(void);
-void setup_logging(char *pname,BOOL interactive);
-void reopen_logs(void);
-void force_check_log_size(void);
 char *tmpdir(void);
 BOOL is_a_socket(int fd);
 BOOL next_token(char **ptr,char *buff,char *sep);
