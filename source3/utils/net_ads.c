@@ -101,7 +101,9 @@ retry:
 		free(prompt);
 	}
 
-	ads->password = strdup(opt_password);
+	if (opt_password)
+		ads->password = strdup(opt_password);
+
 	ads->user_name = strdup(opt_user_name);
 
 	status = ads_connect(ads);
