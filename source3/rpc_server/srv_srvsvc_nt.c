@@ -1624,7 +1624,7 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 	if (!fsp) {
 		/* Perhaps it is a directory */
 		if (errno == EISDIR)
-			fsp = open_directory(conn, filename, &st,
+			fsp = open_directory(conn, filename, &st,0,
 					     (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
 
 		if (!fsp) {
@@ -1728,7 +1728,7 @@ NTSTATUS _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *
 	if (!fsp) {
 		/* Perhaps it is a directory */
 		if (errno == EISDIR)
-			fsp = open_directory(conn, filename, &st,
+			fsp = open_directory(conn, filename, &st,0,
 					     (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
 
 		if (!fsp) {
