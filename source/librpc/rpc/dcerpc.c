@@ -761,7 +761,7 @@ static NTSTATUS dcerpc_ndr_validate_in(TALLOC_CTX *mem_ctx,
 	status = ndr_pull(pull, NDR_IN, st);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ndr_pull_error(pull, NDR_ERR_VALIDATE, 
-				      "Error in input validation pull - %s",
+				      "failed input validation pull - %s",
 				      nt_errstr(status));
 	}
 
@@ -773,7 +773,7 @@ static NTSTATUS dcerpc_ndr_validate_in(TALLOC_CTX *mem_ctx,
 	status = ndr_push(push, NDR_IN, st);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ndr_push_error(push, NDR_ERR_VALIDATE, 
-				      "Error in input validation push - %s",
+				      "failed input validation push - %s",
 				      nt_errstr(status));
 	}
 
@@ -785,7 +785,7 @@ static NTSTATUS dcerpc_ndr_validate_in(TALLOC_CTX *mem_ctx,
 		DEBUG(3,("secondary:\n"));
 		dump_data(3, blob2.data, blob2.length);
 		return ndr_push_error(push, NDR_ERR_VALIDATE, 
-				      "Error in input validation data - %s",
+				      "failed input validation data - %s",
 				      nt_errstr(status));
 	}
 
@@ -825,7 +825,7 @@ static NTSTATUS dcerpc_ndr_validate_out(TALLOC_CTX *mem_ctx,
 	status = ndr_push(push, NDR_OUT, struct_ptr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ndr_push_error(push, NDR_ERR_VALIDATE, 
-				      "Error in output validation push - %s",
+				      "failed output validation push - %s",
 				      nt_errstr(status));
 	}
 
@@ -840,7 +840,7 @@ static NTSTATUS dcerpc_ndr_validate_out(TALLOC_CTX *mem_ctx,
 	status = ndr_pull(pull, NDR_OUT, st);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ndr_pull_error(pull, NDR_ERR_VALIDATE, 
-				      "Error in output validation pull - %s",
+				      "failed output validation pull - %s",
 				      nt_errstr(status));
 	}
 
@@ -852,7 +852,7 @@ static NTSTATUS dcerpc_ndr_validate_out(TALLOC_CTX *mem_ctx,
 	status = ndr_push(push, NDR_OUT, st);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ndr_push_error(push, NDR_ERR_VALIDATE, 
-				      "Error in output validation push2 - %s",
+				      "failed output validation push2 - %s",
 				      nt_errstr(status));
 	}
 
@@ -864,7 +864,7 @@ static NTSTATUS dcerpc_ndr_validate_out(TALLOC_CTX *mem_ctx,
 		DEBUG(3,("secondary:\n"));
 		dump_data(3, blob2.data, blob2.length);
 		return ndr_push_error(push, NDR_ERR_VALIDATE, 
-				      "Error in output validation data - %s",
+				      "failed output validation data - %s",
 				      nt_errstr(status));
 	}
 
