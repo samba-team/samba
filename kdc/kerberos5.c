@@ -210,7 +210,6 @@ as_rep(KDC_REQ *req,
     char *client_name, *server_name;
     krb5_error_code ret = 0;
     const char *e_text = NULL;
-    int i;
 
     Key *ckey, *skey;
 
@@ -838,7 +837,6 @@ tgs_make_reply(KDC_REQ_BODY *b,
     EncTicketPart et;
     KDCOptions f = b->kdc_options;
     krb5_error_code ret;
-    int i;
     krb5_enctype setype;
     Key *skey;
     EncryptionKey *ekey;
@@ -1055,7 +1053,6 @@ tgs_rep2(KDC_REQ_BODY *b,
 	 const char *from)
 {
     krb5_ap_req ap_req;
-    size_t len;
     krb5_error_code ret;
     krb5_principal princ;
     krb5_auth_context ac = NULL;
@@ -1152,7 +1149,6 @@ tgs_rep2(KDC_REQ_BODY *b,
 	Realm r;
 	char *spn = NULL, *cpn = NULL;
 	hdb_entry *server = NULL, *client = NULL;
-	TransitedEncoding tr;
 	int loop = 0;
 	EncTicketPart adtkt;
 	char opt_str[128];

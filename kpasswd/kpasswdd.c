@@ -45,9 +45,6 @@ static krb5_log_facility *log_facility;
 
 static sig_atomic_t exit_flag = 0;
 
-static krb5_data msater_key;
-static int master_key_set = 0;
-
 #define KPASSWDD_LOG_ERR  0
 #define KPASSWDD_LOG_INFO 1
 
