@@ -58,6 +58,7 @@
 #if defined(__hpux)
 #define AFS_SYSCALL	50
 #define AFS_SYSCALL2	49
+#define AFS_SYSCALL3	48
 #endif
 
 #if defined(_AIX)
