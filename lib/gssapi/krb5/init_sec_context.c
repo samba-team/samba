@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -176,20 +176,20 @@ do_delegation (krb5_auth_context ac,
 
 static OM_uint32
 init_auth
-           (OM_uint32 * minor_status,
-            const gss_cred_id_t initiator_cred_handle,
-            gss_ctx_id_t * context_handle,
-            const gss_name_t target_name,
-            const gss_OID mech_type,
-            OM_uint32 req_flags,
-            OM_uint32 time_req,
-            const gss_channel_bindings_t input_chan_bindings,
-            const gss_buffer_t input_token,
-            gss_OID * actual_mech_type,
-            gss_buffer_t output_token,
-            OM_uint32 * ret_flags,
-            OM_uint32 * time_rec
-           )
+(OM_uint32 * minor_status,
+ const gss_cred_id_t initiator_cred_handle,
+ gss_ctx_id_t * context_handle,
+ const gss_name_t target_name,
+ const gss_OID mech_type,
+ OM_uint32 req_flags,
+ OM_uint32 time_req,
+ const gss_channel_bindings_t input_chan_bindings,
+ const gss_buffer_t input_token,
+ gss_OID * actual_mech_type,
+ gss_buffer_t output_token,
+ OM_uint32 * ret_flags,
+ OM_uint32 * time_rec
+    )
 {
     OM_uint32 ret = GSS_S_FAILURE;
     krb5_error_code kret;
@@ -257,12 +257,12 @@ init_auth
 	*actual_mech_type = GSS_KRB5_MECHANISM;
 
     if (initiator_cred_handle == GSS_C_NO_CREDENTIAL) {
-    kret = krb5_cc_default (gssapi_krb5_context, &ccache);
-    if (kret) {
-	*minor_status = kret;
-	ret = GSS_S_FAILURE;
-	goto failure;
-    }
+	kret = krb5_cc_default (gssapi_krb5_context, &ccache);
+	if (kret) {
+	    *minor_status = kret;
+	    ret = GSS_S_FAILURE;
+	    goto failure;
+	}
     } else
 	ccache = initiator_cred_handle->ccache;
 
@@ -319,23 +319,23 @@ init_auth
 		       ccache, cred, target_name, &fwd_data, &flags);
        
     if (req_flags & GSS_C_MUTUAL_FLAG) {
-       flags |= GSS_C_MUTUAL_FLAG;
-       ap_options |= AP_OPTS_MUTUAL_REQUIRED;
+	flags |= GSS_C_MUTUAL_FLAG;
+	ap_options |= AP_OPTS_MUTUAL_REQUIRED;
     }
     
     if (req_flags & GSS_C_REPLAY_FLAG)
-       ;                               /* XXX */
+	;                               /* XXX */
     if (req_flags & GSS_C_SEQUENCE_FLAG)
-       ;                               /* XXX */
+	;                               /* XXX */
     if (req_flags & GSS_C_ANON_FLAG)
-       ;                               /* XXX */
+	;                               /* XXX */
     flags |= GSS_C_CONF_FLAG;
     flags |= GSS_C_INTEG_FLAG;
     flags |= GSS_C_SEQUENCE_FLAG;
     flags |= GSS_C_TRANS_FLAG;
     
     if (ret_flags)
-       *ret_flags = flags;
+	*ret_flags = flags;
     (*context_handle)->flags = flags;
     (*context_handle)->more_flags = LOCAL;
     
@@ -407,7 +407,7 @@ init_auth
 	return GSS_S_COMPLETE;
     }
 
-failure:
+ failure:
     krb5_auth_con_free (gssapi_krb5_context,
 			(*context_handle)->auth_context);
     if((*context_handle)->source)
