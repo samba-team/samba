@@ -369,7 +369,7 @@ char *sid_to_string(fstring sidstr_out, DOM_SID *sid)
 BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
   pstring tok;
-  char *p;
+  char *p. *q;
   /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
   uint32 ia;
 
@@ -381,7 +381,7 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 
   memset((char *)sidout, '\0', sizeof(DOM_SID));
   
-  p = strdup(sidstr + 2);
+  q = p = strdup(sidstr + 2);
   if (p == NULL) {
     DEBUG(0, ("string_to_sid: out of memory!\n"));
     return False;
@@ -389,7 +389,7 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
   
   if (!next_token(&p, tok, "-", sizeof(tok))) {
     DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-    SAFE_FREE(p);
+    SAFE_FREE(q);
     return False;
   }
 
@@ -398,7 +398,7 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 
   if (!next_token(&p, tok, "-", sizeof(tok))) {
     DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-    SAFE_FREE(p);
+    SAFE_FREE(q);
     return False;
   }
 
@@ -426,7 +426,7 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 
   DEBUG(7,("string_to_sid: converted SID %s ok\n", sidstr));
 
-  SAFE_FREE(p);
+  SAFE_FREE(q);
   return True;
 }
 
