@@ -353,6 +353,10 @@ int
 mkstemp(char *template);
 #endif
 
+#ifndef HAVE_PIDFILE
+void pidfile (const char*);
+#endif
+
 #ifndef HAVE_FLOCK
 #ifndef LOCK_SH
 #define LOCK_SH   1		/* Shared lock */
