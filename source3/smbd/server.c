@@ -282,7 +282,6 @@ max can be %d\n",
 BOOL reload_services(BOOL test)
 {
 	BOOL ret;
-	int i=0;
 	
 	if (lp_loaded()) {
 		pstring fname;
