@@ -143,12 +143,19 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	if ((accmode == O_RDONLY) && ((flags & O_TRUNC) == O_TRUNC))
 		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
 
+	/*
+	 * We can't actually truncate here as the file may be locked.
+	 * open_file_shared will take care of the truncate later. JRA.
+	 */
+
+	local_flags &= ~O_TRUNC;
+
 	/* actually do the open */
 	fsp->fd = fd_open(conn, fname, local_flags, mode);
 
 	if (fsp->fd == -1)  {
-		DEBUG(3,("Error opening file %s (%s) (flags=%d)\n",
-			 fname,strerror(errno),flags));
+		DEBUG(3,("Error opening file %s (%s) (local_flags=%d) (flags=%d)\n",
+			 fname,strerror(errno),local_flags,flags));
 		check_for_pipe(fname);
 		return False;
 	}
@@ -230,9 +237,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 static int truncate_unless_locked(struct connection_struct *conn, files_struct *fsp)
 {
 	SMB_BIG_UINT mask = (SMB_BIG_UINT)-1;
-
-	if (!fsp->can_write)
-		return -1;
 
 	if (is_locked(fsp,fsp->conn,mask,0,WRITE_LOCK)){
 		errno = EACCES;
@@ -735,7 +739,11 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
 			flags,flags2,(int)mode));
 
-	fsp_open = open_file(fsp,conn,fname,psbuf,flags|(flags2&~(O_TRUNC)),mode);
+	/*
+	 * open_file strips any O_TRUNC flags itself.
+	 */
+
+	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,mode);
 
 	if (!fsp_open && (flags == O_RDWR) && (errno != ENOENT) && fcbopen) {
 		if((fsp_open = open_file(fsp,conn,fname,psbuf,O_RDONLY,mode)) == True)
