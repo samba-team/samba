@@ -1156,16 +1156,42 @@ BOOL get_uid_list_of_group(gid_t gid, uid_t **uid, int *num_uids)
  Create a UNIX group on demand.
 ****************************************************************************/
 
-int smb_create_group(char *unix_group)
+int smb_create_group(char *unix_group, gid_t *new_gid)
 {
 	pstring add_script;
 	int ret;
+	int fd = 0;
 
 	pstrcpy(add_script, lp_addgroup_script());
 	if (! *add_script) return -1;
 	pstring_sub(add_script, "%g", unix_group);
-	ret = smbrun(add_script,NULL);
+	ret = smbrun(add_script, (new_gid!=NULL) ? &fd : NULL);
 	DEBUG(3,("smb_create_group: Running the command `%s' gave %d\n",add_script,ret));
+	if (ret != 0)
+		return ret;
+
+	if (fd != 0) {
+		fstring output;
+
+		*new_gid = 0;
+		if (read(fd, output, sizeof(output)) > 0) {
+			*new_gid = (gid_t)strtoul(output, NULL, 10);
+		}
+		close(fd);
+
+		if (*new_gid == 0) {
+			/* The output was garbage. We assume nobody
+                           will create group 0 via smbd. Now we try to
+                           get the group via getgrnam. */
+
+			struct group *grp = getgrnam(unix_group);
+			if (grp != NULL)
+				*new_gid = grp->gr_gid;
+			else
+				return 1;
+		}
+	}
+
 	return ret;
 }
 

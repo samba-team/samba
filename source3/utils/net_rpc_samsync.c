@@ -323,14 +323,15 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	fstring sid_string;
 	GROUP_MAP map;
 	int flag = TDB_INSERT;
+	gid_t gid;
 
 	unistr2_to_ascii(name, &delta->uni_grp_name, sizeof(name)-1);
 	unistr2_to_ascii(comment, &delta->uni_grp_desc, sizeof(comment)-1);
 
 	if ((grp = getgrnam(name)) == NULL)
-		smb_create_group(name);
+		smb_create_group(name, &gid);
 
-	if ((grp = getgrnam(name)) == NULL)
+	if ((grp = getgrgid(gid)) == NULL)
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* add the group to the mapping table */
