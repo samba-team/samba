@@ -1,4 +1,4 @@
-.\" Copyright (c) 1997 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
 .\" $Id$
 .Dd April 11, 1999
 .Dt KRB5_425_CONV_PRINCIPAL 3
@@ -26,8 +26,8 @@ realm. In some cases also the first component/name will differ between
 version 4 and version 5.  Furthermore the second component of a host
 principal will be the fully qualified domain name of the host in
 question, while the instance of a version 4 principal will only
-contain the first component.  Because of these problems the conversion
-between principals will have to be site customized.
+contain the first part (short hostname).  Because of these problems
+the conversion between principals will have to be site customized.
 .Pp
 .Fn krb5_425_conv_principal_ext
 will try to convert a version 4 principal, given by
@@ -85,8 +85,10 @@ v4_name_convert = {
 	host = {
 		ftp = ftp
 		hprop = hprop
+		imap = imap
 		pop = pop
 		rcmd = host
+		smtp = smtp
 	}
 }
 .Ed
