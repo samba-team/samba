@@ -431,15 +431,18 @@ init_auth
 	return GSS_S_CONTINUE_NEEDED;
     } else {
 	int32_t seq_number;
+	int is_cfx = 0;
 	
 	krb5_auth_getremoteseqnumber (gssapi_krb5_context,
 				      (*context_handle)->auth_context,
 				      &seq_number);
 
+	gsskrb5_is_cfx(*context_handle, &is_cfx);
+
 	ret = gssapi_msg_order_create(minor_status,
 				      &(*context_handle)->order,
 				      gssapi_msg_order_f(flags),
-				      seq_number, 0);
+				      seq_number, 0, is_cfx);
 	if (ret)
 	    goto failure;
 
@@ -493,6 +496,7 @@ repl_mutual
     krb5_error_code kret;
     krb5_data indata;
     krb5_ap_rep_enc_part *repl;
+    int is_cfx = 0;
 
     output_token->length = 0;
     output_token->value = NULL;
@@ -527,10 +531,12 @@ repl_mutual
 				  (*context_handle)->auth_context,
 				  &seq_number);
 
+    gsskrb5_is_cfx(*context_handle, &is_cfx);
+
     ret = gssapi_msg_order_create(minor_status,
 				  &(*context_handle)->order,
 				  gssapi_msg_order_f((*context_handle)->flags),
-				  seq_number, 0);
+				  seq_number, 0, is_cfx);
     if (ret) {
 	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
 	return ret;

@@ -67,6 +67,44 @@ gsskrb5_register_acceptor_identity (const char *identity)
     return GSS_S_COMPLETE;
 }
 
+void
+gsskrb5_is_cfx(gss_ctx_id_t context_handle, int *is_cfx)
+{
+    krb5_keyblock *key;
+    int acceptor = (context_handle->more_flags & LOCAL) == 0;
+
+    if (acceptor) {
+	if (context_handle->auth_context->local_subkey)
+	    key = context_handle->auth_context->local_subkey;
+	else
+	    key = context_handle->auth_context->remote_subkey;
+    } else {
+	if (context_handle->auth_context->remote_subkey)
+	    key = context_handle->auth_context->remote_subkey;
+	else
+	    key = context_handle->auth_context->local_subkey;
+    }
+    if (key == NULL)
+	key = context_handle->auth_context->keyblock;
+
+    if (key == NULL)
+	return;
+	    
+    switch (key->keytype) {
+    case KEYTYPE_DES :
+    case KEYTYPE_ARCFOUR:
+    case KEYTYPE_DES3 :
+	break;
+    default :
+	*is_cfx = 1;
+	if ((acceptor && context_handle->auth_context->local_subkey) ||
+	    (!acceptor && context_handle->auth_context->remote_subkey))
+	    context_handle->more_flags |= ACCEPTOR_SUBKEY;
+	break;
+    }
+}
+
+
 static OM_uint32
 gsskrb5_accept_sec_context
            (OM_uint32 * minor_status,
@@ -91,6 +129,7 @@ gsskrb5_accept_sec_context
     krb5_keytab keytab = NULL;
     krb5_data fwd_data;
     OM_uint32 minor;
+    int is_cfx = 0;
 
     GSSAPI_KRB5_INIT();
 
@@ -355,12 +394,10 @@ gsskrb5_accept_sec_context
 	    goto end_fwd;
 	}
       
-	krb5_auth_con_getflags(gssapi_krb5_context,
-			       (*context_handle)->auth_context,
-			       &ac_flags);
-	krb5_auth_con_setflags(gssapi_krb5_context,
-			       (*context_handle)->auth_context,
-			       ac_flags & ~KRB5_AUTH_CONTEXT_DO_TIME);
+	krb5_auth_con_removeflags(gssapi_krb5_context,
+				  (*context_handle)->auth_context,
+				  KRB5_AUTH_CONTEXT_DO_TIME,
+				  &ac_flags);
 	kret = krb5_rd_cred2(gssapi_krb5_context,
 			     (*context_handle)->auth_context,
 			     ccache,
@@ -397,8 +434,18 @@ gsskrb5_accept_sec_context
 	    goto failure;
     }
 
+    gsskrb5_is_cfx(*context_handle, &is_cfx);
+
     if(flags & GSS_C_MUTUAL_FLAG) {
 	krb5_data outbuf;
+
+	if (is_cfx) {
+	    kret = krb5_auth_con_addflags(gssapi_krb5_context,
+					  (*context_handle)->auth_context,
+					  KRB5_AUTH_CONTEXT_USE_SUBKEY,
+					  NULL);
+	    (*context_handle)->more_flags |= ACCEPTOR_SUBKEY;
+	}
 
 	kret = krb5_mk_rep (gssapi_krb5_context,
 			    (*context_handle)->auth_context,
@@ -435,7 +482,7 @@ gsskrb5_accept_sec_context
 	ret = gssapi_msg_order_create(minor_status,
 				      &(*context_handle)->order,
 				      gssapi_msg_order_f(flags),
-				      seq_number, 0);
+ 				      seq_number, 0, is_cfx);
 	if (ret)
 	    goto failure;
 	
