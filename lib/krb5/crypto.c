@@ -1922,8 +1922,9 @@ krb5_checksum_is_keyed(krb5_context context,
 {
     struct checksum_type *ct = _find_checksum(type);
     if(ct == NULL) {
-	krb5_set_error_string (context, "checksum type %d not supported",
-			       type);
+	if (context)
+	    krb5_set_error_string (context, "checksum type %d not supported",
+				   type);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
     return ct->flags & F_KEYED;
@@ -1935,8 +1936,9 @@ krb5_checksum_is_collision_proof(krb5_context context,
 {
     struct checksum_type *ct = _find_checksum(type);
     if(ct == NULL) {
-	krb5_set_error_string (context, "checksum type %d not supported",
-			       type);
+	if (context)
+	    krb5_set_error_string (context, "checksum type %d not supported",
+				   type);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
     return ct->flags & F_CPROOF;
