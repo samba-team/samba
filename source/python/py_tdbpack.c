@@ -307,7 +307,8 @@ pytdbpack_calc_reqd_len(char *format_str,
 
 		if (val_i >= val_len) {
 			PyErr_Format(PyExc_IndexError,
-				     "samba.tdbpack.pack: value list is too short for format string");
+				     "%s: value list is too short for format string",
+				     __FUNCTION__);
 			return -1;
 		}
 
@@ -321,13 +322,6 @@ pytdbpack_calc_reqd_len(char *format_str,
 			return -1;
 		else
 			len += item_len;
-	}
-
-	if (val_i != val_len) {
-		PyErr_Format(PyExc_IndexError,
-			     "%s: value list is wrong length for format string",
-			     __FUNCTION__);
-		return -1;
 	}
 
 	return len;
