@@ -12,12 +12,6 @@ static char SccsId[] = "@(#)@(#)pop_init.c	2.1  2.1 3/18/91";
 #include <popper.h>
 RCSID("$Id$");
 
-#ifdef KERBEROS
-AUTH_DAT kdata;
-#endif /* KERBEROS */
-
-extern int      errno;
-
 static
 int
 krb_authenticate(POP *p, struct sockaddr_in *addr)
@@ -33,19 +27,20 @@ krb_authenticate(POP *p, struct sockaddr_in *addr)
     strcpy(instance, "*");
     auth = krb_recvauth(0L, 0, &ticket, "pop", instance,
                         addr, (struct sockaddr_in *) NULL,
-                        &kdata, "", schedule, version);
+                        &p->kdata, "", schedule, version);
     
     if (auth != KSUCCESS) {
         pop_msg(p, POP_FAILURE, "Kerberos authentication failure: %s", 
                 krb_get_err_text(auth));
         pop_log(p, POP_FAILURE, "%s: (%s.%s@%s) %s", p->client, 
-                kdata.pname, kdata.pinst, kdata.prealm, krb_get_err_text(auth));
+                p->kdata.pname, p->kdata.pinst, p->kdata.prealm,
+		krb_get_err_text(auth));
         exit (1);
     }
 
 #ifdef DEBUG
-    pop_log(p, POP_DEBUG, "%s.%s@%s (%s): ok", kdata.pname, 
-            kdata.pinst, kdata.prealm, inet_ntoa(addr->sin_addr));
+    pop_log(p, POP_DEBUG, "%s.%s@%s (%s): ok", p->kdata.pname, 
+            p->kdata.pinst, p->kdata.prealm, inet_ntoa(addr->sin_addr));
 #endif /* DEBUG */
 
 #endif /* KERBEROS */
@@ -76,6 +71,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     int                     options = 0;
     int                     sp = 0;             /*  Socket pointer */
     char                *   trace_file_name;
+    int			    inetd = 0;
 
     /*  Initialize the POP parameter block */
     memset (p,0, sizeof(POP));
@@ -94,7 +90,7 @@ pop_init(POP *p,int argcount,char **argmessage)
 #ifdef KERBEROS
 		       "k"
 #endif
-		       "dt:")) != EOF)
+		       "dit:")) != EOF)
         switch (c) {
 
             /*  Debugging requested */
@@ -127,6 +123,10 @@ pop_init(POP *p,int argcount,char **argmessage)
                 pop_timeout = atoi(optarg);
                 break;
 
+	    /*  Fake inetd */
+	    case 'i':
+		inetd = 1;
+		break;
             /*  Unknown option received */
             default:
                 errflag++;
@@ -134,9 +134,17 @@ pop_init(POP *p,int argcount,char **argmessage)
 
     /*  Exit if bad options specified */
     if (errflag) {
-        (void)fprintf(stderr,"Usage: %s [-d]\n",argmessage[0]);
+        fprintf(stderr,
+		"Usage: %s [-T timeout] [-d] [-k] [-i]\n",
+		argmessage[0]);
         exit (1);
     }
+
+    /* Fake inetd */
+    if (inetd)
+	mini_inetd (p->kerberosp ?
+		    k_getportbyname("kpop", "tcp", htons(1109)) :
+		    k_getportbyname("pop", "tcp", htons(110)));
 
     /*  Get the address and socket of the client to whom I am speaking */
     len = sizeof(cs);
