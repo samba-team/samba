@@ -14,7 +14,7 @@
 [ ${NETWORKING} = "no" ] && exit 0
 
 # Check that smb.conf exists.
-[ -f /etc/smb.conf ] || exit 0
+[ -f /etc/samba/smb.conf ] || exit 0
 
 # See how we were called.
 case "$1" in

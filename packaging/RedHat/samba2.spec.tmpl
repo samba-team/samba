@@ -4,11 +4,9 @@ Version: PVERSION
 Release: PRELEASE
 Copyright: GNU GPL version 2
 Group: Networking
-Source: ftp://samba.org/pub/samba/samba-PVERSION.tar.gz
-Patch: makefile-path.patch
-Patch1: smbw.patch
+Source: ftp://samba.org/pub/samba/samba-%{version}.tar.gz
 Packager: John H Terpstra [Samba-Team] <jht@samba.org>
-Requires: pam >= 0.64 kernel >= 2.2.1 glibc >= 2.1.2
+Requires: pam >= 0.72 /etc/pam.d/sytem-auth kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
 BuildRoot: /var/tmp/samba
 Prefix: /usr
@@ -45,6 +43,18 @@ for Shadow passwords and quotas. Do NOT recompile with the
 SHADOW_PWD option enabled
 
 %changelog
+* Sta Mar 31 2001 Andrew Bartlett <abartlet@pcug.org.au>
+ - Changed prefix/share/man for _mandir/share/man
+  - Changed this for a sed macro MANDIR_MACRO
+  - This allows us to build both RH7 (RPM4)
+     and older versions from same specfile.
+ - Made makerpms.sh use the rpm -ta command rather 
+    than attempting to devine the correct location to 
+    put the file.  Also removes some /tmp symlink games.
+  - Allows build on RPM4
+ - Increased PAM requirements to allow us to use 
+   system-auth (this pam is in 6.x errata at least)
+
 * Tue Mar 27 2001 John H Terpstra <jht@samba.org>
  - Fixed typos introduced by Sum Wun.
  - Build for Red Hat 7.x
@@ -127,8 +137,6 @@ SHADOW_PWD option enabled
 
 %prep
 %setup
-%patch -p1
-%patch1 -p1
 
 %build
 cd source
@@ -141,11 +149,10 @@ EXTRA="-D_LARGEFILE64_SOURCE"
 %endif
 NUMCPU=`grep processor /proc/cpuinfo | wc -l`
 CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
-	--prefix=%{prefix}\
-	--libdir=/etc \
-	--with-lockdir=/var/lock/samba \
-	--with-privatedir=/etc \
-	--with-swatdir=%{prefix}/share/swat \
+	--prefix=%{prefix} \
+	--localstatedir=/var \
+	--with-configdir=/etc/samba \
+	--with-fhs \
 	--with-quotas \
 	--with-smbmount \
 	--with-pam \
@@ -155,7 +162,8 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-vfs \
 	--with-msdfs \
 	--with-netatalk \
-	--with-sambabook=%{prefix}/share/swat/using_samba
+	--with-sambabook=%{prefix}/share/samba/swat/using_samba
+make -j${NUMCPU} proto
 make -j${NUMCPU} all smbfilter nsswitch/libnss_wins.so
 make -j${NUMCPU} smbtorture debug2html locktest2
 make -j${NUMCPU} masktest bin/smbspool
@@ -165,17 +173,19 @@ make -j${NUMCPU} masktest bin/smbspool
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/etc/codepages/src
-mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d}
-mkdir -p $RPM_BUILD_ROOT/etc/rc.d/{init.d,rc0.d,rc1.d,rc2.d,rc3.d,rc5.d,rc6.d}
-mkdir -p $RPM_BUILD_ROOT/home/samba
+mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,samba}
+mkdir -p $RPM_BUILD_ROOT/etc/samba/private
+mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT%{prefix}/{bin,sbin}
-mkdir -p $RPM_BUILD_ROOT/{sbin,lib}
-mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/{using_samba/{figs,gifs}},images,help,include}
-mkdir -p $RPM_BUILD_ROOT%{prefix}/share/man/{man1,man5,man7,man8}
+mkdir -p $RPM_BUILD_ROOT/sbin
+mkdir -p $RPM_BUILD_ROOT%{prefix}/share/samba/codepages
+mkdir -p $RPM_BUILD_ROOT%{prefix}/share/samba/swat/{images,help,include,using_samba}
+mkdir -p $RPM_BUILD_ROOT%{prefix}/share/samba/swat/using_samba/{figs,gifs}
+mkdir -p $RPM_BUILD_ROOTMANDIR_MACRO
 mkdir -p $RPM_BUILD_ROOT/var/lock/samba
 mkdir -p $RPM_BUILD_ROOT/var/log/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
+mkdir -p $RPM_BUILD_ROOT/lib
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
@@ -201,23 +211,17 @@ done
 ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
 ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 
-# Install level 1 man pages
-for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprns.1 make_smbcodepage.1 nmblookup.1
-do
-install -m644 docs/manpages/$i $RPM_BUILD_ROOT%{prefix}/share/man/man1
-done
+# This allows us to get away without duplicating code that 
+#  sombody else can maintin for us.  
+cd source
+make LIBDIR=$RPM_BUILD_ROOT%{prefix}/share/samba \
+	BINDIR=$RPM_BUILD_ROOT%{prefix}/bin \
+	MANDIR=$RPM_BUILD_ROOTMANDIR_MACRO \
+	CODEPAGEDIR=$RPM_BUILD_ROOT%{prefix}/share/samba/codepages \
+	installman installcp
+cd ..
 
-# Install codepage source files
-for i in 437 737 775 850 852 861 866 932 936 949 950 1251
-do
-install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT/etc/codepages/src
-done
-for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
-do
-install -m644 source/codepages/CP$i.TXT $RPM_BUILD_ROOT/etc/codepages/src
-done
-
-# Install the nsswitch library extension file
+# Install the nsswitch library extenstion file
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 # Make link for wins resolver
 ( cd $RPM_BUILD_ROOT/lib; ln -s libnss_wins.so libnss_wins.so.2; )
@@ -225,46 +229,21 @@ install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 # Install SWAT helper files
 for i in swat/help/*.html docs/htmldocs/*.html
 do
-install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/help
+install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/samba/swat/help
 done
 for i in swat/images/*.gif
 do
-install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/images
+install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/samba/swat/images
 done
 for i in swat/include/*.html
 do
-install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/include
-done
-
-# This is the O'Reily Samba Book - on-line
-for i in docs/htmldocs/using_samba/*.html
-do
-install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/using_samba
-done
-for i in docs/htmldocs/using_samba/figs/*.gif
-do
-install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/using_samba/figs
-done
-for i in docs/htmldocs/using_samba/gifs/*.gif
-do
-install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/using_samba/gifs
+install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/samba/swat/include
 done
 
 # Install the miscellany
 install -m644 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat
-install -m644 docs/manpages/smb.conf.5 $RPM_BUILD_ROOT%{prefix}/share/man/man5
-install -m644 docs/manpages/lmhosts.5 $RPM_BUILD_ROOT%{prefix}/share/man/man5
-install -m644 docs/manpages/smbpasswd.5 $RPM_BUILD_ROOT%{prefix}/share/man/man5
-install -m644 docs/manpages/samba.7 $RPM_BUILD_ROOT%{prefix}/share/man/man7
-install -m644 docs/manpages/smbd.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
-install -m644 docs/manpages/nmbd.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
-install -m644 docs/manpages/swat.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
-install -m644 docs/manpages/smbmnt.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
-install -m644 docs/manpages/smbmount.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
-install -m644 docs/manpages/smbpasswd.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
-install -m644 docs/manpages/smbspool.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
-install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/smb.conf
-install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/smbusers
+install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
+install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/findsmb $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smbadduser $RPM_BUILD_ROOT%{prefix}/bin
@@ -272,7 +251,7 @@ install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
 install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
-echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/lmhosts
+echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -280,36 +259,23 @@ rm -rf $RPM_BUILD_ROOT
 %post
 /sbin/chkconfig --add smb
 
-# Build codepage load files
-for i in 437 737 850 852 861 866 932 936 949 950 1251
-do
-%{prefix}/bin/make_smbcodepage c $i /etc/codepages/src/codepage_def.$i /etc/codepages/codepage.$i
-done
-for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
-do
-%{prefix}/bin/make_unicodemap $i /etc/codepages/src/CP$i.TXT /etc/codepages/unicode_map.$i
-done
-
 # Add swat entry to /etc/services if not already there
 if !( grep ^[:space:]*swat /etc/services > /dev/null ) then
 	echo 'swat		901/tcp				# Add swat service used via inetd' >> /etc/services
 fi
 
 # Add swat entry to /etc/inetd.conf if needed
-if !( grep ^[:space:]*swat /etc/inetd.conf > /dev/null ) then
-	echo 'swat	stream	tcp	nowait.400	root	%{prefix}/sbin/swat swat' >> /etc/inetd.conf
-killall -1 inetd || :
+if [ -f /etc/inetd.conf ]; then
+	if !( grep ^[:space:]*swat /etc/inetd.conf > /dev/null ) then
+		echo 'swat	stream	tcp	nowait.400	root	%{prefix}/sbin/swat swat' >> /etc/inetd.conf
+	killall -1 inetd || :
+	fi
 fi
 
 %preun
 if [ $1 = 0 ] ; then
     /sbin/chkconfig --del smb
 
-    for n in /etc/codepages/*; do
-	if [ $n != /etc/codepages/src ]; then
-	    rm -rf $n
-	fi
-    done
     # We want to remove the browse.dat and wins.dat files so they can not interfer with a new version of samba!
     if [ -e /var/lock/samba/browse.dat ]; then
 	    rm -f /var/lock/samba/browse.dat
@@ -335,24 +301,18 @@ if [ $1 = 0 ] ; then
     # Remove swat entries from /etc/inetd.conf and /etc/services
     cd /etc
     tmpfile=/etc/tmp.$$
-    sed -e '/^[:space:]*swat.*$/d' /etc/inetd.conf > $tmpfile
-    mv $tmpfile inetd.conf
+	if [ -f /etc/inetd.conf ]; then
+      sed -e '/^[:space:]*swat.*$/d' /etc/inetd.conf > $tmpfile
+      mv $tmpfile inetd.conf
+	fi
     sed -e '/^[:space:]*swat.*$/d' /etc/services > $tmpfile
     mv $tmpfile services
-fi
-
-if [ -f /sbin/mount.smb ]; then
-	rm -f /sbin/mount.smb
-fi
-if [ -f /sbin/mount.smbfs ]; then
-	rm -f /sbin/mount.smbfs
 fi
 
 %triggerpostun -- samba < samba-2.0.0
 if [ $0 != 0 ]; then
     /sbin/chkconfig --add smb
 fi
-
 
 %files
 %doc README COPYING Manifest Read-Manifest-Now
@@ -368,7 +328,6 @@ fi
 %attr(-,root,root) %{prefix}/sbin/smbumount
 %attr(-,root,root) /sbin/mount.smbfs
 %attr(-,root,root) /sbin/mount.smb
-%attr(0750,root,root) %{prefix}/sbin/samba
 %attr(-,root,root) %{prefix}/bin/addtosmbpass
 %attr(-,root,root) %{prefix}/bin/mksmbpasswd.sh
 %attr(-,root,root) %{prefix}/bin/smbclient
@@ -387,41 +346,26 @@ fi
 %attr(-,root,root) %{prefix}/bin/smbprint
 %attr(-,root,root) %{prefix}/bin/smbadduser
 %attr(755,root,root) /lib/libnss_wins.s*
-%attr(-,root,root) %{prefix}/share/swat/help/*
-%attr(-,root,root) %{prefix}/share/swat/images/*
-%attr(-,root,root) %{prefix}/share/swat/include/header.html
-%attr(-,root,root) %{prefix}/share/swat/include/footer.html
-%attr(-,root,root) %{prefix}/share/swat/using_samba/*
-%attr(-,root,root) %config(noreplace) /etc/lmhosts
-%attr(-,root,root) %config(noreplace) /etc/smb.conf
-%attr(-,root,root) %config(noreplace) /etc/smbusers
+%attr(-,root,root) %{prefix}/share/samba/swat/help/*
+%attr(-,root,root) %{prefix}/share/samba/swat/images/*
+%attr(-,root,root) %{prefix}/share/samba/swat/include/header.html
+%attr(-,root,root) %{prefix}/share/samba/swat/include/footer.html
+%attr(-,root,root) %{prefix}/share/samba/swat/using_samba/*
+%attr(-,root,root) %config(noreplace) /etc/samba/lmhosts
+%attr(-,root,root) %config(noreplace) /etc/samba/smb.conf
+%attr(-,root,root) %config(noreplace) /etc/samba/smbusers
+%attr(700,root,root) %dir /etc/samba/private
 %attr(-,root,root) /etc/rc.d/init.d/smb
 %attr(-,root,root) /etc/logrotate.d/samba
-%attr(-,root,root) /etc/pam.d/samba
-%attr(-,root,root) /etc/codepages/src/codepage_def.*
-%attr(-,root,root) %{prefix}/share/man/man1/make_smbcodepage.1
-%attr(-,root,root) %{prefix}/share/man/man1/make_unicodemap.1
-%attr(-,root,root) %{prefix}/share/man/man1/nmblookup.1
-%attr(-,root,root) %{prefix}/share/man/man1/smbclient.1
-%attr(-,root,root) %{prefix}/share/man/man1/smbrun.1
-%attr(-,root,root) %{prefix}/share/man/man1/smbstatus.1
-%attr(-,root,root) %{prefix}/share/man/man1/smbtar.1
-%attr(-,root,root) %{prefix}/share/man/man1/testparm.1
-%attr(-,root,root) %{prefix}/share/man/man1/testprns.1
-%attr(-,root,root) %{prefix}/share/man/man5/lmhosts.5
-%attr(-,root,root) %{prefix}/share/man/man5/smb.conf.5
-%attr(-,root,root) %{prefix}/share/man/man5/smbpasswd.5
-%attr(-,root,root) %{prefix}/share/man/man7/samba.7
-%attr(-,root,root) %{prefix}/share/man/man8/nmbd.8
-%attr(-,root,root) %{prefix}/share/man/man8/smbd.8
-%attr(-,root,root) %{prefix}/share/man/man8/smbmnt.8
-%attr(-,root,root) %{prefix}/share/man/man8/smbmount.8
-%attr(-,root,root) %{prefix}/share/man/man8/smbpasswd.8
-%attr(-,root,root) %{prefix}/share/man/man8/smbspool.8
-%attr(-,root,root) %{prefix}/share/man/man8/swat.8
-%attr(-,root,nobody) %dir /home/samba
-%attr(-,root,root) %dir /etc/codepages
-%attr(-,root,root) %dir /etc/codepages/src
+%attr(-,root,root) %config(noreplace) /etc/pam.d/samba
+%attr(-,root,root) MANDIR_MACRO/man1/*
+%attr(-,root,root) MANDIR_MACRO/man5/*
+%attr(-,root,root) MANDIR_MACRO/man7/*
+%attr(-,root,root) MANDIR_MACRO/man8/*
+%attr(-,root,root) %dir %{prefix}/share/samba/codepages/*
 %attr(-,root,root) %dir /var/lock/samba
 %attr(-,root,root) %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
+
+
+
