@@ -219,10 +219,7 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 		   where it doens't supply a domain for logon script
 		   'net use' commands.
 
-		   The way I do it here is by checking if the fully
-		   qualified username exists. This is rather reliant
-		   on winbind, but until we have a better method this
-		   will have to do 
+		   Finally, we do this by looking up a cache of trusted domains!
 		*/
 
 		domain = client_domain;
