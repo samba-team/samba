@@ -1,12 +1,24 @@
 #!/bin/sh
 # $Id$
+#
+usage="Usage: $0 [-l username] [-r rsh_args] [-x xterm_args] host"
+while true
+do
+  case $1 in
+  -l) rsh_args="${rsh_args} -l $2 "; title="${2}@"; shift 2;;
+  -r) rsh_args="${rsh_args} $2 "; shift 2;;
+  -x) xterm_args="${xterm_args} $2 "; shift 2;;
+  -*) echo "$0: Bad option $1"; echo $usage; exit 1;;
+  *) break;;
+  esac
+done
 if test $# -lt 1; then
   echo "Usage: $0 host [arguments to xterm]"
   exit 1
 fi
 host=$1
+title="${title}${host}"
 shift
-xterm_args=$*
 bindir=%bindir%
 pdc_trams=`dirname $0`
 PATH=$pdc_trams:$bindir:$PATH
@@ -19,4 +31,4 @@ pid=$1
 disp=$2
 auth=$3
 kill -USR1 $pid
-rsh -n $host "env DISPLAY=$disp XAUTHORITY=$auth xterm -T $host -n $host $xterm_args &"
+rsh $rsh_args $host "env DISPLAY=$disp XAUTHORITY=$auth xterm -T $title -n $title $xterm_args &"
