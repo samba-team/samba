@@ -240,6 +240,7 @@ NDBM__del(krb5_context context, HDB *db, krb5_data key)
 static krb5_error_code
 NDBM_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
+    krb5_error_code ret;
     struct ndbm_db *d = malloc(sizeof(*d));
     char *lock_file;
     if(d == NULL)
@@ -263,7 +264,13 @@ NDBM_open(krb5_context context, HDB *db, int flags, mode_t mode)
 	return errno;
     }
     db->db = d;
-    return 0;
+    if((flags & O_ACCMODE) == O_RDONLY)
+	ret = hdb_check_db_format(context, db);
+    else
+	ret = hdb_init_db(context, db);
+    if(ret == HDB_ERR_NOENTRY)
+	return 0;
+    return ret;
 }
 
 static krb5_error_code
