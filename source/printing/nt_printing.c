@@ -1683,13 +1683,13 @@ static uint32 add_a_printer_driver_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
 
 /****************************************************************************
 ****************************************************************************/
-static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring in_prt, fstring in_arch)
+static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring driver, fstring arch)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 info;
 
 	ZERO_STRUCT(info);
 
-	fstrcpy(info.name, in_prt);
+	fstrcpy(info.name, driver);
 	fstrcpy(info.defaultdatatype, "RAW");
 	
 	fstrcpy(info.driverpath, "");
@@ -1710,7 +1710,7 @@ static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 
 /****************************************************************************
 ****************************************************************************/
-static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring in_prt, fstring in_arch, uint32 version)
+static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring drivername, fstring arch, uint32 version)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 driver;
 	TDB_DATA kbuf, dbuf;
@@ -1721,21 +1721,19 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 
 	ZERO_STRUCT(driver);
 
-	get_short_archi(architecture, in_arch);
+	get_short_archi(architecture, arch);
 
-	DEBUG(8,("get_a_printer_driver_3: [%s%s/%d/%s]\n", DRIVERS_PREFIX, architecture, version, in_prt));
+	DEBUG(8,("get_a_printer_driver_3: [%s%s/%d/%s]\n", DRIVERS_PREFIX, architecture, version, drivername));
 
-	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX, architecture, version, in_prt);
+	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX, architecture, version, drivername);
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
 	
 	dbuf = tdb_fetch(tdb_drivers, kbuf);
-#if 0
-	if (!dbuf.dptr) return get_a_printer_driver_3_default(info_ptr, in_prt, in_arch);
-#else
-	if (!dbuf.dptr) return WERR_ACCESS_DENIED;
-#endif
+	if (!dbuf.dptr) 
+		return WERR_ACCESS_DENIED;
+
 	len += tdb_unpack(dbuf.dptr, dbuf.dsize, "dffffffff",
 			  &driver.cversion,
 			  driver.name,
@@ -1771,7 +1769,7 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	if (len != dbuf.dsize) {
 			SAFE_FREE(driver.dependentfiles);
 
-		return get_a_printer_driver_3_default(info_ptr, in_prt, in_arch);
+		return get_a_printer_driver_3_default(info_ptr, drivername, arch);
 	}
 
 	*info_ptr = (NT_PRINTER_DRIVER_INFO_LEVEL_3 *)memdup(&driver, sizeof(driver));
@@ -3335,17 +3333,31 @@ uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 /****************************************************************************
 ****************************************************************************/
 WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
-                            fstring printername, fstring architecture, uint32 version)
+                            fstring drivername, fstring architecture, uint32 version)
 {
 	WERROR result;
 	
 	switch (level)
 	{
 		case 3:
-		{
-			result=get_a_printer_driver_3(&driver->info_3, printername, architecture, version);
+			/* Sometime we just want any version of the driver */
+			
+			if ( version == DRIVER_ANY_VERSION ) {
+				/* look for Win2k first and then for NT4 */
+				result = get_a_printer_driver_3(&driver->info_3, drivername, 
+						architecture, 3);
+						
+				if ( !W_ERROR_IS_OK(result) ) {
+					result = get_a_printer_driver_3( &driver->info_3, 
+							drivername, architecture, 2 );
+				}
+			}
+			else {
+				result = get_a_printer_driver_3(&driver->info_3, drivername, 
+					architecture, version);				
+			}
 			break;
-		}
+			
 		default:
 			result=W_ERROR(1);
 			break;
@@ -3353,6 +3365,7 @@ WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
 	
 	if (W_ERROR_IS_OK(result))
 		dump_a_printer_driver(*driver, level);
+		
 	return result;
 }
 
@@ -3411,91 +3424,144 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
   Determine whether or not a particular driver is currently assigned
   to a printer
 ****************************************************************************/
-BOOL printer_driver_in_use (char *arch, char *driver)
+
+BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i )
 {
-	TDB_DATA kbuf, newkey, dbuf;
-	NT_PRINTER_INFO_LEVEL_2 info;
-	int ret;
+	int snum;
+	int n_services = lp_numservices();
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
-	if (!tdb_printers)
-		if (!nt_printing_init())
-			return False;
+	if ( !i ) 
+		return False;
 
-	DEBUG(5,("printer_driver_in_use: Beginning search through printers.tdb...\n"));
+	DEBUG(5,("printer_driver_in_use: Beginning search through ntprinters.tdb...\n"));
 	
 	/* loop through the printers.tdb and check for the drivername */
-	for (kbuf = tdb_firstkey(tdb_printers); kbuf.dptr;
-	     newkey = tdb_nextkey(tdb_printers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
+	
+	for (snum=0; snum<n_services; snum++) 
 	{
-
-		dbuf = tdb_fetch(tdb_printers, kbuf);
-		if (!dbuf.dptr) 
+		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 			continue;
-
-		if (strncmp(kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) != 0) 
+		
+		if ( !W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))) )
 			continue;
-
-		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "dddddddddddfffffPfffff",
-			&info.attributes,
-			&info.priority,
-			&info.default_priority,
-			&info.starttime,
-			&info.untiltime,
-			&info.status,
-			&info.cjobs,
-			&info.averageppm,
-			&info.changeid,
-			&info.c_setprinter,
-			&info.setuptime,
-			info.servername,
-			info.printername,
-			info.sharename,
-			info.portname,
-			info.drivername,
-			info.comment,
-			info.location,
-			info.sepfile,
-			info.printprocessor,
-			info.datatype,
-			info.parameters);
-
-		SAFE_FREE(dbuf.dptr);
-
-		if (ret == -1) {
-			DEBUG (0,("printer_driver_in_use: tdb_unpack failed for printer %s\n",
-					info.printername));
-			continue;
+		
+		if ( !StrCaseCmp(i->name, printer->info_2->drivername) ) {
+			free_a_printer( &printer, 2 );
+			return True;
 		}
 		
-		DEBUG (10,("printer_driver_in_use: Printer - %s (%s)\n",
-			info.printername, info.drivername));
-			
-		if (strcmp(info.drivername, driver) == 0) 
-		{
-			DEBUG(5,("printer_driver_in_use: Printer %s using %s\n",
-				info.printername, driver));
-			return True;
-		}	
+		free_a_printer( &printer, 2 );
 	}
-	DEBUG(5,("printer_driver_in_use: Completed search through printers.tdb...\n"));
 	
+	DEBUG(5,("printer_driver_in_use: Completed search through ntprinters.tdb...\n"));
 	
+	/* report that the driver is not in use by default */
 	
-	/* report that the driver is in use by default */
 	return False;
+}
+
+/**********************************************************************
+ Check if any of the files used by src are also used by drv 
+ *********************************************************************/
+
+static BOOL check_driver_file_overlap( NT_PRINTER_DRIVER_INFO_LEVEL_3 *src, 
+				       NT_PRINTER_DRIVER_INFO_LEVEL_3 *drv )
+{
+	
+
+	return False;
+}
+
+/****************************************************************************
+  Determine whether or not a particular driver files are currently being 
+  used by any other driver.  Requires using the full path from [print$]
+****************************************************************************/
+
+BOOL printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
+{
+	int 				i;
+	int 				ndrivers;
+	uint32 				version;
+	fstring 			*list = NULL;
+	NT_PRINTER_DRIVER_INFO_LEVEL 	driver;
+	
+	/* loop over all driver versions */
+	
+	DEBUG(5,("printer_driver_files_in_use: Beginning search through ntdrivers.tdb...\n"));
+	
+	for ( version=0; version<DRIVER_MAX_VERSION; version++ )
+	{
+		/* get the list of drivers */
+		
+		list = NULL;
+		ndrivers = get_ntdrivers(&list, info->environment, version);
+		
+		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", 
+			ndrivers, info->environment, version));
+
+		if(ndrivers == -1)
+			continue;
+			
+		/* check each driver for overlap in files */
+		
+		for (i=0; i<ndrivers; i++) 
+		{
+			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
+			
+			ZERO_STRUCT(driver);
+			
+			if ( !W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, list[i], 
+				info->environment, version)) ) 
+			{
+				SAFE_FREE(list);
+				return True;
+			}
+			
+			/* check if d2 uses any files from d1 */
+			
+			if ( check_driver_file_overlap(info, driver.info_3) ) {
+				free_a_printer_driver(driver, 3);
+				SAFE_FREE( list );
+				return True;
+			}
+	
+			free_a_printer_driver(driver, 3);
+		}	
+		
+		SAFE_FREE(list);
+	}
+	
+	DEBUG(5,("printer_driver_files_in_use: Completed search through ntdrivers.tdb...\n"));
+	
+	return False;
+}
+
+/****************************************************************************
+  Actually delete the driver files.  Make sure that 
+  printer_driver_files_in_use() return False before calling 
+  this.
+****************************************************************************/
+
+static NTSTATUS delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i )
+{
+
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
  Remove a printer driver from the TDB.  This assumes that the the driver was
  previously looked up.
  ***************************************************************************/
-WERROR delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i)
+WERROR delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, BOOL delete_files)
 {
 	pstring 	key;
 	fstring		arch;
 	TDB_DATA 	kbuf;
 
-
+	/* delete the tdb data first */
+	
 	get_short_archi(arch, i->environment);
 	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX,
 		arch, i->cversion, i->name); 
@@ -3512,6 +3578,15 @@ WERROR delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i)
 	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n",
 		i->name));
 	
+	/* 
+	 * now delete any associated files if delete_files == True
+	 * even if this part failes, we return succes because the 
+	 * driver doesn not exist any more  
+	 */
+	 
+	if ( delete_files )
+		delete_driver_files( i );
+		
 	return WERR_OK;
 }
 /****************************************************************************
