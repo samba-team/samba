@@ -1122,7 +1122,7 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 <smbconfoption><name>ldap suffix</name><value>dc=quenya,dc=org</value></smbconfoption>
 
 <smbconfcomment> generally the default ldap search filter is ok</smbconfcomment>
-<smbconfoption><name>ldap filter</name><value>(&amp;(uid=%u)(objectclass=sambaSamAccount))</value></smbconfoption>
+<smbconfoption><name>ldap filter</name><value>(uid=%u)</value></smbconfoption>
 </smbconfexample>
 </para>
 
