@@ -262,7 +262,9 @@ BOOL get_referred_path(struct junction_map* junction)
   if(S_ISLNK(st.st_mode))
     {
       /* open the link and read it to get the dfs referral */
-      readlink(path, buf, sizeof(buf));
+      int linkcnt = 0;
+      linkcnt = readlink(path, buf, sizeof(buf));
+      buf[linkcnt] = '\0';
       DEBUG(5,("get_referred_path: Referral: %s\n",buf));
       if(parse_symlink(buf, &junction->referral_list, 
 		       &junction->referral_count))
