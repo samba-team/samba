@@ -48,17 +48,39 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
     int ret;
     pstring magic_output;
     pstring fname;
-    pstrcpy(fname,fsp->fsp_name);
+	SMB_STRUCT_STAT st;
+	int tmp_fd, outfd;
 
+    pstrcpy(fname,fsp->fsp_name);
     if (*lp_magicoutput(SNUM(conn)))
       pstrcpy(magic_output,lp_magicoutput(SNUM(conn)));
     else
       slprintf(magic_output,sizeof(fname)-1, "%s.out",fname);
 
     chmod(fname,0755);
-    ret = smbrun(fname,magic_output,False);
+    ret = smbrun(fname,&tmp_fd,magic_output);
     DEBUG(3,("Invoking magic command %s gave %d\n",fname,ret));
     unlink(fname);
+	if (ret != 0 || tmp_fd == -1) {
+		if (tmp_fd != -1)
+			close(tmp_fd);
+		return;
+	}
+	outfd = open(magic_output, O_CREAT|O_EXCL|O_RDWR, 0600);
+	if (outfd == -1) {
+		close(tmp_fd);
+		return;
+	}
+
+	if (sys_fstat(tmp_fd,&st) == -1) {
+		close(tmp_fd);
+		close(outfd);
+		return;
+	}
+
+	transfer_file(tmp_fd,outfd,st.st_size, NULL,0,0);
+	close(tmp_fd);
+	close(outfd);
   }
 }
 

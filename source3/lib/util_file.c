@@ -368,20 +368,14 @@ char *file_pload(char *syscmd, size_t *size)
 	return p;
 }
 
-
 /****************************************************************************
-load a file into memory
-****************************************************************************/
-char *file_load(char *fname, size_t *size)
+load a file into memory from a fd.
+****************************************************************************/ 
+
+char *fd_load(int fd, size_t *size)
 {
-	int fd;
 	SMB_STRUCT_STAT sbuf;
 	char *p;
-
-	if (!fname || !*fname) return NULL;
-	
-	fd = open(fname,O_RDONLY);
-	if (fd == -1) return NULL;
 
 	if (sys_fstat(fd, &sbuf) != 0) return NULL;
 
@@ -394,9 +388,27 @@ char *file_load(char *fname, size_t *size)
 	}
 	p[sbuf.st_size] = 0;
 
-	close(fd);
-
 	if (size) *size = sbuf.st_size;
+
+	return p;
+}
+
+/****************************************************************************
+load a file into memory
+****************************************************************************/
+char *file_load(char *fname, size_t *size)
+{
+	int fd;
+	char *p;
+
+	if (!fname || !*fname) return NULL;
+	
+	fd = open(fname,O_RDONLY);
+	if (fd == -1) return NULL;
+
+	p = fd_load(fd, size);
+
+	close(fd);
 
 	return p;
 }
@@ -454,6 +466,22 @@ char **file_lines_load(char *fname, int *numlines, BOOL convert)
 	size_t size;
 
 	p = file_load(fname, &size);
+	if (!p) return NULL;
+
+	return file_lines_parse(p, size, numlines, convert);
+}
+
+/****************************************************************************
+load a fd into memory and return an array of pointers to lines in the file
+must be freed with file_lines_free(). If convert is true calls unix_to_dos on
+the list.
+****************************************************************************/
+char **fd_lines_load(int fd, int *numlines, BOOL convert)
+{
+	char *p;
+	size_t size;
+
+	p = fd_load(fd, &size);
 	if (!p) return NULL;
 
 	return file_lines_parse(p, size, numlines, convert);

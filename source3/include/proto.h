@@ -219,7 +219,7 @@ int vslprintf(char *str, int n, char *format, va_list ap);
 
 /*The following definitions come from  lib/smbrun.c  */
 
-int smbrun(char *cmd,char *outfile,BOOL shared);
+int smbrun(char *cmd, int *outfd, char *template);
 
 /*The following definitions come from  lib/snprintf.c  */
 
@@ -529,8 +529,10 @@ BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok);
 int getfileline(void *vp, char *linebuf, int linebuf_size);
 char *fgets_slash(char *s2,int maxlen,FILE *f);
 char *file_pload(char *syscmd, size_t *size);
+char *fd_load(int fd, size_t *size);
 char *file_load(char *fname, size_t *size);
 char **file_lines_load(char *fname, int *numlines, BOOL convert);
+char **fd_lines_load(int fd, int *numlines, BOOL convert);
 char **file_lines_pload(char *syscmd, int *numlines, BOOL convert);
 void file_lines_free(char **lines);
 void file_lines_slashcont(char **lines);
@@ -4382,6 +4384,15 @@ off_t smbw_lseek(int fd, off_t offset, int whence);
 int smbw_dup(int fd);
 int smbw_dup2(int fd, int fd2);
 int smbw_fork(void);
+
+/*The following definitions come from  smbwrapper/smbw_cache.c  */
+
+BOOL smbw_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
+			void (*fn)(const char *, uint32, const char *, void *),
+			void *state);
+int smbw_RNetShareEnum(struct cli_state *cli, 
+		       void (*fn)(const char *, uint32, const char *, void *), 
+		       void *state);
 
 /*The following definitions come from  smbwrapper/smbw_dir.c  */
 
