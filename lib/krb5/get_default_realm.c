@@ -56,7 +56,7 @@ krb5_get_default_realms (krb5_context context,
 }
 
 /*
- * Return the first default realm.  For compatability.
+ * Return the first default realm.  For compatibility.
  */
 
 krb5_error_code
