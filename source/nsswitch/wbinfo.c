@@ -248,25 +248,21 @@ static BOOL wbinfo_show_sequence(void)
 static BOOL wbinfo_check_secret(void)
 {
         struct winbindd_response response;
-        BOOL result;
+        NSS_STATUS result;
 
         ZERO_STRUCT(response);
 
         result = winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response) ==
                 NSS_STATUS_SUCCESS;
-
-        if (result) {
-
-                if (response.data.num_entries == 0)
-                        d_printf("Secret is good\n");
-                else
-                        d_printf("Secret is bad\n0x%08x\n", 
-			       response.data.num_entries);
-
-                return True;
-        }
-
-        return False;
+		
+	d_printf("checking the trust secret via RPC calls %s\n", 
+		 (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
+	
+	d_printf("error code was %s (0x%x)\n", 
+		 response.data.auth.nt_status_string, 
+		 response.data.auth.nt_status);
+	
+	return result == NSS_STATUS_SUCCESS;	
 }
 
 /* Convert uid to sid */
