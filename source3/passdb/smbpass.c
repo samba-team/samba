@@ -684,7 +684,11 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
     }
   }
 
-  if (!found_entry) return False;
+  if (!found_entry) {
+    pw_file_unlock(lockfd, &pw_file_lock_depth);
+    fclose(fp);
+    return False;
+  }
 
   DEBUG(6, ("mod_smbfilepwd_entry: entry exists\n"));
 
