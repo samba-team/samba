@@ -177,6 +177,7 @@ implemented */
 #define ERRfilexists 80 /* File in operation already exists */
 #define ERRcannotopen 110 /* Cannot open the file specified */
 #define ERRunknownlevel 124
+#define ERRnotlocked 158 /* This region is not locked by this locking context. */
 #define ERRrename 183
 #define ERRbadpipe 230 /* Named pipe invalid */
 #define ERRpipebusy 231 /* All instances of pipe are busy */
