@@ -137,7 +137,8 @@ recv_conn (int sock, kx_context *kc,
      kc->thisaddr = thisaddr;
      kc->thataddr = thataddr;
 
-     inaddr2str (thataddr.sin_addr, remotehost, sizeof(remotehost));
+     getnameinfo (&thataddr, addrlen, remotehost, sizeof(remotehost),
+		  NULL, 0, 0);
 
      if (net_read (sock, msg, 4) != 4) {
 	 syslog (LOG_ERR, "read: %m");
