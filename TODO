@@ -8,8 +8,6 @@ use more careful checking before starting to use berkeley db.  it only
 makes sense to do so if we have the appropriate library and the header
 file.
 
-generate krb5-config
-
 handle readline hiding in readline/readline.h
 
 * appl
