@@ -16,6 +16,8 @@ AC_PROG_RANLIB
 AC_PROG_CPP
 AC_PROG_YACC
 
+AC_PROG_INSTALL
+
 AC_C_CROSS
 
 AC_CACHE_VAL(krb_cv_ld_flags,
@@ -31,7 +33,5 @@ AC_FIND_FUNC(socket, socket)
 AC_FIND_FUNC(gethostbyname, nsl)
 
 AC_CHECK_FUNCS(setproctitle)
-
-AC_EGREP_HEADER(ut_host, utmp.h, AC_DEFINE(HAVE_UT_HOST))
 
 AC_OUTPUT(Makefile common/Makefile ftp/Makefile ftpd/Makefile)
