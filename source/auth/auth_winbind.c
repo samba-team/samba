@@ -49,7 +49,7 @@ static NTSTATUS check_winbind_security(void *my_private_data,
 	}
 
 	if (!auth_info) {
-		DEBUG(3,("Password for user %s cannot be checked becouse we have no auth_info to get the challange from.\n", 
+		DEBUG(3,("Password for user %s cannot be checked because we have no auth_info to get the challenge from.\n", 
 			 user_info->internal_username.str));		
 		return NT_STATUS_LOGON_FAILURE;
 	}		
@@ -62,7 +62,7 @@ static NTSTATUS check_winbind_security(void *my_private_data,
 	snprintf(request.data.auth_crap.user, sizeof(request.data.auth_crap.user),
 		 "%s\\%s", user_info->domain.str, user_info->smb_name.str);
 
-	memcpy(request.data.auth_crap.chal, auth_info->challange.data, sizeof(request.data.auth_crap.chal));
+	memcpy(request.data.auth_crap.chal, auth_info->challenge.data, sizeof(request.data.auth_crap.chal));
 	
 	request.data.auth_crap.lm_resp_len = MIN(user_info->lm_resp.length, 
 						 sizeof(request.data.auth_crap.lm_resp));

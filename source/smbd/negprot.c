@@ -83,7 +83,7 @@ static int reply_lanman1(char *inbuf, char *outbuf)
 	  if (!make_auth_info_subsystem(&negprot_global_auth_info)) {
 		  smb_panic("cannot make_negprot_global_auth_info!\n");
 	  }
-	  cryptkey = auth_get_challange(negprot_global_auth_info);
+	  cryptkey = auth_get_challenge(negprot_global_auth_info);
 	  memcpy(smb_buf(outbuf), cryptkey.data, 8);
 	  data_blob_free(&cryptkey);
   }
@@ -129,7 +129,7 @@ static int reply_lanman2(char *inbuf, char *outbuf)
 	  if (!make_auth_info_subsystem(&negprot_global_auth_info)) {
 		  smb_panic("cannot make_negprot_global_auth_info!\n");
 	  }
-	  cryptkey = auth_get_challange(negprot_global_auth_info);
+	  cryptkey = auth_get_challenge(negprot_global_auth_info);
 	  memcpy(smb_buf(outbuf), cryptkey.data, 8);
 	  data_blob_free(&cryptkey);
   }
@@ -265,7 +265,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 			if (!make_auth_info_subsystem(&negprot_global_auth_info)) {
 				smb_panic("cannot make_negprot_global_auth_info!\n");
 			}
-			cryptkey = auth_get_challange(negprot_global_auth_info);
+			cryptkey = auth_get_challenge(negprot_global_auth_info);
 			memcpy(p, cryptkey.data, 8);
 			data_blob_free(&cryptkey);
 		}

@@ -92,12 +92,12 @@ typedef struct serversupplied_info
 } auth_serversupplied_info;
 
 typedef struct authsupplied_info {
-	DATA_BLOB challange; 
+	DATA_BLOB challenge; 
 
 	/* Who set this up in the first place? */ 
-	char *challange_set_by; \
+	char *challenge_set_by; \
 
-	struct auth_methods *challange_set_method; 
+	struct auth_methods *challenge_set_method; 
 	/* What order are the various methods in?   Try to stop it changing under us */ 
 	struct auth_methods *auth_method_list;	
 } auth_authsupplied_info;

@@ -1122,10 +1122,10 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
 	     This is attached to the auth_info created in the
 	     negprot */
 	  if (negprot_global_auth_info 
-	      && negprot_global_auth_info->challange_set_method 
-	      && negprot_global_auth_info->challange_set_method->send_keepalive) {
-		  negprot_global_auth_info->challange_set_method->send_keepalive
-			  (&negprot_global_auth_info->challange_set_method->private_data);
+	      && negprot_global_auth_info->challenge_set_method 
+	      && negprot_global_auth_info->challenge_set_method->send_keepalive) {
+		  negprot_global_auth_info->challenge_set_method->send_keepalive
+			  (&negprot_global_auth_info->challenge_set_method->private_data);
 	  }
 
 	  last_keepalive_sent_time = t;

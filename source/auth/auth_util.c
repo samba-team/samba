@@ -358,7 +358,7 @@ BOOL make_user_info_winbind(auth_usersupplied_info **user_info,
                             const char *username,
                             const char *domain, 
                             const char *password,
-			    char chal[8] /* Give winbind back the challange we used */
+			    char chal[8] /* Give winbind back the challenge we used */
 	)
 {
 	unsigned char local_lm_response[24];

@@ -475,7 +475,7 @@ static NTSTATUS check_ntdomain_security(void *my_private_data,
 	if (! *pserver) pserver = "*";
 	p = pserver;
 
-	nt_status = domain_client_validate(user_info, (uchar *)auth_info->challange.data,server_info, 
+	nt_status = domain_client_validate(user_info, (uchar *)auth_info->challenge.data,server_info, 
 					   p, trust_passwd, last_change_time);
 
 	return nt_status;

@@ -135,10 +135,10 @@ static void send_server_keepalive(void **private_data_pointer)
 }
 
 /****************************************************************************
- Get the challange out of a password server.
+ Get the challenge out of a password server.
 ****************************************************************************/
 
-static DATA_BLOB auth_get_challange_server(void **my_private_data, const struct authsupplied_info *auth_info) 
+static DATA_BLOB auth_get_challenge_server(void **my_private_data, const struct authsupplied_info *auth_info) 
 {
 	struct cli_state *cli = server_cryptkey();
 	
@@ -147,14 +147,14 @@ static DATA_BLOB auth_get_challange_server(void **my_private_data, const struct 
 		if ((cli->sec_mode & 2) == 0) {
 			/* We can't work with unencrypted password servers
 			   unless 'encrypt passwords = no' */
-			DEBUG(5,("make_auth_info_server: Server is unencrypted, no challange available..\n"));
+			DEBUG(5,("make_auth_info_server: Server is unencrypted, no challenge available..\n"));
 
 			*my_private_data = (void *)cli;
 			return data_blob(NULL, 0);
 			
 		} else if (cli->secblob.length < 8) {
-			/* We can't do much if we don't get a full challange */
-			DEBUG(2,("make_auth_info_server: Didn't receive a full challange from server\n"));
+			/* We can't do much if we don't get a full challenge */
+			DEBUG(2,("make_auth_info_server: Didn't receive a full challenge from server\n"));
 			cli_shutdown(cli);
 			return data_blob(NULL, 0);
 		}
@@ -205,8 +205,8 @@ static NTSTATUS check_smbserver_security(void *my_private_data,
 			return NT_STATUS_LOGON_FAILURE;		
 		}
 	} else {
-		if (memcmp(cli->secblob.data, auth_info->challange.data, 8) != 0) {
-			DEBUG(1,("the challange that the password server (%s) supplied us is not the one we gave our client. This just can't work :-(\n", cli->desthost));
+		if (memcmp(cli->secblob.data, auth_info->challenge.data, 8) != 0) {
+			DEBUG(1,("the challenge that the password server (%s) supplied us is not the one we gave our client. This just can't work :-(\n", cli->desthost));
 			return NT_STATUS_LOGON_FAILURE;		
 		}
 	}
@@ -347,7 +347,7 @@ BOOL auth_init_smbserver(auth_methods **auth_method)
 		return False;
 	}
 	(*auth_method)->auth = check_smbserver_security;
-	(*auth_method)->get_chal = auth_get_challange_server;
+	(*auth_method)->get_chal = auth_get_challenge_server;
 	(*auth_method)->send_keepalive = send_server_keepalive;
 	(*auth_method)->free_private_data = free_server_private_data;
 	return True;

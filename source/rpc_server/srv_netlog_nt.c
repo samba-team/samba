@@ -569,7 +569,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	{
 		auth_authsupplied_info *auth_info = NULL;
 		make_auth_info_fixed(&auth_info, ctr->auth.id2.lm_chal);
-		/* Standard challange/response authenticaion */
+		/* Standard challenge/response authenticaion */
 		make_user_info_netlogon_network(&user_info, 
 						nt_username, nt_domain, 
 						nt_workstation, 
@@ -584,9 +584,10 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		break;
 	}
 	case INTERACTIVE_LOGON_TYPE:
-		/* 'Interactive' autheticaion, supplies the password in its MD4 form, encrypted
-		   with the session key.  We will convert this to challange/responce for the 
-		   auth subsystem to chew on */
+		/* 'Interactive' autheticaion, supplies the password in its
+		   MD4 form, encrypted with the session key.  We will
+		   convert this to chellange/responce for the auth
+		   subsystem to chew on */
 	{
 		auth_authsupplied_info *auth_info = NULL;
 		DATA_BLOB chal;
@@ -594,7 +595,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 			return NT_STATUS_NO_MEMORY;
 		}
 		
-		chal = auth_get_challange(auth_info);
+		chal = auth_get_challenge(auth_info);
 
 		make_user_info_netlogon_interactive(&user_info, 
 						    nt_username, nt_domain, 
