@@ -1067,7 +1067,7 @@ EOF
 esac
 
 
-for ac_func in setproctitle mmap
+for ac_func in valloc getpagesize
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
@@ -1097,6 +1097,153 @@ $ac_func();
 ; return 0; }
 EOF
 if { (eval echo configure:1100: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+  rm -rf conftest*
+  eval "ac_cv_func_$ac_func=yes"
+else
+  rm -rf conftest*
+  eval "ac_cv_func_$ac_func=no"
+fi
+rm -f conftest*
+
+fi
+if eval "test \"`echo '$ac_cv_func_'$ac_func`\" = yes"; then
+  echo "$ac_t""yes" 1>&6
+    ac_tr_func=HAVE_`echo $ac_func | tr 'abcdefghijklmnopqrstuvwxyz' 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'`
+  cat >> confdefs.h <<EOF
+#define $ac_tr_func 1
+EOF
+ 
+else
+  echo "$ac_t""no" 1>&6
+fi
+done
+
+echo $ac_n "checking for working mmap""... $ac_c" 1>&6
+if eval "test \"`echo '$''{'ac_cv_func_mmap'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  if test "$cross_compiling" = yes; then
+  ac_cv_func_mmap=no
+else
+cat > conftest.$ac_ext <<EOF
+#line 1130 "configure"
+#include "confdefs.h"
+
+/* Thanks to Mike Haertel and Jim Avera for this test. */
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+
+#ifndef HAVE_GETPAGESIZE
+# include <sys/param.h>
+# ifdef EXEC_PAGESIZE
+#  define getpagesize() EXEC_PAGESIZE
+# else
+#  ifdef NBPG
+#   define getpagesize() NBPG * CLSIZE
+#   ifndef CLSIZE
+#    define CLSIZE 1
+#   endif
+#  else
+#   ifdef NBPC
+#    define getpagesize() NBPC
+#   else
+#    define getpagesize() PAGESIZE /* SVR4 */
+#   endif
+#  endif
+# endif
+#endif
+
+#ifndef HAVE_VALLOC
+# define valloc malloc
+#endif
+
+#ifdef __cplusplus
+extern "C" { void *valloc(unsigned), *malloc(unsigned); }
+#else
+char *valloc(), *malloc();
+#endif
+
+int
+main()
+{
+  char *buf1, *buf2, *buf3;
+  int i = getpagesize(), j;
+  int i2 = i * 2;
+  int fd;
+
+  buf1 = (char *)valloc(i2);
+  buf2 = (char *)valloc(i);
+  buf3 = (char *)malloc(i2);
+  for (j = 0; j < i2; ++j)
+    *(buf1 + j) = rand();
+  fd = open("conftestmmap", O_CREAT | O_RDWR, 0666);
+  write(fd, buf1, i2);
+  mmap(buf2, i, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE, fd, 0);
+  for (j = 0; j < i; ++j)
+    if (*(buf1 + j) != *(buf2 + j))
+      exit(1);
+  lseek(fd, (long)i, 0);
+  read(fd, buf2, i); /* read into mapped memory -- file should not change */
+  /* (it does in i386 SVR4.0 - Jim Avera, jima@netcom.com) */
+  lseek(fd, (long)0, 0);
+  read(fd, buf3, i2);
+  for (j = 0; j < i2; ++j)
+    if (*(buf1 + j) != *(buf3 + j))
+      exit(1);
+  exit(0);
+}
+
+EOF
+{ (eval echo configure:1199: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }
+if test -s conftest && (./conftest; exit) 2>/dev/null; then
+  ac_cv_func_mmap=yes
+else
+  ac_cv_func_mmap=no
+fi
+fi
+rm -fr conftest*
+fi
+
+echo "$ac_t""$ac_cv_func_mmap" 1>&6
+if test $ac_cv_func_mmap = yes; then
+  cat >> confdefs.h <<\EOF
+#define HAVE_MMAP 1
+EOF
+
+fi
+
+
+for ac_func in setproctitle
+do
+echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
+if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  cat > conftest.$ac_ext <<EOF
+#line 1225 "configure"
+#include "confdefs.h"
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char $ac_func(); below.  */
+#include <assert.h>
+/* Override any gcc2 internal prototype to avoid an error.  */
+char $ac_func();
+
+int main() { return 0; }
+int t() {
+
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined (__stub_$ac_func) || defined (__stub___$ac_func)
+choke me
+#else
+$ac_func();
+#endif
+
+; return 0; }
+EOF
+if { (eval echo configure:1247: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "ac_cv_func_$ac_func=yes"
 else
