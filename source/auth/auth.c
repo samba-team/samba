@@ -23,7 +23,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-/** List of various built-in authenticaion modules */
+/** List of various built-in authentication modules */
 
 const struct auth_init_function_entry builtin_auth_init_functions[] = {
 	{ "guest", auth_init_guest },
@@ -43,7 +43,7 @@ const struct auth_init_function_entry builtin_auth_init_functions[] = {
 };
 
 /****************************************************************************
- Try to get a challenge out of the various authenticaion modules.
+ Try to get a challenge out of the various authentication modules.
  Returns a const char of length 8 bytes.
 ****************************************************************************/
 
@@ -68,7 +68,7 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 
 		DEBUG(5, ("auth_get_challenge: getting challenge from module %s\n", auth_method->name));
 		if (challenge_set_by != NULL) {
-			DEBUG(1, ("auth_get_challenge: CONFIGURATION ERROR: authenticaion method %s has already specified a challenge.  Challenge by %s ignored.\n", 
+			DEBUG(1, ("auth_get_challenge: CONFIGURATION ERROR: authentication method %s has already specified a challenge.  Challenge by %s ignored.\n", 
 				  challenge_set_by, auth_method->name));
 			continue;
 		}
@@ -80,7 +80,7 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 		
 		challenge = auth_method->get_chal(auth_context, &auth_method->private_data, mem_ctx);
 		if (!challenge.length) {
-			DEBUG(3, ("auth_get_challenge: getting challenge from authenticaion method %s FAILED.\n", 
+			DEBUG(3, ("auth_get_challenge: getting challenge from authentication method %s FAILED.\n", 
 				  auth_method->name));
 		} else {
 			DEBUG(5, ("auth_get_challenge: sucessfully got challenge from module %s\n", auth_method->name));
@@ -164,7 +164,7 @@ static BOOL check_domain_match(const char *user, const char *domain)
  *                  filled in, either at creation or by calling the challenge geneation 
  *                  function auth_get_challenge().  
  *
- * @param server_info If successful, contains information about the authenticaion, 
+ * @param server_info If successful, contains information about the authentication, 
  *                    including a SAM_ACCOUNT struct describing the user.
  *
  * @return An NTSTATUS with NT_STATUS_OK or an appropriate error.
@@ -257,7 +257,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		
 		if (NT_STATUS_IS_OK(nt_status)) {
 			DEBUG((*server_info)->guest ? 5 : 2, 
-			      ("check_password:  %sauthenticaion for user [%s] -> [%s] -> [%s] suceeded\n", 
+			      ("check_password:  %sauthentication for user [%s] -> [%s] -> [%s] suceeded\n", 
 			       (*server_info)->guest ? "guest " : "", 
 			       user_info->smb_name.str, 
 			       user_info->internal_username.str, 
@@ -266,7 +266,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(2, ("check_password:  Authenticaion for user [%s] -> [%s] FAILED with error %s\n", 
+		DEBUG(2, ("check_password:  Authentication for user [%s] -> [%s] FAILED with error %s\n", 
 			  user_info->smb_name.str, user_info->internal_username.str, 
 			  nt_errstr(nt_status)));
 		ZERO_STRUCTP(server_info);
