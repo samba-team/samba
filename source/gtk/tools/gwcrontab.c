@@ -40,6 +40,7 @@ GtkWidget *tasks;
 GtkWidget *entry_cmd;
 GtkWidget *entry_repeat_weekly;
 GtkWidget *entry_repeat_monthly;
+GtkWidget *delete;
 
 void update_joblist()
 {
@@ -80,6 +81,13 @@ void update_joblist()
 	talloc_destroy(mem_ctx);
 	gtk_widget_set_sensitive(tasks, TRUE);
 }
+
+static void on_job_select(GtkTreeSelection *sel,
+                                             gpointer data)
+{
+        gtk_widget_set_sensitive(delete, gtk_tree_selection_get_selected(sel, NULL, NULL));
+}
+
 
 void
 on_connect_activate                    (GtkMenuItem     *menuitem,
@@ -224,7 +232,6 @@ create_mainwindow (void)
   GtkWidget *new;
   GtkCellRenderer *renderer;
   GtkTreeViewColumn *curcol;
-  GtkWidget *delete;
   GtkWidget *menuitem7;
   GtkWidget *menuitem7_menu;
   GtkWidget *about;
@@ -277,6 +284,7 @@ create_mainwindow (void)
   gtk_container_add (GTK_CONTAINER (task_menu), new);
 
   delete = gtk_menu_item_new_with_mnemonic ("_Delete");
+  gtk_widget_set_sensitive(delete, FALSE);
   gtk_widget_show (delete);
   gtk_container_add (GTK_CONTAINER (task_menu), delete);
 
@@ -338,6 +346,8 @@ create_mainwindow (void)
 
   gtk_widget_show (tasks);
   gtk_container_add (GTK_CONTAINER (scrolledwindow), tasks);
+
+  g_signal_connect (gtk_tree_view_get_selection(GTK_TREE_VIEW(tasks)) , "changed", G_CALLBACK (on_job_select), NULL);
 
   statusbar = gtk_statusbar_new ();
   gtk_widget_show (statusbar);

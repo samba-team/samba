@@ -270,15 +270,18 @@ static void on_about_activate                      (GtkMenuItem     *menuitem,
         gtk_widget_destroy(GTK_WIDGET(aboutwin));
 }
 
-static void on_key_activate (GtkTreeView *treeview,
-					  GtkTreePath *path,
-					  gpointer user_data)
+gboolean on_key_activate(GtkTreeSelection *selection,
+                                             GtkTreeModel *model,
+                                             GtkTreePath *path,
+                                             gboolean path_currently_selected,
+                                             gpointer data)
 {
 	int i;
 	REG_KEY *k;
 	REG_VAL *val;
 	WERROR error;
 	GtkTreeIter parent;
+	if(path_currently_selected)return TRUE;
 
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(store_keys), &parent, path);
 	gtk_tree_model_get(GTK_TREE_MODEL(store_keys), &parent, 1, &k, -1);
@@ -303,7 +306,11 @@ static void on_key_activate (GtkTreeView *treeview,
 						-1);
 	}
 
-	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) gtk_show_werror(mainwin, error);
+	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
+		 gtk_show_werror(mainwin, error);
+		 return FALSE;
+	}
+	return TRUE;
 }
 
 static GtkWidget* create_mainwin (void)
@@ -480,13 +487,12 @@ static GtkWidget* create_mainwin (void)
   gtk_tree_view_set_model(GTK_TREE_VIEW(tree_keys), GTK_TREE_MODEL(store_keys));
   g_object_unref(store_keys);
 
-  g_signal_connect ((gpointer) tree_keys, "row-activated",
-                    G_CALLBACK (on_key_activate),
-                    NULL);
+  gtk_tree_selection_set_select_function (gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_keys)), on_key_activate, NULL, NULL);
 
   g_signal_connect ((gpointer) tree_keys, "row-expanded",
                     G_CALLBACK (expand_key),
                     NULL);
+
 
   scrolledwindow2 = gtk_scrolled_window_new (NULL, NULL);
   gtk_widget_show (scrolledwindow2);
