@@ -838,7 +838,7 @@ main (int argc, char **argv)
     XGCValues gcvalues;
 
     srand(getpid());
-    for (i = 0; i < STRING_LENGTH - 2; i++)
+    for (i = 0; i < STRING_LENGTH; i++)
 	STRING[i] = ((unsigned long)rand() % ('~' - ' ')) + ' ';
 
     locked_at = time(0);
@@ -859,31 +859,7 @@ main (int argc, char **argv)
       exit(1);
     } 
 
-    {
-	int code = KSUCCESS;
-	char *file;
-	strcpy(name, pw->pw_name); /* Unix name is default name */
-	if ((file =  getenv("KRBTKFILE")) == 0)
-	    file = TKT_FILE;  
-	code = tf_init(file, R_TKT_FIL);
-	if (code == KSUCCESS)
-	    {
-		(void) tf_close();
-		if ((code = krb_get_tf_realm(file, realm)) == KSUCCESS &&
-		    (code = tf_init(file, R_TKT_FIL)) == KSUCCESS &&
-		    (code = tf_get_pname(name)) == KSUCCESS &&
-		    (code = tf_get_pinst(inst)) == KSUCCESS)
-		    {
-			(void) tf_close(); /* Alles gut */
-		    }
-	    }
-	if (code != KSUCCESS)
-	    {
-		code = krb_get_lrealm(realm, 1);
-		if (code != KSUCCESS)
-		    realm[0] = 0; /* No kerberos today */
-	    }
-    }
+    krb_get_default_principal(name, inst, realm);
     
 
     override = XtVaAppInitialize(&app, "XNlock", options, XtNumber(options),
