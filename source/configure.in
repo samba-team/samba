@@ -2455,7 +2455,6 @@ AC_SUBST(WINBIND_PAM_PROGS)
 #################################################
 # Check to see if we should use the included popt 
 
-AC_MSG_CHECKING(whether to use included popt)
 AC_ARG_WITH(included-popt,
 [  --with-included-popt    use bundled popt library, not from system],
 [ 
@@ -2473,6 +2472,7 @@ if test x"$INCLUDED_POPT" != x"yes"; then
 	         INCLUDED_POPT=no, INCLUDED_POPT=yes)
 fi
 
+AC_MSG_CHECKING(whether to use included popt)
 if test x"$INCLUDED_POPT" = x"yes"; then
     AC_MSG_RESULT($srcdir/popt)
     BUILD_POPT='$(POPT_OBJS)'
