@@ -63,7 +63,8 @@ ADD_OBJ_FILES = \
 		torture/rpc/autoidl.o \
 		torture/rpc/testjoin.o \
 		torture/rpc/schannel.o \
-		torture/rpc/netlogon.o
+		torture/rpc/netlogon.o \
+		torture/rpc/bind.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB
 # End SUBSYSTEM TORTURE_RPC
