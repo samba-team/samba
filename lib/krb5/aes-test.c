@@ -587,6 +587,11 @@ encryption_test(krb5_context context, char *key, int keylen,
 	if (!samep(i, "clear", p, enc[i].input, enc[i].len))
 	    val = 1;
 
+	if (enc[i].nextiv && !samep(i, "iv", iv, enc[i].nextiv, 16)){ /*XXX*/ 
+	    krb5_warnx(context, "%d: iv", i);
+	    val = 1;
+	}
+
 	free(p);
 
 	if (val) {
