@@ -40,6 +40,84 @@
 
 RCSID("$Id$");
 
+struct port_desc{
+    int family;
+    int type;
+    int port;
+};
+
+static struct port_desc *ports;
+static int num_ports;
+
+static void
+add_port(const char *port_str, const char *protocol)
+{
+    struct servent *sp;
+    int type;
+    int port;
+    int i;
+
+    sp = getservbyname(port_str, protocol);
+    if(sp){
+	port = sp->s_port;
+    }else{
+	char *end;
+	port = htons(strtol(port_str, &end, 0));
+	if(end == port_str)
+	    return;
+    }
+    if(strcmp(protocol, "udp") == 0)
+	type = SOCK_DGRAM;
+    else if(strcmp(protocol, "tcp") == 0)
+	type = SOCK_STREAM;
+    else
+	return;
+    for(i = 0; i < num_ports; i++){
+	if(ports[i].type == type && ports[i].port == port)
+	    return;
+    }
+    ports = realloc(ports, (num_ports + 1) * sizeof(*ports));
+    ports[num_ports].family = AF_INET;
+    ports[num_ports].type = type;
+    ports[num_ports].port = port;
+    num_ports++;
+}
+
+static void
+parse_ports(char *str)
+{
+    char *pos = NULL;
+    char *p;
+    p = strtok_r(str, " \t", &pos);
+    while(p){
+	if(strcmp(p, "+") == 0){
+	    add_port("kerberos", "udp");
+	    add_port("kerberos", "tcp");
+	    add_port("kerberos-sec", "udp");
+	    add_port("kerberos-sec", "tcp");
+	    add_port("kerberos-iv", "udp");
+	    add_port("kerberos-iv", "tcp");
+	    if(enable_http)
+		add_port("http", "tcp");
+#ifdef KASERVER
+	    add_port("7004", "udp");
+#endif
+	} else {
+	    char *q = strchr(p, '/');
+	    if(q){
+		*q = 0;
+		*q++;
+		add_port(p, q);
+	    }else {
+		add_port(p, "udp");
+		add_port(p, "tcp");
+	    }
+	}
+	    
+	p = strtok_r(NULL, " \t", &pos);
+    }
+}
+
 struct descr {
     int s;
     int type;
@@ -50,22 +128,22 @@ struct descr {
 };
 
 static void 
-init_socket(struct descr *d, int type, int port)
+init_socket(struct descr *d, int family, int type, int port)
 {
     struct sockaddr_in sin;
     memset(d, 0, sizeof(*d));
-    d->s = socket(AF_INET, type, 0);
+    d->s = socket(family, type, 0);
     if(d->s < 0){
-	krb5_warn(context, errno, "socket(AF_INET, %d, 0)", type);
+	krb5_warn(context, errno, "socket(%d, %d, 0)", family, type);
 	d->s = -1;
 	return;
     }
     d->type = type;
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
-    sin.sin_port = htons(port);
+    sin.sin_port = port;
     if(bind(d->s, (struct sockaddr*)&sin, sizeof(sin)) < 0){
-	krb5_warn(context, errno, "bind(%d)", port);
+	krb5_warn(context, errno, "bind(%d)", ntohs(port));
 	close(d->s);
 	d->s = -1;
 	return;
@@ -78,23 +156,23 @@ init_socket(struct descr *d, int type, int port)
 }
 
 static int
-init_sockets(struct descr **d)
+init_sockets(struct descr **desc)
 {
-    int nsockets = 4;
-
-#ifdef KASERVER
-    nsockets++;
-#endif
-
-    *d = malloc(nsockets * sizeof(**d));
-    init_socket(*d + 0, SOCK_DGRAM, 88);
-    init_socket(*d + 1, SOCK_DGRAM, 750);
-    init_socket(*d + 2, SOCK_STREAM, 88);
-    init_socket(*d + 3, SOCK_STREAM, 750);
-#ifdef KASERVER
-    init_socket(*d + 4, SOCK_DGRAM, 7004);
-#endif
-    return nsockets;
+    int i;
+    struct descr *d = NULL;
+    int num = 0;
+    parse_ports(port_str);
+    for (i = 0; i < num_ports; i++){
+	d = realloc(d, (num + 1) * sizeof(*d));
+	init_socket(&d[num], ports[i].family, ports[i].type, ports[i].port);
+	if(d[num].s != -1){
+	    kdc_log(5, "listening to port %u/%s", ntohs(ports[i].port), 
+		    (ports[i].type == SOCK_STREAM) ? "tcp" : "udp"); /* XXX */
+	    num++;
+	}
+    }
+    *desc = d;
+    return num;
 }
 
     
@@ -282,8 +360,7 @@ handle_tcp(struct descr *d, int index, int min_free)
 	    n = 0;
 	}
     }
-#ifdef HTTP
-    else if(strncmp(d[index].buf, "GET ", 4) == 0 && 
+    else if(enable_http && strncmp(d[index].buf, "GET ", 4) == 0 && 
 	    strncmp(d[index].buf + d[index].len - 4, "\r\n\r\n", 4) == 0){
 	char *s, *p, *t;
 	void *data;
@@ -330,7 +407,6 @@ handle_tcp(struct descr *d, int index, int min_free)
 	n = 0;
 	free(data);
     }
-#endif
     if(n == 0){
 	do_request(d[index].buf, d[index].len, 
 		   d[index].s, (struct sockaddr*)&from, from_len);
