@@ -39,6 +39,7 @@ CLEANFILES =		\
 	krb5_err.h	\
 	md4.h		\
 	md5.h		\
+	rc4.h		\
 	otp.h		\
 	parse_time.h	\
 	parse_units.h	\
