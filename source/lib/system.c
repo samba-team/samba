@@ -332,6 +332,22 @@ int sys_chmod(char *fname,int mode)
 }
 
 /*******************************************************************
+for getwd
+********************************************************************/
+char *sys_getwd(char *s)
+{
+  char *wd;
+#ifdef USE_GETCWD
+  wd = (char *) getcwd (s, sizeof (pstring));
+#else
+  wd = (char *) getwd (s);
+#endif
+  if (wd)
+    unix_to_dos (wd, True);
+  return wd;
+}
+
+/*******************************************************************
 chown isn't used much but OS/2 doesn't have it
 ********************************************************************/
 int sys_chown(char *fname,int uid,int gid)

@@ -22,6 +22,7 @@
      and extend coding system to EUC/SJIS/JIS/HEX at 1994.10.11
      and add all jis codes sequence at 1995.8.16
      Notes: Hexadecimal code by <ohki@gssm.otuka.tsukuba.ac.jp>
+     and add upper/lower case conversion 1997.8.21
 */
 #ifndef _KANJI_H_
 #define _KANJI_H_
@@ -36,6 +37,22 @@
     (0x40 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0xfc \
     && ((unsigned char) (c)) != 0x7f)
 #define is_kana(c) ((0xa0 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0xdf))
+
+/* case conversion */
+#define is_sj_upper2(c) \
+  ((0x60 <= (unsigned char) (c)) && ((unsigned char) (c) <= 0x79))
+#define is_sj_lower2(c) \
+  ((0x81 <= (unsigned char) (c)) && ((unsigned char) (c) <= 0x9A))
+#define sjis_alph 0x82
+#define is_sj_alph(c) (sjis_alph == (unsigned char) (c))
+#define is_sj_upper(c1, c2) (is_sj_alph (c1) && is_sj_upper2 (c2))
+#define is_sj_lower(c1, c2) (is_sj_alph (c1) && is_sj_lower2 (c2))
+#define sj_toupper2(c) \
+    (is_sj_lower2 (c) ? ((int) ((unsigned char) (c) - 0x81 + 0x60)) : \
+     ((int) (unsigned char) (c)))
+#define sj_tolower2(c) \
+    (is_sj_upper2 (c) ? ((int) ((unsigned char) (c) - 0x60 + 0x81)) : \
+     ((int) (unsigned char) (c)))
 
 #ifdef _KANJI_C_
 /* FOR EUC CODE */
