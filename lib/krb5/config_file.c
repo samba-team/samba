@@ -277,8 +277,9 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
 	ret = parse_list (f, lineno, &tmp->u.list);
     } else {
 	p1 = p;
-	while (*p && !isspace((unsigned char)*p))
-	    ++p;
+	p = p1 + strlen(p1);
+	while(p > p1 && isspace((unsigned char)*(p-1)))
+	    --p;
 	*p = '\0';
 	tmp->type = krb5_config_string;
 	tmp->u.string = strdup(p1);
