@@ -24,6 +24,8 @@
 
 #include "includes.h"
 
+#undef HAVE_KRB5
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
@@ -33,6 +35,7 @@ enum stdio_helper_mode {
 	SQUID_2_4_BASIC,
 	SQUID_2_5_BASIC,
 	SQUID_2_5_NTLMSSP,
+	CLIENT_NTLMSSP_1,
 	GSS_SPNEGO,
 	GSS_SPNEGO_CLIENT,
 	NUM_HELPER_MODES
@@ -55,6 +58,9 @@ static void manage_squid_basic_request (enum stdio_helper_mode stdio_helper_mode
 static void manage_squid_ntlmssp_request (enum stdio_helper_mode stdio_helper_mode, 
 					  char *buf, int length);
 
+static void manage_client_ntlmssp_request (enum stdio_helper_mode stdio_helper_mode, 
+					   char *buf, int length);
+
 static void manage_gss_spnego_request (enum stdio_helper_mode stdio_helper_mode, 
 				       char *buf, int length);
 
@@ -69,6 +75,7 @@ static const struct {
 	{ SQUID_2_4_BASIC, "squid-2.4-basic", manage_squid_basic_request},
 	{ SQUID_2_5_BASIC, "squid-2.5-basic", manage_squid_basic_request},
 	{ SQUID_2_5_NTLMSSP, "squid-2.5-ntlmssp", manage_squid_ntlmssp_request},
+	{ CLIENT_NTLMSSP_1, "client-ntlmssp-1", manage_client_ntlmssp_request},
 	{ GSS_SPNEGO, "gss-spnego", manage_gss_spnego_request},
 	{ GSS_SPNEGO_CLIENT, "gss-spnego-client", manage_gss_spnego_client_request},
 	{ NUM_HELPER_MODES, NULL, NULL}
@@ -335,6 +342,112 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 	return nt_status;
 }
 
+static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key) 
+{
+	static const char zeros[16];
+	NTSTATUS nt_status;
+	uint8 lm_key[8]; 
+	uint8 nt_key[16]; 
+	uint8 lm_pw[16], nt_pw[16];
+
+	nt_lm_owf_gen (opt_password, nt_pw, lm_pw);
+	
+	nt_status = ntlm_password_check(ntlmssp_state->mem_ctx, 
+					&ntlmssp_state->chal,
+					&ntlmssp_state->lm_resp,
+					&ntlmssp_state->nt_resp, 
+					ntlmssp_state->user, 
+					ntlmssp_state->user, 
+					ntlmssp_state->domain,
+					lm_pw, nt_pw, nt_session_key, lm_session_key);
+	
+	if (NT_STATUS_IS_OK(nt_status)) {
+		if (memcmp(lm_key, zeros, 8) != 0) {
+			*lm_session_key = data_blob(NULL, 16);
+			memcpy(lm_session_key->data, lm_key, 8);
+			memset(lm_session_key->data+8, '\0', 8);
+		}
+		
+		if (memcmp(nt_key, zeros, 16) != 0) {
+			*nt_session_key = data_blob(nt_key, 16);
+		}
+	} else {
+		DEBUG(3, ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
+			  ntlmssp_state->domain, ntlmssp_state->user, ntlmssp_state->workstation, 
+			  nt_errstr(nt_status)));
+	}
+	return nt_status;
+}
+
+static NTSTATUS ntlm_auth_start_ntlmssp_client(NTLMSSP_STATE **client_ntlmssp_state) 
+{
+	NTSTATUS status;
+	if ( (opt_username == NULL) || (opt_domain == NULL) ) {
+		DEBUG(1, ("Need username and domain for NTLMSSP\n"));
+		return status;
+	}
+
+	status = ntlmssp_client_start(client_ntlmssp_state);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not start NTLMSSP client: %s\n",
+			  nt_errstr(status)));
+		ntlmssp_end(client_ntlmssp_state);
+		return status;
+	}
+
+	status = ntlmssp_set_username(*client_ntlmssp_state, opt_username);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not set username: %s\n",
+			  nt_errstr(status)));
+		ntlmssp_end(client_ntlmssp_state);
+		return status;
+	}
+
+	status = ntlmssp_set_domain(*client_ntlmssp_state, opt_domain);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not set domain: %s\n",
+			  nt_errstr(status)));
+		ntlmssp_end(client_ntlmssp_state);
+		return status;
+	}
+
+	status = ntlmssp_set_password(*client_ntlmssp_state, opt_password);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not set password: %s\n",
+			  nt_errstr(status)));
+		ntlmssp_end(client_ntlmssp_state);
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ntlm_auth_start_ntlmssp_server(NTLMSSP_STATE **ntlmssp_state) 
+{
+	NTSTATUS status = ntlmssp_server_start(ntlmssp_state);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not start NTLMSSP client: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	/* Have we been given a local password, or should we ask winbind? */
+	if (opt_password) {
+		(*ntlmssp_state)->check_password = local_pw_check;
+		(*ntlmssp_state)->get_domain = lp_workgroup;
+		(*ntlmssp_state)->get_global_myname = global_myname;
+	} else {
+		(*ntlmssp_state)->check_password = winbind_pw_check;
+		(*ntlmssp_state)->get_domain = get_winbind_domain;
+		(*ntlmssp_state)->get_global_myname = get_winbind_netbios_name;
+	}
+	return NT_STATUS_OK;
+}
+
 static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode, 
 					 char *buf, int length) 
 {
@@ -345,6 +458,29 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
 		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	if (strlen(buf) > 3) {
+		request = base64_decode_data_blob(buf + 3);
+	} else {
+		request = data_blob(NULL, 0);
+	}
+
+	if ((strncmp(buf, "PW ", 3) == 0)) {
+		/* The calling application wants us to use a local password (rather than winbindd) */
+
+		opt_password = strndup((const char *)request.data, request.length);
+
+		if (opt_password == NULL) {
+			DEBUG(1, ("Out of memory\n"));
+			x_fprintf(x_stdout, "BH\n");
+			data_blob_free(&request);
+			return;
+		}
+
+		x_fprintf(x_stdout, "OK\n");
+		data_blob_free(&request);
 		return;
 	}
 
@@ -359,17 +495,11 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 		return;
 	}
 
-	if (strlen(buf) > 3) {
-		request = base64_decode_data_blob(buf + 3);
-	} else {
-		request = data_blob(NULL, 0);
-	}
-
 	if (!ntlmssp_state) {
-		ntlmssp_server_start(&ntlmssp_state);
-		ntlmssp_state->check_password = winbind_pw_check;
-		ntlmssp_state->get_domain = get_winbind_domain;
-		ntlmssp_state->get_global_myname = get_winbind_netbios_name;
+		if (!NT_STATUS_IS_OK(nt_status = ntlm_auth_start_ntlmssp_server(&ntlmssp_state))) {
+			x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
+			return;
+		}
 	}
 
 	DEBUG(10, ("got NTLMSSP packet:\n"));
@@ -386,12 +516,110 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
 		x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
 		DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
+
+		ntlmssp_end(&ntlmssp_state);
 	} else if (!NT_STATUS_IS_OK(nt_status)) {
 		x_fprintf(x_stdout, "NA %s\n", nt_errstr(nt_status));
 		DEBUG(10, ("NTLMSSP %s\n", nt_errstr(nt_status)));
 	} else {
 		x_fprintf(x_stdout, "AF %s\\%s\n", ntlmssp_state->domain, ntlmssp_state->user);
 		DEBUG(10, ("NTLMSSP OK!\n"));
+	}
+
+	data_blob_free(&request);
+}
+
+static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode, 
+					 char *buf, int length) 
+{
+	static NTLMSSP_STATE *ntlmssp_state = NULL;
+	DATA_BLOB request, reply;
+	NTSTATUS nt_status;
+	BOOL first = False;
+	
+	if (strlen(buf) < 2) {
+		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	if (strlen(buf) > 3) {
+		request = base64_decode_data_blob(buf + 3);
+	} else {
+		request = data_blob(NULL, 0);
+	}
+
+	if (strncmp(buf, "PW ", 3) == 0) {
+		/* We asked for a password and obviously got it :-) */
+
+		opt_password = strndup((const char *)request.data, request.length);
+
+		if (opt_password == NULL) {
+			DEBUG(1, ("Out of memory\n"));
+			x_fprintf(x_stdout, "BH\n");
+			data_blob_free(&request);
+			return;
+		}
+
+		x_fprintf(x_stdout, "OK\n");
+		data_blob_free(&request);
+		return;
+	}
+
+	if (opt_password == NULL) {
+		
+		/* Request a password from the calling process.  After
+		   sending it, the calling process should retry asking for the negotiate. */
+		
+		DEBUG(10, ("Requesting password\n"));
+		x_fprintf(x_stdout, "PW\n");
+		return;
+	}
+
+	if (strncmp(buf, "YR", 2) == 0) {
+		if (ntlmssp_state)
+			ntlmssp_end(&ntlmssp_state);
+	} else if (strncmp(buf, "TT", 2) == 0) {
+		
+	} else {
+		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
+
+	if (!ntlmssp_state) {
+		if (!NT_STATUS_IS_OK(nt_status = ntlm_auth_start_ntlmssp_client(&ntlmssp_state))) {
+			x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
+			return;
+		}
+		first = True;
+	}
+
+	DEBUG(10, ("got NTLMSSP packet:\n"));
+	dump_data(10, (const char *)request.data, request.length);
+
+	nt_status = ntlmssp_update(ntlmssp_state, request, &reply);
+	
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		char *reply_base64 = base64_encode_data_blob(reply);
+		if (first) {
+			x_fprintf(x_stdout, "YR %s\n", reply_base64);
+		} else { 
+			x_fprintf(x_stdout, "KK %s\n", reply_base64);
+		}
+		SAFE_FREE(reply_base64);
+		data_blob_free(&reply);
+		DEBUG(10, ("NTLMSSP challenge\n"));
+	} else if (NT_STATUS_IS_OK(nt_status)) {
+		x_fprintf(x_stdout, "AF\n");
+		DEBUG(10, ("NTLMSSP OK!\n"));
+		if (ntlmssp_state)
+			ntlmssp_end(&ntlmssp_state);
+	} else {
+		x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
+		DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
+		if (ntlmssp_state)
+			ntlmssp_end(&ntlmssp_state);
 	}
 
 	data_blob_free(&request);
@@ -561,10 +789,10 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 				return;
 			}
 
-			ntlmssp_server_start(&ntlmssp_state);
-			ntlmssp_state->check_password = winbind_pw_check;
-			ntlmssp_state->get_domain = get_winbind_domain;
-			ntlmssp_state->get_global_myname = get_winbind_netbios_name;
+			if (!NT_STATUS_IS_OK(status = ntlm_auth_start_ntlmssp_server(&ntlmssp_state))) {
+				x_fprintf(x_stdout, "BH %s\n", nt_errstr(status));
+				return;
+			}
 
 			DEBUG(10, ("got NTLMSSP packet:\n"));
 			dump_data(10, (const char *)request.negTokenInit.mechToken.data,
@@ -720,10 +948,13 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 		return False;
 	}
 
-	if ( (opt_username == NULL) || (opt_domain == NULL) ) {
-		DEBUG(1, ("Need username and domain for NTLMSSP\n"));
-		return False;
+	if (!client_ntlmssp_state) {
+		if (!NT_STATUS_IS_OK(status = ntlm_auth_start_ntlmssp_client(&client_ntlmssp_state))) {
+			x_fprintf(x_stdout, "BH %s\n", nt_errstr(status));
+			return False;
+		}
 	}
+
 
 	if (opt_password == NULL) {
 
@@ -734,42 +965,6 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 		DEBUG(10, ("Requesting password\n"));
 		x_fprintf(x_stdout, "PW\n");
 		return True;
-	}
-
-	status = ntlmssp_client_start(&client_ntlmssp_state);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not start NTLMSSP client: %s\n",
-			  nt_errstr(status)));
-		ntlmssp_end(&client_ntlmssp_state);
-		return False;
-	}
-
-	status = ntlmssp_set_username(client_ntlmssp_state, opt_username);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not set username: %s\n",
-			  nt_errstr(status)));
-		ntlmssp_end(&client_ntlmssp_state);
-		return False;
-	}
-
-	status = ntlmssp_set_domain(client_ntlmssp_state, opt_domain);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not set domain: %s\n",
-			  nt_errstr(status)));
-		ntlmssp_end(&client_ntlmssp_state);
-		return False;
-	}
-
-	status = ntlmssp_set_password(client_ntlmssp_state, opt_password);
-	
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not set password: %s\n",
-			  nt_errstr(status)));
-		ntlmssp_end(&client_ntlmssp_state);
-		return False;
 	}
 
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
@@ -1915,7 +2110,12 @@ enum {
 				exit(0);
 			}
 		}
-		x_fprintf(x_stderr, "unknown helper protocol [%s]\n", helper_protocol);
+		x_fprintf(x_stderr, "unknown helper protocol [%s]\n\nValid helper protools:\n\n", helper_protocol);
+
+		for (i=0; i<NUM_HELPER_MODES; i++) {
+			x_fprintf(x_stderr, "%s\n", stdio_helper_protocols[i].name);
+		}
+
 		exit(1);
 	}
 
