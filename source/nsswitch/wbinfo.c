@@ -32,7 +32,23 @@ enum nss_status generic_request(int req_type,
 
 /* Globals */
 
-BOOL do_users, do_groups;
+BOOL do_users, do_groups, do_string2sid, do_sid2string;
+
+/* Convert string to sid */
+
+/* Convert sid to string */
+
+BOOL convert_sid2string(char *sid)
+{
+	return False;
+}
+
+/* Convert string to sid */
+
+BOOL convert_string2sid(char *sid)
+{
+	return False;
+}
 
 /* Print domain users */
 
@@ -106,7 +122,7 @@ int main(int argc, char **argv)
 
 	/* Parse command line options */
 
-	while ((opt = getopt(argc, argv, "ug")) != EOF) {
+	while ((opt = getopt(argc, argv, "ugs:t:")) != EOF) {
 		switch (opt) {
 		case 'u':
 			do_users = True;
@@ -114,6 +130,11 @@ int main(int argc, char **argv)
 		case 'g':
 			do_groups = True;
 			break;
+		case 's':
+			do_sid2string = True;
+			break;
+		case 't':
+			do_string2sid = True;
 		default:
 			usage();
 			exit(1);
@@ -122,7 +143,7 @@ int main(int argc, char **argv)
 
 	/* Process options */
 
-	if (do_users && print_domain_users()) {
+	if (do_users && !print_domain_users()) {
 		DEBUG(0, ("Error fetching domain users\n"));
 		return 1;
 
@@ -130,6 +151,16 @@ int main(int argc, char **argv)
 
 	if (do_groups && !print_domain_groups()) {
 		DEBUG(0, ("Error fetching domain groups\n"));
+		return 1;
+	}
+
+	if (do_sid2string && !convert_sid2string(optarg)) {
+		DEBUG(0, ("Unable to convert sid %s to string\n", optarg));
+		return 1;
+	}
+
+	if (do_sid2string && !convert_string2sid(optarg)) {
+		DEBUG(0, ("Unable to convert string %s to sid\n", optarg));
 		return 1;
 	}
 

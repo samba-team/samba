@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 2.0
 
-   Winbind daemon - user related function
+   Winbind daemon - user related functions
 
    Copyright (C) Tim Potter 2000
    

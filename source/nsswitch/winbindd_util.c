@@ -604,19 +604,27 @@ char *winbindd_cmd_to_string(enum winbindd_cmd cmd)
 		break;
 
 	case WINBINDD_PAM_AUTH:
-		result = "pam_auth";
+		result = "pam auth";
 		break;
 
 	case WINBINDD_PAM_CHAUTHTOK:
-		result = "pam_chauthtok";
+		result = "pam chauthtok";
 		break;
 
 	case WINBINDD_LIST_USERS:
-		result = "list_users";
+		result = "list users";
 		break;
 
 	case WINBINDD_LIST_GROUPS:
-		result = "list_groups";
+		result = "list groups";
+		break;
+
+	case WINBINDD_STRING2SID:
+		result = "sid to string";
+		break;
+
+	case WINBINDD_SID2STRING:
+		result = "string to sid";
 		break;
 
 	default:
