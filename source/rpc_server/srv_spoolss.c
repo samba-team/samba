@@ -66,50 +66,6 @@ static struct
 #define VALID_HANDLE(pnum)   (((pnum) >= 0) && ((pnum) < MAX_OPEN_PRINTER_EXS))
 #define OPEN_HANDLE(pnum)    (VALID_HANDLE(pnum) && Printer[pnum].open)
 
-/****************************************************************************
-  create a unique printer handle
-****************************************************************************/
-static void create_printer_hnd(POLICY_HND *hnd)
-{
-	static uint32 prt_hnd_low  = 0;
-	static uint32 prt_hnd_high = 0;
-
-	if (hnd == NULL) return;
-
-	/* i severely doubt that prt_hnd_high will ever be non-zero... */
-	prt_hnd_low++;
-	if (prt_hnd_low == 0) prt_hnd_high++;
-
-	SIVAL(hnd->data, 0 , 0x0);          /* first bit must be null */
-	SIVAL(hnd->data, 4 , prt_hnd_low ); /* second bit is incrementing */
-	SIVAL(hnd->data, 8 , prt_hnd_high); /* second bit is incrementing */
-	SIVAL(hnd->data, 12, time(NULL));   /* something random */
-	SIVAL(hnd->data, 16, getpid());     /* something more random */
-}
-
-/****************************************************************************
-  find first available printer slot.  creates a printer handle for you.
- ****************************************************************************/
-static BOOL open_printer_hnd(POLICY_HND *hnd)
-{
-	int i;
-
-	for (i = 0; i < MAX_OPEN_PRINTER_EXS; i++)
-	{
-		if (!Printer[i].open)
-		{
-			Printer[i].open = True;				
-			create_printer_hnd(hnd);
-			memcpy(&(Printer[i].printer_hnd), hnd, sizeof(*hnd));
-
-			DEBUG(4,("Opened printer handle[%x] ", i));
-			dump_data(4, hnd->data, sizeof(hnd->data));
-			return True;
-		}
-	}
-	DEBUG(1,("ERROR - open_printer_hnd: out of Printers Handles!\n"));
-	return False;
-}
 
 /****************************************************************************
   find printer index by handle
@@ -130,125 +86,6 @@ static int find_printer_index_by_hnd(POLICY_HND *hnd)
 	DEBUG(3,("Whoops, Printer handle not found: "));
 	dump_data(4, hnd->data, sizeof(hnd->data));
 	return -1;
-}
-
-/****************************************************************************
-  set printer handle type.
-****************************************************************************/
-static BOOL set_printer_hnd_printertype(POLICY_HND *hnd, char *printername)
-{
-	int pnum = find_printer_index_by_hnd(hnd);
-		
-	if (OPEN_HANDLE(pnum))
-	{
-		DEBUG(3,("Setting printer type=%s (pnum=%x)\n", printername, pnum));
-
-		if ( strlen(printername) < 3 )
-		{
-			DEBUGADD(4,("A print server must have at least 1 char ! %s\n", printername));
-			return False;
-		}
-
-		/* check if it's \\server or \\server\printer */		
-		/* +2 is to skip the leading \\ */
-		if (!strchr(printername+2, '\\'))
-		{
-			/* it's a print server */
-			DEBUGADD(4,("Printer is a print server\n"));
-			Printer[pnum].printer_type = PRINTER_HANDLE_IS_PRINTSERVER;
-			return True;
-		}
-		else
-		{
-			/* it's a printer */
-			DEBUGADD(4,("Printer is a printer\n"));
-			Printer[pnum].printer_type = PRINTER_HANDLE_IS_PRINTER;
-			return True;
-		}	
-	}
-	else
-	{
-		DEBUGADD(4,("Error setting printer name %s (pnum=%x)",
-		          printername, pnum));
-		return False;
-	}
-	return False;
-}
-
-/****************************************************************************
-  set printer handle printername.
-****************************************************************************/
-static BOOL set_printer_hnd_printername(POLICY_HND *hnd, char *printername)
-{
-	int pnum = find_printer_index_by_hnd(hnd);
-	char *back;
-	NT_PRINTER_INFO_LEVEL printer;
-	int snum;
-	int n_services=lp_numservices();
-	uint32 marche;
-	
-	if (OPEN_HANDLE(pnum))
-	{
-		DEBUG(4,("Setting printer name=%s (len=%d) (pnum=%x)\n",
-		          printername,strlen(printername), pnum));
-			  
-		switch (Printer[pnum].printer_type)
-		 {
-		   case PRINTER_HANDLE_IS_PRINTER:
-		   	back=strchr(printername+2, '\\');
-			back=back+1;
-			DEBUGADD(5,("searching for %s (len=%d)\n", back,strlen(back)));
-			/* 
-			 * store the Samba share name in it
-			 * in back we have the long printer name
-			 * need to iterate all the snum and do a 
-			 * get_a_printer each time to find the printer
-			 * faster to do it here than later.
-			 */
-			for (snum=0;snum<n_services; snum++)
-			{
-				if (lp_browseable(snum) && 
-				    lp_snum_ok(snum) && 
-				    lp_print_ok(snum) )
-				{
-					DEBUGADD(5,("share:%s\n",lp_servicename(snum)));
-					
-					marche=get_a_printer(&printer, 2, lp_servicename(snum));
-					DEBUGADD(6,("marche:%d\n",marche));
-										
-					if ( marche==0 && ( strlen(printer.info_2->printername) == strlen(back) ) 
-					     && ( !strncasecmp(printer.info_2->printername, back, strlen(back))) 
-					   )
-					{
-						DEBUGADD(4,("Printer found: %s[%x]\n",lp_servicename(snum),snum));
-						ZERO_STRUCT(Printer[pnum].dev.printername);
-						strncpy(Printer[pnum].dev.printername, lp_servicename(snum), strlen(lp_servicename(snum)));
-						free_a_printer(printer, 2);
-						return True;
-						break;	
-					}
-					free_a_printer(printer, 2);
-				}
-			}
-
-			return False;
-			break;		
-		   case PRINTER_HANDLE_IS_PRINTSERVER:
-			ZERO_STRUCT(Printer[pnum].dev.printerservername);
-			strncpy(Printer[pnum].dev.printerservername, printername, strlen(printername));
-			return True;
-			break;
-		   default:
-			return False;
-			break;
-		 }
-	}
-	else
-	{
-		DEBUG(0,("Error setting printer name=%s (pnum=%x)\n",
-		         printername , pnum));
-		return False;
-	}
 }
 
 /****************************************************************************
@@ -949,6 +786,9 @@ static void api_spoolss_enumports(rpcsrv_struct *p, prs_struct *data,
 	SPOOL_Q_ENUMPORTS q_u;
 	SPOOL_R_ENUMPORTS r_u;
 	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
 	spoolss_io_q_enumports("", &q_u, data, 0);
 
 	r_u.offered=q_u.buf_size;
@@ -964,62 +804,24 @@ static void api_spoolss_enumports(rpcsrv_struct *p, prs_struct *data,
 	spoolss_free_r_enumports(&r_u);
 }
 
-/****************************************************************************
-****************************************************************************/
-static void spoolss_reply_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, prs_struct *rdata)
-{
-	SPOOL_R_ADDPRINTEREX r_u;
-	BOOL printer_open = False;
-	fstring ascii_name;
-	fstring server_name;
-	fstring share_name;
-	UNISTR2 *portname;
-	SPOOL_PRINTER_INFO_LEVEL_2 *info2;
-	SPOOL_PRINTER_INFO_LEVEL *info;
-	
-	info=&(q_u->info);
-	info2=info->info_2;
-	portname=&(info2->portname);
-
-	r_u.status=0x0; /* everything is always nice in this world */
-
-	StrnCpy(server_name, global_myname, strlen(global_myname) );
-	unistr2_to_ascii(share_name, portname, sizeof(share_name)-1);
-	
-	slprintf(ascii_name, sizeof(ascii_name)-1, "\\\\%s\\%s", 
-	         server_name, share_name);
-		
-	printer_open = open_printer_hnd(&(r_u.handle));
-	set_printer_hnd_printertype(&(r_u.handle), ascii_name);
-	set_printer_hnd_printername(&(r_u.handle), ascii_name);
-
-	spoolss_io_r_addprinterex("", &r_u, rdata, 0);
-}
 
 /****************************************************************************
 ****************************************************************************/
 static void api_spoolss_addprinterex(rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SPOOL_Q_ADDPRINTEREX q_u;
-	NT_PRINTER_INFO_LEVEL printer;	
+	SPOOL_R_ADDPRINTEREX r_u;
 	
-	/* read the stream and decode */
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
 	spoolss_io_q_addprinterex("", &q_u, data, 0);
-
-	/* NULLify info_2 here */
-	/* don't put it in convert_printer_info as it's used also with non-NULL values */
-	printer.info_2=NULL;
-
-	/* convert from UNICODE to ASCII */
-	convert_printer_info(&q_u.info, &printer, q_u.level);
-
-	/* write the ASCII on disk */
-	add_a_printer(printer, q_u.level);
-
-	spoolss_reply_addprinterex(&q_u, rdata);
-	/* free mem used in q_u and r_u */
-	
-	/* free_add_printer(q_u, r_u); */
+	r_u.status = _spoolss_addprinterex(&q_u.server_name,
+	                        q_u.level, &q_u.info,
+				q_u.unk0, q_u.unk1, q_u.unk2, q_u.unk3,
+				q_u.user_level, &q_u.user,
+				&r_u.handle);
+	spoolss_io_r_addprinterex("", &r_u, rdata, 0);
 }
 
 /****************************************************************************

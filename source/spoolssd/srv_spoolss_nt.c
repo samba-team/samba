@@ -2962,49 +2962,31 @@ uint32 _spoolss_enumports( const UNISTR2 *name,
    	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, prs_struct *rdata)
+uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name,
+				uint32 level,
+				const SPOOL_PRINTER_INFO_LEVEL *info,
+				uint32 unk0,
+				uint32 unk1,
+				uint32 unk2,
+				uint32 unk3,
+				uint32 user_level,
+				const SPOOL_USER_LEVEL *user,
+				POLICY_HND *handle)
 {
-	SPOOL_R_ADDPRINTEREX r_u;
-	BOOL printer_open = False;
+	NT_PRINTER_INFO_LEVEL printer;	
 	fstring ascii_name;
 	fstring server_name;
 	fstring share_name;
 	UNISTR2 *portname;
 	SPOOL_PRINTER_INFO_LEVEL_2 *info2;
-	SPOOL_PRINTER_INFO_LEVEL *info;
+	uint32 status = 0x0;
 	
-	info=&(info);
-	info2=info->info_2;
-	portname=&(info2->portname);
-
-	status=0x0; /* everything is always nice in this world */
-
-	StrnCpy(server_name, global_myname, strlen(global_myname) );
-	unistr2_to_ascii(share_name, portname, sizeof(share_name)-1);
-	
-	slprintf(ascii_name, sizeof(ascii_name)-1, "\\\\%s\\%s", 
-	         server_name, share_name);
-		
-	printer_open = open_printer_hnd(handle);
-	set_printer_hnd_printertype(handle, ascii_name);
-	set_printer_hnd_printername(handle, ascii_name);
-
-	spoolss_io_r_addprinterex("", &r_u, rdata, 0);
-}
-
-/****************************************************************************
-****************************************************************************/
-static void api_spoolss_addprinterex(rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
-{
-	SPOOL_Q_ADDPRINTEREX q_u;
-	NT_PRINTER_INFO_LEVEL printer;	
-	
-	/* read the stream and decode */
-	spoolss_io_q_addprinterex("", &q_u, data, 0);
+	if (!open_printer_hnd(handle))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* NULLify info_2 here */
 	/* don't put it in convert_printer_info as it's used also with non-NULL values */
@@ -3014,13 +2996,33 @@ static void api_spoolss_addprinterex(rpcsrv_struct *p, prs_struct *data, prs_str
 	convert_printer_info(info, &printer, level);
 
 	/* write the ASCII on disk */
-	add_a_printer(printer, level);
+	status = add_a_printer(printer, level);
+	if (status != 0x0)
+	{
+		close_printer_handle(handle);
+		return status;
+	}
 
-	spoolss_addprinterex(&q_u, rdata);
-	/* free mem used in q_u and r_u */
+	info2=info->info_2;
+	portname=&(info2->portname);
+
+	StrnCpy(server_name, global_myname, strlen(global_myname) );
+	unistr2_to_ascii(share_name, portname, sizeof(share_name)-1);
 	
-	/* free_add_printer(q_u, r_u); */
+	slprintf(ascii_name, sizeof(ascii_name)-1, "\\\\%s\\%s", 
+	         server_name, share_name);
+		
+	if (!set_printer_hnd_printertype(handle, ascii_name) ||
+	    !set_printer_hnd_printername(handle, ascii_name))
+	{
+		close_printer_handle(handle);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return 0x0;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/
