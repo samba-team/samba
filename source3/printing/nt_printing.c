@@ -2456,7 +2456,8 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	smb_ucs2_t conv_str[1024];
 	size_t str_size;
 	fstring longname;
-        char *uncname;
+        char *ascii_str;
+	uint8 bin_bool;
 	uint32 dword;
 	int i;
 
@@ -2495,11 +2496,69 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 			    (char *) &dword, sizeof(dword));
 
 	regval_ctr_delvalue(ctr, SPOOL_REG_UNCNAME);
-	asprintf(&uncname, "\\\\%s\\%s", longname, info2->sharename);
-	str_size = push_ucs2(NULL, conv_str, uncname, sizeof(conv_str),
+	asprintf(&ascii_str, "\\\\%s\\%s", longname, info2->sharename);
+	str_size = push_ucs2(NULL, conv_str, ascii_str, sizeof(conv_str),
 			     STR_TERMINATE | STR_NOALIGN);
 	regval_ctr_addvalue(ctr, SPOOL_REG_UNCNAME, REG_SZ, (char *) conv_str,
 			    str_size);
+	safe_free(ascii_str);
+
+	regval_ctr_delvalue(ctr, SPOOL_REG_DRIVERNAME);
+	str_size = push_ucs2(NULL, conv_str, info2->drivername, 
+			     sizeof(conv_str), STR_TERMINATE | STR_NOALIGN);
+	regval_ctr_addvalue(ctr, SPOOL_REG_DRIVERNAME, REG_SZ, 
+			    (char *) conv_str, str_size);
+
+	regval_ctr_delvalue(ctr, SPOOL_REG_LOCATION);
+	str_size = push_ucs2(NULL, conv_str, info2->location, 
+			     sizeof(conv_str), STR_TERMINATE | STR_NOALIGN);
+	regval_ctr_addvalue(ctr, SPOOL_REG_LOCATION, REG_SZ, 
+			    (char *) conv_str, str_size);
+
+	regval_ctr_delvalue(ctr, SPOOL_REG_PRINTSEPARATORFILE);
+	str_size = push_ucs2(NULL, conv_str, info2->sepfile, 
+			     sizeof(conv_str), STR_TERMINATE | STR_NOALIGN);
+	regval_ctr_addvalue(ctr, SPOOL_REG_PRINTSEPARATORFILE, REG_SZ, 
+			    (char *) conv_str, str_size);
+
+	regval_ctr_delvalue(ctr, SPOOL_REG_PRINTSTARTTIME);
+	dword = info2->starttime;
+	regval_ctr_addvalue(ctr, SPOOL_REG_PRINTSTARTTIME, REG_DWORD, 
+			    (char *) &dword, sizeof(dword));
+
+	regval_ctr_delvalue(ctr, SPOOL_REG_PRINTENDTIME);
+	dword = info2->untiltime;
+	regval_ctr_addvalue(ctr, SPOOL_REG_PRINTENDTIME, REG_DWORD, 
+			    (char *) &dword, sizeof(dword));
+
+	regval_ctr_delvalue(ctr, SPOOL_REG_PRIORITY);
+	dword = info2->priority;
+	regval_ctr_addvalue(ctr, SPOOL_REG_PRIORITY, REG_DWORD, 
+			    (char *) &dword, sizeof(dword));
+
+	regval_ctr_delvalue(ctr, SPOOL_REG_PRINTKEEPPRINTEDJOBS);
+	bin_bool = (info2->attributes >> 8) & 0x1;
+	regval_ctr_addvalue(ctr, SPOOL_REG_PRINTKEEPPRINTEDJOBS, REG_BINARY, 
+			    (char *) &bin_bool, sizeof(bin_bool));
+
+	regval_ctr_delvalue(ctr, SPOOL_REG_PRINTSPOOLING);
+	switch (info2->attributes & 0x3) {
+	case 0:
+		ascii_str = SPOOL_REGVAL_PRINTWHILESPOOLING;
+		break;
+	case 1:
+		ascii_str = SPOOL_REGVAL_PRINTAFTERSPOOLED;
+		break;
+	case 2:
+		ascii_str = SPOOL_REGVAL_PRINTDIRECT;
+		break;
+	default:
+		ascii_str = "unknown";
+	}
+	str_size = push_ucs2(NULL, conv_str, ascii_str, sizeof(conv_str), 
+			     STR_TERMINATE | STR_NOALIGN);
+	regval_ctr_addvalue(ctr, SPOOL_REG_PRINTSPOOLING, REG_SZ, 
+			    (char *) conv_str, str_size);
 
 	return True;
 }
