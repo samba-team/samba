@@ -82,13 +82,11 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 
 		ent = &ent_r->msg.r.SearchResultEntry;
 		ent->dn = talloc_steal(ent_r, res[i]->dn);
-		ALLOC_CHECK(ent->dn, call);
 		ent->num_attributes = res[i]->num_elements;
 		ent->attributes = talloc_array_p(ent_r, struct ldap_attribute, ent->num_attributes);
 		ALLOC_CHECK(ent->attributes, call);
 		for (j=0; j < ent->num_attributes; j++) {
 			ent->attributes[j].name = talloc_steal(ent->attributes, res[i]->elements[j].name);
-			ALLOC_CHECK(ent->attributes[j].name, call);
 			if (r->attributesonly) {
 				ent->attributes[j].num_values = 0;
 				ent->attributes[j].values = NULL;
@@ -102,8 +100,6 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 				ent->attributes[j].values[y].length = res[i]->elements[j].values[y].length;
 				ent->attributes[j].values[y].data = talloc_steal(ent->attributes[j].values,
 									res[i]->elements[j].values[y].data);
-				ALLOC_CHECK(ent->attributes[j].values[y].data, call);
-
 			}
 		}
 
