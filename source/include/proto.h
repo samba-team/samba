@@ -491,8 +491,6 @@ void* add_copy_to_array(uint32 *len, void ***array, const void *item,
 void* add_item_to_array(uint32 *len, void ***array, void *item);
 void free_char_array(uint32 num_entries, char **entries);
 char* add_chars_to_array(uint32 *len, char ***array, const char *name);
-void free_con_array(uint32 num_entries, struct cli_connection **entries);
-struct cli_connection* add_con_to_array(uint32 *len, struct cli_connection ***array, struct cli_connection *con);
 void free_uint32_array(uint32 num_entries, uint32 **entries);
 uint32* add_uint32s_to_array(uint32 *len, uint32 ***array, const uint32 *name);
 void free_unistr_array(uint32 num_entries, UNISTR2 **entries);
@@ -1801,6 +1799,7 @@ BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
 BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con);
 BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from);
 BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16]);
+BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name);
 BOOL cli_get_sesskey(const POLICY_HND *pol, uchar sess_key[16]);
 BOOL cli_get_sesskey_srv(const char* srv_name, uchar sess_key[16]);
 void cli_con_gen_next_creds(struct cli_connection *con,
@@ -1827,10 +1826,11 @@ BOOL event_readeventlog(POLICY_HND *hnd,
 
 /*The following definitions come from  rpc_client/cli_login.c  */
 
-uint32 cli_nt_setup_creds( const char* srv_name, const char* myhostname,
+uint32 cli_nt_setup_creds( char* servers, const char* myhostname,
 				const char* trust_acct,
 				unsigned char trust_pwd[16],
-				uint16 sec_chan);
+				uint16 sec_chan,
+				char *srv_name);
 BOOL cli_nt_srv_pwset(const char* srv_name, const char* myhostname,
 				const char* trust_acct,
 				unsigned char *new_hashof_trust_pwd,
@@ -1849,7 +1849,7 @@ BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
 				NET_USER_INFO_3 *user_info3);
 BOOL cli_nt_logoff(const char* srv_name, const char* myhostname,
 				NET_ID_INFO_CTR *ctr);
-BOOL net_sam_sync(const char* srv_name, const char* myhostname,
+BOOL net_sam_sync(char* servers, const char* myhostname,
 				const char* trust_acct,
 				uchar trust_passwd[16],
 				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],

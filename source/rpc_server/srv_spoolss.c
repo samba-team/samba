@@ -50,7 +50,7 @@ static struct
   uint32      document_lastwritten;
   pstring     document_name;
   pstring     job_name;
-  PRINTER_HND printer_hnd;
+  POLICY_HND printer_hnd;
   BOOL        printer_type;
   union
   {
@@ -82,7 +82,7 @@ void init_printer_hnd(void)
 /****************************************************************************
   create a unique printer handle
 ****************************************************************************/
-static void create_printer_hnd(PRINTER_HND *hnd)
+static void create_printer_hnd(POLICY_HND *hnd)
 {
 	static uint32 prt_hnd_low  = 0;
 	static uint32 prt_hnd_high = 0;
@@ -103,15 +103,15 @@ static void create_printer_hnd(PRINTER_HND *hnd)
 /****************************************************************************
   clear an handle
 ****************************************************************************/
-static void clear_handle(PRINTER_HND *hnd)
+static void clear_handle(POLICY_HND *hnd)
 {
-	bzero(hnd->data, PRINTER_HND_SIZE);
+	bzero(hnd->data, POLICY_HND_SIZE);
 }
 
 /****************************************************************************
   find first available printer slot.  creates a printer handle for you.
  ****************************************************************************/
-static BOOL open_printer_hnd(PRINTER_HND *hnd)
+static BOOL open_printer_hnd(POLICY_HND *hnd)
 {
 	int i;
 
@@ -135,7 +135,7 @@ static BOOL open_printer_hnd(PRINTER_HND *hnd)
 /****************************************************************************
   find printer index by handle
 ****************************************************************************/
-static int find_printer_index_by_hnd(PRINTER_HND *hnd)
+static int find_printer_index_by_hnd(POLICY_HND *hnd)
 {
 	int i;
 
@@ -156,7 +156,7 @@ static int find_printer_index_by_hnd(PRINTER_HND *hnd)
 /****************************************************************************
   set printer handle type.
 ****************************************************************************/
-static BOOL set_printer_hnd_accesstype(PRINTER_HND *hnd, uint32 access_required)
+static BOOL set_printer_hnd_accesstype(POLICY_HND *hnd, uint32 access_required)
 {
 	int pnum = find_printer_index_by_hnd(hnd);
 
@@ -182,7 +182,7 @@ static BOOL set_printer_hnd_accesstype(PRINTER_HND *hnd, uint32 access_required)
 /****************************************************************************
   set printer handle type.
 ****************************************************************************/
-static BOOL set_printer_hnd_printertype(PRINTER_HND *hnd, char *printername)
+static BOOL set_printer_hnd_printertype(POLICY_HND *hnd, char *printername)
 {
 	int pnum = find_printer_index_by_hnd(hnd);
 		
@@ -225,7 +225,7 @@ static BOOL set_printer_hnd_printertype(PRINTER_HND *hnd, char *printername)
 /****************************************************************************
   set printer handle printername.
 ****************************************************************************/
-static BOOL set_printer_hnd_printername(PRINTER_HND *hnd, char *printername)
+static BOOL set_printer_hnd_printername(POLICY_HND *hnd, char *printername)
 {
 	int pnum = find_printer_index_by_hnd(hnd);
 	char *back;
@@ -301,7 +301,7 @@ static BOOL set_printer_hnd_printername(PRINTER_HND *hnd, char *printername)
 /****************************************************************************
   return the snum of a printer corresponding to an handle
 ****************************************************************************/
-static BOOL get_printer_snum(PRINTER_HND *hnd, int *number)
+static BOOL get_printer_snum(POLICY_HND *hnd, int *number)
 {
 	int snum;
 	int pnum = find_printer_index_by_hnd(hnd);
@@ -350,7 +350,7 @@ static BOOL get_printer_snum(PRINTER_HND *hnd, int *number)
 
 /********************************************************************
  ********************************************************************/
-static BOOL handle_is_printserver(PRINTER_HND *handle)
+static BOOL handle_is_printserver(POLICY_HND *handle)
 {
 	int pnum=find_printer_index_by_hnd(handle);
 
@@ -372,7 +372,7 @@ static BOOL handle_is_printserver(PRINTER_HND *handle)
 /********************************************************************
  ********************************************************************/
 /*
-static BOOL handle_is_printer(PRINTER_HND *handle)
+static BOOL handle_is_printer(POLICY_HND *handle)
 {
 	return (!handle_is_printserver(handle));
 }
@@ -538,7 +538,7 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 size, uint32 *ty
 
 /********************************************************************
  ********************************************************************/
-static BOOL getprinterdata_printer(PRINTER_HND *handle, fstring value, uint32 size, uint32 *type, 
+static BOOL getprinterdata_printer(POLICY_HND *handle, fstring value, uint32 size, uint32 *type, 
                                           uint32 *numeric_data, uint8 **data, uint32 *needed )
 {
 	NT_PRINTER_INFO_LEVEL printer;
@@ -1315,7 +1315,7 @@ static void construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_I
  * fill a notify_info struct with info asked
  * 
  ********************************************************************/
-static void printserver_notify_info(PRINTER_HND *hnd, SPOOL_NOTIFY_INFO *info, connection_struct *conn)
+static void printserver_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info, connection_struct *conn)
 {
 	int snum;
 	int pnum=find_printer_index_by_hnd(hnd);
@@ -1348,7 +1348,7 @@ static void printserver_notify_info(PRINTER_HND *hnd, SPOOL_NOTIFY_INFO *info, c
  * fill a notify_info struct with info asked
  * 
  ********************************************************************/
-static void printer_notify_info(PRINTER_HND *hnd, SPOOL_NOTIFY_INFO *info, connection_struct *conn)
+static void printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info, connection_struct *conn)
 {
 	int snum;
 	int pnum=find_printer_index_by_hnd(hnd);
@@ -2458,7 +2458,7 @@ static void api_spoolss_writeprinter(pipes_struct *p, prs_struct *data,
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void control_printer(PRINTER_HND handle, uint32 command, connection_struct *conn)
+static void control_printer(POLICY_HND handle, uint32 command, connection_struct *conn)
 {
 	int pnum;
 	int snum;
@@ -2489,7 +2489,7 @@ static void control_printer(PRINTER_HND handle, uint32 command, connection_struc
  * called by spoolss_api_setprinter
  * when updating a printer description
  ********************************************************************/
-static void update_printer(PRINTER_HND handle, uint32 level,
+static void update_printer(POLICY_HND handle, uint32 level,
                            SPOOL_PRINTER_INFO_LEVEL info, DEVICEMODE *devmode)
 {
 	int pnum;

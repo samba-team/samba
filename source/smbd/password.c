@@ -1116,16 +1116,15 @@ BOOL domain_client_validate( char *user, char *domain, char *server_list,
 				char *smb_ntpasswd, int smb_ntpasslen,
 				uchar user_sess_key[16])
 {
-	uint16 nt_pipe_fnum;
 	unsigned char local_challenge[8];
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_reponse[24];
 	unsigned char trust_passwd[16];
 	NET_ID_INFO_CTR ctr;
 	NET_USER_INFO_3 info3;
-	struct cli_state cli;
 	uint32 smb_uid_low;
 	fstring trust_acct;
+	fstring srv_name;
 
 	fstrcpy(trust_acct, acct_name);
 	fstrcat(trust_acct, "$");
@@ -1192,50 +1191,31 @@ BOOL domain_client_validate( char *user, char *domain, char *server_list,
 	 * see if they were valid.
 	 */
 
-	if (!cli_connect_serverlist(&cli, server_list))
-	{
-		DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
-		return False;
-	}
-
 	/*
 	* Ok - we have an anonymous connection to the IPC$ share.
 	* Now start the NT Domain stuff :-).
 	*/
 
-	if (!cli_nt_session_open(&cli, PIPE_NETLOGON, &nt_pipe_fnum)) {
-	DEBUG(0,("domain_client_validate: unable to open the domain client session to \
-	machine %s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
-	cli_nt_session_close(&cli, nt_pipe_fnum);
-	cli_ulogoff(&cli);
-	cli_shutdown(&cli);
-	return False; 
-	}
-
-	if(cli_nt_setup_creds(&cli, nt_pipe_fnum,
-	   trust_acct, global_myname, trust_passwd, acct_type) != 0x0)
+	if(cli_nt_setup_creds(server_list, global_myname, trust_acct,
+	                      trust_passwd, acct_type, srv_name) != 0x0)
 	{
 		DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
-		%s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
-		cli_nt_session_close(&cli, nt_pipe_fnum);
-		cli_ulogoff(&cli);
-		cli_shutdown(&cli);
+		%s.\n", srv_name));
 		return False;
 	}
 
 	/* We really don't care what LUID we give the user. */
 	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
 
-	if (!cli_nt_login_network(&cli, nt_pipe_fnum, domain, user, smb_uid_low, (char *)local_challenge,
-	((smb_apasslen != 0) ? smb_apasswd : NULL),
-	((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
-	&ctr, &info3))
+	if (!cli_nt_login_network(srv_name, global_myname, 
+	                domain, user,
+	               smb_uid_low, (char *)local_challenge,
+			((smb_apasslen != 0) ? smb_apasswd : NULL),
+			((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
+			&ctr, &info3))
 	{
 		DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
-		%s to Domain controller %s. Error was %s.\n", user, domain, cli.desthost, cli_errstr(&cli)));
-		cli_nt_session_close(&cli, nt_pipe_fnum);
-		cli_ulogoff(&cli);
-		cli_shutdown(&cli);
+		%s to Domain controller %s.\n", user, domain, srv_name));
 		return False;
 	}
 
@@ -1244,28 +1224,6 @@ BOOL domain_client_validate( char *user, char *domain, char *server_list,
 	 * LKCLXXXX - really important to check things like "is this user acct
 	 * locked out / disabled" etc!!!!
 	 */
-
-#if 0
-	/* 
-	* We don't actually need to do this - plus it fails currently with
-	* NT_STATUS_INVALID_INFO_CLASS - we need to know *exactly* what to
-	* send here. JRA.
-	*/
-
-	if (!cli_nt_logoff(&cli, nt_pipe_fnum, &ctr))
-	{
-		DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
-		%s to Domain controller %s. Error was %s.\n", user, domain, cli.desthost, cli_errstr(&cli)));        
-		cli_nt_session_close(&cli, nt_pipe_fnum);
-		cli_ulogoff(&cli);
-		cli_shutdown(&cli);
-		return False;
-	}
-#endif /* 0 */
-
-	cli_nt_session_close(&cli, nt_pipe_fnum);
-	cli_ulogoff(&cli);
-	cli_shutdown(&cli);
 
 	return True;
 }

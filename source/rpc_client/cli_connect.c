@@ -50,6 +50,20 @@ void init_connections(void)
 	num_cons = 0;
 }
 
+static void free_con_array(uint32 num_entries, struct cli_connection **entries)
+{
+	void(*fn)(void*) = (void(*)(void*))&cli_connection_free;
+	free_void_array(num_entries, (void**)entries, *fn);
+}
+
+static struct cli_connection* add_con_to_array(uint32 *len,
+				struct cli_connection ***array,
+				struct cli_connection *con)
+{
+	return (struct cli_connection*)add_item_to_array(len,
+	                     (void***)array, (void*)con);
+				
+}
 void free_connections(void)
 {
 	free_con_array(num_cons, con_list);
@@ -286,8 +300,36 @@ policy handle.
 ****************************************************************************/
 BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16])
 {
+	if (con == NULL)
+	{
+		return False;
+	}
 	memcpy(sess_key, con->cli->sess_key, sizeof(con->cli->sess_key));
 
+	return True;
+}
+
+/****************************************************************************
+get a user session key associated with a connection associated with a
+policy handle.
+****************************************************************************/
+BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name)
+{
+	if (con == NULL)
+	{
+		return False;
+	}
+
+	if (strnequal("\\\\", con->cli->desthost, 2))
+	{
+		fstrcpy(srv_name, con->cli->desthost);
+	}
+	else
+	{
+		fstrcpy(srv_name, "\\\\");
+		fstrcat(srv_name, con->cli->desthost);
+	}
+	
 	return True;
 }
 
