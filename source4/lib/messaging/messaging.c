@@ -514,7 +514,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, servid_t server_id
 	fde.flags	= EVENT_FD_READ;
 	fde.handler	= messaging_listen_handler;
 
-	msg->event.ev   = ev;
+	msg->event.ev   = talloc_reference(msg,ev);
 	msg->event.fde	= event_add_fd(ev, &fde);
 
 	talloc_set_destructor(msg, messaging_destructor);
