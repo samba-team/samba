@@ -4,11 +4,6 @@ void exit(int);
 
 main()
 {
-#if !(defined(HAVE_FCNTL_LOCK) || defined(HAVE_STRUCT_FLOCK64))
-	printf("ERROR: No locking available. Running Samba would be unsafe\n");
-	exit(1);
-#endif
-
 #if !(defined(HAVE_IFACE_IFCONF) || defined(HAVE_IFACE_IFREQ) || defined(HAVE_IFACE_AIX))
 	printf("WARNING: No automated network interface determination\n");
 #endif
