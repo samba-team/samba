@@ -1318,7 +1318,8 @@ sub ParseUnionNdrSize($)
 	if (my $flags = util::has_property($t, "flag")) {
 		pidl "flags |= $flags;";
 	}
-	pidl "return ndr_size_union(r, flags, level, (ndr_push_union_fn_t)ndr_push_$t->{NAME});";
+
+	pidl "return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_$t->{NAME});";
 }
 
 #####################################################################
