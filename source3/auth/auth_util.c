@@ -965,7 +965,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
  
 struct passwd *smb_getpwnam( char *domuser )
 {
-	struct passwd *pw;
+	struct passwd *pw = NULL;
 	char *p;
 	fstring mapped_username;
 
@@ -981,10 +981,20 @@ struct passwd *smb_getpwnam( char *domuser )
 		p += 1;
 		fstrcpy( mapped_username, p );
 		map_username( mapped_username );	
-		return Get_Pwnam(mapped_username);
+		pw = Get_Pwnam(mapped_username);
+		if (!pw) {
+			/* Create local user if requested. */
+			p = strchr( mapped_username, *lp_winbind_separator() );
+			if (p)
+				p += 1;
+			else
+				p = mapped_username;
+			auth_add_user_script(NULL, p);
+			return Get_Pwnam(p);
+		}
 	}
 
-	return NULL;
+	return pw;
 }
 
 /***************************************************************************
