@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -46,7 +46,7 @@ krb5_set_default_realm(krb5_context context,
 {
     const char *foo;
     char *tmp;
-    char **realms = NULL;
+    krb5_realm *realms = NULL;
 
     if (realm == NULL){
 	foo = krb5_config_get_string (context, NULL,
@@ -64,12 +64,7 @@ krb5_set_default_realm(krb5_context context,
 	foo = realm;
 
     tmp = strdup (foo);
-    if(realms){
-	char **q;
-	for(q = realms; *q; q++)
-	    free(*q);
-	free(realms);
-    }
+    krb5_free_host_realm(context, realms);
 	
     if (tmp == NULL)
 	return ENOMEM;
