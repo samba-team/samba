@@ -3245,6 +3245,17 @@ int reply_negprot(connection_struct *conn,
 
 BOOL disk_quotas(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize);
 
+/*The following definitions come from  smbd/notify.c  */
+
+#if OLD_NTDOMAIN
+void remove_pending_change_notify_requests_by_fid(files_struct *fsp);
+void remove_pending_change_notify_requests_by_mid(int mid);
+void remove_pending_change_notify_requests_by_filename(files_struct *fsp);
+BOOL process_pending_change_notify_queue(time_t t);
+BOOL change_notifies_pending(void);
+BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, uint32 flags);
+#endif
+
 /*The following definitions come from  smbd/nttrans.c  */
 
 #if OLD_NTDOMAIN
@@ -3256,10 +3267,6 @@ int reply_ntcancel(connection_struct *conn,
 		   char *inbuf,char *outbuf,int length,int bufsize);
 int reply_nttranss(connection_struct *conn,
 		   char *inbuf,char *outbuf,int length,int bufsize);
-void remove_pending_change_notify_requests_by_fid(files_struct *fsp);
-void remove_pending_change_notify_requests_by_filename(files_struct *fsp);
-BOOL process_pending_change_notify_queue(time_t t);
-BOOL change_notifies_pending(void);
 int reply_nttrans(connection_struct *conn,
 		  char *inbuf,char *outbuf,int length,int bufsize);
 #endif
@@ -3292,18 +3299,6 @@ BOOL request_oplock_break(share_mode_entry *share_entry,
                           SMB_DEV_T dev, SMB_INO_T inode);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
 BOOL init_oplocks(void);
-#endif
-
-/*The following definitions come from  smbd/oplock_irix.c  */
-
-#if OLD_NTDOMAIN
-struct kernel_oplocks *irix_init_kernel_oplocks(void) ;
-#endif
-
-/*The following definitions come from  smbd/oplock_linux.c  */
-
-#if OLD_NTDOMAIN
-struct kernel_oplocks *linux_init_kernel_oplocks(void) ;
 #endif
 
 /*The following definitions come from  smbd/password.c  */
