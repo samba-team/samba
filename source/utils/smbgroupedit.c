@@ -22,7 +22,7 @@
 #include "includes.h"
 
 extern pstring global_myname;
-extern pstring global_myworkgroup;
+extern fstring global_myworkgroup;
 
 /*
  * Next two lines needed for SunOS and don't
