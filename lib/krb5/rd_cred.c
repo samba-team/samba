@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -78,10 +78,11 @@ krb5_rd_cred (krb5_context      context,
 	goto out;
     
 
-    ret = decode_EncKrbCredPart (enc_krb_cred_part_data.data,
-				 enc_krb_cred_part_data.length,
-				 &enc_krb_cred_part,
-				 &len);
+    ret = krb5_decode_EncKrbCredPart (context,
+				      enc_krb_cred_part_data.data,
+				      enc_krb_cred_part_data.length,
+				      &enc_krb_cred_part,
+				      &len);
     if (ret)
 	goto out;
 
