@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,34 +40,16 @@
 
 RCSID("$Id$");
 
-int
+static int
 kt_list(int argc, char **argv)
 {
-    krb5_keytab kt;
     krb5_error_code ret;
     krb5_kt_cursor cursor;
     krb5_keytab_entry entry;
 
-    if(argc == 1){
-	ret = krb5_kt_default(context, &kt);
-	if(ret){
-	    krb5_warn(context, ret, "krb5_kt_default");
-	    return 1;
-	}
-    } else if(argc == 2){
-	ret = krb5_kt_resolve(context, argv[1], &kt);
-	if(ret){
-	    krb5_warn(context, ret, "krb5_kt_resolve(%s)", argv[1]);
-	    return 1;
-	}
-    } else {
-	krb5_warnx(context, "Usage: ktlist [keytab]");
-	return 1;
-    }
-    ret = krb5_kt_start_seq_get(context, kt, &cursor);
+    ret = krb5_kt_start_seq_get(context, keytab, &cursor);
     if(ret){
 	krb5_warn(context, ret, "krb5_kt_start_seq_get");
-	krb5_kt_close(context, kt);
 	return 1;
     }
     printf("%s", "Version");
@@ -76,7 +58,7 @@ kt_list(int argc, char **argv)
     printf("  ");
     printf("%s", "Principal");
     printf("\n");
-    while((ret = krb5_kt_next_entry(context, kt, &entry, &cursor)) == 0){
+    while((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0){
 	char *p;
 	printf("   %3d ", entry.vno);
 	printf("  ");
@@ -90,33 +72,215 @@ kt_list(int argc, char **argv)
 	printf("\n");
 	krb5_kt_free_entry(context, &entry);
     }
-    ret = krb5_kt_end_seq_get(context, kt, &cursor);
-    ret = krb5_kt_close(context, kt);
+    ret = krb5_kt_end_seq_get(context, keytab, &cursor);
+    return 0;
+}
+
+static int
+kt_remove(int argc, char **argv)
+{
+    krb5_error_code ret;
+    krb5_keytab_entry entry;
+    char *principal_string = NULL;
+    krb5_principal principal;
+    int kvno = 0;
+    char *keytype_string = NULL;
+    krb5_keytype keytype = 0;
+    int help_flag = 0;
+    struct getargs args[] = {
+	{ "principal", 'p', arg_string, NULL, "principal to remove" },
+	{ "kvno", 'V', arg_integer, NULL, "key version to remove" },
+	{ "keytype", 't', arg_string, NULL, "key type to remove" },
+	{ "help", 'h', arg_flag, NULL }
+    };
+    int num_args = sizeof(args) / sizeof(args[0]);
+    int optind = 0;
+    int i = 0;
+    args[i++].value = &principal_string;
+    args[i++].value = &kvno;
+    args[i++].value = &keytype_string;
+    args[i++].value = &help_flag;
+    if(getarg(args, num_args, argc, argv, &optind)) {
+	arg_printusage(args, num_args, "");
+	return 0;
+    }
+    if(help_flag) {
+	arg_printusage(args, num_args, "");
+	return 0;
+    }
+    if(principal_string) {
+	ret = krb5_parse_name(context, principal_string, &principal);
+	if(ret) {
+	    krb5_warn(context, ret, "%s", principal_string);
+	    return 0;
+	}
+    }
+    if(keytype_string) {
+	ret = krb5_string_to_keytype(context, keytype_string, &keytype);
+	if(ret) {
+	    int t;
+	    if(sscanf(keytype_string, "%d", &t) == 1)
+		keytype = t;
+	    else {
+		krb5_warn(context, ret, "%s", keytype_string);
+		if(principal)
+		    krb5_free_principal(context, principal);
+		return 0;
+	    }
+	}
+    }
+    entry.principal = principal;
+    entry.keyblock.keytype = keytype;
+    entry.vno = kvno;
+    ret = krb5_kt_remove_entry(context, keytab, &entry);
+    if(ret)
+	krb5_warn(context, ret, "remove");
+    if(principal)
+	krb5_free_principal(context, principal);
+    return 0;
+}
+
+static int
+kt_add(int argc, char **argv)
+{
+    krb5_error_code ret;
+    krb5_keytab_entry entry;
+    char buf[128];
+    char *principal_string = NULL;
+    int kvno = -1;
+    char *keytype_string = NULL;
+    krb5_keytype keytype;
+    char *password_string = NULL;
+    int random_flag = 0;
+    int help_flag = 0;
+    struct getargs args[] = {
+	{ "principal", 'p', arg_string, NULL, "principal of key", "principal"},
+	{ "kvno", 'V', arg_integer, NULL, "key version of key" },
+	{ "keytype", 't', arg_string, NULL, "key type of key" },
+	{ "password", 'w', arg_string, NULL, "password for key"},
+	{ "random",  'r', arg_flag, NULL, "generate random key" },
+	{ "help", 'h', arg_flag, NULL }
+    };
+    int num_args = sizeof(args) / sizeof(args[0]);
+    int optind = 0;
+    int i = 0;
+    args[i++].value = &principal_string;
+    args[i++].value = &kvno;
+    args[i++].value = &keytype_string;
+    args[i++].value = &password_string;
+    args[i++].value = &random_flag;
+    args[i++].value = &help_flag;
+
+    if(getarg(args, num_args, argc, argv, &optind)) {
+	arg_printusage(args, num_args, "");
+	return 0;
+    }
+    if(help_flag) {
+	arg_printusage(args, num_args, "");
+	return 0;
+    }
+    if(principal_string == NULL) {
+	printf("Principal: ");
+	fgets(buf, sizeof(buf), stdin);
+	buf[strcspn(buf, "\r\n")] = '\0';
+	principal_string = buf;
+    }
+    ret = krb5_parse_name(context, principal_string, &entry.principal);
+    if(ret) {
+	krb5_warn(context, ret, "%s", principal_string);
+	return 0;
+    }
+    if(keytype_string == NULL) {
+	printf("Keytype: ");
+	fgets(buf, sizeof(buf), stdin);
+	buf[strcspn(buf, "\r\n")] = '\0';
+	keytype_string = buf;
+    }
+    ret = krb5_string_to_keytype(context, keytype_string, &keytype);
+    if(ret) {
+	int t;
+	if(sscanf(keytype_string, "%d", &t) == 1)
+	    keytype = t;
+	else {
+	    krb5_warn(context, ret, "%s", keytype_string);
+	    if(entry.principal)
+		krb5_free_principal(context, entry.principal);
+	    return 0;
+	}
+    }
+    if(kvno == -1) {
+	printf("Key version: ");
+	fgets(buf, sizeof(buf), stdin);
+	buf[strcspn(buf, "\r\n")] = '\0';
+	kvno = atoi(buf);
+    }
+    if(password_string == NULL && random_flag == 0) {
+	des_read_pw_string(buf, sizeof(buf), "Password: ", 1);
+	password_string = buf;
+    }
+    if(password_string) {
+	krb5_data salt;
+	krb5_get_salt(entry.principal, &salt);
+	krb5_string_to_key(password_string, &salt, keytype, &entry.keyblock);
+	krb5_data_free(&salt);
+    } else {
+	krb5_generate_random_keyblock(context, keytype, &entry.keyblock);
+    }
+    entry.vno = kvno;
+    ret = krb5_kt_add_entry(context, keytab, &entry);
+    if(ret)
+	krb5_warn(context, ret, "add");
+    krb5_kt_free_entry(context, &entry);
     return 0;
 }
 
 static int help(int argc, char **argv);
 
 static SL_cmd cmds[] = {
-    { "list",		kt_list,	"list [keytab]",	"" },
+    { "list",		kt_list,	"list",		"" },
     { "srvconvert",	srvconv,	"srvconvert [flags]",	"" },
     { "srv2keytab" },
+    { "add", 		kt_add,		"add", 		"" },
+    { "remove", 	kt_remove,	"remove", 	"" },
     { "help",		help,		"help",			"" },
     { NULL, 	NULL,		NULL, 			NULL }
 };
 
 static int help_flag;
 static int version_flag;
- 
+static char *keytab_string; 
 
 static struct getargs args[] = {
-    { "version",    0,     arg_flag, &version_flag, NULL, NULL },
-    { "help",	    'h',   arg_flag, &help_flag, NULL, NULL}
+    { 
+	"version",
+	0,
+	arg_flag,
+	&version_flag,
+	NULL,
+	NULL 
+    },
+    { 
+	"help",	    
+	'h',   
+	arg_flag, 
+	&help_flag, 
+	NULL, 
+	NULL
+    },
+    { 
+	"keytab",	    
+	'k',   
+	arg_string, 
+	&keytab_string, 
+	"keytab", 
+	"keytab to operate on" 
+    },
 };
 
 static int num_args = sizeof(args) / sizeof(args[0]);
 
 krb5_context context;
+krb5_keytab keytab;
 
 static int
 help(int argc, char **argv)
@@ -136,6 +300,7 @@ int
 main(int argc, char **argv)
 {
     int optind = 0;
+    krb5_error_code ret;
     set_progname(argv[0]);
     krb5_init_context(&context);
     if(getarg(args, num_args, argc, argv, &optind))
@@ -148,5 +313,14 @@ main(int argc, char **argv)
     argv += optind;
     if(argc == 0)
 	usage(1);
-    return sl_command(cmds, argc, argv);
+    if(keytab_string) {
+	ret = krb5_kt_resolve(context, keytab_string, &keytab);
+    } else {
+	ret = krb5_kt_default(context, &keytab);
+    }
+    if(ret)
+	krb5_err(context, 1, ret, "resolving keytab");
+    ret = sl_command(cmds, argc, argv);
+    krb5_kt_close(context, keytab);
+    return ret;
 }
