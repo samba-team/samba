@@ -162,7 +162,8 @@ static int	 yylex (void);
 	AUTH	ADAT	PROT	PBSZ	CCC	MIC
 	CONF	ENC
 
-	KAUTH	KLIST	FIND	URL
+	KAUTH	KLIST	KDESTROY KRBTKFILE AFSLOG
+	FIND	URL
 
 	LEXERR
 
@@ -567,6 +568,37 @@ cmd
 		    if($4)
 			klist();
 		}
+	| SITE SP KDESTROY check_login CRLF
+		{
+		    if($4)
+			kdestroy();
+		}
+	| SITE SP KRBTKFILE check_login SP STRING CRLF
+		{
+		    if(guest)
+			reply(500, "Can't be done as guest.");
+		    else if($4 && $6)
+			krbtkfile($6);
+		    if($6)
+			free($6);
+		}
+	| SITE SP AFSLOG check_login CRLF
+		{
+		    if(guest)
+			reply(500, "Can't be done as guest.");
+		    else if($4)
+			afslog(NULL);
+		}
+	| SITE SP AFSLOG check_login SP STRING CRLF
+		{
+		    if(guest)
+			reply(500, "Can't be done as guest.");
+		    else if($4){
+			afslog($6);
+		    }
+		    if($6)
+			free($6);
+		}
 	| SITE SP FIND check_login SP STRING CRLF
 		{
 		    if($4 && $6 != NULL)
@@ -961,6 +993,9 @@ struct tab sitetab[] = {
 
 	{ "KAUTH", KAUTH, STR1, 1,	"<sp> principal [ <sp> ticket ]" },
 	{ "KLIST", KLIST, ARGS, 1,	"(show ticket file)" },
+	{ "KDESTROY", KDESTROY, ARGS, 1, "(destroy tickets)" },
+	{ "KRBTKFILE", KRBTKFILE, STR1, 1, "<sp> ticket-file" },
+	{ "AFSLOG", AFSLOG, OSTR, 1,	"[<sp> cell]" },
 
 	{ "FIND", FIND, STR1, 1,	"<sp> globexpr" },
 

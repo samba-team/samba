@@ -68,6 +68,9 @@ int sec_request_prot(char *level);
 
 void kauth(int, char **);
 void klist(int, char **);
+void kdestroy(int, char **);
+void krbtkfile(int, char **);
+void afslog(int, char **);
 
 void krb4_quit(void);
 

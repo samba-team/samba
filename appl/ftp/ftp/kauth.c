@@ -39,7 +39,8 @@
 #include "ftp_locl.h"
 RCSID("$Id$");
 
-void kauth(int argc, char **argv)
+void
+kauth(int argc, char **argv)
 {
     int ret;
     char buf[1024];
@@ -131,7 +132,8 @@ void kauth(int argc, char **argv)
     code = 0;
 }
 
-void klist(int argc, char **argv)
+void
+klist(int argc, char **argv)
 {
     int ret;
     if(argc != 1){
@@ -141,5 +143,47 @@ void klist(int argc, char **argv)
     }
     
     ret = command("SITE KLIST");
+    code = (ret == COMPLETE);
+}
+
+void
+kdestroy(int argc, char **argv)
+{
+    int ret;
+    if (argc != 1) {
+	printf("usage: %s\n", argv[0]);
+	code = -1;
+	return;
+    }
+    ret = command("SITE KDESTROY");
+    code = (ret == COMPLETE);
+}
+
+void
+krbtkfile(int argc, char **argv)
+{
+    int ret;
+    if(argc != 2) {
+	printf("usage: %s tktfile\n", argv[0]);
+	code = -1;
+	return;
+    }
+    ret = command("SITE KRBTKFILE %s", argv[1]);
+    code = (ret == COMPLETE);
+}
+
+void
+afslog(int argc, char **argv)
+{
+    int ret;
+    if(argc > 2) {
+	printf("usage: %s [cell]\n", argv[0]);
+	code = -1;
+	return;
+    }
+    if(argc == 2)
+	ret = command("SITE AFSLOG %s", argv[1]);
+    else
+	ret = command("SITE AFSLOG");
     code = (ret == COMPLETE);
 }

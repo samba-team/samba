@@ -53,8 +53,11 @@
 #include <pwd.h>
 #endif
 
-#ifndef NBBY
+#ifdef HAVE_LIMITS_H
 #include <limits.h>
+#endif
+
+#ifndef NBBY
 #define NBBY CHAR_BIT
 #endif
 
@@ -110,6 +113,11 @@ void	yyerror(char *);
 
 void	kauth(char *, char*);
 void	klist(void);
+void	cond_kdestroy(void);
+void	kdestroy(void);
+void	krbtkfile(const char *tkfile);
+void	afslog(const char *cell);
+void	afsunlog(void);
 
 int	find(char *);
 

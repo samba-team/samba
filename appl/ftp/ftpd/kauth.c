@@ -71,6 +71,8 @@ static time_t local_time;
 
 static krb_principal pr;
 
+static int do_destroy_tickets = 1;
+
 static int
 save_tkt(char *user, char *instance, char *realm, void *arg, 
 	 int (*key_proc)(char*, char*, char*, void*, des_cblock*), KTEXT *cipp)
@@ -184,7 +186,8 @@ store_ticket(KTEXT cip)
     return(kerror);
 }
 
-void kauth(char *principal, char *ticket)
+void
+kauth(char *principal, char *ticket)
 {
     char *p;
     int ret;
@@ -209,6 +212,8 @@ void kauth(char *principal, char *ticket)
 	    memset(&cip, 0, sizeof(cip));
 	    return;
 	}
+	do_destroy_tickets = 1;
+
 	if(k_hasafs())
 	    k_afsklog(0, 0);
 	reply(200, "Tickets will be destroyed on exit.");
@@ -245,7 +250,8 @@ short_date(int32_t dp)
     return (cp);
 }
 
-void klist(void)
+void
+klist(void)
 {
     int err;
 
@@ -302,6 +308,8 @@ void klist(void)
      * it was done before tf_init.
      */
        
+    lreply(200, "Ticket file: %s", tkt_string());
+
     lreply(200, "Principal: %s", krb_unparse_name(&pr));
     while ((err = tf_get_cred(&c)) == KSUCCESS) {
 	if (header) {
@@ -322,4 +330,50 @@ void klist(void)
 	lreply(200, "No tickets in file.");
     }
     reply(200, "");
+}
+
+/*
+ * Only destroy if we created the tickets
+ */
+
+void
+cond_kdestroy(void)
+{
+    if (do_destroy_tickets)
+	dest_tkt();
+    afsunlog();
+}
+
+void
+kdestroy(void)
+{
+    dest_tkt();
+    afsunlog();
+    reply(200, "Tickets destroyed");
+}
+
+void
+krbtkfile(const char *tkfile)
+{
+    do_destroy_tickets = 0;
+    krb_set_tkt_string(tkfile);
+    reply(200, "Using ticket file %s", tkfile);
+}
+
+void
+afslog(const char *cell)
+{
+    if(k_hasafs()) {
+	k_afsklog(cell, 0);
+	reply(200, "afslog done");
+    } else {
+	reply(200, "no AFS present");
+    }
+}
+
+void
+afsunlog(void)
+{
+    if(k_hasafs())
+	k_unlog();
 }
