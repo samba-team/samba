@@ -61,6 +61,7 @@
 #undef WITH_NISPLUS
 #undef WITH_TDBPWD
 #undef WITH_PAM
+#undef WITH_PAM_SMBPASS
 #undef WITH_NISPLUS_HOME
 #undef WITH_AUTOMOUNT
 #undef WITH_SMBMOUNT
@@ -147,3 +148,4 @@
 #undef HAVE_XFS_ACLS
 #undef HAVE_AIX_ACLS
 #undef HAVE_NO_ACLS
+#undef HAVE_LIBPAM
