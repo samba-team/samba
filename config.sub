@@ -258,8 +258,9 @@ case $basic_machine in
 		os=-unicos
 		;;
 	[ctj]90-cray)
-		basic_machine=c90-cray
-		os=-unicos
+		#basic_machine=c90-cray
+		os=`echo $os | sed -e 's/\(unicos[0-9]*\.[0-9]*\).*/\1/'`
+		#os=-unicos
 		;;
 	crds | unos)
 		basic_machine=m68k-crds
