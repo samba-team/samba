@@ -263,10 +263,16 @@ pop_init(POP *p,int argcount,char **argmessage)
     gethostname(p->myhost,MaxHostNameLen);
 
 #ifdef KRB5
-    krb5_init_context (&p->context);
+    {
+	krb5_error_code ret;
 
-    krb5_openlog(p->context, p->myname, &p->logf);
-    krb5_set_warn_dest(p->context, p->logf);
+	ret = krb5_init_context (&p->context);
+	if (ret)
+	    errx (1, "krb5_init_context failed: %d", ret);
+
+	krb5_openlog(p->context, p->myname, &p->logf);
+	krb5_set_warn_dest(p->context, p->logf);
+    }
 #else
     /*  Open the log file */
     roken_openlog(p->myname,POP_LOGOPTS,POP_FACILITY);
