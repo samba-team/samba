@@ -812,11 +812,21 @@ static void talloc_report_null_full(void)
 }
 
 /*
+  enable tracking of the NULL context
+*/
+void talloc_enable_null_tracking(void)
+{
+	if (null_context == NULL) {
+		null_context = talloc_named_const(NULL, 0, "null_context");
+	}
+}
+
+/*
   enable leak reporting on exit
 */
 void talloc_enable_leak_report(void)
 {
-	null_context = talloc_named_const(NULL, 0, "null_context");
+	talloc_enable_null_tracking();
 	atexit(talloc_report_null);
 }
 
@@ -825,7 +835,7 @@ void talloc_enable_leak_report(void)
 */
 void talloc_enable_leak_report_full(void)
 {
-	null_context = talloc_named_const(NULL, 0, "null_context");
+	talloc_enable_null_tracking();
 	atexit(talloc_report_null_full);
 }
 
