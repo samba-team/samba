@@ -27,13 +27,13 @@ struct dcerpc_pipe *sam_pipe = NULL;
 struct policy_handle domain_handle;
 GtkWidget *mainwin;
 
-void update_grouplist()
+void update_grouplist(void)
 {
 	if(!sam_pipe) return;
 	//FIXME
 }
 
-void update_userlist()
+void update_userlist(void)
 {
 	NTSTATUS status;
 	struct samr_EnumDomainUsers r;
