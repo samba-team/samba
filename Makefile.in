@@ -6,10 +6,12 @@ srcdir = @srcdir@
 VPATH  = @srcdir@
 
 CC = @CC@
-DEFS = @DEFS@
+DEFS = @DEFS@  -I$(srcdir) -Iasn1 -I. -I/usr/athena/include
 YACC = @YACC@
 
-CFLAGS = -g -I$(srcdir) -Iasn1 -I. -I/usr/athena/include
+.SUFFIXES: .pro
+
+CFLAGS = -g
 
 LIBS = -L/usr/athena/lib -ldes
 
@@ -21,6 +23,15 @@ SOURCES = cache.c principal.c principal_p.c data.c context.c misc.c \
 OBJECTS = $(SOURCES:%.c=%.o) config_file.o
 
 all: kinit klist
+
+.c.o:
+	$(CC) $(CFLAGS) $(DEFS) -c $< -o $@
+
+.c.pro:
+	gcc $(CFLAGS) $(DEFS) -S -o /dev/null -aux-info $*.X $<
+	awk -V f=$< -f $(srcdir)/format.awk $*.X > $@
+	rm $*.X
+
 
 kinit: kinit.o libkrb5.a
 	$(CC) -o kinit kinit.o libkrb5.a -Lasn1 -lasn1 $(LIBS)
