@@ -209,14 +209,20 @@ ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 # This allows us to get away without duplicating code that 
 #  sombody else can maintain for us.  
 cd source
-make LIBDIR=$RPM_BUILD_ROOT%{prefix}/etc/samba \
+make LIBDIR=$RPM_BUILD_ROOT/etc/samba \
 	BINDIR=$RPM_BUILD_ROOT%{prefix}/bin \
 	MANDIR=$RPM_BUILD_ROOTMANDIR_MACRO \
-	CODEPAGEDIR=$RPM_BUILD_ROOT%{prefix}/etc/codepages \
+	CODEPAGEDIR=$RPM_BUILD_ROOT/etc/codepages \
 	SWATDIR=$RPM_BUILD_ROOT/usr/share/swat \
 	SAMBABOOK=$RPM_BUILD_ROOT/usr/share/swat/using_samba \
 	installman installcp installswat
 cd ..
+
+# Install codepage source files
+for i in source/codepages/codepage_def.* source/codepages/*.TXT
+do
+install -m644 $i $RPM_BUILD_ROOT/etc/codepages/src
+done
 
 # Install the nsswitch library extenstion file
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
@@ -244,33 +250,30 @@ install -m755 packaging/RedHat/findsmb $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
 install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
-if [ -f /etc/smb.conf ]; then
-	mv /etc/smb.conf /etc/samba/smb.conf
-else
-	install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
-fi
-
-if [ -f /etc/smbusers ]; then
-	mv /etc/smbusers /etc/samba/smbusers
-else
-	install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
-fi
-
-if [ -f /etc/lmhosts ]; then
-	mv /etc/lmhosts /etc/samba/lmhosts
-else
-	echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
-fi
-
-if [ -f /etc/MACHINE.SID ]; then
-	mv /etc/MACHINE.SID /etc/samba/MACHINE.SID
-fi
-
+install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
+install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
+echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %post
 /sbin/chkconfig --add smb
+
+if [ -f /etc/smb.conf ]; then
+	mv /etc/smb.conf /etc/samba/smb.conf
+fi
+
+if [ -f /etc/smbusers ]; then
+	mv /etc/smbusers /etc/samba/smbusers
+fi
+
+if [ -f /etc/lmhosts ]; then
+	mv /etc/lmhosts /etc/samba/lmhosts
+fi
+
+if [ -f /etc/MACHINE.SID ]; then
+	mv /etc/MACHINE.SID /etc/samba/MACHINE.SID
+fi
 
 # Add swat entry to /etc/services if not already there.
 if !( grep ^[:space:]*swat /etc/services > /dev/null ) then
@@ -400,9 +403,9 @@ fi
 %attr(-,root,root) %{prefix}/share/swat/include/header.html
 %attr(-,root,root) %{prefix}/share/swat/include/footer.html
 %attr(-,root,root) %{prefix}/share/swat/using_samba/*
-%attr(-,root,root) %config(noreplace) /etc/lmhosts
-%attr(-,root,root) %config(noreplace) /etc/smb.conf
-%attr(-,root,root) %config(noreplace) /etc/smbusers
+%attr(-,root,root) %config(noreplace) /etc/samba/lmhosts
+%attr(-,root,root) %config(noreplace) /etc/samba/smb.conf
+%attr(-,root,root) %config(noreplace) /etc/samba/smbusers
 %attr(-,root,root) /etc/rc.d/init.d/smb
 %attr(-,root,root) /etc/logrotate.d/samba
 %attr(-,root,root) %config(noreplace) /etc/pam.d/samba
