@@ -38,7 +38,6 @@ static char copyright[] =
 #endif /* not lint */
 
 #include "telnet_locl.h"
-
 RCSID("$Id$");
 
 /* These values need to be the same as defined in libtelnet/kerberos5.c */
@@ -101,9 +100,6 @@ main(int argc, char **argv)
 #endif	/* FORWARD */
 
 	tninit();		/* Clear out things */
-#if	defined(CRAY) && !defined(__STDC__)
-	_setlist_init();	/* Work around compiler bug */
-#endif
 
 	TerminalSaveState();
 
