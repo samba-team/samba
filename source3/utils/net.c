@@ -297,10 +297,8 @@ static int net_group(int argc, const char **argv)
 	if (net_ads_check() == 0)
 		return net_ads_group(argc, argv);
 
-       
-	/* if server is not specified, default to PDC? */
-	/* not implemented yet	if (net_rpc_check(NET_FLAGS_PDC))
-	   return net_rpc_group(argc, argv); */
+	if (argc == 0 && net_rpc_check(NET_FLAGS_PDC))
+		return net_rpc_group(argc, argv);
 
 	return net_rap_group(argc, argv);
 }
@@ -316,6 +314,22 @@ static int net_join(int argc, const char **argv)
 	return net_rpc_join(argc, argv);
 }
 
+static int net_share(int argc, const char **argv)
+{
+	/* only share list is implemented in RPC */
+	if (argc == 0 && net_rpc_check(0))
+		return net_rpc_share(argc, argv);
+	return net_rap_share(argc, argv);
+}
+
+static int net_file(int argc, const char **argv)
+{
+	/* only file list is implemented in RPC */
+	if (argc == 0 && net_rpc_check(0))
+		return net_rpc_file(argc, argv);
+	return net_rap_file(argc, argv);
+}
+
 /* main function table */
 static struct functable net_func[] = {
 	{"RPC", net_rpc},
@@ -323,8 +337,8 @@ static struct functable net_func[] = {
 	{"ADS", net_ads},
 
 	/* eventually these should auto-choose the transport ... */
-	{"FILE", net_rap_file},
-	{"SHARE", net_rap_share},
+	{"FILE", net_file},
+	{"SHARE", net_share},
 	{"SESSION", net_rap_session},
 	{"SERVER", net_rap_server},
 	{"DOMAIN", net_rap_domain},

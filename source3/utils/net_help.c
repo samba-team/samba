@@ -63,12 +63,12 @@ static int help_usage(int argc, const char **argv)
 
 int net_help_user(int argc, const char **argv)
 {
-	d_printf("\nnet [method] user [misc. options] [targets]\n\tList users\n");
-	d_printf("\nnet [method] user DELETE <name> [misc. options] [targets]"\
+	d_printf("\nnet <method> user [misc. options] [targets]\n\tList users\n");
+	d_printf("\nnet <method> user DELETE <name> [misc. options] [targets]"\
 		 "\n\tDelete specified user\n");
-	d_printf("\nnet [method] user INFO <name> [misc. options] [targets]"\
+	d_printf("\nnet <method> user INFO <name> [misc. options] [targets]"\
 		 "\n\tList the domain groups of the specified user\n");
-	d_printf("\nnet [method] user ADD <name> [-F user flags] [misc. options]"\
+	d_printf("\nnet <method> user ADD <name> [password] [-F user flags] [misc. options]"\
 		 " [targets]\n\tAdd specified user\n");
 
 	net_common_methods_usage(argc, argv);
@@ -80,16 +80,48 @@ int net_help_user(int argc, const char **argv)
 
 int net_help_group(int argc, const char **argv)
 {
-	d_printf("net [method] group [misc. options] [targets]"\
+	d_printf("net <method> group [misc. options] [targets]"\
 		 "\n\tList user groups\n\n");
-	d_printf("net [method] group DELETE <name> [misc. options] [targets]"\
+	d_printf("net <method> group DELETE <name> [misc. options] [targets]"\
 		 "\n\tDelete specified group\n");
-	d_printf("\nnet [method] group ADD <name> [-C comment]"\
+	d_printf("\nnet <method> group ADD <name> [-C comment]"\
 		 " [misc. options] [targets]\n\tCreate specified group\n");
 	net_common_methods_usage(argc, argv);
 	net_common_flags_usage(argc, argv);
 	d_printf(
 	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
+	return -1;
+}
+
+int net_help_share(int argc, const char **argv)
+{
+	d_printf(
+	 "\nnet <method> share [misc. options] [targets] \n"
+	 "\tenumerates all exported resources (network shares) "
+	 "on target server\n"
+	 "\nnet [rap] share ADD <name=serverpath> [misc. options] [targets]"
+	 "\n\tAdds a share from a server (makes the export active)\n"
+	 "\nnet [rap] share DELETE <sharename> [misc. options] [targets]\n"
+	 "\n\tDeletes a share from a server (makes the export inactive)\n");
+	net_common_methods_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
+	d_printf(
+	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n"
+	 "\t-M or --maxusers=<num>\t\tmax users allowed for share\n");
+	return -1;
+}
+
+int net_help_file(int argc, const char **argv)
+{
+	d_printf("net <method> file [misc. options] [targets]\n"\
+		 "\tlists all open files on file server\n\n");
+	d_printf("net [rap] file USER <username> [misc. options] [targets]\n"\
+		 "\tlists all files opened by username on file server\n\n");
+	d_printf("net [rap] file CLOSE <id> [misc. options] [targets]\n"\
+		 "\tcloses specified file on target server\n");
+
+	net_common_methods_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
 	return -1;
 }
 
@@ -101,9 +133,9 @@ static int net_usage(int argc, const char **argv)
 		 "  net group\t\tto manage groups\n"\
 		 "  net join\t\tto join a domain\n"\
 		 "\n"\
-		 "  net ads [command]\tto run ADS commands\n"\
-		 "  net rap [command]\tto run RAP (pre-RPC) commands\n"\
-		 "  net rpc [command]\tto run RPC commands\n"\
+		 "  net ads <command>\tto run ADS commands\n"\
+		 "  net rap <command>\tto run RAP (pre-RPC) commands\n"\
+		 "  net rpc <command>\tto run RPC commands\n"\
 		 "\n"\
 		 "Type \"net help <option>\" to get more information on that option\n");
 	return -1;
@@ -119,8 +151,8 @@ int net_help(int argc, const char **argv)
 		{"RAP", net_rap_help},
 		{"RPC", net_rpc_help},
 
-		{"FILE", net_rap_file_usage},
-		{"SHARE", net_rap_share_usage},
+		{"FILE", net_help_file},
+		{"SHARE", net_help_share},
 		{"SESSION", net_rap_session_usage},
 		{"SERVER", net_rap_server_usage},
 		{"DOMAIN", net_rap_domain_usage},
