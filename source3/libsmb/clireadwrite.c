@@ -49,6 +49,52 @@ static void cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 }
 
 /****************************************************************************
+  issue a single SMBread and wait for a reply.  This function only called
+  in the rpc pipe code to read dce/rpc reply fragments.
+****************************************************************************/
+size_t cli_read_one(struct cli_state *cli, int fnum, char *buf, off_t offset, 
+		    size_t size)
+{
+	uint32 ecode;
+	uint8 eclass;
+	char *p;
+	int size2;
+
+	if (size == 0) 
+		return 0;
+
+	/* Issue a read and receive a reply */
+
+	cli_issue_read(cli, fnum, offset, size, 0);
+
+	if (!cli_receive_smb(cli))
+		return -1;
+
+	size2 = SVAL(cli->inbuf, smb_vwv5);
+
+	/* Check for error.  Because the client library doesn't support
+	   STATUS32, we need to check for and ignore the more data error
+	   for pipe support. */
+
+	if (cli_error(cli, &eclass, &ecode, NULL) &&
+		(eclass != ERRDOS && ecode != ERRmoredata)) {
+		return -1;
+	}
+
+	if (size2 > size) {
+		DEBUG(5,("server returned more than we wanted!\n"));
+		return -1;
+	}
+
+	/* Copy data into buffer */
+
+	p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
+	memcpy(buf, p, size2);
+
+	return size2;
+}
+
+/****************************************************************************
   read from a file
 ****************************************************************************/
 size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
