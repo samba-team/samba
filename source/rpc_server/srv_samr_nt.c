@@ -893,15 +893,6 @@ uint32 _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAMR_
     if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
         return NT_STATUS_INVALID_HANDLE;
 
-	switch (q_u->switch_level) {
-	case 3:
-		ctr->switch_value1 = 3;
-		make_samr_alias_info3(&ctr->alias.info3, "<fake account description>");
-		break;
-	default:
-		return NT_STATUS_INVALID_INFO_CLASS;
-	}
-
     alias_rid = get_lsa_policy_samr_rid(&q_u->pol);
     if(alias_rid == 0xffffffff)
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -909,7 +900,14 @@ uint32 _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAMR_
     if(!local_lookup_rid(alias_rid, alias, &type))
         return NT_STATUS_NO_SUCH_ALIAS;
 
-    init_samr_r_query_aliasinfo(r_u, q_u->switch_level, alias, alias_desc);
+	switch (q_u->switch_level) {
+	case 3:
+		r_u->ctr.switch_value1 = 3;
+		init_samr_alias_info3(&r_u->ctr.alias.info3, alias_desc);
+		break;
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
 
     DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
 
@@ -996,8 +994,7 @@ uint32 _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOK
     ZERO_ARRAY(type);
 
     if (!get_lsa_policy_samr_sid(&q_u->pol, &pol_sid)) {
-        r_u->status = NT_STATUS_OBJECT_TYPE_MISMATCH;
-        init_samr_r_lookup_names(r_u, 0, rid, type, r_u->status);
+        init_samr_r_lookup_names(p->mem_ctx, r_u, 0, NULL, NULL, NT_STATUS_OBJECT_TYPE_MISMATCH);
         return r_u->status;
     }
 
@@ -1027,7 +1024,7 @@ uint32 _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOK
         }
     }
 
-    init_samr_r_lookup_names(r_u, num_rids, rid, type, r_u->status);
+    init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, type, r_u->status);
 
     DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
 
@@ -1056,30 +1053,49 @@ uint32 _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_R_
                          q_u->nt_newpass.pass, q_u->nt_oldhash.hash))
         r_u->status = NT_STATUS_WRONG_PASSWORD;
 
-    init_samr_r_chgpasswd_user(r_u, status);
+    init_samr_r_chgpasswd_user(r_u, r_u->status);
 
     DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
 
     return r_u->status;
 }
 
-#if 0
 /*******************************************************************
- samr_reply_unknown_38
- ********************************************************************/
+makes a SAMR_R_LOOKUP_RIDS structure.
+********************************************************************/
 
- uint32 _samr_unknown_38(pipes_struct *p, SAMR_Q_UNKNOWN_38 *q_u, SAMR_R_UNKNOWN_38 *r_u)
+static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring names[],
+									UNIHDR **pp_hdr_name, UNISTR2 **pp_uni_name)
 {
-    DEBUG(5,("_samr_unknown_38: %d\n", __LINE__));
+	uint32 i;
+	UNIHDR *hdr_name;
+	UNISTR2 *uni_name;
 
-    r_u->status = NT_STATUS_NOPROBLEMO;
+	*pp_uni_name = NULL;
+	*pp_hdr_name = NULL;
 
-    init_samr_r_unknown_38(&r_u);
+	if (num_names != 0) {
+		hdr_name = (UNIHDR *)talloc(ctx, sizeof(UNIHDR)*num_names);
+		if (hdr_name == NULL)
+			return False;
 
-    DEBUG(5,("_samr_unknown_38: %d\n", __LINE__));
-    return r_u->status;
+		uni_name = (UNISTR2 *)talloc(ctx,sizeof(UNISTR2)*num_names);
+		if (uni_name == NULL)
+			return False;
+    }
+
+    for (i = 0; i < num_names; i++) {
+        int len = names[i] != NULL ? strlen(names[i]) : 0;
+        DEBUG(10, ("names[%d]:%s\n", i, names[i]));
+        init_uni_hdr(&hdr_name[i], len);
+        init_unistr2(&uni_name[i], names[i], len);
+    }
+
+	*pp_uni_name = uni_name;
+	*pp_hdr_name = hdr_name;
+
+    return True;
 }
-#endif
 
 /*******************************************************************
  _samr_lookup_rids
@@ -1087,9 +1103,12 @@ uint32 _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_R_
 
 uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP_RIDS *r_u)
 {
-    fstring group_names[MAX_SAM_ENTRIES];
-    uint32  group_attrs[MAX_SAM_ENTRIES];
-    int num_gids = q_u->num_gids1;
+	fstring group_names[MAX_SAM_ENTRIES];
+	uint32 group_attrs[MAX_SAM_ENTRIES];
+	UNIHDR *hdr_name = NULL;
+	UNISTR2 *uni_name = NULL;
+	DOM_SID pol_sid;
+    int num_rids = q_u->num_rids1;
     int i;
 
     r_u->status = NT_STATUS_NOPROBLEMO;
@@ -1097,20 +1116,41 @@ uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP
     DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
 
     /* find the policy handle.  open a policy on it. */
-    if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
+    if (!get_lsa_policy_samr_sid(&q_u->pol, &pol_sid))
         return NT_STATUS_INVALID_HANDLE;
 
-    if (num_gids > MAX_SAM_ENTRIES) {
-        num_gids = MAX_SAM_ENTRIES;
-        DEBUG(5,("_samr_lookup_rids: truncating entries to %d\n", num_gids));
+    if (num_rids > MAX_SAM_ENTRIES) {
+        num_rids = MAX_SAM_ENTRIES;
+        DEBUG(5,("_samr_lookup_rids: truncating entries to %d\n", num_rids));
     }
 
-    for (i = 0; i < num_gids && status == 0; i++) {
-        fstrcpy(group_names[i], "dummy group");
-        group_attrs[i] = 0x2;
-    }
+	r_u->status = NT_STATUS_NONE_MAPPED;
 
-    init_samr_r_lookup_rids(r_u, num_gids, group_names, group_attrs, r_u->status);
+    for (i = 0; i < num_rids; i++) {
+        fstring tmpname;
+        fstring domname;
+       	DOM_SID sid;
+   		enum SID_NAME_USE type;
+
+		group_attrs[i] = SID_NAME_UNKNOWN;
+		*group_names[i] = '\0';
+
+		if (sid_equal(&pol_sid, &global_sam_sid)) {
+			sid_copy(&sid, &pol_sid);
+			sid_append_rid(&sid, q_u->rid[i]);
+
+			if (lookup_sid(&sid, domname, tmpname, &type)) {
+    			r_u->status = NT_STATUS_NOPROBLEMO;
+				group_attrs[i] = (uint32)type;
+				fstrcpy(group_names[i],tmpname);
+			}
+		}
+	}
+
+	if(!make_samr_lookup_rids(p->mem_ctx, num_rids, group_names, &hdr_name, &uni_name))
+		return NT_STATUS_NO_MEMORY;
+
+    init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, group_attrs);
 
     DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
 
@@ -1244,7 +1284,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
         hrs.hours[i] = sam_pass->hours[i];
     }
 
-    init_sam_user_info21(id21,
+    init_sam_user_info21A(id21,
 
                &dummy_time, /* logon_time */
                &dummy_time, /* logoff_time */
@@ -1283,17 +1323,8 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 
 uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_QUERY_USERINFO *r_u)
 {
-#if 0
-    SAM_USER_INFO_11 id11;
-#endif
-    SAM_USER_INFO_10 id10;
-    SAM_USER_INFO_21 id21;
-    void *info = NULL;
-    uint32 rid = 0x0;
-
-    r_u->status = NT_STATUS_NO_PROBLEMO;
-
-    DEBUG(5,("_samr_query_userinfo: %d\n", __LINE__));
+	SAM_USERINFO_CTR *ctr;
+	uint32 rid = 0;
 
     /* search for the handle */
     if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
@@ -1305,43 +1336,74 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 
     DEBUG(5,("_samr_query_userinfo: rid:0x%x\n", rid));
 
-    /* ok!  user info levels (there are lots: see MSDEV help), off we go... */
+	ctr = (SAM_USERINFO_CTR *)talloc(p->mem_ctx, sizeof(SAM_USERINFO_CTR));
+	if (!ctr)
+		return NT_STATUS_NO_MEMORY;
 
-    switch (q_u->switch_value) {
-        case 0x10:
-            info = (void*)&id10;
-            r_u->status = get_user_info_10(&id10, rid) ? 0 : NT_STATUS_NO_SUCH_USER;
-            break;
+	/* ok!  user info levels (lots: see MSDEV help), off we go... */
+	ctr->switch_value = q_u->switch_value;
+
+	switch (q_u->switch_value) {
+	case 0x10:
+		ctr->info.id10 = (SAM_USER_INFO_10 *)talloc(p->mem_ctx, sizeof(SAM_USER_INFO_10));
+		if (ctr->info.id10 == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		if (!get_user_info_10(ctr->info.id10, rid))
+			return NT_STATUS_NO_SUCH_USER;
+		break;
+
 #if 0
 /* whoops - got this wrong.  i think.  or don't understand what's happening. */
         case 0x11:
-            {
-                NTTIME expire;
-                info = (void*)&id11;
+        {
+            NTTIME expire;
+            info = (void *)&id11;
 
-                expire.low  = 0xffffffff;
-                expire.high = 0x7fffffff;
+            expire.low = 0xffffffff;
+            expire.high = 0x7fffffff;
 
-                make_sam_user_info11(&id11, &expire, "BROOKFIELDS$", 0x03ef, 0x201, 0x0080);
+            ctr->info.id = (SAM_USER_INFO_11 *)talloc(p->mem_ctx,
+                                    sizeof
+                                    (*ctr->
+                                     info.
+                                     id11));
+            init_sam_user_info11(ctr->info.id11, &expire,
+                         "BROOKFIELDS$",    /* name */
+                         0x03ef,    /* user rid */
+                         0x201, /* group rid */
+                         0x0080);   /* acb info */
 
-                break;
-            }
+            break;
+        }
 #endif
-        case 21:
-            info = (void*)&id21;
-            r_u->status = get_user_info_21(&id21, rid) ? 0 : NT_STATUS_NO_SUCH_USER;
-            break;
 
-        default:
-            r_u->status = NT_STATUS_INVALID_INFO_CLASS;
-            break;
-    }
+	case 0x12:
+		ctr->info.id12 = (SAM_USER_INFO_12 *)talloc(p->mem_ctx, sizeof(SAM_USER_INFO_12));
+		if (ctr->info.id12 == NULL)
+			return NT_STATUS_NO_MEMORY;
 
-    init_samr_r_query_userinfo(r_u, q_u->switch_value, info, r_u->status);
+		if (!get_user_info_12(ctr->info.id12, rid))
+			return NT_STATUS_NO_SUCH_USER;
+		break;
+
+	case 21:
+		ctr->info.id21 = (SAM_USER_INFO_21 *)talloc(p->mem_ctx,sizeof(SAM_USER_INFO_21));
+		if (ctr->info.id21 == NULL)
+			return NT_STATUS_NO_MEMORY;
+		if (!get_user_info_21(ctr->info.id21, rid))
+			return NT_STATUS_NO_SUCH_USER;
+		break;
+
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+    init_samr_r_query_userinfo(r_u, q_u->switch_value, ctr, r_u->status);
 
     DEBUG(5,("_samr_query_userinfo: %d\n", __LINE__));
 
-    return r_u->status;
+	return r_u->status;
 }
 
 /*******************************************************************
@@ -1543,7 +1605,7 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
         return NT_STATUS_NO_SUCH_USER;
     }
 
-    /* associate the RID with the (unique) handle. */
+    /* associate the SID with the (unique) handle. */
     if (!set_lsa_policy_samr_sid(user_pol, &sid)) {
         /* oh, whoops.  don't know what error message to return, here */
         close_lsa_policy_hnd(user_pol);
@@ -1672,7 +1734,7 @@ uint32 _api_samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	/* associate a RID with the (unique) handle. */
+	/* associate a SID with the (unique) handle. */
 	if (!set_lsa_policy_samr_sid(alias_pol, &sid)) {
 		/* oh, whoops.  don't know what error message to return, here */
 		close_lsa_policy_hnd(alias_pol);
@@ -1911,7 +1973,7 @@ uint32 _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SET_
 
 	ctr = (SAM_USERINFO_CTR *)talloc(p->mem_ctx, sizeof(SAM_USERINFO_CTR));
 	if (!ctr)
-	  return NT_STATUS_NOMEMORY;
+	  return NT_STATUS_NO_MEMORY;
 
 	q_u->ctr = ctr;
 
@@ -2001,7 +2063,7 @@ uint32 _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SE
 
 	ctr = (SAM_USERINFO_CTR *)talloc(p->mem_ctx, sizeof(SAM_USERINFO_CTR));
 	if (!ctr)
-	  return NT_STATUS_NOMEMORY;
+	  return NT_STATUS_NO_MEMORY;
 
 	q_u->ctr = ctr;
 
