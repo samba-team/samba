@@ -513,11 +513,20 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 		/* Copy entries into return buffer */
 
 		if (num_entries) {
+			struct acct_info *tnl;
 
-			name_list = Realloc(name_list,
+			tnl = (struct acct_info *)Realloc(name_list,
 					    sizeof(struct acct_info) *
 					    (ent->num_sam_entries +
 					     num_entries));
+
+			if (!tnl) {
+				DEBUG(0,("get_sam_group_entries: Realloc fail.\n"));
+				if (name_list)
+					free(name_list);
+				return False;
+			} else
+				name_list = tnl;
 
 			memcpy(&name_list[ent->num_sam_entries],
 			       sam_grp_entries, 
@@ -761,8 +770,8 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 {
-        uint32 total_entries = 0;
-        struct winbindd_domain *domain;
+	uint32 total_entries = 0;
+	struct winbindd_domain *domain;
 	struct getent_state groups;
 	char *ted, *extra_data = NULL;
 	int extra_data_len = 0, i;
