@@ -2226,7 +2226,7 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 	uint16 type;
 	uint16 field;
 
-	SPOOL_NOTIFY_INFO_DATA *current_data;
+	SPOOL_NOTIFY_INFO_DATA *current_data, *tid;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	print_queue_struct *queue=NULL;
 
@@ -2245,10 +2245,13 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 
 		if (!search_notify(type, field, &j) )
 			continue;
-		
-		if((info->data=(SPOOL_NOTIFY_INFO_DATA *)Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
+
+		if((tid=(SPOOL_NOTIFY_INFO_DATA *)Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
+			DEBUG(0,("construct_notify_printer_info: failed to enlarge buffer info->data!\n"));
 			return False;
 		}
+		else info->data = tid;
+
 		current_data=&info->data[info->count];
 
 		construct_info_data(current_data, type, field, id);		
@@ -2282,7 +2285,7 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue,
 	uint16 type;
 	uint16 field;
 
-	SPOOL_NOTIFY_INFO_DATA *current_data;
+	SPOOL_NOTIFY_INFO_DATA *current_data, *tid;
 	
 	DEBUG(4,("construct_notify_jobs_info\n"));
 	
@@ -2298,9 +2301,11 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue,
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		if((info->data=Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
+		if((tid=Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
+			DEBUG(0,("construct_notify_jobs_info: failed to enlarg buffer info->data!\n"));
 			return False;
-		}
+		} else
+			info->data = tid;
 
 		current_data=&(info->data[info->count]);
 
@@ -2903,7 +2908,7 @@ static BOOL enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 of
 	int snum;
 	int i;
 	int n_services=lp_numservices();
-	PRINTER_INFO_1 *printers=NULL;
+	PRINTER_INFO_1 *tp, *printers=NULL;
 	PRINTER_INFO_1 current_prt;
 	
 	DEBUG(4,("enum_all_printers_info_1\n"));	
@@ -2913,10 +2918,13 @@ static BOOL enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 of
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 				
 			if (construct_printer_info_1(flags, &current_prt, snum)) {
-				if((printers=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_1))) == NULL) {
+				if((tp=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_1))) == NULL) {
+					DEBUG(0,("enum_all_printers_info_1: failed to enlarge printers buffer!\n"));
+					safe_free(printers);
 					*returned=0;
 					return ERRnomem;
-				}
+				} else
+					printers = tp;
 				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1\n", *returned));		
 				memcpy(&printers[*returned], &current_prt, sizeof(PRINTER_INFO_1));
 				(*returned)++;
@@ -3050,7 +3058,7 @@ static BOOL enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint32 
 	int snum;
 	int i;
 	int n_services=lp_numservices();
-	PRINTER_INFO_2 *printers=NULL;
+	PRINTER_INFO_2 *tp, *printers=NULL;
 	PRINTER_INFO_2 current_prt;
 
 	for (snum=0; snum<n_services; snum++) {
@@ -3058,8 +3066,13 @@ static BOOL enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint32 
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 				
 			if (construct_printer_info_2(&current_prt, snum)) {
-				if((printers=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_2))) == NULL)
+				if((tp=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_2))) == NULL) {
+					DEBUG(0,("enum_all_printers_info_2: failed to enlarge printers buffer!\n"));
+					safe_free(printers);
+					*returned = 0;
 					return ERRnomem;
+				} else
+					printers = tp;
 				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2\n", *returned));		
 				memcpy(&printers[*returned], &current_prt, sizeof(PRINTER_INFO_2));
 				(*returned)++;
@@ -3486,6 +3499,7 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *ser
 	int j=0;
 	char *v;
 	pstring line;
+	uint16 *tuary;
 
 	DEBUG(6,("init_unistr_array\n"));
 	*uni_array=NULL;
@@ -3500,10 +3514,11 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *ser
 		if (strlen(v) == 0) break;
 		slprintf(line, sizeof(line)-1, "\\\\%s%s", servername, v);
 		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
-		if((*uni_array=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL) {
+		if((tuary=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL) {
 			DEBUG(0,("init_unistr_array: Realloc error\n" ));
 			return;
-		}
+		} else
+			*uni_array = tuary;
 		j += (dos_PutUniCode((char *)(*uni_array+j), line , sizeof(uint16)*strlen(line), True) / sizeof(uint16) );
 		i++;
 	}
@@ -5012,7 +5027,7 @@ static uint32 enumprinterdrivers_level1(fstring servername, fstring architecture
 	fstring *list = NULL;
 
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	DRIVER_INFO_1 *driver_info_1=NULL;
+	DRIVER_INFO_1 *tdi1, *driver_info_1=NULL;
 
 	*returned=0;
 
@@ -5027,10 +5042,13 @@ static uint32 enumprinterdrivers_level1(fstring servername, fstring architecture
 			return ERRnomem;
 
 		if(ndrivers != 0) {
-			if((driver_info_1=(DRIVER_INFO_1 *)Realloc(driver_info_1, (*returned+ndrivers) * sizeof(DRIVER_INFO_1))) == NULL) {
+			if((tdi1=(DRIVER_INFO_1 *)Realloc(driver_info_1, (*returned+ndrivers) * sizeof(DRIVER_INFO_1))) == NULL) {
+				DEBUG(0,("enumprinterdrivers_level1: failed to enlarge driver info buffer!\n"));
+				safe_free(driver_info_1);
 				safe_free(list);
 				return ERRnomem;
-			}
+			} else
+				driver_info_1 = tdi1;
 		}
 
 		for (i=0; i<ndrivers; i++) {
@@ -5087,7 +5105,7 @@ static uint32 enumprinterdrivers_level2(fstring servername, fstring architecture
 	fstring *list = NULL;
 
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	DRIVER_INFO_2 *driver_info_2=NULL;
+	DRIVER_INFO_2 *tdi2, *driver_info_2=NULL;
 
 	*returned=0;
 
@@ -5102,10 +5120,13 @@ static uint32 enumprinterdrivers_level2(fstring servername, fstring architecture
 			return ERRnomem;
 
 		if(ndrivers != 0) {
-			if((driver_info_2=(DRIVER_INFO_2 *)Realloc(driver_info_2, (*returned+ndrivers) * sizeof(DRIVER_INFO_2))) == NULL) {
+			if((tdi2=(DRIVER_INFO_2 *)Realloc(driver_info_2, (*returned+ndrivers) * sizeof(DRIVER_INFO_2))) == NULL) {
+				DEBUG(0,("enumprinterdrivers_level2: failed to enlarge driver info buffer!\n"));
+				safe_free(driver_info_2);
 				safe_free(list);
 				return ERRnomem;
-			}
+			} else
+				driver_info_2 = tdi2;
 		}
 		
 		for (i=0; i<ndrivers; i++) {
@@ -5163,7 +5184,7 @@ static uint32 enumprinterdrivers_level3(fstring servername, fstring architecture
 	fstring *list = NULL;
 
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	DRIVER_INFO_3 *driver_info_3=NULL;
+	DRIVER_INFO_3 *tdi3, *driver_info_3=NULL;
 
 	*returned=0;
 
@@ -5178,10 +5199,13 @@ static uint32 enumprinterdrivers_level3(fstring servername, fstring architecture
 			return ERRnomem;
 
 		if(ndrivers != 0) {
-			if((driver_info_3=(DRIVER_INFO_3 *)Realloc(driver_info_3, (*returned+ndrivers) * sizeof(DRIVER_INFO_3))) == NULL) {
+			if((tdi3=(DRIVER_INFO_3 *)Realloc(driver_info_3, (*returned+ndrivers) * sizeof(DRIVER_INFO_3))) == NULL) {
+				DEBUG(0,("enumprinterdrivers_level3: failed to enlarge driver info buffer!\n"));
+				safe_free(driver_info_3);
 				safe_free(list);
 				return ERRnomem;
-			}
+			} else
+				driver_info_3 = tdi3;
 		}
 
 		for (i=0; i<ndrivers; i++) {
