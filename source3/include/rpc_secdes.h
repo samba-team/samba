@@ -156,4 +156,14 @@ typedef struct sec_desc_buf_info
 #define _SEC_DESC_BUF
 #endif
 
+/* A type to describe the mapping of generic access rights to object
+   specific access rights. */
+
+typedef struct generic_mapping {
+	uint32 generic_read;
+	uint32 generic_write;
+	uint32 generic_execute;
+	uint32 generic_all;
+} GENERIC_MAPPING;
+
 #endif /* _RPC_SECDES_H */

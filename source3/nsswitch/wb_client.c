@@ -266,7 +266,8 @@ int winbind_initgroups(char *user, gid_t gid)
 
 	result = wb_getgroups(user, &groups);
 
-	DEBUG(10,("wb_getgroups: %s: result = %s\n", user, result == NSS_STATUS_SUCCESS ? "SUCCESS" : "FAIL"));
+	DEBUG(10,("wb_getgroups: %s: result = %s\n", user, result == -1 ?
+		  "FAIL" : "SUCCESS"));
 
 	if (result != -1) {
 		int ngroups = result, i;
