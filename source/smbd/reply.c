@@ -549,7 +549,14 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   strlower(user);
 
-  strcpy(sesssetup_user,user);
+  /* 
+   * In share level security, only overwrite sesssetup_use if
+   * it's a non null-session share. Helps keep %U and %G
+   * working.
+   */
+
+  if((lp_security() != SEC_SHARE) || *user)
+    strcpy(sesssetup_user,user);
 
   reload_services(True);
 
