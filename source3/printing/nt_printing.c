@@ -2110,7 +2110,7 @@ done:
 NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 {
 
-	char adevice[32];
+	char adevice[MAXDEVICENAME];
 	NT_DEVICEMODE *nt_devmode = (NT_DEVICEMODE *)malloc(sizeof(NT_DEVICEMODE));
 
 	if (nt_devmode == NULL) {
