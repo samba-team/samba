@@ -1005,12 +1005,14 @@ static BOOL run_locktest2(int dummy)
 
 	if (cli_unlock(&cli, fnum1, 0, 4)) {
 		printf("unlock1 succeeded! This is a locking bug\n");
+		correct = False;
 	} else {
 		if (!check_error(&cli, ERRDOS, ERRnotlocked, 0)) return False;
 	}
 
 	if (cli_unlock(&cli, fnum1, 0, 8)) {
 		printf("unlock2 succeeded! This is a locking bug\n");
+		correct = False;
 	} else {
 		if (!check_error(&cli, ERRDOS, ERRnotlocked, 0)) return False;
 	}
