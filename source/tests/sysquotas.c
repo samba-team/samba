@@ -1,4 +1,4 @@
-/* this test should find out what quota api is avalable on the os */
+/* this test should find out what quota api is available on the os */
 
 #if defined(HAVE_QUOTACTL_4A)
 /* long quotactl(int cmd, char *special, qid_t id, caddr_t addr) */
