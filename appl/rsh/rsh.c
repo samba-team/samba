@@ -972,7 +972,8 @@ main(int argc, char **argv)
 	else
 	    tmp_port = krb5_getportbyname(context, "shell", "tcp", 514);
 	auth_method = AUTH_BROKEN;
-	do_encrypt = 0;
+	if (do_encrypt)
+	    errx (1, "encryption not supported with priv port authentication");
 	ret = doit_broken (argc, argv, host_index, host,
 			   user, local_user,
 			   tmp_port,
