@@ -9,6 +9,9 @@
 start a telnet and forward X-connections.
 .Sh SYNOPSIS
 .Nm rxtelnet
+.Op Fl l Ar username
+.Op Fl t Ar telnet_args
+.Op Fl x Ar xterm_args
 .Ar host
 .Sh DESCRIPTION
 The
@@ -16,9 +19,26 @@ The
 program starts a
 .Nm xterm
 window with a telnet to host
-.Ar host.
+.Ar host .
 From this window you will also be able to run X clients that will be
 able to connect securily to your X server.
+.Pp
+The supported options are:
+.Bl -tag -width Ds
+.It Fl l
+Log in on the remote host as user
+.Ar username
+.It Fl t
+Send
+.Ar telnet_args
+as arguments to
+.Nm telnet
+.It Fl x
+Send
+.Ar xterm_args
+as arguments to
+.Nm xterm
+.El
 .Sh EXAMPLE
 To login from host
 .Va foo
@@ -41,4 +61,5 @@ In this window you will be able to start X clients.
 .Sh SEE ALSO
 .Xr rxterm 1 ,
 .Xr kx 1 ,
-.Xr kxd 8
+.Xr kxd 8 ,
+.Xr telnet 1
