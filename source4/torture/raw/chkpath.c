@@ -31,6 +31,25 @@
 	}} while (0)
 
 
+static NTSTATUS single_search(struct smbcli_state *cli,
+                              TALLOC_CTX *mem_ctx, const char *pattern)
+{
+        union smb_search_first io;
+        NTSTATUS status;
+                                                                                                                                   
+        io.generic.level = RAW_SEARCH_STANDARD;
+	io.t2ffirst.in.search_attrib = 0;
+	io.t2ffirst.in.max_count = 1;
+	io.t2ffirst.in.flags = FLAG_TRANS2_FIND_CLOSE;
+	io.t2ffirst.in.storage_type = 0;
+	io.t2ffirst.in.pattern = pattern;
+
+	status = smb_raw_search_first(cli->tree, mem_ctx,
+			&io, NULL, NULL);
+                                                                                                                                   
+        return status;
+}
+
 static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	struct smb_chkpath io;
@@ -48,14 +67,14 @@ static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_chkpath(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
-	fnum = create_complex_file(cli, mem_ctx, BASEDIR "\\test.txt");
+	fnum = create_complex_file(cli, mem_ctx, BASEDIR "\\test.txt..");
 	if (fnum == -1) {
 		printf("failed to open test.txt - %s\n", smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
 
-	io.in.path = BASEDIR "\\test.txt";
+	io.in.path = BASEDIR "\\test.txt..";
 	printf("testing %s\n", io.in.path);
 	status = smb_raw_chkpath(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_NOT_A_DIRECTORY);
@@ -81,7 +100,89 @@ static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_chkpath(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
 
+	io.in.path = ".\\";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	io.in.path = ".\\.";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = ".\\.\\";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = ".\\.\\.";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = ".\\.\\.aaaaa";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = "\\.\\";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	io.in.path = "\\.\\\\";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	io.in.path = "\\.\\\\\\\\\\\\";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	/* Note that the two following paths are identical but
+	  give different NT status returns for chkpth and findfirst. */
+
+	printf("testing findfirst on %s\n", "\\.\\\\\\\\\\\\.");
+	status = single_search(cli, mem_ctx, "\\.\\\\\\\\\\\\.");
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	io.in.path = "\\.\\\\\\\\\\\\.";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	/* We expect this open to fail with the same error code as the chkpath below. */
+	printf("testing Open on %s\n", "\\.\\\\\\\\\\\\.");
+	/* findfirst seems to fail with a different error. */
+	fnum1 = smbcli_nt_create_full(cli->tree, "\\.\\\\\\\\\\\\.",
+				0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
+				FILE_ATTRIBUTE_NORMAL,
+				NTCREATEX_SHARE_ACCESS_DELETE|
+				NTCREATEX_SHARE_ACCESS_READ|
+				NTCREATEX_SHARE_ACCESS_WRITE,
+				NTCREATEX_DISP_OVERWRITE_IF,
+				0, 0);
+	status = smbcli_nt_error(cli->tree);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+
+	io.in.path = "\\.\\\\xxx";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = "\\.\\\\\\\\\\\\xxx";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
 	io.in.path = BASEDIR"\\.\\";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	io.in.path = BASEDIR"\\.\\\\";
 	printf("testing %s\n", io.in.path);
 	status = smb_raw_chkpath(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
@@ -146,6 +247,11 @@ static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_chkpath(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
 
+	io.in.path = "\\..\\";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+
 	io.in.path = "\\..";
 	printf("testing %s\n", io.in.path);
 	status = smb_raw_chkpath(cli->tree, &io);
@@ -172,6 +278,26 @@ static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_NOT_A_DIRECTORY);
 
 	/* We expect this open to fail with the same error code as the chkpath below. */
+	printf("testing Open on %s\n", BASEDIR".\\.\\.\\.\\foo\\..\\.\\");
+	/* findfirst seems to fail with a different error. */
+	fnum1 = smbcli_nt_create_full(cli->tree, BASEDIR".\\.\\.\\.\\foo\\..\\.\\",
+				0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
+				FILE_ATTRIBUTE_NORMAL,
+				NTCREATEX_SHARE_ACCESS_DELETE|
+				NTCREATEX_SHARE_ACCESS_READ|
+				NTCREATEX_SHARE_ACCESS_WRITE,
+				NTCREATEX_DISP_OVERWRITE_IF,
+				0, 0);
+	status = smbcli_nt_error(cli->tree);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	printf("testing findfirst on %s\n", BASEDIR".\\.\\.\\.\\foo\\..\\.\\");
+	status = single_search(cli, mem_ctx, BASEDIR".\\.\\.\\.\\foo\\..\\.\\");
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	/* We expect this open to fail with the same error code as the chkpath below. */
+	/* findfirst seems to fail with a different error. */
+	printf("testing Open on %s\n", BASEDIR "\\nt\\Visual Studio\\VB98\\vb6.exe\\3");
 	fnum1 = smbcli_nt_create_full(cli->tree, BASEDIR "\\nt\\Visual Studio\\VB98\\vb6.exe\\3",
 				0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
 				FILE_ATTRIBUTE_NORMAL,
