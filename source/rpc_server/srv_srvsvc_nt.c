@@ -33,7 +33,7 @@ extern pstring global_myname;
  Fill in a share info level 1 structure.
  ********************************************************************/
 
-static void init_srv_share_info_1(SRV_SHARE_INFO_1 *sh1, int snum)
+static void init_srv_share_info_1(pipes_struct *p, SRV_SHARE_INFO_1 *sh1, int snum)
 {
 	int len_net_name;
 	pstring net_name;
@@ -42,7 +42,7 @@ static void init_srv_share_info_1(SRV_SHARE_INFO_1 *sh1, int snum)
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
-	pstring_sub(remark,"%S",lp_servicename(snum));
+	standard_sub_conn(p->conn, remark);
 	len_net_name = strlen(net_name);
 
 	/* work out the share type */
@@ -63,7 +63,7 @@ static void init_srv_share_info_1(SRV_SHARE_INFO_1 *sh1, int snum)
  Fill in a share info level 2 structure.
  ********************************************************************/
 
-static void init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, int snum)
+static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int snum)
 {
 	int len_net_name;
 	pstring net_name;
@@ -74,7 +74,7 @@ static void init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, int snum)
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
-	pstring_sub(remark,"%S",lp_servicename(snum));
+	standard_sub_conn(p->conn, remark);
 	pstrcpy(path, "C:");
 	pstrcat(path, lp_pathname(snum));
 
@@ -353,7 +353,7 @@ BOOL share_access_check(connection_struct *conn, int snum, uint16 vuid, uint32 d
  Fill in a share info level 502 structure.
  ********************************************************************/
 
-static void init_srv_share_info_502(TALLOC_CTX *ctx, SRV_SHARE_INFO_502 *sh502, int snum)
+static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, int snum)
 {
 	int len_net_name;
 	pstring net_name;
@@ -363,12 +363,14 @@ static void init_srv_share_info_502(TALLOC_CTX *ctx, SRV_SHARE_INFO_502 *sh502, 
 	uint32 type;
 	SEC_DESC *sd;
 	size_t sd_size;
+	TALLOC_CTX *ctx = p->mem_ctx;
+
 
 	ZERO_STRUCTP(sh502);
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
-	pstring_sub(remark,"%S",lp_servicename(snum));
+	standard_sub_conn(p->conn, remark);
 	pstrcpy(path, "C:");
 	pstrcat(path, lp_pathname(snum));
 
@@ -429,12 +431,13 @@ static BOOL is_admin_share(int snum)
  Fill in a share info structure.
  ********************************************************************/
 
-static BOOL init_srv_share_info_ctr(TALLOC_CTX *ctx, SRV_SHARE_INFO_CTR *ctr,
+static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 	       uint32 info_level, uint32 *resume_hnd, uint32 *total_entries, BOOL all_shares)
 {
 	int num_entries = 0;
 	int num_services = lp_numservices();
 	int snum;
+	TALLOC_CTX *ctx = p->mem_ctx;
 
 	DEBUG(5,("init_srv_share_info_ctr\n"));
 
@@ -466,7 +469,7 @@ static BOOL init_srv_share_info_ctr(TALLOC_CTX *ctx, SRV_SHARE_INFO_CTR *ctr,
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_admin_share(snum)) ) {
-				init_srv_share_info_1(&info1[i++], snum);
+				init_srv_share_info_1(p, &info1[i++], snum);
 			}
 		}
 
@@ -483,7 +486,7 @@ static BOOL init_srv_share_info_ctr(TALLOC_CTX *ctx, SRV_SHARE_INFO_CTR *ctr,
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_admin_share(snum)) ) {
-				init_srv_share_info_2(&info2[i++], snum);
+				init_srv_share_info_2(p, &info2[i++], snum);
 			}
 		}
 
@@ -500,7 +503,7 @@ static BOOL init_srv_share_info_ctr(TALLOC_CTX *ctx, SRV_SHARE_INFO_CTR *ctr,
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_admin_share(snum)) ) {
-				init_srv_share_info_502(ctx, &info502[i++], snum);
+				init_srv_share_info_502(p, &info502[i++], snum);
 			}
 		}
 
@@ -520,12 +523,12 @@ static BOOL init_srv_share_info_ctr(TALLOC_CTX *ctx, SRV_SHARE_INFO_CTR *ctr,
  Inits a SRV_R_NET_SHARE_ENUM structure.
 ********************************************************************/
 
-static void init_srv_r_net_share_enum(TALLOC_CTX *ctx, SRV_R_NET_SHARE_ENUM *r_n,
+static void init_srv_r_net_share_enum(pipes_struct *p, SRV_R_NET_SHARE_ENUM *r_n,
 				      uint32 info_level, uint32 resume_hnd, BOOL all)  
 {
 	DEBUG(5,("init_srv_r_net_share_enum: %d\n", __LINE__));
 
-	if (init_srv_share_info_ctr(ctx, &r_n->ctr, info_level,
+	if (init_srv_share_info_ctr(p, &r_n->ctr, info_level,
 				    &resume_hnd, &r_n->total_entries, all)) {
 		r_n->status = NT_STATUS_NOPROBLEMO;
 	} else {
@@ -539,7 +542,7 @@ static void init_srv_r_net_share_enum(TALLOC_CTX *ctx, SRV_R_NET_SHARE_ENUM *r_n
  Inits a SRV_R_NET_SHARE_GET_INFO structure.
 ********************************************************************/
 
-static void init_srv_r_net_share_get_info(TALLOC_CTX *ctx, SRV_R_NET_SHARE_GET_INFO *r_n,
+static void init_srv_r_net_share_get_info(pipes_struct *p, SRV_R_NET_SHARE_GET_INFO *r_n,
 				  char *share_name, uint32 info_level)
 {
 	uint32 status = NT_STATUS_NOPROBLEMO;
@@ -554,13 +557,13 @@ static void init_srv_r_net_share_get_info(TALLOC_CTX *ctx, SRV_R_NET_SHARE_GET_I
 	if (snum >= 0) {
 		switch (info_level) {
 		case 1:
-			init_srv_share_info_1(&r_n->info.share.info1, snum);
+			init_srv_share_info_1(p, &r_n->info.share.info1, snum);
 			break;
 		case 2:
-			init_srv_share_info_2(&r_n->info.share.info2, snum);
+			init_srv_share_info_2(p, &r_n->info.share.info2, snum);
 			break;
 		case 502:
-			init_srv_share_info_502(ctx, &r_n->info.share.info502, snum);
+			init_srv_share_info_502(p, &r_n->info.share.info502, snum);
 			break;
 		case 1005:
 			init_srv_share_info_1005(&r_n->info.share.info1005, snum);
@@ -1153,7 +1156,7 @@ uint32 _srv_net_share_enum_all(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R
 	DEBUG(5,("_srv_net_share_enum: %d\n", __LINE__));
 
 	/* Create the list of shares for the response. */
-	init_srv_r_net_share_enum(p->mem_ctx, r_u,
+	init_srv_r_net_share_enum(p, r_u,
 				q_u->ctr.info_level,
 				get_enum_hnd(&q_u->enum_hnd), True);
 
@@ -1171,7 +1174,7 @@ uint32 _srv_net_share_enum(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET
 	DEBUG(5,("_srv_net_share_enum: %d\n", __LINE__));
 
 	/* Create the list of shares for the response. */
-	init_srv_r_net_share_enum(p->mem_ctx, r_u,
+	init_srv_r_net_share_enum(p, r_u,
 				q_u->ctr.info_level,
 				get_enum_hnd(&q_u->enum_hnd), False);
 
@@ -1192,7 +1195,7 @@ uint32 _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, S
 
 	/* Create the list of shares for the response. */
 	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
-	init_srv_r_net_share_get_info(p->mem_ctx, r_u, share_name, q_u->info_level);
+	init_srv_r_net_share_get_info(p, r_u, share_name, q_u->info_level);
 
 	DEBUG(5,("_srv_net_share_get_info: %d\n", __LINE__));
 
@@ -1229,9 +1232,7 @@ static char *valid_share_pathname(char *dos_pathname)
 	if (getcwd(saved_pathname, sizeof(saved_pathname)) == NULL)
 		return False;
 
-	/* Convert to UNIX charset. */
 	pstrcpy(unix_pathname, ptr);
-	dos_to_unix(unix_pathname, True);
 	
 	ret = chdir(unix_pathname);
 
@@ -1338,7 +1339,6 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
 				lp_change_share_cmd(), CONFIGFILE, share_name, ptr, comment);
-		dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
 		if ((ret = smbrun(command, NULL)) != 0) {
@@ -1455,7 +1455,6 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
 			lp_add_share_cmd(), CONFIGFILE, share_name, ptr, comment);
-	dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
 	if ((ret = smbrun(command, NULL)) != 0) {
@@ -1522,7 +1521,6 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
 			lp_delete_share_cmd(), CONFIGFILE, lp_servicename(snum));
-	dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 	DEBUG(10,("_srv_net_share_del: Running [%s]\n", command ));
 	if ((ret = smbrun(command, NULL)) != 0) {
