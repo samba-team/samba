@@ -3778,7 +3778,7 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	len += pack_values( &info->data, buf+len, buflen-len );
 
-	if (buflen != len) {
+	if (buflen < len) {
 		char *tb;
 
 		tb = (char *)Realloc(buf, len);
