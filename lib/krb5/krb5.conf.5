@@ -389,6 +389,10 @@ password is about to expire.
 What type of logging the kdc should use, see also [logging]/kdc.
 .It Li use_2b = Va principal list
 List of principals to use AFS 2b tokens for.
+.It Li hdb-ldap-structural-object Va structural object
+If the LDAP backend is used for storing principals, this is the
+structural object that will be used when creating and when reading
+objects.
 .El
 .It Li [kadmin]
 .Bl -tag -width "xxx" -offset indent
