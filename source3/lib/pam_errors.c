@@ -105,7 +105,7 @@ convert a PAM error to a NT status32 code
  *****************************************************************************/
 NTSTATUS pam_to_ntstatus(int pam_error)
 {
-	if (pam_errno == 0) return NT_STATUS_OK;
+	if (pam_error == 0) return NT_STATUS_OK;
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -114,7 +114,7 @@ convert an NT status32 code to a PAM error
  *****************************************************************************/
 int ntstatus_to_pam(NTSTATUS nt_status)
 {
-	if (nt_status == NT_STATUS_OK) return 0;
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_OK)) return 0;
 	return 4; /* PAM_SYSTEM_ERR */
 }
 
