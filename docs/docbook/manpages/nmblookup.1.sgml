@@ -16,6 +16,7 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>nmblookup</command>
+		<arg choice="opt">-f</arg>
 		<arg choice="opt">-M</arg>
 		<arg choice="opt">-R</arg>
 		<arg choice="opt">-S</arg>
@@ -49,6 +50,13 @@
 	<title>OPTIONS</title>
 
 	<variablelist>
+		<varlistentry>
+		<term>-f</term>
+		<listitem><para>Causes nmblookup to print out the flags
+		in the NMB packet headers. These flags will print out as 
+		strings like Authoritative, Recursion_Desired, Recursion_available, etc.
+		</para></listitem>
+		</varlistentry>
 		<varlistentry>
 		<term>-M</term>
 		<listitem><para>Searches for a master browser by looking 
