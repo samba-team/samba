@@ -326,6 +326,30 @@ krb5_config_vget_next (krb5_config_section *c,
     return NULL;
 }
 
+const void *
+krb5_config_get (krb5_config_section *c,
+		 int type,
+		 ...)
+{
+    const void *ret;
+    va_list args;
+
+    va_start(args, type);
+    ret = krb5_config_vget (c, type, args);
+    va_end(args);
+    return ret;
+}
+
+const void *
+krb5_config_vget (krb5_config_section *c,
+		  int type,
+		  va_list args)
+{
+    krb5_config_binding *foo = NULL;
+
+    return krb5_config_vget_next (c, &foo, type, args);
+}
+
 const krb5_config_binding *
 krb5_config_get_list (krb5_config_section *c,
 		      ...)
@@ -341,11 +365,9 @@ krb5_config_get_list (krb5_config_section *c,
 
 const krb5_config_binding *
 krb5_config_vget_list (krb5_config_section *c,
-			 va_list args)
+		       va_list args)
 {
-    krb5_config_binding *foo = NULL;
-    return (const krb5_config_binding *)
-	    krb5_config_vget_next(c, &foo, LIST, args);
+    return krb5_config_vget (c, LIST, args);
 }
 
 const char *
@@ -365,8 +387,7 @@ const char *
 krb5_config_vget_string (krb5_config_section *c,
 			 va_list args)
 {
-    krb5_config_binding *foo = NULL;
-    return krb5_config_vget_next(c, &foo, STRING, args);
+    return krb5_config_vget (c, STRING, args);
 }
 
 #ifdef TEST
