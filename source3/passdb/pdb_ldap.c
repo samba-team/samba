@@ -309,8 +309,13 @@ static BOOL ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * l
 	   
 	DEBUG(10,("ldap_connect_system: Binding to ldap server as \"%s\"\n",
 		ldap_dn));
-	
-	ldap_set_rebind_proc(ldap_struct, (LDAP_REBIND_PROC *)(&rebindproc));	
+
+#if LDAP_SET_REBIND_PROC_ARGS == 3
+		ldap_set_rebind_proc(ldap_struct, (LDAP_REBIND_PROC *)(&rebindproc), NULL);
+#elif LDAP_SET_REBIND_PROC_ARGS == 2
+		ldap_set_rebind_proc(ldap_struct, (LDAP_REBIND_PROC *)(&rebindproc));	
+#endif
+
 
 	rc = ldap_simple_bind_s(ldap_struct, ldap_dn, ldap_secret);
 
