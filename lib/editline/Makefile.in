@@ -10,7 +10,7 @@ VPATH = @srcdir@
 CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
-DEFS = @DEFS@ -DLIBDIR='"$(libdir)"'
+DEFS = @DEFS@
 CFLAGS = @CFLAGS@
 
 INSTALL = @INSTALL@
@@ -28,7 +28,7 @@ LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
 LIBPREFIX = @LIBPREFIX@
 SHARED = @SHARED@
-LIB = $(LIBNAME).$(LIBEXT) $(AFS_EXTRA_LIBS)
+LIB = $(LIBNAME).$(LIBEXT)
 
 SOURCES = edit_compat.c editline.c complete.c sysunix.c
 
