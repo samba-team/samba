@@ -735,6 +735,9 @@
 /* Define if you have the sysconf function.  */
 #undef HAVE_SYSCONF
 
+/* Define if you have the syslog function.  */
+#undef HAVE_SYSLOG
+
 /* Define if you have the updwtmp function.  */
 #undef HAVE_UPDWTMP
 
@@ -755,6 +758,9 @@
 
 /* Define if you have the vsnprintf function.  */
 #undef HAVE_VSNPRINTF
+
+/* Define if you have the vsyslog function.  */
+#undef HAVE_VSYSLOG
 
 /* Define if you have the waitpid function.  */
 #undef HAVE_WAITPID

@@ -1,4 +1,4 @@
-###########################################################################
+##########################################################################
 # Makefile.in for Samba - rewritten for autoconf support
 # Copyright Andrew Tridgell 1992-1998
 ###########################################################################
@@ -271,7 +271,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 				$(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(LIBMSRPC_OBJ) \
 				$(READLINE_OBJ)
 
-PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po
+PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po lib/snprintf.o
 
 SMBW_OBJ = smbwrapper/smbw.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
@@ -361,7 +361,7 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 		lib/charset.o lib/util_file.o lib/kanji.o lib/genrand.o \
 		lib/username.o lib/util_getent.o lib/charcnv.o lib/time.o lib/md4.o \
 		lib/util_unistr.o lib/signal.o lib/talloc.o lib/ms_fnmatch.o \
-		lib/util_sock.o lib/smbrun.o lib/util_sec.o \
+		lib/util_sock.o lib/smbrun.o lib/util_sec.o lib/snprintf.o \
 		ubiqx/ubi_sLinkList.o libsmb/smbencrypt.o libsmb/smbdes.o \
 		$(PARAM_OBJ) $(TDB_OBJ) $(PASSDB_OBJ)
 
