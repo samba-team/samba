@@ -39,7 +39,7 @@ struct in6_addr any = IPV6ADDR_ANY_INIT;
 ac_cv_lib_ipv6=yes,
 ac_cv_lib_ipv6=no))
 if test "$ac_cv_lib_ipv6" = yes; then
-  AC_DEFINE(HAVE_IPV6)
+  AC_DEFINE(HAVE_IPV6, 1, [Define if you have IPv6.])
 
 	dnl check for different v6 implementations (by itojun)
 	v6type=unknown
