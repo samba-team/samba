@@ -628,8 +628,7 @@ static void kernel_flock(files_struct *fsp, int deny_mode)
 
 
 /****************************************************************************
- Open a file with a share mode. On output from this open we are guarenteeing
- that 
+ Open a file with a share mode - old method.
 ****************************************************************************/
 
 files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_STAT *psbuf, 
@@ -640,8 +639,7 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 }
 
 /****************************************************************************
- Open a file with a share mode. On output from this open we are guarenteeing
- that 
+ Open a file with a share mode - called from NTCreateAndX.
 ****************************************************************************/
 
 files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_STAT *psbuf, 
@@ -951,6 +949,8 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		NTSTATUS result = set_delete_on_close_internal(fsp, delete_on_close);
 
 		if (NT_STATUS_V(result) !=  NT_STATUS_V(NT_STATUS_OK)) {
+			/* Remember to delete the mode we just added. */
+			del_share_mode(fsp, NULL);
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);

@@ -80,12 +80,12 @@ implemented */
 #define pSETDIR '\377'
 
 /* these define the attribute byte as seen by DOS */
-#define aRONLY (1L<<0)
-#define aHIDDEN (1L<<1)
-#define aSYSTEM (1L<<2)
-#define aVOLID (1L<<3)
-#define aDIR (1L<<4)
-#define aARCH (1L<<5)
+#define aRONLY (1L<<0)          /* 0x01 */
+#define aHIDDEN (1L<<1)         /* 0x02 */
+#define aSYSTEM (1L<<2)         /* 0x04 */
+#define aVOLID (1L<<3)          /* 0x08 */
+#define aDIR (1L<<4)            /* 0x10 */
+#define aARCH (1L<<5)           /* 0x20 */
 
 /* deny modes */
 #define DENY_DOS 0
