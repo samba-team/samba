@@ -38,7 +38,7 @@ typedef struct {
 	} config;
 } ADS_STRUCT;
 
-/* there are 4 possible types of errors the ads subsystem can produce */
+/* there are 5 possible types of errors the ads subsystem can produce */
 enum ads_error_type {ADS_ERROR_KRB5, ADS_ERROR_GSS, 
 		     ADS_ERROR_LDAP, ADS_ERROR_SYSTEM, ADS_ERROR_NT};
 
