@@ -43,10 +43,15 @@
 /****************************************************************************
 display the prompt and wait for input. Call callback() regularly
 ****************************************************************************/
-char *smb_readline(char *prompt, void (*callback)(void))
+char *smb_readline(char *prompt, void (*callback)(void), 
+		   char **(completion_fn)(char *text, int start, int end))
 {
 	char *ret;
 #if HAVE_LIBREADLINE
+	if (completion_fn) {
+		rl_attempted_completion_function = completion_fn;
+	}
+
 	rl_event_hook = (Function *)callback;
 	ret = readline(prompt);
 	if (ret && *ret) add_history(ret);
