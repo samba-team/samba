@@ -446,3 +446,89 @@ void fill_domain_username(fstring name, const char *domain, const char *user)
 			 user);
 	}
 }
+
+/*
+ * Winbindd socket accessor functions
+ */
+
+/* Open the winbindd socket */
+
+static int _winbindd_socket = -1;
+
+int open_winbindd_socket(void)
+{
+	if (_winbindd_socket == -1) {
+		_winbindd_socket = create_pipe_sock(
+			WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME, 0755);
+		DEBUG(10, ("open_winbindd_socket: opened socket fd %d\n",
+			   _winbindd_socket));
+	}
+
+	return _winbindd_socket;
+}
+
+/* Close the winbindd socket */
+
+void close_winbindd_socket(void)
+{
+	if (_winbindd_socket != -1) {
+		DEBUG(10, ("close_winbindd_socket: closing socket fd %d\n",
+			   _winbindd_socket));
+		close(_winbindd_socket);
+		_winbindd_socket = -1;
+	}
+}
+
+/*
+ * Client list accessor functions
+ */
+
+static struct winbindd_cli_state *_client_list;
+static int _num_clients;
+
+/* Return list of all connected clients */
+
+struct winbindd_cli_state *winbindd_client_list(void)
+{
+	return _client_list;
+}
+
+/* Add a connection to the list */
+
+void winbindd_add_client(struct winbindd_cli_state *cli)
+{
+	DLIST_ADD(_client_list, cli);
+	_num_clients++;
+}
+
+/* Remove a client from the list */
+
+void winbindd_remove_client(struct winbindd_cli_state *cli)
+{
+	DLIST_REMOVE(_client_list, cli);
+	_num_clients--;
+}
+
+/* Close all open clients */
+
+void winbindd_kill_all_clients(void)
+{
+	struct winbindd_cli_state *cl = winbindd_client_list();
+
+	DEBUG(10, ("winbindd_kill_all_clients: going postal\n"));
+
+	while (cl) {
+		struct winbindd_cli_state *next;
+		
+		next = cl->next;
+		winbindd_remove_client(cl);
+		cl = next;
+	}
+}
+
+/* Return number of open clients */
+
+int winbindd_num_clients(void)
+{
+	return _num_clients;
+}
