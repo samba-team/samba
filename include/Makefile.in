@@ -1,8 +1,8 @@
 HEADERS = \
 	asn1.h asn1_err.h bits.h cache.h config_file.h \
 	des.h error.h getarg.h gssapi.h hdb.h hdb_asn1.h hdb_err.h \
-	keytab.h krb5.h krb5_err.h md4.h md5.h roken.h \
-	sha.h sl.h store.h parse_time.h
+	heim_err.h keytab.h krb5.h krb5_err.h md4.h md5.h roken.h \
+	sha.h sl.h store.h parse_time.h parse_units.h
 
 MAYBE_HEADERS = \
 	err.h
@@ -43,6 +43,9 @@ uninstall:
 	  rm -f $(includedir)/err.h; \
 	fi
 
+Makefile: Makefile.in
+	@(cd ..; CONFIG_HEADERS= CONFIG_FILES=include/Makefile ./config.status)
+
 .c.o:
 	$(CC) $(CFLAGS) $(DEFS) -c $< 
 
@@ -54,6 +57,9 @@ krb5.h:
 
 krb5_err.h:
 	$(LN_S) ../lib/error/krb5_err.h .
+
+heim_err.h:
+	$(LN_S) ../lib/error/heim_err.h .
 
 asn1_err.h:
 	$(LN_S) ../lib/error/asn1_err.h .
@@ -71,6 +77,9 @@ getarg.h:
 
 parse_time.h:
 	$(LN_S) $(top_srcdir)/lib/roken/parse_time.h .
+
+parse_units.h:
+	$(LN_S) $(top_srcdir)/lib/roken/parse_units.h .
 
 error.h:
 	$(LN_S) $(top_srcdir)/lib/error/error.h .
