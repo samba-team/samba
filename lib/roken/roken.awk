@@ -6,15 +6,14 @@ BEGIN {
 	print ""
 	print "int main()"
 	print "{"
-	print "printf(\"/* This is (as usual) a generated file,\\n\");"
-	print "printf(\"   it is also machine dependent */\\n\");"
-	print "printf(\"\\n\");"
-	print "printf(\"#ifndef __ROKEN_H__\\n\");"
-	print "printf(\"#define __ROKEN_H__\\n\");"
-	print "printf(\"\\n\");"
+	    print "puts(\"/* This is an OS dependent, generated file */\");"
+	print "puts(\"\\n\");"
+	print "puts(\"#ifndef __ROKEN_H__\");"
+	print "puts(\"#define __ROKEN_H__\");"
+	print "puts(\"\");"
 }
 END {
-	print "printf(\"#endif /* __ROKEN_H__ */\\n\");"
+	print "puts(\"#endif /* __ROKEN_H__ */\");"
 	print "exit(0);"
 	print "}"
 }
@@ -32,5 +31,5 @@ $1 == "\#ifdef" || $1 == "\#ifndef" || $1 == "\#if" || $1 == "\#else" || $1 == "
 			s = s "\\";
 		s = s x;
 	}
-	printf("printf(\"%s\\n\");\n", s);
+	print "puts(\"" s "\");"
 }
