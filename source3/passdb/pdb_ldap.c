@@ -2110,7 +2110,7 @@ static void free_private_data(void **vp)
 	/* No need to free any further, as it is talloc()ed */
 }
 
-static const char *group_attr[] = {"gid", "ntSid", "ntGroupType",
+static const char *group_attr[] = {"cn", "ntSid", "ntGroupType",
 				   "gidNumber",
 				   "displayName", "description",
 				   NULL };
@@ -2156,7 +2156,7 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 	}
 	DEBUG(2, ("Entry found for group: %s\n", temp));
 
-	map->gid = (uint32)atol(temp);
+	map->gid = (gid_t)atol(temp);
 
 	if (!get_single_attribute(ldap_state->ldap_struct, entry, "ntSid",
 				  temp)) {
@@ -2182,6 +2182,11 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 				  temp)) {
 		DEBUG(3, ("Attribute displayName not found\n"));
 		temp[0] = '\0';
+		if (!get_single_attribute(ldap_state->ldap_struct, entry, "cn",
+					  temp)) {
+			DEBUG(0, ("Attributes displayName and cn not found for gidNumber(%i)\n",map->gid));
+			return False;
+		}
 	}
 	fstrcpy(map->nt_name, temp);
 
@@ -2301,8 +2306,8 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 	/* TODO: Escaping of name? */
 
 	snprintf(filter, sizeof(filter)-1,
-		 "(&(objectClass=sambaGroupMapping)(displayName=%s))",
-		 name);
+		 "(&(objectClass=sambaGroupMapping)(|(displayName=%s)(cn=%s))",
+		 name,name);
 
 	return ldapsam_getgroup(methods, filter, map);
 }
