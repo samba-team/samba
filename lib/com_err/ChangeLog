@@ -1,3 +1,7 @@
+2001-05-06  Assar Westerlund  <assar@sics.se>
+
+	* com_err.h: add printf formats for gcc
+
 2001-02-28  Johan Danielsson  <joda@pdc.kth.se>
 
 	* error.c (initialize_error_table_r): put table at end of the list
