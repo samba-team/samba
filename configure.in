@@ -44,7 +44,7 @@ esac
 test -z "$CFLAGS" && CFLAGS="-g"
 
 dnl Checks for programs.
-AC_PROG_CC
+AC_PROG_CC_STDC
 
 AC_CYGWIN
 AC_OBJEXT
@@ -63,8 +63,8 @@ libdir="$libdir$abilibdirext"
 
 AC_C___ATTRIBUTE__
 
-AM_DISABLE_SHARED
-AM_PROG_LIBTOOL
+AC_ENABLE_SHARED(no)
+AC_PROG_LIBTOOL
 
 AC_WFLAGS(-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs)
 
@@ -157,39 +157,12 @@ AM_CONDITIONAL(KRB4, test "$with_krb4" != "no")
 AM_CONDITIONAL(KRB5, true)
 AC_DEFINE(KRB5, 1, [Enable Kerberos 5 support in applications.])dnl
 AC_SUBST(LIB_kdb)dnl
-AM_CONDITIONAL(AIX, test "$aix" != no)dnl
-AM_CONDITIONAL(AIX4, test "$aix" = 4)
-aix_dynamic_afs=yes
-AM_CONDITIONAL(AIX_DYNAMIC_AFS, test "$aix_dynamic_afs" = yes)dnl
-
-AC_FIND_FUNC_NO_LIBS(dlopen, dl)
-
-if test "$aix" != no; then
-	if test "$aix_dynamic_afs" = yes; then
-		if test "$ac_cv_funclib_dlopen" = yes; then
-			AIX_EXTRA_KAFS=
-		elif test "$ac_cv_funclib_dlopen" != no; then
-			AIX_EXTRA_KAFS="$ac_cv_funclib_dlopen"
-		else
-			AIX_EXTRA_KAFS=-lld
-		fi
-	else
-		AIX_EXTRA_KAFS=
-	fi
-fi
-
-AM_CONDITIONAL(HAVE_DLOPEN, test "$ac_cv_funclib_dlopen" != no)dnl
-AC_SUBST(AFS_EXTRA_LD)dnl
-AC_SUBST(AIX_EXTRA_KAFS)dnl
 
 AC_ARG_ENABLE(dce, [  --enable-dce	if you want support for DCE/DFS PAG's.])
 if test "$enable_dce" = yes; then
     AC_DEFINE(DCE, 1, [Define if you want support for DCE/DFS PAG's.])
-    APPL_dce=dceutils
-    LIB_dce=kdfs
 fi
-AC_SUBST(APPL_dce)
-AC_SUBST(LIB_dce)
+AM_CONDITIONAL(DCE, test "$with_dce" = yes)
 
 AC_ARG_ENABLE(kaserver,
 [  --enable-kaserver	  if you want the KDC to try to emulate a kaserver])
@@ -242,6 +215,8 @@ AC_TEST_PACKAGE_NEW(hesiod,[#include <hesiod.h>],-lhesiod)
 
 KRB_C_BIGENDIAN
 AC_C_INLINE
+
+KRB_AIX
 
 KRB_CHECK_X
 
@@ -1051,7 +1026,6 @@ AC_OUTPUT(Makefile 			\
 	lib/otp/Makefile		\
 	lib/sl/Makefile			\
 	lib/vers/Makefile		\
-	lib/kdfs/Makefile		\
 	kuser/Makefile			\
 	kpasswd/Makefile		\
 	kadmin/Makefile			\
