@@ -350,7 +350,7 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 	}
 
 	for (i = 0; mods[i] != NULL; ++i) {
-		if (mods[i]->mod_op == modop && !strcasecmp(mods[i]->mod_type, attribute))
+		if (mods[i]->mod_op == modop && strequal(mods[i]->mod_type, attribute))
 			break;
 	}
 
@@ -542,7 +542,7 @@ static int smbldap_open_connection (struct smbldap_state *ldap_state)
 		SMB_ASSERT(sizeof(protocol)>10 && sizeof(host)>254);
 		
 		/* skip leading "URL:" (if any) */
-		if ( strncasecmp( p, "URL:", 4 ) == 0 ) {
+		if ( strnequal( p, "URL:", 4 ) ) {
 			p += 4;
 		}
 		

@@ -21,6 +21,12 @@
 
 #include "includes.h"
 
+/*
+ * We have to use strcasecmp here as the character conversions
+ * haven't been initialised yet. JRA.
+ */
+
+#undef strcasecmp
 
 /**
  * @file

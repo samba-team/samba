@@ -972,7 +972,7 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
  **/
 char *ads_ou_string(const char *org_unit)
 {	
-	if (!org_unit || !*org_unit || strcasecmp(org_unit, "Computers") == 0) {
+	if (!org_unit || !*org_unit || strequal(org_unit, "Computers")) {
 		return strdup("cn=Computers");
 	}
 
@@ -1970,8 +1970,8 @@ ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **workg
 	prefix_length = strlen(prefix);
 
 	for (i=0;principles[i]; i++) {
-		if (strncasecmp(principles[i], prefix, prefix_length) == 0 &&
-		    strcasecmp(ads->config.realm, principles[i]+prefix_length) != 0 &&
+		if (strnequal(principles[i], prefix, prefix_length) &&
+		    !strequal(ads->config.realm, principles[i]+prefix_length) &&
 		    !strchr(principles[i]+prefix_length, '.')) {
 			/* found an alternate (short) name for the domain. */
 			DEBUG(3,("Found alternate name '%s' for realm '%s'\n",

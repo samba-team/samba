@@ -45,10 +45,10 @@ void set_local_machine_name(const char* local_name, BOOL perm)
 	 * arrggg!!! 
 	 */
 
-	if (strcasecmp(local_name, "*SMBSERVER")==0) 
+	if (strequal(local_name, "*SMBSERVER")) 
 		return;
 
-	if (strcasecmp(local_name, "*SMBSERV")==0) 
+	if (strequal(local_name, "*SMBSERV")) 
 		return;
 
 	if (already_perm)

@@ -34,7 +34,7 @@ static BOOL ads_dc_name(const char *domain, struct in_addr *dc_ip, fstring srv_n
 	ADS_STRUCT *ads;
 	const char *realm = domain;
 
-	if (strcasecmp(realm, lp_workgroup()) == 0)
+	if (strequal(realm, lp_workgroup()))
 		realm = lp_realm();
 
 	ads = ads_init(realm, domain, NULL);
