@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -187,7 +187,8 @@ doit (int port, const char *service)
     my_addr.sin_port        = port;
     my_addr.sin_addr.s_addr = INADDR_ANY;
 
-    if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0)
+    if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, 
+		    (void *)&one, sizeof(one)) < 0)
 	warn ("setsockopt SO_REUSEADDR");
 
     if (bind (sock, (struct sockaddr *)&my_addr, sizeof(my_addr)) < 0)
