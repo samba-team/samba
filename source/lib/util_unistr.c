@@ -743,3 +743,35 @@ BOOL trim_string_wa(smb_ucs2_t *s, const char *front,
 	else *b = 0;
 	return trim_string_w(s, f, b);
 }
+
+/*******************************************************************
+ returns the length in number of wide characters
+ ******************************************************************/
+int unistrlen(uint16 *s)
+{
+	int len;
+
+	if (!s)
+		return -1;
+
+	for (len=0; *s; s++,len++);
+
+	return len;
+}
+
+/*******************************************************************
+ Strcpy for unicode strings.  returns length (in num of wide chars)
+********************************************************************/
+
+int unistrcpy(uint16 *dst, uint16 *src)
+{
+	int num_wchars = 0;
+
+	while (*src) {
+		*dst++ = *src++;
+		num_wchars++;
+	}
+	*dst = 0;
+
+	return num_wchars;
+}
