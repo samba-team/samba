@@ -70,7 +70,9 @@ ldap_open_connection (LDAP ** ldap_struct)
 	int port;
 	int version, rc;
 	int tls = LDAP_OPT_X_TLS_HARD;
-	
+
+	/* there should be an lp_ldap_ssl_port(), what happen if for some
+	   reason we need to bind an SSLed LDAP on port 389 ?? ---simo */
 	if (lp_ldap_ssl() == LDAP_SSL_ON && lp_ldap_port() == 389) {
 		port = 636;
 	}
@@ -368,6 +370,11 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	uint8 *hours;
 	pstring temp;
 
+	if (sampass == NULL || ldap_struct == NULL || entry == NULL) {
+		DEBUG(0, ("init_sam_from_ldap: NULL parameters found!\n"));
+		return False;
+	}
+
 	get_single_attribute(ldap_struct, entry, "uid", username);
 	DEBUG(2, ("Entry found for user: %s\n", username));
 
@@ -525,6 +532,11 @@ Initialize SAM_ACCOUNT from an LDAP query
 static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, const SAM_ACCOUNT * sampass)
 {
 	pstring temp;
+
+	if (mods == NULL || sampass == NULL) {
+		DEBUG(0, ("init_ldap_from_sam: NULL parameters found!\n"));
+		return False;
+	}
 
 	*mods = NULL;
 
