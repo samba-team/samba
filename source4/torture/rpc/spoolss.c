@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		     struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -67,7 +67,7 @@ BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-BOOL test_ClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_ClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		       struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -87,7 +87,7 @@ BOOL test_ClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		  struct policy_handle *handle, char *formname)
 {
 	NTSTATUS status;
@@ -127,7 +127,7 @@ BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		    struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -189,7 +189,7 @@ BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL test_DeleteForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_DeleteForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		     struct policy_handle *handle, char *formname)
 {
 	NTSTATUS status;
@@ -209,7 +209,7 @@ BOOL test_DeleteForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		  struct policy_handle *handle)
 {
 	struct spoolss_AddForm r;
@@ -270,7 +270,7 @@ BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-BOOL test_GetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_GetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		  struct policy_handle *handle, uint32 job_id)
 {
 	NTSTATUS status;
@@ -310,7 +310,7 @@ BOOL test_GetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL test_SetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_SetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		 struct policy_handle *handle, uint32 job_id, uint32 command)
 {
 	NTSTATUS status;
@@ -333,7 +333,7 @@ BOOL test_SetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		   struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -403,7 +403,7 @@ BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL test_GetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_GetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle, char *value_name)
 {
 	NTSTATUS status;
@@ -438,7 +438,7 @@ BOOL test_GetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL test_GetPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_GetPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *handle, char *key_name,
 			   char *value_name)
 {
@@ -475,7 +475,7 @@ BOOL test_GetPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -523,7 +523,7 @@ BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL test_DeletePrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_DeletePrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			    struct policy_handle *handle, char *value_name)
 {
 	NTSTATUS status;
@@ -544,7 +544,7 @@ BOOL test_DeletePrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL test_SetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_SetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle)
 {
 	NTSTATUS status;
