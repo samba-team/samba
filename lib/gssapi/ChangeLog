@@ -1,5 +1,8 @@
 2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cfx.c: EC is not included in the checksum since the length might
+	change depending on the data.  From: Luke Howard <lukeh@PADL.COM>
+	
 	* acquire_cred.c: use
 	krb5_get_init_creds_opt_alloc/krb5_get_init_creds_opt_free
 
