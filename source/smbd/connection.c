@@ -55,7 +55,7 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 
 	ZERO_STRUCT(key);
 	key.pid = sys_getpid();
-	if (conn) key.cnum = conn->cnum;
+	key.cnum = conn?conn->cnum:-1;
 	fstrcpy(key.name, name);
 
 	kbuf.dptr = (char *)&key;
