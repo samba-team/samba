@@ -372,7 +372,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	 if passlen1>0 and passlen2>0 then its a NT box and its
 	 setting passlen2 to some random value which really stuffs
 	 things up. we need to fix that one.  */
-      if (passlen1 > 0 && passlen2 > 0) {
+      if (passlen1 > 0 && passlen2 > 0 && passlen2 != 24) {
 	passlen2 = 0;
       }
       /* we use the first password that they gave */
