@@ -57,7 +57,7 @@ void locking_close_file(files_struct *fsp)
  Utility function called to see if a file region is locked.
 ****************************************************************************/
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
-	       SMB_OFF_T count,SMB_OFF_T offset, 
+	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       enum brl_type lock_type)
 {
 	int snum = SNUM(conn);
@@ -78,7 +78,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
  Utility function called by locking requests.
 ****************************************************************************/
 BOOL do_lock(files_struct *fsp,connection_struct *conn,
-             SMB_OFF_T count,SMB_OFF_T offset,enum brl_type lock_type,
+             SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type,
              int *eclass,uint32 *ecode)
 {
 	BOOL ok = False;
@@ -115,7 +115,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
  Utility function called by unlocking requests.
 ****************************************************************************/
 BOOL do_unlock(files_struct *fsp,connection_struct *conn,
-               SMB_OFF_T count,SMB_OFF_T offset, 
+               SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       int *eclass,uint32 *ecode)
 {
 	BOOL ok = False;
