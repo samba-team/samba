@@ -158,6 +158,45 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 }
 
 /*******************************************************************
+ opens a samr group by rid, returns a policy handle.
+ ********************************************************************/
+static uint32 samr_open_group_by_rid(DOM_SID *sid, POLICY_HND *group_pol,
+				uint32 group_rid)
+{
+	/* get a (unique) handle.  open a policy on it. */
+	if (!open_policy_hnd(get_global_hnd_cache(), group_pol))
+	{
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	DEBUG(0,("TODO: verify that the group rid exists\n"));
+
+	/* associate a RID with the (unique) handle. */
+	if (!set_policy_samr_rid(get_global_hnd_cache(), group_pol, group_rid))
+	{
+		/* close the policy in case we can't associate a RID */
+		close_policy_hnd(get_global_hnd_cache(), group_pol);
+
+		/* oh, whoops.  don't know what error message to return, here */
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	sid_append_rid(sid, group_rid);
+
+	/* associate an group SID with the (unique) handle. */
+	if (!set_policy_samr_sid(get_global_hnd_cache(), group_pol, sid))
+	{
+		/* close the policy in case we can't associate a group SID */
+		close_policy_hnd(get_global_hnd_cache(), group_pol);
+
+		/* oh, whoops.  don't know what error message to return, here */
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	return 0x0;
+}
+
+/*******************************************************************
  _samr_close
  ********************************************************************/
 uint32 _samr_close(POLICY_HND *hnd)
@@ -2244,48 +2283,6 @@ uint32 _samr_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u,
 
 }
 
-
-/*******************************************************************
- opens a samr group by rid, returns a policy handle.
- ********************************************************************/
-static uint32 open_samr_group(DOM_SID *sid, POLICY_HND *group_pol,
-				uint32 group_rid)
-{
-	BOOL pol_open = False;
-	uint32 status = 0x0;
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (status == 0x0 && !(pol_open = open_policy_hnd(get_global_hnd_cache(), group_pol)))
-	{
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	DEBUG(0,("TODO: verify that the group rid exists\n"));
-
-	/* associate a RID with the (unique) handle. */
-	if (status == 0x0 && !set_policy_samr_rid(get_global_hnd_cache(), group_pol, group_rid))
-	{
-		/* oh, whoops.  don't know what error message to return, here */
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	sid_append_rid(sid, group_rid);
-
-	/* associate an group SID with the (unique) handle. */
-	if (status == 0x0 && !set_policy_samr_sid(get_global_hnd_cache(), group_pol, sid))
-	{
-		/* oh, whoops.  don't know what error message to return, here */
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (status != 0 && pol_open)
-	{
-		close_policy_hnd(get_global_hnd_cache(), group_pol);
-	}
-
-	return status;
-}
-
 /*******************************************************************
  samr_reply_create_dom_group
  ********************************************************************/
@@ -2343,7 +2340,6 @@ uint32 _samr_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_u,
 	DEBUG(5,("samr_create_dom_group: %d\n", __LINE__));
 
 }
-
 
 /*******************************************************************
  samr_reply_query_dom_info
@@ -2627,7 +2623,6 @@ uint32 _samr_connect(SAMR_Q_CONNECT *q_u,
 uint32 _samr_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 				prs_struct *rdata)
 {
-	SAMR_R_OPEN_ALIAS r_u;
 	DOM_SID sid;
 	BOOL pol_open = False;
 
@@ -2677,56 +2672,35 @@ uint32 _samr_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 
 }
 
-
-/*******************************************************************
- samr_reply_open_group
- ********************************************************************/
-/* XXXX this is from cli_samr.c's part of proto.h, use it to get the
-   args right for _samr_open_group.
-	BOOL samr_open_group(  const POLICY_HND *domain_pol,
-					uint32 flags, uint32 rid,
-					POLICY_HND *group_pol);
-*/
-uint32 _samr_open_group(SAMR_Q_OPEN_GROUP *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_OPEN_GROUP r_u; /* XXXX remove this */
-	DOM_SID sid;
-
-	DEBUG(5,("samr_open_group: %d\n", __LINE__));
-
-	status = 0x0;
-
-	/* find the domain sid associated with the policy handle */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &domain_pol, &sid))
-	{
-		status = NT_STATUS_INVALID_HANDLE;
-	}
-
-	if (status == 0x0 && !sid_equal(&sid, &global_sam_sid))
-	{
-		status = NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (status == 0x0)
-	{
-		status = open_samr_group(&sid, &pol, rid_group);
-	}
-
-	/* store the response in the SMB stream */
-	samr_io_r_open_group("", &r_u, rdata, 0); /* XXXX remove this */
-
-	DEBUG(5,("samr_open_group: %d\n", __LINE__));
-
-	/* XXXX return status code here */
-}
-
-/* XXXX now do a make proto; make samrd/srv_samr_passdb.c,
-   and go to rpc_server/srv_samr.c */
 #endif 
 
 /*******************************************************************
-samr_lookup_domain
+ _samr_open_group
+ ********************************************************************/
+uint32 _samr_open_group(const POLICY_HND *domain_pol,	uint32 flags, uint32 group_rid,
+					POLICY_HND *group_pol)
+{
+	DOM_SID sid;
+
+	DEBUG(5,("_samr_open_group: %d\n", __LINE__));
+
+	/* find the domain sid associated with the policy handle */
+	if (!get_policy_samr_sid(get_global_hnd_cache(), domain_pol, &sid))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+	if (!sid_equal(&sid, &global_sam_sid))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	DEBUG(5,("_samr_open_group: %d\n", __LINE__));
+
+	return samr_open_group_by_rid(&sid, group_pol, group_rid);
+}
+
+/*******************************************************************
+_samr_lookup_domain
 ********************************************************************/
 uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
 				const UNISTR2 *uni_domain,
@@ -2734,7 +2708,7 @@ uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
 {
 	fstring domain;
 
-	DEBUG(5,("samr_lookup_domain: %d\n", __LINE__));
+	DEBUG(5,("_samr_lookup_domain: %d\n", __LINE__));
 
 	/* find the connection policy handle */
 	if (find_policy_by_hnd(get_global_hnd_cache(), connect_pol) == -1)
@@ -2759,7 +2733,7 @@ uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	DEBUG(5,("samr_lookup_domain: %d\n", __LINE__));
+	DEBUG(5,("_samr_lookup_domain: %d\n", __LINE__));
 
 	return 0x0;
 }

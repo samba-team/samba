@@ -833,7 +833,6 @@ static void api_samr_create_dom_alias( rpcsrv_struct *p, prs_struct *data, prs_s
 	samr_reply_create_dom_alias(&q_u, rdata);
 }
 
-
 /*******************************************************************
  opens a samr group by rid, returns a policy handle.
  ********************************************************************/

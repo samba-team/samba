@@ -4339,8 +4339,8 @@ uint32 _samr_connect(SAMR_Q_CONNECT *q_u,
 				prs_struct *rdata);
 uint32 _samr_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 				prs_struct *rdata);
-uint32 _samr_open_group(SAMR_Q_OPEN_GROUP *q_u,
-				prs_struct *rdata);
+uint32 _samr_open_group(const POLICY_HND *domain_pol,	uint32 flags, uint32 group_rid,
+					POLICY_HND *group_pol);
 uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
 				const UNISTR2 *uni_domain,
 				DOM_SID *dom_sid);
@@ -4922,7 +4922,7 @@ uint32 _spoolss_enumjobs( const POLICY_HND *handle,
 				JOB_INFO_CTR *ctr,
 				uint32 *buf_size,
 				uint32 *numofjobs);
-uint32 _spoolss_schedulejob(SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *rdata);
+uint32 _spoolss_schedulejob( const POLICY_HND *handle, uint32 jobid);
 uint32 _spoolss_setjob(SPOOL_Q_SETJOB *q_u, prs_struct *rdata);
 uint32 _spoolss_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *rdata);
 uint32 _spoolss_enumforms(SPOOL_Q_ENUMFORMS *q_u, prs_struct *rdata);
