@@ -611,7 +611,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			plaintext_password.data[passlen1] = 0;
 		}
 
-		srvstr_pull(inbuf, user, smb_buf(inbuf)+passlen1, sizeof(user), -1, STR_TERMINATE);
+		srvstr_pull_buf(inbuf, user, smb_buf(inbuf)+passlen1, sizeof(user), STR_TERMINATE);
 		*domain = 0;
   
 	} else {
@@ -674,14 +674,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		}
 		
 		p += passlen1 + passlen2;
-		p += srvstr_pull(inbuf, user, p, sizeof(user), -1,
-				 STR_TERMINATE);
-		p += srvstr_pull(inbuf, domain, p, sizeof(domain), 
-				 -1, STR_TERMINATE);
-		p += srvstr_pull(inbuf, native_os, p, sizeof(native_os), 
-				 -1, STR_TERMINATE);
-		p += srvstr_pull(inbuf, native_lanman, p, sizeof(native_lanman),
-				 -1, STR_TERMINATE);
+		p += srvstr_pull_buf(inbuf, user, p, sizeof(user), STR_TERMINATE);
+		p += srvstr_pull_buf(inbuf, domain, p, sizeof(domain), STR_TERMINATE);
+		p += srvstr_pull_buf(inbuf, native_os, p, sizeof(native_os), STR_TERMINATE);
+		p += srvstr_pull_buf(inbuf, native_lanman, p, sizeof(native_lanman), STR_TERMINATE);
 		DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
 			 domain,native_os,native_lanman));
 	}
