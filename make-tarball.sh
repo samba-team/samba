@@ -6,6 +6,7 @@
 ##
 ## Usgae:  ./make-tarball.sh
 
+DOCSDIR=../samba-docs/
 USING_SAMBA=../using_samba/
 SRCDIR=`pwd`
 
@@ -21,6 +22,17 @@ if [ ! -d $USING_SAMBA ]; then
 
 fi
 
+if [ ! -d $DOCSDIR ]; then
+
+	echo Cannot find samba-docs \(assuming $DOCSDIR\).
+	echo Please set the DOCSDIR variable in this script 
+	echo to the correct path.
+
+	exit 1
+
+fi
+
+
 VERSION=`grep SAMBA_VERSION_OFFICIAL_STRING source/include/version.h | cut -d\" -f2 | sed 's/ /_/g'`
 TARBALLDIR=/tmp/samba-$VERSION
 
@@ -31,6 +43,8 @@ echo Creating the tarball source directory in $TARBALLDIR
 
 mkdir $TARBALLDIR
 rsync -aC ./ $TARBALLDIR
+/bin/rm -rf $TARBALLDIR/docs/*
+rsync -aC $DOCSDIR/ $TARBALLDIR/docs/ 
 rsync -aC $USING_SAMBA $TARBALLDIR/docs/htmldocs/
 
 echo Creating packaging scripts...
