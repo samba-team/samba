@@ -55,7 +55,8 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 	/* Convert to RAP id. */
 	fsp->rap_print_jobid = pjobid_to_rap(SNUM(conn), jobid);
 	if (fsp->rap_print_jobid == 0) {
-		/* We need to delete the entry in the tdb here ! FIXME ! JRA */
+		/* We need to delete the entry in the tdb. */
+		pjob_delete(SNUM(conn), jobid);
 		file_free(fsp);
 		return NULL;
 	}
