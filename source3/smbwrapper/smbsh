@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# a simple launcher for the smbwrapper.so preloadde library
+
+export LD_PRELOAD=$PWD/smbwrapper/smbwrapper.so
+bash
