@@ -167,7 +167,9 @@ AC_CHECK_FUNCS([				\
 	getprogname				\
 	getrlimit				\
 	getspnam				\
+	initstate				\
 	setprogname				\
+	setstate				\
 	strsvis					\
 	strunvis				\
 	strvis					\
