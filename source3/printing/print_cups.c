@@ -332,7 +332,7 @@ int cups_printername_ok(const char *name)
 
 	if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
 	{
-		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
+		DEBUG(3,("Unable to connect to CUPS server %s - %s\n", 
 			 cupsServer(), strerror(errno)));
 		return (0);
 	}
@@ -374,7 +374,7 @@ int cups_printername_ok(const char *name)
 
 	if ((response = cupsDoRequest(http, request, "/")) == NULL)
 	{
-		DEBUG(0,("Unable to get printer status for %s - %s\n", name,
+		DEBUG(3,("Unable to get printer status for %s - %s\n", name,
 			 ippErrorString(cupsLastError())));
 		httpClose(http);
 		return (0);
@@ -384,7 +384,7 @@ int cups_printername_ok(const char *name)
 
 	if (response->request.status.status_code >= IPP_OK_CONFLICT)
 	{
-		DEBUG(0,("Unable to get printer status for %s - %s\n", name,
+		DEBUG(3,("Unable to get printer status for %s - %s\n", name,
 			 ippErrorString(response->request.status.status_code)));
 		ippDelete(response);
 		return (0);
