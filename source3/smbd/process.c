@@ -121,9 +121,6 @@ static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct t
 		DLIST_ADD_END(smb_sharing_violation_queue, msg, tmp_msg);
 	}
 
-	/* Push the MID of this packet on the signing queue. */
-	srv_defer_sign_response(SVAL(buf,smb_mid));
-
 	DEBUG(10,("push_message: pushed message length %u on queue %s\n",
 		(unsigned int)msg_len,
 		qt == OPLOCK_QUEUE ? "smb_oplock_queue" : "smb_sharing_violation_queue" ));
@@ -138,7 +135,12 @@ static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct t
 
 BOOL push_oplock_pending_smb_message(char *buf, int msg_len)
 {
-	return push_queued_message(OPLOCK_QUEUE, buf, msg_len, NULL, NULL, 0);
+	BOOL ret = push_queued_message(OPLOCK_QUEUE, buf, msg_len, NULL, NULL, 0);
+	if (ret) {
+		/* Push the MID of this packet on the signing queue. */
+		srv_defer_sign_response(SVAL(buf,smb_mid));
+	}
+	return ret;
 }
 
 /****************************************************************************
