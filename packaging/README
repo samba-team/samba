@@ -1,7 +1,8 @@
-Copyright (C) 1997-1998 Samba-Team
+Copyright (C) 1997-2003 Samba-Team
 Date:		November 16, 1998
 Updates:	First Release - 19970819
 		19981116
+		20030329
 ===============================================================================
 
 Note:
@@ -36,3 +37,10 @@ ability to keep the binary distribution itself current with the released source.
 
 The future of cooperatively developed software such as Samba depends on the
 willingness of all partners to share the fruit of their labours.
+
+If you have a compelling need for binary packages for your platform and it is
+not available from this packaging repository please notify jht@samba.org. We 
+can not guarrantee our ability to satisfy your need, but your feedback may help
+us to find a solution.
+
+- John T.
