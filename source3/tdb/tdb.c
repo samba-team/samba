@@ -429,6 +429,7 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off size)
 	struct list_struct rec;
 	tdb_off offset;
 	char b = 0;
+	void *old_map_ptr;
 
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1) return 0;
 
@@ -439,19 +440,42 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off size)
            the database up to a multiple of TDB_PAGE_SIZE */
 	size = TDB_ALIGN(tdb->map_size + size*10, TDB_PAGE_SIZE) - tdb->map_size;
 
-	/* expand the file itself */
-        if (!(tdb->flags & TDB_INTERNAL)) {
-		lseek(tdb->fd, tdb->map_size + size - 1, SEEK_SET);
-		if (write(tdb->fd, &b, 1) != 1) goto fail;
-        }
+	old_map_ptr = tdb->map_ptr;
 
 	if (!(tdb->flags & TDB_INTERNAL) && tdb->map_ptr)
 		tdb->map_ptr = tdb_munmap(tdb->map_ptr, tdb->map_size);
+
+	/*
+	 * We must ensure the file is unmapped before doing this
+	 * to ensure consistency with systems like OpenBSD where
+	 * writes and mmaps are not consistent.
+	 */
+
+	/* expand the file itself */
+	if (!(tdb->flags & TDB_INTERNAL)) {
+		if (lseek(tdb->fd, tdb->map_size + size - 1, SEEK_SET)!=tdb->map_size + size - 1)
+			goto fail;
+		if (write(tdb->fd, &b, 1) != 1)
+			goto fail;
+	}
 
 	tdb->map_size += size;
 
 	if (tdb->flags & TDB_INTERNAL)
 		tdb->map_ptr = realloc(tdb->map_ptr, tdb->map_size);
+
+	/*
+	 * We must ensure the file is remapped before adding the space
+	 * to ensure consistency with systems like OpenBSD where
+	 * writes and mmaps are not consistent.
+	 */
+
+	if (!(tdb->flags & TDB_NOMMAP)) {
+		tdb->map_ptr = tdb_mmap(tdb->map_size, 0, tdb->fd);
+		/* if old_map_ptr was != NULL but the new one is, we have an error. */
+		if (old_map_ptr && (tdb->map_ptr == NULL))
+			goto fail;
+	}
 
 	/* form a new freelist record */
 	memset(&rec,'\0',sizeof(rec));
@@ -460,9 +484,6 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off size)
 	/* link it into the free list */
 	offset = tdb->map_size - size;
 	if (tdb_free(tdb, offset, &rec) == -1) goto fail;
-
-	if (!(tdb->flags & TDB_NOMMAP))
-		tdb->map_ptr = tdb_mmap(tdb->map_size, 0, tdb->fd);
 
 	tdb_unlock(tdb, -1, F_WRLCK);
 	return 0;
