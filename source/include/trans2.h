@@ -440,6 +440,9 @@ Offset Size         Name
 #define SMB_QUERY_XATTR                0x205 /* need for non-user XATTRs */
 #define SMB_QUERY_ATTR_FLAGS           0x206 /* chflags, chattr */
 #define SMB_SET_ATTR_FLAGS             0x206 
+#define SMB_QUERY_POSIX_PERMISSION     0x207
+#define SMB_QUERY_POSIX_LOCK	       0x208
+#define SMB_SET_POSIX_LOCK	       0x208
 
 /* Transact 2 Find First levels */
 #define SMB_FIND_FILE_UNIX             0x202
@@ -464,6 +467,13 @@ Offset Size         Name
 
 #define CIFS_UNIX_FCNTL_LOCKS_CAP           0x1
 #define CIFS_UNIX_POSIX_ACLS_CAP            0x2
+#define CIFS_UNIX_XATTTR_CAP	            0x4 /* for support of other xattr
+						namespaces such as system,
+						security and trusted */
+#define CIFS_UNIX_EXTATTR_CAP		    0x8 /* for support of chattr
+						(chflags) and lsattr */
+#define CIFS_UNIX_POSIX_LOCK		    0x10
+						
 
 #define SMB_QUERY_POSIX_FS_INFO     0x201
 
