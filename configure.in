@@ -77,7 +77,10 @@ dnl AC_ROKEN(10,[/usr/heimdal /usr/athena],[lib/roken],[$(top_builddir)/lib/roke
 rk_ROKEN(lib/roken)
 LIB_roken="\$(top_builddir)/lib/vers/libvers.la $LIB_roken"
 
-AC_TEST_PACKAGE_NEW(openldap,[#include <ldap.h>],[-lldap -llber],,,OPENLDAP)
+AC_TEST_PACKAGE_NEW(openldap,
+[#include <lber.h>
+#include <ldap.h>],
+[-lldap -llber],,,OPENLDAP)
 
 if test "$openldap_libdir"; then
 	LIB_openldap="-R $openldap_libdir $LIB_openldap"
