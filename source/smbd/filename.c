@@ -150,11 +150,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 			pstrcpy(saved_last_component, name);
 	}
 
-#if 1
 	if (!conn->case_preserve || (mangle_is_8_3(name, False) && !conn->short_case_preserve))
-#else
-	if (!conn->case_sensitive && (!conn->case_preserve || (mangle_is_8_3(name, False) && !conn->short_case_preserve)))
-#endif
 		strnorm(name, lp_defaultcase(SNUM(conn)));
 
 	start = name;
