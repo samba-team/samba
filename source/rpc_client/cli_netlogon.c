@@ -294,10 +294,9 @@ uint32 cli_net_req_chal(const char *srv_name, const char *cli_hostname,
 
 	struct cli_connection *con = NULL;
 
-	if (!cli_connection_init(srv_name, PIPE_NETLOGON, &con))
-	{
+	if (!cli_connection_getsrv(srv_name, PIPE_NETLOGON, &con) &&
+	    !cli_connection_init(srv_name, PIPE_NETLOGON, &con))
 		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	if (srv_chal == NULL || clnt_chal == NULL) {
 		cli_connection_free(con);
@@ -349,8 +348,6 @@ uint32 cli_net_req_chal(const char *srv_name, const char *cli_hostname,
 
 	prs_free_data(&rbuf);
 	prs_free_data(&buf);
-
-	cli_connection_free(con);
 
 	return status;
 }
