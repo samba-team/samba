@@ -412,7 +412,7 @@ typedef struct share_info_502_info
 /* SRV_SHARE_INFO_1005 */
 typedef struct share_info_1005_info
 {
-  uint32 dfs_root_flag; 
+	uint32 misc_flags;
 } SRV_SHARE_INFO_1005;
 
 /* SRV_SHARE_INFO_1501 */

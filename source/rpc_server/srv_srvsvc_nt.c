@@ -433,12 +433,14 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 
 static void init_srv_share_info_1005(SRV_SHARE_INFO_1005* sh1005, int snum)
 {
-	sh1005->dfs_root_flag = 0;
+	sh1005->misc_flags = 0;
 
 #ifdef WITH_MSDFS
 	if(lp_host_msdfs() && lp_msdfs_root(snum))
-		sh1005->dfs_root_flag = 3;
+		sh1005->misc_flags = 3;
 #endif
+	
+	sh1005->misc_flags |= (lp_csc_policy(snum) << 4);
 
 }
 
