@@ -3484,15 +3484,15 @@ BOOL reload_services(BOOL test)
   BOOL ret;
 
   if (lp_loaded())
+  {
+    pstring fname;
+    pstrcpy(fname,lp_configfile());
+    if (file_exist(fname,NULL) && !strcsequal(fname,servicesf))
     {
-      pstring fname;
-      pstrcpy(fname,lp_configfile());
-      if (file_exist(fname,NULL) && !strcsequal(fname,servicesf))
-	{
-	  pstrcpy(servicesf,fname);
-	  test = False;
-	}
+      pstrcpy(servicesf,fname);
+      test = False;
     }
+  }
 
   reopen_logs();
 
@@ -3532,11 +3532,20 @@ BOOL reload_services(BOOL test)
 /****************************************************************************
 this prevents zombie child processes
 ****************************************************************************/
+static BOOL reload_after_sighup = False;
+
 static int sig_hup(void)
 {
   BlockSignals(True,SIGHUP);
   DEBUG(0,("Got SIGHUP\n"));
-  reload_services(False);
+
+  /*
+   * Fix from <branko.cibej@hermes.si> here.
+   * We used to reload in the signal handler - this
+   * is a *BIG* no-no.
+   */
+
+  reload_after_sighup = True;
 #ifndef DONT_REINSTALL_SIG
   signal(SIGHUP,SIGNAL_CAST sig_hup);
 #endif
@@ -5115,6 +5124,18 @@ static void process(void)
 
         /* reload services, if files have changed. */
         reload_services(True);
+      }
+
+      /*
+       * If reload_after_sighup == True then we got a SIGHUP
+       * and are being asked to reload. Fix from <branko.cibej@hermes.si>
+       */
+
+      if (reload_after_sighup)
+      {
+        DEBUG(0,("Reloading services after SIGHUP\n"));
+        reload_services(False);
+        reload_after_sighup = False;
       }
 
       /* automatic timeout if all connections are closed */      
