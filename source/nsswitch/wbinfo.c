@@ -463,6 +463,8 @@ int main(int argc, char **argv)
 
 	TimeInit();
 
+	charset_initialise();
+
 	if (!lp_load(CONFIGFILE, True, False, False)) {
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
