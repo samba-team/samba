@@ -3204,7 +3204,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
   BOOL ok;
 
   ok = (dos_rmdir(directory) == 0);
-  if(!ok && (errno == ENOTEMPTY) && lp_veto_files(SNUM(conn)))
+  if(!ok && ((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn)))
   {
     /* 
      * Check to see if the only thing in this directory are
