@@ -410,25 +410,58 @@ int write_sock(void *buffer, int count)
 static int read_sock(void *buffer, int count)
 {
 	int result = 0, nread = 0;
+	int total_time = 0, selret;
 
 	/* Read data from socket */
-	
 	while(nread < count) {
+		struct timeval tv;
+		fd_set r_fds;
 		
-		result = read(winbindd_fd, (char *)buffer + nread, 
-			      count - nread);
-		
-		if ((result == -1) || (result == 0)) {
-			
-			/* Read failed.  I think the only useful thing we
-			   can do here is just return -1 and fail since the
-			   transaction has failed half way through. */
-			
+		/* Catch pipe close on other end by checking if a read()
+		   call would not block by calling select(). */
+
+		FD_ZERO(&r_fds);
+		FD_SET(winbindd_fd, &r_fds);
+		ZERO_STRUCT(tv);
+		/* Wait for 5 seconds for a reply. May need to parameterise this... */
+		tv.tv_sec = 5;
+
+		if ((selret = select(winbindd_fd + 1, &r_fds, NULL, NULL, &tv)) == -1) {
 			close_sock();
-			return -1;
+			return -1;                   /* Select error */
 		}
 		
-		nread += result;
+		if (selret == 0) {
+			/* Not ready for read yet... */
+			if (total_time >= 30) {
+				/* Timeout */
+				close_sock();
+				return -1;
+			}
+			total_time += 5;
+			continue;
+		}
+
+		if (FD_ISSET(winbindd_fd, &r_fds)) {
+			
+			/* Do the Read */
+			
+			result = read(winbindd_fd, (char *)buffer + nread, 
+			      count - nread);
+			
+			if ((result == -1) || (result == 0)) {
+				
+				/* Read failed.  I think the only useful thing we
+				   can do here is just return -1 and fail since the
+				   transaction has failed half way through. */
+			
+				close_sock();
+				return -1;
+			}
+			
+			nread += result;
+			
+		}
 	}
 	
 	return result;
