@@ -853,7 +853,7 @@ BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 		char *q;
 		i++;
 		prs_grow(ps, ps->offset + (i+1)*2);
-		q = prs_data(ps, ps->offset + (i+1)*2);
+		q = prs_data(ps, ps->offset + i*2);
 		if (q == NULL) 
 		{
 			ps->error = True;
@@ -900,7 +900,7 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
 		i++;
 
 		prs_grow(ps, ps->offset + i+1);
-		q = prs_data(ps, ps->offset + i+1);
+		q = prs_data(ps, ps->offset + i);
 		if (q == NULL)
 		{
 			ps->error = True;
