@@ -64,7 +64,7 @@ static int read_only;
 
 
 /* Conversion to hash entry index from device and inode numbers. */
-#define HASH_ENTRY(dev,ino) ((((uint32)(dev)) * ((uint32)(ino))) % shmops->hash_size())
+#define HASH_ENTRY(dev,ino) ((((uint32)(dev)) ^ ((uint32)(ino))) % shmops->hash_size())
 
 
 /*******************************************************************
