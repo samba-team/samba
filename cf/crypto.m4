@@ -123,10 +123,10 @@ if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
 	INCLUDE_des=
 	LIB_des=
 	if test "$with_openssl_include" != ""; then
-		INCLUDE_des="-I${with_openssl}/include"
+		INCLUDE_des="-I${with_openssl_include}"
 	fi
 	if test "$with_openssl_lib" != ""; then
-		LIB_des="-L${with_openssl}/lib"
+		LIB_des="-L${with_openssl_lib}"
 	fi
 	CFLAGS="-DHAVE_OPENSSL ${INCLUDE_des} ${CFLAGS}"
 	LIB_des="${LIB_des} -lcrypto"
