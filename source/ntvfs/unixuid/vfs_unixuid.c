@@ -25,6 +25,8 @@
 
 struct unixuid_private {
 	void *samctx;
+	struct unix_sec_ctx *last_sec_ctx;
+	struct auth_session_info *last_session_info;
 };
 
 
@@ -279,6 +281,7 @@ static NTSTATUS authinfo_to_unix_security(struct ntvfs_module_context *ntvfs,
 static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 				       struct smbsrv_request *req, struct unix_sec_ctx **sec)
 {
+	struct unixuid_private *private = ntvfs->private_data;
 	struct auth_serversupplied_info *info = req->session->session_info->server_info;
 	void *ctx = talloc(req, 0);
 	struct unix_sec_ctx *newsec;
@@ -289,10 +292,20 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = authinfo_to_unix_security(ntvfs, req, info, &newsec);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(ctx);
-		return status;
+	if (req->session->session_info == private->last_session_info) {
+		newsec = private->last_sec_ctx;
+	} else {
+		status = authinfo_to_unix_security(ntvfs, req, info, &newsec);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(ctx);
+			return status;
+		}
+		if (private->last_sec_ctx) {
+			talloc_free(private->last_sec_ctx);
+		}
+		private->last_sec_ctx = newsec;
+		private->last_session_info = req->session->session_info;
+		talloc_steal(private, newsec);
 	}
 
 	status = set_unix_security(newsec);
@@ -340,6 +353,8 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 	}
 
 	ntvfs->private_data = private;
+	private->last_sec_ctx = NULL;
+	private->last_session_info = NULL;
 
 	PASS_THRU_REQ(ntvfs, req, connect, (ntvfs, req, sharename));
 
@@ -591,9 +606,12 @@ static NTSTATUS unixuid_exit(struct ntvfs_module_context *ntvfs,
 static NTSTATUS unixuid_logoff(struct ntvfs_module_context *ntvfs,
 			      struct smbsrv_request *req)
 {
+	struct unixuid_private *private = ntvfs->private_data;
 	NTSTATUS status;
 
 	PASS_THRU_REQ(ntvfs, req, logoff, (ntvfs, req));
+
+	private->last_session_info = NULL;
 
 	return status;
 }
