@@ -323,7 +323,7 @@
 
 	<image id="chap05net">
 		<imagedescription>Network Topology &smbmdash; 500 User Network Using tdbsam passdb backend.</imagedescription>
-		<imagefile scale="60">chap5-net</imagefile>
+		<imagefile scale="50">chap5-net</imagefile>
 	</image>
 
 	<sect2 id="ch5-dnshcp-setup">
