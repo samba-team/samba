@@ -1066,6 +1066,7 @@ static const struct ntlm_tests {
 */
 static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct creds_CredentialState *creds, 
+			  const char *account_domain, const char *account_name, 
 			  int n_subtests)
 {
 	int i, v, l, f;
@@ -1081,8 +1082,8 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("testing netr_LogonSamLogon and netr_LogonSamLogonWithFlags\n");
 	
 	samlogon_state.mem_ctx = mem_ctx;
-	samlogon_state.account_name = lp_parm_string(-1, "torture", "username");
-	samlogon_state.account_domain = lp_parm_string(-1, "torture", "userdomain");
+	samlogon_state.account_name = account_name;
+	samlogon_state.account_domain = account_domain;
 	samlogon_state.password = lp_parm_string(-1, "torture", "password");
 	samlogon_state.p = p;
 	samlogon_state.creds = creds;
@@ -1121,7 +1122,9 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 					samlogon_state.r_flags.in.validation_level = validation_levels[v];
 					samlogon_state.r_flags.in.logon_level = logon_levels[l];
 					if (!test_table[i].fn(&samlogon_state, &error_string)) {
-						printf("Testing '%s' at validation level %d, logon level %d, function %d: \n", 
+						printf("Testing [%s]\\[%s] '%s' at validation level %d, logon level %d, function %d: \n", 
+						       samlogon_state.account_domain,
+						       samlogon_state.account_name,
 						       test_table[i].name, validation_levels[v], 
 						       logon_levels[l], function_levels[f]);
 						
@@ -1145,7 +1148,8 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
   test an ADS style interactive domain logon
 */
 static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-				  struct creds_CredentialState *creds)
+				  struct creds_CredentialState *creds, 
+				  const char *account_domain, const char *account_name)
 {
 	NTSTATUS status;
 	struct netr_LogonSamLogonWithFlags r;
@@ -1168,11 +1172,11 @@ static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.validation_level = 6;
 	r.in.flags = 0;
 
-	pinfo.identity_info.domain_name.string = lp_parm_string(-1, "torture", "userdomain");
+	pinfo.identity_info.domain_name.string = account_domain;
 	pinfo.identity_info.parameter_control = 0;
 	pinfo.identity_info.logon_id_low = 0;
 	pinfo.identity_info.logon_id_high = 0;
-	pinfo.identity_info.account_name.string = lp_parm_string(-1, "torture", "username");
+	pinfo.identity_info.account_name.string = account_name;
 	pinfo.identity_info.workstation.string = TEST_MACHINE_NAME;
 
 	plain_pass = lp_parm_string(-1, "torture", "password");
@@ -1271,11 +1275,54 @@ BOOL torture_rpc_samlogon(void)
 		goto failed;
 	}
 
-	if (!test_InteractiveLogon(p, mem_ctx, creds)) {
+	if (!test_InteractiveLogon(p, mem_ctx, creds,
+			   lp_parm_string(-1, "torture", "userdomain"),
+			   lp_parm_string(-1, "torture", "username"))) {
 		ret = False;
 	}
 
-	if (!test_SamLogon(p, mem_ctx, creds, 0)) {
+	if (!test_SamLogon(p, mem_ctx, creds, 
+			   lp_parm_string(-1, "torture", "userdomain"),
+			   lp_parm_string(-1, "torture", "username"), 
+			   0)) {
+		ret = False;
+	}
+
+	if (!test_InteractiveLogon(p, mem_ctx, creds, 
+				   NULL,
+				   talloc_asprintf(mem_ctx, 
+						   "%s@%s", 
+						   lp_parm_string(-1, "torture", "username"), 
+						   lp_parm_string(-1, "torture", "userdomain")))) {
+		ret = False;
+	}
+
+	if (!test_InteractiveLogon(p, mem_ctx, creds, 
+				   NULL,
+				   talloc_asprintf(mem_ctx, 
+						   "%s@%s", 
+						   lp_parm_string(-1, "torture", "username"), 
+						   lp_realm()))) {
+		ret = False;
+	}
+
+	if (!test_SamLogon(p, mem_ctx, creds, 
+			   NULL, 
+			   talloc_asprintf(mem_ctx, 
+					   "%s@%s", 
+					   lp_parm_string(-1, "torture", "username"), 
+					   lp_realm()),
+			   0)) {
+		ret = False;
+	}
+
+	if (!test_SamLogon(p, mem_ctx, creds, 
+			   NULL, 
+			   talloc_asprintf(mem_ctx, 
+					   "%s@%s", 
+					   lp_parm_string(-1, "torture", "username"), 
+					   lp_realm()),
+			   0)) {
 		ret = False;
 	}
 
@@ -1287,11 +1334,31 @@ BOOL torture_rpc_samlogon(void)
 			return False;
 		}
 		
-		if (!test_InteractiveLogon(p, mem_ctx, creds)) {
+		if (!test_InteractiveLogon(p, mem_ctx, creds,
+					   NULL, 
+					   talloc_asprintf(mem_ctx, 
+							   "%s@%s", 
+							   lp_parm_string(-1, "torture", "username"), 
+							   lp_parm_string(-1, "torture", "userdomain")))) {
 			ret = False;
 		}
 		
-		if (!test_SamLogon(p, mem_ctx, creds, 1)) {
+		if (!test_InteractiveLogon(p, mem_ctx, creds,
+					   NULL, 
+					   talloc_asprintf(mem_ctx, 
+							   "%s@%s", 
+							   lp_parm_string(-1, "torture", "username"), 
+							   lp_realm()))) {
+			ret = False;
+		}
+		
+		if (!test_SamLogon(p, mem_ctx, creds, 
+				   NULL, 
+				   talloc_asprintf(mem_ctx, 
+						   "%s@%s", 
+						   lp_parm_string(-1, "torture", "username"), 
+						   lp_realm()),
+				   1)) {
 			ret = False;
 		}
 	}
