@@ -37,7 +37,7 @@ void init_request(struct winbindd_request *request, int request_type)
         static char *domain_env;
         static BOOL initialised;
 
-	request->cmd = (enum winbindd_cmd)request_type;
+	request->cmd = request_type;
 	request->pid = getpid();
 	request->domain[0] = '\0';
 
@@ -59,7 +59,7 @@ void init_response(struct winbindd_response *response)
 {
 	/* Initialise return value */
 
-	response->result = (enum winbindd_result)NSS_STATUS_UNAVAIL;
+	response->result = WINBINDD_ERROR;
 }
 
 /* Close established socket */
@@ -141,6 +141,7 @@ static int open_pipe_sock(void)
 	if (connect(established_socket, (struct sockaddr *)&sunaddr, 
 		    sizeof(sunaddr)) == -1) {
 		close_sock();
+		established_socket = -1;
 		return -1;
 	}
         
@@ -304,7 +305,7 @@ void free_response(struct winbindd_response *response)
 
 /* Handle simple types of requests */
 
-enum nss_status winbindd_request(int req_type, 
+NSS_STATUS winbindd_request(int req_type, 
 				 struct winbindd_request *request,
 				 struct winbindd_response *response)
 {
