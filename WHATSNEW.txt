@@ -1,6 +1,6 @@
                  =================================
-                 Release Notes for Samba 3.0.3pre1
-                          March 19, 2004
+                 Release Notes for Samba 3.0.3pre2
+                          XXXX XX, 2004
                  =================================
 
 This is a preview release of the Samba 3.0.3 code base and is
@@ -14,28 +14,85 @@ exact updates.
 
 Common bugs fixed in this preview release include:
 
-  o Crash bugs and change notify issues in Samba's 
-    printing code.
-  o Honoring secondary group membership on domain 
-    member servers.
-  o TDB scalability issue surrounding the TDB_CLEAR_IF_FIRST
-    flag.
-    
-New features introduced in this preview release include:
-
-  o Improved support for i18n character sets.  
-  o Support for account lockout policy based on 
-    bad password attempts.
-  o Improved support for long password changes (>14 
-    characters) and strong password enforcement.
-  o Continued work on support Windows aliases (i.e. 
-    nested groups).
-
+  o <FILL IN>
 
 
 ######################################################################
 Changes
 #######
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+
+
+o   Andrew Bartlet <abartlet@samba.org>
+
+
+o   Alexander Bokovoy <ab@samba.org>
+
+
+o   Gerald Carter <jerry@samba.org>
+    * BUG 417, 1128: Ensure that the current_user_info is set
+      constistenly so that %[UuGg] is expanded correctly.
+
+
+o   Volker Lendecke <vl@samba.org>
+
+
+o   Herb Lewis <herb@samba.org>
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+
+
+o   Tim Potter <tpot@samba.org>
+      
+
+o   Simo Source <idra@samba.org>
+
+
+o   Richard Sharpe <rsharpe@samba.org>
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    
+    
+o   Jelmer Vernooij <jelmer@samba.org>
+
+
+     
+Changes for older versions follow below:
+
+        --------------------------------------------------
+
+                 =================================
+                 Release Notes for Samba 3.0.3pre1
+                          March 19, 2004
+                 =================================
+
+
+Common bugs fixed in this preview release include:
+
+  o Crash bugs and change notify issues in Samba's
+    printing code.
+  o Honoring secondary group membership on domain
+    member servers.
+  o TDB scalability issue surrounding the TDB_CLEAR_IF_FIRST
+    flag.
+
+New features introduced in this preview release include:
+
+  o Improved support for i18n character sets.
+  o Support for account lockout policy based on
+    bad password attempts.
+  o Improved support for long password changes (>14
+    characters) and strong password enforcement.
+  o Continued work on support Windows aliases (i.e.
+    nested groups).
+
+
 Changes since 3.0.2a
 --------------------
 smb.conf changes
@@ -308,8 +365,6 @@ o    Shiro Yamada <shiro@miraclelinux.com>
      * BUG 1129: install image files for SWAT.
       
 
-Changes for older versions follow below:
-
         --------------------------------------------------
 
                   ==============================
@@ -337,10 +392,6 @@ these accounts and reset the password hashes to a string of X's.
 
 ******************* Attention! Achtung! Kree! *********************
 
-
-######################################################################
-Changes
-#######
 
 Changes since 3.0.2
 -------------------
