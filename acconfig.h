@@ -123,6 +123,9 @@
 /* define if the system is missing a prototype for strtok_r() */
 #undef NEED_STRTOK_R_PROTO
 
+/* define if the system is missing a prototype for getusershell() */
+#undef NEED_GETUSERSHELL_PROTO
+
 /* define if the system is missing a prototype for strtok_r() */
 #undef NEED_HSTRERROR_PROTO
 
@@ -143,6 +146,15 @@
 
 /* define if the system is missing a prototype for vasprintf() */
 #undef NEED_VASPRINTF_PROTO
+
+/* define if the system is missing a prototype for gethostname() */
+#undef NEED_GETHOSTNAME_PROTO
+
+/* define if the system is missing a prototype for inet_aton() */
+#undef NEED_INET_ATON_PROTO
+
+/* define if the system is missing a prototype for mkstemp() */
+#undef NEED_MKSTEMP_PROTO
 
 /* Define this if your `struct tm' has a field `tm_gmtoff' */
 #undef HAVE_STRUCT_TM_TM_GMTOFF
