@@ -69,7 +69,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli,
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID dom_sid;
-	UUID_FLAT dom_guid;
+	struct uuid dom_guid;
 	fstring sid_str, domain_name="", dns_name="", forest_name="";
 	uint32 info_class = 3;
 
@@ -124,8 +124,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli,
 
 	if (info_class == 12) {
 		printf("domain GUID is %s\n",
-		       smb_uuid_string_static(
-			       smb_uuid_unpack_static(dom_guid)));
+		       smb_uuid_string_static(dom_guid));
 	}
  done:
 	return result;
