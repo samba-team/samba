@@ -425,6 +425,8 @@ static mode_t get_default_ace_mode(files_struct *fsp, int type)
     mode_t force_mode = lp_force_dir_security_mode(SNUM(fsp->conn));
 	mode_t mode = 0;
 
+	DEBUG(10,("get_default_ace_mode: force_mode = 0%o\n", (int)force_mode ));
+
 	switch(type) {
 		case S_IRUSR:
 			mode |= (force_mode & S_IRUSR) ? S_IRUSR : 0;
@@ -442,6 +444,8 @@ static mode_t get_default_ace_mode(files_struct *fsp, int type)
 			mode |= (force_mode & S_IXOTH) ? S_IXUSR : 0;
 			break;
 	}
+
+	DEBUG(10,("get_default_ace_mode: returning mode = 0%o\n", (int)mode ));
 
 	return mode;
 }
@@ -489,7 +493,9 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->unix_ug.uid = pst->st_uid;
 		pace->sid = *pfile_owner_sid;
 		/* Ensure owner has read access. */
-		pace->perms = default_acl ? get_default_ace_mode(fsp, S_IRUSR): S_IRUSR;
+		pace->perms = default_acl ? get_default_ace_mode(fsp, S_IRUSR) : S_IRUSR;
+		if (pace->perms == (mode_t)0)
+			pace->perms = S_IRUSR;
 		pace->attr = ALLOW_ACE;
 
 		DLIST_ADD(*pp_ace, pace);
