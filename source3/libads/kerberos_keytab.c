@@ -440,10 +440,12 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	krb5_kt_cursor cursor;
 	krb5_keytab_entry kt_entry;
 	krb5_kvno kvno;
-	fstring my_fqdn, my_Fqdn, my_name, my_NAME;
+	fstring my_fqdn, my_Fqdn, my_name, my_NAME, my_host_realm;
 	char *p_fqdn;
 	int i, found = 0;
-	char **oldEntries = NULL, *princ_s[18];;
+	char **oldEntries = NULL, *princ_s[26];
+
+	memset(princ_s, '\0', sizeof(princ_s));
 
 	ret = ads_keytab_add_entry(ads, "host");
 	if (ret) {
@@ -472,6 +474,11 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		fstrcat(my_Fqdn, p_fqdn);
 	}
 
+	fstrcpy(my_host_realm, my_name);
+	fstrcat(my_host_realm, ".");
+	fstrcat(my_host_realm, lp_realm());
+	strlower_m(my_host_realm);
+
 	asprintf(&princ_s[0], "%s$@%s", my_name, lp_realm());
 	asprintf(&princ_s[1], "%s$@%s", my_NAME, lp_realm());
 	asprintf(&princ_s[2], "host/%s@%s", my_name, lp_realm());
@@ -490,6 +497,18 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	asprintf(&princ_s[15], "CIFS/%s@%s", my_NAME, lp_realm());
 	asprintf(&princ_s[16], "CIFS/%s@%s", my_fqdn, lp_realm());
 	asprintf(&princ_s[17], "CIFS/%s@%s", my_Fqdn, lp_realm());
+	asprintf(&princ_s[18], "cifs/%s.%s@%s", my_name, lp_realm(), lp_realm());
+	asprintf(&princ_s[19], "CIFS/%s.%s@%s", my_name, lp_realm(), lp_realm());
+	asprintf(&princ_s[20], "host/%s.%s@%s", my_name, lp_realm(), lp_realm());
+	asprintf(&princ_s[21], "HOST/%s.%s@%s", my_name, lp_realm(), lp_realm());
+
+	/* when dnsdomain == realm, don't add duplicate principal */
+	if (!strequal(my_host_realm, my_fqdn)) {
+		asprintf(&princ_s[22], "cifs/%s@%s", my_host_realm, lp_realm());
+		asprintf(&princ_s[23], "CIFS/%s@%s", my_host_realm, lp_realm());
+		asprintf(&princ_s[24], "host/%s@%s", my_host_realm, lp_realm());
+		asprintf(&princ_s[25], "HOST/%s@%s", my_host_realm, lp_realm());
+	}
 
 	for (i = 0; i < sizeof(princ_s) / sizeof(princ_s[0]); i++) {
 		if (princ_s[i] != NULL) {
