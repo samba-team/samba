@@ -249,7 +249,10 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				/* ready to listen */
 				set_socket_options(s,"SO_KEEPALIVE"); 
 				set_socket_options(s,user_socket_options);
-      
+     
+				/* Set server socket to non-blocking for the accept. */
+				set_blocking(s,False); 
+ 
 				if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
 					DEBUG(0,("listen: %s\n",strerror(errno)));
 					close(s);
@@ -286,6 +289,9 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			set_socket_options(s,"SO_KEEPALIVE"); 
 			set_socket_options(s,user_socket_options);
 			
+			/* Set server socket to non-blocking for the accept. */
+			set_blocking(s,False); 
+ 
 			if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
 				DEBUG(0,("open_sockets_smbd: listen: %s\n",
 					 strerror(errno)));
@@ -377,6 +383,9 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 					 strerror(errno)));
 				continue;
 			}
+
+			/* Ensure child is set to blocking mode */
+			set_blocking(smbd_server_fd(),True);
 
 			if (smbd_server_fd() != -1 && interactive)
 				return True;
