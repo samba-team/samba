@@ -417,7 +417,7 @@ BOOL cli_temp_set_signing(struct cli_state *cli)
 }
 
 /**
- * Free the singing context
+ * Free the signing context
  */
  
 void cli_free_signing_context(struct cli_state *cli) 
