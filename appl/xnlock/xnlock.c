@@ -251,9 +251,6 @@ zrefresh()
       /* Child */
       execlp("zrefresh", "zrefresh", 0);
       execl(BINDIR "/zrefresh", "zrefresh", 0);
-#if 0
-      fprintf(stderr, "Warning %s: Failed to exec zrefresh\n", ProgName);
-#endif
       return -1;
   default:
       /* Parent */
