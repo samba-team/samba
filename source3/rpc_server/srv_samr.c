@@ -2150,8 +2150,8 @@ static uint32 _api_samr_open_alias(POLICY_HND domain_pol, uint32 alias_rid, POLI
 	DOM_SID sid;
 	
 	/* get the domain policy. */
-	if (!open_lsa_policy_hnd(&domain_pol))
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	if (find_lsa_policy_by_hnd(&domain_pol) == -1)
+		return NT_STATUS_INVALID_HANDLE;
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!open_lsa_policy_hnd(alias_pol))
