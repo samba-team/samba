@@ -83,7 +83,8 @@ krb_mk_req(KTEXT authent,
 
     code = krb_get_cred(service, instance, realm, &cr);
     if(code || time(NULL) > krb_life_to_time(cr.issue_date, cr.lifetime)){
-	code = get_ad_tkt(service, instance, realm, lifetime);
+	code = get_ad_tkt((char *)service,
+			  (char *)instance, (char *)realm, lifetime);
 	if(code == KSUCCESS)
 	    code = krb_get_cred(service, instance, realm, &cr);
     }
