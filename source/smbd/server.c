@@ -560,22 +560,22 @@ usage on the program
 static void usage(char *pname)
 {
 
-	printf("Usage: %s [-DaoPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
-	printf("       [-O socket options] [-s services file]\n");
-	printf("\t-D                    Become a daemon\n");
-	printf("\t-a                    Append to log file (default)\n");
-	printf("\t-o                    Overwrite log file, don't append\n");
-	printf("\t-h                    Print usage\n");
-	printf("\t-?                    Print usage\n");
-	printf("\t-V                    Print version\n");
-	printf("\t-d debuglevel         Set the debuglevel\n");
-	printf("\t-l log basename.      Basename for log/debug files\n");
-	printf("\t-p port               Listen on the specified port\n");
-	printf("\t-O socket options     Socket options\n");
-	printf("\t-s services file.     Filename of services file\n");
-	printf("\n");
+	d_printf("Usage: %s [-DaoPh?Vb] [-d debuglevel] [-l log basename] [-p port]\n", pname);
+	d_printf("       [-O socket options] [-s services file]\n");
+	d_printf("\t-D                    Become a daemon\n");
+	d_printf("\t-a                    Append to log file (default)\n");
+	d_printf("\t-o                    Overwrite log file, don't append\n");
+	d_printf("\t-h                    Print usage\n");
+	d_printf("\t-?                    Print usage\n");
+	d_printf("\t-V                    Print version\n");
+	d_printf("\t-b                    Print build options\n");
+	d_printf("\t-d debuglevel         Set the debuglevel\n");
+	d_printf("\t-l log basename.      Basename for log/debug files\n");
+	d_printf("\t-p port               Listen on the specified port\n");
+	d_printf("\t-O socket options     Socket options\n");
+	d_printf("\t-s services file.     Filename of services file\n");
+	d_printf("\n");
 }
-
 
 /****************************************************************************
   main program
@@ -600,7 +600,7 @@ static void usage(char *pname)
 		argc--;
 	}
 
-	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dp:h?Vaof:")) )
+	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dp:h?bVaof:")) )
 		switch (opt)  {
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
@@ -646,6 +646,10 @@ static void usage(char *pname)
 
 		case 'V':
 			d_printf("Version %s\n",VERSION);
+			exit(0);
+			break;
+		case 'b':
+		        build_options(True); /* Display output to screen as well as debug */ 
 			exit(0);
 			break;
 		default:
@@ -717,6 +721,9 @@ static void usage(char *pname)
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
+
+	/* Output the build options to the debug log */ 
+	build_options(False);
 
 	if (sizeof(uint16) < 2 || sizeof(uint32) < 4) {
 		DEBUG(0,("ERROR: Samba is not configured correctly for the word size on your machine\n"));
