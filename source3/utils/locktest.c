@@ -29,139 +29,26 @@ static fstring workgroup;
 static int got_pass;
 static int numops = 1000;
 static BOOL showall;
+static BOOL analyze;
 
 #define FILENAME "locktest.dat"
 #define LOCKRANGE 100
 
 #define READ_PCT 50
-#define LOCK_PCT 45
-#define UNLOCK_PCT 45
+#define LOCK_PCT 25
+#define UNLOCK_PCT 65
 
-struct preset {
+struct record {
 	int r1, r2;
 	int conn, f;
 	int start, len;
-	int rw;
-} preset[] = {
-{86, 37, 0, 1,  0, 3, WRITE_LOCK},
-{46, 21, 0, 1,  1, 1, READ_LOCK},
-{51, 35, 0, 0, 10, 1, WRITE_LOCK},
-{69, 97, 0, 1,  0, 0, 0},
-{35, 27, 1, 1,  0, 3, READ_LOCK},
+	BOOL needed;
+};
+
+static struct record preset[] = {
 	};
 
-/* each server has two connections open to it. Each connection has two file
-   descriptors open on the file - 8 file descriptors in total 
-
-   we then do random locking ops in tamdem on the 4 fnums from each
-   server and ensure that the results match
- */
-static void test_locks(struct cli_state *cli[2][2])
-{
-	int fnum[2][2][2];
-	int server, conn, f, n; 
-
-	cli_unlink(cli[0][0], FILENAME);
-	cli_unlink(cli[1][0], FILENAME);
-
-	for (server=0;server<2;server++)
-	for (conn=0;conn<2;conn++)
-	for (f=0;f<2;f++) {
-		fnum[server][conn][f] = cli_open(cli[server][conn], FILENAME,
-						 O_RDWR|O_CREAT,
-						 DENY_NONE);
-		if (fnum[server][conn][f] == -1) {
-			fprintf(stderr,"Failed to open fnum[%d][%d][%d]\n",
-				server, conn, f);
-			return;
-		}
-	}
-
-	for (n=0; n<numops; n++) {
-		int start, len, op, r1, r2;
-		BOOL ret1, ret2;
-
-		if (n < sizeof(preset) / sizeof(preset[0])) {
-			conn = preset[n].conn;
-			f = preset[n].f;
-			start = preset[n].start;
-			len = preset[n].len;
-			r1 = preset[n].r1;
-			r2 = preset[n].r2;
-		} else {
-			conn = random() % 2;
-			f = random() % 2;
-			start = random() % (LOCKRANGE-1);
-			len = 1 + random() % (LOCKRANGE-start);
-
-			r1 = random() % 100;
-			r2 = random() % 100;
-		}
-
-		if (r1 < READ_PCT) {
-			op = READ_LOCK; 
-		} else {
-			op = WRITE_LOCK; 
-		}
-
-
-		if (r2 < LOCK_PCT) {
-			/* set a lock */
-			ret1 = cli_lock(cli[0][conn], 
-					fnum[0][conn][f],
-					start, len, 0, op);
-			ret2 = cli_lock(cli[1][conn], 
-					fnum[1][conn][f],
-					start, len, 0, op);
-			if (showall || ret1 != ret2) {
-				printf("%5d r1=%d r2=%d lock   conn=%d f=%d %d:%d op=%s -> %d:%d\n",
-				       n, r1, r2, conn, f, start, len, op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
-				       ret1, ret2);
-			}
-			if (ret1 != ret2) return;
-		} else if (r2 < LOCK_PCT+UNLOCK_PCT) {
-			/* unset a lock */
-			/* set a lock */
-			ret1 = cli_unlock(cli[0][conn], 
-					  fnum[0][conn][f],
-					  start, len);
-			ret2 = cli_unlock(cli[1][conn], 
-					  fnum[1][conn][f],
-					  start, len);
-			if (showall || ret1 != ret2) {
-				printf("%5d r1=%d r2=%d unlock conn=%d f=%d %d:%d       -> %d:%d\n",
-				       n, r1, r2, conn, f, start, len,
-				       ret1, ret2);
-			}
-		} else {
-			/* reopen the file */
-			cli_close(cli[0][conn], fnum[0][conn][f]);
-			cli_close(cli[1][conn], fnum[1][conn][f]);
-			fnum[0][conn][f] = cli_open(cli[0][conn], FILENAME,
-						    O_RDWR|O_CREAT,
-						    DENY_NONE);
-			fnum[1][conn][f] = cli_open(cli[1][conn], FILENAME,
-						    O_RDWR|O_CREAT,
-						    DENY_NONE);
-			if (fnum[0][conn][f] == -1) {
-				printf("failed to reopen on share1\n");
-				return;
-			}
-			if (fnum[1][conn][f] == -1) {
-				printf("failed to reopen on share2\n");
-				return;
-			}
-			if (showall) {
-				printf("%5d r1=%d r2=%d reopen conn=%d f=%d\n",
-				       n, r1, r2, conn, f);
-			}
-		}
-		if (n % 100 == 0) {
-			printf("%d\n", n);
-		}
-	}
-}
-
+static struct record *recorded;
 
 /***************************************************** 
 return a connection to a server
@@ -258,6 +145,234 @@ struct cli_state *connect_one(char *share)
 }
 
 
+static void reconnect(struct cli_state *cli[2][2], char *share1, char *share2)
+{
+	int server, conn;
+	char *share[2];
+	share[0] = share1;
+	share[1] = share2;
+
+	for (server=0;server<2;server++)
+	for (conn=0;conn<2;conn++) {
+		if (cli[server][conn]) {
+			cli_shutdown(cli[server][conn]);
+			free(cli[server][conn]);
+			cli[server][conn] = NULL;
+		}
+		cli[server][conn] = connect_one(share[server]);
+		if (!cli[server][conn]) {
+			DEBUG(0,("Failed to connect to %s\n", share[server]));
+			exit(1);
+		}
+	}
+}
+
+
+
+static BOOL test_one(struct cli_state *cli[2][2], 
+		     int fnum[2][2][2],
+		     struct record *rec)
+{
+	int conn = rec->conn;
+	int f = rec->f;
+	int start = rec->start;
+	int len = rec->len;
+	int r1 = rec->r1;
+	int r2 = rec->r2;
+	int op;
+	BOOL ret1, ret2;
+
+	if (r1 < READ_PCT) {
+		op = READ_LOCK; 
+	} else {
+		op = WRITE_LOCK; 
+	}
+
+	if (r2 < LOCK_PCT) {
+		/* set a lock */
+		ret1 = cli_lock(cli[0][conn], 
+				fnum[0][conn][f],
+				start, len, 0, op);
+		ret2 = cli_lock(cli[1][conn], 
+				fnum[1][conn][f],
+				start, len, 0, op);
+		if (showall || ret1 != ret2) {
+			printf("lock   conn=%d f=%d range=%d:%d op=%s -> %d:%d\n",
+			       conn, f, start, len, op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
+			       ret1, ret2);
+		}
+		if (ret1 != ret2) return False;
+	} else if (r2 < LOCK_PCT+UNLOCK_PCT) {
+		/* unset a lock */
+		ret1 = cli_unlock(cli[0][conn], 
+				  fnum[0][conn][f],
+				  start, len);
+		ret2 = cli_unlock(cli[1][conn], 
+				  fnum[1][conn][f],
+				  start, len);
+		if (showall || ret1 != ret2) {
+			printf("unlock conn=%d f=%d %d:%d       -> %d:%d\n",
+			       conn, f, start, len,
+			       ret1, ret2);
+		}
+		if (ret1 != ret2) return False;
+	} else {
+		/* reopen the file */
+		cli_close(cli[0][conn], fnum[0][conn][f]);
+		cli_close(cli[1][conn], fnum[1][conn][f]);
+		fnum[0][conn][f] = cli_open(cli[0][conn], FILENAME,
+					    O_RDWR|O_CREAT,
+					    DENY_NONE);
+		fnum[1][conn][f] = cli_open(cli[1][conn], FILENAME,
+					    O_RDWR|O_CREAT,
+					    DENY_NONE);
+		if (fnum[0][conn][f] == -1) {
+			printf("failed to reopen on share1\n");
+			return False;
+		}
+		if (fnum[1][conn][f] == -1) {
+			printf("failed to reopen on share2\n");
+			return False;
+		}
+		if (showall) {
+			printf("reopen conn=%d f=%d\n",
+			       conn, f);
+		}
+	}
+	return True;
+}
+
+static void open_files(struct cli_state *cli[2][2], 
+		       int fnum[2][2][2])
+{
+	int server, conn, f; 
+
+	for (server=0;server<2;server++)
+	for (conn=0;conn<2;conn++)
+	for (f=0;f<2;f++) {
+		if (fnum[server][conn][f] != -1) {
+			cli_close(cli[server][conn], fnum[server][conn][f]);
+		}
+		fnum[server][conn][f] = cli_open(cli[server][conn], FILENAME,
+						 O_RDWR|O_CREAT,
+						 DENY_NONE);
+		if (fnum[server][conn][f] == -1) {
+			fprintf(stderr,"Failed to open fnum[%d][%d][%d]\n",
+				server, conn, f);
+			exit(1);
+		}
+	}
+}
+
+
+static int retest(struct cli_state *cli[2][2], 
+		   int fnum[2][2][2],
+		   int n)
+{
+	int i;
+	printf("retesting %d ...\n", n);
+	open_files(cli, fnum);
+	for (i=0; i<n; i++) {
+		if (recorded[i].needed &&
+		    !test_one(cli, fnum, &recorded[i])) return i;
+
+		if (i % 100 == 0) {
+			printf("%d\n", i);
+		}
+	}
+	return n;
+}
+
+
+/* each server has two connections open to it. Each connection has two file
+   descriptors open on the file - 8 file descriptors in total 
+
+   we then do random locking ops in tamdem on the 4 fnums from each
+   server and ensure that the results match
+ */
+static void test_locks(char *share1, char *share2)
+{
+	struct cli_state *cli[2][2];
+	int fnum[2][2][2];
+	int n, i, n1; 
+
+	ZERO_STRUCT(fnum);
+	ZERO_STRUCT(cli);
+
+	reconnect(cli, share1, share2);
+	cli_unlink(cli[0][0], FILENAME);
+	cli_unlink(cli[1][0], FILENAME);
+	open_files(cli, fnum);
+
+	recorded = (struct record *)malloc(sizeof(*recorded) * numops);
+
+	for (n=0; n<numops; n++) {
+		if (n < sizeof(preset) / sizeof(preset[0])) {
+			recorded[n] = preset[n];
+		} else {
+			recorded[n].conn = random() % 2;
+			recorded[n].f = random() % 2;
+			recorded[n].start = random() % (LOCKRANGE-1);
+			recorded[n].len = 1 + random() % (LOCKRANGE-recorded[n].start);
+			recorded[n].r1 = random() % 100;
+			recorded[n].r2 = random() % 100;
+			recorded[n].needed = True;
+		}
+
+		if (!test_one(cli, fnum, &recorded[n])) break;
+
+		if (n % 100 == 0) {
+			printf("%d\n", n);
+		}
+	}
+
+	if (n == numops || !analyze) return;
+
+	n++;
+
+
+	while (1) {
+		n1 = n;
+
+		reconnect(cli, share1, share2);
+		cli_unlink(cli[0][0], FILENAME);
+		cli_unlink(cli[1][0], FILENAME);
+		open_files(cli, fnum);
+
+		for (i=0;i<n;i++) {
+			int m;
+			recorded[i].needed = False;
+			m = retest(cli, fnum, n);
+			if (m == n) {
+				recorded[i].needed = True;
+			} else {
+				if (i < m) {
+					memmove(&recorded[i], &recorded[i+1],
+						(m-i)*sizeof(recorded[0]));
+				}
+				n = m;
+				i--;
+			}
+		}
+
+		if (n1 == n) break;
+	}
+
+	for (i=0;i<n;i++) {
+		printf("{%d, %d, %d, %d, %d, %d, %d},\n",
+		       recorded[i].r1,
+		       recorded[i].r2,
+		       recorded[i].conn,
+		       recorded[i].f,
+		       recorded[i].start,
+		       recorded[i].len,
+		       recorded[i].needed);
+	}	
+
+}
+
+
+
 static void usage(void)
 {
 	printf(
@@ -277,7 +392,6 @@ static void usage(void)
  int main(int argc,char *argv[])
 {
 	char *share1, *share2;
-	struct cli_state *cli[2][2];
 	extern char *optarg;
 	extern int optind;
 	extern FILE *dbf;
@@ -318,7 +432,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:ho:a")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:ho:aA")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -338,6 +452,9 @@ static void usage(void)
 		case 'a':
 			showall = True;
 			break;
+		case 'A':
+			analyze = True;
+			break;
 		case 'h':
 			usage();
 			exit(1);
@@ -353,21 +470,7 @@ static void usage(void)
 	DEBUG(0,("seed=%d\n", seed));
 	srandom(seed);
 
-	cli[0][0] = connect_one(share1);
-	cli[0][1] = connect_one(share1);
-	if (!cli[0][0] || !cli[0][1]) {
-		DEBUG(0,("Failed to connect to %s\n", share1));
-		exit(1);
-	}
-
-	cli[1][0] = connect_one(share2);
-	cli[1][1] = connect_one(share2);
-	if (!cli[1][0] || !cli[1][1]) {
-		DEBUG(0,("Failed to connect to %s\n", share2));
-		exit(1);
-	}
-
-	test_locks(cli);
+	test_locks(share1, share2);
 
 	return(0);
 }
