@@ -152,8 +152,7 @@ session    required     /lib/security/pam_pwdb.so nodelay
 password   required     /lib/security/pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
 </programlisting></para>
 
-<para>
-Note: PAM allows stacking of authentication mechanisms. It is 
+<note><para>PAM allows stacking of authentication mechanisms. It is 
 also possible to pass information obtained within one PAM module through 
 to the next module in the PAM stack. Please refer to the documentation for 
 your particular system implementation for details regarding the specific 
@@ -164,7 +163,7 @@ authentication to be configured in a single central file. The
 on the basis that it allows for easier administration. As with all issues in 
 life though, every decision makes trade-offs, so you may want examine the 
 PAM documentation for further helpful information.
-</para>
+</para></note>
 
 </sect1>
 
@@ -174,9 +173,9 @@ PAM documentation for further helpful information.
 <para>
 The astute administrator will realize from this that the 
 combination of <filename>pam_smbpass.so</filename>, 
-<command>winbindd</command>, and <command>rsync</command> (see
-<ulink url="http://rsync.samba.org/">http://rsync.samba.org/</ulink>)
-will allow the establishment of a centrally managed, distributed 
+<command>winbindd</command>, and a distributed 
+passdb backend, such as ldap, will allow the establishment of a
+centrally managed, distributed 
 user/password database that can also be used by all 
 PAM (eg: Linux) aware programs and applications. This arrangement 
 can have particularly potent advantages compared with the 
@@ -196,7 +195,7 @@ The following is from the on-line help for this option in SWAT;
 </para>
 
 <para>
-When Samba 2.2 is configure to enable PAM support (i.e. 
+When Samba is configured to enable PAM support (i.e. 
 <constant>--with-pam</constant>), this parameter will 
 control whether or not Samba should obey PAM's account 
 and session management directives. The default behavior 
