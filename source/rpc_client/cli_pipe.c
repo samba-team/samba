@@ -1013,24 +1013,20 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 		if (valid_ack && auth->decode_bind_resp != NULL)
 		{
 			valid_ack = auth->decode_bind_resp(con, &rdata);
+		}
 
+		if (valid_ack && auth->create_bind_cont != NULL)
+		{
+			prs_struct dataa;
+			prs_init(&dataa, 0, 4, False);
+
+			valid_ack = auth->create_bind_cont(con, &dataa,
+						   rpc_call_id);
 			if (valid_ack)
 			{
-				prs_struct dataa;
-				prs_init(&dataa, 0, 4, False);
-
-                                SMB_ASSERT(auth->create_bind_cont != NULL);
-
-				valid_ack = 
-                                    auth->create_bind_cont(con, &dataa,
-                                                           rpc_call_id);
-				if (valid_ack)
-				{
-					valid_ack =
-						rpc_api_write(con, &dataa);
-				}
-				prs_free_data(&dataa);
+				valid_ack = rpc_api_write(con, &dataa);
 			}
+			prs_free_data(&dataa);
 		}
 	}
 

@@ -2086,6 +2086,7 @@ void free_net_user_info_ctr(NET_USER_INFO_CTR * ctr)
 		return;
 
 	safe_free(ctr->usr.id);
+	ctr->usr.id = NULL;
 }
 
 /*******************************************************************
