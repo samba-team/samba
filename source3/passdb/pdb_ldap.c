@@ -202,7 +202,7 @@ static ATTRIB_MAP_ENTRY attrib_map_v30[] = {
 	{ LDAP_ATTR_KICKOFF_TIME,	"sambaKickoffTime"	},
 	{ LDAP_ATTR_CN,			"cn"			},
 	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
-	{ LDAP_ATTR_HOME_DRIVE,		"sambaHoneDrive"	},
+	{ LDAP_ATTR_HOME_DRIVE,		"sambaHomeDrive"	},
 	{ LDAP_ATTR_HOME_PATH,		"sambaHomePath"		},
 	{ LDAP_ATTR_LOGON_SCRIPT,	"sambaLogonScript"	},
 	{ LDAP_ATTR_PROFILE_PATH,	"sambaProfilePath"	},
