@@ -348,7 +348,7 @@ krb5_build_principal(krb5_context context,
 
 static krb5_error_code
 append_component(krb5_context context, krb5_principal p, 
-		 general_string comp,
+		 const general_string comp,
 		 size_t comp_len)
 {
     general_string *tmp;
@@ -368,12 +368,12 @@ static void
 va_ext_princ(krb5_context context, krb5_principal p, va_list ap)
 {
     while(1){
-	char *s;
+	const char *s;
 	int len;
 	len = va_arg(ap, int);
 	if(len == 0)
 	    break;
-	s = va_arg(ap, char*);
+	s = va_arg(ap, const char*);
 	append_component(context, p, s, len);
     }
 }
@@ -382,8 +382,8 @@ static void
 va_princ(krb5_context context, krb5_principal p, va_list ap)
 {
     while(1){
-	char *s;
-	s = va_arg(ap, char*);
+	const char *s;
+	s = va_arg(ap, const char*);
 	if(s == NULL)
 	    break;
 	append_component(context, p, s, strlen(s));
