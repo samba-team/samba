@@ -1,5 +1,14 @@
 2001-01-26  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kdc/hprop.c: make it possible to convert a v4 dump file without
+	having any v4 libraries; the kdb backend still require them
+
+	* kdc/v4_dump.c: include shadow definition of kdb Principal, so we
+	don't have to depend on any v4 libraries
+
+	* kdc/hprop.h: include shadow definition of kdb Principal, so we
+	don't have to depend on any v4 libraries
+
 	* lib/hdb/print.c: reduce number of memory allocations
 
 	* lib/hdb/mkey.c: add support for reading krb4 /.k files
