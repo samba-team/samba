@@ -20,7 +20,7 @@ MANDIR = /usr/man
 BINDIR = $(BASEDIR)/bin
 SBINDIR = $(BASEDIR)/sbin
 LIBDIR = /etc
-VARDIR = /var
+VARDIR = /var/log/samba
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -45,22 +45,22 @@ SHELL = /bin/sh
 # set these to where to find various files
 # These can be overridden by command line switches (see smbd(8))
 # or in smb.conf (see smb.conf(5))
-SMBLOGFILE = $(VARDIR)/log/samba/log.smb
-NMBLOGFILE = $(VARDIR)/log/samba/log.nmb
+SMBLOGFILE = $(VARDIR)/log.smb
+NMBLOGFILE = $(VARDIR)/log.nmb
 CONFIGFILE = $(LIBDIR)/smb.conf
 LMHOSTSFILE = $(LIBDIR)/lmhosts
 DRIVERFILE = $(LIBDIR)/printers.def
 SMB_PASSWD = $(BINDIR)/smbpasswd
-SMB_PASSWD_FILE = /etc/smbpasswd
+SMB_PASSWD_FILE = $(LIBDIR)/smbpasswd
 WEB_ROOT = $(BASEDIR)
 
 # the directory where lock files go
-LOCKDIR = $(VARDIR)/lock/samba
+LOCKDIR = /var/lock/samba
 
 # The directory where code page definition files go
 CODEPAGEDIR = $(LIBDIR)/codepages
 # The current codepage definition list.
-CODEPAGELIST= 437 850 852 932 866
+CODEPAGELIST= 437 850 852 932 866 949 950
 
 # set this to the default group you want your machine to appear in
 # for browsing. This can also be set in nmbd (see nmbd(8))
@@ -116,6 +116,12 @@ PAM_LIBS = -ldl -lpam
 # KRB5_BASE = /usr/local/krb5
 # KRB5_FLAGS = -DKRB5_AUTH -I$(KRB5_BASE)/include
 # KRB5_LIBS = -L$(KRB5_BASE)/lib -ldes425 -lkrb5 -lcrypto -lcom_err
+
+# This is for Kerberos 4 authentication. Contributed by Johan Hedin
+# Royal Institute of Technology, <johanh@fusion.kth.se>
+# KRB4_BASE = /usr/athena
+# KRB4_FLAGS = -DKRB4_AUTH -I$(KRB4_BASE)/include
+# KRB4_LIBS = -L$(KRB4_BASE)/lib -lkrb -ldes -lresolv
 
 ######################################
 # VTP-Support
@@ -350,6 +356,10 @@ LIBSM =
 # FLAGSM = -DNETBSD -DSHADOW_PWD
 # LIBSM = -lcrypt 
 
+# This is for NetBSD 1.3  
+# contributed by sean@fuzzymagic.com  
+# FLAGSM = -DNETBSD -DSHADOW_PWD -DUFC_CRYPT -DALLOW_CHANGE_PASSWORD -DFAST_SHARE_MODES  
+# LIBSM = -lcrypt
 
 # This is for SEQUENT. 
 # Contributed by fwk@ix.netcom.com (Frank Keeney) and 
@@ -637,9 +647,9 @@ CFLAGS1 = $(FLAGS1) -DSMBLOGFILE=\"$(SMBLOGFILE)\" -DNMBLOGFILE=\"$(NMBLOGFILE)\
 CFLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" -DWEB_ROOT=\"$(WEB_ROOT)\"
 CFLAGS3 = -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
 CFLAGS4 = -DWORKGROUP=\"$(WORKGROUP)\" -DGUEST_ACCOUNT=\"$(GUESTACCOUNT)\" -DDRIVERFILE=\"$(DRIVERFILE)\"
-CFLAGS5 = $(CFLAGS1) $(CFLAGS2) $(CFLAGS3) $(CFLAGS4) $(FLAGSM) $(AFS_FLAGS) $(KRB5_FLAGS) $(RPM_OPT_FLAGS)
+CFLAGS5 = $(CFLAGS1) $(CFLAGS2) $(CFLAGS3) $(CFLAGS4) $(FLAGSM) $(AFS_FLAGS) $(KRB5_FLAGS) $(KRB4_FLAGS) $(RPM_OPT_FLAGS)
 CFLAGS  = $(CFLAGS5) $(PAM_FLAGS) $(DCE_FLAGS) $(DES_FLAGS) $(PASSWD_FLAGS) $(VTP_FLAGS)
-LIBS = $(LIBS1) $(LIBSM) $(PAM_LIBS) $(DCE_LIBS) $(KRB5_LIBS) $(DES_LIB)
+LIBS = $(LIBS1) $(LIBSM) $(PAM_LIBS) $(DCE_LIBS) $(KRB5_LIBS) $(KRB4_LIBS) $(DES_LIB)
 
 INCLUDES1 = $(srcdir)version.h $(srcdir)local.h $(srcdir)includes.h $(srcdir)smb.h 
 INCLUDES2 = $(srcdir)trans2.h 
@@ -672,7 +682,7 @@ RPC_OBJ = $(RPC_OBJ1) $(RPC_OBJ2)
 
 # general utility object files
 UTILOBJ1 = util.o system.o charset.o kanji.o fault.o smbencrypt.o smbdes.o charcnv.o
-UTILOBJ2 = $(UTILOBJ1) md4.o loadparm.o params.o pcap.o username.o time.o
+UTILOBJ2 = $(UTILOBJ1) md4.o loadparm.o params.o pcap.o username.o time.o namequery.o nmblib.o
 UTILOBJ = $(UTILOBJ2) interface.o replace.o print_svid.o smberr.o mem_man/mem_man.o
 
 # object code for smbd
@@ -686,7 +696,7 @@ SMBDOBJ = $(SMBDOBJ1) $(SMBDOBJ2) $(SMBDOBJ3) $(SMBDOBJ4) $(UBIOBJ) $(RPC_OBJ) $
 LOCKOBJ = locking_shm.o locking_slow.o locking.o shmem.o shmem_sysv.o
 
 # object code for nmbd
-NMBDOBJ1 = nmbd.o nmblib.o nmbd_packets.o nmbd_lmhosts.o nmbd_become_dmb.o nmbd_logonnames.o
+NMBDOBJ1 = nmbd.o nmbd_packets.o nmbd_lmhosts.o nmbd_become_dmb.o nmbd_logonnames.o
 NMBDOBJ2 = nmbd_browserdb.o nmbd_responserecordsdb.o nmbd_workgroupdb.o nmbd_serverlistdb.o
 NMBDOBJ3 = nmbd_subnetdb.o nmbd_browsesync.o nmbd_nodestatus.o nmbd_mynames.o nmbd_winsproxy.o
 NMBDOBJ4 = nmbd_sendannounce.o nmbd_processlogon.o nmbd_incomingdgrams.o clientgen.o
@@ -696,10 +706,10 @@ NMBDOBJ6 = nmbd_namerelease.o nmbd_namequery.o nmbd_become_lmb.o nmbd_elections.
 NMBDOBJ = $(UTILOBJ) $(NMBDOBJ1) $(NMBDOBJ2) $(NMBDOBJ3) $(NMBDOBJ4) $(NMBDOBJ5) $(NMBDOBJ6)
 
 # object files for smbclient
-CLIENT_OBJ = client.o ntclient.o credentials.o clientutil.o clitar.o getsmbpass.o namequery.o nmblib.o $(UTILOBJ) $(RPC_CLI_OBJ) $(RPC_OBJ)
+CLIENT_OBJ = client.o ntclient.o credentials.o clientutil.o clitar.o getsmbpass.o $(UTILOBJ) $(RPC_CLI_OBJ) $(RPC_OBJ)
 
 # object files for smbmount
-MOUNT_OBJ = smbmount.o ntclient.o credentials.o clientutil.o getsmbpass.o namequery.o nmblib.o $(UTILOBJ) $(RPC_CLI_OBJ) $(RPC_OBJ)
+MOUNT_OBJ = smbmount.o ntclient.o credentials.o clientutil.o getsmbpass.o $(UTILOBJ) $(RPC_CLI_OBJ) $(RPC_OBJ)
 
 # object files for smbmnt
 MNT_OBJ = smbmnt.o
@@ -711,7 +721,7 @@ UMOUNT_OBJ = smbumount.o
 STATUS_OBJ = status.o $(UTILOBJ) $(LOCKOBJ) 
 
 # object files for nmblookup
-LOOKUP_OBJ = nmblookup.o namequery.o nmblib.o $(UTILOBJ) 
+LOOKUP_OBJ = nmblookup.o $(UTILOBJ) 
 
 
 # object files to be auto-prototyped
@@ -784,9 +794,9 @@ testprns: testprns.o $(UTILOBJ)
 	@echo Linking testprns
 	@$(CC) $(CFLAGS) -o testprns testprns.o $(UTILOBJ) $(LIBS)
 
-smbpasswd: smbpasswd.o getsmbpass.o smbpass.o $(UTILOBJ)
+smbpasswd: smbpasswd.o getsmbpass.o smbpass.o clientgen.o $(UTILOBJ)
 	@echo Linking smbpasswd
-	@$(CC) $(CFLAGS) -o smbpasswd smbpasswd.o getsmbpass.o smbpass.o $(UTILOBJ) $(LIBS)
+	@$(CC) $(CFLAGS) -o smbpasswd smbpasswd.o getsmbpass.o smbpass.o clientgen.o $(UTILOBJ) $(LIBS)
 
 make_smbcodepage: make_smbcodepage.o $(UTILOBJ) 
 	@echo Linking make_smbcodepage

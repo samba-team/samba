@@ -1,5 +1,5 @@
---- samba-1.9.18p3/source/Makefile.orig	Wed Feb 18 10:18:43 1998
-+++ samba-1.9.18p3/source/Makefile	Thu Feb 19 06:43:17 1998
+--- samba-1.9.18p4/source/Makefile.orig	Fri Mar 20 09:09:25 1998
++++ samba-1.9.18p4/source/Makefile	Fri Mar 27 19:38:50 1998
 @@ -5,11 +5,11 @@
  ###########################################################################
  
@@ -23,7 +23,7 @@
 -VARDIR = $(BASEDIR)/var
 +SBINDIR = $(BASEDIR)/sbin
 +LIBDIR = /etc
-+VARDIR = /var
++VARDIR = /var/log/samba
  
  # The permissions to give the executables
  INSTALLPERMS = 0755
@@ -36,25 +36,17 @@
  
  # This may help with some versions of make
  SHELL = /bin/sh
-@@ -45,17 +45,17 @@
- # set these to where to find various files
- # These can be overridden by command line switches (see smbd(8))
- # or in smb.conf (see smb.conf(5))
--SMBLOGFILE = $(VARDIR)/log.smb
--NMBLOGFILE = $(VARDIR)/log.nmb
-+SMBLOGFILE = $(VARDIR)/log/samba/log.smb
-+NMBLOGFILE = $(VARDIR)/log/samba/log.nmb
- CONFIGFILE = $(LIBDIR)/smb.conf
+@@ -51,11 +51,11 @@
  LMHOSTSFILE = $(LIBDIR)/lmhosts
  DRIVERFILE = $(LIBDIR)/printers.def
  SMB_PASSWD = $(BINDIR)/smbpasswd
 -SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
-+SMB_PASSWD_FILE = /etc/smbpasswd
++SMB_PASSWD_FILE = $(LIBDIR)/smbpasswd
  WEB_ROOT = $(BASEDIR)
  
  # the directory where lock files go
 -LOCKDIR = $(VARDIR)/locks
-+LOCKDIR = $(VARDIR)/lock/samba
++LOCKDIR = /var/lock/samba
  
  # The directory where code page definition files go
  CODEPAGEDIR = $(LIBDIR)/codepages
@@ -69,7 +61,7 @@
  
  # This is for AFS authentication.  If you use AFS then set AFS_BASE 
  # according to your system layout, and uncomment the other lines as well.
-@@ -209,8 +209,8 @@
+@@ -215,8 +215,8 @@
  # contributed by Andrew.Tridgell@anu.edu.au & John.Terpstra@aquasoft.com.au
  # AXPROC defines DEC Alpha Processor
  # FLAGSM = -DLINUX -DAXPROC -DFAST_SHARE_MODES

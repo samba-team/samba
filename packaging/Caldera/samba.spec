@@ -1,10 +1,10 @@
 Summary: SMB client and server
 Name: samba
-Version: 1.9.18p3
+Version: 1.9.18p4
 Release: Caldera.1
 Copyright: GPL
 Group: Networking
-Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.18p3.tar.gz
+Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.18p4.tar.gz
 Patch: samba-make.patch
 Packager: John H Terpstra [Samba-Team] <jht@samba.anu.edu.au>
 Requires: libpam >= 0.56
@@ -90,7 +90,7 @@ do
 install -m644 docs/$i $RPM_BUILD_ROOT/usr/man/man1
 done
 
-for i in 437 850 852 866 932
+for i in 437 850 852 866 932 949 950
 do
 install -m644 source/codepage_def.$i $RPM_BUILD_ROOT/etc/codepages/src
 done
@@ -125,7 +125,7 @@ done
 rm -rf $RPM_BUILD_ROOT
 
 %post
-for i in 437 850 852 866 932
+for i in 437 850 852 866 932 949 950
 do
 /usr/bin/make_smbcodepage c $i /etc/codepages/src/codepage_def.$i /etc/codepages/codepage.$i
 done
@@ -183,6 +183,8 @@ fi
 %attr(-,root,root) %config /etc/codepages/src/codepage_def.852
 %attr(-,root,root) %config /etc/codepages/src/codepage_def.866
 %attr(-,root,root) %config /etc/codepages/src/codepage_def.932
+%attr(-,root,root) %config /etc/codepages/src/codepage_def.949
+%attr(-,root,root) %config /etc/codepages/src/codepage_def.950
 %attr(-,root,root) /usr/man/man1/smbstatus.1
 %attr(-,root,root) /usr/man/man1/smbclient.1
 %attr(-,root,root) /usr/man/man1/make_smbcodepage.1
