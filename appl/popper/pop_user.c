@@ -24,7 +24,7 @@ pop_user (POP *p)
     } else if (p->auth_level != AUTH_NONE) {
 	char *s = otp_error(&p->otp_ctx);
 	return pop_msg(p, POP_FAILURE, "Permission denied%s%s",
-		       s ? ":" : "", s);
+		       s ? ":" : "", s ? s : "");
     } else
 	return pop_msg(p, POP_SUCCESS, "Password required for %s.", p->user);
 }
