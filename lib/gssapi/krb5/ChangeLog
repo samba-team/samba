@@ -1,3 +1,8 @@
+2005-03-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* display_status.c (gssapi_krb5_set_error_string): pass in the
+	krb5_context to krb5_free_error_string
+	
 2005-03-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* display_status.c (gssapi_krb5_set_error_string): don't misuse
