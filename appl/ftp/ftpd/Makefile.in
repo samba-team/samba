@@ -12,9 +12,10 @@ CC 	= @CC@
 YACC	= @YACC@
 RANLIB 	= @RANLIB@
 DEFS 	= @DEFS@
-CFLAGS 	= @CFLAGS@
+CFLAGS 	= @CFLAGS@ @SKEYINCLUDE@
 LD_FLAGS = @LD_FLAGS@
 LIBS	= @LIBS@
+SKEYLIB = @SKEYLIB@
 MKDIRHIER = @top_srcdir@/../../mkdirhier-sh
 
 INSTALL = @INSTALL@
@@ -49,7 +50,7 @@ install: all
 
 
 ftpd: $(ftpd_OBJS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o ftpd $(ftpd_OBJS) ../common/libcommon.a $(LIBKAFS) $(LIBKRB) $(LIBDES) $(LIBROKEN) $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o ftpd $(ftpd_OBJS) ../common/libcommon.a $(LIBKAFS) $(LIBKRB) $(LIBDES) $(LIBROKEN) $(LIBS) $(SKEYLIB)
 
 ftpcmd.c: ftpcmd.y
 	$(YACC) $(YFLAGS) $<
