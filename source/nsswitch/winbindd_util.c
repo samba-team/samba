@@ -310,10 +310,17 @@ void establish_connections(BOOL force_reestablish)
 	static time_t lastt;
 	time_t t;
 
-	/* Check we haven't checked too recently */
+	/* 
+	 * Check we haven't checked too recently & make sure
+	 * the system clock has not been wound backwards (i.e. 
+	 * negative time difference) 
+	 */
 
 	t = time(NULL);
-	if ((t - lastt < WINBINDD_ESTABLISH_LOOP) && !force_reestablish) {
+	if ( (t - lastt > 0) 
+		&& (t - lastt < WINBINDD_ESTABLISH_LOOP) 
+		&& !force_reestablish ) 
+	{
 		return;
 	}
 	lastt = t;
