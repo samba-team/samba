@@ -840,9 +840,8 @@ BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
 			fstrcpy(pass->pw_name,mypasswd->ufld.fd_name);
 			fstrcpy(pass->pw_passwd,mypasswd->ufld.fd_encrypt);
 		} else {
-			DEBUG(5,("No entry for user %s in protected database !\n",
+			DEBUG(5,("OSF1_ENH_SEC: No entry for user %s in protected database !\n",
 				 user));
-			return(False);
 		}
 	}
 #endif
@@ -860,9 +859,12 @@ BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
 	/* extract relevant info */
 	fstrcpy(this_user,pass->pw_name);  
 	fstrcpy(this_salt,pass->pw_passwd);
+
+#if defined(HAVE_TRUNCATED_SALT)
 	/* crypt on some platforms (HPUX in particular)
 	   won't work with more than 2 salt characters. */
 	this_salt[2] = 0;
+#endif
 	
 	fstrcpy(this_crypted,pass->pw_passwd);
 	

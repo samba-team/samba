@@ -79,7 +79,7 @@ exit(0);
 #else
 exit(1);
 #endif
-}], [SINIX_LFS_SUPPORT=yes], [SINIX_LFS_SUPPORT=no])
+}], [SINIX_LFS_SUPPORT=yes], [SINIX_LFS_SUPPORT=no], [SINIX_LFS_SUPPORT=cross])
         CPPFLAGS="$old_CPPFLAGS"
         if test x$SINIX_LFS_SUPPORT = xyes ; then
           CPPFLAGS="-D_LARGEFILE64_SOURCE $CPPFLAGS"
@@ -191,7 +191,7 @@ AC_CACHE_CHECK([for real setresgid],samba_cv_have_setresgid,[
     AC_TRY_RUN([#include <unistd.h>
 #include <errno.h>
 main() { errno = 0; setresgid(1,1,1); exit(errno != 0 ? (errno==EPERM ? 0 : 1) : 0);}],
-	samba_cv_have_setresgid=yes,samba_cv_have_setresgid=no)])
+	samba_cv_have_setresgid=yes,samba_cv_have_setresgid=no,samba_cv_have_setresgid=cross)])
 if test x"$samba_cv_have_setresgid" = x"yes"; then
     AC_DEFINE(HAVE_SETRESGID)
 fi
@@ -490,7 +490,11 @@ if test x"$samba_cv_HAVE_INO64_T" = x"yes"; then
 fi
 
 AC_CACHE_CHECK([for struct dirent64],samba_cv_HAVE_STRUCT_DIRENT64,[
-AC_TRY_COMPILE([#include <sys/types.h>
+AC_TRY_COMPILE([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <sys/types.h>
 #include <dirent.h>],
 [struct dirent64 de;],
 samba_cv_HAVE_STRUCT_DIRENT64=yes,samba_cv_HAVE_STRUCT_DIRENT64=no)])
@@ -810,6 +814,13 @@ if test x"$samba_cv_HAVE_SYSV_IPC" = x"yes"; then
     AC_DEFINE(HAVE_SYSV_IPC)
 fi
 
+AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
+           samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)])
+if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
+    AC_DEFINE(HAVE_TRUNCATED_SALT)
+fi
+
 #################################################
 # check for smbwrapper support
 AC_MSG_CHECKING(whether to use smbwrapper)
@@ -894,6 +905,20 @@ AC_ARG_WITH(krb4,
     AC_DEFINE(KRB4_AUTH)
     AC_CHECK_LIB(resolv, dn_expand)
     LIBS="$LIBS -lkrb -ldes"
+    CFLAGS="$CFLAGS -I$withval/include"
+    LDFLAGS="$LDFLAGS -L$withval/lib"],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
+# check for Kerberos 5 auth system
+AC_MSG_CHECKING(whether to use Kerberos 5)
+AC_ARG_WITH(krb5,
+[  --with-krb5=base-dir     Include Kerberos 5 support
+  --whithout-krb5          Don't include Kerbers 5 support (default)],
+[   AC_MSG_RESULT(yes)
+    AC_DEFINE(KRB5_AUTH)
+    LIBS="$LIBS -ldes425 -lkrb5 -lcrypto -lcom_err"
     CFLAGS="$CFLAGS -I$withval/include"
     LDFLAGS="$LDFLAGS -L$withval/lib"],
   AC_MSG_RESULT(no)
