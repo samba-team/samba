@@ -106,7 +106,7 @@ on who did what bits.
 Where can I get it?
 -------------------
 
-The package is available via anonymous ftp from samba.anu.edu.au in
+The package is available via anonymous ftp from samba.org in
 the directory pub/samba/. 
 
 What about SMBServer?
@@ -136,7 +136,7 @@ There is also often quite a bit of discussion about Samba on the
 newsgroup comp.protocols.smb.
 
 A WWW site with lots of Samba info can be found at 
-http://samba.anu.edu.au/samba/
+http://samba.org/samba/
 
-The Samba Team (Contact: samba-bugs@samba.anu.edu.au)
+The Samba Team (Contact: samba-bugs@samba.org)
 June 1996

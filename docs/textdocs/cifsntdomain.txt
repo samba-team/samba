@@ -153,7 +153,7 @@ http://mailhost.cb1.com/~lkcl/crypt.html
 A c-code implementation, provided by Linus Nordberg <linus@incolumitas.se>
 of this protocol is available from:
 
-http://samba.anu.edu.au/cgi-bin/mfs/01/digest/1997/97aug/0391.html
+http://samba.org/cgi-bin/mfs/01/digest/1997/97aug/0391.html
 http://mailhost.cb1.com/~lkcl/crypt.txt
 
 

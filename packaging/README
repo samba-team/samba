@@ -19,7 +19,7 @@ wants to just install Samba from the pristine source files contained under
 the ~/source directory.
 
 All contributions / modifications / additions / etc. to the packaging files
-should be sent to samba-bugs@samba.anu.edu.au with the subject marked:
+should be sent to samba-bugs@samba.org with the subject marked:
 	PACKAGING: [add|mod|contrib] Your subject.
 
 Should you, or anyone you know of, have package build instructions and/or files

@@ -27,7 +27,7 @@ advantages but none are both public specifications and widely
 implemented in desktop machines by default.
 
 The Common Internet Filesystem (CIFS) is what the new SMB initiative
-is called. For details watch http://samba.anu.edu.au/cifs.
+is called. For details watch http://samba.org/cifs.
 
 
 WHY DO PEOPLE WANT TO USE SMB?
@@ -66,7 +66,7 @@ printers) from unix, Netware and other operating systems
   functionality, which can be used on Samba, NT workstation and NT server.
 
 For a much better overview have a look at the web site at
-http://samba.anu.edu.au/samba, and browse the user survey.
+http://samba.org/samba, and browse the user survey.
 
 Related packages include:
 
@@ -79,7 +79,7 @@ networking problems over netbeui and tcp/ip.
 
 - smblib, a library of smb functions which are designed to make it
 easy to smb-ise any particular application. See
-ftp://samba.anu.edu.au/pub/samba/smblib.
+ftp://samba.org/pub/samba/smblib.
 
 
 CONTRIBUTIONS
@@ -89,10 +89,10 @@ If you want to contribute to the development of the software then
 please join the mailing list. The Samba team accepts patches
 (preferably in "diff -u" format, see docs/BUGS.txt for more details)
 and are always glad to receive feedback or suggestions to the address
-samba-bugs@samba.anu.edu.au. We have recently put a new bug tracking
+samba-bugs@samba.org. We have recently put a new bug tracking
 system into place which should help the throughput quite a lot. You
 can also get the Samba sourcecode straight from the CVS tree - see
-http://samba.anu.edu.au/cvs.html.
+http://samba.org/cvs.html.
 
 You could also send hardware/software/money/jewelry or pizza
 vouchers directly to Andrew. The pizza vouchers would be especially
@@ -100,7 +100,7 @@ welcome, in fact there is a special field in the survey for people who
 have paid up their pizza :-)
 
 If you like a particular feature then look through the CVS change-log
-(on the web at http://samba.anu.edu.au/cgi-bin/cvsweb/samba) and see
+(on the web at http://samba.org/cgi-bin/cvsweb/samba) and see
 who added it, then send them an email.
 
 Remember that free software of this kind lives or dies by the response
@@ -109,14 +109,14 @@ something else. However, as you can see from the user survey quite a lot of
 people do seem to like it at the moment :-)
 
 Andrew Tridgell
-Email: samba-bugs@samba.anu.edu.au
+Email: samba-bugs@samba.org
 
 3 Ballow Crescent
 Macgregor, A.C.T.
 2615 Australia
 
 Samba Team
-Email: samba-bugs@samba.anu.edu.au
+Email: samba-bugs@samba.org
 
 
 MORE INFO
@@ -136,32 +136,32 @@ available on the web page.
 
 If you would like to help with the documentation (and we _need_ help!)
 then have a look at the mailing list samba-docs, archived at
-http://samba.anu.edu.au/listproc/samba-docs.
+http://samba.org/listproc/samba-docs.
 
 
 FTP SITE
 --------
 
 Please use a mirror site! The list of mirrors is in docs/MIRRORS.txt.
-The master ftp site is samba.anu.edu.au in the directory pub/samba.
+The master ftp site is samba.org in the directory pub/samba.
 
 
 MAILING LIST
 ------------
 
 There is a mailing list for discussion of Samba. To subscribe send
-mail to listproc@samba.anu.edu.au with a body of "subscribe samba Your Name"
+mail to listproc@samba.org with a body of "subscribe samba Your Name"
 Please do NOT send this request to the list alias instead.
 
 To send mail to everyone on the list mail to samba@listproc.anu.edu.au
 
 There is also an announcement mailing list where new versions are
-announced.  To subscribe send mail to listproc@samba.anu.edu.au with a
+announced.  To subscribe send mail to listproc@samba.org with a
 body of "subscribe samba-announce Your Name". All announcements also
 go to the samba list.
 
 For details of other Samba mailing lists and for access to archives, see
-http://samba.anu.edu.au/listproc.
+http://samba.org/listproc.
 
 
 NEWS GROUP
@@ -180,12 +180,12 @@ WEB SITE
 
 A Samba WWW site has been setup with lots of useful info. Connect to:
 
-http://samba.anu.edu.au/samba/
+http://samba.org/samba/
 
 As well as general information and documentation, this also has searchable 
 archives of the mailing list and a user survey that shows who else is using
 this package. Have you registered with the survey yet? :-)
 
 It is maintained by Paul Blackman (thanks Paul!). You can contact him
-as ictinus@samba.anu.edu.au.
+as ictinus@samba.org.
 

@@ -1,4 +1,4 @@
-mailto(samba-bugs@samba.anu.edu.au) 
+mailto(samba-bugs@samba.org) 
 
 manpage(smb.conf htmlcommand((5)))(5)(23 Oct 1998)(Samba)(SAMBA)
 
@@ -361,7 +361,7 @@ it() bf(%a) = the architecture of the remote
 machine. Only some are recognized, and those may not be 100%
 reliable. It currently recognizes Samba, WfWg, WinNT and
 Win95. Anything else will be known as "UNKNOWN". If it gets it wrong
-then sending a level 3 log to email(samba-bugs@samba.anu.edu.au)
+then sending a level 3 log to email(samba-bugs@samba.org)
 should allow it to be fixed.
 
 label(percentI)
@@ -1776,7 +1776,7 @@ Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
-email(listproc@samba.anu.edu.au)
+email(listproc@samba.org)
 
 label(domainadminusers) 
 dit(bf(domain admin users (G)))
@@ -1786,7 +1786,7 @@ Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
-email(listproc@samba.anu.edu.au)
+email(listproc@samba.org)
 
 label(domain controller)
 dit(bf(domain controller (G)))
@@ -1803,7 +1803,7 @@ Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
-email(listproc@samba.anu.edu.au)
+email(listproc@samba.org)
 
 label(domainguestgroup)
 dit(bf(domain guest group (G)))
@@ -1813,7 +1813,7 @@ Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
-email(listproc@samba.anu.edu.au)
+email(listproc@samba.org)
 
 label(domainguestusers)
 dit(bf(domain guest users (G)))
@@ -1823,7 +1823,7 @@ Samba NT Domain Controller Code. It may be removed in a later release.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list bf(Samba-ntdom) available by sending email to
-email(listproc@samba.anu.edu.au)
+email(listproc@samba.org)
 
 label(domainlogons)
 dit(bf(domain logons (G)))
@@ -5017,7 +5017,7 @@ You may find that on some systems Samba will say "Unknown socket
 option" when you supply an option. This means you either incorrectly 
 typed it or you need to add an include file to includes.h for your OS. 
 If the latter is the case please send the patch to
-email(samba-bugs@samba.anu.edu.au).
+email(samba-bugs@samba.org).
 
 Any of the supported socket options may be combined in any way you
 like, as long as your OS allows it.
@@ -6114,7 +6114,7 @@ label(AUTHOR)
 manpageauthor()
 
 The original Samba software and related utilities were created by
-Andrew Tridgell email(samba-bugs@samba.anu.edu.au). Samba is now developed
+Andrew Tridgell email(samba-bugs@samba.org). Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 
@@ -6123,7 +6123,7 @@ sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 url(bf(ftp://ftp.icce.rug.nl/pub/unix/))(ftp://ftp.icce.rug.nl/pub/unix/))
 and updated for the Samba2.0 release by Jeremy Allison.
-email(samba-bugs@samba.anu.edu.au).
+email(samba-bugs@samba.org).
 
 See url(bf(samba (7)))(samba.7.html) to find out how to get a full
 list of contributors and details on how to submit bug reports,

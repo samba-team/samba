@@ -2,7 +2,7 @@
 !== BROWSING-Config.txt for Samba release 2.0.0-beta1 13 Nov 1998
 !==
 Date:		July 5, 1998
-Contributor:	John H Terpstra <jht@samba.anu.edu.au>
+Contributor:	John H Terpstra <jht@samba.org>
 
 Subject:	Cross Subnet Browsing / Cross Workgroup Browsing
 ===============================================================================

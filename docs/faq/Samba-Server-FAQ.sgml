@@ -11,7 +11,7 @@
 
 <title> Samba Server FAQ
 
-<author>Dan Shearer & Paul Blackman, <tt>ictinus@samba.anu.edu.au</tt>
+<author>Dan Shearer & Paul Blackman, <tt>ictinus@samba.org</tt>
 
 <date>v 0.3, 7 Oct '97
 
@@ -256,7 +256,7 @@ Samba compiled with libdes - enabling encrypted passwords
 <sect1>Managing Samba Log files<p><label id="LogFiles">
 
 <sect1>I can't see the Samba server in any browse lists!<p><label id="no_browse">
- See <url url="ftp://samba.anu.edu.au/pub/samba/BROWSING.txt" name="BROWSING.txt">
+ See <url url="ftp://samba.org/pub/samba/BROWSING.txt" name="BROWSING.txt">
  for more information on browsing.  Browsing.txt can also be found
  in the docs directory of the Samba source.
 

@@ -7,7 +7,7 @@ Updated:	June 27, 1997
 Subject: This file describes how to report Samba bugs. 
 ============================================================================
 
->> The email address for bug reports is samba-bugs@samba.anu.edu.au <<
+>> The email address for bug reports is samba-bugs@samba.org <<
 
 Please take the time to read this file before you submit a bug
 report. Also, please see if it has changed between releases, as we
@@ -28,7 +28,7 @@ that list that may be able to help you.
 
 You may also like to look though the recent mailing list archives,
 which are conveniently accessible on the Samba web pages
-at http://samba.anu.edu.au/samba/ 
+at http://samba.org/samba/ 
 
 
 GENERAL INFO

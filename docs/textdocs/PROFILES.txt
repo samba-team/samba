@@ -4,7 +4,7 @@
 Contributors:	Bruce Cook <BC3-AU@bigfoot.com>
 		Copyright (C) 1998 Bruce Cook
 
-		John Terpstra <samba-bugs@samba.anu.edu.au>
+		John Terpstra <samba-bugs@samba.org>
 		Copyright (C) 1998 John H. Terpstra
 
 		Wolfgang Ratzka <ratzka@hrz.uni-marburg.de>
@@ -19,7 +19,7 @@ Subject:	User Profiles
 From BC3-AU@bigfoot.com Sat Apr 11 13:36:05 1998
 Date: Sat, 11 Apr 1998 17:13:49 +1000
 From: Bruce Cook <BC3-AU@bigfoot.com>
-To: Multiple recipients of list <samba-ntdom@samba.anu.edu.au>
+To: Multiple recipients of list <samba-ntdom@samba.org>
 Subject: RE: A question about NT Domains
 
 Luke Kenneth Casson Leighton writes:
@@ -121,7 +121,7 @@ machine.
 [lkcl: nt workstations should look in exactly the same places for things on
        samba or other SMB servers as they do on an NT server, as long as that
        SMB server looks like NT.  if anyone finds that something fails, alert
-       us on samba-bugs@samba.anu.edu.au and we'll look into it].
+       us on samba-bugs@samba.org and we'll look into it].
 
    When an NT system find a user without a NTuser.DAT, it copies from a
    prototype that it stores especially for this purpose, so while unlike '95
@@ -208,7 +208,7 @@ To sum up:
 From samba@aquasoft.com.au Sat Apr 11 13:48:54 1998
 Date: Sat, 11 Apr 1998 09:34:08 +1000
 From: Samba Bugs <samba@aquasoft.com.au>
-To: Multiple recipients of list <samba-ntdom@samba.anu.edu.au>
+To: Multiple recipients of list <samba-ntdom@samba.org>
 Subject: Re: A question about NT Domains
 
 Just for the sake of completeness I thought I'd add a bit to this.
