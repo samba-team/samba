@@ -76,6 +76,8 @@ static const known_sid_users builtin_groups[] = {
 	{ BUILTIN_ALIAS_RID_SYSTEM_OPS, SID_NAME_ALIAS, "Server Operators" },
 	{ BUILTIN_ALIAS_RID_PRINT_OPS, SID_NAME_ALIAS, "Print Operators" },
 	{ BUILTIN_ALIAS_RID_BACKUP_OPS, SID_NAME_ALIAS, "Backup Operators" },
+	{ BUILTIN_ALIAS_RID_REPLICATOR, SID_NAME_ALIAS, "Replicator" },
+	{ BUILTIN_ALIAS_RID_RAS_SERVERS, SID_NAME_ALIAS, "RAS Servers" },
 	{  0, (enum SID_NAME_USE)0, NULL}};
 
 /**************************************************************************
