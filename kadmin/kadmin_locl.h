@@ -80,6 +80,7 @@
 #include <hdb_err.h>
 #include <kadm5/admin.h>
 #include <kadm5/private.h>
+#include <kadm5/kadm5_err.h>
 #include <parse_time.h>
 #include <getarg.h>
 
