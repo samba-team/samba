@@ -64,7 +64,10 @@ install-suid-programs:
 	for file in $$foo; do \
 	x=$(DESTDIR)$(bindir)/$$file; \
 	if chown 0:0 $$x && chmod u+s $$x; then :; else \
-	chmod 0 $$x; fi; done
+	echo "*"; \
+	echo "* Failed to install $$x setuid root"; \
+	echo "*"; \
+	fi; done
 
 install-exec-hook: install-suid-programs
 
