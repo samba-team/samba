@@ -59,7 +59,8 @@ verify_mic_des
   p = token_buffer->value;
   ret = gssapi_krb5_verify_header (&p,
 				   token_buffer->length,
-				   type);
+				   type,
+				   GSS_KRB5_MECHANISM);
   if (ret)
       return ret;
 
@@ -151,7 +152,8 @@ verify_mic_des3
   p = token_buffer->value;
   ret = gssapi_krb5_verify_header (&p,
 				   token_buffer->length,
-				   type);
+				   type,
+				   GSS_KRB5_MECHANISM);
   if (ret)
       return ret;
 
@@ -295,9 +297,18 @@ gss_verify_mic_internal
 			       message_buffer, token_buffer, qop_state, key,
 			       type);
 	break;
-    default :
-	*minor_status = KRB5_PROG_ETYPE_NOSUPP;
+    case KEYTYPE_ARCFOUR :
+	*minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
 	ret = GSS_S_FAILURE;
+	break;
+    default :
+#ifdef HAVE_GSSAPI_CFX
+	ret = verify_mic_cfx (minor_status, context_handle,
+			      message_buffer, token_buffer, qop_state, key);
+#else
+	*minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
+	ret = GSS_S_FAILURE;
+#endif
 	break;
     }
     krb5_free_keyblock (gssapi_krb5_context, key);

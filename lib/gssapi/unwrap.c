@@ -88,7 +88,8 @@ unwrap_des
   p = input_message_buffer->value;
   ret = gssapi_krb5_verify_header (&p,
 				   input_message_buffer->length,
-				   "\x02\x01");
+				   "\x02\x01",
+				   GSS_KRB5_MECHANISM);
   if (ret)
       return ret;
 
@@ -226,7 +227,8 @@ unwrap_des3
   p = input_message_buffer->value;
   ret = gssapi_krb5_verify_header (&p,
 				   input_message_buffer->length,
-				   "\x02\x01");
+				   "\x02\x01",
+				   GSS_KRB5_MECHANISM);
   if (ret)
       return ret;
 
@@ -426,9 +428,19 @@ OM_uint32 gss_unwrap
 			 input_message_buffer, output_message_buffer,
 			 conf_state, qop_state, key);
       break;
-  default :
-      *minor_status = KRB5_PROG_ETYPE_NOSUPP;
+  case KEYTYPE_ARCFOUR:
+      *minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
       ret = GSS_S_FAILURE;
+      break;
+  default :
+#ifdef HAVE_GSSAPI_CFX
+      ret = unwrap_cfx (minor_status, context_handle,
+			input_message_buffer, output_message_buffer,
+			conf_state, qop_state, key);
+#else
+      *minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
+      ret = GSS_S_FAILURE;
+#endif
       break;
   }
   krb5_free_keyblock (gssapi_krb5_context, key);

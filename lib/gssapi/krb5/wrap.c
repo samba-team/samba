@@ -72,7 +72,7 @@ sub_wrap_size (
 
     len = 8 + req_output_size + blocksize + extrasize;
 
-    gssapi_krb5_encap_length(len, &len, &total_len);
+    gssapi_krb5_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
 
     total_len -= req_output_size; /* token length */
     if (total_len < req_output_size) {
@@ -108,14 +108,20 @@ gss_wrap_size_limit (
 
   switch (keytype) {
   case KEYTYPE_DES :
+  case KEYTYPE_ARCFOUR:
       ret = sub_wrap_size(req_output_size, max_input_size, 8, 22);
       break;
   case KEYTYPE_DES3 :
       ret = sub_wrap_size(req_output_size, max_input_size, 8, 34);
       break;
   default :
-      *minor_status = KRB5_PROG_ETYPE_NOSUPP;
+#ifdef HAVE_GSSAPI_CFX
+      ret = wrap_size_cfx(minor_status, context_handle, conf_req_flag,
+			  qop_req, req_output_size, max_input_size, key);
+#else
+      *minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
       ret = GSS_S_FAILURE;
+#endif
       break;
   }
   krb5_free_keyblock (gssapi_krb5_context, key);
@@ -148,7 +154,7 @@ wrap_des
   padlength = 8 - (input_message_buffer->length % 8);
   datalen = input_message_buffer->length + padlength + 8;
   len = datalen + 22;
-  gssapi_krb5_encap_length (len, &len, &total_len);
+  gssapi_krb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
 
   output_message_buffer->length = total_len;
   output_message_buffer->value  = malloc (total_len);
@@ -159,7 +165,8 @@ wrap_des
 
   p = gssapi_krb5_make_header(output_message_buffer->value,
 			      len,
-			      "\x02\x01"); /* TOK_ID */
+			      "\x02\x01", /* TOK_ID */
+			      GSS_KRB5_MECHANISM);
 
   /* SGN_ALG */
   memcpy (p, "\x00\x00", 2);
@@ -271,7 +278,7 @@ wrap_des3
   padlength = 8 - (input_message_buffer->length % 8);
   datalen = input_message_buffer->length + padlength + 8;
   len = datalen + 34;
-  gssapi_krb5_encap_length (len, &len, &total_len);
+  gssapi_krb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
 
   output_message_buffer->length = total_len;
   output_message_buffer->value  = malloc (total_len);
@@ -282,7 +289,8 @@ wrap_des3
 
   p = gssapi_krb5_make_header(output_message_buffer->value,
 			      len,
-			      "\x02\x01"); /* TOK_ID */
+			      "\x02\x01", /* TOK_ID */
+			      GSS_KRB5_MECHANISM); 
 
   /* SGN_ALG */
   memcpy (p, "\x04\x00", 2);	/* HMAC SHA1 DES3-KD */
@@ -452,9 +460,19 @@ OM_uint32 gss_wrap
 		       qop_req, input_message_buffer, conf_state,
 		       output_message_buffer, key);
       break;
-  default :
-      *minor_status = KRB5_PROG_ETYPE_NOSUPP;
+  case KEYTYPE_ARCFOUR:
+      *minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
       ret = GSS_S_FAILURE;
+      break;
+  default :
+#ifdef HAVE_GSSAPI_CFX
+      ret = wrap_cfx (minor_status, context_handle, conf_req_flag,
+		      qop_req, input_message_buffer, conf_state,
+		      output_message_buffer, key);
+#else
+      *minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
+      ret = GSS_S_FAILURE;
+#endif
       break;
   }
   krb5_free_keyblock (gssapi_krb5_context, key);

@@ -54,7 +54,7 @@ mic_des
   int32_t seq_number;
   size_t len, total_len;
 
-  gssapi_krb5_encap_length (22, &len, &total_len);
+  gssapi_krb5_encap_length (22, &len, &total_len, GSS_KRB5_MECHANISM);
 
   message_token->length = total_len;
   message_token->value  = malloc (total_len);
@@ -65,7 +65,8 @@ mic_des
 
   p = gssapi_krb5_make_header(message_token->value,
 			      len,
-			      "\x01\x01"); /* TOK_ID */
+			      "\x01\x01", /* TOK_ID */
+			      GSS_KRB5_MECHANISM); 
 
   memcpy (p, "\x00\x00", 2);	/* SGN_ALG = DES MAC MD5 */
   p += 2;
@@ -144,7 +145,7 @@ mic_des3
   char *tmp;
   char ivec[8];
 
-  gssapi_krb5_encap_length (36, &len, &total_len);
+  gssapi_krb5_encap_length (36, &len, &total_len, GSS_KRB5_MECHANISM);
 
   message_token->length = total_len;
   message_token->value  = malloc (total_len);
@@ -155,7 +156,8 @@ mic_des3
 
   p = gssapi_krb5_make_header(message_token->value,
 			      len,
-			      "\x01\x01"); /* TOK-ID */
+			      "\x01\x01", /* TOK-ID */
+			      GSS_KRB5_MECHANISM);
 
   memcpy (p, "\x04\x00", 2);	/* SGN_ALG = HMAC SHA1 DES3-KD */
   p += 2;
@@ -285,9 +287,18 @@ OM_uint32 gss_get_mic
       ret = mic_des3 (minor_status, context_handle, qop_req,
 		      message_buffer, message_token, key);
       break;
-  default :
-      *minor_status = KRB5_PROG_ETYPE_NOSUPP;
+  case KEYTYPE_ARCFOUR:
+      *minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
       ret = GSS_S_FAILURE;
+      break;
+  default :
+#ifdef HAVE_GSSAPI_CFX
+      ret = mic_cfx (minor_status, context_handle, qop_req,
+		     message_buffer, message_token, key);
+#else
+      *minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
+      ret = GSS_S_FAILURE;
+#endif
       break;
   }
   krb5_free_keyblock (gssapi_krb5_context, key);
