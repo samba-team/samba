@@ -138,7 +138,7 @@ void cli_setup_bcc(struct cli_state *cli, void *p)
 
 
 /****************************************************************************
-initialise a client structure
+initialise credentials of a client structure
 ****************************************************************************/
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 {
