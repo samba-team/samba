@@ -573,8 +573,6 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 		}
 	}
 
-	dptr->has_wild = True;
-
 	/* In case sensitive mode we don't search - we know if it doesn't exist 
 	   with a stat we will fail. */
 
@@ -584,6 +582,7 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 		dptr->dir_hnd->offset = *poffset = -1;
 		return NULL;
 	} else {
+		dptr->has_wild = True;
 		return dptr_normal_ReadDirName(dptr, poffset, pst);
 	}
 }
@@ -602,7 +601,7 @@ BOOL dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, S
 		return False;
 	}
 
-	while (SearchDir(dptr->dir_hnd, name, poffset) == True) {
+	if (SearchDir(dptr->dir_hnd, name, poffset)) {
 		if (is_visible_file(dptr->conn, dptr->path, name, pst, True)) {
 			return True;
 		}
