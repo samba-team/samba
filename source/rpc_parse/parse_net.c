@@ -2399,11 +2399,9 @@ static BOOL net_io_sam_alias_info(const char *desc, SAM_ALIAS_INFO * info,
                             info->hdr_sec_desc.buffer, ps, depth))
                 return False;
 
-	if (info->hdr_als_desc.buffer != 0) {
-		if (!smb_io_unistr2("uni_als_desc", &info->uni_als_desc,
-				    info->hdr_als_name.buffer, ps, depth))
-			return False;
-	}
+	if (!smb_io_unistr2("uni_als_desc", &info->uni_als_desc,
+			    info->hdr_als_desc.buffer, ps, depth))
+		return False;
 
 	return True;
 }
