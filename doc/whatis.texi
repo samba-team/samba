@@ -47,7 +47,7 @@ services can authenticate each other.
 @end ifhtml
 
 @quotation
-@strong{Note:} This discussion is about Kerberos version 4, but version
+@strong{Note} This discussion is about Kerberos version 4, but version
 5 works similarly.
 @end quotation
 
