@@ -1,3 +1,7 @@
+2001-02-16  Assar Westerlund  <assar@sics.se>
+
+	* set_key.c: correct weak keys and update comment
+
 2001-01-30  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libdes_la_LDFLAGS): bump version to 3:0:0
