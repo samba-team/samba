@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -271,7 +271,7 @@ krb5_change_password (krb5_context	context,
     if (ret)
 	goto out;
 
-    while (krb5_krbhst_next(context, handle, &hi) == 0) {
+    while (!done && (ret = krb5_krbhst_next(context, handle, &hi)) == 0) {
 	struct addrinfo *ai, *a;
 
 	ret = krb5_krbhst_get_addrinfo(context, hi, &ai);
