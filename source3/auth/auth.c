@@ -56,10 +56,11 @@ static BOOL check_domain_match(char *user, char *domain)
  as it makes the calls itself when needed.
 ****************************************************************************/
 
-uint32 check_password(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
+NTSTATUS check_password(const auth_usersupplied_info *user_info, 
+			auth_serversupplied_info *server_info)
 {
 	
-	uint32 nt_status = NT_STATUS_LOGON_FAILURE;
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	BOOL done_pam = False;
 	
 	DEBUG(3, ("check_password:  Checking password for user %s with the new password interface\n", user_info->smb_username.str));
@@ -120,9 +121,9 @@ SMB hash
 return True if the password is correct, False otherwise
 ****************************************************************************/
 
-uint32 pass_check_smb_with_chal(char *user, char *domain, uchar chal[8], 
-                    uchar *lm_pwd, int lm_pwd_len,
-		    uchar *nt_pwd, int nt_pwd_len)
+NTSTATUS pass_check_smb_with_chal(char *user, char *domain, uchar chal[8], 
+				  uchar *lm_pwd, int lm_pwd_len,
+				  uchar *nt_pwd, int nt_pwd_len)
 {
 
 	auth_usersupplied_info user_info;
@@ -196,9 +197,9 @@ uint32 pass_check_smb_with_chal(char *user, char *domain, uchar chal[8],
 	return check_password(&user_info, &server_info);
 }
 
-uint32 pass_check_smb(char *user, char *domain,
-                    uchar *lm_pwd, int lm_pwd_len,
-		    uchar *nt_pwd, int nt_pwd_len)
+NTSTATUS pass_check_smb(char *user, char *domain,
+			uchar *lm_pwd, int lm_pwd_len,
+			uchar *nt_pwd, int nt_pwd_len)
 {
 	uchar chal[8];
 

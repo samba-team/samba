@@ -487,7 +487,7 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
 	
 	if (!last_challenge(user_info.chal)) {
 		DEBUG(1,("smb_password_ok: no challenge done - password failed\n"));
-		return NT_STATUS_LOGON_FAILURE;
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
   pdb_init_sam(&sam_trust_acct);
@@ -789,9 +789,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   add_session_user(user);
 
   if (!guest) {
-	  valid_password = (pass_check_smb(user, domain, 
-					   (unsigned char *)smb_apasswd, smb_apasslen, 
-					   (unsigned char *)smb_ntpasswd, smb_ntpasslen) == NT_STATUS_NOPROBLEMO);
+	  valid_password = NT_STATUS_IS_OK(pass_check_smb(user, domain, 
+							  (unsigned char *)smb_apasswd, 
+							  smb_apasslen, 
+							  (unsigned char *)smb_ntpasswd,
+							  smb_ntpasslen));
 
     /* The true branch will be executed if 
        (1) the NT password failed (or was not tried), and 
@@ -2086,7 +2088,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	status = do_lock(fsp, conn, SVAL(inbuf,smb_pid), 
 			 (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK);
 
-	if (status != NT_STATUS_NOPROBLEMO) {
+	if (NT_STATUS_V(status)) {
 		if (lp_blocking_locks(SNUM(conn))) {
 			/*
 			 * A blocking lock was requested. Package up
@@ -2407,7 +2409,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 
 	status = do_unlock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtowrite, 
 			   (SMB_BIG_UINT)startpos);
-	if (status != NT_STATUS_NOPROBLEMO) {
+	if (NT_STATUS_V(status)) {
 		END_PROFILE(SMBwriteunlock);
 		return ERROR_NT(status);
 	}
@@ -2885,8 +2887,8 @@ int reply_lock(connection_struct *conn,
 		 fsp->fd, fsp->fnum, (double)offset, (double)count));
 
 	status = do_lock(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK);
-	if (status != NT_STATUS_NOPROBLEMO) {
-		if (status != NT_STATUS_NOPROBLEMO && lp_blocking_locks(SNUM(conn))) {
+	if (NT_STATUS_V(status)) {
+		if (lp_blocking_locks(SNUM(conn))) {
 			/*
 			 * A blocking lock was requested. Package up
 			 * this smb into a queued request and push it
@@ -2924,7 +2926,7 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	offset = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv3);
 	
 	status = do_unlock(fsp, conn, SVAL(inbuf,smb_pid), count, offset);
-	if (status != NT_STATUS_NOPROBLEMO) {
+	if (NT_STATUS_V(status)) {
 		END_PROFILE(SMBunlock);
 		return ERROR_NT(status);
 	}
@@ -4232,7 +4234,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 			  (double)offset, (double)count, (unsigned int)lock_pid, fsp->fsp_name ));
 		
 		status = do_unlock(fsp,conn,lock_pid,count,offset);
-		if (status != NT_STATUS_NOPROBLEMO) {
+		if (NT_STATUS_V(status)) {
 			END_PROFILE(SMBlockingX);
 			return ERROR_NT(status);
 		}
@@ -4265,7 +4267,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 		
 		status = do_lock(fsp,conn,lock_pid, count,offset, 
 				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK));
-		if (status != NT_STATUS_NOPROBLEMO) {
+		if (NT_STATUS_V(status)) {
 			if ((lock_timeout != 0) && lp_blocking_locks(SNUM(conn))) {
 				/*
 				 * A blocking lock was requested. Package up

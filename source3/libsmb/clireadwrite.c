@@ -110,16 +110,17 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
                    errors. */
 
                 if (cli_is_error(cli)) {
-                        uint32 status = 0;
+                        NTSTATUS status = NT_STATUS_OK;
                         uint8 eclass = 0;
+			uint32 ecode = 0;
 
                         if (cli_is_nt_error(cli))
                                 status = cli_nt_error(cli);
                         else
-                                cli_dos_error(cli, &eclass, &status);
+                                cli_dos_error(cli, &eclass, &ecode);
 
-                        if ((eclass == ERRDOS && status == ERRmoredata) ||
-                            status == STATUS_MORE_ENTRIES)
+                        if ((eclass == ERRDOS && ecode == ERRmoredata) ||
+                            NT_STATUS_V(status) == NT_STATUS_V(STATUS_MORE_ENTRIES))
                                 return -1;
 		}
 

@@ -76,7 +76,7 @@ char *cli_errstr(struct cli_state *cli)
 
         /* Case #1: 32-bit NT errors */
 	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-                uint32 status = IVAL(cli->inbuf,smb_rcls);
+                NTSTATUS status = NT_STATUS(IVAL(cli->inbuf,smb_rcls));
 
                 return get_nt_error_msg(status);
         }
@@ -103,7 +103,7 @@ char *cli_errstr(struct cli_state *cli)
 
 
 /* Return the 32-bit NT status code from the last packet */
-uint32 cli_nt_error(struct cli_state *cli)
+NTSTATUS cli_nt_error(struct cli_state *cli)
 {
         int flgs2 = SVAL(cli->inbuf,smb_flg2);
 
@@ -113,7 +113,7 @@ uint32 cli_nt_error(struct cli_state *cli)
 		return dos_to_ntstatus(class, code);
         }
 
-        return IVAL(cli->inbuf,smb_rcls);
+        return NT_STATUS(IVAL(cli->inbuf,smb_rcls));
 }
 
 
@@ -130,7 +130,7 @@ void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
 	flgs2 = SVAL(cli->inbuf,smb_flg2);
 
 	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-		uint32 ntstatus = IVAL(cli->inbuf, smb_rcls);
+		NTSTATUS ntstatus = NT_STATUS(IVAL(cli->inbuf, smb_rcls));
 		ntstatus_to_dos(ntstatus, eclass, ecode);
                 return;
         }
@@ -175,29 +175,38 @@ int cli_errno_from_dos(uint8 eclass, uint32 num)
 }
 
 /* Return a UNIX errno from a NT status code */
+static struct {
+	NTSTATUS status;
+	int error;
+} nt_errno_map[] = {
+        {NT_STATUS_ACCESS_VIOLATION, EACCES},
+        {NT_STATUS_NO_SUCH_FILE, ENOENT},
+        {NT_STATUS_NO_SUCH_DEVICE, ENODEV},
+        {NT_STATUS_INVALID_HANDLE, EBADF},
+        {NT_STATUS_NO_MEMORY, ENOMEM},
+        {NT_STATUS_ACCESS_DENIED, EACCES},
+        {NT_STATUS_OBJECT_NAME_NOT_FOUND, ENOENT},
+        {NT_STATUS_SHARING_VIOLATION, EBUSY},
+        {NT_STATUS_OBJECT_PATH_INVALID, ENOTDIR},
+        {NT_STATUS_OBJECT_NAME_COLLISION, EEXIST},
+        {NT_STATUS_PATH_NOT_COVERED, ENOENT},
+	{NT_STATUS(0), 0}
+};
 
-int cli_errno_from_nt(uint32 status)
+int cli_errno_from_nt(NTSTATUS status)
 {
-        DEBUG(10,("cli_errno_from_nt: 32 bit codes: code=%08x\n", status));
+	int i;
+        DEBUG(10,("cli_errno_from_nt: 32 bit codes: code=%08x\n", NT_STATUS_V(status)));
 
         /* Status codes without this bit set are not errors */
 
-        if (!(status & 0xc0000000))
+        if (!(NT_STATUS_V(status) & 0xc0000000))
                 return 0;
 
-        switch (status) {
-        case NT_STATUS_ACCESS_VIOLATION: return EACCES;
-        case NT_STATUS_NO_SUCH_FILE: return ENOENT;
-        case NT_STATUS_NO_SUCH_DEVICE: return ENODEV;
-        case NT_STATUS_INVALID_HANDLE: return EBADF;
-        case NT_STATUS_NO_MEMORY: return ENOMEM;
-        case NT_STATUS_ACCESS_DENIED: return EACCES;
-        case NT_STATUS_OBJECT_NAME_NOT_FOUND: return ENOENT;
-        case NT_STATUS_SHARING_VIOLATION: return EBUSY;
-        case NT_STATUS_OBJECT_PATH_INVALID: return ENOTDIR;
-        case NT_STATUS_OBJECT_NAME_COLLISION: return EEXIST;
-        case NT_STATUS_PATH_NOT_COVERED: return ENOENT;
-        }
+	for (i=0;nt_errno_map[i].error;i++) {
+		if (NT_STATUS_V(nt_errno_map[i].status) ==
+		    NT_STATUS_V(status)) return nt_errno_map[i].error;
+	}
 
         /* for all other cases - a default code */
         return EINVAL;
@@ -208,7 +217,7 @@ int cli_errno_from_nt(uint32 status)
 
 int cli_errno(struct cli_state *cli)
 {
-        uint32 status;
+        NTSTATUS status;
 
         if (cli_is_dos_error) {
                 uint8 eclass;

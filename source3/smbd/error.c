@@ -84,14 +84,14 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code,int line)
 		}
 	}
 
-	return error_packet(outbuf,0,eclass,ecode,line);
+	return error_packet(outbuf,NT_STATUS_OK,eclass,ecode,line);
 }
 
 
 /****************************************************************************
   create an error packet. Normally called using the ERROR() macro
 ****************************************************************************/
-int error_packet(char *outbuf,uint32 ntstatus,
+int error_packet(char *outbuf,NTSTATUS ntstatus,
 		 uint8 eclass,uint32 ecode,int line)
 {
 	int outsize = set_message(outbuf,0,0,True);
@@ -101,10 +101,10 @@ int error_packet(char *outbuf,uint32 ntstatus,
 		DEBUG(3,("error string = %s\n",strerror(errno)));
   
 	if (global_client_caps & CAP_STATUS32) {
-		if (ntstatus == 0 && eclass) {
+		if (NT_STATUS_V(ntstatus) == 0 && eclass) {
 			ntstatus = dos_to_ntstatus(eclass, ecode);
 		}
-		SIVAL(outbuf,smb_rcls,ntstatus);
+		SIVAL(outbuf,smb_rcls,NT_STATUS_V(ntstatus));
 		SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2)|FLAGS2_32_BIT_ERROR_CODES);
 		DEBUG(3,("error packet at line %d cmd=%d (%s) %s\n",
 			 line,
@@ -114,7 +114,7 @@ int error_packet(char *outbuf,uint32 ntstatus,
 		return outsize;
 	} 
 
-	if (eclass == 0 && ntstatus) {
+	if (eclass == 0 && NT_STATUS_V(ntstatus)) {
 		ntstatus_to_dos(ntstatus, &eclass, &ecode);
 	}
 

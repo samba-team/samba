@@ -145,8 +145,7 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	int total_data=0;
 	int total_param=0;
 	int this_data,this_param;
-	uint8 eclass;
-	uint32 ecode;
+	NTSTATUS status;
 	char *tdata;
 	char *tparam;
 
@@ -170,19 +169,9 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	 * to a trans call. This is not an error and should not
 	 * be treated as such.
 	 */
-
-	if (cli_is_error(cli)) {
-		if (cli_is_dos_error(cli)) {
-			cli_dos_error(cli, &eclass, &ecode);
-
-			if(cli->nt_pipe_fnum == 0)
-				return(False);
-
-			if(!(eclass == ERRDOS && ecode == ERRmoredata)) {
-				if (eclass != 0 && (ecode != (0x80000000 | STATUS_BUFFER_OVERFLOW)))
-					return(False);
-			}
-		}
+	status = cli_nt_error(cli);
+	
+	if (NT_STATUS_IS_ERR(status)) {
 		return False;
 	}
 
@@ -251,11 +240,8 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 				 CVAL(cli->inbuf,smb_com)));
 			return(False);
 		}
-		if (cli_is_dos_error(cli)) {
-                        cli_dos_error(cli, &eclass, &ecode);
-                        if(cli->nt_pipe_fnum == 0 || 
-                           !(eclass == ERRDOS && ecode == ERRmoredata))
-				return(False);
+		if (NT_STATUS_IS_ERR(cli_nt_error(cli))) {
+			return(False);
 		}
 	}
 	

@@ -276,7 +276,7 @@ static BOOL process_lockread(blocking_lock_record *blr)
  
 	status = do_lock( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, 
 			  (SMB_BIG_UINT)startpos, READ_LOCK);
-	if (status != NT_STATUS_NOPROBLEMO) {
+	if (NT_STATUS_V(status)) {
 		if ((errno != EACCES) && (errno != EAGAIN)) {
 			/*
 			 * We have other than a "can't get lock" POSIX
@@ -342,7 +342,7 @@ static BOOL process_lock(blocking_lock_record *blr)
 	errno = 0;
 	status = do_lock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)count, 
 			 (SMB_BIG_UINT)offset, WRITE_LOCK);
-	if (status != NT_STATUS_NOPROBLEMO) {
+	if (NT_STATUS_IS_ERR(status)) {
 		if((errno != EACCES) && (errno != EAGAIN)) {
 			/*
 			 * We have other than a "can't get lock" POSIX
@@ -391,7 +391,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 	uint16 lock_pid;
 	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
 	char *data;
-	NTSTATUS status = 0;
+	NTSTATUS status = NT_STATUS_OK;
 
 	data = smb_buf(inbuf) + ((large_file_format ? 20 : 10)*num_ulocks);
 
@@ -414,7 +414,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 		errno = 0;
 		status = do_lock(fsp,conn,count,lock_pid,offset, 
 				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK));
-		if (status != NT_STATUS_NOPROBLEMO) break;
+		if (NT_STATUS_IS_ERR(status)) break;
 	}
 
 	if(blr->lock_num == num_locks) {

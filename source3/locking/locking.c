@@ -105,7 +105,7 @@ NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 	BOOL ok = False;
 
 	if (!lp_locking(SNUM(conn)))
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS(0);
 
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
 
@@ -156,10 +156,10 @@ NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 	BOOL ok = False;
 	
 	if (!lp_locking(SNUM(conn)))
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS(0);
 	
 	if (!OPEN_FSP(fsp) || !fsp->can_lock || (fsp->conn != conn)) {
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS(NT_STATUS_INVALID_HANDLE);
 	}
 	
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for file %s\n",
@@ -176,15 +176,15 @@ NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
    
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
-		return NT_STATUS_LOCK_NOT_GRANTED;
+		return NT_STATUS(NT_STATUS_LOCK_NOT_GRANTED);
 	}
 
 	if (!lp_posix_locking(SNUM(conn)))
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS(0);
 
 	(void)release_posix_lock(fsp, offset, count);
 
-	return NT_STATUS_NOPROBLEMO; /* Did unlock */
+	return NT_STATUS(0);
 }
 
 /****************************************************************************
