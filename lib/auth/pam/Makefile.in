@@ -18,8 +18,7 @@ INSTALL_DATA	= @INSTALL_DATA@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
-exec_prefix = $(prefix)
-libdir = $(exec_prefix)/lib
+libdir = @libdir@
 
 PICFLAGS = @REAL_PICFLAGS@
 SHARED = @REAL_SHARED@

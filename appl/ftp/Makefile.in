@@ -16,8 +16,6 @@ CFLAGS 	= @CFLAGS@
 INSTALL = @INSTALL@
 
 prefix 	= @prefix@
-exec_prefix = $(prefix)
-libdir = $(exec_prefix)/lib
 
 SUBDIRS=common ftp ftpd
 
