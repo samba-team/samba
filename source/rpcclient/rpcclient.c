@@ -595,7 +595,7 @@ struct cli_state *setup_connection(struct cli_state *cli, char *system_name,
 /* Print usage information */
 static void usage(void)
 {
-	printf("Usage: rpcclient server [options]\n");
+	printf("Usage: rpcclient [options] server\n");
 
 	printf("\t-A authfile           file containing user credentials\n");
 	printf("\t-c \"command string\"   execute semicolon separated cmds\n");
