@@ -2288,6 +2288,10 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
 		pdb_free_sam(&pwd);
 		return False;
 	}
+ 	if (!pdb_set_pass_changed_now (pwd)) {
+		pdb_free_sam(&pwd);
+		return False; 
+	}
  
 	if(!pdb_update_sam_account(pwd, True)) {
 		pdb_free_sam(&pwd);

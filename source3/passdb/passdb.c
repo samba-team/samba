@@ -1624,29 +1624,6 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 	return True;
 }
 
-/*********************************************************************
- Set the user's PLAINTEXT password.  Used as an interface to the above.
- ********************************************************************/
-
-BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, char *plaintext)
-{
-	uchar new_lanman_p16[16];
-	uchar new_nt_p16[16];
-
-	if (!sampass || !plaintext)
-		return False;
-	
-	nt_lm_owf_gen (plaintext, new_nt_p16, new_lanman_p16);
-
-	if (!pdb_set_nt_passwd (sampass, new_nt_p16)) 
-		return False;
-
-	if (!pdb_set_lanman_passwd (sampass, new_lanman_p16)) 
-		return False;
-
-	return True;
-}
-
 BOOL pdb_set_unknown_3 (SAM_ACCOUNT *sampass, uint32 unkn)
 {
 	if (!sampass)
@@ -1688,3 +1665,57 @@ BOOL pdb_set_hours (SAM_ACCOUNT *sampass, uint8 *hours)
 
 	return True;
 }
+
+
+/* Helpful interfaces to the above */
+
+/*********************************************************************
+ Sets the last changed times and must change times for a normal
+ password change.
+ ********************************************************************/
+
+BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
+{
+
+	if (!sampass)
+		return False;
+	
+	if (!pdb_set_pass_last_set_time (sampass, time(NULL)))
+		return False;
+
+	if (!pdb_set_pass_must_change_time (sampass, 
+					    pdb_get_pass_last_set_time(sampass)
+					    + MAX_PASSWORD_AGE))
+		return False;
+	
+	return True;
+}
+
+/*********************************************************************
+ Set the user's PLAINTEXT password.  Used as an interface to the above.
+ Also sets the last change time to NOW.
+ ********************************************************************/
+
+BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
+{
+	uchar new_lanman_p16[16];
+	uchar new_nt_p16[16];
+
+	if (!sampass || !plaintext)
+		return False;
+	
+	nt_lm_owf_gen (plaintext, new_nt_p16, new_lanman_p16);
+
+	if (!pdb_set_nt_passwd (sampass, new_nt_p16)) 
+		return False;
+
+	if (!pdb_set_lanman_passwd (sampass, new_lanman_p16)) 
+		return False;
+	
+	if (!pdb_set_pass_changed_now (sampass))
+		return False;
+
+	return True;
+}
+
+

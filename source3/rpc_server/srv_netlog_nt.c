@@ -436,6 +436,12 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		return NT_STATUS_NO_MEMORY; 
 	}
  
+	if (!pdb_set_pass_changed_now     (sampass)) {
+		pdb_free_sam(&sampass);
+		/* Not quite sure what this one qualifies as, but this will do */
+		return NT_STATUS_NO_MEMORY; 
+	}
+ 
 	become_root();
 	ret = pdb_update_sam_account (sampass,False);
 	unbecome_root();
