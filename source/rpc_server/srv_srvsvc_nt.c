@@ -1602,7 +1602,9 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	get_current_user(&user, p);
 	fstrcpy(user_name, uidtoname(user.uid));
 
+	become_root();
 	conn = make_connection(qualname, user_name, null_pw, 0, "A:", user.vuid, &ecode);
+	unbecome_root();
 
 	if (conn == NULL) {
 		DEBUG(3,("_srv_net_file_query_secdesc: Unable to connect to %s\n", qualname));
@@ -1695,7 +1697,9 @@ uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	get_current_user(&user, p);
 	fstrcpy(user_name, uidtoname(user.uid));
 
-	conn = make_connection_nonroot(qualname, user_name, null_pw, 0, "A:", user.vuid, &ecode);
+	become_root();
+	conn = make_connection(qualname, user_name, null_pw, 0, "A:", user.vuid, &ecode);
+	unbecome_root();
 
 	if (conn == NULL) {
 		DEBUG(3,("_srv_net_file_set_secdesc: Unable to connect to %s\n", qualname));

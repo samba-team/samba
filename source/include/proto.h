@@ -4368,8 +4368,6 @@ BOOL set_current_service(connection_struct *conn,BOOL do_chdir);
 int add_home_service(char *service, char *homedir);
 int find_service(char *service);
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode);
-connection_struct *make_connection_nonroot(char *service,char *user,char *password, int pwlen,
-						char *dev,uint16 vuid, int *ecode);
 void close_cnum(connection_struct *conn, uint16 vuid);
 
 /*The following definitions come from  smbd/session.c  */
@@ -4411,6 +4409,7 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid);
 BOOL change_to_root_user(void);
 BOOL become_authenticated_pipe_user(pipes_struct *p);
 BOOL unbecome_authenticated_pipe_user(void);
+void init_conn_ctx(void);
 void become_root(void);
 void unbecome_root(void);
 BOOL become_user(connection_struct *conn, uint16 vuid);

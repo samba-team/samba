@@ -955,16 +955,19 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 		*perr = ERRnoaccess;
 		return -1;
 	}
-	unbecome_root();
 
-	/* connect to the print$ share under the same account as the user connected
-	 * to the rpc pipe */	
+	/*
+	 * Connect to the print$ share under the same account as the user connected
+	 * to the rpc pipe. Note we must still be root to do this.
+	 */
+
 	fstrcpy(user_name, pass->pw_name );
 	DEBUG(10,("get_correct_cversion: uid %d -> user %s\n", (int)user->uid, user_name));
 
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
-	conn = make_connection_nonroot("print$", user_name, null_pw, 0, "A:", user->vuid, &ecode);
+	conn = make_connection("print$", user_name, null_pw, 0, "A:", user->vuid, &ecode);
+	unbecome_root();
 
 	if (conn == NULL) {
 		DEBUG(0,("get_correct_cversion: Unable to connect\n"));
@@ -1282,15 +1285,19 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		unbecome_root();
 		return False;
 	}
-	unbecome_root();
 
-	/* connect to the print$ share under the same account as the user connected to the rpc pipe */	
+	/*
+	 * Connect to the print$ share under the same account as the user connected to the rpc pipe.
+	 * Note we must be root to do this.
+	 */
+
 	fstrcpy(user_name, pass->pw_name );
 	DEBUG(10,("move_driver_to_download_area: uid %d -> user %s\n", (int)user->uid, user_name));
 
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
-	conn = make_connection_nonroot("print$", user_name, null_pw, 0, "A:", user->vuid, &ecode);
+	conn = make_connection("print$", user_name, null_pw, 0, "A:", user->vuid, &ecode);
+	unbecome_root();
 
 	if (conn == NULL) {
 		DEBUG(0,("move_driver_to_download_area: Unable to connect\n"));

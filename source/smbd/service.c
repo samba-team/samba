@@ -227,7 +227,15 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	BOOL guest = False;
 	BOOL force = False;
 	connection_struct *conn;
+	uid_t euid;
 	int ret;
+
+	/* This must ONLY BE CALLED AS ROOT. As it exits this function as root. */
+
+	if ((euid = geteuid()) != 0) {
+		DEBUG(0,("make_connection: PANIC ERROR. Called as nonroot (%u)\n", (unsigned int)euid ));
+		smb_panic("make_connection: PANIC ERROR. Called as nonroot\n");
+	}
 
 	strlower(service);
 
@@ -636,29 +644,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
             
 	return(conn);
-}
-
-/****************************************************************************
- A version of make_connection designed to be called as a non-root user.
- Ensures current_user conn and vuid are not modified.
-****************************************************************************/
-
-connection_struct *make_connection_nonroot(char *service,char *user,char *password, int pwlen,
-						char *dev,uint16 vuid, int *ecode)
-{
-	extern struct current_user current_user;
-	connection_struct *conn = NULL;
-	connection_struct *saved_conn = current_user.conn;
-	uint16 saved_vuid = current_user.vuid;
-
-	become_root();
-	conn = make_connection(service, user, password, pwlen, dev, vuid, ecode);
-	unbecome_root();
-
-	current_user.conn = saved_conn;
-	current_user.vuid = saved_vuid;
-
-	return conn;
 }
 
 /****************************************************************************

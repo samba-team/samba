@@ -253,13 +253,83 @@ BOOL unbecome_authenticated_pipe_user(void)
 }
 
 /****************************************************************************
- Temporarily become a root user.  Must match with unbecome_root(). Doesn't
- modify current_user.
+ Utility functions used by become_xxx/unbecome_xxx.
+****************************************************************************/
+
+struct conn_ctx {
+	connection_struct *conn;
+	uint16 vuid;
+};
+ 
+/* A stack of current_user connection contexts. */
+ 
+static struct conn_ctx conn_ctx_stack[MAX_SEC_CTX_DEPTH];
+static int conn_ctx_stack_ndx;
+
+static void push_conn_ctx(void)
+{
+	struct conn_ctx *ctx_p;
+ 
+	/* Check we don't overflow our stack */
+ 
+	if (conn_ctx_stack_ndx == MAX_SEC_CTX_DEPTH) {
+		DEBUG(0, ("Connection context stack overflow!\n"));
+		smb_panic("Connection context stack overflow!\n");
+	}
+ 
+	/* Store previous user context */
+	ctx_p = &conn_ctx_stack[conn_ctx_stack_ndx];
+ 
+	ctx_p->conn = current_user.conn;
+	ctx_p->vuid = current_user.vuid;
+ 
+	DEBUG(3, ("push_conn_ctx(%u) : conn_ctx_stack_ndx = %d\n",
+		(unsigned int)ctx_p->vuid, conn_ctx_stack_ndx ));
+
+	conn_ctx_stack_ndx++;
+}
+
+static void pop_conn_ctx(void)
+{
+	struct conn_ctx *ctx_p;
+ 
+	/* Check for stack underflow. */
+
+	if (conn_ctx_stack_ndx == 0) {
+		DEBUG(0, ("Connection context stack underflow!\n"));
+		smb_panic("Connection context stack underflow!\n");
+	}
+
+	conn_ctx_stack_ndx--;
+	ctx_p = &conn_ctx_stack[conn_ctx_stack_ndx];
+
+	current_user.conn = ctx_p->conn;
+	current_user.vuid = ctx_p->vuid;
+
+	ctx_p->conn = NULL;
+	ctx_p->vuid = UID_FIELD_INVALID;
+}
+
+void init_conn_ctx(void)
+{
+    int i;
+ 
+    /* Initialise connection context stack */
+	for (i = 0; i < MAX_SEC_CTX_DEPTH; i++) {
+		conn_ctx_stack[i].conn = NULL;
+		conn_ctx_stack[i].vuid = UID_FIELD_INVALID;
+    }
+}
+
+/****************************************************************************
+ Temporarily become a root user.  Must match with unbecome_root(). Saves and
+ restores the connection context.
 ****************************************************************************/
 
 void become_root(void)
 {
 	push_sec_ctx();
+	push_conn_ctx();
 	set_root_sec_ctx();
 }
 
@@ -268,31 +338,12 @@ void become_root(void)
 void unbecome_root(void)
 {
 	pop_sec_ctx();
-}
-
-/****************************************************************************
- Utility functions used by become_user/unbecome_user.
-****************************************************************************/
-
-static connection_struct *saved_conn;
-static uint16 saved_vuid;
-
-static void save_conn_info(void)
-{
-	saved_conn = current_user.conn;
-	saved_vuid = current_user.vuid;
-}
-	
-static void restore_conn_info(void)
-{
-	current_user.conn = saved_conn;
-	current_user.vuid = saved_vuid;
+	pop_conn_ctx();
 }
 
 /****************************************************************************
  Push the current security context then force a change via change_to_user().
- In conjunction with unbecome_user, saves and restores the current_user
- conn and vuid elements.
+ Saves and restores the connection context.
 ****************************************************************************/
 
 BOOL become_user(connection_struct *conn, uint16 vuid)
@@ -300,11 +351,11 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 	if (!push_sec_ctx())
 		return False;
 
-	save_conn_info();
+	push_conn_ctx();
 
 	if (!change_to_user(conn, vuid)) {
 		pop_sec_ctx();
-		restore_conn_info();
+		pop_conn_ctx();
 		return False;
 	}
 
@@ -314,7 +365,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 BOOL unbecome_user()
 {
 	pop_sec_ctx();
-	restore_conn_info();
+	pop_conn_ctx();
 	return True;
 }
 

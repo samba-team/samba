@@ -683,6 +683,7 @@ static void usage(char *pname)
 	umask(0);
 
 	init_sec_ctx();
+	init_conn_ctx();
 
 	reopen_logs();
 
