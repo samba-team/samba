@@ -913,6 +913,9 @@ account without a valid local system user.\n", user_name);
 			}
 		}
 
+		/* Remember to set the "last changed time". */
+		pdb_set_pass_last_set_time(sam_pass, time(NULL));
+
 		if (pdb_add_sam_account(sam_pass)) {
 			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
 			pdb_free_sam(sam_pass);
@@ -944,7 +947,6 @@ account without a valid local system user.\n", user_name);
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED));
 	} else if (local_flags & LOCAL_SET_NO_PASSWORD) {
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ);
-		
 		/* This is needed to preserve ACB_PWNOTREQ in mod_smbfilepwd_entry */
 		if (!pdb_set_lanman_passwd (sam_pass, NULL)) {
 			pdb_free_sam(sam_pass);
@@ -1589,6 +1591,9 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 	if (!sampass)
 		return False;
 	
+	/* Remember to set the "last changed time". */
+	pdb_set_pass_last_set_time(sampass, time(NULL));
+
 	if (!pwd) {
 		/* Allow setting to NULL */
 		SAFE_FREE(sampass->nt_pw);
@@ -1616,6 +1621,9 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 {
 	if (!sampass)
 		return False;
+
+	/* Remember to set the "last changed time". */
+	pdb_set_pass_last_set_time(sampass, time(NULL));
 
 	if (!pwd) {
 		/* Allow setting to NULL */
