@@ -1053,6 +1053,68 @@ static NTSTATUS tdbsam_delete_trust_passwd(struct pdb_methods *methods, const SA
 }
 
 
+static NTSTATUS tdbsam_lsa_create_account(struct pdb_methods *my_methods, const DOM_SID *sid)
+{
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
+	TDB_CONTEXT 	*pwd_tdb = NULL;
+	TDB_DATA 	key, data;
+	fstring 	keystr;
+	NTSTATUS	ret = NT_STATUS_UNSUCCESSFUL;
+	fstring		sid_str;
+
+	/* invalidate the existing TDB iterator if it is open */
+	
+	if (tdb_state->passwd_tdb) {
+		tdb_close(tdb_state->passwd_tdb);
+		tdb_state->passwd_tdb = NULL;
+	}
+
+ 	/* open the account TDB passwd*/
+	
+	pwd_tdb = tdbsam_tdbopen(tdb_state->tdbsam_location, O_RDWR | O_CREAT);
+	
+  	if (!pwd_tdb) {
+		DEBUG(0, ("tdb_lsa_create_account: Unable to open TDB passwd (%s)!\n", 
+			tdb_state->tdbsam_location));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+  	/* setup the PRIV index key */
+	sid_to_string(sid_str, sid);
+
+	slprintf(keystr, sizeof(keystr)-1, "%s%s", PRIVPREFIX, sid_str);
+	key.dptr = keystr;
+	key.dsize = strlen(keystr) + 1;
+
+	/* get the record */
+	data = tdb_fetch (pwd_tdb, key);
+
+	/* check if the privilege already exist in the database */
+	if (data.dptr != NULL) {
+		ret = NT_STATUS_OK;
+		goto done;
+	}
+
+	data.dptr = strdup("");
+	data.dsize = 1;
+
+	/* add the account */
+	if (tdb_store(pwd_tdb, key, data, TDB_INSERT) != TDB_SUCCESS) {
+		DEBUG(0, ("Unable to modify passwd TDB!"));
+		DEBUGADD(0, (" Error: %s", tdb_errorstr(pwd_tdb)));
+		DEBUGADD(0, (" occured while storing the main record (%s)\n", keystr));
+		goto done;
+	}
+
+	ret = NT_STATUS_OK;
+	
+done:	
+	/* cleanup */
+	tdb_close (pwd_tdb);
+	
+	return (ret);	
+}
+
 /***************************************************************************
  Add privilege to sid
 ****************************************************************************/
@@ -1067,6 +1129,7 @@ static NTSTATUS tdbsam_add_privilege_to_sid(struct pdb_methods *my_methods, cons
 	fstring		sid_str;
 	char		*priv_list = NULL, *s = NULL;
 	size_t		str_size;
+	int		priv_name_len = strlen(priv_name);
 	int		flag;
 
 	/* invalidate the existing TDB iterator if it is open */
@@ -1099,7 +1162,7 @@ static NTSTATUS tdbsam_add_privilege_to_sid(struct pdb_methods *my_methods, cons
 	data = tdb_fetch (pwd_tdb, key);
 
 	if (data.dptr) {
-		char *p, *c;
+		char *p;
 
 		/* check the list is not empty */
 		if (*(data.dptr)) {
@@ -1113,20 +1176,17 @@ static NTSTATUS tdbsam_add_privilege_to_sid(struct pdb_methods *my_methods, cons
 		/* check the privilege is not yet there */
 		p = data.dptr;
 
-		while ((c = strchr(p, ',')) != NULL) {
-			*c = '\0';
-			p = c + 1;
-
-			if ((StrCaseCmp(priv_name, p)) == 0) {
+		do {
+			p += (p == data.dptr)?0:1;
+			if ((StrnCaseCmp(p, priv_name, priv_name_len)) == 0)	{
 				ret = NT_STATUS_OK;
+				SAFE_FREE(priv_list);
+				SAFE_FREE(data.dptr);
 				goto done;
 			}
-		}
-		if ((StrCaseCmp(priv_name, p)) == 0) {
-			ret = NT_STATUS_OK;
-			goto done;
-		}
 
+		} while ((p = strchr(p, ',')) != NULL);
+ 
 		SAFE_FREE(data.dptr);
 
 		flag = TDB_MODIFY;
@@ -1137,7 +1197,8 @@ static NTSTATUS tdbsam_add_privilege_to_sid(struct pdb_methods *my_methods, cons
 
 	/* add the given privilege */
 	if (priv_list) {
-		str_size = strlen(priv_list) + strlen(priv_name) + 2;
+		int priv_list_len = strlen(priv_list);
+		str_size = priv_list_len + priv_name_len + 2;
 		s = realloc(priv_list, str_size);
 		if (!s) {
 			DEBUG(0, ("tdbsam_add_privilege_to_sid: Out of Memory!\n"));
@@ -1145,8 +1206,8 @@ static NTSTATUS tdbsam_add_privilege_to_sid(struct pdb_methods *my_methods, cons
 			goto done;
 		}
 		priv_list = s;
-		s = &priv_list[strlen(priv_list)];
-		snprintf(s, strlen(priv_name) + 2, ",%s", priv_name);
+		s = &priv_list[priv_list_len];
+		snprintf(s, priv_name_len + 2, ",%s", priv_name);
 
 	} else {
 		priv_list = strdup(priv_name);
@@ -1193,7 +1254,8 @@ static NTSTATUS tdbsam_remove_privilege_from_sid(struct pdb_methods *my_methods,
 	fstring		name;
 	NTSTATUS	ret = NT_STATUS_UNSUCCESSFUL;
 	fstring		sid_str;
-	char		*priv_list = NULL, *s = NULL;
+	char		*priv_list = NULL, *p = NULL;
+	int		priv_name_len = strlen(priv_name);
 
 	/* invalidate the existing TDB iterator if it is open */
 	
@@ -1237,24 +1299,33 @@ static NTSTATUS tdbsam_remove_privilege_from_sid(struct pdb_methods *my_methods,
 		priv_list = strdup(data.dptr);
 		if (!priv_list) {
 			DEBUG(0, ("tdbsam_remove_sid_from_privilege: Out of Memory!\n"));
+			SAFE_FREE(data.dptr);
 			goto done;
 		}
 		SAFE_FREE(data.dptr);
 	}
 
 	/* remove the given privilege */
+	p = priv_list;
 
-	s = strstr(priv_list, name);
-	if (s) {
-		char *p;
-		p = strstr(s, ",");
-		if (p) {
-			size_t l = strlen(priv_list) + 1 - (s - priv_list);
-			memmove(s, ++p, l);
+	do {
+		p += (p == data.dptr)?0:1;
+		if ((StrnCaseCmp(p, priv_name, priv_name_len)) == 0)	{
+			break;
+		}
+
+	} while ((p = strchr(p, ',')) != NULL);
+ 
+	if (p) {
+		char *s;
+		s = strchr(p, ',');
+		if (s) {
+			size_t l = strlen(priv_list) + 1 - (p - priv_list);
+			memmove(p, ++s, l);
 		} else {
-			if (s != priv_list)
-				s--;
-			*s = '\0';
+			if (p != priv_list)
+				p--;
+			*p = '\0';
 		}
 	} else {
 		/* sid not found */
@@ -1342,7 +1413,8 @@ static int tdbsam_traverse_sids(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, voi
 
 struct priv_traverse_2 {
 	const char *privname;
-	char *sid_list;
+	DOM_SID **sid_list;
+	int *sid_count;
 	NTSTATUS status;
 };
 
@@ -1350,56 +1422,48 @@ static int tdbsam_traverse_single_privilege(TDB_CONTEXT *t, TDB_DATA key, TDB_DA
 {
 	struct priv_traverse_2 *pt = (struct priv_traverse_2 *)state;
 	int  prefixlen = strlen(PRIVPREFIX);
+	int privname_len = strlen(pt->privname);
+
+	if (*(data.dptr) == 0) return 0;
 
 	/* check we have a PRIV_+SID entry */
 	if (strncmp(key.dptr, PRIVPREFIX, prefixlen) == 0) {
 
 		fstring sid_str;
-		char *c, *s;
-		size_t str_size;
+		char *p;
 		BOOL found = False;
 		/* add to privilege_set if any of the sid in the token
 		 * contain the privilege */
 
 		fstrcpy(sid_str, &key.dptr[strlen(PRIVPREFIX)]);
 
-		s = data.dptr;
-		if (*s == '\0') return 0;
+		p = data.dptr;
 
-		while ((c = strchr(s, ',')) != NULL) {
-			*c = '\0';
-			s = c + 1;
-
-			if ((StrCaseCmp(pt->privname, s)) == 0) {
+		do {
+			p += (p == data.dptr)?0:1;
+			if ((StrnCaseCmp(p, pt->privname, privname_len)) == 0)	{
 				found = True;
+				break;
 			}
-		}
-		if ((StrCaseCmp(pt->privname, s)) == 0) {
-			found = True;
-		}
 
+		} while ((p = strchr(p, ',')) != NULL);
+ 
 		if (found) {
-			/* add the given privilege */
-			if (pt->sid_list != NULL) {
-				str_size = strlen(pt->sid_list) + strlen(sid_str) + 2;
-				s = realloc(pt->sid_list, str_size);
-				if (!s) {
-					DEBUG(0, ("tdbsam_add_privilege_to_sid: Out of Memory!\n"));
-					pt->status = NT_STATUS_NO_MEMORY;
-					return 1;
-				}
-				pt->sid_list = s;
-				s = &(pt->sid_list[strlen(pt->sid_list)]);
-				snprintf(s, strlen(sid_str) + 2, ",%s", sid_str);
+			/* add the discovered sid */
+			DOM_SID tmpsid;
 
-			} else {
-				pt->sid_list = strdup(sid_str);
-				if (pt->sid_list == NULL) {
-					DEBUG(0, ("tdbsam_add_sid_to_privilege: Out of Memory!\n"));
-					pt->status = NT_STATUS_NO_MEMORY;
-					return 1;
-				}
+			if (!string_to_sid(&tmpsid, sid_str)) {
+				DEBUG(3, ("Could not convert SID\n"));
+				return 0;
 			}
+
+			add_sid_to_array(&tmpsid, pt->sid_list, pt->sid_count);
+
+			if (pt->sid_list == NULL) {
+				pt->status = NT_STATUS_NO_MEMORY;
+				return 1;
+			}
+
 			pt->status = NT_STATUS_OK;
 		}
 	}
@@ -1450,7 +1514,7 @@ done:
 	return ret;
 }	
 
-static NTSTATUS tdbsam_get_privilege_entry(struct pdb_methods *my_methods, const char *privname, char **sid_list)
+static NTSTATUS tdbsam_get_privilege_entry(struct pdb_methods *my_methods, const char *privname, DOM_SID **sid_list, int *sid_count)
 {
 	TDB_CONTEXT *pwd_tdb = NULL;
 	struct priv_traverse_2 pt;
@@ -1461,7 +1525,8 @@ static NTSTATUS tdbsam_get_privilege_entry(struct pdb_methods *my_methods, const
 		return NT_STATUS_UNSUCCESSFUL;
 
 	pt.status = NT_STATUS_UNSUCCESSFUL;
-	pt.sid_list = NULL;
+	pt.sid_list = sid_list;
+	pt.sid_count = sid_count;
 	pt.privname = privname;
 
 	tdb_traverse(pwd_tdb, tdbsam_traverse_single_privilege, &pt);
@@ -1469,9 +1534,9 @@ static NTSTATUS tdbsam_get_privilege_entry(struct pdb_methods *my_methods, const
 	if (!NT_STATUS_IS_OK(pt.status)) {
 		SAFE_FREE(*sid_list);
 		*sid_list = NULL;
+		*sid_count = 0;
 	}
 
-	*sid_list = pt.sid_list;
 	tdb_close(pwd_tdb);
 	return pt.status;
 }	
@@ -1508,6 +1573,7 @@ static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	(*pdb_method)->add_trust_passwd = tdbsam_add_trust_passwd;
 	(*pdb_method)->update_trust_passwd = tdbsam_update_trust_passwd;
 	(*pdb_method)->delete_trust_passwd = tdbsam_delete_trust_passwd;
+	(*pdb_method)->lsa_create_account = tdbsam_lsa_create_account;
 	(*pdb_method)->add_privilege_to_sid = tdbsam_add_privilege_to_sid;
 	(*pdb_method)->remove_privilege_from_sid = tdbsam_remove_privilege_from_sid;
 	(*pdb_method)->get_privilege_set = tdbsam_get_privilege_set;

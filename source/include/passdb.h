@@ -407,13 +407,15 @@ typedef struct pdb_context
 
 	/* privileges functions */
 
+	NTSTATUS (*pdb_lsa_create_account)(struct pdb_context *context, const DOM_SID *sid);
+
 	NTSTATUS (*pdb_add_privilege_to_sid)(struct pdb_context *context, const char *priv_name, const DOM_SID *sid);
 
 	NTSTATUS (*pdb_remove_privilege_from_sid)(struct pdb_context *context, const char *priv_name, const DOM_SID *sid);
 
 	NTSTATUS (*pdb_get_privilege_set)(struct pdb_context *context, DOM_SID *user_sids, int num_sids, PRIVILEGE_SET *privs);
 	
-	NTSTATUS (*pdb_get_privilege_entry)(struct pdb_context *context, const char *privname, char **sid_list);
+	NTSTATUS (*pdb_get_privilege_entry)(struct pdb_context *context, const char *privname, DOM_SID **sid_list, int *sid_count);
 	
 	void (*free_fn)(struct pdb_context **);
 	
@@ -547,13 +549,15 @@ typedef struct pdb_methods
 
 	/* privileges functions */
 
+	NTSTATUS (*lsa_create_account)(struct pdb_methods *methods, const DOM_SID *sid);
+
 	NTSTATUS (*add_privilege_to_sid)(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid);
 
 	NTSTATUS (*remove_privilege_from_sid)(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid);
 
 	NTSTATUS (*get_privilege_set)(struct pdb_methods *methods, DOM_SID *user_sids, int num_sids, PRIVILEGE_SET *privs);
 
-	NTSTATUS (*get_privilege_entry)(struct pdb_methods *methods, const char *privname, char **sid_list);
+	NTSTATUS (*get_privilege_entry)(struct pdb_methods *methods, const char *privname, DOM_SID **sid_list, int *sid_count);
 
 } PDB_METHODS;
 

@@ -754,6 +754,26 @@ static NTSTATUS context_delete_trust_passwd(struct pdb_context *context,
 	return ret;
 }
 
+static NTSTATUS context_lsa_create_account(struct pdb_context *context, const DOM_SID *sid)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	struct pdb_methods *curmethods;
+	if ((!context)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+	curmethods = context->pdb_methods;
+	while (curmethods){
+		if (NT_STATUS_IS_OK(ret = curmethods->lsa_create_account(curmethods, sid))) {
+			return ret;
+		}
+		curmethods = curmethods->next;
+	}
+
+	return ret;
+}
+
 static NTSTATUS context_add_privilege_to_sid(struct pdb_context *context, const char *priv_name, const DOM_SID *sid)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
@@ -814,7 +834,7 @@ static NTSTATUS context_get_privilege_set(struct pdb_context *context, DOM_SID *
 	return ret;
 }
 
-static NTSTATUS context_get_privilege_entry(struct pdb_context *context, const char *privname, char **sid_list)
+static NTSTATUS context_get_privilege_entry(struct pdb_context *context, const char *privname, DOM_SID **sid_list, int *sid_count)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -825,7 +845,7 @@ static NTSTATUS context_get_privilege_entry(struct pdb_context *context, const c
 	}
 	curmethods = context->pdb_methods;
 	while (curmethods){
-		if (NT_STATUS_IS_OK(ret = curmethods->get_privilege_entry(curmethods, privname, sid_list))) {
+		if (NT_STATUS_IS_OK(ret = curmethods->get_privilege_entry(curmethods, privname, sid_list, sid_count))) {
 			return ret;
 		}
 		curmethods = curmethods->next;
@@ -966,6 +986,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_add_trust_passwd = context_add_trust_passwd;
 	(*context)->pdb_update_trust_passwd = context_update_trust_passwd;
 	(*context)->pdb_delete_trust_passwd = context_delete_trust_passwd;
+	(*context)->pdb_lsa_create_account = context_lsa_create_account;
 	(*context)->pdb_add_privilege_to_sid = context_add_privilege_to_sid;
 	(*context)->pdb_remove_privilege_from_sid = context_remove_privilege_from_sid;
 	(*context)->pdb_get_privilege_set = context_get_privilege_set;
@@ -1408,6 +1429,18 @@ BOOL pdb_enum_alias_memberships(const DOM_SID *sid,
 							  aliases, num));
 }
 
+BOOL pdb_lsa_create_account(DOM_SID *sid)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->
+			       pdb_lsa_create_account(pdb_context, sid));
+}
+
 BOOL pdb_add_privilege_to_sid(char *priv_name, DOM_SID *sid)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
@@ -1444,7 +1477,7 @@ BOOL pdb_get_privilege_set(DOM_SID *sid_list, int num_sids, PRIVILEGE_SET *privs
 			       pdb_get_privilege_set(pdb_context, sid_list, num_sids, privset));
 }
 
-BOOL pdb_get_privilege_entry(const char *privname, char **sid_list)
+BOOL pdb_get_privilege_entry(const char *privname, DOM_SID **sid_list, int *sid_count)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -1453,7 +1486,7 @@ BOOL pdb_get_privilege_entry(const char *privname, char **sid_list)
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_get_privilege_entry(pdb_context, privname, sid_list));
+			       pdb_get_privilege_entry(pdb_context, privname, sid_list, sid_count));
 }
 
 /***************************************************************
@@ -1550,6 +1583,11 @@ static NTSTATUS pdb_default_delete_trust_passwd(struct pdb_methods *methods, con
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+static NTSTATUS pdb_default_lsa_create_account(struct pdb_methods *methods, const DOM_SID *sid)
+{
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS pdb_default_add_privilege_to_sid(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -1567,7 +1605,7 @@ static NTSTATUS pdb_default_get_privilege_set(struct pdb_methods *methods, DOM_S
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_default_get_privilege_entry(struct pdb_methods *methods, const char *privname, char **sid_list)
+static NTSTATUS pdb_default_get_privilege_entry(struct pdb_methods *methods, const char *privname, char **sid_list, int *sid_count)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -1618,6 +1656,7 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->update_trust_passwd = pdb_default_update_trust_passwd;
 	(*methods)->delete_trust_passwd = pdb_default_delete_trust_passwd;
 
+	(*methods)->lsa_create_account = pdb_default_lsa_create_account;
 	(*methods)->add_privilege_to_sid = pdb_default_add_privilege_to_sid;
 	(*methods)->remove_privilege_from_sid = pdb_default_remove_privilege_from_sid;
 	(*methods)->get_privilege_set = pdb_default_get_privilege_set;

@@ -27,8 +27,8 @@
 #define NTSTATUS_CHECK(err, label, str1, str2) do { if (!NT_STATUS_IS_OK(err)) { DEBUG(0, ("%s: %s failed!\n", str1, str2)); } } while(0)
 
 PRIVS privs[] = {
-	{SE_CREATE_TOKEN,		"SeCreateTokenPrivilege",		"Create Token"},
 	{SE_ASSIGN_PRIMARY_TOKEN,	"SeAssignPrimaryTokenPrivilege",	"Assign Primary Token"},
+	{SE_CREATE_TOKEN,		"SeCreateTokenPrivilege",		"Create Token"},
 	{SE_LOCK_MEMORY,		"SeLockMemoryPrivilege",		"Lock Memory"},
 	{SE_INCREASE_QUOTA,		"SeIncreaseQuotaPrivilege",		"Increase Quota"},
 	{SE_UNSOLICITED_INPUT,		"SeUnsolicitedInputPrivilege",		"Unsolicited Input"},

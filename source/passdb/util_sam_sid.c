@@ -308,10 +308,18 @@ BOOL map_name_to_wellknown_sid(DOM_SID *sid, enum SID_NAME_USE *use, const char 
 
 void add_sid_to_array(const DOM_SID *sid, DOM_SID **sids, int *num)
 {
-	*sids = Realloc(*sids, ((*num)+1) * sizeof(DOM_SID));
+	DOM_SID *list;
 
-	if (*sids == NULL)
+	list = Realloc(*sids, ((*num)+1) * sizeof(DOM_SID));
+
+	if (list == NULL) {
+		DEBUG(0, ("Realloc failed in add_sid_to_array!!\n"));
+		free(*sids);
+		*sids = NULL;
 		return;
+	}
+
+	*sids = list;
 
 	sid_copy(&((*sids)[*num]), sid);
 	*num += 1;

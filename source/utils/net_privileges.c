@@ -61,7 +61,7 @@ static char* get_string_param( const char* param )
  Dump a GROUP_MAP entry to stdout (long or short listing)
 **********************************************************/
 
-static void print_priv_entry(const char *privname, const char *description, const char *sid_list)
+static void print_priv_entry(const char *privname, const char *description, const DOM_SID *sid_list, int sid_count)
 {
 	d_printf("%s\n", privname);
 
@@ -69,8 +69,19 @@ static void print_priv_entry(const char *privname, const char *description, cons
 		d_printf("\tdescription: %s\n", description);
 	}
 
-	if (sid_list) {
-		d_printf("\tSIDs: %s\n", sid_list);
+	if (sid_count != 0) {
+		int i;
+		pstring sid_str;
+
+		d_printf("\tSIDs: ");
+
+		for (i = 0; i < sid_count; i++) {
+			sid_to_string(sid_str, &sid_list[i]);
+			if (i != 0) d_printf(",");
+			d_printf(sid_str);
+		}
+
+		d_printf("\n");
 	} else {
 		d_printf("\tNo SIDs in this privilege\n");
 	}
@@ -115,7 +126,8 @@ static int net_priv_list(int argc, const char **argv)
 		/* list all privileges of a single sid */
 		
 	} else {
-	       	char *sid_list = NULL;
+	       	DOM_SID *sid_list;
+		int sid_count;
 		
 		if (privname[0] != '\0') {
 			const char *description = NULL;
@@ -135,19 +147,27 @@ static int net_priv_list(int argc, const char **argv)
 			}
 			
 			/* Get the current privilege from the database */
-			pdb_get_privilege_entry(privname, &sid_list);
-			print_priv_entry(privname, description, sid_list);
+			sid_list = NULL;
+			sid_count = 0;
+
+			pdb_get_privilege_entry(privname, &sid_list, &sid_count);
+			print_priv_entry(privname, description, sid_list, sid_count);
 
 			SAFE_FREE(sid_list);
 
 		} else for (i=0; privs[i].se_priv != SE_ALL_PRIVS; i++) {
 
-			if (!pdb_get_privilege_entry(privs[i].priv, &sid_list)) {
-				if (!verbose)
+			sid_list = NULL;
+			sid_count = 0;
+
+			if (!pdb_get_privilege_entry(privs[i].priv, &sid_list, &sid_count)) {
+				if (!verbose) {
+					SAFE_FREE(sid_list);
 					continue;
+				}
 			}
 
-			print_priv_entry(privs[i].priv, privs[i].description, sid_list);
+			print_priv_entry(privs[i].priv, privs[i].description, sid_list, sid_count);
 
 			SAFE_FREE(sid_list);
 		}
