@@ -962,8 +962,8 @@ static struct parm_struct parm_table[] =
 
   {"Winbind daemon options", P_SEP, P_SEPARATOR},
 
-  {"surs uid map", P_STRING, P_GLOBAL, &Globals.szWinbindUID, handle_winbind_id, NULL, 0},
-  {"surs gid map", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_id, NULL, 0},
+  {"winbind uid", P_STRING, P_GLOBAL, &Globals.szWinbindUID, handle_winbind_id, NULL, 0},
+  {"winbind gid", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_id, NULL, 0},
   {"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, 0},
   {"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, 0},
   {"winbind cache time", P_INTEGER, P_GLOBAL, &Globals.winbind_cache_time, NULL,   NULL,  0},
@@ -2388,8 +2388,8 @@ static BOOL handle_copy(char *pszParmValue,char **ptr)
 
  [global]
 
-        winbind uid = ACSYS-NTDOM:1000-1999, BUILTIN:2000-2999
-        winbind gid = BUILTIN:600-699, ACSYS-NTDOM:700-899
+        winbind uid = 1000-1999
+        winbind gid = 700-899
 
  We only do simple parsing checks here.  The strings are parsed into useful
  structures in the winbind daemon code.
@@ -2400,20 +2400,10 @@ static BOOL handle_copy(char *pszParmValue,char **ptr)
 
 static BOOL handle_winbind_id(char *pszParmValue, char **ptr)
 {
-    fstring temp;
-    char *p;
+    int low, high;
 
-    fstrcpy(temp, pszParmValue);
-
-    /* Check list values are of form DOMAIN:id1 or DOMAIN:id1-id2 */
-        
-    for (p = strtok(temp, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
-        int value;
-
-        if ((sscanf(p, "%*[^/]/%d", &value) != 1) &&
-            (sscanf(p, "%*[^/]/%*d-%d", &value) != 1)) {
-            return False;
-        }
+    if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2) {
+        return False;
     }
 
     /* Parse OK */
