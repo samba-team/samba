@@ -82,6 +82,10 @@ static int smb_full_audit_set_quota(struct vfs_handle_struct *handle,
 			   struct connection_struct *conn,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
 			   SMB_DISK_QUOTA *qt);
+static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
+                                struct files_struct *fsp,
+                                SHADOW_COPY_DATA *shadow_copy_data, BOOL labels);
+
 static DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct *conn,
 			  const char *fname);
 static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
@@ -303,6 +307,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_set_quota),	SMB_VFS_OP_SET_QUOTA,
 	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_get_shadow_copy_data), SMB_VFS_OP_GET_SHADOW_COPY_DATA,
+	 SMB_VFS_LAYER_LOGGER},
 
 	/* Directory operations */
 
@@ -395,9 +401,9 @@ static vfs_op_tuple audit_op_tuples[] = {
 
 	/* POSIX ACL operations. */
 
-	{SMB_VFS_OP(smb_full_audit_chmod_acl),	SMB_VFS_OP_CHMOD,
+	{SMB_VFS_OP(smb_full_audit_chmod_acl),	SMB_VFS_OP_CHMOD_ACL,
 	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_fchmod_acl),	SMB_VFS_OP_FCHMOD,
+	{SMB_VFS_OP(smb_full_audit_fchmod_acl),	SMB_VFS_OP_FCHMOD_ACL,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_sys_acl_get_entry),	SMB_VFS_OP_SYS_ACL_GET_ENTRY,
 	 SMB_VFS_LAYER_LOGGER},
@@ -784,6 +790,19 @@ static int smb_full_audit_set_quota(struct vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_SET_QUOTA(handle, conn, qtype, id, qt);
 
 	do_log(SMB_VFS_OP_SET_QUOTA, (result >= 0), handle, "");
+
+	return result;
+}
+
+static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				SHADOW_COPY_DATA *shadow_copy_data, BOOL labels)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_GET_SHADOW_COPY_DATA(handle, fsp, shadow_copy_data, labels);
+
+	do_log(SMB_VFS_OP_GET_SHADOW_COPY_DATA, (result >= 0), handle, "");
 
 	return result;
 }
