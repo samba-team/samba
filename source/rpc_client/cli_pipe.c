@@ -1054,7 +1054,7 @@ static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, const int pipe_idx, RPC_IFAC
 	/* check the transfer syntax */
 	if ((hdr_ba->transfer.version != transfer->version) ||
 	     (memcmp(&hdr_ba->transfer.uuid, &transfer->uuid, sizeof(transfer->uuid)) !=0)) {
-		DEBUG(0,("bind_rpc_pipe: transfer syntax differs\n"));
+		DEBUG(2,("bind_rpc_pipe: transfer syntax differs\n"));
 		return False;
 	}
 
@@ -1208,7 +1208,7 @@ BOOL rpc_pipe_bind(struct cli_state *cli, const int pipe_idx, char *my_name)
 		}
 
 		if(!check_bind_response(&hdr_ba, pipe_idx, &transfer)) {
-			DEBUG(0,("rpc_pipe_bind: check_bind_response failed.\n"));
+			DEBUG(2,("rpc_pipe_bind: check_bind_response failed.\n"));
 			prs_mem_free(&rdata);
 			return False;
 		}
@@ -1286,8 +1286,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 	/******************* bind request on pipe *****************/
 
 	if (!rpc_pipe_bind(cli, pipe_idx, global_myname)) {
-		DEBUG(0,("cli_nt_session_open: rpc bind failed. Error was %s\n",
-		          cli_errstr(cli)));
+		DEBUG(2,("cli_nt_session_open: rpc bind failed\n"));
 		cli_close(cli, cli->nt_pipe_fnum);
 		return False;
 	}
