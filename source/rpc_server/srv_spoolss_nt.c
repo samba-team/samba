@@ -729,14 +729,17 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 	/* NT doesn't let us connect to a printer if the connecting user
 	   doesn't have print permission.  */
 
-	if (!get_printer_snum(handle, &snum))
-		return ERROR_INVALID_HANDLE;
+	if (!handle_is_printserver(handle)) {
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_USE)) {
-		DEBUG(3, ("access DENIED for printer open\n"));
-		close_printer_handle(handle);
-		result = ERROR_ACCESS_DENIED;
-		goto done;
+		if (!get_printer_snum(handle, &snum))
+			return ERROR_INVALID_HANDLE;
+
+		if (!print_access_check(NULL, snum, PRINTER_ACCESS_USE)) {
+			DEBUG(3, ("access DENIED for printer open\n"));
+			close_printer_handle(handle);
+			result = ERROR_ACCESS_DENIED;
+			goto done;
+		}
 	}
 
  done:
