@@ -48,8 +48,8 @@ void sec_ace_copy(SEC_ACE *ace_dest, SEC_ACE *ace_src)
 	ace_dest->size  = ace_src->size;
 	ace_dest->info.mask = ace_src->info.mask;
 	ace_dest->obj_flags = ace_src->obj_flags;
-	memcpy(&ace_dest->obj_guid, &ace_src->obj_guid, GUID_SIZE);
-	memcpy(&ace_dest->inh_guid, &ace_src->inh_guid, GUID_SIZE);	
+	memcpy(&ace_dest->obj_guid, &ace_src->obj_guid, sizeof(struct uuid));
+	memcpy(&ace_dest->inh_guid, &ace_src->inh_guid, sizeof(struct uuid));
 	sid_copy(&ace_dest->trustee, &ace_src->trustee);
 }
 
