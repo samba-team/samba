@@ -443,7 +443,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
   /* the client expects localtime */
   t -= TimeDiff(t);
 
-  PACKI(desc,"W",queue->job); /* uJobId */
+  PACKI(desc,"W",pjobid_to_rap(queue->job)); /* uJobId */
   if (uLevel == 1) {
     PACKS(desc,"B21",queue->fs_user); /* szUserName */
     PACKS(desc,"B","");		/* pad */
@@ -933,7 +933,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	if (!mdrcnt && lp_disable_spoolss())
 		desc.errcode = ERRbuftoosmall;
  
-    *rdata_len = desc.usedlen;
+	*rdata_len = desc.usedlen;
 	*rparam_len = 6;
 	*rparam = REALLOC(*rparam,*rparam_len);
 	SSVALS(*rparam,0,desc.errcode);
@@ -2185,7 +2185,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	extern struct current_user current_user;
 	WERROR werr = WERR_OK;
 
-	jobid = SVAL(p,0);
+	jobid = rap_to_pjobid(SVAL(p,0));
 
 	/* check it's a supported varient */
 	if (!(strcsequal(str1,"W") && strcsequal(str2,"")))
@@ -2318,7 +2318,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	int function = SVAL(p,4);
 	int place, errcode;
 
-	jobid = SVAL(p,0);
+	jobid = rap_to_pjobid(SVAL(p,0));
 	*rparam_len = 4;
 	*rparam = REALLOC(*rparam,*rparam_len);
   
@@ -2994,7 +2994,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   int count;
   int i;
   int snum;
-  int job;
+  uint32 jobid;
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
   print_status_struct status;
@@ -3011,14 +3011,14 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   if (strcmp(str1,"WWrLh") != 0) return False;
   if (!check_printjob_info(&desc,uLevel,str2)) return False;
 
-  job = SVAL(p,0);
-  snum = print_job_snum(job);
+  jobid = rap_to_pjobid(SVAL(p,0));
+  snum = print_job_snum(jobid);
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
   count = print_queue_status(snum,&queue,&status);
   for (i = 0; i < count; i++) {
-    if (queue[i].job == job) break;
+    if (queue[i].job == jobid) break;
   }
 
   if (mdrcnt > 0) {
