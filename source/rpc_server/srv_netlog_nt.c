@@ -514,6 +514,12 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(usr_info);
+
+ 	/* store the user information, if there is any. */
+	r_u->user = usr_info;
+	r_u->switch_value = 0; /* indicates no info */
+	r_u->auth_resp = 1; /* authoritative response */
+	r_u->switch_value = 3; /* indicates type of validation user info */
  
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
@@ -526,12 +532,6 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
     
 	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
 	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
-
-	/* store the user information, if there is any. */
-	r_u->user = usr_info;
-	r_u->switch_value = 0; /* indicates no info */
-	r_u->auth_resp = 1; /* authoritative response */
-	r_u->switch_value = 3; /* indicates type of validation user info */
 
 	/* find the username */
     
