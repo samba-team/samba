@@ -26,6 +26,8 @@ sub smb_build_main($)
 
 	create_depend($SMB_BUILD_CTX);
 
+	create_output($SMB_BUILD_CTX);
+
 	create_makefile_in($SMB_BUILD_CTX);
 
 	_dump_ctx($SMB_BUILD_CTX);

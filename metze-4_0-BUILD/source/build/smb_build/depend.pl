@@ -249,8 +249,6 @@ sub _do_depend_shared_modules($)
 	#
 	foreach my $key (sort keys %{$CTX->{INPUT}{MODULES}}) {
 		my $name = $CTX->{INPUT}{MODULES}{$key}{NAME};
-		my $i = 0;
-		my $count = 0;
 
 		#
 		# if it's not a shared module skip it
@@ -309,8 +307,6 @@ sub _do_depend_libraries($)
 	#
 	foreach my $key (sort keys %{$CTX->{INPUT}{LIBRARIES}}) {
 		my $name = $CTX->{INPUT}{LIBRARIES}{$key}{NAME};
-		my $i = 0;
-		my $count = 0;
 
 		#
 		# if it's not a library skip it
@@ -369,8 +365,6 @@ sub _do_depend_binaries($)
 	#
 	foreach my $key (sort keys %{$CTX->{INPUT}{BINARIES}}) {
 		my $name = $CTX->{INPUT}{BINARIES}{$key}{NAME};
-		my $i = 0;
-		my $count = 0;
 
 		#
 		# skip when the binary was disabled
@@ -424,13 +418,6 @@ sub _do_depend_binaries($)
 sub create_depend($)
 {
 	my $CTX = shift;
-
-	$CTX->{OUTPUT}{PROTO} = ();
-	@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}} = ();
-
-	$CTX->{OUTPUT}{TARGETS}{ALL} = ();
-	$CTX->{OUTPUT}{TARGETS}{ALL}{TARGET} = "all";
-	@{$CTX->{OUTPUT}{TARGETS}{ALL}{DEPEND_LIST}} = ();
 
 	_do_depend_subsystems($CTX);
 

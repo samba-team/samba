@@ -192,6 +192,42 @@ sub array2oneline($)
 
 ###########################################################
 # This function creates a object file
+# and library list
+#
+# $output = _prepare_var_obj_and_lib_list($var, $var_ctx)
+#
+# $var_ctx -		the subsystem context
+#
+# $var_ctx->{NAME} 	-	the <var> name
+# $var_ctx->{OBJ_LIST} 	-	the list of objectfiles which sould be linked to this <var>
+# $var_ctx->{LIB_LIST} 	-	the list of libraries which sould be linked to this <var>
+#
+# $output -		the resulting output buffer
+sub _prepare_var_obj_and_lib_list($$)
+{
+	my $var = shift;
+	my $ctx = shift;
+	my $tmpobjlist;
+	my $tmpliblist;
+	my $output;
+
+	$tmpobjlist = array2oneperline($ctx->{OBJ_LIST});
+	$tmpliblist = array2oneperline($ctx->{LIB_LIST});
+
+	$output = "
+###################################
+# Start $var $ctx->{NAME} OBJ AND LIB LIST
+$var\_$ctx->{NAME}_OBJS =$tmpobjlist
+$var\_$ctx->{NAME}_LIBS =$tmpliblist
+# End $var $ctx->{NAME} OBJ AND LIB LIST
+###################################
+";
+
+	return $output;
+}
+
+###########################################################
+# This function creates a object file
 # and library list for a subsystem
 #
 # $output = _prepare_subsystem_obj_and_lib_list($subsystem_ctx)
@@ -206,23 +242,8 @@ sub array2oneline($)
 sub _prepare_subsystem_obj_and_lib_list($)
 {
 	my $ctx = shift;
-	my $tmpobjlist;
-	my $tmpliblist;
-	my $output;
 
-	$tmpobjlist = array2oneperline($ctx->{OBJ_LIST});
-	$tmpliblist = array2oneperline($ctx->{LIB_LIST});
-
-	$output = "
-###################################
-# Start Subsystem $ctx->{NAME} OBJ AND LIB LIST
-SUBSYSTEM_$ctx->{NAME}_OBJS =$tmpobjlist
-SUBSYSTEM_$ctx->{NAME}_LIBS =$tmpliblist
-# End Subsystem $ctx->{NAME} OBJ AND LIB LIST
-###################################
-";
-
-	return $output;
+	return _prepare_var_obj_and_lib_list("SUBSYSTEM",$ctx);
 }
 
 ###########################################################
@@ -241,29 +262,15 @@ SUBSYSTEM_$ctx->{NAME}_LIBS =$tmpliblist
 sub _prepare_module_obj_and_lib_list($)
 {
 	my $ctx = shift;
-	my $tmpobjlist;
-	my $tmpliblist;
-	my $output;
 
-	$tmpobjlist = array2oneperline($ctx->{OBJ_LIST});
-	$tmpliblist = array2oneperline($ctx->{LIB_LIST});
+	return _prepare_var_obj_and_lib_list("MODULE",$ctx);
 
-	$output = "
-###################################
-# Start Module $ctx->{NAME} OBJ AND LIB LIST
-MODULE_$ctx->{NAME}_OBJS =$tmpobjlist
-MODULE_$ctx->{NAME}_LIBS =$tmpliblist
-# End Module $ctx->{NAME} OBJ AND LIB LIST
-###################################
-";
-
-	return $output;
 }
 
 ###########################################################
-# This function creates a make rule for linking a module
+# This function creates a make rule for linking a shared module
 #
-# $output = _prepare_module_rule($module_ctx)
+# $output = _prepare_shared_module_rule($module_ctx)
 #
 # $module_ctx -		the module context
 #
@@ -274,23 +281,30 @@ MODULE_$ctx->{NAME}_LIBS =$tmpliblist
 # $module_ctx->{LINK_FLAGS} -	linker flags used by this module
 #
 # $output -		the resulting output buffer
-sub _prepare_module_rule($)
+sub _prepare_shared_module_rule($)
 {
 	my $ctx = shift;
 	my $tmpdepend;
 	my $tmplink;
+	my $tmpflag;
 	my $output;
 
-	$tmpdepend = array2oneline($ctx->{DEPEND_LIST});
+	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 	$tmplink = array2oneperline($ctx->{LINK_LIST});
+	$tmpflag = array2oneperline($ctx->{LINK_FLAGS});
 
 	$output = "
 ###################################
 # Start Module $ctx->{MODULE}
-bin/$ctx->{MODULE}: basics $tmpdepend bin/.dummy
+MODULE_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
+MODULE_$ctx->{NAME}_LINK_LIST =$tmplink
+MODULE_$ctx->{NAME}_LINK_FLAGS =$tmpflag
+#
+bin/$ctx->{MODULE}: basics \$(MODULE_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
-		$ctx->{LINK_FLAGS} $tmplink
+		\$(MODULE_$ctx->{NAME}_LINK_FLAGS) \\
+		\$(MODULE_$ctx->{NAME}_LINK_LIST)
 # Module $ctx->{MODULE}
 ###################################
 ";
@@ -314,23 +328,9 @@ bin/$ctx->{MODULE}: basics $tmpdepend bin/.dummy
 sub _prepare_library_obj_and_lib_list($)
 {
 	my $ctx = shift;
-	my $tmpobjlist;
-	my $tmpliblist;
-	my $output;
 
-	$tmpobjlist = array2oneperline($ctx->{OBJ_LIST});
-	$tmpliblist = array2oneperline($ctx->{LIB_LIST});
+	return _prepare_var_obj_and_lib_list("LIBRARY",$ctx);
 
-	$output = "
-###################################
-# Start Library $ctx->{NAME} OBJ AND LIB LIST
-LIBRARY_$ctx->{NAME}_OBJS =$tmpobjlist
-LIBRARY_$ctx->{NAME}_LIBS =$tmpliblist
-# End Library $ctx->{NAME} OBJ AND LIB LIST
-###################################
-";
-
-	return $output;
 }
 
 ###########################################################
@@ -356,31 +356,47 @@ sub _prepare_library_rule($)
 {
 	my $ctx = shift;
 	my $tmpdepend;
-	my $tmplink;
+	my $tmpstlink;
+	my $tmpstflag;
+	my $tmpshlink;
+	my $tmpshflag;
 	my $output;
 
-	$tmpdepend = array2oneline($ctx->{DEPEND_LIST});
-	$tmplink = array2oneperline($ctx->{LINK_LIST});
+	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
+
+	$tmpstlink = array2oneperline($ctx->{STATIC_LINK_LIST});
+	$tmpstflag = array2oneperline($ctx->{STATIC_LINK_FLAGS});
+
+	$tmpshlink = array2oneperline($ctx->{SHARED_LINK_LIST});
+	$tmpshflag = array2oneperline($ctx->{SHARED_LINK_FLAGS});
 
 	$output = "
 ###################################
 # Start Library $ctx->{LIBRARY}
 #
+LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
+#
+LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST =$tmpstlink
+LIBRARY_$ctx->{NAME}_STATIC_LINK_FLAGS =$tmpstflag
+#
+LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST =$tmpshlink
+LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS =$tmpshflag
+#
 # Static $ctx->{STATIC_LIBRARY}
-bin/$ctx->{STATIC_LIBRARY}: basics $tmpdepend bin/.dummy
+bin/$ctx->{STATIC_LIBRARY}: basics \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(STLD) \$(STLD_FLAGS) \$\@ \\
-		$ctx->{STATIC_LINK_FLAGS} \\
-		$ctx->{STATIC_LINK_LIST}";
+		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_FLAGS) \\
+		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST)";
 
 	if (defined($ctx->{SHARED_LIBRARY})) {
 		$output .= "
 # Shared $ctx->{SHARED_LIBRARY}
-bin/$ctx->{SHARED_LIBRARY}: basics $tmpdepend basics bin/.dummy
+bin/$ctx->{SHARED_LIBRARY}: basics \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
-		$ctx->{SHARED_LINK_FLAGS} \\
-		$ctx->{SHARED_LINK_LIST}";
+		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS) \\
+		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST)";
 	}
 $output .= "
 # End Library $ctx->{LIBRARY}
@@ -398,7 +414,7 @@ $output .= "
 #
 # $binary_ctx -		the binary context
 #
-# $binary_ctx->{NAME} -		the binary binary name
+# $binary_ctx->{NAME} -		the binary name
 # $binary_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this binary
 # $binary_ctx->{LIB_LIST} -	the list of libraries which sould be linked to this binary
 #
@@ -406,23 +422,9 @@ $output .= "
 sub _prepare_binary_obj_and_lib_list($)
 {
 	my $ctx = shift;
-	my $tmpobjlist;
-	my $tmpliblist;
-	my $output;
 
-	$tmpobjlist = array2oneperline($ctx->{OBJ_LIST});
-	$tmpliblist = array2oneperline($ctx->{LIB_LIST});
+	return _prepare_var_obj_and_lib_list("BINARY",$ctx);
 
-	$output = "
-###################################
-# Start Binary $ctx->{NAME} OBJ AND LIB LIST
-BINARY_$ctx->{NAME}_OBJS =$tmpobjlist
-BINARY_$ctx->{NAME}_LIBS =$tmpliblist
-# End Binary $ctx->{NAME} OBJ AND LIB LIST
-###################################
-";
-
-	return $output;
 }
 
 ###########################################################
@@ -432,7 +434,9 @@ BINARY_$ctx->{NAME}_LIBS =$tmpliblist
 #
 # $binary_ctx -		the binary context
 #
-# $binary_ctx->{BINARY} -	the binary name
+# $binary_ctx->{NAME} -		the binary name
+# $binary_ctx->{BINARY} -	the binary binary name
+#
 # $binary_ctx->{DEPEND_LIST} -	the list of rules on which this binary depends
 # $binary_ctx->{LINK_LIST} -	the list of objectfiles and external libraries
 #				which sould be linked to this binary
@@ -444,18 +448,26 @@ sub _prepare_binary_rule($)
 	my $ctx = shift;
 	my $tmpdepend;
 	my $tmplink;
+	my $tmpflag;
 	my $output;
 
-	$tmpdepend = array2oneline($ctx->{DEPEND_LIST});
+	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 	$tmplink = array2oneperline($ctx->{LINK_LIST});
+	$tmpflag = array2oneperline($ctx->{LINK_FLAGS});
 
 	$output = "
 ###################################
 # Start Binary $ctx->{BINARY}
-bin/$ctx->{BINARY}: basics $tmpdepend bin/.dummy
+#
+BINARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
+BINARY_$ctx->{NAME}_LINK_LIST =$tmplink
+BINARY_$ctx->{NAME}_LINK_FLAGS =$tmpflag
+#
+bin/$ctx->{BINARY}: basics \$(BINARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(LD) \$(LD_FLAGS) -o \$\@ \\
-		$ctx->{LINK_FLAGS} $tmplink
+		\$(BINARY_$ctx->{NAME}_LINK_FLAGS) \\
+		\$(BINARY_$ctx->{NAME}_LINK_LIST)
 # End Binary $ctx->{BINARY}
 ###################################
 ";

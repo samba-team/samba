@@ -33,6 +33,7 @@ _SMB_ACEOF
 cat >> config.smb_build.pl < build/smb_build/config_mk.pl
 cat >> config.smb_build.pl < build/smb_build/input.pl
 cat >> config.smb_build.pl < build/smb_build/depend.pl
+cat >> config.smb_build.pl < build/smb_build/output.pl
 cat >> config.smb_build.pl < build/smb_build/makefile.pl
 cat >> config.smb_build.pl < build/smb_build/main.pl
 
