@@ -558,6 +558,11 @@ void reset_globals_after_fork(void);
 char *client_name(int fd);
 char *client_addr(int fd);
 
+/*The following definitions come from  lib/util_status.c  */
+
+BOOL get_connection_status(struct connect_record **crec,
+				uint32 *connection_count);
+
 /*The following definitions come from  lib/util_str.c  */
 
 void set_first_token(char *ptr);
