@@ -6061,7 +6061,17 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 	usr->user_rid  = user_rid;
 	usr->group_rid = group_rid;
 	usr->acb_info  = pdb_get_acct_ctrl(pw);
-	usr->unknown_3 = pdb_get_unknown_3(pw);
+
+	/*
+	  Look at a user on a real NT4 PDC with usrmgr, press
+	  'ok'. Then you will see that unknown_3 is set to
+	  0x08f827fa. Look at the user immediately after that again,
+	  and you will see that 0x00fffff is returned. This solves
+	  the problem that you get access denied after having looked
+	  at the user.
+	  -- Volker
+	*/
+	usr->unknown_3 = 0x00ffffff;
 
 	usr->logon_divs = pdb_get_logon_divs(pw); 
 	usr->ptr_logon_hrs = pdb_get_hours(pw) ? 1 : 0;

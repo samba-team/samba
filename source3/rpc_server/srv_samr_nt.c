@@ -1180,6 +1180,15 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	/* Get what we need from the password database */
 	switch (q_u->switch_level) {
 		case 0x1:
+			/* When playing with usrmgr, this is necessary
+                           if you want immediate refresh after editing
+                           a user. I would like to do this after the
+                           setuserinfo2, but we do not have access to
+                           the domain handle in that call, only to the
+                           user handle. Where else does this hurt?
+			   -- Volker
+			*/
+			free_samr_users(info);
 		case 0x2:
 		case 0x4:
 			become_root();		
@@ -3181,7 +3190,7 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 
 	if (sid_equal(&alias_sid, &global_sid_Builtin)) {
 		DEBUG(10, ("lookup on Builtin SID (S-1-5-32)\n"));
-		if(!get_local_group_from_sid(als_sid, &map, MAPPING_WITHOUT_PRIV))
+		if(!get_builtin_group_from_sid(als_sid, &map, MAPPING_WITHOUT_PRIV))
 			return NT_STATUS_NO_SUCH_ALIAS;
 	} else {
 		if (sid_equal(&alias_sid, get_global_sam_sid())) {
@@ -3513,7 +3522,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	GROUP_MAP map;
 	uid_t uid;
 	NTSTATUS ret;
-	SAM_ACCOUNT *sam_user;
+	SAM_ACCOUNT *sam_user=NULL;
 	BOOL check;
 	uint32 acc_granted;
 
@@ -3560,19 +3569,21 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 
 	if ((pwd=getpwuid_alloc(uid)) == NULL) {
 		return NT_STATUS_NO_SUCH_USER;
-	} else {
-		passwd_free(&pwd);
 	}
 
-	if ((grp=getgrgid(map.gid)) == NULL)
+	if ((grp=getgrgid(map.gid)) == NULL) {
+		passwd_free(&pwd);
 		return NT_STATUS_NO_SUCH_GROUP;
+	}
 
 	/* we need to copy the name otherwise it's overloaded in user_in_group_list */
 	fstrcpy(grp_name, grp->gr_name);
 
 	/* if the user is already in the group */
-	if(user_in_group_list(pwd->pw_name, grp_name))
+	if(user_in_group_list(pwd->pw_name, grp_name)) {
+		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_IN_GROUP;
+	}
 
 	/* 
 	 * ok, the group exist, the user exist, the user is not in the group,
@@ -3583,9 +3594,12 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	smb_add_user_group(grp_name, pwd->pw_name);
 
 	/* check if the user has been added then ... */
-	if(!user_in_group_list(pwd->pw_name, grp_name))
+	if(!user_in_group_list(pwd->pw_name, grp_name)) {
+		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;		/* don't know what to reply else */
+	}
 
+	passwd_free(&pwd);
 	return NT_STATUS_OK;
 }
 
