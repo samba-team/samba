@@ -14,67 +14,10 @@ This is a rough guide to setting up Samba 3.0 with kerberos authentication again
 Windows2000 KDC. 
 </para>
 
-<para>Pieces you need before you begin:</para>
-<para>
-<simplelist>
-<member>a Windows 2000 server.</member>
-<member>samba 3.0 or higher.</member>
-<member>the MIT kerberos development libraries (either install from the above sources or use a package). The heimdal libraries will not work.</member>
-<member>the OpenLDAP development libraries.</member>
-</simplelist>
-</para>
-
 <sect1>
-<title>Installing the required packages for Debian</title>
+<title>Setup your <filename>smb.conf</filename></title>
 
-<para>On Debian you need to install the following packages:</para>
-<para>
-<simplelist>
-<member>libkrb5-dev</member>
-<member>krb5-user</member>
-</simplelist>
-</para>
-</sect1>
-
-<sect1>
-<title>Installing the required packages for RedHat</title>
-
-<para>On RedHat this means you should have at least: </para>
-<para>
-<simplelist>
-<member>krb5-workstation (for kinit)</member>
-<member>krb5-libs (for linking with)</member>
-<member>krb5-devel (because you are compiling from source)</member>
-</simplelist>
-</para>
-
-<para>in addition to the standard development environment.</para>
-
-<para>Note that these are not standard on a RedHat install, and you may need 
-to get them off CD2.</para>
-
-</sect1>
-
-<sect1>
-<title>Compile Samba</title>
-<para>If your kerberos libraries are in a non-standard location then
-  remember to add the configure option --with-krb5=DIR.</para>
-
-<para>After you run configure make sure that include/config.h it
-  generates contains 
-  lines like this:</para>
-
-<para><programlisting>
-#define HAVE_KRB5 1
-#define HAVE_LDAP 1
-</programlisting></para>
-
-<para>If it doesn't then configure did not find your krb5 libraries or
-  your ldap libraries. Look in config.log to figure out why and fix
-  it.</para>
-
-<para>Then compile and install Samba as usual. You must use at least the
-  following 3 options in smb.conf:</para>
+<para>You must use at least the following 3 options in smb.conf:</para>
 
 <para><programlisting>
   realm = YOUR.KERBEROS.REALM
@@ -93,13 +36,13 @@ In case samba can't figure out your ads server using your realm name, use the
 <para>You do *not* need a smbpasswd file, and older clients will
   be authenticated as if "security = domain", although it won't do any harm
   and allows you to have local users not in the domain.
-  I expect that the above
-  required options will change soon when we get better active
-  directory integration.</para>
-</sect1>
+  I expect that the above required options will change soon when we get better
+  active directory integration.</para>
 
+</sect1>
+  
 <sect1>
-<title>Setup your /etc/krb5.conf</title>
+<title>Setup your <filename>/etc/krb5.conf</filename></title>
 
 <para>The minimal configuration for krb5.conf is:</para>
 
@@ -187,12 +130,11 @@ specify the -k option to choose kerberos authentication.
 <sect1>
 <title>Notes</title>
 
-<para>You must change administrator password at least once after DC install,
- to create the right encoding types</para>
+<para>You must change administrator password at least once after DC 
+install, to create the right encoding types</para>
 
 <para>w2k doesn't seem to create the _kerberos._udp and _ldap._tcp in
    their defaults DNS setup. Maybe fixed in service packs?</para>
-
 </sect1>
 
 </chapter>
