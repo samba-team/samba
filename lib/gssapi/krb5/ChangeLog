@@ -1,9 +1,12 @@
+2003-09-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* 8003.c: remove #if 0'ed code
+	
 2003-09-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* accept_sec_context.c (gsskrb5_accept_sec_context): set sequence
 	number when not requesting mutual auth From: Luke Howard
 	<lukeh@PADL.COM>
-	
 
 	* init_sec_context.c (init_auth): set sequence number when not
 	requesting mutual auth From: Luke Howard <lukeh@PADL.COM>
