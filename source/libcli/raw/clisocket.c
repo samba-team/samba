@@ -125,7 +125,7 @@ ssize_t smbcli_sock_write(struct smbcli_socket *sock, const char *data, size_t l
 		return -1;
 	}
 
-	return write_data(sock->fd, data, len);
+	return write(sock->fd, data, len);
 }
 
 
@@ -139,7 +139,7 @@ ssize_t smbcli_sock_read(struct smbcli_socket *sock, char *data, size_t len)
 		return -1;
 	}
 
-	return read_data(sock->fd, data, len);
+	return read(sock->fd, data, len);
 }
 
 /****************************************************************************
