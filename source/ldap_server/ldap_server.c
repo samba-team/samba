@@ -25,107 +25,14 @@
 #include "dlinklist.h"
 #include "asn_1.h"
 #include "ldap_server/ldap_server.h"
+#include "smbd/service_stream.h"
 
 /*
   close the socket and shutdown a server_context
 */
 static void ldapsrv_terminate_connection(struct ldapsrv_connection *ldap_conn, const char *reason)
 {
-	server_terminate_connection(ldap_conn->connection, reason);
-}
-
-static const struct server_stream_ops *ldapsrv_get_stream_ops(void);
-
-/*
-  add a socket address to the list of events, one event per port
-*/
-static void add_socket(struct server_service *service,
-		       struct ipv4_addr *ifip)
-{
-	struct server_stream_socket *stream_socket;
-	uint16_t port = 389;
-	char *ip_str = talloc_strdup(service, sys_inet_ntoa(*ifip));
-
-	stream_socket = service_setup_stream_socket(service, ldapsrv_get_stream_ops(), "ipv4", ip_str, &port);
-
-	port = 3268;
-	stream_socket = service_setup_stream_socket(service, ldapsrv_get_stream_ops(), "ipv4", ip_str, &port);
-
-	talloc_free(ip_str);
-}
-
-/****************************************************************************
- Open the socket communication.
-****************************************************************************/
-static void ldapsrv_init(struct server_service *service)
-{	
-	struct ldapsrv_service *ldap_service;
-	struct ldapsrv_partition *rootDSE_part;
-	struct ldapsrv_partition *part;
-
-	DEBUG(10,("ldapsrv_init\n"));
-
-	ldap_service = talloc(service, struct ldapsrv_service);
-	if (!ldap_service) {
-		DEBUG(0,("talloc(service, struct ldapsrv_service) failed\n"));
-		return;
-	}
-	ZERO_STRUCTP(ldap_service);
-
-	rootDSE_part = talloc(ldap_service, struct ldapsrv_partition);
-	if (!rootDSE_part) {
-		DEBUG(0,("talloc(ldap_service, struct ldapsrv_partition) failed\n"));
-		return;
-	}
-	rootDSE_part->base_dn = ""; /* RootDSE */
-	rootDSE_part->ops = ldapsrv_get_rootdse_partition_ops();
-
-	ldap_service->rootDSE = rootDSE_part;
-	DLIST_ADD_END(ldap_service->partitions, rootDSE_part, struct ldapsrv_partition *);
-
-	part = talloc(ldap_service, struct ldapsrv_partition);
-	if (!ldap_service) {
-		DEBUG(0,("talloc(ldap_service, struct ldapsrv_partition) failed\n"));
-		return;
-	}
-	part->base_dn = "*"; /* default partition */
-	if (lp_parm_bool(-1, "ldapsrv", "hacked", False)) {
-		part->ops = ldapsrv_get_hldb_partition_ops();
-	} else {
-		part->ops = ldapsrv_get_sldb_partition_ops();
-	}
-
-	ldap_service->default_partition = part;
-	DLIST_ADD_END(ldap_service->partitions, part, struct ldapsrv_partition *);
-
-	service->service.private_data = ldap_service;
-
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
-		int num_interfaces = iface_count();
-		int i;
-
-		/* We have been given an interfaces line, and been 
-		   told to only bind to those interfaces. Create a
-		   socket per interface and bind to only these.
-		*/
-		for(i = 0; i < num_interfaces; i++) {
-			struct ipv4_addr *ifip = iface_n_ip(i);
-
-			if (ifip == NULL) {
-				DEBUG(0,("ldapsrv_init: interface %d has NULL "
-					 "IP address !\n", i));
-				continue;
-			}
-
-			add_socket(service, ifip);
-		}
-	} else {
-		struct ipv4_addr ifip;
-
-		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
-		ifip = interpret_addr2(lp_socket_address());
-		add_socket(service, &ifip);
-	}
+	stream_terminate_connection(ldap_conn->connection, reason);
 }
 
 /* This rw-buf api is made to avoid memcpy. For now do that like mad...  The
@@ -421,10 +328,10 @@ NTSTATUS ldapsrv_flush_responses(struct ldapsrv_connection *conn)
 /*
   called when a LDAP socket becomes readable
 */
-static void ldapsrv_recv(struct server_connection *conn, struct timeval t,
+static void ldapsrv_recv(struct stream_connection *conn, struct timeval t,
 			 uint16_t flags)
 {
-	struct ldapsrv_connection *ldap_conn = conn->connection.private_data;
+	struct ldapsrv_connection *ldap_conn = talloc_get_type(conn->private, struct ldapsrv_connection);
 	uint8_t *buf;
 	size_t buf_length, msg_length;
 	DATA_BLOB blob;
@@ -517,10 +424,10 @@ static void ldapsrv_recv(struct server_connection *conn, struct timeval t,
 /*
   called when a LDAP socket becomes writable
 */
-static void ldapsrv_send(struct server_connection *conn, struct timeval t,
+static void ldapsrv_send(struct stream_connection *conn, struct timeval t,
 			 uint16_t flags)
 {
-	struct ldapsrv_connection *ldap_conn = conn->connection.private_data;
+	struct ldapsrv_connection *ldap_conn = talloc_get_type(conn->private, struct ldapsrv_connection);
 
 	DEBUG(10,("ldapsrv_send\n"));
 
@@ -540,52 +447,108 @@ static void ldapsrv_send(struct server_connection *conn, struct timeval t,
   initialise a server_context from a open socket and register a event handler
   for reading from that socket
 */
-static void ldapsrv_accept(struct server_connection *conn)
+static void ldapsrv_accept(struct stream_connection *conn)
 {
 	struct ldapsrv_connection *ldap_conn;
 
 	DEBUG(10, ("ldapsrv_accept\n"));
 
-	ldap_conn = talloc(conn, struct ldapsrv_connection);
+	ldap_conn = talloc_zero(conn, struct ldapsrv_connection);
 
 	if (ldap_conn == NULL)
 		return;
 
-	ZERO_STRUCTP(ldap_conn);
 	ldap_conn->connection = conn;
-	ldap_conn->service = talloc_reference(ldap_conn, conn->stream_socket->service->service.private_data);
-
-	conn->connection.private_data = ldap_conn;
-
-	return;
+	ldap_conn->service = talloc_get_type(conn->private, struct ldapsrv_service);
+	conn->private = ldap_conn;
 }
 
-static const struct server_stream_ops ldap_stream_ops = {
+static const struct stream_server_ops ldap_stream_ops = {
 	.name			= "ldap",
-	.socket_init		= NULL,
 	.accept_connection	= ldapsrv_accept,
 	.recv_handler		= ldapsrv_recv,
 	.send_handler		= ldapsrv_send,
-	.idle_handler		= NULL,
-	.close_connection	= NULL
 };
 
-static const struct server_stream_ops *ldapsrv_get_stream_ops(void)
+/*
+  add a socket address to the list of events, one event per port
+*/
+static NTSTATUS add_socket(struct event_context *event_context, const struct model_ops *model_ops,
+			   const char *address, struct ldapsrv_service *ldap_service)
 {
-	return &ldap_stream_ops;
+	uint16_t port = 389;
+	NTSTATUS status;
+
+	status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
+				     "ipv4", address, &port, ldap_service);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	port = 3268;
+
+	return stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
+				   "ipv4", address, &port, ldap_service);
 }
 
-static const struct server_service_ops ldap_server_ops = {
-	.name			= "ldap",
-	.service_init		= ldapsrv_init
-};
+/*
+  open the ldap server sockets
+*/
+static NTSTATUS ldapsrv_init(struct event_context *event_context, const struct model_ops *model_ops)
+{	
+	struct ldapsrv_service *ldap_service;
+	struct ldapsrv_partition *rootDSE_part;
+	struct ldapsrv_partition *part;
+	NTSTATUS status;
 
-const struct server_service_ops *ldapsrv_get_ops(void)
-{
-	return &ldap_server_ops;
+	DEBUG(10,("ldapsrv_init\n"));
+
+	ldap_service = talloc_zero(event_context, struct ldapsrv_service);
+	NT_STATUS_HAVE_NO_MEMORY(ldap_service);
+
+	rootDSE_part = talloc(ldap_service, struct ldapsrv_partition);
+	NT_STATUS_HAVE_NO_MEMORY(rootDSE_part);
+
+	rootDSE_part->base_dn = ""; /* RootDSE */
+	rootDSE_part->ops = ldapsrv_get_rootdse_partition_ops();
+
+	ldap_service->rootDSE = rootDSE_part;
+	DLIST_ADD_END(ldap_service->partitions, rootDSE_part, struct ldapsrv_partition *);
+
+	part = talloc(ldap_service, struct ldapsrv_partition);
+	NT_STATUS_HAVE_NO_MEMORY(part);
+
+	part->base_dn = "*"; /* default partition */
+	if (lp_parm_bool(-1, "ldapsrv", "hacked", False)) {
+		part->ops = ldapsrv_get_hldb_partition_ops();
+	} else {
+		part->ops = ldapsrv_get_sldb_partition_ops();
+	}
+
+	ldap_service->default_partition = part;
+	DLIST_ADD_END(ldap_service->partitions, part, struct ldapsrv_partition *);
+
+	if (lp_interfaces() && lp_bind_interfaces_only()) {
+		int num_interfaces = iface_count();
+		int i;
+
+		/* We have been given an interfaces line, and been 
+		   told to only bind to those interfaces. Create a
+		   socket per interface and bind to only these.
+		*/
+		for(i = 0; i < num_interfaces; i++) {
+			const char *address = sys_inet_ntoa(*iface_n_ip(i));
+			status = add_socket(event_context, model_ops, address, ldap_service);
+			NT_STATUS_NOT_OK_RETURN(status);
+		}
+	} else {
+		status = add_socket(event_context, model_ops, lp_socket_address(), ldap_service);
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+	return NT_STATUS_OK;
 }
+
 
 NTSTATUS server_service_ldap_init(void)
 {
-	return NT_STATUS_OK;	
+	return register_server_service("ldap", ldapsrv_init);
 }

@@ -44,7 +44,8 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM SERVICE
 [SUBSYSTEM::SERVER_SERVICE]
 INIT_OBJ_FILES = \
-		smbd/service.o
+		smbd/service.o \
+		smbd/service_stream.o
 REQUIRED_SUBSYSTEMS = \
 		MESSAGING
 # End SUBSYSTEM SERVER
@@ -54,8 +55,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start BINARY smbd
 [BINARY::smbd]
 OBJ_FILES = \
-		smbd/server.o \
-		smbd/rewrite.o
+		smbd/server.o
 REQUIRED_SUBSYSTEMS = \
 		PROCESS_MODEL \
 		SERVER_SERVICE \

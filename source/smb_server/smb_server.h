@@ -232,7 +232,7 @@ struct smbsrv_connection {
 
 	struct smb_signing_context signing;
 	
-	struct server_connection *connection;
+	struct stream_connection *connection;
 
 	/* this holds a partially received request */
 	struct smbsrv_request *partial_req;

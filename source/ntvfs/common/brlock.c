@@ -41,7 +41,7 @@
   lock is the same as another lock
 */
 struct lock_context {
-	servid_t server;
+	uint32_t server;
 	uint16_t smbpid;
 	uint16_t tid;
 };
@@ -60,7 +60,7 @@ struct lock_struct {
 
 struct brl_context {
 	struct tdb_wrap *w;
-	servid_t server;
+	uint32_t server;
 	uint16_t tid;
 	struct messaging_context *messaging_ctx;
 	struct lock_struct last_lock;
@@ -72,7 +72,7 @@ struct brl_context {
   talloc_free(). We need the messaging_ctx to allow for
   pending lock notifications.
 */
-struct brl_context *brl_init(TALLOC_CTX *mem_ctx, servid_t server, uint16_t tid, 
+struct brl_context *brl_init(TALLOC_CTX *mem_ctx, uint32_t server, uint16_t tid, 
 			     struct messaging_context *messaging_ctx)
 {
 	char *path;

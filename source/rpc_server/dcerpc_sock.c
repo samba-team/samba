@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "events.h"
 #include "rpc_server/dcerpc_server.h"
+#include "smbd/service_stream.h"
 
 struct dcesrv_socket_context {
 	const struct dcesrv_endpoint *endpoint;
@@ -50,185 +51,19 @@ static ssize_t dcerpc_write_fn(void *private, DATA_BLOB *out)
 
 static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, const char *reason)
 {
-	server_terminate_connection(dce_conn->srv_conn, reason);
+	stream_terminate_connection(dce_conn->srv_conn, reason);
 }
 
-static void add_socket_rpc_unix(struct server_service *service, struct dcesrv_endpoint *e)
-{
-	struct dcesrv_context *dce_ctx = service->service.private_data;
-	struct server_stream_socket *stream_socket;
-	struct dcesrv_socket_context *dcesrv_sock;
-	uint16_t port = 1;
 
-	stream_socket = service_setup_stream_socket(service, dcesrv_get_stream_ops(), "unix", e->ep_description.endpoint, &port);
-	if (!stream_socket) {
-		DEBUG(0,("service_setup_stream_socket(path=%s) failed\n",e->ep_description.endpoint));
-		return;
-	}
-
-	dcesrv_sock = talloc(stream_socket, struct dcesrv_socket_context);
-	if (!dcesrv_sock) {
-		DEBUG(0,("talloc(stream_socket, struct dcesrv_socket_context) failed\n"));
-		return;
-	}
-
-	/* remember the endpoint of this socket */
-	dcesrv_sock->endpoint		= e;
-	dcesrv_sock->dcesrv_ctx		= dce_ctx;
-
-	stream_socket->stream.private_data = dcesrv_sock;
-}
-
-static void add_socket_rpc_ncalrpc(struct server_service *service, struct dcesrv_endpoint *e)
-{
-	struct dcesrv_context *dce_ctx = service->service.private_data;
-	struct server_stream_socket *stream_socket;
-	struct dcesrv_socket_context *dcesrv_sock;
-	uint16_t port = 1;
-	char *full_path;
-
-	if (!e->ep_description.endpoint) {
-		/* No identifier specified: use DEFAULT. 
-		 * DO NOT hardcode this value anywhere else. Rather, specify 
-		 * no endpoint and let the epmapper worry about it. */
-		e->ep_description.endpoint = talloc_strdup(dce_ctx, "DEFAULT");
-	}
-
-	full_path = talloc_asprintf(dce_ctx, "%s/%s", lp_ncalrpc_dir(), e->ep_description.endpoint);
-
-	stream_socket = service_setup_stream_socket(service, dcesrv_get_stream_ops(), "unix", full_path, &port);
-	if (!stream_socket) {
-		DEBUG(0,("service_setup_stream_socket(identifier=%s,path=%s) failed\n",e->ep_description.endpoint, full_path));
-		return;
-	}
-
-	dcesrv_sock = talloc(stream_socket, struct dcesrv_socket_context);
-	if (!dcesrv_sock) {
-		DEBUG(0,("talloc(stream_socket, struct dcesrv_socket_context) failed\n"));
-		return;
-	}
-
-	/* remember the endpoint of this socket */
-	dcesrv_sock->endpoint		= e;
-	dcesrv_sock->dcesrv_ctx		= dce_ctx;
-
-	stream_socket->stream.private_data = dcesrv_sock;
-
-	return;
-}
-
-/*
-  add a socket address to the list of events, one event per dcerpc endpoint
-*/
-static void add_socket_rpc_tcp_iface(struct server_service *service, 
-				     struct dcesrv_endpoint *e,
-				     struct ipv4_addr *ifip)
-{
-	struct dcesrv_context *dce_ctx = service->service.private_data;
-	struct server_stream_socket *stream_socket;
-	struct dcesrv_socket_context *dcesrv_sock;
-	uint16_t port = 0;
-	char *ip_str = talloc_strdup(service, sys_inet_ntoa(*ifip));
-			
-	if (e->ep_description.endpoint) 
-		port = atoi(e->ep_description.endpoint);
-
-	stream_socket = service_setup_stream_socket(service, dcesrv_get_stream_ops(), "ipv4", ip_str, &port);
-	if (!stream_socket) {
-		DEBUG(0,("service_setup_stream_socket(address=%s,port=%u) failed\n", ip_str, port));
-		return;
-	}
-
-	if (e->ep_description.endpoint == NULL) {
-		e->ep_description.endpoint = talloc_asprintf(dce_ctx, "%d", port);
-	}
-
-	dcesrv_sock = talloc(stream_socket, struct dcesrv_socket_context);
-	if (!dcesrv_sock) {
-		DEBUG(0,("talloc(stream_socket, struct dcesrv_socket_context) failed\n"));
-		return;
-	}
-
-	/* remember the endpoint of this socket */
-	dcesrv_sock->endpoint		= e;
-	dcesrv_sock->dcesrv_ctx		= dce_ctx;
-
-	stream_socket->stream.private_data = dcesrv_sock;
-
-	talloc_free(ip_str);
-
-	return;
-}
-
-static void add_socket_rpc_tcp(struct server_service *service, struct dcesrv_endpoint *e)
-{
-	/* Add TCP/IP sockets */
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
-		int num_interfaces = iface_count();
-		int i;
-		for(i = 0; i < num_interfaces; i++) {
-			struct ipv4_addr *ifip = iface_n_ip(i);
-			if (ifip == NULL) {
-				continue;
-			}
-			add_socket_rpc_tcp_iface(service, e, ifip);
-		}
-	} else {
-		struct ipv4_addr ifip;
-		ifip = interpret_addr2(lp_socket_address());
-		add_socket_rpc_tcp_iface(service, e, &ifip);
-	}
-
-	return;
-}
-
-/****************************************************************************
- Open the listening sockets for RPC over NCACN_IP_TCP/NCALRPC/NCACN_UNIX_STREAM
-****************************************************************************/
-void dcesrv_sock_init(struct server_service *service)
-{
-	struct dcesrv_context *dce_ctx = service->service.private_data;
-	struct dcesrv_endpoint *e;
-
-	DEBUG(1,("dcesrv_sock_init\n"));
-
-	/* Make sure the directory for NCALRPC exists */
-	if (!directory_exist(lp_ncalrpc_dir(), NULL)) {
-		mkdir(lp_ncalrpc_dir(), 0755);
-	}
-
-	for (e=dce_ctx->endpoint_list;e;e=e->next) {
-		switch (e->ep_description.transport) {
-		case NCACN_UNIX_STREAM:
-			add_socket_rpc_unix(service, e);
-			break;
-		
-		case NCALRPC:
-			add_socket_rpc_ncalrpc(service, e);
-			break;
-
-		case NCACN_IP_TCP:
-			add_socket_rpc_tcp(service, e);
-			break;
-
-		default:
-			break;
-		}
-	}
-
-	return;	
-}
-
-void dcesrv_sock_accept(struct server_connection *srv_conn)
+void dcesrv_sock_accept(struct stream_connection *srv_conn)
 {
 	NTSTATUS status;
-	struct dcesrv_socket_context *dcesrv_sock = srv_conn->stream_socket->stream.private_data;
+	struct dcesrv_socket_context *dcesrv_sock = 
+		talloc_get_type(srv_conn->private, struct dcesrv_socket_context);
 	struct dcesrv_connection *dcesrv_conn = NULL;
 
-	DEBUG(5,("dcesrv_sock_accept\n"));
-
 	status = dcesrv_endpoint_connect(dcesrv_sock->dcesrv_ctx,
-					 dcesrv_sock,
+					 srv_conn,
 					 dcesrv_sock->endpoint,
 					 srv_conn,
 					 &dcesrv_conn);
@@ -238,15 +73,15 @@ void dcesrv_sock_accept(struct server_connection *srv_conn)
 		return;
 	}
 
-	srv_conn->connection.private_data = dcesrv_conn;
+	srv_conn->private = dcesrv_conn;
 
 	return;	
 }
 
-void dcesrv_sock_recv(struct server_connection *conn, struct timeval t, uint16_t flags)
+void dcesrv_sock_recv(struct stream_connection *conn, struct timeval t, uint16_t flags)
 {
 	NTSTATUS status;
-	struct dcesrv_connection *dce_conn = conn->connection.private_data;
+	struct dcesrv_connection *dce_conn = talloc_get_type(conn->private, struct dcesrv_connection);
 	DATA_BLOB tmp_blob;
 	size_t nread;
 
@@ -279,16 +114,12 @@ void dcesrv_sock_recv(struct server_connection *conn, struct timeval t, uint16_t
 	if (dce_conn->call_list && dce_conn->call_list->replies) {
 		conn->event.fde->flags |= EVENT_FD_WRITE;
 	}
-
-	return;	
 }
 
-void dcesrv_sock_send(struct server_connection *conn, struct timeval t, uint16_t flags)
+void dcesrv_sock_send(struct stream_connection *conn, struct timeval t, uint16_t flags)
 {
-	struct dcesrv_connection *dce_conn = conn->connection.private_data;
+	struct dcesrv_connection *dce_conn = talloc_get_type(conn->private, struct dcesrv_connection);
 	NTSTATUS status;
-
-	DEBUG(10,("dcesrv_sock_send\n"));
 
 	status = dcesrv_output(dce_conn, conn->socket, dcerpc_write_fn);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -299,6 +130,170 @@ void dcesrv_sock_send(struct server_connection *conn, struct timeval t, uint16_t
 	if (!dce_conn->call_list || !dce_conn->call_list->replies) {
 		conn->event.fde->flags &= ~EVENT_FD_WRITE;
 	}
-
-	return;
 }
+
+
+static const struct stream_server_ops dcesrv_stream_ops = {
+	.name			= "rpc",
+	.accept_connection	= dcesrv_sock_accept,
+	.recv_handler		= dcesrv_sock_recv,
+	.send_handler		= dcesrv_sock_send,
+};
+
+
+
+static NTSTATUS add_socket_rpc_unix(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+				    struct event_context *event_ctx, const struct model_ops *model_ops)
+{
+	struct dcesrv_socket_context *dcesrv_sock;
+	uint16_t port = 1;
+	NTSTATUS status;
+
+	dcesrv_sock = talloc(dce_ctx, struct dcesrv_socket_context);
+	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
+
+	/* remember the endpoint of this socket */
+	dcesrv_sock->endpoint		= e;
+	dcesrv_sock->dcesrv_ctx		= talloc_reference(dcesrv_sock, dce_ctx);
+
+	status = stream_setup_socket(event_ctx, model_ops, &dcesrv_stream_ops, 
+				     "unix", e->ep_description.endpoint, &port, 
+				     dcesrv_sock);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("service_setup_stream_socket(path=%s) failed - %s\n",
+			 e->ep_description.endpoint, nt_errstr(status)));
+	}
+
+	return status;
+}
+
+static NTSTATUS add_socket_rpc_ncalrpc(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+				       struct event_context *event_ctx, const struct model_ops *model_ops)
+{
+	struct dcesrv_socket_context *dcesrv_sock;
+	uint16_t port = 1;
+	char *full_path;
+	NTSTATUS status;
+
+	if (!e->ep_description.endpoint) {
+		/* No identifier specified: use DEFAULT. 
+		 * DO NOT hardcode this value anywhere else. Rather, specify 
+		 * no endpoint and let the epmapper worry about it. */
+		e->ep_description.endpoint = talloc_strdup(dce_ctx, "DEFAULT");
+	}
+
+	full_path = talloc_asprintf(dce_ctx, "%s/%s", lp_ncalrpc_dir(), e->ep_description.endpoint);
+
+	dcesrv_sock = talloc(dce_ctx, struct dcesrv_socket_context);
+	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
+
+	/* remember the endpoint of this socket */
+	dcesrv_sock->endpoint		= e;
+	dcesrv_sock->dcesrv_ctx		= dce_ctx;
+
+	status = stream_setup_socket(event_ctx, model_ops, &dcesrv_stream_ops, 
+				     "unix", full_path, &port, dcesrv_sock);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("service_setup_stream_socket(identifier=%s,path=%s) failed - %s\n",
+			 e->ep_description.endpoint, full_path, nt_errstr(status)));
+	}
+	return status;
+}
+
+/*
+  add a socket address to the list of events, one event per dcerpc endpoint
+*/
+static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+					 struct event_context *event_ctx, const struct model_ops *model_ops,
+					 const char *address)
+{
+	struct dcesrv_socket_context *dcesrv_sock;
+	uint16_t port = 0;
+	NTSTATUS status;
+			
+	if (e->ep_description.endpoint) {
+		port = atoi(e->ep_description.endpoint);
+	}
+
+	dcesrv_sock = talloc(dce_ctx, struct dcesrv_socket_context);
+	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
+
+	/* remember the endpoint of this socket */
+	dcesrv_sock->endpoint		= e;
+	dcesrv_sock->dcesrv_ctx		= dce_ctx;
+
+	status = stream_setup_socket(event_ctx, model_ops, &dcesrv_stream_ops, 
+				     "ipv4", address, &port, dcesrv_sock);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("service_setup_stream_socket(address=%s,port=%u) failed - %s\n", 
+			 address, port, nt_errstr(status)));
+	}
+
+	if (e->ep_description.endpoint == NULL) {
+		e->ep_description.endpoint = talloc_asprintf(dce_ctx, "%d", port);
+	}
+
+	return status;
+}
+
+static NTSTATUS add_socket_rpc_tcp(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+				   struct event_context *event_ctx, const struct model_ops *model_ops)
+{
+	NTSTATUS status;
+
+	/* Add TCP/IP sockets */
+	if (lp_interfaces() && lp_bind_interfaces_only()) {
+		int num_interfaces = iface_count();
+		int i;
+		for(i = 0; i < num_interfaces; i++) {
+			const char *address = sys_inet_ntoa(*iface_n_ip(i));
+			status = add_socket_rpc_tcp_iface(dce_ctx, e, event_ctx, model_ops, address);
+			NT_STATUS_NOT_OK_RETURN(status);
+		}
+	} else {
+		status = add_socket_rpc_tcp_iface(dce_ctx, e, event_ctx, model_ops, lp_socket_address());
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Open the listening sockets for RPC over NCACN_IP_TCP/NCALRPC/NCACN_UNIX_STREAM
+****************************************************************************/
+NTSTATUS dcesrv_sock_init(struct dcesrv_context *dce_ctx, 
+			  struct event_context *event_ctx, const struct model_ops *model_ops)
+{
+	struct dcesrv_endpoint *e;
+	NTSTATUS status;
+
+	/* Make sure the directory for NCALRPC exists */
+	if (!directory_exist(lp_ncalrpc_dir(), NULL)) {
+		mkdir(lp_ncalrpc_dir(), 0755);
+	}
+
+	for (e=dce_ctx->endpoint_list;e;e=e->next) {
+		switch (e->ep_description.transport) {
+		case NCACN_UNIX_STREAM:
+			status = add_socket_rpc_unix(dce_ctx, e, event_ctx, model_ops);
+			NT_STATUS_NOT_OK_RETURN(status);
+			break;
+		
+		case NCALRPC:
+			status = add_socket_rpc_ncalrpc(dce_ctx, e, event_ctx, model_ops);
+			NT_STATUS_NOT_OK_RETURN(status);
+			break;
+
+		case NCACN_IP_TCP:
+			status = add_socket_rpc_tcp(dce_ctx, e, event_ctx, model_ops);
+			NT_STATUS_NOT_OK_RETURN(status);
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	return NT_STATUS_OK;	
+}
+

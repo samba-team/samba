@@ -28,6 +28,7 @@
 #include "dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
 #include "events.h"
+#include "smbd/service_stream.h"
 
 /*
   see if two endpoints match
@@ -299,7 +300,7 @@ static int dcesrv_endpoint_destructor(void *ptr)
 NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 TALLOC_CTX *mem_ctx,
 				 const struct dcesrv_endpoint *ep,
-				 struct server_connection *srv_conn,
+				 struct stream_connection *srv_conn,
 				 struct dcesrv_connection **_p)
 {
 	struct dcesrv_connection *p;
@@ -333,7 +334,7 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 					TALLOC_CTX *mem_ctx,
 					const struct dcerpc_binding *ep_description,
 					struct auth_session_info *session_info,
-					struct server_connection *srv_conn,
+					struct stream_connection *srv_conn,
 					struct dcesrv_connection **dce_conn_p)
 {
 	NTSTATUS status;
@@ -1204,7 +1205,7 @@ static NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, const char **endpoint_s
 }
 
 /*
-  initialise the dcerpc server context
+  initialise the dcerpc server context for ncacn_np based services
 */
 NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct dcesrv_context **_dce_ctx)
 {
@@ -1216,45 +1217,6 @@ NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct dcesrv_context **_d
 
 	*_dce_ctx = dce_ctx;
 	return NT_STATUS_OK;
-}
-
-static void dcesrv_init(struct server_service *service)
-{
-	NTSTATUS status;
-	struct dcesrv_context *dce_ctx;
-
-	DEBUG(1,("dcesrv_init\n"));
-
-	status = dcesrv_init_context(service,
-				     lp_dcerpc_endpoint_servers(),
-				     DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
-				     &dce_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		return;
-	}
-
-	service->service.private_data = dce_ctx;
-
-	dcesrv_sock_init(service);
-
-	return;	
-}
-
-static void dcesrv_accept(struct server_connection *srv_conn)
-{
-	dcesrv_sock_accept(srv_conn);
-}
-
-static void dcesrv_recv(struct server_connection *srv_conn, 
-			struct timeval t, uint16_t flags)
-{
-	dcesrv_sock_recv(srv_conn, t, flags);
-}
-
-static void dcesrv_send(struct server_connection *srv_conn, 
-			struct timeval t, uint16_t flags)
-{
-	dcesrv_sock_send(srv_conn, t, flags);
 }
 
 /* the list of currently registered DCERPC endpoint servers.
@@ -1338,32 +1300,25 @@ const struct dcesrv_critical_sizes *dcerpc_module_version(void)
 	return &critical_sizes;
 }
 
-static const struct server_stream_ops dcesrv_stream_ops = {
-	.name			= "rpc",
-	.socket_init		= NULL,
-	.accept_connection	= dcesrv_accept,
-	.recv_handler		= dcesrv_recv,
-	.send_handler		= dcesrv_send,
-	.idle_handler		= NULL,
-	.close_connection	= NULL
-};
-
-const struct server_stream_ops *dcesrv_get_stream_ops(void)
+/*
+  initialise the dcerpc server context for socket based services
+*/
+static NTSTATUS dcesrv_init(struct event_context *event_context, const struct model_ops *model_ops)
 {
-	return &dcesrv_stream_ops;
+	NTSTATUS status;
+	struct dcesrv_context *dce_ctx;
+
+	status = dcesrv_init_context(event_context,
+				     lp_dcerpc_endpoint_servers(),
+				     DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
+				     &dce_ctx);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return dcesrv_sock_init(dce_ctx, event_context, model_ops);
 }
 
-static const struct server_service_ops dcesrv_ops = {
-	.name			= "rpc",
-	.service_init		= dcesrv_init,
-};
-
-const struct server_service_ops *dcesrv_get_ops(void)
-{
-	return &dcesrv_ops;
-}
 
 NTSTATUS server_service_rpc_init(void)
 {
-	return NT_STATUS_OK;	
+	return register_server_service("rpc", dcesrv_init);
 }

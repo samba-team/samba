@@ -24,6 +24,7 @@
 #include "events.h"
 #include "dlinklist.h"
 #include "vfs_posix.h"
+#include "smbd/service_stream.h"
 
 /* the context for a single wait instance */
 struct pvfs_wait {
@@ -56,7 +57,7 @@ NTSTATUS pvfs_async_setup(struct ntvfs_module_context *ntvfs,
   receive a completion message for a wait
 */
 static void pvfs_wait_dispatch(struct messaging_context *msg, void *private, uint32_t msg_type, 
-			       servid_t src, DATA_BLOB *data)
+			       uint32_t src, DATA_BLOB *data)
 {
 	struct pvfs_wait *pwait = private;
 	struct smbsrv_request *req;
@@ -133,7 +134,7 @@ static int pvfs_wait_destructor(void *ptr)
 
 	pwait->private = private;
 	pwait->handler = fn;
-	pwait->msg_ctx = pvfs->tcon->smb_conn->connection->messaging.ctx;
+	pwait->msg_ctx = pvfs->tcon->smb_conn->connection->msg_ctx;
 	pwait->ev = req->tcon->smb_conn->connection->event.ctx;
 	pwait->msg_type = msg_type;
 	pwait->req = talloc_reference(pwait, req);

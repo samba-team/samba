@@ -217,10 +217,11 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	transport = dcerpc_transport_by_tower(&r->in.map_tower->tower);
 
 	if (transport == -1) {
-		DEBUG(1, ("Client requested unknown transport with levels: "));
+		DEBUG(2, ("Client requested unknown transport with levels: "));
 		for (i = 2; i < r->in.map_tower->tower.num_floors; i++) {
-			DEBUG(1, ("%d, ", r->in.map_tower->tower.floors[i].lhs.protocol));
+			DEBUG(2, ("%d, ", r->in.map_tower->tower.floors[i].lhs.protocol));
 		}
+		DEBUG(2, ("\n"));
 		goto failed;
 	}
 

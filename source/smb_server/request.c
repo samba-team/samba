@@ -26,6 +26,7 @@
 #include "events.h"
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
+#include "smbd/service_stream.h"
 
 
 /* we over allocate the data buffer to prevent too many realloc calls */
