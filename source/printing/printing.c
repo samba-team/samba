@@ -183,7 +183,9 @@ static struct tdb_print_db *get_print_db_byname(const char *printername)
 					return NULL;
 				}
 			}
-			ZERO_STRUCTP(p);
+			p->tdb = NULL;
+			p->ref_count = 0;
+			memset(p->printer_name, '\0', sizeof(p->printer_name));
 			break;
 		}
 		if (p) {
