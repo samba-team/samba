@@ -31,36 +31,36 @@ struct socket_ops {
 	const char *name;
 	enum socket_type type;
 
-	NTSTATUS (*init)(struct socket_context *sock);
+	NTSTATUS (*fn_init)(struct socket_context *sock);
 
 	/* client ops */
-	NTSTATUS (*connect)(struct socket_context *sock,
+	NTSTATUS (*fn_connect)(struct socket_context *sock,
 				const char *my_address, int my_port,
 				const char *server_address, int server_port,
 				uint32_t flags);
 
 	/* server ops */
-	NTSTATUS (*listen)(struct socket_context *sock,
+	NTSTATUS (*fn_listen)(struct socket_context *sock,
 				const char *my_address, int port, int queue_size, uint32_t flags);
-	NTSTATUS (*accept)(struct socket_context *sock,	struct socket_context **new_sock);
+	NTSTATUS (*fn_accept)(struct socket_context *sock,	struct socket_context **new_sock);
 
 	/* general ops */
-	NTSTATUS (*recv)(struct socket_context *sock, void *buf,
+	NTSTATUS (*fn_recv)(struct socket_context *sock, void *buf,
 			 size_t wantlen, size_t *nread, uint32_t flags);
-	NTSTATUS (*send)(struct socket_context *sock, 
+	NTSTATUS (*fn_send)(struct socket_context *sock, 
 			 const DATA_BLOB *blob, size_t *sendlen, uint32_t flags);
 
-	void (*close)(struct socket_context *sock);
+	void (*fn_close)(struct socket_context *sock);
 
-	NTSTATUS (*set_option)(struct socket_context *sock, const char *option, const char *val);
+	NTSTATUS (*fn_set_option)(struct socket_context *sock, const char *option, const char *val);
 
-	char *(*get_peer_name)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
-	char *(*get_peer_addr)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
-	int (*get_peer_port)(struct socket_context *sock);
-	char *(*get_my_addr)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
-	int (*get_my_port)(struct socket_context *sock);
+	char *(*fn_get_peer_name)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
+	char *(*fn_get_peer_addr)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
+	int (*fn_get_peer_port)(struct socket_context *sock);
+	char *(*fn_get_my_addr)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
+	int (*fn_get_my_port)(struct socket_context *sock);
 
-	int (*get_fd)(struct socket_context *sock);
+	int (*fn_get_fd)(struct socket_context *sock);
 };
 
 enum socket_state {
