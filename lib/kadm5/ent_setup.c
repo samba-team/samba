@@ -75,11 +75,19 @@ _kadm5_setup_entry(hdb_entry *ent,
 		   u_int32_t def_mask)
 {
     if(mask & KADM5_PRINC_EXPIRE_TIME
-       && princ_mask & KADM5_PRINC_EXPIRE_TIME)
-	set_value(ent->valid_end, princ->princ_expire_time);
+       && princ_mask & KADM5_PRINC_EXPIRE_TIME) {
+	if (princ->princ_expire_time)
+	    set_value(ent->valid_end, princ->princ_expire_time);
+	else
+	    set_null(ent->valid_end);
+    }
     if(mask & KADM5_PW_EXPIRATION
-       && princ_mask & KADM5_PW_EXPIRATION)
-	set_value(ent->pw_end, princ->pw_expiration);
+       && princ_mask & KADM5_PW_EXPIRATION) {
+	if (princ->pw_expiration)
+	    set_value(ent->pw_end, princ->pw_expiration);
+	else
+	    set_null(ent->pw_end);
+    }
     if(mask & KADM5_ATTRIBUTES) {
 	if (princ_mask & KADM5_ATTRIBUTES) {
 	    attr_to_flags(princ->attributes, &ent->flags);
