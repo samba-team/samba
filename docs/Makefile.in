@@ -136,6 +136,9 @@ $(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl
 	echo "<para/>" > $@
 	$(XSLTPROC) --xinclude xslt/generate-attributions.xsl $*/index.xml > $@
 
+clobber: clean
+	rm Makefile settings.xsl config.status config.log configure
+
 clean: 
 	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
 	rm -f *.xml
