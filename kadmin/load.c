@@ -117,7 +117,7 @@ parse_time_string_alloc (time_t **t, const char *s)
  */
 
 static int
-parse_integer(unsigned *u, const char *s)
+parse_integer(unsigned int *u, const char *s)
 {
     if(strcmp(s, "-") == 0)
 	return 0;
@@ -127,9 +127,9 @@ parse_integer(unsigned *u, const char *s)
 }
 
 static int
-parse_integer_alloc (int **u, const char *s)
+parse_integer_alloc (unsigned int **u, const char *s)
 {
-    unsigned tmp;
+    unsigned int tmp;
     int ret;
 
     *u = NULL;
@@ -275,7 +275,7 @@ static int
 parse_hdbflags2int(HDBFlags *f, const char *s)
 {
     int ret;
-    unsigned tmp;
+    unsigned int tmp;
 
     ret = parse_integer (&tmp, s);
     if (ret == 1)
