@@ -675,6 +675,7 @@ extern int errno;
 #include "registry.h"
 #include "rap.h"
 #include "gtk/common/gtk-smb.h"
+#include "gtk/common/select.h"
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)

@@ -19,19 +19,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-
-#include <gdk/gdkkeysyms.h>
-#include <gtk/gtk.h>
 #include "includes.h"
+#include "gtk/common/gtk-smb.h"
 
 struct dcerpc_pipe *at_pipe = NULL;
 GtkWidget *mainwin;
@@ -211,7 +200,7 @@ void
 on_about_activate                     (GtkMenuItem     *menuitem,
                                         gpointer         user_data)
 {
-	GtkDialog *aboutwin = GTK_DIALOG(create_gtk_samba_about_dialog());
+	GtkDialog *aboutwin = GTK_DIALOG(create_gtk_samba_about_dialog("gwcrontab"));
         gtk_dialog_run(aboutwin);
         gtk_widget_destroy(GTK_WIDGET(aboutwin));
 }
@@ -242,6 +231,7 @@ create_mainwindow (void)
   accel_group = gtk_accel_group_new ();
 
   mainwindow = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_default_size (GTK_WINDOW (mainwindow), 642, 562);
   gtk_window_set_title (GTK_WINDOW (mainwindow), "Task Scheduler");
 
   vbox = gtk_vbox_new (FALSE, 0);
@@ -529,7 +519,7 @@ static GtkWidget*create_new_job_dialog (void)
 
 
 
-int main(int argc, char **argv)
+ int main(int argc, char **argv)
 {
 	gtk_init(&argc, &argv);
 	mainwin = create_mainwindow();

@@ -19,19 +19,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-
-#include <gdk/gdkkeysyms.h>
-#include <gtk/gtk.h>
 #include "includes.h"
+#include "gtk-smb.h"
 
 void gtk_show_werror(GtkWidget *win, WERROR err) 
 {
@@ -55,8 +44,15 @@ void gtk_show_ntstatus(GtkWidget *win, NTSTATUS status)
  	gtk_widget_destroy (dialog);
 }
 
-static void gtk_rpc_binding_dialog_class_init (GtkRpcBindingDialogClass *class)
+static void on_browse_activate  (GtkButton     *button,  gpointer         user_data)
 {
+	GtkRpcBindingDialog *rbd = user_data;
+	GtkSelectHostDialog *shd = gtk_select_host_dialog_new(TRUE);
+	if(gtk_dialog_run(GTK_DIALOG(shd)) == GTK_RESPONSE_ACCEPT) {
+		gtk_entry_set_text(GTK_ENTRY(rbd->entry_host), gtk_select_host_dialog_get_host(shd));
+	}
+	
+	gtk_widget_destroy(GTK_WIDGET(shd));
 }
 
 static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_dialog)
@@ -79,6 +75,7 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	GtkWidget *table1;
 	GtkWidget *lbl_username;
 	GtkWidget *lbl_password;
+	GtkWidget *btn_browse;
 	GtkWidget *label9;
 	GtkWidget *chk_button;
 	GtkWidget *lbl_credentials;
@@ -138,6 +135,14 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_rpc_binding_dialog->entry_host = gtk_entry_new ();
 	gtk_widget_show (gtk_rpc_binding_dialog->entry_host);
 	gtk_box_pack_start (GTK_BOX (hbox1), gtk_rpc_binding_dialog->entry_host, TRUE, TRUE, 0);
+
+ 	btn_browse = gtk_button_new_with_label ("Browse");
+  	gtk_widget_show (btn_browse);
+  	gtk_box_pack_start (GTK_BOX (hbox1), btn_browse, TRUE, TRUE, 0);
+
+        g_signal_connect ((gpointer) btn_browse, "pressed",
+               G_CALLBACK (on_browse_activate),
+               gtk_rpc_binding_dialog);
 
 	label2 = gtk_label_new ("Host");
 	gtk_widget_show (label2);
@@ -245,7 +250,7 @@ GType gtk_rpc_binding_dialog_get_type ()
 	sizeof (GtkRpcBindingDialogClass),
 	NULL,
 	NULL,
-	(GClassInitFunc) gtk_rpc_binding_dialog_class_init,
+	NULL,
 	NULL,
 	NULL,
 	sizeof(GtkRpcBindingDialog),
@@ -282,12 +287,14 @@ const char *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, char *pip
 	char *options = NULL;
 	char *binding = NULL;
 
+	/* Format: TRANSPORT:host:[\pipe\foo,foo,foo] */
+
 	host = gtk_entry_get_text(GTK_ENTRY(d->entry_host));
 	if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->transport_tcp_ip)))
 		transport = "ncacn_tcp";
 	else 
 		transport = "ncacn_np";
-	// Format: TRANSPORT:host:[\pipe\foo,foo,foo]
+
 	if(pipe != NULL) {
 		options = talloc_asprintf(d->mem_ctx, "\\pipe\\%s", pipe);
 	}
@@ -309,44 +316,46 @@ const char *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, char *pip
 
 GtkWidget* create_gtk_samba_about_dialog (char *appname)
 {
+  GtkWidget *samba_about_dialog;
   GtkWidget *dialog_vbox1;
   GtkWidget *image1;
   GtkWidget *label1;
+  GtkWidget *label3;
   GtkWidget *label2;
   GtkWidget *dialog_action_area1;
-  GtkWidget *closebutton1;
-  GtkWidget *aboutwin;
+  GtkWidget *okbutton1;
 
-  aboutwin = gtk_dialog_new ();
-  gtk_window_set_title (GTK_WINDOW (aboutwin), "About");
-  gtk_window_set_resizable (GTK_WINDOW (aboutwin), FALSE);
+  samba_about_dialog = gtk_dialog_new ();
+  gtk_window_set_title (GTK_WINDOW (samba_about_dialog), "About");
 
-  dialog_vbox1 = GTK_DIALOG (aboutwin)->vbox;
+  dialog_vbox1 = GTK_DIALOG (samba_about_dialog)->vbox;
   gtk_widget_show (dialog_vbox1);
 
-  /* FIXME: Samba logo ? 
-  image1 = create_pixmap (aboutwin, "samba.png");
+/* FIXME image1 = create_pixmap (samba_about_dialog, "slmed.png");
   gtk_widget_show (image1);
-  gtk_box_pack_start (GTK_BOX (dialog_vbox1), image1, FALSE, TRUE, 0); */
+  gtk_box_pack_start (GTK_BOX (dialog_vbox1), image1, TRUE, TRUE, 0);*/
 
   label1 = gtk_label_new (appname);
   gtk_widget_show (label1);
   gtk_box_pack_start (GTK_BOX (dialog_vbox1), label1, FALSE, FALSE, 0);
-  gtk_label_set_use_markup (GTK_LABEL (label1), TRUE);
 
-  label2 = gtk_label_new_with_mnemonic ("(C) 2004 Jelmer Vernooij <jelmer@samba.org>\nPart of Samba\nhttp://www.samba.org/\n");
+  label3 = gtk_label_new_with_mnemonic ("Part of Samba <http://www.samba.org/>");
+  gtk_widget_show (label3);
+  gtk_box_pack_start (GTK_BOX (dialog_vbox1), label3, FALSE, FALSE, 0);
+
+  label2 = gtk_label_new ("\302\251 1992-2004 The Samba Team");
   gtk_widget_show (label2);
-  gtk_box_pack_start (GTK_BOX (dialog_vbox1), label2, TRUE, FALSE, 0);
-  gtk_label_set_use_markup (GTK_LABEL (label2), TRUE);
+  gtk_box_pack_start (GTK_BOX (dialog_vbox1), label2, FALSE, FALSE, 0);
 
-  dialog_action_area1 = GTK_DIALOG (aboutwin)->action_area;
+  dialog_action_area1 = GTK_DIALOG (samba_about_dialog)->action_area;
   gtk_widget_show (dialog_action_area1);
   gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area1), GTK_BUTTONBOX_END);
 
-  closebutton1 = gtk_button_new_from_stock ("gtk-close");
-  gtk_widget_show (closebutton1);
-  gtk_dialog_add_action_widget (GTK_DIALOG (aboutwin), closebutton1, GTK_RESPONSE_CLOSE);
-  GTK_WIDGET_SET_FLAGS (closebutton1, GTK_CAN_DEFAULT);
+  okbutton1 = gtk_button_new_from_stock ("gtk-ok");
+  gtk_widget_show (okbutton1);
+  gtk_dialog_add_action_widget (GTK_DIALOG (samba_about_dialog), okbutton1, GTK_RESPONSE_OK);
+  GTK_WIDGET_SET_FLAGS (okbutton1, GTK_CAN_DEFAULT);
 
-  return aboutwin;
+  return samba_about_dialog;
 }
+
