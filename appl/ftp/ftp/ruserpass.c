@@ -70,7 +70,7 @@ ruserpass(char *host, char **aname, char **apass, char **aacct)
 	int t, i, c, usedefault = 0;
 	struct stat stb;
 
-	if(k_gethostname(myhostname, MaxHostNameLen) < 0)
+	if(gethostname(myhostname, MaxHostNameLen) < 0)
 	    strcpy(myhostname, "");
 	if((mydomain = strchr(myhostname, '.')) == NULL)
 	    mydomain = myhostname;

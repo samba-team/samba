@@ -489,7 +489,7 @@ main(int argc, char **argv)
 		fclose(fd);
 		/* reply(220,) must follow */
 	}
-	k_gethostname(hostname, sizeof(hostname));
+	gethostname(hostname, sizeof(hostname));
 	reply(220, "%s FTP server (%s+%s) ready.", hostname, 
 	      version, krb4_version);
 	setjmp(errcatch);

@@ -158,7 +158,7 @@ krb4encpwd_init(ap, server)
 		str_data[3] = TELQUAL_REPLY;
 	} else {
 		str_data[3] = TELQUAL_IS;
-		k_gethostname(hostname, sizeof(hostname));
+		gethostname(hostname, sizeof(hostname));
 		realm = krb_realmofhost(hostname);
 		cp = strchr(hostname, '.');
 		if (*cp != NULL) *cp = NULL;
@@ -209,7 +209,7 @@ krb4encpwd_is(ap, data, cnt)
 	case KRB4_ENCPWD_AUTH:
 		memmove(auth.dat, data, auth.length = cnt);
 
-		k_gethostname(lhostname, sizeof(lhostname));
+		gethostname(lhostname, sizeof(lhostname));
 		if ((cp = strchr(lhostname, '.')) != 0)  *cp = '\0';
 
 		if (r = krb_rd_encpwd_req(&auth, KRB_SERVICE_NAME, lhostname, 0, &adat, NULL, challenge, r_user, r_passwd)) {
@@ -301,7 +301,7 @@ krb4encpwd_reply(ap, data, cnt)
 		 * Verify that the response to the challenge is correct.
 		 */
 
-		k_gethostname(hostname, sizeof(hostname));
+		gethostname(hostname, sizeof(hostname));
 		realm = krb_realmofhost(hostname);
 		memmove(challenge, data, cnt);
 		memset(user_passwd, 0, sizeof(user_passwd));

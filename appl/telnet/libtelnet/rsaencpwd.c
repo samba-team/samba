@@ -157,7 +157,7 @@ rsaencpwd_init(ap, server)
 	if (server) {
 		str_data[3] = TELQUAL_REPLY;
 		memset(key_file, 0, sizeof(key_file));
-		k_gethostname(lhostname, sizeof(lhostname));
+		gethostname(lhostname, sizeof(lhostname));
 		if ((cp = strchr(lhostname, '.')) != 0)  *cp = '\0';
 		strcpy(key_file, "/etc/.");
 		strcat(key_file, lhostname);
