@@ -20,13 +20,15 @@ login_SOURCES = \
 		conf.c				\
 		shadow.c
 
-LDADD = $(LIB_kafs) \
+LDADD = $(LIB_otp) \
+	$(LIB_kafs) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken) \
-	$(LIB_security)
+	$(LIB_security) \
+	$(DBLIB)
 
 $(srcdir)/login_protos.h:
 	cd $(srcdir); perl ../../cf/make-proto.pl -o login_protos.h $(login_SOURCES) || rm -f login_protos.h
