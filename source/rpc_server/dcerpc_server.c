@@ -1027,7 +1027,7 @@ static int num_ep_servers;
 
   The 'type' is used to specify whether this is for a disk, printer or IPC$ share
 */
-static NTSTATUS decrpc_register_ep_server(void *_ep_server)
+static NTSTATUS dcerpc_register_ep_server(void *_ep_server)
 {
 	const struct dcesrv_endpoint_server *ep_server = _ep_server;
 	
@@ -1040,7 +1040,7 @@ static NTSTATUS decrpc_register_ep_server(void *_ep_server)
 
 	ep_servers = Realloc(ep_servers, sizeof(ep_servers[0]) * (num_ep_servers+1));
 	if (!ep_servers) {
-		smb_panic("out of memory in decrpc_register");
+		smb_panic("out of memory in dcerpc_register");
 	}
 
 	ep_servers[num_ep_servers].ep_server = smb_xmemdup(ep_server, sizeof(*ep_server));
@@ -1101,7 +1101,7 @@ BOOL dcesrv_init(void)
 {
 	NTSTATUS status;
 
-	status = register_subsystem("dcerpc", decrpc_register_ep_server); 
+	status = register_subsystem("dcerpc", dcerpc_register_ep_server); 
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
