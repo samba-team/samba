@@ -369,6 +369,23 @@ exit(1);
 
 esac
 
+AC_CACHE_CHECK([for dynamic executables],samba_cv_dynamic_executables,[
+
+    _ldflags=${LDFLAGS}
+    LDFLAGS="-rdynamic $LDFLAGS"
+
+    AC_TRY_RUN([
+#include <unistd.h>
+main () {
+exit(0);
+}], samba_cv_dynamic_executables=yes,samba_cv_dynamic_executables=no,samba_cv_dynamic_executables=cross)])
+if test x"$samba_cv_dynamic_executables" = x"yes"; then
+	LDFLAGS="-rdynamic $_ldflags"
+else
+	LDFLAGS="$_ldflags"
+fi
+
+
 AC_INLINE
 AC_HEADER_STDC
 AC_HEADER_DIRENT
