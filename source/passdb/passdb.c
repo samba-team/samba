@@ -868,18 +868,6 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 }
 
 /*************************************************************
- Copies a SAM_ACCOUNT.
- **************************************************************/
-
-void copy_sam_passwd(SAM_ACCOUNT *to, const SAM_ACCOUNT *from)
-{
-	if (!from || !to)
-		return;
-
-	memcpy(to, from, sizeof(SAM_ACCOUNT));
-}
-
-/*************************************************************
  Change a password entry in the local smbpasswd file.
 
  FIXME!!  The function needs to be abstracted into the

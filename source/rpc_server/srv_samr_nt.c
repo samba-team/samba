@@ -2311,7 +2311,6 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
 static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 {
 	SAM_ACCOUNT *pwd = NULL;
-	SAM_ACCOUNT *new_pwd = NULL;
  
 	if (id21 == NULL) {
 		DEBUG(5, ("set_user_info_21: NULL id21\n"));
@@ -2319,17 +2318,13 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 	}
  
 	pdb_init_sam(&pwd);
-	pdb_init_sam(&new_pwd);
  
 	if (!pdb_getsampwrid(pwd, rid)) {
 		pdb_free_sam(&pwd);
-		pdb_free_sam(&new_pwd);
 		return False;
 	}
  
-	/* we make a copy so that we can modify stuff */
-	copy_sam_passwd(new_pwd, pwd);
-	copy_id21_to_sam_passwd(new_pwd, id21);
+	copy_id21_to_sam_passwd(pwd, id21);
  
 	/*
 	 * The funny part about the previous two calls is
@@ -2339,14 +2334,12 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 	 */
  
 	/* write the change out */
-	if(!pdb_update_sam_account(new_pwd, True)) {
+	if(!pdb_update_sam_account(pwd, True)) {
 		pdb_free_sam(&pwd);
-		pdb_free_sam(&new_pwd);
 		return False;
  	}
 
 	pdb_free_sam(&pwd);
-	pdb_free_sam(&new_pwd);
 
 	return True;
 }
@@ -2358,7 +2351,6 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 {
 	SAM_ACCOUNT *pwd = NULL;
-	SAM_ACCOUNT *new_pwd = NULL;
 	pstring plaintext_buf;
 	uint32 len;
 	uint16 acct_ctrl;
@@ -2369,28 +2361,23 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	}
  
  	pdb_init_sam(&pwd);
-	pdb_init_sam(&new_pwd);
  
 	if (!pdb_getsampwrid(pwd, rid)) {
 		pdb_free_sam(&pwd);
-		pdb_free_sam(&new_pwd);
 		return False;
  	}
 
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
-	copy_sam_passwd(new_pwd, pwd);
-	pdb_free_sam(&pwd);
-	
-	copy_id23_to_sam_passwd(new_pwd, id23);
+	copy_id23_to_sam_passwd(pwd, id23);
  
 	if (!decode_pw_buffer((char*)id23->pass, plaintext_buf, 256, &len)) {
-		pdb_free_sam(&new_pwd);
+		pdb_free_sam(&pwd);
 		return False;
  	}
   
-	if (!pdb_set_plaintext_passwd (new_pwd, plaintext_buf)) {
-		pdb_free_sam(&new_pwd);
+	if (!pdb_set_plaintext_passwd (pwd, plaintext_buf)) {
+		pdb_free_sam(&pwd);
 		return False;
 	}
  
@@ -2402,20 +2389,20 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	} else  {
 		/* update the UNIX password */
 		if (lp_unix_password_sync() )
-			if(!chgpasswd(pdb_get_username(new_pwd), "", plaintext_buf, True)) {
-				pdb_free_sam(&new_pwd);
+			if(!chgpasswd(pdb_get_username(pwd), "", plaintext_buf, True)) {
+				pdb_free_sam(&pwd);
 				return False;
 			}
 	}
  
 	ZERO_STRUCT(plaintext_buf);
  
-	if(!pdb_update_sam_account(new_pwd, True)) {
-		pdb_free_sam(&new_pwd);
+	if(!pdb_update_sam_account(pwd, True)) {
+		pdb_free_sam(&pwd);
 		return False;
 	}
  
-	pdb_free_sam(&new_pwd);
+	pdb_free_sam(&pwd);
 
 	return True;
 }
