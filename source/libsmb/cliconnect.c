@@ -910,7 +910,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	memcpy(p,pword,passlen);
 	p += passlen;
 	p += clistr_push(cli, p, fullshare, -1, STR_TERMINATE |STR_UPPER);
-	fstrcpy(p, dev); p += strlen(dev)+1;
+	p += clistr_push(cli, p, dev, -1, STR_TERMINATE |STR_UPPER | STR_ASCII);
 
 	cli_setup_bcc(cli, p);
 
