@@ -31,6 +31,20 @@ extern int DEBUGLEVEL;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
+struct sam_database_info {
+        uint32 index;
+        uint32 serial_lo, serial_hi;
+        uint32 date_lo, date_hi;
+};
+
+/****************************************************************************
+Handle a sam/uas change notification
+**************************************************************************/
+static void handle_sam_uas_change(int db_count, 
+                                  struct sam_database_info *db_info)
+{
+}
+
 /****************************************************************************
 Process a domain logon packet
 **************************************************************************/
@@ -277,6 +291,65 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
                    p->ip, *iface_ip(p->ip), p->port);  
       break;
     }
+
+    /* Announce change to UAS or SAM */
+
+  case SAM_UAS_CHANGE: {
+          struct sam_database_info *db_info;
+          char *q = buf + 2;
+          int i, db_count;
+          
+          /* Header */
+          
+          q += 4;                   /* Low serial number */
+          q += 4;                   /* Date/time */
+          q += 4;                   /* Pulse */
+          q += 4;                   /* Random */
+          
+          /* Domain info */
+          
+          q = skip_string(q, 1);    /* PDC name */
+          q = skip_string(q, 1);    /* Domain name */
+          q = skip_unibuf(q, PTR_DIFF(buf + len, q)); /* Unicode PDC name */
+          q = skip_unibuf(q, PTR_DIFF(buf + len, q)); /* Unicode domain name */
+          
+          /* Database info */
+          
+          db_count = IVAL(q, 0); q += 2;
+          
+          db_info = (struct sam_database_info *)
+                  malloc(sizeof(struct sam_database_info) * db_count);
+
+          if (db_info == NULL) {
+                  DEBUG(3, ("out of memory allocating info for %d databases\n",
+                            db_count));
+                  return;
+          }
+          
+          for (i = 0; i < db_count; i++) {
+                  db_info[i].index = IVAL(q, 0);
+                  db_info[i].serial_lo = IVAL(q, 4);
+                  db_info[i].serial_hi = IVAL(q, 8);
+                  db_info[i].date_lo = IVAL(q, 12);
+                  db_info[i].date_hi = IVAL(q, 16);
+                  q += 20;
+          }
+
+          /* Domain SID */
+
+          q += IVAL(q, 0) + 4;  /* 4 byte length plus data */
+          
+          q += 2;               /* Alignment? */
+
+          /* Misc other info */
+
+          q += 4;               /* NT version (0x1) */
+          q += 2;               /* LMNT token (0xff) */
+          q += 2;               /* LM20 token (0xff) */
+
+          handle_sam_uas_change(db_count, db_info);
+          free(db_info);
+  }
 
     default:
     {
