@@ -88,9 +88,15 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
                   "good" : "bad"));
 
  done:
-	state->response.data.num_entries = NT_STATUS_V(result);
+	state->response.data.auth.nt_status = NT_STATUS_V(result);
+	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
+	fstrcpy(state->response.data.auth.error_string, nt_errstr(result));
+	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
-	return WINBINDD_OK;
+	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Checking the trust account password returned %s\n", 
+						state->response.data.auth.nt_status_string));
+
+	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
 enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
