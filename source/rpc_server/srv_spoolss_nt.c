@@ -6157,12 +6157,6 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	if (!get_printer_snum(p,handle, &snum))
 		return ERRbadfid;
 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
-	if (status != 0x0)
-		return ERRinvalidname;
-
-	convert_specific_param(&param, value , type, data, real_len);
-
 	ZERO_STRUCT(old_param);
 
 	/* 
@@ -6185,6 +6179,13 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	   nothing is actually changing.  This is not needed anymore but
 	   has been left in as an optimization to keep from from
 	   writing to disk as often  --jerry  */
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (status != 0x0)
+		return ERRinvalidname;
+
+	convert_specific_param(&param, value , type, data, real_len);
+
 
 	if (get_specific_param(*printer, 2, param->value, &old_param.data,
 			       &old_param.type, (uint32 *)&old_param.data_len)) {
