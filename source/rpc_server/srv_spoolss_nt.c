@@ -1816,7 +1816,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, fstring 
 	counter_printer_0 *session_counter;
 	uint32 global_counter;
 	struct tm *t;
-	time_t setup_time = time(NULL);
+	time_t setuptime;
 
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
@@ -1869,8 +1869,8 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, fstring 
 	printer->total_jobs = 0;
 	printer->total_bytes = 0;
 
-	t=gmtime(&setup_time);
-	ntprinter->info_2->setuptime = (uint32)setup_time; /* FIXME !! */
+	setuptime = (time_t)ntprinter->info_2->setuptime;
+	t=gmtime(&setuptime);
 
 	printer->year = t->tm_year+1900;
 	printer->month = t->tm_mon+1;
@@ -4957,7 +4957,7 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
 	
-	ZERO_STRUCTP(*data_out);
+	memset(*data_out,'\0',in_data_len);
 	memcpy(*data_out, data, (size_t)data_len);
 	*out_data_len=data_len;
 
@@ -5009,7 +5009,7 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 	if (!add_a_specific_param(printer->info_2, param))
 		status = ERROR_INVALID_PARAMETER;
 	else
-		status = add_a_printer(*printer, 2);
+		status = mod_a_printer(*printer, 2);
 
 	free_a_printer(&printer, 2);
 	return status;
@@ -5051,7 +5051,7 @@ uint32 _spoolss_deleteprinterdata( POLICY_HND *handle, const UNISTR2 *value)
 	if(!unlink_specific_param_if_exist(printer->info_2, &param))
 		status = ERROR_INVALID_PARAMETER;
 	else
-		status = add_a_printer(*printer, 2);
+		status = mod_a_printer(*printer, 2);
 
 	free_a_printer(&printer, 2);
 	return status;

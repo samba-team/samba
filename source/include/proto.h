@@ -1732,6 +1732,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename);
 NT_DEVICEMODE *dup_nt_devicemode(NT_DEVICEMODE *nt_devicemode);
 void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr);
 void get_printer_subst_params(int snum, fstring *printername, fstring *sharename, fstring *portname);
+uint32 mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
 uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring sharename);
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
