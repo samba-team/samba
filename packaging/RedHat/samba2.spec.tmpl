@@ -158,6 +158,7 @@ install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{prefix}/include/
 #done
 
 # Install the miscellany
+install -m755 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat/README
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m755 packaging/RedHat/winbind.init $RPM_BUILD_ROOT/etc/rc.d/init.d/winbind
@@ -396,9 +397,6 @@ fi
 %{prefix}/bin/smbgroupedit
 %{prefix}/bin/smbcacls
 %{prefix}/bin/pdbedit
-%{prefix}/bin/pam_smbpass.so
-%{prefix}/bin/smbmount
-%{prefix}/bin/smbumount
 %{prefix}/bin/tdbbackup
 %{prefix}/bin/smbtree
 %attr(755,root,root) /lib/libnss_wins.s*
