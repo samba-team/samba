@@ -111,6 +111,10 @@ static unsigned sha1WithRSAEncryption_num[] =
     { 1, 2, 840, 113549, 1, 1, 5 };
 heim_oid heim_sha1WithRSAEncryption_oid =
 	oid_enc(sha1WithRSAEncryption_num);
+static unsigned rc2CBC_num[] =
+    { 1, 2, 840, 113549, 3, 2 };
+heim_oid heim_rc2CBC_oid =
+	oid_enc(rc2CBC_num);
 static unsigned des_ede3_cbc_num[] = 
     { 1, 2, 840, 113549, 3, 7 };
 heim_oid heim_des_ede3_cbc_oid =
@@ -849,6 +853,7 @@ pk_verify_chain_standard(krb5_context context,
     X509_STORE_CTX_trusted_stack(store_ctx, id->trusted_certs);
     X509_verify_cert(store_ctx);
     /* the last checked certificate is in store_ctx->current_cert */
+    krb5_clear_error_string(context);
     switch(store_ctx->error) {
     case X509_V_OK:
 	ret = 0;
@@ -864,12 +869,21 @@ pk_verify_chain_standard(krb5_context context,
     case X509_V_ERR_CERT_HAS_EXPIRED:
 	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE;
 	break;
+    case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
+    case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
+    case X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:
+    case X509_V_ERR_CERT_CHAIN_TOO_LONG:
+    case X509_V_ERR_PATH_LENGTH_EXCEEDED:
+    case X509_V_ERR_INVALID_CA:
+	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE;
+	krb5_set_error_string(context, "unknown CA or can't "
+			      "verify certificate");
+	break;
     default:
 	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE; /* XXX */
 	break;
     }
     if (ret) {
-	krb5_clear_error_string(context);
 	goto end;
     }
 
@@ -1123,6 +1137,7 @@ _krb5_pk_verify_sign(krb5_context context,
 
 static krb5_error_code
 get_reply_key(krb5_context context,
+	      int win2k_compat,
 	      const heim_oid *eContentType,
 	      const krb5_data *eContent,
 	      unsigned nonce,
@@ -1132,9 +1147,16 @@ get_reply_key(krb5_context context,
     krb5_error_code ret;
     size_t size;
 
-    if (heim_oid_cmp(eContentType, &heim_pkrkeydata_oid) != 0) {
-	krb5_set_error_string(context, "PKINIT, reply key, wrong oid");
-	return KRB5KRB_AP_ERR_MSG_TYPE;
+    if (win2k_compat) {
+	if (heim_oid_cmp(eContentType, &pkcs7_data_oid) != 0) {
+	    krb5_set_error_string(context, "PKINIT, reply key, wrong oid");
+	    return KRB5KRB_AP_ERR_MSG_TYPE;
+	}
+    } else {
+	if (heim_oid_cmp(eContentType, &heim_pkrkeydata_oid) != 0) {
+	    krb5_set_error_string(context, "PKINIT, reply key, wrong oid");
+	    return KRB5KRB_AP_ERR_MSG_TYPE;
+	}
     }
 
     ret = decode_ReplyKeyPack(eContent->data,
@@ -1148,6 +1170,7 @@ get_reply_key(krb5_context context,
     }
      
     if (key_pack.nonce != nonce) {
+	krb5_set_error_string(context, "PKINIT nonce is wrong");
 	free_ReplyKeyPack(&key_pack);
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
@@ -1163,7 +1186,7 @@ get_reply_key(krb5_context context,
     ret = copy_EncryptionKey(&key_pack.replyKey, *key);
     free_ReplyKeyPack(&key_pack);
     if (ret) {
-	krb5_set_error_string(context, "PKINIT failed allocating reply key");
+	krb5_set_error_string(context, "PKINIT failed copying reply key");
 	free(*key);
     }
 
@@ -1201,6 +1224,9 @@ pk_rd_pa_reply_enckey(krb5_context context,
     krb5_data eContent;
     heim_oid eContentType = { 0, NULL };
     struct krb5_pk_cert *host = NULL;
+    heim_octet_string encryptedContent;
+    heim_octet_string *any;
+
 
     memset(&tmp_key, 0, sizeof(tmp_key));
     memset(&ed, 0, sizeof(ed));
@@ -1246,7 +1272,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     }
 
     if (heim_oid_cmp(&heim_rsaEncryption_oid,
-		&ri->keyEncryptionAlgorithm.algorithm)) {
+		     &ri->keyEncryptionAlgorithm.algorithm)) {
 	krb5_set_error_string(context, "Invalid content type");
 	return EINVAL;
     }
@@ -1270,27 +1296,86 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	}
     }
 
+    if (ed.encryptedContentInfo.encryptedContent == NULL) {
+	krb5_set_error_string(context, "OPTIONAL encryptedContent "
+			      "field not filled in in KDC reply");
+	ret = KRB5_BADMSGTYPE;
+	goto out;
+    }
 
-    if (heim_oid_cmp(&ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm,
-		&heim_des_ede3_cbc_oid) == 0) {
-	/* use des-ede3-cbc */
-	heim_octet_string encryptedContent;
-	heim_octet_string *any;
+    any = ed.encryptedContentInfo.encryptedContent;
+    ret = der_get_octet_string(any->data, any->length,
+			       &encryptedContent, NULL);
+    if (ret) {
+	krb5_set_error_string(context, "encryptedContent content invalid");
+	goto out;
+    }
 
-	if (ed.encryptedContentInfo.encryptedContent == NULL) {
-	    krb5_set_error_string(context, "OPTIONAL encryptedContent "
-				  "field not filled in in KDC reply");
+    if (heim_oid_cmp(&ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm, &heim_rc2CBC_oid) == 0) {
+	/* use rc2-cbc */
+	RC2CBCParameter params;
+	int bits;
+
+	plain.data = malloc(encryptedContent.length);
+	if (plain.data == NULL) {
+	    free_octet_string(&encryptedContent);
+	    krb5_set_error_string(context, "malloc - out of memory");
+	    ret = ENOMEM;
+	    goto out;
+	}
+	plain.length = encryptedContent.length;
+
+	ret = decode_RC2CBCParameter(ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->data,
+			       ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->length,
+			       &params,
+			       &size);
+	if (ret) {
+	    free_octet_string(&encryptedContent);
+	    krb5_set_error_string(context, "failed decoding rc2 parameters");
+	    goto out;
+	}
+
+	switch (params.rc2ParameterVersion) {
+	case 160:
+	    bits = 40;
+	    break;
+	case 120:
+	    bits = 64;
+	    break;
+	case 58:
+	    bits = 128;
+	    break;
+	default:
+	    krb5_set_error_string(context,
+				  "rc2ParameterVersion %d unsupported",
+				  params.rc2ParameterVersion);
+	    ret = KRB5_BADMSGTYPE;
+	    goto out;
+	}
+	if (params.iv.length != 8) {
+	    free_RC2CBCParameter(&params);
+	    krb5_set_error_string(context, "rc2 iv wrong size: %d", 
+				  params.iv.length);
 	    ret = KRB5_BADMSGTYPE;
 	    goto out;
 	}
 
-	any = ed.encryptedContentInfo.encryptedContent;
-	ret = der_get_octet_string(any->data, any->length,
-				   &encryptedContent, NULL);
-	if (ret) {
-	    krb5_set_error_string(context, "encryptedContent content invalid");
-	    goto out;
+	{
+	    RC2_KEY key;
+
+	    RC2_set_key(&key, tmp_key.keyvalue.length,
+			tmp_key.keyvalue.data, bits);
+
+	    RC2_cbc_encrypt(encryptedContent.data,
+			    plain.data,
+			    encryptedContent.length, &key,
+			    params.iv.data, 0);
 	}
+	free_octet_string(&encryptedContent);
+
+    } else if (heim_oid_cmp(&ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm,
+			    &heim_des_ede3_cbc_oid) == 0) {
+	/* use des-ede3-cbc */
 
 	tmp_key.keytype = ETYPE_DES3_CBC_NONE;
 	ret = krb5_crypto_init(context,
@@ -1333,7 +1418,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	    goto out;
 	}
 
-	if (heim_oid_cmp(&ci.contentType, &pkcs7_signed_oid) == 0) {
+	if (heim_oid_cmp(&ci.contentType, &pkcs7_signed_oid)) {
 	    ret = EINVAL; /* XXX */
 	    krb5_set_error_string(context, "Invalid content type");
 	    goto out;
@@ -1359,7 +1444,8 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	goto out;
     }
 
-    ret = get_reply_key(context, &eContentType, &eContent, nonce, key);
+    ret = get_reply_key(context, win2k_compat,
+			&eContentType, &eContent, nonce, key);
     if (ret)
 	goto out;
 
