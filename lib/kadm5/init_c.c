@@ -241,8 +241,10 @@ get_cred_cache(krb5_context context,
 	if(client != default_client) {
 	    krb5_free_principal(context, default_client);
 	    default_client = NULL;
-	    krb5_cc_close(context, id);
-	    id = NULL;
+	    if (id != NULL) {
+		krb5_cc_close(context, id);
+		id = NULL;
+	    }
 	}
     } else if(ccache != NULL)
 	id = ccache;
