@@ -1,5 +1,8 @@
 2003-10-13  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/fcache.c (erase_file): revert a change in previous; if
+	the ccache is a symlink, kdestroy should remove it
+
 	* lib/krb5/fcache.c: implement locking
 
 2003-10-12  Johan Danielsson  <joda@pdc.kth.se>
