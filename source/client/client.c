@@ -150,7 +150,7 @@ static int readfile(char *b, int size, int n, FILE *f)
 		return(fread(b,size,n,f));
   
 	i = 0;
-	while (i < n) {
+	while (i < (n - 1)) {
 		if ((c = getc(f)) == EOF) {
 			break;
 		}
@@ -159,8 +159,7 @@ static int readfile(char *b, int size, int n, FILE *f)
 			b[i++] = '\r';
 		}
       
-		if(i < n)
-			b[i++] = c;
+		b[i++] = c;
 	}
   
 	return(i);
