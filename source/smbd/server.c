@@ -705,16 +705,16 @@ static void usage(char *pname)
 		pidfile_create("smbd");
 	}
 
+	if (!message_init()) {
+		exit(1);
+	}
+
 	if (!open_sockets(is_daemon,port))
 		exit(1);
 
 	/*
 	 * everything after this point is run after the fork()
 	 */ 
-
-	if (!message_init()) {
-		exit(1);
-	}
 
 	if (!locking_init(0)) {
 		exit(1);
