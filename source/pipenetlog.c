@@ -374,9 +374,9 @@ static void api_lsa_auth_2( user_struct *vuser,
 	/* create server challenge for inclusion in the reply */
 	cred_create(vuser->dc.sess_key, &(vuser->dc.srv_cred), srv_time, &srv_cred);
 
-	/* update the client credentials for use next time */
-	memcpy(vuser->dc.clnt_cred.data, &(srv_cred.data), sizeof(srv_cred.data));
-	memcpy(vuser->dc.srv_cred .data, &(srv_cred.data), sizeof(srv_cred.data));
+	/* copy the received client credentials for use next time */
+	memcpy(vuser->dc.clnt_cred.data, &(q_a.clnt_chal.data), sizeof(q_a.clnt_chal.data));
+	memcpy(vuser->dc.srv_cred .data, &(q_a.clnt_chal.data), sizeof(q_a.clnt_chal.data));
 
 	/* construct reply. */
 	*rdata_len = lsa_reply_auth_2(&q_a, *rdata + 0x18, *rdata,
