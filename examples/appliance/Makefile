@@ -5,8 +5,8 @@ CONFIGOPTS=--with-pam --prefix=$(PREFIX)
 all: headb tngb
 
 config:
-	(cd head/source; CFLAGS="-Wall -g" ./configure $(CONFIGOPTS))
-	(cd tng;  CFLAGS="-Wall -g" ./configure $(CONFIGOPTS) --enable-shared=no)
+	(cd head/source; CFLAGS="-Wall -O2 -g" ./configure $(CONFIGOPTS))
+	(cd tng;  CFLAGS="-Wall -O2 -g" ./configure $(CONFIGOPTS) --enable-shared=no)
 
 headb:
 	(cd head/source; make)	
