@@ -243,6 +243,22 @@ static void display_sam_info_5(SAM_ENTRY5 *e5, SAM_STR5 *s5)
 
 }
 
+/****************************************************************************
+ Try samr_connect4 first, then samr_conenct if it fails
+ ****************************************************************************/
+static NTSTATUS try_samr_connects(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				  uint32 access_mask, POLICY_HND *connect_pol)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	
+	result = cli_samr_connect4(cli, mem_ctx, access_mask, connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		result = cli_samr_connect(cli, mem_ctx, access_mask,
+					  connect_pol);
+	}
+	return result;
+}
+
 /**********************************************************************
  * Query user information 
  */
@@ -275,8 +291,8 @@ static NTSTATUS cmd_samr_query_user(struct cli_state *cli,
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 	
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -383,8 +399,8 @@ static NTSTATUS cmd_samr_query_group(struct cli_state *cli,
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -447,8 +463,8 @@ static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli,
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 		
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -513,8 +529,8 @@ static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli,
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 		
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -576,8 +592,8 @@ static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli,
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -635,8 +651,8 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli,
 
 	/* Get sam policy handle */
 
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -711,8 +727,8 @@ static NTSTATUS cmd_samr_enum_als_groups(struct cli_state *cli,
 
 	/* Get sam policy handle */
 
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -794,8 +810,8 @@ static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli,
 
 	/* Open SAMR handle */
 
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -878,7 +894,8 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 
 	/* Get sam policy handle */
 
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -983,8 +1000,8 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 
 	/* Get sam policy handle */
 
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1053,8 +1070,8 @@ static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli,
 
 	/* Get sam policy handle */
 
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1109,8 +1126,8 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli,
 
 	/* Get sam policy and domain handles */
 
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1174,8 +1191,8 @@ static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli,
 
 	/* Get sam policy and domain handles */
 
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1231,8 +1248,8 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli,
 
 	/* Get sam policy and domain handles */
 
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1312,8 +1329,8 @@ static NTSTATUS cmd_samr_query_sec_obj(struct cli_state *cli,
 	
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
-				  &connect_pol);
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
+				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
