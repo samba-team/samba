@@ -3373,6 +3373,14 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 builddir=`pwd`
 AC_SUBST(builddir)
 
+dnl Remove -L/usr/lib/? from LDFLAGS and LIBS
+LIB_REMOVE_USR_LIB(LDFLAGS)
+LIB_REMOVE_USR_LIB(LIBS)
+
+dnl Remove -I/usr/include/? from CFLAGS and CPPFLAGS
+CFLAGS_REMOVE_USR_INCLUDE(CFLAGS)
+CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
+
 AC_OUTPUT(include/stamp-h Makefile script/findsmb)
 
 #################################################
