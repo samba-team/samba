@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "lib/crypto/crypto.h"
 
 #define TEST_ACCOUNT_NAME "samrtorturetest"
 #define TEST_ALIASNAME "samrtorturetestalias"

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "lib/crypto/crypto.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

@@ -216,13 +216,8 @@ extern int errno;
 #include "lib/socket/socket.h"
 #include "libcli/ldap/ldap.h"
 #include "nameserv.h"
-#include "secrets.h"
 
 #include "byteorder.h"
-
-#include "md5.h"
-#include "hmacmd5.h"
-
 
 #include "module.h"
 

@@ -20,6 +20,19 @@ ADD_OBJ_FILES = \
 ##############################
 
 ##############################
+# Start SUBSYSTEM LIBCRYPTO
+[SUBSYSTEM::LIBCRYPTO]
+INIT_OBJ_FILES = \
+		lib/crypto/crc32.o
+ADD_OBJ_FILES = \
+		lib/crypto/md5.o \
+		lib/crypto/hmacmd5.o \
+		lib/crypto/md4.o
+# End SUBSYSTEM LIBCRYPTO
+##############################
+
+
+##############################
 # Start SUBSYSTEM LIBBASIC
 [SUBSYSTEM::LIBBASIC]
 INIT_OBJ_FILES = lib/version.o
@@ -57,14 +70,10 @@ ADD_OBJ_FILES = \
 		lib/module.o \
 		lib/mutex.o \
 		lib/events.o \
-		lib/crypto/crc32.o \
-		lib/crypto/md5.o \
-		lib/crypto/hmacmd5.o \
-		lib/crypto/md4.o \
 		lib/db_wrap.o \
 		lib/server_mutex.o \
 		lib/idtree.o
 REQUIRED_SUBSYSTEMS = \
-		LIBTDB CHARSET LIBREPLACE LIBNETIF
+		LIBTDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO
 # End SUBSYSTEM LIBBASIC
 ##############################

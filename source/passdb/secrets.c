@@ -23,6 +23,7 @@
    such as the local SID and machine trust password */
 
 #include "includes.h"
+#include "secrets.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB

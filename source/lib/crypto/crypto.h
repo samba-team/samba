@@ -1,8 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
-   Interface header: Scheduler service
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
-   Copyright (C) Andrew Tridgell 1992-1999
+
+   Copyright (C) Andrew Tridgell 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,14 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _HMAC_MD5_H
-
-typedef struct 
-{
-        struct MD5Context ctx;
-        uint8_t k_ipad[65];    
-        uint8_t k_opad[65];
-
-} HMACMD5Context;
-
-#endif /* _HMAC_MD5_H */
+#include "lib/crypto/md5.h"
+#include "lib/crypto/md4.h"
+#include "lib/crypto/hmacmd5.h"
+#include "lib/crypto/crc32.h"

@@ -86,14 +86,6 @@ typedef int BOOL;
 
 #include "smb_macros.h"
 
-/* A netbios name structure. */
-struct nmb_name {
-	char         name[17];
-	char         scope[64];
-	uint_t name_type;
-};
-
-
 #include "rpc_secdes.h"
 
 #include "client.h"
