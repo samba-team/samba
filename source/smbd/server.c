@@ -635,6 +635,11 @@ static void usage(char *pname)
 	BlockSignals(True,SIGFPE);
 #endif
 
+#if defined(SIGUSR2)
+	/* We are no longer interested in USR2 */
+	BlockSignals(True,SIGUSR2);
+#endif
+
 	/* we want total control over the permissions on created files,
 	   so set our umask to 0 */
 	umask(0);
