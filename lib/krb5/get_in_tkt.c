@@ -196,7 +196,7 @@ _krb5_extract_ticket(krb5_context context,
 
     krb5_timeofday (context, &sec_now);
     if (context->kdc_sec_offset == 0
-	&& krb5_config_get_bool (context->cf,
+	&& krb5_config_get_bool (context, NULL,
 				 "libdefaults",
 				 "kdc_timesync",
 				 NULL)) {
@@ -563,10 +563,21 @@ krb5_get_in_cred(krb5_context context,
 	int index = 0;
 	pa = krb5_find_padata(rep.part1.padata->val, rep.part1.padata->len, 
 			      pa_pw_salt, &index);
+	if(pa == NULL) {
+	    index = 0;
+	    pa = krb5_find_padata(rep.part1.padata->val, 
+				  rep.part1.padata->len, 
+				  pa_afs3_salt, &index);
+	}
     }
     if(pa) {
 	krb5_keytype keytype;
 	ret = krb5_etype_to_keytype(context, etype, &keytype);
+	if(pa->padata_type == pa_afs3_salt){
+	    if(keytype != KEYTYPE_DES)
+		return KRB5_PROG_KEYTYPE_NOSUPP;
+	    keytype = KEYTYPE_DES_AFS3;
+	}
 	ret = (*key_proc)(context, keytype, &pa->padata_value, keyseed, &key);
     } else {
 	/* make a v5 salted pa-data */
