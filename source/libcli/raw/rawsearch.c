@@ -208,7 +208,7 @@ static NTSTATUS smb_raw_search_first_blob(struct smbcli_tree *tree,
 	tp.in.setup_count = 1;
 	tp.in.data = data_blob(NULL, 0);
 	tp.in.max_param = 10;
-	tp.in.max_data = smb_raw_max_trans_data(tree, 10);
+	tp.in.max_data = 0xFFFF;
 	tp.in.setup = &setup;
 
 	if (info_level == RAW_SEARCH_EA_LIST) {
@@ -269,7 +269,7 @@ static NTSTATUS smb_raw_search_next_blob(struct smbcli_tree *tree,
 	tp.in.setup_count = 1;
 	tp.in.data = data_blob(NULL, 0);
 	tp.in.max_param = 10;
-	tp.in.max_data = smb_raw_max_trans_data(tree, 10);
+	tp.in.max_data = 0xFFFF;
 	tp.in.setup = &setup;
 
 	if (info_level == RAW_SEARCH_EA_LIST) {
@@ -416,7 +416,7 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
 					      &data->ea_list.name,
 					      22+ea_size, 23+ea_size, 
-					      STR_LEN8BIT | STR_TERMINATE | STR_NOALIGN);
+					      STR_LEN8BIT | STR_NOALIGN);
 		return len + ea_size + 23 + 1;
 
 	case RAW_SEARCH_DIRECTORY_INFO:
