@@ -609,8 +609,9 @@ const static struct smb_message_struct
 };
 
 /*******************************************************************
-dump a prs to a file
- ********************************************************************/
+ Dump a packet to a file.
+********************************************************************/
+
 static void smb_dump(const char *name, int type, char *data, ssize_t len)
 {
 	int fd, i;
@@ -635,178 +636,170 @@ static void smb_dump(const char *name, int type, char *data, ssize_t len)
 
 
 /****************************************************************************
-do a switch on the message type, and return the response size
+ Do a switch on the message type, and return the response size
 ****************************************************************************/
+
 static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize)
 {
-  static pid_t pid= (pid_t)-1;
-  int outsize = 0;
-  extern uint16 global_smbpid;
+	static pid_t pid= (pid_t)-1;
+	int outsize = 0;
+	extern uint16 global_smbpid;
 
-  type &= 0xff;
+	type &= 0xff;
 
-  if (pid == (pid_t)-1)
-    pid = sys_getpid();
+	if (pid == (pid_t)-1)
+		pid = sys_getpid();
 
-  errno = 0;
-  last_message = type;
+	errno = 0;
+	last_message = type;
 
-  /* make sure this is an SMB packet */
-  if (strncmp(smb_base(inbuf),"\377SMB",4) != 0)
-  {
-    DEBUG(2,("Non-SMB packet of length %d\n",smb_len(inbuf)));
-    return(-1);
-  }
+	/* Make sure this is an SMB packet */
+	if (strncmp(smb_base(inbuf),"\377SMB",4) != 0) {
+		DEBUG(2,("Non-SMB packet of length %d\n",smb_len(inbuf)));
+		return(-1);
+	}
 
-  /* yuck! this is an interim measure before we get rid of our
-     current inbuf/outbuf system */
-  global_smbpid = SVAL(inbuf,smb_pid);
+	/* yuck! this is an interim measure before we get rid of our
+		current inbuf/outbuf system */
+	global_smbpid = SVAL(inbuf,smb_pid);
 
-  if (smb_messages[type].fn == NULL)
-  {
-    DEBUG(0,("Unknown message type %d!\n",type));
-    smb_dump("Unknown", 1, inbuf, size);
-    outsize = reply_unknown(inbuf,outbuf);
-  }
-  else
-  {
-    int flags = smb_messages[type].flags;
-    static uint16 last_session_tag = UID_FIELD_INVALID;
-    /* In share mode security we must ignore the vuid. */
-    uint16 session_tag = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
-    connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
+	if (smb_messages[type].fn == NULL) {
+		DEBUG(0,("Unknown message type %d!\n",type));
+		smb_dump("Unknown", 1, inbuf, size);
+		outsize = reply_unknown(inbuf,outbuf);
+	} else {
+		int flags = smb_messages[type].flags;
+		static uint16 last_session_tag = UID_FIELD_INVALID;
+		/* In share mode security we must ignore the vuid. */
+		uint16 session_tag = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
+		connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 
-    DEBUG(3,("switch message %s (pid %d)\n",smb_fn_name(type),(int)pid));
+		DEBUG(3,("switch message %s (pid %d)\n",smb_fn_name(type),(int)pid));
 
-    smb_dump(smb_fn_name(type), 1, inbuf, size);
-    if(global_oplock_break)
-    {
-      if(flags & QUEUE_IN_OPLOCK)
-      {
-        /* 
-         * Queue this message as we are the process of an oplock break.
-         */
+		smb_dump(smb_fn_name(type), 1, inbuf, size);
+		if(global_oplock_break) {
+			if(flags & QUEUE_IN_OPLOCK) {
+				/* 
+				 * Queue this message as we are the process of an oplock break.
+				 */
 
-        DEBUG( 2, ( "switch_message: queueing message due to being in " ) );
-        DEBUGADD( 2, ( "oplock break state.\n" ) );
+				DEBUG( 2, ( "switch_message: queueing message due to being in " ) );
+				DEBUGADD( 2, ( "oplock break state.\n" ) );
 
-        push_oplock_pending_smb_message( inbuf, size );
-        return -1;
-      }          
-    }
+				push_oplock_pending_smb_message( inbuf, size );
+				return -1;
+			}
+		}
 
-    /* Ensure this value is replaced in the incoming packet. */
-    SSVAL(inbuf,smb_uid,session_tag);
+		/* Ensure this value is replaced in the incoming packet. */
+		SSVAL(inbuf,smb_uid,session_tag);
 
-    /*
-     * Ensure the correct username is in current_user_info.
-     * This is a really ugly bugfix for problems with
-     * multiple session_setup_and_X's being done and
-     * allowing %U and %G substitutions to work correctly.
-     * There is a reason this code is done here, don't
-     * move it unless you know what you're doing... :-).
-     * JRA.
-     */
+		/*
+		 * Ensure the correct username is in current_user_info.
+		 * This is a really ugly bugfix for problems with
+		 * multiple session_setup_and_X's being done and
+		 * allowing %U and %G substitutions to work correctly.
+		 * There is a reason this code is done here, don't
+		 * move it unless you know what you're doing... :-).
+		 * JRA.
+		 */
 
-    if (session_tag != last_session_tag) {
-      user_struct *vuser = NULL;
+		if (session_tag != last_session_tag) {
+			user_struct *vuser = NULL;
 
-      last_session_tag = session_tag;
-      if(session_tag != UID_FIELD_INVALID)
-        vuser = get_valid_user_struct(session_tag);           
-      if(vuser != NULL)
-        current_user_info = vuser->user;
-    }
+			last_session_tag = session_tag;
+			if(session_tag != UID_FIELD_INVALID)
+				vuser = get_valid_user_struct(session_tag);           
+			if(vuser != NULL)
+				current_user_info = vuser->user;
+		}
 
-    /* does this protocol need to be run as root? */
-    if (!(flags & AS_USER))
-      change_to_root_user();
+		/* does this protocol need to be run as root? */
+		if (!(flags & AS_USER))
+			change_to_root_user();
 
-    /* does this protocol need a valid tree connection? */
-    if ((flags & AS_USER) && !conn) {
-	    return ERROR_DOS(ERRSRV, ERRinvnid);
-    }
+		/* does this protocol need a valid tree connection? */
+		if ((flags & AS_USER) && !conn)
+			return ERROR_DOS(ERRSRV, ERRinvnid);
 
 
-    /* does this protocol need to be run as the connected user? */
-    if ((flags & AS_USER) && !change_to_user(conn,session_tag)) {
-      if (flags & AS_GUEST) 
-        flags &= ~AS_USER;
-      else
-        return(ERROR_DOS(ERRSRV,ERRaccess));
-    }
+		/* does this protocol need to be run as the connected user? */
+		if ((flags & AS_USER) && !change_to_user(conn,session_tag)) {
+			if (flags & AS_GUEST) 
+				flags &= ~AS_USER;
+			else
+				return(ERROR_DOS(ERRSRV,ERRaccess));
+		}
 
-    /* this code is to work around a bug is MS client 3 without
-       introducing a security hole - it needs to be able to do
-       print queue checks as guest if it isn't logged in properly */
-    if (flags & AS_USER)
-      flags &= ~AS_GUEST;
+		/* this code is to work around a bug is MS client 3 without
+			introducing a security hole - it needs to be able to do
+			print queue checks as guest if it isn't logged in properly */
+		if (flags & AS_USER)
+			flags &= ~AS_GUEST;
 
-    /* does it need write permission? */
-    if ((flags & NEED_WRITE) && !CAN_WRITE(conn))
-      return(ERROR_DOS(ERRSRV,ERRaccess));
+		/* does it need write permission? */
+		if ((flags & NEED_WRITE) && !CAN_WRITE(conn))
+			return(ERROR_DOS(ERRSRV,ERRaccess));
 
-    /* ipc services are limited */
-    if (IS_IPC(conn) && (flags & AS_USER) && !(flags & CAN_IPC)) {
-      return(ERROR_DOS(ERRSRV,ERRaccess));	    
-    }
+		/* ipc services are limited */
+		if (IS_IPC(conn) && (flags & AS_USER) && !(flags & CAN_IPC))
+			return(ERROR_DOS(ERRSRV,ERRaccess));	    
 
-    /* load service specific parameters */
-    if (conn && !set_current_service(conn,(flags & AS_USER)?True:False)) {
-      return(ERROR_DOS(ERRSRV,ERRaccess));
-    }
+		/* load service specific parameters */
+		if (conn && !set_current_service(conn,(flags & AS_USER)?True:False))
+			return(ERROR_DOS(ERRSRV,ERRaccess));
 
-    /* does this protocol need to be run as guest? */
-    if ((flags & AS_GUEST) && 
-		 (!change_to_guest() || 
-		!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1)))) {
-      return(ERROR_DOS(ERRSRV,ERRaccess));
-    }
+		/* does this protocol need to be run as guest? */
+		if ((flags & AS_GUEST) && (!change_to_guest() || 
+				!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))))
+			return(ERROR_DOS(ERRSRV,ERRaccess));
 
-    last_inbuf = inbuf;
+		last_inbuf = inbuf;
 
-    outsize = smb_messages[type].fn(conn, inbuf,outbuf,size,bufsize);
-  }
+		outsize = smb_messages[type].fn(conn, inbuf,outbuf,size,bufsize);
+	}
 
-  smb_dump(smb_fn_name(type), 0, outbuf, outsize);
+	smb_dump(smb_fn_name(type), 0, outbuf, outsize);
 
-  return(outsize);
+	return(outsize);
 }
 
 
 /****************************************************************************
-  construct a reply to the incoming packet
+ Construct a reply to the incoming packet.
 ****************************************************************************/
+
 static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 {
-  int type = CVAL(inbuf,smb_com);
-  int outsize = 0;
-  int msg_type = CVAL(inbuf,0);
+	int type = CVAL(inbuf,smb_com);
+	int outsize = 0;
+	int msg_type = CVAL(inbuf,0);
 
-  GetTimeOfDay(&smb_last_time);
+	GetTimeOfDay(&smb_last_time);
 
-  chain_size = 0;
-  file_chain_reset();
-  reset_chain_p();
+	chain_size = 0;
+	file_chain_reset();
+	reset_chain_p();
 
-  if (msg_type != 0)
-    return(reply_special(inbuf,outbuf));  
+	if (msg_type != 0)
+		return(reply_special(inbuf,outbuf));  
 
-  construct_reply_common(inbuf, outbuf);
+	construct_reply_common(inbuf, outbuf);
 
-  outsize = switch_message(type,inbuf,outbuf,size,bufsize);
+	outsize = switch_message(type,inbuf,outbuf,size,bufsize);
 
-  outsize += chain_size;
+	outsize += chain_size;
 
-  if(outsize > 4)
-    smb_setlen(outbuf,outsize - 4);
-  return(outsize);
+	if(outsize > 4)
+		smb_setlen(outbuf,outsize - 4);
+	return(outsize);
 }
 
 /****************************************************************************
-  Keep track of the number of running smbd's. This functionality is used to
-  'hard' limit Samba overhead on resource constrained systems. 
+ Keep track of the number of running smbd's. This functionality is used to
+ 'hard' limit Samba overhead on resource constrained systems. 
 ****************************************************************************/
+
 static BOOL smbd_process_limit(void)
 {
 	int32  total_smbds;
