@@ -103,7 +103,8 @@ Samba knows of three kinds of character sets:
 		This is the charset used internally by your operating system. 
 		The default is <constant>UTF-8</constant>, which is fine for most 
 		systems, which covers all characters in all languages. The default
-		in previous Samba releases was <constant>ASCII</constant>. 
+		in previous Samba releases was to save filenames in the encoding of the 
+		clients, for example cp850 for western european countries.
 		</para></listitem>
 	</varlistentry>
 
