@@ -397,7 +397,7 @@ SMBD_OBJ_BASE = $(PARAM_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
 		$(REGISTRY_OBJ) $(POPT_LIB_OBJ) \
 		$(BUILDOPT_OBJ) $(SMBLDAP_OBJ)
 
-PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
+PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_aix.o \
                printing/print_cups.o printing/print_generic.o \
                printing/lpq_parse.o printing/load.o
 

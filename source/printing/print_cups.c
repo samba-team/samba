@@ -52,14 +52,8 @@ static const char *cups_server(void)
 	return cupsServer();
 }
 
-/*
- * 'cups_printer_fn()' - Call a function for every printer known to the
- *                       system.
- */
-
-void cups_printer_fn(void (*fn)(char *, char *))
+BOOL cups_cache_reload(void)
 {
-	/* I - Function to call */
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
 			*response;	/* IPP Response */
@@ -74,7 +68,7 @@ void cups_printer_fn(void (*fn)(char *, char *))
 			};       
 
 
-	DEBUG(5,("cups_printer_fn(%p)\n", fn));
+	DEBUG(5, ("reloading cups printcap cache\n"));
 
        /*
         * Make sure we don't ask for passwords...
@@ -90,7 +84,7 @@ void cups_printer_fn(void (*fn)(char *, char *))
 	{
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
 			 cups_server(), strerror(errno)));
-		return;
+		return False;
 	}
 
        /*
@@ -129,7 +123,7 @@ void cups_printer_fn(void (*fn)(char *, char *))
 		DEBUG(0,("Unable to get printer list - %s\n",
 			 ippErrorString(cupsLastError())));
 		httpClose(http);
-		return;
+		return False;
 	}
 
 	for (attr = response->attrs; attr != NULL;)
@@ -171,7 +165,11 @@ void cups_printer_fn(void (*fn)(char *, char *))
 		if (name == NULL)
 			break;
 
-		(*fn)(name, info);
+		if (!pcap_cache_add(name, info)) {
+			ippDelete(response);
+			httpClose(http);
+			return False;
+		}
 	}
 
 	ippDelete(response);
@@ -213,7 +211,7 @@ void cups_printer_fn(void (*fn)(char *, char *))
 		DEBUG(0,("Unable to get printer list - %s\n",
 			 ippErrorString(cupsLastError())));
 		httpClose(http);
-		return;
+		return False;
 	}
 
 	for (attr = response->attrs; attr != NULL;)
@@ -255,7 +253,11 @@ void cups_printer_fn(void (*fn)(char *, char *))
 		if (name == NULL)
 			break;
 
-		(*fn)(name, info);
+		if (!pcap_cache_add(name, info)) {
+			ippDelete(response);
+			httpClose(http);
+			return False;
+		}
 	}
 
 	ippDelete(response);
@@ -265,100 +267,7 @@ void cups_printer_fn(void (*fn)(char *, char *))
 	*/
 
 	httpClose(http);
-}
-
-
-/*
- * 'cups_printername_ok()' - Provide the equivalent of pcap_printername_ok()
- *                           for CUPS.
- * O - 1 if printer name OK
- * I - Name of printer 
- */
-int cups_printername_ok(const char *name)
-{
-	http_t		*http;		/* HTTP connection to server */
-	ipp_t		*request,	/* IPP Request */
-			*response;	/* IPP Response */
-	cups_lang_t	*language;	/* Default language */
-	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-
-
-	DEBUG(5,("cups_printername_ok(\"%s\")\n", name));
-
-       /*
-        * Make sure we don't ask for passwords...
-	*/
-
-        cupsSetPasswordCB(cups_passwd_cb);
-
-       /*
-	* Try to connect to the server...
-	*/
-
-	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
-	{
-		DEBUG(3,("Unable to connect to CUPS server %s - %s\n", 
-			 cups_server(), strerror(errno)));
-		return (0);
-	}
-
-       /*
-	* Build an IPP_GET_PRINTER_ATTRS request, which requires the following
-	* attributes:
-	*
-	*    attributes-charset
-	*    attributes-natural-language
-	*    requested-attributes
-	*    printer-uri
-	*/
-
-	request = ippNew();
-
-	request->request.op.operation_id = IPP_GET_PRINTER_ATTRIBUTES;
-	request->request.op.request_id   = 1;
-
-	language = cupsLangDefault();
-
-	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
-                     "attributes-charset", NULL, cupsLangEncoding(language));
-
-	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
-                     "attributes-natural-language", NULL, language->language);
-
-	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
-                     "requested-attributes", NULL, "printer-uri");
-
-	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s", name);
-
-	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
-                     "printer-uri", NULL, uri);
-
-       /*
-	* Do the request and get back a response...
-	*/
-
-	if ((response = cupsDoRequest(http, request, "/")) == NULL)
-	{
-		DEBUG(3,("Unable to get printer status for %s - %s\n", name,
-			 ippErrorString(cupsLastError())));
-		httpClose(http);
-		return (0);
-	}
-
-	httpClose(http);
-
-	if (response->request.status.status_code >= IPP_OK_CONFLICT)
-	{
-		DEBUG(3,("Unable to get printer status for %s - %s\n", name,
-			 ippErrorString(response->request.status.status_code)));
-		ippDelete(response);
-		return (0);
-	}
-	else
-	{
-		ippDelete(response);
-		return (1);
-	}
+	return True;
 }
 
 

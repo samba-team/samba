@@ -2247,7 +2247,7 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DE
 	}
 
 	/* for autoloaded printers, check that the printcap entry still exists */
-	if (lp_autoloaded(snum) && !pcap_printername_ok(lp_const_servicename(snum), NULL)) {
+	if (lp_autoloaded(snum) && !pcap_printername_ok(lp_const_servicename(snum))) {
 		DEBUG(3, ("print_job_start: printer name %s check failed.\n", lp_const_servicename(snum) ));
 		release_print_db(pdb);
 		errno = ENOENT;
