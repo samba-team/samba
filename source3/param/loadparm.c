@@ -903,6 +903,7 @@ FN_GLOBAL_STRING(lp_domain_hostsdeny,&Globals.szDomainHostsdeny)
 
 FN_GLOBAL_BOOL(lp_dns_proxy,&Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
+FN_GLOBAL_BOOL(lp_we_are_a_wins_server,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_wins_proxy,&Globals.bWINSproxy)
 FN_GLOBAL_BOOL(lp_local_master,&Globals.bLocalMaster)
 FN_GLOBAL_BOOL(lp_domain_controller,&Globals.bDomainController)
