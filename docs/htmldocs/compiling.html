@@ -74,7 +74,7 @@ CLASS="CHAPTER"
 ><A
 NAME="COMPILING"
 ></A
->Chapter 30. How to compile SAMBA</H1
+>Chapter 31. How to compile SAMBA</H1
 ><P
 >You can obtain the samba source from the <A
 HREF="http://samba.org/"
@@ -87,16 +87,16 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4323"
->30.1. Access Samba source code via CVS</A
+NAME="AEN4453"
+>31.1. Access Samba source code via CVS</A
 ></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN4325"
->30.1.1. Introduction</A
+NAME="AEN4455"
+>31.1.1. Introduction</A
 ></H2
 ><P
 >Samba is developed in an open environment.  Developers use CVS
@@ -117,8 +117,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN4330"
->30.1.2. CVS Access to samba.org</A
+NAME="AEN4460"
+>31.1.2. CVS Access to samba.org</A
 ></H2
 ><P
 >The machine samba.org runs a publicly accessible CVS 
@@ -130,8 +130,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN4333"
->30.1.2.1. Access via CVSweb</A
+NAME="AEN4463"
+>31.1.2.1. Access via CVSweb</A
 ></H3
 ><P
 >You can access the source code via your 
@@ -151,8 +151,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN4338"
->30.1.2.2. Access via cvs</A
+NAME="AEN4468"
+>31.1.2.2. Access via cvs</A
 ></H3
 ><P
 >You can also access the source code via a 
@@ -256,8 +256,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4366"
->30.2. Accessing the samba sources via rsync and ftp</A
+NAME="AEN4496"
+>31.2. Accessing the samba sources via rsync and ftp</A
 ></H1
 ><P
 >	pserver.samba.org also exports unpacked copies of most parts of the CVS tree at <A
@@ -284,8 +284,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4372"
->30.3. Building the Binaries</A
+NAME="AEN4502"
+>31.3. Building the Binaries</A
 ></H1
 ><P
 >To do this, first run the program <KBD
@@ -370,8 +370,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN4400"
->30.3.1. Compiling samba with Active Directory support</A
+NAME="AEN4530"
+>31.3.1. Compiling samba with Active Directory support</A
 ></H2
 ><P
 >In order to compile samba with ADS support, you need to have installed
@@ -420,8 +420,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN4412"
->30.3.1.1. Installing the required packages for Debian</A
+NAME="AEN4542"
+>31.3.1.1. Installing the required packages for Debian</A
 ></H3
 ><P
 >On Debian you need to install the following packages:</P
@@ -451,8 +451,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN4419"
->30.3.1.2. Installing the required packages for RedHat</A
+NAME="AEN4549"
+>31.3.1.2. Installing the required packages for RedHat</A
 ></H3
 ><P
 >On RedHat this means you should have at least: </P
@@ -493,8 +493,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4429"
->30.4. Starting the smbd and nmbd</A
+NAME="AEN4559"
+>31.4. Starting the smbd and nmbd</A
 ></H1
 ><P
 >You must choose to start smbd and nmbd either
@@ -533,8 +533,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN4439"
->30.4.1. Starting from inetd.conf</A
+NAME="AEN4569"
+>31.4.1. Starting from inetd.conf</A
 ></H2
 ><P
 >NOTE; The following will be different if 
@@ -578,8 +578,28 @@ CLASS="FILENAME"
 > 
 		varies between unixes. Look at the other entries in inetd.conf 
 		for a guide.</P
+><DIV
+CLASS="NOTE"
 ><P
->NOTE: Some unixes already have entries like netbios_ns 
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Some unixes already have entries like netbios_ns 
 		(note the underscore) in <TT
 CLASS="FILENAME"
 >/etc/services</TT
@@ -592,9 +612,39 @@ CLASS="FILENAME"
 CLASS="FILENAME"
 >/etc/inetd.conf</TT
 > to make them consistent.</P
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="NOTE"
 ><P
->NOTE: On many systems you may need to use the 
-		"interfaces" option in smb.conf to specify the IP address 
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>On many systems you may need to use the 
+		<B
+CLASS="COMMAND"
+>interfaces</B
+> option in <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> to specify the IP address 
 		and netmask of your interfaces. Run <SPAN
 CLASS="APPLICATION"
 >ifconfig</SPAN
@@ -606,6 +656,10 @@ CLASS="APPLICATION"
 > tries to determine it at run 
 		time, but fails on some unixes. 
 		</P
+></TD
+></TR
+></TABLE
+></DIV
 ><DIV
 CLASS="WARNING"
 ><P
@@ -657,8 +711,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN4469"
->30.4.2. Alternative: starting it as a daemon</A
+NAME="AEN4603"
+>31.4.2. Alternative: starting it as a daemon</A
 ></H2
 ><P
 >To start the server as a daemon you should create 

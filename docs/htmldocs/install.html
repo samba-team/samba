@@ -90,18 +90,21 @@ NAME="AEN65"
 HREF="http://samba.org/"
 TARGET="_top"
 >the samba homepage</A
->
+>.
 	</P
 ><P
 >If you need to compile samba from source, check the 
-	appropriate appendix chapter.</P
+	<A
+HREF="compiling.html"
+>appropriate appendix chapter</A
+>.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN70"
+NAME="AEN71"
 >1.2. Configuring samba</A
 ></H1
 ><P
@@ -122,8 +125,11 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN75"
->1.2.1. Editing the smb.conf file</A
+NAME="AEN76"
+>1.2.1. Editing the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file</A
 ></H2
 ><P
 >There are sample configuration files in the examples 
@@ -136,31 +142,27 @@ NAME="AEN75"
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->	[global]
-	   workgroup = MYGROUP
+>[global]
+	workgroup = MYGROUP
 
-	   [homes]
-	      guest ok = no
-	      read only = no
+[homes]
+	guest ok = no
+	read only = no
 	</PRE
 ></P
 ><P
 >which would allow connections by anyone with an 
 	account on the server, using either their login name or 
-	"homes" as the service name. (Note that I also set the 
+	"<B
+CLASS="COMMAND"
+>homes</B
+>" as the service name. (Note that I also set the 
 	workgroup that Samba is part of. See BROWSING.txt for details)</P
 ><P
->Note that <B
-CLASS="COMMAND"
->make install</B
-> will not install 
-	a <TT
+>Make sure you put the <TT
 CLASS="FILENAME"
 >smb.conf</TT
-> file. You need to create it 
-	yourself. </P
-><P
->Make sure you put the smb.conf file in the same place 
+> file in the same place 
 	you specified in the<TT
 CLASS="FILENAME"
 >Makefile</TT
@@ -171,13 +173,20 @@ CLASS="FILENAME"
 >).</P
 ><P
 >For more information about security settings for the 
-	[homes] share please refer to the document UNIX_SECURITY.txt.</P
+	<B
+CLASS="COMMAND"
+>[homes]</B
+> share please refer to the chapter 
+	<A
+HREF="securing-samba.html"
+>Securing Samba</A
+>.</P
 ><DIV
 CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN89"
+NAME="AEN92"
 >1.2.1.1. Test your config file with 
 	<B
 CLASS="COMMAND"
@@ -189,7 +198,10 @@ CLASS="COMMAND"
 	<TT
 CLASS="FILENAME"
 >smb.conf</TT
-> file using the testparm program. 
+> file using the <SPAN
+CLASS="APPLICATION"
+>testparm</SPAN
+> program. 
 	If testparm runs OK then it will list the loaded services. If 
 	not it will give an error message.</P
 ><P
@@ -208,7 +220,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN97"
+NAME="AEN101"
 >1.2.2. SWAT</A
 ></H2
 ><P
@@ -236,7 +248,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN103"
+NAME="AEN107"
 >1.3. Try listing the shares available on your 
 	server</A
 ></H1
@@ -273,7 +285,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN112"
+NAME="AEN116"
 >1.4. Try connecting with the unix client</A
 ></H1
 ><P
@@ -292,32 +304,49 @@ CLASS="REPLACEABLE"
 CLASS="REPLACEABLE"
 >yourhostname</VAR
 > 
-	would be the name of the host where you installed <B
-CLASS="COMMAND"
->	smbd</B
->. The <VAR
+	would be the name of the host where you installed <SPAN
+CLASS="APPLICATION"
+>smbd</SPAN
+>. 
+	The <VAR
 CLASS="REPLACEABLE"
 >aservice</VAR
 > is 
 	any service you have defined in the <TT
 CLASS="FILENAME"
 >smb.conf</TT
-> 
-	file. Try your user name if you just have a [homes] section
+>
+	file. Try your user name if you just have a <B
+CLASS="COMMAND"
+>[homes]</B
+>
+	section
 	in <TT
 CLASS="FILENAME"
 >smb.conf</TT
 >.</P
 ><P
->For example if your unix host is bambi and your login 
-	name is fred you would type:</P
+>For example if your unix host is <VAR
+CLASS="REPLACEABLE"
+>bambi</VAR
+>
+	and your login name is <VAR
+CLASS="REPLACEABLE"
+>fred</VAR
+> you would type:</P
 ><P
 ><SAMP
 CLASS="PROMPT"
 >$ </SAMP
 ><KBD
 CLASS="USERINPUT"
->smbclient //bambi/fred
+>smbclient //<VAR
+CLASS="REPLACEABLE"
+>bambi</VAR
+>/<VAR
+CLASS="REPLACEABLE"
+>fred</VAR
+>
 	</KBD
 ></P
 ></DIV
@@ -326,7 +355,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN128"
+NAME="AEN137"
 >1.5. Try connecting from a DOS, WfWg, Win9x, WinNT, 
 	Win2k, OS/2, etc... client</A
 ></H1
@@ -361,19 +390,21 @@ CLASS="USERINPUT"
 >print filename
 	</KBD
 ></P
-><P
->Celebrate, or send me a bug report!</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN142"
+NAME="AEN150"
 >1.6. What If Things Don't Work?</A
 ></H1
 ><P
->Then you might read the file HOWTO chapter Diagnosis and the 
+>Then you might read the file chapter 
+	<A
+HREF="diagnosis.html"
+>Diagnosis</A
+> and the 
 	FAQ. If you are still stuck then try the mailing list or 
 	newsgroup (look in the README for details). Samba has been 
 	successfully installed at thousands of sites worldwide, so maybe 
@@ -395,7 +426,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN147"
+NAME="AEN156"
 >1.6.1. Scope IDs</A
 ></H2
 ><P
@@ -411,7 +442,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN150"
+NAME="AEN159"
 >1.6.2. Locking</A
 ></H2
 ><P
