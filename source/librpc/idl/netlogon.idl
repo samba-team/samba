@@ -1004,9 +1004,17 @@ interface netlogon
 		[out,switch_is(level)] netr_DomainInfo info
 		);
 
-	/****************/
+	/*****************/
 	/* Function 0x1e */
-	WERROR netr_NETRSERVERPASSWORDSET2();
+	NTSTATUS netr_ServerPasswordSet2(
+		[in]  unistr *server_name,
+		[in]  unistr account_name,
+		[in]  netr_SchannelType secure_channel_type,
+		[in]  unistr computer_name,
+		[in]  netr_Authenticator credential,
+		[in]  samr_CryptPassword new_password,
+		[out] netr_Authenticator return_authenticator
+		);
 
 	/****************/
 	/* Function 0x1f */
