@@ -169,13 +169,13 @@ BOOL lang_tdb_init(const char *lang)
 /* translate a msgid to a message string in the current language 
    returns a string that must be freed by calling lang_msg_free()
 */
-const char *lang_msg(const char *msgid)
+char *lang_msg(const char *msgid)
 {
 	TDB_DATA key, data;
 
 	lang_tdb_init(NULL);
 
-	if (!tdb) return msgid;
+	if (!tdb) return strdup(msgid);
 
 	key.dptr = strdup(msgid);
 	key.dsize = strlen(msgid)+1;
@@ -189,12 +189,12 @@ const char *lang_msg(const char *msgid)
 	if (!data.dptr)
 		return strdup(msgid);
 
-	return (const char *)data.dptr;
+	return data.dptr;
 }
 
 
 /* free up a string from lang_msg() */
-void lang_msg_free(const char *msgstr)
+void lang_msg_free(char *msgstr)
 {
 	if (!tdb) return;
 	free(msgstr);
