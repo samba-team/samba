@@ -92,6 +92,51 @@ static void free_tdbsid_info(void *dev)
 }
 
 /****************************************************************************
+  set samr rid
+****************************************************************************/
+BOOL set_tdbrid(struct policy_cache *cache, POLICY_HND *hnd,
+				uint32 rid)
+{
+	uint32 *dev = malloc(sizeof(uint32));
+
+	if (dev != NULL)
+	{
+		*dev = rid;
+		if (set_policy_state(cache, hnd, NULL, (void*)dev))
+		{
+			DEBUG(3,("Service setting policy rid=%x\n", rid));
+			return True;
+		}
+		free(dev);
+		return False;
+	}
+	DEBUG(3,("Error setting policy rid\n"));
+	return False;
+}
+
+/****************************************************************************
+  get samr rid
+****************************************************************************/
+BOOL get_tdbrid(struct policy_cache *cache, const POLICY_HND *hnd,
+				uint32 *rid)
+{
+	uint32 *dev = (uint32*)get_policy_state_info(cache, hnd);
+
+	if (dev != NULL)
+	{
+		if (rid != NULL)
+		{
+			(*rid) = (*dev);
+			DEBUG(3,("Service getting policy rid=%x\n", (*dev)));
+		}
+		return True;
+	}
+
+	DEBUG(3,("Error getting policy rid\n"));
+	return False;
+}
+
+/****************************************************************************
   set samr sid
 ****************************************************************************/
 BOOL set_tdbsam(struct policy_cache *cache, POLICY_HND *hnd,
@@ -271,5 +316,27 @@ BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
 
 	DEBUG(3,("Error getting policy sid\n"));
 	return False;
+}
+
+/*******************************************************************
+ opens a samr entiry by rid, returns a policy handle.
+ ********************************************************************/
+uint32 samr_open_by_tdbrid( POLICY_HND *pol, uint32 access_mask, uint32 rid)
+{
+	/* get a (unique) handle.  open a policy on it. */
+	if (!open_policy_hnd(get_global_hnd_cache(), pol, access_mask))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* associate a RID with the (unique) handle. */
+	if (!set_tdbrid(get_global_hnd_cache(), pol, rid))
+	{
+		/* close the policy in case we can't associate a group SID */
+		close_policy_hnd(get_global_hnd_cache(), pol);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return 0x0;
 }
 

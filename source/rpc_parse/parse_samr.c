@@ -5280,7 +5280,7 @@ BOOL make_sam_user_info21(SAM_USER_INFO_21 *usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL sam_io_user_info21(char *desc,  SAM_USER_INFO_21 *usr, prs_struct *ps, int depth)
+BOOL sam_io_user_info21(char *desc,  SAM_USER_INFO_21 *usr, prs_struct *ps, int depth)
 {
 	if (usr == NULL) return False;
 

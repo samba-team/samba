@@ -28,39 +28,56 @@
 
 extern int DEBUGLEVEL;
 
-
-/*******************************************************************
- opens a samr group by rid, returns a policy handle.
- ********************************************************************/
-static uint32 samr_open_by_tdbsid(TDB_CONTEXT *ptdb,
-				const DOM_SID *dom_sid,
-				POLICY_HND *pol,
-				uint32 access_mask,
-				uint32 rid)
+static uint32 tdb_lookup_user(TDB_CONTEXT *tdb,
+				uint32 rid,
+				SAM_USER_INFO_21 *usr)
 {
-	DOM_SID sid;
+	prs_struct key;
+	prs_struct data;
 
-	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(), pol, access_mask))
+	prs_init(&key, 0, 4, False);
+	if (!_prs_uint32("rid", &key, 0, &rid))
 	{
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(0,("TODO: verify that the rid exists\n"));
+	prs_tdb_fetch(tdb, &key, &data);
 
-	/* associate a SID with the (unique) handle. */
-	sid_copy(&sid, dom_sid);
-	sid_append_rid(&sid, rid);
-
-	/* associate an group SID with the (unique) handle. */
-	if (!set_tdbsid(get_global_hnd_cache(), pol, ptdb, &sid))
+	if (!sam_io_user_info21("usr", usr, &data, 0))
 	{
-		/* close the policy in case we can't associate a group SID */
-		close_policy_hnd(get_global_hnd_cache(), pol);
-		return NT_STATUS_ACCESS_DENIED;
+		prs_free_data(&key);
+		prs_free_data(&data);
+		return NT_STATUS_NO_SUCH_USER;
 	}
+
+	prs_free_data(&key);
+	prs_free_data(&data);
 
 	return 0x0;
+}
+
+static BOOL tdb_create_user(TDB_CONTEXT *tdb, uint32 rid, SAM_USER_INFO_21 *usr)
+{
+	prs_struct key;
+	prs_struct data;
+
+	DEBUG(10,("creating user %x\n", rid));
+
+	prs_init(&key, 0, 4, False);
+	prs_init(&data, 0, 4, False);
+
+	if (!_prs_uint32("rid", &key, 0, &rid) ||
+	    !sam_io_user_info21("usr", usr, &data, 0) ||
+	     prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
+	{
+		prs_free_data(&key);
+		prs_free_data(&data);
+		return False;
+	}
+
+	prs_free_data(&key);
+	prs_free_data(&data);
+	return True;
 }
 
 /*******************************************************************
@@ -284,7 +301,6 @@ uint32 _samr_open_user(const POLICY_HND *domain_pol,
 	TDB_CONTEXT *tdb_dom = NULL;
 	struct sam_passwd *sam_pass;
 	DOM_SID sid;
-	TDB_CONTEXT *tdb_usr = NULL;
 
 	/* set up the SAMR open_user response */
 	bzero(user_pol->data, POL_HND_SIZE);
@@ -312,7 +328,7 @@ uint32 _samr_open_user(const POLICY_HND *domain_pol,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	return samr_open_by_tdbsid(tdb_usr, &sid, user_pol, access_mask, user_rid);
+	return samr_open_by_tdbrid(user_pol, access_mask, user_rid);
 }
 
 
@@ -715,6 +731,18 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 	return 0x0;
 }
 
+static void create_user_info_21(SAM_USER_INFO_21 *usr,
+				const UNISTR2 *uni_user_name,
+				uint16 acb_info, uint32 user_rid)
+{
+	ZERO_STRUCTP(usr);
+
+	usr->acb_info = acb_info | ACB_DISABLED | ACB_PWNOTREQ;
+	usr->user_rid = user_rid;
+	copy_unistr2(&usr->uni_user_name, uni_user_name);
+	make_uni_hdr(&usr->hdr_user_name, uni_user_name->uni_str_len);
+}
+
 /*******************************************************************
  _samr_create_user
  ********************************************************************/
@@ -725,13 +753,9 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 				uint32 *unknown_0, uint32 *user_rid)
 {
 	DOM_SID sid;
-	TDB_CONTEXT *dom_tdb = NULL;
 	TDB_CONTEXT *tdb_usr = NULL;
 
-	struct sam_passwd *sam_pass;
-	fstring user_name;
-	pstring err_str;
-	pstring msg_str;
+	SAM_USER_INFO_21 usr;
 
 	(*unknown_0) = 0x30;
 	(*user_rid) = 0x0;
@@ -743,45 +767,37 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	 */
 
 	/* find the domain sid associated with the policy handle */
-	if (!get_tdbsid(get_global_hnd_cache(), domain_pol, &dom_tdb, &sid))
+	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol,
+					&tdb_usr, NULL, NULL, &sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
-	if (!sid_equal(&sid, &global_sam_sid))
+
 	{
-		return NT_STATUS_ACCESS_DENIED;
+		fstring user_name;
+		unistr2_to_ascii(user_name, uni_username, sizeof(user_name)-1);
+		DEBUG(10,("create user: %s\n", user_name));
 	}
 
-	unistr2_to_ascii(user_name, uni_username, sizeof(user_name)-1);
-
-	sam_pass = getsam21pwntnam(user_name);
-
-	if (sam_pass != NULL)
+	DEBUG(0,("TODO: verify that the user doesn't exist!\n"));
+#if 0
+	if (tdb_lookup_user(tdb_usr, user_rid, &usr) == 0x0)
 	{
 		/* account exists: say so */
 		return NT_STATUS_USER_EXISTS;
 	}
+#endif
+	create_user_info_21(&usr, uni_username, acb_info, 1001);
 
-	if (!local_password_change(user_name, True,
-		  acb_info | ACB_DISABLED | ACB_PWNOTREQ, 0xffff,
-		  NULL,
-		  err_str, sizeof(err_str),
-		  msg_str, sizeof(msg_str)))
-	{
-		DEBUG(0,("%s\n", err_str));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	sam_pass = getsam21pwntnam(user_name);
-	if (sam_pass == NULL)
+	if (!tdb_create_user(tdb_usr, usr.user_rid, &usr))
 	{
 		/* account doesn't exist: say so */
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	*unknown_0 = 0x000703ff;
-	*user_rid = sam_pass->user_rid;
+	*user_rid = usr.user_rid;
 
-	return samr_open_by_tdbsid(tdb_usr, &sid, user_pol, access_mask, *user_rid);
+	return samr_open_by_tdbrid(user_pol, access_mask, *user_rid);
 }
 

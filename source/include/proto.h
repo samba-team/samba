@@ -3448,6 +3448,7 @@ BOOL make_sam_user_info21(SAM_USER_INFO_21 *usr,
 	LOGON_HRS *hrs,
 	uint32 unknown_5,
 	uint32 unknown_6);
+BOOL sam_io_user_info21(char *desc,  SAM_USER_INFO_21 *usr, prs_struct *ps, int depth);
 BOOL make_samr_userinfo_ctr(SAM_USERINFO_CTR *ctr, const uchar *sess_key,
 				uint16 switch_value, void *info);
 BOOL samr_io_userinfo_ctr(char *desc,  SAM_USERINFO_CTR *ctr, prs_struct *ps, int depth);
@@ -4335,6 +4336,10 @@ uint32 _samr_unknown_38(const UNISTR2 *uni_srv_name,
 
 /*The following definitions come from  samrd/srv_samr_tdb.c  */
 
+BOOL set_tdbrid(struct policy_cache *cache, POLICY_HND *hnd,
+				uint32 rid);
+BOOL get_tdbrid(struct policy_cache *cache, const POLICY_HND *hnd,
+				uint32 *rid);
 BOOL set_tdbsam(struct policy_cache *cache, POLICY_HND *hnd,
 				TDB_CONTEXT *tdb);
 BOOL get_tdbsam(struct policy_cache *cache, const POLICY_HND *hnd,
@@ -4353,6 +4358,7 @@ BOOL set_tdbsid(struct policy_cache *cache, POLICY_HND *hnd,
 				TDB_CONTEXT *tdb, const DOM_SID *sid);
 BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
 				TDB_CONTEXT **tdb, DOM_SID *sid);
+uint32 samr_open_by_tdbrid( POLICY_HND *pol, uint32 access_mask, uint32 rid);
 
 /*The following definitions come from  samrd/srv_samr_usr_tdb.c  */
 
