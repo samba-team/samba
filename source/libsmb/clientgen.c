@@ -251,8 +251,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->outbuf = (char *)malloc(cli->bufsize);
 	cli->inbuf = (char *)malloc(cli->bufsize);
 	cli->oplock_handler = cli_oplock_ack;
-	if (lp_use_spnego())
-		cli->use_spnego = True;
+
+	cli->use_spnego = lp_client_use_spnego();
 
 	cli->capabilities = CAP_UNICODE | CAP_STATUS32;
 

@@ -363,19 +363,17 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
  SMB signing - setup the MAC key.
 ************************************************************/
 
-void cli_calculate_mac_key(struct cli_state *cli, const char *plain_passwd, const uchar resp[24])
+void cli_calculate_mac_key(struct cli_state *cli, const uchar user_session_key[16], const DATA_BLOB response)
 {
-	uchar nt_hash[16];
-	E_md4hash(plain_passwd, nt_hash);
 	
-	mdfour(&cli->sign_info.mac_key[0], nt_hash, sizeof(nt_hash));
-	memcpy(&cli->sign_info.mac_key[16],resp,24);
-	cli->sign_info.mac_key_len = 40;
+	memcpy(&cli->sign_info.mac_key[0], user_session_key, 16);
+	memcpy(&cli->sign_info.mac_key[16],response.data, MIN(response.length, 40 - 16));
+	cli->sign_info.mac_key_len = MIN(response.length + 16, 40);
 	cli->sign_info.use_smb_signing = True;
 
 	/* These calls are INCONPATIBLE with SMB signing */
 	cli->readbraw_supported = False;
-	cli->writebraw_supported = False;    
+	cli->writebraw_supported = False;
 
 	/* Reset the sequence number in case we had a previous (aborted) attempt */
 	cli->sign_info.send_seq_num = 2;

@@ -709,7 +709,8 @@ BOOL msrpc_parse(DATA_BLOB *blob,
 		case 'b':
 			b = (DATA_BLOB *)va_arg(ap, void *);
 			len1 = va_arg(ap, unsigned);
-			*b = data_blob(blob->data + head_ofs, len1);
+			*b = data_blob(blob->data + head_ofs, 
+				       MIN(len1, blob->length - head_ofs));
 			head_ofs += len1;
 			break;
 		case 'd':

@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    client connect/disconnect routines
    Copyright (C) Andrew Tridgell 1994-1998
-   Copyright (C) Andrew Barteltt 2001-2002
+   Copyright (C) Andrew Barteltt 2001-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ static const struct {
 ****************************************************************************/
 
 static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user, 
-				      const char *pass, int passlen, const char *workgroup)
+				      const char *pass, size_t passlen, const char *workgroup)
 {
 	fstring pword;
 	char *p;
@@ -228,7 +228,7 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 	return True;
 }
 
-static void set_signing_on_cli (struct cli_state *cli, const char* pass, uint8 response[24]) 
+static void set_signing_on_cli (struct cli_state *cli, uint8 user_session_key[16], DATA_BLOB response) 
 {
 	uint8 zero_sig[8];
 	ZERO_STRUCT(zero_sig);
@@ -242,7 +242,7 @@ static void set_signing_on_cli (struct cli_state *cli, const char* pass, uint8 r
 
 		DEBUG(3, ("smb signing enabled!\n"));
 		cli->sign_info.use_smb_signing = True;
-		cli_calculate_mac_key(cli, pass, response);
+		cli_calculate_mac_key(cli, user_session_key, response);
 	} else {
 		DEBUG(5, ("smb signing NOT enabled!\n"));
 	}
@@ -265,25 +265,90 @@ static void set_temp_signing_on_cli(struct cli_state *cli)
 ****************************************************************************/
 
 static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user, 
-				  const char *pass, int passlen,
-				  const char *ntpass, int ntpasslen,
+				  const char *pass, size_t passlen,
+				  const char *ntpass, size_t ntpasslen,
 				  const char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
-	uchar pword[24];
-	uchar ntpword[24];
+	DATA_BLOB lm_response = data_blob(NULL, 0);
+	DATA_BLOB nt_response = data_blob(NULL, 0);
+	uchar user_session_key[16];
 	char *p;
 	BOOL have_plaintext = False;
 
-	if (passlen > sizeof(pword) || ntpasslen > sizeof(ntpword))
-		return False;
-
 	if (passlen != 24) {
-		/* non encrypted password supplied. Ignore ntpass. */
-		passlen = 24;
-		ntpasslen = 24;
-		SMBencrypt(pass,cli->secblob.data,pword);
-		SMBNTencrypt(pass,cli->secblob.data,ntpword);
+		uchar nt_hash[16];
+		E_md4hash(pass, nt_hash);
+
+		if (lp_client_ntlmv2_auth()) {
+			uchar ntlm_v2_hash[16];
+			uchar ntlmv2_response[16];
+			uchar lmv2_response[16];
+			DATA_BLOB ntlmv2_client_data;
+			DATA_BLOB lmv2_client_data;
+			DATA_BLOB server_chal;
+
+			/* We don't use the NT# directly.  Instead we use it mashed up with
+			   the username and domain.
+			   This prevents username swapping during the auth exchange
+			*/
+			if (!ntv2_owf_gen(nt_hash, user, workgroup, ntlm_v2_hash)) {
+				return False;
+			}
+
+			server_chal = data_blob(cli->secblob.data, MIN(cli->secblob.length, 8)); 
+
+			/* NTLMv2 */
+
+			/* We also get to specify some random data */
+			ntlmv2_client_data = data_blob(NULL, 20);
+			generate_random_buffer(ntlmv2_client_data.data, ntlmv2_client_data.length, False);
+			memset(ntlmv2_client_data.data, 'A', ntlmv2_client_data.length);
+
+			/* Given that data, and the challenge from the server, generate a response */
+			SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, ntlmv2_client_data, ntlmv2_response);
+
+			/* put it into nt_response, for the code below to put into the packet */
+			nt_response = data_blob(NULL, ntlmv2_client_data.length + sizeof(ntlmv2_response));
+			memcpy(nt_response.data, ntlmv2_response, sizeof(ntlmv2_response));
+			/* after the first 16 bytes is the random data we generated above, so the server can verify us with it */
+			memcpy(nt_response.data + sizeof(ntlmv2_response), ntlmv2_client_data.data, ntlmv2_client_data.length);
+			data_blob_free(&ntlmv2_client_data);
+
+
+			/* LMv2 */
+
+			/* We also get to specify some random data, but only 8 bytes (24 byte total response) */
+			lmv2_client_data = data_blob(NULL, 8);
+			generate_random_buffer(lmv2_client_data.data, lmv2_client_data.length, False);
+			memset(lmv2_client_data.data, 'B', lmv2_client_data.length);
+
+			/* Calculate response */
+			SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, lmv2_client_data, lmv2_response);
+
+			/* Calculate response */
+			lm_response = data_blob(NULL, lmv2_client_data.length + sizeof(lmv2_response));
+			memcpy(lm_response.data, lmv2_response, sizeof(lmv2_response));
+			/* after the first 16 bytes is the 8 bytes of random data we made above */
+			memcpy(lm_response.data + sizeof(lmv2_response), lmv2_client_data.data, lmv2_client_data.length);
+			data_blob_free(&lmv2_client_data);
+
+			data_blob_free(&server_chal);
+
+			/* The NTLMv2 calculations also provide a session key, for signing etc later */
+			SMBsesskeygen_ntv2(ntlm_v2_hash, ntlmv2_response, user_session_key);
+
+		} else {
+			/* non encrypted password supplied. Ignore ntpass. */
+			if (lp_client_lanman_auth()) {
+				lm_response = data_blob(NULL, 24);
+				SMBencrypt(pass,cli->secblob.data,lm_response.data);
+			}
+
+			nt_response = data_blob(NULL, 24);
+			SMBNTencrypt(pass,cli->secblob.data,nt_response.data);
+			SMBsesskeygen_ntv1(nt_hash, NULL, user_session_key);
+		}
 
 		have_plaintext = True;
 		set_temp_signing_on_cli(cli);
@@ -291,11 +356,9 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 		/* pre-encrypted password supplied.  Only used for 
 		   security=server, can't do
 		   signing becouse we don't have oringial key */
-		memcpy(pword, pass, 24);
-		if (ntpasslen == 24)
-			memcpy(ntpword, ntpass, 24);
-		else
-			ZERO_STRUCT(ntpword);
+
+		lm_response = data_blob(pass, passlen);
+		nt_response = data_blob(ntpass, ntpasslen);
 	}
 
 	/* send a session setup command */
@@ -310,28 +373,35 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	SSVAL(cli->outbuf,smb_vwv3,2);
 	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
 	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
-	SSVAL(cli->outbuf,smb_vwv7,passlen);
-	SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
+	SSVAL(cli->outbuf,smb_vwv7,lm_response.length);
+	SSVAL(cli->outbuf,smb_vwv8,nt_response.length);
 	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
 	p = smb_buf(cli->outbuf);
-	memcpy(p,pword,passlen); p += passlen;
-	memcpy(p,ntpword,ntpasslen); p += ntpasslen;
+	if (lm_response.length) {
+		memcpy(p,lm_response.data, lm_response.length); p += lm_response.length;
+	}
+	if (nt_response.length) {
+		memcpy(p,nt_response.data, nt_response.length); p += nt_response.length;
+	}
 	p += clistr_push(cli, p, user, -1, STR_TERMINATE);
 	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE);
 	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
 	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
 	cli_setup_bcc(cli, p);
 
-	if (!cli_send_smb(cli))
+	if (!cli_send_smb(cli) || !cli_receive_smb(cli)) {
+		data_blob_free(&lm_response);
+		data_blob_free(&nt_response);
 		return False;
-
-	if (!cli_receive_smb(cli))
-		return False;
+	}
 
 	show_msg(cli->inbuf);
 
-	if (cli_is_error(cli))
+	if (cli_is_error(cli)) {
+		data_blob_free(&lm_response);
+		data_blob_free(&nt_response);
 		return False;
+	}
 
 	/* use the returned vuid from now on */
 	cli->vuid = SVAL(cli->inbuf,smb_uid);
@@ -345,9 +415,11 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 
 	if (have_plaintext) {
 		/* Have plaintext orginal */
-		set_signing_on_cli(cli, pass, ntpword);
+		set_signing_on_cli(cli, user_session_key, nt_response);
 	}
 	
+	data_blob_free(&lm_response);
+	data_blob_free(&nt_response);
 	return True;
 }
 
@@ -529,6 +601,10 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 		return False;
 	}
  
+	if (challenge_blob.length < 8) {
+		return False;
+	}
+
 	DEBUG(10, ("Challenge:\n"));
 	dump_data(10, challenge_blob.data, 8);
 
