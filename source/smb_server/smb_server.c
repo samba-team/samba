@@ -170,18 +170,10 @@ static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn)
 }
 
 /*
-These flags determine some of the permissions required to do an operation 
-
-Note that I don't set NEED_WRITE on some write operations because they
-are used by some brain-dead clients when printing, and I don't want to
-force write permissions on print services.
+  These flags determine some of the permissions required to do an operation 
 */
 #define AS_USER (1<<0)
-#define NEED_WRITE (1<<1)
-#define TIME_INIT (1<<2)
-#define CAN_IPC (1<<3)
-#define AS_GUEST (1<<5)
-#define USE_MUTEX (1<<7)
+#define USE_MUTEX (1<<1)
 
 /* 
    define a list of possible SMB messages and their corresponding
@@ -195,18 +187,18 @@ static const struct smb_message_struct
 	int flags;
 }
  smb_messages[256] = {
-/* 0x00 */ { "SMBmkdir",reply_mkdir,AS_USER | NEED_WRITE},
-/* 0x01 */ { "SMBrmdir",reply_rmdir,AS_USER | NEED_WRITE},
-/* 0x02 */ { "SMBopen",reply_open,AS_USER },
+/* 0x00 */ { "SMBmkdir",reply_mkdir,AS_USER},
+/* 0x01 */ { "SMBrmdir",reply_rmdir,AS_USER},
+/* 0x02 */ { "SMBopen",reply_open,AS_USER},
 /* 0x03 */ { "SMBcreate",reply_mknew,AS_USER},
-/* 0x04 */ { "SMBclose",reply_close,AS_USER | CAN_IPC },
+/* 0x04 */ { "SMBclose",reply_close,AS_USER},
 /* 0x05 */ { "SMBflush",reply_flush,AS_USER},
-/* 0x06 */ { "SMBunlink",reply_unlink,AS_USER | NEED_WRITE },
-/* 0x07 */ { "SMBmv",reply_mv,AS_USER | NEED_WRITE },
+/* 0x06 */ { "SMBunlink",reply_unlink,AS_USER},
+/* 0x07 */ { "SMBmv",reply_mv,AS_USER},
 /* 0x08 */ { "SMBgetatr",reply_getatr,AS_USER},
-/* 0x09 */ { "SMBsetatr",reply_setatr,AS_USER | NEED_WRITE},
+/* 0x09 */ { "SMBsetatr",reply_setatr,AS_USER},
 /* 0x0a */ { "SMBread",reply_read,AS_USER},
-/* 0x0b */ { "SMBwrite",reply_write,AS_USER | CAN_IPC },
+/* 0x0b */ { "SMBwrite",reply_write,AS_USER},
 /* 0x0c */ { "SMBlock",reply_lock,AS_USER},
 /* 0x0d */ { "SMBunlock",reply_unlock,AS_USER},
 /* 0x0e */ { "SMBctemp",reply_ctemp,AS_USER },
@@ -229,23 +221,23 @@ static const struct smb_message_struct
 /* 0x1f */ { "SMBwriteBs",reply_writebs,AS_USER},
 /* 0x20 */ { "SMBwritec",NULL,0},
 /* 0x21 */ { NULL, NULL, 0 },
-/* 0x22 */ { "SMBsetattrE",reply_setattrE,AS_USER | NEED_WRITE },
-/* 0x23 */ { "SMBgetattrE",reply_getattrE,AS_USER },
-/* 0x24 */ { "SMBlockingX",reply_lockingX,AS_USER },
-/* 0x25 */ { "SMBtrans",reply_trans,AS_USER | CAN_IPC },
-/* 0x26 */ { "SMBtranss",NULL,AS_USER | CAN_IPC},
+/* 0x22 */ { "SMBsetattrE",reply_setattrE,AS_USER},
+/* 0x23 */ { "SMBgetattrE",reply_getattrE,AS_USER},
+/* 0x24 */ { "SMBlockingX",reply_lockingX,AS_USER},
+/* 0x25 */ { "SMBtrans",reply_trans,AS_USER},
+/* 0x26 */ { "SMBtranss",NULL,AS_USER},
 /* 0x27 */ { "SMBioctl",reply_ioctl,0},
 /* 0x28 */ { "SMBioctls",NULL,AS_USER},
-/* 0x29 */ { "SMBcopy",reply_copy,AS_USER | NEED_WRITE },
-/* 0x2a */ { "SMBmove",NULL,AS_USER | NEED_WRITE },
+/* 0x29 */ { "SMBcopy",reply_copy,AS_USER},
+/* 0x2a */ { "SMBmove",NULL,AS_USER},
 /* 0x2b */ { "SMBecho",reply_echo,0},
 /* 0x2c */ { "SMBwriteclose",reply_writeclose,AS_USER},
-/* 0x2d */ { "SMBopenX",reply_open_and_X,AS_USER | CAN_IPC },
-/* 0x2e */ { "SMBreadX",reply_read_and_X,AS_USER | CAN_IPC },
-/* 0x2f */ { "SMBwriteX",reply_write_and_X,AS_USER | CAN_IPC },
+/* 0x2d */ { "SMBopenX",reply_open_and_X,AS_USER},
+/* 0x2e */ { "SMBreadX",reply_read_and_X,AS_USER},
+/* 0x2f */ { "SMBwriteX",reply_write_and_X,AS_USER},
 /* 0x30 */ { NULL, NULL, 0 },
 /* 0x31 */ { NULL, NULL, 0 },
-/* 0x32 */ { "SMBtrans2", reply_trans2, AS_USER | CAN_IPC },
+/* 0x32 */ { "SMBtrans2", reply_trans2, AS_USER},
 /* 0x33 */ { "SMBtranss2", reply_transs2, AS_USER},
 /* 0x34 */ { "SMBfindclose", reply_findclose,AS_USER},
 /* 0x35 */ { "SMBfindnclose", reply_findnclose, AS_USER},
@@ -355,9 +347,9 @@ static const struct smb_message_struct
 /* 0x9d */ { NULL, NULL, 0 },
 /* 0x9e */ { NULL, NULL, 0 },
 /* 0x9f */ { NULL, NULL, 0 },
-/* 0xa0 */ { "SMBnttrans", reply_nttrans, AS_USER | CAN_IPC },
-/* 0xa1 */ { "SMBnttranss", reply_nttranss, AS_USER | CAN_IPC },
-/* 0xa2 */ { "SMBntcreateX", reply_ntcreate_and_X, AS_USER | CAN_IPC },
+/* 0xa0 */ { "SMBnttrans", reply_nttrans, AS_USER},
+/* 0xa1 */ { "SMBnttranss", reply_nttranss, AS_USER},
+/* 0xa2 */ { "SMBntcreateX", reply_ntcreate_and_X, AS_USER},
 /* 0xa3 */ { NULL, NULL, 0 },
 /* 0xa4 */ { "SMBntcancel", reply_ntcancel, 0 },
 /* 0xa5 */ { "SMBntrename", reply_ntrename, 0 },
@@ -403,14 +395,14 @@ static const struct smb_message_struct
 /* 0xcd */ { NULL, NULL, 0 },
 /* 0xce */ { NULL, NULL, 0 },
 /* 0xcf */ { NULL, NULL, 0 },
-/* 0xd0 */ { "SMBsends",reply_sends,AS_GUEST},
-/* 0xd1 */ { "SMBsendb",NULL,AS_GUEST},
-/* 0xd2 */ { "SMBfwdname",NULL,AS_GUEST},
-/* 0xd3 */ { "SMBcancelf",NULL,AS_GUEST},
-/* 0xd4 */ { "SMBgetmac",NULL,AS_GUEST},
-/* 0xd5 */ { "SMBsendstrt",reply_sendstrt,AS_GUEST},
-/* 0xd6 */ { "SMBsendend",reply_sendend,AS_GUEST},
-/* 0xd7 */ { "SMBsendtxt",reply_sendtxt,AS_GUEST},
+/* 0xd0 */ { "SMBsends",reply_sends,0},
+/* 0xd1 */ { "SMBsendb",NULL,0},
+/* 0xd2 */ { "SMBfwdname",NULL,0},
+/* 0xd3 */ { "SMBcancelf",NULL,0},
+/* 0xd4 */ { "SMBgetmac",NULL,0},
+/* 0xd5 */ { "SMBsendstrt",reply_sendstrt,0},
+/* 0xd6 */ { "SMBsendend",reply_sendend,0},
+/* 0xd7 */ { "SMBsendtxt",reply_sendtxt,0},
 /* 0xd8 */ { NULL, NULL, 0 },
 /* 0xd9 */ { NULL, NULL, 0 },
 /* 0xda */ { NULL, NULL, 0 },
@@ -516,11 +508,6 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	DEBUG(3,("switch message %s (task_id %d)\n",smb_fn_name(type), smb_conn->connection->service->model_ops->get_id(req)));
 
-	/* does this protocol need to be run as root? */
-	if (!(flags & AS_USER)) {
-		change_to_root_user();
-	}
-	
 	/* does this protocol need a valid tree connection? */
 	if ((flags & AS_USER) && !req->tcon) {
 		req_reply_error(req, NT_STATUS_INVALID_HANDLE);
@@ -529,59 +516,12 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	/* see if the vuid is valid */
 	if ((flags & AS_USER) && !req->session) {
-		if (!(flags & AS_GUEST)) {
-			req_reply_error(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
-			return;
-		}
+		req_reply_error(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
+		return;
 	}
 
-	/* does this protocol need to be run as the connected user? */
-#if HACK_REWRITE
-	if ((flags & AS_USER) && !change_to_user(req->tcon,session_tag)) {
-		if (!(flags & AS_GUEST)) {
-			req_reply_error(req, NT_STATUS_ACCESS_DENIED);
-			return;
-		}
-
-		/* we'll run it as guest */
-		flags &= ~AS_USER;
-	}
-#endif
-
-	/* this code is to work around a bug is MS client 3 without
-	   introducing a security hole - it needs to be able to do
-	   print queue checks as guest if it isn't logged in properly */
-	if (flags & AS_USER) {
-		flags &= ~AS_GUEST;
-	}
-	
-	/* does it need write permission? */
-	if ((flags & NEED_WRITE) && !CAN_WRITE(req->tcon)) {
-		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
-		return;
-	}
-	
-	/* ipc services are limited */
-	if (req->tcon && req->tcon->ntvfs_ctx->type == NTVFS_IPC && (flags & AS_USER) && !(flags & CAN_IPC)) {
-		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
-		return;
-	}
-	
-	/* load service specific parameters */
-	if (req->tcon && !set_current_service(req->tcon,(flags & AS_USER)?True:False)) {
-		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
-		return;
-	}
-	
-	/* does this protocol need to be run as guest? */
-#if HACK_REWRITE
-	if ((flags & AS_GUEST) && 
-	    !change_to_guest()) {
-		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
-		return;
-	}
-#endif
-	/* THREAD TESTING: use mutex to serialize calls to critical functions with global state */
+	/* THREAD TESTING: use mutex to serialize calls to critical
+	   functions with global state */
 	if (flags & USE_MUTEX) {
 		MUTEX_LOCK_BY_ID(MUTEX_SMBD);
 	}
