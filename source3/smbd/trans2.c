@@ -415,8 +415,8 @@ static int get_lanman2_dir_entry(connection_struct *conn,
   {
     case 1:
       if(requires_resume_key) {
-	SIVAL(p,0,reskey);
-	p += 4;
+        SIVAL(p,0,reskey);
+        p += 4;
       }
       put_dos_date2(p,l1_fdateCreation,cdate);
       put_dos_date2(p,l1_fdateLastAccess,adate);
@@ -433,8 +433,8 @@ static int get_lanman2_dir_entry(connection_struct *conn,
     case 2:
       /* info_level 2 */
       if(requires_resume_key) {
-	SIVAL(p,0,reskey);
-	p += 4;
+        SIVAL(p,0,reskey);
+        p += 4;
       }
       put_dos_date2(p,l2_fdateCreation,cdate);
       put_dos_date2(p,l2_fdateLastAccess,adate);
@@ -466,8 +466,8 @@ static int get_lanman2_dir_entry(connection_struct *conn,
 
     case 4:
       if(requires_resume_key) {
-	SIVAL(p,0,reskey);
-	p += 4;
+        SIVAL(p,0,reskey);
+        p += 4;
       }
       SIVAL(p,0,33+strlen(fname)+1);
       put_dos_date2(p,4,cdate);
@@ -492,17 +492,22 @@ static int get_lanman2_dir_entry(connection_struct *conn,
       put_long_date(p,adate); p += 8;
       put_long_date(p,mdate); p += 8;
       put_long_date(p,mdate); p += 8;
-      SIVAL(p,0,size); p += 8;
-      SIVAL(p,0,size); p += 8;
+      SIVAL(p,0,size);
+      SIVAL(p,8,size);
+#ifdef LARGE_SMB_OFF_T
+      SIVAL(p,4,size >> 32);
+      SIVAL(p,12,size >> 32);
+#endif /* LARGE_SMB_OFF_T */
+      p += 16;
       SIVAL(p,0,nt_extmode); p += 4;
       SIVAL(p,0,strlen(fname)); p += 4;
       SIVAL(p,0,0); p += 4;
       if (!was_8_3) {
-	pstrcpy(p+2,fname);
-	if (!name_map_mangle(p+2,True,SNUM(conn)))
-	  (p+2)[12] = 0;
+        pstrcpy(p+2,fname);
+        if (!name_map_mangle(p+2,True,SNUM(conn)))
+          (p+2)[12] = 0;
       } else
-	*(p+2) = 0;
+        *(p+2) = 0;
       strupper(p+2);
       SSVAL(p,0,strlen(p+2));
       p += 2 + 24;
@@ -520,8 +525,13 @@ static int get_lanman2_dir_entry(connection_struct *conn,
       put_long_date(p,adate); p += 8;
       put_long_date(p,mdate); p += 8;
       put_long_date(p,mdate); p += 8;
-      SIVAL(p,0,size); p += 8;
-      SIVAL(p,0,size); p += 8;
+      SIVAL(p,0,size);
+      SIVAL(p,8,size);
+#ifdef LARGE_SMB_OFF_T
+      SIVAL(p,4,size >> 32);
+      SIVAL(p,12,size >> 32);
+#endif /* LARGE_SMB_OFF_T */
+      p += 16;
       SIVAL(p,0,nt_extmode); p += 4;
       SIVAL(p,0,strlen(fname)); p += 4;
       pstrcpy(p,fname);
@@ -538,8 +548,13 @@ static int get_lanman2_dir_entry(connection_struct *conn,
       put_long_date(p,adate); p += 8;
       put_long_date(p,mdate); p += 8;
       put_long_date(p,mdate); p += 8;
-      SIVAL(p,0,size); p += 8;
-      SIVAL(p,0,size); p += 8;
+      SIVAL(p,0,size); 
+      SIVAL(p,8,size);
+#ifdef LARGE_SMB_OFF_T
+      SIVAL(p,4,size >> 32);
+      SIVAL(p,12,size >> 32);
+#endif /* LARGE_SMB_OFF_T */
+      p += 16;
       SIVAL(p,0,nt_extmode); p += 4;
       SIVAL(p,0,strlen(fname)); p += 4;
       SIVAL(p,0,0); p += 4;
@@ -1055,6 +1070,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 /****************************************************************************
   reply to a TRANS2_QFSINFO (query filesystem info)
 ****************************************************************************/
+
 static int call_trans2qfsinfo(connection_struct *conn, 
 			      char *inbuf, char *outbuf, 
 			      int length, int bufsize,
@@ -1329,6 +1345,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       data_size = 22;
       SIVAL(pdata,0,size);
       SIVAL(pdata,8,size);
+#ifdef LARGE_SMB_OFF_T
+      SIVAL(pdata,4,size>>32);
+      SIVAL(pdata,12,size>>32);
+#endif /* LARGE_SMB_OFF_T */
       SIVAL(pdata,16,sbuf.st_nlink);
       CVAL(pdata,20) = 0;
       CVAL(pdata,21) = (mode&aDIR)?1:0;
@@ -1367,6 +1387,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
     case SMB_QUERY_FILE_END_OF_FILEINFO:
       data_size = 8;
       SIVAL(pdata,0,size);
+#ifdef LARGE_SMB_OFF_T
+      SIVAL(pdata,4,size >> 32);
+#endif /* LARGE_SMB_OFF_T */
       break;
 
     case SMB_QUERY_FILE_ALL_INFO:
@@ -1378,6 +1401,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       pdata += 40;
       SIVAL(pdata,0,size);
       SIVAL(pdata,8,size);
+#ifdef LARGE_SMB_OFF_T
+      SIVAL(pdata,4,size >> 32);
+      SIVAL(pdata,12,size >> 32);
+#endif /* LARGE_SMB_OFF_T */
       SIVAL(pdata,16,sbuf.st_nlink);
       CVAL(pdata,20) = 0;
       CVAL(pdata,21) = (mode&aDIR)?1:0;
@@ -1385,9 +1412,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       pdata += 8; /* index number */
       pdata += 4; /* EA info */
       if (mode & aRONLY)
-	SIVAL(pdata,0,0xA9);
+        SIVAL(pdata,0,0xA9);
       else
-	SIVAL(pdata,0,0xd01BF);
+        SIVAL(pdata,0,0xd01BF);
       pdata += 4;
       SIVAL(pdata,0,pos); /* current offset */
       pdata += 8;
@@ -1566,16 +1593,39 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
     case SMB_SET_FILE_END_OF_FILE_INFO:
     {
+      size = IVAL(pdata,0);
+#ifdef LARGE_SMB_OFF_T
+      size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+#else /* LARGE_SMB_OFF_T */
       if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
          return(ERROR(ERRDOS,ERRunknownlevel));
-      size = IVAL(pdata,0);
+#endif /* LARGE_SMB_OFF_T */
       break;
     }
 
     case SMB_SET_FILE_ALLOCATION_INFO:
       break; /* We don't need to do anything for this call. */
 
-    case SMB_SET_FILE_DISPOSITION_INFO: /* not supported yet */
+    case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
+    {
+      if (tran_call == TRANSACT2_SETFILEINFO) {
+        files_struct *fsp = file_fsp(params,0);
+        if(fsp->is_directory)
+          return(ERROR(ERRDOS,ERRnoaccess));
+        /*
+         * TODO - check here is this means set
+         * this flag bit on all open files that
+         * reference this particular dev/inode pair.
+         * If so we'll need to search the open
+         * file entries here and set this flag on 
+         * all of them that match. JRA.
+         */
+        fsp->delete_on_close = CVAL(pdata,0);
+      } else
+        return(ERROR(ERRDOS,ERRunknownlevel));
+      break;
+    }
+
     default:
     {
       return(ERROR(ERRDOS,ERRunknownlevel));

@@ -507,6 +507,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     fsp->granted_oplock = False;
     fsp->sent_oplock_break = False;
     fsp->is_directory = False;
+    fsp->delete_on_close = False;
     fsp->conn = conn;
     /*
      * Note that the file name here is the *untranslated* name
