@@ -1,3 +1,30 @@
+Sat Feb 13 17:12:53 1999  Assar Westerlund  <assar@sics.se>
+
+	* lib/kadm5/init_c.c (kadm5_c_init_with_context): remove unused
+ 	`error'
+
+	* lib/asn1/Makefile.am (check-der): add
+
+	* lib/asn1/gen.c (define_type): map ASN1 Integer to `int' instead
+ 	of `unsigned'
+
+	* lib/asn1/der_length.c (length_unsigned): new function
+	(length_int): handle signed integers
+
+	* lib/asn1/der_put.c (der_put_unsigned): new function
+	(der_put_int): handle signed integers
+
+ 	* lib/asn1/der_get.c (der_get_unsigned): new function
+ 	(der_get_int): handle signed integers
+
+	* lib/asn1/der.h: all integer functions take `int' instead of
+ 	`unsigned'
+
+	* lib/asn1/lex.l (filename): unused. remove.
+
+	* lib/asn1/check-der.c: new test program for der encoding and
+ 	decoding.
+
 Mon Feb  1 04:09:06 1999  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/send_to_kdc.c (krb5_sendto_kdc): only call
