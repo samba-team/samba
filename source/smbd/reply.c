@@ -276,7 +276,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		set_message(outbuf,3,0,True);
 
 		p = smb_buf(outbuf);
-		p += srvstr_push(outbuf, p, devicename, -1, 
+		p += srvstr_push(outbuf, p, IS_IPC(conn) ? "IPC" : devicename, -1, 
 				 STR_TERMINATE|STR_ASCII);
 		p += srvstr_push(outbuf, p, fsname, -1, 
 				 STR_TERMINATE);
