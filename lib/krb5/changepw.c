@@ -157,7 +157,6 @@ send_request (krb5_context context,
     if (sendmsg (sock, &msghdr, 0) < 0)
 	ret = errno;
 
-out1:
     krb5_data_free (&krb_priv_data);
 out2:
     krb5_data_free (&ap_req_data);
