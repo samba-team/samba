@@ -88,7 +88,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
 	int fd;
 	struct ip_service *ret = NULL;
-	struct in_addr *return_ip;
+	struct in_addr *return_ip = NULL;
 	int j, i, flags = 0;
 
 	*count = 0;
@@ -121,7 +121,9 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	     j--) {
 		struct in_addr *bcast = iface_n_bcast(j);
 		return_ip = name_query(fd,name,0x20,True,True,*bcast,count, &flags, NULL);
-		if (return_ip) break;
+		if (return_ip) {
+			break;
+		}
 	}
 
 	close(fd);

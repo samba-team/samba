@@ -1697,7 +1697,7 @@ list_unique_wg_fn(const char *name, uint32 type, const char *comment, void *stat
         struct smbc_dir_list *dir_list;
         struct smbc_dirent *dirent;
 	int dirent_type;
-        int remove = 0;
+        int do_remove = 0;
 
 	dirent_type = dir->dir_type;
 
@@ -1714,13 +1714,13 @@ list_unique_wg_fn(const char *name, uint32 type, const char *comment, void *stat
         for (dir_list = dir->dir_list;
              dir_list != dir->dir_end;
              dir_list = dir_list->next) {
-                if (! remove &&
+                if (! do_remove &&
                     strcmp(dir_list->dirent->name, dirent->name) == 0) {
                         /* Duplicate.  End end of list need to be removed. */
-                        remove = 1;
+                        do_remove = 1;
                 }
 
-                if (remove && dir_list->next == dir->dir_end) {
+                if (do_remove && dir_list->next == dir->dir_end) {
                         /* Found the end of the list.  Remove it. */
                         dir->dir_end = dir_list;
                         free(dir_list->next);
