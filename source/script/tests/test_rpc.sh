@@ -32,7 +32,7 @@ testit() {
 }
 
 for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
- for bindoptions in connect sign seal sign,seal validate padcheck bigendian bigendian,seal; do
+ for bindoptions in connect sign seal sign,seal spnego spnego,sign spnego,seal validate padcheck bigendian bigendian,seal; do
      case $transport in
 	 ncalrpc) tests=$ncalrpc_tests ;;
 	 ncacn_np) tests=$ncacn_np_tests ;;
