@@ -558,6 +558,9 @@ sub RewriteC($$$)
         next, if /^void ndr_print/ .. /^}/;
         next, if /^size_t ndr_size/ .. /^}/;
 
+	# get rid of the init functions
+	next, if /^NTSTATUS dcerpc_ndr_\w+_init/ .. /^}/;
+
 	# Get rid of dcerpc interface structures and functions since
 	# they are also not very interesting.
 
