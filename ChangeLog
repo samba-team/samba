@@ -1,5 +1,13 @@
 Fri Mar  6 00:41:30 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/krb5/send_to_kdc.c (krb5_sendto_kdc, send_and_recv_http):
+ 	Add support for using proxy.
+
+	* lib/krb5/context.c: Initialize `http_proxy' from
+ 	`libdefaults/http_proxy'.
+
+	* lib/krb5/krb5.h: Add `http_proxy' to context.
+
 	* lib/krb5/send_to_kdc.c: Recognize `http/' and `udp/' as protocol
  	specifications.
 
