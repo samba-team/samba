@@ -218,6 +218,10 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 		if (!all_ops[i]->oid) {
 			continue;
 		}
+		if (strcasecmp(OID_SPNEGO,all_ops[i]->oid) == 0) {
+			continue;
+		}
+
 		nt_status = gensec_subcontext_start(gensec_security, 
 						    &spnego_state->sub_sec_security);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -437,7 +441,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			if (spnego.type != spnego_state->expected_packet) {
 				DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type, 
 					  spnego_state->expected_packet));
-				dump_data(1, (const char *)in.data, in.length);
+				dump_data(1, in.data, in.length);
 				spnego_free_data(&spnego);
 				return NT_STATUS_INVALID_PARAMETER;
 			}
@@ -497,7 +501,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		
 		if (len == -1) {
 			DEBUG(1, ("Invalid SPNEGO request:\n"));
-			dump_data(1, (const char *)in.data, in.length);
+			dump_data(1, in.data, in.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
@@ -505,7 +509,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		if (spnego.type != spnego_state->expected_packet) {
 			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type, 
 				  spnego_state->expected_packet));
-			dump_data(1, (const char *)in.data, in.length);
+			dump_data(1, in.data, in.length);
 			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -563,7 +567,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		
 		if (len == -1) {
 			DEBUG(1, ("Invalid SPNEGO request:\n"));
-			dump_data(1, (const char *)in.data, in.length);
+			dump_data(1, in.data, in.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
@@ -571,7 +575,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		if (spnego.type != spnego_state->expected_packet) {
 			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type, 
 				  spnego_state->expected_packet));
-			dump_data(1, (const char *)in.data, in.length);
+			dump_data(1, in.data, in.length);
 			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -603,7 +607,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		
 		if (len == -1) {
 			DEBUG(1, ("Invalid SPNEGO request:\n"));
-			dump_data(1, (const char *)in.data, in.length);
+			dump_data(1, in.data, in.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
@@ -611,7 +615,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		if (spnego.type != spnego_state->expected_packet) {
 			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type, 
 				  spnego_state->expected_packet));
-			dump_data(1, (const char *)in.data, in.length);
+			dump_data(1, in.data, in.length);
 			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
