@@ -451,8 +451,7 @@ the connection is allowed as the corresponding user.
 
 eit() Step 4: If the client has previously validated a
 username/password pair with the server and the client has passed the
-validation token then that username is used. This step is skipped if
-link(bf("revalidate = yes"))(revalidate) for this service.
+validation token then that username is used. 
 
 eit() Step 5: If a link(bf("user = "))(user) field is given in the
 smb.conf file for the service and the client has supplied a password,
@@ -956,6 +955,8 @@ it() link(bf(printable))(printable)
 
 it() link(bf(printer))(printer)
 
+it() link(bf(printer admin))(printer admin)
+
 it() link(bf(printer driver))(printerdriver)
 
 it() link(bf(printer driver location))(printerdriverlocation)
@@ -973,8 +974,6 @@ it() link(bf(queueresume command))(queueresumecommand)
 it() link(bf(read list))(readlist)
 
 it() link(bf(read only))(readonly)
-
-it() link(bf(revalidate))(revalidate)
 
 it() link(bf(root postexec))(rootpostexec)
 
@@ -4742,6 +4741,19 @@ dit(bf(printcap (G)))
 
 Synonym for link(bf(printcapname))(printcapname).
 
+label(printer admin)
+dit(bf(printer admin (S)))
+
+This is a list of users that can do anything to printers via the
+remote administration interfaces offered by MSRPC (usually using a NT
+workstation). Note that the root user always has admin rights.
+
+  bf(Default:)
+tt(     printer admin = <empty string>)
+
+  bf(Example:)
+tt(	printer admin = admin, @staff)
+
 label(printcapname)
 dit(bf(printcap name (G)))
 
@@ -5179,28 +5191,6 @@ tt(     restrict anonymous = false)
 
   bf(Example:)
 tt(     restrict anonymous = true)
-
-label(revalidate)
-dit(bf(revalidate (S)))
-
-Note that this option only works with
-link(bf("security=share"))(securityequalshare) and will be ignored if
-this is not the case.
-
-This option controls whether Samba will allow a previously validated
-username/password pair to be used to attach to a share. Thus if you
-connect to tt(\\server\share1) then to tt(\\server\share2) it won't
-automatically allow the client to request connection to the second
-share as the same username as the first without a password.
-
-If bf("revalidate") is tt("True") then the client will be denied
-automatic access as the same username.
-
-  bf(Default:)
-tt(	revalidate = False)
-
-  bf(Example:)
-tt(	revalidate = True)
 
 label(root)
 dit(bf(root (G)))
