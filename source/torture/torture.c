@@ -2869,9 +2869,13 @@ static BOOL run_error_map_extract(int dummy) {
 
 	fstring user;
 
+	/* NT-Error connection */
+
 	if (!open_nbt_connection(&c_nt)) {
 		return False;
 	}
+
+	c_nt.use_spnego = False;
 
 	if (!cli_negprot(&c_nt)) {
 		printf("%s rejected the NT-error negprot (%s)\n",host, cli_errstr(&c_nt));
@@ -2879,14 +2883,30 @@ static BOOL run_error_map_extract(int dummy) {
 		return False;
 	}
 
+	if (!cli_session_setup(&c_nt, "", "", 0, "", 0,
+			       workgroup)) {
+		printf("%s rejected the NT-error initial session setup (%s)\n",host, cli_errstr(&c_nt));
+		return False;
+	}
+
+	/* DOS-Error connection */
+
 	if (!open_nbt_connection(&c_dos)) {
 		return False;
 	}
 
+	c_dos.use_spnego = False;
 	c_dos.force_dos_errors = True;
+
 	if (!cli_negprot(&c_dos)) {
 		printf("%s rejected the DOS-error negprot (%s)\n",host, cli_errstr(&c_dos));
 		cli_shutdown(&c_dos);
+		return False;
+	}
+
+	if (!cli_session_setup(&c_dos, "", "", 0, "", 0,
+			       workgroup)) {
+		printf("%s rejected the DOS-error initial session setup (%s)\n",host, cli_errstr(&c_dos));
 		return False;
 	}
 
