@@ -202,8 +202,16 @@ des_cblock *ivec,
 int enc);
 	Cipher Feedback Back mode of DES.  This implementation 'feeds back'
 	in numbit blocks.  The input (and output) is in multiples of numbits
-	bits.  numbits needs to be a multiple of 8 bits.  Length is the
-	number of bytes input.
+	bits.  numbits should to be a multiple of 8 bits.  Length is the
+	number of bytes input.  If numbits is not a multiple of 8 bits,
+	the extra bits in the bytes will be considered padding.  So if
+	numbits is 12, for each 2 input bytes, the 4 high bits of the
+	second byte will be ignored.  So to encode 72 bits when using
+	a numbits of 12 take 12 bytes.  To encode 72 bits when using
+	numbits of 9 will take 16 bytes.  To encode 80 bits when using
+	numbits of 16 will take 10 bytes. etc, etc.  This padding will
+	apply to both input and output.
+
 	
 void des_cfb64_encrypt(
 unsigned char *in,

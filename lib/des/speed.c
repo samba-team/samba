@@ -103,7 +103,7 @@ struct tms {
 #define BUFSIZE	((long)1024*8)
 long run=0;
 
-#ifdef PROTO
+#ifndef NOPROTO
 double Time_F(int s);
 #else
 double Time_F();
@@ -116,7 +116,7 @@ double Time_F();
 #define SIGRETTYPE int
 #endif
 
-#ifdef PROTO
+#ifndef NOPROTO
 SIGRETTYPE sig_done(int sig);
 #else
 SIGRETTYPE sig_done();

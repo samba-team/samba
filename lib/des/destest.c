@@ -261,10 +261,10 @@ static unsigned char ofb_cipher[24]=
 	0x3d,0x6d,0x5b,0xe3,0x25,0x5a,0xf8,0xc3
 	};
 
-unsigned long cbc_cksum_ret=0xB462FEF7L;
+DES_LONG cbc_cksum_ret=0xB462FEF7L;
 unsigned char cbc_cksum_data[8]={0x1D,0x26,0x93,0x97,0xf7,0xfe,0x62,0xb4};
 
-#ifdef PROTO
+#ifndef NOPROTO
 static char *pt(unsigned char *p);
 static int cfb_test(int bits, unsigned char *cfb_cipher);
 static int cfb64_test(unsigned char *cfb_cipher);
@@ -285,9 +285,9 @@ char *argv[];
 	des_key_schedule ks,ks2,ks3;
 	unsigned char cbc_in[40];
 	unsigned char cbc_out[40];
-	unsigned long cs;
+	DES_LONG cs;
 	unsigned char qret[4][4],cret[8];
-	unsigned long lqret[4];
+	DES_LONG lqret[4];
 	int num;
 	char *str;
 
@@ -585,9 +585,9 @@ char *argv[];
 		memcpy(&(lqret[i]),&(qret[i][0]),4);
 		}
 	{ /* Big-endian fix */
-	static unsigned long l=1;
+	static DES_LONG l=1;
 	static unsigned char *c=(unsigned char *)&l;
-	unsigned long ll;
+	DES_LONG ll;
 
 	if (!c[0])
 		{

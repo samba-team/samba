@@ -1,26 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-
-/*
-  if (we have termios.h)
-    define TERMIOS
-  else if (we have termio.h)
-    define TERMIO
-*/
-#ifdef HAVE_TERMIOS_H
-
-#define TERMIOS
-
-#else /* !HAVE_TERMIOS_H */
-
-#ifdef HAVE_TERMIO_H
-#define TERMIO
-#endif
-
-#endif /* !HAVE_TERMIOS_H */
-
-#endif /* HAVE_CONFIG_H */
-
 /* lib/des/des_locl.h */
 /* Copyright (C) 1995 Eric Young (eay@mincom.oz.au)
  * All rights reserved.
@@ -77,19 +54,28 @@
 #endif
 #include "des.h"
 
+/* WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+ *
+ * Always modify des_locl.org since des_locl.h is automatically generated from
+ * it during SSLeay configuration.
+ *
+ * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+ */
+
 /* the following is tweaked from a config script, that is why it is a
  * protected undef/define */
-#ifndef DES_USE_PTR
-#undef DES_USE_PTR
+#ifndef DES_PTR
+#undef DES_PTR
 #endif
 
 #ifdef MSDOS		/* Visual C++ 2.1 (Windows NT/95) */
 #include <stdlib.h>
 #include <time.h>
 #include <io.h>
+#ifndef RAND
 #define RAND
-#undef PROTO
-#define PROTO
+#endif
+#undef NOPROTO
 #endif
 
 #if defined(__STDC__) || defined(VMS) || defined(M_XENIX) || defined(MSDOS)
@@ -100,12 +86,15 @@
 #define RAND
 #endif
 
+#ifdef linux
+#undef RAND
+#endif
+
 #ifdef MSDOS
 #define getpid() 2
 extern int errno;
 #define RAND
-#undef PROTO
-#define PROTO
+#undef NOPROTO
 #endif
 
 #if defined(NOCONST)
@@ -113,8 +102,7 @@ extern int errno;
 #endif
 
 #ifdef __STDC__
-#undef PROTO
-#define PROTO
+#undef NOPROTO
 #endif
 
 #ifdef RAND
@@ -129,24 +117,24 @@ extern int errno;
 #define MAXWRITE	(1024*16)
 #define BSIZE		(MAXWRITE+4)
 
-#define c2l(c,l)	(l =((unsigned long)(*((c)++)))    , \
-			 l|=((unsigned long)(*((c)++)))<< 8L, \
-			 l|=((unsigned long)(*((c)++)))<<16L, \
-			 l|=((unsigned long)(*((c)++)))<<24L)
+#define c2l(c,l)	(l =((DES_LONG)(*((c)++)))    , \
+			 l|=((DES_LONG)(*((c)++)))<< 8L, \
+			 l|=((DES_LONG)(*((c)++)))<<16L, \
+			 l|=((DES_LONG)(*((c)++)))<<24L)
 
 /* NOTE - c is not incremented as per c2l */
 #define c2ln(c,l1,l2,n)	{ \
 			c+=n; \
 			l1=l2=0; \
 			switch (n) { \
-			case 8: l2 =((unsigned long)(*(--(c))))<<24L; \
-			case 7: l2|=((unsigned long)(*(--(c))))<<16L; \
-			case 6: l2|=((unsigned long)(*(--(c))))<< 8L; \
-			case 5: l2|=((unsigned long)(*(--(c))));     \
-			case 4: l1 =((unsigned long)(*(--(c))))<<24L; \
-			case 3: l1|=((unsigned long)(*(--(c))))<<16L; \
-			case 2: l1|=((unsigned long)(*(--(c))))<< 8L; \
-			case 1: l1|=((unsigned long)(*(--(c))));     \
+			case 8: l2 =((DES_LONG)(*(--(c))))<<24L; \
+			case 7: l2|=((DES_LONG)(*(--(c))))<<16L; \
+			case 6: l2|=((DES_LONG)(*(--(c))))<< 8L; \
+			case 5: l2|=((DES_LONG)(*(--(c))));     \
+			case 4: l1 =((DES_LONG)(*(--(c))))<<24L; \
+			case 3: l1|=((DES_LONG)(*(--(c))))<<16L; \
+			case 2: l1|=((DES_LONG)(*(--(c))))<< 8L; \
+			case 1: l1|=((DES_LONG)(*(--(c))));     \
 				} \
 			}
 
@@ -159,10 +147,10 @@ extern int errno;
  * when faced with machines with 8 byte longs. */
 #define HDRSIZE 4
 
-#define n2l(c,l)	(l =((unsigned long)(*((c)++)))<<24L, \
-			 l|=((unsigned long)(*((c)++)))<<16L, \
-			 l|=((unsigned long)(*((c)++)))<< 8L, \
-			 l|=((unsigned long)(*((c)++))))
+#define n2l(c,l)	(l =((DES_LONG)(*((c)++)))<<24L, \
+			 l|=((DES_LONG)(*((c)++)))<<16L, \
+			 l|=((DES_LONG)(*((c)++)))<< 8L, \
+			 l|=((DES_LONG)(*((c)++))))
 
 #define l2n(l,c)	(*((c)++)=(unsigned char)(((l)>>24L)&0xff), \
 			 *((c)++)=(unsigned char)(((l)>>16L)&0xff), \
@@ -187,21 +175,24 @@ extern int errno;
 /* The changes to this macro may help or hinder, depending on the
  * compiler and the achitecture.  gcc2 always seems to do well :-).
  * Inspired by Dana How <how@isl.stanford.edu>
- * DO NOT use the alternative version on machines with 8 byte longs. */
-#ifdef DES_USR_PTR
+ * DO NOT use the alternative version on machines with 8 byte longs.
+ * It does not seem to work on the Alpha, even when DES_LONG is 4
+ * bytes, probably an issue of accessing non-word aligned objects :-( */
+#ifdef DES_PTR
+
 #define D_ENCRYPT(L,R,S) { \
 	u=((R^s[S  ])<<2);	\
 	t= R^s[S+1]; \
 	t=((t>>2)+(t<<30)); \
-	L^= \
-	*(unsigned long *)(des_SP+0x0100+((t    )&0xfc))+ \
-	*(unsigned long *)(des_SP+0x0300+((t>> 8)&0xfc))+ \
-	*(unsigned long *)(des_SP+0x0500+((t>>16)&0xfc))+ \
-	*(unsigned long *)(des_SP+0x0700+((t>>24)&0xfc))+ \
-	*(unsigned long *)(des_SP+       ((u    )&0xfc))+ \
-	*(unsigned long *)(des_SP+0x0200+((u>> 8)&0xfc))+ \
-	*(unsigned long *)(des_SP+0x0400+((u>>16)&0xfc))+ \
-	*(unsigned long *)(des_SP+0x0600+((u>>24)&0xfc)); }
+	L^= (\
+	*(DES_LONG *)(&(des_SPtrans[1][0])+((t    )&0xfc))+ \
+	*(DES_LONG *)(&(des_SPtrans[3][0])+((t>> 8)&0xfc))+ \
+	*(DES_LONG *)(&(des_SPtrans[5][0])+((t>>16)&0xfc))+ \
+	*(DES_LONG *)(&(des_SPtrans[7][0])+((t>>24)&0xfc))+ \
+	*(DES_LONG *)(&(des_SPtrans[0][0])+((u    )&0xfc))+ \
+	*(DES_LONG *)(&(des_SPtrans[2][0])+((u>> 8)&0xfc))+ \
+	*(DES_LONG *)(&(des_SPtrans[4][0])+((u>>16)&0xfc))+ \
+	*(DES_LONG *)(&(des_SPtrans[6][0])+((u>>24)&0xfc))); }
 #else /* original version */
 #ifdef MSDOS
 #define D_ENCRYPT(L,R,S)	\
@@ -276,7 +267,7 @@ extern int errno;
 
 #define IP(l,r) \
 	{ \
-	register unsigned long tt; \
+	register DES_LONG tt; \
 	PERM_OP(r,l,tt, 4,0x0f0f0f0fL); \
 	PERM_OP(l,r,tt,16,0x0000ffffL); \
 	PERM_OP(r,l,tt, 2,0x33333333L); \
@@ -286,7 +277,7 @@ extern int errno;
 
 #define FP(l,r) \
 	{ \
-	register unsigned long tt; \
+	register DES_LONG tt; \
 	PERM_OP(l,r,tt, 1,0x55555555L); \
 	PERM_OP(r,l,tt, 8,0x00ff00ffL); \
 	PERM_OP(l,r,tt, 2,0x33333333L); \

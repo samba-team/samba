@@ -80,7 +80,7 @@
 #define srandom(s) srand(s)
 #endif
 
-#ifdef PROTO
+#ifndef NOPROTO
 void usage(void);
 void doencryption(void);
 int uufwrite(unsigned char *data, int size, unsigned int num, FILE *fp);
@@ -113,7 +113,7 @@ int do_encrypt,longk=0;
 FILE *DES_IN,*DES_OUT,*CKSUM_OUT;
 char uuname[200];
 unsigned char uubuf[50];
-int uubufnum;
+int uubufnum=0;
 #define INUUBUFN	(45*100)
 #define OUTUUBUF	(65*100)
 unsigned char b[OUTUUBUF];
@@ -625,8 +625,7 @@ void doencryption()
 					{
 					fputs("The file was not decrypted correctly.\n",
 						stderr);
-					/*Exit=8;
-					goto problems;*/
+					Exit=8;
 					last=0;
 					}
 				l=l-8+last;
@@ -722,7 +721,7 @@ FILE *fp;
 			}
 		}
 
-	for (i=0; i<(num-INUUBUFN); i+=INUUBUFN)
+	for (i=0; i<(((int)num)-INUUBUFN); i+=INUUBUFN)
 		{
 		j=uuencode(&(data[i]),INUUBUFN,b);
 		fwrite(b,1,(unsigned int)j,fp);
@@ -827,9 +826,9 @@ FILE *fp;
 	return(tot);
 	}
 
-#define ccc2l(c,l)      (l =((unsigned long)(*((c)++)))<<16, \
-			 l|=((unsigned long)(*((c)++)))<< 8, \
-		 	 l|=((unsigned long)(*((c)++))))
+#define ccc2l(c,l)      (l =((DES_LONG)(*((c)++)))<<16, \
+			 l|=((DES_LONG)(*((c)++)))<< 8, \
+		 	 l|=((DES_LONG)(*((c)++))))
 
 #define l2ccc(l,c)      (*((c)++)=(unsigned char)(((l)>>16)&0xff), \
                     *((c)++)=(unsigned char)(((l)>> 8)&0xff), \
@@ -842,7 +841,7 @@ int num;
 unsigned char *out;
 	{
 	int j,i,n,tot=0;
-	unsigned long l;
+	DES_LONG l;
 	register unsigned char *p;
 	p=out;
 
@@ -876,8 +875,8 @@ unsigned char *out;
 	{
 	int j,i,k;
 	unsigned int n=0,space=0;
-	unsigned long l;
-	unsigned long w,x,y,z;
+	DES_LONG l;
+	DES_LONG w,x,y,z;
 	unsigned int blank=(unsigned int)'\n'-' ';
 
 	for (j=0; j<num; )

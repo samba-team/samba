@@ -390,7 +390,7 @@ static const unsigned long skb[8][64]={
 
 static const int shifts2[16]={0,0,1,1,1,1,1,1,0,1,1,1,1,1,1,0};
 
-#ifdef PROTO
+#ifndef NOPROTO
 static int body(unsigned long *out0, unsigned long *out1,
 	des_key_schedule ks, unsigned long Eswap0, unsigned long Eswap1);
 static int des_set_key(des_cblock (*key), des_key_schedule schedule);
@@ -501,6 +501,10 @@ des_key_schedule schedule;
 		SPtrans[6][(u>>24)&0x3f];
 #endif
 
+/* Added more values to handle illegal salt values the way normal
+ * crypt() implementations do.  The patch was sent by 
+ * Bjorn Gronvall <bg@sics.se>
+ */
 static unsigned const char con_salt[128]={
 0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,
 0xDA,0xDB,0xDC,0xDD,0xDE,0xDF,0xE0,0xE1,
@@ -531,7 +535,7 @@ static unsigned const char cov_2char[64]={
 0x73,0x74,0x75,0x76,0x77,0x78,0x79,0x7A
 };
 
-#ifdef PROTO
+#ifndef NOPROTO
 #ifdef PERL5
 char *des_crypt(char *buf,char *salt);
 #else

@@ -56,7 +56,7 @@
 #include "podd.h"
 #include "sk.h"
 
-#ifdef PROTO
+#ifndef NOPROTO
 static int check_parity(des_cblock (*key));
 #else
 static int check_parity();
@@ -150,9 +150,9 @@ int des_set_key(key, schedule)
 des_cblock (*key);
 des_key_schedule schedule;
 	{
-	register unsigned long c,d,t,s;
+	register DES_LONG c,d,t,s;
 	register unsigned char *in;
-	register unsigned long *k;
+	register DES_LONG *k;
 	register int i;
 
 	if (des_check_key)
@@ -164,7 +164,7 @@ des_key_schedule schedule;
 			return(-2);
 		}
 
-	k=(unsigned long *)schedule;
+	k=(DES_LONG *)schedule;
 	in=(unsigned char *)key;
 
 	c2l(in,c);

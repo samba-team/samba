@@ -45,3 +45,4 @@ gcc2 -O2) on the sparc 2 (1410 vs 1270) but is not so good on other machines
 (on a sun3/260 168 vs 336).  It is a function of CPU on chip cache size.
 
 Eric Young (eay@mincom.oz.au or eay@psych.psy.uq.oz.au)
+

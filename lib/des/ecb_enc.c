@@ -48,7 +48,7 @@
 #include "des_locl.h"
 #include "spr.h"
 
-const char *DES_version="libdes v 3.21 - 95/11/21 - eay";
+const char *DES_version="libdes v 3.22 - 95/11/29 - eay";
 
 void des_ecb_encrypt(input, output, ks, encrypt)
 des_cblock (*input);
@@ -56,38 +56,38 @@ des_cblock (*output);
 des_key_schedule ks;
 int encrypt;
 	{
-	register unsigned long l0,l1;
+	register DES_LONG l;
 	register unsigned char *in,*out;
-	unsigned long ll[2];
+	DES_LONG ll[2];
 
 	in=(unsigned char *)input;
 	out=(unsigned char *)output;
-	c2l(in,l0); ll[0]=l0;
-	c2l(in,l1); ll[1]=l1;
+	c2l(in,l); ll[0]=l;
+	c2l(in,l); ll[1]=l;
 	des_encrypt(ll,ks,encrypt);
-	l0=ll[0]; l2c(l0,out);
-	l1=ll[1]; l2c(l1,out);
-	l0=l1=ll[0]=ll[1]=0;
+	l=ll[0]; l2c(l,out);
+	l=ll[1]; l2c(l,out);
+	l=ll[0]=ll[1]=0;
 	}
 
 void des_encrypt(data, ks, encrypt)
-unsigned long *data;
+DES_LONG *data;
 des_key_schedule ks;
 int encrypt;
 	{
-	register unsigned long l,r,t,u;
+	register DES_LONG l,r,t,u;
 #ifdef DES_USE_PTR
 	register unsigned char *des_SP=(unsigned char *)des_SPtrans;
 #endif
 #ifdef MSDOS
 	union fudge {
-		unsigned long  l;
+		DES_LONG  l;
 		unsigned short s[2];
 		unsigned char  c[4];
 		} U,T;
 #endif
 	register int i;
-	register unsigned long *s;
+	register DES_LONG *s;
 
 	u=data[0];
 	r=data[1];
@@ -106,7 +106,7 @@ int encrypt;
 	l&=0xffffffffL;
 	r&=0xffffffffL;
 
-	s=(unsigned long *)ks;
+	s=(DES_LONG *)ks;
 	/* I don't know if it is worth the effort of loop unrolling the
 	 * inner loop */
 	if (encrypt)
@@ -138,23 +138,23 @@ int encrypt;
 	}
 
 void des_encrypt2(data, ks, encrypt)
-unsigned long *data;
+DES_LONG *data;
 des_key_schedule ks;
 int encrypt;
 	{
-	register unsigned long l,r,t,u;
+	register DES_LONG l,r,t,u;
 #ifdef DES_USE_PTR
 	register unsigned char *des_SP=(unsigned char *)des_SPtrans;
 #endif
 #ifdef MSDOS
 	union fudge {
-		unsigned long  l;
+		DES_LONG  l;
 		unsigned short s[2];
 		unsigned char  c[4];
 		} U,T;
 #endif
 	register int i;
-	register unsigned long *s;
+	register DES_LONG *s;
 
 	u=data[0];
 	r=data[1];
@@ -172,7 +172,7 @@ int encrypt;
 	l&=0xffffffffL;
 	r&=0xffffffffL;
 
-	s=(unsigned long *)ks;
+	s=(DES_LONG *)ks;
 	/* I don't know if it is worth the effort of loop unrolling the
 	 * inner loop */
 	if (encrypt)

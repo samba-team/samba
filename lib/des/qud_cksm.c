@@ -53,23 +53,23 @@
 #include "des_locl.h"
 
 /* bug fix for dos - 7/6/91 - Larry hughes@logos.ucs.indiana.edu */
-#define B0(a)	(((unsigned long)(a)))
-#define B1(a)	(((unsigned long)(a))<<8)
-#define B2(a)	(((unsigned long)(a))<<16)
-#define B3(a)	(((unsigned long)(a))<<24)
+#define B0(a)	(((DES_LONG)(a)))
+#define B1(a)	(((DES_LONG)(a))<<8)
+#define B2(a)	(((DES_LONG)(a))<<16)
+#define B3(a)	(((DES_LONG)(a))<<24)
 
 /* used to scramble things a bit */
 /* Got the value MIT uses via brute force :-) 2/10/90 eay */
-#define NOISE	((unsigned long)83653421L)
+#define NOISE	((DES_LONG)83653421L)
 
-unsigned long des_quad_cksum(input, output, length, out_count, seed)
+DES_LONG des_quad_cksum(input, output, length, out_count, seed)
 des_cblock (*input);
 des_cblock (*output);
 long length;
 int out_count;
 des_cblock (*seed);
 	{
-	unsigned long z0,z1,t0,t1;
+	DES_LONG z0,z1,t0,t1;
 	int i;
 	long l=0;
 	unsigned char *cp;
@@ -89,12 +89,12 @@ des_cblock (*seed);
 			{
 			if (l > 1)
 				{
-				t0= (unsigned long)(*(cp++));
-				t0|=(unsigned long)B1(*(cp++));
+				t0= (DES_LONG)(*(cp++));
+				t0|=(DES_LONG)B1(*(cp++));
 				l--;
 				}
 			else
-				t0= (unsigned long)(*(cp++));
+				t0= (DES_LONG)(*(cp++));
 			l--;
 			/* add */
 			t0+=z0;
@@ -112,7 +112,7 @@ des_cblock (*seed);
 			 * is one huge number and it is returned in a
 			 * host dependant byte order.
 			 */
-			static unsigned long ltmp=1;
+			static DES_LONG ltmp=1;
 			static unsigned char *c=(unsigned char *)&ltmp;
 
 			if (c[0])

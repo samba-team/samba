@@ -1,4 +1,4 @@
-/* lib/des/cfb64enc.c */
+/* lib/des/cfb64ede.c */
 /* Copyright (C) 1995 Eric Young (eay@mincom.oz.au)
  * All rights reserved.
  * 
@@ -61,9 +61,9 @@ des_cblock (*ivec);
 int *num;
 int encrypt;
 	{
-	register unsigned long v0,v1;
+	register DES_LONG v0,v1;
 	register long l=length,n=*num;
-	unsigned long ti[2];
+	DES_LONG ti[2];
 	unsigned char *iv,c,cc;
 
 	iv=(unsigned char *)ivec;
@@ -80,9 +80,9 @@ int encrypt;
 
 				ti[0]=v0;
 				ti[1]=v1;
-				des_encrypt2((unsigned long *)ti,ks1,DES_ENCRYPT);
-				des_encrypt2((unsigned long *)ti,ks2,DES_DECRYPT);
-				des_encrypt2((unsigned long *)ti,ks3,DES_ENCRYPT);
+				des_encrypt2((DES_LONG *)ti,ks1,DES_ENCRYPT);
+				des_encrypt2((DES_LONG *)ti,ks2,DES_DECRYPT);
+				des_encrypt2((DES_LONG *)ti,ks3,DES_ENCRYPT);
 				v0=ti[0];
 				v1=ti[1];
 
@@ -112,9 +112,9 @@ int encrypt;
 
 				ti[0]=v0;
 				ti[1]=v1;
-				des_encrypt2((unsigned long *)ti,ks1,DES_ENCRYPT);
-				des_encrypt2((unsigned long *)ti,ks2,DES_DECRYPT);
-				des_encrypt2((unsigned long *)ti,ks3,DES_ENCRYPT);
+				des_encrypt2((DES_LONG *)ti,ks1,DES_ENCRYPT);
+				des_encrypt2((DES_LONG *)ti,ks2,DES_DECRYPT);
+				des_encrypt2((DES_LONG *)ti,ks3,DES_ENCRYPT);
 
 				v0=ti[0];
 				v1=ti[1];

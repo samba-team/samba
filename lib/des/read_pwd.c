@@ -93,7 +93,7 @@
 #define TTY_set(tty,data)	ioctl(tty,TIOCSETP,data)
 #endif
 
-#ifndef _LIBC
+#if !defined(_LIBC) && !defined(MSDOS)
 #include <sys/ioctl.h>
 #endif
 
@@ -118,7 +118,7 @@ struct IOSB {
 #define NX509_SIG 32
 #endif
 
-#ifdef PROTO
+#ifndef NOPROTO
 static void read_till_nl(FILE *);
 static int read_pw(char *buf, char *buff, int size, char *prompt, int verify);
 static void recsig(int);

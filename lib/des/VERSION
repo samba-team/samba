@@ -1,3 +1,17 @@
+Version 3.23 11/04/95
+	Added DES_LONG.  If defined to 'unsigned int' on the DEC Alpha,
+	it gives a %20 speedup :-)
+	Fixed the problem with des.pl under perl5.  The patches were
+	sent by Ed Kubaitis (ejk@uiuc.edu).
+	if fcrypt.c, changed values to handle illegal salt values the way
+	normal crypt() implementations do.  Some programs apparently use
+	them :-(. The patch was sent by Bjorn Gronvall <bg@sics.se>
+
+Version 3.22 29/11/95
+	Bug in des(1), an error with the uuencoding stuff when the
+	'data' is small, thanks to Geoff Keating <keagchon@mehta.anu.edu.au>
+	for the patch.
+
 Version 3.21 22/11/95
 	After some emailing back and forth with 
 	Colin Plumb <colin@nyx10.cs.du.edu>, I've tweaked a few things
@@ -310,3 +324,4 @@ Version 1.10 11/09/1990 eay
 	Still need to document des_enc_read and des_enc_write.
 
 Version 1.00 27/08/1990 eay
+

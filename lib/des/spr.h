@@ -45,7 +45,7 @@
  * [including the GNU Public Licence.]
  */
 
-static const unsigned long des_SPtrans[8][64]={
+static const DES_LONG des_SPtrans[8][64]={
 {
 /* nibble 0 */
 0x00820200L, 0x00020000L, 0x80800000L, 0x80820200L,

@@ -7,7 +7,7 @@ TLIB    = tlib /0 /C
 # note: the -3 flag produces code for 386, 486, Pentium etc; omit it for 286s
 OPTIMIZE= -3 -O2
 #WINDOWS= -W
-CFLAGS  = -c -ml -d $(OPTIMIZE) $(WINDOWS) -DMSDOS -DPROTO
+CFLAGS  = -c -ml -d $(OPTIMIZE) $(WINDOWS) -DMSDOS
 LFLAGS  = -ml $(WINDOWS)
 
 .c.obj:

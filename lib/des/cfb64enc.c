@@ -61,9 +61,9 @@ des_cblock (*ivec);
 int *num;
 int encrypt;
 	{
-	register unsigned long v0,v1;
+	register DES_LONG v0,v1;
 	register long l=length,n=*num;
-	unsigned long ti[2];
+	DES_LONG ti[2];
 	unsigned char *iv,c,cc;
 
 	iv=(unsigned char *)ivec;
@@ -75,7 +75,7 @@ int encrypt;
 				{
 				c2l(iv,v0); ti[0]=v0;
 				c2l(iv,v1); ti[1]=v1;
-				des_encrypt((unsigned long *)ti,
+				des_encrypt((DES_LONG *)ti,
 					schedule,DES_ENCRYPT);
 				iv=(unsigned char *)ivec;
 				v0=ti[0]; l2c(v0,iv);
@@ -96,7 +96,7 @@ int encrypt;
 				{
 				c2l(iv,v0); ti[0]=v0;
 				c2l(iv,v1); ti[1]=v1;
-				des_encrypt((unsigned long *)ti,
+				des_encrypt((DES_LONG *)ti,
 					schedule,DES_ENCRYPT);
 				iv=(unsigned char *)ivec;
 				v0=ti[0]; l2c(v0,iv);
