@@ -1268,6 +1268,7 @@ int command_main(int argc, char *argv[])
 	extern struct user_creds *usr_creds;
 	mode_t myumask = 0755;
 	char progname[255], path[255], *s;
+	pstring msg;
 
 	DEBUGLEVEL = 2;
 
@@ -1335,11 +1336,8 @@ int command_main(int argc, char *argv[])
 	{
 		free_connections();
 
-		if (status) {
-			pstring msg;
-			get_safe_nt_error_msg(status, msg, sizeof(msg));
-			report(out_hnd, "Exit Status: %s\n", msg);
-		}
+		get_safe_nt_error_msg(status, msg, sizeof(msg));
+		report(out_hnd, "Exit Status: %s\n", msg);
 		/* unix only has 8 bit error codes - blergh */
 		exit(status & 0xFF);
 	}
@@ -1355,11 +1353,8 @@ int command_main(int argc, char *argv[])
 	num_commands = 0;
 	commands = NULL;
 	
-	if (status) {
-		pstring msg;
-		get_safe_nt_error_msg(status, msg, sizeof(msg));
-		report(out_hnd, "Exit Status: %s\n", msg);
-	}
+	get_safe_nt_error_msg(status, msg, sizeof(msg));
+	report(out_hnd, "Exit Status: %s\n", msg);
 
 	return status;
 }
