@@ -1,3 +1,7 @@
+2004-07-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/test_cc.c: don't use krb5_err on error code 0
+	
 2004-07-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/hdb-ldap.c (LDAP_seq): try handling errors better
