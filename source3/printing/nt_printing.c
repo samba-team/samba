@@ -3530,7 +3530,6 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	SEC_DESC *psd = NULL;
 	DOM_SID owner_sid;
 	size_t sd_size;
-	enum SID_NAME_USE name_type;
 
 	/* Create an ACE where Everyone is allowed to print */
 
@@ -3541,7 +3540,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	/* Make the security descriptor owned by the Administrators group
 	   on the PDC of the domain. */
 
-	if (winbind_lookup_name(lp_workgroup(), &owner_sid, &name_type)) {
+	if (secrets_fetch_domain_sid(lp_workgroup(), &owner_sid)) {
 		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 	} else {
 		/* Backup plan - make printer owned by admins.
@@ -3625,18 +3624,17 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secde
 		return True;
 	}
 
-	/* If security descriptor is owned by S-1-1-0 and winbindd is up,
-	   this security descriptor has been created when winbindd was
+	/* If security descriptor is owned by S-1-1-0 and we can now read our 
+           domain sid (from secrets.tdb).  The current security descriptor must of been
+           created under the old code that didn't talk to winbind properly or when winbindd was
 	   down.  Take ownership of security descriptor. */
 
 	if (sid_equal((*secdesc_ctr)->sec->owner_sid, &global_sid_World)) {
 		DOM_SID owner_sid;
-		enum SID_NAME_USE name_type;
 
 		/* Change sd owner to workgroup administrator */
 
-		if (winbind_lookup_name(lp_workgroup(), &owner_sid,
-					&name_type)) {
+		if (secrets_fetch_domain_sid(lp_workgroup(), &owner_sid)) {
 			SEC_DESC_BUF *new_secdesc_ctr = NULL;
 			SEC_DESC *psd = NULL;
 			size_t size;
