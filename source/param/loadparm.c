@@ -7,6 +7,7 @@
 
    Copyright (C) Simo Sorce 2001
    Copyright (C) Alexander Bokovoy 2002
+   Copyright (C) Stefan (metze) Metzmacher 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -79,6 +80,13 @@ BOOL use_getwd_cache = True;
 extern int extra_time_offset;
 
 static BOOL defaults_saved = False;
+
+typedef struct _param_opt_struct param_opt_struct;
+struct _param_opt_struct {
+	param_opt_struct *prev, *next;
+	char *key;
+	char *value;
+};
 
 /* 
  * This structure describes global (ie., server-wide) parameters.
@@ -266,6 +274,7 @@ typedef struct
 	BOOL bDisableNetbios;
 	int restrict_anonymous;
 	int name_cache_timeout;
+	param_opt_struct *param_opt;
 }
 global;
 
@@ -386,6 +395,7 @@ typedef struct
 	BOOL bNTAclSupport;
 	BOOL bUseSendfile;
 	BOOL bProfileAcls;
+	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
 }
@@ -504,6 +514,8 @@ static service sDefault = {
 	True,			/* bNTAclSupport */
 	False,			/* bUseSendfile */
 	False,			/* bProfileAcls */
+	
+	NULL,			/* Parametric options */
 
 	""			/* dummy */
 };
@@ -1799,53 +1811,10 @@ FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
 FN_GLOBAL_BOOL(lp_algorithmic_rid_base, &Globals.bAlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 
-typedef struct _param_opt_struct param_opt_struct;
-struct _param_opt_struct {
-	char *key;
-	char *value;
-	param_opt_struct *prev, *next;
-};
-
-static param_opt_struct *param_opt = NULL;
-
-/* Return parametric option from given service. Type is a part of option before ':' */
-/* Parametric option has following syntax: 'Type: option = value' */
-/* Returned value is allocated in 'lp_talloc' context */
-
-char *lp_parm_string(const char *servicename, const char *type, const char *option)
-{
-    param_opt_struct *data;
-    pstring vfskey;
-    
-    if (param_opt != NULL) {
-	    ZERO_STRUCT(vfskey);
-	    pstr_sprintf(vfskey, "%s:%s:%s", (servicename==NULL) ? "global" : servicename,
-		    type, option);
-	    data = param_opt;
-	    while (data) {
-		    if (strcmp(data->key, vfskey) == 0) {
-			    return lp_string(data->value);
-		    }
-		    data = data->next;
-	    }
-	    /* Try to fetch the same option but from globals */
-	    pstr_sprintf(vfskey, "global:%s:%s", type, option);
-	    data = param_opt;
-	    while (data) {
-		    if (strcmp(data->key, vfskey) == 0) {
-			    return lp_string(data->value);
-		    }
-		    data = data->next;
-	    }
-	
-    }
-    return NULL;
-}
-
 /* local prototypes */
 
 static int map_parameter(char *pszParmName);
-static BOOL set_boolean(BOOL *pb, char *pszParmValue);
+static BOOL set_boolean(BOOL *pb, const char *pszParmValue);
 static int getservicebyname(const char *pszServiceName,
 			    service * pserviceDest);
 static void copy_service(service * pserviceDest,
@@ -1854,6 +1823,198 @@ static BOOL service_ok(int iService);
 static BOOL do_parameter(char *pszParmName, char *pszParmValue);
 static BOOL do_section(char *pszSectionName);
 static void init_copymap(service * pservice);
+
+/* This is a helper function for parametrical options support. */
+/* It returns a pointer to parametrical option value if it exists or NULL otherwise */
+/* Actual parametrical functions are quite simple */
+static const char *get_parametrics(int lookup_service, const char *type, const char *option)
+{
+	char* vfskey;
+        param_opt_struct *data;
+	
+	if (lookup_service >= iNumServices) return NULL;
+	
+	data = (lookup_service < 0) ? 
+		Globals.param_opt : ServicePtrs[lookup_service]->param_opt;
+    
+	asprintf(&vfskey, "%s:%s", type, option);
+	while (data) {
+		if (strcmp(data->key, vfskey) == 0) {
+			string_free(&vfskey);
+			return data->value;
+		}
+		data = data->next;
+	}
+
+	if (lookup_service >= 0) {
+		/* Try to fetch the same option but from globals */
+		/* but only if we are not already working with Globals */
+		data = Globals.param_opt;
+		while (data) {
+			if (strcmp(data->key, vfskey) == 0) {
+				string_free(&vfskey);
+				return data->value;
+			}
+			data = data->next;
+		}
+	}
+
+	string_free(&vfskey);
+	
+	return NULL;
+}
+
+
+/*******************************************************************
+convenience routine to return int parameters.
+********************************************************************/
+static int lp_int(const char *s)
+{
+
+	if (!s) {
+		DEBUG(0,("lp_int(%s): is called with NULL!\n",s));
+		return (-1);
+	}
+
+	return atoi(s); 
+}
+
+/*******************************************************************
+convenience routine to return unsigned long parameters.
+********************************************************************/
+static int lp_ulong(const char *s)
+{
+
+	if (!s) {
+		DEBUG(0,("lp_int(%s): is called with NULL!\n",s));
+		return (-1);
+	}
+
+	return strtoul(s, NULL, 10);
+}
+
+/*******************************************************************
+convenience routine to return boolean parameters.
+********************************************************************/
+static BOOL lp_bool(const char *s)
+{
+	BOOL ret = False;
+
+	if (!s) {
+		DEBUG(0,("lp_bool(%s): is called with NULL!\n",s));
+		return False;
+	}
+	
+	if (!set_boolean(&ret,s)) {
+		DEBUG(0,("lp_bool(%s): value is not boolean!\n",s));
+		return False;
+	}
+
+	return ret;
+}
+
+/*******************************************************************
+convenience routine to return enum parameters.
+********************************************************************/
+static int lp_enum(const char *s,const struct enum_list *_enum)
+{
+	int i;
+
+	if (!s || !_enum) {
+		DEBUG(0,("lp_enum(%s,enum): is called with NULL!\n",s));
+		return False;
+	}
+	
+	for (i=0; _enum[i].name; i++) {
+		if (strcasecmp(_enum[i].name,s)==0)
+			return _enum[i].value;
+	}
+
+	DEBUG(0,("lp_enum(%s,enum): value is not in enum_list!\n",s));
+	return (-1);
+}
+
+/* Return parametric option from a given service. Type is a part of option before ':' */
+/* Parametric option has following syntax: 'Type: option = value' */
+/* Returned value is allocated in 'lp_talloc' context */
+
+char *lp_parm_string(int lookup_service, const char *type, const char *option)
+{
+	const char *value = get_parametrics(lookup_service, type, option);
+	
+	if (value)
+		return lp_string(value);
+
+	return NULL;
+}
+
+/* Return parametric option from a given service. Type is a part of option before ':' */
+/* Parametric option has following syntax: 'Type: option = value' */
+/* Returned value is allocated in 'lp_talloc' context */
+
+char **lp_parm_string_list(int lookup_service, const char *type, const char *option,
+			   const char *separator)
+{
+	const char *value = get_parametrics(lookup_service, type, option);
+	
+	if (value)
+		return str_list_make(value, separator);
+
+	return NULL;
+}
+
+/* Return parametric option from a given service. Type is a part of option before ':' */
+/* Parametric option has following syntax: 'Type: option = value' */
+
+int lp_parm_int(int lookup_service, const char *type, const char *option)
+{
+	const char *value = get_parametrics(lookup_service, type, option);
+	
+	if (value)
+		return lp_int(value);
+
+	return (-1);
+}
+
+/* Return parametric option from a given service. Type is a part of option before ':' */
+/* Parametric option has following syntax: 'Type: option = value' */
+
+unsigned long lp_parm_ulong(int lookup_service, const char *type, const char *option)
+{
+	const char *value = get_parametrics(lookup_service, type, option);
+	
+	if (value)
+		return lp_ulong(value);
+
+	return (0);
+}
+
+/* Return parametric option from a given service. Type is a part of option before ':' */
+/* Parametric option has following syntax: 'Type: option = value' */
+
+BOOL lp_parm_bool(int lookup_service, const char *type, const char *option)
+{
+	const char *value = get_parametrics(lookup_service, type, option);
+	
+	if (value)
+		return lp_bool(value);
+
+	return False;
+}
+
+/* Return parametric option from a given service. Type is a part of option before ':' */
+/* Parametric option has following syntax: 'Type: option = value' */
+
+int lp_parm_enum(int lookup_service, const char *type, const char *option,
+		 const struct enum_list *_enum)
+{
+	const char *value = get_parametrics(lookup_service, type, option);
+	
+	if (value)
+		return lp_enum(value, _enum);
+
+	return (-1);
+}
 
 
 /***************************************************************************
@@ -1873,6 +2034,7 @@ static void init_service(service * pservice)
 static void free_service(service *pservice)
 {
 	int i;
+        param_opt_struct *data, *pdata;
 	if (!pservice)
 		return;
 
@@ -1897,6 +2059,16 @@ static void free_service(service *pservice)
 					     PTR_DIFF(parm_table[i].ptr, &sDefault)));
 	}
 				
+	DEBUG(5,("Freeing parametrics:\n"));
+	data = pservice->param_opt;
+	while (data) {
+		DEBUG(5,("[%s = %s]\n", data->key, data->value));
+		string_free(&data->key);
+		string_free(&data->value);
+		pdata = data->next;
+		SAFE_FREE(data);
+		data = pdata;
+	}
 
 	ZERO_STRUCTP(pservice);
 }
@@ -1911,14 +2083,27 @@ static int add_a_service(const service *pservice, const char *name)
 	int i;
 	service tservice;
 	int num_to_alloc = iNumServices + 1;
+	param_opt_struct *data, *pdata;
 
 	tservice = *pservice;
 
 	/* it might already exist */
 	if (name) {
 		i = getservicebyname(name, NULL);
-		if (i >= 0)
+		if (i >= 0) {
+			/* Clean all parametric options for service */
+			/* They will be added during parsing again */
+			data = ServicePtrs[i]->param_opt;
+			while (data) {
+				string_free(&data->key);
+				string_free(&data->value);
+				pdata = data->next;
+				SAFE_FREE(data);
+				data = pdata;
+			}
+			ServicePtrs[i]->param_opt = NULL;
 			return (i);
+		}
 	}
 
 	/* find an invalid one */
@@ -2111,7 +2296,7 @@ static int map_parameter(char *pszParmName)
  represent a boolean.
 ***************************************************************************/
 
-static BOOL set_boolean(BOOL *pb, char *pszParmValue)
+static BOOL set_boolean(BOOL *pb, const char *pszParmValue)
 {
 	BOOL bRetval;
 
@@ -2161,6 +2346,8 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 {
 	int i;
 	BOOL bcopyall = (pcopymapDest == NULL);
+	param_opt_struct *data, *pdata, *paramo;
+	BOOL not_added;
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].ptr && parm_table[i].class == P_LOCAL &&
@@ -2213,6 +2400,30 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 			memcpy((void *)pserviceDest->copymap,
 			       (void *)pserviceSource->copymap,
 			       sizeof(BOOL) * NUMPARAMETERS);
+	}
+	
+	data = pserviceSource->param_opt;
+	while (data) {
+		not_added = True;
+		pdata = pserviceDest->param_opt;
+		/* Traverse destination */
+		while (pdata) {
+			/* If we already have same option, override it */
+			if (strcmp(pdata->key, data->key) == 0) {
+				string_free(&pdata->value);
+				pdata->value = strdup(data->value);
+				not_added = False;
+				break;
+			}
+			pdata = pdata->next;
+		}
+		if (not_added) {
+		    paramo = smb_xmalloc(sizeof(param_opt_struct));
+		    paramo->key = strdup(data->key);
+		    paramo->value = strdup(data->value);
+		    DLIST_ADD(pserviceDest->param_opt, paramo);
+		}
+		data = data->next;
 	}
 }
 
@@ -2815,7 +3026,8 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 	void *def_ptr = NULL;
 	pstring vfskey;
 	char *sep;
-	param_opt_struct *paramo;
+	param_opt_struct *paramo, *data;
+	BOOL not_added;
 
 	parmnum = map_parameter(pszParmName);
 
@@ -2823,15 +3035,35 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 		if ((sep=strchr(pszParmName, ':')) != NULL) {
 			*sep = 0;
 			ZERO_STRUCT(vfskey);
-			pstr_sprintf(vfskey, "%s:%s:", 
-				(snum >= 0) ? lp_servicename(snum) : "global", pszParmName);
+			pstr_sprintf(vfskey, "%s:", pszParmName);
 			slen = strlen(vfskey);
 			safe_strcat(vfskey, sep+1, sizeof(pstring));
 			trim_string(vfskey+slen, " ", " ");
-			paramo = smb_xmalloc(sizeof(param_opt_struct));
-			paramo->key = strdup(vfskey);
-			paramo->value = strdup(pszParmValue);
-			DLIST_ADD(param_opt, paramo);
+			not_added = True;
+			data = (snum < 0) ? Globals.param_opt : 
+				ServicePtrs[snum]->param_opt;
+			/* Traverse destination */
+			while (data) {
+				/* If we already have same option, override it */
+				if (strcmp(data->key, vfskey) == 0) {
+					string_free(&data->value);
+					data->value = strdup(pszParmValue);
+					not_added = False;
+					break;
+				}
+				data = data->next;
+			}
+			if (not_added) {
+				paramo = smb_xmalloc(sizeof(param_opt_struct));
+				paramo->key = strdup(vfskey);
+				paramo->value = strdup(pszParmValue);
+				if (snum < 0) {
+					DLIST_ADD(Globals.param_opt, paramo);
+				} else {
+					DLIST_ADD(ServicePtrs[snum]->param_opt, paramo);
+				}
+			}
+
 			*sep = ':';
 			return (True);
 		}
@@ -3180,7 +3412,6 @@ static void dump_globals(FILE *f)
 {
 	int i;
 	param_opt_struct *data;
-	char *s;
 	
 	fprintf(f, "# Global parameters\n[global]\n");
 
@@ -3194,14 +3425,11 @@ static void dump_globals(FILE *f)
 			print_parameter(&parm_table[i], parm_table[i].ptr, f);
 			fprintf(f, "\n");
 	}
-	if (param_opt != NULL) {
-		data = param_opt;
+	if (Globals.param_opt != NULL) {
+		data = Globals.param_opt;
 		while(data) {
-		    if (((s=strstr(data->key, "global")) == data->key) &&
-			(*(s+strlen("global")) == ':')) {
-			    fprintf(f, "\t%s = %s\n", s+strlen("global")+1, data->value);
-		    }
-		    data = data->next;
+			fprintf(f, "\t%s = %s\n", data->key, data->value);
+			data = data->next;
 		}
         }
 
@@ -3228,7 +3456,6 @@ static void dump_a_service(service * pService, FILE * f)
 {
 	int i;
 	param_opt_struct *data;
-	char *s, *sn;
 	
 	if (pService != &sDefault)
 		fprintf(f, "\n[%s]\n", pService->szService);
@@ -3257,15 +3484,11 @@ static void dump_a_service(service * pService, FILE * f)
 					((char *)pService) + pdiff, f);
 			fprintf(f, "\n");
 	}
-	if (param_opt != NULL) {
-		data = param_opt;
-		sn = (pService == &sDefault) ? "global" : pService->szService;
+	if (pService->param_opt != NULL) {
+		data = pService->param_opt;
 		while(data) {
-		    if (((s=strstr(data->key, sn)) == data->key) &&
-			(*(s+strlen(sn)) == ':')) {
-			    fprintf(f, "\t%s = %s\n", s+strlen(sn)+1, data->value);
-		    }
-		    data = data->next;
+			fprintf(f, "\t%s = %s\n", data->key, data->value);
+			data = data->next;
 		}
         }
 }
@@ -3600,16 +3823,16 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 		lp_save_defaults();
 	}
 
-	if (param_opt != NULL) {
-		data = param_opt;
+	if (Globals.param_opt != NULL) {
+		data = Globals.param_opt;
 		while (data) {
-			SAFE_FREE(data->key);
-			SAFE_FREE(data->value);
+			string_free(&data->key);
+			string_free(&data->value);
 			pdata = data->next;
 			SAFE_FREE(data);
 			data = pdata;
 		}
-		param_opt = NULL;
+		Globals.param_opt = NULL;
 	}
 	
 	/* We get sections first, so have to start 'behind' to make up */
