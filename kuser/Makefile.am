@@ -12,7 +12,9 @@ kinit_SOURCES = kinit.c kinit_options.c
 
 kauth_SOURCES = kinit.c kauth_options.c
 
-noinst_PROGRAMS = kfoo kverify
+noinst_PROGRAMS = kverify
+
+CHECK_LOCAL = $(bin_PROGRAMS)
 
 kauth_LDADD = \
 	$(LIB_kafs) \
