@@ -991,7 +991,7 @@ static BOOL resolve_ads(const char *name, int name_type,
  resolve_hosts() when looking up DC's via SRV RR entries in DNS
 **********************************************************************/
 
-BOOL internal_resolve_name(const char *name, int name_type,
+static BOOL internal_resolve_name(const char *name, int name_type,
 				  struct ip_service **return_iplist, 
 				  int *return_count, const char *resolve_order)
 {
