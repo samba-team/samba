@@ -222,7 +222,6 @@ BOOL register_message_flags(BOOL doreg, uint32 msg_flags)
 	}
 
 	pcrec = (struct connections_data *)dbuf.dptr;
-	pcrec->bcast_msg_flags = msg_flags;
 	if (doreg)
 		pcrec->bcast_msg_flags |= msg_flags;
 	else
