@@ -128,11 +128,14 @@ static char *get_group_members(char *p, int *num_mem, DOMAIN_GRP_MEMBER **member
 
 	while (next_token(&p, name, ",", sizeof(fstring)))
 	{
-		(*members) = Realloc((*members), ((*num_mem)+1) * sizeof(DOMAIN_GRP_MEMBER));
-		if ((*members) == NULL)
+		DOMAIN_GRP_MEMBER *mbrs;
+		
+		mbrs = Realloc((*members), ((*num_mem)+1) * sizeof(DOMAIN_GRP_MEMBER));
+		if (mbrs == NULL)
 		{
 			return NULL;
 		}
+		else (*members) = mbrs;
 		fstrcpy((*members)[(*num_mem)].name, name);
 		(*members)[(*num_mem)].attr = 0x07;
 		(*num_mem)++;

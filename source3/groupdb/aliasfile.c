@@ -128,12 +128,13 @@ static char *get_alias_members(char *p, int *num_mem, LOCAL_GRP_MEMBER **members
 
 	while (next_token(&p, name, ",", sizeof(fstring)))
 	{
+		LOCAL_GRP_MEMBER *mbrs;
 		DOM_SID sid;
 		uint8 type;
 
 		if (lookup_sid(name, &sid, &type))
 		{
-			(*members) = Realloc((*members), ((*num_mem)+1) * sizeof(LOCAL_GRP_MEMBER));
+			mbrs = Realloc((*members), ((*num_mem)+1) * sizeof(LOCAL_GRP_MEMBER));
 			(*num_mem)++;
 		}
 		else
@@ -141,10 +142,12 @@ static char *get_alias_members(char *p, int *num_mem, LOCAL_GRP_MEMBER **members
 			DEBUG(0,("alias database: could not resolve alias named %s\n", name));
 			continue;
 		}
-		if ((*members) == NULL)
+		if (mbrs == NULL)
 		{
 			return NULL;
 		}
+		else (*members) = mbrs;
+		
 		fstrcpy((*members)[(*num_mem)-1].name, name);
 		(*members)[(*num_mem)-1].sid_use = type;
 		sid_copy(&(*members)[(*num_mem)-1].sid, &sid);

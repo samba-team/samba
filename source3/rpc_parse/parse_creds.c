@@ -90,8 +90,7 @@ BOOL make_creds_unix_sec(CREDS_UNIX_SEC *r_u,
 	r_u->uid      = uid;
 	r_u->gid      = gid;
 	r_u->num_grps = num_grps;
-	r_u->grps = (uint32*)Realloc(NULL, sizeof(r_u->grps[0]) *
-				       r_u->num_grps);
+	r_u->grps = (uint32*)malloc(sizeof(r_u->grps[0]) * r_u->num_grps);
 	if (r_u->grps == NULL && num_grps != 0)
 	{
 		return False;
@@ -123,14 +122,17 @@ BOOL creds_io_unix_sec(char *desc, CREDS_UNIX_SEC *r_u, prs_struct *ps, int dept
 	prs_uint32("num_grps", ps, depth, (uint32 *)&(r_u->num_grps));
 	if (r_u->num_grps != 0)
 	{
-		r_u->grps = (uint32*)Realloc(r_u->grps,
+		uint32 *tgr;
+		
+		tgr = (uint32*)Realloc(r_u->grps,
 				       sizeof(r_u->grps[0]) *
 				       r_u->num_grps);
-		if (r_u->grps == NULL)
+		if (tgr == NULL)
 		{
 			creds_free_unix_sec(r_u);
 			return False;
 		}
+		else r_u->grps = tgr;
 	}
 	for (i = 0; i < r_u->num_grps; i++)
 	{
@@ -165,8 +167,7 @@ BOOL make_creds_nt_sec(CREDS_NT_SEC *r_u,
 
 	sid_copy(&r_u->sid, sid);
 	r_u->num_grps = num_grps;
-	r_u->grp_rids = (uint32*)Realloc(NULL, sizeof(r_u->grp_rids[0]) *
-				       r_u->num_grps);
+	r_u->grp_rids = (uint32*)malloc(sizeof(r_u->grp_rids[0]) * r_u->num_grps);
 
 	if (r_u->grp_rids == NULL && num_grps != 0)
 	{
@@ -199,14 +200,17 @@ BOOL creds_io_nt_sec(char *desc, CREDS_NT_SEC *r_u, prs_struct *ps, int depth)
 	prs_uint32("num_grps", ps, depth, &(r_u->num_grps));
 	if (r_u->num_grps != 0)
 	{
-		r_u->grp_rids = (uint32*)Realloc(r_u->grp_rids,
+		uint32 *tgrid;
+		
+		tgrid = (uint32*)Realloc(r_u->grp_rids,
 				       sizeof(r_u->grp_rids[0]) *
 				       r_u->num_grps);
-		if (r_u->grp_rids == NULL)
+		if (tgrid == NULL)
 		{
 			creds_free_nt_sec(r_u);
 			return False;
 		}
+		else r_u->grp_rids = tgrid;
 	}
 	for (i = 0; i < r_u->num_grps; i++)
 	{

@@ -136,7 +136,7 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 {
 	struct winbindd_domain *domain;
 	int total_entries = 0, extra_data_len = 0;
-	char *extra_data = NULL;
+	char *ted, *extra_data = NULL;
 
 	DEBUG(3, ("[%5d]: list trusted domains\n", state->pid));
 
@@ -149,10 +149,15 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 		/* Add domain to list */
 
 		total_entries++;
-		extra_data = Realloc(extra_data, sizeof(fstring) * 
+		ted = Realloc(extra_data, sizeof(fstring) * 
 				     total_entries);
 
-		if (!extra_data) return WINBINDD_ERROR;
+		if (!ted) {
+			DEBUG(0,("winbindd_list_trusted_domains: failed to enlarge buffer!\n"));
+			if (extra_data) free(extra_data);
+			return WINBINDD_ERROR;
+		}
+		else extra_data = ted;
 
 		memcpy(&extra_data[extra_data_len], domain->name,
 		       strlen(domain->name));

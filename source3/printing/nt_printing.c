@@ -316,6 +316,7 @@ get a form struct list
 int get_ntforms(nt_forms_struct **list)
 {
 	TDB_DATA kbuf, newkey, dbuf;
+	nt_forms_struct *tl;
 	nt_forms_struct form;
 	int ret;
 	int i;
@@ -336,11 +337,12 @@ int get_ntforms(nt_forms_struct **list)
 		safe_free(dbuf.dptr);
 		if (ret != dbuf.dsize) continue;
 
-		*list = Realloc(*list, sizeof(nt_forms_struct)*(n+1));
-		if (!*list) {
+		tl = Realloc(*list, sizeof(nt_forms_struct)*(n+1));
+		if (!tl) {
 			DEBUG(0,("get_ntforms: Realloc fail.\n"));
 			return 0;
 		}
+		*list = tl;
 		(*list)[n] = form;
 		n++;
 	}
@@ -385,6 +387,7 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	int n=0;
 	BOOL update;
 	fstring form_name;
+	nt_forms_struct *tl;
 
 	/*
 	 * NT tries to add forms even when
@@ -404,8 +407,11 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	}
 
 	if (update==False) {
-		if((*list=Realloc(*list, (n+1)*sizeof(nt_forms_struct))) == NULL)
+		if((tl=Realloc(*list, (n+1)*sizeof(nt_forms_struct))) == NULL) {
+			DEBUG(0,("add_a_form: failed to enlarge forms list!\n"));
 			return False;
+		}
+		*list = tl;
 		unistr2_to_ascii((*list)[n].name, &form->name, sizeof((*list)[n].name)-1);
 		(*count)++;
 	}
@@ -496,6 +502,7 @@ int get_ntdrivers(fstring **list, char *architecture, uint32 version)
 {
 	int total=0;
 	fstring short_archi;
+	fstring *fl;
 	pstring key;
 	TDB_DATA kbuf, newkey;
 
@@ -507,8 +514,11 @@ int get_ntdrivers(fstring **list, char *architecture, uint32 version)
 	     newkey = tdb_nextkey(tdb_drivers, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, key, strlen(key)) != 0) continue;
 		
-		if((*list = Realloc(*list, sizeof(fstring)*(total+1))) == NULL)
+		if((fl = Realloc(*list, sizeof(fstring)*(total+1))) == NULL) {
+			DEBUG(0,("get_ntdrivers: failed to enlarge list!\n"));
 			return -1;
+		}
+		else *list = fl;
 
 		fstrcpy((*list)[total], kbuf.dptr+strlen(key));
 		total++;
@@ -1520,7 +1530,15 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	}
 
 	if (len != buflen) {
-		buf = (char *)Realloc(buf, len);
+		char *tb;
+		
+		tb = (char *)Realloc(buf, len);
+		if (!tb) {
+			DEBUG(0,("add_a_printer_driver_3: failed to enlarge buffer\n!"));
+			ret = -1;
+			goto done;
+		}
+		else buf = tb;
 		buflen = len;
 		goto again;
 	}
@@ -1533,6 +1551,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	
 	ret = tdb_store(tdb_drivers, kbuf, dbuf, TDB_REPLACE);
 
+done:
 	if (ret)
 		DEBUG(0,("add_a_printer_driver_3: Adding driver with key %s failed.\n", key ));
 
@@ -1630,10 +1649,15 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 
 	i=0;
 	while (len < dbuf.dsize) {
-		driver.dependentfiles = (fstring *)Realloc(driver.dependentfiles,
+		fstring *tddfs;
+	
+		tddfs = (fstring *)Realloc(driver.dependentfiles,
 							 sizeof(fstring)*(i+2));
-		if (driver.dependentfiles == NULL)
+		if (tddfs == NULL) {
+			DEBUG(0,("get_a_printer_driver_3: failed to enlarge buffer!\n"));
 			break;
+		}
+		else driver.dependentfiles = tddfs;
 
 		len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "f",
 				  &driver.dependentfiles[i]);
@@ -1936,7 +1960,15 @@ static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	len += pack_specifics(info->specific, buf+len, buflen-len);
 
 	if (buflen != len) {
-		buf = (char *)Realloc(buf, len);
+		char *tb;
+		
+		tb = (char *)Realloc(buf, len);
+		if (!tb) {
+			DEBUG(0,("update_a_printer_2: failed to enlarge buffer!\n"));
+			ret = -1;
+			goto done;
+		}
+		else buf = tb;
 		buflen = len;
 		goto again;
 	}
@@ -1951,6 +1983,7 @@ static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	ret = tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE);
 
+done:
 	if (ret == -1)
 		DEBUG(8, ("error updating printer to tdb on disk\n"));
 
@@ -2793,7 +2826,15 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	len += pack_specifics(info->specific, buf+len, buflen-len);
 
 	if (buflen != len) {
-		buf = (char *)Realloc(buf, len);
+		char *tb;
+		
+		tb = (char *)Realloc(buf, len);
+		if (!tb) {
+			DEBUG(0, ("update_driver_init_2: failed to enlarge buffer!\n"));
+			ret = -1;
+			goto done;
+		}
+		else buf = tb;
 		buflen = len;
 		goto again;
 	}
@@ -2807,6 +2848,7 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	ret = tdb_store(tdb_drivers, kbuf, dbuf, TDB_REPLACE);
 
+done:
 	if (ret == -1)
 		DEBUG(8, ("update_driver_init_2: error updating printer init to tdb on disk\n"));
 

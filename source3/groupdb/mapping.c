@@ -395,7 +395,7 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 	fstring string_sid;
 	fstring group_type;
 	GROUP_MAP map;
-	GROUP_MAP *mapt=NULL;
+	GROUP_MAP *mapt;
 	int ret;
 	int entries=0;
 
@@ -433,7 +433,14 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 		
 		decode_sid_name_use(group_type, map.sid_name_use);
 
-		mapt=(GROUP_MAP *)Realloc(mapt, (entries+1)*sizeof(GROUP_MAP));
+		mapt=(GROUP_MAP *)Realloc((*rmap), (entries+1)*sizeof(GROUP_MAP));
+		if (!mapt) {
+			DEBUG(0,("enum_group_mapping: Unable to enlarge group map!\n"));
+			if (*rmap) free(*rmap);
+			*rmap=NULL;
+			return False;
+		}
+		else (*rmap) = mapt;
 
 		mapt[entries].gid = map.gid;
 		sid_copy( &mapt[entries].sid, &map.sid);
@@ -445,7 +452,6 @@ BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 		entries++;
 	}
 
-	*rmap=mapt;
 	*num_entries=entries;
 	return True;
 }
@@ -661,6 +667,7 @@ BOOL get_uid_list_of_group(gid_t gid, uid_t **uid, int *num_uids)
 	struct passwd *pwd;
 	int i=0;
 	char *gr;
+	uid_t *u;
  
 	*num_uids = 0;
 	*uid=NULL;
@@ -672,7 +679,12 @@ BOOL get_uid_list_of_group(gid_t gid, uid_t **uid, int *num_uids)
 	DEBUG(10, ("getting members\n"));
         
 	while (gr && (*gr != (char)'\0')) {
-		(*uid)=Realloc((*uid), sizeof(uid_t)*(*num_uids+1));
+		u = Realloc((*uid), sizeof(uid_t)*(*num_uids+1));
+		if (!u) {
+			DEBUG(0,("get_uid_list_of_group: unable to enlarge uid list!\n"));
+			return False;
+		}
+		else (*uid) = u;
 
 		if( (pwd=getpwnam(gr)) !=NULL) {
 			(*uid)[*num_uids]=pwd->pw_uid;
@@ -685,7 +697,12 @@ BOOL get_uid_list_of_group(gid_t gid, uid_t **uid, int *num_uids)
 	setpwent();
 	while ((pwd=getpwent()) != NULL) {
 		if (pwd->pw_gid==gid) {
-			(*uid)=Realloc((*uid), sizeof(uid_t)*(*num_uids+1));
+			u = Realloc((*uid), sizeof(uid_t)*(*num_uids+1));
+			if (!u) {
+				DEBUG(0,("get_uid_list_of_group: unable to enlarge uid list!\n"));
+				return False;
+			}
+			else (*uid) = u;
 			(*uid)[*num_uids]=pwd->pw_uid;
 
 			(*num_uids)++;

@@ -80,16 +80,19 @@ add a entry to a directory listing
 static void smbw_dir_add(struct file_info *finfo, const char *mask, 
 			 void *state)
 {
+	struct file_info *cdl;
+
 	DEBUG(5,("%s\n", finfo->name));
 
 	if (cur_dir->malloced == cur_dir->count) {
-		cur_dir->list = (struct file_info *)Realloc(cur_dir->list, 
+		cdl = (struct file_info *)Realloc(cur_dir->list, 
 							    sizeof(cur_dir->list[0])*
 							    (cur_dir->count+100));
 		if (!cur_dir->list) {
 			/* oops */
 			return;
 		}
+		cur_dir->list = cdl;
 		cur_dir->malloced += 100;
 	}
 
