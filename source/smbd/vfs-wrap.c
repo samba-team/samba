@@ -225,13 +225,26 @@ ssize_t vfswrap_write(files_struct *fsp, int fd, const void *data, size_t n)
 
 SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int whence)
 {
-    SMB_OFF_T result;
+	SMB_OFF_T result;
 
-    START_PROFILE(syscall_lseek);
+	START_PROFILE(syscall_lseek);
 
-    result = sys_lseek(filedes, offset, whence);
-    END_PROFILE(syscall_lseek);
-    return result;
+	result = sys_lseek(filedes, offset, whence);
+
+	/*
+	 * We want to maintain the fiction that we can seek
+	 * on a fifo for file system purposes. This allows
+	 * people to set up UNIX fifo's that feed data to Windows
+	 * applications. JRA.
+	 */
+
+	if((result == -1) && (errno == ESPIPE)) {
+		result = 0;
+		errno = 0;
+	}
+
+	END_PROFILE(syscall_lseek);
+	return result;
 }
 
 int vfswrap_rename(connection_struct *conn, const char *old, const char *new)
