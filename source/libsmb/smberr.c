@@ -182,3 +182,14 @@ char *smb_errstr(char *inbuf)
   slprintf(ret, sizeof(ret) - 1, "Error: Unknown error (%d,%d)",class,num);
   return(ret);
 }
+
+
+/*****************************************************************************
+ returns an WERROR error message.
+ *****************************************************************************/
+char *werror_str(WERROR status)
+{
+	static fstring msg;
+	slprintf(msg, sizeof(msg), "WIN32 code 0x%08x", W_ERROR_V(status));
+	return msg;
+}

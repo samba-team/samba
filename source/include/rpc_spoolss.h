@@ -789,7 +789,7 @@ typedef struct printer_info_0
 	uint32 unknown16;
 	uint32 change_id;
 	uint32 unknown18;
-	NTSTATUS status;
+	uint32 status;
 	uint32 unknown20;
 	uint32 c_setprinter;
 
@@ -832,7 +832,7 @@ typedef struct printer_info_2
 	uint32 defaultpriority;
 	uint32 starttime;
 	uint32 untiltime;
-	NTSTATUS status;
+	uint32 status;
 	uint32 cjobs;
 	uint32 averageppm;
 }

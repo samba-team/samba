@@ -766,7 +766,7 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
 		case NT_STATUS_OK:
 			break;
 			
-		case ERRunknownprinterdriver:
+		case WERR_UNKNOWN_PRINTER_DRIVER:
 			continue;
 
 		default:
@@ -804,7 +804,7 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
 	cli_nt_session_close (cli);
 	talloc_destroy(mem_ctx);
 	
-	if (result==ERRunknownprinterdriver)
+	if (result==WERR_UNKNOWN_PRINTER_DRIVER)
 		return NT_STATUS_OK;
 	else 
 		return result;
@@ -899,7 +899,7 @@ static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **a
 	cli_nt_session_close (cli);
 	talloc_destroy(mem_ctx);
 	
-	if (result==ERRunknownprinterdriver)
+	if (result==WERR_UNKNOWN_PRINTER_DRIVER)
 		return NT_STATUS_OK;
 	else 
 		return result;
