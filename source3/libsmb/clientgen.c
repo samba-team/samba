@@ -2926,7 +2926,7 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 	return False;
 }
 
-static int cli_init_redirect(struct cli_state *cli,
+static BOOL cli_init_redirect(struct cli_state *cli,
 				const char* srv_name, struct in_addr *destip,
 				const struct ntuser_creds *usr)
 {
@@ -2955,7 +2955,7 @@ static int cli_init_redirect(struct cli_state *cli,
 
 	if (sock < 0)
 	{
-		return sock;
+		return False;
 	}
 
 	command = usr != NULL ? AGENT_CMD_CON : AGENT_CMD_CON_ANON;
@@ -3038,8 +3038,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		}
 		else
 		{
-			DEBUG(10,("redirect FAILED\n"));
-			return False;
+			DEBUG(10,("redirect FAILED, make direct connection\n"));
 		}
 	}
 	if (cli->fd == -1)

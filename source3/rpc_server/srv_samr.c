@@ -145,7 +145,7 @@ static void samr_reply_close_hnd(SAMR_Q_CLOSE_HND *q_u,
 /*******************************************************************
  api_samr_close_hnd
  ********************************************************************/
-static void api_samr_close_hnd( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_close_hnd( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CLOSE_HND q_u;
 	samr_io_q_close_hnd("", &q_u, data, 0);
@@ -200,7 +200,7 @@ static void samr_reply_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 /*******************************************************************
  api_samr_open_domain
  ********************************************************************/
-static void api_samr_open_domain( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_open_domain( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_OPEN_DOMAIN q_u;
 	samr_io_q_open_domain("", &q_u, data, 0);
@@ -243,7 +243,7 @@ static void samr_reply_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u,
 /*******************************************************************
  api_samr_unknown_2c
  ********************************************************************/
-static void api_samr_unknown_2c( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_unknown_2c( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_UNKNOWN_2C q_u;
 	samr_io_q_unknown_2c("", &q_u, data, 0);
@@ -312,7 +312,7 @@ static void samr_reply_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 /*******************************************************************
  api_samr_unknown_3
  ********************************************************************/
-static void api_samr_unknown_3( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_unknown_3( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_UNKNOWN_3 q_u;
 	samr_io_q_unknown_3("", &q_u, data, 0);
@@ -370,7 +370,7 @@ static void samr_reply_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_u,
 /*******************************************************************
  api_samr_enum_dom_users
  ********************************************************************/
-static void api_samr_enum_dom_users( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_enum_dom_users( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_ENUM_DOM_USERS q_e;
 	samr_io_q_enum_dom_users("", &q_e, data, 0);
@@ -429,7 +429,7 @@ static void samr_reply_add_groupmem(SAMR_Q_ADD_GROUPMEM *q_u,
 /*******************************************************************
  api_samr_add_groupmem
  ********************************************************************/
-static void api_samr_add_groupmem( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_add_groupmem( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_ADD_GROUPMEM q_e;
 	samr_io_q_add_groupmem("", &q_e, data, 0);
@@ -487,7 +487,7 @@ static void samr_reply_del_groupmem(SAMR_Q_DEL_GROUPMEM *q_u,
 /*******************************************************************
  api_samr_del_groupmem
  ********************************************************************/
-static void api_samr_del_groupmem( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_del_groupmem( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_DEL_GROUPMEM q_e;
 	samr_io_q_del_groupmem("", &q_e, data, 0);
@@ -553,7 +553,7 @@ static void samr_reply_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u,
 /*******************************************************************
  api_samr_add_aliasmem
  ********************************************************************/
-static void api_samr_add_aliasmem( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_add_aliasmem( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_ADD_ALIASMEM q_e;
 	samr_io_q_add_aliasmem("", &q_e, data, 0);
@@ -619,7 +619,7 @@ static void samr_reply_del_aliasmem(SAMR_Q_DEL_ALIASMEM *q_u,
 /*******************************************************************
  api_samr_del_aliasmem
  ********************************************************************/
-static void api_samr_del_aliasmem( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_del_aliasmem( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_DEL_ALIASMEM q_e;
 	samr_io_q_del_aliasmem("", &q_e, data, 0);
@@ -684,7 +684,7 @@ static void samr_reply_enum_domains(SAMR_Q_ENUM_DOMAINS *q_u,
 /*******************************************************************
  api_samr_enum_domains
  ********************************************************************/
-static void api_samr_enum_domains( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_enum_domains( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_ENUM_DOMAINS q_e;
 
@@ -764,7 +764,7 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 /*******************************************************************
  api_samr_enum_dom_groups
  ********************************************************************/
-static void api_samr_enum_dom_groups( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_enum_dom_groups( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_ENUM_DOM_GROUPS q_e;
 
@@ -861,7 +861,7 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 /*******************************************************************
  api_samr_enum_dom_aliases
  ********************************************************************/
-static void api_samr_enum_dom_aliases( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_enum_dom_aliases( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_ENUM_DOM_ALIASES q_e;
 
@@ -1033,7 +1033,7 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 /*******************************************************************
  api_samr_query_dispinfo
  ********************************************************************/
-static void api_samr_query_dispinfo( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_query_dispinfo( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_DISPINFO q_e;
 
@@ -1095,7 +1095,7 @@ static void samr_reply_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_u,
 /*******************************************************************
  api_samr_delete_dom_group
  ********************************************************************/
-static void api_samr_delete_dom_group( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_delete_dom_group( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_DELETE_DOM_GROUP q_u;
 	samr_io_q_delete_dom_group("", &q_u, data, 0);
@@ -1190,7 +1190,7 @@ static void samr_reply_query_groupmem(SAMR_Q_QUERY_GROUPMEM *q_u,
 /*******************************************************************
  api_samr_query_groupmem
  ********************************************************************/
-static void api_samr_query_groupmem( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_query_groupmem( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_GROUPMEM q_u;
 	samr_io_q_query_groupmem("", &q_u, data, 0);
@@ -1253,7 +1253,7 @@ static void samr_reply_query_groupinfo(SAMR_Q_QUERY_GROUPINFO *q_u,
 /*******************************************************************
  api_samr_query_groupinfo
  ********************************************************************/
-static void api_samr_query_groupinfo( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_query_groupinfo( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_GROUPINFO q_e;
 	samr_io_q_query_groupinfo("", &q_e, data, 0);
@@ -1307,7 +1307,7 @@ static void samr_reply_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
 /*******************************************************************
  api_samr_query_aliasinfo
  ********************************************************************/
-static void api_samr_query_aliasinfo( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_query_aliasinfo( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_ALIASINFO q_e;
 	samr_io_q_query_aliasinfo("", &q_e, data, 0);
@@ -1429,7 +1429,7 @@ static void samr_reply_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 /*******************************************************************
  api_samr_query_useraliases
  ********************************************************************/
-static void api_samr_query_useraliases( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_query_useraliases( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_USERALIASES q_u;
 	ZERO_STRUCT(q_u);
@@ -1492,7 +1492,7 @@ static void samr_reply_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u,
 /*******************************************************************
  api_samr_delete_dom_alias
  ********************************************************************/
-static void api_samr_delete_dom_alias( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_delete_dom_alias( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_DELETE_DOM_ALIAS q_u;
 	samr_io_q_delete_dom_alias("", &q_u, data, 0);
@@ -1587,7 +1587,7 @@ static void samr_reply_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_u,
 /*******************************************************************
  api_samr_query_aliasmem
  ********************************************************************/
-static void api_samr_query_aliasmem( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_query_aliasmem( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_ALIASMEM q_u;
 	samr_io_q_query_aliasmem("", &q_u, data, 0);
@@ -1659,7 +1659,7 @@ static void samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 /*******************************************************************
  api_samr_lookup_names
  ********************************************************************/
-static void api_samr_lookup_names( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_lookup_names( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_LOOKUP_NAMES q_u;
 	samr_io_q_lookup_names("", &q_u, data, 0);
@@ -1700,7 +1700,7 @@ static void samr_reply_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 /*******************************************************************
  api_samr_chgpasswd_user
  ********************************************************************/
-static void api_samr_chgpasswd_user( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_chgpasswd_user( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CHGPASSWD_USER q_u;
 	samr_io_q_chgpasswd_user("", &q_u, data, 0);
@@ -1729,7 +1729,7 @@ static void samr_reply_unknown_38(SAMR_Q_UNKNOWN_38 *q_u,
 /*******************************************************************
  api_samr_unknown_38
  ********************************************************************/
-static void api_samr_unknown_38( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_unknown_38( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_UNKNOWN_38 q_u;
 	samr_io_q_unknown_38("", &q_u, data, 0);
@@ -1795,7 +1795,7 @@ static void samr_reply_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 /*******************************************************************
  api_samr_lookup_rids
  ********************************************************************/
-static void api_samr_lookup_rids( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_lookup_rids( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_LOOKUP_RIDS q_u;
 	ZERO_STRUCT(q_u);
@@ -1867,7 +1867,7 @@ static void samr_reply_open_user(SAMR_Q_OPEN_USER *q_u,
 /*******************************************************************
  api_samr_open_user
  ********************************************************************/
-static void api_samr_open_user( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_open_user( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_OPEN_USER q_u;
 	samr_io_q_open_user("", &q_u, data, 0);
@@ -2151,7 +2151,7 @@ static BOOL set_user_info_16(SAM_USER_INFO_16 *id16, uint32 rid)
 /*******************************************************************
  api_samr_query_userinfo
  ********************************************************************/
-static void api_samr_query_userinfo( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_query_userinfo( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_USERINFO q_u;
 	samr_io_q_query_userinfo("", &q_u, data, 0);
@@ -2224,14 +2224,13 @@ static void samr_reply_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
 /*******************************************************************
  api_samr_set_userinfo2
  ********************************************************************/
-static void api_samr_set_userinfo2( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_set_userinfo2( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
-	user_struct *vuser = get_valid_user_struct(p->vuid);
 	SAMR_Q_SET_USERINFO2 q_u;
 	ZERO_STRUCT(q_u);
 
 	samr_io_q_set_userinfo2("", &q_u, data, 0);
-	samr_reply_set_userinfo2(&q_u, rdata, vuser->dc.user_sess_key);
+	samr_reply_set_userinfo2(&q_u, rdata, p->user_sess_key);
 
 	if (q_u.info.id != NULL)
 	{
@@ -2321,18 +2320,17 @@ static void samr_reply_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 /*******************************************************************
  api_samr_set_userinfo
  ********************************************************************/
-static void api_samr_set_userinfo( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_set_userinfo( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
-	user_struct *vuser = get_valid_user_struct(p->vuid);
 	SAMR_Q_SET_USERINFO q_u;
 	ZERO_STRUCT(q_u);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("set user info: sess_key: "));
-	dump_data(100, vuser->dc.user_sess_key, 16);
+	dump_data(100, p->user_sess_key, 16);
 #endif
 	samr_io_q_set_userinfo("", &q_u, data, 0);
-	samr_reply_set_userinfo(&q_u, rdata, vuser->dc.user_sess_key);
+	samr_reply_set_userinfo(&q_u, rdata, p->user_sess_key);
 
 	if (q_u.info.id != NULL)
 	{
@@ -2416,7 +2414,7 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 /*******************************************************************
  api_samr_query_usergroups
  ********************************************************************/
-static void api_samr_query_usergroups( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_query_usergroups( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_USERGROUPS q_u;
 	samr_io_q_query_usergroups("", &q_u, data, 0);
@@ -2527,7 +2525,7 @@ static void samr_reply_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u,
 /*******************************************************************
  api_samr_create_dom_alias
  ********************************************************************/
-static void api_samr_create_dom_alias( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_create_dom_alias( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CREATE_DOM_ALIAS q_u;
 	samr_io_q_create_dom_alias("", &q_u, data, 0);
@@ -2639,7 +2637,7 @@ static void samr_reply_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_u,
 /*******************************************************************
  api_samr_create_dom_group
  ********************************************************************/
-static void api_samr_create_dom_group( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_create_dom_group( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CREATE_DOM_GROUP q_u;
 	samr_io_q_create_dom_group("", &q_u, data, 0);
@@ -2731,7 +2729,7 @@ static void samr_reply_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 /*******************************************************************
  api_samr_query_dom_info
  ********************************************************************/
-static void api_samr_query_dom_info( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_query_dom_info( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_DOMAIN_INFO q_e;
 	samr_io_q_query_dom_info("", &q_e, data, 0);
@@ -2839,7 +2837,7 @@ static void samr_reply_create_user(SAMR_Q_CREATE_USER *q_u,
 /*******************************************************************
  api_samr_create_user
  ********************************************************************/
-static void api_samr_create_user( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_create_user( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CREATE_USER q_u;
 
@@ -2893,7 +2891,7 @@ static void samr_reply_connect_anon(SAMR_Q_CONNECT_ANON *q_u,
 /*******************************************************************
  api_samr_connect_anon
  ********************************************************************/
-static void api_samr_connect_anon( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_connect_anon( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CONNECT_ANON q_u;
 	samr_io_q_connect_anon("", &q_u, data, 0);
@@ -2942,7 +2940,7 @@ static void samr_reply_connect(SAMR_Q_CONNECT *q_u,
 /*******************************************************************
  api_samr_connect
  ********************************************************************/
-static void api_samr_connect( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_connect( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CONNECT q_u;
 	samr_io_q_connect("", &q_u, data, 0);
@@ -3008,7 +3006,7 @@ static void samr_reply_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 /*******************************************************************
  api_samr_open_alias
  ********************************************************************/
-static void api_samr_open_alias( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_open_alias( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
                                 
 {
 	SAMR_Q_OPEN_ALIAS q_u;
@@ -3055,7 +3053,7 @@ static void samr_reply_open_group(SAMR_Q_OPEN_GROUP *q_u,
 /*******************************************************************
  api_samr_open_group
  ********************************************************************/
-static void api_samr_open_group( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_open_group( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
                                 
 {
 	SAMR_Q_OPEN_GROUP q_u;
@@ -3114,7 +3112,7 @@ static void samr_reply_lookup_domain(SAMR_Q_LOOKUP_DOMAIN *q_u,
 /*******************************************************************
  api_samr_lookup_domain
  ********************************************************************/
-static void api_samr_lookup_domain( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_lookup_domain( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_LOOKUP_DOMAIN q_u;
 	samr_io_q_lookup_domain("", &q_u, data, 0);
@@ -3172,7 +3170,7 @@ static struct api_struct api_samr_cmds [] =
 /*******************************************************************
  receives a samr pipe and responds.
  ********************************************************************/
-BOOL api_samr_rpc(pipes_struct *p, prs_struct *data)
+BOOL api_samr_rpc(rpcsrv_struct *p, prs_struct *data)
 {
     return api_rpcTNP(p, "api_samr_rpc", api_samr_cmds, data);
 }

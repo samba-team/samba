@@ -2020,13 +2020,13 @@ void cmd_sam_query_dispinfo(struct client_info *info, int argc, char *argv[])
 	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
 
+	string_to_sid(&sid1, sid);
+
 	if (sid1.num_auths == 0)
 	{
 		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
-
-	string_to_sid(&sid1, sid);
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);

@@ -199,9 +199,9 @@ get the nt drivers list
 
 open the directory and look-up the matching names
 ****************************************************************************/
-int get_ntdrivers(connection_struct *conn, fstring **list, char *architecture)
+int get_ntdrivers(fstring **list, char *architecture)
 {
-	void *dirp;
+	DIR *dirp;
 	char *dpname;
 	fstring name_match;
 	fstring short_archi;
@@ -212,9 +212,9 @@ int get_ntdrivers(connection_struct *conn, fstring **list, char *architecture)
 	DEBUG(5,("Getting the driver list from directory: [%s]\n", lp_nt_drivers_file()));
 	
 	*list=NULL;
-	dirp = OpenDir(conn, lp_nt_drivers_file(), False);
+	dirp = opendir(lp_nt_drivers_file());
 
-	if (!dirp)
+	if (dirp == NULL)
 	{
 		DEBUG(0,("Error opening driver directory [%s]\n",lp_nt_drivers_file())); 
 		return(-1);
@@ -224,8 +224,7 @@ int get_ntdrivers(connection_struct *conn, fstring **list, char *architecture)
 	slprintf(name_match, sizeof(name_match)-1, "NTdriver_%s_", short_archi);
 	match_len=strlen(name_match);
 	
-	
-	while ((dpname = ReadDirName(dirp)) != NULL)
+	while ((dpname = readdirname(dirp)) != NULL)
 	{
 		if (strncmp(dpname, name_match, match_len)==0)
 		{
@@ -240,7 +239,7 @@ int get_ntdrivers(connection_struct *conn, fstring **list, char *architecture)
 		}
 	}
 
-	CloseDir(dirp);
+	closedir(dirp);
 	return(total);
 }
 

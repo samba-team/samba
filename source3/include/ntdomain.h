@@ -62,20 +62,8 @@ typedef struct
 
 } prs_struct;
 
-typedef struct pipes_struct
+typedef struct rpcsrv_struct
 {
-	struct pipes_struct *next, *prev;
-	int pnum;
-	connection_struct *conn;
-	uint16 vuid;
-	BOOL open; /* open connection */
-	uint16 device_state;
-	uint16 priority;
-	fstring name;
-	fstring pipe_srv_name;
-
-	struct msrpc_state *m;
-
 	prs_struct rhdr; /* output header */
 	prs_struct rfault; /* fault */
 	prs_struct rdata; /* output data */
@@ -107,6 +95,39 @@ typedef struct pipes_struct
 	fstring domain;
 	fstring wks;
 
+	uchar user_sess_key[16];
+
+	/* per-user authentication info.  hmm, this not appropriate, but
+	   it will do for now.  dcinfo contains NETLOGON-specific info,
+	   so have to think of a better method.
+	 */
+	struct dcinfo dc;
+
+} rpcsrv_struct;
+
+typedef struct pipes_struct
+{
+	struct pipes_struct *next, *prev;
+	int pnum;
+	connection_struct *conn;
+	uint16 vuid;
+	BOOL open; /* open connection */
+	uint16 device_state;
+	uint16 priority;
+	fstring name;
+	fstring pipe_srv_name;
+
+	/* remote, server-side rpc redirection */
+	struct msrpc_state *m;
+
+	/* local, server-side rpc state processing */
+	rpcsrv_struct *l;
+
+	/* to store pdus being constructed / communicated from smb to msrpc */
+	prs_struct smb_pdu;
+	prs_struct rsmb_pdu;
+
+	/* state-based info used in processing smbs to/from msrpc pdus */ 
 	uint32 file_offset;
 	uint32 prev_pdu_file_offset;
 	uint32 hdr_offsets;
@@ -117,7 +138,7 @@ struct api_struct
 {  
   char *name;
   uint8 opnum;
-  void (*fn) (pipes_struct*, prs_struct*, prs_struct*);
+  void (*fn) (rpcsrv_struct*, prs_struct*, prs_struct*);
 };
 
 struct mem_desc

@@ -84,14 +84,40 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	pipes_struct *p;
 	static int next_pipe;
 	struct msrpc_state *m = NULL;
+	struct rpcsrv_struct *l = NULL;
+	user_struct *vuser = get_valid_user_struct(vuid);
+	struct user_creds usr;
+
+	ZERO_STRUCT(usr);
 
 	DEBUG(4,("Open pipe requested %s (pipes_open=%d)\n",
 		 pipe_name, pipes_open));
 	
+	if (vuser == NULL)
+	{
+		DEBUG(4,("invalid vuid %d\n", vuid));
+		return NULL;
+	}
+
+	/* set up unix credentials from the smb side, to feed over the pipe */
+	make_creds_unix(&usr.uxc, vuser->name, vuser->requested_name,
+	                              vuser->real_name, vuser->guest);
+	usr.ptr_uxc = 1;
+	make_creds_unix_sec(&usr.uxs, vuser->uid, vuser->gid,
+	                              vuser->n_groups, vuser->groups);
+	usr.ptr_uxs = 1;
+
+	/* set up nt credentials from the smb side, to feed over the pipe */
+	/* lkclXXXX todo!
+	make_creds_nt(&usr.ntc);
+	make_creds_nt_sec(&usr.nts);
+	*/
+
 	/* not repeating pipe numbers makes it easier to track things in 
 	   log files and prevents client bugs where pipe numbers are reused
 	   over connection restarts */
-	if (next_pipe == 0) {
+	if (next_pipe == 0)
+	{
 		next_pipe = (getpid() ^ time(NULL)) % MAX_OPEN_PIPES;
 	}
 
@@ -111,12 +137,32 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	if (strequal(pipe_name, "lsarpc"))
 	{
-		m = msrpc_use_add(pipe_name, NULL, False);
+		m = msrpc_use_add(pipe_name, &usr, False);
 		if (m == NULL)
 		{
 			DEBUG(5,("open pipes: msrpc redirect failed\n"));
 			return NULL;
 		}
+	}
+	else
+	{
+		l = malloc(sizeof(*l));
+		if (l == NULL)
+		{
+			DEBUG(5,("open pipes: local msrpc malloc failed\n"));
+			return NULL;
+		}
+		ZERO_STRUCTP(l);
+		l->rhdr.data  = NULL;
+		l->rdata.data = NULL;
+		l->rhdr.offset  = 0;
+		l->rdata.offset = 0;
+		
+		l->ntlmssp_validated = False;
+		l->ntlmssp_auth      = False;
+
+		memcpy(l->user_sess_key, vuser->user_sess_key,
+		       sizeof(l->user_sess_key));
 	}
 
 	p = (pipes_struct *)malloc(sizeof(*p));
@@ -132,6 +178,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	p->pnum = i;
 	p->m = m;
+	p->l = l;
 
 	p->open = True;
 	p->device_state = 0;
@@ -139,19 +186,14 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	p->conn = conn;
 	p->vuid  = vuid;
 	
-	p->rhdr.data  = NULL;
-	p->rdata.data = NULL;
-	p->rhdr.offset  = 0;
-	p->rdata.offset = 0;
-	
 	p->file_offset     = 0;
 	p->prev_pdu_file_offset = 0;
 	p->hdr_offsets     = 0;
 	
-	p->ntlmssp_validated = False;
-	p->ntlmssp_auth      = False;
-	
 	fstrcpy(p->name, pipe_name);
+
+	prs_init(&p->smb_pdu, 0, 4, 0, True);
+	prs_init(&p->rsmb_pdu, 0, 4, 0, False);
 
 	DEBUG(4,("Opened pipe %s with handle %x (pipes_open=%d)\n",
 		 pipe_name, i, pipes_open));
@@ -175,29 +217,13 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
  ****************************************************************************/
 ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
 {
-	prs_struct pd;
-	struct mem_buf data_buf;
-
 	DEBUG(6,("write_pipe: %x", p->pnum));
-
 	DEBUG(6,("name: %s open: %s len: %d",
 		 p->name, BOOLSTR(p->open), n));
 
 	dump_data(50, data, n);
 
-	/* fake up a data buffer from the write_pipe data parameters */
-	mem_create(&data_buf, data, 0, n, 0, False);
-	data_buf.offset.start = 0;
-	data_buf.offset.end   = n;
-
-	/* fake up a parsing structure */
-	pd.data = &data_buf;
-	pd.align = 4;
-	pd.io = True;
-	pd.error = False;
-	pd.offset = 0;
-
-	return rpc_command(p, &pd) ? ((ssize_t)n) : -1;
+	return rpc_to_smb(p, data, n) ? ((ssize_t)n) : -1;
 }
 
 
@@ -232,8 +258,8 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 	}
 
 
-	if (p->rhdr.data == NULL || p->rhdr.data->data == NULL ||
-	    p->rhdr.data->data_used == 0)
+	if (p->rsmb_pdu.data == NULL || p->rsmb_pdu.data->data == NULL ||
+	    p->rsmb_pdu.data->data_used == 0)
 	{
 		return 0;
 	}
@@ -246,12 +272,12 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 	pdu_data_sent = p->file_offset - p->prev_pdu_file_offset;
 	this_pdu_data_pos = (pdu_data_sent == 0) ? 0 : (pdu_data_sent - 0x18);
 
-	if (!IS_BITS_SET_ALL(p->hdr.flags, RPC_FLG_LAST))
+	if (!IS_BITS_SET_ALL(p->l->hdr.flags, RPC_FLG_LAST))
 	{
 		/* intermediate fragment - possibility of another header */
 		
 		DEBUG(5,("read_pipe: frag_len: %d data_pos: %d pdu_data_sent: %d\n",
-			 p->hdr.frag_len, data_pos, pdu_data_sent));
+			 p->l->hdr.frag_len, data_pos, pdu_data_sent));
 		
 		if (pdu_data_sent == 0)
 		{
@@ -263,11 +289,11 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 			data_pos -= 0x18;
 
 			/* create and copy in a new header. */
-			create_rpc_reply(p, data_pos, p->rdata.offset);
+			create_rpc_reply(p->l, data_pos);
 		}			
 	}
 	
-	pdu_len = mem_buf_len(p->rhdr.data);
+	pdu_len = mem_buf_len(p->rsmb_pdu.data);
 	num = pdu_len - this_pdu_data_pos;
 	
 	DEBUG(6,("read_pipe: pdu_len: %d num: %d n: %d\n", pdu_len, num, n));
@@ -284,7 +310,7 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 		DEBUG(5,("read_pipe: warning - data read only part of a header\n"));
 	}
 
-	mem_buf_copy(data, p->rhdr.data, pdu_data_sent, num);
+	mem_buf_copy(data, p->rsmb_pdu.data, pdu_data_sent, num);
 	
 	p->file_offset  += num;
 	pdu_data_sent  += num;
@@ -294,7 +320,7 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 		DEBUG(6,("read_pipe: just header read\n"));
 	}
 
-	if (pdu_data_sent == p->hdr.frag_len)
+	if (pdu_data_sent == p->l->hdr.frag_len)
 	{
 		DEBUG(6,("read_pipe: next fragment expected\n"));
 		p->prev_pdu_file_offset = p->file_offset;
@@ -359,8 +385,8 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 		return False;
 	}
 
-	mem_buf_free(&(p->rdata.data));
-	mem_buf_free(&(p->rhdr .data));
+	mem_buf_free(&(p->smb_pdu .data));
+	mem_buf_free(&(p->rsmb_pdu.data));
 
 	bitmap_clear(bmap, p->pnum - pipe_handle_offset);
 
@@ -384,8 +410,17 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 		}
 	}
 
-	ZERO_STRUCTP(p);
+	if (p->l != NULL)
+	{
+		DEBUG(4,("closed msrpc local: OK\n"));
 
+		mem_free_data(p->l->rdata  .data);
+		rpcsrv_free_temp(p->l);
+
+		free(p->l);
+	}
+
+	ZERO_STRUCTP(p);
 	free(p);
 	
 	return True;

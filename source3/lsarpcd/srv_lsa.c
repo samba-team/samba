@@ -140,7 +140,7 @@ static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 	{
 		/* set up the LSA QUERY INFO response */
 
-		r_q.undoc_buffer = 0x1; /* bizarre */
+		r_q.undoc_buffer = 0x1; 
 		r_q.info_class = q_q->info_class;
 
 		make_dom_query(&r_q.dom.id5, dom_name, dom_sid);
@@ -448,7 +448,7 @@ static void lsa_reply_lookup_names(prs_struct *rdata,
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
-static void api_lsa_open_policy2( pipes_struct *p, prs_struct *data,
+static void api_lsa_open_policy2( rpcsrv_struct *p, prs_struct *data,
                              prs_struct *rdata )
 {
 	LSA_Q_OPEN_POL2 q_o;
@@ -467,7 +467,7 @@ static void api_lsa_open_policy2( pipes_struct *p, prs_struct *data,
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
-static void api_lsa_open_policy( pipes_struct *p, prs_struct *data,
+static void api_lsa_open_policy( rpcsrv_struct *p, prs_struct *data,
                              prs_struct *rdata )
 {
 	LSA_Q_OPEN_POL q_o;
@@ -486,7 +486,7 @@ static void api_lsa_open_policy( pipes_struct *p, prs_struct *data,
 /***************************************************************************
 api_lsa_enum_trust_dom
  ***************************************************************************/
-static void api_lsa_enum_trust_dom( pipes_struct *p, prs_struct *data,
+static void api_lsa_enum_trust_dom( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	LSA_Q_ENUM_TRUST_DOM q_e;
@@ -503,7 +503,7 @@ static void api_lsa_enum_trust_dom( pipes_struct *p, prs_struct *data,
 /***************************************************************************
 api_lsa_query_info
  ***************************************************************************/
-static void api_lsa_query_info( pipes_struct *p, prs_struct *data,
+static void api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
                                 prs_struct *rdata )
 {
 	LSA_Q_QUERY_INFO q_i;
@@ -545,7 +545,7 @@ static void api_lsa_query_info( pipes_struct *p, prs_struct *data,
 /***************************************************************************
 api_lsa_lookup_sids
  ***************************************************************************/
-static void api_lsa_lookup_sids( pipes_struct *p, prs_struct *data,
+static void api_lsa_lookup_sids( rpcsrv_struct *p, prs_struct *data,
                                  prs_struct *rdata )
 {
 	LSA_Q_LOOKUP_SIDS q_l;
@@ -561,7 +561,7 @@ static void api_lsa_lookup_sids( pipes_struct *p, prs_struct *data,
 /***************************************************************************
 api_lsa_lookup_names
  ***************************************************************************/
-static void api_lsa_lookup_names( pipes_struct *p, prs_struct *data,
+static void api_lsa_lookup_names( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata )
 {
 	LSA_Q_LOOKUP_NAMES q_l;
@@ -578,7 +578,7 @@ static void api_lsa_lookup_names( pipes_struct *p, prs_struct *data,
 /***************************************************************************
  api_lsa_close
  ***************************************************************************/
-static void api_lsa_close( pipes_struct *p, prs_struct *data,
+static void api_lsa_close( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata)
 {
 	LSA_R_CLOSE r_c;
@@ -607,7 +607,7 @@ static void api_lsa_close( pipes_struct *p, prs_struct *data,
 /***************************************************************************
  api_lsa_open_secret
  ***************************************************************************/
-static void api_lsa_open_secret( pipes_struct *p, prs_struct *data,
+static void api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata)
 {
 	/* XXXX this is NOT good */
@@ -648,7 +648,7 @@ static struct api_struct api_lsa_cmds[] =
 /***************************************************************************
  api_ntLsarpcTNP
  ***************************************************************************/
-BOOL api_ntlsa_rpc(pipes_struct *p, prs_struct *data)
+BOOL api_ntlsa_rpc(rpcsrv_struct *p, prs_struct *data)
 {
 	return api_rpcTNP(p, "api_ntlsa_rpc", api_lsa_cmds, data);
 }

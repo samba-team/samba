@@ -61,7 +61,7 @@ static void svc_reply_close(SVC_Q_CLOSE *q_r,
 /*******************************************************************
  api_svc_close
  ********************************************************************/
-static void api_svc_close( pipes_struct *p, prs_struct *data,
+static void api_svc_close( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SVC_Q_CLOSE q_r;
@@ -117,7 +117,7 @@ static void svc_reply_open_service(SVC_Q_OPEN_SERVICE *q_u,
 /*******************************************************************
  api_svc_open_service
  ********************************************************************/
-static void api_svc_open_service( pipes_struct *p, prs_struct *data,
+static void api_svc_open_service( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SVC_Q_OPEN_SERVICE q_u;
@@ -153,7 +153,7 @@ static void svc_reply_start_service(SVC_Q_START_SERVICE *q_s,
 /*******************************************************************
  api_svc_start_service
  ********************************************************************/
-static void api_svc_start_service( pipes_struct *p, prs_struct *data,
+static void api_svc_start_service( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SVC_Q_START_SERVICE q_u;
@@ -203,7 +203,7 @@ static void svc_reply_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
 /*******************************************************************
  api_svc_open_sc_man
  ********************************************************************/
-static void api_svc_open_sc_man( pipes_struct *p, prs_struct *data,
+static void api_svc_open_sc_man( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SVC_Q_OPEN_SC_MAN q_u;
@@ -318,7 +318,7 @@ static void svc_reply_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_u,
 /*******************************************************************
  api_svc_enum_svcs_status
  ********************************************************************/
-static void api_svc_enum_svcs_status( pipes_struct *p, prs_struct *data,
+static void api_svc_enum_svcs_status( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SVC_Q_ENUM_SVCS_STATUS q_u;
@@ -356,7 +356,7 @@ static void svc_reply_query_disp_name(SVC_Q_QUERY_DISP_NAME *q_u,
 /*******************************************************************
  api_svc_query_disp_name
  ********************************************************************/
-static void api_svc_query_disp_name( pipes_struct *p, prs_struct *data,
+static void api_svc_query_disp_name( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SVC_Q_QUERY_DISP_NAME q_u;
@@ -381,7 +381,7 @@ static struct api_struct api_svc_cmds[] =
 /*******************************************************************
  receives a svcctl pipe and responds.
  ********************************************************************/
-BOOL api_svcctl_rpc(pipes_struct *p, prs_struct *data)
+BOOL api_svcctl_rpc(rpcsrv_struct *p, prs_struct *data)
 {
 	return api_rpcTNP(p, "api_svc_rpc", api_svc_cmds, data);
 }

@@ -972,7 +972,7 @@ static void srv_reply_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *q_n,
 
 /*******************************************************************
 ********************************************************************/
-static void api_srv_net_srv_get_info( pipes_struct *p, prs_struct *data,
+static void api_srv_net_srv_get_info( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_SRV_GET_INFO q_n;
@@ -987,7 +987,7 @@ static void api_srv_net_srv_get_info( pipes_struct *p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static void api_srv_net_file_enum( pipes_struct *p, prs_struct *data,
+static void api_srv_net_file_enum( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_FILE_ENUM q_n;
@@ -1005,7 +1005,7 @@ static void api_srv_net_file_enum( pipes_struct *p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static void api_srv_net_conn_enum( pipes_struct *p, prs_struct *data,
+static void api_srv_net_conn_enum( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_CONN_ENUM q_n;
@@ -1023,7 +1023,7 @@ static void api_srv_net_conn_enum( pipes_struct *p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static void api_srv_net_sess_enum( pipes_struct *p, prs_struct *data,
+static void api_srv_net_sess_enum( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_SESS_ENUM q_n;
@@ -1041,7 +1041,7 @@ static void api_srv_net_sess_enum( pipes_struct *p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static void api_srv_net_share_enum( pipes_struct *p, prs_struct *data,
+static void api_srv_net_share_enum( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_SHARE_ENUM q_n;
@@ -1097,7 +1097,7 @@ static void srv_reply_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_n,
 }
 /*******************************************************************
 ********************************************************************/
-static void api_srv_net_remote_tod( pipes_struct *p, prs_struct *data,
+static void api_srv_net_remote_tod( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_REMOTE_TOD q_n;
@@ -1127,7 +1127,7 @@ struct api_struct api_srv_cmds[] =
 /*******************************************************************
 receives a srvsvc pipe and responds.
 ********************************************************************/
-BOOL api_srvsvc_rpc(pipes_struct *p, prs_struct *data)
+BOOL api_srvsvc_rpc(rpcsrv_struct *p, prs_struct *data)
 {
 	return api_rpcTNP(p, "api_srvsvc_rpc", api_srv_cmds, data);
 }

@@ -3118,21 +3118,14 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
 }
 
 static void api_rpc_trans_reply(char *outbuf,
-				pipes_struct *p,
-				prs_struct *pd)
+				pipes_struct *p)
 {
-	send_trans_reply(outbuf, p->rhdr.data, NULL, NULL, 0, p->file_offset);
+	send_trans_reply(outbuf, p->rsmb_pdu.data, NULL, NULL, 0, p->file_offset);
 
-	if (mem_buf_len(p->rhdr.data) <= p->file_offset)
+	if (mem_buf_len(p->rsmb_pdu.data) <= p->file_offset)
 	{
 		/* all of data was sent: no need to wait for SMBreadX calls */
-		mem_free_data(p->rhdr .data);
-		mem_free_data(p->rfault .data);
-		mem_free_data(p->rdata  .data);
- 		mem_free_data(p->rdata_i.data);		
-		mem_free_data(p->rauth  .data);
-		mem_free_data(p->rverf  .data);
- 		mem_free_data(p->rntlm  .data);		
+		mem_free_data(p->rsmb_pdu.data);
 	}
 }
 
@@ -3221,13 +3214,8 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 	uint16 pnum;
 	uint16 subcommand;
 	pipes_struct *p = NULL;
-	prs_struct pd;
 
 	DEBUG(5,("api_fd_reply\n"));
-
- 	/* make a static data parsing structure from the api_fd_reply data */
- 	prs_init(&pd, 0, 4, 0, True);
- 	mem_create(pd.data, data, 0, tdscnt, 0, False);
 
 	/* First find out the name of this file. */
 	if (suwcnt != 2)
@@ -3257,11 +3245,10 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		{
 			case 0x26:
 			{
-				/* dce/rpc command */
-				reply = rpc_command(p, &pd);
+				reply = rpc_to_smb(p, data, tdscnt);
 				if (reply)
 				{
-					api_rpc_trans_reply(outbuf, p, &pd);
+					api_rpc_trans_reply(outbuf, p);
 				}
 				break;
 			}
@@ -3284,8 +3271,6 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		DEBUG(1,("api_fd_reply: INVALID PIPE HANDLE: %x\n", pnum));
 	}
 
- 	mem_free_data(pd.data);
-	
 	if (!reply)
 	{
 		return api_no_reply(outbuf, mdrcnt);

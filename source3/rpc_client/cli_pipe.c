@@ -695,13 +695,11 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint16 fnum, uint8 op_num,
 		prs_link(&hdr, data, NULL);
 	}
 
-	mem_realloc_data(hdr.data, data_len);
-
 	DEBUG(100,("data_len: %x data_calc_len: %x\n",
 		data_len, mem_buf_len(data->data)));
 
 	/* this is a hack due to limitations in rpc_api_pipe */
-	prs_init(&dataa, mem_buf_len(hdr.data), 4, 0x0, False);
+	prs_init(&dataa, data_len, 4, 0x0, False);
 	mem_buf_copy(dataa.data->data, hdr.data, 0, mem_buf_len(hdr.data));
 
 	ret = rpc_api_pipe(cli, fnum, False, 0x0026, NULL, &dataa, &rparam, rdata);

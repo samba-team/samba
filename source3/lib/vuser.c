@@ -55,18 +55,12 @@ void invalidate_vuid(uint16 vuid)
   vuser->uid = (uid_t)-1;
   vuser->gid = (gid_t)-1;
 
-  vuser->n_sids = 0;
-
   /* same number of igroups as groups */
   vuser->n_groups = 0;
 
   if (vuser->groups)
     free((char *)vuser->groups);
 
-  if (vuser->sids)
-    free((char *)vuser->sids);
-
-  vuser->sids    = NULL;
   vuser->groups  = NULL;
 }
 
@@ -89,9 +83,53 @@ register a uid/name pair as being valid and that a valid password
 has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, uchar user_sess_key[16])
+uint16 create_vuid(uid_t uid, gid_t gid, int n_groups, gid_t *groups,
+				char *unix_name, char *requested_name,
+				char *real_name,
+				BOOL guest, uchar user_sess_key[16])
 {
   user_struct *vuser;
+
+  validated_users = (user_struct *)Realloc(validated_users,
+			   sizeof(user_struct)*
+			   (num_validated_users+1));
+  
+  if (!validated_users)
+    {
+      DEBUG(0,("Failed to realloc users struct!\n"));
+      num_validated_users = 0;
+      return UID_FIELD_INVALID;
+    }
+
+  vuser = &validated_users[num_validated_users];
+  num_validated_users++;
+
+  vuser->uid = uid;
+  vuser->gid = gid;
+  vuser->guest = guest;
+  fstrcpy(vuser->name,unix_name);
+  fstrcpy(vuser->requested_name,requested_name);
+  fstrcpy(vuser->real_name,real_name);
+  memcpy(vuser->user_sess_key, user_sess_key, sizeof(vuser->user_sess_key));
+
+  vuser->n_groups = n_groups;
+	vuser->groups = groups;
+
+  DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
+
+  return (uint16)((num_validated_users - 1) + VUID_OFFSET);
+}
+
+/****************************************************************************
+register a uid/name pair as being valid and that a valid password
+has been given. vuid is biased by an offset. This allows us to
+tell random client vuid's (normally zero) from valid vuids.
+****************************************************************************/
+uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, uchar user_sess_key[16])
+{
+	int n_groups;
+	gid_t *groups;
+	fstring real_name;
   struct passwd *pwfile; /* for getting real name from passwd file */
 
   /* Ensure no vuid gets registered in share level security. */
@@ -130,40 +168,28 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
       return UID_FIELD_INVALID;
     }
 
-  vuser = &validated_users[num_validated_users];
-  num_validated_users++;
-
-  vuser->uid = uid;
-  vuser->gid = gid;
-  vuser->guest = guest;
-  fstrcpy(vuser->name,unix_name);
-  fstrcpy(vuser->requested_name,requested_name);
-  memcpy(vuser->dc.user_sess_key, user_sess_key, sizeof(vuser->dc.user_sess_key));
-
-  vuser->n_sids = 0;
-  vuser->sids   = NULL;
-
-  vuser->n_groups = 0;
-  vuser->groups  = NULL;
-
   /* Find all the groups this uid is in and store them. 
      Used by become_user() */
   get_unixgroups(unix_name,uid,gid,
-	       &vuser->n_groups,
-	       &vuser->groups);
+	       &n_groups,
+	       &groups);
 
   DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
 
   DEBUG(3, ("Clearing default real name\n"));
-  fstrcpy(vuser->real_name, "<Full Name>\0");
-  if (lp_unix_realname()) {
-    if ((pwfile=hashed_getpwnam(vuser->name))!= NULL)
+  fstrcpy(real_name, "<Full Name>\0");
+  if (lp_unix_realname())
+	{
+    if ((pwfile=hashed_getpwnam(unix_name))!= NULL)
       {
-      DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->name,pwfile->pw_gecos));
-      fstrcpy(vuser->real_name, pwfile->pw_gecos);
+      DEBUG(3, ("User name: %s\tReal name: %s\n",unix_name,pwfile->pw_gecos));
+      fstrcpy(real_name, pwfile->pw_gecos);
       }
   }
 
-  return (uint16)((num_validated_users - 1) + VUID_OFFSET);
+  return create_vuid(uid, gid, n_groups, groups,
+				unix_name, requested_name,
+				real_name,
+				guest, user_sess_key);
 }
 
