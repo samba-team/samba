@@ -293,7 +293,11 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	}
 	krb5_unparse_name_fixed(context->context, princ, name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW);
+	/* anyone can change her/his own password */
+	if(!krb5_principal_compare(context->context, context->caller, princ))
+	    ret = KADM5_AUTH_INSUFFICIENT;
+	if(ret)
+	    ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW);
 	if(ret){
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
@@ -313,7 +317,11 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	    goto fail;
 	krb5_unparse_name_fixed(context->context, princ, name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW);
+	/* anyone can change her/his own password */
+	if(!krb5_principal_compare(context->context, context->caller, princ))
+	    ret = KADM5_AUTH_INSUFFICIENT;
+	if(ret)
+	    ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW);
 	if(ret){
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
