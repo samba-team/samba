@@ -1544,6 +1544,7 @@ int _lp_force_dir_security_mode(int );
 int lp_max_connections(int );
 int lp_defaultcase(int );
 int lp_minprintspace(int );
+int lp_maxprintjobs(int );
 int lp_printing(int );
 int lp_oplock_contention_limit(int );
 int lp_write_cache_size(int );
