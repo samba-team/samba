@@ -21,8 +21,6 @@ dont_build="openssl-0.9.7.*krb4-1.2.* ${dont_build}"
 dont_build="openssl-0.9.6.*heimdal-0.5.*osf4.* ${dont_build}"
 #local openssl 09.7 and broken kuser/Makefile.am
 dont_build="openssl-0.9.6.*heimdal-0.5.*freebsd4.8.* ${dont_build}" 
-#krb4-config broken test
-dont_build="openssl-*.*heimdal-0.5.*krb4-1.2.* ${dont_build}"
 failed=
 
 # Allow override
@@ -104,6 +102,7 @@ build () {
     prog=$2
     ver=$3
     confprog=$4
+    checks=$5
     pv=${prog}-${ver}
     mkdir tmp || logerror "failed to build tmpdir"
     cd tmp || logerror "failed to change dir to tmpdir"
@@ -128,6 +127,7 @@ build () {
     do_check_p make_check_version ${real_ver} || \
     	{ ${opt_n} make check >> ${logfile} 2>&1 || return 1 ; }
     ${opt_n} cd ..
+    [ "${checks}" != "" ] && ${opt_n} ${checks} >> ${logfile} 2>&1
     return 0
 }
 
@@ -165,13 +165,9 @@ for vo in ${openssl_versions} ; do
 	v="openssl-${vo}-heimdal-${vh}"
 	build "${v}" \
 	    heimdal ${vh} \
-	    "configure ${wok4} ${wssl}-${vo} ${wssli}-${vo}/include" || \
-	    { failed="${failed} ${v}" ; continue ; }
-	if ! ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
-	    grep lcrypto) >/dev/null 2>&1 ; then
-	    logprint "** failed to build with openssl"
-	    failed="${failed} ${v}"
-	fi
+	    "configure ${wok4} ${wssl}-${vo} ${wssli}-${vo}/include" \
+	    "${targetdir}/heimdal-${vh}/bin/krb5-config --libs | grep lcrypto" \ || \
+	    { failed="${failed} ${v}" ; logprint ${v} failed ; }
     done
 done
 
@@ -181,13 +177,9 @@ for vo in ${openssl_versions} ; do
 	v="openssl-${vo}-krb4-${vk}"
 	build "${v}" \
 	    krb4 ${vk} \
-	    "configure ${wssl}-${vo}" || \
-	    { failed="${failed} ${v}" ; continue ; }
-	if ! ( ${targetdir}/krb4-${vk}/bin/krb4-config --libs | \
-	    grep lcrypto) >/dev/null 2>&1 ; then
-	    logprint "*** failed to build with openssl"
-	    failed="${failed} ${v}"
-	fi
+	    "configure ${wssl}-${vo}" \
+	    "${targetdir}/krb4-${vk}/bin/krb4-config --libs | grep lcrypto"|| \
+	    { failed="${failed} ${v}" ; logprint ${v} failed ; }
     done
 done
 
@@ -198,40 +190,21 @@ for vo in ${openssl_versions} ; do
 	    v="openssl-${vo}-krb4-${vk}-heimdal-${vh}"
 	    build "${v}" \
 		heimdal ${vh} \
-		"configure ${wk4c}-${vk}${bk4c} ${wssl}-${vo} ${wssli}-${vo}/include" || \
-		{ failed="${failed} ${v}" ; continue ; }
-	    if ! ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
-		grep lcrypto) >/dev/null 2>&1 ; then
-		logprint "*** failed to build with openssl"
-	        failed="${failed} ${v}"
-		continue
-	    fi
-	    if ! ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
-		grep krb4) >/dev/null 2>&1 ; then
-		logprint "*** failed to build with krb4"
-	        failed="${failed} ${v}"
-	    fi
+		"configure ${wk4c}-${vk}${bk4c} ${wssl}-${vo} ${wssli}-${vo}/include" \
+		"${targetdir}/heimdal-${vh}/bin/krb5-config --libs | grep lcrypto && ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | grep krb4" \
+		 || \
+	    { failed="${failed} ${v}" ; logprint ${v} failed ; }
 	done
     done
 done
 
 logprint === building heimdal without krb4 and openssl versions
 for vh in ${heimdal_versions} ; do
-    build "des-heimdal-${vh}" \
+    v="des-heimdal-${vh}"
+    build "${v}" \
 	heimdal ${vh} \
 	"configure ${wok4} ${wossl}" || \
-	{ failed="${failed} ${v}" ; continue ; }
-    if ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
-	grep lcrypto) >/dev/null 2>&1 ; then
-	logprint "*** failed to build WITHOUT openssl"
-        failed="${failed} ${v}"
-	continue
-    fi
-    if ( ${targetdir}/heimdal-${vh}/bin/krb5-config --libs | \
-	grep krb4 ) >/dev/null 2>&1 ; then
-	logprint "*** failed to build WITHOUT krb4"
-        failed="${failed} ${v}"
-    fi
+	{ failed="${failed} ${v}" ; logprint ${v} failed ; }
 done
 
 logprint all done
