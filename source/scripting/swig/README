@@ -1,0 +1,37 @@
+README for Samba SWIG Python extensions
+---------------------------------------
+
+Instructions for building:
+
+1. Run configure with the --with-python option to enable python
+   extensions. 
+
+2. Edit the script/build_idl.sh script to pass the --swig option to
+   pidl.  Here's a patch:
+
+Index: script/build_idl.sh
+===================================================================
+--- script/build_idl.sh	(revision 2413)
++++ script/build_idl.sh	(working copy)
+@@ -4,7 +4,7 @@
+ 
+ [ -d librpc/gen_ndr ] || mkdir -p librpc/gen_ndr || exit 1
+ 
+-PIDL="$PERL ./build/pidl/pidl.pl --output librpc/gen_ndr/ndr_ --parse --header --parser --server"
++PIDL="$PERL ./build/pidl/pidl.pl --output librpc/gen_ndr/ndr_ --parse --header --parser --server --swig"
+ TABLES="$PERL ./build/pidl/tables.pl --output librpc/gen_ndr/tables"
+ 
+ if [ x$FULLBUILD = xFULL ]; then
+
+3. Run 'make idl_full swig' to build extensions.
+
+4. At some stage there will be a proper system for installing the
+   extensions, but right now it's easier to run them in place.  Set
+   your PYTHONPATH to include the modules.  From the Samba source
+   directory, run:
+
+   export PYTHONPATH=`pwd`/scripting/swig
+
+Now you can go nuts and use the extensions.  Check the
+scripting/swig/torture directory for a testsuite.  There will
+hopefully be a bunch of usage examples somewhere.
