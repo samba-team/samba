@@ -183,13 +183,13 @@ static error_status_t epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	if (!eps) {
 		/* this is the first call - fill the list. Subsequent calls 
 		   will feed from this list, stored in the handle */
-		eps = talloc_p(h->mem_ctx, struct rpc_eps);
+		eps = talloc_p(h, struct rpc_eps);
 		if (!eps) {
 			return EPMAPPER_STATUS_NO_MEMORY;
 		}
 		h->data = eps;
 
-		eps->count = build_ep_list(h->mem_ctx, dce_call->conn->dce_ctx->endpoint_list, &eps->e);
+		eps->count = build_ep_list(h, dce_call->conn->dce_ctx->endpoint_list, &eps->e);
 	}
 
 	/* return the next N elements */

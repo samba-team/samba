@@ -69,7 +69,6 @@ struct dcesrv_interface {
 struct dcesrv_call_state {
 	struct dcesrv_call_state *next, *prev;
 	struct dcesrv_connection *conn;
-	TALLOC_CTX *mem_ctx;
 	struct dcerpc_packet pkt;
 
 	DATA_BLOB input;
@@ -89,7 +88,6 @@ struct dcesrv_call_state {
 struct dcesrv_handle {
 	struct dcesrv_handle *next, *prev;
 	struct policy_handle wire_handle;
-	TALLOC_CTX *mem_ctx;
 	void *data;
 	void (*destroy)(struct dcesrv_connection *, struct dcesrv_handle *);
 };
@@ -107,8 +105,6 @@ struct dcesrv_auth {
 struct dcesrv_connection {
 	/* the top level context for this server */
 	struct dcesrv_context *dce_ctx;
-
-	TALLOC_CTX *mem_ctx;
 
 	/* the endpoint that was opened */
 	const struct dcesrv_endpoint *endpoint;
@@ -166,8 +162,6 @@ struct dcesrv_endpoint_server {
 
 /* server-wide context information for the dcerpc server */
 struct dcesrv_context {
-	TALLOC_CTX *mem_ctx;
-
 	/* the list of endpoints that have registered 
 	 * by the configured endpoint servers 
 	 */

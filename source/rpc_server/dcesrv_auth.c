@@ -83,13 +83,13 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return True;
 	}
 
-	dce_conn->auth_state.auth_info = talloc_p(dce_conn->mem_ctx, struct dcerpc_auth);
+	dce_conn->auth_state.auth_info = talloc_p(dce_conn, struct dcerpc_auth);
 	if (!dce_conn->auth_state.auth_info) {
 		return False;
 	}
 
 	status = ndr_pull_struct_blob(&pkt->u.bind.auth_info,
-				      call->mem_ctx,
+				      call,
 				      dce_conn->auth_state.auth_info,
 				      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -118,7 +118,7 @@ BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct dcerpc_packet *
 	}
 
 	status = gensec_update(dce_conn->auth_state.gensec_security,
-			       call->mem_ctx,
+			       call,
 			       dce_conn->auth_state.auth_info->credentials, 
 			       &dce_conn->auth_state.auth_info->credentials);
 	
@@ -161,7 +161,7 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	}
 
 	status = ndr_pull_struct_blob(&pkt->u.auth.auth_info,
-				      call->mem_ctx,
+				      call,
 				      dce_conn->auth_state.auth_info,
 				      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -170,7 +170,7 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 
 	/* Pass the extra data we got from the client down to gensec for processing */
 	status = gensec_update(dce_conn->auth_state.gensec_security,
-			       call->mem_ctx,
+			       call,
 			       dce_conn->auth_state.auth_info->credentials, 
 			       &dce_conn->auth_state.auth_info->credentials);
 	if (NT_STATUS_IS_OK(status)) {
@@ -250,7 +250,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	pkt->u.request.stub_and_verifier.length -= auth_blob.length;
 
 	/* pull the auth structure */
-	ndr = ndr_pull_init_blob(&auth_blob, call->mem_ctx);
+	ndr = ndr_pull_init_blob(&auth_blob, call);
 	if (!ndr) {
 		return False;
 	}
@@ -261,6 +261,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 
 	status = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, &auth);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(ndr);
 		return False;
 	}
 
@@ -268,7 +269,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	switch (dce_conn->auth_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_unseal_packet(dce_conn->auth_state.gensec_security,
-					      call->mem_ctx,
+					      call,
 					      full_packet->data + DCERPC_REQUEST_LENGTH,
 					      pkt->u.request.stub_and_verifier.length, 
 					      full_packet->data,
@@ -281,7 +282,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		status = gensec_check_packet(dce_conn->auth_state.gensec_security,
-					     call->mem_ctx,
+					     call,
 					     pkt->u.request.stub_and_verifier.data, 
 					     pkt->u.request.stub_and_verifier.length,
 					     full_packet->data,
@@ -300,9 +301,11 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 
 	/* remove the indicated amount of padding */
 	if (pkt->u.request.stub_and_verifier.length < auth.auth_pad_length) {
+		talloc_free(ndr);
 		return False;
 	}
 	pkt->u.request.stub_and_verifier.length -= auth.auth_pad_length;
+	talloc_free(ndr);
 
 	return NT_STATUS_IS_OK(status);
 }
@@ -321,11 +324,11 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 
 	/* non-signed packets are simple */
 	if (!dce_conn->auth_state.auth_info || !dce_conn->auth_state.gensec_security) {
-		status = dcerpc_push_auth(blob, call->mem_ctx, pkt, NULL);
+		status = dcerpc_push_auth(blob, call, pkt, NULL);
 		return NT_STATUS_IS_OK(status);
 	}
 
-	ndr = ndr_push_init_ctx(call->mem_ctx);
+	ndr = ndr_push_init_ctx(call);
 	if (!ndr) {
 		return False;
 	}
@@ -346,14 +349,14 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	payload_length = ndr->offset - DCERPC_REQUEST_LENGTH;
 
 	if (dce_conn->auth_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
-		status = dcesrv_connect_verifier(call->mem_ctx,
+		status = dcesrv_connect_verifier(call,
 						 &dce_conn->auth_state.auth_info->credentials);
 		if (!NT_STATUS_IS_OK(status)) {
 			return False;
 		}
 	} else {
 		dce_conn->auth_state.auth_info->credentials
-			= data_blob_talloc(call->mem_ctx, NULL, 
+			= data_blob_talloc(call, NULL, 
 					   gensec_sig_size(dce_conn->auth_state.gensec_security));
 	}
 
@@ -376,7 +379,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	switch (dce_conn->auth_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_seal_packet(dce_conn->auth_state.gensec_security, 
-					    call->mem_ctx,
+					    call,
 					    ndr->data + DCERPC_REQUEST_LENGTH, 
 					    payload_length,
 					    blob->data,
@@ -386,7 +389,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		status = gensec_sign_packet(dce_conn->auth_state.gensec_security, 
-					    call->mem_ctx,
+					    call,
 					    ndr->data + DCERPC_REQUEST_LENGTH, 
 					    payload_length,
 					    blob->data,

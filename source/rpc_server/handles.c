@@ -28,19 +28,12 @@
 struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection *dce_conn, 
 					uint8_t handle_type)
 {
-	TALLOC_CTX *mem_ctx;
 	struct dcesrv_handle *h;
 
-	mem_ctx = talloc_init("rpc handle type %d\n", handle_type);
-	if (!mem_ctx) {
-		return NULL;
-	}
-	h = talloc(mem_ctx, sizeof(*h));
+	h = talloc_p(dce_conn, struct dcesrv_handle);
 	if (!h) {
-		talloc_destroy(mem_ctx);
 		return NULL;
 	}
-	h->mem_ctx = mem_ctx;
 	h->data = NULL;
 	h->destroy = NULL;
 
@@ -62,7 +55,7 @@ void dcesrv_handle_destroy(struct dcesrv_connection *dce_conn,
 		h->destroy(dce_conn, h);
 	}
 	DLIST_REMOVE(dce_conn->handles, h);
-	talloc_destroy(h->mem_ctx);
+	talloc_free(h);
 }
 
 

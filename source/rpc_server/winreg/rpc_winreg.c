@@ -51,7 +51,7 @@ static NTSTATUS winreg_bind(struct dcesrv_call_state *dc, const struct dcesrv_in
 {
 	struct _privatedata *data;
 	WERROR error;
-	data = talloc(dc->conn->mem_ctx, sizeof(struct _privatedata));
+	data = talloc_p(dc->conn, struct _privatedata);
 	error = reg_open(&data->registry, "dir", "/tmp/reg", "");
 	if(!W_ERROR_IS_OK(error)) return werror_to_ntstatus(error);
 	dc->conn->private = data;

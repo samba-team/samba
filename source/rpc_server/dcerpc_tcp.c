@@ -208,7 +208,7 @@ void dcesrv_tcp_close(struct server_connection *conn, const char *reason)
 
 	DEBUG(5,("dcesrv_tcp_close: %s\n",reason));
 
-	talloc_destroy(dce_conn->mem_ctx);
+	talloc_free(dce_conn);
 
 	return;
 }

@@ -27,7 +27,7 @@
   see if two endpoints match
 */
 static BOOL endpoints_match(const struct dcesrv_ep_description *ep1,
-							const struct dcesrv_ep_description *ep2)
+			    const struct dcesrv_ep_description *ep2)
 {
 	if (ep1->type != ep2->type) {
 		return False;
@@ -53,7 +53,7 @@ static BOOL endpoints_match(const struct dcesrv_ep_description *ep1,
   find an endpoint in the dcesrv_context
 */
 static struct dcesrv_endpoint *find_endpoint(struct dcesrv_context *dce_ctx,
-						       const struct dcesrv_ep_description *ep_description)
+					     const struct dcesrv_ep_description *ep_description)
 {
 	struct dcesrv_endpoint *ep;
 	for (ep=dce_ctx->endpoint_list; ep; ep=ep->next) {
@@ -169,7 +169,7 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	/* check if this endpoint exists
 	 */
 	if ((ep=find_endpoint(dce_ctx, &ep_description))==NULL) {
-		ep = talloc(dce_ctx->mem_ctx, sizeof(*ep));
+		ep = talloc_p(dce_ctx, struct dcesrv_endpoint);
 		if (!ep) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -192,7 +192,7 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	}
 
 	/* talloc a new interface list element */
-	ifl = talloc(dce_ctx->mem_ctx, sizeof(*ifl));
+	ifl = talloc_p(dce_ctx, struct dcesrv_if_list);
 	if (!ifl) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -208,7 +208,7 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		 * we try to set it
 		 */
 		if (ep->sd == NULL) {
-			ep->sd = copy_security_descriptor(dce_ctx->mem_ctx, sd);
+			ep->sd = copy_security_descriptor(dce_ctx, sd);
 		}
 
 		/* if now there's no security descriptor given on the endpoint
@@ -275,21 +275,12 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 const struct dcesrv_endpoint *ep,
 				 struct dcesrv_connection **p)
 {
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_init("dcesrv_endpoint_connect");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*p = talloc_p(mem_ctx, struct dcesrv_connection);
+	*p = talloc_p(dce_ctx, struct dcesrv_connection);
 	if (! *p) {
-		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	(*p)->dce_ctx = dce_ctx;
-	(*p)->mem_ctx = mem_ctx;
 	(*p)->endpoint = ep;
 	(*p)->iface = NULL;
 	(*p)->private = NULL;
@@ -363,7 +354,7 @@ void dcesrv_endpoint_disconnect(struct dcesrv_connection *p)
 		free_session_info(&p->auth_state.session_info);
 	}
 
-	talloc_free(p->mem_ctx);
+	talloc_free(p);
 }
 
 static void dcesrv_init_hdr(struct dcerpc_packet *pkt)
@@ -400,12 +391,12 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 	pkt.u.fault.cancel_count = 0;
 	pkt.u.fault.status = fault_code;
 
-	rep = talloc_p(call->mem_ctx, struct dcesrv_call_reply);
+	rep = talloc_p(call, struct dcesrv_call_reply);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL);
+	status = dcerpc_push_auth(&rep->data, call, &pkt, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -437,12 +428,12 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	pkt.u.bind_nak.reject_reason = reason;
 	pkt.u.bind_nak.num_versions = 0;
 
-	rep = talloc_p(call->mem_ctx, struct dcesrv_call_reply);
+	rep = talloc_p(call, struct dcesrv_call_reply);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL);
+	status = dcerpc_push_auth(&rep->data, call, &pkt, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -474,13 +465,13 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	if_version = call->pkt.u.bind.ctx_list[0].abstract_syntax.if_version;
-	uuid = GUID_string(call->mem_ctx, &call->pkt.u.bind.ctx_list[0].abstract_syntax.uuid);
+	uuid = GUID_string(call, &call->pkt.u.bind.ctx_list[0].abstract_syntax.uuid);
 	if (!uuid) {
 		return dcesrv_bind_nak(call, 0);
 	}
 
 	transfer_syntax_version = call->pkt.u.bind.ctx_list[0].transfer_syntaxes[0].if_version;
-	transfer_syntax = GUID_string(call->mem_ctx, 
+	transfer_syntax = GUID_string(call, 
 				      &call->pkt.u.bind.ctx_list[0].transfer_syntaxes[0].uuid);
 	if (!transfer_syntax ||
 	    strcasecmp(NDR_GUID, transfer_syntax) != 0 ||
@@ -517,13 +508,13 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
 	pkt.u.bind_ack.assoc_group_id = call->pkt.u.bind.assoc_group_id;
 	if (call->conn->iface && call->conn->iface->ndr) {
-		pkt.u.bind_ack.secondary_address = talloc_asprintf(call->mem_ctx, "\\PIPE\\%s", 
+		pkt.u.bind_ack.secondary_address = talloc_asprintf(call, "\\PIPE\\%s", 
 								   call->conn->iface->ndr->name);
 	} else {
 		pkt.u.bind_ack.secondary_address = "";
 	}
 	pkt.u.bind_ack.num_results = 1;
-	pkt.u.bind_ack.ctx_list = talloc_p(call->mem_ctx, struct dcerpc_ack_ctx);
+	pkt.u.bind_ack.ctx_list = talloc_p(call, struct dcerpc_ack_ctx);
 	if (!pkt.u.bind_ack.ctx_list) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -545,12 +536,12 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		}
 	}
 
-	rep = talloc_p(call->mem_ctx, struct dcesrv_call_reply);
+	rep = talloc_p(call, struct dcesrv_call_reply);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, 
+	status = dcerpc_push_auth(&rep->data, call, &pkt, 
 				  call->conn->auth_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -575,7 +566,7 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 		return dcesrv_fault(call, DCERPC_FAULT_OTHER);
 	}
 
-	talloc_free(call->mem_ctx);
+	talloc_free(call);
 
 	/* we don't send a reply to a auth3 request, except by a
 	   fault */
@@ -607,12 +598,12 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		return dcesrv_fault(call, DCERPC_FAULT_OP_RNG_ERROR);
 	}
 
-	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier, call->mem_ctx);
+	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier, call);
 	if (!pull) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r = talloc(call->mem_ctx, call->conn->iface->ndr->calls[opnum].struct_size);
+	r = talloc(call, call->conn->iface->ndr->calls[opnum].struct_size);
 	if (!r) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -638,7 +629,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	call->fault_code = 0;
 
 	/* call the dispatch function */
-	status = call->conn->iface->dispatch(call, call->mem_ctx, r);
+	status = call->conn->iface->dispatch(call, call, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		dcerpc_log_packet(call->conn->iface->ndr, opnum, NDR_IN, 
 				  &call->pkt.u.request.stub_and_verifier);
@@ -646,7 +637,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	}
 
 	/* form the reply NDR */
-	push = ndr_push_init_ctx(call->mem_ctx);
+	push = ndr_push_init_ctx(call);
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -674,7 +665,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		struct dcesrv_call_reply *rep;
 		struct dcerpc_packet pkt;
 
-		rep = talloc_p(call->mem_ctx, struct dcesrv_call_reply);
+		rep = talloc_p(call, struct dcesrv_call_reply);
 		if (!rep) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -760,32 +751,25 @@ static void dce_partial_advance(struct dcesrv_connection *dce_conn, uint32_t off
 NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 {
 	struct ndr_pull *ndr;
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	struct dcesrv_call_state *call;
 	DATA_BLOB blob;
 
-	mem_ctx = talloc_init("dcesrv_input");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	call = talloc_p(mem_ctx, struct dcesrv_call_state);
+	call = talloc_p(dce_conn, struct dcesrv_call_state);
 	if (!call) {
 		talloc_free(dce_conn->partial_input.data);
-		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	call->mem_ctx = mem_ctx;
 	call->conn = dce_conn;
 	call->replies = NULL;
 
 	blob = dce_conn->partial_input;
 	blob.length = dcerpc_get_frag_length(&blob);
 
-	ndr = ndr_pull_init_blob(&blob, mem_ctx);
+	ndr = ndr_pull_init_blob(&blob, call);
 	if (!ndr) {
 		talloc_free(dce_conn->partial_input.data);
-		talloc_free(mem_ctx);
+		talloc_free(call);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -796,7 +780,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	status = ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, &call->pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(dce_conn->partial_input.data);
-		talloc_free(mem_ctx);
+		talloc_free(call);
 		return status;
 	}
 
@@ -879,7 +863,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	   it to the list of pending calls. We add it to the end to keep the call
 	   list in the order we will answer */
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(call);
 	}
 
 	return status;
@@ -962,7 +946,7 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 	if (call->replies == NULL) {
 		/* we're done with the whole call */
 		DLIST_REMOVE(dce_conn->call_list, call);
-		talloc_free(call->mem_ctx);
+		talloc_free(call);
 	}
 
 	return status;
@@ -995,18 +979,18 @@ NTSTATUS dcesrv_output_blob(struct dcesrv_connection *dce_conn,
 /*
   initialise the dcerpc server context
 */
-NTSTATUS dcesrv_init_context(struct dcesrv_context *dce_ctx)
+NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, struct dcesrv_context **dce_ctx)
 {
 	int i;
 	const char **endpoint_servers = lp_dcerpc_endpoint_servers();
 
-	dce_ctx->mem_ctx = talloc_init("struct dcesrv_context");
-	if (!dce_ctx->mem_ctx) {
-		DEBUG(3,("dcesrv_init_context: talloc_init failed\n"));
+	(*dce_ctx) = talloc_p(mem_ctx, struct dcesrv_context);
+	if (! *dce_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	talloc_set_name(*dce_ctx, "struct dcesrv_context");
 
-	dce_ctx->endpoint_list = NULL;
+	(*dce_ctx)->endpoint_list = NULL;
 
 	if (!endpoint_servers) {
 		DEBUG(3,("dcesrv_init_context: no endpoint servers configured\n"));
@@ -1023,7 +1007,7 @@ NTSTATUS dcesrv_init_context(struct dcesrv_context *dce_ctx)
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		ret = ep_server->init_server(dce_ctx, ep_server);
+		ret = ep_server->init_server(*dce_ctx, ep_server);
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(0,("dcesrv_init_context: failed to init endpoint server = '%s'\n", endpoint_servers[i]));
 			return ret;
@@ -1035,7 +1019,6 @@ NTSTATUS dcesrv_init_context(struct dcesrv_context *dce_ctx)
 
 static void dcesrv_init(struct server_service *service, const struct model_ops *model_ops)
 {
-	TALLOC_CTX *mem_ctx;
 	struct dcesrv_context *dce_ctx;
 	int i;
 	const char **endpoint_servers = lp_dcerpc_endpoint_servers();
@@ -1047,16 +1030,14 @@ static void dcesrv_init(struct server_service *service, const struct model_ops *
 		return;
 	}
 
-	mem_ctx = talloc_init("struct dcesrv_context");
-
-	dce_ctx = talloc_p(mem_ctx, struct dcesrv_context);
+	dce_ctx = talloc_p(NULL, struct dcesrv_context);
 	if (!dce_ctx) {
 		DEBUG(0,("talloc_p(mem_ctx, struct dcesrv_context) failed\n"));
 		return;
 	}
+	talloc_set_name(dce_ctx, "dcesrv_init");
 
 	ZERO_STRUCTP(dce_ctx);
-	dce_ctx->mem_ctx	= mem_ctx;
 	dce_ctx->endpoint_list	= NULL;
 
 	for (i=0;endpoint_servers[i];i++) {
