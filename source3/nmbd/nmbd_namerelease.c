@@ -99,14 +99,14 @@ name %s on subnet %s.\n", inet_ntoa(p->ip), nmb_namestr(answer_name), subrec->su
     putip((char*)&released_ip ,&nmb->answers->rdata[2]);
 
     if(rrec->success_fn)
-      (*rrec->success_fn)(subrec, rrec->userdata, answer_name, released_ip);
+      (*(release_name_success_function)rrec->success_fn)(subrec, rrec->userdata, answer_name, released_ip);
     standard_success_release( subrec, rrec->userdata, answer_name, released_ip);
   }
   else
   {
     /* We have no standard_fail_release - maybe we should add one ? */
     if(rrec->fail_fn)
-      (*rrec->fail_fn)(subrec, rrec, answer_name);
+      (*(release_name_fail_function)rrec->fail_fn)(subrec, rrec, answer_name);
   }
 
   remove_response_record(subrec, rrec);
@@ -174,14 +174,14 @@ responding.\n", inet_ntoa(rrec->packet->ip)));
   if(success && rrec->success_fn)
   {
     if(rrec->success_fn)
-      (*rrec->success_fn)(subrec, rrec->userdata, question_name, released_ip);
+      (*(release_name_success_function)rrec->success_fn)(subrec, rrec->userdata, question_name, released_ip);
     standard_success_release( subrec, rrec->userdata, question_name, released_ip);
   }
   else 
   {
     /* We have no standard_fail_release - maybe we should add one ? */
     if( rrec->fail_fn)
-      (*rrec->fail_fn)(subrec, rrec, question_name);
+      (*(release_name_fail_function)rrec->fail_fn)(subrec, rrec, question_name);
   }
 
   remove_response_record(subrec, rrec);
