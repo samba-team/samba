@@ -57,6 +57,9 @@ int audit_close(struct files_struct *fsp, int fd);
 int audit_rename(struct connection_struct *conn, char *old, char *new);
 int audit_unlink(struct connection_struct *conn, char *path);
 int audit_chmod(struct connection_struct *conn, char *path, mode_t mode);
+int audit_chmod_acl(struct connection_struct *conn, char *name, mode_t mode);
+int audit_fchmod(struct files_struct *fsp, int fd, mode_t mode);
+int audit_fchmod_acl(struct files_struct *fsp, int fd, mode_t mode);
 
 /* VFS operations */
 
@@ -113,9 +116,9 @@ struct vfs_ops audit_ops = {
 	audit_chmod_acl,		/* chmod_acl */
 	audit_fchmod_acl,		/* fchmod_acl */
 
-	NULL,				/* sys_acl_get_entry */
-	NULL,				/* sys_acl_get_tag_type */
-        NULL,			/* sys_acl_get_permset */
+	NULL,			/* sys_acl_get_entry */
+	NULL,			/* sys_acl_get_tag_type */
+	NULL,			/* sys_acl_get_permset */
 	NULL,			/*sys_acl_get_qualifier */
 	NULL,			/* sys_acl_get_file */
 	NULL,			/* sys_acl_get_fd */
@@ -255,6 +258,42 @@ int audit_chmod(struct connection_struct *conn, char *path, mode_t mode)
 
 	syslog(SYSLOG_PRIORITY, "chmod %s mode 0x%x %s%s\n",
 	       path, mode,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+
+	return result;
+}
+
+int audit_chmod_acl(struct connection_struct *conn, char *path, mode_t mode)
+{
+	int result = default_vfs_ops.chmod_acl(conn, path, mode);
+
+	syslog(SYSLOG_PRIORITY, "chmod_acl %s mode 0x%x %s%s\n",
+	       path, mode,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+
+	return result;
+}
+
+int audit_fchmod(struct files_struct *fsp, int fd, mode_t mode)
+{
+	int result = default_vfs_ops.fchmod(fsp, fd, mode);
+
+	syslog(SYSLOG_PRIORITY, "fchmod %s mode 0x%x %s%s\n",
+	       fsp->fsp_name, mode,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+
+	return result;
+}
+
+int audit_fchmod_acl(struct files_struct *fsp, int fd, mode_t mode)
+{
+	int result = default_vfs_ops.fchmod_acl(fsp, fd, mode);
+
+	syslog(SYSLOG_PRIORITY, "fchmod_acl %s mode 0x%x %s%s\n",
+	       fsp->fsp_name, mode,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
 
