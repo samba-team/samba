@@ -1,3 +1,8 @@
+2000-10-08  Assar Westerlund  <assar@sics.se>
+
+	* mini_inetd.c (mini_inetd): check that fds are not too large to
+	select on
+
 2000-09-24  Assar Westerlund  <assar@sics.se>
 
 	*  esetenv.c: new file/function

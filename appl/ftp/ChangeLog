@@ -1,3 +1,7 @@
+2000-10-08  Assar Westerlund  <assar@sics.se>
+
+	* ftp/ftp.c (*): check that fds are not too large to select on
+
 2000-07-27  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/gss_userok.c (gss_userok): only do AFS iff KRB4

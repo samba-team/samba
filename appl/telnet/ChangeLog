@@ -1,3 +1,17 @@
+2000-10-08  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/utility.c (stilloob): check that fds are not too large
+	to select on
+	(ttloop): remove confusing output of errno
+	* telnetd/telnetd.c (my_telnet): check that fds are not too large
+	to select on
+	* telnet/utilities.c (EmptyTerminal): check that fds are not too
+	large to select on
+	* telnet/sys_bsd.c (process_rings): check that fds are not too
+	large to select on
+	* telnet/network.c (stilloob): check that fds are not too large to
+	select on
+
 2000-06-09  Assar Westerlund  <assar@sics.se>
 
 	* telnet/commands.c: remove all setuid(getuid()).  we do not

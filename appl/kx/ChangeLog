@@ -1,3 +1,14 @@
+2000-10-08  Assar Westerlund  <assar@sics.se>
+
+	* kxd.c (doit_passive): check that fds are not too large to select
+	on
+	* kx.c (doit_active): check that fds are not too large to select
+	on
+	* krb5.c (krb5_copy_encrypted): check that fds are not too large
+	to select on
+	* krb4.c (krb4_copy_encrypted): check that fds are not too large
+	to select on
+
 2000-06-10  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in: use INSTALL_SCRIPT for installing rxterm, rxtelnet,
