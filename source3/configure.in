@@ -321,12 +321,6 @@ AC_CHECK_LIB(dl, dlopen, [LIBS="$LIBS -ldl";
 	AC_DEFINE(HAVE_LIBDL)])
 
 ############################################
-# we need kerberos 5 for w2k ADS authentication
-AC_CHECK_LIB(krb5, krb5_mk_req_extended, [LIBS="$LIBS -lkrb5";
-	AC_DEFINE(HAVE_KRB5)])
-
-
-############################################
 # check if the compiler can do immediate structures
 AC_CACHE_CHECK([for immediate structures],samba_cv_immediate_structures, [
     AC_TRY_COMPILE([
@@ -1611,9 +1605,10 @@ AC_ARG_WITH(krb4,
   AC_MSG_RESULT(no)
 )
 
+
 #################################################
 # check for location of Kerberos 5 install
-AC_MSG_CHECKING(for kerberos 5 install)
+AC_MSG_CHECKING(for kerberos 5 install path)
 AC_ARG_WITH(krb5,
 [  --with-krb5=base-dir    Include Kerberos 5 support (default=no)],
 [ case "$withval" in
@@ -1623,15 +1618,25 @@ AC_ARG_WITH(krb5,
   *)
     AC_MSG_RESULT(yes)
     AC_DEFINE(KRB5_AUTH)
-    LIBS="$LIBS -lkrb5"
+    LIBS="$LIBS -lkrb5 -lk5crypto -lresolv -lcom_err"
     CFLAGS="$CFLAGS -I$withval/include"
     LDFLAGS="$LDFLAGS -L$withval/lib"
     AC_DEFINE(HAVE_KRB5)
     AC_DEFINE_UNQUOTED(KRB5_DIR,${withval})
+    have_krb5=yes;
     ;;
   esac ],
   AC_MSG_RESULT(no)
 )
+
+
+########################################################
+# now see if we can find the krb5 libs in standard paths
+if test x$have_krb5 != xyes; then
+AC_CHECK_LIB(krb5, krb5_mk_req_extended, [LIBS="$LIBS -lkrb5 -lk5crypto -lresolv -lcom_err";
+	AC_DEFINE(HAVE_KRB5)])
+fi
+
 
 #################################################
 # check for automount support
@@ -2081,57 +2086,6 @@ AC_ARG_WITH(swatdir,
   AC_SUBST(swatdir)],
   [swatdir='${prefix}/swat'
    AC_SUBST(swatdir)]
-)
-
-#################################################
-# check for i18n'ed SWAT compiling
-AC_MSG_CHECKING(whether to use i18n'ed SWAT)
-AC_ARG_WITH(i18n-swat,
-[  --with-i18n-swat        Use i18n'ed SWAT
-  --without-i18n-swat     Don't use i18n'ed SWAT (default)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(I18N_SWAT)
-    i18n_swat="yes"
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    i18n_swat="no"
-    ;;
-  esac 
-  AC_SUBST(i18n_swat) ],
-  [ AC_MSG_RESULT(no)
-  i18n_swat="no"
-  AC_SUBST(i18n_swat) ]
-)
-
-#################################################
-# set SWAT default language for old web browsers.
-AC_MSG_CHECKING(whether to use default SWAT language)
-AC_ARG_WITH(swat-def-lang,
-[  --with-swat-def-lang=LN default SWAT language for old web browsers (empty)],
-[
-  default_pref_lang=""
-  case "$withval" in
-  yes)
-    AC_MSG_WARN([--with-swat-def-lang called without argument - will use default])
-  ;;
-  no)
-    AC_MSG_RESULT(no)
-  ;;
-  *)
-    default_pref_lang="$withval"
-    AC_MSG_RESULT($withval)
-    ;;
-  esac
-  AC_DEFINE_UNQUOTED(I18N_DEFAULT_PREF_LANG, "$default_pref_lang")
-],
-[
-  default_pref_lang=""
-  AC_MSG_RESULT(no)
-  AC_DEFINE_UNQUOTED(I18N_DEFAULT_PREF_LANG, "$default_pref_lang")
-]
 )
 
 #################################################
