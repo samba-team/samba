@@ -31,6 +31,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include "krb5_locl.h"
+#include <getarg.h>
 #include <err.h>
 
 RCSID("$Id$");
@@ -75,15 +76,50 @@ test_alname(krb5_context context, krb5_realm realm,
     
 }
 
+static int version_flag = 0;
+static int help_flag	= 0;
+
+static struct getargs args[] = {
+    {"version",	0,	arg_flag,	&version_flag,
+     "print version", NULL },
+    {"help",	0,	arg_flag,	&help_flag,
+     NULL, NULL }
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args)/sizeof(*args),
+		    NULL,
+		    "");
+    exit (ret);
+}
+
 int
 main(int argc, char **argv)
 {
     krb5_context context;
     krb5_error_code ret;
     krb5_realm realm;
+    int optind = 0;
     char *user;
 
     setprogname(argv[0]);
+
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+	usage(1);
+    
+    if (help_flag)
+	usage (0);
+
+    if(version_flag){
+	print_version(NULL);
+	exit(0);
+    }
+
+    argc -= optind;
+    argv += optind;
 
     if (argc != 2)
 	errx(1, "first argument should be a local user that in root .k5login");
