@@ -862,14 +862,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	share_access   = io->generic.in.share_access;
 	access_mask    = io->generic.in.access_mask;
 
-	if (access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
-		if (name->exists && (name->dos.attrib & FILE_ATTRIBUTE_READONLY)) {
-			access_mask = SEC_RIGHTS_FILE_READ;
-		} else {
-			access_mask = SEC_RIGHTS_FILE_READ | SEC_RIGHTS_FILE_WRITE;
-		}
-	}
-
 	/* certain create options are not allowed */
 	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
 	    !(access_mask & SEC_STD_DELETE)) {
@@ -914,12 +906,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)) {
-		flags |= O_RDWR;
-	} else {
-		flags |= O_RDONLY;
-	}
-
 	if (io->generic.in.file_attr & FILE_ATTRIBUTE_DIRECTORY) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -947,6 +933,12 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	if ((name->dos.attrib & FILE_ATTRIBUTE_READONLY) &&
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
 		return NT_STATUS_CANNOT_DELETE;
+	}
+
+	/* check the security descriptor */
+	status = pvfs_access_check(pvfs, req, name, &access_mask);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	f = talloc_p(req, struct pvfs_file);
@@ -1035,6 +1027,12 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	f->handle->have_opendb_entry = True;
+
+	if (access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)) {
+		flags |= O_RDWR;
+	} else {
+		flags |= O_RDONLY;
+	}
 
 	/* do the actual open */
 	fd = open(f->handle->name->full_name, flags);
