@@ -82,35 +82,6 @@ krb5_build_authenticator (krb5_context context,
 			  Authenticator **auth,
 			  krb5_data *result);
 
-krb5_error_code
-krb5_encrypt (krb5_context context,
-	      void *ptr,
-	      size_t len,
-	      int etype,
-	      krb5_keyblock *keyblock,
-	      krb5_data *result);
-
-krb5_error_code
-krb5_decrypt (krb5_context context,
-	      void *ptr,
-	      size_t len,
-	      int etype,
-	      const krb5_keyblock *keyblock,
-	      krb5_data *result);
-
-krb5_error_code
-krb5_create_checksum (krb5_context context,
-		      krb5_cksumtype type,
-		      void *ptr,
-		      size_t len,
-		      Checksum *result);
-
-krb5_error_code
-krb5_verify_checksum (krb5_context context,
-		      void *ptr,
-		      size_t len,
-		      Checksum *sum);
-
 #define ALLOC(N, X) ((X*)malloc((N) * sizeof(X)))
 #define FREE(X) do{if(X)free(X);}while(0)
 
