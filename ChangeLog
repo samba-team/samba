@@ -1,3 +1,12 @@
+Sat Feb 27 22:41:23 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* doc/install.texi: krb4 is now automatically detected
+
+	* doc/misc.texi: update procedure to set supported encryption
+ 	types
+
+	* doc/setup.texi: change some silly wordings
+
 Sat Feb 27 22:17:30 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/keytab.c (fkt_remove_entry): make this work
