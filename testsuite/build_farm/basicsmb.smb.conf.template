@@ -15,11 +15,13 @@
 
     add machine script = useradd %u -d /dev/null -s /bin/false
 
-    panic action = echo bt | gdb PREFIX/sbin/smbd %d
+    panic action = /bin/sh BUILD_FARM/samba/testsuite/build_farm/backtrace %d
 
     passdb backend = smbpasswd_nua
 
     non unix account range = 10000-200000
+    map hidden = yes
+    create mask = 0777
 
 [test]
     path = PREFIX/testdir
