@@ -566,7 +566,7 @@ verify(char *password)
     /*
      * Try to verify as user.
      */
-    if(verify_unix_user(name, password) == 0)
+    if(unix_verify_user(name, password) == 0)
 	return 0;
     return -1;
 }
