@@ -1,7 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    Generic authenticaion types
-   Copyright (C) Andrew Bartlett              2001
+   Copyright (C) Andrew Bartlett         2001-2002
+   Copyright (C) Jelmer Vernooij              2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -52,14 +53,15 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 }
 
 /* Guest modules initialisation */
-BOOL auth_init_guest(struct auth_context *auth_context, auth_methods **auth_method) 
+NTSTATUS auth_init_guest(struct auth_context *auth_context, const char *options, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	(*auth_method)->auth = check_guest_security;
-	return True;
+	(*auth_method)->name = "guest";
+	return NT_STATUS_OK;
 }
 
 /** 
@@ -102,13 +104,60 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 }
 
 /** Module initailisation function */
-BOOL auth_init_name_to_ntstatus(struct auth_context *auth_context, auth_methods **auth_method) 
+NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	(*auth_method)->auth = check_name_to_ntstatus_security;
-	return True;
+	(*auth_method)->name = "name_to_ntstatus";
+	return NT_STATUS_OK;
 }
+
+/**
+ * Outsorce an auth module to an external loadable .so
+ *
+ * Only works on systems with dlopen() etc.
+ **/
+
+/* Plugin modules initialisation */
+NTSTATUS auth_init_plugin(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+{
+	void * dl_handle;
+	char *plugin_param, *plugin_name, *p;
+	auth_init_function plugin_init;
+
+	if (param == NULL) {
+		DEBUG(0, ("The plugin module needs an argument!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	plugin_name = smb_xstrdup(param);
+	p = strchr(plugin_name, ':');
+	if (p) {
+		*p = 0;
+		plugin_param = p+1;
+		trim_string(plugin_param, " ", " ");
+	} else plugin_param = NULL;
+
+	trim_string(plugin_name, " ", " ");
+
+	DEBUG(5, ("Trying to load auth plugin %s\n", plugin_name));
+	dl_handle = sys_dlopen(plugin_name, RTLD_NOW | RTLD_GLOBAL );
+	if (!dl_handle) {
+		DEBUG(0, ("Failed to load auth plugin %s using sys_dlopen (%s)\n", plugin_name, sys_dlerror()));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+    
+	plugin_init = sys_dlsym(dl_handle, "auth_init");
+	if (!plugin_init){
+		DEBUG(0, ("Failed to find function 'pdb_init' using sys_dlsym in sam plugin %s (%s)\n", plugin_name, sys_dlerror()));	    
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	DEBUG(5, ("Starting sam plugin %s with paramater %s\n", plugin_name, plugin_param?plugin_param:"(null)"));
+	return plugin_init(auth_context, plugin_param, auth_method);
+}
+
 

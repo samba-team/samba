@@ -404,14 +404,15 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-BOOL auth_init_sam(struct auth_context *auth_context, auth_methods **auth_method) 
+NTSTATUS auth_init_sam(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*auth_method)->auth = check_sam_security;
-	return True;
+	(*auth_method)->auth = check_sam_security;	
+	(*auth_method)->name = "sam";
+	return NT_STATUS_OK;
 }
 
 
@@ -442,14 +443,15 @@ static NTSTATUS check_samstrict_security(const struct auth_context *auth_context
 }
 
 /* module initialisation */
-BOOL auth_init_samstrict(struct auth_context *auth_context, auth_methods **auth_method) 
+NTSTATUS auth_init_samstrict(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	(*auth_method)->auth = check_samstrict_security;
-	return True;
+	(*auth_method)->name = "samstrict";
+	return NT_STATUS_OK;
 }
 
 

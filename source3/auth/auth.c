@@ -25,7 +25,7 @@
 
 /** List of various built-in authenticaion modules */
 
-const struct auth_init_function builtin_auth_init_functions[] = {
+const struct auth_init_function_entry builtin_auth_init_functions[] = {
 	{ "guest", auth_init_guest },
 	{ "rhosts", auth_init_rhosts },
 	{ "hostsequiv", auth_init_hostsequiv },
@@ -340,14 +340,31 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 		{
 			if (strequal(builtin_auth_init_functions[i].name, *text_list))
 			{
+				
+				char *module_name = smb_xstrdup(*text_list);
+				char *module_params = NULL;
+				char *p;
+				
+				p = strchr(module_name, ':');
+				
+				if (p) {
+					*p = 0;
+					
+					module_params = p+1;
+					
+					trim_string(module_params, " ", " ");
+				}
+				
+				trim_string(module_name, " ", " ");
+
 				DEBUG(5,("Found auth method %s (at pos %d)\n", *text_list, i));
-				if (builtin_auth_init_functions[i].init(*auth_context, &t)) {
+				if (NT_STATUS_IS_OK(builtin_auth_init_functions[i].init(*auth_context, module_params, &t))) {
 					DEBUG(5,("auth method %s has a valid init\n", *text_list));
-					t->name = builtin_auth_init_functions[i].name;
 					DLIST_ADD_END(list, t, tmp);
 				} else {
 					DEBUG(0,("auth method %s did not correctly init\n", *text_list));
 				}
+				SAFE_FREE(module_name);
 				break;
 			}
 		}
