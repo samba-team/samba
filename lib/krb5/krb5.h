@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -469,7 +469,7 @@ typedef struct krb5_keytab_key_proc_args krb5_keytab_key_proc_args;
 
 typedef struct krb5_replay_data {
     krb5_timestamp timestamp;
-    u_int32_t usec;
+    int32_t usec;
     u_int32_t seq;
 } krb5_replay_data;
 
