@@ -1453,6 +1453,7 @@ static void init_globals(void)
 	   a large number of sites (tridge) */
 	Globals.bHostnameLookups = False;
 
+	str_list_free(&Globals.szPassdbBackend);
 #ifdef WITH_LDAP_SAMCONFIG
 	string_set(&Globals.szLdapServer, "localhost");
 	Globals.ldap_port = 636;
@@ -2527,6 +2528,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 					strupper_m(*(char **)dest_ptr);
 					break;
 				case P_LIST:
+					str_list_free((char ***)dest_ptr);
 					str_list_copy((char ***)dest_ptr, *(const char ***)src_ptr);
 					break;
 				default:
@@ -2758,6 +2760,7 @@ static BOOL handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
 
 static BOOL handle_netbios_aliases(int snum, const char *pszParmValue, char **ptr)
 {
+	str_list_free(&Globals.szNetbiosAliases);
 	Globals.szNetbiosAliases = str_list_make(pszParmValue, NULL);
 	return set_netbios_aliases((const char **)Globals.szNetbiosAliases);
 }
