@@ -691,8 +691,9 @@ static NTSTATUS lsa_OpenAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   lsa_EnumPrivsAccount 
 */
-static NTSTATUS lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_EnumPrivsAccount *r)
+static NTSTATUS lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call, 
+				     TALLOC_CTX *mem_ctx,
+				     struct lsa_EnumPrivsAccount *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -1375,7 +1376,7 @@ static NTSTATUS lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		r->out.sids->sids[i].unknown     = 0;
 
 		status2 = lsa_lookup_name(state, mem_ctx, name, &sid, &atype);
-		if (!NT_STATUS_IS_OK(status) || sid->num_auths == 0) {
+		if (!NT_STATUS_IS_OK(status2) || sid->num_auths == 0) {
 			status = STATUS_SOME_UNMAPPED;
 			continue;
 		}
