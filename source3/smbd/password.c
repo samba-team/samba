@@ -1589,6 +1589,7 @@ BOOL server_validate(char *user, char *domain,
 	}
 
 
+#if USE_NETWKSTAUSERLOGON
 	if (!cli_NetWkstaUserLogon(&cli,user,local_machine)) {
 		DEBUG(1,("password server %s failed NetWkstaUserLogon\n", cli.desthost));
 		cli_tdis(&cli);
@@ -1608,6 +1609,7 @@ BOOL server_validate(char *user, char *domain,
 		cli_tdis(&cli);
 		return False;
 	}
+#endif
 
 	DEBUG(3,("password server %s accepted the password\n", cli.desthost));
 
