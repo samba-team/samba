@@ -814,32 +814,34 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 	pstring     reply_argument;
 
 	if (strlen(buf) < 2) {
-
-		if (ntlmssp_state != NULL) {
-			DEBUG(1, ("Request for initial SPNEGO request where "
-				  "we already have a state\n"));
-			x_fprintf(x_stdout, "BH\n");
-			return;
-		}
-
-		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
+		DEBUG(1, ("SPENGO query [%s] invalid", buf));
 		x_fprintf(x_stdout, "BH\n");
 		return;
 	}
 
-	if ( (strlen(buf) == 2) && (strcmp(buf, "YR") == 0) ) {
+	if (strncmp(buf, "YR", 2) == 0) {
+		if (ntlmssp_state)
+			ntlmssp_end(&ntlmssp_state);
+	} else if (strncmp(buf, "KK", 2) == 0) {
+		
+	} else {
+		DEBUG(1, ("SPENGO query [%s] invalid", buf));
+		x_fprintf(x_stdout, "BH\n");
+		return;
+	}
 
-		/* Initial request, get the negTokenInit offering
+	if ( (strlen(buf) == 2)) {
+
+		/* no client data, get the negTokenInit offering
                    mechanisms */
 
 		offer_gss_spnego_mechs();
 		return;
 	}
 
-	/* All subsequent requests are "KK" (Knock, Knock ;)) and have
-	   a blob. This might be negTokenInit or negTokenTarg */
+	/* All subsequent requests have a blob. This might be negTokenInit or negTokenTarg */
 
-	if ( (strlen(buf) <= 3) || (strncmp(buf, "KK", 2) != 0) ) {
+	if (strlen(buf) <= 3) {
 		DEBUG(1, ("GSS-SPNEGO query [%s] invalid\n", buf));
 		x_fprintf(x_stdout, "BH\n");
 		return;
@@ -1151,7 +1153,7 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 {
 	char *principal;
 	DATA_BLOB tkt, to_server;
-	DATA_BLOB session_key_krb5;
+	DATA_BLOB session_key_krb5 = data_blob(NULL, 0);
 	SPNEGO_DATA reply;
 	char *reply_base64;
 	int retval;
@@ -1196,14 +1198,14 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 		if ((retval = kerberos_kinit_password(user, opt_password, 
 						      0, NULL))) {
 			DEBUG(10, ("Requesting TGT failed: %s\n", error_message(retval)));
-			x_fprintf(x_stdout, "NA\n");
-			return True;
+			return False;
 		}
 
 		retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5);
 
 		if (retval) {
 			DEBUG(10, ("Kinit suceeded, but getting a ticket failed: %s\n", error_message(retval)));
+			return False;
 		}
 	}
 
