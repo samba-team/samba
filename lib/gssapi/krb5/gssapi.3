@@ -100,10 +100,8 @@ gss_wrap_size_limit.3
 .Sh COMPATIBILITY
 The
 .Nm Heimdal
-.Nm
-implementation had a bug in releases before 0.6 that made it fail to
-inter-operate with other
-.Nm
+GSS-API implementation had a bug in releases before 0.6 that made it
+fail to inter-operate when using DES3 with other GSS-API
 implementations when using
 .Fn gss_get_mic
 /
