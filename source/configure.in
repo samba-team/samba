@@ -766,6 +766,24 @@ AC_MSG_RESULT([$LDSHFLAGS])
 AC_MSG_CHECKING([compiler flags for position-independent code])
 AC_MSG_RESULT([$PICFLAGS])
 
+#######################################################
+# test whether building a shared library actually works
+if test $BLDSHARED = true; then
+AC_CACHE_CHECK([whether building shared libraries actually works], 
+               [ac_cv_shlib_works],[
+   ac_cv_shlib_works=no
+   # try building a trivial shared library
+   $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/tests/shlib.c &&
+     $CC $LDSHFLAGS -o shlib.so shlib.po &&
+     ac_cv_shlib_works=yes
+   rm -f shlib.so shlib.po
+])
+if test $ac_cv_shlib_works = no; then
+   BLDSHARED=false
+fi
+fi
+
+
 # this updates our target list if we can build shared libs
 if test $BLDSHARED = true; then
    LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
