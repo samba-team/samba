@@ -202,6 +202,150 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 }
 
 /****************************************************************************
+ parse a node status response into an array of structures
+****************************************************************************/
+static struct node_status *parse_node_status(char *p, int *num_names)
+{
+	struct node_status *ret;
+	int i;
+
+	*num_names = CVAL(p,0);
+
+	if (*num_names == 0) return NULL;
+
+	ret = (struct node_status *)malloc(sizeof(struct node_status)* (*num_names));
+	if (!ret) return NULL;
+
+	p++;
+	for (i=0;i< *num_names;i++) {
+		StrnCpy(ret[i].name,p,15);
+		trim_string(ret[i].name,NULL," ");
+		ret[i].type = CVAL(p,15);
+		ret[i].flags = p[16];
+		p += 18;
+	}
+	return ret;
+}
+
+/****************************************************************************
+do a NBT node status query on an open socket and return an array of
+structures holding the returned names or NULL if the query failed
+**************************************************************************/
+struct node_status *name_status_query(int fd,struct nmb_name *name,
+				      struct in_addr to_ip, int *num_names)
+{
+	BOOL found=False;
+	int retries = 2;
+	int retry_time = 2000;
+	struct timeval tval;
+	struct packet_struct p;
+	struct packet_struct *p2;
+	struct nmb_packet *nmb = &p.packet.nmb;
+	struct node_status *ret;
+
+	ZERO_STRUCT(p);
+
+	nmb->header.name_trn_id = generate_trn_id();
+	nmb->header.opcode = 0;
+	nmb->header.response = False;
+	nmb->header.nm_flags.bcast = False;
+	nmb->header.nm_flags.recursion_available = False;
+	nmb->header.nm_flags.recursion_desired = False;
+	nmb->header.nm_flags.trunc = False;
+	nmb->header.nm_flags.authoritative = False;
+	nmb->header.rcode = 0;
+	nmb->header.qdcount = 1;
+	nmb->header.ancount = 0;
+	nmb->header.nscount = 0;
+	nmb->header.arcount = 0;
+	nmb->question.question_name = *name;
+	nmb->question.question_type = 0x21;
+	nmb->question.question_class = 0x1;
+
+	p.ip = to_ip;
+	p.port = NMB_PORT;
+	p.fd = fd;
+	p.timestamp = time(NULL);
+	p.packet_type = NMB_PACKET;
+	
+	GetTimeOfDay(&tval);
+  
+	if (!send_packet(&p)) 
+		return NULL;
+
+	retries--;
+
+	while (1) {
+		struct timeval tval2;
+		GetTimeOfDay(&tval2);
+		if (TvalDiff(&tval,&tval2) > retry_time) {
+			if (!retries)
+				break;
+			if (!found && !send_packet(&p))
+				return NULL;
+			GetTimeOfDay(&tval);
+			retries--;
+		}
+
+		if ((p2=receive_nmb_packet(fd,90,nmb->header.name_trn_id))) {     
+			struct nmb_packet *nmb2 = &p2->packet.nmb;
+			debug_nmb_packet(p2);
+			
+			if (nmb2->header.opcode != 0 ||
+			    nmb2->header.nm_flags.bcast ||
+			    nmb2->header.rcode ||
+			    !nmb2->header.ancount ||
+			    nmb2->answers->rr_type != 0x21) {
+				/* XXXX what do we do with this? could be a
+				   redirect, but we'll discard it for the
+				   moment */
+				free_packet(p2);
+				continue;
+			}
+
+			ret = parse_node_status(&nmb2->answers->rdata[0], num_names);
+			free_packet(p2);
+			return ret;
+		}
+	}
+	
+	return NULL;
+}
+
+/****************************************************************************
+find the first type XX name in a node status reply - used for finding
+a servers name given its IP
+return the matched name in *name
+**************************************************************************/
+BOOL name_status_find(int type, struct in_addr to_ip, char *name)
+{
+	struct node_status *status;
+	struct nmb_name nname;
+	int count, i;
+	int sock;
+
+	sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
+	if (sock == -1) return False;
+
+	make_nmb_name(&nname, "*", 0);
+	status = name_status_query(sock, &nname, to_ip, &count);
+	close(sock);
+	if (!status) return False;
+
+	for (i=0;i<count;i++) {
+		if (status[i].type == type) break;
+	}
+	if (i == count) return False;
+
+	StrnCpy(name, status[i].name, 15);
+
+	dos_to_unix(name, True);
+
+	free(status);
+	return True;
+}
+
+/****************************************************************************
  Do a netbios name query to find someones IP.
  Returns an array of IP addresses or NULL if none.
  *count will be set to the number of addresses returned.
