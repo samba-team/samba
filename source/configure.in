@@ -278,8 +278,8 @@ fi
 
 AC_CACHE_CHECK([whether seekdir returns void],samba_cv_SEEKDIR_RETURNS_VOID,[
 AC_TRY_COMPILE([#include <sys/types.h>
-#include <dirent.h>],
-[void seekdir(DIR *d, long loc) { return; }],
+#include <dirent.h>
+void seekdir(DIR *d, long loc) { return; }],[return 0;],
 samba_cv_SEEKDIR_RETURNS_VOID=yes,samba_cv_SEEKDIR_RETURNS_VOID=no)])
 if test x"$samba_cv_SEEKDIR_RETURNS_VOID" = x"yes"; then
     AC_DEFINE(SEEKDIR_RETURNS_VOID)
