@@ -102,7 +102,7 @@ BOOL create_rpc_reply(pipes_struct *p,
 
 	prs_init(&p->rhdr , 0x18, 4, 0, False);
 	prs_init(&p->rauth, 1024, 4, 0, False);
-	prs_init(&p->rverf, 0x08, 4, 0, False);
+	prs_init(&p->rverf, 0x10, 4, 0, False);
 
 	p->hdr.pkt_type = RPC_RESPONSE; /* mark header as an rpc response */
 
