@@ -1,48 +1,79 @@
-              WHATS NEW IN Samba 2.0.3
+              WHATS NEW IN Samba 2.0.4
               ========================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
 for all current bug-fixes.
 
-New/Changed parameters in 2.0.3
+New/Changed parameters in 2.0.4
 -------------------------------
 
-There are 2 new parameters and one enhanced parameter in
+There are 5 new parameters and one modified parameter in
 the smb.conf file.
 
+allow trusted domains
+restrict anonymous
+mangle locks
+oplock break wait time
+oplock contention limit
+
 The new parameters are :
+
+allow trusted domains
+---------------------
+
+This option is used in "security=domain" settings and allows
+the Samba admin to restrict access to users within the domain
+the the Samba server is in.
+
+restrict anonymous
+------------------
+
+This parameter allows the Samba admin to cause Samba to
+refuse access to anonymous users. Use of this parameter
+is only recommened for homogenous NT client environments.
+
+mangle locks
+------------
+
+This parameter was added to get around a bug in Windows NT
+when dealing with Samba running on 32-bit systems (such
+as Linux x86). This bug causes NT to send 64 bit locking
+requests to 32-bit systems even though Samba correctly 
+tells the NT client not to do so. This option causes Samba
+to map the lock requests from 64 bits to 32 bits on these
+systems.
+
+oplock break wait time
+----------------------
+
+This tuning parameter, added to help with clients that don't
+respond to oplock break requests, causes Samba to deley for
+this number of milliseconds before sending an oplock break
+request to a client that caused the break to be sent. The
+default is 10ms. This is an advanced tuning parameter and
+should not be changed lightly.
+
+oplock contention limit
+-----------------------
+
+This tuning parameter causes Samba not to grant oplocks
+when an smbd daemon notices that there have been this 
+many concurrent requests for an oplock on a file. This
+prevents the "baton passing" oplock problem where many
+clients accessing one file pass the oplock between themselves
+like a baton. The default is 2. This is an advanced tuning
+parameter and should not be changed lightly.
+
+The modified parameter is :
 
 nt acl support
 --------------
 
-This is a global parameter that defaults to False (at the
-present time). If set to yes it allows UNIX file permissions
-to be reported via the Windows NT "cacls.exe" program. As some
-of the RPC calls that allow cacls to report the name of the
-owner of a file are not yet implemented in 2.0.3 this parameter
-is set to "no" by default. The default state of this parameter
-will change to "yes" in a future release.
-
-min passwd length
------------------
-
-This is an integer global parameter that tells Samba the minimum
-permissible UNIX password length (in characters) when Samba is
-set to synchronise the Windows and UNIX passwords. By default
-this is set to 5, and was previously hardcoded into Samba 2.0.x.
-
-The modified parameter is :
-
-announce as
------------
-
-Prior to 2.0.3 this parameter had only one setting for Windows
-NT compatibility, "NT", which was the default. This is still
-the default and this still tells Samba to announce itself in
-browse lists as an NT server, however this parameter may now
-be set to "NT workstation" which causes Samba to announce itself
-as an NT workstation instead of a server. 
+This is a global parameter that defaulted to False in
+the previous release (2.0.3) and now defaults to True
+as the RPC code has been added to Samba to allow it to
+map UNIX permissions to NT ACLs.
 
 All of these new parameters and changes are documented in the
 smb.conf man pages and html pages.
@@ -50,12 +81,67 @@ smb.conf man pages and html pages.
 Updated and New documentation
 -----------------------------
 
-The NT Domain FAQ has been updated. Three new text documents have
-been provided :
+A new document describing the manipulation of UNIX permissions
+via the Windows NT security dialogs and their interaction with
+Samba 2.0.4 is provided as :
 
-docs/textdocs/File-Cacheing.txt
-docs/textdocs/NT-Guest-Access.txt
-docs/textdocs/CRLF-LF-Conversions.txt
+docs/textdocs/NT_Security.txt
+docs/htmldocs/NT_Security.html
+
+Bugfixes added since 2.0.3
+--------------------------
+
+1). Fix for 8 character password problem when using HPUX and
+plaintest passwords.
+2). --with-pam option added to ./configure.
+3). Client fixes for memory leak and display of 64 bit values.
+4). Fixes for -E and -s option with smbclient.
+5). smbclient now allows -L //server or -L \\server
+6). smbtar fix for display of 64 bit values.
+7). Endian independence added to DCE/RPC code.
+8). DCE/RPC marshalling/unmarshalling code re-written to provide
+overflow reporting and sign and seal support.
+9). Bind NAK reply packet added to DCE/RPC code, used to correctly
+refuse bind requests (prevents NT system event log messages).
+10). Mapping of UNIX permissions into NT ACL's for get and set
+added.
+11). DCE/RPC enumeration of numbers of shares made dynamic. 
+Samba now has no limit on the number of exported shares seen.
+12). Fix to speed up random number seed generation on /dev/urandom
+being unavailable.
+13). Several memory fixes added by running Purify on the code.
+14). Read from client error messages improved.
+15). Fixed endianness used in UNICODE strings.
+16). Cope with ERRORmoredata in an RPC pipe client call.
+17). Check for malformed responses in nmbd register name.
+18). NT Encrypted password changing from the NT password dialog box
+now fully implmented.
+19). Mangle 64-bit lock ranges into 32-bits (NT bug!) on a 32-bit
+Samba platform.
+20). Allow file to be pseudo-openend in order to read security only.
+21). Improve filename mangling to reduce chance of collisions.
+22). Added code to prevent granting of oplocks when a file is under
+contention.
+23). Added tunable wait time before sending an oplock break request
+to a client if the client caused the break request. Helps with clients
+not responding to oplock breaks.
+24). Always respond negatively to queued local oplock break messages
+before shutdown. This can prevent "freezes" on an oplock error.
+25). Allow admin to restrict logons to correct domain when in domain
+level security.
+26). Added "restrict anonymous" patch from Andy (thwartedefforts@wonky.org)
+to prevent parameter substitution problems with anonymous connections.
+27). Fix SMBseek where seeking to a negative number sets the offset
+to zero.
+28). Fixed problem with mode getting corrupted in trans2 request
+(setting to zero means please ignore it).
+29). Correctly become the authenticated user on an authenticated
+DCE/RPC pipe request.
+30). Correctly reset debug level in nmbd if someone set it on the
+command line.
+31). Added more checking into testparm
+32). NetBench simulator added to smbtorture by Andrew.
+33). Fixed NIS+ option compile (was broken in 2.0.3).
 
 Bugfixes added since 2.0.2
 --------------------------
