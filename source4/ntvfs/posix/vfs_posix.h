@@ -40,10 +40,10 @@ struct pvfs_state {
 	struct odb_context *odb_context;
 
 	/* an id tree mapping open search ID to a pvfs_search_state structure */
-	void *idtree_search;
+	struct idr_context *idtree_search;
 
 	/* an id tree mapping open file handle -> struct pvfs_file */
-	void *idtree_fnum;
+	struct idr_context *idtree_fnum;
 };
 
 
