@@ -47,7 +47,7 @@ BOOL spoolss_enum_printers(uint32 flags, const char *srv_name,
 
 	struct cli_connection *con = NULL;
 
-	if (!cli_connection_init(srv_name, PIPE_LSARPC, &con))
+	if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
 	{
 		return False;
 	}
@@ -203,7 +203,7 @@ BOOL spoolss_open_printer_ex( const char *printername,
 		*s = 0;
 	}
 
-	if (!cli_connection_init(srv_name, PIPE_LSARPC, &con))
+	if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
 	{
 		return False;
 	}
