@@ -1,5 +1,5 @@
-              WHATS NEW IN 1.9.17p4 - October 20th 1997
-              ===========================================
+              WHATS NEW IN 1.9.17p4 - October 21st. 1997
+              ==========================================
 
 Update release: Samba - version 1.9.17p4.
 -----------------------------------------
@@ -12,10 +12,22 @@ Here are a list of the fixes in this release (the fixes
 introduced between 1.9.17p3 and 1.9.17p4) :
 
 1). Fix in nmbd for Windows 95 machines hanging on logout !
-2). Fix so nmbd ignores loopback packets.
-3). New option 'dos filetimes' to fix UTIME_WORKAROUND problem.
-4). Fix for nmbd ignoring WINS negative responses.
-5). New PAM support from RedHat for new PAM version.
+2). Fix for slow share mode code leaving zero length share
+    files.
+3). Fix for security = server, some broken NT4.x servers don't 
+    set the guest bit on connections. New code to check logged 
+    in user matches requested user.
+4). Fix for security = server. Problem with previous workaround
+    which caused machine logon restrictions on an NT server to fail.
+    This code has been completely re-written.
+5). New option 'dos filetimes' to fix UTIME_WORKAROUND problem.
+6). Fix so nmbd ignores loopback packets.
+7). Fix for nmbd ignoring WINS negative responses.
+8). New PAM support from RedHat for new PAM version.
+9). Memory leak fix when files included from an smb.conf
+    are changed.
+10). Client now logs when connecting as 'guest'.
+11). Updated documentation.
 
 Reporting bugs
 --------------
