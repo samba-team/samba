@@ -674,7 +674,7 @@ int main(int argc, char **argv)
 	poptContext pc;
 	int opt;
 
-	struct poptOption wbinfo_options[] = {
+	static struct poptOption wbinfo_options[] = {
 		{ "timeout", 't', POPT_ARG_INT, &timeout, 't', 
 		  "Set timeout value in seconds", "TIMEOUT" },
 
