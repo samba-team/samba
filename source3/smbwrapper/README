@@ -6,6 +6,7 @@ Currently this code has only been tested on:
 
 - Linux 2.0 with glibc2 (RH5.1)
 - Linux 2.1 with glibc2
+- Solaris 2.5 with gcc
 - Solaris 2.5.1 with gcc
 - Solaris 2.6 with gcc
 
