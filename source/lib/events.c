@@ -290,7 +290,11 @@ int event_loop_once(struct event_context *ev)
 		 * sys_select() with something in the events
 		 * structure - for now just use select() 
 		 */
-		selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, &tval);
+		if (timeval_is_zero(&tval)) {
+			selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, NULL);
+		} else {
+			selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, &tval);
+		}
 		
 		t = timeval_current();
 		
