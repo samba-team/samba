@@ -1,4 +1,4 @@
-.\" Copyright (c) 2001 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2001 - 2003 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -48,6 +48,7 @@
 .Nm krb5_kt_free_entry ,
 .Nm krb5_kt_get_entry ,
 .Nm krb5_kt_get_name ,
+.Nm krb5_kt_get_type ,
 .Nm krb5_kt_next_entry ,
 .Nm krb5_kt_read_service_key ,
 .Nm krb5_kt_register ,
@@ -122,6 +123,13 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_keytab keytab"
 .Fa "char *name"
 .Fa "size_t namesize"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_kt_get_type
+.Fa "krb5_context context"
+.Fa "krb5_keytab keytab"
+.Fa "char *prefix"
+.Fa "size_t prefixsize"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_kt_next_entry
@@ -289,6 +297,18 @@ retrieves the name of the keytab
 into
 .Fa name ,
 .Fa namesize .
+Returns 0 or an error.
+.Pp
+.Fn krb5_kt_get_type
+retrieves the type of the keytab
+.Fa keytab
+and store the prefix/name for type of the keytab into
+.Fa prefix ,
+.Fa prefixsize .
+The prefix will have the maximum length of
+.Dv KRB5_KT_PREFIX_MAX_LEN 
+(including terminating
+.Dv NUL ) .
 Returns 0 or an error.
 .Pp
 .Fn krb5_kt_free_entry
