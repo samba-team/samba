@@ -109,22 +109,22 @@ while(@bins) {
 
   if (index($nextfile,'$')) {
     if ($filename eq "smbpasswd") {
-      print IDB "f 0755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base\n";
+      print IDB "f 0755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base nostrip\n";
     }
     elsif ($filename eq "findsmb") {
       print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base\n";
     }
     elsif ($filename eq "swat") {
-      print IDB "f 4755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base\n";
+      print IDB "f 4755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base nostrip preop(/etc/killall smbd nmbd) exitop(/usr/samba/scripts/startswat.sh) removeop(/usr/samba/scripts/removeswat.sh)\n";
     }
     elsif ($filename eq "sambalp") {
-      print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base\n";
+      print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base nostrip\n";
     }
     elsif ($filename eq "smbprint") {
       print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base\n";
     }
     else {
-      print IDB "f 0755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base\n";
+      print IDB "f 0755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base nostrip\n";
     }
   }
 }
@@ -144,7 +144,6 @@ while (@docs) {
   }
 }
 
-print IDB "f 0755 root sys usr/samba/inetd.sh packaging/SGI/inetd.sh samba.sw.base\n";
 print IDB "d 0755 root sys usr/samba/lib packaging/SGI samba.sw.base\n";
 if (@codepage) {
   print IDB "d 0755 root sys usr/samba/lib/codepages packaging/SGI samba.sw.base\n";
@@ -153,11 +152,17 @@ if (@codepage) {
     print IDB "f 0644 root sys usr/samba/lib/codepages/codepage.$nextpage packaging/SGI/codepages/codepage.$nextpage samba.sw.base\n";
   }
 }
-print IDB "f 0644 root sys usr/samba/lib/smb.conf packaging/SGI/smb.conf samba.sw.base config(update)\n";
-print IDB "f 0755 root sys usr/samba/mkprintcap.sh packaging/SGI/mkprintcap.sh samba.sw.base\n";
+print IDB "f 0644 root sys usr/samba/lib/smb.conf packaging/SGI/smb.conf samba.sw.base config(suggest)\n";
 
 print IDB "d 0644 root sys usr/samba/private packaging/SGI samba.sw.base\n";
-print IDB "f 0600 root sys usr/samba/private/smbpasswd packaging/SGI/smbpasswd samba.sw.base config(update)\n";
+print IDB "f 0600 root sys usr/samba/private/smbpasswd packaging/SGI/smbpasswd samba.sw.base config(suggest)\n";
+
+print IDB "d 0755 root sys usr/samba/scripts packaging/SGI samba.src.samba\n";
+print IDB "f 0755 root sys usr/samba/scripts/inetd.sh packaging/SGI/inetd.sh samba.sw.base\n";
+print IDB "f 0755 root sys usr/samba/scripts/mkprintcap.sh packaging/SGI/mkprintcap.sh samba.sw.base\n";
+print IDB "f 0755 root sys usr/samba/scripts/removeswat.sh packaging/SGI/removeswat.sh samba.sw.base\n";
+print IDB "f 0755 root sys usr/samba/scripts/startswat.sh packaging/SGI/startswat.sh samba.sw.base\n";
+
 print IDB "d 0755 root sys usr/samba/src packaging/SGI samba.src.samba\n";
 @sorted = sort(@allfiles);
 while (@sorted) {
@@ -180,7 +185,6 @@ while (@sorted) {
   }
 }
 
-print IDB "f 0755 root sys usr/samba/startswat.sh packaging/SGI/startswat.sh samba.sw.base\n";
 print IDB "d 0755 root sys usr/samba/swat packaging/SGI/swat samba.sw.base\n";
 while (@swatfiles) {
   $nextfile = shift @swatfiles;
