@@ -3167,7 +3167,7 @@ void init_sam_user_info11(SAM_USER_INFO_11 * usr,
 			  NTTIME * expiry,
 			  char *mach_acct,
 			  uint32 rid_user, uint32 rid_group, uint16 acct_ctrl);
-void init_sam_user_info24(SAM_USER_INFO_24 * usr, char newpass[516]);
+void init_sam_user_info24(SAM_USER_INFO_24 * usr, char newpass[516], uint16 pw_len);
 void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all zeros */
 			NTTIME * logoff_time,	/* all zeros */
 			NTTIME * kickoff_time,	/* all zeros */
