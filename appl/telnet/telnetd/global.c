@@ -94,17 +94,13 @@ char *unptyip;  /* pointer to remaining characters in buffer */
 int	ourpty, net;
 int	SYNCHing;		/* we are in TELNET SYNCH mode */
 
-#ifndef	P
-# ifdef	__STDC__
-#  define P(x)	x
-# else
-#  define P(x)	()
-# endif
-#endif
-
 /*
  * The following are some clocks used to decide how to interpret
  * the relationship between various variables.
  */
 
 struct clocks_t clocks;
+
+
+/* whether to log unauthenticated login attempts */
+int log_unauth;

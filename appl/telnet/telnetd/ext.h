@@ -220,6 +220,8 @@ struct clocks_t{
 };
 extern struct clocks_t clocks;
 
+extern int log_unauth;
+
 
 #if	defined(CRAY2) && defined(UNICOS5)
 extern int	needtermstat;

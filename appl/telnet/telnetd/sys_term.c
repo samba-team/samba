@@ -1564,6 +1564,14 @@ void start_login(char *host, int autologin, char *name)
 	if (auth_level < 0 || autologin != AUTH_VALID) {
 		printf("User not authenticated. "
 		       "Using plaintext username and password\r\n");
+		if(log_unauth) {
+		  char *u;
+		  if(name[0]) u = name;
+		  else u=getenv("USER");
+		  u = u ? u : "unknown user";
+		  syslog(LOG_INFO, "unauthenticated access from %s (%s)", 
+			 host, u);
+		}
 	}
 	if (auth_level >= 0 && autologin == AUTH_VALID) {
 # if	!defined(NO_LOGIN_F)
