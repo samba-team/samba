@@ -1,11 +1,11 @@
 Index: Makefile.in
 ===================================================================
 RCS file: /data/cvs/samba/source/Makefile.in,v
-retrieving revision 1.502
-diff -u -r1.502 Makefile.in
---- Makefile.in	2002/08/02 07:20:56	1.502
-+++ Makefile.in	2002/08/06 00:51:48
-@@ -839,6 +839,45 @@
+retrieving revision 1.530
+diff -u -r1.530 Makefile.in
+--- Makefile.in	8 Sep 2002 14:58:22 -0000	1.530
++++ Makefile.in	8 Sep 2002 23:56:36 -0000
+@@ -846,6 +846,45 @@
  	-$(INSTALLCMD) -d ${prefix}/include
  	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
  
@@ -54,16 +54,16 @@ diff -u -r1.502 Makefile.in
 Index: configure.in
 ===================================================================
 RCS file: /data/cvs/samba/source/configure.in,v
-retrieving revision 1.326
-diff -u -r1.326 configure.in
---- configure.in	2002/07/30 09:59:52	1.326
-+++ configure.in	2002/08/06 00:51:51
-@@ -2797,7 +2797,7 @@
- builddir=`pwd`
- AC_SUBST(builddir)
- 
--AC_OUTPUT(include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile ../examples/VFS/block/Makefile)
-+AC_OUTPUT(include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile ../examples/VFS/block/Makefile python/setup.py)
+retrieving revision 1.336
+diff -u -r1.336 configure.in
+--- configure.in	7 Sep 2002 04:08:02 -0000	1.336
++++ configure.in	8 Sep 2002 23:56:37 -0000
+@@ -2828,7 +2828,7 @@
+ # I added make files that are outside /source directory.
+ # I know this is not a good solution, will work out a better
+ # solution soon.			--simo
+-AC_OUTPUT(include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile ../examples/pdb/mysql/Makefile ../examples/pdb/xml/Makefile ../examples/sam/Makefile)
++AC_OUTPUT(include/stamp-h Makefile script/findsmb ../examples/VFS/Makefile ../examples/pdb/mysql/Makefile ../examples/pdb/xml/Makefile ../examples/sam/Makefile python/setup.py)
  
  #################################################
  # Print very concise instructions on building/use
