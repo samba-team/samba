@@ -35,6 +35,10 @@
 *   \ingroup libsmbclient
 *   Data structures, types, and constants
 */
+/** \defgroup callback Callback function types
+*   \ingroup libsmbclient
+*   Callback functions
+*/
 /** \defgroup file File Functions
 *   \ingroup libsmbclient
 *   Functions used to access individual file contents
@@ -51,7 +55,7 @@
 *   \ingroup libsmbclient
 *   Functions used to access printing functionality
 */
-/** \defgroup attribute Miscellaneous Functions
+/** \defgroup misc Miscellaneous Functions
 *   \ingroup libsmbclient
 *   Functions that don't fit in to other categories
 */
@@ -62,7 +66,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define SMBC_MAX_NAME       1023
 #define SMBC_WORKGROUP      1
 #define SMBC_SERVER         2
 #define SMBC_FILE_SHARE     3
@@ -72,12 +75,6 @@
 #define SMBC_DIR            7
 #define SMBC_FILE           8
 #define SMBC_LINK           9
-
-#define SMBC_FILE_MODE (S_IFREG | 0444)
-#define SMBC_DIR_MODE  (S_IFDIR | 0555)
-
-#define SMBC_MAX_FD         10000
-
 
 /**@ingroup structure
  * Structure that represents a directory entry.
@@ -116,12 +113,12 @@ struct smbc_dirent
 	char name[1];
 };
 
-#ifndef _CLIENT_H
 
 /**@ingroup structure
  * Structure that represents a print job.
  *
  */
+#ifndef _CLIENT_H
 struct print_job_info 
 {
 	/** numeric ID of the print job
@@ -149,9 +146,29 @@ struct print_job_info
 	 */
 	time_t t;
 };
-#endif /* ifndef _CLIENT_H */
+#endif /* _CLIENT_H */
+
 
 /**@ingroup structure
+ * Server handle 
+ */
+typedef struct _SMBCSRV  SMBCSRV;
+
+/**@ingroup structure
+ * File or directory handle 
+ */
+typedef struct _SMBCFILE SMBCFILE;
+
+/**@ingroup structure
+ * File or directory handle 
+ */
+typedef struct _SMBCCTX SMBCCTX;
+
+
+
+
+
+/**@ingroup callback
  * Authentication callback function type.
  * 
  * Type for the the authentication function called by the library to
@@ -187,51 +204,114 @@ typedef void (*smbc_get_auth_data_fn)(const char *srv,
                                       char *pw, int pwlen);
 
 
-/**@ingroup structure
+/**@ingroup callback
  * Print job info callback function type.
  *
  * @param i         pointer to print job information structure
  *
  */ 
-typedef void (*smbc_get_print_job_info)(struct print_job_info *i);
+typedef void (*smbc_list_print_job_fn)(struct print_job_info *i);
+		
 
-typedef struct _SMBCSRV {
-	struct cli_state cli;
-	dev_t dev;
-	BOOL no_pathinfo2;
-	int server_fd;
-
-	struct _SMBCSRV *next, *prev;
-	
-} SMBCSRV;
-
-/* 
- * Keep directory entries in a list 
- */
-struct smbc_dir_list {
-	struct smbc_dir_list *next;
-	struct smbc_dirent *dirent;
-};
-
-/*
- * Structure for open file management
+/**@ingroup callback
+ * Check if a server is still good
+ *
+ * @param c         pointer to smb context
+ *
+ * @param srv       pointer to server to check
+ *
+ * @return          0 when connection is good. 1 on error.
+ *
  */ 
-typedef struct _SMBCFILE {
-	int cli_fd; 
-	char *fname;
-	off_t offset;
-	SMBCSRV *srv;
-	BOOL file;
-	struct smbc_dir_list *dir_list, *dir_end, *dir_next;
-	int dir_type, dir_error;
+typedef int (*smbc_check_server_fn)(SMBCCTX * c, SMBCSRV *srv);
 
-	struct _SMBCFILE *next, *prev;
-} SMBCFILE;
+/**@ingroup callback
+ * Remove a server if unused
+ *
+ * @param c         pointer to smb context
+ *
+ * @param srv       pointer to server to remove
+ *
+ * @return          0 on success. 1 on failure.
+ *
+ */ 
+typedef int (*smbc_remove_unused_server_fn)(SMBCCTX * c, SMBCSRV *srv);
+
+
+/**@ingroup callback
+ * Add a server to the cache system
+ *
+ * @param c         pointer to smb context
+ *
+ * @param srv       pointer to server to add
+ *
+ * @param server    server name 
+ *
+ * @param share     share name
+ *
+ * @param workgroup workgroup used to connect
+ *
+ * @param username  username used to connect
+ *
+ * @return          0 on success. 1 on failure.
+ *
+ */ 
+typedef int (*smbc_add_cached_srv_fn)   (SMBCCTX * c, SMBCSRV *srv, 
+				    char * server, char * share, 
+				    char * workgroup, char * username);
+
+
+/**@ingroup callback
+ * Look up a server in the cache system
+ *
+ * @param c         pointer to smb context
+ *
+ * @param server    server name to match
+ *
+ * @param share     share name to match
+ *
+ * @param workgroup workgroup to match
+ *
+ * @param username  username to match
+ *
+ * @return          pointer to SMBCSRV on success. NULL on failure.
+ *
+ */ 
+typedef SMBCSRV * (*smbc_get_cached_srv_fn)   (SMBCCTX * c, char * server, 
+					       char * share, char * workgroup, char * username);
+
+
+/**@ingroup callback
+ * Check if a server is still good
+ *
+ * @param c         pointer to smb context
+ *
+ * @param srv       pointer to server to remove
+ *
+ * @return          0 when found and removed. 1 on failure.
+ *
+ */ 
+typedef int (*smbc_remove_cached_srv_fn)(SMBCCTX * c, SMBCSRV *srv);
+
+
+/**@ingroup callback
+ * Try to remove all servers from the cache system and disconnect
+ *
+ * @param c         pointer to smb context
+ *
+ * @return          0 when found and removed. 1 on failure.
+ *
+ */ 
+typedef int (*smbc_purge_cached_fn)     (SMBCCTX * c);
+
+
+
 
 /**@ingroup structure
  * Structure that contains a client context information 
+ * This structure is know as SMBCCTX
  */
-typedef struct _SMBCCTX {
+struct _SMBCCTX {
 	/** debug level 
 	 */
 	int     debug;
@@ -255,42 +335,42 @@ typedef struct _SMBCCTX {
 	/** callable functions for files:
 	 * For usage and return values see the smbc_* functions
 	 */ 
-	SMBCFILE * (*open)    (struct _SMBCCTX *c, const char *fname, int flags, mode_t mode);
-	SMBCFILE * (*creat)   (struct _SMBCCTX *c, const char *path, mode_t mode);
-	ssize_t    (*read)    (struct _SMBCCTX *c, SMBCFILE *file, void *buf, size_t count);
-	ssize_t    (*write)   (struct _SMBCCTX *c, SMBCFILE *file, void *buf, size_t count);
-	int        (*unlink)  (struct _SMBCCTX *c, const char *fname);
-	int        (*rename)  (struct _SMBCCTX *ocontext, const char *oname, 
-			       struct _SMBCCTX *ncontext, const char *nname);
-	off_t      (*lseek)   (struct _SMBCCTX *c, SMBCFILE * file, off_t offset, int whence);
-	int        (*stat)    (struct _SMBCCTX *c, const char *fname, struct stat *st);
-	int        (*fstat)   (struct _SMBCCTX *c, SMBCFILE *file, struct stat *st);
-	int        (*close)   (struct _SMBCCTX *c, SMBCFILE *file);
+	SMBCFILE * (*open)    (SMBCCTX *c, const char *fname, int flags, mode_t mode);
+	SMBCFILE * (*creat)   (SMBCCTX *c, const char *path, mode_t mode);
+	ssize_t    (*read)    (SMBCCTX *c, SMBCFILE *file, void *buf, size_t count);
+	ssize_t    (*write)   (SMBCCTX *c, SMBCFILE *file, void *buf, size_t count);
+	int        (*unlink)  (SMBCCTX *c, const char *fname);
+	int        (*rename)  (SMBCCTX *ocontext, const char *oname, 
+			       SMBCCTX *ncontext, const char *nname);
+	off_t      (*lseek)   (SMBCCTX *c, SMBCFILE * file, off_t offset, int whence);
+	int        (*stat)    (SMBCCTX *c, const char *fname, struct stat *st);
+	int        (*fstat)   (SMBCCTX *c, SMBCFILE *file, struct stat *st);
+	int        (*close)   (SMBCCTX *c, SMBCFILE *file);
 
 	/** callable functions for dirs
 	 */ 
-	SMBCFILE * (*opendir) (struct _SMBCCTX *c, const char *fname);
-	int        (*closedir)(struct _SMBCCTX *c, SMBCFILE *dir);
-	struct smbc_dirent * (*readdir)(struct _SMBCCTX *c, SMBCFILE *dir);
-	int        (*getdents)(struct _SMBCCTX *c, SMBCFILE *dir, 
+	SMBCFILE * (*opendir) (SMBCCTX *c, const char *fname);
+	int        (*closedir)(SMBCCTX *c, SMBCFILE *dir);
+	struct smbc_dirent * (*readdir)(SMBCCTX *c, SMBCFILE *dir);
+	int        (*getdents)(SMBCCTX *c, SMBCFILE *dir, 
 			       struct smbc_dirent *dirp, int count);
-	int        (*mkdir)   (struct _SMBCCTX *c, const char *fname, mode_t mode);
-	int        (*rmdir)   (struct _SMBCCTX *c, const char *fname);
-	off_t      (*telldir) (struct _SMBCCTX *c, SMBCFILE *dir);
-	int        (*lseekdir)(struct _SMBCCTX *c, SMBCFILE *dir, off_t offset);
-	int        (*fstatdir)(struct _SMBCCTX *c, SMBCFILE *dir, struct stat *st);
+	int        (*mkdir)   (SMBCCTX *c, const char *fname, mode_t mode);
+	int        (*rmdir)   (SMBCCTX *c, const char *fname);
+	off_t      (*telldir) (SMBCCTX *c, SMBCFILE *dir);
+	int        (*lseekdir)(SMBCCTX *c, SMBCFILE *dir, off_t offset);
+	int        (*fstatdir)(SMBCCTX *c, SMBCFILE *dir, struct stat *st);
 
 	/** callable functions for printing
 	 */ 
-	int        (*print_file)(struct _SMBCCTX *c_file, const char *fname, 
-				 struct _SMBCCTX *c_print, const char *printq);
-	SMBCFILE * (*open_print_job)(struct _SMBCCTX *c, const char *fname);
-	int        (*list_print_jobs)(struct _SMBCCTX *c, const char *fname, void (*fn)(struct print_job_info *));
-	int        (*unlink_print_job)(struct _SMBCCTX *c, const char *fname, int id);
+	int        (*print_file)(SMBCCTX *c_file, const char *fname, 
+				 SMBCCTX *c_print, const char *printq);
+	SMBCFILE * (*open_print_job)(SMBCCTX *c, const char *fname);
+	int        (*list_print_jobs)(SMBCCTX *c, const char *fname, smbc_list_print_job_fn fn);
+	int        (*unlink_print_job)(SMBCCTX *c, const char *fname, int id);
 
 
 	/** Callbacks
-	 * These callbacks _always_ have to be intialized because they will not be checked
+	 * These callbacks _always_ have to be initialized because they will not be checked
 	 * at dereference for increased speed.
 	 */
 	struct _smbc_callbacks {
@@ -300,11 +380,11 @@ typedef struct _SMBCCTX {
 		
 		/** check if a server is still good
 		 */
-		int (*check_server_fn)(struct _SMBCCTX * c, SMBCSRV *srv);
+		smbc_check_server_fn check_server_fn;
 
 		/** remove a server if unused
 		 */
-		int (*remove_unused_server_fn)(struct _SMBCCTX * c, SMBCSRV *srv);
+		smbc_remove_unused_server_fn remove_unused_server_fn;
 
 		/** Cache subsystem
 		 * For an example cache system see samba/source/libsmb/libsmb_cache.c
@@ -313,21 +393,19 @@ typedef struct _SMBCCTX {
 
 		/** server cache addition 
 		 */
-		int (*add_cached_srv_fn)   (struct _SMBCCTX * c, SMBCSRV *srv, 
-					    char * server, char * share, 
-					    char * workgroup, char * username);
+		smbc_add_cached_srv_fn add_cached_srv_fn;
+
 		/** server cache lookup 
 		 */
-		SMBCSRV * (*get_cached_srv_fn)   (struct _SMBCCTX * c, char * server, 
-					    char * share, char * workgroup, char * username);
+		smbc_get_cached_srv_fn get_cached_srv_fn;
+
 		/** server cache removal
 		 */
-		int (*remove_cached_srv_fn)(struct _SMBCCTX * c, SMBCSRV *srv);
+		smbc_remove_cached_srv_fn remove_cached_srv_fn;
 		
 		/** server cache purging, try to remove all cached servers (disconnect)
 		 */
-		int (*purge_cached_fn)     (struct _SMBCCTX * c);
-		
+		smbc_purge_cached_fn purge_cached_fn;
 	} callbacks;
 
 
@@ -335,27 +413,12 @@ typedef struct _SMBCCTX {
 	 */
 	struct smbc_server_cache * server_cache;
 
-	/** INTERNAL functions
-	 * do _NOT_ touch these from your program !
+	/** INTERNAL DATA
+	 * do _NOT_ touch this from your program !
 	 */
-
-	/** INTERNAL: is this handle initialized ? 
-	 */
-	int     _initialized;
-
-	/** INTERNAL: dirent pointer location 
-	 */
-	char    _dirent[512];  
-
-	/** INTERNAL: server connection list
-	 */
-	SMBCSRV * _servers;
+	struct smbc_internal_data * internal;
 	
-	/** INTERNAL: open file/dir list
-	 */
-	SMBCFILE * _files;
-	
-} SMBCCTX;
+};
 
 
 /**@ingroup misc
@@ -990,7 +1053,7 @@ int smbc_open_print_job(const char *fname);
  *                  - EINVAL fname was NULL or smbc_init not called
  *                  - EACCES ???
  */
-int smbc_list_print_jobs(const char *purl, smbc_get_print_job_info fn);
+int smbc_list_print_jobs(const char *purl, smbc_list_print_job_fn fn);
 
 /**@ingroup print
  * Delete a print job 
