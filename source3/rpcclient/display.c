@@ -493,7 +493,7 @@ void display_tprt_info_0(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "Connection Info Level 0:\n");
+			fprintf(out_hnd, "Transport Info Level 0:\n");
 
 			break;
 		}
