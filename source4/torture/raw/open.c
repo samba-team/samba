@@ -1178,6 +1178,63 @@ done:
 	return ret;
 }
 
+
+/*
+  test chained RAW_OPEN_OPENX_READX
+*/
+static BOOL test_chained(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	union smb_open io;
+	const char *fname = BASEDIR "\\torture_chained.txt";
+	NTSTATUS status;
+	int fnum = -1;
+	BOOL ret = True;
+	const char *buf = "test";
+	char buf2[4];
+
+	printf("Checking RAW_OPEN_OPENX chained with READX\n");
+	smbcli_unlink(cli->tree, fname);
+
+	fnum = create_complex_file(cli, mem_ctx, fname);
+
+	smbcli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));
+
+	smbcli_close(cli->tree, fnum);	
+
+	io.openxreadx.level = RAW_OPEN_OPENX_READX;
+	io.openxreadx.in.fname = fname;
+	io.openxreadx.in.flags = OPENX_FLAGS_ADDITIONAL_INFO;
+	io.openxreadx.in.open_mode = OPENX_MODE_ACCESS_RDWR;
+	io.openxreadx.in.open_func = OPENX_OPEN_FUNC_OPEN;
+	io.openxreadx.in.search_attrs = 0;
+	io.openxreadx.in.file_attrs = 0;
+	io.openxreadx.in.write_time = 0;
+	io.openxreadx.in.size = 1024*1024;
+	io.openxreadx.in.timeout = 0;
+	
+	io.openxreadx.in.offset = 0;
+	io.openxreadx.in.mincnt = sizeof(buf);
+	io.openxreadx.in.maxcnt = sizeof(buf);
+	io.openxreadx.in.remaining = 0;
+	io.openxreadx.out.data = buf2;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.openxreadx.out.fnum;
+
+	if (memcmp(buf, buf2, sizeof(buf)) != 0) {
+		d_printf("wrong data in reply buffer\n");
+		ret = False;
+	}
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+
+	return ret;
+}
+
+
 /* basic testing of all RAW_OPEN_* calls 
 */
 BOOL torture_raw_open(void)
@@ -1205,6 +1262,7 @@ BOOL torture_raw_open(void)
 	ret &= test_mknew(cli, mem_ctx);
 	ret &= test_create(cli, mem_ctx);
 	ret &= test_ctemp(cli, mem_ctx);
+	ret &= test_chained(cli, mem_ctx);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);

@@ -1092,7 +1092,8 @@ enum smb_open_level {
 		 RAW_OPEN_MKNEW, RAW_OPEN_CREATE, 
 		 RAW_OPEN_CTEMP, RAW_OPEN_SPLOPEN,
 		 RAW_OPEN_NTCREATEX, RAW_OPEN_T2OPEN,
-		 RAW_OPEN_NTTRANS_CREATE};
+		 RAW_OPEN_NTTRANS_CREATE, 
+		 RAW_OPEN_OPENX_READX};
 
 /* the generic interface is defined to be equal to the NTCREATEX interface */
 #define RAW_OPEN_GENERIC RAW_OPEN_NTCREATEX
@@ -1266,6 +1267,51 @@ union smb_open {
 			uint16_t fnum;
 		} out;
 	} splopen;
+
+
+	/* chained OpenX/ReadX interface */
+	struct {
+		enum smb_open_level level;
+
+		struct {
+			uint16_t flags;
+			uint16_t open_mode;
+			uint16_t search_attrs; /* not honoured by win2003 */
+			uint16_t file_attrs;
+			time_t write_time; /* not honoured by win2003 */
+			uint16_t open_func;
+			uint32_t size; /* note that this sets the
+					initial file size, not
+					just allocation size */
+			uint32_t timeout; /* not honoured by win2003 */
+			const char *fname;
+
+			/* readx part */
+			uint64_t offset;
+			uint16_t mincnt;
+			uint32_t maxcnt;
+			uint16_t remaining;
+		} in;
+		struct {
+			uint16_t fnum;
+			uint16_t attrib;
+			time_t write_time;
+			uint32_t size;
+			uint16_t access;
+			uint16_t ftype;
+			uint16_t devstate;
+			uint16_t action;
+			uint32_t unique_fid;
+			uint32_t access_mask;
+			uint32_t unknown;
+			
+			/* readx part */
+			uint8_t *data;
+			uint16_t remaining;
+			uint16_t compaction_mode;
+			uint16_t nread;
+		} out;
+	} openxreadx;
 };
 
 

@@ -484,6 +484,8 @@ static void reply_open_and_X_send(struct smbsrv_request *req)
 		REQ_VWV_RESERVED(17, 2);
 	}
 
+	req->chained_fnum = oi->openx.out.fnum;
+
 	chain_reply(req);
 }
 
@@ -2261,6 +2263,8 @@ static void reply_ntcreate_and_X_send(struct smbsrv_request *req)
 	SSVAL(req->out.vwv,       63, io->ntcreatex.out.file_type);
 	SSVAL(req->out.vwv,       65, io->ntcreatex.out.ipc_state);
 	SCVAL(req->out.vwv,       67, io->ntcreatex.out.is_directory);
+
+	req->chained_fnum = io->ntcreatex.out.fnum;
 
 	chain_reply(req);
 }
