@@ -29,19 +29,14 @@
  * -------------------------------------------------------------------------- **
  *
  * $Log: debug2html.c,v $
- * Revision 1.2  1998/10/27 23:28:29  crh
- * Fixed a small bug in debug2html.  It wasn't properly checking EOF.  The
- * current status is "it works".  I need to add some syntax error recovery
- * and a usage message.  Basic stuff.
- *
- * I've also modified Makefile.in.  If you want to compile it you'll have to
- * do a 'make debug2html', as I used smbtorture as a model.  We can decide
- * later if this tool is useful enough to be compiled always.
- *
- * BTW, a 'make realclean' fails because the bin directory isn't empty.
- * That's because it doesn't delete optionally compiled files such as
- * smbtorture and debug2html (and because of the CVS subdirectory, but I
- * think that's only a problem for developers).
+ * Revision 1.3  1998/10/28 20:33:35  crh
+ * I've moved the debugparse module files into the ubiqx directory because I
+ * know that 'make proto' will ignore them there.  The debugparse.h header
+ * file is included in includes.h, and includes.h is included in debugparse.c,
+ * so all of the pieces "see" each other.  I've compiled and tested this,
+ * and it does seem to work.  It's the same compromise model I used when
+ * adding the ubiqx modules into the system, which is why I put it all into
+ * the same directory.
  *
  * Chris -)-----
  *
@@ -137,7 +132,7 @@ static void newblock( dbg_Token old, dbg_Token new )
   switch( old )
     {
     case dbg_timestamp:
-      (void)printf( ", " );
+      (void)printf( ",</B>" );
       break;
     case dbg_level:
       (void)printf( "</FONT>]</B>\n   " );
@@ -156,7 +151,7 @@ static void newblock( dbg_Token old, dbg_Token new )
       (void)printf( "<B>[" );
       break;
     case dbg_level:
-      (void)printf( "<FONT COLOR=MAROON>" );
+      (void)printf( " <B><FONT COLOR=MAROON>" );
       break;
     case dbg_lineno:
       (void)printf( "(" );
