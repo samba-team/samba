@@ -13,13 +13,15 @@ AC_ARG_WITH(fhs,
     codepagedir="\$(DATADIR)/samba/codepages"
     configdir="${sysconfdir}/samba"
     lockdir="\${VARDIR}/cache/samba"
+    piddir="\$(VARDIR)/run/samba"
     logfilebase="\${VARDIR}/log/samba"
     privatedir="\${CONFIGDIR}/private"
     swatdir="\${DATADIR}/samba/swat",
     codepagedir="\$(LIBDIR)/codepages"
     configdir="\$(LIBDIR)"
-    piddir="\$(VARDIR)/run/samba"
     logfilebase="\$(VARDIR)"
+    lockdir="\${VARDIR}/locks"
+    piddir="\$(VARDIR)/locks"
     privatedir="\${prefix}/private"
     swatdir="\${prefix}/swat")
 
