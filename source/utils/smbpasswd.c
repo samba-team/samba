@@ -433,7 +433,8 @@ static int process_root(int local_flags)
 				
 				pdb_init_sam(&sampass);
 				ret = pdb_getsampwnam(sampass, user_name);
-				if((sampass != False) && (pdb_get_lanman_passwd(sampass) == NULL)) {
+				if((ret) &&
+				   (pdb_get_lanman_passwd(sampass) == NULL)) {
 					local_flags |= LOCAL_SET_PASSWORD;
 				}
 				pdb_free_sam(&sampass);
