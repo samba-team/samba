@@ -1446,3 +1446,21 @@ const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s)
 
 	return ret;
 }
+
+BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
+			 const char *str, const char ***strings, int *num)
+{
+	char *dup_str = talloc_strdup(mem_ctx, str);
+
+	*strings = talloc_realloc(mem_ctx, *strings,
+				  ((*num)+1) * sizeof(**strings));
+
+	if ((*strings == NULL) || (dup_str == NULL))
+		return False;
+
+	(*strings)[*num] = dup_str;
+	*num += 1;
+
+	return True;
+}
+
