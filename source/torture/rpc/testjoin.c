@@ -43,10 +43,10 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct policy_handle user_handle;
 	uint32_t rid;
 	struct samr_LookupNames n;
-	struct samr_Name sname;
+	struct samr_String sname;
 	struct samr_OpenUser r;
 
-	sname.name = name;
+	sname.string = name;
 
 	n.in.domain_handle = handle;
 	n.in.num_names = 1;
@@ -103,7 +103,7 @@ struct test_join *torture_join_domain(const char *machine_name,
 	uint32_t access_granted;
 	uint32_t rid;
 	DATA_BLOB session_key;
-	struct samr_Name name;
+	struct samr_String name;
 	int policy_min_pw_len = 0;
 	struct test_join *join;
 
@@ -140,7 +140,7 @@ struct test_join *torture_join_domain(const char *machine_name,
 
 	printf("Opening domain %s\n", domain);
 
-	name.name = domain;
+	name.string = domain;
 	l.in.connect_handle = &handle;
 	l.in.domain = &name;
 
@@ -164,7 +164,7 @@ struct test_join *torture_join_domain(const char *machine_name,
 	printf("Creating machine account %s\n", machine_name);
 
 again:
-	name.name = talloc_asprintf(join, "%s$", machine_name);
+	name.string = talloc_asprintf(join, "%s$", machine_name);
 	r.in.domain_handle = &domain_handle;
 	r.in.account_name = &name;
 	r.in.acct_flags = acct_flags;
@@ -176,7 +176,7 @@ again:
 	status = dcerpc_samr_CreateUser2(join->p, join, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-		status = DeleteUser_byname(join->p, join, &domain_handle, name.name);
+		status = DeleteUser_byname(join->p, join, &domain_handle, name.string);
 		if (NT_STATUS_IS_OK(status)) {
 			goto again;
 		}
@@ -238,6 +238,7 @@ again:
 	if (machine_password) {
 		*machine_password = join->machine_password;
 	}
+
 	return join;
 
 failed:
@@ -245,6 +246,10 @@ failed:
 	return NULL;
 }
 
+struct dcerpc_pipe *torture_join_samr_pipe(struct test_join *join) 
+{
+	return join->p;
+}
 
 /*
   leave the domain, deleting the machine acct

@@ -81,14 +81,14 @@
 	/******************/
 	/* Function: 0x05 */
 	typedef struct {
-		[value(2*strlen_m(r->name))] uint16 name_len;
-		[value(r->name_len)] uint16 name_size;
-		unistr_noterm *name;
-	} samr_Name;	
+		[value(2*strlen_m(r->string))] uint16 length;
+		[value(r->length)] uint16 size;
+		unistr_noterm *string;
+	} samr_String;	
 
 	NTSTATUS samr_LookupDomain (
 		[in,ref]  policy_handle *connect_handle,		
-		[in,ref]  samr_Name *domain,
+		[in,ref]  samr_String *domain,
 		[out]     dom_sid2 *sid
 		);
 
@@ -98,7 +98,7 @@
 
 	typedef struct {
 		uint32 idx;
-		samr_Name name;
+		samr_String name;
 	} samr_SamEntry;
 
 	typedef struct {
@@ -138,9 +138,9 @@
 
 	typedef struct {
 		uint64 force_logoff_time;
-		samr_Name comment;
-		samr_Name domain;  /* domain name */
-		samr_Name primary; /* PDC name if this is a BDC */
+		samr_String comment;
+		samr_String domain;  /* domain name */
+		samr_String primary; /* PDC name if this is a BDC */
 		uint64 sequence_num;
 		uint32 unknown2;
 		uint32 role;
@@ -158,15 +158,15 @@
 		/* I'm not entirely sure this is a comment. win2003
 		   allows it to be set, and it seems harmless (like a
 		   comment) but I haven't seen it show up anywhere */
-		samr_Name comment;
+		samr_String comment;
 	} samr_DomInfo4;
 
 	typedef struct {
-		samr_Name domain;
+		samr_String domain;
 	} samr_DomInfo5;
 
 	typedef struct {
-		samr_Name primary;
+		samr_String primary;
 	} samr_DomInfo6;
 
 	typedef struct {
@@ -240,7 +240,7 @@
 	/* Function    0x0a     */
 	NTSTATUS samr_CreateDomainGroup(
 		[in,ref]      policy_handle *domain_handle,
-		[in,ref]      samr_Name *name,
+		[in,ref]      samr_String *name,
 		[in]          uint32 access_mask,
 		[out,ref]     policy_handle *group_handle,
 		[out,ref]     uint32 *rid
@@ -261,7 +261,7 @@
 	/* Function    0x0c     */
 	NTSTATUS samr_CreateUser(
 		[in,ref]      policy_handle *domain_handle,
-		[in,ref]      samr_Name *account_name,
+		[in,ref]      samr_String *account_name,
 		[in]          uint32 access_mask,
 		[out,ref]     policy_handle *user_handle,
 		[out,ref]     uint32 *rid
@@ -289,7 +289,7 @@
 	/* Function    0x0e     */
 	NTSTATUS samr_CreateDomAlias(
 		[in,ref]      policy_handle *domain_handle,
-		[in,ref]      samr_Name     *aliasname,
+		[in,ref]      samr_String     *aliasname,
 		[in]          uint32         access_mask,
 		[out,ref]     policy_handle *alias_handle,
 		[out,ref]     uint32        *rid
@@ -337,7 +337,7 @@
 	NTSTATUS samr_LookupNames(
 		[in,ref]      policy_handle *domain_handle,
 		[in,range(0,1000)] uint32 num_names,
-		[in,ref,size_is(1000),length_is(num_names)] samr_Name *names,
+		[in,ref,size_is(1000),length_is(num_names)] samr_String *names,
 		[out]         samr_Ids rids,
 		[out]         samr_Ids types
 		);
@@ -348,14 +348,14 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] samr_Name *names;
-	} samr_Names;
+		[size_is(count)] samr_String *names;
+	} samr_Strings;
 
 	NTSTATUS samr_LookupRids(
 		[in,ref]      policy_handle *domain_handle,
 		[in,range(0,1000)] uint32 num_rids,
 		[in,ref,size_is(1000),length_is(num_rids)] uint32 *rids,
-		[out]         samr_Names names,
+		[out]         samr_Strings names,
 		[out]         samr_Ids types
 		);
 
@@ -373,10 +373,10 @@
 	/* Function    0x14     */
 
 	typedef struct {
-		samr_Name name;
+		samr_String name;
 		uint32 unknown;
 		uint32 num_members;
-		samr_Name description;
+		samr_String description;
 	} samr_GroupInfoAll;
 
 	typedef struct {
@@ -384,7 +384,7 @@
 	} samr_GroupInfoX;
 
 	typedef struct {
-		samr_Name description;
+		samr_String description;
 	} samr_GroupInfoDesciption;
 
 	typedef enum {
@@ -397,9 +397,9 @@
 
 	typedef union {
 		[case(GroupInfoAll)]         samr_GroupInfoAll    all;
-		[case(GroupInfoName)]        samr_Name            name;
+		[case(GroupInfoName)]        samr_String            name;
 		[case(GroupInfoX)]           samr_GroupInfoX      unknown;
-		[case(GroupInfoDescription)] samr_Name            description;
+		[case(GroupInfoDescription)] samr_String            description;
 		[case(GroupInfoAll2)]        samr_GroupInfoAll    all2;
 	} samr_GroupInfo;
 
@@ -483,15 +483,15 @@
 	/* Function    0x1c     */
 
 	typedef struct {
-		samr_Name name;
+		samr_String name;
 		uint32 num_members;
-		samr_Name description;
+		samr_String description;
 	} samr_AliasInfoAll;
 
 	typedef union {
 		[case(1)] samr_AliasInfoAll all;
-		[case(2)] samr_Name name;
-		[case(3)] samr_Name description;
+		[case(2)] samr_String name;
+		[case(3)] samr_String description;
 	} samr_AliasInfo;
 
 	NTSTATUS samr_QueryAliasInfo(
@@ -553,16 +553,16 @@
 	/************************/
 	/* Function    0x24     */
 	typedef struct {
-		samr_Name account_name;
-		samr_Name full_name;
+		samr_String account_name;
+		samr_String full_name;
 		uint32 primary_gid;
-		samr_Name description;
-		samr_Name comment;
+		samr_String description;
+		samr_String comment;
 	} samr_UserInfo1;
 
 	typedef struct {
-		samr_Name comment;
-		samr_Name unknown; /* settable, but doesn't stick. probably obsolete */
+		samr_String comment;
+		samr_String unknown; /* settable, but doesn't stick. probably obsolete */
 		uint16 country_code;
 		uint16 code_page;
 	} samr_UserInfo2;
@@ -574,15 +574,15 @@
 	} samr_LogonHours;
 
 	typedef struct {
-		samr_Name account_name;
-		samr_Name full_name;
+		samr_String account_name;
+		samr_String full_name;
 		uint32 rid;
 		uint32 primary_gid;
-		samr_Name home_directory;
-		samr_Name home_drive;
-		samr_Name logon_script;
-		samr_Name profile_path;
-		samr_Name workstations;
+		samr_String home_directory;
+		samr_String home_drive;
+		samr_String logon_script;
+		samr_String profile_path;
+		samr_String workstations;
 		NTTIME last_logon;
 		NTTIME last_logoff;
 		NTTIME last_password_change;
@@ -590,7 +590,7 @@
 		NTTIME force_password_change;
 		samr_LogonHours logon_hours;
 		uint16 bad_password_count;
-		uint16 num_logons;
+		uint16 logon_count;
 		uint32 acct_flags;
 	} samr_UserInfo3;
 
@@ -599,37 +599,37 @@
 	} samr_UserInfo4;
 
 	typedef struct {
-		samr_Name account_name;
-		samr_Name full_name;
+		samr_String account_name;
+		samr_String full_name;
 		uint32 rid;
 		uint32 primary_gid;
-		samr_Name home_directory;
-		samr_Name home_drive;
-		samr_Name logon_script;
-		samr_Name profile_path;
-		samr_Name description;
-		samr_Name workstations;
+		samr_String home_directory;
+		samr_String home_drive;
+		samr_String logon_script;
+		samr_String profile_path;
+		samr_String description;
+		samr_String workstations;
 		NTTIME last_logon;
 		NTTIME last_logoff;
 		samr_LogonHours logon_hours;
 		uint16 bad_password_count;
-		uint16 num_logons;
+		uint16 logon_count;
 		NTTIME last_password_change;
 		NTTIME acct_expiry;
 		uint32 acct_flags;
 	} samr_UserInfo5;
 
 	typedef struct {
-		samr_Name account_name;
-		samr_Name full_name;
+		samr_String account_name;
+		samr_String full_name;
 	} samr_UserInfo6;
 
 	typedef struct {
-		samr_Name account_name;
+		samr_String account_name;
 	} samr_UserInfo7;
 
 	typedef struct {
-		samr_Name full_name;
+		samr_String full_name;
 	} samr_UserInfo8;
 
 	typedef struct {
@@ -637,24 +637,24 @@
 	} samr_UserInfo9;
 
 	typedef struct {
-		samr_Name home_directory;
-		samr_Name home_drive;
+		samr_String home_directory;
+		samr_String home_drive;
 	} samr_UserInfo10;
 
 	typedef struct {
-		samr_Name logon_script;
+		samr_String logon_script;
 	} samr_UserInfo11;
 
 	typedef struct {
-		samr_Name profile_path;
+		samr_String profile_path;
 	} samr_UserInfo12;
 
 	typedef struct {
-		samr_Name description;
+		samr_String description;
 	} samr_UserInfo13;
 
 	typedef struct {
-		samr_Name workstations;
+		samr_String workstations;
 	} samr_UserInfo14;
 
 	typedef struct {
@@ -666,7 +666,7 @@
 	} samr_UserInfo17;
 
 	typedef struct {
-		samr_Name callback;
+		samr_String parameters;
 	} samr_UserInfo20;
 
 	/* this defines the bits used for fields_present in info21 */
@@ -678,7 +678,7 @@
 	const int SAMR_FIELD_WORKSTATION  = 0x00000400;
 	const int SAMR_FIELD_LOGON_HOURS  = 0x00002000;
 	const int SAMR_FIELD_ACCT_FLAGS   = 0x00100000;
-	const int SAMR_FIELD_CALLBACK     = 0x00200000;
+	const int SAMR_FIELD_PARAMETERS     = 0x00200000;
 	const int SAMR_FIELD_COUNTRY_CODE = 0x00400000;
 	const int SAMR_FIELD_CODE_PAGE    = 0x00800000;
 	const int SAMR_FIELD_PASSWORD     = 0x01000000; /* either of these */
@@ -691,19 +691,19 @@
 		NTTIME acct_expiry;
 		NTTIME allow_password_change;
 		NTTIME force_password_change;
-		samr_Name account_name;
-		samr_Name full_name;
-		samr_Name home_directory;
-		samr_Name home_drive;
-		samr_Name logon_script;
-		samr_Name profile_path;
-		samr_Name description;
-		samr_Name workstations;
-		samr_Name comment;
-		samr_Name callback;
-		samr_Name unknown1;
-		samr_Name unknown2;
-		samr_Name unknown3;
+		samr_String account_name;
+		samr_String full_name;
+		samr_String home_directory;
+		samr_String home_drive;
+		samr_String logon_script;
+		samr_String profile_path;
+		samr_String description;
+		samr_String workstations;
+		samr_String comment;
+		samr_String parameters;
+		samr_String unknown1;
+		samr_String unknown2;
+		samr_String unknown3;
 		uint32 buf_count;
 		[size_is(buf_count)] uint8 *buffer;
 		uint32 rid;
@@ -712,12 +712,12 @@
 		uint32 fields_present;
 		samr_LogonHours logon_hours;
 		uint16 bad_password_count;
-		uint16 num_logons;
+		uint16 logon_count;
 		uint16 country_code;
 		uint16 code_page;
 		uint8  nt_password_set;
 		uint8  lm_password_set;
-		uint8  expired_flag;
+		uint8  password_expired;
 		uint8  unknown4;
 	} samr_UserInfo21;
 
@@ -835,9 +835,9 @@
 		uint32    idx;
 		uint32    rid;
 		uint32    acct_flags;
-		samr_Name account_name;
-		samr_Name full_name;
-		samr_Name description;
+		samr_String account_name;
+		samr_String full_name;
+		samr_String description;
 	} samr_DispEntryGeneral;
 
 	typedef struct {
@@ -849,8 +849,8 @@
 		uint32    idx;
 		uint32    rid;
 		uint32    acct_flags;
-		samr_Name account_name;
-		samr_Name description;
+		samr_String account_name;
+		samr_String description;
 	} samr_DispEntryFull;
 
 	typedef struct {
@@ -859,9 +859,9 @@
 	} samr_DispInfoFull;
 
 	typedef struct {
-		[value(strlen_m(r->name))] uint16 name_len;
-		[value(strlen_m(r->name))] uint16 name_size;
-		ascstr_noterm *name;
+		[value(strlen_m(r->string))] uint16 length;
+		[value(strlen_m(r->string))] uint16 size;
+		ascstr_noterm *string;
 	} samr_AsciiName;	
 
 	typedef struct {
@@ -909,7 +909,7 @@
 	NTSTATUS samr_GetDisplayEnumerationIndex(
 		[in,ref]    policy_handle *domain_handle,
 		[in]        uint16 level,
-		[in]        samr_Name name,
+		[in]        samr_String name,
 		[out]       uint32 idx
 		);
 
@@ -1014,7 +1014,7 @@
 	NTSTATUS samr_GetDisplayEnumerationIndex2(
 		[in,ref]    policy_handle *domain_handle,
 		[in]        uint16 level,
-		[in]        samr_Name name,
+		[in]        samr_String name,
 		[out]       uint32 idx
 		);
 
@@ -1023,7 +1023,7 @@
 	/* Function    0x32     */
 	NTSTATUS samr_CreateUser2(
 		[in,ref]      policy_handle *domain_handle,
-		[in,ref]      samr_Name *account_name,
+		[in,ref]      samr_String *account_name,
 		[in]          uint32 acct_flags,
 		[in]          uint32 access_mask,
 		[out,ref]     policy_handle *user_handle,
@@ -1076,8 +1076,8 @@
 	/************************/
 	/* Function    0x37     */
 	NTSTATUS samr_ChangePasswordUser2(
-		[in]              samr_Name *server,
-		[in,ref]          samr_Name *account,
+		[in]              samr_String *server,
+		[in,ref]          samr_String *account,
 		[in]              samr_CryptPassword *nt_password,
 		[in]              samr_Password *nt_verifier,
 		[in]              bool8 lm_change,
@@ -1088,7 +1088,7 @@
 	/************************/
 	/* Function    0x38     */
 	NTSTATUS samr_GetDomPwInfo(
-		[in]        samr_Name *name,
+		[in]        samr_String *name,
 		[out]       samr_PwInfo info
 		);
 
@@ -1163,8 +1163,8 @@
 	} samr_ChangeReject;
 
 	NTSTATUS samr_ChangePasswordUser3(
-		[in]              samr_Name *server,
-		[in,ref]          samr_Name *account,
+		[in]              samr_String *server,
+		[in,ref]          samr_String *account,
 		[in]              samr_CryptPassword *nt_password,
 		[in]              samr_Password *nt_verifier,
 		[in]              bool8 lm_change,
@@ -1214,7 +1214,7 @@
 	*/
 
 	NTSTATUS samr_SetDsrmPassword(
-		[in]       samr_Name *name,
+		[in]       samr_String *name,
 		[in]       uint32 unknown,
 		[in]       samr_Password *hash
 		);

@@ -41,13 +41,13 @@ static BOOL test_QueryUserInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 static BOOL test_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       struct policy_handle *handle);
 
-static void init_samr_Name(struct samr_Name *name, const char *s)
+static void init_samr_String(struct samr_String *string, const char *s)
 {
-	name->name = s;
+	string->string = s;
 }
 
-static BOOL test_Close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-		       struct policy_handle *handle)
+BOOL test_samr_handle_Close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				   struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct samr_Close r;
@@ -93,7 +93,7 @@ static BOOL test_SetDsrmPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_SetDsrmPassword r;
-	struct samr_Name name;
+	struct samr_String string;
 	struct samr_Password hash;
 
 	if (lp_parm_int(-1, "torture", "dangerous") != 1) {
@@ -103,9 +103,9 @@ static BOOL test_SetDsrmPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	E_md4hash("TeSTDSRM123", hash.hash);
 
-	init_samr_Name(&name, "Administrator");
+	init_samr_String(&string, "Administrator");
 
-	r.in.name = &name;
+	r.in.name = &string;
 	r.in.unknown = 0;
 	r.in.hash = &hash;
 
@@ -213,7 +213,7 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			break; \
 		}
 
-#define TEST_USERINFO_NAME(lvl1, field1, lvl2, field2, value, fpval) do { \
+#define TEST_USERINFO_STRING(lvl1, field1, lvl2, field2, value, fpval) do { \
 		printf("field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
 		q.in.level = lvl1; \
 		TESTCALL(QueryUserInfo, q) \
@@ -224,17 +224,17 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(u.info21); \
 			u.info21.fields_present = fpval; \
 		} \
-		init_samr_Name(&u.info ## lvl1.field1, value); \
+		init_samr_String(&u.info ## lvl1.field1, value); \
 		TESTCALL(SetUserInfo, s) \
 		TESTCALL(SetUserInfo2, s2) \
-		init_samr_Name(&u.info ## lvl1.field1, ""); \
+		init_samr_String(&u.info ## lvl1.field1, ""); \
 		TESTCALL(QueryUserInfo, q); \
 		u = *q.out.info; \
-		STRING_EQUAL(u.info ## lvl1.field1.name, value, field1); \
+		STRING_EQUAL(u.info ## lvl1.field1.string, value, field1); \
 		q.in.level = lvl2; \
 		TESTCALL(QueryUserInfo, q) \
 		u = *q.out.info; \
-		STRING_EQUAL(u.info ## lvl2.field2.name, value, field2); \
+		STRING_EQUAL(u.info ## lvl2.field2.string, value, field2); \
 	} while (0)
 
 #define TEST_USERINFO_INT_EXP(lvl1, field1, lvl2, field2, value, exp_value, fpval) do { \
@@ -273,48 +273,48 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	q0.in.level = 12;
 	do { TESTCALL(QueryUserInfo, q0) } while (0);
 
-	TEST_USERINFO_NAME(2, comment,  1, comment, "xx2-1 comment", 0);
-	TEST_USERINFO_NAME(2, comment, 21, comment, "xx2-21 comment", 0);
-	TEST_USERINFO_NAME(21, comment, 21, comment, "xx21-21 comment", 
+	TEST_USERINFO_STRING(2, comment,  1, comment, "xx2-1 comment", 0);
+	TEST_USERINFO_STRING(2, comment, 21, comment, "xx2-21 comment", 0);
+	TEST_USERINFO_STRING(21, comment, 21, comment, "xx21-21 comment", 
 			   SAMR_FIELD_COMMENT);
 
-	TEST_USERINFO_NAME(6, full_name,  1, full_name, "xx6-1 full_name", 0);
-	TEST_USERINFO_NAME(6, full_name,  3, full_name, "xx6-3 full_name", 0);
-	TEST_USERINFO_NAME(6, full_name,  5, full_name, "xx6-5 full_name", 0);
-	TEST_USERINFO_NAME(6, full_name,  6, full_name, "xx6-6 full_name", 0);
-	TEST_USERINFO_NAME(6, full_name,  8, full_name, "xx6-8 full_name", 0);
-	TEST_USERINFO_NAME(6, full_name, 21, full_name, "xx6-21 full_name", 0);
-	TEST_USERINFO_NAME(8, full_name, 21, full_name, "xx8-21 full_name", 0);
-	TEST_USERINFO_NAME(21, full_name, 21, full_name, "xx21-21 full_name", 
+	TEST_USERINFO_STRING(6, full_name,  1, full_name, "xx6-1 full_name", 0);
+	TEST_USERINFO_STRING(6, full_name,  3, full_name, "xx6-3 full_name", 0);
+	TEST_USERINFO_STRING(6, full_name,  5, full_name, "xx6-5 full_name", 0);
+	TEST_USERINFO_STRING(6, full_name,  6, full_name, "xx6-6 full_name", 0);
+	TEST_USERINFO_STRING(6, full_name,  8, full_name, "xx6-8 full_name", 0);
+	TEST_USERINFO_STRING(6, full_name, 21, full_name, "xx6-21 full_name", 0);
+	TEST_USERINFO_STRING(8, full_name, 21, full_name, "xx8-21 full_name", 0);
+	TEST_USERINFO_STRING(21, full_name, 21, full_name, "xx21-21 full_name", 
 			   SAMR_FIELD_NAME);
 
-	TEST_USERINFO_NAME(11, logon_script, 3, logon_script, "xx11-3 logon_script", 0);
-	TEST_USERINFO_NAME(11, logon_script, 5, logon_script, "xx11-5 logon_script", 0);
-	TEST_USERINFO_NAME(11, logon_script, 21, logon_script, "xx11-21 logon_script", 0);
-	TEST_USERINFO_NAME(21, logon_script, 21, logon_script, "xx21-21 logon_script", 
+	TEST_USERINFO_STRING(11, logon_script, 3, logon_script, "xx11-3 logon_script", 0);
+	TEST_USERINFO_STRING(11, logon_script, 5, logon_script, "xx11-5 logon_script", 0);
+	TEST_USERINFO_STRING(11, logon_script, 21, logon_script, "xx11-21 logon_script", 0);
+	TEST_USERINFO_STRING(21, logon_script, 21, logon_script, "xx21-21 logon_script", 
 			   SAMR_FIELD_LOGON_SCRIPT);
 
-	TEST_USERINFO_NAME(12, profile_path,  3, profile_path, "xx12-3 profile_path", 0);
-	TEST_USERINFO_NAME(12, profile_path,  5, profile_path, "xx12-5 profile_path", 0);
-	TEST_USERINFO_NAME(12, profile_path, 21, profile_path, "xx12-21 profile_path", 0);
-	TEST_USERINFO_NAME(21, profile_path, 21, profile_path, "xx21-21 profile_path", 
+	TEST_USERINFO_STRING(12, profile_path,  3, profile_path, "xx12-3 profile_path", 0);
+	TEST_USERINFO_STRING(12, profile_path,  5, profile_path, "xx12-5 profile_path", 0);
+	TEST_USERINFO_STRING(12, profile_path, 21, profile_path, "xx12-21 profile_path", 0);
+	TEST_USERINFO_STRING(21, profile_path, 21, profile_path, "xx21-21 profile_path", 
 			   SAMR_FIELD_PROFILE_PATH);
 
-	TEST_USERINFO_NAME(13, description,  1, description, "xx13-1 description", 0);
-	TEST_USERINFO_NAME(13, description,  5, description, "xx13-5 description", 0);
-	TEST_USERINFO_NAME(13, description, 21, description, "xx13-21 description", 0);
-	TEST_USERINFO_NAME(21, description, 21, description, "xx21-21 description", 
+	TEST_USERINFO_STRING(13, description,  1, description, "xx13-1 description", 0);
+	TEST_USERINFO_STRING(13, description,  5, description, "xx13-5 description", 0);
+	TEST_USERINFO_STRING(13, description, 21, description, "xx13-21 description", 0);
+	TEST_USERINFO_STRING(21, description, 21, description, "xx21-21 description", 
 			   SAMR_FIELD_DESCRIPTION);
 
-	TEST_USERINFO_NAME(14, workstations,  3, workstations, "14workstation3", 0);
-	TEST_USERINFO_NAME(14, workstations,  5, workstations, "14workstation4", 0);
-	TEST_USERINFO_NAME(14, workstations, 21, workstations, "14workstation21", 0);
-	TEST_USERINFO_NAME(21, workstations, 21, workstations, "21workstation21", 
+	TEST_USERINFO_STRING(14, workstations,  3, workstations, "14workstation3", 0);
+	TEST_USERINFO_STRING(14, workstations,  5, workstations, "14workstation4", 0);
+	TEST_USERINFO_STRING(14, workstations, 21, workstations, "14workstation21", 0);
+	TEST_USERINFO_STRING(21, workstations, 21, workstations, "21workstation21", 
 			   SAMR_FIELD_WORKSTATION);
 
-	TEST_USERINFO_NAME(20, callback, 21, callback, "xx20-21 callback", 0);
-	TEST_USERINFO_NAME(21, callback, 21, callback, "xx21-21 callback", 
-			   SAMR_FIELD_CALLBACK);
+	TEST_USERINFO_STRING(20, parameters, 21, parameters, "xx20-21 parameters", 0);
+	TEST_USERINFO_STRING(21, parameters, 21, parameters, "xx21-21 parameters", 
+			   SAMR_FIELD_PARAMETERS);
 
 	TEST_USERINFO_INT(2, country_code, 21, country_code, __LINE__, 0);
 	TEST_USERINFO_INT(21, country_code, 21, country_code, __LINE__, 
@@ -630,8 +630,8 @@ static BOOL test_SetAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.alias_handle = handle;
 		r.in.level = levels[i];
 		switch (r.in.level) {
-		    case 2 : init_samr_Name(&r.in.info.name,TEST_ALIASNAME); break;
-		    case 3 : init_samr_Name(&r.in.info.description,
+		    case 2 : init_samr_String(&r.in.info.name,TEST_ALIASNAME); break;
+		    case 3 : init_samr_String(&r.in.info.description,
 				"Test Description, should test I18N as well"); break;
 		}
 
@@ -678,14 +678,14 @@ static BOOL test_GetGroupsForUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_GetDomPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			      struct samr_Name *domain_name)
+			      struct samr_String *domain_name)
 {
 	NTSTATUS status;
 	struct samr_GetDomPwInfo r;
 	BOOL ret = True;
 
 	r.in.name = domain_name;
-	printf("Testing GetDomPwInfo with name %s\n", r.in.name->name);
+	printf("Testing GetDomPwInfo with name %s\n", r.in.name->string);
 
 	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -693,8 +693,8 @@ static BOOL test_GetDomPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	r.in.name->name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	printf("Testing GetDomPwInfo with name %s\n", r.in.name->name);
+	r.in.name->string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	printf("Testing GetDomPwInfo with name %s\n", r.in.name->string);
 
 	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -702,8 +702,8 @@ static BOOL test_GetDomPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	r.in.name->name = "\\\\__NONAME__";
-	printf("Testing GetDomPwInfo with name %s\n", r.in.name->name);
+	r.in.name->string = "\\\\__NONAME__";
+	printf("Testing GetDomPwInfo with name %s\n", r.in.name->string);
 
 	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -711,8 +711,8 @@ static BOOL test_GetDomPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	r.in.name->name = "\\\\Builtin";
-	printf("Testing GetDomPwInfo with name %s\n", r.in.name->name);
+	r.in.name->string = "\\\\Builtin";
+	printf("Testing GetDomPwInfo with name %s\n", r.in.name->string);
 
 	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -750,9 +750,9 @@ static NTSTATUS test_LookupName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_LookupNames n;
-	struct samr_Name sname[2];
+	struct samr_String sname[2];
 
-	init_samr_Name(&sname[0], name);
+	init_samr_String(&sname[0], name);
 
 	n.in.domain_handle = domain_handle;
 	n.in.num_names = 1;
@@ -764,7 +764,7 @@ static NTSTATUS test_LookupName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	init_samr_Name(&sname[1], "xxNONAMExx");
+	init_samr_String(&sname[1], "xxNONAMExx");
 	n.in.num_names = 2;
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
 	if (!NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
@@ -772,7 +772,7 @@ static NTSTATUS test_LookupName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	init_samr_Name(&sname[1], "xxNONAMExx");
+	init_samr_String(&sname[1], "xxNONAMExx");
 	n.in.num_names = 0;
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -861,7 +861,7 @@ static BOOL test_ChangePasswordNT3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_Close(p, mem_ctx, &user_handle)) {
+	if (!test_samr_handle_Close(p, mem_ctx, &user_handle)) {
 		ret = False;
 	}
 
@@ -931,7 +931,7 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		*password = newpass;
 	}
 
-	if (!test_Close(p, mem_ctx, &user_handle)) {
+	if (!test_samr_handle_Close(p, mem_ctx, &user_handle)) {
 		ret = False;
 	}
 
@@ -955,8 +955,8 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	struct samr_GetDomPwInfo dom_pw_info;
 	int policy_min_pw_len = 0;
 
-	struct samr_Name domain_name;
-	domain_name.name = "";
+	struct samr_String domain_name;
+	domain_name.string = "";
 	dom_pw_info.in.name = &domain_name;
 
 	printf("Testing OemChangePasswordUser2\n");
@@ -968,8 +968,8 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 
 	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
-	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	account.name = TEST_ACCOUNT_NAME;
+	server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	account.string = TEST_ACCOUNT_NAME;
 
 	E_deshash(oldpass, old_lm_hash);
 	E_deshash(newpass, new_lm_hash);
@@ -1001,7 +1001,7 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_ChangePasswordUser2 r;
 	BOOL ret = True;
-	struct samr_Name server, account;
+	struct samr_String server, account;
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Password nt_verifier, lm_verifier;
 	char *oldpass = *password;
@@ -1012,8 +1012,8 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_GetDomPwInfo dom_pw_info;
 	int policy_min_pw_len = 0;
 
-	struct samr_Name domain_name;
-	domain_name.name = "";
+	struct samr_String domain_name;
+	domain_name.string = "";
 	dom_pw_info.in.name = &domain_name;
 
 	printf("Testing ChangePasswordUser2\n");
@@ -1025,8 +1025,8 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
-	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	init_samr_Name(&account, TEST_ACCOUNT_NAME);
+	server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	init_samr_String(&account, TEST_ACCOUNT_NAME);
 
 	E_md4hash(oldpass, old_nt_hash);
 	E_md4hash(newpass, new_nt_hash);
@@ -1070,7 +1070,7 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_ChangePasswordUser3 r;
 	BOOL ret = True;
-	struct samr_Name server, account;
+	struct samr_String server, account;
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Password nt_verifier, lm_verifier;
 	char *oldpass = *password;
@@ -1080,8 +1080,8 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("Testing ChangePasswordUser3\n");
 
-	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	init_samr_Name(&account, TEST_ACCOUNT_NAME);
+	server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	init_samr_String(&account, TEST_ACCOUNT_NAME);
 
 	E_md4hash(oldpass, old_nt_hash);
 	E_md4hash(newpass, new_nt_hash);
@@ -1462,28 +1462,28 @@ static BOOL test_CreateAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_CreateDomAlias r;
-	struct samr_Name name;
+	struct samr_String name;
 	uint32_t rid;
 	BOOL ret = True;
 
-	init_samr_Name(&name, TEST_ALIASNAME);
+	init_samr_String(&name, TEST_ALIASNAME);
 	r.in.domain_handle = domain_handle;
 	r.in.aliasname = &name;
 	r.in.access_mask = SEC_RIGHT_MAXIMUM_ALLOWED;
 	r.out.alias_handle = alias_handle;
 	r.out.rid = &rid;
 
-	printf("Testing CreateAlias (%s)\n", r.in.aliasname->name);
+	printf("Testing CreateAlias (%s)\n", r.in.aliasname->string);
 
 	status = dcerpc_samr_CreateDomAlias(p, mem_ctx, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		printf("Server refused create of '%s'\n", r.in.aliasname->name);
+		printf("Server refused create of '%s'\n", r.in.aliasname->string);
 		return True;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ALIAS_EXISTS)) {
-		if (!test_DeleteAlias_byname(p, mem_ctx, domain_handle, r.in.aliasname->name)) {
+		if (!test_DeleteAlias_byname(p, mem_ctx, domain_handle, r.in.aliasname->string)) {
 			return False;
 		}
 		status = dcerpc_samr_CreateDomAlias(p, mem_ctx, &r);
@@ -1554,10 +1554,10 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	/* This call creates a 'normal' account - check that it really does */
 	const uint32_t acct_flags = ACB_NORMAL;
-	struct samr_Name name;
+	struct samr_String name;
 	BOOL ret = True;
 
-	init_samr_Name(&name, TEST_ACCOUNT_NAME);
+	init_samr_String(&name, TEST_ACCOUNT_NAME);
 
 	r.in.domain_handle = domain_handle;
 	r.in.account_name = &name;
@@ -1565,18 +1565,18 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.out.user_handle = user_handle;
 	r.out.rid = &rid;
 
-	printf("Testing CreateUser(%s)\n", r.in.account_name->name);
+	printf("Testing CreateUser(%s)\n", r.in.account_name->string);
 
 	status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		printf("Server refused create of '%s'\n", r.in.account_name->name);
+		printf("Server refused create of '%s'\n", r.in.account_name->string);
 		ZERO_STRUCTP(user_handle);
 		return True;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-		if (!test_DeleteUser_byname(p, mem_ctx, domain_handle, r.in.account_name->name)) {
+		if (!test_DeleteUser_byname(p, mem_ctx, domain_handle, r.in.account_name->string)) {
 			return False;
 		}
 		status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
@@ -1675,7 +1675,7 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_DeleteUser d;
 	struct policy_handle user_handle;
 	uint32_t rid;
-	struct samr_Name name;
+	struct samr_String name;
 	BOOL ret = True;
 	int i;
 
@@ -1705,7 +1705,7 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		uint32_t acct_flags = account_types[i].acct_flags;
 		uint32_t access_granted;
 
-		init_samr_Name(&name, account_types[i].account_name);
+		init_samr_String(&name, account_types[i].account_name);
 
 		r.in.domain_handle = handle;
 		r.in.account_name = &name;
@@ -1715,16 +1715,16 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.out.access_granted = &access_granted;
 		r.out.rid = &rid;
 		
-		printf("Testing CreateUser2(%s, 0x%x)\n", r.in.account_name->name, acct_flags);
+		printf("Testing CreateUser2(%s, 0x%x)\n", r.in.account_name->string, acct_flags);
 		
 		status = dcerpc_samr_CreateUser2(p, mem_ctx, &r);
 		
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-			printf("Server refused create of '%s'\n", r.in.account_name->name);
+			printf("Server refused create of '%s'\n", r.in.account_name->string);
 			continue;
 
 		} else if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			if (!test_DeleteUser_byname(p, mem_ctx, handle, r.in.account_name->name)) {
+			if (!test_DeleteUser_byname(p, mem_ctx, handle, r.in.account_name->string)) {
 				return False;
 			}
 			status = dcerpc_samr_CreateUser2(p, mem_ctx, &r);
@@ -1883,12 +1883,12 @@ static BOOL test_SetGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		   the name is still reserved, so creating the old name fails, but deleting by the old name
 		   also fails */
 		if (s.in.level == 2) {
-			init_samr_Name(&s.in.info->name, "NewName");
+			init_samr_String(&s.in.info->string, "NewName");
 		}
 #endif
 
 		if (s.in.level == 4) {
-			init_samr_Name(&s.in.info->description, "test description");
+			init_samr_String(&s.in.info->description, "test description");
 		}
 
 		status = dcerpc_samr_SetGroupInfo(p, mem_ctx, &s);
@@ -2007,7 +2007,7 @@ static BOOL test_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_Close(p, mem_ctx, &user_handle)) {
+	if (!test_samr_handle_Close(p, mem_ctx, &user_handle)) {
 		ret = False;
 	}
 
@@ -2047,7 +2047,7 @@ static BOOL test_OpenGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_Close(p, mem_ctx, &group_handle)) {
+	if (!test_samr_handle_Close(p, mem_ctx, &group_handle)) {
 		ret = False;
 	}
 
@@ -2087,7 +2087,7 @@ static BOOL test_OpenAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_Close(p, mem_ctx, &alias_handle)) {
+	if (!test_samr_handle_Close(p, mem_ctx, &alias_handle)) {
 		ret = False;
 	}
 
@@ -2136,7 +2136,7 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing LookupNames\n");
 	n.in.domain_handle = handle;
 	n.in.num_names = r.out.sam->count;
-	n.in.names = talloc(mem_ctx, r.out.sam->count * sizeof(struct samr_Name));
+	n.in.names = talloc(mem_ctx, r.out.sam->count * sizeof(struct samr_String));
 	for (i=0;i<r.out.sam->count;i++) {
 		n.in.names[i] = r.out.sam->entries[i].name;
 	}
@@ -2292,7 +2292,7 @@ static BOOL test_GetDisplayEnumerationIndex(struct dcerpc_pipe *p, TALLOC_CTX *m
 
 		r.in.domain_handle = handle;
 		r.in.level = levels[i];
-		init_samr_Name(&r.in.name, TEST_ACCOUNT_NAME);
+		init_samr_String(&r.in.name, TEST_ACCOUNT_NAME);
 
 		status = dcerpc_samr_GetDisplayEnumerationIndex(p, mem_ctx, &r);
 
@@ -2304,7 +2304,7 @@ static BOOL test_GetDisplayEnumerationIndex(struct dcerpc_pipe *p, TALLOC_CTX *m
 			ret = False;
 		}
 
-		init_samr_Name(&r.in.name, "zzzzzzzz");
+		init_samr_String(&r.in.name, "zzzzzzzz");
 
 		status = dcerpc_samr_GetDisplayEnumerationIndex(p, mem_ctx, &r);
 		
@@ -2333,7 +2333,7 @@ static BOOL test_GetDisplayEnumerationIndex2(struct dcerpc_pipe *p, TALLOC_CTX *
 
 		r.in.domain_handle = handle;
 		r.in.level = levels[i];
-		init_samr_Name(&r.in.name, TEST_ACCOUNT_NAME);
+		init_samr_String(&r.in.name, TEST_ACCOUNT_NAME);
 
 		status = dcerpc_samr_GetDisplayEnumerationIndex2(p, mem_ctx, &r);
 		if (ok_lvl[i] && 
@@ -2344,7 +2344,7 @@ static BOOL test_GetDisplayEnumerationIndex2(struct dcerpc_pipe *p, TALLOC_CTX *
 			ret = False;
 		}
 
-		init_samr_Name(&r.in.name, "zzzzzzzz");
+		init_samr_String(&r.in.name, "zzzzzzzz");
 
 		status = dcerpc_samr_GetDisplayEnumerationIndex2(p, mem_ctx, &r);
 		if (ok_lvl[i] && !NT_STATUS_EQUAL(NT_STATUS_NO_MORE_ENTRIES, status)) {
@@ -2564,7 +2564,7 @@ static BOOL test_GroupList(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		for (i=0; i<q1.out.sam->count; i++) {
 			add_string_to_array(mem_ctx,
-					    q1.out.sam->entries[i].name.name,
+					    q1.out.sam->entries[i].name.string,
 					    &names, &num_names);
 		}
 	}
@@ -2594,7 +2594,7 @@ static BOOL test_GroupList(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		for (i=0; i<q2.out.info.info5.count; i++) {
 			int j;
-			const char *name = q2.out.info.info5.entries[i].account_name.name;
+			const char *name = q2.out.info.info5.entries[i].account_name.string;
 			BOOL found = False;
 			for (j=0; j<num_names; j++) {
 				if (names[j] == NULL)
@@ -2803,10 +2803,10 @@ static BOOL test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_CreateDomainGroup r;
 	uint32_t rid;
-	struct samr_Name name;
+	struct samr_String name;
 	BOOL ret = True;
 
-	init_samr_Name(&name, TEST_GROUPNAME);
+	init_samr_String(&name, TEST_GROUPNAME);
 
 	r.in.domain_handle = domain_handle;
 	r.in.name = &name;
@@ -2814,19 +2814,19 @@ static BOOL test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.out.group_handle = group_handle;
 	r.out.rid = &rid;
 
-	printf("Testing CreateDomainGroup(%s)\n", r.in.name->name);
+	printf("Testing CreateDomainGroup(%s)\n", r.in.name->string);
 
 	status = dcerpc_samr_CreateDomainGroup(p, mem_ctx, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		printf("Server refused create of '%s'\n", r.in.name->name);
+		printf("Server refused create of '%s'\n", r.in.name->string);
 		ZERO_STRUCTP(group_handle);
 		return True;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_GROUP_EXISTS) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-		if (!test_DeleteGroup_byname(p, mem_ctx, domain_handle, r.in.name->name)) {
+		if (!test_DeleteGroup_byname(p, mem_ctx, domain_handle, r.in.name->string)) {
 			return False;
 		}
 		status = dcerpc_samr_CreateDomainGroup(p, mem_ctx, &r);
@@ -2906,7 +2906,7 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	/* run the domain tests with the main handle closed - this tests
 	   the servers reference counting */
-	ret &= test_Close(p, mem_ctx, handle);
+	ret &= test_samr_handle_Close(p, mem_ctx, handle);
 
 	ret &= test_QuerySecurity(p, mem_ctx, &domain_handle);
 	ret &= test_RemoveMemberFromForeignDomain(p, mem_ctx, &domain_handle);
@@ -2945,7 +2945,7 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	ret &= test_Close(p, mem_ctx, &domain_handle);
+	ret &= test_samr_handle_Close(p, mem_ctx, &domain_handle);
 
 	/* reconnect the main handle */
 	ret &= test_Connect(p, mem_ctx, handle);
@@ -2954,19 +2954,19 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			      struct policy_handle *handle, struct samr_Name *domain)
+			      struct policy_handle *handle, struct samr_String *domain)
 {
 	NTSTATUS status;
 	struct samr_LookupDomain r;
-	struct samr_Name n2;
+	struct samr_String n2;
 	BOOL ret = True;
 
-	printf("Testing LookupDomain(%s)\n", domain->name);
+	printf("Testing LookupDomain(%s)\n", domain->string);
 
 	/* check for correct error codes */
 	r.in.connect_handle = handle;
 	r.in.domain = &n2;
-	n2.name = NULL;
+	n2.string = NULL;
 
 	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r);
 	if (!NT_STATUS_EQUAL(NT_STATUS_INVALID_PARAMETER, status)) {
@@ -2974,7 +2974,7 @@ static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	n2.name = "xxNODOMAINxx";
+	n2.string = "xxNODOMAINxx";
 
 	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r);
 	if (!NT_STATUS_EQUAL(NT_STATUS_NO_SUCH_DOMAIN, status)) {
@@ -3084,7 +3084,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	} else {
 		if (got_handle) {
-			test_Close(p, mem_ctx, handle);
+			test_samr_handle_Close(p, mem_ctx, handle);
 		}
 		got_handle = True;
 		*handle = h;
@@ -3103,7 +3103,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	} else {
 		if (got_handle) {
-			test_Close(p, mem_ctx, handle);
+			test_samr_handle_Close(p, mem_ctx, handle);
 		}
 		got_handle = True;
 		*handle = h;
@@ -3122,7 +3122,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	} else {
 		if (got_handle) {
-			test_Close(p, mem_ctx, handle);
+			test_samr_handle_Close(p, mem_ctx, handle);
 		}
 		got_handle = True;
 		*handle = h;
@@ -3146,7 +3146,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	} else {
 		if (got_handle) {
-			test_Close(p, mem_ctx, handle);
+			test_samr_handle_Close(p, mem_ctx, handle);
 		}
 		got_handle = True;
 		*handle = h;
@@ -3194,7 +3194,7 @@ BOOL torture_rpc_samr(void)
 		ret = False;
 	}
 
-	if (!test_Close(p, mem_ctx, &handle)) {
+	if (!test_samr_handle_Close(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 

@@ -34,12 +34,12 @@ static BOOL test_samr_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct samr_GetDomPwInfo r;
 	int i;
-	struct samr_Name name;
+	struct samr_String name;
 
-	name.name = lp_workgroup();
+	name.string = lp_workgroup();
 	r.in.name = &name;
 
-	printf("Testing GetDomPwInfo with name %s\n", r.in.name->name);
+	printf("Testing GetDomPwInfo with name %s\n", r.in.name->string);
 	
 	/* do several ops to test credential chaining */
 	for (i=0;i<5;i++) {

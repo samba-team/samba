@@ -68,7 +68,7 @@ void update_userlist(void)
 	}
 
 	for (i=0;i<r.out.sam->count;i++) {
-		printf("Found: %s\n", r.out.sam->entries[i].name.name);
+		printf("Found: %s\n", r.out.sam->entries[i].name.string);
 		/* FIXME: Query user info */
 
 		//		if (!test_OpenUser(sam_pipe, mem_ctx, &sam_handle, r.out.sam->entries[i].idx)) {

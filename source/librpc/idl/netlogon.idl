@@ -329,15 +329,15 @@ interface netlogon
 		uint32 DataLength;
 
 		/* netr_USER_KEYS encrypted with the session key */
-		[size_is(DataLength)] uint8 *SensitiveData;
+		[size_is(DataLength)][flag(NDR_PAHEX)] uint8 *SensitiveData;
 	} netr_USER_PRIVATE_INFO;
 
 	typedef struct {
 		netr_String account_name;
 		netr_String full_name;
 		uint32 rid;
-		uint32 primary_group;
-		netr_String home_dir;
+		uint32 primary_gid;
+		netr_String home_directory;
 		netr_String home_drive;
 		netr_String logon_script;
 		netr_String description;
@@ -345,20 +345,20 @@ interface netlogon
 		NTTIME last_logon;
 		NTTIME last_logoff;
 		samr_LogonHours logon_hours;
-		uint16 bad_pw_count;
+		uint16 bad_password_count;
 		uint16 logon_count;
 		NTTIME last_password_change;
 		NTTIME acct_expiry;
 		uint32 acct_flags;
 		samr_Password lmpassword;
 		samr_Password ntpassword;
-		bool8 ntpassword_present;
-		bool8 lmpassword_present;
+		bool8 nt_password_present;
+		bool8 lm_password_present;
 		bool8 password_expired;
-		netr_String UserComment;
-		netr_String Parameters;
-		uint16 CountryCode;
-		uint16 CodePage;
+		netr_String comment;
+		netr_String parameters;
+		uint16 country_code;
+		uint16 code_page;
 		netr_USER_PRIVATE_INFO user_private_info;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
@@ -471,7 +471,7 @@ interface netlogon
 		bool8 auditingmode;
 		uint32 maxauditeventcount;
 		[size_is(maxauditeventcount+1)] uint32 *eventauditoptions;
-		netr_String primarydomainname;
+		netr_String primary_domain_name;
 		dom_sid2 *sid;
 		netr_QUOTA_LIMITS quota_limits;
 		uint64 sequence_num;

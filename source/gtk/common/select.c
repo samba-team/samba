@@ -158,7 +158,7 @@ GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe)
 		for (i=0;i<r.out.sam->count;i++) {
 			GtkTreeIter iter;
 			gtk_list_store_append(d->store_domains, &iter);
-			gtk_list_store_set (d->store_domains, &iter, 0, r.out.sam->entries[i].name.name, -1);
+			gtk_list_store_set (d->store_domains, &iter, 0, r.out.sam->entries[i].name.string, -1);
 		}
 	}
 
