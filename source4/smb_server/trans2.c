@@ -633,7 +633,7 @@ static NTSTATUS trans2_qpathinfo(struct smbsrv_request *req, struct smb_trans2 *
 	}
 
 	/* work out the backend level - we make it 1-1 in the header */
-	st.generic.level = (enum fileinfo_level)level;
+	st.generic.level = (enum smb_fileinfo_level)level;
 	if (st.generic.level >= RAW_FILEINFO_GENERIC) {
 		return NT_STATUS_INVALID_LEVEL;
 	}
@@ -669,7 +669,7 @@ static NTSTATUS trans2_qfileinfo(struct smbsrv_request *req, struct smb_trans2 *
 	level = SVAL(trans->in.params.data, 2);
 
 	/* work out the backend level - we make it 1-1 in the header */
-	st.generic.level = (enum fileinfo_level)level;
+	st.generic.level = (enum smb_fileinfo_level)level;
 	if (st.generic.level >= RAW_FILEINFO_GENERIC) {
 		return NT_STATUS_INVALID_LEVEL;
 	}
@@ -804,7 +804,7 @@ static NTSTATUS trans2_setfileinfo(struct smbsrv_request *req, struct smb_trans2
 	blob = &trans->in.data;
 
 	st.generic.file.fnum = fnum;
-	st.generic.level = (enum setfileinfo_level)level;
+	st.generic.level = (enum smb_setfileinfo_level)level;
 
 	status = trans2_parse_sfileinfo(req, &st, blob);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -838,7 +838,7 @@ static NTSTATUS trans2_setpathinfo(struct smbsrv_request *req, struct smb_trans2
 
 	level = SVAL(trans->in.params.data, 0);
 	blob = &trans->in.data;
-	st.generic.level = (enum setfileinfo_level)level;
+	st.generic.level = (enum smb_setfileinfo_level)level;
 
 	trans2_pull_blob_string(req, &trans->in.params, 4, &st.generic.file.fname, 0);
 	if (st.generic.file.fname == NULL) {
@@ -865,7 +865,7 @@ static NTSTATUS trans2_setpathinfo(struct smbsrv_request *req, struct smb_trans2
 struct find_state {
 	struct smbsrv_request *req;
 	struct smb_trans2 *trans;
-	enum search_level level;
+	enum smb_search_level level;
 	uint16_t last_entry_offset;
 	uint16_t flags;
 };
@@ -1093,7 +1093,7 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct smb_trans2 *
 		return NT_STATUS_FOOBAR;
 	}
 
-	search.t2ffirst.level = (enum search_level)level;
+	search.t2ffirst.level = (enum smb_search_level)level;
 	if (search.t2ffirst.level >= RAW_SEARCH_GENERIC) {
 		return NT_STATUS_INVALID_LEVEL;
 	}
@@ -1153,7 +1153,7 @@ static NTSTATUS trans2_findnext(struct smbsrv_request *req, struct smb_trans2 *t
 		return NT_STATUS_FOOBAR;
 	}
 
-	search.t2fnext.level = (enum search_level)level;
+	search.t2fnext.level = (enum smb_search_level)level;
 	if (search.t2fnext.level >= RAW_SEARCH_GENERIC) {
 		return NT_STATUS_INVALID_LEVEL;
 	}

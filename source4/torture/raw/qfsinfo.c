@@ -23,7 +23,7 @@
 
 static struct {
 	const char *name;
-	enum fsinfo_level level;
+	enum smb_fsinfo_level level;
 	uint32_t capability_mask;
 	NTSTATUS status;
 	union smb_fsinfo fsinfo;
