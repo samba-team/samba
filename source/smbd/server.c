@@ -1237,8 +1237,7 @@ static BOOL check_access_allowed_for_current_user( char *fname, int accmode )
     }
 #else /* defined(WIFEXITED) && defined(WEXITSTATUS) */
     if(status_code != 0) {
-      DEBUG(9,("check_access_allowed_for_current_user: The status of the process e
-xiting was %d. Returning access denied.\n", status_code));
+      DEBUG(9,("check_access_allowed_for_current_user: The status of the process exiting was %d. Returning access denied.\n", status_code));
       return(False);
     }
 #endif /* defined(WIFEXITED) && defined(WEXITSTATUS) */
