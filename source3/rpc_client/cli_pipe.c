@@ -1016,8 +1016,6 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 			static const uchar netsec_sig[8] = NETSEC_SIGNATURE;
 			static const uchar nullbytes[8] = { 0,0,0,0,0,0,0,0 };
 			uchar sign[8];
-			BOOL ret;
-			int i;
 			prs_struct netsec_blob;
 
 			memset(sign, 0, sizeof(sign));
