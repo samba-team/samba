@@ -3107,7 +3107,7 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
 	if (ext2[0]) {
 		snprintf(pname2, available_space - 1, "%s.%s", root2, ext2);
 	} else {
-		StrnCpy(pname2, root2, available_space - 1);
+		pstrcpy_base(pname2, root2, name2);
 	}
 
 	return(True);

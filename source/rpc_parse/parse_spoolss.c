@@ -5438,8 +5438,9 @@ BOOL make_spoolss_driver_info_3(TALLOC_CTX *mem_ctx,
 					done = True;
 				else
 					null_char = True;
+
 				break;
-					
+
 			default:
 				null_char = False;
 				;;

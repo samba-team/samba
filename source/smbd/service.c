@@ -486,13 +486,14 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		pstring tmp_gname;
 		BOOL user_must_be_member = False;
 		
-		StrnCpy(tmp_gname,lp_force_group(snum),sizeof(pstring)-1);
+		pstrcpy(tmp_gname,lp_force_group(snum));
 		
 		if (tmp_gname[0] == '+') {
 			user_must_be_member = True;
-			StrnCpy(gname,&tmp_gname[1],sizeof(pstring)-2);
+			/* even now, tmp_gname is null terminated */
+			pstrcpy(gname,&tmp_gname[1]);
 		} else {
-			StrnCpy(gname,tmp_gname,sizeof(pstring)-1);
+			pstrcpy(gname,tmp_gname);
 		}
 		/* default service may be a group name 		*/
 		pstring_sub(gname,"%S",lp_servicename(snum));

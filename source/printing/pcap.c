@@ -384,7 +384,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
 
 	  if (strlen(p)>strlen(comment) && has_punctuation)
 	    {
-	      StrnCpy(comment,p,sizeof(comment)-1);
+	      pstrcpy(comment,p);
 	      continue;
 	    }
 
@@ -398,8 +398,8 @@ void pcap_printer_fn(void (*fn)(char *, char *))
 	  if (!strchr_m(comment,' ') && 
 	      strlen(p) > strlen(comment))
 	    {
-	      StrnCpy(comment,p,sizeof(comment)-1);
-	      continue;
+		    pstrcpy(comment,p);
+		    continue;
 	    }
 	}
 

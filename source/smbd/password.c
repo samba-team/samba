@@ -250,7 +250,7 @@ void add_session_user(const char *user)
 
   if (!(passwd = Get_Pwnam(user))) return;
 
-  StrnCpy(suser,passwd->pw_name,sizeof(suser)-1);
+  fstrcpy(suser,passwd->pw_name);
 
   if (suser && *suser && !in_list(suser,session_users,False))
     {
@@ -448,7 +448,7 @@ and given password ok\n", user));
 	if (!ok && lp_username(snum)) {
 		char *auser;
 		pstring user_list;
-		StrnCpy(user_list,lp_username(snum),sizeof(pstring));
+		pstrcpy(user_list,lp_username(snum));
 		
 		pstring_sub(user_list,"%S",lp_servicename(snum));
 		
@@ -478,7 +478,7 @@ and given password ok (%s)\n", user));
 	/* check for a normal guest connection */
 	if (!ok && GUEST_OK(snum)) {
 		fstring guestname;
-		StrnCpy(guestname,lp_guestaccount(),sizeof(guestname)-1);
+		fstrcpy(guestname,lp_guestaccount());
 		if (Get_Pwnam(guestname)) {
 			fstrcpy(user,guestname);
 			ok = True;

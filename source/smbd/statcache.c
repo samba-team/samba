@@ -128,18 +128,6 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	  original_path_length = translated_path_length;
   }
 
-#if 0
-  /*
-   * We will only replace namelen characters 
-   * of full_orig_name.
-   * StrnCpy always null terminates.
-   */
-
-  smbStrnCpy(orig_name, full_orig_name, namelen);
-  if(!case_sensitive)
-    strupper( orig_name );
-#endif
-
   /*
    * Check this name doesn't exist in the cache before we 
    * add it.
