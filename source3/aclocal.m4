@@ -84,6 +84,14 @@ define(AC_N_DEFINE,
 EOF
 ])
 
+dnl Add an #include
+dnl AC_ADD_INCLUDE(VARIABLE)
+define(AC_ADD_INCLUDE,
+[cat >> confdefs.h <<\EOF
+[#include] $1
+EOF
+])
+
 ## libtool.m4 - Configure libtool for the target system. -*-Shell-script-*-
 ## Copyright (C) 1996-1999 Free Software Foundation, Inc.
 ## Originally by Gordon Matzigkeit <gord@gnu.ai.mit.edu>, 1996
