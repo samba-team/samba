@@ -172,7 +172,7 @@ quote_string(const char *s, char *out, size_t index, size_t len)
 
 krb5_error_code
 krb5_unparse_name_fixed(krb5_context context,
-			krb5_principal principal,
+			krb5_const_principal principal,
 			char *name,
 			size_t len)
 {
@@ -192,7 +192,7 @@ krb5_unparse_name_fixed(krb5_context context,
 
 krb5_error_code
 krb5_unparse_name(krb5_context context,
-		  krb5_principal principal,
+		  krb5_const_principal principal,
 		  char **name)
 {
     size_t len = 0, plen;
@@ -407,7 +407,8 @@ krb5_copy_principal(krb5_context context,
     krb5_principal p = malloc(sizeof(*p));
     if (p == NULL)
 	return ENOMEM;
-    copy_Principal(inprinc, p);
+    if(copy_Principal(inprinc, p))
+	return ENOMEM;
     *outprinc = p;
     return 0;
 }
