@@ -365,17 +365,23 @@ static NTSTATUS ipc_read(struct ntvfs_module_context *ntvfs,
 	}
 
 	fnum = rd->readx.in.fnum;
-	data.length = rd->readx.in.maxcnt;
-	data.data = rd->readx.out.data;
 
 	p = pipe_state_find(private, fnum);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	status = dcesrv_output_blob(p->dce_conn, &data);
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
+	data.length = rd->readx.in.maxcnt;
+	data.data = rd->readx.out.data;
+	if (data.length > UINT16_MAX) {
+		data.length = 0;
+	}
+
+	if (data.length != 0) {
+		status = dcesrv_output_blob(p->dce_conn, &data);
+		if (NT_STATUS_IS_ERR(status)) {
+			return status;
+		}
 	}
 
 	rd->readx.out.remaining = 0;
