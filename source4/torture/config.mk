@@ -52,7 +52,7 @@ ADD_OBJ_FILES = \
 		torture/raw/acls.o \
 		torture/raw/seek.o
 REQUIRED_SUBSYSTEMS = \
-		LIBSMB
+		LIBSMB LIBCLI_LSA
 # End SUBSYSTEM TORTURE_RAW
 #################################
 
