@@ -829,7 +829,11 @@ BOOL reduce_name(connection_struct *conn, pstring fname)
 				if (p) {
 					*p++ = '\0';
 					fstrcpy(last_component, p);
+				} else {
+					fstrcpy(last_component, tmp_fname);
+					pstrcpy(tmp_fname, ".");
 				}
+
 #ifdef REALPATH_TAKES_NULL
 				resolved_name = SMB_VFS_REALPATH(conn,tmp_fname,NULL);
 #else
@@ -875,7 +879,7 @@ BOOL reduce_name(connection_struct *conn, pstring fname)
 	}
 
 	if (strncmp(conn->connectpath, resolved_name, con_path_len) != 0) {
-		DEBUG(2, ("reduce_name: Bad access attemt: %s is a symlink outside the share path", fname));
+		DEBUG(2, ("reduce_name: Bad access attempt: %s is a symlink outside the share path", fname));
 		if (free_resolved_name)
 			SAFE_FREE(resolved_name);
 		return False;
