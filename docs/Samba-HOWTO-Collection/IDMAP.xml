@@ -315,13 +315,126 @@ on Server Types and Security Modes</link>.
 <title>IDMAP Backend Usage</title>
 
 <para>
+Anyone who wishes to use <command>winbind</command> will find the following example configurations helpful.
+Remember that in the majority of cases <command>winbind</command> is of primary interest for use with
+Domain Member Servers (DMSs) and Domain Member Clients (DMCs).
 </para>
 
 	<sect2>
 	<title>Default Winbind TDB</title>
 
 	<para>
+	The following is a simple example of an NT4 DMS &smb.conf; file that shows only the global section.
+<screen>
+#Global parameters
+[global]
+        workgroup = MEGANET2
+        security = DOMAIN
+        idmap uid = 10000-20000
+        idmap gid = 10000-20000
+        template primary group = "Domain Users"
+        template shell = /bin/bash
+        winbind separator = +
+</screen>
 	</para>
+
+	<para>
+	The creation of the DMS requires the following steps:
+	</para>
+
+	<procedure>
+		<step><para>
+		Create or install and &smb.conf; file with the above configuration.
+		</para></step>
+
+		<step><para>
+		Execute:
+<screen>
+&rootprompt; net rpc join -UAdministrator%password
+Joined domain MEGANET2.
+</screen>
+	The success or failure of the join can be confirmed with the following command:
+<screen>
+&rootprompt; net rpc testjoin
+Join to 'MIDEARTH' is OK
+</screen>
+		A failed join would report the following:
+<screen>
+&rootprompt; net rpc testjoin
+[2004/11/05 16:34:12, 0] utils/net_rpc_join.c:net_rpc_join_ok(66)
+Join to domain 'MEGANET2' is not valid
+</screen>
+		</para></step>
+
+		<step><para>
+		Start the <command>nmbd, winbind,</command> and <command>smbd</command> daemons in the order shown.
+		</para></step>
+	</procedure>
+
+	<para>
+	The procedure for joining and ADS domain is similar to the NT4 domain join, except the &smb.conf; file
+	will have the following contents:
+<screen>
+# Global parameters
+[global]
+        workgroup = BUTTERNET
+	netbios name = GARGOYLE
+        realm = BUTTERNET.BIZ
+        security = ADS
+        template shell = /bin/bash
+        idmap uid = 500-10000000
+        idmap gid = 500-10000000
+        winbind use default domain = Yes
+        winbind nested groups = Yes
+        printer admin = "BUTTERNET\Domain Admins"
+</screen>
+	</para>
+
+	<para>
+	ADS DMS operation requires use of kerberos (KRB). For this to work the <filename>krb5.conf</filename>
+	must be configured. The exact requirements depends on which version of MIT or Heimdal kerberos is being
+	used. It is sound advice to use only the latest version, which at this time are MIT kerberos version
+	1.3.5 and Heimdal 0.61.
+	</para>
+
+	<para>
+	The creation of the DMS requires the following steps:
+	</para>
+
+	<procedure>
+		<step><para>
+		Create or install and &smb.conf; file with the above configuration.
+		</para></step>
+
+		<step><para>
+		Execute:
+<screen>
+&rootprompt; net ads join -UAdministrator%password
+Joined domain BUTTERNET.
+</screen>
+	The success or failure of the join can be confirmed with the following command:
+<screen>
+&rootprompt; net ads testjoin
+Join to 'BUTTERNET' is OK
+</screen>
+	</para>
+
+	<para>
+	An invalid or failed join can be detected by executing:
+<screen>
+&rootprompt; net ads testjoin
+GARGOYLE$@'s password:
+[2004/11/05 16:53:03, 0] utils/net_ads.c:ads_startup(186)
+  ads_connect: No results returned
+Join to domain is not valid
+</screen>
+		</para></step>
+
+		<step><para>
+		Start the <command>nmbd, winbind,</command> and <command>smbd</command> daemons in the order shown.
+		</para></step>
+
+	</procedure>
 
 	</sect2>
 
@@ -329,6 +442,23 @@ on Server Types and Security Modes</link>.
 	<title>IDMAP Storage in LDAP using Winbind</title>
 
 	<para>
+<screen>
+# Global parameters
+[global]
+        workgroup = SNOWSHOW
+        realm = SNOWSHOW.COM
+        server string = Samba Server
+        security = ADS
+        log level = 1 ads:10 auth:10 sam:10 rpc:10
+        ldap admin dn = cn=Manager,dc=SNOWSHOW,dc=COM
+        ldap idmap suffix = ou=Idmap
+        ldap suffix = dc=SNOWSHOW,dc=COM
+        idmap backend = ldap:ldap://ldap.snowshow.com
+        idmap uid = 150000-550000
+        idmap gid = 150000-550000
+        template shell = /bin/bash
+        winbind use default domain = Yes
+</screen>
 	</para>
 
 	</sect2>
@@ -337,6 +467,20 @@ on Server Types and Security Modes</link>.
 	<title>IDMAP and NSS IDMAP Resolution</title>
 
 	<para>
+<screen>
+# Global parameters
+[global]
+        workgroup = BOBBY
+        realm = BOBBY.COM
+        security = ADS
+        idmap uid = 150000-550000
+        idmap gid = 150000-550000
+        template shell = /bin/bash
+        winbind cache time = 5
+        winbind use default domain = Yes
+        winbind trusted domains only = Yes
+        winbind nested groups = Yes
+</screen>
 	</para>
 
 		<sect3>
@@ -361,6 +505,24 @@ on Server Types and Security Modes</link>.
 	<title>IDMAP_RID with Winbind</title>
 
 	<para>
+<screen>
+# Global parameters
+[global]
+        workgroup = KPAK
+        realm = corp.kpak.com
+        server string = Office Server
+        security = ADS
+        allow trusted domains = No
+        idmap backend = idmap_rid:KPAK=500-100000000
+        idmap uid = 500-100000000
+        idmap gid = 500-100000000
+        template shell = /bin/bash
+        winbind use default domain = Yes
+        winbind enum users = No
+        winbind enum groups = No
+        winbind nested groups = Yes
+        printer admin = "Domain Admins"
+</screen>
 	</para>
 
 	</sect2>
