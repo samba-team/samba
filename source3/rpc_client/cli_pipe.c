@@ -361,7 +361,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 nt_pipe_fnum, uint16 cmd,
 		int num_read;
 		prs_struct hps;
 
-		prs_init(&hps, 0x8, 4, 0, True);
+		prs_init(&hps, 0x18, 4, 0, True);
 
 		num_read = cli_read(cli, nt_pipe_fnum, hps.data->data, 0, 0x18);
 		DEBUG(5,("rpc_api_pipe: read header (size:%d)\n", num_read));
