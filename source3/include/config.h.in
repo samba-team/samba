@@ -875,6 +875,9 @@
 /* Define if you have the <arpa/inet.h> header file.  */
 #undef HAVE_ARPA_INET_H
 
+/* Define if you have the <com_err.h> header file.  */
+#undef HAVE_COM_ERR_H
+
 /* Define if you have the <compat.h> header file.  */
 #undef HAVE_COMPAT_H
 
