@@ -102,7 +102,7 @@ $(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
 
 $(DOCBOOKDIR)/%.xml: $(MANPAGEDIR)/%.xml xslt/expand-sambadoc.xsl
 	mkdir -p $(@D)
-	$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
+	$(XSLTPROC) --xinclude --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/manpages.xml: $(MANPAGES_SOURCES) xslt/manpage-summary.xsl
 	mkdir -p $(@D)
