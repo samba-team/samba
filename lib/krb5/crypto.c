@@ -159,7 +159,7 @@ static krb5_error_code hmac(krb5_context context,
 			    struct key_data *keyblock,
 			    Checksum *result);
 static void free_key_data(krb5_context context, struct key_data *key);
-static krb5_error_code usage2arcfour (krb5_context, int *);
+static krb5_error_code usage2arcfour (krb5_context, unsigned *);
 static void xor (DES_cblock *, const unsigned char *);
 
 /************************************************************
@@ -318,7 +318,7 @@ krb5_DES_AFS3_Transarc_string_to_key (krb5_data pw,
     memcpy(&temp_key, &ivec, 8);
     DES_set_odd_parity (&temp_key);
     DES_set_key (&temp_key, &schedule);
-    DES_cbc_cksum (password, key, passlen, &schedule, &ivec);
+    DES_cbc_cksum ((void*)password, key, passlen, &schedule, &ivec);
     memset(&schedule, 0, sizeof(schedule));
     memset(&temp_key, 0, sizeof(temp_key));
     memset(&ivec, 0, sizeof(ivec));
@@ -869,7 +869,7 @@ extern struct salt_type AES_salt[];
 
 #endif /* ENABLE_AES */
 
-extern struct salt_type des_salt[], 
+static struct salt_type des_salt[], 
     des3_salt[], des3_salt_derived[], arcfour_salt[];
 
 static struct key_type keytype_null = {
@@ -2420,8 +2420,8 @@ _krb5_aes_cts_encrypt(const unsigned char *in, unsigned char *out,
 	memcpy(ivec, out - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
 
     } else {
-	char tmp2[AES_BLOCK_SIZE];
-	char tmp3[AES_BLOCK_SIZE];
+	unsigned char tmp2[AES_BLOCK_SIZE];
+	unsigned char tmp3[AES_BLOCK_SIZE];
 
 	while(len > AES_BLOCK_SIZE * 2) {
 	    memcpy(tmp, in, AES_BLOCK_SIZE);
@@ -2686,7 +2686,7 @@ ARCFOUR_subdecrypt(krb5_context context,
  */
 
 static krb5_error_code
-usage2arcfour (krb5_context context, int *usage)
+usage2arcfour (krb5_context context, unsigned *usage)
 {
     switch (*usage) {
     case KRB5_KU_AS_REP_ENC_PART : /* 3 */
