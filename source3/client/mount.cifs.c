@@ -164,17 +164,36 @@ int parse_options(char * options)
 		if (value && *value) {
 			got_gid = 1;
 		}
-	} /* else if (strnicmp(data, "file_mode", 4) == 0) {
-		if (value && *value) {
-			vol->file_mode =
-				simple_strtoul(value, &value, 0);
+       /* fmask and dmask synonyms for people used to smbfs syntax */
+	} else if (strcmp(data, "file_mode") == 0 || strcmp(data, "fmask")==0) {
+		if (!value || !*value) {
+			printf ("Option '%s' requires a numerical argument\n", data);
+			return 1;
 		}
-	} else if (strnicmp(data, "dir_mode", 3) == 0) {
-		if (value && *value) {
-			vol->dir_mode =
-				simple_strtoul(value, &value, 0);
+
+		if (value[0] != '0') {
+			printf ("WARNING: '%s' not expressed in octal.\n", data);
 		}
-	} else if (strnicmp(data, "port", 4) == 0) {
+
+		if (strcmp (data, "fmask") == 0) {
+			printf ("WARNING: CIFS mount option 'fmask' is deprecated. Use 'file_mode' instead.\n");
+			data = "file_mode";
+                }
+        } else if (strcmp(data, "dir_mode") == 0 || strcmp(data, "dmask")==0) {
+                if (!value || !*value) {
+                        printf ("Option '%s' requires a numerical argument\n", data);
+                        return 1;
+                }
+
+                if (value[0] != '0') {
+                        printf ("WARNING: '%s' not expressed in octal.\n", data);
+                }
+
+                if (strcmp (data, "dmask") == 0) {
+                        printf ("WARNING: CIFS mount option 'dmask' is deprecated. Use 'dir_mode' instead.\n");
+                        data = "dir_mode";
+                }
+	} /* else if (strnicmp(data, "port", 4) == 0) {
 		if (value && *value) {
 			vol->port =
 				simple_strtoul(value, &value, 0);
