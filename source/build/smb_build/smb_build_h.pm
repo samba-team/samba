@@ -6,6 +6,9 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
+package smb_build_h;
+use strict;
+
 sub _add_define_section($)
 {
 	my $DEFINE = shift;

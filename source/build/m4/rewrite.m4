@@ -665,7 +665,7 @@ fi
 SMB_INFO_BUILD_ENV="$SMB_INFO_BUILD_ENV
 #############################################
 # Start Tell the Linker to export all symbols
-@{\$SMB_BUILD_CTX->{BUILD_ENV}{LD}{DYNEXP}} = str2array(\"$DYNEXP\");
+@{\$SMB_BUILD_CTX->{BUILD_ENV}{LD}{DYNEXP}} = input::str2array(\"$DYNEXP\");
 # End Tell the Linker to export all symbols
 #############################################
 "

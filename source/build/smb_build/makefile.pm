@@ -6,6 +6,9 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
+package makefile;
+use strict;
+
 sub _prepare_command_interpreters($)
 {
 	my $ctx = shift;

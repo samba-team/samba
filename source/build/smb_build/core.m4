@@ -70,11 +70,6 @@ smb_build_main(\$SMB_BUILD_CTX);
 
 _SMB_ACEOF
 
-if test x"$developer" = x"yes";then
-	echo "#line 1 \"build/smb_build/dump.pl\"" >> config.smb_build.pl
-	cat >> config.smb_build.pl < build/smb_build/dump.pl
-fi
-
 $PERL ./config.smb_build.pl || exit $?
 
 ])

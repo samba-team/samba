@@ -6,6 +6,9 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
+package output;
+use strict;
+
 sub _generate_ext_libs($)
 {
 	my $CTX = shift;

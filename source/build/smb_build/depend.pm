@@ -6,6 +6,9 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
+package depend;
+use strict;
+
 ###########################################################
 # This function resolves the dependencies 
 # for the SUBSYSTEMS_LIST
