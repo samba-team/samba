@@ -99,7 +99,7 @@ NTSTATUS cli_net_auth2(struct cli_state *cli,
 
         DEBUG(4,("cli_net_auth2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %x\n",
                  cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname(),
-                 credstr(cli->clnt_cred.challenge.data), neg_flags));
+                 credstr(cli->clnt_cred.challenge.data), *neg_flags));
 
         /* store the parameters */
         init_q_auth_2(&q, cli->srv_name_slash, cli->mach_acct, 
