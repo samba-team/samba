@@ -375,18 +375,21 @@ main(int argc, char **argv)
 		/* reply(220,) must follow */
 	}
 	gethostname(hostname, sizeof(hostname));
-#if 0
+	reply(220, "%s FTP server (%s"
 #ifdef KRB5
-	reply(220, "%s FTP server (%s+%s) ready.", hostname, 
-	      version, heimdal_version);
-#elif defined(KRB4)
-	reply(220, "%s FTP server (%s+%s) ready.", hostname, 
-	      version, krb4_version);
-#else
-	reply(220, "%s FTP server (%s) ready.", hostname, version);
+	      "+%s"
 #endif
+#ifdef KRB4
+	      "+%s"
 #endif
-	reply(220, "%s FTP server (%s) ready.", hostname, version);
+	      ") ready.", hostname, version
+#ifdef KRB5
+	      ,heimdal_version
+#endif
+#ifdef KRB4
+	      ,krb4_version
+#endif
+	      );
 	setjmp(errcatch);
 	for (;;)
 	    yyparse();
