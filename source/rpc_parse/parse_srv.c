@@ -1459,6 +1459,17 @@ void srv_io_r_net_srv_get_info(char *desc,  SRV_R_NET_SRV_GET_INFO *r_n, prs_str
 	prs_uint32("status      ", ps, depth, &(r_n->status      ));
 }
 
+/*******************************************************************
+ makes a SRV_Q_NET_REMOTE_TOD structure.
+ ********************************************************************/
+void make_srv_q_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_t, char *server_name)
+{
+	if (q_t == NULL) return;
+
+	DEBUG(5,("make_srv_q_net_remote_tod\n"));
+
+	make_buf_unistr2(&(q_t->uni_srv_name), &(q_t->ptr_srv_name), server_name);
+}
 
 /*******************************************************************
  reads or writes a structure.

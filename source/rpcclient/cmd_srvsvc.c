@@ -331,3 +331,44 @@ void cmd_srv_enum_files(struct client_info *info)
 	}
 }
 
+/****************************************************************************
+display remote time
+****************************************************************************/
+void cmd_time(struct client_info *info)
+{
+	uint16 nt_pipe_fnum;
+	fstring dest_srv;
+	TIME_OF_DAY_INFO tod;
+	BOOL res = True;
+
+	fstrcpy(dest_srv, "\\\\");
+	fstrcat(dest_srv, info->dest_host);
+	strupper(dest_srv);
+
+	DEBUG(4,("cmd_time: server:%s\n", dest_srv));
+
+	/* open srvsvc session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &nt_pipe_fnum) : False;
+
+	/* enumerate files on server */
+	res = res ? do_srv_net_remote_tod(smb_cli, nt_pipe_fnum,
+					  dest_srv, &tod) : False;
+
+	if (res)
+	{
+		fprintf(out_hnd, "\tRemote Time:\t%s\n\n",
+			http_timestring(tod.elapsedt));
+	}
+
+	/* Close the session */
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_srv_enum_files: query succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_srv_enum_files: query failed\n"));
+	}
+}
