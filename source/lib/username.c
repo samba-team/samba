@@ -22,18 +22,18 @@
 #include "includes.h"
 extern int DEBUGLEVEL;
 
-/* internal functions - modified versions of the ones in password.c */
+/* internal functions */
 static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (char *), int N);
 static struct passwd *uname_string_combinations2(char *s, int offset, struct passwd * (*fn) (char *), int N);
 
 /****************************************************************************
-get a users home directory. tries as-is then lower case
+get a users home directory.
 ****************************************************************************/
 char *get_home_dir(char *user)
 {
   static struct passwd *pass;
 
-  pass = Get_Pwnam(user,False);
+  pass = Get_Pwnam(user, False);
 
   if (!pass) return(NULL);
   return(pass->pw_dir);      
@@ -42,26 +42,34 @@ char *get_home_dir(char *user)
 
 /*******************************************************************
 map a username from a dos name to a unix name by looking in the username
-map
+map. Note that this modifies the name in place.
+This is the main function that should be called *once* on
+any incoming or new username - in order to canonicalize the name.
+This is being done to de-couple the case conversions from the user mapping
+function. Previously, the map_username was being called
+every time Get_Pwnam was called.
 ********************************************************************/
 void map_username(char *user)
 {
-  static int depth=0;
   static BOOL initialised=False;
   static fstring last_from,last_to;
   FILE *f;
   char *s;
   char *mapfile = lp_username_map();
-  if (!*mapfile || depth) return;
 
   if (!*user) return;
+
+  if (!*mapfile) {
+    return;
+  }
 
   if (!initialised) {
     *last_from = *last_to = 0;
     initialised = True;
   }
 
-  if (strequal(user,last_to)) return;
+  if (strequal(user,last_to))
+    return;
 
   if (strequal(user,last_from)) {
     DEBUG(3,("Mapped user %s to %s\n",user,last_to));
@@ -77,20 +85,17 @@ void map_username(char *user)
 
   DEBUG(4,("Scanning username map %s\n",mapfile));
 
-  depth++;
-
   for (; (s=fgets_slash(NULL,80,f)); free(s)) {
     char *unixname = s;
     char *dosname = strchr(unixname,'=');
-    BOOL break_if_mapped = False;
+    BOOL return_if_mapped = False;
 
     if (!dosname) continue;
     *dosname++ = 0;
 
     while (isspace(*unixname)) unixname++;
-    if ('!' == *unixname)
-    {
-      break_if_mapped = True;
+    if ('!' == *unixname) {
+      return_if_mapped = True;
       unixname++;
       while (*unixname && isspace(*unixname)) unixname++;
     }
@@ -100,30 +105,29 @@ void map_username(char *user)
     {
       int l = strlen(unixname);
       while (l && isspace(unixname[l-1])) {
-	unixname[l-1] = 0;
-	l--;
+        unixname[l-1] = 0;
+        l--;
       }
     }
 
     if (strchr(dosname,'*') || user_in_list(user,dosname)) {
       DEBUG(3,("Mapped user %s to %s\n",user,unixname));
-      StrnCpy(last_from,user,sizeof(last_from)-1);
+      fstrcpy(last_from,user);
       sscanf(unixname,"%s",user);
-      StrnCpy(last_to,user,sizeof(last_to)-1);
-      if(break_if_mapped) { 
+      fstrcpy(last_to,user);
+      if(return_if_mapped) { 
         free(s);
-        break;
+        fclose(f);
+        return;
       }
     }
   }
 
   fclose(f);
-
-  depth--;
 }
 
 /****************************************************************************
-internals of Get_Pwnam wrapper
+Get_Pwnam wrapper
 ****************************************************************************/
 static struct passwd *_Get_Pwnam(char *s)
 {
@@ -151,7 +155,7 @@ static struct passwd *_Get_Pwnam(char *s)
 /****************************************************************************
 a wrapper for getpwnam() that tries with all lower and all upper case 
 if the initial name fails. Also tried with first letter capitalised
-Note that this changes user!
+Note that this can change user!
 ****************************************************************************/
 struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 {
@@ -169,8 +173,6 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
   if (!allow_change) {
     user = &user2[0];
   }
-
-  map_username(user);
 
   ret = _Get_Pwnam(user);
   if (ret) return(ret);
@@ -207,7 +209,6 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 
   return(NULL);
 }
-
 
 /****************************************************************************
 check if a user is in a user list

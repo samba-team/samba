@@ -232,6 +232,18 @@ int reply_tcon(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 
   parse_connect(smb_buf(inbuf)+1,service,user,password,&pwlen,dev);
 
+  /*
+   * Pass the user through the NT -> unix user mapping
+   * function.
+   */
+   
+  map_username(user);
+
+  /*
+   * Do any UNIX username case mangling.
+   */
+  (void)Get_Pwnam( user, True);
+
   connection_num = make_connection(service,user,password,pwlen,dev,vuid);
   
   if (connection_num < 0)
@@ -299,6 +311,18 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     StrnCpy(devicename,path + strlen(path) + 1,6);
     DEBUG(4,("Got device type %s\n",devicename));
   }
+
+  /*
+   * Pass the user through the NT -> unix user mapping
+   * function.
+   */
+   
+  map_username(user);
+
+  /*
+   * Do any UNIX username case mangling.
+   */
+  (void)Get_Pwnam( user, True);
 
   connection_num = make_connection(service,user,password,passlen,devicename,vuid);
   
@@ -599,11 +623,22 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   reload_services(True);
 
+  /*
+   * Pass the user through the NT -> unix user mapping
+   * function.
+   */
+   
+  map_username(user);
+
+  /*
+   * Do any UNIX username case mangling.
+   */
+  (void)Get_Pwnam( user, True);
+
   add_session_user(user);
 
-  /* Check if the given username was the guest user with no password.
-     We need to do this check after add_session_user() as that
-     call can potentially change the username (via map_user).
+  /*
+   * Check if the given username was the guest user with no password.
    */
 
   if(!guest && strequal(user,lp_guestaccount(-1)) && (*smb_apasswd == 0))
