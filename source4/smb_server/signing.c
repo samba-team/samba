@@ -84,8 +84,8 @@ void srv_signing_restart(struct smbsrv_connection *smb_conn,
 		srv_setup_signing(smb_conn, session_key, response);
 		smb_conn->signing.next_seq_num = 2;
 		if (smb_conn->signing.mandatory_signing) {
-			DEBUG(5, ("Configured for mandetory signing, 'good packet seen' forced on\n"));
-			/* if this is mandetory, then
+			DEBUG(5, ("Configured for mandatory signing, 'good packet seen' forced on\n"));
+			/* if this is mandatory, then
 			 * pretend we have seen a
 			 * valid packet, so we don't
 			 * turn it off */
