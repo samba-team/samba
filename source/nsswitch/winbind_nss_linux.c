@@ -23,6 +23,10 @@
 
 #include "winbind_client.h"
 
+#ifndef MIN
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#endif
+
 /* Maximum number of users to pass back over the unix domain socket
    per call. This is not a static limit on the total number of users 
    or groups returned in total. */
