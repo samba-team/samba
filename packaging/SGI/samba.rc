@@ -17,7 +17,7 @@ stop_samba()
 	nmbd_group=`cat /usr/samba/var/locks/nmbd.pid`
 	ps -p $nmbd_group | grep nmbd > /dev/null
 	if [ $? -eq 0 ]; then
-	    /usr/bin/kill -15 -$nmbd_group
+	    /usr/bin/kill -15 $nmbd_group
 	fi
     fi
 }
