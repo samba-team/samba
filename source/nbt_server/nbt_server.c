@@ -45,14 +45,14 @@ static void nbtd_task_init(struct task_server *task)
 	nbtsrv->bcast_interface = NULL;
 
 	/* start listening on the configured network interfaces */
-	status = nbt_startup_interfaces(nbtsrv);
+	status = nbtd_startup_interfaces(nbtsrv);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_terminate(task, "nbtd failed to setup interfaces");
 		return;
 	}
 
 	/* start the process of registering our names on all interfaces */
-	nbt_register_names(nbtsrv);
+	nbtd_register_names(nbtsrv);
 }
 
 

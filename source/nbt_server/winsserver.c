@@ -27,9 +27,9 @@
 /*
   answer a name query
 */
-void nbt_query_wins(struct nbt_name_socket *nbtsock, 
-		    struct nbt_name_packet *packet, 
-		    const char *src_address, int src_port)
+void nbtd_query_wins(struct nbt_name_socket *nbtsock, 
+		     struct nbt_name_packet *packet, 
+		     const char *src_address, int src_port)
 {
 	DEBUG(0,("WINS query from %s\n", src_address));
 	if (DEBUGLVL(10)) {

@@ -28,11 +28,11 @@
 /*
   send a name status reply
 */
-static void nbt_node_status_reply(struct nbt_name_socket *nbtsock, 
-				  struct nbt_name_packet *request_packet, 
-				  const char *src_address, int src_port,
-				  struct nbt_name *name, 
-				  struct nbt_interface *iface)
+static void nbtd_node_status_reply(struct nbt_name_socket *nbtsock, 
+				   struct nbt_name_packet *request_packet, 
+				   const char *src_address, int src_port,
+				   struct nbt_name *name, 
+				   struct nbt_interface *iface)
 {
 	struct nbt_name_packet *packet;
 	uint32_t name_count;
@@ -95,9 +95,9 @@ failed:
 /*
   answer a node status query
 */
-void nbt_query_status(struct nbt_name_socket *nbtsock, 
-		      struct nbt_name_packet *packet, 
-		      const char *src_address, int src_port)
+void nbtd_query_status(struct nbt_name_socket *nbtsock, 
+		       struct nbt_name_packet *packet, 
+		       const char *src_address, int src_port)
 {
 	struct nbt_name *name;
 	struct nbt_iface_name *iname;
@@ -111,12 +111,13 @@ void nbt_query_status(struct nbt_name_socket *nbtsock,
 	/* see if we have the requested name on this interface */
 	name = &packet->questions[0].name;
 
-	iname = nbt_find_iname(iface, name, NBT_NM_ACTIVE);
+	iname = nbtd_find_iname(iface, name, NBT_NM_ACTIVE);
 	if (iname == NULL) {
 		DEBUG(7,("Node status query for %s<%02x> from %s - not found on %s\n",
 			 name->name, name->type, src_address, iface->ip_address));
 		return;
 	}
 
-	nbt_node_status_reply(nbtsock, packet, src_address, src_port, &iname->name, iface);
+	nbtd_node_status_reply(nbtsock, packet, src_address, src_port, 
+			       &iname->name, iface);
 }

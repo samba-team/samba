@@ -29,13 +29,13 @@
 /*
   receive an incoming request and dispatch it to the right place
 */
-static void nbt_request_handler(struct nbt_name_socket *nbtsock, 
-				struct nbt_name_packet *packet, 
-				const char *src_address, int src_port)
+static void nbtd_request_handler(struct nbt_name_socket *nbtsock, 
+				 struct nbt_name_packet *packet, 
+				 const char *src_address, int src_port)
 {
 	switch (packet->operation & NBT_OPCODE) {
 	case NBT_OPCODE_QUERY:
-		nbt_request_query(nbtsock, packet, src_address, src_port);
+		nbtd_request_query(nbtsock, packet, src_address, src_port);
 		break;
 	}
 }
@@ -45,8 +45,9 @@ static void nbt_request_handler(struct nbt_name_socket *nbtsock,
 /*
   find a registered name on an interface
 */
-struct nbt_iface_name *nbt_find_iname(struct nbt_interface *iface, struct nbt_name *name, 
-				      uint16_t nb_flags)
+struct nbt_iface_name *nbtd_find_iname(struct nbt_interface *iface, 
+				       struct nbt_name *name, 
+				       uint16_t nb_flags)
 {
 	struct nbt_iface_name *iname;
 	for (iname=iface->names;iname;iname=iname->next) {
@@ -62,11 +63,11 @@ struct nbt_iface_name *nbt_find_iname(struct nbt_interface *iface, struct nbt_na
 /*
   start listening on the given address
 */
-static NTSTATUS nbt_add_socket(struct nbt_server *nbtsrv, 
-			       const char *bind_address, 
-			       const char *address, 
-			       const char *bcast, 
-			       const char *netmask)
+static NTSTATUS nbtd_add_socket(struct nbt_server *nbtsrv, 
+				const char *bind_address, 
+				const char *address, 
+				const char *bcast, 
+				const char *netmask)
 {
 	struct nbt_interface *iface;
 	NTSTATUS status;
@@ -101,7 +102,7 @@ static NTSTATUS nbt_add_socket(struct nbt_server *nbtsrv,
 			return status;
 		}
 
-		nbt_set_incoming_handler(bcast_nbtsock, nbt_request_handler, iface);
+		nbt_set_incoming_handler(bcast_nbtsock, nbtd_request_handler, iface);
 	}
 
 	iface->nbtsock = nbt_name_socket_init(iface, nbtsrv->task->event_ctx);
@@ -118,7 +119,7 @@ static NTSTATUS nbt_add_socket(struct nbt_server *nbtsrv,
 	/* we need to be able to send broadcasts out */
 	socket_set_option(iface->nbtsock->sock, "SO_BROADCAST", "1");
 
-	nbt_set_incoming_handler(iface->nbtsock, nbt_request_handler, iface);
+	nbt_set_incoming_handler(iface->nbtsock, nbtd_request_handler, iface);
 
 	if (strcmp(netmask, "0.0.0.0") == 0) {
 		DLIST_ADD(nbtsrv->bcast_interface, iface);
@@ -133,7 +134,7 @@ static NTSTATUS nbt_add_socket(struct nbt_server *nbtsrv,
 /*
   setup our listening sockets on the configured network interfaces
 */
-NTSTATUS nbt_startup_interfaces(struct nbt_server *nbtsrv)
+NTSTATUS nbtd_startup_interfaces(struct nbt_server *nbtsrv)
 {
 	int num_interfaces = iface_count();
 	int i;
@@ -157,11 +158,11 @@ NTSTATUS nbt_startup_interfaces(struct nbt_server *nbtsrv)
 		primary_address = talloc_strdup(tmp_ctx, primary_address);
 		NT_STATUS_HAVE_NO_MEMORY(primary_address);
 
-		status = nbt_add_socket(nbtsrv, 
-					"0.0.0.0",
-					primary_address,
-					talloc_strdup(tmp_ctx, "255.255.255.255"),
-					talloc_strdup(tmp_ctx, "0.0.0.0"));
+		status = nbtd_add_socket(nbtsrv, 
+					 "0.0.0.0",
+					 primary_address,
+					 talloc_strdup(tmp_ctx, "255.255.255.255"),
+					 talloc_strdup(tmp_ctx, "0.0.0.0"));
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
@@ -170,7 +171,7 @@ NTSTATUS nbt_startup_interfaces(struct nbt_server *nbtsrv)
 		const char *bcast   = talloc_strdup(tmp_ctx, sys_inet_ntoa(*iface_n_bcast(i)));
 		const char *netmask = talloc_strdup(tmp_ctx, sys_inet_ntoa(*iface_n_netmask(i)));
 
-		status = nbt_add_socket(nbtsrv, address, address, bcast, netmask);
+		status = nbtd_add_socket(nbtsrv, address, address, bcast, netmask);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
