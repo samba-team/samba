@@ -25,7 +25,7 @@ define(foo,translit($1, [ ], [_]))
 : << END
 @@@funcs="$funcs foo"@@@
 END
-undef(foo)
+undefine([foo])
   AC_DEFINE_UNQUOTED($ac_tr_hdr, 1)
 fi
 ])
