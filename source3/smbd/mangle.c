@@ -544,6 +544,7 @@ BOOL is_8_3(const char *fname, BOOL check_case)
 
 	if (!fname || !*fname) return False;
 	if ((f = strrchr(fname, '/')) == NULL) f = fname;
+	else f++;
 
 	DEBUG(10,("is_8_3: testing [%s]\n", f));
 
