@@ -209,15 +209,9 @@ afslog_uid_int(kafs_data *data, const char *cell, const char *rh, uid_t uid,
 
     trealm = krb5_princ_realm (d->context, princ);
 
-    if (d->realm != NULL && strcmp (d->realm, *trealm) == 0) {
-	trealm = NULL;
-	krb5_free_principal (d->context, princ);
-    }
-
     kt.ticket = NULL;
     ret = _kafs_get_cred(data, cell, d->realm, *trealm, uid, &kt);
-    if(trealm)
-	krb5_free_principal (d->context, princ);
+    krb5_free_principal (d->context, princ);
     
     if(ret == 0) {
 	ret = kafs_settoken_rxkad(cell, &kt.ct, kt.ticket, kt.ticket_len);
