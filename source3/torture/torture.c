@@ -2493,19 +2493,19 @@ static BOOL run_trans2test(int dummy)
 
 static BOOL new_trans(struct cli_state *pcli, int fnum, int level)
 {
-	char buf[4096];
+	char *buf = NULL;
+	uint32 len;
 	BOOL correct = True;
 
-	memset(buf, 0xff, sizeof(buf));
-
-	if (!cli_qfileinfo_test(pcli, fnum, level, buf)) {
+	if (!cli_qfileinfo_test(pcli, fnum, level, &buf, &len)) {
 		printf("ERROR: qfileinfo (%d) failed (%s)\n", level, cli_errstr(pcli));
 		correct = False;
 	} else {
-		printf("qfileinfo: level %d\n", level);
-		dump_data(0, buf, 256);
+		printf("qfileinfo: level %d, len = %u\n", level, len);
+		dump_data(0, buf, len);
 		printf("\n");
 	}
+	SAFE_FREE(buf);
 	return correct;
 }
 
@@ -2812,8 +2812,8 @@ static BOOL run_deletetest(int dummy)
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
 	
-	fnum1 = cli_nt_create_full(cli1, fname, 0, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 
+	fnum1 = cli_nt_create_full(cli1, fname, 0, GENERIC_ALL_ACCESS|DELETE_ACCESS, FILE_ATTRIBUTE_NORMAL,
+				   0, FILE_OVERWRITE_IF, 
 				   FILE_DELETE_ON_CLOSE, 0);
 	
 	if (fnum1 == -1) {
@@ -2821,7 +2821,15 @@ static BOOL run_deletetest(int dummy)
 		correct = False;
 		goto fail;
 	}
-	
+
+#if 0
+	{
+		uint32 accinfo = 0;
+		cli_qfileinfo_test(cli1, fnum1, SMB_FILE_ACCESS_INFORMATION, (char *)&accinfo);
+		printf("access mode = 0x%lx\n", accinfo);
+	}
+#endif
+
 	if (!cli_close(cli1, fnum1)) {
 		printf("[1] close failed (%s)\n", cli_errstr(cli1));
 		correct = False;

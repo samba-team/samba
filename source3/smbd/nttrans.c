@@ -354,6 +354,7 @@ static int map_share_mode( char *fname, uint32 create_options,
 			uint32 *desired_access, uint32 share_access, uint32 file_attributes)
 {
 	int smb_open_mode = -1;
+	uint32 original_desired_access = *desired_access;
 
 	/*
 	 * Convert GENERIC bits to specific bits.
@@ -425,6 +426,10 @@ static int map_share_mode( char *fname, uint32 create_options,
 		DEBUG(10,("map_share_mode: FILE_SHARE_DELETE requested. open_mode = 0x%x\n", smb_open_mode));
 	}
 
+	if(*desired_access & DELETE_ACCESS) {
+		DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = 0x%x\n", smb_open_mode));
+	}
+
 	/*
 	 * We need to store the intent to open for Delete. This
 	 * is what determines if a delete on close flag can be set.
@@ -432,11 +437,19 @@ static int map_share_mode( char *fname, uint32 create_options,
 	 * is the only practical way. JRA.
 	 */
 
-	if(*desired_access & DELETE_ACCESS) {
-		DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = 0x%x\n", smb_open_mode));
-	}
-
 	if (create_options & FILE_DELETE_ON_CLOSE) {
+		/*
+		 * W2K3 bug compatibility mode... To set delete on close
+		 * the redirector must have *specifically* set DELETE_ACCESS
+		 * in the desired_access field. Just asking for GENERIC_ALL won't do. JRA.
+		 */
+
+		if (!(original_desired_access & DELETE_ACCESS)) {
+			DEBUG(5,("map_share_mode: FILE_DELETE_ON_CLOSE requested without \
+DELETE_ACCESS for file %s. (desired_access = 0x%lx)\n",
+				fname, (unsigned long)*desired_access));
+			return -1;
+		}
 		/* Implicit delete access is *NOT* requested... */
 		smb_open_mode |= DELETE_ON_CLOSE_FLAG;
 		DEBUG(10,("map_share_mode: FILE_DELETE_ON_CLOSE requested. open_mode = 0x%x\n", smb_open_mode));
@@ -739,7 +752,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 					   share_access, 
 					   file_attributes)) == -1) {
 		END_PROFILE(SMBntcreateX);
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
@@ -1268,7 +1281,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 	if((smb_open_mode = map_share_mode( fname, create_options, &desired_access,
 						share_access, file_attributes)) == -1)
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
 	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
