@@ -636,6 +636,14 @@
 		<listitem><para><link linkend="KERNELOPLOCKS"><parameter>kernel oplocks</parameter></link></para></listitem>
 		<listitem><para><link linkend="LANMANAUTH"><parameter>lanman auth</parameter></link></para></listitem>
 		<listitem><para><link linkend="LARGEREADWRITE"><parameter>large readwrite</parameter></link></para></listitem>
+		
+		<listitem><para><link linkend="LDAPADMINDN"><parameter>ldap admin dn</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPFILTER"><parameter>ldap filter</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPPORT"><parameter>ldap port</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPSERVER"><parameter>ldap server</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPSSL"><parameter>ldap ssl</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPSUFFIX"><parameter>ldap suffix</parameter></link></para></listitem>
+
 		<listitem><para><link linkend="LMANNOUNCE"><parameter>lm announce</parameter></link></para></listitem>
 		<listitem><para><link linkend="LMINTERVAL"><parameter>lm interval</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOADPRINTERS"><parameter>load printers</parameter></link></para></listitem>
@@ -710,6 +718,7 @@
 		<listitem><para><link linkend="SOCKETADDRESS"><parameter>socket address</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOCKETOPTIONS"><parameter>socket options</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOURCEENVIRONMENT"><parameter>source environment</parameter></link></para></listitem>
+
 		<listitem><para><link linkend="SSL"><parameter>ssl</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLCACERTDIR"><parameter>ssl CA certDir</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLCACERTFILE"><parameter>ssl CA certFile</parameter></link></para></listitem>
@@ -717,6 +726,9 @@
 		<listitem><para><link linkend="SSLCLIENTCERT"><parameter>ssl client cert</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLCLIENTKEY"><parameter>ssl client key</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLCOMPATIBILITY"><parameter>ssl compatibility</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLEGDSOCKET"><parameter>ssl egd socket</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLENTROPYBYTES"><parameter>ssl entropy bytes</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLENTROPYFILE"><parameter>ssl entropy file</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLHOSTS"><parameter>ssl hosts</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLHOSTSRESIGN"><parameter>ssl hosts resign</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLREQUIRECLIENTCERT"><parameter>ssl require clientcert</parameter></link></para></listitem>
@@ -724,6 +736,7 @@
 		<listitem><para><link linkend="SSLSERVERCERT"><parameter>ssl server cert</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLSERVERKEY"><parameter>ssl server key</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLVERSION"><parameter>ssl version</parameter></link></para></listitem>
+
 		<listitem><para><link linkend="STATCACHE"><parameter>stat cache</parameter></link></para></listitem>
 		<listitem><para><link linkend="STATCACHESIZE"><parameter>stat cache size</parameter></link></para></listitem>
 		<listitem><para><link linkend="STRIPDOT"><parameter>strip dot</parameter></link></para></listitem>
@@ -3385,6 +3398,150 @@
 		<para>Default : <command>large readwrite = no</command></para>
 		</listitem>
 		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPADMINDN">ldap admin dn (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development.
+		</para>
+
+		<para>
+		The <parameter>ldap admin dn</parameter> defines the Distinguished 
+		Name (DN) name used by Samba to contact the <link linkend="LDAPSERVER">ldap
+		server</link> when retreiving user account information. The <parameter>ldap
+		admin dn</parameter> is used in conjunction with the admin dn password
+		stored in the <filename>private/secrets.tdb</filename> file.  See the
+		<ulink url="smbpasswd.8.html"><command>smbpasswd(8)</command></ulink> man
+		page for more information on how to accmplish this.
+		</para>
+	
+		
+		<para>Default : <emphasis>none</emphasis></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPFILTER">ldap filter (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development.
+		</para>
+
+		<para>
+		This parameter specifies the RFC 2254 compliant LDAP search filter.
+		The default is to match the login name with the <constant>uid</constant> 
+		attribute for all entries matching the <constant>sambaAccount</constant>		
+		objectclass.  Note that this filter should only return one entry.
+		</para>
+	
+		
+		<para>Default : <command>ldap filter = (&(uid=%u)(objectclass=sambaAccount))</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPPORT">ldap port (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development.
+		</para>
+		
+		<para>
+		This option is used to control the tcp port number used to contact
+		the <link linkend="LDAPSERVER"><parameter>ldap server</parameter></link>.
+		The default is to use the stand LDAP port 389.
+		</para>
+		
+		<para>Default : <command>ldap port = 389</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPSERVER">ldap server (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development.
+		</para>
+		
+		<para>
+		This parameter should contains the FQDN of the ldap directory 
+		server which should be queried to locate user account information.
+		</para>
+		
+	
+		
+		<para>Default : <command>ldap server = localhost</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPSSL">ldap ssl (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development.
+		</para>
+		
+		<para>
+		This option is used to define whether or not Samba should
+		use SSL when connecting to the <link linkend="LDAPSERVER"><parameter>ldap
+		server</parameter></link>.  This is <emphasis>NOT</emphasis> related to
+		Samba SSL support which is enabled by specifying the 
+		<command>--with-ssl</command> option to the <filename>configure</filename> 
+		script (see <link linkend="SSL"><parameter>ssl</parameter></link>).
+		</para>
+		
+		<para>
+		The <parameter>ldap ssl</parameter> can be set to one of three values:
+		(a) <command>on</command> - Always use SSL when contacting the 
+		<parameter>ldap	server</parameter>, (b) <command>off</command> -
+		Never use SSL when querying the directory, or (c) <command>start 
+		tls</command> - Use the LDAPv3 StartTLS extended operation 
+		(RFC2830) for communicating with the directory server.
+		</para>
+		
+		
+		<para>Default : <command>ldap ssl = off</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPSUFFIX">ldap suffix (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development.
+		</para>
+		
+	
+		
+		<para>Default : <emphasis>none</emphasis></para>
+		</listitem>
+		</varlistentry>
+
+
 
 
 
@@ -6787,10 +6944,6 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
 		<para>This variable enables or disables the entire SSL mode. If 
 		it is set to <constant>no</constant>, the SSL-enabled Samba behaves 
 		exactly like the non-SSL Samba. If set to <constant>yes</constant>, 
@@ -6811,10 +6964,6 @@
 		is only available if the SSL libraries have been compiled on your 
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
-
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
 
 		<para>This variable defines where to look up the Certification
 		Authorities. The given directory should contain one file for 
@@ -6837,10 +6986,6 @@
 		is only available if the SSL libraries have been compiled on your 
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
-
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
 
 		<para>This variable is a second way to define the trusted CAs. 
 		The certificates of the trusted CAs are collected in one big 
@@ -6865,10 +7010,6 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
 		<para>This variable defines the ciphers that should be offered 
 		during SSL negotiation. You should not set this variable unless 
 		you know what you are doing.</para>
@@ -6882,10 +7023,6 @@
 		is only available if the SSL libraries have been compiled on your 
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
-
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
 
 		<para>The certificate in this file is used by <ulink url="smbclient.1.html">
 		<command>smbclient(1)</command></ulink> if it exists. It's needed 
@@ -6905,10 +7042,6 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
 		<para>This is the private key for <ulink url="smbclient.1.html">
 		<command>smbclient(1)</command></ulink>. It's only needed if the 
 		client should have a certificate. </para>
@@ -6927,18 +7060,77 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
-		<para>This variable defines whether SSLeay should be configured 
+		<para>This variable defines whether OpenSSL should be configured 
 		for bug compatibility with other SSL implementations. This is 
 		probably not desirable because currently no clients with SSL 
-		implementations other than SSLeay exist.</para>
+		implementations other than OpenSSL exist.</para>
 
 		<para>Default: <command>ssl compatibility = no</command></para>
 		</listitem>
 		</varlistentry>
+
+
+		<varlistentry>
+		<term><anchor id="SSLEGDSOCKET">ssl egd socket (G)</term>
+		<listitem><para>This variable is part of SSL-enabled Samba. This 
+		is only available if the SSL libraries have been compiled on your 
+		system and the configure option <command>--with-ssl</command> was 
+		given at configure time.</para>
+		
+		<para>
+		This option is used to define the location of the communiation socket of 
+		an EGD or PRNGD daemon, from which entropy can be retrieved. This option 
+		can be used instead of or together with the <link 
+		linkend="SSLENTROPYFILE"><parameter>ssl entropy file</parameter></link> 
+		directive. 255 bytes of entropy will be retrieved from the daemon.
+		</para>
+
+		<para>Default: <emphasis>none</emphasis></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term><anchor id="SSLENTROPYBYTES">ssl entropy bytes (G)</term>
+		<listitem><para>This variable is part of SSL-enabled Samba. This 
+		is only available if the SSL libraries have been compiled on your 
+		system and the configure option <command>--with-ssl</command> was 
+		given at configure time.</para>
+		
+		<para>
+		This parameter is used to define the number of bytes which should 
+		be read from the <link linkend="SSLENTROPYFILE"><parameter>ssl entropy 
+		file</parameter></link> If a -1 is specified, the entire file will
+		be read.
+		</para>
+
+		<para>Default: <command>ssl entropy bytes = 255</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="SSLENTROPYFILE">ssl entropy file (G)</term>
+		<listitem><para>This variable is part of SSL-enabled Samba. This 
+		is only available if the SSL libraries have been compiled on your 
+		system and the configure option <command>--with-ssl</command> was 
+		given at configure time.</para>
+		
+		<para>
+		This parameter is used to specify a file from which processes will 
+		read "random bytes" on startup.  In order to seed the internal pseudo 
+		random number generator, entropy must be provided. On system with a 
+		<filename>/dev/urandom</filename> device file, the processes
+		will retrieve its entropy from the kernel. On systems without kernel
+		entropy support, a file can be supplied that will be read on startup
+		and that will be used to seed the PRNG.
+		</para>
+
+		<para>Default: <emphasis>none</emphasis></para>
+		</listitem>
+		</varlistentry>
+
 		
 
 		<varlistentry>
@@ -6955,10 +7147,6 @@
 		is only available if the SSL libraries have been compiled on your 
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
-
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
 
 		<para>These two variables define whether Samba will go 
 		into SSL mode or not. If none of them is defined, Samba will 
@@ -6993,10 +7181,6 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
 		<para>If this variable is set to <constant>yes</constant>, the 
 		server will not tolerate connections from clients that don't 
 		have a valid certificate. The directory/file given in <link
@@ -7025,10 +7209,6 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
 		<para>If this variable is set to <constant>yes</constant>, the 
 		<ulink url="smbclient.1.html"><command>smbclient(1)</command>
 		</ulink> will request a certificate from the server. Same as 
@@ -7047,10 +7227,6 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
 		<para>This is the file containing the server's certificate. 
 		The server <emphasis>must</emphasis> have a certificate. The 
 		file may also contain the server's private key. See later for 
@@ -7068,10 +7244,6 @@
 		is only available if the SSL libraries have been compiled on your 
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
-
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
 
 		<para>This file contains the private key of the server. If 
 		this variable is not defined, the key is looked up in the 
@@ -7092,10 +7264,6 @@
 		is only available if the SSL libraries have been compiled on your 
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
-
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
 
 		<para>This enumeration variable defines the versions of the 
 		SSL protocol that will be used. <constant>ssl2or3</constant> allows 
