@@ -1,3 +1,12 @@
+2001-07-02  Johan Danielsson  <joda@pdc.kth.se>
+
+	* doc/install.texi: remove kaserver switches, it's always compiled
+	in now
+
+	* kdc/hprop.c: always include kadb support
+
+	* kdc/kaserver.c: always include kaserver support
+
 2001-07-02  Assar Westerlund  <assar@sics.se>
 
 	* kpasswd/kpasswdd.c (doit): make failing to bind a socket a

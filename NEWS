@@ -12,6 +12,10 @@ Changes in release 0.3g
 
  * remove rfc2052 support, now only rfc2782 is supported
 
+ * always build with kaserver protocol support in the KDC (assuming
+   KRB4 is enabled) and support for reading kaserver databases in
+   hprop
+
 Changes in release 0.3f
 
  * change default keytab to ANY:FILE:/etc/krb5.keytab,krb4:/etc/srvtab,
