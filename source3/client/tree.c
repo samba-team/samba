@@ -35,7 +35,7 @@ static void cb_itemsignal( GtkWidget *item,
   GtkWidget *real_tree, *aitem, *subtree;
   gchar *name;
   GtkLabel *label;
-  gint dh, err, dirlen;
+  gint dh, err, dirlen, level;
   char dirbuf[512];
   struct smbc_dirent *dirp;
   
@@ -44,15 +44,31 @@ static void cb_itemsignal( GtkWidget *item,
   label = GTK_LABEL (GTK_BIN (item)->child);
   /* Get the text of the label */
   gtk_label_get (label, &name);
+
+  level = GTK_TREE(item->parent)->level;
+
   /* Get the level of the tree which the item is in */
   g_print ("%s called for item %s->%p, level %d\n", signame, name,
 	   item, GTK_TREE (item->parent)->level);
 
   if (strncmp(signame, "expand", 6) == 0) { /* Expand called */
-
     char server[128];
 
-    slprintf(server, 128, "smb://%s", name);
+    if (level>0) {
+      gchar *sname;
+      GtkLabel *l2;
+      GtkWidget *p = GTK_WIDGET(item->parent);
+
+      p = GTK_TREE(p)->tree_owner;
+
+      l2 = GTK_LABEL(GTK_BIN(p)->child);
+
+      gtk_label_get(l2, &sname);
+      slprintf(server, 128, "smb://%s/%s", sname, name);
+
+    }
+    else
+      slprintf(server, 128, "smb://%s", name);
 
     if ((dh = smbc_opendir(server)) < 0) { /* Handle error */
 
@@ -232,7 +248,7 @@ static void cb_wholenet(GtkWidget *item, gchar *signame)
 			    GTK_SIGNAL_FUNC(cb_itemsignal), "expand");
 	gtk_signal_connect (GTK_OBJECT(aitem), "collapse",
 			    GTK_SIGNAL_FUNC(cb_itemsignal), "collapse");
-	/* Add it to the parent tree */
+
 	gtk_tree_append (GTK_TREE(real_tree), aitem);
 	/* Show it - this can be done at any time */
 	gtk_widget_show (aitem);
@@ -309,7 +325,9 @@ auth_fn(char *server, char *share,
 	     char **workgroup, char **username, char **password)
 {
 
-  /* Do nothing for now ... */
+  *workgroup = "";
+  *username = "test";
+  *password = "test";
 
 }
 
