@@ -152,7 +152,6 @@ krb5_get_in_tkt(krb5_context context,
     char buf[BUFSIZ];
     krb5_data salt;
     krb5_keyblock *key;
-    PA_DATA padata;
 
     memset(&a, 0, sizeof(a));
 
@@ -215,6 +214,7 @@ krb5_get_in_tkt(krb5_context context,
 	struct timeval tv;
 	int len;
 	unsigned foo;
+	EncryptedData encdata;
 
 	gettimeofday (&tv, NULL);
 	p.patimestamp = tv.tv_sec;
@@ -227,18 +227,31 @@ krb5_get_in_tkt(krb5_context context,
 	if (len < 0)
 	  return ASN1_PARSE_ERROR;
 
+	a.padata = malloc(sizeof(*a.padata));
+	a.padata->len = 1;
+	a.padata->val = malloc(sizeof(*a.padata->val));
+	a.padata->val->padata_type = pa_enc_timestamp;
+	a.padata->val->padata_value.length = 0;
+
+	encdata.etype = ETYPE_DES_CBC_CRC;
+	encdata.kvno  = NULL;
 	err = krb5_encrypt (context,
 			    buf + sizeof(buf) - len,
 			    len,
 			    key,
-			    &padata.padata_value);
+			    &encdata.cipher);
 	if (err)
 	    return err;
-	
-	padata.padata_type = pa_enc_timestamp;
-	a.padata = malloc(sizeof(*a.padata));
-	a.padata->len = 1;
-	a.padata->val = &padata;
+
+	len = encode_EncryptedData(buf + sizeof(buf) - 1,
+				   sizeof(buf),
+				   &encdata);
+	krb5_data_free(&encdata.cipher);
+	if (len < 0)
+	  return ASN1_PARSE_ERROR;
+	krb5_data_copy(&a.padata->val->padata_value,
+		       buf + sizeof(buf) - len,
+		       len);
     } else
 	return KRB5_PREAUTH_BAD_TYPE;
 
