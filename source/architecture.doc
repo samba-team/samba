@@ -105,17 +105,16 @@ nbmd Design
 Originally Andrew used recursion to simulate a multi-threaded
 environment, which use the stack enormously and made for really
 confusing debugging sessions. Luke Leighton rewrote it to use a
-queuing system that keeps state information on each packet. During the
-1.9.18 alpha series it was decided that this was too unwieldy to
-manage.  If the protocol was cleaner than it is then it would be OK
-but with the way the protocol works you really need some data hiding.
-The mistake we made was to transfer all the info from the packets to
-more specialised structures. It bit us badly when we then found we
-needed some detail of the original packet to handle some special
-case. The specialised structures kept growing till they almost
-contained all the info of the original packet! The code became
-extremely hairy, which became particularly evident when Jeremy fixed
-browsing on multiple subnets for 1.9.17.
+queuing system that keeps state information on each packet.  The
+first version used a single structure which was used by all the
+pending states.  As the initialisation of this structure was
+done by adding arguments, as the functionality developed, it got
+pretty messy.  So, it was replaced with a higher-order function
+and a pointer to a user-defined memory block.  This suddenly
+made things much simpler: large numbers of functions could be
+made static, and modularised.  This is the same principle as used
+in NT's kernel, and achieves the same effect as threads, but in
+a single process.
 
 Then Jeremy rewrote nmbd. The packet data in nmbd isn't what's on the
 wire. It's a nice format that is very amenable to processing but still
