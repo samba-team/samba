@@ -105,7 +105,12 @@ static WERROR rpc_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *h, struct
 	struct dcerpc_pipe *p;
 	int n;
 
-	if(!h->credentials || !h->location) return WERR_INVALID_PARAM;
+	if (!h->credentials) return WERR_INVALID_PARAM;
+
+	/* Default to local smbd if no connection is specified */
+	if (!h->location) {
+		h->location = talloc_strdup(mem_ctx, "ncalrpc:");
+	}
 
 	user = talloc_strdup(mem_ctx, h->credentials);
 	pass = strchr(user, '%');
