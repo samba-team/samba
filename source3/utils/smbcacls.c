@@ -234,7 +234,7 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 	struct perm_value *v;
 
 	ZERO_STRUCTP(ace);
-	p = strchr(str,':');
+	p = strchr_m(str,':');
 	if (!p) return False;
 	*p = '\0';
 	p++;
@@ -697,7 +697,7 @@ struct cli_state *connect_one(char *share)
 	extern pstring global_myname;
 
 	fstrcpy(server,share+2);
-	share = strchr(server,'\\');
+	share = strchr_m(server,'\\');
 	if (!share) return NULL;
 	*share = 0;
 	share++;
@@ -843,11 +843,11 @@ You can string acls together with spaces, commas or newlines\n\
 	if (getenv("USER")) {
 		pstrcpy(username,getenv("USER"));
 
-		if ((p=strchr(username,'%'))) {
+		if ((p=strchr_m(username,'%'))) {
 			*p = 0;
 			pstrcpy(password,p+1);
 			got_pass = True;
-			memset(strchr(getenv("USER"), '%') + 1, 'X',
+			memset(strchr_m(getenv("USER"), '%') + 1, 'X',
 			       strlen(password));
 		}
 	}
@@ -856,7 +856,7 @@ You can string acls together with spaces, commas or newlines\n\
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
-			p = strchr(username,'%');
+			p = strchr_m(username,'%');
 			if (p) {
 				*p = 0;
 				pstrcpy(password, p+1);

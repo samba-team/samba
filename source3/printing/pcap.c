@@ -122,7 +122,7 @@ static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 		{
 			case 0: /* locate an entry */
 			 if (*line == '\t' || *line == ' ') continue;
-			 if ((p=strchr(line,':')))
+			 if ((p=strchr_m(line,':')))
 			 {
 			 	*p = '\0';
 				p = strtok(line,":");
@@ -297,14 +297,14 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 	continue;
 
       /* now we have a real printer line - cut it off at the first : */      
-      p = strchr(line,':');
+      p = strchr_m(line,':');
       if (p) *p = 0;
       
       /* now just check if the name is in the list */
       /* NOTE: I avoid strtok as the fn calling this one may be using it */
       for (p=line; p; p=q)
 	{
-	  if ((q = strchr(p,'|'))) *q++ = 0;
+	  if ((q = strchr_m(p,'|'))) *q++ = 0;
 
 	  if (strequal(p,pszPrintername))
 	    {
@@ -378,7 +378,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
 	continue;
 
       /* now we have a real printer line - cut it off at the first : */      
-      p = strchr(line,':');
+      p = strchr_m(line,':');
       if (p) *p = 0;
       
       /* now find the most likely printer name and comment 
@@ -388,9 +388,9 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       for (p=line; p; p=q)
 	{
 	  BOOL has_punctuation;
-	  if ((q = strchr(p,'|'))) *q++ = 0;
+	  if ((q = strchr_m(p,'|'))) *q++ = 0;
 
-	  has_punctuation = (strchr(p,' ') || strchr(p,'\t') || strchr(p,'(') || strchr(p,')'));
+	  has_punctuation = (strchr_m(p,' ') || strchr_m(p,'\t') || strchr_m(p,'(') || strchr_m(p,')'));
 
 	  if (strlen(p)>strlen(comment) && has_punctuation)
 	    {
@@ -405,7 +405,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
 	      continue;
 	    }
 
-	  if (!strchr(comment,' ') && 
+	  if (!strchr_m(comment,' ') && 
 	      strlen(p) > strlen(comment))
 	    {
 	      StrnCpy(comment,p,sizeof(comment)-1);

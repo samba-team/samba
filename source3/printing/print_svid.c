@@ -59,8 +59,8 @@ static void populate_printers(void)
 		char *buf = lines[i];
 
 		/* eat "system/device for " */
-		if (((tmp = strchr(buf, ' ')) == NULL) ||
-		    ((tmp = strchr(++tmp, ' ')) == NULL))
+		if (((tmp = strchr_m(buf, ' ')) == NULL) ||
+		    ((tmp = strchr_m(++tmp, ' ')) == NULL))
 			continue;
 
 		/*
@@ -68,13 +68,13 @@ static void populate_printers(void)
 		 */
 
 		if(!strncmp("for ",++tmp,4)) {
-			tmp=strchr(tmp, ' ');
+			tmp=strchr_m(tmp, ' ');
 			tmp++;
 		}
 		name = tmp;
 
 		/* truncate the ": ..." */
-		if ((tmp = strchr(name, ':')) != NULL)
+		if ((tmp = strchr_m(name, ':')) != NULL)
 			*tmp = '\0';
 		
 		/* add it to the cache */

@@ -157,7 +157,7 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 		return 0;
 
 	pstrcpy(print_directory, pjob->filename);
-	p = strrchr(print_directory,'/');
+	p = strrchr_m(print_directory,'/');
 	if (!p)
 		return 0;
 	*p++ = 0;

@@ -533,7 +533,7 @@ static BOOL ensurepath(char *fname)
   safe_strcpy(ffname, fname, strlen(fname));
 
   /* do a `basename' on ffname, so don't try and make file name directory */
-  if ((basehack=strrchr(ffname, '\\')) == NULL)
+  if ((basehack=strrchr_m(ffname, '\\')) == NULL)
     return True;
   else
     *basehack='\0';
@@ -1451,7 +1451,7 @@ int process_tar(void)
 	  *(cliplist[i]+strlen(cliplist[i])-1)='\0';
 	}
 	
-	if (strrchr(cliplist[i], '\\')) {
+	if (strrchr_m(cliplist[i], '\\')) {
 	  pstring saved_dir;
 	  
 	  safe_strcpy(saved_dir, cur_dir, sizeof(pstring));
@@ -1463,7 +1463,7 @@ int process_tar(void)
 	    safe_strcat(tarmac, cliplist[i], sizeof(pstring));
 	  }
 	  safe_strcpy(cur_dir, tarmac, sizeof(pstring));
-	  *(strrchr(cur_dir, '\\')+1)='\0';
+	  *(strrchr_m(cur_dir, '\\')+1)='\0';
 
 	  DEBUG(5, ("process_tar, do_list with tarmac: %s\n", tarmac));
 	  do_list(tarmac,attribute,do_tar, False, True);
@@ -1514,13 +1514,13 @@ static int clipfind(char **aret, int ret, char *tok)
   if (aret==NULL) return 0;
 
   /* ignore leading slashes or dots in token */
-  while(strchr("/\\.", *tok)) tok++;
+  while(strchr_m("/\\.", *tok)) tok++;
 
   while(ret--) {
     char *pkey=*aret++;
 
     /* ignore leading slashes or dots in list */
-    while(strchr("/\\.", *pkey)) pkey++;
+    while(strchr_m("/\\.", *pkey)) pkey++;
 
     if (!strslashcmp(pkey, tok)) return 1;
   }
@@ -1604,7 +1604,7 @@ static int read_inclusion_file(char *filename)
 	} else {
 	  unfixtarname(tmpstr, p, strlen(p) + 1, True);
 	  cliplist[i] = tmpstr;
-	  if ((p = strchr(p, '\000')) == NULL) {
+	  if ((p = strchr_m(p, '\000')) == NULL) {
 	    DEBUG(0,("INTERNAL ERROR: inclusion_buffer is of unexpected contents.\n"));
 	    abort();
 	  }

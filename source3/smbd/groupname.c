@@ -125,7 +125,7 @@ void load_groupname_map(void)
 
     DEBUG(10,("load_groupname_map: Read line |%s|\n", s));
 
-    if (!*s || strchr("#;",*s))
+    if (!*s || strchr_m("#;",*s))
       continue;
 
     if(!next_token(&s,unixname, "\t\n\r=", sizeof(unixname)))

@@ -85,11 +85,11 @@ extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
  *
  * isbasecahr()   - Given a character, check the chartest array to see
  *                  if that character is in the basechars set.  This is
- *                  faster than using strchr().
+ *                  faster than using strchr_m().
  *
  * isillegal()    - Given a character, check the chartest array to see
  *                  if that character is in the illegal characters set.
- *                  This is faster than using strchr().
+ *                  This is faster than using strchr_m().
  *
  * mangled_cache  - Cache header used for storing mangled -> original
  *                  reverse maps.
@@ -181,7 +181,7 @@ static BOOL is_reserved_msdos( char *fname )
   StrnCpy (upperFname, fname, 12);
 
   /* lpt1.txt and con.txt etc are also illegal */
-  p = strchr(upperFname,'.');
+  p = strchr_m(upperFname,'.');
   if( p )
     *p = '\0';
 
@@ -287,14 +287,14 @@ BOOL is_mangled( char *s )
   if( !ct_initialized )
     init_chartest();
 
-  magic = strchr( s, magic_char );
+  magic = strchr_m( s, magic_char );
   while( magic && magic[1] && magic[2] )          /* 3 chars, 1st is magic. */
     {
     if( ('.' == magic[3] || '/' == magic[3] || !(magic[3]))          /* Ends with '.' or nul or '/' ?  */
      && isbasechar( toupper(magic[1]) )           /* is 2nd char basechar?  */
      && isbasechar( toupper(magic[2]) ) )         /* is 3rd char basechar?  */
       return( True );                           /* If all above, then true, */
-    magic = strchr( magic+1, magic_char );      /*    else seek next magic. */
+    magic = strchr_m( magic+1, magic_char );      /*    else seek next magic. */
     }
   return( False );
   } /* is_mangled */
@@ -318,7 +318,7 @@ BOOL is_8_3( char *fname, BOOL check_case )
   int   l;
   char *p;
   char *dot_pos;
-  char *slash_pos = strrchr( fname, '/' );
+  char *slash_pos = strrchr_m( fname, '/' );
 
   /* If there is a directory path, skip it. */
   if( slash_pos )
@@ -389,7 +389,7 @@ BOOL is_8_3( char *fname, BOOL check_case )
   /* see smb.conf(5) for a description of the 'strip dot' parameter. */
   if( lp_strip_dot()
    && len - l == 1
-   && !strchr( dot_pos + 1, '.' ) )
+   && !strchr_m( dot_pos + 1, '.' ) )
     {
     *dot_pos = 0;
     return( True );
@@ -400,7 +400,7 @@ BOOL is_8_3( char *fname, BOOL check_case )
     return( False );
 
   /* extensions may not have a dot */
-  if( strchr( dot_pos+1, '.' ) )
+  if( strchr_m( dot_pos+1, '.' ) )
     return( False );
 
   /* must be in 8.3 format */
@@ -537,8 +537,8 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
   /* See if the extensions are unmangled.  If so, store the entry
    * without the extension, thus creating a "group" reverse map.
    */
-  s1 = strrchr( mangled_name, '.' );
-  if( s1 && (s2 = strrchr( raw_name, '.' )) )
+  s1 = strrchr_m( mangled_name, '.' );
+  if( s1 && (s2 = strrchr_m( raw_name, '.' )) )
     {
     i = 1;
     while( s1[i] && (tolower( s1[1] ) == s2[i]) )
@@ -595,7 +595,7 @@ BOOL check_mangled_cache( char *s )
   /* If we didn't find the name *with* the extension, try without. */
   if( !FoundPtr )
   {
-    ext_start = strrchr( s, '.' );
+    ext_start = strrchr_m( s, '.' );
     if( ext_start )
     {
       if((saved_ext = strdup(ext_start)) == NULL)
@@ -833,7 +833,7 @@ void mangle_name_83( char *s)
   extension[0] = 0;
   base[0] = 0;
 
-  p = strrchr(s,'.');  
+  p = strrchr_m(s,'.');  
   if( p && (strlen(p+1) < (size_t)4) )
     {
     BOOL all_normal = ( strisnormal(p+1) ); /* XXXXXXXXX */

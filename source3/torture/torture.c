@@ -3233,7 +3233,7 @@ static void usage(void)
 	}
 
 	fstrcpy(host, &argv[1][2]);
-	p = strchr(&host[2],'/');
+	p = strchr_m(&host[2],'/');
 	if (!p) {
 		usage();
 	}
@@ -3280,7 +3280,7 @@ static void usage(void)
 			break;
 		case 'U':
 			pstrcpy(username,optarg);
-			p = strchr(username,'%');
+			p = strchr_m(username,'%');
 			if (p) {
 				*p = 0;
 				pstrcpy(password, p+1);

@@ -92,7 +92,7 @@ BOOL map_username(char *user)
 
   while((s=fgets_slash(buf,sizeof(buf),f))!=NULL) {
     char *unixname = s;
-    char *dosname = strchr(unixname,'=');
+    char *dosname = strchr_m(unixname,'=');
     BOOL return_if_mapped = False;
 
     if (!dosname)
@@ -109,7 +109,7 @@ BOOL map_username(char *user)
         unixname++;
     }
     
-    if (!*unixname || strchr("#;",*unixname))
+    if (!*unixname || strchr_m("#;",*unixname))
       continue;
 
     {
@@ -120,7 +120,7 @@ BOOL map_username(char *user)
       }
     }
 
-    if (strchr(dosname,'*') || user_in_list(user,dosname)) {
+    if (strchr_m(dosname,'*') || user_in_list(user,dosname)) {
       DEBUG(3,("Mapped user %s to %s\n",user,unixname));
       mapped_user = True;
       fstrcpy(last_from,user);
@@ -529,7 +529,7 @@ struct passwd *smb_getpwnam(char *user, BOOL allow_change)
 	   lookup just the username portion locally */
 	sep = lp_winbind_separator();
 	if (!sep || !*sep) sep = "\\";
-	p = strchr(user,*sep);
+	p = strchr_m(user,*sep);
 	if (p && 
 	    strncasecmp(global_myname, user, strlen(global_myname))==0) {
 		return Get_Pwnam(p+1, allow_change);

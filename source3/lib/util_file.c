@@ -255,7 +255,7 @@ int getfileline(void *vp, char *linebuf, int linebuf_size)
 			continue;
 		}
 
-		p = (unsigned char *) strchr(linebuf, ':');
+		p = (unsigned char *) strchr_m(linebuf, ':');
 		if (p == NULL)
 		{
 			DEBUG(0, ("getfileline: malformed line entry (no :)\n"));

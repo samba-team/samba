@@ -365,7 +365,7 @@ static uint32 process(struct client_info *info, char *cmd_str)
 		{
 			char *p;
 
-			if ((p = strchr(cmd, ';')) == 0)
+			if ((p = strchr_m(cmd, ';')) == 0)
 			{
 				strncpy(line, cmd, 999);
 				line[1000] = '\0';
@@ -702,11 +702,11 @@ static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 			{
 				char *lp;
 				pstrcpy(usr.ntc.user_name, optarg);
-				if ((lp = strchr(usr.ntc.user_name, '%')))
+				if ((lp = strchr_m(usr.ntc.user_name, '%')))
 				{
 					*lp = 0;
 					pstrcpy(password, lp + 1);
-					memset(strchr(optarg, '%') + 1, 'X',
+					memset(strchr_m(optarg, '%') + 1, 'X',
 					       strlen(password));
 					got_pwd = True;
 				}
@@ -1012,7 +1012,7 @@ static uint32 cmd_set(CLIENT_INFO *info, int argc, char *argv[])
 				char *lp;
 				cmd_set_options |= CMD_USER;
 				pstrcpy(usr.ntc.user_name, optarg);
-				if ((lp = strchr(usr.ntc.user_name, '%')))
+				if ((lp = strchr_m(usr.ntc.user_name, '%')))
 				{
 					*lp = 0;
 					pstrcpy(password, lp + 1);
@@ -1241,11 +1241,11 @@ static void read_user_env(struct ntuser_creds *u)
 		/* modification to support userid%passwd syntax in the USER var
 		   25.Aug.97, jdblair@uab.edu */
 
-		if ((p = strchr(u->user_name, '%')))
+		if ((p = strchr_m(u->user_name, '%')))
 		{
 			*p = 0;
 			pstrcpy(password, p + 1);
-			memset(strchr(getenv("USER"), '%') + 1, 'X',
+			memset(strchr_m(getenv("USER"), '%') + 1, 'X',
 			       strlen(password));
 		}
 	}

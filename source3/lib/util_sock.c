@@ -127,7 +127,7 @@ void set_socket_options(int fd, char *options)
 		char *p;
 		BOOL got_value = False;
 
-		if ((p = strchr(tok,'='))) {
+		if ((p = strchr_m(tok,'='))) {
 			*p = 0;
 			value = atoi(p+1);
 			got_value = True;

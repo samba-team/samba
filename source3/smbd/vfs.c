@@ -705,7 +705,7 @@ BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks)
   all_string_sub(s,"//","/",0);
 
   pstrcpy(base_name,s);
-  p = strrchr(base_name,'/');
+  p = strrchr_m(base_name,'/');
 
   if (!p)
     return(True);

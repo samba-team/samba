@@ -140,7 +140,7 @@ char *Atoic(char *p, int *n, char *c)
 		p++;
 	}
 
-	if (strchr(c, *p) == NULL)
+	if (strchr_m(c, *p) == NULL)
 	{
 		DEBUG(5, ("Atoic: no separator characters (%s) not found\n", c));
 		return NULL;
@@ -366,7 +366,7 @@ void dos_clean_name(char *s)
       *p = 0;
       pstrcpy(s1,p+3);
 
-      if ((p=strrchr(s,'\\')) != NULL)
+      if ((p=strrchr_m(s,'\\')) != NULL)
 	*p = 0;
       else
 	*s = 0;
@@ -404,7 +404,7 @@ void unix_clean_name(char *s)
       *p = 0;
       pstrcpy(s1,p+3);
 
-      if ((p=strrchr(s,'/')) != NULL)
+      if ((p=strrchr_m(s,'/')) != NULL)
 	*p = 0;
       else
 	*s = 0;
@@ -428,7 +428,7 @@ void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,ti
     size = 0;
 
   memset(buf+1,' ',11);
-  if ((p = strchr(mask2,'.')) != NULL)
+  if ((p = strchr_m(mask2,'.')) != NULL)
     {
       *p = 0;
       memcpy(buf+1,mask2,MIN(strlen(mask2),8));
@@ -720,7 +720,7 @@ BOOL get_myname(char *my_name)
 
 	if (my_name) {
 		/* split off any parts after an initial . */
-		char *p = strchr(hostname,'.');
+		char *p = strchr_m(hostname,'.');
 		if (p) *p = 0;
 		
 		fstrcpy(my_name,hostname);
@@ -766,7 +766,7 @@ BOOL is_ipaddress(const char *str)
       pure_address = False;
 
   /* Check that a pure number is not misinterpreted as an IP */
-  pure_address = pure_address && (strchr(str, '.') != NULL);
+  pure_address = pure_address && (strchr_m(str, '.') != NULL);
 
   return pure_address;
 }
@@ -1144,7 +1144,7 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
   }
 
   /* Get the last component of the unix name. */
-  p = strrchr(name, '/');
+  p = strrchr_m(name, '/');
   strncpy(last_component, p ? ++p : name, sizeof(last_component)-1);
   last_component[sizeof(last_component)-1] = '\0'; 
 
@@ -1211,7 +1211,7 @@ void set_namearray(name_compare_entry **ppname_array, char *namelist)
           continue;
         }
       /* find the next / */
-      name_end = strchr(nameptr, '/');
+      name_end = strchr_m(nameptr, '/');
 
       /* oops - the last check for a / didn't find one. */
       if (name_end == NULL)
@@ -1244,7 +1244,7 @@ void set_namearray(name_compare_entry **ppname_array, char *namelist)
           continue;
       }
       /* find the next / */
-      if ((name_end = strchr(nameptr, '/')) != NULL) 
+      if ((name_end = strchr_m(nameptr, '/')) != NULL) 
       {
           *name_end = 0;
          }
@@ -1741,7 +1741,7 @@ char *parent_dirname(const char *path)
 		return(NULL);
 
 	pstrcpy(dirpath, path);
-	p = strrchr(dirpath, '/');  /* Find final '/', if any */
+	p = strrchr_m(dirpath, '/');  /* Find final '/', if any */
 	if (!p) {
 		pstrcpy(dirpath, ".");    /* No final "/", so dir is "." */
 	} else {

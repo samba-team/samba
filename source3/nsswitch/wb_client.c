@@ -36,8 +36,8 @@ static void parse_domain_user(char *domuser, fstring domain, fstring user)
         char *p;
         char *sep = lp_winbind_separator();
         if (!sep) sep = "\\";
-        p = strchr(domuser,*sep);
-        if (!p) p = strchr(domuser,'\\');
+        p = strchr_m(domuser,*sep);
+        if (!p) p = strchr_m(domuser,'\\');
         if (!p) {
                 fstrcpy(domain,"");
                 fstrcpy(user, domuser);
@@ -286,7 +286,7 @@ int winbind_initgroups(char *user, gid_t gid)
 
 	sep = lp_winbind_separator();
 
-	if (!strchr(user, *sep)) {
+	if (!strchr_m(user, *sep)) {
 		return initgroups(user, gid);
 	}
 

@@ -312,7 +312,7 @@ void setup_logging(char *pname, BOOL interactive)
 	}
 #ifdef WITH_SYSLOG
 	else {
-		char *p = strrchr( pname,'/' );
+		char *p = strrchr_m( pname,'/' );
 		if (p)
 			pname = p + 1;
 #ifdef LOG_DAEMON

@@ -43,7 +43,7 @@ static void wins_hook(char *operation, struct name_record *namerec, int ttl)
 	if (!cmd || !*cmd) return;
 
 	for (p=namerec->name.name; *p; p++) {
-		if (!(isalnum((int)*p) || strchr("._-",*p))) {
+		if (!(isalnum((int)*p) || strchr_m("._-",*p))) {
 			DEBUG(3,("not calling wins hook for invalid name %s\n", nmb_namestr(&namerec->name)));
 			return;
 		}
@@ -255,7 +255,7 @@ BOOL initialise_wins(void)
       got_token = next_token(&ptr,ip_str,NULL,sizeof(ip_str));
       was_ip = False;
 
-      if(got_token && strchr(ip_str, '.'))
+      if(got_token && strchr_m(ip_str, '.'))
       {
         num_ips++;
         was_ip = True;
@@ -310,7 +310,7 @@ BOOL initialise_wins(void)
     /* Netbios name. # divides the name from the type (hex): netbios#xx */
     pstrcpy(name,name_str);
       
-    if((p = strchr(name,'#')) != NULL)
+    if((p = strchr_m(name,'#')) != NULL)
     {
       *p = 0;
       sscanf(p+1,"%x",&type);
@@ -1630,7 +1630,7 @@ void wins_write_database(BOOL background)
 
       tm = LocalTime(&namerec->data.death_time);
       ts = asctime(tm);
-      nl = strrchr( ts, '\n' );
+      nl = strrchr_m( ts, '\n' );
       if( NULL != nl )
         *nl = '\0';
       DEBUGADD(4,("TTL = %s  ", ts ));

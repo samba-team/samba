@@ -163,7 +163,7 @@ static char* next_command (char** cmdstr)
 	if (!cmdstr || !(*cmdstr))
 		return NULL;
 	
-	p = strchr(*cmdstr, ';');
+	p = strchr_m(*cmdstr, ';');
 	if (p)
 		*p = '\0';
 	pstrcpy(command, *cmdstr);
@@ -588,11 +588,11 @@ static void usage(char *pname)
 		case 'U': {
 			char *lp;
 			pstrcpy(username,optarg);
-			if ((lp=strchr(username,'%'))) {
+			if ((lp=strchr_m(username,'%'))) {
 				*lp = 0;
 				pstrcpy(password,lp+1);
 				got_pass = True;
-				memset(strchr(optarg,'%')+1,'X',strlen(password));
+				memset(strchr_m(optarg,'%')+1,'X',strlen(password));
 			}
 			break;
 		}

@@ -97,19 +97,19 @@ static int string_match(char *tok,char *s, char *invalid_char)
 	} else if (strcasecmp(tok, "FAIL") == 0) {	/* fail: match any */
 		return (FAIL);
 	} else if (strcasecmp(tok, "LOCAL") == 0) {	/* local: no dots */
-		if (strchr(s, '.') == 0 && strcasecmp(s, "unknown") != 0)
+		if (strchr_m(s, '.') == 0 && strcasecmp(s, "unknown") != 0)
 			return (True);
 	} else if (!strcasecmp(tok, s)) {   /* match host name or address */
 		return (True);
 	} else if (tok[(tok_len = strlen(tok)) - 1] == '.') {	/* network */
 		if (strncmp(tok, s, tok_len) == 0)
 			return (True);
-	} else if ((cut = strchr(tok, '/')) != 0) {	/* netnumber/netmask */
+	} else if ((cut = strchr_m(tok, '/')) != 0) {	/* netnumber/netmask */
 		if (isdigit((int)s[0]) && masked_match(tok, cut, s))
 			return (True);
-	} else if (strchr(tok, '*') != 0) {
+	} else if (strchr_m(tok, '*') != 0) {
 		*invalid_char = '*';
-	} else if (strchr(tok, '?') != 0) {
+	} else if (strchr_m(tok, '?') != 0) {
 		*invalid_char = '?';
 	}
 	return (False);
@@ -252,7 +252,7 @@ static BOOL only_ipaddrs_in_list(char** list)
 			 * was a network/netmask pair.  Only network/netmask pairs
 			 * have a '/' in them
 			 */
-			if ((p=strchr(*list, '/')) == NULL)
+			if ((p=strchr_m(*list, '/')) == NULL)
 			{
 				only_ip = False;
 				DEBUG(3,("only_ipaddrs_in_list: list has non-ip address (%s)\n", *list));

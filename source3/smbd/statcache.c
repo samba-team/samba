@@ -174,7 +174,7 @@ BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath,
       /*
        * Didn't find it - remove last component for next try.
        */
-      sp = strrchr(chk_name, '/');
+      sp = strrchr_m(chk_name, '/');
       if (sp) {
         *sp = '\0';
       } else {

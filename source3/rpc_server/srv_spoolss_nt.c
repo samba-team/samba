@@ -377,7 +377,7 @@ static BOOL set_printer_hnd_printertype(Printer_entry *Printer, char *handlename
 	}
 
 	/* it's a print server */
-	if (*handlename=='\\' && *(handlename+1)=='\\' && !strchr(handlename+2, '\\')) {
+	if (*handlename=='\\' && *(handlename+1)=='\\' && !strchr_m(handlename+2, '\\')) {
 		DEBUGADD(4,("Printer is a print server\n"));
 		Printer->printer_type = PRINTER_HANDLE_IS_PRINTSERVER;		
 	}
@@ -414,7 +414,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		return False;
 	
 	if (*handlename=='\\') {
-		aprinter=strchr(handlename+2, '\\');
+		aprinter=strchr_m(handlename+2, '\\');
 		aprinter++;
 	}
 	else {
@@ -442,7 +442,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
 			continue;
 
-		printername=strchr(printer->info_2->printername+2, '\\');
+		printername=strchr_m(printer->info_2->printername+2, '\\');
 		printername++;
 
 		DEBUG(10,("set_printer_hnd_name: name [%s], aprinter [%s]\n",
@@ -1461,7 +1461,7 @@ static void spoolss_notify_printer_name(int snum,
 	uint32 len;
 		
 	/* the notify name should not contain the \\server\ part */
-	char *p = strrchr(printer->info_2->printername, '\\');
+	char *p = strrchr_m(printer->info_2->printername, '\\');
 
 	if (!p) {
 		p = printer->info_2->printername;

@@ -349,7 +349,7 @@ int main(int argc, char **argv)
 		char *p;
 
 		fstrcpy(global_myname, myhostname());
-		p = strchr(global_myname, '.');
+		p = strchr_m(global_myname, '.');
 		if (p) {
 			*p = 0;
 		}

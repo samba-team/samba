@@ -134,7 +134,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   * Extract the destination from the URI...
   */
 
-  if ((sep = strrchr(uri, '@')) != NULL)
+  if ((sep = strrchr_m(uri, '@')) != NULL)
   {
     username = uri + 6;
     *sep++ = '\0';
@@ -145,7 +145,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     * Extract password as needed...
     */
 
-    if ((password = strchr(username, ':')) != NULL)
+    if ((password = strchr_m(username, ':')) != NULL)
       *password++ = '\0';
     else
       password = "";
@@ -157,7 +157,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     server   = uri + 6;
   }
 
-  if ((sep = strchr(server, '/')) == NULL)
+  if ((sep = strchr_m(server, '/')) == NULL)
   {
     fputs("ERROR: Bad URI - need printer name!\n", stderr);
     return (1);
@@ -166,7 +166,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   *sep++ = '\0';
   printer = sep;
 
-  if ((sep = strchr(printer, '/')) != NULL)
+  if ((sep = strchr_m(printer, '/')) != NULL)
   {
    /*
     * Convert to smb://[username:password@]workgroup/server/printer...

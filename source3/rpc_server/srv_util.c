@@ -114,7 +114,7 @@ int make_dom_gids(TALLOC_CTX *ctx, char *gids_str, DOM_GID **ppgids)
     uint32 rid = 0;
     int i;
 
-    attr = strchr(s2,'/');
+    attr = strchr_m(s2,'/');
     if (attr)
       *attr++ = 0;
 

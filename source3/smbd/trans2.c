@@ -339,7 +339,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
   if (!conn->dirptr)
     return(False);
 
-  p = strrchr(path_mask,'/');
+  p = strrchr_m(path_mask,'/');
   if(p != NULL)
   {
     if(p[1] == '\0')
@@ -732,7 +732,7 @@ static int call_trans2findfirst(connection_struct *conn,
     return(UNIXERROR(ERRDOS,ERRbadpath));
   }
 
-  p = strrchr(directory,'/');
+  p = strrchr_m(directory,'/');
   if(p == NULL) {
     pstrcpy(mask,directory);
     pstrcpy(directory,"./");
@@ -1383,7 +1383,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
   DEBUG(3,("call_trans2qfilepathinfo %s level=%d call=%d total_data=%d\n",
 	   fname,info_level,tran_call,total_data));
 
-  p = strrchr(fname,'/'); 
+  p = strrchr_m(fname,'/'); 
   if (!p) {
 	  base_name = fname;
   } else {

@@ -303,7 +303,7 @@ int main(int argc,char *argv[])
 	}
       }
 
-      p = strchr(lookup,'#');
+      p = strchr_m(lookup,'#');
       if (p) {
         *p = '\0';
         sscanf(++p,"%x",&lookup_type);

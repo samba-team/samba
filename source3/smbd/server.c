@@ -389,7 +389,7 @@ static BOOL dump_core(void)
 	char *p;
 	pstring dname;
 	pstrcpy(dname,debugf);
-	if ((p=strrchr(dname,'/'))) *p=0;
+	if ((p=strrchr_m(dname,'/'))) *p=0;
 	pstrcat(dname,"/corefiles");
 	mkdir(dname,0700);
 	sys_chown(dname,getuid(),getgid());
@@ -497,7 +497,7 @@ static void init_structs(void )
 	if (!*global_myname) {
 		char *p;
 		fstrcpy( global_myname, myhostname() );
-		p = strchr( global_myname, '.' );
+		p = strchr_m( global_myname, '.' );
 		if (p) 
 			*p = 0;
 	}
