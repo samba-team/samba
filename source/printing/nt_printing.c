@@ -1012,7 +1012,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 	}
 	close_file(fsp, True);
 
-	if (use_version) {
+	if (use_version && (new_major != old_major || new_minor != old_minor)) {
 		/* Compare versions and choose the larger version number */
 		if (new_major > old_major ||
 			(new_major == old_major && new_minor > old_minor)) {
