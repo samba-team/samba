@@ -281,6 +281,10 @@ struct cli_request {
 	   expecting a reply from the server. */
 	uint_t one_way_request:1;
 
+	/* set this when the request should only increment the signing
+	   counter by one */
+	uint_t sign_single_increment:1;
+
 	/* the mid of this packet - used to match replies */
 	uint16_t mid;
 
