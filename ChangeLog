@@ -1,3 +1,12 @@
+2004-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.conf.5: document [kdc]hdb-ldap-create-base
+	
+	* lib/hdb/hdb-ldap.c: add creation base that defaults to the
+	search base
+
+	* lib/hdb/hdb-ldap.c: indent like the rest of the code
+	
 2004-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/hdb-ldap.c: check return values from ldap operations and
