@@ -213,7 +213,7 @@ NTSTATUS ntvfs_posix_init(void)
 	ops.chkpath = pvfs_chkpath;
 	ops.qpathinfo = pvfs_qpathinfo;
 	ops.setpathinfo = pvfs_setpathinfo;
-	ops.open = pvfs_open;
+	ops.openfile = pvfs_open;
 	ops.mkdir = pvfs_mkdir;
 	ops.rmdir = pvfs_rmdir;
 	ops.rename = pvfs_rename;

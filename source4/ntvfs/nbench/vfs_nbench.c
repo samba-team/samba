@@ -280,7 +280,7 @@ static NTSTATUS nbench_setpathinfo(struct ntvfs_module_context *ntvfs,
 /*
   open a file
 */
-static void nbench_open_send(struct smbsrv_request *req)
+static void nbench_openfile_send(struct smbsrv_request *req)
 {
 	union smb_open *io = req->async_states->private_data;
 
@@ -306,12 +306,12 @@ static void nbench_open_send(struct smbsrv_request *req)
 	PASS_THRU_REP_POST(req);
 }
 
-static NTSTATUS nbench_open(struct ntvfs_module_context *ntvfs,
-			    struct smbsrv_request *req, union smb_open *io)
+static NTSTATUS nbench_openfile(struct ntvfs_module_context *ntvfs,
+				struct smbsrv_request *req, union smb_open *io)
 {
 	NTSTATUS status;
 
-	PASS_THRU_REQ(ntvfs, req, open, io, (ntvfs, req, io));
+	PASS_THRU_REQ(ntvfs, req, openfile, io, (ntvfs, req, io));
 
 	return status;
 }
@@ -874,7 +874,7 @@ NTSTATUS ntvfs_nbench_init(void)
 	ops.chkpath = nbench_chkpath;
 	ops.qpathinfo = nbench_qpathinfo;
 	ops.setpathinfo = nbench_setpathinfo;
-	ops.open = nbench_open;
+	ops.openfile = nbench_openfile;
 	ops.mkdir = nbench_mkdir;
 	ops.rmdir = nbench_rmdir;
 	ops.rename = nbench_rename;
