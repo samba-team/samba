@@ -1,3 +1,7 @@
+2000-08-19  Assar Westerlund  <assar@sics.se>
+
+	* krb-bigendian.m4: merge from arla: make it work better
+
 2000-08-07  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken-frag.m4: check getsockname for proto compat
