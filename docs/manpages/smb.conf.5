@@ -2355,6 +2355,11 @@ If you list several hosts in the "password server" option then smbd
 will try each in turn till it finds one that responds. This is useful
 in case your primary server goes down.
 
+If you are using a WindowsNT server as your password server then you
+will have to ensure that your users are able to login from the Samba 
+server, as the network logon will appear to come from there rather
+than from the users workstation.
+
 .SS path (S)
 A synonym for this parameter is 'directory'.
 
