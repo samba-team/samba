@@ -852,17 +852,64 @@ static NTSTATUS lsa_LookupPrivName(struct dcesrv_call_state *dce_call,
 				   TALLOC_CTX *mem_ctx,
 				   struct lsa_LookupPrivName *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct lsa_policy_state *state;
+	const char *privname;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	state = h->data;
+
+	if (r->in.luid->high != 0) {
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
+	}
+
+	privname = sec_privilege_name(r->in.luid->low);
+	if (privname == NULL) {
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
+	}
+
+	r->out.name = talloc_p(mem_ctx, struct lsa_String);
+	if (r->out.name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	r->out.name->string = privname;
+
+	return NT_STATUS_OK;	
 }
 
 
 /* 
   lsa_LookupPrivDisplayName
 */
-static NTSTATUS lsa_LookupPrivDisplayName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_LookupPrivDisplayName *r)
+static NTSTATUS lsa_LookupPrivDisplayName(struct dcesrv_call_state *dce_call, 
+					  TALLOC_CTX *mem_ctx,
+					  struct lsa_LookupPrivDisplayName *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct lsa_policy_state *state;
+	int id;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	state = h->data;
+
+	id = sec_privilege_id(r->in.name->string);
+	if (id == -1) {
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
+	}
+	
+	r->out.disp_name = talloc_p(mem_ctx, struct lsa_String);
+	if (r->out.disp_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r->out.disp_name->string = sec_privilege_display_name(id, r->in.language_id);
+	if (r->out.disp_name->string == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
