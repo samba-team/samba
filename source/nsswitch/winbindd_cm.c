@@ -598,8 +598,13 @@ static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
 				   lp_name_resolve_order()))
 		return False;
 
-	for (i=0; i<num; i++)
-		send_getdc_request(iplist[i].ip, domain->name, &domain->sid);
+	for (i=0; i<num; i++) {
+		if (!send_getdc_request(iplist[i].ip, domain->name,
+					&domain->sid)) {
+			DEBUG(10, ("Defaulting to nbtstat method\n"));
+			goto nbtstat;
+		}
+	}
 
 	for (i=0; i<5; i++) {
 		int j;
@@ -632,6 +637,8 @@ static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
 
 	if (*num_dcs > 0)
 		return True;
+
+ nbtstat:
 
 	/* Fall back to the old method with the name status request */
 
