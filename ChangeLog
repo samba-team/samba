@@ -1,8 +1,22 @@
+2003-09-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/context.c (add_file): make len argument an pointer to
+	an integer
+
+	* lib/asn1/k5.asn1: add SAM types
+
+	* lib/krb5/init_creds_pw.c: break out the encrypt timestamp
+	preauth to its function break out the pa_data_to_key_plain to its
+	own function make more variables const
+	
 2003-09-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/krb5.conf.5: document appdefaults/{forward,encrypt}
 
 2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.h: Add key usage for encryption of the
+	SAM-NONCE-OR-SAD field.
 
 	* include/make_crypto.c: include <openssl/ui.h> in the openssl
 	case
