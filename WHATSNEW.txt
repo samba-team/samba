@@ -46,7 +46,7 @@ back to searching the 'ldap suffix' in some cases.
 Privilege Model
 ---------------
 
-Samba 3.0.11pre2 supports the following assignable rights
+Samba 3.0.11 supports the following assignable rights
 
 SeMachineAccountPrivilege  Add machines to domain
 SePrintOperatorPrivilege   Manage printers
