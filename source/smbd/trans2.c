@@ -1859,17 +1859,17 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
     }
   }
 
+  /* get some defaults (no modifications) if any info is zero or -1. */
+  if (tvs.actime == (time_t)0 || tvs.actime == (time_t)-1)
+    tvs.actime = st.st_atime;
+
+  if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
+    tvs.modtime = st.st_mtime;
+
   DEBUG(6,("actime: %s " , ctime(&tvs.actime)));
   DEBUG(6,("modtime: %s ", ctime(&tvs.modtime)));
   DEBUG(6,("size: %.0f ", (double)size));
   DEBUG(6,("mode: %x\n"  , mode));
-
-  /* get some defaults (no modifications) if any info is zero. */
-  if (!tvs.actime)
-    tvs.actime = st.st_atime;
-
-  if (!tvs.modtime)
-    tvs.modtime = st.st_mtime;
 
   if(!((info_level == SMB_SET_FILE_END_OF_FILE_INFO) ||
      (info_level == SMB_SET_FILE_ALLOCATION_INFO))) {
@@ -1894,9 +1894,12 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
        * away and will set it on file code. JRA.
        */
 
-      DEBUG(10,("call_trans2setfilepathinfo: setting pending modtime to %s\n",
+       if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
+         DEBUG(10,("call_trans2setfilepathinfo: setting pending modtime to %s\n",
             ctime(&tvs.modtime) ));
-      fsp->pending_modtime = tvs.modtime;
+         fsp->pending_modtime = tvs.modtime;
+       }
+
     } else {
 
       DEBUG(10,("call_trans2setfilepathinfo: setting utimes to modified values.\n"));
