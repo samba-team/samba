@@ -1773,13 +1773,13 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	
 	switch (function) {
 	case 81:		/* delete */ 
-		if (print_job_delete(jobid, vuid)) errcode = NERR_Success;
+		if (print_job_delete(NULL, jobid)) errcode = NERR_Success;
 		break;
 	case 82:		/* pause */
-		if (print_job_pause(jobid, vuid)) errcode = NERR_Success;
+		if (print_job_pause(NULL, jobid)) errcode = NERR_Success;
 		break;
 	case 83:		/* resume */
-		if (print_job_resume(jobid, vuid)) errcode = NERR_Success;
+		if (print_job_resume(NULL, jobid)) errcode = NERR_Success;
 		break;
 	}
 	
@@ -1822,13 +1822,13 @@ static BOOL api_WPrintQueuePurge(connection_struct *conn,uint16 vuid, char *para
 
 	switch (function) {
 	case 74: /* Pause queue */
-		if (print_queue_pause(snum, vuid)) errcode = NERR_Success;
+		if (print_queue_pause(NULL, snum)) errcode = NERR_Success;
 		break;
 	case 75: /* Resume queue */
-		if (print_queue_resume(snum, vuid)) errcode = NERR_Success;
+		if (print_queue_resume(NULL, snum)) errcode = NERR_Success;
 		break;
 	case 103: /* Purge */
-		if (print_queue_purge(snum, vuid)) errcode = NERR_Success;
+		if (print_queue_purge(NULL, snum)) errcode = NERR_Success;
 		break;
 	}
 
