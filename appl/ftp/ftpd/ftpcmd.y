@@ -138,14 +138,14 @@ static int	 yylex (void);
 	AUTH	ADAT	PROT	PBSZ	CCC	MIC
 	CONF	ENC
 
-	KAUTH	KLIST	FIND
+	KAUTH	KLIST	FIND	URL
 
 	LEXERR
 
 %token	<s> STRING
 %token	<i> NUMBER
 
-%type	<i> check_login octal_number byte_size
+%type	<i> check_login check_login_no_guest octal_number byte_size
 %type	<i> struct_code mode_code type_code form_code
 %type	<s> pathstring pathname password username
 
@@ -366,23 +366,25 @@ cmd
 			}else
 				statcmd();
 	}
-	| DELE check_login SP pathname CRLF
+	| DELE check_login_no_guest SP pathname CRLF
 		{
 			if ($2 && $4 != NULL)
 				delete($4);
 			if ($4 != NULL)
 				free($4);
 		}
-	| RNTO SP pathname CRLF
+	| RNTO check_login_no_guest SP pathname CRLF
 		{
-			if (fromname) {
-				renamecmd(fromname, $3);
-				free(fromname);
-				fromname = (char *) 0;
-			} else {
-				reply(503, "Bad sequence of commands.");
+			if($2){
+				if (fromname) {
+					renamecmd(fromname, $4);
+					free(fromname);
+					fromname = (char *) 0;
+				} else {
+					reply(503, "Bad sequence of commands.");
+				}
 			}
-			free($3);
+			free($4);
 		}
 	| ABOR CRLF
 		{
@@ -436,7 +438,7 @@ cmd
 			if ($4 != NULL)
 				free($4);
 		}
-	| RMD check_login SP pathname CRLF
+	| RMD check_login_no_guest SP pathname CRLF
 		{
 			if ($2 && $4 != NULL)
 				removedir($4);
@@ -471,7 +473,7 @@ cmd
 				reply(200, "Current UMASK is %03o", oldmask);
 			}
 		}
-	| SITE SP UMASK check_login SP octal_number CRLF
+	| SITE SP UMASK check_login_no_guest SP octal_number CRLF
 		{
 			int oldmask;
 
@@ -486,7 +488,7 @@ cmd
 				}
 			}
 		}
-	| SITE SP CHMOD check_login SP octal_number SP pathname CRLF
+	| SITE SP CHMOD check_login_no_guest SP octal_number SP pathname CRLF
 		{
 			if ($4 && ($8 != NULL)) {
 				if ($6 > 0777)
@@ -526,17 +528,21 @@ cmd
 			char *p;
 			size_t s;
 			
-			if($4 && $6 != NULL){
-			    p = strpbrk($6, " \t");
-			    if(p){
-				*p++ = 0;
-				s = strspn(p, " \t");				
-				if(s >= 0)
-				    kauth($6, p + s);
-				else
-				    kauth($6, p);
-			    }else
-				kauth($6, NULL);
+			if(guest)
+				reply(500, "Can't be done as guest.");
+			else{
+				if($4 && $6 != NULL){
+				    p = strpbrk($6, " \t");
+				    if(p){
+					*p++ = 0;
+					s = strspn(p, " \t");				
+					if(s >= 0)
+					    kauth($6, p + s);
+					else
+					    kauth($6, p);
+				    }else
+					kauth($6, NULL);
+				}
 			}
 			if($6 != NULL)
 			    free($6);
@@ -552,6 +558,10 @@ cmd
 			find($6);
 		    if($6 != NULL)
 			free($6);
+		}
+	| SITE SP URL CRLF
+		{
+			reply(200, "http://www.pdc.kth.se/kth-krb/");
 		}
 	| STOU check_login SP pathname CRLF
 		{
@@ -625,7 +635,7 @@ cmd
 		}
 	;
 rcmd
-	: RNFR check_login SP pathname CRLF
+	: RNFR check_login_no_guest SP pathname CRLF
 		{
 			char *renamefrom();
 
@@ -822,6 +832,13 @@ octal_number
 	;
 
 
+check_login_no_guest : check_login
+		{
+			$$ = $1 && !guest;
+			if($1 && !$$)
+				reply(550, "Permission denied");
+		}
+
 check_login
 	: /* empty */
 		{
@@ -924,6 +941,8 @@ struct tab sitetab[] = {
 	{ "KLIST", KLIST, ARGS, 1,	"(show ticket file)" },
 
 	{ "FIND", FIND, STR1, 1,	"<sp> globexpr" },
+
+	{ "URL",  URL,  ARGS, 1,	"?" },
 	
 	{ NULL,   0,    0,    0,	0 }
 };
@@ -1318,7 +1337,7 @@ help(struct tab *ctab, char *s)
 		    }
 		    lreply(214, buf);
 		}
-		reply(214, "Direct comments to ftp-bugs@%s.", hostname);
+		reply(214, "Direct comments to kth-krb-bugs@pdc.kth.se");
 		return;
 	}
 	upper(s);
