@@ -91,34 +91,51 @@ read from a file
 
 ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 {
-  ssize_t ret=0,readret;
+	ssize_t ret=0,readret;
 
-  /* you can't read from print files */
-  if (fsp->print_file) {
-	  return -1;
-  }
+	/* you can't read from print files */
+	if (fsp->print_file)
+		return -1;
 
-  /*
-   * Serve from write cache if we can.
-   */
-  if(read_from_write_cache(fsp, data, pos, n))
-    return n;
+	/*
+	 * Serve from write cache if we can.
+	 */
 
-  flush_write_cache(fsp, READ_FLUSH);
+	if(read_from_write_cache(fsp, data, pos, n))
+		return n;
 
-  if (seek_file(fsp,pos) == -1) {
-    DEBUG(3,("read_file: Failed to seek to %.0f\n",(double)pos));
-    return(ret);
-  }
+	flush_write_cache(fsp, READ_FLUSH);
+
+	if (seek_file(fsp,pos) == -1) {
+		DEBUG(3,("read_file: Failed to seek to %.0f\n",(double)pos));
+		return(ret);
+	}
   
-  if (n > 0) {
-    readret = fsp->conn->vfs_ops.read(fsp,fsp->fd,data,n);
-    if (readret == -1)
-      return -1;
-    if (readret > 0) ret += readret;
-  }
+	if (n > 0) {
+#ifdef DMF_FIX
+		int numretries = 3;
+tryagain:
+		readret = fsp->conn->vfs_ops.read(fsp,fsp->fd,data,n);
+		if (readret == -1) {
+			if ((errno == EAGAIN) && numretries) {
+				DEBUG(3,("read_file EAGAIN retry in 10 seconds\n"));
+				(void)sleep(10);
+				--numretries;
+				goto tryagain;
+			}
+			return -1;
+		}
+#else /* NO DMF fix. */
+		readret = fsp->conn->vfs_ops.read(fsp,fsp->fd,data,n);
+		if (readret == -1)
+			return -1;
+#endif
 
-  return(ret);
+		if (readret > 0)
+			ret += readret;
+	}
+
+	return(ret);
 }
 
 /* how many write cache buffers have been allocated */
