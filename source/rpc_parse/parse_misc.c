@@ -1414,7 +1414,7 @@ BOOL smb_io_pol_hnd(char *desc, POLICY_HND *pol, prs_struct *ps, int depth)
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint8s (False, "data", ps, depth, pol->data, POL_HND_SIZE))
+	if(!prs_uint8s (False, "handle", ps, depth, pol->data, POL_HND_SIZE))
 		return False;
 
 	return True;

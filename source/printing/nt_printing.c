@@ -2338,43 +2338,43 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 			  &devmode.panningwidth,
 			  &devmode.panningheight,
 			  &devmode.private);
-#if 0 /*JRRTEST*/
-	DEBUG(   10,("Unpacked devicemode:\n"));
-	DEBUGADD(10,("devicename = %s\n", devmode.devicename));
-	DEBUGADD(10,("formname = %s\n", devmode.formname));
-	DEBUGADD(10,("specversion = %d\n", devmode.specversion));
-	DEBUGADD(10,("driverversion = %d\n", devmode.driverversion));
-	DEBUGADD(10,("size = %d\n", devmode.size));
-	DEBUGADD(10,("driverextra = %d\n", devmode.driverextra));
-	DEBUGADD(10,("orientation = %d\n", devmode.orientation));
-	DEBUGADD(10,("papersize = %d\n", devmode.papersize));
-	DEBUGADD(10,("paperlength = %d\n", devmode.paperlength));
-	DEBUGADD(10,("paperwidth = %d\n", devmode.paperwidth));
-	DEBUGADD(10,("scale = %d\n", devmode.scale));
-	DEBUGADD(10,("copies = %d\n", devmode.copies));
-	DEBUGADD(10,("defaultsource = %d\n", devmode.defaultsource));
-	DEBUGADD(10,("printquality = %d\n", devmode.printquality));
-	DEBUGADD(10,("color = %d\n", devmode.color));
-	DEBUGADD(10,("duplex = %d\n", devmode.duplex));
-	DEBUGADD(10,("yresolution = %d\n", devmode.yresolution));
-	DEBUGADD(10,("ttoption = %d\n", devmode.ttoption));
-	DEBUGADD(10,("collate = %d\n", devmode.collate));
-	DEBUGADD(10,("logpixels = %d\n", devmode.logpixels));
-	DEBUGADD(10,("fields = %d\n", devmode.fields));
-	DEBUGADD(10,("bitsperpel = %d\n", devmode.bitsperpel));
-	DEBUGADD(10,("pelswidth = %d\n", devmode.pelswidth));
-	DEBUGADD(10,("pelsheight = %d\n", devmode.pelsheight));
-	DEBUGADD(10,("displayflags = %d\n", devmode.displayflags));
-	DEBUGADD(10,("displayfrequency = %d\n", devmode.displayfrequency));
-	DEBUGADD(10,("icmmethod = %d\n", devmode.icmmethod));
-	DEBUGADD(10,("icmintent = %d\n", devmode.icmintent));
-	DEBUGADD(10,("mediatype = %d\n", devmode.mediatype));
-	DEBUGADD(10,("dithertype = %d\n", devmode.dithertype));
-	DEBUGADD(10,("reserved1 = %d\n", devmode.reserved1));
-	DEBUGADD(10,("reserved2 = %d\n", devmode.reserved2));
-	DEBUGADD(10,("panningwidth = %d\n", devmode.panningwidth));
-	DEBUGADD(10,("panningheight = %d\n", devmode.panningheight));
-#endif
+
+	DEBUG(    8,("Unpacked devicemode:\n"));
+	DEBUGADD( 8,("devicename = %s\n", devmode.devicename));
+	DEBUGADD(11,("formname = %s\n", devmode.formname));
+	DEBUGADD(11,("specversion = %d\n", devmode.specversion));
+	DEBUGADD(11,("driverversion = %d\n", devmode.driverversion));
+	DEBUGADD(11,("size = %d\n", devmode.size));
+	DEBUGADD(11,("driverextra = %d\n", devmode.driverextra));
+	DEBUGADD(11,("orientation = %d\n", devmode.orientation));
+	DEBUGADD(11,("papersize = %d\n", devmode.papersize));
+	DEBUGADD(11,("paperlength = %d\n", devmode.paperlength));
+	DEBUGADD(11,("paperwidth = %d\n", devmode.paperwidth));
+	DEBUGADD(11,("scale = %d\n", devmode.scale));
+	DEBUGADD(11,("copies = %d\n", devmode.copies));
+	DEBUGADD(11,("defaultsource = %d\n", devmode.defaultsource));
+	DEBUGADD(11,("printquality = %d\n", devmode.printquality));
+	DEBUGADD(11,("color = %d\n", devmode.color));
+	DEBUGADD(11,("duplex = %d\n", devmode.duplex));
+	DEBUGADD(11,("yresolution = %d\n", devmode.yresolution));
+	DEBUGADD(11,("ttoption = %d\n", devmode.ttoption));
+	DEBUGADD(11,("collate = %d\n", devmode.collate));
+	DEBUGADD(11,("logpixels = %d\n", devmode.logpixels));
+	DEBUGADD(11,("fields = %d\n", devmode.fields));
+	DEBUGADD(11,("bitsperpel = %d\n", devmode.bitsperpel));
+	DEBUGADD(11,("pelswidth = %d\n", devmode.pelswidth));
+	DEBUGADD(11,("pelsheight = %d\n", devmode.pelsheight));
+	DEBUGADD(11,("displayflags = %d\n", devmode.displayflags));
+	DEBUGADD(11,("displayfrequency = %d\n", devmode.displayfrequency));
+	DEBUGADD(11,("icmmethod = %d\n", devmode.icmmethod));
+	DEBUGADD(11,("icmintent = %d\n", devmode.icmintent));
+	DEBUGADD(11,("mediatype = %d\n", devmode.mediatype));
+	DEBUGADD(11,("dithertype = %d\n", devmode.dithertype));
+	DEBUGADD(11,("reserved1 = %d\n", devmode.reserved1));
+	DEBUGADD(11,("reserved2 = %d\n", devmode.reserved2));
+	DEBUGADD(11,("panningwidth = %d\n", devmode.panningwidth));
+	DEBUGADD(11,("panningheight = %d\n", devmode.panningheight));
+	
 	if (devmode.private) {
 		/* the len in tdb_unpack is an int value and
 		 * devmode.driverextra is only a short
@@ -2390,16 +2390,10 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 
 	*nt_devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
 
-#if 0 /*JRRTEST*/
 	if (devmode.private) {
 		DEBUG(8,("with a private section of %d bytes\n", devmode.driverextra));
-		dump_data(10, devmode.private, devmode.driverextra);
+		dump_data(11, devmode.private, devmode.driverextra);
 	}
-#else
-	DEBUG(8,("Unpacked devicemode [%s](%s)\n", devmode.devicename, devmode.formname));
-	if (devmode.private)
-			DEBUG(8,("with a private section of %d bytes\n", devmode.driverextra));
-#endif
 
 	return len;
 }
@@ -2425,12 +2419,8 @@ static int unpack_specifics(NT_PRINTER_PARAM **list, char *buf, int buflen)
 		param.next = *list;
 		*list = memdup(&param, sizeof(param));
 
-#if 0 /*JRRTEST*/
 		DEBUG(10,("specific: [%s], type: %d len: %d\n", param.value, param.type, param.data_len));
-		dump_data(10, param.data, param.data_len);
-#else
-		DEBUG(8,("specific: [%s], len: %d\n", param.value, param.data_len));
-#endif
+		dump_data(11, param.data, param.data_len);
 	}
 
 	return len;
@@ -2475,11 +2465,10 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	pstrcpy(info.comment, "");
 	fstrcpy(info.printprocessor, "winprint");
 	fstrcpy(info.datatype, "RAW");
-
+	
+	/* See note in check_printer_ok() for reasons for these attributes. JRR */
 	info.attributes = PRINTER_ATTRIBUTE_SHARED   \
-			 | PRINTER_ATTRIBUTE_LOCAL  \
-			 | PRINTER_ATTRIBUTE_RAW_ONLY \
-			 | PRINTER_ATTRIBUTE_QUEUED ;            /* attributes */
+					| PRINTER_ATTRIBUTE_NETWORK;            /* attributes */
 
 	info.starttime = 0; /* Minutes since 12:00am GMT */
 	info.untiltime = 0; /* Minutes since 12:00am GMT */
@@ -2567,8 +2556,8 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 			info.datatype,
 			info.parameters);
 
-	/* Samba has to have shared raw drivers. */
-	info.attributes |= (PRINTER_ATTRIBUTE_SHARED|PRINTER_ATTRIBUTE_RAW_ONLY);
+	/* See note in check_printer_ok() for reasons for these attributes. JRR */
+	info.attributes |= PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK;
 
 	/* Restore the stripped strings. */
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", global_myname);
@@ -2699,7 +2688,20 @@ uint32 mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	{
 		case 2:
 		{
+#if 0 /*JRRTEST - change_id*/
+			/*
+			 * Update the changestamp.
+			 */
+			NTTIME time_nt;
+			time_t time_unix = time(NULL);
+			unix_to_nt_time(&time_nt, time_unix);
+			if (printer.info_2->changeid==time_nt.low)
+				printer.info_2->changeid++;
+			else
+				printer.info_2->changeid=time_nt.low;
+#else
 			printer.info_2->c_setprinter++;
+#endif
 			result=update_a_printer_2(printer.info_2);
 			break;
 		}
@@ -2726,10 +2728,16 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	{
 		case 2:
 		{
+#if 0 /*JRRTEST - change_id*/
 			/*
 			 * Update the changestamp.
 			 * Note we must *not* do this in mod_a_printer().
 			 */
+#else
+			/*
+			 * Update the changestamp.
+			 */
+#endif
 			NTTIME time_nt;
 			time_t time_unix = time(NULL);
 			unix_to_nt_time(&time_nt, time_unix);
@@ -2737,7 +2745,12 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 				printer.info_2->changeid++;
 			else
 				printer.info_2->changeid=time_nt.low;
-
+#if 0 /*JRRTEST - change_id*/
+			/*
+			 * Update count of set_printer's (N.B. *not* set_printer_data)
+			 * Note we must *not* do this in mod_a_printer().
+			 */
+#endif
 			printer.info_2->c_setprinter++;
 
 			result=update_a_printer_2(printer.info_2);

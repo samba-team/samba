@@ -4022,12 +4022,19 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
 		 global_myname, lp_servicename(snum));
 	fstrcpy(info->sharename, lp_servicename(snum));
-	info->attributes = PRINTER_ATTRIBUTE_SHARED   \
-		| PRINTER_ATTRIBUTE_LOCAL  \
-		| PRINTER_ATTRIBUTE_RAW_ONLY \
-		| PRINTER_ATTRIBUTE_QUEUED ;
-	
-	return True;
+
+    /* Although 2k/Nt set the LOCAL attr, they serve it as NETWORK when	they
+       P&P to a windows client. We set it to NETWORK, and then just serve
+       it to the clients when they connect. We are always a SHARED printer :-)
+       In the past we set RAW_ONLY, this is incorrect; neither 2k nor NT do. We
+       are protected against client attempts to do EMF printing, by refusing
+       (elsewhere in the code), and forcing the clients to back down to RAW.
+       If you change these bits, you *will* break printer drivers rendering;
+       they make decisions based on these settings. JRR 011205 */
+
+    info->attributes |= PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK;
+
+    return True;
 }
 
 /****************************************************************************
@@ -4285,13 +4292,7 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	pi1 = p1->info_2;
 	pi2 = p2->info_2;
 
-	/* Don't check the attributes as we stomp on the value in
-	   check_printer_ok() anyway. */
-
-#if 0
 	PI_CHECK_INT(attributes);
-#endif
-
 	PI_CHECK_INT(priority);
 	PI_CHECK_INT(default_priority);
 	PI_CHECK_INT(starttime);
@@ -5923,21 +5924,27 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 		return ERROR_INVALID_NAME;
 
 	convert_specific_param(&param, value , type, data, real_len);
-	
+#if 0 /*JRRTEST - change_id*/
+    /* We can't test to see if the param/value is the same and skip the write
+       back to the tdb, as the change_id must change even if the data doesn't,
+       it is held in the tdb. JRR 011205 */
+	get_specific_param(*printer, 2, param->value, &old_param.data,
+			       &old_param.type, (unsigned int *)&old_param.data_len);
+#else
 	if (get_specific_param(*printer, 2, param->value, &old_param.data,
-			       &old_param.type, (unsigned int *)&old_param.data_len)) {
-
+		&old_param.type, (unsigned int *)&old_param.data_len)) {
+	
 		if (param->type == old_param.type &&
-		    param->data_len == old_param.data_len &&
-		    memcmp(param->data, old_param.data,
-			   old_param.data_len) == 0) {
-
-			DEBUG(3, ("setprinterdata hasn't changed\n"));
-			status = NT_STATUS_NO_PROBLEMO;
-			goto done;
+			param->data_len == old_param.data_len &&
+			memcmp(param->data, old_param.data,
+			old_param.data_len) == 0) {
+		
+				DEBUG(3, ("setprinterdata hasn't changed\n"));
+				status = NT_STATUS_NO_PROBLEMO;
+				goto done;
 		}
 	}
-
+#endif
 	unlink_specific_param_if_exist(printer->info_2, param);
 
 	/*
