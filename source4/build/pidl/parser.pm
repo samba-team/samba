@@ -468,13 +468,18 @@ sub ParseElementPullSwitch($$$$)
 	if (!defined $utype ||
 	    !util::has_property($utype, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
+		my $type_decl = $e2->{TYPE};
+		my $type_fn = $e2->{TYPE};
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
 		if (util::is_enum($e2->{TYPE})) {
-			pidl "\t\t enum $e2->{TYPE} _level;\n";
-		} else {
-			pidl "\t\t $e2->{TYPE} _level;\n";
+			$type_decl = util::enum_type_decl($e2);
+			$type_fn = util::enum_type_fn($e2);
+		} elsif (util::is_bitmap($e2->{TYPE})) {
+			$type_decl = util::bitmap_type_decl($e2);
+			$type_fn = util::bitmap_type_fn($e2);
 		}
-		pidl "\t\tNDR_CHECK(ndr_pull_$e2->{TYPE}(ndr, &_level));\n";
+		pidl "\t\t$type_decl _level;\n";
+		pidl "\t\tNDR_CHECK(ndr_pull_$type_fn(ndr, &_level));\n";
 		if ($switch_var =~ /r->in/) {
 			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _level != $switch_var) {\n";
 		} else {
@@ -863,6 +868,78 @@ sub ParseEnumPrint($)
 }
 
 
+#####################################################################
+# generate a push function for a bitmap
+sub ParseBitmapPush($)
+{
+	my($bitmap) = shift;
+	my($type_decl) = util::bitmap_type_decl($bitmap);
+	my($type_fn) = util::bitmap_type_fn($bitmap);
+
+	start_flags($bitmap);
+
+	pidl "\tNDR_CHECK(ndr_push_$type_fn(ndr, r));\n";
+
+	end_flags($bitmap);
+}
+
+#####################################################################
+# generate a pull function for an bitmap
+sub ParseBitmapPull($)
+{
+	my($bitmap) = shift;
+	my($type_decl) = util::bitmap_type_decl($bitmap);
+	my($type_fn) = util::bitmap_type_fn($bitmap);
+
+	start_flags($bitmap);
+
+	pidl "\t$type_decl v;\n";
+	pidl "\tNDR_CHECK(ndr_pull_$type_fn(ndr, &v));\n";
+	pidl "\t*r = v;\n";
+
+	end_flags($bitmap);
+}
+
+#####################################################################
+# generate a print function for an bitmap
+sub ParseBintmapPrintElement($$)
+{
+	my($e) = shift;
+	my($bitmap) = shift;
+	my($type_decl) = util::bitmap_type_decl($bitmap);
+	my($type_fn) = util::bitmap_type_fn($bitmap);
+	my($name) = $bitmap->{PARENT}->{NAME};
+	my($flag);
+
+	if ($e =~ /^(\w+) .*$/) {
+		$flag = "$1";
+	} else {
+		die "Bitmap: \"$name\" invalid Flag: \"$e\"";
+	}
+
+	pidl "\tndr_print_bitmap_flag(ndr, sizeof($type_decl), \"$flag\", $flag, r);\n";
+}
+
+#####################################################################
+# generate a print function for an bitmap
+sub ParseBitmapPrint($)
+{
+	my($bitmap) = shift;
+	my($type_decl) = util::bitmap_type_decl($bitmap);
+	my($type_fn) = util::bitmap_type_fn($bitmap);
+
+	start_flags($bitmap);
+
+	pidl "\tndr_print_$type_fn(ndr, name, r);\n";
+
+	pidl "\tndr->depth++;\n";
+	foreach my $e (@{$bitmap->{ELEMENTS}}) {
+		ParseBintmapPrintElement($e, $bitmap);
+	}
+	pidl "\tndr->depth--;\n";
+
+	end_flags($bitmap);
+}
 
 #####################################################################
 # generate a struct print function
@@ -1139,6 +1216,8 @@ sub ParseTypePush($)
 		    ParseUnionPush($data);
 		($data->{TYPE} eq "ENUM") &&
 		    ParseEnumPush($data);
+		($data->{TYPE} eq "BITMAP") &&
+		    ParseBitmapPush($data);
 	}
 }
 
@@ -1155,6 +1234,8 @@ sub ParseTypePrint($)
 		    ParseUnionPrint($data);
 		($data->{TYPE} eq "ENUM") &&
 		    ParseEnumPrint($data);
+		($data->{TYPE} eq "BITMAP") &&
+		    ParseBitmapPrint($data);
 	}
 }
 
@@ -1171,6 +1252,8 @@ sub ParseTypePull($)
 		    ParseUnionPull($data);
 		($data->{TYPE} eq "ENUM") &&
 		    ParseEnumPull($data);
+		($data->{TYPE} eq "BITMAP") &&
+		    ParseBitmapPull($data);
 	}
 }
 
@@ -1208,6 +1291,15 @@ sub ParseTypedefPush($)
 
 	if ($e->{DATA}->{TYPE} eq "ENUM") {
 		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, enum $e->{NAME} r)";
+		pidl "\n{\n";
+		ParseTypePush($e->{DATA});
+		pidl "\treturn NT_STATUS_OK;\n";
+		pidl "}\n\n";
+	}
+
+	if ($e->{DATA}->{TYPE} eq "BITMAP") {
+		my $type_decl = util::bitmap_type_fn($e->{DATA});
+		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, $type_decl r)";
 		pidl "\n{\n";
 		ParseTypePush($e->{DATA});
 		pidl "\treturn NT_STATUS_OK;\n";
@@ -1255,6 +1347,15 @@ sub ParseTypedefPull($)
 		pidl "\treturn NT_STATUS_OK;\n";
 		pidl "}\n\n";
 	}
+
+	if ($e->{DATA}->{TYPE} eq "BITMAP") {
+		my $type_decl = util::bitmap_type_fn($e->{DATA});
+		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, $type_decl *r)";
+		pidl "\n{\n";
+		ParseTypePull($e->{DATA});
+		pidl "\treturn NT_STATUS_OK;\n";
+		pidl "}\n\n";
+	}
 }
 
 
@@ -1286,6 +1387,14 @@ sub ParseTypedefPrint($)
 
 	if ($e->{DATA}->{TYPE} eq "ENUM") {
 		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, enum $e->{NAME} r)";
+		pidl "\n{\n";
+		ParseTypePrint($e->{DATA});
+		pidl "}\n\n";
+	}
+
+	if ($e->{DATA}->{TYPE} eq "BITMAP") {
+		my $type_decl = util::bitmap_type_fn($e->{DATA});
+		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $type_decl r)";
 		pidl "\n{\n";
 		ParseTypePrint($e->{DATA});
 		pidl "}\n\n";

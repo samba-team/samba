@@ -4,8 +4,6 @@
 # released under the GNU GPL
 package util;
 
-my %is_enum;
-
 #####################################################################
 # load a data structure from a file (as saved with SaveStructure)
 sub LoadStructure($)
@@ -216,6 +214,59 @@ sub is_enum($)
 	return defined $enum_list{$name}
 }
 
+sub enum_type_decl($)
+{
+	my $e = shift;
+	return "enum $e->{TYPE}";
+}
+
+sub enum_type_fn($)
+{
+	my $e = shift;
+	return "$e->{TYPE}";
+}
+
+my %bitmap_list;
+
+sub register_bitmap($$)
+{
+	my $bitmap = shift;
+	my $name = shift;
+	$bitmap_list{$name} = $bitmap;
+}
+
+sub is_bitmap($)
+{
+	my $name = shift;
+	return defined $bitmap_list{$name};
+}
+
+sub get_bitmap($)
+{
+	my $name = shift;
+	return $bitmap_list{$name};
+}
+
+sub bitmap_type_decl($)
+{
+	my $bitmap = shift;
+
+	if (util::has_property($bitmap->{PARENT}, "bitmap8bit")) {
+		return "uint8";
+	} elsif (util::has_property($bitmap->{PARENT}, "bitmap16bit")) {
+		return "uint16";
+	} elsif (util::has_property($bitmap->{PARENT}, "bitmap64bit")) {
+		return "uint64";
+	}
+	return "uint32";
+}
+
+sub bitmap_type_fn($)
+{
+	my $bitmap = shift;
+	return bitmap_type_decl($bitmap);
+}
+
 sub is_scalar_type($)
 {
     my($type) = shift;
@@ -232,7 +283,11 @@ sub is_scalar_type($)
     if (is_enum($type)) {
 	    return 1;
     }
-    
+
+    if (is_bitmap($type)) {
+	    return 1;
+    }
+
     return 0;
 }
 
@@ -246,19 +301,29 @@ sub type_align($)
 	    return 4;
     }
 
-    return 4, if ($type eq "uint32");
-    return 4, if ($type eq "long");
-    return 2, if ($type eq "short");
     return 1, if ($type eq "char");
+    return 1, if ($type eq "int8");
     return 1, if ($type eq "uint8");
+
+    return 2, if ($type eq "short");
+    return 2, if ($type eq "wchar_t");
+    return 2, if ($type eq "int16");
     return 2, if ($type eq "uint16");
+
+    return 4, if ($type eq "long");
+    return 4, if ($type eq "int32");
+    return 4, if ($type eq "uint32");
+
+    return 4, if ($type eq "int64");
+    return 4, if ($type eq "uint64");
+
     return 4, if ($type eq "NTTIME");
     return 4, if ($type eq "NTTIME_1sec");
     return 4, if ($type eq "time_t");
-    return 8, if ($type eq "HYPER_T");
-    return 2, if ($type eq "wchar_t");
+
     return 4, if ($type eq "DATA_BLOB");
-    return 4, if ($type eq "int32");
+
+    return 8, if ($type eq "HYPER_T");
 
     # it must be an external type - all we can do is guess 
     return 4;
