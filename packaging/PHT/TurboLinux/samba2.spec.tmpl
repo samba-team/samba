@@ -368,6 +368,9 @@ if [ $1 = 0 ] ; then
     mv /etc/xinetd.conf /etc/xinetd.conf.samba
     /usr/sbin/itox --daemon_dir /usr/sbin < /etc/inetd.conf > /etc/xinetd.conf
 fi
+if [ -f /sbin/mount.smb ]; then
+	rm -f /sbin/mount.smb
+fi
 
 %triggerpostun -- samba < samba-2.0.0
 if [ $0 != 0 ]; then
