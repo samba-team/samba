@@ -311,11 +311,18 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 				ret = NT_STATUS_OK;
 				break;
 			}
+			if (tdb_error(idmap_tdb) != TDB_ERR_EXISTS)
+				DEBUG(10,("db_get_id_from_sid: error %s\n", tdb_errorstr(idmap_tdb) ));
 			ret = NT_STATUS_UNSUCCESSFUL;
-		} while (idmap_tdb->ecode == TDB_ERR_EXISTS);
+		} while (tdb_error(idmap_tdb) == TDB_ERR_EXISTS);
 
 		if (NT_STATUS_IS_OK(ret)) {
+
+			DEBUG(10,("db_get_id_from_sid: storing %s -> %s\n",
+				sid_data.dptr, ugid_data.dptr ));
+
 			if (tdb_store(idmap_tdb, sid_data, ugid_data, TDB_REPLACE) == -1) {
+				DEBUG(10,("db_get_id_from_sid: error %s\n", tdb_errorstr(idmap_tdb) ));
 				/* TODO: print tdb error !! */
 				return NT_STATUS_UNSUCCESSFUL;
 			}
