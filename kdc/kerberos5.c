@@ -571,7 +571,9 @@ as_rep(KDC_REQ *req,
 	    e_text = NULL;
 	    goto out;
 	}
-    }else if (require_preauth || client->flags.require_preauth || server->flags.require_preauth) {
+    }else if (require_preauth
+	      || client->flags.require_preauth
+	      || server->flags.require_preauth) {
 	METHOD_DATA method_data;
 	PA_DATA *pa;
 	unsigned char *buf;
