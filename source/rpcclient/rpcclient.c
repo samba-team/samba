@@ -607,6 +607,4 @@ static void usage(char *pname)
 
 		process_cmd(&cli, line);
 	}
-	
-	return 0;
 }
