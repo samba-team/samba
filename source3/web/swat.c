@@ -51,12 +51,6 @@ static int iNumNonAutoPrintServices = 0;
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
 
-/* FUNCTION DECLARATIONS */
-
- BOOL remote_password_change(const char *rmachine, const char *username,
-                            const char *old_pw, const char *new_pw,
-                            char *err_str, size_t err_str_len);
-
 
 /****************************************************************************
 ****************************************************************************/
