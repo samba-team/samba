@@ -257,7 +257,7 @@ void nb_qfsinfo(int level)
 	cli_dskattr(c, &bsize, &total, &avail);
 }
 
-static void find_fn(file_info *finfo, const char *name, void *state)
+static void find_fn(const char *mnt, file_info *finfo, const char *name, void *state)
 {
 	/* noop */
 }
@@ -276,7 +276,7 @@ void nb_flush(int fnum)
 
 static int total_deleted;
 
-static void delete_fn(file_info *finfo, const char *name, void *state)
+static void delete_fn(const char *mnt, file_info *finfo, const char *name, void *state)
 {
 	char *s, *n;
 	if (finfo->name[0] == '.') return;

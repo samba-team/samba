@@ -4674,7 +4674,8 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 			 for domain %s\n", domain_name));
 	}
 	 
-	if (!(mem_ctx = talloc_init("rpc_trustdom_establish"))) {
+	if (!(mem_ctx = talloc_init("establishing trust relationship to "
+				    "domain %s", domain_name))) {
 		DEBUG(0, ("talloc_init() failed\n"));
 		cli_shutdown(cli);
 		return -1;

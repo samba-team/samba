@@ -320,6 +320,7 @@ static int fix_users_list (struct pdb_context *in)
 
 static int set_user_info (struct pdb_context *in, const char *username, 
 			  const char *fullname, const char *homedir, 
+			  const char *acct_desc, 
 			  const char *drive, const char *script, 
 			  const char *profile, const char *account_control,
 			  const char *user_sid, const char *group_sid,
@@ -367,6 +368,8 @@ static int set_user_info (struct pdb_context *in, const char *username,
 
 	if (fullname)
 		pdb_set_fullname(sam_pwent, fullname, PDB_CHANGED);
+	if (acct_desc)
+		pdb_set_acct_desc(sam_pwent, acct_desc, PDB_CHANGED);
 	if (homedir)
 		pdb_set_homedir(sam_pwent, homedir, PDB_CHANGED);
 	if (drive)
@@ -662,6 +665,7 @@ int main (int argc, char **argv)
 	uint32	setparms, checkparms;
 	int opt;
 	static char *full_name = NULL;
+	static char *acct_desc = NULL;
 	static const char *user_name = NULL;
 	static char *home_dir = NULL;
 	static char *home_drive = NULL;
@@ -695,6 +699,7 @@ int main (int argc, char **argv)
 		{"verbose",	'v', POPT_ARG_NONE, &verbose, 0, "be verbose", NULL },
 		{"smbpasswd-style",	'w',POPT_ARG_NONE, &spstyle, 0, "give output in smbpasswd style", NULL},
 		{"user",	'u', POPT_ARG_STRING, &user_name, 0, "use username", "USER" },
+		{"account-desc",	'N', POPT_ARG_STRING, &acct_desc, 0, "set account description", NULL},
 		{"fullname",	'f', POPT_ARG_STRING, &full_name, 0, "set full name", NULL},
 		{"homedir",	'h', POPT_ARG_STRING, &home_dir, 0, "set home directory", NULL},
 		{"drive",	'D', POPT_ARG_STRING, &home_drive, 0, "set home drive", NULL},
@@ -988,6 +993,7 @@ int main (int argc, char **argv)
 			}
 			return set_user_info (bdef, user_name, full_name,
 					      home_dir,
+					      acct_desc,
 					      home_drive,
 					      logon_script,
 					      profile_path, account_control,
