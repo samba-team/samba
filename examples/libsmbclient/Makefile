@@ -1,4 +1,5 @@
 #
+CC = gcc
 
 SAMBA_INCL = ../../source/include
 
