@@ -16,6 +16,7 @@ if eval "test \"\$ac_cv_func_$1\" != yes" ; then
 		case "$ac_lib" in
 		"") ;;
 		yes) ac_lib="" ;;
+		no) continue ;;
 		-l*) ;;
 		*) ac_lib="-l$ac_lib" ;;
 		esac
