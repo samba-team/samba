@@ -52,5 +52,7 @@
 
 /* promote an element to the top of the list */
 #define DLIST_PROMOTE(list, p) \
+{ \
           DLIST_REMOVE(list, p) \
-          DLIST_ADD(list, p)
+          DLIST_ADD(list, p) \
+}

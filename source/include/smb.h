@@ -1676,8 +1676,10 @@ struct ncacn_np
 #include "rpc_secdes.h"
 #include "nt_printing.h"
 
-typedef struct
+typedef struct user_struct
 {
+	struct user_struct *next, *prev;
+	uint16 vuid; /* Tag for this entry. */
 	uid_t uid; /* uid of a validated user */
 	gid_t gid; /* gid of a validated user */
 
