@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-/* #define ALIGN_SEC_DESC_PARSE	1 */
-
 #define SD_HEADER_SIZE 0x14
 
 /*******************************************************************
@@ -249,19 +247,6 @@ size_t sec_desc_size(SEC_DESC *psd)
 
 	offset = SD_HEADER_SIZE;
 
-#ifdef ALIGN_SEC_DESC_PARSE
-	if (psd->owner_sid != NULL)
-		offset += ((sid_size(psd->owner_sid) + 3) & ~3);
-
-	if (psd->grp_sid != NULL)
-		offset += ((sid_size(psd->grp_sid) + 3) & ~3);
-
-	if (psd->sacl != NULL)
-		offset += ((psd->sacl->size + 3) & ~3);
-
-	if (psd->dacl != NULL)
-		offset += ((psd->dacl->size + 3) & ~3);
-#else
 	/* don't align */
 
 	if (psd->owner_sid != NULL)
@@ -275,7 +260,6 @@ size_t sec_desc_size(SEC_DESC *psd)
 
 	if (psd->dacl != NULL)
 		offset += psd->dacl->size;
-#endif
 
 	return offset;
 }
@@ -543,11 +527,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 			offset = SD_HEADER_SIZE;
 
 		dst->off_owner_sid = offset;
-#ifdef ALIGN_SEC_DESC_PARSE
-		offset += ((sid_size(dst->owner_sid) + 3) & ~3);
-#else
 		offset += sid_size(dst->owner_sid);
-#endif
 	}
 
 	if (dst->grp_sid != NULL) {
@@ -556,11 +536,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 			offset = SD_HEADER_SIZE;
 
 		dst->off_grp_sid = offset;
-#ifdef ALIGN_SEC_DESC_PARSE
-		offset += ((sid_size(dst->grp_sid) + 3) & ~3);
-#else
 		offset += sid_size(dst->grp_sid);
-#endif
 	}
 
 	if (dst->sacl != NULL) {
@@ -569,11 +545,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 			offset = SD_HEADER_SIZE;
 
 		dst->off_sacl = offset;
-#ifdef ALIGN_SEC_DESC_PARSE
-		offset += ((dst->sacl->size + 3) & ~3);
-#else
 		offset += dst->sacl->size;
-#endif
 	}
 
 	if (dst->dacl != NULL) {
@@ -582,11 +554,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 			offset = SD_HEADER_SIZE;
 
 		dst->off_dacl = offset;
-#ifdef ALIGN_SEC_DESC_PARSE
-		offset += ((dst->dacl->size + 3) & ~3);
-#else
 		offset += dst->dacl->size;
-#endif
 	}
 
 	*sd_size = (size_t)((offset == 0) ? SD_HEADER_SIZE : offset);
@@ -700,10 +668,6 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 		if(!smb_io_dom_sid("owner_sid ", psd->owner_sid , ps, depth))
 			return False;
-#ifdef ALIGN_SEC_DESC_PARSE
-		if(!prs_align(ps))
-			return False;
-#endif
 	}
 
 	max_offset = MAX(max_offset, prs_offset(ps));
@@ -720,10 +684,6 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 		if(!smb_io_dom_sid("grp_sid", psd->grp_sid, ps, depth))
 			return False;
-#ifdef ALIGN_SEC_DESC_PARSE
-		if(!prs_align(ps))
-			return False;
-#endif
 	}
 
 	max_offset = MAX(max_offset, prs_offset(ps));
@@ -733,10 +693,6 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 			return False;
 		if(!sec_io_acl("sacl", &psd->sacl, ps, depth))
 			return False;
-#ifdef ALIGN_SEC_DESC_PARSE
-		if(!prs_align(ps))
-			return False;
-#endif
 	}
 
 	max_offset = MAX(max_offset, prs_offset(ps));
@@ -746,10 +702,6 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 			return False;
 		if(!sec_io_acl("dacl", &psd->dacl, ps, depth))
 			return False;
-#ifdef ALIGN_SEC_DESC_PARSE
-		if(!prs_align(ps))
-			return False;
-#endif
 	}
 
 	max_offset = MAX(max_offset, prs_offset(ps));
