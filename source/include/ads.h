@@ -213,3 +213,10 @@ typedef void **ADS_MODLIST;
 #if defined(HAVE_ENCTYPE_ARCFOUR_HMAC_MD5)
 #define ENCTYPE_ARCFOUR_HMAC ENCTYPE_ARCFOUR_HMAC_MD5
 #endif
+
+/* The older versions of heimdal that don't have this
+   define don't seem to use it anyway.  I'm told they
+   always use a subkey */
+#ifndef AP_OPTS_USE_SUBKEY
+#define AP_OPTS_USE_SUBKEY 0
+#endif
