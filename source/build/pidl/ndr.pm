@@ -619,7 +619,7 @@ sub ParseElementPushScalar($$$)
 	if (util::has_property($e, "relative")) {
 		pidl "NDR_CHECK(ndr_push_relative_ptr1(ndr, $ptr_prefix$var_prefix$e->{NAME}));";
 	} elsif (need_wire_pointer($e)) {
-		ParseElementPushPtr($e, $ptr_prefix.$var_prefix, "NDR_SCALARS");
+		ParseElementPushPtr($e, $ptr_prefix.$var_prefix);
 	} elsif (is_inline_array($e)) {
 		ParseArrayPush($e, "r->", "NDR_SCALARS");
 	} elsif (need_alloc($e)) {
@@ -637,11 +637,10 @@ sub ParseElementPushScalar($$$)
 
 #####################################################################
 # parse a pointer in a struct element or function
-sub ParseElementPushPtr($$$)
+sub ParseElementPushPtr($$)
 {
 	my $e = shift;
 	my $var_prefix = shift;
-	my $ndr_flags = shift;
 
 	pidl "NDR_CHECK(ndr_push_unique_ptr(ndr, $var_prefix$e->{NAME}));";
 }
@@ -848,11 +847,10 @@ sub ParseElementPullPtr($$$)
 
 #####################################################################
 # parse buffers in a structure element
-sub ParseElementPushBuffer($$$)
+sub ParseElementPushBuffer($$)
 {
 	my($e) = shift;
 	my($var_prefix) = shift;
-	my($ndr_flags) = shift;
 	my $cprefix = c_push_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
 
@@ -863,33 +861,31 @@ sub ParseElementPushBuffer($$$)
 	my $pointers = c_ptr_prefix($e);
 	for my $i (1..need_wire_pointer($e)) {
 		if ($i > 1) {
-			ParseElementPushPtr($e,$pointers.$var_prefix,$ndr_flags);
+			ParseElementPushPtr($e,$pointers.$var_prefix);
 		}
 		pidl "if ($pointers$var_prefix$e->{NAME}) {";
 		indent;
 		$pointers.="*";
 	}
-		
+	
 	if (util::has_property($e, "relative")) {
 		pidl "NDR_CHECK(ndr_push_relative_ptr2(ndr, $var_prefix$e->{NAME}));";
 	}
+
+	my $ndr_flags = "NDR_BUFFERS";
+	if ($e->{POINTERS} || (util::array_size($e) && !is_inline_array($e)))
+	{
+		$ndr_flags="NDR_SCALARS|$ndr_flags" 
+	}
 	    
-	if (is_inline_array($e)) {
-		ParseArrayPush($e, "r->", "NDR_BUFFERS");
-	} elsif (util::array_size($e)) {
-		ParseArrayPush($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
+	if (util::array_size($e)) {
+		ParseArrayPush($e, "r->", $ndr_flags);
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		if ($e->{POINTERS}) {
-			ParseElementPushSwitch($e, $var_prefix, "NDR_BUFFERS|NDR_SCALARS", $switch);
-		} else {
-			ParseElementPushSwitch($e, $var_prefix, "NDR_BUFFERS", $switch);
-		}
+		ParseElementPushSwitch($e, $var_prefix, $ndr_flags, $switch);
 	} elsif (defined $sub_size) {
 		if ($e->{POINTERS}) {
 			pidl "NDR_CHECK(ndr_push_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_push_flags_fn_t) ndr_push_$e->{TYPE}));";
 		}
-	} elsif ($e->{POINTERS}) {
-		pidl "NDR_CHECK(ndr_push_$e->{TYPE}(ndr, NDR_SCALARS|NDR_BUFFERS, $cprefix$var_prefix$e->{NAME}));";
 	} else {
 		pidl "NDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));";
 	}
@@ -904,11 +900,10 @@ sub ParseElementPushBuffer($$$)
 
 #####################################################################
 # parse buffers in a structure element - pull side
-sub ParseElementPullBuffer($$$)
+sub ParseElementPullBuffer($$)
 {
 	my($e) = shift;
 	my($var_prefix) = shift;
-	my($ndr_flags) = shift;
 	my $cprefix = c_pull_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
 
@@ -931,23 +926,21 @@ sub ParseElementPullBuffer($$$)
  		pidl "ndr_pull_save(ndr, &_relative_save);";
  		pidl "NDR_CHECK(ndr_pull_relative_ptr2(ndr, $var_prefix$e->{NAME}));";
  	}
+
+	my $ndr_flags = "NDR_BUFFERS";
+	if ($e->{POINTERS} || (util::array_size($e) && !is_inline_array($e)))
+	{
+		$ndr_flags="NDR_SCALARS|$ndr_flags" 
+	}
   	    
-	if (is_inline_array($e)) {
-		ParseArrayPull($e, "r->", "NDR_BUFFERS");
-	} elsif (util::array_size($e)) {
-		ParseArrayPull($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
+	if (util::array_size($e)) {
+		ParseArrayPull($e, "r->", $ndr_flags);
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		if ($e->{POINTERS}) {
-			ParseElementPullSwitch($e, $var_prefix, "NDR_SCALARS|NDR_BUFFERS", $switch);
-		} else {
-			ParseElementPullSwitch($e, $var_prefix, "NDR_BUFFERS", $switch);
-		}
+		ParseElementPullSwitch($e, $var_prefix, $ndr_flags, $switch);
 	} elsif (defined $sub_size) {
 		if ($e->{POINTERS}) {
 			pidl "NDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE}));";
 		}
-	} elsif ($e->{POINTERS}) {
-		pidl "NDR_CHECK(ndr_pull_$e->{TYPE}(ndr, NDR_SCALARS|NDR_BUFFERS, $cprefix$var_prefix$e->{NAME}));";
 	} else {
 		pidl "NDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));";
 	}
@@ -1002,7 +995,7 @@ sub ParseStructPush($)
 	pidl "buffers:";
 	pidl "if (!(ndr_flags & NDR_BUFFERS)) goto done;";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPushBuffer($e, "r->", "NDR_BUFFERS");
+		ParseElementPushBuffer($e, "r->");
 	}
 
 	pidl "ndr_push_struct_end(ndr);";
@@ -1276,7 +1269,7 @@ sub ParseStructPull($)
 	pidl "buffers:\n";
 	pidl "if (!(ndr_flags & NDR_BUFFERS)) goto done;";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPullBuffer($e, "r->", "NDR_BUFFERS");
+		ParseElementPullBuffer($e, "r->");
 	}
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
@@ -1406,7 +1399,7 @@ sub ParseUnionPush($)
 		}
 		if ($el->{TYPE} ne "EMPTY") {
 			indent;
-			ParseElementPushBuffer($el, "r->", "NDR_BUFFERS");
+			ParseElementPushBuffer($el, "r->");
 			deindent;
 		}
 		pidl "break;";
@@ -1515,7 +1508,7 @@ sub ParseUnionPull($)
 		}
 		if ($el->{TYPE} ne "EMPTY") {
 			indent;
-			ParseElementPullBuffer($el, "r->", "NDR_BUFFERS");
+			ParseElementPullBuffer($el, "r->");
 			deindent;
 		}
 		pidl "break;";
@@ -1726,9 +1719,8 @@ sub ParseFunctionElementPush($$)
 		}
 	} else {
 		ParseElementPushScalar($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
-
 		if (need_wire_pointer($e)) {
-			ParseElementPushBuffer($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+			ParseElementPushBuffer($e, "r->$inout.");
 		}
 	}
 }	
@@ -1810,7 +1802,7 @@ sub ParseFunctionElementPull($$)
 
 		ParseElementPullScalar($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 		if (need_wire_pointer($e)) {
-			ParseElementPullBuffer($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+			ParseElementPullBuffer($e, "r->$inout.");
 		}
 	}
 }
