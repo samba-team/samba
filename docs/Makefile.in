@@ -63,7 +63,7 @@ HOWTODIR_IMAGES_EPS=$(patsubst %.png,%.eps,$(wildcard $(IMAGEPROJDIR)/*.png))
 HOWTODIR_DEPS = $(HOWTODIR)/*.xml $(HOWTODIR)/attributions.xml $(MANPAGEDIR)/*.xml $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
 DEVDOCDIR_DEPS = $(DEVDOCDIR)/*.xml $(DEVDOCDIR)/attributions.xml
 
-all: 
+help: 
 	@echo "Supported make targets:"
 	@echo "release - Build the docs needed for a Samba release"
 	@echo "pdf - Build PDF version of book"
@@ -80,7 +80,10 @@ all:
 	@echo "undocumented - Output list of undocumented smb.conf options"
 	@echo "samples - Extract examples"
 	@echo "files - Extract other files"
+	@echo "all - Build all docs that can be build using the utilities found by configure"
 	@echo "everything - Build all of the above"
+
+all: @TARGETS@
 
 everything: manpages pdf html-single html htmlman txt ps
 
