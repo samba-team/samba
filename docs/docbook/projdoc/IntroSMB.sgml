@@ -141,8 +141,8 @@ http://www.samba.org).  Optionally, you could just search mailing.unix.samba at 
 <title>Related Projects</title>
 
 <para>
-Currently, there are two projects that are directly related to Samba: SMBFS and CIFS network
-client file systems for Linux, both available in the Linux kernel itself.
+There are currently two network filesystem client projects for Linux that are directly
+related to Samba: SMBFS and CIFS VFS.  These are both available in the Linux kernel itself.
 </para>
 
 <itemizedlist>
@@ -155,24 +155,26 @@ client file systems for Linux, both available in the Linux kernel itself.
 	</para></listitem>
 
 	<listitem><para>
-	CIFS (Common Internet File System) is the successor to SMB, and is actively being worked
-	on in the upcoming version of the Linux kernel. The intent of this module is to 
-	provide advanced network file system functionality including support for dfs (heirarchical 
+	CIFS VFS (Common Internet File System Virtual File System) is the successor to SMBFS, and
+        is being actively developed for the upcoming version of the Linux kernel. The intent of this module
+        is to provide advanced network file system functionality including support for dfs (heirarchical
 	name space), secure per-user session establishment, safe distributed caching (oplock), 
 	optional packet signing, Unicode and other internationalization improvements, and optional 
 	Winbind (nsswitch) integration.
-	</para></listitem>
-
-	<listitem><para>
-	jCIFS (Java implementation of CIFS) is an active project headed by Chris Hertel.
-	</para></listitem>
-
+        </para></listitem>
+ 
 </itemizedlist>
 
 <para>
 Again, it's important to note that these are implementations for client filesystems, and have
 nothing to do with acting as a file and print server for SMB/CIFS clients.
 </para>
+
+<para>
+There are other Open Source CIFS client implementations, such as the jCIFS project
+(jcifs.samba.org) which provides an SMB client toolkit written in Java.
+</para>
+
 
 </sect1>
 
