@@ -42,7 +42,7 @@ krb5_mk_req(krb5_context context,
 			    NULL);
   if (r)
     return r;
-  this_cred.times.endtime = time (NULL) + 4711;
+  this_cred.times.endtime = time (NULL) + 4711;	/* XXX */
 
   r = krb5_get_credentials (context, 0, ccache, &this_cred, &cred);
   if (r)
