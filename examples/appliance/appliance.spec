@@ -23,11 +23,6 @@ Provides: winbind
 Samba appliance.
 
 %changelog
-* Thu May 11 2000 Tim Potter <tpot@linuxcare.com.au>
-  - Modified to use libnss_winbind instead of libnss_ntdom.
-  - Remove rpcclient from binary list
-* Mon May 8 2000 Tim Potter <tpot@linuxcare.com.au>
-  - Initial version.
 
 %prep
 %setup
@@ -90,6 +85,7 @@ install -m644 %{head_build_dir}/docs/manpages/nmbd.8 $RPM_BUILD_ROOT%{prefix}/ma
 install -m644 %{head_build_dir}/docs/manpages/winbindd.8 $RPM_BUILD_ROOT%{prefix}/man/man8
 install -m644 %{head_build_dir}/docs/manpages/swat.8 $RPM_BUILD_ROOT%{prefix}/man/man8
 install -m644 %{head_build_dir}/docs/manpages/smbpasswd.8 $RPM_BUILD_ROOT%{prefix}/man/man8
+install -m644 %{head_build_dir}/docs/manpages/winbindd.8 $RPM_BUILD_ROOT%{prefix}/man/man8
 install -m644 %{head_build_dir}/packaging/RedHat/smb.conf $RPM_BUILD_ROOT/%{prefix}/lib/smb.conf
 
 %post
@@ -127,7 +123,7 @@ fi
 rm -f /lib/libnss_winbind.so.2
 
 %clean
-#rm -rf $RPM_BUILD_ROOT
+rm -rf $RPM_BUILD_ROOT
 
 %files
 %attr(-,root,root) %{prefix}/bin/winbindd
