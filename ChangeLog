@@ -1,3 +1,13 @@
+2001-08-30  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/verify_krb5_conf.c: do some checks of the values in the
+	file
+
+	* lib/krb5/krb5.conf.5: remove srv_try_txt, fix spelling
+
+	* lib/krb5/context.c: don't init srv_try_txt, since it isn't used
+	anymore
+
 2001-08-29  Jacques Vidrine  <n@nectar.com>
 
 	* configure.in: Check for already-installed com_err.
