@@ -18,27 +18,27 @@
 
 	typedef struct {
 		uint32 platform_id;
-		unistr *server;
-		unistr *domain;
-		uint32 ver_major;
-		uint32 ver_minor;
+		unistr *server_name;
+		unistr *domain_name;
+		uint32 version_major;
+		uint32 version_minor;
 	} wkssvc_NetWkstaInfo100;
 
 	typedef struct {
 		uint32 platform_id;
-		unistr *server;
-		unistr *domain;
-		uint32 ver_major;
-		uint32 ver_minor;
+		unistr *server_name;
+		unistr *domain_name;
+		uint32 version_major;
+		uint32 version_minor;
 		unistr *lan_root;
 	} wkssvc_NetWkstaInfo101;
 
 	typedef struct {
 		uint32 platform_id;
-		unistr *server;
-		unistr *domain;
-		uint32 ver_major;
-		uint32 ver_minor;
+		unistr *server_name;
+		unistr *domain_name;
+		uint32 version_major;
+		uint32 version_minor;
 		unistr *lan_root;
 		uint32 logged_on_users;
 	} wkssvc_NetWkstaInfo102;
