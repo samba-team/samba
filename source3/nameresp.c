@@ -177,8 +177,7 @@ static void dead_netbios_entry(struct subnet_record *d,
 	}
       else
         {
-          DEBUG(0, ("ERROR: nmbd configured as domain master and one already exitsts !!!\n"));
-          exit(1);
+          DEBUG(1, ("nmbd configured as domain master and one already exists\n"));
         }
       break;
     }
