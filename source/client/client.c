@@ -40,7 +40,7 @@ static pstring username;
 static pstring workgroup;
 static char *cmdstr;
 static BOOL got_pass;
-static int io_bufsize = 65520;
+static int io_bufsize = 64512;
 extern struct in_addr ipzero;
 
 static int name_type = 0x20;
