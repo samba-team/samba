@@ -1316,6 +1316,10 @@ LDAP_seq(krb5_context context, HDB * db, unsigned flags, hdb_entry * entry)
     do {
 	rc = ldap_result(HDB2LDAP(db), msgid, LDAP_MSG_ONE, NULL, &e);
 	switch (rc) {
+	case LDAP_RES_SEARCH_REFERENCE:
+	    ldap_msgfree(e);
+	    ret = 0;
+	    break;
 	case LDAP_RES_SEARCH_ENTRY:
 	    /* We have an entry. Parse it. */
 	    ret = LDAP_message2entry(context, db, e, entry);
@@ -1336,10 +1340,11 @@ LDAP_seq(krb5_context context, HDB * db, unsigned flags, hdb_entry * entry)
 	    HDBSETMSGID(db, -1);
 	    break;
 	case LDAP_SERVER_DOWN:
+	    ldap_msgfree(e);
 	    LDAP_close(context, db);
-	    /* fall though */
-	case 0:
-	case -1:
+	    HDBSETMSGID(db, -1);
+	    ret = ENETDOWN;
+	    break;
 	default:
 	    /* Some unspecified error (timeout?). Abandon. */
 	    ldap_msgfree(e);
