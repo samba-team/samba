@@ -127,6 +127,9 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	do {
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
+
+		if ( cli ) 
+			SAFE_FREE(cli);
 	
 		/* Don't shut this down - it belongs to the connection cache code */
 		result = cm_get_netlogon_cli(contact_domain, trust_passwd, 
@@ -300,6 +303,9 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	do {
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
+
+		if ( cli ) 
+			SAFE_FREE( cli );
 
 		/* Don't shut this down - it belongs to the connection cache code */
 		result = cm_get_netlogon_cli(contact_domain, trust_passwd, sec_channel_type, False, &cli);
