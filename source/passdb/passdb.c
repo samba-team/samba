@@ -2215,6 +2215,28 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	return (buflen);
 }
 
+BOOL pdb_copy_sam_account(const SAM_ACCOUNT *src, SAM_ACCOUNT **dst)
+{
+	BOOL result;
+	uint8 *buf;
+	int len;
+
+	if ((*dst == NULL) && (!NT_STATUS_IS_OK(pdb_init_sam(dst))))
+		return False;
+
+	len = init_buffer_from_sam_v2(&buf, src, False);
+
+	if (len == -1)
+		return False;
+
+	result = init_sam_from_buffer_v2(*dst, buf, len);
+	(*dst)->methods = src->methods;
+
+	free(buf);
+
+	return result;
+}
+
 /**********************************************************************
 **********************************************************************/
 
