@@ -156,12 +156,14 @@ handle_udp(struct descr *d)
 		 (struct sockaddr*)&from, &from_len);
     if(n < 0){
 	warn("recvfrom");
-	return;
+	goto out;
     }
     if(n == 0){
-	return;
+	goto out;
     }
     do_request(buf, n, d->s, (struct sockaddr*)&from, from_len);
+out:
+    free (buf);
 }
 
 static void
