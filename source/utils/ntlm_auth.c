@@ -734,6 +734,8 @@ static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 	return;
 }
 
+#ifdef HAVE_KRB5
+
 static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 {
 	char *principal;
@@ -834,6 +836,8 @@ static void manage_client_krb5_targ(SPNEGO_DATA spnego)
 	}
 }
 
+#endif
+
 static void manage_gss_spnego_client_request(enum squid_mode squid_mode,
 					     char *buf, int length) 
 {
@@ -896,11 +900,13 @@ static void manage_gss_spnego_client_request(enum squid_mode squid_mode,
 
 		while (*mechType != NULL) {
 
+#ifdef HAVE_KRB5
 			if ( (strcmp(*mechType, OID_KERBEROS5_OLD) == 0) ||
 			     (strcmp(*mechType, OID_KERBEROS5) == 0) ) {
 				if (manage_client_krb5_init(spnego))
 					goto out;
 			}
+#endif
 
 			if (strcmp(*mechType, OID_NTLMSSP) == 0) {
 				if (manage_client_ntlmssp_init(spnego))
@@ -946,11 +952,13 @@ static void manage_gss_spnego_client_request(enum squid_mode squid_mode,
 			goto out;
 		}
 
+#if HAVE_KRB5
 		if (strcmp(spnego.negTokenTarg.supportedMech,
 			   OID_KERBEROS5_OLD) == 0) {
 			manage_client_krb5_targ(spnego);
 			goto out;
 		}
+#endif
 
 	}
 
