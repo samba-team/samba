@@ -634,6 +634,7 @@ AC_BROKEN([					\
 	strnlen					\
 	strptime				\
 	strsep					\
+	strsep_copy				\
 	strtok_r				\
 	strupr					\
 	swab					\
