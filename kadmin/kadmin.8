@@ -1,37 +1,37 @@
 .\" Copyright (c) 2000 - 2004 Kungliga Tekniska Högskolan
-.\" (Royal Institute of Technology, Stockholm, Sweden). 
-.\" All rights reserved. 
+.\" (Royal Institute of Technology, Stockholm, Sweden).
+.\" All rights reserved.
 .\"
-.\" Redistribution and use in source and binary forms, with or without 
-.\" modification, are permitted provided that the following conditions 
-.\" are met: 
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
 .\"
-.\" 1. Redistributions of source code must retain the above copyright 
-.\"    notice, this list of conditions and the following disclaimer. 
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
 .\"
-.\" 2. Redistributions in binary form must reproduce the above copyright 
-.\"    notice, this list of conditions and the following disclaimer in the 
-.\"    documentation and/or other materials provided with the distribution. 
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
 .\"
-.\" 3. Neither the name of the Institute nor the names of its contributors 
-.\"    may be used to endorse or promote products derived from this software 
-.\"    without specific prior written permission. 
+.\" 3. Neither the name of the Institute nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
 .\"
-.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
-.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
-.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
-.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
-.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
-.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
-.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
-.\" SUCH DAMAGE. 
-.\" 
+.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
 .\" $Id$
 .\"
-.Dd March 24, 2004
+.Dd June 27, 2004
 .Dt KADMIN 8
 .Os HEIMDAL
 .Sh NAME
@@ -128,8 +128,8 @@ If no
 .Ar command
 is given on the command line,
 .Nm
-will prompt for commands to process. Some of the commands which take a
-principal as argument
+will prompt for commands to process. Some of the commands that take
+one or more principals as argument
 .Ns ( Nm delete ,
 .Nm ext_keytab ,
 .Nm get ,
@@ -137,7 +137,9 @@ principal as argument
 and
 .Nm passwd )
 will accept a glob style wildcard, and perform the operation on all
-matching principals.  Commands include:
+matching principals.
+.Pp
+Commands include:
 .\" not using a list here, since groff apparently gets confused
 .\" with nested Xo/Xc
 .Bd -ragged -offset indent
@@ -191,11 +193,42 @@ Creates a keytab with the keys of the specified principals.
 .Op Fl l | Fl -long
 .Op Fl s | Fl -short
 .Op Fl t | Fl -terse
+.Op Fl o Ar string | Fl -column-info= Ns Ar string
 .Ar principal...
 .Pp
 .Bd -ragged -offset indent
-Lists the matching principals, long format gives more information, and
-terse just prints the names.
+Lists the matching principals, short prints the result as a table,
+while long format produces a more verbose output. Which columns to
+print can be selected with the
+.Fl o
+option. The argument is a comma separated list of column names
+optionally appended with an equal sign
+.Pq Sq =
+and a column header. Which columns are printed by default differ
+slightly between short and long output.
+.Pp
+The default terse output format is similar to
+.Fl s o Ar principal= ,
+just printing the names of matched principals.
+.Pp
+Possible column names include:
+.Li principal ,
+.Li princ_expire_time ,
+.Li pw_expiration ,
+.Li last_pwd_change ,
+.Li max_life ,
+.Li max_rlife ,
+.Li mod_time ,
+.Li mod_name ,
+.Li attributes ,
+.Li kvno ,
+.Li mkvno ,
+.Li last_success ,
+.Li last_failed ,
+.Li fail_auth_count ,
+.Li policy ,
+and
+.Li keytypes .
 .Ed
 .Pp
 .Nm modify
@@ -246,7 +279,7 @@ no rpc call is done to the server.
 .Pp
 .Bd -ragged -offset indent
 Lists the operations you are allowed to perform. These include
-.Li add , 
+.Li add ,
 .Li change-password ,
 .Li delete ,
 .Li get ,
@@ -277,7 +310,7 @@ When running in local mode, the following commands can also be used:
 Writes the database in
 .Dq human readable
 form to the specified file, or standard out. If the database is
-encrypted, the dump will also have encrypted keys, unless 
+encrypted, the dump will also have encrypted keys, unless
 .Fl -decrypt
 is used.
 .Ed
@@ -307,6 +340,22 @@ scratch.
 Similar to
 .Nm load
 but just modifies the database with the entries in the dump file.
+.Ed
+.Pp
+.Nm stash
+.Oo Fl e Ar enctype \*(Ba Xo
+.Fl -enctype= Ns Ar enctype
+.Xc
+.Oc
+.Oo Fl k Ar keyfile \*(Ba Xo
+.Fl -key-file= Ns Ar keyfile
+.Xc
+.Oc
+.Op Fl -convert-file
+.Op Fl -master-key-fd= Ns Ar fd
+.Pp
+.Bd -ragged -offset indent
+Writes the Kerberos master key to a file used by the KDC.
 .Ed
 .Pp
 .Ed
