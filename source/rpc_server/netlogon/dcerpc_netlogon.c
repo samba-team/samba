@@ -147,8 +147,8 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 			       "objectSid", NULL};
 
 	ZERO_STRUCTP(r->out.credentials);
-	*r->out.negotiate_flags = 0;
 	*r->out.rid = 0;
+	*r->out.negotiate_flags = *r->in.negotiate_flags & NETLOGON_NEG_AUTH2_FLAGS;
 
 	if (!pipe_state) {
 		DEBUG(1, ("No challange requested by client, cannot authenticate\n"));
