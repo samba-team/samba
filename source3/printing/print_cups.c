@@ -65,6 +65,17 @@ cups_passwd_cb(const char *prompt)	/* I - Prompt */
   return (NULL);
 }
 
+static const char *cups_server(void)
+{
+	if ((lp_cups_server() != NULL) && (strlen(lp_cups_server()) > 0)) {
+		DEBUG(10, ("cups server explicitly set to %s\n",
+			   lp_cups_server()));
+		return lp_cups_server();
+	}
+
+	DEBUG(10, ("cups server left to default %s\n", cupsServer()));
+	return cupsServer();
+}
 
 /*
  * 'cups_printer_fn()' - Call a function for every printer known to the
@@ -102,10 +113,10 @@ void cups_printer_fn(void (*fn)(char *, char *))
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
 	{
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cupsServer(), strerror(errno)));
+			 cups_server(), strerror(errno)));
 		return;
 	}
 
@@ -331,10 +342,10 @@ int cups_printername_ok(const char *name)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
 	{
 		DEBUG(3,("Unable to connect to CUPS server %s - %s\n", 
-			 cupsServer(), strerror(errno)));
+			 cups_server(), strerror(errno)));
 		return (0);
 	}
 
@@ -425,10 +436,10 @@ cups_job_delete(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
 	{
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cupsServer(), strerror(errno)));
+			 cups_server(), strerror(errno)));
 		return (1);
 	}
 
@@ -515,10 +526,10 @@ cups_job_pause(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
 	{
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cupsServer(), strerror(errno)));
+			 cups_server(), strerror(errno)));
 		return (1);
 	}
 
@@ -605,10 +616,10 @@ cups_job_resume(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
 	{
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cupsServer(), strerror(errno)));
+			 cups_server(), strerror(errno)));
 		return (1);
 	}
 
@@ -698,10 +709,10 @@ cups_job_submit(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
 	{
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cupsServer(), strerror(errno)));
+			 cups_server(), strerror(errno)));
 		return (1);
 	}
 
@@ -848,10 +859,10 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
 	{
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cupsServer(), strerror(errno)));
+			 cups_server(), strerror(errno)));
 		return (0);
 	}
 
@@ -1153,10 +1164,10 @@ cups_queue_pause(int snum)
 	 * Try to connect to the server...
 	 */
 
-	if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
 	{
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cupsServer(), strerror(errno)));
+			 cups_server(), strerror(errno)));
 		return (1);
 	}
 
@@ -1245,10 +1256,10 @@ cups_queue_resume(int snum)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
+	if ((http = httpConnect(cups_server(), ippPort())) == NULL)
 	{
 		DEBUG(0,("Unable to connect to CUPS server %s - %s\n", 
-			 cupsServer(), strerror(errno)));
+			 cups_server(), strerror(errno)));
 		return (1);
 	}
 
