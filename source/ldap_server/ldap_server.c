@@ -38,7 +38,7 @@ static void add_socket(struct server_service *service,
 {
 	struct server_socket *srv_sock;
 	uint16_t port = 389;
-	char *ip_str = talloc_strdup(service->mem_ctx, inet_ntoa(*ifip));
+	char *ip_str = talloc_strdup(service, inet_ntoa(*ifip));
 
 	srv_sock = service_setup_socket(service, model_ops, ip_str, &port);
 
