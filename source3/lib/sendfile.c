@@ -47,7 +47,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 	if (header) {
 		hdr_len = header->length;
-		while (total < hd_len) {
+		while (total < hdr_len) {
 			ret = sys_send(tofd, header->data + total,hdr_len - total, MSG_MORE);
 			if (ret == -1)
 				return -1;
@@ -115,7 +115,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 	if (header) {
 		hdr_len = header->length;
-		while (total < hd_len) {
+		while (total < hdr_len) {
 			ret = sys_send(tofd, header->data + total,hdr_len - total, MSG_MORE);
 			if (ret == -1)
 				return -1;

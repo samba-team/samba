@@ -68,6 +68,7 @@ static struct vfs_ops default_vfs_ops = {
 	vfswrap_read,
 	vfswrap_write,
 	vfswrap_lseek,
+	vfswrap_sendfile,
 	vfswrap_rename,
 	vfswrap_fsync,
 	vfswrap_stat,
@@ -263,6 +264,7 @@ BOOL smbd_vfs_init(connection_struct *conn)
 /*******************************************************************
  Create vfs_ops reflecting current vfs_opaque_ops
 *******************************************************************/
+
 struct vfs_ops *smb_vfs_get_opaque_ops(void)
 {
   int i;
@@ -301,6 +303,7 @@ BOOL vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_
 /*******************************************************************
  vfs getwd wrapper 
 ********************************************************************/
+
 static char *vfs_getwd(connection_struct *conn, char *path)
 {
 	return conn->vfs_ops.getwd(conn,path);

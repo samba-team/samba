@@ -1723,7 +1723,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		SSVAL(outbuf,smb_vwv5,smb_maxcnt);
 		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
 		SSVAL(smb_buf(outbuf),-2,smb_maxcnt);
-		CVAL(outbuf,smb_vwv0) = 0xFF;
+		SCVAL(outbuf,smb_vwv0,0xFF);
 		set_message(outbuf,12,smb_maxcnt,False);
 		header.data = outbuf;
 		header.length = data - outbuf;
