@@ -214,8 +214,8 @@ void add_workgroup_to_subnet( struct subnet_record *d, char *group)
    */
   if (strequal(myworkgroup, group))
   {
-    add_my_name_entry(d,group,0x0 ,nb_type|NB_ACTIVE|NB_GROUP,False);
-    add_my_name_entry(d,group,0x1e,nb_type|NB_ACTIVE|NB_GROUP,False);
+    add_my_name_entry(d,group,0x0 ,nb_type|NB_ACTIVE|NB_GROUP);
+    add_my_name_entry(d,group,0x1e,nb_type|NB_ACTIVE|NB_GROUP);
     /* add samba server name to workgroup list. */
     add_server_entry(d,w,myname,w->ServerType|SV_TYPE_LOCAL_LIST_ONLY,0,
 		lp_serverstring(),True);

@@ -14,7 +14,7 @@ int interpret_character_set(char *str, int def);
 
 /*The following definitions come from  charset.c  */
 
-void charset_initialise(void);
+void charset_initialise();
 void codepage_initialise(int client_codepage);
 void add_char_string(char *s);
 
@@ -51,6 +51,7 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  clitar.c  */
 
+int strslashcmp(char *s1, char *s2);
 int padit(char *buf, int bufsize, int padsize);
 void cmd_block(void);
 void cmd_tarmode(void);
@@ -77,7 +78,7 @@ BOOL dptr_fill(char *buf1,unsigned int key);
 BOOL dptr_zero(char *buf);
 void *dptr_fetch(char *buf,int *num);
 void *dptr_fetch_lanman2(char *params,int dptr_num);
-BOOL dir_check_ftype(int cnum, int mode,struct stat *st,int dirtype);
+BOOL dir_check_ftype(int cnum,int mode,struct stat *st,int dirtype);
 BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mode,time_t *date,BOOL check_descend);
 void *OpenDir(int cnum, char *name, BOOL use_veto);
 void CloseDir(void *p);
@@ -493,8 +494,11 @@ struct response_record *queue_netbios_packet(struct subnet_record *d,
 
 /*The following definitions come from  nameserv.c  */
 
-void remove_name_entry(struct subnet_record *d, char *name,int type, BOOL direct);
-void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags, BOOL direct);
+void remove_name_entry(struct subnet_record *d, char *name,int type);
+void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags);
+void add_domain_logon_names(void);
+void add_domain_master_bcast(void);
+void add_domain_master_wins(void);
 void add_domain_names(time_t t);
 void add_my_names(void);
 void remove_my_names();
@@ -719,7 +723,7 @@ void close_cnum(int cnum, uint16 vuid);
 BOOL yield_connection(int cnum,char *name,int max_connections);
 BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear);
 void exit_server(char *reason);
-void standard_sub(int cnum,char *s);
+void standard_sub(int cnum,char *string);
 char *smb_fn_name(int type);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
@@ -737,9 +741,6 @@ BOOL smb_shm_unlock_hash_entry( unsigned int entry );
 BOOL smb_shm_get_usage(int *bytes_free,
 		   int *bytes_used,
 		   int *bytes_overhead);
-smb_shm_offset_t smb_shm_alloc(int size);
-smb_shm_offset_t smb_shm_addr2offset(void *addr);
-smb_shm_offset_t smb_shm_get_userdef_off(void);
 
 /*The following definitions come from  smbencrypt.c  */
 
@@ -898,7 +899,7 @@ BOOL strhaslower(char *s);
 int count_chars(char *s,char c);
 void make_dir_struct(char *buf,char *mask,char *fname,unsigned int size,int mode,time_t date);
 void close_low_fds(void);
-int set_blocking(int fd, int set);
+int set_blocking(int fd, BOOL set);
 int write_socket(int fd,char *buf,int len);
 int read_udp_socket(int fd,char *buf,int len);
 int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out);
@@ -943,7 +944,7 @@ BOOL zero_ip(struct in_addr ip);
 void reset_globals_after_fork();
 char *client_name(void);
 char *client_addr(void);
-void standard_sub_basic(char *s);
+void standard_sub_basic(char *string);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 int PutUniCode(char *dst,char *src);
 struct hostent *Get_Hostbyname(char *name);
