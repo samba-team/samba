@@ -590,6 +590,26 @@ krb5_get_in_tkt_with_password (krb5_context context,
 			       krb5_kdc_rep *ret_as_reply);
 
 krb5_error_code
+krb5_password_key_proc (krb5_context context,
+			krb5_keytype type,
+			krb5_data *salt,
+			krb5_const_pointer keyseed,
+			krb5_keyblock **key);
+
+krb5_error_code
+krb5_get_in_cred(krb5_context context,
+		 krb5_flags options,
+		 const krb5_addresses *addrs,
+		 const krb5_enctype *etypes,
+		 const krb5_preauthtype *ptypes,
+		 krb5_key_proc key_proc,
+		 krb5_const_pointer keyseed,
+		 krb5_decrypt_proc decrypt_proc,
+		 krb5_const_pointer decryptarg,
+		 krb5_creds *creds,
+		 krb5_kdc_rep *ret_as_reply);
+
+krb5_error_code
 krb5_mk_error(krb5_context context,
 	      krb5_error_code error_code,
 	      const char *e_text,
@@ -988,6 +1008,104 @@ krb5_cksumsize(krb5_context,
 	       krb5_cksumtype,
 	       size_t*);
 
+typedef krb5_time krb5_deltat;
+
+typedef struct _krb5_prompt {
+    char *prompt;
+    int hidden;
+    krb5_data *reply;
+} krb5_prompt;
+
+typedef int (*krb5_prompter_fct)(krb5_context context,
+				 void *data,
+				 const char *banner,
+				 int num_prompts,
+				 krb5_prompt prompts[]);
+
+int krb5_prompter_posix (krb5_context context,
+			 void *data,
+			 const char *banner,
+			 int num_prompts,
+			 krb5_prompt prompts[]);
+
+typedef struct _krb5_get_init_creds_opt {
+    krb5_flags flags;
+    krb5_deltat tkt_life;
+    krb5_deltat renew_life;
+    int forwardable;
+    int proxiable;
+    krb5_enctype *etype_list;
+    int etype_list_length;
+    krb5_addresses *address_list;
+#if 0 /* this is the MIT-way */
+    krb5_address **address_list;
+#endif
+	/* XXX the next three should not be used, as they may be
+	removed later */
+    krb5_preauthtype *preauth_list;
+    int preauth_list_length;
+    krb5_data *salt;
+} krb5_get_init_creds_opt;
+
+#define KRB5_GET_INIT_CREDS_OPT_TKT_LIFE	0x0001
+#define KRB5_GET_INIT_CREDS_OPT_RENEW_LIFE	0x0002
+#define KRB5_GET_INIT_CREDS_OPT_FORWARDABLE	0x0004
+#define KRB5_GET_INIT_CREDS_OPT_PROXIABLE	0x0008
+#define KRB5_GET_INIT_CREDS_OPT_ETYPE_LIST	0x0010
+#define KRB5_GET_INIT_CREDS_OPT_ADDRESS_LIST	0x0020
+#define KRB5_GET_INIT_CREDS_OPT_PREAUTH_LIST	0x0040
+#define KRB5_GET_INIT_CREDS_OPT_SALT		0x0080
+
+void krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt);
+
+void krb5_get_init_creds_opt_set_tkt_life(krb5_get_init_creds_opt *opt,
+					  krb5_deltat tkt_life);
+void krb5_get_init_creds_opt_set_renew_life(krb5_get_init_creds_opt *opt,
+					    krb5_deltat renew_life);
+void krb5_get_init_creds_opt_set_forwardable(krb5_get_init_creds_opt *opt,
+					     int forwardable);
+void krb5_get_init_creds_opt_set_proxiable(krb5_get_init_creds_opt *opt,
+					   int proxiable);
+void krb5_get_init_creds_opt_set_etype_list(krb5_get_init_creds_opt *opt,
+					    krb5_enctype *etype_list,
+					    int etype_list_length);
+void krb5_get_init_creds_opt_set_address_list(krb5_get_init_creds_opt *opt,
+					      krb5_addresses *addresses);
+void krb5_get_init_creds_opt_set_preauth_list(krb5_get_init_creds_opt *opt,
+					      krb5_preauthtype *preauth_list,
+					      int preauth_list_length);
+void krb5_get_init_creds_opt_set_salt(krb5_get_init_creds_opt *opt,
+				      krb5_data *salt);
+
+krb5_error_code
+krb5_get_init_creds_password(krb5_context context,
+			     krb5_creds *creds,
+			     krb5_principal client,
+			     char *password,
+			     krb5_prompter_fct prompter,
+			     void *data,
+			     krb5_deltat start_time,
+			     char *in_tkt_service,
+			     krb5_get_init_creds_opt *options);
+
+typedef struct _krb5_verify_init_creds_opt {
+    krb5_flags flags;
+    int ap_req_nofail;
+} krb5_verify_init_creds_opt;
+
+#define KRB5_VERIFY_INIT_CREDS_OPT_AP_REQ_NOFAIL	0x0001
+
+void krb5_verify_init_creds_opt_init(krb5_init_creds_opt *options);
+void krb5_verify_init_creds_opt_set_ap_req_nofail(krb5_init_creds_opt *options,
+						  int ap_req_nofail);
+
+krb5_error_code
+krb5_verify_init_creds(krb5_context context,
+		       krb5_creds *creds,
+		       krb5_principal ap_req_server,
+		       krb5_keytab ap_req_keytab,
+		       krb5_ccache *ccache,
+		       krb5_verify_init_creds_opt *options);
 
 #include "cache.h"
 
