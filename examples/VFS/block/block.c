@@ -144,7 +144,7 @@ struct vfs_ops execute_vfs_ops = {
 
 extern BOOL pm_process(char *FileName, BOOL (*sfunc)(char *), BOOL(*pfunc)(char * , char *));
 
-//functions
+/* functions */
 
 BOOL enter_pblock_mount(char *dir);
 BOOL get_section(char *sect);
