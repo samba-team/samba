@@ -35,13 +35,17 @@ taken from a config file, or from a default compiled-in value.
 .Pp
 Options supported:
 .Bl -tag -width Ds
-.It Fl c Ar file
-.It Fl -config-file= Ns Ar file
+.It Xo
+.Fl c Ar file ,
+.Fl -config-file= Ns Ar file
+.Xc
 Specifies the location of the config file, the default is
 .Pa /var/heimdal/kdc.conf .
 This is the only value that can't be specified in the config file.
-.It Fl p
-.It Fl -no-require-preauth
+.It Xo
+.Fl p ,
+.Fl -no-require-preauth
+.Xc
 Turn off the requirement for pre-autentication in the initial AS-REQ
 for all principals. The use of pre-authentication makes it more
 difficult to do offline password attacks. You might want to turn it
@@ -66,8 +70,10 @@ Makes the kdc listen on port 80 and handle requests encapsulated in HTTP.
 .Fl -no-kaserver
 .Xc
 Disables kaserver emulation (in case it's compiled in).
-.It Fl r Ar realm
-.It Fl -v4-realm= Ns Ar realm
+.It Xo
+.Fl r Ar realm ,
+.Fl -v4-realm= Ns Ar realm
+.Xc
 What realm this server should act as when dealing with version 4
 requests. The database can contain any number of realms, but since the
 version 4 protocol doesn't contain a realm for the server, it must be
@@ -81,9 +87,7 @@ This option is only availabe if the KDC has been compiled with version
 .Xc
 Specifies the set of ports the KDC should listen on.  It is given as a
 white-space separated list of services or port numbers.
-.It Xo
-.Fl -addresses= Ns Ar list of addresses
-.Xc
+.It Fl -addresses= Ns Ar list of addresses
 The list of addresses to listen for requests on.  By default, the kdc
 will listen on all the locally configured addresses.  If only a subset
 is desired, or the automatic detection fails, this option might be used.
