@@ -1235,13 +1235,17 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	r_u->switch_value = 0;
 
 	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$"))
-		return NT_STATUS_BAD_NETWORK_NAME;
+		return ERROR_ACCESS_DENIED;
 
 	snum = find_service(share_name);
 
 	/* Does this share exist ? */
 	if (snum < 0)
-		return NT_STATUS_BAD_NETWORK_NAME;
+		return ERRnosuchshare;
+
+	/* No change to printer shares. */
+	if (lp_print_ok(snum))
+		return ERROR_ACCESS_DENIED;
 
 	get_current_user(&user,p);
 
@@ -1360,11 +1364,15 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	get_current_user(&user,p);
 
-	if (user.uid != 0)
+	if (user.uid != 0) {
+		DEBUG(10,("_srv_net_share_add: uid != 0. Access denied.\n"));
 		return ERROR_ACCESS_DENIED;
+	}
 
-	if (!lp_add_share_cmd() || !*lp_add_share_cmd())
+	if (!lp_add_share_cmd() || !*lp_add_share_cmd()) {
+		DEBUG(10,("_srv_net_share_add: No add share command\n"));
 		return ERROR_ACCESS_DENIED;
+	}
 
 	switch (q_u->info_level) {
 	case 1:
@@ -1398,7 +1406,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	/* Share already exists. */
 	if (snum >= 0)
-		return NT_STATUS_BAD_NETWORK_NAME;
+		return ERRfilexists;
 
 	/* We can only add disk shares. */
 	if (type != STYPE_DISKTREE)
@@ -1461,10 +1469,17 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
 
+	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$"))
+		return ERROR_ACCESS_DENIED;
+
 	snum = find_service(share_name);
 
 	if (snum < 0)
-		return NT_STATUS_BAD_NETWORK_NAME;
+		return ERRnosuchshare;
+
+	/* No change to printer shares. */
+	if (lp_print_ok(snum))
+		return ERROR_ACCESS_DENIED;
 
 	get_current_user(&user,p);
 
