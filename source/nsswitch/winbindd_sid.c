@@ -65,7 +65,8 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	}
 
 	sid_to_string(sid_str, &sid);
-	fstrcpy(state->response.data.sid, sid_str);
+	fstrcpy(state->response.data.sid.sid, sid_str);
+	state->response.data.sid.type = type;
 
 	return WINBINDD_OK;
 }
@@ -163,7 +164,8 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 
 	sid_copy(&sid, &domain->sid);
 	sid_append_rid(&sid, user_rid);
-	sid_to_string(state->response.data.sid, &sid);
+	sid_to_string(state->response.data.sid.sid, &sid);
+	state->response.data.sid.type = SID_NAME_USER;
 
 	return WINBINDD_OK;
 }
@@ -189,7 +191,8 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 
 	sid_copy(&sid, &domain->sid);
 	sid_append_rid(&sid, group_rid);
-	sid_to_string(state->response.data.sid, &sid);
+	sid_to_string(state->response.data.sid.sid, &sid);
+	state->response.data.sid.type = SID_NAME_DOM_GRP;  /* XXX fixme */
 
 	return WINBINDD_OK;
 }

@@ -87,7 +87,7 @@ static BOOL wbinfo_uid_to_sid(uid_t uid)
 
 	/* Display response */
 
-	printf("%s\n", response.data.sid);
+	printf("%s\n", response.data.sid.sid);
 
 	return True;
 }
@@ -112,7 +112,7 @@ static BOOL wbinfo_gid_to_sid(gid_t gid)
 
 	/* Display response */
 
-	printf("%s\n", response.data.sid);
+	printf("%s\n", response.data.sid.sid);
 
 	return True;
 }
@@ -210,7 +210,7 @@ static BOOL wbinfo_lookupname(char *name)
 
 	/* Display response */
 
-	printf("%s\n", response.data.sid);
+	printf("%s %d\n", response.data.sid.sid, response.data.sid.type);
 
 	return True;
 }
