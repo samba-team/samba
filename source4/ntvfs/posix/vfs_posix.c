@@ -284,7 +284,6 @@ NTSTATUS ntvfs_posix_init(void)
 
 	ZERO_STRUCT(ops);
 
-	ops.name = "default";
 	ops.type = NTVFS_DISK;
 	
 	/* fill in all the operations */
@@ -319,9 +318,10 @@ NTSTATUS ntvfs_posix_init(void)
 	/* register ourselves with the NTVFS subsystem. We register
 	   under the name 'default' as we wish to be the default
 	   backend, and also register as 'posix' */
-	ops.name = "posix";
+	ops.name = "default";
 	ret = register_backend("ntvfs", &ops);
 
+	ops.name = "posix";
 	ret = register_backend("ntvfs", &ops);
 
 	if (!NT_STATUS_IS_OK(ret)) {
