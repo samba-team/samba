@@ -1325,6 +1325,7 @@ char **toktocliplist(int *ctok, char *sep);
 int StrCaseCmp(const char *s, const char *t);
 int StrnCaseCmp(const char *s, const char *t, size_t n);
 BOOL strequal(const char *s1, const char *s2);
+BOOL strequal_unix(const char *s1, const char *s2);
 BOOL strnequal(const char *s1,const char *s2,size_t n);
 BOOL strcsequal(const char *s1,const char *s2);
 int strwicmp(char *psz1, char *psz2);
