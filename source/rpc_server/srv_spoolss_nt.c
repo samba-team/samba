@@ -1766,6 +1766,7 @@ Can't find printer handle we created for printer %s\n", name ));
 			&Printer->nt_devmode );
 	 }
 
+#if 0	/* JERRY */
 	/* HACK ALERT!!! Sleep for 1/3 of a second to try trigger a LAN/WAN 
 	   optimization in Windows 2000 clients  --jerry */
 
@@ -1775,6 +1776,7 @@ Can't find printer handle we created for printer %s\n", name ));
 		DEBUG(10,("_spoolss_open_printer_ex: Enabling LAN/WAN hack for Win2k clients.\n"));
 		usleep( 500000 );
 	}
+#endif
 
 	return WERR_OK;
 }
@@ -2461,24 +2463,34 @@ done:
  Connect to the client machine.
 **********************************************************/
 
-static BOOL spoolss_connect_to_client(struct cli_state *the_cli, const char *remote_machine)
+static BOOL spoolss_connect_to_client(struct cli_state *the_cli, 
+                                      struct in_addr *client_ip,
+                                      const char *remote_machine) 
 {
 	ZERO_STRUCTP(the_cli);
+	
 	if(cli_initialise(the_cli) == NULL) {
 		DEBUG(0,("connect_to_client: unable to initialize client connection.\n"));
 		return False;
 	}
-
-	if(!resolve_name( remote_machine, &the_cli->dest_ip, 0x20)) {
-		DEBUG(0,("connect_to_client: Can't resolve address for %s\n", remote_machine));
-		cli_shutdown(the_cli);
+	
+	if ( is_zero_ip(*client_ip) ) {
+		if(!resolve_name( remote_machine, &the_cli->dest_ip, 0x20)) {
+			DEBUG(0,("spoolss_connect_to_client: Can't resolve address for %s\n", remote_machine));
+			cli_shutdown(the_cli);
 		return False;
+		}
+
+		if (ismyip(the_cli->dest_ip)) {
+			DEBUG(0,("spoolss_connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n", remote_machine));
+			cli_shutdown(the_cli);
+			return False;
+		}
 	}
-
-	if (ismyip(the_cli->dest_ip)) {
-		DEBUG(0,("connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n", remote_machine));
-		cli_shutdown(the_cli);
-		return False;
+	else {
+		the_cli->dest_ip.s_addr = client_ip->s_addr;
+		DEBUG(5,("spoolss_connect_to_client: Using address %s (no name resolution necessary)\n",
+			inet_ntoa(*client_ip) ));
 	}
 
 	/* Timeout in 2 seconds if we can't connect. */
@@ -2553,7 +2565,9 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli, const char *rem
  Connect to the client.
 ****************************************************************************/
 
-static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer, uint32 localprinter, uint32 type, POLICY_HND *handle)
+static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer, 
+					uint32 localprinter, uint32 type, 
+					POLICY_HND *handle, struct in_addr *client_ip)
 {
 	WERROR result;
 
@@ -2567,7 +2581,7 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer, uint32 l
 		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
 		dos_to_unix(unix_printer);
 
-		if(!spoolss_connect_to_client(&notify_cli, unix_printer))
+		if(!spoolss_connect_to_client(&notify_cli, client_ip, unix_printer))
 			return False;
 			
 		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message_list);
@@ -2616,6 +2630,7 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	uint32 printerlocal = q_u->printerlocal;
 	int snum = -1;
 	SPOOL_NOTIFY_OPTION *option = q_u->option;
+	struct in_addr client_ip;
 
 	/* store the notify value in the printer struct */
 
@@ -2645,10 +2660,12 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	else if ( (Printer->printer_type == PRINTER_HANDLE_IS_PRINTER) &&
 			!get_printer_snum(p, handle, &snum) )
 		return WERR_BADFID;
-
+		
+	client_ip.s_addr = inet_addr(p->conn->client_address);
+	
 	if(!srv_spoolss_replyopenprinter(snum, Printer->notify.localmachine,
 					Printer->notify.printerlocal, 1,
-					&Printer->notify.client_hnd))
+					&Printer->notify.client_hnd, &client_ip))
 		return WERR_SERVER_UNAVAILABLE;
 
 	Printer->notify.client_connected=True;

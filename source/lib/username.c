@@ -318,36 +318,55 @@ static BOOL user_in_netgroup_list(char *user,char *ngname)
   
 static BOOL user_in_winbind_group_list(char *user,char *gname, BOOL *winbind_answered)
 {
-	int num_groups;
 	int i;
- 	gid_t *groups = NULL;
+ 	static gid_t *groups = NULL;
+	static int num_groups = 0;
+	static fstring last_user = "";
  	gid_t gid;
  	BOOL ret = False;
- 
+	
  	*winbind_answered = False;
+	
+	/* try to user the last user we looked up */
+	/* otherwise fall back to lookups */
+	
+	if ( !strequal_unix( last_user, user ) || !groups )
+ 	{
+		/* clear any cached information */
+		
+ 	 	SAFE_FREE(groups);
+		fstrcpy( last_user, "" );
+
+	 	/*
+ 		 * Get the gid's that this user belongs to.
+ 		 */
  
- 	/*
- 	 * Get the gid's that this user belongs to.
- 	 */
+	 	if ((num_groups = winbind_getgroups(user, 0, NULL)) == -1)
+ 			return False;
  
- 	if ((num_groups = winbind_getgroups(user, 0, NULL)) == -1)
- 		return False;
+	 	if (num_groups == 0) {
+ 			*winbind_answered = True;
+ 			return False;
+ 		}
  
- 	if (num_groups == 0) {
- 		*winbind_answered = True;
- 		return False;
- 	}
+ 		if ((groups = (gid_t *)malloc(sizeof(gid_t) * num_groups )) == NULL) {
+ 			DEBUG(0,("user_in_winbind_group_list: malloc fail.\n"));
+ 			goto err;
+ 		}
  
- 	if ((groups = (gid_t *)malloc(sizeof(gid_t) * num_groups )) == NULL) {
- 		DEBUG(0,("user_in_winbind_group_list: malloc fail.\n"));
- 		goto err;
- 	}
- 
- 	if ((num_groups = winbind_getgroups(user, num_groups, groups)) == -1) {
- 		DEBUG(0,("user_in_winbind_group_list: second winbind_getgroups call \
-failed with error %s\n", strerror(errno) ));
- 		goto err;
+ 		if ((num_groups = winbind_getgroups(user, num_groups, groups)) == -1) {
+ 			DEBUG(0,("user_in_winbind_group_list: second winbind_getgroups call failed with error %s\n", 
+				strerror(errno) ));
+ 			goto err;
+		}
+		
+		/* save the last username */
+		
+		fstrcpy( last_user, user );
+		
 	}
+	else
+		DEBUG(10,("user_in_winbind_group_list: using cached user groups for [%s]\n", user));
  
  	/*
  	 * Now we have the gid list for this user - convert the gname
@@ -370,14 +389,14 @@ failed with error %s\n", strerror(errno) ));
  	}
  
  	*winbind_answered = True;
- 	SAFE_FREE(groups);
  	return ret;
- 
-   err:
- 
- 	*winbind_answered = False;
+
+err: 
+	fstrcpy( last_user, "" );
  	SAFE_FREE(groups);
- 	return False;
+ 	*winbind_answered = False;
+ 
+	return False;
 }	      
  
 /****************************************************************************
