@@ -1,3 +1,13 @@
+2000-11-30  Assar Westerlund  <assar@sics.se>
+
+	* tools/Makefile.am: add krb5-config.1
+	* tools/krb5-config.in: add kadm-client and kadm5-server as
+	libraries
+
+2000-11-29  Assar Westerlund  <assar@sics.se>
+
+	* tools/krb5-config.in: add --prefix, --exec-prefix and gssapi
+
 2000-11-29  Johan Danielsson  <joda@pdc.kth.se>
 
 	* configure.in: add roken/Makefile here, since it can't live in
