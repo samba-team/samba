@@ -422,14 +422,49 @@ krb5_425_conv_principal(krb5_context context,
 			const char *realm,
 			krb5_principal *princ)
 {
-    if(!strcmp(name, "rcmd"))
-	name = "host";
-    return krb5_build_principal(context, princ, 
-				strlen(realm), 
-				realm, 
-				name, 
-				(instance && instance[0]) ? instance : NULL, 
-				0);
+    const char *p;
+    krb5_error_code ret;
+    char *domain = NULL;
+    p = krb5_config_get_string(context->cf,
+			       "realms",
+			       realm,
+			       "v4_name_convert",
+			       name,
+			       NULL);
+    if(p)
+	name = p;
+    if(instance[0] == 0)
+	instance = NULL;
+    if(instance){
+	p = krb5_config_get_string(context->cf,
+				   "realms",
+				   realm,
+				   "v4_instance_convert",
+				   instance,
+				   NULL);
+	if(p)
+	    instance = p;
+	else{
+	    p = krb5_config_get_string(context->cf,
+				       "realms",
+				       realm,
+				       "default_domain",
+				       NULL);
+	    if(p){
+		asprintf(&domain, "%s.%s", instance, p);
+		instance = domain;
+	    }
+	}
+    }
+    ret = krb5_build_principal(context, princ, 
+			       strlen(realm), 
+			       realm, 
+			       name, 
+			       instance, 
+			       0);
+    if(domain)
+	free(domain);
+    return ret;
 }
 
 krb5_error_code
