@@ -1292,22 +1292,30 @@ send_data(FILE *instr, FILE *outstr)
 		char *chunk;
 		int in = fileno(instr);
 		if(fstat(in, &st) == 0 && S_ISREG(st.st_mode)) {
-		    chunk = mmap(0, st.st_size, PROT_READ, MAP_SHARED, in, 0);
-		    if((void *)chunk != (void *)MAP_FAILED) {
-			cnt = st.st_size - restart_point;
-			sec_write(fileno(outstr),
-				   chunk + restart_point,
-				   cnt);
-			munmap(chunk, st.st_size);
-			sec_fflush(outstr);
-			byte_count = cnt;
+		    /*
+		     * mmap zero bytes has potential of loosing, don't do it.
+		     */
+		    if (st.st_size > 0) {
+			chunk = mmap(0, st.st_size, PROT_READ,
+				     MAP_SHARED, in, 0);
+			if((void *)chunk != (void *)MAP_FAILED) {
+			    cnt = st.st_size - restart_point;
+			    sec_write(fileno(outstr),
+				      chunk + restart_point,
+				      cnt);
+			    if (munmap(chunk, st.st_size) < 0)
+				warn ("munmap");
+			    sec_fflush(outstr);
+			    byte_count = cnt;
+			    transflag = 0;
+			}
+		    } else {
 			transflag = 0;
 		    }
-		}
 	    }
 	
 #endif
-	if(transflag){
+	if(transflag) {
 	    struct stat st;
 
 	    netfd = fileno(outstr);
@@ -1495,7 +1503,7 @@ statcmd(void)
 	struct sockaddr_in *sin;
 	u_char *a, *p;
 
-	lreply(211, "%s FTP server status:", hostname, version);
+	lreply(211, "%s FTP server (%s) status:", hostname, version);
 	printf("     %s\r\n", version);
 	printf("     Connected to %s", remotehost);
 	if (!isdigit(remotehost[0]))
