@@ -1653,7 +1653,7 @@ static BOOL test_QueryGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryGroupInfo r;
-	uint16_t levels[] = {1, 2, 3, 4};
+	uint16_t levels[] = {1, 2, 3, 4, 5};
 	int i;
 	BOOL ret = True;
 
@@ -1669,6 +1669,26 @@ static BOOL test_QueryGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       levels[i], nt_errstr(status));
 			ret = False;
 		}
+	}
+
+	return ret;
+}
+
+static BOOL test_QueryGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				  struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_QueryGroupMember r;
+	BOOL ret = True;
+
+	printf("Testing QueryGroupMember\n");
+
+	r.in.group_handle = handle;
+
+	status = dcerpc_samr_QueryGroupMember(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QueryGroupInfo failed - %s\n", nt_errstr(status));
+		ret = False;
 	}
 
 	return ret;
@@ -1868,6 +1888,10 @@ static BOOL test_OpenGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_QueryGroupInfo(p, mem_ctx, &group_handle)) {
+		ret = False;
+	}
+
+	if (!test_QueryGroupMember(p, mem_ctx, &group_handle)) {
 		ret = False;
 	}
 
