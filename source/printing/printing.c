@@ -1231,9 +1231,13 @@ static void print_queue_update(int snum)
 	 * Otherwise just do the update ourselves 
 	 */
 	   
-	if ( background_lpq_updater_pid != -1 )
-		message_send_pid(background_lpq_updater_pid, MSG_PRINTER_UPDATE, &snum, sizeof(snum), False);
-	else
+	if ( background_lpq_updater_pid != -1 ) {
+		become_root();
+		message_send_pid(background_lpq_updater_pid,
+				 MSG_PRINTER_UPDATE, &snum, sizeof(snum),
+				 False);
+		unbecome_root();
+	} else
 		print_queue_update_internal( snum );
 }
 
