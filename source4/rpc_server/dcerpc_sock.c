@@ -246,7 +246,7 @@ static NTSTATUS add_socket_rpc_tcp(struct dcesrv_context *dce_ctx, struct dcesrv
 		int num_interfaces = iface_count();
 		int i;
 		for(i = 0; i < num_interfaces; i++) {
-			const char *address = sys_inet_ntoa(*iface_n_ip(i));
+			const char *address = iface_n_ip(i);
 			status = add_socket_rpc_tcp_iface(dce_ctx, e, event_ctx, model_ops, address);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}

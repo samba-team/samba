@@ -157,6 +157,7 @@ struct nbt_name_query;
 struct nbt_name_status;
 struct nbt_name_register;
 struct nbt_name_refresh;
+struct nbt_name_release;
 struct nbt_name_register_bcast;
 struct nbt_name_refresh_wins;
 struct nbt_name_register_wins;

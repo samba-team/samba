@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
+
    multiple interface handling
-   Copyright (C) Andrew Tridgell 1992-1998
+
+   Copyright (C) Andrew Tridgell 1992-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -276,20 +278,6 @@ BOOL ismyip(struct ipv4_addr ip)
 }
 
 /****************************************************************************
-  check if a packet is from a local (known) net
-  **************************************************************************/
-BOOL is_local_net(struct ipv4_addr from)
-{
-	struct interface *i;
-	for (i=local_interfaces;i;i=i->next) {
-		if((from.addr & i->nmask.addr) == 
-		   (i->ip.addr & i->nmask.addr))
-			return True;
-	}
-	return False;
-}
-
-/****************************************************************************
   how many interfaces do we have
   **************************************************************************/
 int iface_count(void)
@@ -305,65 +293,48 @@ int iface_count(void)
 /****************************************************************************
   return IP of the Nth interface
   **************************************************************************/
-struct ipv4_addr *iface_n_ip(int n)
+const char *iface_n_ip(int n)
 {
 	struct interface *i;
   
 	for (i=local_interfaces;i && n;i=i->next)
 		n--;
 
-	if (i) return &i->ip;
+	if (i) {
+		return sys_inet_ntoa(i->ip);
+	}
 	return NULL;
 }
 
 /****************************************************************************
   return bcast of the Nth interface
   **************************************************************************/
-struct ipv4_addr *iface_n_bcast(int n)
+const char *iface_n_bcast(int n)
 {
 	struct interface *i;
   
 	for (i=local_interfaces;i && n;i=i->next)
 		n--;
 
-	if (i) return &i->bcast;
+	if (i) {
+		return sys_inet_ntoa(i->bcast);
+	}
 	return NULL;
 }
 
 /****************************************************************************
   return netmask of the Nth interface
   **************************************************************************/
-struct ipv4_addr *iface_n_netmask(int n)
+const char *iface_n_netmask(int n)
 {
 	struct interface *i;
   
 	for (i=local_interfaces;i && n;i=i->next)
 		n--;
 
-	if (i) return &i->nmask;
+	if (i) {
+		return sys_inet_ntoa(i->nmask);
+	}
 	return NULL;
 }
 
-/* these 3 functions return the ip/bcast/nmask for the interface
-   most appropriate for the given ip address. If they can't find
-   an appropriate interface they return the requested field of the
-   first known interface. */
-
-struct ipv4_addr *iface_ip(struct ipv4_addr ip)
-{
-	struct in_addr in;
-	struct interface *i;
-	in.s_addr = ip.addr;
-	i = iface_find(in, True);
-	return(i ? &i->ip : &local_interfaces->ip);
-}
-
-/*
-  return True if a IP is directly reachable on one of our interfaces
-*/
-BOOL iface_local(struct ipv4_addr ip)
-{
-	struct in_addr in;
-	in.s_addr = ip.addr;
-	return iface_find(in, True) ? True : False;
-}

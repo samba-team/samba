@@ -138,7 +138,6 @@ struct nbt_name_query {
 		struct nbt_name name;
 		int16_t num_addrs;
 		const char **reply_addrs;
-		uint8_t rcode;
 	} out;
 };
 
@@ -154,7 +153,6 @@ struct nbt_name_status {
 		const char *reply_from;
 		struct nbt_name name;
 		struct nbt_rdata_status status;
-		uint8_t rcode;
 	} out;
 };
 
@@ -247,3 +245,21 @@ struct nbt_name_refresh_wins {
 };
 
 
+/* a name release request */
+struct nbt_name_release {
+	struct {
+		struct nbt_name name;
+		const char *dest_addr;
+		const char *address;
+		uint16_t nb_flags;
+		BOOL broadcast;
+		int timeout; /* in seconds */
+		int retries;
+	} in;
+	struct {
+		const char *reply_from;
+		struct nbt_name name;
+		const char *reply_addr;
+		uint8_t rcode;
+	} out;
+};

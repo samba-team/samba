@@ -84,14 +84,19 @@ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 	packet = req->replies[0].packet;
 	io->out.reply_from = talloc_steal(mem_ctx, req->replies[0].reply_addr);
 
+	if ((packet->operation & NBT_RCODE) != 0) {
+		status = nbt_rcode_to_ntstatus(packet->operation & NBT_RCODE);
+		talloc_free(req);
+		return status;
+	}
+
 	if (packet->ancount != 1 ||
 	    packet->answers[0].rr_type != NBT_QTYPE_NETBIOS ||
 	    packet->answers[0].rr_class != NBT_QCLASS_IP) {
 		talloc_free(req);
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		return status;
 	}
 
-	io->out.rcode = packet->operation & NBT_RCODE;
 	io->out.name = packet->answers[0].name;
 	io->out.num_addrs = packet->answers[0].rdata.netbios.length / 6;
 	io->out.reply_addrs = talloc_array(mem_ctx, const char *, io->out.num_addrs);
@@ -178,6 +183,12 @@ NTSTATUS nbt_name_status_recv(struct nbt_name_request *req,
 	packet = req->replies[0].packet;
 	io->out.reply_from = talloc_steal(mem_ctx, req->replies[0].reply_addr);
 
+	if ((packet->operation & NBT_RCODE) != 0) {
+		status = nbt_rcode_to_ntstatus(packet->operation & NBT_RCODE);
+		talloc_free(req);
+		return status;
+	}
+
 	if (packet->ancount != 1 ||
 	    packet->answers[0].rr_type != NBT_QTYPE_STATUS ||
 	    packet->answers[0].rr_class != NBT_QCLASS_IP) {
@@ -185,7 +196,6 @@ NTSTATUS nbt_name_status_recv(struct nbt_name_request *req,
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	io->out.rcode = packet->operation & NBT_RCODE;
 	io->out.name = packet->answers[0].name;
 	talloc_steal(mem_ctx, io->out.name.name);
 	talloc_steal(mem_ctx, io->out.name.scope);
