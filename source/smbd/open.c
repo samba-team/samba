@@ -194,9 +194,12 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	 * Take care of inherited ACLs on created files. JRA.
 	 */
 
-	if ((flags & O_CREAT) && (conn->vfs_ops.fchmod_acl != NULL))
-		conn->vfs_ops.fchmod_acl(fsp, fsp->fd, mode);
-
+	if ((flags & O_CREAT) && (conn->vfs_ops.fchmod_acl != NULL)) {
+		int saved_errno = errno; /* We might get ENOSYS in the next call.. */
+		if (conn->vfs_ops.fchmod_acl(fsp, fsp->fd, mode) == -1 && errno == ENOSYS)
+			errno = saved_errno; /* Ignore ENOSYS */
+	}
+		
 	return True;
 }
 
