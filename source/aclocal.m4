@@ -48,3 +48,16 @@ if test $ac_cv_dirent_d_off = yes; then
   AC_DEFINE(HAVE_DIRENT_D_OFF)
 fi
 ])
+
+
+dnl AC_PROG_CC_FLAG(flag)
+AC_DEFUN(AC_PROG_CC_FLAG,
+[AC_CACHE_CHECK(whether ${CC-cc} accepts -$1, ac_cv_prog_cc_$1,
+[echo 'void f(){}' > conftest.c
+if test -z "`${CC-cc} -$1 -c conftest.c 2>&1`"; then
+  ac_cv_prog_cc_$1=yes
+else
+  ac_cv_prog_cc_$1=no
+fi
+rm -f conftest*
+])])
