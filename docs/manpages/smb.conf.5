@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "09 October 2002" "" ""
+.TH "SMB.CONF" "5" "15 October 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -3503,10 +3503,10 @@ supports the new 64k streaming read and write varient SMB requests introduced
 with Windows 2000. Note that due to Windows 2000 client redirector bugs
 this requires Samba to be running on a 64-bit capable operating system such
 as IRIX, Solaris or a Linux 2.4 kernel. Can improve performance by 10% with
-Windows 2000 clients. Defaults to off. Not as tested as some other Samba
-code paths.
+Windows 2000 clients. Defaults to on. Windows NT 4.0 only supports
+read version of this call, and ignores the write version.
 
-Default : \fBlarge readwrite = no\fR
+Default : \fBlarge readwrite = yes\fR
 .TP
 \fBldap admin dn (G)\fR
 This parameter is only available if Samba has been
@@ -4528,11 +4528,13 @@ Default: \fBmax wins ttl = 518400\fR
 .TP
 \fBmax xmit (G)\fR
 This option controls the maximum packet size 
-that will be negotiated by Samba. The default is 65535, which 
-is the maximum. In some cases you may find you get better performance 
+that will be negotiated by Samba. The default in Samba 2.2.6 is
+now 16644 (changed from 65535 in earlier releases) which matches
+Windows 2000. This allows better performance with Windows NT clients.
+The maximum is 65535. In some cases you may find you get better performance 
 with a smaller value. A value below 2048 is likely to cause problems.
 
-Default: \fBmax xmit = 65535\fR
+Default: \fBmax xmit = 16644\fR
 
 Example: \fBmax xmit = 8192\fR
 .TP

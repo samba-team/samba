@@ -164,6 +164,8 @@ Changes since 2.2.5
 83) Fix infinite looping bug in winbindd_getgrent()
 84) Fix crash bug on 64-bit systems (merge from HEAD)
 85) Fix extended character bug when setting LanMan/NT password
+86) Negotiate same SMB read size as a Windows 2000 file server
+    to fix performance bug with NT4 clients
 
 
               =========================================
