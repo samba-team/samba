@@ -804,7 +804,7 @@ retrieve(char *cmd, char *name)
 			}
 		    }
 		    if(p->ext){
-			fin = ftpd_popen(line, "r", 0);
+			fin = ftpd_popen(line, "r", 0, 0);
 			closefunc = ftpd_pclose;
 			st.st_size = -1;
 #ifdef HAVE_ST_BLKSIZE
@@ -815,7 +815,7 @@ retrieve(char *cmd, char *name)
 		}
 	} else {
 		sprintf(line, cmd, name), name = line;
-		fin = ftpd_popen(line, "r", 1);
+		fin = ftpd_popen(line, "r", 1, 0);
 		closefunc = ftpd_pclose;
 		st.st_size = -1;
 #ifdef HAVE_ST_BLKSIZE
@@ -1291,8 +1291,8 @@ statfilecmd(char *filename)
 	int c;
 	char line[LINE_MAX];
 
-	sprintf(line, "/bin/ls -lA %s", filename);
-	fin = ftpd_popen(line, "r", 1);
+	sprintf(line, "/bin/ls -la %s", filename);
+	fin = ftpd_popen(line, "r", 1, 0);
 	lreply(211, "status of %s:", filename);
 	while ((c = getc(fin)) != EOF) {
 		if (c == '\n') {
@@ -1386,8 +1386,10 @@ int_reply(int n, char *c, const char *fmt, va_list ap)
   char buf[10240];
   char *p;
   p=buf;
-  sprintf(p, "%d%s", n, c);
-  p+=strlen(p);
+  if(n){
+      sprintf(p, "%d%s", n, c);
+      p+=strlen(p);
+  }
   vsprintf(p, fmt, ap);
   p+=strlen(p);
   sprintf(p, "\r\n");
@@ -1414,6 +1416,15 @@ lreply(int n, const char *fmt, ...)
   va_list ap;
   va_start(ap, fmt);
   int_reply(n, "-", fmt, ap);
+  va_end(ap);
+}
+
+void
+nreply(const char *fmt, ...)
+{
+  va_list ap;
+  va_start(ap, fmt);
+  int_reply(0, NULL, fmt, ap);
   va_end(ap);
 }
 
@@ -1860,4 +1871,27 @@ out:
 		freeglob = 0;
 		globfree(&gl);
 	}
+}
+
+
+int
+find(char *pattern)
+{
+    char line[1024];
+    FILE *f;
+    sprintf(line, "/bin/locate -d /etc/locatedb %s", pattern);
+    f = ftpd_popen(line, "r", 1, 1);
+    if(f == NULL){
+	perror_reply(550, "/bin/locate");
+	return 1;
+    }
+    lreply(200, "Output from find.");
+    while(fgets(line, sizeof(line), f)){
+	if(line[strlen(line)-1] == '\n')
+	    line[strlen(line)-1] = 0;
+	nreply("%s", line);
+    }
+    reply(200, "Done");
+    ftpd_pclose(f);
+    return 0;
 }

@@ -138,7 +138,7 @@ static int	 yylex (void);
 	AUTH	ADAT	PROT	PBSZ	CCC	MIC
 	CONF	ENC
 
-	KAUTH	KLIST
+	KAUTH	KLIST	FIND
 
 	LEXERR
 
@@ -521,26 +521,37 @@ cmd
 			}
 		}
 
-	| SITE SP KAUTH SP STRING CRLF
+	| SITE SP KAUTH check_login SP STRING CRLF
 		{
 			char *p;
 			size_t s;
 			
-			p = strpbrk($5, " \t");
-			if(p){
+			if($4 && $6 != NULL){
+			    p = strpbrk($6, " \t");
+			    if(p){
 				*p++ = 0;
 				s = strspn(p, " \t");				
 				if(s >= 0)
-					kauth($5, p + s);
+				    kauth($6, p + s);
 				else
-					kauth($5, p);
-			}else
-				kauth($5, NULL);
-			free($5);
+				    kauth($6, p);
+			    }else
+				kauth($6, NULL);
+			}
+			if($6 != NULL)
+			    free($6);
 		}
-	| SITE SP KLIST CRLF
+	| SITE SP KLIST check_login CRLF
 		{
+		    if($4)
 			klist();
+		}
+	| SITE SP FIND check_login SP STRING CRLF
+		{
+		    if($4 && $6 != NULL)
+			find($6);
+		    if($6 != NULL)
+			free($6);
 		}
 	| STOU check_login SP pathname CRLF
 		{
@@ -911,6 +922,8 @@ struct tab sitetab[] = {
 
 	{ "KAUTH", KAUTH, STR1, 1,	"<sp> principal [ <sp> ticket ]" },
 	{ "KLIST", KLIST, ARGS, 1,	"(show ticket file)" },
+
+	{ "FIND", FIND, STR1, 1,	"<sp> globexpr" },
 	
 	{ NULL,   0,    0,    0,	0 }
 };
