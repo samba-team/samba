@@ -983,6 +983,7 @@ BOOL lp_unix_password_sync(void);
 BOOL lp_passwd_chat_debug(void);
 BOOL lp_ole_locking_compat(void);
 BOOL lp_nt_smb_support(void);
+BOOL lp_nt_pipe_support(void);
 BOOL lp_stat_cache(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
@@ -1845,7 +1846,6 @@ void wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int
 
 /*The following definitions come from  rpc_server/srv_ldap_helpers.c  */
 
-void ldap_helper_dummy(void);
 
 /*The following definitions come from  rpc_server/srv_lsa.c  */
 
