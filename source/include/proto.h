@@ -796,11 +796,6 @@ BOOL become_user(int cnum, int uid);
 BOOL unbecome_user(void );
 int smbrun(char *cmd,char *outfile);
 
-/*The following definitions come from  unxlog.c  */
-
-void write_utmp(int dologin, int connection, int pid,
-                char *from_addr, char *username);
-
 /*The following definitions come from  username.c  */
 
 char *get_home_dir(char *user);

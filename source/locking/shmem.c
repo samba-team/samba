@@ -20,10 +20,11 @@
 
 */
 
-#ifdef FAST_SHARE_MODES
-
-
 #include "includes.h"
+
+
+#if FAST_SHARE_MODES
+
 
 extern int DEBUGLEVEL;
 

@@ -3026,7 +3026,7 @@ struct smb_message_struct
    {SMBctemp,"SMBctemp",reply_ctemp,AS_USER},
    {SMBsplopen,"SMBsplopen",reply_printopen,AS_USER},
    {SMBsplclose,"SMBsplclose",reply_printclose,AS_USER},
-   {SMBsplretq,"SMBsplretq",reply_printqueue,AS_USER},
+   {SMBsplretq,"SMBsplretq",reply_printqueue,AS_USER|AS_GUEST},
    {SMBsplwr,"SMBsplwr",reply_printwrite,AS_USER},
    {SMBlock,"SMBlock",reply_lock,AS_USER},
    {SMBunlock,"SMBunlock",reply_unlock,AS_USER},
@@ -3159,8 +3159,17 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 	    unbecome_user();
 
 	  /* does this protocol need to be run as the connected user? */
-	  if ((flags & AS_USER) && !become_user(cnum,uid))
-	    return(ERROR(ERRSRV,ERRinvnid));
+	  if ((flags & AS_USER) && !become_user(cnum,uid)) {
+	    if (flags & AS_GUEST) 
+	      flags &= ~AS_USER;
+	    else
+	      return(ERROR(ERRSRV,ERRinvnid));
+	  }
+	  /* this code is to work around a bug is MS client 3 without
+	     introducing a security hole - it needs to be able to do
+	     print queue checks as guest if it isn't logged in properly */
+	  if (flags & AS_USER)
+	    flags &= ~AS_GUEST;
 
 	  /* does it need write permission? */
 	  if ((flags & NEED_WRITE) && !CAN_WRITE(cnum))
@@ -3744,7 +3753,7 @@ static void usage(char *pname)
   if (!open_sockets(is_daemon,port))
     exit(1);
 
-#ifdef FAST_SHARE_MODES
+#if FAST_SHARE_MODES
   if (!start_share_mode_mgmt())
     exit(1);
 #endif
@@ -3763,7 +3772,7 @@ static void usage(char *pname)
   process();
   close_sockets();
 
-#ifdef FAST_SHARE_MODES
+#if FAST_SHARE_MODES
   stop_share_mode_mgmt();
 #endif
 
