@@ -1,4 +1,16 @@
+2000-07-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* check-var.m4: rename to rk_CHECK_VAR, transposing the arguments,
+	and making the second optional, AU_DEFINE AC_CHECK_VAR to
+	rk_CHECK_VAR
+
+	* roken-frag.m4: other roken tests
+
+	* db.m4: db tests
+
 2000-07-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* mips-abi.m4: AC_ERROR -> AC_MSG_ERROR
 
 	* check-netinet-ip-and-tcp.m4: use cache_check, and make this work
 	with new autoconf
