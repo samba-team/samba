@@ -67,7 +67,7 @@ typedef void **ADS_MODLIST;
 #define ADS_ERROR_GSS(rc, minor) ads_build_error(ADS_ERROR_GSS, rc, minor)
 #define ADS_ERROR_NT(rc) ads_build_nt_error(ADS_ERROR_NT,rc)
 
-#define ADS_ERR_OK(status) ({ADS_STATUS errokstat = status;(errokstat.error_type == ADS_ERROR_NT) ? NT_STATUS_IS_OK(errokstat.err.nt_status):(errokstat.err.rc == 0);})
+#define ADS_ERR_OK(status) ((status.error_type == ADS_ERROR_NT) ? NT_STATUS_IS_OK(status.err.nt_status):(status.err.rc == 0))
 #define ADS_SUCCESS ADS_ERROR(0)
 
 /* time between reconnect attempts */
