@@ -704,7 +704,7 @@ void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[])
 
 	/* connect to the domain */
 	res1 = res1 ? samr_open_alias( &pol_dom,
-	            0x010000, alias_rid, &alias_pol) : False;
+	            0x00f001f, alias_rid, &alias_pol) : False;
 
 	res2 = res1 ? samr_delete_dom_alias(&alias_pol) : False;
 
@@ -1378,7 +1378,6 @@ void cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[])
 	BOOL res = True;
 	BOOL res1 = True;
 	BOOL res2 = True;
-	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	uint32 user_rid = 0;
 	const char *names[1];
 	uint32 *rids;
@@ -1419,7 +1418,7 @@ void cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[])
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain( &sam_pol, ace_perms, &sid1,
+	res = res ? samr_open_domain( &sam_pol, 0x0200, &sid1,
 	            &pol_dom) : False;
 
 	names[0] = name;
@@ -1447,13 +1446,12 @@ void cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[])
 
 	/* connect to the domain */
 	res1 = res1 ? samr_open_user( &pol_dom,
-	            0x0000001f, user_rid, &pol_usr) : False;
+	            0x010000, user_rid, &pol_usr) : False;
 
 	res2 = res1 ? samr_unknown_2d(&pol_dom, &sid_usr) : False;
 	res2 = res2 ? samr_delete_dom_user(&pol_usr) : False;
 	res2 = res2 ? samr_unknown_2d(&pol_dom, &sid_usr) : False;
 
-	res1 = res1 ? samr_close(&pol_usr) : False;
 	res  = res  ? samr_close(&pol_dom) : False;
 	res  = res  ? samr_close(&sam_pol) : False;
 
