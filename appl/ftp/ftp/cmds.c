@@ -1212,7 +1212,7 @@ shell(int argc, char **argv)
 		exit(1);
 	}
 	if (pid > 0)
-		while (waitpid(-1, 0, &status) != pid)
+		while (waitpid(-1, &status, 0) != pid)
 			;
 	signal(SIGINT, old1);
 	signal(SIGQUIT, old2);
