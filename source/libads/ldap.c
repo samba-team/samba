@@ -464,6 +464,9 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	timeout.tv_usec = 0;
 	*res = NULL;
 
+	/* see the note in ads_do_paged_search - we *must* disable referrals */
+	ldap_set_option(ads->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
+
 	rc = ldap_search_ext_s(ads->ld, utf8_path, scope, utf8_exp,
 			       search_attrs, 0, NULL, NULL, 
 			       &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
