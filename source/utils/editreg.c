@@ -401,6 +401,11 @@ typedef struct key_sec_desc_s {
 
 /* Make, delete keys */
 
+int nt_delete_reg_key(REG_KEY *key)
+{
+
+  return 1;
+}
 
 /* 
  * Create/delete key lists and add delete keys to/from a list, count the keys 
@@ -466,6 +471,124 @@ typedef struct regf_struct_s {
   SK_MAP **sk_map;
 } REGF;
 
+/*
+ * Structures for dealing with the on-disk format of the registry
+ */
+
+typedef unsigned int DWORD;
+typedef unsigned short WORD;
+
+#define REG_REGF_ID 0x66676572
+
+typedef struct regf_block {
+  DWORD REGF_ID;     /* regf */
+  DWORD uk1;
+  DWORD uk2;
+  DWORD tim1, tim2;
+  DWORD uk3;             /* 1 */
+  DWORD uk4;             /* 3 */
+  DWORD uk5;             /* 0 */
+  DWORD uk6;             /* 1 */
+  DWORD first_key;       /* offset */
+  unsigned int dblk_size;
+  DWORD uk7[116];        /* 1 */
+  DWORD chksum;
+} REGF_HDR;
+
+typedef struct hbin_sub_struct {
+  DWORD dblocksize;
+  char data[1];
+} HBIN_SUB_HDR;
+
+#define REG_HBIN_ID 0x6E696268
+
+typedef struct hbin_struct {
+  DWORD HBIN_ID; /* hbin */
+  DWORD next_off;
+  DWORD prev_off;
+  DWORD uk1;
+  DWORD uk2;
+  DWORD uk3;
+  DWORD uk4;
+  DWORD blk_size;
+  HBIN_SUB_HDR hbin_sub_hdr;
+} HBIN_HDR;
+
+#define REG_NK_ID 0x6B6E
+
+typedef struct nk_struct {
+  WORD NK_ID;
+  WORD type;
+  DWORD t1, t2;
+  DWORD uk1;
+  DWORD own_off;
+  DWORD subk_num;
+  DWORD uk2;
+  DWORD lf_off;
+  DWORD uk3;
+  DWORD val_cnt;
+  DWORD val_off;
+  DWORD sk_off;
+  DWORD clsnam_off;
+  DWORD unk4[4];
+  DWORD unk5;
+  WORD nam_len;
+  WORD clsnam_len;
+  char key_nam[1];  /* Actual length determined by nam_len */
+} NK_HDR;
+
+#define REG_SK_ID 0x6B73
+
+typedef struct sk_struct {
+  WORD SK_ID;
+  WORD uk1;
+  DWORD prev_off;
+  DWORD next_off;
+  DWORD ref_cnt;
+  DWORD rec_size;
+  char sec_desc[1];
+} SK_HDR;
+
+#define OFF(f) ((f) + 0x1000 + 4) 
+#define LOCN(f) (base + OFF(f))
+
+typedef struct hash_struct {
+  DWORD nk_off;
+  char hash[4];
+} HASH_REC;
+
+#define REG_LF_ID 0x666C
+
+typedef struct lf_struct {
+  WORD LF_ID;
+  WORD key_count;
+  struct hash_struct hr[1];  /* Array of hash records, depending on key_count */
+} LF_HDR;
+
+typedef DWORD VL_TYPE[1];  /* Value list is an array of vk rec offsets */
+
+#define REG_VK_ID 0x6B76
+
+typedef struct vk_struct {
+  WORD VK_ID;
+  WORD nam_len;
+  DWORD dat_len;    /* If top-bit set, offset contains the data */
+  DWORD dat_off;   
+  DWORD dat_type;
+  WORD flag;        /* =1, has name, else no name (=Default). */
+  WORD unk1;
+  char dat_name[1]; /* Name starts here ... */
+} VK_HDR;
+
+#define REG_TYPE_REGSZ     1
+#define REG_TYPE_EXPANDSZ  2
+#define REG_TYPE_BIN       3  
+#define REG_TYPE_DWORD     4
+#define REG_TYPE_MULTISZ   7
+
+#define OFF(f) ((f) + 0x1000 + 4) 
+#define LOCN(f) (base + OFF(f))
+
 int nt_set_regf_input_file(REGF *regf, char *filename)
 {
   return ((regf->regfile_name = strdup(filename)) != NULL); 
@@ -501,7 +624,7 @@ int nt_free_regf(REGF *regf)
   regf->base = NULL;
   close(regf->fd);    /* Ignore the error :-) */
 
-  nt_free_reg_tree(regf->root); /* Free the tree */
+  nt_delete_reg_key(regf->root); /* Free the tree */
   free(regf->sk_map);
   regf->sk_count = regf->sk_map_size = 0;
 
@@ -544,13 +667,68 @@ int nt_get_regf_hdr(REGF *regf)
    * header 
    */
 
-  ASSERT(regf->base != NULL);
+  assert(regf->base != NULL);
 
+  
 
+  return 1;
 }
 
 int nt_get_hbin_hdr(REGF *regf, int hbin_offs)
 {
 
-
+  return 1;
 } 
+
+int nt_load_registry(REGF *regf)
+{
+  int rc;
+
+  /* Get the header */
+
+  if ((rc = nt_get_regf_hdr(regf)) < 0) {
+    return rc;
+  }
+
+  /* Now what? */
+
+  return 1;
+}
+
+/*
+ * Main code from here on ...
+ */
+
+void usage(void)
+{
+  fprintf(stderr, "Usage: editreg <registryfile>\n");
+  fprintf(stderr, "Version: 0.1\n\n"); 
+}
+
+int main(int argc, char *argv[])
+{
+  REGF *regf;
+
+  if (argc < 2) {
+    usage();
+    exit(1);
+  }
+
+  if ((regf = nt_create_regf()) == NULL) {
+    fprintf(stderr, "Could not create registry object: %s\n", strerror(errno));
+    exit(2);
+  }
+
+  if (!nt_set_regf_input_file(regf, argv[1])) {
+    fprintf(stderr, "Could not set name of registry file: %s, %s\n", 
+	    argv[1], strerror(errno));
+    exit(3);
+  }
+
+  /* Now, open it, and bring it into memory :-) */
+
+  if (nt_load_registry(regf) < 0) {
+    fprintf(stderr, "Could not load registry: %s\n", argv[1]);
+    exit(4);
+  }
+}
