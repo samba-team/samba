@@ -45,17 +45,22 @@
 #define SEC_CHAN_BDC     6
 
 /* Returned delta types */
-#define SAM_DELTA_DOMAIN_INFO  0x01 /* Domain */
-#define SAM_DELTA_GROUP_INFO   0x02 /* Domain groups */
-#define SAM_DELTA_ACCOUNT_INFO 0x05 /* Users */
-#define SAM_DELTA_GROUP_MEM    0x08 /* Group membership */
-#define SAM_DELTA_ALIAS_INFO   0x09 /* Local groups */
-#define SAM_DELTA_ALIAS_MEM    0x0C /* Local group membership */
-#define SAM_DELTA_DOM_INFO     0x0D /* Privilege stuff */
-#define SAM_DELTA_UNK0E_INFO   0x0e /* Privilege stuff */
-#define SAM_DELTA_PRIVS_INFO   0x10 /* Privilege stuff */
-#define SAM_DELTA_UNK12_INFO   0x12 /* Privilege stuff */
-#define SAM_DELTA_SAM_STAMP    0x16 /* Some kind of journal record? */
+#define SAM_DELTA_DOMAIN_INFO    0x01
+#define SAM_DELTA_GROUP_INFO     0x02
+#define SAM_DELTA_RENAME_GROUP   0x04
+#define SAM_DELTA_ACCOUNT_INFO   0x05
+#define SAM_DELTA_RENAME_USER    0x07
+#define SAM_DELTA_GROUP_MEM      0x08
+#define SAM_DELTA_ALIAS_INFO     0x09
+#define SAM_DELTA_RENAME_ALIAS   0x0b
+#define SAM_DELTA_ALIAS_MEM      0x0c
+#define SAM_DELTA_POLICY_INFO    0x0d
+#define SAM_DELTA_TRUST_DOMS     0x0e
+#define SAM_DELTA_PRIVS_INFO     0x10 /* DT_DELTA_ACCOUNTS */
+#define SAM_DELTA_SECRET_INFO    0x12
+#define SAM_DELTA_DELETE_GROUP   0x14
+#define SAM_DELTA_DELETE_USER    0x15
+#define SAM_DELTA_MODIFIED_COUNT 0x16
 
 /* SAM database types */
 #define SAM_DATABASE_DOMAIN    0x00 /* Domain users and groups */
@@ -711,7 +716,7 @@ typedef struct sam_alias_mem_info_info
 } SAM_ALIAS_MEM_INFO;
 
 
-/* SAM_DELTA_DOM (0x0D) */
+/* SAM_DELTA_POLICY (0x0D) */
 typedef struct
 {
 	uint32 unknown1; /* 0x5000 */
@@ -753,9 +758,9 @@ typedef struct
 	UNISTR2 domain_name;
 	DOM_SID2 domain_sid;
 
-} SAM_DELTA_DOM;
+} SAM_DELTA_POLICY;
 
-/* SAM_DELTA_UNK0E (0x0e) */
+/* SAM_DELTA_TRUST_DOMS */
 typedef struct
 {
 	uint32 buf_size;
@@ -773,7 +778,7 @@ typedef struct
 	uint32 unknown3;
 	UNISTR2 domain;
 
-} SAM_DELTA_UNK0E;
+} SAM_DELTA_TRUSTDOMS;
 
 /* SAM_DELTA_PRIVS (0x10) */
 typedef struct
@@ -812,7 +817,7 @@ typedef struct
 
 } SAM_DELTA_PRIVS;
 
-/* SAM_DELTA_UNK12 (0x12) */
+/* SAM_DELTA_SECRET */
 typedef struct
 {
 	uint32 buf_size;
@@ -846,15 +851,15 @@ typedef struct
 	uint32 buf_size3;
 	SEC_DESC *sec_desc2;
 
-} SAM_DELTA_UNK12;
+} SAM_DELTA_SECRET;
 
-/* SAM_DELTA_STAMP (0x16) */
+/* SAM_DELTA_MOD_COUNT (0x16) */
 typedef struct
 {
         uint32 seqnum;
         uint32 dom_mod_count_ptr;
 	UINT64_S dom_mod_count;  /* domain mod count at last sync */
-} SAM_DELTA_STAMP;
+} SAM_DELTA_MOD_COUNT;
 
 typedef union sam_delta_ctr_info
 {
@@ -864,11 +869,11 @@ typedef union sam_delta_ctr_info
 	SAM_GROUP_MEM_INFO grp_mem_info;
 	SAM_ALIAS_INFO     alias_info  ;
 	SAM_ALIAS_MEM_INFO als_mem_info;
-	SAM_DELTA_DOM	   dom_info;
+	SAM_DELTA_POLICY   policy_info;
 	SAM_DELTA_PRIVS    privs_info;
-	SAM_DELTA_STAMP    stamp;
-	SAM_DELTA_UNK0E    unk0e_info;
-	SAM_DELTA_UNK12    unk12_info;
+	SAM_DELTA_MOD_COUNT mod_count;
+	SAM_DELTA_TRUSTDOMS trustdoms_info;
+	SAM_DELTA_SECRET   secret_info;
 } SAM_DELTA_CTR;
 
 /* NET_R_SAM_SYNC */
