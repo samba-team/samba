@@ -53,7 +53,7 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL, NULL)) return False;
+	if (cli_is_error(cli)) return False;
 
 	*grp = SVAL(cli->inbuf,smb_vwv0);
 
@@ -89,7 +89,7 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL, NULL)) return False;
+	if (cli_is_error(cli)) return False;
 
 	return True;
 }      
@@ -114,7 +114,7 @@ BOOL cli_message_end(struct cli_state *cli, int grp)
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL, NULL)) return False;
+	if (cli_is_error(cli)) return False;
 
 	return True;
 }      

@@ -329,7 +329,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
 
   clistr_push(cli, dos_new_password, new_password, -1, STR_TERMINATE);
 
-  if (!make_oem_passwd_hash(dos_new_password, old_pw_hash, False, data))
+  if (!make_oem_passwd_hash( data, dos_new_password, old_pw_hash, False))
     return False;
 
   /* 
@@ -408,12 +408,12 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 		       cli_receive_trans(cli, SMBtrans2, 
 					 &rparam, &param_len,
 					 &rdata, &data_len));
-		if (!ret) {
+		if (!ret && cli_is_dos_error(cli)) {
 			/* we need to work around a Win95 bug - sometimes
 			   it gives ERRSRV/ERRerror temprarily */
 			uint8 eclass;
 			uint32 ecode;
-			cli_error(cli, &eclass, &ecode, NULL);
+			cli_dos_error(cli, &eclass, &ecode);
 			if (eclass != ERRSRV || ecode != ERRerror) break;
 			msleep(100);
 		}

@@ -195,16 +195,27 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
 
 int smbc_errno(struct cli_state *c)
 {
-	uint8 eclass;
-	uint32 ecode;
 	int ret;
 
-	ret = cli_error(c, &eclass, &ecode, NULL);
+        if (cli_is_dos_error(c)) {
+                uint8 eclass;
+                uint32 ecode;
 
-	if (ret) {
-		DEBUG(3,("smbc_error %d %d (0x%x) -> %d\n", 
-			 (int)eclass, (int)ecode, (int)ecode, ret));
-	}
+                cli_dos_error(c, &eclass, &ecode);
+                ret = cli_errno_from_dos(eclass, ecode);
+                
+                DEBUG(3,("smbc_error %d %d (0x%x) -> %d\n", 
+                         (int)eclass, (int)ecode, (int)ecode, ret));
+        } else {
+                uint32 status;
+
+                cli_nt_error(c, &status);
+                ret = cli_errno_from_nt(status);
+
+                DEBUG(3,("smbc errno 0x%08x -> %d\n",
+                         status, ret));
+        }
+
 	return ret;
 }
 
@@ -1445,8 +1456,6 @@ int smbc_opendir(const char *fname)
   struct smbc_server *srv = NULL;
   struct in_addr rem_ip;
   int slot = 0;
-  uint8 eclass;
-  uint32 ecode;
 
   if (!smbc_initialized) {
 
@@ -1570,7 +1579,7 @@ int smbc_opendir(const char *fname)
 	free(smbc_file_table[slot]);
       }
       smbc_file_table[slot] = NULL;
-      errno = cli_error(&srv->cli, &eclass, &ecode, NULL);
+      errno = cli_errno(dos_error(&srv->cli);
       return -1;
 
     }
@@ -1641,7 +1650,7 @@ int smbc_opendir(const char *fname)
 	    free(smbc_file_table[slot]);
 	  }
 	  smbc_file_table[slot] = NULL;
-	  errno = cli_error(&srv->cli, &eclass, &ecode, NULL);
+	  errno = cli_error(&srv->cli);
 	  return -1;
 
 	}
@@ -1675,7 +1684,7 @@ int smbc_opendir(const char *fname)
 	  if (cli_RNetShareEnum(&srv->cli, list_fn, 
 				(void *)smbc_file_table[slot]) < 0) {
 
-	    errno = cli_error(&srv->cli, &eclass, &ecode, NULL);
+	    errno = cli_errno(&srv->cli);
 	    if (smbc_file_table[slot]) {
 	      if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
 	      free(smbc_file_table[slot]);

@@ -745,7 +745,7 @@ BOOL cli_chkpath(struct cli_state *cli, char *path)
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL, NULL)) return False;
+	if (cli_is_error(cli)) return False;
 
 	return True;
 }

@@ -1,3 +1,24 @@
+/* 
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
+ *  RPC Pipe client / server routines
+ *  Copyright (C) Luke Kenneth Casson Leighton 1997-2001.
+ *  
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 /* NT error codes.  please read nterr.h */
 
 #include "includes.h"
@@ -519,33 +540,20 @@ nt_err_code_struct nt_errs[] =
 /*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
-BOOL get_safe_nt_error_msg(uint32 nt_code,char *msg, size_t len)
-{
-	int idx = 0;
-
-	slprintf(msg, len-1, "NT code 0x%08x", nt_code);
-
-	while (nt_errs[idx].nt_errstr != NULL)
-	{
-		if ((nt_errs[idx].nt_errcode & 0xFFFFFF) == (nt_code & 0xFFFFFF))
-		{
-			safe_strcpy(msg, nt_errs[idx].nt_errstr, len);
-			return True;
-		}
-		idx++;
-	}
-	return False;
-}
-
-/*****************************************************************************
- returns an NT error message.  not amazingly helpful, but better than a number.
- *****************************************************************************/
 char *get_nt_error_msg(uint32 nt_code)
 {
         static pstring msg;
+        int idx = 0;
 
-        get_safe_nt_error_msg(nt_code, msg, sizeof(msg));
+	slprintf(msg, sizeof(msg), "NT code 0x%08x", nt_code);
+
+	while (nt_errs[idx].nt_errstr != NULL) {
+		if ((nt_errs[idx].nt_errcode & 0xFFFFFF) == 
+                    (nt_code & 0xFFFFFF)) {
+                        return nt_errs[idx].nt_errstr;
+		}
+		idx++;
+	}
+
         return msg;
 }
-
-
