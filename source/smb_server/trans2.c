@@ -705,9 +705,9 @@ static NTSTATUS trans2_parse_sfileinfo(struct request_context *req,
 
 	case RAW_SFILEINFO_STANDARD:
 		CHECK_MIN_BLOB_SIZE(blob, 12);
-		st->standard.in.create_time = pull_dos_date2(req->smb, blob->data + 0);
-		st->standard.in.access_time = pull_dos_date2(req->smb, blob->data + 4);
-		st->standard.in.write_time  = pull_dos_date2(req->smb, blob->data + 8);
+		st->standard.in.create_time = srv_pull_dos_date2(req->smb, blob->data + 0);
+		st->standard.in.access_time = srv_pull_dos_date2(req->smb, blob->data + 4);
+		st->standard.in.write_time  = srv_pull_dos_date2(req->smb, blob->data + 8);
 		return NT_STATUS_OK;
 
 	case RAW_SFILEINFO_EA_SET:
