@@ -761,6 +761,27 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p = pdata + len;
 			break;
 
+		case SMB_FIND_FILE_LEVEL_261:
+			p += 4;
+			SIVAL(p,0,reskey); p += 4;
+			put_long_date(p,cdate); p += 8;
+			put_long_date(p,adate); p += 8;
+			put_long_date(p,mdate); p += 8;
+			put_long_date(p,mdate); p += 8;
+			SOFF_T(p,0,file_size); 
+			SOFF_T(p,8,allocation_size);
+			p += 16;
+			SIVAL(p,0,nt_extmode);
+			p += 4;
+			len = srvstr_push(outbuf, p + 20, fname, -1, STR_TERMINATE_ASCII);
+			SIVAL(p, 0, len);
+			p += 20 + len; /* Strlen, EA size. Unknown 0 1 2, string itself */
+			len = PTR_DIFF(p, pdata);
+			len = (len + 3) & ~3;
+			SIVAL(pdata,0,len);
+			p = pdata + len;
+			break;
+
 		/* CIFS UNIX Extension. */
 
 		case SMB_FIND_FILE_UNIX:
@@ -893,6 +914,7 @@ close_if_end = %d requires_resume_key = %d level = %d, max_data_bytes = %d\n",
 		case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
 		case SMB_FIND_FILE_NAMES_INFO:
 		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
+		case SMB_FIND_FILE_LEVEL_261:
 			break;
 		case SMB_FIND_FILE_UNIX:
 			if (!lp_unix_extensions())
