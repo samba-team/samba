@@ -1,3 +1,7 @@
+2000-07-31  Assar Westerlund  <assar@sics.se>
+
+	* com_right.h (initialize_error_table_r): fix prototype
+
 2000-04-05  Assar Westerlund  <assar@sics.se>
 
 	* com_err.c (_et_lit): explicitly initialize it to NULL to make
