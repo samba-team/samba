@@ -515,7 +515,7 @@ void ndr_pull_subcontext_header(struct ndr_pull *ndr, proto_tree *tree,
 		break;
 	}
 	default: ;
-//		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext size %d", sub_size);
+/*		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext size %d", sub_size); */
 	}
 }
 
@@ -580,7 +580,7 @@ void proto_register_eparser(void)
         { &hf_subcontext_size_2, { "Subcontext size2", "eparser.subcontext_size2", FT_UINT16, BASE_DEC, NULL, 0x0, "Subcontext size2", HFILL }},
         { &hf_subcontext_size_4, { "Subcontext size4", "eparser.subcontext_size4", FT_UINT16, BASE_DEC, NULL, 0x0, "Subcontext size4", HFILL }},
         { &hf_relative_ofs, { "Relative offset", "eparser.relative_offset", FT_UINT32, BASE_DEC, NULL, 0x0, "Relative offset", HFILL }},
-//        { &hf_subtree_list, { "Subtree list", "", FT_UINT64, BASE_DEC, NULL, 0,"", HFILL }},
+/*        { &hf_subtree_list, { "Subtree list", "", FT_UINT64, BASE_DEC, NULL, 0,"", HFILL }}, */
         };
 
         static gint *ett[] = {

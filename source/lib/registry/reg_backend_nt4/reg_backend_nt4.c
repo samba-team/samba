@@ -1438,7 +1438,7 @@ static uint_t nt_store_security(REG_HANDLE *regf, KEY_SEC_DESC *sec)
 	 * means making one pass over each structure and figuring it out
 	 */
 
-//FIXME	size = sec_desc_size(sec->sec_desc);
+/* FIXME	size = sec_desc_size(sec->sec_desc); */
 
 	/* Allocate that much space */
 
