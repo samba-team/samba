@@ -1091,9 +1091,11 @@ uid_t nametouid(char *name)
 	if (winbind_nametouid(&u, name))
 		return u;
 
-	pass = sys_getpwnam(name);
-	if (pass)
+	pass = getpwnam_alloc(name);
+	if (pass) {
 		return(pass->pw_uid);
+		passwd_free(&pass);
+	}
 	return (uid_t)-1;
 }
 

@@ -227,12 +227,17 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 	
 	ZERO_STRUCT(sam_pwent);
 
-	if (!(pwd = sys_getpwnam(username))) {
-		fprintf (stderr, "User %s does not exist in system passwd!\n", username);
-		return -1;
-	}
+	if (pwd = getpwnam_alloc(username)) {
 	
-	pdb_init_sam_pw (&sam_pwent, pwd);
+		pdb_init_sam_pw (&sam_pwent, pwd);
+		passwd_free(&pwd);
+	} else {
+		fprintf (stderr, "WARNING: user %s does not exist in system passwd\n", username);
+		pdb_init_sam(&sam_pwent);
+		if (!pdb_set_username(sam_pwent, username)) {
+			return False;
+		}
+	}
 
 	password1 = getpass("new password:");
 	password2 = getpass("retype new password:");
@@ -244,7 +249,6 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 
 	pdb_set_plaintext_passwd(sam_pwent, password1);
 
-	pdb_set_username(sam_pwent, username);
 	if (fullname)
 		pdb_set_fullname(sam_pwent, fullname);
 	if (homedir)

@@ -1192,14 +1192,17 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
   
   if (result->status != NIS_SUCCESS || NIS_RES_NUMOBJ(result) <= 0)
     {
+      struct passwd *passwd;
       DEBUG(3, ("nis_list failure: %s: %s\n", 
 		nisname,  nis_sperrno(result->status)));
       nis_freeresult(result);
 
-      if (!sys_getpwnam(pdb_get_username(newpwd))) {
+      if (!passwd = getpwnam_alloc(pdb_get_username(newpwd))) {
 	/* no such user in system! */
 	return False;
       }
+      passwd_free(&passwd);
+
 	/* 
 	 * user is defined, but not in passwd.org_dir.
 	 */

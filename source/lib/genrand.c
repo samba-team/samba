@@ -158,13 +158,14 @@ static int do_reseed(BOOL use_fd, int fd)
 	 * seriously this will be secret.
 	 */
 
-	pw = sys_getpwnam("root");
+	pw = getpwnam_alloc("root");
 	if (pw && pw->pw_passwd) {
 		size_t i;
 		unsigned char md4_tmp[16];
 		mdfour(md4_tmp, (unsigned char *)pw->pw_passwd, strlen(pw->pw_passwd));
 		for (i=0;i<16;i++)
 			seed_inbuf[8+i] ^= md4_tmp[i];
+		passwd_free(&pw);
 	}
 
 	/*
