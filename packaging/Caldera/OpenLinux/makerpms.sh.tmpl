@@ -28,10 +28,12 @@ else
 fi
 
 cp -af *.spec *.spec-lsb $SPECDIR
-for src in *.patch; do
-  trg=`echo $src | sed 's;xxxxxx;PVERSION;'`
-  cp -a $src $SRCDIR/$trg
-done
+if [ -x *.patch ]; then
+	for src in *.patch; do
+	  trg=`echo $src | sed 's;xxxxxx;PVERSION;'`
+	  cp -a $src $SRCDIR/$trg
+	done
+fi
 
 # Start building the package
 cd $SPECDIR
