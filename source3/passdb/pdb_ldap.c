@@ -1897,13 +1897,16 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 
 	rc = ldapsam_search_one_group_by_gid(ldap_state, map->gid, &result);
 	if (rc != LDAP_SUCCESS) {
+		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
 
-	if ( count == 0 )
+	if ( count == 0 ) {
+		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	if (count > 1) {
 		DEBUG(2, ("Group %i must exist exactly once in LDAP\n",
