@@ -20,6 +20,7 @@ SGMLSPL=@SGMLSPL@
 SGML_SHARE=/usr/local/share/sgml
 HTML_STYLESHEET = $(srcdir)/stylesheets/html.dsl
 HTML_DEPS = $(srcdir)/stylesheets/html-common.dsl $(srcdir)/stylesheets/common.dsl
+SGML_SHARE=/usr/local/share/sgml
 
 MANPAGES=findsmb.1 smbclient.1 \
 	smbspool.8 lmhosts.5 \
@@ -36,7 +37,7 @@ MANPAGES=findsmb.1 smbclient.1 \
 ######################################################################
 # Make instructions
 ######################################################################
-all: man
+all: man html
 
 man: 
 	@echo Building man pages...
@@ -45,10 +46,23 @@ man:
 	   echo "Making $$manfile"; \
 	   $(ONSGMLS) -f /tmp/docbook2x.log $$file | $(SGMLSPL) \
 	      $(SGML_SHARE)/docbook2X/docbook2man-spec.pl; \
-	      cat /tmp/docbook2x.log | grep -v DTDDECL; \
-	      /bin/rm -f /tmp/docbook2x.log; \
+	   cat /tmp/docbook2x.log | grep -v DTDDECL; \
+	   /bin/rm -f /tmp/docbook2x.log; \
 	   /bin/mv -f $$manfile ../manpages/$$manfile; \
 	done
+	
+html:
+	@echo Building HTML formatted man pages...
+		@for file in `/bin/ls manpages/*sgml`; do \
+	   htmlfile=`basename $$file | sed "s/\.sgml/\.html/g"`; \
+	   echo "Making $$htmlfile"; \
+	   $(JADE) -t sgml -V nochunks -d  $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl \
+	      -f /tmp/jade.log $$file > ../htmldocs/$$htmlfile; \
+	   cat /tmp/jade.log | grep -v DTDDECL; \
+	   /bin/rm -f /tmp/jade.log; \
+	done
+
+
 ##
 ## these rules are for building individual files
 ##
