@@ -186,6 +186,19 @@ close a dptr
 ****************************************************************************/
 void dptr_close(int key)
 {
+  /* OS/2 seems to use -1 to indicate "close all directories" */
+  if (key == -1) {
+    int i;
+    for (i=0;i<NUMDIRPTRS;i++) 
+      dptr_close(i);
+    return;
+  }
+
+  if (key < 0 || key >= NUMDIRPTRS) {
+    DEBUG(3,("Invalid key %d given to dptr_close\n",key));
+    return;
+  }
+
   if (dirptrs[key].valid) {
     DEBUG(4,("closing dptr key %d\n",key));
     if (dirptrs[key].ptr) {
