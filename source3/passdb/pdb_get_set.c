@@ -1045,19 +1045,6 @@ BOOL pdb_set_backend_private_data (SAM_ACCOUNT *sampass, void *private_data,
 	if (!sampass)
 		return False;
 
-#if 0
-	/* With this check backend_private_data_free_fn is *never* set
-	   as the methods are never set anywhere. What is this
-	   supposed to do ????
-
-	   Volker
-	*/
-
-	/* does this backend 'own' this SAM_ACCOUNT? */
-	if (my_methods != sampass->private.backend_private_methods)
-		return False;
-#endif
-
 	if (sampass->private.backend_private_data && sampass->private.backend_private_data_free_fn) {
 		sampass->private.backend_private_data_free_fn(&sampass->private.backend_private_data);
 	}
