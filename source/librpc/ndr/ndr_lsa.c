@@ -762,7 +762,8 @@ NTSTATUS ndr_pull_lsa_ServerRole(struct ndr_pull *ndr, int ndr_flags, struct lsa
 {
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_align(ndr, 2));
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->unknown));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->role));
 	ndr_pull_struct_end(ndr);
 buffers:
@@ -823,8 +824,8 @@ NTSTATUS ndr_pull_lsa_AuditFullSetInfo(struct ndr_pull *ndr, int ndr_flags, stru
 {
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->shutdown_on_full));
+	NDR_CHECK(ndr_pull_align(ndr, 1));
+	NDR_CHECK(ndr_pull_uint8(ndr, &r->shutdown_on_full));
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
@@ -836,9 +837,10 @@ NTSTATUS ndr_pull_lsa_AuditFullQueryInfo(struct ndr_pull *ndr, int ndr_flags, st
 {
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->shutdown_on_full));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->log_is_full));
+	NDR_CHECK(ndr_pull_align(ndr, 2));
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->unknown));
+	NDR_CHECK(ndr_pull_uint8(ndr, &r->shutdown_on_full));
+	NDR_CHECK(ndr_pull_uint8(ndr, &r->log_is_full));
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
@@ -2007,6 +2009,7 @@ void ndr_print_lsa_ServerRole(struct ndr_print *ndr, const char *name, struct ls
 {
 	ndr_print_struct(ndr, name, "lsa_ServerRole");
 	ndr->depth++;
+	ndr_print_uint16(ndr, "unknown", r->unknown);
 	ndr_print_uint16(ndr, "role", r->role);
 	ndr->depth--;
 }
@@ -2046,7 +2049,7 @@ void ndr_print_lsa_AuditFullSetInfo(struct ndr_print *ndr, const char *name, str
 {
 	ndr_print_struct(ndr, name, "lsa_AuditFullSetInfo");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "shutdown_on_full", r->shutdown_on_full);
+	ndr_print_uint8(ndr, "shutdown_on_full", r->shutdown_on_full);
 	ndr->depth--;
 }
 
@@ -2054,8 +2057,9 @@ void ndr_print_lsa_AuditFullQueryInfo(struct ndr_print *ndr, const char *name, s
 {
 	ndr_print_struct(ndr, name, "lsa_AuditFullQueryInfo");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "shutdown_on_full", r->shutdown_on_full);
-	ndr_print_uint32(ndr, "log_is_full", r->log_is_full);
+	ndr_print_uint16(ndr, "unknown", r->unknown);
+	ndr_print_uint8(ndr, "shutdown_on_full", r->shutdown_on_full);
+	ndr_print_uint8(ndr, "log_is_full", r->log_is_full);
 	ndr->depth--;
 }
 

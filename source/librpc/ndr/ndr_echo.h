@@ -56,12 +56,21 @@ struct echo_SourceData {
 
 };
 
+struct echo_ServerRole {
+	uint16 role;
+};
+
+union echo_PolicyInformation {
+/* [case(6)] */ struct echo_ServerRole role;
+};
+
 struct TestCall {
 	struct {
-		const char *s;
+		uint16 level;
 	} in;
 
 	struct {
+		union echo_PolicyInformation *info;
 	} out;
 
 };

@@ -202,6 +202,7 @@ struct lsa_PDAccountInfo {
 };
 
 struct lsa_ServerRole {
+	uint16 unknown;
 	uint16 role;
 };
 
@@ -225,12 +226,13 @@ struct lsa_ModificationInfo {
 };
 
 struct lsa_AuditFullSetInfo {
-	uint32 shutdown_on_full;
+	uint8 shutdown_on_full;
 };
 
 struct lsa_AuditFullQueryInfo {
-	uint32 shutdown_on_full;
-	uint32 log_is_full;
+	uint16 unknown;
+	uint8 shutdown_on_full;
+	uint8 log_is_full;
 };
 
 struct lsa_DnsDomainInfo {
