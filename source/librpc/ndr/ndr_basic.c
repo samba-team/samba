@@ -106,7 +106,7 @@ NTSTATUS ndr_pull_int32(struct ndr_pull *ndr, int ndr_flags, int32_t *v)
 }
 
 /*
-  parse a pointer
+  parse a pointer referent identifier
 */
 NTSTATUS ndr_pull_ptr(struct ndr_pull *ndr, uint32_t *v)
 {

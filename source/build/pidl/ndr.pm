@@ -199,7 +199,7 @@ sub find_sibling($$)
 
 ####################################################################
 # work out the name of a size_is() variable
-sub find_size_var($$$)
+sub ParseExpr($$$)
 {
 	my($e) = shift;
 	my($size) = shift;
@@ -242,7 +242,7 @@ sub find_size_var($$$)
 }
 
 #####################################################################
-# check that a variable we get from find_size_var isn't a null pointer
+# check that a variable we get from ParseExpr isn't a null pointer
 sub check_null_pointer($)
 {
 	my $size = shift;
@@ -253,7 +253,7 @@ sub check_null_pointer($)
 }
 
 #####################################################################
-# check that a variable we get from find_size_var isn't a null pointer
+# check that a variable we get from ParseExpr isn't a null pointer
 # void return varient
 sub check_null_pointer_void($)
 {
@@ -345,19 +345,23 @@ sub align_type
 
 	my $dt = $typedefs{$e}->{DATA};
 
-	if ($dt->{TYPE} eq "STRUCT") {
-		return struct_alignment($dt);
-	} elsif($dt->{TYPE} eq "UNION") {
-		return struct_alignment($dt);
-	} elsif ($dt->{TYPE} eq "ENUM") {
-	   	return align_type(util::enum_type_fn(util::get_enum($e)));
-	} elsif ($dt->{TYPE} eq "BITMAP") {
-		return align_type(util::bitmap_type_fn(util::get_bitmap($e)));
-	} elsif ($dt->{TYPE} eq "SCALAR") {
-		return $dt->{ALIGN};
-	}
+	return $dt->{ALIGN} if ($dt->{ALIGN});
 
-	die("Internal pidl error. Typedef has unknown data type $dt->{TYPE}!");
+	if ($dt->{TYPE} eq "STRUCT") {
+		$dt->{ALIGN} = struct_alignment($dt);
+	} elsif($dt->{TYPE} eq "UNION") {
+		$dt->{ALIGN} = struct_alignment($dt);
+	} elsif ($dt->{TYPE} eq "ENUM") {
+	   	$dt->{ALIGN} = align_type(util::enum_type_fn(util::get_enum($e)));
+	} elsif ($dt->{TYPE} eq "BITMAP") {
+		$dt->{ALIGN} = align_type(util::bitmap_type_fn(util::get_bitmap($e)));
+	} 
+
+	if (not defined($dt->{ALIGN})) {
+		die("Internal pidl error. Unable to determine alignment for data type $dt->{TYPE}!");
+	}
+	
+	return $dt->{ALIGN};
 }
 
 #####################################################################
@@ -368,7 +372,7 @@ sub ParseArrayPush($$$)
 	my $var_prefix = shift;
 	my $ndr_flags = shift;
 
-	my $size = find_size_var($e, util::array_size($e), $var_prefix);
+	my $size = ParseExpr($e, util::array_size($e), $var_prefix);
 
 	if (defined $e->{CONFORMANT_SIZE}) {
 		# the conformant size has already been pushed
@@ -378,7 +382,7 @@ sub ParseArrayPush($$$)
 	}
 
 	if (my $length = util::has_property($e, "length_is")) {
-		$length = find_size_var($e, $length, $var_prefix);
+		$length = ParseExpr($e, $length, $var_prefix);
 		pidl "\t\tNDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));\n";
 		pidl "\t\tNDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $length));\n";
 		$size = $length;
@@ -397,11 +401,11 @@ sub ParseArrayPrint($$)
 {
 	my $e = shift;
 	my $var_prefix = shift;
-	my $size = find_size_var($e, util::array_size($e), $var_prefix);
+	my $size = ParseExpr($e, util::array_size($e), $var_prefix);
 	my $length = util::has_property($e, "length_is");
 
 	if (defined $length) {
-		$size = find_size_var($e, $length, $var_prefix);
+		$size = ParseExpr($e, $length, $var_prefix);
 	}
 
 	if (is_scalar_type($e->{TYPE})) {
@@ -420,7 +424,7 @@ sub CheckArraySizes($$)
 
 	if (!defined $e->{CONFORMANT_SIZE} && 
 	    util::has_property($e, "size_is")) {
-		my $size = find_size_var($e, util::array_size($e), $var_prefix);
+		my $size = ParseExpr($e, util::array_size($e), $var_prefix);
 		pidl "\tif ($var_prefix$e->{NAME}) {\n";
 		check_null_pointer($size);
 		pidl "\t\tNDR_CHECK(ndr_check_array_size(ndr, (void*)&$var_prefix$e->{NAME}, $size));\n";
@@ -428,7 +432,7 @@ sub CheckArraySizes($$)
 	}
 
 	if (my $length = util::has_property($e, "length_is")) {
-		$length = find_size_var($e, $length, $var_prefix);
+		$length = ParseExpr($e, $length, $var_prefix);
 		pidl "\tif ($var_prefix$e->{NAME}) {\n";
 		check_null_pointer($length);
 		pidl "\t\tNDR_CHECK(ndr_check_array_length(ndr, (void*)&$var_prefix$e->{NAME}, $length));\n";
@@ -445,7 +449,7 @@ sub ParseArrayPull($$$)
 	my $var_prefix = shift;
 	my $ndr_flags = shift;
 
-	my $size = find_size_var($e, util::array_size($e), $var_prefix);
+	my $size = ParseExpr($e, util::array_size($e), $var_prefix);
 	my $alloc_size = $size;
 
 	# if this is a conformant array then we use that size to allocate, and make sure
@@ -571,7 +575,7 @@ sub ParseElementPullSwitch($$$$)
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $switch = shift;
-	my $switch_var = find_size_var($e, $switch, $var_prefix);
+	my $switch_var = ParseExpr($e, $switch, $var_prefix);
 
 	my $cprefix = c_pull_prefix($e);
 
@@ -624,7 +628,7 @@ sub ParseElementPushSwitch($$$$)
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $switch = shift;
-	my $switch_var = find_size_var($e, $switch, $var_prefix);
+	my $switch_var = ParseExpr($e, $switch, $var_prefix);
 	my $cprefix = c_push_prefix($e);
 
 	check_null_pointer($switch_var);
@@ -655,7 +659,7 @@ sub ParseElementPrintSwitch($$$)
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my $switch = shift;
-	my $switch_var = find_size_var($e, $switch, $var_prefix);
+	my $switch_var = ParseExpr($e, $switch, $var_prefix);
 	my $cprefix = c_push_prefix($e);
 
 	check_null_pointer_void($switch_var);
@@ -856,7 +860,7 @@ sub ParseStructPush($)
 	# alignment)
 	my $e = $struct->{ELEMENTS}[-1];
 	if (defined $e->{ARRAY_LEN} && $e->{ARRAY_LEN} eq "*") {
-		my $size = find_size_var($e, util::array_size($e), "r->");
+		my $size = ParseExpr($e, util::array_size($e), "r->");
 		$e->{CONFORMANT_SIZE} = $size;
 		check_null_pointer($size);
 		pidl "\tNDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $size));\n";
@@ -1673,7 +1677,7 @@ sub AllocateRefVars($)
 	}
 
 	# its an array
-	my $size = find_size_var($e, $asize, "r->out.");
+	my $size = ParseExpr($e, $asize, "r->out.");
 	check_null_pointer($size);
 	pidl "\tNDR_ALLOC_N(ndr, r->out.$e->{NAME}, $size);\n";
 	if (util::has_property($e, "in")) {

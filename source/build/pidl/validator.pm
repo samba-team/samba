@@ -47,6 +47,17 @@ sub ValidElement($)
 	if ($e->{POINTERS} && $e->{ARRAY_LEN}) {
 		fatal(el_name($e) . " : pidl cannot handle pointers to arrays. Use a substructure instead\n");
 	}
+	
+	if (util::has_property($e, "ptr")) {
+		fatal(el_name($e) . " : pidl does not support full NDR pointers yet\n");
+	}
+	
+	if (!$e->{POINTERS} && (
+		util::has_property($e, "ptr") or
+		util::has_property($e, "unique") or
+		util::has_property($e, "ref"))) {
+		fatal(el_name($e) . " : pointer properties on non-pointer element\n");	
+	}
 }
 
 #####################################################################
