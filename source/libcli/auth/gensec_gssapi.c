@@ -130,6 +130,10 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	gss_buffer_desc name_token;
 	OM_uint32 maj_stat, min_stat;
 
+	gss_OID_desc hostbased = {10, 
+				  (void *)discard_const_p(char, "\x2a\x86\x48\x86\xf7\x12"
+							  "\x01\x02\x01\x04")};
+
 	nt_status = gensec_gssapi_start(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -144,7 +148,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 
 	maj_stat = gss_import_name (&min_stat,
 				    &name_token,
-				    GSS_C_NT_HOSTBASED_SERVICE,
+				    &hostbased,
 				    &gensec_gssapi_state->server_name);
 
 
