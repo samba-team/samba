@@ -387,10 +387,9 @@ void notify_job_status(int snum, uint32 jobid, uint32 status)
 	notify_job_status_byname(printer_name, jobid, status, 0);
 }
 
-void notify_job_total_bytes(int snum, uint32 jobid, uint32 size)
+void notify_job_total_bytes(const char *printer_name, uint32 jobid,
+			    uint32 size)
 {
-	const char *printer_name = SERVICE(snum);
-
 	/* Job id stored in id field, status in value1 */
 
 	send_notify_field_values(printer_name, JOB_NOTIFY_TYPE,
@@ -398,10 +397,9 @@ void notify_job_total_bytes(int snum, uint32 jobid, uint32 size)
 				 size, 0, 0);
 }
 
-void notify_job_total_pages(int snum, uint32 jobid, uint32 pages)
+void notify_job_total_pages(const char *printer_name, uint32 jobid,
+			    uint32 pages)
 {
-	const char *printer_name = SERVICE(snum);
-
 	/* Job id stored in id field, status in value1 */
 
 	send_notify_field_values(printer_name, JOB_NOTIFY_TYPE,
@@ -409,28 +407,23 @@ void notify_job_total_pages(int snum, uint32 jobid, uint32 pages)
 				 pages, 0, 0);
 }
 
-void notify_job_username(int snum, uint32 jobid, char *name)
+void notify_job_username(const char *printer_name, uint32 jobid, char *name)
 {
-	const char *printer_name = SERVICE(snum);
-
 	send_notify_field_buffer(
 		printer_name, JOB_NOTIFY_TYPE, JOB_NOTIFY_USER_NAME,
 		jobid, strlen(name) + 1, name);
 }
 
-void notify_job_name(int snum, uint32 jobid, char *name)
+void notify_job_name(const char *printer_name, uint32 jobid, char *name)
 {
-	const char *printer_name = SERVICE(snum);
-
 	send_notify_field_buffer(
 		printer_name, JOB_NOTIFY_TYPE, JOB_NOTIFY_DOCUMENT,
 		jobid, strlen(name) + 1, name);
 }
 
-void notify_job_submitted(int snum, uint32 jobid, time_t submitted)
+void notify_job_submitted(const char *printer_name, uint32 jobid,
+			  time_t submitted)
 {
-	const char *printer_name = SERVICE(snum);
-
 	send_notify_field_buffer(
 		printer_name, JOB_NOTIFY_TYPE, JOB_NOTIFY_SUBMITTED,
 		jobid, sizeof(submitted), (char *)&submitted);

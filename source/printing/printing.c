@@ -161,7 +161,7 @@ static void rap_jobid_delete(int snum, uint32 jobid)
 
 static pid_t local_pid;
 
-static int get_queue_status(int, print_status_struct *);
+static int get_queue_status(const char *printer_name, print_status_struct *);
 
 /****************************************************************************
  Initialise the printing backend. Called once at startup before the fork().
@@ -434,7 +434,8 @@ static uint32 map_to_spoolss_status(uint32 lpq_status)
 	return 0;
 }
 
-static void pjob_store_notify(int snum, uint32 jobid, struct printjob *old_data,
+static void pjob_store_notify(const char *printer_name, uint32 jobid,
+			      struct printjob *old_data,
 			      struct printjob *new_data)
 {
 	BOOL new_job = False;
@@ -445,38 +446,41 @@ static void pjob_store_notify(int snum, uint32 jobid, struct printjob *old_data,
 	/* Notify the job name first */
 
 	if (new_job || !strequal(old_data->jobname, new_data->jobname))
-		notify_job_name(snum, jobid, new_data->jobname);
+		notify_job_name(printer_name, jobid, new_data->jobname);
 
 	/* Job attributes that can't be changed.  We only send
 	   notification for these on a new job. */
 
 	if (new_job) {
-		notify_job_submitted(snum, jobid, new_data->starttime);
-		notify_job_username(snum, jobid, new_data->user);
+		notify_job_submitted(printer_name, jobid, new_data->starttime);
+		notify_job_username(printer_name, jobid, new_data->user);
 	}
 
 	/* Job attributes of a new job or attributes that can be
 	   modified. */
 
 	if (new_job || old_data->status != new_data->status)
-		notify_job_status(snum, jobid, map_to_spoolss_status(new_data->status));
+		notify_job_status_byname(printer_name, jobid,
+					 map_to_spoolss_status(new_data->status), 0);
 
 	if (new_job || old_data->size != new_data->size)
-		notify_job_total_bytes(snum, jobid, new_data->size);
+		notify_job_total_bytes(printer_name, jobid, new_data->size);
 
 	if (new_job || old_data->page_count != new_data->page_count)
-		notify_job_total_pages(snum, jobid, new_data->page_count);
+		notify_job_total_pages(printer_name, jobid,
+				       new_data->page_count);
 }
 
 /****************************************************************************
  Store a job structure back to the database.
 ****************************************************************************/
 
-static BOOL pjob_store(int snum, uint32 jobid, struct printjob *pjob)
+static BOOL pjob_store(const char *printer_name, uint32 jobid,
+		       struct printjob *pjob)
 {
 	TDB_DATA 		old_data, new_data;
 	BOOL 			ret = False;
-	struct tdb_print_db 	*pdb = get_print_db_byname(lp_const_servicename(snum));
+	struct tdb_print_db 	*pdb = get_print_db_byname(printer_name);
 	char			*buf = NULL;
 	int			len, newlen, buflen;
 	
@@ -544,13 +548,14 @@ static BOOL pjob_store(int snum, uint32 jobid, struct printjob *pjob)
 		{
 			if ( unpack_pjob( old_data.dptr, old_data.dsize, &old_pjob ) != -1 )
 			{
-				pjob_store_notify( snum, jobid, &old_pjob , pjob );
+				pjob_store_notify( printer_name, jobid,
+						   &old_pjob , pjob );
 				free_nt_devicemode( &old_pjob.nt_devmode );
 			}
 		}
 		else {
 			/* new job */
-			pjob_store_notify( snum, jobid, NULL, pjob );
+			pjob_store_notify( printer_name, jobid, NULL, pjob );
 		}
 	}
 
@@ -657,7 +662,7 @@ static void print_unix_job(int snum, print_queue_struct *q, uint32 jobid)
 	fstrcpy(pj.user, old_pj ? old_pj->user : q->fs_user);
 	fstrcpy(pj.queuename, old_pj ? old_pj->queuename : lp_const_servicename(snum));
 
-	pjob_store(snum, jobid, &pj);
+	pjob_store(lp_const_servicename(snum), jobid, &pj);
 }
 
 
@@ -1107,7 +1112,7 @@ static void print_queue_update_internal(struct print_queue_update_context *ctx)
 
 		pjob->sysjob = queue[i].job;
 		pjob->status = queue[i].status;
-		pjob_store(ctx->snum, jobid, pjob);
+		pjob_store(ctx->printer_name, jobid, pjob);
 		check_job_changed(ctx->snum, jcdata, jobid);
 	}
 
@@ -1133,7 +1138,7 @@ static void print_queue_update_internal(struct print_queue_update_context *ctx)
 
 	tdb_store_int32(pdb->tdb, "INFO/total_jobs", tstruct.total_jobs);
 
-	get_queue_status(ctx->snum, &old_status);
+	get_queue_status(ctx->printer_name, &old_status);
 	if (old_status.qcount != qcount)
 		DEBUG(10,("print_queue_update: queue status change %d jobs -> "
 			  "%d jobs for printer %s\n", old_status.qcount,
@@ -1530,7 +1535,7 @@ BOOL print_job_set_name(int snum, uint32 jobid, char *name)
 		return False;
 
 	fstrcpy(pjob->jobname, name);
-	return pjob_store(snum, jobid, pjob);
+	return pjob_store(lp_const_servicename(snum), jobid, pjob);
 }
 
 /***************************************************************************
@@ -1620,7 +1625,7 @@ static BOOL print_job_delete1(int snum, uint32 jobid)
 	/* Set the tdb entry to be deleting. */
 
 	pjob->status = LPQ_DELETING;
-	pjob_store(snum, jobid, pjob);
+	pjob_store(lp_const_servicename(snum), jobid, pjob);
 
 	if (pjob->spooled && pjob->sysjob != -1)
 		result = (*(current_printif->job_delete))(snum, pjob);
@@ -1850,7 +1855,7 @@ int print_job_write(int snum, uint32 jobid, const char *buf, int size)
 	return_code = write(pjob->fd, buf, size);
 	if (return_code>0) {
 		pjob->size += size;
-		pjob_store(snum, jobid, pjob);
+		pjob_store(lp_const_servicename(snum), jobid, pjob);
 	}
 	return return_code;
 }
@@ -1898,11 +1903,11 @@ static BOOL print_cache_expired(int snum)
  Get the queue status - do not update if db is out of date.
 ****************************************************************************/
 
-static int get_queue_status(int snum, print_status_struct *status)
+static int get_queue_status(const char *printername,
+			    print_status_struct *status)
 {
 	fstring keystr;
 	TDB_DATA data, key;
-	const char *printername = lp_const_servicename(snum);
 	struct tdb_print_db *pdb = get_print_db_byname(printername);
 	int len;
 
@@ -1943,7 +1948,7 @@ int print_queue_length(int snum, print_status_struct *pstatus)
  
 	/* also fetch the queue status */
 	memset(&status, 0, sizeof(status));
-	len = get_queue_status(snum, &status);
+	len = get_queue_status(lp_const_servicename(snum), &status);
 
 	if (pstatus)
 		*pstatus = status;
@@ -2147,7 +2152,7 @@ to open spool file %s.\n", pjob.filename));
 		goto fail;
 	}
 
-	pjob_store(snum, jobid, &pjob);
+	pjob_store(lp_const_servicename(snum), jobid, &pjob);
 
 	/* Update the 'jobs changed' entry used by print_queue_status. */
 	add_to_jobs_changed(pdb, jobid);
@@ -2184,7 +2189,7 @@ void print_job_endpage(int snum, uint32 jobid)
 		return;
 
 	pjob->page_count++;
-	pjob_store(snum, jobid, pjob);
+	pjob_store(lp_const_servicename(snum), jobid, pjob);
 }
 
 /****************************************************************************
@@ -2246,7 +2251,7 @@ BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
 	
 	pjob->spooled = True;
 	pjob->status = LPQ_QUEUED;
-	pjob_store(snum, jobid, pjob);
+	pjob_store(lp_const_servicename(snum), jobid, pjob);
 	
 	/* make sure the database is up to date */
 	if (print_cache_expired(snum))
