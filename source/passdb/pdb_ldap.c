@@ -782,7 +782,15 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 
 	/* pdb_set_unknown_6(sampass, unknown6, PDB_SET); */
 
-	pdb_set_hours(sampass, hours, PDB_SET);
+	if(!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
+		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LOGON_HOURS), temp)) {
+			/* leave as default */
+	} else {
+		pdb_gethexhours(temp, hours);
+		memset((char *)temp, '\0', strlen(temp) +1);
+		pdb_set_hours(sampass, hours, PDB_SET);
+		ZERO_STRUCT(hours);
+	}
 
 	/* check the timestamp of the cache vs ldap entry */
 	if (!(ldap_entry_time = ldapsam_get_entry_timestamp(ldap_state, 
@@ -1065,7 +1073,18 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		}
 	}
 
-	/* FIXME: Hours stuff goes in LDAP  */
+	if (need_update(sampass, PDB_HOURS)) {
+		const char *hours = pdb_get_hours(sampass);
+		if (hours) {
+			pdb_sethexhours(temp, hours);
+			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct,
+				existing,
+				mods,
+				get_userattr_key2string(ldap_state->schema_ver,
+						LDAP_ATTR_LOGON_HOURS),
+				temp);
+		}
+	}
 
 	if (need_update(sampass, PDB_ACCTCTRL))
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
