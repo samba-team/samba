@@ -294,7 +294,7 @@ akf_add_entry(krb5_context context,
     return 0;
 }
 
-krb5_kt_ops krb5_akf_ops = {
+const krb5_kt_ops krb5_akf_ops = {
     "AFSKEYFILE",
     akf_resolve,
     akf_get_name,
