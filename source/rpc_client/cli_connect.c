@@ -213,7 +213,7 @@ void cli_connection_free(struct cli_connection *con)
 			{
 				DEBUG(10, ("msrpc smb connection\n"));
 				ncacn_np_use_del(con->pipe_name,
-						 &con->msrpc.local->nt.key,
+						 &con->msrpc.smb->smb->nt.key,
 						 False, &closed);
 				oldcli = con->msrpc.local;
 				con->msrpc.smb = NULL;

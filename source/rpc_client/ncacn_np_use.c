@@ -203,12 +203,12 @@ static struct ncacn_np_use *ncacn_np_find(const char *srv_name,
 		ncacn_np_name = c->cli->pipe_name;
 		cli_name = c->cli->smb->desthost;
 
+		k = c->cli->smb->nt.key;
+
 		DEBUG(10, ("ncacn_np_find[%d]: %s %s %s %s [%d,%x]\n",
 			   i, ncacn_np_name, cli_name,
 			   c->cli->smb->usr.user_name,
 			   c->cli->smb->usr.domain, k.pid, k.vuid));
-
-		k = c->cli->smb->nt.key;
 
 		if (strnequal("\\\\", cli_name, 2))
 		{
@@ -394,8 +394,14 @@ BOOL ncacn_np_use_del(const char *pipe_name,
 		      BOOL force_close, BOOL *connection_closed)
 {
 	int i;
-	DEBUG(10, ("ncacn_np_net_use_del: %s. force close: %s\n",
+	DEBUG(10, ("ncacn_np_net_use_del: %s. force close: %s ",
 		   pipe_name, BOOLSTR(force_close)));
+	if (key != NULL)
+	{
+		DEBUG(10, ("[%d,%x]", key->pid, key->vuid));
+	}
+	DEBUG(10, ("\n"));
+
 	if (connection_closed != NULL)
 	{
 		*connection_closed = False;
@@ -409,29 +415,40 @@ BOOL ncacn_np_use_del(const char *pipe_name,
 	for (i = 0; i < num_msrpcs; i++)
 	{
 		char *ncacn_np_name = NULL;
-		if (msrpcs[i] == NULL)
+		struct ncacn_np_use *c = msrpcs[i];
+		vuser_key k;
+
+		if (c == NULL || c->cli == NULL)
 			continue;
-		if (msrpcs[i]->cli == NULL)
-			continue;
-		ncacn_np_name = msrpcs[i]->cli->pipe_name;
-		if (strnequal("\\PIPE\\", pipe_name, 6))
+
+		ncacn_np_name = c->cli->pipe_name;
+
+		k = c->cli->smb->nt.key;
+
+		DEBUG(10, ("use_del[%d]: %s %s %s [%d,%x]\n",
+			   i, ncacn_np_name, 
+			   c->cli->smb->usr.user_name,
+			   c->cli->smb->usr.domain, k.pid, k.vuid));
+
+		if (strnequal("\\PIPE\\", ncacn_np_name, 6))
 		{
 			ncacn_np_name = &ncacn_np_name[6];
 		}
 		if (!strequal(ncacn_np_name, pipe_name))
+		{
 			continue;
-		if (key->pid != msrpcs[i]->cli->smb->nt.key.pid ||
-		    key->vuid != msrpcs[i]->cli->smb->nt.key.vuid)
+		}
+		if (key->pid != k.pid || key->vuid != k.vuid)
 		{
 			continue;
 		}
 		/* decrement number of users */
-		msrpcs[i]->num_users--;
+		c->num_users--;
 		DEBUG(10, ("idx: %i num_users now: %d\n",
-			   i, msrpcs[i]->num_users));
-		if (force_close || msrpcs[i]->num_users == 0)
+			   i, c->num_users));
+		if (force_close || c->num_users == 0)
 		{
-			ncacn_np_use_free(msrpcs[i]);
+			ncacn_np_use_free(c);
 			msrpcs[i] = NULL;
 			if (connection_closed != NULL)
 			{
