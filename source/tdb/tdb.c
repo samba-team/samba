@@ -1097,7 +1097,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 
 /* open the database, creating it if necessary 
 
-   The flags and mode are passed straight to the open call on the database
+   The open_flags and mode are passed straight to the open call on the database
    file. A flags value of O_WRONLY is invalid
 
    The hash size is advisory, use zero for a default value. 
