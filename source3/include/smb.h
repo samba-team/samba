@@ -1526,6 +1526,12 @@ struct node_status {
 	unsigned char flags;
 };
 
+/* The extra info from a NetBIOS node status query */
+struct node_status_extra {
+	unsigned char mac_addr[6];
+	/* There really is more here ... */ 
+};
+
 struct pwd_info
 {
 	BOOL null_pwd;
