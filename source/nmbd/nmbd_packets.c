@@ -1864,7 +1864,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
 
   /* DIRECT GROUP or UNIQUE datagram. */
   dgram->header.msg_type = unique ? 0x10 : 0x11; 
-  dgram->header.flags.node_type = M_NODE;
+  dgram->header.flags.node_type = M_NODE | 0x40;
   dgram->header.flags.first = True;
   dgram->header.flags.more = False;
   dgram->header.dgm_id = name_trn_id;

@@ -2750,8 +2750,9 @@ static void samr_reply_create_user(SAMR_Q_CREATE_USER *q_u,
 	SAMR_R_CREATE_USER r_u;
 	POLICY_HND pol;
 	uint32 status = 0x0;
-	uint32 user_rid = 0xffffffff;
+	uint32 user_rid = 0x0;
 	BOOL pol_open = False;
+	uint32 unk_0 = 0x30;
 
 	/* find the machine account: tell the caller if it exists.
 	   lkclXXXX i have *no* idea if this is a problem or not
@@ -2786,7 +2787,7 @@ static void samr_reply_create_user(SAMR_Q_CREATE_USER *q_u,
 		pstring msg_str;
 
 		if (!local_password_change(user_name, True,
-		          q_u->acb_info | ACB_DISABLED, 0xffff,
+		          q_u->acb_info | ACB_DISABLED | ACB_PWNOTREQ, 0xffff,
 		          NULL,
 		          err_str, sizeof(err_str),
 		          msg_str, sizeof(msg_str)))
@@ -2805,6 +2806,7 @@ static void samr_reply_create_user(SAMR_Q_CREATE_USER *q_u,
 			else
 			{
 				user_rid = sam_pass->user_rid;
+				unk_0 = 0x000703ff;
 			}
 		}
 	}
@@ -2823,7 +2825,7 @@ static void samr_reply_create_user(SAMR_Q_CREATE_USER *q_u,
 
 	DEBUG(5,("samr_create_user: %d\n", __LINE__));
 
-	make_samr_r_create_user(&r_u, &pol, 0x000703ff, user_rid, status);
+	make_samr_r_create_user(&r_u, &pol, unk_0, user_rid, status);
 
 	/* store the response in the SMB stream */
 	samr_io_r_create_user("", &r_u, rdata, 0);

@@ -1605,6 +1605,7 @@ void cmd_sam_create_dom_user(struct client_info *info)
 	uint32 user_rid; 
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
+	uint16 acb_info;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
@@ -1631,7 +1632,14 @@ void cmd_sam_create_dom_user(struct client_info *info)
 		acct_desc[0] = 0;
 	}
 
-
+	if (acct_name[strlen(acct_name)-1] == '$')
+	{
+		acb_info = ACB_WSTRUST;
+	}
+	else
+	{
+		acb_info = ACB_NORMAL;
+	}
 	report(out_hnd, "SAM Create Domain User\n");
 	report(out_hnd, "Domain: %s Name: %s Description: %s\n",
 	                  domain, acct_name, acct_desc);
@@ -1652,7 +1660,7 @@ void cmd_sam_create_dom_user(struct client_info *info)
 	/* create a domain user */
 	res1 = res ? create_samr_domain_user(smb_cli, fnum, 
 				&pol_dom,
-	                        acct_name, ACB_NORMAL, &user_rid) : False;
+	                        acct_name, acb_info, &user_rid) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
 	            &pol_dom) : False;
