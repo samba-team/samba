@@ -23,6 +23,43 @@
 #include "includes.h"
 #include "rpcclient.h"
 
+
+/* useful function to allow entering a name instead of a SID and
+ * looking it up automatically */
+static NTSTATUS name_to_sid(struct cli_state *cli, 
+			    TALLOC_CTX *mem_ctx,
+			    DOM_SID *sid, const char *name)
+{
+	POLICY_HND pol;
+	uint32 *sid_types;
+	NTSTATUS result;
+	DOM_SID *sids;
+
+	/* maybe its a raw SID */
+	if (strncmp(name, "S-", 2) == 0 &&
+	    string_to_sid(sid, name)) {
+		return NT_STATUS_OK;
+	}
+
+	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &pol);
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, 1, &name, &sids, &sid_types);
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	cli_lsa_close(cli, mem_ctx, &pol);
+
+	*sid = sids[0];
+
+done:
+	return result;
+}
+
+
 /* Look up domain related information on a remote host */
 
 static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli, 
@@ -422,7 +459,9 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct cli_state *cli,
 		return NT_STATUS_OK;
 	}
 
-	string_to_sid(&sid, argv[1]);
+	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(result))
+		goto done;	
 
 	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -474,7 +513,9 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct cli_state *cli,
 		return NT_STATUS_OK;
 	}
 
-	string_to_sid(&sid, argv[1]);
+	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(result))
+		goto done;	
 
 	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -488,7 +529,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	printf("found %d privileges for SID %s\n", count, argv[1]);
+	printf("found %d privileges for SID %s\n", count, sid_string_static(&sid));
 
 	for (i = 0; i < count; i++) {
 		printf("\t%s\n", rights[i]);
