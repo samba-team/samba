@@ -5341,27 +5341,19 @@ BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 	memcpy(&(q_u->pol), hnd, sizeof(q_u->pol));
 	q_u->switch_value  = switch_value;
 	q_u->switch_value2 = switch_value;
+	q_u->info.id = info;
 
 	switch (switch_value)
 	{
 		case 0x18:
-		{
-			q_u->info.id24 = (SAM_USER_INFO_24*)info;
-
-			break;
-		}
-
 		case 0x17:
 		{
-			q_u->info.id23 = (SAM_USER_INFO_23*)info;
-
 			break;
 		}
-
 		default:
 		{
 			DEBUG(4,("make_samr_q_set_userinfo: unsupported switch level\n"));
-			break;
+			return False;
 		}
 	}
 
@@ -5397,8 +5389,12 @@ BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps
 		}
 		case 24:
 		{
-			q_u->info.id = (SAM_USER_INFO_24*)Realloc(NULL,
-			                 sizeof(*q_u->info.id24));
+			if (ps->io)
+			{
+				/* reading */
+				q_u->info.id = (SAM_USER_INFO_24*)Realloc(NULL,
+						 sizeof(*q_u->info.id24));
+			}
 			if (q_u->info.id == NULL)
 			{
 				DEBUG(2,("samr_io_q_query_userinfo: info pointer not initialised\n"));
@@ -5409,8 +5405,12 @@ BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps
 		}
 		case 23:
 		{
-			q_u->info.id = (SAM_USER_INFO_23*)Realloc(NULL,
-				         sizeof(*q_u->info.id23));
+			if (ps->io)
+			{
+				/* reading */
+				q_u->info.id = (SAM_USER_INFO_23*)Realloc(NULL,
+						 sizeof(*q_u->info.id23));
+			}
 			if (q_u->info.id == NULL)
 			{
 				DEBUG(2,("samr_io_q_query_userinfo: info pointer not initialised\n"));
@@ -5428,7 +5428,24 @@ BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps
 	}
 	prs_align(ps);
 
+	if (!ps->io)
+	{
+		free_samr_q_set_userinfo(q_u);
+	}
+
 	return True;
+}
+
+/*******************************************************************
+frees a structure.
+********************************************************************/
+void free_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u)
+{
+	if (q_u->info.id == NULL)
+	{
+		free(q_u->info.id);
+	}
+	q_u->info.id = NULL;
 }
 
 /*******************************************************************

@@ -2,8 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NT Domain Authentication SMB / MSRPC client
-   Copyright (C) Andrew Tridgell 1994-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
+   Copyright (C) Andrew Tridgell 1994-1999
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -109,13 +109,17 @@ BOOL msrpc_srv_enum_tprt(struct cli_state *cli,
 				const char* dest_srv,
 				uint32 info_level,
 				SRV_TPRT_INFO_CTR *ctr,
-				uint32 pref_sz,
-				ENUM_HND *hnd)
+				TPRT_INFO_FN(tprt_fn))
 {
 	uint16 fnum;
 
 	BOOL res = True;
 	BOOL res1 = True;
+
+	ENUM_HND hnd;
+
+	hnd.ptr_hnd = 1;
+	hnd.handle = 0;
 
 	/* open srvsvc session. */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &fnum) : False;
@@ -123,12 +127,23 @@ BOOL msrpc_srv_enum_tprt(struct cli_state *cli,
 	/* enumerate transports on server */
 	res1 = res ? do_srv_net_srv_tprt_enum(smb_cli, fnum,
 				dest_srv, 
-	            info_level, ctr, pref_sz, hnd) : False;
+	            info_level, ctr, 0xffffffff, &hnd) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
 
+	tprt_fn(ctr);
+
+	free_srv_tprt_ctr(ctr);
+
 	return res1;
+}
+
+static void srv_display_tprt_ctr(SRV_TPRT_INFO_CTR *ctr)
+{
+	display_srv_tprt_info_ctr(out_hnd, ACTION_HEADER   , ctr);
+	display_srv_tprt_info_ctr(out_hnd, ACTION_ENUMERATE, ctr);
+	display_srv_tprt_info_ctr(out_hnd, ACTION_FOOTER   , ctr);
 }
 
 /****************************************************************************
@@ -139,9 +154,7 @@ void cmd_srv_enum_tprt(struct client_info *info)
 	fstring dest_srv;
 	fstring tmp;
 	SRV_TPRT_INFO_CTR ctr;
-	ENUM_HND hnd;
 	uint32 info_level = 0;
-	uint32 pref_sz = 0xffffffff;
 
 	bzero(&ctr, sizeof(ctr));
 
@@ -159,19 +172,10 @@ void cmd_srv_enum_tprt(struct client_info *info)
 
 	DEBUG(5, ("cmd_srv_enum_tprt: smb_cli->fd:%d\n", smb_cli->fd));
 
-	hnd.ptr_hnd = 1;
-	hnd.handle = 0;
-
 	/* enumerate transports on server */
-	if (msrpc_srv_enum_tprt(smb_cli, dest_srv, 
-	            info_level, &ctr, pref_sz, &hnd))
-	{
-		display_srv_tprt_info_ctr(out_hnd, ACTION_HEADER   , &ctr);
-		display_srv_tprt_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
-		display_srv_tprt_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
-	}
-
-	free_srv_tprt_ctr(&ctr);
+	msrpc_srv_enum_tprt(smb_cli, dest_srv, 
+	            info_level, &ctr, 
+	            srv_display_tprt_ctr);
 }
 
 /****************************************************************************

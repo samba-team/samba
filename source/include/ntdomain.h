@@ -169,5 +169,7 @@ struct acct_info
 #define SVC_QUERY_FN(fn) void (*fn)(QUERY_SERVICE_CONFIG *)
 #define SVC_INFO_FN(fn)  void (*fn)(ENUM_SRVC_STATUS *)
 
+#define TPRT_INFO_FN(fn)  void (*fn)(SRV_TPRT_INFO_CTR *)
+
 #endif /* _NT_DOMAIN_H */
 

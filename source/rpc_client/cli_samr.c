@@ -304,6 +304,41 @@ BOOL get_samr_query_aliasmem(struct cli_state *cli, uint16 fnum,
 }
 
 /****************************************************************************
+do a SAMR set user info
+****************************************************************************/
+BOOL set_samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol_open_domain,
+				uint32 info_level,
+				uint32 user_rid, void *usr)
+{
+	POLICY_HND pol_open_user;
+	BOOL ret = True;
+
+	if (pol_open_domain == NULL || usr == NULL) return False;
+
+	/* send open domain (on user sid) */
+	if (!samr_open_user(cli, fnum,
+				pol_open_domain,
+				0x02000000, user_rid,
+				&pol_open_user))
+	{
+		return False;
+	}
+
+	/* send user info query */
+	if (!samr_set_userinfo(cli, fnum,
+				&pol_open_user,
+				info_level, usr))
+	{
+		DEBUG(5,("samr_set_userinfo: error in query user info, level 0x%x\n",
+		          info_level));
+		ret = False;
+	}
+
+	return samr_close(cli, fnum,&pol_open_user) && ret;
+}
+
+/****************************************************************************
 do a SAMR query user info
 ****************************************************************************/
 BOOL get_samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
@@ -2404,6 +2439,61 @@ BOOL samr_query_groupinfo(struct cli_state *cli, uint16 fnum,
 		}
 
 		if (p && r_o.ptr != 0)
+		{
+			valid_query = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_query;
+}
+
+/****************************************************************************
+do a SAMR Set User Info
+****************************************************************************/
+BOOL samr_set_userinfo(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol, uint16 switch_value, void* usr)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_SET_USERINFO q_o;
+	BOOL valid_query = False;
+
+	DEBUG(4,("SAMR Set User Info.  level: %d\n", switch_value));
+
+	if (pol == NULL || usr == NULL || switch_value == 0) return False;
+
+	/* create and send a MSRPC command with api SAMR_SET_USERINFO */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	/* store the parameters */
+	make_samr_q_set_userinfo(&q_o, pol, switch_value, usr);
+
+	/* turn parameters into data stream */
+	samr_io_q_set_userinfo("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SAMR_SET_USERINFO, &data, &rdata))
+	{
+		SAMR_R_SET_USERINFO r_o;
+		BOOL p;
+
+		samr_io_r_set_userinfo("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+		
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(4,("SAMR_R_QUERY_USERINFO: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
 		{
 			valid_query = True;
 		}

@@ -2,8 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NT Domain Authentication SMB / MSRPC client
-   Copyright (C) Andrew Tridgell 1994-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
+   Copyright (C) Andrew Tridgell 1994-1999
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -2507,6 +2507,174 @@ void cmd_sam_query_user(struct client_info *info)
 	{
 		DEBUG(5,("cmd_sam_query_user: failed\n"));
 	}
+}
+
+
+/****************************************************************************
+experimental SAM user set.
+****************************************************************************/
+void cmd_sam_set_userinfo(struct client_info *info)
+{
+	uint16 fnum;
+	fstring srv_name;
+	fstring domain;
+	fstring sid_str;
+	DOM_SID sid;
+	BOOL res = True;
+	BOOL res1 = True;
+	uint32 argc = 0;
+	char **argv = NULL;
+	uint32 cp_argc = 0;
+	char **cp_argv = NULL;
+	extern int optind;
+	int opt;
+	BOOL set_passwd = False;
+
+	fstring user_name;
+	fstring password;
+	fstring tmp;
+
+	char *names[1];
+	uint32 num_rids;
+	uint32 rid[MAX_LOOKUP_SIDS];
+	uint32 type[MAX_LOOKUP_SIDS];
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+
+	fstrcpy(domain, info->dom.level5_dom);
+	sid_copy(&sid, &info->dom.level5_sid);
+
+	if (sid.num_auths == 0)
+	{
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	/* create arguments array */
+	while (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	{
+		add_chars_to_array(&argc, &argv, tmp);
+	}
+
+	cp_argc = argc;
+	cp_argv = argv;
+
+	if (cp_argc == 0)
+	{
+		report(out_hnd, "samuserset <name> [-p password]\n");
+		return;
+	}
+
+	safe_strcpy(user_name, cp_argv[0], sizeof(user_name));
+
+	cp_argc--;
+	cp_argv++;
+
+	if (cp_argc == 0)
+	{
+		fstring pass_str;
+		char *pass;
+		slprintf(pass_str, sizeof(pass_str)-1, "Enter %s's Password:",
+		         user_name);
+		pass = (char*)getpass(pass_str);
+
+		if (pass != NULL)
+		{
+			safe_strcpy(password, pass,
+				    sizeof(password)-1);
+			set_passwd = True;
+		}
+	}
+	else
+	{
+		optind = -1;
+		while ((opt = getopt(cp_argc, cp_argv,"p:")) != EOF)
+		{
+			switch (opt)
+			{
+				case 'p':
+				{
+					set_passwd = True;
+					safe_strcpy(password, optarg,
+					            sizeof(password)-1);
+					break;
+				}
+			}
+		}
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	sid_to_string(sid_str, &sid);
+
+	report(out_hnd, "SAM Set User Info: %s\n", user_name);
+	report(out_hnd, "Password: %s\n", password);
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(smb_cli, fnum,
+				srv_name, 0x02000000,
+				&sam_pol) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain(smb_cli, fnum,
+	            &sam_pol, 0x304, &sid,
+	            &pol_dom) : False;
+
+	/* look up user rid */
+	names[0] = user_name;
+	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+					&pol_dom, 0x3e8,
+					1, names,
+					&num_rids, rid, type) : False;
+
+	/* send set user info */
+	if (res1 && num_rids == 1)
+	{
+		void *usr = NULL;
+		uint32 switch_value = 0;
+		if (set_passwd)
+		{
+			SAM_USER_INFO_24 *p = malloc(sizeof(SAM_USER_INFO_24));
+			encode_pw_buffer(p->pass, password,
+			               strlen(password), True);
+			SamOEMhash(p->pass, smb_cli->sess_key, 1);
+
+			usr = p;
+			switch_value = 24;
+		}
+		if (usr != NULL)
+		{
+			res1 = set_samr_query_userinfo(smb_cli, fnum,
+					    &pol_dom,
+					    switch_value, rid[0], usr);
+		}
+	}
+	res = res ? samr_close(smb_cli, fnum,
+	            &sam_pol) : False;
+
+	res = res ? samr_close(smb_cli, fnum,
+	            &pol_dom) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, fnum);
+
+	if (res1)
+	{
+		report(out_hnd, "Set User Info: OK\n");
+		DEBUG(5,("cmd_sam_query_user: succeeded\n"));
+	}
+	else
+	{
+		report(out_hnd, "Set User Info: Failed\n");
+		DEBUG(5,("cmd_sam_query_user: failed\n"));
+	}
+
+	free_char_array(argc, argv);
 }
 
 

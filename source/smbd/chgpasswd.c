@@ -642,6 +642,37 @@ BOOL decode_pw_buffer(const char buffer[516], char *new_passwd,
 }
 
 /***********************************************************
+ encode a password buffer
+************************************************************/
+BOOL encode_pw_buffer(char buffer[516], const char *new_passwd,
+			int new_pw_len, BOOL nt_pass_set)
+{
+	if (nt_pass_set)
+	{
+		/*
+		 * nt passwords are in unicode.  last char overwrites NULL
+		 * in ascii_to_unibuf, so use SIVAL *afterwards*.
+		 */
+		int uni_pw_len = new_pw_len;
+		new_pw_len /= 2;
+		ascii_to_unibuf(&buffer[512-uni_pw_len], new_passwd, new_pw_len);
+	}
+	else
+	{
+		memcpy(&buffer[512-new_pw_len], new_passwd, new_pw_len);
+	}
+
+	/* 
+	 * The length of the new password is in the last 4 bytes of
+	 * the data buffer.
+	 */
+
+	SIVAL(buffer, 512, new_passwd_size);
+
+	return True;
+}
+
+/***********************************************************
  Code to check the OEM hashed password.
 
  this function ignores the 516 byte nt OEM hashed password

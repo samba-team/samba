@@ -429,3 +429,69 @@ void create_ntlmssp_resp(struct pwd_info *pwd,
 	smb_io_rpc_auth_ntlmssp_resp("ntlmssp_resp", &ntlmssp_resp, auth_resp, 0);
 	mem_realloc_data(auth_resp->data, auth_resp->offset);
 }
+
+/***********************************************************
+ decode a password buffer
+************************************************************/
+BOOL decode_pw_buffer(const char buffer[516], char *new_passwd,
+			int new_passwd_size, BOOL nt_pass_set)
+{
+	/* 
+	 * The length of the new password is in the last 4 bytes of
+	 * the data buffer.
+	 */
+
+	uint32 new_pw_len = IVAL(buffer, 512);
+	if (new_pw_len < 0 || new_pw_len > new_passwd_size - 1)
+	{
+		DEBUG(0,("check_oem_password: incorrect password length (%d).\n", new_pw_len));
+		return False;
+	}
+
+	if (nt_pass_set)
+	{
+		/*
+		 * nt passwords are in unicode
+		 */
+		int uni_pw_len = new_pw_len;
+		new_pw_len /= 2;
+		unibuf_to_ascii(new_passwd, &buffer[512-uni_pw_len], new_pw_len);
+	}
+	else
+	{
+		memcpy(new_passwd, &buffer[512-new_pw_len], new_pw_len);
+		new_passwd[new_pw_len] = '\0';
+	}
+
+	return True;
+}
+
+/***********************************************************
+ encode a password buffer
+************************************************************/
+BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
+			int new_pw_len, BOOL nt_pass_set)
+{
+	if (nt_pass_set)
+	{
+		/*
+		 * nt passwords are in unicode.  last char overwrites NULL
+		 * in ascii_to_unibuf, so use SIVAL *afterwards*.
+		 */
+		new_pw_len *= 2;
+		ascii_to_unibuf(&buffer[512-new_pw_len], new_pass, new_pw_len);
+	}
+	else
+	{
+		memcpy(&buffer[512-new_pw_len], new_pass, new_pw_len);
+	}
+
+	/* 
+	 * The length of the new password is in the last 4 bytes of
+	 * the data buffer.
+	 */
+
+	SIVAL(buffer, 512, new_pw_len);
+
+	return True;
+}
