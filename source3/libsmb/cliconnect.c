@@ -268,7 +268,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	char *p;
 
 	if (passlen != 24) {
-		if (lp_client_ntlmv2_auth()) {
+		if ((cli->capabilities & CAP_EXTENDED_SECURITY) && lp_client_ntlmv2_auth()) {
 			DATA_BLOB server_chal;
 			DATA_BLOB names_blob;
 			server_chal = data_blob(cli->secblob.data, MIN(cli->secblob.length, 8)); 
