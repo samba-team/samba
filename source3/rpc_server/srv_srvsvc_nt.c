@@ -1761,7 +1761,7 @@ static uint32 init_server_disk_enum(uint32 *resume)
 
 	/*resume can be an offset into the list for now*/
 
-	if(*resume < 0)
+	if(*resume & 0x80000000)
 		*resume = 0;
 
 	if(*resume > server_disk_count)
