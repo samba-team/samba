@@ -20,14 +20,30 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "libcli/nbt/libnbt.h"
+
+/* 
+   a list of our registered names on each interface
+*/
+struct nbt_iface_name {
+	struct nbt_iface_name *next, *prev;
+	struct nbt_interface *iface;
+	struct nbt_name name;
+	uint16_t nb_flags;
+	struct timeval registration_time;
+	uint32_t ttl;
+};
+
 
 /* a list of network interfaces we are listening on */
 struct nbt_interface {
 	struct nbt_interface *next, *prev;
+	struct nbt_server *nbtsrv;
 	const char *ip_address;
 	const char *bcast_address;
+	const char *netmask;
 	struct nbt_name_socket *nbtsock;
-	struct nbt_server *nbtsrv;
+	struct nbt_iface_name *names;
 };
 
 
@@ -37,7 +53,11 @@ struct nbt_interface {
 struct nbt_server {
 	struct task_server *task;
 
+	/* the list of local network interfaces */
 	struct nbt_interface *interfaces;
+
+	/* broadcast interface used for receiving packets only */
+	struct nbt_interface *bcast_interface;
 };
 
 

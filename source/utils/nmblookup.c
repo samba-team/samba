@@ -141,6 +141,7 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_query io;
 	NTSTATUS status;
+	int i;
 
 	io.in.name.name = node_name;
 	io.in.name.type = node_type;
@@ -151,14 +152,16 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 	io.in.timeout = 3;
 
 	status = nbt_name_query(nbtsock, nbtsock, &io);
-	if (NT_STATUS_IS_OK(status)) {
+	NT_STATUS_NOT_OK_RETURN(status);
+		
+	for (i=0;i<io.out.num_addrs;i++) {
 		printf("%s %s<%02x>\n",
-		       io.out.reply_addr,
+		       io.out.reply_addrs[i],
 		       io.out.name.name,
 		       io.out.name.type);
-		if (options.node_status) {
-			do_node_status(nbtsock, io.out.reply_addr);
-		}
+	}
+	if (options.node_status && io.out.num_addrs > 0) {
+		do_node_status(nbtsock, io.out.reply_addrs[0]);
 	}
 
 	return status;
