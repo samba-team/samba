@@ -861,10 +861,12 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
 
 /*The following definitions come from  libsmb/clilist.c  */
 
-int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
-	     void (*fn)(file_info *, const char *, void *), void *state);
+int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute, 
+		 void (*fn)(file_info *, const char *, void *), void *state);
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
 		 void (*fn)(file_info *, const char *, void *), void *state);
+int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
+	     void (*fn)(file_info *, const char *, void *), void *state);
 
 /*The following definitions come from  libsmb/climessage.c  */
 
@@ -3379,15 +3381,6 @@ pipes_struct *get_rpc_pipe(int pnum);
 
 #if OLD_NTDOMAIN
 BOOL api_reg_rpc(pipes_struct *p);
-#endif
-
-/*The following definitions come from  rpc_server/srv_reg_nt.c  */
-
-#if OLD_NTDOMAIN
-uint32 _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u);
-uint32 _reg_open(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u);
-uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY *r_u);
-uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u);
 #endif
 
 /*The following definitions come from  rpc_server/srv_samr.c  */
