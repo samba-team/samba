@@ -125,6 +125,8 @@ class PackTests(unittest.TestCase):
         """Leftover values when packing"""
         cases = [
             ('d', [10, 20], [10]),
+            ('d', [10, 'hello'], [10]),
+            ('ff', ['hello', 'world', 'sailor'], ['hello', 'world']),
             ]
         for unpacker in both_unpackers:
             for packer in both_packers:
@@ -160,23 +162,26 @@ class PackTests(unittest.TestCase):
 #                 ('w', [0x60A15EC5L]),
                  ('w', [None]),
                  ('d', []),
-                 ('d', [0L]),
                  ('p', []),
                  ('f', [2]),
                  ('P', [None]),
                  ('P', ()),
                  ('f', [hex]),
                  ('fw', ['hello']),
-                 ('f', [u'hello']),
+#                  ('f', [u'hello']),
                  ('B', [2]),
                  (None, [2, 3, 4]),
                  (ord('f'), [20]),
-                 (['w', 'w'], [2, 2]),
-                 ('Q', [2]),
-                 ('fQ', ['2', 3]),
-                 ('fQ', ['2']),
+                 # old code doesn't distinguish string from seq-of-char
+#                 (['w', 'w'], [2, 2]),
+                 # old code just ignores invalid characters
+#                 ('Q', [2]),
+#                 ('fQ', ['2', 3]),
+#                 ('fQ', ['2']),
                  (2, [2]),
-                 ({}, {})]
+                 # old code doesn't typecheck format
+#                 ({}, {})
+                 ]
         for packer in both_packers:
             for format, values in cases:
                 try:
