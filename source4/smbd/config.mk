@@ -31,7 +31,6 @@ INIT_OBJ_FILES = \
 		smbd/server.o
 ADD_OBJ_FILES = \
 		smbd/process.o \
-		lib/server_mutex.o \
 		smbd/build_options.o \
 		smbd/rewrite.o
 REQUIRED_SUBSYSTEMS = \

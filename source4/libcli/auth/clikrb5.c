@@ -234,6 +234,55 @@ krb5_error_code get_kerberos_allowed_etypes(krb5_context context,
 }
 #endif
 
+#if !defined(HAVE_KRB5_FREE_UNPARSED_NAME)
+ void krb5_free_unparsed_name(krb5_context context, char *val)
+{
+	SAFE_FREE(val);
+}
+#endif
+
+static BOOL ads_cleanup_expired_creds(krb5_context context, 
+				      krb5_ccache  ccache,
+				      krb5_creds  *credsp)
+{
+	krb5_error_code retval;
+	TALLOC_CTX *mem_ctx = talloc_init("ticket expied time");
+	if (!mem_ctx) {
+		return False;
+	}
+
+	DEBUG(3, ("Ticket in ccache[%s] expiration %s\n",
+		  krb5_cc_default_name(context),
+		  http_timestring(mem_ctx, credsp->times.endtime)));
+
+	talloc_destroy(mem_ctx);
+
+	/* we will probably need new tickets if the current ones
+	   will expire within 10 seconds.
+	*/
+	if (credsp->times.endtime >= (time(NULL) + 10))
+		return False;
+
+	/* heimdal won't remove creds from a file ccache, and 
+	   perhaps we shouldn't anyway, since internally we 
+	   use memory ccaches, and a FILE one probably means that
+	   we're using creds obtained outside of our exectuable
+	*/
+	if (StrCaseCmp(krb5_cc_get_type(context, ccache), "FILE") == 0) {
+		DEBUG(5, ("We do not remove creds from a FILE ccache\n"));
+		return False;
+	}
+	
+	retval = krb5_cc_remove_cred(context, ccache, 0, credsp);
+	if (retval) {
+		DEBUG(1, ("krb5_cc_remove_cred failed, err %s\n",
+			  error_message(retval)));
+		/* If we have an error in this, we want to display it,
+		   but continue as though we deleted it */
+	}
+	return True;
+}
+
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
 */
@@ -249,7 +298,10 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	krb5_creds 		* credsp;
 	krb5_creds 		  creds;
 	krb5_data in_data;
+	BOOL creds_ready = False;
 	
+	TALLOC_CTX *mem_ctx;
+
 	retval = krb5_parse_name(context, principal, &server);
 	if (retval) {
 		DEBUG(1,("Failed to parse principal %s\n", principal));
@@ -270,20 +322,36 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		goto cleanup_creds;
 	}
 
-	if ((retval = krb5_get_credentials(context, 0,
-					   ccache, &creds, &credsp))) {
-		DEBUG(1,("krb5_get_credentials failed for %s (%s)\n", 
-			 principal, error_message(retval)));
-		goto cleanup_creds;
+	while(!creds_ready) {
+		if ((retval = krb5_get_credentials(context, 0, ccache, 
+						   &creds, &credsp))) {
+			DEBUG(1,("krb5_get_credentials failed for %s (%s)\n",
+				 principal, error_message(retval)));
+			goto cleanup_creds;
+		}
+
+		/* cope with ticket being in the future due to clock skew */
+		if ((unsigned)credsp->times.starttime > time(NULL)) {
+			time_t t = time(NULL);
+			int time_offset =(unsigned)credsp->times.starttime-t;
+			DEBUG(4,("Advancing clock by %d seconds to cope with clock skew\n", time_offset));
+			krb5_set_real_time(context, t + time_offset + 1, 0);
+		}
+
+		if (!ads_cleanup_expired_creds(context, ccache, credsp))
+			creds_ready = True;
 	}
 
-	/* cope with the ticket being in the future due to clock skew */
-	if ((uint_t)credsp->times.starttime > time(NULL)) {
-		time_t t = time(NULL);
-		int time_offset = (uint_t)credsp->times.starttime - t;
-		DEBUG(4,("Advancing clock by %d seconds to cope with clock skew\n", time_offset));
-		krb5_set_real_time(context, t + time_offset + 1, 0);
+	mem_ctx = talloc_init("ticket expied time");
+	if (!mem_ctx) {
+		retval = ENOMEM;
+		goto cleanup_creds;
 	}
+	DEBUG(10,("Ticket (%s) in ccache (%s) is valid until: (%s - %d)\n",
+		  principal, krb5_cc_default_name(context),
+		  http_timestring(mem_ctx, (unsigned)credsp->times.endtime), 
+		  (unsigned)credsp->times.endtime));
+	
 
 	in_data.length = 0;
 	retval = krb5_mk_req_extended(context, auth_context, ap_req_options, 
@@ -312,8 +380,8 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 {
 	krb5_error_code retval;
 	krb5_data packet;
-	krb5_ccache ccdef;
-	krb5_context context;
+	krb5_context context = NULL;
+	krb5_ccache ccdef = NULL;
 	krb5_auth_context auth_context = NULL;
 	krb5_enctype enc_types[] = {
 #ifdef ENCTYPE_ARCFOUR_HMAC
@@ -364,8 +432,17 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 #endif
 
 failed:
-	if ( context )
+
+	if ( context ) {
+#if 0 	/* JERRY -- disabled since it causes heimdal 0.6.1rc3 to die 
+	   SuSE 9.1 Pro */
+		if (ccdef)
+			krb5_cc_close(context, ccdef);
+#endif
+		if (auth_context)
+			krb5_auth_con_free(context, auth_context);
 		krb5_free_context(context);
+	}
 		
 	return retval;
 }
@@ -410,7 +487,7 @@ failed:
 #endif
 
 #else /* HAVE_KRB5 */
-/* this saves a few linking headaches */
+ /* this saves a few linking headaches */
 int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
 			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5) 
 {
