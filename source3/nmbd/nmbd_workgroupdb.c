@@ -254,8 +254,7 @@ void initiate_myworkgroup_startup(struct subnet_record *subrec, struct work_reco
      if we are so configured. */
 
   if ((subrec != unicast_subnet) && (subrec != remote_broadcast_subnet) &&
-      (subrec != wins_server_subnet) && lp_preferred_master() &&
-      lp_local_master())
+      (subrec != wins_server_subnet) && lp_preferred_master())
   {
     DEBUG(3, ("initiate_myworkgroup_startup: preferred master startup for \
 workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name));

@@ -593,16 +593,13 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBkernel oplocks\fP
 .IP 
 .IP o 
-\fBldap filter\fP
+\fBldap bind as\fP
+.IP 
+.IP o 
+\fBldap passwd file\fP
 .IP 
 .IP o 
 \fBldap port\fP
-.IP 
-.IP o 
-\fBldap root\fP
-.IP 
-.IP o 
-\fBldap root passwd\fP
 .IP 
 .IP o 
 \fBldap server\fP
@@ -2073,8 +2070,8 @@ or it is a member of a domain using \fB"security = domain"\fP,
 the latter format can be used: the default Domain name is the Samba Server\'s
 Domain name, specified by \fB"workgroup = MYGROUP"\fP\&.
 .IP 
-Any UNIX groups that are \fINOT\fP specified in this map file are assumed
-to be Domain Groups, but it depends on the role of the Samba Server\&.
+Any UNIX groups that are \fINOT\fP specified in this map file are assumed to
+be either Local or Domain Groups, depending on the role of the Samba Server\&.
 .IP 
 In the case when Samba is an \fBEXPERIMENTAL\fP Domain Controller, Samba
 will present \fIALL\fP such unspecified UNIX groups as its own NT Domain
@@ -2188,7 +2185,13 @@ special name for a \fBworkgroup\fP before a Windows NT
 PDC is able to do so then cross subnet browsing will behave strangely
 and may fail\&.
 .IP 
+By default ("auto") Samba will attempt to become the domain master
+browser only if it is the Primary Domain Controller\&.
+.IP 
 \fBDefault:\fP
+\f(CW	domain master = auto\fP
+.IP 
+\fBExample:\fP
 \f(CW	domain master = no\fP
 .IP 
 .IP "\fBdomain user map (G)\fP" 
@@ -2236,7 +2239,7 @@ In the case when Samba is an \fBEXPERIMENTAL\fP Domain Controller, Samba
 will present \fIALL\fP such unspecified UNIX users as its own NT Domain
 Users, with the same name\&.
 .IP 
-In the case where Samba is member of a domain using
+In the case where Samba is a member of a domain using
 \fB"security = domain"\fP, Samba will check the UNIX name with
 its Domain Controller (see \fB"password server"\fP)
 as if it was an NT Domain User\&.  If the Domain Controller says that it is not,
@@ -2800,69 +2803,52 @@ This parameter defaults to \fI"On"\fP on systems that have the support,
 and \fI"off"\fP on systems that don\'t\&. You should never need to touch
 this parameter\&.
 .IP 
-.IP "\fBldap filter (G)\fP" 
+.IP "\fBldap bind as (G)\fP" 
 .IP 
 This parameter is part of the \fIEXPERIMENTAL\fP Samba support for a
-password database stored on an LDAP server back-end\&. These options
-are only available if your version of Samba was configured with
-the \fB--with-ldap\fP option\&.
+password database stored on an LDAP server\&. These options are only
+available if your version of Samba was configured with the \fB--with-ldap\fP
+option\&.
 .IP 
-This parameter specifies an LDAP search filter used to search for a
-user name in the LDAP database\&. It must contain the string
-\fB%u\fP which will be replaced with the user being
-searched for\&.
+This parameter specifies the entity to bind to an LDAP directory as\&.
+Usually it should be safe to use the LDAP root account; for larger
+installations it may be preferable to restrict Samba\'s access\&. See also
+\fBldap passwd file\fP\&.
 .IP 
 \fBDefault:\fP
-\f(CW	empty string\&.\fP
+\f(CW	none (bind anonymously)\fP
+.IP 
+\fBExample:\fP
+\f(CW	ldap bind as = "uid=root, dc=mydomain, dc=org"\fP
+.IP 
+.IP "\fBldap passwd file (G)\fP" 
+.IP 
+This parameter is part of the \fIEXPERIMENTAL\fP Samba support for a
+password database stored on an LDAP server\&. These options are only
+available if your version of Samba was configured with the \fB--with-ldap\fP
+option\&.
+.IP 
+This parameter specifies a file containing the password with which
+Samba should bind to an LDAP server\&. For obvious security reasons
+this file must be set to mode 700 or less\&.
+.IP 
+\fBDefault:\fP
+\f(CW	none (bind anonymously)\fP
+.IP 
+\fBExample:\fP
+\f(CW	ldap passwd file = /usr/local/samba/private/ldappasswd\fP
 .IP 
 .IP "\fBldap port (G)\fP" 
 .IP 
 This parameter is part of the \fIEXPERIMENTAL\fP Samba support for a
-password database stored on an LDAP server back-end\&. These options
-are only available if your version of Samba was configured with
-the \fB--with-ldap\fP option\&.
+password database stored on an LDAP server\&. These options are only
+available if your version of Samba was configured with the \fB--with-ldap\fP
+option\&.
 .IP 
-This parameter specifies the TCP port number to use to contact
-the LDAP server on\&.
+This parameter specifies the TCP port number of the LDAP server\&.
 .IP 
 \fBDefault:\fP
 \f(CW	ldap port = 389\&.\fP
-.IP 
-.IP "\fBldap root (G)\fP" 
-.IP 
-This parameter is part of the \fIEXPERIMENTAL\fP Samba support for a
-password database stored on an LDAP server back-end\&. These options
-are only available if your version of Samba was configured with
-the \fB--with-ldap\fP option\&.
-.IP 
-This parameter specifies the entity to bind to the LDAP server
-as (essentially the LDAP username) in order to be able to perform
-queries and modifications on the LDAP database\&.
-.IP 
-See also \fBldap root passwd\fP\&.
-.IP 
-\fBDefault:\fP
-\f(CW	empty string (no user defined)\fP
-.IP 
-.IP "\fBldap root passwd (G)\fP" 
-.IP 
-This parameter is part of the \fIEXPERIMENTAL\fP Samba support for a
-password database stored on an LDAP server back-end\&. These options
-are only available if your version of Samba was configured with
-the \fB--with-ldap\fP option\&.
-.IP 
-This parameter specifies the password for the entity to bind to the
-LDAP server as (the password for this LDAP username) in order to be
-able to perform queries and modifications on the LDAP database\&.
-.IP 
-\fIBUGS:\fP This parameter should \fINOT\fP be a readable parameter
-in the \fBsmb\&.conf\fP file and will be removed once a correct
-storage place is found\&.
-.IP 
-See also \fBldap root\fP\&.
-.IP 
-\fBDefault:\fP
-\f(CW	empty string\&.\fP
 .IP 
 .IP "\fBldap server (G)\fP" 
 .IP 
@@ -2872,7 +2858,8 @@ are only available if your version of Samba was configured with
 the \fB--with-ldap\fP option\&.
 .IP 
 This parameter specifies the DNS name of the LDAP server to use
-for SMB/CIFS authentication purposes\&.
+when storing and retrieving information about Samba users and
+groups\&.
 .IP 
 \fBDefault:\fP
 \f(CW	ldap server = localhost\fP
@@ -2884,12 +2871,15 @@ password database stored on an LDAP server back-end\&. These options
 are only available if your version of Samba was configured with
 the \fB--with-ldap\fP option\&.
 .IP 
-This parameter specifies the \f(CW"dn"\fP or LDAP \fI"distinguished name"\fP
-that tells \fBsmbd\fP to start from when searching
-for an entry in the LDAP password database\&.
+This parameter specifies the node of the LDAP tree beneath which
+Samba should store its information\&. This parameter MUST be provided
+when using LDAP with Samba\&.
 .IP 
 \fBDefault:\fP
-\f(CW	empty string\&.\fP
+\f(CW	none\fP
+.IP 
+\fBExample:\fP
+\f(CW	ldap suffix = "dc=mydomain, dc=org"\fP
 .IP 
 .IP "\fBlm announce (G)\fP" 
 .IP 
@@ -2976,7 +2966,7 @@ the latter format can be used: the default Domain name is the Samba Server\'s
 Domain name, specified by \fB"workgroup = MYGROUP"\fP\&.
 .IP 
 Any UNIX groups that are \fINOT\fP specified in this map file are treated
-as Local Groups depending on the role of the Samba Server\&.
+as either Local or Domain Groups depending on the role of the Samba Server\&.
 .IP 
 In the case when Samba is an \fBEXPERIMENTAL\fP Domain Controller, Samba
 will present \fIALL\fP unspecified UNIX groups as its own NT Domain
@@ -4075,12 +4065,12 @@ This integer value controls what level Samba advertises itself as for
 browse elections\&. The value of this parameter determines whether
 \fBnmbd\fP has a chance of becoming a local master
 browser for the \fBWORKGROUP\fP in the local broadcast
-area\&. The default is zero, which means \fBnmbd\fP will
-lose elections to Windows machines\&. See BROWSING\&.txt in the Samba
-docs/ directory for details\&.
+area\&. Setting this to zero will cause \fBnmbd\fP to
+always lose elections to Windows machines\&. See BROWSING\&.txt in the
+Samba docs/ directory for details\&.
 .IP 
 \fBDefault:\fP
-\f(CW	os level = 0\fP
+\f(CW	os level = 32\fP
 .IP 
 \fBExample:\fP
 \f(CW	os level = 65    ; This will win against any NT Server\fP
@@ -4426,7 +4416,8 @@ force an election, and it will have a slight advantage in winning the
 election\&.  It is recommended that this parameter is used in
 conjunction with \fB"domain master = yes"\fP, so
 that \fBnmbd\fP can guarantee becoming a domain
-master\&.
+master\&. Indeed the default ("auto") enables "preferred master" if
+Samba is configured as the domain master browser\&.
 .IP 
 Use this option with caution, because if there are several hosts
 (whether Samba servers, Windows 95 or NT) that are preferred master
@@ -4438,7 +4429,7 @@ capabilities\&.
 See also \fBos level\fP\&.
 .IP 
 \fBDefault:\fP
-\f(CW 	preferred master = no\fP
+\f(CW 	preferred master = auto\fP
 .IP 
 \fBExample:\fP
 \f(CW 	preferred master = yes\fP

@@ -1953,7 +1953,13 @@ special name for a link(bf(workgroup))(workgroup) before a Windows NT
 PDC is able to do so then cross subnet browsing will behave strangely
 and may fail.
 
+By default ("auto") Samba will attempt to become the domain master
+browser only if it is the Primary Domain Controller.
+
   bf(Default:)
+tt(	domain master = auto)
+
+  bf(Example:)
 tt(	domain master = no)
 
 
@@ -3910,12 +3916,12 @@ This integer value controls what level Samba advertises itself as for
 browse elections. The value of this parameter determines whether
 url(bf(nmbd))(nmbd.8.html) has a chance of becoming a local master
 browser for the link(bf(WORKGROUP))(workgroup) in the local broadcast
-area. The default is zero, which means url(bf(nmbd))(nmbd.8.html) will
-lose elections to Windows machines. See BROWSING.txt in the Samba
-docs/ directory for details.
+area. Setting this to zero will cause url(bf(nmbd))(nmbd.8.html) to
+always lose elections to Windows machines. See BROWSING.txt in the
+Samba docs/ directory for details.
 
   bf(Default:)
-tt(	os level = 0)
+tt(	os level = 32)
 
   bf(Example:)
 tt(	os level = 65    ; This will win against any NT Server)
@@ -4257,7 +4263,8 @@ force an election, and it will have a slight advantage in winning the
 election.  It is recommended that this parameter is used in
 conjunction with link(bf("domain master = yes"))(domainmaster), so
 that url(bf(nmbd))(nmbd.8.html) can guarantee becoming a domain
-master.
+master. Indeed the default ("auto") enables "preferred master" if
+Samba is configured as the domain master browser.
 
 Use this option with caution, because if there are several hosts
 (whether Samba servers, Windows 95 or NT) that are preferred master
@@ -4269,7 +4276,7 @@ capabilities.
 See also link(bf(os level))(oslevel).
 
   bf(Default:)
-tt( 	preferred master = no)
+tt( 	preferred master = auto)
 
   bf(Example:)
 tt( 	preferred master = yes)
