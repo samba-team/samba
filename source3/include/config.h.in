@@ -274,9 +274,6 @@
 #ifndef _LARGE_FILES
 #undef _LARGE_FILES
 #endif
-#ifndef _LARGEFILE64_SOURCE
-#undef _LARGEFILE64_SOURCE
-#endif
 #ifndef _FILE_OFFSET_BITS
 #undef _FILE_OFFSET_BITS
 #endif
