@@ -106,6 +106,7 @@ BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 			int num_names,
 			const char **names,
 			DOM_SID **sids,
+			uint8 **types,
 			int *num_sids)
 {
 	prs_struct rbuf;
@@ -180,6 +181,11 @@ BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 			}
 		}
 
+		if (types != NULL && valid_response && r_l.num_entries != 0)
+		{
+			(*types) = (uint8*)malloc((*num_sids) * sizeof(uint8));
+		}
+
 		if (sids != NULL && valid_response && r_l.num_entries != 0)
 		{
 			(*sids) = (DOM_SID*)malloc((*num_sids) * sizeof(DOM_SID));
@@ -201,10 +207,18 @@ BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 					{
 						sid_append_rid(sid, dom_rid);
 					}
+					if (types != NULL && (*types) != NULL)
+					{
+						(*types)[i] = t_rids[i].type;
+					}
 				}
 				else
 				{
 					ZERO_STRUCTP(sid);
+					if (types != NULL && (*types) != NULL)
+					{
+						(*types)[i] = SID_NAME_UNKNOWN;
+					}
 				}
 			}
 		}
@@ -224,6 +238,7 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 			int num_sids,
 			DOM_SID **sids,
 			char ***names,
+			uint8 **types,
 			int *num_names)
 {
 	prs_struct rbuf;
@@ -293,6 +308,11 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 			}
 		}
 
+		if (types != NULL && valid_response && t_names.num_entries != 0)
+		{
+			(*types) = (uint8*)malloc((*num_names) * sizeof(uint8));
+		}
+
 		if (names != NULL && valid_response && t_names.num_entries != 0)
 		{
 			(*names) = (char**)malloc((*num_names) * sizeof(char*));
@@ -320,10 +340,18 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 						 dom_name, name);
 
 					(*names)[i] = strdup(full_name);
+					if (types != NULL && (*types) != NULL)
+					{
+						(*types)[i] = t_names.name[i].sid_name_use;
+					}
 				}
 				else
 				{
 					(*names)[i] = NULL;
+					if (types != NULL && (*types) != NULL)
+					{
+						(*types)[i] = SID_NAME_UNKNOWN;
+					}
 				}
 			}
 		}

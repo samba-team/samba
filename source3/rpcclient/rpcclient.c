@@ -160,6 +160,7 @@ static void cmd_quit(struct client_info *info)
 		smb_mem_write_status(dbf);
 		smb_mem_write_errors(dbf);
 		smb_mem_write_verbose(dbf);
+		dbgflush();
 	}
 #endif
 	exit(0);

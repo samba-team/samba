@@ -1549,12 +1549,14 @@ BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 			int num_names,
 			const char **names,
 			DOM_SID **sids,
+			uint8 **types,
 			int *num_sids);
 BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 			POLICY_HND *hnd,
 			int num_sids,
 			DOM_SID **sids,
 			char ***names,
+			uint8 **types,
 			int *num_names);
 BOOL lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
 			POLICY_HND *hnd, uint16 info_class,
@@ -2518,7 +2520,7 @@ void make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG *q_u,
 				char* bin_path_name, char* load_order_grp, 
 				uint32 tag_id,
 				char* dependencies, char* service_start_name,
-				char* display_name);
+				char* disp_name);
 void svc_io_query_svc_cfg(char *desc, QUERY_SERVICE_CONFIG *q_u, prs_struct *ps, int depth);
 void make_svc_q_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_c, POLICY_HND *hnd,
 				uint32 service_type, uint32 service_state,
@@ -2530,6 +2532,12 @@ void make_svc_r_enum_svcs_status(SVC_R_ENUM_SVCS_STATUS *r_c,
 				uint32 dos_status);
 void svc_io_r_enum_svcs_status(char *desc, SVC_R_ENUM_SVCS_STATUS *svc, prs_struct *ps, int depth);
 void svc_io_svc_status(char *desc,  SVC_STATUS *svc, prs_struct *ps, int depth);
+void make_svc_q_query_svc_config(SVC_Q_QUERY_SVC_CONFIG *q_c, POLICY_HND *hnd,
+				uint32 buf_size);
+void svc_io_q_query_svc_config(char *desc,  SVC_Q_QUERY_SVC_CONFIG *q_u, prs_struct *ps, int depth);
+void make_svc_r_query_svc_config(SVC_R_QUERY_SVC_CONFIG *r_c, 
+				uint32 buf_size);
+void svc_io_r_query_svc_config(char *desc,  SVC_R_QUERY_SVC_CONFIG *r_u, prs_struct *ps, int depth);
 void make_svc_q_close(SVC_Q_CLOSE *q_c, POLICY_HND *hnd);
 void svc_io_q_close(char *desc,  SVC_Q_CLOSE *q_u, prs_struct *ps, int depth);
 void svc_io_r_close(char *desc,  SVC_R_CLOSE *r_u, prs_struct *ps, int depth);
