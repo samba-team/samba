@@ -2353,7 +2353,7 @@ static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
 	/* Try to setup the Domain Name, Domain SID, algorithmic rid base */
 	
 	nt_status = smbldap_search_domain_info(ldap_state->smbldap_state, &result, 
-		ldap_state->domain_name, True);
+					       ldap_state->domain_name, True);
 	
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		DEBUG(2, ("pdb_init_ldapsam: WARNING: Could not get domain info, nor add one to the domain\n"));
@@ -2382,8 +2382,15 @@ and will risk BDCs having inconsistant SIDs\n"));
 		}
 		found_sid = secrets_fetch_domain_sid(ldap_state->domain_name, &secrets_domain_sid);
 		if (!found_sid || !sid_equal(&secrets_domain_sid, &ldap_domain_sid)) {
+			fstring new_sid_str, old_sid_str;
+			DEBUG(1, ("pdb_init_ldapsam: Resetting SID for domain %s based on pdb_ldap results %s -> %s\n",
+				  ldap_state->domain_name, 
+				  sid_to_string(old_sid_str, &secrets_domain_sid),
+				  sid_to_string(new_sid_str, &ldap_domain_sid)));
+			
 			/* reset secrets.tdb sid */
 			secrets_store_domain_sid(ldap_state->domain_name, &ldap_domain_sid);
+			DEBUG(1, ("New global sam SID: %s\n", sid_to_string(new_sid_str, get_global_sam_sid())));
 		}
 		sid_copy(&ldap_state->domain_sid, &ldap_domain_sid);
 	}
