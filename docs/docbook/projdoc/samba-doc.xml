@@ -47,11 +47,11 @@ distribution.  A copy can be found on-line at <ulink
 url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</ulink>
 </para>
 
-<sect1>
+<formalpara>
 	<title>Attributions</title>
 	
 	&attributions;
-</sect1>
+</formalpara>
 
 </legalnotice>
 </bookinfo>

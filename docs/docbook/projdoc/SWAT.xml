@@ -179,8 +179,8 @@ http://www.ethereal.com</ulink>.
 SWAT can be configured to run in <emphasis>demo</emphasis> mode. This is NOT recommended
 as it runs SWAT without authentication and with full administrative ability. ie: Allows
 changes to smb.conf as well as general operation with root privilidges. The option that
-creates this ability is the <option>-a</option> flag to swat. <strong>Do not use this in any 
-production environment.</strong>
+creates this ability is the <option>-a</option> flag to swat. <emphasis>Do not use this in any 
+production environment.</emphasis>
 </para></warning>
 
 </sect2>
