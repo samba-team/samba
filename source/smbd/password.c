@@ -251,7 +251,7 @@ register a uid/name pair as being valid and that a valid password
 has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
+uint16 register_vuid(int uid,int gid, char *unix_name, char *requested_name, BOOL guest)
 {
   user_struct *vuser;
   struct passwd *pwfile; /* for getting real name from passwd file */
@@ -298,7 +298,8 @@ uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
   vuser->uid = uid;
   vuser->gid = gid;
   vuser->guest = guest;
-  strcpy(vuser->name,name);
+  fstrcpy(vuser->name,unix_name);
+  fstrcpy(vuser->requested_name,requested_name);
 
   vuser->n_sids = 0;
   vuser->sids   = NULL;
@@ -310,13 +311,13 @@ uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
 
   /* Find all the groups this uid is in and store them. 
      Used by become_user() */
-  setup_groups(name,uid,gid,
+  setup_groups(unix_name,uid,gid,
 	       &vuser->n_groups,
 	       &vuser->igroups,
 	       &vuser->groups,
 	       &vuser->attrs);
 
-  DEBUG(3,("uid %d registered to name %s\n",uid,name));
+  DEBUG(3,("uid %d registered to name %s\n",uid,unix_name));
 
   DEBUG(3, ("Clearing default real name\n"));
   fstrcpy(vuser->real_name, "<Full Name>\0");
