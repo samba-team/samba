@@ -651,7 +651,7 @@ int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d)
 
 int sys_acl_valid(SMB_ACL_T acl_d)
 {
-	if (aclsort(acl_d->count, 1, acl_d->acl) != 0) {
+	if (aclsort(acl_d->count, 0, acl_d->acl) != 0) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -692,13 +692,11 @@ int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 
 		if (type == SMB_ACL_TYPE_ACCESS) {
 			acc_acl = acl_d;
-			def_acl = 
-			tmp_acl = sys_acl_get_file(name, SMB_ACL_TYPE_DEFAULT);
+			def_acl = tmp_acl = sys_acl_get_file(name, SMB_ACL_TYPE_DEFAULT);
 
 		} else {
 			def_acl = acl_d;
-			acc_acl = 
-			tmp_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS);
+			acc_acl = tmp_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS);
 		}
 
 		if (tmp_acl == NULL) {
@@ -708,9 +706,8 @@ int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 		/*
 		 * allocate a temporary buffer for the complete ACL
 		 */
-		acl_count	= acc_acl->count + def_acl->count;
-		acl_p		=
-		acl_buf		= malloc(acl_count * sizeof(acl_buf[0]));
+		acl_count = acc_acl->count + def_acl->count;
+		acl_p = acl_buf = malloc(acl_count * sizeof(acl_buf[0]));
 
 		if (acl_buf == NULL) {
 			sys_acl_free_acl(tmp_acl);
@@ -741,7 +738,7 @@ int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 		return -1;
 	}
 
-	if (aclsort(acl_count, 1, acl_p) != 0) {
+	if (aclsort(acl_count, 0, acl_p) != 0) {
 		errno = EINVAL;
 		ret = -1;
 	} else {
@@ -757,7 +754,7 @@ int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 
 int sys_acl_set_fd(int fd, SMB_ACL_T acl_d)
 {
-	if (aclsort(acl_d->count, 1, acl_d->acl) != 0) {
+	if (aclsort(acl_d->count, 0, acl_d->acl) != 0) {
 		errno = EINVAL;
 		return -1;
 	}
