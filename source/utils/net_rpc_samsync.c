@@ -56,14 +56,23 @@ static void display_account_info(uint32 rid, SAM_ACCOUNT_INFO *a)
 {
 	fstring hex_nt_passwd, hex_lm_passwd;
 	uchar lm_passwd[16], nt_passwd[16];
+	static uchar zero_buf[16];
 
-	/* Decode hashes from password hash */
-	sam_pwd_hash(a->user_rid, a->pass.buf_lm_pwd, lm_passwd, 0);
-	sam_pwd_hash(a->user_rid, a->pass.buf_nt_pwd, nt_passwd, 0);
+	/* Decode hashes from password hash (if they are not NULL) */
 	
-	/* Encode as strings */
-	smbpasswd_sethexpwd(hex_lm_passwd, lm_passwd, a->acb_info);
-	smbpasswd_sethexpwd(hex_nt_passwd, nt_passwd, a->acb_info);
+	if (memcmp(a->pass.buf_lm_pwd, zero_buf, 16) != 0) {
+		sam_pwd_hash(a->user_rid, a->pass.buf_lm_pwd, lm_passwd, 0);
+		smbpasswd_sethexpwd(hex_lm_passwd, lm_passwd, a->acb_info);
+	} else {
+		smbpasswd_sethexpwd(hex_lm_passwd, NULL, 0);
+	}
+
+	if (memcmp(a->pass.buf_nt_pwd, zero_buf, 16) != 0) {
+		sam_pwd_hash(a->user_rid, a->pass.buf_nt_pwd, nt_passwd, 0);
+		smbpasswd_sethexpwd(hex_nt_passwd, nt_passwd, a->acb_info);
+	} else {
+		smbpasswd_sethexpwd(hex_nt_passwd, NULL, 0);
+	}
 	
 	printf("%s:%d:%s:%s:%s:LCT-0\n", unistr2_static(&a->uni_acct_name),
 	       a->user_rid, hex_lm_passwd, hex_nt_passwd,
@@ -194,6 +203,7 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 {
 	fstring s;
 	uchar lm_passwd[16], nt_passwd[16];
+	static uchar zero_buf[16];
 
 	/* Username, fullname, home dir, dir drive, logon script, acct
 	   desc, workstations, profile. */
@@ -246,11 +256,20 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 
 	pdb_set_kickoff_time(account, get_time_t_max(), PDB_CHANGED);
 
-	/* Decode hashes from password hash */
-	sam_pwd_hash(delta->user_rid, delta->pass.buf_lm_pwd, lm_passwd, 0);
-	sam_pwd_hash(delta->user_rid, delta->pass.buf_nt_pwd, nt_passwd, 0);
-	pdb_set_nt_passwd(account, nt_passwd, PDB_CHANGED);
-	pdb_set_lanman_passwd(account, lm_passwd, PDB_CHANGED);
+	/* Decode hashes from password hash 
+	   Note that win2000 may send us all zeros for the hashes if it doesn't 
+	   think this channel is secure enough - don't set the passwords at all
+	   in that case
+	 */
+	if (memcmp(delta->pass.buf_lm_pwd, zero_buf, 16) != 0) {
+		sam_pwd_hash(delta->user_rid, delta->pass.buf_lm_pwd, lm_passwd, 0);
+		pdb_set_lanman_passwd(account, lm_passwd, PDB_CHANGED);
+	}
+
+	if (memcmp(delta->pass.buf_nt_pwd, zero_buf, 16) != 0) {
+		sam_pwd_hash(delta->user_rid, delta->pass.buf_nt_pwd, nt_passwd, 0);
+		pdb_set_nt_passwd(account, nt_passwd, PDB_CHANGED);
+	}
 
 	/* TODO: account expiry time */
 
