@@ -204,7 +204,7 @@ NTSTATUS make_pdb_context_name(struct pdb_context **context, const char *selecte
 	{
 		if (strequal(builtin_pdb_init_functions[i].name, module_name))
 		{
-			DEBUG(5,("Found pdb backend %s (at pos %d)\n", module_location, i));
+			DEBUG(5,("Found pdb backend %s (at pos %d)\n", module_name, i));
 			if (NT_STATUS_IS_OK(nt_status 
 					    = builtin_pdb_init_functions[i].init(*context, &(*context)->pdb_selected, module_location))) {
 				DEBUG(5,("pdb backend %s has a valid init\n", selected));
