@@ -32,6 +32,8 @@ Commits
 o   Jeremy Allison <jra@samba.org>
     * Tidy up of NTLMSSP code.
     * Fixes for SMB signing errors
+    * BUG 815: Workaround NT4 bug to support plaintext
+      password logins and UNICODE.
 
     
 o   Petri Asikainen <paca@sci.fi>
@@ -114,6 +116,11 @@ o   Stefan Metzmacher <metze@metzemix.de>
     * Revert to 2.2 quota code because of so many broken quota files 
       out there.
     
+o   James Peach <jpeach@sgi.com>
+    * BUG 889: Change smbd to use pread/pwrite on platforms that 
+      support these calls. Can lead to a significant speed increase.
+
+
 o   Tim Potter <tpot@samba.org>
     * BUG 924: Fix typo in RW2 torture test.
 
@@ -130,9 +137,6 @@ o   Jelmer Vernooij <jelmer@samba.org>
     * Put functions for generating SQL queries in pdb_sql.c
     * Add pgSQL backend (based on patch by Hamish Friedlander)
     
-o   James Peach <jpeach@sgi.com>
-    * Change smbd to use pread/pwrite on platforms that support
-      these calls. Can lead to a significant speed increase.
 
 
 Changes since 3.0.0
