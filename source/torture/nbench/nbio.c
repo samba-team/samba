@@ -73,15 +73,24 @@ void nb_alarm(void)
 
 	t = end_timer();
 
-	printf("%4d  %8d  %.2f MB/sec  time %.0f sec   \r", 
-	       num_clients, lines/nprocs, 
-	       1.0e-6 * nbio_total() / t, 
-	       t - warmup);
+	if (warmup) {
+		printf("%4d  %8d  %.2f MB/sec  warmup %.0f sec   \r", 
+		       num_clients, lines/nprocs, 
+		       1.0e-6 * nbio_total() / t, 
+		       t);
+	} else {
+		printf("%4d  %8d  %.2f MB/sec  execute %.0f sec   \r", 
+		       num_clients, lines/nprocs, 
+		       1.0e-6 * nbio_total() / t, 
+		       t);
+	}
 
 	if (warmup && t >= warmup) {
 		start_timer();
 		warmup = 0;
 	}
+
+	fflush(stdout);
 
 	signal(SIGALRM, nb_alarm);
 	alarm(1);	
