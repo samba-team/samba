@@ -1463,7 +1463,7 @@ static void spoolss_notify_security_desc(int snum,
 					 TALLOC_CTX *mem_ctx)
 {
 	data->notify_data.data.length=0;
-	data->notify_data.data.string[0]=0x00;
+	data->notify_data.data.string = NULL;
 }
 
 /*******************************************************************
