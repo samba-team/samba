@@ -13,22 +13,32 @@ void winbindd_cache_init(void);
 void winbindd_fill_user_cache(char *domain_name, 
                               struct acct_info *sam_entries,
                               int num_sam_entries);
-void expire_cache_data(char *domain_name, char *cache_type);
 void winbindd_fill_group_cache(char *domain_name,
                                struct acct_info *sam_entries,
                                int num_sam_entries);
+void winbindd_fill_user_cache_entry(char *domain, char *user_name, 
+                                    struct winbindd_pw *pw);
+void winbindd_fill_group_cache_entry(char *domain, char *group_name, 
+                                     struct winbindd_gr *gr, void *extra_data,
+                                     int extra_data_len);
+void expire_cache(char *domain_name, char *cache_type);
 BOOL winbindd_fetch_user_cache(char *domain_name,
                                struct acct_info **sam_entries,
                                int *num_entries);
 BOOL winbindd_fetch_group_cache(char *domain_name,
                                 struct acct_info **sam_entries,
                                 int *num_entries);
+BOOL winbindd_fetch_user_cache_entry(char *domain, char *user, 
+                                     struct winbindd_pw *pw);
+BOOL winbindd_fetch_group_cache_entry(char *domain, char *group, 
+                                      struct winbindd_gr *gr,
+                                      void **extra_data, int *extra_data_len);
 void winbindd_flush_cache(void);
 
 /*The following definitions come from  nsswitch/winbindd_group.c  */
 
 enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state 
-                                                  *state);
+                                                  *state, BOOL allow_cached);
 enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state 
                                                 *state);
 enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state);
@@ -52,7 +62,7 @@ BOOL winbindd_idmap_init(void);
 /*The following definitions come from  nsswitch/winbindd_user.c  */
 
 enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state 
-                                                 *state) ;
+                                                 *state, BOOL allow_cached) ;
 enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state 
                                                 *state);
 enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state);
