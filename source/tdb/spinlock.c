@@ -372,7 +372,7 @@ int tdb_create_rwlocks(int fd, unsigned int hash_size)
 	unsigned size, i;
 	tdb_rwlock_t *rwlocks;
 
-	size = (hash_size + 1) * sizeof(tdb_rwlock_t);
+	size = TDB_SPINLOCK_SIZE(hash_size);
 	rwlocks = malloc(size);
 	if (!rwlocks)
 		return -1;
