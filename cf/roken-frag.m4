@@ -307,6 +307,11 @@ AC_BROKEN([					\
 	writev					\
 ])
 
+rk_BROKEN_GETNAMEINFO
+if test "$ac_cv_func_getnameinfo_broken" = yes; then
+	LIBOBJS="$LIBOBJS getnameinfo.o"
+fi
+
 AC_NEED_PROTO([#include <stdlib.h>], setenv)
 AC_NEED_PROTO([#include <stdlib.h>], unsetenv)
 AC_NEED_PROTO([#include <unistd.h>], gethostname)
