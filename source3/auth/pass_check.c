@@ -609,8 +609,6 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 	if (((!*password) || (!pwlen)) && !lp_null_passwords())
 		return NT_STATUS_LOGON_FAILURE;
 
-	this_salt[0] = 0;
-
 #if defined(WITH_PAM) 
 
 	/*
@@ -647,10 +645,8 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 		   perhaps for IPC password changing requests */
 
 		spass = getspnam(pass->pw_name);
-		if (spass && spass->sp_pwdp) {
+		if (spass && spass->sp_pwdp)
 			fstrcpy(this_crypted, spass->sp_pwdp);
-			fstrcpy(this_salt, spass->sp_pwdp);
-		}
 	}
 #elif defined(IA_UINFO)
 	{
@@ -709,8 +705,7 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 #endif
 
 	/* extract relevant info */
-	if (this_salt[0] == 0)
-		fstrcpy(this_salt, pass->pw_passwd);
+	fstrcpy(this_salt, pass->pw_passwd);
 
 #if defined(HAVE_TRUNCATED_SALT)
 	/* crypt on some platforms (HPUX in particular)
