@@ -162,6 +162,8 @@ NTSTATUS register_backend(const char *subsystem, const void *args)
 		if(!strcmp(subsystem, s->name)) return s->callback(args);
 		s = s->next;
 	}
+	
+	DEBUG(0, ("Unable to register backend for subsystem '%s'\n", subsystem));
 
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
