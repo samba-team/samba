@@ -50,7 +50,7 @@ struct gensec_krb5_state {
 static NTSTATUS gensec_krb5_pac_checksum(DATA_BLOB pac_data,
 					    struct PAC_SIGNATURE_DATA *sig,
 					    struct gensec_krb5_state *gensec_krb5_state,
-					    uint32 cksum_type)
+					    uint32 keyusage)
 {
 	krb5_error_code ret;
 	krb5_crypto crypto;
@@ -63,20 +63,27 @@ static NTSTATUS gensec_krb5_pac_checksum(DATA_BLOB pac_data,
 
 	ret = krb5_crypto_init(gensec_krb5_state->krb5_context,
 				&gensec_krb5_state->krb5_keyblock,
-				cksum_type,
+				0,
 				&crypto);
 	if (ret) {
 		DEBUG(0,("krb5_crypto_init() failed\n"));
 		return NT_STATUS_FOOBAR;
 	}
-
+{
+int i;
+for (i=0; i < 40; i++) {
+	keyusage = i;
 	ret = krb5_verify_checksum(gensec_krb5_state->krb5_context,
 					crypto,
-					cksum_type,
+					keyusage,
 					pac_data.data,
 					pac_data.length,
 					&cksum);
-
+	if (!ret) {
+		DEBUG(0,("PAC Verified: keyusage: %d\n", keyusage));
+		break;
+	}
+}}
 	krb5_crypto_destroy(gensec_krb5_state->krb5_context, crypto);
 
 	if (ret) {
@@ -89,7 +96,7 @@ static NTSTATUS gensec_krb5_pac_checksum(DATA_BLOB pac_data,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
+static NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 				struct PAC_LOGON_INFO *logon_info_out,
 				DATA_BLOB blob,
 				struct gensec_krb5_state *gensec_krb5_state)
@@ -101,7 +108,7 @@ NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 	struct PAC_SIGNATURE_DATA *kdc_sig_ptr;
 	struct PAC_LOGON_INFO *logon_info = NULL;
 	struct PAC_DATA pac_data;
-	DATA_BLOB tmp_blob;
+	DATA_BLOB tmp_blob = data_blob(NULL, 0);
 	int i;
 
 	status = ndr_pull_struct_blob(&blob, mem_ctx, &pac_data,
@@ -110,7 +117,6 @@ NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("can't parse the PAC\n"));
 		return status;
 	}
-
 	NDR_PRINT_DEBUG(PAC_DATA, &pac_data);
 
 	if (pac_data.num_buffers < 3) {
@@ -164,13 +170,20 @@ NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	/* clear the kdc_key */
-	memset((void *)kdc_sig_ptr , '\0', sizeof(*kdc_sig_ptr));
+/*	memset((void *)kdc_sig_ptr , '\0', sizeof(*kdc_sig_ptr));*/
 
 	status = ndr_push_struct_blob(&tmp_blob, mem_ctx, &pac_data,
 					      (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	status = ndr_pull_struct_blob(&tmp_blob, mem_ctx, &pac_data,
+					(ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("can't parse the PAC\n"));
+		return status;
+	}
+	/*NDR_PRINT_DEBUG(PAC_DATA, &pac_data);*/
 
 	/* verify by kdc_key */
 	status = gensec_krb5_pac_checksum(tmp_blob, &kdc_sig, gensec_krb5_state, 0);
@@ -180,13 +193,20 @@ NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	/* clear the service_key */
-	memset((void *)srv_sig_ptr , '\0', sizeof(*srv_sig_ptr));
+/*	memset((void *)srv_sig_ptr , '\0', sizeof(*srv_sig_ptr));*/
 
 	status = ndr_push_struct_blob(&tmp_blob, mem_ctx, &pac_data,
 					      (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	status = ndr_pull_struct_blob(&tmp_blob, mem_ctx, &pac_data,
+					(ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("can't parse the PAC\n"));
+		return status;
+	}
+	NDR_PRINT_DEBUG(PAC_DATA, &pac_data);
 
 	/* verify by servie_key */
 	status = gensec_krb5_pac_checksum(tmp_blob, &srv_sig, gensec_krb5_state, 0);
