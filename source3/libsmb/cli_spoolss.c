@@ -677,7 +677,6 @@ uint32 cli_spoolss_setprinter(
 	make_spoolss_q_setprinter(mem_ctx, &q, pol, level, ctr, command);
 
 	/* Marshall data and send request */
-	result = NT_STATUS_UNSUCCESSFUL;
 	if (!spoolss_io_q_setprinter("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTER, &qbuf, &rbuf)) 
 	{
@@ -686,7 +685,6 @@ uint32 cli_spoolss_setprinter(
 	}
 
 	/* Unmarshall response */
-	result = NT_STATUS_UNSUCCESSFUL;
 	if (!spoolss_io_r_setprinter("", &r, &rbuf, 0)) 
 	{
 		goto done;
