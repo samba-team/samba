@@ -579,7 +579,7 @@ static NTSTATUS password_check(const char *password)
 	}
 #endif /* HAVE_CRYPT */
 #endif /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
-#endif /* WITH_PAM || KRB4_AUTH || KRB5_AUTH */
+#endif /* WITH_PAM */
 }
 
 
