@@ -1,8 +1,7 @@
-/* $Id$ */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+RCSID("$Id$");
 #include <string.h>
 #include <stdlib.h>
 #include "symbol.h"
