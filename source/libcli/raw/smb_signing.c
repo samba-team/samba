@@ -104,7 +104,7 @@ void sign_outgoing_message(struct request_buffer *out, DATA_BLOB *mac_key, uint_
 {
 	uint8_t calc_md5_mac[16];
 	struct MD5Context md5_ctx;
-	unsigned char key_buf[16];
+	uint8_t key_buf[16];
 
 	/*
 	 * Firstly put the sequence number into the first 4 bytes.

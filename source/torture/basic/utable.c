@@ -28,7 +28,7 @@ BOOL torture_utable(void)
 	fstring fname;
 	const char *alt_name;
 	int fnum;
-	char c2[4];
+	uint8_t c2[4];
 	int c, len, fd;
 	int chars_allowed=0, alt_allowed=0;
 	uint8_t valid[0x10000];
@@ -102,7 +102,7 @@ BOOL torture_utable(void)
 static char *form_name(int c)
 {
 	static fstring fname;
-	char c2[4];
+	uint8_t c2[4];
 	char *p;
 	int len;
 
@@ -178,7 +178,7 @@ BOOL torture_casetable(void)
 				return False;
 			}
 
-			smbcli_read(cli->tree, fnum, (char *)c2, 0, size);
+			smbcli_read(cli->tree, fnum, c2, 0, size);
 			printf("%04x: ", c);
 			equiv[c][0] = c;
 			for (i=0; i<size/sizeof(int); i++) {
@@ -189,7 +189,7 @@ BOOL torture_casetable(void)
 			fflush(stdout);
 		}
 
-		smbcli_write(cli->tree, fnum, 0, (char *)&c, size, sizeof(c));
+		smbcli_write(cli->tree, fnum, 0, &c, size, sizeof(c));
 		smbcli_close(cli->tree, fnum);
 	}
 

@@ -70,7 +70,7 @@ struct smbcli_request *smb_negprot_send(struct smbcli_transport *transport, int 
 
 	/* setup the protocol strings */
 	for (i=0; i < ARRAY_SIZE(prots) && prots[i].prot <= maxprotocol; i++) {
-		smbcli_req_append_bytes(req, "\2", 1);
+		smbcli_req_append_bytes(req, (const uint8_t *)"\2", 1);
 		smbcli_req_append_string(req, prots[i].name, STR_TERMINATE | STR_ASCII);
 	}
 

@@ -83,7 +83,7 @@ void reply_tcon(struct smbsrv_request *req)
 {
 	union smb_tcon con;
 	NTSTATUS status;
-	char *p;
+	uint8_t *p;
 	
 	/* parse request */
 	REQ_CHECK_WCT(req, 0);
@@ -126,7 +126,7 @@ void reply_tcon_and_X(struct smbsrv_request *req)
 {
 	NTSTATUS status;
 	union smb_tcon con;
-	char *p;
+	uint8_t *p;
 	uint16_t passlen;
 
 	con.tconx.level = RAW_TCON_TCONX;
@@ -1625,7 +1625,7 @@ void reply_rmdir(struct smbsrv_request *req)
 void reply_mv(struct smbsrv_request *req)
 {
 	union smb_rename *io;
-	char *p;
+	uint8_t *p;
  
 	/* parse the request */
 	REQ_CHECK_WCT(req, 1);
@@ -1659,7 +1659,7 @@ void reply_mv(struct smbsrv_request *req)
 void reply_ntrename(struct smbsrv_request *req)
 {
 	union smb_rename *io;
-	char *p;
+	uint8_t *p;
  
 	/* parse the request */
 	REQ_CHECK_WCT(req, 4);
@@ -1711,7 +1711,7 @@ static void reply_copy_send(struct smbsrv_request *req)
 void reply_copy(struct smbsrv_request *req)
 {
 	struct smb_copy *cp;
-	char *p;
+	uint8_t *p;
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 3);
@@ -1774,7 +1774,7 @@ void reply_lockingX(struct smbsrv_request *req)
 	union smb_lock *lck;
 	uint_t total_locks, i;
 	uint_t lck_size;
-	char *p;
+	uint8_t *p;
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 8);
@@ -1953,7 +1953,7 @@ static void reply_sesssetup_old(struct smbsrv_request *req)
 {
 	NTSTATUS status;
 	union smb_sesssetup sess;
-	char *p;
+	uint8_t *p;
 	uint16_t passlen;
 
 	sess.old.level = RAW_SESSSETUP_OLD;
@@ -2011,7 +2011,7 @@ static void reply_sesssetup_nt1(struct smbsrv_request *req)
 {
 	NTSTATUS status;
 	union smb_sesssetup sess;
-	char *p;
+	uint8_t *p;
 	uint16_t passlen1, passlen2;
 
 	sess.nt1.level = RAW_SESSSETUP_NT1;
@@ -2081,7 +2081,7 @@ static void reply_sesssetup_spnego(struct smbsrv_request *req)
 {
 	NTSTATUS status;
 	union smb_sesssetup sess;
-	char *p;
+	uint8_t *p;
 	uint16_t blob_len;
 
 	sess.spnego.level = RAW_SESSSETUP_SPNEGO;
@@ -2371,7 +2371,7 @@ void reply_sendtxt(struct smbsrv_request *req)
 void reply_special(struct smbsrv_request *req)
 {
 	uint8_t msg_type;
-	char *buf = talloc_zero_array_p(req, char, 4);
+	uint8_t *buf = talloc_zero_array_p(req, uint8_t, 4);
 	
 	msg_type = CVAL(req->in.buffer,0);
 

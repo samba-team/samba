@@ -29,7 +29,7 @@
 
 struct request_buffer {
 	/* the raw SMB buffer, including the 4 byte length header */
-	char *buffer;
+	uint8_t *buffer;
 	
 	/* the size of the raw buffer, including 4 byte header */
 	uint_t size;
@@ -40,15 +40,15 @@ struct request_buffer {
 	uint_t allocated;
 	
 	/* the start of the SMB header - this is always buffer+4 */
-	char *hdr;
+	uint8_t *hdr;
 	
 	/* the command words and command word count. vwv points
 	   into the raw buffer */
-	char *vwv;
+	uint8_t *vwv;
 	uint_t wct;
 	
 	/* the data buffer and size. data points into the raw buffer */
-	char *data;
+	uint8_t *data;
 	uint_t data_size;
 	
 	/* ptr is used as a moving pointer into the data area
@@ -56,7 +56,7 @@ struct request_buffer {
 	 * variable in each function is that when a realloc of
 	 * a send packet is done we need to move this
 	 * pointer */
-	char *ptr;
+	uint8_t *ptr;
 };
 
 #endif

@@ -70,7 +70,7 @@ struct search_state {
 static BOOL find_fill_info(struct smbsrv_request *req,
 			   union smb_search_data *file)
 {
-	char *p;
+	uint8_t *p;
 
 	if (req->out.data_size + 43 > req_max_data(req)) {
 		return False;
@@ -111,7 +111,7 @@ void reply_search(struct smbsrv_request *req)
 	union smb_search_next *sn;
 	uint16_t resume_key_length;
 	struct search_state state;
-	char *p;
+	uint8_t *p;
 	NTSTATUS status;
 	enum smb_search_level level = RAW_SEARCH_SEARCH;
 	uint8_t op = CVAL(req->in.hdr,HDR_COM);
@@ -225,7 +225,7 @@ void reply_fclose(struct smbsrv_request *req)
 {
 	union smb_search_close *sc;
 	uint16_t resume_key_length;
-	char *p;
+	uint8_t *p;
 	const char *pattern;
 
 	REQ_TALLOC(sc);

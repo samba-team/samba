@@ -156,7 +156,7 @@ BOOL smbcli_transport_connect(struct smbcli_transport *transport,
 			   struct nmb_name *calling, 
 			   struct nmb_name *called)
 {
-	char *p;
+	uint8_t *p;
 	int len = NBT_HDR_SIZE;
 	struct smbcli_request *req;
 
@@ -174,13 +174,13 @@ BOOL smbcli_transport_connect(struct smbcli_transport *transport,
 
 	/* put in the destination name */
 	p = req->out.buffer + NBT_HDR_SIZE;
-	name_mangle(called->name, p, called->name_type);
-	len += name_len(p);
+	name_mangle(called->name, (char *)p, called->name_type);
+	len += name_len((char *)p);
 
 	/* and my name */
 	p = req->out.buffer+len;
-	name_mangle(calling->name, p, calling->name_type);
-	len += name_len(p);
+	name_mangle(calling->name, (char *)p, calling->name_type);
+	len += name_len((char *)p);
 
 	_smb_setlen(req->out.buffer,len-4);
 	SCVAL(req->out.buffer,0,0x81);

@@ -1454,12 +1454,12 @@ BOOL torture_denytest1(void)
 		} else if (fnum2 == -1) {
 			res = A_0;
 		} else {
-			char x = 1;
+			uint8_t x = 1;
 			res = A_0;
-			if (smbcli_read(cli1->tree, fnum2, (void *)&x, 0, 1) == 1) {
+			if (smbcli_read(cli1->tree, fnum2, &x, 0, 1) == 1) {
 				res += A_R;
 			}
-			if (smbcli_write(cli1->tree, fnum2, 0, (void *)&x, 0, 1) == 1) {
+			if (smbcli_write(cli1->tree, fnum2, 0, &x, 0, 1) == 1) {
 				res += A_W;
 			}
 		}
@@ -1551,12 +1551,12 @@ BOOL torture_denytest2(void)
 		} else if (fnum2 == -1) {
 			res = A_0;
 		} else {
-			char x = 1;
+			uint8_t x = 1;
 			res = A_0;
-			if (smbcli_read(cli2->tree, fnum2, (void *)&x, 0, 1) == 1) {
+			if (smbcli_read(cli2->tree, fnum2, &x, 0, 1) == 1) {
 				res += A_R;
 			}
-			if (smbcli_write(cli2->tree, fnum2, 0, (void *)&x, 0, 1) == 1) {
+			if (smbcli_write(cli2->tree, fnum2, 0, &x, 0, 1) == 1) {
 				res += A_W;
 			}
 		}
@@ -1782,7 +1782,7 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 	union smb_open io1, io2;
 	extern int torture_numops;
 	int failures = 0;
-	char buf[1];
+	uint8_t buf[1];
 
 	ZERO_STRUCT(buf);
 
@@ -1843,11 +1843,11 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 		} else {
 			res = A_0;
 			if (smbcli_read(cli2->tree, 
-					io2.ntcreatex.out.fnum, (void *)buf, 0, sizeof(buf)) >= 1) {
+					io2.ntcreatex.out.fnum, buf, 0, sizeof(buf)) >= 1) {
 				res += A_R;
 			}
 			if (smbcli_write(cli2->tree, 
-					 io2.ntcreatex.out.fnum, 0, (void *)buf, 0, sizeof(buf)) >= 1) {
+					 io2.ntcreatex.out.fnum, 0, buf, 0, sizeof(buf)) >= 1) {
 				res += A_W;
 			}
 		}
