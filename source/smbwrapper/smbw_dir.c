@@ -353,7 +353,7 @@ int smbw_chdir(const char *name)
 
 	smbw_init();
 
-	if (smbw_busy) return real_chdir(cwd);
+	if (smbw_busy) return real_chdir(name);
 
 	smbw_busy++;
 
