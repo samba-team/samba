@@ -1,648 +1,153 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML
-><HEAD
-><TITLE
->winbindd</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
-><BODY
-CLASS="REFENTRY"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><H1
-><A
-NAME="WINBINDD.8"
-></A
->winbindd</H1
-><DIV
-CLASS="REFNAMEDIV"
-><A
-NAME="AEN5"
-></A
-><H2
->Name</H2
->winbindd&nbsp;--&nbsp;Name Service Switch daemon for resolving names 
-	from NT servers</DIV
-><DIV
-CLASS="REFSYNOPSISDIV"
-><A
-NAME="AEN8"
-></A
-><H2
->Synopsis</H2
-><P
-><B
-CLASS="COMMAND"
->winbindd</B
->  [-F] [-S] [-i] [-B] [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;] [-n]</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN18"
-></A
-><H2
->DESCRIPTION</H2
-><P
->This program is part of the <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->Samba</SPAN
->(7)</SPAN
-> suite.</P
-><P
-><B
-CLASS="COMMAND"
->winbindd</B
-> is a daemon that provides 
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>winbindd</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="winbindd.8"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>winbindd &#8212; Name Service Switch daemon for resolving names 
+	from NT servers</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt>winbindd</tt>  [-F] [-S] [-i] [-B] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-n]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This program is part of the <a href="Samba.7.html">Samba(7)</a> suite.</p><p><b>winbindd</b> is a daemon that provides 
 	a service for the Name Service Switch capability that is present 
 	in most modern C libraries.  The Name Service Switch allows user 
 	and system information to be obtained from different databases 
 	services such as NIS or DNS.  The exact behaviour can be configured 
-	throught the <TT
-CLASS="FILENAME"
->/etc/nsswitch.conf</TT
-> file.  
+	throught the <tt>/etc/nsswitch.conf</tt> file.  
 	Users and groups are allocated as they are resolved to a range 
 	of user and group ids specified by the administrator of the 
-	Samba system.</P
-><P
->The service provided by <B
-CLASS="COMMAND"
->winbindd</B
-> is called `winbind' and 
+	Samba system.</p><p>The service provided by <b>winbindd</b> is called `winbind' and 
 	can be used to resolve user and group information from a 
 	Windows NT server. The service can also provide authentication
-	services via an associated PAM module. </P
-><P
->	The <TT
-CLASS="FILENAME"
->pam_winbind</TT
-> module in the 2.2.2 release only 
-	supports the <VAR
-CLASS="PARAMETER"
->auth</VAR
-> and <VAR
-CLASS="PARAMETER"
->account</VAR
-> 
+	services via an associated PAM module. </p><p>
+	The <tt>pam_winbind</tt> module in the 2.2.2 release only 
+	supports the <i><tt>auth</tt></i> and <i><tt>account</tt></i> 
 	module-types.  The latter simply
 	performs a getpwnam() to verify that the system can obtain a uid for the
-	user.  If the <TT
-CLASS="FILENAME"
->libnss_winbind</TT
-> library has been correctly 
+	user.  If the <tt>libnss_winbind</tt> library has been correctly 
 	installed, this should always succeed.
-	</P
-><P
->The following nsswitch databases are implemented by 
-	the winbindd service: </P
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
->hosts</DT
-><DD
-><P
->User information traditionally stored in 
-		the <TT
-CLASS="FILENAME"
->hosts(5)</TT
-> file and used by 
-		<B
-CLASS="COMMAND"
->gethostbyname(3)</B
-> functions. Names are
+	</p><p>The following nsswitch databases are implemented by 
+	the winbindd service: </p><div class="variablelist"><dl><dt><span class="term">hosts</span></dt><dd><p>User information traditionally stored in 
+		the <tt>hosts(5)</tt> file and used by 
+		<b>gethostbyname(3)</b> functions. Names are
 		resolved through the WINS server or by broadcast.
-		</P
-></DD
-><DT
->passwd</DT
-><DD
-><P
->User information traditionally stored in 
-		the <TT
-CLASS="FILENAME"
->passwd(5)</TT
-> file and used by 
-		<B
-CLASS="COMMAND"
->getpwent(3)</B
-> functions. </P
-></DD
-><DT
->group</DT
-><DD
-><P
->Group information traditionally stored in 
-		the <TT
-CLASS="FILENAME"
->group(5)</TT
-> file and used by 		
-		<B
-CLASS="COMMAND"
->getgrent(3)</B
-> functions. </P
-></DD
-></DL
-></DIV
-><P
->For example, the following simple configuration in the
-	<TT
-CLASS="FILENAME"
->/etc/nsswitch.conf</TT
-> file can be used to initially 
-	resolve user and group information from <TT
-CLASS="FILENAME"
->/etc/passwd
-	</TT
-> and <TT
-CLASS="FILENAME"
->/etc/group</TT
-> and then from the 
+		</p></dd><dt><span class="term">passwd</span></dt><dd><p>User information traditionally stored in 
+		the <tt>passwd(5)</tt> file and used by 
+		<b>getpwent(3)</b> functions. </p></dd><dt><span class="term">group</span></dt><dd><p>Group information traditionally stored in 
+		the <tt>group(5)</tt> file and used by 		
+		<b>getgrent(3)</b> functions. </p></dd></dl></div><p>For example, the following simple configuration in the
+	<tt>/etc/nsswitch.conf</tt> file can be used to initially 
+	resolve user and group information from <tt>/etc/passwd
+	</tt> and <tt>/etc/group</tt> and then from the 
 	Windows NT server.
-<PRE
-CLASS="PROGRAMLISTING"
->passwd:         files winbind
-group:          files winbind</PRE
-></P
-><P
->The following simple configuration in the
-	<TT
-CLASS="FILENAME"
->/etc/nsswitch.conf</TT
-> file can be used to initially
-	resolve hostnames from <TT
-CLASS="FILENAME"
->/etc/hosts</TT
-> and then from the
-	WINS server.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN62"
-></A
-><H2
->OPTIONS</H2
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
->-F</DT
-><DD
-><P
->If specified, this parameter causes
-		the main <B
-CLASS="COMMAND"
->winbindd</B
-> process to not daemonize,
+</p><pre class="programlisting">
+passwd:         files winbind
+group:          files winbind
+</pre><p>The following simple configuration in the
+	<tt>/etc/nsswitch.conf</tt> file can be used to initially
+	resolve hostnames from <tt>/etc/hosts</tt> and then from the
+	WINS server.</p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-F</span></dt><dd><p>If specified, this parameter causes
+		the main <b>winbindd</b> process to not daemonize,
 		i.e. double-fork and disassociate with the terminal.
 		Child processes are still created as normal to service
 		each connection request, but the main process does not
 		exit. This operation mode is suitable for running
-		<B
-CLASS="COMMAND"
->winbindd</B
-> under process supervisors such
-		as <B
-CLASS="COMMAND"
->supervise</B
-> and <B
-CLASS="COMMAND"
->svscan</B
->
-		from Daniel J. Bernstein's <B
-CLASS="COMMAND"
->daemontools</B
->
+		<b>winbindd</b> under process supervisors such
+		as <b>supervise</b> and <b>svscan</b>
+		from Daniel J. Bernstein's <b>daemontools</b>
 		package, or the AIX process monitor.
-		</P
-></DD
-><DT
->-S</DT
-><DD
-><P
->If specified, this parameter causes
-		<B
-CLASS="COMMAND"
->winbindd</B
-> to log to standard output rather
-		than a file.</P
-></DD
-><DT
->-V</DT
-><DD
-><P
->Prints the version number for 
-<B
-CLASS="COMMAND"
->smbd</B
->.</P
-></DD
-><DT
->-s &#60;configuration file&#62;</DT
-><DD
-><P
->The file specified contains the 
+		</p></dd><dt><span class="term">-S</span></dt><dd><p>If specified, this parameter causes
+		<b>winbindd</b> to log to standard output rather
+		than a file.</p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the version number for 
+<b>smbd</b>.</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
 configuration details required by the server.  The 
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)</TT
-></A
-> for more information.
+to provide. See <a href="smb.conf.5.html" target="_top"><tt>
+smb.conf(5)</tt></a> for more information.
 The default configuration file name is determined at 
-compile time.</P
-></DD
-><DT
->-d|--debug=debuglevel</DT
-><DD
-><P
-><VAR
-CLASS="REPLACEABLE"
->debuglevel</VAR
-> is an integer 
+compile time.</p></dd><dt><span class="term">-d|--debug=debuglevel</span></dt><dd><p><i><tt>debuglevel</tt></i> is an integer 
 from 0 to 10.  The default value if this parameter is 
-not specified is zero.</P
-><P
->The higher this value, the more detail will be 
+not specified is zero.</p><p>The higher this value, the more detail will be 
 logged to the log files about the activities of the 
 server. At level 0, only critical errors and serious 
 warnings will be logged. Level 1 is a reasonable level for
 day to day running - it generates a small amount of 
-information about operations carried out.</P
-><P
->Levels above 1 will generate considerable 
+information about operations carried out.</p><p>Levels above 1 will generate considerable 
 amounts of log data, and should only be used when 
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
-data, most of which is extremely cryptic.</P
-><P
->Note that specifying this parameter here will 
-override the <A
-HREF="smb.conf.5.html#loglevel"
-TARGET="_top"
->log
-level</A
-> parameter in the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)</TT
-></A
-> file.</P
-></DD
-><DT
->-l|--logfile=logbasename</DT
-><DD
-><P
->File name for log/debug files. The extension
-<CODE
-CLASS="CONSTANT"
->".client"</CODE
-> will be appended. The log file is
-never removed by the client.</P
-></DD
-><DT
->-h|--help</DT
-><DD
-><P
->Print a summary of command line options.</P
-></DD
-><DT
->-i</DT
-><DD
-><P
->Tells <B
-CLASS="COMMAND"
->winbindd</B
-> to not 
+data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
+override the <a href="smb.conf.5.html#loglevel" target="_top">log
+level</a> parameter in the <a href="smb.conf.5.html" target="_top">
+<tt>smb.conf(5)</tt></a> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
+<tt>&quot;.client&quot;</tt> will be appended. The log file is
+never removed by the client.
+</p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
+</p></dd><dt><span class="term">-i</span></dt><dd><p>Tells <b>winbindd</b> to not 
 		become a daemon and detach from the current terminal. This 
 		option is used by developers when interactive debugging 
-		of <B
-CLASS="COMMAND"
->winbindd</B
-> is required.
-		<B
-CLASS="COMMAND"
->winbindd</B
-> also logs to standard output,
-		as if the <B
-CLASS="COMMAND"
->-S</B
-> parameter had been given.
-		</P
-></DD
-><DT
->-n</DT
-><DD
-><P
->Disable caching. This means winbindd will 
+		of <b>winbindd</b> is required.
+		<b>winbindd</b> also logs to standard output,
+		as if the <b>-S</b> parameter had been given.
+		</p></dd><dt><span class="term">-n</span></dt><dd><p>Disable caching. This means winbindd will 
 		always have to wait for a response from the domain controller 
 		before it can respond to a client and this thus makes things 
 		slower. The results will however be more accurate, since 
 		results from the cache might not be up-to-date. This 
 		might also temporarily hang winbindd if the DC doesn't respond.
-		</P
-></DD
-><DT
->-B</DT
-><DD
-><P
->Dual daemon mode. This means winbindd will run 
+		</p></dd><dt><span class="term">-B</span></dt><dd><p>Dual daemon mode. This means winbindd will run 
 		as 2 threads. The first will answer all requests from the cache, 
 		thus making responses to clients faster. The other will 
 		update the cache for the query that the first has just responded. 
 		Advantage of this is that responses stay accurate and are faster.
-		</P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN126"
-></A
-><H2
->NAME AND ID RESOLUTION</H2
-><P
->Users and groups on a Windows NT server are assigned 
+		</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>NAME AND ID RESOLUTION</h2><p>Users and groups on a Windows NT server are assigned 
 	a relative id (rid) which is unique for the domain when the 
 	user or group is created.  To convert the Windows NT user or group 
 	into a unix user or group, a mapping between rids and unix user 
-	and group ids is required.  This is one of the jobs that <B
-CLASS="COMMAND"
->	winbindd</B
-> performs. </P
-><P
->As winbindd users and groups are resolved from a server, user 
+	and group ids is required.  This is one of the jobs that <b>
+	winbindd</b> performs. </p><p>As winbindd users and groups are resolved from a server, user 
 	and group ids are allocated from a specified range.  This
 	is done on a first come, first served basis, although all existing 
 	users and groups will be mapped as soon as a client performs a user 
 	or group enumeration command.  The allocated unix ids are stored 
 	in a database file under the Samba lock directory and will be 
-	remembered. </P
-><P
->WARNING: The rid to unix id database is the only location 
+	remembered. </p><p>WARNING: The rid to unix id database is the only location 
 	where the user and group mappings are stored by winbindd.  If this 
 	file is deleted or corrupted, there is no way for winbindd to 
 	determine which user and group ids correspond to Windows NT user 
-	and group rids. </P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN132"
-></A
-><H2
->CONFIGURATION</H2
-><P
->Configuration of the <B
-CLASS="COMMAND"
->winbindd</B
-> daemon 
-	is done through configuration parameters in the <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
-> file.  All parameters should be specified in the 
-	[global] section of smb.conf. </P
-><P
-></P
-><UL
-><LI
-><P
-><A
-HREF="smb.conf.5.html#WINBINDSEPARATOR"
-TARGET="_top"
->		<VAR
-CLASS="PARAMETER"
->winbind separator</VAR
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="smb.conf.5.html#WINBINDUID"
-TARGET="_top"
->		<VAR
-CLASS="PARAMETER"
->winbind uid</VAR
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="smb.conf.5.html#WINBINDGID"
-TARGET="_top"
->		<VAR
-CLASS="PARAMETER"
->winbind gid</VAR
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="smb.conf.5.html#WINBINDCACHETIME"
-TARGET="_top"
->		<VAR
-CLASS="PARAMETER"
->winbind cache time</VAR
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="smb.conf.5.html#WINBINDENUMUSERS"
-TARGET="_top"
->		<VAR
-CLASS="PARAMETER"
->winbind enum users</VAR
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="smb.conf.5.html#WINBINDENUMGROUPS"
-TARGET="_top"
->		<VAR
-CLASS="PARAMETER"
->winbind enum groups</VAR
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="smb.conf.5.html#TEMPLATEHOMEDIR"
-TARGET="_top"
->		<VAR
-CLASS="PARAMETER"
->template homedir</VAR
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="smb.conf.5.html#TEMPLATESHELL"
-TARGET="_top"
->		<VAR
-CLASS="PARAMETER"
->template shell</VAR
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="smb.conf.5.html#WINBINDUSEDEFAULTDOMAIN"
-TARGET="_top"
->		<VAR
-CLASS="PARAMETER"
->winbind use default domain</VAR
-></A
-></P
-></LI
-></UL
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN176"
-></A
-><H2
->EXAMPLE SETUP</H2
-><P
->To setup winbindd for user and group lookups plus 
+	and group rids. </p></div><div class="refsect1" lang="en"><h2>CONFIGURATION</h2><p>Configuration of the <b>winbindd</b> daemon 
+	is done through configuration parameters in the <a href="smb.conf.5.html">smb.conf(5)</a> file.  All parameters should be specified in the 
+	[global] section of smb.conf. </p><div class="itemizedlist"><ul type="disc"><li><p><a href="smb.conf.5.html#WINBINDSEPARATOR" target="_top">
+		<i><tt>winbind separator</tt></i></a></p></li><li><p><a href="smb.conf.5.html#WINBINDUID" target="_top">
+		<i><tt>winbind uid</tt></i></a></p></li><li><p><a href="smb.conf.5.html#WINBINDGID" target="_top">
+		<i><tt>winbind gid</tt></i></a></p></li><li><p><a href="smb.conf.5.html#WINBINDCACHETIME" target="_top">
+		<i><tt>winbind cache time</tt></i></a></p></li><li><p><a href="smb.conf.5.html#WINBINDENUMUSERS" target="_top">
+		<i><tt>winbind enum users</tt></i></a></p></li><li><p><a href="smb.conf.5.html#WINBINDENUMGROUPS" target="_top">
+		<i><tt>winbind enum groups</tt></i></a></p></li><li><p><a href="smb.conf.5.html#TEMPLATEHOMEDIR" target="_top">
+		<i><tt>template homedir</tt></i></a></p></li><li><p><a href="smb.conf.5.html#TEMPLATESHELL" target="_top">
+		<i><tt>template shell</tt></i></a></p></li><li><p><a href="smb.conf.5.html#WINBINDUSEDEFAULTDOMAIN" target="_top">
+		<i><tt>winbind use default domain</tt></i></a></p></li></ul></div></div><div class="refsect1" lang="en"><h2>EXAMPLE SETUP</h2><p>To setup winbindd for user and group lookups plus 
 	authentication from a domain controller use something like the 
-	following setup. This was tested on a RedHat 6.2 Linux box. </P
-><P
->In <TT
-CLASS="FILENAME"
->/etc/nsswitch.conf</TT
-> put the 
+	following setup. This was tested on a RedHat 6.2 Linux box. </p><p>In <tt>/etc/nsswitch.conf</tt> put the 
 	following:
-<PRE
-CLASS="PROGRAMLISTING"
->passwd:     files winbind
-group:      files winbind</PRE
-></P
-><P
->In <TT
-CLASS="FILENAME"
->/etc/pam.d/*</TT
-> replace the <VAR
-CLASS="PARAMETER"
->	auth</VAR
-> lines with something like this:
-<PRE
-CLASS="PROGRAMLISTING"
->auth       required	/lib/security/pam_securetty.so
+</p><pre class="programlisting">
+passwd:     files winbind
+group:      files winbind
+</pre><p>In <tt>/etc/pam.d/*</tt> replace the <i><tt>
+	auth</tt></i> lines with something like this:
+</p><pre class="programlisting">
+auth       required	/lib/security/pam_securetty.so
 auth       required	/lib/security/pam_nologin.so
 auth       sufficient	/lib/security/pam_winbind.so
-auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok</PRE
-></P
-><P
->Note in particular the use of the <VAR
-CLASS="PARAMETER"
->sufficient
-	</VAR
-> keyword and the <VAR
-CLASS="PARAMETER"
->use_first_pass</VAR
-> keyword. </P
-><P
->Now replace the account lines with this: </P
-><P
-><B
-CLASS="COMMAND"
->account    required	/lib/security/pam_winbind.so
-	</B
-></P
-><P
->The next step is to join the domain. To do that use the 
-	<B
-CLASS="COMMAND"
->net</B
-> program like this:  </P
-><P
-><B
-CLASS="COMMAND"
->net join -S PDC -U Administrator</B
-></P
-><P
->The username after the <VAR
-CLASS="PARAMETER"
->-U</VAR
-> can be any
+auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
+</pre><p>Note in particular the use of the <i><tt>sufficient
+	</tt></i> keyword and the <i><tt>use_first_pass</tt></i> keyword. </p><p>Now replace the account lines with this: </p><p><b>account    required	/lib/security/pam_winbind.so
+	</b></p><p>The next step is to join the domain. To do that use the 
+	<b>net</b> program like this:  </p><p><b>net join -S PDC -U Administrator</b></p><p>The username after the <i><tt>-U</tt></i> can be any
 	Domain user that has administrator privileges on the machine.
-	Substitute the name or IP of your PDC for "PDC".</P
-><P
->Next copy <TT
-CLASS="FILENAME"
->libnss_winbind.so</TT
-> to 
-	<TT
-CLASS="FILENAME"
->/lib</TT
-> and <TT
-CLASS="FILENAME"
->pam_winbind.so
-	</TT
-> to <TT
-CLASS="FILENAME"
->/lib/security</TT
->.  A symbolic link needs to be
-	made from <TT
-CLASS="FILENAME"
->/lib/libnss_winbind.so</TT
-> to
-	<TT
-CLASS="FILENAME"
->/lib/libnss_winbind.so.2</TT
->.  If you are using an
+	Substitute the name or IP of your PDC for &quot;PDC&quot;.</p><p>Next copy <tt>libnss_winbind.so</tt> to 
+	<tt>/lib</tt> and <tt>pam_winbind.so
+	</tt> to <tt>/lib/security</tt>.  A symbolic link needs to be
+	made from <tt>/lib/libnss_winbind.so</tt> to
+	<tt>/lib/libnss_winbind.so.2</tt>.  If you are using an
 	older version of glibc then the target of the link should be
-	<TT
-CLASS="FILENAME"
->/lib/libnss_winbind.so.1</TT
->.</P
-><P
->Finally, setup a <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
-> containing directives like the 
+	<tt>/lib/libnss_winbind.so.1</tt>.</p><p>Finally, setup a <a href="smb.conf.5.html">smb.conf(5)</a> containing directives like the 
 	following:
-<PRE
-CLASS="PROGRAMLISTING"
->[global]
+</p><pre class="programlisting">
+[global]
 	winbind separator = +
         winbind cache time = 10
         template shell = /bin/bash
@@ -651,296 +156,59 @@ CLASS="PROGRAMLISTING"
         winbind gid = 10000-20000
         workgroup = DOMAIN
         security = domain
-        password server = *</PRE
-></P
-><P
->Now start winbindd and you should find that your user and 
+        password server = *
+</pre><p>Now start winbindd and you should find that your user and 
 	group database is expanded to include your NT users and groups, 
 	and that you can login to your unix box as a domain user, using 
 	the DOMAIN+user syntax for the username. You may wish to use the 
-	commands <B
-CLASS="COMMAND"
->getent passwd</B
-> and <B
-CLASS="COMMAND"
->getent group
-	</B
-> to confirm the correct operation of winbindd.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN214"
-></A
-><H2
->NOTES</H2
-><P
->The following notes are useful when configuring and 
-	running <B
-CLASS="COMMAND"
->winbindd</B
->: </P
-><P
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->nmbd</SPAN
->(8)</SPAN
-> must be running on the local machine 
-	for <B
-CLASS="COMMAND"
->winbindd</B
-> to work. <B
-CLASS="COMMAND"
->winbindd</B
-> queries
+	commands <b>getent passwd</b> and <b>getent group
+	</b> to confirm the correct operation of winbindd.</p></div><div class="refsect1" lang="en"><h2>NOTES</h2><p>The following notes are useful when configuring and 
+	running <b>winbindd</b>: </p><p><a href="nmbd.8.html">nmbd(8)</a> must be running on the local machine 
+	for <b>winbindd</b> to work. <b>winbindd</b> queries
 	the list of trusted domains for the Windows NT server
-	on startup and when a SIGHUP is received.  Thus, for a running <B
-CLASS="COMMAND"
->	winbindd</B
-> to become aware of new trust relationships between 
-	servers, it must be sent a SIGHUP signal. </P
-><P
->PAM is really easy to misconfigure.  Make sure you know what 
+	on startup and when a SIGHUP is received.  Thus, for a running <b>
+	winbindd</b> to become aware of new trust relationships between 
+	servers, it must be sent a SIGHUP signal. </p><p>PAM is really easy to misconfigure.  Make sure you know what 
 	you are doing when modifying PAM configuration files.  It is possible 
-	to set up PAM such that you can no longer log into your system. </P
-><P
->If more than one UNIX machine is running <B
-CLASS="COMMAND"
->winbindd</B
->, 
+	to set up PAM such that you can no longer log into your system. </p><p>If more than one UNIX machine is running <b>winbindd</b>, 
 	then in general the user and groups ids allocated by winbindd will not 
 	be the same.  The user and group ids will only be valid for the local 
-	machine.</P
-><P
->If the the Windows NT RID to UNIX user and group id mapping 
-	file is damaged or destroyed then the mappings will be lost. </P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN229"
-></A
-><H2
->SIGNALS</H2
-><P
->The following signals can be used to manipulate the 
-	<B
-CLASS="COMMAND"
->winbindd</B
-> daemon. </P
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
->SIGHUP</DT
-><DD
-><P
->Reload the <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
-> file and 
+	machine.</p><p>If the the Windows NT RID to UNIX user and group id mapping 
+	file is damaged or destroyed then the mappings will be lost. </p></div><div class="refsect1" lang="en"><h2>SIGNALS</h2><p>The following signals can be used to manipulate the 
+	<b>winbindd</b> daemon. </p><div class="variablelist"><dl><dt><span class="term">SIGHUP</span></dt><dd><p>Reload the <a href="smb.conf.5.html">smb.conf(5)</a> file and 
 		apply any parameter changes to the running 
 		version of winbindd.  This signal also clears any cached 
 		user and group information.  The list of other domains trusted 
-		by winbindd is also reloaded.  </P
-></DD
-><DT
->SIGUSR1</DT
-><DD
-><P
->The SIGUSR1 signal will cause <B
-CLASS="COMMAND"
->		winbindd</B
-> to write status information to the winbind 
+		by winbindd is also reloaded.  </p></dd><dt><span class="term">SIGUSR1</span></dt><dd><p>The SIGUSR1 signal will cause <b>
+		winbindd</b> to write status information to the winbind 
 		log file including information about the number of user and 
-		group ids allocated by <B
-CLASS="COMMAND"
->winbindd</B
->.</P
-><P
->Log files are stored in the filename specified by the 
-		log file parameter.</P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN248"
-></A
-><H2
->FILES</H2
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
-><TT
-CLASS="FILENAME"
->/etc/nsswitch.conf(5)</TT
-></DT
-><DD
-><P
->Name service switch configuration file.</P
-></DD
-><DT
->/tmp/.winbindd/pipe</DT
-><DD
-><P
->The UNIX pipe over which clients communicate with 
-		the <B
-CLASS="COMMAND"
->winbindd</B
-> program.  For security reasons, the 
+		group ids allocated by <b>winbindd</b>.</p><p>Log files are stored in the filename specified by the 
+		log file parameter.</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>FILES</h2><div class="variablelist"><dl><dt><span class="term"><tt>/etc/nsswitch.conf(5)</tt></span></dt><dd><p>Name service switch configuration file.</p></dd><dt><span class="term">/tmp/.winbindd/pipe</span></dt><dd><p>The UNIX pipe over which clients communicate with 
+		the <b>winbindd</b> program.  For security reasons, the 
 		winbind client will only attempt to connect to the winbindd daemon 
-		if both the <TT
-CLASS="FILENAME"
->/tmp/.winbindd</TT
-> directory
-		and <TT
-CLASS="FILENAME"
->/tmp/.winbindd/pipe</TT
-> file are owned by 
-		root. </P
-></DD
-><DT
->$LOCKDIR/winbindd_privilaged/pipe</DT
-><DD
-><P
->The UNIX pipe over which 'privilaged' clients 
-                communicate with the <B
-CLASS="COMMAND"
->winbindd</B
-> program.  For security 
+		if both the <tt>/tmp/.winbindd</tt> directory
+		and <tt>/tmp/.winbindd/pipe</tt> file are owned by 
+		root. </p></dd><dt><span class="term">$LOCKDIR/winbindd_privilaged/pipe</span></dt><dd><p>The UNIX pipe over which 'privilaged' clients 
+                communicate with the <b>winbindd</b> program.  For security 
                 reasons, access to some winbindd functions - like those needed by 
-                the <B
-CLASS="COMMAND"
->ntlm_auth</B
-> utility - is restricted.  By default,
+                the <b>ntlm_auth</b> utility - is restricted.  By default,
                 only users in the 'root' group will get this access, however the administrator
                 may change the group permissions on $LOCKDIR/winbindd_privilaged to allow
                 programs like 'squid' to use ntlm_auth.
 		Note that the winbind client will only attempt to connect to the winbindd daemon 
-		if both the <TT
-CLASS="FILENAME"
->$LOCKDIR/winbindd_privilaged</TT
-> directory
-		and <TT
-CLASS="FILENAME"
->$LOCKDIR/winbindd_privilaged/pipe</TT
-> file are owned by 
-		root. </P
-></DD
-><DT
->/lib/libnss_winbind.so.X</DT
-><DD
-><P
->Implementation of name service switch library.
-		</P
-></DD
-><DT
->$LOCKDIR/winbindd_idmap.tdb</DT
-><DD
-><P
->Storage for the Windows NT rid to UNIX user/group 
+		if both the <tt>$LOCKDIR/winbindd_privilaged</tt> directory
+		and <tt>$LOCKDIR/winbindd_privilaged/pipe</tt> file are owned by 
+		root. </p></dd><dt><span class="term">/lib/libnss_winbind.so.X</span></dt><dd><p>Implementation of name service switch library.
+		</p></dd><dt><span class="term">$LOCKDIR/winbindd_idmap.tdb</span></dt><dd><p>Storage for the Windows NT rid to UNIX user/group 
 		id mapping.  The lock directory is specified when Samba is initially 
-		compiled using the <VAR
-CLASS="PARAMETER"
->--with-lockdir</VAR
-> option.
-		This directory is by default <TT
-CLASS="FILENAME"
->/usr/local/samba/var/locks
-		</TT
->. </P
-></DD
-><DT
->$LOCKDIR/winbindd_cache.tdb</DT
-><DD
-><P
->Storage for cached user and group information.
-		</P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN285"
-></A
-><H2
->VERSION</H2
-><P
->This man page is correct for version 3.0 of
-        the Samba suite.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN288"
-></A
-><H2
->SEE ALSO</H2
-><P
-><TT
-CLASS="FILENAME"
->nsswitch.conf(5)</TT
->, <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->Samba</SPAN
->(7)</SPAN
->, <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->wbinfo</SPAN
->(8)</SPAN
->, <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
-></P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN301"
-></A
-><H2
->AUTHOR</H2
-><P
->The original Samba software and related utilities 
+		compiled using the <i><tt>--with-lockdir</tt></i> option.
+		This directory is by default <tt>/usr/local/samba/var/locks
+		</tt>. </p></dd><dt><span class="term">$LOCKDIR/winbindd_cache.tdb</span></dt><dd><p>Storage for cached user and group information.
+		</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of
+        the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><tt>nsswitch.conf(5)</tt>, <a href="Samba.7.html">Samba(7)</a>, <a href="wbinfo.8.html">wbinfo(8)</a>, <a href="smb.conf.5.html">smb.conf(5)</a></p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 
-	to the way the Linux kernel is developed.</P
-><P
-><B
-CLASS="COMMAND"
->wbinfo</B
-> and <B
-CLASS="COMMAND"
->winbindd</B
-> were 
-	written by Tim Potter.</P
-><P
->The conversion to DocBook for Samba 2.2 was done 
+	to the way the Linux kernel is developed.</p><p><b>wbinfo</b> and <b>winbindd</b> were 
+	written by Tim Potter.</p><p>The conversion to DocBook for Samba 2.2 was done 
 	by Gerald Carter. The conversion to DocBook XML 4.2 for
-	Samba 3.0 was done by Alexander Bokovoy.</P
-></DIV
-></BODY
-></HTML
->
+	Samba 3.0 was done by Alexander Bokovoy.</p></div></div></body></html>

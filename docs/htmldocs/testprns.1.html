@@ -1,252 +1,38 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML
-><HEAD
-><TITLE
->testprns</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
-><BODY
-CLASS="REFENTRY"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><H1
-><A
-NAME="TESTPRNS.1"
-></A
->testprns</H1
-><DIV
-CLASS="REFNAMEDIV"
-><A
-NAME="AEN5"
-></A
-><H2
->Name</H2
->testprns&nbsp;--&nbsp;check printer name for validity with smbd</DIV
-><DIV
-CLASS="REFSYNOPSISDIV"
-><A
-NAME="AEN8"
-></A
-><H2
->Synopsis</H2
-><P
-><B
-CLASS="COMMAND"
->testprns</B
->  {printername} [printcapname]</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN13"
-></A
-><H2
->DESCRIPTION</H2
-><P
->This tool is part of the <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->Samba</SPAN
->(7)</SPAN
-> suite.</P
-><P
-><B
-CLASS="COMMAND"
->testprns</B
-> is a very simple test program 
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>testprns</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="testprns.1"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>testprns &#8212; check printer name for validity with smbd</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt>testprns</tt>  {printername} [printcapname]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html">Samba(7)</a> suite.</p><p><b>testprns</b> is a very simple test program 
 	to determine whether a given printer name is valid for use in 
-	a service to be provided by <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbd</SPAN
->(8)</SPAN
->.</P
-><P
->"Valid" in this context means "can be found in the 
-	printcap specified". This program is very stupid - so stupid in 
+	a service to be provided by <a href="smbd.8.html">smbd(8)</a>.</p><p>&quot;Valid&quot; in this context means &quot;can be found in the 
+	printcap specified&quot;. This program is very stupid - so stupid in 
 	fact that it would be wisest to always specify the printcap file 
-	to use. </P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN25"
-></A
-><H2
->OPTIONS</H2
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
->printername</DT
-><DD
-><P
->The printer name to validate.</P
-><P
->Printer names are taken from the first field in each 
+	to use. </p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">printername</span></dt><dd><p>The printer name to validate.</p><p>Printer names are taken from the first field in each 
 		record in the printcap file, single printer names and sets 
-		of aliases separated by vertical bars ("|") are recognized. 
+		of aliases separated by vertical bars (&quot;|&quot;) are recognized. 
 		Note that no validation or checking of the printcap syntax is 
 		done beyond that required to extract the printer name. It may
 		be that the print spooling system is more forgiving or less 
-		forgiving than <B
-CLASS="COMMAND"
->testprns</B
->. However, if 
-		<B
-CLASS="COMMAND"
->testprns</B
-> finds the printer then <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbd</SPAN
->(8)</SPAN
-> should do so as well. </P
-></DD
-><DT
->printcapname</DT
-><DD
-><P
->This is the name of the printcap file within
-		which to search for the given printer name. </P
-><P
->If no printcap name is specified <B
-CLASS="COMMAND"
->testprns
-		</B
-> will attempt to scan the printcap file name 
-		specified at compile time. </P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN44"
-></A
-><H2
->FILES</H2
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
-><TT
-CLASS="FILENAME"
->/etc/printcap</TT
-></DT
-><DD
-><P
->This is usually the default printcap 
-		file to scan. See <TT
-CLASS="FILENAME"
->printcap (5)</TT
->. 
-		</P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN53"
-></A
-><H2
->DIAGNOSTICS</H2
-><P
->If a printer is found to be valid, the message 
-	"Printer name &#60;printername&#62; is valid" will be 
-	displayed. </P
-><P
->If a printer is found to be invalid, the message
-	"Printer name &#60;printername&#62; is not valid" will be 
-	displayed. </P
-><P
->All messages that would normally be logged during
+		forgiving than <b>testprns</b>. However, if 
+		<b>testprns</b> finds the printer then <a href="smbd.8.html">smbd(8)</a> should do so as well. </p></dd><dt><span class="term">printcapname</span></dt><dd><p>This is the name of the printcap file within
+		which to search for the given printer name. </p><p>If no printcap name is specified <b>testprns
+		</b> will attempt to scan the printcap file name 
+		specified at compile time. </p></dd></dl></div></div><div class="refsect1" lang="en"><h2>FILES</h2><div class="variablelist"><dl><dt><span class="term"><tt>/etc/printcap</tt></span></dt><dd><p>This is usually the default printcap 
+		file to scan. See <tt>printcap (5)</tt>. 
+		</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>DIAGNOSTICS</h2><p>If a printer is found to be valid, the message 
+	&quot;Printer name &lt;printername&gt; is valid&quot; will be 
+	displayed. </p><p>If a printer is found to be invalid, the message
+	&quot;Printer name &lt;printername&gt; is not valid&quot; will be 
+	displayed. </p><p>All messages that would normally be logged during
 	operation of the Samba daemons are logged by this program to the 
-	file <TT
-CLASS="FILENAME"
->test.log</TT
-> in the current directory. The
+	file <tt>test.log</tt> in the current directory. The
 	program runs at debuglevel 3, so quite extensive logging 
 	information is written. The log should be checked carefully 
-	for errors and warnings. </P
-><P
->Other messages are self-explanatory. </P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN60"
-></A
-><H2
->VERSION</H2
-><P
->This man page is correct for version 3.0 of 
-	the Samba suite.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN63"
-></A
-><H2
->SEE ALSO</H2
-><P
-><TT
-CLASS="FILENAME"
->printcap(5)</TT
->, 
-	<SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbd</SPAN
->(8)</SPAN
->, <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbclient</SPAN
->(1)</SPAN
-></P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN73"
-></A
-><H2
->AUTHOR</H2
-><P
->The original Samba software and related utilities 
+	for errors and warnings. </p><p>Other messages are self-explanatory. </p></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of 
+	the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><tt>printcap(5)</tt>, 
+	<a href="smbd.8.html">smbd(8)</a>, <a href="smbclient.1.html">smbclient(1)</a></p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 
-	to the way the Linux kernel is developed.</P
-><P
->The original Samba man pages were written by Karl Auer. 
+	to the way the Linux kernel is developed.</p><p>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at <A
-HREF="ftp://ftp.icce.rug.nl/pub/unix/"
-TARGET="_top"
->	ftp://ftp.icce.rug.nl/pub/unix/</A
->) and updated for the Samba 2.0 
+	excellent piece of Open Source software, available at <a href="ftp://ftp.icce.rug.nl/pub/unix/" target="_top">
+	ftp://ftp.icce.rug.nl/pub/unix/</a>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
 	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
-	for Samba 3.0 was done by Alexander Bokovoy.</P
-></DIV
-></BODY
-></HTML
->
+	for Samba 3.0 was done by Alexander Bokovoy.</p></div></div></body></html>

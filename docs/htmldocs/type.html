@@ -1,151 +1,16 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML
-><HEAD
-><TITLE
->Type of installation</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
-REL="HOME"
-TITLE="SAMBA Project Documentation"
-HREF="samba-howto-collection.html"><LINK
-REL="PREVIOUS"
-TITLE="User information database"
-HREF="passdb.html"><LINK
-REL="NEXT"
-TITLE="Nomenclature of Server Types"
-HREF="servertype.html"></HEAD
-><BODY
-CLASS="PART"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><DIV
-CLASS="NAVHEADER"
-><TABLE
-SUMMARY="Header navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TH
-COLSPAN="3"
-ALIGN="center"
->SAMBA Project Documentation</TH
-></TR
-><TR
-><TD
-WIDTH="10%"
-ALIGN="left"
-VALIGN="bottom"
-><A
-HREF="passdb.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="80%"
-ALIGN="center"
-VALIGN="bottom"
-></TD
-><TD
-WIDTH="10%"
-ALIGN="right"
-VALIGN="bottom"
-><A
-HREF="servertype.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-></TABLE
-><HR
-ALIGN="LEFT"
-WIDTH="100%"></DIV
-><DIV
-CLASS="PART"
-><A
-NAME="TYPE"
-></A
-><DIV
-CLASS="TITLEPAGE"
-><H1
-CLASS="TITLE"
->II. Type of installation</H1
-></DIV
-><DIV
-CLASS="PARTINTRO"
-><A
-NAME="AEN816"
-></A
-><H1
->Introduction</H1
-><P
->Samba can operate in various SMB networks. This part contains information on configuring samba 
-for various environments.</P
-></DIV
-></DIV
-><DIV
-CLASS="NAVFOOTER"
-><HR
-ALIGN="LEFT"
-WIDTH="100%"><TABLE
-SUMMARY="Footer navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
-><A
-HREF="passdb.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="samba-howto-collection.html"
-ACCESSKEY="H"
->Home</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
-><A
-HREF="servertype.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
->User information database</TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
->&nbsp;</TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
->Nomenclature of Server Types</TD
-></TR
-></TABLE
-></DIV
-></BODY
-></HTML
->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Part II. Server Configuration Basics</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="index.html" title="SAMBA Project Documentation"><link rel="previous" href="install.html" title="Chapter 2. How to Install and Test SAMBA"><link rel="next" href="ServerType.html" title="Chapter 3. Nomenclature of Server Types"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Part II. Server Configuration Basics</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="install.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ServerType.html">Next</a></td></tr></table><hr></div><div class="part" lang="en"><div class="titlepage"><div><h1 class="title"><a name="type"></a>Server Configuration Basics</h1></div></div><div class="partintro" lang="en"><div><div><h1 class="title"><a name="id2812280"></a>First Steps in Server Configuration</h1></div></div><p>
+Samba can operate in various modes within SMB networks. This HOWTO section contains information on
+configuring samba to function as the type of server your network requires. Please read this
+section carefully.
+</p><div class="toc"><p><b>Table of Contents</b></p><dl><dt>3. <a href="ServerType.html">Nomenclature of Server Types</a></dt><dd><dl><dt><a href="ServerType.html#id2810455">Stand Alone Server</a></dt><dt><a href="ServerType.html#id2810516">Domain Member Server</a></dt><dt><a href="ServerType.html#id2810556">Domain Controller</a></dt><dd><dl><dt><a href="ServerType.html#id2810572">Domain Controller Types</a></dt></dl></dd></dl></dd><dt>4. <a href="securitylevels.html">Samba as Stand-Alone Server</a></dt><dd><dl><dt><a href="securitylevels.html#id2807692">User and Share security level</a></dt><dd><dl><dt><a href="securitylevels.html#id2807727">User Level Security</a></dt><dt><a href="securitylevels.html#id2810322">Share Level Security</a></dt><dt><a href="securitylevels.html#id2812328">Server Level Security</a></dt><dt><a href="securitylevels.html#id2876991">Domain Level Security</a></dt><dt><a href="securitylevels.html#id2877129">ADS Level Security</a></dt></dl></dd></dl></dd><dt>5. <a href="samba-pdc.html">
+Samba as an NT4 or Win2k Primary Domain Controller
+</a></dt><dd><dl><dt><a href="samba-pdc.html#id2807495">Prerequisite Reading</a></dt><dt><a href="samba-pdc.html#id2807518">
+Background
+</a></dt><dt><a href="samba-pdc.html#id2877458">Configuring the Samba Domain Controller</a></dt><dt><a href="samba-pdc.html#id2877759">Creating Machine Trust Accounts and Joining Clients to the Domain</a></dt><dd><dl><dt><a href="samba-pdc.html#id2878028">Manual Creation of Machine Trust Accounts</a></dt><dt><a href="samba-pdc.html#id2878262">&quot;On-the-Fly&quot; Creation of Machine Trust Accounts</a></dt><dt><a href="samba-pdc.html#id2878318">Joining the Client to the Domain</a></dt></dl></dd><dt><a href="samba-pdc.html#id2878425">Common Problems and Errors</a></dt><dd><dl><dt><a href="samba-pdc.html#id2878432">I cannot include a '$' in a machine name</a></dt><dt><a href="samba-pdc.html#id2878470">I get told &quot;You already have a connection to the Domain....&quot; 
+or &quot;Cannot join domain, the credentials supplied conflict with an 
+existing set..&quot; when creating a machine trust account.</a></dt><dt><a href="samba-pdc.html#id2878517">The system can not log you on (C000019B)....</a></dt><dt><a href="samba-pdc.html#id2878568">The machine trust account for this computer either does not 
+exist or is not accessible.</a></dt><dt><a href="samba-pdc.html#id2878617">When I attempt to login to a Samba Domain from a NT4/W2K workstation,
+I get a message about my account being disabled.</a></dt></dl></dd><dt><a href="samba-pdc.html#id2878642">Domain Control for Windows 9x/ME</a></dt><dd><dl><dt><a href="samba-pdc.html#id2878805">Configuration Instructions:	Network Logons</a></dt></dl></dd></dl></dd><dt>6. <a href="samba-bdc.html">
+Samba Backup Domain Controller to Samba Domain Control
+</a></dt><dd><dl><dt><a href="samba-bdc.html#id2807541">Prerequisite Reading</a></dt><dt><a href="samba-bdc.html#id2877190">Background</a></dt><dt><a href="samba-bdc.html#id2879061">What qualifies a Domain Controller on the network?</a></dt><dd><dl><dt><a href="samba-bdc.html#id2879083">How does a Workstation find its domain controller?</a></dt><dt><a href="samba-bdc.html#id2879107">When is the PDC needed?</a></dt></dl></dd><dt><a href="samba-bdc.html#id2879127">Can Samba be a Backup Domain Controller to an NT PDC?</a></dt><dt><a href="samba-bdc.html#id2879160">How do I set up a Samba BDC?</a></dt><dd><dl><dt><a href="samba-bdc.html#id2879257">How do I replicate the smbpasswd file?</a></dt><dt><a href="samba-bdc.html#id2879286">Can I do this all with LDAP?</a></dt></dl></dd></dl></dd><dt>7. <a href="ADS.html">Samba as a ADS domain member</a></dt><dd><dl><dt><a href="ADS.html#id2878917">Setup your smb.conf</a></dt><dt><a href="ADS.html#id2879467">Setup your /etc/krb5.conf</a></dt><dt><a href="ADS.html#ads-create-machine-account">Create the computer account</a></dt><dd><dl><dt><a href="ADS.html#id2879661">Possible errors</a></dt></dl></dd><dt><a href="ADS.html#ads-test-server">Test your server setup</a></dt><dt><a href="ADS.html#ads-test-smbclient">Testing with smbclient</a></dt><dt><a href="ADS.html#id2879814">Notes</a></dt></dl></dd><dt>8. <a href="domain-member.html">Samba as a NT4 or Win2k domain member</a></dt><dd><dl><dt><a href="domain-member.html#id2879309">Joining an NT Domain with Samba 3.0</a></dt><dt><a href="domain-member.html#id2880214">Why is this better than security = server?</a></dt></dl></dd></dl></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="install.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="index.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ServerType.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 2. How to Install and Test SAMBA </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 3. Nomenclature of Server Types</td></tr></table></div></body></html>

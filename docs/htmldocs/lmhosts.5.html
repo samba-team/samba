@@ -1,212 +1,37 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML
-><HEAD
-><TITLE
->lmhosts</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
-><BODY
-CLASS="REFENTRY"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><H1
-><A
-NAME="LMHOSTS.5"
-></A
->lmhosts</H1
-><DIV
-CLASS="REFNAMEDIV"
-><A
-NAME="AEN5"
-></A
-><H2
->Name</H2
->lmhosts&nbsp;--&nbsp;The Samba NetBIOS hosts file</DIV
-><DIV
-CLASS="REFSYNOPSISDIV"
-><A
-NAME="AEN8"
-></A
-><H2
->Synopsis</H2
-><P
-><TT
-CLASS="FILENAME"
->lmhosts</TT
-> is the <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->Samba</SPAN
->(7)</SPAN
-> NetBIOS name to IP address mapping file.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN14"
-></A
-><H2
->DESCRIPTION</H2
-><P
->This file is part of the <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->Samba</SPAN
->(7)</SPAN
-> suite.</P
-><P
-><TT
-CLASS="FILENAME"
->lmhosts</TT
-> is the <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->Samba
-	</I
-></SPAN
-> NetBIOS name to IP address mapping file.  It 
-	is very similar to the <TT
-CLASS="FILENAME"
->/etc/hosts</TT
-> file 
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>lmhosts</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="lmhosts.5"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>lmhosts &#8212; The Samba NetBIOS hosts file</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><p><tt>lmhosts</tt> is the <a href="Samba.7.html">Samba(7)</a> NetBIOS name to IP address mapping file.</p></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This file is part of the <a href="Samba.7.html">Samba(7)</a> suite.</p><p><tt>lmhosts</tt> is the <span class="emphasis"><em>Samba
+	</em></span> NetBIOS name to IP address mapping file.  It 
+	is very similar to the <tt>/etc/hosts</tt> file 
 	format, except that the hostname component must correspond 
-	to the NetBIOS naming format.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN24"
-></A
-><H2
->FILE FORMAT</H2
-><P
->It is an ASCII file containing one line for NetBIOS name. 
+	to the NetBIOS naming format.</p></div><div class="refsect1" lang="en"><h2>FILE FORMAT</h2><p>It is an ASCII file containing one line for NetBIOS name. 
 	The two fields on each line are separated from each other by 
 	white space. Any entry beginning with '#' is ignored. Each line 
-	in the lmhosts file contains the following information:</P
-><P
-></P
-><UL
-><LI
-><P
->IP Address - in dotted decimal format.</P
-></LI
-><LI
-><P
->NetBIOS Name - This name format is a 
+	in the lmhosts file contains the following information:</p><div class="itemizedlist"><ul type="disc"><li><p>IP Address - in dotted decimal format.</p></li><li><p>NetBIOS Name - This name format is a 
 		maximum fifteen character host name, with an optional 
 		trailing '#' character followed by the NetBIOS name type 
-		as two hexadecimal digits.</P
-><P
->If the trailing '#' is omitted then the given IP 
+		as two hexadecimal digits.</p><p>If the trailing '#' is omitted then the given IP 
 		address will be returned for all names that match the given 
-		name, whatever the NetBIOS name type in the lookup.</P
-></LI
-></UL
-><P
->An example follows:</P
-><PRE
-CLASS="PROGRAMLISTING"
->#
+		name, whatever the NetBIOS name type in the lookup.</p></li></ul></div><p>An example follows:</p><pre class="programlisting">
+#
 # Sample Samba lmhosts file.
 #
 192.9.200.1	TESTPC
 192.9.200.20	NTSERVER#20
 192.9.200.21	SAMBASERVER
-	</PRE
-><P
->Contains three IP to NetBIOS name mappings. The first 
-	and third will be returned for any queries for the names "TESTPC" 
-	and "SAMBASERVER" respectively, whatever the type component of 
-	the NetBIOS name requested.</P
-><P
->The second mapping will be returned only when the "0x20" name 
-	type for a name "NTSERVER" is queried. Any other name type will not 
-	be resolved.</P
-><P
->The default location of the <TT
-CLASS="FILENAME"
->lmhosts</TT
-> file 
-	is in the same directory as the <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
-> file.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN42"
-></A
-><H2
->VERSION</H2
-><P
->This man page is correct for version 3.0 of the Samba suite.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN45"
-></A
-><H2
->SEE ALSO</H2
-><P
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbclient</SPAN
->(1)</SPAN
->, <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
->, and <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbpasswd</SPAN
->(8)</SPAN
->
-	</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN57"
-></A
-><H2
->AUTHOR</H2
-><P
->The original Samba software and related utilities 
+	</pre><p>Contains three IP to NetBIOS name mappings. The first 
+	and third will be returned for any queries for the names &quot;TESTPC&quot; 
+	and &quot;SAMBASERVER&quot; respectively, whatever the type component of 
+	the NetBIOS name requested.</p><p>The second mapping will be returned only when the &quot;0x20&quot; name 
+	type for a name &quot;NTSERVER&quot; is queried. Any other name type will not 
+	be resolved.</p><p>The default location of the <tt>lmhosts</tt> file 
+	is in the same directory as the <a href="smb.conf.5.html">smb.conf(5)</a> file.</p></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="smbclient.1.html">smbclient(1)</a>, <a href="smb.conf.5.html">smb.conf(5)</a>, and <a href="smbpasswd.8.html">smbpasswd(8)</a>
+	</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 
-	to the way the Linux kernel is developed.</P
-><P
->The original Samba man pages were written by Karl Auer. 
+	to the way the Linux kernel is developed.</p><p>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
 	excellent piece of Open Source software, available at
-	<A
-HREF="ftp://ftp.icce.rug.nl/pub/unix/"
-TARGET="_top"
->	ftp://ftp.icce.rug.nl/pub/unix/</A
->) and updated for the Samba 2.0 
+	<a href="ftp://ftp.icce.rug.nl/pub/unix/" target="_top">
+	ftp://ftp.icce.rug.nl/pub/unix/</a>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
 	Samba 2.2 was done by Gerald Carter. The conversion to DocBook
-	XML 4.2 was done by Alexander Bokovoy.</P
-></DIV
-></BODY
-></HTML
->
+	XML 4.2 was done by Alexander Bokovoy.</p></div></div></body></html>

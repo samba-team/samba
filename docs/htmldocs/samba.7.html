@@ -1,756 +1,116 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML
-><HEAD
-><TITLE
->samba</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
-><BODY
-CLASS="REFENTRY"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><H1
-><A
-NAME="SAMBA.7"
-></A
->samba</H1
-><DIV
-CLASS="REFNAMEDIV"
-><A
-NAME="AEN5"
-></A
-><H2
->Name</H2
->Samba&nbsp;--&nbsp;A Windows SMB/CIFS fileserver for UNIX</DIV
-><DIV
-CLASS="REFSYNOPSISDIV"
-><A
-NAME="AEN8"
-></A
-><H2
->Synopsis</H2
-><P
-><B
-CLASS="COMMAND"
->Samba</B
-> </P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN11"
-></A
-><H2
->DESCRIPTION</H2
-><P
->The Samba software suite is a collection of programs 
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>samba</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="samba.7"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>Samba &#8212; A Windows SMB/CIFS fileserver for UNIX</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt>Samba</tt> </p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>The Samba software suite is a collection of programs 
 	that implements the Server Message Block (commonly abbreviated 
 	as SMB) protocol for UNIX systems. This protocol is sometimes 
 	also referred to as the Common Internet File System (CIFS). For a
-	more thorough description, see <A
-HREF="http://www.ubiqx.org/cifs/"
-TARGET="_top"
->	http://www.ubiqx.org/cifs/</A
->. Samba also implements the NetBIOS
-	protocol in nmbd.</P
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbd</SPAN
->(8)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->smbd</B
-> daemon provides the file and print services to 
+	more thorough description, see <a href="http://www.ubiqx.org/cifs/" target="_top">
+	http://www.ubiqx.org/cifs/</a>. Samba also implements the NetBIOS
+	protocol in nmbd.</p><div class="variablelist"><dl><dt><span class="term"><a href="smbd.8.html">smbd(8)</a></span></dt><dd><p>The <b>smbd</b> daemon provides the file and print services to 
 		SMB clients, such as Windows 95/98, Windows NT, Windows 
 		for Workgroups or LanManager. The configuration file 
-		for this daemon is described in <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
->
-		</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->nmbd</SPAN
->(8)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->nmbd</B
->
+		for this daemon is described in <a href="smb.conf.5.html">smb.conf(5)</a>
+		</p></dd><dt><span class="term"><a href="nmbd.8.html">nmbd(8)</a></span></dt><dd><p>The <b>nmbd</b>
 		daemon provides NetBIOS nameservice and browsing
 		support. The configuration file for this daemon 
-		is described in <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
-></P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbclient</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->smbclient</B
->
+		is described in <a href="smb.conf.5.html">smb.conf(5)</a></p></dd><dt><span class="term"><a href="smbclient.1.html">smbclient(1)</a></span></dt><dd><p>The <b>smbclient</b>
 		program implements a simple ftp-like client. This 
 		is useful for accessing SMB shares on other compatible
 		servers (such as Windows NT), and can also be used 
 		to allow a UNIX box to print to a printer attached to 
-		any SMB server (such as a PC running Windows NT).</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->testparm</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->testparm</B
->
-		utility is a simple syntax checker for Samba's <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
-> configuration file.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->testprns</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->testprns</B
->
+		any SMB server (such as a PC running Windows NT).</p></dd><dt><span class="term"><a href="testparm.1.html">testparm(1)</a></span></dt><dd><p>The <b>testparm</b>
+		utility is a simple syntax checker for Samba's <a href="smb.conf.5.html">smb.conf(5)</a> configuration file.</p></dd><dt><span class="term"><a href="testprns.1.html">testprns(1)</a></span></dt><dd><p>The <b>testprns</b>
 		utility supports testing printer names defined 
-		in your <TT
-CLASS="FILENAME"
->printcap</TT
-> file used 
-		by Samba.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbstatus</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->smbstatus</B
->
+		in your <tt>printcap</tt> file used 
+		by Samba.</p></dd><dt><span class="term"><a href="smbstatus.1.html">smbstatus(1)</a></span></dt><dd><p>The <b>smbstatus</b>
 		tool provides access to information about the 
-		current connections to <B
-CLASS="COMMAND"
->smbd</B
->.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->nmblookup</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->nmblookup</B
->
+		current connections to <b>smbd</b>.</p></dd><dt><span class="term"><a href="nmblookup.1.html">nmblookup(1)</a></span></dt><dd><p>The <b>nmblookup</b>
 		tools allows NetBIOS name queries to be made 
-		from a UNIX host.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbgroupedit</SPAN
->(8)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->smbgroupedit</B
->
+		from a UNIX host.</p></dd><dt><span class="term"><a href="smbgroupedit.8.html">smbgroupedit(8)</a></span></dt><dd><p>The <b>smbgroupedit</b>
 		tool allows for mapping unix groups to NT Builtin,
 		Domain, or Local groups. Also it allows setting
-		priviledges for that group, such as saAddUser, etc.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbpasswd</SPAN
->(8)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->smbpasswd</B
->
+		priviledges for that group, such as saAddUser, etc.</p></dd><dt><span class="term"><a href="smbpasswd.8.html">smbpasswd(8)</a></span></dt><dd><p>The <b>smbpasswd</b>
 		command is a tool for changing LanMan and Windows NT 
-		password hashes on Samba and Windows NT servers.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbcacls</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->smbcacls</B
-> command is 
-		a tool to set ACL's on remote CIFS servers. </P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbsh</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->smbsh</B
-> command is 
+		password hashes on Samba and Windows NT servers.</p></dd><dt><span class="term"><a href="smbcacls.1.html">smbcacls(1)</a></span></dt><dd><p>The <b>smbcacls</b> command is 
+		a tool to set ACL's on remote CIFS servers. </p></dd><dt><span class="term"><a href="smbsh.1.html">smbsh(1)</a></span></dt><dd><p>The <b>smbsh</b> command is 
 		a program that allows you to run a unix shell with 
-		with an overloaded VFS.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbtree</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->smbtree</B
-> command 
-		is a text-based network neighborhood tool.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbtar</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->smbtar</B
-> can make 
-		backups of data on CIFS/SMB servers.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbspool</SPAN
->(8)</SPAN
-></DT
-><DD
-><P
-><B
-CLASS="COMMAND"
->smbspool</B
-> is a 
+		with an overloaded VFS.</p></dd><dt><span class="term"><a href="smbtree.1.html">smbtree(1)</a></span></dt><dd><p>The <b>smbtree</b> command 
+		is a text-based network neighborhood tool.</p></dd><dt><span class="term"><a href="smbtar.1.html">smbtar(1)</a></span></dt><dd><p>The <b>smbtar</b> can make 
+		backups of data on CIFS/SMB servers.</p></dd><dt><span class="term"><a href="smbspool.8.html">smbspool(8)</a></span></dt><dd><p><b>smbspool</b> is a 
 		helper utility for printing on printers connected 
-		to CIFS servers. </P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbcontrol</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
-><B
-CLASS="COMMAND"
->smbcontrol</B
-> is a utility
+		to CIFS servers. </p></dd><dt><span class="term"><a href="smbcontrol.1.html">smbcontrol(1)</a></span></dt><dd><p><b>smbcontrol</b> is a utility
 		that can change the behaviour of running samba daemons.
-		</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->rpcclient</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
-><B
-CLASS="COMMAND"
->rpcclient</B
-> is a utility
+		</p></dd><dt><span class="term"><a href="rpcclient.1.html">rpcclient(1)</a></span></dt><dd><p><b>rpcclient</b> is a utility
 		that can be used to execute RPC commands on remote 
-		CIFS servers.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->pdbedit</SPAN
->(8)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->pdbedit</B
-> command 
+		CIFS servers.</p></dd><dt><span class="term"><a href="pdbedit.8.html">pdbedit(8)</a></span></dt><dd><p>The <b>pdbedit</b> command 
 		can be used to maintain the local user database on 
-		a samba server.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->findsmb</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->findsmb</B
-> command 
+		a samba server.</p></dd><dt><span class="term"><a href="findsmb.1.html">findsmb(1)</a></span></dt><dd><p>The <b>findsmb</b> command 
 		can be used to find SMB servers on the local network.
-		</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->net</SPAN
->(8)</SPAN
-></DT
-><DD
-><P
->The <B
-CLASS="COMMAND"
->net</B
-> command 
+		</p></dd><dt><span class="term"><a href="net.8.html">net(8)</a></span></dt><dd><p>The <b>net</b> command 
 		is supposed to work similar to the DOS/Windows
-		NET.EXE command.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->swat</SPAN
->(8)</SPAN
-></DT
-><DD
-><P
-><B
-CLASS="COMMAND"
->swat</B
-> is a web-based
-		interface to configuring <TT
-CLASS="FILENAME"
->smb.conf</TT
->.
-		</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->winbindd</SPAN
->(8)</SPAN
-></DT
-><DD
-><P
-><B
-CLASS="COMMAND"
->winbindd</B
-> is a daemon 
+		NET.EXE command.</p></dd><dt><span class="term"><a href="swat.8.html">swat(8)</a></span></dt><dd><p><b>swat</b> is a web-based
+		interface to configuring <tt>smb.conf</tt>.
+		</p></dd><dt><span class="term"><a href="winbindd.8.html">winbindd(8)</a></span></dt><dd><p><b>winbindd</b> is a daemon 
 		that is used for integrating authentication and 
-		the user database into unix.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->wbinfo</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
-><B
-CLASS="COMMAND"
->wbinfo</B
-> is a utility 
+		the user database into unix.</p></dd><dt><span class="term"><a href="wbinfo.1.html">wbinfo(1)</a></span></dt><dd><p><b>wbinfo</b> is a utility 
 		that retrieves and stores information related to winbind.
-		</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->editreg</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
-><B
-CLASS="COMMAND"
->editreg</B
-> is a command-line
+		</p></dd><dt><span class="term"><a href="editreg.1.html">editreg(1)</a></span></dt><dd><p><b>editreg</b> is a command-line
 		utility that can edit windows registry files.
-		</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->profiles</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
-><B
-CLASS="COMMAND"
->profiles</B
-> is a command-line
+		</p></dd><dt><span class="term"><a href="profiles.1.html">profiles(1)</a></span></dt><dd><p><b>profiles</b> is a command-line
 		utility that can be used to replace all occurences of 
 		a certain SID with another SID.
-		</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->vfstest</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
-><B
-CLASS="COMMAND"
->vfstest</B
-> is a utility
-		that can be used to test vfs modules.</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->ntlm_auth</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
-><B
-CLASS="COMMAND"
->ntlm_auth</B
-> is a helper-utility
+		</p></dd><dt><span class="term"><a href="vfstest.1.html">vfstest(1)</a></span></dt><dd><p><b>vfstest</b> is a utility
+		that can be used to test vfs modules.</p></dd><dt><span class="term"><a href="ntlm_auth.1.html">ntlm_auth(1)</a></span></dt><dd><p><b>ntlm_auth</b> is a helper-utility
 		for external programs wanting to do NTLM-authentication.
-		</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbmount</SPAN
->(8)</SPAN
->, <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbumount</SPAN
->(8)</SPAN
->, <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbmount</SPAN
->(8)</SPAN
-></DT
-><DD
-><P
-><B
-CLASS="COMMAND"
->smbmount</B
->,<B
-CLASS="COMMAND"
->smbmnt</B
-> and <B
-CLASS="COMMAND"
->smbmnt</B
-> are commands that can be used to 
+		</p></dd><dt><span class="term"><a href="smbmount.8.html">smbmount(8)</a>, <a href="smbumount.8.html">smbumount(8)</a>, <a href="smbmount.8.html">smbmount(8)</a></span></dt><dd><p><b>smbmount</b>,<b>smbmnt</b> and <b>smbmnt</b> are commands that can be used to 
 		mount CIFS/SMB shares on Linux.
-		</P
-></DD
-><DT
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbcquotas</SPAN
->(1)</SPAN
-></DT
-><DD
-><P
-><B
-CLASS="COMMAND"
->smbcquotas</B
-> is a tool that 
-		can set remote QUOTA's on server with NTFS 5. </P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN260"
-></A
-><H2
->COMPONENTS</H2
-><P
->The Samba suite is made up of several components. Each 
+		</p></dd><dt><span class="term"><a href="smbcquotas.1.html">smbcquotas(1)</a></span></dt><dd><p><b>smbcquotas</b> is a tool that 
+		can set remote QUOTA's on server with NTFS 5. </p></dd></dl></div></div><div class="refsect1" lang="en"><h2>COMPONENTS</h2><p>The Samba suite is made up of several components. Each 
 	component is described in a separate manual page. It is strongly 
 	recommended that you read the documentation that comes with Samba 
 	and the manual pages of those components that you use. If the 
 	manual pages and documents aren't clear enough then please visit
-	<A
-HREF="http://devel.samba.org/"
-TARGET="_top"
->http://devel.samba.org</A
->
-	for information on how to file a bug report or submit a patch.</P
-><P
->If you require help, visit the Samba webpage at
-	<A
-HREF="http://samba.org/"
-TARGET="_top"
->http://www.samba.org/</A
-> and
+	<a href="http://devel.samba.org/" target="_top">http://devel.samba.org</a>
+	for information on how to file a bug report or submit a patch.</p><p>If you require help, visit the Samba webpage at
+	<a href="http://samba.org/" target="_top">http://www.samba.org/</a> and
 	explore the many option available to you.
-	</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN266"
-></A
-><H2
->AVAILABILITY</H2
-><P
->The Samba software suite is licensed under the 
+	</p></div><div class="refsect1" lang="en"><h2>AVAILABILITY</h2><p>The Samba software suite is licensed under the 
 	GNU Public License(GPL). A copy of that license should 
 	have come with the package in the file COPYING. You are 
 	encouraged to distribute copies of the Samba suite, but 
-	please obey the terms of this license.</P
-><P
->The latest version of the Samba suite can be 
+	please obey the terms of this license.</p><p>The latest version of the Samba suite can be 
 	obtained via anonymous ftp from samba.org in the
 	directory pub/samba/. It is also available on several 
-	mirror sites worldwide.</P
-><P
->You may also find useful information about Samba 
-	on the newsgroup <A
-HREF="news:comp.protocols.smb"
-TARGET="_top"
->	comp.protocol.smb</A
-> and the Samba mailing 
+	mirror sites worldwide.</p><p>You may also find useful information about Samba 
+	on the newsgroup <a href="news:comp.protocols.smb" target="_top">
+	comp.protocol.smb</a> and the Samba mailing 
 	list. Details on how to join the mailing list are given in 
-	the README file that comes with Samba.</P
-><P
->If you have access to a WWW viewer (such as Mozilla
+	the README file that comes with Samba.</p><p>If you have access to a WWW viewer (such as Mozilla
 	or Konqueror) then you will also find lots of useful information, 
 	including back issues of the Samba mailing list, at
-	<A
-HREF="http://lists.samba.org/"
-TARGET="_top"
->http://lists.samba.org</A
->.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN274"
-></A
-><H2
->VERSION</H2
-><P
->This man page is correct for version 3.0 of the 
-	Samba suite. </P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN277"
-></A
-><H2
->CONTRIBUTIONS</H2
-><P
->If you wish to contribute to the Samba project, 
+	<a href="http://lists.samba.org/" target="_top">http://lists.samba.org</a>.</p></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of the 
+	Samba suite. </p></div><div class="refsect1" lang="en"><h2>CONTRIBUTIONS</h2><p>If you wish to contribute to the Samba project, 
 	then I suggest you join the Samba mailing list at 
-	<A
-HREF="http://lists.samba.org/"
-TARGET="_top"
->http://lists.samba.org</A
->.
-	</P
-><P
->If you have patches to submit, visit
-	<A
-HREF="http://devel.samba.org/"
-TARGET="_top"
->http://devel.samba.org/</A
->
+	<a href="http://lists.samba.org/" target="_top">http://lists.samba.org</a>.
+	</p><p>If you have patches to submit, visit
+	<a href="http://devel.samba.org/" target="_top">http://devel.samba.org/</a>
 	for information on how to do it properly. We prefer patches 
-	in <B
-CLASS="COMMAND"
->diff -u</B
-> format.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN284"
-></A
-><H2
->CONTRIBUTORS</H2
-><P
->Contributors to the project are now too numerous 
+	in <b>diff -u</b> format.</p></div><div class="refsect1" lang="en"><h2>CONTRIBUTORS</h2><p>Contributors to the project are now too numerous 
 	to mention here but all deserve the thanks of all Samba 
-	users. To see a full list, look at <A
-HREF="ftp://samba.org/pub/samba/alpha/change-log"
-TARGET="_top"
->	ftp://samba.org/pub/samba/alpha/change-log</A
->
-	for the pre-CVS changes and at <A
-HREF="ftp://samba.org/pub/samba/alpha/cvs.log"
-TARGET="_top"
->	ftp://samba.org/pub/samba/alpha/cvs.log</A
->
+	users. To see a full list, look at <a href="ftp://samba.org/pub/samba/alpha/change-log" target="_top">
+	ftp://samba.org/pub/samba/alpha/change-log</a>
+	for the pre-CVS changes and at <a href="ftp://samba.org/pub/samba/alpha/cvs.log" target="_top">
+	ftp://samba.org/pub/samba/alpha/cvs.log</a>
 	for the contributors to Samba post-CVS. CVS is the Open Source 
 	source code control system used by the Samba Team to develop 
-	Samba. The project would have been unmanageable without it.</P
-><P
->In addition, several commercial organizations now help 
+	Samba. The project would have been unmanageable without it.</p><p>In addition, several commercial organizations now help 
 	fund the Samba Team with money and equipment. For details see 
-	the Samba Web pages at <A
-HREF="http://samba.org/samba/samba-thanks.html"
-TARGET="_top"
->	http://samba.org/samba/samba-thanks.html</A
->.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN291"
-></A
-><H2
->AUTHOR</H2
-><P
->The original Samba software and related utilities 
+	the Samba Web pages at <a href="http://samba.org/samba/samba-thanks.html" target="_top">
+	http://samba.org/samba/samba-thanks.html</a>.</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 
-	to the way the Linux kernel is developed.</P
-><P
->The original Samba man pages were written by Karl Auer. 
+	to the way the Linux kernel is developed.</p><p>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at <A
-HREF="ftp://ftp.icce.rug.nl/pub/unix/"
-TARGET="_top"
->	ftp://ftp.icce.rug.nl/pub/unix/</A
->) and updated for the Samba 2.0 
+	excellent piece of Open Source software, available at <a href="ftp://ftp.icce.rug.nl/pub/unix/" target="_top">
+	ftp://ftp.icce.rug.nl/pub/unix/</a>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
 	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML
-	4.2 for Samba 3.0 was done by Alexander Bokovoy.</P
-></DIV
-></BODY
-></HTML
->
+	4.2 for Samba 3.0 was done by Alexander Bokovoy.</p></div></div></body></html>

@@ -1,261 +1,45 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML
-><HEAD
-><TITLE
->ntlm_auth</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
-><BODY
-CLASS="REFENTRY"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><H1
-><A
-NAME="NTLM-AUTH.1"
-></A
->ntlm_auth</H1
-><DIV
-CLASS="REFNAMEDIV"
-><A
-NAME="AEN5"
-></A
-><H2
->Name</H2
->ntlm_auth&nbsp;--&nbsp;tool to allow external access to Winbind's NTLM authentication function</DIV
-><DIV
-CLASS="REFSYNOPSISDIV"
-><A
-NAME="AEN8"
-></A
-><H2
->Synopsis</H2
-><P
-><B
-CLASS="COMMAND"
->ntlm_auth</B
->  [-d debuglevel] [-l logfile] [-s &#60;smb config file&#62;]</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN14"
-></A
-><H2
->DESCRIPTION</H2
-><P
->This tool is part of the <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->Samba</SPAN
->(7)</SPAN
-> suite.</P
-><P
-><B
-CLASS="COMMAND"
->ntlm_auth</B
-> is a helper utility that authenticates 
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>ntlm_auth</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="ntlm-auth.1"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>ntlm_auth &#8212; tool to allow external access to Winbind's NTLM authentication function</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt>ntlm_auth</tt>  [-d debuglevel] [-l logfile] [-s &lt;smb config file&gt;]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html">Samba(7)</a> suite.</p><p><b>ntlm_auth</b> is a helper utility that authenticates 
 	users using NT/LM authentication. It returns 0 if the users is authenticated
 	successfully and 1 if access was denied. ntlm_auth uses winbind to access 
 	the user and authentication data for a domain. This utility 
 	is only to be used by other programs (currently squid).
-	</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN22"
-></A
-><H2
->OPTIONS</H2
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
->--helper-protocol=PROTO</DT
-><DD
-><P
->	Operate as a stdio-based helper
-	</P
-></DD
-><DT
->--username=USERNAME</DT
-><DD
-><P
->	Specify username of user to authenticate
-	</P
-></DD
-><DT
->--domain=DOMAIN</DT
-><DD
-><P
->	Specify domain of user to authenticate
-	</P
-></DD
-><DT
->--workstation=WORKSTATION</DT
-><DD
-><P
->	Specify the workstation the user authenticated from
-	</P
-></DD
-><DT
->--challenge=STRING</DT
-><DD
-><P
->challenge (HEX encoded)</P
-></DD
-><DT
->--lm-response=RESPONSE</DT
-><DD
-><P
->LM Response to the challenge (HEX encoded)</P
-></DD
-><DT
->--nt-response=RESPONSE</DT
-><DD
-><P
->NT or NTLMv2 Response to the challenge (HEX encoded)</P
-></DD
-><DT
->--password=PASSWORD</DT
-><DD
-><P
->User's plaintext password</P
-></DD
-><DT
->--request-lm-key</DT
-><DD
-><P
->Retreive LM session key</P
-></DD
-><DT
->--request-nt-key</DT
-><DD
-><P
->Request NT key</P
-></DD
-><DT
->-V</DT
-><DD
-><P
->Prints the version number for 
-<B
-CLASS="COMMAND"
->smbd</B
->.</P
-></DD
-><DT
->-s &#60;configuration file&#62;</DT
-><DD
-><P
->The file specified contains the 
+	</p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">--helper-protocol=PROTO</span></dt><dd><p>
+	Operate as a stdio-based helper
+	</p></dd><dt><span class="term">--username=USERNAME</span></dt><dd><p>
+	Specify username of user to authenticate
+	</p></dd><dt><span class="term">--domain=DOMAIN</span></dt><dd><p>
+	Specify domain of user to authenticate
+	</p></dd><dt><span class="term">--workstation=WORKSTATION</span></dt><dd><p>
+	Specify the workstation the user authenticated from
+	</p></dd><dt><span class="term">--challenge=STRING</span></dt><dd><p>challenge (HEX encoded)</p></dd><dt><span class="term">--lm-response=RESPONSE</span></dt><dd><p>LM Response to the challenge (HEX encoded)</p></dd><dt><span class="term">--nt-response=RESPONSE</span></dt><dd><p>NT or NTLMv2 Response to the challenge (HEX encoded)</p></dd><dt><span class="term">--password=PASSWORD</span></dt><dd><p>User's plaintext password</p></dd><dt><span class="term">--request-lm-key</span></dt><dd><p>Retreive LM session key</p></dd><dt><span class="term">--request-nt-key</span></dt><dd><p>Request NT key</p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the version number for 
+<b>smbd</b>.</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
 configuration details required by the server.  The 
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)</TT
-></A
-> for more information.
+to provide. See <a href="smb.conf.5.html" target="_top"><tt>
+smb.conf(5)</tt></a> for more information.
 The default configuration file name is determined at 
-compile time.</P
-></DD
-><DT
->-d|--debug=debuglevel</DT
-><DD
-><P
-><VAR
-CLASS="REPLACEABLE"
->debuglevel</VAR
-> is an integer 
+compile time.</p></dd><dt><span class="term">-d|--debug=debuglevel</span></dt><dd><p><i><tt>debuglevel</tt></i> is an integer 
 from 0 to 10.  The default value if this parameter is 
-not specified is zero.</P
-><P
->The higher this value, the more detail will be 
+not specified is zero.</p><p>The higher this value, the more detail will be 
 logged to the log files about the activities of the 
 server. At level 0, only critical errors and serious 
 warnings will be logged. Level 1 is a reasonable level for
 day to day running - it generates a small amount of 
-information about operations carried out.</P
-><P
->Levels above 1 will generate considerable 
+information about operations carried out.</p><p>Levels above 1 will generate considerable 
 amounts of log data, and should only be used when 
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
-data, most of which is extremely cryptic.</P
-><P
->Note that specifying this parameter here will 
-override the <A
-HREF="smb.conf.5.html#loglevel"
-TARGET="_top"
->log
-level</A
-> parameter in the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)</TT
-></A
-> file.</P
-></DD
-><DT
->-l|--logfile=logbasename</DT
-><DD
-><P
->File name for log/debug files. The extension
-<CODE
-CLASS="CONSTANT"
->".client"</CODE
-> will be appended. The log file is
-never removed by the client.</P
-></DD
-><DT
->-h|--help</DT
-><DD
-><P
->Print a summary of command line options.</P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN96"
-></A
-><H2
->VERSION</H2
-><P
->This man page is correct for version 3.0 of the Samba 
-	suite.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN99"
-></A
-><H2
->AUTHOR</H2
-><P
->The original Samba software and related utilities 
+data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
+override the <a href="smb.conf.5.html#loglevel" target="_top">log
+level</a> parameter in the <a href="smb.conf.5.html" target="_top">
+<tt>smb.conf(5)</tt></a> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
+<tt>&quot;.client&quot;</tt> will be appended. The log file is
+never removed by the client.
+</p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
+</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of the Samba 
+	suite.</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 
-	to the way the Linux kernel is developed.</P
-><P
->The ntlm_auth manpage was written by Jelmer Vernooij.</P
-></DIV
-></BODY
-></HTML
->
+	to the way the Linux kernel is developed.</p><p>The ntlm_auth manpage was written by Jelmer Vernooij.</p></div></div></body></html>

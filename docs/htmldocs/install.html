@@ -1,629 +1,75 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML
-><HEAD
-><TITLE
->How to Install and Test SAMBA</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
-REL="HOME"
-TITLE="SAMBA Project Documentation"
-HREF="samba-howto-collection.html"><LINK
-REL="UP"
-TITLE="General installation"
-HREF="introduction.html"><LINK
-REL="PREVIOUS"
-TITLE="Introduction to Samba"
-HREF="introsmb.html"><LINK
-REL="NEXT"
-TITLE="Quick Cross Subnet Browsing / Cross Workgroup Browsing guide"
-HREF="browsing-quick.html"></HEAD
-><BODY
-CLASS="CHAPTER"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><DIV
-CLASS="NAVHEADER"
-><TABLE
-SUMMARY="Header navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TH
-COLSPAN="3"
-ALIGN="center"
->SAMBA Project Documentation</TH
-></TR
-><TR
-><TD
-WIDTH="10%"
-ALIGN="left"
-VALIGN="bottom"
-><A
-HREF="introsmb.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="80%"
-ALIGN="center"
-VALIGN="bottom"
-></TD
-><TD
-WIDTH="10%"
-ALIGN="right"
-VALIGN="bottom"
-><A
-HREF="browsing-quick.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-></TABLE
-><HR
-ALIGN="LEFT"
-WIDTH="100%"></DIV
-><DIV
-CLASS="CHAPTER"
-><H1
-><A
-NAME="INSTALL"
-></A
->Chapter 2. How to Install and Test SAMBA</H1
-><DIV
-CLASS="TOC"
-><DL
-><DT
-><B
->Table of Contents</B
-></DT
-><DT
->2.1. <A
-HREF="install.html#AEN187"
->Obtaining and installing samba</A
-></DT
-><DT
->2.2. <A
-HREF="install.html#AEN193"
->Configuring samba</A
-></DT
-><DD
-><DL
-><DT
->2.2.1. <A
-HREF="install.html#AEN198"
->Editing the <TT
-CLASS="FILENAME"
->smb.conf</TT
-> file</A
-></DT
-><DT
->2.2.2. <A
-HREF="install.html#AEN223"
->SWAT</A
-></DT
-></DL
-></DD
-><DT
->2.3. <A
-HREF="install.html#AEN229"
->Try listing the shares available on your 
-	server</A
-></DT
-><DT
->2.4. <A
-HREF="install.html#AEN238"
->Try connecting with the unix client</A
-></DT
-><DT
->2.5. <A
-HREF="install.html#AEN259"
->Try connecting from a DOS, WfWg, Win9x, WinNT, 
-	Win2k, OS/2, etc... client</A
-></DT
-><DT
->2.6. <A
-HREF="install.html#AEN272"
->What If Things Don't Work?</A
-></DT
-><DD
-><DL
-><DT
->2.6.1. <A
-HREF="install.html#AEN277"
->Scope IDs</A
-></DT
-><DT
->2.6.2. <A
-HREF="install.html#AEN280"
->Locking</A
-></DT
-></DL
-></DD
-></DL
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN187"
->2.1. Obtaining and installing samba</A
-></H1
-><P
->Binary packages of samba are included in almost any Linux or 
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 2. How to Install and Test SAMBA</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="introduction.html" title="Part I. General Installation"><link rel="previous" href="IntroSMB.html" title="Chapter 1. Introduction to Samba"><link rel="next" href="type.html" title="Part II. Server Configuration Basics"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 2. How to Install and Test SAMBA</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="IntroSMB.html">Prev</a> </td><th width="60%" align="center">Part I. General Installation</th><td width="20%" align="right"> <a accesskey="n" href="type.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><h2 class="title"><a name="install"></a>Chapter 2. How to Install and Test SAMBA</h2></div><div><div class="author"><h3 class="author">Andrew Tridgell</h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt>&lt;<a href="mailto:tridge@samba.org">tridge@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author">Jelmer R. Vernooij</h3><div class="affiliation"><span class="orgname">The Samba Team<br></span><div class="address"><p><tt>&lt;<a href="mailto:jelmer@samba.org">jelmer@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author">Karl Auer</h3></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="install.html#id2812103">Obtaining and installing samba</a></dt><dt><a href="install.html#id2812254">Configuring samba</a></dt><dd><dl><dt><a href="install.html#id2812000">Editing the smb.conf file</a></dt><dt><a href="install.html#id2875811">SWAT</a></dt></dl></dd><dt><a href="install.html#id2875850">Try listing the shares available on your 
+	server</a></dt><dt><a href="install.html#id2875900">Try connecting with the unix client</a></dt><dt><a href="install.html#id2876004">Try connecting from a DOS, WfWg, Win9x, WinNT, 
+	Win2k, OS/2, etc... client</a></dt><dt><a href="install.html#id2876065">What If Things Don't Work?</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2812103"></a>Obtaining and installing samba</h2></div></div><p>Binary packages of samba are included in almost any Linux or 
 	Unix distribution. There are also some packages available at 
-	<A
-HREF="http://samba.org/"
-TARGET="_top"
->the samba homepage</A
->.
-	</P
-><P
->If you need to compile samba from source, check the 
-	<A
-HREF="compiling.html"
->appropriate appendix chapter</A
->.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN193"
->2.2. Configuring samba</A
-></H1
-><P
->Samba's configuration is stored in the smb.conf file, 
-	that usually resides in <TT
-CLASS="FILENAME"
->/etc/samba/smb.conf</TT
-> 
-	or <TT
-CLASS="FILENAME"
->/usr/local/samba/lib/smb.conf</TT
->. You can either 
+	<a href="http://samba.org/" target="_top">the samba homepage</a>.
+	</p><p>If you need to compile samba from source, check the 
+	<a href="compiling.html" title="Chapter 30. How to compile SAMBA">appropriate appendix chapter</a>.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2812254"></a>Configuring samba</h2></div></div><p>Samba's configuration is stored in the smb.conf file, 
+	that usually resides in <tt>/etc/samba/smb.conf</tt> 
+	or <tt>/usr/local/samba/lib/smb.conf</tt>. You can either 
 	edit this file yourself or do it using one of the many graphical 
 	tools that are available, such as the web-based interface swat, that 
-	is included with samba.</P
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN198"
->2.2.1. Editing the <TT
-CLASS="FILENAME"
->smb.conf</TT
-> file</A
-></H2
-><P
->There are sample configuration files in the examples 
+	is included with samba.</p><div class="sect2" lang="en"><div class="titlepage"><div><h3 class="title"><a name="id2812000"></a>Editing the <tt>smb.conf</tt> file</h3></div></div><p>There are sample configuration files in the examples 
 	subdirectory in the distribution. I suggest you read them 
 	carefully so you can see how the options go together in 
-	practice. See the man page for all the options.</P
-><P
->The simplest useful configuration file would be 
-	something like this:</P
-><P
-><PRE
-CLASS="PROGRAMLISTING"
->[global]
+	practice. See the man page for all the options.</p><p>The simplest useful configuration file would be 
+	something like this:</p><pre class="programlisting">
+[global]
 	workgroup = MYGROUP
 
 [homes]
 	guest ok = no
 	read only = no
-	</PRE
-></P
-><P
->which would allow connections by anyone with an 
+	</pre><p>which would allow connections by anyone with an 
 	account on the server, using either their login name or 
-	"<B
-CLASS="COMMAND"
->homes</B
->" as the service name. (Note that I also set the 
-	workgroup that Samba is part of. See BROWSING.txt for details)</P
-><P
->Make sure you put the <TT
-CLASS="FILENAME"
->smb.conf</TT
-> file in the same place 
-	you specified in the<TT
-CLASS="FILENAME"
->Makefile</TT
-> (the default is to 
-	look for it in <TT
-CLASS="FILENAME"
->/usr/local/samba/lib/</TT
->).</P
-><P
->For more information about security settings for the 
-	<B
-CLASS="COMMAND"
->[homes]</B
-> share please refer to the chapter 
-	<A
-HREF="securing-samba.html"
->Securing Samba</A
->.</P
-><DIV
-CLASS="SECT3"
-><H3
-CLASS="SECT3"
-><A
-NAME="AEN214"
->2.2.1.1. Test your config file with 
-	<B
-CLASS="COMMAND"
->testparm</B
-></A
-></H3
-><P
->It's important that you test the validity of your
-	<TT
-CLASS="FILENAME"
->smb.conf</TT
-> file using the <SPAN
-CLASS="APPLICATION"
->testparm</SPAN
-> program. 
+	&quot;<b>homes</b>&quot; as the service name. (Note that I also set the 
+	workgroup that Samba is part of. See BROWSING.txt for details)</p><p>Make sure you put the <tt>smb.conf</tt> file in the same place 
+	you specified in the<tt>Makefile</tt> (the default is to 
+	look for it in <tt>/usr/local/samba/lib/</tt>).</p><p>For more information about security settings for the 
+	<b>[homes]</b> share please refer to the chapter 
+	<a href="securing-samba.html" title="Chapter 24. Securing Samba">Securing Samba</a>.</p><div class="sect3" lang="en"><div class="titlepage"><div><h4 class="title"><a name="id2875758"></a>Test your config file with 
+	<b>testparm</b></h4></div></div><p>It's important that you test the validity of your
+	<tt>smb.conf</tt> file using the testparm program. 
 	If testparm runs OK then it will list the loaded services. If 
-	not it will give an error message.</P
-><P
->Make sure it runs OK and that the services look 
-	reasonable before proceeding. </P
-><P
->Always run testparm again when you change 
-	<TT
-CLASS="FILENAME"
->smb.conf</TT
->!</P
-></DIV
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN223"
->2.2.2. SWAT</A
-></H2
-><P
->	SWAT is a web-based interface that helps you configure samba. 
+	not it will give an error message.</p><p>Make sure it runs OK and that the services look 
+	reasonable before proceeding. </p><p>Always run testparm again when you change 
+	<tt>smb.conf</tt>!</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><h3 class="title"><a name="id2875811"></a>SWAT</h3></div></div><p>
+	SWAT is a web-based interface that helps you configure samba. 
 	SWAT might not be available in the samba package on your platform, 
-	but in a seperate package. Please read the swat manpage 
+	but in a separate package. Please read the swat manpage 
 	on compiling, installing and configuring swat from source.
-	</P
-><P
->To launch SWAT just run your favorite web browser and 
-	point it at "http://localhost:901/". Replace <VAR
-CLASS="REPLACEABLE"
->localhost</VAR
-> with the name of the computer you are running samba on if you 
-	are running samba on a different computer then your browser.</P
-><P
->Note that you can attach to SWAT from any IP connected 
+	</p><p>To launch SWAT just run your favorite web browser and 
+	point it at &quot;http://localhost:901/&quot;. Replace <i><tt>localhost</tt></i> with the name of the computer you are running samba on if you 
+	are running samba on a different computer than your browser.</p><p>Note that you can attach to SWAT from any IP connected 
 	machine but connecting from a remote machine leaves your 
 	connection open to password sniffing as passwords will be sent 
-	in the clear over the wire. </P
-></DIV
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN229"
->2.3. Try listing the shares available on your 
-	server</A
-></H1
-><P
-><SAMP
-CLASS="PROMPT"
->$ </SAMP
-><KBD
-CLASS="USERINPUT"
->smbclient -L 
-	<VAR
-CLASS="REPLACEABLE"
->yourhostname</VAR
-></KBD
-></P
-><P
->You should get back a list of shares available on 
+	in the clear over the wire. </p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2875850"></a>Try listing the shares available on your 
+	server</h2></div></div><p><tt>$ </tt><b><tt>smbclient -L 
+	<i><tt>yourhostname</tt></i></tt></b></p><p>You should get back a list of shares available on 
 	your server. If you don't then something is incorrectly setup. 
 	Note that this method can also be used to see what shares 
-	are available on other LanManager clients (such as WfWg).</P
-><P
->If you choose user level security then you may find 
+	are available on other LanManager clients (such as WfWg).</p><p>If you choose user level security then you may find 
 	that Samba requests a password before it will list the shares. 
-	See the <B
-CLASS="COMMAND"
->smbclient</B
-> man page for details. (you 
+	See the <b>smbclient</b> man page for details. (you 
 	can force it to list the shares without a password by
 	adding the option -U% to the command line. This will not work 
-	with non-Samba servers)</P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN238"
->2.4. Try connecting with the unix client</A
-></H1
-><P
-><SAMP
-CLASS="PROMPT"
->$ </SAMP
-><KBD
-CLASS="USERINPUT"
->smbclient <VAR
-CLASS="REPLACEABLE"
->	//yourhostname/aservice</VAR
-></KBD
-></P
-><P
->Typically the <VAR
-CLASS="REPLACEABLE"
->yourhostname</VAR
-> 
-	would be the name of the host where you installed <SPAN
-CLASS="APPLICATION"
->smbd</SPAN
->. 
-	The <VAR
-CLASS="REPLACEABLE"
->aservice</VAR
-> is 
-	any service you have defined in the <TT
-CLASS="FILENAME"
->smb.conf</TT
->
-	file. Try your user name if you just have a <B
-CLASS="COMMAND"
->[homes]</B
->
+	with non-Samba servers)</p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2875900"></a>Try connecting with the unix client</h2></div></div><p><tt>$ </tt><b><tt>smbclient <i><tt>
+	//yourhostname/aservice</tt></i></tt></b></p><p>Typically the <i><tt>yourhostname</tt></i> 
+	would be the name of the host where you installed smbd. 
+	The <i><tt>aservice</tt></i> is 
+	any service you have defined in the <tt>smb.conf</tt>
+	file. Try your user name if you just have a <b>[homes]</b>
 	section
-	in <TT
-CLASS="FILENAME"
->smb.conf</TT
->.</P
-><P
->For example if your unix host is <VAR
-CLASS="REPLACEABLE"
->bambi</VAR
->
-	and your login name is <VAR
-CLASS="REPLACEABLE"
->fred</VAR
-> you would type:</P
-><P
-><SAMP
-CLASS="PROMPT"
->$ </SAMP
-><KBD
-CLASS="USERINPUT"
->smbclient //<VAR
-CLASS="REPLACEABLE"
->bambi</VAR
->/<VAR
-CLASS="REPLACEABLE"
->fred</VAR
->
-	</KBD
-></P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN259"
->2.5. Try connecting from a DOS, WfWg, Win9x, WinNT, 
-	Win2k, OS/2, etc... client</A
-></H1
-><P
->Try mounting disks. eg:</P
-><P
-><SAMP
-CLASS="PROMPT"
->C:\WINDOWS\&#62; </SAMP
-><KBD
-CLASS="USERINPUT"
->net use d: \\servername\service
-	</KBD
-></P
-><P
->Try printing. eg:</P
-><P
-><SAMP
-CLASS="PROMPT"
->C:\WINDOWS\&#62; </SAMP
-><KBD
-CLASS="USERINPUT"
->net use lpt1:
-	\\servername\spoolservice</KBD
-></P
-><P
-><SAMP
-CLASS="PROMPT"
->C:\WINDOWS\&#62; </SAMP
-><KBD
-CLASS="USERINPUT"
->print filename
-	</KBD
-></P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN272"
->2.6. What If Things Don't Work?</A
-></H1
-><P
->Then you might read the file chapter 
-	<A
-HREF="diagnosis.html"
->Diagnosis</A
-> and the 
+	in <tt>smb.conf</tt>.</p><p>For example if your unix host is <i><tt>bambi</tt></i>
+	and your login name is <i><tt>fred</tt></i> you would type:</p><p><tt>$ </tt><b><tt>smbclient //<i><tt>bambi</tt></i>/<i><tt>fred</tt></i>
+	</tt></b></p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2876004"></a>Try connecting from a DOS, WfWg, Win9x, WinNT, 
+	Win2k, OS/2, etc... client</h2></div></div><p>Try mounting disks. eg:</p><p><tt>C:\WINDOWS\&gt; </tt><b><tt>net use d: \\servername\service
+	</tt></b></p><p>Try printing. eg:</p><p><tt>C:\WINDOWS\&gt; </tt><b><tt>net use lpt1:
+	\\servername\spoolservice</tt></b></p><p><tt>C:\WINDOWS\&gt; </tt><b><tt>print filename
+	</tt></b></p></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2876065"></a>What If Things Don't Work?</h2></div></div><p>Then you might read the file chapter 
+	<a href="diagnosis.html" title="Chapter 27. The samba checklist">Diagnosis</a> and the 
 	FAQ. If you are still stuck then try to follow 
-	the <A
-HREF="problems.html"
->Analysing and Solving Problems chapter</A
->
+	the <a href="problems.html" title="Chapter 28. Analysing and solving samba problems">Analysing and Solving Problems chapter</a>
 	Samba has been successfully installed at thousands of sites worldwide,
-	so maybe someone else has hit your problem and has overcome it. </P
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN277"
->2.6.1. Scope IDs</A
-></H2
-><P
->By default Samba uses a blank scope ID. This means 
-		all your windows boxes must also have a blank scope ID. 
-		If you really want to use a non-blank scope ID then you will 
-		need to use the 'netbios scope' smb.conf option.
-        All your PCs will need to have the same setting for 
-		this to work. I do not recommend scope IDs.</P
-></DIV
-><DIV
-CLASS="SECT2"
-><H2
-CLASS="SECT2"
-><A
-NAME="AEN280"
->2.6.2. Locking</A
-></H2
-><P
->One area which sometimes causes trouble is locking.</P
-><P
->There are two types of locking which need to be 
-		performed by a SMB server. The first is "record locking" 
-		which allows a client to lock a range of bytes in a open file. 
-		The second is the "deny modes" that are specified when a file 
-		is open.</P
-><P
->Record locking semantics under Unix is very
-		different from record locking under Windows. Versions
-		of Samba before 2.2 have tried to use the native
-		fcntl() unix system call to implement proper record
-		locking between different Samba clients. This can not
-		be fully correct due to several reasons. The simplest
-		is the fact that a Windows client is allowed to lock a
-		byte range up to 2^32 or 2^64, depending on the client
-		OS. The unix locking only supports byte ranges up to
-		2^31. So it is not possible to correctly satisfy a
-		lock request above 2^31. There are many more
-		differences, too many to be listed here.</P
-><P
->Samba 2.2 and above implements record locking
-		completely independent of the underlying unix
-		system. If a byte range lock that the client requests
-		happens to fall into the range 0-2^31, Samba hands
-		this request down to the Unix system. All other locks
-		can not be seen by unix anyway.</P
-><P
->Strictly a SMB server should check for locks before 
-		every read and write call on a file. Unfortunately with the 
-		way fcntl() works this can be slow and may overstress the 
-		rpc.lockd. It is also almost always unnecessary as clients 
-		are supposed to independently make locking calls before reads 
-		and writes anyway if locking is important to them. By default 
-		Samba only makes locking calls when explicitly asked
-		to by a client, but if you set "strict locking = yes" then it will
-		make lock checking calls on every read and write. </P
-><P
->You can also disable by range locking completely 
-		using "locking = no". This is useful for those shares that 
-		don't support locking or don't need it (such as cdroms). In 
-		this case Samba fakes the return codes of locking calls to 
-		tell clients that everything is OK.</P
-><P
->The second class of locking is the "deny modes". These 
-		are set by an application when it opens a file to determine 
-		what types of access should be allowed simultaneously with 
-		its open. A client may ask for DENY_NONE, DENY_READ, DENY_WRITE 
-		or DENY_ALL. There are also special compatibility modes called 
-		DENY_FCB and  DENY_DOS.</P
-></DIV
-></DIV
-></DIV
-><DIV
-CLASS="NAVFOOTER"
-><HR
-ALIGN="LEFT"
-WIDTH="100%"><TABLE
-SUMMARY="Footer navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
-><A
-HREF="introsmb.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="samba-howto-collection.html"
-ACCESSKEY="H"
->Home</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
-><A
-HREF="browsing-quick.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
->Introduction to Samba</TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="introduction.html"
-ACCESSKEY="U"
->Up</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
->Quick Cross Subnet Browsing / Cross Workgroup Browsing guide</TD
-></TR
-></TABLE
-></DIV
-></BODY
-></HTML
->
+	so maybe someone else has hit your problem and has overcome it. </p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="IntroSMB.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="introduction.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="type.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 1. Introduction to Samba </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Part II. Server Configuration Basics</td></tr></table></div></body></html>
