@@ -1314,5 +1314,17 @@ void smbd_process(void)
 				last_timeout_processing_time = new_check_time; /* Reset time. */
 			}
 		}
+
+		/* The timeout_processing function isn't run nearly
+		   often enough to implement 'max log size' without
+		   overrunning the size of the file by many megabytes.
+		   This is especially true if we are running at debug
+		   level 10.  Checking every 50 SMBs is a nice
+		   tradeoff of performance vs log file size overrun. */
+
+		if ((num_smbs % 50) == 0 && need_to_check_log_size()) {
+			change_to_root_user();
+			check_log_size();
+		}
 	}
 }
