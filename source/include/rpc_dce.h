@@ -197,10 +197,10 @@ typedef struct rpc_hdr_auth_info
 {
 	uint8 auth_type; /* 0x0a */
 	uint8 auth_level; /* 0x06 */
-	uint8 stub_type_len; /* don't know */
-	uint8 padding; /* padding */
+	uint8 padding;
+	uint8 reserved; /* padding */
 
-	uint32 unknown; /* pointer */
+	uint32 auth_context; /* pointer */
 
 } RPC_HDR_AUTH;
 
@@ -229,7 +229,6 @@ typedef struct rpc_auth_netsec_chk_info
 
 struct netsec_auth_struct
 {
-	RPC_AUTH_NETSEC_NEG netsec_neg;
 	uchar sess_key[16];
 	uint32 seq_num;
 };
