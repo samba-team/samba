@@ -2249,7 +2249,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	 * So we go the easy way, only check after if the account exists.
 	 * JFM (2/3/2001), to clear any possible bad understanding (-:
 	 *
-	 * We now have seperate script paramaters for adding users/machines so we
+	 * We now have separate script paramaters for adding users/machines so we
 	 * now have some sainity-checking to match. 
 	 */
 
