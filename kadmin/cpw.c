@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,6 +40,11 @@
 
 RCSID("$Id$");
 
+struct cpw_entry_data {
+    int random;
+    char *password;
+};
+
 static struct getargs args[] = {
     { "random-key",	'r',	arg_flag,	NULL, "set random key" },
     { "password",	'p',	arg_string,	NULL, "princial's password" },
@@ -53,18 +58,55 @@ usage(void)
     arg_printusage(args, num_args, "principal...");
 }
 
+static int
+do_cpw_entry(krb5_principal principal, void *data)
+{
+    char *pw, pwbuf[128], prompt[128], *pr;
+    struct cpw_entry_data *e = data;
+    krb5_error_code ret;
+    
+    pw = e->password;
+    if(e->random == 0){
+	if(pw == NULL){
+	    krb5_unparse_name(context, principal, &pr);
+	    snprintf(prompt, sizeof(prompt), "%s's Password: ", pr);
+	    free(pr);
+	    ret = des_read_pw_string(pwbuf, sizeof(pwbuf), prompt, 1);
+	    if(ret){
+		return 0; /* XXX error code? */
+	    }
+	    pw = pwbuf;
+	}		
+	if(ret == 0)
+	    ret = kadm5_chpass_principal(kadm_handle, principal, pw);
+	memset(pwbuf, 0, sizeof(pwbuf));
+    }else{
+	int i;
+	krb5_keyblock *keys;
+	int num_keys;
+	ret = kadm5_randkey_principal(kadm_handle, principal, &keys, &num_keys);
+	if(ret)
+	    return ret;
+	for(i = 0; i < num_keys; i++)
+	    krb5_free_keyblock_contents(context, &keys[i]);
+	free(keys);
+    }
+    return ret;
+}
+
 int
 cpw_entry(int argc, char **argv)
 {
     krb5_error_code ret;
-    krb5_principal princ;
     int i;
     int optind = 0;
-    char *password = NULL, pwbuf[128], prompt[128], *pr;
-    int rnd = 0;
+    struct cpw_entry_data data;
 
-    args[0].value = &rnd;
-    args[1].value = &password;
+    data.random = 0;
+    data.password = NULL;
+
+    args[0].value = &data.random;
+    args[1].value = &data.password;
     if(getarg(args, num_args, argc, argv, &optind)){
 	usage();
 	return 0;
@@ -72,45 +114,9 @@ cpw_entry(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
-    if(password == NULL)
-	password = pwbuf;
-    
-    for(i = 0; i < argc; i++){
-	ret = krb5_parse_name(context, argv[i], &princ);
-	if(ret){
-	    krb5_warn(context, ret, "krb5_parse_name(%s)", argv[i]);
-	    continue;
-	}
-	if(rnd == 0){
-	    if(password == pwbuf){
-		krb5_unparse_name(context, princ, &pr);
-		snprintf(prompt, sizeof(prompt), "%s's Password: ", pr);
-		free(pr);
-		ret = des_read_pw_string(pwbuf, sizeof(pwbuf), prompt, 1);
-		if(ret){
-		    printf("Verify failure\n");
-		}
-	    }
-	    if(ret == 0){
-		ret = kadm5_chpass_principal(kadm_handle, princ, password);
-		if(ret)
-		    krb5_warn(context, ret, "%s", argv[i]);
-	    }
-	    memset(pwbuf, 0, sizeof(pwbuf));
-	}else{
-	    krb5_keyblock *keys;
-	    int num_keys;
-	    ret = kadm5_randkey_principal(kadm_handle, princ, &keys, &num_keys);
-	    if(ret)
-		krb5_warn(context, ret, "%s", argv[i]);
-	    else{
-		for(i = 0; i < num_keys; i++)
-		    krb5_free_keyblock_contents(context, &keys[i]);
-		free(keys);
-	    }
-	}
-	krb5_free_principal(context, princ);
-    }
+    for(i = 0; i < argc; i++)
+	ret = foreach_principal(argv[i], do_cpw_entry, &data);
+
     return 0;
 }
 

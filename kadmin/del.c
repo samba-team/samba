@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,24 +40,18 @@
 
 RCSID("$Id$");
 
+static int
+do_del_entry(krb5_principal principal, void *data)
+{
+    return kadm5_delete_principal(kadm_handle, principal);
+}
+
 int
 del_entry(int argc, char **argv)
 {
-    krb5_error_code ret;
-    krb5_principal princ;
     int i;
-
-    for(i = 1; i < argc; i++){
-	ret = krb5_parse_name(context, argv[i], &princ);
-	if(ret){
-	    krb5_warn(context, ret, "krb5_parse_name(%s)", argv[i]);
-	    continue;
-	}
-	ret = kadm5_delete_principal(kadm_handle, princ);
-	if(ret)
-	    krb5_warn(context, ret, "%s", argv[i]);
-	krb5_free_principal(context, princ);
-    }
+    krb5_error_code ret;
+    for(i = 0; i < argc; i++)
+	ret = foreach_principal(argv[i], do_del_entry, NULL);
     return 0;
 }
-

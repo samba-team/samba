@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,6 +40,10 @@
 
 RCSID("$Id$");
 
+struct ext_keytab_data {
+    krb5_keytab keytab;
+};
+
 static struct getargs args[] = {
     { "keytab",		'k',	arg_string,	NULL, "keytab to use" },
 };
@@ -52,61 +56,65 @@ usage(void)
     arg_printusage(args, num_args, "principal...");
 }
 
+static int
+do_ext_keytab(krb5_principal principal, void *data)
+{
+    krb5_error_code ret;
+    int i;
+    kadm5_principal_ent_rec princ;
+    struct ext_keytab_data *e = data;
+
+    ret = kadm5_get_principal(kadm_handle, principal, &princ, 
+			      KADM5_PRINCIPAL|KADM5_KVNO|KADM5_KEY_DATA);
+    if(ret)
+	return ret;
+    for(i = 0; i < princ.n_key_data; i++){
+	krb5_keytab_entry key;
+	krb5_key_data *k = &princ.key_data[i];
+	key.principal = princ.principal;
+	key.vno = k->key_data_kvno;
+	key.keyblock.keytype = k->key_data_type[0];
+	key.keyblock.keyvalue.length = k->key_data_length[0];
+	key.keyblock.keyvalue.data = k->key_data_contents[0];
+	ret = krb5_kt_add_entry(context, e->keytab, &key);
+	if(ret)
+	    krb5_warn(context, ret, "krb5_kt_add_entry");
+    }
+    kadm5_free_principal_ent(kadm_handle, &princ);
+    return 0;
+}
+
 int
 ext_keytab(int argc, char **argv)
 {
     krb5_error_code ret;
-    kadm5_principal_ent_rec princ;
-    krb5_principal princ_ent;
     int i;
     int optind = 0;
     char *keytab = NULL;
-    krb5_keytab kt;
-
+    struct ext_keytab_data data;
+    
     args[0].value = &keytab;
     if(getarg(args, num_args, argc, argv, &optind)){
 	usage();
 	return 0;
     }
-    argc -= optind;
-    argv += optind;
-
     if(keytab)
-	ret = krb5_kt_resolve(context, keytab, &kt);
+	ret = krb5_kt_resolve(context, keytab, &data.keytab);
     else
-	ret = krb5_kt_default(context, &kt);
+	ret = krb5_kt_default(context, &data.keytab);
     if(ret){
 	krb5_warn(context, ret, "krb5_kt_resolve");
 	return 0;
     }
 
-    for(i = 0; i < argc; i++){
-	ret = krb5_parse_name(context, argv[i], &princ_ent);
-	if(ret){
-	    krb5_warn(context, ret, "krb5_parse_name(%s)", argv[i]);
-	    continue;
-	}
-	ret = kadm5_get_principal(kadm_handle, princ_ent, &princ, 
-				  KADM5_PRINCIPAL|KADM5_KVNO|KADM5_KEY_DATA);
-	if(ret){
-	    krb5_warn(context, ret, "%s", argv[i]);
-	}else{
-	    for(i = 0; i < princ.n_key_data; i++){
-		krb5_keytab_entry key;
-		krb5_key_data *k = &princ.key_data[i];
-		key.principal = princ.principal;
-		key.vno = k->key_data_kvno;
-		key.keyblock.keytype = k->key_data_type[0];
-		key.keyblock.keyvalue.length = k->key_data_length[0];
-		key.keyblock.keyvalue.data = k->key_data_contents[0];
-		ret = krb5_kt_add_entry(context, kt, &key);
-		if(ret)
-		    krb5_warn(context, ret, "krb5_kt_add_entry");
-	    }
-	    kadm5_free_principal_ent(kadm_handle, &princ);
-	}
-	krb5_free_principal(context, princ_ent);
-    }
+    argc -= optind;
+    argv += optind;
+
+    for(i = 0; i < argc; i++) 
+	foreach_principal(argv[i], do_ext_keytab, &data);
+
+    krb5_kt_close(context, data.keytab);
+
     return 0;
 }
 
