@@ -440,7 +440,10 @@ void cli_use_wait_keyboard(void)
 		 */
 		for (i = 0; i < num_clis; i++)
 		{
-			int fd = clis[i]->cli->fd;
+			int fd;
+			if (clis[i] == NULL || clis[i]->cli == NULL)
+				continue;
+			fd = clis[i]->cli->fd;
 			if (FD_ISSET(fd, &fds))
 				receive_smb(fd, clis[i]->cli->inbuf, 0);
 		}
