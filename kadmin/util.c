@@ -77,12 +77,22 @@ deltat2str(unsigned t, char *str, size_t len)
 	snprintf(str, len, "unlimited");
 }
 
-unsigned
-str2deltat(const char *str)
+int
+str2deltat(const char *str, unsigned *delta)
 {
-    if(strcasecmp(str, "unlimited") == 0)
+    int res;
+
+    if(strcasecmp(str, "unlimited") == 0) {
+	*delta = 0;
 	return 0;
-    return parse_time(str, "day");
+    }
+    res = parse_time(str, "day");
+    if (res < 0)
+	return res;
+    else {
+	*delta = res;
+	return 0;
+    }
 }
 
 void
@@ -91,34 +101,87 @@ attr2str(krb5_flags attributes, char *str, size_t len)
     unparse_flags (attributes, kdb_attrs, str, len);
 }
 
-krb5_flags
-str2attr(const char *str, krb5_flags orig)
+int
+str2attr(const char *str, krb5_flags *flags)
 {
-    int res = parse_flags (str, kdb_attrs, orig);
-    if(res == -1)
-	return orig; /* XXX */
-    return res;
+    int res;
+
+    res = parse_flags (str, kdb_attrs, *flags);
+    if (res < 0)
+	return res;
+    else {
+	*flags = res;
+	return 0;
+    }
 }
 
 void
 get_response(const char *prompt, const char *def, char *buf, size_t len)
 {
     char *p;
+
     printf("%s [%s]:", prompt, def);
-    fgets(buf, len, stdin);
+    if(fgets(buf, len, stdin) == NULL)
+	*buf = '\0';
     p = strchr(buf, '\n');
-    if(p) *p = 0;
+    if(p)
+	*p = '\0';
     if(strcmp(buf, "") == 0)
 	strncpy(buf, def, len);
     buf[len-1] = 0;
 }
 
-unsigned 
-get_deltat(const char *prompt, const char *def)
+int 
+get_deltat(const char *prompt, const char *def, unsigned *delta)
 {
     char buf[128];
     get_response(prompt, def, buf, sizeof(buf));
-    return str2deltat(buf);
+    return str2deltat(buf, delta);
+}
+
+static int
+edit_time (const char *prompt, krb5_deltat *value, int *mask, int bit)
+{
+    char buf[1024], resp[1024];
+
+    deltat2str(*value, buf, sizeof(buf));
+    for (;;) {
+	unsigned tmp;
+
+	get_response(prompt, buf, resp, sizeof(resp));
+	if (str2deltat(resp, &tmp) == 0) {
+	    *value = tmp;
+	    *mask |= bit;
+	    break;
+	} else if(*resp == '?') {
+	    print_time_table (stderr);
+	} else {
+	    fprintf (stderr, "Unable to parse time '%s'\n", resp);
+	}
+    }
+    return 0;
+}
+
+static int
+edit_attributes (const char *prompt, krb5_flags *attr, int *mask, int bit)
+{
+    char buf[1024], resp[1024];
+
+    attr2str(*attr, buf, sizeof(buf));
+    for (;;) {
+	krb5_flags tmp;
+
+	get_response("Attributes", buf, resp, sizeof(resp));
+	if (str2attr(resp, &tmp) == 0) {
+	    *attr = tmp;
+	    *mask |= bit;
+	    break;
+	} else if(*resp == '?') {
+	    print_flags_table (kdb_attrs, stderr);
+	} else {
+	    fprintf (stderr, "Unable to parse '%s'\n", resp);
+	}
+    }
 }
 
 int
@@ -126,17 +189,11 @@ edit_entry(kadm5_principal_ent_t ent, int *mask)
 {
     char buf[1024], resp[1024];
     
-    deltat2str(ent->max_life, buf, sizeof(buf));
-    ent->max_life = get_deltat("Max ticket life", buf);
-    *mask |= KADM5_MAX_LIFE;
-
-    deltat2str(ent->max_renewable_life, buf, sizeof(buf));
-    ent->max_renewable_life = get_deltat("Max renewable life", buf);
-    *mask |= KADM5_MAX_RLIFE;
-    
-    attr2str(ent->attributes, buf, sizeof(buf));
-    get_response("Attributes", buf, resp, sizeof(resp));
-    ent->attributes = str2attr(resp, ent->attributes);
-    *mask |= KADM5_ATTRIBUTES;
+    edit_time ("Max ticket life", &ent->max_life, mask,
+	       KADM5_MAX_LIFE);
+    edit_time ("Max renewable life", &ent->max_renewable_life, mask,
+	       KADM5_MAX_RLIFE);
+    edit_attributes ("Attributes", &ent->attributes, mask,
+		     KADM5_ATTRIBUTES);
     return 0;
 }
