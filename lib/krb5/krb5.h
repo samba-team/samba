@@ -377,7 +377,7 @@ typedef struct krb5_cc_ops {
     krb5_error_code (*close)(krb5_context, krb5_ccache);
     krb5_error_code (*store)(krb5_context, krb5_ccache, krb5_creds*);
     krb5_error_code (*retrieve)(krb5_context, krb5_ccache, 
-				krb5_flags, krb5_creds*, krb5_creds);
+				krb5_flags, const krb5_creds*, krb5_creds *);
     krb5_error_code (*get_princ)(krb5_context, krb5_ccache, krb5_principal*);
     krb5_error_code (*get_first)(krb5_context, krb5_ccache, krb5_cc_cursor *);
     krb5_error_code (*get_next)(krb5_context, krb5_ccache, 
@@ -689,6 +689,7 @@ typedef struct krb5_verify_opt {
 extern const krb5_cc_ops krb5_acc_ops;
 extern const krb5_cc_ops krb5_fcc_ops;
 extern const krb5_cc_ops krb5_mcc_ops;
+extern const krb5_cc_ops krb5_kcm_ops;
 
 extern const krb5_kt_ops krb5_fkt_ops;
 extern const krb5_kt_ops krb5_wrfkt_ops;
