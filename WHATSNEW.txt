@@ -1,12 +1,16 @@
-              WHAT'S NEW IN Samba 2.2.4  - 2nd May 2002
-              =========================================
+              WHAT'S NEW IN Samba 2.2.5  - 18th June 2002
+              ===========================================
 
 This is the latest stable release of Samba. This is the version that all
 production Samba servers should be running for all current bug-fixes.
 
 There have been several fixes and internal enhancements which include:
 
-*
+* Several compile fixes for Solaris and HP-UX
+* More printing fixes for Windows NT/2k/XP clients
+* Enhanced VFS recycle bin
+* New internal signal handling semantics relating to directory change
+  notification and oplocks
 
 New/Changed parameters in 2.2.5
 --------------------------------
@@ -17,16 +21,19 @@ smb.conf(5).
 Added/changed parameters
 ------------------------
 
-* mangle method = [hash|hash2]
+* block size = <INTEGER>
+* force unknown acl user = <boolean>
+* mangling method = [hash|hash2]
 
 
-Depreciated Tools
-----------------------
+Deprecated Parameters
+---------------------
 
-The following parameters have been marked as depreciated
-and will be removed in Samba 3.0
+The following parameters have been marked as deprecated and will be
+removed in Samba 3.0
 
-* make_printerdef
+* strip dot
+* status
 
 
 Removed Parameters
@@ -40,28 +47,29 @@ Changes in 2.2.5
 
 See the cvs log for SAMBA_2_2 for more details
 
-1)  Many fixes for compiler warnings, Makefile dependencies, and
-    incorrect autoconf tests on various platforms--Solaris & HP-UX 10.20
-    being the prodominantly reported platforms
-2)  Fixed crash bug on the IBM s390 w/ Linux fixed
-3)  Inclusion of enhanced Linxu quota support
-4)  Correct link against Sun LDAP libraries on Solaris 8 (even
-    through there is no apparent SSL support here)
-5)  POSIX conformance fixes
-6)  Include new configure --enable-cups (can be disabled even
+1)  Removal of many compiler warnings, incorrect Makefile dependencies,
+    and bad autoconf tests on various platforms--Solaris & HP-UX 10.20
+    being the predominantly reported platforms
+2)  Fixed winbindd crash bug on the IBM s390 running Linux
+3)  Inclusion of enhanced Linux quota support
+4)  Correctly link against Sun LDAP libraries on Solaris 8 (even
+    through there is no apparent SSL support there)
+5)  POSIX conformance patches
+6)  Include new configure --enable-cups option (can also be disabled even
     if CUPS libraries are installed on the system)
-7)  Set resaonable default for the "passwd program" using an autoconf test
-8)  Added --with-winbind-auth for enabling winbindd_pam_auth_crap()
+7)  Set reasonable default for the "passwd program" parameter using an
+    autoconf test
+8)  Added --with-winbind-auth for enabling winbindd_pam_auth_crap() code
 9)  fixed bug to prevent root account from being deleted by the
     "delete user script"
 10) Inclusion of autoconf script for building VFS modules
-11) Add new extensions to the VFS recycle bin module (see examples/VFS/recycle/README
-    for details)
+11) Add new extensions to the VFS recycle bin library (see
+    examples/VFS/recycle/README for details)
 12) Include findsmb perl script as part of the "make install" process
-13) Return correct error code for EnumPrinters (PRINTER_ENUM_RMOTE, InfoLevel1)
+13) Return correct error code for EnumPrinters(PRINTER_ENUM_RMOTE, InfoLevel1)
     to fix a bug where printers appear at the workgroup level in the Windows
     NT/2k APW browse list
-14) Added support to nmblookup for returning NMB flags (See nmblookup(8) for details)
+14) Added support to nmblookup to return NMB flags (See nmblookup(8) for details)
 15) Fix length bug that caused password changes form Windows NT/2k clients to
     occasionally fail
 16) Correct false password expiration when using --with-ldapsam caused by missing
@@ -75,7 +83,7 @@ See the cvs log for SAMBA_2_2 for more details
     problem on Samba print servers and NT/2k clients.
 21) Fix germam umlaut problem when returning ACL entries
 22) Return NT_STATUS_OBJECT_NAME_NOT_FOUND not NT_STATUS_NO_SUCH_FILE for ENOENT.
-    his fixes the bug of running the MS access.exe binary and database files
+    This fixes the bug of running the MS access.exe binary and database files
     from a Samba share documented in the 2.2.4 release
 23) Corrected signal handling relating to
 24) Fix bug in unix_to_nt_time() that appeared on files dated close to Daylight
@@ -86,7 +94,7 @@ See the cvs log for SAMBA_2_2 for more details
     Windows 2k/XP clients
 27) Fixed incorrect error check in mod_share_entry()
 28) Allow %S in dfs root paths
-29) Correct bug in 'wbinfo -A'
+29) Correct bug regarding the use of 'wbinfo -A'
 30) Fix bug in libnss_wins.so on RedHat 7.3 systems
 31) Store the key for a name to sid cache entry in upper case rather than
     whatever case the request was made in.  This gets rid of duplicate
@@ -152,10 +160,10 @@ Added/changed parameters
 * winbind use default domain
 
 
-Depreciated parameters
-----------------------
+Deprecated parameters
+---------------------
 
-The following parameters have been marked as depreciated
+The following parameters have been marked as deprecated
 and will be removed in Samba 3.0
 
 * postscript
