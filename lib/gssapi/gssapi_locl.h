@@ -50,17 +50,19 @@ extern krb5_keytab gssapi_krb5_keytab;
 
 krb5_error_code gssapi_krb5_init (void);
 
-krb5_error_code
+OM_uint32
 gssapi_krb5_create_8003_checksum (
+		      OM_uint32 *minor_status,
 		      const gss_channel_bindings_t input_chan_bindings,
 		      OM_uint32 flags,
-                      krb5_data *fwd_data,
+                      const krb5_data *fwd_data,
 		      Checksum *result);
 
-krb5_error_code
+OM_uint32
 gssapi_krb5_verify_8003_checksum (
+		      OM_uint32 *minor_status,
 		      const gss_channel_bindings_t input_chan_bindings,
-		      Checksum *cksum,
+		      const Checksum *cksum,
 		      OM_uint32 *flags,
                       krb5_data *fwd_data);
 

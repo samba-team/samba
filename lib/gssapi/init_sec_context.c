@@ -344,17 +344,14 @@ init_auth
     (*context_handle)->flags = flags;
     (*context_handle)->more_flags = LOCAL;
     
-    kret = gssapi_krb5_create_8003_checksum (input_chan_bindings,
-					     flags,
-					     &fwd_data,
-					     &cksum);
+    ret = gssapi_krb5_create_8003_checksum (minor_status,
+					    input_chan_bindings,
+					    flags,
+					    &fwd_data,
+					    &cksum);
     krb5_data_free (&fwd_data);
-    if (kret) {
-	gssapi_krb5_set_error_string ();
-	*minor_status = kret;
-	ret = GSS_S_FAILURE;
+    if (ret)
 	goto failure;
-    }
 
 #if 1
     enctype = (*context_handle)->auth_context->keyblock->keytype;
