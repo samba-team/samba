@@ -73,7 +73,8 @@ NDBM_unlock(krb5_context context, HDB *db)
 }
 
 static krb5_error_code
-NDBM_seq(krb5_context context, HDB *db, hdb_entry *entry, int first)
+NDBM_seq(krb5_context context, HDB *db, 
+	 unsigned flags, hdb_entry *entry, int first)
 
 {
     struct ndbm_db *d = (struct ndbm_db *)db->db;
@@ -96,9 +97,9 @@ NDBM_seq(krb5_context context, HDB *db, hdb_entry *entry, int first)
     data.data = value.dptr;
     data.length = value.dsize;
     if(hdb_value2entry(context, &data, entry))
-	return NDBM_seq(context, db, entry, 0);
-    if (db->master_key_set)
-	hdb_unseal_keys (entry, db->master_key);
+	return NDBM_seq(context, db, flags, entry, 0);
+    if (db->master_key_set && (flags & HDB_F_DECRYPT))
+	hdb_unseal_keys (db, entry);
     if (entry->principal == NULL) {
 	entry->principal = malloc (sizeof(*entry->principal));
 	hdb_key2principal (context, &key_data, entry->principal);
@@ -108,16 +109,16 @@ NDBM_seq(krb5_context context, HDB *db, hdb_entry *entry, int first)
 
 
 static krb5_error_code
-NDBM_firstkey(krb5_context context, HDB *db, hdb_entry *entry)
+NDBM_firstkey(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 {
-    return NDBM_seq(context, db, entry, 1);
+    return NDBM_seq(context, db, flags, entry, 1);
 }
 
 
 static krb5_error_code
-NDBM_nextkey(krb5_context context, HDB *db, hdb_entry *entry)
+NDBM_nextkey(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 {
-    return NDBM_seq(context, db, entry, 0);
+    return NDBM_seq(context, db, flags, entry, 0);
 }
 
 static krb5_error_code
