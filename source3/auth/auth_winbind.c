@@ -26,13 +26,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-/* Prototypes from common.h */
-
-NSS_STATUS winbindd_request(int req_type, 
-			    struct winbindd_request *request,
-			    struct winbindd_response *response);
-
-NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response *response, NET_USER_INFO_3 *info3)
+static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response *response, NET_USER_INFO_3 *info3)
 {
 	uint8 *info3_ndr;
 	size_t len = response->length - sizeof(response);
