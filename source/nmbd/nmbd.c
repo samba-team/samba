@@ -51,52 +51,51 @@ BOOL found_lm_clients = False;
 time_t StartupTime = 0;
 
 /**************************************************************************** **
- Catch a sigterm.
+ Handle a SIGTERM in band.
  **************************************************************************** */
+
+static void terminate(void)
+{
+	DEBUG(0,("Got SIGTERM: going down...\n"));
+
+	/* Write out wins.dat file if samba is a WINS server */
+	wins_write_database(False);
+
+	/* Remove all SELF registered names. */
+	release_my_names();
+
+	/* Announce all server entries as 0 time-to-live, 0 type. */
+	announce_my_servers_removed();
+
+	/* If there was an async dns child - kill it. */
+	kill_async_dns_child();
+
+	exit(0);
+}
+
+/**************************************************************************** **
+ Catch a SIGTERM signal.
+ **************************************************************************** */
+
+static VOLATILE sig_atomic_t got_sig_term;
 
 static void sig_term(int sig)
 {
-  BlockSignals(True,SIGTERM);
-  
-  DEBUG(0,("Got SIGTERM: going down...\n"));
-  
-  /* Write out wins.dat file if samba is a WINS server */
-  wins_write_database(False);
-  
-  /* Remove all SELF registered names. */
-  release_my_names();
-  
-  /* Announce all server entries as 0 time-to-live, 0 type. */
-  announce_my_servers_removed();
-
-  /* If there was an async dns child - kill it. */
-  kill_async_dns_child();
-
-  exit(0);
-
-} /* sig_term */
+	got_sig_term = 1;
+	sys_select_signal();
+}
 
 /**************************************************************************** **
- Catch a sighup.
+ Catch a SIGHUP signal.
  **************************************************************************** */
 
-static VOLATILE sig_atomic_t reload_after_sighup = False;
+static VOLATILE sig_atomic_t reload_after_sighup;
 
 static void sig_hup(int sig)
 {
-  BlockSignals( True, SIGHUP );
-
-  DEBUG( 0, ( "Got SIGHUP dumping debug info.\n" ) );
-
-  write_browse_list( 0, True );
-
-  dump_all_namelists();
-
-  reload_after_sighup = True;
-
-  BlockSignals(False,SIGHUP);
-
-} /* sig_hup */
+	reload_after_sighup = 1;
+	sys_select_signal();
+}
 
 #if DUMP_CORE
 /**************************************************************************** **
@@ -335,6 +334,15 @@ static void process(void)
       return;
 
     /*
+     * Handle termination inband.
+     */
+
+    if (got_sig_term) {
+      got_sig_term = 0;
+      terminate();
+    }
+
+    /*
      * Process all incoming packets
      * read above. This calls the success and
      * failure functions registered when response
@@ -491,11 +499,14 @@ static void process(void)
      */
 
     if(reload_after_sighup) {
-	    reload_nmbd_services( True );
-	    reopen_logs();
-	    if(reload_interfaces(0))
-			return;
-	    reload_after_sighup = False;
+      DEBUG( 0, ( "Got SIGHUP dumping debug info.\n" ) );
+      write_browse_list( 0, True );
+      dump_all_namelists();
+      reload_nmbd_services( True );
+      reopen_logs();
+      if(reload_interfaces(0))
+        return;
+      reload_after_sighup = 0;
     }
 
     /* check for new network interfaces */
