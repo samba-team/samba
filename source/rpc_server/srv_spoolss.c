@@ -787,25 +787,6 @@ static void api_spoolss_enddocprinter(rpcsrv_struct *p, prs_struct *data,
 	spoolss_io_r_enddocprinter("",&r_u,rdata,0);		
 }
 
-/****************************************************************************
-****************************************************************************/
-static void spoolss_reply_writeprinter(SPOOL_Q_WRITEPRINTER *q_u, prs_struct *rdata)
-{
-	SPOOL_R_WRITEPRINTER r_u;
-	int pnum = find_printer_index_by_hnd(&(q_u->handle));
-
-	if (OPEN_HANDLE(pnum))
-	{
-		r_u.buffer_written=Printer[pnum].document_lastwritten;
-		r_u.status=0x0;
-
-		spoolss_io_r_writeprinter("",&r_u,rdata,0);		
-	}
-	else
-	{
-		DEBUG(3,("Error in writeprinter printer handle (pnum=%x)\n",pnum));
-	}
-}
 
 /********************************************************************
  * api_spoolss_getprinter
@@ -816,22 +797,19 @@ static void api_spoolss_writeprinter(rpcsrv_struct *p, prs_struct *data,
                                           prs_struct *rdata)
 {
 	SPOOL_Q_WRITEPRINTER q_u;
-	int pnum;
-	int fd;
-	int size;
+	SPOOL_R_WRITEPRINTER r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
 	spoolss_io_q_writeprinter("", &q_u, data, 0);
-	
-	pnum = find_printer_index_by_hnd(&(q_u.handle));
-	
-	if (OPEN_HANDLE(pnum))
-	{
-		fd=Printer[pnum].document_fd;
-		size=write(fd, q_u.buffer, q_u.buffer_size);
-		if (q_u.buffer) free(q_u.buffer);
-		Printer[pnum].document_lastwritten=size;
-	}
-	
-	spoolss_reply_writeprinter(&q_u, rdata);
+	r_u.status = _spoolss_writeprinter(&q_u.handle,
+	                                   q_u.buffer_size,
+	                                   q_u.buffer,
+	                                   &q_u.buffer_size2);
+	r_u.buffer_written = q_u.buffer_size2;
+	safe_free(q_u.buffer);
+	spoolss_io_r_writeprinter("",&r_u,rdata,0);		
 }
 
 /********************************************************************

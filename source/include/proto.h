@@ -4897,7 +4897,10 @@ uint32 _spoolss_endpageprinter(const POLICY_HND *handle);
 uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
 				DOC_INFO *docinfo, uint32 *jobid);
 uint32 _spoolss_enddocprinter(const POLICY_HND *handle);
-uint32 _spoolss_writeprinter(SPOOL_Q_WRITEPRINTER *q_u, prs_struct *rdata);
+uint32 _spoolss_writeprinter( const POLICY_HND *handle,
+				uint32 buffer_size,
+				const uint8 *buffer,
+				uint32 *buffer_written);
 uint32 _spoolss_setprinter(SPOOL_Q_SETPRINTER *q_u, prs_struct *rdata);
 uint32 _spoolss_fcpn(SPOOL_Q_FCPN *q_u, prs_struct *rdata);
 uint32 _spoolss_addjob(SPOOL_Q_ADDJOB *q_u, prs_struct *rdata);

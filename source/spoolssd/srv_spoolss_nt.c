@@ -2268,54 +2268,32 @@ uint32 _spoolss_enddocprinter(const POLICY_HND *handle)
 	return 0x0;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_writeprinter(SPOOL_Q_WRITEPRINTER *q_u, prs_struct *rdata)
+uint32 _spoolss_writeprinter( const POLICY_HND *handle,
+				uint32 buffer_size,
+				const uint8 *buffer,
+				uint32 *buffer_written)
 {
-	SPOOL_R_WRITEPRINTER r_u;
-	int pnum = find_printer_index_by_hnd(handle);
-
-	if (OPEN_HANDLE(pnum))
-	{
-		buffer_written=Printer[pnum].document_lastwritten;
-		status=0x0;
-
-		spoolss_io_r_writeprinter("",&r_u,rdata,0);		
-	}
-	else
-	{
-		DEBUG(3,("Error in writeprinter printer handle (pnum=%x)\n",pnum));
-	}
-}
-
-/********************************************************************
- * api_spoolss_getprinter
- * called from the spoolss dispatcher
- *
- ********************************************************************/
-static void api_spoolss_writeprinter(rpcsrv_struct *p, prs_struct *data,
-                                          prs_struct *rdata)
-{
-	SPOOL_Q_WRITEPRINTER q_u;
 	int pnum;
 	int fd;
-	int size;
-	spoolss_io_q_writeprinter("", &q_u, data, 0);
 	
 	pnum = find_printer_index_by_hnd(handle);
 	
-	if (OPEN_HANDLE(pnum))
+	if (!OPEN_HANDLE(pnum))
 	{
-		fd=Printer[pnum].document_fd;
-		size=write(fd, buffer, buffer_size);
-		if (buffer) free(buffer);
-		Printer[pnum].document_lastwritten=size;
+		DEBUG(3,("Error in writeprinter handle (pnum=%x)\n",pnum));
+		return NT_STATUS_INVALID_HANDLE;
 	}
-	
-	spoolss_writeprinter(&q_u, rdata);
+
+	fd = Printer[pnum].document_fd;
+	(*buffer_written) = write(fd, buffer, buffer_size);
+	Printer[pnum].document_lastwritten = (*buffer_written);
+
+	return 0x0;
 }
+
+#if 0
 
 /********************************************************************
  * api_spoolss_getprinter
