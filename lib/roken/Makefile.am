@@ -44,6 +44,7 @@ libroken_la_SOURCES =		\
 	signal.c		\
 	simple_exec.c		\
 	snprintf.c		\
+	socket.c		\
 	strcat_truncate.c	\
 	strcpy_truncate.c	\
 	tm2time.c		\
