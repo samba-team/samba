@@ -22,6 +22,16 @@
 
 #include "includes.h"
 
+struct schannel_state {
+	TALLOC_CTX *mem_ctx;
+	uint8_t session_key[16];
+	uint32_t seq_num;
+	BOOL initiator;
+};
+
+#define NETSEC_SIGN_SIGNATURE { 0x77, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00 }
+#define NETSEC_SEAL_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
+
 /*******************************************************************
  Encode or Decode the sequence number (which is symmetric)
  ********************************************************************/
@@ -209,13 +219,7 @@ NTSTATUS schannel_seal_packet(struct schannel_state *state,
 
 	netsec_deal_with_seq_num(state, digest_final, seq_num);
 
-	if (!state->signature.data) {
-		state->signature = data_blob_talloc(state->mem_ctx, NULL, 32);
-		if (!state->signature.data) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-	(*sig) = state->signature;
+	(*sig) = data_blob_talloc(state->mem_ctx, NULL, 32);
 
 	memcpy(sig->data, netsec_sig, 8);
 	memcpy(sig->data+8, seq_num, 8);
@@ -252,13 +256,7 @@ NTSTATUS schannel_sign_packet(struct schannel_state *state,
 
 	netsec_deal_with_seq_num(state, digest_final, seq_num);
 
-	if (!state->signature.data) {
-		state->signature = data_blob_talloc(state->mem_ctx, NULL, 32);
-		if (!state->signature.data) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-	(*sig) = state->signature;
+	(*sig) = data_blob_talloc(state->mem_ctx, NULL, 32);
 
 	memcpy(sig->data, netsec_sig, 8);
 	memcpy(sig->data+8, seq_num, 8);
@@ -307,7 +305,6 @@ NTSTATUS schannel_start(struct schannel_state **state,
 	(*state)->mem_ctx = mem_ctx;
 	memcpy((*state)->session_key, session_key, 16);
 	(*state)->initiator = initiator;
-	(*state)->signature = data_blob(NULL, 0);
 	(*state)->seq_num = 0;
 
 	return NT_STATUS_OK;
