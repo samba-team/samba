@@ -152,8 +152,8 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 				/* NT Entry was valid - even if 'X' or '*', can be overwritten */
 				*got_valid_nt_entry = True;
 				if (*p != '*' && *p != 'X') {
-					if(gethexpwd(p,smbntpwd))
-						pw_buf.smb_nt_passwd = smbntpwd;
+				  if (gethexpwd((char *)p,(char *)smbntpwd))
+				    pw_buf.smb_nt_passwd = smbntpwd;
 				}
 			}
 			pw_buf.smb_name = user_name;
@@ -167,12 +167,12 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 		if (p[32] != ':')
 			return (False);
 
-		if (!strncasecmp(p, "NO PASSWORD", 11)) {
-			pw_buf.smb_passwd = NULL;	/* No password */
+		if (!strncasecmp((char *)p, "NO PASSWORD", 11)) {
+		  pw_buf.smb_passwd = NULL;	/* No password */
 		} else {
-			if(!gethexpwd(p,smbpwd))
-				return False;
-			pw_buf.smb_passwd = smbpwd;
+		  if(!gethexpwd((char *)p,(char *)smbpwd))
+		    return False;
+		  pw_buf.smb_passwd = smbpwd;
 		}
 
 		pw_buf.smb_name = user_name;
@@ -189,8 +189,8 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 			/* NT Entry was valid - even if 'X' or '*', can be overwritten */
 			*got_valid_nt_entry = True;
 			if (*p != '*' && *p != 'X') {
-				if(gethexpwd(p,smbntpwd))
-					pw_buf.smb_nt_passwd = smbntpwd;
+			  if (gethexpwd((char *)p,(char *)smbntpwd))
+			    pw_buf.smb_nt_passwd = smbntpwd;
 			}
 		}
 		return &pw_buf;

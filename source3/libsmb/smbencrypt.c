@@ -166,7 +166,7 @@ void E_md4hash(uchar *passwd, uchar *p16)
 	MDstruct MD;
  
 	/* Password cannot be longer than 128 characters */
-	len = strlen(passwd);
+	len = strlen((char *)passwd);
 	if(len > 128)
 		len = 128;
 	/* Password must be converted to NT unicode */
