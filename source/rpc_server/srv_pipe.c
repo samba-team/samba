@@ -1134,7 +1134,6 @@ BOOL api_pipe_request(pipes_struct *p)
 {
 	int i = 0;
 	BOOL ret = False;
-	BOOL changed_user_id = False;
 
 	if (p->ntlmssp_auth_validated) {
 
@@ -1142,8 +1141,6 @@ BOOL api_pipe_request(pipes_struct *p)
 			prs_mem_free(&p->out_data.rdata);
 			return False;
 		}
-
-		changed_user_id = True;
 	}
 
 	for (i = 0; api_fd_commands[i].pipe_clnt_name; i++) {
@@ -1156,8 +1153,8 @@ BOOL api_pipe_request(pipes_struct *p)
 		}
 	}
 
-	if(changed_user_id)
-		unbecome_authenticated_pipe_user(p);
+	if (p->ntlmssp_auth_validated)
+		unbecome_authenticated_pipe_user();
 
 	return ret;
 }

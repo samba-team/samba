@@ -233,7 +233,7 @@ static BOOL dfs_auth(char *user, char *password)
 	}
 
 	/*
-	 * NB. I'd like to change these to call something like become_user()
+	 * NB. I'd like to change these to call something like change_to_user()
 	 * instead but currently we don't have a connection
 	 * context to become the correct user. This is already
 	 * fairly platform specific code however, so I think

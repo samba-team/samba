@@ -134,11 +134,13 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 	struct change_data *data = (struct change_data *)datap;
 	struct change_data data2;
 
-	if (t && t < data->last_check_time + lp_change_notify_timeout()) return False;
+	if (t && t < data->last_check_time + lp_change_notify_timeout())
+		return False;
 
-	if (!become_user(conn,vuid)) return True;
-	if (!become_service(conn,True)) {
-		unbecome_user();
+	if (!change_to_user(conn,vuid))
+		return True;
+	if (!set_current_service(conn,True)) {
+		change_to_root_user();
 		return True;
 	}
 
@@ -147,14 +149,14 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 	    data2.status_time != data->status_time ||
 	    data2.total_time != data->total_time ||
 	    data2.num_entries != data->num_entries) {
-		unbecome_user();
+		change_to_root_user();
 		return True;
 	}
 
 	if (t)
 		data->last_check_time = t;
 
-	unbecome_user();
+	change_to_root_user();
 
 	return False;
 }

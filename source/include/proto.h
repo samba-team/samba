@@ -4364,10 +4364,12 @@ void exit_server(char *reason);
 
 /*The following definitions come from  smbd/service.c  */
 
-BOOL become_service(connection_struct *conn,BOOL do_chdir);
+BOOL set_current_service(connection_struct *conn,BOOL do_chdir);
 int add_home_service(char *service, char *homedir);
 int find_service(char *service);
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode);
+connection_struct *make_connection_nonroot(char *service,char *user,char *password, int pwlen,
+						char *dev,uint16 vuid, int *ecode);
 void close_cnum(connection_struct *conn, uint16 vuid);
 
 /*The following definitions come from  smbd/session.c  */
@@ -4404,13 +4406,15 @@ int reply_trans2(connection_struct *conn,
 
 /*The following definitions come from  smbd/uid.c  */
 
-BOOL become_guest(void);
-BOOL become_user(connection_struct *conn, uint16 vuid);
-BOOL unbecome_user(void );
+BOOL change_to_guest(void);
+BOOL change_to_user(connection_struct *conn, uint16 vuid);
+BOOL change_to_root_user(void);
 BOOL become_authenticated_pipe_user(pipes_struct *p);
-BOOL unbecome_authenticated_pipe_user(pipes_struct *p);
+BOOL unbecome_authenticated_pipe_user(void);
 void become_root(void);
 void unbecome_root(void);
+BOOL become_user(connection_struct *conn, uint16 vuid);
+BOOL unbecome_user();
 BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type);
 BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
 DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);

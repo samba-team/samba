@@ -588,7 +588,7 @@ void process_blocking_lock_queue(time_t t)
       continue;
     }
 
-    if(!become_user(conn,vuid)) {
+    if(!change_to_user(conn,vuid)) {
       DEBUG(0,("process_blocking_lock_queue: Unable to become user vuid=%d.\n",
             vuid ));
       /*
@@ -600,7 +600,7 @@ void process_blocking_lock_queue(time_t t)
       continue;
     }
 
-    if(!become_service(conn,True)) {
+    if(!set_current_service(conn,True)) {
       DEBUG(0,("process_blocking_lock_queue: Unable to become service Error was %s.\n", strerror(errno) ));
       /*
        * Remove the entry and return an error to the client.
@@ -608,7 +608,7 @@ void process_blocking_lock_queue(time_t t)
       blocking_lock_reply_error(blr,ERRSRV,ERRaccess);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
-      unbecome_user();
+      change_to_root_user();
       continue;
     }
 
@@ -621,11 +621,11 @@ void process_blocking_lock_queue(time_t t)
     if(blocking_lock_record_process(blr)) {
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
-      unbecome_user();
+      change_to_root_user();
       continue;
     }
 
-    unbecome_user();
+    change_to_root_user();
 
     /*
      * Move to the next in the list.

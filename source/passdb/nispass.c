@@ -297,7 +297,7 @@ static BOOL make_sam_from_nisp_object(struct sam_passwd *pw_buf, nis_object *obj
 	if (pw_buf->smb_name[strlen(pw_buf->smb_name)-1] != '$') {
 	  
 	  /* XXXX hack to get standard_sub_basic() to use sam logon username */
-	  /* possibly a better way would be to do a become_user() call */
+	  /* possibly a better way would be to do a change_to_user() call */
 	  pstrcpy(samlogon_user, pw_buf->smb_name);
 	  sam_logon_in_ssb = True;
 	  

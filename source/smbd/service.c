@@ -38,7 +38,8 @@ extern fstring remote_machine;
 /****************************************************************************
 load parameters specific to a connection/service
 ****************************************************************************/
-BOOL become_service(connection_struct *conn,BOOL do_chdir)
+
+BOOL set_current_service(connection_struct *conn,BOOL do_chdir)
 {
 	extern char magic_char;
 	static connection_struct *last_conn;
@@ -214,8 +215,11 @@ int find_service(char *service)
 
 
 /****************************************************************************
-  make a connection to a service
+ Make a connection to a service. This function is designed to be called
+ AS ROOT and will return to being root on exit ! Modified current_user conn
+ and vuid elements.
 ****************************************************************************/
+
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode)
 {
 	int snum;
@@ -338,7 +342,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 
 	conn->read_only = lp_readonly(snum);
-
 
 	{
 		pstring list;
@@ -482,7 +485,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	conn->groups = NULL;
 	
 	/* Find all the groups this uid is in and
-	   store them. Used by become_user() */
+	   store them. Used by change_to_user() */
 	initialise_groups(conn->user, conn->uid, conn->gid); 
 	get_current_groups(&conn->ngroups,&conn->groups);
 		
@@ -549,7 +552,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		}
 	}
 	
-	if (!become_user(conn, conn->vuid)) {
+	if (!change_to_user(conn, conn->vuid)) {
 		DEBUG(0,("Can't become connected user!\n"));
 		yield_connection(conn,
 				 lp_servicename(SNUM(conn)),
@@ -563,7 +566,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		DEBUG(0,("%s (%s) Can't change directory to %s (%s)\n",
 			 remote_machine, conn->client_address,
 			 conn->connectpath,strerror(errno)));
-		unbecome_user();
+		change_to_root_user();
 		yield_connection(conn,
 				 lp_servicename(SNUM(conn)),
 				 lp_max_connections(SNUM(conn)));
@@ -616,7 +619,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 	
 	/* we've finished with the sensitive stuff */
-	unbecome_user();
+	change_to_root_user();
 	
 	/* Add veto/hide lists */
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
@@ -635,15 +638,38 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	return(conn);
 }
 
+/****************************************************************************
+ A version of make_connection designed to be called as a non-root user.
+ Ensures current_user conn and vuid are not modified.
+****************************************************************************/
+
+connection_struct *make_connection_nonroot(char *service,char *user,char *password, int pwlen,
+						char *dev,uint16 vuid, int *ecode)
+{
+	extern struct current_user current_user;
+	connection_struct *conn = NULL;
+	connection_struct *saved_conn = current_user.conn;
+	uint16 saved_vuid = current_user.vuid;
+
+	become_root();
+	conn = make_connection(service, user, password, pwlen, dev, vuid, ecode);
+	unbecome_root();
+
+	current_user.conn = saved_conn;
+	current_user.vuid = saved_vuid;
+
+	return conn;
+}
 
 /****************************************************************************
-close a cnum
+ Close a cnum
 ****************************************************************************/
+
 void close_cnum(connection_struct *conn, uint16 vuid)
 {
 	DirCacheFlush(SNUM(conn));
 
-	unbecome_user();
+	change_to_root_user();
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
 				 remote_machine,conn->client_address,
@@ -666,15 +692,14 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 
 	/* execute any "postexec = " line */
 	if (*lp_postexec(SNUM(conn)) && 
-	    become_user(conn, vuid))  {
+	    change_to_user(conn, vuid))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_postexec(SNUM(conn)));
 		standard_sub_conn(conn,cmd);
 		smbrun(cmd,NULL);
-		unbecome_user();
 	}
 
-	unbecome_user();
+	change_to_root_user();
 	/* execute any "root postexec = " line */
 	if (*lp_rootpostexec(SNUM(conn)))  {
 		pstring cmd;
