@@ -215,7 +215,7 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 	case SMB_QFS_ALLOCATION:
 		fsinfo.allocation.level = RAW_QFS_ALLOCATION;
 
-		status = req->conn->ntvfs_ops->fsinfo(req, &fsinfo);
+		status = req->tcon->ntvfs_ops->fsinfo(req, &fsinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -233,7 +233,7 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 	case SMB_QFS_VOLUME:
 		fsinfo.volume.level = RAW_QFS_VOLUME;
 
-		status = req->conn->ntvfs_ops->fsinfo(req, &fsinfo);
+		status = req->tcon->ntvfs_ops->fsinfo(req, &fsinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -253,7 +253,7 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 	case SMB_QFS_VOLUME_INFORMATION:
 		fsinfo.volume_info.level = RAW_QFS_VOLUME_INFO;
 
-		status = req->conn->ntvfs_ops->fsinfo(req, &fsinfo);
+		status = req->tcon->ntvfs_ops->fsinfo(req, &fsinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -272,7 +272,7 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 	case SMB_QFS_SIZE_INFORMATION:
 		fsinfo.size_info.level = RAW_QFS_SIZE_INFO;
 
-		status = req->conn->ntvfs_ops->fsinfo(req, &fsinfo);
+		status = req->tcon->ntvfs_ops->fsinfo(req, &fsinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -290,7 +290,7 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 	case SMB_QFS_DEVICE_INFORMATION:
 		fsinfo.device_info.level = RAW_QFS_DEVICE_INFO;
 
-		status = req->conn->ntvfs_ops->fsinfo(req, &fsinfo);
+		status = req->tcon->ntvfs_ops->fsinfo(req, &fsinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -304,7 +304,7 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 	case SMB_QFS_ATTRIBUTE_INFORMATION:
 		fsinfo.attribute_info.level = RAW_QFS_ATTRIBUTE_INFO;
 
-		status = req->conn->ntvfs_ops->fsinfo(req, &fsinfo);
+		status = req->tcon->ntvfs_ops->fsinfo(req, &fsinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -325,7 +325,7 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 	case SMB_QFS_QUOTA_INFORMATION:
 		fsinfo.quota_information.level = RAW_QFS_QUOTA_INFORMATION;
 
-		status = req->conn->ntvfs_ops->fsinfo(req, &fsinfo);
+		status = req->tcon->ntvfs_ops->fsinfo(req, &fsinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -345,7 +345,7 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 	case SMB_QFS_FULL_SIZE_INFORMATION:
 		fsinfo.full_size_information.level = RAW_QFS_FULL_SIZE_INFORMATION;
 
-		status = req->conn->ntvfs_ops->fsinfo(req, &fsinfo);
+		status = req->tcon->ntvfs_ops->fsinfo(req, &fsinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -363,7 +363,7 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 	case SMB_QFS_OBJECTID_INFORMATION:
 		fsinfo.objectid_information.level = RAW_QFS_OBJECTID_INFORMATION;
 
-		status = req->conn->ntvfs_ops->fsinfo(req, &fsinfo);
+		status = req->tcon->ntvfs_ops->fsinfo(req, &fsinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -639,7 +639,7 @@ static NTSTATUS trans2_qpathinfo(struct request_context *req, struct smb_trans2 
 	}
 
 	/* call the backend */
-	status = req->conn->ntvfs_ops->qpathinfo(req, &st);
+	status = req->tcon->ntvfs_ops->qpathinfo(req, &st);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -675,7 +675,7 @@ static NTSTATUS trans2_qfileinfo(struct request_context *req, struct smb_trans2 
 	}
 
 	/* call the backend */
-	status = req->conn->ntvfs_ops->qfileinfo(req, &st);
+	status = req->tcon->ntvfs_ops->qfileinfo(req, &st);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -811,7 +811,7 @@ static NTSTATUS trans2_setfileinfo(struct request_context *req, struct smb_trans
 		return status;
 	}
 
-	status = req->conn->ntvfs_ops->setfileinfo(req, &st);
+	status = req->tcon->ntvfs_ops->setfileinfo(req, &st);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -850,7 +850,7 @@ static NTSTATUS trans2_setpathinfo(struct request_context *req, struct smb_trans
 		return status;
 	}
 
-	status = req->conn->ntvfs_ops->setpathinfo(req, &st);
+	status = req->tcon->ntvfs_ops->setpathinfo(req, &st);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1109,7 +1109,7 @@ static NTSTATUS trans2_findfirst(struct request_context *req, struct smb_trans2 
 	trans2_setup_reply(req, trans, 10, 0, 0);
 
 	/* call the backend */
-	status = req->conn->ntvfs_ops->search_first(req, &search, &state, find_callback);
+	status = req->tcon->ntvfs_ops->search_first(req, &search, &state, find_callback);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1169,7 +1169,7 @@ static NTSTATUS trans2_findnext(struct request_context *req, struct smb_trans2 *
 	trans2_setup_reply(req, trans, 8, 0, 0);
 
 	/* call the backend */
-	status = req->conn->ntvfs_ops->search_next(req, &search, &state, find_callback);
+	status = req->tcon->ntvfs_ops->search_next(req, &search, &state, find_callback);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1190,9 +1190,9 @@ static NTSTATUS trans2_findnext(struct request_context *req, struct smb_trans2 *
 */
 static NTSTATUS trans2_backend(struct request_context *req, struct smb_trans2 *trans)
 {
-	if (req->conn->ntvfs_ops->trans2 != NULL) {
+	if (req->tcon->ntvfs_ops->trans2 != NULL) {
 		/* direct trans2 pass thru */
-		return req->conn->ntvfs_ops->trans2(req, trans);
+		return req->tcon->ntvfs_ops->trans2(req, trans);
 	}
 
 	/* must have at least one setup word */
@@ -1228,10 +1228,10 @@ static NTSTATUS trans2_backend(struct request_context *req, struct smb_trans2 *t
 */
 static NTSTATUS trans_backend(struct request_context *req, struct smb_trans2 *trans)
 {
-	if (!req->conn->ntvfs_ops->trans) {
+	if (!req->tcon->ntvfs_ops->trans) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return req->conn->ntvfs_ops->trans(req, trans);
+	return req->tcon->ntvfs_ops->trans(req, trans);
 }
 
 

@@ -23,11 +23,11 @@
 static TDB_CONTEXT *tdb;
 
 
-static void make_conn_key(struct tcon_context *conn, const char *name, TDB_DATA *pkbuf, struct connections_key *pkey)
+static void make_conn_key(struct smbsrv_tcon *tcon, const char *name, TDB_DATA *pkbuf, struct connections_key *pkey)
 {
 	ZERO_STRUCTP(pkey);
 	pkey->pid = getpid();
-	pkey->cnum = conn?conn->cnum:-1;
+	pkey->cnum = tcon?tcon->cnum:-1;
 	fstrcpy(pkey->name, name);
 
 	pkbuf->dptr = (char *)pkey;
@@ -38,7 +38,7 @@ static void make_conn_key(struct tcon_context *conn, const char *name, TDB_DATA 
  Delete a connection record.
 ****************************************************************************/
 
-BOOL yield_connection(struct tcon_context *conn, const char *name)
+BOOL yield_connection(struct smbsrv_tcon *tcon, const char *name)
 {
 	struct connections_key key;
 	TDB_DATA kbuf;
@@ -48,10 +48,10 @@ BOOL yield_connection(struct tcon_context *conn, const char *name)
 
 	DEBUG(3,("Yielding connection to %s\n",name));
 
-	make_conn_key(conn, name, &kbuf, &key);
+	make_conn_key(tcon, name, &kbuf, &key);
 
 	if (tdb_delete(tdb, kbuf) != 0) {
-		int dbg_lvl = (!conn && (tdb_error(tdb) == TDB_ERR_NOEXIST)) ? 3 : 0;
+		int dbg_lvl = (!tcon && (tdb_error(tdb) == TDB_ERR_NOEXIST)) ? 3 : 0;
 		DEBUG(dbg_lvl,("yield_connection: tdb_delete for name %s failed with error %s.\n",
 			name, tdb_errorstr(tdb) ));
 		return (False);
@@ -104,14 +104,14 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
  Claim an entry in the connections database.
 ****************************************************************************/
 
-BOOL claim_connection(struct tcon_context *conn, const char *name,int max_connections,BOOL Clear, uint32_t msg_flags)
+BOOL claim_connection(struct smbsrv_tcon *tcon, const char *name,int max_connections,BOOL Clear, uint32_t msg_flags)
 {
 	struct connections_key key;
 	struct connections_data crec;
 	TDB_DATA kbuf, dbuf;
 
 	if (!tdb)
-		tdb = tdb_open_log(lock_path(conn->mem_ctx, "connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
+		tdb = tdb_open_log(lock_path(tcon->mem_ctx, "connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
 			       O_RDWR | O_CREAT, 0644);
 
 	if (!tdb)
@@ -126,7 +126,7 @@ BOOL claim_connection(struct tcon_context *conn, const char *name,int max_connec
 
 		cs.mypid = getpid();
 		cs.curr_connections = 0;
-		cs.name = lp_servicename(SNUM(conn));
+		cs.name = lp_servicename(SNUM(tcon));
 		cs.Clear = Clear;
 
 		/*
@@ -149,24 +149,24 @@ BOOL claim_connection(struct tcon_context *conn, const char *name,int max_connec
 
 	DEBUG(5,("claiming %s %d\n",name,max_connections));
 
-	make_conn_key(conn, name, &kbuf, &key);
+	make_conn_key(tcon, name, &kbuf, &key);
 
 	/* fill in the crec */
 	ZERO_STRUCT(crec);
 	crec.magic = 0x280267;
 	crec.pid = getpid();
-	crec.cnum = conn?conn->cnum:-1;
-	if (conn) {
+	crec.cnum = tcon?tcon->cnum:-1;
+	if (tcon) {
 		crec.uid = -1;
 		crec.gid = -1;
 		StrnCpy(crec.name,
-			lp_servicename(SNUM(conn)),sizeof(crec.name)-1);
+			lp_servicename(SNUM(tcon)),sizeof(crec.name)-1);
 	}
 	crec.start = time(NULL);
 	crec.bcast_msg_flags = msg_flags;
 	
 	StrnCpy(crec.machine,sub_get_remote_machine(),sizeof(crec.machine)-1);
-	StrnCpy(crec.addr,conn?conn->smb_ctx->socket.client_addr:"NONE",sizeof(crec.addr)-1);
+	StrnCpy(crec.addr,tcon?tcon->smb_ctx->socket.client_addr:"NONE",sizeof(crec.addr)-1);
 
 	dbuf.dptr = (char *)&crec;
 	dbuf.dsize = sizeof(crec);

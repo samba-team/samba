@@ -31,7 +31,7 @@ struct ntvfs_ops {
 	
 	/* initial setup */
 	NTSTATUS (*connect)(struct request_context *req, const char *sharename);
-	NTSTATUS (*disconnect)(struct tcon_context *conn);
+	NTSTATUS (*disconnect)(struct smbsrv_tcon *tcon);
 
 	/* path operations */
 	NTSTATUS (*unlink)(struct request_context *req, struct smb_unlink *unl);
@@ -82,6 +82,6 @@ struct ntvfs_critical_sizes {
 	int interface_version;
 	int sizeof_ntvfs_ops;
 	int sizeof_SMB_OFF_T;
-	int sizeof_tcon_context;
+	int sizeof_smbsrv_tcon;
 	int sizeof_request_context;
 };

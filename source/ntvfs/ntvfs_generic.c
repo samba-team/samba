@@ -145,7 +145,7 @@ NTSTATUS ntvfs_map_open(struct request_context *req, union smb_open *io)
 		io2.generic.in.file_attr = io->openx.in.file_attrs;
 		io2.generic.in.fname = io->openx.in.fname;
 
-		status = req->conn->ntvfs_ops->open(req, &io2);
+		status = req->tcon->ntvfs_ops->open(req, &io2);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -227,7 +227,7 @@ NTSTATUS ntvfs_map_open(struct request_context *req, union smb_open *io)
 		DEBUG(9,("ntvfs_map_open(OPEN): mapped flags=0x%x to access_mask=0x%x and share_access=0x%x\n",
 			io->open.in.flags, io2.generic.in.access_mask, io2.generic.in.share_access));
 
-		status = req->conn->ntvfs_ops->open(req, &io2);
+		status = req->tcon->ntvfs_ops->open(req, &io2);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -261,7 +261,7 @@ NTSTATUS ntvfs_map_fsinfo(struct request_context *req, union smb_fsinfo *fs)
 	/* ask the backend for the generic info */
 	fs2.generic.level = RAW_QFS_GENERIC;
 
-	status = req->conn->ntvfs_ops->fsinfo(req, &fs2);
+	status = req->tcon->ntvfs_ops->fsinfo(req, &fs2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -603,7 +603,7 @@ NTSTATUS ntvfs_map_qfileinfo(struct request_context *req, union smb_fileinfo *in
 	info2.generic.level = RAW_FILEINFO_GENERIC;
 	info2.generic.in.fnum = info->generic.in.fnum;
 
-	status = req->conn->ntvfs_ops->qfileinfo(req, &info2);
+	status = req->tcon->ntvfs_ops->qfileinfo(req, &info2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -626,7 +626,7 @@ NTSTATUS ntvfs_map_qpathinfo(struct request_context *req, union smb_fileinfo *in
 	info2.generic.level = RAW_FILEINFO_GENERIC;
 	info2.generic.in.fname = info->generic.in.fname;
 
-	status = req->conn->ntvfs_ops->qpathinfo(req, &info2);
+	status = req->tcon->ntvfs_ops->qpathinfo(req, &info2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

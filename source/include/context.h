@@ -49,8 +49,8 @@ enum ntvfs_type {NTVFS_DISK, NTVFS_PRINT, NTVFS_IPC};
    include recursion */
 struct ntvfs_ops;
 
-struct tcon_context {
-	struct tcon_context *next, *prev;
+struct smbsrv_tcon {
+	struct smbsrv_tcon *next, *prev;
 
 	/* the server context that this was created on */
 	struct smbsrv_context *smb_ctx;
@@ -84,7 +84,7 @@ struct request_context {
 	struct smbsrv_context *smb_ctx;
 
 	/* conn is only set for operations that have a valid TID */
-	struct tcon_context *conn;
+	struct smbsrv_tcon *tcon;
 
 	/* the user context is derived from the vuid plus smb.conf options */
 	struct smbsrv_user *user_ctx;
@@ -191,7 +191,7 @@ struct files_context {
 
 /* the context associated with open tree connects on a smb socket */
 struct tree_context {
-	struct tcon_context *connections;
+	struct smbsrv_tcon *tcons;
 
 	/* number of open connections */
 	struct bitmap *bmap;

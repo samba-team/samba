@@ -31,7 +31,7 @@
 */
 char *svfs_unix_path(struct request_context *req, const char *name)
 {
-	struct svfs_private *private = req->conn->ntvfs_private;
+	struct svfs_private *private = req->tcon->ntvfs_private;
 	char *ret;
 
 	if (*name != '\\') {
