@@ -589,9 +589,6 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 
-	if (acct_ctrl & ACB_DISABLED)
-		return NT_STATUS_ACCOUNT_DISABLED;
-    
 	/* Validate password - if required. */
 
 	if (!(acct_ctrl & ACB_PWNOTREQ)) {
@@ -618,7 +615,9 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 		return status;
 #endif
 
-
+	if (acct_ctrl & ACB_DISABLED)
+		return NT_STATUS_ACCOUNT_DISABLED;
+    
 	/* lkclXXXX this is the point at which, if the login was
 		successful, that the SAM Local Security Authority should
 		record that the user is logged in to the domain.
