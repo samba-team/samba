@@ -576,7 +576,7 @@ static int ltdb_index_add1(struct ldb_context *ldb, const char *dn,
 		}
 		msg.num_elements = 0;
 		msg.elements = NULL;
-		msg.private = NULL;
+		msg.private_data = NULL;
 	}
 
 	free(dn_key);
