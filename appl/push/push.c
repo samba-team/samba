@@ -534,12 +534,12 @@ main(int argc, char **argv)
     int optind = 0;
     int ret = 1;
     char *host, *user, *filename;
-#ifdef KRB5
-    krb5_context context;
-    krb5_init_context (&context);
-#endif
 
     set_progname (argv[0]);
+
+#ifdef KRB5
+    krb5_init_context (&context);
+#endif
 
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
 		&optind))
