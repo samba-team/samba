@@ -27,6 +27,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+#include "module_dummy.h"
+
 #define SQUID_BUFFER_SIZE 2010
 
 enum squid_mode {

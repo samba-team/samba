@@ -28,6 +28,8 @@
 #define REGISTER 0
 #endif
 
+#include "module_dummy.h"
+
 struct cli_state *cli;
 extern BOOL in_client;
 static int port = 0;
