@@ -181,6 +181,7 @@ mic_des3
   kret = krb5_create_checksum (gssapi_krb5_context,
 			       crypto,
 			       KRB5_KU_USAGE_SIGN,
+			       0,
 			       tmp,
 			       message_buffer->length + 8,
 			       &cksum);
