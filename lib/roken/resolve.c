@@ -51,8 +51,6 @@ RCSID("$Id$");
 #undef HAVE_RES_NSEARCH
 #endif
 
-#if (defined(HAVE_RES_SEARCH) || defined(HAVE_RES_NSEARCH)) && defined(HAVE_DN_EXPAND)
-
 #define DECL(X) {#X, rk_ns_t_##X}
 
 static struct stot{
@@ -98,6 +96,8 @@ dns_type_to_string(int type)
 	    return p->name;
     return NULL;
 }
+
+#if (defined(HAVE_RES_SEARCH) || defined(HAVE_RES_NSEARCH)) && defined(HAVE_DN_EXPAND)
 
 void
 dns_free_data(struct dns_reply *r)
