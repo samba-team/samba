@@ -1,3 +1,9 @@
+Mon Jun  2 00:37:48 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/fcache.c: Move file cache from cache.c.
+
+	* lib/krb5/cache.c: Allow more than one cache type.
+
 Sun Jun  1 23:45:33 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* admin/extkeytab.c: Merged with kdb_edit.
