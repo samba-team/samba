@@ -20,9 +20,17 @@
  */
 
 #include "includes.h"
-static TDB_CONTEXT *tdb; /* used for driver files */
+static TDB_CONTEXT *tdb; 
 
 #define DATABASE_VERSION 2
+
+extern DOM_SID global_sid_World;
+extern DOM_SID global_sid_Builtin_Administrators;
+extern DOM_SID global_sid_Builtin_Account_Operators;
+extern DOM_SID global_sid_Builtin_Server_Operators;
+extern DOM_SID global_sid_Builtin_Print_Operators;
+extern DOM_SID global_sid_Builtin_Backup_Operators;
+
 
 /****************************************************************************
  Set default for a field if it is empty
@@ -91,6 +99,15 @@ BOOL init_account_policy(void)
 	}
 	tdb_unlock_bystring(tdb, vstring);
 
+	/* These exist by default on NT4 in [HKLM\SECURITY\Policy\Accounts] */
+
+	privilege_create_account( &global_sid_World );
+	privilege_create_account( &global_sid_Builtin_Administrators );
+	privilege_create_account( &global_sid_Builtin_Account_Operators );
+	privilege_create_account( &global_sid_Builtin_Server_Operators );
+	privilege_create_account( &global_sid_Builtin_Print_Operators );
+	privilege_create_account( &global_sid_Builtin_Backup_Operators );
+	
 	return True;
 }
 
@@ -218,3 +235,18 @@ BOOL account_policy_set(int field, uint32 value)
 	
 	return True;
 }
+
+/****************************************************************************
+****************************************************************************/
+
+TDB_CONTEXT *get_account_pol_tdb( void )
+{
+
+	if ( !tdb ) {
+		if ( !init_account_policy() )
+			return NULL;
+	}
+
+	return tdb;
+}
+

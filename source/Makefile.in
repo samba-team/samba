@@ -310,7 +310,7 @@ PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/util_sam_sid.o passdb/pdb_compat.o \
-		passdb/privileges.o passdb/lookup_sid.o \
+		passdb/lookup_sid.o \
 		passdb/login_cache.o @PDB_STATIC@ passdb/pdb_sql.o \
 		lib/system_smbd.o
 
@@ -460,7 +460,7 @@ TESTPARM_OBJ = utils/testparm.o \
 	       $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
 
 TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
-               $(LIB_NONSMBD_OBJ)
+               $(LIB_NONSMBD_OBJ) libsmb/nterr.o
 
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSCHANGE_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
 		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)\
@@ -592,7 +592,7 @@ SMBCQUOTAS_OBJ = utils/smbcquotas.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
 		$(LIBMSRPC_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
 
-TALLOCTORT_OBJ = lib/talloctort.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ)
+TALLOCTORT_OBJ = lib/talloctort.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ) libsmb/nterr.o
 
 RPCTORTURE_OBJ = torture/rpctorture.o \
              rpcclient/display.o \

@@ -4,6 +4,8 @@
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
+   Copyright (C) Simo Sorce 2003
+   Copyright (C) Gerald (Jerry) Carter 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,21 +25,72 @@
 #ifndef PRIVILEGES_H
 #define PRIVILEGES_H
 
-#define PRIV_ALL_INDEX		5
+/* common privilege defines */
 
-#define SE_PRIV_NONE		0x0000
-#define SE_PRIV_ADD_MACHINES	0x0006
-#define SE_PRIV_SEC_PRIV	0x0008
-#define SE_PRIV_TAKE_OWNER	0x0009
-#define SE_PRIV_ADD_USERS	0xff01
-#define SE_PRIV_PRINT_OPERATOR	0xff03
-#define SE_PRIV_ALL		0xffff
+#define SE_END				0x00000000
+#define SE_NONE				0x00000000
+#define SE_ALL_PRIVS                    0xFFFFFFFF
 
+
+/* 
+ * We will use our own set of privileges since it makes no sense
+ * to implement all of the Windows set when only a portion will
+ * be used. 
+ */
+
+#define SE_NETWORK_LOGON		0x00000001
+#define SE_INTERACTIVE_LOGON		0x00000002
+#define SE_BATCH_LOGON			0x00000004
+#define SE_SERVICE_LOGON		0x00000008
+#define SE_MACHINE_ACCOUNT		0x00000010
+#define SE_PRINT_OPERATOR		0x00000020
+#define SE_ADD_USERS			0x00000040
+
+#if 0	/* not needed currently */
+
+#define SE_ASSIGN_PRIMARY_TOKEN	
+#define SE_CREATE_TOKEN		
+#define SE_LOCK_MEMORY		
+#define SE_INCREASE_QUOTA	
+#define SE_UNSOLICITED_INPUT
+#define SE_TCB	
+#define SE_SECURITY	
+#define SE_TAKE_OWNERSHIP
+#define SE_LOAD_DRIVER	
+#define SE_SYSTEM_PROFILE	
+#define SE_SYSTEM_TIME	
+#define SE_PROF_SINGLE_PROCESS	
+#define SE_INC_BASE_PRIORITY
+#define SE_CREATE_PAGEFILE
+#define SE_CREATE_PERMANENT	
+#define SE_BACKUP
+#define SE_RESTORE
+#define SE_SHUTDOWN	
+#define SE_DEBUG
+#define SE_AUDIT	
+#define SE_SYSTEM_ENVIRONMENT	
+#define SE_CHANGE_NOTIFY
+#define SE_REMOTE_SHUTDOWN
+#define SE_UNDOCK
+#define SE_SYNC_AGENT	
+#define SE_ENABLE_DELEGATION
+
+#endif	/* not needed currently */
+
+/*
+ * These are used in Lsa replies (srv_lsa_nt.c)
+ */
 #define PR_NONE                0x0000
 #define PR_LOG_ON_LOCALLY      0x0001
 #define PR_ACCESS_FROM_NETWORK 0x0002
 #define PR_LOG_ON_BATCH_JOB    0x0004
 #define PR_LOG_ON_SERVICE      0x0010
+
+
+#ifndef _BOOL
+typedef int BOOL;
+#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
+#endif
 
 typedef struct LUID
 {
@@ -49,7 +102,7 @@ typedef struct LUID_ATTR
 {
 	LUID luid;
 	uint32 attr;
-} LUID_ATTR ;
+} LUID_ATTR;
 
 typedef struct privilege_set
 {
@@ -62,9 +115,8 @@ typedef struct privilege_set
 
 typedef struct _PRIVS {
 	uint32 se_priv;
-	const char *priv;
+	const char *name;
 	const char *description;
 } PRIVS;
-
 
 #endif /* PRIVILEGES_H */

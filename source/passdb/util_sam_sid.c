@@ -315,28 +315,4 @@ BOOL map_name_to_wellknown_sid(DOM_SID *sid, enum SID_NAME_USE *use, const char 
 	return False;
 }
 
-void add_sid_to_array(const DOM_SID *sid, DOM_SID **sids, int *num)
-{
-	*sids = SMB_REALLOC_ARRAY(*sids, DOM_SID, (*num)+1);
 
-	if (*sids == NULL)
-		return;
-
-	sid_copy(&((*sids)[*num]), sid);
-	*num += 1;
-
-	return;
-}
-
-
-void add_sid_to_array_unique(const DOM_SID *sid, DOM_SID **sids, int *num_sids)
-{
-	int i;
-
-	for (i=0; i<(*num_sids); i++) {
-		if (sid_compare(sid, &(*sids)[i]) == 0)
-			return;
-	}
-
-	add_sid_to_array(sid, sids, num_sids);
-}
