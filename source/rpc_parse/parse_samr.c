@@ -243,7 +243,7 @@ reads or writes a structure.
 
 void init_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN * q_u,
 			     POLICY_HND *pol, uint32 flags,
-			     DOM_SID *sid)
+			     const DOM_SID *sid)
 {
 	DEBUG(5, ("samr_init_samr_q_open_domain\n"));
 
@@ -4840,7 +4840,7 @@ reads or writes a structure.
 
 void init_samr_q_create_user(SAMR_Q_CREATE_USER * q_u,
 			     POLICY_HND *pol,
-			     char *name,
+			     const char *name,
 			     uint32 acb_info, uint32 access_mask)
 {
 	int len_name;
