@@ -49,7 +49,7 @@ all: telnetd
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) -I../../../include -I.. -I../../.. -I$(srcdir)/.. -I. -I$(srcdir) $<
 
 telnetd: $(OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnetd $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o telnetd $(OBJECTS) ../libtelnet/libtelnet.a $(KLIB) $(LIBS) @LIB_tgetent@
 
 install: all
 	$(MKINSTALLDIRS) $(prefix)/libexec
