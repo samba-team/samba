@@ -1878,25 +1878,59 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       break;
     }
 
-    /*
-     * NT seems to use this call with a size of zero
-     * to mean truncate the file. JRA.
-     */
-
 	case 1019:
 	case 1020:
     case SMB_SET_FILE_ALLOCATION_INFO:
     {
-      SMB_OFF_T newsize = IVAL(pdata,0);
+      int ret = -1;
+      size = IVAL(pdata,0);
 #ifdef LARGE_SMB_OFF_T
-      newsize |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+      size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
       if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
          return(ERROR(ERRDOS,ERRunknownlevel));
 #endif /* LARGE_SMB_OFF_T */
-      DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n", fname, (double)newsize ));
-      if(newsize == 0)
-        size = 0;
+      DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n",
+                           fname, (double)size ));
+
+      if(size != sbuf.st_size) {
+ 
+        DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new size to %.0f\n",
+            fname, (double)size ));
+ 
+        if (fd == -1) {
+          files_struct *new_fsp = NULL;
+          int access_mode = 0;
+          int action = 0;
+ 
+          if(global_oplock_break) {
+            /* Queue this file modify as we are the process of an oplock break.  */
+ 
+            DEBUG(2,("call_trans2setfilepathinfo: queueing message due to being "));
+            DEBUGADD(2,( "in oplock break state.\n"));
+ 
+            push_oplock_pending_smb_message(inbuf, length);
+            return -1;
+          }
+ 
+          new_fsp = open_file_shared(conn, fname, &sbuf,
+                             SET_OPEN_MODE(DOS_OPEN_RDWR),
+                             (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+                             0, 0, &access_mode, &action);
+ 
+          if (new_fsp == NULL)
+            return(UNIXERROR(ERRDOS,ERRbadpath));
+          ret = vfs_allocate_file_space(new_fsp, size);
+          close_file(new_fsp,True);
+        } else {
+          ret = vfs_allocate_file_space(fsp, size);
+        }
+      }
+
+      if (ret == -1)
+        return(UNIXERROR(ERRHRD,ERRdiskfull));
+
+      sbuf.st_size = size;
       break;
     }
 
