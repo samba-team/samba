@@ -2210,7 +2210,9 @@ fi
 esac
 
 AC_CACHE_CHECK([for broken nisplus include files],samba_cv_BROKEN_NISPLUS_INCLUDE_FILES,[
-AC_TRY_COMPILE([#include <sys/acl.h>
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/acl.h>
 #if defined(HAVE_RPCSVC_NIS_H)
 #include <rpcsvc/nis.h>
 #endif],
