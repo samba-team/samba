@@ -199,14 +199,14 @@ int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list)
 		DEBUG(15,("quota entry for id[%s] path[%s]\n",
 			sid_string_static(&sid),fsp->conn->connectpath));
 
-		if ((tmp_list_ent=(SMB_NTQUOTA_LIST *)talloc_zero(mem_ctx,sizeof(SMB_NTQUOTA_LIST)))==NULL) {
+		if ((tmp_list_ent=TALLOC_ZERO_P(mem_ctx,SMB_NTQUOTA_LIST))==NULL) {
 			DEBUG(0,("talloc_zero() failed\n"));
 			*qt_list = NULL;
 			talloc_destroy(mem_ctx);
 			return (-1);
 		}
 
-		if ((tmp_list_ent->quotas=(SMB_NTQUOTA_STRUCT *)talloc_zero(mem_ctx,sizeof(SMB_NTQUOTA_STRUCT)))==NULL) {
+		if ((tmp_list_ent->quotas=TALLOC_ZERO_P(mem_ctx,SMB_NTQUOTA_STRUCT))==NULL) {
 			DEBUG(0,("talloc_zero() failed\n"));
 			*qt_list = NULL;
 			talloc_destroy(mem_ctx);
@@ -232,7 +232,7 @@ void *init_quota_handle(TALLOC_CTX *mem_ctx)
 	if (!mem_ctx)
 		return False;
 
-	qt_handle = (SMB_NTQUOTA_HANDLE *)talloc_zero(mem_ctx,sizeof(SMB_NTQUOTA_HANDLE));
+	qt_handle = TALLOC_ZERO_P(mem_ctx,SMB_NTQUOTA_HANDLE);
 	if (qt_handle==NULL) {
 		DEBUG(0,("talloc_zero() failed\n"));
 		return NULL;

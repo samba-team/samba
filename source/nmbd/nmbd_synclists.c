@@ -143,7 +143,7 @@ done:
 		return;
 	}
 
-	s = (struct sync_record *)malloc(sizeof(*s));
+	s = SMB_MALLOC_P(struct sync_record);
 	if (!s) goto done;
 
 	ZERO_STRUCTP(s);

@@ -30,12 +30,12 @@ struct bitmap *bitmap_allocate(int n)
 {
 	struct bitmap *bm;
 
-	bm = (struct bitmap *)malloc(sizeof(*bm));
+	bm = SMB_MALLOC_P(struct bitmap);
 
 	if (!bm) return NULL;
 	
 	bm->n = n;
-	bm->b = (uint32 *)malloc(sizeof(bm->b[0])*(n+31)/32);
+	bm->b = SMB_MALLOC_ARRAY(uint32, (n+31)/32);
 	if (!bm->b) {
 		SAFE_FREE(bm);
 		return NULL;
@@ -68,12 +68,12 @@ struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
 
 	if (!mem_ctx) return NULL;
 
-	bm = (struct bitmap *)talloc(mem_ctx, sizeof(*bm));
+	bm = TALLOC_P(mem_ctx, struct bitmap);
 
 	if (!bm) return NULL;
 	
 	bm->n = n;
-	bm->b = (uint32 *)talloc(mem_ctx, sizeof(bm->b[0])*(n+31)/32);
+	bm->b = TALLOC_ARRAY(mem_ctx, uint32, (n+31)/32);
 	if (!bm->b) {
 		return NULL;
 	}

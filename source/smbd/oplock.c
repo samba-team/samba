@@ -740,12 +740,12 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	 * messages crossing on the wire.
 	 */
 
-	if((inbuf = (char *)malloc(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN))==NULL) {
+	if((inbuf = (char *)SMB_MALLOC(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN))==NULL) {
 		DEBUG(0,("oplock_break: malloc fail for input buffer.\n"));
 		return False;
 	}
 
-	if((outbuf = (char *)malloc(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN))==NULL) {
+	if((outbuf = (char *)SMB_MALLOC(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN))==NULL) {
 		DEBUG(0,("oplock_break: malloc fail for output buffer.\n"));
 		SAFE_FREE(inbuf);
 		return False;

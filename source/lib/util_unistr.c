@@ -61,7 +61,7 @@ void load_case_tables(void)
 	   not available */
 	if (!upcase_table) {
 		DEBUG(1,("creating lame upcase table\n"));
-		upcase_table = malloc(0x20000);
+		upcase_table = SMB_MALLOC(0x20000);
 		for (i=0;i<0x10000;i++) {
 			smb_ucs2_t v;
 			SSVAL(&v, 0, i);
@@ -76,7 +76,7 @@ void load_case_tables(void)
 
 	if (!lowcase_table) {
 		DEBUG(1,("creating lame lowcase table\n"));
-		lowcase_table = malloc(0x20000);
+		lowcase_table = SMB_MALLOC(0x20000);
 		for (i=0;i<0x10000;i++) {
 			smb_ucs2_t v;
 			SSVAL(&v, 0, i);
@@ -175,7 +175,7 @@ void init_valid_table(void)
 	if (valid_table) free(valid_table);
 
 	DEBUG(2,("creating default valid table\n"));
-	valid_table = malloc(0x10000);
+	valid_table = SMB_MALLOC(0x10000);
 	for (i=0;i<128;i++)
 		valid_table[i] = isalnum(i) || strchr(allowed,i);
 	
@@ -302,7 +302,7 @@ char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str)
 	char *s;
 	int maxlen = (str->uni_str_len+1)*4;
 	if (!str->buffer) return NULL;
-	s = (char *)talloc(ctx, maxlen); /* convervative */
+	s = (char *)TALLOC(ctx, maxlen); /* convervative */
 	if (!s) return NULL;
 	pull_ucs2(NULL, s, str->buffer, maxlen, str->uni_str_len*2, 
 		  STR_NOALIGN);
@@ -586,7 +586,7 @@ smb_ucs2_t *strndup_w(const smb_ucs2_t *src, size_t len)
 	smb_ucs2_t *dest;
 	
 	if (!len) len = strlen_w(src);
-	dest = (smb_ucs2_t *)malloc((len + 1) * sizeof(smb_ucs2_t));
+	dest = SMB_MALLOC_ARRAY(smb_ucs2_t, len + 1);
 	if (!dest) {
 		DEBUG(0,("strdup_w: out of memory!\n"));
 		return NULL;
@@ -815,12 +815,12 @@ UNISTR2* ucs2_to_unistr2(TALLOC_CTX *ctx, UNISTR2* dst, smb_ucs2_t* src)
 	
 	/* allocate UNISTR2 destination if not given */
 	if (!dst) {
-		dst = (UNISTR2*) talloc(ctx, sizeof(UNISTR2));
+		dst = TALLOC_P(ctx, UNISTR2);
 		if (!dst)
 			return NULL;
 	}
 	if (!dst->buffer) {
-		dst->buffer = (uint16*) talloc(ctx, sizeof(uint16) * (len + 1));
+		dst->buffer = TALLOC_ARRAY(ctx, uint16, len + 1);
 		if (!dst->buffer)
 			return NULL;
 	}

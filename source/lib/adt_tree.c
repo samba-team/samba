@@ -59,7 +59,7 @@ SORTED_TREE* sorted_tree_init( void *data_p,
 {
 	SORTED_TREE *tree = NULL;
 	
-	if ( !(tree = (SORTED_TREE*)malloc( sizeof(SORTED_TREE) )) )
+	if ( !(tree = SMB_MALLOC_P(SORTED_TREE)) )
 		return NULL;
 		
 	ZERO_STRUCTP( tree );
@@ -67,7 +67,7 @@ SORTED_TREE* sorted_tree_init( void *data_p,
 	tree->compare = cmp_fn;
 	tree->free_func    = free_fn;
 	
-	if ( !(tree->root = (TREE_NODE*)malloc( sizeof(TREE_NODE) )) ) {
+	if ( !(tree->root = SMB_MALLOC_P(TREE_NODE)) ) {
 		SAFE_FREE( tree );
 		return NULL;
 	}
@@ -126,15 +126,15 @@ static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
 	TREE_NODE **siblings;
 	int i;
 	
-	if ( !(infant = (TREE_NODE*)malloc( sizeof(TREE_NODE) )) )
+	if ( !(infant = SMB_MALLOC_P(TREE_NODE)) )
 		return NULL;
 	
 	ZERO_STRUCTP( infant );
 		
-	infant->key = strdup( key );
+	infant->key = SMB_STRDUP( key );
 	infant->parent = node;
 	
-	siblings = Realloc( node->children, sizeof(TREE_NODE*)*(node->num_children+1) );
+	siblings = SMB_REALLOC_ARRAY( node->children, TREE_NODE *, node->num_children+1 );
 	
 	if ( siblings )
 		node->children = siblings;
@@ -260,7 +260,7 @@ BOOL sorted_tree_add( SORTED_TREE *tree, const char *path, void *data_p )
 	/* move past the first '/' */
 	
 	path++;	
-	path2 = strdup( path );
+	path2 = SMB_STRDUP( path );
 	if ( !path2 ) {
 		DEBUG(0,("sorted_tree_add: strdup() failed on string [%s]!?!?!\n", path));
 		return False;
@@ -405,9 +405,9 @@ void* sorted_tree_find( SORTED_TREE *tree, char *key )
 	/* make a copy to play with */
 	
 	if ( *key == '/' )
-		keystr = strdup( key+1 );
+		keystr = SMB_STRDUP( key+1 );
 	else
-		keystr = strdup( key );
+		keystr = SMB_STRDUP( key );
 	
 	if ( !keystr ) {
 		DEBUG(0,("sorted_tree_find: strdup() failed on string [%s]!?!?!\n", key));

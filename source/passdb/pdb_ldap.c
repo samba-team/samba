@@ -730,7 +730,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		/* We can only store (sizeof(pstring)-1)/64 password history entries. */
 		pwHistLen = MIN(pwHistLen, ((sizeof(temp)-1)/64));
 
-		if ((pwhist = malloc(pwHistLen * PW_HISTORY_ENTRY_LEN)) == NULL){
+		if ((pwhist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN)) == NULL){
 			DEBUG(0, ("init_sam_from_ldap: malloc failed!\n"));
 			return False;
 		}
@@ -1266,9 +1266,9 @@ static void append_attr(char ***attr_list, const char *new_attr)
 		;
 	}
 
-	(*attr_list) = Realloc((*attr_list), sizeof(**attr_list) * (i+2));
+	(*attr_list) = SMB_REALLOC_ARRAY((*attr_list), char *,  i+2);
 	SMB_ASSERT((*attr_list) != NULL);
-	(*attr_list)[i] = strdup(new_attr);
+	(*attr_list)[i] = SMB_STRDUP(new_attr);
 	(*attr_list)[i+1] = NULL;
 }
 
@@ -2644,7 +2644,7 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 			continue;
 		}
 
-		mapt=(GROUP_MAP *)Realloc((*rmap), (entries+1)*sizeof(GROUP_MAP));
+		mapt=SMB_REALLOC_ARRAY((*rmap), GROUP_MAP, entries+1);
 		if (!mapt) {
 			DEBUG(0,("ldapsam_enum_group_mapping: Unable to enlarge group map!\n"));
 			SAFE_FREE(*rmap);
@@ -2971,7 +2971,7 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 
 	/* TODO: Setup private data and free */
 
-	ldap_state = talloc_zero(pdb_context->mem_ctx, sizeof(*ldap_state));
+	ldap_state = TALLOC_ZERO_P(pdb_context->mem_ctx, struct ldapsam_privates);
 	if (!ldap_state) {
 		DEBUG(0, ("pdb_init_ldapsam_common: talloc() failed for ldapsam private_data!\n"));
 		return NT_STATUS_NO_MEMORY;

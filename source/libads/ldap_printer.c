@@ -161,10 +161,9 @@ static BOOL map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	};
 
 	if (num_vals) {
-		str_values = talloc(ctx, 
-				    (num_vals + 1) * sizeof(smb_ucs2_t *));
+		str_values = TALLOC_ARRAY(ctx, char *, num_vals + 1);
 		memset(str_values, '\0', 
-		       (num_vals + 1) * sizeof(smb_ucs2_t *));
+		       (num_vals + 1) * sizeof(char *));
 
 		cur_str = (smb_ucs2_t *) value->data_p;
 		for (i=0; i < num_vals; i++)

@@ -44,7 +44,7 @@ void _echo_data(pipes_struct *p, ECHO_Q_ECHO_DATA *q_u,
 {
 	DEBUG(10, ("_echo_data\n"));
 
-	r_u->data = talloc(p->mem_ctx, q_u->size);
+	r_u->data = TALLOC(p->mem_ctx, q_u->size);
 	r_u->size = q_u->size;
 	memcpy(r_u->data, q_u->data, q_u->size);
 }
@@ -68,7 +68,7 @@ void _source_data(pipes_struct *p, ECHO_Q_SOURCE_DATA *q_u,
 
 	DEBUG(10, ("_source_data\n"));
 
-	r_u->data = talloc(p->mem_ctx, q_u->size);
+	r_u->data = TALLOC(p->mem_ctx, q_u->size);
 	r_u->size = q_u->size;
 
 	for (i = 0; i < r_u->size; i++)

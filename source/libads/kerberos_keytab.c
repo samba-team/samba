@@ -546,7 +546,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	if (!found) {
 		goto done;
 	}
-	oldEntries = (char **) malloc(found * sizeof(char *));
+	oldEntries = SMB_MALLOC_ARRAY(char *, found );
 	if (!oldEntries) {
 		DEBUG(1,("ads_keytab_create_default: Failed to allocate space to store the old keytab entries (malloc failed?).\n"));
 		ret = -1;

@@ -72,7 +72,7 @@ LOGIN_CACHE * login_cache_read(SAM_ACCOUNT *sampass)
 	if (!login_cache_init())
 		return NULL;
 
-	keybuf.dptr = strdup(pdb_get_nt_username(sampass));
+	keybuf.dptr = SMB_STRDUP(pdb_get_nt_username(sampass));
 	if (!keybuf.dptr || !strlen(keybuf.dptr)) {
 		SAFE_FREE(keybuf.dptr);
 		return NULL;
@@ -84,7 +84,7 @@ LOGIN_CACHE * login_cache_read(SAM_ACCOUNT *sampass)
 	databuf = tdb_fetch(cache, keybuf);
 	SAFE_FREE(keybuf.dptr);
 
-	if (!(entry = malloc(sizeof(LOGIN_CACHE)))) {
+	if (!(entry = SMB_MALLOC_P(LOGIN_CACHE))) {
 		DEBUG(1, ("Unable to allocate cache entry buffer!\n"));
 		SAFE_FREE(databuf.dptr);
 		return NULL;
@@ -117,7 +117,7 @@ BOOL login_cache_write(const SAM_ACCOUNT *sampass, LOGIN_CACHE entry)
 	if (!login_cache_init())
 		return False;
 
-	keybuf.dptr = strdup(pdb_get_nt_username(sampass));
+	keybuf.dptr = SMB_STRDUP(pdb_get_nt_username(sampass));
 	if (!keybuf.dptr || !strlen(keybuf.dptr)) {
 		SAFE_FREE(keybuf.dptr);
 		return False;
@@ -132,7 +132,7 @@ BOOL login_cache_write(const SAM_ACCOUNT *sampass, LOGIN_CACHE entry)
 			 entry.acct_ctrl,
 			 entry.bad_password_count,
 			 entry.bad_password_time);
-	databuf.dptr = malloc(databuf.dsize);
+	databuf.dptr = SMB_MALLOC(databuf.dsize);
 	if (!databuf.dptr) {
 		SAFE_FREE(keybuf.dptr);
 		return False;
@@ -163,7 +163,7 @@ BOOL login_cache_delentry(const SAM_ACCOUNT *sampass)
 	if (!login_cache_init()) 
 		return False;	
 
-	keybuf.dptr = strdup(pdb_get_nt_username(sampass));
+	keybuf.dptr = SMB_STRDUP(pdb_get_nt_username(sampass));
 	if (!keybuf.dptr || !strlen(keybuf.dptr)) {
 		SAFE_FREE(keybuf.dptr);
 		return False;

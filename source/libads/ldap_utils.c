@@ -42,7 +42,7 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 		return ADS_ERROR(LDAP_SERVER_DOWN);
 	}
 
-	bp = strdup(bind_path);
+	bp = SMB_STRDUP(bind_path);
 
 	if (!bp) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);

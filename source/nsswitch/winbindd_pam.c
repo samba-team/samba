@@ -43,7 +43,7 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 	}
 
 	size = prs_data_size(&ps);
-	state->response.extra_data = malloc(size);
+	state->response.extra_data = SMB_MALLOC(size);
 	if (!state->response.extra_data) {
 		prs_mem_free(&ps);
 		return NT_STATUS_NO_MEMORY;
@@ -78,7 +78,7 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	all_sids = talloc(mem_ctx, sizeof(DOM_SID) * num_all_sids);
+	all_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, num_all_sids);
 	if (!all_sids)
 		return NT_STATUS_NO_MEMORY;
 
@@ -363,7 +363,7 @@ done:
 	if ( NT_STATUS_IS_OK(result) &&
 	     (state->request.flags & WBFLAG_PAM_AFS_TOKEN) ) {
 
-		char *afsname = strdup(lp_afs_username_map());
+		char *afsname = SMB_STRDUP(lp_afs_username_map());
 		char *cell;
 
 		if (afsname == NULL) goto no_token;
@@ -600,7 +600,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 			DEBUG(5, ("Setting unix username to [%s]\n", username_out));
 
-			state->response.extra_data = strdup(username_out);
+			state->response.extra_data = SMB_STRDUP(username_out);
 			if (!state->response.extra_data) {
 				result = NT_STATUS_NO_MEMORY;
 				goto done;

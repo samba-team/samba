@@ -304,7 +304,7 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 
 	memset((char *)sidout, '\0', sizeof(DOM_SID));
 
-	p = q = strdup(sidstr + 2);
+	p = q = SMB_STRDUP(sidstr + 2);
 	if (p == NULL) {
 		DEBUG(0, ("string_to_sid: out of memory!\n"));
 		return False;
@@ -621,7 +621,7 @@ char *sid_binstring(const DOM_SID *sid)
 {
 	char *buf, *s;
 	int len = sid_size(sid);
-	buf = malloc(len);
+	buf = SMB_MALLOC(len);
 	if (!buf)
 		return NULL;
 	sid_linearize(buf, len, sid);
@@ -641,7 +641,7 @@ DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src)
 	if(!src)
 		return NULL;
 	
-	if((dst = talloc_zero(ctx, sizeof(DOM_SID))) != NULL) {
+	if((dst = TALLOC_ZERO_P(ctx, DOM_SID)) != NULL) {
 		sid_copy( dst, src);
 	}
 	

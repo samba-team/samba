@@ -40,6 +40,19 @@
 
 #else
 #include "includes.h"
+
+#ifdef malloc
+#undef malloc
+#endif
+                                                                                                                 
+#ifdef realloc
+#undef realloc
+#endif
+                                                                                                                 
+#ifdef calloc
+#undef calloc
+#endif
+
 #endif
 
 #include "tdb.h"

@@ -204,7 +204,7 @@ int ms_fnmatch(const char *pattern, const char *string, enum protocol_types prot
 	}
 
 	if (count != 0) {
-		max_n = calloc(sizeof(struct max_n), count);
+		max_n = SMB_CALLOC_ARRAY(struct max_n, count);
 		if (!max_n) {
 			return -1;
 		}

@@ -78,7 +78,7 @@ REGISTRY_HOOK* reghook_cache_find( char *keyname )
 	/* prepend the string with a '\' character */
 	
 	len = strlen( keyname );
-	if ( !(key = malloc( len + 2 )) ) {
+	if ( !(key = SMB_MALLOC( len + 2 )) ) {
 		DEBUG(0,("reghook_cache_find: malloc failed for string [%s] !?!?!\n",
 			keyname));
 		return NULL;

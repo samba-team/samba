@@ -86,7 +86,7 @@ static BOOL string_match(const char *tok,const char *s, char *invalid_char)
 			DEBUG(0,("Unable to get default yp domain.\n"));
 			return False;
 		}
-		if (!(hostname = strdup(s))) {
+		if (!(hostname = SMB_STRDUP(s))) {
 			DEBUG(1,("out of memory for strdup!\n"));
 			return False;
 		}

@@ -256,8 +256,8 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 	BOOL bigoffset = False;
 
 	if (size > cli->bufsize) {
-		cli->outbuf = realloc(cli->outbuf, size + 1024);
-		cli->inbuf = realloc(cli->inbuf, size + 1024);
+		cli->outbuf = SMB_REALLOC(cli->outbuf, size + 1024);
+		cli->inbuf = SMB_REALLOC(cli->inbuf, size + 1024);
 		if (cli->outbuf == NULL || cli->inbuf == NULL)
 			return False;
 		cli->bufsize = size + 1024;

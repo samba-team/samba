@@ -204,8 +204,7 @@ smb_np_struct *open_rpc_pipe_p(char *pipe_name,
 	for (p = Pipes; p; p = p->next)
 		DEBUG(5,("open_rpc_pipe_p: name %s pnum=%x\n", p->name, p->pnum));  
 
-	p = (smb_np_struct *)malloc(sizeof(*p));
-
+	p = SMB_MALLOC_P(smb_np_struct);
 	if (!p) {
 		DEBUG(0,("ERROR! no memory for pipes_struct!\n"));
 		return NULL;
@@ -283,10 +282,9 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 		return NULL;
 	}
 
-	p = (pipes_struct *)malloc(sizeof(*p));
+	p = SMB_MALLOC_P(pipes_struct);
 
-	if (!p)
-	{
+	if (!p) {
 		DEBUG(0,("ERROR! no memory for pipes_struct!\n"));
 		return NULL;
 	}

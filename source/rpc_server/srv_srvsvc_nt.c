@@ -522,10 +522,12 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 	switch (info_level) {
 	case 0:
 	{
-		SRV_SHARE_INFO_0 *info0;
+		SRV_SHARE_INFO_0 *info0 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_0, num_entries);
 		int i = 0;
 
-		info0 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_0));
+		if (!info0) {
+			return False;
+		}
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
@@ -540,10 +542,12 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 
 	case 1:
 	{
-		SRV_SHARE_INFO_1 *info1;
+		SRV_SHARE_INFO_1 *info1 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_1, num_entries);
 		int i = 0;
 
-		info1 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1));
+		if (!info1) {
+			return False;
+		}
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
@@ -557,10 +561,12 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 
 	case 2:
 	{
-		SRV_SHARE_INFO_2 *info2;
+		SRV_SHARE_INFO_2 *info2 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_2, num_entries);
 		int i = 0;
 
-		info2 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_2));
+		if (!info2) {
+			return False;
+		}
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
@@ -574,10 +580,12 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 
 	case 501:
 	{
-		SRV_SHARE_INFO_501 *info501;
+		SRV_SHARE_INFO_501 *info501 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_501, num_entries);
 		int i = 0;
 	
-		info501 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_501));
+		if (!info501) {
+			return False;
+		}
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
@@ -591,10 +599,12 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 
 	case 502:
 	{
-		SRV_SHARE_INFO_502 *info502;
+		SRV_SHARE_INFO_502 *info502 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_502, num_entries);
 		int i = 0;
 
-		info502 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_502));
+		if (!info502) {
+			return False;
+		}
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
@@ -610,10 +620,12 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 	
 	case 1004:
 	{
-		SRV_SHARE_INFO_1004 *info1004;
+		SRV_SHARE_INFO_1004 *info1004 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_1004, num_entries);
 		int i = 0;
 
-		info1004 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1004));
+		if (!info1004) {
+			return False;
+		}
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
@@ -627,10 +639,12 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 
 	case 1005:
 	{
-		SRV_SHARE_INFO_1005 *info1005;
+		SRV_SHARE_INFO_1005 *info1005 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_1005, num_entries);
 		int i = 0;
 
-		info1005 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1005));
+		if (!info1005) {
+			return False;
+		}
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
@@ -644,10 +658,12 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 
 	case 1006:
 	{
-		SRV_SHARE_INFO_1006 *info1006;
+		SRV_SHARE_INFO_1006 *info1006 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_1006, num_entries);
 		int i = 0;
 
-		info1006 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1006));
+		if (!info1006) {
+			return False;
+		}
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
@@ -661,10 +677,12 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 
 	case 1007:
 	{
-		SRV_SHARE_INFO_1007 *info1007;
+		SRV_SHARE_INFO_1007 *info1007 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_1007, num_entries);
 		int i = 0;
 
-		info1007 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1007));
+		if (!info1007) {
+			return False;
+		}
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
@@ -678,10 +696,12 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 
 	case 1501:
 	{
-		SRV_SHARE_INFO_1501 *info1501;
+		SRV_SHARE_INFO_1501 *info1501 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_1501, num_entries);
 		int i = 0;
 
-		info1501 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1501));
+		if (!info1501) {
+			return False;
+		}
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
@@ -1132,8 +1152,7 @@ static WERROR init_srv_file_info_ctr(pipes_struct *p, SRV_FILE_INFO_CTR *ctr,
 		int i;
 		if (*total_entries > 0) {
 			ctr->ptr_entries = 1;
-			ctr->file.info3 = talloc(ctx, ctr->num_entries * 
-						 sizeof(SRV_FILE_INFO_3));
+			ctr->file.info3 = TALLOC_ARRAY(ctx, SRV_FILE_INFO_3, ctr->num_entries);
 		}
 		for (i=0 ;i<ctr->num_entries;i++) {
 			init_srv_file_info3(&ctr->file.info3[i].info_3, i+*resume_hnd, 0x35, 0, "\\PIPE\\samr", "dummy user");
@@ -1184,7 +1203,7 @@ net server get info
 WERROR _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R_NET_SRV_GET_INFO *r_u)
 {
 	WERROR status = WERR_OK;
-	SRV_INFO_CTR *ctr = (SRV_INFO_CTR *)talloc(p->mem_ctx, sizeof(SRV_INFO_CTR));
+	SRV_INFO_CTR *ctr = TALLOC_P(p->mem_ctx, SRV_INFO_CTR);
 
 	if (!ctr)
 		return WERR_NOMEM;
@@ -1287,7 +1306,7 @@ WERROR _srv_net_conn_enum(pipes_struct *p, SRV_Q_NET_CONN_ENUM *q_u, SRV_R_NET_C
 {
 	DEBUG(5,("srv_net_conn_enum: %d\n", __LINE__));
 
-	r_u->ctr = (SRV_CONN_INFO_CTR *)talloc(p->mem_ctx, sizeof(SRV_CONN_INFO_CTR));
+	r_u->ctr = TALLOC_P(p->mem_ctx, SRV_CONN_INFO_CTR);
 	if (!r_u->ctr)
 		return WERR_NOMEM;
 
@@ -1312,7 +1331,7 @@ WERROR _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_S
 {
 	DEBUG(5,("_srv_net_sess_enum: %d\n", __LINE__));
 
-	r_u->ctr = (SRV_SESS_INFO_CTR *)talloc(p->mem_ctx, sizeof(SRV_SESS_INFO_CTR));
+	r_u->ctr = TALLOC_P(p->mem_ctx, SRV_SESS_INFO_CTR);
 	if (!r_u->ctr)
 		return WERR_NOMEM;
 
@@ -1795,7 +1814,7 @@ WERROR _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
 	struct tm *t;
 	time_t unixdate = time(NULL);
 
-	tod = (TIME_OF_DAY_INFO *)talloc(p->mem_ctx, sizeof(TIME_OF_DAY_INFO));
+	tod = TALLOC_P(p->mem_ctx, TIME_OF_DAY_INFO);
 	if (!tod)
 		return WERR_NOMEM;
 
@@ -2114,16 +2133,8 @@ WERROR _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_D
 
 	r_u->disk_enum_ctr.unknown = 0; 
 
-	{
-		DISK_INFO *dinfo;
-
-		int dinfo_size = MAX_SERVER_DISK_ENTRIES * sizeof(*dinfo);
-	  
-		if(!(dinfo =  talloc(ctx, dinfo_size))) {
-			return WERR_NOMEM;
-		}
-
-		r_u->disk_enum_ctr.disk_info = dinfo;
+	if(!(r_u->disk_enum_ctr.disk_info =  TALLOC_ARRAY(ctx, DISK_INFO, MAX_SERVER_DISK_ENTRIES))) {
+		return WERR_NOMEM;
 	}
 
 	r_u->disk_enum_ctr.disk_info_ptr = r_u->disk_enum_ctr.disk_info ? 1 : 0;

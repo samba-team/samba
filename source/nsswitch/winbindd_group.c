@@ -47,7 +47,7 @@ static int gr_mem_buffer( char **buffer, char **members, int num_members )
 	for ( i=0; i<num_members; i++ )
 		len += strlen(members[i])+1;
 
-	*buffer = (char*)smb_xmalloc(len);
+	*buffer = SMB_XMALLOC_ARRAY(char, len);
 	for ( i=0; i<num_members; i++ ) {
 		snprintf( &(*buffer)[idx], len-idx, "%s,", members[i]);
 		idx += strlen(members[i])+1;
@@ -194,7 +194,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	/* Allocate buffer */
 
 	if (!buf && buf_len != 0) {
-		if (!(buf = malloc(buf_len))) {
+		if (!(buf = SMB_MALLOC(buf_len))) {
 			DEBUG(1, ("out of memory\n"));
 			result = False;
 			goto done;
@@ -457,8 +457,7 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 		}
 						
 		
-		if ((domain_state = (struct getent_state *)
-		     malloc(sizeof(struct getent_state))) == NULL) {
+		if ((domain_state = SMB_MALLOC_P(struct getent_state)) == NULL) {
 			DEBUG(1, ("winbindd_setgrent: malloc failed for domain_state!\n"));
 			return WINBINDD_ERROR;
 		}
@@ -542,7 +541,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	/* Copy entries into return buffer */
 
 	if (num_entries) {
-		if ( !(name_list = malloc(sizeof(struct acct_info) * num_entries)) ) {
+		if ( !(name_list = SMB_MALLOC_ARRAY(struct acct_info, num_entries)) ) {
 			DEBUG(0,("get_sam_group_entries: Failed to malloc memory for %d domain groups!\n", 
 				num_entries));
 			result = False;
@@ -573,7 +572,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 		/* Copy entries into return buffer */
 
 		if ( num_entries ) {
-			if ( !(tmp_name_list = Realloc( name_list, sizeof(struct acct_info) * (ent->num_sam_entries+num_entries))) )
+			if ( !(tmp_name_list = SMB_REALLOC_ARRAY( name_list, struct acct_info, ent->num_sam_entries+num_entries)) )
 			{
 				DEBUG(0,("get_sam_group_entries: Failed to realloc more memory for %d local groups!\n", 
 					num_entries));
@@ -625,8 +624,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 	num_groups = MIN(MAX_GETGRENT_GROUPS, state->request.data.num_entries);
 
-	if ((state->response.extra_data = 
-	     malloc(num_groups * sizeof(struct winbindd_gr))) == NULL)
+	if ((state->response.extra_data = SMB_MALLOC_ARRAY(struct winbindd_gr, num_groups)) == NULL)
 		return WINBINDD_ERROR;
 
 	memset(state->response.extra_data, '\0',
@@ -746,9 +744,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 		if (result) {
 			/* Append to group membership list */
-			new_gr_mem_list = Realloc(
-				gr_mem_list,
-				gr_mem_list_len + gr_mem_len);
+			new_gr_mem_list = SMB_REALLOC( gr_mem_list, gr_mem_list_len + gr_mem_len);
 
 			if (!new_gr_mem_list && (group_list[group_list_ndx].num_gr_mem != 0)) {
 				DEBUG(0, ("out of memory\n"));
@@ -799,7 +795,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 	if (group_list_ndx == 0)
 		goto done;
 
-	new_extra_data = Realloc(
+	new_extra_data = SMB_REALLOC(
 		state->response.extra_data,
 		group_list_ndx * sizeof(struct winbindd_gr) + gr_mem_list_len);
 
@@ -880,7 +876,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		
 		/* Allocate some memory for extra data.  Note that we limit
 		   account names to sizeof(fstring) = 128 characters.  */		
-                ted = Realloc(extra_data, sizeof(fstring) * total_entries);
+                ted = SMB_REALLOC(extra_data, sizeof(fstring) * total_entries);
  
 		if (!ted) {
 			DEBUG(0,("failed to enlarge buffer!\n"));
@@ -1151,12 +1147,12 @@ static void add_sid_to_parray_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 			return;
 	}
 
-	*sids = talloc_realloc(mem_ctx, *sids, sizeof(**sids) * (*num_sids+1));
+	*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, DOM_SID *, *num_sids+1);
 
 	if (*sids == NULL)
 		return;
 
-	(*sids)[*num_sids] = talloc(mem_ctx, sizeof(DOM_SID));
+	(*sids)[*num_sids] = TALLOC_P(mem_ctx, DOM_SID);
 	sid_copy((*sids)[*num_sids], sid);
 	*num_sids += 1;
 	return;
@@ -1259,7 +1255,7 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 	}
 
 	/* build the reply */
-	ret = malloc(ret_size);
+	ret = SMB_MALLOC(ret_size);
 	if (!ret) goto done;
 	ofs = 0;
 	for (i = 0; i < num_groups; i++) {

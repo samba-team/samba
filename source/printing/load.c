@@ -40,7 +40,7 @@ static void add_auto_printers(void)
 {
 	const char *p;
 	int printers;
-	char *str = strdup(lp_auto_services());
+	char *str = SMB_STRDUP(lp_auto_services());
 
 	if (!str) return;
 

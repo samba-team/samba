@@ -818,7 +818,7 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 
 	timeout *= 1000; 	/* convert to microseconds */
 
-	sockets = malloc(num_addrs * sizeof(*sockets));
+	sockets = SMB_MALLOC_ARRAY(int, num_addrs);
 
 	if (sockets == NULL)
 		return False;

@@ -52,16 +52,16 @@ int regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, const char *keyname )
 		/* allocate a space for the char* in the array */
 		
 		if (  ctr->subkeys == 0 )
-			ctr->subkeys = talloc( ctr->ctx, sizeof(char*) );
+			ctr->subkeys = TALLOC_P( ctr->ctx, char *);
 		else {
-			pp = talloc_realloc( ctr->ctx, ctr->subkeys, sizeof(char*)*(ctr->num_subkeys+1) );
+			pp = TALLOC_REALLOC_ARRAY( ctr->ctx, ctr->subkeys, char *, ctr->num_subkeys+1);
 			if ( pp )
 				ctr->subkeys = pp;
 		}
 
 		/* allocate the string and save it in the array */
 		
-		ctr->subkeys[ctr->num_subkeys] = talloc( ctr->ctx, len+1 );
+		ctr->subkeys[ctr->num_subkeys] = TALLOC( ctr->ctx, len+1 );
 		strncpy( ctr->subkeys[ctr->num_subkeys], keyname, len+1 );
 		ctr->num_subkeys++;
 	}
@@ -138,7 +138,7 @@ REGISTRY_VALUE* dup_registry_value( REGISTRY_VALUE *val )
 	if ( !val )
 		return NULL;
 	
-	if ( !(copy = malloc( sizeof(REGISTRY_VALUE) )) ) {
+	if ( !(copy = SMB_MALLOC_P( REGISTRY_VALUE)) ) {
 		DEBUG(0,("dup_registry_value: malloc() failed!\n"));
 		return NULL;
 	}
@@ -244,22 +244,22 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, const char *name, uint16 type,
 		/* allocate a slot in the array of pointers */
 		
 		if (  ctr->num_values == 0 )
-			ctr->values = talloc( ctr->ctx, sizeof(REGISTRY_VALUE*) );
+			ctr->values = TALLOC_P( ctr->ctx, REGISTRY_VALUE *);
 		else {
-			ppreg = talloc_realloc( ctr->ctx, ctr->values, sizeof(REGISTRY_VALUE*)*(ctr->num_values+1) );
+			ppreg = TALLOC_REALLOC_ARRAY( ctr->ctx, ctr->values, REGISTRY_VALUE *, ctr->num_values+1 );
 			if ( ppreg )
 				ctr->values = ppreg;
 		}
 
 		/* allocate a new value and store the pointer in the arrya */
 		
-		ctr->values[ctr->num_values] = talloc( ctr->ctx, sizeof(REGISTRY_VALUE) );
+		ctr->values[ctr->num_values] = TALLOC_P( ctr->ctx, REGISTRY_VALUE);
 
 		/* init the value */
 	
 		fstrcpy( ctr->values[ctr->num_values]->valuename, name );
 		ctr->values[ctr->num_values]->type = type;
-		ctr->values[ctr->num_values]->data_p = talloc_memdup( ctr->ctx, data_p, size );
+		ctr->values[ctr->num_values]->data_p = TALLOC_MEMDUP( ctr->ctx, data_p, size );
 		ctr->values[ctr->num_values]->size = size;
 		ctr->num_values++;
 	}
@@ -280,22 +280,22 @@ int regval_ctr_copyvalue( REGVAL_CTR *ctr, REGISTRY_VALUE *val )
 		/* allocate a slot in the array of pointers */
 		
 		if (  ctr->num_values == 0 )
-			ctr->values = talloc( ctr->ctx, sizeof(REGISTRY_VALUE*) );
+			ctr->values = TALLOC_P( ctr->ctx, REGISTRY_VALUE *);
 		else {
-			ppreg = talloc_realloc( ctr->ctx, ctr->values, sizeof(REGISTRY_VALUE*)*(ctr->num_values+1) );
+			ppreg = TALLOC_REALLOC_ARRAY( ctr->ctx, ctr->values, REGISTRY_VALUE *, ctr->num_values+1 );
 			if ( ppreg )
 				ctr->values = ppreg;
 		}
 
 		/* allocate a new value and store the pointer in the arrya */
 		
-		ctr->values[ctr->num_values] = talloc( ctr->ctx, sizeof(REGISTRY_VALUE) );
+		ctr->values[ctr->num_values] = TALLOC_P( ctr->ctx, REGISTRY_VALUE);
 
 		/* init the value */
 	
 		fstrcpy( ctr->values[ctr->num_values]->valuename, val->valuename );
 		ctr->values[ctr->num_values]->type = val->type;
-		ctr->values[ctr->num_values]->data_p = talloc_memdup( ctr->ctx, val->data_p, val->size );
+		ctr->values[ctr->num_values]->data_p = TALLOC_MEMDUP( ctr->ctx, val->data_p, val->size );
 		ctr->values[ctr->num_values]->size = val->size;
 		ctr->num_values++;
 	}

@@ -135,7 +135,7 @@ NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 
 	mem_ctx = talloc_init("AUTH NTLMSSP context");
 	
-	*auth_ntlmssp_state = talloc_zero(mem_ctx, sizeof(**auth_ntlmssp_state));
+	*auth_ntlmssp_state = TALLOC_ZERO_P(mem_ctx, AUTH_NTLMSSP_STATE);
 	if (!*auth_ntlmssp_state) {
 		DEBUG(0,("auth_ntlmssp_start: talloc failed!\n"));
 		talloc_destroy(mem_ctx);

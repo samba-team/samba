@@ -101,7 +101,7 @@ static time_t parse_timeout(const char* timeout_str)
 	/* number detection */
 	len = (sign) ? strlen(&timeout_str[number_begin]) : len;
 	number_end = (unit) ? len - 1 : len;
-	number = strndup(&timeout_str[number_begin], number_end);
+	number = SMB_STRNDUP(&timeout_str[number_begin], number_end);
 	
 	/* calculate actual timeout value */
 	timeout = (time_t)atoi(number);

@@ -501,7 +501,7 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 		}
 
 		/* allocate memory */
-		if (!(data = (char *)malloc(read_size))) {
+		if (!(data = (char *)SMB_MALLOC(read_size))) {
 			d_printf("malloc fail for size %d\n", read_size);
 			nt_status = NT_STATUS_NO_MEMORY;
 			goto out;
@@ -1153,7 +1153,7 @@ get_printer_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 
 	/* argument given, get a single printer by name */
-	sharename = strdup(argv[0]);
+	sharename = SMB_STRDUP(argv[0]);
 
 	if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename,
 			MAXIMUM_ALLOWED_ACCESS,	cli->user_name, &hnd)) 
@@ -2299,7 +2299,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 		}
 
 		/* copy devmode (info level 2) */
-		ctr_dst.printers_2->devmode = talloc_memdup(mem_ctx, 
+		ctr_dst.printers_2->devmode = TALLOC_MEMDUP(mem_ctx, 
 			ctr_enum.printers_2[i].devmode, sizeof(DEVICEMODE));
 
 		/* do not copy security descriptor (we have another command for that) */
@@ -2461,7 +2461,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 
 					value.type = REG_SZ;
 					value.size = data.uni_str_len * 2;
-					value.data_p = talloc_memdup(mem_ctx, data.buffer, value.size);
+					value.data_p = TALLOC_MEMDUP(mem_ctx, data.buffer, value.size);
 
 					if (opt_verbose) 
 						display_reg_value(subkey, value);

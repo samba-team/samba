@@ -206,7 +206,7 @@ static void release_1d_name( struct subnet_record *subrec, const char *workgroup
 		struct userdata_struct *userdata;
 		size_t size = sizeof(struct userdata_struct) + sizeof(BOOL);
 
-		if((userdata = (struct userdata_struct *)malloc(size)) == NULL) {
+		if((userdata = (struct userdata_struct *)SMB_MALLOC(size)) == NULL) {
 			DEBUG(0,("release_1d_name: malloc fail.\n"));
 			return;
 		}
@@ -545,7 +545,7 @@ in workgroup %s on subnet %s\n",
 	subrec->work_changed = True;
 
 	/* Setup the userdata_struct. */
-	if((userdata = (struct userdata_struct *)malloc(size)) == NULL) {
+	if((userdata = (struct userdata_struct *)SMB_MALLOC(size)) == NULL) {
 		DEBUG(0,("become_local_master_browser: malloc fail.\n"));
 		return;
 	}

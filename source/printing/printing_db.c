@@ -80,7 +80,7 @@ struct tdb_print_db *get_print_db_byname(const char *printername)
        
 	if (!p)	{
 		/* Create one. */
-		p = (struct tdb_print_db *)malloc(sizeof(struct tdb_print_db));
+		p = SMB_MALLOC_P(struct tdb_print_db);
 		if (!p) {
 			DEBUG(0,("get_print_db: malloc fail !\n"));
 			return NULL;

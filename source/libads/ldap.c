@@ -119,7 +119,7 @@ static BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
 	DEBUG(5,("ads_try_connect: trying ldap server '%s' port %u\n", server, port));
 
 	/* this copes with inet_ntoa brokenness */
-	srv = strdup(server);
+	srv = SMB_STRDUP(server);
 
 	ads->ld = ldap_open_with_timeout(srv, port, lp_ldap_timeout());
 	if (!ads->ld) {
@@ -296,11 +296,11 @@ got_connection:
 	}
 
 	if (!ads->auth.realm) {
-		ads->auth.realm = strdup(ads->config.realm);
+		ads->auth.realm = SMB_STRDUP(ads->config.realm);
 	}
 
 	if (!ads->auth.kdc_server) {
-		ads->auth.kdc_server = strdup(inet_ntoa(ads->ldap_ip));
+		ads->auth.kdc_server = SMB_STRDUP(inet_ntoa(ads->ldap_ip));
 	}
 
 #if KRB5_DNS_HACK
@@ -338,13 +338,13 @@ static struct berval *dup_berval(TALLOC_CTX *ctx, const struct berval *in_val)
 
 	if (!in_val) return NULL;
 
-	value = talloc_zero(ctx, sizeof(struct berval));
+	value = TALLOC_ZERO_P(ctx, struct berval);
 	if (value == NULL)
 		return NULL;
 	if (in_val->bv_len == 0) return value;
 
 	value->bv_len = in_val->bv_len;
-	value->bv_val = talloc_memdup(ctx, in_val->bv_val, in_val->bv_len);
+	value->bv_val = TALLOC_MEMDUP(ctx, in_val->bv_val, in_val->bv_len);
 	return value;
 }
 
@@ -358,9 +358,9 @@ static struct berval **ads_dup_values(TALLOC_CTX *ctx,
 	int i;
        
 	if (!in_vals) return NULL;
-	for (i=0; in_vals[i]; i++); /* count values */
-	values = (struct berval **) talloc_zero(ctx, 
-						(i+1)*sizeof(struct berval *));
+	for (i=0; in_vals[i]; i++)
+		; /* count values */
+	values = TALLOC_ZERO_ARRAY(ctx, struct berval *, i+1);
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
@@ -378,8 +378,9 @@ static char **ads_push_strvals(TALLOC_CTX *ctx, const char **in_vals)
 	int i;
        
 	if (!in_vals) return NULL;
-	for (i=0; in_vals[i]; i++); /* count values */
-	values = (char ** ) talloc_zero(ctx, (i+1)*sizeof(char *));
+	for (i=0; in_vals[i]; i++)
+		; /* count values */
+	values = TALLOC_ZERO_ARRAY(ctx, char *, i+1);
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
@@ -397,8 +398,9 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
 	int i;
        
 	if (!in_vals) return NULL;
-	for (i=0; in_vals[i]; i++); /* count values */
-	values = (char **) talloc_zero(ctx, (i+1)*sizeof(char *));
+	for (i=0; in_vals[i]; i++)
+		; /* count values */
+	values = TALLOC_ZERO_ARRAY(ctx, char *, i+1);
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
@@ -824,8 +826,7 @@ ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx)
 #define ADS_MODLIST_ALLOC_SIZE 10
 	LDAPMod **mods;
 	
-	if ((mods = (LDAPMod **) talloc_zero(ctx, sizeof(LDAPMod *) * 
-					     (ADS_MODLIST_ALLOC_SIZE + 1))))
+	if ((mods = TALLOC_ZERO_ARRAY(ctx, LDAPMod *, ADS_MODLIST_ALLOC_SIZE + 1)))
 		/* -1 is safety to make sure we don't go over the end.
 		   need to reset it to NULL before doing ldap modify */
 		mods[ADS_MODLIST_ALLOC_SIZE] = (LDAPMod *) -1;
@@ -861,8 +862,8 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	for (curmod=0; modlist[curmod] && modlist[curmod] != (LDAPMod *) -1;
 	     curmod++);
 	if (modlist[curmod] == (LDAPMod *) -1) {
-		if (!(modlist = talloc_realloc(ctx, modlist, 
-			(curmod+ADS_MODLIST_ALLOC_SIZE+1)*sizeof(LDAPMod *))))
+		if (!(modlist = TALLOC_REALLOC_ARRAY(ctx, modlist, LDAPMod *,
+				curmod+ADS_MODLIST_ALLOC_SIZE+1)))
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		memset(&modlist[curmod], 0, 
 		       ADS_MODLIST_ALLOC_SIZE*sizeof(LDAPMod *));
@@ -870,7 +871,7 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		*mods = modlist;
 	}
 		
-	if (!(modlist[curmod] = talloc_zero(ctx, sizeof(LDAPMod))))
+	if (!(modlist[curmod] = TALLOC_ZERO_P(ctx, LDAPMod)))
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	modlist[curmod]->mod_type = talloc_strdup(ctx, name);
 	if (mod_op & LDAP_MOD_BVALUES) {
@@ -1046,11 +1047,11 @@ char *ads_ou_string(ADS_STRUCT *ads, const char *org_unit)
 		ret = ads_default_ou_string(ads, WELL_KNOWN_GUID_COMPUTERS);
 
 		/* samba4 might not yet respond to a wellknownobject-query */
-		return ret ? ret : strdup("cn=Computers");
+		return ret ? ret : SMB_STRDUP("cn=Computers");
 	}
 	
 	if (strequal(org_unit, "Computers")) {
-		return strdup("cn=Computers");
+		return SMB_STRDUP("cn=Computers");
 	}
 
 	return ads_build_path(org_unit, "\\/", "ou=", 1);
@@ -1107,7 +1108,7 @@ char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 	for (i=1; i < new_ln; i++) {
 		char *s;
 		asprintf(&s, "%s,%s", ret, wkn_dn_exp[i]);
-		ret = strdup(s);
+		ret = SMB_STRDUP(s);
 		free(s);
 	}
 
@@ -1741,7 +1742,7 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,
 	char *machine;
 
 	/* machine name must be lowercase */
-	machine = strdup(machine_name);
+	machine = SMB_STRDUP(machine_name);
 	strlower_m(machine);
 
 	/*
@@ -1791,7 +1792,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	int rc;
 
 	/* hostname must be lowercase */
-	host = strdup(hostname);
+	host = SMB_STRDUP(hostname);
 	strlower_m(host);
 
 	status = ads_find_machine_acct(ads, &res, host);
@@ -1915,7 +1916,7 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	if (!(mods = ads_init_mods(ctx))) return ADS_ERROR(LDAP_NO_MEMORY);
 
 	bval.bv_len = prs_offset(&ps_wire);
-	bval.bv_val = talloc(ctx, bval.bv_len);
+	bval.bv_val = TALLOC(ctx, bval.bv_len);
 	if (!bval.bv_val) {
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto ads_set_sd_error;
@@ -2015,7 +2016,7 @@ char **ads_pull_strings(ADS_STRUCT *ads,
 
 	*num_values = ldap_count_values(values);
 
-	ret = talloc(mem_ctx, sizeof(char *) * (*num_values+1));
+	ret = TALLOC_ARRAY(mem_ctx, char *, *num_values + 1);
 	if (!ret) {
 		ldap_value_free(values);
 		return NULL;
@@ -2126,9 +2127,8 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 		return NULL;
 	}
 
-	strings = talloc_realloc(mem_ctx, current_strings,
-				 sizeof(*current_strings) *
-				 (*num_strings + num_new_strings));
+	strings = TALLOC_REALLOC_ARRAY(mem_ctx, current_strings, char *,
+				 *num_strings + num_new_strings);
 	
 	if (strings == NULL) {
 		ldap_memfree(range_attr);
@@ -2265,7 +2265,7 @@ int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	for (i=0; values[i]; i++)
 		/* nop */ ;
 
-	(*sids) = talloc(mem_ctx, sizeof(DOM_SID) * i);
+	(*sids) = TALLOC_ARRAY(mem_ctx, DOM_SID, i);
 	if (!(*sids)) {
 		ldap_value_free_len(values);
 		return 0;
@@ -2446,7 +2446,7 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 
 	SAFE_FREE(ads->config.ldap_server_name);
 
-	ads->config.ldap_server_name = strdup(p+1);
+	ads->config.ldap_server_name = SMB_STRDUP(p+1);
 	p = strchr(ads->config.ldap_server_name, '$');
 	if (!p || p[1] != '@') {
 		talloc_destroy(ctx);
@@ -2461,7 +2461,7 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 	SAFE_FREE(ads->config.realm);
 	SAFE_FREE(ads->config.bind_path);
 
-	ads->config.realm = strdup(p+2);
+	ads->config.realm = SMB_STRDUP(p+2);
 	ads->config.bind_path = ads_build_dn(ads->config.realm);
 
 	DEBUG(3,("got ldap server name %s@%s, using bind path: %s\n", 

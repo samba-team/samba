@@ -102,7 +102,7 @@ static BOOL add_fd_to_close_entry(files_struct *fsp)
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 
-	tp = Realloc(dbuf.dptr, dbuf.dsize + sizeof(int));
+	tp = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(int));
 	if (!tp) {
 		DEBUG(0,("add_fd_to_close_entry: Realloc fail !\n"));
 		SAFE_FREE(dbuf.dptr);
@@ -371,7 +371,7 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 	pl.size = size;
 	pl.lock_type = lock_type;
 
-	tp = Realloc(dbuf.dptr, dbuf.dsize + sizeof(pl));
+	tp = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(pl));
 	if (!tp) {
 		DEBUG(0,("add_posix_lock_entry: Realloc fail !\n"));
 		goto fail;
@@ -896,8 +896,7 @@ BECOMES.....
         | l_curr|         | l_new   |
         +-------+         +---------+
 **********************************************/
-				struct lock_list *l_new = (struct lock_list *)talloc(ctx,
-													sizeof(struct lock_list));
+				struct lock_list *l_new = TALLOC_P(ctx, struct lock_list);
 
 				if(l_new == NULL) {
 					DEBUG(0,("posix_lock_list: talloc fail.\n"));
@@ -1002,7 +1001,7 @@ BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_cou
 		return True; /* Not a fatal error. */
 	}
 
-	if ((ll = (struct lock_list *)talloc(l_ctx, sizeof(struct lock_list))) == NULL) {
+	if ((ll = TALLOC_P(l_ctx, struct lock_list)) == NULL) {
 		DEBUG(0,("set_posix_lock: unable to talloc unlock list.\n"));
 		talloc_destroy(l_ctx);
 		return True; /* Not a fatal error. */
@@ -1148,7 +1147,7 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 		return True; /* Not a fatal error. */
 	}
 
-	if ((ul = (struct lock_list *)talloc(ul_ctx, sizeof(struct lock_list))) == NULL) {
+	if ((ul = TALLOC_P(ul_ctx, struct lock_list)) == NULL) {
 		DEBUG(0,("release_posix_lock: unable to talloc unlock list.\n"));
 		talloc_destroy(ul_ctx);
 		return True; /* Not a fatal error. */

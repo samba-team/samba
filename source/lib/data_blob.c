@@ -47,7 +47,7 @@ DATA_BLOB data_blob(const void *p, size_t length)
 	if (p) {
 		ret.data = smb_xmemdup(p, length);
 	} else {
-		ret.data = smb_xmalloc(length);
+		ret.data = SMB_XMALLOC_ARRAY(char, length);
 	}
 	ret.length = length;
 	ret.free = free_data_blob;
@@ -67,11 +67,11 @@ DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
 	}
 
 	if (p) {
-		ret.data = talloc_memdup(mem_ctx, p, length);
+		ret.data = TALLOC_MEMDUP(mem_ctx, p, length);
 		if (ret.data == NULL)
 			smb_panic("data_blob_talloc: talloc_memdup failed.\n");
 	} else {
-		ret.data = talloc(mem_ctx, length);
+		ret.data = TALLOC(mem_ctx, length);
 		if (ret.data == NULL)
 			smb_panic("data_blob_talloc: talloc failed.\n");
 	}

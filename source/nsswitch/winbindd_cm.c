@@ -432,7 +432,7 @@ static BOOL add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 	if (!NT_STATUS_IS_OK(check_negative_conn_cache(domain_name, dcname)))
 		return False;
 
-	*dcs = talloc_realloc(mem_ctx, *dcs, ((*num)+1) * sizeof(**dcs));
+	*dcs = TALLOC_REALLOC_ARRAY(mem_ctx, *dcs, struct dc_name_ip, (*num)+1);
 
 	if (*dcs == NULL)
 		return False;
@@ -448,7 +448,7 @@ static BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
 {
 	char *dup_str = talloc_strdup(mem_ctx, str);
 
-	*array = talloc_realloc(mem_ctx, *array, ((*num)+1) * sizeof(**array));
+	*array = TALLOC_REALLOC_ARRAY(mem_ctx, *array, char *, (*num)+1);
 
 	if ((*array == NULL) || (dup_str == NULL))
 		return False;
@@ -462,7 +462,7 @@ static BOOL add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 				  struct in_addr ip, uint16 port,
 				  struct sockaddr_in **addrs, int *num)
 {
-	*addrs = talloc_realloc(mem_ctx, *addrs, ((*num)+1) * sizeof(**addrs));
+	*addrs = TALLOC_REALLOC_ARRAY(mem_ctx, *addrs, struct sockaddr_in, (*num)+1);
 
 	if (*addrs == NULL)
 		return False;
@@ -753,7 +753,7 @@ static NTSTATUS new_cm_connection(struct winbindd_domain *domain, const char *pi
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
 
-	if (!(conn = malloc(sizeof(*conn))))
+	if (!(conn = SMB_MALLOC_P(struct winbindd_cm_conn)))
 		return NT_STATUS_NO_MEMORY;
 		
 	ZERO_STRUCTP(conn);

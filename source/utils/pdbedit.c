@@ -429,10 +429,10 @@ static int new_user (struct pdb_context *in, const char *username,
 	}
 
 	staticpass = getpass("new password:");
-	password1 = strdup(staticpass);
+	password1 = SMB_STRDUP(staticpass);
 	memset(staticpass, 0, strlen(staticpass));
 	staticpass = getpass("retype new password:");
-	password2 = strdup(staticpass);
+	password2 = SMB_STRDUP(staticpass);
 	memset(staticpass, 0, strlen(staticpass));
 	if (strcmp (password1, password2)) {
 		fprintf (stderr, "Passwords does not match!\n");

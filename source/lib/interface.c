@@ -65,7 +65,7 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 		return;
 	}
 
-	iface = (struct interface *)malloc(sizeof(*iface));
+	iface = SMB_MALLOC_P(struct interface);
 	if (!iface) return;
 	
 	ZERO_STRUCTPN(iface);
@@ -207,7 +207,7 @@ void load_interfaces(void)
 
 	if (ptr) {
 		while (*ptr) {
-			char *ptr_cpy = strdup(*ptr);
+			char *ptr_cpy = SMB_STRDUP(*ptr);
 			if (ptr_cpy) {
 				interpret_interface(ptr_cpy);
 				free(ptr_cpy);

@@ -147,7 +147,7 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 		set_socket_options(dgram_sock,"SO_BROADCAST");
 	}
 
-	subrec = (struct subnet_record *)malloc(sizeof(*subrec));
+	subrec = SMB_MALLOC_P(struct subnet_record);
 	if (!subrec) {
 		DEBUG(0,("make_subnet: malloc fail !\n"));
 		close(nmb_sock);
@@ -160,7 +160,7 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 			namelist_entry_compare,
 			ubi_trOVERWRITE );
 
-	if((subrec->subnet_name = strdup(name)) == NULL) {
+	if((subrec->subnet_name = SMB_STRDUP(name)) == NULL) {
 		DEBUG(0,("make_subnet: malloc fail for subnet name !\n"));
 		close(nmb_sock);
 		close(dgram_sock);

@@ -70,7 +70,7 @@ BOOL init_pipe_handle_list(pipes_struct *p, char *pipe_name)
 		 * Create list.
 		 */
 
-		if ((hl = (struct handle_list *)malloc(sizeof(struct handle_list))) == NULL)
+		if ((hl = SMB_MALLOC_P(struct handle_list)) == NULL)
 			return False;
 		ZERO_STRUCTP(hl);
 
@@ -112,7 +112,7 @@ BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *)
 		return False;
 	}
 
-	pol = (struct policy *)malloc(sizeof(*p));
+	pol = SMB_MALLOC_P(struct policy);
 	if (!pol) {
 		DEBUG(0,("create_policy_hnd: ERROR: out of memory!\n"));
 		return False;

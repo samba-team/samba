@@ -346,7 +346,7 @@ BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 			
 	/* the trust's password */	
 	if (pwd) {
-		*pwd = strdup(pass.pass);
+		*pwd = SMB_STRDUP(pass.pass);
 		if (!*pwd) {
 			return False;
 		}
@@ -577,7 +577,7 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned in
 	size_t size, packed_size = 0;
 	fstring dom_name;
 	char *packed_pass;
-	struct trusted_dom_pass *pass = talloc_zero(ctx, sizeof(struct trusted_dom_pass));
+	struct trusted_dom_pass *pass = TALLOC_ZERO_P(ctx, struct trusted_dom_pass);
 	NTSTATUS status;
 
 	if (!secrets_init()) return NT_STATUS_ACCESS_DENIED;
@@ -599,7 +599,7 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned in
 	DEBUG(5, ("secrets_get_trusted_domains: looking for %d domains, starting at index %d\n", 
 		  max_num_domains, *enum_ctx));
 
-	*domains = talloc_zero(ctx, sizeof(**domains)*max_num_domains);
+	*domains = TALLOC_ZERO_ARRAY(ctx, TRUSTDOM *, max_num_domains);
 
 	/* fetching trusted domains' data and collecting them in a list */
 	keys = tdb_search_keys(tdb, pattern);
@@ -615,7 +615,7 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned in
 		char *secrets_key;
 		
 		/* important: ensure null-termination of the key string */
-		secrets_key = strndup(k->node_key.dptr, k->node_key.dsize);
+		secrets_key = SMB_STRNDUP(k->node_key.dptr, k->node_key.dsize);
 		if (!secrets_key) {
 			DEBUG(0, ("strndup failed!\n"));
 			return NT_STATUS_NO_MEMORY;
@@ -638,7 +638,7 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned in
 		SAFE_FREE(secrets_key);
 
 		if (idx >= start_idx && idx < start_idx + max_num_domains) {
-			dom = talloc_zero(ctx, sizeof(*dom));
+			dom = TALLOC_ZERO_P(ctx, TRUSTDOM);
 			if (!dom) {
 				/* free returned tdb record */
 				return NT_STATUS_NO_MEMORY;

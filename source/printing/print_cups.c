@@ -909,7 +909,7 @@ cups_queue_get(const char *printer_name,
 		{
 			qalloc += 16;
 
-			temp = Realloc(queue, sizeof(print_queue_struct) * qalloc);
+			temp = SMB_REALLOC_ARRAY(queue, print_queue_struct, qalloc);
 
 			if (temp == NULL)
 			{

@@ -58,11 +58,12 @@ static char *nttrans_realloc(char **ptr, size_t size)
 	if (ptr==NULL)
 		smb_panic("nttrans_realloc() called with NULL ptr\n");
 		
-	tptr = Realloc_zero(*ptr, size);
+	tptr = SMB_REALLOC(*ptr, size);
 	if(tptr == NULL) {
 		*ptr = NULL;
 		return NULL;
 	}
+	memset(tptr,'\0',size);
 
 	*ptr = tptr;
 
@@ -2139,7 +2140,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 			return ERROR_NT(NT_STATUS_NO_MEMORY);
 		}
 
-		shadow_data = (SHADOW_COPY_DATA *)talloc_zero(shadow_mem_ctx,sizeof(SHADOW_COPY_DATA));
+		shadow_data = TALLOC_ZERO_P(shadow_mem_ctx,SHADOW_COPY_DATA);
 		if (shadow_data == NULL) {
 			DEBUG(0,("talloc_zero() failed!\n"));
 			return ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -2449,6 +2450,10 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 			}
 
 			sid_len = IVAL(pdata,4);
+			/* Ensure this is less than 1mb. */
+			if (sid_len > (1024*1024)) {
+				return ERROR_DOS(ERRDOS,ERRnomem);
+			}
 
 			if (data_count < 8+sid_len) {
 				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %lu bytes data\n",data_count,(unsigned long)(8+sid_len)));
@@ -2703,15 +2708,21 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 			CVAL(inbuf, smb_wct), 19 + (setup_count/2)));
 		goto bad_param;
 	}
-    
+
+	/* Don't allow more than 128mb for each value. */
+	if ((total_parameter_count > (1024*1024*128)) || (total_data_count > (1024*1024*128))) {
+		END_PROFILE(SMBnttrans);
+		return ERROR_DOS(ERRDOS,ERRnomem);
+	}
+
 	/* Allocate the space for the setup, the maximum needed parameters and data */
 
 	if(setup_count > 0)
-		setup = (char *)malloc(setup_count);
+		setup = (char *)SMB_MALLOC(setup_count);
 	if (total_parameter_count > 0)
-		params = (char *)malloc(total_parameter_count);
+		params = (char *)SMB_MALLOC(total_parameter_count);
 	if (total_data_count > 0)
-		data = (char *)malloc(total_data_count);
+		data = (char *)SMB_MALLOC(total_data_count);
  
 	if ((total_parameter_count && !params)  || (total_data_count && !data) ||
 				(setup_count && !setup)) {
