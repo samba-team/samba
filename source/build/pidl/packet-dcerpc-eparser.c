@@ -2,6 +2,8 @@
 #include "config.h"
 #endif
 
+#include "tvbuff.h"
+
 #include "packet-dcerpc.h"
 #include "packet-dcerpc-nt.h"
 #include "packet-dcerpc-eparser.h"
@@ -20,13 +22,12 @@ struct e_ndr_pull *ndr_pull_init(tvbuff_t *tvb, int offset, packet_info *pinfo,
 
 	ndr = (struct e_ndr_pull *)g_malloc(sizeof(*ndr));
 	
-	ndr->tvb = tvb;
-	ndr->offset = offset;
+	ndr->tvb = tvb_new_subset(tvb, offset, -1, -1);
+	ndr->offset = 0;
 	ndr->pinfo = pinfo;
 	ndr->tree = tree;
 	ndr->drep = drep;
 	ndr->flags = NDR_SCALARS|NDR_BUFFERS;
-
 	return ndr;
 }
 
@@ -340,7 +341,7 @@ void ndr_pull_subcontext_flags_fn(struct e_ndr_pull *ndr, size_t sub_size,
 	ndr_pull_subcontext_header(ndr, sub_size, &ndr2);
 	fn(&ndr2, NDR_SCALARS|NDR_BUFFERS);
 	if (sub_size) {
-//		ndr_pull_advance(ndr, ndr2.data_size);
+		ndr_pull_advance(ndr, tvb_length(ndr2.tvb));
 	} else {
 		ndr_pull_advance(ndr, ndr2.offset);
 	}
@@ -366,22 +367,99 @@ void ndr_pull_struct_end(struct e_ndr_pull *ndr)
 	ndr->ofs_list = ndr->ofs_list->next;
 }
 
-void ndr_pull_subcontext_header(struct e_ndr_pull *ndr, 
-				size_t sub_size,
-				struct e_ndr_pull *ndr2)
+void ndr_pull_subcontext(struct e_ndr_pull *ndr, struct e_ndr_pull *ndr2, guint32 size)
 {
-	ndr2->tvb = ndr->tvb;
-	ndr2->offset = ndr->offset;
+	ndr2->tvb = tvb_new_subset(
+		ndr->tvb, ndr->offset, 
+		(tvb_length_remaining(ndr->tvb, ndr->offset) > size) ? size :
+		tvb_length_remaining(ndr->tvb, ndr->offset),
+		(tvb_reported_length_remaining(ndr->tvb, ndr->offset) > size) ? size :
+		tvb_reported_length_remaining(ndr->tvb, ndr->offset));
+
+	ndr2->offset = 0;
+	ndr2->flags = ndr->flags;
+
 	ndr2->pinfo = ndr->pinfo;
 	ndr2->tree = ndr->tree;
 	ndr2->drep = ndr->drep;
 	ndr2->ofs_list = ndr->ofs_list;
-	ndr2->flags = ndr->flags;
 }
+
+static int hf_subcontext_size_2 = -1;
+static int hf_subcontext_size_4 = -1;
+
+void ndr_pull_subcontext_header(struct e_ndr_pull *ndr, 
+				size_t sub_size,
+				struct e_ndr_pull *ndr2)
+{
+	switch (sub_size) {
+	case 0: {
+		guint32 size = tvb_length(ndr->tvb) - ndr->offset;
+		if (size == 0) return;
+		ndr_pull_subcontext(ndr, ndr2, size);
+		break;
+	}
+
+	case 2: {
+		guint16 size;
+		ndr_pull_uint16(ndr, hf_subcontext_size_2, &size);
+		if (size == 0) return;
+		ndr_pull_subcontext(ndr, ndr2, size);
+		break;
+	}
+
+	case 4: {
+		guint32 size;
+		ndr_pull_uint32(ndr, hf_subcontext_size_4, &size);
+		if (size == 0) return;
+		ndr_pull_subcontext(ndr, ndr2, size);
+		break;
+	}
+	default:
+//		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext size %d", sub_size);
+	}
+}
+
+/* save the offset/size of the current ndr state */
+void ndr_pull_save(struct e_ndr_pull *ndr, struct ndr_pull_save *save)
+{
+	save->offset = ndr->offset;
+}
+
+/* restore the size/offset of a ndr structure */
+void ndr_pull_restore(struct e_ndr_pull *ndr, struct ndr_pull_save *save)
+{
+	ndr->offset = save->offset;
+}
+
+void ndr_pull_set_offset(struct e_ndr_pull *ndr, guint32 ofs)
+{
+	ndr->offset = ofs;
+}
+
+static int hf_relative_ofs = -1;
 
 void ndr_pull_relative(struct e_ndr_pull *ndr,
 		       void (*fn)(struct e_ndr_pull *, int ndr_flags))
 {
+	struct e_ndr_pull ndr2;
+	guint32 ofs;
+	struct ndr_pull_save save;
+
+	ndr_pull_uint32(ndr, hf_relative_ofs, &ofs);
+	if (ofs == 0) {
+		return;
+	}
+	ndr_pull_save(ndr, &save);
+	ndr_pull_set_offset(ndr, ofs + ndr->ofs_list->offset);
+	ndr_pull_subcontext(ndr, &ndr2, tvb_length(ndr->tvb) - ndr->offset);
+	/* strings must be allocated by the backend functions */
+	if (ndr->flags & LIBNDR_STRING_FLAGS) {
+		fn(&ndr2, NDR_SCALARS|NDR_BUFFERS);
+	} else {
+		fn(&ndr2, NDR_SCALARS|NDR_BUFFERS);
+	}
+	ndr_pull_restore(ndr, &save);
 }
 
 int lsa_dissect_LSA_SECURITY_DESCRIPTOR(tvbuff_t tvb, int offset,
@@ -432,9 +510,20 @@ void ndr_pull_array_uint32(struct e_ndr_pull *ndr, int hf, int ndr_flags, guint3
 	}
 }
 
-void ndr_pull_array(struct e_ndr_pull *ndr, int ndr_flags, guint32 n, 
-		    void (*fn)(struct e_ndr_pull *, int ndr_flags))
+void ndr_pull_array(struct e_ndr_pull *ndr, int ndr_flags, guint32 count,
+		    void (*pull_fn)(struct e_ndr_pull *, int ndr_flags))
 {
+	int i;
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	for (i=0;i<count;i++) {
+		pull_fn(ndr, NDR_SCALARS);
+	}
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+buffers:
+	for (i=0;i<count;i++) {
+		pull_fn(ndr, NDR_BUFFERS);
+	}
+ done: ;
 }
 
 void proto_register_eparser(void)
@@ -444,6 +533,9 @@ void proto_register_eparser(void)
 	{ &hf_string4_offset, { "String4 offset", "eparser.string4_offset", FT_UINT32, BASE_DEC, NULL, 0x0, "String4 offset", HFILL }},
 	{ &hf_string4_len2, { "String4 length2", "eparser.string4_length2", FT_UINT32, BASE_DEC, NULL, 0x0, "String4 length2", HFILL }},
 	{ &hf_string_data, { "String data", "eparser.string_data", FT_BYTES, BASE_NONE, NULL, 0x0, "String data", HFILL }},
+	{ &hf_subcontext_size_2, { "Subcontext size2", "eparser.subcontext_size2", FT_UINT16, BASE_DEC, NULL, 0x0, "Subcontext size2", HFILL }},
+	{ &hf_subcontext_size_4, { "Subcontext size4", "eparser.subcontext_size4", FT_UINT16, BASE_DEC, NULL, 0x0, "Subcontext size4", HFILL }},
+	{ &hf_relative_ofs, { "Relative offset", "eparser.relative_offset", FT_UINT32, BASE_DEC, NULL, 0x0, "Relative offset", HFILL }},
 	};
 
 	int proto_dcerpc;

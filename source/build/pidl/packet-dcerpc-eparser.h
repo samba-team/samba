@@ -41,6 +41,11 @@ struct e_ndr_pull {
 	int flags;
 };
 
+struct ndr_pull_save {
+	guint32 offset;
+	struct ndr_pull_save *next;
+};
+
 /* offset lists are used to allow a push/pull function to find the
    start of an encapsulating structure */
 struct ndr_ofs_list {
@@ -50,8 +55,6 @@ struct ndr_ofs_list {
 
 typedef long long gNTTIME;
 typedef long long gHYPER_T;
-//typedef unsigned long long guint64;
-//typedef long long gint64;
 
 #include "packet-dcerpc-proto.h"
 
