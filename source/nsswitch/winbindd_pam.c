@@ -77,7 +77,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 					state->request.data.auth.pass,
 					passlen,
 					state->request.data.auth.pass,
-					passlen, &user_exists);
+					passlen, &user_exists, NULL);
 
 	return result ? WINBINDD_OK : WINBINDD_ERROR;
 }
