@@ -35,6 +35,10 @@
 
 #include "ftp_locl.h"
 
+#ifndef INADDR_NONE
+#define INADDR_NONE 0xffffffff
+#endif
+
 struct	sockaddr_in hisctladdr;
 struct	sockaddr_in data_addr;
 int	data = -1;
@@ -58,7 +62,8 @@ hookup(char *host, int port)
 	static char hostnamebuf[80];
 
 	memset((char *)&hisctladdr, 0, sizeof (hisctladdr));
-	if (inet_aton(host, &hisctladdr.sin_addr) != 0) {
+	hisctladdr.sin_addr.s_addr = inet_addr(host);
+	if (hisctladdr.sin_addr.s_addr != INADDR_NONE) {
 		hisctladdr.sin_family = AF_INET;
 		(void) strncpy(hostnamebuf, host, sizeof(hostnamebuf));
 	} else {
