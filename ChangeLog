@@ -1,3 +1,7 @@
+2003-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1/k5.asn1: add ETYPE-INFO2 and ETYPE-INFO2-ENTRY
+	
 2003-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krbhst.c: copy NUL too, from janj@wenf.org via openbsd
