@@ -212,8 +212,12 @@ generalizedtime2time (char *s, time_t *t)
   tm.tm_isdst = 0;
 
   *t = mktime(&tm);
-#if 1 /* XXX */
+#ifdef HAVE_STRUCT_TM_TM_GMTOFF
+  *t += tm.tm_gmtoff;
+#elif defined(HAVE_TIMEZONE)
   *t -= timezone;
+#else
+#error Cannot figure out where in timezoneworld we are
 #endif
 }
 
