@@ -301,6 +301,9 @@ MSGTEST_OBJ = utils/msgtest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 LOCKTEST_OBJ = utils/locktest.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
+TESTRESOLVCONF_OBJ = libsmb/testresolvconf.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
+                 $(UBIQX_OBJ) $(LIB_OBJ)
+
 SMBCACLS_OBJ = utils/smbcacls.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
 				$(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
 				$(LIBMSRPC_OBJ)
@@ -548,6 +551,10 @@ bin/rpctorture: $(RPCTORTURE_OBJ) bin/.dummy
 bin/debug2html: $(DEBUG2HTML_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(DEBUG2HTML_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/testresolvconf: $(TESTRESOLVCONF_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(TESTRESOLVCONF_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbfilter: $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@
