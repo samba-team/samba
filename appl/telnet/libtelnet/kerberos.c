@@ -394,7 +394,10 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 		    Data(ap, KRB_FORWARD_REJECT, "Bad credentials", -1);
 		}else{
 		    if((ret = tf_setup(&cred) == KSUCCESS)){
-			chown(tkt_string(), pw->pw_uid, pw->pw_gid);
+		        struct passwd *pw = getpwnam(UserNameRequested);
+
+			if (pw)
+			  chown(tkt_string(), pw->pw_uid, pw->pw_gid);
 			Data(ap, KRB_FORWARD_ACCEPT, 0, 0);
 		    } else{
 			Data(ap, KRB_FORWARD_REJECT, 
@@ -597,7 +600,7 @@ pack_cred(CREDENTIALS *cred, unsigned char *buf)
     p += 8;
     *p++ = cred->lifetime;
     *p++ = cred->kvno;
-    p += krb_put_int(cred->ticket_st.length);
+    p += krb_put_int(cred->ticket_st.length, p, 4);
     memcpy(p, cred->ticket_st.dat, cred->ticket_st.length);
     p += cred->ticket_st.length;
     p += krb_put_int(cred->issue_date, p, 4);
@@ -614,7 +617,7 @@ unpack_cred(unsigned char *buf, int len, CREDENTIALS *cred)
     p += 8;
     cred->lifetime = *p++;
     cred->kvno = *p++;
-    p += krb_get_int(p, &cred->ticket_st.length);
+    p += krb_get_int(p, &cred->ticket_st.length, 4, 0);
     memcpy(cred->ticket_st.dat, p, cred->ticket_st.length);
     cred->ticket_st.mbz = 0;
     p += krb_get_int(p, &cred->issue_date, 4, 0);
