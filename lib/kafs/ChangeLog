@@ -1,3 +1,9 @@
+2001-10-24  Assar Westerlund  <assar@sics.se>
+
+	* afskrb.c (afslog_uid_int): handle krb_get_tf_fullname that
+	cannot take NULLs
+	(such as the MIT one)
+
 2001-10-22  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (ROKEN_SRCS): add strlcpy.c
