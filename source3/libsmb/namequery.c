@@ -191,7 +191,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	if (i == count)
 		goto done;
 
-	pull_ascii(name, status[i].name, 15, 0, STR_TERMINATE);
+	pull_ascii(name, status[i].name, 15, -1, STR_TERMINATE);
 	result = True;
 
  done:
