@@ -5,6 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 SUBDIRS = kadm5
 
 noinst_PROGRAMS = bits
+CHECK_LOCAL =
 
 INCLUDES = -DHOST=\"$(CANONICAL_HOST)\"
 
