@@ -12,6 +12,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <X11/StringDefs.h>
 #include <X11/Intrinsic.h>
 #include <X11/keysym.h>
@@ -122,10 +123,9 @@ static XrmOptionDescRec options[] = {
 };
 
 static char *
-get_words(argv)
-char **argv;
+get_words(char **argv)
 {
-    FILE *pp;
+    FILE *pp = 0;
     static char buf[BUFSIZ];
     register char *p = buf;
 
@@ -167,9 +167,7 @@ char **argv;
 }
 
 static void
-init_words (argc, argv)
-int argc;
-char *argv[];
+init_words (int argc, char **argv)
 {
     char buf[BUFSIZ];
 
@@ -219,8 +217,7 @@ char *argv[];
 }
 
 static void
-ScreenSaver(save)
-     int save;
+ScreenSaver(int save)
 {
     static int timeout, interval, prefer_blank, allow_exp;
     if (save) {
@@ -231,13 +228,13 @@ ScreenSaver(save)
 	XSetScreenSaver(dpy, timeout, interval, prefer_blank, allow_exp);
 }
 
-/* XXX */
+/* Forward decls necessary */
 static void talk(int force_erase);
 static unsigned long look(void);
 
 
 static void
-leave()
+leave(void)
 {
 #if 0
     XUngrabServer(dpy);
@@ -250,8 +247,7 @@ leave()
 }
 
 static void
-walk(dir)
-register int dir;
+walk(int dir)
 {
     register int incr = 0;
     static int lastdir;
@@ -314,7 +310,7 @@ register int dir;
 }
 
 static int
-think()
+think(void)
 {
     if (rand() & 1)
 	walk(FRONT);
@@ -327,7 +323,7 @@ think()
 }
 
 static void
-move()
+move(XtPointer _p, XtIntervalId *_id)
 {
     static int length, dir;
 
@@ -385,8 +381,7 @@ move()
 }
 
 static void
-post_prompt_box(window)
-Window window;
+post_prompt_box(Window window)
 {
     char s[32];
     int width = (Width / 3);
@@ -430,10 +425,9 @@ Window window;
 }
 
 static void
-ClearWindow(w, event)
-Widget w;
-XExposeEvent *event;
+ClearWindow(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 {
+    XExposeEvent *event = (XExposeEvent *)_event;
     if (!XtIsRealized(w))
 	return;
     XSetForeground(dpy, gc, Black);
@@ -454,18 +448,15 @@ XExposeEvent *event;
 }
 
 static void
-Visibility(w, client_data, event)
-Widget w;
-XtPointer client_data;
-XVisibilityEvent *event;
+Visibility(Widget w, XtPointer client_data, XEvent *event, Boolean *_b)
 {
     XRaiseWindow(dpy, XtWindow(w));
 }
 
 static void
-countdown(timeout)
-int *timeout;
+countdown(XtPointer _t, XtIntervalId *_d)
 {
+    int *timeout = _t;
     char buf[16];
 
     if (--(*timeout) < 0) {
@@ -474,7 +465,7 @@ int *timeout;
 	state = IS_MOVING;
 	event.x = event.y = 0;
 	event.width = Width, event.height = Height;
-	ClearWindow(widget, &event);
+	ClearWindow(widget, (XEvent *)&event, 0, 0);
 	timeout_id = XtAppAddTimeOut(app, 200L, move, NULL);
 	return;
     }
@@ -485,10 +476,9 @@ int *timeout;
 }
 
 static void
-GetPasswd(w, event)
-Widget w;
-XKeyEvent *event;
+GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 {
+    XKeyEvent *event = (XKeyEvent *)_event;
     static char passwd[MAX_PASSWD_LENGTH];
     static int cnt;
     char c;
@@ -507,7 +497,7 @@ XKeyEvent *event;
 	post_prompt_box(XtWindow(w));
 	cnt = 0;
 	time_left = 30;
-	countdown(&time_left);
+	countdown(&time_left, 0);
 	return;
     }
     if (event->type != KeyPress)
@@ -593,7 +583,7 @@ XKeyEvent *event;
 #include "nose.down"
 
 static void
-init_images()
+init_images(void)
 {
     static Pixmap *images[] = {
 	&left0, &left1, &right0, &right1,
@@ -614,14 +604,13 @@ init_images()
 }
 
 static void
-talk(force_erase)
-int force_erase;
+talk(int force_erase)
 {
     int width = 0, height, Z, total = 0;
     static int X, Y, talking;
     static struct { int x, y, width, height; } s_rect;
     register char *p, *p2;
-    char buf[BUFSIZ], *strcpy(), *index(), args[MAXLINES][256];
+    char buf[BUFSIZ], args[MAXLINES][256];
 
     /* clear what we've written */
     if (talking || force_erase) {
@@ -732,7 +721,7 @@ int force_erase;
 }
 
 static unsigned long
-look()
+look(void)
 {
     if (rand() % 3) {
 	XCopyPlane(dpy, (rand() & 1)? down : front, XtWindow(widget), gc,
@@ -754,9 +743,7 @@ look()
 }
 
 int
-main (argc, argv)
-int argc;
-char *argv[];
+main (int argc, char **argv)
 {
     register int i;
     int foo;
