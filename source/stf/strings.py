@@ -42,16 +42,28 @@ class StrCaseCmp_Ascii_Tests(comfychair.TestCase):
                       "  result=%s\n" % (`a`, `b`, `expect`, `out`))
 
     def runtest(self):
+        # A, B, strcasecmp(A, B)
         cases = [('hello', 'hello', 0),
                  ('hello', 'goodbye', +1),
                  ('goodbye', 'hello', -1),
-                 ('hell', 'hello', -1)]
+                 ('hell', 'hello', -1),
+                 ('', '', 0),
+                 ('a', '', +1),
+                 ('', 'a', -1),
+                 ('a', 'A', 0),
+                 ('aa', 'aA', 0),
+                 ('Aa', 'aa', 0),
+                 ('longstring ' * 100, 'longstring ' * 100, 0),
+                 ('longstring ' * 100, 'longstring ' * 100 + 'a', -1),
+                 ('longstring ' * 100 + 'a', 'longstring ' * 100, +1),
+                 ]
         for a, b, expect in cases:
             self.run_strcmp(a, b, expect)
         
-
+# Define the tests exported by this module
 tests = [StrCaseCmp_Ascii_Tests]
 
+# Handle execution of this file as a main program
 if __name__ == '__main__':
     comfychair.main(tests)
 
