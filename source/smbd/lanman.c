@@ -1156,7 +1156,7 @@ static int get_server_info(uint32 servertype,
     if (!next_token(&ptr,s->comment, NULL, sizeof(s->comment))) continue;
     if (!next_token(&ptr,s->domain , NULL, sizeof(s->domain))) {
       /* this allows us to cope with an old nmbd */
-      pstrcpy(s->domain,lp_workgroup_dos()); 
+      fstrcpy(s->domain,lp_workgroup_dos()); 
     }
     
     if (sscanf(stype,"%X",&s->type) != 1) { 
