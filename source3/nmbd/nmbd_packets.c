@@ -1402,8 +1402,9 @@ static struct subnet_record *find_subnet_for_nmb_packet( struct packet_struct *p
     rrec = find_response_record( &subrec, nmb->header.name_trn_id);
     if(rrec == NULL)
     {
-      DEBUG(0,("find_subnet_for_nmb_packet: response record not found for response id %hu\n",
+      DEBUG(3,("find_subnet_for_nmb_packet: response record not found for response id %hu\n",
                nmb->header.name_trn_id));
+      unexpected_packet(p);
       return NULL;
     }
 
