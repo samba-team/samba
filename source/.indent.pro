@@ -1,0 +1,8 @@
+-ncs -cli8 -cbi0 -bli0 -bl -i8 -npsl -npcs -bbo
+-T BOOL
+-T pstring
+-T fstring
+-T tdb_len
+-T tdb_off
+-T LDAPDB
+-T PLDAPDB
