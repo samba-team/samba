@@ -53,7 +53,9 @@ return the length of a UNISTR string.
 static uint32 str_len_uni(UNISTR *source)
 {
  	uint32 i=0;
-	
+
+	if (!source->buffer) return 0;
+
 	while (source->buffer[i]!=0x0000)
 	{
 	 i++;
@@ -792,6 +794,8 @@ BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 				const UNISTR2 *valuename,
 				uint32 size)
 {
+	int len_name = valuename != NULL ? strlen(valuename) : 0;
+
 	if (q_u == NULL) return False;
 
 	DEBUG(5,("make_spoolss_q_getprinterdata\n"));
@@ -2462,8 +2466,9 @@ uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info)
 	size+=size_of_relative_string( &info->defaultdatatype );
 	
 	string=info->dependentfiles;
-	
-	for (i=0; (string[i]!=0x0000) || (string[i+1]!=0x0000); i++);
+	if (string) {
+		for (i=0; (string[i]!=0x0000) || (string[i+1]!=0x0000); i++);
+	}
 
 	i=i+2; /* to count all chars including the leading zero */
 	i=2*i; /* because we need the value in bytes */
@@ -2918,6 +2923,8 @@ BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps
 ********************************************************************/  
 BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps, int depth)
 {
+	uint32 ptr_sec_desc = 0;
+
 	prs_debug(ps, depth, desc, "spoolss_io_q_setprinter");
 	depth++;
 
@@ -2935,8 +2942,24 @@ BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps
 	if (!spoolss_io_devmode_cont(desc, &q_u->devmode_ctr, ps, depth))
 		return False;
 	
-	if (!sec_io_desc_buf(desc, &q_u->secdesc_ctr, ps, depth))
-		return False;
+	switch (q_u->level)
+	{
+		case 2:
+		{
+			ptr_sec_desc = q_u->info.info_2->secdesc_ptr;
+			break;
+		}
+		case 3:
+		{
+			ptr_sec_desc = q_u->info.info_3->secdesc_ptr;
+			break;
+		}
+	}
+	if (ptr_sec_desc)
+	{
+		if (!sec_io_desc_buf(desc, &q_u->secdesc_ctr, ps, depth))
+			return False;
+	}
 	
 	if(!prs_uint32("command", ps, depth, &q_u->command))
 		return False;
@@ -3429,6 +3452,7 @@ BOOL spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 *il, p
 		return False;
 	if(!prs_uint32("portname_ptr", ps, depth, &il->portname_ptr))
 		return False;
+
 	if(!prs_uint32("drivername_ptr", ps, depth, &il->drivername_ptr))
 		return False;
 	if(!prs_uint32("comment_ptr", ps, depth, &il->comment_ptr))
@@ -3860,56 +3884,24 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
  dynamically allocate memory
  
 ********************************************************************/  
-static BOOL uniarray_2_dosarray(BUFFER5 *buf5, char ***ar)
+static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 {
-	char **array;
-	char *string;
-	char *destend;
-	char *dest;
-	uint32 n;
-	uint32 i;
-
-	uint16 *src;
+	fstring f;
+	int n = 0;
+	char *src;
 
 	if (buf5==NULL) return False;
 
-	array=NULL;
-	n=0;
-	i=0;
-	src=buf5->buffer;
+	src = (char *)buf5->buffer;
+	*ar = NULL;
 
-	string=(char *)malloc(sizeof(char)*buf5->buf_len);
-	if(string == NULL)
-		return False;
-
-	destend = string + buf5->buf_len;
-	dest=string;
-
-	while (dest < destend)
-	{
-		dest += unicode_to_dos_char(dest, (smb_ucs2_t)*(src++));
+	while (src < ((char *)buf5->buffer) + buf5->buf_len*2) {
+		unistr_to_dos(f, src, sizeof(f)-1);
+		src = skip_unibuf(src, 2*buf5->buf_len - PTR_DIFF(src,buf5->buffer));
+		*ar = (fstring *)Realloc(*ar, sizeof(fstring)*(n+2));
+		fstrcpy((*ar)[n], f);
 	}
-		
-	/* that ugly for the first one but that's working */
-	array=(char **)Realloc(array, sizeof(char *)*(i+1));
-	if(array == NULL)
-		return False;
-	array[i++]=string;
-	
-	while ( n < buf5->buf_len )
-	{
-		if ( *(string++) == '\0' )
-		{
-			array=(char **)Realloc(array, sizeof(char *)*(i+1));
-			if(array == NULL)
-				return False;
-			array[i++]=string;			
-		}
-		n++;
-	}		
-	*ar=array;
-	
-	DEBUG(10,("Number of dependent files: [%d]\n", i-1));
+	fstrcpy((*ar)[n], "");
 
 	return True;
 }
@@ -3962,7 +3954,6 @@ BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LE
 				return False;
 			break;		
 	default:
-		prs_dump("spool_io_printer_driver_info_level", il->level, ps);
 		return False;
 	}
 
@@ -4139,9 +4130,8 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 
 	unix_to_nt_time(&time_nt, time_unix);
 	d->changeid=time_nt.low;
-	
 	d->c_setprinter++;
-
+	
 	unistr2_to_ascii(d->servername, &uni->servername, sizeof(d->servername)-1);
 	unistr2_to_ascii(d->printername, &uni->printername, sizeof(d->printername)-1);
 	unistr2_to_ascii(d->sharename, &uni->sharename, sizeof(d->sharename)-1);

@@ -1319,3 +1319,33 @@ void prs_tdb_fetch(TDB_CONTEXT * tdb, prs_struct *pk, prs_struct *pd)
 
 	prs_create(pd, data.dptr, data.dsize, 4, True);
 }
+
+
+/* useful function to store a structure in rpc wire format */
+int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
+{
+	TDB_DATA kbuf, dbuf;
+	kbuf.dptr = keystr;
+	kbuf.dsize = strlen(keystr)+1;
+	dbuf.dptr = (char *)prs_data(ps, 0);
+	dbuf.dsize = prs_buf_len(ps);
+
+	return tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+}
+
+/* useful function to fetch a structure into rpc wire format */
+int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
+{
+	TDB_DATA kbuf, dbuf;
+	kbuf.dptr = keystr;
+	kbuf.dsize = strlen(keystr)+1;
+
+	dbuf = tdb_fetch(tdb, kbuf);
+	if (!dbuf.dptr) return -1;
+
+	ZERO_STRUCTP(ps);
+	prs_create(ps, dbuf.dptr, dbuf.dsize, 4, UNMARSHALL);
+
+	return 0;
+}
+

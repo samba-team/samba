@@ -217,6 +217,10 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
   DEBUG(3,("trans2open %s mode=%d attr=%d ofun=%d size=%d\n",
 	   fname,open_mode, open_attr, open_ofun, open_size));
 
+  if (IS_IPC(conn)) {
+		return(ERROR(ERRSRV,ERRaccess));
+  }
+
   /* XXXX we need to handle passed times, sattr and flags */
 
   unix_convert(fname,conn,0,&bad_path,NULL);
@@ -2233,6 +2237,9 @@ int reply_trans2(connection_struct *conn,
 		return -1;
 	}
 	
+	if (IS_IPC(conn) && (tran_call != TRANSACT2_OPEN)) 
+		return(ERROR(ERRSRV,ERRaccess));
+
 	outsize = set_message(outbuf,0,0,True);
 
 	/* All trans2 messages we handle have smb_sucnt == 1 - ensure this

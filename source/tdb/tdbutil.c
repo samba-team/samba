@@ -194,13 +194,13 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 		case 'd':
 			len = 4;
 			d = va_arg(ap, uint32 *);
-			if (bufsize >= len) goto no_space;
+			if (bufsize < len) goto no_space;
 			*d = IVAL(buf, 0);
 			break;
 		case 'p':
 			len = 4;
 			p = va_arg(ap, void **);
-			if (bufsize >= len) goto no_space;
+			if (bufsize < len) goto no_space;
 			*p = (void *)IVAL(buf, 0);
 			break;
 		case 'f':
@@ -213,14 +213,14 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 			i = va_arg(ap, int *);
 			b = va_arg(ap, char **);
 			len = 4;
-			if (bufsize >= len) {
-				*i = IVAL(buf, 0);
-				len += *i;
-				if (bufsize >= len) {
-					*b = (char *)malloc(*i);
-					memcpy(*b, buf+4, *i);
-				}
-			}
+			if (bufsize < len) goto no_space;
+			*i = IVAL(buf, 0);
+			if (! *i) break;
+			len += *i;
+			if (bufsize < len) goto no_space;
+			*b = (char *)malloc(*i);
+			if (! *b) goto no_space;
+			memcpy(*b, buf+4, *i);
 			break;
 		default:
 			DEBUG(0,("Unknown tdb_unpack format %c in %s\n", 

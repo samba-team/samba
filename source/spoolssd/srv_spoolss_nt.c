@@ -579,7 +579,11 @@ static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *u
 	switch (level) {
 		case 3: 
 			printer->info_3=NULL;
-			uni_2_asc_printer_driver_3(uni->info_3, &(printer->info_3));						
+			uni_2_asc_printer_driver_3(uni->info_3, &(printer->info_3));
+			break;
+		case 6: 
+			printer->info_6=NULL;
+			uni_2_asc_printer_driver_6(uni->info_6, &(printer->info_6));
 			break;
 		default:
 			break;
@@ -590,8 +594,8 @@ static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *u
 
 static BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode)
 {
-	unistr_to_ascii(nt_devmode->devicename, (char *)devmode.devicename.buffer, 31);
-	unistr_to_ascii(nt_devmode->formname, (char *)devmode.formname.buffer, 31);
+	unistr_to_dos(nt_devmode->devicename, (char *)devmode.devicename.buffer, 31);
+	unistr_to_dos(nt_devmode->formname, (char *)devmode.formname.buffer, 31);
 
 	nt_devmode->specversion=devmode.specversion;
 	nt_devmode->driverversion=devmode.driverversion;
@@ -893,7 +897,7 @@ static void spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
 {
 	pstring temp_name;
 
-	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
+	snprintf(temp_name, sizeof(temp_name)-1, "\\\\%s", global_myname);
 
 	data->notify_data.data.length=strlen(temp_name);
 	ascii_to_unistr((char *)data->notify_data.data.string, temp_name, sizeof(data->notify_data.data.string)-1);
@@ -1649,6 +1653,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, fstring 
 	counter_printer_0 *session_counter;
 	uint32 global_counter;
 	struct tm *t;
+	time_t setup_time;
 
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
@@ -1699,7 +1704,8 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, fstring 
 	printer->total_jobs = 0;
 	printer->total_bytes = 0;
 
-	t=gmtime(&ntprinter.info_2->setuptime);
+	t=gmtime(&setup_time);
+	ntprinter.info_2->setuptime = (uint32)setup_time; /* FIXME !! */
 
 	printer->year = t->tm_year+1900;
 	printer->month = t->tm_mon+1;
@@ -2467,6 +2473,9 @@ static void construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum,
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 
+	ZERO_STRUCT(driver);
+	ZERO_STRUCT(printer);
+
 	get_a_printer(&printer, 2, lp_servicename(snum) );
 	get_a_printer_driver(&driver, 3, printer.info_2->drivername, architecture);	
 	
@@ -2492,7 +2501,7 @@ static void fill_printer_driver_info_2(DRIVER_INFO_2 *info,
 
 	get_short_archi(short_archi,architecture);
 	
-	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\", servername, short_archi);
+	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\%s\\", servername, short_archi, driver.info_3->name);
 
 	info->version=driver.info_3->cversion;
 
@@ -2520,7 +2529,10 @@ static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fstri
 {
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	
+
+	ZERO_STRUCT(printer);
+	ZERO_STRUCT(driver);
+
 	get_a_printer(&printer, 2, lp_servicename(snum) );
 	get_a_printer_driver(&driver, 3, printer.info_2->drivername, architecture);	
 
@@ -2535,7 +2547,7 @@ static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fstri
  *
  * convert an array of ascii string to a UNICODE string
  ********************************************************************/
-static void init_unistr_array(uint16 **uni_array, char **char_array, char *where)
+static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *where)
 {
 	int i=0;
 	int j=0;
@@ -2545,7 +2557,8 @@ static void init_unistr_array(uint16 **uni_array, char **char_array, char *where
 	DEBUG(6,("init_unistr_array\n"));
 	*uni_array=NULL;
 
-	for (v=char_array[i]; *v!='\0'; v=char_array[i]) {
+	while (1) {
+		v = char_array[i];
 		snprintf(line, sizeof(line)-1, "%s%s", where, v);
 		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
 		if((*uni_array=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL) {
@@ -2555,9 +2568,12 @@ static void init_unistr_array(uint16 **uni_array, char **char_array, char *where
 		ascii_to_unistr((char *)(*uni_array+j), line , 2*strlen(line));
 		j+=strlen(line)+1;			
 		i++;
+		if (strlen(v) == 0) break;
 	}
 	
-	(*uni_array)[j]=0x0000;
+	if (*uni_array) {
+		(*uni_array)[j]=0x0000;
+	}
 	
 	DEBUGADD(6,("last one:done\n"));
 }
@@ -2579,8 +2595,8 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info,
 	
 	get_short_archi(short_archi, architecture);
 	
-	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\", servername, short_archi);
-	
+	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\%s\\", servername, short_archi, driver.info_3->name);
+
 	info->version=driver.info_3->cversion;
 
 	init_unistr( &(info->name),         driver.info_3->name );	
@@ -2614,14 +2630,14 @@ static void construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum,
 {	
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	
+
+	ZERO_STRUCT(printer);
+	ZERO_STRUCT(driver);
+
 	get_a_printer(&printer, 2, lp_servicename(snum) );	
 	get_a_printer_driver(&driver, 3, printer.info_2->drivername, architecture);	
 
 	fill_printer_driver_info_3(info, driver, servername, architecture);
-
-	free_a_printer_driver(driver, 3);
-	free_a_printer(printer, 2);
 }
 
 /****************************************************************************
@@ -2690,27 +2706,21 @@ static uint32 getprinterdriver2_level2(fstring servername, fstring architecture,
 ****************************************************************************/
 static uint32 getprinterdriver2_level3(fstring servername, fstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
-	DRIVER_INFO_3 *info=NULL;
-	
-	if((info=(DRIVER_INFO_3 *)malloc(sizeof(DRIVER_INFO_3)))==NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
-	
-	construct_printer_driver_info_3(info, snum, servername, architecture);
+	DRIVER_INFO_3 info;
+
+	ZERO_STRUCT(info);
+
+	construct_printer_driver_info_3(&info, snum, servername, architecture);
 
 	/* check the required size. */	
-	*needed += spoolss_size_printer_driver_info_3(info);
+	*needed += spoolss_size_printer_driver_info_3(&info);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(info);
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
-	new_smb_io_printer_driver_info_3("", buffer, info, 0);	
-
-	/* clear memory */
-	safe_free(info->dependentfiles);
-	safe_free(info);
+	new_smb_io_printer_driver_info_3("", buffer, &info, 0);
 
 	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
@@ -2938,6 +2948,23 @@ static uint32 control_printer(const POLICY_HND *handle, uint32 command)
  * called by spoolss_api_setprinter
  * when updating a printer description
  ********************************************************************/
+static uint32 update_printer_sec(const POLICY_HND *handle, uint32 level,
+				 const SPOOL_PRINTER_INFO_LEVEL *info,
+				 const SEC_DESC_BUF *secdesc_ctr)
+{
+	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+
+	if (!OPEN_HANDLE(Printer))
+		return ERROR_INVALID_HANDLE;
+
+	return nt_printing_setsec(Printer->dev.printername, secdesc_ctr);
+}
+
+
+/********************************************************************
+ * called by spoolss_api_setprinter
+ * when updating a printer description
+ ********************************************************************/
 static uint32 update_printer(const POLICY_HND *handle, uint32 level,
                            const SPOOL_PRINTER_INFO_LEVEL *info,
                            const DEVICEMODE *devmode)
@@ -3007,6 +3034,7 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 			   const SPOOL_PRINTER_INFO_LEVEL *info,
 			   const DEVMODE_CTR devmode_ctr,
+			   const SEC_DESC_BUF *secdesc_ctr,
 			   uint32 command)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
@@ -3021,6 +3049,9 @@ uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 			break;
 		case 2:
 			return update_printer(handle, level, info, devmode_ctr.devmode);
+			break;
+		case 3:
+			return update_printer_sec(handle, level, info, secdesc_ctr);
 			break;
 		default:
 			return ERROR_INVALID_LEVEL;
@@ -3334,6 +3365,8 @@ static uint32 enumprinterdrivers_level1(fstring *list, fstring servername, fstri
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_1 *driver_info_1=NULL;
 
+	ZERO_STRUCT(driver);
+
 	if((driver_info_1=(DRIVER_INFO_1 *)malloc(*returned * sizeof(DRIVER_INFO_1))) == NULL)
 		return ERROR_NOT_ENOUGH_MEMORY;
 
@@ -3380,6 +3413,8 @@ static uint32 enumprinterdrivers_level2(fstring *list, fstring servername, fstri
 	int i;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_2 *driver_info_2=NULL;
+
+	ZERO_STRUCT(driver);
 
 	if (*returned > 0 && 
 	    !(driver_info_2=(DRIVER_INFO_2 *)malloc(*returned * sizeof(DRIVER_INFO_2))))
@@ -3428,6 +3463,8 @@ static uint32 enumprinterdrivers_level3(fstring *list, fstring servername, fstri
 	int i;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_3 *driver_info_3=NULL;
+
+	ZERO_STRUCT(driver);
 
 	if((driver_info_3=(DRIVER_INFO_3 *)malloc((*returned)*sizeof(DRIVER_INFO_3))) == NULL)
 		return ERROR_NOT_ENOUGH_MEMORY;
@@ -3478,7 +3515,7 @@ uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 
 				    uint32 *needed, uint32 *returned)
 {
 	int i;
-	fstring *list;
+	fstring *list = NULL;
 	fstring servername;
 	fstring architecture;
 
@@ -3817,6 +3854,51 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 	}
 }
 
+/****************************************************************************
+ Modify internal driver heirarchy.
+****************************************************************************/
+
+#if RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
+static uint32 modify_driver_heirarchy(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level)
+{
+	pstring path_old;
+	pstring path_new;
+	pstring short_archi;
+	/* find_service is an smbd-specific function call */
+	int snum = find_service("print$");
+	char *model = NULL;
+
+	*short_archi = '\0';
+	switch (level) {
+		case 3:
+			get_short_archi(short_archi, driver->info_3->environment);
+			model = driver->info_3->name;
+			break;
+		case 6:
+			get_short_archi(short_archi, driver->info_6->environment);
+			model = driver->info_6->name;
+			break;
+		default:
+			DEBUG(0,("modify_driver_heirarchy: unknown info level (%d)\n", level));
+			return ERROR_INVALID_LEVEL;
+			break;
+	}
+
+	slprintf(path_old, sizeof(path_old)-1, "%s/%s/TMP_%u", lp_pathname(snum), short_archi,
+		(unsigned int)sys_getpid());
+	slprintf(path_new, sizeof(path_new)-1, "%s/%s/%s", lp_pathname(snum), short_archi, model);
+
+	DEBUG(10,("_spoolss_addprinterdriver: old_path=%s, new_path=%s\n",
+			path_old, path_new ));
+	if (dos_rename(path_old, path_new) == -1) {
+		DEBUG(0,("modify_driver_heirarchy: rename failed (%s)\n", strerror(errno) ));
+		/* We need to clean up here.... - how ? */
+		return ERROR_ACCESS_DENIED; /* We need a generic mapping from NT errors here... */
+	}
+
+	return NT_STATUS_NO_PROBLEMO;
+}
+#endif
 
 /****************************************************************************
 ****************************************************************************/
@@ -3825,13 +3907,24 @@ uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 				const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
+	uint32 err;
+	ZERO_STRUCT(driver);
 	
 	convert_printer_driver_info(info, &driver, level);
 
 	if (add_a_printer_driver(driver, level)!=0)
 		return ERROR_ACCESS_DENIED;
 
+#if RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
+	if ((err = modify_driver_heirarchy(&driver, level)) != 0) {
+		safe_free(driver.info_3);
+		safe_free(driver.info_6);
+		return err;
+	}
+#endif
+
 	safe_free(driver.info_3);
+	safe_free(driver.info_6);
 
 	return NT_STATUS_NO_PROBLEMO;
 }
@@ -3847,7 +3940,7 @@ static void fill_driverdir_1(DRIVER_DIRECTORY_1 *info, char *name)
 ****************************************************************************/
 static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environment, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
-	pstring chaine;
+	pstring path;
 	pstring long_archi;
 	pstring short_archi;
 	DRIVER_DIRECTORY_1 *info=NULL;
@@ -3858,13 +3951,18 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
 	get_short_archi(short_archi, long_archi);
 		
-	slprintf(chaine, sizeof(chaine)-1, "\\\\%s\\print$\\%s", global_myname, short_archi);
+#if RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
+	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s\\TMP_%u", global_myname, short_archi,
+		(unsigned int)sys_getpid());
+#else
+	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s",
+			global_myname, short_archi);
+#endif
+	DEBUG(4,("printer driver directory: [%s]\n", path));
 
-	DEBUG(4,("printer driver directory: [%s]\n", chaine));
-
-	fill_driverdir_1(info, chaine);
+	fill_driverdir_1(info, path);
 	
-	*needed += spoolss_size_driverdir_info_1(info);							    
+	*needed += spoolss_size_driverdir_info_1(info);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(info);

@@ -743,6 +743,8 @@ BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 int prs_tdb_delete(TDB_CONTEXT * tdb, prs_struct *pk);
 int prs_tdb_store(TDB_CONTEXT * tdb, int flgs, prs_struct *pk, prs_struct *pd);
 void prs_tdb_fetch(TDB_CONTEXT * tdb, prs_struct *pk, prs_struct *pd);
+int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps);
+int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps);
 
 /*The following definitions come from  rpc_parse/parse_rpc.c  */
 

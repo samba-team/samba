@@ -2636,10 +2636,8 @@ BOOL ms_has_wild(char *s)
 /*******************************************************************
  a wrapper that handles case sensitivity and the special handling
    of the ".." name
-
-   case_sensitive is a boolean
  *******************************************************************/
-BOOL mask_match(char *string, char *pattern, BOOL case_sensitive)
+BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive)
 {
 	fstring p2, s2;
 	if (strcmp(string, "..") == 0)
@@ -2647,7 +2645,7 @@ BOOL mask_match(char *string, char *pattern, BOOL case_sensitive)
 	if (strcmp(pattern, ".") == 0)
 		return False;
 
-	if (case_sensitive)
+	if (is_case_sensitive)
 	{
 		return ms_fnmatch(pattern, string) == 0;
 	}

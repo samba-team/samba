@@ -619,7 +619,7 @@ char *lock_path(char *name);
 char *parent_dirname(const char *path);
 const char *get_sid_name_use_str(uint32 sid_name_use);
 BOOL ms_has_wild(char *s);
-BOOL mask_match(char *string, char *pattern, BOOL case_sensitive);
+BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive);
 int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6);
 
 /*The following definitions come from  lib/util_array.c  */
@@ -2312,6 +2312,7 @@ BOOL parse_lpq_entry(int snum,char *line,
 
 /*The following definitions come from  printing/nt_printing.c  */
 
+BOOL nt_printing_init(void);
 int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
 BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count);
@@ -2319,7 +2320,6 @@ void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture);
 void get_short_archi(char *short_archi, char *long_archi);
 uint32 del_a_printer(char *portname);
-void dump_a_param(NT_PRINTER_PARAM *param);
 BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
 BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
 uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
@@ -2334,6 +2334,8 @@ BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, ui
 BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level, 
                         fstring value, uint8 **data, uint32 *type, uint32 *len);
 void init_devicemode(NT_DEVICEMODE *nt_devmode);
+uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr);
+uint32 nt_printing_getsec(char *printername, SEC_DESC_BUF *secdesc_ctr);
 
 /*The following definitions come from  printing/pcap.c  */
 
@@ -2834,6 +2836,8 @@ BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 int prs_tdb_delete(TDB_CONTEXT * tdb, prs_struct *pk);
 int prs_tdb_store(TDB_CONTEXT * tdb, int flgs, prs_struct *pk, prs_struct *pd);
 void prs_tdb_fetch(TDB_CONTEXT * tdb, prs_struct *pk, prs_struct *pd);
+int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps);
+int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps);
 
 /*The following definitions come from  rpc_parse/parse_rpc.c  */
 
@@ -4322,6 +4326,7 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
 uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 			   const SPOOL_PRINTER_INFO_LEVEL *info,
 			   const DEVMODE_CTR devmode_ctr,
+			   const SEC_DESC_BUF *secdesc_ctr,
 			   uint32 command);
 uint32 _spoolss_fcpn(const POLICY_HND *handle);
 uint32 _spoolss_addjob(const POLICY_HND *handle, uint32 level,

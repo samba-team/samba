@@ -145,8 +145,7 @@ typedef struct nt_printer_driver_info_level_3
 	fstring helpfile;
 	fstring monitorname;
 	fstring defaultdatatype;
-	char    **dependentfiles;
-
+	fstring *dependentfiles;
 } NT_PRINTER_DRIVER_INFO_LEVEL_3;
 
 /* SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 structure */
@@ -164,8 +163,8 @@ typedef struct {
 	fstring	oemurl;
 	fstring	hardwareid;
 	fstring	provider;
-	char **dependentfiles;
-	char **previousnames;
+	fstring *dependentfiles;
+	fstring *previousnames;
 } NT_PRINTER_DRIVER_INFO_LEVEL_6;
 
 
@@ -249,7 +248,7 @@ typedef struct nt_printer_info_level_2
 	/* not used but ... and how ??? */
 	uint32 changeid;
 	uint32 c_setprinter;
-	time_t setuptime;	
+	uint32 setuptime;	
 } NT_PRINTER_INFO_LEVEL_2;
 
 typedef struct nt_printer_info_level
@@ -259,7 +258,7 @@ typedef struct nt_printer_info_level
 
 typedef struct
 {
-	char name[100];
+	fstring name;
 	uint32 flag;
 	uint32 width;
 	uint32 length;

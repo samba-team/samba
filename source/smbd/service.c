@@ -574,7 +574,7 @@ connection_struct *make_connection(char *service,char *user,
 				yield_connection(conn,"",MAXSTATUS);
 		}
 		conn_free(conn);
-		*ecode = ERRinvnetname;
+		*ecode = ERRnosuchshare;
 		return NULL;
 	}
 	

@@ -2083,13 +2083,6 @@ int reply_readbraw(connection_struct * conn, char *inbuf, char *outbuf,
 		int predict = 0;
 		_smb_setlen(header, nread);
 
-#if USE_READ_PREDICTION
-		if (!fsp->can_write)
-			predict =
-				read_predict(fsp, fsp->fd, startpos,
-					     header + 4, NULL, nread);
-#endif /* USE_READ_PREDICTION */
-
 		if ((nread - predict) > 0)
 		{
 			if (conn->vfs_ops.seek(fsp, startpos + predict) == -1)

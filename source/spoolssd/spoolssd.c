@@ -45,6 +45,15 @@ static void service_init(char* service_name)
 	{
 		exit(-1);
 	}
+
+	if (!print_backend_init())
+	{
+		exit(-1);
+	}
+	if (!nt_printing_init())
+	{
+		exit(-1);
+	}
 }
 
 /****************************************************************************

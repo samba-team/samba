@@ -463,6 +463,9 @@ static BOOL print_job_delete1(int jobid)
 		print_run_command(snum, 
 				  lp_lprmcommand(snum), NULL,
 				  "%j", jobstr,
+				  /*
+				  "%T", http_timestring(pjob->starttime),
+				  */
 				  NULL, NULL);
 	}
 
@@ -701,6 +704,7 @@ BOOL print_job_end(int jobid)
 	print_run_command(snum, 
 			  lp_printcommand(snum), NULL,
 			  "%s", p,
+  /*			  "%J", stripquote(pjob->jobname), */
 			  "%f", p);
 
 	chdir(wd);

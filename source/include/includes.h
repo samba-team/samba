@@ -628,7 +628,7 @@ extern int errno;
 #endif
 
 
-/* Lists, trees, caching, datbase... */
+/* Lists, trees, caching, database... */
 #include "ubi_sLinkList.h"
 #include "ubi_dLinkList.h"
 #include "dlinklist.h"
@@ -637,11 +637,6 @@ extern int errno;
 #include "interfaces.h"
 #include "hash.h"
 
-#ifdef HAVE_FNMATCH
-#include <fnmatch.h>
-#else
-#include "fnmatch.h"
-#endif
 
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"
