@@ -444,21 +444,30 @@ BOOL msrpc_spoolss_enum_printerdata( const char* printer_name,
 	uint32 datalen;
 	uint8  *data;
 	uint32 rdatalen;
+	uint32 maxvaluelen;
+	uint32 maxdatalen;
 
 	DEBUG(4,("spoolenum_printerdata - printer: %s\n", printer_name));
 
 	if(!spoolss_open_printer_ex( printer_name, 0, 0, station, user_name, &hnd))
 		return False;
 
-	/* FIXME!!!!  --jerry
-	   something is severly buggy about the use of 
-	   data, datalen, value, & valuelen */
-	status = spoolss_enum_printerdata(&hnd, 0, &valuelen, value, 
+	
+	idx=0;
+	valuelen=0;
+	rvaluelen=0;
+	type=0;
+	datalen=0;
+	rdatalen=0;
+	
+	status = spoolss_enum_printerdata(&hnd, idx, &valuelen, value, 
 					  &rvaluelen, &type, &datalen, 
 					  data, &rdatalen);
 
-	valuelen=rvaluelen;
-	datalen=rdatalen;
+	DEBUG(4,("spoolenum_printerdata - got size: biggest value:[%d], biggest data:[%d]\n", rvaluelen, rdatalen));
+
+	maxvaluelen=valuelen=rvaluelen;
+	maxdatalen=datalen=rdatalen;
 
 	value=(uint16 *)malloc(valuelen*sizeof(uint16));
 	data=(uint8 *)malloc(datalen*sizeof(uint8));
@@ -467,6 +476,8 @@ BOOL msrpc_spoolss_enum_printerdata( const char* printer_name,
 				 value, rvaluelen, type, datalen, data, rdatalen);
 	
 	do {
+		valuelen=maxvaluelen;
+		datalen=maxdatalen;
 
 		status = spoolss_enum_printerdata(&hnd, idx, &valuelen, 
 						  value, &rvaluelen, &type, 
@@ -507,16 +518,16 @@ BOOL msrpc_spoolss_getprinter( const char* printer_name, const uint32 level,
         POLICY_HND hnd;
         uint32 status=0;
         NEW_BUFFER buffer;
-        uint32 needed;
+        uint32 needed=1000;
 
         DEBUG(4,("spoolenum_getprinter - printer: %s\n", printer_name));
 
         if(!spoolss_open_printer_ex( printer_name, "", PRINTER_ALL_ACCESS, station, user_name, &hnd))
                 return False;
 
-        init_buffer(&buffer, 0);
+        init_buffer(&buffer, needed);
 
-        status = spoolss_getprinter(&hnd, level, &buffer, 0, &needed);
+        status = spoolss_getprinter(&hnd, level, &buffer, needed, &needed);
 
         if (status==ERROR_INSUFFICIENT_BUFFER) {
                 init_buffer(&buffer, needed);
