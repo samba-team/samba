@@ -1,3 +1,7 @@
+Wed Jul 16 03:37:41 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* Remove non ASN.1 principal code.
+
 Wed Jul 16 03:17:30 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* kdc/kerberos5.c: Split tgs_rep in smaller functions. Add better
