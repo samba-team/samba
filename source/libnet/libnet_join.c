@@ -386,7 +386,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		samdb_msg_add_string(ldb, mem_ctx, msg, "objectClass", "primaryDomain");
 		samdb_msg_add_string(ldb, mem_ctx, msg, "secret", r2.generic.out.join_password);
 
-		samdb_msg_add_string(ldb, mem_ctx, msg, "accountName", r2.generic.in.account_name);
+		samdb_msg_add_string(ldb, mem_ctx, msg, "samAccountName", r2.generic.in.account_name);
 
 		samdb_msg_add_string(ldb, mem_ctx, msg, "secureChannelType", sct);
 
@@ -423,7 +423,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 				     prior_modified_time);
 	}
 	
-	samdb_msg_set_string(ldb, mem_ctx, msg, "accountName", r2.generic.in.account_name);
+	samdb_msg_set_string(ldb, mem_ctx, msg, "samAccountName", r2.generic.in.account_name);
 	samdb_msg_set_string(ldb, mem_ctx, msg, "secureChannelType", sct);
 
 	/* update the secret */
