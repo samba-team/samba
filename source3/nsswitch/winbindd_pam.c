@@ -191,7 +191,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	if (*state->request.data.auth_crap.domain) {
 		char *dom = NULL;
-		if (pull_utf8_talloc(mem_ctx, &dom, state->request.data.auth_crap.domain) (size_t)-1) {
+		if (pull_utf8_talloc(mem_ctx, &dom, state->request.data.auth_crap.domain) == (size_t)-1) {
 			DEBUG(0, ("winbindd_pam_auth_crap: pull_utf8_talloc failed!\n"));
 		}
 		domain = dom;
