@@ -406,11 +406,10 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 						break;
 					}
 				}
-			}
-			else {
+			} else {
 				conn->gid = gptr->gr_gid;
+				DEBUG(3,("Forced group %s\n",gname));
 			}
-			DEBUG(3,("Forced group %s\n",gname));
 		} else {
 			DEBUG(1,("Couldn't find group %s\n",gname));
 		}
