@@ -292,7 +292,7 @@ void req_send_reply(struct request_context *req)
    construct and send an error packet with a forced DOS error code
    this is needed to match win2000 behaviour for some parts of the protocol
 */
-void req_reply_dos_error(struct request_context *req, uint8 eclass, uint16 ecode)
+void req_reply_dos_error(struct request_context *req, uint8 eclass, uint16_t ecode)
 {
 	/* if the basic packet hasn't been setup yet then do it now */
 	if (req->out.buffer == NULL) {
@@ -407,7 +407,7 @@ size_t req_append_bytes(struct request_context *req,
   return the number of bytes added
 */
 size_t req_append_var_block(struct request_context *req, 
-		const uint8 *bytes, uint16 byte_len)
+		const uint8 *bytes, uint16_t byte_len)
 {
 	req_grow_allocation(req, byte_len + 3 + req->out.data_size);
 	SCVAL(req->out.data + req->out.data_size, 0, 5);
@@ -617,7 +617,7 @@ BOOL req_data_oob(struct request_context *req, const char *ptr, uint32_t count)
 /* 
    pull an open file handle from a packet, taking account of the chained_fnum
 */
-uint16 req_fnum(struct request_context *req, const char *base, unsigned offset)
+uint16_t req_fnum(struct request_context *req, const char *base, unsigned offset)
 {
 	if (req->chained_fnum != -1) {
 		return req->chained_fnum;

@@ -495,7 +495,7 @@ NTSTATUS cli_unlock64(struct cli_tree *tree, int fnum, SMB_OFF_T offset,
  Do a SMBgetattrE call.
 ****************************************************************************/
 NTSTATUS cli_getattrE(struct cli_tree *tree, int fnum,
-		      uint16 *attr, size_t *size,
+		      uint16_t *attr, size_t *size,
 		      time_t *c_time, time_t *a_time, time_t *m_time)
 {		
 	union smb_fileinfo parms;
@@ -536,7 +536,7 @@ NTSTATUS cli_getattrE(struct cli_tree *tree, int fnum,
  Do a SMBgetatr call
 ****************************************************************************/
 NTSTATUS cli_getatr(struct cli_tree *tree, const char *fname, 
-		    uint16 *attr, size_t *size, time_t *t)
+		    uint16_t *attr, size_t *size, time_t *t)
 {
 	union smb_fileinfo parms;
 	NTSTATUS status;
@@ -569,7 +569,7 @@ NTSTATUS cli_getatr(struct cli_tree *tree, const char *fname,
 /****************************************************************************
  Do a SMBsetatr call.
 ****************************************************************************/
-NTSTATUS cli_setatr(struct cli_tree *tree, const char *fname, uint16 mode, 
+NTSTATUS cli_setatr(struct cli_tree *tree, const char *fname, uint16_t mode, 
 		    time_t t)
 {
 	union smb_setfileinfo parms;

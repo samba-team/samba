@@ -39,10 +39,10 @@ struct model_ops {
 	void (*model_startup)(void);
 
 	/* function to accept new connection */
-	void (*accept_connection)(struct event_context *, struct fd_event *, time_t, uint16);
+	void (*accept_connection)(struct event_context *, struct fd_event *, time_t, uint16_t);
 
 	/* function to accept new rpc over tcp connection */
-	void (*accept_rpc_connection)(struct event_context *, struct fd_event *, time_t, uint16);
+	void (*accept_rpc_connection)(struct event_context *, struct fd_event *, time_t, uint16_t);
 				
 	/* function to terminate a connection */
 	void (*terminate_connection)(struct server_context *smb, const char *reason);

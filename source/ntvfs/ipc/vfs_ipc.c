@@ -32,17 +32,17 @@
    pipes */
 struct ipc_private {
 
-	uint16 next_fnum;
-	uint16 num_open;
+	uint16_t next_fnum;
+	uint16_t num_open;
 
 	/* a list of open pipes */
 	struct pipe_state {
 		struct pipe_state *next, *prev;
 		TALLOC_CTX *mem_ctx;
 		const char *pipe_name;
-		uint16 fnum;
+		uint16_t fnum;
 		struct dcesrv_connection *dce_conn;
-		uint16 ipc_state;
+		uint16_t ipc_state;
 	} *pipe_list;
 
 };
@@ -51,7 +51,7 @@ struct ipc_private {
 /*
   find the next fnum available on this connection
 */
-static uint16 find_next_fnum(struct ipc_private *ipc)
+static uint16_t find_next_fnum(struct ipc_private *ipc)
 {
 	struct pipe_state *p;
 	uint32_t ret;
@@ -88,7 +88,7 @@ static void pipe_shutdown(struct ipc_private *private, struct pipe_state *p)
 /*
   find a open pipe give a file descriptor
 */
-static struct pipe_state *pipe_state_find(struct ipc_private *private, uint16 fnum)
+static struct pipe_state *pipe_state_find(struct ipc_private *private, uint16_t fnum)
 {
 	struct pipe_state *p;
 	
@@ -369,7 +369,7 @@ static NTSTATUS ipc_read(struct request_context *req, union smb_read *rd)
 {
 	struct ipc_private *private = req->conn->ntvfs_private;
 	DATA_BLOB data;
-	uint16 fnum;
+	uint16_t fnum;
 	struct pipe_state *p;
 	NTSTATUS status;
 
@@ -421,7 +421,7 @@ static NTSTATUS ipc_write(struct request_context *req, union smb_write *wr)
 {
 	struct ipc_private *private = req->conn->ntvfs_private;
 	DATA_BLOB data;
-	uint16 fnum;
+	uint16_t fnum;
 	struct pipe_state *p;
 	NTSTATUS status;
 

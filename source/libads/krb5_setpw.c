@@ -111,7 +111,7 @@ static DATA_BLOB encode_krb5_setpw(const char *principal, const char *password)
 	return ret;
 }	
 
-static krb5_error_code build_kpasswd_request(uint16 pversion,
+static krb5_error_code build_kpasswd_request(uint16_t pversion,
 					   krb5_context context,
 					   krb5_auth_context auth_context,
 					   krb5_data *ap_req,
@@ -340,7 +340,7 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 
 static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 					  const char *kdc_host,
-					  uint16 pversion,
+					  uint16_t pversion,
 					  krb5_creds *credsp,
 					  const char *princ,
 					  const char *newpw)

@@ -532,7 +532,7 @@ static BOOL test_SetAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_SetAliasInfo r;
 	struct samr_QueryAliasInfo q;
-	uint16 levels[] = {2, 3};
+	uint16_t levels[] = {2, 3};
 	int i;
 	BOOL ret = True;
 
@@ -1538,7 +1538,7 @@ static BOOL test_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryAliasInfo r;
-	uint16 levels[] = {1, 2, 3};
+	uint16_t levels[] = {1, 2, 3};
 	int i;
 	BOOL ret = True;
 
@@ -1564,7 +1564,7 @@ static BOOL test_QueryGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryGroupInfo r;
-	uint16 levels[] = {1, 2, 3, 4};
+	uint16_t levels[] = {1, 2, 3, 4};
 	int i;
 	BOOL ret = True;
 
@@ -1592,8 +1592,8 @@ static BOOL test_SetGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_QueryGroupInfo r;
 	struct samr_SetGroupInfo s;
-	uint16 levels[] = {1, 2, 3, 4};
-	uint16 set_ok[] = {0, 1, 1, 1};
+	uint16_t levels[] = {1, 2, 3, 4};
+	uint16_t set_ok[] = {0, 1, 1, 1};
 	int i;
 	BOOL ret = True;
 
@@ -1650,7 +1650,7 @@ static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryUserInfo r;
-	uint16 levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
 			   11, 12, 13, 14, 16, 17, 20, 21};
 	int i;
 	BOOL ret = True;
@@ -1677,7 +1677,7 @@ static BOOL test_QueryUserInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryUserInfo2 r;
-	uint16 levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
 			   11, 12, 13, 14, 16, 17, 20, 21};
 	int i;
 	BOOL ret = True;
@@ -1968,8 +1968,8 @@ static BOOL test_GetDisplayEnumerationIndex(struct dcerpc_pipe *p, TALLOC_CTX *m
 	NTSTATUS status;
 	struct samr_GetDisplayEnumerationIndex r;
 	BOOL ret = True;
-	uint16 levels[] = {1, 2, 3, 4, 5};
-	uint16 ok_lvl[] = {1, 1, 1, 0, 0};
+	uint16_t levels[] = {1, 2, 3, 4, 5};
+	uint16_t ok_lvl[] = {1, 1, 1, 0, 0};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -2009,8 +2009,8 @@ static BOOL test_GetDisplayEnumerationIndex2(struct dcerpc_pipe *p, TALLOC_CTX *
 	NTSTATUS status;
 	struct samr_GetDisplayEnumerationIndex2 r;
 	BOOL ret = True;
-	uint16 levels[] = {1, 2, 3, 4, 5};
-	uint16 ok_lvl[] = {1, 1, 1, 0, 0};
+	uint16_t levels[] = {1, 2, 3, 4, 5};
+	uint16_t ok_lvl[] = {1, 1, 1, 0, 0};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -2048,7 +2048,7 @@ static BOOL test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_QueryDisplayInfo r;
 	BOOL ret = True;
-	uint16 levels[] = {1, 2, 3, 4, 5};
+	uint16_t levels[] = {1, 2, 3, 4, 5};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -2077,7 +2077,7 @@ static BOOL test_QueryDisplayInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_QueryDisplayInfo2 r;
 	BOOL ret = True;
-	uint16 levels[] = {1, 2, 3, 4, 5};
+	uint16_t levels[] = {1, 2, 3, 4, 5};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -2106,7 +2106,7 @@ static BOOL test_QueryDisplayInfo3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_QueryDisplayInfo3 r;
 	BOOL ret = True;
-	uint16 levels[] = {1, 2, 3, 4, 5};
+	uint16_t levels[] = {1, 2, 3, 4, 5};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -2135,8 +2135,8 @@ static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_QueryDomainInfo r;
 	struct samr_SetDomainInfo s;
-	uint16 levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13};
-	uint16 set_ok[] = {1, 0, 1, 1, 0, 1, 1, 0, 1,  0,  1,  0};
+	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13};
+	uint16_t set_ok[] = {1, 0, 1, 1, 0, 1, 1, 0, 1,  0,  1,  0};
 	int i;
 	BOOL ret = True;
 
@@ -2195,7 +2195,7 @@ static BOOL test_QueryDomainInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryDomainInfo2 r;
-	uint16 levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13};
+	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13};
 	int i;
 	BOOL ret = True;
 

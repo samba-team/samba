@@ -600,7 +600,7 @@ static void read_credentials_file(char *filename)
 {
 	FILE *auth;
 	fstring buf;
-	uint16 len = 0;
+	uint16_t len = 0;
 	char *ptr, *val, *param;
 
 	if ((auth=sys_fopen(filename, "r")) == NULL)

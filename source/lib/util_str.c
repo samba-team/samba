@@ -86,7 +86,7 @@ BOOL next_token_nr(const char **ptr, char *buff, const char *sep, size_t bufsize
 	return ret;	
 }
 
-static uint16 tmpbuf[sizeof(pstring)];
+static uint16_t tmpbuf[sizeof(pstring)];
 
 /**
  Convert list of tokens to array; dependent on above routine.
@@ -269,7 +269,7 @@ void string_replace(char *s,char oldc,char newc)
 
 size_t str_charnum(const char *s)
 {
-	uint16 tmpbuf2[sizeof(pstring)];
+	uint16_t tmpbuf2[sizeof(pstring)];
 	push_ucs2(NULL, tmpbuf2,s, sizeof(tmpbuf2), STR_TERMINATE);
 	return strlen_w(tmpbuf2);
 }

@@ -204,7 +204,7 @@ struct subnet_record;
 
 struct nmb_data
 {
-  uint16 nb_flags;         /* Netbios flags. */
+  uint16_t nb_flags;         /* Netbios flags. */
   int num_ips;             /* Number of ip entries. */
   struct in_addr *ip;      /* The ip list for this name. */
 
@@ -391,7 +391,7 @@ struct response_record
   struct response_record *next;
   struct response_record *prev;
 
-  uint16 response_id;
+  uint16_t response_id;
 
   /* Callbacks for packets received or not. */ 
   response_function resp_fn;

@@ -41,7 +41,7 @@
 typedef struct file_info
 {
 	uint64_t size;
-	uint16 mode;
+	uint16_t mode;
 	uid_t uid;
 	gid_t gid;
 	/* these times are normally kept in GMT */
@@ -54,8 +54,8 @@ typedef struct file_info
 
 struct print_job_info
 {
-	uint16 id;
-	uint16 priority;
+	uint16_t id;
+	uint16_t priority;
 	size_t size;
 	fstring user;
 	fstring name;
@@ -104,8 +104,8 @@ struct cli_client
 	int number_members;
 	BOOL use_dfs;				/* True if client should support Dfs */
 	int connection_flags;		/* see CLI_FULL_CONN.. below */
-	uint16 max_xmit_frag;
-	uint16 max_recv_frag;
+	uint16_t max_xmit_frag;
+	uint16_t max_recv_frag;
 	struct cli_state *cli[DFS_MAX_CLUSTER_SIZE];
 };
 

@@ -32,7 +32,7 @@ static void model_startup(void)
 /*
   called when a listening socket becomes readable
 */
-static void accept_connection(struct event_context *ev, struct fd_event *fde, time_t t, uint16 flags)
+static void accept_connection(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags)
 {
 	int accepted_fd;
 	struct sockaddr addr;
@@ -82,7 +82,7 @@ static void accept_connection(struct event_context *ev, struct fd_event *fde, ti
 /*
   called when a rpc listening socket becomes readable
 */
-static void accept_rpc_connection(struct event_context *ev, struct fd_event *fde, time_t t, uint16 flags)
+static void accept_rpc_connection(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags)
 {
 	int accepted_fd;
 	struct sockaddr addr;

@@ -34,12 +34,12 @@
 /* setup a nttrans reply, given the data and params sizes */
 static void nttrans_setup_reply(struct request_context *req, 
 			       struct smb_nttrans *trans,
-			       uint16 param_size, uint16 data_size,
-			       uint16 setup_count)
+			       uint16_t param_size, uint16_t data_size,
+			       uint16_t setup_count)
 {
 	trans->out.setup_count = setup_count;
 	if (setup_count != 0) {
-		trans->out.setup = talloc_zero(req->mem_ctx, sizeof(uint16) * setup_count);
+		trans->out.setup = talloc_zero(req->mem_ctx, sizeof(uint16_t) * setup_count);
 	}
 	trans->out.params = data_blob_talloc(req->mem_ctx, NULL, param_size);
 	trans->out.data = data_blob_talloc(req->mem_ctx, NULL, data_size);
@@ -68,7 +68,7 @@ static NTSTATUS nttrans_ioctl(struct request_context *req,
 {
 	union smb_ioctl nt;
 	uint32_t function;
-	uint16 fnum;
+	uint16_t fnum;
 	uint8 filter;
 	BOOL fsctl;
 	DATA_BLOB *blob;
@@ -132,10 +132,10 @@ void reply_nttrans(struct request_context *req)
 {
 	struct smb_nttrans trans;
 	int i;
-	uint16 param_ofs, data_ofs;
-	uint16 param_count, data_count;
-	uint16 params_left, data_left;
-	uint16 param_total, data_total;
+	uint16_t param_ofs, data_ofs;
+	uint16_t param_count, data_count;
+	uint16_t params_left, data_left;
+	uint16_t param_total, data_total;
 	char *params, *data;
 	NTSTATUS status;
 
@@ -163,7 +163,7 @@ void reply_nttrans(struct request_context *req)
 	}
 
 	/* parse out the setup words */
-	trans.in.setup = talloc(req->mem_ctx, trans.in.setup_count * sizeof(uint16));
+	trans.in.setup = talloc(req->mem_ctx, trans.in.setup_count * sizeof(uint16_t));
 	if (!trans.in.setup) {
 		req_reply_error(req, NT_STATUS_NO_MEMORY);
 		return;
@@ -203,7 +203,7 @@ void reply_nttrans(struct request_context *req)
 	/* we need to divide up the reply into chunks that fit into
 	   the negotiated buffer size */
 	do {
-		uint16 this_data, this_param, max_bytes;
+		uint16_t this_data, this_param, max_bytes;
 		uint_t align1 = 1, align2 = (params_left ? 2 : 0);
 
 		req_setup_reply(req, 18 + trans.out.setup_count, 0);

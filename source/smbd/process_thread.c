@@ -46,7 +46,7 @@ static int get_id(struct request_context *req)
   called when a listening socket becomes readable
 */
 static void accept_connection(struct event_context *ev, struct fd_event *fde, 
-			      time_t t, uint16 flags)
+			      time_t t, uint16_t flags)
 {
 	int accepted_fd, rc;
 	struct sockaddr addr;
@@ -91,7 +91,7 @@ static void accept_connection(struct event_context *ev, struct fd_event *fde,
 /*
   called when a rpc listening socket becomes readable
 */
-static void accept_rpc_connection(struct event_context *ev, struct fd_event *fde, time_t t, uint16 flags)
+static void accept_rpc_connection(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags)
 {
 	int accepted_fd, rc;
 	struct sockaddr addr;

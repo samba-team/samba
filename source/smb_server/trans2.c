@@ -34,7 +34,7 @@
    pointer */
 static void trans2_grow_data_allocation(struct request_context *req, 
 					struct smb_trans2 *trans,
-					uint16 new_size)
+					uint16_t new_size)
 {
 	if (new_size <= trans->out.data.length) {
 		return;
@@ -46,7 +46,7 @@ static void trans2_grow_data_allocation(struct request_context *req,
 /* grow the data size of a trans2 reply */
 static void trans2_grow_data(struct request_context *req, 
 			     struct smb_trans2 *trans,
-			     uint16 new_size)
+			     uint16_t new_size)
 {
 	trans2_grow_data_allocation(req, trans, new_size);
 	trans->out.data.length = new_size;
@@ -55,9 +55,9 @@ static void trans2_grow_data(struct request_context *req,
 /* grow the data, zero filling any new bytes */
 static void trans2_grow_data_fill(struct request_context *req, 
 				  struct smb_trans2 *trans,
-				  uint16 new_size)
+				  uint16_t new_size)
 {
-	uint16 old_size = trans->out.data.length;
+	uint16_t old_size = trans->out.data.length;
 	trans2_grow_data(req, trans, new_size);
 	if (new_size > old_size) {
 		memset(trans->out.data.data + old_size, 0, new_size - old_size);
@@ -68,12 +68,12 @@ static void trans2_grow_data_fill(struct request_context *req,
 /* setup a trans2 reply, given the data and params sizes */
 static void trans2_setup_reply(struct request_context *req, 
 			       struct smb_trans2 *trans,
-			       uint16 param_size, uint16 data_size,
-			       uint16 setup_count)
+			       uint16_t param_size, uint16_t data_size,
+			       uint16_t setup_count)
 {
 	trans->out.setup_count = setup_count;
 	if (setup_count != 0) {
-		trans->out.setup = talloc_zero(req->mem_ctx, sizeof(uint16) * setup_count);
+		trans->out.setup = talloc_zero(req->mem_ctx, sizeof(uint16_t) * setup_count);
 	}
 	trans->out.params = data_blob_talloc(req->mem_ctx, NULL, param_size);
 	trans->out.data = data_blob_talloc(req->mem_ctx, NULL, data_size);
@@ -85,7 +85,7 @@ static void trans2_setup_reply(struct request_context *req,
 */
 static size_t trans2_pull_blob_string(struct request_context *req, 
 				      const DATA_BLOB *blob,
-				      uint16 offset,
+				      uint16_t offset,
 				      const char **str,
 				      int flags)
 {
@@ -109,8 +109,8 @@ static size_t trans2_pull_blob_string(struct request_context *req,
 */
 static size_t trans2_push_data_string(struct request_context *req, 
 				      struct smb_trans2 *trans,
-				      uint16 len_offset,
-				      uint16 offset,
+				      uint16_t len_offset,
+				      uint16_t offset,
 				      const WIRE_STRING *str,
 				      int dest_len,
 				      int flags)
@@ -183,7 +183,7 @@ static void trans2_append_data_string(struct request_context *req,
 					int flags)
 {
 	size_t ret;
-	uint16 offset;
+	uint16_t offset;
 	const int max_bytes_per_char = 3;
 
 	offset = trans->out.data.length;
@@ -200,7 +200,7 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 {
 	union smb_fsinfo fsinfo;
 	NTSTATUS status;
-	uint16 level;
+	uint16_t level;
 	uint_t i;
 	DATA_BLOB guid_blob;
 
@@ -587,7 +587,7 @@ static NTSTATUS trans2_fileinfo_fill(struct request_context *req, struct smb_tra
 		SSVAL(trans->out.params.data, 0, 0);
 
 		for (i=0;i<st->stream_info.out.num_streams;i++) {
-			uint16 data_size = trans->out.data.length;
+			uint16_t data_size = trans->out.data.length;
 			char *data;
 
 			trans2_grow_data(req, trans, data_size + 24);
@@ -618,7 +618,7 @@ static NTSTATUS trans2_qpathinfo(struct request_context *req, struct smb_trans2 
 {
 	union smb_fileinfo st;
 	NTSTATUS status;
-	uint16 level;
+	uint16_t level;
 
 	/* make sure we got enough parameters */
 	if (trans->in.params.length < 8) {
@@ -658,7 +658,7 @@ static NTSTATUS trans2_qfileinfo(struct request_context *req, struct smb_trans2 
 {
 	union smb_fileinfo st;
 	NTSTATUS status;
-	uint16 level;
+	uint16_t level;
 
 	/* make sure we got enough parameters */
 	if (trans->in.params.length < 4) {
@@ -790,7 +790,7 @@ static NTSTATUS trans2_setfileinfo(struct request_context *req, struct smb_trans
 {
 	union smb_setfileinfo st;
 	NTSTATUS status;
-	uint16 level, fnum;
+	uint16_t level, fnum;
 	DATA_BLOB *blob;
 
 	/* make sure we got enough parameters */
@@ -828,7 +828,7 @@ static NTSTATUS trans2_setpathinfo(struct request_context *req, struct smb_trans
 {
 	union smb_setfileinfo st;
 	NTSTATUS status;
-	uint16 level;
+	uint16_t level;
 	DATA_BLOB *blob;
 
 	/* make sure we got enough parameters */
@@ -866,8 +866,8 @@ struct find_state {
 	struct request_context *req;
 	struct smb_trans2 *trans;
 	enum search_level level;
-	uint16 last_entry_offset;
-	uint16 flags;
+	uint16_t last_entry_offset;
+	uint16_t flags;
 };
 
 /*
@@ -1073,7 +1073,7 @@ static NTSTATUS trans2_findfirst(struct request_context *req, struct smb_trans2 
 {
 	union smb_search_first search;
 	NTSTATUS status;
-	uint16 level;
+	uint16_t level;
 	char *param;
 	struct find_state state;
 
@@ -1133,7 +1133,7 @@ static NTSTATUS trans2_findnext(struct request_context *req, struct smb_trans2 *
 {
 	union smb_search_next search;
 	NTSTATUS status;
-	uint16 level;
+	uint16_t level;
 	char *param;
 	struct find_state state;
 
@@ -1242,10 +1242,10 @@ void reply_trans_generic(struct request_context *req, uint8 command)
 {
 	struct smb_trans2 trans;
 	int i;
-	uint16 param_ofs, data_ofs;
-	uint16 param_count, data_count;
-	uint16 params_left, data_left;
-	uint16 param_total, data_total;
+	uint16_t param_ofs, data_ofs;
+	uint16_t param_count, data_count;
+	uint16_t params_left, data_left;
+	uint16_t param_total, data_total;
 	char *params, *data;
 	NTSTATUS status;
 
@@ -1274,7 +1274,7 @@ void reply_trans_generic(struct request_context *req, uint8 command)
 	}
 
 	/* parse out the setup words */
-	trans.in.setup = talloc(req->mem_ctx, trans.in.setup_count * sizeof(uint16));
+	trans.in.setup = talloc(req->mem_ctx, trans.in.setup_count * sizeof(uint16_t));
 	if (!trans.in.setup) {
 		req_reply_error(req, NT_STATUS_NO_MEMORY);
 		return;
@@ -1322,7 +1322,7 @@ void reply_trans_generic(struct request_context *req, uint8 command)
 	/* we need to divide up the reply into chunks that fit into
 	   the negotiated buffer size */
 	do {
-		uint16 this_data, this_param, max_bytes;
+		uint16_t this_data, this_param, max_bytes;
 		uint_t align1 = 1, align2 = (params_left ? 2 : 0);
 
 		req_setup_reply(req, 10 + trans.out.setup_count, 0);

@@ -169,9 +169,9 @@ int svfs_file_utime(int fd, struct utimbuf *times)
 /*
   map a unix file attrib to a DOS attribute
 */
-uint16 svfs_unix_to_dos_attrib(mode_t mode)
+uint16_t svfs_unix_to_dos_attrib(mode_t mode)
 {
-	uint16 ret = 0;
+	uint16_t ret = 0;
 	if (S_ISDIR(mode)) ret |= FILE_ATTRIBUTE_DIRECTORY;
 	if (!(mode & S_IWUSR)) ret |= FILE_ATTRIBUTE_READONLY;
 	return ret;

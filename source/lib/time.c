@@ -141,9 +141,9 @@ BOOL null_mtime(time_t mtime)
 /*******************************************************************
   create a 16 bit dos packed date
 ********************************************************************/
-static uint16 make_dos_date1(struct tm *t)
+static uint16_t make_dos_date1(struct tm *t)
 {
-	uint16 ret=0;
+	uint16_t ret=0;
 	ret = (((unsigned)(t->tm_mon+1)) >> 3) | ((t->tm_year-80) << 1);
 	ret = ((ret&0xFF)<<8) | (t->tm_mday | (((t->tm_mon+1) & 0x7) << 5));
 	return ret;
@@ -152,9 +152,9 @@ static uint16 make_dos_date1(struct tm *t)
 /*******************************************************************
   create a 16 bit dos packed time
 ********************************************************************/
-static uint16 make_dos_time1(struct tm *t)
+static uint16_t make_dos_time1(struct tm *t)
 {
-	uint16 ret=0;
+	uint16_t ret=0;
 	ret = ((((unsigned)t->tm_min >> 3)&0x7) | (((unsigned)t->tm_hour) << 3));
 	ret = ((ret&0xFF)<<8) | ((t->tm_sec/2) | ((t->tm_min & 0x7) << 5));
 	return ret;
@@ -382,7 +382,7 @@ const char *nt_time_string(TALLOC_CTX *mem_ctx, NTTIME nt)
 /*
   put a NTTIME into a packet
 */
-void push_nttime(void *base, uint16 offset, NTTIME t)
+void push_nttime(void *base, uint16_t offset, NTTIME t)
 {
 	SBVAL(base, offset,   t);
 }
@@ -390,7 +390,7 @@ void push_nttime(void *base, uint16 offset, NTTIME t)
 /*
   pull a NTTIME from a packet
 */
-NTTIME pull_nttime(void *base, uint16 offset)
+NTTIME pull_nttime(void *base, uint16_t offset)
 {
 	NTTIME ret = BVAL(base, offset);
 	return ret;

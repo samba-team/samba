@@ -65,7 +65,7 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 {
 	struct dcesrv_remote_private *private = dce_call->conn->private;
 	NTSTATUS status;
-	uint16 opnum = dce_call->pkt.u.request.opnum;
+	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	const char *name = dce_call->conn->iface->ndr->calls[opnum].name;
 	ndr_push_flags_fn_t ndr_push_fn = dce_call->conn->iface->ndr->calls[opnum].ndr_push;
 	ndr_pull_flags_fn_t ndr_pull_fn = dce_call->conn->iface->ndr->calls[opnum].ndr_pull;

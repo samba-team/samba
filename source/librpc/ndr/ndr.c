@@ -426,7 +426,7 @@ static NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr,
 	}
 
 	case 2: {
-		uint16 size;
+		uint16_t size;
 		NDR_CHECK(ndr_pull_uint16(ndr, &size));
 		if (size == 0) return NT_STATUS_OK;
 		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
