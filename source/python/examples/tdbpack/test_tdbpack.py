@@ -119,7 +119,21 @@ class PackTests(unittest.TestCase):
                 out, rest = unpacker(format, packed + 'hello sailor!')
                 self.assertEquals(rest, 'hello sailor!')
                 self.assertEquals(list(values), list(out))
-        
+
+
+    def test_pack_extra(self):
+        """Leftover values when packing"""
+        cases = [
+            ('d', [10, 20]),
+            ]
+        for unpacker in both_unpackers:
+            for packer in both_packers:
+                for format, values in cases:
+                    bin = packer(format, values)
+                    out, rest = unpacker(format, bin)
+                    self.assertEquals(list(out), list(values))
+                    self.assertEquals(rest, '')
+
 
     def test_unpack(self):
         """Cookbook of tricky unpack tests"""
