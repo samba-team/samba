@@ -1207,7 +1207,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	
 	/* Create a 'combined' list of all SIDs we might want in the SD */
 	
-	all_group_SIDs = malloc(sizeof(DOM_SID) * (info3->num_groups2 +info3->num_other_sids));
+	all_group_SIDs = malloc(sizeof(DOM_SID) * (info3->num_groups2 + info3->num_other_sids + n_lgroupSIDs));
 	
 	if (!all_group_SIDs) {
 		DEBUG(0, ("malloc() failed for DOM_SID list!\n"));
@@ -1215,12 +1215,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		free_server_info(server_info);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-#if 0 	/* JERRY -- no such thing as local groups in current code */
-	/* Copy the 'local' sids */
-	memcpy(all_group_SIDs, lgroupSIDs, sizeof(DOM_SID) * n_lgroupSIDs);
-	SAFE_FREE(lgroupSIDs);
-#endif
 
 	/* and create (by appending rids) the 'domain' sids */
 	
@@ -1254,13 +1248,22 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		sid_copy(&all_group_SIDs[info3->num_groups2 + i],
 			 &info3->other_sids[i].sid);
 	}
+
+
+	/* add local alias sids */ 
+
+	for (i = 0; i < n_lgroupSIDs; i++) {
+		sid_copy(&all_group_SIDs[info3->num_groups2 +
+					 info3->num_other_sids + i],
+			 &lgroupSIDs[i]);
+	}
 	
 	/* Where are the 'global' sids... */
 
 	/* can the user be guest? if yes, where is it stored? */
 	
 	nt_status = create_nt_user_token(&user_sid, &group_sid,
-		info3->num_groups2 + info3->num_other_sids,
+		info3->num_groups2 + info3->num_other_sids + n_lgroupSIDs,
 		all_group_SIDs, False, &token);
 		
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
