@@ -181,6 +181,7 @@ BOOL py_to_DEVICEMODE(DEVICEMODE *devmode, PyObject *dict)
 BOOL py_from_PRINTER_INFO_0(PyObject **dict, PRINTER_INFO_0 *info)
 {
 	*dict = from_struct(info, py_PRINTER_INFO_0);
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(0));
 	return True;
 }
 
@@ -196,6 +197,7 @@ BOOL py_to_PRINTER_INFO_0(PRINTER_INFO_0 *info, PyObject *dict)
 BOOL py_from_PRINTER_INFO_1(PyObject **dict, PRINTER_INFO_1 *info)
 {
 	*dict = from_struct(info, py_PRINTER_INFO_1);
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(1));
 	return True;
 }
 
@@ -219,6 +221,8 @@ BOOL py_from_PRINTER_INFO_2(PyObject **dict, PRINTER_INFO_2 *info)
 
 	if (py_from_DEVICEMODE(&obj, info->devmode))
 		PyDict_SetItemString(*dict, "device_mode", obj);
+
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(2));
 
 	return True;
 }
@@ -259,6 +263,8 @@ BOOL py_from_PRINTER_INFO_3(PyObject **dict, PRINTER_INFO_3 *info)
 
 	if (py_from_SECDESC(&obj, info->secdesc))
 		PyDict_SetItemString(*dict, "security_descriptor", obj);
+
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(3));
 
 	return True;
 }
