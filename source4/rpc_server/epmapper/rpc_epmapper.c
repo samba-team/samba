@@ -116,11 +116,28 @@ static uint32 build_ep_list(TALLOC_CTX *mem_ctx,
 			    struct dcesrv_endpoint *endpoint_list,
 			    struct dcesrv_ep_iface **eps)
 {
+	struct dcesrv_endpoint *d;
 	uint32 total = 0;
 
 	(*eps) = NULL;
 	
-	/* TODO */
+	for (d=endpoint_list; d; d=d->next) {
+		struct dcesrv_if_list *iface;
+
+		for (iface=d->interface_list;iface;iface=iface->next) {
+			(*eps) = talloc_realloc_p(mem_ctx, *eps, 
+						  struct dcesrv_ep_iface,
+						  total + 1);
+			if (!*eps) {
+				return 0;
+			}
+			(*eps)[total].name = iface->iface.ndr->name;
+			(*eps)[total].uuid = iface->iface.ndr->uuid;
+			(*eps)[total].if_version = iface->iface.ndr->if_version;
+			(*eps)[total].ep_description = d->ep_description;
+			total++;
+		}
+	}
 
 	return total;
 }
