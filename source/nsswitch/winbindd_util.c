@@ -40,8 +40,11 @@ static const fstring name_deadbeef = "<deadbeef>";
 
 
 /* Globals for domain list stuff */
-
 struct winbindd_domain *domain_list = NULL;
+
+static struct winbindd_methods msrpc_methods = {
+	winbindd_query_dispinfo
+};
 
 /* Given a domain name, return the struct winbindd domain info for it 
    if it is actually working. */
@@ -89,7 +92,8 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 /* Add a trusted domain to our list of domains */
 
 static struct winbindd_domain *add_trusted_domain(char *domain_name,
-                                                  DOM_SID *domain_sid)
+                                                  DOM_SID *domain_sid,
+						  struct winbindd_methods *methods)
 {
 	struct winbindd_domain *domain, *tmp;
         
@@ -112,7 +116,8 @@ static struct winbindd_domain *add_trusted_domain(char *domain_name,
 	ZERO_STRUCTP(domain);
 	fstrcpy(domain->name, domain_name);
 	sid_copy(&domain->sid, domain_sid);
-        
+        domain->methods = methods;
+
 	/* Link to domain list */
         
 	DLIST_ADD(domain_list, domain);
@@ -150,7 +155,7 @@ BOOL get_domain_info(void)
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	add_trusted_domain(lp_workgroup(), &domain_sid);
+	add_trusted_domain(lp_workgroup(), &domain_sid, &msrpc_methods);
 	
 	/* Enumerate list of trusted domains */	
 
@@ -166,7 +171,7 @@ BOOL get_domain_info(void)
 	/* Add each domain to the trusted domain list */
 
 	for(i = 0; i < num_doms; i++)
-		add_trusted_domain(domains[i], &sids[i]);
+		add_trusted_domain(domains[i], &sids[i], &msrpc_methods);
 
 	rv = True;	
 
@@ -790,14 +795,17 @@ BOOL winbindd_param_init(void)
 
 NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
                                  TALLOC_CTX *mem_ctx,
-				 uint32 *start_ndx, uint16 info_level, 
-				 uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
+				 uint32 *start_ndx, uint32 *num_entries, 
+				 WINBIND_DISPINFO **info)
 {
 	CLI_POLICY_HND *hnd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND dom_pol;
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	SAM_DISPINFO_CTR ctr;
+	SAM_DISPINFO_1 info1;
+	int i;
 
 	/* Get sam handle */
 
@@ -814,11 +822,30 @@ NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
 
 	got_dom_pol = True;
 
-	/* Query display info */
+	ctr.sam.info1 = &info1;
 
+	/* Query display info level 1 */
 	result = cli_samr_query_dispinfo(hnd->cli, mem_ctx,
-					&dom_pol, start_ndx, info_level,
-					num_entries, 0xffff, ctr);
+					&dom_pol, start_ndx, 1,
+					num_entries, 0xffff, &ctr);
+
+	/* now map the result into the WINBIND_DISPINFO structure */
+	(*info) = (WINBIND_DISPINFO *)talloc(mem_ctx, (*num_entries)*sizeof(WINBIND_DISPINFO));
+	if (!(*info)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0;i<*num_entries;i++) {
+		(*info)[i].acct_name = unistr2_tdup(mem_ctx, &info1.str[i].uni_acct_name);
+		(*info)[i].full_name = unistr2_tdup(mem_ctx, &info1.str[i].uni_full_name);
+		(*info)[i].user_rid = info1.sam[i].rid_user;
+		/* For the moment we set the primary group for every user to be the
+		   Domain Users group.  There are serious problems with determining
+		   the actual primary group for large domains.  This should really
+		   be made into a 'winbind force group' smb.conf parameter or
+		   something like that. */ 
+		(*info)[i].group_rid = DOMAIN_GROUP_RID_USERS;
+	}
 
  done:
 

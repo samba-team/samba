@@ -165,6 +165,23 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 
 
 /*******************************************************************
+ duplicate a UNISTR2 string into a null terminated char*
+ using a talloc context
+********************************************************************/
+char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str)
+{
+	char *s;
+	int maxlen = (str->uni_str_len+1)*4;
+	if (!str->buffer) return NULL;
+	s = (char *)talloc(ctx, maxlen); /* convervative */
+	if (!s) return NULL;
+	pull_ucs2(NULL, s, str->buffer, maxlen, str->uni_str_len*2, 
+		  STR_NOALIGN);
+	return s;
+}
+
+
+/*******************************************************************
 Return a number stored in a buffer
 ********************************************************************/
 

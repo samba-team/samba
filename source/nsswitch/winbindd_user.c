@@ -377,12 +377,11 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 {
 	NTSTATUS status;
 	uint32 num_entries;
-	SAM_DISPINFO_1 info1;
-	SAM_DISPINFO_CTR ctr;
+	WINBIND_DISPINFO *info;
 	struct getpwent_user *name_list = NULL;
-	uint32 group_rid;
 	BOOL result = False;
 	TALLOC_CTX *mem_ctx;
+	struct winbindd_methods *methods;
 
 	if (ent->got_all_sam_entries)
 		return False;
@@ -390,10 +389,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	if (!(mem_ctx = talloc_init()))
 		return False;
 
-	ZERO_STRUCT(info1);
-	ZERO_STRUCT(ctr);
-
-	ctr.sam.info1 = &info1;
+	methods = ent->domain->methods;
 
 #if 0
 	/* Look in cache for entries, else get them direct */
@@ -405,14 +401,6 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 		return True;
 	}
 #endif
-
-	/* For the moment we set the primary group for every user to be the
-	   Domain Users group.  There are serious problems with determining
-	   the actual primary group for large domains.  This should really
-	   be made into a 'winbind force group' smb.conf parameter or
-	   something like that. */ 
-
-	group_rid = DOMAIN_GROUP_RID_USERS;
 
 	/* Free any existing user info */
 
@@ -426,9 +414,9 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 					
 		num_entries = 0;
 
-		status = winbindd_query_dispinfo(ent->domain, mem_ctx,
-						 &ent->dispinfo_ndx, 1,
-						 &num_entries, &ctr);
+		status = methods->query_dispinfo(ent->domain, mem_ctx,
+						 &ent->dispinfo_ndx, 
+						 &num_entries, &info);
 		
 		if (num_entries) {
 			struct getpwent_user *tnl;
@@ -447,26 +435,23 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 		}
 
 		for (i = 0; i < num_entries; i++) {
-
 			/* Store account name and gecos */
-
-			unistr2_to_ascii(
-				name_list[ent->num_sam_entries + i].name, 
-				&info1.str[i].uni_acct_name, 
-				sizeof(fstring));
-
-			unistr2_to_ascii(
-				name_list[ent->num_sam_entries + i].gecos, 
-				&info1.str[i].uni_full_name, 
-				sizeof(fstring));
+			if (!info[i].acct_name) {
+				fstrcpy(name_list[ent->num_sam_entries + i].name, "");
+			} else {
+				fstrcpy(name_list[ent->num_sam_entries + i].name, 
+					info[i].acct_name); 
+			}
+			if (!info[i].full_name) {
+				fstrcpy(name_list[ent->num_sam_entries + i].gecos, "");
+			} else {
+				fstrcpy(name_list[ent->num_sam_entries + i].gecos, 
+					info[i].full_name); 
+			}
 
 			/* User and group ids */
-
-			name_list[ent->num_sam_entries + i].user_rid =
-				info1.sam[i].rid_user;
-
-			name_list[ent->num_sam_entries + i].
-				group_rid = group_rid;
+			name_list[ent->num_sam_entries+i].user_rid = info[i].user_rid;
+			name_list[ent->num_sam_entries+i].group_rid = info[i].group_rid;
 		}
 		
 		ent->num_sam_entries += num_entries;
@@ -615,8 +600,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
-	SAM_DISPINFO_CTR ctr;
-	SAM_DISPINFO_1 info1;
+	WINBIND_DISPINFO *info;
 	uint32 num_entries = 0, total_entries = 0;
 	char *ted, *extra_data = NULL;
 	int extra_data_len = 0;
@@ -630,14 +614,13 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 
 	/* Enumerate over trusted domains */
 
-	ctr.sam.info1 = &info1;
-
 	if (domain_list == NULL)
 		get_domain_info();
 
 	for (domain = domain_list; domain; domain = domain->next) {
 		NTSTATUS status;
 		uint32 start_ndx = 0;
+		struct winbindd_methods *methods;
 
 		/* Skip domains other than WINBINDD_DOMAIN environment
 		   variable */ 
@@ -646,20 +629,20 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		    !check_domain_env(state->request.domain, domain->name))
 			continue;
 
+		methods = domain->methods;
+
 		/* Query display info */
 
 		do {
 			int i;
 
-			status = winbindd_query_dispinfo(
-                                domain, mem_ctx, &start_ndx, 
-                                1, &num_entries, &ctr);
+			status = methods->query_dispinfo(domain, mem_ctx, &start_ndx, 
+							 &num_entries, &info);
 
 			if (num_entries == 0)
 				continue;
 
 			/* Allocate some memory for extra data */
-
 			total_entries += num_entries;
 			
 			ted = Realloc(extra_data, sizeof(fstring) * 
@@ -675,26 +658,22 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 			/* Pack user list into extra data fields */
 			
 			for (i = 0; i < num_entries; i++) {
-				UNISTR2 *uni_acct_name;
 				fstring acct_name, name;
 
-				/* Convert unistring to ascii */
-				
-				uni_acct_name = &ctr.sam.info1->str[i]. 
-					uni_acct_name;
-				unistr2_to_ascii(acct_name, uni_acct_name,
-						 sizeof(acct_name) - 1);
+				if (!info[i].acct_name) {
+					fstrcpy(acct_name, "");
+				} else {
+					fstrcpy(acct_name, info[i].acct_name);
+				}
                                                  
 				slprintf(name, sizeof(name) - 1, "%s%s%s",
 					 domain->name, lp_winbind_separator(),
 					 acct_name);
 
 				/* Append to extra data */
-			
 				memcpy(&extra_data[extra_data_len], name, 
 				       strlen(name));
 				extra_data_len += strlen(name);
-				
 				extra_data[extra_data_len++] = ',';
 			}   
 		} while (NT_STATUS_V(status) == NT_STATUS_V(STATUS_MORE_ENTRIES));

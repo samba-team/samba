@@ -73,7 +73,7 @@ struct winbindd_cm_conn {
 	POLICY_HND pol;
 };
 
-struct winbindd_cm_conn *cm_conns = NULL;
+static struct winbindd_cm_conn *cm_conns = NULL;
 
 /* Get a domain controller name.  Cache positive and negative lookups so we
    don't go to the network too often when something is badly broken. */
