@@ -43,7 +43,7 @@ MAKEINDEX = @MAKEINDEX@
 IMAGEPROJDIR = $(HOWTODIR)/imagefiles
 GUIDEDOC = $(TOPDIR)/guide
 EXAMPLESDIR = $(TOPDIR)/examples
-DEVDOC = $(TOPDIR)/devdoc
+DEVDOC = $(TOPDIR)/devel
 SMBDOTCONFDOC = $(TOPDIR)/smbdotconf
 PSDIR = $(OUTPUTDIR)
 PDFDIR = $(OUTPUTDIR)
@@ -108,14 +108,14 @@ html-single: $(HTMLDIR) CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/S
 	@if [ ! -d $(HTMLDIR)/images/ ]; then \
 		mkdir $(HTMLDIR)/images/; \
 	fi \
-	&& cp -p projdoc/imagefiles/*png $(HTMLDIR)/images/
+	&& cp -p $(IMAGEPROJDIR)/*png $(HTMLDIR)/images/
 
 html: $(HTMLDIR) CSS Samba-HOWTO-Collection.xml $(HTMLDIR)/Samba-Developers-Guide.html
 	$(XSLTPROC) -o "$(HTMLDIR)/" xslt/html-chunk.xsl Samba-HOWTO-Collection.xml
 	@if [ ! -d $(HTMLDIR)/images/ ]; then \
 		mkdir $(HTMLDIR)/images/; \
 	fi \
-	&& cp -p projdoc/imagefiles/*png $(HTMLDIR)/images/
+	&& cp -p $(IMAGEPROJDIR)/*png $(HTMLDIR)/images/
 
 manpages: $(MANDIR) $(MANPAGES)
 
@@ -203,6 +203,7 @@ $(OUTPUTDIR):
 
 $(HTMLDIR): $(OUTPUTDIR)
 	mkdir $(HTMLDIR)
+	mkdir $(HTMLDIR)/images
 
 $(PLUCKERDIR): $(OUTPUTDIR)
 	mkdir $(PLUCKERDIR)
