@@ -268,24 +268,6 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		p = rdata;
 
 		/* we might need the lastname for continuations */
-		if (ff_lastname > 0) {
-			switch(info_level) {
-				case 260:
-					clistr_pull(cli, mask, p+ff_lastname,
-						    sizeof(mask), 
-						    data_len-ff_lastname,
-						    STR_TERMINATE);
-					break;
-				case 1:
-					clistr_pull(cli, mask, p+ff_lastname+1,
-						    sizeof(mask), 
-						    -1,
-						    STR_TERMINATE);
-					break;
-				}
-		} else {
-			pstrcpy(mask,"");
-		}
  
 		/* and add them to the dirlist pool */
 		tdl = SMB_REALLOC(dirlist,dirlist_len + data_len);
@@ -299,9 +281,17 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		/* put in a length for the last entry, to ensure we can chain entries 
 		   into the next packet */
-		for (p2=p,i=0;i<(ff_searchcount-1);i++)
-			p2 += interpret_long_filename(cli,info_level,p2,NULL);
+		for (p2=p,i=0;i<(ff_searchcount-1);i++) {
+			p2 += interpret_long_filename(cli,info_level,p2,&finfo);
+		}
 		SSVAL(p2,0,data_len - PTR_DIFF(p2,p));
+
+		/* we might need the lastname for continuations */
+		if (ff_lastname > 0) {
+			pstrcpy(mask, finfo.name);
+		} else {
+			pstrcpy(mask,"");
+		}
 
 		/* grab the data for later use */
 		memcpy(dirlist+dirlist_len,p,data_len);
