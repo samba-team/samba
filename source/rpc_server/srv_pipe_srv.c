@@ -802,7 +802,7 @@ static BOOL api_pipe_request(rpcsrv_struct *l, const char* name)
 	return False;
 }
 
-BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
+static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 				const char* name)
 {
 	BOOL reply = False;
@@ -991,11 +991,11 @@ BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name,
  pdu; hands pdu off to msrpc, which gets a pdu back (except in the
  case of the RPC_BINDCONT pdu).
  ********************************************************************/
-BOOL rpc_to_smb_local(pipes_struct *p, char *data, int len)
+BOOL rpc_local(pipes_struct *p, char *data, int len)
 {
 	BOOL reply = False;
 
-	DEBUG(10,("rpc_to_smb: len %d\n", len));
+	DEBUG(10,("rpc_local: len %d\n", len));
 
 	if (len != 0)
 	{

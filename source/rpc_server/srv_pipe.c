@@ -97,7 +97,7 @@ BOOL rpc_redir_remote(struct msrpc_state *m, prs_struct *req, prs_struct *resp)
  pdu; hands pdu off to msrpc, which gets a pdu back (except in the
  case of the RPC_BINDCONT pdu).
  ********************************************************************/
-BOOL rpc_to_smb_remote(pipes_struct *p, char *data, int len)
+BOOL rpc_to_smb_write(pipes_struct *p, char *data, int len)
 {
 	BOOL reply = False;
 
@@ -126,21 +126,6 @@ BOOL rpc_to_smb_remote(pipes_struct *p, char *data, int len)
 }
 
 /****************************************************************************
- writes data to a pipe.
- ****************************************************************************/
-ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
-{
-	DEBUG(6,("write_pipe: %x", p->pnum));
-	DEBUG(6,("name: %s open: %s len: %d",
-		 p->name, BOOLSTR(p->open), n));
-
-	dump_data(50, data, n);
-
-	return rpc_to_smb_remote(p, data, n) ? ((ssize_t)n) : -1;
-}
-
-
-/****************************************************************************
  reads data from a pipe.
 
  headers are interspersed with the data at regular intervals.  by the time
@@ -148,7 +133,7 @@ ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
  read by an SMBtrans (file_offset != 0).
 
  ****************************************************************************/
-int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
+int rpc_to_smb_read(pipes_struct *p, char *data, int n)
 {
 	int num = 0;
 	int pdu_len = 0;
@@ -157,17 +142,6 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 	int data_pos; /* entire rpc data sent - no headers, no auth verifiers */
 	int this_pdu_data_pos;
 	RPC_HDR hdr;
-
-	DEBUG(6,("read_pipe: %x name: %s open: %s pos: %d len: %d",
-		 p->pnum, p->name, BOOLSTR(p->open),
-		 pos, n));
-
-	if (!p || !p->open)
-	{
-		DEBUG(6,("pipe not open\n"));
-		return -1;		
-	}
-
 
 	if (p->rsmb_pdu.data == NULL ||  p->rsmb_pdu.data_size == 0)
 	{
@@ -246,6 +220,45 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 	}
 
 	return num;
+}
+
+
+/****************************************************************************
+ writes data to a pipe.
+ ****************************************************************************/
+ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
+{
+	DEBUG(6,("write_pipe: %x", p->pnum));
+	DEBUG(6,("name: %s open: %s len: %d",
+		 p->name, BOOLSTR(p->open), n));
+
+	dump_data(50, data, n);
+
+	return rpc_to_smb_write(p, data, n) ? ((ssize_t)n) : -1;
+}
+
+
+/****************************************************************************
+ reads data from a pipe.
+
+ headers are interspersed with the data at regular intervals.  by the time
+ this function is called, the start of the data could possibly have been
+ read by an SMBtrans (file_offset != 0).
+
+ ****************************************************************************/
+int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
+{
+	DEBUG(6,("read_pipe: %x name: %s open: %s pos: %d len: %d",
+		 p->pnum, p->name, BOOLSTR(p->open),
+		 pos, n));
+
+	if (!p || !p->open)
+	{
+		DEBUG(6,("pipe not open\n"));
+		return -1;		
+	}
+
+	return rpc_to_smb_read(p, data, n);
 }
 
 

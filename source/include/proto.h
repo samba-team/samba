@@ -3768,7 +3768,8 @@ BOOL api_netlog_rpc(rpcsrv_struct *p);
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 
 BOOL rpc_redir_remote(struct msrpc_state *m, prs_struct *req, prs_struct *resp);
-BOOL rpc_to_smb_remote(pipes_struct *p, char *data, int len);
+BOOL rpc_to_smb_write(pipes_struct *p, char *data, int len);
+int rpc_to_smb_read(pipes_struct *p, char *data, int n);
 ssize_t write_pipe(pipes_struct *p, char *data, size_t n);
 int read_pipe(pipes_struct *p, char *data, uint32 pos, int n);
 
@@ -3793,11 +3794,9 @@ void close_msrpc_command_processor(void);
 void add_msrpc_command_processor(char* pipe_name,
 				char* process_name,
 				BOOL (*fn) (rpcsrv_struct *));
-BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
-				const char* name);
 BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name,
 				struct api_struct *api_rpc_cmds);
-BOOL rpc_to_smb_local(pipes_struct *p, char *data, int len);
+BOOL rpc_local(pipes_struct *p, char *data, int len);
 
 /*The following definitions come from  rpc_server/srv_reg.c  */
 

@@ -173,7 +173,7 @@ static void process_msrpc(pipes_struct *p, int c)
   }
 #endif
 
-	if (rpc_to_smb_local(p, pdu.data, len))
+	if (rpc_local(p, pdu.data, len))
 	{
 	      msrpc_send(c, &p->rsmb_pdu);
 	}
