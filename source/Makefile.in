@@ -405,7 +405,7 @@ realclean: clean
 distclean: realclean
 	-rm -f include/config.h include/stamp-h Makefile
 	-rm -f config.status config.cache
-	-rm -rf .deps bin
+	-rm -rf .deps 
 
 # this target is really just for my use. It only works on a limited
 # range of machines and is used to produce a list of potentially
