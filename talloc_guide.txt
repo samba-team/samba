@@ -134,6 +134,11 @@ as talloc_reference().
 Note that if the reference has already been removed using
 talloc_free() then this function will fail and will return NULL.
 
+Usually you can just use talloc_free() instead of
+talloc_unreference(), but sometimes it is useful to have the
+additional control on who becomes the parent of the pointer given by
+talloc_unreference().
+
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void talloc_set_destructor(const void *ptr, int (*destructor)(void *));
