@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,7 +42,8 @@ krb5_mk_error(krb5_context context,
 	      const krb5_data *e_data,
 	      const krb5_principal client,
 	      const krb5_principal server,
-	      time_t ctime,
+	      time_t *ctime,
+	      int *cusec,
 	      krb5_data *reply)
 {
     KRB_ERROR msg;
@@ -59,9 +60,8 @@ krb5_mk_error(krb5_context context,
     msg.msg_type = krb_error;
     msg.stime    = sec;
     msg.susec    = usec;
-    if(ctime) {
-	msg.ctime = &ctime;
-    }
+    msg.ctime    = ctime;
+    msg.cusec    = cusec;
     /* Make sure we only send `protocol' error codes */
     if(error_code < KRB5KDC_ERR_NONE || error_code >= KRB5_ERR_RCSID) {
 	if(e_text == NULL)
