@@ -855,22 +855,35 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 
 	fp = startlmhosts(dyn_LMHOSTSFILE);
 	if(fp) {
-		while (getlmhostsent(fp, lmhost_name, &name_type2, &return_ip)) {
-			if (strequal(name, lmhost_name) && 
-                ((name_type2 == -1) || (name_type == name_type2))
-               ) {
-				endlmhosts(fp);
-				if ( (*return_iplist = (struct ip_service *)malloc(sizeof(struct ip_service))) == NULL ) {
-					DEBUG(3,("resolve_lmhosts: malloc fail !\n"));
-					return False;
-				}
-				(*return_iplist)[0].ip   = return_ip;
-				(*return_iplist)[0].port = PORT_NONE;
-				*return_count = 1;
-				return True; 
+		while (getlmhostsent(fp, lmhost_name, &name_type2,
+				     &return_ip)) {
+
+			if (!strequal(name, lmhost_name))
+				continue;
+
+			if ((name_type2 != -1) && (name_type != name_type2))
+				continue;
+
+			*return_iplist = (struct ip_service *)
+				realloc((*return_iplist),
+					sizeof(struct ip_service) *
+					((*return_count)+1));
+
+			if ((*return_iplist) == NULL) {
+				DEBUG(3,("resolve_lmhosts: malloc fail !\n"));
+				return False;
 			}
+
+			(*return_iplist)[*return_count].ip   = return_ip;
+			(*return_iplist)[*return_count].port = PORT_NONE;
+			*return_count += 1;
+
+			/* Multiple names only for DC lookup */
+			if (name_type != 0x1c)
+				break;
 		}
 		endlmhosts(fp);
+		return True;
 	}
 	return False;
 }
