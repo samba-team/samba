@@ -581,7 +581,7 @@ typedef struct {
 #define FLAG_SAM_LOGONSCRIPT	0x00000010
 #define FLAG_SAM_DRIVE		0x00000020
 
-#define IS_SAM_ACCT_UNIX_USER(x) \
+#define IS_SAM_UNIX_USER(x) \
 	(((x)->init_flag & SAM_ACCT_UNIX_UID) \
 	 && ((x)->init_flag & SAM_ACCT_UNIX_GID))
 
