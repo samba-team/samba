@@ -115,3 +115,30 @@ msrpc_service_fns *get_service_fns(void)
 {
 	return &fn_table;
 }
+
+/*******************************************************************
+time of day
+********************************************************************/
+uint32 _srv_net_remote_tod( UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod )
+{
+	struct tm *t;
+	time_t unixdate = time(NULL);
+
+	t = gmtime(&unixdate);
+
+	/* set up the */
+	make_time_of_day_info(tod,
+	                      unixdate,
+	                      0,
+	                      t->tm_hour,
+	                      t->tm_min,
+	                      t->tm_sec,
+	                      0,
+	                      TimeDiff(unixdate)/60,
+	                      10000,
+	                      t->tm_mday,
+	                      t->tm_mon + 1,
+	                      1900+t->tm_year,
+	                      t->tm_wday);
+	return 0x0;
+}

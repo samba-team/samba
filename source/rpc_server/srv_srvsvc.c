@@ -1057,56 +1057,29 @@ static void api_srv_net_share_enum( rpcsrv_struct *p, prs_struct *data,
 }
 
 /*******************************************************************
-time of day
-********************************************************************/
-static void srv_reply_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_n,
-				prs_struct *rdata)
-{
-	SRV_R_NET_REMOTE_TOD r_n;
-	TIME_OF_DAY_INFO tod;
-	struct tm *t;
-	time_t unixdate = time(NULL);
-
-	r_n.tod = &tod;
-	r_n.ptr_srv_tod = 0x1;
-	r_n.status = 0x0;
-
-	DEBUG(5,("srv_reply_net_remote_tod: %d\n", __LINE__));
-
-	t = gmtime(&unixdate);
-
-	/* set up the */
-	make_time_of_day_info(&tod,
-	                      unixdate,
-	                      0,
-	                      t->tm_hour,
-	                      t->tm_min,
-	                      t->tm_sec,
-	                      0,
-	                      TimeDiff(unixdate)/60,
-	                      10000,
-	                      t->tm_mday,
-	                      t->tm_mon + 1,
-	                      1900+t->tm_year,
-	                      t->tm_wday);
-	
-	/* store the response in the SMB stream */
-	srv_io_r_net_remote_tod("", &r_n, rdata, 0);
-	
-	DEBUG(5,("srv_reply_net_remote_tod: %d\n", __LINE__));
-}
-/*******************************************************************
 ********************************************************************/
 static void api_srv_net_remote_tod( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
-	SRV_Q_NET_REMOTE_TOD q_n;
+        SRV_Q_NET_REMOTE_TOD q_n;
+        SRV_R_NET_REMOTE_TOD r_n;
+        TIME_OF_DAY_INFO tod;
+	uint32 status;
+
+	ZERO_STRUCT(q_n);
+	ZERO_STRUCT(r_n);
 
 	/* grab the net server get enum */
 	srv_io_q_net_remote_tod("", &q_n, data, 0);
 
-	/* construct reply.  always indicate success */
-	srv_reply_net_remote_tod(&q_n, rdata);
+	status = _srv_net_remote_tod( &q_n.uni_srv_name, &tod );
+
+	r_n.tod = &tod;
+	r_n.ptr_srv_tod = 0x1;
+	r_n.status = status;
+
+	/* store the response in the SMB stream */
+	srv_io_r_net_remote_tod("", &r_n, rdata, 0);
 }
 
 
