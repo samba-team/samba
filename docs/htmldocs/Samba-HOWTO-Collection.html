@@ -253,38 +253,47 @@ HREF="#AEN439"
 HREF="#AEN456"
 >Configuration</A
 ></DT
+><DD
+><DL
 ><DT
 ><A
 HREF="#AEN510"
+>Support a large number of printers</A
+></DT
+></DL
+></DD
+><DT
+><A
+HREF="#AEN521"
 >The Imprints Toolset</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN514"
+HREF="#AEN525"
 >What is Imprints?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN524"
+HREF="#AEN535"
 >Creating Printer Driver Packages</A
 ></DT
 ><DT
 ><A
-HREF="#AEN527"
+HREF="#AEN538"
 >The Imprints server</A
 ></DT
 ><DT
 ><A
-HREF="#AEN531"
+HREF="#AEN542"
 >The Installation Client</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN553"
+HREF="#AEN564"
 ><A
 NAME="MIGRATION"
 ></A
@@ -295,161 +304,161 @@ NAME="MIGRATION"
 ></DD
 ><DT
 >5. <A
-HREF="#AEN581"
+HREF="#AEN593"
 >security = domain in Samba 2.x</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN592"
+HREF="#AEN604"
 >Joining an NT Domain with Samba 2.2</A
 ></DT
 ><DT
 ><A
-HREF="#AEN655"
+HREF="#AEN667"
 >Why is this better than security = server?</A
 ></DT
 ></DL
 ></DD
 ><DT
 >6. <A
-HREF="#AEN669"
+HREF="#AEN681"
 >Unifed Logons between Windows NT and UNIX using Winbind</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN687"
+HREF="#AEN699"
 >Abstract</A
 ></DT
 ><DT
 ><A
-HREF="#AEN691"
+HREF="#AEN703"
 >Introduction</A
 ></DT
 ><DT
 ><A
-HREF="#AEN704"
+HREF="#AEN716"
 >What Winbind Provides</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN711"
+HREF="#AEN723"
 >Target Uses</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN715"
+HREF="#AEN727"
 >How Winbind Works</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN720"
+HREF="#AEN732"
 >Microsoft Remote Procedure Calls</A
 ></DT
 ><DT
 ><A
-HREF="#AEN724"
+HREF="#AEN736"
 >Name Service Switch</A
 ></DT
 ><DT
 ><A
-HREF="#AEN740"
+HREF="#AEN752"
 >Pluggable Authentication Modules</A
 ></DT
 ><DT
 ><A
-HREF="#AEN748"
+HREF="#AEN760"
 >User and Group ID Allocation</A
 ></DT
 ><DT
 ><A
-HREF="#AEN752"
+HREF="#AEN764"
 >Result Caching</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN755"
+HREF="#AEN767"
 >Installation and Configuration</A
 ></DT
 ><DT
 ><A
-HREF="#AEN761"
+HREF="#AEN773"
 >Limitations</A
 ></DT
 ><DT
 ><A
-HREF="#AEN773"
+HREF="#AEN785"
 >Conclusion</A
 ></DT
 ></DL
 ></DD
 ><DT
 >7. <A
-HREF="#AEN776"
+HREF="#AEN788"
 >UNIX Permission Bits and WIndows NT Access Control Lists</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN787"
+HREF="#AEN799"
 >Viewing and changing UNIX permissions using the NT 
 	security dialogs</A
 ></DT
 ><DT
 ><A
-HREF="#AEN796"
+HREF="#AEN808"
 >How to view file security on a Samba share</A
 ></DT
 ><DT
 ><A
-HREF="#AEN807"
+HREF="#AEN819"
 >Viewing file ownership</A
 ></DT
 ><DT
 ><A
-HREF="#AEN827"
+HREF="#AEN839"
 >Viewing file or directory permissions</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN842"
+HREF="#AEN854"
 >File Permissions</A
 ></DT
 ><DT
 ><A
-HREF="#AEN856"
+HREF="#AEN868"
 >Directory Permissions</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN863"
+HREF="#AEN875"
 >Modifying file or directory permissions</A
 ></DT
 ><DT
 ><A
-HREF="#AEN885"
+HREF="#AEN897"
 >Interaction with the standard Samba create mask 
 	parameters</A
 ></DT
 ><DT
 ><A
-HREF="#AEN949"
+HREF="#AEN961"
 >Interaction with the standard Samba file attribute 
 	mapping</A
 ></DT
@@ -2084,10 +2093,10 @@ NAME="AEN439"
 >Introduction</A
 ></H1
 ><P
->Beginning with the 2.2.0 release, Samba now supports 
+>Beginning with the 2.2.0 release, Samba supports 
 	the native Windows NT printing mechanisms implemented via 
 	MS-RPC (i.e. the SPOOLSS named pipe).  Previous versions of 
-	Samba only supported the LanMan printing calls.</P
+	Samba only supported LanMan printing calls.</P
 ><P
 >The additional functionality provided by the new 
 	SPOOLSS support includes:</P
@@ -2130,7 +2139,7 @@ TARGET="_top"
 ><LI
 ><P
 >Improved support for printer queue manipulation 
-		through the use of an internal database for spooled job 
+		through the use of an internal databases for spooled job 
 		information</P
 ></LI
 ></UL
@@ -2149,7 +2158,7 @@ NAME="AEN456"
 	The name of this share is hard coded in Samba's internals so 
 	the name is very important (print$ is the service used by 
 	Windows NT print servers to provide support for printer driver 
-	download.</P
+	download).</P
 ><DIV
 CLASS="WARNING"
 ><P
@@ -2229,7 +2238,7 @@ CLASS="PROGRAMLISTING"
 ></P
 ><P
 >The <A
-HREF="smb./conf.5.html#WRITELIST"
+HREF="smb.conf.5.html#WRITELIST"
 TARGET="_top"
 ><TT
 CLASS="PARAMETER"
@@ -2350,7 +2359,7 @@ CLASS="PARAMETER"
 ></UL
 ><P
 >Of course, the connected account must still possess access
-		to add files to the sibdirectories beneath [print$].</P
+		to add files to the subdirectories beneath [print$].</P
 ></TD
 ></TR
 ></TABLE
@@ -2367,23 +2376,6 @@ CLASS="PARAMETER"
 	from a Windows NT 4.0 client.  Navigate to the "Printers" folder
 	on the Samba server.  You should see an initial listing of printers
 	that matches the printer shares defined on your Samba host.</P
-><P
->It is possible on a Windows NT print server to have printers
-	listed in the Printers folder which are not shared.  Samba does
-	not make this distinction.  By definition, the only printers of
-	which Samba is aware are those which are specified as shares in
-	<TT
-CLASS="FILENAME"
->smb.conf</TT
->.</P
-><P
->Another interesting side note is that Windows NT clients do
-	not use the SMB printer share, but rather can print directly 
-	to any printer on another Windows NT host using MS-RPC.  This
-	of course assumes that the printing client has the necessary
-	privileges on the remote host serving the printer.  The default
-	permissions assigned by Windows NT to a printer gives the "Print"
-	permissions to the "Everyone" well-known group.</P
 ><P
 >The initial listing of printers in the Samba host's 
 	Printers folder will have no printer driver assigned to them.  
@@ -2411,13 +2403,98 @@ CLASS="FILENAME"
 >Assuming you have connected with a root account, you 
 	will also be able modify other printer properties such as 
 	ACLs and device settings using this dialog box.</P
+><P
+>A few closing comments for this section, it is possible 
+	on a Windows NT print server to have printers
+	listed in the Printers folder which are not shared.  Samba does
+	not make this distinction.  By definition, the only printers of
+	which Samba is aware are those which are specified as shares in
+	<TT
+CLASS="FILENAME"
+>smb.conf</TT
+>.</P
+><P
+>Another interesting side note is that Windows NT clients do
+	not use the SMB printer share, but rather can print directly 
+	to any printer on another Windows NT host using MS-RPC.  This
+	of course assumes that the printing client has the necessary
+	privileges on the remote host serving the printer.  The default
+	permissions assigned by Windows NT to a printer gives the "Print"
+	permissions to the "Everyone" well-known group.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN510"
+>Support a large number of printers</A
+></H2
+><P
+>One issue that has arisen during the development
+		phase of Samba 2.2 is the need to support driver downloads for
+		100's of printers.  Using the Windows NT APW is somewhat 
+		awkward to say the list.  If more than one printer are using the 
+		same driver, the <A
+HREF="rpcclient.1.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>rpcclient's
+		setdriver command</B
+></A
+> can be used to set the driver
+		associated with an installed driver.  The following is example
+		of how this could be accomplished:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+> 
+		<TT
+CLASS="PROMPT"
+>$ </TT
+>rpcclient pogo -U root%secret -c "enumdrivers"
+Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
+ 
+[Windows NT x86]
+Printer Driver Info 1:
+	Driver Name: [HP LaserJet 4000 Series PS]
+ 
+Printer Driver Info 1:
+	Driver Name: [HP LaserJet 2100 Series PS]
+ 
+Printer Driver Info 1:
+	Driver Name: [HP LaserJet 4Si/4SiMX PS]
+				  
+		<TT
+CLASS="PROMPT"
+>$ </TT
+>rpcclient pogo -U root%secret -c "enumprinters"
+Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
+	flags:[0x800000]
+	name:[\\POGO\hp-print]
+	description:[POGO\\POGO\hp-print,NO DRIVER AVAILABLE FOR THIS PRINTER,]
+	comment:[]
+				  
+		<TT
+CLASS="PROMPT"
+>$ </TT
+>rpcclient pogo -U root%bleaK.er \
+		<TT
+CLASS="PROMPT"
+>&gt; </TT
+> -c "setdriver hp-print \"HP LaserJet 4000 Series PS\""
+Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
+Succesfully set hp-print to driver HP LaserJet 4000 Series PS.
+		</PRE
+></P
+></DIV
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN510"
+NAME="AEN521"
 >The Imprints Toolset</A
 ></H1
 ><P
@@ -2435,7 +2512,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN514"
+NAME="AEN525"
 >What is Imprints?</A
 ></H2
 ><P
@@ -2467,7 +2544,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN524"
+NAME="AEN535"
 >Creating Printer Driver Packages</A
 ></H2
 ><P
@@ -2483,7 +2560,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN527"
+NAME="AEN538"
 >The Imprints server</A
 ></H2
 ><P
@@ -2504,7 +2581,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN531"
+NAME="AEN542"
 >The Installation Client</A
 ></H2
 ><P
@@ -2599,7 +2676,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN553"
+NAME="AEN564"
 ><A
 NAME="MIGRATION"
 ></A
@@ -2678,14 +2755,14 @@ CLASS="PARAMETER"
 ><UL
 ><LI
 ><P
->If you does not desire the new Windows NT 
+>If you do not desire the new Windows NT 
 		print driver support, nothing needs to be done.  
 		All existing parameters work the same.</P
 ></LI
 ><LI
 ><P
 >If you want to take advantage of NT printer 
-		driver support but does not want to migrate the 
+		driver support but do not want to migrate the 
 		9x drivers to the new setup, the leave the existing 
 		printers.def file.  When smbd attempts to locate a 
 		9x driver for the printer in the TDB and fails it 
@@ -2712,8 +2789,12 @@ CLASS="FILENAME"
 >		printers.def</TT
 > file into the new setup, the current only 
 		solution is to use the Windows NT APW to install the NT drivers 
-		and the 9x  drivers.  (comment: this could possibly be scripted 
-		using smbclient and rpcclient, but I haven't had time  --jerry)
+		and the 9x  drivers.  This can be scripted using smbclient and 
+		rpcclient.  See the <A
+HREF="http://imprints.sourceforge.net/"
+TARGET="_top"
+>		Imprints insrallation client</A
+> for an example.
 		</P
 ></LI
 ></UL
@@ -2723,7 +2804,7 @@ CLASS="FILENAME"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN581"
+NAME="AEN593"
 >Chapter 5. security = domain in Samba 2.x</A
 ></H1
 ><DIV
@@ -2731,7 +2812,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN592"
+NAME="AEN604"
 >Joining an NT Domain with Samba 2.2</A
 ></H1
 ><P
@@ -2954,7 +3035,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN655"
+NAME="AEN667"
 >Why is this better than security = server?</A
 ></H1
 ><P
@@ -3031,7 +3112,7 @@ TARGET="_top"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN669"
+NAME="AEN681"
 >Chapter 6. Unifed Logons between Windows NT and UNIX using Winbind</A
 ></H1
 ><DIV
@@ -3039,7 +3120,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN687"
+NAME="AEN699"
 >Abstract</A
 ></H1
 ><P
@@ -3062,7 +3143,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN691"
+NAME="AEN703"
 >Introduction</A
 ></H1
 ><P
@@ -3116,7 +3197,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN704"
+NAME="AEN716"
 >What Winbind Provides</A
 ></H1
 ><P
@@ -3158,7 +3239,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN711"
+NAME="AEN723"
 >Target Uses</A
 ></H2
 ><P
@@ -3182,7 +3263,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN715"
+NAME="AEN727"
 >How Winbind Works</A
 ></H1
 ><P
@@ -3202,7 +3283,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN720"
+NAME="AEN732"
 >Microsoft Remote Procedure Calls</A
 ></H2
 ><P
@@ -3228,7 +3309,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN724"
+NAME="AEN736"
 >Name Service Switch</A
 ></H2
 ><P
@@ -3307,7 +3388,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN740"
+NAME="AEN752"
 >Pluggable Authentication Modules</A
 ></H2
 ><P
@@ -3356,7 +3437,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN748"
+NAME="AEN760"
 >User and Group ID Allocation</A
 ></H2
 ><P
@@ -3382,7 +3463,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN752"
+NAME="AEN764"
 >Result Caching</A
 ></H2
 ><P
@@ -3405,7 +3486,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN755"
+NAME="AEN767"
 >Installation and Configuration</A
 ></H1
 ><P
@@ -3436,7 +3517,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN761"
+NAME="AEN773"
 >Limitations</A
 ></H1
 ><P
@@ -3484,7 +3565,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN773"
+NAME="AEN785"
 >Conclusion</A
 ></H1
 ><P
@@ -3500,7 +3581,7 @@ NAME="AEN773"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN776"
+NAME="AEN788"
 >Chapter 7. UNIX Permission Bits and WIndows NT Access Control Lists</A
 ></H1
 ><DIV
@@ -3508,7 +3589,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN787"
+NAME="AEN799"
 >Viewing and changing UNIX permissions using the NT 
 	security dialogs</A
 ></H1
@@ -3547,7 +3628,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN796"
+NAME="AEN808"
 >How to view file security on a Samba share</A
 ></H1
 ><P
@@ -3599,7 +3680,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN807"
+NAME="AEN819"
 >Viewing file ownership</A
 ></H1
 ><P
@@ -3687,7 +3768,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN827"
+NAME="AEN839"
 >Viewing file or directory permissions</A
 ></H1
 ><P
@@ -3749,7 +3830,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN842"
+NAME="AEN854"
 >File Permissions</A
 ></H2
 ><P
@@ -3811,7 +3892,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN856"
+NAME="AEN868"
 >Directory Permissions</A
 ></H2
 ><P
@@ -3843,7 +3924,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN863"
+NAME="AEN875"
 >Modifying file or directory permissions</A
 ></H1
 ><P
@@ -3941,7 +4022,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN885"
+NAME="AEN897"
 >Interaction with the standard Samba create mask 
 	parameters</A
 ></H1
@@ -4215,7 +4296,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN949"
+NAME="AEN961"
 >Interaction with the standard Samba file attribute 
 	mapping</A
 ></H1

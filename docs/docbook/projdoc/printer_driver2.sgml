@@ -21,10 +21,10 @@
 <sect1>
 	<title>Introduction</title>
 	
-	<para>Beginning with the 2.2.0 release, Samba now supports 
+	<para>Beginning with the 2.2.0 release, Samba supports 
 	the native Windows NT printing mechanisms implemented via 
 	MS-RPC (i.e. the SPOOLSS named pipe).  Previous versions of 
-	Samba only supported the LanMan printing calls.</para>
+	Samba only supported LanMan printing calls.</para>
 
 	<para>The additional functionality provided by the new 
 	SPOOLSS support includes:</para>
@@ -49,7 +49,7 @@
 		on printer objects</para></listitem>
 		
 		<listitem><para>Improved support for printer queue manipulation 
-		through the use of an internal database for spooled job 
+		through the use of an internal databases for spooled job 
 		information</para></listitem>
 	</itemizedlist>
 
@@ -64,7 +64,7 @@
 	The name of this share is hard coded in Samba's internals so 
 	the name is very important (print$ is the service used by 
 	Windows NT print servers to provide support for printer driver 
-	download.</para>
+	download).</para>
 
 	<warning>
 		<para>Previous versions of Samba recommended using 
@@ -103,7 +103,7 @@
 	write list = ntadmin
 	</programlisting></para>
 	
-	<para>The <ulink url="smb./conf.5.html#WRITELIST"><parameter>
+	<para>The <ulink url="smb.conf.5.html#WRITELIST"><parameter>
 	write list</parameter></ulink> is used to allow administrative 
 	level user accounts to have write access in order to update files 
 	on the share.  See the <ulink url="smb./conf.5.html">
@@ -163,7 +163,7 @@
 		</itemizedlist>
 
 		<para>Of course, the connected account must still possess access
-		to add files to the sibdirectories beneath [print$].</para>
+		to add files to the subdirectories beneath [print$].</para>
 	</warning>
 
 
@@ -173,20 +173,6 @@
 	from a Windows NT 4.0 client.  Navigate to the "Printers" folder
 	on the Samba server.  You should see an initial listing of printers
 	that matches the printer shares defined on your Samba host.</para>
-
-	<para>It is possible on a Windows NT print server to have printers
-	listed in the Printers folder which are not shared.  Samba does
-	not make this distinction.  By definition, the only printers of
-	which Samba is aware are those which are specified as shares in
-	<filename>smb.conf</filename>.</para>
-  
-	<para>Another interesting side note is that Windows NT clients do
-	not use the SMB printer share, but rather can print directly 
-	to any printer on another Windows NT host using MS-RPC.  This
-	of course assumes that the printing client has the necessary
-	privileges on the remote host serving the printer.  The default
-	permissions assigned by Windows NT to a printer gives the "Print"
-	permissions to the "Everyone" well-known group.</para>
 
 	<para>The initial listing of printers in the Samba host's 
 	Printers folder will have no printer driver assigned to them.  
@@ -209,6 +195,62 @@
 	<para>Assuming you have connected with a root account, you 
 	will also be able modify other printer properties such as 
 	ACLs and device settings using this dialog box.</para>
+	
+	<para>A few closing comments for this section, it is possible 
+	on a Windows NT print server to have printers
+	listed in the Printers folder which are not shared.  Samba does
+	not make this distinction.  By definition, the only printers of
+	which Samba is aware are those which are specified as shares in
+	<filename>smb.conf</filename>.</para>
+  
+	<para>Another interesting side note is that Windows NT clients do
+	not use the SMB printer share, but rather can print directly 
+	to any printer on another Windows NT host using MS-RPC.  This
+	of course assumes that the printing client has the necessary
+	privileges on the remote host serving the printer.  The default
+	permissions assigned by Windows NT to a printer gives the "Print"
+	permissions to the "Everyone" well-known group.</para>
+	
+	<sect2>
+		<title>Support a large number of printers</title>
+		
+		<para>One issue that has arisen during the development
+		phase of Samba 2.2 is the need to support driver downloads for
+		100's of printers.  Using the Windows NT APW is somewhat 
+		awkward to say the list.  If more than one printer are using the 
+		same driver, the <ulink url="rpcclient.1.html"><command>rpcclient's
+		setdriver command</command></ulink> can be used to set the driver
+		associated with an installed driver.  The following is example
+		of how this could be accomplished:</para>
+		
+		<para><programlisting> 
+		<prompt>$ </prompt>rpcclient pogo -U root%secret -c "enumdrivers"
+Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
+ 
+[Windows NT x86]
+Printer Driver Info 1:
+	Driver Name: [HP LaserJet 4000 Series PS]
+ 
+Printer Driver Info 1:
+	Driver Name: [HP LaserJet 2100 Series PS]
+ 
+Printer Driver Info 1:
+	Driver Name: [HP LaserJet 4Si/4SiMX PS]
+				  
+		<prompt>$ </prompt>rpcclient pogo -U root%secret -c "enumprinters"
+Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
+	flags:[0x800000]
+	name:[\\POGO\hp-print]
+	description:[POGO\\POGO\hp-print,NO DRIVER AVAILABLE FOR THIS PRINTER,]
+	comment:[]
+				  
+		<prompt>$ </prompt>rpcclient pogo -U root%bleaK.er \
+		<prompt>&gt; </prompt> -c "setdriver hp-print \"HP LaserJet 4000 Series PS\""
+Domain=[NARNIA] OS=[Unix] Server=[Samba 2.2.0-alpha3]
+Succesfully set hp-print to driver HP LaserJet 4000 Series PS.
+		</programlisting></para>
+	</sect2>
+	
 </sect1>
 
 
@@ -372,12 +414,12 @@
 	<para>Here are the possible scenarios for supporting migration:</para>
 	
 	<itemizedlist>
-		<listitem><para>If you does not desire the new Windows NT 
+		<listitem><para>If you do not desire the new Windows NT 
 		print driver support, nothing needs to be done.  
 		All existing parameters work the same.</para></listitem>
 
 		<listitem><para>If you want to take advantage of NT printer 
-		driver support but does not want to migrate the 
+		driver support but do not want to migrate the 
 		9x drivers to the new setup, the leave the existing 
 		printers.def file.  When smbd attempts to locate a 
 		9x driver for the printer in the TDB and fails it 
@@ -395,8 +437,9 @@
 		<listitem><para>If you want to migrate an existing <filename>
 		printers.def</filename> file into the new setup, the current only 
 		solution is to use the Windows NT APW to install the NT drivers 
-		and the 9x  drivers.  (comment: this could possibly be scripted 
-		using smbclient and rpcclient, but I haven't had time  --jerry)
+		and the 9x  drivers.  This can be scripted using smbclient and 
+		rpcclient.  See the <ulink url="http://imprints.sourceforge.net/">
+		Imprints insrallation client</ulink> for an example.
 		</para></listitem>
 	</itemizedlist>
 
