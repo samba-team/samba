@@ -183,6 +183,7 @@ static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 	SIVAL(req->out.vwv, VWV(6), req->smb_conn->pid);
 	srv_push_dos_date(req->smb_conn, req->out.vwv, VWV(8), t);
 	SSVAL(req->out.vwv, VWV(10), req->smb_conn->negotiate.zone_offset/60);
+	SIVAL(req->out.vwv, VWV(11), 0);
 
 	/* Create a token value and add it to the outgoing packet. */
 	if (req->smb_conn->negotiate.encrypted_passwords) {
