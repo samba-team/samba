@@ -58,28 +58,28 @@
 
 struct dns_query{
     char *domain;
-    int type;
-    int class;
+    unsigned type;
+    unsigned class;
 };
 
 struct mx_record{
-    int preference;
+    unsigned  preference;
     char domain[1];
 };
 
 struct srv_record{
-    int priority;
-    int weight;
-    int port;
+    unsigned priority;
+    unsigned weight;
+    unsigned port;
     char target[1];
 };
 
 struct resource_record{
     char *domain;
-    int type;
-    int class;
-    int ttl;
-    int size;
+    unsigned type;
+    unsigned class;
+    unsigned ttl;
+    unsigned size;
     union {
 	void *data;
 	struct mx_record *mx;
