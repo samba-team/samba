@@ -454,10 +454,12 @@ static NTSTATUS trans2_open(struct smbsrv_request *req, struct smb_trans2 *trans
 			   VWV(2), io->t2open.out.write_time);
 	SIVAL(trans->out.params.data, VWV(4), io->t2open.out.size);
 	SSVAL(trans->out.params.data, VWV(6), io->t2open.out.access);
-	SIVAL(trans->out.params.data, VWV(7), io->t2open.out.ftype);
-	SIVAL(trans->out.params.data, VWV(8), io->t2open.out.devstate);
-	SIVAL(trans->out.params.data, VWV(9), io->t2open.out.action);
-	SIVAL(trans->out.params.data, VWV(10), io->t2open.out.unknown);
+	SSVAL(trans->out.params.data, VWV(7), io->t2open.out.ftype);
+	SSVAL(trans->out.params.data, VWV(8), io->t2open.out.devstate);
+	SSVAL(trans->out.params.data, VWV(9), io->t2open.out.action);
+	SIVAL(trans->out.params.data, VWV(10), 0); /* reserved */
+	SSVAL(trans->out.params.data, VWV(12), 0); /* EaErrorOffset */
+	SIVAL(trans->out.params.data, VWV(13), 0); /* EaLength */
 
 	return status;
 }
