@@ -1600,7 +1600,6 @@ char *lp_os2_driver_map(void);
 char *lp_lockdir(void);
 char *lp_utmpdir(void);
 char *lp_wtmpdir(void);
-char *lp_utmp_hostname(void);
 BOOL lp_utmp(void);
 char *lp_rootdir(void);
 char *lp_source_environment(void);
@@ -1881,7 +1880,7 @@ struct passdb_ops *nisplus_initialize_password_db(void);
 
 /*The following definitions come from  passdb/pampass.c  */
 
-BOOL pam_session(BOOL flag, const char *in_user, char *tty);
+BOOL pam_session(BOOL flag, const char *in_user, char *tty, char *rhost);
 BOOL pam_accountcheck(char * user);
 BOOL pam_passcheck(char * user, char * password);
 

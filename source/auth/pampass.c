@@ -61,8 +61,7 @@ static char *PAM_password;
 static BOOL pam_error_handler(pam_handle_t *pamh, int pam_error, char *msg, int dbglvl)
 {
 
-       	if( pam_error != PAM_SUCCESS)
-	{
+	if( pam_error != PAM_SUCCESS) {
 		DEBUG(dbglvl, ("PAM: %s : %s\n", msg, pam_strerror(pamh, pam_error)));
 		return False;
 	}
@@ -87,10 +86,8 @@ static int PAM_conv(int num_msg,
 	if (!reply)
 		return PAM_CONV_ERR;
 
-	for (replies = 0; replies < num_msg; replies++)
-	{
-		switch (msg[replies]->msg_style)
-		{
+	for (replies = 0; replies < num_msg; replies++) {
+		switch (msg[replies]->msg_style) {
 			case PAM_PROMPT_ECHO_ON:
 				reply[replies].resp_retcode = PAM_SUCCESS;
 			reply[replies].resp =
@@ -135,58 +132,58 @@ static struct pam_conv PAM_conversation = {
  */
 static BOOL proc_pam_end(pam_handle_t *pamh)
 {
-       int pam_error;
+	int pam_error;
        
-       if( pamh != NULL )
-       {
+	if( pamh != NULL ) {
 		pam_error = pam_end(pamh, 0);
 		if(pam_error_handler(pamh, pam_error, "End Cleanup Failed", 2) == True) {
 			DEBUG(4, ("PAM: PAM_END OK.\n"));
-    			return True;
+			return True;
 		}
-       }
-       DEBUG(2,("PAM: not initialised"));
-       return False;
+	}
+	DEBUG(2,("PAM: not initialised"));
+	return False;
 }
 
 /*
  * Start PAM authentication for specified account
  */
-static BOOL proc_pam_start(pam_handle_t **pamh, char *user)
+static BOOL proc_pam_start(pam_handle_t **pamh, char *user, char *rhost)
 {
-       int pam_error;
-       char * rhost;
+	int pam_error;
 
-       DEBUG(4,("PAM: Init user: %s\n", user));
+	DEBUG(4,("PAM: Init user: %s\n", user));
 
-       pam_error = pam_start("samba", user, &PAM_conversation, pamh);
-       if( !pam_error_handler(*pamh, pam_error, "Init Failed", 0)) {
-	       proc_pam_end(*pamh);
-               return False;
-       }
+	pam_error = pam_start("samba", user, &PAM_conversation, pamh);
+	if( !pam_error_handler(*pamh, pam_error, "Init Failed", 0)) {
+		proc_pam_end(*pamh);
+		return False;
+	}
 
-       rhost = client_name();
-       if (strcmp(rhost,"UNKNOWN") == 0)
-               rhost = client_addr();
+	if (rhost == NULL) {
+		rhost = client_name();
+		if (strequal(rhost,"UNKNOWN"))
+			rhost = client_addr();
+	}
 
 #ifdef PAM_RHOST
-       DEBUG(4,("PAM: setting rhost to: %s\n", rhost));
-       pam_error = pam_set_item(*pamh, PAM_RHOST, rhost);
-       if(!pam_error_handler(*pamh, pam_error, "set rhost failed", 0)) {
-	       proc_pam_end(*pamh);
-               return False;
-       }
+	DEBUG(4,("PAM: setting rhost to: %s\n", rhost));
+	pam_error = pam_set_item(*pamh, PAM_RHOST, rhost);
+	if(!pam_error_handler(*pamh, pam_error, "set rhost failed", 0)) {
+		proc_pam_end(*pamh);
+		return False;
+	}
 #endif
 #ifdef PAM_TTY
-       DEBUG(4,("PAM: setting tty\n"));
-       pam_error = pam_set_item(*pamh, PAM_TTY, "samba");
-       if (!pam_error_handler(*pamh, pam_error, "set tty failed", 0)) {
-	       proc_pam_end(*pamh);
-               return False;
-       }
+	DEBUG(4,("PAM: setting tty\n"));
+	pam_error = pam_set_item(*pamh, PAM_TTY, "samba");
+	if (!pam_error_handler(*pamh, pam_error, "set tty failed", 0)) {
+		proc_pam_end(*pamh);
+		return False;
+	}
 #endif
-       DEBUG(4,("PAM: Init passed for user: %s\n", user));
-       return True;
+	DEBUG(4,("PAM: Init passed for user: %s\n", user));
+	return True;
 }
 
 /*
@@ -201,7 +198,7 @@ static BOOL pam_auth(pam_handle_t *pamh, char *user, char *password)
 	 *	auth required /lib/security/pam_pwdb.so nullok shadow audit
 	 */
 	
-        DEBUG(4,("PAM: Authenticate User: %s\n", user));
+	DEBUG(4,("PAM: Authenticate User: %s\n", user));
 	pam_error = pam_authenticate(pamh, PAM_SILENT); /* Can we authenticate user? */
 	switch( pam_error ){
 		case PAM_AUTH_ERR:
@@ -243,7 +240,7 @@ static BOOL pam_account(pam_handle_t *pamh, char * user, char * password, BOOL p
 {
 	int pam_error;
 
-        DEBUG(4,("PAM: Account Management for User: %s\n", user));
+	DEBUG(4,("PAM: Account Management for User: %s\n", user));
 	pam_error = pam_acct_mgmt(pamh, PAM_SILENT); /* Is user account enabled? */
 	switch( pam_error ) {
 		case PAM_AUTHTOK_EXPIRED:
@@ -285,7 +282,7 @@ static BOOL pam_account(pam_handle_t *pamh, char * user, char * password, BOOL p
 	 * exporting an AFS cell, be able to /write/ to this cell.
 	 */
 
-        DEBUG(4,("PAM: Account Management SetCredentials for User: %s\n", user));
+	DEBUG(4,("PAM: Account Management SetCredentials for User: %s\n", user));
 	pam_error = pam_setcred(pamh, (PAM_ESTABLISH_CRED|PAM_SILENT)); 
 	switch( pam_error ) {
 		case PAM_CRED_UNAVAIL:
@@ -321,49 +318,46 @@ static BOOL pam_account(pam_handle_t *pamh, char * user, char * password, BOOL p
  */
 static BOOL proc_pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL flag)
 {
-       int pam_error;
+	int pam_error;
 
-       PAM_password = NULL;
-       PAM_username = user;
+	PAM_password = NULL;
+	PAM_username = user;
 
 #ifdef PAM_TTY
-       DEBUG(4,("PAM: tty set to: %s\n", tty));
-       pam_error = pam_set_item(pamh, PAM_TTY, tty);
-       if (!pam_error_handler(pamh, pam_error, "set tty failed", 0)) {
-	       proc_pam_end(pamh);
-               return False;
-       }
+	DEBUG(4,("PAM: tty set to: %s\n", tty));
+	pam_error = pam_set_item(pamh, PAM_TTY, tty);
+	if (!pam_error_handler(pamh, pam_error, "set tty failed", 0)) {
+		proc_pam_end(pamh);
+		return False;
+	}
 #endif
 
-       if (flag) {
-         pam_error = pam_open_session(pamh, PAM_SILENT);
-         if (!pam_error_handler(pamh, pam_error, "session setup failed", 0)) {
-	       proc_pam_end(pamh);
-               return False;
-         }
-       }
-       else
-       {
-         pam_error = pam_close_session(pamh, PAM_SILENT);
-         if (!pam_error_handler(pamh, pam_error, "session close failed", 0)) {
-	       proc_pam_end(pamh);
-               return False;
-         }
-       }
-      return (True);
+	if (flag) {
+		pam_error = pam_open_session(pamh, PAM_SILENT);
+		if (!pam_error_handler(pamh, pam_error, "session setup failed", 0)) {
+			proc_pam_end(pamh);
+			return False;
+		}
+	} else {
+		pam_error = pam_close_session(pamh, PAM_SILENT);
+		if (!pam_error_handler(pamh, pam_error, "session close failed", 0)) {
+			proc_pam_end(pamh);
+			return False;
+		}
+	}
+	return (True);
 }
 
 /*
  * PAM Externally accessible Session handler
  */
-BOOL pam_session(BOOL flag, const char *in_user, char *tty)
+BOOL pam_session(BOOL flag, const char *in_user, char *tty, char *rhost)
 {
 	pam_handle_t *pamh = NULL;
 	char * user;
 
 	user = malloc(strlen(in_user)+1);
-	if ( user == NULL )
-	{
+	if ( user == NULL ) {
 		DEBUG(0, ("PAM: PAM_session Malloc Failed!\n"));
 		return False;
 	}
@@ -371,20 +365,16 @@ BOOL pam_session(BOOL flag, const char *in_user, char *tty)
 	/* This is freed by PAM */
 	StrnCpy(user, in_user, strlen(in_user)+1);
 
-	if (!proc_pam_start(&pamh, user))
-	{
-	  proc_pam_end(pamh);
-	  return False;
+	if (!proc_pam_start(&pamh, user, rhost)) {
+		proc_pam_end(pamh);
+		return False;
 	}
 
-	if (proc_pam_session(pamh, user, tty, flag))
-	{
-	  return proc_pam_end(pamh);
-	}
-	else
-	{
-	  proc_pam_end(pamh);
-	  return False;
+	if (proc_pam_session(pamh, user, tty, flag)) {
+		return proc_pam_end(pamh);
+	} else {
+		proc_pam_end(pamh);
+		return False;
 	}
 }
 
@@ -398,12 +388,10 @@ BOOL pam_accountcheck(char * user)
 	PAM_username = user;
 	PAM_password = NULL;
 
-	if( proc_pam_start(&pamh, user))
-	{
-			if ( pam_account(pamh, user, NULL, False))
-			{
-				return( proc_pam_end(pamh));
-			}
+	if( proc_pam_start(&pamh, user, NULL)) {
+		if ( pam_account(pamh, user, NULL, False)) {
+			return( proc_pam_end(pamh));
+		}
 	}
 	DEBUG(0, ("PAM: Account Validation Failed - Rejecting User!\n"));
 	return( False );
@@ -419,12 +407,9 @@ BOOL pam_passcheck(char * user, char * password)
 	PAM_username = user;
 	PAM_password = password;
 
-	if( proc_pam_start(&pamh, user))
-	{
-		if ( pam_auth(pamh, user, password))
-		{
-			if ( pam_account(pamh, user, password, True))
-			{
+	if( proc_pam_start(&pamh, user, NULL)) {
+		if ( pam_auth(pamh, user, password)) {
+			if ( pam_account(pamh, user, password, True)) {
 				return( proc_pam_end(pamh));
 			}
 		}
@@ -435,8 +420,10 @@ BOOL pam_passcheck(char * user, char * password)
 
 #else
 
- /* Do *NOT* make this function static. Doing so breaks the compile on gcc */
-
- void pampass_dummy_function( void ) { } /*This stops compiler complaints */
+/* If PAM not used, no PAM restrictions on accounts. */
+ BOOL pam_accountcheck(char * user)
+{
+	return True;
+}
 
 #endif /* WITH_PAM */

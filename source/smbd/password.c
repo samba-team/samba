@@ -595,31 +595,34 @@ return True if the password is correct, False otherwise
 BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 {
 
-  BOOL ret;
+	BOOL ret;
 
 	if ((pwlen == 0) && !lp_null_passwords()) {
 		DEBUG(4,("Null passwords not allowed.\n"));
 		return False;
 	}
 
-	if (pwlen == 24 || (lp_encrypted_passwords() && (pwlen == 0) && lp_null_passwords()))
-	{
+	if (pwlen == 24 || (lp_encrypted_passwords() && (pwlen == 0) && lp_null_passwords())) {
 		/* if 24 bytes long assume it is an encrypted password */
 		uchar challenge[8];
 
-		if (!last_challenge(challenge))
-		{
+		if (!last_challenge(challenge)) {
 			DEBUG(0,("Error: challenge not done for user=%s\n", user));
 			return False;
 		}
 
 		ret = pass_check_smb(user, global_myworkgroup,
 		                      challenge, (uchar *)password, (uchar *)password, pwd);
-#ifdef WITH_PAM
-		if (ret) {
+
+		/*
+		 * Try with PAM (may not be compiled in - returns True if not. JRA).
+		 * FIXME ! Should this be called if we're using winbindd ? What about
+		 * non-local accounts ? JRA.
+		 */
+
+		if (ret)
 		  return pam_accountcheck(user);
-		}
-#endif
+
 		return ret;
 	} 
 
