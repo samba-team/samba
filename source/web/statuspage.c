@@ -187,7 +187,7 @@ void status_page(void)
 		refresh_interval = atoi(v);
 	}
 
-	tdb = tdb_open_log(lock_path("connections.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDONLY, 0);
+	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (tdb) tdb_traverse(tdb, traverse_fn1, NULL);
 
 	printf("<H2>Server Status</H2>\n");

@@ -62,7 +62,7 @@ BOOL session_claim(uint16 vuid)
 	}
 
 	if (!tdb) {
-		tdb = tdb_open_log(lock_path("sessionid.tdb"), 0, TDB_CLEAR_IF_FIRST|USE_TDB_MMAP_FLAG, 
+		tdb = tdb_open_log(lock_path("sessionid.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
 			       O_RDWR | O_CREAT, 0644);
 		if (!tdb) {
 			DEBUG(1,("session_claim: failed to open sessionid tdb\n"));

@@ -125,7 +125,7 @@ BOOL share_info_db_init(void)
     char *vstring = "INFO/version";
  
     if (share_tdb && local_pid == sys_getpid()) return True;
-    share_tdb = tdb_open_log(lock_path("share_info.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDWR|O_CREAT, 0600);
+    share_tdb = tdb_open_log(lock_path("share_info.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
     if (!share_tdb) {
         DEBUG(0,("Failed to open share info database %s (%s)\n",
 				lock_path("share_info.tdb"), strerror(errno) ));

@@ -239,21 +239,21 @@ BOOL nt_printing_init(void)
 	if (tdb_drivers && tdb_printers && tdb_forms && local_pid == sys_getpid())
 		return True;
  
-	tdb_drivers = tdb_open_log(lock_path("ntdrivers.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDWR|O_CREAT, 0600);
+	tdb_drivers = tdb_open_log(lock_path("ntdrivers.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb_drivers) {
 		DEBUG(0,("nt_printing_init: Failed to open nt drivers database %s (%s)\n",
 			lock_path("ntdrivers.tdb"), strerror(errno) ));
 		return False;
 	}
  
-	tdb_printers = tdb_open_log(lock_path("ntprinters.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDWR|O_CREAT, 0600);
+	tdb_printers = tdb_open_log(lock_path("ntprinters.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb_printers) {
 		DEBUG(0,("nt_printing_init: Failed to open nt printers database %s (%s)\n",
 			lock_path("ntprinters.tdb"), strerror(errno) ));
 		return False;
 	}
  
-	tdb_forms = tdb_open_log(lock_path("ntforms.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDWR|O_CREAT, 0600);
+	tdb_forms = tdb_open_log(lock_path("ntforms.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb_forms) {
 		DEBUG(0,("nt_printing_init: Failed to open nt forms database %s (%s)\n",
 			lock_path("ntforms.tdb"), strerror(errno) ));
