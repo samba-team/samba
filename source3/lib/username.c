@@ -153,7 +153,7 @@ static struct passwd *_Get_Pwnam(char *s)
   ret = getpwnam(s);
   if (ret)
     {
-#ifdef GETPWANAM
+#ifdef HAVE_GETPWANAM
       struct passwd_adjunct *pwret;
       pwret = getpwanam(s);
       if (pwret)

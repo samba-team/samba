@@ -106,6 +106,7 @@
 #undef HAVE_PAM_AUTHENTICATE
 #undef HAVE_BROKEN_GETGROUPS
 #undef REPLACE_INET_NTOA
+#undef HAVE_FILE_MACRO
 #undef HAVE_FUNCTION_MACRO
 
 /* The number of bytes in a int.  */
@@ -161,6 +162,9 @@
 
 /* Define if you have the getprpwnam function.  */
 #undef HAVE_GETPRPWNAM
+
+/* Define if you have the getpwanam function.  */
+#undef HAVE_GETPWANAM
 
 /* Define if you have the getrlimit function.  */
 #undef HAVE_GETRLIMIT
