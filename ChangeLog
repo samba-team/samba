@@ -1,3 +1,7 @@
+2000-02-01  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/kinit.c: change --noaddresses into --no-addresses
+
 2000-01-28  Assar Westerlund  <assar@sics.se>
 
 	* kpasswd/kpasswd.c (main): make sure the ticket is not
@@ -220,6 +224,10 @@ Tue Dec 21 18:03:17 1999  Assar Westerlund  <assar@sics.se>
 	* configure.in (BROKEN): check for freeaddrinfo, getaddrinfo,
 	getnameinfo, gai_strerror
 	(socklen_t): check for
+
+1999-12-02  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/crypto.c: ARCFOUR_set_key -> RC4_set_key
 
 1999-11-23  Assar Westerlund  <assar@sics.se>
 
