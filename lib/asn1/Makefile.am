@@ -6,19 +6,19 @@ lib_LIBRARIES = libasn1.a
 
 SUFFIXES = .x
 
-BUILT_SOURCES = asn1_Realm.c asn1_PrincipalName.c \
-	asn1_HostAddress.c asn1_HostAddresses.c asn1_KerberosTime.c \
-	asn1_AuthorizationData.c asn1_APOptions.c asn1_TicketFlags.c \
-	asn1_KDCOptions.c asn1_LastReq.c asn1_EncryptedData.c \
-	asn1_EncryptionKey.c asn1_TransitedEncoding.c asn1_Ticket.c \
-	asn1_EncTicketPart.c asn1_Checksum.c asn1_Authenticator.c \
-	asn1_PA_DATA.c asn1_KDC_REQ_BODY.c asn1_KDC_REQ.c asn1_AS_REQ.c \
-	asn1_TGS_REQ.c asn1_PA_ENC_TS_ENC.c asn1_KDC_REP.c asn1_AS_REP.c \
-	asn1_TGS_REP.c asn1_EncKDCRepPart.c asn1_EncASRepPart.c \
-	asn1_EncTGSRepPart.c asn1_AP_REQ.c asn1_AP_REP.c \
-	asn1_EncAPRepPart.c asn1_KRB_SAFE_BODY.c asn1_KRB_SAFE.c \
-	asn1_KRB_PRIV.c asn1_EncKrbPrivPart.c asn1_KRB_CRED.c \
-	asn1_KrbCredInfo.c asn1_EncKrbCredPart.c asn1_KRB_ERROR.c
+BUILT_SOURCES = asn1_APOptions.c asn1_AP_REP.c asn1_AP_REQ.c \
+	asn1_AS_REP.c asn1_AS_REQ.c asn1_Authenticator.c \
+	asn1_AuthorizationData.c asn1_Checksum.c asn1_EncAPRepPart.c \
+	asn1_EncASRepPart.c asn1_EncKDCRepPart.c asn1_EncKrbCredPart.c \
+	asn1_EncKrbPrivPart.c asn1_EncTGSRepPart.c asn1_EncTicketPart.c \
+	asn1_EncryptedData.c asn1_EncryptionKey.c asn1_HostAddress.c \
+	asn1_HostAddresses.c asn1_KDCOptions.c asn1_KDC_REP.c asn1_KDC_REQ.c \
+	asn1_KDC_REQ_BODY.c asn1_KRB_CRED.c asn1_KRB_ERROR.c asn1_KRB_PRIV.c \
+	asn1_KRB_SAFE.c asn1_KRB_SAFE_BODY.c asn1_KerberosTime.c \
+	asn1_KrbCredInfo.c asn1_LastReq.c asn1_PA_DATA.c asn1_PA_ENC_TS_ENC.c \
+	asn1_PrincipalName.c asn1_Principal.c asn1_Realm.c asn1_TGS_REP.c \
+	asn1_TGS_REQ.c asn1_Ticket.c asn1_TicketFlags.c \
+	asn1_TransitedEncoding.c
 
 foo=$(BUILT_SOURCES:%.c=%.x)
 
