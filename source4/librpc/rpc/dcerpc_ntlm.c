@@ -59,7 +59,7 @@ static NTSTATUS ntlm_sign_packet(struct dcerpc_security *dcerpc_security,
 static void ntlm_security_end(struct dcerpc_security *dcerpc_security)
 {
 	struct ntlmssp_state *ntlmssp_state = dcerpc_security->private;
-	return ntlmssp_end(&ntlmssp_state);
+	ntlmssp_end(&ntlmssp_state);
 }
 
 
