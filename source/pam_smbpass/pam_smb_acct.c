@@ -33,6 +33,7 @@
 
 #include "support.h"
 
+
 /*
  * pam_sm_acct_mgmt() verifies whether or not the account is disabled.
  *
@@ -45,15 +46,12 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
     int retval;
 
     const char *name;
-    const char *p;
     SAM_ACCOUNT *sampass = NULL;
 
     extern BOOL in_client;
 
     /* Samba initialization. */
     setup_logging( "pam_smbpass", False );
-    charset_initialise();
-    codepage_initialise(lp_client_code_page());
     in_client = True;
 
     ctrl = set_ctrl( flags, argc, argv );
