@@ -14,10 +14,13 @@ AC_SUBST(CANONICAL_HOST)
 sunos=no
 case "$host" in 
 *-*-sunos4*)
-	sunos=4
+	sunos=40
+	;;
+*-*-solaris2.7)
+	sunos=57
 	;;
 *-*-solaris2*)
-	sunos=5
+	sunos=50
 	;;
 esac
 if test "$sunos" != no; then
@@ -864,6 +867,7 @@ AC_OUTPUT(Makefile 			\
 	appl/telnet/telnet/Makefile	\
 	appl/telnet/telnetd/Makefile	\
 	appl/test/Makefile		\
+	appl/kf/Makefile		\
 	doc/Makefile			\
 )
 
