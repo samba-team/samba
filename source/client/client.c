@@ -30,7 +30,6 @@
 extern BOOL in_client;
 pstring cur_dir = "\\";
 pstring cd_path = "";
-extern BOOL in_client;
 extern pstring service;
 extern pstring desthost;
 extern pstring global_myname;
