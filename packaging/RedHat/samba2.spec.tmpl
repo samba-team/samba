@@ -276,8 +276,9 @@ install -m755 examples/VFS/audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
 (cd examples/VFS; make clean)
 
 # libsmbclient
-install -m 644 source/bin/libsmbclient.a $RPM_BUILD_ROOT/usr/lib/
-install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT/usr/include/
+install -m 644 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{prefix}/lib/
+install -m 644 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{prefix}/lib/
+install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{prefix}/include/
 
 # Install SWAT helper files
 for i in swat/help/*.html docs/htmldocs/*.html
@@ -533,7 +534,10 @@ fi
 %{prefix}/bin/smbcacls
 %{prefix}/bin/wbinfo
 %attr(755,root,root) /lib/libnss_wins.s*
-%attr(755,root,root) %{prefix}/lib/samba/*.so
+%attr(755,root,root) %{prefix}/lib/samba/vfs/*.so
+%{prefix}/include/libsmbclient.h
+%{prefix}/lib/libsmbclient.a
+%{prefix}/lib/libsmbclient.so
 %{prefix}/share/swat/help/*
 %{prefix}/share/swat/images/*
 %{prefix}/share/swat/include/header.html
@@ -545,6 +549,7 @@ fi
 /etc/samba/samba.stack
 /etc/samba/samba.xinetd
 /etc/rc.d/init.d/smb
+/etc/rc.d/init.d/winbind
 /etc/logrotate.d/samba
 %config(noreplace) /etc/pam.d/samba
 MANDIR_MACRO/man1/*
