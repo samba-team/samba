@@ -606,24 +606,31 @@ interface netlogon
 	/*****************/
 	/* Function 0x09 */
 
-	typedef struct {
+	/* w2k3 returns NT_STATUS_NOT_IMPLEMENTED for this call */
+
+	typedef [flag(NDR_PAHEX)] struct {
 		uint8 computer_name[16];
 		uint32 timecreated;
 		uint32 serial_number;
 	} UAS_INFO_0;
+
+	typedef struct {
+		[flag(NDR_REMAINING)] DATA_BLOB blob;
+	} netr_AccountBuffer;
 
 	NTSTATUS netr_AccountDeltas(
 		[in]     unistr *logonserver,
 		[in]     unistr computername,
 		[in]     netr_Authenticator credential,
 		[in,out] netr_Authenticator return_authenticator,
-		[out][size_is(count_returned)] uint8 *buffer,
-		[out]    uint32 count_returned,
-		[out]    uint32 total_entries,
-		[in,out] UAS_INFO_0 recordid,
+		[in]     UAS_INFO_0 uas,
 		[in]     uint32 count,
 		[in]     uint32 level,
-		[in]     uint32 buffersize
+		[in]     uint32 buffersize,
+		[out,subcontext(4)] netr_AccountBuffer buffer,
+		[out]    uint32 count_returned,
+		[out]    uint32 total_entries,
+		[out]    UAS_INFO_0 recordid
 		);
 
 #if 0
