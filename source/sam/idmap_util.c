@@ -226,12 +226,11 @@ NTSTATUS sid_to_uid(const DOM_SID *sid, uid_t *uid)
 		}
 	}
 
-	if (NT_STATUS_IS_OK(idmap_get_id_from_sid(&id, &flags, sid))) {
+	if (NT_STATUS_IS_OK(ret = idmap_get_id_from_sid(&id, &flags, sid))) {
 
 		DEBUG(10,("sid_to_uid: uid = [%d]\n", id.uid));
 
 		*uid = id.uid;
-		ret = NT_STATUS_OK;
 		
 	} else if (fallback) {
 		uint32 rid;
@@ -284,19 +283,17 @@ NTSTATUS sid_to_gid(const DOM_SID *sid, gid_t *gid)
 		}
 	}
 
-	if (NT_STATUS_IS_OK(idmap_get_id_from_sid(&id, &flags, sid))) {
+	if (NT_STATUS_IS_OK(ret = idmap_get_id_from_sid(&id, &flags, sid))) {
 		
 		DEBUG(10,("sid_to_gid: gid = [%d]\n", id.gid));
 		*gid = id.gid;
-		ret = NT_STATUS_OK;
 
 	} else if (fallback) {
 		uint32 rid;
 
 		if (!sid_peek_rid(sid, &rid)) {
 			DEBUG(10,("sid_to_uid: invalid SID!\n"));
-			ret = NT_STATUS_INVALID_PARAMETER;
-			goto done;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		DEBUG(10,("sid_to_gid: Fall back to algorithmic mapping\n"));
@@ -311,7 +308,6 @@ NTSTATUS sid_to_gid(const DOM_SID *sid, gid_t *gid)
 		}
 	}
 
-done:
 	return ret;
 }
 
