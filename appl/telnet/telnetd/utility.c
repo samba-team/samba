@@ -528,7 +528,7 @@ printsub(int direction, unsigned char *pointer, int length)
        			       		/* length of suboption data */
 {
     int i;
-    char buf[512];
+    unsigned char buf[512];
 
     if (!(diagnostic & TD_OPTIONS))
 	return;

@@ -1560,7 +1560,7 @@ env_init(void)
 
 		/* If this is not the full name, try to get it via DNS */
 		if (strchr(hbuf, '.') == 0) {
-			struct hostent *he = gethostbyname(hbuf);
+			struct hostent *he = roken_gethostbyname(hbuf);
 			if (he != 0)
 				strncpy(hbuf, he->h_name, 256);
 			hbuf[256] = '\0';
@@ -1602,7 +1602,7 @@ env_define(unsigned char *var, unsigned char *value)
 		if (ep->next)
 			ep->next->prev = ep;
 	}
-	ep->welldefined = opt_welldefined(var);
+	ep->welldefined = opt_welldefined((char *)var);
 	ep->export = 1;
 	ep->var = (unsigned char *)strdup((char *)var);
 	ep->value = (unsigned char *)strdup((char *)value);
@@ -2140,7 +2140,7 @@ tn(int argc, char **argv)
 	    if(host == NULL)
 		host = gethostbyname2(hostp, AF_INET);
 #else
-	    host = gethostbyname(hostp);
+	    host = roken_gethostbyname(hostp);
 #endif
 	    if (host) {
 		strncpy(_hostname, host->h_name, sizeof(_hostname));
@@ -2192,7 +2192,7 @@ tn(int argc, char **argv)
 	    telnetport = 0;
 	port = atoi(portp);
 	if (port == 0) {
-	    sp = getservbyname(portp, "tcp");
+	    sp = roken_getservbyname(portp, "tcp");
 	    if (sp)
 		port = sp->s_port;
 	    else {
@@ -2205,7 +2205,7 @@ tn(int argc, char **argv)
 	}
     } else {
 	if (sp == 0) {
-	    sp = getservbyname("telnet", "tcp");
+	    sp = roken_getservbyname("telnet", "tcp");
 	    if (sp == 0) {
 		fprintf(stderr, "telnet: tcp/telnet: unknown service\r\n");
 		setuid(getuid());
@@ -2649,7 +2649,7 @@ sourceroute(char *arg, char **cpp, int *lenp)
 
 		if ((tmp = inet_addr(cp)) != -1) {
 			sin_addr.s_addr = tmp;
-		} else if ((host = gethostbyname(cp))) {
+		} else if ((host = roken_gethostbyname(cp))) {
 #if	defined(h_addr)
 			memmove(&sin_addr,
 				host->h_addr_list[0],

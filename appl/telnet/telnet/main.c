@@ -131,7 +131,7 @@ main(int argc, char **argv)
 		    /* sometimes we don't want a mangled display */
 		    char *p;
 		    if((p = getenv("DISPLAY")))
-			env_define("DISPLAY", p);
+			env_define("DISPLAY", (unsigned char*)p);
 		    break;
 		}
 		case 'E':

@@ -1471,7 +1471,7 @@ env_opt_add(unsigned char *ep)
 		opt_replyp = opt_reply + len - (opt_replyend - opt_replyp);
 		opt_replyend = opt_reply + len;
 	}
-	if (opt_welldefined(ep))
+	if (opt_welldefined((char *)ep))
 #ifdef	OLD_ENVIRON
 		if (telopt_environ == TELOPT_OLD_ENVIRON)
 			*opt_replyp++ = old_env_var;

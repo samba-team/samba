@@ -253,7 +253,7 @@ void
 printsub(char direction, unsigned char *pointer, int length)
 {
     int i;
-    char buf[512];
+    unsigned char buf[512];
     extern int want_status_response;
 
     if (showoptions || direction == 0 ||

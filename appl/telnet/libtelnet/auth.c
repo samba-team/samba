@@ -527,7 +527,7 @@ auth_reply(unsigned char *data, int cnt)
 void
 auth_name(unsigned char *data, int cnt)
 {
-    unsigned char savename[256];
+    char savename[256];
 
     if (cnt < 1) {
 	if (auth_debug_mode)

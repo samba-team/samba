@@ -209,7 +209,8 @@ kerberos5_send(char *name, Authenticator *ap)
 	return(0);
     }
 
-    if (!auth_sendname(UserNameRequested, strlen(UserNameRequested))) {
+    if (!auth_sendname((unsigned char *)UserNameRequested,
+		       strlen(UserNameRequested))) {
 	if (auth_debug_mode)
 	    printf("Not enough room for user name\r\n");
 	return(0);
