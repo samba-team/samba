@@ -11,7 +11,8 @@ http://www.opengroup.org/onlinepubs/9629399/chap6.htm#tagcjh_11_02_03_01: bindin
 [
  uuid(e1af8308-5d1f-11c9-91a4-08002b14a0fa), 
  version(3.0), 
- endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]"),
+ endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", 
+		  "ncalrpc:[EPMAPPER]", "ncacn_unix_stream:[/tmp/epmapper]"),
  pointer_default(unique)
 ]
 interface epmapper

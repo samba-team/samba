@@ -48,6 +48,8 @@ pstring dyn_CONFIGFILE = CONFIGFILE; /**< Location of smb.conf file. **/
 /** Log file directory. **/
 const char *dyn_LOGFILEBASE = LOGFILEBASE;
 
+const char *dyn_NCALRPCDIR = NCALRPCDIR;
+
 /** Statically configured LanMan hosts. **/
 pstring dyn_LMHOSTSFILE = LMHOSTSFILE;
 

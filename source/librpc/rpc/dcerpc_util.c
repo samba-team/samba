@@ -715,6 +715,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 		tower->floors[2 + i].lhs.protocol = protseq[i];
 		tower->floors[2 + i].lhs.info.lhs_data = data_blob_talloc(mem_ctx, NULL, 0);
 		ZERO_STRUCT(tower->floors[2 + i].rhs);
+		floor_set_rhs_data(mem_ctx, &tower->floors[2 + i], "");
 	}
 
 	/* The 4th floor contains the endpoint */
@@ -724,6 +725,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 			return status;
 		}
 	}
+	
 	/* The 5th contains the network address */
 	if (num_protocols >= 3 && binding->host) {
 		status = floor_set_rhs_data(mem_ctx, &tower->floors[4], binding->host);
@@ -845,6 +847,106 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	return NT_STATUS_OK;
 }
 
+/* open a rpc connection to a rpc pipe on SMP using the binding
+   structure to determine the endpoint and options */
+static NTSTATUS dcerpc_pipe_connect_ncalrpc(struct dcerpc_pipe **p, 
+						 struct dcerpc_binding *binding,
+						 const char *pipe_uuid, 
+						 uint32_t pipe_version,
+						 const char *domain,
+						 const char *username,
+						 const char *password)
+{
+	NTSTATUS status;
+
+	/* FIXME: Look up identifier using the epmapper */
+	if (!binding->options || !binding->options[0]) {
+		DEBUG(0, ("Identifier not specified\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dcerpc_pipe_open_pipe(p, binding->options[0]);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to open ncalrpc pipe '%s'\n", binding->options[0]));
+                return status;
+    }
+
+	(*p)->flags = binding->flags;
+
+	/* remember the binding string for possible secondary connections */
+	(*p)->binding_string = dcerpc_binding_string((*p), binding);
+
+	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
+		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
+						   domain, username, password);
+	} else if (username && username[0]) {
+		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version, domain, username, password);
+	} else {    
+		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to bind to uuid %s - %s\n", 
+			 pipe_uuid, nt_errstr(status)));
+		dcerpc_pipe_close(*p);
+		*p = NULL;
+		return status;
+	}
+ 
+    return status;
+}
+
+
+
+/* open a rpc connection to a rpc pipe on SMP using the binding
+   structure to determine the endpoint and options */
+static NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream(struct dcerpc_pipe **p, 
+						 struct dcerpc_binding *binding,
+						 const char *pipe_uuid, 
+						 uint32_t pipe_version,
+						 const char *domain,
+						 const char *username,
+						 const char *password)
+{
+	NTSTATUS status;
+
+	/* FIXME: Look up path via the epmapper */
+	if (!binding->options || !binding->options[0]) {
+		DEBUG(0, ("Path to unix socket not specified\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dcerpc_pipe_open_unix_stream(p, binding->options[0]);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to open unix socket %s\n", binding->options[0]));
+                return status;
+    }
+
+	(*p)->flags = binding->flags;
+
+	/* remember the binding string for possible secondary connections */
+	(*p)->binding_string = dcerpc_binding_string((*p), binding);
+
+	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
+		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
+						   domain, username, password);
+	} else if (username && username[0]) {
+		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version, domain, username, password);
+	} else {    
+		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to bind to uuid %s - %s\n", 
+			 pipe_uuid, nt_errstr(status)));
+		dcerpc_pipe_close(*p);
+		*p = NULL;
+		return status;
+	}
+ 
+    return status;
+}
 
 /* open a rpc connection to a rpc pipe on SMP using the binding
    structure to determine the endpoint and options */
@@ -927,6 +1029,12 @@ NTSTATUS dcerpc_pipe_connect_b(struct dcerpc_pipe **p,
 	case NCACN_IP_TCP:
 		status = dcerpc_pipe_connect_ncacn_ip_tcp(p, binding, pipe_uuid, pipe_version,
 							  domain, username, password);
+		break;
+	case NCACN_UNIX_STREAM:
+		status = dcerpc_pipe_connect_ncacn_unix_stream(p, binding, pipe_uuid, pipe_version, domain, username, password);
+		break;
+	case NCALRPC:
+		status = dcerpc_pipe_connect_ncalrpc(p, binding, pipe_uuid, pipe_version, domain, username, password);
 		break;
 	default:
 		return NT_STATUS_NOT_SUPPORTED;

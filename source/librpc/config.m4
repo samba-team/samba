@@ -56,7 +56,7 @@ SMB_SUBSYSTEM(LIBRPC_RAW,[],
 		librpc/rpc/dcerpc_ntlm.o
 		librpc/rpc/dcerpc_spnego.o
 		librpc/rpc/dcerpc_smb.o
-		librpc/rpc/dcerpc_tcp.o])
+		librpc/rpc/dcerpc_sock.o])
 
 SMB_SUBSYSTEM(LIBRPC,[],[],[],
 		[LIBNDR_RAW LIBRPC_RAW])

@@ -46,6 +46,7 @@ INSTALLPERMS = 0755
 LOGFILEBASE = \@logfilebase\@
 CONFIGFILE = \$(CONFIGDIR)/smb.conf
 LMHOSTSFILE = \$(CONFIGDIR)/lmhosts
+NCALRPCDIR = \@localstatedir\@/ncalrpc
 
 # This is where smbpasswd et al go
 PRIVATEDIR = \@privatedir\@
@@ -64,7 +65,7 @@ PATH_FLAGS3 = \$(PATH_FLAGS2) -DLMHOSTSFILE=\\\"\$(LMHOSTSFILE)\\\"
 PATH_FLAGS4 = \$(PATH_FLAGS3) -DLOCKDIR=\\\"\$(LOCKDIR)\\\" -DPIDDIR=\\\"\$(PIDDIR)\\\"
 PATH_FLAGS5 = \$(PATH_FLAGS4) -DLIBDIR=\\\"\$(LIBDIR)\\\" \\
 	      -DLOGFILEBASE=\\\"\$(LOGFILEBASE)\\\" -DSHLIBEXT=\\\"\@SHLIBEXT\@\\\"
-PATH_FLAGS6 = \$(PATH_FLAGS5) -DCONFIGDIR=\\\"\$(CONFIGDIR)\\\"
+PATH_FLAGS6 = \$(PATH_FLAGS5) -DCONFIGDIR=\\\"\$(CONFIGDIR)\\\" -DNCALRPCDIR=\\\"\@NCALRPCDIR\@\\\"
 PATH_FLAGS = \$(PATH_FLAGS6) \$(PASSWD_FLAGS)
 ";
 	return $output;

@@ -93,6 +93,7 @@ typedef struct
 	char **smb_ports;
 	char *dos_charset;
 	char *unix_charset;
+	char *ncalrpc_dir;
 	char *display_charset;
 	char *szPrintcapname;
 	char *szLockDir;
@@ -505,6 +506,7 @@ static struct parm_struct parm_table[] = {
 
 	{"dos charset", P_STRING, P_GLOBAL, &Globals.dos_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"unix charset", P_STRING, P_GLOBAL, &Globals.unix_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"ncalrpc dir", P_STRING, P_GLOBAL, &Globals.ncalrpc_dir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"display charset", P_STRING, P_GLOBAL, &Globals.display_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
@@ -916,6 +918,8 @@ static void init_globals(void)
 	
 	do_parameter("pid directory", dyn_PIDDIR);
 	do_parameter("lock dir", dyn_LOCKDIR);
+	do_parameter("ncalrpc dir", dyn_NCALRPCDIR);
+
 	do_parameter("socket address", "0.0.0.0");
 	do_parameter_var("server string", "Samba %s", SAMBA_VERSION_STRING);
 
@@ -1113,6 +1117,7 @@ FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
+FN_GLOBAL_STRING(lp_ncalrpc_dir, &Globals.ncalrpc_dir)
 FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
 FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, &Globals.dcerpc_ep_servers)
 FN_GLOBAL_LIST(lp_server_services, &Globals.server_services)
