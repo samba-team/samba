@@ -380,7 +380,7 @@ BOOL nt_printing_init(void)
 
 	win_rc = check_published_printers();
 	if (!W_ERROR_IS_OK(win_rc))
-		DEBUG(3, ("error checking published printers: %s\n", W_ERROR_V(win_rc)));
+		DEBUG(0, ("nt_printing_init: error checking published printers: %s\n", dos_errstr(win_rc)));
 
 	return True;
 }
@@ -2870,7 +2870,7 @@ WERROR check_published_printers(void)
 
 		win_rc = nt_printer_publish_ads(ads, printer);
 		if (!W_ERROR_IS_OK(win_rc))
-			DEBUG(3, ("error publishing %s: %s\n", printer->info_2->sharename, W_ERROR_V(win_rc)));
+			DEBUG(3, ("error publishing %s: %s\n", printer->info_2->sharename, dos_errstr(win_rc)));
 
 	next:
 		free_a_printer(&printer, 2);
