@@ -157,6 +157,10 @@ pop_send(POP *p)
 	    if (hangup)
 		return (pop_msg (p,POP_FAILURE,"SIGHUP or SIGPIPE flagged"));
 	}
+	/* some braindamaged pop-clients need a blank line at the end
+	   of the message */
+	if(IS_MAILDIR(p))
+	    fputs("\r\n", p->output);
     }
     /*  "." signals the end of a multi-line transmission */
     fputs(".\r\n",p->output);
