@@ -64,6 +64,7 @@ kadm5_s_randkey_principal(void *server_handle,
 				    n_keys);
     if (ret)
 	goto out2;
+    ent.kvno++;
 
     ret = _kadm5_set_modifier(context, &ent);
     if(ret)
