@@ -162,7 +162,7 @@ static NTSTATUS check_hostsequiv_security(const struct auth_context *auth_contex
 					  const auth_usersupplied_info *user_info, 
 					  auth_serversupplied_info **server_info)
 {
-	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	SAM_ACCOUNT *account = NULL;
 	if (!NT_STATUS_IS_OK(nt_status = 
 			     auth_get_sam_account(user_info->internal_username.str, 
@@ -174,7 +174,6 @@ static NTSTATUS check_hostsequiv_security(const struct auth_context *auth_contex
 		nt_status = make_server_info_sam(server_info, account);
 	} else {
 		pdb_free_sam(&account);
-		nt_status = NT_STATUS_LOGON_FAILURE;
 	}
 
 	return nt_status;
@@ -203,7 +202,7 @@ static NTSTATUS check_rhosts_security(const struct auth_context *auth_context,
 				      const auth_usersupplied_info *user_info, 
 				      auth_serversupplied_info **server_info)
 {
-	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	SAM_ACCOUNT *account = NULL;
 	pstring rhostsfile;
 	const char *home;
@@ -223,12 +222,10 @@ static NTSTATUS check_rhosts_security(const struct auth_context *auth_context,
 			nt_status = make_server_info_sam(server_info, account);
 		} else {
 			pdb_free_sam(&account);
-			nt_status = NT_STATUS_LOGON_FAILURE;
 		}
 		unbecome_root();
 	} else {
 		pdb_free_sam(&account);
-		nt_status = NT_STATUS_LOGON_FAILURE;
 	}
 	
 	return nt_status;

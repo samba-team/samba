@@ -464,7 +464,7 @@ failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
 	}
 
 	fstrcpy(p->user_name, user_name);
-	fstrcpy(p->pipe_user_name, pdb_get_username(server_info->sam_account));
+	fstrcpy(p->pipe_user_name, server_info->unix_name);
 	fstrcpy(p->domain, domain);
 	fstrcpy(p->wks, wks);
 

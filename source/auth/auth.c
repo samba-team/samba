@@ -203,8 +203,8 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 				    const struct auth_usersupplied_info *user_info, 
 				    struct auth_serversupplied_info **server_info)
 {
-	
-	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
+	/* if all the modules say 'not for me' this is reasonable */
+	NTSTATUS nt_status = NT_STATUS_NO_SUCH_USER;
 	const char *pdb_username;
 	auth_methods *auth_method;
 	TALLOC_CTX *mem_ctx;
@@ -269,12 +269,8 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		}
 
 		talloc_destroy(mem_ctx);
-		
-		/* this sucks.  Somehow we have to know if an authentication module is 
-		   authoritative for a user.  Fixme!!!  --jerry */
-		
-		if ( NT_STATUS_IS_OK(nt_status) || 
-			NT_STATUS_V(nt_status) == NT_STATUS_V(NT_STATUS_WRONG_PASSWORD) )
+
+		if ( NT_STATUS_IS_OK(nt_status))
 		{
 				break;			
 		}
@@ -463,8 +459,13 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 			break;
 		case SEC_USER:
 			if (lp_encrypted_passwords()) {	
-				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = yes\n"));
-				auth_method_list = str_list_make("guest sam", NULL);
+				if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {
+					DEBUG(5,("Making default auth method list for DC, security=user, encrypt passwords = yes\n"));
+					auth_method_list = str_list_make("guest sam winbind:trustdomain", NULL);
+				} else {
+					DEBUG(5,("Making default auth method list for standalone security=user, encrypt passwords = yes\n"));
+					auth_method_list = str_list_make("guest sam", NULL);
+				}
 			} else {
 				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = no\n"));
 				auth_method_list = str_list_make("guest unix", NULL);

@@ -96,6 +96,8 @@ typedef struct auth_serversupplied_info
 	SAM_ACCOUNT *sam_account;
 	
 	void *pam_handle;
+
+	char *unix_name;
 	
 } auth_serversupplied_info;
 
