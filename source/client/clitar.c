@@ -33,7 +33,6 @@
 
 #include "includes.h"
 #include "clitar.h"
-#include <regex.h>
 
 extern BOOL recurse;
 
