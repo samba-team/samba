@@ -663,6 +663,7 @@
 		<listitem><para><link linkend="LDAPUSERSUFFIX"><parameter>ldap user suffix</parameter></link></para></listitem>
 		<listitem><para><link linkend="LDAPMACHINESUFFIX"><parameter>ldap machine suffix</parameter></link></para></listitem>
 		<listitem><para><link linkend="LDAPPASSWDSYNC"><parameter>ldap passwd sync</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPTRUSTIDS"><parameter>ldap trust ids</parameter></link></para></listitem>
 
 		<listitem><para><link linkend="LMANNOUNCE"><parameter>lm announce</parameter></link></para></listitem>
 		<listitem><para><link linkend="LMINTERVAL"><parameter>lm interval</parameter></link></para></listitem>
@@ -3464,16 +3465,20 @@
 		The <parameter>ldap ssl</parameter> can be set to one of three values:
 		</para>	
 		<itemizedlist>
-			<listitem><para><parameter>On</parameter>  =  Always use SSL when contacting the 
-			<parameter>ldap	server</parameter>.</para></listitem>
-			
 			<listitem><para><parameter>Off</parameter> = Never use SSL when querying the directory.</para></listitem>
 
 			<listitem><para><parameter>Start_tls</parameter> = Use the LDAPv3 StartTLS extended operation 
 			(RFC2830) for communicating with the directory server.</para></listitem>
+	    
+			<listitem><para><parameter>On</parameter>  =
+			Use SSL on the ldaps port when contacting the 
+			<parameter>ldap	server</parameter>.  Only
+			available when the backwards-compatiblity <command>
+			--with-ldapsam</command> option is specified
+			to configure.  See <link linkend="PASSDBBACKEND"><paramater>passdb backend</parameter></link></para></listitem>
 		</itemizedlist>		
 		
-		<para>Default : <command>ldap ssl = on</command></para>
+		<para>Default : <command>ldap ssl = start_tls</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -3540,9 +3545,24 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term><anchor id="LDAPTRUSTUIDS">ldap trust uids (G)</term>
+		<listitem><para>Normally, Samba validates each entry
+		in the LDAP server against getpwnam().  This allows
+		LDAP to be used for Samba with the unix system using
+		NIS (for example) and also ensures that Samba does not
+		present accounts that do not otherwise exist.  </para>
+	        <para>This option is used to disable this functionality, and
+		instead to rely on the presence of the appropriate
+		attributes in LDAP directly, which can result in a
+		significant performance boost in some situations.  
+                Setting this option to yes effectivly assumes
+		that the local machine is running <command>nss_ldap</command> against the
+		same LDAP server.</para>
 
-
-
+		<para>Default: <command>ldap trust ids = No</command></para>
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="LEVEL2OPLOCKS">level2 oplocks (S)</term>
@@ -5357,8 +5377,20 @@
 			<listitem><para><command>ldapsam_nua</command> - The LDAP based passdb 
                         backend, with non unix account support.  Takes an LDAP URL as an optional argument (defaults to 
                         <command>ldap://localhost</command>)</para>
+		        <para>Note:  In this module, any account
+                        without a matching POSIX account is regarded
+                        as 'non unix'.
                         <para>See also <link linkend="NONUNIXACCOUNTRANGE">
-                        <parameter>non unix account range</parameter></link></para></listitem>
+                        <parameter>non unix account
+                        range</parameter></link></para>
+	                
+		        <para>LDAP connections should be secured where
+                        possible.  This may be done using either
+                        Start-TLS (see <link linkend="LDAPSSL">
+                        <parameter>ldap ssl</parameter>) or by
+                        specifying <paramater>ldaps://</paramater> in
+                        the URL argument.  
+                        </para></listitem>
 			
 			<listitem><para><command>nisplussam</command> - The NIS+ based passdb backend. Takes name NIS domain as an optional argument. Only works with sun NIS+ servers. </para></listitem>
 			
