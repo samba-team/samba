@@ -485,7 +485,7 @@ typedef struct {
     KRB_ERROR error;
 } krb5_kdc_rep;
 
-extern char *heimdal_version, *heimdal_long_version;
+extern const char *heimdal_version, *heimdal_long_version;
 
 typedef void (*krb5_log_log_func_t)(const char*, const char*, void*);
 typedef void (*krb5_log_close_func_t)(void*);
