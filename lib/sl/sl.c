@@ -189,7 +189,6 @@ sl_command_loop(SL_cmd *cmds, char *prompt, void **data)
 {
     int ret = 0;
     char *buf;
-    SL_cmd *c;
     int argc;
     char **argv;
 	
