@@ -2736,9 +2736,10 @@ static void readline_callback(void)
 /****************************************************************************
 process commands on stdin
 ****************************************************************************/
-static void process_stdin(void)
+static int process_stdin(void)
 {
 	const char *ptr;
+	int rc = 0;
 
 	while (1) {
 		fstring tok;
@@ -2766,13 +2767,14 @@ static void process_stdin(void)
 		if (!next_token_nr(&ptr,tok,NULL,sizeof(tok))) continue;
 
 		if ((i = process_tok(tok)) >= 0) {
-			commands[i].fn();
+			rc = commands[i].fn();
 		} else if (i == -2) {
 			d_printf("%s: command abbreviation ambiguous\n",tok);
 		} else {
 			d_printf("%s: command not found\n",tok);
 		}
 	}
+	return rc;
 }
 
 

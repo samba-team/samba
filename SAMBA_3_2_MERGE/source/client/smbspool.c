@@ -4,6 +4,7 @@
    Copyright 1999 by Easy Software Products
    Copyright Andrew Tridgell 1994-1998
    Copyright Andrew Bartlett 2002
+   Copyright Jelmer Vernooij 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

@@ -1413,11 +1413,8 @@ int cmd_tar(void)
   if (!tar_parseargs(argcl, argl, buf, 0))
     return 1;
 
-  process_tar();
-
-  SAFE_FREE(argl);
-
-  return 0;
+	SAFE_FREE(argl);
+	return process_tar();
 }
 
 /****************************************************************************
@@ -1425,9 +1422,10 @@ Command line (option) version
 ***************************************************************************/
 int process_tar(void)
 {
-  initarbuf();
-  switch(tar_type) {
-  case 'x':
+	int rc = 0;
+	initarbuf();
+	switch(tar_type) {
+		case 'x':
 
 #if 0
     do_tarput2();
@@ -1491,18 +1489,17 @@ int process_tar(void)
     break;
   }
 
-  if (must_free_cliplist) {
-    int i;
-    for (i = 0; i < clipn; ++i) {
-      SAFE_FREE(cliplist[i]);
-    }
-    SAFE_FREE(cliplist);
-    cliplist = NULL;
-    clipn = 0;
-    must_free_cliplist = False;
-  }
-
-  return(0);
+	if (must_free_cliplist) {
+		int i;
+		for (i = 0; i < clipn; ++i) {
+			SAFE_FREE(cliplist[i]);
+		}
+		SAFE_FREE(cliplist);
+		cliplist = NULL;
+		clipn = 0;
+		must_free_cliplist = False;
+	}
+	return rc;
 }
 
 /****************************************************************************

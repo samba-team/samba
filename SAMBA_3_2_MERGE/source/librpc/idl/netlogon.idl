@@ -124,6 +124,7 @@ interface netlogon
 		[case(1)] netr_PasswordInfo *password;
 		[case(2)] netr_NetworkInfo  *network;
 		[case(3)] netr_PasswordInfo *password;
+		[case(5)] netr_PasswordInfo *password;
 		[case(6)] netr_NetworkInfo  *network;
 	} netr_LogonLevel;
 
@@ -164,20 +165,18 @@ interface netlogon
 		uint32 primary_gid;
 		uint32 group_count;
 		[size_is(group_count)] netr_GroupMembership *groupids;
-		uint32 acct_flags;
+		uint32 user_flags;
 		netr_UserSessionKey key;
 		netr_String logon_server;
 		netr_String domain;
 		dom_sid2 *domain_sid;
 		netr_LMSessionKey LMSessKey;
-		uint32 AccountControl;
-		uint32 unknown1;
-		uint32 unknown2;
-		uint32 unknown3;
-		uint32 unknown4;
-		uint32 unknown5;
-		uint32 unknown6;
-		uint32 unknown7;
+		uint32 acct_flags;
+		uint32 unknown[7];
+	} netr_SamBaseInfo;
+
+	typedef struct {
+		netr_SamBaseInfo base;
 	} netr_SamInfo2;
 
 	typedef struct {
@@ -186,41 +185,19 @@ interface netlogon
 	} netr_SidAttr;
 
 	typedef struct {
-		NTTIME last_logon;
-		NTTIME last_logoff;
-		NTTIME acct_expiry;
-		NTTIME last_password_change;
-		NTTIME allow_password_change;
-		NTTIME force_password_change;
-		netr_String account_name;
-		netr_String full_name;
-		netr_String logon_script;
-		netr_String profile_path;
-		netr_String home_directory;
-		netr_String home_drive;
-		uint16 logon_count;
-		uint16 bad_password_count;
-		uint32 rid;
-		uint32 primary_gid;
-		uint32 group_count;
-		[size_is(group_count)] netr_GroupMembership *groupids;
-		uint32 acct_flags;
-		netr_UserSessionKey key;
-		netr_String logon_server;
-		netr_String domain;
-		dom_sid2 *domain_sid;
-		netr_LMSessionKey LMSessKey;
-		uint32 AccountControl;
-		uint32 unknown1;
-		uint32 unknown2;
-		uint32 unknown3;
-		uint32 unknown4;
-		uint32 unknown5;
-		uint32 unknown6;
-		uint32 unknown7;
+		netr_SamBaseInfo base;
 		uint32 sidcount;
 		[size_is(sidcount)] netr_SidAttr *sids;
 	} netr_SamInfo3;
+
+	typedef struct {
+		netr_SamBaseInfo base;
+		uint32 sidcount;
+		[size_is(sidcount)] netr_SidAttr *sids;
+		netr_String forest;
+		netr_String principle;
+		uint32 unknown4[20];
+	} netr_SamInfo6;
 
 	typedef struct {
 		uint32 pac_size;
@@ -239,10 +216,11 @@ interface netlogon
 	} netr_PacInfo;
 
 	typedef union {
-		[case(2)] netr_SamInfo2  *sam2;
+		[case(2)] netr_SamInfo2 *sam2;
 		[case(3)] netr_SamInfo3 *sam3;
 		[case(4)] netr_PacInfo  *pac;
-		[case(5)] netr_PacInfo  *pac2;
+		[case(5)] netr_PacInfo  *pac;
+		[case(6)] netr_SamInfo6 *sam6;
 	} netr_Validation;
 
 	NTSTATUS netr_LogonSamLogon(
@@ -914,7 +892,70 @@ interface netlogon
 
 	/****************/
 	/* Function 0x1d */
-	WERROR netr_NETRLOGONGETDOMAININFO();
+
+	typedef struct {
+		uint32 length;
+		[size_is(length)] uint8 *data;
+	} netr_Blob;
+
+	typedef [flag(NDR_PAHEX)] struct {
+		uint16 length;
+		uint16 size;
+		[size_is(size/2),length_is(length/2)] uint16 *data;
+	} netr_BinaryString;
+
+	typedef struct {
+		netr_Blob blob;
+		unistr *workstation_domain;
+		unistr *workstation_site;
+		unistr *unknown1;
+		unistr *unknown2;
+		unistr *unknown3;
+		unistr *unknown4;
+		netr_BinaryString blob2;
+		netr_String product;
+		uint32 unknown5;
+		unistr *unknown6;
+		uint32 unknown7[6];
+	} netr_DomainQuery1;
+
+	typedef union {
+		[case(1)] netr_DomainQuery1 *query1;
+		[case(2)] netr_DomainQuery1 *query1;
+	} netr_DomainQuery;
+
+	typedef struct {
+		netr_String domainname;
+		netr_String fulldomainname;
+		netr_String forest;
+		GUID        guid;
+		dom_sid2    *sid;
+		netr_BinaryString unknown1[4];
+		uint32      unknown[4];
+	} netr_DomainTrustInfo;
+
+	typedef struct {
+		netr_DomainTrustInfo domaininfo;
+		uint32 num_trusts;
+		[size_is(num_trusts)] netr_DomainTrustInfo *trusts;
+		uint32 unknown[14]; /* room for expansion? */
+	} netr_DomainInfo1;
+
+	typedef union {
+		[case(1)] netr_DomainInfo1 *info1;
+		[case(2)] netr_DomainInfo1 *info1;
+	} netr_DomainInfo;
+	
+	NTSTATUS netr_LogonGetDomainInfo(
+		[in]         unistr server_name,
+		[in]         unistr *computer_name,
+		[in,out,ref] netr_Authenticator *credential,
+		[in]         uint32 unknown1,
+		[in]         uint32 *i1,
+		[in]	     uint32 level,
+		[in,switch_is(level)] netr_DomainQuery query,
+		[out,switch_is(level)] netr_DomainInfo info
+		);
 
 	/****************/
 	/* Function 0x1e */
@@ -1003,7 +1044,20 @@ interface netlogon
 
 	/****************/
 	/* Function 0x2d */
-	WERROR netr_NETRLOGONSAMLOGONWITHFLAGS();
+
+	/* this is the ADS varient. I don't yet know what the "flags" are for */
+	NTSTATUS netr_LogonSamLogonWithFlags(
+		[in] unistr *server_name,
+		[in] unistr *workstation,
+		[in] netr_Authenticator *credential,
+		[in][out] netr_Authenticator *return_authenticator,
+		[in]  uint16 logon_level,
+		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
+		[in]  uint16 validation_level,
+		[out] [switch_is(validation_level)] netr_Validation validation,
+		[out] uint32 authoritative,
+		[in,out] uint32 flags
+		);
 
 	/****************/
 	/* Function 0x2e */

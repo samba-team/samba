@@ -32,109 +32,68 @@ struct dcerpc_schannel_state {
 	struct schannel_state *schannel_state;
 };
 
+static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
+			     const char *domain,
+			     const char *username,
+			     const char *password,
+			     int chan_type,
+				    uint8_t new_session_key[16]);
+
 /*
   wrappers for the schannel_*() functions
+
+  These will become static again, when we get dynamic registration, and
+  decrpc_schannel_security_ops come back here.
 */
-static NTSTATUS dcerpc_schannel_unseal(struct dcerpc_security *dcerpc_security, 
+static NTSTATUS dcerpc_schannel_unseal(struct gensec_security *gensec_security, 
 				    TALLOC_CTX *mem_ctx, 
 				    uint8_t *data, size_t length, DATA_BLOB *sig)
 {
-	struct dcerpc_schannel_state *dce_schan_state = dcerpc_security->private_data;
+	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
 
 	return schannel_unseal_packet(dce_schan_state->schannel_state, mem_ctx, data, length, sig);
 }
 
-static NTSTATUS dcerpc_schannel_check_sig(struct dcerpc_security *dcerpc_security, 
+static NTSTATUS dcerpc_schannel_check_sig(struct gensec_security *gensec_security, 
 				   TALLOC_CTX *mem_ctx, 
 				   const uint8_t *data, size_t length, 
 				   const DATA_BLOB *sig)
 {
-	struct dcerpc_schannel_state *dce_schan_state = dcerpc_security->private_data;
+	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
 
 	return schannel_check_packet(dce_schan_state->schannel_state, data, length, sig);
 }
 
-static NTSTATUS dcerpc_schannel_seal(struct dcerpc_security *dcerpc_security, 
+static NTSTATUS dcerpc_schannel_seal(struct gensec_security *gensec_security, 
 				  TALLOC_CTX *mem_ctx, 
 				  uint8_t *data, size_t length, 
 				  DATA_BLOB *sig)
 {
-	struct dcerpc_schannel_state *dce_schan_state = dcerpc_security->private_data;
+	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
 
 	return schannel_seal_packet(dce_schan_state->schannel_state, mem_ctx, data, length, sig);
 }
 
-static NTSTATUS dcerpc_schannel_sign(struct dcerpc_security *dcerpc_security, 
+static NTSTATUS dcerpc_schannel_sign(struct gensec_security *gensec_security, 
 				 TALLOC_CTX *mem_ctx, 
 				 const uint8_t *data, size_t length, 
 				 DATA_BLOB *sig)
 {
-	struct dcerpc_schannel_state *dce_schan_state = dcerpc_security->private_data;
+	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
 
 	return schannel_sign_packet(dce_schan_state->schannel_state, mem_ctx, data, length, sig);
 }
 
-static NTSTATUS dcerpc_schannel_session_key(struct dcerpc_security *dcerpc_security, 
+static NTSTATUS dcerpc_schannel_session_key(struct gensec_security *gensec_security, 
 				  DATA_BLOB *session_key)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS dcerpc_schannel_start(struct dcerpc_pipe *p, struct dcerpc_security *dcerpc_security)
-{
-	struct dcerpc_schannel_state *dce_schan_state;
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
-	uint8_t session_key[16];
-	int chan_type = 0;
-
-	if (p->flags & DCERPC_SCHANNEL_BDC) {
-		chan_type = SEC_CHAN_BDC;
-	} else if (p->flags & DCERPC_SCHANNEL_WORKSTATION) {
-		chan_type = SEC_CHAN_WKSTA;
-	} else if (p->flags & DCERPC_SCHANNEL_DOMAIN) {
-		chan_type = SEC_CHAN_DOMAIN;
-	}
-
-	status = dcerpc_schannel_key(p, dcerpc_security->user.domain, 
-					dcerpc_security->user.name,
-					dcerpc_security->user.password, 
-					chan_type, session_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	mem_ctx = talloc_init("dcerpc_schannel_start");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	dce_schan_state = talloc_p(mem_ctx, struct dcerpc_schannel_state);
-	if (!dce_schan_state) {
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	dce_schan_state->mem_ctx = mem_ctx;
-
-	status = schannel_start(&dce_schan_state->schannel_state, session_key, True);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	dce_schan_state->state = DCERPC_SCHANNEL_STATE_START;
-
-	dcerpc_security->private_data = dce_schan_state;
-
-	dump_data_pw("session key:\n", dce_schan_state->schannel_state->session_key, 16);
-
-	return status;
-}
-
-static NTSTATUS dcerpc_schannel_update(struct dcerpc_security *dcerpc_security, TALLOC_CTX *out_mem_ctx, 
+static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
 						const DATA_BLOB in, DATA_BLOB *out) 
 {
-	struct dcerpc_schannel_state *dce_schan_state = dcerpc_security->private_data;
+	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
 	NTSTATUS status;
 	struct schannel_bind bind_schannel;
 
@@ -148,14 +107,14 @@ static NTSTATUS dcerpc_schannel_update(struct dcerpc_security *dcerpc_security, 
 #if 0
 	/* to support this we'd need to have access to the full domain name */
 	bind_schannel.bind_type = 23;
-	bind_schannel.u.info23.domain = dcerpc_security->user.domain;
-	bind_schannel.u.info23.account_name = dcerpc_security->user.name;
+	bind_schannel.u.info23.domain = gensec_security->user.domain;
+	bind_schannel.u.info23.account_name = gensec_security->user.name;
 	bind_schannel.u.info23.dnsdomain = str_format_nbt_domain(dce_schan_state->mem_ctx, fulldomainname);
-	bind_schannel.u.info23.workstation = str_format_nbt_domain(dce_schan_state->mem_ctx, dcerpc_security->user.name);
+	bind_schannel.u.info23.workstation = str_format_nbt_domain(dce_schan_state->mem_ctx, gensec_security->user.name);
 #else
 	bind_schannel.bind_type = 3;
-	bind_schannel.u.info3.domain = dcerpc_security->user.domain;
-	bind_schannel.u.info3.account_name = dcerpc_security->user.name;
+	bind_schannel.u.info3.domain = gensec_security->user.domain;
+	bind_schannel.u.info3.account_name = gensec_security->user.name;
 #endif
 
 	status = ndr_push_struct_blob(out, dce_schan_state->mem_ctx, &bind_schannel,
@@ -167,27 +126,39 @@ static NTSTATUS dcerpc_schannel_update(struct dcerpc_security *dcerpc_security, 
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
-static void dcerpc_schannel_end(struct dcerpc_security *dcerpc_security)
+static void dcerpc_schannel_end(struct gensec_security *gensec_security)
 {
-	struct dcerpc_schannel_state *dce_schan_state = dcerpc_security->private_data;
+	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
 
 	schannel_end(&dce_schan_state->schannel_state);
 
 	talloc_destroy(dce_schan_state->mem_ctx);
 
-	dcerpc_security->private_data = NULL;
+	gensec_security->private_data = NULL;
 }
 
+
+static const struct gensec_security_ops gensec_dcerpc_schannel_security_ops = {
+	.name		= "dcerpc_schannel",
+	.auth_type	= DCERPC_AUTH_TYPE_SCHANNEL,
+	.update 	= dcerpc_schannel_update,
+	.seal 		= dcerpc_schannel_seal,
+	.sign		= dcerpc_schannel_sign,
+	.check_sig	= dcerpc_schannel_check_sig,
+	.unseal		= dcerpc_schannel_unseal,
+	.session_key	= dcerpc_schannel_session_key,
+	.end		= dcerpc_schannel_end
+};
 
 /*
   get a schannel key using a netlogon challenge on a secondary pipe
 */
-NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
-			     const char *domain,
-			     const char *username,
-			     const char *password,
-			     int chan_type,
-			     uint8_t new_session_key[16])
+static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
+				    const char *domain,
+				    const char *username,
+				    const char *password,
+				    int chan_type,
+				    uint8_t new_session_key[16])
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p2;
@@ -269,24 +240,6 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	return NT_STATUS_OK;
 }
 
-const struct dcesrv_security_ops dcerpc_schannel_security_ops = {
-	.name		= "schannel",
-	.auth_type	= DCERPC_AUTH_TYPE_SCHANNEL,
-	.start 		= dcerpc_schannel_start,
-	.update 	= dcerpc_schannel_update,
-	.seal 		= dcerpc_schannel_seal,
-	.sign		= dcerpc_schannel_sign,
-	.check_sig	= dcerpc_schannel_check_sig,
-	.unseal		= dcerpc_schannel_unseal,
-	.session_key	= dcerpc_schannel_session_key,
-	.end		= dcerpc_schannel_end
-};
-
-const struct dcesrv_security_ops *dcerpc_schannel_security_get_ops(void)
-{
-	return &dcerpc_schannel_security_ops;
-}
-
 /*
   do a schannel style bind on a dcerpc pipe. The username is usually
   of the form HOSTNAME$ and the password is the domain trust password
@@ -298,11 +251,58 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 				   const char *password)
 {
 	NTSTATUS status;
+	struct dcerpc_schannel_state *dce_schan_state;
+	TALLOC_CTX *mem_ctx;
+	uint8_t session_key[16];
+	int chan_type = 0;
+
+	if (p->flags & DCERPC_SCHANNEL_BDC) {
+		chan_type = SEC_CHAN_BDC;
+	} else if (p->flags & DCERPC_SCHANNEL_WORKSTATION) {
+		chan_type = SEC_CHAN_WKSTA;
+	} else if (p->flags & DCERPC_SCHANNEL_DOMAIN) {
+		chan_type = SEC_CHAN_DOMAIN;
+	}
+
+	status = dcerpc_schannel_key(p, domain, 
+					username,
+					password, 
+					chan_type, session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	mem_ctx = talloc_init("dcerpc_schannel_start");
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	dce_schan_state = talloc_p(mem_ctx, struct dcerpc_schannel_state);
+	if (!dce_schan_state) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	dce_schan_state->mem_ctx = mem_ctx;
+
+	status = schannel_start(&dce_schan_state->schannel_state, session_key, True);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	dce_schan_state->state = DCERPC_SCHANNEL_STATE_START;
+
+	p->security_state.generic_state.user.domain = domain;
+	p->security_state.generic_state.user.name = username;
+	p->security_state.generic_state.user.password = password;
+
+	p->security_state.generic_state.ops = &gensec_dcerpc_schannel_security_ops;
+	p->security_state.generic_state.private_data = dce_schan_state;
+
+	dump_data_pw("session key:\n", dce_schan_state->schannel_state->session_key, 16);
 
 	status = dcerpc_bind_auth(p, DCERPC_AUTH_TYPE_SCHANNEL,
-				uuid, version,
-				domain, username, 
-				password);
+				  uuid, version);
 
 	return status;
 }

@@ -6,6 +6,7 @@
 
 [ uuid(12345678-1234-abcd-ef00-0123456789ab),
   version(1.0),
+  endpoints(spoolss),
   pointer_default(unique)
 ] interface spoolss
 {
@@ -47,7 +48,7 @@
 		uint8  private[driverextra];
 	} spoolss_DeviceMode;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 flags;
 		[relative] nstring *name;
 		[relative] nstring *description;

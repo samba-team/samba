@@ -841,7 +841,8 @@ extern int errno;
 #include "libcli/auth/ntlmssp.h"
 #include "libcli/auth/credentials.h"
 #include "libcli/auth/schannel.h"
-
+#include "libcli/auth/gensec.h"
+#include "libcli/auth/spnego.h"
 #include "librpc/rpc/dcerpc.h"
 
 #include "auth.h"
@@ -866,8 +867,6 @@ extern int errno;
 #include "module.h"
 
 #include "nsswitch/winbind_client.h"
-
-#include "spnego.h"
 
 #include "context.h"
 #include "cli_context.h"

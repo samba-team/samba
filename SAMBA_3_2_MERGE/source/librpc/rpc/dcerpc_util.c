@@ -488,10 +488,13 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	
 	(*p)->flags = binding->flags;
 
-	if (binding->flags & DCERPC_SCHANNEL_ANY) {
+	/* remember the binding string for possible secondary connections */
+	(*p)->binding_string = dcerpc_binding_string((*p)->mem_ctx, binding);
+
+	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
 						   domain, username, password);
-	} else if (binding->flags & (DCERPC_SIGN | DCERPC_SEAL)) {
+	} else if (username && username[0] && (binding->flags & (DCERPC_SIGN | DCERPC_SEAL))) {
 		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version, domain, username, password);
 	} else {    
 		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
@@ -544,20 +547,22 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 
 	/* it doesn't seem to work to do a null NTLMSSP session without either sign
 	   or seal, so force signing if we are doing ntlmssp */
-	if (username[0] && !(binding->flags & (DCERPC_SIGN|DCERPC_SEAL))) {
+	if (username && username[0] && !(binding->flags & (DCERPC_SIGN|DCERPC_SEAL))) {
 		binding->flags |= DCERPC_SIGN;
 	}
 
 	(*p)->flags = binding->flags;
 
-	if (binding->flags & DCERPC_SCHANNEL_ANY) {
+	/* remember the binding string for possible secondary connections */
+	(*p)->binding_string = dcerpc_binding_string((*p)->mem_ctx, binding);
+
+	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
 						   domain, username, password);
-	} else if (!(binding->flags & (DCERPC_SIGN|DCERPC_SEAL)) && !username[0]) {
+	} else if (username && username[0] && (binding->flags & (DCERPC_SIGN | DCERPC_SEAL))) {
+		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version, domain, username, password);
+	} else {    
 		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
-	} else {
-		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version,
-					       domain, username, password);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -592,11 +597,6 @@ NTSTATUS dcerpc_pipe_connect_b(struct dcerpc_pipe **p,
 		status = dcerpc_pipe_connect_ncacn_ip_tcp(p, binding, pipe_uuid, pipe_version,
 							  domain, username, password);
 		break;
-	}
-
-	/* remember the binding string for possible secondary connections */
-	if (NT_STATUS_IS_OK(status)) {
-		(*p)->binding_string = dcerpc_binding_string((*p)->mem_ctx, binding);
 	}
 
 	return status;
@@ -697,8 +697,8 @@ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 {
 	struct cli_tree *tree;
 
-	if (p->security_state.ops) {
-		return p->security_state.ops->session_key(&p->security_state, session_key);
+	if (p->security_state.generic_state.ops) {
+		return p->security_state.generic_state.ops->session_key(&p->security_state.generic_state, session_key);
 	}
 	
 	tree = dcerpc_smb_tree(p);
@@ -711,3 +711,38 @@ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 
 	return NT_STATUS_NO_USER_SESSION_KEY;
 }
+
+
+/*
+  log a rpc packet in a format suitable for ndrdump. This is especially useful
+  for sealed packets, where ethereal cannot easily see the contents
+
+  this triggers on a debug level of >= 10
+*/
+void dcerpc_log_packet(const struct dcerpc_interface_table *ndr,
+		       uint32_t opnum, uint32_t flags, DATA_BLOB *pkt)
+{
+	const int num_examples = 20;
+	int i;
+
+	if (DEBUGLEVEL < 10) return;
+
+	for (i=0;i<num_examples;i++) {
+		char *name=NULL;
+		asprintf(&name, "%s/rpclog/%s-%u.%d.%s", 
+			 lp_lockdir(), ndr->name, opnum, i,
+			 (flags&NDR_IN)?"in":"out");
+		if (name == NULL) {
+			return;
+		}
+		if (!file_exist(name, NULL)) {
+			if (file_save(name, pkt->data, pkt->length)) {
+				DEBUG(10,("Logged rpc packet to %s\n", name));
+			}
+			free(name);
+			break;
+		}
+		free(name);
+	}
+}
+

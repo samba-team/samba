@@ -1,9 +1,11 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   dcerpc authentication operations
+   Generic Authentication Interface
 
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
+
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -42,24 +44,8 @@ NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
 	return status;
 }
 
-const struct dcesrv_security_ops *dcerpc_security_by_authtype(uint8_t auth_type)
-{
-	switch (auth_type) {
-		case DCERPC_AUTH_TYPE_SCHANNEL:
-			return dcerpc_schannel_security_get_ops();
-
-		case DCERPC_AUTH_TYPE_NTLMSSP:
-			return dcerpc_ntlmssp_security_get_ops();
-	}
-
-	return NULL;
-}
-
 NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type,
-				       const char *uuid, uint_t version,
-				       const char *domain,
-				       const char *username,
-				       const char *password)
+			  const char *uuid, uint_t version)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
@@ -69,20 +55,19 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type,
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	
+	if (!p->security_state.generic_state.ops) {
+		
+		p->security_state.generic_state.ops = gensec_security_by_authtype(auth_type);
+		if (!p->security_state.generic_state.ops) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		}
 
-	p->security_state.ops = dcerpc_security_by_authtype(auth_type);
-	if (!p->security_state.ops) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto done;
-	}
-
-	p->security_state.user.domain = domain;
-	p->security_state.user.name = username;
-	p->security_state.user.password = password;
-
-	status = p->security_state.ops->start(p, &p->security_state);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		status = p->security_state.generic_state.ops->client_start(&p->security_state.generic_state);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	p->security_state.auth_info = talloc(p->mem_ctx, sizeof(*p->security_state.auth_info));
@@ -105,9 +90,9 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type,
 		p->security_state.auth_info->auth_level = DCERPC_AUTH_LEVEL_NONE;
 	}
 
-	status = p->security_state.ops->update(&p->security_state, mem_ctx,
-					p->security_state.auth_info->credentials,
-					&credentials);
+	status = p->security_state.generic_state.ops->update(&p->security_state.generic_state, mem_ctx,
+							     p->security_state.auth_info->credentials,
+							     &credentials);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto done;
@@ -120,9 +105,9 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type,
 		goto done;
 	}
 
-	status = p->security_state.ops->update(&p->security_state, mem_ctx,
-					p->security_state.auth_info->credentials,
-					&credentials);
+	status = p->security_state.generic_state.ops->update(&p->security_state.generic_state, mem_ctx,
+							     p->security_state.auth_info->credentials,
+							     &credentials);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto done;
@@ -140,3 +125,5 @@ done:
 
 	return status;
 }
+
+

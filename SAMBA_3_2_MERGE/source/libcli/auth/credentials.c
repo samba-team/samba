@@ -270,7 +270,8 @@ BOOL creds_server_step_check(struct creds_CredentialState *creds,
 			     struct netr_Authenticator *received_authenticator,
 			     struct netr_Authenticator *return_authenticator) 
 {
-	/* Should we check that this is increasing? */
+	/* TODO: this may allow the a replay attack on a non-signed
+	   connection. Should we check that this is increasing? */
 	creds->sequence = received_authenticator->timestamp;
 	creds_step(creds);
 	if (creds_server_check(creds, &received_authenticator->cred)) {

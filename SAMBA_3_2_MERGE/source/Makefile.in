@@ -241,6 +241,7 @@ LIBNMB_OBJ = libcli/unexpected.o libcli/namecache.o libcli/nmblib.o \
 
 LIBSAMBA_OBJ = libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o libsmb/ntlm_check.o \
 	libsmb/ntlmssp.o libsmb/ntlmssp_parse.o libsmb/ntlmssp_sign.o
+LIBSAMBA_OBJ = 
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/asn1.o \
@@ -310,12 +311,15 @@ LIBCLI_UTILS_OBJ = libcli/util/asn1.o libcli/util/smberr.o libcli/util/doserr.o 
 
 LIBCLI_AUTH_OBJ = \
                 libcli/auth/ntlmssp.o \
-                libcli/auth/ntlmssp_parse.o \
                 libcli/auth/ntlmssp_sign.o \
                 libcli/auth/schannel.o \
                 libcli/auth/credentials.o \
                 libcli/auth/session.o \
-                libcli/auth/ntlm_check.o
+                libcli/auth/ntlm_check.o \
+				libcli/auth/gensec.o \
+				libcli/auth/spnego.o \
+				libcli/auth/spnego_parse.o \
+				libcli/auth/gensec_ntlmssp.o
 
 LIBCLI_RAW_OBJ = \
                 libcli/raw/rawfile.o \
@@ -324,8 +328,6 @@ LIBCLI_RAW_OBJ = \
                 libcli/raw/clitransport.o \
                 libcli/raw/clisession.o \
                 libcli/raw/clitree.o \
-                libcli/raw/clikrb5.o \
-                libcli/raw/clispnego.o \
                 libcli/raw/rawrequest.o \
                 libcli/raw/rawreadwrite.o \
                 libcli/raw/rawsearch.o \
@@ -748,7 +750,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) \
 	    $(RPC_LSA_DS_OBJ) $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) \
 	    $(RPC_SPOOLSS_OBJ) $(RPC_ECHO_OBJ) $(RPC_EPMAPPER_OBJ) \
-	    $(SMBLDAP_OBJ) $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ)
+	    $(SMBLDAP_OBJ) $(IDMAP_OBJ) $(PASSCHANGE_OBJ)
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ)

@@ -55,6 +55,7 @@ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 	ndr->data_size = blob->length;
 	ndr->offset = 0;
 	ndr->mem_ctx = mem_ctx;
+	ndr->ofs_list = NULL;
 
 	return ndr;
 }
@@ -139,6 +140,7 @@ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 	ndr->ptr_count = 0;
 	ndr->relative_list = NULL;
 	ndr->relative_list_end = NULL;
+	ndr->ofs_list = NULL;
 	
 	return ndr;
 }
@@ -375,7 +377,8 @@ static NTSTATUS ndr_map_error(enum ndr_err_code err)
 /*
   return and possibly log an NDR error
 */
-NTSTATUS ndr_pull_error(struct ndr_pull *ndr, enum ndr_err_code err, const char *format, ...)
+NTSTATUS ndr_pull_error(struct ndr_pull *ndr, 
+			enum ndr_err_code err, const char *format, ...)
 {
 	char *s=NULL;
 	va_list ap;
