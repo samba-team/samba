@@ -57,6 +57,8 @@ struct utimbuf;
 
 struct auth_usersupplied_info;
 struct auth_serversupplied_info;
+struct auth_session_info;
+
 struct creds_CredentialState;
 struct ntlmssp_state;
 struct auth_methods;
@@ -90,3 +92,9 @@ struct pvfs_filename;
 struct pvfs_state;
 struct pvfs_file;
 
+struct dcesrv_context;
+struct dcesrv_interface;
+struct dcesrv_connection;
+struct dcesrv_endpoint;
+struct dcesrv_call_state;
+struct dcesrv_auth;

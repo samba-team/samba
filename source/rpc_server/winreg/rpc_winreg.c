@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "rpc_server/dcerpc_server.h"
 #include "registry.h"
 #include "librpc/gen_ndr/ndr_winreg.h"
 #include "rpc_server/common/common.h"

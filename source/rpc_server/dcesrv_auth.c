@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "rpc_server/dcerpc_server.h"
 
 /*
   startup the cryptographic side of an authenticated dcerpc server
