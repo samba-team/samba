@@ -227,24 +227,6 @@ password ?).\n", cli->desthost ));
         return result;
 }
 
-/* Return the secure channel type depending on the server role. */
-
-uint16 get_sec_chan(void)
-{
-	uint16 sec_chan = SEC_CHAN_WKSTA;
-
-	switch (lp_server_role()) {
-	case ROLE_DOMAIN_PDC:
-		sec_chan = SEC_CHAN_DOMAIN;
-		break;
-	case ROLE_DOMAIN_BDC:
-		sec_chan = SEC_CHAN_BDC;
-		break;
-	}
-
-	return sec_chan;
-}
-
 /* Initialize domain session credentials */
 
 NTSTATUS cli_nt_setup_creds(struct cli_state *cli, 

@@ -352,6 +352,11 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
                          "Error was %s.\n", user_info->smb_name.str,
                          user_info->domain.str, cli->srv_name_slash, 
                          nt_errstr(nt_status)));
+
+		/* map to something more useful */
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_UNSUCCESSFUL)) {
+			nt_status = NT_STATUS_NO_LOGON_SERVERS;
+		}
 	} else {
 		nt_status = make_server_info_info3(mem_ctx, user_info->internal_username.str, 
 						   user_info->smb_name.str, domain, server_info, &info3);
@@ -400,6 +405,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
 	const char *domain = lp_workgroup();
+	uint32 sec_channel_type = 0;
 
 	if (!user_info || !server_info || !auth_context) {
 		DEBUG(1,("check_ntdomain_security: Critical variables not present.  Failing.\n"));
@@ -422,7 +428,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	 * No need to become_root() as secrets_init() is done at startup.
 	 */
 
-	if (!secrets_fetch_trust_account_password(domain, trust_passwd, &last_change_time))
+	if (!secrets_fetch_trust_account_password(domain, trust_passwd, &last_change_time, &sec_channel_type))
 	{
 		DEBUG(0, ("check_ntdomain_security: could not fetch trust account password for domain '%s'\n", domain));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -447,7 +453,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	nt_status = domain_client_validate(mem_ctx, user_info, domain,
 					   (uchar *)auth_context->challenge.data, 
 					   server_info, 
-					   password_server, global_myname(), SEC_CHAN_WKSTA, trust_passwd, last_change_time);
+					   password_server, global_myname(), sec_channel_type,trust_passwd, last_change_time);
 	return nt_status;
 }
 

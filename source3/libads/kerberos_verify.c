@@ -53,7 +53,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	password_s = secrets_fetch_machine_password();
+	password_s = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 	if (!password_s) {
 		DEBUG(1,("failed to fetch machine password\n"));
 		return NT_STATUS_LOGON_FAILURE;

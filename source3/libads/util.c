@@ -29,21 +29,23 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
     char *new_password;
     char *service_principal;
     ADS_STATUS ret;
-
-    if ((password = secrets_fetch_machine_password()) == NULL) {
+    uint32 sec_channel_type;
+    
+    if ((password = secrets_fetch_machine_password(lp_workgroup(), NULL, &sec_channel_type)) == NULL) {
 	DEBUG(1,("Failed to retrieve password for principal %s\n", host_principal));
 	return ADS_ERROR_SYSTEM(ENOENT);
     }
 
     tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
     new_password = strdup(tmp_password);
+    
     asprintf(&service_principal, "HOST/%s", host_principal);
 
     ret = kerberos_set_password(ads->auth.kdc_server, service_principal, password, service_principal, new_password, ads->auth.time_offset);
 
     if (!ADS_ERR_OK(ret)) goto failed;
 
-    if (!secrets_store_machine_password(new_password)) {
+    if (!secrets_store_machine_password(new_password, lp_workgroup(), sec_channel_type)) {
 	    DEBUG(1,("Failed to save machine password\n"));
 	    return ADS_ERROR_SYSTEM(EACCES);
     }

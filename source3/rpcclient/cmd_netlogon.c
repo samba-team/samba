@@ -152,6 +152,7 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli,
         SAM_DELTA_CTR *deltas;
 	DOM_CRED ret_creds;
 	uint32 neg_flags = 0x000001ff;
+	uint32 sec_channel_type = 0;
 
         if (argc > 2) {
                 fprintf(stderr, "Usage: %s [database_id]\n", argv[0]);
@@ -169,12 +170,12 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli,
         /* Initialise session credentials */
 
 	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd,
-                                                  NULL)) {
+                                                  NULL, &sec_channel_type)) {
 		fprintf(stderr, "could not fetch trust account password\n");
 		goto done;
 	}        
 
-        result = cli_nt_setup_creds(cli, get_sec_chan(), trust_passwd, &neg_flags, 2);
+        result = cli_nt_setup_creds(cli, sec_channel_type, trust_passwd, &neg_flags, 2);
 
         if (!NT_STATUS_IS_OK(result)) {
                 fprintf(stderr, "Error initialising session creds\n");
@@ -213,6 +214,7 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli,
         SAM_DELTA_CTR *deltas;
         UINT64_S seqnum;
 	uint32 neg_flags = 0x000001ff;
+	uint32 sec_channel_type = 0;
 
         if (argc != 3) {
                 fprintf(stderr, "Usage: %s database_id seqnum\n", argv[0]);
@@ -233,12 +235,12 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli,
         /* Initialise session credentials */
 
 	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd,
-                                                  NULL)) {
+                                                  NULL, &sec_channel_type)) {
 		fprintf(stderr, "could not fetch trust account password\n");
 		goto done;
 	}        
 
-        result = cli_nt_setup_creds(cli, get_sec_chan(), trust_passwd, &neg_flags, 2);
+        result = cli_nt_setup_creds(cli, sec_channel_type, trust_passwd, &neg_flags, 2);
 
         if (!NT_STATUS_IS_OK(result)) {
                 fprintf(stderr, "Error initialising session creds\n");
