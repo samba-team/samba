@@ -913,11 +913,10 @@ int smbw_rename(const char *oldname, const char *newname)
 
 
 /***************************************************** 
-a wrapper for utime()
+a wrapper for utime and utimes
 *******************************************************/
-int smbw_utime(const char *fname, void *buf)
+static int smbw_settime(const char *fname, time_t t)
 {
-	struct utimbuf *tbuf = (struct utimbuf *)buf;
 	struct smbw_server *srv;
 	fstring server, share;
 	pstring path;
@@ -947,8 +946,7 @@ int smbw_utime(const char *fname, void *buf)
 		goto failed;
 	}
 
-	if (!cli_setatr(&srv->cli, path, mode, 
-			tbuf?tbuf->modtime:time(NULL))) {
+	if (!cli_setatr(&srv->cli, path, mode, t)) {
 		errno = smbw_errno(&srv->cli);
 		goto failed;
 	}
@@ -960,6 +958,25 @@ int smbw_utime(const char *fname, void *buf)
 	smbw_busy--;
 	return -1;
 }
+
+/***************************************************** 
+a wrapper for utime 
+*******************************************************/
+int smbw_utime(const char *fname, void *buf)
+{
+	struct utimbuf *tbuf = (struct utimbuf *)buf;
+	return smbw_settime(fname, tbuf?tbuf->modtime:time(NULL));
+}
+
+/***************************************************** 
+a wrapper for utime 
+*******************************************************/
+int smbw_utimes(const char *fname, void *buf)
+{
+	struct timeval *tbuf = (struct timeval *)buf;
+	return smbw_settime(fname, tbuf?tbuf->tv_sec:time(NULL));
+}
+
 
 /***************************************************** 
 a wrapper for chown()

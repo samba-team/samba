@@ -74,8 +74,6 @@
 #define real_telldir(d)		(syscall(SYS_telldir,(d)))
 #elif HAVE___TELLDIR
 #define real_telldir(d)            	(__telldir(d))
-#else
-#define NO_TELLDIR_WRAPPER
 #endif
 
 #ifdef HAVE__DUP
@@ -216,5 +214,10 @@
 #define real_unlink(fn)			(syscall(SYS_unlink, (fn)))
 #define real_rmdir(fn)			(syscall(SYS_rmdir, (fn)))
 #define real_mkdir(fn, mode)		(syscall(SYS_mkdir, (fn), (mode)))
-#define real_utime(fn, buf)		(syscall(SYS_utime, (fn), (buf)))
 #define real_utimes(fn, buf)		(syscall(SYS_utimes, (fn), (buf)))
+
+#ifdef SYS_utime
+#define real_utime(fn, buf)		(syscall(SYS_utime, (fn), (buf)))
+#else
+#define REPLACE_UTIME 1
+#endif

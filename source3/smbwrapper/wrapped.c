@@ -22,8 +22,15 @@
 
 #include "wrapper.h"
 
- int open(const char *name, int flags, mode_t mode)
+ int open(const char *name, int flags, ...)
 {
+	va_list ap;
+	mode_t mode;
+
+	va_start(ap, flags);
+	mode = va_arg(ap, mode_t);
+	va_end(ap);
+
 	if (smbw_path(name)) {
 		return smbw_open(name, flags, mode);
 	}
@@ -174,8 +181,14 @@
 #endif
 
 
- int fcntl(int fd, int cmd, long arg)
+ int fcntl(int fd, int cmd, ...)
 {
+	va_list ap;
+	long arg;
+	va_start(ap, cmd);
+	arg = va_arg(ap, long);
+	va_end(ap);
+
 	if (smbw_fd(fd)) {
 		return smbw_fcntl(fd, cmd, arg);
 	}
@@ -575,6 +588,7 @@
 }
 
 
+#ifdef HAVE_UTIME
  int utime(const char *name,void *tvp)
 {
 	if (smbw_path(name)) {
@@ -583,6 +597,18 @@
 
 	return real_utime(name, tvp);
 }
+#endif
+
+#ifdef HAVE_UTIMES
+ int utimes(const char *name,void *tvp)
+{
+	if (smbw_path(name)) {
+		return smbw_utimes(name, tvp);
+	}
+
+	return real_utimes(name, tvp);
+}
+#endif
 
  int readlink(char *path, char *buf, size_t bufsize)
 {
@@ -657,6 +683,7 @@
 	return real_dup2(oldfd, newfd);
 }
 
+#ifdef real_opendir
  DIR *opendir(const char *name)
 {
 	DIR *ret;
@@ -666,7 +693,9 @@
 
 	return real_opendir(name);
 }
+#endif
 
+#ifdef real_readdir
  struct dirent *readdir(DIR *dir)
 {
 	if (smbw_dirp(dir)) {
@@ -675,7 +704,9 @@
 
 	return real_readdir(dir);
 }
+#endif
 
+#ifdef real_closedir
  int closedir(DIR *dir)
 {
 	if (smbw_dirp(dir)) {
@@ -684,8 +715,9 @@
 
 	return real_closedir(dir);
 }
+#endif
 
-#ifndef NO_TELLDIR_WRAPPER
+#ifdef real_telldir
  off_t telldir(DIR *dir)
 {
 	if (smbw_dirp(dir)) {
@@ -696,7 +728,7 @@
 }
 #endif
 
-#ifndef NO_SEEKDIR_WRAPPER
+#ifdef real_seekdir
  void seekdir(DIR *dir, off_t offset)
 {
 	if (smbw_dirp(dir)) {
