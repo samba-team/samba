@@ -33,23 +33,6 @@
  *	@(#)externs.h	8.3 (Berkeley) 5/30/95
  */
 
-#ifndef	BSD
-# define BSD 43
-#endif
-
-/*
- * ucb stdio.h defines BSD as something wierd
- */
-#if defined(sun) && defined(__svr4__)
-#define BSD 43
-#endif
-
-#ifndef	USE_TERMIO
-# if BSD > 43 || defined(SYSV_TERMIO)
-#  define USE_TERMIO
-# endif
-#endif
-
 #include <stdio.h>
 #include <setjmp.h>
 #if defined(CRAY) && !defined(NO_BSD_SETJMP)
@@ -63,6 +46,25 @@
 #ifdef CRAY
 # include <errno.h>
 #endif /* CRAY */
+
+#ifndef	BSD
+# define BSD 43
+#endif
+
+/*
+ * ucb stdio.h defines BSD as something wierd
+ */
+#if defined(sun) && defined(__svr4__)
+#undef BSD
+#define BSD 43
+#endif
+
+#ifndef	USE_TERMIO
+# if BSD > 43 || defined(SYSV_TERMIO)
+#  define USE_TERMIO
+# endif
+#endif
+
 #ifdef	USE_TERMIO
 # ifndef	VINTR
 #  ifdef SYSV_TERMIO
