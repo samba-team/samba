@@ -5780,8 +5780,14 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	}
 
 	/* Call addprinter hook */
-
-	if (*lp_addprinter_cmd()) {
+	/* Check changes to see if this is really needed */
+	
+	if ( *lp_addprinter_cmd() 
+		&& (!strequal(printer->info_2->drivername, old_printer->info_2->drivername)
+			|| !strequal(printer->info_2->comment, old_printer->info_2->comment)
+			|| !strequal(printer->info_2->portname, old_printer->info_2->portname)
+			|| !strequal(printer->info_2->location, old_printer->info_2->location)) )
+	{
 		if ( !add_printer_hook(printer) ) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
