@@ -1,5 +1,7 @@
 Fri Aug 15 00:09:37 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/krb5/context.c: Fix kdc_timeout.
+
 	* lib/hdb/{ndbm,db}.c: Free name in close.
 
 	* kdc/kerberos5.c (tgs_check_autenticator): Return error code
