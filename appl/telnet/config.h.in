@@ -162,7 +162,7 @@
 
 /* set this to a sensible login */
 #ifndef LOGIN_PATH
-#define LOGIN_PATH "/usr/athena/bin/login"
+#define LOGIN_PATH BINDIR "/login"
 #endif
 
 #endif /* T_CONFIG_H */

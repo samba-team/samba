@@ -9,7 +9,7 @@ SHELL		= /bin/sh
 CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
-DEFS = @DEFS@
+DEFS = @DEFS@ -DBINDIR='"$(bindir)"'
 CFLAGS = @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 LIBS = @LIBS@
@@ -19,6 +19,7 @@ MKDIRHIER = @top_srcdir@/../../mkdirhier-sh
 prefix = @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
+bindir = $(exec_prefix)/bin
 
 PROGS = telnetd
 
