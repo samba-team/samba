@@ -342,6 +342,7 @@ typedef struct
   BOOL bMap_archive;
   BOOL bLocking;
   BOOL bStrictLocking;
+  BOOL bPosixLocking;
 #ifdef WITH_UTMP
   BOOL bUtmp;
 #endif
@@ -454,6 +455,7 @@ static service sDefault =
   True,  /* bMap_archive */
   True,  /* bLocking */
   False,  /* bStrictLocking */
+  True,   /* bPosixLocking */
 #ifdef WITH_UTMP
   False,  /* bUtmp */
 #endif
@@ -814,6 +816,7 @@ static struct parm_struct parm_table[] =
   {"level2 oplocks",   P_BOOL,    P_LOCAL,  &sDefault.bLevel2OpLocks,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"oplock break wait time",P_INTEGER,P_GLOBAL,&Globals.oplock_break_wait_time,NULL,NULL,FLAG_GLOBAL},
   {"oplock contention limit",P_INTEGER,P_LOCAL,&sDefault.iOplockContentionLimit,NULL,NULL,FLAG_SHARE|FLAG_GLOBAL},
+  {"posix locking",    P_BOOL,    P_LOCAL,  &sDefault.bPosixLocking,    NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"strict locking",   P_BOOL,    P_LOCAL,  &sDefault.bStrictLocking,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"share modes",      P_BOOL,    P_LOCAL,  &sDefault.bShareModes,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
 
@@ -1420,6 +1423,7 @@ FN_LOCAL_BOOL(lp_map_hidden,bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive,bMap_archive)
 FN_LOCAL_BOOL(lp_locking,bLocking)
 FN_LOCAL_BOOL(lp_strict_locking,bStrictLocking)
+FN_LOCAL_BOOL(lp_posix_locking,bPosixLocking)
 #ifdef WITH_UTMP
 FN_LOCAL_BOOL(lp_utmp,bUtmp)
 #endif
