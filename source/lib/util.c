@@ -3035,8 +3035,26 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
   if (res == -1) 
     { DEBUG(0,("socket error\n")); return -1; }
 
-  if (type != SOCK_STREAM) return(res);
+#ifdef BIND_LOCAL_OUTPUT_SOCKET
+  {
+  struct sockaddr_in sock_in;
+  /* Bind the local part of this socket to the address
+     given in the socket address parameter. */
+
+  bzero((char *)&sock_in,sizeof(sock_in));
+  putip((char *)&sock_in.sin_addr,(char *)interpret_addr2(lp_socket_address()));
   
+  sock_in.sin_port = 0;
+  sock_in.sin_family = PF_INET;
+
+  if (bind(res, (struct sockaddr * ) &sock_in,sizeof(sock_in)) < 0)
+    DEBUG(0,("Failed to bind local socket address for output socket. Error was %s\n",
+          strerror(errno)));
+  }
+#endif /* BIND_LOCAL_OUTPUT_SOCKET */
+
+  if (type != SOCK_STREAM) return(res);
+ 
   bzero((char *)&sock_out,sizeof(sock_out));
   putip((char *)&sock_out.sin_addr,(char *)addr);
   
