@@ -26,11 +26,11 @@
 #include "winbindd.h"
 #include "debug.h"
 
-/* Prototypes from common.h */
+/* Prototypes from common.h - only needed #if TNG */
 
-enum nss_status generic_request(int req_type, 
-				struct winbindd_request *request,
-				struct winbindd_response *response);
+enum nss_status winbindd_request(int req_type, 
+				 struct winbindd_request *request,
+				 struct winbindd_response *response);
 
 /* List trusted domains */
 
@@ -43,7 +43,7 @@ static BOOL wbinfo_list_domains(void)
 
 	/* Send request */
 
-	if (generic_request(WINBINDD_LIST_TRUSTDOM, NULL, &response) ==
+	if (winbindd_request(WINBINDD_LIST_TRUSTDOM, NULL, &response) ==
 	    WINBINDD_ERROR) {
 		return False;
 	}
@@ -80,7 +80,7 @@ static BOOL wbinfo_uid_to_sid(uid_t uid)
 	/* Send request */
 
 	request.data.uid = uid;
-	if (generic_request(WINBINDD_UID_TO_SID, &request, &response) ==
+	if (winbindd_request(WINBINDD_UID_TO_SID, &request, &response) ==
 	    WINBINDD_ERROR) {
 		return False;
 	}
@@ -105,7 +105,7 @@ static BOOL wbinfo_gid_to_sid(gid_t gid)
 	/* Send request */
 
 	request.data.gid = gid;
-	if (generic_request(WINBINDD_GID_TO_SID, &request, &response) ==
+	if (winbindd_request(WINBINDD_GID_TO_SID, &request, &response) ==
 	    WINBINDD_ERROR) {
 		return False;
 	}
@@ -130,7 +130,7 @@ static BOOL wbinfo_sid_to_uid(char *sid)
 	/* Send request */
 
 	fstrcpy(request.data.sid, sid);
-	if (generic_request(WINBINDD_SID_TO_UID, &request, &response) ==
+	if (winbindd_request(WINBINDD_SID_TO_UID, &request, &response) ==
 	    WINBINDD_ERROR) {
 		return False;
 	}
@@ -153,7 +153,7 @@ static BOOL wbinfo_sid_to_gid(char *sid)
 	/* Send request */
 
 	fstrcpy(request.data.sid, sid);
-	if (generic_request(WINBINDD_SID_TO_GID, &request, &response) ==
+	if (winbindd_request(WINBINDD_SID_TO_GID, &request, &response) ==
 	    WINBINDD_ERROR) {
 		return False;
 	}
@@ -178,7 +178,7 @@ static BOOL wbinfo_lookupsid(char *sid)
 	/* Send off request */
 
 	fstrcpy(request.data.sid, sid);
-	if (generic_request(WINBINDD_LOOKUPSID, &request, &response) ==
+	if (winbindd_request(WINBINDD_LOOKUPSID, &request, &response) ==
 	    WINBINDD_ERROR) {
 		return False;
 	}
@@ -203,7 +203,7 @@ static BOOL wbinfo_lookupname(char *name)
 	ZERO_STRUCT(response);
 
 	fstrcpy(request.data.name, name);
-	if (generic_request(WINBINDD_LOOKUPNAME, &request, &response) ==
+	if (winbindd_request(WINBINDD_LOOKUPNAME, &request, &response) ==
 	    WINBINDD_ERROR) {
 		return False;
 	}
@@ -226,7 +226,7 @@ static BOOL print_domain_users(void)
 
 	ZERO_STRUCT(response);
 
-	if (generic_request(WINBINDD_LIST_USERS, NULL, &response) ==
+	if (winbindd_request(WINBINDD_LIST_USERS, NULL, &response) ==
 	    WINBINDD_ERROR) {
 		return False;
 	}
@@ -254,7 +254,7 @@ static BOOL print_domain_groups(void)
 
 	ZERO_STRUCT(response);
 
-	if (generic_request(WINBINDD_LIST_GROUPS, NULL, &response) ==
+	if (winbindd_request(WINBINDD_LIST_GROUPS, NULL, &response) ==
 	    WINBINDD_ERROR) {
 		return False;
 	}

@@ -28,9 +28,9 @@
 /* Prototypes from common.c */
 
 void init_request(struct winbindd_request *req,int rq_type);
-enum nss_status generic_request(int req_type, 
-				struct winbindd_request *request,
-				struct winbindd_response *response);
+enum nss_status winbindd_request(int req_type, 
+				 struct winbindd_request *request,
+				 struct winbindd_response *response);
 int write_sock(void *buffer, int count);
 int read_reply(struct winbindd_response *response);
 void free_response(struct winbindd_response *response);
@@ -292,7 +292,7 @@ _nss_winbind_setpwent(void)
 		free_response(&getpwent_response);
 	}
 
-	return generic_request(WINBINDD_SETPWENT, NULL, NULL);
+	return winbindd_request(WINBINDD_SETPWENT, NULL, NULL);
 }
 
 /* Close ntdom password database "file pointer" */
@@ -304,7 +304,7 @@ _nss_winbind_endpwent(void)
 		free_response(&getpwent_response);
 	}
 
-	return generic_request(WINBINDD_ENDPWENT, NULL, NULL);
+	return winbindd_request(WINBINDD_ENDPWENT, NULL, NULL);
 }
 
 /* Fetch the next password entry from ntdom password database */
@@ -337,7 +337,8 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 
 	request.data.num_entries = MAX_GETPWENT_USERS;
 
-	ret = generic_request(WINBINDD_GETPWENT, &request, &getpwent_response);
+	ret = winbindd_request(WINBINDD_GETPWENT, &request, 
+			       &getpwent_response);
 
 	if (ret == NSS_STATUS_SUCCESS) {
 		struct winbindd_pw *pw_cache;
@@ -400,8 +401,8 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
 		request.data.uid = uid;
 
-		ret = generic_request(WINBINDD_GETPWNAM_FROM_UID, &request, 
-				      &response);
+		ret = winbindd_request(WINBINDD_GETPWNAM_FROM_UID, &request, 
+				       &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_pwent(result, &response.data.pw, 
@@ -459,8 +460,8 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 		request.data.username
 			[sizeof(request.data.username) - 1] = '\0';
 
-		ret = generic_request(WINBINDD_GETPWNAM_FROM_USER, &request, 
-				      &response);
+		ret = winbindd_request(WINBINDD_GETPWNAM_FROM_USER, &request, 
+				       &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_pwent(result, &response.data.pw, &buffer,
@@ -502,7 +503,7 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 enum nss_status
 _nss_winbind_setgrent(void)
 {
-	return generic_request(WINBINDD_SETGRENT, NULL, NULL);
+	return winbindd_request(WINBINDD_SETGRENT, NULL, NULL);
 }
 
 /* Close "file pointer" for ntdom group database */
@@ -510,7 +511,7 @@ _nss_winbind_setgrent(void)
 enum nss_status
 _nss_winbind_endgrent(void)
 {
-	return generic_request(WINBINDD_ENDGRENT, NULL, NULL);
+	return winbindd_request(WINBINDD_ENDGRENT, NULL, NULL);
 }
 
 /* Get next entry from ntdom group database */
@@ -531,7 +532,7 @@ _nss_winbind_getgrent_r(struct group *result,
 
 		ZERO_STRUCT(response);
 		
-		ret = generic_request(WINBINDD_GETGRENT, NULL, &response);
+		ret = winbindd_request(WINBINDD_GETGRENT, NULL, &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_grent(result, &response, &buffer, &buflen);
@@ -589,8 +590,8 @@ _nss_winbind_getgrnam_r(const char *name,
 		request.data.groupname
 			[sizeof(request.data.groupname) - 1] = '\0';
 
-		ret = generic_request(WINBINDD_GETGRNAM_FROM_GROUP, 
-				      &request, &response);
+		ret = winbindd_request(WINBINDD_GETGRNAM_FROM_GROUP, 
+				       &request, &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_grent(result, &response, &buffer, &buflen);
@@ -645,8 +646,8 @@ _nss_winbind_getgrgid_r(gid_t gid,
 
 		request.data.gid = gid;
 
-		ret = generic_request(WINBINDD_GETGRNAM_FROM_GID, &request, 
-				      &response);
+		ret = winbindd_request(WINBINDD_GETGRNAM_FROM_GID, &request, 
+				       &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_grent(result, &response, &buffer, &buflen);
