@@ -1101,6 +1101,8 @@ static int get_dir(file_info2 finfo)
     return(False);
 
   }
+
+  ntarf++;
   return(True);
 
 }
@@ -1203,7 +1205,7 @@ static void do_tarput(void)
       return;
 
     case 0: /* chksum is zero - looks like an EOF */
-      DEBUG(0, ("total of %d tar files restored to share\n", ntarf));
+      DEBUG(0, ("tar: restored %d files and directories\n", ntarf));
       return;        /* Hmmm, bad here ... */
 
     default: 
@@ -1512,7 +1514,7 @@ int process_tar(void)
     close(tarhandle);
     free(tarbuf);
     
-    DEBUG(0, ("tar: dumped %d tar files\n", ntarf));
+    DEBUG(0, ("tar: dumped %d files and directories\n", ntarf));
     DEBUG(0, ("Total bytes written: %.0f\n", (double)ttarf));
     break;
   }
