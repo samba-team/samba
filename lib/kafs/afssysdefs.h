@@ -38,16 +38,10 @@
 #define AFS_SYSCALL	31
 #endif
 
-#if defined(__linux)
-#define AFS_SYSCALL	137
-/* Kent Engström <kent@lysator.liu.se> 1995-08-22
-   Linux has no SIGSYS signal. Furthermore, the normal
-   kernels have no support for AFS. I'm not sure about
-   what to do, but for now I use SIGILL instead of SIGSYS.
-*/
-#define SIGSYS SIGILL
-#endif /* __linux */
-
 #if defined(__NetBSD__)
 #define AFS_SYSCALL 210
+#endif
+
+#ifdef SYS_afs_syscall
+#define AFS_SYSCALL	SYS_afs_syscall
 #endif
