@@ -150,14 +150,13 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p,
 	return True;
 }
 
-#if 0
+
 static BOOL test_NetDiskEnum(struct dcerpc_pipe *p, 
 			   TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct srvsvc_NetDiskEnum r;
-	struct srvsvc_NetDiskCtr0 c0;
-	uint32 levels[] = {0, 1, 2, 3};
+	uint32 levels[] = {0};
 	int i;
 	BOOL ret = True;
 
@@ -209,7 +208,7 @@ static BOOL test_NetTransportEnum(struct dcerpc_pipe *p,
 
 	return True;
 }
-#endif
+
 static BOOL test_NetShareEnum(struct dcerpc_pipe *p, 
 			   TALLOC_CTX *mem_ctx)
 {
@@ -278,11 +277,11 @@ BOOL torture_rpc_srvsvc(int dummy)
 	if (!test_NetDiskEnum(p, mem_ctx)) {
 		ret = False;
 	}
-
+#endif
 	if (!test_NetTransportEnum(p, mem_ctx)) {
 		ret = False;
 	}
-#endif
+
 	if (!test_NetShareEnum(p, mem_ctx)) {
 		ret = False;
 	}

@@ -34,7 +34,7 @@ sub Boilerplate($)
 		return;
 	}
 
-	pidl "static const dcesrv_dispatch_fn_t dispatch_table[] = {\n";
+	pidl "static const dcesrv_dispatch_fn_t $name\_dispatch_table[] = {\n";
 	foreach my $d (@{$data}) {
 		if ($d->{TYPE} eq "FUNCTION") {
 			pidl "\t(dcesrv_dispatch_fn_t)$d->{NAME},\n";
@@ -43,39 +43,39 @@ sub Boilerplate($)
 	pidl "\tNULL};\n\n";
 
 	pidl "
-static BOOL op_query_endpoint(const struct dcesrv_endpoint *ep)
+static BOOL $name\_op_query_endpoint(const struct dcesrv_endpoint *ep)
 {
 	return dcesrv_table_query(&dcerpc_table_$name, ep);
 }
 
-static BOOL op_set_interface(struct dcesrv_state *dce, 
+static BOOL $name\_op_set_interface(struct dcesrv_state *dce, 
 			     const char *uuid, uint32 if_version)
 {
 	return dcesrv_set_interface(dce, uuid, if_version, 
-				    &dcerpc_table_$name, dispatch_table);
+				    &dcerpc_table_$name, $name\_dispatch_table);
 }
 
-static NTSTATUS op_connect(struct dcesrv_state *dce)
+static NTSTATUS $name\_op_connect(struct dcesrv_state *dce)
 {
 	return NT_STATUS_OK;
 }
 
-static void op_disconnect(struct dcesrv_state *dce)
+static void $name\_op_disconnect(struct dcesrv_state *dce)
 {
 	/* nothing to do */
 }
 
-static int op_lookup_endpoints(TALLOC_CTX *mem_ctx, struct dcesrv_ep_iface **e)
+static int $name\_op_lookup_endpoints(TALLOC_CTX *mem_ctx, struct dcesrv_ep_iface **e)
 {
 	return dcesrv_lookup_endpoints(&dcerpc_table_$name, mem_ctx, e);
 }
 
 static const struct dcesrv_endpoint_ops $name\_ops = {
-	op_query_endpoint,
-	op_set_interface,
-	op_connect,
-	op_disconnect,
-	op_lookup_endpoints
+	$name\_op_query_endpoint,
+	$name\_op_set_interface,
+	$name\_op_connect,
+	$name\_op_disconnect,
+	$name\_op_lookup_endpoints
 };
 
 void rpc_$name\_init(void *v)

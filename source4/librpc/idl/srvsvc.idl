@@ -11,42 +11,42 @@
 {
 	/******************/
 	/* Function: 0x00 */
-	NTSTATUS srvsvc_00(
+	NTSTATUS srvsvc_NETRCHARDEVENUM(
 		);
 
 	/******************/
 	/* Function: 0x01 */
-	NTSTATUS srvsvc_01(
+	NTSTATUS srvsvc_NETRCHARDEVGETINFO(
 		);
 
 	/******************/
 	/* Function: 0x02 */
-	NTSTATUS srvsvc_02(
+	NTSTATUS srvsvc_NETRCHARDEVCONTROL(
 		);
 
 	/******************/
 	/* Function: 0x03 */
-	NTSTATUS srvsvc_03(
+	NTSTATUS srvsvc_NETRCHARDEVQENUM(
 		);
 
 	/******************/
 	/* Function: 0x04 */
-	NTSTATUS srvsvc_04(
+	NTSTATUS srvsvc_NETRCHARDEVQGETINFO(
 		);
 
 	/******************/
 	/* Function: 0x05 */
-	NTSTATUS srvsvc_05(
+	NTSTATUS srvsvc_NETRCHARDEVQSETINFO(
 		);
 
 	/******************/
 	/* Function: 0x06 */
-	NTSTATUS srvsvc_06(
+	NTSTATUS srvsvc_NETRCHARDEVQPURGE(
 		);
 
 	/******************/
 	/* Function: 0x07 */
-	NTSTATUS srvsvc_07(
+	NTSTATUS srvsvc_NETRCHARDEVQPURGESELF(
 		);
 
 	/******************/
@@ -136,7 +136,7 @@
 
 	/******************/
 	/* Function: 0x0a */
-	NTSTATUS srvsvc_0a(
+	NTSTATUS srvsvc_NETRFILEGETINFO(
 		);
 
 	/******************/
@@ -235,7 +235,7 @@
 
 	/******************/
 	/* Function: 0x0d */
-	NTSTATUS srvsvc_0d(
+	NTSTATUS srvsvc_NETRSESSIONDEL(
 		);
 
 	/******************/
@@ -274,7 +274,7 @@
 		uint32 max_users;
 		uint32 current_users;
 		unistr *path;
-		uint32 *password;
+		unistr *password;
 	} srvsvc_NetShare2;
 
 	typedef struct {
@@ -302,7 +302,7 @@
 		uint32 max_users;
 		uint32 current_users;
 		unistr *path;
-		uint32 *password;
+		unistr *password;
 		uint32 unknown;
 		[subcontext(4)] security_descriptor *sd;
 	} srvsvc_NetShare502;
@@ -323,12 +323,12 @@
 		[case(501)] srvsvc_NetShareCtr501 *ctr501;
 		[case(502)] srvsvc_NetShareCtr502 *ctr502;
 		[default] ;
-	} srvsvc_NetShareUnion;
+	} srvsvc_NetShareCtr;
 
 	WERROR srvsvc_NetShareEnumAll (
 		[in]         unistr *server_unc,
 		[in,out]     uint32 level,
-		[in,out,switch_is(level)] srvsvc_NetShareUnion ctr,
+		[in,out,switch_is(level)] srvsvc_NetShareCtr ctr,
 		[in]         uint32 max_buffer,
 		[out]        uint32 totalentries,
 		[in,out]     uint32 *resume_handle
@@ -356,7 +356,7 @@
 	
 	/******************/
 	/* Function: 0x14 */
-	NTSTATUS srvsvc_14(
+	NTSTATUS srvsvc_NETRSHARECHECK(
 		);
 
 	/******************/
@@ -374,51 +374,16 @@
 
 	typedef struct {
 		uint32 unknown;
-		uint32 size;
-		[size_is(size)] uint8 *disk;
+		lstring disk;
+		uint16 unknown2;
 	} srvsvc_NetDisk0;
 
 	typedef struct {
 		uint32 count;
 		uint32 unknown1;
 		uint32 unknown2;
-		[size_is(count)] srvsvc_NetDisk0 *array;
+		srvsvc_NetDisk0 array[count];
 	} srvsvc_NetDiskCtr0;
-
-	typedef struct {
-		uint32 dummy;
-	} srvsvc_NetDisk1;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] srvsvc_NetDisk1 *array;
-	} srvsvc_NetDiskCtr1;
-
-	typedef struct {
-		uint32 dummy;
-	} srvsvc_NetDisk2;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] srvsvc_NetDisk2 *array;
-	} srvsvc_NetDiskCtr2;
-
-	typedef struct {
-		uint32 dummy;
-	} srvsvc_NetDisk3;
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] srvsvc_NetDisk3 *array;
-	} srvsvc_NetDiskCtr3;
-
-	typedef union {
-		[case(0)] srvsvc_NetDiskCtr0 ctr0;
-		[case(1)] srvsvc_NetDiskCtr1 ctr1;
-		[case(2)] srvsvc_NetDiskCtr2 ctr2;
-		[case(3)] srvsvc_NetDiskCtr3 ctr3;
-		[default] ;
-	} srvsvc_NetDiskSubCtr;
 
 	typedef struct {
 		uint32 num1;
@@ -428,22 +393,20 @@
 	WERROR srvsvc_NetDiskEnum(
 		[in]   unistr *server_unc,
 		[in]   uint32 level,
-		[in]   uint32 unknown1,
-		[in]   uint32 unknown2,
+		[in,out]   srvsvc_NetDiskCtr ctr,
 		[in]   uint32 preferred_len,
-		[out]   srvsvc_NetDiskCtr ctr,
 		[out]   uint32 total,
 		[in,out]   uint32 *resume_handle
 		);
 
 	/******************/
 	/* Function: 0x18 */
-	NTSTATUS srvsvc_18(
+	NTSTATUS srvsvc_NETRSERVERSTATISTICSGET(
 		);
 
 	/******************/
 	/* Function: 0x19 */
-	NTSTATUS srvsvc_19(
+	NTSTATUS srvsvc_NETRSERVERTRANSPORTADD(
 		);
 		
 	/******************/
@@ -451,7 +414,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] uint8 *addr;
+		uint8 addr[count];
 	} srvsvc_TransportAddress;
 
 	typedef struct {
@@ -490,10 +453,21 @@
 		[size_is(count)] srvsvc_NetTransport2 *array;
 	} srvsvc_NetTransportCtr2;
 
+	typedef struct {
+		uint32 dummy;
+	} srvsvc_NetTransport3;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] srvsvc_NetTransport3 *array;
+	} srvsvc_NetTransportCtr3;
+
 	typedef union {
 		[case(0)] srvsvc_NetTransportCtr0 *ctr0;
 		[case(1)] srvsvc_NetTransportCtr1 *ctr1;
 		[case(2)] srvsvc_NetTransportCtr2 *ctr2;
+		[case(3)] srvsvc_NetTransportCtr3 *ctr3;
+		[default];
 	} srvsvc_NetTransportCtr;
 
 	WERROR srvsvc_NetTransportEnum(
@@ -507,7 +481,7 @@
 
 	/******************/
 	/* Function: 0x1b */
-	NTSTATUS srvsvc_1b(
+	NTSTATUS srvsvc_NETRSERVERTRANSPORTDEL(
 		);
 
 	/******************/
@@ -517,22 +491,22 @@
 
 	/******************/
 	/* Function: 0x1d */
-	NTSTATUS srvsvc_1d(
+	NTSTATUS srvsvc_NETRSERVERSETSERVICEBITS(
 		);
 
 	/******************/
 	/* Function: 0x1e */
-	NTSTATUS srvsvc_1e(
+	NTSTATUS srvsvc_NETRPRPATHTYPE(
 		);
 
 	/******************/
 	/* Function: 0x1f */
-	NTSTATUS srvsvc_1f(
+	NTSTATUS srvsvc_NETRPRPATHCANONICALIZE(
 		);
 
 	/******************/
 	/* Function: 0x20 */
-	NTSTATUS srvsvc_20(
+	NTSTATUS srvsvc_NETRPRPATHCOMPARE(
 		);
 
 	/******************/
@@ -542,12 +516,12 @@
 
 	/******************/
 	/* Function: 0x22 */
-	NTSTATUS srvsvc_22(
+	NTSTATUS srvsvc_NETRPRNAMECANONICALIZE(
 		);
 
 	/******************/
 	/* Function: 0x23 */
-	NTSTATUS srvsvc_23(
+	NTSTATUS srvsvc_NETRPRNAMECOMPARE(
 		);
 
 	/******************/
@@ -556,8 +530,8 @@
 	   total entries ... */
 	WERROR srvsvc_NetShareEnum(
 		[in]       unistr *server_unc,
-	 	[in,out]	   uint32 level,
-		[in,out,switch_is(level)]   srvsvc_NetShareUnion ctr,
+	 	[in,out]   uint32 level,
+		[in,out,switch_is(level)]   srvsvc_NetShareCtr ctr,
 		[in]       uint32 preferred_len,
 		[out]      uint32 totalentries,
 		[in,out]   uint32 *resume_handle
@@ -565,12 +539,12 @@
 
 	/******************/
 	/* Function: 0x25 */
-	NTSTATUS srvsvc_25(
+	NTSTATUS srvsvc_NETRSHAREDELSTART(
 		);
 
 	/******************/
 	/* Function: 0x26 */
-	NTSTATUS srvsvc_26(
+	NTSTATUS srvsvc_NETRSHAREDELCOMMIT(
 		);
 
 	/******************/
@@ -581,5 +555,70 @@
 	/******************/
 	/* Function: 0x28 */
 	NTSTATUS srvsvc_NET_FILE_SET_SECDESC(
+		);
+
+	/******************/
+	/* Function: 0x29 */
+	NTSTATUS srvsvc_NETRSERVERTRANSPORTADDEX(
+		);
+
+	/******************/
+	/* Function: 0x2a */
+	NTSTATUS srvsvc_NETRSERVERSETSERVICEBITSEX(
+		);
+
+	/******************/
+	/* Function: 0x2b */
+	NTSTATUS srvsvc_NETRDFSGETVERSION(
+		);
+
+	/******************/
+	/* Function: 0x2c */
+	NTSTATUS srvsvc_NETRDFSCREATELOCALPARTITION(
+		);
+
+	/******************/
+	/* Function: 0x2d */
+	NTSTATUS srvsvc_NETRDFSDELETELOCALPARTITION(
+		);
+
+	/******************/
+	/* Function: 0x2e */
+	NTSTATUS srvsvc_NETRDFSSETLOCALVOLUMESTATE(
+		);
+
+	/******************/
+	/* Function: 0x2f */
+	NTSTATUS srvsvc_NETRDFSSETSERVERINFO(
+		);
+
+	/******************/
+	/* Function: 0x30 */
+	NTSTATUS srvsvc_NETRDFSCREATEEXITPOINT(
+		);
+
+	/******************/
+	/* Function: 0x31 */
+	NTSTATUS srvsvc_NETRDFSDELETEEXITPOINT(
+		);
+
+	/******************/
+	/* Function: 0x32 */
+	NTSTATUS srvsvc_NETRDFSMODIFYPREFIX(
+		);
+
+	/******************/
+	/* Function: 0x33 */
+	NTSTATUS srvsvc_NETRDFSFIXLOCALVOLUME(
+		);
+
+	/******************/
+	/* Function: 0x34 */
+	NTSTATUS srvsvc_NETRDFSMANAGERREPORTSITEINFO(
+		);
+
+	/******************/
+	/* Function: 0x35 */
+	NTSTATUS srvsvc_NETRSERVERTRANSPORTDELEX(
 		);
 }
