@@ -66,7 +66,7 @@ TARGET="_top"
 a guide to LDAP for System Administrators which has a planned release date of
 early summer, 2002.</P
 ><P
->It may also be helpful to suppplement the reading of the HOWTO with 
+>It may also be helpful to supplement the reading of the HOWTO with 
 the <A
 HREF="http://www.unav.es/cti/ldap-smb/ldap-smb-2_2-howto.html"
 TARGET="_top"
@@ -106,7 +106,7 @@ session connection such as when mapping a network drive or printer), this
 is non-optimal.  What is needed is an indexed approach such as is used in
 databases.</P
 ><P
->The second problem is that administrators which desired to replicate an
+>The second problem is that administrators who desired to replicate a
 smbpasswd file to more than one Samba server were left to use external
 tools such as <B
 CLASS="COMMAND"
@@ -115,7 +115,7 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >ssh(1)</B
 >
-and write custom, in-house scripts.</P
+and wrote custom, in-house scripts.</P
 ><P
 >And finally, the amount of information which is stored in an
 smbpasswd entry leaves no room for additional attributes such as
@@ -156,7 +156,7 @@ CLASS="PARAMETER"
 >--with-ldapsam</I
 ></TT
 >
-does not provide.  The LDAP support referred to in the this documentat does not
+does not provide.  The LDAP support referred to in the this documentation does not
 include:</P
 ><P
 ></P
@@ -179,7 +179,7 @@ HREF="http://www.padl.com/"
 TARGET="_top"
 >http://www.padl.com/</A
 >).  However,
-the details of configuring these packages i beyond the scope of this document.</P
+the details of configuring these packages are beyond the scope of this document.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
@@ -193,8 +193,8 @@ NAME="AEN42"
 >The LDAP samdb code in 2.2.3 has been developed and tested using the OpenLDAP
 2.0 server and client libraries.  The same code should be able to work with
 Netscape's Directory Server and client SDK. However, due to lack of testing
-so far, there are bounds to be compile errors and bugs.  These should not be
-hard to fix. If you are so inclined, please be sure to forward all pacthes to
+so far, there are bound to be compile errors and bugs.  These should not be
+hard to fix. If you are so inclined, please be sure to forward all patches to
 <A
 HREF="samba-patches@samba.org"
 TARGET="_top"
@@ -235,7 +235,7 @@ CLASS="PROGRAMLISTING"
 ></P
 ><P
 >The samba.schema file has been formatted for OpenLDAP 2.0.  The OID's are
-owned by the Samba Team and as such as legal to be openly published.
+owned by the Samba Team and as such is legal to be openly published.
 If you translate the schema to be used with Netscape DS, please
 submit the modified schema file as a patch to <A
 HREF="jerry@samba.org"
@@ -261,9 +261,9 @@ it is necessary to use the sambaAccount and posixAccount objectclasses in
 combination.  However, smbd will still obtain the user's UNIX account
 information via the standard C library calls (e.g. getpwnam(), et. al.).
 This means that the Samba server must also have the LDAP NSS library installed
-and functioning correctly.  This division of information mkes it posible to
+and functioning correctly.  This division of information makes it possible to
 store all Samba account information in LDAP, but still maintain UNIX account
-information in NIS while the network is transitioning to a full LDAP infratrsucture.</P
+information in NIS while the network is transitioning to a full LDAP infrastructure.</P
 ><P
 >To include support for the sambaAccount object in an OpenLDAP directory
 server, first copy the samba.schema file to slapd's configuration directory.</P
@@ -454,7 +454,7 @@ of sambaAccount entries in the directory.</P
 CLASS="EMPHASIS"
 >Never</I
 > retrieve the lmPassword or
-	ntPassword attribute values over and unencrypted LDAP session.</P
+	ntPassword attribute values over an unencrypted LDAP session.</P
 ></LI
 ><LI
 ><P
@@ -551,15 +551,11 @@ CLASS="COMMAND"
 its <TT
 CLASS="FILENAME"
 >smb.conf</TT
-> file.  Assuming <TT
-CLASS="FILENAME"
->smb.conf</TT
->
-also contains , when a user named "becky" logons to the domain, the <TT
+> file. When a user named "becky" logons to the domain,
+the <TT
 CLASS="PARAMETER"
 ><I
->logon
-home</I
+>logon home</I
 ></TT
 > string is expanded to \\TASHTEGO\becky.</P
 ><P
@@ -579,7 +575,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN139"
+NAME="AEN138"
 >Example LDIF Entries for a sambaAccount</A
 ></H1
 ><P
@@ -637,7 +633,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN147"
+NAME="AEN146"
 >Comments</A
 ></H1
 ><P
