@@ -62,12 +62,12 @@ make_pa_tgs_req(krb5_context context,
 
     in_data.length = len;
     in_data.data   = buf;
-    ret = krb5_mk_req_internal(context, &ac, 0, &in_data, creds,
-			       &padata->padata_value,
-			       KRB5_KU_TGS_REQ_AUTH_CKSUM,
-			       usage
-			       /* KRB5_KU_TGS_REQ_AUTH */);
-out:
+    ret = _krb5_mk_req_internal(context, &ac, 0, &in_data, creds,
+				&padata->padata_value,
+				KRB5_KU_TGS_REQ_AUTH_CKSUM,
+				usage
+				/* KRB5_KU_TGS_REQ_AUTH */);
+ out:
     free (buf);
     if(ret)
 	return ret;
