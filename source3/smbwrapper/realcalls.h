@@ -21,9 +21,14 @@
 
 #ifdef linux
 struct dirent *__libc_readdir(DIR * dir);
-#define real_readdir(dir)		(__libc_readdir(dirp))
+#define real_readdir(dir)		(__libc_readdir(dir))
+#define real_opendir(fn)            	(__libc_opendir(fn))
+#define real_telldir(dir)            	(__libc_telldir(dir))
+#define real_closedir(dir)            	(__libc_closedir(dir))
+#define real_seekdir(dir, ofs)          (__libc_seekdir(dir, ofs))
 #else
 #define real_readdir(dirp)		((struct dirent *)syscall(SYS_readdir,(dirp)))
+#define real_opendir(fn)		((DIR *)syscall(SYS_opendir,(fn)))
 /* if needed define SYS_readdir so that readdir gets compiled */
 #endif
 

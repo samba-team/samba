@@ -497,6 +497,19 @@ struct smbw_dir *smbw_dir(int fd)
 }
 
 /***************************************************** 
+check if a DIR* is one of ours
+*******************************************************/
+BOOL smbw_dirp(struct smbw_dir *d)
+{
+	struct smbw_dir *dir;
+
+	for (dir=smbw_dirs;dir;dir=dir->next) {
+		if (dir == d) return True;
+	}
+	return False;
+}
+
+/***************************************************** 
 setup basic info in a stat structure
 *******************************************************/
 void smbw_setup_stat(struct stat *st, char *fname, size_t size, int mode)
@@ -596,7 +609,7 @@ void smbw_share_add(const char *share, uint32 type, const char *comment)
 /***************************************************** 
 open a directory on the server
 *******************************************************/
-int smbw_dir_open(const char *fname, int flags)
+int smbw_dir_open(const char *fname)
 {
 	fstring server, share;
 	pstring path;
@@ -722,7 +735,7 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 	}
 	if (fd == -1) {
 		/* it might be a directory. Maybe we should use chkpath? */
-		fd = smbw_dir_open(fname, flags);
+		fd = smbw_dir_open(fname);
 		smbw_busy--;
 		return fd;
 	}
@@ -1068,9 +1081,7 @@ int smbw_getdents(unsigned int fd, struct dirent *dirp, int count)
 	while (count>=sizeof(*dirp) && (dir->offset < dir->count)) {
 		dirp->d_off = (dir->offset+1)*sizeof(*dirp);
 		dirp->d_reclen = sizeof(*dirp);
-		/* what's going on with the -1 here? maybe d_type
-                   isn't really there? */
-		safe_strcpy(&dirp->d_name[-1], dir->list[dir->offset].name, 
+		safe_strcpy(&dirp->d_name[0], dir->list[dir->offset].name, 
 			    sizeof(dirp->d_name)-1);
 		dirp->d_ino = smbw_inode(dir->list[dir->offset].name);
 		dir->offset++;
@@ -1660,4 +1671,62 @@ int smbw_fchdir(unsigned int fd)
 	smbw_busy--;
 	
 	return chdir(dir->path);
+}
+
+/***************************************************** 
+open a directory on the server
+*******************************************************/
+DIR *smbw_opendir(const char *fname)
+{
+	int fd;
+
+	smbw_busy++;
+
+	fd = smbw_dir_open(fname);
+
+	if (fd == -1) {
+		smbw_busy--;
+		return NULL;
+	}
+
+	smbw_busy--;
+
+	return (DIR *)smbw_dir(fd);
+}
+
+/***************************************************** 
+read one entry from a directory
+*******************************************************/
+struct dirent *smbw_readdir(struct smbw_dir *d)
+{
+	static struct dirent de;
+
+	if (smbw_getdents(d->fd, &de, sizeof(struct dirent)) > 0) 
+		return &de;
+
+	return NULL;
+}
+
+/***************************************************** 
+close a DIR*
+*******************************************************/
+int smbw_closedir(struct smbw_dir *d)
+{
+	return smbw_close(d->fd);
+}
+
+/***************************************************** 
+seek in a directory
+*******************************************************/
+void smbw_seekdir(struct smbw_dir *d, off_t offset)
+{
+	smbw_dir_lseek(d->fd,offset, SEEK_SET);
+}
+
+/***************************************************** 
+current loc in a directory
+*******************************************************/
+off_t smbw_telldir(struct smbw_dir *d)
+{
+	return smbw_dir_lseek(d->fd,0,SEEK_CUR);
 }
