@@ -61,6 +61,18 @@ DATA_BLOB data_blob_talloc_named(TALLOC_CTX *mem_ctx, const void *p, size_t leng
 	return ret;
 }
 
+
+/*******************************************************************
+ construct a data blob which is a reference to another blob, in 
+the given mem context
+*******************************************************************/
+DATA_BLOB data_blob_talloc_reference(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
+{
+	DATA_BLOB ret = *blob;
+	ret.data = talloc_reference(mem_ctx, ret.data);
+	return ret;
+}
+
 /*******************************************************************
  construct a zero data blob, using supplied TALLOC_CTX. 
  use this sparingly as it initialises data - better to initialise
