@@ -9,6 +9,34 @@ Thu Jul 24 08:13:59 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 Thu Jul 24 01:54:43 1997  Assar Westerlund  <assar@sics.se>
 
+	* kdc/kerberos5.c (as_rep): Use `METHOD-DATA' when sending
+ 	KRB5KDC_ERR_PREAUTH_REQUIRED, not PA-DATA.
+
+	* kpasswd/kpasswdd.c: fix freeing bug use sequence numbers set
+ 	addresses in auth_context bind one socket per interface.
+	
+	* kpasswd/kpasswd.c: use sequence numbers
+
+	* lib/krb5/rd_req.c (krb5_verify_ap_req): do abs when verifying
+ 	the timestamps
+
+	* lib/krb5/rd_priv.c (krb5_rd_priv): Fetch the correct session key
+ 	from auth_context
+
+	* lib/krb5/mk_priv.c (krb5_mk_priv): Fetch the correct session key
+ 	from auth_context
+
+	* lib/krb5/mk_error.c (krb5_mk_error): return an error number and
+ 	not a comerr'd number.
+
+	* lib/krb5/get_in_tkt.c (krb5_get_in_tkt): interpret the error
+ 	number in KRB-ERROR correctly.
+
+	* lib/krb5/get_cred.c (krb5_get_kdc_cred): interpret the error
+ 	number in KRB-ERROR correctly.
+
+	* lib/asn1/k5.asn1: Add `METHOD-DATA'
+
 	* removed some memory leaks.
 
 Wed Jul 23 07:53:18 1997  Assar Westerlund  <assar@sics.se>
