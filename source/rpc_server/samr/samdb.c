@@ -205,6 +205,33 @@ const char *samdb_search_string(void *ctx,
 	return str;
 }
 
+
+/*
+  search the sam for a single integer attribute in exactly 1 record
+*/
+uint_t samdb_search_uint(void *ctx,
+			 TALLOC_CTX *mem_ctx,
+			 uint_t default_value,
+			 const char *basedn,
+			 const char *attr_name,
+			 const char *format, ...)
+{
+	va_list ap;
+	int count;
+	struct ldb_message **res;
+	const char * const attrs[2] = { attr_name, NULL };
+
+	va_start(ap, format);
+	count = samdb_search_v(ctx, mem_ctx, basedn, &res, attrs, format, ap);
+	va_end(ap);
+
+	if (count != 1) {
+		return default_value;
+	}
+
+	return samdb_result_uint(res[0], attr_name, default_value);
+}
+
 /*
   search the sam for multipe records each giving a single string attribute
   return the number of matches, or -1 on error
@@ -426,11 +453,8 @@ int samdb_copy_template(void *ctx, TALLOC_CTX *mem_ctx,
 		}
 		for (j=0;j<el->num_values;j++) {
 			if (strcasecmp(el->name, "objectClass") == 0 &&
-			    strcasecmp((char *)el->values[j].data, "userTemplate") == 0) {
-				continue;
-			}
-			if (strcasecmp(el->name, "objectClass") == 0 &&
-			    strcasecmp((char *)el->values[j].data, "groupTemplate") == 0) {
+			    (strcasecmp((char *)el->values[j].data, "userTemplate") == 0 ||
+			     strcasecmp((char *)el->values[j].data, "groupTemplate") == 0)) {
 				continue;
 			}
 			samdb_msg_add_string(ctx, mem_ctx, msg, el->name, 
