@@ -327,4 +327,12 @@ extern const char *__progname;
 
 void set_progname(char *argv0);
 
+#ifdef HAVE_PATHS_H
+#include <paths.h>
+#endif
+
+#ifndef _PATH_DEVNULL
+#define _PATH_DEVNULL "/dev/null"
+#endif
+
 #endif /*  __ROKEN_H__ */

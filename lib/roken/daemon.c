@@ -53,6 +53,8 @@ RCSID("$Id$");
 #include <unistd.h>
 #endif
 
+#include "roken.h"
+
 int
 daemon(nochdir, noclose)
 	int nochdir, noclose;
