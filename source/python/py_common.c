@@ -218,7 +218,7 @@ BOOL py_parse_creds(PyObject *creds, char **username, char **domain,
    be freed by calling free(). */
 
 struct cli_state *open_pipe_creds(char *server, PyObject *creds, 
-				  char *pipe_name, char **errstr)
+				  int pipe_idx, char **errstr)
 {
 	char *username, *password, *domain;
 	struct cli_state *cli;
@@ -240,10 +240,9 @@ struct cli_state *open_pipe_creds(char *server, PyObject *creds,
 		return NULL;
 	}
 
-	if (!cli_nt_session_open(cli, pipe_name)) {
+	if (!cli_nt_session_open(cli, pipe_idx)) {
 		cli_shutdown(cli);
-		free(cli);
-		asprintf(errstr, "error opening %s", pipe_name);
+		asprintf(errstr, "error opening pipe index %d", pipe_idx);
 		return NULL;
 	}
 
