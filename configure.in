@@ -285,6 +285,7 @@ AC_CHECK_HEADERS([\
 	netinet6/in6.h				\
 	netinfo/ni.h				\
 	paths.h					\
+	pthread.h				\
 	pty.h					\
 	pwd.h					\
 	resolv.h				\
