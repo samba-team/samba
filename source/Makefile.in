@@ -851,6 +851,7 @@ realclean: clean
 distclean: realclean
 	-rm -f include/config.h include/stamp-h Makefile
 	-rm -f config.status config.cache so_locations
+	-rm -f libtool
 	-rm -rf .deps
 
 #
@@ -888,6 +889,11 @@ config.status: $(srcdir)/configure
 Makefile: $(srcdir)/Makefile.in config.status \
 	  include/stamp-h # just to ensure that config.h is up-to-date
 	CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
+
+libtool: $(LIBTOOL_DEPS)
+	$(SHELL) ./config.status --recheck
+# So something depends on libtool, so it gets rebuild, if needed
+$(SAMBA_LIBS): libtool
 
 # note that nothing depends on config.h, so will probably be rebuilt
 # only when explicitly requested, unless dependency tracking is enabled
