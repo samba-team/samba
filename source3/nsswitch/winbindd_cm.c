@@ -625,10 +625,11 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
 /* Get a handle on a netlogon pipe.  This is a bit of a hack to re-use the
    netlogon pipe as no handle is returned. */
 
-struct cli_state *cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd)
+NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
+                             struct cli_state **cli)
 {
 	struct winbindd_cm_conn conn;
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	/* Open an initial conection */
 
@@ -636,7 +637,7 @@ struct cli_state *cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd)
 
 	if (!cm_open_connection(domain, PIPE_NETLOGON, &conn)) {
 		DEBUG(3, ("Could not open a connection to %s\n", domain));
-		return NULL;
+                return result;
 	}
 
 	result = cli_nt_setup_creds(conn.cli, trust_passwd);
@@ -645,12 +646,13 @@ struct cli_state *cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd)
 		DEBUG(0, ("error connecting to domain password server: %s\n",
 			get_nt_error_msg(result)));
 			cli_shutdown(conn.cli);
-			return NULL;
+                        return result;
 	}
 
-	/* We only want the client handle from this structure */
+        if (cli)
+                *cli = conn.cli;
 
-	return conn.cli;
+        return result;
 }
 
 /* Dump the current connection status */

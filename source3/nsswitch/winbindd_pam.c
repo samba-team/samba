@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 3.0
 
-   Winbind daemon - pam auuth funcions
+   Winbind daemon - pam auth funcions
 
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) Tim Potter 2001
@@ -102,9 +102,11 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	ZERO_STRUCT(info3);
 
-        if (!(cli = cm_get_netlogon_cli(lp_workgroup(), trust_passwd))) {
+        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, &cli);
+
+        if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
-                return WINBINDD_ERROR;
+                goto done;
         }
 
 	result = cli_nt_login_network(cli, user_info, smb_uid_low, 
@@ -113,7 +115,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
         free_user_info(&user_info);
 
         cli_shutdown(cli);
-
+        
+ done:
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
@@ -165,9 +168,11 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	ZERO_STRUCT(info3);
 
-        if (!(cli = cm_get_netlogon_cli(lp_workgroup(), trust_passwd))) {
+        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, &cli);
+
+        if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
-                return WINBINDD_ERROR;
+                goto done;
         }
 
 	result = cli_nt_login_network(cli, user_info, smb_uid_low, 
@@ -177,6 +182,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
         cli_shutdown(cli);
 
+ done:
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
