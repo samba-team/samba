@@ -95,7 +95,7 @@ int rpcstr_push(void* dest, const char *src, int dest_len, int flags)
  units. Always null terminates.
  Hack alert: uses fixed buffer(s).
 ********************************************************************/
-char *dos_unistrn2(uint16 *src, int len)
+char *dos_unistrn2(const uint16 *src, int len)
 {
 	static char lbufs[8][MAXUNI];
 	static int nexti;
@@ -312,10 +312,9 @@ smb_ucs2_t *strrchr_wa(const smb_ucs2_t *s, char c)
 	int len = strlen_w(s);
 	if (len == 0) return NULL;
 	p += (len-1);
-	while (p != s) {
+	do {
 		if (UCS2_CHAR(c) == *p) return (smb_ucs2_t *)p;
-		p--;
-	}
+	} while (p-- != s);
 	return NULL;
 }
 
