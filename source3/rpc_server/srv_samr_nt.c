@@ -205,8 +205,8 @@ static void samr_clear_sam_passwd(SAM_ACCOUNT *sam_pass)
 
 	/* These now zero out the old password */
 
-	pdb_set_lanman_passwd(sam_pass, NULL);
-	pdb_set_nt_passwd(sam_pass, NULL);
+	pdb_set_lanman_passwd(sam_pass, NULL, PDB_DEFAULT);
+	pdb_set_nt_passwd(sam_pass, NULL, PDB_DEFAULT);
 }
 
 
@@ -2288,13 +2288,13 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 			return nt_status;
 		}
 		
-		if (!pdb_set_username(sam_pass, account)) {
+		if (!pdb_set_username(sam_pass, account, PDB_CHANGED)) {
 			pdb_free_sam(&sam_pass);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
- 	pdb_set_acct_ctrl(sam_pass, acb_info);
+ 	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);
  
  	if (!pdb_add_sam_account(sam_pass)) {
  		pdb_free_sam(&sam_pass);
@@ -2675,8 +2675,9 @@ static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, DOM_SID *sid)
 		pdb_free_sam(&pwd);
 		return False;
 	}
-
-	if (!pdb_set_acct_ctrl(pwd, id10->acb_info)) {
+	
+	/* FIX ME: check if the value is really changed --metze */
+	if (!pdb_set_acct_ctrl(pwd, id10->acb_info, PDB_CHANGED)) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
@@ -2712,11 +2713,11 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, DOM_SID *sid)
 		return False;
 	}
  
-	if (!pdb_set_lanman_passwd (pwd, id12->lm_pwd)) {
+	if (!pdb_set_lanman_passwd (pwd, id12->lm_pwd, PDB_CHANGED)) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
-	if (!pdb_set_nt_passwd     (pwd, id12->nt_pwd)) {
+	if (!pdb_set_nt_passwd     (pwd, id12->nt_pwd, PDB_CHANGED)) {
 		pdb_free_sam(&pwd);
 		return False;
 	}

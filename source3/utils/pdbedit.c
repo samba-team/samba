@@ -247,15 +247,15 @@ static int set_user_info (struct pdb_context *in, char *username, char *fullname
 	}
 	
 	if (fullname)
-		pdb_set_fullname(sam_pwent, fullname);
+		pdb_set_fullname(sam_pwent, fullname, PDB_CHANGED);
 	if (homedir)
-		pdb_set_homedir(sam_pwent, homedir, True);
+		pdb_set_homedir(sam_pwent, homedir, PDB_CHANGED);
 	if (drive)
-		pdb_set_dir_drive(sam_pwent,drive, True);
+		pdb_set_dir_drive(sam_pwent,drive, PDB_CHANGED);
 	if (script)
-		pdb_set_logon_script(sam_pwent, script, True);
+		pdb_set_logon_script(sam_pwent, script, PDB_CHANGED);
 	if (profile)
-		pdb_set_profile_path (sam_pwent, profile, True);
+		pdb_set_profile_path (sam_pwent, profile, PDB_CHANGED);
 	
 	if (NT_STATUS_IS_OK(in->pdb_update_sam_account (in, sam_pwent)))
 		print_user_info (in, username, True, False);
@@ -285,7 +285,7 @@ static int new_user (struct pdb_context *in, char *username, char *fullname, cha
 	} else {
 		fprintf (stderr, "WARNING: user %s does not exist in system passwd\n", username);
 		pdb_init_sam(&sam_pwent);
-		if (!pdb_set_username(sam_pwent, username)) {
+		if (!pdb_set_username(sam_pwent, username, PDB_CHANGED)) {
 			return False;
 		}
 	}
@@ -313,17 +313,17 @@ static int new_user (struct pdb_context *in, char *username, char *fullname, cha
 	SAFE_FREE(password2);
 
 	if (fullname)
-		pdb_set_fullname(sam_pwent, fullname);
+		pdb_set_fullname(sam_pwent, fullname, PDB_CHANGED);
 	if (homedir)
-		pdb_set_homedir (sam_pwent, homedir, True);
+		pdb_set_homedir (sam_pwent, homedir, PDB_CHANGED);
 	if (drive)
-		pdb_set_dir_drive (sam_pwent, drive, True);
+		pdb_set_dir_drive (sam_pwent, drive, PDB_CHANGED);
 	if (script)
-		pdb_set_logon_script(sam_pwent, script, True);
+		pdb_set_logon_script(sam_pwent, script, PDB_CHANGED);
 	if (profile)
-		pdb_set_profile_path (sam_pwent, profile, True);
+		pdb_set_profile_path (sam_pwent, profile, PDB_CHANGED);
 	
-	pdb_set_acct_ctrl (sam_pwent, ACB_NORMAL);
+	pdb_set_acct_ctrl (sam_pwent, ACB_NORMAL, PDB_CHANGED);
 	
 	if (NT_STATUS_IS_OK(in->pdb_add_sam_account (in, sam_pwent))) { 
 		print_user_info (in, username, True, False);
@@ -361,11 +361,11 @@ static int new_machine (struct pdb_context *in, char *machinename)
 	
 	pdb_set_plaintext_passwd (sam_pwent, password);
 
-	pdb_set_username (sam_pwent, name);
+	pdb_set_username (sam_pwent, name, PDB_CHANGED);
 	
-	pdb_set_acct_ctrl (sam_pwent, ACB_WSTRUST);
+	pdb_set_acct_ctrl (sam_pwent, ACB_WSTRUST, PDB_CHANGED);
 	
-	pdb_set_group_sid_from_rid(sam_pwent, DOMAIN_GROUP_RID_COMPUTERS);
+	pdb_set_group_sid_from_rid(sam_pwent, DOMAIN_GROUP_RID_COMPUTERS, PDB_CHANGED);
 	
 	if (NT_STATUS_IS_OK(in->pdb_add_sam_account (in, sam_pwent))) {
 		print_user_info (in, name, True, False);

@@ -6061,11 +6061,11 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 	usr->user_rid  = user_rid;
 	usr->group_rid = group_rid;
 	usr->acb_info  = pdb_get_acct_ctrl(pw);
-	usr->unknown_3 = pdb_get_unknown3(pw);
+	usr->unknown_3 = pdb_get_unknown_3(pw);
 
 	usr->logon_divs = pdb_get_logon_divs(pw); 
 	usr->ptr_logon_hrs = pdb_get_hours(pw) ? 1 : 0;
-	usr->unknown_5 = pdb_get_unknown5(pw); /* 0x0002 0000 */
+	usr->unknown_5 = pdb_get_unknown_5(pw); /* 0x0002 0000 */
 
 	if (pdb_get_pass_must_change_time(pw) == 0) {
 		usr->passmustchange=PASS_MUST_CHANGE_AT_NEXT_LOGON;
@@ -6088,7 +6088,7 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 	init_unistr2(&usr->uni_unknown_str, NULL, len_unknown_str);
 	init_unistr2(&usr->uni_munged_dial, munged_dial, len_munged_dial);
 
-	usr->unknown_6 = pdb_get_unknown6(pw);
+	usr->unknown_6 = pdb_get_unknown_6(pw);
 	usr->padding4 = 0;
 
 	if (pdb_get_hours(pw)) {

@@ -162,10 +162,12 @@ static BOOL ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP *
 
 	int version;
 
+#ifndef NO_LDAP_SECURITY
 	if (geteuid() != 0) {
 		DEBUG(0, ("ldap_open_connection: cannot access LDAP when not root..\n"));
 		return False;
 	}
+#endif
 
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 	DEBUG(10, ("ldapsam_open_connection: %s\n", ldap_state->uri));
@@ -683,13 +685,13 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	get_single_attribute(ldap_struct, entry, "rid", temp);
 	user_rid = (uint32)atol(temp);
 
-	pdb_set_user_sid_from_rid(sampass, user_rid);
+	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
 
 	if (!get_single_attribute(ldap_struct, entry, "primaryGroupID", temp)) {
 		group_rid = 0;
 	} else {
 		group_rid = (uint32)atol(temp);
-		pdb_set_group_sid_from_rid(sampass, group_rid);
+		pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
 	}
 
 	if ((ldap_state->permit_non_unix_accounts) 
@@ -710,21 +712,21 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		uid = pw->pw_uid;
 		gid = pw->pw_gid;
 
-		pdb_set_unix_homedir(sampass, pw->pw_dir);
+		pdb_set_unix_homedir(sampass, pw->pw_dir, PDB_SET);
 
 		passwd_free(&pw);
 
-		pdb_set_uid(sampass, uid);
-		pdb_set_gid(sampass, gid);
+		pdb_set_uid(sampass, uid, PDB_SET);
+		pdb_set_gid(sampass, gid, PDB_SET);
 
 		if (group_rid == 0) {
 			GROUP_MAP map;
 			/* call the mapping code here */
 			if(get_group_map_from_gid(gid, &map, MAPPING_WITHOUT_PRIV)) {
-				pdb_set_group_sid(sampass, &map.sid);
+				pdb_set_group_sid(sampass, &map.sid, PDB_SET);
 			} 
 			else {
-				pdb_set_group_sid_from_rid(sampass, pdb_gid_to_group_rid(gid));
+				pdb_set_group_sid_from_rid(sampass, pdb_gid_to_group_rid(gid), PDB_SET);
 			}
 		}
 	}
@@ -733,42 +735,42 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		/* leave as default */
 	} else {
 		pass_last_set_time = (time_t) atol(temp);
-		pdb_set_pass_last_set_time(sampass, pass_last_set_time);
+		pdb_set_pass_last_set_time(sampass, pass_last_set_time, PDB_SET);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "logonTime", temp)) {
 		/* leave as default */
 	} else {
 		logon_time = (time_t) atol(temp);
-		pdb_set_logon_time(sampass, logon_time, True);
+		pdb_set_logon_time(sampass, logon_time, PDB_SET);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "logoffTime", temp)) {
 		/* leave as default */
 	} else {
 		logoff_time = (time_t) atol(temp);
-		pdb_set_logoff_time(sampass, logoff_time, True);
+		pdb_set_logoff_time(sampass, logoff_time, PDB_SET);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "kickoffTime", temp)) {
 		/* leave as default */
 	} else {
 		kickoff_time = (time_t) atol(temp);
-		pdb_set_kickoff_time(sampass, kickoff_time, True);
+		pdb_set_kickoff_time(sampass, kickoff_time, PDB_SET);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "pwdCanChange", temp)) {
 		/* leave as default */
 	} else {
 		pass_can_change_time = (time_t) atol(temp);
-		pdb_set_pass_can_change_time(sampass, pass_can_change_time, True);
+		pdb_set_pass_can_change_time(sampass, pass_can_change_time, PDB_SET);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "pwdMustChange", temp)) {
 		/* leave as default */
 	} else {
 		pass_must_change_time = (time_t) atol(temp);
-		pdb_set_pass_must_change_time(sampass, pass_must_change_time, True);
+		pdb_set_pass_must_change_time(sampass, pass_must_change_time, PDB_SET);
 	}
 
 	/* recommend that 'gecos' and 'displayName' should refer to the same
@@ -781,10 +783,10 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		if (!get_single_attribute(ldap_struct, entry, "displayName", fullname)) {
 			/* leave as default */
 		} else {
-			pdb_set_fullname(sampass, fullname);
+			pdb_set_fullname(sampass, fullname, PDB_SET);
 		}
 	} else {
-		pdb_set_fullname(sampass, fullname);
+		pdb_set_fullname(sampass, fullname, PDB_SET);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "homeDrive", dir_drive)) {
@@ -792,9 +794,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 								  lp_logon_drive(),
 								  username, domain, 
 								  uid, gid),
-				  False);
+				  PDB_DEFAULT);
 	} else {
-		pdb_set_dir_drive(sampass, dir_drive, True);
+		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "smbHome", homedir)) {
@@ -802,9 +804,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 								  lp_logon_home(),
 								  username, domain, 
 								  uid, gid), 
-				  False);
+				  PDB_DEFAULT);
 	} else {
-		pdb_set_homedir(sampass, homedir, True);
+		pdb_set_homedir(sampass, homedir, PDB_SET);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "scriptPath", logon_script)) {
@@ -812,9 +814,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 								     lp_logon_script(),
 								     username, domain, 
 								     uid, gid), 
-				     False);
+				     PDB_DEFAULT);
 	} else {
-		pdb_set_logon_script(sampass, logon_script, True);
+		pdb_set_logon_script(sampass, logon_script, PDB_SET);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "profilePath", profile_path)) {
@@ -822,21 +824,21 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 								     lp_logon_path(),
 								     username, domain, 
 								     uid, gid), 
-				     False);
+				     PDB_DEFAULT);
 	} else {
-		pdb_set_profile_path(sampass, profile_path, True);
+		pdb_set_profile_path(sampass, profile_path, PDB_SET);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "description", acct_desc)) {
 		/* leave as default */
 	} else {
-		pdb_set_acct_desc(sampass, acct_desc);
+		pdb_set_acct_desc(sampass, acct_desc, PDB_SET);
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "userWorkstations", workstations)) {
 		/* leave as default */;
 	} else {
-		pdb_set_workstations(sampass, workstations);
+		pdb_set_workstations(sampass, workstations, PDB_SET);
 	}
 
 	/* FIXME: hours stuff should be cleaner */
@@ -850,7 +852,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	} else {
 		pdb_gethexpwd(temp, smblmpwd);
 		memset((char *)temp, '\0', strlen(temp)+1);
-		if (!pdb_set_lanman_passwd(sampass, smblmpwd))
+		if (!pdb_set_lanman_passwd(sampass, smblmpwd, PDB_SET))
 			return False;
 		ZERO_STRUCT(smblmpwd);
 	}
@@ -860,7 +862,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	} else {
 		pdb_gethexpwd(temp, smbntpwd);
 		memset((char *)temp, '\0', strlen(temp)+1);
-		if (!pdb_set_nt_passwd(sampass, smbntpwd))
+		if (!pdb_set_nt_passwd(sampass, smbntpwd, PDB_SET))
 			return False;
 		ZERO_STRUCT(smbntpwd);
 	}
@@ -873,26 +875,34 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		if (acct_ctrl == 0)
 			acct_ctrl |= ACB_NORMAL;
 
-		pdb_set_acct_ctrl(sampass, acct_ctrl);
+		pdb_set_acct_ctrl(sampass, acct_ctrl, PDB_SET);
 	}
 
-	pdb_set_hours_len(sampass, hours_len);
-	pdb_set_logon_divs(sampass, logon_divs);
+	pdb_set_hours_len(sampass, hours_len, PDB_SET);
+	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
 
-	pdb_set_username(sampass, username);
+	pdb_set_username(sampass, username, PDB_SET);
 
-	pdb_set_domain(sampass, domain);
-	pdb_set_nt_username(sampass, nt_username);
+	pdb_set_domain(sampass, domain, PDB_DEFAULT);
+	pdb_set_nt_username(sampass, nt_username, PDB_SET);
 
-	pdb_set_munged_dial(sampass, munged_dial);
+	pdb_set_munged_dial(sampass, munged_dial, PDB_SET);
 	
-	/* pdb_set_unknown_3(sampass, unknown3); */
-	/* pdb_set_unknown_5(sampass, unknown5); */
-	/* pdb_set_unknown_6(sampass, unknown6); */
+	/* pdb_set_unknown_3(sampass, unknown3, PDB_SET); */
+	/* pdb_set_unknown_5(sampass, unknown5, PDB_SET); */
+	/* pdb_set_unknown_6(sampass, unknown6, PDB_SET); */
 
-	pdb_set_hours(sampass, hours);
+	pdb_set_hours(sampass, hours, PDB_SET);
 
 	return True;
+}
+
+static BOOL need_ldap_mod(BOOL pdb_add, const SAM_ACCOUNT * sampass, enum pdb_elements element) {
+	if (pdb_add) {
+		return (!IS_SAM_DEFAULT(sampass, element));
+	} else {
+		return IS_SAM_CHANGED(sampass, element);
+	}
 }
 
 /**********************************************************************
@@ -901,6 +911,7 @@ Initialize SAM_ACCOUNT from an LDAP query
 *********************************************************************/
 static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state, 
 				LDAPMod *** mods, int ldap_op, 
+				BOOL pdb_add,
 				const SAM_ACCOUNT * sampass)
 {
 	pstring temp;
@@ -917,91 +928,110 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	 * took out adding "objectclass: sambaAccount"
 	 * do this on a per-mod basis
 	 */
-
-	make_a_mod(mods, ldap_op, "uid", pdb_get_username(sampass));
-	DEBUG(2, ("Setting entry for user: %s\n", pdb_get_username(sampass)));
-
-	if ( pdb_get_user_rid(sampass) ) {
-		rid = pdb_get_user_rid(sampass);
-	} else if (IS_SAM_SET(sampass, FLAG_SAM_UID)) {
+	if (need_ldap_mod(pdb_add, sampass, PDB_USERNAME)) {
+		make_a_mod(mods, ldap_op, "uid", pdb_get_username(sampass));
+		DEBUG(2, ("Setting entry for user: %s\n", pdb_get_username(sampass)));
+	}
+	
+	if ((rid = pdb_get_user_rid(sampass))!=0 ) {
+		if (need_ldap_mod(pdb_add, sampass, PDB_USERSID)) {		
+			slprintf(temp, sizeof(temp) - 1, "%i", rid);
+			make_a_mod(mods, ldap_op, "rid", temp);
+		}
+	} else if (!IS_SAM_DEFAULT(sampass, PDB_UID)) {
 		rid = fallback_pdb_uid_to_user_rid(pdb_get_uid(sampass));
+		slprintf(temp, sizeof(temp) - 1, "%i", rid);
+		make_a_mod(mods, ldap_op, "rid", temp);
 	} else if (ldap_state->permit_non_unix_accounts) {
 		rid = ldapsam_get_next_available_nua_rid(ldap_state);
 		if (rid == 0) {
 			DEBUG(0, ("NO user RID specified on account %s, and findining next available NUA RID failed, cannot store!\n", pdb_get_username(sampass)));
 			return False;
 		}
+		slprintf(temp, sizeof(temp) - 1, "%i", rid);
+		make_a_mod(mods, ldap_op, "rid", temp);
 	} else {
 		DEBUG(0, ("NO user RID specified on account %s, cannot store!\n", pdb_get_username(sampass)));
 		return False;
 	}
 
-	slprintf(temp, sizeof(temp) - 1, "%i", rid);
-	make_a_mod(mods, ldap_op, "rid", temp);
 
-	if ( pdb_get_group_rid(sampass) ) {
-		rid = pdb_get_group_rid(sampass);
-	} else if (IS_SAM_SET(sampass, FLAG_SAM_GID)) {
+
+	if ((rid = pdb_get_group_rid(sampass))!=0 ) {
+		if (need_ldap_mod(pdb_add, sampass, PDB_GROUPSID)) {		
+			slprintf(temp, sizeof(temp) - 1, "%i", rid);
+			make_a_mod(mods, ldap_op, "primaryGroupID", temp);
+		}
+	} else if (!IS_SAM_DEFAULT(sampass, PDB_GID)) {
 		rid = pdb_gid_to_group_rid(pdb_get_gid(sampass));
+		slprintf(temp, sizeof(temp) - 1, "%i", rid);
+		make_a_mod(mods, ldap_op, "primaryGroupID", temp);
 	} else if (ldap_state->permit_non_unix_accounts) {
 		rid = DOMAIN_GROUP_RID_USERS;
+		slprintf(temp, sizeof(temp) - 1, "%i", rid);
+		make_a_mod(mods, ldap_op, "primaryGroupID", temp);
 	} else {
 		DEBUG(0, ("NO group RID specified on account %s, cannot store!\n", pdb_get_username(sampass)));
 		return False;
 	}
 
-	slprintf(temp, sizeof(temp) - 1, "%i", rid);
-	make_a_mod(mods, ldap_op, "primaryGroupID", temp);
 
 	/* displayName, cn, and gecos should all be the same
 	 *  most easily accomplished by giving them the same OID
 	 *  gecos isn't set here b/c it should be handled by the 
 	 *  add-user script
 	 */
-
-	make_a_mod(mods, ldap_op, "displayName", pdb_get_fullname(sampass));
-	make_a_mod(mods, ldap_op, "cn", pdb_get_fullname(sampass));
-	make_a_mod(mods, ldap_op, "description", pdb_get_acct_desc(sampass));
-	make_a_mod(mods, ldap_op, "userWorkstations", pdb_get_workstations(sampass));
-
+	if (need_ldap_mod(pdb_add, sampass, PDB_FULLNAME)) {
+		make_a_mod(mods, ldap_op, "displayName", pdb_get_fullname(sampass));
+		make_a_mod(mods, ldap_op, "cn", pdb_get_fullname(sampass));
+	}
+	if (need_ldap_mod(pdb_add, sampass, PDB_ACCTDESC)) {	
+		make_a_mod(mods, ldap_op, "description", pdb_get_acct_desc(sampass));
+	}
+	if (need_ldap_mod(pdb_add, sampass, PDB_WORKSTATIONS)) {	
+		make_a_mod(mods, ldap_op, "userWorkstations", pdb_get_workstations(sampass));
+	}
 	/*
 	 * Only updates fields which have been set (not defaults from smb.conf)
 	 */
 
-	if (IS_SAM_SET(sampass, FLAG_SAM_SMBHOME))
+	if (need_ldap_mod(pdb_add, sampass, PDB_SMBHOME)) {
 		make_a_mod(mods, ldap_op, "smbHome", pdb_get_homedir(sampass));
-		
-	if (IS_SAM_SET(sampass, FLAG_SAM_DRIVE))
+	}
+			
+	if (need_ldap_mod(pdb_add, sampass, PDB_DRIVE)) {
 		make_a_mod(mods, ldap_op, "homeDrive", pdb_get_dir_drive(sampass));
+	}
 	
-	if (IS_SAM_SET(sampass, FLAG_SAM_LOGONSCRIPT))
+	if (need_ldap_mod(pdb_add, sampass, PDB_LOGONSCRIPT)) {
 		make_a_mod(mods, ldap_op, "scriptPath", pdb_get_logon_script(sampass));
-
-	if (IS_SAM_SET(sampass, FLAG_SAM_PROFILE))
+	}
+	
+	if (need_ldap_mod(pdb_add, sampass, PDB_PROFILE))
 		make_a_mod(mods, ldap_op, "profilePath", pdb_get_profile_path(sampass));
 
-	if (IS_SAM_SET(sampass, FLAG_SAM_LOGONTIME)) {
+	if (need_ldap_mod(pdb_add, sampass, PDB_LOGONTIME)) {
 		slprintf(temp, sizeof(temp) - 1, "%li", pdb_get_logon_time(sampass));
 		make_a_mod(mods, ldap_op, "logonTime", temp);
 	}
 
-	if (IS_SAM_SET(sampass, FLAG_SAM_LOGOFFTIME)) {
+	if (need_ldap_mod(pdb_add, sampass, PDB_LOGOFFTIME)) {
 		slprintf(temp, sizeof(temp) - 1, "%li", pdb_get_logoff_time(sampass));
 		make_a_mod(mods, ldap_op, "logoffTime", temp);
 	}
 
-	if (IS_SAM_SET(sampass, FLAG_SAM_KICKOFFTIME)) {
+	if (need_ldap_mod(pdb_add, sampass, PDB_KICKOFFTIME)) {
 		slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_kickoff_time(sampass));
 		make_a_mod(mods, ldap_op, "kickoffTime", temp);
 	}
 
 
-	if (IS_SAM_SET(sampass, FLAG_SAM_CANCHANGETIME)) {
+	if (need_ldap_mod(pdb_add, sampass, PDB_CANCHANGETIME)) {
 		slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_can_change_time(sampass));
 		make_a_mod(mods, ldap_op, "pwdCanChange", temp);
 	}
 
-	if (IS_SAM_SET(sampass, FLAG_SAM_MUSTCHANGETIME)) {
+	if (need_ldap_mod(pdb_add, sampass, PDB_MUSTCHANGETIME)) {
 		slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_must_change_time(sampass));
 		make_a_mod(mods, ldap_op, "pwdMustChange", temp);
 	}
@@ -1009,22 +1039,28 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	if ((pdb_get_acct_ctrl(sampass)&(ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST))||
 		(lp_ldap_passwd_sync()!=LDAP_PASSWD_SYNC_ONLY)) {
 
-		pdb_sethexpwd (temp, pdb_get_lanman_passwd(sampass), pdb_get_acct_ctrl(sampass));
-		make_a_mod (mods, ldap_op, "lmPassword", temp);
-	
-		pdb_sethexpwd (temp, pdb_get_nt_passwd(sampass), pdb_get_acct_ctrl(sampass));
-		make_a_mod (mods, ldap_op, "ntPassword", temp);
-	
-		slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_last_set_time(sampass));
-		make_a_mod(mods, ldap_op, "pwdLastSet", temp);
-
+		if (need_ldap_mod(pdb_add, sampass, PDB_LMPASSWD)) {
+			pdb_sethexpwd (temp, pdb_get_lanman_passwd(sampass), pdb_get_acct_ctrl(sampass));
+			make_a_mod (mods, ldap_op, "lmPassword", temp);
+		}
+		
+		if (need_ldap_mod(pdb_add, sampass, PDB_NTPASSWD)) {
+			pdb_sethexpwd (temp, pdb_get_nt_passwd(sampass), pdb_get_acct_ctrl(sampass));
+			make_a_mod (mods, ldap_op, "ntPassword", temp);
+		}
+		
+		if (need_ldap_mod(pdb_add, sampass, PDB_PASSLASTSET)) {
+			slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_last_set_time(sampass));
+			make_a_mod(mods, ldap_op, "pwdLastSet", temp);
+		}
 	}
 
 	/* FIXME: Hours stuff goes in LDAP  */
-
-	make_a_mod (mods, ldap_op, "acctFlags", pdb_encode_acct_ctrl (pdb_get_acct_ctrl(sampass),
-		NEW_PW_FORMAT_SPACE_PADDED_LEN));
-
+	if (need_ldap_mod(pdb_add, sampass, PDB_ACCTCTRL)) {
+		make_a_mod (mods, ldap_op, "acctFlags", pdb_encode_acct_ctrl (pdb_get_acct_ctrl(sampass),
+			NEW_PW_FORMAT_SPACE_PADDED_LEN));
+	}
+	
 	return True;
 }
 
@@ -1371,14 +1407,27 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	return ldapsam_getsampwrid(my_methods, user, rid);
 }	
 
-static NTSTATUS ldapsam_modify_entry(LDAP *ldap_struct,SAM_ACCOUNT *newpwd,char *dn,LDAPMod **mods,int ldap_op)
+/********************************************************************
+Do the actual modification - also change a plaittext passord if 
+it it set.
+**********************************************************************/
+
+static NTSTATUS ldapsam_modify_entry(LDAP *ldap_struct,SAM_ACCOUNT *newpwd,char *dn,LDAPMod **mods,int ldap_op, BOOL pdb_add)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	int rc;
 	
-	switch(ldap_op)
-	{
-		case LDAP_MOD_ADD: 
+	if (!ldap_struct || !newpwd || !dn) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	if (!mods) {
+		DEBUG(5,("mods is empty: nothing to modify\n"));
+		/* may be password change below however */
+	} else {
+		switch(ldap_op)
+		{
+			case LDAP_MOD_ADD: 
 				make_a_mod(&mods, LDAP_MOD_ADD, "objectclass", "account");
 				if((rc = ldap_add_s(ldap_struct,dn,mods))!=LDAP_SUCCESS) {
 					char *ld_error;
@@ -1392,7 +1441,7 @@ static NTSTATUS ldapsam_modify_entry(LDAP *ldap_struct,SAM_ACCOUNT *newpwd,char 
 					return ret;
 				}  
 				break;
-		case LDAP_MOD_REPLACE: 	
+			case LDAP_MOD_REPLACE: 	
 				if((rc = ldap_modify_s(ldap_struct,dn,mods))!=LDAP_SUCCESS) {
 					char *ld_error;
 					ldap_get_option(ldap_struct, LDAP_OPT_ERROR_STRING,
@@ -1405,14 +1454,16 @@ static NTSTATUS ldapsam_modify_entry(LDAP *ldap_struct,SAM_ACCOUNT *newpwd,char 
 					return ret;
 				}  
 				break;
-		default: 	
+			default: 	
 				DEBUG(0,("Wrong LDAP operation type: %d!\n",ldap_op));
 				return ret;
+		}
 	}
 	
 #ifdef LDAP_EXOP_X_MODIFY_PASSWD
 	if (!(pdb_get_acct_ctrl(newpwd)&(ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST))&&
 		(lp_ldap_passwd_sync()!=LDAP_PASSWD_SYNC_OFF)&&
+		need_ldap_mod(pdb_add, newpwd, PDB_PLAINTEXT_PW)&&
 		(pdb_get_plaintext_passwd(newpwd)!=NULL)) {
 		BerElement *ber;
 		struct berval *bv;
@@ -1529,6 +1580,18 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	LDAPMessage *entry;
 	LDAPMod **mods;
 
+	if (!init_ldap_from_sam(ldap_state, &mods, LDAP_MOD_REPLACE, False, newpwd)) {
+		DEBUG(0, ("ldapsam_update_sam_account: init_ldap_from_sam failed!\n"));
+		ldap_msgfree(result);
+		ldap_unbind(ldap_struct);
+		return ret;
+	}
+	
+	if (mods == NULL) {
+		DEBUG(4,("mods is empty: nothing to update for user: %s\n",pdb_get_username(newpwd)));
+		return NT_STATUS_OK;
+	}
+	
 	if (!ldapsam_open_connection(ldap_state, &ldap_struct)) /* open a connection to the server */
 		return ret;
 
@@ -1547,18 +1610,11 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 		return ret;
 	}
 
-	if (!init_ldap_from_sam(ldap_state, &mods, LDAP_MOD_REPLACE, newpwd)) {
-		DEBUG(0, ("ldapsam_update_sam_account: init_ldap_from_sam failed!\n"));
-		ldap_msgfree(result);
-		ldap_unbind(ldap_struct);
-		return ret;
-	}
-
 	entry = ldap_first_entry(ldap_struct, result);
 	dn = ldap_get_dn(ldap_struct, entry);
         ldap_msgfree(result);
 	
-	if (NT_STATUS_IS_ERR(ldapsam_modify_entry(ldap_struct,newpwd,dn,mods,LDAP_MOD_REPLACE))) {
+	if (NT_STATUS_IS_ERR(ldapsam_modify_entry(ldap_struct,newpwd,dn,mods,LDAP_MOD_REPLACE, False))) {
 		DEBUG(0,("failed to modify user with uid = %s\n",
 					pdb_get_username(newpwd)));
 		ldap_mods_free(mods,1);
@@ -1649,17 +1705,23 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 
 	ldap_msgfree(result);
 
-	if (!init_ldap_from_sam(ldap_state, &mods, ldap_op, newpwd)) {
+	if (!init_ldap_from_sam(ldap_state, &mods, ldap_op, True, newpwd)) {
 		DEBUG(0, ("ldapsam_add_sam_account: init_ldap_from_sam failed!\n"));
 		ldap_mods_free(mods, 1);
 		ldap_unbind(ldap_struct);
 		return ret;		
 	}
+	
+	if (mods == NULL) {
+		DEBUG(0,("mods is empty: nothing to add for user: %s\n",pdb_get_username(newpwd)));
+		return ret;
+	}	
+	
 	make_a_mod(&mods, LDAP_MOD_ADD, "objectclass", "sambaAccount");
 
-	if (NT_STATUS_IS_ERR(ldapsam_modify_entry(ldap_struct,newpwd,dn,mods,ldap_op))) {
+	if (NT_STATUS_IS_ERR(ldapsam_modify_entry(ldap_struct,newpwd,dn,mods,ldap_op, True))) {
 		DEBUG(0,("failed to modify/add user with uid = %s (dn = %s)\n",
-					pdb_get_username(newpwd),dn));
+			 pdb_get_username(newpwd),dn));
 		ldap_mods_free(mods,1);
 		ldap_unbind(ldap_struct);
 		return ret;
