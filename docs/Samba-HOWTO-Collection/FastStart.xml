@@ -227,7 +227,7 @@ Press enter to see a dump of your service definitions
 			then open Windows Explorer and visit the network neighborhood.
 			The machine HOBBIT should be visible. When you click this machine
 			icon, it should open up to reveal the <emphasis>data</emphasis> share. After
-			clicking the share it, should open up to revel the files previously
+			clicking the share it, should open up to reveal the files previously
 			placed in the <filename>/export</filename> directory.
 			</para></step>
 		</procedure>
