@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -145,6 +145,13 @@ get_new_cache(krb5_context context,
     krb5_ccache id;
     
     krb5_get_init_creds_opt_init (&opt);
+
+    krb5_get_init_creds_opt_set_default_flags(context, "kadmin", 
+					      krb5_principal_get_realm(context, 
+								       client), 
+					      &opt);
+
+
     krb5_get_init_creds_opt_set_forwardable (&opt, FALSE);
     krb5_get_init_creds_opt_set_proxiable (&opt, FALSE);
 
