@@ -46,6 +46,7 @@ get_kdc_address (krb5_context context,
     int port = 0;
     int error;
     char *host;
+    int save_errno;
 
     ret = krb5_get_krb_changepw_hst (context,
 				     &realm,
@@ -64,9 +65,10 @@ get_kdc_address (krb5_context context,
     error = roken_getaddrinfo_hostspec2(host, SOCK_DGRAM, port, ai);
 
     if(error) {
+	save_errno = errno;
 	krb5_set_error_string(context, "resolving %s: %s",
 			      host, gai_strerror(error));
-	return krb5_eai_to_heim_errno(error);
+	return krb5_eai_to_heim_errno(error, save_errno);
     }
     *ret_host = host;
     return 0;

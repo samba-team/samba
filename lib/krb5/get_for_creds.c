@@ -141,15 +141,17 @@ krb5_get_forwarded_creds (krb5_context	    context,
     krb5_kdc_flags kdc_flags;
     krb5_crypto crypto;
     struct addrinfo *ai;
+    int save_errno;
 
     addrs.len = 0;
     addrs.val = NULL;
 
     ret = getaddrinfo (hostname, NULL, NULL, &ai);
     if (ret) {
+	save_errno = errno;
 	krb5_set_error_string(context, "resolving %s: %s",
 			      hostname, gai_strerror(ret));
-	return krb5_eai_to_heim_errno(ret);
+	return krb5_eai_to_heim_errno(ret, save_errno);
     }
 
     ret = add_addrs (context, &addrs, ai);

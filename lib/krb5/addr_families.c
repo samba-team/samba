@@ -530,6 +530,7 @@ krb5_parse_address(krb5_context context,
     int i, n;
     struct addrinfo *ai, *a;
     int error;
+    int save_errno;
 
     for(i = 0; i < num_addrs; i++) {
 	if(at[i].parse_addr) {
@@ -544,8 +545,9 @@ krb5_parse_address(krb5_context context,
 
     error = getaddrinfo (string, NULL, NULL, &ai);
     if (error) {
+	save_errno = errno;
 	krb5_set_error_string (context, "%s: %s", string, gai_strerror(error));
-	return krb5_eai_to_heim_errno(error);
+	return krb5_eai_to_heim_errno(error, save_errno);
     }
     
     n = 0;
