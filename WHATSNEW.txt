@@ -57,8 +57,10 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Allow root to grant/revoke privilege assignments.
     * Correct interaction between user rights and se_access_check() on
       SAMR objects.
+    * BUG 2286: Fix typo OpenLDAP schema file for sambaConfig object 
+      class.
 
-    
+ 
 o   Guenther Deschner <gd@samba.org>
     * Fix configure.in tests using KRB5_CONFIG variable and krb5-
       config utility.
