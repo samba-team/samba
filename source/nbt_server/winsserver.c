@@ -56,7 +56,7 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	rec.state         = WINS_REC_ACTIVE;
 	rec.expire_time   = time(NULL) + ttl;
 	rec.registered_by = src_address;
-	if (nb_flags & NBT_NM_GROUP) {
+	if (IS_GROUP_NAME(name, nb_flags)) {
 		rec.addresses     = str_list_make(packet, "255.255.255.255", NULL);
 	} else {
 		rec.addresses     = str_list_make(packet, address, NULL);
@@ -145,7 +145,7 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 
 	/* if the registration is for a group, then just update the expiry time 
 	   and we are done */
-	if (nb_flags & NBT_NM_GROUP) {
+	if (IS_GROUP_NAME(name, nb_flags)) {
 		wins_update_ttl(nbtsock, packet, rec, src_address, src_port);
 		goto done;
 	}
@@ -207,7 +207,7 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 	rec = winsdb_load(winssrv, name, packet);
 	if (rec == NULL || 
 	    rec->state != WINS_REC_ACTIVE || 
-	    (rec->nb_flags & NBT_NM_GROUP)) {
+	    IS_GROUP_NAME(name, rec->nb_flags)) {
 		goto done;
 	}
 

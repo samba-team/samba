@@ -79,3 +79,7 @@ struct nbtd_server {
 		return; \
 	} \
 } while (0)
+
+/* this copes with the nasty hack that is the type 0x1c name */
+#define IS_GROUP_NAME(name, nb_flags) \
+	((name)->type != NBT_NAME_LOGON && (nb_flags & NBT_NM_GROUP))

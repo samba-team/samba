@@ -120,7 +120,7 @@ static void release_handler(struct nbt_name_request *req)
 }
 
 /*
-  generate a registration
+  generate a name release
 */
 static void generate_release(struct nbt_name_socket *nbtsock, struct wins_state *state, int idx)
 {
