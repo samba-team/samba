@@ -1615,6 +1615,10 @@ static BOOL test_SetGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		s.in.level = levels[i];
 		s.in.info = r.out.info;
 
+		if (s.in.level == 2) {
+			init_samr_Name(&s.in.info->name, "NewName");
+		}
+
 		if (s.in.level == 4) {
 			init_samr_Name(&s.in.info->description, "test description");
 		}
