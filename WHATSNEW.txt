@@ -30,8 +30,8 @@ Major changes in Samba 2.0
 There have been several major changes in Samba for version 2.0. Here
 are some of them:
 
-1). autoconf
-------------
+1) autoconf
+-----------
 
 You now configure Samba by running "./configure" then make. See
 docs/UNIX_INSTALL.txt 
@@ -66,6 +66,33 @@ security rather than share level security.
 
 Samba now comes with SWAT, a web based GUI config system. See
 swat/README for how to set it up.
+
+5) change to nmbd default logging behavior
+------------------------------------------
+
+The nmbd daemon now appends to pre-existing log files by default.  In
+previous releases, nmbd would overwrite old log files.  Both nmbd and smbd
+now accept the '-a' and '-o' options, which mean "append" and "overwrite",
+respectively.
+
+
+Minor changes in Samba 2.0
+--------------------------
+
+1) timestamps on all log messages
+---------------------------------
+
+Both nmbd and smbd now place timestamp headers on all log messages.  The
+headers include the time and the message level.  On systems with compilers
+that support the necessary macros, the file & function names and the line
+number (of the call to Debug()) will also be listed.
+
+2) NetBIOS name server has improved database
+--------------------------------------------
+
+The linked list used to store NetBIOS names in the Samba "WINS" database
+has been replaced with a splay-balanced binary tree.  This should improve
+speed for installations with very large WINS lists.
 
 
 There have been lots of other changes as well. We'll add them here as
