@@ -54,7 +54,7 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
   char *pp = params;
   char *pd = pdata;
   int params_sent_thistime, data_sent_thistime, total_sent_thistime;
-  int alignment_offset = 3;
+  int alignment_offset = 1; /* JRA. This used to be 3. Set to 1 to make netmon parse ok. */
   int data_alignment_offset = 0;
 
   /* Initially set the wcnt area to be 10 - this is true for all
@@ -1970,12 +1970,12 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
         } else {
           ret = vfs_allocate_file_space(fsp, size);
         }
+        if (ret == -1)
+          return allocate_space_error(inbuf, outbuf, errno);
+
+        sbuf.st_size = size;
       }
 
-      if (ret == -1)
-		return allocate_space_error(inbuf, outbuf, errno);
-
-      sbuf.st_size = size;
       break;
     }
 
