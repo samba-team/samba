@@ -160,11 +160,11 @@ GROUPDB_OBJ = groupdb/groupdb.o groupdb/aliasdb.o groupdb/builtindb.o \
 		passdb/passgrp.o passdb/smbpassgroup.o \
 		passdb/smbpassgroupunix.o passdb/passgrpldap.o
 
-SAMPASSDB_OBJ = passdb/sampassdb.o passdb/sampass.o passdb/sampassldap.o
+SAMPASSDB_OBJ = passdb/sampassdb.o passdb/sampass.o passdb/sampassldap.o passdb/mysqlsampass.o
 
 PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o \
              passdb/pass_check.o passdb/ldap.o passdb/nispass.o \
-		passdb/smbpasschange.o \
+		passdb/smbpasschange.o passdb/mysqlpass.o \
 		lib/util_pwdb.o lib/domain_namemap.o lib/sids.o
 
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \

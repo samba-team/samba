@@ -70,6 +70,8 @@ BOOL initialise_password_db(void)
   pwdb_ops =  nisplus_initialise_password_db();
 #elif defined(WITH_LDAP)
   pwdb_ops = ldap_initialise_password_db();
+#elif defined(WITH_MYSQL) || defined(WITH_MYSQLSAM)
+  pwdb_ops = mysql_initialise_password_db();
 #elif defined(USE_SMBPASS_DB)
   pwdb_ops = file_initialise_password_db();
 #endif 
