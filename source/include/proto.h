@@ -3767,9 +3767,8 @@ BOOL api_netlog_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 
-BOOL rpc_redir_remote(struct msrpc_state *m, prs_struct *req, prs_struct *resp);
-BOOL rpc_to_smb_write(pipes_struct *p, char *data, int len);
-int rpc_to_smb_read(pipes_struct *p, char *data, int n);
+BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
+		char **rdata, int *rlen);
 ssize_t write_pipe(pipes_struct *p, char *data, size_t n);
 int read_pipe(pipes_struct *p, char *data, uint32 pos, int n);
 

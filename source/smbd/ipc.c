@@ -169,17 +169,12 @@ void send_trans_reply(char *outbuf,
 	}
 }
 
-static void api_rpc_trans_reply(char *outbuf,
-				pipes_struct *p)
+static void api_rpc_trans_reply(char *outbuf, char *rdata, int rlen)
 {
-	prs_debug_out(&p->rsmb_pdu, "api_rpc_trans_reply", 200);
-	send_trans_reply(outbuf, &p->rsmb_pdu, NULL, NULL, 0, p->file_offset);
-
-	if (prs_buf_len(&p->rsmb_pdu) <= p->file_offset)
-	{
-		/* all of data was sent: no need to wait for SMBreadX calls */
-		prs_free_data(&p->rsmb_pdu);
-	}
+	prs_struct ps;
+	prs_create(&ps, rdata, rlen, 0, False);
+	prs_debug_out(&ps, "api_rpc_trans_reply", 200);
+	send_trans_reply(outbuf, &ps, NULL, NULL, 0, rlen);
 }
 
 /****************************************************************************
@@ -287,7 +282,7 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 				  subcommand, p->name, pnum));
 
 		/* record maximum data length that can be transmitted in an SMBtrans */
-		p->file_offset          = mdrcnt;
+		p->file_offset          = MIN(1024, mdrcnt);
 		p->prev_pdu_file_offset = 0;
 
                 DEBUG(10,("api_fd_reply: p:%p file_offset: %d\n",
@@ -297,10 +292,13 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		{
 			case 0x26:
 			{
-				reply = rpc_to_smb_write(p, data, tdscnt);
+				char *rdata = NULL;
+				int rlen = mdrcnt;
+				reply = readwrite_pipe(p, data, tdscnt,
+				                       &rdata, &rlen);
 				if (reply)
 				{
-					api_rpc_trans_reply(outbuf, p);
+					api_rpc_trans_reply(outbuf, rdata, rlen);
 				}
 				break;
 			}

@@ -173,9 +173,49 @@ static void process_msrpc(pipes_struct *p, int c)
   }
 #endif
 
-	if (rpc_local(p, pdu.data, len))
+	if (rpc_local(p, pdu.data, len) && msrpc_send(c, &p->rsmb_pdu))
 	{
-	      msrpc_send(c, &p->rsmb_pdu);
+		prs_free_data(&p->rsmb_pdu);
+
+		while (rpc_local(p, NULL, 0))
+		{
+			fd_set fds;
+			int selrtn;
+			struct timeval to;
+			int maxfd;
+			int timeout = SMBD_SELECT_LOOP*1000;
+
+			smb_read_error = 0;
+
+			FD_ZERO(&fds);
+			FD_SET(c,&fds);
+			maxfd = 0;
+
+			to.tv_sec = timeout / 1000;
+			to.tv_usec = (timeout % 1000) * 1000;
+
+			selrtn = sys_select(MAX(maxfd,c)+1,NULL,&fds, timeout>0?&to:NULL);
+
+			/* Check if error */
+			if(selrtn == -1) {
+				smb_read_error = READ_ERROR;
+				return;
+			} 
+
+			/* Did we timeout ? */
+			if (selrtn == 0) {
+				smb_read_error = READ_TIMEOUT;
+				return;
+			}
+
+			if (FD_ISSET(c,&fds))
+			{
+				if (!msrpc_send(c, &p->rsmb_pdu))
+				prs_free_data(&p->rsmb_pdu);
+				break;
+			}
+			prs_free_data(&p->rsmb_pdu);
+		}
 	}
   trans_num++;
 }

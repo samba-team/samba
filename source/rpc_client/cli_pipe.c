@@ -674,7 +674,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 
 static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
 			prs_struct *data,
-			int data_offset, int max_data_len,
+			int max_data_len,
 			prs_struct *rdata)
 {
 	uint16 cmd = 0x0026;
@@ -695,8 +695,8 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
 	/*
 	 * Setup the pointers from the incoming.
 	 */
-	char *pdata = prs_data(data, data_offset);
-	int data_len = data ? (data->data_size - data_offset) : 0;
+	char *pdata = prs_data(data, 0);
+	int data_len = data ? (data->data_size): 0;
 	data_len = MIN(max_data_len, data_len);
 
 	/* create setup parameters. */
@@ -705,13 +705,6 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
 
 	DEBUG(5,("cli_send_trans_data: data_len: %d cmd:%x fnum:%x\n",
 				data_len, cmd, fnum));
-
-	if (data_offset != 0)
-	{
-		pipe_name = "";
-		pipe_len = 0;
-		setup_len = 0;
-	}
 
 	/* send the data: receive a response. */
 	if (!cli_api_pipe(cli, pipe_name, pipe_len,
@@ -746,27 +739,22 @@ BOOL cli_send_and_rcv_pdu_trans(struct cli_state *cli, uint16 fnum,
 			int max_send_pdu)
 {
 	int len;
-	int data_offset = 0;
 	uint16 cmd = 0x0026;
 
 	BOOL first = True;
 	BOOL last  = True;
 	RPC_HDR    rhdr;
-	size_t data_left = data->data_size;
 	size_t data_len  = data->data_size;
-	int max_data_len = data_len;
+	int max_data_len = MAX(data_len, 2048);
 	DEBUG(5,("cli_send_and_rcv_pdu_trans: cmd:%x fnum:%x\n", cmd, fnum));
 
-	DEBUG(10,("cli_send_and_rcv_pdu_trans: off: %d len: %d left: %d\n",
-		   data_offset, data_len, data_left));
+	DEBUG(10,("cli_send_and_rcv_pdu_trans: len: %d\n", data_len));
 
 	if (!cli_send_trans_data(cli, fnum,
-		data, data_offset, max_data_len, rdata))
+		data, max_data_len, rdata))
 	{
 		return False;
 	}
-	data_offset += max_data_len;
-	data_left   -= max_data_len;
 
 	if (rdata->data == NULL) return False;
 
