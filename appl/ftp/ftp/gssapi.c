@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -367,7 +367,8 @@ gss_auth(void *app_data, char *host)
 	if (maj_stat & GSS_S_CONTINUE_NEEDED) {
 	    p = strstr(reply_string, "ADAT=");
 	    if(p == NULL){
-		printf("Error: expected ADAT in reply.\n");
+		printf("Error: expected ADAT in reply. got: %s\n",
+		       reply_string);
 		return AUTH_ERROR;
 	    } else {
 		p+=5;
