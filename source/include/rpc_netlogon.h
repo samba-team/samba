@@ -59,8 +59,6 @@
 
 /* SAM database types */
 #define SAM_DATABASE_DOMAIN    0x00 /* Domain users and groups */
-#define SAM_DATABASE_BUILTIN   0x01 /* BUILTIN users and g/* SAM database types */
-#define SAM_DATABASE_DOMAIN    0x00 /* Domain users and groups */
 #define SAM_DATABASE_BUILTIN   0x01 /* BUILTIN users and groups */
 #define SAM_DATABASE_PRIVS     0x02 /* Privileges */
 
