@@ -153,6 +153,183 @@ int make_dom_gids(TALLOC_CTX *ctx, char *gids_str, DOM_GID **ppgids)
 /*******************************************************************
  gets a domain user's groups
  ********************************************************************/
+NTSTATUS new_get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, uint32 **prids, DOM_SID *q_sid)
+{
+	SAM_ACCOUNT *sam_pass=NULL;
+	char *sep;
+	struct sys_grent *glist;
+	struct sys_grent *grp;
+	int i, num, cur_rid=0;
+	gid_t *gid;
+	GROUP_MAP map;
+	DOM_SID tmp_sid;
+	fstring user_name;
+	fstring str_domsid, str_qsid;
+	uint32 rid,grid;
+	uint32 *rids=NULL, *new_rids=NULL;
+	BOOL ret;
+
+	/*
+	 * this code is far from perfect.
+	 * first it enumerates the full /etc/group and that can be slow.
+	 * second, it works only with users' SIDs
+	 * whereas the day we support nested groups, it will have to
+	 * support both users's SIDs and domain groups' SIDs
+	 *
+	 * having our own ldap backend would be so much faster !
+	 * we're far from that, but hope one day ;-) JFM.
+	 */
+
+	*prids=NULL;
+	*numgroups=0;
+
+	sep = lp_winbind_separator();
+
+
+	DEBUG(10,("new_get_alias_user_groups: looking if SID %s is a member of groups in the SID domain %s\n", 
+	          sid_to_string(str_qsid, q_sid), sid_to_string(str_domsid, sid)));
+
+	sid_peek_rid(q_sid, &rid);
+
+	pdb_init_sam(&sam_pass);
+	become_root();
+	ret = pdb_getsampwrid(sam_pass, rid);
+	unbecome_root();
+	if (ret == False)
+		return NT_STATUS_NO_SUCH_USER;
+
+	fstrcpy(user_name, pdb_get_username(sam_pass));
+	grid=pdb_get_group_rid(sam_pass);
+	gid=pdb_get_gid(sam_pass);
+	
+	grp = glist = getgrent_list();
+	if (grp == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	
+	for (; grp != NULL; grp = grp->next) {
+		if(!get_group_from_gid(grp->gr_gid, &map, MAPPING_WITHOUT_PRIV)) {
+			DEBUG(10,("new_get_alias_user_groups: gid %d. not found\n", (int)grp->gr_gid));
+			continue;
+		}
+		
+		/* if it's not an alias, continue */
+		if (map.sid_name_use!=SID_NAME_ALIAS) {
+			DEBUG(10,("new_get_alias_user_groups: not returing %s, not an ALIAS group.\n", map.nt_name));
+			continue;
+		}
+
+		sid_copy(&tmp_sid, &map.sid);
+		sid_split_rid(&tmp_sid, &rid);
+		
+		/* if the sid is not in the correct domain, continue */
+		if (!sid_equal(&tmp_sid, sid)) {
+			DEBUG(10,("new_get_alias_user_groups: not returing %s, not in the domain SID.\n", map.nt_name));
+			continue;
+		}
+
+		/* Don't return winbind groups as they are not local! */
+		if (strchr_m(map.nt_name, *sep) != NULL) {
+			DEBUG(10,("new_get_alias_user_groups: not returing %s, not local.\n", map.nt_name));
+			continue;
+		}
+
+		/* Don't return user private groups... */
+		if (Get_Pwnam(map.nt_name) != 0) {
+			DEBUG(10,("new_get_alias_user_groups: not returing %s, clashes with user.\n", map.nt_name));
+			continue;			
+		}
+		
+		/* the group is fine, we can check if there is the user we're looking for */
+		DEBUG(10,("new_get_alias_user_groups: checking if the user is a member of %s.\n", map.nt_name));
+		
+		for(num=0; grp->gr_mem[num]!=NULL; num++) {
+			if(strcmp(grp->gr_mem[num], user_name)==0) {
+				/* we found the user, add the group to the list */
+				
+				new_rids=(uint32 *)Realloc(rids, sizeof(uint32)*(cur_rid+1));
+				if (new_rids==NULL) {
+					DEBUG(10,("new_get_alias_user_groups: could not realloc memory\n"));
+					return NT_STATUS_NO_MEMORY;
+				}
+				rids=new_rids;
+				
+				sid_peek_rid(&map.sid, &(rids[cur_rid]));
+				DEBUG(10,("new_get_alias_user_groups: user found in group %s\n", map.nt_name));
+				cur_rid++;
+				break;
+			}
+		}
+		
+	}
+	
+	grent_free(glist);
+	
+	/* now check for the user's gid (the primary group rid) */
+	for (i=0; i<cur_rid && grid!=rids[i]; i++)
+		;
+	
+	/* the user's gid is already there */
+	if (i!=cur_rid) {
+		DEBUG(10,("new_get_alias_user_groups: user is already in the list. good.\n"));
+		goto done;
+	}
+	
+	DEBUG(10,("new_get_alias_user_groups: looking for gid %d of user %s\n", (int)*gid, user_name));
+	
+	if(!get_group_from_gid(*gid, &map, MAPPING_WITHOUT_PRIV)) {
+		DEBUG(0,("new_get_alias_user_groups: gid of user %s doesn't exist. Check your /etc/passwd and /etc/group files\n", user_name));
+		goto done;
+	}	
+	
+	/* the primary group isn't an alias */
+	if (map.sid_name_use!=SID_NAME_ALIAS) {
+		DEBUG(10,("new_get_alias_user_groups: not returing %s, not an ALIAS group.\n", map.nt_name));
+		goto done;
+	}
+
+	sid_copy(&tmp_sid, &map.sid);
+	sid_split_rid(&tmp_sid, &rid);
+		
+	/* if the sid is not in the correct domain, continue */
+	if (!sid_equal(&tmp_sid, sid)) {
+		DEBUG(10,("new_get_alias_user_groups: not returing %s, not in the domain SID.\n", map.nt_name));
+		goto done;
+	}
+
+	/* Don't return winbind groups as they are not local! */
+	if (strchr_m(map.nt_name, *sep) != NULL) {
+		DEBUG(10,("new_get_alias_user_groups: not returing %s, not local.\n", map.nt_name ));
+		goto done;
+	}
+
+	/* Don't return user private groups... */
+	if (Get_Pwnam(map.nt_name) != 0) {
+		DEBUG(10,("new_get_alias_user_groups: not returing %s, clashes with user.\n", map.nt_name ));
+		goto done;			
+	}
+
+	new_rids=(uint32 *)Realloc(rids, sizeof(uint32)*(cur_rid+1));
+	if (new_rids==NULL) {
+		DEBUG(10,("new_get_alias_user_groups: could not realloc memory\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+	rids=new_rids;
+
+ 	sid_peek_rid(&map.sid, &(rids[cur_rid]));
+	cur_rid++;
+
+done:
+ 	*prids=rids;
+	*numgroups=cur_rid;
+	
+	return NT_STATUS_OK;
+}
+
+
+/*******************************************************************
+ gets a domain user's groups
+ ********************************************************************/
 BOOL new_get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids, SAM_ACCOUNT *sam_pass)
 {
 	GROUP_MAP *map=NULL;
@@ -162,6 +339,8 @@ BOOL new_get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids
 	fstring user_name;
 	uint32 grid;
 	uint32 tmp_rid;
+
+	*numgroups=0;
 
 	fstrcpy(user_name, pdb_get_username(sam_pass));
 	grid=pdb_get_group_rid(sam_pass);
@@ -226,6 +405,7 @@ BOOL new_get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids
  	*pgids=gids;
 	*numgroups=cur_gid;
 	safe_free(map);
+
 	return True;
 }
 

@@ -1817,7 +1817,6 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	SAM_ACCOUNT *sam_pass=NULL;
 	DOM_GID *gids = NULL;
 	int num_groups = 0;
-	pstring groups;
 	uint32 rid;
 	struct samr_info *info = NULL;
 	BOOL ret;
@@ -2710,14 +2709,10 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 
 NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u, SAMR_R_QUERY_USERALIASES *r_u)
 {
-	uint32 *rid=NULL;
-	int num_rids;
-	
-	num_rids = 1;
-	rid=(uint32 *)talloc_zero(p->mem_ctx, num_rids*sizeof(uint32));
-	if (rid==NULL)
-		return NT_STATUS_NO_MEMORY;
-	
+	int num_groups = 0, tmp_num_groups=0;
+	uint32 *rids=NULL, *new_rids=NULL, *tmp_rids=NULL;
+	struct samr_info *info = NULL;
+	int i,j;
 	/* until i see a real useraliases query, we fack one up */
 
 	/* I have seen one, JFM 2/12/2001 */
@@ -2735,17 +2730,54 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	 * we should reply NT_STATUS_OBJECT_TYPE_MISMATCH
 	 */
 	
-	
-	
-	
-	
+	r_u->status = NT_STATUS_OK;
 
-	rid[0] = BUILTIN_ALIAS_RID_USERS;
+	DEBUG(5,("_samr_query_useraliases: %d\n", __LINE__));
 
-	init_samr_r_query_useraliases(r_u, num_rids, rid, NT_STATUS_OK);
+	/* find the policy handle.  open a policy on it. */
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+		return NT_STATUS_INVALID_HANDLE;
 
+	if (!sid_check_is_domain(&info->sid) &&
+	    !sid_check_is_builtin(&info->sid))
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+
+
+	for (i=0; i<q_u->num_sids1; i++) {
+
+		r_u->status=new_get_alias_user_groups(p->mem_ctx, &info->sid, &tmp_num_groups, &tmp_rids, &(q_u->sid[i].sid));
+
+		/*
+		 * if there is an error, we just continue as
+		 * it can be an unfound user or group
+		 */
+		if (NT_STATUS_IS_ERR(r_u->status)) {
+			DEBUG(10,("_samr_query_useraliases: an error occured while getting groups\n"));
+			continue;
+		}
+
+		if (tmp_num_groups==0) {
+			DEBUG(10,("_samr_query_useraliases: no groups found\n"));
+			continue;
+		}
+
+		new_rids=(uint32 *)talloc_realloc(p->mem_ctx, rids, (num_groups+tmp_num_groups)*sizeof(uint32));
+		if (new_rids==NULL) {
+			DEBUG(0,("_samr_query_useraliases: could not realloc memory\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+		rids=new_rids;
+
+		for (j=0; j<tmp_num_groups; j++)
+			rids[j+num_groups]=tmp_rids[j];
+		
+		safe_free(tmp_rids);
+		
+		num_groups+=tmp_num_groups;
+	}
+	
+	init_samr_r_query_useraliases(r_u, num_groups, rids, NT_STATUS_OK);
 	return NT_STATUS_OK;
-
 }
 
 /*********************************************************************
