@@ -64,7 +64,8 @@ krb5_boolean encode_as_rep_as_tgs_rep; /* bug compatibility */
 krb5_boolean check_ticket_addresses;
 krb5_boolean allow_null_ticket_addresses;
 krb5_boolean allow_anonymous;
-krb5_boolean enforce_transited_policy;
+int trpolicy;
+static const char *trpolicy_str;
 
 static struct getarg_strings addresses_str;	/* addresses to listen on */
 krb5_addresses explicit_addresses;
@@ -361,7 +362,21 @@ configure(int argc, char **argv)
     allow_anonymous = 
 	krb5_config_get_bool(context, NULL, "kdc", 
 			     "allow-anonymous", NULL);
-    enforce_transited_policy = 
+    trpolicy_str = 
+	krb5_config_get_string_default(context, NULL, "always-check", "kdc", 
+				       "transited-policy", NULL);
+    if(strcasecmp(trpolicy_str, "always-check") == 0)
+	trpolicy = TRPOLICY_ALWAYS_CHECK;
+    else if(strcasecmp(trpolicy_str, "allow-per-principal") == 0)
+	trpolicy = TRPOLICY_ALLOW_PER_PRINCIPAL;
+    else if(strcasecmp(trpolicy_str, "always-honour-request") == 0)
+	trpolicy = TRPOLICY_ALWAYS_HONOUR_REQUEST;
+    else {
+	kdc_log(0, "unknown transited-policy: %s, reverting to always-check", 
+		trpolicy_str);
+	trpolicy = TRPOLICY_ALWAYS_CHECK;
+    }
+	
 	krb5_config_get_bool_default(context, NULL, TRUE, "kdc", 
 				     "enforce-transited-policy", NULL);
 #ifdef KRB4
