@@ -9,9 +9,10 @@ libroken_la_LDFLAGS = -version-info 3:2:0
 
 noinst_PROGRAMS = make-roken make-print-version
 
-check_PROGRAMS = parse_bytes-test strpftime-test
+check_PROGRAMS = parse_bytes-test strpftime-test getaddrinfo-test
 TESTS = $(check_PROGRAMS)
 
+getaddrinfo_test_LDADD = libroken.la
 parse_bytes_test_LDADD = libroken.la
 strpftime_test_LDADD = strftime.o strptime.o
 
@@ -67,7 +68,10 @@ EXTRA_libroken_la_SOURCES =	\
 	flock.c			\
 	fnmatch.c		\
 	fnmatch.h		\
+	freeaddrinfo.c		\
 	freehostent.c		\
+	gai_strerror.c		\
+	getaddrinfo.c		\
 	getdtablesize.c		\
 	getegid.c		\
 	geteuid.c		\
@@ -75,6 +79,7 @@ EXTRA_libroken_la_SOURCES =	\
 	gethostname.c		\
 	getipnodebyaddr.c	\
 	getipnodebyname.c	\
+	getnameinfo.c		\
 	getopt.c		\
 	gettimeofday.c		\
 	getuid.c		\
