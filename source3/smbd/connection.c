@@ -22,7 +22,6 @@
 #include "includes.h"
 
 
-extern connection_struct Connections[MAX_CONNECTIONS];
 extern fstring remote_machine;
 
 extern int DEBUGLEVEL;
@@ -30,7 +29,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 simple routines to do connection counting
 ****************************************************************************/
-BOOL yield_connection(int cnum,char *name,int max_connections)
+BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 {
 	struct connect_record crec;
 	pstring fname;
@@ -38,7 +37,7 @@ BOOL yield_connection(int cnum,char *name,int max_connections)
 	int mypid = getpid();
 	int i;
 
-	DEBUG(3,("Yielding connection to %d %s\n",cnum,name));
+	DEBUG(3,("Yielding connection to %s\n",name));
 
 	if (max_connections <= 0)
 		return(True);
@@ -73,11 +72,11 @@ BOOL yield_connection(int cnum,char *name,int max_connections)
 			close(fd);
 			return(False);
 		}
-		if (crec.pid == mypid && crec.cnum == cnum)
+		if (crec.pid == mypid && crec.cnum == conn->cnum)
 			break;
 	}
 
-	if (crec.pid != mypid || crec.cnum != cnum) {
+	if (crec.pid != mypid || crec.cnum != conn->cnum) {
 		if (fcntl_lock(fd,F_SETLKW,0,1,F_UNLCK)==False) {
 			DEBUG(0,("ERROR: can't release lock on %s\n", fname));
 		}
@@ -113,7 +112,7 @@ BOOL yield_connection(int cnum,char *name,int max_connections)
 /****************************************************************************
 simple routines to do connection counting
 ****************************************************************************/
-BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear)
+BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOOL Clear)
 {
 	extern int Client;
 	struct connect_record crec;
@@ -192,11 +191,14 @@ BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear)
 	bzero((void *)&crec,sizeof(crec));
 	crec.magic = 0x280267;
 	crec.pid = getpid();
-	crec.cnum = cnum;
-	if (cnum != -1) {
-		crec.uid = Connections[cnum].uid;
-		crec.gid = Connections[cnum].gid;
-		StrnCpy(crec.name,lp_servicename(SNUM(cnum)),sizeof(crec.name)-1);
+	if (conn) {
+		crec.cnum = conn->cnum;
+		crec.uid = conn->uid;
+		crec.gid = conn->gid;
+		StrnCpy(crec.name,
+			lp_servicename(SNUM(conn)),sizeof(crec.name)-1);
+	} else {
+		crec.cnum = -1;
 	}
 	crec.start = time(NULL);
 	

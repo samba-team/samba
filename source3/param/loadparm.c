@@ -2298,67 +2298,46 @@ BOOL lp_snum_ok(int iService)
 
 
 /***************************************************************************
-auto-load some homes and printer services
+auto-load some home services
 ***************************************************************************/
 static void lp_add_auto_services(char *str)
 {
-  char *s;
-  char *p;
-  int homes, printers;
+	char *s;
+	char *p;
+	int homes;
 
-  if (!str)
-    return;
+	if (!str) return;
 
-  s = strdup(str);
-  if (!s) return;
+	s = strdup(str);
+	if (!s) return;
 
-  homes = lp_servicenumber(HOMES_NAME);
-  printers = lp_servicenumber(PRINTERS_NAME);
-
-  for (p=strtok(s,LIST_SEP);p;p=strtok(NULL,LIST_SEP)) {
-	  char *home = get_home_dir(p);
-
-	  if (lp_servicenumber(p) >= 0) continue;
-
-	  if (home && homes >= 0) {
-		  lp_add_home(p,homes,home);
-		  continue;
-	  }
-	  
-	  if (printers >= 0 && pcap_printername_ok(p,NULL)) {
-		  lp_add_printer(p,printers);
-	  }
-  }
-  free(s);
+	homes = lp_servicenumber(HOMES_NAME);
+	
+	for (p=strtok(s,LIST_SEP);p;p=strtok(NULL,LIST_SEP)) {
+		char *home = get_home_dir(p);
+		
+		if (lp_servicenumber(p) >= 0) continue;
+		
+		if (home && homes >= 0) {
+			lp_add_home(p,homes,home);
+		}
+	}
+	free(s);
 }
 
 /***************************************************************************
 auto-load one printer
 ***************************************************************************/
-static void lp_add_one_printer(char *name,char *comment)
+void lp_add_one_printer(char *name,char *comment)
 {
-  int printers = lp_servicenumber(PRINTERS_NAME);
-  int i;
+	int printers = lp_servicenumber(PRINTERS_NAME);
+	int i;
 
-  if (lp_servicenumber(name) < 0)
-    {
-      lp_add_printer(name,printers);
-      if ((i=lp_servicenumber(name)) >= 0)
-	string_set(&iSERVICE(i).comment,comment);
-    }      
-}
-
-
-/***************************************************************************
-auto-load printer services
-***************************************************************************/
-static void lp_add_all_printers(void)
-{
-  int printers = lp_servicenumber(PRINTERS_NAME);
-
-  if (printers < 0) return;
-
-  pcap_printer_fn(lp_add_one_printer);
+	if (lp_servicenumber(name) < 0)  {
+		lp_add_printer(name,printers);
+		if ((i=lp_servicenumber(name)) >= 0)
+			string_set(&iSERVICE(i).comment,comment);
+	}
 }
 
 /***************************************************************************
@@ -2460,8 +2439,6 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
       bRetval = service_ok(iServiceIndex);	   
 
   lp_add_auto_services(lp_auto_services());
-  if (lp_load_printers())
-    lp_add_all_printers();
 
   if (add_ipc)
 	  lp_add_ipc();
@@ -2540,26 +2517,6 @@ char *volume_label(int snum)
   return(ret);
 }
 
-#if 0
-/*
- * nmbd only loads the global section. There seems to be no way to
- * determine exactly is a service is printable by only looking at the
- * [global] section so for now always announce as a print server. This
- * will need looking at in the future. Jeremy (jallison@whistle.com).
- */
-/*******************************************************************
- Return true if any printer services are defined.
-  ******************************************************************/
-static BOOL lp_printer_services(void)
-{
-  int iService;
-
-  for (iService = iNumServices - 1; iService >= 0; iService--)
-      if (VALID(iService) && iSERVICE(iService).bPrint_ok)
-          return True;
-  return False;
-}
-#endif
 
 /*******************************************************************
  Set the server type we will announce as via nmbd.
@@ -2575,15 +2532,6 @@ static void set_default_server_announce_type()
   else if(lp_announce_as() == ANNOUNCE_AS_WFW)
     default_server_announce |= SV_TYPE_WFW;
   default_server_announce |= (lp_time_server() ? SV_TYPE_TIME_SOURCE : 0);
-/*
- * nmbd only loads the [global] section. There seems to be no way to
- * determine exactly if any service is printable by only looking at the
- * [global] section so for now always announce as a print server. This
- * will need looking at in the future. Jeremy (jallison@whistle.com).
- */
-#if 0
-  default_server_announce |= (lp_printer_services() ? SV_TYPE_PRINTQ_SERVER : 0);
-#endif
 }
 
 

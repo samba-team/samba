@@ -721,7 +721,8 @@ void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 	if (num_sam_entries >= MAX_SAM_ENTRIES)
 	{
 		num_sam_entries = MAX_SAM_ENTRIES;
-		DEBUG(5,("limiting number of entries to %d %s\n", num_sam_entries));
+		DEBUG(5,("limiting number of entries to %d\n",
+			 num_sam_entries));
 	}
 
 	r_u->total_num_entries = total_num_entries;
@@ -853,7 +854,8 @@ void make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
 	if (num_sam_entries >= MAX_SAM_ENTRIES)
 	{
 		num_sam_entries = MAX_SAM_ENTRIES;
-		DEBUG(5,("limiting number of entries to %d %s\n", num_sam_entries));
+		DEBUG(5,("limiting number of entries to %d\n", 
+			 num_sam_entries));
 	}
 
 	r_u->num_entries  = num_sam_entries;
@@ -988,7 +990,8 @@ void make_sam_info_2(SAM_INFO_2 *sam, uint32 acb_mask,
 	if (num_sam_entries >= MAX_SAM_ENTRIES)
 	{
 		num_sam_entries = MAX_SAM_ENTRIES;
-		DEBUG(5,("limiting number of entries to %d %s\n", num_sam_entries));
+		DEBUG(5,("limiting number of entries to %d\n", 
+			 num_sam_entries));
 	}
 
 	for (i = start_idx, entries_added = 0; i < num_sam_entries; i++)
@@ -1065,7 +1068,8 @@ void make_sam_info_1(SAM_INFO_1 *sam, uint32 acb_mask,
 	if (num_sam_entries >= MAX_SAM_ENTRIES)
 	{
 		num_sam_entries = MAX_SAM_ENTRIES;
-		DEBUG(5,("limiting number of entries to %d %s\n", num_sam_entries));
+		DEBUG(5,("limiting number of entries to %d\n", 
+			 num_sam_entries));
 	}
 
 	for (i = start_idx, entries_added = 0; i < num_sam_entries; i++)
@@ -1261,7 +1265,8 @@ void make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
 	if (num_sam_entries >= MAX_SAM_ENTRIES)
 	{
 		num_sam_entries = MAX_SAM_ENTRIES;
-		DEBUG(5,("limiting number of entries to %d %s\n", num_sam_entries));
+		DEBUG(5,("limiting number of entries to %d\n", 
+			 num_sam_entries));
 	}
 
 	if (status == 0x0)

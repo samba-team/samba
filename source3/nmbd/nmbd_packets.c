@@ -112,7 +112,7 @@ static void debug_browse_data(char *outbuf, int len)
       DEBUGADD( 4, ( "%c", x ) );
     }
 
-    DEBUGADD( 4, ( " hex ", i ) );
+    DEBUGADD( 4, ( " hex ") );
 
     for (j = 0; j < 16; j++)
     {

@@ -21,8 +21,6 @@
 
 #include "includes.h"
 extern int DEBUGLEVEL;
-extern connection_struct Connections[];
-extern files_struct Files[];
 
 static BOOL * lpq_cache_reset=NULL;
 
@@ -51,92 +49,84 @@ Build the print command in the supplied buffer. This means getting the
 print command for the service and inserting the printer name and the
 print file name. Return NULL on error, else the passed buffer pointer.
 ****************************************************************************/
-static char *build_print_command(int cnum, char *command, char *syscmd, char *filename1)
+static char *build_print_command(connection_struct *conn,
+				 char *command, 
+				 char *syscmd, char *filename1)
 {
-  int snum = SNUM(cnum);
-  char *tstr;
-  pstring filename;
+	int snum = SNUM(conn);
+	char *tstr;
+	pstring filename;
   
-  /* get the print command for the service. */
-  tstr = command;
-  if (!syscmd || !tstr) {
-    DEBUG(0,("No print command for service `%s'\n", SERVICE(snum)));
-    return (NULL);
-  }
+	/* get the print command for the service. */
+	tstr = command;
+	if (!syscmd || !tstr) {
+		DEBUG(0,("No print command for service `%s'\n", 
+			 SERVICE(snum)));
+		return (NULL);
+	}
 
-  /* copy the command into the buffer for extensive meddling. */
-  StrnCpy(syscmd, tstr, sizeof(pstring) - 1);
+	/* copy the command into the buffer for extensive meddling. */
+	StrnCpy(syscmd, tstr, sizeof(pstring) - 1);
   
-  /* look for "%s" in the string. If there is no %s, we cannot print. */   
-  if (!strstr(syscmd, "%s") && !strstr(syscmd, "%f")) {
-    DEBUG(2,("WARNING! No placeholder for the filename in the print command for service %s!\n", SERVICE(snum)));
-  }
+	/* look for "%s" in the string. If there is no %s, we cannot print. */   
+	if (!strstr(syscmd, "%s") && !strstr(syscmd, "%f")) {
+		DEBUG(2,("WARNING! No placeholder for the filename in the print command for service %s!\n", SERVICE(snum)));
+	}
   
-  if (strstr(syscmd,"%s")) {
-    int iOffset = PTR_DIFF(strstr(syscmd, "%s"),syscmd);
+	if (strstr(syscmd,"%s")) {
+		pstrcpy(filename,filename1);
     
-    /* construct the full path for the filename, shouldn't be necessary unless
-       the subshell causes a "cd" to be executed.
-       Only use the full path if there isn't a / preceding the %s */
-    if (iOffset==0 || syscmd[iOffset-1] != '/') {
-      StrnCpy(filename,Connections[cnum].connectpath,sizeof(filename)-1);
-      trim_string(filename,"","/");
-      pstrcat(filename,"/");
-      pstrcat(filename,filename1);
-    }
-    else
-      pstrcpy(filename,filename1);
-    
-    string_sub(syscmd, "%s", filename);
-  }
+		string_sub(syscmd, "%s", filename);
+	}
   
-  string_sub(syscmd, "%f", filename1);
+	string_sub(syscmd, "%f", filename1);
   
-  /* Does the service have a printername? If not, make a fake and empty    */
-  /* printer name. That way a %p is treated sanely if no printer */
-  /* name was specified to replace it. This eventuality is logged.         */
-  tstr = PRINTERNAME(snum);
-  if (tstr == NULL || tstr[0] == '\0') {
-    DEBUG(3,( "No printer name - using %s.\n", SERVICE(snum)));
-    tstr = SERVICE(snum);
-  }
+	/* Does the service have a printername? If not, make a fake
+           and empty */
+	/* printer name. That way a %p is treated sanely if no printer */
+	/* name was specified to replace it. This eventuality is logged.  */
+	tstr = PRINTERNAME(snum);
+	if (tstr == NULL || tstr[0] == '\0') {
+		DEBUG(3,( "No printer name - using %s.\n", SERVICE(snum)));
+		tstr = SERVICE(snum);
+	}
   
-  string_sub(syscmd, "%p", tstr);
+	string_sub(syscmd, "%p", tstr);
   
-  standard_sub(cnum,syscmd);
+	standard_sub(conn,syscmd);
   
-  return (syscmd);
+	return (syscmd);
 }
 
 
 /****************************************************************************
 print a file - called on closing the file
 ****************************************************************************/
-void print_file(int fnum)
+void print_file(connection_struct *conn, files_struct *file)
 {
-  pstring syscmd;
-  int cnum = Files[fnum].cnum;
-  int snum=SNUM(cnum);
-  char *tempstr;
+	pstring syscmd;
+	int snum = SNUM(conn);
+	char *tempstr;
 
-  *syscmd = 0;
+	*syscmd = 0;
 
-  if (file_size(Files[fnum].name) <= 0) {
-    DEBUG(3,("Discarding null print job %s\n",Files[fnum].name));
-    sys_unlink(Files[fnum].name);
-    return;
-  }
+	if (file_size(file->fsp_name) <= 0) {
+		DEBUG(3,("Discarding null print job %s\n",file->fsp_name));
+		sys_unlink(file->fsp_name);
+		return;
+	}
 
-  tempstr = build_print_command(cnum, PRINTCOMMAND(snum), syscmd, Files[fnum].name);
-  if (tempstr != NULL)
-    {
-      int ret = smbrun(syscmd,NULL,False);
-      DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
-    }
-  else
-    DEBUG(0,("Null print command?\n"));
+	tempstr = build_print_command(conn, 
+				      PRINTCOMMAND(snum), 
+				      syscmd, file->fsp_name);
+	if (tempstr != NULL) {
+		int ret = smbrun(syscmd,NULL,False);
+		DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
+	} else {
+		DEBUG(0,("Null print command?\n"));
+	}
   
-  lpq_reset(snum);
+	lpq_reset(snum);
 }
 
 static char *Months[13] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -1023,105 +1013,102 @@ static BOOL parse_lpq_entry(int snum,char *line,
 /****************************************************************************
 get a printer queue
 ****************************************************************************/
-int get_printqueue(int snum,int cnum,print_queue_struct **queue,
+int get_printqueue(int snum, 
+		   connection_struct *conn,print_queue_struct **queue,
 		   print_status_struct *status)
 {
-  char *lpq_command = lp_lpqcommand(snum);
-  char *printername = PRINTERNAME(snum);
-  int ret=0,count=0;
-  pstring syscmd;
-  fstring outfile;
-  pstring line;
-  FILE *f;
-  struct stat sbuf;
-  BOOL dorun=True;
-  int cachetime = lp_lpqcachetime();
-
-  *line = 0;
-  check_lpq_cache(snum);
-  
-  if (!printername || !*printername)
-    {
-      DEBUG(6,("xx replacing printer name with service (snum=(%s,%d))\n",
-	       lp_servicename(snum),snum));
-      printername = lp_servicename(snum);
-    }
+	char *lpq_command = lp_lpqcommand(snum);
+	char *printername = PRINTERNAME(snum);
+	int ret=0,count=0;
+	pstring syscmd;
+	fstring outfile;
+	pstring line;
+	FILE *f;
+	struct stat sbuf;
+	BOOL dorun=True;
+	int cachetime = lp_lpqcachetime();
+	
+	*line = 0;
+	check_lpq_cache(snum);
+	
+	if (!printername || !*printername) {
+		DEBUG(6,("xx replacing printer name with service (snum=(%s,%d))\n",
+			 lp_servicename(snum),snum));
+		printername = lp_servicename(snum);
+	}
     
-  if (!lpq_command || !(*lpq_command))
-    {
-      DEBUG(5,("No lpq command\n"));
-      return(0);
-    }
+	if (!lpq_command || !(*lpq_command)) {
+		DEBUG(5,("No lpq command\n"));
+		return(0);
+	}
     
-  pstrcpy(syscmd,lpq_command);
-  string_sub(syscmd,"%p",printername);
+	pstrcpy(syscmd,lpq_command);
+	string_sub(syscmd,"%p",printername);
 
-  standard_sub(cnum,syscmd);
+	standard_sub(conn,syscmd);
 
-  slprintf(outfile,sizeof(outfile)-1, "%s/lpq.%08x",tmpdir(),str_checksum(syscmd));
+	slprintf(outfile,sizeof(outfile)-1, "%s/lpq.%08x",tmpdir(),str_checksum(syscmd));
   
-  if (!lpq_cache_reset[snum] && cachetime && !stat(outfile,&sbuf)) 
-    {
-      if (time(NULL) - sbuf.st_mtime < cachetime) {
-	DEBUG(3,("Using cached lpq output\n"));
-	dorun = False;
-      }
-    }
-
-  if (dorun) {
-    ret = smbrun(syscmd,outfile,True);
-    DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
-  }
-
-  lpq_cache_reset[snum] = False;
-
-  f = fopen(outfile,"r");
-  if (!f) {
-    return(0);
-  }
-
-  if (status) {
-    fstrcpy(status->message,"");
-    status->status = LPSTAT_OK;
-  }
-      
-  while (fgets(line,sizeof(pstring),f))
-    {
-      DEBUG(6,("QUEUE2: %s\n",line));
-
-      *queue = Realloc(*queue,sizeof(print_queue_struct)*(count+1));
-      if (! *queue)
-	{
-	  count = 0;
-	  break;
+	if (!lpq_cache_reset[snum] && cachetime && !stat(outfile,&sbuf)) {
+		if (time(NULL) - sbuf.st_mtime < cachetime) {
+			DEBUG(3,("Using cached lpq output\n"));
+			dorun = False;
+		}
 	}
 
-      bzero((char *)&(*queue)[count],sizeof(**queue));
-	  
-      /* parse it */
-      if (!parse_lpq_entry(snum,line,&(*queue)[count],status,count==0))
-	continue;
-	  
-      count++;
-    }	      
+	if (dorun) {
+		ret = smbrun(syscmd,outfile,True);
+		DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
+	}
 
-  fclose(f);
+	lpq_cache_reset[snum] = False;
 
-  if (!cachetime) {
-    unlink(outfile);
-  } else {
-    /* we only expect this to succeed on trapdoor systems, on normal systems
-     the file is owned by root */
-    chmod(outfile,0666);
-  }
-  return(count);
+	f = fopen(outfile,"r");
+	if (!f) {
+		return(0);
+	}
+
+	if (status) {
+		fstrcpy(status->message,"");
+		status->status = LPSTAT_OK;
+	}
+	
+	while (fgets(line,sizeof(pstring),f)) {
+		DEBUG(6,("QUEUE2: %s\n",line));
+		
+		*queue = Realloc(*queue,sizeof(print_queue_struct)*(count+1));
+		if (! *queue) {
+			count = 0;
+			break;
+		}
+
+		bzero((char *)&(*queue)[count],sizeof(**queue));
+	  
+		/* parse it */
+		if (!parse_lpq_entry(snum,line,
+				     &(*queue)[count],status,count==0))
+			continue;
+		
+		count++;
+	}	      
+
+	fclose(f);
+	
+	if (!cachetime) {
+		unlink(outfile);
+	} else {
+		/* we only expect this to succeed on trapdoor systems,
+		   on normal systems the file is owned by root */
+		chmod(outfile,0666);
+	}
+	return(count);
 }
 
 
 /****************************************************************************
 delete a printer queue entry
 ****************************************************************************/
-void del_printqueue(int cnum,int snum,int jobid)
+void del_printqueue(connection_struct *conn,int snum,int jobid)
 {
   char *lprm_command = lp_lprmcommand(snum);
   char *printername = PRINTERNAME(snum);
@@ -1147,7 +1134,7 @@ void del_printqueue(int cnum,int snum,int jobid)
   pstrcpy(syscmd,lprm_command);
   string_sub(syscmd,"%p",printername);
   string_sub(syscmd,"%j",jobstr);
-  standard_sub(cnum,syscmd);
+  standard_sub(conn,syscmd);
 
   ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));  
@@ -1157,7 +1144,7 @@ void del_printqueue(int cnum,int snum,int jobid)
 /****************************************************************************
 change status of a printer queue entry
 ****************************************************************************/
-void status_printjob(int cnum,int snum,int jobid,int status)
+void status_printjob(connection_struct *conn,int snum,int jobid,int status)
 {
   char *lpstatus_command = 
     (status==LPQ_PAUSED?lp_lppausecommand(snum):lp_lpresumecommand(snum));
@@ -1185,7 +1172,7 @@ void status_printjob(int cnum,int snum,int jobid,int status)
   pstrcpy(syscmd,lpstatus_command);
   string_sub(syscmd,"%p",printername);
   string_sub(syscmd,"%j",jobstr);
-  standard_sub(cnum,syscmd);
+  standard_sub(conn,syscmd);
 
   ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));  
@@ -1218,7 +1205,7 @@ void printjob_decode(int jobid, int *snum, int *job)
  Change status of a printer queue
 ****************************************************************************/
 
-void status_printqueue(int cnum,int snum,int status)
+void status_printqueue(connection_struct *conn,int snum,int status)
 {
   char *queuestatus_command = (status==LPSTAT_STOPPED ? 
                                lp_queuepausecommand(snum):lp_queueresumecommand(snum));
@@ -1240,9 +1227,57 @@ void status_printqueue(int cnum,int snum,int status)
 
   pstrcpy(syscmd,queuestatus_command);
   string_sub(syscmd,"%p",printername);
-  standard_sub(cnum,syscmd);
+  standard_sub(conn,syscmd);
 
   ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
   lpq_reset(snum); /* queue has changed */
+}
+
+
+
+/***************************************************************************
+auto-load printer services
+***************************************************************************/
+static void add_all_printers(void)
+{
+	int printers = lp_servicenumber(PRINTERS_NAME);
+
+	if (printers < 0) return;
+
+	pcap_printer_fn(lp_add_one_printer);
+}
+
+/***************************************************************************
+auto-load some homes and printer services
+***************************************************************************/
+static void add_auto_printers(void)
+{
+	char *p;
+	int printers;
+	char *str = lp_auto_services();
+
+	if (!str) return;
+
+	printers = lp_servicenumber(PRINTERS_NAME);
+
+	if (printers < 0) return;
+	
+	for (p=strtok(str,LIST_SEP);p;p=strtok(NULL,LIST_SEP)) {
+		if (lp_servicenumber(p) >= 0) continue;
+		
+		if (pcap_printername_ok(p,NULL)) {
+			lp_add_printer(p,printers);
+		}
+	}
+}
+
+/***************************************************************************
+load automatic printer services
+***************************************************************************/
+void load_printers(void)
+{
+	add_auto_printers();
+	if (lp_load_printers())
+		add_all_printers();
 }

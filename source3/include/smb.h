@@ -98,9 +98,20 @@ typedef unsigned short uint16;
  * the #ifdef directive and will read both definitions, thus creating two
  * diffferent prototype declarations), so we must do these by hand.
  */
+/* I know the __attribute__ stuff is ugly, but it does ensure we get the 
+   arguemnts to DEBUG() right. We have got them wrong too often in the 
+   past */
 #ifdef HAVE_STDARG_H
-int  Debug1( char *, ... );
-BOOL dbgtext( char *, ... );
+int  Debug1( char *, ... )
+#ifdef __GNUC__
+     __attribute__ ((format (printf, 1, 2)))
+#endif
+;
+BOOL dbgtext( char *, ... )
+#ifdef __GNUC__
+     __attribute__ ((format (printf, 1, 2)))
+#endif
+;
 #else
 int  Debug1();
 BOOL dbgtext();
@@ -451,14 +462,6 @@ struct cli_state {
 };
 
 
-struct current_user
-{
-	int cnum, vuid;
-	int uid, gid;
-	int ngroups;
-	GID_T *groups;
-};
-
 typedef struct
 {
   int size;
@@ -515,32 +518,6 @@ typedef struct
   time_t status_time;
 } dir_status_struct;
 
-typedef struct
-{
-  int cnum;
-  file_fd_struct *fd_ptr;
-  int pos;
-  uint32 size;
-  int mode;
-  int vuid;
-  char *mmap_ptr;
-  uint32 mmap_size;
-  write_bmpx_struct *wbmpx_ptr;
-  struct timeval open_time;
-  BOOL open;
-  BOOL can_lock;
-  BOOL can_read;
-  BOOL can_write;
-  BOOL share_mode;
-  BOOL print_file;
-  BOOL modified;
-  BOOL granted_oplock;
-  BOOL sent_oplock_break;
-  BOOL is_directory;
-  BOOL reserved;
-  char *name;
-} files_struct;
-
 struct uid_cache {
   int entries;
   int list[UID_CACHE_SIZE];
@@ -554,38 +531,74 @@ typedef struct
 
 typedef struct
 {
-  int service;
-  BOOL force_user;
-  struct uid_cache uid_cache;
-  void *dirptr;
-  BOOL open;
-  BOOL printer;
-  BOOL ipc;
-  BOOL read_only;
-  BOOL admin_user;
-  char *dirpath;
-  char *connectpath;
-  char *origpath;
-  char *user; /* name of user who *opened* this connection */
-  int uid; /* uid of user who *opened* this connection */
-  int gid; /* gid of user who *opened* this connection */
+	unsigned cnum; /* an index passed over the wire */
+	int service;
+	BOOL force_user;
+	struct uid_cache uid_cache;
+	void *dirptr;
+	BOOL open;
+	BOOL printer;
+	BOOL ipc;
+	BOOL read_only;
+	BOOL admin_user;
+	char *dirpath;
+	char *connectpath;
+	char *origpath;
+	char *user; /* name of user who *opened* this connection */
+	int uid; /* uid of user who *opened* this connection */
+	int gid; /* gid of user who *opened* this connection */
 
-  uint16 vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
+	uint16 vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
 
-  /* following groups stuff added by ih */
+	/* following groups stuff added by ih */
 
-  /* This groups info is valid for the user that *opened* the connection */
-  int ngroups;
-  GID_T *groups;
-
-  time_t lastused;
-  BOOL used;
-  int num_files_open;
-  name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
-  name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
-  name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */
-
+	/* This groups info is valid for the user that *opened* the connection */
+	int ngroups;
+	GID_T *groups;
+	
+	time_t lastused;
+	BOOL used;
+	int num_files_open;
+	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
+	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
+	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
 } connection_struct;
+
+struct current_user
+{
+	connection_struct *conn;
+	int vuid;
+	int uid, gid;
+	int ngroups;
+	GID_T *groups;
+};
+
+typedef struct
+{
+	connection_struct *conn;
+	file_fd_struct *fd_ptr;
+	int pos;
+	uint32 size;
+	int mode;
+	int vuid;
+	char *mmap_ptr;
+	uint32 mmap_size;
+	write_bmpx_struct *wbmpx_ptr;
+	struct timeval open_time;
+	BOOL open;
+	BOOL can_lock;
+	BOOL can_read;
+	BOOL can_write;
+	BOOL share_mode;
+	BOOL print_file;
+	BOOL modified;
+	BOOL granted_oplock;
+	BOOL sent_oplock_break;
+	BOOL is_directory;
+	BOOL reserved;
+	char *fsp_name;
+} files_struct;
+
 
 /* Domain controller authentication protocol info */
 struct dcinfo
@@ -679,9 +692,9 @@ typedef struct
    to support the following operations */
 struct share_ops {
 	BOOL (*stop_mgmt)(void);
-	BOOL (*lock_entry)(int , uint32 , uint32 , int *);
-	BOOL (*unlock_entry)(int , uint32 , uint32 , int );
-	int (*get_entries)(int , int , uint32 , uint32 , share_mode_entry **);
+	BOOL (*lock_entry)(connection_struct *, uint32 , uint32 , int *);
+	BOOL (*unlock_entry)(connection_struct *, uint32 , uint32 , int );
+	int (*get_entries)(connection_struct *, int , uint32 , uint32 , share_mode_entry **);
 	void (*del_entry)(int , int );
 	BOOL (*set_entry)(int , int , uint16 , uint16 );
 	BOOL (*remove_oplock)(int , int);
@@ -848,12 +861,12 @@ struct parm_struct
 #define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < MAX_FNUMS))
 #define OPEN_FNUM(fnum)    (VALID_FNUM(fnum) && Files[fnum].open && !Files[fnum].is_directory)
 #define VALID_CNUM(cnum)   (((cnum) >= 0) && ((cnum) < MAX_CONNECTIONS))
-#define OPEN_CNUM(cnum)    (VALID_CNUM(cnum) && Connections[cnum].open)
-#define IS_IPC(cnum)       (VALID_CNUM(cnum) && Connections[cnum].ipc)
-#define IS_PRINT(cnum)       (VALID_CNUM(cnum) && Connections[cnum].printer)
-#define FNUM_OK(fnum,c) (OPEN_FNUM(fnum) && (c)==Files[fnum].cnum)
+#define OPEN_CNUM(conn)    ((conn) && (conn)->open)
+#define IS_IPC(conn)       ((conn) && (conn)->ipc)
+#define IS_PRINT(conn)       ((conn) && (conn)->printer)
+#define FNUM_OK(fnum,c) (OPEN_FNUM(fnum) && (c)==Files[fnum].conn)
 
-#define CHECK_FNUM(fnum,c) if (!FNUM_OK(fnum,c)) \
+#define CHECK_FNUM(fnum,conn) if (!FNUM_OK(fnum,conn)) \
                                return(ERROR(ERRDOS,ERRbadfid))
 #define CHECK_READ(fnum) if (!Files[fnum].can_read) \
                                return(ERROR(ERRDOS,ERRbadaccess))
@@ -863,26 +876,25 @@ struct parm_struct
                                return(CACHED_ERROR(fnum))
 
 /* translates a connection number into a service number */
-#define SNUM(cnum)         (Connections[cnum].service)
+#define SNUM(conn)         ((conn)?(conn)->service:-1)
 
 /* access various service details */
 #define SERVICE(snum)      (lp_servicename(snum))
 #define PRINTCAP           (lp_printcapname())
 #define PRINTCOMMAND(snum) (lp_printcommand(snum))
 #define PRINTERNAME(snum)  (lp_printername(snum))
-#define CAN_WRITE(cnum)    (OPEN_CNUM(cnum) && !Connections[cnum].read_only)
+#define CAN_WRITE(conn)    (OPEN_CNUM(conn) && !conn->read_only)
 #define VALID_SNUM(snum)   (lp_snum_ok(snum))
 #define GUEST_OK(snum)     (VALID_SNUM(snum) && lp_guest_ok(snum))
 #define GUEST_ONLY(snum)   (VALID_SNUM(snum) && lp_guest_only(snum))
 #define CAN_SETDIR(snum)   (!lp_no_set_dir(snum))
-#define CAN_PRINT(cnum)    (OPEN_CNUM(cnum) && lp_print_ok(SNUM(cnum)))
-#define POSTSCRIPT(cnum)   (OPEN_CNUM(cnum) && lp_postscript(SNUM(cnum)))
-#define MAP_HIDDEN(cnum)   (OPEN_CNUM(cnum) && lp_map_hidden(SNUM(cnum)))
-#define MAP_SYSTEM(cnum)   (OPEN_CNUM(cnum) && lp_map_system(SNUM(cnum)))
-#define MAP_ARCHIVE(cnum)   (OPEN_CNUM(cnum) && lp_map_archive(SNUM(cnum)))
-#define IS_HIDDEN_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].hide_list))
-#define IS_VETO_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].veto_list))
-#define IS_VETO_OPLOCK_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].veto_oplock_list))
+#define CAN_PRINT(conn)    ((conn) && lp_print_ok((conn)->service))
+#define MAP_HIDDEN(conn)   ((conn) && lp_map_hidden((conn)->service))
+#define MAP_SYSTEM(conn)   ((conn) && lp_map_system((conn)->service))
+#define MAP_ARCHIVE(conn)   ((conn) && lp_map_archive((conn)->service))
+#define IS_HIDDEN_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->hide_list))
+#define IS_VETO_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_list))
+#define IS_VETO_OPLOCK_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_oplock_list))
 
 #define SMBENCRYPT()       (lp_encrypted_passwords())
 
@@ -1228,7 +1240,11 @@ struct parm_struct
 #define ERRCMD 0xFF  /* Command was not in the "SMB" format. */
 
 #ifdef HAVE_STDARG_H
-int slprintf(char *str, int n, char *format, ...);
+int slprintf(char *str, int n, char *format, ...)
+#ifdef __GNUC__
+     __attribute__ ((format (printf, 3, 4)))
+#endif
+;
 #else
 int slprintf();
 #endif

@@ -248,8 +248,8 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
                   the NT password. */
     }
 
-    DEBUG(5, ("getsmbfilepwent: returning passwd entry for user %s, uid %d\n",
-			  user_name, uidval));
+    DEBUG(5,("getsmbfilepwent: returning passwd entry for user %s, uid %ld\n",
+	     user_name, uidval));
 
     if (*p == '[')
 	{

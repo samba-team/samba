@@ -61,9 +61,7 @@ int            locks_only  = 0;            /* Added by RJS */
 /* we need these because we link to locking*.o */
  void become_root(BOOL save_dir) {}
  void unbecome_root(BOOL restore_dir) {}
-connection_struct Connections[MAX_CONNECTIONS];
 files_struct Files[MAX_OPEN_FILES];
-struct current_user current_user;
 
 
 /* added by OH */

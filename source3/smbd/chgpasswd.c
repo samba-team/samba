@@ -80,7 +80,7 @@ static int findpty(char **slave)
 #else /* HAVE_GRANTPT */
   fstrcpy( line, "/dev/ptyXX" );
 
-  dirp = OpenDir(-1, "/dev", False);
+  dirp = OpenDir(NULL, "/dev", False);
   if (!dirp) return(-1);
   while ((dpname = ReadDirName(dirp)) != NULL) {
     if (strncmp(dpname, "pty", 3) == 0 && strlen(dpname) == 5) {

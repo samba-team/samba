@@ -22,7 +22,6 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
-extern connection_struct Connections[];
 
 /*
    This module implements directory related functions for Samba.
@@ -36,18 +35,17 @@ static uint32 dircounter = 0;
 #define NUMDIRPTRS 256
 
 
-static struct dptr_struct
-{
-  int pid;
-  int cnum;
-  uint32 lastused;
-  void *ptr;
-  BOOL valid;
-  BOOL finished;
-  BOOL expect_close;
-  char *wcard; /* Field only used for lanman2 trans2_findfirst/next searches */
-  uint16 attr; /* Field only used for lanman2 trans2_findfirst/next searches */
-  char *path;
+static struct dptr_struct {
+	int pid;
+	connection_struct *conn;
+	uint32 lastused;
+	void *ptr;
+	BOOL valid;
+	BOOL finished;
+	BOOL expect_close;
+	char *wcard; /* Field only used for trans2_ searches */
+	uint16 attr; /* Field only used for trans2_ searches */
+	char *path;
 }
 dirptrs[NUMDIRPTRS];
 
@@ -110,20 +108,20 @@ get the dir ptr for a dir index
 ****************************************************************************/
 static void *dptr_get(int key,uint32 lastused)
 {
-  struct dptr_struct *dp = &dirptrs[key];
+	struct dptr_struct *dp = &dirptrs[key];
 
-  if (dp->valid) {
-    if (lastused) dp->lastused = lastused;
-    if (!dp->ptr) {
-      if (dptrs_open >= MAX_OPEN_DIRECTORIES)
-	dptr_idleoldest();
-      DEBUG(4,("Reopening dptr key %d\n",key));
-      if ((dp->ptr = OpenDir(dp->cnum, dp->path, True)))
-	dptrs_open++;
-    }
-    return(dp->ptr);
-  }
-  return(NULL);
+	if (dp->valid) {
+		if (lastused) dp->lastused = lastused;
+		if (!dp->ptr) {
+			if (dptrs_open >= MAX_OPEN_DIRECTORIES)
+				dptr_idleoldest();
+			DEBUG(4,("Reopening dptr key %d\n",key));
+			if ((dp->ptr = OpenDir(dp->conn, dp->path, True)))
+				dptrs_open++;
+		}
+		return(dp->ptr);
+	}
+	return(NULL);
 }
 
 /****************************************************************************
@@ -217,22 +215,22 @@ void dptr_close(int key)
 /****************************************************************************
 close all dptrs for a cnum
 ****************************************************************************/
-void dptr_closecnum(int cnum)
+void dptr_closecnum(connection_struct *conn)
 {
   int i;
   for (i=0;i<NUMDIRPTRS;i++)
-    if (dirptrs[i].valid && dirptrs[i].cnum == cnum)
+    if (dirptrs[i].valid && dirptrs[i].conn == conn)
       dptr_close(i);
 }
 
 /****************************************************************************
 idle all dptrs for a cnum
 ****************************************************************************/
-void dptr_idlecnum(int cnum)
+void dptr_idlecnum(connection_struct *conn)
 {
   int i;
   for (i=0;i<NUMDIRPTRS;i++)
-    if (dirptrs[i].valid && dirptrs[i].cnum == cnum && dirptrs[i].ptr)
+    if (dirptrs[i].valid && dirptrs[i].conn == conn && dirptrs[i].ptr)
       dptr_idle(i);
 }
 
@@ -251,37 +249,37 @@ void dptr_closepath(char *path,int pid)
 /****************************************************************************
   start a directory listing
 ****************************************************************************/
-static BOOL start_dir(int cnum,char *directory)
+static BOOL start_dir(connection_struct *conn,char *directory)
 {
-  DEBUG(5,("start_dir cnum=%d dir=%s\n",cnum,directory));
+	DEBUG(5,("start_dir dir=%s\n",directory));
 
-  if (!check_name(directory,cnum))
-    return(False);
+	if (!check_name(directory,conn))
+		return(False);
   
-  if (! *directory)
-    directory = ".";
+	if (! *directory)
+		directory = ".";
 
-  Connections[cnum].dirptr = OpenDir(cnum, directory, True);
-  if (Connections[cnum].dirptr) {    
-    dptrs_open++;
-    string_set(&Connections[cnum].dirpath,directory);
-    return(True);
-  }
+	conn->dirptr = OpenDir(conn, directory, True);
+	if (conn->dirptr) {    
+		dptrs_open++;
+		string_set(&conn->dirpath,directory);
+		return(True);
+	}
   
-  return(False);
+	return(False);
 }
 
 
 /****************************************************************************
 create a new dir ptr
 ****************************************************************************/
-int dptr_create(int cnum,char *path, BOOL expect_close,int pid)
+int dptr_create(connection_struct *conn,char *path, BOOL expect_close,int pid)
 {
   int i;
   uint32 old;
   int oldi;
 
-  if (!start_dir(cnum,path))
+  if (!start_dir(conn,path))
     return(-2); /* Code to say use a unix error return code. */
 
   if (dptrs_open >= MAX_OPEN_DIRECTORIES)
@@ -325,11 +323,11 @@ int dptr_create(int cnum,char *path, BOOL expect_close,int pid)
   if (dirptrs[i].valid)
     dptr_close(i);
 
-  dirptrs[i].ptr = Connections[cnum].dirptr;
+  dirptrs[i].ptr = conn->dirptr;
   string_set(&dirptrs[i].path,path);
   dirptrs[i].lastused = dircounter++;
   dirptrs[i].finished = False;
-  dirptrs[i].cnum = cnum;
+  dirptrs[i].conn = conn;
   dirptrs[i].pid = pid;
   dirptrs[i].expect_close = expect_close;
   dirptrs[i].wcard = NULL; /* Only used in lanman2 searches */
@@ -357,7 +355,7 @@ BOOL dptr_fill(char *buf1,unsigned int key)
     return(False);
   }
   offset = TellDir(p);
-  DEBUG(6,("fill on key %d dirptr 0x%x now at %d\n",key,p,offset));
+  DEBUG(6,("fill on key %d dirptr 0x%x now at %d\n",key,(unsigned)p,offset));
   buf[0] = key;
   SIVAL(buf,1,offset | DPTR_MASK);
   return(True);
@@ -410,7 +408,7 @@ void *dptr_fetch_lanman2(int dptr_num)
 /****************************************************************************
 check a filetype for being valid
 ****************************************************************************/
-BOOL dir_check_ftype(int cnum,int mode,struct stat *st,int dirtype)
+BOOL dir_check_ftype(connection_struct *conn,int mode,struct stat *st,int dirtype)
 {
   if (((mode & ~dirtype) & (aHIDDEN | aSYSTEM | aDIR)) != 0)
     return False;
@@ -420,7 +418,7 @@ BOOL dir_check_ftype(int cnum,int mode,struct stat *st,int dirtype)
 /****************************************************************************
   get a directory entry
 ****************************************************************************/
-BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mode,time_t *date,BOOL check_descend)
+BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,int *size,int *mode,time_t *date,BOOL check_descend)
 {
   char *dname;
   BOOL found = False;
@@ -434,22 +432,22 @@ BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mo
 
   *path = *pathreal = *filename = 0;
 
-  isrootdir = (strequal(Connections[cnum].dirpath,"./") ||
-	       strequal(Connections[cnum].dirpath,".") ||
-	       strequal(Connections[cnum].dirpath,"/"));
+  isrootdir = (strequal(conn->dirpath,"./") ||
+	       strequal(conn->dirpath,".") ||
+	       strequal(conn->dirpath,"/"));
   
   needslash = 
-        ( Connections[cnum].dirpath[strlen(Connections[cnum].dirpath) -1] != '/');
+        ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
 
-  if (!Connections[cnum].dirptr)
+  if (!conn->dirptr)
     return(False);
   
   while (!found)
     {
-      dname = ReadDirName(Connections[cnum].dirptr);
+      dname = ReadDirName(conn->dirptr);
 
       DEBUG(6,("readdir on dirptr 0x%x now at offset %d\n",
-	    Connections[cnum].dirptr,TellDir(Connections[cnum].dirptr)));
+	       (unsigned)conn->dirptr,TellDir(conn->dirptr)));
       
       if (dname == NULL) 
 	return(False);
@@ -459,7 +457,7 @@ BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mo
       pstrcpy(filename,dname);      
 
       if ((strcmp(filename,mask) == 0) ||
-	  (name_map_mangle(filename,True,SNUM(cnum)) &&
+	  (name_map_mangle(filename,True,SNUM(conn)) &&
 	   mask_match(filename,mask,False,False)))
 	{
 	  if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
@@ -467,7 +465,7 @@ BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mo
 
 	  pstrcpy(fname,filename);
 	  *path = 0;
-	  pstrcpy(path,Connections[cnum].dirpath);
+	  pstrcpy(path,conn->dirpath);
           if(needslash)
   	    pstrcat(path,"/");
 	  pstrcpy(pathreal,path);
@@ -483,9 +481,9 @@ BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mo
 	      !strequal(fname,".") && !strequal(fname,".."))
 	    continue;
 	  
-	  *mode = dos_mode(cnum,pathreal,&sbuf);
+	  *mode = dos_mode(conn,pathreal,&sbuf);
 
-	  if (!dir_check_ftype(cnum,*mode,&sbuf,dirtype)) {
+	  if (!dir_check_ftype(conn,*mode,&sbuf,dirtype)) {
 	    DEBUG(5,("[%s] attribs didn't match %x\n",filename,dirtype));
 	    continue;
 	  }
@@ -517,7 +515,7 @@ typedef struct
 /*******************************************************************
 open a directory
 ********************************************************************/
-void *OpenDir(int cnum, char *name, BOOL use_veto)
+void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 {
   Dir *dirp;
   char *n;
@@ -538,7 +536,7 @@ void *OpenDir(int cnum, char *name, BOOL use_veto)
     int l = strlen(n)+1;
 
     /* If it's a vetoed file, pretend it doesn't even exist */
-    if (use_veto && IS_VETO_PATH(cnum, n)) continue;
+    if (use_veto && conn && IS_VETO_PATH(conn, n)) continue;
 
     if (used + l > dirp->mallocsize) {
       int s = MAX(used+l,used+2000);

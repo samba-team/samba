@@ -140,7 +140,7 @@ void lsa_io_obj_attr(char *desc,  LSA_OBJ_ATTR *attr, prs_struct *ps, int depth)
 
 	if (attr->len != ps->offset - start)
 	{
-		DEBUG(3,("lsa_io_obj_attr: length %lx does not match size %lx\n",
+		DEBUG(3,("lsa_io_obj_attr: length %x does not match size %x\n",
 		         attr->len, ps->offset - start));
 	}
 }

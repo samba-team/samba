@@ -65,7 +65,7 @@ extern int dcelogin_atmost_once;
  */
 extern DOM_SID global_machine_sid;
 
-connection_struct Connections[MAX_CONNECTIONS];
+static connection_struct Connections[MAX_CONNECTIONS];
 files_struct Files[MAX_FNUMS];
 
 /*
@@ -116,8 +116,6 @@ extern int extra_time_offset;
 
 extern pstring myhostname;
 
-static int find_free_connection(int hash);
-
 /* for readability... */
 #define IS_DOS_READONLY(test_mode) (((test_mode) & aRONLY) != 0)
 #define IS_DOS_DIR(test_mode) (((test_mode) & aDIR) != 0)
@@ -156,7 +154,7 @@ void  killkids(void)
          Then apply create mask,
          then add force bits.
 ****************************************************************************/
-mode_t unix_mode(int cnum,int dosmode)
+mode_t unix_mode(connection_struct *conn,int dosmode)
 {
   mode_t result = (S_IRUSR | S_IRGRP | S_IROTH);
 
@@ -168,23 +166,23 @@ mode_t unix_mode(int cnum,int dosmode)
        can always create a file in a read-only directory. */
     result |= (S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH | S_IWUSR);
     /* Apply directory mask */
-    result &= lp_dir_mode(SNUM(cnum));
+    result &= lp_dir_mode(SNUM(conn));
     /* Add in force bits */
-    result |= lp_force_dir_mode(SNUM(cnum));
+    result |= lp_force_dir_mode(SNUM(conn));
   } else { 
-    if (MAP_ARCHIVE(cnum) && IS_DOS_ARCHIVE(dosmode))
+    if (lp_map_archive(SNUM(conn)) && IS_DOS_ARCHIVE(dosmode))
       result |= S_IXUSR;
 
-    if (MAP_SYSTEM(cnum) && IS_DOS_SYSTEM(dosmode))
+    if (lp_map_system(SNUM(conn)) && IS_DOS_SYSTEM(dosmode))
       result |= S_IXGRP;
  
-    if (MAP_HIDDEN(cnum) && IS_DOS_HIDDEN(dosmode))
+    if (lp_map_hidden(SNUM(conn)) && IS_DOS_HIDDEN(dosmode))
       result |= S_IXOTH;  
  
     /* Apply mode mask */
-    result &= lp_create_mode(SNUM(cnum));
+    result &= lp_create_mode(SNUM(conn));
     /* Add in force bits */
-    result |= lp_force_create_mode(SNUM(cnum));
+    result |= lp_force_create_mode(SNUM(conn));
   }
   return(result);
 }
@@ -193,16 +191,16 @@ mode_t unix_mode(int cnum,int dosmode)
 /****************************************************************************
   change a unix mode to a dos mode
 ****************************************************************************/
-int dos_mode(int cnum,char *path,struct stat *sbuf)
+int dos_mode(connection_struct *conn,char *path,struct stat *sbuf)
 {
   int result = 0;
   extern struct current_user current_user;
 
-  DEBUG(8,("dos_mode: %d %s\n", cnum, path));
+  DEBUG(8,("dos_mode: %s\n", path));
 
-  if (CAN_WRITE(cnum) && !lp_alternate_permissions(SNUM(cnum))) {
+  if (CAN_WRITE(conn) && !lp_alternate_permissions(SNUM(conn))) {
     if (!((sbuf->st_mode & S_IWOTH) ||
-	  Connections[cnum].admin_user ||
+	  conn->admin_user ||
 	  ((sbuf->st_mode & S_IWUSR) && current_user.uid==sbuf->st_uid) ||
 	  ((sbuf->st_mode & S_IWGRP) && 
 	   in_group(sbuf->st_gid,current_user.gid,
@@ -213,13 +211,13 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
       result |= aRONLY;
   }
 
-  if (MAP_ARCHIVE(cnum) && ((sbuf->st_mode & S_IXUSR) != 0))
+  if (MAP_ARCHIVE(conn) && ((sbuf->st_mode & S_IXUSR) != 0))
     result |= aARCH;
 
-  if (MAP_SYSTEM(cnum) && ((sbuf->st_mode & S_IXGRP) != 0))
+  if (MAP_SYSTEM(conn) && ((sbuf->st_mode & S_IXGRP) != 0))
     result |= aSYSTEM;
 
-  if (MAP_HIDDEN(cnum) && ((sbuf->st_mode & S_IXOTH) != 0))
+  if (MAP_HIDDEN(conn) && ((sbuf->st_mode & S_IXOTH) != 0))
     result |= aHIDDEN;   
   
   if (S_ISDIR(sbuf->st_mode))
@@ -233,7 +231,7 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
 #endif
 
   /* hide files with a name starting with a . */
-  if (lp_hide_dot_files(SNUM(cnum)))
+  if (lp_hide_dot_files(SNUM(conn)))
     {
       char *p = strrchr(path,'/');
       if (p)
@@ -247,7 +245,7 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
 
   /* Optimization : Only call is_hidden_path if it's not already
      hidden. */
-  if (!(result & aHIDDEN) && IS_HIDDEN_PATH(cnum,path))
+  if (!(result & aHIDDEN) && IS_HIDDEN_PATH(conn,path))
   {
     result |= aHIDDEN;
   }
@@ -268,7 +266,7 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
 /*******************************************************************
 chmod a file - but preserve some bits
 ********************************************************************/
-int dos_chmod(int cnum,char *fname,int dosmode,struct stat *st)
+int dos_chmod(connection_struct *conn,char *fname,int dosmode,struct stat *st)
 {
   struct stat st1;
   int mask=0;
@@ -282,9 +280,9 @@ int dos_chmod(int cnum,char *fname,int dosmode,struct stat *st)
 
   if (S_ISDIR(st->st_mode)) dosmode |= aDIR;
 
-  if (dos_mode(cnum,fname,st) == dosmode) return(0);
+  if (dos_mode(conn,fname,st) == dosmode) return(0);
 
-  unixmode = unix_mode(cnum,dosmode);
+  unixmode = unix_mode(conn,dosmode);
 
   /* preserve the s bits */
   mask |= (S_ISUID | S_ISGID);
@@ -295,9 +293,9 @@ int dos_chmod(int cnum,char *fname,int dosmode,struct stat *st)
 #endif
 
   /* possibly preserve the x bits */
-  if (!MAP_ARCHIVE(cnum)) mask |= S_IXUSR;
-  if (!MAP_SYSTEM(cnum)) mask |= S_IXGRP;
-  if (!MAP_HIDDEN(cnum)) mask |= S_IXOTH;
+  if (!MAP_ARCHIVE(conn)) mask |= S_IXUSR;
+  if (!MAP_SYSTEM(conn)) mask |= S_IXGRP;
+  if (!MAP_HIDDEN(conn)) mask |= S_IXOTH;
 
   unixmode |= (st->st_mode & mask);
 
@@ -323,7 +321,7 @@ Wrapper around sys_utime that possibly allows DOS semantics rather
 than POSIX.
 *******************************************************************/
 
-int file_utime(int cnum, char *fname, struct utimbuf *times)
+int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 {
   extern struct current_user current_user;
   struct stat sb;
@@ -337,7 +335,7 @@ int file_utime(int cnum, char *fname, struct utimbuf *times)
   if((errno != EPERM) && (errno != EACCES))
     return -1;
 
-  if(!lp_dos_filetimes(SNUM(cnum)))
+  if(!lp_dos_filetimes(SNUM(conn)))
     return -1;
 
   /* We have permission (given by the Samba admin) to
@@ -350,9 +348,9 @@ int file_utime(int cnum, char *fname, struct utimbuf *times)
     return -1;
 
   /* Check if we have write access. */
-  if (CAN_WRITE(cnum)) {
+  if (CAN_WRITE(conn)) {
 	  if (((sb.st_mode & S_IWOTH) ||
-	       Connections[cnum].admin_user ||
+	       conn->admin_user ||
 	       ((sb.st_mode & S_IWUSR) && current_user.uid==sb.st_uid) ||
 	       ((sb.st_mode & S_IWGRP) &&
 		in_group(sb.st_gid,current_user.gid,
@@ -371,7 +369,7 @@ int file_utime(int cnum, char *fname, struct utimbuf *times)
 Change a filetime - possibly allowing DOS semantics.
 *******************************************************************/
 
-BOOL set_filetime(int cnum, char *fname, time_t mtime)
+BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime)
 {
   struct utimbuf times;
 
@@ -379,7 +377,7 @@ BOOL set_filetime(int cnum, char *fname, time_t mtime)
 
   times.modtime = times.actime = mtime;
 
-  if (file_utime(cnum, fname, &times)) {
+  if (file_utime(conn, fname, &times)) {
     DEBUG(4,("set_filetime(%s) failed: %s\n",fname,strerror(errno)));
   }
   
@@ -445,7 +443,7 @@ scan a directory to find a filename, matching without case sensitivity
 
 If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
-static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
+static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache)
 {
   void *cur_dir;
   char *dname;
@@ -458,7 +456,7 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
   if (*path == 0)
     path = ".";
 
-  if (docache && (dname = DirCacheCheck(path,name,SNUM(cnum)))) {
+  if (docache && (dname = DirCacheCheck(path,name,SNUM(conn)))) {
     pstrcpy(name, dname);	
     return(True);
   }      
@@ -474,7 +472,7 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
     mangled = !check_mangled_cache( name );
 
   /* open the directory */
-  if (!(cur_dir = OpenDir(cnum, path, True))) 
+  if (!(cur_dir = OpenDir(conn, path, True))) 
     {
       DEBUG(3,("scan dir didn't open dir [%s]\n",path));
       return(False);
@@ -488,13 +486,13 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
 	continue;
 
       pstrcpy(name2,dname);
-      if (!name_map_mangle(name2,False,SNUM(cnum))) continue;
+      if (!name_map_mangle(name2,False,SNUM(conn))) continue;
 
       if ((mangled && mangled_equal(name,name2))
 	  || fname_equal(name, name2))
 	{
 	  /* we've found the file, change it's name and return */
-	  if (docache) DirCacheAdd(path,name,dname,SNUM(cnum));
+	  if (docache) DirCacheAdd(path,name,dname,SNUM(conn));
 	  pstrcpy(name, dname);
 	  CloseDir(cur_dir);
 	  return(True);
@@ -526,7 +524,7 @@ used to pick the correct error code to return between ENOENT and ENOTDIR
 as Windows applications depend on ERRbadpath being returned if a component
 of a pathname does not exist.
 ****************************************************************************/
-BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_path)
+BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, BOOL *bad_path)
 {
   struct stat st;
   char *start, *end;
@@ -563,7 +561,7 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_pa
     strnorm(name);
 
   /* check if it's a printer file */
-  if (Connections[cnum].printer)
+  if (conn->printer)
     {
       if ((! *name) || strchr(name,'/') || !is_8_3(name, True))
 	{
@@ -584,7 +582,7 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_pa
 
   saved_errno = errno;
 
-  DEBUG(5,("unix_convert(%s,%d)\n",name,cnum));
+  DEBUG(5,("unix_convert(%s)\n",name));
 
   /* a special case - if we don't have any mangling chars and are case
      sensitive then searching won't help */
@@ -637,7 +635,7 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_pa
 
 	  /* try to find this part of the path in the directory */
 	  if (strchr(start,'?') || strchr(start,'*') ||
-	      !scan_directory(dirpath, start, cnum, end?True:False))
+	      !scan_directory(dirpath, start, conn, end?True:False))
 	    {
 	      if (end) 
 		{
@@ -701,26 +699,25 @@ This is called by every routine before it allows an operation on a filename.
 It does any final confirmation necessary to ensure that the filename is
 a valid one for the user to access.
 ****************************************************************************/
-BOOL check_name(char *name,int cnum)
+BOOL check_name(char *name,connection_struct *conn)
 {
   BOOL ret;
 
   errno = 0;
 
-  if( IS_VETO_PATH(cnum, name)) 
-    {
-      DEBUG(5,("file path name %s vetoed\n",name));
-      return(0);
-    }
+  if (IS_VETO_PATH(conn, name))  {
+	  DEBUG(5,("file path name %s vetoed\n",name));
+	  return(0);
+  }
 
-  ret = reduce_name(name,Connections[cnum].connectpath,lp_widelinks(SNUM(cnum)));
+  ret = reduce_name(name,conn->connectpath,lp_widelinks(SNUM(conn)));
 
   /* Check if we are allowing users to follow symlinks */
   /* Patch from David Clerc <David.Clerc@cui.unige.ch>
      University of Geneva */
 
 #ifdef S_ISLNK
-  if (!lp_symlinks(SNUM(cnum)))
+  if (!lp_symlinks(SNUM(conn)))
     {
       struct stat statbuf;
       if ( (sys_lstat(name,&statbuf) != -1) &&
@@ -1037,7 +1034,8 @@ static BOOL check_access_allowed_for_current_user( char *fname, int accmode )
 /****************************************************************************
 open a file
 ****************************************************************************/
-static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *sbuf)
+static void open_file(int fnum,connection_struct *conn,
+		      char *fname1,int flags,int mode, struct stat *sbuf)
 {
   extern struct current_user current_user;
   pstring fname;
@@ -1065,14 +1063,13 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
    * JRA.
    */
 
-  if (!CAN_WRITE(cnum) && !Connections[cnum].printer) {
+  if (conn->read_only && !conn->printer) {
     /* It's a read-only share - fail if we wanted to write. */
     if(accmode != O_RDONLY) {
       DEBUG(3,("Permission denied opening %s\n",fname));
       check_for_pipe(fname);
       return;
-    }
-    else if(flags & O_CREAT) {
+    } else if(flags & O_CREAT) {
       /* We don't want to write - but we must make sure that O_CREAT
          doesn't create the file if we have write access into the
          directory.
@@ -1083,8 +1080,9 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
 
   /* this handles a bug in Win95 - it doesn't say to create the file when it 
      should */
-  if (Connections[cnum].printer)
-    flags |= O_CREAT;
+  if (conn->printer) {
+	  flags |= O_CREAT;
+  }
 
 /*
   if (flags == O_WRONLY)
@@ -1212,7 +1210,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
   }
 
   if ((fd_ptr->fd >=0) && 
-      Connections[cnum].printer && lp_minprintspace(SNUM(cnum))) {
+      conn->printer && lp_minprintspace(SNUM(conn))) {
     pstring dname;
     int dum1,dum2,dum3;
     char *p;
@@ -1220,7 +1218,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
     p = strrchr(dname,'/');
     if (p) *p = 0;
     if (sys_disk_free(dname,&dum1,&dum2,&dum3) < 
-	lp_minprintspace(SNUM(cnum))) {
+	lp_minprintspace(SNUM(conn))) {
       fd_attempt_close(fd_ptr);
       fsp->fd_ptr = 0;
       if(fd_ptr->ref_count == 0)
@@ -1260,7 +1258,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
     fd_ptr->inode = (uint32)sbuf->st_ino;
 
     fsp->fd_ptr = fd_ptr;
-    Connections[cnum].num_files_open++;
+    conn->num_files_open++;
     fsp->mode = sbuf->st_mode;
     GetTimeOfDay(&fsp->open_time);
     fsp->vuid = current_user.vuid;
@@ -1273,12 +1271,12 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
     fsp->can_read = ((flags & O_WRONLY)==0);
     fsp->can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
     fsp->share_mode = 0;
-    fsp->print_file = Connections[cnum].printer;
+    fsp->print_file = conn->printer;
     fsp->modified = False;
     fsp->granted_oplock = False;
     fsp->sent_oplock_break = False;
     fsp->is_directory = False;
-    fsp->cnum = cnum;
+    fsp->conn = conn;
     /*
      * Note that the file name here is the *untranslated* name
      * ie. it is still in the DOS codepage sent from the client.
@@ -1286,7 +1284,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
      * functions which will do the dos_to_unix translation before
      * mapping into a UNIX filename. JRA.
      */
-    string_set(&fsp->name,fname);
+    string_set(&fsp->fsp_name,fname);
     fsp->wbmpx_ptr = NULL;      
 
     /*
@@ -1296,32 +1294,30 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
      * This has a similar effect as CtrlD=0 in WIN.INI file.
      * tim@fsg.com 09/06/94
      */
-    if (fsp->print_file && POSTSCRIPT(cnum) && fsp->can_write) 
-    {
-      DEBUG(3,("Writing postscript line\n"));
-      write_file(fnum,"%!\n",3);
+    if (fsp->print_file && lp_postscript(SNUM(conn)) && fsp->can_write) {
+	    DEBUG(3,("Writing postscript line\n"));
+	    write_file(fnum,"%!\n",3);
     }
       
-    DEBUG( 2, ( "%s opened file %s read=%s write=%s (numopen=%d fnum=%d)\n",
-          *sesssetup_user ? sesssetup_user : Connections[cnum].user,fname,
-          BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
-          Connections[cnum].num_files_open,fnum ) );
+    DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d fnum=%d)\n",
+	     *sesssetup_user ? sesssetup_user : conn->user,fname,
+	     BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
+	     conn->num_files_open,fnum));
 
   }
 
 #if WITH_MMAP
   /* mmap it if read-only */
-  if (!fsp->can_write)
-  {
-    fsp->mmap_size = file_size(fname);
-    fsp->mmap_ptr = (char *)mmap(NULL,fsp->mmap_size,
-                                 PROT_READ,MAP_SHARED,fsp->fd_ptr->fd,0);
+  if (!fsp->can_write) {
+	  fsp->mmap_size = file_size(fname);
+	  fsp->mmap_ptr = (char *)mmap(NULL,fsp->mmap_size,
+				       PROT_READ,MAP_SHARED,fsp->fd_ptr->fd,0);
 
-    if (fsp->mmap_ptr == (char *)-1 || !fsp->mmap_ptr)
-    {
-      DEBUG(3,("Failed to mmap() %s - %s\n",fname,strerror(errno)));
-      fsp->mmap_ptr = NULL;
-    }
+	  if (fsp->mmap_ptr == (char *)-1 || !fsp->mmap_ptr) {
+		  DEBUG(3,("Failed to mmap() %s - %s\n",
+			   fname,strerror(errno)));
+		  fsp->mmap_ptr = NULL;
+	  }
   }
 #endif
 }
@@ -1329,10 +1325,10 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
 /*******************************************************************
 sync a file
 ********************************************************************/
-void sync_file(int cnum, int fnum)
+void sync_file(connection_struct *conn, int fnum)
 {
 #ifdef HAVE_FSYNC
-    if(lp_strict_sync(SNUM(cnum)))
+    if(lp_strict_sync(SNUM(conn)))
       fsync(Files[fnum].fd_ptr->fd);
 #endif
 }
@@ -1340,21 +1336,21 @@ void sync_file(int cnum, int fnum)
 /****************************************************************************
 run a file if it is a magic script
 ****************************************************************************/
-static void check_magic(int fnum,int cnum)
+static void check_magic(int fnum,connection_struct *conn)
 {
-  if (!*lp_magicscript(SNUM(cnum)))
+  if (!*lp_magicscript(SNUM(conn)))
     return;
 
-  DEBUG(5,("checking magic for %s\n",Files[fnum].name));
+  DEBUG(5,("checking magic for %s\n",Files[fnum].fsp_name));
 
   {
     char *p;
-    if (!(p = strrchr(Files[fnum].name,'/')))
-      p = Files[fnum].name;
+    if (!(p = strrchr(Files[fnum].fsp_name,'/')))
+      p = Files[fnum].fsp_name;
     else
       p++;
 
-    if (!strequal(lp_magicscript(SNUM(cnum)),p))
+    if (!strequal(lp_magicscript(SNUM(conn)),p))
       return;
   }
 
@@ -1362,10 +1358,10 @@ static void check_magic(int fnum,int cnum)
     int ret;
     pstring magic_output;
     pstring fname;
-    pstrcpy(fname,Files[fnum].name);
+    pstrcpy(fname,Files[fnum].fsp_name);
 
-    if (*lp_magicoutput(SNUM(cnum)))
-      pstrcpy(magic_output,lp_magicoutput(SNUM(cnum)));
+    if (*lp_magicoutput(SNUM(conn)))
+      pstrcpy(magic_output,lp_magicoutput(SNUM(conn)));
     else
       slprintf(magic_output,sizeof(fname)-1, "%s.out",fname);
 
@@ -1379,28 +1375,25 @@ static void check_magic(int fnum,int cnum)
 /****************************************************************************
   Common code to close a file or a directory.
 ****************************************************************************/
-    
 static void close_filestruct(files_struct *fsp)
 {   
-  int cnum = fsp->cnum;
+	connection_struct *conn = fsp->conn;
     
-  fsp->reserved = False; 
-  fsp->open = False;
-  fsp->is_directory = False; 
+	fsp->reserved = False; 
+	fsp->open = False;
+	fsp->is_directory = False; 
     
-  Connections[cnum].num_files_open--;
-  if(fsp->wbmpx_ptr)
-  {  
-    free((char *)fsp->wbmpx_ptr);
-    fsp->wbmpx_ptr = NULL; 
-  }  
+	conn->num_files_open--;
+	if(fsp->wbmpx_ptr) {  
+		free((char *)fsp->wbmpx_ptr);
+		fsp->wbmpx_ptr = NULL; 
+	}  
      
 #if WITH_MMAP
-  if(fsp->mmap_ptr) 
-  {
-    munmap(fsp->mmap_ptr,fsp->mmap_size);
-    fsp->mmap_ptr = NULL;
-  }  
+	if(fsp->mmap_ptr) {
+		munmap(fsp->mmap_ptr,fsp->mmap_size);
+		fsp->mmap_ptr = NULL;
+	}  
 #endif 
 }    
 
@@ -1412,55 +1405,54 @@ static void close_filestruct(files_struct *fsp)
  the closing of the connection. In the latter case printing and
  magic scripts are not run.
 ****************************************************************************/
-
 void close_file(int fnum, BOOL normal_close)
 {
-  files_struct *fs_p = &Files[fnum];
-  int cnum = fs_p->cnum;
-  uint32 dev = fs_p->fd_ptr->dev;
-  uint32 inode = fs_p->fd_ptr->inode;
-  int token;
+	files_struct *fs_p = &Files[fnum];
+	uint32 dev = fs_p->fd_ptr->dev;
+	uint32 inode = fs_p->fd_ptr->inode;
+	int token;
+	connection_struct *conn = fs_p->conn;
 
-  close_filestruct(fs_p);
+	close_filestruct(fs_p);
 
 #if USE_READ_PREDICTION
-  invalidate_read_prediction(fs_p->fd_ptr->fd);
+	invalidate_read_prediction(fs_p->fd_ptr->fd);
 #endif
 
-  if (lp_share_modes(SNUM(cnum)))
-  {
-    lock_share_entry( cnum, dev, inode, &token);
-    del_share_mode(token, fnum);
-  }
+	if (lp_share_modes(SNUM(conn))) {
+		lock_share_entry(conn, dev, inode, &token);
+		del_share_mode(token, fnum);
+	}
 
-  fd_attempt_close(fs_p->fd_ptr);
+	fd_attempt_close(fs_p->fd_ptr);
 
-  if (lp_share_modes(SNUM(cnum)))
-    unlock_share_entry( cnum, dev, inode, token);
+	if (lp_share_modes(SNUM(conn)))
+		unlock_share_entry(conn, dev, inode, token);
 
-  /* NT uses smbclose to start a print - weird */
-  if (normal_close && fs_p->print_file)
-    print_file(fnum);
+	/* NT uses smbclose to start a print - weird */
+	if (normal_close && fs_p->print_file)
+		print_file(conn, fs_p);
 
-  /* check for magic scripts */
-  if (normal_close)
-    check_magic(fnum,cnum);
+	/* check for magic scripts */
+	if (normal_close) {
+		check_magic(fnum,conn);
+	}
 
-  if(fs_p->granted_oplock == True)
-    global_oplocks_open--;
+	if(fs_p->granted_oplock == True)
+		global_oplocks_open--;
 
-  fs_p->sent_oplock_break = False;
+	fs_p->sent_oplock_break = False;
 
-  DEBUG( 2, ( "%s closed file %s (numopen=%d)\n",
-	      Connections[cnum].user,fs_p->name,
-	      Connections[cnum].num_files_open ) );
+	DEBUG(2,("%s closed file %s (numopen=%d)\n",
+		 conn->user,fs_p->fsp_name,
+		 conn->num_files_open));
 
-  if (fs_p->name) {
-	  string_free(&fs_p->name);
-  }
+	if (fs_p->fsp_name) {
+		string_free(&fs_p->fsp_name);
+	}
 
-  /* we will catch bugs faster by zeroing this structure */
-  memset(fs_p, 0, sizeof(*fs_p));
+	/* we will catch bugs faster by zeroing this structure */
+	memset(fs_p, 0, sizeof(*fs_p));
 }
 
 /****************************************************************************
@@ -1482,8 +1474,8 @@ void close_directory(int fnum)
    */
   close_filestruct(fsp);
 
-  if (fsp->name)
-    string_free(&fsp->name);
+  if (fsp->fsp_name)
+    string_free(&fsp->fsp_name);
 
   /* we will catch bugs faster by zeroing this structure */
   memset(fsp, 0, sizeof(*fsp));
@@ -1492,83 +1484,81 @@ void close_directory(int fnum)
 /****************************************************************************
  Open a directory from an NT SMB call.
 ****************************************************************************/
-
-int open_directory(int fnum,int cnum,char *fname, int smb_ofun, int unixmode, int *action)
+int open_directory(int fnum,connection_struct *conn,
+		   char *fname, int smb_ofun, int unixmode, int *action)
 {
-  extern struct current_user current_user;
-  files_struct *fsp = &Files[fnum];
-  struct stat st;
+	extern struct current_user current_user;
+	files_struct *fsp = &Files[fnum];
+	struct stat st;
 
-  if (smb_ofun & 0x10) {
-    /*
-     * Create the directory.
-     */
+	if (smb_ofun & 0x10) {
+		/*
+		 * Create the directory.
+		 */
 
-    if(sys_mkdir(fname, unixmode) < 0) {
-      DEBUG(0,("open_directory: unable to create %s. Error was %s\n",
-            fname, strerror(errno) ));
-      return -1;
-    }
+		if(sys_mkdir(fname, unixmode) < 0) {
+			DEBUG(0,("open_directory: unable to create %s. Error was %s\n",
+				 fname, strerror(errno) ));
+			return -1;
+		}
 
-    *action = FILE_WAS_CREATED;
+		*action = FILE_WAS_CREATED;
+	} else {
+		/*
+		 * Check that it *was* a directory.
+		 */
 
-  } else {
+		if(sys_stat(fname, &st) < 0) {
+			DEBUG(0,("open_directory: unable to stat name = %s. Error was %s\n",
+				 fname, strerror(errno) ));
+			return -1;
+		}
 
-    /*
-     * Check that it *was* a directory.
-     */
+		if(!S_ISDIR(st.st_mode)) {
+			DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
+			return -1;
+		}
+		*action = FILE_WAS_OPENED;
+	}
+	
+	DEBUG(5,("open_directory: opening directory %s, fnum = %d\n",
+		 fname, fnum ));
 
-    if(sys_stat(fname, &st) < 0) {
-      DEBUG(0,("open_directory: unable to stat name = %s. Error was %s\n",
-            fname, strerror(errno) ));
-      return -1;
-    }
+	/*
+	 * Setup the files_struct for it.
+	 */
+	
+	fsp->fd_ptr = NULL;
+	conn->num_files_open++;
+	fsp->mode = 0;
+	GetTimeOfDay(&fsp->open_time);
+	fsp->vuid = current_user.vuid;
+	fsp->size = 0;
+	fsp->pos = -1;
+	fsp->open = True;
+	fsp->mmap_ptr = NULL;
+	fsp->mmap_size = 0;
+	fsp->can_lock = True;
+	fsp->can_read = False;
+	fsp->can_write = False;
+	fsp->share_mode = 0;
+	fsp->print_file = False;
+	fsp->modified = False;
+	fsp->granted_oplock = False;
+	fsp->sent_oplock_break = False;
+	fsp->is_directory = True;
+	fsp->conn = conn;
+	/*
+	 * Note that the file name here is the *untranslated* name
+	 * ie. it is still in the DOS codepage sent from the client.
+	 * All use of this filename will pass though the sys_xxxx
+	 * functions which will do the dos_to_unix translation before
+	 * mapping into a UNIX filename. JRA.
+	 */
+	string_set(&fsp->fsp_name,fname);
+	fsp->wbmpx_ptr = NULL;
 
-    if(!S_ISDIR(st.st_mode)) {
-      DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
-      return -1;
-    }
-    *action = FILE_WAS_OPENED;
-  }
-
-  DEBUG(5,("open_directory: opening directory %s, fnum = %d\n",
-        fname, fnum ));
-
-  /*
-   * Setup the files_struct for it.
-   */
-
-  fsp->fd_ptr = NULL;
-  Connections[cnum].num_files_open++;
-  fsp->mode = 0;
-  GetTimeOfDay(&fsp->open_time);
-  fsp->vuid = current_user.vuid;
-  fsp->size = 0;
-  fsp->pos = -1;
-  fsp->open = True;
-  fsp->mmap_ptr = NULL;
-  fsp->mmap_size = 0;
-  fsp->can_lock = True;
-  fsp->can_read = False;
-  fsp->can_write = False;
-  fsp->share_mode = 0;
-  fsp->print_file = False;
-  fsp->modified = False;
-  fsp->granted_oplock = False;
-  fsp->sent_oplock_break = False;
-  fsp->is_directory = True;
-  fsp->cnum = cnum;
-  /*
-   * Note that the file name here is the *untranslated* name
-   * ie. it is still in the DOS codepage sent from the client.
-   * All use of this filename will pass though the sys_xxxx
-   * functions which will do the dos_to_unix translation before
-   * mapping into a UNIX filename. JRA.
-   */
-  string_set(&fsp->name,fname);
-  fsp->wbmpx_ptr = NULL;
-
-  return 0;
+	return 0;
 }
 
 enum {AFAIL,AREAD,AWRITE,AALL};
@@ -1628,7 +1618,7 @@ static int access_table(int new_deny,int old_deny,int old_mode,
 check if the share mode on a file allows it to be deleted or unlinked
 return True if sharing doesn't prevent the operation
 ********************************************************************/
-BOOL check_file_sharing(int cnum,char *fname, BOOL rename_op)
+BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
 {
   int i;
   int ret = False;
@@ -1639,7 +1629,7 @@ BOOL check_file_sharing(int cnum,char *fname, BOOL rename_op)
   int pid = getpid();
   uint32 dev, inode;
 
-  if(!lp_share_modes(SNUM(cnum)))
+  if(!lp_share_modes(SNUM(conn)))
     return True;
 
   if (sys_stat(fname,&sbuf) == -1) return(True);
@@ -1647,8 +1637,8 @@ BOOL check_file_sharing(int cnum,char *fname, BOOL rename_op)
   dev = (uint32)sbuf.st_dev;
   inode = (uint32)sbuf.st_ino;
 
-  lock_share_entry(cnum, dev, inode, &token);
-  num_share_modes = get_share_modes(cnum, token, dev, inode, &old_shares);
+  lock_share_entry(conn, dev, inode, &token);
+  num_share_modes = get_share_modes(conn, token, dev, inode, &old_shares);
 
   /*
    * Check if the share modes will give us access.
@@ -1707,7 +1697,7 @@ batch oplocked file %s, dev = %x, inode = %x\n", fname, dev, inode));
 dev = %x, inode = %x\n", share_entry->op_type, fname, dev, inode));
 
             /* Oplock break.... */
-            unlock_share_entry(cnum, dev, inode, token);
+            unlock_share_entry(conn, dev, inode, token);
             if(request_oplock_break(share_entry, dev, inode) == False)
             {
               free((char *)old_shares);
@@ -1715,7 +1705,7 @@ dev = %x, inode = %x\n", share_entry->op_type, fname, dev, inode));
 dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
               return False;
             }
-            lock_share_entry(cnum, dev, inode, &token);
+            lock_share_entry(conn, dev, inode, &token);
             broke_oplock = True;
             break;
           }
@@ -1731,7 +1721,7 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
       if(broke_oplock)
       {
         free((char *)old_shares);
-        num_share_modes = get_share_modes(cnum, token, dev, inode, &old_shares);
+        num_share_modes = get_share_modes(conn, token, dev, inode, &old_shares);
       }
     } while(broke_oplock);
   }
@@ -1744,7 +1734,7 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
 
 free_and_exit:
 
-  unlock_share_entry(cnum, dev, inode, token);
+  unlock_share_entry(conn, dev, inode, token);
   if(old_shares != NULL)
     free((char *)old_shares);
   return(ret);
@@ -1755,17 +1745,17 @@ free_and_exit:
   Helper for open_file_shared. 
   Truncate a file after checking locking; close file if locked.
   **************************************************************************/
-static void truncate_unless_locked(int fnum, int cnum, int token, 
+static void truncate_unless_locked(int fnum, connection_struct *conn, int token, 
 				   BOOL *share_locked)
 {
   files_struct *fsp = &Files[fnum];
 
   if (fsp->can_write){
-    if (is_locked(fnum,cnum,0x3FFFFFFF,0,F_WRLCK)){
+    if (is_locked(fnum,conn,0x3FFFFFFF,0,F_WRLCK)){
       /* If share modes are in force for this connection we
          have the share entry locked. Unlock it before closing. */
-      if (*share_locked && lp_share_modes(SNUM(cnum)))
-        unlock_share_entry( cnum, fsp->fd_ptr->dev, 
+      if (*share_locked && lp_share_modes(SNUM(conn)))
+        unlock_share_entry( conn, fsp->fd_ptr->dev, 
                             fsp->fd_ptr->inode, token);
       close_file(fnum,False);   
       /* Share mode no longer locked. */
@@ -1823,7 +1813,7 @@ int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
 /****************************************************************************
 open a file with a share mode
 ****************************************************************************/
-void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
+void open_file_shared(int fnum,connection_struct *conn,char *fname,int share_mode,int ofun,
 		      int mode,int oplock_request, int *Access,int *action)
 {
   files_struct *fs_p = &Files[fnum];
@@ -1894,7 +1884,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 #endif /* O_SYNC */
   
   if (flags != O_RDONLY && file_existed && 
-      (!CAN_WRITE(cnum) || IS_DOS_READONLY(dos_mode(cnum,fname,&sbuf)))) 
+      (!CAN_WRITE(conn) || IS_DOS_READONLY(dos_mode(conn,fname,&sbuf)))) 
   {
     if (!fcbopen) 
     {
@@ -1913,7 +1903,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 
   if (deny_mode == DENY_FCB) deny_mode = DENY_DOS;
 
-  if (lp_share_modes(SNUM(cnum))) 
+  if (lp_share_modes(SNUM(conn))) 
   {
     int i;
     share_mode_entry *old_shares = 0;
@@ -1922,9 +1912,9 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
     {
       dev = (uint32)sbuf.st_dev;
       inode = (uint32)sbuf.st_ino;
-      lock_share_entry(cnum, dev, inode, &token);
+      lock_share_entry(conn, dev, inode, &token);
       share_locked = True;
-      num_share_modes = get_share_modes(cnum, token, dev, inode, &old_shares);
+      num_share_modes = get_share_modes(conn, token, dev, inode, &old_shares);
     }
 
     /*
@@ -1957,7 +1947,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 dev = %x, inode = %x\n", share_entry->op_type, fname, dev, inode));
 
             /* Oplock break.... */
-            unlock_share_entry(cnum, dev, inode, token);
+            unlock_share_entry(conn, dev, inode, token);
             if(request_oplock_break(share_entry, dev, inode) == False)
             {
               free((char *)old_shares);
@@ -1968,7 +1958,7 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
               unix_ERR_code = ERRbadshare;
               return;
             }
-            lock_share_entry(cnum, dev, inode, &token);
+            lock_share_entry(conn, dev, inode, &token);
             broke_oplock = True;
             break;
           }
@@ -1978,7 +1968,7 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
           if(check_share_mode(share_entry, deny_mode, fname, fcbopen, &flags) == False)
           {
             free((char *)old_shares);
-            unlock_share_entry(cnum, dev, inode, token);
+            unlock_share_entry(conn, dev, inode, token);
             errno = EACCES;
             unix_ERR_class = ERRDOS;
             unix_ERR_code = ERRbadshare;
@@ -1990,7 +1980,7 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
         if(broke_oplock)
         {
           free((char *)old_shares);
-          num_share_modes = get_share_modes(cnum, token, dev, inode, &old_shares);
+          num_share_modes = get_share_modes(conn, token, dev, inode, &old_shares);
         }
       } while(broke_oplock);
     }
@@ -2002,23 +1992,23 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
   DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
 	   flags,flags2,mode));
 
-  open_file(fnum,cnum,fname,flags|(flags2&~(O_TRUNC)),mode,file_existed ? &sbuf : 0);
+  open_file(fnum,conn,fname,flags|(flags2&~(O_TRUNC)),mode,file_existed ? &sbuf : 0);
   if (!fs_p->open && flags==O_RDWR && errno!=ENOENT && fcbopen) 
   {
     flags = O_RDONLY;
-    open_file(fnum,cnum,fname,flags,mode,file_existed ? &sbuf : 0 );
+    open_file(fnum,conn,fname,flags,mode,file_existed ? &sbuf : 0 );
   }
 
   if (fs_p->open) 
   {
     int open_mode=0;
 
-    if((share_locked == False) && lp_share_modes(SNUM(cnum)))
+    if((share_locked == False) && lp_share_modes(SNUM(conn)))
     {
       /* We created the file - thus we must now lock the share entry before creating it. */
       dev = fs_p->fd_ptr->dev;
       inode = fs_p->fd_ptr->inode;
-      lock_share_entry(cnum, dev, inode, &token);
+      lock_share_entry(conn, dev, inode, &token);
       share_locked = True;
     }
 
@@ -2050,7 +2040,7 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
        truncate can fail due to locking and have to close the
        file (which expects the share_mode_entry to be there).
      */
-    if (lp_share_modes(SNUM(cnum)))
+    if (lp_share_modes(SNUM(conn)))
     {
       uint16 port = 0;
       /* JRA. Currently this only services Exlcusive and batch
@@ -2058,8 +2048,8 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
          be extended to level II oplocks (multiple reader
          oplocks). */
 
-      if(oplock_request && (num_share_modes == 0) && lp_oplocks(SNUM(cnum)) && 
-	      !IS_VETO_OPLOCK_PATH(cnum,fname))
+      if(oplock_request && (num_share_modes == 0) && lp_oplocks(SNUM(conn)) && 
+	      !IS_VETO_OPLOCK_PATH(conn,fname))
       {
         fs_p->granted_oplock = True;
         fs_p->sent_oplock_break = False;
@@ -2079,11 +2069,11 @@ dev = %x, inode = %x\n", oplock_request, fname, dev, inode));
     }
 
     if ((flags2&O_TRUNC) && file_existed)
-      truncate_unless_locked(fnum,cnum,token,&share_locked);
+      truncate_unless_locked(fnum,conn,token,&share_locked);
   }
 
-  if (share_locked && lp_share_modes(SNUM(cnum)))
-    unlock_share_entry( cnum, dev, inode, token);
+  if (share_locked && lp_share_modes(SNUM(conn)))
+    unlock_share_entry( conn, dev, inode, token);
 }
 
 /****************************************************************************
@@ -2094,7 +2084,7 @@ int seek_file(int fnum,uint32 pos)
   uint32 offset = 0;
   files_struct *fsp = &Files[fnum];
 
-  if (fsp->print_file && POSTSCRIPT(fsp->cnum))
+  if (fsp->print_file && lp_postscript(fsp->conn->service))
     offset = 3;
 
   fsp->pos = (int)(lseek(fsp->fd_ptr->fd,pos+offset,SEEK_SET) - offset);
@@ -2170,9 +2160,9 @@ int write_file(int fnum,char *data,int n)
     struct stat st;
     fsp->modified = True;
     if (fstat(fsp->fd_ptr->fd,&st) == 0) {
-      int dosmode = dos_mode(fsp->cnum,fsp->name,&st);
-      if (MAP_ARCHIVE(fsp->cnum) && !IS_DOS_ARCHIVE(dosmode)) {	
-	dos_chmod(fsp->cnum,fsp->name,dosmode | aARCH,&st);
+      int dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
+      if (MAP_ARCHIVE(fsp->conn) && !IS_DOS_ARCHIVE(dosmode)) {	
+	dos_chmod(fsp->conn,fsp->fsp_name,dosmode | aARCH,&st);
       }
     }  
   }
@@ -2184,44 +2174,42 @@ int write_file(int fnum,char *data,int n)
 /****************************************************************************
 load parameters specific to a connection/service
 ****************************************************************************/
-BOOL become_service(int cnum,BOOL do_chdir)
+BOOL become_service(connection_struct *conn,BOOL do_chdir)
 {
-  extern char magic_char;
-  static int last_cnum = -1;
-  int snum;
+	extern char magic_char;
+	static connection_struct *last_conn;
+	int snum;
 
-  if (!OPEN_CNUM(cnum))
-    {
-      last_cnum = -1;
-      return(False);
-    }
+	if (!conn || !conn->open)  {
+		last_conn = NULL;
+		return(False);
+	}
 
-  Connections[cnum].lastused = smb_last_time;
+	conn->lastused = smb_last_time;
 
-  snum = SNUM(cnum);
+	snum = SNUM(conn);
   
-  if (do_chdir &&
-      ChDir(Connections[cnum].connectpath) != 0 &&
-      ChDir(Connections[cnum].origpath) != 0)
-    {
-      DEBUG( 0, ( "chdir (%s) failed cnum=%d\n",
-	        Connections[cnum].connectpath, cnum ) );
-      return(False);
-    }
+	if (do_chdir &&
+	    ChDir(conn->connectpath) != 0 &&
+	    ChDir(conn->origpath) != 0) {
+		DEBUG(0,("chdir (%s) failed\n",
+			 conn->connectpath));
+		return(False);
+	}
 
-  if (cnum == last_cnum)
-    return(True);
+	if (conn == last_conn)
+		return(True);
 
-  last_cnum = cnum;
+	last_conn = conn;
 
-  case_default = lp_defaultcase(snum);
-  case_preserve = lp_preservecase(snum);
-  short_case_preserve = lp_shortpreservecase(snum);
-  case_mangle = lp_casemangle(snum);
-  case_sensitive = lp_casesensitive(snum);
-  magic_char = lp_magicchar(snum);
-  use_mangled_map = (*lp_mangled_map(snum) ? True:False);
-  return(True);
+	case_default = lp_defaultcase(snum);
+	case_preserve = lp_preservecase(snum);
+	short_case_preserve = lp_shortpreservecase(snum);
+	case_mangle = lp_casemangle(snum);
+	case_sensitive = lp_casesensitive(snum);
+	magic_char = lp_magicchar(snum);
+	use_mangled_map = (*lp_mangled_map(snum) ? True:False);
+	return(True);
 }
 
 
@@ -2906,7 +2894,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   int fnum;
   time_t start_time;
   BOOL shutdown_server = False;
-  int saved_cnum;
+  connection_struct *saved_conn;
   int saved_vuid;
   pstring saved_dir; 
 
@@ -2957,7 +2945,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   {
     if( DEBUGLVL( 0 ) )
       {
-      dbgtext( "oplock_break: file %s (fnum = %d, ", fsp->name, fnum );
+      dbgtext( "oplock_break: file %s (fnum = %d, ", fsp->fsp_name, fnum );
       dbgtext( "dev = %x, inode = %x) has no oplock.\n", dev, inode );
       dbgtext( "Allowing break to succeed regardless.\n" );
       }
@@ -2970,7 +2958,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
     if( DEBUGLVL( 0 ) )
       {
       dbgtext( "oplock_break: ERROR: oplock_break already sent for " );
-      dbgtext( "file %s (fnum = %d, ", fsp->name, fnum );
+      dbgtext( "file %s (fnum = %d, ", fsp->fsp_name, fnum );
       dbgtext( "dev = %x, inode = %x)\n", dev, inode );
       }
 
@@ -3008,7 +2996,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   set_message(outbuf,8,0,True);
 
   SCVAL(outbuf,smb_com,SMBlockingX);
-  SSVAL(outbuf,smb_tid,fsp->cnum);
+  SSVAL(outbuf,smb_tid,fsp->conn->cnum);
   SSVAL(outbuf,smb_pid,0xFFFF);
   SSVAL(outbuf,smb_uid,0);
   SSVAL(outbuf,smb_mid,0xFFFF);
@@ -3037,7 +3025,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
    * Save the information we need to re-become the
    * user, then unbecome the user whilst we're doing this.
    */
-  saved_cnum = fsp->cnum;
+  saved_conn = fsp->conn;
   saved_vuid = current_user.vuid;
   GetWd(saved_dir);
   unbecome_user();
@@ -3060,7 +3048,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
         DEBUG( 0, ( "oplock_break: receive_smb timed out after %d seconds.\n",
                      OPLOCK_BREAK_TIMEOUT ) );
 
-      DEBUGADD( 0, ( "oplock_break failed for file %s ", fsp->name ) );
+      DEBUGADD( 0, ( "oplock_break failed for file %s ", fsp->fsp_name ) );
       DEBUGADD( 0, ( "(fnum = %d, dev = %x, inode = %x).\n", fnum, dev, inode));
       shutdown_server = True;
       break;
@@ -3087,7 +3075,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
         {
         dbgtext( "oplock_break: no break received from client " );
         dbgtext( "within %d seconds.\n", OPLOCK_BREAK_TIMEOUT );
-        dbgtext( "oplock_break failed for file %s ", fsp->name );
+        dbgtext( "oplock_break failed for file %s ", fsp->fsp_name );
         dbgtext( "(fnum = %d, dev = %x, inode = %x).\n", fnum, dev, inode );
         }
       shutdown_server = True;
@@ -3099,7 +3087,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
    * Go back to being the user who requested the oplock
    * break.
    */
-  if(!become_user(&Connections[saved_cnum], saved_cnum, saved_vuid))
+  if(!become_user(saved_conn, saved_vuid))
   {
     DEBUG( 0, ( "oplock_break: unable to re-become user!" ) );
     DEBUGADD( 0, ( "Shutting down server\n" ) );
@@ -3322,7 +3310,7 @@ should be %d\n", pid, share_entry->op_port, oplock_port));
     time_left -= (time(NULL) - start_time);
   }
 
-  DEBUG( 3, ( "%s request_oplock_break: broke oplock.\n" ) );
+  DEBUG(3,("request_oplock_break: broke oplock.\n"));
 
   return True;
 }
@@ -3365,11 +3353,13 @@ check if a snum is in use
 ****************************************************************************/
 BOOL snum_used(int snum)
 {
-  int i;
-  for (i=0;i<MAX_CONNECTIONS;i++)
-    if (OPEN_CNUM(i) && (SNUM(i) == snum))
-      return(True);
-  return(False);
+	int i;
+	for (i=0;i<MAX_CONNECTIONS;i++) {
+		if (Connections[i].open && (Connections[i].service == snum)) {
+			return(True);
+		}
+	}
+	return(False);
 }
 
 /****************************************************************************
@@ -3377,50 +3367,50 @@ BOOL snum_used(int snum)
   **************************************************************************/
 BOOL reload_services(BOOL test)
 {
-  BOOL ret;
+	BOOL ret;
 
-  if (lp_loaded())
-  {
-    pstring fname;
-    pstrcpy(fname,lp_configfile());
-    if (file_exist(fname,NULL) && !strcsequal(fname,servicesf))
-    {
-      pstrcpy(servicesf,fname);
-      test = False;
-    }
-  }
+	if (lp_loaded()) {
+		pstring fname;
+		pstrcpy(fname,lp_configfile());
+		if (file_exist(fname,NULL) && !strcsequal(fname,servicesf)) {
+			pstrcpy(servicesf,fname);
+			test = False;
+		}
+	}
 
-  reopen_logs();
+	reopen_logs();
 
-  if (test && !lp_file_list_changed())
-    return(True);
+	if (test && !lp_file_list_changed())
+		return(True);
 
-  lp_killunused(snum_used);
+	lp_killunused(snum_used);
 
-  ret = lp_load(servicesf,False,False,True);
+	ret = lp_load(servicesf,False,False,True);
 
-  /* perhaps the config filename is now set */
-  if (!test)
-    reload_services(True);
+	load_printers();
 
-  reopen_logs();
+	/* perhaps the config filename is now set */
+	if (!test)
+		reload_services(True);
 
-  load_interfaces();
+	reopen_logs();
 
-  {
-    extern int Client;
-    if (Client != -1) {      
-      set_socket_options(Client,"SO_KEEPALIVE");
-      set_socket_options(Client,user_socket_options);
-    }
-  }
+	load_interfaces();
 
-  reset_mangled_cache();
+	{
+		extern int Client;
+		if (Client != -1) {      
+			set_socket_options(Client,"SO_KEEPALIVE");
+			set_socket_options(Client,user_socket_options);
+		}
+	}
 
-  /* this forces service parameters to be flushed */
-  become_service(-1,True);
+	reset_mangled_cache();
 
-  return(ret);
+	/* this forces service parameters to be flushed */
+	become_service(NULL,True);
+
+	return(ret);
 }
 
 
@@ -3446,330 +3436,354 @@ static int sig_hup(void)
   return(0);
 }
 
+/****************************************************************************
+  find first available connection slot, starting from a random position.
+The randomisation stops problems with the server dieing and clients
+thinking the server is still available.
+****************************************************************************/
+static connection_struct *find_free_connection(int hash)
+{
+	int i;
+	BOOL used=False;
+	hash = (hash % (MAX_CONNECTIONS-2))+1;
+
+ again:
+
+	for (i=hash+1;i!=hash;) {
+		if (!Connections[i].open && Connections[i].used == used) {
+			DEBUG(3,("found free connection number %d\n",i));
+			memset(&Connections[i], 0, sizeof(&Connections[i]));
+			Connections[i].cnum = i;
+			return &Connections[i];
+		}
+		i++;
+		if (i == MAX_CONNECTIONS) {
+			i = 1;
+		}
+	}
+
+	if (!used) {
+		used = !used;
+		goto again;
+	}
+
+	DEBUG(1,("ERROR! Out of connection structures\n"));
+
+	return NULL;
+}
+
 
 /****************************************************************************
   make a connection to a service
 ****************************************************************************/
-int make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid)
+connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode)
 {
-  int cnum;
-  int snum;
-  struct passwd *pass = NULL;
-  connection_struct *pcon;
-  BOOL guest = False;
-  BOOL force = False;
-  extern int Client;
+	int snum;
+	struct passwd *pass = NULL;
+	BOOL guest = False;
+	BOOL force = False;
+	extern int Client;
+	connection_struct *conn;
 
-  strlower(service);
+	strlower(service);
 
-  snum = find_service(service);
-  if (snum < 0)
-    {
-      extern int Client;
-      if (strequal(service,"IPC$"))
-	{
-	  DEBUG( 3, ( "refusing IPC connection\n" ) );
-	  return( -3 );
+	snum = find_service(service);
+	if (snum < 0) {
+		extern int Client;
+		if (strequal(service,"IPC$")) {
+			DEBUG(3,("refusing IPC connection\n"));
+			*ecode = ERRnoipc;
+			return NULL;
+		}
+
+		DEBUG(0,("%s (%s) couldn't find service %s\n",
+			 remote_machine, client_addr(Client), service));
+		*ecode = ERRinvnetname;
+		return NULL;
 	}
 
-      DEBUG( 0, ( "%s (%s) couldn't find service %s\n",
-                remote_machine, client_addr(Client), service ) );
-      return(-2);
-    }
+	if (strequal(service,HOMES_NAME)) {
+		if (*user && Get_Pwnam(user,True))
+			return(make_connection(user,user,password,
+					       pwlen,dev,vuid,ecode));
 
-  if (strequal(service,HOMES_NAME))
-    {
-      if (*user && Get_Pwnam(user,True))
-	return(make_connection(user,user,password,pwlen,dev,vuid));
+		if(lp_security() != SEC_SHARE) {
+			if (validated_username(vuid)) {
+				pstrcpy(user,validated_username(vuid));
+				return(make_connection(user,user,password,pwlen,dev,vuid,ecode));
+			}
+		} else {
+			/* Security = share. Try with sesssetup_user
+			 * as the username.  */
+			if(*sesssetup_user) {
+				pstrcpy(user,sesssetup_user);
+				return(make_connection(user,user,password,pwlen,dev,vuid,ecode));
+			}
+		}
+	}
 
-      if(lp_security() != SEC_SHARE)
-      {
-        if (validated_username(vuid))
-        {
-          pstrcpy(user,validated_username(vuid));
-          return(make_connection(user,user,password,pwlen,dev,vuid));
-        }
-      }
-      else
-      {
-        /*
-         * Security = share. Try with sesssetup_user as the username.
-         */
-        if(*sesssetup_user)
-        {
-          pstrcpy(user,sesssetup_user);
-          return(make_connection(user,user,password,pwlen,dev,vuid));
-        }
-      }
-    }
+	if (!lp_snum_ok(snum) || 
+	    !check_access(Client, 
+			  lp_hostsallow(snum), lp_hostsdeny(snum))) {    
+		*ecode = ERRaccess;
+		return NULL;
+	}
 
-  if (!lp_snum_ok(snum) || 
-      !check_access(Client, lp_hostsallow(snum), lp_hostsdeny(snum))) {    
-    return(-4);
-  }
+	/* you can only connect to the IPC$ service as an ipc device */
+	if (strequal(service,"IPC$"))
+		pstrcpy(dev,"IPC");
+	
+	if (*dev == '?' || !*dev) {
+		if (lp_print_ok(snum)) {
+			pstrcpy(dev,"LPT1:");
+		} else {
+			pstrcpy(dev,"A:");
+		}
+	}
 
-  /* you can only connect to the IPC$ service as an ipc device */
-  if (strequal(service,"IPC$"))
-    pstrcpy(dev,"IPC");
+	/* if the request is as a printer and you can't print then refuse */
+	strupper(dev);
+	if (!lp_print_ok(snum) && (strncmp(dev,"LPT",3) == 0)) {
+		DEBUG(1,("Attempt to connect to non-printer as a printer\n"));
+		*ecode = ERRinvdevice;
+		return NULL;
+	}
 
-  if (*dev == '?' || !*dev)
-    {
-      if (lp_print_ok(snum))
-	pstrcpy(dev,"LPT1:");
-      else
-	pstrcpy(dev,"A:");
-    }
+	/* lowercase the user name */
+	strlower(user);
 
-  /* if the request is as a printer and you can't print then refuse */
-  strupper(dev);
-  if (!lp_print_ok(snum) && (strncmp(dev,"LPT",3) == 0)) {
-    DEBUG(1,("Attempt to connect to non-printer as a printer\n"));
-    return(-6);
-  }
+	/* add it as a possible user name */
+	add_session_user(service);
 
-  /* lowercase the user name */
-  strlower(user);
-
-  /* add it as a possible user name */
-  add_session_user(service);
-
-  /* shall we let them in? */
-  if (!authorise_login(snum,user,password,pwlen,&guest,&force,vuid))
-    {
-      DEBUG( 2, ( "Invalid username/password for %s\n", service ) );
-      return(-1);
-    }
+	/* shall we let them in? */
+	if (!authorise_login(snum,user,password,pwlen,&guest,&force,vuid)) {
+		DEBUG( 2, ( "Invalid username/password for %s\n", service ) );
+		*ecode = ERRbadpw;
+		return NULL;
+	}
   
-  cnum = find_free_connection( str_checksum(service) + str_checksum(user) );
-  if (cnum < 0)
-    {
-      DEBUG( 0, ( "Couldn't find free connection.\n" ) );
-      return(-1);
-    }
+	conn = find_free_connection(str_checksum(service) + str_checksum(user));
+	if (!conn) {
+		DEBUG(0,("Couldn't find free connection.\n"));
+		*ecode = ERRnoresource;
+		return NULL;
+	}
 
-  pcon = &Connections[cnum];
-  bzero((char *)pcon,sizeof(*pcon));
+	/* find out some info about the user */
+	pass = Get_Pwnam(user,True);
 
-  /* find out some info about the user */
-  pass = Get_Pwnam(user,True);
+	if (pass == NULL) {
+		DEBUG(0,( "Couldn't find account %s\n",user));
+		*ecode = ERRbaduid;
+		return NULL;
+	}
 
-  if (pass == NULL)
-    {
-      DEBUG( 0, ( "Couldn't find account %s\n", user ) );
-      return(-7);
-    }
+	conn->read_only = lp_readonly(snum);
 
-  pcon->read_only = lp_readonly(snum);
+	{
+		pstring list;
+		StrnCpy(list,lp_readlist(snum),sizeof(pstring)-1);
+		string_sub(list,"%S",service);
 
-  {
-    pstring list;
-    StrnCpy(list,lp_readlist(snum),sizeof(pstring)-1);
-    string_sub(list,"%S",service);
+		if (user_in_list(user,list))
+			conn->read_only = True;
+		
+		StrnCpy(list,lp_writelist(snum),sizeof(pstring)-1);
+		string_sub(list,"%S",service);
+		
+		if (user_in_list(user,list))
+			conn->read_only = False;    
+	}
 
-    if (user_in_list(user,list))
-      pcon->read_only = True;
-
-    StrnCpy(list,lp_writelist(snum),sizeof(pstring)-1);
-    string_sub(list,"%S",service);
-
-    if (user_in_list(user,list))
-      pcon->read_only = False;    
-  }
-
-  /* admin user check */
-
-  /* JRA - original code denied admin user if the share was
-     marked read_only. Changed as I don't think this is needed,
-     but old code left in case there is a problem here.
-   */
-  if (user_in_list(user,lp_admin_users(snum)) 
+	/* admin user check */
+	
+	/* JRA - original code denied admin user if the share was
+	   marked read_only. Changed as I don't think this is needed,
+	   but old code left in case there is a problem here.
+	*/
+	if (user_in_list(user,lp_admin_users(snum)) 
 #if 0
-      && !pcon->read_only)
-#else
-      )
+	    && !conn->read_only
 #endif
-    {
-      pcon->admin_user = True;
-      DEBUG(0,("%s logged in as admin user (root privileges)\n",user));
-    }
-  else
-    pcon->admin_user = False;
+	    ) {
+		conn->admin_user = True;
+		DEBUG(0,("%s logged in as admin user (root privileges)\n",user));
+	} else {
+		conn->admin_user = False;
+	}
     
-  pcon->force_user = force;
-  pcon->vuid = vuid;
-  pcon->uid = pass->pw_uid;
-  pcon->gid = pass->pw_gid;
-  pcon->num_files_open = 0;
-  pcon->lastused = time(NULL);
-  pcon->service = snum;
-  pcon->used = True;
-  pcon->printer = (strncmp(dev,"LPT",3) == 0);
-  pcon->ipc = (strncmp(dev,"IPC",3) == 0);
-  pcon->dirptr = NULL;
-  pcon->veto_list = NULL;
-  pcon->hide_list = NULL;
-  pcon->veto_oplock_list = NULL;
-  string_set(&pcon->dirpath,"");
-  string_set(&pcon->user,user);
-
+	conn->force_user = force;
+	conn->vuid = vuid;
+	conn->uid = pass->pw_uid;
+	conn->gid = pass->pw_gid;
+	conn->num_files_open = 0;
+	conn->lastused = time(NULL);
+	conn->service = snum;
+	conn->used = True;
+	conn->printer = (strncmp(dev,"LPT",3) == 0);
+	conn->ipc = (strncmp(dev,"IPC",3) == 0);
+	conn->dirptr = NULL;
+	conn->veto_list = NULL;
+	conn->hide_list = NULL;
+	conn->veto_oplock_list = NULL;
+	string_set(&conn->dirpath,"");
+	string_set(&conn->user,user);
+	
 #ifdef HAVE_GETGRNAM 
-  if (*lp_force_group(snum))
-    {
-      struct group *gptr;
-      pstring gname;
-
-      StrnCpy(gname,lp_force_group(snum),sizeof(pstring)-1);
-      /* default service may be a group name 		*/
-      string_sub(gname,"%S",service);
-      gptr = (struct group *)getgrnam(gname);
-
-      if (gptr)
-	{
-	  pcon->gid = gptr->gr_gid;
-	  DEBUG(3,("Forced group %s\n",gname));
+	if (*lp_force_group(snum)) {
+		struct group *gptr;
+		pstring gname;
+		
+		StrnCpy(gname,lp_force_group(snum),sizeof(pstring)-1);
+		/* default service may be a group name 		*/
+		string_sub(gname,"%S",service);
+		gptr = (struct group *)getgrnam(gname);
+		
+		if (gptr) {
+			conn->gid = gptr->gr_gid;
+			DEBUG(3,("Forced group %s\n",gname));
+		} else {
+			DEBUG(1,("Couldn't find group %s\n",gname));
+		}
 	}
-      else
-	DEBUG(1,("Couldn't find group %s\n",gname));
-    }
 #endif
-
-  if (*lp_force_user(snum))
-    {
-      struct passwd *pass2;
-      fstring fuser;
-      fstrcpy(fuser,lp_force_user(snum));
-      pass2 = (struct passwd *)Get_Pwnam(fuser,True);
-      if (pass2)
-	{
-	  pcon->uid = pass2->pw_uid;
-	  string_set(&pcon->user,fuser);
-	  fstrcpy(user,fuser);
-	  pcon->force_user = True;
-	  DEBUG(3,("Forced user %s\n",fuser));	  
+	
+	if (*lp_force_user(snum)) {
+		struct passwd *pass2;
+		fstring fuser;
+		fstrcpy(fuser,lp_force_user(snum));
+		pass2 = (struct passwd *)Get_Pwnam(fuser,True);
+		if (pass2) {
+			conn->uid = pass2->pw_uid;
+			string_set(&conn->user,fuser);
+			fstrcpy(user,fuser);
+			conn->force_user = True;
+			DEBUG(3,("Forced user %s\n",fuser));	  
+		} else {
+			DEBUG(1,("Couldn't find user %s\n",fuser));
+		}
 	}
-      else
-	DEBUG(1,("Couldn't find user %s\n",fuser));
-    }
 
-  {
-    pstring s;
-    pstrcpy(s,lp_pathname(snum));
-    standard_sub(cnum,s);
-    string_set(&pcon->connectpath,s);
-    DEBUG(3,("Connect path is %s\n",s));
-  }
-
-  /* groups stuff added by ih */
-  pcon->ngroups = 0;
-  pcon->groups = NULL;
-
-  if (!IS_IPC(cnum))
-    {
-      /* Find all the groups this uid is in and store them. Used by become_user() */
-      setup_groups(pcon->user,pcon->uid,pcon->gid,
-                  &pcon->ngroups,&pcon->groups);
-      
-      /* check number of connections */
-      if (!claim_connection(cnum,
-			    lp_servicename(SNUM(cnum)),
-			    lp_max_connections(SNUM(cnum)),False))
 	{
-	  DEBUG(1,("too many connections - rejected\n"));
-	  return(-8);
-	}  
+		pstring s;
+		pstrcpy(s,lp_pathname(snum));
+		standard_sub(conn,s);
+		string_set(&conn->connectpath,s);
+		DEBUG(3,("Connect path is %s\n",s));
+	}
 
-      if (lp_status(SNUM(cnum)))
-	claim_connection(cnum,"STATUS.",MAXSTATUS,False);
-    } /* IS_IPC */
-
-  pcon->open = True;
-
-  /* execute any "root preexec = " line */
-  if (*lp_rootpreexec(SNUM(cnum)))
-    {
-      pstring cmd;
-      pstrcpy(cmd,lp_rootpreexec(SNUM(cnum)));
-      standard_sub(cnum,cmd);
-      DEBUG(5,("cmd=%s\n",cmd));
-      smbrun(cmd,NULL,False);
-    }
-
-  if (!become_user(&Connections[cnum], cnum,pcon->vuid))
-    {
-      DEBUG(0,("Can't become connected user!\n"));
-      pcon->open = False;
-      if (!IS_IPC(cnum)) {
-	yield_connection(cnum,
-			 lp_servicename(SNUM(cnum)),
-			 lp_max_connections(SNUM(cnum)));
-	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
-      }
-      return(-1);
-    }
-
-  if (ChDir(pcon->connectpath) != 0)
-    {
-      DEBUG(0,("Can't change directory to %s (%s)\n",
-	       pcon->connectpath,strerror(errno)));
-      pcon->open = False;
-      unbecome_user();
-      if (!IS_IPC(cnum)) {
-	yield_connection(cnum,
-			 lp_servicename(SNUM(cnum)),
-			 lp_max_connections(SNUM(cnum)));
-	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
-      }
-      return(-5);      
-    }
-
-  string_set(&pcon->origpath,pcon->connectpath);
-
+	/* groups stuff added by ih */
+	conn->ngroups = 0;
+	conn->groups = NULL;
+	
+	if (!IS_IPC(conn)) {
+		/* Find all the groups this uid is in and
+		   store them. Used by become_user() */
+		setup_groups(conn->user,conn->uid,conn->gid,
+			     &conn->ngroups,&conn->groups);
+		
+		/* check number of connections */
+		if (!claim_connection(conn,
+				      lp_servicename(SNUM(conn)),
+				      lp_max_connections(SNUM(conn)),
+				      False)) {
+			DEBUG(1,("too many connections - rejected\n"));
+			*ecode = ERRnoresource;
+			return NULL;
+		}  
+		
+		if (lp_status(SNUM(conn)))
+			claim_connection(conn,"STATUS.",
+					 MAXSTATUS,False);
+	} /* IS_IPC */
+	
+	conn->open = True;
+	
+	/* execute any "root preexec = " line */
+	if (*lp_rootpreexec(SNUM(conn))) {
+		pstring cmd;
+		pstrcpy(cmd,lp_rootpreexec(SNUM(conn)));
+		standard_sub(conn,cmd);
+		DEBUG(5,("cmd=%s\n",cmd));
+		smbrun(cmd,NULL,False);
+	}
+	
+	if (!become_user(conn, conn->vuid)) {
+		DEBUG(0,("Can't become connected user!\n"));
+		conn->open = False;
+		if (!IS_IPC(conn)) {
+			yield_connection(conn,
+					 lp_servicename(SNUM(conn)),
+					 lp_max_connections(SNUM(conn)));
+			if (lp_status(SNUM(conn))) {
+				yield_connection(conn,"STATUS.",MAXSTATUS);
+			}
+		}
+		*ecode = ERRbadpw;
+		return NULL;
+	}
+	
+	if (ChDir(conn->connectpath) != 0) {
+		DEBUG(0,("Can't change directory to %s (%s)\n",
+			 conn->connectpath,strerror(errno)));
+		conn->open = False;
+		unbecome_user();
+		if (!IS_IPC(conn)) {
+			yield_connection(conn,
+					 lp_servicename(SNUM(conn)),
+					 lp_max_connections(SNUM(conn)));
+			if (lp_status(SNUM(conn))) 
+				yield_connection(conn,"STATUS.",MAXSTATUS);
+		}
+		*ecode = ERRinvnetname;
+		return NULL;
+	}
+	
+	string_set(&conn->origpath,conn->connectpath);
+	
 #if SOFTLINK_OPTIMISATION
-  /* resolve any soft links early */
-  {
-    pstring s;
-    pstrcpy(s,pcon->connectpath);
-    GetWd(s);
-    string_set(&pcon->connectpath,s);
-    ChDir(pcon->connectpath);
-  }
+	/* resolve any soft links early */
+	{
+		pstring s;
+		pstrcpy(s,conn->connectpath);
+		GetWd(s);
+		string_set(&conn->connectpath,s);
+		ChDir(conn->connectpath);
+	}
 #endif
-
-  num_connections_open++;
-  add_session_user(user);
-  
-  /* execute any "preexec = " line */
-  if (*lp_preexec(SNUM(cnum)))
-    {
-      pstring cmd;
-      pstrcpy(cmd,lp_preexec(SNUM(cnum)));
-      standard_sub(cnum,cmd);
-      smbrun(cmd,NULL,False);
-    }
-  
-  /* we've finished with the sensitive stuff */
-  unbecome_user();
-
-  /* Add veto/hide lists */
-  if (!IS_IPC(cnum) && !IS_PRINT(cnum))
-  {
-    set_namearray( &pcon->veto_list, lp_veto_files(SNUM(cnum)));
-    set_namearray( &pcon->hide_list, lp_hide_files(SNUM(cnum)));
-    set_namearray( &pcon->veto_oplock_list, lp_veto_oplocks(SNUM(cnum)));
-  }
-
-  if( DEBUGLVL( IS_IPC(cnum) ? 3 : 1 ) )
-    {
-    extern int Client;
-
-    dbgtext( "%s (%s) ", remote_machine, client_addr(Client) );
-    dbgtext( "connect to service %s ", lp_servicename(SNUM(cnum)) );
-    dbgtext( "as user %s ", user );
-    dbgtext( "(uid=%d, gid=%d) ", pcon->uid, pcon->gid );
-    dbgtext( "(pid %d)\n", (int)getpid() );
-    }
-
-  return(cnum);
+	
+	num_connections_open++;
+	add_session_user(user);
+		
+	/* execute any "preexec = " line */
+	if (*lp_preexec(SNUM(conn))) {
+		pstring cmd;
+		pstrcpy(cmd,lp_preexec(SNUM(conn)));
+		standard_sub(conn,cmd);
+		smbrun(cmd,NULL,False);
+	}
+	
+	/* we've finished with the sensitive stuff */
+	unbecome_user();
+	
+	/* Add veto/hide lists */
+	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
+		set_namearray( &conn->veto_list, lp_veto_files(SNUM(conn)));
+		set_namearray( &conn->hide_list, lp_hide_files(SNUM(conn)));
+		set_namearray( &conn->veto_oplock_list, lp_veto_oplocks(SNUM(conn)));
+	}
+	
+	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
+		extern int Client;
+		
+		dbgtext( "%s (%s) ", remote_machine, client_addr(Client) );
+		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
+		dbgtext( "as user %s ", user );
+		dbgtext( "(uid=%d, gid=%d) ", conn->uid, conn->gid );
+		dbgtext( "(pid %d)\n", (int)getpid() );
+	}
+	
+	return(conn);
 }
 
 /****************************************************************************
@@ -3783,7 +3797,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 static BOOL attempt_close_oplocked_file(files_struct *fsp)
 {
 
-  DEBUG(5,("attempt_close_oplocked_file: checking file %s.\n", fsp->name));
+  DEBUG(5,("attempt_close_oplocked_file: checking file %s.\n", fsp->fsp_name));
 
   if (fsp->open && fsp->granted_oplock && !fsp->sent_oplock_break) {
 
@@ -3865,41 +3879,6 @@ int find_free_file(void )
 
 	DEBUG(1,("ERROR! Out of file structures - perhaps increase MAX_OPEN_FILES?\n"));
 	return(-1);
-}
-
-/****************************************************************************
-  find first available connection slot, starting from a random position.
-The randomisation stops problems with the server dieing and clients
-thinking the server is still available.
-****************************************************************************/
-static int find_free_connection(int hash )
-{
-  int i;
-  BOOL used=False;
-  hash = (hash % (MAX_CONNECTIONS-2))+1;
-
- again:
-
-  for (i=hash+1;i!=hash;)
-    {
-      if (!Connections[i].open && Connections[i].used == used) 
-	{
-	  DEBUG(3,("found free connection number %d\n",i));
-	  return(i);
-	}
-      i++;
-      if (i == MAX_CONNECTIONS)
-	i = 1;
-    }
-
-  if (!used)
-    {
-      used = !used;
-      goto again;
-    }
-
-  DEBUG(1,("ERROR! Out of connection structures\n"));
-  return(-1);
 }
 
 
@@ -4183,7 +4162,9 @@ struct {
 /****************************************************************************
   reply to a negprot
 ****************************************************************************/
-static int reply_negprot(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+static int reply_negprot(connection_struct *conn, 
+			 char *inbuf,char *outbuf, int dum_size, 
+			 int dum_buffsize)
 {
   int outsize = set_message(outbuf,1,0,True);
   int Index=0;
@@ -4290,11 +4271,11 @@ static int reply_negprot(char *inbuf,char *outbuf, int dum_size, int dum_buffsiz
 /****************************************************************************
 close all open files for a connection
 ****************************************************************************/
-static void close_open_files(int cnum)
+static void close_open_files(connection_struct *conn)
 {
   int i;
   for (i=0;i<MAX_FNUMS;i++)
-    if( Files[i].cnum == cnum && Files[i].open) {
+    if (Files[i].conn == conn && Files[i].open) {
       if(Files[i].is_directory)
         close_directory(i); 
       else                  
@@ -4307,69 +4288,66 @@ static void close_open_files(int cnum)
 /****************************************************************************
 close a cnum
 ****************************************************************************/
-void close_cnum(int cnum, uint16 vuid)
+void close_cnum(connection_struct *conn, uint16 vuid)
 {
-  extern int Client;
-  DirCacheFlush(SNUM(cnum));
+	extern int Client;
+	DirCacheFlush(SNUM(conn));
 
-  unbecome_user();
+	unbecome_user();
 
-  if (!OPEN_CNUM(cnum))
-    {
-      DEBUG(0,("Can't close cnum %d\n",cnum));
-      return;
-    }
+	if (!conn->open) {
+		DEBUG(0,("cnum not open\n"));
+		return;
+	}
 
-  DEBUG( IS_IPC(cnum)?3:1, ( "%s (%s) closed connection to service %s\n",
-			     remote_machine,client_addr(Client),
-			     lp_servicename(SNUM(cnum)) ) );
+	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
+				 remote_machine,client_addr(Client),
+				 lp_servicename(SNUM(conn))));
 
-  yield_connection(cnum,
-		   lp_servicename(SNUM(cnum)),
-		   lp_max_connections(SNUM(cnum)));
+	yield_connection(conn,
+			 lp_servicename(SNUM(conn)),
+			 lp_max_connections(SNUM(conn)));
 
-  if (lp_status(SNUM(cnum)))
-    yield_connection(cnum,"STATUS.",MAXSTATUS);
+	if (lp_status(SNUM(conn)))
+		yield_connection(conn,"STATUS.",MAXSTATUS);
 
-  close_open_files(cnum);
-  dptr_closecnum(cnum);
+	close_open_files(conn);
+	dptr_closecnum(conn);
 
-  /* execute any "postexec = " line */
-  if (*lp_postexec(SNUM(cnum)) && become_user(&Connections[cnum], cnum,vuid))
-    {
-      pstring cmd;
-      pstrcpy(cmd,lp_postexec(SNUM(cnum)));
-      standard_sub(cnum,cmd);
-      smbrun(cmd,NULL,False);
-      unbecome_user();
-    }
+	/* execute any "postexec = " line */
+	if (*lp_postexec(SNUM(conn)) && 
+	    become_user(conn, vuid))  {
+		pstring cmd;
+		pstrcpy(cmd,lp_postexec(SNUM(conn)));
+		standard_sub(conn,cmd);
+		smbrun(cmd,NULL,False);
+		unbecome_user();
+	}
 
-  unbecome_user();
-  /* execute any "root postexec = " line */
-  if (*lp_rootpostexec(SNUM(cnum)))
-    {
-      pstring cmd;
-      pstrcpy(cmd,lp_rootpostexec(SNUM(cnum)));
-      standard_sub(cnum,cmd);
-      smbrun(cmd,NULL,False);
-    }
+	unbecome_user();
+	/* execute any "root postexec = " line */
+	if (*lp_rootpostexec(SNUM(conn)))  {
+		pstring cmd;
+		pstrcpy(cmd,lp_rootpostexec(SNUM(conn)));
+		standard_sub(conn,cmd);
+		smbrun(cmd,NULL,False);
+	}
+	
+	conn->open = False;
+	num_connections_open--;
+	if (conn->ngroups && conn->groups) {
+		free(conn->groups);
+		conn->groups = NULL;
+		conn->ngroups = 0;
+	}
 
-  Connections[cnum].open = False;
-  num_connections_open--;
-  if (Connections[cnum].ngroups && Connections[cnum].groups)
-    {
-      free(Connections[cnum].groups);
-      Connections[cnum].groups = NULL;
-      Connections[cnum].ngroups = 0;
-    }
-
-  free_namearray(Connections[cnum].veto_list);
-  free_namearray(Connections[cnum].hide_list);
-  free_namearray(Connections[cnum].veto_oplock_list);
-
-  string_set(&Connections[cnum].user,"");
-  string_set(&Connections[cnum].dirpath,"");
-  string_set(&Connections[cnum].connectpath,"");
+	free_namearray(conn->veto_list);
+	free_namearray(conn->hide_list);
+	free_namearray(conn->veto_oplock_list);
+	
+	string_set(&conn->user,"");
+	string_set(&conn->dirpath,"");
+	string_set(&conn->connectpath,"");
 }
 
 
@@ -4406,6 +4384,7 @@ static BOOL dump_core(void)
 
 
   DEBUG(0,("Dumping core in %s\n",dname));
+  abort();
   return(True);
 }
 #endif
@@ -4425,7 +4404,7 @@ void exit_server(char *reason)
   DEBUG(2,("Closing connections\n"));
   for (i=0;i<MAX_CONNECTIONS;i++)
     if (Connections[i].open)
-      close_cnum(i,(uint16)-1);
+      close_cnum(&Connections[i],(uint16)-1);
 #ifdef WITH_DFS
   if (dcelogin_atmost_once) {
     dfs_unlogin();
@@ -4448,42 +4427,6 @@ void exit_server(char *reason)
 
   DEBUG( 3, ( "Server exit (%s)\n", (reason ? reason : "") ) );
   exit(0);
-}
-
-/****************************************************************************
-do some standard substitutions in a string
-****************************************************************************/
-void standard_sub(int cnum,char *str)
-{
-  if (VALID_CNUM(cnum)) {
-    char *p, *s, *home;
-
-    for ( s=str ; (p=strchr(s, '%')) != NULL ; s=p ) {
-      switch (*(p+1)) {
-        case 'H' : if ((home = get_home_dir(Connections[cnum].user))!=NULL)
-                     string_sub(p,"%H",home);
-                   else
-                     p += 2;
-                   break;
-        case 'P' : string_sub(p,"%P",Connections[cnum].connectpath); break;
-        case 'S' : string_sub(p,"%S",lp_servicename(Connections[cnum].service)); break;
-        case 'g' : string_sub(p,"%g",gidtoname(Connections[cnum].gid)); break;
-        case 'u' : string_sub(p,"%u",Connections[cnum].user); break;
-	/* 
-         * Patch from jkf@soton.ac.uk
-         * Left the %N (NIS server name) in standard_sub_basic as it
-         * is a feature for logon servers, hence uses the username.
-	 * The %p (NIS server path) code is here as it is used
-	 * instead of the default "path =" string in [homes] and so
-	 * needs the service name, not the username. 
-         */
-	case 'p' : string_sub(p,"%p",automount_path(lp_servicename(Connections[cnum].service))); break;
-        case '\0' : p++; break; /* don't run off the end of the string */
-        default  : p+=2; break;
-      }
-    }
-  }
-  standard_sub_basic(str);
 }
 
 /*
@@ -4509,7 +4452,7 @@ struct smb_message_struct
 {
   int code;
   char *name;
-  int (*fn)(char *, char *, int, int);
+  int (*fn)(connection_struct *conn, char *, char *, int, int);
   int flags;
 #if PROFILING
   unsigned long time;
@@ -4556,7 +4499,7 @@ struct smb_message_struct
    {SMBctemp,"SMBctemp",reply_ctemp,AS_USER | QUEUE_IN_OPLOCK },
    {SMBsplopen,"SMBsplopen",reply_printopen,AS_USER | QUEUE_IN_OPLOCK },
    {SMBsplclose,"SMBsplclose",reply_printclose,AS_USER},
-   {SMBsplretq,"SMBsplretq",reply_printqueue,AS_USER|AS_GUEST},
+   {SMBsplretq,"SMBsplretq",reply_printqueue,AS_USER},
    {SMBsplwr,"SMBsplwr",reply_printwrite,AS_USER},
    {SMBlock,"SMBlock",reply_lock,AS_USER},
    {SMBunlock,"SMBunlock",reply_unlock,AS_USER},
@@ -4624,19 +4567,19 @@ return a string containing the function name of a SMB command
 ****************************************************************************/
 char *smb_fn_name(int type)
 {
-  static char *unknown_name = "SMBunknown";
-  static int num_smb_messages = 
-    sizeof(smb_messages) / sizeof(struct smb_message_struct);
-  int match;
+	static char *unknown_name = "SMBunknown";
+	static int num_smb_messages = 
+		sizeof(smb_messages) / sizeof(struct smb_message_struct);
+	int match;
 
-  for (match=0;match<num_smb_messages;match++)
-    if (smb_messages[match].code == type)
-      break;
+	for (match=0;match<num_smb_messages;match++)
+		if (smb_messages[match].code == type)
+			break;
 
-  if (match == num_smb_messages)
-    return(unknown_name);
+	if (match == num_smb_messages)
+		return(unknown_name);
 
-  return(smb_messages[match].name);
+	return(smb_messages[match].name);
 }
 
 
@@ -4706,6 +4649,12 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
       static uint16 last_session_tag = UID_FIELD_INVALID;
       /* In share mode security we must ignore the vuid. */
       uint16 session_tag = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
+      connection_struct *conn = NULL;
+
+      if (VALID_CNUM(cnum) && Connections[cnum].open) {
+	      conn = &Connections[cnum];
+      }
+
       /* Ensure this value is replaced in the incoming packet. */
       SSVAL(inbuf,smb_uid,session_tag);
 
@@ -4718,7 +4667,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
        * move it unless you know what you're doing... :-).
        * JRA.
        */
-      if(session_tag != last_session_tag ) {
+      if (session_tag != last_session_tag) {
         user_struct *vuser = NULL;
 
         last_session_tag = session_tag;
@@ -4733,7 +4682,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
         unbecome_user();
 
       /* does this protocol need to be run as the connected user? */
-      if ((flags & AS_USER) && !become_user(&Connections[cnum], cnum,session_tag)) {
+      if ((flags & AS_USER) && !become_user(conn,session_tag)) {
         if (flags & AS_GUEST) 
           flags &= ~AS_USER;
         else
@@ -4746,16 +4695,19 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
         flags &= ~AS_GUEST;
 
       /* does it need write permission? */
-      if ((flags & NEED_WRITE) && !CAN_WRITE(cnum))
+      if ((flags & NEED_WRITE) && !CAN_WRITE(conn))
         return(ERROR(ERRSRV,ERRaccess));
 
       /* ipc services are limited */
-      if (IS_IPC(cnum) && (flags & AS_USER) && !(flags & CAN_IPC))
+      if (IS_IPC(conn) && (flags & AS_USER) && !(flags & CAN_IPC)) {
         return(ERROR(ERRSRV,ERRaccess));	    
+      }
 
       /* load service specific parameters */
-      if (OPEN_CNUM(cnum) && !become_service(cnum,(flags & AS_USER)?True:False))
+      if (OPEN_CNUM(conn) && 
+	  !become_service(conn,(flags & AS_USER)?True:False)) {
         return(ERROR(ERRSRV,ERRaccess));
+      }
 
       /* does this protocol need to be run as guest? */
       if ((flags & AS_GUEST) && 
@@ -4766,7 +4718,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
       last_inbuf = inbuf;
 
-      outsize = smb_messages[match].fn(inbuf,outbuf,size,bufsize);
+      outsize = smb_messages[match].fn(conn, inbuf,outbuf,size,bufsize);
     }
     else
     {
@@ -5072,22 +5024,21 @@ static void process(void)
       }
 
       /* check for connection timeouts */
-      for (i=0;i<MAX_CONNECTIONS;i++)
-        if (Connections[i].open)
-        {
-          /* close dirptrs on connections that are idle */
-          if ((t-Connections[i].lastused)>DPTR_IDLE_TIMEOUT)
-            dptr_idlecnum(i);
+      for (i=0;i<MAX_CONNECTIONS;i++) {
+	      if (Connections[i].open) {
+		      /* close dirptrs on connections that are idle */
+		      if ((t-Connections[i].lastused)>DPTR_IDLE_TIMEOUT)
+			      dptr_idlecnum(&Connections[i]);
 
-          if (Connections[i].num_files_open > 0 ||
-                     (t-Connections[i].lastused)<deadtime)
-            allidle = False;
-        }
+		      if (Connections[i].num_files_open > 0 ||
+			  (t-Connections[i].lastused)<deadtime)
+			      allidle = False;
+	      }
+      }
 
-      if (allidle && num_connections_open>0) 
-      {
-        DEBUG( 2, ( "Closing idle connection 2.\n" ) );
-        return;
+      if (allidle && num_connections_open>0) {
+	      DEBUG(2,("Closing idle connection 2.\n"));
+	      return;
       }
 
       if(global_machine_pasword_needs_changing)
@@ -5189,7 +5140,7 @@ static void init_structs(void )
   for (i=0;i<MAX_FNUMS;i++)
     {
       Files[i].open = False;
-      string_init(&Files[i].name,"");
+      string_init(&Files[i].fsp_name,"");
     }
 
   for (i=0;i<MAX_OPEN_FILES;i++)

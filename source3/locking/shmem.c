@@ -128,7 +128,7 @@ static BOOL smb_shm_global_unlock(void)
    
    if(smb_shm_times_locked == 0)
    {
-      DEBUG(0,("ERROR smb_shm_global_unlock : shmem not locked\n",smb_shm_fd));
+      DEBUG(0,("ERROR smb_shm_global_unlock : shmem not locked\n"));
       return False;
    }
    

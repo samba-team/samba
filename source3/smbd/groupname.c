@@ -197,8 +197,8 @@ Error was %s.\n", unixname, strerror(errno) ));
     ubi_slAddHead( &groupname_map_list, (ubi_slNode *)new_ep);
   }
 
-  DEBUG(10,("load_groupname_map: Added %d entries to groupname map.\n",
-        ubi_slCount( &groupname_map_list ) ));
+  DEBUG(10,("load_groupname_map: Added %ld entries to groupname map.\n",
+	    ubi_slCount(&groupname_map_list)));
            
   fclose(fp);
 }

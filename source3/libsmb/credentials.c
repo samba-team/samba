@@ -96,7 +96,7 @@ void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp,
 
 	DEBUG(5,("	sess_key : %s\n", credstr(session_key)));
 	DEBUG(5,("	stor_cred: %s\n", credstr(stor_cred->data)));
-	DEBUG(5,("	timestamp: %lx\n"    , timestamp.time));
+	DEBUG(5,("	timestamp: %x\n"    , timestamp.time));
 	DEBUG(5,("	timecred : %s\n", credstr(time_cred.data)));
 	DEBUG(5,("	calc_cred: %s\n", credstr(cred->data)));
 }
@@ -200,12 +200,12 @@ BOOL deal_with_creds(uchar sess_key[8],
 	new_cred = IVAL(sto_clnt_cred->challenge.data, 0);
 	new_cred += new_clnt_time.time;
 
-	DEBUG(5,("deal_with_creds: new_cred[0]=%lx\n", new_cred));
+	DEBUG(5,("deal_with_creds: new_cred[0]=%x\n", new_cred));
 
 	/* doesn't matter that server time is 0 */
 	rtn_srv_cred->timestamp.time = 0;
 
-	DEBUG(5,("deal_with_creds: new_clnt_time=%lx\n", new_clnt_time.time));
+	DEBUG(5,("deal_with_creds: new_clnt_time=%x\n", new_clnt_time.time));
 
 	/* create return credentials for inclusion in the reply */
 	cred_create(sess_key, &(sto_clnt_cred->challenge), new_clnt_time,

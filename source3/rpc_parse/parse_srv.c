@@ -1364,7 +1364,7 @@ void srv_io_info_ctr(char *desc,  SRV_INFO_CTR *ctr, prs_struct *ps, int depth)
 			}
 			default:
 			{
-				DEBUG(5,("%s% no server info at switch_value %d\n",
+				DEBUG(5,("%s no server info at switch_value %d\n",
 						 tab_depth(depth), ctr->switch_value));
 				break;
 			}

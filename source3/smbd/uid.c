@@ -27,7 +27,7 @@ static int initial_uid;
 static int initial_gid;
 
 /* what user is current? */
-struct current_user current_user;
+extern struct current_user current_user;
 
 pstring OriginalDir;
 
@@ -51,7 +51,7 @@ void init_uid(void)
 	initial_uid = geteuid();
 	initial_gid = getegid();
 
-	current_user.cnum = -1;
+	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
 	
 	ChDir(OriginalDir);
@@ -180,7 +180,7 @@ BOOL become_guest(void)
     DEBUG(1,("Failed to become guest. Invalid guest account?\n"));
   }
 
-  current_user.cnum = -2;
+  current_user.conn = NULL;
   current_user.vuid = UID_FIELD_INVALID;
 
   return(ret);
@@ -210,90 +210,89 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 /****************************************************************************
   become the user of a connection number
 ****************************************************************************/
-BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
+BOOL become_user(connection_struct *conn, uint16 vuid)
 {
-  user_struct *vuser = get_valid_user_struct(vuid);
-  int snum,gid;
-  int uid;
+	user_struct *vuser = get_valid_user_struct(vuid);
+	int snum,gid;
+	int uid;
 
-  /*
-   * We need a separate check in security=share mode due to vuid
-   * always being UID_FIELD_INVALID. If we don't do this then
-   * in share mode security we are *always* changing uid's between
-   * SMB's - this hurts performance - Badly.
-   */
+	/*
+	 * We need a separate check in security=share mode due to vuid
+	 * always being UID_FIELD_INVALID. If we don't do this then
+	 * in share mode security we are *always* changing uid's between
+	 * SMB's - this hurts performance - Badly.
+	 */
 
-  if((lp_security() == SEC_SHARE) && (current_user.cnum == cnum) &&
-     (current_user.uid == conn->uid)) {
-    DEBUG(4,("Skipping become_user - already user\n"));
-    return(True);
-  } else if ((current_user.cnum == cnum) && (vuser != 0) && (current_user.vuid == vuid) && 
-      (current_user.uid == vuser->uid)) {
-    DEBUG(4,("Skipping become_user - already user\n"));
-    return(True);
-  }
+	if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
+	   (current_user.uid == conn->uid)) {
+		DEBUG(4,("Skipping become_user - already user\n"));
+		return(True);
+	} else if ((current_user.conn == conn) && 
+		   (vuser != 0) && (current_user.vuid == vuid) && 
+		   (current_user.uid == vuser->uid)) {
+		DEBUG(4,("Skipping become_user - already user\n"));
+		return(True);
+	}
 
-  unbecome_user();
+	unbecome_user();
 
-  if (!(VALID_CNUM(cnum) && conn->open)) {
-    DEBUG(2,("Connection %d not open\n",cnum));
-    return(False);
-  }
+	if (!(conn && conn->open)) {
+		DEBUG(2,("Connection not open\n"));
+		return(False);
+	}
 
-  snum = conn->service;
+	snum = SNUM(conn);
 
-  if((vuser != NULL) && !check_user_ok(conn, vuser, snum))
-    return False;
+	if((vuser != NULL) && !check_user_ok(conn, vuser, snum))
+		return False;
 
-  if (conn->force_user || 
-      lp_security() == SEC_SHARE ||
-      !(vuser) || (vuser->guest)
-     )
-  {
-    uid = conn->uid;
-    gid = conn->gid;
-    current_user.groups = conn->groups;
-    current_user.ngroups = conn->ngroups;
-  }
-  else
-  {
-    if (!vuser) {
-      DEBUG(2,("Invalid vuid used %d\n",vuid));
-      return(False);
-    }
-    uid = vuser->uid;
-    if(!*lp_force_group(snum))
-      gid = vuser->gid;
-    else
-      gid = conn->gid;
-    current_user.ngroups = vuser->n_groups;
-    current_user.groups  = vuser->groups;
-  }
-
-  if (initial_uid == 0)
-    {
-      if (!become_gid(gid)) return(False);
+	if (conn->force_user || 
+	    lp_security() == SEC_SHARE ||
+	    !(vuser) || (vuser->guest)) {
+		uid = conn->uid;
+		gid = conn->gid;
+		current_user.groups = conn->groups;
+		current_user.ngroups = conn->ngroups;
+	} else {
+		if (!vuser) {
+			DEBUG(2,("Invalid vuid used %d\n",vuid));
+			return(False);
+		}
+		uid = vuser->uid;
+		if(!*lp_force_group(snum)) {
+			gid = vuser->gid;
+		} else {
+			gid = conn->gid;
+		}
+		current_user.ngroups = vuser->n_groups;
+		current_user.groups  = vuser->groups;
+	}
+	
+	if (initial_uid == 0)  {
+		if (!become_gid(gid)) return(False);
 
 #ifdef HAVE_SETGROUPS      
-      if (!(VALID_CNUM(cnum) && conn->ipc)) {
-	/* groups stuff added by ih/wreu */
-	if (current_user.ngroups > 0)
-	  if (setgroups(current_user.ngroups,current_user.groups)<0)
-	    DEBUG(0,("setgroups call failed!\n"));
-      }
+		if (!(conn && conn->ipc)) {
+			/* groups stuff added by ih/wreu */
+			if (current_user.ngroups > 0)
+				if (setgroups(current_user.ngroups,
+					      current_user.groups)<0) {
+					DEBUG(0,("setgroups call failed!\n"));
+				}
+		}
 #endif
 
-      if (!conn->admin_user && !become_uid(uid))
-	return(False);
-    }
+		if (!conn->admin_user && !become_uid(uid))
+			return(False);
+	}
+	
+	current_user.conn = conn;
+	current_user.vuid = vuid;
 
-  current_user.cnum = cnum;
-  current_user.vuid = vuid;
-
-  DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d)\n",
-	   getuid(),geteuid(),getgid(),getegid()));
+	DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d)\n",
+		 getuid(),geteuid(),getgid(),getegid()));
   
-  return(True);
+	return(True);
 }
 
 /****************************************************************************
@@ -301,7 +300,7 @@ BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
 ****************************************************************************/
 BOOL unbecome_user(void )
 {
-  if (current_user.cnum == -1)
+  if (!current_user.conn)
     return(False);
 
   ChDir(OriginalDir);
@@ -343,156 +342,10 @@ BOOL unbecome_user(void )
   DEBUG(5,("unbecome_user now uid=(%d,%d) gid=(%d,%d)\n",
 	getuid(),geteuid(),getgid(),getegid()));
 
-  current_user.cnum = -1;
+  current_user.conn = NULL;
   current_user.vuid = UID_FIELD_INVALID;
 
   return(True);
-}
-
-
-/****************************************************************************
-This is a utility function of smbrun(). It must be called only from
-the child as it may leave the caller in a privilaged state.
-****************************************************************************/
-static BOOL setup_stdout_file(char *outfile,BOOL shared)
-{  
-  int fd;
-  struct stat st;
-  mode_t mode = S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH;
-  int flags = O_RDWR|O_CREAT|O_TRUNC|O_EXCL;
-
-  close(1);
-
-  if (shared) {
-	  /* become root - unprivilaged users can't delete these files */
-#ifdef HAVE_SETRESUID
-	  setresgid(0,0,0);
-	  setresuid(0,0,0);
-#else      
-	  setuid(0);
-	  seteuid(0);
-#endif
-  }
-
-  if(stat(outfile, &st) == 0) {
-    /* Check we're not deleting a device file. */ 
-    if(st.st_mode & S_IFREG)
-      unlink(outfile);
-    else
-      flags = O_RDWR;
-  }
-  /* now create the file */
-  fd = open(outfile,flags,mode);
-
-  if (fd == -1) return False;
-
-  if (fd != 1) {
-    if (dup2(fd,1) != 0) {
-      DEBUG(2,("Failed to create stdout file descriptor\n"));
-      close(fd);
-      return False;
-    }
-    close(fd);
-  }
-  return True;
-}
-
-
-/****************************************************************************
-run a command being careful about uid/gid handling and putting the output in
-outfile (or discard it if outfile is NULL).
-
-if shared is True then ensure the file will be writeable by all users
-but created such that its owned by root. This overcomes a security hole.
-
-if shared is not set then open the file with O_EXCL set
-****************************************************************************/
-int smbrun(char *cmd,char *outfile,BOOL shared)
-{
-  int fd,pid;
-  int uid = current_user.uid;
-  int gid = current_user.gid;
-
-#ifndef HAVE_EXECL
-  int ret;
-  pstring syscmd;  
-  char *path = lp_smbrun();
-
-  /* in the old method we use system() to execute smbrun which then
-     executes the command (using system() again!). This involves lots
-     of shell launches and is very slow. It also suffers from a
-     potential security hole */
-  if (!file_exist(path,NULL))
-    {
-      DEBUG(0,("SMBRUN ERROR: Can't find %s. Installation problem?\n",path));
-      return(1);
-    }
-
-  slprintf(syscmd,sizeof(syscmd)-1,"%s %d %d \"(%s 2>&1) > %s\"",
-	  path,uid,gid,cmd,
-	  outfile?outfile:"/dev/null");
-
-  DEBUG(5,("smbrun - running %s ",syscmd));
-  ret = system(syscmd);
-  DEBUG(5,("gave %d\n",ret));
-  return(ret);
-#else
-  /* in this newer method we will exec /bin/sh with the correct
-     arguments, after first setting stdout to point at the file */
-
-  if ((pid=fork())) {
-    int status=0;
-    /* the parent just waits for the child to exit */
-    if (sys_waitpid(pid,&status,0) != pid) {
-      DEBUG(2,("waitpid(%d) : %s\n",pid,strerror(errno)));
-      return -1;
-    }
-    return status;
-  }
-
-
-  /* we are in the child. we exec /bin/sh to do the work for us. we
-     don't directly exec the command we want because it may be a
-     pipeline or anything else the config file specifies */
-
-  /* point our stdout at the file we want output to go into */
-  if (outfile && !setup_stdout_file(outfile,shared)) {
-    exit(80);
-  }
-
-  /* now completely lose our privilages. This is a fairly paranoid
-     way of doing it, but it does work on all systems that I know of */
-#ifdef HAVE_SETRESUID
-  setresgid(0,0,0);
-  setresuid(0,0,0);
-  setresgid(gid,gid,gid);
-  setresuid(uid,uid,uid);      
-#else      
-  setuid(0);
-  seteuid(0);
-  setgid(gid);
-  setegid(gid);
-  setuid(uid);
-  seteuid(uid);
-#endif
-
-  if (getuid() != uid || geteuid() != uid ||
-      getgid() != gid || getegid() != gid) {
-    /* we failed to lose our privilages - do not execute the command */
-    exit(81); /* we can't print stuff at this stage, instead use exit codes
-		 for debugging */
-  }
-
-  /* close all other file descriptors, leaving only 0, 1 and 2. 0 and
-     2 point to /dev/null from the startup code */
-  for (fd=3;fd<256;fd++) close(fd);
-
-  execl("/bin/sh","sh","-c",cmd,NULL);  
-
-  /* not reached */
-  exit(82);
-#endif
-  return 1;
 }
 
 static struct current_user current_user_saved;

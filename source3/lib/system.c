@@ -129,7 +129,7 @@ a simple opendir() wrapper
 ********************************************************************/
 DIR *sys_opendir(char *dname)
 {
-  return(opendir(dos_to_unix(dname,False)));
+	return(opendir(dos_to_unix(dname,False)));
 }
 
 
@@ -342,15 +342,15 @@ for getwd
 ********************************************************************/
 char *sys_getwd(char *s)
 {
-  char *wd;
+	char *wd;
 #ifdef HAVE_GETCWD
-  wd = (char *)getcwd(s, sizeof (pstring));
+	wd = (char *)getcwd(s, sizeof (pstring));
 #else
-  wd = (char *)getwd(s);
+	wd = (char *)getwd(s);
 #endif
-  if (wd)
-    unix_to_dos (wd, True);
-  return wd;
+	if (wd)
+		unix_to_dos(wd, True);
+	return wd;
 }
 
 /*******************************************************************

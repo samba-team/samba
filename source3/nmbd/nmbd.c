@@ -153,7 +153,8 @@ static BOOL dump_core(void)
 #endif
 
 
-  DEBUG( 0, ( "Dumping core in %s\n",dname ) );
+  DEBUG(0,("Dumping core in %s\n",dname));
+  abort();
   return( True );
 } /* dump_core */
 #endif

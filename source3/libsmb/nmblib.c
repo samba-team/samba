@@ -90,7 +90,7 @@ static void debug_nmb_res_rec(struct res_rec *res, char *hdr)
 	  DEBUGADD(4, ("%c", x));
 	}
       
-      DEBUGADD(4, ("   hex ", i));
+      DEBUGADD(4, ("   hex "));
 
       for (j = 0; j < 16; j++)
 	{

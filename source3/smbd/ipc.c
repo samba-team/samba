@@ -37,7 +37,6 @@
 extern int DEBUGLEVEL;
 extern int max_send;
 extern files_struct Files[];
-extern connection_struct Connections[];
 
 extern fstring local_machine;
 extern fstring global_myworkgroup;
@@ -65,31 +64,32 @@ extern int Client;
 extern int oplock_sock;
 extern int smb_read_error;
 
-static BOOL api_Unsupported(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,char *data,
 			    int mdrcnt,int mprcnt,
 			    char **rdata,char **rparam,
 			    int *rdata_len,int *rparam_len);
-static BOOL api_TooSmall(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param,char *data,
 			 int mdrcnt,int mprcnt,
 			 char **rdata,char **rparam,
 			 int *rdata_len,int *rparam_len);
 
 
-static int CopyExpanded(int cnum, int snum, char** dst, char* src, int* n)
+static int CopyExpanded(connection_struct *conn, 
+			int snum, char** dst, char* src, int* n)
 {
-  pstring buf;
-  int l;
+	pstring buf;
+	int l;
 
-  if (!src || !dst || !n || !(*dst)) return(0);
+	if (!src || !dst || !n || !(*dst)) return(0);
 
-  StrnCpy(buf,src,sizeof(buf)/2);
-  string_sub(buf,"%S",lp_servicename(snum));
-  standard_sub(cnum,buf);
-  StrnCpy(*dst,buf,*n);
-  l = strlen(*dst) + 1;
-  (*dst) += l;
-  (*n) -= l;
-  return l;
+	StrnCpy(buf,src,sizeof(buf)/2);
+	string_sub(buf,"%S",lp_servicename(snum));
+	standard_sub(conn,buf);
+	StrnCpy(*dst,buf,*n);
+	l = strlen(*dst) + 1;
+	(*dst) += l;
+	(*n) -= l;
+	return l;
 }
 
 static int CopyAndAdvance(char** dst, char* src, int* n)
@@ -103,24 +103,24 @@ static int CopyAndAdvance(char** dst, char* src, int* n)
   return l;
 }
 
-static int StrlenExpanded(int cnum, int snum, char* s)
+static int StrlenExpanded(connection_struct *conn, int snum, char* s)
 {
-  pstring buf;
-  if (!s) return(0);
-  StrnCpy(buf,s,sizeof(buf)/2);
-  string_sub(buf,"%S",lp_servicename(snum));
-  standard_sub(cnum,buf);
-  return strlen(buf) + 1;
+	pstring buf;
+	if (!s) return(0);
+	StrnCpy(buf,s,sizeof(buf)/2);
+	string_sub(buf,"%S",lp_servicename(snum));
+	standard_sub(conn,buf);
+	return strlen(buf) + 1;
 }
 
-static char* Expand(int cnum, int snum, char* s)
+static char* Expand(connection_struct *conn, int snum, char* s)
 {
-  static pstring buf;
-  if (!s) return(NULL);
-  StrnCpy(buf,s,sizeof(buf)/2);
-  string_sub(buf,"%S",lp_servicename(snum));
-  standard_sub(cnum,buf);
-  return &buf[0];
+	static pstring buf;
+	if (!s) return(NULL);
+	StrnCpy(buf,s,sizeof(buf)/2);
+	string_sub(buf,"%S",lp_servicename(snum));
+	standard_sub(conn,buf);
+	return &buf[0];
 }
 
 /*******************************************************************
@@ -530,7 +530,7 @@ static int check_printq_info(struct pack_desc* desc,
   return True;
 }
 
-static void fill_printjob_info(int cnum, int snum, int uLevel,
+static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
 			       struct pack_desc* desc,
 			       print_queue_struct* queue, int n)
 {
@@ -577,7 +577,7 @@ static void fill_printjob_info(int cnum, int snum, int uLevel,
   }
 }
 
-static void fill_printq_info(int cnum, int snum, int uLevel,
+static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
  			     struct pack_desc* desc,
  			     int count, print_queue_struct* queue,
  			     print_status_struct* status)
@@ -590,7 +590,7 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
     case 3:
     case 4:
     case 5:
-      PACKS(desc,"z",Expand(cnum,snum,SERVICE(snum)));
+      PACKS(desc,"z",Expand(conn,snum,SERVICE(snum)));
       break;
   }
 
@@ -608,7 +608,7 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
       PACKI(desc,"W",LPSTAT_ERROR);
     }
     else if (!status || !status->message[0]) {
-      PACKS(desc,"z",Expand(cnum,snum,lp_comment(snum)));
+      PACKS(desc,"z",Expand(conn,snum,lp_comment(snum)));
       PACKI(desc,"W",LPSTAT_OK); /* status */
     } else {
       PACKS(desc,"z",status->message);
@@ -625,7 +625,7 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
     PACKS(desc,"z","WinPrint");	/* pszPrProc */
     PACKS(desc,"z","");		/* pszParms */
     if (!status || !status->message[0]) {
-      PACKS(desc,"z",Expand(cnum,snum,lp_comment(snum))); /* pszComment */
+      PACKS(desc,"z",Expand(conn,snum,lp_comment(snum))); /* pszComment */
       PACKI(desc,"W",LPSTAT_OK); /* fsStatus */
     } else {
       PACKS(desc,"z",status->message); /* pszComment */
@@ -639,7 +639,7 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
   if (uLevel == 2 || uLevel == 4) {
     int i;
     for (i=0;i<count;i++)
-      fill_printjob_info(cnum,snum,uLevel == 2 ? 1 : 2,desc,&queue[i],i);
+      fill_printjob_info(conn,snum,uLevel == 2 ? 1 : 2,desc,&queue[i],i);
   }
 
   if (uLevel==52) {
@@ -788,7 +788,8 @@ int get_printerdrivernumber(int snum)
   return(i);
 }
 
-static BOOL api_DosPrintQGetInfo(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_DosPrintQGetInfo(connection_struct *conn,
+				 uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
@@ -837,16 +838,16 @@ static BOOL api_DosPrintQGetInfo(int cnum,uint16 vuid, char *param,char *data,
   {
     count = get_printerdrivernumber(snum);
     DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
+  } else {
+    count = get_printqueue(SNUM(conn), conn,&queue,&status);
   }
-  else
-    count = get_printqueue(snum,cnum,&queue,&status);
 
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
   desc.base = *rdata;
   desc.buflen = mdrcnt;
   if (init_package(&desc,1,count)) {
     desc.subcount = count;
-    fill_printq_info(cnum,snum,uLevel,&desc,count,queue,&status);
+    fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
   }
 
   *rdata_len = desc.usedlen;
@@ -868,7 +869,7 @@ static BOOL api_DosPrintQGetInfo(int cnum,uint16 vuid, char *param,char *data,
 /****************************************************************************
   view list of all print jobs on all queues
   ****************************************************************************/
-static BOOL api_DosPrintQEnum(int cnum, uint16 vuid, char* param, char* data,
+static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param, char* data,
  			      int mdrcnt, int mprcnt,
  			      char **rdata, char** rparam,
  			      int *rdata_len, int *rparam_len)
@@ -907,7 +908,7 @@ static BOOL api_DosPrintQEnum(int cnum, uint16 vuid, char* param, char* data,
     n = 0;
     for (i = 0; i < services; i++)
       if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
- 	subcntarr[n] = get_printqueue(i,cnum,&queue[n],&status[n]);
+ 	subcntarr[n] = get_printqueue(i, conn,&queue[n],&status[n]);
  	subcnt += subcntarr[n];
  	n++;
       }
@@ -921,7 +922,7 @@ static BOOL api_DosPrintQEnum(int cnum, uint16 vuid, char* param, char* data,
     succnt = 0;
     for (i = 0; i < services; i++)
       if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
-	fill_printq_info(cnum,i,uLevel,&desc,subcntarr[n],queue[n],&status[n]);
+	fill_printq_info(conn,i,uLevel,&desc,subcntarr[n],queue[n],&status[n]);
 	n++;
 	if (desc.errcode == NERR_Success) succnt = n;
       }
@@ -1180,7 +1181,7 @@ static BOOL srv_comp(struct srv_info_struct *s1,struct srv_info_struct *s2)
   view list of servers available (or possibly domains). The info is
   extracted from lists saved by nmbd on the local host
   ****************************************************************************/
-static BOOL api_RNetServerEnum(int cnum, uint16 vuid, char *param, char *data,
+static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param, char *data,
 			       int mdrcnt, int mprcnt, char **rdata, 
 			       char **rparam, int *rdata_len, int *rparam_len)
 {
@@ -1306,7 +1307,7 @@ static BOOL api_RNetServerEnum(int cnum, uint16 vuid, char *param, char *data,
 /****************************************************************************
   command 0x34 - suspected of being a "Lookup Names" stub api
   ****************************************************************************/
-static BOOL api_RNetGroupGetUsers(int cnum, uint16 vuid, char *param, char *data,
+static BOOL api_RNetGroupGetUsers(connection_struct *conn, uint16 vuid, char *param, char *data,
 			       int mdrcnt, int mprcnt, char **rdata, 
 			       char **rparam, int *rdata_len, int *rparam_len)
 {
@@ -1360,7 +1361,7 @@ static BOOL check_share_info(int uLevel, char* id)
   return True;
 }
 
-static int fill_share_info(int cnum, int snum, int uLevel,
+static int fill_share_info(connection_struct *conn, int snum, int uLevel,
  			   char** buf, int* buflen,
  			   char** stringbuf, int* stringspace, char* baseaddr)
 {
@@ -1382,7 +1383,7 @@ static int fill_share_info(int cnum, int snum, int uLevel,
   if (!buf)
     {
       len = 0;
-      if (uLevel > 0) len += StrlenExpanded(cnum,snum,lp_comment(snum));
+      if (uLevel > 0) len += StrlenExpanded(conn,snum,lp_comment(snum));
       if (uLevel > 1) len += strlen(lp_pathname(snum)) + 1;
       if (buflen) *buflen = struct_len;
       if (stringspace) *stringspace = len;
@@ -1415,7 +1416,7 @@ static int fill_share_info(int cnum, int snum, int uLevel,
       if (strequal("IPC$",lp_servicename(snum))) type = STYPE_IPC;
       SSVAL(p,14,type);		/* device type */
       SIVAL(p,16,PTR_DIFF(p2,baseaddr));
-      len += CopyExpanded(cnum,snum,&p2,lp_comment(snum),&l2);
+      len += CopyExpanded(conn,snum,&p2,lp_comment(snum),&l2);
     }
   
   if (uLevel > 1)
@@ -1455,7 +1456,7 @@ static int fill_share_info(int cnum, int snum, int uLevel,
   return len;
 }
 
-static BOOL api_RNetShareGetInfo(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
@@ -1475,7 +1476,7 @@ static BOOL api_RNetShareGetInfo(int cnum,uint16 vuid, char *param,char *data,
  
   *rdata = REALLOC(*rdata,mdrcnt);
   p = *rdata;
-  *rdata_len = fill_share_info(cnum,snum,uLevel,&p,&mdrcnt,0,0,0);
+  *rdata_len = fill_share_info(conn,snum,uLevel,&p,&mdrcnt,0,0,0);
   if (*rdata_len < 0) return False;
  
   *rparam_len = 6;
@@ -1490,7 +1491,7 @@ static BOOL api_RNetShareGetInfo(int cnum,uint16 vuid, char *param,char *data,
 /****************************************************************************
   view list of shares available
   ****************************************************************************/
-static BOOL api_RNetShareEnum(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
   			      int mdrcnt,int mprcnt,
   			      char **rdata,char **rparam,
   			      int *rdata_len,int *rparam_len)
@@ -1516,7 +1517,7 @@ static BOOL api_RNetShareEnum(int cnum,uint16 vuid, char *param,char *data,
     if (lp_browseable(i) && lp_snum_ok(i))
     {
       total++;
-      data_len += fill_share_info(cnum,i,uLevel,0,&f_len,0,&s_len,0);
+      data_len += fill_share_info(conn,i,uLevel,0,&f_len,0,&s_len,0);
       if (data_len <= buf_len)
       {
         counted++;
@@ -1536,7 +1537,7 @@ static BOOL api_RNetShareEnum(int cnum,uint16 vuid, char *param,char *data,
   s_len = string_len;
   for (i = 0; i < count;i++)
     if (lp_browseable(i) && lp_snum_ok(i))
-      if (fill_share_info(cnum,i,uLevel,&p,&f_len,&p2,&s_len,*rdata) < 0)
+      if (fill_share_info(conn,i,uLevel,&p,&f_len,&p2,&s_len,*rdata) < 0)
  	break;
   
   *rparam_len = 8;
@@ -1557,7 +1558,7 @@ static BOOL api_RNetShareEnum(int cnum,uint16 vuid, char *param,char *data,
 /****************************************************************************
   get the time of day info
   ****************************************************************************/
-static BOOL api_NetRemoteTOD(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid, char *param,char *data,
 			     int mdrcnt,int mprcnt,
 			     char **rdata,char **rparam,
 			     int *rdata_len,int *rparam_len)
@@ -1606,7 +1607,7 @@ static BOOL api_NetRemoteTOD(int cnum,uint16 vuid, char *param,char *data,
 /****************************************************************************
   set the user password
   ****************************************************************************/
-static BOOL api_SetUserPassword(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
@@ -1682,7 +1683,7 @@ static BOOL api_SetUserPassword(int cnum,uint16 vuid, char *param,char *data,
   Set the user password (SamOEM version - gets plaintext).
 ****************************************************************************/
 
-static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
@@ -1760,7 +1761,7 @@ static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *dat
   delete a print job
   Form: <W> <> 
   ****************************************************************************/
-static BOOL api_RDosPrintJobDel(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
@@ -1789,7 +1790,7 @@ static BOOL api_RDosPrintJobDel(int cnum,uint16 vuid, char *param,char *data,
     {
       print_queue_struct *queue=NULL;
       lpq_reset(snum);
-      count = get_printqueue(snum,cnum,&queue,NULL);
+      count = get_printqueue(snum,conn,&queue,NULL);
   
       for (i=0;i<count;i++)
   	if ((queue[i].job&0xFF) == jobid)
@@ -1797,13 +1798,13 @@ static BOOL api_RDosPrintJobDel(int cnum,uint16 vuid, char *param,char *data,
  	    switch (function) {
 	    case 81:		/* delete */ 
 	      DEBUG(3,("Deleting queue entry %d\n",queue[i].job));
-	      del_printqueue(cnum,snum,queue[i].job);
+	      del_printqueue(conn,snum,queue[i].job);
 	      break;
 	    case 82:		/* pause */
 	    case 83:		/* resume */
 	      DEBUG(3,("%s queue entry %d\n",
 		       (function==82?"pausing":"resuming"),queue[i].job));
-	      status_printjob(cnum,snum,queue[i].job,
+	      status_printjob(conn,snum,queue[i].job,
 			      (function==82?LPQ_PAUSED:LPQ_QUEUED));
 	      break;
  	    }
@@ -1824,7 +1825,7 @@ static BOOL api_RDosPrintJobDel(int cnum,uint16 vuid, char *param,char *data,
 /****************************************************************************
   Purge a print queue - or pause or resume it.
   ****************************************************************************/
-static BOOL api_WPrintQueuePurge(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_WPrintQueuePurge(connection_struct *conn,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
@@ -1862,7 +1863,7 @@ static BOOL api_WPrintQueuePurge(int cnum,uint16 vuid, char *param,char *data,
     switch (function) {
     case 74: /* Pause queue */
     case 75: /* Resume queue */
-      status_printqueue(cnum,snum,(function==74?LPSTAT_STOPPED:LPSTAT_OK));
+      status_printqueue(conn,snum,(function==74?LPSTAT_STOPPED:LPSTAT_OK));
       DEBUG(3,("Print queue %s, queue=%s\n",
             (function==74?"pause":"resume"),QueueName));
       break;
@@ -1870,9 +1871,9 @@ static BOOL api_WPrintQueuePurge(int cnum,uint16 vuid, char *param,char *data,
       {
         print_queue_struct *queue=NULL;
         int i, count;
-        count = get_printqueue(snum,cnum,&queue,NULL);
+        count = get_printqueue(snum,conn,&queue,NULL);
         for (i = 0; i < count; i++)
-          del_printqueue(cnum,snum,queue[i].job);
+          del_printqueue(conn,snum,queue[i].job);
  
         if (queue) free(queue);
         DEBUG(3,("Print queue purge, queue=%s\n",QueueName));
@@ -1907,7 +1908,7 @@ static int check_printjob_info(struct pack_desc* desc,
   return True;
 }
 
-static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
+static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,char *data,
   			     int mdrcnt,int mprcnt,
   			     char **rdata,char **rparam,
   			     int *rdata_len,int *rparam_len)
@@ -1941,7 +1942,7 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 	int count;
   
 	lpq_reset(snum);
-	count = get_printqueue(snum,cnum,&queue,NULL);
+	count = get_printqueue(snum,conn,&queue,NULL);
 	for (i=0;i<count;i++)	/* find job */
 	  if ((queue[i].job&0xFF) == jobid) break;
  	    
@@ -1987,16 +1988,17 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 	  if (Files[i].open && Files[i].print_file)
 	    {
 	      pstring wd;
-          int fcnum = Files[i].cnum;
+	      connection_struct *fconn = Files[i].conn;
 	      GetWd(wd);
 	      unbecome_user();
 	      
-	      if (!become_user(&Connections[fcnum], fcnum,vuid) || 
-		  !become_service(fcnum,True))
+	      if (!become_user(fconn,vuid) || 
+		  !become_service(fconn,True))
 		break;
 	      
-	      if (sys_rename(Files[i].name,name) == 0)
-		string_set(&Files[i].name,name);
+	      if (sys_rename(Files[i].fsp_name,name) == 0) {
+		      string_set(&Files[i].fsp_name,name);
+	      }
 	      break;
 	    }
 
@@ -2019,7 +2021,7 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 /****************************************************************************
   get info about the server
   ****************************************************************************/
-static BOOL api_RNetServerGetInfo(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
 				  int mdrcnt,int mprcnt,
 				  char **rdata,char **rparam,
 				  int *rdata_len,int *rparam_len)
@@ -2102,7 +2104,7 @@ static BOOL api_RNetServerGetInfo(int cnum,uint16 vuid, char *param,char *data,
 	SIVAL(p,6,0);
       } else {
 	SIVAL(p,6,PTR_DIFF(p2,*rdata));
-	standard_sub(cnum,comment);
+	standard_sub(conn,comment);
 	StrnCpy(p2,comment,MAX(mdrcnt - struct_len,0));
 	p2 = skip_string(p2,1);
       }
@@ -2127,7 +2129,7 @@ static BOOL api_RNetServerGetInfo(int cnum,uint16 vuid, char *param,char *data,
 /****************************************************************************
   get info about the server
   ****************************************************************************/
-static BOOL api_NetWkstaGetInfo(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
@@ -2364,7 +2366,7 @@ There is no auxiliary data in the response.
 #define AF_OP_ACCOUNTS  3
 
 
-static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
@@ -2437,7 +2439,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 
 	if (uLevel == 11) /* modelled after NTAS 3.51 reply */
 	{         
-		SSVAL(p,usri11_priv,Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER); 
+		SSVAL(p,usri11_priv,conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER); 
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
@@ -2475,7 +2477,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		memset(p+22,' ',16);	/* password */
 		SIVALS(p,38,-1);		/* password age */
 		SSVAL(p,42,
-		Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
+		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
 		pstrcpy(p2,lp_logon_path());
 		p2 = skip_string(p2,1);
@@ -2523,7 +2525,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 /*******************************************************************
   get groups that a user is a member of
   ******************************************************************/
-static BOOL api_NetUserGetGroups(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
@@ -2570,7 +2572,7 @@ static BOOL api_NetUserGetGroups(int cnum,uint16 vuid, char *param,char *data,
 }
 
 
-static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
@@ -2605,7 +2607,7 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
     PACKS(&desc,"B21",name);	/* eff. name */
     PACKS(&desc,"B","");		/* pad */
     PACKI(&desc,"W",
-	  Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
+	  conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
     PACKI(&desc,"D",0);		/* auth flags XXX */
     PACKI(&desc,"W",0);		/* num logons */
     PACKI(&desc,"W",0);		/* bad pw count */
@@ -2628,7 +2630,7 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
 /* JHT - By calling lp_logon_script() and standard_sub() we have */
 /* made sure all macros are fully substituted and available */
     logon_script = lp_logon_script();
-    standard_sub( cnum, logon_script );
+    standard_sub( conn, logon_script );
     PACKS(&desc,"z", logon_script);		/* script path */
 /* End of JHT mods */
 
@@ -2650,7 +2652,7 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
 /****************************************************************************
   api_WAccessGetUserPerms
   ****************************************************************************/
-static BOOL api_WAccessGetUserPerms(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_WAccessGetUserPerms(connection_struct *conn,uint16 vuid, char *param,char *data,
 				    int mdrcnt,int mprcnt,
 				    char **rdata,char **rparam,
 				    int *rdata_len,int *rparam_len)
@@ -2678,7 +2680,7 @@ static BOOL api_WAccessGetUserPerms(int cnum,uint16 vuid, char *param,char *data
 /****************************************************************************
   api_WPrintJobEnumerate
   ****************************************************************************/
-static BOOL api_WPrintJobGetInfo(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
@@ -2711,7 +2713,7 @@ static BOOL api_WPrintJobGetInfo(int cnum,uint16 vuid, char *param,char *data,
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-  count = get_printqueue(snum,cnum,&queue,&status);
+  count = get_printqueue(snum,conn,&queue,&status);
   for (i = 0; i < count; i++) {
     if ((queue[i].job & 0xFF) == job) break;
   }
@@ -2721,7 +2723,7 @@ static BOOL api_WPrintJobGetInfo(int cnum,uint16 vuid, char *param,char *data,
 
   if (init_package(&desc,1,0)) {
     if (i < count) {
-      fill_printjob_info(cnum,snum,uLevel,&desc,&queue[i],i);
+      fill_printjob_info(conn,snum,uLevel,&desc,&queue[i],i);
       *rdata_len = desc.usedlen;
     }
     else {
@@ -2742,7 +2744,7 @@ static BOOL api_WPrintJobGetInfo(int cnum,uint16 vuid, char *param,char *data,
   return(True);
 }
 
-static BOOL api_WPrintJobEnumerate(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *param,char *data,
 				   int mdrcnt,int mprcnt,
 				   char **rdata,char **rparam,
 				   int *rdata_len,int *rparam_len)
@@ -2784,7 +2786,7 @@ static BOOL api_WPrintJobEnumerate(int cnum,uint16 vuid, char *param,char *data,
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-  count = get_printqueue(snum,cnum,&queue,&status);
+  count = get_printqueue(snum,conn,&queue,&status);
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
   desc.base = *rdata;
   desc.buflen = mdrcnt;
@@ -2792,7 +2794,7 @@ static BOOL api_WPrintJobEnumerate(int cnum,uint16 vuid, char *param,char *data,
   if (init_package(&desc,count,0)) {
     succnt = 0;
     for (i = 0; i < count; i++) {
-      fill_printjob_info(cnum,snum,uLevel,&desc,&queue[i],i);
+      fill_printjob_info(conn,snum,uLevel,&desc,&queue[i],i);
       if (desc.errcode == NERR_Success) succnt = i+1;
     }
   }
@@ -2827,7 +2829,7 @@ static int check_printdest_info(struct pack_desc* desc,
   return True;
 }
 
-static void fill_printdest_info(int cnum, int snum, int uLevel,
+static void fill_printdest_info(connection_struct *conn, int snum, int uLevel,
 				struct pack_desc* desc)
 {
   char buf[100];
@@ -2860,7 +2862,7 @@ static void fill_printdest_info(int cnum, int snum, int uLevel,
   }
 }
 
-static BOOL api_WPrintDestGetInfo(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
 				  int mdrcnt,int mprcnt,
 				  char **rdata,char **rparam,
 				  int *rdata_len,int *rparam_len)
@@ -2904,7 +2906,7 @@ static BOOL api_WPrintDestGetInfo(int cnum,uint16 vuid, char *param,char *data,
     desc.base = *rdata;
     desc.buflen = mdrcnt;
     if (init_package(&desc,1,0)) {
-      fill_printdest_info(cnum,snum,uLevel,&desc);
+      fill_printdest_info(conn,snum,uLevel,&desc);
     }
     *rdata_len = desc.usedlen;
   }
@@ -2919,7 +2921,7 @@ static BOOL api_WPrintDestGetInfo(int cnum,uint16 vuid, char *param,char *data,
   return(True);
 }
 
-static BOOL api_WPrintDestEnum(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_WPrintDestEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
 			       int mdrcnt,int mprcnt,
 			       char **rdata,char **rparam,
 			       int *rdata_len,int *rparam_len)
@@ -2957,7 +2959,7 @@ static BOOL api_WPrintDestEnum(int cnum,uint16 vuid, char *param,char *data,
     n = 0;
     for (i = 0; i < services; i++) {
       if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
-	fill_printdest_info(cnum,i,uLevel,&desc);
+	fill_printdest_info(conn,i,uLevel,&desc);
 	n++;
 	if (desc.errcode == NERR_Success) succnt = n;
       }
@@ -2977,7 +2979,7 @@ static BOOL api_WPrintDestEnum(int cnum,uint16 vuid, char *param,char *data,
   return(True);
 }
 
-static BOOL api_WPrintDriverEnum(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_WPrintDriverEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
@@ -3022,7 +3024,7 @@ static BOOL api_WPrintDriverEnum(int cnum,uint16 vuid, char *param,char *data,
   return(True);
 }
 
-static BOOL api_WPrintQProcEnum(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_WPrintQProcEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
@@ -3068,7 +3070,7 @@ static BOOL api_WPrintQProcEnum(int cnum,uint16 vuid, char *param,char *data,
   return(True);
 }
 
-static BOOL api_WPrintPortEnum(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
 			       int mdrcnt,int mprcnt,
 			       char **rdata,char **rparam,
 			       int *rdata_len,int *rparam_len)
@@ -3366,7 +3368,7 @@ static BOOL api_no_reply(char *outbuf, int max_rdata_len)
 /****************************************************************************
   handle remote api calls delivered to a named pipe already opened.
   ****************************************************************************/
-static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
+static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		 	uint16 *setup,char *data,char *params,
 		 	int suwcnt,int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
@@ -3407,8 +3409,6 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 	{
 		DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)",
 				  subcommand, p->name, pnum));
-		DEBUG(3,("(tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d,cnum=%d,vuid=%d)\n",
-				  tdscnt,tpscnt,mdrcnt,mprcnt,cnum,vuid));
 
 		/* record maximum data length that can be transmitted in an SMBtrans */
 		p->file_offset = mdrcnt;
@@ -3447,7 +3447,7 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 /****************************************************************************
   the buffer was too small
   ****************************************************************************/
-static BOOL api_TooSmall(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param,char *data,
 			 int mdrcnt,int mprcnt,
 			 char **rdata,char **rparam,
 			 int *rdata_len,int *rparam_len)
@@ -3468,7 +3468,7 @@ static BOOL api_TooSmall(int cnum,uint16 vuid, char *param,char *data,
 /****************************************************************************
   the request is not supported
   ****************************************************************************/
-static BOOL api_Unsupported(int cnum,uint16 vuid, char *param,char *data,
+static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,char *data,
 			    int mdrcnt,int mprcnt,
 			    char **rdata,char **rparam,
 			    int *rdata_len,int *rparam_len)
@@ -3493,7 +3493,8 @@ struct
 {
   char *name;
   int id;
-  BOOL (*fn)(int,uint16,char *,char *,int,int,char **,char **,int *,int *);
+  BOOL (*fn)(connection_struct *,uint16,char *,char *,
+	     int,int,char **,char **,int *,int *);
   int flags;
 } api_commands[] = {
   {"RNetShareEnum",	0,	api_RNetShareEnum,0},
@@ -3531,7 +3532,7 @@ struct
 /****************************************************************************
   handle remote api calls
   ****************************************************************************/
-static int api_reply(int cnum,uint16 vuid,char *outbuf,char *data,char *params,
+static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *params,
 		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
   int api_command = SVAL(params,0);
@@ -3558,21 +3559,21 @@ static int api_reply(int cnum,uint16 vuid,char *outbuf,char *data,char *params,
   rdata = (char *)malloc(1024); if (rdata) bzero(rdata,1024);
   rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
 
-  reply = api_commands[i].fn(cnum,vuid,params,data,mdrcnt,mprcnt,
+  reply = api_commands[i].fn(conn,vuid,params,data,mdrcnt,mprcnt,
 			     &rdata,&rparam,&rdata_len,&rparam_len);
 
 
   if (rdata_len > mdrcnt ||
       rparam_len > mprcnt)
     {
-      reply = api_TooSmall(cnum,vuid,params,data,mdrcnt,mprcnt,
+      reply = api_TooSmall(conn,vuid,params,data,mdrcnt,mprcnt,
 			   &rdata,&rparam,&rdata_len,&rparam_len);
     }
 	    
 
   /* if we get False back then it's actually unsupported */
   if (!reply)
-    api_Unsupported(cnum,vuid,params,data,mdrcnt,mprcnt,
+    api_Unsupported(conn,vuid,params,data,mdrcnt,mprcnt,
 		    &rdata,&rparam,&rdata_len,&rparam_len);
 
       
@@ -3597,7 +3598,7 @@ static int api_reply(int cnum,uint16 vuid,char *outbuf,char *data,char *params,
 /****************************************************************************
   handle named pipe commands
   ****************************************************************************/
-static int named_pipe(int cnum,uint16 vuid, char *outbuf,char *name,
+static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *name,
 		      uint16 *setup,char *data,char *params,
 		      int suwcnt,int tdscnt,int tpscnt,
 		      int msrcnt,int mdrcnt,int mprcnt)
@@ -3606,12 +3607,12 @@ static int named_pipe(int cnum,uint16 vuid, char *outbuf,char *name,
 
 	if (strequal(name,"LANMAN"))
 	{
-		return api_reply(cnum,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt);
+		return api_reply(conn,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt);
 	}
 
 	if (strlen(name) < 1)
 	{
-		return api_fd_reply(cnum,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt);
+		return api_fd_reply(conn,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt);
 	}
 
 	if (setup)
@@ -3626,141 +3627,132 @@ static int named_pipe(int cnum,uint16 vuid, char *outbuf,char *name,
 /****************************************************************************
   reply to a SMBtrans
   ****************************************************************************/
-int reply_trans(char *inbuf,char *outbuf, int size, int bufsize)
+int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize)
 {
-  fstring name;
+	fstring name;
 
-  char *data=NULL,*params=NULL;
-  uint16 *setup=NULL;
+	char *data=NULL,*params=NULL;
+	uint16 *setup=NULL;
+	int outsize = 0;
+	uint16 vuid = SVAL(inbuf,smb_uid);
+	int tpscnt = SVAL(inbuf,smb_vwv0);
+	int tdscnt = SVAL(inbuf,smb_vwv1);
+	int mprcnt = SVAL(inbuf,smb_vwv2);
+	int mdrcnt = SVAL(inbuf,smb_vwv3);
+	int msrcnt = CVAL(inbuf,smb_vwv4);
+	BOOL close_on_completion = BITSETW(inbuf+smb_vwv5,0);
+	BOOL one_way = BITSETW(inbuf+smb_vwv5,1);
+	int pscnt = SVAL(inbuf,smb_vwv9);
+	int psoff = SVAL(inbuf,smb_vwv10);
+	int dscnt = SVAL(inbuf,smb_vwv11);
+	int dsoff = SVAL(inbuf,smb_vwv12);
+	int suwcnt = CVAL(inbuf,smb_vwv13);
 
-  int outsize = 0;
-  int cnum = SVAL(inbuf,smb_tid);
-  uint16 vuid = SVAL(inbuf,smb_uid);
+	bzero(name, sizeof(name));
+	fstrcpy(name,smb_buf(inbuf));
 
-  int tpscnt = SVAL(inbuf,smb_vwv0);
-  int tdscnt = SVAL(inbuf,smb_vwv1);
-  int mprcnt = SVAL(inbuf,smb_vwv2);
-  int mdrcnt = SVAL(inbuf,smb_vwv3);
-  int msrcnt = CVAL(inbuf,smb_vwv4);
-  BOOL close_on_completion = BITSETW(inbuf+smb_vwv5,0);
-  BOOL one_way = BITSETW(inbuf+smb_vwv5,1);
-  int pscnt = SVAL(inbuf,smb_vwv9);
-  int psoff = SVAL(inbuf,smb_vwv10);
-  int dscnt = SVAL(inbuf,smb_vwv11);
-  int dsoff = SVAL(inbuf,smb_vwv12);
-  int suwcnt = CVAL(inbuf,smb_vwv13);
-
-  bzero(name, sizeof(name));
-  fstrcpy(name,smb_buf(inbuf));
-
-  if (dscnt > tdscnt || pscnt > tpscnt) {
-	  exit_server("invalid trans parameters\n");
-  }
+	if (dscnt > tdscnt || pscnt > tpscnt) {
+		exit_server("invalid trans parameters\n");
+	}
   
-  if (tdscnt)
-    {
-      data = (char *)malloc(tdscnt);
-      memcpy(data,smb_base(inbuf)+dsoff,dscnt);
-    }
-  if (tpscnt)
-    {
-      params = (char *)malloc(tpscnt);
-      memcpy(params,smb_base(inbuf)+psoff,pscnt);
-    }
+	if (tdscnt)  {
+		data = (char *)malloc(tdscnt);
+		memcpy(data,smb_base(inbuf)+dsoff,dscnt);
+	}
 
-  if (suwcnt)
-    {
-      int i;
-      setup = (uint16 *)malloc(suwcnt*sizeof(setup[0]));
-      for (i=0;i<suwcnt;i++)
-	setup[i] = SVAL(inbuf,smb_vwv14+i*SIZEOFWORD);
-    }
+	if (tpscnt) {
+		params = (char *)malloc(tpscnt);
+		memcpy(params,smb_base(inbuf)+psoff,pscnt);
+	}
+
+	if (suwcnt) {
+		int i;
+		setup = (uint16 *)malloc(suwcnt*sizeof(setup[0]));
+		for (i=0;i<suwcnt;i++)
+			setup[i] = SVAL(inbuf,smb_vwv14+i*SIZEOFWORD);
+	}
 
 
-  if (pscnt < tpscnt || dscnt < tdscnt)
-    {
-      /* We need to send an interim response then receive the rest
-	 of the parameter/data bytes */
-      outsize = set_message(outbuf,0,0,True);
-      show_msg(outbuf);
-      send_smb(Client,outbuf);
-    }
+	if (pscnt < tpscnt || dscnt < tdscnt) {
+		/* We need to send an interim response then receive the rest
+		   of the parameter/data bytes */
+		outsize = set_message(outbuf,0,0,True);
+		show_msg(outbuf);
+		send_smb(Client,outbuf);
+	}
 
-  /* receive the rest of the trans packet */
-  while (pscnt < tpscnt || dscnt < tdscnt)
-    {
-      BOOL ret;
-      int pcnt,poff,dcnt,doff,pdisp,ddisp;
+	/* receive the rest of the trans packet */
+	while (pscnt < tpscnt || dscnt < tdscnt) {
+		BOOL ret;
+		int pcnt,poff,dcnt,doff,pdisp,ddisp;
       
-      ret = receive_next_smb(Client,oplock_sock,inbuf,bufsize,SMB_SECONDARY_WAIT);
+		ret = receive_next_smb(Client,oplock_sock,inbuf,bufsize,SMB_SECONDARY_WAIT);
 
-      if ((ret && (CVAL(inbuf, smb_com) != SMBtrans)) || !ret) {
-	      if(ret) {
-		      DEBUG(0,("reply_trans: Invalid secondary trans packet\n"));
-	      } else {
-		      DEBUG(0,("reply_trans: %s in getting secondary trans response.\n",
-			       (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
-	      }
-	      if (params) free(params);
-	      if (data) free(data);
-	      if (setup) free(setup);
-	      return(ERROR(ERRSRV,ERRerror));
-      }
+		if ((ret && (CVAL(inbuf, smb_com) != SMBtrans)) || !ret) {
+			if(ret) {
+				DEBUG(0,("reply_trans: Invalid secondary trans packet\n"));
+			} else {
+				DEBUG(0,("reply_trans: %s in getting secondary trans response.\n",
+					 (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
+			}
+			if (params) free(params);
+			if (data) free(data);
+			if (setup) free(setup);
+			return(ERROR(ERRSRV,ERRerror));
+		}
 
-      show_msg(inbuf);
+		show_msg(inbuf);
       
-      tpscnt = SVAL(inbuf,smb_vwv0);
-      tdscnt = SVAL(inbuf,smb_vwv1);
+		tpscnt = SVAL(inbuf,smb_vwv0);
+		tdscnt = SVAL(inbuf,smb_vwv1);
 
-      pcnt = SVAL(inbuf,smb_vwv2);
-      poff = SVAL(inbuf,smb_vwv3);
-      pdisp = SVAL(inbuf,smb_vwv4);
-      
-      dcnt = SVAL(inbuf,smb_vwv5);
-      doff = SVAL(inbuf,smb_vwv6);
-      ddisp = SVAL(inbuf,smb_vwv7);
-      
-      pscnt += pcnt;
-      dscnt += dcnt;
+		pcnt = SVAL(inbuf,smb_vwv2);
+		poff = SVAL(inbuf,smb_vwv3);
+		pdisp = SVAL(inbuf,smb_vwv4);
+		
+		dcnt = SVAL(inbuf,smb_vwv5);
+		doff = SVAL(inbuf,smb_vwv6);
+		ddisp = SVAL(inbuf,smb_vwv7);
+		
+		pscnt += pcnt;
+		dscnt += dcnt;
+		
+		if (dscnt > tdscnt || pscnt > tpscnt) {
+			exit_server("invalid trans parameters\n");
+		}
+		
+		if (pcnt)
+			memcpy(params+pdisp,smb_base(inbuf)+poff,pcnt);
+		if (dcnt)
+			memcpy(data+ddisp,smb_base(inbuf)+doff,dcnt);      
+	}
+	
+	
+	DEBUG(3,("trans <%s> data=%d params=%d setup=%d\n",
+		 name,tdscnt,tpscnt,suwcnt));
+	
+	if (strncmp(name,"\\PIPE\\",strlen("\\PIPE\\")) == 0) {
+		DEBUG(5,("calling named_pipe\n"));
+		outsize = named_pipe(conn,vuid,outbuf,name+strlen("\\PIPE\\"),setup,data,params,
+				     suwcnt,tdscnt,tpscnt,msrcnt,mdrcnt,mprcnt);
+	} else {
+		DEBUG(3,("invalid pipe name\n"));
+		outsize = 0;
+	}
 
-      if (dscnt > tdscnt || pscnt > tpscnt) {
-	      exit_server("invalid trans parameters\n");
-      }
+	
+	if (data) free(data);
+	if (params) free(params);
+	if (setup) free(setup);
+	
+	if (close_on_completion)
+		close_cnum(conn,vuid);
 
-      if (pcnt)
-	memcpy(params+pdisp,smb_base(inbuf)+poff,pcnt);
-      if (dcnt)
-	memcpy(data+ddisp,smb_base(inbuf)+doff,dcnt);      
-    }
-
-
-  DEBUG(3,("trans <%s> data=%d params=%d setup=%d\n",name,tdscnt,tpscnt,suwcnt));
-
-  if (strncmp(name,"\\PIPE\\",strlen("\\PIPE\\")) == 0)
-  {
-    DEBUG(5,("calling named_pipe\n"));
-    outsize = named_pipe(cnum,vuid,outbuf,name+strlen("\\PIPE\\"),setup,data,params,
-			 suwcnt,tdscnt,tpscnt,msrcnt,mdrcnt,mprcnt);
-  }
-  else
-  {
-    DEBUG(3,("invalid pipe name\n"));
-    outsize = 0;
-  }
-
-
-  if (data) free(data);
-  if (params) free(params);
-  if (setup) free(setup);
-
-  if (close_on_completion)
-    close_cnum(cnum,vuid);
-
-  if (one_way)
-    return(-1);
-  
-  if (outsize == 0)
-    return(ERROR(ERRSRV,ERRnosupport));
-
-  return(outsize);
+	if (one_way)
+		return(-1);
+	
+	if (outsize == 0)
+		return(ERROR(ERRSRV,ERRnosupport));
+	
+	return(outsize);
 }
