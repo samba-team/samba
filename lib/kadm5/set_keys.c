@@ -129,7 +129,11 @@ parse_key_set(krb5_context context, const char *key,
 	    /* if there is a final string, use it as the string to
 	       salt with, this is mostly useful with null salt for
 	       v4 compat, and a cell name for afs compat */
-	    salt->saltvalue.data = buf[i];
+	    salt->saltvalue.data = strdup(buf[i]);
+	    if (salt->saltvalue.data == NULL) {
+		krb5_set_error_string(context, "malloc out of memory");
+		return ENOMEM;
+	    }
 	    salt->saltvalue.length = strlen(buf[i]);
 	}
     }
@@ -291,10 +295,13 @@ _kadm5_generate_key_set(krb5_context context, krb5_principal principal,
 	    if (j == *nkeyset) {
 		ret = add_enctype_to_key_set(&key_set, nkeyset, enctypes[i], 
 					     no_salt ? NULL : &salt);
-		if (ret)
+		if (ret) {
+		    krb5_free_salt(context, salt);
 		    goto out;
+		}
 	    }
 	}
+	krb5_free_salt(context, salt);
     }
     
  out:
