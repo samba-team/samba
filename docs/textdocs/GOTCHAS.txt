@@ -1,0 +1,22 @@
+This file lists real Gotchas to watch out for:
+=========================================================================
+Item Number:	1.0
+Description:	Problem Detecting Interfaces
+Symptom:	Workstations do NOT see Samba server in Browse List
+OS:		RedHat - Rembrandt Beta 2
+Platform:	Intel
+Date:		August 16, 1996
+Submitted By:	John H Terpstra <jht@aquasoft.com.au>
+Details:
+	By default RedHat Rembrandt-II during installation adds an
+	entry to /etc/hosts as follows:-
+		127.0.0.1 loopback "hostname"."domainname"
+
+	This causes Samba to loop back onto the loopback interface.
+	The result is that Samba fails to communicate correctly with
+	the world and therefor may fail to correctly negotiate who
+	is the master browse list holder and who is the master browser.
+
+Corrective Action:	Delete the entry after the word loopback
+	in the line starting 127.0.0.1
+=========================================================================
