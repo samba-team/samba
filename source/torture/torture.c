@@ -2010,6 +2010,8 @@ static BOOL run_fdsesstest(int dummy)
 		cli_unlink(cli, fname1);
 	} else {
 		printf("create with different vuid, same cnum failed.\n");
+		printf("This will cause problems with service clients.\n");
+		ret = False;
 	}
 
 	cli->vuid = saved_vuid;
