@@ -30,12 +30,6 @@
 /* destroy a request structure */
 void req_destroy(struct smbsrv_request *req)
 {
-	/* the request might be marked protected. This is done by the
-	 * SMBecho code for example */
-	if (req->control_flags & REQ_CONTROL_PROTECTED) {
-		return;
-	}
-
 	/* ahh, its so nice to destroy a complex structure in such a
 	 * simple way! */
 	talloc_free(req);
