@@ -690,9 +690,11 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 	   Let the size determine that */
 	   
 	switch (devmode->specversion) {
+		/* list of observed spec version's */
 		case 0x0320:
 		case 0x0400:
 		case 0x0401:
+		case 0x040d:
 			break;
 			
 		default:
