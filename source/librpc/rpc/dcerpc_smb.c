@@ -309,7 +309,7 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 	union smb_open io;
 	TALLOC_CTX *mem_ctx;
 
-	asprintf(&name, "\\pipe\\%s", pipe_name);
+	asprintf(&name, "\\%s", pipe_name);
 	if (!name) {
 		return NT_STATUS_NO_MEMORY;
 	}

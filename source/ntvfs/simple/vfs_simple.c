@@ -803,6 +803,12 @@ static NTSTATUS svfs_search_close(struct request_context *req, union smb_search_
 	return NT_STATUS_OK;
 }
 
+/* SMBtrans - not used on file shares */
+static NTSTATUS svfs_trans(struct request_context *req, struct smb_trans2 *trans2)
+{
+	return NT_STATUS_ACCESS_DENIED;
+}
+
 
 /*
   initialialise the POSIX disk backend, registering ourselves with the ntvfs subsystem
@@ -844,6 +850,7 @@ NTSTATUS ntvfs_simple_init(void)
 	ops.search_first = svfs_search_first;
 	ops.search_next = svfs_search_next;
 	ops.search_close = svfs_search_close;
+	ops.trans = svfs_trans;
 
 	/* register ourselves with the NTVFS subsystem. We register under the name 'default'
 	   as we wish to be the default backend */

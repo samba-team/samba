@@ -75,8 +75,11 @@ struct ntvfs_ops {
 	/* printing specific operations */
 	NTSTATUS (*lpq)(struct request_context *req, union smb_lpq *lpq);
 
-	/* trans interfaces - only used by CIFS backend to prover complete passthru for testing */
+	/* trans2 interface - only used by CIFS backend to prover complete passthru for testing */
 	NTSTATUS (*trans2)(struct request_context *req, struct smb_trans2 *trans2);
+
+	/* trans interface - used by IPC backend for pipes and RAP calls */
+	NTSTATUS (*trans)(struct request_context *req, struct smb_trans2 *trans);
 };
 
 

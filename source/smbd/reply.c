@@ -2169,24 +2169,6 @@ void reply_ulogoffX(struct request_context *req)
 
 
 /****************************************************************************
- Reply to an SMBtrans request
-****************************************************************************/
-void reply_trans(struct request_context *req)
-{
-	req_reply_error(req, NT_STATUS_FOOBAR);
-}
-
-
-/****************************************************************************
- Reply to an SMBtranss2 request
-****************************************************************************/
-void reply_transs2(struct request_context *req)
-{
-	req_reply_error(req, NT_STATUS_FOOBAR);
-}
-
-
-/****************************************************************************
  Reply to an SMBfindclose request
 ****************************************************************************/
 void reply_findclose(struct request_context *req)

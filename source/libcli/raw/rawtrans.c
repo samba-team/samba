@@ -233,6 +233,11 @@ struct cli_request *smb_raw_trans_send_backend(struct cli_tree *tree,
 	/* make sure we don't leak data via the padding */
 	memset(req->out.data, 0, padding);
 
+	if (command == SMBtrans && parms->in.trans_name) {
+		namelen = cli_req_append_string(req, parms->in.trans_name, 
+						STR_TERMINATE);
+	}
+
 	/* primary request */
 	SSVAL(req->out.vwv,VWV(0),parms->in.params.length);
 	SSVAL(req->out.vwv,VWV(1),parms->in.data.length);
@@ -243,9 +248,6 @@ struct cli_request *smb_raw_trans_send_backend(struct cli_tree *tree,
 	SIVAL(req->out.vwv,VWV(6),parms->in.timeout);
 	SSVAL(req->out.vwv,VWV(8),0); /* reserved */
 	SSVAL(req->out.vwv,VWV(9),parms->in.params.length);
-	if (command == SMBtrans && parms->in.trans_name)
-		namelen = cli_req_append_string(req, parms->in.trans_name, 
-						STR_TERMINATE);
 	SSVAL(req->out.vwv,VWV(10),PTR_DIFF(outparam,req->out.hdr)+namelen);
 	SSVAL(req->out.vwv,VWV(11),parms->in.data.length);
 	SSVAL(req->out.vwv,VWV(12),PTR_DIFF(outdata,req->out.hdr)+namelen);

@@ -1214,10 +1214,20 @@ static NTSTATUS trans2_backend(struct request_context *req, struct smb_trans2 *t
 }
 
 
+/*
+  backend for trans requests
+*/
+static NTSTATUS trans_backend(struct request_context *req, struct smb_trans2 *trans)
+{
+
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+
 /****************************************************************************
- Reply to an SMBtrans2 request
+ Reply to an SMBtrans or SMBtrans2 request
 ****************************************************************************/
-void reply_trans2(struct request_context *req)
+void reply_trans_generic(struct request_context *req, uint8 command)
 {
 	struct smb_trans2 trans;
 	int i;
@@ -1262,6 +1272,10 @@ void reply_trans2(struct request_context *req)
 		trans.in.setup[i] = SVAL(req->in.vwv, VWV(14+i));
 	}
 
+	if (command == SMBtrans) {
+		req_pull_string(req, &trans.in.trans_name, req->in.data, -1, STR_TERMINATE);
+	}
+
 	if (!req_pull_blob(req, req->in.hdr + param_ofs, param_count, &trans.in.params) ||
 	    !req_pull_blob(req, req->in.hdr + data_ofs, data_count, &trans.in.data)) {
 		req_reply_error(req, NT_STATUS_FOOBAR);
@@ -1271,12 +1285,16 @@ void reply_trans2(struct request_context *req)
 	/* is it a partial request? if so, then send a 'send more' message */
 	if (param_total > param_count ||
 	    data_total > data_count) {
-		DEBUG(0,("REWRITE: not handling partial trans2 requests!\n"));
+		DEBUG(0,("REWRITE: not handling partial trans requests!\n"));
 		return;
 	}
 
 	/* its a full request, give it to the backend */
-	status = trans2_backend(req, &trans);
+	if (command == SMBtrans) {
+		status = trans_backend(req, &trans);
+	} else {
+		status = trans2_backend(req, &trans);
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		req_reply_error(req, status);
@@ -1353,3 +1371,30 @@ void reply_trans2(struct request_context *req)
 		req_send_reply(req);
 	} while (params_left != 0 || data_left != 0);
 }
+
+
+/****************************************************************************
+ Reply to an SMBtrans2
+****************************************************************************/
+void reply_trans2(struct request_context *req)
+{
+	reply_trans_generic(req, SMBtrans2);
+}
+
+/****************************************************************************
+ Reply to an SMBtrans
+****************************************************************************/
+void reply_trans(struct request_context *req)
+{
+	reply_trans_generic(req, SMBtrans);
+}
+
+/****************************************************************************
+ Reply to an SMBtranss2 request
+****************************************************************************/
+void reply_transs2(struct request_context *req)
+{
+	req_reply_error(req, NT_STATUS_FOOBAR);
+}
+
+
