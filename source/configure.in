@@ -65,6 +65,15 @@ AC_TRY_COMPILE([#include <unistd.h>],[int i = setresuid],
 echo yes; AC_DEFINE(HAVE_SETRESUID_DECL),
 echo no)
 
+# and glibc has setresuid under linux but the function does
+# nothing until kernel 2.1.44! very dumb.
+echo $ac_n "checking for real setresuid $ac_c"
+AC_TRY_RUN([#include <errno.h>
+main() { setresuid(1,1,1); setresuid(2,2,2); exit(errno==EPERM?0:1);}],
+echo yes;AC_DEFINE(HAVE_SETRESUID), 
+echo no)
+
+
 AC_FUNC_MEMCMP
 
 ###############################################
@@ -149,7 +158,7 @@ AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync execl bzero memset)
 AC_CHECK_FUNCS(memmove vsnprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr)
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam pathconf putprpwnam)
-AC_CHECK_FUNCS(setresuid setuidx setgroups mktime rename ftruncate)
+AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate)
 AC_CHECK_FUNCS(set_auth_parameters atexit grantpt getspnam dup2)
 AC_CHECK_FUNCS(bigcrypt getprpwnam setluid yp_get_default_domain getpwanam)
 

@@ -110,6 +110,7 @@
 #undef HAVE_FILE_MACRO
 #undef HAVE_FUNCTION_MACRO
 #undef HAVE_SETRESUID_DECL
+#undef HAVE_SETRESUID
 #undef WITH_NETATALK
 
 /* The number of bytes in a int.  */
@@ -225,9 +226,6 @@
 
 /* Define if you have the setluid function.  */
 #undef HAVE_SETLUID
-
-/* Define if you have the setresuid function.  */
-#undef HAVE_SETRESUID
 
 /* Define if you have the setsid function.  */
 #undef HAVE_SETSID
