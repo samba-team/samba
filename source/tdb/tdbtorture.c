@@ -74,7 +74,7 @@ static void addrec_db(void)
 	free(d);
 }
 
-static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf)
+static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf, void* state)
 {
 	tdb_delete(db, key);
 	return 0;
@@ -106,9 +106,9 @@ int main(int argc, char *argv[])
 	srand(seed + getpid());
 	for (i=0;i<loops;i++) addrec_db();
 
-	printf("traversed %d records\n", tdb_traverse(db, NULL));
-	printf("traversed %d records\n", tdb_traverse(db, traverse_fn));
-	printf("traversed %d records\n", tdb_traverse(db, traverse_fn));
+	printf("traversed %d records\n", tdb_traverse(db, NULL, NULL));
+	printf("traversed %d records\n", tdb_traverse(db, traverse_fn, NULL));
+	printf("traversed %d records\n", tdb_traverse(db, traverse_fn, NULL));
 
 	tdb_close(db);
 

@@ -480,7 +480,7 @@ static void (*traverse_callback)(share_mode_entry *, char *);
 traverse the whole database with this function, calling traverse_callback
 on each share mode
 ****************************************************************************/
-static int traverse_fn(TDB_CONTEXT *db, TDB_DATA kbuf, TDB_DATA dbuf)
+static int traverse_fn(TDB_CONTEXT *db, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct locking_data *data;
 	share_mode_entry *shares;
@@ -505,5 +505,5 @@ int share_mode_forall(void (*fn)(share_mode_entry *, char *))
 {
 	if (!tdb) return 0;
 	traverse_callback = fn;
-	return tdb_traverse(tdb, traverse_fn);
+	return tdb_traverse(tdb, traverse_fn, NULL);
 }

@@ -2967,6 +2967,26 @@ void *memdup(const void *p, size_t size)
 }
 
 /*****************************************************************
+a useful function for returning a path in the Samba password directory
+ *****************************************************************/  
+char *passdb_path(char *name)
+{
+	static pstring fname;
+
+	pstrcpy(fname,lp_lockdir());
+	trim_string(fname,"","/");
+	
+	if (!directory_exist(fname,NULL)) {
+		mkdir(fname,0755);
+	}
+	
+	pstrcat(fname,"/");
+	pstrcat(fname,name);
+
+	return fname;
+}
+
+/*****************************************************************
 a useful function for returning a path in the Samba lock directory
  *****************************************************************/  
 char *lock_path(char *name)

@@ -265,17 +265,52 @@ void buffer4_to_str(char *dest, const BUFFER4 *str, size_t maxlen)
 /*******************************************************************
 copies a UNISTR2 structure.
 ********************************************************************/
+BOOL unistr2upper(UNISTR2 *str, const UNISTR2 *from)
+{
+	if (from != NULL)
+	{
+		int i;
+
+		ZERO_STRUCTP(str);
+
+		/* copy up string lengths*/
+		str->uni_max_len = from->uni_max_len;
+		str->undoc       = from->undoc;
+		str->uni_str_len = from->uni_str_len;
+
+		/* copy the string */
+		for (i = 0; i < from->uni_str_len; i++)
+		{
+			str->buffer[i] = toupper(from->buffer[i]);
+		}
+	}
+	else
+	{
+		str->uni_max_len = 1;
+		str->undoc = 0;
+		str->uni_str_len = 1;
+		str->buffer[0] = 0;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+copies a UNISTR2 structure.
+********************************************************************/
 BOOL copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 {
 	if (from != NULL)
 	{
+		ZERO_STRUCTP(str);
+
 		/* set up string lengths. add one if string is not null-terminated */
 		str->uni_max_len = from->uni_max_len;
 		str->undoc       = from->undoc;
 		str->uni_str_len = from->uni_str_len;
 
 		/* copy the string */
-		memcpy(str->buffer, from->buffer, sizeof(from->buffer));
+		memcpy(str->buffer, from->buffer, str->uni_str_len * 2);
 	}
 	else
 	{

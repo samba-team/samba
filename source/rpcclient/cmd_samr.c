@@ -259,12 +259,12 @@ void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 	}
 
 	domain = argv[1];
+	strupper(domain);
 
-	report(out_hnd, "Lookup Domain in SAM Server\n");
+	report(out_hnd, "Lookup Domain %s in SAM Server\n", domain);
 
 	/* establish a connection. */
-	res = res ? samr_connect( srv_name, 0x02000000,
-				&sam_pol) : False;
+	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_query_lookup_domain( &sam_pol, domain, &dom_sid) : False;
@@ -276,8 +276,7 @@ void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 		DEBUG(5,("cmd_sam_lookup_domain: succeeded\n"));
 
 		sid_to_string(str_sid, &dom_sid);
-		report(out_hnd, "%s SID: %s\n", domain, str_sid);
-		report(out_hnd, "Lookup Domain: OK\n");
+		report(out_hnd, "Domain:\t%s\tSID:\t%s\n", domain, str_sid);
 	}
 	else
 	{

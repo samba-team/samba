@@ -558,6 +558,7 @@ void pwdb_set_last_set_time(char *p, int max_len, time_t t);
 void pwdb_sethexpwd(char *p, const uchar *pwd, uint16 acct_ctrl);
 BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl);
 void *memdup(const void *p, size_t size);
+char *passdb_path(char *name);
 char *lock_path(char *name);
 
 /*The following definitions come from  lib/util_array.c  */
@@ -733,6 +734,7 @@ char *uni_strncpy(char *destbuf, const char *srcbuf, int len);
 uint32 buffer2_to_uint32(const BUFFER2 *str);
 void buffer2_to_multistr(char *dest, const BUFFER2 *str, size_t maxlen);
 void buffer4_to_str(char *dest, const BUFFER4 *str, size_t maxlen);
+BOOL unistr2upper(UNISTR2 *str, const UNISTR2 *from);
 BOOL copy_unistr2(UNISTR2 *str, const UNISTR2 *from);
 UNISTR2 *unistr2_dup(const UNISTR2 *name);
 void unistr2_free(UNISTR2 *name);
@@ -4219,7 +4221,7 @@ void readline_init(void);
 
 msrpc_service_fns *get_service_fns(void);
 
-/*The following definitions come from  samrd/srv_samr_passdb.c  */
+/*The following definitions come from  samrd/srv_samr_tdb.c  */
 
 uint32 _samr_close(POLICY_HND *hnd);
 uint32 _samr_open_domain(const POLICY_HND *connect_pol,
@@ -4322,7 +4324,9 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 				const UNISTR2 *uni_acct_name,
 				uint32 access_mask,
 				POLICY_HND *group_pol, uint32 *rid);
-uint32 _samr_query_dom_info(const POLICY_HND *domain_pol, uint16 switch_value, SAM_UNK_CTR *ctr);
+uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
+				uint16 switch_value,
+				SAM_UNK_CTR *ctr);
 uint32 _samr_create_user(const POLICY_HND *domain_pol,
 				const UNISTR2 *uni_username,
 				uint16 acb_info, uint32 access_mask, 
@@ -5009,7 +5013,6 @@ uint32 _srv_net_srv_get_info( UNISTR2 *srv_name, uint32 switch_value,
 /*The following definitions come from  srvsvcd/srvsvcd.c  */
 
 msrpc_service_fns *get_service_fns(void);
-uint32 _srv_net_remote_tod( UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod );
 
 /*The following definitions come from  svcctld/svcctld.c  */
 
@@ -5021,7 +5024,7 @@ char *tdb_error(TDB_CONTEXT *tdb);
 int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf));
+int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void* state), void* state);
 TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
 TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key);
