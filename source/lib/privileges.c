@@ -228,6 +228,9 @@ static BOOL set_privileges( const DOM_SID *sid, SE_PRIV *mask )
 	fstring keystr;
 	TDB_DATA key, data;
 	
+	if ( !lp_enable_privileges() )
+		return False;
+
 	if ( !tdb )
 		return False;
 
