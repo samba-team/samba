@@ -278,6 +278,8 @@ static uint32 cmd_spoolss_enum_printers(int argc, char **argv)
 	}
 
  done:
+	cli_spoolss_shutdown(&cli);
+
 	return result;
 }
 
@@ -356,13 +358,15 @@ static uint32 cmd_spoolss_enum_ports(int argc, char **argv)
 				display_port_info_2(&ctr.port.info_2[i]);
 				break;
 			default:
-				printf("unknown info level %s\n", info_level);
+				printf("unknown info level %d\n", info_level);
 				break;
 			}
 		}
 	}
 
  done:
+	cli_spoolss_shutdown(&cli);
+
 	return result;
 }
 
@@ -435,6 +439,7 @@ static uint32 cmd_spoolss_getprinter(int argc, char **argv)
 
  done: 
 	if (opened_hnd) cli_spoolss_closeprinter(&cli, &pol);
+
 	cli_spoolss_shutdown(&cli);
 
 	return result;
