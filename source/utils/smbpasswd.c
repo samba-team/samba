@@ -417,10 +417,8 @@ static void usage(char *name)
     /* Create a new smb passwd entry and set it to the given password. */
     {
       int fd;
-      int i;
       int new_entry_length;
       char *new_entry;
-      char *p;
       long offpos;
 
       /* The add user write needs to be atomic - so get the fd from 
