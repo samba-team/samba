@@ -121,7 +121,10 @@ main(int argc, char **argv)
 	    xargv[4] = NULL;
 	    setpeer(argc+1, xargv);
 	}
-	top = setjmp(toplevel) == 0;
+	if(setjmp(toplevel) == 0)
+	    top = 1;
+	else
+	    top = 0;
 	if (top) {
 	    signal(SIGINT, intr);
 	    signal(SIGPIPE, lostpeer);
