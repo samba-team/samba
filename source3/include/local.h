@@ -100,6 +100,11 @@
 #define GUEST_ACCOUNT "nobody"
 #endif
 
+/* user to test password server with as invalid in security=server mode. */
+#ifndef INVALID_USER_PREFIX
+#define INVALID_USER_PREFIX "sambatest"
+#endif
+
 /* the default pager to use for the client "more" command. Users can
    override this with the PAGER environment variable */
 #ifndef PAGER
