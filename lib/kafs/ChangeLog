@@ -8,6 +8,10 @@ Thu Jul 16 01:27:19 1998  Assar Westerlund  <assar@sics.se>
 	* afssys.c: reorganize order of definitions.
 	(try_one, try_two): conditionalize
 
+Thu Jul  9 18:31:52 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* common.c (realm_of_cell): make the dns fallback work
+
 Wed Jul  8 01:39:44 1998  Assar Westerlund  <assar@sics.se>
 
 	* afssys.c (map_syscall_name_to_number): new function for finding
