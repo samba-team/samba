@@ -1016,7 +1016,7 @@ rpc_user_info_internals(const DOM_SID *domain_sid, const char *domain_name,
                 	rids[i] = user_gids[i].g_rid;
 
 		result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol,
-				      	      flags, num_rids, rids,
+				      	      num_rids, rids,
 				      	      &num_names, &names, &name_types);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -2148,7 +2148,7 @@ rpc_list_group_members(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		if (num_members < this_time)
 			this_time = num_members;
 
-		result = cli_samr_lookup_rids(cli, mem_ctx, domain_pol, 1000,
+		result = cli_samr_lookup_rids(cli, mem_ctx, domain_pol,
 					      this_time, group_rids,
 					      &num_names, &names, &name_types);
 
