@@ -6,6 +6,7 @@
    Copyright (C) Luke Howard 2003   
    Copyright (C) Guenther Deschner 2003
    Copyright (C) Jim McDonough (jmcd@us.ibm.com) 2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -79,15 +80,34 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 						krb5_keyblock *keyblock)
 {
 	krb5_error_code ret = 0;
-	BOOL auth_ok = False;
+	krb5_error_code our_ret = 0;
 	krb5_keytab keytab = NULL;
-	char *my_fqdn;
-	fstring my_name;
-	fstring my_Fqdn, my_NAME;
-	char *p_fqdn;
-	char *host_princ_s[18];
-	krb5_principal host_princ;
+	krb5_kt_cursor kt_cursor;
+	krb5_keytab_entry kt_entry;
+	char *valid_princ_formats[7] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+	char *entry_princ_s = NULL;
+	const char *my_name, *my_fqdn;
 	int i;
+	int number_matched_principals = 0;
+
+	/* Generate the list of principal names which we expect
+	 * clients might want to use for authenticating to the file
+	 * service.  We allow name$,{host,cifs}/{name,fqdn,name.REALM}. */
+
+	my_name = lp_netbios_name();
+
+	my_fqdn = name_to_fqdn(mem_ctx, my_name);
+
+	asprintf(&valid_princ_formats[0], "%s$@%s", my_name, lp_realm());
+	asprintf(&valid_princ_formats[1], "host/%s@%s", my_name, lp_realm());
+	asprintf(&valid_princ_formats[2], "host/%s@%s", my_fqdn, lp_realm());
+	asprintf(&valid_princ_formats[3], "host/%s.%s@%s", my_name, lp_realm(), lp_realm());
+	asprintf(&valid_princ_formats[4], "cifs/%s@%s", my_name, lp_realm());
+	asprintf(&valid_princ_formats[5], "cifs/%s@%s", my_fqdn, lp_realm());
+	asprintf(&valid_princ_formats[6], "cifs/%s.%s@%s", my_name, lp_realm(), lp_realm());
+
+	ZERO_STRUCT(kt_entry);
+	ZERO_STRUCT(kt_cursor);
 
 	ret = krb5_kt_default(context, &keytab);
 	if (ret) {
@@ -95,73 +115,90 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 		goto out;
 	}
 
-	/* Generate the list of principal names which we expect clients might
-	 * want to use for authenticating to the file service. */
+	/* Iterate through the keytab.  For each key, if the principal
+	 * name case-insensitively matches one of the allowed formats,
+	 * try verifying the ticket using that principal. */
 
-	fstrcpy(my_name, lp_netbios_name());
-	strlower_m(my_name);
-
-	fstrcpy(my_NAME, lp_netbios_name());
-	strupper_m(my_NAME);
-
-	my_fqdn = name_to_fqdn(mem_ctx, lp_netbios_name());
-	strlower_m(my_fqdn);
-
-	p_fqdn = strchr_m(my_fqdn, '.');
-	fstrcpy(my_Fqdn, my_NAME);
-	if (p_fqdn) {
-		fstrcat(my_Fqdn, p_fqdn);
+	ret = krb5_kt_start_seq_get(context, keytab, &kt_cursor);
+	if (ret) {
+		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_start_seq_get failed (%s)\n", error_message(ret)));
+		goto out;
 	}
+  
+	ret = krb5_kt_start_seq_get(context, keytab, &kt_cursor);
+	if (ret != KRB5_KT_END && ret != ENOENT ) {
+		while (ret && (krb5_kt_next_entry(context, keytab, &kt_entry, &kt_cursor) == 0)) {
+			ret = krb5_unparse_name(context, kt_entry.principal, &entry_princ_s);
+			if (ret) {
+				DEBUG(1, ("ads_keytab_verify_ticket: krb5_unparse_name failed (%s)\n", error_message(ret)));
+				break;
+			}
+			ret = KRB5_BAD_ENCTYPE;
+			for (i = 0; i < sizeof(valid_princ_formats) / sizeof(valid_princ_formats[0]); i++) {
+				if (strequal(entry_princ_s, valid_princ_formats[i])) {
+					number_matched_principals++;
+					p_packet->length = ticket->length;
+					p_packet->data = (krb5_pointer)ticket->data;
+					*pp_tkt = NULL;
+					our_ret = krb5_rd_req(context, &auth_context, p_packet, kt_entry.principal, keytab, NULL, pp_tkt);
+					if (our_ret !=  KRB5_BAD_ENCTYPE) {
+						ret = our_ret;
+					}
+					if (our_ret) {
+						DEBUG(10, ("ads_keytab_verify_ticket: krb5_rd_req(%s) failed: %s\n",
+							entry_princ_s, error_message(our_ret)));
+					} else {
+						DEBUG(3,("ads_keytab_verify_ticket: krb5_rd_req succeeded for principal %s\n",
+							entry_princ_s));
+						break;
+					}
+				}
+			}
 
-        asprintf(&host_princ_s[0], "%s$@%s", my_name, lp_realm());
-        asprintf(&host_princ_s[1], "%s$@%s", my_NAME, lp_realm());
-        asprintf(&host_princ_s[2], "host/%s@%s", my_name, lp_realm());
-        asprintf(&host_princ_s[3], "host/%s@%s", my_NAME, lp_realm());
-        asprintf(&host_princ_s[4], "host/%s@%s", my_fqdn, lp_realm());
-        asprintf(&host_princ_s[5], "host/%s@%s", my_Fqdn, lp_realm());
-        asprintf(&host_princ_s[6], "HOST/%s@%s", my_name, lp_realm());
-        asprintf(&host_princ_s[7], "HOST/%s@%s", my_NAME, lp_realm());
-        asprintf(&host_princ_s[8], "HOST/%s@%s", my_fqdn, lp_realm());
-        asprintf(&host_princ_s[9], "HOST/%s@%s", my_Fqdn, lp_realm());
-        asprintf(&host_princ_s[10], "%s/%s@%s", service, my_name, lp_realm());
-        asprintf(&host_princ_s[11], "%s/%s@%s", service, my_NAME, lp_realm());
-        asprintf(&host_princ_s[12], "%s/%s@%s", service, my_fqdn, lp_realm());
-        asprintf(&host_princ_s[13], "%s/%s@%s", service, my_Fqdn, lp_realm());
-        asprintf(&host_princ_s[14], "%s/%s@%s", strupper_talloc(mem_ctx, service), my_name, lp_realm());
-        asprintf(&host_princ_s[15], "%s/%s@%s", strupper_talloc(mem_ctx, service), my_NAME, lp_realm());
-        asprintf(&host_princ_s[16], "%s/%s@%s", strupper_talloc(mem_ctx, service), my_fqdn, lp_realm());
-        asprintf(&host_princ_s[17], "%s/%s@%s", strupper_talloc(mem_ctx, service), my_Fqdn, lp_realm());
+			/* Free the name we parsed. */
+			krb5_free_unparsed_name(context, entry_princ_s);
+			entry_princ_s = NULL;
 
-	/* Now try to verify the ticket using the key associated with each of
-	 * the principals which we think clients will expect us to be
-	 * participating as. */
-	for (i = 0; i < sizeof(host_princ_s) / sizeof(host_princ_s[0]); i++) {
-		host_princ = NULL;
-		ret = krb5_parse_name(context, host_princ_s[i], &host_princ);
-		if (ret) {
-			DEBUG(1, ("ads_keytab_verify_ticket: krb5_parse_name(%s) failed (%s)\n",
-				host_princ_s[i], error_message(ret)));
-			goto out;
+			/* Free the entry we just read. */
+			smb_krb5_kt_free_entry(context, &kt_entry);
+			ZERO_STRUCT(kt_entry);
 		}
-		p_packet->length = ticket->length;
-		p_packet->data = (krb5_pointer)ticket->data;
-		*pp_tkt = NULL;
-		ret = krb5_rd_req(context, &auth_context, p_packet, host_princ, keytab, NULL, pp_tkt);
-		krb5_free_principal(context, host_princ);
-		if (ret) {
-			DEBUG(0, ("krb5_rd_req(%s) failed: %s\n", host_princ_s[i], error_message(ret)));
-		} else {
-			DEBUG(10,("krb5_rd_req succeeded for principal %s\n", host_princ_s[i]));
-			auth_ok = True;
-			break;
-                }
+		krb5_kt_end_seq_get(context, keytab, &kt_cursor);
 	}
 
-	for (i = 0; i < sizeof(host_princ_s) / sizeof(host_princ_s[0]); i++) {
-		SAFE_FREE(host_princ_s[i]);
-	}
+	ZERO_STRUCT(kt_cursor);
 
   out:
+
+	if (ret) {
+		if (!number_matched_principals) {
+			DEBUG(3, ("ads_keytab_verify_ticket: no keytab principals matched expected file service name.\n"));
+		} else {
+			DEBUG(3, ("ads_keytab_verify_ticket: krb5_rd_req failed for all %d matched keytab principals\n",
+				number_matched_principals));
+		}
+		DEBUG(3, ("ads_keytab_verify_ticket: last error: %s\n", error_message(ret)));
+	}
+
+	if (entry_princ_s) {
+		krb5_free_unparsed_name(context, entry_princ_s);
+	}
+
+	{
+		krb5_keytab_entry zero_kt_entry;
+		ZERO_STRUCT(zero_kt_entry);
+		if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
+			smb_krb5_kt_free_entry(context, &kt_entry);
+		}
+	}
+
+	{
+		krb5_kt_cursor zero_csr;
+		ZERO_STRUCT(zero_csr);
+		if ((memcmp(&kt_cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && keytab) {
+			krb5_kt_end_seq_get(context, keytab, &kt_cursor);
+		}
+	}
 
 	if (keytab) {
 		krb5_kt_close(context, keytab);
@@ -182,11 +219,12 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_conte
 						 krb5_keyblock *keyblock)
 {
 	krb5_error_code ret = 0;
+	krb5_error_code our_ret;
 	krb5_data password;
 	krb5_enctype *enctypes = NULL;
 	int i;
 	const struct ldb_val *password_v;
-	struct ldb_wrap *ldb;
+	struct ldb_context *ldb;
 	int ldb_ret;
 	struct ldb_message **msgs;
 	const char *base_dn = SECRETS_PRIMARY_DOMAIN_DN;
@@ -228,36 +266,42 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_conte
 	if ((ret = get_kerberos_allowed_etypes(context, &enctypes))) {
 		DEBUG(1,("ads_secrets_verify_ticket: krb5_get_permitted_enctypes failed (%s)\n", 
 			 error_message(ret)));
-		goto out;
+		return ret;
 	}
 
 	p_packet->length = ticket->length;
 	p_packet->data = (krb5_pointer)ticket->data;
 
-	ret = KRB5_BAD_ENCTYPE;
 	/* We need to setup a auth context with each possible encoding type in turn. */
+
+	ret =  KRB5_BAD_ENCTYPE;
 	for (i=0;enctypes[i];i++) {
-		krb5_error_code our_ret;
-		our_ret = create_kerberos_key_from_string(context, host_princ, &password, keyblock, enctypes[i]);
-		if (our_ret) {
-			ret = our_ret;
+		krb5_keyblock *key = NULL;
+
+		if (!(key = malloc_p(krb5_keyblock))) {
+			break;
+		}
+	
+		if (create_kerberos_key_from_string(context, host_princ, &password, key, enctypes[i])) {
+			SAFE_FREE(key);
 			continue;
 		}
 
-		krb5_auth_con_setuseruserkey(context, auth_context, keyblock);
+		krb5_auth_con_setuseruserkey(context, auth_context, key);
+
+		krb5_free_keyblock(context, key);
 
 		our_ret = krb5_rd_req(context, &auth_context, p_packet, 
-					NULL,
-					NULL, NULL, pp_tkt);
+				      NULL,
+				      NULL, NULL, pp_tkt);
 		if (!our_ret) {
+	
 			DEBUG(10,("ads_secrets_verify_ticket: enc type [%u] decrypted message !\n",
-				(unsigned int)enctypes[i] ));
+				  (unsigned int)enctypes[i] ));
 			ret = our_ret;
 			break;
 		}
-
-		krb5_free_keyblock_contents(context, keyblock);
-
+	
 		DEBUG((our_ret != KRB5_BAD_ENCTYPE) ? 3 : 10,
 				("ads_secrets_verify_ticket: enc type [%u] failed to decrypt with error %s\n",
 				(unsigned int)enctypes[i], error_message(our_ret)));
@@ -266,8 +310,6 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_conte
 			ret = our_ret;
 		}
 	}
-
- out:
 
 	free_kerberos_etypes(context, enctypes);
 
