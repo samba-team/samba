@@ -1,3 +1,26 @@
+2001-04-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/rd_cred.c: set ret_creds to NULL before doing anything
+	else, from Jacques Vidrine
+
+2001-04-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/hdb/libasn1.h: asn1.h -> krb5_asn1.h
+
+	* lib/asn1/Makefile.am: add asn1_ENCTYPE.x
+
+	* lib/krb5/krb5.h: adapt to asn1 changes
+
+	* lib/asn1/k5.asn1: move enctypes here
+
+	* lib/asn1/libasn1.h: rename asn1.h to krb5_asn1.h to avoid
+	conflicts
+
+	* lib/asn1/Makefile.am: rename asn1.h to krb5_asn1.h to avoid
+	conflicts
+
+	* lib/asn1/lex.l: use strtol to parse constants
+
 2001-04-06  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kuser/kinit.c: add simple support for running commands
