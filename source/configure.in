@@ -880,7 +880,14 @@ case "$host_os" in
 			SONAMEFLAG="-Wl,-h,"
 			PICFLAG="-KPIC"   # Is this correct for SunOS
 		;;
-		*bsd*)  BLDSHARED="true"
+		*freebsd*)  BLDSHARED="true"
+			LDSHFLAGS="-shared"
+			DYNEXP="-Wl,--export-dynamic"
+			SONAMEFLAG="-Wl,-soname,"
+			PICFLAG="-fPIC"
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+		;;
+		*openbsd*)  BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			DYNEXP="-Wl,-Bdynamic"
 			SONAMEFLAG="-Wl,-soname,"
