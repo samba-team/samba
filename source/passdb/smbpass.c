@@ -20,6 +20,8 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
+extern pstring samlogon_user;
+extern BOOL sam_logon_in_ssb;
 
 static int gotalarm;
 static char s_readbuf[16 * 1024];
@@ -154,7 +156,6 @@ void *startsmbpwent(BOOL update)
 /***************************************************************
  End enumeration of the smbpasswd list.
 ****************************************************************/
-
 void endsmbpwent(void *vp)
 {
   FILE *fp = (FILE *)vp;
@@ -162,6 +163,112 @@ void endsmbpwent(void *vp)
   pw_file_unlock(fileno(fp), &pw_file_lock_depth);
   fclose(fp);
   DEBUG(7, ("endsmbpwent: closed password file.\n"));
+}
+
+/*************************************************************************
+ Routine to return the next entry in the smbpasswd list.
+ this function is a nice, messy combination of reading:
+ - the smbpasswd file
+ - the unix password database
+ - smb.conf options (not done at present).
+
+ do not call this function directly.  use passdb.c instead.
+
+ *************************************************************************/
+struct sam_passwd *getsmb21pwent(void *vp)
+{
+	struct smb_passwd *pw_buf = getsmbpwent(vp);
+	static struct sam_passwd user;
+	struct passwd *pwfile;
+
+	static pstring full_name;
+	static pstring home_dir;
+	static pstring home_drive;
+	static pstring logon_script;
+	static pstring profile_path;
+	static pstring acct_desc;
+	static pstring workstations;
+	
+	if (pw_buf == NULL) return NULL;
+
+	pwfile = getpwnam(pw_buf->smb_name);
+	if (pwfile == NULL) return NULL;
+
+	bzero(&user, sizeof(user));
+
+	pstrcpy(samlogon_user, pw_buf->smb_name);
+
+	if (samlogon_user[strlen(samlogon_user)-1] != '$')
+	{
+		/* XXXX hack to get standard_sub_basic() to use sam logon username */
+		/* possibly a better way would be to do a become_user() call */
+		sam_logon_in_ssb = True;
+
+		user.smb_userid    = pw_buf->smb_userid;
+		user.smb_grpid     = pwfile->pw_gid;
+
+		user.user_rid  = uid_to_user_rid (user.smb_userid);
+		user.group_rid = gid_to_group_rid(user.smb_grpid );
+
+		pstrcpy(full_name    , pwfile->pw_gecos        );
+		pstrcpy(logon_script , lp_logon_script       ());
+		pstrcpy(profile_path , lp_logon_path         ());
+		pstrcpy(home_drive   , lp_logon_drive        ());
+		pstrcpy(home_dir     , lp_logon_home         ());
+		pstrcpy(acct_desc    , "");
+		pstrcpy(workstations , lp_domain_workstations());
+
+		sam_logon_in_ssb = False;
+	}
+	else
+	{
+		user.smb_userid    = pw_buf->smb_userid;
+		user.smb_grpid     = pwfile->pw_gid;
+
+		user.user_rid  = uid_to_user_rid (user.smb_userid);
+		user.group_rid = DOMAIN_GROUP_RID_USERS; /* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
+
+		pstrcpy(full_name    , "");
+		pstrcpy(logon_script , "");
+		pstrcpy(profile_path , "");
+		pstrcpy(home_drive   , "");
+		pstrcpy(home_dir     , "");
+		pstrcpy(acct_desc    , "");
+		pstrcpy(workstations , "");
+	}
+
+	user.logon_time            = (time_t)-1;
+	user.logoff_time           = (time_t)-1;
+	user.kickoff_time          = (time_t)-1;
+	user.pass_last_set_time    = pw_buf->pass_last_set_time;
+	user.pass_can_change_time  = (time_t)-1;
+	user.pass_must_change_time = (time_t)-1;
+
+	user.smb_name     = pw_buf->smb_name;
+	user.full_name    = full_name;
+	user.home_dir     = home_dir;
+	user.dir_drive    = home_drive;
+	user.logon_script = logon_script;
+	user.profile_path = profile_path;
+	user.acct_desc    = acct_desc;
+	user.workstations = workstations;
+
+	user.unknown_str = NULL; /* don't know, yet! */
+	user.munged_dial = NULL; /* "munged" dial-back telephone number */
+
+	user.smb_nt_passwd = pw_buf->smb_nt_passwd;
+	user.smb_passwd    = pw_buf->smb_passwd;
+			
+	user.acct_ctrl = pw_buf->acct_ctrl;
+
+	user.unknown_3 = 0xffffff; /* don't know */
+	user.logon_divs = 168; /* hours per week */
+	user.hours_len = 21; /* 21 times 8 bits = 168 */
+	memset(user.hours, 0xff, user.hours_len); /* available at all hours */
+	user.unknown_5 = 0x00020000; /* don't know */
+	user.unknown_5 = 0x000004ec; /* don't know */
+
+	return &user;
 }
 
 /*************************************************************************
