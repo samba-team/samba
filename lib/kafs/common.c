@@ -45,8 +45,11 @@ RCSID("$Id$");
 
 #define ToAsciiUpper(c) ((c) - 'a' + 'A')
 
-static void
-foldup(char *a, const char *b)
+static void (*kafs_verbose)(void *, const char *, int);
+static void *kafs_verbose_ctx;
+
+void
+_kafs_foldup(char *a, const char *b)
 {
   for (; *b; a++, b++)
     if (IsAsciiLower(*b))
@@ -54,6 +57,15 @@ foldup(char *a, const char *b)
     else
       *a = *b;
   *a = '\0';
+}
+
+void
+kafs_set_verbose(void (*f)(void *, const char *, int), void *ctx)
+{
+    if (f) {
+	kafs_verbose = f;
+	kafs_verbose_ctx = ctx;
+    }
 }
 
 int
@@ -350,6 +362,26 @@ _kafs_realm_of_cell(kafs_data *data, const char *cell, char **realm)
     return file_find_cell(data, cell, realm, 0);
 }
 
+static int
+_kafs_try_get_cred(kafs_data *data, const char *user, const char *cell,
+		   const char *realm, uid_t uid, struct kafs_token *kt)
+{
+    int ret;
+
+    ret = (*data->get_cred)(data, user, cell, realm, uid, kt);
+    if (kafs_verbose) {
+	char *str;
+	asprintf(&str, "%s tried afs%s%s@%s -> %d",
+		 data->name, cell[0] == '\0' ? "" : "/", 
+		 cell, realm, ret);
+	(*kafs_verbose)(kafs_verbose_ctx, str, ret);
+	free(str);
+    }
+
+    return ret;
+}
+
+
 int
 _kafs_get_cred(kafs_data *data,
 	       const char *cell, 
@@ -387,23 +419,23 @@ _kafs_get_cred(kafs_data *data,
      */
   
     if (realm_hint) {
-	ret = (*data->get_cred)(data, AUTH_SUPERUSER,
-				cell, realm_hint, uid, kt);
+	ret = _kafs_try_get_cred(data, AUTH_SUPERUSER,
+				 cell, realm_hint, uid, kt);
 	if (ret == 0) return 0;
-	ret = (*data->get_cred)(data, AUTH_SUPERUSER,
-				"", realm_hint, uid, kt);
+	ret = _kafs_try_get_cred(data, AUTH_SUPERUSER,
+				 "", realm_hint, uid, kt);
 	if (ret == 0) return 0;
     }
 
-    foldup(CELL, cell);
+    _kafs_foldup(CELL, cell);
 
     /*
      * If cell == realm we don't need no cross-cell authentication.
      * Try afs@REALM.
      */
     if (strcmp(CELL, realm) == 0) {
-        ret = (*data->get_cred)(data, AUTH_SUPERUSER,
-				"", realm, uid, kt);
+        ret = _kafs_try_get_cred(data, AUTH_SUPERUSER,
+				 "", realm, uid, kt);
 	if (ret == 0) return 0;
 	/* Try afs.cell@REALM below. */
     }
@@ -413,8 +445,8 @@ _kafs_get_cred(kafs_data *data,
      * REALM we still don't have to resort to cross-cell authentication.
      * Try afs.cell@REALM.
      */
-    ret = (*data->get_cred)(data, AUTH_SUPERUSER, 
-			    cell, realm, uid, kt);
+    ret = _kafs_try_get_cred(data, AUTH_SUPERUSER, 
+			     cell, realm, uid, kt);
     if (ret == 0) return 0;
 
     /*
@@ -423,11 +455,11 @@ _kafs_get_cred(kafs_data *data,
      * Try afs@CELL.
      * Try afs.cell@CELL.
      */
-    ret = (*data->get_cred)(data, AUTH_SUPERUSER,
-			    "", CELL, uid, kt);
+    ret = _kafs_try_get_cred(data, AUTH_SUPERUSER,
+			     "", CELL, uid, kt);
     if (ret == 0) return 0;
-    ret = (*data->get_cred)(data, AUTH_SUPERUSER, 
-			    cell, CELL, uid, kt);
+    ret = _kafs_try_get_cred(data, AUTH_SUPERUSER, 
+			     cell, CELL, uid, kt);
     if (ret == 0) return 0;
 
     /*
@@ -439,11 +471,11 @@ _kafs_get_cred(kafs_data *data,
     if (_kafs_realm_of_cell(data, cell, &vl_realm) == 0
 	&& strcmp(vl_realm, realm) != 0
 	&& strcmp(vl_realm, CELL) != 0) {
-	ret = (*data->get_cred)(data, AUTH_SUPERUSER,
-				cell, vl_realm, uid, kt);
+	ret = _kafs_try_get_cred(data, AUTH_SUPERUSER,
+				 cell, vl_realm, uid, kt);
 	if (ret)
-	    ret = (*data->get_cred)(data, AUTH_SUPERUSER,
-				    "", vl_realm, uid, kt);
+	    ret = _kafs_try_get_cred(data, AUTH_SUPERUSER,
+				     "", vl_realm, uid, kt);
 	free(vl_realm);
 	if (ret == 0) return 0;
     }
