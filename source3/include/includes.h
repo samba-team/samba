@@ -369,11 +369,11 @@
 #endif
 
 #if defined (HAVE_NETGROUP)
-#if defined(HAVE_RPCSVC_YP_PROT_H)
-#include <rpcsvc/yp_prot.h>
-#endif
 #if defined(HAVE_RPCSVC_YPCLNT_H)
 #include <rpcsvc/ypclnt.h>
+#endif
+#if defined(HAVE_RPCSVC_YP_PROT_H)
+#include <rpcsvc/yp_prot.h>
 #endif
 #endif /* HAVE_NETGROUP */
 
