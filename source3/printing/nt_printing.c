@@ -362,7 +362,7 @@ static uint32 get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 	fstrcpy(info.name, lp_printerdriver(snum));
 	fstrcpy(info.defaultdatatype, "RAW");
 	
-	if ((info.dependentfiles=(char *)malloc(sizeof(fstring))) == NULL)
+	if ((info.dependentfiles=(fstring *)malloc(sizeof(fstring))) == NULL)
 		return ERROR_NOT_ENOUGH_MEMORY;
 
 	fstrcpy(info.dependentfiles[0], "");
@@ -1300,7 +1300,7 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 		}
 		case 6: 
 		{
-			NT_PRINTER_DRIVER_INFO_LEVEL_3 *info6;
+			NT_PRINTER_DRIVER_INFO_LEVEL_6 *info6;
 			if (driver.info_6 != NULL)
 			{
 				info6=driver.info_6;
