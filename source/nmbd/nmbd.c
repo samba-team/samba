@@ -403,6 +403,7 @@ static void process(void)
 
     if(reload_after_sighup) {
       reload_services( True );
+      reopen_logs();
       reload_after_sighup = False;
     }
 

@@ -850,8 +850,8 @@ static BOOL parse_lpq_softq(char *line,print_queue_struct *buf,BOOL first)
     t->tm_mon  = atoi(tok[count+2]+3);
     switch (*tok[count+2])
     {
-    case 7: case 8: case 9: t->tm_year = atoi(tok[count+2]) + 1900; break;
-    default:                t->tm_year = atoi(tok[count+2]) + 2000; break;
+    case 7: case 8: case 9: t->tm_year = atoi(tok[count+2]); break;
+    default:                t->tm_year = atoi(tok[count+2]); break;
     }
 
     t->tm_hour = atoi(tok[count+3]);

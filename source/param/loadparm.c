@@ -427,7 +427,7 @@ static service sDefault =
   False,  /* bStrictLocking */
   True,  /* bShareModes */
   True,  /* bOpLocks */
-  False, /* bLevel2OpLocks */
+  True, /* bLevel2OpLocks */
   False, /* bOnlyUser */
   True,  /* bMangledNames */
   True,  /* bWidelinks */
