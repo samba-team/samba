@@ -43,21 +43,20 @@ RCSID("$Id$");
 static int
 send_and_recv (int fd,
 	       time_t tmout,
-	       struct sockaddr_in *addr,
-	       const krb5_data *send,
-	       krb5_data *recv)
+	       int udp,
+	       const krb5_data *req,
+	       krb5_data *rep)
 {
      struct fd_set fdset;
      struct timeval timeout;
      int ret;
      int nbytes;
 
-     if (sendto (fd, send->data, send->length, 0,
-		 (struct sockaddr *)addr, sizeof(*addr)) < 0)
+     if (send (fd, req->data, req->length, 0) < 0)
 	  return -1;
-     recv->data = NULL;
-     recv->length = 0;
-     while(1){
+     rep->data = NULL;
+     rep->length = 0;
+     do{
 	 FD_ZERO(&fdset);
 	 FD_SET(fd, &fdset);
 	 timeout.tv_sec  = tmout;
@@ -73,22 +72,21 @@ send_and_recv (int fd,
 	     if(nbytes == 0)
 		 return 0;
 
-	     recv->data = realloc(recv->data, recv->length + nbytes);
-	     ret = recvfrom (fd, (char *)recv->data + recv->length,
-			     nbytes, 0, NULL, &len);
+	     rep->data = realloc(rep->data, rep->length + nbytes);
+	     ret = recv (fd, (char*)rep->data + rep->length, nbytes, 0);
 	     if (ret < 0) {
-		 free (recv->data);
+		 free (rep->data);
 		 return -1;
 	     }
-	     recv->length += ret;
+	     rep->length += ret;
 	 }
-     }
+     }while(!udp);
+     return 0;
 }
 
 static int
 send_and_recv_http(int fd, 
 		   time_t tmout,
-		   struct sockaddr_in *addr,
 		   const krb5_data *send,
 		   krb5_data *recv)
 {
@@ -103,7 +101,7 @@ send_and_recv_http(int fd,
     free(str);
     r.data = request;
     r.length = strlen(request);
-    ret = send_and_recv(fd, tmout, addr, &r, recv);
+    ret = send_and_recv(fd, tmout, 0, &r, recv);
     free(request);
     if(ret)
 	return ret;
@@ -187,11 +185,11 @@ krb5_sendto_kdc (krb5_context context,
 		    
 		    if(http_flag)
 			ret = send_and_recv_http(fd, context->kdc_timeout,
-						 &a, send, receive);
+						 send, receive);
 		    else
 			
-			ret = send_and_recv (fd, context->kdc_timeout, 
-					     &a, send, receive);
+			ret = send_and_recv (fd, context->kdc_timeout, 1,
+					     send, receive);
 		    close (fd);
 		    if(ret == 0){
 			krb5_free_krbhst (context, hostlist);
