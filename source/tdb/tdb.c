@@ -190,7 +190,7 @@ static int tdb_lock(TDB_CONTEXT *tdb, int list, int ltype)
 	/* Since fcntl locks don't nest, we do a lock for the first one,
 	   and simply bump the count for future ones */
 	if (tdb->locked[list+1].count == 0) {
-		if (tdb->header.rwlocks) {
+		if (!tdb->read_only && tdb->header.rwlocks) {
 			if (tdb_spinlock(tdb, list, ltype)) {
 				TDB_LOG((tdb, 0, "tdb_lock spinlock on list ltype=%d\n", 
 					   list, ltype));
@@ -221,7 +221,7 @@ static void tdb_unlock(TDB_CONTEXT *tdb, int list, int ltype)
 
 	if (tdb->locked[list+1].count == 1) {
 		/* Down to last nested lock: unlock underneath */
-		if (tdb->header.rwlocks)
+		if (!tdb->read_only && tdb->header.rwlocks)
 			tdb_spinunlock(tdb, list, ltype);
 		else
 			tdb_brlock(tdb, FREELIST_TOP+4*list, F_UNLCK, F_SETLKW, 0);
@@ -1460,7 +1460,8 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		goto fail;
 	tdb_mmap(&tdb);
 	if (locked) {
-		tdb_clear_spinlocks(&tdb);
+		if (!tdb.read_only)
+			tdb_clear_spinlocks(&tdb);
 		if (tdb_brlock(&tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0) == -1)
 			goto fail;
 	}
