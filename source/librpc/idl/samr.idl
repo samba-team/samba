@@ -1023,7 +1023,7 @@
 	  this one is mysterious. I have a few guesses, but nothing working yet
 	*/
 	NTSTATUS samr_SetBootKeyInformation(
-		[in,ref]   policy_handle *handle
+		[in,ref]   policy_handle *handle,
 		[in]       uint32 unknown1,
 		[in]       uint32 unknown2,
 		[in]       uint32 unknown3
