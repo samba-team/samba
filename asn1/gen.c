@@ -7,24 +7,26 @@
 
 FILE *headerfile, *codefile;
 
+#define STEM "asn1"
+
 void
 init_generate (char *filename)
 {
-  headerfile = fopen ("foo.h", "w");
-  fprintf (headerfile,
-	   "/* Genereated from %s */\n"
-	   "/* Do not edit */\n\n",
-	   filename);
-  codefile = fopen ("foo.c", "w");
-  fprintf (codefile, 
-	   "/* Generated from %s */\n"
-	   "/* Do not edit */\n\n"
-	   "#include <stdio.h>\n"
-	   "#include <stdlib.h>\n"
-	   "#include <time.h>\n"
-	   "#include <der.h>\n"
-	   "#include <foo.h>\n\n",
-	   filename);
+    headerfile = fopen (STEM ".h", "w");
+    fprintf (headerfile,
+	     "/* Genereated from %s */\n"
+	     "/* Do not edit */\n\n",
+	     filename);
+    codefile = fopen (STEM ".c", "w");
+    fprintf (codefile, 
+	     "/* Generated from %s */\n"
+	     "/* Do not edit */\n\n"
+	     "#include <stdio.h>\n"
+	     "#include <stdlib.h>\n"
+	     "#include <time.h>\n"
+	     "#include <der.h>\n"
+	     "#include <" STEM ".h>\n\n",
+	     filename);
 }
 
 void
