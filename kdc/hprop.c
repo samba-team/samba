@@ -49,10 +49,13 @@ static hdb_master_key mkey5;
 static char *source_type;
 
 static char *afs_cell;
+static char *realm;
 
 #ifdef KRB4
-static char *realm;
 static int v4_db;
+
+static des_cblock mkey4;
+static des_key_schedule msched4;
 
 #ifdef KASERVER_DB
 static int kaspecials_flag;
@@ -155,13 +158,15 @@ kdb_prop(void *arg, Principal *p)
     }
     strlcpy(pr.name, p->name, sizeof(pr.name));
     strlcpy(pr.instance, p->instance, sizeof(pr.instance));
-    /* key */
+
+    kdb_encrypt_key(&pr.key, &pr.key, &mkey4, msched4, DES_DECRYPT);
+    copy_from_key(pr.key, &p->key_low, &p->key_high);
     pr.exp_date = p->exp_date;
     pr.mod_date = p->mod_date;
     strlcpy(pr.mod_name, p->mod_name, sizeof(pr.mod_name));
     strlcpy(pr.mod_instance, p->mod_instance, sizeof(pr.mod_instance));
     pr.max_life = p->max_life;
-    pr.mkvno = p->kdc_key_ver;
+    pr.mkvno = -1; /* p->kdc_key_ver; */
     pr.kvno = p->key_version;
     
     ret = v4_prop(arg, &pr);
@@ -749,6 +754,29 @@ propagate_database (krb5_context context, int type,
     return 0;
 }
 
+#ifdef KRB4
+
+static void
+v4_get_masterkey (krb5_context context, char *database)
+{
+    int e;
+
+    e = kerb_db_set_name (database);
+    if(e)
+	krb5_errx(context, 1, "kerb_db_set_name: %s",
+		  krb_get_err_text(e));
+    e = kdb_get_master_key(0, &mkey4, msched4);
+    if(e)
+	krb5_errx(context, 1, "kdb_get_master_key: %s",
+		  krb_get_err_text(e));
+    e = kdb_verify_master_key(&mkey4, msched4, stdout);
+    if (e)
+	krb5_errx(context, 1, "kdb_verify_master_key: %s",
+		  krb_get_err_text(e));
+}
+
+#endif
+
 int
 main(int argc, char **argv)
 {
@@ -836,26 +864,10 @@ main(int argc, char **argv)
 
     switch(type) {
 #ifdef KRB4
-    case HPROP_KRB4_DB: {
-	int e;
-
+    case HPROP_KRB4_DB:
 	if (database == NULL)
 	    krb5_errx(context, 1, "no database specified");
-	e = kerb_db_set_name (database);
-	if(e)
-	    krb5_errx(context, 1, "kerb_db_set_name: %s",
-		      krb_get_err_text(e));
-#if 0
-	e = kdb_get_master_key(0, &mkey4, msched4);
-	if(e)
-	    krb5_errx(context, 1, "kdb_get_master_key: %s",
-		      krb_get_err_text(e));
-#endif
-	break;
-    }
-    case HPROP_KRB4_DUMP:
-	if (database == NULL)
-	    krb5_errx(context, 1, "no dump file specified");
+	v4_get_masterkey (context, database);
 	break;
 #ifdef KASERVER_DB
     case HPROP_KASERVER:
@@ -869,6 +881,13 @@ main(int argc, char **argv)
 	break;
 #endif
 #endif /* KRB4 */
+    case HPROP_KRB4_DUMP:
+	if (database == NULL)
+	    krb5_errx(context, 1, "no dump file specified");
+#ifdef KRB4
+	v4_get_masterkey (context, database);
+#endif
+	break;
     case HPROP_MIT_DUMP:
 	if (database == NULL)
 	    krb5_errx(context, 1, "no dump file specified");
