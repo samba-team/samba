@@ -259,7 +259,7 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
     FD_ZERO(&fds);
     FD_SET(fd,&fds);
       
-    selrtn = sys_select_intr(fd+1,&fds,&timeout);
+    selrtn = sys_select_intr(fd+1,&fds,NULL,NULL,&timeout);
 
     /* Check if error */
     if(selrtn == -1) {
@@ -363,7 +363,7 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
     FD_ZERO(&fds);
     FD_SET(fd,&fds);
       
-    selrtn = sys_select_intr(fd+1,&fds,&timeout);
+    selrtn = sys_select_intr(fd+1,&fds,NULL,NULL,&timeout);
 
     if(selrtn <= 0)
       return selrtn;

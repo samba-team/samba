@@ -94,7 +94,7 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
 		to.tv_sec = timeout / 1000;
 		to.tv_usec = (timeout % 1000) * 1000;
 
-		selrtn = sys_select(maxfd+1,fds,&to);
+		selrtn = sys_select(maxfd+1,fds,NULL,NULL,&to);
 
 		if (selrtn == -1 && errno == EINTR) {
 			/* could be a kernel oplock interrupt */

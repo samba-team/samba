@@ -209,7 +209,7 @@ max can be %d\n",
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
 		
-		num = sys_select(FD_SETSIZE,&lfds,NULL);
+		num = sys_select(FD_SETSIZE,&lfds,NULL,NULL,NULL);
 		
 		if (num == -1 && errno == EINTR) {
 			extern VOLATILE sig_atomic_t reload_after_sighup;

@@ -2083,7 +2083,7 @@ static void readline_callback(void)
 
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
-	sys_select_intr(cli->fd+1,&fds,&timeout);
+	sys_select_intr(cli->fd+1,&fds,NULL,NULL,&timeout);
       		
 	/* We deliberately use receive_smb instead of
 	   client_receive_smb as we want to receive

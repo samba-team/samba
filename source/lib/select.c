@@ -21,22 +21,23 @@
 
 #include "includes.h"
 
-/* this is here because it allows us to avoid a nasty race in signal handling. 
+/* This is here because it allows us to avoid a nasty race in signal handling. 
    We need to guarantee that when we get a signal we get out of a select immediately
    but doing that involves a race condition. We can avoid the race by getting the 
    signal handler to write to a pipe that is in the select/poll list 
 
-   this means all Samba signal handlers should call sys_select_signal()
+   This means all Samba signal handlers should call sys_select_signal().
 */
+
 static pid_t initialised;
 static int select_pipe[2];
 static VOLATILE unsigned pipe_written, pipe_read;
 
-
 /*******************************************************************
-call this from all Samba signal handlers if you want to avoid a 
-nasty signal race condition
+ Call this from all Samba signal handlers if you want to avoid a 
+ nasty signal race condition.
 ********************************************************************/
+
 void sys_select_signal(void)
 {
 	char c = 1;
@@ -48,13 +49,15 @@ void sys_select_signal(void)
 }
 
 /*******************************************************************
-like select() but avoids the signal race using a pipe
-it also guuarantees that fds on return only ever contains bits set
-for file descriptors that were readable
+ Like select() but avoids the signal race using a pipe
+ it also guuarantees that fds on return only ever contains bits set
+ for file descriptors that were readable.
 ********************************************************************/
-int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
+
+int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval)
 {
 	int ret, saved_errno;
+	fd_set *readfds2, readfds_buf;
 
 	if (initialised != sys_getpid()) {
 		pipe(select_pipe);
@@ -77,16 +80,29 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 	}
 
 	maxfd = MAX(select_pipe[0]+1, maxfd);
-	FD_SET(select_pipe[0], fds);
+
+	/* If readfds is NULL we need to provide our own set. */
+	if (readfds) {
+		readfds2 = readfds;
+	} else {
+		readfds2 = &readfds_buf;
+		FD_ZERO(readfds2);
+	}
+	FD_SET(select_pipe[0], readfds2);
+
 	errno = 0;
-	ret = select(maxfd,fds,NULL,NULL,tval);
+	ret = select(maxfd,readfds2,writefds,errorfds,tval);
 
 	if (ret <= 0) {
-		FD_ZERO(fds);
+		FD_ZERO(readfds2);
+		if (writefds)
+			FD_ZERO(writefds);
+		if (errorfds)
+			FD_ZERO(errorfds);
 	}
 
-	if (FD_ISSET(select_pipe[0], fds)) {
-		FD_CLR(select_pipe[0], fds);
+	if (FD_ISSET(select_pipe[0], readfds2)) {
+		FD_CLR(select_pipe[0], readfds2);
 		ret--;
 		if (ret == 0) {
 			ret = -1;
@@ -110,20 +126,35 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 }
 
 /*******************************************************************
-similar to sys_select() but catch EINTR and continue
-this is what sys_select() used to do in Samba
+ Similar to sys_select() but catch EINTR and continue.
+ This is what sys_select() used to do in Samba.
 ********************************************************************/
-int sys_select_intr(int maxfd, fd_set *fds,struct timeval *tval)
+
+int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval)
 {
 	int ret;
-	fd_set fds2;
+	fd_set *readfds2, readfds_buf, *writefds2, writefds_buf, *errorfds2, errorfds_buf;
+
+	readfds2 = (readfds ? &readfds_buf : NULL);
+	writefds2 = (writefds ? &writefds_buf : NULL);
+	errorfds2 = (errorfds ? &errorfds_buf : NULL);
 
 	do {
-		fds2 = *fds;
-		ret = sys_select(maxfd, &fds2, tval);
+		if (readfds)
+			readfds_buf = *readfds;
+		if (writefds)
+			writefds_buf = *writefds;
+		if (errorfds)
+			errorfds_buf = *errorfds;
+		ret = sys_select(maxfd, readfds2, writefds2, errorfds2, tval);
 	} while (ret == -1 && errno == EINTR);
 
-	*fds = fds2;
+	if (readfds)
+		*readfds = readfds_buf;
+	if (writefds)
+		*writefds = writefds_buf;
+	if (errorfds)
+		*errorfds = errorfds_buf;
 
 	return ret;
 }
