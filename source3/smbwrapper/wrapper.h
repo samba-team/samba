@@ -21,6 +21,20 @@
 
 #include "config.h"
 
+#ifdef NO_PROTO
+/* get rid of prototypes */
+#define _NO_PROTO
+
+#ifdef HAVE_SYS_CDEFS_H
+#include <sys/cdefs.h>
+#ifdef __P
+#undef __P
+#define __P(x) ()
+#endif
+#endif
+#endif
+
+
 #ifdef HAVE_SYSCALL_H
 #include <syscall.h>
 #elif HAVE_SYS_SYSCALL_H

@@ -408,6 +408,9 @@
 /* Define if you have the getcwd function.  */
 #undef HAVE_GETCWD
 
+/* Define if you have the getdents function.  */
+#undef HAVE_GETDENTS
+
 /* Define if you have the getgrnam function.  */
 #undef HAVE_GETGRNAM
 
@@ -653,6 +656,9 @@
 
 /* Define if you have the <sys/capability.h> header file.  */
 #undef HAVE_SYS_CAPABILITY_H
+
+/* Define if you have the <sys/cdefs.h> header file.  */
+#undef HAVE_SYS_CDEFS_H
 
 /* Define if you have the <sys/dir.h> header file.  */
 #undef HAVE_SYS_DIR_H

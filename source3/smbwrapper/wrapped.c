@@ -20,17 +20,13 @@
 */
 
 
+/* we don't want prototypes for this code */
+#define NO_PROTO
+
 #include "wrapper.h"
 
- int open(const char *name, int flags, ...)
+ int open(const char *name, int flags, mode_t mode)
 {
-	va_list ap;
-	mode_t mode;
-
-	va_start(ap, flags);
-	mode = va_arg(ap, mode_t);
-	va_end(ap);
-
 	if (smbw_path(name)) {
 		return smbw_open(name, flags, mode);
 	}
@@ -39,27 +35,13 @@
 }
 
 #ifdef HAVE__OPEN
- int _open(const char *name, int flags, ...) 
+ int _open(const char *name, int flags, mode_t mode) 
 {
-	va_list ap;
-	mode_t mode;
-
-	va_start(ap, flags);
-	mode = va_arg(ap, mode_t);
-	va_end(ap);
-
 	return open(name, flags, mode);
 }
 #elif HAVE___OPEN
- int __open(const char *name, int flags, ...) 
+ int __open(const char *name, int flags, mode_t mode) 
 {
-	va_list ap;
-	mode_t mode;
-
-	va_start(ap, flags);
-	mode = va_arg(ap, mode_t);
-	va_end(ap);
-
 	return open(name, flags, mode);
 }
 #endif
@@ -197,14 +179,8 @@
 #endif
 
 
- int fcntl(int fd, int cmd, ...)
+ int fcntl(int fd, int cmd, long arg)
 {
-	va_list ap;
-	long arg;
-	va_start(ap, cmd);
-	arg = va_arg(ap, long);
-	va_end(ap);
-
 	if (smbw_fd(fd)) {
 		return smbw_fcntl(fd, cmd, arg);
 	}
@@ -214,31 +190,20 @@
 
 
 #ifdef HAVE___FCNTL
- int __fcntl(int fd, int cmd, ...)
+ int __fcntl(int fd, int cmd, long arg)
 {
-	va_list ap;
-	long arg;
-	va_start(ap, cmd);
-	arg = va_arg(ap, long);
-	va_end(ap);
-
 	return fcntl(fd, cmd, arg);
 }
 #elif HAVE__FCNTL
- int _fcntl(int fd, int cmd, ...)
+ int _fcntl(int fd, int cmd, long arg)
 {
-	va_list ap;
-	long arg;
-	va_start(ap, cmd);
-	arg = va_arg(ap, long);
-	va_end(ap);
-
 	return fcntl(fd, cmd, arg);
 }
 #endif
 
 
 
+#ifdef HAVE_GETDENTS
  int getdents(int fd, struct dirent *dirp, unsigned int count)
 {
 	if (smbw_fd(fd)) {
@@ -247,6 +212,7 @@
 
 	return real_getdents(fd, dirp, count);
 }
+#endif
 
 #ifdef HAVE___GETDENTS
  int __getdents(int fd, struct dirent *dirp, unsigned int count)
@@ -628,12 +594,7 @@
 #endif
 
 #ifdef HAVE_UTIMES
-#if LINUX
- /* glibc2 gets the prototype wrong */
- int utimes(const char *name,struct timeval tvp[2])
-#else
  int utimes(const char *name,const struct timeval tvp[2])
-#endif
 {
 	if (smbw_path(name)) {
 		return smbw_utimes(name, tvp);
