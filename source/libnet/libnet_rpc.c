@@ -22,7 +22,15 @@
 #include "libcli/nbt/libnbt.h"
 #include "libnet/libnet.h"
 
-/* find a domain pdc generic */
+/**
+ * Finds a domain pdc (generic part)
+ * 
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param r data structure containing necessary parameters and return values
+ * @return nt status of the call
+ **/
+
 static NTSTATUS libnet_find_pdc_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
 					union libnet_find_pdc *r)
 {
@@ -51,7 +59,16 @@ static NTSTATUS libnet_find_pdc_generic(struct libnet_context *ctx, TALLOC_CTX *
 	return NT_STATUS_OK;
 }
 
-/* find a domain pdc */
+
+/**
+ * Finds a domain pdc function
+ * 
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param r data structure containing necessary parameters and return values
+ * @return nt status of the call
+ **/
+
 NTSTATUS libnet_find_pdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_find_pdc *r)
 {
 	switch (r->generic.level) {
@@ -62,7 +79,16 @@ NTSTATUS libnet_find_pdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union 
 	return NT_STATUS_INVALID_LEVEL;
 }
 
-/* connect to a dcerpc interface of a server */
+
+/**
+ * Connects rpc pipe on remote server
+ * 
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param r data structure containing necessary parameters and return values
+ * @return nt status of the call
+ **/
+
 static NTSTATUS libnet_rpc_connect_standard(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_rpc_connect *r)
 {
 	NTSTATUS status;
@@ -90,7 +116,16 @@ static NTSTATUS libnet_rpc_connect_standard(struct libnet_context *ctx, TALLOC_C
 	return status;
 }
 
-/* connect to a dcerpc interface of a time server */
+
+/**
+ * Connects rpc pipe on domain pdc
+ * 
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param r data structure containing necessary parameters and return values
+ * @return nt status of the call
+ **/
+
 static NTSTATUS libnet_rpc_connect_pdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_rpc_connect *r)
 {
 	NTSTATUS status;
@@ -119,7 +154,16 @@ static NTSTATUS libnet_rpc_connect_pdc(struct libnet_context *ctx, TALLOC_CTX *m
 	return status;
 }
 
-/* connect to a dcerpc interface */
+
+/**
+ * Connects to rpc pipe on remote server or pdc
+ * 
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param r data structure containing necessary parameters and return values
+ * @return nt status of the call
+ **/
+
 NTSTATUS libnet_rpc_connect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_rpc_connect *r)
 {
 	switch (r->standard.level) {
