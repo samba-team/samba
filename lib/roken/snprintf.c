@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -583,7 +583,7 @@ vasnprintf (char **ret, size_t max_sz, const char *format, va_list args)
     *state.s = '\0';
     len = state.s - state.str;
     tmp = realloc (state.str, len+1);
-    if (state.str == NULL) {
+    if (tmp == NULL) {
       free (state.str);
       *ret = NULL;
       return -1;
