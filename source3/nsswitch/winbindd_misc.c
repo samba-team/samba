@@ -180,7 +180,8 @@ enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 	}
 
 	state->response.extra_data = extra_data;
-	state->response.length += strlen(extra_data);
+	/* must add one to length to copy the 0 for string termination */
+	state->response.length += strlen(extra_data) + 1;
 
 	return WINBINDD_OK;
 }
