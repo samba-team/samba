@@ -93,6 +93,7 @@ struct sid_map_fill
 
 static const struct sid_map_fill static_sid_name_map[] =
 {
+	{ "Null SID",             NULL,                 SID_NAME_DOMAIN, "S-1-0-0" },
 	{ "BUILTIN",              &global_sid_S_1_5_32, SID_NAME_DOMAIN, NULL },
 	{ "Global Domain",        &global_sid_S_1_1,    SID_NAME_DOMAIN, NULL },
 	{ "Everyone",             &global_sid_S_1_1_0,  SID_NAME_WKN_GRP, NULL },
@@ -215,7 +216,7 @@ static void get_sam_domain_name(void)
 /****************************************************************************
  obtain the sid from the PDC.
 ****************************************************************************/
-BOOL get_member_domain_sid(void)
+static BOOL get_member_domain_sid(void)
 {
 	DEBUG(10,("get_member_domain_sid: "));
 	switch (lp_server_role())
@@ -342,7 +343,7 @@ BOOL create_sidmap_table(void)
  Generate the global machine sid. Look for the DOMAINNAME.SID file first, if
  not found then look in smb.conf and use it to create the DOMAINNAME.SID file.
 ****************************************************************************/
-BOOL generate_sam_sid(char *domain_name, DOM_SID *sid)
+static BOOL generate_sam_sid(char *domain_name, DOM_SID *sid)
 {
 	char *p;
 	pstring sid_file;

@@ -183,7 +183,8 @@ LIBNMB_OBJ = libsmb/namequery.o libsmb/nmblib.o libsmb/unexpected.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/clidomain.o \
 	libsmb/clifile.o libsmb/cliprint.o libsmb/clierror.o \
-	libsmb/climessage.o libsmb/cliconnect.o \
+	libsmb/climessage.o libsmb/cliconnect.o libsmb/clilist.o \
+	libsmb/clitrans.o \
 	libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
 	libsmb/smberr.o libsmb/credentials.o \
 	libsmb/pwd_cache.o  lib/util_hnd.o \

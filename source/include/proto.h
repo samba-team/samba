@@ -349,10 +349,8 @@ BOOL unbecome_vuser(void);
 
 struct sid_map* add_sidmap_to_array(uint32 *len, struct sid_map ***array,
 				const struct sid_map *name);
-BOOL get_member_domain_sid(void);
 void generate_wellknown_sids(void);
 BOOL create_sidmap_table(void);
-BOOL generate_sam_sid(char *domain_name, DOM_SID *sid);
 BOOL pwdb_initialise(BOOL is_server);
 const DOM_SID *map_wk_name_to_sid(const char *name, DOM_SID *sid, uint32 *type);
 const char *map_wk_sid_to_name(const DOM_SID *sid, char *nt_domain, uint32 *type);
@@ -898,7 +896,7 @@ void endlmhosts(FILE *fp);
 BOOL is_ip_address(const char *name);
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);
 BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
-				struct in_addr *ip);
+                                struct in_addr *ip);
 BOOL find_master_ip(char *group, struct in_addr *master_ip);
 BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pdc_ip, char *ret_name);
 BOOL get_dc_list(char *group, struct in_addr **ip_list, int *count);
