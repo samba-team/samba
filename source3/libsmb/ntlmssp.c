@@ -330,7 +330,7 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->unicode = False;
 	}
 
-	if (neg_flags & NTLMSSP_NEGOTIATE_LM_KEY && allow_lm) {
+	if ((neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) && allow_lm) {
 		/* other end forcing us to use LM */
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
 		ntlmssp_state->use_ntlmv2 = False;
@@ -660,9 +660,13 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
 			hmac_md5(nt_session_key.data, session_nonce, 
 				 sizeof(session_nonce), session_key.data);
-			DEBUG(10,("NTLM2 session key set\n"));
+			DEBUG(10,("ntlmssp_server_auth: Created NTLM2 session key.\n"));
 			dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 
+		}else {
+			data_blob_free(&encrypted_session_key);
+			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM2 session key.\n"));
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
 		if (lm_session_key.data && lm_session_key.length >= 8 && 
@@ -670,13 +674,21 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
 			SMBsesskeygen_lm_sess_key(lm_session_key.data, ntlmssp_state->lm_resp.data, 
 					   session_key.data);
-			DEBUG(10,("LM KEY session key set\n"));
+			DEBUG(10,("ntlmssp_server_auth: Created NTLM session key.\n"));
 			dump_data_pw("LM session key:\n", session_key.data, session_key.length);
+		} else {
+			data_blob_free(&encrypted_session_key);
+			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM session key.\n"));
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	} else if (nt_session_key.data) {
 		session_key = nt_session_key;
-		DEBUG(10,("unmodified session key set\n"));
+		DEBUG(10,("ntlmssp_server_auth: Using unmodified nt session key.\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
+	} else {
+		data_blob_free(&encrypted_session_key);
+		DEBUG(10,("ntlmssp_server_auth: Failed to create unmodified nt session key.\n"));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* With KEY_EXCH, the client supplies the proposed session key, 
@@ -1026,7 +1038,7 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
 	
 	*ntlmssp_state = talloc_zero(mem_ctx, sizeof(**ntlmssp_state));
 	if (!*ntlmssp_state) {
-		DEBUG(0,("ntlmssp_server_start: talloc failed!\n"));
+		DEBUG(0,("ntlmssp_client_start: talloc failed!\n"));
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
