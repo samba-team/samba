@@ -109,7 +109,7 @@ mcc_close(krb5_context context,
 	krb5_free_creds_contents (context, &l->cred);
 	old = l;
 	l = l->next;
-	free (l);
+	free (old);
     }
     krb5_data_free(&id->data);
     return 0;
@@ -119,7 +119,7 @@ static krb5_error_code
 mcc_destroy(krb5_context context,
 	    krb5_ccache id)
 {
-    return mcc_close (context, id);
+    return 0;
 }
 
 static krb5_error_code
@@ -136,6 +136,7 @@ mcc_store_cred(krb5_context context,
 	return KRB5_CC_NOMEM;
     l->next = m->creds;
     m->creds = l;
+    memset (&l->cred, 0, sizeof(l->cred));
     ret = krb5_copy_creds_contents (context, creds, &l->cred);
     if (ret) {
 	free (l);
@@ -177,11 +178,13 @@ mcc_get_next (krb5_context context,
     struct link *l;
 
     l = (struct link *)cursor->u.v;
-    cursor->u.v = l->next;
-
-    return krb5_copy_creds_contents (context,
-				     &l->cred,
-				     creds);
+    if (l != NULL) {
+	cursor->u.v = l->next;
+	return krb5_copy_creds_contents (context,
+					 &l->cred,
+					 creds);
+    } else
+	return KRB5_CC_END;
 }
 
 static krb5_error_code
