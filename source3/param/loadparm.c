@@ -164,6 +164,7 @@ typedef struct
 	char *szSourceEnv;
 	char *szIdmapUID;
 	char *szIdmapGID;
+	BOOL *bIdmapOnly;
 	char *szNonUnixAccountRange;
 	int AlgorithmicRidBase;
 	char *szTemplateHomedir;
@@ -756,7 +757,6 @@ static struct parm_struct parm_table[] = {
 	{"server schannel", P_ENUM, P_GLOBAL, &Globals.serverSchannel, NULL, enum_bool_auto, FLAG_BASIC},
 	{"allow trusted domains", P_BOOL, P_GLOBAL, &Globals.bAllowTrustedDomains, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"hosts equiv", P_STRING, P_GLOBAL, &Globals.szHostsEquiv, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"idmap backend", P_STRING, P_GLOBAL, &Globals.szIdmapBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"min passwd length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"min password length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"map to guest", P_ENUM, P_GLOBAL, &Globals.map_to_guest, NULL, enum_map_to_guest, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1120,6 +1120,8 @@ static struct parm_struct parm_table[] = {
 
 	{"Winbind options", P_SEP, P_SEPARATOR},
 
+	{"idmap only", P_BOOL, P_GLOBAL, &Globals.bIdmapOnly, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"idmap backend", P_STRING, P_GLOBAL, &Globals.szIdmapBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"idmap uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER | FLAG_HIDE},
 	{"idmap gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1478,6 +1480,7 @@ static void init_globals(void)
 	Globals.bWinbindEnumGroups = True;
 	Globals.bWinbindUseDefaultDomain = False;
 
+	Globals.bIdmapOnly = False;
 	string_set(&Globals.szWinbindBackend, "tdb");
 
 	Globals.name_cache_timeout = 660; /* In seconds */
@@ -1657,6 +1660,7 @@ FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
 FN_GLOBAL_STRING(lp_winbind_backend, &Globals.szWinbindBackend)
 
 FN_GLOBAL_STRING(lp_idmap_backend, &Globals.szIdmapBackend)
+FN_GLOBAL_BOOL(lp_idmap_only, &Globals.bIdmapOnly)
 
 #ifdef WITH_LDAP_SAMCONFIG
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
