@@ -314,6 +314,33 @@ uint32 samdb_result_rid_from_sid(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 }
 
 /*
+  pull a dom_sid structure from a objectSid in a result set. 
+*/
+struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
+				     const char *attr)
+{
+	const char *sidstr = ldb_msg_find_string(msg, attr, NULL);
+	if (!sidstr) return NULL;
+
+	return dom_sid_parse_talloc(mem_ctx, sidstr);
+}
+
+/*
+  pull a sid prefix from a objectSid in a result set. 
+  this is used to find the domain sid for a user
+*/
+const char *samdb_result_sid_prefix(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
+				    const char *attr)
+{
+	struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, msg, attr);
+	if (!sid || sid->num_auths < 1) return NULL;
+
+	sid->num_auths--;
+
+	return dom_sid_string(mem_ctx, sid);
+}
+
+/*
   pull a NTTIME in a result set. 
 */
 NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, const char *default_value)
