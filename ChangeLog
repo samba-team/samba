@@ -1,3 +1,8 @@
+2001-01-10  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/appdefault.c (krb5_appdefault_string): fix condition
+	just before returning
+
 2001-01-09  Assar Westerlund  <assar@sics.se>
 
 	* appl/kf/kfd.c (proto): use krb5_rd_cred2 instead of krb5_rd_cred
