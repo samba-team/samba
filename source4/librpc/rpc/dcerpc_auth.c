@@ -34,6 +34,7 @@ NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct ntlmssp_state *state;
 	TALLOC_CTX *mem_ctx;
+	DATA_BLOB credentials;
 
 	mem_ctx = talloc_init("dcerpc_bind_auth_ntlm");
 	if (!mem_ctx) {
@@ -76,27 +77,44 @@ NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
 
 	status = ntlmssp_update(state, 
 				p->auth_info->credentials,
-				&p->auth_info->credentials);
+				&credentials);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto done;
 	}
+
+	p->auth_info->credentials = data_blob_talloc(mem_ctx, 
+						     credentials.data, 
+						     credentials.length);
+	data_blob_free(&credentials);
+
 	status = dcerpc_bind_byuuid(p, mem_ctx, uuid, version);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
+
 	status = ntlmssp_update(state, 
 				p->auth_info->credentials, 
-				&p->auth_info->credentials);
+				&credentials);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto done;
 	}
 
-	status = dcerpc_auth3(p, mem_ctx);
-	p->ntlmssp_state = state;
-	p->auth_info->credentials = data_blob(NULL, 0);
+	p->auth_info->credentials = data_blob_talloc(mem_ctx, 
+						     credentials.data, 
+						     credentials.length);
+	data_blob_free(&credentials);
 
-	ntlmssp_sign_init(state);
+	status = dcerpc_auth3(p, mem_ctx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	p->ntlmssp_state = state;
+
+	/* setup for signing */
+	status = ntlmssp_sign_init(state);
 
 done:
 	talloc_destroy(mem_ctx);

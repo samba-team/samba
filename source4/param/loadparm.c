@@ -3801,7 +3801,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 
 	bRetval = False;
 
-	DEBUG(0, ("lp_load: refreshing parameters from %s\n", pszFname));
+	DEBUG(2, ("lp_load: refreshing parameters from %s\n", pszFname));
 	
 	bInGlobalSection = True;
 	bGlobalOnly = global_only;

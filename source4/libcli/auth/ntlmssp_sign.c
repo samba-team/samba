@@ -180,8 +180,10 @@ NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
 		DEBUG(0, ("NTLMSSP packet check failed with %s\n", nt_errstr(nt_status)));
 		return nt_status;
 	}
-	
-	if (memcmp(sig->data+sig->length - 8, local_sig.data+local_sig.length - 8, 8) != 0) {
+
+	if (local_sig.length != sig->length ||
+	    memcmp(local_sig.data + local_sig.length - 8, 
+		   sig->data + sig->length - 8, 8) != 0) {
 		DEBUG(5, ("BAD SIG: wanted signature of\n"));
 		dump_data(5, (const char *)local_sig.data, local_sig.length);
 		
@@ -191,6 +193,8 @@ NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
 		DEBUG(0, ("NTLMSSP packet check failed due to invalid signature!\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	data_blob_free(&local_sig);
 
 	/* increment counter on recieive */
 	ntlmssp_state->ntlmssp_seq_num++;
