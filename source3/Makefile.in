@@ -201,9 +201,12 @@ CHECK:
 	@echo "Using FLAGS = $(FLAGS)"
 	@echo "Using LIBS = $(LIBS)"
 
-.c.o: $(INCLUDES)
+.c.o: @MAINT@ .deps/.dummy
 	@echo Compiling $*.c
-	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< -o $@
+	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< -o $@ \
+	@MAINT@ -Wp,-MD,.deps/`echo $* | sed s,/,_,g`.P && : >.deps/.stamp
+# the line above is for atomatic dependency tracking
+# it will only work with GNU make, gcc and --enable-maintainer-mode
 
 bin/smbd: $(SMBD_OBJ) 
 	@echo Linking $@
@@ -301,7 +304,7 @@ uninstallcp:
 	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
-	-rm -f core */*~ *~ */*.o 
+	-rm -f core */*~ *~ */*.o
 
 proto:
 	@echo rebuilding include/proto.h
@@ -319,6 +322,7 @@ realclean: clean
 distclean: realclean
 	-rm -f include/config.h include/stamp-h */dummy Makefile
 	-rm -f config.status config.cache
+	-rm -rf .deps
 
 # this target is really just for my use. It only works on a limited
 # range of machines and is used to produce a list of potentially
@@ -327,6 +331,14 @@ finddead:
 	nm */*.o |grep 'U ' | awk '{print $$2}' | sort -u > nmused.txt
 	nm */*.o |grep 'T ' | awk '{print $$3}' | sort -u > nmfns.txt
 	comm -13 nmused.txt nmfns.txt 
+
+# Rules for maintainers (--enable-maintainer-mode)
+AUTOCONF=@AUTOCONF@
+AUTOHEADER=@AUTOHEADER@
+
+# when configure.in is updated, reconfigure
+$(srcdir)/configure: @MAINT@ $(srcdir)/configure.in $(srcdir)/aclocal.m4
+	cd $(srcdir) && $(AUTOCONF)
 
 config.status: $(srcdir)/configure
 	$(SHELL) ./config.status --recheck
@@ -341,10 +353,24 @@ include/config.h: include/stamp-h
 
 include/stamp-h: $(srcdir)/include/config.h.in config.status
 	CONFIG_FILES= CONFIG_HEADERS=include/config.h $(SHELL) ./config.status
-	@ls -l config.status $(srcdir)/include/config.h.in > include/stamp-h
+	@echo > include/stamp-h
 
 $(srcdir)/include/config.h.in: $(srcdir)/include/stamp-h.in
 	@:
 
-$(srcdir)/include/stamp-h.in: $(srcdir)/acconfig.h $(srcdir)/configure.in
-	@cd $(srcdir) && ls -l acconfig.h configure.in > include/stamp-h.in
+$(srcdir)/include/stamp-h.in: @MAINT@ $(srcdir)/acconfig.h $(srcdir)/configure.in
+	cd $(srcdir) && $(AUTOHEADER)
+	@cd $(srcdir) && echo > include/stamp-h.in
+
+# automatic dependency tracking rules
+.deps/.dummy:
+	@-if test ! -d .deps; then rm -rf .deps; mkdir .deps; fi
+	@: >$@
+
+.deps/.stamp: .deps/.dummy
+	@:
+
+.deps/.P: .deps/.stamp
+	@-cat .deps/*.P >$@ 2>/dev/null
+
+@MAINT@-include .deps/.P
