@@ -9,6 +9,8 @@
     guest account = WHOAMI
     domain logons = yes
 
+    strict locking = yes
+
     include = PREFIX/lib/smb.conf.%L
 
 [test]
