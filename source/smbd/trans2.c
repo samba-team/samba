@@ -1131,7 +1131,8 @@ static int call_trans2qfsinfo(connection_struct *conn,
     }
     case SMB_QUERY_FS_ATTRIBUTE_INFO:
       data_len = 12 + 2*strlen(fstype);
-      SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH); /* FS ATTRIBUTES */
+      SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
+            lp_nt_acl_support() ? FILE_PERSISTENT_ACLS : 0); /* FS ATTRIBUTES */
 #if 0 /* Old code. JRA. */
       SIVAL(pdata,0,0x4006); /* FS ATTRIBUTES == long filenames supported? */
 #endif /* Old code. */

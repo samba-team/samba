@@ -1973,8 +1973,6 @@ static int do_message_op(void)
 	
 	codepage_initialise(lp_client_code_page());
 
-	interpret_coding_system(term_code);
-
 #ifdef WITH_SSL
 	sslutil_init(0);
 #endif
@@ -2157,6 +2155,9 @@ static int do_message_op(void)
 
 	if(*new_name_resolve_order)
 		lp_set_name_resolve_order(new_name_resolve_order);
+
+	if (*term_code)
+		interpret_coding_system(term_code);
 
 	if (!tar_type && !*query_host && !*service && !message) {
 		usage(pname);

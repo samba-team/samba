@@ -957,7 +957,8 @@ static void usage(char *pname)
 
   codepage_initialise(lp_client_code_page());
 
-  interpret_coding_system(term_code);
+  if(*term_code)
+    interpret_coding_system(term_code);
 
   if (*workgroup == 0)
     pstrcpy(workgroup,lp_workgroup());
