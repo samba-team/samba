@@ -1048,40 +1048,40 @@ static void dcesrv_init(struct server_service *service, const struct model_ops *
 		}
 	}
 
-	dcesrv_tcp_init(service, model_ops, dce_ctx);
+	dcesrv_sock_init(service, model_ops, dce_ctx);
 
 	return;	
 }
 
 static void dcesrv_accept(struct server_connection *srv_conn)
 {
-	dcesrv_tcp_accept(srv_conn);
+	dcesrv_sock_accept(srv_conn);
 }
 
 static void dcesrv_recv(struct server_connection *srv_conn, time_t t, uint16_t flags)
 {
-	dcesrv_tcp_recv(srv_conn, t, flags);
+	dcesrv_sock_recv(srv_conn, t, flags);
 }
 
 static void dcesrv_send(struct server_connection *srv_conn, time_t t, uint16_t flags)
 {
-	dcesrv_tcp_send(srv_conn, t, flags);
+	dcesrv_sock_send(srv_conn, t, flags);
 }
 
 static void dcesrv_idle(struct server_connection *srv_conn, time_t t)
 {
-	dcesrv_tcp_idle(srv_conn, t);
+	dcesrv_sock_idle(srv_conn, t);
 }
 
 static void dcesrv_close(struct server_connection *srv_conn, const char *reason)
 {
-	dcesrv_tcp_close(srv_conn, reason);
+	dcesrv_sock_close(srv_conn, reason);
 	return;	
 }
 
 static void dcesrv_exit(struct server_service *service, const char *reason)
 {
-	dcesrv_tcp_exit(service, reason);
+	dcesrv_sock_exit(service, reason);
 	return;	
 }
 
