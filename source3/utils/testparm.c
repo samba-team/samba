@@ -48,7 +48,7 @@ static int do_global_checks(void)
 	SMB_STRUCT_STAT st;
 
 	if (lp_security() >= SEC_DOMAIN && !lp_encrypted_passwords()) {
-		printf("ERROR: in 'security=domain' mode the 'encrypt passwords' parameter must also be set to 'true'.\n");
+		printf("ERROR: in 'security=domain' mode the 'encrypt passwords' parameter must always be set to 'true'.\n");
 		ret = 1;
 	}
 

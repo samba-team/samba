@@ -41,9 +41,7 @@ BOOL initialise_alias_db(void)
     return True;
   }
 
-#ifdef WITH_NISPLUS
-  aldb_ops =  nisplus_initialise_alias_db();
-#elif defined(WITH_LDAP)
+#ifdef WITH_LDAP
   aldb_ops = ldap_initialise_alias_db();
 #else 
   aldb_ops = file_initialise_alias_db();

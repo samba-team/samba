@@ -89,8 +89,9 @@ extern int DEBUGLEVEL;
 #define DBGC_RPC_SRV		6
 #define DBGC_RPC_CLI		7
 #define DBGC_PASSDB		8
-#define DBGC_AUTH		9
-#define DBGC_WINBIND		10
+#define DBGC_SAM		9
+#define DBGC_AUTH		10
+#define DBGC_WINBIND		11
 
 
 /* So you can define DBGC_CLASS before including debug.h */
