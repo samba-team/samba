@@ -212,10 +212,10 @@ static void popt_common_credentials_callback(poptContext con,
 		break;
 
 	case 'P':
-	        {
-			cli_credentials_set_machine_account(cmdline_credentials);
-		}
-		/* machine accounts only work with kerberos */
+		/* Later, after this is all over, get the machine account details from the secrets.ldb */
+		cli_credentials_set_machine_account_pending(cmdline_credentials);
+		
+		/* machine accounts only work with kerberos (fall though)*/
 
 	case 'k':
 #ifndef HAVE_KRB5

@@ -4,6 +4,7 @@
    Client credentials structure
 
    Copyright (C) Jelmer Vernooij 2004-2005
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,5 +50,14 @@ struct cli_credentials {
 	const char *(*domain_cb) (struct cli_credentials *);
 	const char *(*realm_cb) (struct cli_credentials *);
 
+	/* Private handle for the callback routines to use */
 	void *priv_data;
+
+	struct creds_CredentialState *netlogon_creds;
+
+	/* We are flagged to get machine account details from the
+	 * secrets.ldb when we are asked for a username or password */
+
+	BOOL machine_account_pending;
 };
+
