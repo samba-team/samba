@@ -1118,10 +1118,10 @@ static BOOL matchname(char *remotehost, struct in_addr addr)
 	struct hostent *hp;
 	int i;
 
-	if ((hp = Get_Hostbyname(remotehost)) == 0)
+	if ((hp = sys_gethostbyname(remotehost)) == 0)
 	{
 		DEBUG(0,
-		      ("Get_Hostbyname(%s): lookup failure.\n", remotehost));
+		      ("sys_gethostbyname(%s): lookup failure.\n", remotehost));
 		return False;
 	}
 

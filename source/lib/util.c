@@ -1006,9 +1006,9 @@ BOOL get_myname(char *my_name)
 	}
 
 	/* get host info */
-	if ((hp = Get_Hostbyname(hostname)) == 0)
+	if ((hp = sys_gethostbyname(hostname)) == 0)
 	{
-		DEBUG(0, ("Get_Hostbyname: Unknown host %s\n", hostname));
+		DEBUG(0, ("sys_gethostbyname: Unknown host %s\n", hostname));
 		return False;
 	}
 	/* Ensure null termination. */
@@ -1083,16 +1083,16 @@ uint32 interpret_addr(char *str)
 	else
 	{
 		/* otherwise assume it's a network name of some sort and use 
-		   Get_Hostbyname */
-		if ((hp = Get_Hostbyname(str)) == 0)
+		   sys_gethostbyname */
+		if ((hp = sys_gethostbyname(str)) == 0)
 		{
-			DEBUG(3, ("Get_Hostbyname: Unknown host. %s\n", str));
+			DEBUG(3, ("sys_gethostbyname: Unknown host. %s\n", str));
 			return 0;
 		}
 		if (hp->h_addr == NULL)
 		{
 			DEBUG(3,
-			      ("Get_Hostbyname: host address is invalid for host %s\n",
+			      ("sys_gethostbyname: host address is invalid for host %s\n",
 			       str));
 			return 0;
 		}
@@ -1295,69 +1295,6 @@ BOOL same_net(struct in_addr ip1, struct in_addr ip2, struct in_addr mask)
 
 	return ((net1 & nmask) == (net2 & nmask));
 }
-
-
-/****************************************************************************
-a wrapper for gethostbyname() that tries with all lower and all upper case 
-if the initial name fails
-****************************************************************************/
-struct hostent *Get_Hostbyname(const char *name)
-{
-	char *name2 = strdup(name);
-	struct hostent *ret;
-
-	if (!name2)
-	{
-		DEBUG(0,
-		      ("Memory allocation error in Get_Hostbyname! panic\n"));
-		exit(0);
-	}
-
-
-	/* 
-	 * This next test is redundent and causes some systems (with
-	 * broken isalnum() calls) problems.
-	 * JRA.
-	 */
-
-#if 0
-	if (!isalnum(*name2))
-	{
-		free(name2);
-		return (NULL);
-	}
-#endif /* 0 */
-
-	ret = sys_gethostbyname(name2);
-	if (ret != NULL)
-	{
-		free(name2);
-		return (ret);
-	}
-
-	/* try with all lowercase */
-	strlower(name2);
-	ret = sys_gethostbyname(name2);
-	if (ret != NULL)
-	{
-		free(name2);
-		return (ret);
-	}
-
-	/* try with all uppercase */
-	strupper(name2);
-	ret = sys_gethostbyname(name2);
-	if (ret != NULL)
-	{
-		free(name2);
-		return (ret);
-	}
-
-	/* nothing works :-( */
-	free(name2);
-	return (NULL);
-}
-
 
 /****************************************************************************
 check if a process exists. Does this work on all unixes?
