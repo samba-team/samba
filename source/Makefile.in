@@ -1008,7 +1008,7 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
-realclean: clean
+realclean: clean delheaders
 	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy
 	-rmdir bin
 
