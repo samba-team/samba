@@ -4,7 +4,7 @@
 Contributors:	Bruce Cook <BC3-AU@bigfoot.com>
 		Copyright (C) 1998 Bruce Cook
 
-		John Terpstra <samba-bugs@samba.org>
+		John Terpstra <samba@samba.org>
 		Copyright (C) 1998 John H. Terpstra
 
 		Wolfgang Ratzka <ratzka@hrz.uni-marburg.de>
@@ -121,7 +121,7 @@ machine.
 [lkcl: nt workstations should look in exactly the same places for things on
        samba or other SMB servers as they do on an NT server, as long as that
        SMB server looks like NT.  if anyone finds that something fails, alert
-       us on samba-bugs@samba.org and we'll look into it].
+       us on samba@samba.org and we'll look into it].
 
    When an NT system find a user without a NTuser.DAT, it copies from a
    prototype that it stores especially for this purpose, so while unlike '95

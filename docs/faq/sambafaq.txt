@@ -497,7 +497,7 @@
   If you make changes to the source code, _please_ submit these patches
   so that everyone else gets the benefit of your work. This is one of
   the most important aspects to the maintainence of Samba. Send all
-  patches to samba-bugs@samba.org. Do not send patches to Andrew
+  patches to samba@samba.org. Do not send patches to Andrew
   Tridgell or any other individual, they may be lost if you do.
 
 
@@ -646,7 +646,7 @@
   machines (such as users of smbclient under Unix). Having said that,
   several developers are working hard on building it in to the next
   major version of Samba. If you can contribute, send a message to
-  samba-bugs@samba.org !
+  samba@samba.org !
 
   Seeing this message should not affect your ability to mount redirected
   disks and printers, which is really what all this is about.
@@ -703,7 +703,7 @@
   In earlier Samba versions there were some difficulties with the very
   latest Microsoft products, particularly Excel 5 and Word for Windows
   6. These should have all been solved. If not then please let Andrew
-  Tridgell know via email at samba-bugs@samba.org.
+  Tridgell know via email at samba@samba.org.
 
 
   22..99..  MMyy ""sseerrvveerr ssttrriinngg"" ddooeessnn''tt sseeeemm ttoo bbee rreeccooggnniisseedd
@@ -1050,7 +1050,7 @@
 
   this is effectively what older versions of Samba did, so if that
   worked for you then give it a go. If this does work then let us know
-  via samba-bugs@samba.org, and we'll make it the default. Cur-
+  via samba@samba.org, and we'll make it the default. Cur-
   rently the default is a 0 length string.
 
 
