@@ -480,3 +480,20 @@ krb5_cc_clear_mcred(krb5_creds *mcred)
 {
     memset(mcred, 0, sizeof(*mcred));
 }
+
+/*
+ * Get the cc ops that is registered in `context' to handle the
+ * `prefix'. Returns NULL if ops not found.
+ */
+
+const krb5_cc_ops *
+krb5_cc_get_prefix_ops(krb5_context context, const char *prefix)
+{
+    int i;
+
+    for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
+	if(strcmp(context->cc_ops[i].prefix, prefix) == 0)
+	    return &context->cc_ops[i];
+    }
+    return NULL;
+}

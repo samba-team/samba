@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 16, 2003
+.Dd April 13, 2004
 .Dt KRB5_CCACHE 3
 .Os HEIMDAL
 .Sh NAME
@@ -49,19 +49,20 @@
 .Nm krb5_cc_end_seq_get ,
 .Nm krb5_cc_gen_new ,
 .Nm krb5_cc_get_name ,
+.Nm krb5_cc_get_ops ,
+.Nm krb5_cc_get_prefix_ops ,
 .Nm krb5_cc_get_principal ,
 .Nm krb5_cc_get_type ,
-.Nm krb5_cc_get_ops ,
 .Nm krb5_cc_get_version ,
 .Nm krb5_cc_initialize ,
+.Nm krb5_cc_next_cred
 .Nm krb5_cc_register ,
+.Nm krb5_cc_remove_cred ,
 .Nm krb5_cc_resolve ,
 .Nm krb5_cc_retrieve_cred ,
-.Nm krb5_cc_remove_cred ,
 .Nm krb5_cc_set_default_name ,
-.Nm krb5_cc_store_cred ,
 .Nm krb5_cc_set_flags ,
-.Nm krb5_cc_next_cred
+.Nm krb5_cc_store_cred ,
 .Nd mange credential cache
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
@@ -139,6 +140,11 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fo krb5_cc_get_ops
 .Fa "krb5_context *context"
 .Fa "krb5_ccache id"
+.Fc
+.Ft "const krb5_cc_ops *"
+.Fo krb5_cc_get_prefix_ops
+.Fa "krb5_context context"
+.Fa "const char *prefix"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_get_version
@@ -314,6 +320,15 @@ Adds a new credential cache type with operations
 overwriting any existing one if
 .Fa override .
 Return an error code or 0.
+.Pp
+.Fn krb5_cc_get_prefix_ops
+Get the cc ops that is registered in
+.Fa context
+to handle the
+.Fa prefix .
+Returns
+.Dv NULL
+if ops not found.
 .Pp
 .Fn krb5_cc_remove_cred
 removes the credential identified by
