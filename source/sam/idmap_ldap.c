@@ -71,8 +71,7 @@ static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	else
 		fstrcpy( type, get_attr_key2string( sidmap_attr_list, LDAP_ATTR_GIDNUMBER ) );
 
-	pstr_sprintf(id_str, "%lu", ((id_type & ID_USERID) ? (unsigned long)id.uid :
-						 (unsigned long)id.gid));	
+	pstr_sprintf(id_str, "%d", ((id_type & ID_USERID) ? id.uid : id.gid));	
 	
 	smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_IDMAP_ENTRY );
 
@@ -501,9 +500,9 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
 
 	pstrcpy( suffix, lp_ldap_idmap_suffix() );
-	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%lu))",
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%d))",
 		LDAP_OBJ_IDMAP_ENTRY, type,  
-		((id_type & ID_USERID) ? (unsigned long)id.uid : (unsigned long)id.gid));
+		((id_type & ID_USERID) ? id.uid : id.gid));
 		
 	attr_list = get_attr_list( sidmap_attr_list );
 	rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
@@ -701,8 +700,8 @@ static NTSTATUS verify_idpool( void )
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
-		fstr_sprintf( uid_str, "%lu", (unsigned long)luid );
-		fstr_sprintf( gid_str, "%lu", (unsigned long)lgid );
+		fstr_sprintf( uid_str, "%d", luid );
+		fstr_sprintf( gid_str, "%d", lgid );
 
 		smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_IDPOOL );
 		smbldap_set_mod( &mods, LDAP_MOD_ADD, 
