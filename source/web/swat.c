@@ -519,15 +519,14 @@ static void show_main_buttons(void)
  ****************************************************************************/
 static void ViewModeBoxes(int mode)
 {
-	d_printf("<p>%s\n", _("Configuration View:&nbsp Current View is:&nbsp"));
+	d_printf("<p>%s\n", _("Current View Is:&nbsp \n"));
 	d_printf("<input type=radio name=\"ViewMode\" value=0 %s>Basic\n", (mode == 0) ? "checked" : "");
 	d_printf("<input type=radio name=\"ViewMode\" value=1 %s>Advanced\n", (mode == 1) ? "checked" : "");
 	d_printf("<input type=radio name=\"ViewMode\" value=2 %s>Developer\n", (mode == 2) ? "checked" : "");
-	d_printf("</p><br>\n");
-	d_printf("<p>%s\n", _("Change View To:&nbsp"));
-	d_printf("<input type=submit name=\"BasicMode\" value=\"%s\">\n", _("Basic Mode"));
-	d_printf("<input type=submit name=\"AdvMode\" value=\"%s\">\n", _("Advanced Mode"));
-	d_printf("<input type=submit name=\"DevMode\" value=\"%s\">\n", _("Developer Mode"));
+	d_printf("<br>%s\n", _("Change View To:&nbsp"));
+	d_printf("<input type=submit name=\"BasicMode\" value=\"%s\">\n", _("Basic"));
+	d_printf("<input type=submit name=\"AdvMode\" value=\"%s\">\n", _("Advanced"));
+	d_printf("<input type=submit name=\"DevMode\" value=\"%s\">\n", _("Developer"));
 	d_printf("</p><br>\n");
 }
 
