@@ -42,6 +42,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+#if 0	/* these aren't used currently but are here if you need them */
 /*
  * A list of the rids of well known BUILTIN and Domain users
  * and groups.
@@ -78,7 +79,7 @@ static const rid_name domain_group_rids[] =
     { DOMAIN_GROUP_RID_GUESTS       , "Domain Guests" },
     { 0                             , NULL }
 };
-
+#endif
 
 /*******************************************************************
  gets a domain user's groups from their already-calculated NT_USER_TOKEN

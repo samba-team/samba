@@ -747,8 +747,8 @@ static NTSTATUS check_oem_password(const char *user,
 	static uchar null_pw[16];
 	static uchar null_ntpw[16];
 	SAM_ACCOUNT *sampass = NULL;
-	char *password_encrypted;
-	const char *encryption_key;
+	uint8 *password_encrypted;
+	const uint8 *encryption_key;
 	const uint8 *lanman_pw, *nt_pw;
 	uint16 acct_ctrl;
 	uint32 new_pw_len;

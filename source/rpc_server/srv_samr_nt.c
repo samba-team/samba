@@ -2093,7 +2093,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	DOM_GID *gids = NULL;
 	int num_groups = 0;
 	gid_t *unix_gids;
-	int i, num_gids, num_sids;
+	int i, num_gids;
 	uint32 acc_granted;
 	BOOL ret;
 	NTSTATUS result;
@@ -2143,7 +2143,6 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	}
 
 	sids = NULL;
-	num_sids = 0;
 
 	become_root();
 	result = pdb_enum_group_memberships(pdb_get_username(sam_pass),
@@ -3010,7 +3009,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, SAM_ACCOUNT *pwd)
 
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
-	if (!decode_pw_buffer((char*)id23->pass, plaintext_buf, 256, &len, STR_UNICODE)) {
+	if (!decode_pw_buffer(id23->pass, plaintext_buf, 256, &len, STR_UNICODE)) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -3061,7 +3060,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, SAM_ACCOUNT *pwd)
  set_user_info_pw
  ********************************************************************/
 
-static BOOL set_user_info_pw(char *pass, SAM_ACCOUNT *pwd)
+static BOOL set_user_info_pw(uint8 *pass, SAM_ACCOUNT *pwd)
 {
 	uint32 len;
 	pstring plaintext_buf;
@@ -3205,7 +3204,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 			dump_data(100, (char *)ctr->info.id24->pass, 516);
 
-			if (!set_user_info_pw((char *)ctr->info.id24->pass, pwd))
+			if (!set_user_info_pw(ctr->info.id24->pass, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 
@@ -3878,7 +3877,6 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	DOM_SID user_sid;
 	SAM_ACCOUNT *sam_pass=NULL;
 	uint32 acc_granted;
-	SE_PRIV se_rights;
 	BOOL can_add_accounts;
 	BOOL ret;
 
@@ -3904,8 +3902,7 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	
-	se_priv_copy( &se_rights, &se_add_users );
-	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_add_users );
 
 	/******** BEGIN SeAddUsers BLOCK *********/
 	
@@ -4158,7 +4155,6 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	DOM_SID dom_sid;
 	DOM_SID info_sid;
 	fstring name;
-	struct group *grp;
 	struct samr_info *info;
 	uint32 acc_granted;
 	gid_t gid;
@@ -4205,7 +4201,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* check if the group has been successfully created */
-	if ((grp=getgrgid(gid)) == NULL)
+	if ( getgrgid(gid) == NULL )
 		return NT_STATUS_ACCESS_DENIED;
 
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)

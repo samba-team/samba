@@ -363,16 +363,16 @@ BOOL strisnormal(const char *s, int case_default)
  NOTE: oldc and newc must be 7 bit characters
 **/
 
-void string_replace(pstring s,char oldc,char newc)
+void string_replace( pstring s, char oldc, char newc )
 {
-	unsigned char *p;
+	char *p;
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	for (p = (unsigned char *)s; *p; p++) {
+	for (p = s; *p; p++) {
 		if (*p & 0x80) /* mb string - slow path. */
 			break;
 		if (*p == oldc)
@@ -799,7 +799,7 @@ DATA_BLOB strhex_to_data_blob(const char *strhex)
 {
 	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
 
-	ret_blob.length = strhex_to_str(ret_blob.data, 	
+	ret_blob.length = strhex_to_str((char*)ret_blob.data, 	
 					strlen(strhex), 
 					strhex);
 
@@ -1334,7 +1334,7 @@ char *strstr_m(const char *src, const char *findstr)
 
 	/* for correctness */
 	if (!findstr[0]) {
-		return src;
+		return (char*)src;
 	}
 
 	/* Samba does single character findstr calls a *lot*. */
