@@ -520,7 +520,7 @@ return True if the password is correct, False otherwise
 ****************************************************************************/
 
 BOOL pass_check_smb(char *user, char *domain, uchar *chal, 
-                    uchar *lm_pwd, uchar *nt_pwd, struct passwd *pwd)
+                    uchar *lm_pwd, uchar *nt_pwd)
 {
 	struct passwd *pass;
 	SAM_ACCOUNT *sampass=NULL;
@@ -533,17 +533,10 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 
 	/* FIXME! this code looks to be unnecessary now that the passdb
 	   validates that the username exists and has a valid uid */
-	if (pwd != NULL && user == NULL)
-	{
-		pass = (struct passwd *) pwd;
-		user = pass->pw_name;
-	}
-	else
-	{
-		/* I don't get this call here.  I think it should be moved.
-		   Need to check on it.     --jerry */
-		pass = smb_getpwnam(user,True);
-	}
+	
+	/* I don't get this call here.  I think it should be moved.
+	   Need to check on it.     --jerry */
+	pass = smb_getpwnam(user,True);
 
 	if (pass == NULL)
 	{
@@ -612,7 +605,7 @@ check if a username/password pair is OK either via the system password
 database or the encrypted SMB password database
 return True if the password is correct, False otherwise
 ****************************************************************************/
-BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
+BOOL password_ok(char *user, char *password, int pwlen)
 {
 	BOOL ret;
 
@@ -631,7 +624,7 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 		}
 
 		ret = pass_check_smb(user, global_myworkgroup,
-		                      challenge, (uchar *)password, (uchar *)password, pwd);
+		                      challenge, (uchar *)password, (uchar *)password);
 
 		/*
 		 * Try with PAM (may not be compiled in - returns True if not. JRA).
@@ -643,7 +636,7 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 			return (smb_pam_accountcheck(user) == NT_STATUS_NOPROBLEMO);
 	} 
 
-	return pass_check(user, password, pwlen, pwd, 
+	return pass_check(user, password, pwlen, 
 			  lp_update_encrypted() ? 
 			  update_smbpassword_file : NULL);
 }
@@ -692,7 +685,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 		while (getnetgrent(&host, &user, &domain)) {
 			if (user) {
 				if (user_ok(user, snum) && 
-				    password_ok(user,password,pwlen,NULL)) {
+				    password_ok(user,password,pwlen)) {
 					endnetgrent();
 					return(user);
 				}
@@ -747,7 +740,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 				static fstring name;
 				fstrcpy(name,member);
 				if (user_ok(name,snum) &&
-				    password_ok(name,password,pwlen,NULL)) {
+				    password_ok(name,password,pwlen)) {
 					endgrent();
 					return(&name[0]);
 				}
@@ -822,7 +815,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 	if (!(GUEST_ONLY(snum) && GUEST_OK(snum))) {
 		/* check the given username and password */
 		if (!ok && (*user) && user_ok(user,snum)) {
-			ok = password_ok(user,password, pwlen, NULL);
+			ok = password_ok(user,password, pwlen);
 			if (ok)
 				DEBUG(3,("authorise_login: ACCEPTED: given username (%s) password ok\n",
 						user ));
@@ -831,7 +824,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 		/* check for a previously registered guest username */
 		if (!ok && (vuser != 0) && vuser->guest) {	  
 			if (user_ok(vuser->user.unix_name,snum) &&
-					password_ok(vuser->user.unix_name, password, pwlen, NULL)) {
+					password_ok(vuser->user.unix_name, password, pwlen)) {
 				fstrcpy(user, vuser->user.unix_name);
 				vuser->guest = False;
 				DEBUG(3,("authorise_login: ACCEPTED: given password with registered user %s\n", user));
@@ -853,7 +846,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 				if (!user_ok(user2,snum))
 					continue;
 		  
-				if (password_ok(user2,password, pwlen, NULL)) {
+				if (password_ok(user2,password, pwlen)) {
 					ok = True;
 					fstrcpy(user,user2);
 					DEBUG(3,("authorise_login: ACCEPTED: session list username (%s) \
@@ -902,7 +895,7 @@ and given password ok (%s)\n", user));
 				} else {
 					fstring user2;
 					fstrcpy(user2,auser);
-					if (user_ok(user2,snum) && password_ok(user2,password,pwlen,NULL)) {
+					if (user_ok(user2,snum) && password_ok(user2,password,pwlen)) {
 						ok = True;
 						fstrcpy(user,user2);
 						DEBUG(3,("authorise_login: ACCEPTED: user list username \

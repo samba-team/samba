@@ -1797,7 +1797,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
   if(SVAL(*rparam,0) != NERR_Success)
   {
-    if (password_ok(user, pass1,strlen(pass1),NULL) &&
+    if (password_ok(user, pass1,strlen(pass1)) &&
         chgpasswd(user,pass1,pass2,False))
     {
       SSVAL(*rparam,0,NERR_Success);

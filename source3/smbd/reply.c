@@ -945,7 +945,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
     if(smb_ntpasslen)
     {
-      if(!password_ok(user, smb_ntpasswd,smb_ntpasslen,NULL))
+      if(!password_ok(user, smb_ntpasswd,smb_ntpasslen))
         DEBUG(2,("NT Password did not match for user '%s'!\n", user));
       else
         valid_nt_password = True;
@@ -957,7 +957,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     if (!valid_nt_password && lp_lanman_auth())
     {
       DEBUG(2,("Defaulting to Lanman password for %s\n", user));
-      valid_lm_password = password_ok(user, smb_apasswd,smb_apasslen,NULL);
+      valid_lm_password = password_ok(user, smb_apasswd,smb_apasslen);
     }
       
 
