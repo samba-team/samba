@@ -245,7 +245,7 @@ krb5_cc_destroy(krb5_context context,
 /*
  * Stop using the ccache `id' and free the related resources.
  * Return 0 or an error code.
-u */
+ */
 
 krb5_error_code
 krb5_cc_close(krb5_context context,
