@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -421,9 +421,11 @@ getarg(struct getargs *args, size_t num_args,
 	    }
 	    ret = arg_match_long (args, num_args, argv[i] + 2, 
 				  argc, argv, &i);
-	    if(ret)
+	    if(ret) {
+		*optind = i;
 		return ret;
-	}else{
+	    }
+	} else {
 	    for(j = 1; argv[i][j]; j++) {
 		for(k = 0; k < num_args; k++) {
 		    char *optarg;
@@ -444,12 +446,16 @@ getarg(struct getargs *args, size_t num_args,
 			    i++;
 			    optarg = argv[i];
 			}
-			if(optarg == NULL)
+			if(optarg == NULL) {
+			    *optind = i;
 			    return ARG_ERR_NO_ARG;
+			}
 			if(args[k].type == arg_integer){
 			    int tmp;
-			    if(sscanf(optarg, "%d", &tmp) != 1)
+			    if(sscanf(optarg, "%d", &tmp) != 1) {
+				*optind = i;
 				return ARG_ERR_BAD_ARG;
+			    }
 			    *(int*)args[k].value = tmp;
 			    goto out;
 			}else if(args[k].type == arg_string){
@@ -460,23 +466,30 @@ getarg(struct getargs *args, size_t num_args,
 			    goto out;
 			} else if(args[k].type == arg_double){
 			    double tmp;
-			    if(sscanf(optarg, "%lf", &tmp) != 1)
+			    if(sscanf(optarg, "%lf", &tmp) != 1) {
+				*optind = i;
 				return ARG_ERR_BAD_ARG;
+			    }
 			    *(double*)args[k].value = tmp;
 			    goto out;
 			} else if(args[k].type == arg_collect){
 			    struct getarg_collect_info *c = args[k].value;
 			    if((*c->func)(optarg, argc, argv, &i, 
-					  c->data))
+					  c->data)) {
+				*optind = i;
 				return ARG_ERR_BAD_ARG;
+			    }
 			    goto out;
 			}
+			*optind = i;
 			return ARG_ERR_BAD_ARG;
 		    }
 			
 		}
-		if (k == num_args)
+		if (k == num_args) {
+		    *optind = i;
 		    return ARG_ERR_NO_MATCH;
+		}
 	    }
 	out:;
 	}
