@@ -415,19 +415,13 @@ Related Products and Services:
 ------------------------------------------------------------------------------
 FLORIDA - USA
 
-The PC Doctor
-3009 West Tharpe Street Unit-C
-Tallahassee, Florida 32303
-ph 904.531.0364
-fx 904.531.0128
+Ten Twenty-Six Enterprises, Inc.
+1616 Illinois Street, Orlando FL  32803
 
-Contacts: Andy McRory    pcdr@pcdr.com
-          David Blodgett david@pcdr.com
+407 898-2519
 
-The PC Doctor specializes in Linux Internet/Workgroup servers and network
-intergration. We have experience in setup and configuration of SAMBA under
-Caldera/RedHat/Slackware Linux as well as SCO and AIX. We offer workgroup
-Internet gateway servers for Windows client based networks.
+We are a commercial network and computer consulting firm providing
+hardware sales and network support.  
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
