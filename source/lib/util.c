@@ -140,8 +140,14 @@ BOOL set_global_scope(const char *scope)
 	return True;
 }
 
+/*********************************************************************
+ Ensure scope is never null string.
+*********************************************************************/
+
 const char *global_scope(void)
 {
+	if (!smb_scope)
+		set_global_scope("");
 	return smb_scope;
 }
 
