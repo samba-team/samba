@@ -14,6 +14,7 @@ LD_FLAGS = @LD_FLAGS@
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 LIBS = @LIBS@
+LIB_DBM = @LIB_DBM@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
@@ -99,7 +100,7 @@ LIBROKEN=-L../../lib/roken -lroken
 OTPLIB=-L../../lib/otp -lotp
 
 popper$(EXECSUFFIX): $(POPPER_OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(POPPER_OBJECTS) $(OTPLIB) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(POPPER_OBJECTS) $(OTPLIB) $(KLIB) $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
 
 pop_debug$(EXECSUFFIX): $(POP_DEBUG_OBJECTS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(POP_DEBUG_OBJECTS) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)

@@ -14,6 +14,7 @@ LD_FLAGS = @LD_FLAGS@
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 LIBS = @LIBS@
+LIB_DBM = @LIB_DBM@
 MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 
 prefix = @prefix@
@@ -79,9 +80,9 @@ OLIB=-L../../lib/otp -lotp -L../../lib/des -ldes
 LIBROKEN=-L../../lib/roken -lroken
 
 otp$(EXECSUFFIX): $(OBJECTS_OTP)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTP) $(OLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTP) $(OLIB) $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
 
 otpprint$(EXECSUFFIX): $(OBJECTS_OTPPRINT)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTPPRINT) $(OLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTPPRINT) $(OLIB) $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
 
 $(OBJECTS): ../../include/config.h
