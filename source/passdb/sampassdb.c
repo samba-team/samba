@@ -412,9 +412,62 @@ void copy_id23_to_sam_passwd(struct sam_passwd *to, const SAM_USER_INFO_23 *from
 	memcpy(to->hours, from->logon_hrs.hours, MAX_HOURS_LEN);
 
 	to->unknown_5 = from->unknown_5;
-#if 0
 	to->unknown_6 = from->unknown_6;
-#endif
+}
+
+/*************************************************************
+ copies a sam passwd.
+ **************************************************************/
+void copy_id21_to_sam_passwd(struct sam_passwd *to, const SAM_USER_INFO_21 *from)
+{
+	static fstring nt_name;
+	static fstring full_name;
+	static fstring home_dir;
+	static fstring dir_drive;
+	static fstring logon_script;
+	static fstring profile_path;
+	static fstring acct_desc;
+	static fstring workstations;
+	static fstring unknown_str;
+	static fstring munged_dial;
+
+	if (from == NULL || to == NULL) return;
+
+	to->logon_time = from->logon_time;
+	to->logoff_time = from->logoff_time;
+	to->kickoff_time = from->kickoff_time;
+	to->pass_last_set_time = from->pass_last_set_time;
+	to->pass_can_change_time = from->pass_can_change_time;
+	to->pass_must_change_time = from->pass_must_change_time;
+
+	select_name(&nt_name     , &to->nt_name     , &from->uni_user_name   );
+	select_name(&full_name   , &to->full_name   , &from->uni_full_name   );
+	select_name(&home_dir    , &to->home_dir    , &from->uni_home_dir    );
+	select_name(&dir_drive   , &to->dir_drive   , &from->uni_dir_drive   );
+	select_name(&logon_script, &to->logon_script, &from->uni_logon_script);
+	select_name(&profile_path, &to->profile_path, &from->uni_profile_path);
+	select_name(&acct_desc   , &to->acct_desc   , &from->uni_acct_desc   );
+	select_name(&workstations, &to->workstations, &from->uni_workstations);
+	select_name(&unknown_str , &to->unknown_str , &from->uni_unknown_str );
+	select_name(&munged_dial , &to->munged_dial , &from->uni_munged_dial );
+
+	to->unix_uid = (uid_t)-1;
+	to->unix_gid = (gid_t)-1;
+	to->user_rid = from->user_rid;
+	to->group_rid = from->group_rid;
+
+	to->smb_passwd = NULL;
+	to->smb_nt_passwd = NULL;
+
+	to->acct_ctrl = from->acb_info;
+	to->unknown_3 = from->unknown_3;
+
+	to->logon_divs = from->logon_divs;
+	to->hours_len = from->logon_hrs.len;
+	memcpy(to->hours, from->logon_hrs.hours, MAX_HOURS_LEN);
+
+	to->unknown_5 = from->unknown_5;
+	to->unknown_6 = from->unknown_6;
 }
 
 

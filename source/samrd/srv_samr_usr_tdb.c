@@ -267,6 +267,98 @@ static UNISTR2 *choose_unistr2(const UNISTR2 *str1, const UNISTR2 *str2)
 	return unistr2_dup(str2);
 }
 
+static BOOL tdb_set_userinfo_21(TDB_CONTEXT * tdb,
+				const SAM_USER_INFO_21 * usr21)
+{
+	SAM_USER_INFO_21 usr;
+	BOOL ret;
+	
+	UNISTR2 *uni_user_name;
+	UNISTR2 *uni_full_name;
+	UNISTR2 *uni_home_dir;
+	UNISTR2 *uni_dir_drive;
+	UNISTR2 *uni_logon_script;
+	UNISTR2 *uni_profile_path;
+	UNISTR2 *uni_acct_desc;
+	UNISTR2 *uni_workstations;
+	UNISTR2 *uni_unknown_str;
+	UNISTR2 *uni_munged_dial;
+
+	if (tdb_writelock(tdb) != 0)
+	{
+		return False;
+	}
+
+	if (!tdb_lookup_user(tdb, &usr))
+	{
+		tdb_writeunlock(tdb);
+		return False;
+	}
+
+	uni_user_name = choose_unistr2( &usr21->uni_user_name, &usr.uni_user_name);
+	uni_full_name = choose_unistr2( &usr21->uni_full_name, &usr.uni_full_name);
+	uni_home_dir = choose_unistr2( &usr21->uni_home_dir, &usr.uni_home_dir);
+	uni_dir_drive = choose_unistr2( &usr21->uni_dir_drive, &usr.uni_dir_drive);
+	uni_logon_script = choose_unistr2( &usr21->uni_logon_script, &usr.uni_logon_script);
+	uni_profile_path = choose_unistr2( &usr21->uni_profile_path, &usr.uni_profile_path);
+	uni_acct_desc = choose_unistr2( &usr21->uni_acct_desc, &usr.uni_acct_desc);
+	uni_workstations = choose_unistr2( &usr21->uni_workstations, &usr.uni_workstations);
+	uni_unknown_str = choose_unistr2( &usr21->uni_unknown_str, &usr.uni_unknown_str);
+	uni_munged_dial = choose_unistr2( &usr21->uni_munged_dial, &usr.uni_munged_dial);
+
+	ret = make_sam_user_info21W(&usr,
+				   &usr21->logon_time,
+				   &usr21->logoff_time,
+				   &usr21->kickoff_time,
+				   &usr21->pass_last_set_time,
+				   &usr21->pass_can_change_time,
+				   &usr21->pass_must_change_time,
+				   uni_user_name,
+				   uni_full_name,
+				   uni_home_dir,
+				   uni_dir_drive,
+				   uni_logon_script,
+				   uni_profile_path,
+				   uni_acct_desc,
+				   uni_workstations,
+				   uni_unknown_str,
+				   uni_munged_dial,
+				   usr.lm_pwd, usr.nt_pwd,
+				   usr.user_rid,
+				   usr21->group_rid,
+				   usr21->acb_info,
+				   usr21->unknown_3,
+				   usr21->logon_divs,
+				   &usr21->logon_hrs,
+				   usr21->unknown_5, usr21->unknown_6);
+
+	unistr2_free(uni_user_name);
+	unistr2_free(uni_full_name);
+	unistr2_free(uni_home_dir);
+	unistr2_free(uni_dir_drive);
+	unistr2_free(uni_logon_script);
+	unistr2_free(uni_profile_path);
+	unistr2_free(uni_acct_desc);
+	unistr2_free(uni_workstations);
+	unistr2_free(uni_unknown_str);
+	unistr2_free(uni_munged_dial);
+
+	if (!ret)
+	{
+		tdb_writeunlock(tdb);
+		return False;
+	}
+
+	if (!tdb_store_user(tdb, &usr))
+	{
+		tdb_writeunlock(tdb);
+		return False;
+	}
+
+	tdb_writeunlock(tdb);
+	return True;
+}
+
 static BOOL tdb_set_userinfo_23(TDB_CONTEXT * tdb,
 				const SAM_USER_INFO_23 * usr23,
 				const uchar lm_pwd[16],
@@ -544,6 +636,15 @@ static BOOL set_user_info_12(TDB_CONTEXT * usr_tdb,
 }
 
 /*******************************************************************
+ set_user_info_21
+ ********************************************************************/
+static BOOL set_user_info_21(TDB_CONTEXT * usr_tdb,
+			     const SAM_USER_INFO_21 * id21)
+{
+	return tdb_set_userinfo_21(usr_tdb, id21);
+}
+
+/*******************************************************************
  set_user_info_23
  ********************************************************************/
 static BOOL set_user_info_23(TDB_CONTEXT * usr_tdb,
@@ -702,6 +803,18 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	switch (switch_value)
 	{
+		case 21:
+		{
+			SAM_USER_INFO_21 *id21 = ctr->info.id21;
+
+			if (!set_user_info_21(tdb_usr, id21))
+			{
+				DEBUG(10, ("_samr_set_userinfo 21 failed\n"));
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+		}
+
 		case 0x12:
 		{
 			SAM_USER_INFO_12 *id12 = ctr->info.id12;
@@ -714,14 +827,13 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 
 			if (!set_user_info_12(tdb_usr, id12))
 			{
-				DEBUG(10,
-				      ("_samr_set_userinfo 0x12 failed\n"));
+				DEBUG(10, ("_samr_set_userinfo 0x12 failed\n"));
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			break;
 		}
 
-		case 16:
+		case 0x10:
 		{
 			SAM_USER_INFO_10 *id10 = ctr->info.id10;
 			if (!set_user_info_10(tdb_usr, id10))

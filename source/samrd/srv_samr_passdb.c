@@ -1957,6 +1957,52 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 * id24, uint32 rid)
 }
 
 /*******************************************************************
+ set_user_info_21
+ ********************************************************************/
+static BOOL set_user_info_21(const SAM_USER_INFO_21 * id21, uint32 rid)
+{
+	struct sam_passwd *pwd = getsam21pwrid(rid);
+	struct sam_passwd new_pwd;
+	static uchar nt_hash[16];
+	static uchar lm_hash[16];
+
+	if (id21 == NULL)
+	{
+		DEBUG(5, ("set_user_info_21: NULL id21\n"));
+		return False;
+	}
+	if (pwd == NULL)
+	{
+		return False;
+	}
+
+	pwdb_init_sam(&new_pwd);
+	copy_sam_passwd(&new_pwd, pwd);
+	copy_id21_to_sam_passwd(&new_pwd, id21);
+
+	if (pwd->smb_nt_passwd != NULL)
+	{
+		memcpy(nt_hash, pwd->smb_nt_passwd, 16);
+		new_pwd.smb_nt_passwd = nt_hash;
+	}
+	else
+	{
+		new_pwd.smb_nt_passwd = NULL;
+	}
+	if (pwd->smb_nt_passwd != NULL)
+	{
+		memcpy(lm_hash, pwd->smb_passwd, 16);
+		new_pwd.smb_passwd = lm_hash;
+	}
+	else
+	{
+		new_pwd.smb_passwd = NULL;
+	}
+
+	return mod_sam21pwd_entry(&new_pwd, True);
+}
+
+/*******************************************************************
  set_user_info_23
  ********************************************************************/
 static BOOL set_user_info_23(const SAM_USER_INFO_23 * id23, uint32 rid)
@@ -2149,6 +2195,15 @@ uint32 _samr_set_userinfo2(const POLICY_HND * pol, uint16 switch_value,
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	switch (switch_value)
 	{
+		case 21:
+		{
+			SAM_USER_INFO_21 *id21 = ctr->info.id21;
+			if (!set_user_info_21(id21, rid))
+			{
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+		}
 		case 16:
 		{
 			SAM_USER_INFO_10 *id10 = ctr->info.id10;

@@ -2050,6 +2050,7 @@ struct sam_passwd *getsam21pwrid(uint32 rid);
 void pwdb_init_sam(struct sam_passwd *user);
 struct sam_disp_info *pwdb_sam_to_dispinfo(struct sam_passwd *user);
 void copy_id23_to_sam_passwd(struct sam_passwd *to, const SAM_USER_INFO_23 *from);
+void copy_id21_to_sam_passwd(struct sam_passwd *to, const SAM_USER_INFO_21 *from);
 void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from);
 struct smb_passwd *pwdb_sam_to_smb(struct sam_passwd *user);
 struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user);
