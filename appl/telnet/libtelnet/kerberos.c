@@ -170,7 +170,6 @@ kerberos4_send(char *name, Authenticator *ap)
     CREDENTIALS cred;
     int r;
 
-    printf("[ Trying %s ... ]\r\n", name);
     if (!UserNameRequested) {
 	if (auth_debug_mode) {
 	    printf("Kerberos V4: no user name supplied\r\n");
@@ -190,6 +189,8 @@ kerberos4_send(char *name, Authenticator *ap)
 	printf("Kerberos V4: no realm for %s\r\n", RemoteHostName);
 	return(0);
     }
+    printf("[ Trying %s (%s.%s@%s) ... ]\r\n", name, 
+	   KRB_SERVICE_NAME, instance, realm);
     r = krb_mk_req(&auth, KRB_SERVICE_NAME, instance, realm, 0L);
     if (r) {
 	printf("mk_req failed: %s\r\n", krb_get_err_text(r));

@@ -169,6 +169,7 @@ kerberos5_init(Authenticator *ap, int server)
     return(1);
 }
 
+extern int net;
 static int
 kerberos5_send(char *name, Authenticator *ap)
 {
@@ -177,9 +178,7 @@ kerberos5_send(char *name, Authenticator *ap)
     int ap_opts;
     krb5_data cksum_data;
     char foo[2];
-    extern int net;
     
-    printf("[ Trying %s ... ]\r\n", name);
     if (!UserNameRequested) {
 	if (auth_debug_mode) {
 	    printf("Kerberos V5: no user name supplied\r\n");
@@ -229,10 +228,42 @@ kerberos5_send(char *name, Authenticator *ap)
 
     cksum_data.length = sizeof(foo);
     cksum_data.data   = foo;
-    ret = krb5_mk_req(context, &auth_context, ap_opts,
-		      "host", RemoteHostName, 
-		      &cksum_data, ccache, &auth);
 
+
+    {
+	krb5_principal service;
+	char sname[128];
+
+
+	ret = krb5_sname_to_principal (context,
+				       RemoteHostName,
+				       NULL,
+				       KRB5_NT_SRV_HST,
+				       &service);
+	if(ret) {
+	    if (auth_debug_mode) {
+		printf ("Kerberos V5:"
+			" krb5_sname_to_principal(%s) failed (%s)\r\n",
+			RemoteHostName, krb5_get_err_text(context, ret));
+	    }
+	    return 0;
+	}
+	ret = krb5_unparse_name_fixed(context, service, sname, sizeof(sname));
+	if(ret) {
+	    if (auth_debug_mode) {
+		printf ("Kerberos V5:"
+			" krb5_unparse_name_fixed failed (%s)\r\n",
+			krb5_get_err_text(context, ret));
+	    }
+	    return 0;
+	}
+	printf("[ Trying %s (%s)... ]\r\n", name, sname);
+	ret = krb5_mk_req_exact(context, &auth_context, ap_opts,
+				service, 
+				&cksum_data, ccache, &auth);
+	krb5_free_principal (context, service);
+
+    }
     if (ret) {
 	if (1 || auth_debug_mode) {
 	    printf("Kerberos V5: mk_req failed (%s)\r\n",
