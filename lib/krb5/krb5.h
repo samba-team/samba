@@ -110,6 +110,22 @@ typedef enum krb5_preauthtype {
   KRB5_PADATA_ENC_SECURID
 } krb5_preauthtype;
 
+typedef enum krb5_salttype {
+    KRB5_PA_PW_SALT = pa_pw_salt,
+    KRB5_PA_AFS3_SALT = pa_afs3_salt
+}krb5_salttype;
+
+typedef PA_KEY_INFO krb5_preauthinfo;
+
+typedef struct {
+    krb5_preauthtype type;
+    krb5_preauthinfo info; /* list of preauthinfo for this type */
+} krb5_preauthdata_entry;
+
+typedef struct krb5_preauthdata {
+    unsigned len;
+    krb5_preauthdata_entry *val;
+}krb5_preauthdata;
 
 typedef enum krb5_address_type { 
     KRB5_ADDRESS_INET  = 2,
@@ -125,11 +141,14 @@ typedef HostAddress krb5_address;
 
 typedef HostAddresses krb5_addresses;
 
+#define KEYTYPE_USE_AFS3_SALT 0x10000 /* XXX */
+#define KEYTYPE_KEYTYPE_MASK 0xffff /* XXX */
+
 typedef enum krb5_keytype { 
     KEYTYPE_NULL = 0,
     KEYTYPE_DES = 1,
     KEYTYPE_DES3 = 7,
-    KEYTYPE_DES_AFS3 = 0x100000
+    KEYTYPE_DES_AFS3 = KEYTYPE_DES | KEYTYPE_USE_AFS3_SALT
 } krb5_keytype;
 
 typedef EncryptionKey krb5_keyblock;
