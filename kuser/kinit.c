@@ -401,6 +401,7 @@ get_new_tickets(krb5_context context,
     krb5_creds cred;
     char passwd[256];
     krb5_deltat start_time = 0;
+    krb5_deltat renew = 0;
 
     memset(&cred, 0, sizeof(cred));
 
@@ -424,13 +425,14 @@ get_new_tickets(krb5_context context,
     }
 
     if(renew_life) {
-	int tmp = parse_time (renew_life, "s");
-	if (tmp < 0)
+	renew = parse_time (renew_life, "s");
+	if (renew < 0)
 	    errx (1, "unparsable time: %s", renew_life);
 
-	krb5_get_init_creds_opt_set_renew_life (&opt, tmp);
+	krb5_get_init_creds_opt_set_renew_life (&opt, renew);
     } else if (renewable_flag == 1)
 	krb5_get_init_creds_opt_set_renew_life (&opt, 1 << 30);
+
 
     if(ticket_life != 0)
 	krb5_get_init_creds_opt_set_tkt_life (&opt, ticket_life);
@@ -526,6 +528,24 @@ get_new_tickets(krb5_context context,
 	break;
     default:
 	krb5_err(context, 1, ret, "krb5_get_init_creds");
+    }
+
+    if(ticket_life != 0) {
+	if(abs(cred.times.endtime - cred.times.starttime - ticket_life) > 30) {
+	    char life[32];
+	    unparse_time(cred.times.endtime - cred.times.starttime, 
+			 life, sizeof(life));
+	    krb5_warnx(context, "NOTICE: ticket lifetime is %s", life);
+	}
+    }
+    if(renew != 0) {
+	if(abs(cred.times.renew_till - cred.times.starttime - renew) > 30) {
+	    char life[32];
+	    unparse_time(cred.times.renew_till - cred.times.starttime, 
+			 life, sizeof(life));
+	    krb5_warnx(context, "NOTICE: ticket renewable lifetime is %s", 
+		       life);
+	}
     }
 
     ret = krb5_cc_initialize (context, ccache, cred.client);
