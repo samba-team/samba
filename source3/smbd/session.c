@@ -78,9 +78,12 @@ BOOL session_claim(user_struct *vuser)
 		return False;
 	}
 
-	hostname = client_name();
-	if (strequal(hostname,"UNKNOWN"))
-		hostname = client_addr();
+        /* Don't resolve the hostname in smbd as we can pause for a long
+           time while waiting for DNS timeouts to occur.  The correct
+           place to do this is in the code that displays the session
+           information. */
+
+        hostname = client_addr();
 
 	fstrcpy(sessionid.username, vuser->user.unix_name);
 	fstrcpy(sessionid.hostname, hostname);
