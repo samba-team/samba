@@ -8,6 +8,7 @@ echo Making manual pages
 # build the sources
 #
 echo Making binaries
+./makefile.pl ../../source/Makefile > Makefile
 cd ../../source
 # make -f ../packaging/SGI/Makefile clean
 make -f ../packaging/SGI/Makefile all
