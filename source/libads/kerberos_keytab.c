@@ -101,7 +101,34 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	/* Construct our principal */
 	name_to_fqdn(my_fqdn, global_myname());
 	strlower_m(my_fqdn);
-	asprintf(&princ_s, "%s/%s@%s", srvPrinc, my_fqdn, lp_realm());
+
+	if (strchr_m(srvPrinc, '@')) {
+		/* It's a fully-named principal. */
+		asprintf(&princ_s, "%s", srvPrinc);
+	} else if (srvPrinc[strlen(srvPrinc)-1] == '$') {
+		/* It's the machine account, as used by smbclient clients. */
+		asprintf(&princ_s, "%s@%s", srvPrinc, lp_realm());
+	} else {
+		/* It's a normal service principal.  Add the SPN now so that we
+		 * can obtain credentials for it and double-check the salt value
+		 * used to generate the service's keys. */
+		asprintf(&princ_s, "%s/%s@%s", srvPrinc, my_fqdn, lp_realm());
+		/* Update the directory with the SPN */
+		DEBUG(3,("ads_keytab_add_entry: Attempting to add/update '%s'\n", princ_s));
+		if (!ADS_ERR_OK(ads_add_service_principal_name(ads, global_myname(), srvPrinc))) {
+			DEBUG(1,("ads_keytab_add_entry: ads_add_service_principal_name failed.\n"));
+			goto out;
+		}
+	}
+
+	ret = get_kerberos_allowed_etypes(context,&enctypes);
+	if (ret) {
+		DEBUG(1,("ads_keytab_add_entry: get_kerberos_allowed_etypes failed (%s)\n",error_message(ret)));
+		goto out;
+	}
+
+	/* Guess at how the KDC is salting keys for this principal. */
+	kerberos_derive_salting_principal(context, NULL, enctypes, princ_s);
 
 	ret = krb5_parse_name(context, princ_s, &princ);
 	if (ret) {
@@ -201,12 +228,6 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 
 	/* If we get here, we have deleted all the old entries with kvno's not equal to the current kvno-1. */
 
-	ret = get_kerberos_allowed_etypes(context,&enctypes);
-	if (ret) {
-		DEBUG(1,("ads_keytab_add_entry: get_kerberos_allowed_etypes failed (%s)\n",error_message(ret)));
-		goto out;
-	}
-
 	/* Now add keytab entries for all encryption types */
 	for (i = 0; enctypes[i]; i++) {
 		krb5_keyblock *keyp;
@@ -240,13 +261,6 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 
 	krb5_kt_close(context, keytab);
 	keytab = NULL; /* Done with keytab now. No double free. */
-
-	/* Update the LDAP with the SPN */
-	DEBUG(3,("ads_keytab_add_entry: Attempting to add/update '%s'\n", princ_s));
-	if (!ADS_ERR_OK(ads_add_service_principal_name(ads, global_myname(), srvPrinc))) {
-		DEBUG(1,("ads_keytab_add_entry: ads_add_service_principcal_name failed.\n"));
-		goto out;
-	}
 
 out:
 
@@ -410,8 +424,9 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	krb5_kt_cursor cursor;
 	krb5_keytab_entry kt_entry;
 	krb5_kvno kvno;
+	fstring my_fqdn, my_Fqdn, my_name, my_NAME;
 	int i, found = 0;
-	char **oldEntries = NULL;
+	char **oldEntries = NULL, *princ_s[18];;
 
 	ret = ads_keytab_add_entry(ads, "host");
 	if (ret) {
@@ -422,6 +437,45 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	if (ret) {
 		DEBUG(1,("ads_keytab_create_default: ads_keytab_add_entry failed while adding 'cifs'.\n"));
 		return ret;
+	}
+
+	fstrcpy(my_name, global_myname());
+	strlower_m(my_name);
+	fstrcpy(my_NAME, global_myname());
+	strupper_m(my_NAME);
+	name_to_fqdn(my_Fqdn, global_myname());
+	strlower_m(my_Fqdn);
+	memcpy(my_Fqdn, my_NAME, strlen(my_NAME));
+	name_to_fqdn(my_fqdn, global_myname());
+	strlower_m(my_fqdn);
+
+	asprintf(&princ_s[0], "%s$@%s", my_name, lp_realm());
+	asprintf(&princ_s[1], "%s$@%s", my_NAME, lp_realm());
+	asprintf(&princ_s[2], "host/%s@%s", my_name, lp_realm());
+	asprintf(&princ_s[3], "host/%s@%s", my_NAME, lp_realm());
+	asprintf(&princ_s[4], "host/%s@%s", my_fqdn, lp_realm());
+	asprintf(&princ_s[5], "host/%s@%s", my_Fqdn, lp_realm());
+	asprintf(&princ_s[6], "HOST/%s@%s", my_name, lp_realm());
+	asprintf(&princ_s[7], "HOST/%s@%s", my_NAME, lp_realm());
+	asprintf(&princ_s[8], "HOST/%s@%s", my_fqdn, lp_realm());
+	asprintf(&princ_s[9], "HOST/%s@%s", my_Fqdn, lp_realm());
+	asprintf(&princ_s[10], "cifs/%s@%s", my_name, lp_realm());
+	asprintf(&princ_s[11], "cifs/%s@%s", my_NAME, lp_realm());
+	asprintf(&princ_s[12], "cifs/%s@%s", my_fqdn, lp_realm());
+	asprintf(&princ_s[13], "cifs/%s@%s", my_Fqdn, lp_realm());
+	asprintf(&princ_s[14], "CIFS/%s@%s", my_name, lp_realm());
+	asprintf(&princ_s[15], "CIFS/%s@%s", my_NAME, lp_realm());
+	asprintf(&princ_s[16], "CIFS/%s@%s", my_fqdn, lp_realm());
+	asprintf(&princ_s[17], "CIFS/%s@%s", my_Fqdn, lp_realm());
+
+	for (i = 0; i < sizeof(princ_s) / sizeof(princ_s[0]); i++) {
+		if (princ_s[i] != NULL) {
+			ret = ads_keytab_add_entry(ads, princ_s[i]);
+			if (ret != 0) {
+				DEBUG(1,("ads_keytab_create_default: ads_keytab_add_entry failed while adding '%s'.\n", princ_s[i]));
+			}
+			SAFE_FREE(princ_s[i]);
+		}
 	}
 
 	kvno = (krb5_kvno) ads_get_kvno(ads, global_myname());
@@ -495,6 +549,11 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 				 * or mb strings into account. Maybe this is because they assume utf8 ?
 				 * In this case we may need to convert from utf8 to mb charset here ? JRA.
 				 */
+				p = strchr_m(ktprinc, '@');
+				if (p) {
+					*p = '\0';
+				}
+
 				p = strchr_m(ktprinc, '/');
 				if (p) {
 					*p = '\0';
