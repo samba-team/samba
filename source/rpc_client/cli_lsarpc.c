@@ -158,8 +158,8 @@ BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
 do a LSA Query Secret
 ****************************************************************************/
 BOOL lsa_query_secret(struct cli_state *cli, uint16 fnum,
-		      POLICY_HND *pol, unsigned char secret[24],
-		      NTTIME *lastupdate)
+		      POLICY_HND *pol, STRING2 *enc_secret,
+		      NTTIME *last_update)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -200,8 +200,8 @@ BOOL lsa_query_secret(struct cli_state *cli, uint16 fnum,
 		    (r_q.info.value.ptr_secret != 0) &&
 		    (r_q.info.ptr_update != 0))
 		{
-			memcpy(secret, r_q.info.value.secret.buffer, 24);
-			memcpy(lastupdate, &(r_q.info.last_update), sizeof(NTTIME));
+			memcpy(enc_secret,  &(r_q.info.value.enc_secret), sizeof(STRING2));
+			memcpy(last_update, &(r_q.info.last_update),      sizeof(NTTIME));
 			valid_info = True;
 		}
 	}

@@ -318,11 +318,13 @@ void cmd_lsa_query_secret(struct client_info *info)
 	fstring srv_name;
 	BOOL res = True;
 	BOOL res1;
+	BOOL res2;
 	int i;
 
 	POLICY_HND hnd_secret;
 	fstring secret_name;
-	unsigned char enc_secret[24];
+	STRING2 enc_secret;
+	STRING2 secret;
 	NTTIME last_update;
 
 	if (!next_token(NULL, secret_name, NULL, sizeof(secret_name)))
@@ -350,8 +352,8 @@ void cmd_lsa_query_secret(struct client_info *info)
 				&info->dom.lsa_info_pol,
 				secret_name, 0x20003, &hnd_secret) : False;
 
-	res1 = res1 ? lsa_query_secret(smb_cli, nt_pipe_fnum,
-				&hnd_secret, enc_secret, &last_update) : False;
+	res2 = res1 ? lsa_query_secret(smb_cli, nt_pipe_fnum,
+			       &hnd_secret, &enc_secret, &last_update) : False;
 
 	res1 = res1 ? lsa_close(smb_cli, nt_pipe_fnum, &hnd_secret) : False;
 
@@ -360,15 +362,15 @@ void cmd_lsa_query_secret(struct client_info *info)
 	/* close the session */
 	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
-	if (res1)
+	if (res2 && nt_decrypt_string2(&secret, &enc_secret, smb_cli->pwd.smb_nt_pwd))
 	{
-		fprintf(out_hnd, "\tValue (encrypted): ");
-		for (i = 0; i < 24; i++)
+		fprintf(out_hnd, "\tValue       : ");
+		for (i = 0; i < secret.str_str_len; i++)
 		{
-			fprintf(out_hnd, "%02X", enc_secret[i]);
+			fprintf(out_hnd, "%02X", secret.buffer[i]);
 		}
 
-		fprintf(out_hnd, "\n\tLast Updated     : %s\n\n",
+		fprintf(out_hnd, "\n\tLast Updated: %s\n\n",
 			http_timestring(nt_time_to_unix(&last_update)));
 	}
 	else
