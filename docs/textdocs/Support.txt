@@ -407,3 +407,16 @@ I have Samba experience with Windows NT,
 Windows 95, and Windows for Workgroups clients with Linux and HP-UX
 servers.
 ------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+SEOUL - KOREA
+
+MultiMedia KOREA Inc,                  E-Mail : info@seoul.korea.co.kr
+Internet,WWW,Network Support Group,    TEL    : +82-02-597-1631
+                                       FAX    : +82-02-521-4463
+SeoChoGu SeoChoDong 1537-6             WWW    : http://www.korea.co.kr
+JungAng B/D #401
+SEOUL KOREA
+
+SAMBA Experience : SunOS, Solaris, Linux, SCO-Unix, Win95/NT/3.1
+------------------------------------------------------------------------------
