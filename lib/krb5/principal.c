@@ -539,6 +539,28 @@ krb5_realm_compare(krb5_context context,
     return strcmp(princ_realm(princ1), princ_realm(princ2)) == 0;
 }
 
+/*
+ * return TRUE iff princ matches pattern
+ */
+
+krb5_boolean
+krb5_principal_match(krb5_context context,
+		     krb5_const_principal princ,
+		     krb5_const_principal pattern)
+{
+    int i;
+    if(princ_num_comp(princ) != princ_num_comp(pattern))
+	return FALSE;
+    if(fnmatch(princ_realm(pattern), princ_realm(princ), 0) != 0)
+	return FALSE;
+    for(i = 0; i < princ_num_comp(princ); i++){
+	if(fnmatch(princ_ncomp(pattern, i), princ_ncomp(princ, i), 0) != 0)
+	    return FALSE;
+    }
+    return TRUE;
+}
+
+
 struct v4_name_convert {
     const char *from;
     const char *to; 
