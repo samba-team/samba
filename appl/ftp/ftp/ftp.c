@@ -1,5 +1,3 @@
-/*      $NetBSD: ftp.c,v 1.13 1995/09/16 22:32:59 pk Exp $      */
-
 /*
  * Copyright (c) 1985, 1989, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.

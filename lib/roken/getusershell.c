@@ -1,5 +1,3 @@
-/*	$NetBSD: getusershell.c,v 1.5 1995/02/27 04:13:27 cgd Exp $	*/
-
 /*
  * Copyright (c) 1985, 1993
  *	The Regents of the University of California.  All rights reserved.

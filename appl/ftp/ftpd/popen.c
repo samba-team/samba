@@ -1,5 +1,3 @@
-/*	$NetBSD: popen.c,v 1.5 1995/04/11 02:45:00 cgd Exp $	*/
-
 /*
  * Copyright (c) 1988, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
