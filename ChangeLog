@@ -1,3 +1,9 @@
+Sat Mar 21 14:38:51 1998  assar westerlund  <assar@sics.se>
+
+	* lib/kadm5/get_s.c (kadm5_s_get_principal): handle an empty salt
+
+	* configure.in: define SunOS if running solaris
+
 Sat Mar 21 00:26:34 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/kadm5/server.c: Unifdef test for same principal when
@@ -22,10 +28,18 @@ Thu Mar 19 16:54:10 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/kerberos4.c: Return sane error code if krb_rd_req fails.
 
+Wed Mar 18 17:11:47 1998  Assar Westerlund  <assar@sics.se>
+
+	* acconfig.h: rename HAVE_STRUCT_SOCKADDR_IN6 to HAVE_IPV6
+
 Wed Mar 18 09:58:18 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/get_in_tkt_with_keytab.c (krb5_keytab_key_proc): don't
  	free keyseed; use correct keytab
+
+Tue Mar 10 09:56:16 1998  Assar Westerlund  <assar@sics.se>
+
+	* acinclude.m4 (AC_KRB_IPV6): rewrote to avoid false positives
 
 Mon Mar 16 23:58:23 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
