@@ -3650,7 +3650,6 @@ static NTSTATUS ldapsam_gettrustpwsid(struct pdb_methods *methods, SAM_TRUST_PAS
 	if (!ldap_state->entry)
 		return NT_STATUS_NOT_FOUND;
 
-	memset((void*)trust, 0, sizeof(*trust));
 	ret = init_trustpw_from_ldap(ldap_state, trust, ldap_state->entry);
 	if (ret)
 		return NT_STATUS_OK;
