@@ -419,7 +419,7 @@ TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
 # now the rules...
 ######################################################################
 
-all : CHECK include/proto.h $(SPROGS) $(PROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
+all : CHECK include/proto.h nsswitch/winbindd_proto.h $(SPROGS) $(PROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
 # The following "everything" is NOT needed except by Samba developers - so do not use this!
 everything : CHECK $(SPROGS) $(PROGS) $(SHLIBS) nsswitch smbwrapper smbtorture debug2html smbfilter nsswitch/libnss_wins.so
