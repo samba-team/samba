@@ -482,7 +482,7 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val);
 void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void E_md4hash(uchar *passwd, uchar *p16);
 void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16]);
-void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
+void SMBOWFencrypt(uchar passwd[16], char *c8, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 
 /*The following definitions come from  libsmb/smberr.c  */
@@ -1131,6 +1131,14 @@ struct sam_disp_info *pdb_sam_to_dispinfo(struct sam_passwd *user);
 struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user);
 char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length);
 uint16 pdb_decode_acct_ctrl(char *p);
+time_t pdb_get_last_set_time(char *p);
+void pdb_set_logon_time(char *p, int max_len, time_t t);
+void pdb_set_logoff_time(char *p, int max_len, time_t t);
+void pdb_set_kickoff_time(char *p, int max_len, time_t t);
+void pdb_set_can_change_time(char *p, int max_len, time_t t);
+void pdb_set_must_change_time(char *p, int max_len, time_t t);
+void pdb_set_last_set_time(char *p, int max_len, time_t t);
+void pdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl);
 BOOL pdb_gethexpwd(char *p, char *pwd);
 BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
 BOOL pdb_generate_machine_sid(void);
