@@ -72,6 +72,12 @@ uint32_t dcesrv_common_get_share_type(TALLOC_CTX *mem_ctx, struct dcesrv_context
 	 * ADMIN$, IPC$, C$, D$, E$ ...  are type |= 0x80000000
 	 * this ones are hidden in NetShareEnum, but shown in NetShareEnumAll
 	 */
+	if (strcasecmp(lp_servicename(snum), "IPC$") == 0) {
+		return 3;
+	}
+	if (lp_print_ok(snum)) {
+		return 1;
+	}
 	return 0;
 }
 
