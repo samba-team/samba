@@ -2897,6 +2897,12 @@ BOOL printer_driver_in_use (char *arch, char *driver)
 			info.parameters);
 
 		safe_free(dbuf.dptr);
+
+		if (ret == -1) {
+			DEBUG (0,("printer_driver_in_use: tdb_unpack failed for printer %s\n",
+					info.printername));
+			continue;
+		}
 		
 		DEBUG (10,("printer_driver_in_use: Printer - %s (%s)\n",
 			info.printername, info.drivername));
