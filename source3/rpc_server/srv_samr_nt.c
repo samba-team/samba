@@ -2953,13 +2953,10 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			break;
 
 		case 24:
-			if (p->session_key.length != 16) {
-				/* we may have no session key at all, 
-				   and we don't know how to do the SamOEMhash 
-				   for length != 16 */
+			if (!p->session_key.length) {
 				return NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			SamOEMhash(ctr->info.id24->pass, p->session_key.data, 516);
+			SamOEMhashBlob(ctr->info.id24->pass, 516, &p->session_key);
 
 			dump_data(100, (char *)ctr->info.id24->pass, 516);
 
@@ -2977,10 +2974,10 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			 * info level and W2K SP2 drops down to level 23... JRA.
 			 */
 
-			if (p->session_key.length != 16) {
+			if (!p->session_key.length) {
 				return NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			SamOEMhash(ctr->info.id25->pass, p->session_key.data, 532);
+			SamOEMhashBlob(ctr->info.id25->pass, 532, &p->session_key);
 
 			dump_data(100, (char *)ctr->info.id25->pass, 532);
 
@@ -2991,10 +2988,10 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			return NT_STATUS_INVALID_INFO_CLASS;
 
 		case 23:
-			if (p->session_key.length != 16) {
+			if (!p->session_key.length) {
 				return NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			SamOEMhash(ctr->info.id23->pass, p->session_key.data, 516);
+			SamOEMhashBlob(ctr->info.id23->pass, 516, &p->session_key);
 
 			dump_data(100, (char *)ctr->info.id23->pass, 516);
 
