@@ -143,7 +143,7 @@ TTYput(unsigned char c)
 }
 
 static void
-TTYputs(unsigned char *p)
+TTYputs(const unsigned char *p)
 {
     while (*p)
 	TTYput(*p++);
@@ -197,7 +197,7 @@ TTYget()
     return EOF;
 }
 
-#define TTYback()	(backspace ? TTYputs((unsigned char *)backspace) : TTYput('\b'))
+#define TTYback()	(backspace ? TTYputs(backspace) : TTYput('\b'))
 
 static void
 TTYbackn(int n)
@@ -278,7 +278,7 @@ columns(int ac, unsigned char **av)
 	    longest = j;
     cols = TTYwidth / (longest + 3);
 
-    TTYputs((unsigned char *)NEWLINE);
+    TTYputs(NEWLINE);
     for (skip = ac / cols + 1, i = 0; i < skip; i++) {
 	for (j = i; j < ac; j += skip) {
 	    for (p = av[j], len = strlen((char *)p), k = len; --k >= 0; p++)
@@ -287,7 +287,7 @@ columns(int ac, unsigned char **av)
 		while (++len < longest + 3)
 		    TTYput(' ');
 	}
-	TTYputs((unsigned char *)NEWLINE);
+	TTYputs(NEWLINE);
     }
 }
 
@@ -298,7 +298,7 @@ reposition()
     unsigned char	*p;
 
     TTYput('\r');
-    TTYputs((unsigned char *)Prompt);
+    TTYputs(Prompt);
     for (i = Point, p = Line; --i >= 0; p++)
 	TTYshow(*p);
 }
@@ -615,12 +615,12 @@ h_search()
     clear_line();
     old_prompt = Prompt;
     Prompt = "Search: ";
-    TTYputs((unsigned char *)Prompt);
+    TTYputs(Prompt);
     move = Repeat == NO_ARG ? prev_hist : next_hist;
     p = search_hist(editinput(), move);
     clear_line();
     Prompt = old_prompt;
-    TTYputs((unsigned char *)Prompt);
+    TTYputs(Prompt);
 
     Searching = 0;
     return do_insert_hist(p);
@@ -732,8 +732,8 @@ bk_del_char()
 static STATUS
 redisplay()
 {
-    TTYputs((unsigned char *)NEWLINE);
-    TTYputs((unsigned char *)Prompt);
+    TTYputs(NEWLINE);
+    TTYputs(Prompt);
     TTYstring(Line);
     return CSmove;
 }
@@ -961,10 +961,10 @@ readline(const char* prompt)
     ScreenSize = SCREEN_INC;
     Screen = malloc(ScreenSize);
     Prompt = prompt ? prompt : (char *)NIL;
-    TTYputs((unsigned char *)Prompt);
+    TTYputs(Prompt);
     if ((line = editinput()) != NULL) {
 	line = (unsigned char *)strdup((char *)line);
-	TTYputs((unsigned char *)NEWLINE);
+	TTYputs(NEWLINE);
 	TTYflush();
     }
     rl_ttyset(1);
