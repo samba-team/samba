@@ -368,6 +368,159 @@ NTSTATUS pdb_free_sam(SAM_ACCOUNT **user)
 	return NT_STATUS_OK;	
 }
 
+/**************************************************************************
+ * This function will take care of all the steps needed to correctly
+ * allocate and set the user SID, please do use this function to create new
+ * users and don't add the account to the passdb directly unless you know
+ * what are you doing, messing with SIDs is not good.
+ *
+ * account_data must be provided initialized. But values may be discarded if
+ * free RIDs are not in use.
+ * 
+ * ATTENTION: Please pay attention to leave any ID field to NULL unless you 
+ * really know what you are doing
+ *
+ * 									SSS
+ ***************************************************************************/
+
+NTSTATUS pdb_create_new_user_account(char *username, SAM_ACCOUNT *account_data)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	SAM_ACCOUNT test;
+	DOM_SID u_sid, g_sid;
+	struct passwd *pw;
+	
+	if (!username || !account_data) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (pdb_getsampwnam(&test, username)) {
+		DEBUG(3, ("pdb_create_new_user_account: User already exist in SAM! Aborting...\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	pw = getpwnam_alloc(username);
+	
+	if (pdb_get_free_rid_base()) {
+		unid_t idval;
+		int idtype;
+
+		if (!pdb_set_username(account_data, username, PDB_CHANGED)) {
+			goto done;
+		}
+
+		if (lp_idmap_only() || !pw) {
+			if (pdb_get_init_flags(account_data, PDB_USERSID) == PDB_DEFAULT) {
+				if (!pdb_get_next_sid(&u_sid)) {
+					goto done;
+				}
+				pdb_set_user_sid(account_data, &u_sid, PDB_SET);
+			}
+			/* make a mapping in idmap */
+			idtype = ID_USERID;
+			idmap_get_id_from_sid(&idval, &idtype, &u_sid);
+		
+			if (pdb_get_init_flags(account_data, PDB_GROUPSID) == PDB_DEFAULT) {
+				/* set Domain Users by default ! */
+				sid_copy(&g_sid, get_global_sam_sid());
+				sid_append_rid(&u_sid,  DOMAIN_GROUP_RID_USERS);
+				pdb_set_group_sid(account_data, &g_sid, PDB_SET);
+			}
+			/* make a mapping in idmap */
+			idtype = ID_GROUPID;
+			idmap_get_id_from_sid(&idval, &idtype, &g_sid);
+		} else {
+			GROUP_MAP map;
+
+			if (!pdb_set_user_sid_from_rid(account_data, fallback_pdb_uid_to_user_rid(pw->pw_uid), PDB_SET)) {
+				DEBUG(0,("Can't set User SID from RID!\n"));
+				ret = NT_STATUS_INVALID_PARAMETER;
+				goto done;
+			}
+		
+			/* call the mapping code here */
+			if(pdb_getgrgid(&map, pw->pw_gid, MAPPING_WITHOUT_PRIV)) {
+				if (!pdb_set_group_sid(account_data, &map.sid, PDB_SET)){
+					DEBUG(0,("Can't set Group SID!\n"));
+					ret = NT_STATUS_INVALID_PARAMETER;
+					goto done;
+				}
+			} 
+			else {
+				if (!pdb_set_group_sid_from_rid(account_data, pdb_gid_to_group_rid(pw->pw_gid), PDB_SET)) {
+					DEBUG(0,("Can't set Group SID\n"));
+					ret = NT_STATUS_INVALID_PARAMETER;
+					goto done;
+				}
+			}
+		}			
+	} else {
+		if (!pw || NT_STATUS_IS_ERR(pdb_fill_sam_pw(account_data, pw))) {
+			goto done;
+		}
+	}
+
+	if (pdb_add_sam_account(account_data)) {
+		ret = NT_STATUS_OK;
+	}
+
+done:
+	passwd_free(&pw);
+	return ret;
+}
+
+/******************************************************************
+ * Get the free RID base if idmap is configured, otherwise return 0
+ ******************************************************************/
+
+uint32 pdb_get_free_rid_base(void)
+{
+	uint32 low, high;
+	if (pdb_get_free_rid_range(&low, &high)) {
+		return low;
+	}
+	return 0;
+}
+
+/******************************************************************
+ * Get the the non-algorithmic RID range if idmap range are defined
+ ******************************************************************/
+
+BOOL pdb_get_free_rid_range(uint32 *low, uint32 *high)
+{
+	uid_t u_low, u_high;
+       	gid_t g_low, g_high;
+	uint32 id_low, id_high;
+
+	if (lp_idmap_only()) {
+		*low = BASE_RID;
+		*high = -1;
+	}
+
+	if (lp_idmap_uid(&u_low, &u_high) && lp_idmap_gid(&g_low, &g_high)) {
+		if (u_low < g_low) {
+			id_low = u_low;
+		} else {
+			id_low = g_low;
+		}
+		if (u_high > g_high) {
+			id_high = u_high;
+		} else {
+			id_high = g_high;
+		}
+
+		*low = fallback_pdb_uid_to_user_rid(id_low);
+		if (fallback_pdb_user_rid_to_uid(-1) < id_high) {
+			*high = -1;
+		} else {
+			*high = fallback_pdb_uid_to_user_rid(id_high);
+		}
+
+		return True;
+	}
+
+	return False;
+}
 
 /**********************************************************
  Encode the account control bits into a string.
@@ -527,7 +680,7 @@ static int algorithmic_rid_base(void)
 uid_t fallback_pdb_user_rid_to_uid(uint32 user_rid)
 {
 	int rid_offset = algorithmic_rid_base();
-	return (uid_t)(((user_rid & (~USER_RID_TYPE))- rid_offset)/RID_MULTIPLIER);
+	return (uid_t)(((user_rid & (~USER_RID_TYPE)) - rid_offset)/RID_MULTIPLIER);
 }
 
 
