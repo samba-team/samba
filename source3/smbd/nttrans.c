@@ -1304,9 +1304,9 @@ static int call_nt_transact_create(connection_struct *conn,
 	restore_case_semantics(file_attributes);
 
 	/* Save the requested allocation size. */
-	allocation_size = IVAL(params,12);
+	allocation_size = IVAL_TO_SMB_OFF_T(params,12);
 #ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((SMB_OFF_T)IVAL(params,16)) << 32);
+	allocation_size |= ((IVAL_TO_SMB_OFF_T(params,16)) << 32);
 #endif
 	if (allocation_size && (allocation_size > file_len)) {
 		fsp->initial_allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);

@@ -267,20 +267,20 @@ static BOOL process_lockread(blocking_lock_record *blr)
 	ssize_t nread = -1;
 	char *data, *p;
 	int outsize = 0;
-	SMB_OFF_T startpos;
+	SMB_BIG_UINT startpos;
 	size_t numtoread;
 	NTSTATUS status;
 	connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 	files_struct *fsp = blr->fsp;
 
 	numtoread = SVAL(inbuf,smb_vwv1);
-	startpos = IVAL(inbuf,smb_vwv2);
+	startpos = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv2);
 	
 	numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
 	data = smb_buf(outbuf) + 3;
  
 	status = do_lock_spin( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, 
-			  (SMB_BIG_UINT)startpos, READ_LOCK);
+			  startpos, READ_LOCK);
 	if (NT_STATUS_V(status)) {
 		if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
 			!NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
@@ -337,17 +337,17 @@ static BOOL process_lock(blocking_lock_record *blr)
 	char *outbuf = OutBuffer;
 	char *inbuf = blr->inbuf;
 	int outsize;
-	SMB_OFF_T count = 0, offset = 0;
+	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT)0;
 	NTSTATUS status;
 	connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 	files_struct *fsp = blr->fsp;
 
-	count = IVAL(inbuf,smb_vwv1);
-	offset = IVAL(inbuf,smb_vwv3);
+	count = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv1);
+	offset = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
 
 	errno = 0;
-	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)count, 
-			 (SMB_BIG_UINT)offset, WRITE_LOCK);
+	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, 
+			 offset, WRITE_LOCK);
 	if (NT_STATUS_IS_ERR(status)) {
 		if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
 			!NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
