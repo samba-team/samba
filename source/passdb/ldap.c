@@ -20,7 +20,7 @@
    
 */
 
-#ifdef USE_LDAP
+#ifdef USE_LDAP_DB
 
 #include "includes.h"
 
@@ -945,6 +945,26 @@ static BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override)
   return mod_ldap21pwd_entry(pdb_smb_to_sam(pwd), override);
 }
 
+static struct sam_disp_info *getldapdispnam(char *name)
+{
+	return pdb_sam_to_dispinfo(getldap21pwnam(name));
+}
+
+static struct sam_disp_info *getldapdisprid(uint32 rid)
+{
+	return pdb_sam_to_dispinfo(getldap21pwrid(rid));
+}
+
+static struct sam_disp_info *getldapdispent(void *vp)
+{
+	return pdb_sam_to_dispinfo(getldap21pwent(vp));
+}
+
+static struct sam_passwd *getldap21pwuid(uid_t uid)
+{
+	return pdb_smb_to_sam(iterate_getsam21pwuid(pdb_uid_to_user_rid(uid)));
+}
+
 static struct passdb_ops ldap_ops =
 {
 	startldappwent,
@@ -952,18 +972,19 @@ static struct passdb_ops ldap_ops =
 	getldappwpos,
 	setldappwpos,
 	getldappwnam,
-	NULL, /* getldappwuid, */
-	NULL, /* getldappwent, */
-	NULL, /* add_ldappwd_entry, */
-	NULL, /* mod_ldappwd_entry, */
+	getldappwuid,
+	getldappwent,
+	add_ldappwd_entry,
+	mod_ldappwd_entry,
 	getldap21pwent,
 	iterate_getsam21pwnam,       /* From passdb.c */
 	iterate_getsam21pwuid,       /* From passdb.c */
 	iterate_getsam21pwrid,       /* From passdb.c */
 	add_ldap21pwd_entry,
 	mod_ldap21pwd_entry,
-	NULL, /* getsamdisprid, */
-	NULL /* getsamdispent */
+	getldapdispnam,
+	getldapdisprid,
+	getldapdispent
 };
 
 struct passdb_ops *ldap_initialize_password_db(void)

@@ -693,6 +693,7 @@ struct passdb_ops {
   /*
    * sam query display info functions.
    */
+  struct sam_disp_info *(*getsamdispnam)(char *);
   struct sam_disp_info *(*getsamdisprid)(uint32);
   struct sam_disp_info *(*getsamdispent)(void *);
 };

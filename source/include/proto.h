@@ -1555,9 +1555,9 @@ BOOL pm_process( char *FileName,
 
 /*The following definitions come from  passdb.c  */
 
+BOOL initialize_password_db(void);
 struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid);
 struct smb_passwd *iterate_getsmbpwnam(char *name);
-BOOL initialize_password_db(void);
 void *startsmbpwent(BOOL update);
 void endsmbpwent(void *vp);
 struct smb_passwd *getsmbpwent(void *vp);
@@ -1570,6 +1570,7 @@ struct smb_passwd *getsmbpwuid(uid_t smb_userid);
 struct sam_passwd *iterate_getsam21pwnam(char *name);
 struct sam_passwd *iterate_getsam21pwrid(uint32 rid);
 struct sam_passwd *iterate_getsam21pwuid(uid_t uid);
+struct sam_disp_info *getsamdispnam(char *name);
 struct sam_disp_info *getsamdisprid(uint32 rid);
 struct sam_disp_info *getsamdispent(void *vp);
 struct sam_passwd *getsam21pwent(void *vp);
