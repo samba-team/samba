@@ -5,8 +5,8 @@ This is a MAJOR new release of Samba, the UNIX based SMB/CIFS file
 and print server for Windows systems.
 
 There have been many changes in Samba since the last major release,
-1.9.18. These have mainly been in the areas of performance and
-SMB protocol correctness. In addition, a Web based GUI interface
+1.9.18.  These have mainly been in the areas of performance and
+SMB protocol correctness.  In addition, a Web based GUI interface
 for configuring Samba has been added.
 
 In addition, Samba has been re-written to help portability to
@@ -15,7 +15,7 @@ other POSIX-based systems, based on the GNU autoconf tool.
 Major changes in Samba 2.0
 --------------------------
 
-There are many major changes in Samba for version 2.0. Here are 
+There are many major changes in Samba for version 2.0.  Here are 
 some of them:
 
 =====================================================================
@@ -30,7 +30,7 @@ Many changes to the code to optimise high-end performance have been made.
 2). Correctness
 ---------------
 
-Samba now supports the Windows NT specific SMB requests. This
+Samba now supports the Windows NT specific SMB requests.  This
 means that on platforms that are capable Samba now presents a
 64 bit view of the filesystem to Windows NT clients and is
 capable of handling very large files.
@@ -42,39 +42,39 @@ Samba is now self-configuring using GNU autoconf, removing
 the need for people installing Samba to have to hand configure
 Makefiles, as was needed in previous versions.
 
-You now configure Samba by running "./configure" then "make". See
+You now configure Samba by running "./configure" then "make".  See
 docs/textdocs/UNIX_INSTALL.txt for details.
 
-4) Web based GUI configuration
-------------------------------
+4). Web based GUI configuration
+-------------------------------
 
-Samba now comes with SWAT, a web based GUI config system. See
+Samba now comes with SWAT, a web based GUI config system.  See
 the swat man page for details on how to set it up.
 
-5) Cross protocol data integrety
---------------------------------
+5). Cross protocol data integrity
+---------------------------------
 
 An open function interface has been defined to allow 
 "opportunistic locks" (oplocks for short) granted by Samba
-to be seen by other UNIX processes. This allows complete
+to be seen by other UNIX processes.  This allows complete
 cross protocol (NFS and SMB) data integrety using Samba
 with platforms that support this feature.
 
-6) Domain client capability
----------------------------
+6). Domain client capability
+----------------------------
 
 Samba is now capable of using a Windows NT PDC for user
-authentication in exactly the same was as a Windows NT
-server does, ie. it can be a member of a Domain. See
+authentication in exactly the same way that a Windows NT
+workstation does, i.e. it can be a member of a Domain.  See
 docs/textdocs/DOMAIN_MEMBER.txt for details.
 
-7) Documentation Updates
-------------------------
+7). Documentation Updates
+-------------------------
 
 All the reference parts of the Samba documentation (the
 manual pages) have been updated and converted to a document
 format that allows automatic generation of HTML, SGML, and
-text formats. These documents now ship as standard in HTML
+text formats.  These documents now ship as standard in HTML
 and manpage format.
 
 =====================================================================
@@ -82,7 +82,7 @@ and manpage format.
 NOTE - Some important option defaults changed
 ---------------------------------------------
 
-Several parameters have changed their default values. The most
+Several parameters have changed their default values.  The most
 important of these is that the default security mode is now user
 level security rather than share level security.
 
@@ -114,20 +114,20 @@ NOTE - Primary Domain Controller Functionality
 
 This version of Samba contains code that correctly implements
 the undocumented Primary Domain Controller authentication
-protocols. However, there is much more to being a Primary
+protocols.  However, there is much more to being a Primary
 Domain Controller than serving Windows NT logon requests.
 
 A useful version of a Primary Domain Controller contains
-many remote proceedure calls to do things like enumerate users, 
+many remote procedure calls to do things like enumerate users, 
 groups, and security information, only some of which Samba currently
-implements. For this reason we have chosen not to advertise
+implements.  For this reason we have chosen not to advertise
 and actively support Primary Domain Controller functionality
 with this release.
 
 This work is being done in the CVS (developer) versions of Samba,
-development of which continues at a fast pace. If you are
+development of which continues at a fast pace.  If you are
 interested in participating in or helping with this development
-please join the Samba-NTDOM mailing list. Details on joining
+please join the Samba-NTDOM mailing list.  Details on joining
 are available at :
 
 http://samba.anu.edu.au/listproc/
@@ -148,5 +148,5 @@ As always, all bugs are our responsibility.
 
 Regards,
 
-        The Samba Team. 
+        The Samba Team.  
 
