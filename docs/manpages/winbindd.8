@@ -23,7 +23,7 @@ winbindd \- Name Service Switch daemon for resolving names from NT servers
 .SH "SYNOPSIS"
 
 .nf
-\fBwinbindd\fR [-F] [-S] [-i] [-B] [-d <debug level>] [-s <smb config file>] [-n]
+\fBwinbindd\fR [-F] [-S] [-i] [-Y] [-d <debug level>] [-s <smb config file>] [-n]
 .fi
 
 .SH "DESCRIPTION"
@@ -127,8 +127,8 @@ Disable caching\&. This means winbindd will always have to wait for a response f
 
 
 .TP
--B
-Dual daemon mode\&. This means winbindd will run as 2 threads\&. The first will answer all requests from the cache, thus making responses to clients faster\&. The other will update the cache for the query that the first has just responded\&. Advantage of this is that responses stay accurate and are faster\&.
+-Y
+Single daemon mode\&. This means winbindd will run as a single process (the mode of operation in Samba 2\&.2)\&. Winbindd's default behavior is to launch a child process that is responsible for updating expired cache entries\&.
 
 
 .SH "NAME AND ID RESOLUTION"

@@ -1,8 +1,9 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 5. Domain Control</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="type.html" title="Part II. Server Configuration Basics"><link rel="previous" href="ServerType.html" title="Chapter 4. Server Types and Security Modes"><link rel="next" href="samba-bdc.html" title="Chapter 6. Backup Domain Control"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 5. Domain Control</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ServerType.html">Prev</a> </td><th width="60%" align="center">Part II. Server Configuration Basics</th><td width="20%" align="right"> <a accesskey="n" href="samba-bdc.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="samba-pdc"></a>Chapter 5. Domain Control</h2></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Gerald</span> <span class="othername">(Jerry)</span> <span class="surname">Carter</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jerry@samba.org">jerry@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">David</span> <span class="surname">Bannon</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:dbannon@samba.org">dbannon@samba.org</a>&gt;</tt></p></div></div></div></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="samba-pdc.html#id2891986">Features and Benefits</a></dt><dt><a href="samba-pdc.html#id2892290">Basics of Domain Control</a></dt><dd><dl><dt><a href="samba-pdc.html#id2892306">Domain Controller Types</a></dt><dt><a href="samba-pdc.html#id2892517">Preparing for Domain Control</a></dt></dl></dd><dt><a href="samba-pdc.html#id2892837">Domain Control - Example Configuration</a></dt><dt><a href="samba-pdc.html#id2893136">Samba ADS Domain Control</a></dt><dt><a href="samba-pdc.html#id2893157">Domain and Network Logon Configuration</a></dt><dd><dl><dt><a href="samba-pdc.html#id2893173">Domain Network Logon Service</a></dt><dt><a href="samba-pdc.html#id2893499">Security Mode and Master Browsers</a></dt></dl></dd><dt><a href="samba-pdc.html#id2893607">Common Problems and Errors</a></dt><dd><dl><dt><a href="samba-pdc.html#id2893614">I cannot include a '$' in a machine name</a></dt><dt><a href="samba-pdc.html#id2893653">I get told &quot;You already have a connection to the Domain....&quot; 
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 5. Domain Control</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="type.html" title="Part II. Server Configuration Basics"><link rel="previous" href="ServerType.html" title="Chapter 4. Server Types and Security Modes"><link rel="next" href="samba-bdc.html" title="Chapter 6. Backup Domain Control"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 5. Domain Control</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ServerType.html">Prev</a> </td><th width="60%" align="center">Part II. Server Configuration Basics</th><td width="20%" align="right"> <a accesskey="n" href="samba-bdc.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="samba-pdc"></a>Chapter 5. Domain Control</h2></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Gerald</span> <span class="othername">(Jerry)</span> <span class="surname">Carter</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jerry@samba.org">jerry@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">David</span> <span class="surname">Bannon</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:dbannon@samba.org">dbannon@samba.org</a>&gt;</tt></p></div></div></div></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="samba-pdc.html#id2892619">Features and Benefits</a></dt><dt><a href="samba-pdc.html#id2890215">Basics of Domain Control</a></dt><dd><dl><dt><a href="samba-pdc.html#id2890230">Domain Controller Types</a></dt><dt><a href="samba-pdc.html#id2890429">Preparing for Domain Control</a></dt></dl></dd><dt><a href="samba-pdc.html#id2890744">Domain Control - Example Configuration</a></dt><dt><a href="samba-pdc.html#id2891040">Samba ADS Domain Control</a></dt><dt><a href="samba-pdc.html#id2891062">Domain and Network Logon Configuration</a></dt><dd><dl><dt><a href="samba-pdc.html#id2891077">Domain Network Logon Service</a></dt><dt><a href="samba-pdc.html#id2893804">Security Mode and Master Browsers</a></dt></dl></dd><dt><a href="samba-pdc.html#id2893909">Common Problems and Errors</a></dt><dd><dl><dt><a href="samba-pdc.html#id2893916">I cannot include a '$' in a machine name</a></dt><dt><a href="samba-pdc.html#id2893954">I get told &quot;You already have a connection to the Domain....&quot; 
 or &quot;Cannot join domain, the credentials supplied conflict with an 
-existing set..&quot; when creating a machine trust account.</a></dt><dt><a href="samba-pdc.html#id2893703">The system can not log you on (C000019B)....</a></dt><dt><a href="samba-pdc.html#id2893773">The machine trust account for this computer either does not 
-exist or is not accessible.</a></dt><dt><a href="samba-pdc.html#id2893836">When I attempt to login to a Samba Domain from a NT4/W2K workstation,
-I get a message about my account being disabled.</a></dt><dt><a href="samba-pdc.html#id2893863">Until a few minutes after Samba has started, clients get the error &quot;Domain Controller Unavailable&quot;</a></dt></dl></dd></dl></div><p><b><span class="emphasis"><em>The Essence of Learning:</em></span> </b>
+existing set..&quot; when creating a machine trust account.</a></dt><dt><a href="samba-pdc.html#id2894004">The system can not log you on (C000019B)....</a></dt><dt><a href="samba-pdc.html#id2894075">The machine trust account for this computer either does not 
+exist or is not accessible.</a></dt><dt><a href="samba-pdc.html#id2894138">When I attempt to login to a Samba Domain from a NT4/W2K workstation,
+I get a message about my account being disabled.</a></dt><dt><a href="samba-pdc.html#id2894165">Until a few minutes after Samba has started, clients get the error &quot;Domain Controller Unavailable&quot;</a></dt></dl></dd></dl></div><p><b><span class="emphasis"><em>The Essence of Learning:</em></span> </b>
 There are many who approach MS Windows networking with incredible misconceptions.
 That's OK, because it gives the rest of us plenty of opportunity to be of assistance.
 Those who really want help would be well advised to become familiar with information
@@ -32,7 +33,7 @@ burden on an organisation.
 Where is the right place to make mistakes? Only out of harm's way! If you are going to
 make mistakes, then please do this on a test network, away from users and in such a way as
 to not inflict pain on others. Do your learning on a test network.
-</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2891986"></a>Features and Benefits</h2></div></div><div></div></div><p>
+</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2892619"></a>Features and Benefits</h2></div></div><div></div></div><p>
 <span class="emphasis"><em>What is the key benefit of Microsoft Domain security?</em></span>
 </p><p>
 In a word, <span class="emphasis"><em>Single Sign On</em></span>, or SSO for short. To many, this is the holy
@@ -130,11 +131,11 @@ per user settings for many parameters, over-riding global settings given in the
 Thus, with samba-3 it is possible to have a default system configuration for profiles,
 and on a per user basis to over-ride this for those users who should not be subject
 to the default configuration.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2892290"></a>Basics of Domain Control</h2></div></div><div></div></div><p>
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2890215"></a>Basics of Domain Control</h2></div></div><div></div></div><p>
 Over the years, public perceptions of what Domain Control really is has taken on an
 almost mystical nature. Before we branch into a brief overview of Domain Control,
 there are three basic types of domain controllers:
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2892306"></a>Domain Controller Types</h3></div></div><div></div></div><div class="itemizedlist"><ul type="disc"><li><p>Primary Domain Controller</p></li><li><p>Backup Domain Controller</p></li><li><p>ADS Domain Controller</p></li></ul></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2890230"></a>Domain Controller Types</h3></div></div><div></div></div><div class="itemizedlist"><ul type="disc"><li><p>Primary Domain Controller</p></li><li><p>Backup Domain Controller</p></li><li><p>ADS Domain Controller</p></li></ul></div><p>
 The <span class="emphasis"><em>Primary Domain Controller</em></span> or PDC plays an important role in the MS 
 Windows NT4 and Windows 200x Domain Control architecture, but not in the manner that so many
 expect. There is folk lore that dictates that because of it's role in the MS Windows
@@ -186,7 +187,7 @@ At this time any appearance that Samba-3 is capable of acting as an
 This functionality should not be used until the Samba-Team offers formal support for it.
 At such a time, the documentation will be revised to duly reflect all configuration and
 management requirements.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2892517"></a>Preparing for Domain Control</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2890429"></a>Preparing for Domain Control</h3></div></div><div></div></div><p>
 There are two ways that MS Windows machines may interact with each other, with other servers,
 and with Domain Controllers: Either as <span class="emphasis"><em>Stand-Alone</em></span> systems, more commonly
 called <span class="emphasis"><em>Workgroup</em></span> members, or as full participants in a security system,
@@ -247,7 +248,7 @@ domain/workgroup. Local master browsers in the same domain/workgroup on broadcas
 then ask for a complete copy of the browse list for the whole wide area network. Browser clients
 will then contact their local master browser, and will receive the domain-wide browse list,
 instead of just the list for their broadcast-isolated subnet.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2892837"></a>Domain Control - Example Configuration</h2></div></div><div></div></div><p>
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2890744"></a>Domain Control - Example Configuration</h2></div></div><div></div></div><p>
 The first step in creating a working Samba PDC is to understand the parameters necessary
 in <tt class="filename">smb.conf</tt>. Here we attempt to explain the parameters that are covered in
 the <tt class="filename">smb.conf</tt> man page.
@@ -301,20 +302,20 @@ Here is an example <tt class="filename">smb.conf</tt> for acting as a PDC:
 	    <a href="smb.conf.5.html#READONLY" target="_top">read only</a> = no
 	    <a href="smb.conf.5.html#CREATEMASK" target="_top">create mask</a> = 0600
 	    <a href="smb.conf.5.html#DIRECTORYMASK" target="_top">directory mask</a> = 0700
-</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
+</pre><div xmlns:ns5="" class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><ns5:p>
 The above parameters make for a full set of parameters that may define the server's mode
 of operation. The following parameters are the essentials alone:
 
-</p><pre class="programlisting">
+</ns5:p><pre class="programlisting">
 	workgroup = NARNIA
 	domain logons = Yes
 	domain master = Yes
 	security = User
-</pre><p>
+</pre><ns5:p>
 
 The additional parameters shown in the longer listing above just makes for a
 more complete environment.
-</p></div><p>
+</ns5:p></div><p>
 There are a couple of points to emphasize in the above configuration.
 </p><div class="itemizedlist"><ul type="disc"><li><p>
 	Encrypted passwords must be enabled.  For more details on how 
@@ -327,22 +328,22 @@ There are a couple of points to emphasize in the above configuration.
 	client to locate the server as a DC.  Please refer to the various 
 	Network Browsing documentation included with this distribution for 
 	details.
-	</p></li></ul></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2893136"></a>Samba ADS Domain Control</h2></div></div><div></div></div><p>
+	</p></li></ul></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2891040"></a>Samba ADS Domain Control</h2></div></div><div></div></div><p>
 Samba-3 is not and can not act as an Active Directory Server. It can not truly function as
 an Active Directory Primary Domain Controller. The protocols for some of the functionality
 the Active Directory Domain Controllers is have been partially implemented on an experimental
 only basis. Please do NOT expect Samba-3 to support these protocols - nor should you depend
 on any such functionality either now or in the future. The Samba-Team may well remove such
 experimental features or may change their behaviour.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2893157"></a>Domain and Network Logon Configuration</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2891062"></a>Domain and Network Logon Configuration</h2></div></div><div></div></div><p>
 The subject of Network or Domain Logons is discussed here because it rightly forms
 an integral part of the essential functionality that is provided by a Domain Controller.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2893173"></a>Domain Network Logon Service</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2891077"></a>Domain Network Logon Service</h3></div></div><div></div></div><p>
 All Domain Controllers must run the netlogon service (<span class="emphasis"><em>domain logons</em></span>
 in Samba). One Domain Controller must be configured with <i class="parameter"><tt>domain master = Yes</tt></i>
 (the Primary Domain Controller); on ALL Backup Domain Controllers <i class="parameter"><tt>domain master = No</tt></i>
 must be set.
-</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2893206"></a>Example Configuration</h4></div></div><div></div></div><pre class="programlisting">
+</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2891110"></a>Example Configuration</h4></div></div><div></div></div><pre class="programlisting">
 	[global]
 		domain logons = Yes
 		domain master = (Yes on PDC, No on BDCs)
@@ -352,7 +353,7 @@ must be set.
 		path = /var/lib/samba/netlogon
 		guest ok = Yes
 		browseable = No
-</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2893226"></a>The Special Case of MS Windows XP Home Edition</h4></div></div><div></div></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
+</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2891129"></a>The Special Case of MS Windows XP Home Edition</h4></div></div><div></div></div><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
 MS Windows XP Home Edition does not have the ability to join any type of Domain
 security facility. Unlike, MS Windows 9x / Me, MS Windows XP Home Edition also completely
 lacks the ability to log onto a network.
@@ -364,7 +365,7 @@ MS Windows XP Professional.
 </p><p>
 Now that this has been said, please do NOT ask the mailing list, or email any of the
 Samba-Team members with your questions asking how to make this work. It can't be done.
-</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2893261"></a>The Special Case of Windows 9x / Me</h4></div></div><div></div></div><p>
+</p></div><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2891165"></a>The Special Case of Windows 9x / Me</h4></div></div><div></div></div><p>
 A domain and a workgroup are exactly the same thing in terms of network
 browsing.  The difference is that a distributable authentication
 database is associated with a domain, for secure login access to a
@@ -444,7 +445,7 @@ The main difference between a PDC and a Windows 9x logon server configuration is
 	</p></li></ul></div><p>
 A Samba PDC will act as a Windows 9x logon server; after all, it does provide the
 network logon services that MS Windows 9x / Me expect to find.
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2893499"></a>Security Mode and Master Browsers</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2893804"></a>Security Mode and Master Browsers</h3></div></div><div></div></div><p>
 There are a few comments to make in order to tie up some 
 loose ends.  There has been much debate over the issue of whether
 or not it is ok to configure Samba as a Domain Controller in security
@@ -478,7 +479,7 @@ Configuring a Samba box as a DC for a domain that already by definition has a
 PDC is asking for trouble. Therefore, you should always configure the Samba DC
 to be the DMB for its domain and set <i class="parameter"><tt>security = user</tt></i>.
 This is the only officially supported mode of operation.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2893607"></a>Common Problems and Errors</h2></div></div><div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2893614"></a>I cannot include a '$' in a machine name</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2893909"></a>Common Problems and Errors</h2></div></div><div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2893916"></a>I cannot include a '$' in a machine name</h3></div></div><div></div></div><p>
 A 'machine account', (typically) stored in <tt class="filename">/etc/passwd</tt>,
 takes the form of the machine name with a '$' appended. FreeBSD (and other BSD 
 systems?) won't create a user with a '$' in their name.
@@ -486,7 +487,7 @@ systems?) won't create a user with a '$' in their name.
 The problem is only in the program used to make the entry. Once made, it works perfectly.
 Create a user without the '$'. Then use <b class="command">vipw</b> to edit the entry, adding
 the '$'. Or create the whole entry with vipw if you like; make sure you use a unique User ID!
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2893653"></a>I get told &quot;You already have a connection to the Domain....&quot; 
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2893954"></a>I get told &quot;You already have a connection to the Domain....&quot; 
 or &quot;Cannot join domain, the credentials supplied conflict with an 
 existing set..&quot; when creating a machine trust account.</h3></div></div><div></div></div><p>
 This happens if you try to create a machine trust account from the 
@@ -500,7 +501,7 @@ Further, if the machine is already a 'member of a workgroup' that
 is the same name as the domain you are joining (bad idea) you will 
 get this message.  Change the workgroup name to something else, it 
 does not matter what, reboot, and try again.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2893703"></a>The system can not log you on (C000019B)....</h3></div></div><div></div></div><p>I joined the domain successfully but after upgrading 
+</p></div><div xmlns:ns6="" class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2894004"></a>The system can not log you on (C000019B)....</h3></div></div><div></div></div><p>I joined the domain successfully but after upgrading 
 to a newer version of the Samba code I get the message, <span class="errorname">The system 
 can not log you on (C000019B), Please try again or consult your 
 system administrator</span> when attempting to logon.
@@ -511,14 +512,14 @@ the domain name and/or the server name (NetBIOS name) is changed.
 The only way to correct the problem is to restore the original domain 
 SID or remove the domain client from the domain and rejoin. The domain
 SID may be reset using either the net or rpcclient utilities.
-</p><p>
+</p><ns6:p>
 The reset or change the domain SID you can use the net command as follows:
 
-</p><pre class="screen">
+</ns6:p><pre class="screen">
 <tt class="prompt">root# </tt><b class="userinput"><tt>net getlocalsid 'OLDNAME'</tt></b>
 <tt class="prompt">root# </tt><b class="userinput"><tt>net setlocalsid 'SID'</tt></b>
-</pre><p>
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2893773"></a>The machine trust account for this computer either does not 
+</pre><ns6:p>
+</ns6:p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2894075"></a>The machine trust account for this computer either does not 
 exist or is not accessible.</h3></div></div><div></div></div><p>
 When I try to join the domain I get the message <span class="errorname">The machine account 
 for this computer either does not exist or is not accessible</span>. What's 
@@ -541,10 +542,10 @@ Some people have also reported
 that inconsistent subnet masks between the Samba server and the NT 
 client can cause this problem.   Make sure that these are consistent 
 for both client and server.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2893836"></a>When I attempt to login to a Samba Domain from a NT4/W2K workstation,
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2894138"></a>When I attempt to login to a Samba Domain from a NT4/W2K workstation,
 I get a message about my account being disabled.</h3></div></div><div></div></div><p>
 Enable the user accounts with <b class="userinput"><tt>smbpasswd -e <i class="replaceable"><tt>username</tt></i>
 </tt></b>, this is normally done as an account is created.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2893863"></a>Until a few minutes after Samba has started, clients get the error &quot;Domain Controller Unavailable&quot;</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2894165"></a>Until a few minutes after Samba has started, clients get the error &quot;Domain Controller Unavailable&quot;</h3></div></div><div></div></div><p>
 		A domain controller has to announce on the network who it is. This usually takes a while.
 	</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ServerType.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="type.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="samba-bdc.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 4. Server Types and Security Modes </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 6. Backup Domain Control</td></tr></table></div></body></html>
