@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -61,15 +61,12 @@ do_read (int fd,
 	    if (ret != 4)
 		return ret;
 	    len = ntohl(len);
-	    outer_len = len + 12;
-	    outer_len = (outer_len + 7) & ~7;
+	    outer_len = krb5_get_wrapped_length (context, crypto, len);
 	    if (outer_len > sz)
 		abort ();
 	    ret = krb5_net_read (context, &fd, buf, outer_len);
 	    if (ret != outer_len)
 		return ret;
-
-	    
 
 	    status = krb5_decrypt(context, crypto, KRB5_KU_OTHER_ENCRYPTED, 
 				  buf, outer_len, &data);
@@ -106,6 +103,10 @@ do_write (int fd, void *buf, size_t sz)
 	    
 	    if (status)
 		errx (1, "%s", krb5_get_err_text(context, status));
+
+	    assert (krb5_get_wrapped_length (context, crypto,
+					     sz) == data.length);
+
 	    len = htonl(sz);
 	    ret = krb5_net_write (context, &fd, &len, 4);
 	    if (ret != 4)
