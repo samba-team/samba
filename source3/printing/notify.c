@@ -65,18 +65,17 @@ again:
 
 	/* Send message */
 
-	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
+	tdb = conn_tdb_ctx();
 
 	if (!tdb) {
 		DEBUG(3, ("Failed to open connections database in send_spoolss_notify2_msg\n"));
-		return;
+		goto done;
 	}
+	
+	message_send_all(tdb, MSG_PRINTER_NOTIFY2, buf, buflen, False, NULL);
 
-	message_send_all(tdb, MSG_PRINTER_NOTIFY2, buf,
-			 buflen, False, NULL);
-
+done:
 	SAFE_FREE(buf);
-	tdb_close(tdb);
 }
 
 static void send_notify_field_values(const char *printer_name, uint32 type,
