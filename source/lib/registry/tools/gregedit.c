@@ -723,10 +723,12 @@ GtkWidget* create_savefilewin (void)
   return savefilewin;
 }
 
-int main (int argc, char *argv[])
+ int main(int argc, char *argv[])
 {
   poptContext pc;
-  const char *backend = NULL, *credentials = NULL, *location;
+  const char *backend = NULL;
+  const char *credentials = NULL;
+  const char *location;
   int opt;
   struct poptOption long_options[] = {
        POPT_AUTOHELP

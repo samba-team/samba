@@ -752,7 +752,7 @@ int nt_apply_reg_command_file(REG_KEY *root, const char *cmd_file_name)
 	return modified;
 }
 
-int main (int argc, char **argv)
+ int main(int argc, char **argv)
 {
 	int opt;
 	poptContext pc;
