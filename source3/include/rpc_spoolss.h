@@ -1199,8 +1199,8 @@ typedef struct job_info_ctr_info
 {
 	union
 	{
-		JOB_INFO_1 **job_info_1;
-		JOB_INFO_2 **job_info_2;
+		JOB_INFO_1 *job_info_1;
+		JOB_INFO_2 *job_info_2;
 		void *info;
 	} job;
 
