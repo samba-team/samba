@@ -285,7 +285,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	 * need to detect this as some versions of NT4.x are broken. JRA.
 	 */
 
-	/* I sure as hell hope that there arn't servers out there that take 
+	/* I sure as hell hope that there aren't servers out there that take 
 	 * NTLMv2 and have this bug, as we don't test for that... 
 	 *  - abartlet@samba.org
 	 */

@@ -171,7 +171,6 @@ typedef struct
 	int max_xmit;
 	int max_mux;
 	int max_open_files;
-	int max_packet;
 	int pwordlevel;
 	int unamelevel;
 	int deadtime;
@@ -799,8 +798,6 @@ static struct parm_struct parm_table[] = {
 	{"max xmit", P_INTEGER, P_GLOBAL, &Globals.max_xmit, NULL, NULL, 0},
 	
 	{"name resolve order", P_STRING, P_GLOBAL, &Globals.szNameResolveOrder, NULL, NULL, 0},
-	{"max packet", P_INTEGER, P_GLOBAL, &Globals.max_packet, NULL, NULL, 0},
-	{"packet size", P_INTEGER, P_GLOBAL, &Globals.max_packet, NULL, NULL, 0},
 	{"max ttl", P_INTEGER, P_GLOBAL, &Globals.max_ttl, NULL, NULL, 0}, 
 	{"max wins ttl", P_INTEGER, P_GLOBAL, &Globals.max_wins_ttl, NULL, NULL, 0},
 	{"min wins ttl", P_INTEGER, P_GLOBAL, &Globals.min_wins_ttl, NULL, NULL, 0},
@@ -1245,7 +1242,6 @@ static void init_globals(void)
 	Globals.bAlgorithmicRidBase = BASE_RID;
 
 	Globals.bLoadPrinters = True;
-	Globals.max_packet = 65535;
 	Globals.mangled_stack = 50;
 	Globals.max_xmit = 65535;
 	Globals.max_mux = 50;	/* This is *needed* for profile support. */
