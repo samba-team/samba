@@ -635,7 +635,19 @@ static struct togglelist Togglelist[] = {
 		0,
 		    "print encryption debugging information" },
 #endif
-    { "skiprc",
+#if defined(KRB5)
+    { "forward",
+	"credentials forwarding",
+	    kerberos5_set_forward,
+		0,
+		    "forward credentials" },
+    { "forwardable",
+	"forwardable flag of forwarded credentials",
+	    kerberos5_set_forwardable,
+		0,
+		    "forward forwardable credentials" },
+#endif
+   { "skiprc",
 	"don't read ~/.telnetrc file",
 	    0,
 		&skiprc,
@@ -2254,6 +2266,7 @@ tn(int argc, char **argv)
 	    return 0;
     }
     cmdrc(hostp, hostname);
+    set_forward_options();
     if (autologin && user == NULL)
 	user = (char *)get_default_username ();
     if (user) {
