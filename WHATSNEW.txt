@@ -39,7 +39,7 @@ o   Volker Lendecke <vl@samba.org>
 
     
 o   Stefan Metzmacher <metze@samba.org>
-
+    * Fix XFS quotas: HAVE_XFS_QUOTA -> HAVE_XFS_QUOTAS
 
 o   Tim Potter <tpot@samba.org>
 
