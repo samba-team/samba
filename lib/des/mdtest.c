@@ -51,7 +51,7 @@ int
 md4_tests ()
 {
   struct test {
-    unsigned char *str;
+    char *str;
     unsigned char hash[16];
   } tests[] = {
     {"", 
@@ -78,7 +78,7 @@ md4_tests ()
     char res[16];
 
     md4_init (&md4);
-    md4_update (&md4, t->str, strlen(t->str));
+    md4_update (&md4, (unsigned char *)t->str, strlen(t->str));
     md4_finito (&md4, res);
     if (memcmp (res, t->hash, 16) != 0) {
       printf ("MD4(\"%s\") failed\n", t->str);
@@ -93,7 +93,7 @@ int
 md5_tests ()
 {
   struct test {
-    unsigned char *str;
+    char *str;
     unsigned char hash[16];
   } tests[] = {
     {"", {0xd4, 0x1d, 0x8c, 0xd9, 0x8f, 0x00, 0xb2, 0x04, 0xe9, 0x80, 0x09, 0x98, 0xec, 0xf8, 0x42, 0x7e}}, 
@@ -112,7 +112,7 @@ md5_tests ()
     char res[16];
 
     md5_init (&md5);
-    md5_update (&md5, t->str, strlen(t->str));
+    md5_update (&md5, (unsigned char *)t->str, strlen(t->str));
     md5_finito (&md5, res);
     if (memcmp (res, t->hash, 16) != 0) {
       printf ("MD5(\"%s\") failed\n", t->str);
@@ -127,7 +127,7 @@ int
 sha_tests ()
 {
   struct test {
-    unsigned char *str;
+    char *str;
     unsigned char hash[20];
   } tests[] = {
     {"abc", {0xA9, 0x99, 0x3E, 0x36, 0x47, 0x06, 0x81, 0x6A,
@@ -146,7 +146,7 @@ sha_tests ()
     char res[20];
 
     sha_init (&sha);
-    sha_update (&sha, t->str, strlen(t->str));
+    sha_update (&sha, (unsigned char *)t->str, strlen(t->str));
     sha_finito (&sha, res);
     if (memcmp (res, t->hash, 16) != 0) {
       printf ("SHA(\"%s\") failed\n", t->str);
