@@ -24,6 +24,22 @@
 #include "vfs_posix.h"
 
 
+/* the state of a search started with pvfs_search_first() */
+struct pvfs_search_state {
+	struct pvfs_state *pvfs;
+	uint16_t handle;
+	uint_t current_index;
+	uint16_t search_attrib;
+	uint16_t must_attrib;
+	struct pvfs_dir *dir;
+	time_t last_used;
+};
+
+
+/* place a reasonable limit on old-style searches as clients tend to
+   not send search close requests */
+#define MAX_OLD_SEARCHES 2000
+
 /*
   destroy an open search
 */
@@ -68,11 +84,11 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->search.write_time       = nt_time_to_unix(name->dos.write_time);
 		file->search.size             = name->st.st_size;
 		file->search.name             = shortname;
-		file->search.id.reserved      = 8;
+		file->search.id.reserved      = search->handle >> 8;
 		memset(file->search.id.name, ' ', sizeof(file->search.id.name));
 		memcpy(file->search.id.name, shortname, 
 		       MIN(strlen(shortname)+1, sizeof(file->search.id.name)));
-		file->search.id.handle        = search->handle;
+		file->search.id.handle        = search->handle & 0xFF;
 		file->search.id.server_cookie = dir_index;
 		file->search.id.client_cookie = 0;
 		return NT_STATUS_OK;
@@ -237,6 +253,29 @@ static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/*
+  we've run out of search handles - cleanup those that the client forgot
+  to close
+*/
+static void pvfs_search_cleanup(struct pvfs_state *pvfs)
+{
+	int i;
+	time_t t = time(NULL);
+
+	for (i=0;i<MAX_OLD_SEARCHES;i++) {
+		struct pvfs_search_state *search = idr_find(pvfs->idtree_search, i);
+		if (search == NULL) return;
+		if (pvfs_list_eos(search->dir, search->current_index) &&
+		    search->last_used != 0 &&
+		    t > search->last_used + 30) {
+			/* its almost certainly been forgotten
+			 about */
+			talloc_free(search);
+		}
+	}
+}
+
+
 /* 
    list files in a directory matching a wildcard pattern - old SMBsearch interface
 */
@@ -284,7 +323,11 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 
 	/* we need to give a handle back to the client so it
 	   can continue a search */
-	id = idr_get_new(pvfs->idtree_search, search, UINT8_MAX);
+	id = idr_get_new(pvfs->idtree_search, search, MAX_OLD_SEARCHES);
+	if (id == -1) {
+		pvfs_search_cleanup(pvfs);
+		id = idr_get_new(pvfs->idtree_search, search, MAX_OLD_SEARCHES);
+	}
 	if (id == -1) {
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
@@ -295,6 +338,7 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 	search->current_index = 0;
 	search->search_attrib = search_attrib & 0xFF;
 	search->must_attrib = (search_attrib>>8) & 0xFF;
+	search->last_used = time(NULL);
 
 	talloc_set_destructor(search, pvfs_search_destructor);
 
@@ -329,7 +373,7 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 	uint16_t handle;
 	NTSTATUS status;
 
-	handle    = io->search_next.in.id.handle;
+	handle    = io->search_next.in.id.handle | (io->search_next.in.id.reserved<<8);
 	max_count = io->search_next.in.max_count;
 
 	search = idr_find(pvfs->idtree_search, handle);
@@ -339,6 +383,7 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 	}
 
 	search->current_index = io->search_next.in.id.server_cookie;
+	search->last_used = time(NULL);
 	dir = search->dir;
 
 	status = pvfs_list_wakeup(dir, &search->current_index);
@@ -423,6 +468,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 	search->current_index = 0;
 	search->search_attrib = search_attrib;
 	search->must_attrib = 0;
+	search->last_used = 0;
 
 	talloc_set_destructor(search, pvfs_search_destructor);
 

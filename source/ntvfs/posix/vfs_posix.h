@@ -75,16 +75,6 @@ struct pvfs_filename {
 };
 
 
-/* the state of a search started with pvfs_search_first() */
-struct pvfs_search_state {
-	struct pvfs_state *pvfs;
-	uint16_t handle;
-	uint_t current_index;
-	uint16_t search_attrib;
-	uint16_t must_attrib;
-	struct pvfs_dir *dir;
-};
-
 /* open file state */
 struct pvfs_file {
 	struct pvfs_file *next, *prev;
@@ -160,5 +150,8 @@ struct pvfs_mangle_context {
 #define PVFS_FLAG_READONLY       (1<<4)
 #define PVFS_FLAG_STRICT_SYNC    (1<<5)
 #define PVFS_FLAG_STRICT_LOCKING (1<<6)
+
+/* forward declare some anonymous structures */
+struct pvfs_dir;
 
 #endif /* _VFS_POSIX_H_ */

@@ -913,6 +913,168 @@ done:
 }
 
 
+
+/* 
+   basic testing of many old style search calls using separate dirs
+*/
+static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	const int num_dirs = 300;
+	int i, fnum, n;
+	char *fname, *dname;
+	BOOL ret = True;
+	NTSTATUS status;
+	union smb_search_data *file, *file2, *file3;
+
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 || 
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
+		return False;
+	}
+
+	printf("Creating %d dirs\n", num_dirs);
+
+	for (i=0;i<num_dirs;i++) {
+		asprintf(&dname, BASEDIR "\\d%d", i);
+		status = smbcli_mkdir(cli->tree, dname);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("(%s) Failed to create %s - %s\n", 
+			       __location__, dname, nt_errstr(status));
+			ret = False;
+			goto done;
+		}
+
+		for (n=0;n<3;n++) {
+			asprintf(&fname, BASEDIR "\\d%d\\f%d-%d.txt", i, i, n);
+			fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
+			if (fnum == -1) {
+				printf("(%s) Failed to create %s - %s\n", 
+				       __location__, fname, smbcli_errstr(cli->tree));
+				ret = False;
+				goto done;
+			}
+			free(fname);
+		}
+
+		free(dname);
+		smbcli_close(cli->tree, fnum);
+	}
+
+	file  = talloc_zero_array_p(mem_ctx, union smb_search_data, num_dirs);
+	file2 = talloc_zero_array_p(mem_ctx, union smb_search_data, num_dirs);
+	file3 = talloc_zero_array_p(mem_ctx, union smb_search_data, num_dirs);
+
+	printf("Search first on %d dirs\n", num_dirs);
+
+	for (i=0;i<num_dirs;i++) {
+		union smb_search_first io;
+		io.generic.level = RAW_SEARCH_SEARCH;
+		io.search_first.in.max_count = 1;
+		io.search_first.in.search_attrib = 0;
+		io.search_first.in.pattern = talloc_asprintf(mem_ctx, BASEDIR "\\d%d\\*.txt", i);
+		fname = talloc_asprintf(mem_ctx, "f%d-", i);
+
+		io.search_first.out.count = 0;
+
+		status = smb_raw_search_first(cli->tree, mem_ctx,
+					      &io, (void *)&file[i], single_search_callback);
+		if (io.search_first.out.count != 1) {
+			printf("(%s) search first gave %d entries for dir %d - %s\n",
+			       __location__, io.search_first.out.count, i, nt_errstr(status));
+			ret = False;
+			goto done;
+		}
+		CHECK_STATUS(status, NT_STATUS_OK);
+		if (strncasecmp(file[i].search.name, fname, strlen(fname)) != 0) {
+			printf("(%s) incorrect name '%s' expected '%s'[12].txt\n", 
+			       __location__, file[i].search.name, fname);
+			ret = False;
+			goto done;
+		}
+
+		talloc_free(fname);
+	}
+
+	printf("Search next on %d dirs\n", num_dirs);
+
+	for (i=0;i<num_dirs;i++) {
+		union smb_search_next io2;
+
+		io2.generic.level = RAW_SEARCH_SEARCH;
+		io2.search_next.in.max_count = 1;
+		io2.search_next.in.search_attrib = 0;
+		io2.search_next.in.id = file[i].search.id;
+		fname = talloc_asprintf(mem_ctx, "f%d-", i);
+
+		io2.search_next.out.count = 0;
+
+		status = smb_raw_search_next(cli->tree, mem_ctx,
+					     &io2, (void *)&file2[i], single_search_callback);
+		if (io2.search_next.out.count != 1) {
+			printf("(%s) search next gave %d entries for dir %d - %s\n",
+			       __location__, io2.search_next.out.count, i, nt_errstr(status));
+			ret = False;
+			goto done;
+		}
+		CHECK_STATUS(status, NT_STATUS_OK);
+		if (strncasecmp(file2[i].search.name, fname, strlen(fname)) != 0) {
+			printf("(%s) incorrect name '%s' expected '%s'[12].txt\n", 
+			       __location__, file2[i].search.name, fname);
+			ret = False;
+			goto done;
+		}
+
+		talloc_free(fname);
+	}
+
+
+	printf("Search next (rewind) on %d dirs\n", num_dirs);
+
+	for (i=0;i<num_dirs;i++) {
+		union smb_search_next io2;
+
+		io2.generic.level = RAW_SEARCH_SEARCH;
+		io2.search_next.in.max_count = 1;
+		io2.search_next.in.search_attrib = 0;
+		io2.search_next.in.id = file[i].search.id;
+		fname = talloc_asprintf(mem_ctx, "f%d-", i);
+		io2.search_next.out.count = 0;
+
+		status = smb_raw_search_next(cli->tree, mem_ctx,
+					     &io2, (void *)&file3[i], single_search_callback);
+		if (io2.search_next.out.count != 1) {
+			printf("(%s) search next gave %d entries for dir %d - %s\n",
+			       __location__, io2.search_next.out.count, i, nt_errstr(status));
+			ret = False;
+			goto done;
+		}
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		if (strncasecmp(file3[i].search.name, file2[i].search.name, 3) != 0) {
+			printf("(%s) incorrect name '%s' on rewind at dir %d\n", 
+			       __location__, file2[i].search.name, i);
+			ret = False;
+			goto done;
+		}
+
+		if (strcmp(file3[i].search.name, file2[i].search.name) != 0) {
+			printf("(%s) server did not rewind - got '%s' expected '%s'\n", 
+			       __location__, file3[i].search.name, file2[i].search.name);
+			ret = False;
+			goto done;
+		}
+
+		talloc_free(fname);
+	}
+
+
+done:
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
 /* 
    basic testing of all RAW_SEARCH_* calls using a single file
 */
@@ -928,21 +1090,11 @@ BOOL torture_raw_search(int dummy)
 
 	mem_ctx = talloc_init("torture_search");
 
-	if (!test_one_file(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_many_files(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_sorted(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_modify_search(cli, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_one_file(cli, mem_ctx);
+	ret &= test_many_files(cli, mem_ctx);
+	ret &= test_sorted(cli, mem_ctx);
+	ret &= test_modify_search(cli, mem_ctx);
+	ret &= test_many_dirs(cli, mem_ctx);
 
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);
