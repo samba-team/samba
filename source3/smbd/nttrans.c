@@ -892,27 +892,27 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 
 	srvstr_pull(inbuf, fname, params+53, sizeof(fname), total_parameter_count-53, STR_TERMINATE);
 
-    if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
-      return ret;
-
+	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
+		return ret;
+	
 	/* Realloc the size of parameters and data we will return */
 	params = Realloc(*ppparams, 69);
 	if(params == NULL)
 		return ERROR_DOS(ERRDOS,ERRnomem);
-
+	
 	*ppparams = params;
-
+	
 	memset((char *)params,'\0',69);
-
+	
 	p = params;
 	SCVAL(p,0,NO_OPLOCK_RETURN);
-
+	
 	p += 2;
 	SSVAL(p,0,pnum);
 	p += 2;
 	SIVAL(p,0,FILE_WAS_OPENED);
 	p += 8;
-
+	
 	p += 32;
 	SIVAL(p,0,FILE_ATTRIBUTE_NORMAL); /* File Attributes. */
 	p += 20;
@@ -920,12 +920,12 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 	SSVAL(p,0,FILE_TYPE_MESSAGE_MODE_PIPE);
 	/* Device state. */
 	SSVAL(p,2, 0x5FF); /* ? */
-
+	
 	DEBUG(5,("do_nt_transact_create_pipe: open name = %s\n", fname));
-
+	
 	/* Send the required number of replies */
 	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, 69, *ppdata, 0);
-
+	
 	return -1;
 }
 
@@ -933,17 +933,15 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
  Internal fn to set security descriptors.
 ****************************************************************************/
 
-static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 security_info_sent, int *pdef_class,uint32 *pdef_code)
+static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 security_info_sent)
 {
 	prs_struct pd;
 	SEC_DESC *psd = NULL;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret;
-
+	
 	if (sd_len == 0) {
-		*pdef_class = 0;
-		*pdef_code = 0;
-		return True;
+		return NT_STATUS_OK;
 	}
 
 	/*
@@ -952,9 +950,7 @@ static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 security
 
 	if ((mem_ctx = talloc_init()) == NULL) {
 		DEBUG(0,("set_sd: talloc_init failed.\n"));
-		*pdef_class = ERRDOS;
-		*pdef_code = ERRnomem;
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	prs_init(&pd, 0, mem_ctx, UNMARSHALL);
@@ -976,11 +972,9 @@ static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 security
 		 * Return access denied for want of a better error message..
 		 */ 
 		talloc_destroy(mem_ctx);
-		*pdef_class = ERRDOS;
-		*pdef_code = ERRnomem;
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
-
+	
 	if (psd->off_owner_sid==0)
 		security_info_sent &= ~OWNER_SECURITY_INFORMATION;
 	if (psd->off_grp_sid==0)
@@ -991,19 +985,15 @@ static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 security
 		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	
 	ret = fsp->conn->vfs_ops.fset_nt_acl( fsp, fsp->fd, security_info_sent, psd);
-
+	
 	if (!ret) {
 		talloc_destroy(mem_ctx);
-		*pdef_class = ERRDOS;
-		*pdef_code = ERRnoaccess;
-		return False;
+		return NT_STATUS_ACCESS_DENIED;
 	}
-
+	
 	talloc_destroy(mem_ctx);
-
-	*pdef_class = 0;
-	*pdef_code = 0;
-	return True;
+	
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1040,9 +1030,8 @@ static int call_nt_transact_create(connection_struct *conn,
 	int smb_ofun;
 	int smb_open_mode;
 	int smb_attr;
-	int error_class;
-	uint32 error_code;
 	time_t c_time;
+	NTSTATUS nt_status;
 
 	DEBUG(5,("call_nt_transact_create\n"));
 
@@ -1256,12 +1245,12 @@ static int call_nt_transact_create(connection_struct *conn,
 	 * Now try and apply the desired SD.
 	 */
 
-	if (sd_len && !set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION, &error_class, &error_code)) {
+	if (sd_len && !NT_STATUS_IS_OK(nt_status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
 		close_file(fsp,False);
 		restore_case_semantics(file_attributes);
-		return ERROR_DOS(error_class, error_code);
+		return ERROR_NT(nt_status);
 	}
-
+	
 	restore_case_semantics(file_attributes);
 
 	/* Realloc the size of parameters and data we will return */
@@ -1574,8 +1563,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
 	uint32 total_data_count = (uint32)IVAL(inbuf, smb_nts_TotalDataCount);
 	files_struct *fsp = NULL;
 	uint32 security_info_sent = 0;
-	int error_class;
-	uint32 error_code;
+	NTSTATUS nt_status;
 
 	if(total_parameter_count < 8)
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
@@ -1594,8 +1582,8 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
 	if (total_data_count == 0)
 		return ERROR_DOS(ERRDOS, ERRbadaccess);
 
-	if (!set_sd( fsp, data, total_data_count, security_info_sent, &error_class, &error_code))
-		return ERROR_DOS(error_class, error_code);
+	if (!NT_STATUS_IS_OK(nt_status = set_sd( fsp, data, total_data_count, security_info_sent)))
+		return ERROR_NT(nt_status);
 
   done:
 
