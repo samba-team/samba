@@ -50,7 +50,7 @@ fi
 cd ../../source
 if [ "$doclean" = "clean" ]; then
   echo Create SGI specific Makefile
-  ./configure --prefix=/usr/samba --mandir=/usr/share/catman --with-acl-support --with-smbwrapper
+  ./configure --prefix=/usr/samba --sbindir='${exec_prefix}/bin' --mandir=/usr/share/catman --with-acl-support --with-smbwrapper
   errstat=$?
   if [ $errstat -ne 0 ]; then
     echo "Error $errstat creating Makefile\n";
