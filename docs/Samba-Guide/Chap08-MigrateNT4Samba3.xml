@@ -439,10 +439,10 @@
 <screen>
 &rootprompt; slapadd -v -l preload.LDIF
 added: "dc=abmas,dc=biz" (00000001)
-added: "ou=People,dc=abmas,dc=biz" (00000003)
-added: "ou=Groups,dc=abmas,dc=biz" (00000005)
-added: "ou=Idmap,dc=abmas,dc=biz" (00000006)
-added: "sambaDomainName=MEGANET,dc=abmas,dc=biz" (00000007)
+added: "ou=People,dc=abmas,dc=biz" (00000002)
+added: "ou=Groups,dc=abmas,dc=biz" (00000003)
+added: "ou=Idmap,dc=abmas,dc=biz" (00000004)
+added: "sambaDomainName=MEGANET,dc=abmas,dc=biz" (00000005)
 </screen>
 		</para></step>
 
