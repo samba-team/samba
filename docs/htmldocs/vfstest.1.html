@@ -1,11 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
 >vfstest</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="VFSTEST"
-></A
->vfstest</H1
+NAME="VFSTEST">vfstest</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -29,15 +28,13 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"
-></A
-><H2
+NAME="AEN8"><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >vfstest</B
->  [-d debuglevel] [-c command] [-l logfile] [-h]</P
+> [-d debuglevel] [-c command] [-l logfile] [-h]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -78,7 +75,7 @@ CLASS="VARIABLELIST"
 >-c|--command=command</DT
 ><DD
 ><P
->Execute the specified (colon-seperated) commands.
+>Execute the specified (colon-separated) commands.
 		See below for the commands that are available.
 		</P
 ></DD
@@ -152,12 +149,9 @@ NAME="AEN48"
 ><H2
 >COMMANDS</H2
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >VFS COMMANDS</I
-></SPAN
 ></P
 ><P
 ></P
@@ -166,14 +160,14 @@ CLASS="EMPHASIS"
 ><P
 ><B
 CLASS="COMMAND"
->load &lt;module.so&gt;</B
+>load &#60;module.so&#62;</B
 > - Load specified VFS module </P
 ></LI
 ><LI
 ><P
 ><B
 CLASS="COMMAND"
->populate &lt;char&gt; &lt;size&gt;</B
+>populate &#60;char&#62; &#60;size&#62;</B
 > - Populate a data buffer with the specified data
 		</P
 ></LI
@@ -181,7 +175,7 @@ CLASS="COMMAND"
 ><P
 ><B
 CLASS="COMMAND"
->showdata [&lt;offset&gt; &lt;len&gt;]</B
+>showdata [&#60;offset&#62; &#60;len&#62;]</B
 > - Show data currently in data buffer
 		</P
 ></LI
@@ -418,12 +412,9 @@ CLASS="COMMAND"
 ></LI
 ></UL
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >GENERAL COMMANDS</I
-></SPAN
 ></P
 ><P
 ></P
@@ -432,21 +423,21 @@ CLASS="EMPHASIS"
 ><P
 ><B
 CLASS="COMMAND"
->conf &lt;smb.conf&gt;</B
+>conf &#60;smb.conf&#62;</B
 > - Load a different configuration file</P
 ></LI
 ><LI
 ><P
 ><B
 CLASS="COMMAND"
->help [&lt;command&gt;]</B
+>help [&#60;command&#62;]</B
 > - Get list of commands or info about specified command</P
 ></LI
 ><LI
 ><P
 ><B
 CLASS="COMMAND"
->debuglevel &lt;level&gt;</B
+>debuglevel &#60;level&#62;</B
 > - Set debug level</P
 ></LI
 ><LI

@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBPASSWD" "8" "05 November 2002" "" ""
+.TH "SMBPASSWD" "8" "26 November 2002" "" ""
 .SH NAME
 smbpasswd \- change a user's SMB password
 .SH SYNOPSIS
 
-\fBsmbpasswd\fR [ \fB-a\fR ] [ \fB-x\fR ] [ \fB-d\fR ] [ \fB-e\fR ] [ \fB-D debuglevel\fR ] [ \fB-n\fR ] [ \fB-r <remote machine>\fR ] [ \fB-R <name resolve order>\fR ] [ \fB-m\fR ] [ \fB-U username[%password]\fR ] [ \fB-h\fR ] [ \fB-s\fR ] [ \fB-w pass\fR ] [ \fBusername\fR ]
+\fBsmbpasswd\fR [ \fB-a\fR ] [ \fB-x\fR ] [ \fB-d\fR ] [ \fB-e\fR ] [ \fB-D debuglevel\fR ] [ \fB-n\fR ] [ \fB-r <remote machine>\fR ] [ \fB-R <name resolve order>\fR ] [ \fB-m\fR ] [ \fB-U username[%password]\fR ] [ \fB-h\fR ] [ \fB-s\fR ] [ \fB-w pass\fR ] [ \fB-i\fR ] [ \fB-L\fR ] [ \fBusername\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -239,6 +239,17 @@ the \fIprivate/secrets.tdb\fR and is keyed off
 of the admin's DN.  This means that if the value of \fIldap
 admin dn\fR ever changes, the password will need to be 
 manually updated as well.
+.TP
+\fB-i\fR
+This option tells smbpasswd that the account 
+being changed is an interdomain trust account. Currently this is used 
+when Samba is being used as an NT Primary Domain Controller. 
+The account contains the info about another trusted domain.
+
+This option is only available when running smbpasswd as root.
+.TP
+\fB-L\fR
+Run in local mode.
 .TP
 \fBusername\fR
 This specifies the username for all of the 

@@ -1,11 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smbsh</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBSH"
-></A
->smbsh</H1
+NAME="SMBSH">smbsh</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -30,15 +29,13 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"
-></A
-><H2
+NAME="AEN8"><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >smbsh</B
->  [-W workgroup] [-U username] [-P prefix] [-R &lt;name resolve order&gt;] [-d &lt;debug level&gt;] [-l logfile] [-L libdir]</P
+> [-W workgroup] [-U username] [-P prefix] [-R &#60;name resolve order&#62;] [-d &#60;debug level&#62;] [-l logfile] [-L libdir]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -115,17 +112,14 @@ CLASS="FILENAME"
 >This option allows
 		the user to set the directory prefix for SMB access. The 
 		default value if this option is not specified is 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >smb</I
-></SPAN
 >.
 		</P
 ></DD
 ><DT
->-R &lt;name resolve order&gt;</DT
+>-R &#60;name resolve order&#62;</DT
 ><DD
 ><P
 >This option is used to determine what naming 
@@ -236,7 +230,7 @@ CLASS="FILENAME"
 		order. </P
 ></DD
 ><DT
->-d &lt;debug level&gt;</DT
+>-d &#60;debug level&#62;</DT
 ><DD
 ><P
 >debug level is an integer from 0 to 10.</P
@@ -305,6 +299,12 @@ CLASS="COMMAND"
 	that authenticates you to the machine running the Windows NT 
 	operating system.</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >	<TT
@@ -335,6 +335,9 @@ CLASS="USERINPUT"
 ></TT
 >
 	</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >Any dynamically linked command you execute from 
@@ -354,7 +357,7 @@ CLASS="COMMAND"
 	the  workgroup MYGROUP. The command 
 	<B
 CLASS="COMMAND"
->ls /smb/MYGROUP/&lt;machine-name&gt;</B
+>ls /smb/MYGROUP/&#60;machine-name&#62;</B
 > will show the share 
 	names for that machine. You could then, for example, use the <B
 CLASS="COMMAND"
@@ -376,7 +379,7 @@ NAME="AEN112"
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
+>This man page is correct for version 3.0 of 
 	the Samba suite.</P
 ></DIV
 ><DIV

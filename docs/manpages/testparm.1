@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "TESTPARM" "1" "05 November 2002" "" ""
+.TH "TESTPARM" "1" "26 November 2002" "" ""
 .SH NAME
 testparm \- check an smb.conf configuration file for  internal correctness
 .SH SYNOPSIS
 
-\fBtestparm\fR [ \fB-s\fR ] [ \fB-h\fR ] [ \fB-v\fR ] [ \fB-L <servername>\fR ] \fBconfig filename\fR [ \fBhostname  hostIP\fR ]
+\fBtestparm\fR [ \fB-s\fR ] [ \fB-h\fR ] [ \fB-v\fR ] [ \fB-L <servername>\fR ] [ \fB-t <encoding>\fR ] \fBconfig filename\fR [ \fBhostname hostIP\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -53,6 +53,9 @@ will also output all options that were not used in
 \fIsmb.conf\fR and are thus set to
 their defaults.
 .TP
+\fB-t encoding\fR
+Output data in specified encoding.
+.TP
 \fBconfigfilename\fR
 This is the name of the configuration file 
 to check. If this parameter is not present then the 
@@ -86,7 +89,7 @@ loaded OK, the program then dumps all known service details
 to stdout. 
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of 
+This man page is correct for version 3.0 of 
 the Samba suite.
 .SH "SEE ALSO"
 .PP

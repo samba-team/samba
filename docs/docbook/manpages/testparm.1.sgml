@@ -92,6 +92,7 @@
 		<listitem><para>
 		Output data in specified encoding.
 		</para></listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term>configfilename</term>
