@@ -5187,10 +5187,11 @@ static BOOL sam_io_user_info11(char *desc, SAM_USER_INFO_11 * usr,
 
  *************************************************************************/
 
-void init_sam_user_info24(SAM_USER_INFO_24 * usr, char newpass[516])
+void init_sam_user_info24(SAM_USER_INFO_24 * usr, char newpass[516], uint16 pw_len)
 {
 	DEBUG(10, ("init_sam_user_info24:\n"));
 	memcpy(usr->pass, newpass, sizeof(usr->pass));
+	usr->pw_len = pw_len;
 }
 
 /*******************************************************************
@@ -6474,6 +6475,10 @@ BOOL samr_io_q_connect(char *desc, SAMR_Q_CONNECT * q_u,
 	if(!smb_io_unistr2("", &q_u->uni_srv_name, q_u->ptr_srv_name, ps, depth))
 		return False;
 
+	if (MARSHALLING(ps) && (usr->pw_len != 0)) {
+		if (!prs_uint16("pw_len", ps, depth, &usr->pw_len))
+			return False;
+	}
 	if(!prs_align(ps))
 		return False;
 	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
