@@ -1685,6 +1685,18 @@ struct cli_state *do_connect(char *server, char *share)
 		return NULL;
 	}
 
+	/*
+	 * These next two lines are needed to emulate
+	 * old client behaviour for people who have
+	 * scripts based on client output.
+	 * QUESTION ? Do we want to have a 'client compatibility
+	 * mode to turn these on/off ? JRA.
+	 */
+
+	if (*c->server_domain || *c->server_os || *c->server_name)
+		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
+			c->server_domain,c->server_os,c->server_name));
+	
 	DEBUG(4,(" session setup ok\n"));
 
 	if (!cli_send_tconX(c, share, "?????",
@@ -1710,7 +1722,7 @@ static BOOL process(char *base_directory)
 	if (!cli) {
 		return(False);
 	}
-	
+
 	if (*base_directory) do_cd(base_directory);
 	
 	if (cmdstr) {

@@ -87,6 +87,15 @@ struct cli_state {
 	fstring user_name;
 	fstring domain;
 
+	/*
+	 * The following strings are the
+	 * ones returned by the server if
+	 * the protocol > NT1.
+	 */
+	fstring server_type;
+	fstring server_os;
+	fstring server_domain;
+
 	fstring share;
 	fstring dev;
 	struct nmb_name called;

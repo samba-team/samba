@@ -702,25 +702,26 @@ static void passwd_page(void)
 	/* 
 	 * Create all the dialog boxes for data collection
 	 */
-	printf("<p> User Name        : <input type=text size=30 name=%s value=%s> \n", 
-	       USER, new_name);
+	printf("<tr><td> User Name : </td>\n");
+	printf("<td><input type=text size=30 name=%s value=%s></td></tr> \n", USER, new_name);
 	if (am_root() == False) {
-		printf("<p> Old Password: <input type=password size=30 name=%s>\n",OLD_PSWD);
+		printf("<tr><td> Old Password : </td>\n");
+		printf("<td><input type=password size=30 name=%s></td></tr> \n",OLD_PSWD);
 	}
-	printf("<p> New Password: <input type=password size=30 name=%s>\n",NEW_PSWD);
-	printf("<p> Re-type New Password: <input type=password size=30 name=%s>\n",NEW2_PSWD);
+	printf("<tr><td> New Password : </td>\n");
+	printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW_PSWD);
+	printf("<tr><td> Re-type New Password : </td>\n");
+	printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW2_PSWD);
 
 	/*
 	 * Create all the control buttons for requesting action
 	 */
-	printf("<p><tr><td>");
-	printf("<input type=submit name=%s value=\"Change Password\">", CHG_S_PASSWD_FLAG);
+	printf("<tr><td><input type=submit name=%s value=\"Change Password\"></td></tr>\n", CHG_S_PASSWD_FLAG);
 	if (am_root() == True) {
-		printf("<input type=submit name=%s value=\"Add New User\">", ADD_USER_FLAG);
-		printf("<input type=submit name=%s value=\"Disable User\">", DISABLE_USER_FLAG);
-		printf("<input type=submit name=%s value=\"Enable User\">", ENABLE_USER_FLAG);
+		printf("<tr><td><input type=submit name=%s value=\"Add New User\"></td></tr>\n", ADD_USER_FLAG);
+		printf("<tr><td><input type=submit name=%s value=\"Disable User\"></td></tr>\n", DISABLE_USER_FLAG);
+		printf("<tr><td><input type=submit name=%s value=\"Enable User\"></td></tr>\n", ENABLE_USER_FLAG);
 	}
-	printf("</td></tr>\n");
 
 	/*
 	 * Do some work if change, add, disable or enable was requested. It could be
@@ -731,7 +732,7 @@ static void passwd_page(void)
 		chg_passwd();		
 	}
 
-	printf("</table>");
+	printf("</table>\n");
 
 	printf("</FORM>\n");
 
@@ -744,19 +745,21 @@ static void passwd_page(void)
 	/* 
 	 * Create all the dialog boxes for data collection
 	 */
-	printf("<p> User Name        : <input type=text size=30 name=%s value=%s> \n", 
-	       USER, new_name);
-	printf("<p> Old Password: <input type=password size=30 name=%s>\n",OLD_PSWD);
-	printf("<p> New Password: <input type=password size=30 name=%s>\n",NEW_PSWD);
-	printf("<p> Re-type New Password: <input type=password size=30 name=%s>\n",NEW2_PSWD);
-	printf("<p> Remote Machine: <input type=password size=30 name=%s>\n",RHOST);
+	printf("<tr><td> User Name : </td>\n");
+	printf("<td><input type=text size=30 name=%s value=%s></td></tr>\n",USER, new_name);
+	printf("<tr><td> Old Password : </td>\n");
+	printf("<td><input type=password size=30 name=%s></td></tr>\n",OLD_PSWD);
+	printf("<tr><td> New Password : </td>\n");
+	printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW_PSWD);
+	printf("<tr><td> Re-type New Password : </td>\n");
+	printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW2_PSWD);
+	printf("<tr><td> Remote Machine : </td>\n");
+	printf("<td><input type=password size=30 name=%s></td></tr>\n",RHOST);
 
 	/*
 	 * Create all the control buttons for requesting action
 	 */
-	printf("<p><tr><td>");
-	printf("<input type=submit name=%s value=\"Change Password\">", CHG_R_PASSWD_FLAG);
-	printf("</td></tr>\n");
+	printf("<tr><td><input type=submit name=%s value=\"Change Password\"></td></tr>", CHG_R_PASSWD_FLAG);
 
 	/*
 	 * Do some work if a request has been made to change the password somewhere other
