@@ -40,23 +40,19 @@ make everything work with openssl
 
 ** lib/gssapi
 
-process_context_token, display_status, add_cred, inquire_cred_by_mech,
-export_sec_context, import_sec_context, inquire_names_for_mech, and
+process_context_token, add_cred, inquire_cred_by_mech,
+inquire_names_for_mech, and
 inquire_mechs_for_name not implemented.
-
-only DES MAC MD5 and DES implemented.
 
 set minor_status in all functions
 
-init_sec_context: `initiator_cred_handle' and `time_req' ignored.
+init_sec_context: `initiator_cred_handle' ignored.
 
 anonymous credentials not implemented
 
-add 3des, rc4
+add rc4
 
 ** lib/hdb
-
-make keytab code look through all databases
 
 ** lib/kadm5
 
@@ -80,6 +76,8 @@ OTP?
 
 make checksum/encryption type configuration more realm-specific.  make
 some simple way of handling the w2k situtation
+
+crypto: allow scather/gather creation of checksums
 
 ** lib/roken
 
