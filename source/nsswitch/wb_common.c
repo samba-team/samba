@@ -216,25 +216,49 @@ int write_sock(void *buffer, int count)
 	return nwritten;
 }
 
-/* Read data from winbindd socket with timeout */
+/* Read data from winbindd socket with timeout in msec.  Return -1 on
+   failure, zero for a timeout, or the number of bytes read. */
 
-static int read_sock(void *buffer, int count)
+static int read_sock(void *buffer, int count, int timeout)
 {
 	int result = 0, nread = 0;
+	fd_set r_fds;
+	struct timeval tv, *tv_ptr = &tv;
 
 	/* Read data from socket */
 	
+	FD_ZERO(&r_fds);
+	FD_SET(established_socket, &r_fds);
+
+	tv.tv_sec = 0;
+	tv.tv_usec = timeout * 1000;
+
+	if (!timeout)
+		tv_ptr = NULL;
+
 	while(nread < count) {
+
+		/* Call select */
 		
+		result = select(
+			established_socket + 1, &r_fds, NULL, NULL, tv_ptr);
+		
+		if (result == 0)
+			return 0; /* Timed out */
+
+		if (result < 0)
+			goto read_failed; /* Select() failed */
+
 		result = read(established_socket, (char *)buffer + nread, 
 			      count - nread);
 		
 		if ((result == -1) || (result == 0)) {
-			
+
 			/* Read failed.  I think the only useful thing we
 			   can do here is just return -1 and fail since the
 			   transaction has failed half way through. */
 			
+		read_failed:
 			close_sock();
 			return -1;
 		}
@@ -247,7 +271,7 @@ static int read_sock(void *buffer, int count)
 
 /* Read reply */
 
-int read_reply(struct winbindd_response *response)
+int read_reply(struct winbindd_response *response, int timeout)
 {
 	int result1, result2 = 0;
 
@@ -257,11 +281,11 @@ int read_reply(struct winbindd_response *response)
 	
 	/* Read fixed length response */
 	
-	if ((result1 = read_sock(response, sizeof(struct winbindd_response)))
-	    == -1) {
-		
-		return -1;
-	}
+	result1 = read_sock(response, sizeof(struct winbindd_response), 
+			    timeout);
+
+	if (result1 == -1 || result1 == 0)
+		return result1;	/* Read error or timed out */
 	
 	/* We actually send the pointer value of the extra_data field from
 	   the server.  This has no meaning in the client's address space
@@ -281,10 +305,10 @@ int read_reply(struct winbindd_response *response)
 			return -1;
 		}
 		
-		if ((result2 = read_sock(response->extra_data, extra_data_len))
-		    == -1) {
+		if ((result2 = read_sock(
+			     response->extra_data, extra_data_len,
+			     timeout)) == -1)
 			return -1;
-		}
 	}
 	
 	/* Return total amount of data read */
@@ -304,14 +328,20 @@ void free_response(struct winbindd_response *response)
 	}
 }
 
-/* Handle simple types of requests */
+/* Handle simple types of requests.  A timeout in msec can be specified
+   when waiting for a reply from the winbindd daemon.  If zero no timeout
+   is used.  Returns NSS_STATUS_NOTFOUND for serious errors,
+   NSS_STATUS_UNAVAIL when the winbindd daemon could not be contacted, and
+   NSS_STATUS_TRYAGAIN for timeout. */
 
-NSS_STATUS winbindd_request(int req_type, 
-				 struct winbindd_request *request,
-				 struct winbindd_response *response)
+NSS_STATUS winbindd_request_with_timeout(int req_type, 
+					 struct winbindd_request *request,
+					 struct winbindd_response *response,
+					 int timeout)
 {
 	struct winbindd_request lrequest;
 	struct winbindd_response lresponse;
+	int result;
 
 	/* Check for our tricky environment variable */
 
@@ -339,9 +369,14 @@ NSS_STATUS winbindd_request(int req_type,
 	}
 	
 	/* Wait for reply */
-	if (read_reply(response) == -1) {
-		return NSS_STATUS_UNAVAIL;
-	}
+
+	result = read_reply(response, timeout);
+
+	if (result == 0)
+		return NSS_STATUS_TRYAGAIN;
+
+	if (result == -1)
+		return NSS_STATUS_UNAVAIL; /* A read error */
 
 	/* Throw away extra data if client didn't request it */
 	if (response == &lresponse) {
@@ -354,4 +389,12 @@ NSS_STATUS winbindd_request(int req_type,
 	}
 	
 	return NSS_STATUS_SUCCESS;
+}
+
+NSS_STATUS winbindd_request(int req_type, 
+			    struct winbindd_request *request,
+			    struct winbindd_response *response)
+{
+	return winbindd_request_with_timeout(
+		req_type, request, response, 0); /* No timeout */
 }
