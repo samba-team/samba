@@ -9,6 +9,15 @@ Subject:     Windows NT Domain Control & Samba
 
 ****NOTE:****
 =============
+The term "Domain Controller" and those related to it refer to one specific
+method of authentication that can underly an SMB domain. Domain Controllers
+prior to Windows NT Server 3.1 were sold by various companies and based on 
+private extensions to the LAN Manager 2.1 protocol. Windows NT introduced
+Microsoft-specific ways of distributing the user authentication database.
+See DOMAIN.txt for examples of how Samba can participate in or create
+SMB domains based on shared authentication database schemes other than the 
+Windows NT SAM.
+
 Microsoft Windows NT Domain Control is an extremely complex protocol.
 We have received countless requests to implement Domain Control in Samba
 and have seriously investigated the potential to support this. The Samba
@@ -24,6 +33,8 @@ Control (DOMAIN member, Primary Domain controller or Backup Domain controller).
 
 The same is true for OS/2 Warp Server, Digital Pathworks and other similar
 products, all of which can participate in Domain Control along with Windows NT.
+However only those servers which have licenced Windows NT code in them can be
+a primary Domain Controller (eg Windows NT Server, Advanced Server for Unix.)
 
 To many people these terms can be confusing, so let's try to clear the air.
 
@@ -68,6 +79,12 @@ The User database is called the SAM (Security Access Manager) database and
 is used for all user authentication as well as for authentication of inter-
 process authentication (ie: to ensure that the service action a user has
 requested is permitted within the limits of that user's privileges).
+
+The Samba team have produced a utility that can dump the Windows NT SAM into 
+smbpasswd format: see ENCRYPTION.txt for information on smbpasswd and
+/pub/samba/pwdump on your nearest Samba mirror for the utility. This 
+facility is useful but cannot be easily used to implement SAM replication
+to Samba systems.
 
 Windows for Workgroups, Windows 95, and Windows NT Workstations and Servers
 can participate in a Domain security system that is controlled by Windows NT
