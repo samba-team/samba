@@ -1405,7 +1405,6 @@ BOOL lp_msdfs_root(int );
 BOOL lp_autoloaded(int );
 BOOL lp_preexec_close(int );
 BOOL lp_rootpreexec_close(int );
-BOOL lp_revalidate(int );
 BOOL lp_casesensitive(int );
 BOOL lp_preservecase(int );
 BOOL lp_shortpreservecase(int );
@@ -1598,6 +1597,7 @@ BOOL parse_lpq_entry(int snum,char *line,
 
 /*The following definitions come from  printing/nt_printing.c  */
 
+int nt_printing_init(void);
 int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
 BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count);
@@ -1605,7 +1605,6 @@ void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture);
 void get_short_archi(char *short_archi, char *long_archi);
 uint32 del_a_printer(char *portname);
-void dump_a_param(NT_PRINTER_PARAM *param);
 BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
 BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
 uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
@@ -3630,6 +3629,8 @@ int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
 int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len);
 TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr);
+size_t tdb_pack(char *buf, int bufsize, char *fmt, ...);
+int tdb_unpack(char *buf, int bufsize, char *fmt, ...);
 
 /*The following definitions come from  utils/nbio.c  */
 
