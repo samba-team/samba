@@ -13,7 +13,7 @@
 <!ENTITY sam SYSTEM "sam.sgml">
 ]>
 
-<book id="Samba-Developer-Documentation">
+<book id="Samba-Developers-Guide">
 
 <title>SAMBA Developers Guide</title>
 

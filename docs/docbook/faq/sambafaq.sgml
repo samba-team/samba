@@ -1,6 +1,6 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
 
-<book id="sambafaq">
+<book id="Samba-FAQ">
 <title>Samba FAQ</title>
 
 <bookinfo>
@@ -20,7 +20,7 @@ This FAQ is based on the old Samba FAQ by Dan Shearer and Paul Blackman.
 </para>
 </dedication>
 
-<chapter>
+<chapter id="general">
 <title>General Information</title>
 
 <sect1>
@@ -187,7 +187,9 @@ hungry sniffer dogs but it will have been a noble gesture.
 
 </sect1>
 
-<chapter>
+</chapter>
+
+<chapter id="Install">
 <title>Compiling and installing Samba on a Unix host</title>
 
 <sect1>
@@ -516,7 +518,9 @@ in that dialog box.</para>
 
 </sect1>
 
-<chapter>
+</chapter>
+
+<chapter id="ClientApp">
 <title>Specific client application problems</title>
 
 <sect1>
