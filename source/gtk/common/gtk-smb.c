@@ -55,6 +55,11 @@ static void on_browse_activate  (GtkButton     *button,  gpointer         user_d
 	gtk_widget_destroy(GTK_WIDGET(shd));
 }
 
+static void on_krb5_toggled(GtkToggleButton *togglebutton, GtkRpcBindingDialog *d)
+{
+	gtk_widget_set_sensitive(d->entry_password, !gtk_toggle_button_get_active(togglebutton));
+}
+
 static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_dialog)
 {
 	GtkWidget *dialog_vbox1;
@@ -75,7 +80,6 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	GtkWidget *lbl_password;
 	GtkWidget *btn_browse;
 	GtkWidget *label9;
-	GtkWidget *chk_button;
 	GtkWidget *lbl_credentials;
 	GtkWidget *dialog_action_area1;
 	GtkWidget *btn_cancel;
@@ -138,7 +142,7 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
   	gtk_widget_show (btn_browse);
   	gtk_box_pack_start (GTK_BOX (hbox1), btn_browse, TRUE, TRUE, 0);
 
-        g_signal_connect ((gpointer) btn_browse, "pressed",
+    g_signal_connect ((gpointer) btn_browse, "pressed",
                G_CALLBACK (on_browse_activate),
                gtk_rpc_binding_dialog);
 
@@ -208,11 +212,22 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 			(GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
 			(GtkAttachOptions) (0), 0, 0);
 
-	chk_button = gtk_check_button_new_with_mnemonic ("_Use kerberos");
-	gtk_widget_show (chk_button);
-	gtk_table_attach (GTK_TABLE (table1), chk_button, 1, 2, 2, 3,
+	gtk_entry_set_text(GTK_ENTRY(gtk_rpc_binding_dialog->entry_username), getenv("LOGNAME"));
+
+	gtk_rpc_binding_dialog->krb5_chk_button = gtk_check_button_new_with_mnemonic ("_Use kerberos");
+	gtk_widget_show (gtk_rpc_binding_dialog->krb5_chk_button);
+	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->krb5_chk_button, 1, 2, 2, 3,
 			(GtkAttachOptions) (GTK_FILL),
 			(GtkAttachOptions) (0), 0, 0);
+
+    g_signal_connect ((gpointer) gtk_rpc_binding_dialog->krb5_chk_button, "toggled",
+               G_CALLBACK (on_krb5_toggled),
+               gtk_rpc_binding_dialog);
+
+	/* Poor man's autodetection */
+	if(getenv("KRB5CCNAME")) {
+		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(gtk_rpc_binding_dialog->krb5_chk_button), TRUE);
+	}
 
 	lbl_credentials = gtk_label_new ("Credentials");
 	gtk_widget_show (lbl_credentials);
@@ -276,6 +291,11 @@ const char *gtk_rpc_binding_dialog_get_username(GtkRpcBindingDialog *d)
 const char *gtk_rpc_binding_dialog_get_password(GtkRpcBindingDialog *d)
 {
 	return gtk_entry_get_text(GTK_ENTRY(d->entry_password));
+}
+
+const char *gtk_rpc_binding_dialog_get_host(GtkRpcBindingDialog *d)
+{
+	return gtk_entry_get_text(GTK_ENTRY(d->entry_host));
 }
 
 const char *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, char *pipe_name)

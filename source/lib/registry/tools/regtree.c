@@ -21,39 +21,45 @@
 
 #include "includes.h"
 
-static void print_tree(int l, REG_KEY *p, int fullpath, int novals)
+static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 {
-	REG_KEY *subkey;
-	REG_VAL *value;
+	struct registry_key *subkey;
+	struct registry_value *value;
 	WERROR error;
 	int i;
+	TALLOC_CTX *mem_ctx;
 
 	for(i = 0; i < l; i++) putchar(' ');
-	if(fullpath) printf("%s\n", reg_key_get_path_abs(p));
-	else printf("%s\n", reg_key_name(p));
+	
+	/* Hive name */
+	if(p->hive->root == p) printf("%s\n", p->hive->name);
+	else if(!p->name) printf("<No Name>\n");
+	else if(fullpath) printf("%s\n", p->path);
+	else printf("%s\n", p->name);
 
-	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(p, i, &subkey)); i++) {
+	mem_ctx = talloc_init("print_tree");
+	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(mem_ctx, p, i, &subkey)); i++) {
 		print_tree(l+1, subkey, fullpath, novals);
-		reg_key_free(subkey);
 	}
+	talloc_destroy(mem_ctx);
 
 	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while fetching subkeys for '%s': %s\n", reg_key_get_path_abs(p), win_errstr(error)));
+		DEBUG(0, ("Error occured while fetching subkeys for '%s': %s\n", p->path, win_errstr(error)));
 	}
 
 	if(!novals) {
-		for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(p, i, &value)); i++) {
+		mem_ctx = talloc_init("print_tree");
+		for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(mem_ctx, p, i, &value)); i++) {
 			int j;
 			char *desc;
 			for(j = 0; j < l+1; j++) putchar(' ');
-			desc = reg_val_description(value);
+			desc = reg_val_description(mem_ctx, value);
 			printf("%s\n", desc);
-			free(desc);
-			reg_val_free(value);
 		}
+		talloc_destroy(mem_ctx);
 
 		if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-			DEBUG(0, ("Error occured while fetching values for '%s': %s\n", reg_key_get_path_abs(p), win_errstr(error)));
+			DEBUG(0, ("Error occured while fetching values for '%s': %s\n", p->path, win_errstr(error)));
 		}
 	}
 }
@@ -64,8 +70,7 @@ static void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 	const char *backend = "dir";
 	const char *credentials = NULL;
 	poptContext pc;
-	REG_KEY *root;
-	REG_HANDLE *h;
+	struct registry_context *h;
 	WERROR error;
 	int fullpath = 0, no_values = 0;
 	struct poptOption long_options[] = {
@@ -77,6 +82,12 @@ static void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 		POPT_TABLEEND
 	};
 
+
+	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
+	}
+
+
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
 	
 	while((opt = poptGetNextOpt(pc)) != -1) {
@@ -84,7 +95,7 @@ static void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 
 	setup_logging("regtree", True);
 
-	error = reg_open(backend, poptPeekArg(pc), credentials, &h);
+	error = reg_open(&h, backend, poptPeekArg(pc), credentials);
 	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open '%s' with backend '%s':%s \n", poptGetArg(pc), backend, win_errstr(error));
 		return 1;
@@ -93,11 +104,8 @@ static void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 
 	error = WERR_OK;
 
-	for(i = 0; W_ERROR_IS_OK(error); i++) {
-		error = reg_get_hive(h, i, &root);
-		if(!W_ERROR_IS_OK(error)) return 1;
-
-		print_tree(0, root, fullpath, no_values);
+	for(i = 0; i < h->num_hives; i++) {
+		print_tree(0, h->hives[i]->root, fullpath, no_values);
 	}
 	
 	return 0;
