@@ -69,6 +69,7 @@ get_entry(int argc, char **argv)
     case 0: {
 	char buf[128];
 	char *name;
+
 	krb5_unparse_name(context, ent.principal, &name);
 	printf("Principal: %s\n", name);
 	free(name);
@@ -76,6 +77,33 @@ get_entry(int argc, char **argv)
 	printf("Max ticket life: %s\n", buf);
 	puttime (*ent.max_renew, buf, sizeof(buf));
 	printf("Max renewable ticket life: %s\n", buf);
+	if (ent.created_by.principal)
+	    krb5_unparse_name (context, ent.created_by.principal, &name);
+	else
+	    name = NULL;
+	printf("Created by %s at %s\n",
+	       name ? name : "<unknown>",
+	       time2str(ent.created_by.time));
+	free (name);
+	if (ent.modified_by) {
+	    if (ent.modified_by->principal)
+		krb5_unparse_name (context, ent.modified_by->principal, &name);
+	    else
+		name = NULL;
+	    printf("Last modified by %s at %s\n",
+		   name ? name : "<unknown>",
+		   time2str(ent.modified_by->time));
+	    free (name);
+	}
+	if (ent.valid_start) {
+	    printf("Valid from %s\n", time2str(*ent.valid_start));
+	}
+	if (ent.valid_end) {
+	    printf("Valid till %s\n", time2str(*ent.valid_end));
+	}
+	if (ent.pw_end) {
+	    printf("Password expires at %s\n", time2str(*ent.pw_end));
+	}
 	printf("Kvno: %d\n", ent.kvno);
 	printf("Keys: ");
 	for(i = 0; i < ent.keys.len; i++){
@@ -84,7 +112,29 @@ get_entry(int argc, char **argv)
 		   ent.keys.val[i].key.keyvalue.length);
 	}
 	printf("\n");
-	
+	{
+	    int first_flag = 1;
+
+	    printf("Flags: ");
+#define PRINT_FLAG(f)				\
+if(ent.flags. ##f) { 				\
+    if(!first_flag)				\
+	printf(", ");				\
+    printf("%s", #f);				\
+    first_flag = 0;				\
+}
+	    PRINT_FLAG(initial);
+	    PRINT_FLAG(forwardable);
+	    PRINT_FLAG(proxiable);
+	    PRINT_FLAG(renewable);
+	    PRINT_FLAG(postdate);
+	    PRINT_FLAG(server);
+	    PRINT_FLAG(client);
+	    PRINT_FLAG(invalid);
+	    PRINT_FLAG(require_preauth);
+	    PRINT_FLAG(change_pw);
+	    printf("\n");
+	}
 	break;
     }
     default:
