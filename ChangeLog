@@ -1,7 +1,3 @@
-1999-05-04  Assar Westerlund  <assar@sics.se>
-
-	* configure.in: bump version to 0.1f
-
 1999-05-03  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_cred.c (get_cred_from_kdc_flags): allocate and free
@@ -13,6 +9,9 @@
 	* kuser/kdestroy.c (cache): const-correctness
 
 1999-05-03  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/hdb/hdb.c (hdb_set_master_key): initialise master key
+	version
 
 	* lib/hdb/convert_db.c: add support for upgrading database
 	versions
