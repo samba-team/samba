@@ -51,5 +51,7 @@ fi
 if [ $team -ne 0 ]; then
 	mv -f samba2.spec samba2.spec-lsb
 	ln -f samba2.spec-team samba2.spec
+	rpm -ba -v samba2.spec
+else
+	rpm -ba -v --rmsource --clean samba2.spec
 fi
-rpm -ba -v samba2.spec
