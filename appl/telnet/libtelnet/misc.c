@@ -47,13 +47,14 @@ RCSID("$Id$");
 #include "encrypt.h"
 
 
-char *RemoteHostName;
-char *LocalHostName;
+const char *RemoteHostName;
+const char *LocalHostName;
 char *UserNameRequested = 0;
 int ConnectedCount = 0;
 
 void
-auth_encrypt_init(char *local, char *remote, char *name, int server)
+auth_encrypt_init(const char *local, const char *remote, const char *name,
+		  int server)
 {
     RemoteHostName = remote;
     LocalHostName = local;
