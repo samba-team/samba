@@ -277,6 +277,7 @@ init_tgs_req (krb5_context context,
     }
 fail:
     if (ret)
+	/* XXX - don't free addresses? */
 	free_TGS_REQ (t);
     return ret;
 }
@@ -647,8 +648,10 @@ get_cred_from_kdc_flags(krb5_context context,
 	    else {
 		ret = get_cred_kdc_la(context, ccache, flags, 
 				      in_creds, &tgts, *out_creds);
-		if (ret)
+		if (ret) {
 		    free (*out_creds);
+		    *out_creds = NULL;
+		}
 	    }
 	    krb5_free_creds_contents(context, &tgts);
 	    krb5_free_principal(context, tmp_creds.server);
@@ -703,8 +706,10 @@ get_cred_from_kdc_flags(krb5_context context,
     else {
 	ret = get_cred_kdc_la(context, ccache, flags, 
 				      in_creds, tgt, *out_creds);
-	if (ret)
+	if (ret) {
 	    free (*out_creds);
+	    *out_creds = NULL;
+	}
     }
     krb5_free_creds(context, tgt);
     return ret;
@@ -734,20 +739,24 @@ krb5_get_credentials_with_flags(krb5_context context,
 {
     krb5_error_code ret;
     krb5_creds **tgts;
+    krb5_creds *res_creds;
     int i;
     
-    *out_creds = calloc(1, sizeof(**out_creds));
-    if (*out_creds == NULL)
+    *out_creds = NULL;
+    res_creds = calloc(1, sizeof(*res_creds));
+    if (res_creds == NULL)
 	return ENOMEM;
 
     ret = krb5_cc_retrieve_cred(context,
 				ccache,
 				in_creds->session.keytype ?
 				KRB5_TC_MATCH_KEYTYPE : 0,
-				in_creds, *out_creds);
-    if(ret == 0)
+				in_creds, res_creds);
+    if(ret == 0) {
+	*out_creds = res_creds;
 	return 0;
-    free(*out_creds);
+    }
+    free(res_creds);
     if(ret != KRB5_CC_END)
 	return ret;
     if(options & KRB5_GC_CACHED)
@@ -757,7 +766,7 @@ krb5_get_credentials_with_flags(krb5_context context,
     tgts = NULL;
     ret = get_cred_from_kdc_flags(context, flags, ccache, 
 				  in_creds, out_creds, &tgts);
-    for(i = 0; tgts && tgts[i]; i++){
+    for(i = 0; tgts && tgts[i]; i++) {
 	krb5_cc_store_cred(context, ccache, tgts[i]);
 	krb5_free_creds(context, tgts[i]);
     }
