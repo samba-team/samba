@@ -1611,7 +1611,7 @@ AC_ARG_WITH(krb5,
   *)
     AC_MSG_RESULT(yes)
     AC_DEFINE(KRB5_AUTH)
-    LIBS="$LIBS -lkrb5 -lk5crypto -lcom_err"
+    LIBS="$LIBS -lkrb5"
     CFLAGS="$CFLAGS -I$withval/include"
     LDFLAGS="$LDFLAGS -L$withval/lib"
     AC_DEFINE(HAVE_KRB5)
@@ -1626,10 +1626,14 @@ AC_ARG_WITH(krb5,
 ########################################################
 # now see if we can find the krb5 libs in standard paths
 if test x$have_krb5 != xyes; then
-AC_CHECK_LIB(krb5, krb5_mk_req_extended, [LIBS="$LIBS -lkrb5 -lk5crypto -lcom_err";
+AC_CHECK_LIB(krb5, krb5_mk_req_extended, [LIBS="$LIBS -lkrb5";
 	AC_DEFINE(HAVE_KRB5)])
 fi
 
+##################################################################
+# we might need the k5crypto and com_err libraries on some systems
+AC_CHECK_LIB(k5crypto, krb5_encrypt_data)
+AC_CHECK_LIB(com_err, _et_list)
 
 #################################################
 # check for automount support
