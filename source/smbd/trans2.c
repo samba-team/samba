@@ -33,6 +33,7 @@ extern int Client;
 extern int oplock_sock;
 extern int smb_read_error;
 extern fstring local_machine;
+extern int global_oplock_break;
 
 /****************************************************************************
   Send the required number of replies back.
@@ -1742,6 +1743,19 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
   unsigned int tran_call = SVAL(inbuf, smb_setup0);
   char *params = NULL, *data = NULL;
   int num_params, num_params_sofar, num_data, num_data_sofar;
+
+  if(global_oplock_break && (tran_call == TRANSACT2_OPEN))
+  {
+    /*
+     * Queue this open message as we are the process of an oplock break.
+     */ 
+
+    DEBUG(2,("%s: reply_trans2: queueing message trans2open due to being in oplock break state.\n",
+           timestring() ));
+
+    push_smb_message( inbuf, length);
+    return -1;
+  }
 
   outsize = set_message(outbuf,0,0,True);
 
