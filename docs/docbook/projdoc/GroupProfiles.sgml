@@ -14,7 +14,7 @@
 	</author>
 </chapterinfo>
 
-<title>Creating Group Profiles</title>
+<title>Creating Group Prolicy Files</title>
 
 <sect1>
 <title>Windows '9x</title>
@@ -34,7 +34,7 @@ stuff. You then save these settings in a file called
 <filename>Config.POL</filename> that needs to be placed in
 the root of the [NETLOGON] share. If your Win98 is configured to log onto
 the Samba Domain, it will automatically read this file and update the
-Win98 registry of the machine that is logging on.
+Win9x/Me registry of the machine that is logging on.
 </para>
 
 <para>
@@ -42,19 +42,23 @@ All of this is covered in the Win98 Resource Kit documentation.
 </para>
 
 <para>
-If you do not do it this way, then every so often Win98 will check the
+If you do not do it this way, then every so often Win9x/Me will check the
 integrity of the registry and will restore it's settings from the back-up
-copy of the registry it stores on each Win98 machine. Hence, you will notice
-things changing back to the original settings.
+copy of the registry it stores on each Win9x/Me machine. Hence, you will
+occasionally notice things changing back to the original settings.
 </para>
 
+<para>
+The following all refers to Windows NT/200x profile migration - not to policies.
+We need a separate section on policies (NTConfig.Pol) for NT4/200x.
+</para>
 </sect1>
 
 <sect1>
 <title>Windows NT 4</title>
 
 <para>
-Unfortunately, the Resource Kit info is Win NT4/2K version specific.
+Unfortunately, the Resource Kit info is Win NT4 or 200x specific.
 </para>
 
 <para>
