@@ -3452,6 +3452,7 @@ static BOOL unix_ex_wire_to_tagtype(unsigned char wire_tt, SMB_ACL_TAG_T *p_tt)
 
 /****************************************************************************
  Create a new POSIX acl from wire permissions.
+ FIXME ! How does the share mask/mode fit into this.... ?
 ****************************************************************************/
 
 static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn, uint16 num_acls, const char *pdata)
@@ -3574,6 +3575,131 @@ BOOL set_unix_posix_default_acl(connection_struct *conn, const char *fname, SMB_
 }
 
 /****************************************************************************
+ Remove an ACL from a file. As we don't have acl_delete_entry() available
+ we must read the current acl and copy all entries except MASK, USER and GROUP
+ to a new acl, then set that. This (at least on Linux) causes any ACL to be
+ removed.
+ FIXME ! How does the share mask/mode fit into this.... ?
+****************************************************************************/
+
+static BOOL remove_posix_acl(connection_struct *conn, files_struct *fsp, const char *fname)
+{
+	SMB_ACL_T file_acl = NULL;
+	int entry_id = SMB_ACL_FIRST_ENTRY;
+	SMB_ACL_ENTRY_T entry;
+	BOOL ret = False;
+	/* Create a new ACL with only 3 entries, u/g/w. */
+	SMB_ACL_T new_file_acl = SMB_VFS_SYS_ACL_INIT(conn, 3);
+	SMB_ACL_ENTRY_T user_ent = NULL;
+	SMB_ACL_ENTRY_T group_ent = NULL;
+	SMB_ACL_ENTRY_T other_ent = NULL;
+
+	if (new_file_acl == NULL) {
+		DEBUG(5,("remove_posix_acl: failed to init new ACL with 3 entries for file %s.\n", fname));
+		return False;
+	}
+
+	/* Now create the u/g/w entries. */
+	if (SMB_VFS_SYS_ACL_CREATE_ENTRY(conn, &new_file_acl, &user_ent) == -1) {
+		DEBUG(5,("remove_posix_acl: Failed to create user entry for file %s. (%s)\n",
+			fname, strerror(errno) ));
+		goto done;
+	}
+	if (SMB_VFS_SYS_ACL_SET_TAG_TYPE(conn, user_ent, SMB_ACL_USER_OBJ) == -1) {
+		DEBUG(5,("remove_posix_acl: Failed to set user entry for file %s. (%s)\n",
+			fname, strerror(errno) ));
+		goto done;
+	}
+
+	if (SMB_VFS_SYS_ACL_CREATE_ENTRY(conn, &new_file_acl, &group_ent) == -1) {
+		DEBUG(5,("remove_posix_acl: Failed to create group entry for file %s. (%s)\n",
+			fname, strerror(errno) ));
+		goto done;
+	}
+	if (SMB_VFS_SYS_ACL_SET_TAG_TYPE(conn, group_ent, SMB_ACL_GROUP_OBJ) == -1) {
+		DEBUG(5,("remove_posix_acl: Failed to set group entry for file %s. (%s)\n",
+			fname, strerror(errno) ));
+		goto done;
+	}
+
+	if (SMB_VFS_SYS_ACL_CREATE_ENTRY(conn, &new_file_acl, &other_ent) == -1) {
+		DEBUG(5,("remove_posix_acl: Failed to create other entry for file %s. (%s)\n",
+			fname, strerror(errno) ));
+		goto done;
+	}
+	if (SMB_VFS_SYS_ACL_SET_TAG_TYPE(conn, other_ent, SMB_ACL_OTHER) == -1) {
+		DEBUG(5,("remove_posix_acl: Failed to set other entry for file %s. (%s)\n",
+			fname, strerror(errno) ));
+		goto done;
+	}
+
+	/* Get the current file ACL. */
+	if (fsp && fsp->fd != -1) {
+		file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fd);
+	} else {
+		file_acl = SMB_VFS_SYS_ACL_GET_FILE( conn, fname, SMB_ACL_TYPE_ACCESS);
+	}
+
+	if (file_acl == NULL) {
+		/* This is only returned if an error occurred. Even for a file with
+		   no acl a u/g/w acl should be returned. */
+		DEBUG(5,("remove_posix_acl: failed to get ACL from file %s (%s).\n",
+			fname, strerror(errno) ));
+		goto done;
+	}
+
+	while ( SMB_VFS_SYS_ACL_GET_ENTRY(conn, file_acl, entry_id, &entry) == 1) {
+		SMB_ACL_TAG_T tagtype;
+		SMB_ACL_PERMSET_T permset;
+
+		/* get_next... */
+		if (entry_id == SMB_ACL_FIRST_ENTRY)
+			entry_id = SMB_ACL_NEXT_ENTRY;
+
+		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) == -1) {
+			DEBUG(5,("remove_posix_acl: failed to get tagtype from ACL on file %s (%s).\n",
+				fname, strerror(errno) ));
+			goto done;
+		}
+
+		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, entry, &permset) == -1) {
+			DEBUG(5,("remove_posix_acl: failed to get permset from ACL on file %s (%s).\n",
+				fname, strerror(errno) ));
+			goto done;
+		}
+
+		if (tagtype == SMB_ACL_USER_OBJ) {
+			if (SMB_VFS_SYS_ACL_SET_PERMSET(conn, user_ent, permset) == -1) {
+				DEBUG(5,("remove_posix_acl: failed to set permset from ACL on file %s (%s).\n",
+					fname, strerror(errno) ));
+			}
+		} else if (tagtype == SMB_ACL_GROUP_OBJ) {
+			if (SMB_VFS_SYS_ACL_SET_PERMSET(conn, group_ent, permset) == -1) {
+				DEBUG(5,("remove_posix_acl: failed to set permset from ACL on file %s (%s).\n",
+					fname, strerror(errno) ));
+			}
+		} else if (tagtype == SMB_ACL_OTHER) {
+			if (SMB_VFS_SYS_ACL_SET_PERMSET(conn, other_ent, permset) == -1) {
+				DEBUG(5,("remove_posix_acl: failed to set permset from ACL on file %s (%s).\n",
+					fname, strerror(errno) ));
+			}
+		}
+	}
+
+	ret = True;
+
+ done:
+
+	if (file_acl) {
+		SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
+	}
+	if (new_file_acl) {
+		SMB_VFS_SYS_ACL_FREE_ACL(conn, new_file_acl);
+	}
+	return ret;
+}
+
+/****************************************************************************
  Calls from UNIX extensions - POSIX ACL set.
  If num_dir_acls == 0 then read/modify/write acl after removing all entries
  except SMB_ACL_USER_OBJ, SMB_ACL_GROUP_OBJ, SMB_ACL_OTHER.
@@ -3584,8 +3710,8 @@ BOOL set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
 	SMB_ACL_T file_acl = NULL;
 
 	if (!num_acls) {
-		/* TODO !!! */
-		/* Remove the default ACL. */
+		/* Remove the ACL from the file. */
+		return remove_posix_acl(conn, fsp, fname);
 	}
 
 	if ((file_acl = create_posix_acl_from_wire(conn, num_acls, pdata)) == NULL) {
