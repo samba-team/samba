@@ -42,7 +42,7 @@ RCSID("$Id$");
 
 #define USAGE_STRING \
           "Usage: %s [-r] [-f alg] [-u user] num seed\n" \
-	  "       or -[d|l] [-u user]\n" \
+	  "       or -[d|l|o] [-u user]\n" \
 	  "       or -h\n"
 
 #define HELP_STRING \
@@ -52,6 +52,7 @@ RCSID("$Id$");
     "\t-d: delete OTP\n" \
     "\t-l: list OTP status\n" \
     "\t-h: help!\n" \
+    "\t-o: open up the locked OTP\n" \
     "\t-u user: specify a user, default is the current user.\n" \
     "\t		only root can use this option.\n" \
     "\t-f alg: encryption algorithm (md4|md5|sha), default is md5.\n" \
@@ -243,9 +244,38 @@ print_otp_entry_for_name (void *db, char *user)
 
   ctx.user = user;
   if (!otp_simple_get(db, &ctx)) {
-    fprintf(stdout, "%s\totp-%s %d %s\n", 
+    fprintf(stdout,
+	    "%s\totp-%s %d",
 	    ctx.user, ctx.alg->name, ctx.n, ctx.seed);
+    if (ctx.lock_time)
+      fprintf(stdout,
+	      "\tlocked since %s",
+	      ctime(&ctx.lock_time));
+    else
+      fprintf(stdout, "\n");
   }
+}
+
+static int
+open_otp (int argc, char **argv, char *user)
+{
+  void *db;
+  OtpContext ctx;
+  int ret;
+
+  if (argc != 0)
+    usage ();
+
+  db = otp_db_open ();
+  if (db == NULL)
+    errx (1, "otp_db_open failed");
+  
+  ctx.user = user;
+  ret = otp_simple_get (db, &ctx);
+  if (ret == 0)
+    ret = otp_put (db, &ctx);
+  otp_db_close (db);
+  return ret;
 }
 
 /*
@@ -280,14 +310,14 @@ int
 main (int argc, char **argv)
 {
   int c;
-  int renewp = 0, listp = 0, deletep = 0, defaultp = 0;
+  int renewp = 0, listp = 0, deletep = 0, defaultp = 0, openp = 0;
   int uid = getuid();
   OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
   char *user = NULL;
 
   set_progname (argv[0]);
 
-  while ((c = getopt (argc, argv, "hrf:u:ld")) != EOF)
+  while ((c = getopt (argc, argv, "hrf:u:ldo")) != EOF)
     switch (c) {
     case 'h' : 
       help();
@@ -299,6 +329,9 @@ main (int argc, char **argv)
       if (uid != 0)
 	errx (1, "Only root can delete OTPs");
       deletep = 1;
+      break;
+    case 'o':
+      openp = 1;
       break;
     case 'r' :
       renewp = 1;
@@ -320,10 +353,10 @@ main (int argc, char **argv)
   argc -= optind;
   argv += optind;
 
-  if (!(listp || deletep || renewp))
+  if (!(listp || deletep || renewp || openp))
     defaultp = 1;
 
-  if ( listp + deletep + renewp + defaultp != 1) 
+  if ( listp + deletep + renewp + defaultp + openp != 1) 
     usage(); /* one of -d or -l or -r or none */
 
   if (listp)
@@ -357,6 +390,8 @@ main (int argc, char **argv)
     return delete_otp (argc, argv, user);
   else if (renewp)
     return renew (argc, argv, alg, user);
+  else if (openp)
+    return open_otp (argc, argv, user);
   else
     return set (argc, argv, alg, user);
 }
