@@ -509,12 +509,6 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 
 	new_printer->notify.option=NULL;
 	
-	if ( !(new_printer->ctx = talloc_init_named("Printer Entry [0x%x]", (uint32)hnd)) ) {
-		DEBUG(0,("open_printer_hnd: talloc_init() failed!\n"));
-		close_printer_handle(p, hnd);
-		return False;
-	}
-
 	if (!set_printer_hnd_printertype(new_printer, name)) {
 		close_printer_handle(p, hnd);
 		return False;
@@ -1160,8 +1154,10 @@ Can't find printer handle we created for printer %s\n", name ));
 		/* NT doesn't let us connect to a printer if the connecting user
 		   doesn't have print permission.  */
 
-		if (!get_printer_snum(p, handle, &snum))
+		if (!get_printer_snum(p, handle, &snum)) {
+			close_printer_handle(p, handle);
 			return WERR_BADFID;
+		}
 
 		se_map_standard(&printer_default->access_required, &printer_std_mapping);
 		
