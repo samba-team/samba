@@ -1,6 +1,6 @@
 HEADERS = \
 	asn1.h asn1_err.h bits.h cache.h config_file.h \
-	des.h error.h getarg.h gssapi.h hdb.h hdb_err.h \
+	des.h error.h getarg.h gssapi.h hdb.h hdb_asn1.h hdb_err.h \
 	keytab.h krb5.h krb5_err.h md4.h md5.h roken.h \
 	sha.h sl.h store.h
 
@@ -89,6 +89,9 @@ des.h:
 
 hdb.h:
 	$(LN_S) $(top_srcdir)/lib/hdb/hdb.h .
+
+hdb_asn1.h:
+	$(LN_S) ../lib/hdb/hdb_asn1.h .
 
 md4.h:
 	$(LN_S) $(top_srcdir)/lib/des/md4.h .
