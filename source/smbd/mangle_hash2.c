@@ -501,7 +501,7 @@ static BOOL is_legal_name(const char *name)
 
   the name parameter must be able to hold 13 bytes
 */
-static void name_map(fstring name, BOOL need83, BOOL cache83)
+static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case)
 {
 	char *dot_p;
 	char lead_chars[7];

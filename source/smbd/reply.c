@@ -31,9 +31,6 @@ extern int Protocol;
 extern int max_send;
 extern int max_recv;
 extern char magic_char;
-extern BOOL case_sensitive;
-extern BOOL case_preserve;
-extern BOOL short_case_preserve;
 extern int global_oplock_break;
 unsigned int smb_echo_count = 0;
 
@@ -881,7 +878,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		if (ok) {
 			if ((dirtype&0x1F) == aVOLID) {	  
 				memcpy(p,status,21);
-				make_dir_struct(p,"???????????",volume_label(SNUM(conn)),0,aVOLID,0);
+				make_dir_struct(p,"???????????",volume_label(SNUM(conn)),0,aVOLID,0,conn->case_sensitive);
 				dptr_fill(p+12,dptr_num);
 				if (dptr_zero(p+12) && (status_len==0))
 					numentries = 1;
@@ -901,7 +898,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 					finished = !get_dir_entry(conn,mask,dirtype,fname,&size,&mode,&date,check_descend);
 					if (!finished) {
 						memcpy(p,status,21);
-						make_dir_struct(p,mask,fname,size,mode,date);
+						make_dir_struct(p,mask,fname,size,mode,date,conn->case_sensitive);
 						dptr_fill(p+12,dptr_num);
 						numentries++;
 					}
@@ -1570,7 +1567,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 					}
 				}
 
-				if(!mask_match(fname, mask, case_sensitive))
+				if(!mask_match(fname, mask, conn->case_sensitive))
 					continue;
 				
 				if (sys_direntry) {
@@ -3515,7 +3512,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
 	 * filename).
 	 */
 
-	if((case_sensitive == False) && (case_preserve == True) &&
+	if((conn->case_sensitive == False) && (conn->case_preserve == True) &&
 			strequal(newname, fsp->fsp_name)) {
 		char *p;
 		pstring newname_modified_last_component;
@@ -3689,7 +3686,7 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, ui
 		
 		DEBUG(3,("rename_internals: case_sensitive = %d, case_preserve = %d, short case preserve = %d, \
 directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n", 
-			 case_sensitive, case_preserve, short_case_preserve, directory, 
+			 conn->case_sensitive, conn->case_preserve, conn->short_case_preserve, directory, 
 			 newname, last_component_dest, is_short_name));
 
 		/*
@@ -3700,10 +3697,10 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 		 * the rename (user is trying to change the case of the
 		 * filename).
 		 */
-		if((case_sensitive == False) && 
-		   (((case_preserve == True) && 
+		if((conn->case_sensitive == False) && 
+		   (((conn->case_preserve == True) && 
 		     (is_short_name == False)) || 
-		    ((short_case_preserve == True) && 
+		    ((conn->short_case_preserve == True) && 
 		     (is_short_name == True))) &&
 		   strcsequal(directory, newname)) {
 			pstring modified_last_component;
@@ -3839,7 +3836,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					}
 				}
 
-				if(!mask_match(fname, mask, case_sensitive))
+				if(!mask_match(fname, mask, conn->case_sensitive))
 					continue;
 				
 				if (sysdir_entry) {
@@ -4172,7 +4169,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 				pstring fname;
 				pstrcpy(fname,dname);
     
-				if(!mask_match(fname, mask, case_sensitive))
+				if(!mask_match(fname, mask, conn->case_sensitive))
 					continue;
 
 				error = ERRnoaccess;

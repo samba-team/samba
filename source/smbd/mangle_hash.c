@@ -51,13 +51,6 @@
 
 
 /* -------------------------------------------------------------------------- **
- * External Variables...
- */
-
-extern int case_default;    /* Are conforming 8.3 names all upper or lower?   */
-extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
-
-/* -------------------------------------------------------------------------- **
  * Other stuff...
  *
  * magic_char     - This is the magic char used for mangling.  It's
@@ -129,13 +122,6 @@ static ubi_cacheRoot mangled_cache[1] =  { { { 0, 0, 0, 0 }, 0, 0, 0, 0, 0, 0 } 
 static BOOL          mc_initialized   = False;
 #define MANGLED_CACHE_MAX_ENTRIES 1024
 #define MANGLED_CACHE_MAX_MEMORY 0
-
-/* -------------------------------------------------------------------------- **
- * External Variables...
- */
-
-extern int case_default;    /* Are conforming 8.3 names all upper or lower?   */
-extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
 
 /* -------------------------------------------------------------------- */
 
@@ -639,7 +625,7 @@ static BOOL check_cache( char *s )
  * the buffer must be able to hold 13 characters (including the null)
  *****************************************************************************
  */
-static void to_8_3(char *s)
+static void to_8_3(char *s, int default_case)
 {
 	int csum;
 	char *p;
@@ -653,7 +639,7 @@ static void to_8_3(char *s)
 
 	p = strrchr(s,'.');  
 	if( p && (strlen(p+1) < (size_t)4) ) {
-		BOOL all_normal = ( strisnormal(p+1) ); /* XXXXXXXXX */
+		BOOL all_normal = ( strisnormal(p+1, default_case) ); /* XXXXXXXXX */
 
 		if( all_normal && p[1] != 0 ) {
 			*p = 0;
@@ -728,7 +714,7 @@ static void to_8_3(char *s)
  * ****************************************************************************
  */
 
-static void name_map(char *OutName, BOOL need83, BOOL cache83)
+static void name_map(char *OutName, BOOL need83, BOOL cache83, int default_case)
 {
 	smb_ucs2_t *OutName_ucs2;
 	DEBUG(5,("name_map( %s, need83 = %s, cache83 = %s)\n", OutName,
@@ -750,7 +736,7 @@ static void name_map(char *OutName, BOOL need83, BOOL cache83)
 		if (cache83)
 			tmp = strdup(OutName);
 
-		to_8_3(OutName);
+		to_8_3(OutName, default_case);
 
 		if(tmp != NULL) {
 			cache_mangled_name(OutName, tmp);
