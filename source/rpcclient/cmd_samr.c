@@ -265,7 +265,7 @@ void cmd_sam_query_user(struct client_info *info)
 	fstring domain;
 	fstring sid;
 	DOM_SID sid1;
-	int user_idx;
+	int user_idx = 0;  /* FIXME maybe ... */
 	BOOL res = True;
 	uint32 admin_rid = 0x304; /* absolutely no idea. */
 	fstring rid_str ;

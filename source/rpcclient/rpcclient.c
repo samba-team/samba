@@ -546,7 +546,10 @@ enum client_action
 		{
 			case 'm':
 			{
-				int max_protocol = interpret_protocol(optarg,max_protocol);
+				/* FIXME ... max_protocol seems to be funny here */
+
+				int max_protocol = 0;
+				max_protocol = interpret_protocol(optarg,max_protocol);
 				fprintf(stderr, "max protocol not currently supported\n");
 				break;
 			}
