@@ -115,7 +115,11 @@ int reply_special(char *inbuf,char *outbuf)
 			break;
 		}
 
-		add_session_user(remote_machine);
+		/* add it as a possible user name if we 
+		   are in share mode security */
+		if (lp_security() == SEC_SHARE) {
+			add_session_user(remote_machine);
+		}
 
 		reload_services(True);
 		reopen_logs();
