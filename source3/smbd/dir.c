@@ -649,9 +649,9 @@ void DirCacheAdd(char *path,char *name,char *dname,int snum)
   
   if (dir_cache_size == DIRCACHESIZE) {
     for (entry=dir_cache, count=1; 
-	 entry->next && count < dir_cache_size; 
+	 entry->next && count < dir_cache_size + 1; 
 	 entry=entry->next, count++) ;
-    if (entry->next || count != dir_cache_size) {
+    if (entry->next || count != dir_cache_size + 1) {
       DEBUG(0,("DirCache bug - please report\n"));
     }
     free(entry->path);
