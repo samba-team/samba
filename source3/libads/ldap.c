@@ -69,8 +69,6 @@ char *ads_errstr(int rc)
 
 /*
   find the ldap server from DNS
-  this won't work till we add a DNS packet parser. Talk about a 
-  lousy resolv interface! 
 */
 static char *find_ldap_server(ADS_STRUCT *ads)
 {
@@ -111,7 +109,10 @@ ADS_STRUCT *ads_init(const char *realm,
 		ads->bind_path = ads_build_dn(ads->realm);
 	}
 	if (!ads->ldap_server) {
-		ads->ldap_server = find_ldap_server(ads);
+		ads->ldap_server = lp_ads_server();
+		if (!ads->ldap_server[0]) {
+			ads->ldap_server = find_ldap_server(ads);
+		}
 	}
 	if (!ads->kdc_server) {
 		/* assume its the same as LDAP */
