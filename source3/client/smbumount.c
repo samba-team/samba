@@ -90,7 +90,8 @@ canonicalize (char *path)
 	if (realpath (path, canonical))
 		return canonical;
 
-	pstrcpy (canonical, path);
+	strncpy (canonical, path, PATH_MAX);
+	canonical[PATH_MAX] = '\0';
 	return canonical;
 }
 

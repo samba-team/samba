@@ -434,8 +434,7 @@ MOUNT_OBJ = client/smbmount.o \
 
 MNT_OBJ = client/smbmnt.o             	
 
-UMOUNT_OBJ = client/smbumount.o \
-             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+UMOUNT_OBJ = client/smbumount.o
 
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) \
                 $(LIBSMB_OBJ) $(LIB_OBJ)
@@ -703,11 +702,11 @@ bin/smbmount@EXEEXT@: $(MOUNT_OBJ) bin/.dummy
 
 bin/smbmnt@EXEEXT@: $(MNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MNT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(MNT_OBJ) $(LDFLAGS) 
 
 bin/smbumount@EXEEXT@: $(UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(LDFLAGS)
 
 bin/testparm@EXEEXT@: $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
