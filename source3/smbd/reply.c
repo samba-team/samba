@@ -39,6 +39,7 @@ extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 extern pstring sesssetup_user;
 extern fstring global_myworkgroup;
+extern fstring global_myname;
 extern int Client;
 extern int global_oplock_break;
 uint32 global_client_caps = 0;
@@ -501,12 +502,62 @@ static BOOL check_domain_security(char *orig_user, char *domain,
                                   char *smb_apasswd, int smb_apasslen,
                                   char *smb_ntpasswd, int smb_ntpasslen)
 {
-  if(lp_security() != SEC_DOMAIN)
-    return False;
+	fstring acct_name;
+	uint16 acct_type = 0;
 
-  return domain_client_validate(orig_user, domain,
-                                smb_apasswd, smb_apasslen,
-                                smb_ntpasswd, smb_ntpasslen);
+	char *server_list = NULL;
+	pstring srv_list;
+	char *trusted_list = lp_trusted_domains();
+
+	if (lp_security() == SEC_SHARE || lp_security() == SEC_SERVER)
+	{
+		return False;
+	}
+		
+	if (lp_security() == SEC_DOMAIN)
+	{
+		fstrcpy(acct_name, global_myname);
+		acct_type = SEC_CHAN_WKSTA;
+		if (strequal(lp_workgroup(), domain))
+		{
+			DEBUG(10,("local domain server list: %s\n", server_list));
+			pstrcpy(srv_list, lp_passwordserver());
+			server_list = srv_list;
+		}
+	}
+
+	if (server_list == NULL)
+	{
+		pstring tmp;
+		if (next_token(&trusted_list, tmp, NULL, sizeof(tmp)))
+		{
+			do
+			{
+				fstring trust_dom;
+				split_at_first_component(tmp, trust_dom, '=', srv_list);
+
+				if (strequal(domain, trust_dom))
+				{
+					DEBUG(10,("trusted domain server list: %s\n", server_list));
+					fstrcpy(acct_name, global_myworkgroup);
+					acct_type = SEC_CHAN_DOMAIN;
+					server_list = srv_list;
+					break;
+				}
+
+			} while (next_token(NULL, tmp, NULL, sizeof(tmp)));
+		}
+	}
+
+	if (server_list == NULL)
+	{
+		return False;
+	}
+
+	return domain_client_validate(orig_user, domain, server_list,
+	                        acct_name, acct_type,
+	                        smb_apasswd, smb_apasslen,
+	                        smb_ntpasswd, smb_ntpasslen);
 }
 
 /****************************************************************************

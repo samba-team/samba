@@ -634,7 +634,8 @@ BOOL pwdb_initialise(BOOL is_server)
 		{
 			srvs = lp_passwordserver();
 		}
-		if (!get_domain_sids(&global_member_sid, &global_sam_sid, srvs))
+		if (!get_domain_sids(global_myname, &global_member_sid,
+		                      &global_sam_sid, srvs))
 		{
 			return False;
 		}
