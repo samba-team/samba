@@ -30,11 +30,19 @@ SHARED = @SHARED@
 LIB = $(LIBNAME).$(LIBEXT)
 PROGS = otptest
 
-SOURCES = otp.c otp_challenge.c otp_db.c otp_md.c \
+LIB_SOURCES = otp.c otp_challenge.c otp_db.c otp_md.c \
 	  otp_parse.c otp_print.c otp_verify.c
 
-OBJECTS = otp.o otp_challenge.o otp_db.o otp_md.o \
+OTPTEST_SOURCES = otptest.c
+
+SOURCES = $(LIB_SOURCES) $(OTPTEST_SOURCES)
+
+LIB_OBJECTS = otp.o otp_challenge.o otp_db.o otp_md.o \
 	  otp_parse.o otp_print.o otp_verify.o
+
+OTPTEST_OBJECTS = otptest.o
+
+OBJECTS = $(LIB_OBJECTS) $(OTPTEST_OBJECTS)
 
 all: $(LIB) $(PROGS)
 
@@ -67,17 +75,17 @@ distclean: clean
 realclean: distclean
 	rm -f TAGS
 
-otptest: otptest.o
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ otptest.o -L. -lotp -L../des -ldes
+otptest: $(OTPTEST_OBJECTS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OTPTEST_OBJECTS) -L. -lotp -L../des -ldes
 
-$(LIBNAME).a: $(OBJECTS)
+$(LIBNAME).a: $(LIB_OBJECTS)
 	rm -f $@
-	$(AR) cr $@ $(OBJECTS)
+	$(AR) cr $@ $(LIB_OBJECTS)
 	-$(RANLIB) $@
 
-$(LIBNAME).$(SHLIBEXT): $(OBJECTS)
+$(LIBNAME).$(SHLIBEXT): $(LIB_OBJECTS)
 	rm -f $@
-	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS)
+	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(LIB_OBJECTS)
 
 $(OBJECTS): ../../config.h
 
