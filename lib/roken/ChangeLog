@@ -1,6 +1,6 @@
 Thu Apr 15 14:04:03 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
-	* Makefile.am: make print-version.h depend on version.h
+	* Makefile.am: make make-print-version.o depend on version.h
 
 Wed Apr  7 14:11:00 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
