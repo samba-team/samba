@@ -1045,63 +1045,7 @@ tt(	admin users = jason)
 label(allow hosts)
 dit(bf(allow hosts (S)))
 
-A synonym for this parameter is link(bf('hosts allow'))(hostsallow)
-
-This parameter is a comma, space, or tab delimited set of hosts which
-are permitted to access a service.
-
-If specified in the link(bf([global]))(global) section then it will
-apply to all services, regardless of whether the individual service
-has a different setting.
-
-You can specify the hosts by name or IP number. For example, you could
-restrict access to only the hosts on a Class C subnet with something
-like tt("allow hosts = 150.203.5."). The full syntax of the list is
-described in the man page bf(hosts_access (5)). Note that this man
-page may not be present on your system, so a brief description will
-be given here also.
-
-em(NOTE:) IF you wish to allow the url(bf(smbpasswd
-(8)))(smbpasswd.html.8) program to be run by local users to change
-their Samba passwords using the local url(bf(smbd (8)))(smbd.8.html)
-daemon, then you em(MUST) ensure that the localhost is listed in your
-bf(allow hosts) list, as url(bf(smbpasswd (8)))(smbpasswd.html.8) runs
-in client-server mode and is seen by the local
-url(bf(smbd))(smbd.8.html) process as just another client.
-
-You can also specify hosts by network/netmask pairs and by netgroup
-names if your system supports netgroups. The em(EXCEPT) keyword can also
-be used to limit a wildcard list. The following examples may provide
-some help:
-
-bf(Example 1): allow localhost and all IPs in 150.203.*.* except one
-
-tt(	hosts allow = localhost, 150.203. EXCEPT 150.203.6.66)
-
-bf(Example 2): allow localhost and hosts that match the given network/netmask
-
-tt(	hosts allow = localhost, 150.203.15.0/255.255.255.0)
-
-bf(Example 3): allow a localhost plus a couple of hosts
-
-tt(	hosts allow = localhost, lapland, arvidsjaur)
-
-bf(Example 4): allow only hosts in NIS netgroup "foonet" or localhost, but 
-deny access from one particular host
-
-tt( 	hosts allow = @foonet, localhost)
-tt( 	hosts deny = pirate)
-
-Note that access still requires suitable user-level passwords.
-
-See url(bf(testparm (1)))(testparm.1.html) for a way of testing your
-host access to see if it does what you expect.
-
-  bf(Default:)
-tt(	none (i.e., all hosts permitted access))
-
-  bf(Example:)
-tt(	allow hosts = 150.203.5. localhost myhost.mynet.edu.au)
+Synonym for link(bf(hosts allow))(hostsallow).
 
 label(alternatepermissions)
 dit(bf(alternate permissions (S)))
@@ -1750,16 +1694,7 @@ tt(	delete veto files = True)
 label(denyhosts)
 dit(bf(deny hosts (S)))
 
-The opposite of link(bf('allow hosts'))(allowhosts) - hosts listed
-here are em(NOT) permitted access to services unless the specific
-services have their own lists to override this one. Where the lists
-conflict, the link(bf('allow'))(allowhosts) list takes precedence.
-
-  bf(Default:)
-tt(	none (i.e., no hosts specifically excluded))
-
-  bf(Example:)
-tt(	deny hosts = 150.203.4. badhost.mynet.edu.au)
+Synonym for link(bf(hosts deny))(hostsdeny).
 
 label(dfreecommand)
 dit(bf(dfree command (G)))
@@ -2392,12 +2327,79 @@ tt(	homedir map = amd.homedir)
 label(hostsallow)
 dit(bf(hosts allow (S)))
 
-Synonym for link(bf(allow hosts))(allowhosts).
+A synonym for this parameter is link(bf('allow hosts'))(allowhosts)
+
+This parameter is a comma, space, or tab delimited set of hosts which
+are permitted to access a service.
+
+If specified in the link(bf([global]))(global) section then it will
+apply to all services, regardless of whether the individual service
+has a different setting.
+
+You can specify the hosts by name or IP number. For example, you could
+restrict access to only the hosts on a Class C subnet with something
+like tt("allow hosts = 150.203.5."). The full syntax of the list is
+described in the man page bf(hosts_access (5)). Note that this man
+page may not be present on your system, so a brief description will
+be given here also.
+
+em(NOTE:) IF you wish to allow the url(bf(smbpasswd
+(8)))(smbpasswd.html.8) program to be run by local users to change
+their Samba passwords using the local url(bf(smbd (8)))(smbd.8.html)
+daemon, then you em(MUST) ensure that the localhost is listed in your
+bf(hosts allow) list, as url(bf(smbpasswd (8)))(smbpasswd.html.8) runs
+in client-server mode and is seen by the local
+url(bf(smbd))(smbd.8.html) process as just another client.
+
+You can also specify hosts by network/netmask pairs and by netgroup
+names if your system supports netgroups. The em(EXCEPT) keyword can also
+be used to limit a wildcard list. The following examples may provide
+some help:
+
+bf(Example 1): allow localhost and all IPs in 150.203.*.* except one
+
+tt(	hosts allow = localhost, 150.203. EXCEPT 150.203.6.66)
+
+bf(Example 2): allow localhost and hosts that match the given network/netmask
+
+tt(	hosts allow = localhost, 150.203.15.0/255.255.255.0)
+
+bf(Example 3): allow a localhost plus a couple of hosts
+
+tt(	hosts allow = localhost, lapland, arvidsjaur)
+
+bf(Example 4): allow only hosts in NIS netgroup "foonet" or localhost, but 
+deny access from one particular host
+
+tt( 	hosts allow = @foonet, localhost)
+
+tt( 	hosts deny = pirate)
+
+Note that access still requires suitable user-level passwords.
+
+See url(bf(testparm (1)))(testparm.1.html) for a way of testing your
+host access to see if it does what you expect.
+
+  bf(Default:)
+tt(	none (i.e., all hosts permitted access))
+
+  bf(Example:)
+tt(	allow hosts = 150.203.5. localhost myhost.mynet.edu.au)
+
 
 label(hostsdeny)
 dit(bf(hosts deny (S)))
 
-Synonym for link(bf(denyhosts))(denyhosts).
+The opposite of link(bf('hosts allow'))(hostsallow) - hosts listed
+here are em(NOT) permitted access to services unless the specific
+services have their own lists to override this one. Where the lists
+conflict, the link(bf('allow'))(hostsallow) list takes precedence.
+
+  bf(Default:)
+tt(	none (i.e., no hosts specifically excluded))
+
+  bf(Example:)
+tt(	hosts deny = 150.203.4. badhost.mynet.edu.au)
 
 label(hostsequiv)
 dit(bf(hosts equiv (G)))
@@ -2406,7 +2408,7 @@ If this global parameter is a non-null string, it specifies the name
 of a file to read for the names of hosts and users who will be allowed
 access without specifying a password.
 
-This is not be confused with link(bf(allow hosts))(allowhosts) which
+This is not be confused with link(bf(hosts allow))(hostsallow) which
 is about hosts access to services and is more useful for guest
 services. bf(hosts equiv) may be useful for NT clients which will not
 supply passwords to samba.
