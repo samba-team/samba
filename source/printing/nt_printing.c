@@ -2174,73 +2174,20 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 
 uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 {
-	SEC_DESC_BUF *new_secdesc_ctr = NULL;
-	SEC_DESC_BUF *old_secdesc_ctr = NULL;
-	DOM_SID *owner_sid, *group_sid;
-	SEC_ACL *dacl, *sacl;
-	SEC_DESC *psd = NULL;
-	size_t secdesc_size;
 	prs_struct ps;
 	TALLOC_CTX *mem_ctx = NULL;
 	fstring key;
-	uint16 secdesc_type;
 	uint32 status;
 
 	mem_ctx = talloc_init();
 	if (mem_ctx == NULL) return False;
 
-	/* Make a copy of the security descriptor so we can fill in bits
-	   that NT doesn't pass to us.  Any pieces of the security descriptor
-	   that are NULL are not meant to change. */
-
-	nt_printing_getsec(printername, &old_secdesc_ctr);
-	
-	secdesc_type = secdesc_ctr->sec->type;
-
-	/* Copy over owner and group sids.  There seems to be no flag for
-	   this so just check the pointer values. */
-
-	owner_sid = secdesc_ctr->sec->owner_sid ?
-		secdesc_ctr->sec->owner_sid :
-		old_secdesc_ctr->sec->owner_sid;
-
-	group_sid = secdesc_ctr->sec->grp_sid ?
-		secdesc_ctr->sec->grp_sid :
-		old_secdesc_ctr->sec->grp_sid;
-
-	/* Ignore changes to the system ACL.  This has the effect of making
-	   changes through the security tab audit button not sticking. 
-	   Perhaps in future Samba could implement these settings somehow. */
-
-	sacl = NULL;
-	secdesc_type &= ~SEC_DESC_SACL_PRESENT;
-
-	/* Copy across discretionary ACL */
-
-	if (secdesc_type & SEC_DESC_DACL_PRESENT) {
-		dacl = secdesc_ctr->sec->dacl;
-	} else {
-		dacl = old_secdesc_ctr->sec->dacl;
-		secdesc_type |= SEC_DESC_DACL_PRESENT;
-	}
-
-	/* Create new security descriptor from bits */
-
-	psd = make_sec_desc(secdesc_ctr->sec->revision, secdesc_type,
-			    owner_sid, group_sid, sacl, dacl, &secdesc_size);
-
-	new_secdesc_ctr = make_sec_desc_buf(secdesc_size, psd);
-
-	free_sec_desc(&psd);
-	free_sec_desc_buf(&old_secdesc_ctr);
-
 	/* Store the security descriptor in a tdb */
 
-	prs_init(&ps, (uint32)sec_desc_size(new_secdesc_ctr->sec) + 
+	prs_init(&ps, (uint32)sec_desc_size(secdesc_ctr->sec) + 
 		 sizeof(SEC_DESC_BUF), 4, mem_ctx, MARSHALL);
 
-	if (!sec_io_desc_buf("nt_printing_setsec", &new_secdesc_ctr, 
-			     &ps, 1)) {
+	if (!sec_io_desc_buf("nt_printing_setsec", &secdesc_ctr, &ps, 1)) {
 		status = ERROR_INVALID_FUNCTION;
 		goto done;
 	}
@@ -2257,9 +2204,6 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 	/* Free mallocated memory */
 
  done:
-	free_sec_desc_buf(&old_secdesc_ctr);
-	free_sec_desc_buf(&new_secdesc_ctr);
-
 	prs_mem_free(&ps);
 
 	if (mem_ctx) talloc_destroy(mem_ctx);

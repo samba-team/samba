@@ -3325,7 +3325,7 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 {
 	struct current_user user;
 	int snum;
-	int errcode = 0;
+	int errcode = ERROR_INVALID_FUNCTION;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
 	get_current_user(&user, p);
@@ -3335,35 +3335,29 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 		return ERROR_INVALID_HANDLE;
 	}
 
-	if (!get_printer_snum(handle, &snum) )	 
+	if (!get_printer_snum(handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
 	switch (command) {
 	case PRINTER_CONTROL_PAUSE:
 		if (print_queue_pause(&user, snum, &errcode)) {
-			srv_spoolss_sendnotify(handle);
-			return 0;
+			errcode = 0;
 		}
 		break;
 	case PRINTER_CONTROL_RESUME:
 	case PRINTER_CONTROL_UNPAUSE:
 		if (print_queue_resume(&user, snum, &errcode)) {
-			srv_spoolss_sendnotify(handle);
-			return 0;
+			errcode = 0;
 		}
 		break;
 	case PRINTER_CONTROL_PURGE:
 		if (print_queue_purge(&user, snum, &errcode)) {
-			srv_spoolss_sendnotify(handle);
-			return 0;
+			errcode = 0;
 		}
 		break;
 	}
 
-	if (errcode)
-		return (uint32)errcode;
-
-	return ERROR_INVALID_FUNCTION;
+	return errcode;
 }
 
 /********************************************************************
@@ -3383,6 +3377,7 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 				 const SPOOL_PRINTER_INFO_LEVEL *info,
 				 pipes_struct *p, SEC_DESC_BUF *secdesc_ctr)
 {
+	SEC_DESC_BUF *new_secdesc_ctr = NULL, *old_secdesc_ctr = NULL;
 	struct current_user user;
 	uint32 result;
 	int snum;
@@ -3390,25 +3385,47 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
 	if (!OPEN_HANDLE(Printer) || !get_printer_snum(handle, &snum)) {
-		DEBUG(0,("update_printer_sec: Invalid handle (%s)\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		DEBUG(0,("update_printer_sec: Invalid handle (%s)\n", 
+			 OUR_HANDLE(handle)));
+
+		result = ERROR_INVALID_HANDLE;
+		goto done;
+	}
+
+	/* NT seems to like setting the security descriptor even though
+	   nothing may have actually changed.  This causes annoying
+	   dialog boxes when the user doesn't have permission to change
+	   the security descriptor. */
+
+	nt_printing_getsec(Printer->dev.handlename, &old_secdesc_ctr);
+
+	new_secdesc_ctr = sec_desc_merge(secdesc_ctr, old_secdesc_ctr);
+
+	if (sec_desc_equal(new_secdesc_ctr->sec, old_secdesc_ctr->sec)) {
+		result = NT_STATUS_NO_PROBLEMO;
+		goto done;
 	}
 
 	/* Work out which user is performing the operation */
+
 	get_current_user(&user, p);
 
 	/* Check the user has permissions to change the security
 	   descriptor.  By experimentation with two NT machines, the user
 	   requires Full Access to the printer to change security
 	   information. */ 
+
 	if (!print_access_check(&user, snum, PRINTER_ACCESS_ADMINISTER)) {
 		result = ERROR_ACCESS_DENIED;
 		goto done;
 	}
 
-	result = nt_printing_setsec(Printer->dev.handlename, secdesc_ctr);
+	result = nt_printing_setsec(Printer->dev.handlename, new_secdesc_ctr);
 
  done:
+	free_sec_desc_buf(&new_secdesc_ctr);
+	free_sec_desc_buf(&old_secdesc_ctr);
+
 	return result;
 }
 
@@ -3522,6 +3539,181 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	return True;
 }
 
+/* Return true if two devicemodes are equal */
+
+static BOOL nt_devicemode_equal(NT_DEVICEMODE *d1, NT_DEVICEMODE *d2)
+{
+	if (!strequal(d1->devicename, d2->devicename) ||
+	    !strequal(d1->formname, d2->formname)) {
+		return False;
+	}
+
+	if (d1->specversion != d2->specversion ||
+	    d1->driverversion != d2->driverversion ||
+	    d1->size != d2->size ||
+	    d1->driverextra != d2->driverextra ||
+	    d1->orientation != d2->orientation ||
+	    d1->papersize != d2->papersize ||
+	    d1->paperlength != d2->paperlength ||
+	    d1->paperwidth != d2->paperwidth ||
+	    d1->scale != d2->scale ||
+	    d1->copies != d2->copies ||
+	    d1->defaultsource != d2->defaultsource ||
+	    d1->printquality != d2->printquality ||
+	    d1->color != d2->color ||
+	    d1->duplex != d2->duplex ||
+	    d1->yresolution != d2->yresolution ||
+	    d1->ttoption != d2->ttoption ||
+	    d1->collate != d2->collate ||
+	    d1->logpixels != d2->logpixels) {
+		return False;
+	}
+
+	if (d1->fields != d2->fields ||
+	    d1->bitsperpel != d2->bitsperpel ||
+	    d1->pelswidth != d2->pelswidth ||
+	    d1->pelsheight != d2->pelsheight ||
+	    d1->displayflags != d2->displayflags ||
+	    d1->displayfrequency != d2->displayfrequency ||
+	    d1->icmmethod != d2->icmmethod ||
+	    d1->icmintent != d2->icmintent ||
+	    d1->mediatype != d2->mediatype ||
+	    d1->dithertype != d2->dithertype ||
+	    d1->reserved1 != d2->reserved1 ||
+	    d1->reserved2 != d2->reserved2 ||
+	    d1->panningwidth != d2->panningwidth ||
+	    d1->panningheight != d2->panningheight) {
+		return False;
+	}
+
+	/* Not sure what to do about these fields */
+#if 0
+	uint8 	*private;
+#endif
+
+	return True;
+}
+
+/* Return true if two NT_PRINTER_PARAM structures are equal */
+
+static BOOL nt_printer_param_equal(NT_PRINTER_PARAM *p1,
+				   NT_PRINTER_PARAM *p2)
+{
+	if (!p1 && !p2) return True;
+
+	if ((!p1 && p2) || (p1 && !p2)) return False;
+
+	/* Compare lists of printer parameters */
+
+	while (p1) {
+		BOOL found = False;
+		NT_PRINTER_PARAM *q = p1;
+
+		/* Find the parameter in the second structure */
+
+		while(q) {
+
+			if (strequal(p1->value, q->value) &&
+			    p1->type == q->type &&
+			    p1->data_len == q->data_len &&
+			    memcmp(p1->data, q->data, p1->data_len) == 0) {
+				found = True;
+				goto found_it;
+			}
+
+			q = q->next;
+		}
+
+	found_it:
+		if (!found) {
+			return False;
+		}
+
+		p1 = p1->next;
+	}
+
+	return True;
+}
+
+/********************************************************************
+ * Called by update_printer when trying to work out whether to
+ * actually update printer info.
+ ********************************************************************/
+
+static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
+					NT_PRINTER_INFO_LEVEL *p2)
+{
+	NT_PRINTER_INFO_LEVEL_2 *pi1, *pi2;
+
+	/* Trivial conditions */
+
+	if ((!p1 && !p2) || (!p1->info_2 && !p2->info_2)) {
+		return True;
+	}
+
+	if ((!p1 && p2) || (p1 && !p2) || 
+	    (!p1->info_2 && p2->info_2) ||
+	    (p1->info_2 && !p2->info_2)) {
+		return False;
+	}
+
+	/* Compare two nt_printer_info_level structures.  Don't compare
+	   status or cjobs as they seem to have something to do with the
+	   printer queue. */
+
+	pi1 = p1->info_2;
+	pi2 = p2->info_2;
+
+	if (pi1->attributes != pi2->attributes ||
+	    pi1->priority != pi2->priority ||
+	    pi1->default_priority != pi2->default_priority ||
+	    pi1->starttime != pi2->starttime ||
+	    pi1->untiltime != pi2->untiltime ||
+	    pi1->averageppm != pi2->averageppm) {
+		return False;
+	}
+
+	/* Yuck - don't check the printername or servername as the 
+	   add_a_printer() code plays games with them.  You can't
+	   change the printername or the sharename through this interface
+	   in Samba. */
+
+	if (!strequal(pi1->sharename, pi2->sharename) ||
+	    !strequal(pi1->portname, pi2->portname) ||
+	    !strequal(pi1->drivername, pi2->drivername) ||
+	    !strequal(pi1->comment, pi2->comment) ||
+	    !strequal(pi1->location, pi2->location)) {
+		return False;
+	}
+
+	if (!nt_devicemode_equal(pi1->devmode, pi2->devmode)) {
+		return False;
+	}
+
+	if (!strequal(pi1->sepfile, pi2->sepfile) ||
+	    !strequal(pi1->printprocessor, pi2->printprocessor) ||
+	    !strequal(pi1->datatype, pi2->datatype) ||
+	    !strequal(pi1->parameters, pi2->parameters)) {
+		return False;
+	}
+
+	if (!nt_printer_param_equal(pi1->specific, pi2->specific)) {
+		return False;
+	}
+
+	if (!sec_desc_equal(pi1->secdesc_buf->sec, pi2->secdesc_buf->sec)) {
+		return False;
+	}
+
+	if (pi1->changeid != pi2->changeid ||
+	    pi1->c_setprinter != pi2->c_setprinter ||
+	    pi1->setuptime != pi2->setuptime) {
+		return False;
+	}
+
+	return True;
+}
+
 /********************************************************************
  * called by spoolss_api_setprinter
  * when updating a printer description
@@ -3532,15 +3724,13 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
                            DEVICEMODE *devmode)
 {
 	int snum;
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	NT_PRINTER_INFO_LEVEL *printer = NULL, *old_printer = NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 	uint32 result;
 
 	DEBUG(8,("update_printer\n"));
 	
 	result = NT_STATUS_NO_PROBLEMO;
-
-	/* Check calling user has permission to update printer description */ 
 
 	if (level!=2) {
 		DEBUG(0,("Send a mail to samba@samba.org\n"));
@@ -3559,14 +3749,8 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("printer property change denied by security "
-			  "descriptor\n"));
-		result = ERROR_ACCESS_DENIED;
-		goto done;
-	}
-	
-	if(get_a_printer(&printer, 2, lp_servicename(snum)) != 0) {
+	if((get_a_printer(&printer, 2, lp_servicename(snum)) != 0) ||
+	   (get_a_printer(&old_printer, 2, lp_servicename(snum)) != 0)) {
 		result = ERROR_INVALID_HANDLE;
 		goto done;
 	}
@@ -3602,14 +3786,33 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 		printer->info_2->devmode=NULL;
 	}
 
-	/*
-	 * Do sanity check on the requested changes for Samba.
-	 */
+	/* Do sanity check on the requested changes for Samba */
 
 	if (!check_printer_ok(printer->info_2, snum)) {
 		result = ERROR_INVALID_PARAMETER;
 		goto done;
 	}
+
+	/* NT likes to call this function even though nothing has actually
+	   changed.  Check this so the user doesn't end up with an
+	   annoying permission denied dialog box. */
+
+	if (nt_printer_info_level_equal(printer, old_printer)) {
+		DEBUG(3, ("printer info has not changed\n"));
+		result = NT_STATUS_NO_PROBLEMO;
+		goto done;
+	}
+
+	/* Check calling user has permission to update printer description */ 
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(3, ("printer property change denied by security "
+			  "descriptor\n"));
+		result = ERROR_ACCESS_DENIED;
+		goto done;
+	}
+
+	/* Call addprinter hook */
 
 	if (*lp_addprinter_cmd() )
 		if ( !add_printer_hook(printer) ) {
@@ -3617,6 +3820,8 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 			goto done;
 		}
 	
+	/* Update printer info */
+
 	if (add_a_printer(*printer, 2)!=0) {
 		/* I don't really know what to return here !!! */
 		result = ERROR_ACCESS_DENIED;
@@ -4988,14 +5193,13 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 				uint32 numeric_data)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	NT_PRINTER_PARAM *param = NULL;		
+	NT_PRINTER_PARAM *param = NULL, old_param;
 	int snum=0;
 	uint32 status = 0x0;
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
 	
 	DEBUG(5,("spoolss_setprinterdata\n"));
 
-	
 	if (!OPEN_HANDLE(Printer)) {
 		DEBUG(0,("_spoolss_setprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
@@ -5004,17 +5208,40 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 	if (!get_printer_snum(handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("security descriptor change denied by existing "
-			  "security descriptor\n"));
-		return ERROR_ACCESS_DENIED;
-	}
-
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
 	if (status != 0x0)
 		return ERROR_INVALID_NAME;
 
 	convert_specific_param(&param, value , type, data, real_len);
+
+	/* Check if we are making any changes or not.  Return true if 
+	   nothing is actually changing. */
+
+	ZERO_STRUCT(old_param);
+
+	if (get_specific_param(*printer, 2, param->value, &old_param.data,
+			       &old_param.type, &old_param.data_len)) {
+
+		if (param->type == old_param.type &&
+		    param->data_len == old_param.data_len &&
+		    memcmp(param->data, old_param.data,
+			   old_param.data_len) == 0) {
+
+			DEBUG(3, ("setprinterdata hasn't changed\n"));
+			status = NT_STATUS_NO_PROBLEMO;
+			goto done;
+		}
+	}
+
+	/* Access check */
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(3, ("security descriptor change denied by existing "
+			  "security descriptor\n"));
+		status = ERROR_ACCESS_DENIED;
+		goto done;
+	}
+
 	unlink_specific_param_if_exist(printer->info_2, param);
 	
 	if (!add_a_specific_param(printer->info_2, param))
@@ -5022,7 +5249,10 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 	else
 		status = mod_a_printer(*printer, 2);
 
+ done:
 	free_a_printer(&printer, 2);
+	safe_free(old_param.data);
+
 	return status;
 }
 
