@@ -61,8 +61,8 @@ Abstract
 .ti 0
 Introduction
 
-Kerberos is a protocol for authenticating parties communicating over
-insecure networks.
+Kerberos[RFC1510] is a protocol for authenticating parties
+communicating over insecure networks.
 
 Firewalling is a technique for achieving an illusion of security by
 putting restrictions on what kinds of packets and how these are sent
@@ -71,8 +71,6 @@ between the internal (so called \*Qsecure\*U) network and the global (or
 
 .ti 0
 Definitions
-
-types of firewalls: ...
 
 client: the user, process, and host acquiring tickets from the KDC and
 authenticating itself to the kerberised server.
@@ -86,16 +84,16 @@ client, for example telnetd.
 Firewalls
 
 A firewall is usually placed between the \*Qinside\*U and the
-\*Qoutside\*U and is supposed to protect the inside from the evils on
-the outside.  There are different kinds of firewalls.  The main
-differences are in the way they forward packets.
+\*Qoutside\*U networks, and is supposed to protect the inside from the
+evils on the outside.  There are different kinds of firewalls.  The
+main differences are in the way they forward packets.
 
-.Ip 1
+.Ip \(bu
 The most straight forward type is the one that just imposes
 restrictions on incoming packets. Such a firewall could be described
-as a router that just throws away packets that match some criteria.
+as a router that filters packets that match some criteria.
 
-.Ip 2
+.Ip \(bu
 They may also \*Qhide\*U some or all addresses on the inside of the
 firewall, replacing the addresses in the outgoing packets with the
 address of the firewall (aka network address translation, or NAT). NAT
@@ -108,7 +106,7 @@ There are also firewalls that does NAT both on the inside and the
 outside (a server on the inside will see this as a connection from the
 firewall).
 
-.Ip 3
+.Ip \(bu
 A third type is the proxy type firewall, that parses the contents of
 the packets, basically acting as a server to the client, and as a
 client to the server (man-in-the-middle). If Kerberos is to be used
@@ -116,19 +114,17 @@ with this kind of firewall, a protocol module that handles KDC
 requests has to be written.
 
 .in 3
-This type of firewall might also add extra trouble when used with
+This type of firewall might also cause extra trouble when used with
 kerberised versions of protocols that the proxy understands, in
-addition to the ones mentioned below.
-
-This is the case with the FTP Security Extensions [RFC2228], that adds
-a new set of commands to the FTP protocol [RFC959], for integrity,
-confidentiality, and privacy protecting commands. When transferring
-data, the FTP protocol uses a separate data channel, and an FTP proxy
-will have to look out for commands that start a data transfer. If all
-commands are encrypted, this is impossible.
-
-An example of a protocol that doesn't suffer from this is TELNET that
-does all authentication and encryption in-bound.
+addition to the ones mentioned below. This is the case with the FTP
+Security Extensions [RFC2228], that adds a new set of commands to the
+FTP protocol [RFC959], for integrity, confidentiality, and privacy
+protecting commands. When transferring data, the FTP protocol uses a
+separate data channel, and an FTP proxy will have to look out for
+commands that start a data transfer. If all commands are encrypted,
+this is impossible. A protocol that doesn't suffer from this is the
+Telnet Authentication Option [RFC1416] that does all authentication
+and encryption in-bound.
 
 .ti 0
 Scenarios
@@ -190,8 +186,11 @@ addition to those mentioned in [RFC1510].
 .ti 0
 References
 
-[RFC959] Postel, J. and Reynolds, J., \*QFILE TRANSFER PROTOCOL
+[RFC959] Postel, J. and Reynolds, J., \*QFile Transfer Protocol
 (FTP)\*U, RFC 969, October 1985
+
+[RFC1416] Borman, D., \*QTelnet Authentication Option\*U, RFC 1416,
+February 1993.
 
 [RFC1510] Kohl, J. and Neuman, C., \*QThe Kerberos Network
 Authentication Service (V5)\*U, RFC 1510, September 1993.
