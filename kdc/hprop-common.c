@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -46,7 +46,6 @@ send_priv(krb5_context context, krb5_auth_context ac,
 {
     krb5_data packet;
     krb5_error_code ret;
-    unsigned char net_len[4];
 
     ret = krb5_mk_priv (context,
 			ac,
@@ -56,16 +55,7 @@ send_priv(krb5_context context, krb5_auth_context ac,
     if (ret)
 	return ret;
     
-    net_len[0] = (packet.length >> 24) & 0xff;
-    net_len[1] = (packet.length >> 16) & 0xff;
-    net_len[2] = (packet.length >> 8) & 0xff;
-    net_len[3] = packet.length & 0xff;
-	
-    if (krb5_net_write (context, &fd, net_len, 4) != 4)
-	ret = errno;
-    else if (krb5_net_write (context, &fd,
-			     packet.data, packet.length) != packet.length)
-	ret =  errno;
+    ret = krb5_write_message (context, &fd, &packet);
     krb5_data_free(&packet);
     return ret;
 }
@@ -79,55 +69,23 @@ recv_priv(krb5_context context, krb5_auth_context ac, int fd, krb5_data *out)
     size_t len;
     krb5_data data;
 
-    if(krb5_net_read(context, &fd, tmp, 4) != 4)
-	return errno;
-    len = (tmp[0] << 24) | (tmp[1] << 16) | (tmp[2] << 8) | tmp[3];
-    buf = malloc(len);
-    if(krb5_net_read(context, &fd, buf, len) != len)
-	return errno;
-    data.data = buf;
-    data.length = len;
+    ret = krb5_read_message (context, &fd, &data);
+    if (ret)
+	return ret;
+
     ret = krb5_rd_priv(context, ac, &data, out, NULL);
-    if(ret) return ret;
-    free(buf);
-    return 0;
+    krb5_data_free (&data);
+    return ret;
 }
 
 krb5_error_code
 send_clear(krb5_context context, int fd, krb5_data data)
 {
-    unsigned char tmp[4];
-    int len;
-    
-    tmp[0] = (data.length >> 24) & 0xff;
-    tmp[1] = (data.length >> 16) & 0xff;
-    tmp[2] = (data.length >> 8) & 0xff;
-    tmp[3] = (data.length >> 0) & 0xff;
-    len = write(fd, tmp, sizeof(tmp));
-    if(len == sizeof(tmp))
-	len = write(fd, data.data, data.length);
-    if(len != data.length)
-	return errno;
-    return 0;
+    return krb5_write_message (context, &fd, &data);
 }
 
 krb5_error_code
 recv_clear(krb5_context context, int fd, krb5_data *out)
 {
-    unsigned char tmp[4];
-    int len;
-    len = read(fd, tmp, sizeof(tmp));
-    if(len == 0){
-	memset(out, 0, sizeof(*out));
-	return 0;
-    }
-	
-    if(len == sizeof(tmp)){
-	len = (tmp[0] << 24) | (tmp[1] << 16) | (tmp[2] << 8) | tmp[3];
-	krb5_data_alloc(out, len);
-	len = read(fd, out->data, out->length);
-    }
-    if(len != out->length)
-	return errno;
-    return 0;
+    return krb5_read_message (context, &fd, out);
 }
