@@ -801,7 +801,7 @@ char *Strstr(char *s, char *p);
 #define MINOR_VERSION 0x01
 
 /* Browser Election Values */
-#define BROWSER_ELECT_VERSION	0x010f
+#define BROWSER_ELECTION_VERSION	0x010f
 #define BROWSER_CONSTANT	0xaa55
 
 
