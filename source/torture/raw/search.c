@@ -107,6 +107,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	int fnum;
 	const char *fname = "\\torture_search.txt";
+	const char *fname2 = "\\torture_search-NOTEXIST.txt";
 	NTSTATUS status;
 	int i;
 	union smb_fileinfo all_info, alt_info, name_info, internal_info;
@@ -123,6 +124,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* call all the levels */
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		NTSTATUS expected_status;
 		uint32_t cap = cli->transport->negotiate.capabilities;
 
 		printf("testing %s\n", levels[i].name);
@@ -141,6 +143,22 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			printf("search level %s(%d) failed - %s\n",
 			       levels[i].name, (int)levels[i].level, 
 			       nt_errstr(levels[i].status));
+			ret = False;
+			continue;
+		}
+
+		status = single_search(cli, mem_ctx, fname2, 
+				       levels[i].level, &levels[i].data);
+		
+		expected_status = NT_STATUS_NO_SUCH_FILE;
+		if (levels[i].level == RAW_SEARCH_SEARCH) {
+			expected_status = STATUS_NO_MORE_FILES;
+		}
+		if (!NT_STATUS_EQUAL(status, expected_status)) {
+			printf("search level %s(%d) should fail with %s - %s\n",
+			       levels[i].name, (int)levels[i].level, 
+			       nt_errstr(expected_status),
+			       nt_errstr(status));
 			ret = False;
 		}
 	}
