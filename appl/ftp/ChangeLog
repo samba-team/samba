@@ -1,3 +1,8 @@
+2000-12-11  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ftpd.c: make it possible to set list of good filename
+	characters from command line
+
 2000-12-10  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ftpd.c: some spec-violating mirror software assumes that
