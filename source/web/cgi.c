@@ -355,7 +355,8 @@ static BOOL cgi_handle_authorization(char *line)
 	}
 	
 err:
-	cgi_setup_error("401 Bad Authorization", "", 
+	cgi_setup_error("401 Bad Authorization", 
+			"WWW-Authenticate: Basic realm=\"SWAT\"\r\n",
 			"username or password incorrect");
 
 	passwd_free(&pass);
