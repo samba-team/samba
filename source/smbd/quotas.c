@@ -376,8 +376,12 @@ DEBUG(5,("disk_quotas for path \"%s\" returning  bsize %d, dfree %d, dsize %d\n"
 
 #else
 
+#ifdef        __FreeBSD__
+#include <ufs/ufs/quota.h>
+#else
 #include <sys/quota.h>
 #include <devnm.h>
+#endif
 
 /****************************************************************************
 try to get the disk space from disk quotas - default version
@@ -389,9 +393,11 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   char dev_disk[256];
   struct dqblk D;
   struct stat S;
+#ifndef __FreeBSD__
   /* find the block device file */
   if ((stat(path, &S)<0) ||
       (devnm(S_IFBLK, S.st_dev, dev_disk, 256, 0)<0)) return (False);
+#endif
 
   euser_id = geteuid();
 
@@ -399,12 +405,17 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   /* for HPUX, real uid must be same as euid to execute quotactl for euid */
   user_id = getuid();
   setresuid(euser_id,-1,-1);
-#endif
   r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
-  #ifdef USE_SETRES
   if (setresuid(user_id,-1,-1))
     DEBUG(5,("Unable to reset uid to %d\n", user_id));
+#else
+#if defined(__FreeBSD__)
+  r= quotactl(path,Q_GETQUOTA,euser_id,(char *) &D);
+#else
+  r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
   #endif
+#endif
+
   /* Use softlimit to determine disk space, except when it has been exceeded */
   *bsize = 1024;
   if (r)
@@ -420,8 +431,11 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   if (D.dqb_bsoftlimit==0)
     return(False);
   /* Use softlimit to determine disk space, except when it has been exceeded */
-  if ((D.dqb_curblocks>D.dqb_bsoftlimit)||(D.dqb_curfiles>D.dqb_fsoftlimit)) 
-    {
+  if ((D.dqb_curblocks>D.dqb_bsoftlimit)
+#if !defined(__FreeBSD__)
+||(D.dqb_curfiles>D.dqb_fsoftlimit)) 
+#endif
+    ) {
       *dfree = 0;
       *dsize = D.dqb_curblocks;
     }
