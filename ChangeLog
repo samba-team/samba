@@ -1,3 +1,7 @@
+2001-04-06  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/kinit.c: add simple support for running commands
+
 2001-03-26  Assar Westerlund  <assar@sics.se>
 
 	* lib/hdb/hdb-ldap.c: change order of includes to allow it to work
@@ -54,6 +58,10 @@
 	explicitly requested.  it still gets a renewable one if the renew
 	life is specified
 	* kuser/kinit.c (renew_validate): treat -1 as flags not being set
+
+2001-02-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/context.c (krb5_init_ets): use krb5_add_et_list
 
 2001-02-27  Johan Danielsson  <joda@pdc.kth.se>
 
