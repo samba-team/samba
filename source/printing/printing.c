@@ -1555,6 +1555,70 @@ int print_queue_length(int snum, print_status_struct *pstatus)
 }
 
 /***************************************************************************
+ Allocate a jobid. Hold the lock for as short a time as possible.
+***************************************************************************/
+
+static BOOL allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char *unix_printername, uint32 *pjobid)
+{
+	int i;
+	uint32 jobid;
+
+	*pjobid = (uint32)-1;
+
+	for (i = 0; i < 3; i++) {
+		/* Lock the database - only wait 20 seconds. */
+		if (tdb_lock_bystring(pdb->tdb, "INFO/nextjob", 20) == -1) {
+			DEBUG(0,("allocate_print_jobid: failed to lock printing database %s\n", unix_printername ));
+			return False;
+		}
+
+		if (!tdb_fetch_uint32(pdb->tdb, "INFO/nextjob", &jobid)) {
+			if (tdb_error(pdb->tdb) != TDB_ERR_NOEXIST) {
+				DEBUG(0, ("allocate_print_jobid: failed to fetch INFO/nextjob for print queue %s\n",
+						unix_printername ));
+				return False;
+			}
+			jobid = 0;
+		}
+
+		jobid = NEXT_JOBID(jobid);
+
+		if (tdb_store_int32(pdb->tdb, "INFO/nextjob", jobid)==-1) {
+			DEBUG(3, ("allocate_print_jobid: failed to store INFO/nextjob.\n"));
+			tdb_unlock_bystring(pdb->tdb, "INFO/nextjob");
+			return False;
+		}
+
+		/* We've finished with the INFO/nextjob lock. */
+		tdb_unlock_bystring(pdb->tdb, "INFO/nextjob");
+				
+		if (!print_job_exists(snum, jobid))
+			break;
+	}
+
+	if (i > 2) {
+		DEBUG(0, ("allocate_print_jobid: failed to allocate a print job for queue %s\n",
+				unix_printername ));
+		return False;
+	}
+
+	/* Store a dummy placeholder. */
+	{
+		TDB_DATA dum;
+		dum.dptr = NULL;
+		dum.dsize = 0;
+		if (tdb_store(pdb->tdb, print_key(jobid), dum, TDB_INSERT) == -1) {
+			DEBUG(3, ("allocate_print_jobid: jobid (%d) failed to store placeholder.\n",
+				jobid ));
+			return False;
+		}
+	}
+
+	*pjobid = jobid;
+	return True;
+}
+
+/***************************************************************************
  Start spooling a job - return the jobid. jobname is in UNIX character set.
 ***************************************************************************/
 
@@ -1563,12 +1627,10 @@ uint32 print_job_start(struct current_user *user, int snum, const char *unix_job
 	uint32 jobid;
 	pstring unix_path;
 	struct printjob pjob;
-	int next_jobid;
 	user_struct *vuser;
-	int njobs = 0;
 	const char *unix_printername = lp_const_servicename_unix(snum);
 	struct tdb_print_db *pdb = get_print_db_byname(unix_printername);
-	BOOL pdb_locked = False;
+	int njobs;
 
 	errno = 0;
 
@@ -1618,55 +1680,8 @@ uint32 print_job_start(struct current_user *user, int snum, const char *unix_job
 		return (uint32)-1;
 	}
 
-	/* Lock the database - only wait 20 seconds. */
-	if (tdb_lock_bystring(pdb->tdb, "INFO/nextjob", 20) == -1) {
-		DEBUG(0,("print_job_start: failed to lock printing database %s\n", unix_printername ));
-		release_print_db(pdb);
-		return (uint32)-1;
-	}
-
-	pdb_locked = True;
-
-	next_jobid = tdb_fetch_int32(pdb->tdb, "INFO/nextjob");
-	if (next_jobid == -1)
-		next_jobid = 1;
-
-	njobs = 0;
-	for (njobs = 0, jobid = NEXT_JOBID(next_jobid); jobid != next_jobid; jobid = NEXT_JOBID(jobid), njobs++) {
-		if (!print_job_exists(snum, jobid))
-			break;
-	}
-				
-	if (jobid == next_jobid) {
-		DEBUG(3, ("print_job_start: jobid (%d)==next_jobid(%d).\n",
-				jobid, next_jobid ));
-		tdb_store_int32(pdb->tdb, "INFO/total_jobs", njobs);
-		jobid = -1;
+	if (!allocate_print_jobid(pdb, snum, unix_printername, &jobid))
 		goto fail;
-	}
-
-	/* Store a dummy placeholder. This must be quick as we have the lock. */
-	{
-		TDB_DATA dum;
-		dum.dptr = NULL;
-		dum.dsize = 0;
-		if (tdb_store(pdb->tdb, print_key(jobid), dum, TDB_INSERT) == -1) {
-			DEBUG(3, ("print_job_start: jobid (%d) failed to store placeholder.\n",
-				jobid ));
-			jobid = -1;
-			goto fail;
-		}
-	}
-
-	if (tdb_store_int32(pdb->tdb, "INFO/nextjob", jobid)==-1) {
-		DEBUG(3, ("print_job_start: failed to store INFO/nextjob.\n"));
-		jobid = -1;
-		goto fail;
-	}
-
-	/* We've finished with the INFO/nextjob lock. */
-	tdb_unlock_bystring(pdb->tdb, "INFO/nextjob");
-	pdb_locked = False;
 
 	/* create the database entry */
 	
@@ -1730,12 +1745,10 @@ to open spool file %s.\n", pjob.filename));
 	if (jobid != -1)
 		pjob_delete(snum, jobid);
 
-	if (pdb_locked)
-		tdb_unlock_bystring(pdb->tdb, "INFO/nextjob");
 	release_print_db(pdb);
 
 	DEBUG(3, ("print_job_start: returning fail. Error = %s\n", strerror(errno) ));
-	return -1;
+	return (uint32)-1;
 }
 
 /****************************************************************************
