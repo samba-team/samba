@@ -212,22 +212,32 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 
 	}
 
-	if (NT_STATUS_IS_OK(status)) {
-		DATA_BLOB session_key;
-		DATA_BLOB null_data_blob = data_blob(NULL, 0);
-		status = gensec_session_info(smb_sess->gensec_ctx, &smb_sess->session_info);
-		if (NT_STATUS_IS_OK(gensec_session_key(smb_sess->gensec_ctx, 
-						       &session_key))) {
-			srv_setup_signing(req->smb_conn, &session_key, &null_data_blob);
-			req->seq_num = 0;
-			req->smb_conn->signing.next_seq_num = 2;
-		}
-	}
-
 	if (!smb_sess) {
 		vuid = smbsrv_register_session(req->smb_conn, session_info, gensec_ctx);
 		if (vuid == UID_FIELD_INVALID) {
 			return NT_STATUS_ACCESS_DENIED;
+		}
+		smb_sess = smbsrv_session_find(req->smb_conn, vuid);
+		if (!smb_sess) {
+			return NT_STATUS_FOOBAR;
+		}
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+		DATA_BLOB session_key;
+		DATA_BLOB null_data_blob = data_blob(NULL, 0);
+		
+		status = gensec_session_info(smb_sess->gensec_ctx, &smb_sess->session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		
+		status = gensec_session_key(smb_sess->gensec_ctx, 
+						       &session_key);
+		if (NT_STATUS_IS_OK(status)) {
+			srv_setup_signing(req->smb_conn, &session_key, &null_data_blob);
+			req->seq_num = 0;
+			req->smb_conn->signing.next_seq_num = 2;
 		}
 	}
 
