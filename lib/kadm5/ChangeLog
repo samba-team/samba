@@ -1,3 +1,11 @@
+2004-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* default_keys.c (parse_file): use hdb_generate_key_set
+	
+	* keys.c,set_keys.c: Move keyset parsing and password based keyset
+	generation into hdb.  Requested by Andrew Bartlett <abartlet@samba.org>
+	for hdb-ldb backend.
+	
 2004-09-23  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ipropd_master.c: add help strings to some options
