@@ -1,3 +1,9 @@
+2000-05-16  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): set version to 11:1:0
+	* lib/krb5/fcache.c: fix second lseek
+	* lib/krb5/principal.c (krb5_524_conv_principal): fix typo
+
 2000-05-15  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.2s
