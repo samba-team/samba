@@ -28,7 +28,7 @@
 static char *capencode(char *to, const char *from);
 static char *capdecode(char *to, const char *from);
 
-static SMB_BIG_UINT skel_disk_free(vfs_handle_struct *handle, connection_struct *conn, const char *path,
+static SMB_BIG_UINT cap_disk_free(vfs_handle_struct *handle, connection_struct *conn, const char *path,
 	BOOL small_query, SMB_BIG_UINT *bsize,
 	SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
@@ -38,7 +38,7 @@ static SMB_BIG_UINT skel_disk_free(vfs_handle_struct *handle, connection_struct 
 					 dfree, dsize);
 }
 
-static int skel_set_quota(vfs_handle_struct *handle, connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dq)
+static int cap_set_quota(vfs_handle_struct *handle, connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dq)
 {
 	return SMB_VFS_NEXT_SET_QUOTA(handle, conn, qtype, id, dq);
 }
@@ -100,14 +100,14 @@ static int cap_stat(vfs_handle_struct *handle, connection_struct *conn, const ch
 	return SMB_VFS_NEXT_STAT(handle, conn, capname, sbuf);
 }
 
-static int skel_lstat(vfs_handle_struct *handle, connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf)
+static int cap_lstat(vfs_handle_struct *handle, connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf)
 {
 	pstring cappath;
 	capencode(cappath, path);
 	return SMB_VFS_NEXT_LSTAT(handle, conn, cappath, sbuf);
 }
 
-static int skel_unlink(vfs_handle_struct *handle, connection_struct *conn, const char *path)
+static int cap_unlink(vfs_handle_struct *handle, connection_struct *conn, const char *path)
 {
 	pstring cappath;
 	capencode(cappath, path);
@@ -136,7 +136,7 @@ static int cap_chdir(vfs_handle_struct *handle, connection_struct *conn, const c
 	return SMB_VFS_NEXT_CHDIR(handle, conn, cappath);
 }
 
-static int skel_utime(vfs_handle_struct *handle, connection_struct *conn, const char *path, struct utimbuf *times)
+static int cap_utime(vfs_handle_struct *handle, connection_struct *conn, const char *path, struct utimbuf *times)
 {
         pstring cappath;
 	capencode(cappath, path);
@@ -144,7 +144,7 @@ static int skel_utime(vfs_handle_struct *handle, connection_struct *conn, const 
 }
 
 
-static BOOL skel_symlink(vfs_handle_struct *handle, connection_struct *conn, const char *oldpath, const char *newpath)
+static BOOL cap_symlink(vfs_handle_struct *handle, connection_struct *conn, const char *oldpath, const char *newpath)
 {
         pstring capoldpath, capnewpath;
         capencode(capoldpath, oldpath);
@@ -152,14 +152,14 @@ static BOOL skel_symlink(vfs_handle_struct *handle, connection_struct *conn, con
 	return SMB_VFS_NEXT_SYMLINK(handle, conn, capoldpath, capnewpath);
 }
 
-static BOOL skel_readlink(vfs_handle_struct *handle, connection_struct *conn, const char *path, char *buf, size_t bufsiz)
+static BOOL cap_readlink(vfs_handle_struct *handle, connection_struct *conn, const char *path, char *buf, size_t bufsiz)
 {
         pstring cappath;
 	capencode(cappath, path);
 	return SMB_VFS_NEXT_READLINK(handle, conn, cappath, buf, bufsiz);
 }
 
-static int skel_link(vfs_handle_struct *handle, connection_struct *conn, const char *oldpath, const char *newpath)
+static int cap_link(vfs_handle_struct *handle, connection_struct *conn, const char *oldpath, const char *newpath)
 {
         pstring capoldpath, capnewpath;
         capencode(capoldpath, oldpath);
@@ -167,14 +167,14 @@ static int skel_link(vfs_handle_struct *handle, connection_struct *conn, const c
 	return SMB_VFS_NEXT_LINK(handle, conn, capoldpath, capnewpath);
 }
 
-static int skel_mknod(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode, SMB_DEV_T dev)
+static int cap_mknod(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode, SMB_DEV_T dev)
 {
         pstring cappath;
 	capencode(cappath, path);
 	return SMB_VFS_NEXT_MKNOD(handle, conn, cappath, mode, dev);
 }
 
-static char *skel_realpath(vfs_handle_struct *handle, connection_struct *conn, const char *path, char *resolved_path)
+static char *cap_realpath(vfs_handle_struct *handle, connection_struct *conn, const char *path, char *resolved_path)
 {
         /* monyo need capencode'ed and capdecode'ed? */
         pstring cappath;
@@ -182,14 +182,14 @@ static char *skel_realpath(vfs_handle_struct *handle, connection_struct *conn, c
 	return SMB_VFS_NEXT_REALPATH(handle, conn, path, resolved_path);
 }
 
-static BOOL skel_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor_info *psd)
+static BOOL cap_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor_info *psd)
 {
         pstring capname;
 	capencode(capname, name);
 	return SMB_VFS_NEXT_SET_NT_ACL(handle, fsp, capname, security_info_sent, psd);
 }
 
-static int skel_chmod_acl(vfs_handle_struct *handle, connection_struct *conn, const char *name, mode_t mode)
+static int cap_chmod_acl(vfs_handle_struct *handle, connection_struct *conn, const char *name, mode_t mode)
 {
         pstring capname;
 	capencode(capname, name);
@@ -202,28 +202,28 @@ static int skel_chmod_acl(vfs_handle_struct *handle, connection_struct *conn, co
 	return SMB_VFS_NEXT_CHMOD_ACL(handle, conn, capname, mode);
 }
 
-static SMB_ACL_T skel_sys_acl_get_file(vfs_handle_struct *handle, connection_struct *conn, const char *path_p, SMB_ACL_TYPE_T type)
+static SMB_ACL_T cap_sys_acl_get_file(vfs_handle_struct *handle, connection_struct *conn, const char *path_p, SMB_ACL_TYPE_T type)
 {
         pstring cappath_p;
 	capencode(cappath_p, path_p);
 	return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, conn, cappath_p, type);
 }
 
-static int skel_sys_acl_set_file(vfs_handle_struct *handle, connection_struct *conn, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+static int cap_sys_acl_set_file(vfs_handle_struct *handle, connection_struct *conn, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
         pstring capname;
 	capencode(capname, name);
 	return SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, conn, capname, acltype, theacl);
 }
 
-static int skel_sys_acl_delete_def_file(vfs_handle_struct *handle, connection_struct *conn, const char *path)
+static int cap_sys_acl_delete_def_file(vfs_handle_struct *handle, connection_struct *conn, const char *path)
 {
         pstring cappath;
 	capencode(cappath, path);
 	return SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, conn, cappath);
 }
 
-static ssize_t skel_getxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, void *value, size_t size)
+static ssize_t cap_getxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, void *value, size_t size)
 {
         pstring cappath, capname;
 	capencode(cappath, path);
@@ -231,7 +231,7 @@ static ssize_t skel_getxattr(vfs_handle_struct *handle, struct connection_struct
         return SMB_VFS_NEXT_GETXATTR(handle, conn, cappath, capname, value, size);
 }
 
-static ssize_t skel_lgetxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, void *value, size_t
+static ssize_t cap_lgetxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, void *value, size_t
 size)
 {
         pstring cappath, capname;
@@ -240,28 +240,28 @@ size)
         return SMB_VFS_NEXT_LGETXATTR(handle, conn, cappath, capname, value, size);
 }
 
-static ssize_t skel_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, void *value, size_t size)
+static ssize_t cap_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, void *value, size_t size)
 {
         pstring capname;
 	capencode(capname, name);
         return SMB_VFS_NEXT_FGETXATTR(handle, fsp, fd, capname, value, size);
 }
 
-static ssize_t skel_listxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, char *list, size_t size)
+static ssize_t cap_listxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, char *list, size_t size)
 {
         pstring cappath;
 	capencode(cappath, path);
         return SMB_VFS_NEXT_LISTXATTR(handle, conn, cappath, list, size);
 }
 
-static ssize_t skel_llistxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, char *list, size_t size)
+static ssize_t cap_llistxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, char *list, size_t size)
 {
         pstring cappath;
 	capencode(cappath, path);
         return SMB_VFS_NEXT_LLISTXATTR(handle, conn, cappath, list, size);
 }
 
-static int skel_removexattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name)
+static int cap_removexattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name)
 {
         pstring cappath, capname;
 	capencode(cappath, path);
@@ -269,7 +269,7 @@ static int skel_removexattr(vfs_handle_struct *handle, struct connection_struct 
         return SMB_VFS_NEXT_REMOVEXATTR(handle, conn, cappath, capname);
 }
 
-static int skel_lremovexattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name)
+static int cap_lremovexattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name)
 {
         pstring cappath, capname;
 	capencode(cappath, path);
@@ -277,14 +277,14 @@ static int skel_lremovexattr(vfs_handle_struct *handle, struct connection_struct
         return SMB_VFS_NEXT_LREMOVEXATTR(handle, conn, cappath, capname);
 }
 
-static int skel_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name)
+static int cap_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name)
 {
         pstring capname;
 	capencode(capname, name);
         return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, fd, capname);
 }
 
-static int skel_setxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags)
+static int cap_setxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags)
 {
         pstring cappath, capname;
 	capencode(cappath, path);
@@ -292,7 +292,7 @@ static int skel_setxattr(vfs_handle_struct *handle, struct connection_struct *co
         return SMB_VFS_NEXT_SETXATTR(handle, conn, cappath, capname, value, size, flags);
 }
 
-static int skel_lsetxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags)
+static int cap_lsetxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags)
 {
         pstring cappath, capname;
 	capencode(cappath, path);
@@ -300,7 +300,7 @@ static int skel_lsetxattr(vfs_handle_struct *handle, struct connection_struct *c
         return SMB_VFS_NEXT_LSETXATTR(handle, conn, cappath, capname, value, size, flags);
 }
 
-static int skel_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, const void *value, size_t size, int flags)
+static int cap_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, const void *value, size_t size, int flags)
 {
         pstring capname;
 	capencode(capname, name);
@@ -313,7 +313,7 @@ static vfs_op_tuple cap_op_tuples[] = {
 
 	/* Disk operations */
 
-	{SMB_VFS_OP(skel_disk_free),			SMB_VFS_OP_DISK_FREE,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_disk_free),			SMB_VFS_OP_DISK_FREE,		SMB_VFS_LAYER_TRANSPARENT},
 	
 	/* Directory operations */
 
@@ -327,42 +327,42 @@ static vfs_op_tuple cap_op_tuples[] = {
 	{SMB_VFS_OP(cap_open),				SMB_VFS_OP_OPEN,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_rename),			SMB_VFS_OP_RENAME,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_stat),				SMB_VFS_OP_STAT,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_lstat),			SMB_VFS_OP_LSTAT,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_unlink),			SMB_VFS_OP_UNLINK,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_lstat),			SMB_VFS_OP_LSTAT,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_unlink),			SMB_VFS_OP_UNLINK,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_chmod),			SMB_VFS_OP_CHMOD,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_chown),			SMB_VFS_OP_CHOWN,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(cap_chdir),			SMB_VFS_OP_CHDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_utime),			SMB_VFS_OP_UTIME,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_symlink),			SMB_VFS_OP_SYMLINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_readlink),			SMB_VFS_OP_READLINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_link),				SMB_VFS_OP_LINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_mknod),			SMB_VFS_OP_MKNOD,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_realpath),			SMB_VFS_OP_REALPATH,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_utime),			SMB_VFS_OP_UTIME,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_symlink),			SMB_VFS_OP_SYMLINK,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_readlink),			SMB_VFS_OP_READLINK,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_link),				SMB_VFS_OP_LINK,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_mknod),			SMB_VFS_OP_MKNOD,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_realpath),			SMB_VFS_OP_REALPATH,		SMB_VFS_LAYER_TRANSPARENT},
 
 	/* NT File ACL operations */
 
-	{SMB_VFS_OP(skel_set_nt_acl),			SMB_VFS_OP_SET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_set_nt_acl),			SMB_VFS_OP_SET_NT_ACL,		SMB_VFS_LAYER_TRANSPARENT},
 
 	/* POSIX ACL operations */
 
-	{SMB_VFS_OP(skel_chmod_acl),			SMB_VFS_OP_CHMOD_ACL,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_chmod_acl),			SMB_VFS_OP_CHMOD_ACL,		SMB_VFS_LAYER_TRANSPARENT},
 
-	{SMB_VFS_OP(skel_sys_acl_get_file),		SMB_VFS_OP_SYS_ACL_GET_FILE,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_set_file),		SMB_VFS_OP_SYS_ACL_SET_FILE,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_sys_acl_delete_def_file),	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_sys_acl_get_file),		SMB_VFS_OP_SYS_ACL_GET_FILE,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_sys_acl_set_file),		SMB_VFS_OP_SYS_ACL_SET_FILE,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_sys_acl_delete_def_file),	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,	SMB_VFS_LAYER_TRANSPARENT},
 	
 	/* EA operations. */
-	{SMB_VFS_OP(skel_getxattr),			SMB_VFS_OP_GETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_lgetxattr),			SMB_VFS_OP_LGETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_fgetxattr),			SMB_VFS_OP_FGETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_listxattr),			SMB_VFS_OP_LISTXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_llistxattr),			SMB_VFS_OP_LLISTXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_removexattr),			SMB_VFS_OP_REMOVEXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_lremovexattr),			SMB_VFS_OP_LREMOVEXATTR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_fremovexattr),			SMB_VFS_OP_FREMOVEXATTR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_setxattr),			SMB_VFS_OP_SETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_lsetxattr),			SMB_VFS_OP_LSETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_fsetxattr),			SMB_VFS_OP_FSETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_getxattr),			SMB_VFS_OP_GETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_lgetxattr),			SMB_VFS_OP_LGETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_fgetxattr),			SMB_VFS_OP_FGETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_listxattr),			SMB_VFS_OP_LISTXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_llistxattr),			SMB_VFS_OP_LLISTXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_removexattr),			SMB_VFS_OP_REMOVEXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_lremovexattr),			SMB_VFS_OP_LREMOVEXATTR,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_fremovexattr),			SMB_VFS_OP_FREMOVEXATTR,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_setxattr),			SMB_VFS_OP_SETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_lsetxattr),			SMB_VFS_OP_LSETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(cap_fsetxattr),			SMB_VFS_OP_FSETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
 
 	{NULL,						SMB_VFS_OP_NOOP,			SMB_VFS_LAYER_NOOP}
 };
