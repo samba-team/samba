@@ -5,6 +5,7 @@
 
    Copyright (C) Tim Potter 2001
    Copyright (C) Andrew Bartlett 2002
+   Copyright (C) Gerald Carter 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,12 +25,54 @@
 
 #include "includes.h"
 
+/**************************************************************************
+ Find the name and IP address for a server in he realm/domain
+ *************************************************************************/
+ 
+static BOOL ads_dc_name(const char *domain, struct in_addr *dc_ip, fstring srv_name)
+{
+	ADS_STRUCT *ads;
+	const char *realm = domain;
+
+	if (strcasecmp(realm, lp_workgroup()) == 0)
+		realm = lp_realm();
+
+	ads = ads_init(realm, domain, NULL);
+	if (!ads)
+		return False;
+
+	/* we don't need to bind, just connect */
+	ads->auth.flags |= ADS_AUTH_NO_BIND;
+
+	DEBUG(4,("ads_dc_name: domain=%s\n", domain));
+
+#ifdef HAVE_ADS
+	/* a full ads_connect() is actually overkill, as we don't srictly need
+	   to do the SASL auth in order to get the info we need, but libads
+	   doesn't offer a better way right now */
+	ads_connect(ads);
+#endif
+
+	if (!ads->config.realm)
+		return False;
+
+	fstrcpy(srv_name, ads->config.ldap_server_name);
+	strupper(srv_name);
+	*dc_ip = ads->ldap_ip;
+	ads_destroy(&ads);
+	
+	DEBUG(4,("ads_dc_name: using server='%s' IP=%s\n",
+		 srv_name, inet_ntoa(*dc_ip)));
+	
+	return True;
+}
+
 /****************************************************************************
  Utility function to return the name of a DC. The name is guaranteed to be 
  valid since we have already done a name_status_find on it 
  ***************************************************************************/
 
-BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
+static BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 {
 	struct ip_service *ip_list = NULL;
 	struct in_addr dc_ip, exclude_ip;
@@ -109,3 +152,29 @@ BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 
 	return True;
 }
+
+/**********************************************************************
+ wrapper around ads and rpc methods of finds DC's
+**********************************************************************/
+
+BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
+{
+	struct in_addr dc_ip;
+	BOOL ret;
+
+	zero_ip(&dc_ip);
+
+	ret = False;
+	if (lp_security() == SEC_ADS)
+		ret = ads_dc_name(domain, &dc_ip, srv_name);
+
+	if (!ret) {
+		/* fall back on rpc methods if the ADS methods fail */
+		ret = rpc_dc_name(domain, srv_name, &dc_ip);
+	}
+
+	*ip_out = dc_ip;
+
+	return ret;
+}
+

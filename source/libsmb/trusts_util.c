@@ -153,8 +153,16 @@ BOOL is_trusted_domain(const char* dom_name)
 	/*
 	 * Query the trustdom_cache updated periodically. The only
 	 * way for domain member server.
+	 * 
+	 * Sure...it's all fun and games until someone gets hurt...
+	 * This call cannot work without winbindd running since it 
+	 * is the only process updating the cache currently.  
+	 *
+	 * FIXME!!!   make this always true for now until I figure 
+	 * out what to do   --jerry
 	 */
-	if (trustdom_cache_fetch(dom_name, &trustdom_sid)) {
+	 
+	if (True || trustdom_cache_fetch(dom_name, &trustdom_sid)) {
 		return True;
 	}
 
