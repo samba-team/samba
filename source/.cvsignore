@@ -15,6 +15,7 @@ config.cache
 config.log
 config.status
 configure.tridge
+configure
 cvs.log
 diffs
 dmalloc.log

@@ -1,5 +1,6 @@
 build_env.h
 config.h
+config.h.in
 stamp-h
 proto.h
 wrepld_proto.h
