@@ -238,7 +238,7 @@
 	</varlistentry>
 
 	<varlistentry>
-	<term>tallocdump and pool-usage</term>
+	<term>pool-usage</term>
 	<listitem><para>Print a human-readable description of all 
 	talloc(pool) memory usage by the specified daemon/process. Available 
 	for both smbd and nmbd.</para></listitem>
