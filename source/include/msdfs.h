@@ -59,7 +59,7 @@ struct dfs_path
   pstring restofthepath;
 };
 
-#ifdef MS_DFS
+#ifdef WITH_MSDFS
 
 #define RESOLVE_DFSPATH(name, conn, inbuf, outbuf) \
 { if(((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES)) && \

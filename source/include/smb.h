@@ -385,6 +385,7 @@ typedef struct
 }
 vuser_key;
 
+
 #ifndef MAXSUBAUTHS
 #define MAXSUBAUTHS 15		/* max sub authorities in a SID */
 #endif
@@ -427,6 +428,11 @@ DOM_MAP_TYPE;
 /*
  * The complete list of SIDS belonging to this user.
  * Created when a vuid is registered.
+ * The definition of the user_sids array is as follows :
+ *
+ * token->user_sids[0] = primary user SID.
+ * token->user_sids[1] = primary group SID.
+ * token->user_sids[2-num_sids] = supplementary group SIDS.
  */
 
 #ifndef _NT_USER_TOKEN
@@ -661,6 +667,7 @@ struct dcinfo
 	uchar sess_key[8];	/* Session key */
 	uchar md4pw[16];	/* md4(machine password) */
 };
+
 
 
 enum {LPQ_QUEUED,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING};
@@ -1811,7 +1818,7 @@ extern int chain_size;
 #define KERNEL_OPLOCK_CAPABILITY 0x1
 
 /*
- * Oplock break command code sent via the kernel interface.
+ * Oplock break command code sent via the kernel interface (if it exists).
  *
  * Form of this is :
  *
