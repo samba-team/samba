@@ -51,15 +51,23 @@ fi
 
 
 if test x"${SAMBA_VERSION_IS_SVN_SNAPSHOT}" = x"yes";then
-    TMP_SVN_REVISION=`(svn info ${SOURCE_DIR} 2>/dev/null || svk info ${SOURCE_DIR} 2>/dev/null) |grep Revision: |sed -e 's/Revision: \([0-9]*\).*/\1/'`
-    TMP_SVN_REVISION_STR=""
-    if test -n "${TMP_SVN_REVISION}";then
-	TMP_SVN_REVISION_STR="-${TMP_SVN_REVISION}"
-    else
-	TMP_SVN_REVISION=0
+    HAVESVN=no
+    svn info ${SOURCE_DIR} >/dev/null 2>&1 && HAVESVN=yes
+    TMP_REVISION=`(svn info ${SOURCE_DIR} 2>/dev/null || svk info ${SOURCE_DIR} 2>/dev/null) |grep Revision: |sed -e 's/Revision: \([0-9]*\).*/\1/'`
+    if test x"${HAVESVN}" = x"no";then
+	HAVESVK=no
+	svk info ${SOURCE_DIR} >/dev/null 2>&1 && HAVESVK=yes
+	TMP_SVK_REVISION_STR="${TMP_REVISION}-${USER}@${HOSTNAME}"
     fi
-    SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVN-build${TMP_SVN_REVISION_STR}"
-    echo "#define SAMBA_VERSION_SVN_REVISION ${TMP_SVN_REVISION}" >> $OUTPUT_FILE
+
+    if test x"${HAVESVN}" = x"yes";then
+	    SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVN-build-${TMP_REVISION}"
+	    echo "#define SAMBA_VERSION_SVN_REVISION ${TMP_REVISION}" >> $OUTPUT_FILE
+    elif test x"${HAVESVK}" = x"yes";then
+	    SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVK-build-${TMP_SVK_REVISION_STR}"
+    else
+	    SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVN-build-UNKNOWN"
+    fi
 fi
 
 if test -n "${SAMBA_VERSION_VENDOR_SUFFIX}";then
