@@ -25,12 +25,12 @@
 
 /* the list of currently registered GENSEC backends */
 const static struct gensec_security_ops **generic_security_ops;
-static int num_backends;
+static int gensec_num_backends;
 
 static const struct gensec_security_ops *gensec_security_by_authtype(uint8_t auth_type)
 {
 	int i;
-	for (i=0; i < num_backends; i++) {
+	for (i=0; i < gensec_num_backends; i++) {
 		if (generic_security_ops[i]->auth_type == auth_type) {
 			return generic_security_ops[i];
 		}
@@ -42,7 +42,7 @@ static const struct gensec_security_ops *gensec_security_by_authtype(uint8_t aut
 static const struct gensec_security_ops *gensec_security_by_oid(const char *oid_string)
 {
 	int i;
-	for (i=0; i < num_backends; i++) {
+	for (i=0; i < gensec_num_backends; i++) {
 		if (generic_security_ops[i]->oid &&
 		    (strcmp(generic_security_ops[i]->oid, oid_string) == 0)) {
 			return generic_security_ops[i];
@@ -55,7 +55,7 @@ static const struct gensec_security_ops *gensec_security_by_oid(const char *oid_
 static const struct gensec_security_ops *gensec_security_by_sasl_name(const char *sasl_name)
 {
 	int i;
-	for (i=0; i < num_backends; i++) {
+	for (i=0; i < gensec_num_backends; i++) {
 		if (generic_security_ops[i]->sasl_name 
 		    && (strcmp(generic_security_ops[i]->sasl_name, sasl_name) == 0)) {
 			return generic_security_ops[i];
@@ -68,7 +68,7 @@ static const struct gensec_security_ops *gensec_security_by_sasl_name(const char
 static const struct gensec_security_ops *gensec_security_by_name(const char *name)
 {
 	int i;
-	for (i=0; i < num_backends; i++) {
+	for (i=0; i < gensec_num_backends; i++) {
 		if (generic_security_ops[i]->name 
 		    && (strcmp(generic_security_ops[i]->name, name) == 0)) {
 			return generic_security_ops[i];
@@ -80,8 +80,38 @@ static const struct gensec_security_ops *gensec_security_by_name(const char *nam
 
 const struct gensec_security_ops **gensec_security_all(int *num_backends_out)
 {
-	*num_backends_out = num_backends;
+	*num_backends_out = gensec_num_backends;
 	return generic_security_ops;
+}
+
+const char **gensec_security_oids(TALLOC_CTX *mem_ctx, const char *skip) 
+{
+	int i, j = 0;
+	const char **oid_list;
+	int num_backends;
+	const struct gensec_security_ops **ops = gensec_security_all(&num_backends);
+	if (!ops) {
+		return NULL;
+	}
+	oid_list = talloc_array_p(mem_ctx, const char *, num_backends + 1);
+	if (!oid_list) {
+		return NULL;
+	}
+	
+	for (i=0; i<num_backends; i++) {
+		if (!ops[i]->oid) {
+			continue;
+		}
+		
+		if (skip && strcmp(skip, ops[i]->oid)==0) {
+			continue;
+		}
+
+		oid_list[j] = ops[i]->oid;
+		j++;
+	}
+	oid_list[j] = NULL;
+	return oid_list;
 }
 
 static NTSTATUS gensec_start(struct gensec_security **gensec_security) 
@@ -643,14 +673,14 @@ static NTSTATUS gensec_register(const void *_ops)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	generic_security_ops = Realloc(generic_security_ops, sizeof(generic_security_ops[0]) * (num_backends+1));
+	generic_security_ops = Realloc(generic_security_ops, sizeof(generic_security_ops[0]) * (gensec_num_backends+1));
 	if (!generic_security_ops) {
 		smb_panic("out of memory in gensec_register");
 	}
 
-	generic_security_ops[num_backends] = ops;
+	generic_security_ops[gensec_num_backends] = ops;
 
-	num_backends++;
+	gensec_num_backends++;
 
 	DEBUG(3,("GENSEC backend '%s' registered\n", 
 		 ops->name));
