@@ -1636,7 +1636,7 @@ struct passgrp_ops *unix_initialise_password_grp(void);
 
 int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
-void add_a_form(nt_forms_struct **list, FORM form, int count);
+void add_a_form(nt_forms_struct **list, FORM form, int *count);
 void update_a_form(nt_forms_struct **list, FORM form, int count);
 int get_ntdrivers(connection_struct *conn, fstring **list, char *architecture);
 void get_short_archi(char *short_archi, char *long_archi);

@@ -126,7 +126,7 @@ int write_ntforms(nt_forms_struct **list, int number)
 /****************************************************************************
 add a form struct at the end of the list
 ****************************************************************************/
-void add_a_form(nt_forms_struct **list, FORM form, int count)
+void add_a_form(nt_forms_struct **list, FORM form, int *count)
 {
 	int n=0;
 	BOOL update;
@@ -141,7 +141,7 @@ void add_a_form(nt_forms_struct **list, FORM form, int count)
 	update=False;
 	
 	unistr2_to_ascii(form_name, &(form.name), sizeof(form_name)-1);
-	for (n=0; n<count && update==False; n++)
+	for (n=0; n<*count && update==False; n++)
 	{
 		if (!strncmp((*list)[n].name, form_name, strlen(form_name)))
 		{
@@ -154,6 +154,7 @@ void add_a_form(nt_forms_struct **list, FORM form, int count)
 	{
 		*list=Realloc(*list, (n+1)*sizeof(nt_forms_struct));
 		unistr2_to_ascii((*list)[n].name, &(form.name), sizeof((*list)[n].name)-1);
+		(*count)++;
 	}
 	
 	(*list)[n].flag=form.flags;
@@ -163,7 +164,6 @@ void add_a_form(nt_forms_struct **list, FORM form, int count)
 	(*list)[n].top=form.top;
 	(*list)[n].right=form.right;
 	(*list)[n].bottom=form.bottom;
-
 }
 
 /****************************************************************************
