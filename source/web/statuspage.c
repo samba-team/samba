@@ -21,7 +21,78 @@
 
 #include "includes.h"
 
+#define PIDMAP		struct PidMap
+
+PIDMAP {
+	PIDMAP	*next, *prev;
+	pid_t	pid;
+	char	*machine;
+};
+
+static PIDMAP	*pidmap;
+static int	PID_or_Machine;		/* 0 = show PID, else show Machine name */
+
 static pid_t smbd_pid;
+
+/* from 2nd call on, remove old list */
+static void initPid2Machine (void)
+{
+	/* show machine name rather PID on table "Open Files"? */
+	if (PID_or_Machine) {
+		PIDMAP *p, *q;
+
+		for (p = pidmap; p != NULL; ) {
+			DLIST_REMOVE(pidmap, p);
+			SAFE_FREE(p->machine);
+			SAFE_FREE(p);
+		}
+
+		pidmap = NULL;
+	}
+}
+
+/* add new PID <-> Machine name mapping */
+static void addPid2Machine (pid_t pid, char *machine)
+{
+	/* show machine name rather PID on table "Open Files"? */
+	if (PID_or_Machine) {
+		PIDMAP *newmap;
+
+		if ((newmap = (PIDMAP *) malloc (sizeof (PIDMAP))) == NULL) {
+			/* XXX need error message for this?
+			   if malloc fails, PID is always shown */
+			return;
+		}
+
+		newmap->pid = pid;
+		newmap->machine = strdup (machine);
+
+		DLIST_ADD(pidmap, newmap);
+	}
+}
+
+/* lookup PID <-> Machine name mapping */
+static char *mapPid2Machine (pid_t pid)
+{
+	static char pidbuf [64];
+	PIDMAP *map;
+
+	/* show machine name rather PID on table "Open Files"? */
+	if (PID_or_Machine) {
+		for (map = pidmap; map != NULL; map = map->next) {
+			if (pid == map->pid) {
+				if (map->machine == NULL)	/* no machine name */
+					break;			/* show PID */
+
+				return map->machine;
+			}
+		}
+	}
+
+	/* PID not in list or machine name NULL? return pid as string */
+	snprintf (pidbuf, sizeof (pidbuf) - 1, "%d", pid);
+	return pidbuf;
+}
 
 static char *tstring(time_t t)
 {
@@ -33,7 +104,7 @@ static char *tstring(time_t t)
 
 static void print_share_mode(share_mode_entry *e, char *fname)
 {
-	printf("<tr><td>%d</td>",(int)e->pid);
+	printf("<tr><td>%s</td>", mapPid2Machine (e->pid));
 	printf("<td>");
 	switch ((e->share_mode>>4)&0xF) {
 	case DENY_NONE: printf("DENY_NONE"); break;
@@ -104,6 +175,8 @@ static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 	
 	if (crec.cnum != -1 || !process_exists(crec.pid) || (crec.pid == smbd_pid))
 		return 0;
+
+	addPid2Machine (crec.pid, crec.machine);
 
 	printf("<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td>\n",
 	       (int)crec.pid,
@@ -187,8 +260,14 @@ void status_page(void)
 		refresh_interval = atoi(v);
 	}
 
+	if (cgi_variable("show_client_in_col_1")) {
+		PID_or_Machine = 1;
+	}
+
 	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (tdb) tdb_traverse(tdb, traverse_fn1, NULL);
+
+	initPid2Machine ();
 
 	printf("<H2>Server Status</H2>\n");
 
@@ -268,7 +347,7 @@ void status_page(void)
 
 	printf("<h3>Open Files</h3>\n");
 	printf("<table border=1>\n");
-	printf("<tr><th>PID</th><th>Sharing</th><th>R/W</th><th>Oplock</th><th>File</th><th>Date</th></tr>\n");
+	printf("<tr><th>%s</th><th>Sharing</th><th>R/W</th><th>Oplock</th><th>File</th><th>Date</th></tr>\n", PID_or_Machine ? "Client" : "PID");
 
 	locking_init(1);
 	share_mode_forall(print_share_mode);
@@ -276,6 +355,9 @@ void status_page(void)
 	printf("</table>\n");
 
 	if (tdb) tdb_close(tdb);
+
+	printf("<br><input type=submit name=\"show_client_in_col_1\" value=\"Show Client in col 1\">\n");
+	printf("<input type=submit name=\"show_pid_in_col_1\" value=\"Show PID in col 1\">\n");
 
 	printf("</FORM>\n");
 
