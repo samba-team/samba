@@ -112,7 +112,8 @@ add_one_principal (const char *name,
     if(use_defaults) 
 	set_defaults(&princ, &mask, default_ent, default_mask);
     else
-	edit_entry(&princ, &mask, default_ent, default_mask);
+	if(edit_entry(&princ, &mask, default_ent, default_mask))
+	    goto out;
     if(rand_key || key_data) {
 	princ.attributes |= KRB5_KDB_DISALLOW_ALL_TIX;
 	mask |= KADM5_ATTRIBUTES;
