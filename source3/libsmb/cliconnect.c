@@ -258,6 +258,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	fstring pword, ntpword;
 	char *p;
+	BOOL tried_signing = False;
 
 	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1) {
 		return False;
@@ -269,13 +270,13 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 		ntpasslen = 24;
 		SMBencrypt((uchar *)pass,cli->secblob.data,(uchar *)pword);
 		SMBNTencrypt((uchar *)pass,cli->secblob.data,(uchar *)ntpword);
+		if (!cli->sign_info.use_smb_signing && cli->sign_info.negotiated_smb_signing) {
+			cli_calculate_mac_key(cli, (uchar *)pass, (uchar *)ntpword);
+			tried_signing = True;
+		}
 	} else {
 		memcpy(pword, pass, passlen);
 		memcpy(ntpword, ntpass, ntpasslen);
-	}
-
-	if (cli->sign_info.negotiated_smb_signing) {
-		cli_calculate_mac_key(cli, (uchar *)pass, (uchar *)ntpword);
 	}
 
 	/* send a session setup command */
@@ -308,7 +309,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 
 	show_msg(cli->inbuf);
 
-	if (cli_is_error(cli) || SVAL(cli->inbuf,smb_vwv2) /* guest */) {
+	if (tried_signing && (cli_is_error(cli) || SVAL(cli->inbuf,smb_vwv2) /* guest */)) {
 		/* We only use it if we have a successful non-guest connect */
 		cli->sign_info.use_smb_signing = False;
 	}

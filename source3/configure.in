@@ -1986,6 +1986,16 @@ AC_CHECK_LIB(lber, ber_scanf, [LIBS="$LIBS -llber"])
 if test x$have_ldap != xyes; then
 AC_CHECK_LIB(ldap, ldap_domain2hostlist, [LIBS="$LIBS -lldap";
 	AC_DEFINE(HAVE_LDAP)])
+
+	########################################################
+	# If we have LDAP, does it's rebind procedure take 2 or 3 arguments?
+	# Check found in pam_ldap 145.
+	AC_CHECK_FUNCS(ldap_set_rebind_proc)
+	AC_CACHE_CHECK(whether ldap_set_rebind_proc takes 3 arguments, pam_ldap_cv_ldap_set_rebind_proc, [
+	AC_TRY_COMPILE([
+	#include <lber.h>
+	#include <ldap.h>], [ldap_set_rebind_proc(0, 0, 0);], [pam_ldap_cv_ldap_set_rebind_proc=3], [pam_ldap_cv_ldap_set_rebind_proc=2]) ])
+	AC_DEFINE_UNQUOTED(LDAP_SET_REBIND_PROC_ARGS, $pam_ldap_cv_ldap_set_rebind_proc)
 fi
 
 #################################################
