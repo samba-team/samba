@@ -2091,6 +2091,49 @@ static void run_oplock2(int dummy)
 	printf("finished oplock test 2\n");
 }
 
+/* handler for oplock 3 tests */
+static BOOL oplock3_handler(struct cli_state *cli, int fnum, unsigned char level)
+{
+	printf("got oplock break fnum=%d level=%d\n",
+	       fnum, level);
+	return cli_oplock_ack(cli, fnum, level);
+}
+
+static void run_oplock3(int dummy)
+{
+	static struct cli_state cli;
+	char *fname = "\\oplockt3.dat";
+	int fnum;
+	char buf[4] = "abcd";
+
+	printf("starting oplock test 3\n");
+
+	if (fork() == 0) {
+		/* Child code */
+		if (!open_connection(&cli)) return;
+		sleep(2);
+		/* try to trigger a oplock break in parent */
+		fnum = cli_open(&cli, fname, O_RDWR, DENY_NONE);
+		cli_write(&cli, fnum, 0, buf, 0, 4);
+		exit(0);
+	}
+
+	/* parent code */
+	use_oplocks = True;
+	use_level_II_oplocks = True;
+	if (!open_connection(&cli)) return;
+	cli_oplock_handler(&cli, oplock3_handler);
+	fnum = cli_open(&cli, fname, O_RDWR|O_CREAT, DENY_NONE);
+	cli_write(&cli, fnum, 0, buf, 0, 4);
+	cli_close(&cli, fnum);
+	fnum = cli_open(&cli, fname, O_RDWR, DENY_NONE);
+	cli.timeout = 20000;
+	cli_receive_smb(&cli);
+	printf("finished oplock test 3\n");
+}
+
+
+
 /*
   Test delete on close semantics.
  */
@@ -2764,6 +2807,7 @@ static struct {
 	{"NBWNT",  run_nbwnt, 0},
 	{"OPLOCK1",  run_oplock1, 0},
 	{"OPLOCK2",  run_oplock2, 0},
+	{"OPLOCK3",  run_oplock3, 0},
 	{"DIR",  run_dirtest, 0},
 	{"DENY1",  run_denytest1, 0},
 	{"DENY2",  run_denytest2, 0},
@@ -2790,8 +2834,8 @@ static void run_test(char *name)
 	}
 	
 	for (i=0;torture_ops[i].name;i++) {
-		fstrcpy(randomfname, "\\XXXXXXX");
-		mktemp(randomfname);
+		snprintf(randomfname, sizeof(randomfname), "\\XX%x", 
+			 (unsigned)random());
 
 		if (strequal(name, torture_ops[i].name)) {
 			start_timer();

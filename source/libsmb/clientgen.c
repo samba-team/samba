@@ -25,7 +25,6 @@
 
 
 extern int DEBUGLEVEL;
-static void cli_process_oplock(struct cli_state *cli);
 
 /*
  * Change the port number used to call on 
@@ -53,7 +52,11 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		    CVAL(cli->inbuf,smb_com) == SMBlockingX &&
 		    SVAL(cli->inbuf,smb_vwv6) == 0 &&
 		    SVAL(cli->inbuf,smb_vwv7) == 0) {
-			if (cli->use_oplocks) cli_process_oplock(cli);
+			if (cli->oplock_handler) {
+				int fnum = SVAL(cli->inbuf,smb_vwv2);
+				unsigned char level = CVAL(cli->inbuf,smb_vwv3+1);
+				if (!cli->oplock_handler(cli, fnum, level)) return False;
+			}
 			/* try to prevent loops */
 			CVAL(cli->inbuf,smb_com) = 0xFF;
 			goto again;
@@ -125,51 +128,6 @@ void cli_setup_bcc(struct cli_state *cli, void *p)
 }
 
 
-/****************************************************************************
-process an oplock break request from the server
-****************************************************************************/
-static void cli_process_oplock(struct cli_state *cli)
-{
-	char *oldbuf = cli->outbuf;
-	pstring buf;
-	int fnum;
-	unsigned char level;
-
-	fnum = SVAL(cli->inbuf,smb_vwv2);
-	level = CVAL(cli->inbuf,smb_vwv3+1);
-
-	/* damn, we really need to keep a record of open files so we
-	   can detect a oplock break and a close crossing on the
-	   wire. for now this swallows the errors */
-	if (fnum == 0) return;
-
-	/* Ignore level II break to none's. */
-	if (level == OPLOCKLEVEL_NONE)
-		return;
-
-	cli->outbuf = buf;
-
-        memset(buf,'\0',smb_size);
-        set_message(buf,8,0,True);
-
-        CVAL(buf,smb_com) = SMBlockingX;
-	SSVAL(buf,smb_tid, cli->cnum);
-        cli_setup_packet(cli);
-	SSVAL(buf,smb_vwv0,0xFF);
-	SSVAL(buf,smb_vwv1,0);
-	SSVAL(buf,smb_vwv2,fnum);
-	if (cli->use_level_II_oplocks)
-		SSVAL(buf,smb_vwv3,0x102); /* levelII oplock break ack */
-	else
-		SSVAL(buf,smb_vwv3,2); /* exclusive oplock break ack */
-	SIVAL(buf,smb_vwv4,0); /* timoeut */
-	SSVAL(buf,smb_vwv6,0); /* unlockcount */
-	SSVAL(buf,smb_vwv7,0); /* lockcount */
-
-        cli_send_smb(cli);	
-
-	cli->outbuf = oldbuf;
-}
 
 /****************************************************************************
 initialise a client structure
@@ -219,6 +177,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->max_xmit = cli->bufsize;
 	cli->outbuf = (char *)malloc(cli->bufsize);
 	cli->inbuf = (char *)malloc(cli->bufsize);
+	cli->oplock_handler = cli_oplock_ack;
+
 	if (!cli->outbuf || !cli->inbuf)
 	{
 		return NULL;
