@@ -40,6 +40,7 @@ static BOOL analyze;
 #define RANGE_MULTIPLE 32
 #define NCONNECTIONS 2
 #define NFILES 2
+#define LOCK_TIMEOUT 0
 
 struct record {
 	char r1, r2;
@@ -218,10 +219,10 @@ static BOOL test_one(struct cli_state *cli[2][2],
 		/* set a lock */
 		ret1 = cli_lock(cli[0][conn], 
 				fnum[0][conn][f],
-				start, len, 0, op);
+				start, len, LOCK_TIMEOUT, op);
 		ret2 = cli_lock(cli[1][conn], 
 				fnum[1][conn][f],
-				start, len, 0, op);
+				start, len, LOCK_TIMEOUT, op);
 		if (showall || ret1 != ret2) {
 			printf("lock   conn=%d f=%d range=%d:%d op=%s -> %d:%d\n",
 			       conn, f, start, len, op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
