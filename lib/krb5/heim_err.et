@@ -10,5 +10,6 @@ error_table heim
 prefix HEIM_ERR
 
 error_code LOG_PARSE,		"Error parsing log destination"
+error_code V4_PRINC_NO_CONV,	"Failed to convert v4 principal"
 
 end
