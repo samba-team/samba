@@ -450,26 +450,14 @@ void check_log_size( void )
  * This is called by dbghdr() and format_debug_text().
  * ************************************************************************** **
  */
-#ifdef HAVE_STDARG_H
  int Debug1( char *format_str, ... )
 {
-#else
- int Debug1(va_alist)
-va_dcl
-{  
-  char *format_str;
-#endif
   va_list ap;  
   int old_errno = errno;
 
   if( stdout_logging )
     {
-#ifdef HAVE_STDARG_H
     va_start( ap, format_str );
-#else
-    va_start( ap );
-    format_str = va_arg( ap, char * );
-#endif
     if(dbf)
       (void)vfprintf( dbf, format_str, ap );
     va_end( ap );
@@ -524,12 +512,7 @@ va_dcl
     else
       priority = priority_map[syslog_level];
       
-#ifdef HAVE_STDARG_H
     va_start( ap, format_str );
-#else
-    va_start( ap );
-    format_str = va_arg( ap, char * );
-#endif
     vslprintf( msgbuf, sizeof(msgbuf)-1, format_str, ap );
     va_end( ap );
       
@@ -544,12 +527,7 @@ va_dcl
   if( !lp_syslog_only() )
 #endif
     {
-#ifdef HAVE_STDARG_H
     va_start( ap, format_str );
-#else
-    va_start( ap );
-    format_str = va_arg( ap, char * );
-#endif
     if(dbf)
       (void)vfprintf( dbf, format_str, ap );
     va_end( ap );
@@ -740,7 +718,6 @@ BOOL dbghdr( int level, char *file, char *func, int line )
  *
  * ************************************************************************** **
  */
-#ifdef HAVE_STDARG_H
  BOOL dbgtext( char *format_str, ... )
   {
   va_list ap;
@@ -755,24 +732,5 @@ BOOL dbghdr( int level, char *file, char *func, int line )
   return( True );
   } /* dbgtext */
 
-#else
- BOOL dbgtext( va_alist )
- va_dcl
-  {
-  char *format_str;
-  va_list ap;
-  pstring msgbuf;
-
-  va_start( ap );
-  format_str = va_arg( ap, char * );
-  vslprintf( msgbuf, sizeof(msgbuf)-1, format_str, ap );
-  va_end( ap );
-
-  format_debug_text( msgbuf );
-
-  return( True );
-  } /* dbgtext */
-
-#endif
 
 /* ************************************************************************** */

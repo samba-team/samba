@@ -4502,6 +4502,7 @@ int tdb_clear_spinlocks(TDB_CONTEXT *tdb);
 /*The following definitions come from  tdb/tdb.c  */
 
 void tdb_printfreelist(TDB_CONTEXT *tdb);
+enum TDB_ERROR tdb_error(TDB_CONTEXT *tdb);
 const char *tdb_errorstr(TDB_CONTEXT *tdb);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);

@@ -221,27 +221,15 @@ static BOOL init_package(struct pack_desc* p, int count, int subcount)
   return(p->errcode == NERR_Success);
 }
 
-#ifdef HAVE_STDARG_H
 static int package(struct pack_desc* p, ...)
 {
-#else
-static int package(va_alist)
-va_dcl
-{
-  struct pack_desc* p;
-#endif
   va_list args;
   int needed=0, stringneeded;
   char* str=NULL;
   int is_string=0, stringused;
   int32 temp;
 
-#ifdef HAVE_STDARG_H
   va_start(args,p);
-#else
-  va_start(args);
-  p = va_arg(args,struct pack_desc *);
-#endif
 
   if (!*p->curpos) {
     if (!p->subcount)

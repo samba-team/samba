@@ -1222,26 +1222,6 @@ struct bitmap {
 #define ERRHRD 0x03  /* Error is an hardware error. */
 #define ERRCMD 0xFF  /* Command was not in the "SMB" format. */
 
-#ifdef HAVE_STDARG_H
-int slprintf(char *str, int n, char *format, ...)
-#ifdef __GNUC__
-     __attribute__ ((format (__printf__, 3, 4)))
-#endif
-;
-#else
-int slprintf();
-#endif
-
-#ifdef HAVE_STDARG_H
-int fdprintf(int fd, char *format, ...)
-#ifdef __GNUC__
-     __attribute__ ((format (__printf__, 2, 3)))
-#endif
-;
-#else
-int fdprintf();
-#endif
-
 #ifdef WITH_DFS
 void dfs_unlogin(void);
 extern int dcelogin_atmost_once;

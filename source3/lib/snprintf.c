@@ -735,6 +735,22 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 
 #endif 
 
+#ifndef HAVE_VASPRINTF
+ int vasprintf(char **ptr, const char *format, va_list ap)
+{
+	int ret;
+	
+	ret = vsnprintf(NULL, 0, format, ap);
+	if (ret <= 0) return ret;
+
+	(*ptr) = (char *)malloc(ret+1);
+	if (!*ptr) return -1;
+	ret = vsnprintf(*ptr, ret+1, format, ap);
+
+	return ret;
+}
+#endif
+
 
 #ifndef HAVE_ASPRINTF
  int asprintf(char **ptr, const char *format, ...)
@@ -743,15 +759,7 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 	int ret;
 	
 	va_start(ap, format);
-	ret = vsnprintf(NULL, 0, format, ap);
-	va_end(ap);
-
-	if (ret <= 0) return ret;
-	
-	va_start(ap, format);
-	(*ptr) = (char *)malloc(ret+1);
-	if (!*ptr) return -1;
-	ret = vsnprintf(*ptr, ret+1, format, ap);
+	ret = vasprintf(ptr, format, ap);
 	va_end(ap);
 
 	return ret;
