@@ -260,6 +260,7 @@ typedef fstring string;
 #define PIPE_SRVSVC   "\\PIPE\\srvsvc"
 #define PIPE_NETLOGON "\\PIPE\\NETLOGON"
 #define PIPE_NTLSA    "\\PIPE\\ntlsa"
+#define PIPE_LSASS    "\\PIPE\\lsass"
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
 
 /* NETLOGON opcodes and data structures */

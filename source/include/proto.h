@@ -1251,6 +1251,7 @@ enum remote_arch_types get_remote_arch();
 char *skip_unicode_string(char *buf,int n);
 char *unistrn2(uint16 *buf, int len);
 char *unistr2(uint16 *buf);
+int struni2(uint16 *p, char *buf);
 char *unistr(char *buf);
 int unistrncpy(char *dst, char *src, int len);
 int unistrcpy(char *dst, char *src);
