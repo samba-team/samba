@@ -871,12 +871,9 @@ krb5_verify(struct passwd *pwd, char *passwd)
                          1,
                          NULL);
   krb5_free_principal(context, princ);
-#ifdef KRB4
   if (k_hasafs()) {
-      k_setpag();
       krb5_afslog_uid_home(context, id,NULL, NULL,pwd->pw_uid, pwd->pw_dir);
   }
-#endif /* KRB4 */
   krb5_cc_destroy(context, id);
   krb5_free_context (context);
   if(ret) 
