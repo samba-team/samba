@@ -127,6 +127,8 @@ krb5_parse_name(krb5_context context,
 	memmove(realm.data, start, realm.length);
 #endif
     }else{
+	krb5_get_default_realm (context, &realm);
+
 #ifdef USE_ASN1_PRINCIPAL
 	comp[n] = malloc(q - start + 1);
 	strncpy(comp[n], start, q - start);
