@@ -25,18 +25,19 @@
 
 
 /****************************************************************************
-  send a SMB trans or trans2 request
-  ****************************************************************************/
+ Send a SMB trans or trans2 request.
+****************************************************************************/
+
 BOOL cli_send_trans(struct cli_state *cli, int trans, 
 		    const char *pipe_name, 
 		    int fid, int flags,
-		    uint16 *setup, int lsetup, int msetup,
-		    char *param, int lparam, int mparam,
-		    char *data, int ldata, int mdata)
+		    uint16 *setup, unsigned int lsetup, unsigned int msetup,
+		    char *param, unsigned int lparam, unsigned int mparam,
+		    char *data, unsigned int ldata, unsigned int mdata)
 {
 	int i;
-	int this_ldata,this_lparam;
-	int tot_data=0,tot_param=0;
+	unsigned int this_ldata,this_lparam;
+	unsigned int tot_data=0,tot_param=0;
 	char *outdata,*outparam;
 	char *p;
 	int pipe_name_len=0;
@@ -84,14 +85,13 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	cli_setup_bcc(cli, outdata+this_ldata);
 
 	show_msg(cli->outbuf);
-	cli_send_smb(cli);
+	if (!cli_send_smb(cli))
+		return False;
 
 	if (this_ldata < ldata || this_lparam < lparam) {
 		/* receive interim response */
-		if (!cli_receive_smb(cli) || 
-		    cli_is_error(cli)) {
+		if (!cli_receive_smb(cli) || cli_is_error(cli))
 			return(False);
-		}      
 
 		tot_data = this_ldata;
 		tot_param = this_lparam;
@@ -124,7 +124,8 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 			cli_setup_bcc(cli, outdata+this_ldata);
 			
 			show_msg(cli->outbuf);
-			cli_send_smb(cli);
+			if (!cli_send_smb(cli))
+				return False;
 			
 			tot_data += this_ldata;
 			tot_param += this_lparam;
@@ -134,17 +135,17 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	return(True);
 }
 
-
 /****************************************************************************
-  receive a SMB trans or trans2 response allocating the necessary memory
-  ****************************************************************************/
+ Receive a SMB trans or trans2 response allocating the necessary memory.
+****************************************************************************/
+
 BOOL cli_receive_trans(struct cli_state *cli,int trans,
-                              char **param, int *param_len,
-                              char **data, int *data_len)
+                              char **param, unsigned int *param_len,
+                              char **data, unsigned int *data_len)
 {
-	int total_data=0;
-	int total_param=0;
-	int this_data,this_param;
+	unsigned int total_data=0;
+	unsigned int total_param=0;
+	unsigned int this_data,this_param;
 	NTSTATUS status;
 	char *tdata;
 	char *tparam;
@@ -171,9 +172,8 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	 */
 	status = cli_nt_error(cli);
 	
-	if (NT_STATUS_IS_ERR(status)) {
+	if (NT_STATUS_IS_ERR(status))
 		return False;
-	}
 
 	/* parse out the lengths */
 	total_data = SVAL(cli->inbuf,smb_tdrcnt);
@@ -200,7 +200,7 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 			*param = tparam;
 	}
 
-	while (1)  {
+	for (;;)  {
 		this_data = SVAL(cli->inbuf,smb_drcnt);
 		this_param = SVAL(cli->inbuf,smb_prcnt);
 
@@ -210,21 +210,59 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 			return False;
 		}
 
-		if (this_data)
-			memcpy(*data + SVAL(cli->inbuf,smb_drdisp),
-			       smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_droff),
-			       this_data);
-		if (this_param)
-			memcpy(*param + SVAL(cli->inbuf,smb_prdisp),
-			       smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_proff),
-			       this_param);
+		if (this_data + *data_len < this_data ||
+				this_data + *data_len < *data_len ||
+				this_param + *param_len < this_param ||
+				this_param + *param_len < *param_len) {
+			DEBUG(1,("Data overflow in cli_receive_trans\n"));
+			return False;
+		}
+
+		if (this_data) {
+			unsigned int data_offset_out = SVAL(cli->inbuf,smb_drdisp);
+			unsigned int data_offset_in = SVAL(cli->inbuf,smb_droff);
+
+			if (data_offset_out > total_data ||
+					data_offset_out + this_data > total_data ||
+					data_offset_out + this_data < data_offset_out ||
+					data_offset_out + this_data < this_data) {
+				DEBUG(1,("Data overflow in cli_receive_trans\n"));
+				return False;
+			}
+			if (data_offset_in > cli->bufsize ||
+					data_offset_in + this_data >  cli->bufsize ||
+					data_offset_in + this_data < data_offset_in ||
+					data_offset_in + this_data < this_data) {
+				DEBUG(1,("Data overflow in cli_receive_trans\n"));
+				return False;
+			}
+
+			memcpy(*data + data_offset_out, smb_base(cli->inbuf) + data_offset_in, this_data);
+		}
+		if (this_param) {
+			unsigned int param_offset_out = SVAL(cli->inbuf,smb_prdisp);
+			unsigned int param_offset_in = SVAL(cli->inbuf,smb_proff);
+
+			if (param_offset_out > total_param ||
+					param_offset_out + this_param > total_param ||
+					param_offset_out + this_param < param_offset_out ||
+					param_offset_out + this_param < this_param) {
+				DEBUG(1,("Param overflow in cli_receive_trans\n"));
+				return False;
+			}
+			if (param_offset_in > cli->bufsize ||
+					param_offset_in + this_param >  cli->bufsize ||
+					param_offset_in + this_param < param_offset_in ||
+					param_offset_in + this_param < this_param) {
+				DEBUG(1,("Param overflow in cli_receive_trans\n"));
+				return False;
+			}
+
+			memcpy(*param + param_offset_out, smb_base(cli->inbuf) + param_offset_in, this_param);
+		}
 		*data_len += this_data;
 		*param_len += this_param;
 
-		/* parse out the total lengths again - they can shrink! */
-		total_data = SVAL(cli->inbuf,smb_tdrcnt);
-		total_param = SVAL(cli->inbuf,smb_tprcnt);
-		
 		if (total_data <= *data_len && total_param <= *param_len)
 			break;
 		
@@ -243,27 +281,35 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 		if (NT_STATUS_IS_ERR(cli_nt_error(cli))) {
 			return(False);
 		}
+
+		/* parse out the total lengths again - they can shrink! */
+		if (SVAL(cli->inbuf,smb_tdrcnt) < total_data)
+			total_data = SVAL(cli->inbuf,smb_tdrcnt);
+		if (SVAL(cli->inbuf,smb_tprcnt) < total_param)
+			total_param = SVAL(cli->inbuf,smb_tprcnt);
+		
+		if (total_data <= *data_len && total_param <= *param_len)
+			break;
+		
 	}
 	
 	return(True);
 }
 
-
-
-
 /****************************************************************************
-  send a SMB nttrans request
-  ****************************************************************************/
+ Send a SMB nttrans request.
+****************************************************************************/
+
 BOOL cli_send_nt_trans(struct cli_state *cli, 
 		       int function, 
 		       int flags,
-		       uint16 *setup, int lsetup, int msetup,
-		       char *param, int lparam, int mparam,
-		       char *data, int ldata, int mdata)
+		       uint16 *setup, unsigned int lsetup, unsigned int msetup,
+		       char *param, unsigned int lparam, unsigned int mparam,
+		       char *data, unsigned int ldata, unsigned int mdata)
 {
-	int i;
-	int this_ldata,this_lparam;
-	int tot_data=0,tot_param=0;
+	unsigned int i;
+	unsigned int this_ldata,this_lparam;
+	unsigned int tot_data=0,tot_param=0;
 	char *outdata,*outparam;
 
 	this_lparam = MIN(lparam,cli->max_xmit - (500+lsetup*2)); /* hack */
@@ -302,14 +348,13 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 	cli_setup_bcc(cli, outdata+this_ldata);
 
 	show_msg(cli->outbuf);
-	cli_send_smb(cli);
+	if (!cli_send_smb(cli))
+		return False;
 
 	if (this_ldata < ldata || this_lparam < lparam) {
 		/* receive interim response */
-		if (!cli_receive_smb(cli) || 
-		    cli_is_error(cli)) {
+		if (!cli_receive_smb(cli) || cli_is_error(cli))
 			return(False);
-		}      
 
 		tot_data = this_ldata;
 		tot_param = this_lparam;
@@ -341,7 +386,8 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 			cli_setup_bcc(cli, outdata+this_ldata);
 			
 			show_msg(cli->outbuf);
-			cli_send_smb(cli);
+			if (!cli_send_smb(cli))
+				return False;
 			
 			tot_data += this_ldata;
 			tot_param += this_lparam;
@@ -356,13 +402,14 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 /****************************************************************************
   receive a SMB nttrans response allocating the necessary memory
   ****************************************************************************/
+
 BOOL cli_receive_nt_trans(struct cli_state *cli,
-			  char **param, int *param_len,
-			  char **data, int *data_len)
+			  char **param, unsigned int *param_len,
+			  char **data, unsigned int *data_len)
 {
-	int total_data=0;
-	int total_param=0;
-	int this_data,this_param;
+	unsigned int total_data=0;
+	unsigned int total_param=0;
+	unsigned int this_data,this_param;
 	uint8 eclass;
 	uint32 ecode;
 	char *tdata;
@@ -424,25 +471,65 @@ BOOL cli_receive_nt_trans(struct cli_state *cli,
 
 		if (this_data + *data_len > total_data ||
 		    this_param + *param_len > total_param) {
-			DEBUG(1,("Data overflow in cli_receive_trans\n"));
+			DEBUG(1,("Data overflow in cli_receive_nt_trans\n"));
 			return False;
 		}
 
-		if (this_data)
-			memcpy(*data + SVAL(cli->inbuf,smb_ntr_DataDisplacement),
-			       smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_ntr_DataOffset),
-			       this_data);
-		if (this_param)
-			memcpy(*param + SVAL(cli->inbuf,smb_ntr_ParameterDisplacement),
-			       smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_ntr_ParameterOffset),
-			       this_param);
+		if (this_data + *data_len < this_data ||
+				this_data + *data_len < *data_len ||
+				this_param + *param_len < this_param ||
+				this_param + *param_len < *param_len) {
+			DEBUG(1,("Data overflow in cli_receive_nt_trans\n"));
+			return False;
+		}
+
+		if (this_data) {
+			unsigned int data_offset_out = SVAL(cli->inbuf,smb_ntr_DataDisplacement);
+			unsigned int data_offset_in = SVAL(cli->inbuf,smb_ntr_DataOffset);
+
+			if (data_offset_out > total_data ||
+					data_offset_out + this_data > total_data ||
+					data_offset_out + this_data < data_offset_out ||
+					data_offset_out + this_data < this_data) {
+				DEBUG(1,("Data overflow in cli_receive_nt_trans\n"));
+				return False;
+			}
+			if (data_offset_in > cli->bufsize ||
+					data_offset_in + this_data >  cli->bufsize ||
+					data_offset_in + this_data < data_offset_in ||
+					data_offset_in + this_data < this_data) {
+				DEBUG(1,("Data overflow in cli_receive_nt_trans\n"));
+				return False;
+			}
+
+			memcpy(*data + data_offset_out, smb_base(cli->inbuf) + data_offset_in, this_data);
+		}
+
+		if (this_param) {
+			unsigned int param_offset_out = SVAL(cli->inbuf,smb_ntr_ParameterDisplacement);
+			unsigned int param_offset_in = SVAL(cli->inbuf,smb_ntr_ParameterOffset);
+
+			if (param_offset_out > total_param ||
+					param_offset_out + this_param > total_param ||
+					param_offset_out + this_param < param_offset_out ||
+					param_offset_out + this_param < this_param) {
+				DEBUG(1,("Param overflow in cli_receive_nt_trans\n"));
+				return False;
+			}
+			if (param_offset_in > cli->bufsize ||
+					param_offset_in + this_param >  cli->bufsize ||
+					param_offset_in + this_param < param_offset_in ||
+					param_offset_in + this_param < this_param) {
+				DEBUG(1,("Param overflow in cli_receive_nt_trans\n"));
+				return False;
+			}
+
+			memcpy(*param + param_offset_out, smb_base(cli->inbuf) + param_offset_in, this_param);
+		}
+
 		*data_len += this_data;
 		*param_len += this_param;
 
-		/* parse out the total lengths again - they can shrink! */
-		total_data = SVAL(cli->inbuf,smb_ntr_TotalDataCount);
-		total_param = SVAL(cli->inbuf,smb_ntr_TotalParameterCount);
-		
 		if (total_data <= *data_len && total_param <= *param_len)
 			break;
 		
@@ -463,6 +550,14 @@ BOOL cli_receive_nt_trans(struct cli_state *cli,
                            !(eclass == ERRDOS && ecode == ERRmoredata))
 				return(False);
 		}
+		/* parse out the total lengths again - they can shrink! */
+		if (SVAL(cli->inbuf,smb_ntr_TotalDataCount) < total_data)
+			total_data = SVAL(cli->inbuf,smb_ntr_TotalDataCount);
+		if (SVAL(cli->inbuf,smb_ntr_TotalParameterCount) < total_param)
+			total_param = SVAL(cli->inbuf,smb_ntr_TotalParameterCount);
+		
+		if (total_data <= *data_len && total_param <= *param_len)
+			break;
 	}
 	
 	return(True);
