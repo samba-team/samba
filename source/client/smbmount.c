@@ -40,7 +40,11 @@ static struct smb_conn_opt conn_options;
 #endif
 
 /* Uncomment this to allow debug the smbmount daemon */
-#define SMBFS_DEBUG 1
+/* WARNING!  This option is incompatible with autofs/automount because
+	it does not close the stdout pipe back to the automount
+	process, which automount depends on.  This will cause automount
+	to hang!  Use with caution! */
+/* #define SMBFS_DEBUG 1	*/
 
 pstring cur_dir = "\\";
 pstring cd_path = "";
