@@ -2042,7 +2042,7 @@ BOOL svc_open_sc_man(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *hnd);
 BOOL svc_open_service(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *scm_hnd,
-				char *srv_name,
+				const char *srv_name,
 				uint32 des_access,
 				POLICY_HND *hnd);
 BOOL svc_enum_svcs(struct cli_state *cli, uint16 fnum, 
@@ -3049,7 +3049,7 @@ BOOL make_svc_r_open_sc_man(SVC_R_OPEN_SC_MAN *r_u, POLICY_HND *hnd,
 BOOL svc_io_r_open_sc_man(char *desc,  SVC_R_OPEN_SC_MAN *r_u, prs_struct *ps, int depth);
 BOOL make_svc_q_open_service(SVC_Q_OPEN_SERVICE *q_u,
 				POLICY_HND *hnd,
-				char *server,
+				const char *server,
 				uint32 des_access)  ;
 BOOL svc_io_q_open_service(char *desc, SVC_Q_OPEN_SERVICE *q_u, prs_struct *ps, int depth);
 BOOL make_svc_r_open_service(SVC_R_OPEN_SERVICE *r_u, POLICY_HND *hnd,
@@ -3303,6 +3303,17 @@ void cmd_time(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_svcctl.c  */
 
+void svc_display_query_svc_cfg(QUERY_SERVICE_CONFIG *cfg);
+BOOL svc_query_service(struct cli_state *cli, uint16 fnum,
+				POLICY_HND *pol_scm,
+				const char *svc_name,
+				SVC_QUERY_FN(svc_query_fn));
+void cmd_svc_info(struct client_info *info);
+BOOL msrpc_svc_enum(struct client_info *info,
+				ENUM_SRVC_STATUS **svcs,
+				uint32 *num_svcs,
+				SVC_INFO_FN(info_fn),
+				SVC_QUERY_FN(query_fn));
 void cmd_svc_enum(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_wkssvc.c  */

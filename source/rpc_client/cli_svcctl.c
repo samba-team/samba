@@ -96,7 +96,7 @@ do a SVC Open Service
 ****************************************************************************/
 BOOL svc_open_service(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *scm_hnd,
-				char *srv_name,
+				const char *srv_name,
 				uint32 des_access,
 				POLICY_HND *hnd)
 {

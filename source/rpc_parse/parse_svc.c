@@ -108,7 +108,7 @@ BOOL svc_io_r_open_sc_man(char *desc,  SVC_R_OPEN_SC_MAN *r_u, prs_struct *ps, i
  ********************************************************************/
 BOOL make_svc_q_open_service(SVC_Q_OPEN_SERVICE *q_u,
 				POLICY_HND *hnd,
-				char *server,
+				const char *server,
 				uint32 des_access)  
 {
 	DEBUG(5,("make_svc_q_open_service\n"));
@@ -209,6 +209,7 @@ BOOL svc_io_q_start_service(char *desc, SVC_Q_START_SERVICE *q_s, prs_struct *ps
 		for (i = 0; i < q_s->argc2; i++)
 		{
 			smb_io_unistr2("", &(q_s->argv[i]), 1, ps, depth); 
+			prs_align(ps);
 		}
 	}
 
@@ -396,6 +397,8 @@ BOOL svc_io_r_enum_svcs_status(char *desc, SVC_R_ENUM_SVCS_STATUS *svc, prs_stru
 		buf_offset = ps->offset;
 		ps->offset = buf_offset + svc->buf_size;
 
+		prs_align(ps);
+
 		prs_uint32("more_buf_size", ps, depth, &(svc->more_buf_size));
 		prs_uint32("num_svcs", ps, depth, &(svc->num_svcs));
 		smb_io_enum_hnd("resume_hnd", &(svc->resume_hnd), ps, depth); 
@@ -507,6 +510,8 @@ BOOL svc_io_r_enum_svcs_status(char *desc, SVC_R_ENUM_SVCS_STATUS *svc, prs_stru
 		prs_uint32_post("buf_size", ps, depth, &svc->buf_size, buf_offset, srvc_offset - buf_offset - sizeof(uint32));
 
 		ps->offset = srvc_offset;
+
+		prs_align(ps);
 
 		prs_uint32("more_buf_size", ps, depth, &(svc->more_buf_size));
 		prs_uint32("num_svcs", ps, depth, &(svc->num_svcs));
