@@ -31,7 +31,6 @@
 #define SPOOLSS_OPENPRINTER				0x01
 #define SPOOLSS_GETPRINTERDRIVER			0x0b
 #define SPOOLSS_DELETEPRINTERDRIVER			0x0d
-#define SPOOLSS_ADDPRINTPROCESSOR			0x0e
 #define SPOOLSS_GETPRINTPROCESSORDIRECTORY		0x10
 #define SPOOLSS_READPRINTER				0x16
 #define SPOOLSS_WAITFORPRINTERCHANGE			0x1c
@@ -73,6 +72,7 @@
 #define SPOOLSS_ADDPRINTERDRIVER			0x09
 #define SPOOLSS_ENUMPRINTERDRIVERS			0x0a
 #define SPOOLSS_GETPRINTERDRIVERDIRECTORY		0x0c
+#define SPOOLSS_ADDPRINTPROCESSOR			0x0e
 #define SPOOLSS_ENUMPRINTPROCESSORS			0x0f
 #define SPOOLSS_STARTDOCPRINTER				0x11
 #define SPOOLSS_STARTPAGEPRINTER			0x12
@@ -1563,6 +1563,23 @@ typedef struct spool_r_getprinterdriverdirectory
 	uint32 status;
 }
 SPOOL_R_GETPRINTERDRIVERDIR;
+
+typedef struct spool_q_addprintprocessor
+{
+	uint32 server_ptr;
+	UNISTR2 server;
+	UNISTR2 environment;
+	UNISTR2 path;
+	UNISTR2 name;
+}
+SPOOL_Q_ADDPRINTPROCESSOR;
+
+typedef struct spool_r_addprintprocessor
+{
+	uint32 status;
+}
+SPOOL_R_ADDPRINTPROCESSOR;
+
 
 typedef struct spool_q_enumprintprocessors
 {
