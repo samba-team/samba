@@ -755,10 +755,18 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			pstring pass;
 			BOOL unic=SVAL(inbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS;
 
+#if 0
+			/* This was the previous fix. Not sure if it's still valid. JRA. */
 			if ((ra_type == RA_WINNT) && (passlen2 == 0) && unic && passlen1) {
 				/* NT4.0 stuffs up plaintext unicode password lengths... */
 				srvstr_pull(inbuf, pass, smb_buf(inbuf) + 1,
 					sizeof(pass), passlen1, STR_TERMINATE);
+#endif
+
+			if (unic && (passlen2 == 0) && passlen1) {
+				/* Only a ascii plaintext password was sent. */
+				srvstr_pull(inbuf, pass, smb_buf(inbuf), sizeof(pass),
+					passlen1, STR_TERMINATE|STR_ASCII);
 			} else {
 				srvstr_pull(inbuf, pass, smb_buf(inbuf), 
 					sizeof(pass),  unic ? passlen2 : passlen1, 
