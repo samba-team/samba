@@ -644,6 +644,19 @@
 		samr_Name callback;
 	} samr_UserInfo20;
 
+	/* this defines the bits used for fields_present in info21 */
+	const int SAMR_FIELD_NAME         = 0x00000002;
+	const int SAMR_FIELD_DESCRIPTION  = 0x00000010;
+	const int SAMR_FIELD_COMMENT      = 0x00000020;
+	const int SAMR_FIELD_LOGON_SCRIPT = 0x00000100;
+	const int SAMR_FIELD_PROFILE      = 0x00000200;
+	const int SAMR_FIELD_WORKSTATION  = 0x00000400;
+	const int SAMR_FIELD_LOGON_HOURS  = 0x00002000;
+	const int SAMR_FIELD_CALLBACK     = 0x00200000;
+	const int SAMR_FIELD_COUNTRY_CODE = 0x00400000;
+	const int SAMR_FIELD_CODE_PAGE    = 0x00800000;
+	const int SAMR_FIELD_PASSWORD     = 0x03000000; /* 2 bits!? */
+
 	typedef struct {
 		NTTIME last_logon;
 		NTTIME last_logoff;
@@ -695,7 +708,7 @@
 		uint16 pw_len;
 	} samr_UserInfo24;
 
-	typedef struct {
+	typedef [flag(NDR_PAHEX)] struct {
 		uint8 data[532];
 	} samr_CryptPasswordEx;
 
@@ -986,7 +999,6 @@
 	/************************/
 	/* Function    0x32     */
 	NTSTATUS samr_CreateUser2(
-	/************************/
 		[in,ref]      policy_handle *handle,
 		[in,ref]      samr_Name *username,
 		[in]          uint32 acct_flags,
