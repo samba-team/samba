@@ -208,6 +208,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
+    Files[fnum].reserved = False;
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -224,6 +225,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
+    Files[fnum].reserved = False;
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
