@@ -331,6 +331,11 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 			sid_split_rid(&find_sid, &rid);
 		}
 
+		/* unistr routines take dos codepage strings */
+
+		unix_to_dos(dom_name, True);
+		unix_to_dos(name, True);
+
 		dom_idx = init_dom_ref(ref, dom_name, &find_sid);
 
 		DEBUG(10,("init_lsa_trans_names: added user '%s\\%s' to "
