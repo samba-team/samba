@@ -1919,14 +1919,38 @@ typedef struct spool_r_enumprinterkey
 }
 SPOOL_R_ENUMPRINTERKEY;
 
+typedef struct printer_enum_values
+{
+	UNISTR valuename;
+	uint32 value_len;
+	uint32 type;
+	uint8  *data;
+	uint32 data_len; 
+	
+}
+PRINTER_ENUM_VALUES;
+
+typedef struct printer_enum_values_ctr
+{
+	uint32 size;
+	uint32 size_of_array;
+	PRINTER_ENUM_VALUES *values;
+}
+PRINTER_ENUM_VALUES_CTR;
+
 typedef struct spool_q_enumprinterdataex
 {
-	WERROR status;
+	POLICY_HND handle;
+	UNISTR2 key;
+	uint32 size;
 }
 SPOOL_Q_ENUMPRINTERDATAEX;
 
 typedef struct spool_r_enumprinterdataex
 {
+	NEW_BUFFER buffer;
+	uint32 needed;
+	uint32 returned;
 	WERROR status;
 }
 SPOOL_R_ENUMPRINTERDATAEX;
@@ -1937,3 +1961,4 @@ SPOOL_R_ENUMPRINTERDATAEX;
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"
 
 #endif /* _RPC_SPOOLSS_H */
+
