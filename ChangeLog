@@ -1,3 +1,8 @@
+2001-07-13  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: remove make-print-version from LIBOBJS, it's no
+	longer in lib/roken but always built in lib/vers
+
 2001-07-12  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/hdb/mkey.c: more set_error_string
