@@ -122,8 +122,9 @@
  * ========================================================================== **
  */
 
+#include "../includes.h"
 #include "ubi_BinTree.h"            /* Header for this module          */
-#include <stdlib.h>                 /* Standard C definitions.         */
+
 
 /* ========================================================================== **
  * Static data.

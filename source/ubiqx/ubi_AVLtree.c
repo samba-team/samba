@@ -128,8 +128,8 @@
  *  ========================================================================= **
  */
 
+#include "../includes.h"
 #include "ubi_AVLtree.h"            /* Header for THIS module.             */
-#include <stdlib.h>                 /* Standard C definitions, etc.        */
 
 /* ========================================================================== **
  * Static data.
