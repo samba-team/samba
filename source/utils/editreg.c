@@ -91,10 +91,15 @@ multiple of 8. Nigel
 If the size field is negative (bit 31 set), the corresponding block
 is free and has a size of -blocksize!
 
-That does not seem to be true. All block lengths seem to be negative! (Richard Sharpe) 
+That does not seem to be true. All block lengths seem to be negative! 
+(Richard Sharpe) 
 
 The data is stored as one record per block. Block size is a multiple
 of 4 and the last block reaches the next hbin-block, leaving no room.
+
+(That also seems incorrect, in that the block size if a multiple of 8.
+That is, the block, including the 4 byte header, is always a multiple of
+8 bytes. Richard Sharpe.)
 
 Records in the hbin-blocks
 ==========================
@@ -1574,6 +1579,7 @@ int data_to_ascii(unsigned char *datap, int len, int type, char *ascii, int asci
   switch (type) {
   case REG_TYPE_REGSZ:
     if (verbose) fprintf(stderr, "Len: %d\n", len);
+    /* FIXME. This has to be fixed. It has to be UNICODE */ 
     return uni_to_ascii(datap, ascii, len, ascii_max);
     break;
 
@@ -2052,7 +2058,13 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
       char *dat_ptr = LOCN(regf->base, dat_off);
       bcopy(dat_ptr, dtmp, dat_len);
     }
-    else { /* The data is in the offset */
+    else { /* The data is in the offset or type */
+      /*
+       * FIXME.
+       * Some registry files seem to have wierd fields. If top bit is set,
+       * but len is 0, the type seems to be the value ...
+       * Not sure how to handle this last type for the moment ...
+       */
       dat_len = dat_len & 0x7FFFFFFF;
       bcopy(&dat_off, dtmp, dat_len);
     }
@@ -2430,19 +2442,95 @@ int nt_load_registry(REGF *regf)
 }
 
 /*
- * Allocate a new hbin block and link it to the others.
+ * Allocate a new hbin block, set up the header for the block etc 
  */
-int nt_create_hbin_blk(REGF *regf)
+HBIN_BLK *nt_create_hbin_blk(REGF *regf, int size)
 {
+  HBIN_BLK *tmp;
 
-  return 0;
+  if (!regf || !size) return NULL;
+
+  /* Round size up to multiple of REGF_HDR_BLKSIZ */
+
+  size = (size + (REGF_HDR_BLKSIZ - 1)) & ~(REGF_HDR_BLKSIZ - 1);
+
+  tmp = (HBIN_BLK *)malloc(sizeof(HBIN_BLK));
+  bzero(tmp, sizeof(HBIN_BLK));
+
+  tmp->data = malloc(size);
+  if (!tmp->data) goto error;
+
+  bzero(tmp->data, size);  /* Make it pristine */
+
+  tmp->size = size;
+  tmp->file_offset = regf->blk_tail->file_offset + regf->blk_tail->size;
+
+  tmp->free_space = size - (sizeof(HBIN_HDR) - sizeof(HBIN_SUB_HDR));
+  tmp->fsp_off = size - tmp->free_space;
+
+  /*
+   * Now link it in
+   */
+
+  regf->blk_tail->next = tmp;
+  regf->blk_tail = tmp;
+  if (!regf->free_space) regf->free_space = tmp;
+
+  return tmp;
+ error:
+  if (tmp) free(tmp);
+  return NULL;
 }
 
 /*
- * Allocate a unit of space ...
+ * Allocate a unit of space ... and return a pointer as function param
+ * and the block's offset as a side effect
  */
-void *nt_alloc_regf_space(REGF *regf, int size)
+void *nt_alloc_regf_space(REGF *regf, int size, int *off)
 {
+  int tmp = 0;
+  void *ret = NULL;
+  HBIN_BLK *blk;
+  
+  if (!regf || !size || !off) return NULL;
+
+  assert(regf->blk_head != NULL);
+
+  /*
+   * round up size to include header and then to 8-byte boundary
+   */
+  size = (size + 4 + 7) & ~7;
+
+  /*
+   * Check if there is space, if none, grab a block
+   */
+  if (!regf->free_space) {
+    if (!nt_create_hbin_blk(regf, REGF_HDR_BLKSIZ))
+      return NULL;
+  }
+
+  /*
+   * Now, chain down the list of blocks looking for free space
+   */
+
+  for (blk = regf->free_space; blk != NULL; blk = blk->next) {
+    if (blk->free_space <= size) {
+      tmp = blk->file_offset + blk->fsp_off;
+      ret = blk->data + blk->fsp_off;
+      blk->free_space -= size;
+      blk->fsp_off += size;
+
+      /*
+       * Fix up the free space ptr
+       */
+    }
+
+  }
+
+  /*
+   * If we got here, we need to add another block, which might be 
+   * larger than one block -- deal with that later
+   */
 
   return NULL;
 }
@@ -2505,8 +2593,14 @@ REGF_HDR *nt_get_reg_header(REGF *regf)
 int nt_store_registry(REGF *regf)
 {
   REGF_HDR *reg;
+  NK_HDR *fkey;
 
+  /*
+   * Get a header ... and partially fill it in ...
+   */
   reg = nt_get_reg_header(regf);
+
+  
 
   return 1;
 }
