@@ -90,7 +90,7 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/{lib,include}
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
-	rpcclient smbspool smbcacls smbcontrol wbinfo smbmnt net smbgroupedit \
+	rpcclient smbspool smbcacls smbcontrol wbinfo smbmnt net \
 	smbcacls pdbedit tdbbackup smbtree
 do
 	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
@@ -394,7 +394,6 @@ fi
 %{prefix}/bin/smbcontrol
 %{prefix}/bin/wbinfo
 %{prefix}/bin/net
-%{prefix}/bin/smbgroupedit
 %{prefix}/bin/smbcacls
 %{prefix}/bin/pdbedit
 %{prefix}/bin/tdbbackup
