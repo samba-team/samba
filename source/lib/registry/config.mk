@@ -37,8 +37,7 @@ INIT_FUNCTION = registry_rpc_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
 		lib/registry/reg_backend_rpc/reg_backend_rpc.o
-REQUIRED_SUBSYSTEMS = \
-		LIBRPC
+REQUIRED_SUBSYSTEMS = RPC_NDR_WINREG
 # End MODULE registry_rpc
 ################################################
 
