@@ -2697,12 +2697,12 @@ static BOOL construct_printer_info_1(uint32 flags, PRINTER_INFO_1 *printer, int 
 
 	if (*ntprinter->info_2->comment == '\0') {
 		init_unistr(&printer->comment, lp_comment(snum));
-		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",get_called_name(), ntprinter->info_2->printername,
+		snprintf(chaine,sizeof(chaine)-1,"%s,%s,%s", ntprinter->info_2->printername,
 			ntprinter->info_2->drivername, lp_comment(snum));
 	}
 	else {
 		init_unistr(&printer->comment, ntprinter->info_2->comment); /* saved comment. */
-		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",get_called_name(), ntprinter->info_2->printername,
+		snprintf(chaine,sizeof(chaine)-1,"%s,%s,%s", ntprinter->info_2->printername,
 			ntprinter->info_2->drivername, ntprinter->info_2->comment);
 	}
 		
