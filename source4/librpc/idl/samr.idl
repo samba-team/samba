@@ -317,7 +317,7 @@
 	NTSTATUS samr_EnumDomainAliases(
 		[in,ref]      policy_handle *handle,
 		[in,out,ref]  uint32 *resume_handle,
-		[in]          uint32 max_size,
+		[in]          uint32 account_flags,
 		[out]         samr_SamArray *sam,
 		[out]         uint32 num_entries
 		);
