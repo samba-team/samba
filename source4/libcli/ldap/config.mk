@@ -4,5 +4,6 @@
 ADD_OBJ_FILES = libcli/ldap/ldap.o \
 		libcli/ldap/ldap_client.o \
 		libcli/ldap/ldap_ldif.o
+NOPROTO=YES
 # End SUBSYSTEM LIBCLI_LDAP
 #################################

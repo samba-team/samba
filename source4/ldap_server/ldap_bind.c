@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "ldap_server/ldap_server.h"
 #include "auth/auth.h"
+#include "libcli/ldap/ldap.h"
 
 static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 {

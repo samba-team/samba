@@ -21,9 +21,10 @@
 #include "includes.h"
 #include "ldap_server/ldap_server.h"
 #include "dlinklist.h"
+#include "libcli/ldap/ldap.h"
 
 
-struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, enum ldap_request_tag type)
+struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, uint8_t type)
 {
 	struct ldapsrv_reply *reply;
 
@@ -47,7 +48,7 @@ NTSTATUS ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *re
 	return NT_STATUS_OK;
 }
 
-struct ldapsrv_partition *ldapsrv_get_partition(struct ldapsrv_connection *conn, const char *dn, enum ldap_scope scope)
+struct ldapsrv_partition *ldapsrv_get_partition(struct ldapsrv_connection *conn, const char *dn, uint8_t scope)
 {
 	if (scope == LDAP_SEARCH_SCOPE_BASE
 	    && strcasecmp("", dn) == 0) {

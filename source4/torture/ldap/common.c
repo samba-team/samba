@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "asn_1.h"
+#include "libcli/ldap/ldap.h"
 
 NTSTATUS torture_ldap_bind(struct ldap_connection *conn, const char *userdn, const char *password)
 {

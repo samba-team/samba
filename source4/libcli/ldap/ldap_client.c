@@ -29,6 +29,7 @@
 #include "auth/auth.h"
 #include "asn_1.h"
 #include "dlinklist.h"
+#include "libcli/ldap/ldap.h"
 
 
 
