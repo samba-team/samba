@@ -1,5 +1,7 @@
 1999-08-04  Assar Westerlund  <assar@sics.se>
 
+	* kuser/kinit.c (main): some more KRB4-conditionalizing
+
 	* lib/krb5/get_in_tkt.c: type correctness
 
 	* lib/krb5/get_for_creds.c (krb5_fwd_tgs_creds): set forwarded in
