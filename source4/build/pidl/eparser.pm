@@ -249,7 +249,7 @@ sub ParseArrayPull($$$)
 		# non fixed arrays encode the size just before the array
 		pidl "\t{\n";
 		pidl "\t\tguint32 _array_size;\n\n";
-		pidl "\t\tdissect_ndr_uint32(ndr->tvb, ndr->offset, ndr->pinfo, ndr->tree, ndr->drep, hf_array_size, &_array_size);\n";
+		pidl "\t\tndr_pull_uint32(ndr, hf_array_size, &_array_size);\n";
 		if ($size =~ /r->in/) {
 			pidl "\t\t// if (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _array_size != $size) {\n";
 		} else {
