@@ -45,7 +45,7 @@
 static int net_rpc_join_ok(const char *domain)
 {
 	struct cli_state *cli;
-	uchar stored_md4_trust_password[16];
+	SAM_TRUST_PASSWD *trust = NULL;
 	int retval = 1;
 	uint32 channel;
 	NTSTATUS result;
@@ -59,17 +59,25 @@ static int net_rpc_join_ok(const char *domain)
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto done;
 	}
-
-	if (!secrets_fetch_trust_account_password(domain,
-						  stored_md4_trust_password, 
-						  NULL, &channel)) {
-		DEBUG(0,("Could not retreive domain trust secret"));
+	
+	result = pdb_init_trustpw(&trust);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("Could not init trust password"));
 		goto done;
 	}
-	
+
+	result = pdb_gettrustpwnam(trust, domain);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("Could not retreive domain trust secret"));
+		goto done;
+	}
+
+	channel = SCHANNEL_TYPE(trust->private.flags);
+
 	/* ensure that schannel uses the right domain */
 	fstrcpy(cli->domain, domain);
-	if (! NT_STATUS_IS_OK(result = cli_nt_establish_netlogon(cli, channel, stored_md4_trust_password))) {
+	if (! NT_STATUS_IS_OK(result = cli_nt_establish_netlogon(cli, channel,
+								 trust->private.pass.data))) {
 		DEBUG(0,("Error in domain join verfication (fresh connection)\n"));
 		goto done;
 	}
@@ -82,6 +90,7 @@ done:
 		cli_nt_session_close(cli);
 
 	cli_shutdown(cli);
+	trust->free_fn(&trust);
 
 	return retval;
 }
@@ -120,6 +129,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	SAM_USER_INFO_24 p24;
 	SAM_USER_INFO_10 p10;
 	uchar md4_trust_password[16];
+	SAM_TRUST_PASSWD *trust = NULL;
 
 	/* Misc */
 
@@ -336,10 +346,45 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		DEBUG(0, ("error storing domain sid for %s\n", domain));
 		goto done;
 	}
+	
+	result = pdb_init_trustpw(&trust);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("could not initialise trust password\n"));
+		goto done;
+	}
 
+	pdb_set_tp_domain_name_c(trust, domain);
+
+	switch (sec_channel_type) {
+	case SEC_CHAN_WKSTA:
+		pdb_set_tp_flags(trust, PASS_MACHINE_TRUST_NT);
+		break;
+	case SEC_CHAN_BDC:
+		pdb_set_tp_flags(trust, PASS_SERVER_TRUST_NT);
+		break;
+	default:
+		DEBUG(0, ("Invalid trust type required!\n"));
+		goto done;
+	}
+
+	E_md4hash(clear_trust_password, md4_trust_password);
+	pdb_set_tp_pass(trust, md4_trust_password, sizeof(md4_trust_password));
+
+	pdb_set_tp_mod_time(trust, time(NULL));
+
+	pdb_set_tp_domain_sid(trust, domain_sid);
+
+	result = pdb_add_trust_passwd(trust);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("error when adding new trust password\n"));
+		goto done;
+	}
+
+	/*
 	if (!secrets_store_machine_password(clear_trust_password, domain, sec_channel_type)) {
 		DEBUG(0, ("error storing plaintext domain secrets for %s\n", domain));
 	}
+	*/
 
 	/* double-check, connection from scratch */
 	retval = net_rpc_join_ok(domain);

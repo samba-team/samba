@@ -695,6 +695,8 @@ int net_ads_join(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
+	NTSTATUS nt_status;
+	SAM_TRUST_PASSWD *trust = NULL;
 	char *password;
 	char *machine_account = NULL;
 	char *tmp_password;
@@ -703,7 +705,6 @@ int net_ads_join(int argc, const char **argv)
 	void *res;
 	DOM_SID dom_sid;
 	char *ou_str;
-	uint32 sec_channel_type = SEC_CHAN_WKSTA;
 	uint32 account_type = UF_WORKSTATION_TRUST_ACCOUNT;
 	const char *short_domain_name = NULL;
 	TALLOC_CTX *ctx = NULL;
@@ -817,24 +818,60 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
+	nt_status = pdb_init_trustpw_talloc(ctx, &trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1,("Could not initialise trust password\n"));
+		ads_destroy(&ads);
+		return -1;
+	}
+	
+	pdb_set_tp_domain_name_c(trust, lp_workgroup());
+	pdb_set_tp_flags(trust, PASS_MACHINE_TRUST_ADS);
+	pdb_set_tp_pass(trust, password, strlen(password) + 1);
+	trust->private.pass.data[trust->private.pass.length] = '\0';
+	pdb_set_tp_mod_time(trust, time(NULL));
+	pdb_set_tp_domain_sid(trust, &dom_sid);
+
+	nt_status = pdb_add_trust_passwd(trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("error when adding trust password [%s]\n", lp_workgroup()));
+		ads_destroy(&ads);
+		return -1;
+	}
+	/*
 	if (!secrets_store_machine_password(password, lp_workgroup(), sec_channel_type)) {
 		DEBUG(1,("Failed to save machine password\n"));
 		ads_destroy(&ads);
 		return -1;
 	}
-
+	*/
 	if (!secrets_store_domain_sid(short_domain_name, &dom_sid)) {
 		DEBUG(1,("Failed to save domain sid\n"));
 		ads_destroy(&ads);
 		return -1;
 	}
 
+	/* associate password with short domain name */
+	pdb_set_tp_domain_name_c(trust, short_domain_name);
+	pdb_set_tp_flags(trust, PASS_MACHINE_TRUST_ADS);
+	pdb_set_tp_pass(trust, password, strlen(password) + 1);
+	trust->private.pass.data[trust->private.pass.length] = '\0';
+	pdb_set_tp_mod_time(trust, time(NULL));
+	pdb_set_tp_domain_sid(trust, &dom_sid);
+
+	nt_status = pdb_add_trust_passwd(trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("error when adding trust password [%s]\n", short_domain_name));
+		ads_destroy(&ads);
+		return -1;
+	}
+	/*
 	if (!secrets_store_machine_password(password, short_domain_name, sec_channel_type)) {
 		DEBUG(1,("Failed to save machine password\n"));
 		ads_destroy(&ads);
 		return -1;
 	}
-	
+	*/
 	/* Now build the keytab, using the same ADS connection */
 	if (lp_use_kerberos_keytab() && ads_keytab_create_default(ads)) {
 		DEBUG(1,("Error creating host keytab!\n"));

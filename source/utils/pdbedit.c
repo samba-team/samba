@@ -286,6 +286,7 @@ static int print_trustpw_info(TALLOC_CTX *mem_ctx, SAM_TRUST_PASSWD *trust, BOOL
 {
 	char *dom_name;
 	size_t uni_name_len;
+	fstring password;
 	if (!mem_ctx || !trust) return -1;
 
 	/* convert unicode domain name to char* */
@@ -293,11 +294,16 @@ static int print_trustpw_info(TALLOC_CTX *mem_ctx, SAM_TRUST_PASSWD *trust, BOOL
 	uni_name_len = trust->private.uni_name_len;
 	dom_name[uni_name_len > 32 ? 32 : uni_name_len] = 0;
 
+	if (trust->private.flags & PASS_TRUST_NT)
+		pdb_sethexpwd(password, trust->private.pass.data, 0);
+	else if (trust->private.flags & PASS_TRUST_ADS)
+		strncpy(password, trust->private.pass.data, sizeof(password));
+
 	/* different output depending on level of verbosity */
 	if (verbose) {
 		printf("Domain name:          %s\n", dom_name);
 		printf("Domain SID:           %s\n", sid_string_static(&trust->private.domain_sid));
-		printf("Trust password        %s\n", trust->private.pass);
+		printf("Trust password        %s\n", trust->private.pass.data);
 		printf("Trust type:           %s\n", trustpw_flag_name(trust->private.flags));
 		printf("Last modified         %s\n", trust->private.mod_time ? http_timestring(trust->private.mod_time) : "0");
 	
@@ -321,15 +327,19 @@ static int print_trustpw_info(TALLOC_CTX *mem_ctx, SAM_TRUST_PASSWD *trust, BOOL
  
 static int print_trust_info(struct pdb_context *in, const char *name, BOOL verbose, BOOL smbpwdstyle)
 {
-	SAM_TRUST_PASSWD trust;
+	SAM_TRUST_PASSWD *trust = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	
 	mem_ctx = talloc_init("pdbedit: trust passwords listing");
+	if (!mem_ctx) return -1;
 	
-	if (NT_STATUS_IS_OK(in->pdb_gettrustpwnam(in, &trust, name))) {
-		return print_trustpw_info(mem_ctx, &trust, verbose);
+	if (NT_STATUS_IS_OK(pdb_init_trustpw_talloc(mem_ctx, &trust))) {
+		if (NT_STATUS_IS_OK(in->pdb_gettrustpwnam(in, trust, name))) {
+			return print_trustpw_info(mem_ctx, trust, verbose);
+		}
 	}
-	
+
+	talloc_destroy(mem_ctx);
 	return -1;
 }
 	
@@ -389,7 +399,7 @@ static int print_trustpw_list(struct pdb_context *in, BOOL verbose, BOOL smbpwds
 	/* first trust password */
 	status = in->pdb_gettrustpwent(in, &trust);
 
-	while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) || NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
+	while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) || NT_STATUS_IS_OK(status)) {
 		/* print trust password info */
 		if (verbose) printf ("---------------\n");
 		print_trustpw_info(mem_ctx, &trust, verbose);
@@ -777,17 +787,23 @@ static int new_trustpw(struct pdb_context *in, const char *dom_name,
 	/* password */
 	givenpass = getpass("password:");
 	memset(password, '\0', sizeof(password));
-	memset(trust.private.pass, '\0', sizeof(trust.private.pass));
 	strncpy(password, givenpass, FSTRING_LEN);
 
 	/* trust password is either in hashed form (NT) or plaintext (ADS)
 	   so let's prepare one */
 	if (trust.private.flags & PASS_TRUST_NT) {
 		E_md4hash(password, nthash);
-		pdb_sethexpwd(trust.private.pass, nthash, 0);
+		trust.private.pass.length = sizeof(nthash);
+		trust.private.pass.data = talloc(mem_ctx,
+						 sizeof(uint8) * sizeof(nthash));
+		memcpy(trust.private.pass.data, nthash, trust.private.pass.length);
 
 	} else if (trust.private.flags & PASS_TRUST_ADS) {
-		strncpy(trust.private.pass, password, sizeof(trust.private.pass));
+		trust.private.pass.length = strlen(password);
+		trust.private.pass.data = talloc(mem_ctx,
+						 sizeof(uint8) * (strlen(password) + 1));
+		strncpy(trust.private.pass.data, password, trust.private.pass.length);
+		trust.private.pass.data[trust.private.pass.length] = '\0';
 	}	
 	
 	/* last change time */
@@ -858,18 +874,25 @@ static int update_trustpw(struct pdb_context *in, const char *dom_name,
 	/* password */
 	givenpass = getpass("password (type Enter to leave it untouched):");
 	memset(password, '\0', sizeof(password));
-	memset(trust.private.pass, '\0', sizeof(trust.private.pass));
 	strncpy(password, givenpass, FSTRING_LEN);
 
 	/* trust password is either in hashed form (NT) or plaintext (ADS)
 	   so let's prepare one */
 	if (trust.private.flags & PASS_TRUST_NT) {
 		E_md4hash(password, nthash);
-		pdb_sethexpwd(trust.private.pass, nthash, 0);
+		trust.private.pass.length = sizeof(nthash);
+		trust.private.pass.data = talloc(mem_ctx,
+						 sizeof(uint8) * sizeof(nthash));
+		memcpy(trust.private.pass.data, nthash, trust.private.pass.length);
 
 	} else if (trust.private.flags & PASS_TRUST_ADS) {
-		strncpy(trust.private.pass, password, sizeof(trust.private.pass));
+		trust.private.pass.length = strlen(password);
+		trust.private.pass.data = talloc(mem_ctx,
+						 sizeof(uint8) * (strlen(password) + 1));
+		strncpy(trust.private.pass.data, password, trust.private.pass.length);
+		trust.private.pass.data[trust.private.pass.length] = '\0';
 	}	
+	
 
 	/* last change time */
 	lct = time(NULL);
@@ -964,6 +987,7 @@ static int delete_trustpw(struct pdb_context *in, char* domain)
 	/* unicode name and its null-termination */
 	trust.private.uni_name_len = strnlen(domain, 32);
 	domain[trust.private.uni_name_len] = 0;
+	strupper_m(domain);
 	push_ucs2(NULL, trust.private.uni_name, domain, 32, 0);
 
 	/* deletion is based on domain name only, so there's no need

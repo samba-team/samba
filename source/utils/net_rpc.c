@@ -3511,10 +3511,12 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	NTSTATUS nt_status;
 	DOM_SID *domain_sid;
 	WKS_INFO_100 wks_info;
+	SAM_TRUST_PASSWD *trust = NULL;
 	
 	char* domain_name;
 	char* domain_name_pol;
 	char* acct_name;
+	char nt_wks_hash[NT_HASH_LEN];
 	fstring pdc_name;
 
 	/*
@@ -3649,12 +3651,26 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	   but I still don't know if it's _really_ necessary */
 			
 	/*
-	 * Store the password in secrets db
+	 * Store the password in passdb backend
 	 */
 
-	if (!secrets_store_trusted_domain_password(domain_name, wks_info.uni_lan_grp.buffer,
-						   wks_info.uni_lan_grp.uni_str_len, opt_password,
-						   *domain_sid)) {
+	/* initialising trust password */
+	nt_status = pdb_init_trustpw_talloc(mem_ctx, &trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Could not initialise trust password\n"));
+		return -1;
+	}
+	
+	/* setting trust password properties */
+	pdb_set_tp_flags(trust, PASS_TRUST_NT | PASS_TRUST_DOMAIN);
+	pdb_set_tp_domain_name(trust, wks_info.uni_lan_grp.buffer);
+	E_md4hash(opt_password, nt_wks_hash);
+	pdb_set_tp_pass(trust, nt_wks_hash, sizeof(nt_wks_hash));
+	pdb_set_tp_domain_sid(trust, domain_sid);
+	
+	/* adding trust password */
+	nt_status = pdb_add_trust_passwd(trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		return -1;
 	}
@@ -3690,21 +3706,26 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 
 static int rpc_trustdom_revoke(int argc, const char **argv)
 {
+	NTSTATUS nt_status;
 	char* domain_name;
+	SAM_TRUST_PASSWD trust;
 
 	if (argc < 1) return -1;
+	memset(&trust, 0, sizeof(trust));
 	
 	/* generate upper cased domain name */
 	domain_name = smb_xstrdup(argv[0]);
 	strupper_m(domain_name);
+	pdb_set_tp_domain_name_c(&trust, domain_name);
 
 	/* delete password of the trust */
-	if (!trusted_domain_password_delete(domain_name)) {
+	nt_status = pdb_delete_trust_passwd(&trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Failed to revoke relationship to the trusted domain %s\n",
 			  domain_name));
 		return -1;
-	};
-	
+	}
+
 	return 0;
 }
 
