@@ -342,6 +342,7 @@ struct dcerpc_binding *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d
 
 	binding->options = NULL;
 	binding->flags = 0;
+	binding->endpoint = NULL;
 
 	if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->chk_seal))) {
 		binding->flags |= DCERPC_SEAL;
