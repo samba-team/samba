@@ -190,7 +190,14 @@ This option allows you to override the Netbios name that Samba uses for itself.
 
 .RS 3
 If this parameter is specified, the log files will be appended to with each 
-new connection. By default, the log files will be overwritten.
+new connection.  This is the default.
+.RE
+
+.B \-o
+
+.RS 3
+Overwrite existing log files instead of appending to them.  (This was the
+default until version 2.0.0.)
 .RE
 
 .B \-p
