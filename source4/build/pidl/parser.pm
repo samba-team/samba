@@ -168,6 +168,8 @@ sub ParseElementPushScalar($$$)
 		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $e->{VALUE}));\n";
 	} elsif (util::need_wire_pointer($e)) {
 		$res .= "\tNDR_CHECK(ndr_push_ptr(ndr, $var_prefix$e->{NAME}));\n";
+	} elsif (my $switch = util::has_property($e, "switch_is")) {
+		ParseElementPushSwitch($e, $var_prefix, $ndr_flags, $switch);
 	} elsif (util::is_builtin_type($e->{TYPE})) {
 		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
@@ -194,6 +196,8 @@ sub ParseElementPrintScalar($$)
 		$res .= "\tndr->depth++;\n";
 		ParseElementPrintBuffer($e, "r->");
 		$res .= "\tndr->depth--;\n";
+	} elsif (my $switch = util::has_property($e, "switch_is")) {
+		ParseElementPrintSwitch($e, $var_prefix, $switch);
 	} else {
 		$res .= "\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $cprefix$var_prefix$e->{NAME});\n";
 	}
@@ -215,6 +219,33 @@ sub ParseElementPullSwitch($$$$)
 	$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, &_level, $cprefix$var_prefix$e->{NAME}));\n";
 	$res .= "\tif (_level != $switch_var) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\");\n";
 	$res .= "\t}\n";
+}
+
+#####################################################################
+# push switch element
+sub ParseElementPushSwitch($$$$)
+{
+	my($e) = shift;
+	my($var_prefix) = shift;
+	my($ndr_flags) = shift;
+	my $switch = shift;
+	my $switch_var = find_size_var($e, $switch);
+	my $cprefix = util::c_push_prefix($e);
+
+	$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME}));\n";
+}
+
+#####################################################################
+# print scalars in a structure element 
+sub ParseElementPrintSwitch($$$)
+{
+	my($e) = shift;
+	my($var_prefix) = shift;
+	my $switch = shift;
+	my $switch_var = find_size_var($e, $switch);
+	my $cprefix = util::c_push_prefix($e);
+
+	$res .= "\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $switch_var, $cprefix$var_prefix$e->{NAME});\n";
 }
 
 
@@ -249,10 +280,11 @@ sub ParseElementPullScalar($$$)
 
 #####################################################################
 # parse buffers in a structure element
-sub ParseElementPushBuffer($$)
+sub ParseElementPushBuffer($$$)
 {
 	my($e) = shift;
 	my($var_prefix) = shift;
+	my($ndr_flags) = shift;
 	my $cprefix = util::c_push_prefix($e);
 
 	if (util::is_pure_scalar($e)) {
@@ -265,10 +297,16 @@ sub ParseElementPushBuffer($$)
 	    
 	if (util::array_size($e)) {
 		ParseArrayPush($e, "r->");
+	} elsif (my $switch = util::has_property($e, "switch_is")) {
+		if ($e->{POINTERS}) {
+			ParseElementPushSwitch($e, $var_prefix, "NDR_BUFFERS|NDR_SCALARS", $switch);
+		} else {
+			ParseElementPushSwitch($e, $var_prefix, "NDR_BUFFERS", $switch);
+		}
 	} elsif (util::is_builtin_type($e->{TYPE})) {
 		$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} else {
-		$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
+		$res .= "\t\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));\n";
 	}
 
 	if (util::need_wire_pointer($e)) {
@@ -294,6 +332,8 @@ sub ParseElementPrintBuffer($$)
 	    
 	if (util::array_size($e)) {
 		ParseArrayPrint($e, "r->");
+	} elsif (my $switch = util::has_property($e, "switch_is")) {
+		ParseElementPrintSwitch($e, $var_prefix, $switch);
 	} else {
 		$res .= "\t\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $cprefix$var_prefix$e->{NAME});\n";
 	}
@@ -324,7 +364,11 @@ sub ParseElementPullBuffer($$$)
 	if (util::array_size($e)) {
 		ParseArrayPull($e, "r->");
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		ParseElementPullSwitch($e, $var_prefix, $ndr_flags, $switch);
+		if ($e->{POINTERS}) {
+			ParseElementPullSwitch($e, $var_prefix, "NDR_SCALARS|NDR_BUFFERS", $switch);
+		} else {
+			ParseElementPullSwitch($e, $var_prefix, "NDR_BUFFERS", $switch);
+		}
 	} elsif (util::is_builtin_type($e->{TYPE})) {
 		$res .= "\t\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME}));\n";
 	} elsif ($e->{POINTERS}) {
@@ -393,7 +437,7 @@ sub ParseStructPush($)
 	$res .= "buffers:\n";
 	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPushBuffer($e, "r->");
+		ParseElementPushBuffer($e, "r->", "ndr_flags");
 	}
 
 	if (defined $struct_len) {
@@ -510,7 +554,29 @@ sub ParseStructPull($)
 sub ParseUnionPush($)
 {
 	my $e = shift;
-	print "WARNING! union push  not done\n";	
+	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
+	$res .= "\tNDR_CHECK(ndr_push_uint16(ndr, level));\n";
+	$res .= "\tswitch (level) {\n";
+	foreach my $el (@{$e->{DATA}}) {
+		$res .= "\tcase $el->{CASE}:\n";
+		ParseElementPushScalar($el->{DATA}, "r->", "NDR_SCALARS");		
+		$res .= "\tbreak;\n\n";
+	}
+	$res .= "\tdefault:\n";
+	$res .= "\t\treturn ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
+	$res .= "\t}\n";
+	$res .= "buffers:\n";
+	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
+	$res .= "\tswitch (level) {\n";
+	foreach my $el (@{$e->{DATA}}) {
+		$res .= "\tcase $el->{CASE}:\n";
+		ParseElementPushBuffer($el->{DATA}, "r->", "ndr_flags");
+		$res .= "\tbreak;\n\n";
+	}
+	$res .= "\tdefault:\n";
+	$res .= "\t\treturn ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
+	$res .= "\t}\n";
+	$res .= "done:\n";
 }
 
 #####################################################################
@@ -535,8 +601,8 @@ sub ParseUnionPull($)
 {
 	my $e = shift;
 
-	$res .= "\tNDR_CHECK(ndr_pull_uint16(ndr, level));\n";
 	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
+	$res .= "\tNDR_CHECK(ndr_pull_uint16(ndr, level));\n";
 	$res .= "\tswitch (*level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
 		$res .= "\tcase $el->{CASE}:\n";
@@ -544,7 +610,7 @@ sub ParseUnionPull($)
 		$res .= "\tbreak;\n\n";
 	}
 	$res .= "\tdefault:\n";
-	$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\", *level);\n";
+	$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", *level);\n";
 	$res .= "\t}\n";
 	$res .= "buffers:\n";
 	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
@@ -555,7 +621,7 @@ sub ParseUnionPull($)
 		$res .= "\tbreak;\n\n";
 	}
 	$res .= "\tdefault:\n";
-	$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\", *level);\n";
+	$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", *level);\n";
 	$res .= "\t}\n";
 	$res .= "done:\n";
 }
@@ -705,7 +771,7 @@ sub ParseFunctionPush($)
 				$res .= "\t}\n";
 			} else {
 				ParseElementPushScalar($e, "r->in.", "NDR_SCALARS|NDR_BUFFERS");
-				ParseElementPushBuffer($e, "r->in.");
+				ParseElementPushBuffer($e, "r->in.", "NDR_SCALARS|NDR_BUFFERS");
 			}
 		}
 	}
@@ -757,25 +823,6 @@ sub ParseFunctionPull($)
 }
 
 #####################################################################
-# parse a typedef
-sub ParseTypedef($)
-{
-	my($e) = shift;
-	ParseTypedefPush($e);
-	ParseTypedefPull($e);
-	ParseTypedefPrint($e);
-}
-
-#####################################################################
-# parse a function
-sub ParseFunction($)
-{
-	my $i = shift;
-	ParseFunctionPush($i);
-	ParseFunctionPull($i);
-}
-
-#####################################################################
 # parse the interface definitions
 sub ParseInterface($)
 {
@@ -783,9 +830,19 @@ sub ParseInterface($)
 	my($data) = $interface->{DATA};
 	foreach my $d (@{$data}) {
 		($d->{TYPE} eq "TYPEDEF") &&
-		    ParseTypedef($d);
+		    ParseTypedefPush($d);
 		($d->{TYPE} eq "FUNCTION") && 
-		    ParseFunction($d);
+		    ParseFunctionPush($d);
+	}
+	foreach my $d (@{$data}) {
+		($d->{TYPE} eq "TYPEDEF") &&
+		    ParseTypedefPull($d);
+		($d->{TYPE} eq "FUNCTION") && 
+		    ParseFunctionPull($d);
+	}
+	foreach my $d (@{$data}) {
+		($d->{TYPE} eq "TYPEDEF") &&
+		    ParseTypedefPrint($d);
 	}
 }
 
