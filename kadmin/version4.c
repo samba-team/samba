@@ -469,9 +469,22 @@ kadm_ser_cpw(krb5_context context,
     ret = message->fetch(message, key, 4);
     ret = krb5_ret_stringz(message, &password);
     
-    if(password)
+    if(password) {
+	krb5_data pwd_data;
+	const char *tmp;
+
+	pwd_data.data   = password;
+	pwd_data.length = strlen(password);
+
+	tmp = kadm5_check_password_quality (context, principal, &pwd_data);
+
+	if (tmp != NULL) {
+	    krb5_store_stringz (reply, (char *)tmp);
+	    ret = KADM5_PASS_Q_DICT;
+	    goto fail;
+	}
 	ret = kadm5_chpass_principal(kadm_handle, principal, password);
-    else {
+    } else {
 	krb5_key_data key_data[3];
 	int i;
 	for(i = 0; i < 3; i++) {
