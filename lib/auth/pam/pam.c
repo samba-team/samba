@@ -212,7 +212,7 @@ pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 int
 pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-    char *tkt;
+    char *tkt, *var;
     void *user;
     const char *homedir = NULL;
 
@@ -225,7 +225,10 @@ pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
     }
 
     pam_get_data(pamh, "KRBTKFILE", (const void**)&tkt);
-    setenv("KRBTKFILE", tkt, 1);
+    var = malloc(strlen("KRBTKFILE=") + strlen(tkt) + 1);
+    strcpy(var, "KRBTKFILE=");
+    strcat(var, tkt);
+    putenv(var);
     if(k_hasafs()){
 	k_setpag();
 	krb_afslog_home(0, 0, homedir);

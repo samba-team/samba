@@ -31,8 +31,8 @@ LD_FLAGS = @REAL_LD_FLAGS@
 LIB_res_search = @LIB_res_search@
 LIB_dn_expand = @LIB_dn_expand@
  
-@lib_deps_yes@LIB_DEPS = -L../../kafs -L../../krb -L../../des -L../../roken \
-@lib_deps_yes@	   -lkafs -lkrb -ldes -lroken \
+@lib_deps_yes@LIB_DEPS = -L../../kafs -L../../krb -L../../des \
+@lib_deps_yes@	   -lkafs -lkrb -ldes \
 @lib_deps_yes@     $(LIB_res_search) $(LIB_dn_expand) -lc
 @lib_deps_no@LIB_DEPS =
 
