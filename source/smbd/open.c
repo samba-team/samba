@@ -1146,17 +1146,15 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		oplock_request = 0;
 	}
 
-	/* this is for OS/2 EAs - try and say we don't support them */
+	/* this is for OS/2 long file names - say we don't support them */
 	if (strstr(fname,".+,;=[].")) {
 		unix_ERR_class = ERRDOS;
 		/* OS/2 Workplace shell fix may be main code stream in a later release. */ 
-#if 1 /* OS2_WPS_FIX - Recent versions of OS/2 need this. */
 		unix_ERR_code = ERRcannotopen;
-#else /* OS2_WPS_FIX */
-		unix_ERR_code = ERROR_EAS_NOT_SUPPORTED;
-#endif /* OS2_WPS_FIX */
-
-		DEBUG(5,("open_file_shared: OS/2 EA's are not supported.\n"));
+		unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		DEBUG(5,("open_file_shared: OS/2 long filenames are not supported.\n"));
+		/* need to reset errno or DEVELOPER will cause us to coredump */
+		errno = 0;
 		file_free(fsp);
 		return NULL;
 	}
