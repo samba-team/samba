@@ -99,6 +99,7 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	if (cookie && *cookie) {
 		ber_printf(berelem, "{iO}", (ber_int_t) 1000, *cookie);
 		ber_bvfree(*cookie); /* don't need it from last time */
+		*cookie = NULL;
 	} else {
 		ber_printf(berelem, "{io}", (ber_int_t) 1000, "", 0);
 	}
@@ -158,6 +159,47 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	ldap_controls_free(rcontrols);
 			
 	return ADS_ERROR(rc);
+}
+
+
+/*
+  this uses ads_do_paged_search() to return all entries in a large
+  search.  The interface is the same as ads_do_search(), which makes
+  it more convenient than the paged interface
+ */
+ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
+			     int scope, const char *exp,
+			     const char **attrs, void **res)
+{
+	void *cookie = NULL;
+	int count = 0;
+	ADS_STATUS status;
+
+	status = ads_do_paged_search(ads, bind_path, scope, exp, attrs, res, &count, &cookie);
+
+	if (!ADS_ERR_OK(status)) return status;
+
+	while (cookie) {
+		void *res2 = NULL;
+		ADS_STATUS status2;
+		LDAPMessage *msg, *next;
+
+		status2 = ads_do_paged_search(ads, bind_path, scope, exp, attrs, &res2, &count, &cookie);
+
+		if (!ADS_ERR_OK(status2)) break;
+
+		/* this relies on the way that ldap_add_result_entry() works internally. I hope
+		   that this works on all ldap libs, but I have only tested with openldap */
+		for (msg = ads_first_entry(ads, res2); msg; msg = next) {
+			next = ads_next_entry(ads, msg);
+			ldap_add_result_entry((LDAPMessage **)res, msg);
+		}
+
+		/* note that we do not free res2, as the memory is now
+                   part of the main returned list */
+	}
+
+	return status;
 }
 
 /*
