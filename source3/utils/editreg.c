@@ -357,7 +357,7 @@ typedef struct val_key_s {
 
 typedef struct val_list_s {
   int val_count;
-  VAL_KEY vals[1];
+  VAL_KEY *vals[1];
 } VAL_LIST;
 
 #ifndef MAXSUBAUTHS
@@ -769,6 +769,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
   char val_name[1024], data_value[1024];
   int nam_len, dat_len, flag, dat_type, dat_off, vk_id;
   char *val_type;
+  VAL_KEY *tmp = NULL; 
 
   if (!vk_hdr) return NULL;
 
@@ -782,9 +783,23 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
   val_name[nam_len] = '\0';
   flag = SVAL(&vk_hdr->flag);
   dat_type = IVAL(&vk_hdr->dat_type);
+  dat_len = IVAL(&vk_hdr->dat_len);  /* If top bit, offset contains data */
 
-  if (flag & 0x01)
+  tmp = (VAL_KEY *)malloc(sizeof(VAL_KEY));
+  if (!tmp) {
+    goto error;
+  }
+  bzero(tmp, sizeof(VAL_KEY));
+  tmp->has_name = flag;
+  tmp->data_type = dat_type;
+
+  if (flag & 0x01) {
     strncpy(val_name, vk_hdr->dat_name, nam_len);
+    tmp->name = strdup(val_name);
+    if (!tmp->name) {
+      goto error;
+    }
+  }
   else
     strncpy(val_name, "<No Name>", 10);
 
@@ -796,6 +811,10 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
 
   fprintf(stdout, "  %s : %s : \n", val_name, val_type);
 
+  return tmp;
+
+ error:
+  /* XXX: FIXME, free the partially allocated struct */
   return NULL;
 
 }
@@ -807,17 +826,32 @@ VAL_LIST *process_vl(REGF *regf, VL_TYPE vl, int count, int size)
 {
   int i, vk_off;
   VK_HDR *vk_hdr;
+  VAL_LIST *tmp = NULL;
 
   if (-size < (count+1)*sizeof(int)){
     fprintf(stderr, "Error in VL header format. Size less than space required. %d\n", -size);
     return NULL;
   }
 
+  tmp = (VAL_LIST *)malloc(sizeof(VAL_LIST) + (count - 1) * sizeof(VAL_KEY *));
+  if (!tmp) {
+    goto error;
+  }
+
   for (i=0; i<count; i++) {
     vk_off = IVAL(&vl[i]);
     vk_hdr = (VK_HDR *)LOCN(regf->base, vk_off);
-    process_vk(regf, vk_hdr, BLK_SIZE(vk_hdr));
+    tmp->vals[i] = process_vk(regf, vk_hdr, BLK_SIZE(vk_hdr));
+    if (!tmp->vals[i]){
+      goto error;
+    }
   }
+
+  return tmp;
+
+ error:
+  /* XXX: FIXME, free the partially allocated structure */
+  return NULL;
 } 
 
 /*
@@ -867,6 +901,7 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size)
   return tmp;
 
  error:
+  /* XXX: FIXME, free the partially allocated structure */
   return NULL;
 }
 
