@@ -722,7 +722,7 @@ int find_service(char *service);
 int cached_error_packet(char *inbuf,char *outbuf,int fnum,int line);
 int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int line);
 int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int line);
-BOOL oplock_break(uint32 dev, uint32 inode);
+BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval);
 BOOL request_oplock_break(min_share_mode_entry *share_entry, 
                           uint32 dev, uint32 inode);
 BOOL snum_used(int snum);

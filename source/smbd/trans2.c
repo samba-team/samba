@@ -319,7 +319,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 
       reskey = TellDir(Connections[cnum].dirptr);
 
-      DEBUG(6,("get_lanman2_dir_entry:readdir on dirptr 0x%x now at offset %d\n",
+      DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%x now at offset %d\n",
 	       Connections[cnum].dirptr,TellDir(Connections[cnum].dirptr)));
       
       if (!dname) 
