@@ -50,7 +50,7 @@ mode_t unix_mode(connection_struct *conn,int dosmode)
        can always create a file in a read-only directory. */
     result |= (S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH | S_IWUSR);
     /* Apply directory mask */
-    result &= lp_dir_mode(SNUM(conn));
+    result &= lp_dir_mask(SNUM(conn));
     /* Add in force bits */
     result |= lp_force_dir_mode(SNUM(conn));
   } else { 
@@ -64,7 +64,7 @@ mode_t unix_mode(connection_struct *conn,int dosmode)
       result |= S_IXOTH;  
  
     /* Apply mode mask */
-    result &= lp_create_mode(SNUM(conn));
+    result &= lp_create_mask(SNUM(conn));
     /* Add in force bits */
     result |= lp_force_create_mode(SNUM(conn));
   }

@@ -26,10 +26,10 @@ extern int DEBUGLEVEL;
 extern pstring sesssetup_user;
 extern uint16 global_oplock_port;
 
-
 /****************************************************************************
 fd support routines - attempt to do a dos_open
 ****************************************************************************/
+
 static int fd_attempt_open(char *fname, int flags, mode_t mode)
 {
   int fd = dos_open(fname,flags,mode);
@@ -82,6 +82,7 @@ static int fd_attempt_open(char *fname, int flags, mode_t mode)
 Cache a uid_t currently with this file open. This is an optimization only
 used when multiple sessionsetup's have been done to one smbd.
 ****************************************************************************/
+
 void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u)
 {
   if(fd_ptr->uid_cache_count >= sizeof(fd_ptr->uid_users_cache)/sizeof(uid_t))
@@ -93,6 +94,7 @@ void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u)
 Remove a uid_t that currently has this file open. This is an optimization only
 used when multiple sessionsetup's have been done to one smbd.
 ****************************************************************************/
+
 static void fd_remove_from_uid_cache(file_fd_struct *fd_ptr, uid_t u)
 {
   int i;
@@ -110,6 +112,7 @@ static void fd_remove_from_uid_cache(file_fd_struct *fd_ptr, uid_t u)
 Check if a uid_t that currently has this file open is present. This is an
 optimization only used when multiple sessionsetup's have been done to one smbd.
 ****************************************************************************/
+
 static BOOL fd_is_in_uid_cache(file_fd_struct *fd_ptr, uid_t u)
 {
   int i;
@@ -119,11 +122,11 @@ static BOOL fd_is_in_uid_cache(file_fd_struct *fd_ptr, uid_t u)
   return False;
 }
 
-
 /****************************************************************************
 fd support routines - attempt to re-open an already open fd as O_RDWR.
 Save the already open fd (we cannot close due to POSIX file locking braindamage.
 ****************************************************************************/
+
 static void fd_attempt_reopen(char *fname, mode_t mode, file_fd_struct *fd_ptr)
 {
   int fd = dos_open( fname, O_RDWR, mode);
@@ -288,11 +291,12 @@ is no longer waiting ! Error = %s\n", strerror(errno) ));
 /****************************************************************************
 check a filename for the pipe string
 ****************************************************************************/
+
 static void check_for_pipe(char *fname)
 {
 	/* special case of pipe opens */
 	char s[10];
-	StrnCpy(s,fname,9);
+	StrnCpy(s,fname,sizeof(s)-1);
 	strlower(s);
 	if (strstr(s,"pipe/")) {
 		DEBUG(3,("Rejecting named pipe open for %s\n",fname));
@@ -304,6 +308,7 @@ static void check_for_pipe(char *fname)
 /****************************************************************************
 open a file
 ****************************************************************************/
+
 static void open_file(files_struct *fsp,connection_struct *conn,
 		      char *fname1,int flags,mode_t mode, SMB_STRUCT_STAT *sbuf)
 {
@@ -315,7 +320,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
 
   fsp->open = False;
   fsp->fd_ptr = 0;
-  fsp->granted_oplock = False;
+  fsp->oplock_type = NO_OPLOCK;
   errno = EPERM;
 
   pstrcpy(fname,fname1);
@@ -543,8 +548,8 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     fsp->share_mode = 0;
     fsp->print_file = conn->printer;
     fsp->modified = False;
-    fsp->granted_oplock = False;
-    fsp->sent_oplock_break = False;
+    fsp->oplock_type = NO_OPLOCK;
+    fsp->sent_oplock_break = NO_BREAK_SENT;
     fsp->is_directory = False;
     fsp->stat_open = False;
     fsp->directory_delete_on_close = False;
@@ -568,7 +573,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
      */
     if (fsp->print_file && lp_postscript(SNUM(conn)) && fsp->can_write) {
 	    DEBUG(3,("Writing postscript line\n"));
-	    write_file(fsp,"%!\n",3);
+	    write_file(fsp,"%!\n",-1,3);
     }
       
     DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
@@ -594,7 +599,7 @@ static void mmap_open_file(files_struct *fsp)
   /* mmap it if read-only */
   if (!fsp->can_write) {
 	  fsp->mmap_size = dos_file_size(fsp->fsp_name);
-	  if (fsp->mmap_size < MAX_MMAP_SIZE) {
+	  if (fsp->mmap_size < MAX_MMAP_SIZE && fsp->mmap_size > 0) {
 		  fsp->mmap_ptr = (char *)sys_mmap(NULL,fsp->mmap_size,
 					       PROT_READ,MAP_SHARED,fsp->fd_ptr->fd,(SMB_OFF_T)0);
 
@@ -613,6 +618,7 @@ static void mmap_open_file(files_struct *fsp)
   Helper for open_file_shared. 
   Truncate a file after checking locking; close file if locked.
   **************************************************************************/
+
 static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, int token, 
 				   BOOL *share_locked)
 {
@@ -638,19 +644,19 @@ static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, i
 	}
 }
 
-
 enum {AFAIL,AREAD,AWRITE,AALL};
 
 /*******************************************************************
 reproduce the share mode access table
 ********************************************************************/
+
 static int access_table(int new_deny,int old_deny,int old_mode,
-			int share_pid,char *fname)
+			pid_t share_pid,char *fname)
 {
   if (new_deny == DENY_ALL || old_deny == DENY_ALL) return(AFAIL);
 
   if (new_deny == DENY_DOS || old_deny == DENY_DOS) {
-    int pid = getpid();
+    pid_t pid = getpid();
     if (old_deny == new_deny && share_pid == pid) 
 	return(AALL);    
 
@@ -692,10 +698,10 @@ static int access_table(int new_deny,int old_deny,int old_mode,
   return(AFAIL);      
 }
 
-
 /****************************************************************************
 check if we can open a file with a share mode
 ****************************************************************************/
+
 static int check_share_mode( share_mode_entry *share, int deny_mode, 
 			     char *fname,
 			     BOOL fcbopen, int *flags)
@@ -739,7 +745,7 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
     {
       DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s,fcbopen = %d, flags = %d) = %d\n",
                 deny_mode,old_deny_mode,old_open_mode,
-                share->pid,fname, fcbopen, *flags, access_allowed));
+                (int)share->pid,fname, fcbopen, *flags, access_allowed));
 
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadshare;
@@ -757,7 +763,6 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
 
   return True;
 }
-
 
 /****************************************************************************
 open a file with a share mode
@@ -779,7 +784,7 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   SMB_INO_T inode = 0;
   int num_share_modes = 0;
   int oplock_contention_count = 0;
-
+  BOOL all_current_opens_are_level_II = False;
   fsp->open = False;
   fsp->fd_ptr = 0;
 
@@ -893,6 +898,8 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
       {
 
         broke_oplock = False;
+        all_current_opens_are_level_II = True;
+
         for(i = 0; i < num_share_modes; i++)
         {
           share_mode_entry *share_entry = &old_shares[i];
@@ -904,7 +911,8 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
            * Check if someone has an oplock on this file. If so we must break 
            * it before continuing. 
            */
-          if(share_entry->op_type & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
+          if((oplock_request && EXLUSIVE_OPLOCK_TYPE(share_entry->op_type)) ||
+             (!oplock_request && (share_entry->op_type != NO_OPLOCK)))
           {
 
             DEBUG(5,("open_file_shared: breaking oplock (%x) on file %s, \
@@ -926,7 +934,10 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
             }
             lock_share_entry(conn, dev, inode, &token);
             broke_oplock = True;
+            all_current_opens_are_level_II = False;
             break;
+          } else if (!LEVEL_II_OPLOCK_TYPE(share_entry->op_type)) {
+            all_current_opens_are_level_II = False;
           }
 
           /* someone else has a share lock on it, check to see 
@@ -1023,18 +1034,19 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
     {
       uint16 port = 0;
 
-      /* JRA. Currently this only services Exlcusive and batch
-         oplocks (no other opens on this file). This needs to
-         be extended to level II oplocks (multiple reader
-         oplocks). */
+      /* 
+       * Setup the oplock info in both the shared memory and
+       * file structs.
+       */
 
-      if((oplock_request) && (num_share_modes == 0) && lp_oplocks(SNUM(conn)) && 
-	      !IS_VETO_OPLOCK_PATH(conn,fname) && set_file_oplock(fsp) )
-      {
+      if(oplock_request && (num_share_modes == 0) && lp_oplocks(SNUM(conn)) && 
+	      !IS_VETO_OPLOCK_PATH(conn,fname) && set_file_oplock(fsp, oplock_request) ) {
         port = global_oplock_port;
-      }
-      else
-      {
+      } else if (oplock_request && all_current_opens_are_level_II) {
+        port = global_oplock_port;
+        oplock_request = LEVEL_II_OPLOCK;
+        set_file_oplock(fsp, oplock_request);
+      } else {
         port = 0;
         oplock_request = 0;
       }
@@ -1102,8 +1114,8 @@ int open_file_stat(files_struct *fsp,connection_struct *conn,
 	fsp->share_mode = 0;
 	fsp->print_file = False;
 	fsp->modified = False;
-	fsp->granted_oplock = False;
-	fsp->sent_oplock_break = False;
+	fsp->oplock_type = NO_OPLOCK;
+	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
 	fsp->stat_open = True;
 	fsp->directory_delete_on_close = False;
@@ -1137,7 +1149,7 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 	}
 
 	if (got_stat && (GET_FILE_OPEN_DISPOSITION(smb_ofun) == FILE_EXISTS_FAIL)) {
-		errno = EEXIST;
+		errno = EEXIST; /* Setup so correct error is returned to client. */
 		return -1;
 	}
 
@@ -1208,8 +1220,8 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 	fsp->share_mode = 0;
 	fsp->print_file = False;
 	fsp->modified = False;
-	fsp->granted_oplock = False;
-	fsp->sent_oplock_break = False;
+	fsp->oplock_type = NO_OPLOCK;
+	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = True;
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
@@ -1239,7 +1251,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
   int num_share_modes;
   SMB_STRUCT_STAT sbuf;
   int token;
-  int pid = getpid();
+  pid_t pid = getpid();
   SMB_DEV_T dev;
   SMB_INO_T inode;
 
@@ -1276,7 +1288,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
          * Check if someone has an oplock on this file. If so we must 
          * break it before continuing. 
          */
-        if(share_entry->op_type & BATCH_OPLOCK)
+        if(BATCH_OPLOCK_TYPE(share_entry->op_type))
         {
 
           /*

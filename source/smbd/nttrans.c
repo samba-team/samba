@@ -788,9 +788,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				 */
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
-					SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
 					file_free(fsp);
 					restore_case_semantics(file_attributes);
+					SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
 					return(ERROR(0, 0xc0000000|NT_STATUS_FILE_IS_A_DIRECTORY));
 				}
 	
@@ -869,9 +869,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
 	
-	if(oplock_request && fsp->granted_oplock)
+	if(oplock_request && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
-	
+
 	set_message(outbuf,34,0,True);
 	
 	p = outbuf + smb_vwv2;
@@ -880,9 +880,14 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * Currently as we don't support level II oplocks we just report
 	 * exclusive & batch here.
 	 */
-	
-	SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? BATCH_OPLOCK : 0));
 
+    if (smb_action & EXTENDED_OPLOCK_GRANTED)	
+	  	SCVAL(p,0, BATCH_OPLOCK_RETURN);
+	else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+        SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
+	else
+		SCVAL(p,0,NO_OPLOCK_RETURN);
+	
 	p++;
 	SSVAL(p,0,fsp->fnum);
 	p += 2;
@@ -1101,7 +1106,28 @@ static int call_nt_transact_create(connection_struct *conn,
 
       if (!fsp->open) { 
 
-		if(errno == EACCES && stat_open_only) {
+		if(errno == EISDIR) {
+
+			/*
+			 * Fail the open if it was explicitly a non-directory file.
+			 */
+
+			if (create_options & FILE_NON_DIRECTORY_FILE) {
+				file_free(fsp);
+				restore_case_semantics(file_attributes);
+				SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+				return(ERROR(0, 0xc0000000|NT_STATUS_FILE_IS_A_DIRECTORY));
+			}
+	
+			oplock_request = 0;
+			open_directory(fsp, conn, fname, smb_ofun, unixmode, &smb_action);
+				
+			if(!fsp->open) {
+				file_free(fsp);
+				restore_case_semantics(file_attributes);
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			}
+		} else if(errno == EACCES && stat_open_only) {
 
 			/*
 			 * We couldn't open normally and all we want
@@ -1159,7 +1185,7 @@ static int call_nt_transact_create(connection_struct *conn,
       if (oplock_request && lp_fake_oplocks(SNUM(conn)))
         smb_action |= EXTENDED_OPLOCK_GRANTED;
   
-      if(oplock_request && fsp->granted_oplock)
+      if(oplock_request && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
         smb_action |= EXTENDED_OPLOCK_GRANTED;
     }
   }
@@ -1174,7 +1200,13 @@ static int call_nt_transact_create(connection_struct *conn,
   memset((char *)params,'\0',69);
 
   p = params;
-  SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? BATCH_OPLOCK : 0));
+  if (smb_action & EXTENDED_OPLOCK_GRANTED)	
+  	SCVAL(p,0, BATCH_OPLOCK_RETURN);
+  else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+    SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
+  else
+	SCVAL(p,0,NO_OPLOCK_RETURN);
+	
   p += 2;
   if (IS_IPC(conn)) {
 	  SSVAL(p,0,pnum);
@@ -1509,18 +1541,20 @@ void remove_pending_change_notify_requests_by_filename(files_struct *fsp)
 
 /****************************************************************************
  Process the change notify queue. Note that this is only called as root.
+ Returns True if there are still outstanding change notify requests on the
+ queue.
 *****************************************************************************/
 
-void process_pending_change_notify_queue(time_t t)
+BOOL process_pending_change_notify_queue(time_t t)
 {
   change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
   change_notify_buf *prev = NULL;
 
   if(cnbp == NULL)
-    return;
+    return False;
 
   if(cnbp->next_check_time >= t)
-    return;
+    return True;
 
   /*
    * It's time to check. Go through the queue and see if
@@ -1598,6 +1632,18 @@ directory %s\n", cnbp->fsp->fsp_name ));
     prev = cnbp;
     cnbp = (change_notify_buf *)ubi_slNext(cnbp);
   }
+
+  return (cnbp != NULL);
+}
+
+/****************************************************************************
+ Return true if there are pending change notifies.
+****************************************************************************/
+
+BOOL change_notifies_pending(void)
+{
+  change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
+  return (cnbp != NULL);
 }
 
 /****************************************************************************
@@ -2155,6 +2201,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   SMB_STRUCT_STAT sbuf;
   files_struct *fsp = NULL;
   uint32 security_info_sent = 0;
+  BOOL got_dacl = False;
 
   if(!lp_nt_acl_support())
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2206,6 +2253,11 @@ security descriptor.\n"));
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
+  if (psd->dacl != NULL)
+    got_dacl = True;
+
+  free_sec_desc(&psd);
+
   /*
    * Get the current state of the file.
    */
@@ -2223,8 +2275,9 @@ security descriptor.\n"));
     else
       ret = sys_fstat(fsp->fd_ptr->fd,&sbuf);
 
-    if(ret != 0)
+    if(ret != 0) {
       return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
   }
 
   /*
@@ -2233,39 +2286,66 @@ security descriptor.\n"));
 
   if((user != (uid_t)-1 || grp != (uid_t)-1) && (sbuf.st_uid != user || sbuf.st_gid != grp)) {
 
-      DEBUG(3,("call_nt_transact_set_security_desc: chown %s. uid = %u, gid = %u.\n",
-            fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
+    DEBUG(3,("call_nt_transact_set_security_desc: chown %s. uid = %u, gid = %u.\n",
+          fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
 
-      if(dos_chown( fsp->fsp_name, user, grp) == -1) {
-        DEBUG(3,("call_nt_transact_set_security_desc: chown %s, %u, %u failed. Error = %s.\n",
-              fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
+    if(dos_chown( fsp->fsp_name, user, grp) == -1) {
+      DEBUG(3,("call_nt_transact_set_security_desc: chown %s, %u, %u failed. Error = %s.\n",
+            fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
+
+    /*
+     * Recheck the current state of the file, which may have changed.
+     * (suid/sgid bits, for instance)
+     */
+
+    if(fsp->is_directory) {
+      if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
         return(UNIXERROR(ERRDOS,ERRnoaccess));
       }
+    } else {
+
+      int ret;
+    
+      if(fsp->fd_ptr == NULL)
+        ret = dos_stat(fsp->fsp_name, &sbuf);
+      else
+        ret = sys_fstat(fsp->fd_ptr->fd,&sbuf);
+  
+      if(ret != 0)
+        return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
   }
 
   /*
    * Only change security if we got a DACL.
    */
 
-  if((security_info_sent & DACL_SECURITY_INFORMATION) && (psd->dacl != NULL)) {
-
-    free_sec_desc(&psd);
+  if((security_info_sent & DACL_SECURITY_INFORMATION) && got_dacl) {
 
     /*
      * Check to see if we need to change anything.
+     * Enforce limits on modified bits.
      */
 
     if(fsp->is_directory) {
 
-      perms &= lp_dir_mode(SNUM(conn));
-      perms |= lp_force_dir_mode(SNUM(conn));
+      perms &= lp_dir_security_mask(SNUM(conn));
+      perms |= lp_force_dir_security_mode(SNUM(conn));
 
     } else {
 
-      perms &= lp_create_mode(SNUM(conn)); 
-      perms |= lp_force_create_mode(SNUM(conn));
+      perms &= lp_security_mask(SNUM(conn)); 
+      perms |= lp_force_security_mode(SNUM(conn));
 
     }
+
+    /*
+     * Preserve special bits.
+     */
+
+    perms |= (sbuf.st_mode & ~0777);
 
     /*
      * Do we need to chmod ?

@@ -1828,7 +1828,7 @@ dev = %x, inode = %.0f from %x to %x\n",
                       iterate_fsp->fnum, iterate_fsp->fsp_name, (unsigned int)dev, 
                       (double)inode, iterate_fsp->share_mode, new_share_mode ));
 
-                if(modify_share_mode(token, iterate_fsp, new_share_mode)==False)
+                if(modify_share_mode(token, iterate_fsp, new_share_mode, iterate_fsp->oplock_type)==False)
                   DEBUG(0,("call_trans2setfilepathinfo: failed to change delete on close for fnum %d, \
 dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode));
               }

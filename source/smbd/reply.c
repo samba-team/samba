@@ -1504,7 +1504,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
     
-  if(fsp->granted_oplock)
+  if(EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   return(outsize);
 }
@@ -1599,7 +1599,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     smb_action |= EXTENDED_OPLOCK_GRANTED;
   }
 
-  if(ex_oplock_request && fsp->granted_oplock) {
+  if(ex_oplock_request && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
     smb_action |= EXTENDED_OPLOCK_GRANTED;
   }
 
@@ -1612,7 +1612,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
 
-  if(core_oplock_request && fsp->granted_oplock) {
+  if(core_oplock_request && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
 
@@ -1735,7 +1735,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
  
-  if(fsp->granted_oplock)
+  if(EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
  
   DEBUG( 2, ( "new file %s\n", fname ) );
@@ -1809,7 +1809,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
   
-  if(fsp->granted_oplock)
+  if(EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
 
   DEBUG( 2, ( "created temp file %s\n", fname2 ) );
@@ -1843,8 +1843,9 @@ static BOOL can_delete(char *fname,connection_struct *conn, int dirtype)
 }
 
 /****************************************************************************
-  reply to a unlink
+ Reply to a unlink
 ****************************************************************************/
+
 int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = 0;
@@ -1858,6 +1859,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL has_wild;
   BOOL exists=False;
   BOOL bad_path = False;
+  BOOL rc = True;
 
   *directory = *mask = 0;
 
@@ -1867,7 +1869,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
    
   DEBUG(3,("reply_unlink : %s\n",name));
    
-  unix_convert(name,conn,0,&bad_path,NULL);
+  rc = unix_convert(name,conn,0,&bad_path,NULL);
 
   p = strrchr(name,'/');
   if (!p) {
@@ -1879,7 +1881,16 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     pstrcpy(mask,p+1);
   }
 
-  if (is_mangled(mask))
+  /*
+   * We should only check the mangled cache
+   * here if unix_convert failed. This means
+   * that the path in 'mask' doesn't exist
+   * on the file system and so we need to look
+   * for a possible mangle. This patch from
+   * Tine Smukavec <valentin.smukavec@hermes.si>.
+   */
+
+  if (!rc && is_mangled(mask))
     check_mangled_cache( mask );
 
   has_wild = strchr(mask,'*') || strchr(mask,'?');
@@ -2306,13 +2317,8 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
   if (is_locked(fsp,conn,tcount,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if (seek_file(fsp,startpos) == -1) {
-    DEBUG(0,("couldn't seek to %.0f in writebraw\n",(double)startpos));
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-
   if (numtowrite>0)
-    nwritten = write_file(fsp,data,numtowrite);
+    nwritten = write_file(fsp,data,startpos,numtowrite);
   
   DEBUG(3,("writebraw1 fnum=%d start=%.0f num=%d wrote=%d sync=%d\n",
 	   fsp->fnum, (double)startpos, (int)numtowrite, (int)nwritten, (int)write_through));
@@ -2397,16 +2403,13 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if(seek_file(fsp,startpos) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-
   /* The special X/Open SMB protocol handling of
      zero length writes is *NOT* done for
      this call */
   if(numtowrite == 0)
     nwritten = 0;
   else
-    nwritten = write_file(fsp,data,numtowrite);
+    nwritten = write_file(fsp,data,startpos,numtowrite);
   
   if (lp_syncalways(SNUM(conn)))
     sync_file(conn,fsp);
@@ -2450,16 +2453,13 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if(seek_file(fsp,startpos) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-
   /* X/Open SMB protocol says that if smb_vwv1 is
      zero then the file size should be extended or
      truncated to the size given in smb_vwv[2-3] */
   if(numtowrite == 0)
     nwritten = set_filelen(fsp->fd_ptr->fd, (SMB_OFF_T)startpos);
   else
-    nwritten = write_file(fsp,data,numtowrite);
+    nwritten = write_file(fsp,data,startpos,numtowrite);
   
   if (lp_syncalways(SNUM(conn)))
     sync_file(conn,fsp);
@@ -2531,9 +2531,6 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if(seek_file(fsp,startpos) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  
   /* X/Open SMB protocol says that, unlike SMBwrite
      if the length is zero then NO truncation is
      done, just a write of zero. To truncate a file,
@@ -2541,7 +2538,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   if(numtowrite == 0)
     nwritten = 0;
   else
-    nwritten = write_file(fsp,data,numtowrite);
+    nwritten = write_file(fsp,data,startpos,numtowrite);
   
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2785,11 +2782,8 @@ int reply_writeclose(connection_struct *conn,
   
 	if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
 		return(ERROR(ERRDOS,ERRlock));
-      
-	if(seek_file(fsp,startpos) == -1)
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
-      
-	nwritten = write_file(fsp,data,numtowrite);
+          
+	nwritten = write_file(fsp,data,startpos,numtowrite);
 
 	set_filetime(conn, fsp->fsp_name,mtime);
   
@@ -3123,7 +3117,7 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
   numtowrite = SVAL(smb_buf(inbuf),1);
   data = smb_buf(inbuf) + 3;
   
-  if (write_file(fsp,data,numtowrite) != numtowrite)
+  if (write_file(fsp,data,-1,numtowrite) != numtowrite)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
   DEBUG( 3, ( "printwrite fnum=%d num=%d\n", fsp->fnum, numtowrite ) );
@@ -3449,10 +3443,11 @@ int rename_internals(connection_struct *conn,
 	int count=0;
 	int error = ERRnoaccess;
 	BOOL exists=False;
+	BOOL rc = True;
 
 	*directory = *mask = 0;
 
-	unix_convert(name,conn,0,&bad_path1,NULL);
+	rc = unix_convert(name,conn,0,&bad_path1,NULL);
 	unix_convert(newname,conn,newname_last_component,&bad_path2,NULL);
 
 	/*
@@ -3475,7 +3470,16 @@ int rename_internals(connection_struct *conn,
 		*p = '/'; /* Replace needed for exceptional test below. */
 	}
 
-	if (is_mangled(mask))
+	/*
+	 * We should only check the mangled cache
+	 * here if unix_convert failed. This means
+	 * that the path in 'mask' doesn't exist
+	 * on the file system and so we need to look
+	 * for a possible mangle. This patch from
+	 * Tine Smukavec <valentin.smukavec@hermes.si>.
+	 */
+
+	if (!rc && is_mangled(mask))
 		check_mangled_cache( mask );
 
 	has_wild = strchr(mask,'*') || strchr(mask,'?');
@@ -3760,6 +3764,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   BOOL target_is_directory=False;
   BOOL bad_path1 = False;
   BOOL bad_path2 = False;
+  BOOL rc = True;
 
   *directory = *mask = 0;
 
@@ -3774,7 +3779,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(ERROR(ERRSRV,ERRinvdevice));
   }
 
-  unix_convert(name,conn,0,&bad_path1,NULL);
+  rc = unix_convert(name,conn,0,&bad_path1,NULL);
   unix_convert(newname,conn,0,&bad_path2,NULL);
 
   target_is_directory = dos_directory_exist(newname,NULL);
@@ -3803,7 +3808,16 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     pstrcpy(mask,p+1);
   }
 
-  if (is_mangled(mask))
+  /*
+   * We should only check the mangled cache
+   * here if unix_convert failed. This means
+   * that the path in 'mask' doesn't exist
+   * on the file system and so we need to look
+   * for a possible mangle. This patch from
+   * Tine Smukavec <valentin.smukavec@hermes.si>.
+   */
+
+  if (!rc && is_mangled(mask))
     check_mangled_cache( mask );
 
   has_wild = strchr(mask,'*') || strchr(mask,'?');
@@ -3844,7 +3858,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 	    pstrcpy(destname,newname);
 	    if (resolve_wildcards(fname,destname) && 
-		copy_file(directory,newname,conn,ofun,
+		copy_file(fname,destname,conn,ofun,
 			  count,target_is_directory,&err)) count++;
 	    DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname,destname));
 	  }
@@ -3935,6 +3949,7 @@ SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, B
             ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)));
 
 #else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
+
     /*
      * NT4.x seems to be broken in that it sends large file
      * lockingX calls even if the CAP_LARGE_FILES was *not*
@@ -4031,6 +4046,7 @@ SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, 
             ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)));
 
 #else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
+
     /*
      * NT4.x seems to be broken in that it sends large file
      * lockingX calls even if the CAP_LARGE_FILES was *not*
@@ -4125,9 +4141,9 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
     DEBUG(5,("reply_lockingX: oplock break reply from client for fnum = %d\n",
               fsp->fnum));
     /*
-     * Make sure we have granted an oplock on this file.
+     * Make sure we have granted an exclusive or batch oplock on this file.
      */
-    if(!fsp->granted_oplock)
+    if(!EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     {
       DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
 no oplock granted on this file.\n", fsp->fnum));
@@ -4140,13 +4156,38 @@ no oplock granted on this file.\n", fsp->fnum));
     }
 
     /* Remove the oplock flag from the sharemode. */
-    lock_share_entry(fsp->conn, dev, inode, &token);
-    if(remove_share_oplock(token, fsp)==False) {
-      DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
-dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
+    if (lock_share_entry(fsp->conn, dev, inode, &token) == False) {
+      DEBUG(0,("reply_lockingX: failed to lock share entry for file %s\n",
+            fsp->fsp_name ));
     }
 
-    release_file_oplock(fsp);
+    if (fsp->sent_oplock_break == EXCLUSIVE_BREAK_SENT) {
+
+      /*
+       * Deal with a reply when a break-to-none was sent.
+       */
+
+      if(remove_share_oplock(token, fsp)==False) {
+        DEBUG(0,("reply_lockingX: failed to remove share oplock for file %s fnum %d, \
+dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
+      }
+
+      release_file_oplock(fsp);
+
+    } else {
+
+      /*
+       * Deal with a reply when a break-to-level II was sent.
+       */
+
+      if(downgrade_share_oplock(token, fsp)==False) {
+        DEBUG(0,("reply_lockingX: failed to downgrade share oplock for file %s fnum %d, \
+dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
+      }
+
+      downgrade_file_oplock(fsp);
+    }
+
     unlock_share_entry(fsp->conn, dev, inode, token);
 
     /* if this is a pure oplock break request then don't send a reply */
@@ -4355,10 +4396,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
   if (is_locked(fsp,conn,tcount,startpos,F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if(seek_file(fsp,startpos) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-
-  nwritten = write_file(fsp,data,numtowrite);
+  nwritten = write_file(fsp,data,startpos,numtowrite);
 
   if(lp_syncalways(SNUM(conn)) || write_through)
     sync_file(conn,fsp);
@@ -4459,19 +4497,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   if(wbms->wr_discard)
     return -1; /* Just discard the packet */
 
-  if(seek_file(fsp,startpos) == -1)
-  {
-    if(write_through)
-    {
-      /* We are returning an error - we can delete the aux struct */
-      if (wbms) free((char *)wbms);
-      fsp->wbmpx_ptr = NULL;
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
-    }
-    return(CACHE_ERROR(wbms,ERRDOS,ERRnoaccess));
-  } 
-
-  nwritten = write_file(fsp,data,numtowrite);
+  nwritten = write_file(fsp,data,startpos,numtowrite);
 
   if(lp_syncalways(SNUM(conn)) || write_through)
     sync_file(conn,fsp);

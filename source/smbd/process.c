@@ -244,12 +244,12 @@ void respond_to_all_remaining_local_messages(void)
   fd_set fds;
 
   /*
-   * Assert we have no open oplocks.
+   * Assert we have no exclusive open oplocks.
    */
 
-  if(get_number_of_open_oplocks()) {
-    DEBUG(0,("respond_to_all_remaining_local_messages: PANIC : we have %d oplocks.\n",
-          get_number_of_open_oplocks() ));
+  if(get_number_of_exclusive_open_oplocks()) {
+    DEBUG(0,("respond_to_all_remaining_local_messages: PANIC : we have %d exclusive oplocks.\n",
+          get_number_of_exclusive_open_oplocks() ));
     return;
   }
 
@@ -414,14 +414,14 @@ do a switch on the message type, and return the response size
 ****************************************************************************/
 static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize)
 {
-  static int pid= -1;
+  static pid_t pid= (pid_t)-1;
   int outsize = 0;
   static int num_smb_messages = 
     sizeof(smb_messages) / sizeof(struct smb_message_struct);
   int match;
   extern int Client;
 
-  if (pid == -1)
+  if (pid == (pid_t)-1)
     pid = getpid();
 
   errno = 0;
@@ -445,7 +445,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   }
   else
   {
-    DEBUG(3,("switch message %s (pid %d)\n",smb_messages[match].name,pid));
+    DEBUG(3,("switch message %s (pid %d)\n",smb_messages[match].name,(int)pid));
 
     if(global_oplock_break)
     {
@@ -787,6 +787,29 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 }
 
 /****************************************************************************
+ Setup the needed select timeout.
+****************************************************************************/
+
+static int setup_select_timeout(void)
+{
+  int change_notify_timeout = lp_change_notify_timeout() * 1000;
+  int select_timeout;
+
+  /*
+   * Increase the select timeout back to SMBD_SELECT_TIMEOUT if we
+   * have removed any blocking locks. JRA.
+   */
+
+  select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
+                                              SMBD_SELECT_TIMEOUT*1000;
+
+  if (change_notifies_pending())
+    select_timeout = MIN(select_timeout, change_notify_timeout);
+
+  return select_timeout;
+}
+
+/****************************************************************************
  Process any timeout housekeeping. Return False if the caler should exit.
 ****************************************************************************/
 
@@ -942,12 +965,11 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
   process_pending_change_notify_queue(t);
 
   /*
-   * Increase the select timeout back to SMBD_SELECT_TIMEOUT if we
-   * have removed any blocking locks. JRA.
+   * Modify the select timeout depending upon
+   * what we have remaining in our queues.
    */
 
-  *select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
-                                              SMBD_SELECT_TIMEOUT*1000;
+  *select_timeout = setup_select_timeout();
 
   return True;
 }
@@ -991,7 +1013,7 @@ void smbd_process(void)
   {
     int deadtime = lp_deadtime()*60;
     BOOL got_smb = False;
-    int select_timeout = SMBD_SELECT_TIMEOUT*1000;
+    int select_timeout = setup_select_timeout();
 
     if (deadtime <= 0)
       deadtime = DEFAULT_SMBD_TIMEOUT;

@@ -276,7 +276,7 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
   DEBUG(3, ("Clearing default real name\n"));
   fstrcpy(vuser->real_name, "<Full Name>\0");
   if (lp_unix_realname()) {
-    if ((pwfile=getpwnam(vuser->name))!= NULL)
+    if ((pwfile=sys_getpwnam(vuser->name))!= NULL)
       {
       DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->name,pwfile->pw_gecos));
       fstrcpy(vuser->real_name, pwfile->pw_gecos);
@@ -568,8 +568,8 @@ BOOL user_ok(char *user,int snum)
 	pstring valid, invalid;
 	BOOL ret;
 
-	StrnCpy(valid, lp_valid_users(snum), sizeof(pstring));
-	StrnCpy(invalid, lp_invalid_users(snum), sizeof(pstring));
+	StrnCpy(valid, lp_valid_users(snum), sizeof(pstring)-1);
+	StrnCpy(invalid, lp_invalid_users(snum), sizeof(pstring)-1);
 
 	string_sub(valid,"%S",lp_servicename(snum));
 	string_sub(invalid,"%S",lp_servicename(snum));

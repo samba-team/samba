@@ -114,7 +114,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 write to a file
 ****************************************************************************/
 
-ssize_t write_file(files_struct *fsp,char *data,size_t n)
+ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
 {
 
   if (!fsp->can_write) {
@@ -132,6 +132,90 @@ ssize_t write_file(files_struct *fsp,char *data,size_t n)
       }
     }  
   }
+
+  /*
+   * If this file is level II oplocked then we need
+   * to grab the shared memory lock and inform all
+   * other files with a level II lock that they need
+   * to flush their read caches. We keep the lock over
+   * the shared memory area whilst doing this.
+   */
+
+  if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
+    SMB_DEV_T dev = fsp->fd_ptr->dev;
+    SMB_INO_T inode = fsp->fd_ptr->inode;
+    share_mode_entry *share_list = NULL;
+    pid_t pid = getpid();
+    int token = -1;
+    int num_share_modes = 0;
+    int i;
+
+    if (lock_share_entry(fsp->conn, dev, inode, &token) == False) {
+      DEBUG(0,("write_file: failed to lock share mode entry for file %s.\n", fsp->fsp_name ));
+    }
+
+    num_share_modes = get_share_modes(fsp->conn, token, dev, inode, &share_list);
+
+    for(i = 0; i < num_share_modes; i++) {
+      share_mode_entry *share_entry = &share_list[i];
+
+      /*
+       * As there could have been multiple writes waiting at the lock_share_entry
+       * gate we may not be the first to enter. Hence the state of the op_types
+       * in the share mode entries may be partly NO_OPLOCK and partly LEVEL_II
+       * oplock. It will do no harm to re-send break messages to those smbd's
+       * that are still waiting their turn to remove their LEVEL_II state, and
+       * also no harm to ignore existing NO_OPLOCK states. JRA.
+       */
+
+      if (share_entry->op_type == NO_OPLOCK)
+        continue;
+
+      /* Paranoia .... */
+      if (EXLUSIVE_OPLOCK_TYPE(share_entry->op_type)) {
+        DEBUG(0,("write_file: PANIC. share mode entry %d is an exlusive oplock !\n", i ));
+        abort();
+      }
+
+      /*
+       * Check if this is a file we have open (including the
+       * file we've been called to do write_file on. If so
+       * then break it directly without releasing the lock.
+       */
+
+      if (pid == share_entry->pid) {
+        files_struct *new_fsp = file_find_dit(dev, inode, &share_entry->time);
+
+        /* Paranoia check... */
+        if(new_fsp == NULL) {
+          DEBUG(0,("write_file: PANIC. share mode entry %d is not a local file !\n", i ));
+          abort();
+        }
+        oplock_break_level2(new_fsp, True, token);
+
+      } else {
+
+        /*
+         * This is a remote file and so we send an asynchronous
+         * message.
+         */
+
+        request_oplock_break(share_entry, dev, inode);
+      }
+    }
+ 
+    free((char *)share_list);
+    unlock_share_entry(fsp->conn, dev, inode, token);
+  }
+
+  /* Paranoia check... */
+  if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
+    DEBUG(0,("write_file: PANIC. File %s still has a level II oplock.\n", fsp->fsp_name));
+    abort();
+  }
+
+  if ((pos != -1) && (seek_file(fsp,pos) == -1))
+    return -1;
 
   return(write_data(fsp->fd_ptr->fd,data,n));
 }

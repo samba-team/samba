@@ -94,7 +94,6 @@ files_struct *file_new(void )
 	first_file = (i+1) % real_max_open_files;
 
 	bitmap_set(file_bmap, i);
-
 	files_used++;
 
 	fsp->fnum = i + FILE_HANDLE_OFFSET;
@@ -376,8 +375,8 @@ void file_free(files_struct *fsp)
 	bitmap_clear(file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
 	files_used--;
 
-	DEBUG(5,("freed files structure %d fnum = %d (%d used)\n",
-		 fsp->fnum - FILE_HANDLE_OFFSET, fsp->fnum, files_used));
+	DEBUG(5,("freed files structure %d (%d used)\n",
+		 fsp->fnum, files_used));
 
 	/* this is paranoia, just in case someone tries to reuse the 
 	   information */
