@@ -1316,6 +1316,17 @@ find_rpath(Realm r)
 }
 	    
 
+krb5_boolean
+need_referral(krb5_principal server, krb5_realm **realms)
+{
+    if(server->name.name_type != KRB5_NT_SRV_INST ||
+       server->name.name_string.len != 2)
+	return FALSE;
+ 
+    return krb5_get_host_realm_int(context, server->name.name_string.val[1],
+				   FALSE, realms) == 0;
+}
+
 static krb5_error_code
 tgs_rep2(KDC_REQ_BODY *b,
 	 PA_DATA *tgs_req,
@@ -1588,11 +1599,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 			goto server_lookup;
 		    }
 		}
-	    } else if(sp->name.name_string.len == 2
-		&& (ret = krb5_get_host_realm_int(context,
-						  sp->name.name_string.val[1],
-						  FALSE,
-						  &realms)) == 0) {
+	    } else if(need_referral(sp, &realms)) {
 		if (strcmp(realms[0], sp->realm) != 0) {
 		    kdc_log(5, "returning a referral to realm %s for "
 			    "server %s that was not found",
