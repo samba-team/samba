@@ -5,7 +5,6 @@
 
 /* The following definitions come from nsswitch/winbindd.c  */
 
-void winbindd_dump_status(void);
 int main(int argc, char **argv);
 
 /* The following definitions come from nsswitch/winbindd_cache.c  */
@@ -74,9 +73,6 @@ BOOL winbindd_idmap_init(void);
 void winbindd_idmap_dump_status(void);
 
 /* The following definitions come from nsswitch/winbindd_misc.c  */
-
-BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
-				 time_t *pass_last_set_time);
 enum winbindd_result winbindd_check_machine_acct(
 	struct winbindd_cli_state *state);
 enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
@@ -112,7 +108,6 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state);
 
 void debug_conn_state(void);
 BOOL domain_handles_open(struct winbindd_domain *domain);
-void winbindd_kill_connections(struct winbindd_domain *domain);
 void winbindd_kill_all_connections(void);
 void establish_connections(BOOL force_reestablish) ;
 BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain);
@@ -142,5 +137,4 @@ NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
 			     uint32 *start_ndx, uint16 info_level, 
 			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr);
 BOOL check_domain_env(char *domain_env, char *domain);
-void parse_domain_user(char *domuser, fstring domain, fstring user);
 #endif /* _PROTO_H_ */

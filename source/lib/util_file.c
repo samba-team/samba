@@ -272,14 +272,14 @@ read a line from a file with possible \ continuation chars.
 Blanks at the start or end of a line are stripped.
 The string will be allocated if s2 is NULL
 ****************************************************************************/
-char *fgets_slash(char *s2,int maxlen,FILE *f)
+char *fgets_slash(char *s2,int maxlen,XFILE *f)
 {
   char *s=s2;
   int len = 0;
   int c;
   BOOL start_of_line = True;
 
-  if (feof(f))
+  if (x_feof(f))
     return(NULL);
 
   if (maxlen <2) return(NULL);
@@ -296,7 +296,7 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
 
   while (len < maxlen-1)
     {
-      c = getc(f);
+      c = x_getc(f);
       switch (c)
 	{
 	case '\r':

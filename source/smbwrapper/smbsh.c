@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 
 	if (!smbw_getshared("USER")) {
 		printf("Username: ");
-		u = fgets_slash(line, sizeof(line)-1, stdin);
+		u = fgets_slash(line, sizeof(line)-1, x_stdin);
 		smbw_setshared("USER", u);
 	}
 

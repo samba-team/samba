@@ -99,14 +99,14 @@ static int strlocate(char *xpLine,char *xpS)
 static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 {
 	int iEtat;
-	FILE *pfile;
+	XFILE *pfile;
 	char *line,*p;
 	pstring name,comment;
 	line  = NULL;
 	*name = 0;
 	*comment = 0;
 
-	if ((pfile = sys_fopen(psz, "r")) == NULL)
+	if ((pfile = x_fopen(psz, O_RDONLY, 0)) == NULL)
 	{
 	      DEBUG(0,( "Unable to open qconfig file %s for read!\n", psz));
 	      return;
@@ -160,7 +160,7 @@ static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 		  	  break;
 		}
 	}
-	fclose(pfile);
+	x_fclose(pfile);
 }
 
 /* Scan qconfig file and locate de printername */
@@ -168,7 +168,7 @@ static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 static BOOL ScanQconfig(char *psz,char *pszPrintername)
 {
 	int iLg,iEtat;
-	FILE *pfile;
+	XFILE *pfile;
 	char *pName;
 	char *line;
 
@@ -181,7 +181,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		DEBUG(0,(" Unable to allocate memory for printer %s\n",pszPrintername));
 		return(False);
 	}
-	if ((pfile = sys_fopen(psz, "r")) == NULL)
+	if ((pfile = x_fopen(psz, O_RDONLY, 0)) == NULL)
 	{
 	      DEBUG(0,( "Unable to open qconfig file %s for read!\n", psz));
 	      free(pName);
@@ -234,7 +234,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		}
 	}
 	free (pName);
-	fclose(pfile);
+	x_fclose(pfile);
 	return(False);
 }
 #endif /* AIX */
@@ -254,7 +254,7 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
   char *line=NULL;
   char *psz;
   char *p,*q;
-  FILE *pfile;
+  XFILE *pfile;
 
   if (pszPrintername == NULL || pszPrintername[0] == '\0')
     {
@@ -285,7 +285,7 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
      return(ScanQconfig(psz,pszPrintername));
 #endif
 
-  if ((pfile = sys_fopen(psz, "r")) == NULL)
+  if ((pfile = x_fopen(psz, O_RDONLY, 0)) == NULL)
     {
       DEBUG(0,( "Unable to open printcap file %s for read!\n", psz));
       return(False);
@@ -311,14 +311,14 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 	      /* normalise the case */
 	      pstrcpy(pszPrintername,p);
 	      free(line);
-	      fclose(pfile);
+	      x_fclose(pfile);
 	      return(True);	      
 	    }
 	  p = q;
 	}
     }
 
-  fclose(pfile);
+  x_fclose(pfile);
   return(False);
 }
 
@@ -335,7 +335,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
   char *line;
   char *psz;
   char *p,*q;
-  FILE *pfile;
+  XFILE *pfile;
 
   /* only go looking if no printcap name supplied */
   if (((psz = lp_printcapname()) == NULL) || (psz[0] == '\0'))
@@ -366,7 +366,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
   }
 #endif
 
-  if ((pfile = sys_fopen(psz, "r")) == NULL)
+  if ((pfile = x_fopen(psz, O_RDONLY, 0)) == NULL)
     {
       DEBUG(0,( "Unable to open printcap file %s for read!\n", psz));
       return;
@@ -419,5 +419,5 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       if (*name) 
 	fn(name,comment);
     }
-  fclose(pfile);
+  x_fclose(pfile);
 }
