@@ -1385,6 +1385,7 @@ BOOL lp_ssl_enabled(void);
 BOOL lp_ssl_reqClientCert(void);
 BOOL lp_ssl_reqServerCert(void);
 BOOL lp_ssl_compatibility(void);
+BOOL lp_ms_add_printer_wizard(void);
 BOOL lp_dns_proxy(void);
 BOOL lp_wins_support(void);
 BOOL lp_we_are_a_wins_server(void);
@@ -1976,15 +1977,6 @@ uint32 spoolss_getprinterdriverdir(fstring srv_name, fstring env_name, uint32 le
                              NEW_BUFFER *buffer, uint32 offered,
                              uint32 *needed);
 uint32 spoolss_addprinterdriver(const char *srv_name, uint32 level, PRINTER_DRIVER_CTR *info);
-
-/*The following definitions come from  rpc_client/cli_spoolss_notify.c  */
-
-BOOL spoolss_disconnect_from_client( struct cli_state *cli);
-BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine);
-BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32 localprinter, uint32 type, uint32 *status, POLICY_HND *handle);
-BOOL cli_spoolss_reply_rrpcn(struct cli_state *cli, POLICY_HND *handle, 
-			     uint32 change_low, uint32 change_high, uint32 *status);
-BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, uint32 *status);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 

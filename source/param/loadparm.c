@@ -219,6 +219,7 @@ typedef struct
 	BOOL sslReqServerCert;
 	BOOL sslCompatibility;
 #endif				/* WITH_SSL */
+	BOOL bMsAddPrinterWizard;
 	BOOL bDNSproxy;
 	BOOL bWINSsupport;
 	BOOL bWINSproxy;
@@ -806,6 +807,7 @@ static struct parm_struct parm_table[] = {
 	{"enumports command", P_STRING, P_GLOBAL, &Globals.szEnumPortsCommand, NULL, NULL, 0},
 	{"addprinter command", P_STRING, P_GLOBAL, &Globals.szAddPrinterCommand, NULL, NULL, 0},
 	{"deleteprinter command", P_STRING, P_GLOBAL, &Globals.szDeletePrinterCommand, NULL, NULL, 0},
+	{"show add printer wizard", P_BOOL, P_GLOBAL, &Globals.bMsAddPrinterWizard, NULL, NULL, 0},
 	
 	{"printer name", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_PRINT},
 	{"printer", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, 0},
@@ -1231,6 +1233,7 @@ static void init_globals(void)
 
 */
 
+	Globals.bMsAddPrinterWizard = True;
 	Globals.bPreferredMaster = Auto;	/* depending on bDomainMaster */
 	Globals.os_level = 20;
 	Globals.bLocalMaster = True;
@@ -1406,6 +1409,7 @@ FN_GLOBAL_BOOL(lp_ssl_reqServerCert, &Globals.sslReqServerCert);
 FN_GLOBAL_BOOL(lp_ssl_compatibility, &Globals.sslCompatibility);
 #endif /* WITH_SSL */
 
+FN_GLOBAL_BOOL(lp_ms_add_printer_wizard, &Globals.bMsAddPrinterWizard)
 FN_GLOBAL_BOOL(lp_dns_proxy, &Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support, &Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_we_are_a_wins_server, &Globals.bWINSsupport)

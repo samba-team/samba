@@ -196,6 +196,8 @@ static BOOL srv_spoolss_replycloseprinter(POLICY_HND *handle)
 			return False;
 
 	smb_connections--;
+
+	return True;
 }
 
 /****************************************************************************
@@ -280,7 +282,7 @@ static BOOL delete_printer_handle(POLICY_HND *hnd)
 		DEBUGADD(10,("Unlinking output file [%s]\n", tmp_file));
 		unlink(tmp_file);
 
-		// Send SIGHUP to process group... is there a better way?
+		/* Send SIGHUP to process group... is there a better way? */
 		kill(0, SIGHUP);
 
 		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) >= 0 ) {
@@ -495,6 +497,7 @@ static BOOL open_printer_hnd(POLICY_HND *hnd, char *name)
 {
 	Printer_entry *new_printer;
 
+	DEBUG(10,("open_printer_hnd: name [%s]\n", name));
 	clear_handle(hnd);
 	create_printer_hnd(hnd);
 
@@ -600,6 +603,8 @@ static BOOL srv_spoolss_receive_message(char *printer)
 				return False;
 
 	}
+
+	return True;
 }
 
 /***************************************************************************
@@ -622,6 +627,8 @@ static BOOL srv_spoolss_sendnotify(POLICY_HND *handle)
 		fstrcpy(printer, "");
 
 	srv_spoolss_receive_message(printer);
+
+	return True;
 }	
 
 /********************************************************************
@@ -663,6 +670,17 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 		return ERROR_ACCESS_DENIED;
 	}
 		
+	/* Disallow MS AddPrinterWizard if access rights are insufficient OR
+	   if parameter disables it. The client tries an OpenPrinterEx with
+	   SERVER_ALL_ACCESS(0xf0003), which we force to fail. It then tries
+	   OpenPrinterEx with SERVER_READ(0x20002) which we allow. This lets
+	   it see any printers there, but does not show the MSAPW */
+	if (handle_is_printserver(handle) &&
+		printer_default->access_required != (SERVER_READ) &&
+		!lp_ms_add_printer_wizard() ) {
+		return ERROR_ACCESS_DENIED;
+	}
+
 	return NT_STATUS_NO_PROBLEMO;
 }
 
@@ -1001,6 +1019,8 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 
 	if(!cli_spoolss_reply_open_printer(&cli, printer, localprinter, type, &status, handle))
 		return False;
+
+	return True;
 }
 
 /********************************************************************
@@ -3451,11 +3471,11 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	unlink(tmp_file);
 
 	if(numlines) {
-		// Set the portname to what the script says the portname should be
+		/* Set the portname to what the script says the portname should be. */
 		strncpy(printer->info_2->portname, qlines[0], sizeof(printer->info_2->portname));
 		DEBUGADD(6,("Line[0] = [%s]\n", qlines[0]));
 
-		// Send SIGHUP to process group... is there a better way?
+		/* Send SIGHUP to process group... is there a better way? */
 		kill(0, SIGHUP);
 		add_all_printers();
 	}
@@ -4393,7 +4413,7 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		DEBUG(10,("Returned [%d]\n", ret));
 		if (ret != 0) {
 			unlink(tmp_file);
-			// Is this the best error to return here?
+			/* Is this the best error to return here? */
 			return ERROR_ACCESS_DENIED;
 		}
 
@@ -4491,7 +4511,7 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		DEBUGADD(10,("returned [%d]\n", ret));
 		if (ret != 0) {
 			unlink(tmp_file);
-			// Is this the best error to return here?
+			/* Is this the best error to return here? */
 			return ERROR_ACCESS_DENIED;
 		}
 
