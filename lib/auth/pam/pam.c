@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -80,7 +80,7 @@ doit(pam_handle_t *pamh, char *name, char *inst, char *pwd, char *tkt)
     krb_set_tkt_string(tkt);
 	
     krb_get_lrealm(realm, 1);
-    ret = krb_verify_user_multiple(name, inst, realm, pwd, 1, NULL);
+    ret = krb_verify_user(name, inst, realm, pwd, 1, NULL);
     memset(pwd, 0, strlen(pwd));
     switch(ret){
     case KSUCCESS:

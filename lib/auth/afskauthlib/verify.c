@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -68,7 +68,7 @@ afs_verify(char *name,
 	      "%s%d_%d", TKT_ROOT,
 	      (unsigned)pwd->pw_uid, (unsigned)getpid());
     krb_set_tkt_string (tkt_string);
-    ret = krb_verify_user_multiple (name, "", lrealm, password, 1, NULL);
+    ret = krb_verify_user (name, "", lrealm, password, 1, NULL);
     if (ret == KSUCCESS) {
       if (k_hasafs()) {
 	k_setpag ();
