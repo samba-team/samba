@@ -103,8 +103,8 @@ uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	char *key;
 	uint32 type=0x1; /* key type: REG_SZ */
 
-	UNISTR2 uni_key;
-	BUFFER2 buf;
+	UNISTR2 *uni_key = NULL;
+	BUFFER2 *buf = NULL;
 	fstring name;
 
 	DEBUG(5,("_reg_info: %d\n", __LINE__));
@@ -116,13 +116,19 @@ uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 
 	DEBUG(5,("reg_info: checking key: %s\n", name));
 
+	uni_key = (UNISTR2 *)talloc_zero(p->mem_ctx, sizeof(UNISTR2));
+	buf = (BUFFER2 *)talloc_zero(p->mem_ctx, sizeof(BUFFER2));
+
+	if (!uni_key || !buf)
+		return NT_STATUS_NO_MEMORY;
+
 	if ( strequal(name, "RefusePasswordChange") ) {
 		type=0xF770;
 		status = ERRbadfile;
-		init_unistr2(&uni_key, "", 0);
-		init_buffer2(&buf, (uint8*) uni_key.buffer, uni_key.uni_str_len*2);
+		init_unistr2(uni_key, "", 0);
+		init_buffer2(buf, (uint8*) uni_key->buffer, uni_key->uni_str_len*2);
 		
-		buf.buf_max_len=4;
+		buf->buf_max_len=4;
 
 		goto out;
 	}
@@ -144,11 +150,11 @@ uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	/* which tells clients that we have our own local user and    */
 	/* group databases and helps with ACL support.                */
 
-	init_unistr2(&uni_key, key, strlen(key)+1);
-	init_buffer2(&buf, (uint8*)uni_key.buffer, uni_key.uni_str_len*2);
+	init_unistr2(uni_key, key, strlen(key)+1);
+	init_buffer2(buf, (uint8*)uni_key->buffer, uni_key->uni_str_len*2);
   
  out:
-	init_reg_r_info(q_u->ptr_buf, r_u, &buf, type, status);
+	init_reg_r_info(q_u->ptr_buf, r_u, buf, type, status);
 
 	DEBUG(5,("reg_open_entry: %d\n", __LINE__));
 
