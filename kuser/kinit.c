@@ -179,6 +179,7 @@ char *keytab_str	= NULL;
 #ifdef KRB4
 extern int do_afslog;
 extern int get_v4_tgt;
+int convert_524;
 #endif
 int fcache_version;
 
@@ -186,6 +187,9 @@ static struct getargs args[] = {
 #ifdef KRB4
     { "524init", 	'4', arg_flag, &get_v4_tgt,
       "obtain version 4 TGT" },
+    
+    { "524convert", 	'9', arg_flag, &convert_524,
+      "only convert ticket to version 4" },
     
     { "afslog", 	0  , arg_flag, &do_afslog,
       "obtain afs tokens"  },
@@ -250,6 +254,56 @@ usage (int ret)
 		    NULL,
 		    "[principal [command]]");
     exit (ret);
+}
+
+static krb5_error_code
+get_server(krb5_context context,
+	   krb5_principal client,
+	   const char *server,
+	   krb5_principal *princ)
+{
+    krb5_realm *client_realm;
+    if(server)
+	return krb5_parse_name(context, server, princ);
+
+    client_realm = krb5_princ_realm (context, client);
+    return krb5_make_principal(context, princ, *client_realm,
+			       KRB5_TGS_NAME, *client_realm, NULL);
+}
+
+static krb5_error_code
+do_524init(krb5_context context, krb5_ccache ccache, 
+	   krb5_creds *creds, const char *server)
+{
+    krb5_error_code ret;
+    CREDENTIALS c;
+    krb5_creds in_creds, *real_creds;
+
+    if(creds != NULL)
+	real_creds = creds;
+    else {
+	krb5_principal client;
+	krb5_cc_get_principal(context, ccache, &client);
+	memset(&in_creds, 0, sizeof(in_creds));
+	ret = get_server(context, client, server, &in_creds.server);
+	ret = krb5_get_credentials(context, 0, ccache, &in_creds, &real_creds);
+	if(ret)
+	    return ret;
+    }
+    ret = krb524_convert_creds_kdc_ccache(context, ccache, real_creds, &c);
+    if(ret)
+	krb5_warn(context, ret, "converting creds");
+    else {
+	int tret = tf_setup(&c, c.pname, c.pinst);
+	if(tret)
+	    krb5_warnx(context, "saving v4 creds: %s", krb_get_err_text(tret));
+    }
+
+    if(creds == NULL)
+	krb5_free_creds(context, real_creds);
+    memset(&c, 0, sizeof(c));
+
+    return ret;
 }
 
 static int
@@ -317,6 +371,18 @@ renew_validate(krb5_context context,
 	goto out;
     }
     ret = krb5_cc_store_cred(context, cache, out);
+
+#ifdef KRB4
+    if(ret != 0 && server == NULL) {
+	/* only do this if it's a general renew-my-tgt request */
+	if(get_v4_tgt)
+	    do_524init(context, cache, out, NULL);
+
+	if(do_afslog && k_hasafs())
+	    krb5_afslog(context, cache, NULL, NULL);
+    }
+#endif
+
     krb5_free_creds (context, out);
     if(ret) {
 	krb5_warn(context, ret, "krb5_cc_store_cred");
@@ -327,108 +393,20 @@ out:
     return ret;
 }
 
-int
-main (int argc, char **argv)
+static krb5_error_code
+get_new_tickets(krb5_context context, 
+		krb5_principal principal,
+		krb5_ccache ccache,
+		krb5_deltat ticket_life)
 {
     krb5_error_code ret;
-    krb5_context context;
-    krb5_ccache  ccache;
-    krb5_principal principal;
-    krb5_creds cred;
-    int optind = 0;
     krb5_get_init_creds_opt opt;
-    krb5_deltat start_time = 0;
-    krb5_deltat ticket_life = 0;
     krb5_addresses no_addrs;
+    krb5_creds cred;
     char passwd[256];
+    krb5_deltat start_time = 0;
 
-    setprogname (argv[0]);
     memset(&cred, 0, sizeof(cred));
-    
-    ret = krb5_init_context (&context);
-    if (ret)
-	errx(1, "krb5_init_context failed: %d", ret);
-  
-    /* XXX no way to figure out if set without explict test */
-    if(krb5_config_get_string(context, NULL, "libdefaults", 
-			      "forwardable", NULL))
-	forwardable_flag = krb5_config_get_bool (context, NULL,
-						 "libdefaults",
-						 "forwardable",
-						 NULL);
-
-#ifdef KRB4
-    get_v4_tgt = krb5_config_get_bool_default (context, NULL,
-					       get_v4_tgt,
-					       "libdefaults",
-					       "krb4_get_tickets",
-					       NULL);
-#endif
-
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
-	usage(1);
-    
-    if (help_flag)
-	usage (0);
-
-    if(version_flag) {
-	print_version(NULL);
-	exit(0);
-    }
-
-    argc -= optind;
-    argv += optind;
-
-    if (argv[0]) {
-	ret = krb5_parse_name (context, argv[0], &principal);
-	if (ret)
-	    krb5_err (context, 1, ret, "krb5_parse_name");
-    } else {
-	ret = kinit_get_default_principal (context, &principal);
-	if (ret)
-	    krb5_err (context, 1, ret, "krb5_get_default_principal");
-    }
-
-    if(fcache_version)
-	krb5_set_fcache_version(context, fcache_version);
-
-    if(cred_cache) 
-	ret = krb5_cc_resolve(context, cred_cache, &ccache);
-    else {
-	if(argc > 1) {
-	    char s[1024];
-	    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &ccache);
-	    if(ret)
-		krb5_err(context, 1, ret, "creating cred cache");
-	    snprintf(s, sizeof(s), "%s:%s",
-		     krb5_cc_get_type(context, ccache),
-		     krb5_cc_get_name(context, ccache));
-	    setenv("KRB5CCNAME", s, 1);
-#ifdef KRB4
-	    snprintf(s, sizeof(s), "%s_XXXXXX", TKT_ROOT);
-	    close(mkstemp(s));
-	    setenv("KRBTKFILE", s, 1);
-	    if (k_hasafs ())
-		k_setpag();
-#endif
-	} else
-	    ret = krb5_cc_default (context, &ccache);
-    }
-    if (ret)
-	krb5_err (context, 1, ret, "resolving credentials cache");
-
-    if (lifetime) {
-	int tmp = parse_time (lifetime, "s");
-	if (tmp < 0)
-	    errx (1, "unparsable time: %s", lifetime);
-
-	ticket_life = tmp;
-    }
-    if(renew_flag || validate_flag) {
-	ret = renew_validate(context, renew_flag, validate_flag, 
-			     ccache, server, ticket_life);
-	exit(ret != 0);
-    }
 
     krb5_get_init_creds_opt_init (&opt);
     
@@ -485,17 +463,6 @@ main (int argc, char **argv)
 	krb5_get_init_creds_opt_set_etype_list(&opt, enctype, 
 					       etype_str.num_strings);
     }
-
-#ifdef KRB4
-    get_v4_tgt = krb5_config_get_bool_default (context,
-					       NULL,
-					       get_v4_tgt,
-					       "realms",
-					       *krb5_princ_realm(context,
-								 principal),
-					       "krb4_get_tickets",
-					       NULL);
-#endif
 
     if(use_keytab || keytab_str) {
 	krb5_keytab kt;
@@ -573,22 +540,134 @@ main (int argc, char **argv)
 	krb5_err (context, 1, ret, "krb5_cc_initialize");
     
     ret = krb5_cc_store_cred (context, ccache, &cred);
+
+    krb5_free_creds_contents (context, &cred);
+
+    return ret;
+}
+
+int
+main (int argc, char **argv)
+{
+    krb5_error_code ret;
+    krb5_context context;
+    krb5_ccache  ccache;
+    krb5_principal principal;
+    int optind = 0;
+    krb5_deltat ticket_life = 0;
+
+    setprogname (argv[0]);
+    
+    ret = krb5_init_context (&context);
     if (ret)
-	krb5_err (context, 1, ret, "krb5_cc_store_cred");
+	errx(1, "krb5_init_context failed: %d", ret);
+  
+    /* XXX no way to figure out if set without explict test */
+    if(krb5_config_get_string(context, NULL, "libdefaults", 
+			      "forwardable", NULL))
+	forwardable_flag = krb5_config_get_bool (context, NULL,
+						 "libdefaults",
+						 "forwardable",
+						 NULL);
 
 #ifdef KRB4
-    if(get_v4_tgt) {
-	CREDENTIALS c;
-	ret = krb524_convert_creds_kdc_ccache(context, ccache, &cred, &c);
-	if(ret)
-	    krb5_warn(context, ret, "converting creds");
-	else
-	    tf_setup(&c, c.pname, c.pinst);
-	memset(&c, 0, sizeof(c));
+    get_v4_tgt = krb5_config_get_bool_default (context, NULL,
+					       get_v4_tgt,
+					       "libdefaults",
+					       "krb4_get_tickets",
+					       NULL);
+#endif
+
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+	usage(1);
+    
+    if (help_flag)
+	usage (0);
+
+    if(version_flag) {
+	print_version(NULL);
+	exit(0);
     }
+
+    argc -= optind;
+    argv += optind;
+
+    if (argv[0]) {
+	ret = krb5_parse_name (context, argv[0], &principal);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_parse_name");
+    } else {
+	ret = kinit_get_default_principal (context, &principal);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_get_default_principal");
+    }
+
+    if(fcache_version)
+	krb5_set_fcache_version(context, fcache_version);
+
+    if(cred_cache) 
+	ret = krb5_cc_resolve(context, cred_cache, &ccache);
+    else {
+	if(argc > 1) {
+	    char s[1024];
+	    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &ccache);
+	    if(ret)
+		krb5_err(context, 1, ret, "creating cred cache");
+	    snprintf(s, sizeof(s), "%s:%s",
+		     krb5_cc_get_type(context, ccache),
+		     krb5_cc_get_name(context, ccache));
+	    setenv("KRB5CCNAME", s, 1);
+#ifdef KRB4
+	    {
+		int fd;
+		snprintf(s, sizeof(s), "%s_XXXXXX", TKT_ROOT);
+		if((fd = mkstemp(s)) >= 0) {
+		    close(fd);
+		    setenv("KRBTKFILE", s, 1);
+		    if (k_hasafs ())
+			k_setpag();
+		}
+	    }
+#endif
+	} else
+	    ret = krb5_cc_default (context, &ccache);
+    }
+    if (ret)
+	krb5_err (context, 1, ret, "resolving credentials cache");
+
+    if (lifetime) {
+	int tmp = parse_time (lifetime, "s");
+	if (tmp < 0)
+	    errx (1, "unparsable time: %s", lifetime);
+
+	ticket_life = tmp;
+    }
+#ifdef KRB4
+    get_v4_tgt = krb5_config_get_bool_default (context,
+					       NULL,
+					       get_v4_tgt,
+					       "realms",
+					       krb5_principal_get_realm(context,
+									principal),
+					       "krb4_get_tickets",
+					       NULL);
+#endif
+
+    
+    if(renew_flag || validate_flag) {
+	ret = renew_validate(context, renew_flag, validate_flag, 
+			     ccache, server, ticket_life);
+	exit(ret != 0);
+    }
+
+    if(!convert_524)
+	get_new_tickets(context, principal, ccache, ticket_life);
+
+#ifdef KRB4
+    if(get_v4_tgt)
+	do_524init(context, ccache, NULL, server);
     if(do_afslog && k_hasafs())
 	krb5_afslog(context, ccache, NULL, NULL);
-    krb5_free_creds_contents (context, &cred);
 #endif
     if(argc > 1) {
 	simple_execvp(argv[1], argv+1);
