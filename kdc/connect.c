@@ -333,8 +333,8 @@ do_request(void *buf, size_t len, int sendlength,
 {
     krb5_error_code ret;
     krb5_data reply;
-    
     char addr[128];
+    
     addr_to_string(from, from_len, addr, sizeof(addr));
     
     reply.length = 0;
@@ -608,7 +608,7 @@ handle_tcp(struct descr *d, int index, int min_free)
     struct sockaddr *sa = (struct sockaddr *)&__ss;
     int from_len;
     int n;
-    int ret;
+    int ret = 0;
 
     if (d[index].timeout == 0) {
 	add_new_tcp (d, index, min_free);
