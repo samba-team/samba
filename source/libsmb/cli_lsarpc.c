@@ -607,7 +607,7 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 			unistr2_to_ascii(tmp, &r.uni_domain_name[i], 
 					 sizeof(tmp) - 1);
-			(*domain_names)[i] = strdup(tmp);
+			(*domain_names)[i] = talloc_strdup(tmp);
 			sid_copy(&(*domain_sids)[i], &r.domain_sid[i].sid);
 		}
 	}
