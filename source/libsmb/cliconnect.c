@@ -1590,42 +1590,88 @@ struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip,
 	return NULL;
 }
 
-/* Return the IP address and workgroup of a master browser on the 
-   network. */
+/*
+ * Given the IP address of a master browser on the network, return its
+ * workgroup and connect to it.
+ *
+ * This function is provided to allow additional processing beyond what
+ * get_ipc_connect_master_ip_bcast() does, e.g. to retrieve the list of master
+ * browsers and obtain each master browsers' list of domains (in case the
+ * first master browser is recently on the network and has not yet
+ * synchronized with other master browsers and therefore does not yet have the
+ * entire network browse list)
+ */
+
+struct cli_state *get_ipc_connect_master_ip(struct ip_service * mb_ip, pstring workgroup, struct user_auth_info *user_info)
+{
+        static fstring name;
+	struct cli_state *cli;
+	struct in_addr server_ip; 
+
+        DEBUG(99, ("Looking up name of master browser %s\n",
+                   inet_ntoa(mb_ip->ip)));
+
+        /*
+         * Do a name status query to find out the name of the master browser.
+         * We use <01><02>__MSBROWSE__<02>#01 if *#00 fails because a domain
+         * master browser will not respond to a wildcard query (or, at least,
+         * an NT4 server acting as the domain master browser will not).
+         *
+         * We might be able to use ONLY the query on MSBROWSE, but that's not
+         * yet been tested with all Windows versions, so until it is, leave
+         * the original wildcard query as the first choice and fall back to
+         * MSBROWSE if the wildcard query fails.
+         */
+        if (!name_status_find("*", 0, 0x1d, mb_ip->ip, name) &&
+            !name_status_find(MSBROWSE, 1, 0x1d, mb_ip->ip, name)) {
+
+                DEBUG(99, ("Could not retrieve name status for %s\n",
+                           inet_ntoa(mb_ip->ip)));
+                return NULL;
+        }
+
+        if (!find_master_ip(name, &server_ip)) {
+                DEBUG(99, ("Could not find master ip for %s\n", name));
+                return NULL;
+        }
+
+                pstrcpy(workgroup, name);
+
+                DEBUG(4, ("found master browser %s, %s\n", 
+                  name, inet_ntoa(mb_ip->ip)));
+
+		cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info);
+
+		return cli;
+    
+}
+
+/*
+ * Return the IP address and workgroup of a master browser on the network, and
+ * connect to it.
+ */
 
 struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user_auth_info *user_info)
 {
 	struct ip_service *ip_list;
 	struct cli_state *cli;
 	int i, count;
-	struct in_addr server_ip; 
+
+        DEBUG(99, ("Do broadcast lookup for workgroups on local network\n"));
 
         /* Go looking for workgroups by broadcasting on the local network */ 
 
         if (!name_resolve_bcast(MSBROWSE, 1, &ip_list, &count)) {
+                DEBUG(99, ("No master browsers responded\n"));
                 return False;
         }
 
 	for (i = 0; i < count; i++) {
-		static fstring name;
+            DEBUG(99, ("Found master browser %s\n", inet_ntoa(ip_list[i].ip)));
 
-		if (!name_status_find("*", 0, 0x1d, ip_list[i].ip, name))
-			continue;
-
-                if (!find_master_ip(name, &server_ip))
-			continue;
-
-                pstrcpy(workgroup, name);
-
-                DEBUG(4, ("found master browser %s, %s\n", 
-                          name, inet_ntoa(ip_list[i].ip)));
-
-		cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info);
-
-		if (!cli)
-		    continue;
-		
-		return cli;
+            cli = get_ipc_connect_master_ip(&ip_list[i], workgroup, user_info);
+            if (cli)
+                    return(cli);
 	}
 
 	return NULL;

@@ -159,10 +159,15 @@ static int smbc_remove_cached_server(SMBCCTX * context, SMBCSRV * server)
  */
 static int smbc_purge_cached(SMBCCTX * context)
 {
-	struct smbc_server_cache * srv = NULL;
+	struct smbc_server_cache * srv;
+	struct smbc_server_cache * next;
 	int could_not_purge_all = 0;
 
-	for (srv=((struct smbc_server_cache *) context->server_cache);srv;srv=srv->next) {
+	for (srv = ((struct smbc_server_cache *) context->server_cache),
+                 next = (srv ? srv->next :NULL);
+             srv;
+             srv = next, next = (srv ? srv->next : NULL)) {
+
 		if (smbc_remove_unused_server(context, srv->server)) {
 			/* could not be removed */
 			could_not_purge_all = 1;
