@@ -141,6 +141,11 @@ static BOOL open_sockets_inetd(void)
 	return True;
 }
 
+static void msg_exit_server(int msg_type, pid_t src, void *buf, size_t len)
+{
+	exit_server("Got a SHUTDOWN message");
+}
+
 
 /****************************************************************************
  Open the socket communication.
@@ -242,6 +247,7 @@ max can be %d\n",
 
         message_register(MSG_SMB_SAM_SYNC, msg_sam_sync);
         message_register(MSG_SMB_SAM_REPL, msg_sam_repl);
+        message_register(MSG_SHUTDOWN, msg_exit_server);
 
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
