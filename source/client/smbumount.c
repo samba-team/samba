@@ -15,8 +15,6 @@
 #include <linux/smb_mount.h>
 #include <linux/smb_fs.h>
 
-#include "includes.h"
-
 static char *progname;
 
 static void
@@ -60,7 +58,7 @@ umount_ok(const char *mount_point)
    is not a legal pathname for ``/dev/fd0.''  Anything we cannot parse
    we return unmodified.   */
 char *
-canonicalize (const char *path)
+canonicalize (char *path)
 {
 	char *canonical = malloc (PATH_MAX + 1);
 
