@@ -520,7 +520,8 @@ static void globals_page(void)
 }
 
 /****************************************************************************
-  display a shares editing page  
+  display a shares editing page. share is in unix codepage, and must be in
+  dos codepage. FIXME !!! JRA.
 ****************************************************************************/
 static void shares_page(void)
 {

@@ -22,7 +22,6 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include "includes.h"
 
 extern int DEBUGLEVEL;
@@ -384,9 +383,31 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 			return False;
 		if (MARSHALLING(ps)) {
 			/* These are already in little endian format. Don't byte swap. */
-			if(!prs_uint8s(True,"string",ps,depth,(uint8 *)data->notify_data.data.string,x*2))
-				return False;
+			if (x == 1) {
+
+				/* No memory allocated for this string
+				   therefore following the data.string
+				   pointer is a bad idea.  Use a pointer to
+				   the uint32 length union member to
+				   provide a source for a unicode NULL */
+
+				if(!prs_uint8s(True,"string",ps,depth, (uint8 *)&data->notify_data.data.length,x*2)) 
+					return False;
+			} else {
+				if(!prs_uint8s(True,"string",ps,depth,(uint8 *)data->notify_data.data.string,x*2))
+					return False;
+			}
 		} else {
+
+			/* Tallocate memory for string */
+
+			DEBUG(10, ("** tallocating memory\n"));
+
+			data->notify_data.data.string = (uint16 *)
+				talloc(ps->mem_ctx, x * 2);
+			if (!data->notify_data.data.string) 
+				return False;
+
 			if(!prs_uint16s(True,"string",ps,depth,data->notify_data.data.string,x))
 				return False;
 		}
@@ -5753,10 +5774,7 @@ static JOB_INFO_2 *job2_dup(const JOB_INFO_2* from)
 void free_job_info_2(JOB_INFO_2 *job)
 {
 	if (job!=NULL)
-	{
 		free_devmode(job->devmode);
-		free(job);
-	}
 }
 
 void free_job2_array(uint32 num_entries, JOB_INFO_2 **entries)

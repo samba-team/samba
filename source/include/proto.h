@@ -3305,7 +3305,8 @@ uint32 _spoolss_rffpcnex(POLICY_HND *handle, uint32 flags, uint32 options,
 			 const UNISTR2 *localmachine, uint32 printerlocal,
 			 SPOOL_NOTIFY_OPTION *option);
 uint32 _spoolss_rfnpcnex( POLICY_HND *handle, uint32 change,
-			  SPOOL_NOTIFY_OPTION *option, SPOOL_NOTIFY_INFO *info);
+			  SPOOL_NOTIFY_OPTION *option, TALLOC_CTX *mem_ctx,
+			  SPOOL_NOTIFY_INFO *info);
 uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 level,
 			      NEW_BUFFER *buffer, uint32 offered,
 			      uint32 *needed, uint32 *returned);
