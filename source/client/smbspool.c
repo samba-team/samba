@@ -210,12 +210,12 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     {
       if (getenv("CLASS") == NULL)
       {
-        perror("ERROR: Unable to connect to SAMBA host, will retry in 60 seconds...");
+        fprintf(stderr, "ERROR: Unable to connect to SAMBA host, will retry in 60 seconds...");
         sleep (60);
       }
       else
       {
-        perror("ERROR: Unable to connect to SAMBA host, trying next printer...");
+        fprintf(stderr, "ERROR: Unable to connect to SAMBA host, trying next printer...");
         return (1);
       }
     }
