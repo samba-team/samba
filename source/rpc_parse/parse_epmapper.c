@@ -327,9 +327,17 @@ BOOL epm_io_tower_array(const char *desc, EPM_TOWER_ARRAY *array,
 			return False;
 		}
 	}
-	for (i=0; i < array->count; i++)
-		if (!prs_uint32("ref_id", ps, depth, &array->tower_ref_ids[i]))
+	for (i=0; i < array->count; i++) {
+		if (!prs_uint32("ref_id", ps, depth, &array->tower_ref_ids[i])) {
 			return False;
+		} else {
+			if (array->tower_ref_ids[i] > internal_referent_id) {
+				internal_referent_id = array->tower_ref_ids[i];
+			}
+		}
+	}
+			
+			
 
 	if (!prs_set_offset(ps, prs_offset(ps) + array->offset))
 		return False;
@@ -418,8 +426,10 @@ BOOL epm_io_q_map(const char *desc, EPM_Q_MAP *io_map, prs_struct *ps,
 	if (!epm_io_handle("handle", &io_map->handle, ps, depth))
 		return False;
 
-	if (!prs_uint32("max_towers", ps, 0, &io_map->tower_ref_id))
+	if (!prs_uint32("referent_id", ps, 0, &io_map->tower_ref_id))
 		return False;
+	if (io_map->tower_ref_id > internal_referent_id)
+		internal_referent_id = io_map->tower_ref_id;
 
 	/* HACK: We need a more elegant way of doing this */
 	if (UNMARSHALLING(ps)) {
