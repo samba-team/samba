@@ -1,3 +1,26 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+
+/*
+  if (we have termios.h)
+    define TERMIOS
+  else if (we have termio.h)
+    define TERMIO
+*/
+#ifdef HAVE_TERMIOS_H
+
+#define TERMIOS
+
+#else /* !HAVE_TERMIOS_H */
+
+#ifdef HAVE_TERMIO_H
+#define TERMIO
+#endif
+
+#endif /* !HAVE_TERMIOS_H */
+
+#endif /* HAVE_CONFIG_H */
+
 /* lib/des/des_locl.h */
 /* Copyright (C) 1995 Eric Young (eay@mincom.oz.au)
  * All rights reserved.
