@@ -90,7 +90,10 @@ as_reserve (struct state *state, size_t n)
     if (state->max_sz && state->sz >= state->max_sz)
       return 1;
 
-    state->sz = min(state->max_sz, state->sz*2);
+    if (state->max_sz)
+      state->sz = min(state->max_sz, state->sz*2);
+    else
+      state->sz *= 2;
     tmp = realloc (state->str, state->sz);
     if (tmp == NULL)
       return 1;
@@ -448,7 +451,10 @@ vasnprintf (char **ret, size_t max_sz, const char *format, va_list args)
   struct state state;
 
   state.max_sz = max_sz;
-  state.sz     = min(1, max_sz);
+  if (max_sz)
+    state.sz   = min(1, max_sz);
+  else
+    state.sz   = 1;
   state.str    = malloc(state.sz);
   if (state.str == NULL) {
     *ret = NULL;
