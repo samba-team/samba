@@ -20,6 +20,27 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
+
+
+/* NOTE: If you use tdbs under valgrind, and in particular if you run
+ * tdbtorture, you may get spurious "uninitialized value" warnings.  I
+ * think this is because valgrind doesn't understand that the mmap'd
+ * area may be written to by other processes.  Memory can, from the
+ * point of view of the grinded process, spontaneously become
+ * initialized.
+ *
+ * I can think of a few solutions.  [mbp 20030311]
+ *
+ * 1 - Write suppressions for Valgrind so that it doesn't complain
+ * about this.  Probably the most reasonable but people need to
+ * remember to use them.
+ *
+ * 2 - Use IO not mmap when running under valgrind.  Not so nice.
+ *
+ * 3 - Use the special valgrind macros to mark memory as valid at the
+ * right time.  Probably too hard -- the process just doesn't know.
+ */ 
+
 #ifdef STANDALONE
 #if HAVE_CONFIG_H
 #include <config.h>
