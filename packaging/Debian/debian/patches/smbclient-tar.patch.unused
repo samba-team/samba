@@ -1,7 +1,7 @@
 diff -uNr samba-3.0.0beta2.orig/source/client/client.c samba-3.0.0beta2/source/client/client.c
 --- samba-3.0.0beta2.orig/source/client/client.c	2003-07-01 22:36:24.000000000 -0500
 +++ samba-3.0.0beta2/source/client/client.c	2003-07-06 15:17:36.000000000 -0500
-@@ -2731,6 +2731,7 @@
+@@ -2773,6 +2773,7 @@
  	int opt;
  	pstring query_host;
  	BOOL message = False;
@@ -18,7 +18,7 @@ diff -uNr samba-3.0.0beta2.orig/source/client/client.c samba-3.0.0beta2/source/c
  				poptPrintUsage(pc, stderr, 0);
  				exit(1);
  			}
-@@ -2848,6 +2849,22 @@
+@@ -2917,6 +2917,22 @@
  		pstrcpy(cmdline_auth_info.password,poptGetArg(pc));  
  	}
  
