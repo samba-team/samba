@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -39,7 +39,6 @@
 #include <time.h>
 #include <krb5-types.h>
 
-#include <des.h>
 #include <asn1_err.h>
 #include <krb5_err.h>
 #include <heim_err.h>
@@ -83,7 +82,8 @@ typedef enum krb5_cksumtype {
 /*  CKSUMTYPE_SHA1		= 10,*/
   CKSUMTYPE_HMAC_SHA1_DES3	= 12,
   CKSUMTYPE_SHA1		= 1000, /* correct value? */
-  CKSUMTYPE_HMAC_MD5		= -138 /* unofficial microsoft number */
+  CKSUMTYPE_HMAC_MD5		= -138, /* unofficial microsoft number */
+  CKSUMTYPE_HMAC_MD5_ENC	= -1138 /* even more unofficial */
 } krb5_cksumtype;
 
 
