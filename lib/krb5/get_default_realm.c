@@ -46,6 +46,9 @@ krb5_get_default_realm(krb5_context context,
 {
     char *res;
 
+    if (context->default_realm == NULL)
+	return KRB5_CONFIG_NODEFREALM;
+
     res = strdup (context->default_realm);
     if (res == NULL)
 	return ENOMEM;
