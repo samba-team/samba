@@ -9,7 +9,7 @@ krb5_auth_con_init(krb5_context context,
     if(!p)
 	return ENOMEM;
     memset(p, 0, sizeof(*p));
-    p->authenticator = ALLOC(1, krb5_authenticator);
+    p->authenticator = ALLOC(1, krb5_authenticator_data);
     if (!p->authenticator)
 	return ENOMEM;
     *auth_context = p;
