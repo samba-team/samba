@@ -72,7 +72,7 @@ void	renamecmd(char *, char *);
 char   *renamefrom(char *);
 void	reply(int, const char *, ...);
 void	retrieve(char *, char *);
-void	send_file_list(char *, int minus_l);
+void	send_file_list(char *);
 void	setproctitle(const char *, ...);
 void	statcmd(void);
 void	statfilecmd(char *);
