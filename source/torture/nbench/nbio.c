@@ -28,6 +28,7 @@ extern int nbench_line_count;
 static int nbio_id;
 static int nprocs;
 static BOOL bypass_io;
+static int warmup;
 
 static struct {
 	int fd;
@@ -50,6 +51,13 @@ double nbio_total(void)
 	return total;
 }
 
+void nb_warmup_done(void)
+{
+	children[nbio_id].bytes_out = 0;
+	children[nbio_id].bytes_in = 0;
+}
+
+
 void nb_alarm(void)
 {
 	int i;
@@ -65,10 +73,15 @@ void nb_alarm(void)
 
 	t = end_timer();
 
-	printf("%4d  %8d  %.2f MB/sec  t=%.0f    \r", 
+	printf("%4d  %8d  %.2f MB/sec  time %.0f sec   \r", 
 	       num_clients, lines/nprocs, 
 	       1.0e-6 * nbio_total() / t, 
-	       t);
+	       t - warmup);
+
+	if (warmup && t >= warmup) {
+		start_timer();
+		warmup = 0;
+	}
 
 	signal(SIGALRM, nb_alarm);
 	alarm(1);	
@@ -101,8 +114,9 @@ static int find_handle(int handle)
 
 static struct cli_state *c;
 
-void nb_setup(struct cli_state *cli, int id)
+void nb_setup(struct cli_state *cli, int id, int warmupt)
 {
+	warmup = warmupt;
 	nbio_id = id;
 	c = cli;
 	start_timer();
@@ -244,7 +258,6 @@ void nb_writex(int handle, int offset, int size, int ret_size, NTSTATUS status)
 
 	children[nbio_id].bytes_out += ret_size;
 }
-
 
 void nb_write(int handle, int offset, int size, int ret_size, NTSTATUS status)
 {
