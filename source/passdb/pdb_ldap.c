@@ -74,6 +74,11 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 	int version, rc;
 	int tls = LDAP_OPT_X_TLS_HARD;
 	
+	if (geteuid() != 0) {
+		DEBUG(0, ("ldap_open_connection: cannot access LDAP when not root..\n"));
+		return False;
+	}
+
 	if (lp_ldap_ssl() == LDAP_SSL_ON && lp_ldap_port() == 389) {
 		port = 636;
 	}
@@ -848,11 +853,6 @@ BOOL pdb_delete_sam_account(char *sname)
 	LDAPMessage *result;
 
 	/* Ensure we have euid as root - else deny this. */
-	if (geteuid() != 0) {
-		DEBUG(0, ("pdb_delete_sam_account: non-root user cannot delete user %s from LDAP.\n", sname));
-		return False;
-	}
-
 	if (!ldap_open_connection (&ldap_struct))
 		return False;
 
@@ -905,12 +905,6 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
 	LDAPMessage *result;
 	LDAPMessage *entry;
 	LDAPMod **mods;
-
-	/* Ensure we have euid as root - else deny this. */
-	if (geteuid() != 0) {
-		DEBUG(0, ("pdb_update_sam_account: non-root user cannot update LDAP account.\n"));
-		return False;
-	}
 
 	if (!ldap_open_connection(&ldap_struct)) /* open a connection to the server */
 		return False;
@@ -971,12 +965,6 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 	LDAPMod 	**mods;
 	int 		ldap_op;
 	uint32		num_result;
-
-	/* Ensure we have euid as root - else deny this. */
-	if (geteuid() != 0) {
-		DEBUG(0, ("pdb_add_sam_account: non-root user cannot add LDAP account.\n"));
-		return False;
-	}
 
 	if (!ldap_open_connection(&ldap_struct))	/* open a connection to the server */
 		return False;
