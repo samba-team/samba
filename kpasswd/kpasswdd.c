@@ -45,6 +45,9 @@ static krb5_log_facility *log_facility;
 
 static sig_atomic_t exit_flag = 0;
 
+static krb5_data msater_key;
+static int master_key_set = 0;
+
 #define KPASSWDD_LOG_ERR  0
 #define KPASSWDD_LOG_INFO 1
 
@@ -60,6 +63,7 @@ syslog_and_die (const char *m, ...)
 }
 
 static char *database = HDB_DEFAULT_DB;
+static HDB *db;
 
 static void
 send_reply (int s,
@@ -215,6 +219,15 @@ reply_priv (krb5_auth_context auth_context,
     krb5_data_free (&krb_priv_data);
 }
 
+static char *
+passwd_quality_check (krb5_data *pwd)
+{
+    if (pwd->length < 6)
+	return "Password too short";
+    else
+	return NULL;
+}
+
 static void
 change (krb5_auth_context auth_context,
 	krb5_principal principal,
@@ -225,10 +238,10 @@ change (krb5_auth_context auth_context,
 {
     krb5_error_code ret;
     char *c;
-    HDB *db;
     hdb_entry ent;
     krb5_data salt;
     krb5_keyblock new_keyblock, *old_keyblock;
+    char *pwd_reason;
 
     krb5_unparse_name (context, principal, &c);
 
@@ -236,14 +249,15 @@ change (krb5_auth_context auth_context,
 	      "Changing password for %s", c);
     free (c);
 
-    if (pwd_data->length < 6) {	/* XXX */
+    pwd_reason = passwd_quality_check (pwd_data);
+    if (pwd_reason != NULL ) {
 	krb5_log (context, log_facility,
-		  KPASSWDD_LOG_ERR, "Password too short");
-	reply_priv (auth_context, s, sa, sa_size, 4, "password too short");
+		  KPASSWDD_LOG_ERR, pwd_reason);
+	reply_priv (auth_context, s, sa, sa_size, 4, pwd_reason);
 	return;
     }
 
-    ret = hdb_open (context, &db, database, O_RDWR, 0600);
+    ret = db->open(context, db, O_RDWR, 0600);
     if (ret) {
 	krb5_log (context, log_facility, KPASSWDD_LOG_ERR,
 		  "hdb_open: %s", krb5_get_err_text(context, ret));
@@ -272,13 +286,18 @@ change (krb5_auth_context auth_context,
 	goto out;
     }
 
+    /*
+     * Compare with the first key to see if it already has been
+     * changed.  If it hasn't, store the new key in the database and
+     * string2key all the rest of them.
+     */
+
     krb5_data_zero (&salt);
     krb5_get_salt (principal, &salt);
     memset (&new_keyblock, 0, sizeof(new_keyblock));
     old_keyblock = &ent.keys.val[0].key;
     krb5_string_to_key_data (pwd_data, &salt, old_keyblock->keytype, /* XXX */
 			     &new_keyblock);
-    krb5_data_free (&salt);
 
     if (new_keyblock.keytype == old_keyblock->keytype
 	&& new_keyblock.keyvalue.length == old_keyblock->keyvalue.length
@@ -288,6 +307,7 @@ change (krb5_auth_context auth_context,
 	ret = 0;
     } else {
 	Event *e;
+	int i;
 
 	free_EncryptionKey (old_keyblock);
 	memset (old_keyblock, 0, sizeof(*old_keyblock));
@@ -295,6 +315,15 @@ change (krb5_auth_context auth_context,
 	krb5_data_copy (&old_keyblock->keyvalue,
 			new_keyblock.keyvalue.data,
 			new_keyblock.keyvalue.length);
+
+	for(i = 1; i < ent.keys.len; ++i) {
+	    free_Key (&ent.keys.val[i]);
+	    krb5_string_to_key_data (pwd_data,
+				     &salt,
+				     ent.keys.val[i].key.keytype,
+				     &ent.keys.val[i].key);
+	}
+
 	ent.kvno++;
 	e = malloc(sizeof(*e));
 	e->time = time(NULL);
@@ -308,6 +337,7 @@ change (krb5_auth_context auth_context,
 	    *ent.pw_end = e->time + 3600; /* XXX - Change here! */
 	ret = db->store (context, db, 1, &ent);
     }
+    krb5_data_free (&salt);
     krb5_free_keyblock (context, &new_keyblock);
 
     if (ret) {
@@ -573,10 +603,22 @@ sigterm(int sig)
 int
 main (int argc, char **argv)
 {
+    krb5_error_code ret;
+    char *keyfile = NULL;
+
     krb5_init_context (&context);
 
     set_progname (argv[0]);
     krb5_openlog (context, "kpasswdd", &log_facility);
+
+    ret = hdb_create (context, &db, database);
+    if (ret)
+	syslog_and_die ("Failed to open database %s: %s",
+			database, krb5_get_err_text(context, ret));
+    ret = hdb_set_master_key(context, db, keyfile);
+    if (ret)
+	syslog_and_die ("Failed to set master key: %s",
+			krb5_get_err_text(context, ret));
 
 #ifdef HAVE_SIGACTION
     {
