@@ -42,6 +42,7 @@ struct winbindd_cli_state {
     pid_t pid;                                /* pid of client */
     int read_buf_len, write_buf_len;          /* Indexes in request/response */
     BOOL finished;                            /* Can delete from list */
+    BOOL write_extra_data;                    /* Write extra_data field */
     struct winbindd_request request;          /* Request from client */
     struct winbindd_response response;        /* Respose to client */
     struct getent_state *getpwent_state;      /* State for getpwent() */
@@ -96,6 +97,17 @@ struct winbindd_domain {
 };
 
 extern struct winbindd_domain *domain_list;  /* List of domains we know */
+
+typedef enum {
+    SURS_POSIX_UID_AS_USR,     /* User id as user */
+    SURS_POSIX_GID_AS_GRP,     /* Group id as domain group */
+    SURS_POSIX_GID_AS_ALS      /* Group id as alias */
+} winbindd_posix_type;
+
+typedef struct {
+    uint32 id;                 /* user/group id */
+    winbindd_posix_type type;  /* id type */
+} WINBINDD_POSIX_ID;
 
 #include "winbindd_proto.h"
 
