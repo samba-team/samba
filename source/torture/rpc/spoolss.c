@@ -162,24 +162,16 @@ static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		status = dcerpc_spoolss_EnumForms(p, mem_ctx, &r);
 
-		if (!r.out.buffer) {
+		if (!r.out.info) {
 			printf("No forms returned");
 			return False;
 		}
 
-		status = pull_spoolss_FormInfoArray(r.out.buffer, mem_ctx, r.in.level, r.out.count, &info);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumFormsArray parse failed - %s\n", nt_errstr(status));
-			return False;
-		}
+		info = *r.out.info;
 
-		for (j=0;j<r.out.count;j++) {
-			printf("Form %d\n", j);
-			NDR_PRINT_UNION_DEBUG(spoolss_FormInfo, r.in.level, &info[j]);
-		}
-
-		for (j = 0; j < r.out.count; j++)
+		for (j = 0; j < r.out.count; j++) {
 			test_GetForm(p, mem_ctx, handle, info[j].info1.formname);
+		}
 	}
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
@@ -298,8 +290,6 @@ static BOOL test_EnumPorts(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
 		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
-		union spoolss_PortInfo *info;
-		int j;
 
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
@@ -311,24 +301,9 @@ static BOOL test_EnumPorts(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			return False;
 		}
 
-		if (!r.out.buffer) {
+		if (!r.out.info) {
 			printf("No ports returned");
 			return False;
-		}
-
-		status = pull_spoolss_PortInfoArray(r.out.buffer, mem_ctx,
-						    r.in.level, r.out.count,
-						    &info);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumPortArray parse failed - %s\n",
-			       nt_errstr(status));
-			return False;
-		}
-
-		for (j=0;j<r.out.count;j++) {
-			printf("Port %d\n", j);
-			NDR_PRINT_UNION_DEBUG(spoolss_PortInfo, r.in.level,
-					      &info[j]);
 		}
 	}
 
@@ -433,31 +408,16 @@ static BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		status = dcerpc_spoolss_EnumJobs(p, mem_ctx, &r);
 
-		if (!r.out.buffer) {
+		if (!r.out.info) {
 			printf("No jobs returned");
 			return True;
 		}
 
-		status = pull_spoolss_JobInfoArray(
-			r.out.buffer, mem_ctx, r.in.level, r.out.count,
-			&info);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumJobsArray parse failed - %s\n",
-			       nt_errstr(status));
-			return False;
-		}
-
-		for (j = 0; j < r.out.count; j++) {
-			printf("Job %d\n", j);
-			NDR_PRINT_UNION_DEBUG(
-				spoolss_JobInfo, r.in.level, &info[j]);
-		}
+		info = *r.out.info;
 
 		for (j = 0; j < r.out.count; j++) {
 			test_GetJob(p, mem_ctx, handle, info[j].info1.job_id);
-			test_SetJob(
-				p, mem_ctx, handle, info[j].info1.job_id, 1);
+			test_SetJob(p, mem_ctx, handle, info[j].info1.job_id, 1);
 		}
 
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
@@ -697,7 +657,7 @@ static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;	
 	r.out.handle = &handle;
 
-	printf("\nTesting OpenPrinter(\\\\%s)\n", r.in.server);
+	printf("\nTesting OpenPrinter(%s)\n", r.in.server);
 
 	status = dcerpc_spoolss_OpenPrinter(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
@@ -858,21 +818,12 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			continue;
 		}
 
-		if (!r.out.buffer) {
+		if (!r.out.info) {
 			printf("No printers returned");
 			continue;
 		}
 
-		status = pull_spoolss_PrinterInfoArray(r.out.buffer, mem_ctx, r.in.level, r.out.count, &info);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumPrintersArray parse failed - %s\n", nt_errstr(status));
-			continue;
-		}
-
-		for (j=0;j<r.out.count;j++) {
-			printf("Printer %d\n", j);
-			NDR_PRINT_UNION_DEBUG(spoolss_PrinterInfo, r.in.level, &info[j]);
-		}
+		info = *r.out.info;
 
 		for (j=0;j<r.out.count;j++) {
 			if (r.in.level == 1) {
@@ -943,12 +894,10 @@ static BOOL test_EnumPrinterDrivers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		uint32_t buf_size;
-		char *server;
 		union spoolss_DriverInfo *info;
 		uint32_t j;
 
-		asprintf(&server, "\\\\%s", dcerpc_server_name(p));
-		r.in.server = server;
+		r.in.server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 		r.in.environment = "Windows NT x86";
 		r.in.level = levels[i];
 		r.in.buffer = NULL;
@@ -966,62 +915,42 @@ static BOOL test_EnumPrinterDrivers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			ret = False;
 			continue;
 		}
-		
+
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
 			DATA_BLOB blob = data_blob_talloc(
 				mem_ctx, NULL, buf_size);
 
 			data_blob_clear(&blob);
 			r.in.buffer = &blob;
-			status = dcerpc_spoolss_EnumPrinterDrivers(
-				p, mem_ctx, &r);
+			status = dcerpc_spoolss_EnumPrinterDrivers(p, mem_ctx, &r);
 		}
 		
 		if (!NT_STATUS_IS_OK(status) ||
 		    !W_ERROR_IS_OK(r.out.result)) {
 			printf("EnumPrinterDrivers failed - %s/%s\n", 
 			       nt_errstr(status), win_errstr(r.out.result));
-			goto done;
+			break;
 		}
 
-		if (!r.out.buffer) {
+		if (!r.out.info) {
 			printf("No printer drivers returned");
-			goto done;
+			break;
 		}
 
-		status = pull_spoolss_DriverInfoArray(
-			r.out.buffer, mem_ctx, r.in.level, r.out.count, &info);
+		info = *r.out.info;
 
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumPrinterDriverArray parse failed - %s\n", 
-			       nt_errstr(status));
-			continue;
-		}
+		if (r.in.level != 1) continue;
 
 		for (j=0;j<r.out.count;j++) {
-			printf("Printer driver %d\n", j);
-			NDR_PRINT_UNION_DEBUG(
-				spoolss_DriverInfo, r.in.level, 
-				&info[j]);
+			struct policy_handle handle;
 
-			if (r.in.level == 1) {
-				struct policy_handle handle;
-
-				if (!call_OpenPrinterEx(
-					    p, mem_ctx, "",
-					    &handle))
-					continue;
-
-				test_GetPrinterDriver2(
-					p, mem_ctx, &handle, 
-					info[j].info1.driver_name);
+			if (!call_OpenPrinterEx(p, mem_ctx, "",&handle)) {
+				continue;
 			}
+			ret &=test_GetPrinterDriver2(p, mem_ctx, &handle, info[j].info1.driver_name);
 		}
-
-	done:
-		free(server);
 	}
-	
+
 	return ret;
 }
 
@@ -1032,8 +961,6 @@ BOOL torture_rpc_spoolss(void)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 
-	mem_ctx = talloc_init("torture_rpc_spoolss");
-
 	status = torture_rpc_connection(&p, 
 					DCERPC_SPOOLSS_NAME,
 					DCERPC_SPOOLSS_UUID,
@@ -1041,6 +968,8 @@ BOOL torture_rpc_spoolss(void)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
+
+	mem_ctx = talloc_init("torture_rpc_spoolss");
 
 	if (!test_EnumPorts(p, mem_ctx)) {
 		ret = False;
@@ -1053,7 +982,7 @@ BOOL torture_rpc_spoolss(void)
 	if (!test_EnumPrinterDrivers(p, mem_ctx)) {
 		ret = False;
 	}
-
+printf("blub\n");
 	talloc_free(mem_ctx);
 
         torture_rpc_close(p);

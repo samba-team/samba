@@ -26,163 +26,121 @@
 #include "rpc_server/common/common.h"
 #include "rpc_server/spoolss/dcesrv_spoolss.h"
 
-static WERROR spoolss_EnumPrinters1(TALLOC_CTX *mem_ctx, 
-				    struct ldb_message **msgs, int num_msgs,
-				    struct ndr_push *ndr)
-{
-	struct spoolss_PrinterInfo1 *info;
-	int i;
-
-	info = talloc_array(mem_ctx, struct spoolss_PrinterInfo1, num_msgs);
-
-	if (!info)
-		return WERR_NOMEM;
-
-	for (i = 0; i < num_msgs; i++) {
-		info[i].flags = samdb_result_uint(msgs[i], "flags", 0);
-		info[i].name = samdb_result_string(msgs[i], "name", "");
-		info[i].description = samdb_result_string(msgs[i], "description", "");
-		info[i].comment = samdb_result_string(msgs[i], "comment", "");
-	}
-
-	ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, info,
-		       sizeof(struct spoolss_PrinterInfo1), num_msgs,
-		       (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo1);
-
-	return WERR_OK;
-}
-
-static WERROR spoolss_EnumPrinters2(TALLOC_CTX *mem_ctx, 
-				    struct ldb_message **msgs, int num_msgs,
-				    struct ndr_push *ndr)
-{
-	struct spoolss_PrinterInfo2 *info;
-	int i;
-
-	info = talloc_array(mem_ctx, struct spoolss_PrinterInfo2, num_msgs);
-
-	if (!info)
-		return WERR_NOMEM;
-
-	for (i = 0; i < num_msgs; i++) {
-		info[i].servername = samdb_result_string(msgs[i], "servername", "");
-		info[i].printername = samdb_result_string(msgs[i], "printername", "");
-		info[i].sharename = samdb_result_string(msgs[i], "sharename", "");
-		info[i].portname = samdb_result_string(msgs[i], "portname", "");
-		info[i].drivername = samdb_result_string(msgs[i], "drivername", "");
-		info[i].comment = samdb_result_string(msgs[i], "comment", "");
-		info[i].location = samdb_result_string(msgs[i], "location", "");
-		/* DEVICEMODE - eek! */
-		info[i].sepfile = samdb_result_string(msgs[i], "sepfile", "");
-		info[i].printprocessor = samdb_result_string(msgs[i], "printprocessor", "");
-		info[i].datatype = samdb_result_string(msgs[i], "datatype", "");
-		info[i].parameters = samdb_result_string(msgs[i], "parameters", "");
-		/* SECURITY_DESCRIPTOR */
-		info[i].attributes = samdb_result_uint(msgs[i], "attributes", 0);
-		info[i].priority = samdb_result_uint(msgs[i], "priority", 0);
-		info[i].defaultpriority = samdb_result_uint(msgs[i], "defaultpriority", 0);
-		info[i].starttime = samdb_result_uint(msgs[i], "starttime", 0);
-		info[i].untiltime = samdb_result_uint(msgs[i], "untiltime", 0);
-		info[i].status = samdb_result_uint(msgs[i], "status", 0);
-		info[i].cjobs = samdb_result_uint(msgs[i], "cjobs", 0);
-		info[i].averageppm = samdb_result_uint(msgs[i], "averageppm", 0);
-	}
-
-	ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, info,
-		       sizeof(struct spoolss_PrinterInfo2), num_msgs,
-		       (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo2);
-
-	return WERR_OK;
-}
-
-static WERROR spoolss_EnumPrinters5(TALLOC_CTX *mem_ctx, 
-				    struct ldb_message **msgs, int num_msgs,
-				    struct ndr_push *ndr)
-{
-	struct spoolss_PrinterInfo5 *info;
-	int i;
-
-	info = talloc_array(mem_ctx, struct spoolss_PrinterInfo5, num_msgs);
-
-	if (!info)
-		return WERR_NOMEM;
-
-	for (i = 0; i < num_msgs; i++) {
-		info[i].printername = samdb_result_string(msgs[i], "name", "");
-		info[i].portname = samdb_result_string(msgs[i], "port", "");
-		info[i].attributes = samdb_result_uint(msgs[i], "attributes", 0);
-		info[i].device_not_selected_timeout = samdb_result_uint(msgs[i], "device_not_selected_timeout", 0);
-		info[i].transmission_retry_timeout = samdb_result_uint(msgs[i], "transmission_retry_timeout", 0);
-	}
-
-	ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, info,
-		       sizeof(struct spoolss_PrinterInfo5), num_msgs,
-		       (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo5);
-
-	return WERR_OK;
-}
-
 /* 
   spoolss_EnumPrinters 
 */
 static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPrinters *r)
 {
-	struct ndr_push *ndr;
 	void *spoolss_ctx;
-	WERROR result;
 	struct ldb_message **msgs;
-	int ret;
+	int count;
+	int i;
+	union spoolss_PrinterInfo *info;
+
+	r->out.info = NULL;
+	*r->out.buf_size = 0;
+	r->out.count = 0;
 
 	spoolss_ctx = spoolssdb_connect();
-	if (spoolss_ctx == NULL)
-		return WERR_NOMEM;
+	W_ERROR_HAVE_NO_MEMORY(spoolss_ctx);
 
-	ret = spoolssdb_search(spoolss_ctx, mem_ctx, NULL, &msgs, NULL,
+	count = spoolssdb_search(spoolss_ctx, mem_ctx, NULL, &msgs, NULL,
 			       "(&(objectclass=printer))");
-	
-	ndr = ndr_push_init();
+	spoolssdb_close(spoolss_ctx);
 
-	r->out.count = 0;
-	*r->out.buf_size = 0;
+	if (count == 0) return WERR_OK;
+	if (count < 0) return WERR_GENERAL_FAILURE;
+
+	info = talloc_array(mem_ctx, union spoolss_PrinterInfo, count);
+	W_ERROR_HAVE_NO_MEMORY(info);
 
 	switch(r->in.level) {
 	case 1:
-		result = spoolss_EnumPrinters1(mem_ctx, msgs, ret, ndr);
-		break;
+		for (i = 0; i < count; i++) {
+			info[i].info1.flags		= samdb_result_uint(msgs[i], "flags", 0);
+
+			info[i].info1.name		= samdb_result_string(msgs[i], "name", "");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info1.name);
+
+			info[i].info1.description	= samdb_result_string(msgs[i], "description", "");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info1.description);
+
+			info[i].info1.comment		= samdb_result_string(msgs[i], "comment", NULL);
+		}
+		return WERR_OK;
 	case 2:
-		result = spoolss_EnumPrinters2(mem_ctx, msgs, ret, ndr);
-		break;
+		for (i = 0; i < count; i++) {
+			info[i].info2.servername	= samdb_result_string(msgs[i], "servername", "");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info2.servername);
+
+			info[i].info2.printername	= samdb_result_string(msgs[i], "printername", "");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info2.printername);
+
+			info[i].info2.sharename		= samdb_result_string(msgs[i], "sharename", "");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info2.sharename);
+
+			info[i].info2.portname		= samdb_result_string(msgs[i], "portname", "");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info2.portname);
+
+			info[i].info2.drivername	= samdb_result_string(msgs[i], "drivername", "");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info2.drivername);
+
+			info[i].info2.comment		= samdb_result_string(msgs[i], "comment", NULL);
+
+			info[i].info2.location		= samdb_result_string(msgs[i], "location", NULL);
+
+			info[i].info2.devmode		= NULL;
+
+			info[i].info2.sepfile		= samdb_result_string(msgs[i], "sepfile", NULL);
+
+			info[i].info2.printprocessor	= samdb_result_string(msgs[i], "printprocessor", "");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info2.printprocessor);
+
+			info[i].info2.datatype		= samdb_result_string(msgs[i], "datatype", "");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info2.datatype);
+
+			info[i].info2.parameters	= samdb_result_string(msgs[i], "parameters", NULL);
+
+			info[i].info2.secdesc		= NULL;
+
+			info[i].info2.attributes	= samdb_result_uint(msgs[i], "attributes", 0);
+			info[i].info2.priority		= samdb_result_uint(msgs[i], "priority", 0);
+			info[i].info2.defaultpriority	= samdb_result_uint(msgs[i], "defaultpriority", 0);
+			info[i].info2.starttime		= samdb_result_uint(msgs[i], "starttime", 0);
+			info[i].info2.untiltime		= samdb_result_uint(msgs[i], "untiltime", 0);
+			info[i].info2.status		= samdb_result_uint(msgs[i], "status", 0);
+			info[i].info2.cjobs		= samdb_result_uint(msgs[i], "cjobs", 0);
+			info[i].info2.averageppm	= samdb_result_uint(msgs[i], "averageppm", 0);
+		}
+		return WERR_OK;
+	case 4:
+		for (i = 0; i < count; i++) {
+			info[i].info4.printername	= samdb_result_string(msgs[i], "printername", "");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info2.printername);
+
+			info[i].info4.servername	= samdb_result_string(msgs[i], "servername", "");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info2.servername);
+
+			info[i].info4.attributes	= samdb_result_uint(msgs[i], "attributes", 0);
+		}
+		return WERR_OK;
 	case 5:
-		result = spoolss_EnumPrinters5(mem_ctx, msgs, ret, ndr);
-		break;
-	default:
-		r->out.buffer = NULL;
-		result = WERR_UNKNOWN_LEVEL;
-		goto done;
+		for (i = 0; i < count; i++) {
+			info[i].info5.printername	= samdb_result_string(msgs[i], "name", "");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info5.printername);
+
+			info[i].info5.portname		= samdb_result_string(msgs[i], "port", "");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info5.portname);
+
+			info[i].info5.attributes	= samdb_result_uint(msgs[i], "attributes", 0);
+			info[i].info5.device_not_selected_timeout = samdb_result_uint(msgs[i], "device_not_selected_timeout", 0);
+			info[i].info5.transmission_retry_timeout  = samdb_result_uint(msgs[i], "transmission_retry_timeout", 0);
+		}
+		return WERR_OK;
 	}
 
-	if (*r->in.buf_size < ndr->offset) {
-		*r->out.buf_size = ndr->offset;
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto done;
-	}
-
-	r->out.buffer = talloc(mem_ctx, DATA_BLOB);
-
-	if (!r->out.buffer) {
-		result = WERR_NOMEM;
-		goto done;
-	}
-
-	*r->out.buffer = data_blob_talloc(mem_ctx, ndr->data, ndr->offset);
-	*r->out.buf_size = ndr->offset;
-
- done:
-	ndr_push_free(ndr);
-	spoolssdb_close(spoolss_ctx);
-
-	return result;
+	return WERR_UNKNOWN_LEVEL;
 }
 
 
