@@ -133,19 +133,22 @@ static int net_time_system(int argc, const char **argv)
 static int net_time_zone(int argc, const char **argv)
 {
 	int zone = 0;
+	int hours, mins;
+	char zsign;
 	time_t t;
 
 	t = nettime(&zone);
 
 	if (t == 0) return -1;
 
-	zone /= 60;
+	zsign = (zone > 0) ? '-' : '+';
+	if (zone < 0) zone = -zone;
 
-	if (zone % 60 == 0) {
-		printf("%+d\n", -zone / 60);
-	} else {
-		printf("%+.1f\n", ((double)-zone) / 60);
-	}
+	zone /= 60;
+	hours = zone / 60;
+	mins = zone % 60;
+
+	printf("%c%02d%02d\n", zsign, hours, mins);
 
 	return 0;
 }
