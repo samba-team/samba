@@ -394,5 +394,8 @@ pop_init(POP *p,int argcount,char **argmessage)
 #endif /* DEBUG */
 
 
-    return((p->kerberosp ? krb_authenticate : plain_authenticate)(p, cs));
+    if(p->kerberosp)
+	return krb_authenticate(p, cs);
+    else
+	return plain_authenticate(p, cs);
 }
