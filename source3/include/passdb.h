@@ -232,6 +232,12 @@ typedef struct _GROUP_INFO {
 	fstring comment;
 } GROUP_INFO;
 
+struct acct_info
+{
+    fstring acct_name; /* account name */
+    fstring acct_desc; /* account name */
+    uint32 rid; /* domain-relative RID */
+};
 
 typedef struct sam_trust_passwd {
 	TALLOC_CTX *mem_ctx;
@@ -262,7 +268,7 @@ typedef struct sam_trust_passwd {
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 6
+#define PASSDB_INTERFACE_VERSION 7
 
 typedef struct pdb_context 
 {
@@ -309,6 +315,29 @@ typedef struct pdb_context
 					   enum SID_NAME_USE sid_name_use,
 					   GROUP_MAP **rmap, int *num_entries,
 					   BOOL unix_only);
+
+	NTSTATUS (*pdb_find_alias)(struct pdb_context *context,
+				   const char *name, DOM_SID *sid);
+
+	NTSTATUS (*pdb_create_alias)(struct pdb_context *context,
+				     const char *name, uint32 *rid);
+
+	NTSTATUS (*pdb_delete_alias)(struct pdb_context *context,
+				     const DOM_SID *sid);
+
+	NTSTATUS (*pdb_enum_aliases)(struct pdb_context *context,
+				     const DOM_SID *domain_sid,
+				     uint32 start_idx, uint32 num_entries,
+				     uint32 *num_aliases,
+				     struct acct_info **aliases);
+
+	NTSTATUS (*pdb_get_aliasinfo)(struct pdb_context *context,
+				      const DOM_SID *sid,
+				      struct acct_info *info);
+
+	NTSTATUS (*pdb_set_aliasinfo)(struct pdb_context *context,
+				      const DOM_SID *sid,
+				      struct acct_info *info);
 
 	NTSTATUS (*pdb_add_aliasmem)(struct pdb_context *context,
 				     const DOM_SID *alias,
@@ -429,6 +458,28 @@ typedef struct pdb_methods
 				       enum SID_NAME_USE sid_name_use,
 				       GROUP_MAP **rmap, int *num_entries,
 				       BOOL unix_only);
+
+	NTSTATUS (*find_alias)(struct pdb_methods *methods,
+			       const char *name, DOM_SID *sid);
+
+	NTSTATUS (*create_alias)(struct pdb_methods *methods,
+				 const char *name, uint32 *rid);
+
+	NTSTATUS (*delete_alias)(struct pdb_methods *methods,
+				 const DOM_SID *sid);
+
+	NTSTATUS (*enum_aliases)(struct pdb_methods *methods,
+				 const DOM_SID *domain_sid,
+				 uint32 start_idx, uint32 max_entries,
+				 uint32 *num_aliases, struct acct_info **info);
+
+	NTSTATUS (*get_aliasinfo)(struct pdb_methods *methods,
+				  const DOM_SID *sid,
+				  struct acct_info *info);
+
+	NTSTATUS (*set_aliasinfo)(struct pdb_methods *methods,
+				  const DOM_SID *sid,
+				  struct acct_info *info);
 
 	NTSTATUS (*add_aliasmem)(struct pdb_methods *methods,
 				 const DOM_SID *alias, const DOM_SID *member);

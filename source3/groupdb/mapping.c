@@ -1270,6 +1270,115 @@ NTSTATUS pdb_default_delete_group_mapping_entry(struct pdb_methods *methods,
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
+NTSTATUS pdb_default_find_alias(struct pdb_methods *methods,
+				const char *name, DOM_SID *sid)
+{
+	GROUP_MAP map;
+
+	if (!get_group_map_from_ntname(name, &map))
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	if ((map.sid_name_use != SID_NAME_WKN_GRP) &&
+	    (map.sid_name_use != SID_NAME_ALIAS))
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+
+	sid_copy(sid, &map.sid);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
+				  const char *name, uint32 *rid)
+{
+	return NT_STATUS_ACCESS_DENIED;
+}
+
+NTSTATUS pdb_default_delete_alias(struct pdb_methods *methods,
+				  const DOM_SID *sid)
+{
+	return NT_STATUS_ACCESS_DENIED;
+}
+
+NTSTATUS pdb_default_enum_aliases(struct pdb_methods *methods,
+				  const DOM_SID *sid,
+				  uint32 start_idx, uint32 max_entries,
+				  uint32 *num_aliases,
+				  struct acct_info **info)
+{
+	extern DOM_SID global_sid_Builtin;
+
+	GROUP_MAP *map;
+	int i, num_maps;
+	enum SID_NAME_USE type = SID_NAME_UNKNOWN;
+
+	if (sid_compare(sid, get_global_sam_sid()) == 0)
+		type = SID_NAME_ALIAS;
+
+	if (sid_compare(sid, &global_sid_Builtin) == 0)
+		type = SID_NAME_WKN_GRP;
+
+	if (!enum_group_mapping(type, &map, &num_maps, False) ||
+	    (num_maps == 0)) {
+		*num_aliases = 0;
+		*info = NULL;
+		goto done;
+	}
+
+	if (start_idx > num_maps) {
+		*num_aliases = 0;
+		*info = NULL;
+		goto done;
+	}
+
+	*num_aliases = num_maps - start_idx;
+
+	if (*num_aliases > max_entries)
+		*num_aliases = max_entries;
+
+	*info = malloc(sizeof(struct acct_info) * (*num_aliases));
+
+	for (i=0; i<*num_aliases; i++) {
+		fstrcpy((*info)[i].acct_name, map[i+start_idx].nt_name);
+		fstrcpy((*info)[i].acct_desc, map[i+start_idx].comment);
+		sid_peek_rid(&map[i].sid, &(*info)[i+start_idx].rid);
+	}
+
+ done:
+	SAFE_FREE(map);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS pdb_default_get_aliasinfo(struct pdb_methods *methods,
+				   const DOM_SID *sid,
+				   struct acct_info *info)
+{
+	GROUP_MAP map;
+
+	if (!get_group_map_from_sid(*sid, &map))
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	fstrcpy(info->acct_name, map.nt_name);
+	fstrcpy(info->acct_desc, map.comment);
+	sid_peek_rid(&map.sid, &info->rid);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS pdb_default_set_aliasinfo(struct pdb_methods *methods,
+				   const DOM_SID *sid,
+				   struct acct_info *info)
+{
+	GROUP_MAP map;
+
+	if (!get_group_map_from_sid(*sid, &map))
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	fstrcpy(map.comment, info->acct_desc);
+
+	if (!add_mapping_entry(&map, TDB_REPLACE))
+		return NT_STATUS_ACCESS_DENIED;
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
 					   enum SID_NAME_USE sid_name_use,
 					   GROUP_MAP **rmap, int *num_entries,
