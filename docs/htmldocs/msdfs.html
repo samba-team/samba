@@ -1,0 +1,88 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 17. Hosting a Microsoft Distributed File System tree on Samba</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="optional.html" title="Part III. Advanced Configuration"><link rel="previous" href="InterdomainTrusts.html" title="Chapter 16. Interdomain Trust Relationships"><link rel="next" href="printing.html" title="Chapter 18. Classical Printing Support"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 17. Hosting a Microsoft Distributed File System tree on Samba</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="InterdomainTrusts.html">Prev</a> </td><th width="60%" align="center">Part III. Advanced Configuration</th><td width="20%" align="right"> <a accesskey="n" href="printing.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="msdfs"></a>Chapter 17. Hosting a Microsoft Distributed File System tree on Samba</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Shirish</span> <span class="surname">Kalele</span></h3><div class="affiliation"><span class="orgname">Samba Team &amp; Veritas Software<br></span><div class="address"><p><br>
+				<tt class="email">&lt;<a href="mailto:samba@samba.org">samba@samba.org</a>&gt;</tt><br>
+			</p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate">12 Jul 2000</p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="msdfs.html#id2920158">Features and Benefits</a></dt><dt><a href="msdfs.html#id2920447">Common Errors</a></dt><dd><dl><dt><a href="msdfs.html#id2920488">MSDFS UNIX Path Is Case-Critical</a></dt></dl></dd></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2920158"></a>Features and Benefits</h2></div></div><div></div></div><p>
+	The Distributed File System (DFS) provides a means of separating the logical
+	view of files and directories that users see from the actual physical locations
+	of these resources on the network. It allows for higher availability, smoother
+	storage expansion, load balancing, and so on.
+	</p><p>
+	For information about DFS, refer to the 
+<ulink url="http://www.microsoft.com/NTServer/nts/downloads/winfeatures/NTSDistrFile/AdminGuide.asp">Microsoft documentation</ulink>.
+	This document explains how to host a DFS tree on a UNIX machine (for DFS-aware
+	clients to browse) using Samba.
+	</p><p>
+	To enable SMB-based DFS for Samba, configure it with the <tt class="option">--with-msdfs</tt>
+	option. Once built, a Samba server can be made a DFS server by setting the global 
+	Boolean <a class="indexterm" name="id2920201"></a><i class="parameter"><tt>host msdfs</tt></i>
+	parameter in the <tt class="filename">smb.conf</tt> file. You designate a share as a DFS
+	root using the Share Level Boolean <a class="indexterm" name="id2920223"></a><i class="parameter"><tt>msdfs root</tt></i> parameter. A DFS root directory on Samba hosts DFS
+	links in the form of symbolic links that point to other servers. For example, a symbolic link
+	<tt class="filename">junction-&gt;msdfs:storage1\share1</tt> in the share directory acts
+	as the DFS junction. When DFS-aware clients attempt to access the junction link,
+	they are redirected to the storage location (in this case, <i class="parameter"><tt>\\storage1\share1</tt></i>).
+	</p><p>
+	DFS trees on Samba work with all DFS-aware clients ranging from Windows 95 to 200x.
+	<link linkend="dfscfg"> shows how to setup a DFS tree on a Samba server.
+	In the <tt class="filename">/export/dfsroot</tt> directory, you set up your DFS links to 
+	other servers on the network.
+</p><pre class="screen">
+<tt class="prompt">root# </tt><b class="userinput"><tt>cd /export/dfsroot</tt></b>
+<tt class="prompt">root# </tt><b class="userinput"><tt>chown root /export/dfsroot</tt></b>
+<tt class="prompt">root# </tt><b class="userinput"><tt>chmod 755 /export/dfsroot</tt></b>
+<tt class="prompt">root# </tt><b class="userinput"><tt>ln -s msdfs:storageA\\shareA linka</tt></b>
+<tt class="prompt">root# </tt><b class="userinput"><tt>ln -s msdfs:serverB\\share,serverC\\share linkb</tt></b>
+</pre><p>
+</p><p>
+</p><div class="example"><a name="dfscfg"></a><p class="title"><b>Example 17.1. smb.conf with DFS configured</b></p><table class="simplelist" border="0" summary="Simple list"><tr><td> </td></tr><tr><td><i class="parameter"><tt>[global]</tt></i></td></tr><tr><td><i class="parameter"><tt>netbios name = GANDALF</tt></i></td></tr><tr><td><i class="parameter"><tt>host msdfs   = yes</tt></i></td></tr><tr><td> </td></tr><tr><td><i class="parameter"><tt>[dfs]</tt></i></td></tr><tr><td><i class="parameter"><tt>path = /export/dfsroot</tt></i></td></tr><tr><td><i class="parameter"><tt>msdfs root = yes</tt></i></td></tr></table></div><p>
+</p><p>You should set up the permissions and ownership of 
+	the directory acting as the DFS root so that only designated 
+	users can create, delete or modify the msdfs links. Also note 
+	that symlink names should be all lowercase. This limitation exists 
+	to have Samba avoid trying all the case combinations to get at 
+	the link name. Finally, set up the symbolic links to point to the 
+	network shares you want and start Samba.</p><p>Users on DFS-aware clients can now browse the DFS tree 
+	on the Samba server at \\samba\dfs. Accessing 
+	links linka or linkb (which appear as directories to the client) 
+	takes users directly to the appropriate shares on the network.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2920447"></a>Common Errors</h2></div></div><div></div></div><div class="itemizedlist"><ul type="disc"><li><p>Windows clients need to be rebooted 
+		if a previously mounted non-DFS share is made a DFS 
+		root or vice versa. A better way is to introduce a 
+		new share and make it the DFS root.</p></li><li><p>Currently, there's a restriction that msdfs 
+		symlink names should all be lowercase.</p></li><li><p>For security purposes, the directory 
+		acting as the root of the DFS tree should have ownership 
+		and permissions set so only designated users can 
+		modify the symbolic links in the directory.</p></li></ul></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2920488"></a>MSDFS UNIX Path Is Case-Critical</h3></div></div><div></div></div><p>
+		A network administrator sent advice to the Samba mailing list
+		after a long sessions trying to determine why DFS was not working.
+		His advice is worth noting.
+		</p><p>&#8220;<span class="quote">
+		I spent some time trying to figure out why my particular
+		dfs root wasn't working. I noted in the documenation that
+		the symlink should be in all lowercase. It should be
+		amended that the entire path to the symlink should all be
+		in lowercase as well.
+		</span>&#8221;</p><p>
+		For example, I had a share defined as such:
+
+		</p><pre class="screen">
+		[pub]
+			path = /export/home/Shares/public_share
+			msdfs root = yes
+		</pre><p>
+
+		and I could not make my Windows 9x/Me (with the dfs client installed)
+		follow this symlink:
+
+		</p><pre class="screen">
+			damage1 -&gt; msdfs:damage\test-share
+		</pre><p>
+		</p><p>
+		Running a debug level of 10 reveals:
+
+		</p><pre class="programlisting">
+		[2003/08/20 11:40:33, 5] msdfs/msdfs.c:is_msdfs_link(176)
+		  is_msdfs_link: /export/home/shares/public_share/* does not exist.
+		</pre><p>
+
+		Curious. So I changed the directory name from .../Shares/... to
+		.../shares/... (along with my service definition) and it worked!
+		</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="InterdomainTrusts.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="optional.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="printing.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 16. Interdomain Trust Relationships </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 18. Classical Printing Support</td></tr></table></div></body></html>
