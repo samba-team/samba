@@ -466,7 +466,7 @@ to open_mode 0x%x\n", (unsigned long)desired_access, (unsigned long)share_access
 static int nt_open_pipe(char *fname, connection_struct *conn,
 			char *inbuf, char *outbuf, int *ppnum)
 {
-	pipes_struct *p = NULL;
+	smb_np_struct *p = NULL;
 
 	uint16 vuid = SVAL(inbuf, smb_uid);
 	int i;

@@ -163,8 +163,9 @@ void send_trans_reply(char *outbuf,
  Start the first part of an RPC reply which began with an SMBtrans request.
 ****************************************************************************/
 
-static BOOL api_rpc_trans_reply(char *outbuf, pipes_struct *p)
+static BOOL api_rpc_trans_reply(char *outbuf, smb_np_struct *p)
 {
+	BOOL is_data_outstanding;
 	char *rdata = malloc(p->max_trans_reply);
 	int data_len;
 
@@ -173,12 +174,13 @@ static BOOL api_rpc_trans_reply(char *outbuf, pipes_struct *p)
 		return False;
 	}
 
-	if((data_len = read_from_pipe( p, rdata, p->max_trans_reply)) < 0) {
+	if((data_len = read_from_pipe( p, rdata, p->max_trans_reply,
+					&is_data_outstanding)) < 0) {
 		SAFE_FREE(rdata);
 		return False;
 	}
 
-	send_trans_reply(outbuf, NULL, 0, rdata, data_len, p->out_data.current_pdu_len > data_len);
+	send_trans_reply(outbuf, NULL, 0, rdata, data_len, is_data_outstanding);
 
 	SAFE_FREE(rdata);
 	return True;
@@ -188,7 +190,7 @@ static BOOL api_rpc_trans_reply(char *outbuf, pipes_struct *p)
  WaitNamedPipeHandleState 
 ****************************************************************************/
 
-static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param, int param_len)
+static BOOL api_WNPHS(char *outbuf, smb_np_struct *p, char *param, int param_len)
 {
 	uint16 priority;
 
@@ -211,7 +213,7 @@ static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param, int param_len)
  SetNamedPipeHandleState 
 ****************************************************************************/
 
-static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param, int param_len)
+static BOOL api_SNPHS(char *outbuf, smb_np_struct *p, char *param, int param_len)
 {
 	uint16 id;
 
@@ -259,7 +261,7 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		 	int suwcnt,int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
 	BOOL reply = False;
-	pipes_struct *p = NULL;
+	smb_np_struct *p = NULL;
 	int pnum;
 	int subcommand;
 

@@ -114,7 +114,7 @@ END {
 
 {
   gotstart = 0;
-  if( $0 ~ /^const|^connection_struct|^pipes_struct|^file_fd_struct|^files_struct|^connection_struct|^uid_t|^gid_t|^unsigned|^mode_t|^DIR|^user|^int|^pid_t|^ino_t|^off_t/ ) {
+  if( $0 ~ /^const|^connection_struct|^pipes_struct|^smb_np_struct|^file_fd_struct|^files_struct|^connection_struct|^uid_t|^gid_t|^unsigned|^mode_t|^DIR|^user|^int|^pid_t|^ino_t|^off_t/ ) {
     gotstart = 1;
   }
 

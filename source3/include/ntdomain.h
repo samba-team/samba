@@ -159,15 +159,19 @@ struct dcinfo
 	fstring mach_acct;  /* Machine name we've authenticated. */
 };
 
+/*
+ * DCE/RPC-specific samba-internal-specific handling of data on
+ * NamedPipes.
+ *
+ */
+
 typedef struct pipes_struct
 {
 	struct pipes_struct *next, *prev;
-	int pnum;
+
 	connection_struct *conn;
 	uint16 vuid; /* points to the unauthenticated user that opened this pipe. */
-	BOOL open; /* open connection */
-	uint16 device_state;
-	uint16 priority;
+
 	fstring name;
 	fstring pipe_srv_name;
 
@@ -226,10 +230,6 @@ typedef struct pipes_struct
 
 	output_data out_data;
 
-	/* When replying to an SMBtrans, this is the maximum amount of
-           data that can be sent in the initial reply. */
-	int max_trans_reply;
-
 	/* talloc context to use when allocating memory on this pipe. */
 	TALLOC_CTX *mem_ctx;
 
@@ -237,6 +237,83 @@ typedef struct pipes_struct
 	struct handle_list *pipe_handles;
 
 } pipes_struct;
+
+typedef struct smb_np_struct
+{
+	struct smb_np_struct *next, *prev;
+	int pnum;
+	connection_struct *conn;
+	uint16 vuid; /* points to the unauthenticated user that opened this pipe. */
+	BOOL open; /* open connection */
+	uint16 device_state;
+	uint16 priority;
+	fstring name;
+
+	/* When replying to an SMBtrans, this is the maximum amount of
+           data that can be sent in the initial reply. */
+	int max_trans_reply;
+
+	/*
+	 * NamedPipe state information.
+	 *
+	 * (e.g. typecast a np_struct, above).
+	 */
+	void *np_state;
+
+	/*
+	 * NamedPipe functions, to be called to perform
+	 * Named Pipe transactions on request from an
+	 * SMB client.
+	 */
+
+	/* call to create a named pipe connection.
+	 * returns: state information representing the connection.
+	 *          is stored in np_state, above.
+	 */
+	void *   (*namedpipe_create)(char *pipe_name, 
+					  connection_struct *conn, uint16 vuid);
+
+	/* call to perform a write / read namedpipe transaction.
+	 * TransactNamedPipe is weird: it returns whether there
+	 * is more data outstanding to be read, and the
+	 * caller is expected to take note and follow up with
+	 * read requests.
+	 */
+	ssize_t  (*namedpipe_transact)(void *np_state,
+	                               char *data, int len,
+	                               char *rdata, int rlen,
+	                               BOOL *pipe_outstanding);
+
+	/* call to perform a write namedpipe operation
+	 */
+	ssize_t  (*namedpipe_write)(void * np_state,
+	                            char *data, size_t n);
+
+	/* call to perform a read namedpipe operation.
+	 *
+	 * NOTE: the only reason that the pipe_outstanding
+	 * argument is here is because samba does not use
+	 * the namedpipe_transact function yet: instead,
+	 * it performs the same as what namedpipe_transact
+	 * does - a write, followed by a read.
+	 *
+	 * when samba is modified to use namedpipe_transact,
+	 * the pipe_outstanding argument may be removed.
+	 */
+	ssize_t  (*namedpipe_read)(void * np_state,
+	                           char *data, size_t max_len,
+	                           BOOL *pipe_outstanding);
+
+	/* call to close a namedpipe.
+	 * function is expected to perform all cleanups
+	 * necessary, free all memory etc.
+	 *
+	 * returns True if cleanup was successful (not that
+	 * we particularly care).
+	 */
+	BOOL     (*namedpipe_close)(void * np_state);
+
+} smb_np_struct;
 
 struct api_struct
 {  
