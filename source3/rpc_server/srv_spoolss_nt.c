@@ -658,12 +658,28 @@ static BOOL srv_spoolss_sendnotify(POLICY_HND *handle)
 	return True;
 }	
 
+/****************************************************************************
+ Return a user struct for a pipe user.
+****************************************************************************/
+
+static struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
+{
+	if (p->ntlmssp_auth_validated) {
+		memcpy(user, &p->pipe_user, sizeof(struct current_user));
+	} else {
+		extern struct current_user current_user;
+		memcpy(user, &current_user, sizeof(struct current_user));
+	}
+
+	return user;
+}
+
 /********************************************************************
  * spoolss_open_printer
  *
  * called from the spoolss dispatcher
  ********************************************************************/
-uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
+uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 				 const PRINTER_DEFAULT *printer_default,
 				 uint32  user_switch, SPOOL_USER_CTR user_ctr,
 				 POLICY_HND *handle)
@@ -671,11 +687,10 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 	uint32 result = NT_STATUS_NO_PROBLEMO;
 	fstring name;
 	int snum;
+	struct current_user user;
 	
-	if (printername == NULL) {
-		result = ERROR_INVALID_PRINTER_NAME;
-		goto done;
-	}
+	if (printername == NULL)
+		return ERROR_INVALID_PRINTER_NAME;
 
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
@@ -683,10 +698,8 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 
 	DEBUGADD(3,("checking name: %s\n",name));
 
-	if (!open_printer_hnd(handle, name)) {
-		result = ERROR_INVALID_PRINTER_NAME;
-		goto done;
-	}
+	if (!open_printer_hnd(handle, name))
+		return ERROR_INVALID_PRINTER_NAME;
 	
 /*
 	if (printer_default->datatype_ptr != NULL)
@@ -700,45 +713,62 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 	
 	if (!set_printer_hnd_accesstype(handle, printer_default->access_required)) {
 		close_printer_handle(handle);
-		result = ERROR_ACCESS_DENIED;
-		goto done;
+		return ERROR_ACCESS_DENIED;
 	}
 		
-	/* Disallow MS AddPrinterWizard if parameter disables it. A Win2k
+	/*
+	   First case: the user is opening the print server:
+
+	   Disallow MS AddPrinterWizard if parameter disables it. A Win2k
 	   client 1st tries an OpenPrinterEx with access==0, MUST be allowed.
+
 	   Then both Win2k and WinNT clients try an OpenPrinterEx with
-	   SERVER_ALL_ACCESS, which we force to fail. Then they try
-	   OpenPrinterEx with SERVER_READ which we allow. This lets the
+	   SERVER_ALL_ACCESS, which we allow only if the user is root (uid=0)
+	   or if the user is listed in the smb.conf printer admin parameter.
+
+	   Then they try OpenPrinterEx with SERVER_READ which we allow. This lets the
 	   client view printer folder, but does not show the MSAPW.
 
 	   Note: this test needs code to check access rights here too. Jeremy
-	   could you look at this? */
+	   could you look at this?
+	   
+	   
+	   Second case: the user is opening a printer:
+	   NT doesn't let us connect to a printer if the connecting user
+	   doesn't have print permission.
 
-	if (handle_is_printserver(handle) &&
-	    !lp_ms_add_printer_wizard()) {
+	*/
+
+	get_current_user(&user, p);
+	
+	if (handle_is_printserver(handle) ) {
 		if (printer_default->access_required == 0) {
-			goto done;
+			return NT_STATUS_NO_PROBLEMO;
 		}
-		else if (printer_default->access_required != (SERVER_READ)) {
-			close_printer_handle(handle);
-			result = ERROR_ACCESS_DENIED;
-			goto done;
+		else if ( (printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
+
+			if (lp_ms_add_printer_wizard()) {
+				close_printer_handle(handle);
+				return ERROR_ACCESS_DENIED;
+			}
+			else if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin(snum))) {
+				return NT_STATUS_NO_PROBLEMO;
+			} else {
+				close_printer_handle(handle);
+				return ERROR_ACCESS_DENIED;
+			}
 		}
-	}
-
-	/* NT doesn't let us connect to a printer if the connecting user
-	   doesn't have print permission.  */
-
-	if (!handle_is_printserver(handle)) {
-
+		else 
+			return NT_STATUS_NO_PROBLEMO;
+	} else {
+	
 		if (!get_printer_snum(handle, &snum))
 			return ERROR_INVALID_HANDLE;
 
-		if (!print_access_check(NULL, snum, PRINTER_ACCESS_USE)) {
+		if (!print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(handle);
-			result = ERROR_ACCESS_DENIED;
-			goto done;
+			return ERROR_ACCESS_DENIED;
 		}
 
 		/*
@@ -753,13 +783,13 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 			result = printer_write_default_dev( snum, printer_default);
 			if (result != 0) {
 				close_printer_handle(handle);
-				goto done;
+				return result;
 			}
 		}
+
+		return NT_STATUS_NO_PROBLEMO;
 	}
 
- done:
-	return result;
 }
 
 /****************************************************************************
@@ -3613,22 +3643,6 @@ uint32 _spoolss_endpageprinter(POLICY_HND *handle)
 	Printer->page_started=False;
 
 	return NT_STATUS_NO_PROBLEMO;
-}
-
-/****************************************************************************
- Return a user struct for a pipe user.
-****************************************************************************/
-
-static struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
-{
-	if (p->ntlmssp_auth_validated) {
-		memcpy(user, &p->pipe_user, sizeof(struct current_user));
-	} else {
-		extern struct current_user current_user;
-		memcpy(user, &current_user, sizeof(struct current_user));
-	}
-
-	return user;
 }
 
 /********************************************************************
