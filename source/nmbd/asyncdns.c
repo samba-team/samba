@@ -122,6 +122,7 @@ void kill_async_dns_child(void)
 {
 	if (child_pid > 0) {
 		kill(child_pid, SIGTERM);
+		child_pid = -1;
 	}
 }
 
