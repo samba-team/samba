@@ -21,6 +21,9 @@ init_generate (char *filename)
 	     "/* Generated from %s */\n"
 	     "/* Do not edit */\n\n",
 	     filename);
+    fprintf (headerfile, 
+	     "#ifndef __" STEM "_h__\n"
+	     "#define __" STEM "_h__\n\n");
     logfile = fopen(STEM "_files", "w");
     if (logfile == NULL) {
 	fprintf (stderr, "Could not open " STEM "_files" "\n");
@@ -31,9 +34,11 @@ init_generate (char *filename)
 void
 close_generate ()
 {
-  fclose (headerfile);
-  fprintf (logfile, "\n");
-  fclose (logfile);
+    fprintf (headerfile, "#endif /* __" STEM "_h__ /*\n");
+
+    fclose (headerfile);
+    fprintf (logfile, "\n");
+    fclose (logfile);
 }
 
 void
@@ -44,90 +49,197 @@ generate_constant (Symbol *s)
 }
 
 static void
-define_type (char *name, Type *t)
+space(int level)
 {
-  switch (t->type) {
-  case TType:
-    fprintf (headerfile, "%s %s;\n", t->symbol->gen_name, name);
-    break;
-  case TInteger:
-    fprintf (headerfile, "unsigned %s;\n", name);
-    break;
-  case TOctetString:
-    fprintf (headerfile, "krb5_data %s;\n", name);
-    break;
-  case TBitString: {
-    Member *m;
-    Type i;
-    int tag = -1;
+    while(level-- > 0)
+	fprintf(headerfile, "  ");
+}
 
-    i.type = TInteger;
-    fprintf (headerfile, "struct {\n");
-    for (m = t->members; m && m->val != tag; m = m->next) {
-      char *n = malloc(strlen(m->gen_name) + 3);
-      strcpy (n, m->gen_name);
-      strcat (n, ":1");
-      define_type (n, &i);
-      free (n);
-      if (tag == -1)
-	tag = m->val;
+static void
+define_asn1 (int level, Type *t)
+{
+    switch (t->type) {
+    case TType:
+	space(level);
+	fprintf (headerfile, "%s", t->symbol->name);
+	break;
+    case TInteger:
+	space(level);
+	fprintf (headerfile, "INTEGER");
+	break;
+    case TOctetString:
+	space(level);
+	fprintf (headerfile, "OCTET STRING");
+	break;
+    case TBitString: {
+	Member *m;
+	Type i;
+	int tag = -1;
+
+	i.type = TInteger;
+	space(level);
+	fprintf (headerfile, "BIT STRING {\n");
+	for (m = t->members; m && m->val != tag; m = m->next) {
+	    if (tag == -1)
+		tag = m->val;
+	    space(level + 1);
+	    fprintf (headerfile, "%s(%d)%s\n", m->name, m->val, 
+		     m->next->val == tag?"":",");
+
+	}
+	space(level);
+	fprintf (headerfile, "}");
+	break;
     }
-    fprintf (headerfile, "} %s;\n\n", name);
-    break;
-  }
-  case TSequence: {
-    Member *m;
-    int tag = -1;
+    case TSequence: {
+	Member *m;
+	int tag = -1;
 
-    fprintf (headerfile, "struct {\n");
-    for (m = t->members; m && m->val != tag; m = m->next) {
-      if (m->optional) {
-	char *n = malloc(strlen(m->gen_name) + 2);
-
-	*n = '*';
-	strcpy (n+1, m->gen_name);
-	define_type (n, m->type);
-	free (n);
-      } else
-	define_type (m->gen_name, m->type);
-      if (tag == -1)
-	tag = m->val;
+	space(level);
+	fprintf (headerfile, "SEQUENCE {\n");
+	for (m = t->members; m && m->val != tag; m = m->next) {
+	    if (tag == -1)
+		tag = m->val;
+	    space(level + 1);
+	    fprintf (headerfile, "%s[%d] ", m->name, m->val);
+	    if(strlen(m->name) < 16)
+		fprintf (headerfile, "%*s", 16 - strlen(m->name), "");
+	    define_asn1(level + 1, m->type);
+	    if(m->optional)
+		fprintf(headerfile, " OPTIONAL");
+	    if(m->next->val != tag)
+		fprintf (headerfile, ",");
+	    fprintf (headerfile, "\n");
+	}
+	space(level);
+	fprintf (headerfile, "}");
+	break;
     }
-    fprintf (headerfile, "} %s;\n\n", name);
-    break;
-  }
-  case TSequenceOf: {
-    Type i;
+    case TSequenceOf: {
+	space(level);
+	fprintf (headerfile, "SEQUENCE OF ");
+	define_asn1 (0, t->subtype);
+	break;
+    }
+    case TGeneralizedTime:
+	space(level);
+	fprintf (headerfile, "GeneralizedTime");
+	break;
+    case TGeneralString:
+	space(level);
+	fprintf (headerfile, "GeneralString");
+	break;
+    case TApplication:
+	fprintf (headerfile, "[APPLICATION %d] ", t->application);
+	define_asn1 (level, t->subtype);
+	break;
+    default:
+	abort ();
+    }
+}
 
-    i.type = TInteger;
-    i.application = 0;
+static void
+define_type (int level, char *name, Type *t)
+{
+    switch (t->type) {
+    case TType:
+	space(level);
+	fprintf (headerfile, "%s %s;\n", t->symbol->gen_name, name);
+	break;
+    case TInteger:
+	space(level);
+	fprintf (headerfile, "unsigned %s;\n", name);
+	break;
+    case TOctetString:
+	space(level);
+	fprintf (headerfile, "krb5_data %s;\n", name);
+	break;
+    case TBitString: {
+	Member *m;
+	Type i;
+	int tag = -1;
 
-    fprintf (headerfile, "struct {\n");
-    define_type ("len", &i);
-    define_type ("*val", t->subtype);
-    fprintf (headerfile, "} %s;\n\n", name);
-    break;
-  }
-  case TGeneralizedTime:
-    fprintf (headerfile, "time_t %s;\n", name);
-    break;
-  case TGeneralString:
-    fprintf (headerfile, "char *%s;\n", name);
-    break;
-  case TApplication:
-    define_type (name, t->subtype);
-    break;
-  default:
-    abort ();
-  }
+	i.type = TInteger;
+	space(level);
+	fprintf (headerfile, "struct {\n");
+	for (m = t->members; m && m->val != tag; m = m->next) {
+	    char *n = malloc(strlen(m->gen_name) + 3);
+	    strcpy (n, m->gen_name);
+	    strcat (n, ":1");
+	    define_type (level + 1, n, &i);
+	    free (n);
+	    if (tag == -1)
+		tag = m->val;
+	}
+	space(level);
+	fprintf (headerfile, "} %s;\n\n", name);
+	break;
+    }
+    case TSequence: {
+	Member *m;
+	int tag = -1;
+
+	space(level);
+	fprintf (headerfile, "struct {\n");
+	for (m = t->members; m && m->val != tag; m = m->next) {
+	    if (m->optional) {
+		char *n = malloc(strlen(m->gen_name) + 2);
+
+		*n = '*';
+		strcpy (n+1, m->gen_name);
+		define_type (level + 1, n, m->type);
+		free (n);
+	    } else
+		define_type (level + 1, m->gen_name, m->type);
+	    if (tag == -1)
+		tag = m->val;
+	}
+	space(level);
+	fprintf (headerfile, "} %s;\n", name);
+	break;
+    }
+    case TSequenceOf: {
+	Type i;
+
+	i.type = TInteger;
+	i.application = 0;
+
+	space(level);
+	fprintf (headerfile, "struct {\n");
+	define_type (level + 1, "len", &i);
+	define_type (level + 1, "*val", t->subtype);
+	space(level);
+	fprintf (headerfile, "} %s;\n", name);
+	break;
+    }
+    case TGeneralizedTime:
+	space(level);
+	fprintf (headerfile, "time_t %s;\n", name);
+	break;
+    case TGeneralString:
+	space(level);
+	fprintf (headerfile, "char *%s;\n", name);
+	break;
+    case TApplication:
+	define_type (level, name, t->subtype);
+	break;
+    default:
+	abort ();
+    }
 }
 
 static void
 generate_type_header (Symbol *s)
 {
-  fprintf (headerfile, "typedef ");
-  define_type (s->gen_name, s->type);
-  fprintf (headerfile, "\n");
+    fprintf (headerfile, "/*\n");
+    fprintf (headerfile, "%s ::= ", s->name);
+    define_asn1 (0, s->type);
+    fprintf (headerfile, "\n*/\n\n");
+
+    fprintf (headerfile, "typedef ");
+    define_type (0, s->gen_name, s->type);
+
+    fprintf (headerfile, "\n");
 }
 
 
@@ -158,6 +270,7 @@ generate_type (Symbol *s)
     generate_type_free (s);
     generate_type_length (s);
     generate_type_copy (s);
+    generate_type_maybe (s);
     fprintf(headerfile, "\n\n");
     fclose(codefile);
 }
