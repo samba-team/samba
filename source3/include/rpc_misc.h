@@ -85,49 +85,42 @@ typedef struct enum_hnd_info
 {
 	uint32 ptr_hnd;          /* pointer to enumeration handle */
 	uint32 handle;           /* enumeration handle */
-
 } ENUM_HND;
 
 /* LOOKUP_LEVEL - switch value */
 typedef struct lookup_level_info
 {
-  uint16 value;
-
+	uint16 value;
 } LOOKUP_LEVEL;
 
 /* DOM_SID2 - security id */
 typedef struct sid_info_2
 {
 	uint32 num_auths; /* length, bytes, including length of len :-) */
-
 	DOM_SID sid;
-
 } DOM_SID2;
 
 /* STRHDR - string header */
 typedef struct header_info
 {
-  uint16 str_str_len;
-  uint16 str_max_len;
-  uint32 buffer; /* non-zero */
-
+	uint16 str_str_len;
+	uint16 str_max_len;
+	uint32 buffer; /* non-zero */
 } STRHDR;
 
 /* UNIHDR - unicode string header */
 typedef struct unihdr_info
 {
-  uint16 uni_str_len;
-  uint16 uni_max_len;
-  uint32 buffer; /* usually has a value of 4 */
-
+	uint16 uni_str_len;
+	uint16 uni_max_len;
+	uint32 buffer; /* usually has a value of 4 */
 } UNIHDR;
 
 /* UNIHDR2 - unicode string header and undocumented buffer */
 typedef struct unihdr2_info
 {
-  UNIHDR unihdr;
-  uint32 buffer; /* 32 bit buffer pointer */
-
+	UNIHDR unihdr;
+	uint32 buffer; /* 32 bit buffer pointer */
 } UNIHDR2;
 
 /* clueless as to what maximum length should be */
@@ -138,16 +131,15 @@ typedef struct unihdr2_info
 /* UNISTR - unicode string size and buffer */
 typedef struct unistr_info
 {
-  /* unicode characters. ***MUST*** be little-endian. ***MUST*** be null-terminated */
-  uint16 *buffer;
+	/* unicode characters. ***MUST*** be little-endian. ***MUST*** be null-terminated */
+	uint16 *buffer;
 } UNISTR;
 
 /* BUFHDR - buffer header */
 typedef struct bufhdr_info
 {
-  uint32 buf_max_len;
-  uint32 buf_len;
-
+	uint32 buf_max_len;
+	uint32 buf_len;
 } BUFHDR;
 
 /* BUFFER2 - unicode string, size (in uint8 ascii chars) and buffer */
@@ -155,51 +147,47 @@ typedef struct bufhdr_info
 /* of a unicode string different from the other \PIPE\ writers */
 typedef struct buffer2_info
 {
-  uint32 buf_max_len;
-  uint32 undoc;
-  uint32 buf_len;
-  /* unicode characters. ***MUST*** be little-endian. **NOT** necessarily null-terminated */
-  uint16 *buffer;
-
+	uint32 buf_max_len;
+	uint32 undoc;
+	uint32 buf_len;
+	/* unicode characters. ***MUST*** be little-endian. **NOT** necessarily null-terminated */
+	uint16 *buffer;
 } BUFFER2;
 
 /* BUFFER3 */
 typedef struct buffer3_info
 {
-  uint32 buf_max_len;
-  uint8  *buffer; /* Data */
-  uint32 buf_len;
-
+	uint32 buf_max_len;
+	uint8  *buffer; /* Data */
+	uint32 buf_len;
 } BUFFER3;
 
 /* BUFFER5 */
 typedef struct buffer5_info
 {
-  uint32 buf_len;
-  uint16 *buffer; /* data */
+	uint32 buf_len;
+	uint16 *buffer; /* data */
 } BUFFER5;
 
 /* UNISTR2 - unicode string size (in uint16 unicode chars) and buffer */
 typedef struct unistr2_info
 {
-  uint32 uni_max_len;
-  uint32 undoc;
-  uint32 uni_str_len;
-  /* unicode characters. ***MUST*** be little-endian. 
-     **must** be null-terminated and the uni_str_len should include
-     the NULL character */
-  uint16 *buffer;
-
+	uint32 uni_max_len;
+	uint32 undoc;
+	uint32 uni_str_len;
+	/* unicode characters. ***MUST*** be little-endian. 
+		**must** be null-terminated and the uni_str_len should include
+		the NULL character */
+	uint16 *buffer;
 } UNISTR2;
 
 /* STRING2 - string size (in uint8 chars) and buffer */
 typedef struct string2_info
 {
-  uint32 str_max_len;
-  uint32 undoc;
-  uint32 str_str_len;
-  uint8  *buffer; /* uint8 characters. **NOT** necessarily null-terminated */
-
+	uint32 str_max_len;
+	uint32 undoc;
+	uint32 str_str_len;
+	uint8  *buffer; /* uint8 characters. **NOT** necessarily null-terminated */
 } STRING2;
 
 /* UNISTR3 - XXXX not sure about this structure */
@@ -266,85 +254,77 @@ typedef struct domrid3_info
 /* DOM_RID4 - rid + user attributes */
 typedef struct domrid4_info
 {
-  uint32 unknown;
-  uint16 attr;
-  uint32 rid;  /* user RID */
-
+	uint32 unknown;
+	uint16 attr;
+	uint32 rid;  /* user RID */
 } DOM_RID4;
 
 /* DOM_CLNT_SRV - client / server names */
 typedef struct clnt_srv_info
 {
-  uint32  undoc_buffer; /* undocumented 32 bit buffer pointer */
-  UNISTR2 uni_logon_srv; /* logon server name */
-  uint32  undoc_buffer2; /* undocumented 32 bit buffer pointer */
-  UNISTR2 uni_comp_name; /* client machine name */
-
+	uint32  undoc_buffer; /* undocumented 32 bit buffer pointer */
+	UNISTR2 uni_logon_srv; /* logon server name */
+	uint32  undoc_buffer2; /* undocumented 32 bit buffer pointer */
+	UNISTR2 uni_comp_name; /* client machine name */
 } DOM_CLNT_SRV;
 
 /* DOM_LOG_INFO - login info */
 typedef struct log_info
 {
-  uint32  undoc_buffer; /* undocumented 32 bit buffer pointer */
-  UNISTR2 uni_logon_srv; /* logon server name */
-  UNISTR2 uni_acct_name; /* account name */
-  uint16  sec_chan;      /* secure channel type */
-  UNISTR2 uni_comp_name; /* client machine name */
-
+	uint32  undoc_buffer; /* undocumented 32 bit buffer pointer */
+	UNISTR2 uni_logon_srv; /* logon server name */
+	UNISTR2 uni_acct_name; /* account name */
+	uint16  sec_chan;      /* secure channel type */
+	UNISTR2 uni_comp_name; /* client machine name */
 } DOM_LOG_INFO;
 
 /* DOM_CHAL - challenge info */
 typedef struct chal_info
 {
-    uchar data[8]; /* credentials */
+	uchar data[8]; /* credentials */
 } DOM_CHAL;
  
 /* DOM_CREDs - timestamped client or server credentials */
 typedef struct cred_info
 {
-    DOM_CHAL challenge; /* credentials */
-    UTIME timestamp;    /* credential time-stamp */
+	DOM_CHAL challenge; /* credentials */
+	UTIME timestamp;    /* credential time-stamp */
 } DOM_CRED;
 
 /* DOM_CLNT_INFO - client info */
 typedef struct clnt_info
 {
-  DOM_LOG_INFO login;
-  DOM_CRED     cred;
-
+	DOM_LOG_INFO login;
+	DOM_CRED     cred;
 } DOM_CLNT_INFO;
 
 /* DOM_CLNT_INFO2 - client info */
 typedef struct clnt_info2
 {
-  DOM_CLNT_SRV login;
-  uint32        ptr_cred;
-  DOM_CRED      cred;
-
+	DOM_CLNT_SRV login;
+	uint32        ptr_cred;
+	DOM_CRED      cred;
 } DOM_CLNT_INFO2;
 
 /* DOM_LOGON_ID - logon id */
 typedef struct logon_info
 {
-  uint32 low;
-  uint32 high;
-
+	uint32 low;
+	uint32 high;
 } DOM_LOGON_ID;
 
 /* OWF INFO */
 typedef struct owf_info
 {
-  uint8 data[16];
-
+	uint8 data[16];
 } OWF_INFO;
 
 
 /* DOM_GID - group id + user attributes */
 typedef struct gid_info
 {
-  uint32 g_rid;  /* a group RID */
-  uint32 attr;
-
+	uint32 g_rid;  /* a group RID */
+	uint32 attr;
 } DOM_GID;
 
 /* POLICY_HND */
@@ -355,7 +335,6 @@ typedef struct lsa_policy_info
 	uint16 data3;
 	uint16 data4;
 	uint8 data5[8];
-
 #ifdef __INSURE__
 
 	/* To prevent the leakage of policy handles mallocate a bit of
@@ -366,7 +345,6 @@ typedef struct lsa_policy_info
 
 	char *marker;
 #endif
-
 } POLICY_HND;
 
 /*
