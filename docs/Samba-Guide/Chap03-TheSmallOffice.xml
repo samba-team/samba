@@ -152,7 +152,7 @@
 	</itemizedlist>
 
 	<para>
-	In this instance the installed Linux system is assumed to be a Red Hat Linux 9.0 server 
+	In this instance the installed Linux system is assumed to be a Red Hat Linux Fedora Core2 server 
 	(as in <link linkend="AccountingOffice"/>).
 	
 	</para>
@@ -815,7 +815,7 @@ $rootprompt; ps ax | grep winbind
 
         Server               Comment
         ---------            -------
-        SLEETH               Samba 3.0.2
+        SLEETH               Samba 3.0.12
 
         Workgroup            Master
         ---------            -------
@@ -989,7 +989,7 @@ smb: \> q
 
 		<para>
 		In this network design and implementation exercise, you have created a Windows NT4 style Domain
-		Controller using Samba-3.0.2. As a result of following these guidelines meant that you experienced
+		Controller using Samba-3.0.12. As a result of following these guidelines meant that you experienced
 		and implemented several important aspects of Windows networking. In the next chapter of this book,
 		you build on the experience gained. These are the highlights from this chapter:
 		</para>

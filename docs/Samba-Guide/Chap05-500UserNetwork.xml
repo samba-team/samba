@@ -316,7 +316,7 @@
 	<title>Implementation</title>
 
 	<para>
-	The following configuration process begins following installation of Red Hat Linux 9.0 on the
+	The following configuration process begins following installation of Red Hat Fedora Core2 on the
 	three servers shown in the network topology diagram in <link linkend="chap05net"/>. You have
 	selected hardware that is appropriate to the task.
 	</para>
