@@ -102,4 +102,6 @@ asn1_files: asn1_compile$(EXEEXT) $(srcdir)/k5.asn1
 
 $(libasn1_la_OBJECTS): asn1.h asn1_err.h
 
+$(asn1_print_OBJECTS): asn1.h
+
 EXTRA_DIST = asn1_err.et
