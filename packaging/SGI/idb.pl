@@ -84,7 +84,7 @@ chdir $curdir;
 
 # strip out all the generated directories and the "*.o" files from the source
 # release
-@allfiles = grep(!/^.*\.o$/ & !/^packaging\/SGI\/bins/ & !/^packaging\/SGI\/catman/ & !/^packaging\/SGI\/html/ & !/^packaging\/SGI\/codepages/ & !/^packaging\/SGI\/swat/, @allfiles);
+@allfiles = grep(!/^.*\.o$/ & !/^.*\.po$/ & !/^.*\.po32$/ & !/^source\/bin/ & !/^packaging\/SGI\/bins/ & !/^packaging\/SGI\/catman/ & !/^packaging\/SGI\/html/ & !/^packaging\/SGI\/codepages/ & !/^packaging\/SGI\/swat/, @allfiles);
 
 open(IDB,">samba.idb") || die "Unable to open samba.idb for output\n";
 
