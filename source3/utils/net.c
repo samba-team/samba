@@ -530,6 +530,7 @@ static struct functable net_func[] = {
 		{"force",	'f', POPT_ARG_NONE,   &opt_force},
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
+		{"myworkgroup", 'W', POPT_ARG_STRING, &opt_workgroup},
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
 	};

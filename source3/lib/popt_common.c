@@ -112,21 +112,32 @@ static void popt_common_callback(poptContext con,
 	}
 }
 
-struct poptOption popt_common_samba[] = {
+struct poptOption popt_common_connection[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
-	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
-	{ "configfile", 's', POPT_ARG_STRING, NULL, 's', "Use alternative configuration file",
-	  "CONFIGFILE" },
 	{ "socket-options", 'O', POPT_ARG_STRING, NULL, 'O', "socket options to use",
 	  "SOCKETOPTIONS" },
-	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
-	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Basename for log/debug files",
-	  "LOGFILEBASE" },
 	{ "netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name", "NETBIOSNAME" },
 	{ "workgroup", 'W', POPT_ARG_STRING, NULL, 'W', "Set the workgroup name", "WORKGROUP" },
 	{ "scope", 'i', POPT_ARG_STRING, NULL, 'i', "Use this Netbios scope", "SCOPE" },
 	POPT_TABLEEND
 };
+
+struct poptOption popt_common_samba[] = {
+	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
+	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
+	{ "configfile", 's', POPT_ARG_STRING, NULL, 's', "Use alternative configuration file", "CONFIGFILE" },
+	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Basename for log/debug files", "LOGFILEBASE" },
+	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
+	POPT_TABLEEND
+};
+
+struct poptOption popt_common_version[] = {
+	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
+	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
+	POPT_TABLEEND
+};
+
+
 
 /****************************************************************************
  * get a password from a a file or file descriptor

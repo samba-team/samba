@@ -206,8 +206,8 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		{"verbose", 'v', POPT_ARG_NONE, &show_defaults, 1, "Show default options too"},
 		{"server", 'L',POPT_ARG_STRING, &new_local_machine, 0, "Set %%L macro to servername\n"},
 		{"encoding", 't', POPT_ARG_STRING, &term_code, 0, "Print parameters with encoding"},
-		POPT_COMMON_SAMBA
-		{0,0,0,0}
+		POPT_COMMON_VERSION
+		POPT_TABLEEND
 	};
 
 	pc = poptGetContext(NULL, argc, argv, long_options, 

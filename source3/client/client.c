@@ -2603,7 +2603,8 @@ static void remember_query_host(const char *arg,
 		{ "send-buffer", 'b', POPT_ARG_INT, NULL, 'b', "Changes the transmit/send buffer", "BYTES" },
 		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
 		POPT_COMMON_SAMBA
-		POPT_CREDENTIALS
+		POPT_COMMON_CONNECTION
+		POPT_COMMON_CREDENTIALS
 		POPT_TABLEEND
 	};
 	

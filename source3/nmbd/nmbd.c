@@ -601,6 +601,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	{"hosts", 'H', POPT_ARG_STRING, dyn_LMHOSTSFILE, 'H', "Load a netbios hosts file"},
 	{"port", 'p', POPT_ARG_INT, &global_nmb_port, NMB_PORT, "Listen on the specified port" },
 	POPT_COMMON_SAMBA
+	POPT_COMMON_CONNECTION
 	{ NULL }
 	};
 	pstring logfile;

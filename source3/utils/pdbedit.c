@@ -516,7 +516,7 @@ int main (int argc, char **argv)
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"list",	'l', POPT_ARG_NONE, &list_users, 0, "list all users", NULL},
+		{"list",	'L', POPT_ARG_NONE, &list_users, 0, "list all users", NULL},
 		{"verbose",	'v', POPT_ARG_NONE, &verbose, 0, "be verbose", NULL },
 		{"smbpasswd-style",	'w',POPT_ARG_NONE, &spstyle, 0, "give output in smbpasswd style", NULL},
 		{"user",	'u', POPT_ARG_STRING, &user_name, 0, "use username", "USER" },

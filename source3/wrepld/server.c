@@ -516,6 +516,7 @@ static void process(void)
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Run interactive (not a daemon)" },
 		{ "port", 'p', POPT_ARG_INT, &wins_port, 'p', "Listen on the specified port" },
 		POPT_COMMON_SAMBA
+		POPT_COMMON_CONNECTION
 		POPT_TABLEEND
 	};
 	int opt;

@@ -507,7 +507,8 @@ out_free:
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 'c', "Execute semicolon separated cmds", "COMMANDS"},
 		{"dest-ip", 'I', POPT_ARG_STRING,   &opt_ipaddr, 'I', "Specify destination IP address", "IP"},
 		POPT_COMMON_SAMBA
-		POPT_CREDENTIALS
+		POPT_COMMON_CONNECTION
+		POPT_COMMON_CREDENTIALS
 		POPT_TABLEEND
 	};
 
