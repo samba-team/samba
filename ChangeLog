@@ -1,3 +1,16 @@
+2003-08-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/ticket.c (krb5_ticket_get_authorization_data_type):
+	reindent
+
+	* lib/krb5/ticket.c (krb5_copy_ticket): free all data when
+	failing, copy data to right memory, the later pointed out by Luke
+	Howard.
+
+2003-08-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.h: cfx-01 use diffrent usage numbers
+	
 2003-08-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/db3.c: try to include more db headers
@@ -13,8 +26,6 @@
 	
 	* appl/test/gssapi_server.c: recv both INT and CONF wrapped token
 	
-2003-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
-
 	* lib/asn1/k5.asn1: add KRB5_NT_SMTP_NAME and KRB5_NT_ENTERPRISE
 	
 2003-08-27  Love Hörnquist Åstrand  <lha@it.su.se>
