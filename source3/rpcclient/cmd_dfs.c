@@ -227,11 +227,11 @@ struct cmd_set dfs_commands[] = {
 
 	{ "DFS" },
 
-	{ "dfsexist",   cmd_dfs_exist,   PI_NETDFS, "Query DFS support",    "" },
-	{ "dfsadd",     cmd_dfs_add,     PI_NETDFS, "Add a DFS share",      "" },
-	{ "dfsremove",  cmd_dfs_remove,  PI_NETDFS, "Remove a DFS share",   "" },
-	{ "dfsgetinfo", cmd_dfs_getinfo, PI_NETDFS, "Query DFS share info", "" },
-	{ "dfsenum",    cmd_dfs_enum,    PI_NETDFS, "Enumerate dfs shares", "" },
+	{ "dfsexist",  RPC_RTYPE_NTSTATUS, cmd_dfs_exist,   NULL, PI_NETDFS, "Query DFS support",    "" },
+	{ "dfsadd",    RPC_RTYPE_NTSTATUS, cmd_dfs_add,     NULL, PI_NETDFS, "Add a DFS share",      "" },
+	{ "dfsremove", RPC_RTYPE_NTSTATUS, cmd_dfs_remove,  NULL, PI_NETDFS, "Remove a DFS share",   "" },
+	{ "dfsgetinfo",RPC_RTYPE_NTSTATUS, cmd_dfs_getinfo, NULL, PI_NETDFS, "Query DFS share info", "" },
+	{ "dfsenum",   RPC_RTYPE_NTSTATUS, cmd_dfs_enum,    NULL, PI_NETDFS, "Enumerate dfs shares", "" },
 
 	{ NULL }
 };
