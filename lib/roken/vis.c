@@ -154,8 +154,8 @@ do {									      \
 	if (isc) break;							      \
 	if (isextra || ((c & 0177) == ' ') || (flag & VIS_OCTAL)) {	      \
 		*dst++ = '\\';						      \
-		*dst++ = (u_char)(((u_int32_t)(u_char)c >> 6) & 03) + '0';    \
-		*dst++ = (u_char)(((u_int32_t)(u_char)c >> 3) & 07) + '0';    \
+		*dst++ = (u_char)(((unsigned)(u_char)c >> 6) & 03) + '0';     \
+		*dst++ = (u_char)(((unsigned)(u_char)c >> 3) & 07) + '0';     \
 		*dst++ =			     (c	      & 07) + '0';    \
 	} else {							      \
 		if ((flag & VIS_NOSLASH) == 0) *dst++ = '\\';		      \
