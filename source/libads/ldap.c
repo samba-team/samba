@@ -66,6 +66,83 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	return ads_sasl_bind(ads);
 }
 
+/* Do a search with paged results.  cookie must be null on the first
+   call, and then returned on each subsequent call.  It will be null
+   again when the entire search is complete */
+
+ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
+			       int scope, const char *exp,
+			       const char **attrs, void **res, 
+			       int *count, void **cookie)
+{
+	int rc;
+#define ADS_PAGE_CTL_OID "1.2.840.113556.1.4.319"
+	int version;
+	LDAPControl PagedResults; 
+	BerElement *berelem = NULL;
+	struct berval *berval = NULL;
+	LDAPControl *controls[2];
+	LDAPControl **rcontrols, *cur_control;
+
+	*res = NULL;
+
+	ldap_get_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+
+		/* Paged results only available on ldap v3 or later, so check
+		   version first before using, since at connect time we're
+		   only v2.  Not sure exactly why... */
+	if (version < LDAP_VERSION3) 
+		return ADS_ERROR(LDAP_NOT_SUPPORTED);
+
+	berelem = ber_alloc_t(LBER_USE_DER);
+	if (cookie && *cookie) {
+		ber_printf(berelem, "{iO}", (ber_int_t) 256, *cookie);
+		ber_bvfree(*cookie); /* don't need it from last time */
+	} else {
+		ber_printf(berelem, "{io}", (ber_int_t) 256, "", 0);
+	}
+	ber_flatten(berelem, &berval);
+	PagedResults.ldctl_oid = ADS_PAGE_CTL_OID;
+	PagedResults.ldctl_iscritical = (char) 1;
+	PagedResults.ldctl_value.bv_len = berval->bv_len;
+	PagedResults.ldctl_value.bv_val = berval->bv_val;
+			
+	controls[0] = &PagedResults;
+	controls[1] = NULL;
+
+	*res = NULL;
+	
+	rc = ldap_search_ext_s(ads->ld, bind_path, scope, exp, 
+			       (char **) attrs, 0, controls, NULL,
+			       NULL, LDAP_NO_LIMIT,
+			       (LDAPMessage **)res);
+	ber_free(berelem, 1);
+	ber_bvfree(berval);
+	
+	rc = ldap_parse_result(ads->ld, *res, NULL, NULL, NULL,
+					NULL, &rcontrols,  0);
+
+	for (cur_control=rcontrols[0]; cur_control; cur_control++) {
+		if (strcmp(ADS_PAGE_CTL_OID, cur_control->ldctl_oid) == 0) {
+			berelem = ber_init(&cur_control->ldctl_value);
+			ber_scanf(berelem,"{iO}", (ber_int_t *) count,
+				  &berval);
+			/* the berval is the cookie, but must be freed when
+			   it is all done */
+			if (berval->bv_len) /* still more to do */
+				*cookie=ber_bvdup(berval);
+			else
+				*cookie=NULL;
+			ber_bvfree(berval);
+			ber_free(berelem, 1);
+			break;
+		}
+	}
+	ldap_controls_free(rcontrols);
+			
+	return ADS_ERROR(rc);
+}
+
 /*
   do a search with a timeout
 */
@@ -84,10 +161,12 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 			       bind_path, scope,
 			       exp, (char **) attrs, 0, NULL, NULL, 
 			       &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
+
 	if (rc == LDAP_SIZELIMIT_EXCEEDED) {
 		DEBUG(3,("Warning! sizelimit exceeded in ldap. Truncating.\n"));
 		rc = 0;
 	}
+
 	return ADS_ERROR(rc);
 }
 /*
