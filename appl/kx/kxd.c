@@ -59,15 +59,28 @@ childhandler (int sig)
      SIGRETURN(0);
 }
 
-static int
-fatal (int fd, char *s)
+static void
+fatal (int fd, des_cblock *key, des_key_schedule schedule,
+       struct sockaddr_in *thisaddr,
+       struct sockaddr_in *thataddr,
+       char *format, ...)
 {
-     u_char err = 1;
+    u_char msg[1024];
+    u_char *p;
+    va_list args;
+    int len;
 
-     write (fd, &err, sizeof(err));
-     write (fd, s, strlen(s)+1);
-     syslog(LOG_ERR, s);
-     return err;
+    va_start(args, format);
+    p = msg;
+    *p++ = ERROR;
+    vsprintf (p + 4, format, args);
+    syslog (LOG_ERR, p + 4);
+    len = strlen (p + 4);
+    p += krb_put_int (len, p, 4);
+    p += len;
+    write_encrypted (fd, msg, p - msg, schedule, key, thisaddr, thataddr);
+    va_end(args);
+    exit (1);
 }
 
 static void
@@ -80,116 +93,150 @@ cleanup(void)
 }
 
 static int
-recv_conn (int sock, des_cblock *key, des_key_schedule schedule)
+recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
+	   struct sockaddr_in *thisaddr,
+	   struct sockaddr_in *thataddr)
 {
      int status;
      KTEXT_ST ticket;
      AUTH_DAT auth;
      char user[ANAME_SZ + 1];
      char instance[INST_SZ + 1];
-     struct sockaddr_in thisaddr, thataddr;
      int addrlen;
      char version[KRB_SENDAUTH_VLEN];
-     u_char ok = 0;
      struct passwd *passwd;
      char remotehost[MaxHostNameLen];
+     void *ret;
+     int len;
+     u_char msg[1024], *p;
+     u_int32_t tmp;
+     int flags;
 
-     addrlen = sizeof(thisaddr);
-     if (getsockname (sock, (struct sockaddr *)&thisaddr, &addrlen) < 0 ||
-	 addrlen != sizeof(thisaddr)) {
-	  return 1;
+     addrlen = sizeof(*thisaddr);
+     if (getsockname (sock, (struct sockaddr *)thisaddr, &addrlen) < 0 ||
+	 addrlen != sizeof(*thisaddr)) {
+	 syslog (LOG_ERR, "getsockname: %m");
+	 exit (1);
      }
-     addrlen = sizeof(thataddr);
-     if (getpeername (sock, (struct sockaddr *)&thataddr, &addrlen) < 0 ||
-	 addrlen != sizeof(thataddr)) {
-	  return 1;
+     addrlen = sizeof(*thataddr);
+     if (getpeername (sock, (struct sockaddr *)thataddr, &addrlen) < 0 ||
+	 addrlen != sizeof(*thataddr)) {
+	 syslog (LOG_ERR, "getpeername: %m");
+	 exit (1);
      }
 
-     inaddr2str (thataddr.sin_addr, remotehost, sizeof(remotehost));
+     inaddr2str (thataddr->sin_addr, remotehost, sizeof(remotehost));
 
      k_getsockinst (sock, instance);
      status = krb_recvauth (KOPT_DO_MUTUAL, sock, &ticket, "rcmd", instance,
-			    &thataddr, &thisaddr, &auth, "", schedule,
+			    thataddr, thisaddr, &auth, "", schedule,
 			    version);
-     if (status != KSUCCESS ||
-	 strncmp(version, KX_VERSION, KRB_SENDAUTH_VLEN) != 0) {
-	  return 1;
-     }
+     if (status != KSUCCESS)
+	 errx(1, "%s: krb_recvauth: %s",
+	      prog, krb_get_err_text(status));
+     if( strncmp(version, KX_VERSION, KRB_SENDAUTH_VLEN) != 0)
+	 fatal(sock, key, schedule, thisaddr, thataddr,
+	       "Bad version %s", version);
      memcpy(key, &auth.session, sizeof(des_cblock));
-     if (krb_net_read (sock, user, sizeof(user)) != sizeof(user))
-	  return 1;
+
+     len = read_encrypted (sock, msg, sizeof(msg), &ret,
+			   schedule, key, thataddr, thisaddr);
+     if (len < 0)
+	 return 1;
+     p = (u_char *)ret;
+     if (*p != INIT)
+	 fatal(sock, key, schedule, thisaddr, thataddr,
+	       "Bad message");
+     p++;
+     p += krb_get_int (p, &tmp, 4, 0);
+     len = min(sizeof(user), tmp);
+     strncpy (user, p, len);
+     p += tmp;
+     user[len] = '\0';
+
      passwd = k_getpwnam (user);
      if (passwd == NULL)
-	  return fatal (sock, "Cannot find uid");
+	  fatal (sock, key, schedule, thisaddr, thataddr,
+		 "Cannot find uid");
      if (kuserok(&auth, user) != 0)
-	  return fatal (sock, "Permission denied");
+	  fatal (sock, key, schedule, thisaddr, thataddr,
+		 "%s is not allowed to login as %s",
+		 krb_unparse_name_long (auth.pname,
+					auth.pinst,
+					auth.prealm),
+		 user);
      if (setgid (passwd->pw_gid) ||
 	 initgroups(passwd->pw_name, passwd->pw_gid) ||
 	 setuid(passwd->pw_uid)) {
-	  return fatal (sock, "Cannot set uid");
+	 fatal (sock, key, schedule, thisaddr, thataddr,
+		"Cannot set uid");
      }
      syslog (LOG_INFO, "from %s(%s): %s -> %s",
 	     remotehost,
-	     inet_ntoa(thataddr.sin_addr),
+	     inet_ntoa(thataddr->sin_addr),
 	     krb_unparse_name_long (auth.pname, auth.pinst, auth.prealm),
 	     user);
-
      umask(077);
-     if (krb_net_write (sock, &ok, sizeof(ok)) != sizeof(ok))
-	  return 1;
-
-     return 0;
-}
-
-static int
-start_session (int fd, int sock, des_cblock *key,
-	       des_key_schedule schedule)
-{
-     u_char beg[12];
-     int bigendianp;
-     unsigned n, d, npad, dpad;
-     char *protocol_name, *protocol_data;
-     u_char zeros[6] = {0, 0, 0, 0, 0, 0};
-
-     if (krb_net_read (fd, beg, sizeof(beg)) != sizeof(beg))
-	  return 1;
-     if (krb_net_write (sock, beg, 6) != 6)
-	  return 1;
-     bigendianp = beg[0] == 'B';
-     if (bigendianp) {
-	  n = (beg[6] << 8) | beg[7];
-	  d = (beg[8] << 8) | beg[9];
-     } else {
-	  n = (beg[7] << 8) | beg[6];
-	  d = (beg[9] << 8) | beg[8];
+     flags = *p++;
+     if (!(flags & PASSIVE)) {
+	 p += krb_get_int (p, &tmp, 4, 0);
+	 len = min(tmp, display_size);
+	 strncpy (display, p, len);
+	 display[len] = '\0';
+	 p += tmp;
+	 p += krb_get_int (p, &tmp, 4, 0);
+	 len = min(tmp, xauthfile_size);
+	 strncpy (xauthfile, p, len);
+	 p += tmp;
      }
-     npad = (4 - (n % 4)) % 4;
-     dpad = (4 - (d % 4)) % 4;
-     protocol_name = malloc(n + npad);
-     protocol_data = malloc(d + dpad);
-     if (krb_net_read (fd, protocol_name, n + npad) != n + npad)
-	  return 1;
-     if (krb_net_read (fd, protocol_data, d + dpad) != d + dpad)
-	  return 1;
-     if (strncmp (protocol_name, COOKIE_TYPE, strlen(COOKIE_TYPE)) != 0)
-	  return 1;
-     if (d != cookie_len ||
-	 memcmp (protocol_data, cookie, cookie_len) != 0)
-	  return 1;
-     if (krb_net_write (sock, zeros, 6) != 6)
-	  return 1;
-     return copy_encrypted (fd, sock, key, schedule);
+#if defined(SO_KEEPALIVE) && defined(HAVE_SETSOCKOPT)
+     if (flags & KEEP_ALIVE) {
+	 int one = 1;
+
+	 setsockopt (sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&one,
+		     sizeof(one));
+     }
+#endif
+     return flags;
+}
+
+/*
+ *
+ */
+
+static int
+passive_session (int fd, int sock, des_cblock *key,
+		 des_key_schedule schedule)
+{
+    if (verify_and_remove_cookies (fd, sock))
+	return 1;
+    else
+	return copy_encrypted (fd, sock, key, schedule);
 }
 
 static int
-doit_conn (int fd, int meta_sock,
-	   des_cblock *key, des_key_schedule schedule)
+active_session (int fd, int sock, des_cblock *key,
+		des_key_schedule schedule)
+{
+    fd = connect_local_xsocket(0);
+
+    if (replace_cookie (fd, sock, xauthfile))
+	return 1;
+    else
+	return copy_encrypted (fd, sock, key, schedule);
+}
+
+static int
+doit_conn (int fd, int meta_sock, int flags,
+	   des_cblock *key, des_key_schedule schedule,
+	   struct sockaddr_in *thisaddr,
+	   struct sockaddr_in *thataddr)
 {
     int sock, sock2;
     int one = 1;
-    struct sockaddr_in thisaddr;
+    struct sockaddr_in addr;
     int addrlen;
-    char tmp[6];
+    u_char msg[1024], *p;
 
     sock = socket (AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
@@ -197,15 +244,27 @@ doit_conn (int fd, int meta_sock,
 	return 1;
     }
 #if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
-    setsockopt (sock, IPPROTO_TCP, TCP_NODELAY, (void *)&one, sizeof(one));
+    {
+	int one = 1;
+	setsockopt (sock, IPPROTO_TCP, TCP_NODELAY, (void *)&one, sizeof(one));
+    }
 #endif
-    memset (&thisaddr, 0, sizeof(thisaddr));
-    if (bind (sock, (struct sockaddr *)&thisaddr, sizeof(thisaddr)) < 0) {
+#if defined(SO_KEEPALIVE) && defined(HAVE_SETSOCKOPT)
+     if (flags & KEEP_ALIVE) {
+	 int one = 1;
+
+	 setsockopt (sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&one,
+		     sizeof(one));
+     }
+#endif
+    memset (&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    if (bind (sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 	syslog (LOG_ERR, "bind: %m");
 	return 1;
     }
-    addrlen = sizeof(thisaddr);
-    if (getsockname (sock, (struct sockaddr *)&thisaddr,
+    addrlen = sizeof(addr);
+    if (getsockname (sock, (struct sockaddr *)&addr,
 		     &addrlen) < 0) {
 	syslog (LOG_ERR, "getsockname: %m");
 	return 1;
@@ -214,11 +273,16 @@ doit_conn (int fd, int meta_sock,
 	syslog (LOG_ERR, "listen: %m");
 	return 1;
     }
-    sprintf (tmp, "%d", ntohs(thisaddr.sin_port));
-    if (krb_net_write (meta_sock, tmp, sizeof(tmp)) != sizeof(tmp)) {
+    p = msg;
+    *p++ = NEW_CONN;
+    p += krb_put_int (ntohs(addr.sin_port), p, 4);
+
+    if (write_encrypted (meta_sock, msg, p - msg, schedule, key,
+			 thisaddr, thataddr) < 0) {
 	syslog (LOG_ERR, "write: %m");
 	return 1;
     }
+
     sock2 = accept (sock, (struct sockaddr *)&thisaddr, &addrlen);
     if (sock2 < 0) {
 	syslog (LOG_ERR, "accept: %m");
@@ -226,39 +290,51 @@ doit_conn (int fd, int meta_sock,
     }
     close (sock);
     close (meta_sock);
-    return start_session (fd, sock2, key, schedule);
+
+    if (flags & PASSIVE)
+	return passive_session (fd, sock2, key, schedule);
+    else
+	return active_session (fd, sock2, key, schedule);
 }
 
 /*
  *
  */
 
-static int
-check_user_console (void)
+static void
+check_user_console (int fd, des_cblock *key, des_key_schedule schedule,
+		    struct sockaddr_in *thisaddr,
+		    struct sockaddr_in *thataddr)
 {
      struct stat sb;
 
      if (stat ("/dev/console", &sb) < 0)
-	  return fatal (0, "Cannot stat /dev/console");
+	 fatal (fd, key, schedule, thisaddr, thataddr,
+		"Cannot stat /dev/console");
      if (getuid() != sb.st_uid)
-	  return fatal (0, "Permission denied");
-     return 0;
+	 fatal (fd, key, schedule, thisaddr, thataddr,
+		"Permission denied");
 }
+
+/*
+ * Receive a connection on `sock' and process it.
+ */
 
 static int
 doit(int sock, int tcpp)
 {
-     u_char passivep;
      des_key_schedule schedule;
      des_cblock key;
      int localx, tcpx;
+     struct sockaddr_in me, him;
+     int flags;
+     u_char msg[1024], *p;
 
-     if (recv_conn (sock, &key, schedule))
-	  return 1;
-     if (krb_net_read (sock, &passivep, sizeof(passivep)) != sizeof(passivep))
-	  return 1;
-     if (passivep) {
+     flags = recv_conn (sock, &key, schedule, &me, &him);
+
+     if (flags & PASSIVE) {
 	  int tmp;
+	  int len;
 
 	  tmp = get_xsockets (&localx, tcpp ? &tcpx : NULL);
 	  if (tmp < 0)
@@ -268,19 +344,30 @@ doit(int sock, int tcpp)
 	       sprintf (display, "localhost:%u", display_num);
 	  else
 	       sprintf (display, ":%u", display_num);
-	  if (krb_net_write (sock, display, display_size) != display_size)
-	       return 1;
 	  strncpy(xauthfile, tempnam("/tmp", NULL), xauthfile_size);
-	  if (krb_net_write (sock, xauthfile, xauthfile_size)
-	      != xauthfile_size)
-	       return 1;
 	  if(create_and_write_cookie (xauthfile, cookie, cookie_len))
 	       return 1;
+
+	  p = msg;
+	  *p++ = ACK;
+	  len = strlen (display);
+	  p += krb_put_int (len, p, 4);
+	  strncpy (p, display, len);
+	  p += len;
+	  len = strlen (xauthfile);
+	  p += krb_put_int (len, p, 4);
+	  strncpy (p, xauthfile, len);
+	  p += len;
+	  
+	  if(write_encrypted (sock, msg, p - msg, schedule, &key,
+			      &me, &him) < 0) {
+	      syslog (LOG_ERR, "write: %m");
+	      return 1;
+	  }
 	  for (;;) {
 	       pid_t child;
 	       int fd;
 	       int zero = 0;
-	       int one = 1;
 	       fd_set fds;
 	       
 	       FD_ZERO(&fds);
@@ -316,10 +403,7 @@ doit(int sock, int tcpp)
 			syslog (LOG_ERR, "accept: %m");
 			return 1;
 		    }
-#if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
-	       setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, (void *)&one,
-			   sizeof(one));
-#endif
+
 	       child = fork ();
 	       if (child < 0) {
 		   syslog (LOG_ERR, "fork: %m");
@@ -328,19 +412,52 @@ doit(int sock, int tcpp)
 		    close (localx);
 		    if (tcpp)
 			 close (tcpx);
-		    return doit_conn (fd, sock, &key, schedule);
+		    return doit_conn (fd, sock, flags,
+				      &key, schedule, &me, &him);
 	       } else {
 		    close (fd);
 	       }
 	  }
      } else {
-	  if (check_user_console ())
-	       return 1;
+	  check_user_console (sock, &key, schedule, &me, &him);
 
-	  localx = connect_local_xsocket (0);
-	  if (localx < 0)
-	       return 1;
-	  return copy_encrypted (localx, sock, &key, schedule);
+	  p = msg;
+	  *p++ = ACK;
+	  
+	  if(write_encrypted (sock, msg, p - msg, schedule, &key,
+			      &me, &him) < 0) {
+	      syslog (LOG_ERR, "write: %m");
+	      return 1;
+	  }
+	  for (;;) {
+	      pid_t child;
+	      int fd;
+	      int len;
+	      void *ret;
+	      
+	      len = read_encrypted (sock, msg, sizeof(msg), &ret,
+				    schedule, &key,
+				    &him, &me);
+	      if (len < 0) {
+		  syslog (LOG_ERR, "read: %m");
+		  return 1;
+	      }
+	      p = (u_char *)ret;
+	      if (*p != NEW_CONN) {
+		  syslog (LOG_ERR, "bad_message: %d", *p);
+		  return 1;
+	      }
+
+	      child = fork ();
+	      if (child < 0) {
+		  syslog (LOG_ERR, "fork: %m");
+		  return 1;
+	      } else if (child == 0) {
+		  return doit_conn (localx, sock, flags,
+				    &key, schedule, &me, &him);
+	      } else {
+	      }
+	  }
      }
 }
 

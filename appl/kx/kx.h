@@ -47,6 +47,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
@@ -128,8 +129,25 @@ int create_and_write_cookie (char *xauthfile,
 			     size_t sz);
 int suspicious_address (int sock, struct sockaddr_in addr);
 
+int
+write_encrypted (int fd, void *buf, size_t len, des_key_schedule schedule,
+		 des_cblock *session, struct sockaddr_in *me,
+		 struct sockaddr_in *him);
+
+int
+read_encrypted (int fd, void *buf, size_t len, void **ret,
+		des_key_schedule schedule, des_cblock *session,
+		struct sockaddr_in *him, struct sockaddr_in *me);
+
+
 #define KX_PORT 2111
 
 #define KX_VERSION "KXSERV.2"
 
 #define COOKIE_TYPE "MIT-MAGIC-COOKIE-1"
+
+enum { INIT = 0, ACK = 1, NEW_CONN = 2, ERROR = 3 };
+
+enum kx_flags { PASSIVE = 1, KEEP_ALIVE = 2 };
+
+typedef enum kx_flags kx_flags;
