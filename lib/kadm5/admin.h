@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -518,11 +518,24 @@ kadm5_s_chpass_principal __P((
 	char *password));
 
 kadm5_ret_t
+kadm5_s_chpass_principal_with_key __P((
+	void *server_handle,
+	krb5_principal princ,
+	int n_key_data,
+	krb5_key_data *key_data));
+
+kadm5_ret_t
 kadm5_s_create_principal __P((
 	void *server_handle,
 	kadm5_principal_ent_t princ,
 	u_int32_t mask,
 	char *password));
+
+kadm5_ret_t
+kadm5_s_create_principal_with_key __P((
+	void *server_handle,
+	kadm5_principal_ent_t princ,
+	u_int32_t mask));
 
 kadm5_ret_t
 kadm5_s_delete_principal __P((
@@ -624,6 +637,12 @@ kadm5_s_modify_principal __P((
 	u_int32_t mask));
 
 kadm5_ret_t
+kadm5_s_modify_principal_with_key __P((
+	void *server_handle,
+	kadm5_principal_ent_t princ,
+	u_int32_t mask));
+
+kadm5_ret_t
 kadm5_s_randkey_principal __P((
 	void *server_handle,
 	krb5_principal princ,
@@ -656,13 +675,6 @@ kadm5_ret_t
 kadm5_store_tl_data __P((
 	krb5_storage *sp,
 	krb5_tl_data *tl));
-
-krb5_error_code
-kadmind_loop __P((
-	krb5_context context,
-	krb5_auth_context ac,
-	const char *client,
-	int fd));
 
 #if 0
 /* unimplemented functions */
