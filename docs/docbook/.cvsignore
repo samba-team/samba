@@ -1,3 +1,4 @@
-confdefs.h
+Makefile
 config.cache
 config.log
+config.status
