@@ -106,6 +106,7 @@
 #undef HAVE_PAM_AUTHENTICATE
 #undef HAVE_BROKEN_GETGROUPS
 #undef REPLACE_INET_NTOA
+#undef HAVE_FUNCTION_MACRO
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
