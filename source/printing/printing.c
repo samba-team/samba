@@ -377,7 +377,7 @@ HINT: Use as short a path as possible for the samba spool directory.
 A long spool-path will just waste significant chars of the file name.
 */
 
-  (char)line[JOBSIZE_POS-1]=' ';
+  line[JOBSIZE_POS-1]=' ';
 
   /* handle the case of "(stdin)" as a filename */
   string_sub(line,"stdin","STDIN");
