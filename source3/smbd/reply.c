@@ -1792,7 +1792,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 
   startpos = IVAL(inbuf,smb_vwv1);
 #ifdef LARGE_SMB_OFF_T
-  if(SVAL(inbuf,smb_wct) == 10) {
+  if(CVAL(inbuf,smb_wct) == 10) {
     /*
      * This is a large offset (64 bit) read.
      */
@@ -2007,7 +2007,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   data = smb_buf(outbuf);
 
 #ifdef LARGE_SMB_OFF_T
-  if(SVAL(inbuf,smb_wct) == 12) {
+  if(CVAL(inbuf,smb_wct) == 12) {
     /*
      * This is a large offset (64 bit) read.
      */
@@ -2265,7 +2265,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   data = smb_base(inbuf) + smb_doff;
 
 #ifdef LLARGE_SMB_OFF_T
-  if(SVAL(inbuf,smb_wct) == 14) {
+  if(CVAL(inbuf,smb_wct) == 14) {
     /*
      * This is a large offset (64 bit) write.
      */

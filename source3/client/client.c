@@ -1123,7 +1123,7 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
       SSVAL(outbuf,smb_vwv1,smb_offset(p,outbuf));
       bzero(p,200);
       p -= smb_wct;
-      SSVAL(p,smb_wct,10);
+      SCVAL(p,smb_wct,10);
       SSVAL(p,smb_vwv0,0xFF);
       SSVAL(p,smb_vwv5,MIN(max_xmit-500,finfo.size));
       SSVAL(p,smb_vwv9,MIN(BUFFER_SIZE,finfo.size));

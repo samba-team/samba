@@ -159,7 +159,7 @@ int sys_stat(char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
 int sys_lstat(char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_ftruncate(int fd, SMB_OFF_T offset);
-int sys_lseek(int fd, SMB_OFF_T offset, int whence);
+SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence);
 int dos_unlink(char *fname);
 int dos_open(char *fname,int flags,int mode);
 DIR *dos_opendir(char *dname);

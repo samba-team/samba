@@ -36,6 +36,10 @@ SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
     offset = 3;
 
   fsp->pos = (sys_lseek(fsp->fd_ptr->fd,pos+offset,SEEK_SET) - offset);
+
+  DEBUG(10,("seek_file: requested pos = %.0f, new pos = %.0f\n",
+        (double)(pos+offset), (double)fsp->pos ));
+
   return(fsp->pos);
 }
 
@@ -62,7 +66,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
     SMB_OFF_T num = (fsp->mmap_size > pos) ? (fsp->mmap_size - pos) : -1;
     num = MIN(n,num);
 #ifdef LARGE_SMB_OFF_T
-    if ((num > 0) && (num < (1<<(sizeof(size_t)*8))) {
+    if ((num > 0) && (num < (1LL<<(sizeof(size_t)*8)))) {
 #else /* LARGE_SMB_OFF_T */
     if (num > 0) {
 #endif /* LARGE_SMB_OFF_T */
@@ -76,7 +80,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 #endif
 
   if (seek_file(fsp,pos) != pos) {
-    DEBUG(3,("Failed to seek to %.0f\n",(double)pos));
+    DEBUG(3,("read_file: Failed to seek to %.0f\n",(double)pos));
     return(ret);
   }
   

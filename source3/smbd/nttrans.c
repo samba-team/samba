@@ -661,9 +661,16 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	put_long_date(p,sbuf.st_mtime); /* change time */
 	p += 8;
 	SIVAL(p,0,fmode); /* File Attributes. */
-	p += 12;
+    p += 4;
 #ifdef LARGE_SMB_OFF_T
-	SIVAL(p,0, file_len & 0xFFFFFFFF);
+    SIVAL(p,0, file_len);
+    SIVAL(p,4, file_len >> 32);
+#else /* LARGE_SMB_OFF_T */
+    SIVAL(p,0,file_len);
+#endif /* LARGE_SMB_OFF_T */
+	p += 8;
+#ifdef LARGE_SMB_OFF_T
+	SIVAL(p,0, file_len);
 	SIVAL(p,4, file_len >> 32);
 #else /* LARGE_SMB_OFF_T */
 	SIVAL(p,0,file_len);
@@ -889,9 +896,16 @@ static int call_nt_transact_create(connection_struct *conn,
     put_long_date(p,sbuf.st_mtime); /* change time */
     p += 8;
     SIVAL(p,0,fmode); /* File Attributes. */
-    p += 12;
+    p += 4;
 #ifdef LARGE_SMB_OFF_T
-    SIVAL(p,0, file_len & 0xFFFFFFFF);
+    SIVAL(p,0, file_len);
+    SIVAL(p,4, (file_len >> 32));
+#else /* LARGE_SMB_OFF_T */
+    SIVAL(p,0,file_len);
+#endif /* LARGE_SMB_OFF_T */
+    p += 8;
+#ifdef LARGE_SMB_OFF_T
+    SIVAL(p,0, file_len);
     SIVAL(p,4, (file_len >> 32));
 #else /* LARGE_SMB_OFF_T */
     SIVAL(p,0,file_len);
