@@ -180,6 +180,8 @@ typedef struct
 	char *szTemplateHomedir;
 	char *szTemplateShell;
 	char *szWinbindSeparator;
+	BOOL bWinbindEnumUsers;
+	BOOL bWinbindEnumGroups;
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
@@ -1038,6 +1040,8 @@ static struct parm_struct parm_table[] = {
 	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, 0},
 	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, 0},
 	{"winbind cache time", P_INTEGER, P_GLOBAL, &Globals.winbind_cache_time, NULL, NULL, 0},
+	{"winbind enum users", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumUsers, NULL, NULL, 0},
+	{"winbind enum groups", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumGroups, NULL, NULL, 0},
 
 	{NULL, P_BOOL, P_NONE, NULL, NULL, NULL, 0}
 };
@@ -1350,7 +1354,10 @@ static void init_globals(void)
 	string_set(&Globals.szTemplateShell, "/bin/false");
 	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
 	string_set(&Globals.szWinbindSeparator, "\\");
+
 	Globals.winbind_cache_time = 15;
+	Globals.bWinbindEnumUsers = True;
+	Globals.bWinbindEnumGroups = True;
 
 	/*
 	 * This must be done last as it checks the value in 
@@ -1492,6 +1499,8 @@ FN_GLOBAL_STRING(lp_winbind_gid, &Globals.szWinbindGID)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
+FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers);
+FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups);
 FN_GLOBAL_STRING(lp_codepagedir,&Globals.szCodePageDir)
 #ifdef WITH_LDAP
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
