@@ -10,7 +10,7 @@ RCSID("$Id$");
 #endif
 #include "roken.h"
 
-#ifdef __ultrix
+#if defined(__ultrix) || defined(sun)
 char *crypt(const char*, const char*);
 #endif
 
