@@ -1,4 +1,6 @@
 # 
+# $Id$
+#
 
 srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@
@@ -26,6 +28,13 @@ INCTOP = $(ATHENA)/include
 
 LIBTOP = $(ATHENA)/lib
 
+LIBKAFS = -L$(LIBTOP)/kafs -lkafs
+LIBKRB	= -L$(LIBTOP)/krb -lkrb
+LIBDES	= -L$(LIBTOP)/des -ldes
+LIBROKEN= $(LIBTOP)/roken/libroken.a
+
+PROGS = ftpd
+
 ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o auth.o krb4.o kauth.o klogin.o
 
 all: ftpd
@@ -33,11 +42,13 @@ all: ftpd
 .c.o:
 	$(CC) -c $(CFLAGS) -I$(srcdir) -I.. -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
 
-install:
+install: all
+	$(MKDIRHIER) $(prefix)/libexec
+	for x in $(PROGS); do $(INSTALL) $$x $(prefix)/libexec; done
 
 
 ftpd: $(ftpd_OBJS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o ftpd $(ftpd_OBJS) ../common/libcommon.a -L$(LIBTOP)/kafs -lkafs -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes -L$(LIBTOP)/roken -lroken $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o ftpd $(ftpd_OBJS) ../common/libcommon.a $(LIBKAFS) $(LIBKRB) $(LIBDES) $(LIBROKEN) $(LIBS)
 
 ftpcmd.c: ftpcmd.y
 	$(YACC) $(YFLAGS) $<

@@ -1,4 +1,6 @@
 # 
+# $Id$
+#
 
 srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@
@@ -25,6 +27,8 @@ INCTOP = $(ATHENA)/include
 
 LIBTOP = $(ATHENA)/lib
 
+PROGS = ftp
+
 ftp_OBJS = cmds.o cmdtab.o ftp.o krb4.o main.o ruserpass.o domacro.o globals.o kauth.o
 
 all: ftp
@@ -32,8 +36,9 @@ all: ftp
 .c.o:
 	$(CC) -c $(CFLAGS) -I$(srcdir) -I.. -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
 
-install:
-
+install: all
+	$(MKDIRHIER) $(prefix)/bin
+	for x in $(PROGS); do $(INSTALL) $$x $(prefix)/bin; done
 
 ftp: $(ftp_OBJS) ../common/libcommon.a
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o ftp $(ftp_OBJS) ../common/libcommon.a -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes -L$(LIBTOP)/roken -lroken $(LIBS)
