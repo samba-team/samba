@@ -1121,6 +1121,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	id.id = pass->pw_uid;
 	id.type = SURS_POSIX_UID_AS_USR;
 
+	/* XXXX WITH Create = True, the SID is a *SUGGESTION* */
 	if (!surs_unixid_to_sam_sid(&id, &usr_sid, True))
 	{
 		DEBUG(0, ("create user: unix uid %d to RID failed\n",
@@ -1147,6 +1148,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	id.id = pass->pw_gid;
 	id.type = SURS_POSIX_GID_AS_GRP;
 
+	/* XXXX WITH Create = True, the SID is a *SUGGESTION* */
 	if (!surs_unixid_to_sam_sid(&id, &grp_sid, True))
 	{
 		DEBUG(0, ("create user: unix uid %d to RID failed\n",

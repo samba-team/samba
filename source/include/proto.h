@@ -417,15 +417,15 @@ void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 
 /*The following definitions come from  lib/surs.c  */
 
-BOOL surs_sam_sid_to_unixid(DOM_SID *sid, POSIX_ID *id, BOOL create);
-BOOL surs_unixid_to_sam_sid(POSIX_ID *id, DOM_SID *sid, BOOL create);
+BOOL surs_sam_sid_to_unixid(const SURS_SID_ID *sid, SURS_POSIX_ID *id, BOOL create);
+BOOL surs_unixid_to_sam_sid(const SURS_POSIX_ID *id, SURS_SID_ID *sid, BOOL create);
 
-/*The following definitions come from  lib/sursalgdomonly.c  */
+/*The following definitions come from  lib/sursalgmultidom.c  */
 
-BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, POSIX_ID *id,
-				BOOL create);
-BOOL surs_algdomonly_unixid_to_sam_sid(POSIX_ID *id, DOM_SID *sid,
-				BOOL create);
+BOOL surs_multidomalg_sam_sid_to_unixid(const SURS_SID_ID * sid,
+					SURS_POSIX_ID * id, BOOL create);
+BOOL surs_multidomalg_unixid_to_sam_sid(const SURS_POSIX_ID * id,
+					SURS_SID_ID * sid, BOOL create);
 
 /*The following definitions come from  lib/sursalgnt5ldap.c  */
 
@@ -1836,8 +1836,8 @@ char *lp_deluser_script(void);
 char *lp_wins_hook(void);
 char *lp_nt_forms(void);
 char *lp_nt_drivers_file(void);
-char *lp_winbind_uid(void);
-char *lp_winbind_gid(void);
+char *lp_surs_domainrange_uid(void);
+char *lp_surs_domainrange_gid(void);
 char *lp_template_homedir(void);
 char *lp_template_shell(void);
 char *lp_ldap_server(void);
@@ -2298,6 +2298,7 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count);
 void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture);
 void get_short_archi(char *short_archi, char *long_archi);
+uint32 del_a_printer(char *portname);
 void dump_a_param(NT_PRINTER_PARAM *param);
 BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
 BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);

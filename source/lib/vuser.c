@@ -119,7 +119,7 @@ uint16 create_vuid(pid_t pid,
 	fstrcpy(vuser.name, unix_name);
 	fstrcpy(vuser.requested_name, requested_name);
 	fstrcpy(vuser.real_name, real_name);
-	memcpy(&vuser.usr, info3, sizeof(vuser.usr));
+	memcpy_zero(&vuser.usr, info3, sizeof(vuser.usr));
 
 	vuser.n_groups = n_groups;
 	vuser.groups = groups;

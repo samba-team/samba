@@ -28,7 +28,7 @@ extern int DEBUGLEVEL;
 /******************************************************************
  converts SID + SID_NAME_USE type to a UNIX id.
  ********************************************************************/
-BOOL surs_sam_sid_to_unixid(DOM_SID *sid, POSIX_ID *id, BOOL create)
+BOOL surs_sam_sid_to_unixid(const SURS_SID_ID *sid, SURS_POSIX_ID *id, BOOL create)
 {
 #if 0
 #ifdef WITH_NT5LDAP
@@ -38,13 +38,13 @@ BOOL surs_sam_sid_to_unixid(DOM_SID *sid, POSIX_ID *id, BOOL create)
 	return surs_tdb_sam_sid_to_unixid(id, sid, create);
 #endif
 #endif
-	return surs_algdomonly_sam_sid_to_unixid(sid, id, create);
+	return surs_multidomalg_sam_sid_to_unixid(sid, id, create);
 }
 
 /******************************************************************
  converts UNIX id + type to a SID.
  ********************************************************************/
-BOOL surs_unixid_to_sam_sid(POSIX_ID *id, DOM_SID *sid, BOOL create)
+BOOL surs_unixid_to_sam_sid(const SURS_POSIX_ID *id, SURS_SID_ID *sid, BOOL create)
 {
 #if 0
 #ifdef WITH_NT5LDAP
@@ -54,5 +54,5 @@ BOOL surs_unixid_to_sam_sid(POSIX_ID *id, DOM_SID *sid, BOOL create)
 	return surs_tdb_unixid_to_sam_sid(id, sid, create);
 #endif
 #endif
-	return surs_algdomonly_unixid_to_sam_sid(id, sid, create);
+	return surs_multidomalg_unixid_to_sam_sid(id, sid, create);
 }

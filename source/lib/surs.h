@@ -25,9 +25,8 @@
 
 typedef enum 
 {
-        SURS_POSIX_UID_AS_USR,     /* User id as user */
-        SURS_POSIX_GID_AS_GRP,     /* Group id as domain group */
-        SURS_POSIX_GID_AS_ALS      /* Group id as alias */
+        SURS_POSIX_UID,	/* User id */
+        SURS_POSIX_GID	/* Group id */
 
 } 
 posix_type;
@@ -37,6 +36,8 @@ typedef struct _surs_posix_id
         uint32 id;                 /* user/group id */
         posix_type type;           /* id type */
 }
-POSIX_ID;
+SURS_POSIX_ID;
+
+typedef DOM_SID SURS_SID_ID;
 
 #endif /* _SURS_H_ */

@@ -1147,7 +1147,7 @@ BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 * enum_ctx,
 			DEBUG(0,
 			      ("LSA_ENUMTRUSTDOM: %s\n",
 			       get_nt_error_msg(r_q.status)));
-			p = r_q.status == 0x8000001a;
+			p = r_q.status == 0x8000001a || r_q.status == 0x0;
 		}
 
 		if (p)

@@ -208,12 +208,6 @@ struct msrpc_local *ncalrpc_l_use_add(const char *pipe_name,
 		return cli->cli;
 	}
 
-	/* reuse an existing connection requested, and one was not found */
-	if (key != NULL && reuse)
-	{
-		return False;
-	}
-
 	/*
 	 * allocate
 	 */

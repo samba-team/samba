@@ -5,19 +5,17 @@
 
 /*The following definitions come from  rpc_client/cli_atsvc.c  */
 
-BOOL at_add_job(
-		char *srv_name, AT_JOB_INFO *info, char *command,
+BOOL at_add_job(char *srv_name, AT_JOB_INFO *info, char *command,
 		uint32 *jobid);
-BOOL at_del_job( char *srv_name, uint32 min_jobid, uint32 max_jobid);
-BOOL at_enum_jobs( char *srv_name, uint32 *num_jobs,
+BOOL at_del_job(char *srv_name, uint32 min_jobid, uint32 max_jobid);
+BOOL at_enum_jobs(char *srv_name, uint32 *num_jobs,
 		  AT_ENUM_INFO *jobs, char ***commands);
 BOOL at_query_job(char *srv_name,
 		  uint32 jobid, AT_JOB_INFO *job, fstring command);
 
 /*The following definitions come from  rpc_client/cli_brs.c  */
 
-BOOL brs_query_info( const char *srv_name, uint32 switch_value,
-			void *id);
+BOOL brs_query_info(const char *srv_name, uint32 switch_value, void *id);
 
 /*The following definitions come from  rpc_client/cli_connect.c  */
 
@@ -225,57 +223,55 @@ void cli_nt_session_close(struct cli_state *cli, uint16 fnum);
 
 /*The following definitions come from  rpc_client/cli_reg.c  */
 
-BOOL reg_connect( const char* srv_name,
+BOOL reg_connect(const char *srv_name,
 				const char *full_keyname,
 				char *key_name,
 				uint32 access_mask,
 				POLICY_HND *reg_hnd);
-BOOL reg_open_hkcr( struct cli_connection *con,
+BOOL reg_open_hkcr(struct cli_connection *con,
+		   uint16 unknown_0, uint32 level, POLICY_HND *hnd);
+BOOL reg_open_hklm(struct cli_connection *con,
 				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
-BOOL reg_open_hklm( struct cli_connection *con,
+BOOL reg_open_hku(struct cli_connection *con, 
 				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
-BOOL reg_open_hku( struct cli_connection *con, 
-				uint16 unknown_0, uint32 level,
-				POLICY_HND *hnd);
-BOOL reg_flush_key( POLICY_HND *hnd);
-BOOL reg_query_key( POLICY_HND *hnd,
+BOOL reg_flush_key(POLICY_HND *hnd);
+BOOL reg_query_key(POLICY_HND *hnd,
 				char *key_class, uint32 *class_len,
 				uint32 *num_subkeys, uint32 *max_subkeylen,
 				uint32 *max_subkeysize, uint32 *num_values,
 				uint32 *max_valnamelen, uint32 *max_valbufsize,
 				uint32 *sec_desc, NTTIME *mod_time);
-BOOL reg_unknown_1a( POLICY_HND *hnd, uint32 *unk);
-BOOL reg_query_info( POLICY_HND *hnd,
-				const char* val_name,
-				uint32 *type, BUFFER2 *buffer);
-BOOL reg_set_key_sec( POLICY_HND *hnd,
+BOOL reg_unknown_1a(POLICY_HND *hnd, uint32 *unk);
+BOOL reg_query_info(POLICY_HND *hnd, const char *val_name,
+		    uint32 *type, BUFFER2 *buffer);
+BOOL reg_set_key_sec(POLICY_HND *hnd,
 				uint32 sec_info,
 				uint32 sec_buf_size, SEC_DESC *sec_buf);
-BOOL reg_get_key_sec( POLICY_HND *hnd,
+BOOL reg_get_key_sec(POLICY_HND *hnd,
 				uint32 sec_info,
 				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf);
-BOOL reg_delete_val( POLICY_HND *hnd, char *val_name);
-BOOL reg_delete_key( POLICY_HND *hnd, char *key_name);
-BOOL reg_create_key( POLICY_HND *hnd,
+BOOL reg_delete_val(POLICY_HND *hnd, char *val_name);
+BOOL reg_delete_key(POLICY_HND *hnd, char *key_name);
+BOOL reg_create_key(POLICY_HND *hnd,
 				char *key_name, char *key_class,
 				SEC_ACCESS *sam_access,
 				POLICY_HND *key);
-BOOL reg_enum_key( POLICY_HND *hnd,
+BOOL reg_enum_key(POLICY_HND *hnd,
 				int key_index, char *key_name,
 				uint32 *unk_1, uint32 *unk_2,
 				time_t *mod_time);
-BOOL reg_create_val( POLICY_HND *hnd,
+BOOL reg_create_val(POLICY_HND *hnd,
 				char *val_name, uint32 type, BUFFER3 *data);
-BOOL reg_enum_val( POLICY_HND *hnd,
+BOOL reg_enum_val(POLICY_HND *hnd,
 				int val_index, int max_valnamelen, int max_valbufsize,
 				fstring val_name,
 				uint32 *val_type, BUFFER2 *value);
-BOOL reg_open_entry( POLICY_HND *hnd,
+BOOL reg_open_entry(POLICY_HND *hnd,
 				char *key_name, uint32 unk_0,
 				POLICY_HND *key_hnd);
-BOOL reg_close( POLICY_HND *hnd);
+BOOL reg_close(POLICY_HND *hnd);
 BOOL reg_shutdown(const char *srv_name,
 			const char *msg, uint32 timeout, uint16 flags);
 
