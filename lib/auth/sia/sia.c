@@ -202,8 +202,8 @@ common_auth(sia_collect_func_t *collect,
     {
 	char realm[REALM_SZ];
 	int ret;
-	struct passwd pw, *pwd;
-	char pwbuf[1024];
+	struct passwd pw, *pwd,  fpw, *fpwd;
+	char pwbuf[1024],  fpwbuf[1024];
 	struct state *s = (struct state*)entity->mech[pkgind];
 
 	if(getpwnam_r(entity->name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0)
@@ -215,9 +215,14 @@ common_auth(sia_collect_func_t *collect,
 	toname = entity->name;
 	toinst = "";
 	if(entity->authtype == SIA_A_SUAUTH){
-	    struct passwd fpw, *fpwd;
-	    char fpwbuf[1024];
-	    if(getpwuid_r(getuid(), &fpw, fpwbuf, sizeof(fpwbuf), &fpwd) != 0)
+	    uid_t ouid;
+#ifdef SIAENTITY_HAS_OUID
+	    ouid = entity->ouid;
+#else
+	    ouid = getuid();
+#endif
+	    if(getpwuid_r(ouid, &fpw, 
+			  fpwbuf, sizeof(fpwbuf), &fpwd) != 0)
 		return SIADFAIL;
 	    snprintf(s->ticket, sizeof(s->ticket), TKT_ROOT "_%s_to_%s_%d", 
 		     fpwd->pw_name, pwd->pw_name, getpid());
@@ -274,9 +279,11 @@ siad_ses_launch(sia_collect_func_t *collect,
     char buf[MaxPathLen];
     static char env[MaxPathLen];
     struct state *s = (struct state*)entity->mech[pkgind];
-    chown(s->ticket, entity->pwd->pw_uid, entity->pwd->pw_gid);
-    snprintf(env, sizeof(env), "KRBTKFILE=%s", s->ticket);
-    putenv(env);
+    if(s->valid){
+	chown(s->ticket, entity->pwd->pw_uid, entity->pwd->pw_gid);
+	snprintf(env, sizeof(env), "KRBTKFILE=%s", s->ticket);
+	putenv(env);
+    }
     if (k_hasafs()) {
 	char cell[64];
 	k_setpag();
@@ -310,3 +317,128 @@ siad_ses_suauthent(sia_collect_func_t *collect,
     return common_auth(collect, entity, siastat, pkgind);
 }
 
+/* The following functions returns the default fail */
+
+int
+siad_ses_reauthent (sia_collect_func_t *collect,
+			SIAENTITY *entity,
+			int siastat,
+			int pkgind)
+{
+    return SIADFAIL;
+}
+
+int
+siad_chg_finger (sia_collect_func_t *collect,
+		     const char *username, 
+		     int argc, 
+		     char *argv[])
+{
+    return SIADFAIL;
+}
+
+int
+siad_chg_passwd (sia_collect_func_t *collect,
+		     const char *username, 
+		     int argc, 
+		     char *argv[])
+{
+    return SIADFAIL;
+}
+
+int
+siad_chg_shell (sia_collect_func_t *collect,
+		     const char *username, 
+		     int argc, 
+		     char *argv[])
+{
+    return SIADFAIL;
+}
+
+int
+siad_getpwent(struct passwd *result, 
+	      char *buf, 
+	      int bufsize, 
+	      struct sia_context *context)
+{
+    return SIADFAIL;
+}
+
+int
+siad_getpwuid (uid_t uid, 
+	       struct passwd *result, 
+	       char *buf, 
+	       int bufsize, 
+	       struct sia_context *context)
+{
+    return SIADFAIL;
+}
+
+int
+siad_getpwnam (const char *name, 
+	       struct passwd *result, 
+	       char *buf, 
+	       int bufsize, 
+	       struct sia_context *context)
+{
+    return SIADFAIL;
+}
+
+int
+siad_setpwent (struct sia_context *context)
+{
+    return SIADFAIL;
+}
+
+int
+siad_endpwent (struct sia_context *context)
+{
+    return SIADFAIL;
+}
+
+int
+siad_getgrent(struct group *result, 
+	      char *buf, 
+	      int bufsize, 
+	      struct sia_context *context)
+{
+    return SIADFAIL;
+}
+
+int
+siad_getgrgid (gid_t gid, 
+	       struct group *result, 
+	       char *buf, 
+	       int bufsize, 
+	       struct sia_context *context)
+{
+    return SIADFAIL;
+}
+
+int
+siad_getgrnam (const char *name, 
+	       struct group *result, 
+	       char *buf, 
+	       int bufsize, 
+	       struct sia_context *context)
+{
+    return SIADFAIL;
+}
+
+int
+siad_setgrent (struct sia_context *context)
+{
+    return SIADFAIL;
+}
+
+int
+siad_endgrent (struct sia_context *context)
+{
+    return SIADFAIL;
+}
+
+int
+siad_chk_user (const char *logname, int checkflag)
+{
+    return SIADFAIL;
+}
