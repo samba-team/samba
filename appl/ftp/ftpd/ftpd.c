@@ -44,11 +44,20 @@ static char version[] = "Version 6.00";
 extern	off_t restart_point;
 extern	char cbuf[];
 
-struct	sockaddr_in ctrl_addr;
-struct	sockaddr_in data_source;
-struct	sockaddr_in data_dest;
-struct	sockaddr_in his_addr;
-struct	sockaddr_in pasv_addr;
+struct  sockaddr_storage ctrl_addr_ss;
+struct  sockaddr *ctrl_addr = (struct sockaddr *)&ctrl_addr_ss;
+
+struct  sockaddr_storage data_source_ss;
+struct  sockaddr *data_source = (struct sockaddr *)&data_source_ss;
+
+struct  sockaddr_storage data_dest_ss;
+struct  sockaddr *data_dest = (struct sockaddr *)&data_dest_ss;
+
+struct  sockaddr_storage his_addr_ss;
+struct  sockaddr *his_addr = (struct sockaddr *)&his_addr_ss;
+
+struct  sockaddr_storage pasv_addr_ss;
+struct  sockaddr *pasv_addr = (struct sockaddr *)&pasv_addr_ss;
 
 int	data;
 jmp_buf	errcatch, urgcatch;
@@ -126,7 +135,7 @@ static void	 myoob (int);
 static int	 checkuser (char *, char *);
 static int	 checkaccess (char *);
 static FILE	*dataconn (char *, off_t, char *);
-static void	 dolog (struct sockaddr_in *);
+static void	 dolog (struct sockaddr *);
 static void	 end_login (void);
 static FILE	*getdatasock (char *);
 static char	*gunique (char *);
@@ -305,22 +314,25 @@ main(int argc, char **argv)
 	 * necessary for anonymous ftp's that chroot and can't do it later.
 	 */
 	openlog("ftpd", LOG_PID | LOG_NDELAY, LOG_FTP);
-	addrlen = sizeof(his_addr);
-	if (getpeername(0, (struct sockaddr *)&his_addr, &addrlen) < 0) {
+	addrlen = sizeof(his_addr_ss);
+	if (getpeername(STDIN_FILENO, his_addr, &addrlen) < 0) {
 		syslog(LOG_ERR, "getpeername (%s): %m",argv[0]);
 		exit(1);
 	}
-	addrlen = sizeof(ctrl_addr);
-	if (getsockname(0, (struct sockaddr *)&ctrl_addr, &addrlen) < 0) {
+	addrlen = sizeof(ctrl_addr_ss);
+	if (getsockname(STDIN_FILENO, ctrl_addr, &addrlen) < 0) {
 		syslog(LOG_ERR, "getsockname (%s): %m",argv[0]);
 		exit(1);
 	}
 #if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
 	tos = IPTOS_LOWDELAY;
-	if (setsockopt(0, IPPROTO_IP, IP_TOS, (void *)&tos, sizeof(int)) < 0)
+	if (setsockopt(STDIN_FILENO, IPPROTO_IP, IP_TOS,
+		       (void *)&tos, sizeof(int)) < 0)
 		syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
 #endif
-	data_source.sin_port = htons(ntohs(ctrl_addr.sin_port) - 1);
+	data_source->sa_family = ctrl_addr->sa_family;
+	socket_set_port (data_source,
+			 htons(ntohs(socket_get_port(ctrl_addr)) - 1));
 
 	/* set this here so it can be put in wtmp */
 	snprintf(ttyline, sizeof(ttyline), "ftp%u", (unsigned)getpid());
@@ -345,7 +357,7 @@ main(int argc, char **argv)
 	if (fcntl(fileno(stdin), F_SETOWN, getpid()) == -1)
 		syslog(LOG_ERR, "fcntl F_SETOWN: %m");
 #endif
-	dolog(&his_addr);
+	dolog(his_addr);
 	/*
 	 * Set up default state
 	 */
@@ -506,10 +518,19 @@ user(char *name)
 		reply(331, "Guest login ok, type your name as password.");
 	    } else
 		reply(530, "User %s unknown.", name);
-	    if (!askpasswd && logging)
+	    if (!askpasswd && logging) {
+		char data_addr[256];
+
+		if (inet_ntop (his_addr->sa_family,
+			       socket_get_address(his_addr),
+			       data_addr, sizeof(data_addr)) == NULL)
+			strcpy_truncate (data_addr, "unknown address",
+					 sizeof(data_addr));
+
 		syslog(LOG_NOTICE,
 		       "ANONYMOUS FTP LOGIN REFUSED FROM %s(%s)",
-		       remotehost, inet_ntoa(his_addr.sin_addr));
+		       remotehost, data_addr);
+	    }
 	    return;
 	}
 	if((auth_level & AUTH_PLAIN) == 0 && !sec_complete){
@@ -526,12 +547,23 @@ user(char *name)
 
 		if (cp == NULL || checkaccess(name)) {
 			reply(530, "User %s access denied.", name);
-			if (logging)
+			if (logging) {
+				char data_addr[256];
+
+				if (inet_ntop (his_addr->sa_family,
+					       socket_get_address(his_addr),
+					       data_addr,
+					       sizeof(data_addr)) == NULL)
+					strcpy_truncate (data_addr,
+							 "unknown address",
+							 sizeof(data_addr));
+
 				syslog(LOG_NOTICE,
 				       "FTP LOGIN REFUSED FROM %s(%s), %s",
 				       remotehost,
-				       inet_ntoa(his_addr.sin_addr),
+				       data_addr,
 				       name);
+			}
 			pw = (struct passwd *) NULL;
 			return;
 		}
@@ -725,22 +757,40 @@ int do_login(int code, char *passwd)
 			  remotehost,
 			  passwd);
 #endif /* HAVE_SETPROCTITLE */
-		if (logging)
+		if (logging) {
+			char data_addr[256];
+
+			if (inet_ntop (his_addr->sa_family,
+				       socket_get_address(his_addr),
+				       data_addr, sizeof(data_addr)) == NULL)
+				strcpy_truncate (data_addr, "unknown address",
+						 sizeof(data_addr));
+
 			syslog(LOG_INFO, "ANONYMOUS FTP LOGIN FROM %s(%s), %s",
 			       remotehost, 
-			       inet_ntoa(his_addr.sin_addr),
+			       data_addr,
 			       passwd);
+		}
 	} else {
 		reply(code, "User %s logged in.", pw->pw_name);
 #ifdef HAVE_SETPROCTITLE
 		snprintf(proctitle, sizeof(proctitle), "%s: %s", remotehost, pw->pw_name);
 		setproctitle(proctitle);
 #endif /* HAVE_SETPROCTITLE */
-		if (logging)
+		if (logging) {
+			char data_addr[256];
+
+			if (inet_ntop (his_addr->sa_family,
+				       socket_get_address(his_addr),
+				       data_addr, sizeof(data_addr)) == NULL)
+				strcpy_truncate (data_addr, "unknown address",
+						 sizeof(data_addr));
+
 			syslog(LOG_INFO, "FTP LOGIN FROM %s(%s) as %s",
 			       remotehost,
-			       inet_ntoa(his_addr.sin_addr),
+			       data_addr,
 			       pw->pw_name);
+		}
 	}
 	umask(defumask);
 	return 0;
@@ -819,19 +869,27 @@ pass(char *passwd)
 		 * local authentication succeeded.
 		 */
 		if (rval) {
+			char data_addr[256];
+
+			if (inet_ntop (his_addr->sa_family,
+				       socket_get_address(his_addr),
+				       data_addr, sizeof(data_addr)) == NULL)
+				strcpy_truncate (data_addr, "unknown address",
+						 sizeof(data_addr));
+
 			reply(530, "Login incorrect.");
 			if (logging)
 				syslog(LOG_NOTICE,
 				    "FTP LOGIN FAILED FROM %s(%s), %s",
 				       remotehost,
-				       inet_ntoa(his_addr.sin_addr),
+				       data_addr,
 				       curname);
 			pw = NULL;
 			if (login_attempts++ >= 5) {
 				syslog(LOG_NOTICE,
 				       "repeated login failures from %s(%s)",
 				       remotehost,
-				       inet_ntoa(his_addr.sin_addr));
+				       data_addr);
 				exit(0);
 			}
 			return;
@@ -1068,35 +1126,31 @@ done:
 static FILE *
 getdatasock(char *mode)
 {
-	int on = 1, s, t, tries;
+	int s, t, tries;
 
 	if (data >= 0)
 		return (fdopen(data, mode));
-	seteuid((uid_t)0);
-	s = socket(AF_INET, SOCK_STREAM, 0);
+	seteuid(0);
+	s = socket(ctrl_addr->sa_family, SOCK_STREAM, 0);
 	if (s < 0)
 		goto bad;
-#if defined(SO_REUSEADDR) && defined(HAVE_SETSOCKOPT)
-	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
-	    (void *) &on, sizeof(on)) < 0)
-		goto bad;
-#endif
+	socket_set_reuseaddr (s, 1);
 	/* anchor socket to avoid multi-homing problems */
-	data_source.sin_family = AF_INET;
-	data_source.sin_addr = ctrl_addr.sin_addr;
+	socket_set_address_and_port (data_source,
+				     socket_get_address (ctrl_addr),
+				     0);
+
 	for (tries = 1; ; tries++) {
-		if (bind(s, (struct sockaddr *)&data_source,
-		    sizeof(data_source)) >= 0)
+		if (bind(s, data_source,
+			 socket_sockaddr_size (data_source)) >= 0)
 			break;
 		if (errno != EADDRINUSE || tries > 10)
 			goto bad;
 		sleep(tries);
 	}
-	seteuid((uid_t)pw->pw_uid);
-#if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
-	on = IPTOS_THROUGHPUT;
-	if (setsockopt(s, IPPROTO_IP, IP_TOS, (void *)&on, sizeof(int)) < 0)
-		syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
+	seteuid(pw->pw_uid);
+#ifdef IPTOS_THROUGHPUT
+	socket_set_tos (s, IPTOS_THROUGHPUT);
 #endif
 	return (fdopen(s, mode));
 bad:
@@ -1122,10 +1176,12 @@ dataconn(char *name, off_t size, char *mode)
 	else
 	    *sizebuf = '\0';
 	if (pdata >= 0) {
-		struct sockaddr_in from;
-		int s, fromlen = sizeof(from);
+		struct sockaddr_storage from_ss;
+		struct sockaddr *from = (struct sockaddr *)&from;
+		int s;
+		int fromlen = sizeof(from_ss);
 
-		s = accept(pdata, (struct sockaddr *)&from, &fromlen);
+		s = accept(pdata, from, &fromlen);
 		if (s < 0) {
 			reply(425, "Can't open data connection.");
 			close(pdata);
@@ -1157,16 +1213,25 @@ dataconn(char *name, off_t size, char *mode)
 	usedefault = 1;
 	file = getdatasock(mode);
 	if (file == NULL) {
+		char data_addr[256];
+
+		if (inet_ntop (data_source->sa_family,
+			       socket_get_address(data_source),
+			       data_addr, sizeof(data_addr)) == NULL)
+			strcpy_truncate (data_addr, "unknown address",
+					 sizeof(data_addr));
+
 		reply(425, "Can't create data socket (%s,%d): %s.",
-		    inet_ntoa(data_source.sin_addr),
-		    ntohs(data_source.sin_port), strerror(errno));
+		      data_addr,
+		      socket_get_port (data_source),
+		      strerror(errno));
 		return (NULL);
 	}
 	data = fileno(file);
-	while (connect(data, (struct sockaddr *)&data_dest,
-	    sizeof(data_dest)) < 0) {
+	while (connect(data, data_dest,
+		       socket_sockaddr_size(data_dest)) < 0) {
 		if (errno == EADDRINUSE && retry < swaitmax) {
-			sleep((unsigned) swaitint);
+			sleep(swaitint);
 			retry += swaitint;
 			continue;
 		}
@@ -1673,18 +1738,30 @@ renamecmd(char *from, char *to)
 }
 
 static void
-dolog(struct sockaddr_in *sin)
+dolog(struct sockaddr *sa)
 {
+	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+
 	inaddr2str (sin->sin_addr, remotehost, sizeof(remotehost));
 #ifdef HAVE_SETPROCTITLE
 	snprintf(proctitle, sizeof(proctitle), "%s: connected", remotehost);
 	setproctitle(proctitle);
 #endif /* HAVE_SETPROCTITLE */
 
-	if (logging)
+	if (logging) {
+		char data_addr[256];
+
+		if (inet_ntop (his_addr->sa_family,
+			       socket_get_address(his_addr),
+			       data_addr, sizeof(data_addr)) == NULL)
+			strcpy_truncate (data_addr, "unknown address",
+					 sizeof(data_addr));
+
+
 		syslog(LOG_INFO, "connection from %s(%s)",
 		       remotehost,
-		       inet_ntoa(his_addr.sin_addr));
+		       data_addr);
+	}
 }
 
 /*
@@ -1766,31 +1843,41 @@ myoob(int signo)
  *	with Rick Adams on 25 Jan 89.
  */
 void
-passive(void)
+pasv(void)
 {
 	int len;
 	char *p, *a;
+	struct sockaddr_in *sin;
 
-	pdata = socket(AF_INET, SOCK_STREAM, 0);
+	if (ctrl_addr->sa_family != AF_INET) {
+		reply(425,
+		      "You cannot do PASV with something that's not IPv4");
+		return;
+	}
+
+	pdata = socket(ctrl_addr->sa_family, SOCK_STREAM, 0);
 	if (pdata < 0) {
 		perror_reply(425, "Can't open passive connection");
 		return;
 	}
-	pasv_addr = ctrl_addr;
-	pasv_addr.sin_port = 0;
-	seteuid((uid_t)0);
-	if (bind(pdata, (struct sockaddr *)&pasv_addr, sizeof(pasv_addr)) < 0) {
-		seteuid((uid_t)pw->pw_uid);
+	pasv_addr->sa_family = ctrl_addr->sa_family;
+	socket_set_address_and_port (pasv_addr,
+				     socket_get_address (ctrl_addr),
+				     0);
+	seteuid(0);
+	if (bind(pdata, pasv_addr, socket_sockaddr_size (pasv_addr)) < 0) {
+		seteuid(pw->pw_uid);
 		goto pasv_error;
 	}
-	seteuid((uid_t)pw->pw_uid);
-	len = sizeof(pasv_addr);
-	if (getsockname(pdata, (struct sockaddr *) &pasv_addr, &len) < 0)
+	seteuid(pw->pw_uid);
+	len = sizeof(pasv_addr_ss);
+	if (getsockname(pdata, pasv_addr, &len) < 0)
 		goto pasv_error;
 	if (listen(pdata, 1) < 0)
 		goto pasv_error;
-	a = (char *) &pasv_addr.sin_addr;
-	p = (char *) &pasv_addr.sin_port;
+	sin = (struct sockaddr_in *)pasv_addr;
+	a = (char *) &sin->sin_addr;
+	p = (char *) &sin->sin_port;
 
 #define UC(b) (((int) b) & 0xff)
 
@@ -1803,6 +1890,109 @@ pasv_error:
 	pdata = -1;
 	perror_reply(425, "Can't open passive connection");
 	return;
+}
+
+void
+epsv(char *proto)
+{
+	int len;
+
+	pdata = socket(ctrl_addr->sa_family, SOCK_STREAM, 0);
+	if (pdata < 0) {
+		perror_reply(425, "Can't open passive connection");
+		return;
+	}
+	pasv_addr->sa_family = ctrl_addr->sa_family;
+	socket_set_address_and_port (pasv_addr,
+				     socket_get_address (ctrl_addr),
+				     0);
+	seteuid(0);
+	if (bind(pdata, pasv_addr, socket_sockaddr_size (pasv_addr)) < 0) {
+		seteuid(pw->pw_uid);
+		goto pasv_error;
+	}
+	seteuid(pw->pw_uid);
+	len = sizeof(pasv_addr_ss);
+	if (getsockname(pdata, pasv_addr, &len) < 0)
+		goto pasv_error;
+	if (listen(pdata, 1) < 0)
+		goto pasv_error;
+
+	reply(229, "Entering Extended Passive Mode (|||%d|)",
+	      ntohs(socket_get_port (pasv_addr)));
+	return;
+
+pasv_error:
+	close(pdata);
+	pdata = -1;
+	perror_reply(425, "Can't open passive connection");
+	return;
+}
+
+void
+eprt(char *str)
+{
+	char *end;
+	char sep;
+	int af;
+	int ret;
+	int port;
+
+	usedefault = 0;
+	if (pdata >= 0) {
+	    close(pdata);
+	    pdata = -1;
+	}
+
+	sep = *str++;
+	if (sep == '\0') {
+		reply(500, "Bad syntax in EPRT");
+		return;
+	}
+	af = strtol (str, &end, 0);
+	if (af == 0 || *end != sep) {
+		reply(500, "Bad syntax in EPRT");
+		return;
+	}
+	str = end + 1;
+	switch (af) {
+#ifdef HAVE_IPV6
+	case 2 :
+	    data_dest->sa_family = AF_INET6;
+	    break;
+#endif		
+	case 1 :
+	    data_dest->sa_family = AF_INET;
+		break;
+	default :
+		reply(522, "Network protocol %d not supported, use (1"
+#ifdef HAVE_IPV6
+		      ",2"
+#endif
+		      ")", af);
+		return;
+	}
+	end = strchr (str, sep);
+	if (end == NULL) {
+		reply(500, "Bad syntax in EPRT");
+		return;
+	}
+	*end = '\0';
+	ret = inet_pton (data_dest->sa_family, str,
+			 socket_get_address (data_dest));
+
+	if (ret != 1) {
+		reply(500, "Bad address syntax in EPRT");
+		return;
+	}
+	str = end + 1;
+	port = strtol (str, &end, 0);
+	if (port == 0 || *end != sep) {
+		reply(500, "Bad port syntax in EPRT");
+		return;
+	}
+	socket_set_port (data_dest, htons(port));
+	reply(200, "EPRT command successful.");
 }
 
 /*
