@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: citation.mod.xsl,v 1.1.2.1 2003/05/01 14:06:14 jelmer Exp $
 |- #############################################################################
-|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -18,7 +16,6 @@
     <doc:reference id="citation" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: citation.mod.xsl,v 1.1.2.1 2003/05/01 14:06:14 jelmer Exp $
 	    </releaseinfo>
 	    <authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>

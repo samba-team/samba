@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: mediaobject.mod.xsl,v 1.1.2.1 2003/05/01 14:06:15 jelmer Exp $
 |- #############################################################################
-|	$Author: jelmer $												
 |														
 |   PURPOSE: Manage Imageobject related tags.
 + ############################################################################## -->
@@ -19,7 +17,6 @@
     <doc:reference id="mediaobject" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: mediaobject.mod.xsl,v 1.1.2.1 2003/05/01 14:06:15 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>

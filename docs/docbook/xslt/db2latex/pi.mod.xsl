@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: pi.mod.xsl,v 1.1.2.1 2003/05/01 14:06:15 jelmer Exp $
 |- #############################################################################
-|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -20,7 +18,6 @@
     <doc:reference id="abstract" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: pi.mod.xsl,v 1.1.2.1 2003/05/01 14:06:15 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>

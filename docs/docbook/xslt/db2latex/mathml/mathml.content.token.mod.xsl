@@ -5,9 +5,7 @@
  <!ENTITY % mmlextra PUBLIC "MathML extra" "ent/mmlextra.ent">  %mmlextra;
 ]>
 <!--############################################################################# 
- |	$Id: mathml.content.token.mod.xsl,v 1.1.2.1 2003/05/01 14:10:37 jelmer Exp $
  |- #############################################################################
- |	$Author: jelmer $												
  |	
  |	PURPOSE: MathML Content Markup, tokens (ci, cn, csymbol)
  |	MathML namespace used -> mml
