@@ -15,6 +15,9 @@ struct krb5_config_binding {
 
 typedef struct krb5_config_binding krb5_config_binding;
 
+typedef krb5_config_binding krb5_config_section;
+
+#if 0
 struct krb5_config_section {
     char *name;
     krb5_config_binding *list;
@@ -22,5 +25,6 @@ struct krb5_config_section {
 };
 
 typedef struct krb5_config_section krb5_config_section;
+#endif
 
 #endif /* __CONFIG_FILE_H__ */
