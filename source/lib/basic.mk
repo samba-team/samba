@@ -45,7 +45,6 @@ ADD_OBJ_FILES = \
 		lib/system.o \
 		lib/time.o \
 		lib/genrand.o \
-		lib/username.o \
 		lib/dprintf.o \
 		lib/xfile.o \
 		lib/util_str.o \
