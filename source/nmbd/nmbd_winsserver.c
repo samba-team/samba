@@ -122,8 +122,8 @@ static void wins_hook(const char *operation, struct name_record *namerec, int tt
 	/* Use the name without the nametype (and scope) appended */
 
 	namestr = nmb_namestr(&namerec->name);
-	p = strchr(namestr, '<');
-	*p = 0;
+	if ((p = strchr(namestr, '<')))
+		*p = 0;
 
 	p = command;
 	p += slprintf(p, sizeof(command)-1, "%s %s %s %02x %d", 
