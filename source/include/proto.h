@@ -1538,6 +1538,8 @@ char *lp_winbind_gid(void);
 char *lp_template_homedir(void);
 char *lp_template_shell(void);
 char *lp_winbind_separator(void);
+BOOL lp_winbind_enum_users(void);
+BOOL lp_winbind_enum_groups(void);
 char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_bind_as(void);
@@ -1989,6 +1991,7 @@ struct passgrp_ops *unix_initialise_password_grp(void);
 
 /*The following definitions come from  printing/load.c  */
 
+void add_all_printers(void);
 void load_printers(void);
 
 /*The following definitions come from  printing/lpq_parse.c  */
