@@ -32,6 +32,31 @@ enum nss_status winbindd_request(int req_type,
 				 struct winbindd_request *request,
 				 struct winbindd_response *response);
 
+static BOOL wbinfo_get_usergroups(char *user)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result, i;
+	
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	fstrcpy(request.data.username, user);
+
+	result = winbindd_request(WINBINDD_INITGROUPS, &request, &response);
+
+	if (result != NSS_STATUS_SUCCESS) {
+		return False;
+	}
+
+	for (i = 0; i < response.data.num_entries; i++) {
+		printf("%d\n", ((gid_t *)response.extra_data)[i]);
+	}
+
+	return True;
+}
+
 /* List trusted domains */
 
 static BOOL wbinfo_list_domains(void)
@@ -288,6 +313,7 @@ static void usage(void)
 	printf("\t-Y sid\tconverts sid to gid\n");
 	printf("\t-t\tcheck shared secret\n");
 	printf("\t-m\tlist trusted domains\n");
+	printf("\t-r user\tget user groups\n");
 }
 
 /* Main program */
@@ -327,7 +353,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tm")) != EOF) {
+	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tmr:")) != EOF) {
 		switch (opt) {
 		case 'u':
 			if (!print_domain_users()) {
@@ -390,6 +416,13 @@ int main(int argc, char **argv)
 		case 'm':
 			if (!wbinfo_list_domains()) {
 				printf("Could not list trusted domains\n");
+				return 1;
+			}
+			break;
+		case 'r':
+			if (!wbinfo_get_usergroups(optarg)) {
+				printf("Could not get groups for user %s\n", 
+				       optarg);
 				return 1;
 			}
 			break;
