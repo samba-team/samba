@@ -3427,9 +3427,9 @@ char *readdirname(void *p)
 }
 
 
-BOOL is_vetoed_name(char *name)
+BOOL is_vetoed_name(int snum, char *name)
 {
-  char *namelist = lp_veto_files();
+  char *namelist = lp_veto_files(snum);
   char *nameptr = namelist;
   char *name_end;
 
@@ -3524,17 +3524,17 @@ static BOOL is_in_path(char *name, char *namelist)
 /****************************************************************************
 used to make files hidden, but still accessible
 ****************************************************************************/
-BOOL is_hidden_path(char *path)
+BOOL is_hidden_path(int cnum, char *path)
 {
-  return is_in_path(path, lp_hide_files());
+  return is_in_path(path, lp_hide_files(cnum));
 }
 
 /****************************************************************************
 used to make files _completely_ inaccessible
 ****************************************************************************/
-BOOL is_vetoed_path(char *path)
+BOOL is_vetoed_path(int cnum, char *path)
 {
-  return is_in_path(path, lp_veto_files());
+  return is_in_path(path, lp_veto_files(cnum));
 }
 
 /****************************************************************************
