@@ -1631,8 +1631,8 @@ fi
 
 ##################################################################
 # we might need the k5crypto and com_err libraries on some systems
-AC_CHECK_LIB(k5crypto, krb5_encrypt_data)
-AC_CHECK_LIB(com_err, _et_list)
+AC_CHECK_LIB(com_err, _et_list, [LIBS="$LIBS -lcom_err"])
+AC_CHECK_LIB(k5crypto, krb5_encrypt_data, [LIBS="$LIBS -lk5crypto"])
 
 #################################################
 # check for automount support
