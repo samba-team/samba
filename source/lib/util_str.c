@@ -1780,11 +1780,6 @@ void rfc1738_unescape(char *buf)
 {
 	char *p=buf;
 
-	while ((p=strchr_m(p,'+')))
-		*p = ' ';
-
-	p = buf;
-
 	while (p && *p && (p=strchr_m(p,'%'))) {
 		int c1 = p[1];
 		int c2 = p[2];
