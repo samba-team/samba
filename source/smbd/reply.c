@@ -408,8 +408,8 @@ int reply_ioctl(connection_struct *conn,
 	{
 	    case IOCTL_QUERY_JOB_INFO:		    
 		SSVAL(p,0,fsp->print_jobid);             /* Job number */
-		StrnCpy(p+2, global_myname, 15);         /* Our NetBIOS name */
-		StrnCpy(p+18, lp_servicename(SNUM(conn)), 13); /* Service name */
+		srvstr_push(outbuf, p+2, global_myname, 15, STR_TERMINATE|STR_CONVERT|STR_ASCII);
+		srvstr_push(outbuf, p+18, lp_servicename(SNUM(conn)), 13, STR_TERMINATE|STR_CONVERT|STR_ASCII);
 		break;
 	}
 
@@ -3270,7 +3270,7 @@ int reply_printqueue(connection_struct *conn,
 			SSVAL(p,5, queue[i].job);
 			SIVAL(p,7,queue[i].size);
 			CVAL(p,11) = 0;
-			StrnCpy(p+12,queue[i].user,16);
+			srvstr_push(outbuf, p+12, queue[i].user, 16, STR_CONVERT|STR_ASCII);
 			p += 28;
 		}
 
