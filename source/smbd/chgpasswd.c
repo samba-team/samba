@@ -943,7 +943,8 @@ static BOOL check_passwd_history(SAM_ACCOUNT *sampass, const char *plaintext)
 	const uint8 *nt_pw;
 	const uint8 *pwhistory;
 	BOOL found = False;
-	int i, pwHisLen, curr_pwHisLen;
+	int i;
+	uint32 pwHisLen, curr_pwHisLen;
 
 	account_policy_get(AP_PASSWORD_HISTORY, &pwHisLen);
 	if (pwHisLen == 0) {
