@@ -822,6 +822,15 @@ int main(int argc, char **argv)
 	if (!interactive)
 		become_daemon();
 
+#if HAVE_SETPGID
+	/*
+	 * If we're interactive we want to set our own process group for
+	 * signal management.
+	 */
+	if (interactive)
+		setpgid( (pid_t)0, (pid_t)0);
+#endif
+
 	load_interfaces();
 
 	secrets_init();

@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
 
 /* Define if on AIX 3.
    System headers sometimes define this.
@@ -694,6 +694,9 @@
 
 /* Define if you have the setnetgrent function.  */
 #undef HAVE_SETNETGRENT
+
+/* Define if you have the setpgid function.  */
+#undef HAVE_SETPGID
 
 /* Define if you have the setpriv function.  */
 #undef HAVE_SETPRIV

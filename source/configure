@@ -945,7 +945,7 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL_PROGRAM}'
 
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
-for ac_prog in mawk gawk nawk awk
+for ac_prog in gawk mawk nawk awk
 do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -5191,7 +5191,7 @@ else
 fi
 done
 
-for ac_func in fstat strchr utime utimes getrlimit fsync bzero memset strlcpy strlcat
+for ac_func in fstat strchr utime utimes getrlimit fsync bzero memset strlcpy strlcat setpgid
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:5198: checking for $ac_func" >&5
