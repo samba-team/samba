@@ -64,7 +64,7 @@ NTSTATUS cli_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return result */
 
-	*dfs_exists = (r.status == 1);
+	*dfs_exists = (r.status != 0);
 
 	result = NT_STATUS_OK;
 
@@ -110,6 +110,8 @@ NTSTATUS cli_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return result */
 
+        result = werror_to_ntstatus(r.status);
+
  done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
@@ -123,7 +125,7 @@ NTSTATUS cli_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	DFS_Q_DFS_REMOVE q;
 	DFS_R_DFS_REMOVE r;
-	WERROR result = WERR_BADFUNC;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -150,13 +152,13 @@ NTSTATUS cli_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return result */
 
-	result = r.status;
+	result = werror_to_ntstatus(r.status);
 
  done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
 
-	return NT_STATUS_OK;
+	return result;
 }
 
 NTSTATUS cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
@@ -167,7 +169,7 @@ NTSTATUS cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	DFS_Q_DFS_GET_INFO q;
 	DFS_R_DFS_GET_INFO r;
-	WERROR result = WERR_BADFUNC;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -195,14 +197,14 @@ NTSTATUS cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return result */
 
-	result = r.status;
+	result = werror_to_ntstatus(r.status);
 	*ctr = r.ctr;
 	
  done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
 
-	return NT_STATUS_OK;    /* Should return a WERROR */
+	return result;
 }
 
 /* Enumerate dfs shares */
@@ -213,7 +215,7 @@ NTSTATUS cli_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	DFS_Q_DFS_ENUM q;
 	DFS_R_DFS_ENUM r;
-	WERROR result = WERR_BADFUNC;
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -242,11 +244,11 @@ NTSTATUS cli_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return result */
 
-	result = r.status;
+	result = werror_to_ntstatus(r.status);
 
  done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
 
-	return NT_STATUS_OK;
+	return result;
 }
