@@ -344,6 +344,12 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 			recv_sign_const = CLI_SIGN;
 			recv_seal_const = CLI_SEAL;
 			break;
+		default:
+			send_sign_const = "unknown role";
+			send_seal_const = "unknown role";
+			recv_sign_const = "unknown role";
+			recv_seal_const = "unknown role";
+			break;
 		}
 
 		calc_ntlmv2_hash(ntlmssp_state->send_sign_hash, 
