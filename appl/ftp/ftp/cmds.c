@@ -142,7 +142,7 @@ setpeer(int argc, char **argv)
 		if (autologin)
 			login(argv[1]);
 
-#if (defined(unix) || defined(__unix__) || defined(__unix) || defined(_AIX) || defined(_CRAY)) && NBBY == 8
+#if (defined(unix) || defined(__unix__) || defined(__unix) || defined(_AIX) || defined(_CRAY) || defined(__NetBSD__)) && NBBY == 8
 /*
  * this ifdef is to keep someone form "porting" this to an incompatible
  * system and not checking this out. This way they have to think about it.
