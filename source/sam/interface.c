@@ -318,7 +318,7 @@ NTSTATUS context_sam_lookup_domain(const SAM_CONTEXT *context, const NT_USER_TOK
 }
 
 
-NTSTATUS context_sam_get_domain_by_sid(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *domainsid, SAM_DOMAIN_HANDLE **domain)
+NTSTATUS context_sam_get_domain_by_sid(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *domainsid, SAM_DOMAIN_HANDLE **domain)
 {
 	SAM_METHODS	*tmp_methods;
 	NTSTATUS	nt_status;
@@ -344,7 +344,7 @@ NTSTATUS context_sam_get_domain_by_sid(const SAM_CONTEXT *context, const NT_USER
 	return NT_STATUS_OK;
 }
 
-NTSTATUS context_sam_create_account(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *domainsid, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account)
+NTSTATUS context_sam_create_account(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *domainsid, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account)
 {
 	SAM_METHODS	*tmp_methods;
 	NTSTATUS	nt_status;
@@ -511,7 +511,7 @@ NTSTATUS context_sam_enum_accounts(const SAM_CONTEXT *context, const NT_USER_TOK
 }
 
 
-NTSTATUS context_sam_get_account_by_sid(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *accountsid, SAM_ACCOUNT_HANDLE **account)
+NTSTATUS context_sam_get_account_by_sid(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *accountsid, SAM_ACCOUNT_HANDLE **account)
 {
 	SAM_METHODS	*tmp_methods;
 	uint32		rid;
@@ -546,7 +546,7 @@ NTSTATUS context_sam_get_account_by_sid(const SAM_CONTEXT *context, const NT_USE
 	return NT_STATUS_OK;
 }
 
-NTSTATUS context_sam_get_account_by_name(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const uint32 access_desired, const char *domain, const char *name, SAM_ACCOUNT_HANDLE **account)
+NTSTATUS context_sam_get_account_by_name(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *domain, const char *name, SAM_ACCOUNT_HANDLE **account)
 {
 	SAM_METHODS	*tmp_methods;
 	NTSTATUS	nt_status;
@@ -572,7 +572,7 @@ NTSTATUS context_sam_get_account_by_name(const SAM_CONTEXT *context, const NT_US
 	return NT_STATUS_OK;
 }
 
-NTSTATUS context_sam_create_group(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *domainsid, const char *group_name, uint16 group_ctrl, SAM_GROUP_HANDLE **group)
+NTSTATUS context_sam_create_group(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *domainsid, const char *group_name, uint16 group_ctrl, SAM_GROUP_HANDLE **group)
 {
 	SAM_METHODS	*tmp_methods;
 	NTSTATUS	nt_status;
@@ -738,7 +738,7 @@ NTSTATUS context_sam_enum_groups(const SAM_CONTEXT *context, const NT_USER_TOKEN
 	return NT_STATUS_OK;
 }
 
-NTSTATUS context_sam_get_group_by_sid(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *groupsid, SAM_GROUP_HANDLE **group)
+NTSTATUS context_sam_get_group_by_sid(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *groupsid, SAM_GROUP_HANDLE **group)
 {
 	SAM_METHODS	*tmp_methods;
 	uint32		rid;
@@ -773,7 +773,7 @@ NTSTATUS context_sam_get_group_by_sid(const SAM_CONTEXT *context, const NT_USER_
 	return NT_STATUS_OK;
 }
 
-NTSTATUS context_sam_get_group_by_name(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, const uint32 access_desired, const char *domain, const char *name, SAM_GROUP_HANDLE **group)
+NTSTATUS context_sam_get_group_by_name(const SAM_CONTEXT *context, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *domain, const char *name, SAM_GROUP_HANDLE **group)
 {
 	SAM_METHODS	*tmp_methods;
 	NTSTATUS	nt_status;
