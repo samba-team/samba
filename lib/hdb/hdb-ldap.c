@@ -116,6 +116,7 @@ static int
 pos(char c)
 {
     const char *p;
+    c = toupper((unsigned char)c);
     for (p = hexchar; *p; p++)
 	if (*p == c)
 	    return p - hexchar;
