@@ -29,6 +29,87 @@ BOOL global_machine_password_needs_changing = False;
 extern pstring global_myname;
 extern userdom_struct current_user_info;
 
+
+/*
+  resolve the name of a DC in ways appropriate for an ADS domain mode
+  an ADS domain may not have Netbios enabled at all, so this is 
+  quite different from the RPC case
+  Note that we ignore the 'server' parameter here. That has the effect of using
+  the 'ADS server' smb.conf parameter, which is what we really want anyway
+ */
+static NTSTATUS ads_resolve_dc(const char *server, 
+			       fstring remote_machine, 
+			       struct in_addr *dest_ip)
+{
+	ADS_STRUCT *ads;
+	ads = ads_init_simple();
+	if (!ads) {
+		return NT_STATUS_NO_LOGON_SERVERS;		
+	}
+
+#ifdef HAVE_ADS
+	/* a full ads_connect() is actually overkill, as we don't srictly need
+	   to do the SASL auth in order to get the info we need, but libads
+	   doesn't offer a better way right now */
+	if (!ADS_ERR_OK(ads_connect(ads))) {
+		return NT_STATUS_NO_LOGON_SERVERS;		
+	}
+#endif
+
+	fstrcpy(remote_machine, ads->ldap_server_name);
+	strupper(remote_machine);
+	*dest_ip = *interpret_addr2(ads->ldap_server);
+	ads_destroy(&ads);
+	
+	if (!*remote_machine) {
+		return NT_STATUS_NO_LOGON_SERVERS;		
+	}
+
+	DEBUG(4,("ads_resolve_dc: using server='%s' IP=%s\n",
+		 remote_machine, inet_ntoa(*dest_ip)));
+	
+	return NT_STATUS_OK;
+}
+
+/*
+  resolve the name of a DC in ways appropriate for RPC domain mode
+  this relies on the server supporting netbios and port 137 not being
+  firewalled
+ */
+static NTSTATUS rpc_resolve_dc(const char *server, 
+			       fstring remote_machine, 
+			       struct in_addr *dest_ip)
+{
+	if (is_ipaddress(server)) {
+		struct in_addr to_ip = *interpret_addr2(server);
+
+		/* we need to know the machines netbios name - this is a lousy
+		   way to find it, but until we have a RPC call that does this
+		   it will have to do */
+		if (!name_status_find("*", 0x20, 0x20, to_ip, remote_machine)) {
+			DEBUG(2, ("connect_to_domain_password_server: Can't "
+				  "resolve name for IP %s\n", server));
+			return NT_STATUS_NO_LOGON_SERVERS;
+		}
+
+		*dest_ip = to_ip;
+		return NT_STATUS_OK;
+	} 
+
+	fstrcpy(remote_machine, server);
+	strupper(remote_machine);
+	if (!resolve_name(remote_machine, dest_ip, 0x20)) {
+		DEBUG(1,("connect_to_domain_password_server: Can't resolve address for %s\n", 
+			 remote_machine));
+		return NT_STATUS_NO_LOGON_SERVERS;
+	}
+
+	DEBUG(4,("rpc_resolve_dc: using server='%s' IP=%s\n",
+		 remote_machine, inet_ntoa(*dest_ip)));
+
+	return NT_STATUS_OK;
+}
+
 /**
  * Connect to a remote server for domain security authenticaion.
  *
@@ -50,38 +131,16 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	fstring remote_machine;
         NTSTATUS result;
 
-	if (is_ipaddress(server)) {
-		struct in_addr to_ip;
-	  
-		/* we shouldn't have 255.255.255.255 forthe IP address of 
-		   a password server anyways */
-		if ((to_ip.s_addr=inet_addr(server)) == 0xFFFFFFFF) {
-			DEBUG (0,("connect_to_domain_password_server: inet_addr(%s) returned 0xFFFFFFFF!\n", server));
-			return NT_STATUS_NO_LOGON_SERVERS;
-		}
-
-		if (lp_security() == SEC_ADS) {
-			/* if in ADS mode then we know that port 445
-			   will work and *SMBSERVER will be recognised
-			   anyway. This avoids an expensive netbios
-			   lookup. */
-			fstrcpy(remote_machine, "*SMBSERVER");
-		} else if (!name_status_find("*", 0x20, 0x20, to_ip, remote_machine)) {
-			DEBUG(0, ("connect_to_domain_password_server: Can't "
-				  "resolve name for IP %s\n", server));
-			return NT_STATUS_NO_LOGON_SERVERS;
-		}
-
-		/* we know the IP - smb.conf specified it! */
-		dest_ip = to_ip;
+	if (lp_security() == SEC_ADS) {
+		result = ads_resolve_dc(server, remote_machine, &dest_ip);
 	} else {
-		fstrcpy(remote_machine, server);
-		strupper(remote_machine);
-		if (!resolve_name(remote_machine, &dest_ip, 0x20)) {
-			DEBUG(1,("connect_to_domain_password_server: Can't resolve address for %s\n", 
-				 remote_machine));
-			return NT_STATUS_NO_LOGON_SERVERS;
-		}
+		result = rpc_resolve_dc(server, remote_machine, &dest_ip);
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(2,("connect_to_domain_password_server: unable to resolve DC: %s\n", 
+			 nt_errstr(result)));
+		return result;
 	}
 
 	if (ismyip(dest_ip)) {
