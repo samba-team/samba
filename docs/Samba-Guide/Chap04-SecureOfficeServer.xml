@@ -160,7 +160,7 @@
 
 		<image id="ch04net">
 			<imagedescription>Abmas Network Topology &smbmdash; 130 Users</imagedescription>
-			<imagefile scale="90">chap4-net</imagefile>
+			<imagefile scale="60">chap4-net</imagefile>
 		</image>
 
 		<para>
@@ -896,7 +896,7 @@ echo -e "\nNAT firewall done.\n"
 <smbconfoption><name>delete group script</name><value>/usr/sbin/groupdel '%g'</value></smbconfoption>
 <smbconfoption><name>add user to group script</name><value>/usr/sbin/usermod -G '%g' '%u'</value></smbconfoption>
 <smbconfoption><name>add machine script</name><value>/usr/sbin/useradd</value></smbconfoption>
-<member><parameter>-s /bin/false -d /dev/null %u</parameter></member>
+<member><parameter>-s /bin/false -d /tmp '%u'</parameter></member>
 <smbconfoption><name>shutdown script</name><value>/var/lib/samba/scripts/shutdown.sh</value></smbconfoption>
 <smbconfoption><name>abort shutdown script</name><value>/sbin/shutdown -c</value></smbconfoption>
 <smbconfoption><name>logon script</name><value>scripts\logon.bat</value></smbconfoption>
