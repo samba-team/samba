@@ -316,6 +316,8 @@
 
 	typedef [nodiscriminant,public] union {
 		[case(1)] spoolss_JobInfo1 info1;
+		[case(2)]; /* TODO */
+		[case(3)]; /* TODO */
 		[default];
 	} spoolss_JobInfo;
 
@@ -582,11 +584,26 @@
 
 	/******************/
 	/* Function: 0x1a */
+	const string SPOOLSS_ARCHITECTURE_NT_X86		= "Windows NT x86";
+
+	typedef [v1_enum] enum {
+		SPOOLSS_PRINTER_DATA_TYPE_NULL = 0,
+		SPOOLSS_PRINTER_DATA_TYPE_STRING = 1,
+		SPOOLSS_PRINTER_DATA_TYPE_UINT32 = 4
+	} spoolss_PrinterDataType;
+
+	typedef [nodiscriminant,gensize] union {
+		[case(SPOOLSS_PRINTER_DATA_TYPE_NULL)];
+		[case(SPOOLSS_PRINTER_DATA_TYPE_STRING)] nstring string;
+		[case(SPOOLSS_PRINTER_DATA_TYPE_UINT32)] uint32 value;
+		[default,flag(NDR_REMAINING)] DATA_BLOB data;
+	} spoolss_PrinterData;
+
 	WERROR spoolss_GetPrinterData(
 		[in,ref] policy_handle *handle,
 		[in] unistr value_name,
-		[out] uint32 type,
-		[out] DATA_BLOB buffer,
+		[out] spoolss_PrinterDataType type,
+		[out,subcontext(4),switch_is(type)] spoolss_PrinterData data,
 		[in,out,ref] uint32 *buf_size
 	);
 
@@ -611,23 +628,37 @@
 		[in,out,ref]     policy_handle *handle
 	);
 
+	/******************/
+	/* Function: 0x1e */
+	typedef [v1_enum] enum {
+		SPOOLSS_FORM_USER	= 0,
+		SPOOLSS_FORM_BUILTIN	= 1,
+		SPOOLSS_FORM_PRINTER	= 2
+	} spoolss_FormFlags;
+
 	typedef struct {
-		uint32 flags;
-		[relative] unistr *formname;
 		uint32 width;
-		uint32 length;
+		uint32 height;
+	} spoolss_FormSize;
+
+	typedef struct {
 		uint32 left;
 		uint32 top;
 		uint32 right;
 		uint32 bottom;
+	} spoolss_FormArea;
+
+	typedef struct {
+		spoolss_FormFlags flags;
+		[relative] unistr *form_name;
+		spoolss_FormSize size;
+		spoolss_FormArea area;
 	} spoolss_AddFormInfo1;
 
 	typedef union {
 		[case(1)] spoolss_AddFormInfo1 *info1;
 	} spoolss_AddFormInfo;
 
-	/******************/
-	/* Function: 0x1e */
 	WERROR spoolss_AddForm(
 		[in,ref] policy_handle *handle,
 		[in] uint32 level,
@@ -638,25 +669,21 @@
 	/* Function: 0x1f */
 	WERROR spoolss_DeleteForm(
 		[in,ref] policy_handle *handle,
-		[in] unistr formname
+		[in] unistr form_name
 	);
 
 	/******************/
 	/* Function: 0x20 */
 	typedef struct {
-		uint32 flags;
-		[relative] nstring *formname;
-		uint32 width;
-		uint32 length;
-		uint32 left;
-		uint32 top;
-		uint32 right;
-		uint32 bottom;
+		spoolss_FormFlags flags;
+		[relative] nstring *form_name;
+		spoolss_FormSize size;
+		spoolss_FormArea area;
 	} spoolss_FormInfo1;
 
 	WERROR spoolss_GetForm(
 		[in,ref] policy_handle *handle,
-		[in] unistr formname,
+		[in] unistr form_name,
 		[in] uint32 level,
 		[in] DATA_BLOB *buffer,
 		[out,subcontext(4),switch_is(level)] spoolss_FormInfo *info,
@@ -664,25 +691,21 @@
 	);
 
 	typedef struct {
-		uint32 flags;
-		unistr *formname;
-		uint32 width;
-		uint32 length;
-		uint32 left;
-		uint32 top;
-		uint32 right;
-		uint32 bottom;
+		spoolss_FormFlags flags;
+		unistr *form_name;
+		spoolss_FormSize size;
+		spoolss_FormArea area;
 	} spoolss_SetFormInfo1;
 
 	typedef union {
-		[case(1)] spoolss_AddFormInfo1 *info1;
+		[case(1)] spoolss_SetFormInfo1 *info1;
 	} spoolss_SetFormInfo;
 
 	/******************/
 	/* Function: 0x21 */
 	WERROR spoolss_SetForm(
 		[in,ref] policy_handle *handle,
-		[in] unistr formname,
+		[in] unistr form_name,
 		[in] uint32 level,
 		[in,switch_is(level)] spoolss_SetFormInfo info
 	);
@@ -726,6 +749,7 @@
 	typedef [nodiscriminant,public] union {
 		[case(1)] spoolss_PortInfo1 info1;
 		[case(2)] spoolss_PortInfo2 info2;
+		[case(3)]; /* TODO */
 		[default];
 	} spoolss_PortInfo;
 
@@ -926,7 +950,29 @@
 
 	/******************/
 	/* Function: 0x41 */
+	typedef [flag(NDR_PAHEX)] struct {
+		uint16 u1;
+		uint16 u2;
+		uint32 u3;
+		uint32 u4;
+		uint32 count;
+		[size_is(count)] uint16 *array[];
+	} spoolss_RemoteFindFirstPrinterChangeNotifyEx_t2;
+
+	typedef struct {
+		uint32 u1;
+		uint32 u2;
+		uint32 count;
+		[size_is(count)] spoolss_RemoteFindFirstPrinterChangeNotifyEx_t2 *t2[];
+	} spoolss_RemoteFindFirstPrinterChangeNotifyEx_t1;
+
 	WERROR spoolss_RemoteFindFirstPrinterChangeNotifyEx(
+		[in,ref] policy_handle *handle,
+		[in] uint32 u1,
+		[in] uint32 u2,
+		[in] unistr *str,
+		[in] uint32 u3,
+		[in] spoolss_RemoteFindFirstPrinterChangeNotifyEx_t1 *t1
 	);
 
 	/******************/
