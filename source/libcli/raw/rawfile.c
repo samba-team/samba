@@ -366,10 +366,10 @@ static struct smbcli_request *smb_raw_t2open_send(struct smbcli_tree *tree,
 
 	SSVAL(t2.in.params.data, VWV(0), parms->t2open.in.flags);
 	SSVAL(t2.in.params.data, VWV(1), parms->t2open.in.open_mode);
-	SSVAL(t2.in.params.data, VWV(2), 0); /* reserved */
+	SSVAL(t2.in.params.data, VWV(2), parms->t2open.in.search_attrs);
 	SSVAL(t2.in.params.data, VWV(3), parms->t2open.in.file_attrs);
 	raw_push_dos_date(tree->session->transport, 
-			 t2.in.params.data, VWV(4), parms->t2open.in.write_time);
+			  t2.in.params.data, VWV(4), parms->t2open.in.write_time);
 	SSVAL(t2.in.params.data, VWV(6), parms->t2open.in.open_func);
 	SIVAL(t2.in.params.data, VWV(7), parms->t2open.in.size);
 	SIVAL(t2.in.params.data, VWV(9), parms->t2open.in.timeout);
@@ -377,8 +377,8 @@ static struct smbcli_request *smb_raw_t2open_send(struct smbcli_tree *tree,
 	SSVAL(t2.in.params.data, VWV(13), 0);
 
 	smbcli_blob_append_string(tree->session, mem_ctx, 
-			       &t2.in.params, parms->t2open.in.fname, 
-			       STR_TERMINATE);
+				  &t2.in.params, parms->t2open.in.fname, 
+				  STR_TERMINATE);
 
 	ea_put_list(t2.in.data.data, parms->t2open.in.num_eas, parms->t2open.in.eas);
 
@@ -414,7 +414,7 @@ static NTSTATUS smb_raw_t2open_recv(struct smbcli_request *req, TALLOC_CTX *mem_
 	parms->t2open.out.ftype =       SVAL(t2.out.params.data, VWV(7));
 	parms->t2open.out.devstate =    SVAL(t2.out.params.data, VWV(8));
 	parms->t2open.out.action =      SVAL(t2.out.params.data, VWV(9));
-	parms->t2open.out.unknown =     SVAL(t2.out.params.data, VWV(10));
+	parms->t2open.out.file_id =     SVAL(t2.out.params.data, VWV(10));
 
 	return NT_STATUS_OK;
 }
@@ -433,7 +433,7 @@ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_ope
 
 	case RAW_OPEN_OPEN:
 		SETUP_REQUEST(SMBopen, 2, 0);
-		SSVAL(req->out.vwv, VWV(0), parms->openold.in.flags);
+		SSVAL(req->out.vwv, VWV(0), parms->openold.in.open_mode);
 		SSVAL(req->out.vwv, VWV(1), parms->openold.in.search_attrs);
 		smbcli_req_append_ascii4(req, parms->openold.in.fname, STR_TERMINATE);
 		break;

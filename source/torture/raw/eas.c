@@ -34,55 +34,6 @@
 		goto done; \
 	}} while (0)
 
-/*
-  check that an EA has the right value 
-*/
-static BOOL check_ea(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
-		     const char *fname, const char *eaname, const char *value)
-{
-	union smb_fileinfo info;
-	NTSTATUS status;
-	BOOL ret = True;
-	int i;
-
-	info.all_eas.level = RAW_FILEINFO_ALL_EAS;
-	info.all_eas.in.fname = fname;
-
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &info);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	for (i=0;i<info.all_eas.out.num_eas;i++) {
-		if (StrCaseCmp(eaname, info.all_eas.out.eas[i].name.s) == 0) {
-			if (value == NULL) {
-				printf("attr '%s' should not be present\n", eaname);
-				return False;
-			}
-			if (strlen(value) == info.all_eas.out.eas[i].value.length &&
-			    memcmp(value, 
-				   info.all_eas.out.eas[i].value.data,
-				   info.all_eas.out.eas[i].value.length) == 0) {
-				return True;
-			} else {
-				printf("attr '%s' has wrong value '%*.*s'\n", 
-				       eaname, 
-				       info.all_eas.out.eas[i].value.length,
-				       info.all_eas.out.eas[i].value.length,
-				       info.all_eas.out.eas[i].value.data);
-				ret = False;
-				goto done;
-			}
-		}
-	}
-
-	if (value != NULL) {
-		printf("attr '%s' not found\n", eaname);
-		ret = False;
-	}
-
-done:
-	return ret;
-}
-
 static DATA_BLOB data_blob_string_const(const char *str)
 {
 	DATA_BLOB blob;
@@ -91,6 +42,12 @@ static DATA_BLOB data_blob_string_const(const char *str)
 	return blob;
 }
 
+static BOOL check_ea(struct smbcli_state *cli, 
+		     const char *fname, const char *eaname, const char *value)
+{
+	NTSTATUS status = torture_check_ea(cli, fname, eaname, value);
+	return NT_STATUS_IS_OK(status);
+}
 
 static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
@@ -121,7 +78,7 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.fnum;
 	
-	ret &= check_ea(cli, mem_ctx, fname, "EAONE", NULL);
+	ret &= check_ea(cli, fname, "EAONE", NULL);
 
 	printf("Adding first EA\n");
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;
@@ -133,7 +90,7 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	ret &= check_ea(cli, mem_ctx, fname, "EAONE", "VALUE1");
+	ret &= check_ea(cli, fname, "EAONE", "VALUE1");
 
 	setfile.ea_set.in.ea.name.s = "SECONDEA";
 	setfile.ea_set.in.ea.value = data_blob_string_const("ValueTwo");
@@ -142,16 +99,16 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	ret &= check_ea(cli, mem_ctx, fname, "EAONE", "VALUE1");
-	ret &= check_ea(cli, mem_ctx, fname, "SECONDEA", "ValueTwo");
+	ret &= check_ea(cli, fname, "EAONE", "VALUE1");
+	ret &= check_ea(cli, fname, "SECONDEA", "ValueTwo");
 
 	printf("Modifying 2nd EA\n");
 	setfile.ea_set.in.ea.value = data_blob_string_const(" Changed Value");
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	ret &= check_ea(cli, mem_ctx, fname, "EAONE", "VALUE1");
-	ret &= check_ea(cli, mem_ctx, fname, "SECONDEA", " Changed Value");
+	ret &= check_ea(cli, fname, "EAONE", "VALUE1");
+	ret &= check_ea(cli, fname, "SECONDEA", " Changed Value");
 
 	printf("Setting a NULL EA\n");
 	setfile.ea_set.in.ea.value = data_blob(NULL, 0);
@@ -159,9 +116,9 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	ret &= check_ea(cli, mem_ctx, fname, "EAONE", "VALUE1");
-	ret &= check_ea(cli, mem_ctx, fname, "SECONDEA", " Changed Value");
-	ret &= check_ea(cli, mem_ctx, fname, "NULLEA", NULL);
+	ret &= check_ea(cli, fname, "EAONE", "VALUE1");
+	ret &= check_ea(cli, fname, "SECONDEA", " Changed Value");
+	ret &= check_ea(cli, fname, "NULLEA", NULL);
 
 	printf("Deleting first EA\n");
 	setfile.ea_set.in.ea.flags = 0;
@@ -170,8 +127,8 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	ret &= check_ea(cli, mem_ctx, fname, "EAONE", NULL);
-	ret &= check_ea(cli, mem_ctx, fname, "SECONDEA", " Changed Value");
+	ret &= check_ea(cli, fname, "EAONE", NULL);
+	ret &= check_ea(cli, fname, "SECONDEA", " Changed Value");
 
 	printf("Deleting second EA\n");
 	setfile.ea_set.in.ea.flags = 0;
@@ -180,8 +137,8 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	ret &= check_ea(cli, mem_ctx, fname, "EAONE", NULL);
-	ret &= check_ea(cli, mem_ctx, fname, "SECONDEA", NULL);
+	ret &= check_ea(cli, fname, "EAONE", NULL);
+	ret &= check_ea(cli, fname, "SECONDEA", NULL);
 
 done:
 	smbcli_close(cli->tree, fnum);
@@ -241,10 +198,10 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.fnum;
 	
-	ret &= check_ea(cli, mem_ctx, fname, "EAONE", NULL);
-	ret &= check_ea(cli, mem_ctx, fname, "1st EA", "Value One");
-	ret &= check_ea(cli, mem_ctx, fname, "2nd EA", "Second Value");
-	ret &= check_ea(cli, mem_ctx, fname, "and 3rd", "final value");
+	ret &= check_ea(cli, fname, "EAONE", NULL);
+	ret &= check_ea(cli, fname, "1st EA", "Value One");
+	ret &= check_ea(cli, fname, "2nd EA", "Second Value");
+	ret &= check_ea(cli, fname, "and 3rd", "final value");
 
 	smbcli_close(cli->tree, fnum);
 
@@ -261,10 +218,10 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.fnum;
 	
-	ret &= check_ea(cli, mem_ctx, fname, "1st EA", "Value One");
-	ret &= check_ea(cli, mem_ctx, fname, "2nd EA", "Second Value");
-	ret &= check_ea(cli, mem_ctx, fname, "and 3rd", "final value");
-	ret &= check_ea(cli, mem_ctx, fname, "Fourth EA", NULL);
+	ret &= check_ea(cli, fname, "1st EA", "Value One");
+	ret &= check_ea(cli, fname, "2nd EA", "Second Value");
+	ret &= check_ea(cli, fname, "and 3rd", "final value");
+	ret &= check_ea(cli, fname, "Fourth EA", NULL);
 
 done:
 	smbcli_close(cli->tree, fnum);

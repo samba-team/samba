@@ -795,38 +795,6 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 }
 
 /*
-  special handling for t2open
-*/
-static NTSTATUS pvfs_open_t2open(struct ntvfs_module_context *ntvfs,
-				 struct smbsrv_request *req, union smb_open *io)
-{
-	struct pvfs_state *pvfs = ntvfs->private_data;
-	struct pvfs_filename *name;
-	NTSTATUS status;
-
-	status = pvfs_resolve_name(pvfs, req, io->t2open.in.fname, 0, &name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (io->t2open.in.open_func & OPENX_OPEN_FUNC_CREATE) {
-		if (!name->stream_exists) return NT_STATUS_ACCESS_DENIED;
-	}
-	if (io->t2open.in.open_func & OPENX_OPEN_FUNC_TRUNC) {
-		if (name->stream_exists) return NT_STATUS_ACCESS_DENIED;
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-	if ((io->t2open.in.open_func & 0xF) == OPENX_OPEN_FUNC_FAIL) {
-		if (!name->stream_exists) return NT_STATUS_ACCESS_DENIED;
-		return NT_STATUS_OBJECT_NAME_COLLISION;
-	}
-
-	talloc_free(name);
-
-	return ntvfs_map_open(req, io, ntvfs);
-}
-
-/*
   open a file
 */
 NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
@@ -843,10 +811,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	uint32_t share_access;
 	uint32_t access_mask;
 	BOOL stream_existed;
-
-	if (io->generic.level == RAW_OPEN_T2OPEN) {
-		return pvfs_open_t2open(ntvfs, req, io);
-	}
 
 	/* use the generic mapping code to avoid implementing all the
 	   different open calls. */
