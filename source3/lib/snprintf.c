@@ -1,11 +1,8 @@
-/* This is taken from cvslock. The same code is used in several
- * freeware and GPLd applications. I contacted the email addresses
- * listed in the header and have been told that the code is probably
- * public domain, but I am still seeking confirmation from Patrick
- * Powell. The original code was posted to BugTraq by Patrick in 1995
- * but without any notice as to the copyright or license status.
- *
- * October 1998, Andrew Tridgell (tridge@samba.anu.edu.au)
+/*
+ * Copyright Patrick Powell 1995
+ * This code is based on code written by Patrick Powell (papowell@astart.com)
+ * It may be used for any purpose as long as this notice remains intact
+ * on all source code distributions
  */
 
 /**************************************************************
