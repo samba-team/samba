@@ -4,6 +4,14 @@
 # You may specify a OS major version number (4, 5, or 6) to specify which
 # OS release to build. If no version number is given it will default to 6.
 
+if [ "$1" = "clean" ]; then
+  cd ../../source
+  make clean
+  cd ../packaging/SGI
+  shift
+  rm -rf bins catman html codepages swat Makefile samba.idb samba.spec
+fi
+
 # create the catman versions of the manual pages
 #
 echo Making manual pages
