@@ -1232,7 +1232,12 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 	 * and connect to the IPC$ share anonumously
 	 */
 	if (smb_connections==0) {
-		if(!spoolss_connect_to_client(&cli, printer+2)) /* the +2 is to strip the leading 2 backslashs */
+		fstring unix_printer;
+
+		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
+		dos_to_unix(unix_printer, True);
+
+		if(!spoolss_connect_to_client(&cli, unix_printer)) 
 			return False;
 		message_register(MSG_PRINTER_NOTIFY, srv_spoolss_receive_message);
 
