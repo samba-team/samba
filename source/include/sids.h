@@ -31,6 +31,7 @@ extern DOM_SID global_member_sid;
 
 extern DOM_SID global_sid_S_1_5_32; /* local well-known domain */
 extern DOM_SID global_sid_S_1_1;    /* Global Domain */
+extern DOM_SID global_sid_NULL;
 
 extern const DOM_SID *global_sid_everyone;
 extern const DOM_SID *global_sid_system;   /* SYSTEM */

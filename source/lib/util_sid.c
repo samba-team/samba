@@ -39,6 +39,7 @@ DOM_SID global_sid_World;    /* everyone */
 DOM_SID global_sid_Creator_Owner_Domain;    /* Creator Owner */
 DOM_SID global_sid_Creator_Owner;    /* Creator Owner */
 DOM_SID global_sid_NT_Authority;    /* NT Authority */
+DOM_SID global_sid_NULL;            /* NULL sid */
 
 const DOM_SID *global_sid_everyone = &global_sid_World;
 
@@ -93,6 +94,7 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_Creator_Owner_Domain, "S-1-3");
 	string_to_sid(&global_sid_Creator_Owner, "S-1-3-0");
 	string_to_sid(&global_sid_NT_Authority, "S-1-5");
+	string_to_sid(&global_sid_NULL, "S-1-0-0");
 }
 
 /**************************************************************************
