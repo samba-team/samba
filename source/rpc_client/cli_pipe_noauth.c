@@ -132,14 +132,16 @@ static BOOL create_rpc_noauth_bind_req(struct cli_connection *con,
 	RPC_HDR_RB           hdr_rb;
 	RPC_HDR              hdr;
 
+	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
+
 	DEBUG(10,("create_rpc_noauth_bind_req\n"));
 
 	prs_init(&rhdr     , 0x0, 4, False);
 	prs_init(&rhdr_rb  , 0x0, 4, False);
 
 	/* create the bind request RPC_HDR_RB */
-	make_rpc_hdr_rb(&hdr_rb, 0x1630, 0x1630, 0x0,
-	                0x1, 0x0, 0x1, abstract, transfer);
+	make_rpc_hdr_rb(&hdr_rb, 0x1630, 0x1630, nt->key.pid,
+	                0x1, nt->key.vuid, 0x1, abstract, transfer);
 
 	/* stream the bind request data */
 	smb_io_rpc_hdr_rb("", &hdr_rb,  &rhdr_rb, 0);

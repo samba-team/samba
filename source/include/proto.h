@@ -797,6 +797,7 @@ BOOL check_vuser_ok(struct uid_cache *cache, user_struct *vuser,int snum);
 
 /*The following definitions come from  lib/vuser_db.c  */
 
+BOOL tdb_delete_vuid( const vuser_key *uk);
 BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct *usr);
 BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr);
 BOOL vuid_init_db(void);
@@ -3092,6 +3093,7 @@ BOOL _prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
 BOOL _prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset);
 BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 				uint32 ptr_uint32, uint32 data_size);
+int prs_tdb_delete(TDB_CONTEXT *tdb, prs_struct *pk);
 int prs_tdb_store(TDB_CONTEXT *tdb, int flgs, prs_struct *pk, prs_struct *pd);
 void prs_tdb_fetch(TDB_CONTEXT *tdb, prs_struct *pk, prs_struct *pd);
 

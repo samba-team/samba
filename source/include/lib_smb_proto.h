@@ -606,6 +606,7 @@ BOOL _prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
 BOOL _prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset);
 BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 				uint32 ptr_uint32, uint32 data_size);
+int prs_tdb_delete(TDB_CONTEXT *tdb, prs_struct *pk);
 int prs_tdb_store(TDB_CONTEXT *tdb, int flgs, prs_struct *pk, prs_struct *pd);
 void prs_tdb_fetch(TDB_CONTEXT *tdb, prs_struct *pk, prs_struct *pd);
 

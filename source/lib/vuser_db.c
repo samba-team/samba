@@ -37,6 +37,34 @@ extern int DEBUGLEVEL;
 
 static TDB_CONTEXT *tdb = NULL;
 
+BOOL tdb_delete_vuid( const vuser_key *uk)
+{
+	prs_struct key;
+	vuser_key k = *uk;
+
+	if (tdb == NULL)
+	{
+		if (!vuid_init_db())
+		{
+			return False;
+		}
+	}
+
+	DEBUG(10,("delete user %x,%x\n", uk->pid, uk->vuid));
+
+	prs_init(&key, 0, 4, False);
+	if (!vuid_io_key("key", &k, &key, 0))
+	{
+		return False;
+	}
+
+	prs_tdb_delete(tdb, &key);
+
+	prs_free_data(&key);
+
+	return True;
+}
+
 BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct *usr)
 {
 	prs_struct key;

@@ -203,7 +203,7 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l,
 	BOOL ret;
 
 	prs_struct rhdr;
-	uint16 assoc_gid = 0x0;
+	uint32 assoc_gid = l->key.pid;
 
 	l->auth = NULL;
 
@@ -228,7 +228,6 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l,
 			                                &l->auth_info))
 			{
 				l->auth = l->auth_fns[i];
-				assoc_gid = 0x7a77;
 				found = True;
 			}
 		}

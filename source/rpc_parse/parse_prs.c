@@ -1043,6 +1043,19 @@ BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 /*******************************************************************
  prs_tdb_store.  stores prs_struct data by prs_struct key 
  ********************************************************************/
+int prs_tdb_delete(TDB_CONTEXT *tdb, prs_struct *pk)
+{
+	TDB_DATA key;
+
+	key.dptr = (char*)prs_data(pk, 0);
+	key.dsize = prs_buf_len(pk);
+
+	return tdb_delete(tdb, key);
+}
+
+/*******************************************************************
+ prs_tdb_store.  stores prs_struct data by prs_struct key 
+ ********************************************************************/
 int prs_tdb_store(TDB_CONTEXT *tdb, int flgs, prs_struct *pk, prs_struct *pd)
 {
 	TDB_DATA key;

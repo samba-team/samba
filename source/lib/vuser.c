@@ -67,21 +67,7 @@ invalidate a uid
 ****************************************************************************/
 void invalidate_vuid(vuser_key *key)
 {
-	user_struct *vuser = get_valid_user_struct(key);
-
-	if (vuser == NULL) return;
-
-	vuser->uid = (uid_t)-1;
-	vuser->gid = (gid_t)-1;
-
-	vuser->n_groups = 0;
-	safe_free(vuser->groups);
-	vuser->groups  = NULL;
-
-	tdb_store_vuid(key, vuser);
-
-	vuid_free_user_struct(vuser);
-	safe_free(vuser);
+	tdb_delete_vuid(key);
 }
 
 
