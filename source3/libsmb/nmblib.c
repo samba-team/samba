@@ -759,14 +759,15 @@ static int build_dgram(char *buf,struct packet_struct *p)
 
 /*******************************************************************
   build a nmb name
-  ******************************************************************/
-void make_nmb_name(struct nmb_name *n,char *name,int type,char *this_scope)
+ *******************************************************************/
+void make_nmb_name( struct nmb_name *n, char *name, int type, char *this_scope )
 {
-  memset((char *)n, '\0', sizeof(struct nmb_name));
-  StrnCpy(n->name,name,15);
-  strupper(n->name);
+  memset( (char *)n, '\0', sizeof(struct nmb_name) );
+  StrnCpy( n->name, name, 15 );
+  strupper( n->name );
   n->name_type = (unsigned int)type & 0xFF;
-  StrnCpy(n->scope,this_scope,63);
+  StrnCpy( n->scope, this_scope, 63 );
+  strupper( n->scope );
 }
 
 /*******************************************************************
