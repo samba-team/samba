@@ -531,13 +531,34 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 }
 
 /****************************************************************************
- Return True if the blocking lock queue has entries.
+ Return the number of seconds to the next blocking locks timeout, or default_timeout.
 *****************************************************************************/
 
-BOOL blocking_locks_pending(void)
+BOOL blocking_locks_timeout(unsigned default_timeout)
 {
-  blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst( &blocking_lock_queue );
-  return (blr == NULL ? False : True);
+	unsigned timeout = default_timeout;
+	time_t t;
+	blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst(&blocking_lock_queue);
+
+	/* note that we avoid the time() syscall if there are no blocking locks */
+	if (!blr) {
+		return timeout;
+	}
+
+	t = time(NULL);
+
+	while (blr) {
+		if (timeout > (blr->expire_time - t)) {
+			timeout = blr->expire_time - t;
+		}
+		blr = (blocking_lock_record *)ubi_slNext(blr);
+	}
+
+	if (timeout < 1) {
+		timeout = 1;
+	}
+
+	return timeout;
 }
 
 /****************************************************************************

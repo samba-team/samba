@@ -1052,13 +1052,8 @@ static int setup_select_timeout(void)
 	int select_timeout;
 	int t;
 
-	/*
-	 * Increase the select timeout back to SMBD_SELECT_TIMEOUT if we
-	 * have removed any blocking locks. JRA.
-	 */
-
-	select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
-		SMBD_SELECT_TIMEOUT*1000;
+	select_timeout = blocking_locks_timeout(SMBD_SELECT_TIMEOUT);
+	select_timeout *= 1000;
 
 	t = change_notify_timeout();
 	if (t != -1) select_timeout = MIN(select_timeout, t*1000);
