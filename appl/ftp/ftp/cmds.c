@@ -566,16 +566,17 @@ get(int argc, char **argv)
 {
     char *mode;
 
-    if (restart_point)
+    if (restart_point) {
 	if (curtype == TYPE_I)
 	    mode = "r+wb";
 	else
 	    mode = "r+w";
-    else
+    } else {
 	if (curtype == TYPE_I)
 	    mode = "wb";
 	else
 	    mode = "w";
+    }
 
     getit(argc, argv, 0, mode);
 }
