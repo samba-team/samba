@@ -1605,7 +1605,7 @@ void init_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 void init_sam_info(DOM_SAM_INFO *sam,
 				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
 				DOM_CRED *rtn_cred, uint16 logon_level,
-				NET_ID_INFO_CTR *ctr, uint16 validation_level);
+				NET_ID_INFO_CTR *ctr);
 void init_net_user_info3(NET_USER_INFO_3 *usr,
 
 	NTTIME *logon_time,
