@@ -1930,25 +1930,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 	  DATA_BLOB password = data_blob(pass1, strlen(pass1)+1);
 	  if (NT_STATUS_IS_OK(check_plaintext_password(user,password,&server_info))) {
 
-		  /*
-		   * If unix password sync was requested, attempt to change
-		   * the /etc/passwd database first. Return failure if this cannot
-		   * be done.
-		   *
-		   * This occurs before the oem change, becouse we don't want to
-                   * update it if chgpasswd failed.
-		   *
-		   * Conditional on lp_unix_password_sync() becouse we don't want
-                   * to touch the unix db unless we have admin permission.
-		   */
-		  
-		  if(lp_unix_password_sync() && IS_SAM_UNIX_USER(server_info->sam_account) 
-		     && !chgpasswd(pdb_get_username(server_info->sam_account),
-				   pass1,pass2,False)) {
-			  SSVAL(*rparam,0,NERR_badpass);
-		  }
-		  
-		  if (change_oem_password(server_info->sam_account,pass2))
+		  if (NT_STATUS_IS_OK(change_oem_password(server_info->sam_account, pass1, pass2)))
 		  {
 			  SSVAL(*rparam,0,NERR_Success);
 		  }
@@ -2031,7 +2013,7 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
 
   (void)map_username(user);
 
-  if (pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL))
+  if (NT_STATUS_IS_OK(pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL)))
   {
     SSVAL(*rparam,0,NERR_Success);
   }
