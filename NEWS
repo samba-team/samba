@@ -1,3 +1,18 @@
+Changes in release 0.1m:
+
+ * support for getting default from krb5.conf for kinit/kf/rsh/telnet.
+   From Miroslav Ruda <ruda@ics.muni.cz>
+ * v6-ify hprop and hpropd
+ * support numeric addresses in krb5_mk_req
+ * shadow support in login and su. From Miroslav Ruda <ruda@ics.muni.cz>
+ * make rsh/rshd IPv6-aware
+ * make the gssapi sample applications better at reporting errors
+ * lots of bug fixes
+ * handle systems with v6-aware libc and non-v6 kernels (like Linux
+   with glibc 2.1) better
+ * hide failure of ERPT in ftp
+ * lots of bug fixes
+
 Changes in release 0.1l:
 
  * make ftp and ftpd IPv6-aware
