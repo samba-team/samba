@@ -215,6 +215,8 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	while (fname[0] == '\\') fname++;
+
 	p->pipe_name = talloc_asprintf(p, "\\pipe\\%s", fname);
 	if (!p->pipe_name) {
 		talloc_free(p);
@@ -240,6 +242,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	  finalised for Samba4
 	*/
 
+	printf("FINDING: %s\n", p->pipe_name);
 	ep_description.type = ENDPOINT_SMB;
 	ep_description.info.smb_pipe = p->pipe_name;
 
@@ -302,10 +305,6 @@ static NTSTATUS ipc_open_openx(struct ntvfs_module_context *ntvfs,
 	struct pipe_state *p;
 	NTSTATUS status;
 	const char *fname = oi->openx.in.fname;
-
-	if (strncasecmp(fname, "PIPE\\", 5) != 0) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
 
 	status = ipc_open_generic(ntvfs, req, fname, &p);
 	if (!NT_STATUS_IS_OK(status)) {
