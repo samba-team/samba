@@ -23,6 +23,22 @@ DEB_BUILD_GNU_TYPE	:= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 export DEB_HOST_GNU_TYPE
 export DEB_BUILD_GNU_TYPE
 
+
+# Support the DEB_BUILD_OPTIONS variable
+CFLAGS = -gstabs -Wall
+INSTALL = install
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+  CFLAGS += -O0
+else
+  CFLAGS += -O2
+endif
+
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+  INSTALL += -s
+endif
+
+
 DESTDIR=`pwd`/debian/tmp
 SWATDIR=`pwd`/debian/swat
 SAMBABOOK=`pwd`/debian/swat
@@ -60,7 +76,7 @@ configure-stamp:
 		cp -f debian/config.cache source/config.cache; \
 	fi
 
-	[ -f source/Makefile ] || (cd source && ./configure \
+	[ -f source/Makefile ] || (cd source && CFLAGS="$(CFLAGS)" ./configure \
 		--host=$(DEB_HOST_GNU_TYPE) \
 		--build=$(DEB_BUILD_GNU_TYPE) \
 		--cache-file=./config.cache \

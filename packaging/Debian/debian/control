@@ -3,8 +3,8 @@ Section: net
 Priority: optional
 Maintainer: Eloy A. Paris <peloy@debian.org>
 Uploaders: Steve Langasek <vorlon@debian.org>
-Build-Depends: debhelper (>= 4.1.13), libpam0g-dev, libreadline4-dev, libcupsys2-dev, autoconf, libacl1-dev | acl-dev (>= 2.0.0), libkrb5-dev, libldap2-dev, po-debconf, python-dev (>= 2.2)
-Standards-Version: 3.1.1
+Build-Depends: debhelper (>= 4.1.13), libpam0g-dev, libreadline4-dev, libcupsys2-dev, autoconf, libacl1-dev (>= 2.2.11-1), libacl1 (>= 2.2.11-1), libkrb5-dev, libldap2-dev, po-debconf, python-dev (>= 2.2)
+Standards-Version: 3.5.10
 
 Package: samba
 Architecture: any

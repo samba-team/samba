@@ -44,7 +44,7 @@ devscripts, etc.):
     That's fine; the configure script won't detect CUPS support and the
     resulting binaries won't support CUPS.
 
-  * The list above is current as of samba-3.0.0beta1, but it can get
+  * The list above is current as of samba-3.0.0beta2, but it can get
     out of date. The best way to check what packages are required to
     build the samba packages on Debian is to look for the Build-Depends:
     field in the file debian/control.
