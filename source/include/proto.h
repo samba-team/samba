@@ -803,8 +803,6 @@ int share_mode_forall(SHAREMODE_FN(fn));
 
 /*The following definitions come from  msdfs/msdfs.c  */
 
-void create_nondfs_path(char* pathname, struct dfs_path* pdp);
-BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp);
 BOOL dfs_redirect(char* pathname, connection_struct* conn);
 BOOL dfs_findfirst_redirect(char* pathname, connection_struct* conn);
 int setup_dfs_referral(char* pathname, int max_referral_level, 
@@ -812,7 +810,7 @@ int setup_dfs_referral(char* pathname, int max_referral_level,
 int dfs_path_error(char* inbuf, char* outbuf);
 int setup_dfs_referral(char* pathname, int max_referral_level, 
 		       char** ppdata);
-void unistr_to_dos(char* dst,uint16* src)	       ;
+void unistr_to_dos(char* dst,char* src)	       ;
 
 /*The following definitions come from  msdfs/msdfs_tdb.c  */
 
@@ -825,9 +823,7 @@ void msdfs_end(void);
 
 /*The following definitions come from  msdfs/parse_dfs_map.c  */
 
-BOOL parse_referral(char* s, struct referral* ref);
 void load_dfsmaps(void);
-BOOL load_dfsmap(char* fname, int snum);
 void load_dfsmaps(void);
 
 /*The following definitions come from  nmbd/asyncdns.c  */

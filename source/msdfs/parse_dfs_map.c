@@ -111,9 +111,7 @@ static BOOL parse_referral(char* s, struct referral* ref)
   return True;
 }
 
-
-
-BOOL load_dfsmap(char* fname, int snum)
+static BOOL load_dfsmap(char* fname, int snum)
 {
   struct junction_map* junction = NULL;
   struct referral tmp_ref_array[MAX_ALTERNATE_PATHS];
@@ -137,9 +135,6 @@ BOOL load_dfsmap(char* fname, int snum)
     {
       pstring rawline;
       char* line;
-      int i;
-
-      struct referral* curr_referral_list = NULL;
 
       if(!fgets(rawline,PSTRING_LEN,fp))
 	continue;
@@ -175,7 +170,7 @@ BOOL load_dfsmap(char* fname, int snum)
 	  if((junction = (struct junction_map*) malloc(sizeof(struct junction_map))) == NULL)
 	    {
 	      DEBUG(0,("Couldn't malloc for Dfs junction_map node\n"));
-	      return;
+	      return False;
 	    }
 	  pstrcpy(junction->service_name,lp_servicename(snum));
 	  pstrcpy(junction->volume_name,line);
@@ -184,13 +179,10 @@ BOOL load_dfsmap(char* fname, int snum)
       else
 	{
 	  /* referral encountered. add to current junction */
-	  int j=0;
-	  char* tok;
-
 	  if(!junction)
 	    {
 	      DEBUG(4,("Invalid entry in Dfs map file.\nAlternate path defined outside of a junction in line:\n%s\n",line));
-	      return;
+	      return False;
 	    }
 
 	  /* parse the referral */

@@ -198,7 +198,7 @@ int setup_dfs_referral(char* pathname, int max_referral_level,
     char* map = lp_dfsmap(lp_servicenumber(dp.servicename));
     DEBUG(10,("lp_dfsmap in setup dfs referral: .%s.\n",map ));
     
-    if(map == NULL | *map == '\0')
+    if(map == NULL || (*map == '\0'))
       return -1;
   }
 
