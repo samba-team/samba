@@ -4,7 +4,8 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
- *  
+ *  Copyright (C) Jean François Micouleau           2002.
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -732,6 +733,84 @@ BOOL net_io_r_auth_2(char *desc, NET_R_AUTH_2 *r_a, prs_struct *ps, int depth)
 	if(!smb_io_chal("", &r_a->srv_chal, ps, depth)) /* server challenge */
 		return False;
 	if(!net_io_neg_flags("", &r_a->srv_flgs, ps, depth))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_a->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Inits a NET_Q_AUTH_3 struct.
+********************************************************************/
+
+void init_q_auth_3(NET_Q_AUTH_3 *q_a,
+		const char *logon_srv, const char *acct_name, uint16 sec_chan, const char *comp_name,
+		DOM_CHAL *clnt_chal, uint32 clnt_flgs)
+{
+	DEBUG(5,("init_q_auth_3: %d\n", __LINE__));
+
+	init_log_info(&q_a->clnt_id, logon_srv, acct_name, sec_chan, comp_name);
+	memcpy(q_a->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
+	q_a->clnt_flgs.neg_flags = clnt_flgs;
+
+	DEBUG(5,("init_q_auth_3: %d\n", __LINE__));
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL net_io_q_auth_3(char *desc, NET_Q_AUTH_3 *q_a, prs_struct *ps, int depth)
+{
+	int old_align;
+	if (q_a == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_q_auth_3");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+    
+	if(!smb_io_log_info ("", &q_a->clnt_id, ps, depth)) /* client identification info */
+		return False;
+	/* client challenge is _not_ aligned */
+	old_align = ps->align;
+	ps->align = 0;
+	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth)) {
+		/* client-calculated credentials */
+		ps->align = old_align;
+		return False;
+	}
+	ps->align = old_align;
+	if(!net_io_neg_flags("", &q_a->clnt_flgs, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL net_io_r_auth_3(char *desc, NET_R_AUTH_3 *r_a, prs_struct *ps, int depth)
+{
+	if (r_a == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_r_auth_3");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+    
+	if(!smb_io_chal("srv_chal", &r_a->srv_chal, ps, depth)) /* server challenge */
+		return False;
+	if(!net_io_neg_flags("srv_flgs", &r_a->srv_flgs, ps, depth))
+		return False;
+	if (!prs_uint32("unknown", ps, depth, &r_a->unknown))
 		return False;
 
 	if(!prs_ntstatus("status", ps, depth, &r_a->status))
