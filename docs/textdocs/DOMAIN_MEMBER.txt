@@ -1,6 +1,3 @@
-!==
-!== DOMAIN_MEMBER.txt for Samba release 2.0.0beta5 31 Dec 1998
-!==
 
 TITLE INFORMATION: Joining an NT Domain with Samba 2.0 
 AUTHOR INFORMATION: Jeremy Allison, Samba Team 
@@ -77,6 +74,10 @@ line in the [global] section to read:
 workgroup = DOM
 
 as this is the name of the domain we are joining. 
+
+You must also have the parameter "encrypt passwords"
+set to "yes" in order for your users to authenticate to the
+NT PDC.
 
 Finally, add (or modify) a:
 

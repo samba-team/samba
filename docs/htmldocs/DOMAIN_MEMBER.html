@@ -63,6 +63,9 @@ use domain security.
 <p><br>line in the <a href="smb.conf.5.html#global"><strong>[global]</strong></a> section to read: 
 <p><br><code>workgroup = DOM</code>
 <p><br>as this is the name of the domain we are joining. 
+<p><br>You must also have the parameter <a href="smb.conf.5.html#encryptpasswords"><strong>"encrypt passwords"</strong></a>
+set to <code>"yes"</code> in order for your users to authenticate to the
+NT PDC.
 <p><br>Finally, add (or modify) a:
 <p><br><a href="smb.conf.5.html#passwordserver"><strong>"password server ="</strong></a>
 <p><br>line in the <a href="smb.conf.5.html#global"><strong>[global]</strong></a> section to read: 

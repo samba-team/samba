@@ -72,6 +72,10 @@ tt(workgroup = DOM)
 
 as this is the name of the domain we are joining. 
 
+You must also have the parameter url(bf("encrypt passwords"))(smb.conf.5.html#encryptpasswords)
+set to tt("yes") in order for your users to authenticate to the
+NT PDC.
+
 Finally, add (or modify) a:
 
 url(bf("password server ="))(smb.conf.5.html#passwordserver)
