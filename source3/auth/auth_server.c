@@ -362,6 +362,7 @@ NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const char* para
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	(*auth_method)->name = "smbserver";
 	(*auth_method)->auth = check_smbserver_security;
 	(*auth_method)->get_chal = auth_get_challenge_server;
 	(*auth_method)->send_keepalive = send_server_keepalive;

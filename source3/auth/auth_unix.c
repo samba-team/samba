@@ -125,6 +125,8 @@ NTSTATUS auth_init_unix(struct auth_context *auth_context, const char* param, au
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	(*auth_method)->name = "unix";
 	(*auth_method)->auth = check_unix_security;
 	return NT_STATUS_OK;
 }
+

@@ -517,6 +517,7 @@ NTSTATUS auth_init_ntdomain(struct auth_context *auth_context, const char* param
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	(*auth_method)->name = "ntdomain";
 	(*auth_method)->auth = check_ntdomain_security;
 	return NT_STATUS_OK;
 }
@@ -604,6 +605,7 @@ NTSTATUS auth_init_trustdomain(struct auth_context *auth_context, const char* pa
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	(*auth_method)->name = "trustdomain";
 	(*auth_method)->auth = check_trustdomain_security;
 	return NT_STATUS_OK;
 }

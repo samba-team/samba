@@ -109,6 +109,7 @@ NTSTATUS auth_init_winbind(struct auth_context *auth_context, const char *param,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	(*auth_method)->name = "winbind";
 	(*auth_method)->auth = check_winbind_security;
 	return NT_STATUS_OK;
 }
