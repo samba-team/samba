@@ -21,7 +21,7 @@
 		unistr *domain;
 		uint32 ver_major;
 		uint32 ver_minor;
-	} wkssvc_Info100;
+	} wkssvc_NetWkstaInfo100;
 
 	typedef struct {
 		uint32 platform_id;
@@ -30,7 +30,7 @@
 		uint32 ver_major;
 		uint32 ver_minor;
 		unistr *lan_root;
-	} wkssvc_Info101;
+	} wkssvc_NetWkstaInfo101;
 
 	typedef struct {
 		uint32 platform_id;
@@ -40,7 +40,7 @@
 		uint32 ver_minor;
 		unistr *lan_root;
 		uint32 logged_on_users;
-	} wkssvc_Info102;
+	} wkssvc_NetWkstaInfo102;
 
 	typedef struct {
 		uint32 char_wait;
@@ -78,25 +78,30 @@
 		BOOL buf_read_only_files;
 		BOOL force_core_create_mode;
 		BOOL use_512_byte_max_transfer;
-	} wkssvc_Info502;
+	} wkssvc_NetWkstaInfo502;
 
 	typedef union {
-		[case(100)] wkssvc_Info100 *info100;
-		[case(101)] wkssvc_Info101 *info101;
-		[case(102)] wkssvc_Info102 *info102;
-		[case(502)] wkssvc_Info502 *info502;
-	} wkssvc_Info;
+		[case(100)] wkssvc_NetWkstaInfo100 *info100;
+		[case(101)] wkssvc_NetWkstaInfo101 *info101;
+		[case(102)] wkssvc_NetWkstaInfo102 *info102;
+		[case(502)] wkssvc_NetWkstaInfo502 *info502;
+	} wkssvc_NetWkstaInfo;
 
-	WERROR wkssvc_QueryInfo(
+	WERROR wkssvc_NetWkstaGetInfo(
 		[in]   unistr *server_name,
 		[in]   uint32 level,
-		[out,switch_is(level)]  wkssvc_Info info
+		[out,switch_is(level)]  wkssvc_NetWkstaInfo info
 		);
 
 
 	/******************/
 	/* Function: 0x01 */
-	WERROR wkssvc_SetInfo();
+	WERROR wkssvc_NetWkstaSetInfo(
+		[in]   unistr *server_name,
+		[in]   uint32 level,
+		[in,switch_is(level)]  wkssvc_NetWkstaInfo info,
+		[in,out]   uint32 *parm_error
+		);
 
 	/*****************************/
 	/* Function        0x02      */
@@ -120,22 +125,22 @@
 		unistr *name;
 		unistr *address;
 		uint32 wan_link;
-	} wkssvc_TransportInfo0;
+	} wkssvc_NetWkstaTransportInfo0;
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] wkssvc_TransportInfo0 *transports;
-	} wkssvc_TransportInfoArray;
+		[size_is(count)] wkssvc_NetWkstaTransportInfo0 *array;
+	} wkssvc_NetWkstaTransportCtr0;
 
 	typedef union {
-		[case(0)] wkssvc_TransportInfoArray *array;
+		[case(0)] wkssvc_NetWkstaTransportCtr0 *ctr0;
 		[default] ;
-	} wkssvc_TransportInfo;
+	} wkssvc_NetWkstaTransportCtr;
 
-	WERROR wkssvc_TransportEnum (
+	WERROR wkssvc_NetWkstaTransportEnum (
 		[in]         unistr *server_name,
 		[in,out]     uint32 level,
-		[in,out,switch_is(level)] wkssvc_TransportInfo info,
+		[in,out,switch_is(level)] wkssvc_NetWkstaTransportCtr ctr,
 		[in]         uint32 max_buffer,
 		[out]        uint32 totalentries,
 		[in,out]     uint32 *resume_handle
