@@ -14,11 +14,13 @@
 .ad l
 .in 0
 .ta \n(.luR
+.nf
 Network Working Group	Assar Westerlund
 <draft-ietf-cat-krb5-tcp.txt>	SICS
 Internet-Draft	Johan Danielsson
-October, 1997	PDC, KTH
-Expire in six months	
+November, 1997	PDC, KTH
+Expire in six months
+.fi
 
 .ce
 Kerberos over TCP
@@ -58,25 +60,24 @@ protocol.
 .ti 0
 Specification
 
-A Kerberos server MAY accepts requests on port 88 (decimal).
+This draft specifies an extension to section 8.2.1 of RFC1510. 
+
+A Kerberos server MAY accept requests on TCP port 88 (decimal).
 
 The data sent from the client to the KDC should consist of 4 bytes
-containting the length Kerberos request in network byte order and then
-the request (AS-REQ or TGS-REQ) itself.  The reply from the KDC should
-consist of the length of the reply packet in network byte order
-followed by the packet itself (AS-REP, TGS-REP, or KRB-ERROR).
+containing the length, in network byte order, of the Kerberos request,
+followed by the request (AS-REQ or TGS-REQ) itself.  The reply from
+the KDC should consist of the length of the reply packet (4 bytes,
+network byte order) followed by the packet itself (AS-REP, TGS-REP, or
+KRB-ERROR).
 
-C->S: Open connection to port 88 at the server
-.br
-C->S: length of request [as 4 bytes in network byte order ]
-.br
+.nf
+C->S: Open connection to TCP port 88 at the server
+C->S: length of request
 C->S: AS-REQ or TGS-REQ
-.br
-S->C: length of reply [as 4 bytes in network byte order ]
-.br
+S->C: length of reply
 S->C: AS-REP, TGS-REP, or KRB-ERROR
-.br
-    : connection is closed
+.fi
 
 .ti 0
 Discussion
@@ -90,12 +91,11 @@ than UDP.
 In theory, there's no reason for having explicit length fields, that
 information is already encoded in the ASN1 encoding of the Kerberos
 packets.  But having explicit lengths makes it unnecessary to have to
-decode the ASN1 encoding just to know how much data has to be read.
+decode the ASN.1 encoding just to know how much data has to be read.
 
 Another way of signaling the end of the request of the reply would be
-to do a half-close after the request and a full-close after the
-reply.  This does not work well with all kind of firewalls so the
-simpler and more robust solution of explicit length fields.
+to do a half-close after the request and a full-close after the reply.
+This does not work well with all kinds of firewalls.
 
 .ti 0
 Security considerations
