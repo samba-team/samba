@@ -175,7 +175,7 @@ int smbw_dir_open(const char *fname)
 
 	cur_dir = NULL;
 	
-	fd = open("/dev/null", O_WRONLY);
+	fd = open(SMBW_DUMMY, O_WRONLY);
 	if (fd == -1) {
 		errno = EMFILE;
 		goto failed;

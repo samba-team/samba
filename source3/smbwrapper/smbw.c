@@ -523,7 +523,7 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 		goto failed;
 	}
 	file->srv = srv;
-	file->fd = open("/dev/null", O_WRONLY);
+	file->fd = open(SMBW_DUMMY, O_WRONLY);
 	if (file->fd == -1) {
 		errno = EMFILE;
 		goto failed;
@@ -567,7 +567,8 @@ ssize_t smbw_read(int fd, void *buf, size_t count)
 	struct smbw_file *file;
 	int ret;
 
-	DEBUG(4,("%s %d\n", __FUNCTION__, (int)count));
+	DEBUG(4,("%s %d\n", 
+		 __FUNCTION__, (int)count));
 
 	smbw_busy++;
 
