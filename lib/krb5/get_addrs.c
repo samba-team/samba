@@ -91,7 +91,7 @@ find_all_addresses (krb5_context context, krb5_addresses *res, int flags)
 {
     struct sockaddr sa_zero;
     struct ifaddrs *ifa0, *ifa;
-    krb5_error_code ret; 
+    krb5_error_code ret = ENXIO; 
     int num, idx;
 
     res->val = NULL;
