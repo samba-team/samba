@@ -198,12 +198,12 @@ void add_my_names(void)
 
     if (lp_domain_logons()) {
 	/* XXXX the 0x1c is apparently something to do with domain logons */
-	  add_my_name_entry(d, my_workgroup(),0x1c,nb_type|NB_ACTIVE|NB_GROUP);
+	  add_my_name_entry(d, lp_workgroup(),0x1c,nb_type|NB_ACTIVE|NB_GROUP);
     }
   }
   if (lp_domain_master() && (d = find_subnet(ipgrp)))
   {
-    struct work_record *work = find_workgroupstruct(d, my_workgroup(), True);
+    struct work_record *work = find_workgroupstruct(d, lp_workgroup(), True);
     if (work && work->state == MST_NONE)
     {
       work->state = MST_DOMAIN_NONE;
