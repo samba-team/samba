@@ -2919,7 +2919,14 @@ AC_SUBST(FLAGS1)
 
 AC_ARG_WITH(python,
 [  --with-python=PYTHONNAME  build Python libraries],
-[ PYTHON=${withval-python} ])
+[ case "${withval-python}" in
+  yes)
+	PYTHON=python
+	;;
+  *)
+	PYTHON=${withval-python}
+	;;
+  esac ])
 AC_SUBST(PYTHON)
 
 #################################################
