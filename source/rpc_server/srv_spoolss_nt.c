@@ -3384,6 +3384,37 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 
 	nt_printing_getsec(Printer->dev.handlename, &old_secdesc_ctr);
 
+	if (DEBUGLEVEL >= 10) {
+		SEC_ACL *acl;
+		int i;
+
+		acl = old_secdesc_ctr->sec->dacl;
+		DEBUG(10, ("old_secdesc_ctr for %s has %d aces:\n", 
+			   PRINTERNAME(snum), acl->num_aces));
+
+		for (i = 0; i < acl->num_aces; i++) {
+			fstring sid_str;
+
+			sid_to_string(sid_str, &acl->ace[i].sid);
+
+			DEBUG(10, ("%s 0x%08x\n", sid_str, 
+				  acl->ace[i].info.mask));
+		}
+
+		acl = secdesc_ctr->sec->dacl;
+		DEBUG(10, ("secdesc_ctr for %s has %d aces:\n", 
+			   PRINTERNAME(snum), acl->num_aces));
+
+		for (i = 0; i < acl->num_aces; i++) {
+			fstring sid_str;
+
+			sid_to_string(sid_str, &acl->ace[i].sid);
+
+			DEBUG(10, ("%s 0x%08x\n", sid_str, 
+				   acl->ace[i].info.mask));
+		}
+	}
+
 	new_secdesc_ctr = sec_desc_merge(secdesc_ctr, old_secdesc_ctr);
 
 	if (sec_desc_equal(new_secdesc_ctr->sec, old_secdesc_ctr->sec)) {
