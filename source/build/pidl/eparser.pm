@@ -236,7 +236,7 @@ sub ParseArrayPull($$)
 		$alloc_size = $e->{CONFORMANT_SIZE};
 
 		pidl "\tif ($size > $alloc_size) {\n";
-		pidl "\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad conformant size (%u should be %u)\", $alloc_size, $size);\n";
+		pidl "\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad conformant size (%u should be %u)\", $alloc_size, $size);\n";
 		pidl "\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
 		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad conformant size\", $alloc_size, $size);\n";
 		pidl "\t\treturn;\n";
@@ -250,13 +250,13 @@ sub ParseArrayPull($$)
 		# non fixed arrays encode the size just before the array
 		pidl "\t{\n";
 		pidl "\t\tguint32 _array_size;\n\n";
-		pidl "\t\tndr_pull_uint32(ndr, subtree, hf_array_size, &_array_size);\n";
+		pidl "\t\tndr_pull_uint32(ndr, tree, hf_array_size, &_array_size);\n";
 		if ($size =~ /r->in/) {
 			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _array_size != $size) {\n";
 		} else {
 			pidl "\t\tif ($size != _array_size) {\n";
 		}
-		pidl "\t\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad array size (%u should be %u)\", _array_size, $size);\n";
+		pidl "\t\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad array size (%u should be %u)\", _array_size, $size);\n";
 		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
 		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad array size\", _array_size, $size);\n";
 		pidl "\t\t\treturn;\n";
@@ -287,16 +287,16 @@ sub ParseArrayPull($$)
 	if (my $length = util::has_property($e, "length_is")) {
 		$length = find_size_var($e, $length);
 		pidl "\t\tguint32 _offset, _length;\n";
-		pidl "\t\tndr_pull_uint32(ndr, subtree, hf_array_offset, &_offset);\n";
-		pidl "\t\tndr_pull_uint32(ndr, subtree, hf_array_length, &_length);\n";
+		pidl "\t\tndr_pull_uint32(ndr, tree, hf_array_offset, &_offset);\n";
+		pidl "\t\tndr_pull_uint32(ndr, tree, hf_array_length, &_length);\n";
 		pidl "\t\tif (_offset != 0) {\n";
-		pidl "\t\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad array offset %d\", _offset);\n";
+		pidl "\t\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad array offset %d\", _offset);\n";
 		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
 		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \"Bad array offset %d\", _offset);\n";
 		pidl "\t\t\treturn;\n";
 		pidl "\t\t}\n";
 		pidl "\t\tif (_length > $size || _length != $length) {\n";
-		pidl "\t\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad array length %d > size %d\", _offset, $size);\n";
+		pidl "\t\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad array length %d > size %d\", _offset, $size);\n";
 		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
 		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad array length %d > size %d\", _offset, $size);\n";
 		pidl "\t\t\treturn;\n";
@@ -305,9 +305,9 @@ sub ParseArrayPull($$)
 	}
 
 	if (util::is_scalar_type($e->{TYPE})) {
-		pidl "\t\tndr_pull_array_$e->{TYPE}(ndr, subtree, hf_$e->{NAME}_$e->{TYPE}, $ndr_flags, $size);\n";
+		pidl "\t\tndr_pull_array_$e->{TYPE}(ndr, tree, hf_$e->{NAME}_$e->{TYPE}, $ndr_flags, $size);\n";
 	} else {
-		pidl "\t\tndr_pull_array(ndr, subtree, $ndr_flags, $size, ndr_pull_$e->{TYPE});\n";
+		pidl "\t\tndr_pull_array(ndr, tree, $ndr_flags, $size, ndr_pull_$e->{TYPE});\n";
 	}
 
 	pidl "\t}\n";
@@ -331,15 +331,15 @@ sub ParseElementPullSwitch($$$)
 		my $e2 = find_sibling($e, $switch);
 		pidl "\tguint16 _level;\n";
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
-		pidl "\t\tndr_pull_level(ndr, subtree, hf_level, &_level);\n";
+		pidl "\t\tndr_pull_level(ndr, tree, hf_level, &_level);\n";
 		pidl "\t}\n";
 	}
 
 	my $sub_size = util::has_property($e, "subcontext");
 	if (defined $sub_size) {
-		pidl "\tndr_pull_subcontext_union_fn(ndr, subtree, $sub_size, $switch_var, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE});\n";
+		pidl "\tndr_pull_subcontext_union_fn(ndr, tree, $sub_size, $switch_var, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE});\n";
 	} else {
-		pidl "\tndr_pull_$e->{TYPE}(ndr, subtree, $ndr_flags, _level);\n";
+		pidl "\tndr_pull_$e->{TYPE}(ndr, tree, $ndr_flags, _level);\n";
 	}
 
 
@@ -357,11 +357,11 @@ sub ParseElementPullScalar($$)
 	start_flags($e);
 
 	if (util::has_property($e, "relative")) {
-		pidl "\tndr_pull_relative(ndr, subtree, ndr_pull_$e->{TYPE});\n";
+		pidl "\tndr_pull_relative(ndr, subtree_$e->{NAME}, ndr_pull_$e->{TYPE});\n";
 	} elsif (util::is_inline_array($e)) {
 		ParseArrayPull($e, "NDR_SCALARS");
 	} elsif (util::need_wire_pointer($e)) {
-		pidl "\tndr_pull_ptr(ndr, subtree, hf_ptr, &ptr_$e->{NAME});\n";
+		pidl "\tndr_pull_ptr(ndr, tree, hf_ptr, &ptr_$e->{NAME});\n";
 #		pidl "\tif (ptr_$e->{NAME}) {\n";
 #		pidl "\t\tNDR_ALLOC(ndr, $var_prefix$e->{NAME});\n";
 #		pidl "\t} else {\n";
@@ -373,14 +373,14 @@ sub ParseElementPullScalar($$)
 		ParseElementPullSwitch($e, $ndr_flags, $switch);
 	} elsif (defined $sub_size) {
 		if (util::is_builtin_type($e->{TYPE})) {
-			pidl "\tndr_pull_subcontext_fn(ndr, subtree, $sub_size, (ndr_pull_fn_t) ndr_pull_$e->{TYPE});\n";
+			pidl "\tndr_pull_subcontext_fn(ndr, tree, $sub_size, (ndr_pull_fn_t) ndr_pull_$e->{TYPE});\n";
 		} else {
-			pidl "\tndr_pull_subcontext_flags_fn(ndr, subtree, $sub_size, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE});\n";
+			pidl "\tndr_pull_subcontext_flags_fn(ndr, tree, $sub_size, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE});\n";
 		}
 	    } elsif (util::is_builtin_type($e->{TYPE})) {
-		pidl "\tndr_pull_$e->{TYPE}(ndr, subtree, hf_$e->{NAME}_$e->{TYPE}, &elt_$e->{NAME});\n";
+		pidl "\tndr_pull_$e->{TYPE}(ndr, tree, hf_$e->{NAME}_$e->{TYPE}, &elt_$e->{NAME});\n";
 	} else {
-		pidl "\tndr_pull_$e->{TYPE}(ndr, subtree, $ndr_flags);\n";
+		pidl "\tndr_pull_$e->{TYPE}(ndr, tree, $ndr_flags);\n";
 	}
 
 	end_flags($e);
@@ -422,17 +422,17 @@ sub ParseElementPullBuffer($$)
 	} elsif (defined $sub_size) {
 		if ($e->{POINTERS}) {
 			if (util::is_builtin_type($e->{TYPE})) {
-				pidl "\tndr_pull_subcontext_fn(ndr, subtree, $sub_size, _pull_$e->{TYPE});\n";
+				pidl "\tndr_pull_subcontext_fn(ndr, tree, $sub_size, _pull_$e->{TYPE});\n";
 			} else {
-				pidl "\tndr_pull_subcontext_flags_fn(ndr, subtree, $sub_size, ndr_pull_$e->{TYPE});\n";
+				pidl "\tndr_pull_subcontext_flags_fn(ndr, tree, $sub_size, ndr_pull_$e->{TYPE});\n";
 			}
 		}
 	} elsif (util::is_builtin_type($e->{TYPE})) {
-		pidl "\t\tndr_pull_$e->{TYPE}(ndr, subtree, hf_$e->{NAME}_$e->{TYPE}, &elt_$e->{NAME});\n";
+		pidl "\t\tndr_pull_$e->{TYPE}(ndr, tree, hf_$e->{NAME}_$e->{TYPE}, &elt_$e->{NAME});\n";
 	} elsif ($e->{POINTERS}) {
-		pidl "\t\tndr_pull_$e->{TYPE}(ndr, subtree, NDR_SCALARS|NDR_BUFFERS);\n";
+		pidl "\t\tndr_pull_$e->{TYPE}(ndr, tree, NDR_SCALARS|NDR_BUFFERS);\n";
 	} else {
-		pidl "\t\tndr_pull_$e->{TYPE}(ndr, subtree, $ndr_flags);\n";
+		pidl "\t\tndr_pull_$e->{TYPE}(ndr, tree, $ndr_flags);\n";
 	}
 
 	if (util::need_wire_pointer($e)) {
@@ -476,21 +476,34 @@ sub ParseStructPull($)
 		    !util::has_property($e, "relative")) {
 			pidl "\tguint32 ptr_$e->{NAME};\n";
 		}
+		if (!util::is_scalar_type($e->{TYPE})) {
+		    pidl "\tproto_tree *subtree_$e->{NAME};\n";
+		}
 	}
 
 	pidl "\n";
 
 	start_flags($struct);
 
-	pidl "\titem = proto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"$struct->{PARENT}{NAME}\");\n";
-	pidl "\tsubtree = proto_item_add_subtree(item, ett_$struct->{PARENT}{NAME});\n";
+	pidl "\tif ((ndr_flags & (NDR_SCALARS|NDR_BUFFERS)) == (NDR_SCALARS|NDR_BUFFERS)) {\n";
+	pidl "\t\tproto_item *item = proto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"$struct->{PARENT}{NAME}\");\n";
+	pidl "\t\ttree = proto_item_add_subtree(item, ett_$struct->{PARENT}{NAME});\n";
+
+	foreach my $e (@{$struct->{ELEMENTS}}) {
+	    if (!util::is_scalar_type($e->{TYPE})) {
+		pidl "\t\titem = proto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"$e->{NAME}\");\n";
+		pidl "\t\tsubtree_$e->{NAME} = proto_item_add_subtree(item, ett_dcerpc_$module);\n";
+	    }
+	}
+
+	pidl "\t}";
 
 	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
 	pidl "\tndr_pull_struct_start(ndr);\n";
 
 	if (defined $conform_e) {
-		pidl "\tndr_pull_uint32(ndr, subtree, hf_conformant_size, &$conform_e->{CONFORMANT_SIZE});\n";
+		pidl "\tndr_pull_uint32(ndr, tree, hf_conformant_size, &$conform_e->{CONFORMANT_SIZE});\n";
 	}
 
 	my $align = struct_alignment($struct);
@@ -523,7 +536,7 @@ sub ParseUnionPull($)
 	start_flags($e);
 
 	pidl "\titem = proto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"$e->{PARENT}{NAME}\");\n";
-	pidl "\tsubtree = proto_item_add_subtree(item, ett_$e->{PARENT}{NAME});\n";	
+	pidl "\ttree = proto_item_add_subtree(item, ett_$e->{PARENT}{NAME});\n";	
 
 	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
@@ -539,6 +552,7 @@ sub ParseUnionPull($)
 			$have_default = 1;
 		} else {
 			pidl "\tcase $el->{CASE}: {\n";
+			pidl "\tproto_tree *tree_$el->{DATA}{NAME} = tree;\n";
 		}
 		if ($el->{TYPE} eq "UNION_ELEMENT") {
 			my $e2 = $el->{DATA};
@@ -551,7 +565,7 @@ sub ParseUnionPull($)
 	}
 	if (! $have_default) {
 		pidl "\tdefault:\n";
-		pidl "\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad switch value %u\", level);\n";
+		pidl "\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad switch value %u\", level);\n";
 		pidl "\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
 		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", 6Bad switch value %u\", level);\n";
 		pidl "\t\treturn;\n";
@@ -573,7 +587,7 @@ sub ParseUnionPull($)
 	}
 	if (! $have_default) {
 		pidl "\tdefault:\n";
-		pidl "\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad switch value %u\", level);\n";
+		pidl "\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad switch value %u\", level);\n";
 		pidl "\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
 		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", 7Bad switch value %u\", level);\n";
 		pidl "\t\treturn;\n";
@@ -643,8 +657,6 @@ sub ParseTypedefPull($)
   	        pidl "static gint ett_$e->{NAME} = -1;\n\n";
 		pidl $static . "void ndr_pull_$e->{NAME}(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags)";
 		pidl "\n{\n";
-		pidl "\tproto_item *item = NULL;\n";
-		pidl "\tproto_tree *subtree = NULL;\n";
 		ParseTypePull($e->{DATA});
 		pidl "}\n\n";
 	}
@@ -654,7 +666,6 @@ sub ParseTypedefPull($)
 		pidl $static . "void ndr_pull_$e->{NAME}(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags, int level)";
 		pidl "\n{\n";
 		pidl "\tproto_item *item = NULL;\n";
-		pidl "\tproto_tree *subtree = NULL;\n";
 		ParseTypePull($e->{DATA});
 		pidl "}\n\n";
 	}
@@ -715,9 +726,9 @@ sub ParseFunctionPull($)
 
 	# Request
 
-	pidl $static . "int $fn->{NAME}_rqst(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)\n";
+	pidl $static . "int $fn->{NAME}_rqst(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *toplevel_tree, guint8 *drep)\n";
 	pidl "{\n";
-	pidl "\tproto_tree *subtree = tree;\n";
+	pidl "\tproto_tree *tree = toplevel_tree;\n";
 	pidl "\tstruct e_ndr_pull *ndr = ndr_pull_init(tvb, offset, pinfo, drep);\n";
 
 	# declare any internal pointers we need
@@ -750,9 +761,9 @@ sub ParseFunctionPull($)
 
 	# Response
 
-	pidl $static . "int $fn->{NAME}_resp(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)\n";
+	pidl $static . "int $fn->{NAME}_resp(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *toplevel_tree, guint8 *drep)\n";
 	pidl "{\n";
-	pidl "\tproto_tree *subtree = tree;\n";
+	pidl "\tproto_tree *tree = toplevel_tree;\n";
 	pidl "\tstruct e_ndr_pull *ndr = ndr_pull_init(tvb, offset, pinfo, drep);\n";
 
 	# declare any internal pointers we need
@@ -778,7 +789,7 @@ sub ParseFunctionPull($)
 	}
 
 	if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
-		pidl "\tndr_pull_$fn->{RETURN_TYPE}(ndr, subtree, hf_rc);\n";
+		pidl "\tndr_pull_$fn->{RETURN_TYPE}(ndr, tree, hf_rc);\n";
 	}
 
 	pidl "\toffset = ndr->offset;\n";
