@@ -797,6 +797,7 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 	{
 		DEBUG(109,("deleting first value\n"));
 		info_2->specific=current->next;
+		safe_free(current->data);
 		free(current);
 		DEBUG(109,("deleted first value\n"));
 		return (True);
