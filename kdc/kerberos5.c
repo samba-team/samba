@@ -716,9 +716,10 @@ as_rep(KDC_REQ *req,
 	    if (ret == 0) {
 		kdc_log(5, "Using %s/%s", cet, set);
 		free(set);
-	    } else
-		free(cet);
-	} else
+	    }
+	    free(cet);
+	}
+	if (ret != 0)
 	    kdc_log(5, "Using e-types %d/%d", cetype, setype);
     }
     
