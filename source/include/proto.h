@@ -3315,7 +3315,8 @@ SMB_BIG_UINT sys_disk_free(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SM
 /*The following definitions come from  smbd/dfs.c  */
 
 BOOL init_dfs_table(void);
-int under_dfs(connection_struct *conn, const char *path);
+int under_dfs(connection_struct *conn, const char *path,
+				char *local_path, size_t path_len);
 
 /*The following definitions come from  smbd/dir.c  */
 
@@ -3370,8 +3371,12 @@ void sys_sync_file(int fd);
 /*The following definitions come from  smbd/filename.c  */
 
 void print_stat_cache_statistics(void);
-BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, 
-                  BOOL *bad_path, SMB_STRUCT_STAT *pst);
+BOOL unix_dfs_convert(char *name,connection_struct *conn,
+				char *saved_last_component, 
+				BOOL *bad_path, SMB_STRUCT_STAT *pst);
+BOOL unix_convert(char *name,connection_struct *conn,
+				char *saved_last_component, 
+				BOOL *bad_path, SMB_STRUCT_STAT *pst);
 BOOL check_name(char *name,connection_struct *conn);
 
 /*The following definitions come from  smbd/files.c  */

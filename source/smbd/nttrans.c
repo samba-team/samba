@@ -669,7 +669,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		
 	set_posix_case_semantics(file_attributes);
 		
-	unix_convert(fname,conn,0,&bad_path,NULL);
+	if (!unix_dfs_convert(fname,conn,0,&bad_path,NULL))
+	{
+		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+	}
 		
 	fsp = file_new();
 	if (!fsp) {
@@ -952,7 +956,11 @@ static int call_nt_transact_create(connection_struct *conn,
 
     set_posix_case_semantics(file_attributes);
 
-    unix_convert(fname,conn,0,&bad_path,NULL);
+	if (!unix_dfs_convert(fname,conn,0,&bad_path,NULL))
+	{
+		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		return(ERROR(0, 0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+	}
     
     fsp = file_new();
     if (!fsp) {
