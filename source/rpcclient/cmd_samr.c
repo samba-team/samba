@@ -1881,7 +1881,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 	BOOL res3 = True;
 	BOOL res4 = True;
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
-	uint32 group_rid[0];
+	uint32 group_rid[1];
 	uint32 group_type[1];
 	char **names = NULL;
 	uint32 num_names = 0;
