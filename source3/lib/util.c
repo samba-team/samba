@@ -3405,7 +3405,7 @@ BOOL get_myname(char *my_name,struct in_addr *ip)
   /* get host info */
   if ((hp = Get_Hostbyname(hostname)) == 0) 
     {
-      DEBUG(0,( "Get_Hostbyname: Unknown host %s.\n",hostname));
+      DEBUG(0,( "Get_Hostbyname: Unknown host %s\n",hostname));
       return False;
     }
 
@@ -3454,7 +3454,7 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
   /* get host info */
   if ((hp = Get_Hostbyname(host_name)) == 0) 
     {
-      DEBUG(0,( "Get_Hostbyname: Unknown host. %s\n",host_name));
+      DEBUG(0,( "Get_Hostbyname: Unknown host %s\n",host_name));
       return -1;
     }
   
@@ -3634,7 +3634,7 @@ uint32 interpret_addr(char *str)
       return 0;
     }
     if(hp->h_addr == NULL) {
-      DEBUG(3,("Get_Hostbyname: host address is invalid for host %s.\n",str));
+      DEBUG(3,("Get_Hostbyname: host address is invalid for host %s\n",str));
       return 0;
     }
     putip((char *)&res,(char *)hp->h_addr);
