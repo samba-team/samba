@@ -222,7 +222,7 @@ static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mod
 
 	if (strncmp(buf, "PW ", 3) == 0) {
 
-		(*gensec_state)->password_callback_private = talloc_strndup((*gensec_state)->mem_ctx, 
+		(*gensec_state)->password_callback_private = talloc_strndup((*gensec_state), 
 									    (const char *)in.data, in.length);
 		
 		if ((*gensec_state)->password_callback_private == NULL) {
@@ -368,7 +368,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	if (strncmp(buf, "PW ", 3) == 0) {
 
 		if (!NT_STATUS_IS_OK(gensec_set_password(*gensec_state, 
-							 talloc_strndup((*gensec_state)->mem_ctx, 
+							 talloc_strndup((*gensec_state), 
 									(const char *)in.data, 
 									in.length)))) {
 			DEBUG(1, ("Out of memory\n"));
@@ -430,7 +430,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		} else {
 
 			reply_code = "AF";
-			reply_arg = talloc_asprintf((*gensec_state)->mem_ctx, 
+			reply_arg = talloc_asprintf(*gensec_state, 
 						    "%s%s%s", session_info->server_info->domain, 
 						    lp_winbind_separator(), session_info->server_info->account_name);
 			talloc_destroy(session_info->mem_ctx);
