@@ -3722,6 +3722,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
 #if OLD_NTDOMAIN
 int32 get_number_of_exclusive_open_oplocks(void);
+BOOL oplock_message_waiting(fd_set *fds);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
 BOOL set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
