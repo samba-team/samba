@@ -566,13 +566,13 @@ static struct pdb_context *pdb_get_static_context(BOOL reload)
 
 	if ((pdb_context) && (reload)) {
 		pdb_context->free_fn(&pdb_context);
-		if (NT_STATUS_IS_ERR(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
+		if (!NT_STATUS_IS_OK(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
 			return NULL;
 		}
 	}
 
 	if (!pdb_context) {
-		if (NT_STATUS_IS_ERR(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
+		if (!NT_STATUS_IS_OK(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
 			return NULL;
 		}
 	}

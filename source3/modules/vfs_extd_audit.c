@@ -328,7 +328,7 @@ NTSTATUS vfs_extd_audit_init(void)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "extd_audit", audit_op_tuples);
 	
-	if (NT_STATUS_IS_ERR(ret))
+	if (!NT_STATUS_IS_OK(ret))
 		return ret;
 
 	vfs_extd_audit_debug_level = debug_add_class("extd_audit");

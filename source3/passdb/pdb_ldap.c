@@ -2744,7 +2744,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	}
 
 	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,ldap_op, element_is_set_or_changed);
-	if (NT_STATUS_IS_ERR(ret)) {
+	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("failed to modify/add user with uid = %s (dn = %s)\n",
 			 pdb_get_username(newpwd),dn));
 		ldap_mods_free(mods, True);

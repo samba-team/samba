@@ -105,7 +105,7 @@ BOOL idmap_init(void)
 			return False;
 		}
 		
-		if (NT_STATUS_IS_ERR(local_map->init( NULL ))) {
+		if (!NT_STATUS_IS_OK(local_map->init( NULL ))) {
 			DEBUG(0, ("idmap_init: could not load or create local backend!\n"));
 			return False;
 		}
@@ -146,7 +146,7 @@ NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	lazy_initialize_idmap();
 
 	ret = local_map->set_mapping(sid, id, id_type);
-	if (NT_STATUS_IS_ERR(ret)) {
+	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG (0, ("idmap_set_mapping: Error, unable to modify local cache!\n"));
 		DEBUGADD(0, ("Error: %s", nt_errstr(ret)));
 		return ret;
@@ -156,7 +156,7 @@ NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	   Generally this is a forbidden operation. */
 	if (!(id_type & ID_CACHE) && (remote_map != NULL)) {
 		remote_map->set_mapping(sid, id, id_type);
-		if (NT_STATUS_IS_ERR(ret)) {
+		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG (0, ("idmap_set_mapping: Error, unable to modify remote cache!\n"));
 			DEBUGADD(0, ("Error: %s", nt_errstr(ret)));
 		}
@@ -178,10 +178,10 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 		loc_type |= ID_NOMAP;
 	}
 	ret = local_map->get_id_from_sid(id, &loc_type, sid);
-	if (NT_STATUS_IS_ERR(ret)) {
+	if (!NT_STATUS_IS_OK(ret)) {
 		if (remote_map) {
 			ret = remote_map->get_id_from_sid(id, id_type, sid);
-			if (NT_STATUS_IS_ERR(ret)) {
+			if (!NT_STATUS_IS_OK(ret)) {
 				DEBUG(3, ("idmap_get_id_from_sid: error fetching id!\n"));
 				return ret;
 			} else {
@@ -209,10 +209,10 @@ NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 		loc_type = id_type | ID_NOMAP;
 	}
 	ret = local_map->get_sid_from_id(sid, id, loc_type);
-	if (NT_STATUS_IS_ERR(ret)) {
+	if (!NT_STATUS_IS_OK(ret)) {
 		if (remote_map) {
 			ret = remote_map->get_sid_from_id(sid, id, id_type);
-			if (NT_STATUS_IS_ERR(ret)) {
+			if (!NT_STATUS_IS_OK(ret)) {
 				DEBUG(3, ("idmap_get_sid_from_id: unable to fetch sid!\n"));
 				return ret;
 			} else {
@@ -231,13 +231,13 @@ NTSTATUS idmap_close(void)
 	NTSTATUS ret;
 
 	ret = local_map->close();
-	if (NT_STATUS_IS_ERR(ret)) {
+	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(3, ("idmap_close: failed to close local cache!\n"));
 	}
 
 	if (remote_map) {
 		ret = remote_map->close();
-		if (NT_STATUS_IS_ERR(ret)) {
+		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(3, ("idmap_close: failed to close remote idmap repository!\n"));
 		}
 	}
