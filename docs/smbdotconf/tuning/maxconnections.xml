@@ -1,7 +1,7 @@
 <samba:parameter name="max connections"
                  context="S"
 				 type="integer"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option allows the number of simultaneous connections to a service to be limited.
     If <parameter moreinfo="none">max connections</parameter> is greater than 0 then connections

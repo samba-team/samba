@@ -1,7 +1,7 @@
 <samba:parameter name="dos filetimes"
 		 context="S"
 		 type="boolean"
-		 xmlns:samba="http://samba.org/common">
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Under DOS and Windows, if a user can write to a 
 	file they can change the timestamp on it. Under POSIX semantics, 

@@ -2,7 +2,7 @@
                  context="S"
 				 type="boolean"
                  basic="1" advanced="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>An inverted synonym is <link linkend="WRITEABLE">
     <parameter moreinfo="none">writeable</parameter></link>.</para>

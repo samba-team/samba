@@ -2,7 +2,7 @@
                  context="S"
 				 type="boolean"
 		 print="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter applies only to Windows NT/2000
     clients.  It has no effect on Windows 95/98/ME clients.  When 

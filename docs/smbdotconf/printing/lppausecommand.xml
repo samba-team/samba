@@ -2,7 +2,7 @@
                  context="S"
 				 type="string"
 		 print="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter specifies the command to be 
     executed on the server host in order to stop printing or spooling 

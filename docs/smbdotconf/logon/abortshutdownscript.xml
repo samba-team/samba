@@ -2,7 +2,7 @@
                  context="G"
                  advanced="1" developer="1"
 				 type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para><emphasis>This parameter only exists in the HEAD cvs branch</emphasis>
 	This a full path name to a script called by <citerefentry><refentrytitle>smbd</refentrytitle>

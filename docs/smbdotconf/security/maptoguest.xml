@@ -2,7 +2,7 @@
 				 type="enum"
                  context="G"
                  advanced="1" developer="1"
-		 xmlns:samba="http://samba.org/common">
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter is only useful in <link linkend="SECURITY">
     security</link> modes other than <parameter moreinfo="none">security = share</parameter> 

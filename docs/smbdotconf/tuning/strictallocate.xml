@@ -1,7 +1,7 @@
 <samba:parameter name="strict allocate"
                  context="S"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This is a boolean that controls the handling of 
     disk space allocation in the server. When this is set to <constant>yes</constant> 

@@ -1,7 +1,7 @@
 <samba:parameter name="vfs objects"
 				type="list"
                  context="S"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>vfs object</synonym>
 <description>
 	<para>This parameter specifies the backend names which 

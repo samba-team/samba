@@ -2,7 +2,7 @@
                  context="G"
 				 type="boolean-auto"
                  advanced="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter determines if <citerefentry><refentrytitle>nmbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> will produce Lanman announce 

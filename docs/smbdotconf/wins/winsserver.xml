@@ -2,7 +2,7 @@
                  context="G"
 				 type="boolean"
                  basic="1" advanced="1" wizard="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This specifies the IP address (or DNS name: IP 
 	address for preference) of the WINS server that <citerefentry><refentrytitle>nmbd</refentrytitle>

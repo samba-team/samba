@@ -2,7 +2,7 @@
                  context="G"
 				 type="string"
                  developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The value of the parameter (a string) is the 
     lowest SMB protocol dialect than Samba will support.  Please refer

@@ -2,7 +2,7 @@
                  context="G"
 				 type="string"
                  advanced="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>When Samba is running as a WINS server this 
 	allows you to call an external program for all changes to the 

@@ -2,7 +2,7 @@
                  context="G"
 				 type="integer"
                  advanced="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The value of the parameter (an integer) represents 
     the number of seconds between <parameter moreinfo="none">keepalive</parameter> 

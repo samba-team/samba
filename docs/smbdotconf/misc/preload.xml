@@ -2,7 +2,7 @@
                  context="G"
                  advanced="1" developer="1"
 				 type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>auto services</synonym>
 <description>
 	<para>This is a list of services that you want to be 

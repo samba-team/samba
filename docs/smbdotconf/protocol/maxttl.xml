@@ -2,7 +2,7 @@
                  context="G"
 				 type="integer"
                  advanced="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option tells <citerefentry><refentrytitle>nmbd</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> what the default 'time to live' 

@@ -1,7 +1,7 @@
 <samba:parameter name="mangled map"
 				 type="string"
                  context="S"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This is for those who want to directly map UNIX 
 	file names which cannot be represented on Windows/DOS.  The mangling 

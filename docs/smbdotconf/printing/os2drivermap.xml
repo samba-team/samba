@@ -2,7 +2,7 @@
                  context="G"
 		 advanced="1" developer="1"
 		 type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The parameter is used to define the absolute
     path to a file containing a mapping of Windows NT printer driver

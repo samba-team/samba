@@ -1,6 +1,6 @@
 <samba:parameter name="force create mode"
                  context="S"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter specifies a set of UNIX mode bit 
     permissions that will <emphasis>always</emphasis> be set on a 

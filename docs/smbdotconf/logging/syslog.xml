@@ -2,7 +2,7 @@
                  context="G"
 				 type="integer"
                  developer="1" advanced="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter maps how Samba debug messages 
     are logged onto the system syslog logging levels. Samba debug 
