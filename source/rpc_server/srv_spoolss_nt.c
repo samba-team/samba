@@ -240,18 +240,28 @@ static BOOL close_printer_handle(POLICY_HND *hnd)
 /****************************************************************************
   delete a printer given a handle
 ****************************************************************************/
-static BOOL delete_printer_handle(POLICY_HND *hnd)
+static uint32 delete_printer_handle(POLICY_HND *hnd)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
 
 	if (!OPEN_HANDLE(Printer)) {
 		DEBUG(0,("delete_printer_handle: Invalid handle (%s)\n", OUR_HANDLE(hnd)));
-		return False;
+		return ERROR_INVALID_HANDLE;
 	}
 
 	if (del_a_printer(Printer->dev.handlename) != 0) {
 		DEBUG(3,("Error deleting printer %s\n", Printer->dev.handlename));
-		return False;
+		return ERROR_INVALID_HANDLE;
+	}
+
+	/* Check calling user has permission to delete printer.  Note that
+	   since we set the snum parameter to -1 only administrators can
+	   delete the printer.  This stops people with the Full Control
+	   permission from deleting the printer. */
+
+	if (!print_access_check(NULL, -1, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(3, ("printer delete denied by security descriptor\n"));
+		return ERROR_ACCESS_DENIED;
 	}
 
 	if (*lp_deleteprinter_cmd()) {
@@ -280,7 +290,7 @@ static BOOL delete_printer_handle(POLICY_HND *hnd)
 		ret = smbrun(command, tmp_file, False);
 		if (ret != 0) {
 			unlink(tmp_file);
-			return False;
+			return ERROR_INVALID_HANDLE; /* What to return here? */
 		}
 		DEBUGADD(10,("returned [%d]\n", ret));
 		DEBUGADD(10,("Unlinking output file [%s]\n", tmp_file));
@@ -291,12 +301,12 @@ static BOOL delete_printer_handle(POLICY_HND *hnd)
 
 		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) >= 0 ) {
 			lp_killservice( i );
-			return True;
+			return ERROR_SUCCESS;
 		} else
-			return False;
+			return ERROR_ACCESS_DENIED;
 	}
 
-	return True;
+	return ERROR_SUCCESS;
 }	
 
 /****************************************************************************
@@ -855,16 +865,18 @@ uint32 _spoolss_closeprinter(POLICY_HND *handle)
 uint32 _spoolss_deleteprinter(POLICY_HND *handle)
 {
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+	uint32 result;
 
 	if (Printer && Printer->document_started)
-		_spoolss_enddocprinter(handle);          /* print job was not closed */
+		_spoolss_enddocprinter(handle);  /* print job was not closed */
 
-	if (!delete_printer_handle(handle))
-		return ERROR_INVALID_HANDLE;	
+	result = delete_printer_handle(handle);
 
-	srv_spoolss_sendnotify(handle);
+	if (result == ERROR_SUCCESS) {
+		srv_spoolss_sendnotify(handle);
+	}
 		
-	return NT_STATUS_NO_PROBLEMO;
+	return result;
 }
 
 /********************************************************************
