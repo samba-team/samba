@@ -200,7 +200,7 @@ a Linux-based Samba server:
 <indexterm><primary>useradd</primary></indexterm>
 <indexterm><primary>vipw</primary></indexterm>
 <screen>
-&rootprompt;<userinput>/usr/sbin/useradd -g machines -d /dev/null -c <replaceable>"machine nickname"</replaceable> \
+&rootprompt;<userinput>/usr/sbin/useradd -g machines -d /var/lib/nobody -c <replaceable>"machine nickname"</replaceable> \
    -s /bin/false <replaceable>machine_name</replaceable>$ </userinput>
 
 &rootprompt;<userinput>passwd -l <replaceable>machine_name</replaceable>$</userinput>
@@ -378,7 +378,7 @@ Here is an example for a Red Hat Linux system.
 <para><smbconfblock>
 <smbconfsection>[global]</smbconfsection>
 <smbconfcomment>&lt;...remainder of parameters...&gt;</smbconfcomment>
-<smbconfoption><name>add machine script</name><value>/usr/sbin/useradd -d /dev/null -g 100 \</value></smbconfoption>
+<smbconfoption><name>add machine script</name><value>/usr/sbin/useradd -d /var/lib/nobody -g 100 \</value></smbconfoption>
 <member><parameter>  -s /bin/false -M %u</parameter></member>
 </smbconfblock></para>
 

@@ -1924,7 +1924,7 @@ Loaded services file OK.
         delete group script = /usr/sbin/groupdel %g
         add user to group script = /usr/sbin/usermod -G %g %u
         add machine script = /usr/sbin/useradd \
-				-s /bin/false -d /dev/null %u
+				-s /bin/false -d /var/lib/nobody %u
         shutdown script = /var/lib/samba/scripts/shutdown.sh
         abort shutdown script = /sbin/shutdown -c
         logon script = scripts\logon.bat
