@@ -31,28 +31,32 @@ report a fault
 ********************************************************************/
 static void fault_report(int sig)
 {
-  DEBUG(0,("===============================================================\n"));
-  DEBUG(0,("INTERNAL ERROR: Signal %d in pid %d (%s)",sig,(int)getpid(),VERSION));
-  DEBUG(0,("\nPlease read the file BUGS.txt in the distribution\n"));
-  DEBUG(0,("===============================================================\n"));
+	static int counter;
+
+	if (counter) _exit(1);
+
+	counter++;
+
+	DEBUG(0,("===============================================================\n"));
+	DEBUG(0,("INTERNAL ERROR: Signal %d in pid %d (%s)",sig,(int)getpid(),VERSION));
+	DEBUG(0,("\nPlease read the file BUGS.txt in the distribution\n"));
+	DEBUG(0,("===============================================================\n"));
   
 #if AJT
-  ajt_panic();
+	ajt_panic();
 #endif  
 
-  if (cont_fn)
-    {
-      fault_setup(cont_fn);
-      cont_fn(NULL);
+	if (cont_fn) {
+		cont_fn(NULL);
 #ifdef SIGSEGV
-      CatchSignal(SIGSEGV,SIGNAL_CAST SIG_DFL);
+		CatchSignal(SIGSEGV,SIGNAL_CAST SIG_DFL);
 #endif
 #ifdef SIGBUS
-      CatchSignal(SIGBUS,SIGNAL_CAST SIG_DFL);
+		CatchSignal(SIGBUS,SIGNAL_CAST SIG_DFL);
 #endif
-      return; /* this should cause a core dump */
-    }
-  exit(1);
+		return; /* this should cause a core dump */
+	}
+	exit(1);
 }
 
 /****************************************************************************
@@ -60,7 +64,7 @@ catch serious errors
 ****************************************************************************/
 static void sig_fault(int sig)
 {
-  fault_report(sig);
+	fault_report(sig);
 }
 
 /*******************************************************************
@@ -68,13 +72,13 @@ setup our fault handlers
 ********************************************************************/
 void fault_setup(void (*fn)(void *))
 {
-  cont_fn = fn;
+	cont_fn = fn;
 
 #ifdef SIGSEGV
-  CatchSignal(SIGSEGV,SIGNAL_CAST sig_fault);
+	CatchSignal(SIGSEGV,SIGNAL_CAST sig_fault);
 #endif
 #ifdef SIGBUS
-  CatchSignal(SIGBUS,SIGNAL_CAST sig_fault);
+	CatchSignal(SIGBUS,SIGNAL_CAST sig_fault);
 #endif
 }
 
