@@ -80,7 +80,8 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
 	krb5_set_error_string(context, "out of memory");
 	return ENOMEM;
     }
-    *opt = *in;
+    if (in)
+	*opt = *in;
     if(opt->private == NULL) {
 	opt->private = calloc(1, sizeof(*opt->private));
 	if (opt->private == NULL) {
