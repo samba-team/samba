@@ -3723,6 +3723,9 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 	q_u->info.level = level;
 	q_u->info.info_ptr = (info != NULL) ? 1 : 0;
 	switch (level) {
+
+	  /* There's no such thing as a setprinter level 1 */
+
 	case 2:
 		secdesc = info->printers_2->secdesc;
 		devmode = info->printers_2->devmode;
@@ -5934,7 +5937,7 @@ BOOL spoolss_io_r_deleteform(char *desc, SPOOL_R_DELETEFORM *r_u, prs_struct *ps
 
 BOOL spoolss_io_q_addform(char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr=0;
+	uint32 useless_ptr=1;
 	prs_debug(ps, depth, desc, "spoolss_io_q_addform");
 	depth++;
 
@@ -5979,7 +5982,7 @@ BOOL spoolss_io_r_addform(char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int 
 
 BOOL spoolss_io_q_setform(char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr=0;
+	uint32 useless_ptr=1;
 	prs_debug(ps, depth, desc, "spoolss_io_q_setform");
 	depth++;
 
