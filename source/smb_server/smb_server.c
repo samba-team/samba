@@ -480,6 +480,14 @@ static void switch_message(int type, struct request_context *req)
 		return;
 	}
 
+	/* see if the vuid is valid */
+	if ((flags & AS_USER) && !req->user_ctx->vuser) {
+		if (!(flags & AS_GUEST)) {
+			req_reply_error(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
+			return;
+		}
+	}
+
 	/* does this protocol need to be run as the connected user? */
 #if HACK_REWRITE
 	if ((flags & AS_USER) && !change_to_user(req->conn,session_tag)) {
