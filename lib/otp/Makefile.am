@@ -37,7 +37,7 @@ libotp_la_SOURCES = \
 	$(ROKEN_SRCS)
 
 if do_roken_rename
-ROKEN_SRCS = snprintf.c strcasecmp.c strncasecmp.c strlwr.c
+ROKEN_SRCS = snprintf.c strcasecmp.c strncasecmp.c strlwr.c strlcpy.c strlcat.c
 endif
 
 $(libotp_la_OBJECTS): $(ndbm_wrap)
@@ -56,3 +56,7 @@ strncasecmp.c:
 	$(LN_S) $(srcdir)/../roken/strncasecmp.c .
 strlwr.c:
 	$(LN_S) $(srcdir)/../roken/strlwr.c .
+strlcpy.c:
+	$(LN_S) $(srcdir)/../roken/strlcpy.c .
+strlcat.c:
+	$(LN_S) $(srcdir)/../roken/strlcat.c .
