@@ -8,10 +8,10 @@ INCLUDES=-DHOST=\"@CANONICAL_HOST@\"
 
 foodir = $(includedir)
 foo_DATA = \
-	bits.h cache.h config_file.h des.h error.h \
-	getarg.h gssapi.h hdb.h kafs.h \
-	keytab.h krb5.h md4.h md5.h otp.h parse_time.h \
-	parse_units.h roken.h sha.h sl.h store.h @EXTRA_HDRS@
+	bits.h cache.h config_file.h des.h error.h getarg.h gssapi.h \
+	hdb.h kafs.h keytab.h krb5-protos.h krb5.h md4.h md5.h otp.h \
+	parse_time.h parse_units.h roken.h sha.h sl.h store.h \
+	@EXTRA_HDRS@
 
 
 EXTRA_DATA = err.h
@@ -44,6 +44,8 @@ keytab.h:
 	$(LN_S) $(top_srcdir)/lib/krb5/keytab.h .
 krb5.h:
 	$(LN_S) $(top_srcdir)/lib/krb5/krb5.h .
+krb5-protos.h:
+	$(LN_S) $(top_srcdir)/lib/krb5/krb5-protos.h .
 md4.h:
 	$(LN_S) $(top_srcdir)/lib/des/md4.h .
 md5.h:
