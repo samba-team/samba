@@ -66,6 +66,7 @@ void generate_type_free (Symbol *s);
 void generate_type_length (Symbol *s);
 void generate_type_copy (Symbol *s);
 void generate_type_maybe (Symbol *s);
+void generate_glue (Symbol *s);
 
 void init_generate (char *filename, char *basename);
 void close_generate(void);
