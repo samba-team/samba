@@ -925,6 +925,9 @@
 /* Define if you have the <utmpx.h> header file.  */
 #undef HAVE_UTMPX_H
 
+/* Define if you have the acl library (-lacl).  */
+#undef HAVE_LIBACL
+
 /* Define if you have the cups library (-lcups).  */
 #undef HAVE_LIBCUPS
 
