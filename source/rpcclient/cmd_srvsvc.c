@@ -4,7 +4,7 @@
 
    Copyright (C) Andrew Tridgell 1992-1999
    Copyright (C) Luke Kenneth Casson Leighton 1996 - 1999
-   Copyright (C) Tim Potter 2000
+   Copyright (C) Tim Potter 2000,2002
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -221,6 +221,78 @@ static NTSTATUS cmd_srvsvc_srv_query_info(struct cli_state *cli,
 	return result;
 }
 
+static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
+{
+	fstring netname = "", remark = "";
+
+	rpcstr_pull_unistr2_fstring(netname, &info1->info_1_str.uni_netname);
+	rpcstr_pull_unistr2_fstring(remark, &info1->info_1_str.uni_remark);
+
+	printf("netname: %s\n", netname);
+	printf("\tremark:\t%s\n", remark);
+}
+
+static void display_share_info_2(SRV_SHARE_INFO_2 *info2)
+{
+	fstring netname = "", remark = "", path = "", passwd = "";
+
+	rpcstr_pull_unistr2_fstring(netname, &info2->info_2_str.uni_netname);
+	rpcstr_pull_unistr2_fstring(remark, &info2->info_2_str.uni_remark);
+	rpcstr_pull_unistr2_fstring(path, &info2->info_2_str.uni_path);
+	rpcstr_pull_unistr2_fstring(passwd, &info2->info_2_str.uni_passwd);
+
+	printf("netname: %s\n", netname);
+	printf("\tremark:\t%s\n", remark);
+	printf("\tpath:\t%s\n", path);
+	printf("\tpassword:\t%s\n", passwd);
+}
+
+static NTSTATUS cmd_srvsvc_net_share_enum(struct cli_state *cli, 
+                                          TALLOC_CTX *mem_ctx,
+                                          int argc, char **argv)
+{
+	uint32 info_level = 2;
+	SRV_SHARE_INFO_CTR ctr;
+	WERROR result;
+	ENUM_HND hnd;
+	uint32 preferred_len = 0xffffffff, i;
+
+	if (argc > 2) {
+		printf("Usage: %s [infolevel]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (argc == 2)
+		info_level = atoi(argv[1]);
+
+	init_enum_hnd(&hnd, 0);
+
+	result = cli_srvsvc_net_share_enum(
+		cli, mem_ctx, info_level, &ctr, preferred_len, &hnd);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	/* Display results */
+
+	switch (info_level) {
+	case 1:
+		for (i = 0; i < ctr.num_entries; i++)
+			display_share_info_1(&ctr.share.info1[i]);
+		break;
+	case 2:
+		for (i = 0; i < ctr.num_entries; i++)
+			display_share_info_2(&ctr.share.info2[i]);
+		break;
+	default:
+		printf("unsupported info level %d\n", info_level);
+		break;
+	}
+
+ done:
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set srvsvc_commands[] = {
@@ -228,6 +300,7 @@ struct cmd_set srvsvc_commands[] = {
 	{ "SRVSVC" },
 
 	{ "srvinfo",    cmd_srvsvc_srv_query_info,  PIPE_SRVSVC, "Server query info", "" },
+	{ "netshareenum", cmd_srvsvc_net_share_enum, PIPE_SRVSVC, "Enumerate shares", "" },
 
 	{ NULL }
 };
