@@ -163,7 +163,7 @@ static const char *default_classname_table[] = {
 	"vfs",		     /* DBGC_VFS	  */
 	"idmap",	     /* DBGC_IDMAP	  */
 	"quota",	     /* DBGC_QUOTA	  */
-	"acls",		     /* DBGC_QUOTA	  */
+	"acls",		     /* DBGC_ACLS	  */
 	NULL
 };
 
