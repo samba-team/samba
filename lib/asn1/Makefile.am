@@ -9,7 +9,7 @@ YFLAGS = -d
 
 lib_LIBRARIES = libasn1.a
 
-SUFFIXES = .x
+SUFFIXES = .x .h
 
 BUILT_SOURCES = asn1_APOptions.c asn1_AP_REP.c asn1_AP_REQ.c \
 	asn1_AS_REP.c asn1_AS_REQ.c asn1_Authenticator.c \
@@ -58,7 +58,7 @@ incdir = $(includedir)
 inc_DATA = asn1.h
 idir = $(top_builddir)/include
 
-all-local:
+all-local: $(inc_DATA)
 	@for i in $(inc_DATA); do \
 		if cmp -s  $$i $(idir)/$$i 2> /dev/null ; then :; else\
 			echo " $(INSTALL_DATA) $$i $(idir)/$$i"; \
