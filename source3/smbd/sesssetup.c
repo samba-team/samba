@@ -25,9 +25,9 @@
 uint32 global_client_caps = 0;
 
 /****************************************************************************
- Add the standard 'Samba' signiture to the end of the session setup.
+ Add the standard 'Samba' signature to the end of the session setup.
 ****************************************************************************/
-static void add_signiture(char *outbuf) 
+static void add_signature(char *outbuf) 
 {
 	char *p;
 	p = smb_buf(outbuf);
@@ -130,7 +130,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	set_message(outbuf,4,0,True);
 	SSVAL(outbuf, smb_vwv3, 0);
-	add_signiture(outbuf);
+	add_signature(outbuf);
  
 	SSVAL(outbuf,smb_uid,sess_vuid);
 	SSVAL(inbuf,smb_uid,sess_vuid);
@@ -359,7 +359,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 
 	set_message(outbuf,4,0,True);
 	SSVAL(outbuf, smb_vwv3, 0);
-	add_signiture(outbuf);
+	add_signature(outbuf);
  
 	SSVAL(outbuf,smb_uid,sess_vuid);
 	SSVAL(inbuf,smb_uid,sess_vuid);
@@ -395,7 +395,7 @@ static int reply_spnego_anonymous(connection_struct *conn, char *inbuf, char *ou
 
 	set_message(outbuf,4,0,True);
 	SSVAL(outbuf, smb_vwv3, 0);
-	add_signiture(outbuf);
+	add_signature(outbuf);
  
 	SSVAL(outbuf,smb_uid,sess_vuid);
 	SSVAL(inbuf,smb_uid,sess_vuid);
@@ -680,7 +680,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		set_message(outbuf,3,0,True);
 	} else {
 		set_message(outbuf,3,0,True);
-		add_signiture(outbuf);
+		add_signature(outbuf);
 		/* perhaps grab OS version here?? */
 	}
 	
