@@ -2844,6 +2844,107 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 	return result;
 }
 
+
+/****************************************************************************
+  Determine whether or not a particular driver is currently assigned
+  to a printer
+****************************************************************************/
+BOOL printer_driver_in_use (char *arch, char *driver)
+{
+	TDB_DATA kbuf, newkey, dbuf;
+	NT_PRINTER_INFO_LEVEL_2 info;
+	int ret;
+
+	if (!tdb)
+		nt_printing_init();	
+
+	DEBUG(5,("printer_driver_in_use: Beginning search through printers.tdb...\n"));
+	
+	/* loop through the printers.tdb and check for the drivername */
+	for (kbuf = tdb_firstkey(tdb); kbuf.dptr;
+	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
+	{
+
+		dbuf = tdb_fetch(tdb, kbuf);
+		if (!dbuf.dptr) 
+			continue;
+
+		if (strncmp(kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) != 0) 
+			continue;
+
+		ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "dddddddddddfffffPfffff",
+			&info.attributes,
+			&info.priority,
+			&info.default_priority,
+			&info.starttime,
+			&info.untiltime,
+			&info.status,
+			&info.cjobs,
+			&info.averageppm,
+			&info.changeid,
+			&info.c_setprinter,
+			&info.setuptime,
+			info.servername,
+			info.printername,
+			info.sharename,
+			info.portname,
+			info.drivername,
+			info.comment,
+			info.location,
+			info.sepfile,
+			info.printprocessor,
+			info.datatype,
+			info.parameters);
+
+		safe_free(dbuf.dptr);
+		
+		DEBUG (10,("printer_driver_in_use: Printer - %s (%s)\n",
+			info.printername, info.drivername));
+			
+		if (strcmp(info.drivername, driver) == 0) 
+		{
+			DEBUG(5,("printer_driver_in_use: Printer %s using %s\n",
+				info.printername, driver));
+			return True;
+		}	
+	}
+	DEBUG(5,("printer_driver_in_use: Completed search through printers.tdb...\n"));
+	
+	
+	
+	/* report that the driver is in use by default */
+	return False;
+}
+
+/****************************************************************************
+ Remove a printer driver from the TDB.  This assumes that the the driver was
+ previously looked up.
+ ***************************************************************************/
+uint32 delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i)
+{
+	pstring 	key;
+	fstring		arch;
+	TDB_DATA 	kbuf;
+
+
+	get_short_archi(arch, i->environment);
+	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX,
+		arch, i->cversion, i->name); 
+	DEBUG(5,("delete_printer_driver: key = [%s]\n", key));
+
+	kbuf.dptr=key;
+	kbuf.dsize=strlen(key)+1;
+
+	if (tdb_delete(tdb, kbuf) == -1) {
+		DEBUG (0,("delete_printer_driver: fail to delete %s!\n", key));
+		return NT_STATUS_ACCESS_VIOLATION;
+	}
+	
+	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n",
+		i->name));
+	
+	return NT_STATUS_NO_PROBLEMO;
+}
 /****************************************************************************
 ****************************************************************************/
 BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, uint32 param_index,
