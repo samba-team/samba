@@ -1227,7 +1227,8 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 		ret = -1;
 	}
  out:
-	free(p); 
+	if (p)
+		free(p); 
 	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
 	return ret;
 }
