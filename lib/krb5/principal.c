@@ -59,6 +59,13 @@ krb5_free_principal(krb5_context context,
     }
 }
 
+int
+krb5_principal_get_type(krb5_context context,
+			krb5_principal principal)
+{
+    return princ_type(principal);
+}
+
 const char *
 krb5_principal_get_realm(krb5_context context,
 			 krb5_principal principal)
@@ -616,6 +623,7 @@ struct v4_name_convert {
     { "pop",	"pop" },
     { "imap",	"imap" },
     { "rcmd",	"host" },
+    { "smtp",	"smtp" },
     { NULL, NULL }
 };
 
