@@ -275,6 +275,161 @@ static void display_reg_value(pstring subkey, REGISTRY_VALUE value)
 
 
 /**
+ * Copies ACLs, DOS-attributes and timestamps from one 
+ * file or directory from one connected share to another connected share 
+ *
+ * @param mem_ctx		A talloc-context
+ * @param cli_share_src		A connected cli_state 
+ * @param cli_share_dst		A connected cli_state 
+ * @param src_file		The source file-name
+ * @param dst_file		The destination file-name
+ * @param copy_acls		Whether to copy acls
+ * @param copy_attrs		Whether to copy DOS attributes
+ * @param copy_timestamps	Whether to preserve timestamps
+ * @param is_file		Whether this file is a file or a dir
+ *
+ * @return Normal NTSTATUS return.
+ **/ 
+static NTSTATUS 
+net_copy_fileattr(TALLOC_CTX *mem_ctx,
+		  struct cli_state *cli_share_src,
+		  struct cli_state *cli_share_dst, 
+		  char *src_name, char *dst_name,
+		  BOOL copy_acls, BOOL copy_attrs,
+		  BOOL copy_timestamps, BOOL is_file)
+{
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	int fnum_src = 0;
+	int fnum_dst = 0;
+	SEC_DESC *sd = NULL;
+	uint16 attr;
+	time_t atime, ctime, mtime;
+
+
+	if (!copy_timestamps && !copy_acls && !copy_attrs)
+		return NT_STATUS_OK;
+
+
+	/* open file/dir on the originating server */
+
+	DEBUGADD(3,("opening %s %s on originating server\n", 
+		is_file?"file":"dir", src_name));
+
+	fnum_src = cli_nt_create(cli_share_src, src_name, READ_CONTROL_ACCESS);
+	if (fnum_src == -1) {
+		DEBUGADD(0,("cannot open %s %s on originating server %s\n", 
+			is_file?"file":"dir", src_name, cli_errstr(cli_share_src)));
+		nt_status = cli_nt_error(cli_share_src);
+		goto out;
+	}
+
+
+	if (copy_acls) {
+
+		/* get the security descriptor */
+		sd = cli_query_secdesc(cli_share_src, fnum_src, mem_ctx);
+		if (!sd) {
+			DEBUG(0,("failed to get security descriptor: %s\n",
+				cli_errstr(cli_share_src)));
+			nt_status = cli_nt_error(cli_share_src);
+			goto out;
+		}
+
+		if (opt_verbose && DEBUGLEVEL >= 3)
+			display_sec_desc(sd);
+	}
+
+
+	if (copy_attrs || copy_timestamps) {
+
+		/* get file attributes */
+		if (!cli_getattrE(cli_share_src, fnum_src, &attr, NULL, 
+				 &ctime, &atime, &mtime)) {
+			DEBUG(0,("failed to get file-attrs: %s\n", 
+				cli_errstr(cli_share_src)));
+			nt_status = cli_nt_error(cli_share_src);
+			goto out;
+		}
+	}
+
+
+	/* open the file/dir on the destination server */ 
+
+	fnum_dst = cli_nt_create(cli_share_dst, dst_name, WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS);
+	if (fnum_dst == -1) {
+		DEBUG(0,("failed to open %s on the destination server: %s: %s\n",
+			is_file?"file":"dir", dst_name, cli_errstr(cli_share_dst)));
+		nt_status = cli_nt_error(cli_share_dst);
+		goto out;
+	}
+
+	if (copy_timestamps) {
+
+		/* set timestamps */
+		if (!cli_setattrE(cli_share_dst, fnum_dst, ctime, atime, mtime)) {
+			DEBUG(0,("failed to set file-attrs (timestamps): %s\n",
+				cli_errstr(cli_share_dst)));
+			nt_status = cli_nt_error(cli_share_dst);
+			goto out;
+		}
+	}
+
+	if (copy_acls) {
+
+		/* set acls */
+		if (!cli_set_secdesc(cli_share_dst, fnum_dst, sd)) {
+			DEBUG(0,("could not set secdesc on %s: %s\n",
+				dst_name, cli_errstr(cli_share_dst)));
+			nt_status = cli_nt_error(cli_share_dst);
+			goto out;
+		}
+	}
+
+	if (copy_attrs) {
+
+		/* set attrs */
+		if (!cli_setatr(cli_share_dst, dst_name, attr, 0)) {
+			DEBUG(0,("failed to set file-attrs: %s\n",
+				cli_errstr(cli_share_dst)));
+			nt_status = cli_nt_error(cli_share_dst);
+			goto out;
+		}
+	}
+
+
+	/* closing files */
+
+	if (!cli_close(cli_share_src, fnum_src)) {
+		d_printf("could not close %s on originating server: %s\n", 
+			is_file?"file":"dir", cli_errstr(cli_share_src));
+		nt_status = cli_nt_error(cli_share_src);
+		goto out;
+	}
+
+	if (!cli_close(cli_share_dst, fnum_dst)) {
+		d_printf("could not close %s on destination server: %s\n", 
+			is_file?"file":"dir", cli_errstr(cli_share_dst));
+		nt_status = cli_nt_error(cli_share_dst);
+		goto out;
+	}
+
+
+	nt_status = NT_STATUS_OK;
+
+out:
+
+	/* cleaning up */
+	if (fnum_src)
+		cli_close(cli_share_src, fnum_src);
+
+	if (fnum_dst)
+		cli_close(cli_share_dst, fnum_dst);
+
+	return nt_status;
+}
+
+
+/**
  * Copy a file or directory from a connected share to another connected share 
  *
  * @param mem_ctx		A talloc-context
@@ -304,92 +459,70 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 	char *data = NULL;
 	off_t start = 0;
 	off_t nread = 0;
-	SEC_DESC *sd = NULL;
-	uint16 attr;
-	time_t atime, ctime, mtime;
 
+
+	if (!src_name || !dst_name)
+		goto out;
+
+	if (cli_share_dst == NULL || cli_share_dst == NULL)
+		goto out; 
+		
 
 	/* open on the originating server */
 	DEBUGADD(3,("opening %s %s on originating server\n", 
 		is_file ? "file":"dir", src_name));
-
 	if (is_file)
-		fnum_src = cli_open(cli_share_src, src_name, 
-				O_RDONLY, DENY_NONE);
+		fnum_src = cli_open(cli_share_src, src_name, O_RDONLY, DENY_NONE);
 	else
-		fnum_src = cli_nt_create(cli_share_src, src_name, 
-				READ_CONTROL_ACCESS);
+		fnum_src = cli_nt_create(cli_share_src, src_name, READ_CONTROL_ACCESS);
 
 	if (fnum_src == -1) {
 		DEBUGADD(0,("cannot open file %s on originating server %s\n", 
-				src_name, cli_errstr(cli_share_src)));
+			src_name, cli_errstr(cli_share_src)));
 		nt_status = cli_nt_error(cli_share_src);
 		goto out;
 	}
 
-	/* open on the destination server */
+
 	if (is_file) {
+
+		/* open file on the destination server */
 		DEBUGADD(3,("opening file %s on destination server\n", dst_name));
 		fnum_dst = cli_open(cli_share_dst, dst_name, 
 				O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
-	}
 
-        if (fnum_dst == -1) {
-                DEBUGADD(1,("cannot create file %s on destination server: %s\n", 
+		if (fnum_dst == -1) {
+			DEBUGADD(1,("cannot create file %s on destination server: %s\n", 
 				dst_name, cli_errstr(cli_share_dst)));
-		nt_status = cli_nt_error(cli_share_dst);
-                goto out;
-        }
-
-
-	/* allocate memory */
-	if (!(data = (char *)malloc(read_size))) {
-		d_printf("malloc fail for size %d\n", read_size);
-		goto out;
-	}
-
-
-	if (copy_acls) {
-
-		/* get the security descriptor */
-		sd = cli_query_secdesc(cli_share_src, fnum_src, mem_ctx);
-		if (!sd) {
-			DEBUG(0, ("failed to get security descriptor: %s\n",
-				cli_errstr(cli_share_src)));
-			nt_status = cli_nt_error(cli_share_src);
+			nt_status = cli_nt_error(cli_share_dst);
 			goto out;
 		}
-	}
 
-	if (copy_attrs || copy_timestamps) {
-
-		/* get dos attributes */
-		if (!cli_getattrE(cli_share_src, fnum_src, &attr, NULL, 
-			&ctime, &atime, &mtime)) {
-			DEBUG(0, ("failed to get file-attrs: %s\n", 
-				cli_errstr(cli_share_src)));
-			nt_status = cli_nt_error(cli_share_src);
+		/* allocate memory */
+		if (!(data = (char *)malloc(read_size))) {
+			d_printf("malloc fail for size %d\n", read_size);
+			nt_status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
+
 	}
 
-	/* copying file */
+
 	if (opt_verbose) {
 
 		d_printf("copying [\\\\%s\\%s%s] => [\\\\%s\\%s%s] "
-			 "%s acls and %s DOS Attributes %s\n", 
+			 "%s ACLs and %s DOS Attributes %s\n", 
 			cli_share_src->desthost, cli_share_src->share, src_name,
 			cli_share_dst->desthost, cli_share_dst->share, dst_name,
 			copy_acls ?  "with" : "without", 
 			copy_attrs ? "with" : "without",
 			copy_timestamps ? "(preserving timestamps)" : "" );
-
-		if (DEBUGLEVEL >= 3 && copy_acls)
-			display_sec_desc(sd);
 	}
+
 
 	while (is_file) {
 
+		/* copying file */
 		int n, ret;
 		n = cli_read(cli_share_src, fnum_src, data, nread + start, 
 				read_size);
@@ -400,79 +533,36 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 		ret = cli_write(cli_share_dst, fnum_dst, 0, data, 
 			nread + start, n);
 
-                if (n != ret) {
-                        d_printf("Error writing file: %s\n", 
+		if (n != ret) {
+			d_printf("Error writing file: %s\n", 
 				cli_errstr(cli_share_dst));
 			nt_status = cli_nt_error(cli_share_dst);
-                        goto out;
-                }
+			goto out;
+		}
 
 		nread += n;
 	}
 
-	/* creating dir */
+
 	if (!is_file && !cli_chkpath(cli_share_dst, dst_name)) {
 
+		/* creating dir */
 		DEBUGADD(3,("creating dir %s on the destination server\n", 
 			dst_name));
 
 		if (!cli_mkdir(cli_share_dst, dst_name)) {
-                        DEBUG(0,("cannot create directory %s: %s\n",
-                                dst_name, cli_errstr(cli_share_dst)));
-                        nt_status = NT_STATUS_NO_SUCH_FILE;
-                }
+			DEBUG(0,("cannot create directory %s: %s\n",
+				dst_name, cli_errstr(cli_share_dst)));
+			nt_status = NT_STATUS_NO_SUCH_FILE;
+		}
 
-                if (!cli_chkpath(cli_share_dst, dst_name)) {
+		if (!cli_chkpath(cli_share_dst, dst_name)) {
 			d_printf("cannot check for directory %s: %s\n",
 				dst_name, cli_errstr(cli_share_dst));
-                        goto out;
-                }
-	}
-
-	/* open the file/dir a second time */ 
-	fnum_dst = cli_nt_create(cli_share_dst, dst_name, 
-			WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS);
-	
-	if (fnum_dst == -1) {
-		DEBUG(0,("failed to open file/dir again: %s: %s\n",
-			dst_name, cli_errstr(cli_share_dst)));
-		nt_status = cli_nt_error(cli_share_dst);
-		goto out;
-	}
-
-	/* set timestamps */
-	if (copy_timestamps) {
-	
-		if (!cli_setattrE(cli_share_dst, fnum_dst, ctime, atime, mtime)) {
-			DEBUG(0,("failed to set file-attrs (timestamps): %s\n",
-				cli_errstr(cli_share_dst)));
-			nt_status = cli_nt_error(cli_share_dst);
 			goto out;
 		}
 	}
 
-	/* set acls */
-	if (copy_acls) {
-
-		if (!cli_set_secdesc(cli_share_dst, fnum_dst, sd)) {
-			DEBUG(0,("could not set secdesc on %s %s: %s\n", 
-				is_file? "file":"dir", dst_name, 
-				cli_errstr(cli_share_dst)));
-			nt_status = cli_nt_error(cli_share_dst);
-			goto out;
-		}
-	}
-
-	/* set attrs */
-	if (copy_attrs) {
-
-		if (!cli_setatr(cli_share_dst, dst_name, attr, 0)) {
-			DEBUG(0,("failed to set file-attrs: %s\n",
-				cli_errstr(cli_share_dst)));
-			nt_status = cli_nt_error(cli_share_dst);
-			goto out;
-		}
-	}
 
 	/* closing files */
 	if (!cli_close(cli_share_src, fnum_src)) {
@@ -488,6 +578,13 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 		nt_status = cli_nt_error(cli_share_dst);
 		goto out;
 	}
+
+	/* possibly we have to copy some file-attributes / acls / sd */
+	nt_status = net_copy_fileattr(mem_ctx, cli_share_src, cli_share_dst, 
+				      src_name, dst_name, copy_acls, 
+				      copy_attrs, copy_timestamps, is_file);
+	if (!NT_STATUS_IS_OK(nt_status))
+		goto out;
 
 
 	nt_status = NT_STATUS_OK;
