@@ -475,7 +475,7 @@ static void ldap_get_machine(LDAP *ldap_struct,LDAPMessage *entry,
 /*******************************************************************
  find a user or a machine return a smbpass struct.
 ******************************************************************/
-struct smb_passwd *ldap_get_smbpwd_entry(char *name, int smb_userid)
+static struct smb_passwd *ldap_get_smbpwd_entry(char *name, int smb_userid)
 {
 	LDAP *ldap_struct;
 	LDAPMessage *result;
@@ -560,4 +560,24 @@ struct smb_passwd *ldap_get_smbpwd_entry(char *name, int smb_userid)
 		
 	return(&ldap_passwd);
 }
+
+/************************************************************************
+ Routine to search ldap passwd by name.
+*************************************************************************/
+
+struct smb_passwd *getldappwnam(char *name)
+{
+  return ldap_get_smbpwd_entry(name, 0);
+}
+
+/************************************************************************
+ Routine to search ldap passwd by uid.
+*************************************************************************/
+
+struct smb_passwd *getldappwuid(unsigned int uid)
+{
+  return ldap_get_smbpwd_entry(NULL, uid);
+}
+
+
 #endif

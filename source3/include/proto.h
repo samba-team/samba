@@ -36,12 +36,12 @@ BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL
 BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root);
 BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root);
 BOOL check_lanman_password(char *user, unsigned char *pass1, 
-                           unsigned char *pass2, struct smb_passwd **psmbpw);
-BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsigned char *pass2);
+                           unsigned char *pass2, struct smb_passwd **psampw);
+BOOL change_lanman_password(struct smb_passwd *sampw, unsigned char *pass1, unsigned char *pass2);
 BOOL check_oem_password(char *user, unsigned char *data,
-                        struct smb_passwd **psmbpw, char *new_passwd,
+                        struct smb_passwd **psampw, char *new_passwd,
                         int new_passwd_size);
-BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override);
+BOOL change_oem_password(struct smb_passwd *sampw, char *new_passwd, BOOL override);
 
 /*The following definitions come from  client.c  */
 
@@ -1557,6 +1557,18 @@ char *get_nt_error_msg(uint32 nt_code);
 BOOL pm_process( char *FileName,
                  BOOL (*sfunc)(char *),
                  BOOL (*pfunc)(char *, char *) );
+
+/*The following definitions come from  passdb.c  */
+
+struct smb_passwd *getsampwnam(char *name);
+struct smb_passwd *getsampwuid(unsigned int uid);
+void *startsampwent(BOOL update);
+void endsampwent(void *vp);
+struct smb_passwd *getsampwent(void *vp);
+unsigned long getsampwpos(void *vp);
+BOOL setsampwpos(void *vp, unsigned long tok);
+BOOL add_sampwd_entry(struct smb_passwd *newpwd);
+BOOL mod_sampwd_entry(struct smb_passwd* pwd, BOOL override);
 
 /*The following definitions come from  password.c  */
 

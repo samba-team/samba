@@ -17,6 +17,17 @@
  * Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/*X*X*X*X*X*X*X**X*X*X*X*X*X*X**X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*
+ *X*X*X*X*X*X*X**X*X*X*X*X*X*X**X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*
+ *X*X*X*X*X*X*X**X*X*X*X*X*X*X**X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*
+
+     DO NOT CALL ANY OF THE ROUTINES IN THIS MODULE DIRECTLY.
+                       USE passdb.c INSTEAD.
+
+ *X*X*X*X*X*X*X**X*X*X*X*X*X*X**X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*
+ *X*X*X*X*X*X*X**X*X*X*X*X*X*X**X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*
+ *X*X*X*X*X*X*X**X*X*X*X*X*X*X**X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*X*/
+
 #include "includes.h"
 
 extern int DEBUGLEVEL;
@@ -112,7 +123,10 @@ static BOOL pw_file_unlock(int fd, int *plock_depth)
 /***************************************************************
  Start to enumerate the smbpasswd list. Returns a void pointer
  to ensure no modification outside this module.
-****************************************************************/
+
+ do not call this function directly.  use passdb.c instead.
+
+ ****************************************************************/
 
 void *startsmbpwent(BOOL update)
 {
@@ -192,6 +206,9 @@ static int gethexpwd(char *p, char *pwd)
 
 /*************************************************************************
  Routine to return the next entry in the smbpasswd list.
+
+ do not call this function directly.  use passdb.c instead.
+
  *************************************************************************/
 
 struct smb_passwd *getsmbpwent(void *vp)
@@ -482,8 +499,10 @@ struct smb_passwd *getsmbpwent(void *vp)
 /*************************************************************************
  Return the current position in the smbpasswd list as an unsigned long.
  This must be treated as an opaque token.
-*************************************************************************/
 
+ do not call this function directly.  use passdb.c instead.
+
+*************************************************************************/
 unsigned long getsmbpwpos(void *vp)
 {
   return (unsigned long)ftell((FILE *)vp);
@@ -492,8 +511,10 @@ unsigned long getsmbpwpos(void *vp)
 /*************************************************************************
  Set the current position in the smbpasswd list from unsigned long.
  This must be treated as an opaque token.
-*************************************************************************/
 
+ do not call this function directly.  use passdb.c instead.
+
+*************************************************************************/
 BOOL setsmbpwpos(void *vp, unsigned long tok)
 {
   return !fseek((FILE *)vp, tok, SEEK_SET);
@@ -503,7 +524,6 @@ BOOL setsmbpwpos(void *vp, unsigned long tok)
  Routine to search the smbpasswd file for an entry matching the username
  or user id.  if the name is NULL, then the smb_uid is used instead.
  *************************************************************************/
-
 static struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 {
   struct smb_passwd *pwd = NULL;
@@ -549,30 +569,24 @@ static struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 }
 
 /************************************************************************
- Routine to search smbpasswd by name.
+ Routine to search smb passwd by name.
 *************************************************************************/
 
 struct smb_passwd *getsmbpwnam(char *name)
 {
-#ifdef USE_LDAP
-  return ldap_get_smbpwd_entry(name, 0);
-#else /* USE_LDAP */
   return get_smbpwd_entry(name, 0);
-#endif /* USE_LDAP */
 }
 
+
 /************************************************************************
- Routine to search smbpasswd by uid.
+ Routine to search smb passwd by uid.
 *************************************************************************/
 
 struct smb_passwd *getsmbpwuid(unsigned int uid)
 {
-#ifdef USE_LDAP
-  return ldap_get_smbpwd_entry(NULL, uid);
-#else /* USE_DLAP */
   return get_smbpwd_entry(NULL, uid);
-#endif /* USE_LDAP */
 }
+
 
 /**********************************************************
  Encode the account control bits into a string.
@@ -585,24 +599,15 @@ char *encode_acct_ctrl(uint16 acct_ctrl)
  
   *p++ = '[';
 
-  if(acct_ctrl & ACB_HOMDIRREQ)
-    *p++ = 'H';
-  if(acct_ctrl & ACB_TEMPDUP)
-    *p++ = 'T'; 
-  if(acct_ctrl & ACB_NORMAL)
-    *p++ = 'U';
-  if(acct_ctrl & ACB_MNS)
-    *p++ = 'M';
-  if(acct_ctrl & ACB_WSTRUST)
-    *p++ = 'W';
-  if(acct_ctrl & ACB_SVRTRUST) 
-    *p++ = 'S';
-  if(acct_ctrl & ACB_AUTOLOCK)
-    *p++ = 'L';
-  if(acct_ctrl & ACB_PWNOEXP)
-    *p++ = 'X';
-  if(acct_ctrl & ACB_DOMTRUST)
-    *p++ = 'I';
+  if (acct_ctrl & ACB_HOMDIRREQ) *p++ = 'H';
+  if (acct_ctrl & ACB_TEMPDUP  ) *p++ = 'T'; 
+  if (acct_ctrl & ACB_NORMAL   ) *p++ = 'U';
+  if (acct_ctrl & ACB_MNS      ) *p++ = 'M';
+  if (acct_ctrl & ACB_WSTRUST  ) *p++ = 'W';
+  if (acct_ctrl & ACB_SVRTRUST ) *p++ = 'S';
+  if (acct_ctrl & ACB_AUTOLOCK ) *p++ = 'L';
+  if (acct_ctrl & ACB_PWNOEXP  ) *p++ = 'X';
+  if (acct_ctrl & ACB_DOMTRUST ) *p++ = 'I';
       
   *p++ = ']';
   *p = '\0';
@@ -611,6 +616,9 @@ char *encode_acct_ctrl(uint16 acct_ctrl)
 
 /************************************************************************
  Routine to add an entry to the smbpasswd file.
+
+ do not call this function directly.  use passdb.c instead.
+
 *************************************************************************/
 
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
@@ -742,6 +750,9 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
  in the actual file to decide how much room we have to write data.
  override = False, normal
  override = True, override XXXXXXXX'd out password or NO PASS
+
+ do not call this function directly.  use passdb.c instead.
+
 ************************************************************************/
 
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)

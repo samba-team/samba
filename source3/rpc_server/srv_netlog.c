@@ -237,7 +237,7 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 	}
 
 	become_root(True);
-	smb_pass = getsmbpwnam(mach_acct);
+	smb_pass = getsampwnam(mach_acct);
 	unbecome_root(True);
 
 	if (smb_pass != NULL)
@@ -377,48 +377,50 @@ static void api_net_srv_pwset( int uid,
 
 	/* checks and updates credentials.  creates reply credentials */
 	if (deal_with_creds(vuser->dc.sess_key, &(vuser->dc.clnt_cred), 
-	                &(q_a.clnt_id.cred), &srv_cred))
+	                    &(q_a.clnt_id.cred), &srv_cred))
 	{
 		memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred), sizeof(vuser->dc.clnt_cred));
 
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
 
-                pstrcpy(mach_acct, unistrn2(q_a.clnt_id.login.uni_acct_name.buffer,
-                        q_a.clnt_id.login.uni_acct_name.uni_str_len));
+		pstrcpy(mach_acct, unistrn2(q_a.clnt_id.login.uni_acct_name.buffer,
+		                            q_a.clnt_id.login.uni_acct_name.uni_str_len));
 
-                DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
+		DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
 
-                become_root(True);
-                smb_pass = getsmbpwnam(mach_acct);
-                unbecome_root(True);
+		become_root(True);
+		smb_pass = getsampwnam(mach_acct);
+		unbecome_root(True);
 
 		if (smb_pass != NULL)
 		{
-                  unsigned char pwd[16];
-                  int i;
+			unsigned char pwd[16];
+			int i;
 
-                  DEBUG(100,("Server password set : new given value was :\n"));
-                  for(i = 0; i < 16; i++)
-                    DEBUG(100,("%02X ", q_a.pwd[i]));
-                  DEBUG(100,("\n"));
+			DEBUG(100,("Server password set : new given value was :\n"));
+			for(i = 0; i < 16; i++)
+			{
+				DEBUG(100,("%02X ", q_a.pwd[i]));
+			}
+			DEBUG(100,("\n"));
 
-                  cred_hash3( pwd, q_a.pwd, vuser->dc.sess_key, 0);
+			cred_hash3( pwd, q_a.pwd, vuser->dc.sess_key, 0);
 
-                  /* lies!  nt and lm passwords are _not_ the same: don't care */
-                  smb_pass->smb_passwd    = pwd;
-                  smb_pass->smb_nt_passwd = pwd;
-                  smb_pass->acct_ctrl     = ACB_WSTRUST;
+			/* lies!  nt and lm passwords are _not_ the same: don't care */
+			smb_pass->smb_passwd    = pwd;
+			smb_pass->smb_nt_passwd = pwd;
+			smb_pass->acct_ctrl     = ACB_WSTRUST;
 
-                  become_root(True);
-                  ret = mod_smbpwd_entry(smb_pass,False);
-                  unbecome_root(True);
+			become_root(True);
+			ret = mod_sampwd_entry(smb_pass,False);
+			unbecome_root(True);
 
-                  if (ret)
-                  {
-                    /* hooray! */
-                    status = 0x0;
-                  }
-                }
+			if (ret)
+			{
+				/* hooray! */
+				status = 0x0;
+			}
+		}
 
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
 
@@ -629,7 +631,7 @@ static void api_net_sam_logon( int uid,
 		DEBUG(3,("User:[%s]\n", samlogon_user));
 
 		become_root(True);
-		smb_pass = getsmbpwnam(samlogon_user);
+		smb_pass = getsampwnam(samlogon_user);
 		unbecome_root(True);
 
 		if (smb_pass == NULL)

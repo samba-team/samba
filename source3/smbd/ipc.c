@@ -1649,10 +1649,10 @@ static BOOL api_SetUserPassword(int cnum,uint16 vuid, char *param,char *data,
 
   if(SVAL(*rparam,0) != NERR_Success)
   {
-    struct smb_passwd *smbpw = NULL;
+    struct smb_passwd *sampw = NULL;
 
-    if(check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &smbpw) && 
-       change_lanman_password(smbpw,(unsigned char *)pass1,(unsigned char *)pass2))
+    if(check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &sampw) && 
+       change_lanman_password(sampw,(unsigned char *)pass1,(unsigned char *)pass2))
     {
       SSVAL(*rparam,0,NERR_Success);
     }
@@ -1675,7 +1675,7 @@ static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *dat
 {
   fstring user;
   fstring new_passwd;
-  struct smb_passwd *smbpw = NULL;
+  struct smb_passwd *sampw = NULL;
   char *p = param + 2;
 
   *rparam_len = 2;
@@ -1703,7 +1703,7 @@ static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *dat
   fstrcpy(user,p);
   p = skip_string(p,1);
 
-  if(check_oem_password( user, (unsigned char *)data, &smbpw, 
+  if(check_oem_password( user, (unsigned char *)data, &sampw, 
                          new_passwd, (int)sizeof(new_passwd)) == False) {
     return True;
   }
@@ -1720,7 +1720,7 @@ static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *dat
   if(lp_unix_password_sync())
     chgpasswd(user,"", new_passwd, True);
  
-  if(change_oem_password( smbpw, new_passwd, False)) {
+  if(change_oem_password( sampw, new_passwd, False)) {
     SSVAL(*rparam,0,NERR_Success);
   }
 

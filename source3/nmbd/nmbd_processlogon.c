@@ -201,7 +201,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       strcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
       strcpy(reply_name+2,my_name); 
 
-      smb_pass = getsmbpwnam(ascuser);
+      smb_pass = getsampwnam(ascuser);
 
       if(!smb_pass )
       {
