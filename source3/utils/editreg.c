@@ -960,17 +960,24 @@ SK_MAP *alloc_sk_map_entry(REGF *regf, KEY_SEC_DESC *tmp, int sk_off)
   }
   else { /* Simply allocate a new slot, unless we have to expand the list */ 
     int index = regf->sk_count;
-    if (regf->sk_count == regf->sk_map_size) {
-      regf->sk_map = (SK_MAP *)realloc(regf->sk_map, regf->sk_map_size + 10);
+    if (regf->sk_count >= regf->sk_map_size) {
+      regf->sk_map = (SK_MAP *)realloc(regf->sk_map, 
+				       (regf->sk_map_size + 10)*sizeof(SK_MAP));
       if (!regf->sk_map) {
 	free(tmp);
 	return NULL;
       }
-      index++;
+      /*
+       * Index already points at the first entry of the new block
+       */
+      regf->sk_map_size += 10;
     }
     (regf->sk_map)[index].sk_off = sk_off;
     (regf->sk_map)[index].key_sec_desc = tmp;
     regf->sk_count++;
+    if (regf->sk_map[2].key_sec_desc == 0x19) { /* Take us over */
+      fprintf(stderr, "%0x\n", regf->sk_map[7].key_sec_desc->sec_desc);
+    }
   }
  return regf->sk_map;
 }
@@ -1022,7 +1029,7 @@ KEY_SEC_DESC *lookup_create_sec_key(REGF *regf, SK_MAP *sk_map, int sk_off)
 }
 
 /*
- * Allocate storage and uplicate a SID 
+ * Allocate storage and duplicate a SID 
  * We could allocate the SID to be only the size needed, but I am too lazy. 
  */
 DOM_SID *dup_sid(DOM_SID *sid)
@@ -1036,7 +1043,7 @@ DOM_SID *dup_sid(DOM_SID *sid)
   for (i=0; i<6; i++) {
     tmp->auth[i] = sid->auth[i];
   }
-  for (i=0; i<tmp->auths; i++) {
+  for (i=0; i<tmp->auths&&i<MAXSUBAUTHS; i++) {
     tmp->sub_auths[i] = sid->sub_auths[i];
   }
   return tmp;
@@ -1053,7 +1060,7 @@ ACE *dup_ace(REG_ACE *ace)
 
   if (!tmp) return NULL;
 
-  tmp->type = CVAL(&ace->flags);
+  tmp->type = CVAL(&ace->type);
   tmp->flags = CVAL(&ace->flags);
   tmp->perms = IVAL(&ace->perms);
   tmp->trustee = dup_sid(&ace->trustee);
@@ -1080,6 +1087,7 @@ ACL *dup_acl(REG_ACL *acl)
   ace = (REG_ACE *)&acl->aces;
   for (i=0; i<num_aces; i++) {
     tmp->aces[i] = dup_ace(ace);
+    ace = (REG_ACE *)((char *)ace + SVAL(&ace->length));
     /* XXX: FIXME, should handle malloc errors */
   }
 
@@ -1098,12 +1106,12 @@ SEC_DESC *process_sec_desc(REGF *regf, REG_SEC_DESC *sec_desc)
   
   tmp->rev = SVAL(&sec_desc->rev);
   tmp->type = SVAL(&sec_desc->type);
-  tmp->owner = dup_sid((DOM_SID *)(sec_desc + IVAL(&sec_desc->owner_off)));
+  tmp->owner = dup_sid((DOM_SID *)((char *)sec_desc + IVAL(&sec_desc->owner_off)));
   if (!tmp->owner) {
     free(tmp);
     return NULL;
   }
-  tmp->group = dup_sid((DOM_SID *)(sec_desc + IVAL(&sec_desc->owner_off)));
+  tmp->group = dup_sid((DOM_SID *)((char *)sec_desc + IVAL(&sec_desc->group_off)));
   if (!tmp->group) {
     free(tmp);
     return NULL;
@@ -1112,12 +1120,12 @@ SEC_DESC *process_sec_desc(REGF *regf, REG_SEC_DESC *sec_desc)
   /* Now pick up the SACL and DACL */
 
   if (sec_desc->sacl_off)
-    tmp->sacl = dup_acl((REG_ACL *)(sec_desc + IVAL(&sec_desc->sacl_off)));
+    tmp->sacl = dup_acl((REG_ACL *)((char *)sec_desc + IVAL(&sec_desc->sacl_off)));
   else
     tmp->sacl = NULL;
 
   if (sec_desc->dacl_off)
-    tmp->dacl = dup_acl((REG_ACL *)(sec_desc + IVAL(&sec_desc->dacl_off)));
+    tmp->dacl = dup_acl((REG_ACL *)((char *)sec_desc + IVAL(&sec_desc->dacl_off)));
   else
     tmp->dacl = NULL;
 
@@ -1203,7 +1211,7 @@ KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
   sk_prev_off = IVAL(&sk_hdr->prev_off);
   tmp->prev = lookup_create_sec_key(regf, regf->sk_map, sk_prev_off);
   assert(tmp->prev != NULL);
-  sk_next_off = IVAL(&sk_hdr->prev_off);
+  sk_next_off = IVAL(&sk_hdr->next_off);
   tmp->next = lookup_create_sec_key(regf, regf->sk_map, sk_next_off);
   assert(tmp->next != NULL);
 
@@ -1636,9 +1644,9 @@ int print_sec(SEC_DESC *sec_desc)
 {
 
   fprintf(stdout, "  SECURITY\n");
-  fprintf(stdout, "    Owner: \n");
+  fprintf(stdout, "    Owner: ");
   print_sid(sec_desc->owner);
-  fprintf(stdout, "    Group: \n");
+  fprintf(stdout, "    Group: ");
   print_sid(sec_desc->group);
   return 1;
 }
