@@ -287,6 +287,206 @@ NTSTATUS libnet_ChangePassword(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
 	return NT_STATUS_INVALID_LEVEL;
 }
 
+static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
+{
+	NTSTATUS status;
+	struct samr_SetUserInfo sui;
+	union samr_UserInfo u_info;
+	DATA_BLOB session_key;
+	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+	uint8_t confounder[16];	
+	struct MD5Context md5;
+
+	/* prepare samr_SetUserInfo level 26 */
+	ZERO_STRUCT(u_info);
+	encode_pw_buffer(u_info.info26.password.data, r->samr_handle.in.newpassword, STR_UNICODE);
+	u_info.info26.pw_len = strlen(r->samr_handle.in.newpassword);
+	
+	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->samr_handle.out.error_string = talloc_asprintf(mem_ctx,
+								  "dcerpc_fetch_session_key failed: %s\n",
+								  nt_errstr(status));
+		return status;
+	}
+	
+	generate_random_buffer((uint8_t *)confounder, 16);
+	
+	MD5Init(&md5);
+	MD5Update(&md5, confounder, 16);
+	MD5Update(&md5, session_key.data, session_key.length);
+	MD5Final(confounded_session_key.data, &md5);
+	
+	arcfour_crypt_blob(u_info.info26.password.data, 516, &confounded_session_key);
+	memcpy(&u_info.info26.password.data[516], confounder, 16);
+	
+	sui.in.user_handle = r->samr_handle.in.user_handle;
+	sui.in.info = &u_info;
+	sui.in.level = 26;
+	
+	/* 7. try samr_SetUserInfo level 26 to set the password */
+	status = dcerpc_samr_SetUserInfo(r->samr_handle.in.dcerpc_pipe, mem_ctx, &sui);
+	/* check result of samr_SetUserInfo level 26 */
+	if (!NT_STATUS_IS_OK(status)) {
+		r->samr_handle.out.error_string
+			= talloc_asprintf(mem_ctx,
+					  "SetUserInfo level 26 for [%s] failed: %s\n",
+					  r->samr_handle.in.account_name, nt_errstr(status));
+	}
+	return status;
+}
+
+static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
+{
+	NTSTATUS status;
+	struct samr_SetUserInfo sui;
+	union samr_UserInfo u_info;
+	DATA_BLOB session_key;
+	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+	uint8_t confounder[16];	
+	struct MD5Context md5;
+
+	/* prepare samr_SetUserInfo level 25 */
+	ZERO_STRUCT(u_info);
+	u_info.info25.info.fields_present = SAMR_FIELD_PASSWORD;
+	encode_pw_buffer(u_info.info25.password.data, r->samr_handle.in.newpassword, STR_UNICODE);
+
+	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->samr_handle.out.error_string = talloc_asprintf(mem_ctx,
+						"dcerpc_fetch_session_key failed: %s\n",
+						nt_errstr(status));
+		return status;
+	}
+
+	generate_random_buffer((uint8_t *)confounder, 16);
+
+	MD5Init(&md5);
+	MD5Update(&md5, confounder, 16);
+	MD5Update(&md5, session_key.data, session_key.length);
+	MD5Final(confounded_session_key.data, &md5);
+
+	arcfour_crypt_blob(u_info.info25.password.data, 516, &confounded_session_key);
+	memcpy(&u_info.info25.password.data[516], confounder, 16);
+
+	sui.in.user_handle = r->samr_handle.in.user_handle;
+	sui.in.info = &u_info;
+	sui.in.level = 25;
+
+	/* 8. try samr_SetUserInfo level 25 to set the password */
+	status = dcerpc_samr_SetUserInfo(r->samr_handle.in.dcerpc_pipe, mem_ctx, &sui);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->samr_handle.out.error_string
+			= talloc_asprintf(mem_ctx,
+					  "SetUserInfo level 25 for [%s] failed: %s\n",
+					  r->samr_handle.in.account_name, nt_errstr(status));
+	}
+	return status;
+}
+
+static NTSTATUS libnet_SetPassword_samr_handle_24(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
+{
+	NTSTATUS status;
+	struct samr_SetUserInfo sui;
+	union samr_UserInfo u_info;
+	DATA_BLOB session_key;
+
+	/* prepare samr_SetUserInfo level 24 */
+	ZERO_STRUCT(u_info);
+	encode_pw_buffer(u_info.info24.password.data, r->samr_handle.in.newpassword, STR_UNICODE);
+	/* w2k3 ignores this length */
+	u_info.info24.pw_len = strlen_m(r->samr_handle.in.newpassword)*2;
+
+	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->samr_handle.out.error_string = talloc_asprintf(mem_ctx,
+						"dcerpc_fetch_session_key failed: %s\n",
+						nt_errstr(status));
+		return status;
+	}
+
+	arcfour_crypt_blob(u_info.info24.password.data, 516, &session_key);
+
+	sui.in.user_handle = r->samr_handle.in.user_handle;
+	sui.in.info = &u_info;
+	sui.in.level = 24;
+
+	/* 9. try samr_SetUserInfo level 24 to set the password */
+	status = dcerpc_samr_SetUserInfo(r->samr_handle.in.dcerpc_pipe, mem_ctx, &sui);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->samr_handle.out.error_string
+			= talloc_asprintf(mem_ctx,
+					  "SetUserInfo level 24 for [%s] failed: %s\n",
+					  r->samr_handle.in.account_name, nt_errstr(status));
+	}
+	return status;
+}
+
+static NTSTATUS libnet_SetPassword_samr_handle_23(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
+{
+	NTSTATUS status;
+	struct samr_SetUserInfo sui;
+	union samr_UserInfo u_info;
+	DATA_BLOB session_key;
+
+	/* prepare samr_SetUserInfo level 23 */
+	ZERO_STRUCT(u_info);
+	u_info.info23.info.fields_present = SAMR_FIELD_PASSWORD;
+	encode_pw_buffer(u_info.info23.password.data, r->samr_handle.in.newpassword, STR_UNICODE);
+
+	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->samr_handle.out.error_string
+			= talloc_asprintf(mem_ctx,
+					  "dcerpc_fetch_session_key failed: %s\n",
+					  nt_errstr(status));
+		return status;
+	}
+
+	arcfour_crypt_blob(u_info.info23.password.data, 516, &session_key);
+
+	sui.in.user_handle = r->samr_handle.in.user_handle;
+	sui.in.info = &u_info;
+	sui.in.level = 23;
+
+	/* 10. try samr_SetUserInfo level 23 to set the password */
+	status = dcerpc_samr_SetUserInfo(r->samr_handle.in.dcerpc_pipe, mem_ctx, &sui);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->samr_handle.out.error_string
+			= talloc_asprintf(mem_ctx,
+					  "SetUserInfo level 23 for [%s] failed: %s\n",
+					  r->samr_handle.in.account_name, nt_errstr(status));
+	}
+	return status;
+}
+
+/*
+ * 1. try samr_SetUserInfo level 26 to set the password
+ * 2. try samr_SetUserInfo level 25 to set the password
+ * 3. try samr_SetUserInfo level 24 to set the password
+ * 4. try samr_SetUserInfo level 23 to set the password
+*/
+static NTSTATUS libnet_SetPassword_samr_handle(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
+{
+	NTSTATUS status;
+	enum libnet_SetPassword_level levels[] = {
+		LIBNET_SET_PASSWORD_SAMR_HANDLE_26,
+		LIBNET_SET_PASSWORD_SAMR_HANDLE_25,
+		LIBNET_SET_PASSWORD_SAMR_HANDLE_24,
+		LIBNET_SET_PASSWORD_SAMR_HANDLE_23,
+	};
+	int i;
+	
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+		r->generic.level = levels[i];
+		status = libnet_SetPassword(ctx, mem_ctx, r);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
+			break;
+		}
+	}
+	
+	return status;
+}
 /*
  * set a password with DCERPC/SAMR calls
  * 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation)
@@ -296,10 +496,7 @@ NTSTATUS libnet_ChangePassword(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
  * 4. do a samr_OpenDomain to get a domain handle
  * 5. do a samr_LookupNames to get the users rid
  * 6. do a samr_OpenUser to get a user handle
- * 7. try samr_SetUserInfo level 26 to set the password
- * 8. try samr_SetUserInfo level 25 to set the password
- * 8. try samr_SetUserInfo level 24 to set the password
- *10. try samr_SetUserInfo level 23 to set the password
+ * 7  call libnet_SetPassword_samr_handle to set the password
  */
 static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
 {
@@ -314,12 +511,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	struct samr_LookupNames ln;
 	struct samr_OpenUser ou;
 	struct policy_handle u_handle;
-	struct samr_SetUserInfo sui;
-	union samr_UserInfo u_info;
-	DATA_BLOB session_key;
-	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
-	uint8_t confounder[16];	
-	struct MD5Context md5;
+	union libnet_SetPassword r2;
 
 	/* prepare connect to the SAMR pipe of users domain PDC */
 	c.pdc.level			= LIBNET_RPC_CONNECT_PDC;
@@ -332,8 +524,8 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	status = libnet_rpc_connect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"Connection to SAMR pipe of PDC of domain '%s' failed: %s\n",
-						r->samr.in.domain_name, nt_errstr(status));
+							   "Connection to SAMR pipe of PDC of domain '%s' failed: %s\n",
+							   r->samr.in.domain_name, nt_errstr(status));
 		return status;
 	}
 
@@ -435,7 +627,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 						r->samr.in.account_name, nt_errstr(ln.out.result));
 		status = ln.out.result;
 		goto disconnect;
-	}
+}
 
 	/* check if we got one RID for the user */
 	if (ln.out.rids.count != 1) {
@@ -471,193 +663,15 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 		goto disconnect;
 	}
 
-	/* prepare samr_SetUserInfo level 26 */
-	ZERO_STRUCT(u_info);
-	encode_pw_buffer(u_info.info26.password.data, r->samr.in.newpassword, STR_UNICODE);
-	u_info.info26.pw_len = strlen(r->samr.in.newpassword);
+	r2.samr_handle.level		= LIBNET_SET_PASSWORD_SAMR_HANDLE;
+	r2.samr_handle.in.account_name	= r->samr.in.account_name;
+	r2.samr_handle.in.newpassword	= r->samr.in.newpassword;
+	r2.samr_handle.in.user_handle   = &u_handle;
+	r2.samr_handle.in.dcerpc_pipe   = c.pdc.out.dcerpc_pipe;
 
-	status = dcerpc_fetch_session_key(c.pdc.out.dcerpc_pipe, &session_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"dcerpc_fetch_session_key failed: %s\n",
-						nt_errstr(status));
-		goto disconnect;
-	}
+	status = libnet_SetPassword(ctx, mem_ctx, &r2);
 
-	generate_random_buffer((uint8_t *)confounder, 16);
-
-	MD5Init(&md5);
-	MD5Update(&md5, confounder, 16);
-	MD5Update(&md5, session_key.data, session_key.length);
-	MD5Final(confounded_session_key.data, &md5);
-
-	arcfour_crypt_blob(u_info.info26.password.data, 516, &confounded_session_key);
-	memcpy(&u_info.info26.password.data[516], confounder, 16);
-
-	sui.in.user_handle = &u_handle;
-	sui.in.info = &u_info;
-	sui.in.level = 26;
-
-	/* 7. try samr_SetUserInfo level 26 to set the password */
-	status = dcerpc_samr_SetUserInfo(c.pdc.out.dcerpc_pipe, mem_ctx, &sui);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"SetUserInfo level 26 for [%s] failed: %s\n",
-						r->samr.in.account_name, nt_errstr(status));
-		goto UserInfo25;
-	}
-
-	/* check result of samr_SetUserInfo level 26 */
-	if (!NT_STATUS_IS_OK(sui.out.result)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"SetUserInfo level 26 for [%s] failed: %s\n",
-						r->samr.in.account_name, nt_errstr(sui.out.result));
-		if (NT_STATUS_EQUAL(sui.out.result, NT_STATUS_WRONG_PASSWORD)) {
-			status = sui.out.result;
-			goto disconnect;
-		}
-		goto UserInfo25;
-	}
-
-	goto disconnect;
-
-UserInfo25:
-	/* prepare samr_SetUserInfo level 25 */
-	ZERO_STRUCT(u_info);
-	u_info.info25.info.fields_present = SAMR_FIELD_PASSWORD;
-	encode_pw_buffer(u_info.info25.password.data, r->samr.in.newpassword, STR_UNICODE);
-
-	status = dcerpc_fetch_session_key(c.pdc.out.dcerpc_pipe, &session_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"dcerpc_fetch_session_key failed: %s\n",
-						nt_errstr(status));
-		goto disconnect;
-	}
-
-	generate_random_buffer((uint8_t *)confounder, 16);
-
-	MD5Init(&md5);
-	MD5Update(&md5, confounder, 16);
-	MD5Update(&md5, session_key.data, session_key.length);
-	MD5Final(confounded_session_key.data, &md5);
-
-	arcfour_crypt_blob(u_info.info25.password.data, 516, &confounded_session_key);
-	memcpy(&u_info.info25.password.data[516], confounder, 16);
-
-	sui.in.user_handle = &u_handle;
-	sui.in.info = &u_info;
-	sui.in.level = 25;
-
-	/* 8. try samr_SetUserInfo level 25 to set the password */
-	status = dcerpc_samr_SetUserInfo(c.pdc.out.dcerpc_pipe, mem_ctx, &sui);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"SetUserInfo level 25 for [%s] failed: %s\n",
-						r->samr.in.account_name, nt_errstr(status));
-		goto UserInfo24;
-	}
-
-	/* check result of samr_SetUserInfo level 25 */
-	if (!NT_STATUS_IS_OK(sui.out.result)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"SetUserInfo level 25 for [%s] failed: %s\n",
-						r->samr.in.account_name, nt_errstr(sui.out.result));
-		if (NT_STATUS_EQUAL(sui.out.result, NT_STATUS_WRONG_PASSWORD)) {
-			status = sui.out.result;
-			goto disconnect;
-		}
-		goto UserInfo24;
-	}
-
-	goto disconnect;
-
-UserInfo24:
-	/* prepare samr_SetUserInfo level 24 */
-	ZERO_STRUCT(u_info);
-	encode_pw_buffer(u_info.info24.password.data, r->samr.in.newpassword, STR_UNICODE);
-	/* w2k3 ignores this length */
-	u_info.info24.pw_len = strlen_m(r->samr.in.newpassword)*2;
-
-	status = dcerpc_fetch_session_key(c.pdc.out.dcerpc_pipe, &session_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"dcerpc_fetch_session_key failed: %s\n",
-						nt_errstr(status));
-		goto disconnect;
-	}
-
-	arcfour_crypt_blob(u_info.info24.password.data, 516, &session_key);
-
-	sui.in.user_handle = &u_handle;
-	sui.in.info = &u_info;
-	sui.in.level = 24;
-
-	/* 9. try samr_SetUserInfo level 24 to set the password */
-	status = dcerpc_samr_SetUserInfo(c.pdc.out.dcerpc_pipe, mem_ctx, &sui);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"SetUserInfo level 24 for [%s] failed: %s\n",
-						r->samr.in.account_name, nt_errstr(status));
-		goto UserInfo23;
-	}
-
-	/* check result of samr_SetUserInfo level 24 */
-	if (!NT_STATUS_IS_OK(sui.out.result)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"SetUserInfo level 24 for [%s] failed: %s\n",
-						r->samr.in.account_name, nt_errstr(sui.out.result));
-		if (NT_STATUS_EQUAL(sui.out.result, NT_STATUS_WRONG_PASSWORD)) {
-			status = sui.out.result;
-			goto disconnect;
-		}
-		goto UserInfo23;
-	}
-
-	goto disconnect;
-
-UserInfo23:
-	/* prepare samr_SetUserInfo level 23 */
-	ZERO_STRUCT(u_info);
-	u_info.info23.info.fields_present = SAMR_FIELD_PASSWORD;
-	encode_pw_buffer(u_info.info23.password.data, r->samr.in.newpassword, STR_UNICODE);
-
-	status = dcerpc_fetch_session_key(c.pdc.out.dcerpc_pipe, &session_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"dcerpc_fetch_session_key failed: %s\n",
-						nt_errstr(status));
-		goto disconnect;
-	}
-
-	arcfour_crypt_blob(u_info.info23.password.data, 516, &session_key);
-
-	sui.in.user_handle = &u_handle;
-	sui.in.info = &u_info;
-	sui.in.level = 23;
-
-	/* 10. try samr_SetUserInfo level 23 to set the password */
-	status = dcerpc_samr_SetUserInfo(c.pdc.out.dcerpc_pipe, mem_ctx, &sui);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"SetUserInfo level 23 for [%s] failed: %s\n",
-						r->samr.in.account_name, nt_errstr(status));
-		goto disconnect;
-	}
-
-	/* check result of samr_SetUserInfo level 23 */
-	if (!NT_STATUS_IS_OK(sui.out.result)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"SetUserInfo level 23 for [%s] failed: %s\n",
-						r->samr.in.account_name, nt_errstr(sui.out.result));
-		if (NT_STATUS_EQUAL(sui.out.result, NT_STATUS_WRONG_PASSWORD)) {
-			status = sui.out.result;
-			goto disconnect;
-		}
-		goto disconnect;
-	}
-
-	goto disconnect;
+	r->generic.out.error_string = r2.samr_handle.out.error_string;
 
 disconnect:
 	/* close connection */
@@ -676,6 +690,7 @@ static NTSTATUS libnet_SetPassword_generic(struct libnet_context *ctx, TALLOC_CT
 	r2.samr.in.domain_name	= r->generic.in.domain_name;
 	r2.samr.in.newpassword	= r->generic.in.newpassword;
 
+	r->generic.out.error_string = "Unknown Error";
 	status = libnet_SetPassword(ctx, mem_ctx, &r2);
 
 	r->generic.out.error_string = r2.samr.out.error_string;
@@ -690,6 +705,16 @@ NTSTATUS libnet_SetPassword(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, uni
 			return libnet_SetPassword_generic(ctx, mem_ctx, r);
 		case LIBNET_SET_PASSWORD_SAMR:
 			return libnet_SetPassword_samr(ctx, mem_ctx, r);
+		case LIBNET_SET_PASSWORD_SAMR_HANDLE:
+			return libnet_SetPassword_samr_handle(ctx, mem_ctx, r);
+		case LIBNET_SET_PASSWORD_SAMR_HANDLE_26:
+			return libnet_SetPassword_samr_handle_26(ctx, mem_ctx, r);
+		case LIBNET_SET_PASSWORD_SAMR_HANDLE_25:
+			return libnet_SetPassword_samr_handle_25(ctx, mem_ctx, r);
+		case LIBNET_SET_PASSWORD_SAMR_HANDLE_24:
+			return libnet_SetPassword_samr_handle_24(ctx, mem_ctx, r);
+		case LIBNET_SET_PASSWORD_SAMR_HANDLE_23:
+			return libnet_SetPassword_samr_handle_23(ctx, mem_ctx, r);
 		case LIBNET_SET_PASSWORD_KRB5:
 			return NT_STATUS_NOT_IMPLEMENTED;
 		case LIBNET_SET_PASSWORD_LDAP:
