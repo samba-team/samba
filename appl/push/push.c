@@ -90,7 +90,8 @@ usage (int ret)
     arg_printusage (args,
 		    sizeof(args) / sizeof(args[0]),
 		    NULL,
-		    "{po:username[@hostname] | hostname[:username]} filename");
+		    "[{po:username[@hostname] | hostname[:username]}] "
+		    "filename");
     exit (ret);
 }
 
@@ -530,14 +531,64 @@ do_v4 (char *host,
 }
 #endif /* KRB4 */
 
-static void
-parse_pobox (char *a0, char *a1,
-	     char **host, char **user, char **filename)
+static char *
+get_pobox (char **user)
 {
-    char *h, *u, *f;
+    char *ret = NULL;
+
+#ifdef HESIOD
+    {
+	void *context;
+	struct hesiod_postoffice *hpo;
+
+	if(hesiod_init (&context) != 0)
+	    err (1, "hesiod_init");
+
+	hpo = hesiod_getmailhost (context, *user);
+	if (hpo == NULL)
+	    warn ("hesiod_getmailhost %s", *user);
+	else {
+	    if (strcasecmp(hpo->hesiod_po_type, "pop") != 0)
+		errx (1, "Unsopperted po type %s", hpo->hesiod_po_type);
+
+	    ret = strdup(hpo->hesiod_po_host);
+	    if(ret == NULL)
+		errx (1, "strdup: out of memory");
+	    *user = strdup(hpo->hesiod_po_name);
+	    if (*user == NULL)
+		errx (1, "strdup: out of memory");
+	    hesiod_free_postoffice (context, hpo);
+	}
+	hesiod_end (context);
+    }
+#endif
+
+    if (ret == NULL)
+	ret = getenv("MAILHOST");
+    if (ret == NULL)
+	errx (1, "MAILHOST not set");
+    return ret;
+}
+
+static void
+parse_pobox (char *a0, char **host, char **user)
+{
+    char *h, *u;
     int po = 0;
 
-    f = a1;
+    if (a0 == NULL) {
+	struct passwd *pwd;
+
+	pwd = getpwuid (getuid ());
+	if (pwd == NULL)
+	    errx (1, "Who are you?");
+	*user = strdup (pwd->pw_name);
+	if (*user == NULL)
+	    errx (1, "strdup: out of memory");
+	*host = get_pobox (user);
+	return;
+    }
+
     if(strncmp(a0, "po:", 3) == 0) {
 	a0 += 3;
 	po++;
@@ -555,19 +606,18 @@ parse_pobox (char *a0, char *a1,
     if(h == u) {
 	/* some inconsistent compatibility with various mailers */
 	if(po) {
-	    h = getenv("MAILHOST");
-	    if (h == NULL)
-		errx (1, "MAILHOST not set");
+	    h = get_pobox (&u);
 	} else {
 	    struct passwd *pwd = getpwuid(getuid());
 	    if (pwd == NULL)
 		errx (1, "Who are you?");
 	    u = strdup(pwd->pw_name);
+	    if (u == NULL)
+		errx (1, "strdup: out of memory");
 	}
     }
     *host = h;
     *user = u;
-    *filename = f;
 }
 
 int
@@ -576,7 +626,7 @@ main(int argc, char **argv)
     int port = 0;
     int optind = 0;
     int ret = 1;
-    char *host, *user, *filename;
+    char *host, *user, *filename, *pobox;
 
     set_progname (argv[0]);
 
@@ -610,13 +660,28 @@ main(int argc, char **argv)
 	return 0;
     }
 	
-    if (argc != 2 && (do_from && argc != 1))
-	usage (1);
-
     if (do_from && header_str == NULL)
 	header_str = "From:";
     else if (header_str != NULL)
 	do_from = 1;
+
+    if (do_from) {
+	if (argc == 0)
+	    pobox = NULL;
+	else if (argc == 1)
+	    pobox = argv[0];
+	else
+	    usage (1);
+    } else {
+	if (argc == 1) {
+	    filename = argv[0];
+	    pobox    = NULL;
+	} else if (argc == 2) {
+	    filename = argv[1];
+	    pobox    = argv[0];
+	} else
+	    usage (1);
+    }
 
     if (port_str) {
 	struct servent *s = roken_getservbyname (port_str, "tcp");
@@ -641,8 +706,7 @@ main(int argc, char **argv)
 #error must define KRB4 or KRB5
 #endif
 
-    parse_pobox (argv[0], argv[1],
-		 &host, &user, &filename);
+    parse_pobox (pobox, &host, &user);
 
 #ifdef KRB5
     if (ret && use_v5) {
