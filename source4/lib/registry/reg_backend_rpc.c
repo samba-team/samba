@@ -257,7 +257,7 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx, struct registry_key *
 	return r.out.result;
 }
 
-static WERROR rpc_add_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, SEC_DESC *sec, struct registry_key **key)
+static WERROR rpc_add_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *sec, struct registry_key **key)
 {
 	NTSTATUS status;
 	struct winreg_CreateKey r;
