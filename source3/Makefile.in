@@ -218,6 +218,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/clioplock.o libsmb/errormap.o libsmb/clirap2.o \
 	     libsmb/passchange.o libsmb/doserr.o \
+	     libsmb/trustdom_cache.o \
 	     $(RPC_PARSE_OBJ1) $(LIBNTLMSSP_OBJ) $(LIBSAMBA_OBJ) $(LIBNMB_OBJ)
 
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
@@ -227,7 +228,7 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
 	       rpc_client/cli_ds.o rpc_client/cli_echo.o libsmb/namequery_dc.o
 
-LIBMSRPC_SERVER_OBJ = libsmb/trust_passwd.o
+LIBMSRPC_SERVER_OBJ = libsmb/trusts_util.o
 
 REGOBJS_OBJ = registry/reg_objects.o
 REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
@@ -277,8 +278,8 @@ LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
-		passdb/machine_sid.o passdb/util_sam_sid.o \
-		passdb/pdb_compat.o @PDB_STATIC@
+		passdb/machine_sid.o passdb/util_sam_sid.o passdb/pdb_compat.o \
+		@PDB_STATIC@
 
 XML_OBJ = passdb/pdb_xml.o
 MYSQL_OBJ = passdb/pdb_mysql.o
@@ -574,6 +575,7 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_user.o  \
 		nsswitch/winbindd_group.o \
 		nsswitch/winbindd_idmap.o \
+		nsswitch/winbindd_idmap_tdb.o \
 		nsswitch/winbindd_util.o  \
 		nsswitch/winbindd_cache.o \
 		nsswitch/winbindd_pam.o   \
@@ -589,8 +591,8 @@ WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_GET_SET_OBJ) \
 		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
-		$(PROFILE_OBJ) $(UNIGRP_OBJ) $(POPT_LIB_OBJ) \
-		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) 
+		$(PROFILE_OBJ) $(UNIGRP_OBJ) $(IDMAP_OBJ) \
+		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ)
 
 WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o $(POPT_LIB_OBJ)
 
@@ -608,7 +610,8 @@ NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBNTLMSSP_OBJ) $(LIBSAMBA_OBJ) $(POPT_LIB_O
 ######################################################################
 # now the rules...
 ######################################################################
-all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) $(MODULES) @EXTRA_ALL_TARGETS@
+all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
+	$(MODULES) @EXTRA_ALL_TARGETS@
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
@@ -638,7 +641,7 @@ smbfilter : SHOWFLAGS bin/smbfilter@EXEEXT@
 
 talloctort : SHOWFLAGS bin/talloctort@EXEEXT@
 
-nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ nsswitch/libnss_winbind.@SHLIBEXT@ nsswitch/pam_winbind.@SHLIBEXT@
+nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ nsswitch/@WINBIND_NSS@.@SHLIBEXT@ nsswitch/pam_winbind.@SHLIBEXT@
 
 wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 

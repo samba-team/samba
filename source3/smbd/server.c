@@ -877,6 +877,7 @@ static BOOL init_structs(void )
 	smbd_process();
 	
 	uni_group_cache_shutdown();
+	namecache_shutdown();
 	exit_server("normal exit");
 	return(0);
 }
