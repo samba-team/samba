@@ -472,6 +472,8 @@ ClearWindow(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     XExposeEvent *event = (XExposeEvent *)_event;
     if (!XtIsRealized(w))
 	return;
+    XClearArea(dpy, XtWindow(w), event->x, event->y, 
+	       event->width, event->height, False);
     if (state == GET_PASSWD)
 	post_prompt_box(XtWindow(w));
     if (timeout_id == 0 && event->count == 0) {
