@@ -77,7 +77,7 @@ sub _prepare_compiler_linker($)
 
 	$output = "
 CC=\@CC\@
-CC_FLAGS=-Iinclude -I. -I$(srcdir)/include -I$(srcdir) -Ilib \@CFLAGS\@ \@CPPFLAGS\@
+CC_FLAGS=-Iinclude -I. -I\$(srcdir)/include -I\$(srcdir) -Ilib \@CFLAGS\@ \@CPPFLAGS\@
 
 LD=\@CC\@
 LD_FLAGS=\@LDFLAGS\@ \@CFLAGS\@
