@@ -642,7 +642,11 @@ uint32 _net_trust_dom_list(const UNISTR2 *uni_server_name,
 {
 	char **doms = NULL;
 	uint32 num_doms = 0;
+	uint32 i;
+
 	enumtrustdoms(&doms, &num_doms);
+	for (i = 0; i < num_doms; i++)
+		strupper(doms[i]);
 	make_buffer2_multi(uni_trust_dom_name, doms, num_doms);
 	if (num_doms == 0)
 	{
