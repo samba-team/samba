@@ -1089,3 +1089,73 @@ void split_at_last_component(char *path, char *front, char sep, char *back)
 		}
 	}
 }
+
+/****************************************************************************
+convert a bit field to a string.  if you want multiple bits to be detected
+set them first, e.g SV_TYPE_ALL to be "All" or "Full Control" for ACB_INFOs.
+
+strings are expected to contain their own separators, although the code
+below only assumes that separators are spaces.
+
+****************************************************************************/
+char *bit_field_to_str(uint32 type, struct field_info *bs)
+{
+	static fstring typestr;
+	int i = 0;
+
+	typestr[0] = 0;
+
+	if (type == 0 || bs == NULL)
+	{
+		return NULL;
+	}
+
+	while (bs[i].str != NULL && type != 0)
+	{
+		if (IS_BITS_SET_ALL(bs[i].bits, type))
+		{
+			fstrcat(typestr, bs[i].str);
+			type &= ~bs[i].bits;
+		}
+		i++;
+	}
+	
+	i = strlen(typestr)-1;
+	if (i > 0 && typestr[i] == ' ')
+	{
+		typestr[i] = 0;
+	}
+
+	return typestr;
+}
+
+/****************************************************************************
+convert an enumeration to a string.  first item is the default.
+****************************************************************************/
+char *enum_field_to_str(uint32 type, struct field_info *bs, BOOL first_default)
+{
+	int i = 0;
+
+	if (bs == NULL)
+	{
+		return NULL;
+	}
+
+	while (bs[i].str != NULL && type != 0)
+	{
+		if (bs[i].bits == type)
+		{
+			return bs[i].str;
+		}
+		i++;
+	}
+
+	/* oops - none found */
+
+	if (first_default)
+	{
+		return bs[0].str;
+	}
+
+	return NULL;
+}
