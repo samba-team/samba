@@ -135,3 +135,4 @@ bits.h: bits
 bits: bits.o
 	$(CC) -o bits bits.o
 
+bits.o: bits.c
