@@ -277,6 +277,7 @@ doit(int s,
 	if (FD_ISSET(s, &readset)) {
 	    char *beg, *p;
 	    size_t rem;
+	    int blank_line;
 
 	    ret = read (s, in_ptr, sizeof(in_buf) - in_len - 1);
 	    if (ret < 0)
@@ -297,6 +298,8 @@ doit(int s,
 
 		    if (beg[0] == '.') {
 			if (beg[1] == '\r' && beg[2] == '\n') {
+			    if(!blank_line)
+				write_state_add(&write_state, "\n", 1);
 			    state = STAT;
 			    rem -= p - beg + 2;
 			    beg = p + 2;
@@ -335,13 +338,18 @@ doit(int s,
 			    ++copy;
 		    }
 		    *p = '\n';
+		    if(blank_line && 
+		       strncmp(copy, "From ", min(p - copy + 1, 5)) == 0)
+			write_state_add(&write_state, ">", 1);
 		    write_state_add(&write_state, copy, p - copy + 1);
+		    blank_line = (*copy == '\n');
 		    rem -= p - beg + 2;
 		    beg = p + 2;
 		} else if (rem >= 3 && strncmp (beg, "+OK", 3) == 0) {
 		    if (state == STAT) {
 			write_state_add(&write_state,
 					from_line, from_line_length);
+			blank_line = 0;
 			state = RETR;
 		    } else if (state == DELE) {
 			if (++deleted == count) {
