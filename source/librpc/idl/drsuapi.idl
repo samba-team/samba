@@ -1,0 +1,117 @@
+#include "idl_types.h"
+
+[ 
+  uuid(e3514235-4b06-11d1-ab04-00c04fc2dcd2),
+  version(4.0),
+  endpoints(drsuapi,TCP-0),
+  pointer_default(unique)
+] 
+interface drsuapi
+{
+	/*****************/
+        /* Function 0x00 */
+	void DRSUAPI_BIND(
+		/* [in] 8-60 bytes are possible
+		 *      but I saw 56 bytes
+		 */
+		[in]	uint8 blob[56],
+		/* [out] 60 bytes */
+		[out]	uint8 blob[60]
+		);
+
+	/*****************/
+        /* Function 0x01 */
+	void DRSUAPI_UNBIND();
+
+	/*****************/
+        /* Function 0x02 */
+	void DRSUAPI_REPLICA_SYNC();
+
+	/*****************/
+        /* Function 0x03 */
+	void DRSUAPI_GET_NC_CHANGES();
+
+	/*****************/
+        /* Function 0x04 */
+	void DRSUAPI_UPDATE_REFS();
+
+	/*****************/
+        /* Function 0x05 */
+	void DRSUAPI_REPLICA_ADD();
+
+	/*****************/
+        /* Function 0x06 */
+	void DRSUAPI_REPLICA_DEL();
+
+	/*****************/
+        /* Function 0x07 */
+	void DRSUAPI_REPLICA_MODIFY();
+
+	/*****************/
+        /* Function 0x08 */
+	void DRSUAPI_VERIFY_NAMES();
+
+	/*****************/
+        /* Function 0x09 */
+	void DRSUAPI_GET_MEMBERSHIPS();
+
+	/*****************/
+        /* Function 0x0a */
+	void DRSUAPI_INTER_DOMAIN_MOVE();
+
+	/*****************/
+        /* Function 0x0b */
+	void DRSUAPI_GET_NT4_CHANGELOG();
+
+	/*****************/
+        /* Function 0x0c */
+	void DRSUAPI_CRACKNAMES();
+
+	/*****************/
+        /* Function 0x0d */
+	void DRSUAPI_WRITE_SPN();
+
+	/*****************/
+        /* Function 0x0e */
+	void DRSUAPI_REMOVE_DS_SERVER();
+
+	/*****************/
+        /* Function 0x0f */
+	void DRSUAPI_REMOVE_DS_DOMAIN();
+
+	/*****************/
+        /* Function 0x10 */
+	void DRSUAPI_DOMAIN_CONTROLLER_INFO();
+
+	/*****************/
+        /* Function 0x11 */
+	void DRSUAPI_ADD_ENTRY();
+
+	/*****************/
+        /* Function 0x12 */
+	void DRSUAPI_EXECUTE_KCC();
+
+	/*****************/
+        /* Function 0x13 */
+	void DRSUAPI_GET_REPL_INFO();
+
+	/*****************/
+        /* Function 0x14 */
+	void DRSUAPI_ADD_SID_HISTORY();
+
+	/*****************/
+        /* Function 0x15 */
+	void DRSUAPI_GET_MEMBERSHIPS2();
+
+	/*****************/
+        /* Function 0x16 */
+	void DRSUAPI_REPLICA_VERIFY_OBJECTS();
+
+	/*****************/
+        /* Function 0x17 */
+	void DRSUAPI_GET_OBJECT_EXISTENCE();
+
+	/*****************/
+        /* Function 0x18 */
+	void DRSUAPI_QUERY_SITES_BY_COST();
+}
