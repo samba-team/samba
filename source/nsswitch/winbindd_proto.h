@@ -35,13 +35,19 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state);
 
-/*The following definitions come from  nsswitch/winbindd_surs.c  */
+/*The following definitions come from  nsswitch/winbindd_idmap.c  */
 
-BOOL winbindd_surs_sam_sid_to_unixid(struct winbindd_domain *domain,
-                                     DOM_SID *sid, 
-                                     POSIX_ID *id);
-BOOL winbindd_surs_unixid_to_sam_sid(struct winbindd_domain *domain,
-                                     POSIX_ID *id, DOM_SID *sid);
+BOOL winbindd_idmap_get_uid_from_rid(char *domain_name, uint32 user_rid, 
+                                     uid_t *uid);
+BOOL winbindd_idmap_get_gid_from_rid(char *domain_name, uint32 group_rid, 
+                                     gid_t *gid);
+BOOL get_rid_from_id(int id, uint32 *rid, struct winbindd_domain **domain,
+                     BOOL isgroup);
+BOOL winbindd_idmap_get_rid_from_uid(uid_t uid, uint32 *user_rid,
+                                     struct winbindd_domain **domain);
+BOOL winbindd_idmap_get_rid_from_gid(gid_t gid, uint32 *group_rid, 
+                                     struct winbindd_domain **domain);
+BOOL winbindd_idmap_init(void);
 
 /*The following definitions come from  nsswitch/winbindd_user.c  */
 
@@ -78,9 +84,6 @@ int winbindd_lookup_aliasmem(struct winbindd_domain *domain,
                              DOM_SID ***sids, char ***names, 
                              enum SID_NAME_USE **name_types);
 struct winbindd_domain *find_domain_from_name(char *domain_name);
-struct winbindd_domain *find_domain_from_uid(uid_t uid);
-struct winbindd_domain *find_domain_from_gid(gid_t gid);
-struct winbindd_domain *find_domain_from_sid(DOM_SID *sid);
 void free_getent_state(struct getent_state *state);
 BOOL winbindd_param_init(void);
 char *winbindd_cmd_to_string(enum winbindd_cmd cmd);
