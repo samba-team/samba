@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -90,7 +90,7 @@ usage (int ret)
     arg_printusage (args,
 		    sizeof(args) / sizeof(args[0]),
 		    NULL,
-		    "[{po:username[@hostname] | hostname[:username]}] "
+		    "[[{po:username[@hostname] | hostname[:username]}] ...]"
 		    "filename");
     exit (ret);
 }
