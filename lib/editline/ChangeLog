@@ -1,3 +1,7 @@
+Thu Jul  2 15:10:08 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* edit_compat.c: support for newer libedit
+
 Tue Jun 30 17:18:09 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (distclean): don't remove roken_rename.h
