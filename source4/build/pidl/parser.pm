@@ -60,7 +60,8 @@ sub find_size_var($$)
 sub struct_alignment($)
 {
 	my $s = shift;
-	my $align = 1;
+	# why do we need a minimum alignment of 4 ?? 
+	my $align = 4;
 	for my $e (@{$s->{ELEMENTS}}) {
 		if ($align < util::type_align($e)) {
 			$align = util::type_align($e);
