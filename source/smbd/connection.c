@@ -115,9 +115,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 {
 	struct connections_key key;
 	struct connections_data crec;
-	TDB_DATA kbuf, dbuf, lockkey;
-	BOOL rec_locked = False;
-	BOOL ret = True;
+	TDB_DATA kbuf, dbuf;
 
 	if (!tdb) {
 		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
@@ -138,34 +136,21 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		cs.name = lp_servicename(SNUM(conn));
 		cs.Clear = Clear;
 
-		lockkey.dptr = cs.name;
-		lockkey.dsize = strlen(cs.name)+1;
-
 		/*
-		 * Go through and count the connections with hash chain representing the service name
-		 * locked. This is slow but removes race conditions. JRA.
+		 * This has a race condition, but locking the chain before hand is worse
+		 * as it leads to deadlock.
 		 */
-
-		if (tdb_chainlock(tdb, lockkey)) {
-			DEBUG(0,("claim_connection: tdb_chainlock failed %s\n",
-				tdb_errorstr(tdb) ));
-			return False;
-		}
-
-		rec_locked = True;
 
 		if (tdb_traverse(tdb, count_fn, &cs) == -1) {
 			DEBUG(0,("claim_connection: traverse of connections.tdb failed with error %s.\n",
 				tdb_errorstr(tdb) ));
-			ret = False;
-			goto out;
+			return False;
 		}
 
 		if (cs.curr_connections >= max_connections) {
 			DEBUG(1,("claim_connection: Max connections (%d) exceeded for %s\n",
 				max_connections, name ));
-			ret = False;
-			goto out;
+			return False;
 		}
 	}
 
@@ -202,13 +187,8 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
 		DEBUG(0,("claim_connection: tdb_store failed with error %s.\n",
 			tdb_errorstr(tdb) ));
-		ret = False;
+		return False;
 	}
 
-  out:
-
-	if (rec_locked)
-		tdb_chainunlock(tdb, lockkey);
-
-	return ret;
+	return True;
 }
