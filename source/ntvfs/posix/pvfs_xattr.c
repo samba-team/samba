@@ -276,3 +276,40 @@ NTSTATUS pvfs_doseas_save(struct pvfs_state *pvfs, struct pvfs_filename *name, i
 	return pvfs_xattr_ndr_save(pvfs, name->full_name, fd, XATTR_DOSEAS_NAME, eas, 
 				   (ndr_push_flags_fn_t)ndr_push_xattr_DosEAs);
 }
+
+
+/*
+  load the set of streams from extended attributes
+*/
+NTSTATUS pvfs_streams_load(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd,
+			   struct xattr_DosStreams *streams)
+{
+	NTSTATUS status;
+	ZERO_STRUCTP(streams);
+	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
+		return NT_STATUS_OK;
+	}
+	status = pvfs_xattr_ndr_load(pvfs, streams, name->full_name, fd, 
+				     XATTR_DOSSTREAMS_NAME,
+				     streams, 
+				     (ndr_pull_flags_fn_t)ndr_pull_xattr_DosStreams);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return NT_STATUS_OK;
+	}
+	return status;
+}
+
+/*
+  save the set of streams into filesystem xattr
+*/
+NTSTATUS pvfs_streams_save(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd,
+			   struct xattr_DosStreams *streams)
+{
+	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
+		return NT_STATUS_OK;
+	}
+	return pvfs_xattr_ndr_save(pvfs, name->full_name, fd, 
+				   XATTR_DOSSTREAMS_NAME, 
+				   streams, 
+				   (ndr_push_flags_fn_t)ndr_push_xattr_DosStreams);
+}
