@@ -238,7 +238,8 @@ static PyObject *py_smb_query_secdesc(PyObject *self, PyObject *args,
 
 	if (cli_is_error(cli->cli)) {
 		PyErr_SetString(PyExc_RuntimeError, "query_secdesc failed");
-		return NULL;
+		result = NULL;
+		goto done;
 	}
 
 	if (!secdesc) {
@@ -347,6 +348,11 @@ static PyMethodDef smb_methods[] = {
 
 static void py_cli_state_dealloc(PyObject* self)
 {
+	cli_state_object *cli = (cli_state_object *)self;
+
+	if (cli->cli)
+		cli_shutdown(cli->cli);
+
 	PyObject_Del(self);
 }
 
