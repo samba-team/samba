@@ -791,7 +791,12 @@ static void usage(char *pname)
 	/* Setup the main smbd so that we can get messages. */
 	claim_connection(NULL,"",MAXSTATUS,True);
 
-	start_background_queue();
+	/* 
+	   DO NOT ENABLE THIS TILL YOU COPE WITH KILLING THESE TASKS AND INETD
+	   THIS *killed* LOTS OF BUILD FARM MACHINES. IT CREATED HUNDREDS OF 
+	   smbd PROCESSES THAT NEVER DIE
+	   start_background_queue(); 
+	*/
 
 	if (!open_sockets(is_daemon,port))
 		exit(1);
