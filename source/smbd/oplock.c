@@ -598,13 +598,13 @@ static files_struct *initial_break_processing(SMB_DEV_T dev, SMB_INO_T inode, un
 
 /****************************************************************************
  Process a level II oplock break directly.
+ We must call this function with the share mode entry locked.
 ****************************************************************************/
 
-BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
+static BOOL oplock_break_level2(files_struct *fsp, BOOL local_request)
 {
 	extern uint32 global_client_caps;
 	char outbuf[128];
-	BOOL got_lock = False;
 	SMB_DEV_T dev = fsp->dev;
 	SMB_INO_T inode = fsp->inode;
 
@@ -644,24 +644,15 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
 	/*
 	 * Now we must update the shared memory structure to tell
 	 * everyone else we no longer have a level II oplock on 
-	 * this open file. If local_request is true then token is
-	 * the existing lock on the shared memory area.
+	 * this open file. We must call this function with the share mode
+	 * entry locked so we can change the entry directly.
 	 */
-
-	if(!local_request && lock_share_entry_fsp(fsp) == False) {
-		DEBUG(0,("oplock_break_level2: unable to lock share entry for file %s\n", fsp->fsp_name ));
-	} else {
-		got_lock = True;
-	}
 
 	if(remove_share_oplock(fsp)==False) {
 		DEBUG(0,("oplock_break_level2: unable to remove level II oplock for file %s\n", fsp->fsp_name ));
 	}
 
 	release_file_oplock(fsp);
-
-	if (!local_request && got_lock)
-		unlock_share_entry_fsp(fsp);
 
 	if(level_II_oplocks_open < 0) {
 		DEBUG(0,("oplock_break_level2: level_II_oplocks_open < 0 (%d). PANIC ERROR\n",
@@ -680,6 +671,7 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
 
 /****************************************************************************
  Process an oplock break directly.
+ This is always called with the share mode lock *NOT* held.
 ****************************************************************************/
 
 static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, BOOL local_request)
@@ -708,8 +700,18 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	 * Deal with a level II oplock going break to none separately.
 	 */
 
-	if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
-		return oplock_break_level2(fsp, local_request, -1);
+	if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
+		BOOL ret;
+		/* We must always call oplock_break_level2() with
+		   the share mode entry locked. */
+		if (lock_share_entry_fsp(fsp) == False) {
+			DEBUG(0,("oplock_break: unable to lock share entry for file %s\n", fsp->fsp_name ));
+			return False;
+		}
+		ret = oplock_break_level2(fsp, local_request);
+		unlock_share_entry_fsp(fsp);
+		return ret;
+	}
 
 	/* Mark the oplock break as sent - we don't want to send twice! */
 	if (fsp->sent_oplock_break) {
@@ -944,6 +946,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 /****************************************************************************
 Send an oplock break message to another smbd process. If the oplock is held 
 by the local smbd then call the oplock break function directly.
+Note this function is always called with the share mode lock *NOT* held.
 ****************************************************************************/
 
 BOOL request_oplock_break(share_mode_entry *share_entry, BOOL async)
@@ -1155,7 +1158,6 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 {
 	share_mode_entry *share_list = NULL;
 	pid_t pid = sys_getpid();
-	int token = -1;
 	int num_share_modes = 0;
 	int i;
 
@@ -1222,7 +1224,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 
 			DEBUG(10,("release_level_2_oplocks_on_change: breaking our own oplock.\n"));
 
-			oplock_break_level2(new_fsp, True, token);
+			oplock_break_level2(new_fsp, True);
 
 		} else {
 
