@@ -365,6 +365,66 @@ static int skel_sys_acl_free_qualifier(vfs_handle_struct *handle, connection_str
 	return SMB_VFS_NEXT_SYS_ACL_FREE_QUALIFIER(handle, conn, qualifier, tagtype);
 }
 
+static ssize_t skel_getxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, void *value, size_t size)
+{
+        return SMB_VFS_NEXT_GETXATTR(handle, conn, path, name, value, size);
+}
+
+static ssize_t skel_lgetxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, void *value, size_t
+size)
+{
+        return SMB_VFS_NEXT_LGETXATTR(handle, conn, path, name, value, size);
+}
+
+static ssize_t skel_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, void *value, size_t size)
+{
+        return SMB_VFS_NEXT_FGETXATTR(handle, fsp, fd, name, value, size);
+}
+
+static ssize_t skel_listxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, char *list, size_t size)
+{
+        return SMB_VFS_NEXT_LISTXATTR(handle, conn, path, list, size);
+}
+
+static ssize_t skel_llistxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, char *list, size_t size)
+{
+        return SMB_VFS_NEXT_LLISTXATTR(handle, conn, path, list, size);
+}
+
+static ssize_t skel_flistxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, char *list, size_t size)
+{
+        return SMB_VFS_NEXT_FLISTXATTR(handle, fsp, fd, list, size);
+}
+
+static int skel_removexattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name)
+{
+        return SMB_VFS_NEXT_REMOVEXATTR(handle, conn, path, name);
+}
+
+static int skel_lremovexattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name)
+{
+        return SMB_VFS_NEXT_LREMOVEXATTR(handle, conn, path, name);
+}
+
+static int skel_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name)
+{
+        return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, fd, name);
+}
+
+static int skel_setxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags)
+{
+        return SMB_VFS_NEXT_SETXATTR(handle, conn, path, name, value, size, flags);
+}
+
+static int skel_lsetxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags)
+{
+        return SMB_VFS_NEXT_LSETXATTR(handle, conn, path, name, value, size, flags);
+}
+
+static int skel_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, const void *value, size_t size, int flags)
+{
+        return SMB_VFS_NEXT_FSETXATTR(handle, fsp, fd, name, value, size, flags);
+}
 
 /* VFS operations structure */
 
@@ -449,6 +509,20 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_sys_acl_free_acl),		SMB_VFS_OP_SYS_ACL_FREE_ACL,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_sys_acl_free_qualifier),	SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER,	SMB_VFS_LAYER_TRANSPARENT},
 	
+	/* EA operations. */
+	{SMB_VFS_OP(skel_getxattr),			SMB_VFS_OP_GETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_lgetxattr),			SMB_VFS_OP_LGETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_fgetxattr),			SMB_VFS_OP_FGETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_listxattr),			SMB_VFS_OP_LISTXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_llistxattr),			SMB_VFS_OP_LLISTXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_flistxattr),			SMB_VFS_OP_FLISTXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_removexattr),			SMB_VFS_OP_REMOVEXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_lremovexattr),			SMB_VFS_OP_LREMOVEXATTR,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_fremovexattr),			SMB_VFS_OP_FREMOVEXATTR,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_setxattr),			SMB_VFS_OP_SETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_lsetxattr),			SMB_VFS_OP_LSETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_fsetxattr),			SMB_VFS_OP_FSETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+
 	{NULL,						SMB_VFS_OP_NOOP,			SMB_VFS_LAYER_NOOP}
 };
 
