@@ -1,3 +1,7 @@
+Fri May 15 19:38:19 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* libtelnet/kerberos5.c: Always print errors from mk_req.
+
 Fri May  1 07:16:59 1998  Assar Westerlund  <assar@sics.se>
 
 	* telnet/commands.c: unifdef -DHAVE_H_ERRNO

@@ -1,3 +1,8 @@
+Fri May 15 19:39:18 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/get_cred.c: Better error if local tgt couldn't be
+ 	found.
+
 Tue May 12 21:11:02 1998  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.0p
