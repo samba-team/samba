@@ -173,11 +173,6 @@ void wins_register_wack(struct nbt_name_socket *nbtsock,
 	state->src_address     = talloc_strdup(state, src_address);
 	if (state->src_address == NULL) goto failed;
 
-	/* send a WACK to the client, specifying the maximum time it could
-	   take to check with the owner, plus some slack */
-	ttl = 5 + 4 * str_list_length(rec->addresses);
-	nbtd_wack_reply(nbtsock, packet, src_address, src_port, ttl);
-
 	/* setup a name query to the first address */
 	state->query.in.name        = *rec->name;
 	state->query.in.dest_addr   = state->owner_addresses[0];
@@ -185,6 +180,17 @@ void wins_register_wack(struct nbt_name_socket *nbtsock,
 	state->query.in.wins_lookup = True;
 	state->query.in.timeout     = 1;
 	state->query.in.retries     = 2;
+
+	/* the LOGON type is a nasty hack */
+	if (rec->name->type == NBT_NAME_LOGON) {
+		wins_wack_allow(state);
+		return;
+	}
+
+	/* send a WACK to the client, specifying the maximum time it could
+	   take to check with the owner, plus some slack */
+	ttl = 5 + 4 * str_list_length(rec->addresses);
+	nbtd_wack_reply(nbtsock, packet, src_address, src_port, ttl);
 
 	req = nbt_name_query_send(nbtsock, &state->query);
 	if (req == NULL) goto failed;
