@@ -343,7 +343,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 		status = gensec_sign_packet(p->security_state.generic_state, 
 					    mem_ctx, 
 					    blob->data + DCERPC_REQUEST_LENGTH, 
-					    pkt->u.request.stub_and_verifier.length,
+					    pkt->u.request.stub_and_verifier.length+p->security_state.auth_info->auth_pad_length,
 					    blob->data,
 					    blob->length - 
 					    p->security_state.auth_info->credentials.length,
