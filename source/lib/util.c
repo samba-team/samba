@@ -1836,6 +1836,26 @@ char *lock_path(char *name)
 	return fname;
 }
 
+/*****************************************************************
+a useful function for returning a path in the Samba pid directory
+ *****************************************************************/  
+char *pid_path(char *name)
+{
+	static pstring fname;
+
+	pstrcpy(fname,lp_piddir());
+	trim_string(fname,"","/");
+	
+	if (!directory_exist(fname,NULL)) {
+		mkdir(fname,0755);
+	}
+	
+	pstrcat(fname,"/");
+	pstrcat(fname,name);
+
+	return fname;
+}
+
 /*******************************************************************
  Given a filename - get its directory name
  NB: Returned in static storage.  Caveats:

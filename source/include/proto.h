@@ -1892,6 +1892,7 @@ char *lp_addprinter_cmd(void);
 char *lp_deleteprinter_cmd(void);
 char *lp_os2_driver_map(void);
 char *lp_lockdir(void);
+char *lp_piddir(void);
 char *lp_utmpdir(void);
 char *lp_wtmpdir(void);
 BOOL lp_utmp(void);

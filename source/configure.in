@@ -18,7 +18,7 @@ AC_ARG_WITH(fhs,
     swatdir="\${DATADIR}/samba/swat",
     codepagedir="\$(LIBDIR)/codepages"
     configdir="\$(LIBDIR)"
-    lockdir="\$(VARDIR)/locks"
+    piddir="\$(VARDIR)/run/samba"
     logfilebase="\$(VARDIR)"
     privatedir="\${prefix}/private"
     swatdir="\${prefix}/swat")
@@ -52,6 +52,22 @@ AC_ARG_WITH(lockdir,
   ;;
   * )
     lockdir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set pid directory location
+AC_ARG_WITH(piddir,
+[  --with-piddir=DIR      Where to put pid files ($ac_default_prefix/var/locks)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-piddir called without argument - will use default])
+  ;;
+  * )
+    piddir="$withval"
     ;;
   esac])
 
@@ -122,6 +138,7 @@ AC_ARG_WITH(logfilebase,
 AC_SUBST(codepagedir)
 AC_SUBST(configdir)
 AC_SUBST(lockdir)
+AC_SUBST(piddir)
 AC_SUBST(logfilebase)
 AC_SUBST(privatedir)
 AC_SUBST(swatdir)

@@ -270,6 +270,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--libdir='$(DESTDIR)%{EtcSamba}' \
 	--with-privatedir='$(LIBDIR)' \
 	--with-lockdir='$(DESTDIR)/var/lock/samba.d' \
+	--with-piddir='$(DESTDIR)/var/run/samba' \
 	--with-swatdir='$(DESTDIR)/usr/share/swat' \
 	--with-sambabook='$(DESTDIR)/usr/share/swat/using_samba' \
 	--with-configdir='$(DESTDIR)'%{EtcSamba} \
@@ -290,13 +291,20 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 
 make LOGFILEBASE=/var/log/samba.d everything nsswitch/libnss_wins.so
 
+# Now build the VFS modules
+cd ../examples/VFS
+make
+cd block
+CFLAGS="$RPM_OPT_FLAGS -DPARAMCONF=/etc/samba.d/samba-block.conf" make
+
+
 
 %Install
 %{mkDESTDIR}
 VVS=packaging/%{Vendor}/%{Dist}
 
 mkdir -p $DESTDIR/etc/{{logrotate,pam}.d,sysconfig/daemons}
-mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
+mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba,run/samba}
 mkdir -p $DESTDIR/usr/share/swat/using_samba/{gifs,figs}
 mkdir -p $DESTDIR/lib/security
 mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
@@ -341,6 +349,12 @@ install -m 755 source/bin/smbfilter $DESTDIR/usr/bin
 install -m 755 source/bin/smbsh $DESTDIR/usr/bin
 install -m 755 source/bin/smbwrapper.so $DESTDIR/usr/bin
 install -m 755 source/bin/smbtorture $DESTDIR/usr/sbin
+
+# Adding VFS modules
+install -m 755 examples/VFS/audit.so $DESTDIR/usr/lib/samba
+install -m 755 examples/VFS/recycle.so $DESTDIR/usr/lib/samba
+install -m 755 examples/VFS/skel.so $DESTDIR/usr/lib/samba
+install -m 755 examples/VFS/block/block.so $DESTDIR/usr/lib/samba
 
 cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf.sample
 cp -p $VVS/smb.conf $DESTDIR%{EtcSamba}/smb.conf
@@ -425,6 +439,7 @@ done
 cat << 'EOF' | %{mkLists} -d samba
 Samba					base
 /lib/$					base
+/lib/samba/$					base
 %{LSBservedir}				config-IGNORED
 ^/(etc|var|home|tmp)			config-IGNORED
 swat					swat

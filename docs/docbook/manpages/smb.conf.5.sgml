@@ -650,6 +650,8 @@
 		<listitem><para><link linkend="LOCALMASTER"><parameter>local master</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOCKDIR"><parameter>lock dir</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOCKDIRECTORY"><parameter>lock directory</parameter></link></para></listitem>
+		<listitem><para><link linkend="PIDDIR"><parameter>pid dir</parameter></link></para></listitem>
+		<listitem><para><link linkend="PIDDIRECTORY"><parameter>pid directory</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOGFILE"><parameter>log file</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOGLEVEL"><parameter>log level</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOGONDRIVE"><parameter>logon drive</parameter></link></para></listitem>
@@ -5549,6 +5551,26 @@
 		</listitem>
 		</varlistentry>
 
+
+
+
+		<varlistentry>
+		<term><anchor id="PIDDIR">pid dir (G)</term>
+		<listitem><para>Synonym for <link linkend="PIDDIRECTORY"><parameter>
+		pid directory</parameter></link>.</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term><anchor id="PIDDIRECTORY">pid directory (G)</term>
+		<listitem><para>This option specifies the directory where pid 
+		files will be placed.  </para>
+
+		<para>Default: <command>pid directory = ${prefix}/var/locks</command></para>
+		<para>Example: <command>pid directory = /var/run/</command>
+		</para></listitem>
+		</varlistentry>
 
 
 

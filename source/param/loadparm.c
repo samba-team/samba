@@ -108,6 +108,7 @@ typedef struct
 	char *szDeletePrinterCommand;
 	char *szOs2DriverMap;
 	char *szLockDir;
+	char *szPidDir;
 	char *szRootdir;
 	char *szDefaultService;
 	char *szDfree;
@@ -1024,6 +1025,8 @@ static struct parm_struct parm_table[] = {
 	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_DOS_STRING},
 	{"lock dir", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, 0}, 
 	{"lock directory", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, 0},
+	{"pid dir", P_STRING, P_GLOBAL, &Globals.szPidDir, NULL, NULL, 0}, 
+	{"pid directory", P_STRING, P_GLOBAL, &Globals.szPidDir, NULL, NULL, 0}, 
 #ifdef WITH_UTMP
 	{"utmp directory", P_STRING, P_GLOBAL, &Globals.szUtmpDir, NULL, NULL, 0},
 	{"wtmp directory", P_STRING, P_GLOBAL, &Globals.szWtmpDir, NULL, NULL, 0},
@@ -1262,6 +1265,7 @@ static void init_globals(void)
 	string_set(&Globals.szPasswdProgram, PASSWD_PROGRAM);
 	string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
 	string_set(&Globals.szLockDir, LOCKDIR);
+	string_set(&Globals.szPidDir, PIDDIR);
 #ifdef WITH_UTMP
 	string_set(&Globals.szUtmpDir, "");
 	string_set(&Globals.szWtmpDir, "");
@@ -1521,6 +1525,7 @@ FN_GLOBAL_STRING(lp_addprinter_cmd, &Globals.szAddPrinterCommand)
 FN_GLOBAL_STRING(lp_deleteprinter_cmd, &Globals.szDeletePrinterCommand)
 FN_GLOBAL_STRING(lp_os2_driver_map, &Globals.szOs2DriverMap)
 FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
+FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
 #ifdef WITH_UTMP
 FN_GLOBAL_STRING(lp_utmpdir, &Globals.szUtmpDir)
 FN_GLOBAL_STRING(lp_wtmpdir, &Globals.szWtmpDir)
