@@ -550,10 +550,10 @@
 	an <command>smbd</command> is to send it a SIGTERM (-15) signal and wait for 
 	it to die on its own.</para>
 
-	<para>The debug log level of <command>smbd</command> may be raised by sending 
-	it a SIGUSR1 (<command>kill -USR1 &lt;smbd-pid&gt;</command>)
-	and lowered by sending it a SIGUSR2 (<command>kill -USR2 &lt;smbd-pid&gt;
-	</command>). This is to allow transient problems to be diagnosed, 
+	<para>The debug log level of <command>smbd</command> may be raised
+	or lowered using <ulink url="smbcontrol.1.html"><command>smbcontrol(1)
+	</command></ulink> program (SIGUSR[1|2] signals are no longer used in
+	Samba 2.2). This is to allow transient problems to be diagnosed, 
 	whilst still running at a normally low log level.</para>
 
 	<para>Note that as the signal handlers send a debug write, 

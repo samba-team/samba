@@ -965,16 +965,17 @@ CLASS="COMMAND"
 >The debug log level of <B
 CLASS="COMMAND"
 >smbd</B
-> may be raised by sending 
-	it a SIGUSR1 (<B
+> may be raised
+	or lowered using <A
+HREF="smbcontrol.1.html"
+TARGET="_top"
+><B
 CLASS="COMMAND"
->kill -USR1 &#60;smbd-pid&#62;</B
->)
-	and lowered by sending it a SIGUSR2 (<B
-CLASS="COMMAND"
->kill -USR2 &#60;smbd-pid&#62;
+>smbcontrol(1)
 	</B
->). This is to allow transient problems to be diagnosed, 
+></A
+> program (SIGUSR[1|2] signals are no longer used in
+	Samba 2.2). This is to allow transient problems to be diagnosed, 
 	whilst still running at a normally low log level.</P
 ><P
 >Note that as the signal handlers send a debug write, 

@@ -559,23 +559,25 @@ CLASS="COMMAND"
 	the <TT
 CLASS="FILENAME"
 >log.nmb</TT
-> file. In addition, the debug log level 
-	of nmbd may be raised by sending it a SIGUSR1 (<B
+> file.</P
+><P
+>The debug log level of nmbd may be raised or lowered using
+	<A
+HREF="smbcontrol.1.html"
+TARGET="_top"
+><B
 CLASS="COMMAND"
->kill -USR1
-	&#60;nmbd-pid&#62;</B
->) and lowered by sending it a
-	SIGUSR2 (<B
-CLASS="COMMAND"
->kill -USR2 &#60;nmbd-pid&#62;</B
->). This is to 
-	allow transient problems to be diagnosed, whilst still running at a 
-	normally low log level.</P
+>smbcontrol(1)</B
+>
+	</A
+> (SIGUSR[1|2] signals are no longer used in Samba 2.2). This is
+	to allow transient problems to be diagnosed, whilst still running
+	at a normally low log level.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN186"
+NAME="AEN187"
 ></A
 ><H2
 >VERSION</H2
@@ -586,7 +588,7 @@ NAME="AEN186"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN189"
+NAME="AEN190"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -651,7 +653,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN206"
+NAME="AEN207"
 ></A
 ><H2
 >AUTHOR</H2
