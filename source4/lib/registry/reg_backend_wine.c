@@ -22,12 +22,27 @@
 #include "lib/registry/common/registry.h"
 #include "windows/registry.h"
 
+static WERROR wine_open_reg (struct registry_hive *h, struct registry_key **key)
+{
+	/* FIXME: Open h->location and mmap it */
+}
+
+
+
 static REG_OPS reg_backend_wine = {
 	.name = "wine",
+	.open_hive = wine_open_reg,
+	
 };
 
 NTSTATUS registry_wine_init(void)
 {
 	register_backend("registry", &reg_backend_wine);
 	return NT_STATUS_OK;
+}
+
+WERROR reg_open_wine(struct registry_key **ctx)
+{
+	/* FIXME: Open ~/.wine/system.reg, etc */
+	return WERR_NOT_SUPPORTED;
 }

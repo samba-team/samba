@@ -180,14 +180,14 @@ static void parse_rgdb_block(CREG *creg, RGDB_HDR *rgdb_hdr)
 	}
 }
 
-static WERROR w95_open_reg (TALLOC_CTX *mem_ctx, struct registry_hive *h, struct registry_key **root)
+static WERROR w95_open_reg (struct registry_hive *h, struct registry_key **root)
 {
 	CREG *creg;
 	DWORD creg_id, rgkn_id;
 	DWORD i;
 	DWORD offset;
 
-	creg = talloc_p(mem_ctx, CREG);
+	creg = talloc_p(h, CREG);
 	memset(creg, 0, sizeof(CREG));
 	h->backend_data = creg;
 
@@ -234,7 +234,7 @@ static WERROR w95_open_reg (TALLOC_CTX *mem_ctx, struct registry_hive *h, struct
 	}
 #endif
 
-	creg->rgdb_keys = talloc_array_p(mem_ctx, RGDB_KEY **, creg->creg_hdr->num_rgdb);
+	creg->rgdb_keys = talloc_array_p(h, RGDB_KEY **, creg->creg_hdr->num_rgdb);
 
 	offset = 0;
 	DEBUG(3, ("Reading %d rgdb entries\n", creg->creg_hdr->num_rgdb));
@@ -250,7 +250,7 @@ static WERROR w95_open_reg (TALLOC_CTX *mem_ctx, struct registry_hive *h, struct
 		}
 
 
-		creg->rgdb_keys[i] = talloc_array_p(mem_ctx, RGDB_KEY *, rgdb_hdr->max_id+1);
+		creg->rgdb_keys[i] = talloc_array_p(h, RGDB_KEY *, rgdb_hdr->max_id+1);
 		memset(creg->rgdb_keys[i], 0, sizeof(RGDB_KEY *) * (rgdb_hdr->max_id+1));
 
 		parse_rgdb_block(creg, rgdb_hdr);
@@ -259,7 +259,7 @@ static WERROR w95_open_reg (TALLOC_CTX *mem_ctx, struct registry_hive *h, struct
 	}
 	
 	/* First element in rgkn should be root key */
-	*root = talloc_p(mem_ctx, struct registry_key);
+	*root = talloc_p(h, struct registry_key);
 	(*root)->name = NULL;
 	(*root)->backend_data = LOCN_RGKN(creg, sizeof(RGKN_HDR));
 	
@@ -342,7 +342,7 @@ static WERROR w95_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, i
 	return WERR_OK;
 }
 
-static struct registry_operations reg_backend_w95 = {
+static struct hive_operations reg_backend_w95 = {
 	.name = "w95",
 	.open_hive = w95_open_reg,
 	.get_value_by_index = w95_get_value_by_id,

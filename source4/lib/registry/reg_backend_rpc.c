@@ -21,6 +21,8 @@
 #include "registry.h"
 #include "librpc/gen_ndr/ndr_winreg.h"
 
+static struct hive_operations reg_backend_rpc;
+
 /**
  * This is the RPC backend for the registry library.
  */
@@ -76,93 +78,56 @@ struct rpc_key_data {
 };
 
 struct {
-	const char *name;
+	uint32 hkey;
 	WERROR (*open) (struct dcerpc_pipe *p, TALLOC_CTX *, struct policy_handle *h);
 } known_hives[] = {
-{ "HKEY_LOCAL_MACHINE", open_HKLM },
-{ "HKEY_CURRENT_USER", open_HKCU },
-{ "HKEY_CLASSES_ROOT", open_HKCR },
-{ "HKEY_PERFORMANCE_DATA", open_HKPD },
-{ "HKEY_USERS", open_HKU },
-{ "HKEY_DYN_DATA", open_HKDD },
-{ "HKEY_CURRENT_CONFIG", open_HKCC },
-{ NULL, NULL }
+{ HKEY_LOCAL_MACHINE, open_HKLM },
+{ HKEY_CURRENT_USER, open_HKCU },
+{ HKEY_CLASSES_ROOT, open_HKCR },
+{ HKEY_PERFORMANCE_DATA, open_HKPD },
+{ HKEY_USERS, open_HKU },
+{ HKEY_DYN_DATA, open_HKDD },
+{ HKEY_CURRENT_CONFIG, open_HKCC },
+{ 0, NULL }
 };
 
 static WERROR rpc_query_key(struct registry_key *k);
 
-static WERROR rpc_list_hives (TALLOC_CTX *mem_ctx, const char *location, const char *credentials, char ***hives)
+static WERROR rpc_get_hive (struct registry_context *ctx, uint32 hkey_type, struct registry_key **k)
 {
-	int i = 0;
-	*hives = talloc_p(mem_ctx, char *);
-	for(i = 0; known_hives[i].name; i++) {
-		*hives = talloc_realloc_p(mem_ctx, *hives, char *, i+2);
-		(*hives)[i] = talloc_strdup(mem_ctx, known_hives[i].name);
-	}
-	(*hives)[i] = NULL;
-	return WERR_OK;
-}
-
-static WERROR rpc_close_hive (struct registry_hive *h)
-{
-	dcerpc_pipe_close(h->backend_data);
-	return WERR_OK;
-}
-
-static WERROR rpc_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *h, struct registry_key **k)
-{
-	NTSTATUS status;
-	char *user;
-	char *pass;
-	struct rpc_key_data *mykeydata;
-	struct dcerpc_pipe *p;
 	int n;
+	struct registry_hive *h;
+	struct rpc_key_data *mykeydata;
 
-	if (!h->credentials) return WERR_INVALID_PARAM;
-
-	/* Default to local smbd if no connection is specified */
-	if (!h->location) {
-		h->location = talloc_strdup(mem_ctx, "ncalrpc:");
-	}
-
-	user = talloc_strdup(mem_ctx, h->credentials);
-	pass = strchr(user, '%');
-	if (pass) {
-		*pass = '\0';
-		pass = strdup(pass+1);
-	} else {
-		pass = strdup("");
-	}
-
-	status = dcerpc_pipe_connect(&p, h->location, 
-				     DCERPC_WINREG_UUID,
-				     DCERPC_WINREG_VERSION,
-				     lp_workgroup(),
-				     user, pass);
-	free(pass);
-
-	h->backend_data = p;
-
-	if(NT_STATUS_IS_ERR(status)) {
-		DEBUG(1, ("Unable to open '%s': %s\n", h->location, nt_errstr(status)));
-		return ntstatus_to_werror(status);
-	}
-
-	for(n = 0; known_hives[n].name; n++) 
+	for(n = 0; known_hives[n].hkey; n++) 
 	{
-		if(!strcmp(known_hives[n].name, h->backend_hivename)) break;
+		if(known_hives[n].hkey == hkey_type) break;
 	}
 	
-	if(!known_hives[n].name)  {
-		DEBUG(1, ("No such hive %s\n", known_hives[n].name));
+	if(!known_hives[n].open)  {
+		DEBUG(1, ("No such hive %d\n", hkey_type));
 		return WERR_NO_MORE_ITEMS;
 	}
+
+	h = talloc_p(ctx, struct registry_hive);
+	h->functions = &reg_backend_rpc;
+	h->location = NULL;
+	h->backend_data = ctx->backend_data;
+	h->reg_ctx = ctx;
 	
-	*k = talloc_p(mem_ctx, struct registry_key);
-	(*k)->backend_data = mykeydata = talloc_p(mem_ctx, struct rpc_key_data);
+	(*k) = h->root = talloc_p(h, struct registry_key);
+	(*k)->hive = h;
+	(*k)->backend_data = mykeydata = talloc_p(*k, struct rpc_key_data);
 	mykeydata->num_values = -1;
 	mykeydata->num_subkeys = -1;
-	return known_hives[n].open((struct dcerpc_pipe *)h->backend_data, *k, &(mykeydata->pol));
+	return known_hives[n].open((struct dcerpc_pipe *)ctx->backend_data, *k, &(mykeydata->pol));
+}
+
+static int rpc_close (void *_h)
+{
+	struct registry_context *h = _h;
+	dcerpc_pipe_close(h->backend_data);
+	return 0;
 }
 
 #if 0
@@ -385,10 +350,8 @@ static WERROR rpc_num_subkeys(struct registry_key *key, int *count) {
 	return WERR_OK;
 }
 
-static struct registry_operations reg_backend_rpc = {
+static struct hive_operations reg_backend_rpc = {
 	.name = "rpc",
-	.open_hive = rpc_open_hive,
-	.close_hive = rpc_close_hive,
 	.open_key = rpc_open_key,
 	.get_subkey_by_index = rpc_get_subkey_by_index,
 	.get_value_by_index = rpc_get_value_by_index,
@@ -396,8 +359,38 @@ static struct registry_operations reg_backend_rpc = {
 	.del_key = rpc_del_key,
 	.num_subkeys = rpc_num_subkeys,
 	.num_values = rpc_num_values,
-	.list_available_hives = rpc_list_hives,
 };
+
+WERROR reg_open_remote (struct registry_context **ctx, const char *user, const char *pass, const char *location)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
+
+	*ctx = talloc_p(NULL, struct registry_context);
+
+	/* Default to local smbd if no connection is specified */
+	if (!location) {
+		location = talloc_strdup(ctx, "ncalrpc:");
+	}
+
+	status = dcerpc_pipe_connect(&p, location, 
+				     DCERPC_WINREG_UUID,
+				     DCERPC_WINREG_VERSION,
+				     lp_workgroup(),
+				     user, pass);
+	(*ctx)->backend_data = p;
+
+	if(NT_STATUS_IS_ERR(status)) {
+		DEBUG(1, ("Unable to open '%s': %s\n", location, nt_errstr(status)));
+		return ntstatus_to_werror(status);
+	}
+
+	(*ctx)->get_hive = rpc_get_hive;
+
+	talloc_set_destructor(*ctx, rpc_close);
+
+	return WERR_OK;
+}
 
 NTSTATUS registry_rpc_init(void)
 {
