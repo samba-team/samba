@@ -424,9 +424,9 @@ $data = FileLoad("provision.zone") || die "Unable to load provision.zone\n";
 
 $res = apply_substitutions($data);
 
-print "saving dns zone to $newdb/dns.zone ...\n";
+print "saving dns zone to $newdb/$dnsdomain.zone ...\n";
 
-FileSave("$dnsdomain.zone", $res);
+FileSave("$newdb/$dnsdomain.zone", $res);
 
 print "creating $newdb/hklm.ldb ... \n";
 
