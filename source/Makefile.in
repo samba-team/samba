@@ -297,7 +297,7 @@ uninstallcp:
 	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
-	rm -f core */*.o */*~ *~ config.cache $(PROGS)
+	rm -f core */*.o */*~ *~ config.cache $(PROGS) $(SPROGS)
 
 proto:
 	@echo rebuilding include/proto.h
