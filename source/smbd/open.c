@@ -50,129 +50,25 @@ static int fd_open(struct connection_struct *conn, char *fname,
 }
 
 /****************************************************************************
-  Take care of moving any POSIX pending close fd's to another fsp.
-****************************************************************************/
-
-static BOOL fd_close_posix_locks(files_struct *fsp)
-{
-	files_struct *other_fsp;
-
-	DEBUG(10,("fd_close_posix_locks: file %s: fsp->num_posix_pending_closes = %u \
-fsp->posix_pending_close_fds = %lx.\n", fsp->fsp_name,
-				(unsigned int)fsp->num_posix_pending_closes, (unsigned long)fsp->posix_pending_close_fds ));
-
-	for(other_fsp = file_find_di_first(fsp->dev, fsp->inode); other_fsp;
-					other_fsp = file_find_di_next(other_fsp)) {
-
-		if(other_fsp == fsp)
-			continue;
-
-		if ((other_fsp->fd != -1) && other_fsp->num_posix_locks) {
-
-			/*
-			 * POSIX locks pending on another fsp held open, transfer
-			 * the fd in this fsp and all the pending fd's in this fsp pending close array
-			 * to the other_fsp pending close array.
-			 */
-
-			unsigned int extra_fds = fsp->num_posix_pending_closes + 1;
-
-			DEBUG(10,("fd_close_posix_locks: file %s: Transferring to \
-file %s, extra_fds = %u, other_fsp->num_posix_pending_closes = %u.\n",
-				fsp->fsp_name, other_fsp->fsp_name, extra_fds, (unsigned int)other_fsp->num_posix_pending_closes ));
-
-			other_fsp->posix_pending_close_fds = (int *)Realloc(other_fsp->posix_pending_close_fds,
-																(other_fsp->num_posix_pending_closes +
-																	extra_fds)*sizeof(int));
-
-			if(other_fsp->posix_pending_close_fds == NULL) {
-				DEBUG(0,("fd_close_posix_locks: Unable to increase posix_pending_close_fds array size !\n"));
-				return False;
-			}
-
-			/*
-			 * Copy over any fd's in the existing fsp's pending array.
-			 */
-
-			if(fsp->posix_pending_close_fds) {
-				memcpy(&other_fsp->posix_pending_close_fds[other_fsp->num_posix_pending_closes],
-					&fsp->posix_pending_close_fds[0], fsp->num_posix_pending_closes * sizeof(int) );
-
-				free((char *)fsp->posix_pending_close_fds);
-				fsp->posix_pending_close_fds = NULL;
-				fsp->num_posix_pending_closes = 0;
-			}			
-
-			other_fsp->posix_pending_close_fds[other_fsp->num_posix_pending_closes+extra_fds-1] = fsp->fd;
-			other_fsp->num_posix_pending_closes += extra_fds;
-
-			fsp->fd = -1; /* We have moved this fd to other_fsp's pending close array.... */
-
-			break;
-		}
-	}
-
-	return True;
-}
-
-/****************************************************************************
  Close the file associated with a fsp.
-
- This is where we must deal with POSIX "first close drops all locks"
- locking braindamage. We do this by searching for any other fsp open
- on the same dev/inode with open POSIX locks, and then transferring this
- fd (and all pending fd's attached to this fsp) to the posix_pending_close_fds
- array in that fsp.
-
- If there are no open fsp's on the same dev/inode then we close all the
- fd's in the posix_pending_close_fds array and then close the fd.
-
 ****************************************************************************/
 
 int fd_close(struct connection_struct *conn, files_struct *fsp)
 {
 	int ret = 0;
-	int saved_errno = 0;
-	unsigned int i;
 
 	/*
 	 * Deal with transferring any pending fd's if there
 	 * are POSIX locks outstanding.
 	 */
 
-	if(!fd_close_posix_locks(fsp))
+	if(!fd_close_posix_locks(conn,fsp))
 		return -1;
-
-	/*
-	 * Close and free any pending closes given to use from
-	 * other fsp's.
-	 */
-
-	if (fsp->posix_pending_close_fds) {
-
-		for(i = 0; i < fsp->num_posix_pending_closes; i++) {
-			if (fsp->posix_pending_close_fds[i] != -1) {
-				if (conn->vfs_ops.close(fsp->posix_pending_close_fds[i]) == -1) {
-					saved_errno = errno;
-				}
-			}
-		}
-
-		free((char *)fsp->posix_pending_close_fds);
-		fsp->posix_pending_close_fds = NULL;
-		fsp->num_posix_pending_closes = 0;
-	}
 
 	if(fsp->fd != -1)
 		ret = conn->vfs_ops.close(fsp->fd);
 
 	fsp->fd = -1;
-
-	if (saved_errno != 0) {
-		errno = saved_errno;
-		ret = -1;
-	}
-
 	return ret;
 }
 
@@ -278,9 +174,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->num_posix_locks = 0;
-	fsp->num_posix_pending_closes = 0;
-	fsp->posix_pending_close_fds = NULL;
 	fsp->is_directory = False;
 	fsp->stat_open = False;
 	fsp->directory_delete_on_close = False;
@@ -914,9 +807,6 @@ files_struct *open_file_stat(connection_struct *conn,
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->num_posix_locks = 0;
-	fsp->num_posix_pending_closes = 0;
-	fsp->posix_pending_close_fds = NULL;
 	fsp->is_directory = False;
 	fsp->stat_open = True;
 	fsp->directory_delete_on_close = False;
@@ -1040,9 +930,6 @@ files_struct *open_directory(connection_struct *conn,
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->num_posix_locks = 0;
-	fsp->num_posix_pending_closes = 0;
-	fsp->posix_pending_close_fds = NULL;
 	fsp->is_directory = True;
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;

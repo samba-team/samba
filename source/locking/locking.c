@@ -2,7 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 3.0
    Locking functions
-   Copyright (C) Andrew Tridgell 1992-1999
+   Copyright (C) Andrew Tridgell 1992-2000
+   Copyright (C) Jeremy Allison 1992-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +31,8 @@
    support.
 
    rewrtten completely to use new tdb code. Tridge, Dec '99
+
+   Added POSIX locking support. Jeremy Allison (jeremy@valinux.com), Apr. 2000.
 */
 
 #include "includes.h"
@@ -39,6 +42,179 @@ extern int DEBUGLEVEL;
 static TDB_CONTEXT *tdb;
 
 int global_smbpid;
+
+/*
+ * Doubly linked list to hold pending closes needed for
+ * POSIX locks. This may be changed to use a hash table (as
+ * in lib/hash.c if this is too slow in use.... JRA.
+ */
+
+struct pending_closes {
+	struct pending_closes *next;
+	struct pending_closes *prev;
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	int num_posix_locks;
+	size_t fd_array_size;
+	int *fd_array;
+};
+
+static struct pending_closes *pending_close_list = NULL;
+
+/****************************************************************************
+ Find a dev/inode pair in the pending close list.
+****************************************************************************/
+
+static struct pending_closes *find_pending_close_entry(SMB_DEV_T dev, SMB_INO_T inode)
+{
+	struct pending_closes *pc;
+
+	for(pc = pending_close_list; pc; pc = pc->next) {
+		if (dev == pc->dev && inode == pc->inode) {
+			DLIST_PROMOTE(pending_close_list,pc);
+			return pc;
+		}
+	}
+
+	return NULL;
+}
+ 
+/****************************************************************************
+ Add an fd into the pending close array.
+****************************************************************************/
+
+static BOOL add_fd_to_close_entry(struct pending_closes *pc, int fd)
+{
+	if ((pc->fd_array = (int *)Realloc(pc->fd_array, (pc->fd_array_size + 1)*sizeof(int))) == NULL) {
+		DEBUG(0,("add_fd_to_close_entry: Unable to increase fd_array !\n"));
+		return False;
+	}
+
+	pc->fd_array[pc->fd_array_size] = fd;
+	pc->fd_array_size++;
+
+	DEBUG(10,("add_fd_to_close_entry: added fd = %d, size = %u : dev = %.0f, ino = %.0f\n",
+			fd, (unsigned int)pc->fd_array_size, (double)pc->dev, (double)pc->inode ));
+
+	return True;
+}
+
+/****************************************************************************
+ Deal with pending closes needed by POSIX locking support.
+****************************************************************************/
+
+BOOL fd_close_posix_locks(struct connection_struct *conn, files_struct *fsp)
+{
+	struct pending_closes *pc;
+	int saved_errno = 0;
+	size_t i;
+
+	if (!lp_posix_locking(SNUM(conn)))
+		return True;
+
+	pc = find_pending_close_entry(fsp->dev, fsp->inode);
+	
+	if (!pc) {
+		/* 
+		 * No other open with a POSIX lock on this dev/inode within this smbd.
+		 * Just exit.
+		 */
+		return True;
+	}
+
+	if (pc->num_posix_locks) {
+		/*
+		 * There are outstanding locks on this dev/inode pair.
+		 * Add our fd to the list and set fsp->fd to -1 to
+		 * stop the close.
+		 */
+
+		if (!add_fd_to_close_entry(pc, fsp->fd))
+			return False;
+
+		fsp->fd = -1;
+		return True;
+	}
+
+	DEBUG(10,("fd_close_posix_locks: doing close on %u fd's.\n", (unsigned int)pc->fd_array_size ));
+
+	/*
+	 * This is the last close. If there are pending fd's close them
+	 * now. Save the errno just in case.
+	 */
+
+	for(i = 0; i < pc->fd_array_size; i++) {
+		if (pc->fd_array[i] != -1) {
+			if (conn->vfs_ops.close(pc->fd_array[i]) == -1) {
+				saved_errno = errno;
+			}
+		}
+	}
+
+	if (pc->fd_array)
+		free((char *)pc->fd_array);
+
+	DLIST_REMOVE(pending_close_list, pc);
+
+	free((char *)pc);
+
+	if (saved_errno != 0) {
+        errno = saved_errno;
+    } 
+
+	return True;
+}
+
+/****************************************************************************
+ A POSIX lock was granted. Increment the lock list count (create if needed).
+****************************************************************************/
+
+static void increment_posix_lock_list(files_struct *fsp)
+{
+	struct pending_closes *pc;
+
+	if ((pc = find_pending_close_entry(fsp->dev, fsp->inode)) == NULL) {
+		if (!(pc = (struct pending_closes *)malloc(sizeof(struct pending_closes)))) {
+			DEBUG(0,("increment_lock_list: malloc fail.\n"));
+			return;
+		}
+		ZERO_STRUCTP(pc);
+		pc->dev = fsp->dev;
+		pc->inode = fsp->inode;
+		DLIST_ADD(pending_close_list, pc);
+
+		DEBUG(10,("increment_posix_lock_list: creating entry for file %s: dev = %.0f, ino = %.0f\n",
+				fsp->fsp_name, (double)fsp->dev, (double)fsp->inode ));
+	}
+
+	pc->num_posix_locks++;
+
+	DEBUG(10,("increment_posix_lock_list: entry for file %s: dev = %.0f, ino = %.0f, num_locks = %d\n",
+			fsp->fsp_name, (double)pc->dev, (double)pc->inode, pc->num_posix_locks ));
+}
+
+
+/****************************************************************************
+ A POSIX lock was granted. Decrement the lock list count.
+****************************************************************************/
+
+static void decrement_posix_lock_list(files_struct *fsp)
+{
+	struct pending_closes *pc;
+
+	pc = find_pending_close_entry(fsp->dev, fsp->inode);
+
+	if (pc == NULL) {
+		smb_panic("decrement_lock_list: Unlock not found !\n");
+	}
+
+	pc->num_posix_locks--;
+
+	DEBUG(10,("decrement_posix_lock_list: entry for file %s: dev = %.0f, ino = %.0f, num_locks = %d\n",
+			fsp->fsp_name, (double)pc->dev, (double)pc->inode, pc->num_posix_locks ));
+
+	SMB_ASSERT(pc->num_posix_locks >= 0);
+}
 
 /****************************************************************************
  Debugging aid :-).
@@ -444,7 +620,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 			 */
 
 			if((ok = set_posix_lock(fsp, offset, count, lock_type)) == True)
-				fsp->num_posix_locks++;
+				increment_posix_lock_list(fsp);
 			else {
 				/*
 				 * We failed to map - we must now remove the brl
@@ -558,9 +734,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	 * if it may have been split into multiple smaller POSIX unlock ranges.
 	 */
 
-	fsp->num_posix_locks--;
-
-	SMB_ASSERT(fsp->num_posix_locks >= 0);
+	decrement_posix_lock_list(fsp);
 
 	return True; /* Did unlock */
 }
