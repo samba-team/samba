@@ -366,6 +366,10 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
 
 %exception {
 	$action
+	if (NT_STATUS_IS_ERR(result)) {
+		set_ntstatus_exception(NT_STATUS_V(result));
+		return NULL;
+	}
 	if (!W_ERROR_IS_OK(arg3->out.result)) {
 		set_werror_exception(W_ERROR_V(arg3->out.result));
 		return NULL;
