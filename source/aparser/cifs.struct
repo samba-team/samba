@@ -625,10 +625,36 @@ typedef struct _Q_TRANS {
 	}
 } Q_TRANS;
 
+typedef struct _R_TRANS_10 {
+	USHORT TotalParameterCount;/* Total parameter bytes being sent */
+	USHORT TotalDataCount;     /* Total data bytes being sent */
+	USHORT ParameterCount;     /* Parameter bytes sent this buffer */
+	USHORT ParameterOffset;    /* Offset (from header start) to */
+				  /* Parameters */
+	USHORT ParameterDisplacement; /* Specifies the offset from the start */
+				  /* of the overall parameter block to */
+				  /* the parameter bytes that are */
+				  /* contained in this message */
+	USHORT DataCount;          /* Data bytes sent this buffer */
+	USHORT DataOffset;         /* Offset (from header start) to data */
+	USHORT DataDisplacement;   /* Specifies the offset from the start */
+				  /* of the overall data block to the */
+				  /* data bytes that are contained in */
+				  /* this message. */
+	UCHAR SetupCount;         /* Count of setup words */
+	UCHAR Reserved3;                 /* Reserved (pad above to word) */
+	USHORT Setup[SetupCount]; /* Setup words */
+	USHORT ByteCount;         /* Count of data bytes */
+	UCHAR Pad1;               /* Pad to LONG */
+	UCHAR Parameters[ParameterCount];/* Parameter bytes */
+	UCHAR Pad2;               /* Pad to SHORT or LONG */
+	UCHAR Data[DataCount];    /* Data bytes */
+} R_TRANS_10;
+
 typedef struct _R_TRANS {
 	uint8 wcount;
 	union ctr[wcount] {
-		case 10 Q_TRANS_16 q10;
+		case 10 R_TRANS_10 q10;
 	}
 } R_TRANS;
 
