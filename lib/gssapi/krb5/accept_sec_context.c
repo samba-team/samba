@@ -639,7 +639,6 @@ send_accept (OM_uint32 *minor_status,
     u_char *buf;
     OM_uint32 ret;
     gss_buffer_desc mech_buf, mech_mic_buf;
-    u_char *mech_begbuf;
 
     memset(&targ, 0, sizeof(targ));
     ALLOC(targ.negResult, 1);
