@@ -516,14 +516,14 @@ typedef struct lsa_r_enum_privs
 } LSA_R_ENUM_PRIVS;
 
 /* LSA_Q_ENUM_ACCT_RIGHTS - LSA enum account rights */
-typedef struct lsa_q_enum_acct_rights
+typedef struct
 {
 	POLICY_HND pol; /* policy handle */
 	DOM_SID2 sid;
 } LSA_Q_ENUM_ACCT_RIGHTS;
 
 /* LSA_R_ENUM_ACCT_RIGHTS - LSA enum account rights */
-typedef struct lsa_r_enum_acct_rights
+typedef struct
 {
 	uint32 count;
 	UNISTR2_ARRAY rights;
@@ -541,10 +541,27 @@ typedef struct
 } LSA_Q_ADD_ACCT_RIGHTS;
 
 /* LSA_R_ADD_ACCT_RIGHTS - LSA add account rights */
-typedef struct lsa_r_add_acct_rights
+typedef struct
 {
 	NTSTATUS status;
 } LSA_R_ADD_ACCT_RIGHTS;
+
+
+/* LSA_Q_REMOVE_ACCT_RIGHTS - LSA remove account rights */
+typedef struct
+{
+	POLICY_HND pol; /* policy handle */
+	DOM_SID2 sid;
+	uint32 removeall;
+	UNISTR2_ARRAY rights;
+	uint32 count;
+} LSA_Q_REMOVE_ACCT_RIGHTS;
+
+/* LSA_R_REMOVE_ACCT_RIGHTS - LSA remove account rights */
+typedef struct
+{
+	NTSTATUS status;
+} LSA_R_REMOVE_ACCT_RIGHTS;
 
 
 /* LSA_Q_PRIV_GET_DISPNAME - LSA get privilege display name */

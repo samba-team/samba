@@ -23,11 +23,12 @@
 #include "includes.h"
 #include "rpcclient.h"
 
+
 /* useful function to allow entering a name instead of a SID and
  * looking it up automatically */
-static NTSTATUS name_to_sid(struct cli_state *cli,
-				TALLOC_CTX *mem_ctx,
-				DOM_SID *sid, const char *name)
+static NTSTATUS name_to_sid(struct cli_state *cli, 
+			    TALLOC_CTX *mem_ctx,
+			    DOM_SID *sid, const char *name)
 {
 	POLICY_HND pol;
 	uint32 *sid_types;
@@ -36,13 +37,13 @@ static NTSTATUS name_to_sid(struct cli_state *cli,
 
 	/* maybe its a raw SID */
 	if (strncmp(name, "S-", 2) == 0 &&
-			string_to_sid(sid, name)) {
+	    string_to_sid(sid, name)) {
 		return NT_STATUS_OK;
 	}
 
-	result = cli_lsa_open_policy(cli, mem_ctx, True,
-				SEC_RIGHTS_MAXIMUM_ALLOWED,
-				&pol);
+	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &pol);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
@@ -57,6 +58,7 @@ static NTSTATUS name_to_sid(struct cli_state *cli,
 done:
 	return result;
 }
+
 
 /* Look up domain related information on a remote host */
 
@@ -457,7 +459,9 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct cli_state *cli,
 		return NT_STATUS_OK;
 	}
 
-	string_to_sid(&sid, argv[1]);
+	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(result))
+		goto done;	
 
 	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -509,7 +513,9 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct cli_state *cli,
 		return NT_STATUS_OK;
 	}
 
-	string_to_sid(&sid, argv[1]);
+	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(result))
+		goto done;	
 
 	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -523,7 +529,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	printf("found %d privileges for SID %s\n", count, argv[1]);
+	printf("found %d privileges for SID %s\n", count, sid_string_static(&sid));
 
 	for (i = 0; i < count; i++) {
 		printf("\t%s\n", rights[i]);
@@ -563,6 +569,44 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct cli_state *cli,
 
 	result = cli_lsa_add_account_rights(cli, mem_ctx, &dom_pol, sid, 
 					    argc-2, argv+2);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+ done:
+	return result;
+}
+
+
+/* remove some privileges to a SID via LsaRemoveAccountRights */
+
+static NTSTATUS cmd_lsa_remove_acct_rights(struct cli_state *cli, 
+					TALLOC_CTX *mem_ctx, int argc, 
+					const char **argv) 
+{
+	POLICY_HND dom_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DOM_SID sid;
+
+	if (argc < 3 ) {
+		printf("Usage: %s SID [rights...]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(result))
+		goto done;	
+
+	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_lsa_remove_account_rights(cli, mem_ctx, &dom_pol, sid, 
+					       False, argc-2, argv+2);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -659,7 +703,8 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lsaenumsid",          cmd_lsa_enum_sids,          PI_LSARPC, "Enumerate the LSA SIDS",               "" },
 	{ "lsaenumprivsaccount", cmd_lsa_enum_privsaccounts, PI_LSARPC, "Enumerate the privileges of an SID",   "" },
 	{ "lsaenumacctrights",   cmd_lsa_enum_acct_rights,   PI_LSARPC, "Enumerate the rights of an SID",   "" },
-	{ "lsaaddacctrights",   cmd_lsa_add_acct_rights,   PI_LSARPC, "Add rights to an account",   "" },
+	{ "lsaaddacctrights",    cmd_lsa_add_acct_rights,    PI_LSARPC, "Add rights to an account",   "" },
+	{ "lsaremoveacctrights", cmd_lsa_remove_acct_rights, PI_LSARPC, "Remove rights from an account",   "" },
 	{ "lsalookupprivvalue",  cmd_lsa_lookupprivvalue,    PI_LSARPC, "Get a privilege value given its name", "" },
 	{ "lsaquerysecobj",      cmd_lsa_query_secobj,       PI_LSARPC, "Query LSA security object", "" },
 
