@@ -170,6 +170,7 @@ typedef struct
 	char *szSMBPasswdFile;
 	char *szSAM_URL;
 	char *szSPOOLSS_URL;
+	char *szWINS_URL;
 	char *szPrivateDir;
 	char **szPreloadModules;
 	char **szPasswordServers;
@@ -568,6 +569,7 @@ static struct parm_struct parm_table[] = {
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"sam database", P_STRING, P_GLOBAL, &Globals.szSAM_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"spoolss database", P_STRING, P_GLOBAL, &Globals.szSPOOLSS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"wins database", P_STRING, P_GLOBAL, &Globals.szWINS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"non unix account range", P_STRING, P_GLOBAL, &Globals.szNonUnixAccountRange, handle_non_unix_account_range, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -938,6 +940,7 @@ static void init_globals(void)
 	do_parameter("private dir", dyn_PRIVATE_DIR);
 	do_parameter_var("sam database", "tdb://%s/sam.ldb", dyn_PRIVATE_DIR);
 	do_parameter_var("spoolss database", "tdb://%s/spoolss.ldb", dyn_PRIVATE_DIR);
+	do_parameter_var("wins database", "tdb://%s/wins.ldb", dyn_PRIVATE_DIR);
 	do_parameter_var("registry:HKEY_LOCAL_MACHINE", "ldb:/%s/hklm.ldb", dyn_PRIVATE_DIR);
 	do_parameter("guest account", GUEST_ACCOUNT);
 
@@ -1154,6 +1157,7 @@ FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_sam_url, &Globals.szSAM_URL)
 FN_GLOBAL_STRING(lp_spoolss_url, &Globals.szSPOOLSS_URL)
+FN_GLOBAL_STRING(lp_wins_url, &Globals.szWINS_URL)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
