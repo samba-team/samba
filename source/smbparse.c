@@ -416,7 +416,7 @@ char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align)
 
 	q = align_offset(q, base, align);
 	
-	RW_PCVAL(io, q, pol->data, 20); q += 20;
+	RW_PCVAL(io, q, pol->data, POL_HND_SIZE); q += POL_HND_SIZE;
 
 	return q;
 }
@@ -448,6 +448,7 @@ char* smb_io_dom_query(BOOL io, DOM_QUERY *d_q, char *q, char *base, int align)
 	
 
 	RW_SVAL(io, q, d_q->uni_dom_max_len, 0); q += 2; /* domain name string length * 2 */
+	RW_SVAL(io, q, d_q->padding        , 0); q += 2; /* 2 padding bytes */
 	RW_SVAL(io, q, d_q->uni_dom_str_len, 0); q += 2; /* domain name string length * 2 */
 
 	RW_IVAL(io, q, d_q->buffer_dom_name, 0); q += 4; /* undocumented domain name string buffer pointer */
