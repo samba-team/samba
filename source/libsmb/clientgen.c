@@ -1019,7 +1019,7 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t)
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf,smb_size);
 
-	set_message(cli->outbuf,8,strlen(fname)+2,True);
+	set_message(cli->outbuf,8,strlen(fname)+4,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBsetatr;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -1031,6 +1031,8 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t)
 	p = smb_buf(cli->outbuf);
 	*p = 4;
 	strcpy(p+1, fname);
+	p = skip_string(p,1);
+	*p = 4;
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
