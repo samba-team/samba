@@ -6,6 +6,8 @@
 
 #ifndef HAVE_HSTRERROR
 
+RCSID("$Id$");
+
 #include <stdio.h>
 #include <netdb.h>
 
