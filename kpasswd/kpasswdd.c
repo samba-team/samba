@@ -44,6 +44,8 @@ RCSID("$Id$");
 #include <dlfcn.h>
 #endif
 
+#include <hdb.h>
+
 static krb5_context context;
 static krb5_log_facility *log_facility;
 
@@ -304,7 +306,7 @@ change (krb5_auth_context auth_context,
 	free (client);
 	krb5_warn (context, ret, "kadm5_init_with_password_ctx");
 	reply_priv (auth_context, s, sa, sa_size, 2,
-		    "kadm5_init_with_password_ctx failed");
+		    "Internal error");
 	return;
     }
 
@@ -326,7 +328,7 @@ change (krb5_auth_context auth_context,
     if (ret) {
 	krb5_warn (context, ret, "kadm5_get_principal");
 	reply_priv (auth_context, s, sa, sa_size, 2,
-		    "kadm5_get_principal failed");
+		    "Internal error");
 	kadm5_destroy (kadm5_handle);
 	return;
     }
@@ -367,7 +369,7 @@ change (krb5_auth_context auth_context,
 	if (tmp == NULL) {
 	    krb5_warnx (context, "malloc: out of memory");
 	    reply_priv (auth_context, s, sa, sa_size, 2,
-			"malloc failed");
+			"Internal error");
 	    goto out;
 	}
 	memcpy (tmp, pwd_data->data, pwd_data->length);
@@ -381,11 +383,11 @@ change (krb5_auth_context auth_context,
 	if (ret) {
 	    krb5_warn (context, ret, "kadm5_s_chpass_principal");
 	    reply_priv (auth_context, s, sa, sa_size, 2,
-			"change failed");
+			"Internal error");
 	    goto out;
 	}
     }
-    reply_priv (auth_context, s, sa, sa_size, 0, "password changed");
+    reply_priv (auth_context, s, sa, sa_size, 0, "Password changed");
 out:
     kadm5_free_principal_ent (kadm5_handle, &ent);
     kadm5_destroy (kadm5_handle);
@@ -414,12 +416,12 @@ verify (krb5_auth_context *auth_context,
     if (pkt_len != len) {
 	krb5_warnx (context, "Strange len: %ld != %ld", 
 		    (long)pkt_len, (long)len);
-	reply_error (server, s, sa, sa_size, 0, 1, "bad length");
+	reply_error (server, s, sa, sa_size, 0, 1, "Bad request");
 	return 1;
     }
     if (pkt_ver != 0x0001) {
 	krb5_warnx (context, "Bad version (%d)", pkt_ver);
-	reply_error (server, s, sa, sa_size, 0, 1, "bad version");
+	reply_error (server, s, sa, sa_size, 0, 1, "Wrong program version");
 	return 1;
     }
 
@@ -434,15 +436,22 @@ verify (krb5_auth_context *auth_context,
 		       NULL,
 		       ticket);
     if (ret) {
-	krb5_warn (context, ret, "krb5_rd_req");
-	reply_error (server, s, sa, sa_size, ret, 3, "rd_req failed");
+	if(ret == KRB5_KT_NOTFOUND) {
+	    char *name;
+	    krb5_unparse_name(context, server, &name);
+	    krb5_warnx (context, "krb5_rd_req: %s (%s)", 
+			krb5_get_err_text(context, ret), name);
+	    free(name);
+	} else
+	    krb5_warn (context, ret, "krb5_rd_req");
+	reply_error (server, s, sa, sa_size, ret, 3, "Authentication failed");
 	return 1;
     }
 
     if (!(*ticket)->ticket.flags.initial) {
 	krb5_warnx (context, "initial flag not set");
 	reply_error (server, s, sa, sa_size, ret, 1,
-		     "initial flag not set");
+		     "Bad request");
 	goto out;
     }
     krb_priv_data.data   = msg + 6 + ap_req_len;
@@ -456,7 +465,7 @@ verify (krb5_auth_context *auth_context,
     
     if (ret) {
 	krb5_warn (context, ret, "krb5_rd_priv");
-	reply_error (server, s, sa, sa_size, ret, 3, "rd_priv failed");
+	reply_error (server, s, sa, sa_size, ret, 3, "Bad request");
 	goto out;
     }
     return 0;
@@ -555,9 +564,9 @@ doit (krb5_keytab keytab,
 
     free (realm);
 
-    ret = krb5_get_all_client_addrs (context, &addrs);
+    ret = krb5_get_all_server_addrs (context, &addrs);
     if (ret)
-	krb5_err (context, 1, ret, "krb5_get_all_client_addrs");
+	krb5_err (context, 1, ret, "krb5_get_all_server_addrs");
 
     n = addrs.len;
 
@@ -571,11 +580,16 @@ doit (krb5_keytab keytab,
 
 	krb5_addr2sockaddr (&addrs.val[i], sa, &sa_size, port);
 
+	
 	sockets[i] = socket (sa->sa_family, SOCK_DGRAM, 0);
 	if (sockets[i] < 0)
 	    krb5_err (context, 1, errno, "socket");
-	if (bind (sockets[i], sa, sa_size) < 0)
-	    krb5_err (context, 1, errno, "bind");
+	if (bind (sockets[i], sa, sa_size) < 0) {
+	    char str[128];
+	    size_t len;
+	    ret = krb5_print_address (&addrs.val[i], str, sizeof(str), &len);
+	    krb5_err (context, 1, errno, "bind(%s)", str);
+	}
 	maxfd = max (maxfd, sockets[i]);
 	FD_SET(sockets[i], &real_fdset);
     }
@@ -627,7 +641,8 @@ sigterm(int sig)
 const char *check_library;
 const char *check_function;
 #endif
-char *keytab_str;
+char *keytab_str = "HDB:";
+char *realm_str;
 int version_flag;
 int help_flag;
 
@@ -640,6 +655,7 @@ struct getargs args[] = {
 #endif
     { "keytab", 'k', arg_string, &keytab_str, 
       "keytab to get authentication key from", "kspec" },
+    { "realm", 'r', arg_string, &realm_str, "default realm", "realm" },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -650,6 +666,7 @@ main (int argc, char **argv)
 {
     int optind;
     krb5_keytab keytab;
+    krb5_error_code ret;
     
     optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
     
@@ -660,6 +677,9 @@ main (int argc, char **argv)
 	exit(0);
     }
 
+    if(realm_str)
+	krb5_set_default_realm(context, realm_str);
+    
     krb5_openlog (context, "kpasswdd", &log_facility);
     krb5_set_warn_dest(context, log_facility);
 
@@ -687,13 +707,14 @@ main (int argc, char **argv)
     }
 #endif
 
-    if(keytab_str) {
-	krb5_error_code ret = krb5_kt_resolve(context, keytab_str, &keytab);
-	if(ret)
-	    krb5_err(context, 1, ret, "%s", keytab_str);
-    } else
-	keytab = NULL;
+    ret = krb5_kt_register(context, &hdb_kt_ops);
+    if(ret)
+	krb5_err(context, 1, ret, "krb5_kt_register");
 
+    ret = krb5_kt_resolve(context, keytab_str, &keytab);
+    if(ret)
+	krb5_err(context, 1, ret, "%s", keytab_str);
+    
     setup_passwd_quality_check(context);
 
 #ifdef HAVE_SIGACTION
