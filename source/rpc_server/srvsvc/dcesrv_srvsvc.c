@@ -24,6 +24,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "rpc_server/common/common.h"
+#include "system/time.h"
 
 /* 
   srvsvc_NetCharDevEnum 
@@ -807,7 +808,36 @@ static WERROR srvsvc_NETRSERVERTRANSPORTDEL(struct dcesrv_call_state *dce_call, 
 static WERROR srvsvc_NetRemoteTOD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetRemoteTOD *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct timeval tval;
+	time_t t;
+	struct tm tm;
+
+	r->out.info = talloc_p(mem_ctx, struct srvsvc_NetRemoteTODInfo);
+	WERR_TALLOC_CHECK(r->out.info);
+
+	GetTimeOfDay(&tval);
+	t = tval.tv_sec;
+
+	gmtime_r(&t, &tm);
+
+	r->out.info->elapsed	= t;
+	/* fake the uptime: just return the milliseconds till 0:00:00 today */
+	r->out.info->msecs	= (tm.tm_hour*60*60*1000)
+				+ (tm.tm_min*60*1000)
+				+ (tm.tm_sec*1000)
+				+ (tval.tv_usec/1000);
+	r->out.info->hours	= tm.tm_hour;
+	r->out.info->mins	= tm.tm_min;
+	r->out.info->secs	= tm.tm_sec;
+	r->out.info->hunds	= tval.tv_usec/10000;
+	r->out.info->timezone	= get_time_zone(t)/60;
+	r->out.info->tinterval	= 310; /* just return the same as windows */
+	r->out.info->day	= tm.tm_mday;
+	r->out.info->month	= tm.tm_mon + 1;
+	r->out.info->year	= tm.tm_year + 1900;
+	r->out.info->weekday	= tm.tm_wday;
+
+	return WERR_OK;
 }
 
 

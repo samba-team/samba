@@ -1128,14 +1128,14 @@
 /* srvsvc_NetRemoteTOD    */
 /**************************/
 	typedef struct {
-		uint32 elapsed;
-		uint32 msecs;
+		uint32 elapsed; /* time(NULL) */
+		uint32 msecs; /* milliseconds till system reboot (uptime) */
 		uint32 hours;
 		uint32 mins;
 		uint32 secs;
 		uint32 hunds;
-		uint32 timezone;
-		uint32 tinterval;
+		int32 timezone; /* in minutes */
+		uint32 tinterval; /* clock tick interval in 0.0001 second units; 310 on windows */
 		uint32 day;
 		uint32 month;
 		uint32 year;

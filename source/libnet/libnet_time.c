@@ -82,7 +82,7 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 	tm.tm_isdst = -1;
 
 	r->srvsvc.out.time = timegm(&tm);
-	r->srvsvc.out.time_zone = ((int32_t)tod.out.info->timezone) * 60;
+	r->srvsvc.out.time_zone = tod.out.info->timezone * 60;
 
 	goto disconnect;
 
