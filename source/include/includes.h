@@ -110,6 +110,10 @@
 #include <sys/socket.h>
 #endif
 
+#ifdef HAVE_SYS_UN_H
+#include <sys/un.h>
+#endif
+
 #ifdef HAVE_SYS_SYSCALL_H
 #include <sys/syscall.h>
 #elif HAVE_SYSCALL_H

@@ -789,3 +789,46 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL overri
 
   return ret;
 }
+
+/***********************************************************
+ Code to check a plaintext password against smbpasswd entries.
+***********************************************************/
+
+BOOL check_plaintext_password(char *user,char *old_passwd,
+                              int old_passwd_size, struct smb_passwd **psmbpw)
+{
+  struct smb_passwd *smbpw = NULL;
+  uchar old_pw[16],old_ntpw[16];
+
+  become_root(False);
+  *psmbpw = smbpw = getsmbpwnam(user);
+  unbecome_root(False);
+
+  if (smbpw == NULL) {
+    DEBUG(0,("check_plaintext_password: getsmbpwnam returned NULL\n"));
+    return False;
+  }
+
+  if (smbpw->acct_ctrl & ACB_DISABLED) {
+    DEBUG(0,("check_plaintext_password: account %s disabled.\n", user));
+    return(False);
+  }
+
+  nt_lm_owf_gen(old_passwd,old_ntpw,old_pw);
+
+#ifdef DEBUG_PASSWORD
+  DEBUG(100,("check_plaintext_password: smbpw->smb_nt_passwd \n"));
+  dump_data(100,smbpw->smb_nt_passwd,16);
+  DEBUG(100,("check_plaintext_password: old_ntpw \n"));
+  dump_data(100,old_ntpw,16);
+  DEBUG(100,("check_plaintext_password: smbpw->smb_passwd \n"));
+  dump_data(100,smbpw->smb_passwd,16);
+  DEBUG(100,("check_plaintext_password: old_pw\n"));
+  dump_data(100,old_pw,16);
+#endif
+
+  if(memcmp(smbpw->smb_nt_passwd,old_ntpw,16) && memcmp(smbpw->smb_passwd,old_pw,16))
+    return(False);
+  else
+    return(True);
+}

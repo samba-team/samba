@@ -2531,6 +2531,8 @@ BOOL check_oem_password(char *user,
                         struct smb_passwd **psmbpw, char *new_passwd,
                         int new_passwd_size);
 BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override);
+BOOL check_plaintext_password(char *user,char *old_passwd,
+                              int old_passwd_size, struct smb_passwd **psmbpw);
 
 /*The following definitions come from  smbd/close.c  */
 
