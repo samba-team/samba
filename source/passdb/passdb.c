@@ -1324,7 +1324,7 @@ BOOL pdb_set_hours_len (SAM_ACCOUNT *sampass, uint32 len)
 	return True;
 }
 
-BOOL pdb_set_logons_divs (SAM_ACCOUNT *sampass, uint16 hours)
+BOOL pdb_set_logon_divs (SAM_ACCOUNT *sampass, uint16 hours)
 {
 	if (!sampass)
 		return False;

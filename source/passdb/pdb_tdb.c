@@ -161,7 +161,7 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 	pdb_set_unknown_5(sampass, unknown_5);
 	pdb_set_unknown_6(sampass, unknown_6);
 	pdb_set_acct_ctrl(sampass, acct_ctrl);
-	pdb_set_logons_divs(sampass, logon_divs);
+	pdb_set_logon_divs(sampass, logon_divs);
 	pdb_set_hours(sampass, hours);
 
 done:
