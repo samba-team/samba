@@ -400,6 +400,7 @@ static void usage(void)
         -W workgroup\n\
         -U user%%pass\n\
         -s seed\n\
+        -M max protocol\n\
         -f filechars (default %s)\n\
         -m maskchars (default %s)\n\
         -a                             show all tests\n\
