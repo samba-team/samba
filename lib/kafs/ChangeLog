@@ -1,15 +1,15 @@
-2003-07-23  Love Hörquist Åstrand  <lha@it.su.se>
+2003-07-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: always include v4 symbols
 	
 	* afskrb.c: provide dummy krb_ function to there is no need to
 	bump major
 
-2003-06-22  Love Hörquist Åstrand  <lha@it.su.se>
+2003-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afskrb5.c (v5_convert): rename one of the two c to cred4
 	
-2003-04-23  Love Hörquist Åstrand  <lha@it.su.se>
+2003-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* common.c, kafs.h: drop the int argument (the error code) from
 	the logging function
@@ -19,12 +19,12 @@
 	* afskrb5.c (v5_convert): better match what other functions do
 	with values from krb5.conf, like case insensitivity
 
-2003-04-16  Love Hörquist Åstrand  <lha@it.su.se>
+2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kafs.3: Change .Fd #include <header.h> to .In header.h
 	from Thomas Klausner <wiz@netbsd.org>
 
-2003-04-14  Love Hörquist Åstrand  <lha@it.su.se>
+2003-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: (libkafs_la_LDFLAGS): update version
 	
@@ -49,7 +49,7 @@
 	* kafs_locl.h (kafs_data): add name
 	(_kafs_foldup): internally export
 
-2003-04-11  Love Hörquist Åstrand  <lha@it.su.se>
+2003-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kafs.3: tell that cell-name is uppercased
 	
@@ -61,18 +61,18 @@
 	have updated their servers but not afs/cell@REALM. Add constant
 	KAFS_RXKAD_2B_KVNO.
 
-2003-04-06  Love Hörquist Åstrand  <lha@it.su.se>
+2003-04-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kafs.3: s/kerberos/Kerberos/
 	
-2003-03-19  Love Hörquist Åstrand  <lha@it.su.se>
+2003-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kafs.3: spelling, from <jmc@prioris.mini.pw.edu.pl>
 	
 	* kafs.3: document the kafs_settoken functions write about the
 	krb5_appdefault option for kerberos 5 afs tokens fix prototypes
 	
-2003-03-18  Love Hörquist Åstrand  <lha@it.su.se>
+2003-03-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afskrb5.c (kafs_settoken5): change signature to include a
 	krb5_context, use v5_convert
@@ -111,7 +111,7 @@
 	internal structure struct kafs_token that carries around for rxkad
 	data that is independant of kerberos version
 	
-2003-02-18  Love Hörquist Åstrand  <lha@it.su.se>
+2003-02-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* dlfcn.h: s/intialize/initialize, from
 	<jmc@prioris.mini.pw.edu.pl>
@@ -120,7 +120,7 @@
 
 	* afssysdefs.h: fix FreeBSD section
 
-2003-02-06  Love Hörquist Åstrand  <lha@it.su.se>
+2003-02-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afssysdefs.h: use syscall 208 on openbsd (all version) use
 	syscall 339 on freebsd 5.0 and later, use 210 on 4.x and earlier
