@@ -306,6 +306,7 @@ VFS_RECYCLE_OBJ = modules/vfs_recycle.o
 VFS_NETATALK_OBJ = modules/vfs_netatalk.o
 VFS_DEFAULT_QUOTA_OBJ = modules/vfs_default_quota.o
 VFS_READONLY_OBJ = modules/vfs_readonly.o modules/getdate.o
+VFS_CAP_OBJ = modules/vfs_cap.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -1109,6 +1110,11 @@ bin/default_quota.@SHLIBEXT@: $(VFS_DEFAULT_QUOTA_OBJ:.o=.po)
 bin/readonly.@SHLIBEXT@: $(VFS_READONLY_OBJ:.o=.po)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_READONLY_OBJ:.o=.po) \
+		@SONAMEFLAG@`basename $@`
+
+bin/cap.@SHLIBEXT@: $(VFS_CAP_OBJ:.o=.po)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CAP_OBJ:.o=.po) \
 		@SONAMEFLAG@`basename $@`
 
 bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
