@@ -246,26 +246,29 @@ SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
-MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o $(PARAM_OBJ) \
-                       $(UBIQX_OBJ) $(LIB_OBJ)
+MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o libsmb/namecache.o \
+		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
-MAKE_UNICODEMAP_OBJ = utils/make_unicodemap.o $(PARAM_OBJ) \
-                       $(UBIQX_OBJ) $(LIB_OBJ)
+MAKE_UNICODEMAP_OBJ = utils/make_unicodemap.o libsmb/namecache.o  \
+		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
-MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) \
-                      $(UBIQX_OBJ) $(LIB_OBJ)
+MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o libsmb/namecache.o \
+		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
-STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+STATUS_OBJ = utils/status.o libsmb/namecache.o \
+		$(LOCKING_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(PROFILE_OBJ) \
+		$(LIB_OBJ)
 
 SMBCONTROL_OBJ = utils/smbcontrol.o printing/notify.o printing/printing_db.o \
-	$(LOCKING_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+		libsmb/namecache.o \
+		$(LOCKING_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(PROFILE_OBJ) \
+		$(LIB_OBJ)
 
-TESTPARM_OBJ = utils/testparm.o \
-               $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+TESTPARM_OBJ = utils/testparm.o libsmb/namecache.o \
+		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
-TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
-               $(LIB_OBJ)
+TESTPRNS_OBJ = utils/testprns.o libsmb/namecache.o \
+		$(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) \
 				$(LIBSMB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)\
@@ -414,7 +417,7 @@ WINBINDD_OBJ = \
 		$(NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ) \
 
 WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o \
-	passdb/secrets.o
+		passdb/secrets.o libsmb/namecache.o
 
 WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o @WINBIND_NSS_EXTRA_OBJS@
 
