@@ -40,9 +40,6 @@
 
 RCSID("$Id$");
 
-#if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
-#include <sys/ioctl.h>
-#endif
 #ifdef __osf__
 /* hate */
 struct rtentry;
@@ -194,19 +191,16 @@ find_all_addresses (krb5_addresses *res, int loop,
 	     break;
 	 }
 #endif /* AF_INET */
-#if defined(AF_INET6) && defined(HAVE_NETINET_IN6_H)
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
 	 case AF_INET6: {
 	     struct in6_addr *sin6;
 
 	     sin6 = &((struct sockaddr_in6 *)(&ifr->ifr_addr))->sin6_addr;
 
-	     if (IN6_LOOPBACK(*sin6) || IN6_LINK_LOCAL(*sin6)) {
+	     if (IN6_IS_ADDR_LOOPBACK(sin6)
+		 || IN6_IS_ADDR_LINKLOCAL(sin6)
+		 || IN6_IS_ADDR_V4COMPAT(sin6)) {
 		 break;
-	     } else if (IN6_IN4COMPAT(*sin6)) {
-		 res->val[j].addr_type = AF_INET;
-		 ret = krb5_data_copy(&res->val[j].address,
-				      &IN6_IN4ADDR(*sin6),
-				      sizeof(struct in_addr));
 	     } else {
 		 res->val[j].addr_type = AF_INET6;
 		 ret = krb5_data_copy(&res->val[j].address,
