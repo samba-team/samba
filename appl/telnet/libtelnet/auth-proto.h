@@ -55,20 +55,23 @@
 
 /* $Id$ */
 
-#if	defined(AUTHENTICATION)
+#ifdef AUTHENTICATION
 Authenticator *findauthenticator (int, int);
 
-void auth_init (char *, int);
 int auth_cmd (int, char **);
+int auth_wait (char *);
+void auth_disable_name (char *);
+void auth_finished (Authenticator *, int);
+void auth_gen_printsub (unsigned char *, int, unsigned char *, int);
+void auth_init (char *, int);
+void auth_is (unsigned char *, int);
+void auth_name(unsigned char*, int);
+void auth_reply (unsigned char *, int);
 void auth_request (void);
 void auth_send (unsigned char *, int);
 void auth_send_retry (void);
-void auth_is (unsigned char *, int);
-void auth_reply (unsigned char *, int);
-void auth_finished (Authenticator *, int);
-int auth_wait (char *);
-void auth_disable_name (char *);
-void auth_gen_printsub (unsigned char *, int, unsigned char *, int);
+void auth_printsub(unsigned char*, int, unsigned char*, int);
+
 
 #ifdef UNSAFE
 int unsafe_init (Authenticator *, int);

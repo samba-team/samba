@@ -58,27 +58,49 @@
 /* $Id$ */
 
 #if	defined(ENCRYPTION)
-void encrypt_init (char *, int);
 Encryptions *findencryption (int);
-void encrypt_send_supprt (void);
-void encrypt_auto (int);
-void decrypt_auto (int);
-void encrypt_not (void);
-void encrypt_verbose_quiet (int);
-void encrypt_is (unsigned char *, int);
-void encrypt_reply (unsigned char *, int);
-void encrypt_start_input (int);
-void encrypt_session_key (Session_Key *, int);
-void encrypt_end_input (void);
-void encrypt_start_output (int);
-void encrypt_end_output (void);
-void encrypt_send_request_start (void);
-void encrypt_send_request_end (void);
-void encrypt_send_end (void);
-void encrypt_wait (void);
-void encrypt_send_support (void);
-void encrypt_send_keyid (int, unsigned char *, int, int);
+int EncryptAutoDec(int);
+int EncryptAutoEnc(int);
+int EncryptDebug(int);
+int EncryptDisable(char*, char*);
+int EncryptEnable(char*, char*);
+int EncryptStart(char*);
+int EncryptStartInput(void);
+int EncryptStartOutput(void);
+int EncryptStatus(void);
+int EncryptStop(char*);
+int EncryptStopInput(void);
+int EncryptStopOutput(void);
+int EncryptType(char*, char*);
+int EncryptVerbose(int);
 int net_write (unsigned char *, int);
+void decrypt_auto(int);
+void encrypt_auto(int);
+void encrypt_debug(int);
+void encrypt_dec_keyid(unsigned char*, int);
+void encrypt_display(void);
+void encrypt_enc_keyid(unsigned char*, int);
+void encrypt_end(void);
+void encrypt_gen_printsub(unsigned char*, int, unsigned char*, int);
+void encrypt_init(char*, int);
+void encrypt_is(unsigned char*, int);
+void encrypt_list_types(void);
+void encrypt_not(void);
+void encrypt_printsub(unsigned char*, int, unsigned char*, int);
+void encrypt_reply(unsigned char*, int);
+void encrypt_request_end(void);
+void encrypt_request_start(unsigned char*, int);
+void encrypt_send_end(void);
+void encrypt_send_keyid(int, unsigned char*, int, int);
+void encrypt_send_request_end(void);
+void encrypt_send_request_start(void);
+void encrypt_send_support(void);
+void encrypt_session_key(Session_Key*, int);
+void encrypt_start(unsigned char*, int);
+void encrypt_start_output(int);
+void encrypt_support(unsigned char*, int);
+void encrypt_verbose_quiet(int);
+void encrypt_wait(void);
 
 #ifdef	TELENTD
 void encrypt_wait (void);
