@@ -386,6 +386,7 @@ krb5_get_init_creds_password(krb5_context context,
     krb5_addresses *addrs = NULL;
     krb5_enctype *etypes = NULL;
     krb5_preauthtype *pre_auth_types = NULL;
+    krb5_preauthdata *preauth = NULL, preauth2;
     krb5_creds this_cred;
     krb5_kdc_rep kdc_reply;
     char buf[BUFSIZ];
@@ -428,6 +429,7 @@ krb5_get_init_creds_password(krb5_context context,
 				addrs,
 				etypes,
 				pre_auth_types,
+				preauth,
 				krb5_password_key_proc,
 				password,
 				NULL,
@@ -451,15 +453,48 @@ krb5_get_init_creds_password(krb5_context context,
 		goto out;
 	    password = buf;
 	    break;
-	case KRB5KDC_ERR_PREAUTH_REQUIRED :
-	    if (pre_auth_types)
-		free (pre_auth_types);
-	    pre_auth_types = malloc(2 * sizeof(*pre_auth_types));
-	    if (pre_auth_types == NULL)
-		goto out;
-	    pre_auth_types[0] = KRB5_PADATA_ENC_TIMESTAMP;
-	    pre_auth_types[1] = 0;
+	case KRB5KDC_ERR_PREAUTH_REQUIRED : {
+	    if(kdc_reply.error.e_data){
+		METHOD_DATA md;
+		int i;
+		krb5_preauthtype *pt = pre_auth_types;		
+		decode_METHOD_DATA(kdc_reply.error.e_data->data, 
+				   kdc_reply.error.e_data->length, 
+				   &md, 
+				   NULL);
+		for(i = 0; i < md.len; i++){
+		    switch(md.val[i].padata_type){
+		    case pa_enc_timestamp:
+			if (pre_auth_types)
+			    free (pre_auth_types);
+			ALLOC(pre_auth_types, 2);
+			if (pre_auth_types == NULL)
+			    goto out;
+			pre_auth_types[0] = KRB5_PADATA_ENC_TIMESTAMP;
+			pre_auth_types[1] = 0;
+			break;
+		    case pa_key_info:
+			preauth = &preauth2;
+			ALLOC_SEQ(preauth, 1);
+			preauth->val[0].type = KRB5_PADATA_ENC_TIMESTAMP;
+			decode_PA_KEY_INFO(md.val[i].padata_value.data, 
+					   md.val[i].padata_value.length,
+					   &preauth->val[0].info,
+					   NULL);
+			break;
+		    }
+		}
+	    }else{
+		if (pre_auth_types)
+		    free (pre_auth_types);
+		pre_auth_types = malloc(2 * sizeof(*pre_auth_types));
+		if (pre_auth_types == NULL)
+		    goto out;
+		pre_auth_types[0] = KRB5_PADATA_ENC_TIMESTAMP;
+		pre_auth_types[1] = 0;
+	    }
 	    break;
+	}
 	default:
 	    goto out;
 	}
@@ -484,6 +519,10 @@ krb5_get_init_creds_password(krb5_context context,
 out:
     memset (buf, 0, sizeof(buf));
     free (pre_auth_types);
+    if(preauth) {
+	free_PA_KEY_INFO(&preauth->val[0].info);
+	free(preauth->val);
+    }
     free (etypes);
     krb5_free_creds_contents (context, &this_cred);
     return ret;
@@ -537,6 +576,7 @@ krb5_get_init_creds_keytab(krb5_context context,
 			    addrs,
 			    etypes,
 			    pre_auth_types,
+			    NULL,
 			    krb5_keyblock_key_proc,
 			    &kt_ent.keyblock,
 			    NULL,
