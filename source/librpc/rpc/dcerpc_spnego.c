@@ -67,7 +67,7 @@ NTSTATUS dcerpc_bind_auth_spnego(struct dcerpc_pipe *p,
 		return status;
 	}
 	
-	status = dcerpc_bind_auth(p, DCERPC_AUTH_TYPE_SPNEGO,
+	status = dcerpc_bind_alter(p, DCERPC_AUTH_TYPE_SPNEGO,
 				  uuid, version);
 
 	if (!NT_STATUS_IS_OK(status)) {
