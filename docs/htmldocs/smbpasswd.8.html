@@ -36,7 +36,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbpasswd</B
->  [-a] [-x] [-d] [-e] [-D debuglevel] [-n] [-r &lt;remote machine&gt;] [-R &lt;name resolve order&gt;] [-m] [-j DOMAIN] [-U username] [-h] [-s] [username]</P
+>  [-a] [-x] [-d] [-e] [-D debuglevel] [-n] [-r &#60;remote machine&#62;] [-R &#60;name resolve order&#62;] [-m] [-j DOMAIN] [-U username] [-h] [-s] [username]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -53,9 +53,8 @@ TARGET="_top"
 > suite.</P
 ><P
 >The smbpasswd program has several different 
-	functions, depending on whether it is run by the <I
-CLASS="EMPHASIS"
->root</I
+	functions, depending on whether it is run by the <EM
+>root</EM
 > 
 	user or not. When run as a normal user it allows the user to change 
 	the password used for their SMB sessions on any machines that store 
@@ -71,9 +70,8 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >smbpasswd</B
 > differs from how the passwd program works 
-	however in that it is not <I
-CLASS="EMPHASIS"
->setuid root</I
+	however in that it is not <EM
+>setuid root</EM
 > but works in 
 	a client-server mode and communicates with a locally running
 	<B
@@ -93,7 +91,7 @@ CLASS="FILENAME"
 	was typed correctly. No passwords will be echoed on the screen 
 	whilst being typed. If you have a blank smb password (specified by 
 	the string "NO PASSWORD" in the smbpasswd file) then just press 
-	the &lt;Enter&gt; key when asked for your old password. </P
+	the &#60;Enter&#62; key when asked for your old password. </P
 ><P
 >smbpasswd can also be used by a normal user to change their
 	SMB password on remote machines, such as Windows NT Primary Domain 
@@ -127,7 +125,7 @@ CLASS="VARIABLELIST"
 ><P
 >This option specifies that the username 
 		following should be added to the local smbpasswd file, with the 
-		new password typed (type &lt;Enter&gt; for the old password). This 
+		new password typed (type &#60;Enter&#62; for the old password). This 
 		option is ignored if the username following already exists in 
 		the smbpasswd file and it is treated like a regular change 
 		password command. Note that the user to be added must already exist 
@@ -303,9 +301,8 @@ CLASS="PARAMETER"
 		copy of the user account database and will not allow the password 
 		change).</P
 ><P
-><I
-CLASS="EMPHASIS"
->Note</I
+><EM
+>Note</EM
 > that Windows 95/98 do not have 
 		a real password database so it is not possible to change passwords 
 		specifying a Win95/98  machine as remote machine target. </P
@@ -519,9 +516,8 @@ CLASS="COMMAND"
 ><DD
 ><P
 >This specifies the username for all of the 
-		<I
-CLASS="EMPHASIS"
->root only</I
+		<EM
+>root only</EM
 > options to operate on. Only root 
 		can specify this parameter as only root has the permission needed 
 		to modify attributes directly in the local smbpasswd file. 
