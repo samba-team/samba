@@ -1108,7 +1108,7 @@ sub ParseFunctionPrint($)
 
 	pidl "\tif (flags & NDR_SET_VALUES) {\n";
 	pidl "\t\tndr->flags |= LIBNDR_PRINT_SET_VALUES;\n";
-	pidl "}\n";
+	pidl "\t}\n";
 
 	pidl "\tif (flags & NDR_IN) {\n";
 	pidl "\t\tndr_print_struct(ndr, \"in\", \"$fn->{NAME}\");\n";
