@@ -29,27 +29,23 @@
  Find the name and IP address for a server in he realm/domain
  *************************************************************************/
  
-static BOOL ads_dc_name(const char *domain, struct in_addr *dc_ip, fstring srv_name)
+static BOOL ads_dc_name(const char *domain, const char *realm, struct in_addr *dc_ip, fstring srv_name)
 {
 	ADS_STRUCT *ads;
-	const char *realm = domain;
 
-	if (strequal(realm, lp_workgroup()))
+	if (!realm && strequal(domain, lp_workgroup()))
 		realm = lp_realm();
 
 	ads = ads_init(realm, domain, NULL);
 	if (!ads)
 		return False;
 
-	/* we don't need to bind, just connect */
-	ads->auth.flags |= ADS_AUTH_NO_BIND;
-
 	DEBUG(4,("ads_dc_name: domain=%s\n", domain));
 
 #ifdef HAVE_ADS
-	/* a full ads_connect() is actually overkill, as we don't srictly need
-	   to do the SASL auth in order to get the info we need, but libads
-	   doesn't offer a better way right now */
+	/* we don't need to bind, just connect */
+	ads->auth.flags |= ADS_AUTH_NO_BIND;
+
 	ads_connect(ads);
 #endif
 
@@ -157,7 +153,7 @@ static BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip
  wrapper around ads and rpc methods of finds DC's
 **********************************************************************/
 
-BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
+BOOL get_dc_name(const char *domain, const char *realm, fstring srv_name, struct in_addr *ip_out)
 {
 	struct in_addr dc_ip;
 	BOOL ret;
@@ -167,15 +163,14 @@ BOOL get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 
 	ret = False;
 	
-	if ( strequal(lp_workgroup(), domain) || strequal(lp_realm(), domain) )
+	if ( strequal(lp_workgroup(), domain) || strequal(lp_realm(), realm) )
 		our_domain = True;
 	
-	/* always try to obey what the admin specified in smb.conf.
-	   If it is not our domain, assume that domain names with periods 
-	   in them are realm names */
+	/* always try to obey what the admin specified in smb.conf 
+	   (for the local domain) */
 	
-	if ( (our_domain && lp_security()==SEC_ADS) || strchr_m(domain, '.') ) {
-		ret = ads_dc_name(domain, &dc_ip, srv_name);
+	if ( (our_domain && lp_security()==SEC_ADS) || realm ) {
+		ret = ads_dc_name(domain, realm, &dc_ip, srv_name);
 	}
 	
 	if (!ret) {
