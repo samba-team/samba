@@ -420,7 +420,8 @@ do_request(void *buf, size_t len, int sendlength,
     ret = process_request(buf, len, &reply, &sendlength,
 			  d->addr_string, d->sa);
     if(reply.length){
-	kdc_log(5, "sending %d bytes to %s", reply.length, d->addr_string);
+	kdc_log(5, "sending %lu bytes to %s", (unsigned long)reply.length,
+		d->addr_string);
 	if(sendlength){
 	    unsigned char len[4];
 	    len[0] = (reply.length >> 24) & 0xff;
