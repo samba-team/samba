@@ -58,7 +58,10 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	kbuf.dptr = (char *)&key;
 	kbuf.dsize = sizeof(key);
 
-	tdb_delete(tdb, kbuf);
+	if (tdb_delete(tdb, kbuf) != 0) {
+		DEBUG(0,("yield_connection: tdb_delete failed with error %s.\n", tdb_errorstr(tdb) ));
+		return (False);
+	}
 
 	return(True);
 }
@@ -92,7 +95,8 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 	if (cs->Clear && !process_exists(crec.pid) && (errno == ESRCH)) {
 		DEBUG(2,("pid %u doesn't exist - deleting connections %d [%s]\n",
 			(unsigned int)crec.pid, crec.cnum, crec.name));
-		tdb_delete(the_tdb, kbuf);
+		if (tdb_delete(the_tdb, kbuf) != 0)
+			DEBUG(0,("count_fn: tdb_delete failed with error %s\n", tdb_errorstr(tdb) ));
 		return 0;
 	}
 
