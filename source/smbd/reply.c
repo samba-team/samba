@@ -489,7 +489,9 @@ int reply_ioctl(connection_struct *conn,
 			}
 			SSVAL(p,0,fsp->rap_print_jobid);             /* Job number */
 			srvstr_push(outbuf, p+2, global_myname(), 15, STR_TERMINATE|STR_ASCII);
-			srvstr_push(outbuf, p+18, lp_servicename(SNUM(conn)), 13, STR_TERMINATE|STR_ASCII);
+			if (conn) {
+				srvstr_push(outbuf, p+18, lp_servicename(SNUM(conn)), 13, STR_TERMINATE|STR_ASCII);
+			}
 			break;
 		}
 	}
