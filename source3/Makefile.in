@@ -361,10 +361,10 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       printing/printfsp.o lib/sysquotas.o lib/sysquotas_linux.o \
 	       lib/sysquotas_xfs.o lib/sysquotas_4A.o \
 	       smbd/change_trust_pw.o smbd/fake_file.o \
-	       smbd/quotas.o smbd/ntquotas.o lib/afs.o \
+	       smbd/quotas.o smbd/ntquotas.o lib/afs.o smbd/msdfs.o \
 	       $(MANGLE_OBJ) @VFS_STATIC@
 
-SMBD_OBJ_BASE = $(PARAM_OBJ) $(SMBD_OBJ_SRV) $(MSDFS_OBJ) $(LIBSMB_OBJ) \
+SMBD_OBJ_BASE = $(PARAM_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
 		$(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) $(SECRETS_OBJ) \
 		$(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) \
 		$(LIB_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) \
@@ -380,8 +380,6 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
 
 PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o \
                    printing/printing_db.o
-
-MSDFS_OBJ = msdfs/msdfs.o 
 
 SMBD_OBJ = $(SMBD_OBJ_BASE) $(SMBD_OBJ_MAIN)
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -592,7 +590,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(RPC_PIPE_OBJ) $(RPC_PARSE_OBJ) $(KRBCLIENT_OBJ) \
 	    $(AUTH_OBJ) $(PARAM_OBJ) $(LOCKING_OBJ) $(SECRETS_OBJ) \
 	    $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) $(NOTIFY_OBJ) \
-	    $(PASSDB_OBJ) $(GROUPDB_OBJ) $(MSDFS_OBJ) \
+	    $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
 	    $(LIB_SMBD_OBJ) $(AUTH_SAM_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) \
 	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) $(RPC_LSA_DS_OBJ) \
