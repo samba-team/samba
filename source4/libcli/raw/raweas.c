@@ -37,6 +37,23 @@ uint_t ea_list_size(uint_t num_eas, struct ea_struct *eas)
 }
 
 /*
+  work out how many bytes on the wire a chained ea list will consume.
+  This assumes the names are strict ascii, which should be a
+  reasonable assumption
+*/
+uint_t ea_list_size_chained(uint_t num_eas, struct ea_struct *eas)
+{
+	uint_t total = 0;
+	int i;
+	for (i=0;i<num_eas;i++) {
+		uint_t len = 8 + strlen(eas[i].name.s)+1 + eas[i].value.length;
+		len = (len + 3) & ~3;
+		total += len;
+	}
+	return total;
+}
+
+/*
   put a ea_list into a pre-allocated buffer - buffer must be at least
   of size ea_list_size()
 */
@@ -58,6 +75,34 @@ void ea_put_list(char *data, uint_t num_eas, struct ea_struct *eas)
 		memcpy(data+4, eas[i].name.s, nlen+1);
 		memcpy(data+4+nlen+1, eas[i].value.data, eas[i].value.length);
 		data += 4+nlen+1+eas[i].value.length;
+	}
+}
+
+
+/*
+  put a chained ea_list into a pre-allocated buffer - buffer must be
+  at least of size ea_list_size()
+*/
+void ea_put_list_chained(char *data, uint_t num_eas, struct ea_struct *eas)
+{
+	int i;
+
+	for (i=0;i<num_eas;i++) {
+		uint_t nlen = strlen(eas[i].name.s);
+		uint32_t len = 8+nlen+1+eas[i].value.length;
+		uint_t pad = ((len + 3) & ~3) - len;
+		if (i == num_eas-1) {
+			SIVAL(data, 0, 0);
+		} else {
+			SIVAL(data, 0, len+pad);
+		}
+		SCVAL(data, 4, eas[i].flags);
+		SCVAL(data, 5, nlen);
+		SSVAL(data, 6, eas[i].value.length);
+		memcpy(data+8, eas[i].name.s, nlen+1);
+		memcpy(data+8+nlen+1, eas[i].value.data, eas[i].value.length);
+		memset(data+len, 0, pad);
+		data += len + pad;
 	}
 }
 
@@ -102,8 +147,8 @@ uint_t ea_pull_struct(const DATA_BLOB *blob,
   pull a ea_list from a buffer
 */
 NTSTATUS ea_pull_list(const DATA_BLOB *blob, 
-		      TALLOC_CTX *mem_ctx,
-		      uint_t *num_eas, struct ea_struct **eas)
+			      TALLOC_CTX *mem_ctx,
+			      uint_t *num_eas, struct ea_struct **eas)
 {
 	int n;
 	uint32_t ea_size, ofs;
@@ -116,13 +161,13 @@ NTSTATUS ea_pull_list(const DATA_BLOB *blob,
 	if (ea_size > blob->length) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
-	ofs = 4;	
+
+	ofs = 4;
 	n = 0;
 	*num_eas = 0;
 	*eas = NULL;
 
-	while (ofs+6 < ea_size) {
+	while (ofs < ea_size) {
 		uint_t len;
 		DATA_BLOB blob2;
 
@@ -145,4 +190,56 @@ NTSTATUS ea_pull_list(const DATA_BLOB *blob,
 
 	return NT_STATUS_OK;
 }
+
+
+/*
+  pull a chained ea_list from a buffer
+*/
+NTSTATUS ea_pull_list_chained(const DATA_BLOB *blob, 
+			      TALLOC_CTX *mem_ctx,
+			      uint_t *num_eas, struct ea_struct **eas)
+{
+	int n;
+	uint32_t ofs;
+
+	if (blob->length < 4) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+
+	ofs = 0;
+	n = 0;
+	*num_eas = 0;
+	*eas = NULL;
+
+	while (ofs < blob->length) {
+		uint_t len;
+		DATA_BLOB blob2;
+		uint32_t next_ofs = IVAL(blob->data, ofs);
+
+		blob2.data = blob->data + ofs + 4;
+		blob2.length = blob->length - (ofs + 4);
+
+		*eas = talloc_realloc(mem_ctx, *eas, sizeof(**eas) * (n+1));
+		if (! *eas) return NT_STATUS_NO_MEMORY;
+
+		len = ea_pull_struct(&blob2, mem_ctx, &(*eas)[n]);
+		if (len == 0) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		ofs += next_ofs;
+
+		if (ofs+4 > blob->length) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		n++;
+		if (next_ofs == 0) break;
+	}
+
+	*num_eas = n;
+
+	return NT_STATUS_OK;
+}
+
+
 

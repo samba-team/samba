@@ -505,7 +505,7 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 		memcpy(outparam, parms->in.params.data, parms->in.params.length);
 	}
 	if (parms->in.data.length) {
-		memcpy(outparam, parms->in.data.data, parms->in.data.length);
+		memcpy(outdata, parms->in.data.data, parms->in.data.length);
 	}
 
 	if (!smbcli_request_send(req)) {
