@@ -2,7 +2,7 @@ BEGIN {
   inheader=0;
 #  use_ldap_define = 0;
   if (headername=="") {
-    headername="PROTO_H";
+    headername="_PROTO_H_";
   }
   current_file="";
   print "#ifndef",headername

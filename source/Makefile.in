@@ -840,7 +840,7 @@ proto:
 
 rpc_parse_proto:
 	@echo rebuilding include/rpc_parse_proto.h
-	@cd $(srcdir) && $(AWK) -v headername=RPC_PARSE_PROTO_H \
+	@cd $(srcdir) && $(AWK) -v headername=_RPC_PARSE_PROTO_H_ \
 	  -f script/mkproto.awk `echo $(RPC_PARSE_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/rpc_parse_proto.h
 
 etags:
