@@ -33,8 +33,9 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				TALLOC_CTX *mem_ctx,
 				const char *username,
 				uint16_t acct_flags,
-				const uint8_t lm_pw[16], const uint8_t nt_pw[16],
-				const auth_usersupplied_info *user_info, 
+				const struct samr_Password *lm_pwd, 
+				const struct samr_Password *nt_pwd,
+				const struct auth_usersupplied_info *user_info, 
 				DATA_BLOB *user_sess_key, 
 				DATA_BLOB *lm_sess_key)
 {
@@ -57,7 +58,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				   username, 
 				   user_info->smb_name.str, 
 				   user_info->client_domain.str, 
-				   lm_pw, nt_pw, user_sess_key, lm_sess_key);
+				   lm_pwd->hash, nt_pwd->hash, user_sess_key, lm_sess_key);
 }
 
 
@@ -73,7 +74,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 			       NTTIME *must_change_time,
 			       NTTIME *last_set_time,
 			       const char *workstation_list,
-			       const auth_usersupplied_info *user_info)
+			       const struct auth_usersupplied_info *user_info)
 {
 	DEBUG(4,("sam_account_ok: Checking SMB password for user %s\n", username));
 
@@ -165,8 +166,8 @@ return an NT_STATUS constant.
 static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 				   void *my_private_data, 
 				   TALLOC_CTX *mem_ctx,
-				   const auth_usersupplied_info *user_info, 
-				   auth_serversupplied_info **server_info)
+				   const struct auth_usersupplied_info *user_info, 
+				   struct auth_serversupplied_info **server_info)
 {
 	struct ldb_message **msgs;
 	struct ldb_message **msgs_domain;
@@ -187,7 +188,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	NTSTATUS nt_status;
 	DATA_BLOB user_sess_key = data_blob(NULL, 0);
 	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
-	uint8_t *lm_pwd, *nt_pwd;
+	struct samr_Password *lm_pwd, *nt_pwd;
 
 	const char *attrs[] = {"unicodePwd", "lmPwdHash", "ntPwdHash", 
 			       "userAccountControl",
@@ -311,7 +312,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		/* find list of sids */
 		struct dom_sid **groupSIDs = NULL;
 		struct dom_sid *user_sid;
-		struct dom_sid *group_sid;
+		struct dom_sid *primary_group_sid;
 		const char *sidstr;
 		int i;
 
@@ -335,19 +336,16 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		
 		sidstr = ldb_msg_find_string(msgs[0], "objectSid", NULL);
 		user_sid = dom_sid_parse_talloc((*server_info)->mem_ctx, sidstr);
-		group_sid = dom_sid_parse_talloc((*server_info)->mem_ctx, sidstr);
-		group_sid->sub_auths[group_sid->num_auths-1] 
+		primary_group_sid = dom_sid_parse_talloc((*server_info)->mem_ctx, sidstr);
+		primary_group_sid->sub_auths[primary_group_sid->num_auths-1] 
 			= samdb_result_uint(msgs[0], "primaryGroupID", 0);
 
-		if (!NT_STATUS_IS_OK(nt_status = create_nt_user_token((*server_info)->mem_ctx, 
-								     user_sid, group_sid, 
-								     group_ret, groupSIDs, 
-								     False, &(*server_info)->ptok))) {
-			DEBUG(1,("check_sam_security: create_nt_user_token failed with '%s'\n", nt_errstr(nt_status)));
-			free_server_info(server_info);
-			samdb_close(sam_ctx);
-			return nt_status;
-		}
+		(*server_info)->user_sid = user_sid;
+		(*server_info)->primary_group_sid = primary_group_sid;
+		
+		(*server_info)->n_domain_groups = group_ret;
+		(*server_info)->domain_groups = groupSIDs;
+
 	}
 
 	(*server_info)->guest = False;
@@ -359,7 +357,9 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-static NTSTATUS auth_init_sam_ignoredomain(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_sam_ignoredomain(struct auth_context *auth_context, 
+					   const char *param, 
+					   struct auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
@@ -378,8 +378,8 @@ Check SAM security (above) but with a few extra checks.
 static NTSTATUS check_samstrict_security(const struct auth_context *auth_context,
 					 void *my_private_data, 
 					 TALLOC_CTX *mem_ctx,
-					 const auth_usersupplied_info *user_info, 
-					 auth_serversupplied_info **server_info)
+					 const struct auth_usersupplied_info *user_info, 
+					 struct auth_serversupplied_info **server_info)
 {
 
 	if (!user_info || !auth_context) {
@@ -400,7 +400,9 @@ static NTSTATUS check_samstrict_security(const struct auth_context *auth_context
 }
 
 /* module initialisation */
-static NTSTATUS auth_init_sam(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_sam(struct auth_context *auth_context, 
+			      const char *param, 
+			      struct auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;

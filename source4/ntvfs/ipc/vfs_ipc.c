@@ -254,7 +254,9 @@ static NTSTATUS ipc_open_generic(struct request_context *req, const char *fname,
 
 	/* tell the RPC layer the transport session key */
 	if (req->user_ctx->vuser) {
-		dcesrv_set_session_key(p->dce_conn, req->user_ctx->vuser->session_key);
+		/* TODO: Fix this to push more than just a session key
+		 * down - we need the entire session_info, reference counted... */
+		dcesrv_set_session_key(p->dce_conn, req->user_ctx->vuser->session_info->session_key);
 	}
 
 	return NT_STATUS_OK;
