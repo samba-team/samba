@@ -156,7 +156,7 @@ BOOL lsa_lookup_sids(POLICY_HND *hnd,
 		     DOM_SID ** sids,
 		     char ***names, uint32 ** types, int *num_names);
 BOOL lsa_query_sec_obj(const POLICY_HND *hnd, uint32 sec_info,
-				SEC_DESC_BUF *sec_buf);
+		       SEC_DESC_BUF *sec_buf);
 BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID * domain_sid);
 BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 * enum_ctx,

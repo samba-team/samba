@@ -911,7 +911,8 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 					       strlen(password));
 					got_pwd = True;
 				}
-				if (usr.ntc.user_name[0] == 0 && password[0] == 0)
+				if (usr.ntc.user_name[0] == 0
+				    && password[0] == 0)
 				{
 					null_pwd = True;
 				}
@@ -1012,8 +1013,8 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 		       srv_name, usr.ntc.user_name, usr.ntc.domain);
 		report(out_hnd, "Connection:\t");
 
-		if (cli_net_use_add
-		    (srv_name, &usr.ntc, True, info->reuse, &isnew) != NULL)
+		if (cli_net_use_add(srv_name, &usr.ntc, True,
+				    info->reuse, &isnew) != NULL)
 		{
 			report(out_hnd, "OK\n");
 		}
@@ -1029,7 +1030,8 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 		       srv_name, usr.ntc.user_name, usr.ntc.domain);
 		report(out_hnd, "Connection:\t");
 
-		if (!cli_net_use_del(srv_name, &usr.ntc, force_close, &closed))
+		if (!cli_net_use_del(srv_name, &usr.ntc,
+				     force_close, &closed))
 		{
 			report(out_hnd, ": Does not exist\n");
 		}
@@ -1496,7 +1498,8 @@ int command_main(int argc, char *argv[])
 		exit(0);
 	}
 
-	DEBUG(3, ("%s client started (version %s)\n", timestring(), VERSION));
+	DEBUG(3, ("%s client started (version %s)\n",
+		  timestring(False), VERSION));
 
 	process(&cli_info, NULL);
 

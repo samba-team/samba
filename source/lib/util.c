@@ -1910,7 +1910,7 @@ void standard_sub_basic(char *str)
 				string_sub(p, "%R", remote_proto);
 				break;
 			case 'T':
-				string_sub(p, "%T", timestring());
+				string_sub(p, "%T", timestring(False));
 				break;
 			case 'a':
 				string_sub(p, "%a", remote_arch);
@@ -2455,9 +2455,8 @@ BOOL is_in_path(char *name, name_compare_entry * namelist)
 			 * 'unix style' mask match, rather than the
 			 * new NT one.
 			 */
-			if (unix_mask_match
-			    (last_component, namelist->name, case_sensitive,
-			     False))
+			if (unix_mask_match(last_component, namelist->name,
+					    case_sensitive, False))
 			{
 				DEBUG(8,
 				      ("is_in_path: mask match succeeded\n"));

@@ -517,7 +517,7 @@ char *http_timestring(time_t t)
 /****************************************************************************
  Return the date and time as a string
 ****************************************************************************/
-char *timestring(void )
+char *timestring(BOOL hires)
 {
 	static fstring TimeBuf;
 	time_t t = time(NULL);

@@ -67,7 +67,7 @@ extern fstring global_myworkgroup;
 
 DOM_SID global_sid_S_1_5_20; /* local well-known domain */
 DOM_SID global_sid_S_1_1;    /* Global Domain */
-DOM_SID global_sid_S_1_3;    /* Creator Owner */
+static DOM_SID global_sid_S_1_3;    /* Creator Owner */
 DOM_SID global_sid_S_1_5;    /* NT Authority */
 DOM_SID global_sid_system;   /* NT System */
 static DOM_SID global_sid_S_1_1_0;  /* everyone */
@@ -154,10 +154,11 @@ struct sid_map* add_sidmap_to_array(uint32 *len, struct sid_map ***array,
 	                     (void***)array, (const void*)name, *fn, False);
 				
 }
+
 /****************************************************************************
  sets up the name associated with the SAM database for which we are responsible
 ****************************************************************************/
-void get_sam_domain_name(void)
+static void get_sam_domain_name(void)
 {
 
 	switch (lp_server_role())
@@ -264,7 +265,8 @@ BOOL create_sidmap_table(void)
 
 		if (!read_sid(map.name, map.sid))
 		{
-			DEBUG(0,("Could not read Domain SID %s\n", map.name));
+			DEBUG(0, ("Could not read Domain SID %s\n",
+				  map.name));
 			return False;
 		}
 		add_sidmap_to_array(&num_maps, &sid_name_map, &map);
@@ -495,6 +497,7 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain)
 
 	return False;
 }
+
 /**************************************************************************
  turns a domain SID into a domain controller name.
 ***************************************************************************/
@@ -543,7 +546,8 @@ BOOL split_domain_name(const char *fullname, char *domain, char *name)
 		fstrcpy(name, full_name);
 	}
 
-	DEBUG(10,("name '%s' split into domain:%s and nt name:%s'\n", fullname, domain, name));
+	DEBUG(10, ("name '%s' split into domain:%s and nt name:%s'\n",
+		   fullname, domain, name));
 	return True;
 }
 

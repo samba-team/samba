@@ -521,6 +521,7 @@ NETCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/net_cmds.o \
 		rpcclient/dfs_cmds.o \
 		rpcclient/display_srv.o \
+		rpcclient/display_dfs.o \
 		rpcclient/cmd_wkssvc.o \
 		rpcclient/cmd_brs.o \
 		rpcclient/cmd_dfs.o \

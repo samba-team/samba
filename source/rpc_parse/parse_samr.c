@@ -5832,10 +5832,8 @@ uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR * ctr,
 	{
 		case 0x10:
 		{
-			ctr->info.id = (SAM_USER_INFO_10 *) Realloc(NULL,
-								    sizeof
-								    (*ctr->info.id10));
-			if (ctr->info.id == NULL)
+			ctr->info.id10 = g_new(SAM_USER_INFO_10, 1);
+			if (ctr->info.id10 == NULL)
 			{
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -5866,10 +5864,8 @@ uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR * ctr,
 #endif
 		case 0x12:
 		{
-			ctr->info.id = (SAM_USER_INFO_12 *) Realloc(NULL,
-								    sizeof
-								    (*ctr->info.id12));
-			if (ctr->info.id == NULL)
+			ctr->info.id12 = g_new(SAM_USER_INFO_12, 1);
+			if (ctr->info.id12 == NULL)
 			{
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -5880,10 +5876,9 @@ uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR * ctr,
 		case 21:
 		{
 			SAM_USER_INFO_21 *cusr;
-			cusr = (SAM_USER_INFO_21 *) Realloc(NULL,
-							    sizeof(*cusr));
-			ctr->info.id = cusr;
-			if (ctr->info.id == NULL)
+			cusr = g_new(SAM_USER_INFO_21, 1);
+			ctr->info.id21 = cusr;
+			if (ctr->info.id21 == NULL)
 			{
 				return NT_STATUS_NO_MEMORY;
 			}

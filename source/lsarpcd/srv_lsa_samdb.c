@@ -619,8 +619,9 @@ uint32 _lsa_query_secret(const POLICY_HND * hnd_secret,
 	}
 	if (curval != NULL)
 	{
-		if (!nt_encrypt_string2
-		    (curval, &sec->curinfo.value.enc_secret, user_sess_key))
+		if (!nt_encrypt_string2(curval,
+					&sec->curinfo.value.enc_secret,
+					user_sess_key))
 		{
 			safe_free(sec);
 			return NT_STATUS_INVALID_PARAMETER;
@@ -628,8 +629,9 @@ uint32 _lsa_query_secret(const POLICY_HND * hnd_secret,
 	}
 	if (oldval != NULL)
 	{
-		if (!nt_encrypt_string2
-		    (oldval, &sec->oldinfo.value.enc_secret, user_sess_key))
+		if (!nt_encrypt_string2(oldval,
+					&sec->oldinfo.value.enc_secret,
+					user_sess_key))
 		{
 			safe_free(sec);
 			return NT_STATUS_INVALID_PARAMETER;
@@ -676,8 +678,8 @@ uint32 _lsa_create_secret(const POLICY_HND * hnd,
 	policy_hnd_set_name(get_global_hnd_cache(),
 			    hnd_secret, "secret (create)");
 
-	if (!set_tdbsecname
-	    (get_global_hnd_cache(), hnd_secret, tdb, secret_name))
+	if (!set_tdbsecname(get_global_hnd_cache(),
+			    hnd_secret, tdb, secret_name))
 	{
 		close_policy_hnd(get_global_hnd_cache(), hnd_secret);
 		return NT_STATUS_ACCESS_DENIED;
@@ -737,8 +739,8 @@ uint32 _lsa_open_secret(const POLICY_HND * hnd,
 	policy_hnd_set_name(get_global_hnd_cache(),
 			    hnd_secret, "secret (open)");
 
-	if (!set_tdbsecname
-	    (get_global_hnd_cache(), hnd_secret, tdb, secret_name))
+	if (!set_tdbsecname(get_global_hnd_cache(),
+			    hnd_secret, tdb, secret_name))
 	{
 		close_policy_hnd(get_global_hnd_cache(), hnd_secret);
 		return NT_STATUS_ACCESS_DENIED;

@@ -64,9 +64,8 @@ uint32 lookup_lsa_names(const char *srv_name,
 		return NT_STATUS_NONE_MAPPED | 0xC0000000;
 	}
 
-	res1 =
-		res1 ? lsa_open_policy(srv_name, &lsa_pol, True,
-				       0x02000000) : False;
+	res1 = res1 ? lsa_open_policy(srv_name, &lsa_pol, True,
+				      0x02000000) : False;
 
 	res2 = res1 ? lsa_lookup_names(&lsa_pol,
 				       num_names, names,
@@ -105,9 +104,8 @@ uint32 lookup_lsa_name(const char *domain,
 	names = &name;
 
 	/* lookup domain controller; receive a policy handle */
-	res3 =
-		res3 ? lsa_open_policy(srv_name, &lsa_pol, True,
-				       0x02000000) : False;
+	res3 = res3 ? lsa_open_policy(srv_name, &lsa_pol, True,
+				      0x02000000) : False;
 
 	/* send lsa lookup sids call */
 	res4 = res3 ? lsa_lookup_names(&lsa_pol,
@@ -163,9 +161,8 @@ uint32 lookup_lsa_sid(const char *domain,
 	add_sid_to_array(&num_sids, &sids, sid);
 
 	/* lookup domain controller; receive a policy handle */
-	res =
-		res ? lsa_open_policy(srv_name, &lsa_pol, True,
-				      0x02000000) : False;
+	res = res ? lsa_open_policy(srv_name, &lsa_pol, True,
+				    0x02000000) : False;
 
 	/* send lsa lookup sids call */
 	res1 = res ? lsa_lookup_sids(&lsa_pol,
@@ -276,9 +273,8 @@ BOOL msrpc_lsa_set_secret(const char *srv_name,
 				     secret_name, 0x02000000,
 				     &pol_sec) : False;
 
-	res2 =
-		res1 ? (lsa_set_secret(&pol_sec, &secret) ==
-			NT_STATUS_NOPROBLEMO) : False;
+	res2 = res1 ? (lsa_set_secret(&pol_sec, &secret) ==
+		       NT_STATUS_NOPROBLEMO) : False;
 
 	res1 = res1 ? lsa_close(&pol_sec) : False;
 

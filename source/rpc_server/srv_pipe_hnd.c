@@ -180,7 +180,7 @@ BOOL wait_rpc_pipe_hnd_state(pipes_struct * p, uint16 priority)
 
 	DEBUG(3,
 	      ("%s Setting pipe wait state priority=%x on pipe (name=%s)\n",
-	       timestring(), priority, p->name));
+	       timestring(False), priority, p->name));
 
 	p->priority = priority;
 	return True;
@@ -196,7 +196,7 @@ BOOL set_rpc_pipe_hnd_state(pipes_struct * p, uint16 device_state)
 		return False;
 
 	DEBUG(3, ("%s Setting pipe device state=%x on pipe (name=%s)\n",
-		  timestring(), device_state, p->name));
+		  timestring(False), device_state, p->name));
 
 	p->device_state = device_state;
 	return True;

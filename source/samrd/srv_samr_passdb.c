@@ -67,8 +67,8 @@ static BOOL get_policy_samr_sid(struct policy_cache *cache,
 	{
 		pstring tmp;
 		sid_copy(sid, dev);
-		DEBUG(3,
-		      ("Getting policy sid=%s\n", sid_to_string(tmp, sid)));
+		DEBUG(3, ("Getting policy sid=%s\n",
+			  sid_to_string(tmp, sid)));
 		return True;
 	}
 
@@ -216,8 +216,8 @@ uint32 _samr_unknown_2d(const POLICY_HND * domain_pol, const DOM_SID * sid)
 	DOM_SID dom_sid;
 
 	/* associate the domain SID with the (unique) handle. */
-	if (!get_policy_samr_sid
-	    (get_global_hnd_cache(), domain_pol, &dom_sid))
+	if (!get_policy_samr_sid(get_global_hnd_cache(),
+				 domain_pol, &dom_sid))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -336,12 +336,9 @@ static void make_samr_dom_users(SAM_ENTRY ** sam, UNISTR2 ** uni_acct_name,
 		return;
 	}
 
-	(*sam) = (SAM_ENTRY *) Realloc(NULL, num_sam_entries * sizeof((*sam)[0]));
-	
-		(*uni_acct_name) =
-		(UNISTR2 *) Realloc(NULL,
-				    num_sam_entries *
-				    sizeof((*uni_acct_name)[0]));
+	(*sam) = g_new(SAM_ENTRY, num_sam_entries);
+
+	(*uni_acct_name) = g_new(UNISTR2, num_sam_entries);
 
 	if ((*sam) == NULL || (*uni_acct_name) == NULL)
 	{
@@ -476,8 +473,8 @@ uint32 _samr_add_aliasmem(const POLICY_HND * alias_pol, const DOM_SID * sid)
 	fstring alias_sid_str;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_policy_samr_sid
-	    (get_global_hnd_cache(), alias_pol, &alias_sid))
+	if (!get_policy_samr_sid(get_global_hnd_cache(),
+				 alias_pol, &alias_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -522,8 +519,8 @@ uint32 _samr_del_aliasmem(const POLICY_HND * alias_pol, const DOM_SID * sid)
 	fstring alias_sid_str;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_policy_samr_sid
-	    (get_global_hnd_cache(), alias_pol, &alias_sid))
+	if (!get_policy_samr_sid(get_global_hnd_cache(),
+				 alias_pol, &alias_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -576,12 +573,9 @@ static void make_enum_domains(SAM_ENTRY ** sam, UNISTR2 ** uni_dom_name,
 		return;
 	}
 
-	(*sam) = (SAM_ENTRY *) Realloc(NULL, num_sam_entries * sizeof((*sam)[0]));
-	
-		(*uni_dom_name) =
-		(UNISTR2 *) Realloc(NULL,
-				    num_sam_entries *
-				    sizeof((*uni_dom_name)[0]));
+	(*sam) = g_new(SAM_ENTRY, num_sam_entries);
+
+	(*uni_dom_name) = g_new(UNISTR2, num_sam_entries);
 
 	if ((*sam) == NULL || (*uni_dom_name) == NULL)
 	{
@@ -662,12 +656,9 @@ static void make_samr_dom_groups(SAM_ENTRY ** sam, UNISTR2 ** uni_grp_name,
 		return;
 	}
 
-	(*sam) = (SAM_ENTRY *) Realloc(NULL, num_sam_entries * sizeof((*sam)[0]));
-	
-		(*uni_grp_name) =
-		(UNISTR2 *) Realloc(NULL,
-				    num_sam_entries *
-				    sizeof((*uni_grp_name)[0]));
+	(*sam) = g_new(SAM_ENTRY, num_sam_entries);
+
+	(*uni_grp_name) = g_new(UNISTR2, num_sam_entries);
 
 	if ((*sam) == NULL || (*uni_grp_name) == NULL)
 	{
@@ -750,12 +741,9 @@ static void make_samr_dom_aliases(SAM_ENTRY ** sam, UNISTR2 ** uni_grp_name,
 		return;
 	}
 
-	(*sam) = (SAM_ENTRY *) Realloc(NULL, num_sam_entries * sizeof((*sam)[0]));
-	
-		(*uni_grp_name) =
-		(UNISTR2 *) Realloc(NULL,
-				    num_sam_entries *
-				    sizeof((*uni_grp_name)[0]));
+	(*sam) = g_new(SAM_ENTRY, num_sam_entries);
+
+	(*uni_grp_name) = g_new(UNISTR2, num_sam_entries);
 
 	if ((*sam) == NULL || (*uni_grp_name) == NULL)
 	{
@@ -1018,8 +1006,8 @@ uint32 _samr_delete_dom_group(POLICY_HND * group_pol)
 	DEBUG(5, ("samr_delete_dom_group: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_policy_samr_sid
-	    (get_global_hnd_cache(), group_pol, &group_sid))
+	if (!get_policy_samr_sid(get_global_hnd_cache(),
+				 group_pol, &group_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -1064,8 +1052,8 @@ uint32 _samr_query_groupmem(const POLICY_HND * group_pol,
 	(*num_mem) = 0;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_policy_samr_sid
-	    (get_global_hnd_cache(), group_pol, &group_sid))
+	if (!get_policy_samr_sid(get_global_hnd_cache(),
+				 group_pol, &group_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -1092,8 +1080,8 @@ uint32 _samr_query_groupmem(const POLICY_HND * group_pol,
 
 	if (num_rids > 0)
 	{
-		(*rid) = malloc(num_rids * sizeof(uint32));
-		(*attr) = malloc(num_rids * sizeof(uint32));
+		(*rid) = g_new(uint32, num_rids);
+		(*attr) = g_new(uint32, num_rids);
 		if (mem_grp != NULL && (*rid) != NULL && (*attr) != NULL)
 		{
 			int i;
@@ -1303,8 +1291,8 @@ uint32 _samr_delete_dom_alias(POLICY_HND * alias_pol)
 	DEBUG(5, ("samr_delete_dom_alias: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_policy_samr_sid
-	    (get_global_hnd_cache(), alias_pol, &alias_sid))
+	if (!get_policy_samr_sid(get_global_hnd_cache(),
+				 alias_pol, &alias_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -1349,8 +1337,8 @@ uint32 _samr_query_aliasmem(const POLICY_HND * alias_pol,
 	(*num_mem) = 0;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_policy_samr_sid
-	    (get_global_hnd_cache(), alias_pol, &alias_sid))
+	if (!get_policy_samr_sid(get_global_hnd_cache(),
+				 alias_pol, &alias_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -1387,7 +1375,7 @@ uint32 _samr_query_aliasmem(const POLICY_HND * alias_pol,
 
 	if (num_sids > 0)
 	{
-		(*sid) = malloc(num_sids * sizeof(DOM_SID2));
+		(*sid) = g_new(DOM_SID2, num_sids);
 		if (mem_grp != NULL && sid != NULL)
 		{
 			int i;
@@ -1536,15 +1524,13 @@ static BOOL make_samr_lookup_rids(uint32 num_names, char *const *name,
 
 	if (num_names != 0)
 	{
-		(*hdr_name) = (UNIHDR *) malloc(num_names * sizeof((*hdr_name)[0]));
+		(*hdr_name) = g_new(UNIHDR, num_names);
 		if ((*hdr_name) == NULL)
 		{
 			return False;
 		}
-		
-			(*uni_name) =
-			(UNISTR2 *) malloc(num_names *
-					   sizeof((*uni_name)[0]));
+
+		(*uni_name) = g_new(UNISTR2, num_names);
 		if ((*uni_name) == NULL)
 		{
 			free(*uni_name);
@@ -1592,7 +1578,7 @@ uint32 _samr_lookup_rids(const POLICY_HND * pol,
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
-	(*types) = malloc(num_rids * sizeof(**types));
+	(*types) = g_new(uint32, num_rids);
 
 	if ((*types) == NULL)
 	{
@@ -1767,7 +1753,13 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 * id21, uint32 user_rid)
 		hrs.hours[i] = sam_pass->hours[i];
 	}
 
-	make_sam_user_info21A(id21, &sam_pass->logon_time, &sam_pass->logoff_time, &sam_pass->kickoff_time, &sam_pass->pass_last_set_time, &sam_pass->pass_can_change_time, &sam_pass->pass_must_change_time, sam_pass->nt_name,	/* user_name */
+	make_sam_user_info21A(id21, &sam_pass->logon_time,
+			      &sam_pass->logoff_time,
+			      &sam_pass->kickoff_time,
+			      &sam_pass->pass_last_set_time,
+			      &sam_pass->pass_can_change_time,
+			      &sam_pass->pass_must_change_time,
+			      sam_pass->nt_name,	/* user_name */
 			      sam_pass->full_name,	/* full_name */
 			      sam_pass->home_dir,	/* home_dir */
 			      sam_pass->dir_drive,	/* dir_drive */
@@ -1811,12 +1803,8 @@ uint32 _samr_query_userinfo(const POLICY_HND * pol, uint16 switch_value,
 	{
 		case 0x10:
 		{
-			ctr->info.id = (SAM_USER_INFO_10 *) Realloc(NULL,
-								    sizeof
-								    (*ctr->
-								     info.
-								     id10));
-			if (ctr->info.id == NULL)
+			ctr->info.id10 = g_new(SAM_USER_INFO_10, 1);
+			if (ctr->info.id10 == NULL)
 			{
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -1852,12 +1840,8 @@ uint32 _samr_query_userinfo(const POLICY_HND * pol, uint16 switch_value,
 #endif
 		case 0x12:
 		{
-			ctr->info.id = (SAM_USER_INFO_12 *) Realloc(NULL,
-								    sizeof
-								    (*ctr->
-								     info.
-								     id12));
-			if (ctr->info.id == NULL)
+			ctr->info.id12 = g_new(SAM_USER_INFO_12, 1);
+			if (ctr->info.id12 == NULL)
 			{
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -1869,12 +1853,8 @@ uint32 _samr_query_userinfo(const POLICY_HND * pol, uint16 switch_value,
 		}
 		case 21:
 		{
-			ctr->info.id = (SAM_USER_INFO_21 *) Realloc(NULL,
-								    sizeof
-								    (*ctr->
-								     info.
-								     id21));
-			if (ctr->info.id == NULL)
+			ctr->info.id21 = g_new(SAM_USER_INFO_21, 1);
+			if (ctr->info.id21 == NULL)
 			{
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -1958,7 +1938,7 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 * id24, uint32 rid)
 
 	for (i = 0; i < new_pw.uni_str_len; i++)
 	{
-		new_pw.buffer[i] = SVAL(buf, i*2);
+		new_pw.buffer[i] = SVAL(buf, i * 2);
 	}
 
 	nt_lm_owf_genW(&new_pw, nt_hash, lm_hash);
@@ -2007,7 +1987,7 @@ static BOOL set_user_info_23(const SAM_USER_INFO_23 * id23, uint32 rid)
 
 	for (i = 0; i < new_pw.uni_str_len; i++)
 	{
-		new_pw.buffer[i] = SVAL(buf, i*2);
+		new_pw.buffer[i] = SVAL(buf, i * 2);
 	}
 
 	nt_lm_owf_genW(&new_pw, nt_hash, lm_hash);
@@ -2254,8 +2234,8 @@ uint32 _samr_create_dom_alias(const POLICY_HND * domain_pol,
 	}
 
 	/* find the domain sid */
-	if (!get_policy_samr_sid
-	    (get_global_hnd_cache(), domain_pol, &dom_sid))
+	if (!get_policy_samr_sid(get_global_hnd_cache(),
+				 domain_pol, &dom_sid))
 	{
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
@@ -2307,8 +2287,8 @@ uint32 _samr_create_dom_group(const POLICY_HND * domain_pol,
 	}
 
 	/* find the domain sid */
-	if (!get_policy_samr_sid
-	    (get_global_hnd_cache(), domain_pol, &dom_sid))
+	if (!get_policy_samr_sid(get_global_hnd_cache(),
+				 domain_pol, &dom_sid))
 	{
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}

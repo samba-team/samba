@@ -541,12 +541,13 @@ BOOL dbghdr( int level, char *file, char *func, int line )
   if( timestamp_log && (lp_timestamp_logs() || !(lp_loaded()) ))
     {
     /* Print it all out at once to prevent split syslog output. */
-    (void)Debug1( "[%s, %d] %s:%s(%d)\n",
-                  timestring(), level, file, func, line );
+    (void)Debug1("[%s, %d%s] %s:%s(%d)\n",
+                 timestring(lp_debug_hires_timestamp()), level, "",
+                 file, func, line);
     }
 
   return( True );
-  } /* dbghdr */
+}
 
 /* ************************************************************************** **
  * Add text to the body of the "current" debug message via the format buffer.

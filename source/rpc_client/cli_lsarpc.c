@@ -73,9 +73,8 @@ BOOL get_domain_sids(const char *domain, DOM_SID * sid3, DOM_SID * sid5)
 	}
 
 	/* lookup domain controller; receive a policy handle */
-	res =
-		res ? lsa_open_policy(srv_name, &pol, False,
-				      0x02000000) : False;
+	res = res ? lsa_open_policy(srv_name, &pol, False,
+				    0x02000000) : False;
 
 	if (sid3 != NULL)
 	{
@@ -153,9 +152,8 @@ BOOL get_trust_sid_and_domain(const char *myname, char *server,
 	strupper(srv_name);
 
 	/* lookup domain controller; receive a policy handle */
-	res =
-		res ? lsa_open_policy(srv_name, &pol, False,
-				      0x02000000) : False;
+	res = res ? lsa_open_policy(srv_name, &pol, False,
+				    0x02000000) : False;
 
 	/* send client info query, level 3.  receive domain name and sid */
 	res1 = res ? lsa_query_info_pol(&pol, 3, dom3, &sid3) : False;
@@ -934,7 +932,7 @@ BOOL lsa_lookup_sids(POLICY_HND *hnd,
 do a LSA Query Info Policy
 ****************************************************************************/
 BOOL lsa_query_sec_obj(const POLICY_HND *hnd, uint32 sec_info,
-				SEC_DESC_BUF *sec_buf)
+		       SEC_DESC_BUF *sec_buf)
 {
 	prs_struct rbuf;
 	prs_struct buf;
@@ -1082,8 +1080,8 @@ BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 					if (r_q.dom.id5.buffer_dom_sid != 0)
 					{
 						*domain_sid =
-							r_q.dom.id5.dom_sid.
-							sid;
+							r_q.dom.id5.
+							dom_sid.sid;
 					}
 
 					valid_response = True;
