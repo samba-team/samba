@@ -39,6 +39,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	if (lp_map_archive(snum)) pvfs->flags |= PVFS_FLAG_MAP_ARCHIVE;
 	if (lp_map_system(snum)) pvfs->flags |= PVFS_FLAG_MAP_SYSTEM;
 	if (lp_readonly(snum)) pvfs->flags |= PVFS_FLAG_READONLY;
+	if (lp_strict_sync(snum)) pvfs->flags |= PVFS_FLAG_STRICT_SYNC;
 
 	pvfs->share_name = talloc_strdup(pvfs, lp_servicename(snum));
 }
@@ -158,16 +159,6 @@ static NTSTATUS pvfs_seek(struct ntvfs_module_context *ntvfs,
 {
 	DEBUG(0,("pvfs_seek not implemented\n"));
 	return NT_STATUS_NOT_SUPPORTED;
-}
-
-/*
-  flush a file
-*/
-static NTSTATUS pvfs_flush(struct ntvfs_module_context *ntvfs,
-			   struct smbsrv_request *req, struct smb_flush *io)
-{
-	DEBUG(0,("pvfs_flush not implemented\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /*
