@@ -329,8 +329,8 @@ static void utmp_yield(pid_t pid, const connection_struct *conn)
 		return;
 	}
 
-	DEBUG(2,("utmp_yield: conn: user:%s cnum:%d i:%d\n",
-	  conn->user, conn->cnum, i));
+	DEBUG(2,("utmp_yield: conn: user:%s cnum:%d\n",
+		 conn->user, conn->cnum));
 
 	memset((char *)&u, '\0', sizeof(struct utmp));
 	u.ut_type = DEAD_PROCESS;
