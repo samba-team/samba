@@ -285,6 +285,10 @@ int main(int argc, char **argv)
     HDB *db;
     int optind = 0;
     int i;
+#ifdef KRB4
+    int e;
+#endif
+
 
     set_progname(argv[0]);
 
