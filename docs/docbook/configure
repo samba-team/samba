@@ -797,7 +797,7 @@ fi
 
 # The Makefile requires docbook2X in the share/sgml directory
 if  ! test -f $SGML_SHARE/docbook2X/docbook2man-spec.pl ; then
-	{ echo "configure: error: "Unable to find dockbook2X. Make sure it is installed and that the sgml-share path is correct."" 1>&2; exit 1; }
+	{ echo "configure: error: "Unable to find docbook2X. Make sure it is installed and that the sgml-share path is correct."" 1>&2; exit 1; }
 fi
 
 
