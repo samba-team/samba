@@ -1,5 +1,5 @@
 (let* ((heimdal-version (getenv "HV"))
-       (version-string (concat "Release" heimdal-version)))
+       (version-string (concat "Release " heimdal-version)))
   (find-file "configure.in")
   (re-search-forward "AM_INIT_AUTOMAKE(heimdal,\\(.*\\))")
   (replace-match heimdal-version nil nil nil 1)
