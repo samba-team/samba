@@ -99,12 +99,10 @@ void nbt_query_status(struct nbt_name_socket *nbtsock,
 		      struct nbt_name_packet *packet, 
 		      const char *src_address, int src_port)
 {
-	struct nbt_interface *iface;
 	struct nbt_name *name;
 	struct nbt_iface_name *iname;
-
-	/* find the interface for this query */
-	iface = nbt_iface_find(nbtsock, src_address);
+	struct nbt_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						      struct nbt_interface);
 
 	NBT_ASSERT_PACKET(packet, src_address, packet->qdcount == 1);
 	NBT_ASSERT_PACKET(packet, src_address, packet->questions[0].question_type == NBT_QTYPE_STATUS);
