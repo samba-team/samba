@@ -5,6 +5,11 @@
 #ifndef _LOCAL_H
 #define _LOCAL_H
 
+/* The default workgroup - usually overridden in smb.conf */
+#ifndef WORKGROUP
+#define WORKGROUP "WORKGROUP"
+#endif
+
 /* This defines the section name in the configuration file that will contain */
 /* global parameters - that is, parameters relating to the whole server, not */
 /* just services. This name is then reserved, and may not be used as a       */

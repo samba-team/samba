@@ -8,7 +8,7 @@ exec_prefix=@exec_prefix@
 INSTALL_BIN=$(exec_prefix)/bin
 INSTALL_MAN=$(prefix)/man
 
-LIBS1=@LIBS@
+LIBS=@LIBS@
 CC=@CC@
 CFLAGS=@CFLAGS@
 AWK=@AWK@
@@ -51,20 +51,9 @@ LOCKDIR = $(VARDIR)/locks
 
 # The directory where code page definition files go
 CODEPAGEDIR = $(LIBDIR)/codepages
+
 # The current codepage definition list.
 CODEPAGELIST= 437 737 850 852 861 932 866 949 950 936
-
-# set this to the default group you want your machine to appear in
-# for browsing. This can also be set in nmbd (see nmbd(8))
-WORKGROUP = WORKGROUP
-
-# set this to the name of the default account, which is the one
-# to use when no username or password is specified.  This can be overridden
-# in the runtime configuration file (see smb.conf(5))
-# NOTE: The account "nobody" may not be a good one as
-# on many unixes it may not be able to print. Thus you
-# might have to create a separate guest account that can print.
-GUESTACCOUNT = nobody
 
 # where you are going to have the smbrun binary. This defaults to the 
 # install directory. This binary is needed for correct printing
@@ -75,110 +64,74 @@ SMBRUN = $(BINDIR)/smbrun
 
 
 PASSWD_FLAGS = -DSMB_PASSWD=\"$(SMB_PASSWD)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\"
-FLAGS1 = $(CFLAGS) -I. -I$(srcdir)/ubiqx -DSMBLOGFILE=\"$(SMBLOGFILE)\" -DNMBLOGFILE=\"$(NMBLOGFILE)\"
-FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" -DWEB_ROOT=\"$(WEB_ROOT)\" $(REGEX_FLAGS)
+FLAGS1 = $(CFLAGS) -I$(srcdir)/include -I$(srcdir)/ubiqx -DSMBLOGFILE=\"$(SMBLOGFILE)\" -DNMBLOGFILE=\"$(NMBLOGFILE)\"
+FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
 FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
-FLAGS4 = -DWORKGROUP=\"$(WORKGROUP)\" -DGUEST_ACCOUNT=\"$(GUESTACCOUNT)\" -DDRIVERFILE=\"$(DRIVERFILE)\"
-FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) $(AFS_FLAGS) $(KRB5_FLAGS) $(KRB4_FLAGS) $(RPM_OPT_FLAGS) -DHAVE_INCLUDES_H
+FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\"
+FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) -DHAVE_INCLUDES_H
+FLAGS  = $(FLAGS5) $(PASSWD_FLAGS)
 
-FLAGS  = $(FLAGS5) $(PAM_FLAGS) $(DCE_FLAGS) $(DES_FLAGS) $(PASSWD_FLAGS) $(VTP_FLAGS) $(NISPLUS_FLAGS) $(LDAP_FLAGS) $(SSL_CFLAGS)
-LIBS = $(LIBS1) $(LIBSM) $(PAM_LIBS) $(DCE_LIBS) $(KRB5_LIBS) $(KRB4_LIBS) $(DES_LIB) $(LDAP_LIBS) $(SSL_LIBS)
-
-SPROGS = smbd nmbd swat
-PROGS1 = smbclient testparm testprns smbrun smbstatus smbpasswd make_smbcodepage
-PROGS = $(PROGS1) nmblookup make_printerdef $(MOUNT_PROGS)
+SPROGS = bin/smbd bin/nmbd bin/swat
+PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
+PROGS2 = bin/smbpasswd bin/make_smbcodepage
+PROGS = $(PROGS1) $(PROGS2) bin/nmblookup bin/make_printerdef 
 
 SCRIPTS = smbtar addtosmbpass
 
 
 ######################################################################
-# object modules
+# object file lists
 ######################################################################
 
-# modules in the ubiqx library from Chris Hertel
-UBIOBJ = ubiqx/ubi_dLinkList.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
-         ubiqx/ubi_BinTree.o ubiqx/ubi_sLinkList.o
+LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
+          lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
+          lib/membuffer.o lib/netmask.o lib/pidfile.o lib/replace.o \
+          lib/signal.o lib/slprintf.o lib/system.o lib/time.o lib/ufc.o \
+          lib/util.o
 
-# client specific object code in the lib/rpc directory
-RPC_CLI_OBJ = lib/rpc/client/cli_login.o lib/rpc/client/cli_netlogon.o lib/rpc/client/cli_samr.o \
-              lib/rpc/client/cli_wkssvc.o lib/rpc/client/cli_lsarpc.o lib/rpc/client/cli_pipe.o \
-              lib/rpc/client/cli_srvsvc.o lib/rpc/client/ntclienttrust.o
+UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
+            ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o
 
-# client code that needs to do in the server in the lib/rpc directory.
-RPC_CLIENT_SERVER_SUBSET_OBJ = lib/rpc/client/cli_pipe.o lib/rpc/client/cli_login.o \
-                               lib/rpc/client/cli_netlogon.o
+PARAM_OBJ = param/loadparm.o param/params.o
 
-# server specific object code in the lib/rpc directory
-RPC_SERV_OBJ = lib/rpc/server/srv_lsa.o lib/rpc/server/srv_netlog.o lib/rpc/server/srv_reg.o \
-               lib/rpc/server/srv_srvsvc.o lib/rpc/server/srv_wkssvc.o \
-               lib/rpc/server/srv_lsa_hnd.o lib/rpc/server/srv_pipe_hnd.o \
-               lib/rpc/server/srv_samr.o lib/rpc/server/srv_util.o
+LIBSMB_OBJ = libsmb/clientgen.o libsmb/namequery.o libsmb/nmblib.o \
+             libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o libsmb/smberr.o
 
-# parse object files in the lib/rpc subdirectory
-RPC_OBJ = lib/rpc/parse/parse_lsa.o lib/rpc/parse/parse_net.o lib/rpc/parse/parse_reg.o \
-          lib/rpc/parse/parse_samr.o lib/rpc/parse/parse_wks.o lib/rpc/parse/parse_misc.o \
-          lib/rpc/parse/parse_prs.o lib/rpc/parse/parse_rpc.o lib/rpc/parse/parse_srv.o
+RPC_SERVER_OBJ = rpc_server/srv_ldap_helpers.o rpc_server/srv_lsa.o \
+                 rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o \
+                 rpc_server/srv_pipe_hnd.o rpc_server/srv_reg.o \
+                 rpc_server/srv_samr.o rpc_server/srv_srvsvc.o \
+                 rpc_server/srv_util.o rpc_server/srv_wkssvc.o
+
+RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_misc.o \
+                rpc_parse/parse_net.o rpc_parse/parse_prs.o \
+                rpc_parse/parse_reg.o rpc_parse/parse_rpc.o \
+                rpc_parse/parse_samr.o rpc_parse/parse_srv.o \
+                rpc_parse/parse_wks.o
+
+RPC_CLIENT_OBJ = rpc_client/cli_login.o rpc_client/cli_netlogon.o \
+                 rpc_client/cli_pipe.o 
+
+LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
+              locking/shmem.o locking/shmem_sysv.o
+
+SMBD_OBJ1 = smbd/server.o smbd/access.o smbd/chgpasswd.o smbd/connection.o \
+            smbd/credentials.o smbd/dfree.o smbd/dir.o smbd/genrand.o \
+            smbd/groupname.o smbd/ipc.o smbd/ldap.o smbd/mangle.o \
+            smbd/message.o smbd/nispass.o smbd/nttrans.o smbd/passdb.o \
+            smbd/password.o smbd/pcap.o smbd/pipes.o smbd/predict.o \
+            smbd/print_svid.o smbd/printing.o smbd/quotas.o smbd/reply.o \
+            smbd/smbpass.o smbd/smbpassfile.o \
+            smbd/ssl.o smbd/trans2.o smbd/uid.o smbd/username.o
+
+SMBD_OBJ = $(SMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
+           $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
+           $(LOCKING_OBJ) $(LIB_OBJ)
 
 
-# password database object files
-PASSDB_OBJ = passdb.o ldap.o smbpass.o nisppass.o smbpassfile.o
-
-# general utility object files
-UTILOBJ1 = util.o system.o charset.o kanji.o fault.o smbencrypt.o smbdes.o charcnv.o genrand.o
-UTILOBJ2 = $(UTILOBJ1) md4.o loadparm.o params.o pcap.o username.o time.o membuffer.o namequery.o nmblib.o
-UTILOBJ3 = $(UTILOBJ2) signal.o netmask.o dfree.o debug.o
-UTILOBJ = $(UTILOBJ3) credentials.o interface.o replace.o print_svid.o smberr.o pidfile.o slprintf.o \
-          $(SSL_OBJ) $(UBIOBJ)
-
-# Client utility object files.
-CLIENTUTIL = clientgen.o nterr.o
-
-# object code for smbd
-SMBDOBJ1 = $(UTILOBJ) trans2.o nttrans.o message.o dir.o printing.o 
-SMBDOBJ2 = ipc.o reply.o mangle.o chgpasswd.o password.o quotas.o uid.o
-SMBDOBJ3 = predict.o pipes.o server.o access.o 
-SMBDOBJ4 = ufc.o connection.o groupname.o
-SMBDOBJ = $(SMBDOBJ1) $(SMBDOBJ2) $(SMBDOBJ3) $(SMBDOBJ4) $(RPC_OBJ) $(RPC_SERV_OBJ) \
-          $(RPC_CLIENT_SERVER_SUBSET_OBJ) $(VTP_OBJ) $(LOCKOBJ) $(CLIENTUTIL) $(PASSDB_OBJ)
-
-# object code needed for programs that handle the the locking files
-LOCKOBJ = locking_shm.o locking_slow.o locking.o shmem.o shmem_sysv.o
-
-# object code for nmbd
-NMBDOBJ1 = $(PASSDB_OBJ) nmbd.o nmbd_packets.o nmbd_lmhosts.o nmbd_become_dmb.o nmbd_logonnames.o
-NMBDOBJ2 = nmbd_browserdb.o nmbd_responserecordsdb.o nmbd_workgroupdb.o nmbd_serverlistdb.o
-NMBDOBJ3 = nmbd_subnetdb.o nmbd_browsesync.o nmbd_nodestatus.o nmbd_mynames.o nmbd_winsproxy.o
-NMBDOBJ4 = nmbd_sendannounce.o nmbd_processlogon.o nmbd_incomingdgrams.o
-NMBDOBJ5 = asyncdns.o nmbd_winsserver.o nmbd_incomingrequests.o nmbd_nameregister.o
-NMBDOBJ6 = nmbd_namerelease.o nmbd_namequery.o nmbd_become_lmb.o nmbd_elections.o nmbd_namelistdb.o
-
-NMBDOBJ = $(UTILOBJ) $(NMBDOBJ1) $(NMBDOBJ2) $(NMBDOBJ3) $(NMBDOBJ4) $(NMBDOBJ5) $(NMBDOBJ6) $(CLIENTUTIL)
-
-# object files for smbclient
-CLIENT_OBJ = client.o clientutil.o clitar.o getsmbpass.o $(UTILOBJ)
-
-# object files for smbmount
-MOUNT_OBJ = smbmount.o clientutil.o getsmbpass.o $(UTILOBJ)
-
-# object files for smbmnt
-MNT_OBJ = smbmnt.o 
-
-# object files for smbumount
-UMOUNT_OBJ = smbumount.o $(UTILOBJ)
-
-# object files for smbstatus
-STATUS_OBJ = status.o $(UTILOBJ) $(LOCKOBJ) 
-
-# object files for nmblookup
-LOOKUP_OBJ = nmblookup.o $(UTILOBJ) 
-
-# object files for swat
-SWAT_OBJ = web/swat.o web/statuspage.o web/cgi.o web/diagnose.o web/startstop.o password.o $(PASSDB_OBJ) \
-           $(RPC_CLIENT_SERVER_SUBSET_OBJ) $(RPC_OBJ) $(UTILOBJ) $(LOCKOBJ) $(CLIENTUTIL)
-
-# object files to be auto-prototyped
-PROTOOBJ = $(UTILOBJ) $(SMBDOBJ) $(NMBDOBJ) $(LOCKOBJ) $(CLIENT_OBJ) $(STATUS_OBJ) $(SWAT_OBJ) \
-           $(CLIENTUTIL) $(PASSDB_OBJ)
+PROTO_OBJ = $(SMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
+           $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
+           $(LOCKING_OBJ) $(LIB_OBJ)
 
 ######################################################################
 # now the rules...
@@ -193,9 +146,9 @@ all : $(SPROGS) $(PROGS)
 	@echo Compiling $*.c
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< -o $@
 
-smbd: $(SMBDOBJ) 
-	@echo Linking smbd
-	@$(CC) $(FLAGS) -o smbd $(SMBDOBJ) $(LIBS) $(AFS_LIBS)
+bin/smbd: $(SMBD_OBJ) 
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LIBS) 
 
 smbrun: smbrun.o 
 	@echo Linking smbrun
@@ -308,7 +261,7 @@ cleandir:  clean
 	rm -f .depend tags
 
 proto:
-	$(AWK) -f mkproto.awk `echo $(PROTOOBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort | fgrep -v "ubiqx" | uniq` > proto.h
+	$(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | grep -v "ubiqx/"` > include/proto.h
 
 etags:
 	etags `find . -name "*.[ch]"`

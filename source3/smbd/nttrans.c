@@ -1354,11 +1354,12 @@ due to being in oplock break state.\n" ));
 
       if((ret && (CVAL(inbuf, smb_com) != SMBnttranss)) || !ret) {
         outsize = set_message(outbuf,0,0,True);
-        if(ret)
-          DEBUG(0,("reply_nttrans: Invalid secondary nttrans packet\n"));
-        else
-          DEBUG(0,("reply_nttrans: %s in getting secondary nttrans response.\n",
-                (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
+        if(ret) {
+		DEBUG(0,("reply_nttrans: Invalid secondary nttrans packet\n"));
+        } else {
+		DEBUG(0,("reply_nttrans: %s in getting secondary nttrans response.\n",
+			 (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
+	}
         if(params)
           free(params);
         if(data)
