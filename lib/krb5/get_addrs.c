@@ -208,7 +208,7 @@ cleanup:
 }
 
 static krb5_error_code
-get_addrs_int (krb5_addresses *res, int loop)
+get_addrs_int (krb5_context context, krb5_addresses *res, int loop)
 {
     krb5_error_code ret = -1;
 #if defined(AF_INET6) && defined(SIOCGIF6CONF) && defined(SIOCGIF6FLAGS)
@@ -221,7 +221,22 @@ get_addrs_int (krb5_addresses *res, int loop)
 			      sizeof(struct ifreq));
 #endif
     if(ret || res->len == 0)
-	return gethostname_fallback (res);
+	ret = gethostname_fallback (res);
+    if(ret == 0) {
+	/* append user specified addresses */
+	krb5_addresses a;
+	ret = krb5_get_extra_addresses(context, &a);
+	if(ret) {
+	    krb5_free_addresses(context, res);
+	    return ret;
+	}
+	ret = krb5_append_addresses(context, res, &a);
+	if(ret) {
+	    krb5_free_addresses(context, res);
+	    return ret;
+	}
+	krb5_free_addresses(context, &a);
+    }
     return ret;
 }
 
@@ -234,9 +249,9 @@ get_addrs_int (krb5_addresses *res, int loop)
  */
 
 krb5_error_code
-krb5_get_all_client_addrs (krb5_addresses *res)
+krb5_get_all_client_addrs (krb5_context context, krb5_addresses *res)
 {
-    return get_addrs_int (res, 0);
+    return get_addrs_int (context, res, 0);
 }
 
 /*
@@ -245,7 +260,7 @@ krb5_get_all_client_addrs (krb5_addresses *res)
  */
 
 krb5_error_code
-krb5_get_all_server_addrs (krb5_addresses *res)
+krb5_get_all_server_addrs (krb5_context context, krb5_addresses *res)
 {
-    return get_addrs_int (res, 1);
+    return get_addrs_int (context, res, 1);
 }
