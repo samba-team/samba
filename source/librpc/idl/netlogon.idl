@@ -1,0 +1,15 @@
+/*
+  plug and play services?
+*/
+
+[
+  uuid(12345678-1234-abcd-ef00-01234567cffb),
+  version(1.0)
+]
+interface netlogon
+{
+
+	/*****************/
+	/* Function 0x00 */
+	WERROR netlogon_Unknown0();
+}

@@ -1,0 +1,15 @@
+/*
+  cryptographic key services interface
+*/
+
+[
+  uuid(8d0ffe72-d252-11d0-bf8f-00c04fd9126b),
+  version(1.0)
+]
+interface keysvc
+{
+
+	/*****************/
+	/* Function 0x00 */
+	WERROR keysvc_Unknown0();
+}

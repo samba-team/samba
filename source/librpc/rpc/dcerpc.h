@@ -76,10 +76,16 @@ struct dcerpc_interface_call {
 	void (*ndr_print)(struct ndr_print *, const char *, int, void *);	
 };
 
+struct dcerpc_endpoint_list {
+	uint32 count;
+	const char *names[];
+};
+
 struct dcerpc_interface_table {
 	const char *name;
 	const char *uuid;
 	uint32 if_version;
 	uint32 num_calls;
 	const struct dcerpc_interface_call *calls;
+	const struct dcerpc_endpoint_list *endpoints;
 };
