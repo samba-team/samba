@@ -167,7 +167,7 @@ ipv6_anyaddr (struct sockaddr *sa, int *sa_size, int port)
 
     memset (sin6, 0, sizeof(*sin6));
     *sa_size = sizeof(*sin6);
-    sin6->sin6_family = AF_INET;
+    sin6->sin6_family = AF_INET6;
     sin6->sin6_port   = port;
     sin6->sin6_addr   = in6addr_any;
 }
