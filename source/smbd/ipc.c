@@ -52,8 +52,6 @@ extern fstring myworkgroup;
 #define ERROR_INVALID_LEVEL 124
 #define ERROR_MORE_DATA 234
 
-#define REALLOC(ptr,size) Realloc(ptr,MAX((size),4*1024))
-
 #define ACCESS_READ 0x01
 #define ACCESS_WRITE 0x02
 #define ACCESS_CREATE 0x04

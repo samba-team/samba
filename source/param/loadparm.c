@@ -128,6 +128,8 @@ typedef struct
   char *szValidChars;
   char *szWorkGroup;
   char *szDomainController;
+  char *szDomainAdminUsers;
+  char *szDomainGuestUsers;
   char *szUsernameMap;
   char *szCharacterSet;
   char *szLogonScript;
@@ -447,6 +449,8 @@ struct parm_struct
   {"domain sid",       P_USTRING, P_GLOBAL, &Globals.szDomainSID,       NULL},
   {"domain groups",    P_USTRING, P_GLOBAL, &Globals.szDomainGroups,    NULL},
   {"domain controller",P_STRING,  P_GLOBAL, &Globals.szDomainController,NULL},
+  {"domain admin users",P_STRING,  P_GLOBAL, &Globals.szDomainAdminUsers, NULL},
+  {"domain guest users",P_STRING,  P_GLOBAL, &Globals.szDomainGuestUsers, NULL},
   {"username map",     P_STRING,  P_GLOBAL, &Globals.szUsernameMap,     NULL},
   {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set},
   {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL},
@@ -865,6 +869,8 @@ FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
 
 FN_GLOBAL_STRING(lp_domainsid,&Globals.szDomainSID)
 FN_GLOBAL_STRING(lp_domain_groups,&Globals.szDomainGroups)
+FN_GLOBAL_STRING(lp_domain_admin_users,&Globals.szDomainAdminUsers)
+FN_GLOBAL_STRING(lp_domain_guest_users,&Globals.szDomainGuestUsers)
 
 FN_GLOBAL_BOOL(lp_dns_proxy,&Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)

@@ -66,6 +66,8 @@ typedef int BOOL;
 typedef  int smb_shm_offset_t;
 #define NULL_OFFSET (smb_shm_offset_t)(0)
 
+/* limiting size of ipc replies */
+#define REALLOC(ptr,size) Realloc(ptr,MAX((size),4*1024))
 
 /*
    Samba needs type definitions for int16, int32, uint16 and uint32.
@@ -297,6 +299,32 @@ typedef fstring string;
 /* srvsvc pipe */
 #define NETSERVERGETINFO 0x15
 #define NETSHAREENUM     0x0f
+
+/* well-known RIDs - Relative IDs */
+
+/* RIDs - Well-known users ... */
+#define DOMAIN_USER_RID_ADMIN          (0x000001F4L)
+#define DOMAIN_USER_RID_GUEST          (0x000001F5L)
+
+/* RIDs - well-known groups ... */
+#define DOMAIN_GROUP_RID_ADMINS        (0x00000200L)
+#define DOMAIN_GROUP_RID_USERS         (0x00000201L)
+#define DOMAIN_GROUP_RID_GUESTS        (0x00000202L)
+
+/* RIDs - well-known aliases ... */
+#define DOMAIN_ALIAS_RID_ADMINS        (0x00000220L)
+#define DOMAIN_ALIAS_RID_USERS         (0x00000221L)
+#define DOMAIN_ALIAS_RID_GUESTS        (0x00000222L)
+#define DOMAIN_ALIAS_RID_POWER_USERS   (0x00000223L)
+
+#define DOMAIN_ALIAS_RID_ACCOUNT_OPS   (0x00000224L)
+#define DOMAIN_ALIAS_RID_SYSTEM_OPS    (0x00000225L)
+#define DOMAIN_ALIAS_RID_PRINT_OPS     (0x00000226L)
+#define DOMAIN_ALIAS_RID_BACKUP_OPS    (0x00000227L)
+
+#define DOMAIN_ALIAS_RID_REPLICATOR    (0x00000228L)
+
+
 
 /* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
 typedef struct time_info
