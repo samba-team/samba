@@ -28,7 +28,6 @@
 
 extern int DEBUGLEVEL;
 
-
 /*******************************************************************
 reads or writes a BIGINT structure.
 ********************************************************************/
@@ -48,11 +47,13 @@ BOOL smb_io_bigint(char *desc, BIGINT *bigint, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-reads or writes an NTTIME structure.
+ Reads or writes an NTTIME structure.
 ********************************************************************/
-BOOL smb_io_time(char *desc,  NTTIME *nttime, prs_struct *ps, int depth)
+
+BOOL smb_io_time(char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 {
-	if (nttime == NULL) return False;
+	if (nttime == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_time");
 	depth++;
@@ -66,11 +67,13 @@ BOOL smb_io_time(char *desc,  NTTIME *nttime, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-reads or writes a LOOKUP_LEVEL structure.
+ Reads or writes a LOOKUP_LEVEL structure.
 ********************************************************************/
+
 BOOL smb_io_lookup_level(char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int depth)
 {
-	if (level == NULL) return False;
+	if (level == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_lookup_level");
 	depth++;
@@ -83,8 +86,9 @@ BOOL smb_io_lookup_level(char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int de
 }
 
 /*******************************************************************
-gets an enumeration handle from an ENUM_HND structure.
+ Gets an enumeration handle from an ENUM_HND structure.
 ********************************************************************/
+
 uint32 get_enum_hnd(ENUM_HND *enh)
 {
 	return (enh && enh->ptr_hnd != 0) ? enh->handle : 0;
@@ -95,6 +99,7 @@ uint32 get_enum_hnd(ENUM_HND *enh)
 /*******************************************************************
 makes an ENUM_HND structure.
 ********************************************************************/
+
 BOOL make_enum_hnd(ENUM_HND *enh, uint32 hnd)
 {
 	if (enh == NULL) return False;
@@ -108,11 +113,13 @@ BOOL make_enum_hnd(ENUM_HND *enh, uint32 hnd)
 }
 
 /*******************************************************************
-reads or writes an ENUM_HND structure.
+ Reads or writes an ENUM_HND structure.
 ********************************************************************/
+
 BOOL smb_io_enum_hnd(char *desc,  ENUM_HND *hnd, prs_struct *ps, int depth)
 {
-	if (hnd == NULL) return False;
+	if (hnd == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_enum_hnd");
 	depth++;
@@ -131,11 +138,13 @@ BOOL smb_io_enum_hnd(char *desc,  ENUM_HND *hnd, prs_struct *ps, int depth)
 /*******************************************************************
 reads or writes a DOM_SID structure.
 ********************************************************************/
+
 BOOL smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth)
 {
 	int i;
 
-	if (sid == NULL) return False;
+	if (sid == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_dom_sid");
 	depth++;
@@ -683,6 +692,15 @@ BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
 	prs_uint16s(True, "buffer     ", ps, depth, buf5->buffer, buf5->buf_len);
 
 	return True;
+}
+
+/*******************************************************************
+ Frees a BUFFER5 structure (just the malloced part).
+********************************************************************/
+
+void free_buffer5(BUFFER5 *buf5)
+{
+	safe_free(buf5->buffer);
 }
 
 /*******************************************************************

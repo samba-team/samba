@@ -632,7 +632,7 @@ struct use_info* add_use_info_to_array(uint32 *len, struct use_info ***array,
 void free_char_array(uint32 num_entries, char **entries);
 char* add_chars_to_array(uint32 *len, char ***array, const char *name);
 void free_uint32_array(uint32 num_entries, uint32 **entries);
-uint32* add_uint32s_to_array(uint32 *len, uint32 ***array, const uint32 *name);
+uint32* add_uint32s_to_array(uint32 *len, uint32 **array, const uint32 *name);
 void free_unistr_array(uint32 num_entries, UNISTR2 **entries);
 UNISTR2* add_unistr_to_array(uint32 *len, UNISTR2 ***array, UNISTR2 *name);
 void free_sid_array(uint32 num_entries, DOM_SID **entries);
@@ -2452,7 +2452,7 @@ BOOL create_user_creds( prs_struct *ps,
 /*The following definitions come from  rpc_parse/parse_misc.c  */
 
 BOOL smb_io_bigint(char *desc, BIGINT *bigint, prs_struct *ps, int depth);
-BOOL smb_io_time(char *desc,  NTTIME *nttime, prs_struct *ps, int depth);
+BOOL smb_io_time(char *desc, NTTIME *nttime, prs_struct *ps, int depth);
 BOOL smb_io_lookup_level(char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int depth);
 uint32 get_enum_hnd(ENUM_HND *enh);
 BOOL make_enum_hnd(ENUM_HND *enh, uint32 hnd);
@@ -2490,6 +2490,7 @@ BOOL init_buffer5(BUFFER5 **str);
 BOOL clear_buffer5(BUFFER5 **str);
 BOOL make_buffer5(BUFFER5 *str, char *buf, int len);
 BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
+void free_buffer5(BUFFER5 *buf5);
 BOOL make_buffer2_multi(BUFFER2 *str, char *const* const buf, uint32 num);
 BOOL make_buffer2(BUFFER2 *str, const char *buf, int len);
 BOOL smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);

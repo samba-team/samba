@@ -1553,11 +1553,13 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 	if (MARSHALLING(ps)) {
 		uint32 struct_offset = prs_offset(ps);
 		uint32 relative_offset;
+
 		
 		if (*secdesc != NULL) {
 			buffer->string_at_end -= 256; /* HACK! */
-			
-			prs_set_offset(ps, buffer->string_at_end);
+
+			if(!prs_set_offset(ps, buffer->string_at_end))
+				return False;
 			
 			/* write the secdesc */
 			if (!sec_io_desc(desc, *secdesc, ps, depth))
@@ -2958,6 +2960,12 @@ BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps
  Delete the dynamic parts of a SPOOL_Q_SETPRINTER struct.
 ********************************************************************/  
 
+void free_spoolss_q_setprinter(SPOOL_Q_SETPRINTER *q_u)
+{
+	free_spool_printer_info_level(&q_u->info);
+	free_sec_desc_buf( &q_u->secdesc_ctr );
+	free_devmode( q_u->devmode_ctr.devmode );
+}
 
 /*******************************************************************
  Marshall/unmarshall a SPOOL_Q_SETPRINTER struct.
@@ -3779,6 +3787,17 @@ BOOL spool_io_printer_driver_info_level_3(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 	return True;
 }
 
+void free_spool_printer_driver_info_level_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u)
+{
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *il = *q_u;
+
+	if (il == NULL)
+		return;
+
+	free_buffer5(&il->dependentfiles);
+
+	safe_free(il);
+}
 
 /*******************************************************************
 parse a SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 structure
@@ -3918,6 +3937,19 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 	return True;
 }
 
+void free_spool_printer_driver_info_level_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u)
+{
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *il = *q_u;
+
+	if (il == NULL)
+		return;
+
+	free_buffer5(&il->dependentfiles);
+	free_buffer5(&il->previousnames);
+
+	safe_free(il);
+}
+
 
 /*******************************************************************
  convert a buffer of UNICODE strings null terminated
@@ -4004,6 +4036,21 @@ BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LE
 	return True;
 }
 
+void free_spool_printer_driver_info_level(SPOOL_PRINTER_DRIVER_INFO_LEVEL *il)
+{
+	if (il->ptr==0)
+		return;
+
+	switch (il->level) {
+		case 3:
+			free_spool_printer_driver_info_level_3(&il->info_3);
+			break;
+		case 6:
+			free_spool_printer_driver_info_level_6(&il->info_6);
+			break;
+	}
+}
+
 /*******************************************************************
 ********************************************************************/  
 BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth)
@@ -4028,6 +4075,15 @@ BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, pr
 		return False;
 
 	return True;
+}
+
+/*******************************************************************
+ Free the dynamic parts of a printer driver.
+********************************************************************/  
+
+void free_spoolss_q_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u)
+{
+	free_spool_printer_driver_info_level(&q_u->info);
 }
 
 /*******************************************************************
@@ -4068,10 +4124,10 @@ BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
 	unistr2_to_ascii(d->name,            &uni->name,            sizeof(d->name)-1);
 	unistr2_to_ascii(d->environment,     &uni->environment,     sizeof(d->environment)-1);
 	unistr2_to_ascii(d->driverpath,      &uni->driverpath,      sizeof(d->driverpath)-1);
-	unistr2_to_ascii(d->datafile,        &(uni->datafile),        sizeof(d->datafile)-1);
-	unistr2_to_ascii(d->configfile,      &(uni->configfile),      sizeof(d->configfile)-1);
-	unistr2_to_ascii(d->helpfile,        &(uni->helpfile),        sizeof(d->helpfile)-1);
-	unistr2_to_ascii(d->monitorname,     &(uni->monitorname),     sizeof(d->monitorname)-1);
+	unistr2_to_ascii(d->datafile,        &uni->datafile,        sizeof(d->datafile)-1);
+	unistr2_to_ascii(d->configfile,      &uni->configfile,      sizeof(d->configfile)-1);
+	unistr2_to_ascii(d->helpfile,        &uni->helpfile,        sizeof(d->helpfile)-1);
+	unistr2_to_ascii(d->monitorname,     &uni->monitorname,     sizeof(d->monitorname)-1);
 	unistr2_to_ascii(d->defaultdatatype, &uni->defaultdatatype, sizeof(d->defaultdatatype)-1);
 
 	DEBUGADD(8,( "version:         %d\n", d->cversion));
@@ -4113,10 +4169,10 @@ BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
 	unistr2_to_ascii(d->name,            &uni->name,            sizeof(d->name)-1);
 	unistr2_to_ascii(d->environment,     &uni->environment,     sizeof(d->environment)-1);
 	unistr2_to_ascii(d->driverpath,      &uni->driverpath,      sizeof(d->driverpath)-1);
-	unistr2_to_ascii(d->datafile,        &(uni->datafile),        sizeof(d->datafile)-1);
-	unistr2_to_ascii(d->configfile,      &(uni->configfile),      sizeof(d->configfile)-1);
-	unistr2_to_ascii(d->helpfile,        &(uni->helpfile),        sizeof(d->helpfile)-1);
-	unistr2_to_ascii(d->monitorname,     &(uni->monitorname),     sizeof(d->monitorname)-1);
+	unistr2_to_ascii(d->datafile,        &uni->datafile,        sizeof(d->datafile)-1);
+	unistr2_to_ascii(d->configfile,      &uni->configfile,      sizeof(d->configfile)-1);
+	unistr2_to_ascii(d->helpfile,        &uni->helpfile,        sizeof(d->helpfile)-1);
+	unistr2_to_ascii(d->monitorname,     &uni->monitorname,     sizeof(d->monitorname)-1);
 	unistr2_to_ascii(d->defaultdatatype, &uni->defaultdatatype, sizeof(d->defaultdatatype)-1);
 
 	DEBUGADD(8,( "version:         %d\n", d->version));
@@ -4833,13 +4889,9 @@ void free_devmode(DEVICEMODE *devmode)
 	}
 }
 
-void free_printer_info_3(PRINTER_INFO_3 *printer)
+void free_printer_info_1(PRINTER_INFO_1 *printer)
 {
-	if (printer!=NULL)
-	{
-		free_sec_desc(&printer->sec);
-		free(printer);
-	}
+	safe_free(printer);
 }
 
 void free_printer_info_2(PRINTER_INFO_2 *printer)
@@ -4853,7 +4905,54 @@ void free_printer_info_2(PRINTER_INFO_2 *printer)
 			free(printer->secdesc);
 			printer->secdesc = NULL;
 		}
-		free(printer);
+		safe_free(printer);
+	}
+}
+
+void free_printer_info_3(PRINTER_INFO_3 *printer)
+{
+	if (printer!=NULL) {
+		free_sec_desc(&printer->sec);
+		safe_free(printer);
+	}
+}
+
+void free_spool_printer_info_1(SPOOL_PRINTER_INFO_LEVEL_1 *printer)
+{
+	safe_free(printer);
+}
+
+void free_spool_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 *printer)
+{
+	if (printer!=NULL) {
+		if (printer->secdesc != NULL)
+			free_sec_desc_buf(printer->secdesc);
+		safe_free(printer);
+	}
+}
+
+void free_spool_printer_info_3(SPOOL_PRINTER_INFO_LEVEL_3 *printer)
+{
+	safe_free(printer);
+}
+
+void free_spool_printer_info_level(SPOOL_PRINTER_INFO_LEVEL *pil)
+{
+	if (pil == NULL)
+		return;
+
+	switch (pil->level) {
+		case 1:
+			free_spool_printer_info_1(pil->info_1);
+			break;
+		case 2:
+			free_spool_printer_info_2(pil->info_2);
+			break;
+		case 3:
+			free_spool_printer_info_3(pil->info_3);
+			break;
+		default:
+			break;
 	}
 }
 
@@ -4980,3 +5079,87 @@ JOB_INFO_2 *add_job2_to_array(uint32 *len, JOB_INFO_2 ***array,
 	                   (void***)array, (const void*)job, *fn, True);
 }
 
+/*******************************************************************
+ Parse a SPOOL_Q_REPLYOPENPRINTER structure.
+********************************************************************/  
+BOOL spoolss_io_q_replyopenprinter(char *desc, SPOOL_Q_REPLYOPENPRINTER *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_replyopenprinter");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_unistr2("", &q_u->string, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("printer", ps, depth, &q_u->printer))
+		return False;
+	if(!prs_uint32("type", ps, depth, &q_u->type))
+		return False;
+	
+	if(!new_spoolss_io_buffer("", ps, depth, q_u->buffer))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Parse a SPOOL_R_REPLYOPENPRINTER structure.
+********************************************************************/  
+BOOL spoolss_io_r_replyopenprinter(char *desc, SPOOL_R_REPLYOPENPRINTER *r_u, prs_struct *ps, int depth)
+{		
+	prs_debug(ps, depth, desc, "spoolss_io_r_replyopenprinter");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("printer handle",&r_u->handle,ps,depth))
+		return False;
+
+	if (!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;		
+}
+
+/*******************************************************************
+ Parse a SPOOL_Q_REPLYCLOSEPRINTER structure.
+********************************************************************/  
+BOOL spoolss_io_q_replycloseprinter(char *desc, SPOOL_Q_REPLYCLOSEPRINTER *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_replycloseprinter");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Parse a SPOOL_R_REPLYCLOSEPRINTER structure.
+********************************************************************/  
+BOOL spoolss_io_r_replycloseprinter(char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, prs_struct *ps, int depth)
+{		
+	prs_debug(ps, depth, desc, "spoolss_io_r_replycloseprinter");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("printer handle",&r_u->handle,ps,depth))
+		return False;
+
+	if (!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;		
+}
