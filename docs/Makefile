@@ -55,6 +55,7 @@ ps: $(patsubst $(DOCBOOKDIR)/%.xml,$(PSDIR)/%.ps,$(MAIN_DOCS))
 txt: $(patsubst $(DOCBOOKDIR)/%.xml,$(TXTDIR)/%.txt,$(MAIN_DOCS))
 txt-chunks: $(patsubst $(DOCBOOKDIR)/%.xml,$(TXTDIR)/%/,$(MAIN_DOCS))
 fo: $(patsubst $(DOCBOOKDIR)/%.xml,$(FODIR)/%.fo,$(MAIN_DOCS))
+fo-pdf: $(patsubst $(DOCBOOKDIR)/%.xml,$(FOPDFDIR)/%.pdf,$(MAIN_DOCS))
 tex: $(patsubst $(DOCBOOKDIR)/%.xml,%.tex,$(MAIN_DOCS))
 manpages: $(patsubst $(MANPAGEDIR)/%.xml,$(MANDIR)/%,$(MANPAGES)) 
 pearson: $(PEARSONDIR)/Samba-HOWTO-Collection.xml
@@ -176,6 +177,11 @@ xslt/figures/%.pdf: xslt/figures/%.eps
 $(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml
 	mkdir -p $(@D)
 	$(XSLTPROC) --output $@ http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl $<
+
+# PDF thru Fo
+$(FOPDFDIR)/%.pdf: $(FODIR)/%.fo
+	mkdir -p $(@D)
+	$(FOP) $< $@
 
 $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml
 	-mkdir -p $@/images
