@@ -1,13 +1,27 @@
+                 =============================
+                 Release Notes for Samba 2.2.9
+                          May 8, 2004
+                 =============================
+
+This is the latest stable release of the Samba 2.2 code base.
+This is a maintainence release of Samba 2.2.8a to address the 
+problem with user password changes after applying the Microsoft 
+hotfix described in KB282741 to Windows NT 4.0/200x/XP clients.  
+No other changes have been applied since Samba 2.2.8a.
+
+There are no further Samba 2.2.x releases planned at this time.
+
+Older releases notes for 2.2.x distributions follow
+
+       ------------------------------------------------------
+
+            ===========================================
             What's new in Samba 2.2.8a - 7th April 2003
             ===========================================
 
-This is the latest stable release of Samba. This is the version that
-all production Samba servers should be running for all current
-bug-fixes.
-
-            ****************************************
-            * IMPORTANT: Security bugfix for Samba *
-            ****************************************
+             ****************************************
+             * IMPORTANT: Security bugfix for Samba *
+             ****************************************
 
 Summary
 -------
