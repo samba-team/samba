@@ -220,7 +220,7 @@ change (krb5_auth_context auth_context,
     memset(&chpw, 0, sizeof(chpw));
     
     if (version == KRB5_KPASSWD_VERS_CHANGEPW) {
-	ret = krb5_copy_data(context, &chpw.newpasswd, &pwd_data);
+	ret = krb5_copy_data(context, in_data, &pwd_data);
 	if (ret) {
 	    krb5_warn (context, ret, "krb5_copy_data");
 	    reply_priv (auth_context, s, sa, sa_size, KRB5_KPASSWD_MALFORMED,
