@@ -45,6 +45,7 @@ krb5_init_context(krb5_context *context)
 {
     krb5_context p;
     int val;
+    char *config_file;
 
     ALLOC(p, 1);
     if(!p)
@@ -52,7 +53,11 @@ krb5_init_context(krb5_context *context)
     memset(p, 0, sizeof(krb5_context_data));
     krb5_init_ets(p);
     p->cc_ops = NULL;
-    krb5_config_parse_file (krb5_config_file, &p->cf);
+    config_file = getenv("KRB5_CONFIG");
+    if (config_file != NULL)
+	krb5_config_parse_file (config_file, &p->cf);
+    else
+	krb5_config_parse_file (krb5_config_file, &p->cf);
     p->max_skew = 5 * 60;
     val = krb5_config_get_time (p->cf, "libdefaults", "clockskew", NULL);
     if (val >= 0)
