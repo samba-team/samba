@@ -303,7 +303,7 @@ failed with error %s\n", strerror(errno) ));
  	 * to a gid_t via winbind and do the comparison.
  	 */
  
-	if (!winbind_nametogid(gname, &gid)) {
+	if (!winbind_nametogid(&gid, gname)) {
  		DEBUG(0,("user_in_winbind_group_list: winbind_lookup_name for group %s failed.\n",
  			gname ));
  		goto err;
