@@ -63,9 +63,6 @@ int	restartany;	/* restart output on any character state */
 #ifdef DIAGNOSTICS
 int	diagnostic;	/* telnet diagnostic capabilities */
 #endif /* DIAGNOSTICS */
-#ifdef BFTPDAEMON
-int	bftpd;		/* behave as bftp daemon */
-#endif /* BFTPDAEMON */
 #if	defined(SecurID)
 int	require_SecurID;
 #endif
@@ -85,11 +82,6 @@ char	netobuf[BUFSIZ+NETSLOP], *nfrontp, *nbackp;
 char	*neturg;		/* one past last bye of urgent data */
 
 int	pcc, ncc;
-
-#if defined(CRAY2) && defined(UNICOS5)
-int unpcc;  /* characters left unprocessed by CRAY-2 terminal routine */
-char *unptyip;  /* pointer to remaining characters in buffer */
-#endif
 
 int	ourpty, net;
 int	SYNCHing;		/* we are in TELNET SYNCH mode */
