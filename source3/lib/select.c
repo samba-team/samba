@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 3.0
    Samba select/poll implementation
    Copyright (C) Andrew Tridgell 1992-1998
    
@@ -133,10 +134,12 @@ int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorf
 {
 	int ret;
 	fd_set *readfds2, readfds_buf, *writefds2, writefds_buf, *errorfds2, errorfds_buf;
+	struct timeval tval2, *ptval;
 
 	readfds2 = (readfds ? &readfds_buf : NULL);
 	writefds2 = (writefds ? &writefds_buf : NULL);
 	errorfds2 = (errorfds ? &errorfds_buf : NULL);
+	ptval = (tval ? &tval2 : NULL);
 
 	do {
 		if (readfds)
@@ -145,7 +148,10 @@ int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorf
 			writefds_buf = *writefds;
 		if (errorfds)
 			errorfds_buf = *errorfds;
-		ret = sys_select(maxfd, readfds2, writefds2, errorfds2, tval);
+		if (tval)
+			tval2 = *tval;
+
+		ret = sys_select(maxfd, readfds2, writefds2, errorfds2, ptval);
 	} while (ret == -1 && errno == EINTR);
 
 	if (readfds)
