@@ -1,5 +1,19 @@
 Tue Aug 12 01:29:46 1997  Assar Westerlund  <assar@sics.se>
 
+	* appl/telnet/libtelnet/kerberos5.c, appl/popper/pop_init.c,
+ 	appl/rshd/rshd.c: Use `krb5_sock_to_principal'.  Send server
+ 	parameter to krb5_rd_req/krb5_recvauth.  Set addresses in
+ 	auth_context.
+
+	* lib/krb5/recvauth.c: Set addresses in auth_context if there
+ 	aren't any
+
+	* lib/krb5/auth_context.c: New function
+ 	`krb5_auth_con_setaddrs_from_fd'
+
+	* lib/krb5/sock_principal.c: new function
+	`krb5_sock_to_principal'
+	
 	* lib/krb5/time.c: new file with `krb5_timeofday' and
  	`krb5_us_timeofday'.  Use these functions.
 
