@@ -28,6 +28,8 @@
 /* Win32 Status codes. */
 
 #define STATUS_BUFFER_OVERFLOW            NT_STATUS(0x80000005)
+#define NT_STATUS_NO_MORE_ENTRIES         NT_STATUS(0x8000001a)
+
 #define STATUS_MORE_ENTRIES               NT_STATUS(0x0105)
 #define ERROR_INVALID_PARAMETER		  NT_STATUS(0x0057)
 #define ERROR_INSUFFICIENT_BUFFER	  NT_STATUS(0x007a)
@@ -36,6 +38,23 @@
 
 /* Win32 Error codes extracted using a loop in smbclient then printing a
    netmon sniff to a file. */
+
+/*
+                       --------------
+                      /              \
+                     /      REST      \
+                    /        IN        \
+                   /       PEACE        \
+                  /                      \
+                  | NT_STATUS_NOPROBLEMO |
+                  |                      |
+                  |                      |
+                  |      4 September     |
+                  |                      |
+                  |         2001         |
+                 *|     *  *  *          | *
+        _________)/\\_//(\/(/\)/\//\/\///|_)_______
+*/
 
 #define NT_STATUS_OK NT_STATUS(0x0000)
 #define NT_STATUS_UNSUCCESSFUL NT_STATUS(0xC0000000 | 0x0001)
@@ -63,7 +82,7 @@
 #define NT_STATUS_NO_MEMORY NT_STATUS(0xC0000000 | 0x0017)
 #define NT_STATUS_CONFLICTING_ADDRESSES NT_STATUS(0xC0000000 | 0x0018)
 #define NT_STATUS_NOT_MAPPED_VIEW NT_STATUS(0xC0000000 | 0x0019)
-#define NT_STATUS_UNABLE_TO_FREE_VM NT_STATUS(0x80000000 | 0x001a)
+#define NT_STATUS_UNABLE_TO_FREE_VM NT_STATUS(0xC0000000 | 0x001a)
 #define NT_STATUS_UNABLE_TO_DELETE_SECTION NT_STATUS(0xC0000000 | 0x001b)
 #define NT_STATUS_INVALID_SYSTEM_SERVICE NT_STATUS(0xC0000000 | 0x001c)
 #define NT_STATUS_ILLEGAL_INSTRUCTION NT_STATUS(0xC0000000 | 0x001d)
