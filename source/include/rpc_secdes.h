@@ -54,11 +54,12 @@ typedef struct security_descriptor SEC_DESC;
 
 /* Don't know what this means. */
 
-/* security information */
+/* security information flags used in query_secdesc and set_secdesc */
 #define OWNER_SECURITY_INFORMATION	0x00000001
 #define GROUP_SECURITY_INFORMATION	0x00000002
 #define DACL_SECURITY_INFORMATION	0x00000004
 #define SACL_SECURITY_INFORMATION	0x00000008
+
 /* Extra W2K flags. */
 #define UNPROTECTED_SACL_SECURITY_INFORMATION	0x10000000
 #define UNPROTECTED_DACL_SECURITY_INFORMATION	0x20000000

@@ -56,7 +56,8 @@ static NTSTATUS pvfs_query_all_eas(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 /*
   approximately map a struct pvfs_filename to a generic fileinfo struct
 */
-static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
+static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, 
+				  struct smbsrv_request *req,
 				  struct pvfs_filename *name, union smb_fileinfo *info, 
 				  int fd)
 {
@@ -91,7 +92,7 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALL_EAS:
-		return pvfs_query_all_eas(pvfs, mem_ctx, name, fd, &info->all_eas.out);
+		return pvfs_query_all_eas(pvfs, req, name, fd, &info->all_eas.out);
 
 	case RAW_FILEINFO_IS_NAME_VALID:
 		return NT_STATUS_OK;
@@ -149,7 +150,7 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 
 	case RAW_FILEINFO_STREAM_INFO:
 	case RAW_FILEINFO_STREAM_INFORMATION:
-		return pvfs_stream_information(pvfs, mem_ctx, name, fd, &info->stream_info.out);
+		return pvfs_stream_information(pvfs, req, name, fd, &info->stream_info.out);
 
 	case RAW_FILEINFO_COMPRESSION_INFO:
 	case RAW_FILEINFO_COMPRESSION_INFORMATION:
@@ -194,6 +195,9 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		info->attribute_tag_information.out.attrib      = name->dos.attrib;
 		info->attribute_tag_information.out.reparse_tag = 0;
 		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_SEC_DESC:
+		return pvfs_acl_query(pvfs, req, name, fd, info);
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
