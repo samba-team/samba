@@ -232,6 +232,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
 	NTSTATUS nt_status;
+	NTSTATUS update_login_attempts_status;
 	DATA_BLOB user_sess_key = data_blob(NULL, 0);
 	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
 	BOOL updated_autolock = False, updated_badpw = False;
@@ -269,7 +270,12 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 
 	nt_status = sam_password_ok(auth_context, mem_ctx, sampass, 
 				    user_info, &user_sess_key, &lm_sess_key);
-	
+
+	/* Notify passdb backend of login success/failure. If not NT_STATUS_OK the backend doesn't like the login */
+	update_login_attempts_status = pdb_update_login_attempts(sampass, NT_STATUS_IS_OK(nt_status));
+	if (!NT_STATUS_IS_OK(update_login_attempts_status))
+		nt_status = update_login_attempts_status;
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_WRONG_PASSWORD) && 
 		    pdb_get_acct_ctrl(sampass) &ACB_NORMAL) {  
