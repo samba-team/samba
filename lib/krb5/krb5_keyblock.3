@@ -121,10 +121,10 @@ keyblock.
 The destination keyblock is overritten.
 .Pp
 .Fn krb5_free_keyblock
-free the content and the keyblock itself.
+zeros out and frees the content and the keyblock itself.
 .Pp
 .Fn krb5_free_keyblock_contents
-frees the content of the keyblock.
+zeros out and frees the content of the keyblock.
 .Pp
 .Fn krb5_generate_random_keyblock
 creates a new content of the keyblock
