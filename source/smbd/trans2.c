@@ -732,6 +732,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	files_struct *fsp;
 	TALLOC_CTX *ctx = NULL;
 	struct ea_list *ea_list = NULL;
+	uint16 flags = 0;
 	NTSTATUS status;
 
 	/*
@@ -742,11 +743,12 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
+	flags = SVAL(params, 0);
 	open_mode = SVAL(params, 2);
 	open_attr = SVAL(params,6);
-        oplock_request = (SVAL(params,0) & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+        oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
         if (oplock_request) {
-                oplock_request |= (SVAL(params,0) & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+                oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
         }
 
 #if 0
@@ -778,6 +780,16 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
     
 	if (!check_name(fname,conn)) {
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+	}
+
+	/* Strange open mode mapping. */
+	if (open_ofun == 0) {
+		if (GET_OPEN_MODE(open_mode) == DOS_OPEN_EXEC) {
+			open_ofun = FILE_EXISTS_FAIL | FILE_CREATE_IF_NOT_EXIST;
+		} else {
+			END_PROFILE(SMBopenX);
+			return ERROR_FORCE_DOS(ERRDOS, ERRbadaccess);
+		}
 	}
 
 	/* Any data in this call is an EA list. */
@@ -839,21 +851,22 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
 
 	/* Realloc the size of parameters and data we will return */
-	params = SMB_REALLOC(*pparams, 28);
+	params = SMB_REALLOC(*pparams, 30);
 	if( params == NULL ) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	*pparams = params;
 
-	memset((char *)params,'\0',28);
+	memset((char *)params,'\0',30);
 	SSVAL(params,0,fsp->fnum);
 	SSVAL(params,2,fmode);
 	put_dos_date2(params,4, mtime);
 	SIVAL(params,8, (uint32)size);
 	SSVAL(params,12,rmode);
 
-	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
+	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
+	}
 
 	SSVAL(params,18,smb_action);
 
@@ -861,9 +874,13 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	 * WARNING - this may need to be changed if SMB_INO_T <> 4 bytes.
 	 */
 	SIVAL(params,20,inode);
- 
+	if (flags & 8) {
+		uint32 ea_size = estimate_ea_size(conn, fsp, fname);
+		SIVAL(params, 26, ea_size);
+	}
+
 	/* Send the required number of replies */
-	send_trans2_replies(outbuf, bufsize, params, 28, *ppdata, 0);
+	send_trans2_replies(outbuf, bufsize, params, 30, *ppdata, 0);
 
 	return -1;
 }

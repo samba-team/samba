@@ -1295,7 +1295,17 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		END_PROFILE(SMBopenX);
 		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	}
-    
+
+	/* Strange open mode mapping. */
+	if (smb_ofun == 0) {
+		if (GET_OPEN_MODE(smb_mode) == DOS_OPEN_EXEC) {
+			smb_ofun = FILE_EXISTS_FAIL | FILE_CREATE_IF_NOT_EXIST;
+		} else {
+			END_PROFILE(SMBopenX);
+			return ERROR_FORCE_DOS(ERRDOS, ERRbadaccess);
+		}
+	}
+
 	fsp = open_file_shared(conn,fname,&sbuf,smb_mode,smb_ofun,(uint32)smb_attr,
 			oplock_request, &rmode,&smb_action);
       
