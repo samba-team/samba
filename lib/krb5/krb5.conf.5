@@ -117,6 +117,10 @@ A list of default etypes to use when requesting a DES credential.
 .It Li default_keytab_name = Va keytab
 The keytab to use if none other is specified, default is
 .Dq FILE:/etc/krb5.keytab .
+.It Li dns_lookup_kdc = Va boolean
+Use DNS SRV records to lookup KDC services location.
+.It Li dns_lookup_realm = Va boolean
+Use DNS TXT records to lookup domain to realm mappings.
 .It Li kdc_timesync = Va boolean
 Try to keep track of the time differential between the local machine
 and the KDC, and then compensate for that when issuing requests.
@@ -154,8 +158,6 @@ How to print date strings in logs, this string is passed to
 .Xr strftime 3 .
 .It Li log_utc = Va boolean
 Write log-entries using UTC instead of your local time zone.
-.It Li srv_lookup = Va boolean
-Use DNS SRV records to lookup realm configuration information.
 .It Li scan_interfaces = Va boolean
 Scan all network interfaces for addresses, as opposed to simply using
 the address associated with the system's host name.
@@ -177,6 +179,9 @@ binding in this section looks like:
 The domain can be either a full name of a host or a trailing
 component, in the latter case the domain-string should start with a
 perid.
+The realm may be the token `dns_locate', in which case the actual
+realm will be determined using DNS (independently of the setting
+of the `dns_lookup_realm' option).
 .It Li [realms]
 .Bl -tag -width "xxx" -offset indent
 .It Va REALM Li = {
