@@ -563,7 +563,9 @@ static uint32 _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, cha
 		return NT_STATUS_INVALID_INFO_CLASS;
 	} /* end switch */
 	
+	become_root();
 	nt_status = check_password(&user_info, &server_info);
+	unbecome_root();
 
 	DEBUG(5, ("_net_logon_any: exited with status %d\n", nt_status));
 
@@ -652,10 +654,8 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 
 	/* Check account and password */
     
-	if (status != NT_STATUS_NOPROBLEMO) {
-		pdb_free_sam(sampass);
+	if (status != NT_STATUS_NOPROBLEMO)
 		return status;
-	}
 
 	pdb_init_sam(&sampass);
 
