@@ -200,7 +200,7 @@ static BOOL is_mangled_component(const char *name)
 {
 	int len, i;
 
-	M_DEBUG(0,("is_mangled_component %s ?\n", name));
+	M_DEBUG(10,("is_mangled_component %s ?\n", name));
 
 	/* check the length */
 	len = strlen(name);
@@ -234,7 +234,7 @@ static BOOL is_mangled_component(const char *name)
 		}
 	}
 
-	M_DEBUG(0,("is_mangled %s -> yes\n", name));
+	M_DEBUG(10,("is_mangled %s -> yes\n", name));
 
 	return True;
 }
@@ -257,7 +257,7 @@ static BOOL is_mangled(const char *name)
 	const char *p;
 	const char *s;
 
-	M_DEBUG(0,("is_mangled %s ?\n", name));
+	M_DEBUG(10,("is_mangled %s ?\n", name));
 
 	for (s=name; (p=strchr(s, '/')); s=p+1) {
 		char *component = strndup(s, PTR_DIFF(p, s));
@@ -367,7 +367,7 @@ static BOOL check_cache(char *name)
 
 	/* make sure that this is a mangled name from this cache */
 	if (!is_mangled(name)) {
-		M_DEBUG(0,("check_cache: %s -> not mangled\n", name));
+		M_DEBUG(10,("check_cache: %s -> not mangled\n", name));
 		return False;
 	}
 
@@ -382,7 +382,7 @@ static BOOL check_cache(char *name)
 	/* now look in the prefix cache for that hash */
 	prefix = cache_lookup(hash);
 	if (!prefix) {
-		M_DEBUG(0,("check_cache: %s -> %08X -> not found\n", name, hash));
+		M_DEBUG(10,("check_cache: %s -> %08X -> not found\n", name, hash));
 		return False;
 	}
 
@@ -395,10 +395,10 @@ static BOOL check_cache(char *name)
 	}
 
 	if (extension[0]) {
-		M_DEBUG(0,("check_cache: %s -> %s.%s\n", name, prefix, extension));
+		M_DEBUG(10,("check_cache: %s -> %s.%s\n", name, prefix, extension));
 		slprintf(name, sizeof(fstring), "%s.%s", prefix, extension);
 	} else {
-		M_DEBUG(0,("check_cache: %s -> %s\n", name, prefix));
+		M_DEBUG(10,("check_cache: %s -> %s\n", name, prefix));
 		fstrcpy(name, prefix);
 	}
 
@@ -573,7 +573,7 @@ static void name_map(char *name, BOOL need83, BOOL cache83)
 		cache_insert(name, prefix_len, hash);
 	}
 
-	M_DEBUG(0,("name_map: %s -> %08X -> %s (cache=%d)\n", 
+	M_DEBUG(10,("name_map: %s -> %08X -> %s (cache=%d)\n", 
 		   name, hash, new_name, cache83));
 
 	/* and overwrite the old name */
