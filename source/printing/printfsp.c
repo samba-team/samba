@@ -78,7 +78,6 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
 	fsp->directory_delete_on_close = False;
-	fsp->conn = conn;
 	string_set(&fsp->fsp_name,print_job_fname(SNUM(conn),jobid));
 	unix_to_dos(fsp->fsp_name);
 	fsp->wbmpx_ptr = NULL;      

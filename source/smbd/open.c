@@ -227,7 +227,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
 	fsp->directory_delete_on_close = False;
-	fsp->conn = conn;
 	/*
 	 * Note that the file name here is the *untranslated* name
 	 * ie. it is still in the DOS codepage sent from the client.
@@ -1204,8 +1203,6 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	if(!fsp)
 		return NULL;
 
-	fsp->conn = conn; /* The vfs_fXXX() macros need this. */
-
 	if (VALID_STAT(*psbuf))
 		got_stat = True;
 
@@ -1300,7 +1297,6 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = True;
 	fsp->directory_delete_on_close = False;
-	fsp->conn = conn;
 
 	if (delete_on_close) {
 		NTSTATUS result = set_delete_on_close_internal(fsp, delete_on_close);
@@ -1346,8 +1342,6 @@ files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	if(!fsp)
 		return NULL;
 
-	fsp->conn = conn; /* The vfs_fXXX() macros need this. */
-
 	DEBUG(5,("open_file_stat: 'opening' file %s\n", fname));
 
 	/*
@@ -1376,7 +1370,6 @@ files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	fsp->is_directory = False;
 	fsp->is_stat = True;
 	fsp->directory_delete_on_close = False;
-	fsp->conn = conn;
 	string_set(&fsp->fsp_name,fname);
 
 	conn->num_files_open++;
