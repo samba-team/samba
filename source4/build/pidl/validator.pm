@@ -114,6 +114,12 @@ sub ValidInterface($)
 	my($interface) = shift;
 	my($data) = $interface->{DATA};
 
+	if (util::has_property($interface, "object") && 
+     	util::has_property($interface, "version") && 
+		$interface->{PROPERTIES}->{version} != 0) {
+					fatal "Object interfaces must have version 0.0\n";
+	}
+		
 	foreach my $d (@{$data}) {
 		($d->{TYPE} eq "TYPEDEF") &&
 		    ValidTypedef($d);
