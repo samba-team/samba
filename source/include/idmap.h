@@ -22,6 +22,7 @@
    Boston, MA  02111-1307, USA.   
 */
 
+#define	ID_EMPTY	0
 #define ID_USERID	1
 #define ID_GROUPID	2
 #define ID_OTHER	3
