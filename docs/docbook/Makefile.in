@@ -101,7 +101,7 @@ $(HTMLDIR)/%.html: $(MANSGMLDIR)/%.sgml
 	mv $(HTMLDIR)/index.html $@
 
 $(MANDIR)/%: $(MANSGMLDIR)/%.sgml 
-	$(DOCBOOK2MAN) -o $(MANDIR) $<
+	$(DOCBOOK2MAN) -o $(MANDIR) $< || rm $@
 	$(PERL) scripts/strip-links.pl < $@ > $@.temp
 	mv $@.temp $@
 
