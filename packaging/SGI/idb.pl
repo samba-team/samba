@@ -1,19 +1,24 @@
 #!/usr/bin/perl
 
+# This perl script automatically generates the samba.idb file
+
 $curdir = $ENV{"PWD"};
 
+# get a complete list of all files in the tree
 chdir '../../';
 &dodir('.');
 chdir $curdir;
 
-open(IGNORES,"../../source/.cvsignore");
+# We don't want the files listed in .cvsignore in the source tree
+open(IGNORES,"../../source/.cvsignore") || die "Unable to open .cvsignore file\n";
 while (<IGNORES>) {
   chop;
   $ignores{$_}++;
 }
 close IGNORES;
 
-open(MAKEFILE,"../../source/Makefile");
+# get the names of all the binary files to be installed
+open(MAKEFILE,"Makefile") || die "Unable to open Makefile\n";
 @makefile = <MAKEFILE>;
 @sprogs = grep(/^SPROGS /,@makefile);
 @progs1 = grep(/^PROGS1 /,@makefile);
@@ -46,21 +51,27 @@ if (@codepage) {
   @codepage[0] =~ s/^.*\=//;
   @codepage[0] =~ s/^.*\)//;
   chdir '../../source';
-  exec("./installcp.sh . ../packaging/SGI/codepage . @codepage[0]");
+  # if we have codepages we need to create them for the package
+  system("./installcp.sh . ../packaging/SGI/codepage . @codepage[0]");
   chdir $curdir;
   @codepage = sort split(' ',@codepage[0]);
 }
 
+# add my local files to the list of binaries to install
 @bins = sort (@sprogs,@progs,@progs1,@scripts,("psfixes.pl","sambalp","smbprint"));
 
+# the files installed in docs include all the original files in docs plus all
+# the "*.doc" files from the source tree
 @docs = sort byfilename grep (!/^docs\/$/ & (/^source\/.*\.doc$/ | /^docs\//),@allfiles);
 
 @catman = sort grep(/^packaging\/SGI\/catman/ & !/\/$/, @allfiles);
 @catman = sort bydirnum @catman;
 
-@allfiles = grep(!/^.*\.o$/ & !/^packaging\/SGI\/bins/ & !/^packaging\/SGI\/catman/ & !/^packaging\/SGI\/html/, @allfiles);
+# strip out all the generated directories and the "*.o" files from the source
+# release
+@allfiles = grep(!/^.*\.o$/ & !/^packaging\/SGI\/bins/ & !/^packaging\/SGI\/catman/ & !/^packaging\/SGI\/html/ & !/^packaging\/SGI\/codepage/, @allfiles);
 
-open(IDB,">samba.idb");
+open(IDB,">samba.idb") || die "Unable to open samba.idb for output\n";
 
 print IDB "f 0644 root sys etc/config/samba packaging/SGI/samba.config samba.sw.base config(update)\n";
 print IDB "f 0755 root sys etc/init.d/samba packaging/SGI/samba.rc samba.sw.base\n";
@@ -162,6 +173,7 @@ while (@catman) {
 }
 
 close IDB;
+print "\n\nsamba.idb file has been created\n";
 
 sub dodir {
     local($dir, $nlink) = @_;
