@@ -39,172 +39,56 @@
 #include "krb5_locl.h"
 RCSID("$Id$");
 
-/*
- * Netinfo implementation from Luke Howard <lukeh@xedoc.com.au>
- */
-
-#ifdef HAVE_NETINFO
-#include <netinfo/ni.h>
-static ni_status
-ni_proplist2binding(ni_proplist *pl, krb5_config_section **ret)
-{
-    int i, j;
-    krb5_config_section **next = NULL;
-
-    for (i = 0; i < pl->ni_proplist_len; i++) {
-	if (!strcmp(pl->nipl_val[i].nip_name, "name"))
-	    continue;
-
-	for (j = 0; j < pl->nipl_val[i].nip_val.ni_namelist_len; j++) {
-	    krb5_config_binding *b;
-
-	    b = malloc(sizeof(*b));
-	    if (b == NULL)
-		return NI_FAILED;
-	
-	    b->next = NULL;
-	    b->type = krb5_config_string;
-	    b->name = ni_name_dup(pl->nipl_val[i].nip_name);
-	    b->u.string = ni_name_dup(pl->nipl_val[i].nip_val.ninl_val[j]);
-
-	    if (next == NULL) {
-		*ret = b;
-	    } else {
-		*next = b;
-	    }
-	    next = &b->next;
-	}
-    }
-    return NI_OK;
-}
-
-static ni_status
-ni_idlist2binding(void *ni, ni_idlist *idlist, krb5_config_section **ret)
-{
-    int i;
-    ni_status nis;
-    krb5_config_section **next;
-
-    for (i = 0; i < idlist->ni_idlist_len; i++) {
-	ni_proplist pl;
-        ni_id nid;
-	ni_idlist children;
-	krb5_config_binding *b;
-	ni_index index;
-
-	nid.nii_instance = 0;
-	nid.nii_object = idlist->ni_idlist_val[i];
-
-	nis = ni_read(ni, &nid, &pl);
-
-	if (nis != NI_OK) {
-	     return nis;
-	}
-	index = ni_proplist_match(pl, "name", NULL);
-	b = malloc(sizeof(*b));
-	if (b == NULL) return NI_FAILED;
-
-	if (i == 0) {
-	    *ret = b;
-	} else {
-	    *next = b;
-	}
-
-	b->type = krb5_config_list;
-	b->name = ni_name_dup(pl.nipl_val[index].nip_val.ninl_val[0]);
-	b->next = NULL;
-	b->u.list = NULL;
-
-	/* get the child directories */
-	nis = ni_children(ni, &nid, &children);
-	if (nis == NI_OK) {
-	    nis = ni_idlist2binding(ni, &children, &b->u.list);
-	    if (nis != NI_OK) {
-		return nis;
-	    }
-	}
-
-	nis = ni_proplist2binding(&pl, b->u.list == NULL ? &b->u.list : &b->u.list->next);
-	ni_proplist_free(&pl);
-	if (nis != NI_OK) {
-	    return nis;
-	}
-	next = &b->next;
-    }
-    ni_idlist_free(idlist);
-    return NI_OK;
-}
-
-krb5_error_code
-krb5_config_parse_file (const char *fname, krb5_config_section **res)
-{
-    void *ni = NULL, *lastni = NULL;
-    int i;
-    ni_status nis;
-    ni_id nid;
-    ni_idlist children;
-
-    krb5_config_section *s;
-    int ret;
-
-    s = NULL;
-
-    for (i = 0; i < 256; i++) {
-	if (i == 0) {
-	    nis = ni_open(NULL, ".", &ni);
-	} else {
-	    if (lastni != NULL) ni_free(lastni);
-	    lastni = ni;
-	    nis = ni_open(lastni, "..", &ni);
-	}
-	if (nis != NI_OK)
-	    break;
-	nis = ni_pathsearch(ni, &nid, "/locations/kerberos");
-	if (nis == NI_OK) {
-	    nis = ni_children(ni, &nid, &children);
-	    if (nis != NI_OK)
-		break;
-	    nis = ni_idlist2binding(ni, &children, &s);
-	    break;
-	}
-    }
-
-    if (ni != NULL) ni_free(ni);
-    if (ni != lastni && lastni != NULL) ni_free(lastni);
-
-    ret = (nis == NI_OK) ? 0 : -1;
-    if (ret == 0) {
-	*res = s;
-    } else {
-	*res = NULL;
-    }
-    return ret;
-}
-#else /* !HAVE_NETINFO */
+#ifndef HAVE_NETINFO
 
 static int parse_section(char *p, krb5_config_section **s,
-			 krb5_config_section **res);
+			 krb5_config_section **res,
+			 char **error_message);
 static int parse_binding(FILE *f, unsigned *lineno, char *p,
 			 krb5_config_binding **b,
-			 krb5_config_binding **parent);
-static int parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent);
+			 krb5_config_binding **parent,
+			 char **error_message);
+static int parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent,
+		      char **error_message);
+
+/*
+ * Parse a section:
+ *
+ * [section]
+ *	foo = bar
+ *	b = {
+ *		a
+ *	    }
+ * ...
+ * 
+ * starting at the line in `p', storing the resulting structure in
+ * `s' and hooking it into `parent'.
+ * Store the error message in `error_message'.
+ */
 
 static int
-parse_section(char *p, krb5_config_section **s, krb5_config_section **parent)
+parse_section(char *p, krb5_config_section **s, krb5_config_section **parent,
+	      char **error_message)
 {
     char *p1;
     krb5_config_section *tmp;
 
     p1 = strchr (p + 1, ']');
-    if (p1 == NULL)
+    if (p1 == NULL) {
+	*error_message = "missing ]";
 	return -1;
+    }
     *p1 = '\0';
     tmp = malloc(sizeof(*tmp));
-    if (tmp == NULL)
+    if (tmp == NULL) {
+	*error_message = "out of memory";
 	return -1;
+    }
     tmp->name = strdup(p+1);
-    if (tmp->name == NULL)
+    if (tmp->name == NULL) {
+	*error_message = "out of memory";
 	return -1;
+    }
     tmp->type = krb5_config_list;
     tmp->u.list = NULL;
     tmp->next = NULL;
@@ -216,16 +100,25 @@ parse_section(char *p, krb5_config_section **s, krb5_config_section **parent)
     return 0;
 }
 
+/*
+ * Parse a brace-enclosed list from `f', hooking in the structure at
+ * `parent'.
+ * Store the error message in `error_message'.
+ */
+
 static int
-parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent)
+parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent,
+	   char **error_message)
 {
     char buf[BUFSIZ];
     int ret;
     krb5_config_binding *b = NULL;
+    unsigned beg_lineno = *lineno;
 
-    for (; fgets(buf, sizeof(buf), f) != NULL; ++*lineno) {
+    while(fgets(buf, sizeof(buf), f) != NULL) {
 	char *p;
 
+	++*lineno;
 	if (buf[strlen(buf) - 1] == '\n')
 	    buf[strlen(buf) - 1] = '\0';
 	p = buf;
@@ -239,16 +132,23 @@ parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent)
 	    return 0;
 	if (*p == '\0')
 	    continue;
-	ret = parse_binding (f, lineno, p, &b, parent);
+	ret = parse_binding (f, lineno, p, &b, parent, error_message);
 	if (ret)
 	    return ret;
     }
+    *lineno = beg_lineno;
+    *error_message = "unclosed {";
     return -1;
 }
 
+/*
+ *
+ */
+
 static int
 parse_binding(FILE *f, unsigned *lineno, char *p,
-	      krb5_config_binding **b, krb5_config_binding **parent)
+	      krb5_config_binding **b, krb5_config_binding **parent,
+	      char **error_message)
 {
     krb5_config_binding *tmp;
     char *p1;
@@ -257,26 +157,32 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
     p1 = p;
     while (*p && !isspace((unsigned char)*p))
 	++p;
-    if (*p == '\0')
+    if (*p == '\0') {
+	*error_message = "no =";
 	return -1;
+    }
     *p = '\0';
     tmp = malloc(sizeof(*tmp));
-    if (tmp == NULL)
+    if (tmp == NULL) {
+	*error_message = "out of memory";
 	return -1;
+    }
     tmp->name = strdup(p1);
     tmp->next = NULL;
     ++p;
     while (isspace((unsigned char)*p))
 	++p;
-    if (*p != '=')
+    if (*p != '=') {
+	*error_message = "no =";
 	return -1;
+    }
     ++p;
     while(isspace((unsigned char)*p))
 	++p;
     if (*p == '{') {
 	tmp->type = krb5_config_list;
 	tmp->u.list = NULL;
-	ret = parse_list (f, lineno, &tmp->u.list);
+	ret = parse_list (f, lineno, &tmp->u.list, error_message);
     } else {
 	p1 = p;
 	p = p1 + strlen(p1);
@@ -294,25 +200,36 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
     return ret;
 }
 
+/*
+ * Parse the config file `fname', generating the structures into `res'
+ * returning error messages in `error_message'
+ */
+
 krb5_error_code
-krb5_config_parse_file (const char *fname, krb5_config_section **res)
+krb5_config_parse_file_debug (const char *fname,
+			      krb5_config_section **res,
+			      unsigned *lineno,
+			      char **error_message)
 {
     FILE *f;
     krb5_config_section *s;
     krb5_config_binding *b;
     char buf[BUFSIZ];
-    unsigned lineno;
     int ret;
 
     s = NULL;
     b = NULL;
     f = fopen (fname, "r");
-    if (f == NULL)
+    if (f == NULL) {
+	*error_message = "cannot open file";
 	return -1;
+    }
     *res = NULL;
-    for (lineno = 1; fgets(buf, sizeof(buf), f) != NULL; ++lineno) {
+    *lineno = 0;
+    while (fgets(buf, sizeof(buf), f) != NULL) {
 	char *p;
 
+	++*lineno;
 	if(buf[strlen(buf) - 1] == '\n')
 	    buf[strlen(buf) - 1] = '\0';
 	p = buf;
@@ -321,14 +238,15 @@ krb5_config_parse_file (const char *fname, krb5_config_section **res)
 	if (*p == '#' || *p == ';')
 	    continue;
 	if (*p == '[') {
-	    ret = parse_section(p, &s, res);
+	    ret = parse_section(p, &s, res, error_message);
 	    if (ret)
 		return ret;
 	    b = NULL;
 	} else if (*p == '}') {
+	    *error_message = "unmatched }";
 	    return -1;
 	} else if(*p != '\0') {
-	    ret = parse_binding(f, &lineno, p, &b, &s->u.list);
+	    ret = parse_binding(f, lineno, p, &b, &s->u.list, error_message);
 	    if (ret)
 		return ret;
 	}
@@ -337,7 +255,16 @@ krb5_config_parse_file (const char *fname, krb5_config_section **res)
     return 0;
 }
 
-#endif /* HAVE_NETINFO */
+krb5_error_code
+krb5_config_parse_file (const char *fname, krb5_config_section **res)
+{
+    char *foo;
+    unsigned lineno;
+
+    return krb5_config_parse_file_debug (fname, res, &lineno, &foo);
+}
+
+#endif /* !HAVE_NETINFO */
 
 static void
 free_binding (krb5_context context, krb5_config_binding *b)
