@@ -25,7 +25,7 @@
 #include "winbindd.h"
 
 BOOL opt_nocache = False;
-BOOL opt_dual_daemon = False;
+BOOL opt_dual_daemon = True;
 
 /*****************************************************************************
  stubb functions 
@@ -776,7 +776,7 @@ int main(int argc, char **argv)
 		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
-		{ "dual-daemon", 'B', POPT_ARG_VAL, &opt_dual_daemon, True, "Dual daemon mode" },
+		{ "single-daemon", 'Y', POPT_ARG_VAL, &opt_dual_daemon, False, "Single daemon mode" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, False, "Disable caching" },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
