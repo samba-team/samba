@@ -40,6 +40,7 @@
 #include <limits.h>
 #include <getarg.h>
 #include <vers.h>
+#include <roken.h>
 
 #include "slc.h"
 extern FILE *yyin;
