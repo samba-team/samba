@@ -77,7 +77,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	username = lp_parm_string(-1, "torture", "username");
 	password = lp_parm_string(-1, "torture", "password");
-	domain = lp_workgroup();
+	domain = lp_parm_string(-1, "torture", "userdomain");
 
 	printf("create a second security context on the same transport\n");
 	session = smbcli_session_init(cli->transport);

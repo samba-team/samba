@@ -79,7 +79,7 @@ BOOL torture_ldap_basic(int dummy)
 	BOOL ret = True;
 	const char *host = lp_parm_string(-1, "torture", "host");
 	const char *username = lp_parm_string(-1, "torture", "username");
-	const char *domain = lp_workgroup();
+	const char *domain = lp_parm_string(-1, "torture", "userdomain");
 	const char *password = lp_parm_string(-1, "torture", "password");
 	const char *userdn = lp_parm_string(-1, "torture", "ldap_userdn");
 	/*const char *basedn = lp_parm_string(-1, "torture", "ldap_basedn");*/
