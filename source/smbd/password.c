@@ -176,7 +176,7 @@ BOOL initialize_groups(char *user, uid_t uid, gid_t gid)
 		unbecome_root();
 		return False;
 	}
-	become_root();
+	unbecome_root();
 	return True;
 }
 
