@@ -148,7 +148,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	if (ret != KRB5_KT_END && ret != ENOENT ) {
 		DEBUG(3,("ads_keytab_add_entry: Will try to delete old keytab entries\n"));
 		while(!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
-			BOOL compare_ok = False;
+			BOOL compare_name_ok = False;
 
 			ret = krb5_unparse_name(context, kt_entry.principal, &ktprinc);
 			if (ret) {
@@ -166,43 +166,59 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 			 */
 
 #ifdef HAVE_KRB5_KT_COMPARE
-			compare_ok = ((krb5_kt_compare(context, &kt_entry, princ, 0, 0) == True) && (kt_entry.vno != kvno - 1));
+			compare_name_ok = (krb5_kt_compare(context, &kt_entry, princ, 0, 0) == True);
 #else
-			compare_ok = ((strcmp(ktprinc, princ_s) == 0) && (kt_entry.vno != kvno - 1));
+			compare_name_ok = (strcmp(ktprinc, princ_s) == 0);
 #endif
+
+			if (!compare_name_ok) {
+				DEBUG(10,("ads_keytab_add_entry: ignoring keytab entry principal %s, kvno = %d\n",
+					ktprinc, kt_entry.vno));
+			}
+
 			krb5_free_unparsed_name(context, ktprinc);
 			ktprinc = NULL;
 
-			if (compare_ok) {
-				DEBUG(3,("ads_keytab_add_entry: Found old entry for principal: %s (kvno %d) - trying to remove it.\n",
-					princ_s, kt_entry.vno));
-				ret = krb5_kt_end_seq_get(context, keytab, &cursor);
-				ZERO_STRUCT(cursor);
-				if (ret) {
-					DEBUG(1,("ads_keytab_add_entry: krb5_kt_end_seq_get() failed (%s)\n",
-						error_message(ret)));
-					goto out;
+			if (compare_name_ok) {
+				if (kt_entry.vno == kvno - 1) {
+					DEBUG(5,("ads_keytab_add_entry: Saving previous (kvno %d) entry for principal: %s.\n",
+						kvno - 1, princ_s));
+				} else {
+
+					DEBUG(5,("ads_keytab_add_entry: Found old entry for principal: %s (kvno %d) - trying to remove it.\n",
+						princ_s, kt_entry.vno));
+					ret = krb5_kt_end_seq_get(context, keytab, &cursor);
+					ZERO_STRUCT(cursor);
+					if (ret) {
+						DEBUG(1,("ads_keytab_add_entry: krb5_kt_end_seq_get() failed (%s)\n",
+							error_message(ret)));
+						goto out;
+					}
+					ret = krb5_kt_remove_entry(context, keytab, &kt_entry);
+					if (ret) {
+						DEBUG(1,("ads_keytab_add_entry: krb5_kt_remove_entry failed (%s)\n",
+							error_message(ret)));
+						goto out;
+					}
+
+					DEBUG(5,("ads_keytab_add_entry: removed old entry for principal: %s (kvno %d).\n",
+						princ_s, kt_entry.vno));
+
+					ret = krb5_kt_start_seq_get(context, keytab, &cursor);
+					if (ret) {
+						DEBUG(1,("ads_keytab_add_entry: krb5_kt_start_seq failed (%s)\n",
+							error_message(ret)));
+						goto out;
+					}
+					ret = smb_krb5_kt_free_entry(context, &kt_entry);
+					ZERO_STRUCT(kt_entry);
+					if (ret) {
+						DEBUG(1,("ads_keytab_add_entry: krb5_kt_remove_entry failed (%s)\n",
+							error_message(ret)));
+						goto out;
+					}
+					continue;
 				}
-				ret = krb5_kt_remove_entry(context, keytab, &kt_entry);
-				if (ret) {
-					DEBUG(1,("ads_keytab_add_entry: krb5_kt_remove_entry failed (%s)\n",
-						error_message(ret)));
-					goto out;
-				}
-				ret = krb5_kt_start_seq_get(context, keytab, &cursor);
-				if (ret) {
-					DEBUG(1,("ads_keytab_add_entry: krb5_kt_start_seq failed (%s)\n",
-						error_message(ret)));
-					goto out;
-				}
-				ret = smb_krb5_kt_free_entry(context, &kt_entry);
-				ZERO_STRUCT(kt_entry);
-				if (ret) {
-					DEBUG(1,("ads_keytab_add_entry: krb5_kt_remove_entry failed (%s)\n",
-						error_message(ret)));
-					goto out;
-				}
-				continue;
 			}
 
 			/* Not a match, just free this entry and continue. */
