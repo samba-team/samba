@@ -1138,6 +1138,8 @@ typedef struct spool_printer_info_level_2
 
 typedef struct spool_printer_info_level
 {
+	uint32 level;
+	uint32 info_ptr;
 	SPOOL_PRINTER_INFO_LEVEL_2 *info_2;
 } SPOOL_PRINTER_INFO_LEVEL;
 
@@ -1200,8 +1202,7 @@ typedef struct spool_q_setprinter
 	POLICY_HND handle;
 	uint32 level;
 	SPOOL_PRINTER_INFO_LEVEL info;
-
-	DEVICEMODE *devmode;
+	DEVMODE_CTR devmode_ctr;
 
 	/* lkclXXXX jean-francois, see SEC_DESC_BUF code */
 	struct
@@ -1391,7 +1392,7 @@ typedef struct spool_q_enumprinterdata
 typedef struct spool_r_enumprinterdata
 {
 	uint32 valuesize;
-	UNISTR value;
+	uint16 *value;
 	uint32 realvaluesize;
 	uint32 type;
 	uint32 datasize;

@@ -444,8 +444,6 @@ static BOOL api_spoolss_writeprinter(uint16 vuid, prs_struct *data, prs_struct *
 
 /****************************************************************************
 
-FIX ME: JFM: freeing memory ????
-
 ****************************************************************************/
 static BOOL api_spoolss_setprinter(uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
@@ -460,13 +458,15 @@ static BOOL api_spoolss_setprinter(uint16 vuid, prs_struct *data, prs_struct *rd
 		return False;
 	}
 	
-	DEBUG(0,("api_spoolss_setprinter: typecast sec_des to uint8*!\n"));
-	r_u.status = _spoolss_setprinter(&q_u.handle,
-	                                 q_u.level, &q_u.info,
-	                                 q_u.devmode,
-	                                 q_u.security.size_of_buffer,
-	                                 (const uint8*)q_u.security.data,
-	                                 q_u.command);
+	r_u.status = _spoolss_setprinter(&q_u.handle, q_u.level, &q_u.info,
+	                                 q_u.devmode_ctr, q_u.command);
+	
+	/* now, we can free the memory */
+	if (q_u.info.level==2 && q_u.info.info_ptr!=0)
+		safe_free(q_u.info.info_2);
+		
+	if (q_u.devmode_ctr.devmode_ptr!=0)
+		safe_free(q_u.devmode_ctr.devmode);
 	
 	if(!spoolss_io_r_setprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_setprinter: unable to marshall SPOOL_R_SETPRINTER.\n"));
@@ -836,24 +836,19 @@ static BOOL api_spoolss_enumprinterdata(uint16 vuid, prs_struct *data, prs_struc
 		return False;
 	}
 	
-	r_u.valuesize = q_u.valuesize;
-	r_u.datasize = q_u.datasize;
-
-	r_u.status = _spoolss_enumprinterdata(&q_u.handle,
-				q_u.index,/* in */
-				&r_u.valuesize,/* in out */
-				&r_u.value,/* out */
-				&r_u.realvaluesize,/* out */
-				&r_u.type,/* out */
-				&r_u.datasize,/* in out */
-				&r_u.data,/* out */
-				&r_u.realdatasize);/* out */
+	r_u.status = _spoolss_enumprinterdata(&q_u.handle, q_u.index, q_u.valuesize, q_u.datasize,
+						&r_u.valuesize, &r_u.value, &r_u.realvaluesize,
+						&r_u.type,
+						&r_u.datasize, &r_u.data, &r_u.realdatasize);
 				
 	if(!spoolss_io_r_enumprinterdata("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_enumprinterdata: unable to marshall SPOOL_R_ENUMPRINTERDATA.\n"));
+		safe_free(r_u.value);
+		safe_free(r_u.data);
 		return False;
 	}
 
+	safe_free(r_u.value);
 	safe_free(r_u.data);
 
 	return True;

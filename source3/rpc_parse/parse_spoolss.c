@@ -575,6 +575,9 @@ static BOOL spoolss_io_devmode_cont(char *desc, DEVMODE_CTR *dm_c, prs_struct *p
 	prs_debug(ps, depth, desc, "spoolss_io_devmode_cont");
 	depth++;
 
+	if(!prs_align(ps))
+		return False;
+	
 	if (!prs_uint32("size", ps, depth, &dm_c->size))
 		return False;
 
@@ -1164,14 +1167,17 @@ static uint32 size_of_systemtime(SYSTEMTIME *systime)
  * write a UNICODE string.
  * used by all the RPC structs passing a buffer
  ********************************************************************/
-static BOOL spoolss_smb_io_unistr(char *desc,  UNISTR *uni, prs_struct *ps, int depth)
+static BOOL spoolss_smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int depth)
 {
+	uint16 zero=0;
 	if (uni == NULL)
 		return False;
 
 	prs_debug(ps, depth, desc, "spoolss_smb_io_unistr");
 	depth++;
 	if (!prs_unistr("unistr", ps, depth, uni))
+		return False;
+	if (!prs_uint16("null", ps, depth, &zero))
 		return False;
 }
 
@@ -2645,24 +2651,25 @@ BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps
 	prs_debug(ps, depth, desc, "spoolss_io_q_setprinter");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 
-	smb_io_prt_hnd("printer handle", &(q_u->handle),ps,depth);
-	prs_uint32("level", ps, depth, &(q_u->level));
+	if(!smb_io_prt_hnd("printer handle", &q_u->handle ,ps, depth))
+		return False;
+	if(!prs_uint32("level", ps, depth, &q_u->level))
+		return False;
 
-	/* again a designed mess */
-	/* sometimes I'm wondering how all of this work ! */
+	if(!spool_io_printer_info_level("", &q_u->info, ps, depth))
+		return False;
 
-	/* To be correct it need to be split in 3 functions */
-
-	spool_io_printer_info_level("", &(q_u->info), ps, depth);
-
-	spoolss_io_devmode(desc, ps, depth, q_u->devmode);
+	if (!spoolss_io_devmode_cont(desc, &q_u->devmode_ctr, ps, depth))
+		return False;
 	
-	prs_uint32("security.size_of_buffer", ps, depth, &(q_u->security.size_of_buffer));
-	prs_uint32("security.data",           ps, depth, &(q_u->security.data));
+	prs_uint32("security.size_of_buffer", ps, depth, &q_u->security.size_of_buffer);
+	prs_uint32("security.data", ps, depth, &q_u->security.data);
 	
-	prs_uint32("command", ps, depth, &(q_u->command));
+	if(!prs_uint32("command", ps, depth, &q_u->command))
+		return False;
 
 	return True;
 }
@@ -3074,77 +3081,83 @@ BOOL spoolss_io_q_enumports(char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, 
 	return True;
 }
 
-
 /*******************************************************************
+ Parse a SPOOL_PRINTER_INFO_LEVEL_2 structure.
 ********************************************************************/  
-BOOL spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 **q_u, prs_struct *ps, int depth)
+BOOL spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 *il, prs_struct *ps, int depth)
 {	
-	SPOOL_PRINTER_INFO_LEVEL_2 *il;
-	
-	prs_debug(ps, depth, desc, "");
+	prs_debug(ps, depth, desc, "spool_io_printer_info_level_2");
 	depth++;
-
-	/* reading */
-	if (ps->io)
-	{
-		il=(SPOOL_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_2));
-		ZERO_STRUCTP(il);
-		*q_u=il;
-		DEBUG(7,("lecture: memoire ok\n"));
-	}
-	else
-	{
-		il=*q_u;
-	}
 		
-	prs_align(ps);	
+	if(!prs_align(ps))
+		return False;
 
-	prs_uint32("servername_ptr",     ps, depth, &(il->servername_ptr));
-	prs_uint32("printername_ptr",    ps, depth, &(il->printername_ptr));
-	prs_uint32("sharename_ptr",      ps, depth, &(il->sharename_ptr));
-	prs_uint32("portname_ptr",       ps, depth, &(il->portname_ptr));
-	prs_uint32("drivername_ptr",     ps, depth, &(il->drivername_ptr));
-	prs_uint32("comment_ptr",        ps, depth, &(il->comment_ptr));
-	prs_uint32("location_ptr",       ps, depth, &(il->location_ptr));
-	prs_uint32("devmode_ptr",        ps, depth, &(il->devmode_ptr));
-	prs_uint32("sepfile_ptr",        ps, depth, &(il->sepfile_ptr));
-	prs_uint32("printprocessor_ptr", ps, depth, &(il->printprocessor_ptr));
-	prs_uint32("datatype_ptr",       ps, depth, &(il->datatype_ptr));
-	prs_uint32("parameters_ptr",     ps, depth, &(il->parameters_ptr));
-	prs_uint32("secdesc_ptr",        ps, depth, &(il->secdesc_ptr));
+	if(!prs_uint32("servername_ptr", ps, depth, &il->servername_ptr))
+		return False;
+	if(!prs_uint32("printername_ptr", ps, depth, &il->printername_ptr))
+		return False;
+	if(!prs_uint32("sharename_ptr", ps, depth, &il->sharename_ptr))
+		return False;
+	if(!prs_uint32("portname_ptr", ps, depth, &il->portname_ptr))
+		return False;
+	if(!prs_uint32("drivername_ptr", ps, depth, &il->drivername_ptr))
+		return False;
+	if(!prs_uint32("comment_ptr", ps, depth, &il->comment_ptr))
+		return False;
+	if(!prs_uint32("location_ptr", ps, depth, &il->location_ptr))
+		return False;
+	if(!prs_uint32("devmode_ptr", ps, depth, &il->devmode_ptr))
+		return False;
+	if(!prs_uint32("sepfile_ptr", ps, depth, &il->sepfile_ptr))
+		return False;
+	if(!prs_uint32("printprocessor_ptr", ps, depth, &il->printprocessor_ptr))
+		return False;
+	if(!prs_uint32("datatype_ptr", ps, depth, &il->datatype_ptr))
+		return False;
+	if(!prs_uint32("parameters_ptr", ps, depth, &il->parameters_ptr))
+		return False;
+	if(!prs_uint32("secdesc_ptr", ps, depth, &il->secdesc_ptr))
+		return False;
 
-	prs_uint32("attributes",         ps, depth, &(il->attributes));
-	prs_uint32("priority",           ps, depth, &(il->priority));
-	prs_uint32("default_priority",   ps, depth, &(il->default_priority));
-	prs_uint32("starttime",          ps, depth, &(il->starttime));
-	prs_uint32("untiltime",          ps, depth, &(il->untiltime));
-	prs_uint32("status",             ps, depth, &(il->status));
-	prs_uint32("cjobs",              ps, depth, &(il->cjobs));
-	prs_uint32("averageppm",         ps, depth, &(il->averageppm));
+	if(!prs_uint32("attributes", ps, depth, &il->attributes))
+		return False;
+	if(!prs_uint32("priority", ps, depth, &il->priority))
+		return False;
+	if(!prs_uint32("default_priority", ps, depth, &il->default_priority))
+		return False;
+	if(!prs_uint32("starttime", ps, depth, &il->starttime))
+		return False;
+	if(!prs_uint32("untiltime", ps, depth, &il->untiltime))
+		return False;
+	if(!prs_uint32("status", ps, depth, &il->status))
+		return False;
+	if(!prs_uint32("cjobs", ps, depth, &il->cjobs))
+		return False;
+	if(!prs_uint32("averageppm", ps, depth, &il->averageppm))
+		return False;
 
-	smb_io_unistr2("", &(il->servername),     il->servername_ptr,     ps, depth);	
-	smb_io_unistr2("", &(il->printername),    il->printername_ptr,    ps, depth);	
-	smb_io_unistr2("", &(il->sharename),      il->sharename_ptr,      ps, depth);	
-	smb_io_unistr2("", &(il->portname),       il->portname_ptr,       ps, depth);	
-	smb_io_unistr2("", &(il->drivername),     il->drivername_ptr,     ps, depth);	
-	smb_io_unistr2("", &(il->comment),        il->comment_ptr,        ps, depth);	
-	smb_io_unistr2("", &(il->location),       il->location_ptr,       ps, depth);	
-	smb_io_unistr2("", &(il->sepfile),        il->sepfile_ptr,        ps, depth);	
-	smb_io_unistr2("", &(il->printprocessor), il->printprocessor_ptr, ps, depth);	
-	smb_io_unistr2("", &(il->datatype),       il->datatype_ptr,       ps, depth);	
-	smb_io_unistr2("", &(il->parameters),     il->parameters_ptr,     ps, depth);	
-
-	prs_align(ps);
-
-	/* this code as nothing to do here !!!
-	
-	if (il->secdesc_ptr)
-	{
-		il->secdesc=NULL;
-		sec_io_desc_buf("", &(il->secdesc), ps, depth);
-	}
-	
-	*/
+	if(!smb_io_unistr2("servername", &il->servername, il->servername_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("printername", &il->printername, il->printername_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("sharename", &il->sharename, il->sharename_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("portname", &il->portname, il->portname_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("drivername", &il->drivername, il->drivername_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("comment", &il->comment, il->comment_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("location", &il->location, il->location_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("sepfile", &il->sepfile, il->sepfile_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("printprocessor", &il->printprocessor, il->printprocessor_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("datatype", &il->datatype, il->datatype_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("parameters", &il->parameters, il->parameters_ptr, ps, depth))
+		return False;
 
 	return True;
 }
@@ -3153,16 +3166,24 @@ BOOL spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 **q_u,
 ********************************************************************/  
 BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_struct *ps, int depth)
 {
-	uint32 useless;
-	uint32 level;
-	prs_debug(ps, depth, desc, "");
+	prs_debug(ps, depth, desc, "spool_io_printer_info_level");
 	depth++;
 
-	prs_align(ps);	
-	prs_uint32("info level", ps, depth, &level);
-	prs_uint32("useless", ps, depth, &useless);
-		
-	switch (level) {
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("level", ps, depth, &il->level))
+		return False;
+	if(!prs_uint32("info_ptr", ps, depth, &il->info_ptr))
+		return False;
+	
+	/* if no struct inside just return */
+	if (il->info_ptr==0) {
+		if (UNMARSHALLING(ps))
+			il->info_2=NULL;
+		return True;
+	}
+			
+	switch (il->level) {
 		/*
 		 * level 0 is used by setprinter when managing the queue
 		 * (hold, stop, start a queue)
@@ -3174,10 +3195,12 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 		 * and by setprinter when updating printer's info
 		 */	
 		case 2:
-			spool_io_printer_info_level_2("", &(il->info_2), ps, depth);
+			if (UNMARSHALLING(ps))
+				il->info_2=(SPOOL_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_2));
+			if (!spool_io_printer_info_level_2("", il->info_2, ps, depth))
+				return False;
 			break;		
 	}
-
 
 	return True;
 }
@@ -3761,17 +3784,26 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinterdata");
 	depth++;
 
-	prs_align(ps);	
-	prs_uint32("valuesize",     ps, depth, &(r_u->valuesize));
-	prs_unistr("value",         ps, depth, &(r_u->value));
-	prs_uint32("realvaluesize", ps, depth, &(r_u->realvaluesize));
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("valuesize", ps, depth, &r_u->valuesize))
+		return False;
+	if(!prs_uint16s(False, "value", ps, depth, r_u->value, r_u->valuesize))
+		return False;
+	if(!prs_uint32("realvaluesize", ps, depth, &r_u->realvaluesize))
+		return False;
 
-	prs_uint32("type",          ps, depth, &(r_u->type));
+	if(!prs_uint32("type", ps, depth, &r_u->type))
+		return False;
 
-	prs_uint32("datasize",      ps, depth, &(r_u->datasize));
-	prs_uint8s(False, "data",   ps, depth, r_u->data, r_u->datasize);
-	prs_uint32("realdatasize",  ps, depth, &(r_u->realdatasize));
-	prs_uint32("status",        ps, depth, &(r_u->status));
+	if(!prs_uint32("datasize", ps, depth, &r_u->datasize))
+		return False;
+	if(!prs_uint8s(False, "data", ps, depth, r_u->data, r_u->datasize))
+		return False;
+	if(!prs_uint32("realdatasize", ps, depth, &r_u->realdatasize))
+		return False;
+	if(!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
 
 	return True;
 }
@@ -3783,11 +3815,16 @@ BOOL spoolss_io_q_enumprinterdata(char *desc, SPOOL_Q_ENUMPRINTERDATA *q_u, prs_
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumprinterdata");
 	depth++;
 
-	prs_align(ps);
-	smb_io_prt_hnd("printer handle",&(q_u->handle),ps,depth);
-	prs_uint32("index",     ps, depth, &(q_u->index));
-	prs_uint32("valuesize", ps, depth, &(q_u->valuesize));
-	prs_uint32("datasize",  ps, depth, &(q_u->datasize));
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_prt_hnd("printer handle",&q_u->handle,ps,depth))
+		return False;
+	if(!prs_uint32("index", ps, depth, &q_u->index))
+		return False;
+	if(!prs_uint32("valuesize", ps, depth, &q_u->valuesize))
+		return False;
+	if(!prs_uint32("datasize", ps, depth, &q_u->datasize))
+		return False;
 
 	return True;
 }
