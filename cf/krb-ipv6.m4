@@ -8,6 +8,7 @@ AC_ARG_WITH(ipv6,
 if test "$withval" = "no"; then
 	ac_cv_lib_ipv6=no
 fi])
+save_CFLAGS="${CFLAGS}"
 AC_CACHE_VAL(ac_cv_lib_ipv6,
 [dnl check for different v6 implementations (by itojun)
 v6type=unknown
@@ -118,5 +119,7 @@ AC_MSG_CHECKING(for IPv6)
 AC_MSG_RESULT($ac_cv_lib_ipv6)
 if test "$ac_cv_lib_ipv6" = yes; then
   AC_DEFINE(HAVE_IPV6, 1, [Define if you have IPv6.])
+else
+  CFLAGS="${save_CFLAGS}"
 fi
 ])
