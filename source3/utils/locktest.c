@@ -1,7 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 2.0
-   mask_match tester
+   randomised byte range lock tester
    Copyright (C) Andrew Tridgell 1999
    
    This program is free software; you can redistribute it and/or modify
@@ -48,7 +48,7 @@ static BOOL use_oplocks;
 #define NFILES 2
 #define LOCK_TIMEOUT 0
 
-#define NASTY_POSIX_LOCK_HACK 1
+#define NASTY_POSIX_LOCK_HACK 0
 
 
 struct record {
