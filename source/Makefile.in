@@ -367,6 +367,7 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 		lib/util_unistr.o lib/signal.o lib/talloc.o lib/ms_fnmatch.o \
 		lib/util_sock.o lib/smbrun.o lib/util_sec.o lib/snprintf.o \
 		ubiqx/ubi_sLinkList.o libsmb/smbencrypt.o libsmb/smbdes.o \
+		smbd/ssl.o lib/access.o \
 		lib/interfaces.o $(PARAM_OBJ) $(TDB_OBJ) $(PASSDB_OBJ)
 
 PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0:.o=.po)
@@ -647,7 +648,7 @@ libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ)
 	@echo Linking shared library $@
-	$(SHLD) @LDSHFLAGS@ -symbolic -o $@ $(PAM_SMBPASS_OBJ) -lpam $(DYNEXP) $(LIBS) -lc
+	$(SHLD) @LDSHFLAGS@ -symbolic -o $@ $(PAM_SMBPASS_OBJ) $(LDFLAGS) -lpam $(DYNEXP) $(LIBS) -lc
 
 nsswitch/libnss_wins.so: $(NSS_OBJ)
 	@echo "Linking $@"

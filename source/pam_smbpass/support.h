@@ -48,3 +48,5 @@ extern int _smb_read_password( pam_handle_t *, unsigned int, char*,
 
 extern int _pam_smb_approve_pass(pam_handle_t *, unsigned int, const char *,
 				 const char *);
+
+extern pstring servicesf;
