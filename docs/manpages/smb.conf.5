@@ -1259,7 +1259,20 @@ This parameter specifies the home directory where roaming profiles
 (USER.DAT / USER.MAN files) are stored.
 
 This option takes the standard substitutions, allowing you to have
-separate logon scripts for each user or machine.
+separate logon scripts for each user or machine.  It also specifies
+the directory from which the "desktop", "start menu", "nethood" and
+"programs" folders, and their contents, are loaded and displayed
+on your Windows 95 client.
+
+The share and the path must be readable by the user for the preferences
+and directories to be loaded onto the Windows 95 client.  The share
+must be writeable when the logs in for the first time, in order that
+the Windows 95 client can create the user.dat and other directories.
+
+Thereafter, the directories and any of contents can, if required,
+be made read-only.  It is not adviseable that the USER.DAT file be made
+read-only - rename it to USER.MAN to achieve the desired effect
+(a MANdatory profile).
 
 .B Default:
  	logon path = \\\\%L\\%U 
