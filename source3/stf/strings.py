@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python     
 
 # Comfychair test cases for Samba string functions.
 
@@ -19,7 +19,22 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 # USA
 
+# XXX: All this code assumes that the Unix character set is UTF-8,
+# which is the most common setting.  I guess it would be better to
+# force it to that value while running the tests.  I'm not sure of the
+# best way to do that yet.
+# 
+# Note that this is NOT the case in C code until the loadparm table is
+# intialized -- the default seems to be ASCII, which rather lets Samba
+# off the hook. :-) The best way seems to be to put this in the test
+# harnesses:
+#
+#       lp_load("/dev/null", True, False, False);
+#
+# -- mbp
+
 import sys, re, comfychair
+from unicodenames import *
 
 def signum(a):
     if a < 0:
@@ -28,12 +43,29 @@ def signum(a):
         return +1
     else:
         return 0
+
+
+class PushUCS2_Tests(comfychair.TestCase):
+    """Conversion to/from UCS2"""
+    def runtest(self):
+        OE = LATIN_CAPITAL_LETTER_O_WITH_DIARESIS
+        oe = LATIN_CAPITAL_LETTER_O_WITH_DIARESIS
+        cases = ['hello',
+                 'hello world',
+                 'g' + OE + OE + 'gomobile', 
+                 'g' + OE + oe + 'gomobile', 
+                 u'foo\u0100',
+                 KATAKANA_LETTER_A * 20,
+                 ]
+        for u8str in cases:
+            out, err = self.runcmd("t_push_ucs2 \"%s\"" % u8str.encode('utf-8'))
+            self.assert_equal(out, "0\n")
     
 
-class StrCaseCmp_Ascii_Tests(comfychair.TestCase):
+class StrCaseCmp(comfychair.TestCase):
     """String comparisons in simple ASCII""" 
     def run_strcmp(self, a, b, expect):
-        out, err = self.runcmd('t_strcmp \"%s\" \"%s\"' % (a, b))
+        out, err = self.runcmd('t_strcmp \"%s\" \"%s\"' % (a.encode('utf-8'), b.encode('utf-8')))
         if signum(int(out)) != expect:
             self.fail("comparison failed:\n"
                       "  a=%s\n"
@@ -56,14 +88,20 @@ class StrCaseCmp_Ascii_Tests(comfychair.TestCase):
                  ('longstring ' * 100, 'longstring ' * 100, 0),
                  ('longstring ' * 100, 'longstring ' * 100 + 'a', -1),
                  ('longstring ' * 100 + 'a', 'longstring ' * 100, +1),
+                 (KATAKANA_LETTER_A, KATAKANA_LETTER_A, 0),
+                 (KATAKANA_LETTER_A, 'a', 1),
                  ]
         for a, b, expect in cases:
             self.run_strcmp(a, b, expect)
         
 # Define the tests exported by this module
-tests = [StrCaseCmp_Ascii_Tests]
+tests = [StrCaseCmp,
+         PushUCS2_Tests]
 
 # Handle execution of this file as a main program
 if __name__ == '__main__':
     comfychair.main(tests)
 
+# Local variables:
+# coding: utf-8
+# End:
