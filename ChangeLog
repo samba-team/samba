@@ -1,5 +1,7 @@
 2001-06-18  Assar Westerlund  <assar@sics.se>
 
+	* kdc/kerberos5.c: update to new krb5_auth_con* names
+	* kdc/hpropd.c: update to new krb5_auth_con* names
 	* lib/krb5/rd_req.c (krb5_rd_req): use krb5_auth_con* functions
 	and remove some comments
 	* lib/krb5/rd_safe.c (krb5_rd_safe): pick the keys in the right
