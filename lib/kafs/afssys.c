@@ -151,7 +151,6 @@ dns_find_cell(char *cell, char *dbserver)
     r = dns_lookup(cell, "afsdb");
     if(r){
 	struct resource_record *rr = r->head;
-	struct mx_record *afsdb;  /* afsdb and mx are identical */
 	while(rr){
 	    if(rr->type == T_AFSDB && rr->u.afsdb->preference == 1){
 		strncpy(dbserver, rr->u.afsdb->domain, MaxHostNameLen);
