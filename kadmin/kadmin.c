@@ -43,6 +43,7 @@ RCSID("$Id$");
 
 static char *config_file;
 static char *keyfile;
+static int local_flag;
 static int help_flag;
 static int version_flag;
 static char *realm;
@@ -65,6 +66,7 @@ static struct getargs args[] = {
 	"admin-server",	'a',	arg_string,   &admin_server, 
 	"server to contact", "host" 
     },
+    {	"local", 'l', arg_flag, &local_flag, "local admin mode" },
     {	"help",		'h',	arg_flag,   &help_flag },
     {	"version",	'v',	arg_flag,   &version_flag }
 };
@@ -172,14 +174,22 @@ main(int argc, char **argv)
     conf.admin_server = admin_server;
     conf.mask |= KADM5_CONFIG_ADMIN_SERVER;
 
-    ret = kadm5_init_with_password_ctx(context, 
-				       /* XXX these are not used */
-				       "client", 
-				       "password", 
-				       "service",
-				       &conf, 0, 0, 
-				       &kadm_handle);
-
+    if(local_flag)
+	ret = kadm5_s_init_with_password_ctx(context, 
+					     KADM5_ADMIN_SERVICE,
+					     "password",
+					     KADM5_ADMIN_SERVICE,
+					     &conf, 0, 0, 
+					     &kadm_handle);
+    else
+	ret = kadm5_c_init_with_password_ctx(context, 
+					     /* XXX these are not used */
+					     "client",
+					     "password", 
+					     KADM5_ADMIN_SERVICE,
+					     &conf, 0, 0, 
+					     &kadm_handle);
+    
     if(ret)
 	krb5_err(context, 1, ret, "kadm5_init_with_password");
     if (argc != 0)
