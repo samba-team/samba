@@ -50,6 +50,12 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	SCVAL(cli->outbuf,smb_com,trans);
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
 	cli_setup_packet(cli);
+
+	/*
+	 * Save the mid we're using. We need this for finding
+	 * signing replies.
+	 */
+
 	mid = cli->mid;
 
 	if (pipe_name) {
@@ -87,16 +93,13 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 
 	show_msg(cli->outbuf);
 
-	cli_signing_trans_start(cli);
 	if (!cli_send_smb(cli)) {
-		cli_signing_trans_stop(cli);
 		return False;
 	}
 
 	if (this_ldata < ldata || this_lparam < lparam) {
 		/* receive interim response */
 		if (!cli_receive_smb(cli) || cli_is_error(cli)) {
-			cli_signing_trans_stop(cli);
 			return(False);
 		}
 
@@ -130,23 +133,14 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 				memcpy(outdata,data+tot_data,this_ldata);
 			cli_setup_bcc(cli, outdata+this_ldata);
 			
-			/* Ensure this packet has the same MID as
-			 * the primary. Important in signing. JRA. */
-			cli->mid = mid;
-
 			/*
-			 * Turns out that we need to increment the
-			 * sequence number for each packet until the
-			 * last one in the signing sequence. That's
-			 * the one that matters to check signing replies. JRA.
+			 * Save the mid we're using. We need this for finding
+			 * signing replies.
 			 */
-
-			cli_signing_trans_stop(cli);
-			cli_signing_trans_start(cli);
+			mid = cli->mid;
 
 			show_msg(cli->outbuf);
 			if (!cli_send_smb(cli)) {
-				cli_signing_trans_stop(cli);
 				return False;
 			}
 			
@@ -155,6 +149,10 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 		}
 	}
 
+	/* Note we're in a trans state. Save the sequence
+	 * numbers for replies. */
+
+	cli_signing_trans_start(cli, mid);
 	return(True);
 }
 
@@ -362,6 +360,12 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 	SCVAL(cli->outbuf,smb_com,SMBnttrans);
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
 	cli_setup_packet(cli);
+
+	/*
+	 * Save the mid we're using. We need this for finding
+	 * signing replies.
+	 */
+
 	mid = cli->mid;
 
 	outparam = smb_buf(cli->outbuf)+3;
@@ -391,16 +395,13 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 	cli_setup_bcc(cli, outdata+this_ldata);
 
 	show_msg(cli->outbuf);
-	cli_signing_trans_start(cli);
 	if (!cli_send_smb(cli)) {
-		cli_signing_trans_stop(cli);
 		return False;
 	}	
 
 	if (this_ldata < ldata || this_lparam < lparam) {
 		/* receive interim response */
 		if (!cli_receive_smb(cli) || cli_is_error(cli)) {
-			cli_signing_trans_stop(cli);
 			return(False);
 		}
 
@@ -433,24 +434,15 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 				memcpy(outdata,data+tot_data,this_ldata);
 			cli_setup_bcc(cli, outdata+this_ldata);
 			
-			/* Ensure this packet has the same MID as
-			 * the primary. Important in signing. JRA. */
-			cli->mid = mid;
-
 			/*
-			 * Turns out that we need to increment the
-			 * sequence number for each packet until the
-			 * last one in the signing sequence. That's
-			 * the one that matters to check signing replies. JRA.
+			 * Save the mid we're using. We need this for finding
+			 * signing replies.
 			 */
-
-			cli_signing_trans_stop(cli);
-			cli_signing_trans_start(cli);
+			mid = cli->mid;
 
 			show_msg(cli->outbuf);
 
 			if (!cli_send_smb(cli)) {
-				cli_signing_trans_stop(cli);
 				return False;
 			}
 			
@@ -459,6 +451,10 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 		}
 	}
 
+	/* Note we're in a trans state. Save the sequence
+	 * numbers for replies. */
+
+	cli_signing_trans_start(cli, mid);
 	return(True);
 }
 
