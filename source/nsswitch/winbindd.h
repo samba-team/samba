@@ -44,12 +44,6 @@ struct winbindd_cli_state {
 	time_t last_access;                       /* Time of last access (read or write) */
 	BOOL privileged;                           /* Is the client 'privileged' */
 
-	int msgid;				  /* message id to expect from dual */
-	BOOL send_to_background;
-	enum winbindd_result (*continuation)(struct winbindd_cli_state *cli,
-					     pid_t dual_daemon);
-	void *continuation_private;
-
 	struct winbindd_request request;          /* Request from client */
 	struct winbindd_response response;        /* Respose to client */
 	BOOL getpwent_initialized;                /* Has getpwent_state been initialized? */

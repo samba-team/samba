@@ -159,7 +159,6 @@ typedef struct winbindd_gr {
 #define WBFLAG_PAM_UNIX_NAME            0x0080
 #define WBFLAG_PAM_AFS_TOKEN            0x0100
 #define WBFLAG_PAM_NT_STATUS_SQUASH     0x0200
-#define WBFLAG_CACHE_RESPONSE           0x0400
 
 /* Winbind request structure */
 
@@ -169,10 +168,6 @@ struct winbindd_request {
 	pid_t pid;               /* pid of calling process */
 	uint32 flags;            /* flags relavant to a given request */
 	fstring domain_name;	/* name of domain for which the request applies */
-
-	int msgid; 		/* Uniquely identify a request, used in
-				 * MSG_WINBINDD_FINISHED from dual daemon to
-				 * parent. */
 
 	union {
 		fstring winsreq;     /* WINS request */
@@ -222,8 +217,7 @@ struct winbindd_request {
 
 enum winbindd_result {
 	WINBINDD_ERROR,
-	WINBINDD_OK,
-	WINBINDD_PENDING
+	WINBINDD_OK
 };
 
 /* Winbind response structure */
@@ -265,7 +259,6 @@ struct winbindd_response {
 		struct winbindd_info {
 			char winbind_separator;
 			fstring samba_version;
-			int max_busy_children;
 		} info;
 		fstring domain_name;
 		fstring netbios_name;

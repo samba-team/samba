@@ -28,7 +28,6 @@
 BOOL opt_nocache = False;
 BOOL opt_dual_daemon = True;
 BOOL opt_ldap_proxy = False;
-int max_busy_children = 0;
 
 extern BOOL override_logfile;
 
@@ -192,6 +191,17 @@ static void sighup_handler(int signum)
 	sys_select_signal();
 }
 
+static void sigchld_handler(int signum)
+{
+	pid_t pid;
+	int status;
+
+	while ((pid = wait(&status)) != -1 || errno == EINTR) {
+		continue; /* Reap children */
+	}
+	sys_select_signal();
+}
+
 /* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
 static void msg_reload_services(int msg_type, pid_t src, void *buf, size_t len)
 {
@@ -206,131 +216,10 @@ static void msg_shutdown(int msg_type, pid_t src, void *buf, size_t len)
 	terminate();
 }
 
-/* Dual daemon finished a request */
-static void msg_finished(int msg_type, pid_t src, void *buf, size_t len)
-{
-	struct winbindd_cli_state *state;
-	int *msgid;
-
-	DEBUG(5, ("Got finished message\n"));
-
-	if (len != sizeof(*msgid)) {
-		DEBUG(0, ("Wrong buffer size in message: %d\n", len));
-		return;
-	}
-
-	dual_finished(src);
-
-	msgid = (int *)buf;
-
-	DEBUGADD(10, ("got msgid %d\n", *msgid));
-
-	for (state = winbindd_client_list(); state; state = state->next) {
-		if (state->response.result != WINBINDD_PENDING)
-			continue;
-
-		if (state->msgid != *msgid)
-			continue;
-
-		state->response.result = state->continuation(state, src);
-
-		if (state->response.result == WINBINDD_PENDING) {
-			if (state->send_to_background) {
-				extern BOOL background_process;
-				background_process = True;
-				dual_send_request(state);
-			}
-			return;
-		}
-
-		state->read_buf_len = 0;
-		state->write_buf_len = sizeof(struct winbindd_response);
-	}
-}
-
 struct dispatch_table {
 	enum winbindd_cmd cmd;
 	enum winbindd_result (*fn)(struct winbindd_cli_state *state);
 	const char *winbindd_cmd_name;
-};
-
-static struct dispatch_table cache_table[] = {
-	
-	/* User functions */
-
-	{ WINBINDD_GETPWNAM, dual_request, "GETPWNAM" },
-	{ WINBINDD_GETPWUID, dual_request, "GETPWUID" },
-
-	{ WINBINDD_SETPWENT, winbindd_setpwent, "SETPWENT" },
-	{ WINBINDD_ENDPWENT, winbindd_endpwent, "ENDPWENT" },
-	{ WINBINDD_GETPWENT, winbindd_getpwent, "GETPWENT" },
-
-	{ WINBINDD_GETGROUPS, winbindd_getgroups, "GETGROUPS" },
-	{ WINBINDD_GETUSERSIDS, cache_getusersids, "GETUSERSIDS" },
-
-	/* Group functions */
-
-	{ WINBINDD_GETGRNAM, dual_request, "GETGRNAM" },
-	{ WINBINDD_GETGRGID, dual_request, "GETGRGID" },
-	{ WINBINDD_SETGRENT, winbindd_setgrent, "SETGRENT" },
-	{ WINBINDD_ENDGRENT, winbindd_endgrent, "ENDGRENT" },
-	{ WINBINDD_GETGRENT, winbindd_getgrent, "GETGRENT" },
-	{ WINBINDD_GETGRLST, winbindd_getgrent, "GETGRLST" },
-
-	/* PAM auth functions */
-
-	{ WINBINDD_PAM_AUTH, winbindd_pam_auth, "PAM_AUTH" },
-	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" },
-	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok, "CHAUTHTOK" },
-
-	/* Enumeration functions */
-
-	{ WINBINDD_LIST_USERS, cache_list_users, "LIST_USERS" },
-	{ WINBINDD_LIST_GROUPS, cache_list_groups, "LIST_GROUPS" },
-	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains, "LIST_TRUSTDOM" },
-	{ WINBINDD_SHOW_SEQUENCE, winbindd_show_sequence, "SHOW_SEQUENCE" },
-
-	/* SID related functions */
-
-	{ WINBINDD_LOOKUPSID, cache_lookupsid, "LOOKUPSID" },
-	{ WINBINDD_LOOKUPNAME, cache_lookupname, "LOOKUPNAME" },
-
-	/* Lookup related functions */
-
-	{ WINBINDD_SID_TO_UID, cache_sid_to_uid, "SID_TO_UID" },
-	{ WINBINDD_SID_TO_GID, cache_sid_to_gid, "SID_TO_GID" },
-	{ WINBINDD_GID_TO_SID, cache_gid_to_sid, "GID_TO_SID" },
-	{ WINBINDD_UID_TO_SID, cache_uid_to_sid, "UID_TO_SID" },
-	{ WINBINDD_ALLOCATE_RID, winbindd_allocate_rid, "ALLOCATE_RID" },
-
-	/* Miscellaneous */
-
-	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct, "CHECK_MACHACC" },
-	{ WINBINDD_PING, winbindd_ping, "PING" },
-	{ WINBINDD_INFO, winbindd_info, "INFO" },
-	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version, "INTERFACE_VERSION" },
-	{ WINBINDD_DOMAIN_NAME, winbindd_domain_name, "DOMAIN_NAME" },
-	{ WINBINDD_DOMAIN_INFO, winbindd_domain_info, "DOMAIN_INFO" },
-	{ WINBINDD_NETBIOS_NAME, winbindd_netbios_name, "NETBIOS_NAME" },
-	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir, "WINBINDD_PRIV_PIPE_DIR" },
-
-	/* WINS functions */
-
-	{ WINBINDD_WINS_BYNAME, winbindd_wins_byname, "WINS_BYNAME" },
-	{ WINBINDD_WINS_BYIP, winbindd_wins_byip, "WINS_BYIP" },
-	
-	/* UNIX account management functions */
-	{ WINBINDD_CREATE_USER, 		winbindd_create_user, 		"CREATE_USER" 		},
-	{ WINBINDD_CREATE_GROUP,		winbindd_create_group, 		"CREATE_GROUP" 		},
-	{ WINBINDD_ADD_USER_TO_GROUP, 		winbindd_add_user_to_group, 	"ADD_USER_TO_GROUP" 	},
-	{ WINBINDD_REMOVE_USER_FROM_GROUP, 	winbindd_remove_user_from_group,"REMOVE_USER_FROM_GROUP"},
-	{ WINBINDD_SET_USER_PRIMARY_GROUP, 	winbindd_set_user_primary_group,"SET_USER_PRIMARY_GROUP"},
-	{ WINBINDD_DELETE_USER,	 		winbindd_delete_user,		"DELETE_USER"		},
-	{ WINBINDD_DELETE_GROUP, 		winbindd_delete_group,		"DELETE_GROUP"		},
-	
-	/* End of list */
-
-	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
 };
 
 static struct dispatch_table dispatch_table[] = {
@@ -414,7 +303,7 @@ static struct dispatch_table dispatch_table[] = {
 
 static void process_request(struct winbindd_cli_state *state)
 {
-	struct dispatch_table *table;
+	struct dispatch_table *table = dispatch_table;
 
 	/* Free response data - we may be interrupted and receive another
 	   command before being able to send this data off. */
@@ -428,8 +317,7 @@ static void process_request(struct winbindd_cli_state *state)
 
 	/* Process command */
 
-	for (table = opt_dual_daemon ? cache_table : dispatch_table;
-	     table->fn; table++) {
+	for (table = dispatch_table; table->fn; table++) {
 		if (state->request.cmd == table->cmd) {
 			DEBUG(10,("process_request: request fn %s\n", table->winbindd_cmd_name ));
 			state->response.result = table->fn(state);
@@ -555,22 +443,16 @@ void winbind_process_packet(struct winbindd_cli_state *state)
 	state->request.null_term = '\0';
 
 	state->pid = state->request.pid;
-
-	state->continuation = NULL;
 	
 	process_request(state);
 
 	/* Update client state */
-
-	if (state->response.result != WINBINDD_PENDING) {
-		state->read_buf_len = 0;
-		state->write_buf_len = sizeof(struct winbindd_response);
-	}
+	
+	state->read_buf_len = 0;
+	state->write_buf_len = sizeof(struct winbindd_response);
 
 	/* we might need to send it to the dual daemon */
-	if (opt_dual_daemon && state->send_to_background) {
-		extern BOOL background_process;
-		background_process = True;
+	if (opt_dual_daemon) {
 		dual_send_request(state);
 	}
 }
@@ -802,28 +684,6 @@ static void process_loop(void)
 
 			if (opt_dual_daemon) {
 				dual_select(&w_fds);
-
-				if (!opt_dual_daemon) {
-					/* All children died */
-
-					state = winbindd_client_list();
-
-					while (state != NULL) {
-						struct winbindd_cli_state *next;
-						next = state->next;
-
-						/* In theory we should re-do
-						 * the whole request, but this
-						 * looks rather complicated as
-						 * the client's state machines
-						 * might have changed
-						 * state->request. Is it worth
-						 * the effort? */
-						remove_client(state);
-
-						state = next;
-					}
-				}
 			}
 
 			if (FD_ISSET(listen_sock, &r_fds)) {
@@ -899,10 +759,6 @@ static void process_loop(void)
                     
 					if (state->read_buf_len == 
 					    sizeof(state->request)) {
-						static int msgid;
-						msgid += 1;
-						state->msgid = msgid;
-						state->request.msgid = msgid;
 						winbind_process_packet(state);
 						winbindd_demote_client(state);
 						goto again;
@@ -942,7 +798,6 @@ struct winbindd_state server_state;   /* Server state information */
 int main(int argc, char **argv)
 {
 	pstring logfile;
-	int num_children = 1;
 	static BOOL interactive = False;
 	static BOOL Fork = True;
 	static BOOL log_stdout = False;
@@ -954,7 +809,6 @@ int main(int argc, char **argv)
 		{ "single-daemon", 'Y', POPT_ARG_VAL, &opt_dual_daemon, False, "Single daemon mode" },
 		{ "ldap-proxy", 'L', POPT_ARG_VAL, &opt_ldap_proxy, True, "ldap proxy" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
-		{ "num-clients", 'c', POPT_ARG_INT, &num_children, True, "Number of winbind children" },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -1058,12 +912,14 @@ int main(int argc, char **argv)
 	BlockSignals(False, SIGUSR1);
 	BlockSignals(False, SIGUSR2);
 	BlockSignals(False, SIGHUP);
+	BlockSignals(False, SIGCHLD);
 
 	/* Setup signal handlers */
 	
 	CatchSignal(SIGINT, termination_handler);      /* Exit on these sigs */
 	CatchSignal(SIGQUIT, termination_handler);
 	CatchSignal(SIGTERM, termination_handler);
+	CatchSignal(SIGCHLD, sigchld_handler);
 
 	CatchSignal(SIGPIPE, SIG_IGN);                 /* Ignore sigpipe */
 
@@ -1085,10 +941,7 @@ int main(int argc, char **argv)
 #endif
 
 	if (opt_dual_daemon) {
-		int i;
-
-		for (i=0; i<num_children; i++)
-			do_dual_daemon();
+		do_dual_daemon();
 	}
 
 	if (opt_ldap_proxy) {
@@ -1106,7 +959,6 @@ int main(int argc, char **argv)
 	   as to SIGHUP signal */
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services);
 	message_register(MSG_SHUTDOWN, msg_shutdown);
-	message_register(MSG_WINBIND_FINISHED, msg_finished);
 	
 	poptFreeContext(pc);
 
