@@ -82,8 +82,9 @@ is the best tool in your network environment.
 
 	<para>
 	The following information was posted to the Samba mailing list at Apr 3 23:33:50 GMT 2003.
-	It is presented in full (with author details omitted for privacy reasons).
-	<para>
+	It is presented in slightly edited form (with author details omitted for privacy reasons).
+	The entire answer is reproduced below with some comments removed.
+	</para>
 
 <para>
 <screen>
@@ -94,8 +95,8 @@ is the best tool in your network environment.
 &gt;
 &gt; Is there a way to acomplish this? Do I need a windows terminal server?
 &gt; Do I need to configure it so that it is a member of the domain or a
-&gt; BDC,PDC? Are there any hacks for MS Windows XP to enable remote login even if
-&gt; the computer is in a domain?
+&gt; BDC,PDC? Are there any hacks for MS Windows XP to enable remote login
+&gt; even if the computer is in a domain?
 &gt;
 &gt; Any ideas/experience would be appreciated :)
 </screen>
@@ -350,7 +351,9 @@ See the documentation in the <ulink url="http://support.microsoft.com/default.as
 <title>Common Errors</title>
 
 <para>
-Stuff goes here.
+The information provided in this chapter has been reproduced from postings on the samba@samba.org
+mailing list. No implied endorsement or recommendation is offered. Administrators should conduct 
+their own evaluation of alternatives and are encouraged to draw their own conclusions.
 </para>
 
 </sect1>
