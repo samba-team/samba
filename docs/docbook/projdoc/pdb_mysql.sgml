@@ -25,6 +25,19 @@ strongly recommend installing it in $PREFIX/lib or /usr/lib/samba/</para>
 </sect1>
 
 <sect1>
+<title>Creating the database</title>
+
+<para>
+You either can set up your own table and specify the field names to pdb_mysql (see below
+for the column names) or use the default table. The file <filename>examples/pdb/mysql/mysql.dump</filename> 
+contains the correct queries to create the required tables. Use the command :
+
+<command>mysql -u<replaceable>username</replaceable> -h<replaceable>hostname</replaceable> -p<replaceable>password</replaceable> <replaceable>databasename</replaceable> < <filename>/path/to/samba/examples/pdb/mysql/mysql.dump</filename></command>
+
+</para>
+</sect1>
+
+<sect1>
 <title>Configuring</title>
 
 <para>This plugin lacks some good documentation, but here is some short info:</para>
