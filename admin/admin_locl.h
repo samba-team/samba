@@ -69,6 +69,7 @@
 #include <roken.h>
 #include <krb5.h>
 #include <hdb_err.h>
+#include <parse_time.h>
 
 #include "hdb.h"
 
@@ -95,5 +96,7 @@ void set_keys(hdb_entry *ent, char *password);
 char *time2str(time_t t);
 void event2string(Event *ev, char **str);
 int flags2int(HDBFlags *f);
+
+time_t gettime(const char *prompt, const char *def);
 
 #endif /* __ADMIN_LOCL_H__ */
