@@ -597,7 +597,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
    * working.
    */
 
-  if((lp_security() != SEC_SHARE) || *user)
+  if((lp_security() != SEC_SHARE) || (*user && !guest))
     pstrcpy(sesssetup_user,user);
 
   reload_services(True);
