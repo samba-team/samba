@@ -864,7 +864,7 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 	struct res_rec answers;
 	struct nmb_packet *orig_nmb = &orig_packet->packet.nmb;
 	BOOL loopback_this_packet = False;
-	BOOL use_null_rr_type = False;
+	int rr_type = RR_TYPE_NB;
 	const char *packet_type = "unknown";
   
 	/* Check if we are sending to or from ourselves. */
@@ -886,13 +886,14 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 			packet_type = "nmb_status";
 			nmb->header.nm_flags.recursion_desired = False;
 			nmb->header.nm_flags.recursion_available = False;
+			rr_type = RR_TYPE_NBSTAT;
 			break;
 		case NMB_QUERY:
 			packet_type = "nmb_query";
 			nmb->header.nm_flags.recursion_desired = True;
 			nmb->header.nm_flags.recursion_available = True;
 			if (rcode) {
-				use_null_rr_type = True;
+				rr_type = RR_TYPE_NULL;
 			}
 			break;
 		case NMB_REG:
@@ -910,7 +911,7 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 			packet_type = "nmb_wack";
 			nmb->header.nm_flags.recursion_desired = False;
 			nmb->header.nm_flags.recursion_available = False;
-			use_null_rr_type = True;
+			rr_type = RR_TYPE_NULL;
 			break;
 		case WINS_REG:
 			packet_type = "wins_reg";
@@ -922,7 +923,7 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 			nmb->header.nm_flags.recursion_desired = True;
 			nmb->header.nm_flags.recursion_available = True;
 			if (rcode) {
-				use_null_rr_type = True;
+				rr_type = RR_TYPE_NULL;
 			}
 			break;
 		default:
@@ -955,12 +956,8 @@ for id %hu\n", packet_type, nmb_namestr(&orig_nmb->question.question_name),
 	memset((char*)nmb->answers,'\0',sizeof(*nmb->answers));
   
 	nmb->answers->rr_name  = orig_nmb->question.question_name;
-	if (use_null_rr_type) {
-		nmb->answers->rr_type  = RR_TYPE_NULL;
-	} else {
-		nmb->answers->rr_type  = orig_nmb->question.question_type;
-	}
-	nmb->answers->rr_class = orig_nmb->question.question_class;
+	nmb->answers->rr_type  = rr_type;
+	nmb->answers->rr_class = RR_CLASS_IN;
 	nmb->answers->ttl      = ttl;
   
 	if (data && len) {
