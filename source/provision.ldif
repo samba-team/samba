@@ -36,7 +36,7 @@ objectClass: domain
 objectClass: domainDNS
 name: ${DOMAIN}
 realm: ${REALM}
-dnsDomain: ${REALM}
+dnsDomain: ${DNSDOMAIN}
 dc: ${DOMAIN}
 objectGUID: ${NEWGUID}
 creationTime: ${NTTIME}

@@ -12,6 +12,7 @@ my $opt_nobody;
 my $opt_nogroup;
 my $opt_wheel;
 my $opt_users;
+my $dnsdomain;
 my $dnsname;
 my $basedn;
 
@@ -85,6 +86,10 @@ sub substitute($)
 
 	if ($var eq "REALM") {
 		return $opt_realm;
+	}
+
+	if ($var eq "DNSDOMAIN") {
+		return $dnsdomain;
 	}
 
 	if ($var eq "HOSTNAME") {
@@ -230,6 +235,10 @@ if ($opt_help ||
 	ShowHelp();
 }
 
+$opt_realm=uc($opt_realm);
+$opt_domain=uc($opt_domain);
+$opt_hostname=uc($opt_hostname);
+
 print "Provisioning host '$opt_hostname' for domain '$opt_domain' in realm '$opt_realm'\n";
 
 if (!$opt_nobody) {
@@ -269,7 +278,8 @@ print "Using nobody='$opt_nobody'  nogroup='$opt_nogroup'  wheel='$opt_wheel'  u
 
 print "generating ldif ...\n";
 
-$dnsname = "$opt_hostname.$opt_realm";
+$dnsdomain = lc($opt_realm);
+$dnsname = lc($opt_hostname).".".$dnsdomain;
 $basedn = "DC=" . join(",DC=", split(/\./, $opt_realm));
 
 my $data = FileLoad("provision.ldif") || die "Unable to load provision.ldif\n";
