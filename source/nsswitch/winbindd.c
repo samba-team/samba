@@ -720,7 +720,10 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	pidfile_create("winbindd");
+
 	/* Setup names. */
+
 	if (!*global_myname) {
 		char *p;
 
