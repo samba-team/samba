@@ -792,15 +792,17 @@ static BOOL resolve_hosts(const char *name,
 	DEBUG(3,("resolve_hosts: Attempting host lookup for name %s<0x20>\n", name));
 	
 	if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
-		struct in_addr return_ip;
-		putip((char *)&return_ip,(char *)hp->h_addr);
-		*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));
+		int i = 0, j;
+		while (hp->h_addr_list[i]) i++;
+		DEBUG(10, ("%d addresses returned\n", i));
+		*return_iplist = (struct in_addr *)malloc(i*sizeof(struct in_addr));
 		if(*return_iplist == NULL) {
 			DEBUG(3,("resolve_hosts: malloc fail !\n"));
 			return False;
 		}
-		**return_iplist = return_ip;
-		*return_count = 1;
+                for (j = 0; j < i; j++)
+			putip(&(*return_iplist)[j], (char *)hp->h_addr_list[j]);
+		*return_count = i;
 		return True;
 	}
 	return False;
@@ -973,6 +975,15 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 	return False;
 }
 
+/**************************************************************************
+ Resolve a name to a list of addresses
+**************************************************************************/
+BOOL resolve_name_2(const char *name, struct in_addr **return_ip, int *count, int name_type)
+{
+
+	return internal_resolve_name(name, name_type, return_ip, count);
+
+} 
 
 /********************************************************
  resolve a name of format \\server_name or \\ipaddress
@@ -1297,10 +1308,22 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 		p = pserver;
 		*count = 0;
 		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
-			struct in_addr name_ip;
-			if (resolve_name( name, &name_ip, 0x20) == False)
+			struct in_addr *more_ip, *tmp;
+			int count_more;
+			if (resolve_name_2( name, &more_ip, &count_more, 0x20) == False)
 				continue;
-			return_iplist[(*count)++] = name_ip;
+			tmp = (struct in_addr *)realloc(return_iplist,(num_addresses + count_more) * sizeof(struct in_addr));
+			if (return_iplist == NULL) {
+				DEBUG(3, ("realloc failed with &d addresses\n", num_addresses + count_more));
+				SAFE_FREE(return_iplist);
+				SAFE_FREE(more_ip);
+				return False;
+			}
+			return_iplist = tmp;
+			memmove(&return_iplist[(*count)], more_ip, count_more * sizeof(struct in_addr));
+			SAFE_FREE(more_ip); /* Done with this ... */
+			*count += count_more;
+			num_addresses += count_more - 1;
 		}
 		*ip_list = return_iplist;
 		return (*count != 0);
