@@ -2784,7 +2784,11 @@ int reply_echo(connection_struct *conn,
 	int outsize = set_message(outbuf,1,data_len,True);
 	START_PROFILE(SMBecho);
 
-	data_len = MIN(data_len, (sizeof(inbuf)-(smb_buf(inbuf)-inbuf)));
+	if (data_len > BUFFER_SIZE) {
+		DEBUG(0,("reply_echo: data_len too large.\n"));
+		END_PROFILE(SMBecho);
+		return -1;
+	}
 
 	/* copy any incoming data back out */
 	if (data_len > 0)
