@@ -444,17 +444,17 @@ BOOL default_group_mapping(void)
 
 	/* Add the Wellknown groups */
 
-	add_initial_entry(-1, "S-1-5-32-544", SID_NAME_WKN_GRP, "Administrators", "", privilege_all, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-545", SID_NAME_WKN_GRP, "Users", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-546", SID_NAME_WKN_GRP, "Guests", "", privilege_none, PR_ACCESS_FROM_NETWORK);
-	add_initial_entry(-1, "S-1-5-32-547", SID_NAME_WKN_GRP, "Power Users", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-544", SID_NAME_ALIAS, "Administrators", "", privilege_all, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-545", SID_NAME_ALIAS, "Users", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-546", SID_NAME_ALIAS, "Guests", "", privilege_none, PR_ACCESS_FROM_NETWORK);
+	add_initial_entry(-1, "S-1-5-32-547", SID_NAME_ALIAS, "Power Users", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
 
-	add_initial_entry(-1, "S-1-5-32-548", SID_NAME_WKN_GRP, "Account Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-549", SID_NAME_WKN_GRP, "System Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-550", SID_NAME_WKN_GRP, "Print Operators", "", privilege_print_op, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
-	add_initial_entry(-1, "S-1-5-32-551", SID_NAME_WKN_GRP, "Backup Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-548", SID_NAME_ALIAS, "Account Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-549", SID_NAME_ALIAS, "System Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-550", SID_NAME_ALIAS, "Print Operators", "", privilege_print_op, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
+	add_initial_entry(-1, "S-1-5-32-551", SID_NAME_ALIAS, "Backup Operators", "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
 
-	add_initial_entry(-1, "S-1-5-32-552", SID_NAME_WKN_GRP, "Replicators", "", privilege_none, PR_ACCESS_FROM_NETWORK);
+	add_initial_entry(-1, "S-1-5-32-552", SID_NAME_ALIAS, "Replicators", "", privilege_none, PR_ACCESS_FROM_NETWORK);
 
 	/* Add the defaults domain groups */
 
@@ -868,8 +868,10 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 	DEBUG(10, ("get_domain_group_from_sid: SID is mapped to gid:%d\n",map->gid));
 
-	if ( (grp=getgrgid(map->gid)) == NULL)
+	if ( (grp=getgrgid(map->gid)) == NULL) {
+		DEBUG(10, ("get_domain_group_from_sid: gid DOESN'T exist in UNIX security\n"));
 		return False;
+	}
 
 	DEBUG(10, ("get_domain_group_from_sid: gid exists in UNIX security\n"));
 
@@ -899,7 +901,7 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 		uint32 alias_rid;
 
 		sid_peek_rid(&sid, &alias_rid);
-		map->gid=pdb_user_rid_to_gid(alias_rid);
+		map->gid=pdb_group_rid_to_gid(alias_rid);
 
 		if ((grp=getgrgid(map->gid)) == NULL)
 			return False;
@@ -959,6 +961,8 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 		map->sid_name_use=SID_NAME_ALIAS;
 		map->systemaccount=PR_ACCESS_FROM_NETWORK;
 		init_privilege(&map->priv_set);
+
+		/* interim solution until we have a last RID allocated */
 
 		sid_copy(&map->sid, &global_sam_sid);
 		sid_append_rid(&map->sid, pdb_gid_to_group_rid(gid));
