@@ -19,8 +19,7 @@ configuration details required by the server.  The
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See <a href="smb.conf.5.html" target="_top"><tt class="filename">
-smb.conf(5)</tt></a> for more information.
+to provide. See <tt class="filename">smb.conf</tt> for more information.
 The default configuration file name is determined at 
 compile time.</p></dd><dt><span class="term">-d|--debug=debuglevel</span></dt><dd><p><i class="replaceable"><tt>debuglevel</tt></i> is an integer 
 from 0 to 10.  The default value if this parameter is 
@@ -34,9 +33,8 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a href="smb.conf.5.html#loglevel" target="_top">log
-level</a> parameter in the <a href="smb.conf.5.html" target="_top">
-<tt class="filename">smb.conf(5)</tt></a> file.</p></dd><dt><span class="term">-R &lt;name resolve order&gt;</span></dt><dd><p>This option is used to determine what naming 
+override the <a class="indexterm" name="id2796710"></a><i class="parameter"><tt>log level</tt></i> parameter
+in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-R &lt;name resolve order&gt;</span></dt><dd><p>This option is used to determine what naming 
 services and in what order to resolve 
 host names to IP addresses. The option takes a space-separated 
 string of different name resolution options.</p><p>The options are: &quot;lmhosts&quot;, &quot;host&quot;, &quot;wins&quot; and &quot;bcast&quot;. 
@@ -67,18 +65,18 @@ parameter. This is the least reliable of the name
 resolution methods as it depends on the target host 
 being on a locally connected subnet.
 </p></li></ul></div><p>If this parameter is not set then the name resolve order 
-defined in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file parameter  
-(<i class="parameter"><tt>name resolve order</tt></i>) will be used. </p><p>The default order is lmhosts, host, wins, bcast. Without 
-this parameter or any entry in the <i class="parameter"><tt>name resolve order
-</tt></i> parameter of the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file, the name resolution methods 
-will be attempted in this order. </p></dd><dt><span class="term">-L libdir</span></dt><dd><p>This parameter specifies the location of the 
+defined in the <tt class="filename">smb.conf</tt> file parameter  
+(<a class="indexterm" name="id2796864"></a><i class="parameter"><tt>name resolve order</tt></i>) will be used.
+</p><p>The default order is lmhosts, host, wins, bcast. Without 
+this parameter or any entry in the <a class="indexterm" name="id2796883"></a><i class="parameter"><tt>name resolve order</tt></i> parameter of the <tt class="filename">smb.conf</tt> file, the name 
+resolution methods will be attempted in this order. </p></dd><dt><span class="term">-L libdir</span></dt><dd><p>This parameter specifies the location of the 
 		shared libraries used by <b class="command">smbsh</b>. The default
 		value is specified at compile time.
-		</p></dd></dl></div></div><div xmlns:ns1="" class="refsect1" lang="en"><h2>EXAMPLES</h2><ns1:p>To use the <b class="command">smbsh</b> command, execute <b class="command">
+		</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>EXAMPLES</h2><p>To use the <b class="command">smbsh</b> command, execute <b class="command">
 	smbsh</b> from the prompt and enter the username and password 
 	that authenticates you to the machine running the Windows NT 
 	operating system.
-</ns1:p><pre class="programlisting">
+</p><pre class="programlisting">
 <tt class="prompt">system% </tt><b class="userinput"><tt>smbsh</tt></b>
 <tt class="prompt">Username: </tt><b class="userinput"><tt>user</tt></b>
 <tt class="prompt">Password: </tt><b class="userinput"><tt>XXXXXXX</tt></b>
