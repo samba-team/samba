@@ -280,7 +280,7 @@ const char *gtk_rpc_binding_dialog_get_password(GtkRpcBindingDialog *d)
 	return gtk_entry_get_text(GTK_ENTRY(d->entry_password));
 }
 
-const char *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, char *pipe)
+const char *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, char *pipe_name)
 {
 	const char *transport;
 	const char *host;
@@ -295,8 +295,8 @@ const char *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, char *pip
 	else 
 		transport = "ncacn_np";
 
-	if(pipe != NULL) {
-		options = talloc_asprintf(d->mem_ctx, "\\pipe\\%s", pipe);
+	if(pipe_name != NULL) {
+		options = talloc_asprintf(d->mem_ctx, "\\pipe\\%s", pipe_name);
 	}
 	
 	if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->chk_seal))) {
