@@ -9,7 +9,7 @@ AC_TRY_COMPILE([
 #ifdef HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
 #endif
-#ifdef HAVE_SYS_BITYPES_H
+#ifdef HAVE_BIND_BITYPES_H
 #include <bind/bitypes.h>
 #endif
 #ifdef HAVE_NETINET_IN6_MACHTYPES_H
