@@ -228,9 +228,9 @@ $(MANDIR)/%: $(DOCBOOKDIR)/%.xml xslt/man.xsl
 
 # Pearson compatible XML
 
-$(PEARSONDIR)/%.xml: $(DOCBOOKDIR)/%.xml xslt/pearson.xsl
+$(PEARSONDIR)/%.xml: %/index.xml xslt/pearson.xsl
 	mkdir -p $(@D)
-	$(XSLTPROC) --xinclude --output $@ xslt/pearson.xsl $<
+	$(XSLTPROC) --xinclude --output $@ xslt/sambadoc2pearson.xsl $<
 
 $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
 	mkdir -p $(@D)
