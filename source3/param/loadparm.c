@@ -754,8 +754,8 @@ static void init_globals(void)
   Globals.syslog = 1;
   Globals.bSyslogOnly = False;
   Globals.os_level = 0;
-  Globals.max_ttl = 60*60*4; /* 4 hours default */
-  Globals.max_wins_ttl = 60*60*24*3; /* 3 days default */
+  Globals.max_ttl = 60*60*24*3; /* 3 days default */
+  Globals.max_wins_ttl = 60*60*24*6; /* 6 days default */
   Globals.min_wins_ttl = 60*60*6; /* 6 hours default */
   Globals.ReadSize = 16*1024;
   Globals.lm_announce = 2;   /* = Auto: send only if LM clients found */

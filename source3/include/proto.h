@@ -1753,7 +1753,7 @@ int reply_lanman2(char *outbuf);
 int reply_nt1(char *outbuf);
 void close_cnum(int cnum, uint16 vuid);
 void exit_server(char *reason);
-void standard_sub(int cnum,char *str,uint16 vuid);
+void standard_sub(int cnum,char *str);
 char *smb_fn_name(int type);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
