@@ -4598,7 +4598,6 @@ BOOL samr_io_r_query_aliasmem(const char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 			      prs_struct *ps, int depth)
 {
 	uint32 i;
-	uint32 ptr_sid[MAX_LOOKUP_SIDS];
 
 	if (r_u == NULL)
 		return False;
@@ -4614,28 +4613,31 @@ BOOL samr_io_r_query_aliasmem(const char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 	if(!prs_uint32("ptr", ps, depth, &r_u->ptr))
 		return False;
 
-	if (r_u->ptr != 0) {
-		SMB_ASSERT_ARRAY(ptr_sid, r_u->num_sids);
+	if (r_u->ptr != 0 && r_u->num_sids != 0) {
+		uint32 *ptr_sid;
 
-		if (r_u->num_sids != 0) {
-			if(!prs_uint32("num_sids1", ps, depth, &r_u->num_sids1))
+		if(!prs_uint32("num_sids1", ps, depth, &r_u->num_sids1))
+			return False;
+
+		ptr_sid = talloc(ps->mem_ctx, sizeof(uint32) * r_u->num_sids1);
+		if (!ptr_sid) {
+			return False;
+		}
+		
+		for (i = 0; i < r_u->num_sids1; i++) {
+			ptr_sid[i] = 1;
+			if(!prs_uint32("ptr_sid", ps, depth, &ptr_sid[i]))
 				return False;
-
-			for (i = 0; i < r_u->num_sids1; i++) {
-				ptr_sid[i] = 1;
-				if(!prs_uint32("ptr_sid", ps, depth, &ptr_sid[i]))
-				  return False;
-			}
-
-			if (UNMARSHALLING(ps)) {
-				r_u->sid = talloc(ps->mem_ctx, r_u->num_sids1 * sizeof(DOM_SID2));
-			}
-
-			for (i = 0; i < r_u->num_sids1; i++) {
-				if (ptr_sid[i] != 0) {
-					if(!smb_io_dom_sid2("sid", &r_u->sid[i], ps, depth))
-						return False;
-				}
+		}
+		
+		if (UNMARSHALLING(ps)) {
+			r_u->sid = talloc(ps->mem_ctx, r_u->num_sids1 * sizeof(DOM_SID2));
+		}
+		
+		for (i = 0; i < r_u->num_sids1; i++) {
+			if (ptr_sid[i] != 0) {
+				if(!smb_io_dom_sid2("sid", &r_u->sid[i], ps, depth))
+					return False;
 			}
 		}
 	}
