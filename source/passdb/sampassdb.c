@@ -531,7 +531,6 @@ void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from)
 /*************************************************************
  converts a sam_passwd structure to a smb_passwd structure.
  **************************************************************/
-
 struct smb_passwd *pwdb_sam_to_smb(struct sam_passwd *user)
 {
 	static struct smb_passwd pw_buf;

@@ -292,43 +292,68 @@ static BOOL update_smbpassword_file(char *user, char *password)
 /****************************************************************************
 core of smb password checking routine.
 ****************************************************************************/
-BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8)
+static BOOL smb_pwd_check_ntlmv1(char *password, unsigned char *part_passwd,
+				unsigned char *c8)
 {
   /* Finish the encryption of part_passwd. */
-  unsigned char p21[21];
   unsigned char p24[24];
 
   if (part_passwd == NULL)
     DEBUG(10,("No password set - allowing access\n"));
   /* No password set - always true ! */
   if (part_passwd == NULL)
-    return 1;
+    return True;
 
-  memset(p21,'\0',21);
-  memcpy(p21,part_passwd,16);
-  E_P24(p21, c8, p24);
+  SMBOWFencrypt(part_passwd, c8, p24);
 #if DEBUG_PASSWORD
-  {
-    int i;
-    DEBUG(100,("Part password (P16) was |"));
-    for(i = 0; i < 16; i++)
-      DEBUG(100,("%X ", (unsigned char)part_passwd[i]));
-    DEBUG(100,("|\n"));
-    DEBUG(100,("Password from client was |"));
-    for(i = 0; i < 24; i++)
-      DEBUG(100,("%X ", (unsigned char)password[i]));
-    DEBUG(100,("|\n"));
-    DEBUG(100,("Given challenge was |"));
-    for(i = 0; i < 8; i++)
-      DEBUG(100,("%X ", (unsigned char)c8[i]));
-    DEBUG(100,("|\n"));
-    DEBUG(100,("Value from encryption was |"));
-    for(i = 0; i < 24; i++)
-      DEBUG(100,("%X ", (unsigned char)p24[i]));
-    DEBUG(100,("|\n"));
-  }
+	DEBUG(100,("Part password (P16) was |"));
+	dump_data(100, part_passwd, 16);
+	DEBUG(100,("Password from client was |"));
+	dump_data(100, password, 24);
+	DEBUG(100,("Given challenge was |"));
+	dump_data(100, c8, 8);
+	DEBUG(100,("Value from encryption was |"));
+	dump_data(100, p24, 24);
 #endif
   return (memcmp(p24, password, 24) == 0);
+}
+
+/****************************************************************************
+core of smb password checking routine.
+****************************************************************************/
+static BOOL smb_pwd_check_ntlmv2(char *password, size_t pwd_len,
+				unsigned char *part_passwd,
+				unsigned char const *c8,
+				const char *user, const char *domain)
+{
+	/* Finish the encryption of part_passwd. */
+	unsigned char kr[16];
+
+	if (part_passwd == NULL)
+	{
+		DEBUG(10,("No password set - allowing access\n"));
+	}
+	/* No password set - always true ! */
+	if (part_passwd == NULL)
+	{
+		return True;
+	}
+
+	ntv2_owf_gen(part_passwd, user, domain, kr);
+	SMBOWFencrypt_ntv2(kr, c8, 8, password+16, pwd_len-16, kr);
+
+#if DEBUG_PASSWORD
+	DEBUG(100,("Part password (P16) was |"));
+	dump_data(100, part_passwd, 16);
+	DEBUG(100,("Password from client was |"));
+	dump_data(100, password, pwd_len);
+	DEBUG(100,("Given challenge was |"));
+	dump_data(100, c8, 8);
+	DEBUG(100,("Value from encryption was |"));
+	dump_data(100, kr, 16);
+#endif
+
+	return (memcmp(kr, password, 16) == 0);
 }
 
 /****************************************************************************
@@ -336,7 +361,9 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
  the lanman and NT responses.
 ****************************************************************************/
 BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
-                     uchar lm_pass[24], uchar nt_pass[24])
+				const char *user, const char *domain,
+				uchar *lm_pass, size_t lm_pwd_len,
+				uchar *nt_pass, size_t nt_pwd_len)
 {
 	uchar challenge[8];
 
@@ -345,7 +372,8 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 	DEBUG(4,("Checking SMB password for user %s\n", 
 		 smb_pass->unix_name));
 
-	if(smb_pass->acct_ctrl & ACB_DISABLED) {
+	if (smb_pass->acct_ctrl & ACB_DISABLED)
+	{
 		DEBUG(3,("account for user %s was disabled.\n", 
 			 smb_pass->unix_name));
 		return(False);
@@ -366,18 +394,39 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 		memcpy(challenge, chal, 8);
 	}
 
-	if ((Protocol >= PROTOCOL_NT1) && (smb_pass->smb_nt_passwd != NULL)) {
+	if ((Protocol >= PROTOCOL_NT1) && (smb_pass->smb_nt_passwd != NULL))
+	{
 		/* We have the NT MD4 hash challenge available - see if we can
 		   use it (ie. does it exist in the smbpasswd file).
 		*/
-		DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
-		if (smb_password_check((char *)nt_pass, 
+		if (lp_server_ntlmv2())
+		{
+			DEBUG(4,("smb_password_ok: Check NTLMv2 password\n"));
+			if (smb_pwd_check_ntlmv2(nt_pass, nt_pwd_len,
 				       (uchar *)smb_pass->smb_nt_passwd, 
-				       challenge)) {
-			DEBUG(4,("NT MD4 password check succeeded\n"));
-			return(True);
+					challenge, user, domain))
+			{
+				return True;
+			}
+		}
+		if (lp_server_ntlmv2() != True && nt_pwd_len == 24)
+		{
+			DEBUG(4,("smb_password_ok: Check NT MD4 password\n"));
+			if (smb_pwd_check_ntlmv1((char *)nt_pass, 
+				       (uchar *)smb_pass->smb_nt_passwd, 
+				       challenge))
+			{
+				DEBUG(4,("NT MD4 password check succeeded\n"));
+				return True;
+			}
 		}
 		DEBUG(4,("NT MD4 password check failed\n"));
+	}
+
+	if (lp_server_ntlmv2() == False)
+	{
+		DEBUG(4,("Not checking LM MD4 password\n"));
+		return False;
 	}
 
 	/* Try against the lanman password. smb_pass->smb_passwd == NULL means
@@ -385,16 +434,19 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 
 	DEBUG(4,("Checking LM MD4 password\n"));
 
-	if((smb_pass->smb_passwd == NULL) && 
-	   (smb_pass->acct_ctrl & ACB_PWNOTREQ)) {
+	if ((smb_pass->smb_passwd == NULL) && 
+	   (smb_pass->acct_ctrl & ACB_PWNOTREQ))
+	{
 		DEBUG(4,("no password required for user %s\n",
 			 smb_pass->unix_name));
 		return True;
 	}
 
-	if((smb_pass->smb_passwd != NULL) && 
-	   smb_password_check((char *)lm_pass, 
-			      (uchar *)smb_pass->smb_passwd, challenge)) {
+	if ((smb_pass->smb_passwd != NULL) && 
+	   smb_pwd_check_ntlmv1((char *)lm_pass, 
+			      (uchar *)smb_pass->smb_passwd,
+				challenge))
+	{
 		DEBUG(4,("LM MD4 password check succeeded\n"));
 		return(True);
 	}
@@ -411,8 +463,9 @@ SMB hash
 return True if the password is correct, False otherwise
 ****************************************************************************/
 
-BOOL pass_check_smb(char *user, char *domain,
-		uchar *chal, uchar *lm_pwd, uchar *nt_pwd,
+BOOL pass_check_smb(char *user, char *domain, uchar *chal,
+		uchar *lm_pwd, size_t lm_pwd_len,
+		uchar *nt_pwd, size_t nt_pwd_len,
 		struct passwd *pwd, uchar user_sess_key[16])
 {
 	const struct passwd *pass;
@@ -466,7 +519,9 @@ BOOL pass_check_smb(char *user, char *domain,
 		return(True);
 	}
 
-	if (smb_password_ok(smb_pass, chal, lm_pwd, nt_pwd))
+	if (smb_password_ok(smb_pass, chal, user, domain,
+	                                    lm_pwd, lm_pwd_len,
+		                            nt_pwd, nt_pwd_len))
 	{
 		if (user_sess_key != NULL)
 		{
@@ -479,7 +534,7 @@ BOOL pass_check_smb(char *user, char *domain,
 		return(True);
 	}
 	
-	DEBUG(3,("Error smb_password_check failed\n"));
+	DEBUG(3,("Error pass_check_smb failed\n"));
 	return False;
 }
 
@@ -491,9 +546,9 @@ return True if the password is correct, False otherwise
 BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd,
 		uchar user_sess_key[16])
 {
-	if (pwlen == 24 || (lp_encrypted_passwords() && (pwlen == 0) && lp_null_passwords()))
+	if (pwlen >= 24 || (lp_encrypted_passwords() && (pwlen == 0) && lp_null_passwords()))
 	{
-		/* if 24 bytes long assume it is an encrypted password */
+		/* if 24 bytes or longer assume it is an encrypted password */
 		uchar challenge[8];
 
 		if (!last_challenge(challenge))
@@ -503,7 +558,9 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd,
 		}
 
 		return pass_check_smb(user, global_myworkgroup,
-		                      challenge, (uchar *)password, (uchar *)password, pwd, user_sess_key);
+		                      challenge, (uchar *)password,
+					pwlen, (uchar *)password, pwlen,
+					pwd, user_sess_key);
 	} 
 
 	return pass_check(user, password, pwlen, pwd, 

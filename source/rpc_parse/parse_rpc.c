@@ -692,7 +692,8 @@ creates an RPC_AUTH_NTLMSSP_RESP structure.
 
 ********************************************************************/
 void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
-				uchar lm_resp[24], uchar nt_resp[24],
+				uchar lm_resp[24],
+				uchar *nt_resp, size_t nt_len,
 				char *domain, char *user, char *wks,
 				uint32 neg_flags)
 {
@@ -701,7 +702,6 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 	int wks_len = strlen(wks   );
 	int usr_len = strlen(user  );
 	int lm_len  = lm_resp != NULL ? 24 : 0;
-	int nt_len  = nt_resp != NULL ? 24 : 0;
 
 	DEBUG(5,("make_rpc_auth_ntlmssp_resp\n"));
 
@@ -709,9 +709,9 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("lm_resp\n"));
-	dump_data(100, lm_resp, 24);
+	dump_data(100, lm_resp, lm_len);
 	DEBUG(100,("nt_resp\n"));
-	dump_data(100, nt_resp, 24);
+	dump_data(100, nt_resp, nt_len);
 #endif
 
 	DEBUG(6,("dom: %s user: %s wks: %s neg_flgs: 0x%x\n",
@@ -745,8 +745,8 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 
 	rsp->neg_flags = neg_flags;
 
-	memcpy(rsp->lm_resp, lm_resp, 24);
-	memcpy(rsp->nt_resp, nt_resp, 24);
+	memcpy(rsp->lm_resp, lm_resp, lm_len);
+	memcpy(rsp->nt_resp, nt_resp, nt_len);
 
 	if (IS_BITS_SET_ALL(neg_flags, NTLMSSP_NEGOTIATE_UNICODE))
 	{

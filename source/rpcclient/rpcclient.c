@@ -72,6 +72,8 @@ static BOOL rpcclient_connect(struct client_info *info)
 	make_nmb_name(&called , dns_to_netbios_name(info->dest_host ), info->name_type, scope);
 	make_nmb_name(&calling, dns_to_netbios_name(info->myhostname), 0x0            , scope);
 
+	smb_cli->use_ntlmv2 = lp_client_ntlmv2();
+
 	if (!cli_establish_connection(smb_cli, 
 	                          info->dest_host, &info->dest_ip, 
 	                          &calling, &called,

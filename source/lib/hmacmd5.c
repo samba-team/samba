@@ -67,7 +67,8 @@ void hmac_md5_init_rfc2104(uchar*  key, int key_len, HMACMD5Context *ctx)
 /***********************************************************************
  the microsoft version of hmac_md5 initialisation.
 ***********************************************************************/
-void hmac_md5_init_limK_to_64(uchar*  key, int key_len, HMACMD5Context *ctx)
+void hmac_md5_init_limK_to_64(const uchar* key, int key_len,
+			HMACMD5Context *ctx)
 {
         int i;
 
@@ -97,7 +98,7 @@ void hmac_md5_init_limK_to_64(uchar*  key, int key_len, HMACMD5Context *ctx)
 /***********************************************************************
  update hmac_md5 "inner" buffer
 ***********************************************************************/
-void hmac_md5_update(uchar* text, int text_len, HMACMD5Context *ctx)
+void hmac_md5_update(const uchar* text, int text_len, HMACMD5Context *ctx)
 {
         MD5Update(&ctx->ctx, text, text_len); /* then text of datagram */
 }

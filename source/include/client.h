@@ -58,17 +58,22 @@ struct print_job_info
 
 struct pwd_info
 {
-    BOOL null_pwd;
-    BOOL cleartext;
-    BOOL crypted;
+	BOOL null_pwd;
+	BOOL cleartext;
+	BOOL crypted;
 
-    fstring password;
+	fstring password;
 
-    uchar smb_lm_pwd[16];
-    uchar smb_nt_pwd[16];
+	uchar smb_lm_pwd[16];
+	uchar smb_nt_pwd[16];
 
-    uchar smb_lm_owf[24];
-    uchar smb_nt_owf[24];
+	uchar smb_lm_owf[24];
+	uchar smb_nt_owf[128];
+	size_t nt_owf_len;
+
+	uchar lm_cli_chal[8];
+	uchar nt_cli_chal[128];
+	size_t nt_cli_chal_len;
 };
 
 struct cli_state {
@@ -106,6 +111,12 @@ struct cli_state {
 
 	struct pwd_info pwd;
 	unsigned char cryptkey[8];
+	unsigned char lm_cli_chal[8];
+	unsigned char nt_cli_chal[128];
+	size_t nt_cli_chal_len;
+
+	BOOL use_ntlmv2;
+
 	uint32 sesskey;
 	int serverzone;
 	uint32 servertime;

@@ -259,8 +259,8 @@ typedef struct rpc_auth_ntlmssp_chal_info
 /* RPC_AUTH_NTLMSSP_RESP */
 typedef struct rpc_auth_ntlmssp_resp_info
 {
-	STRHDR hdr_lm_resp; /* 24 byte response */
-	STRHDR hdr_nt_resp; /* 24 byte response */
+	STRHDR hdr_lm_resp; /* LM response (NULL or 24 bytes) */
+	STRHDR hdr_nt_resp; /* NT response (NULL, 24 or variable-length) */
 	STRHDR hdr_domain;
 	STRHDR hdr_usr;
 	STRHDR hdr_wks;
