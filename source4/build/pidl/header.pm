@@ -293,7 +293,7 @@ sub HeaderFunctionInOut($$)
     my($fn) = shift;
     my($prop) = shift;
 
-    foreach my $e (@{$fn->{DATA}}) {
+    foreach my $e (@{$fn->{ELEMENTS}}) {
 	    if (util::has_property($e, $prop)) {
 		    HeaderElement($e);
 	    }
@@ -311,7 +311,7 @@ sub HeaderFunctionInOut_needed($$)
 	    return 1;
     }
 
-    foreach my $e (@{$fn->{DATA}}) {
+    foreach my $e (@{$fn->{ELEMENTS}}) {
 	    if (util::has_property($e, $prop)) {
 		    return 1;
 	    }
