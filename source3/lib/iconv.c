@@ -21,6 +21,30 @@
 
 #include "includes.h"
 
+
+/**
+ * @file
+ *
+ * @brief Samba wrapper/stub for iconv character set conversion.
+ *
+ * iconv is the XPG2 interface for converting between character
+ * encodings.  This file provides a Samba wrapper around it, and also
+ * a simple reimplementation that is used if the system does not
+ * implement iconv.
+ *
+ * Samba only works with encodings that are supersets of ASCII: ascii
+ * characters like whitespace can be tested for directly, multibyte
+ * sequences start with a byte with the high bit set, and strings are
+ * terminated by \0.
+ *
+ * Note that the only function provided by iconv is conversion between
+ * characters.  It doesn't directly support operations like
+ * uppercasing or comparison.  We have to convert to UCS-2 and compare
+ * there.
+ *
+ * @sa Samba Developers Guide
+ **/
+
 static size_t ascii_pull(void *,char **, size_t *, char **, size_t *);
 static size_t ascii_push(void *,char **, size_t *, char **, size_t *);
 static size_t  utf8_pull(void *,char **, size_t *, char **, size_t *);
