@@ -88,5 +88,6 @@ DECL(get_entry);
 DECL(del_entry);
 DECL(ext_keytab);
 DECL(help);
+DECL(exit_kdb_edit);
 
 #endif /* __ADMIN_LOCL_H__ */

@@ -52,6 +52,7 @@ static SL_cmd commands[] = {
     { "get_entry",	get_entry, "get_entry principal","" },
     { "delete",		del_entry, "delete principal", 	"" },
     { "ext_keytab",	ext_keytab, "ext_keytab principal", "" },
+    { "exit",		exit_kdb_edit, "exit", "" },
     { NULL,		NULL, NULL,			NULL }
 };
 
@@ -64,11 +65,15 @@ help(int argc, char **argv)
     sl_help(commands, argc, argv);
 }
 
+void
+exit_kdb_edit (int argc, char **argv)
+{
+    exit (0);
+}
+
 int
 main(int argc, char **argv)
 {
-
     krb5_init_context(&context);
-    sl_loop(commands, "kdb_edit> ");
-    return 0;
+    return sl_loop(commands, "kdb_edit> ") != 0;
 }
