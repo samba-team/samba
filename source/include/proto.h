@@ -3711,6 +3711,8 @@ BOOL srv_io_q_net_disk_enum(char *desc, SRV_Q_NET_DISK_ENUM *q_n, prs_struct *ps
 BOOL srv_io_r_net_disk_enum(char *desc, SRV_R_NET_DISK_ENUM *r_n, prs_struct *ps, int depth);
 BOOL srv_io_q_net_name_validate(char *desc, SRV_Q_NET_NAME_VALIDATE *q_n, prs_struct *ps, int depth);
 BOOL srv_io_r_net_name_validate(char *desc, SRV_R_NET_NAME_VALIDATE *r_n, prs_struct *ps, int depth);
+BOOL srv_io_q_net_file_query_secdesc(char *desc, SRV_Q_NET_FILE_QUERY_SECDESC *q_n, prs_struct *ps, int depth);
+BOOL srv_io_r_net_file_query_secdesc(char *desc, SRV_R_NET_FILE_QUERY_SECDESC *r_n, prs_struct *ps, int depth);
 
 /* The following definitions come from rpc_parse/parse_wks.c  */
 
