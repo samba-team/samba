@@ -73,9 +73,7 @@ static const krb5_enctype all_etypes[] = {
     ETYPE_DES_CBC_MD5,
     ETYPE_DES_CBC_MD4,
     ETYPE_DES_CBC_CRC,
-#ifdef ENABLE_AES
     ETYPE_AES256_CTS_HMAC_SHA1_96,
-#endif
     ETYPE_ARCFOUR_HMAC_MD5,
     ETYPE_DES3_CBC_SHA1
 };
@@ -258,9 +256,7 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
     int i, j;
     char *default_keytypes[] = {
 	"des:pw-salt",
-#ifdef ENABLE_AES
 	"aes256-cts-hmac-sha1-96:pw-salt",
-#endif
 	"des3-cbc-sha1:pw-salt",
 	"arcfour-hmac-md5:pw-salt",
 	NULL

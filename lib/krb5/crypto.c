@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -574,7 +574,6 @@ ARCFOUR_string_to_key(krb5_context context,
     return 0;
 }
 
-#ifdef ENABLE_AES
 /*
  * AES
  */
@@ -865,12 +864,8 @@ rc2_schedule(krb5_context context,
  *
  */
 
-static struct salt_type AES_salt[];
-
-#endif /* ENABLE_AES */
-
 static struct salt_type des_salt[], 
-    des3_salt[], des3_salt_derived[], arcfour_salt[];
+    des3_salt[], des3_salt_derived[], arcfour_salt[], AES_salt[];
 
 static struct key_type keytype_null = {
     KEYTYPE_NULL,
@@ -923,7 +918,6 @@ static struct key_type keytype_des3_derived = {
     DES3_random_to_key
 };
 
-#ifdef ENABLE_AES
 static struct key_type keytype_aes128 = {
     KEYTYPE_AES128,
     "aes-128",
@@ -959,7 +953,6 @@ static struct key_type keytype_aes256 = {
     AES_schedule,
     AES_salt
 };
-#endif /* ENABLE_AES */
 
 static struct key_type keytype_arcfour = {
     KEYTYPE_ARCFOUR,
@@ -993,11 +986,9 @@ static struct key_type *keytypes[] = {
     &keytype_des,
     &keytype_des3_derived,
     &keytype_des3,
-#ifdef ENABLE_AES
     &keytype_aes128,
     &keytype_aes192,
     &keytype_aes256,
-#endif /* ENABLE_AES */
     &keytype_rc2,
     &keytype_arcfour
 };
@@ -1047,7 +1038,6 @@ static struct salt_type des3_salt_derived[] = {
     { 0 }
 };
 
-#ifdef ENABLE_AES
 static struct salt_type AES_salt[] = {
     {
 	KRB5_PW_SALT,
@@ -1056,7 +1046,6 @@ static struct salt_type AES_salt[] = {
     },
     { 0 }
 };
-#endif /* ENABLE_AES */
 
 static struct salt_type arcfour_salt[] = {
     {
@@ -1925,7 +1914,6 @@ static struct checksum_type checksum_hmac_sha1_des3 = {
     NULL
 };
 
-#ifdef ENABLE_AES
 static struct checksum_type checksum_hmac_sha1_aes128 = {
     CKSUMTYPE_HMAC_SHA1_96_AES_128,
     "hmac-sha1-96-aes128",
@@ -1945,7 +1933,6 @@ static struct checksum_type checksum_hmac_sha1_aes256 = {
     SP_HMAC_SHA1_checksum,
     NULL
 };
-#endif /* ENABLE_AES */
 
 static struct checksum_type checksum_hmac_md5 = {
     CKSUMTYPE_HMAC_MD5,
@@ -1982,10 +1969,8 @@ static struct checksum_type *checksum_types[] = {
     &checksum_rsa_md5_des3,
     &checksum_sha1,
     &checksum_hmac_sha1_des3,
-#ifdef ENABLE_AES
     &checksum_hmac_sha1_aes128,
     &checksum_hmac_sha1_aes256,
-#endif
     &checksum_hmac_md5,
     &checksum_hmac_md5_enc
 };
@@ -2377,8 +2362,6 @@ DES_PCBC_encrypt_key_ivec(krb5_context context,
     return 0;
 }
 
-#ifdef ENABLE_AES
-
 /*
  * AES draft-raeburn-krb-rijndael-krb-02
  */
@@ -2513,8 +2496,6 @@ AES_CBC_encrypt(krb5_context context,
     AES_cbc_encrypt(data, data, len, k, ivec, encrypt);
     return 0;
 }
-
-#endif /* ENABLE_AES */
 
 /*
  * RC2
@@ -2837,7 +2818,6 @@ static struct encryption_type enctype_old_des3_cbc_sha1 = {
     0,
     DES3_CBC_encrypt,
 };
-#ifdef ENABLE_AES
 static struct encryption_type enctype_aes128_cts_hmac_sha1 = {
     ETYPE_AES128_CTS_HMAC_SHA1_96,
     "aes128-cts-hmac-sha1-96",
@@ -2909,7 +2889,6 @@ static struct encryption_type enctype_aes256_cbc_none = {
     F_PSEUDO|F_PADCMS,
     AES_CBC_encrypt,
 };
-#endif /* ENABLE_AES */
 static struct encryption_type enctype_des_cbc_none = {
     ETYPE_DES_CBC_NONE,
     "des-cbc-none",
@@ -3002,13 +2981,11 @@ static struct encryption_type *etypes[] = {
     &enctype_des3_cbc_md5, 
     &enctype_des3_cbc_sha1,
     &enctype_old_des3_cbc_sha1,
-#ifdef ENABLE_AES
     &enctype_aes128_cts_hmac_sha1,
     &enctype_aes256_cts_hmac_sha1,
     &enctype_aes128_cbc_none,
     &enctype_aes192_cbc_none,
     &enctype_aes256_cbc_none,
-#endif
     &enctype_des_cbc_none,
     &enctype_des_cfb64_none,
     &enctype_des_pcbc_none,
@@ -3903,12 +3880,10 @@ derive_key(krb5_context context,
     case KEYTYPE_DES3:
 	DES3_postproc(context, k, nblocks * et->blocksize, key);
 	break;
-#ifdef ENABLE_AES
     case KEYTYPE_AES128:
     case KEYTYPE_AES256:
 	memcpy(key->key->keyvalue.data, k, key->key->keyvalue.length);
 	break;
-#endif /* ENABLE_AES */
     default:
 	krb5_set_error_string(context,
 			      "derive_key() called with unknown keytype (%u)", 
