@@ -50,8 +50,8 @@
 /* Changed to version 6 for the new module system, fixed cascading and quota functions. --metze */
 /* Changed to version 7 to include the get_nt_acl info parameter. JRA. */
 /* Changed to version 8 includes EA calls. JRA. */
-
-#define SMB_VFS_INTERFACE_VERSION 8
+/* Changed to version 9 to include the get_shadow_data call. --metze */
+#define SMB_VFS_INTERFACE_VERSION 9
 
 
 /* to bug old modules witch are trying to compile with the old functions */
@@ -91,6 +91,8 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_DISK_FREE,
 	SMB_VFS_OP_GET_QUOTA,
 	SMB_VFS_OP_SET_QUOTA,
+	SMB_VFS_OP_GET_SHADOW_COPY_DATA,
+
 
 	/* Directory operations */
 
@@ -196,6 +198,7 @@ struct vfs_ops {
 			SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 		int (*get_quota)(struct vfs_handle_struct *handle, struct connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 		int (*set_quota)(struct vfs_handle_struct *handle, struct connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
+		int (*get_shadow_copy_data)(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, BOOL labels);
 		
 		/* Directory operations */
 		
@@ -293,6 +296,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *disk_free;
 		struct vfs_handle_struct *get_quota;
 		struct vfs_handle_struct *set_quota;
+		struct vfs_handle_struct *get_shadow_copy_data;
 
 		/* Directory operations */
 
@@ -379,6 +383,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *setxattr;
 		struct vfs_handle_struct *lsetxattr;
 		struct vfs_handle_struct *fsetxattr;
+
 	} handles;
 };
 

@@ -49,6 +49,42 @@ SMB_BIG_UINT vfswrap_disk_free(vfs_handle_struct *handle, connection_struct *con
     result = sys_disk_free(path, small_query, bsize, dfree, dsize);
     return result;
 }
+
+int vfswrap_get_quota(struct vfs_handle_struct *handle, struct connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
+{
+#ifdef HAVE_SYS_QUOTAS
+	int result;
+
+	START_PROFILE(syscall_get_quota);
+	result = sys_get_quota(conn->connectpath, qtype, id, qt);
+	END_PROFILE(syscall_get_quota);
+	return result;
+#else
+	errno = ENOSYS;
+	return -1;
+#endif	
+}
+
+int vfswrap_set_quota(struct vfs_handle_struct *handle, struct connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
+{
+#ifdef HAVE_SYS_QUOTAS
+	int result;
+
+	START_PROFILE(syscall_set_quota);
+	result = sys_set_quota(conn->connectpath, qtype, id, qt);
+	END_PROFILE(syscall_set_quota);
+	return result;
+#else
+	errno = ENOSYS;
+	return -1;
+#endif	
+}
+
+int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, BOOL labels)
+{
+	errno = ENOSYS;
+	return -1;  /* Not implemented. */
+}
     
 /* Directory operations */
 
@@ -754,36 +790,6 @@ int vfswrap_sys_acl_free_acl(vfs_handle_struct *handle, connection_struct *conn,
 int vfswrap_sys_acl_free_qualifier(vfs_handle_struct *handle, connection_struct *conn, void *qualifier, SMB_ACL_TAG_T tagtype)
 {
 	return sys_acl_free_qualifier(qualifier, tagtype);
-}
-
-int vfswrap_get_quota(struct vfs_handle_struct *handle, struct connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
-{
-#ifdef HAVE_SYS_QUOTAS
-	int result;
-
-	START_PROFILE(syscall_get_quota);
-	result = sys_get_quota(conn->connectpath, qtype, id, qt);
-	END_PROFILE(syscall_get_quota);
-	return result;
-#else
-	errno = ENOSYS;
-	return -1;
-#endif	
-}
-
-int vfswrap_set_quota(struct vfs_handle_struct *handle, struct connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
-{
-#ifdef HAVE_SYS_QUOTAS
-	int result;
-
-	START_PROFILE(syscall_set_quota);
-	result = sys_set_quota(conn->connectpath, qtype, id, qt);
-	END_PROFILE(syscall_set_quota);
-	return result;
-#else
-	errno = ENOSYS;
-	return -1;
-#endif	
 }
 
 /****************************************************************
