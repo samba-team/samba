@@ -40,7 +40,15 @@ void set_local_machine_name(const char* local_name, BOOL perm)
 	static BOOL already_perm = False;
 	fstring tmp_local_machine;
 
-	if (strcmp(local_name, "*SMBSERVER")==0) 
+	/*
+	 * Windows NT/2k uses "*SMBSERVER" and XP uses "*SMBSERV"
+	 * arrggg!!! 
+	 */
+
+	if (strcasecmp(local_name, "*SMBSERVER")==0) 
+		return;
+
+	if (strcasecmp(local_name, "*SMBSERV")==0) 
 		return;
 
 	if (already_perm)
