@@ -72,6 +72,7 @@ Output:
 void cred_create(uint32 session_key[2], DOM_CHAL *stor_cred, UTIME timestamp, 
 		 DOM_CHAL *cred)
 {
+	DOM_CHAL time_cred;
 	unsigned char calc_cred[8];
 	unsigned char timecred[8];
 	unsigned char netsesskey[8];
@@ -87,12 +88,16 @@ void cred_create(uint32 session_key[2], DOM_CHAL *stor_cred, UTIME timestamp,
 	cred->data[0] = IVAL(calc_cred, 0);
 	cred->data[1] = IVAL(calc_cred, 4);
 
+	time_cred.data[0] = IVAL(timecred, 0);
+	time_cred.data[1] = IVAL(timecred, 4);
+
 	/* debug output*/
 	DEBUG(4,("cred_create\n"));
 
 	DEBUG(5,("	sess_key : %lx %lx\n", session_key    [0], session_key    [1]));
 	DEBUG(5,("	stor_cred: %lx %lx\n", stor_cred->data[0], stor_cred->data[1]));
-	DEBUG(5,("	timecred : %lx %lx\n", IVAL(timecred, 0) , IVAL(timecred, 4) ));
+	DEBUG(5,("	timestamp: %lx\n"    , timestamp.time));
+	DEBUG(5,("	timecred : %lx %lx\n", time_cred .data[0], time_cred .data[1]));
 	DEBUG(5,("	calc_cred: %lx %lx\n", cred     ->data[0], cred     ->data[1]));
 }
 
@@ -139,106 +144,81 @@ int cred_assert(DOM_CHAL *cred, uint32 session_key[2], DOM_CHAL *stored_cred,
 /****************************************************************************
   checks credentials; generates next step in the credential chain
 ****************************************************************************/
-BOOL srv_deal_with_creds(struct dcinfo *dc, DOM_CRED *clnt_cred, DOM_CRED *srv_cred)
+BOOL clnt_deal_with_creds(uint32 sess_key[2],
+		DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred)
+{
+	UTIME new_clnt_time;
+	uint32 new_cred;
+
+	DEBUG(5,("clnt_deal_with_creds: %d\n", __LINE__));
+
+	/* increment client time by one second */
+	new_clnt_time.time = sto_clnt_cred->timestamp.time + 1;
+
+	/* check that the received server credentials are valid */
+	if (!cred_assert(&(rcv_srv_cred->challenge), sess_key,
+                    &(sto_clnt_cred->challenge), new_clnt_time))
+	{
+		return False;
+	}
+
+	/* first 4 bytes of the new seed is old client 4 bytes + clnt time + 1 */
+	new_cred = IVAL(sto_clnt_cred->challenge.data, 0);
+	new_cred += new_clnt_time.time;
+
+	/* store new seed in client credentials */
+	SIVAL(sto_clnt_cred->challenge.data, 0, new_cred);
+
+	DEBUG(5,("	new clnt cred: %lx %lx\n", sto_clnt_cred->challenge.data[0],
+	                                       sto_clnt_cred->challenge.data[1]));
+	return True;
+}
+
+
+/****************************************************************************
+  checks credentials; generates next step in the credential chain
+****************************************************************************/
+BOOL deal_with_creds(uint32 sess_key[2],
+		DOM_CRED *sto_clnt_cred, 
+		DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred)
 {
 	UTIME new_clnt_time;
 	uint32 new_cred;
 
 	DEBUG(5,("deal_with_creds: %d\n", __LINE__));
 
-	/* check that the client credentials are valid */
-	if (!cred_assert(&(clnt_cred->challenge), dc->sess_key,
-                    &(dc->clnt_cred.challenge), clnt_cred->timestamp))
+	/* check that the received client credentials are valid */
+	if (!cred_assert(&(rcv_clnt_cred->challenge), sess_key,
+                    &(sto_clnt_cred->challenge), rcv_clnt_cred->timestamp))
 	{
 		return False;
 	}
 
 	/* increment client time by one second */
-	new_clnt_time.time = clnt_cred->timestamp.time + 1;
+	new_clnt_time.time = rcv_clnt_cred->timestamp.time + 1;
 
 	/* first 4 bytes of the new seed is old client 4 bytes + clnt time + 1 */
-	new_cred = IVAL(dc->clnt_cred.challenge.data, 0);
+	new_cred = IVAL(sto_clnt_cred->challenge.data, 0);
 	new_cred += new_clnt_time.time;
 
 	DEBUG(5,("deal_with_creds: new_cred[0]=%lx\n", new_cred));
 
 	/* doesn't matter that server time is 0 */
-	srv_cred->timestamp.time = 0;
+	rtn_srv_cred->timestamp.time = 0;
 
 	DEBUG(5,("deal_with_creds: new_clnt_time=%lx\n", new_clnt_time.time));
 
 	/* create return credentials for inclusion in the reply */
-	cred_create(dc->sess_key, &(dc->clnt_cred.challenge), new_clnt_time,
-	            &(srv_cred->challenge));
+	cred_create(sess_key, &(sto_clnt_cred->challenge), new_clnt_time,
+	            &(rtn_srv_cred->challenge));
 	
 	DEBUG(5,("deal_with_creds: clnt_cred[0]=%lx\n",
-	          dc->clnt_cred.challenge.data[0]));
+	          sto_clnt_cred->challenge.data[0]));
 
-	/* store new seed in client and server credentials */
-	SIVAL(dc->clnt_cred.challenge.data, 0, new_cred);
-	SIVAL(dc->srv_cred .challenge.data, 0, new_cred);
-
-	return True;
-}
-
-
-#if 0
-/****************************************************************************
-  checks credentials; generates next step in the credential chain
-****************************************************************************/
-BOOL clnt_deal_with_creds(struct dcinfo *dc, DOM_CRED *srv_cred, DOM_CRED *clnt_cred)
-{
-	UTIME new_clnt_time;
-	uint32 new_cred;
-
-	DEBUG(5,("deal_with_creds: %d\n", __LINE__));
-
-	/* setup new client time */
-	dc->clnt_cred.timestamp.time = time(NULL);
-
-	/* create sent credentials for inclusion in the reply */
-	cred_create(dc->sess_key, srv_cred, dc->clnt_cred.timestamp.time, clnt_cred);
-
-	/* increment client time by one second */
-	(dc->clnt_cred.timestamp.time)++;
-
-	/* create expected return credentials to be received from server */
-	cred_create(dc->sess_key, srv_cred, dc->clnt_cred.timestamp.time, clnt_cred);
-
-
-
-	/* check that the server credentials are valid */
-	if (!cred_assert(&(srv_cred->challenge), dc->sess_key,
-                    &(dc->clnt_cred), clnt_cred->timestamp))
-	{
-		return False;
-	}
-	/* increment client time by one second */
-	new_clnt_time = (dc->clnt_cred.timestamp.time += 1);
-
-	/* first 4 bytes of the new seed is old client 4 bytes + clnt time + 1 */
-	new_cred = IVAL(dc->clnt_cred.data, 0);
-	new_cred += new_clnt_time.time;
-
-	DEBUG(5,("deal_with_creds: new_cred[0]=%lx\n", new_cred));
-
-	/* create new client credentials */
-	cred_create(dc->sess_key, new_cred, new_clnt_time, clnt_cred);
-
-	DEBUG(5,("deal_with_creds: new_clnt_time=%lx\n", new_clnt_time.time));
-
-	/* create return credentials for inclusion in the reply
-	cred_create(dc->sess_key, srv_cred, new_clnt_time,
-	            clnt_cred);
-	*/
-	DEBUG(5,("deal_with_creds: clnt_cred[0]=%lx\n",
-	          dc->clnt_cred.data[0]));
-
-	/* store new seed in client and server credentials */
-	SIVAL(dc->clnt_cred.data, 0, new_cred);
-	SIVAL(dc->srv_cred .data, 0, new_cred);
+	/* store new seed in client credentials */
+	SIVAL(sto_clnt_cred->challenge.data, 0, new_cred);
 
 	return True;
 }
 
-#endif
+

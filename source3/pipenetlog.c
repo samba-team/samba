@@ -399,7 +399,9 @@ static void api_lsa_srv_pwset( user_struct *vuser,
 	lsa_io_q_srv_pwset(True, &q_a, data + 0x18, data, 4, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
-	srv_deal_with_creds(&(vuser->dc), &(q_a.clnt_id.cred), &srv_cred);
+	deal_with_creds(vuser->dc.sess_key, &(vuser->dc.clnt_cred), 
+	                &(q_a.clnt_id.cred), &srv_cred);
+	memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred), sizeof(vuser->dc.clnt_cred));
 
 	DEBUG(5,("api_lsa_srv_pwset: %d\n", __LINE__));
 
@@ -415,14 +417,21 @@ static void api_lsa_sam_logoff( user_struct *vuser,
                                char **rdata, int *rdata_len )
 {
 	LSA_Q_SAM_LOGOFF q_l;
+	DOM_ID_INFO_1 id1;	
 
 	DOM_CRED srv_cred;
+
+	/* the DOM_ID_INFO_1 structure is a bit big.  plus we might want to
+	   dynamically allocate it inside lsa_io_q_sam_logon, at some point */
+	q_l.sam_id.auth.id1 = &id1;
 
 	/* grab the challenge... */
 	lsa_io_q_sam_logoff(True, &q_l, data + 0x18, data, 4, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
-	srv_deal_with_creds(&(vuser->dc), &(q_l.sam_id.client.cred), &srv_cred);
+	deal_with_creds(vuser->dc.sess_key, &(vuser->dc.clnt_cred), 
+	                &(q_l.sam_id.client.cred), &srv_cred);
+	memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred), sizeof(vuser->dc.clnt_cred));
 
 	/* construct reply.  always indicate success */
 	*rdata_len = lsa_reply_sam_logoff(&q_l, *rdata + 0x18, *rdata,
@@ -437,10 +446,9 @@ static void api_lsa_sam_logon( user_struct *vuser,
 {
 	LSA_Q_SAM_LOGON q_l;
 	DOM_ID_INFO_1 id1;	
-
 	LSA_USER_INFO usr_info;
 
-	DOM_CRED srv_creds;
+	DOM_CRED srv_cred;
 
 	/* the DOM_ID_INFO_1 structure is a bit big.  plus we might want to
 	   dynamically allocate it inside lsa_io_q_sam_logon, at some point */
@@ -449,7 +457,9 @@ static void api_lsa_sam_logon( user_struct *vuser,
 	lsa_io_q_sam_logon(True, &q_l, data + 0x18, data, 4, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
-	srv_deal_with_creds(&(vuser->dc), &(q_l.sam_id.client.cred), &srv_creds);
+	deal_with_creds(vuser->dc.sess_key, &(vuser->dc.clnt_cred), 
+	                &(q_l.sam_id.client.cred), &srv_cred);
+	memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred), sizeof(vuser->dc.clnt_cred));
 
 	usr_info.ptr_user_info = 0;
 
@@ -568,7 +578,7 @@ static void api_lsa_sam_logon( user_struct *vuser,
 	}
 
 	*rdata_len = lsa_reply_sam_logon(&q_l, *rdata + 0x18, *rdata,
-					&srv_creds, &usr_info);
+					&srv_cred, &usr_info);
 }
 
 
