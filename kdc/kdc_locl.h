@@ -84,6 +84,9 @@ void loop (void);
 void set_master_key (EncryptionKey);
 krb5_error_code tgs_rep (KDC_REQ*, krb5_data*, const char*, struct sockaddr *);
 Key* unseal_key (Key*);
+krb5_error_code check_flags(hdb_entry *client, const char *client_name,
+			    hdb_entry *server, const char *server_name,
+			    krb5_boolean is_as_req);
 
 #ifdef KRB4
 hdb_entry* db_fetch4 (const char*, const char*, const char*);
