@@ -837,7 +837,7 @@ int name_len(char *s1);
 /*The following definitions come from  libsmb/nterr.c  */
 
 BOOL get_safe_nt_error_msg(uint32 nt_code,char *msg, size_t len);
-const char *get_nt_error_msg(uint32 nt_code);
+char *get_nt_error_msg(uint32 nt_code);
 
 /*The following definitions come from  libsmb/passchange.c  */
 

@@ -540,9 +540,10 @@ BOOL get_safe_nt_error_msg(uint32 nt_code,char *msg, size_t len)
 /*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
-const char *get_nt_error_msg(uint32 nt_code)
+char *get_nt_error_msg(uint32 nt_code)
 {
         static pstring msg;
+
         get_safe_nt_error_msg(nt_code, msg, sizeof(msg));
         return msg;
 }
