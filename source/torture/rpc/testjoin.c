@@ -27,10 +27,10 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "system/time.h"
 
 struct test_join {
 	struct dcerpc_pipe *p;
-	const char *machine_password;
 	struct policy_handle user_handle;
 };
 
@@ -81,14 +81,15 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 /*
-  join the domain as a test machine
+  create a test user in the domain
   an opaque pointer is returned. Pass it to torture_leave_domain() 
   when finished
 */
-struct test_join *torture_join_domain(const char *machine_name, 
-				      const char *domain,
-				      uint16_t acct_flags,
-				      const char **machine_password)
+
+struct test_join *torture_create_testuser(const char *username, 
+					  const char *domain,
+					  uint16_t acct_type,
+					  const char **random_password)
 {
 	NTSTATUS status;
 	struct samr_Connect c;
@@ -104,8 +105,12 @@ struct test_join *torture_join_domain(const char *machine_name,
 	uint32_t rid;
 	DATA_BLOB session_key;
 	struct samr_String name;
+	struct samr_String comment;
+	struct samr_String full_name;
+	
 	int policy_min_pw_len = 0;
 	struct test_join *join;
+	char *random_pw;
 
 	join = talloc(NULL, struct test_join);
 	if (join == NULL) {
@@ -161,13 +166,13 @@ struct test_join *torture_join_domain(const char *machine_name,
 		goto failed;
 	}
 
-	printf("Creating machine account %s\n", machine_name);
+	printf("Creating account %s\n", username);
 
 again:
-	name.string = talloc_asprintf(join, "%s$", machine_name);
+	name.string = username;
 	r.in.domain_handle = &domain_handle;
 	r.in.account_name = &name;
-	r.in.acct_flags = acct_flags;
+	r.in.acct_flags = acct_type;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.user_handle = &join->user_handle;
 	r.out.access_granted = &access_granted;
@@ -194,16 +199,16 @@ again:
 		policy_min_pw_len = pwp.out.info.min_password_length;
 	}
 
-	join->machine_password = generate_random_str(join, MAX(8, policy_min_pw_len));
+	random_pw = generate_random_str(join, MAX(8, policy_min_pw_len));
 
-	printf("Setting machine account password '%s'\n", join->machine_password);
+	printf("Setting account password '%s'\n", random_pw);
 
 	s.in.user_handle = &join->user_handle;
 	s.in.info = &u;
 	s.in.level = 24;
 
-	encode_pw_buffer(u.info24.password.data, join->machine_password, STR_UNICODE);
-	u.info24.pw_len = strlen(join->machine_password);
+	encode_pw_buffer(u.info24.password.data, random_pw, STR_UNICODE);
+	u.info24.pw_len = strlen(random_pw);
 
 	status = dcerpc_fetch_session_key(join->p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -221,13 +226,23 @@ again:
 		goto failed;
 	}
 
+	ZERO_STRUCT(u);
 	s.in.user_handle = &join->user_handle;
 	s.in.info = &u;
-	s.in.level = 16;
+	s.in.level = 21;
 
-	u.info16.acct_flags = acct_flags;
+	u.info21.acct_flags = acct_type;
+	u.info21.fields_present = SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_COMMENT | SAMR_FIELD_FULL_NAME;
+	comment.string = talloc_asprintf(join, 
+					 "Tortured by Samba4: %s", 
+					 timestring(join, time(NULL)));
+	u.info21.comment = comment;
+	full_name.string = talloc_asprintf(join, 
+					 "Torture account for Samba4: %s", 
+					 timestring(join, time(NULL)));
+	u.info21.full_name = full_name;
 
-	printf("Resetting ACB flags\n");
+	printf("Resetting ACB flags, force pw change time\n");
 
 	status = dcerpc_samr_SetUserInfo(join->p, join, &s);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -235,8 +250,8 @@ again:
 		goto failed;
 	}
 
-	if (machine_password) {
-		*machine_password = join->machine_password;
+	if (random_password) {
+		*random_password = random_pw;
 	}
 
 	return join;
@@ -246,9 +261,26 @@ failed:
 	return NULL;
 }
 
+
+struct test_join *torture_join_domain(const char *machine_name, 
+				      const char *domain,
+				      uint16_t acct_flags,
+				      const char **machine_password)
+{
+	char *username = talloc_asprintf(NULL, "%s$", machine_name);
+	struct test_join *tj = torture_create_testuser(username, domain, acct_flags, machine_password);
+	talloc_free(username);
+	return tj;
+}
+
 struct dcerpc_pipe *torture_join_samr_pipe(struct test_join *join) 
 {
 	return join->p;
+}
+
+struct policy_handle *torture_join_samr_user_policy(struct test_join *join) 
+{
+	return &join->user_handle;
 }
 
 /*

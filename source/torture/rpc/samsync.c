@@ -31,6 +31,7 @@
 
 #define TEST_MACHINE_NAME "samsynctest"
 #define TEST_MACHINE_NAME2 "samsynctest2"
+#define TEST_USER_NAME "samsynctestuser"
 
 /*
   try a netlogon SamLogon
@@ -787,7 +788,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 
 		status = sess_decrypt_blob(mem_ctx, &lsa_blob1, &session_key, &lsa_blob_out);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("Failed to decrypt secrets OLD blob\n");
+			printf("Failed to decrypt secrets OLD blob: %s\n", nt_errstr(status));
 			return False;
 		}
 
@@ -1281,6 +1282,7 @@ BOOL torture_rpc_samsync(void)
 	BOOL ret = True;
 	struct test_join *join_ctx;
 	struct test_join *join_ctx2;
+	struct test_join *user_ctx;
 	const char *machine_password;
 	const char *machine_password2;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
@@ -1312,6 +1314,14 @@ BOOL torture_rpc_samsync(void)
 		return False;
 	}
 	
+	user_ctx = torture_create_testuser(TEST_USER_NAME,
+					   lp_workgroup(),
+					   ACB_NORMAL, NULL);
+	if (!user_ctx) {
+		printf("Failed to create test account\n");
+		return False;
+	}
+
 	samsync_state = talloc_zero(mem_ctx, struct samsync_state);
 
 	samsync_state->p_samr = torture_join_samr_pipe(join_ctx);
@@ -1469,6 +1479,7 @@ failed:
 
 	torture_leave_domain(join_ctx);
 	torture_leave_domain(join_ctx2);
+	torture_leave_domain(user_ctx);
 
 	talloc_free(mem_ctx);
 
