@@ -35,12 +35,6 @@ const char *get_global_sam_name(void)
 	return global_myname();
 }
 
-/*
- * This is set on startup - it defines the SID for this
- * machine, and therefore the SAM database for which it is
- * responsible.
- */
-
 /************************************************************
  Fill the SAM_ACCOUNT with default values.
  ***********************************************************/
@@ -183,7 +177,7 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 
 	pdb_set_unix_homedir(sam_account, pwd->pw_dir, PDB_SET);
 
-	pdb_set_domain (sam_account, lp_workgroup(), PDB_DEFAULT);
+	pdb_set_domain (sam_account, get_global_sam_name(), PDB_DEFAULT);
 	
 	/* When we get a proper uid -> SID and SID -> uid allocation
 	   mechinism, we should call it here.  
@@ -299,7 +293,7 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
 			return nt_status;
 		}
 
-		pdb_set_domain (*new_sam_acct, lp_workgroup(), PDB_DEFAULT);
+		pdb_set_domain (*new_sam_acct, get_global_sam_name(), PDB_DEFAULT);
 
 		/* set Domain Users by default ! */
 		sid_copy(&g_sid, get_global_sam_sid());

@@ -68,6 +68,7 @@ void invalidate_vuid(uint16 vuid)
 	SAFE_FREE(vuser->logon_script);
 	
 	session_yield(vuser);
+	SAFE_FREE(vuser->session_keystr);
 
 	free_server_info(&vuser->server_info);
 
