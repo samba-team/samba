@@ -21,3 +21,54 @@ REQUIRED_SUBSYSTEMS = \
 #
 # End LIBRARY LIBLDB
 ################################################
+
+################################################
+# Start BINARY tdbtest
+[BINARY::tdbtest]
+OBJ_FILES= \
+		lib/tdb/tools/tdbtest.o
+REQUIRED_SUBSYSTEMS = \
+		LIBBASIC CONFIG LIBCMDLINE LIBTDB
+REQUIRED_LIBRARIES = GDBM
+# End BINARY tdbtest
+################################################
+
+################################################
+# Start BINARY tdbtool
+[BINARY::tdbtool]
+OBJ_FILES= \
+		lib/tdb/tools/tdbtool.o
+REQUIRED_SUBSYSTEMS = \
+		LIBBASIC CONFIG LIBCMDLINE LIBTDB
+# End BINARY tdbtool
+################################################
+
+################################################
+# Start BINARY tdbtorture
+[BINARY::tdbtorture]
+OBJ_FILES= \
+		lib/tdb/tools/tdbtorture.o
+REQUIRED_SUBSYSTEMS = \
+		LIBBASIC CONFIG LIBCMDLINE LIBTDB
+# End BINARY tdbtorture
+################################################
+
+################################################
+# Start BINARY tdbdump
+[BINARY::tdbdump]
+OBJ_FILES= \
+		lib/tdb/tools/tdbdump.o
+REQUIRED_SUBSYSTEMS = \
+		LIBBASIC CONFIG LIBCMDLINE LIBTDB
+# End BINARY tdbdump
+################################################
+
+################################################
+# Start BINARY tdbbackup
+[BINARY::tdbbackup]
+OBJ_FILES= \
+		lib/tdb/tools/tdbbackup.o
+REQUIRED_SUBSYSTEMS = \
+		LIBBASIC CONFIG LIBCMDLINE LIBTDB
+# End BINARY tdbbackup
+################################################
