@@ -36,11 +36,8 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass);
 
 /*The following definitions come from  client.c  */
 
-void setup_pkt(char *outbuf);
 void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir);
 void cmd_help(void);
-BOOL reopen_connection(char *inbuf,char *outbuf);
-char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  clientgen.c  */
 
@@ -62,12 +59,24 @@ void cli_shutdown(struct cli_state *cli);
 
 /*The following definitions come from  clientutil.c  */
 
-BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setup);
-void cli_send_logout(void);
-BOOL cli_call_api(int prcnt,int drcnt,int mprcnt,int mdrcnt,int *rprcnt,
-		  int *rdrcnt, char *param,char *data, 
-		  char **rparam, char **rdata);
-BOOL cli_open_sockets(int port);
+void cli_setup_pkt(char *outbuf);
+BOOL cli_call_api(char *pipe_name, int prcnt,int drcnt,
+		     int mprcnt,int mdrcnt,
+		     int *rprcnt,int *rdrcnt,
+		     char *param,char *data,
+		     char **rparam,char **rdata);
+BOOL cli_receive_trans_response(char *inbuf,int trans,
+                                   int *data_len,int *param_len,
+				   char **data,char **param);
+BOOL cli_send_trans_request(char *outbuf,int trans,
+			       char *name,int fid,int flags,
+			       char *data,char *param,uint16 *setup,
+			       int ldata,int lparam,int lsetup,
+			       int mdata,int mparam,int msetup);
+BOOL cli_send_session_request(char *inbuf,char *outbuf);
+BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup);
+void cli_send_logout(void );
+BOOL cli_open_sockets(int port );
 BOOL cli_reopen_connection(char *inbuf,char *outbuf);
 char *smb_errstr(char *inbuf);
 

@@ -82,7 +82,8 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
   pstrcpy(p, work->work_group);
   p = skip_string(p,1);
   
-  if (cli_call_api(PTR_DIFF(p,param),0, 8,BUFFER_SIZE - SAFETY_MARGIN,
+  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param),0, 8,
+           BUFFER_SIZE - SAFETY_MARGIN,
 		   &rprcnt,&rdrcnt, param,NULL,
 		   &rparam,&rdata))
     {

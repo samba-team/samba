@@ -260,6 +260,12 @@ typedef char fstring[128];
 typedef fstring string;
 
 
+/* pipe strings */
+#define PIPE_LANMAN   "\\PIPE\\LANMAN"
+#define PIPE_SRVSVC   "\\PIPE\\srvsvc"
+#define PIPE_NETLOGON "\\PIPE\\NETLOGON"
+#define PIPE_NTLSA    "\\PIPE\\ntlsa"
+
 /* NETLOGON opcodes and data structures */
 
 #define NET_QUERYFORPDC	     7 /* Query for PDC */
