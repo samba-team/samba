@@ -26,13 +26,10 @@ extern int DEBUGLEVEL;
 extern pstring server;
 
 /* Look up domain related information on a remote host */
-
-static uint32 cmd_lsa_query_info_policy(int argc, char **argv) 
+static uint32 cmd_lsa_query_info_policy(struct cli_state *cli, int argc, char **argv) 
 {
-	struct cli_state cli;
 	POLICY_HND pol;
 	uint32 result = NT_STATUS_UNSUCCESSFUL;
-	struct ntuser_creds creds;
 	BOOL got_policy_hnd = False;
 	DOM_SID dom_sid;
 	fstring sid_str, domain_name;
@@ -47,16 +44,13 @@ static uint32 cmd_lsa_query_info_policy(int argc, char **argv)
 		info_class = atoi(argv[1]);
 	}
 	
-	/* Open a lsa handle */
-
-	ZERO_STRUCT(cli);
-	init_rpcclient_creds(&creds);
-
-	if (cli_lsa_initialise(&cli, server, &creds) == NULL) {
-		goto done;
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
+		fprintf (stderr, "Could not initialize samr pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if ((result = cli_lsa_open_policy(&cli, True, 
+	if ((result = cli_lsa_open_policy(cli, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &pol)) != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -66,7 +60,7 @@ static uint32 cmd_lsa_query_info_policy(int argc, char **argv)
 
 	/* Lookup info policy */
 
-	if ((result = cli_lsa_query_info_policy(&cli, &pol, info_class, 
+	if ((result = cli_lsa_query_info_policy(cli, &pol, info_class, 
 						domain_name, &dom_sid)) 
 	    != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -76,23 +70,21 @@ static uint32 cmd_lsa_query_info_policy(int argc, char **argv)
 
 	printf("domain %s has sid %s\n", domain_name, sid_str);
 
- done:
+done:
 
 	if (got_policy_hnd) {
-		cli_lsa_close(&cli, &pol);
+		cli_lsa_close(cli, &pol);
 	}
 
-	cli_lsa_shutdown(&cli);
+	cli_nt_session_close(cli);
 
 	return result;
 }
 
 /* Resolve a list of names to a list of sids */
 
-static uint32 cmd_lsa_lookup_names(int argc, char **argv)
+static uint32 cmd_lsa_lookup_names(struct cli_state *cli, int argc, char **argv)
 {
-	struct cli_state cli;
-	struct ntuser_creds creds;
 	POLICY_HND pol;
 	uint32 result = NT_STATUS_UNSUCCESSFUL;
 	BOOL got_policy_hnd = False;
@@ -105,16 +97,14 @@ static uint32 cmd_lsa_lookup_names(int argc, char **argv)
 		return 0;
 	}
 
-	/* Open a lsa handle */
-
-	ZERO_STRUCT(cli);
-	init_rpcclient_creds(&creds);
-
-	if (cli_lsa_initialise(&cli, server, &creds) == NULL) {
-		goto done;
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
+		fprintf (stderr, "Could not initialize samr pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if ((result = cli_lsa_open_policy(&cli, True, 
+
+	if ((result = cli_lsa_open_policy(cli, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &pol)) != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -125,7 +115,7 @@ static uint32 cmd_lsa_lookup_names(int argc, char **argv)
 	/* Lookup the names */
 
 	if ((result = cli_lsa_lookup_names(
-		&cli, &pol, argc - 1, &argv[1], &sids, &types, &num_names) !=
+		cli, &pol, argc - 1, &argv[1], &sids, &types, &num_names) !=
 	     NT_STATUS_NOPROBLEMO)) {
 		goto done;
 	}
@@ -146,22 +136,20 @@ static uint32 cmd_lsa_lookup_names(int argc, char **argv)
  done:
 
 	if (got_policy_hnd) {
-		cli_lsa_close(&cli, &pol);
+		cli_lsa_close(cli, &pol);
 	}
 
-	cli_lsa_shutdown(&cli);
+	cli_nt_session_close(cli);
 
 	return result;
 }
 
 /* Resolve a list of SIDs to a list of names */
 
-static uint32 cmd_lsa_lookup_sids(int argc, char **argv)
+static uint32 cmd_lsa_lookup_sids(struct cli_state *cli, int argc, char **argv)
 {
-	struct cli_state cli;
 	POLICY_HND pol;
 	uint32 result = NT_STATUS_UNSUCCESSFUL;
-	struct ntuser_creds creds;
 	BOOL got_policy_hnd = False;
 	DOM_SID *sids;
 	char **names;
@@ -173,16 +161,13 @@ static uint32 cmd_lsa_lookup_sids(int argc, char **argv)
 		return 0;
 	}
 
-	/* Open a lsa handle */
-
-	ZERO_STRUCT(cli);
-	init_rpcclient_creds(&creds);
-
-	if (cli_lsa_initialise(&cli, server, &creds) == NULL) {
-		goto done;
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
+		fprintf (stderr, "Could not initialize samr pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if ((result = cli_lsa_open_policy(&cli, True, 
+	if ((result = cli_lsa_open_policy(cli, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &pol)) != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -205,7 +190,7 @@ static uint32 cmd_lsa_lookup_sids(int argc, char **argv)
 
 	/* Lookup the SIDs */
 
-	if ((result = cli_lsa_lookup_sids(&cli, &pol, argc - 1, sids, 
+	if ((result = cli_lsa_lookup_sids(cli, &pol, argc - 1, sids, 
 					  &names, &types, &num_names) !=
 	     NT_STATUS_NOPROBLEMO)) {
 		goto done;
@@ -233,22 +218,20 @@ static uint32 cmd_lsa_lookup_sids(int argc, char **argv)
  done:
 
 	if (got_policy_hnd) {
-		cli_lsa_close(&cli, &pol);
+		cli_lsa_close(cli, &pol);
 	}
 
-	cli_lsa_shutdown(&cli);
+	cli_nt_session_close(cli);
 
 	return result;
 }
 
 /* Enumerate list of trusted domains */
 
-static uint32 cmd_lsa_enum_trust_dom(int argc, char **argv)
+static uint32 cmd_lsa_enum_trust_dom(struct cli_state *cli, int argc, char **argv)
 {
-	struct cli_state cli;
 	POLICY_HND pol;
 	uint32 result = NT_STATUS_UNSUCCESSFUL;
-	struct ntuser_creds creds;
 	BOOL got_policy_hnd = False;
 	DOM_SID *domain_sids;
 	char **domain_names;
@@ -259,16 +242,13 @@ static uint32 cmd_lsa_enum_trust_dom(int argc, char **argv)
 		return 0;
 	}
 
-	/* Open a lsa handle */
-
-	ZERO_STRUCT(cli);
-	init_rpcclient_creds(&creds);
-
-	if (cli_lsa_initialise(&cli, server, &creds) == NULL) {
-		goto done;
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
+		fprintf (stderr, "Could not initialize samr pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if ((result = cli_lsa_open_policy(&cli, True, 
+	if ((result = cli_lsa_open_policy(cli, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &pol)) != NT_STATUS_NOPROBLEMO) {
 		goto done;
@@ -278,7 +258,7 @@ static uint32 cmd_lsa_enum_trust_dom(int argc, char **argv)
 
 	/* Lookup list of trusted domains */
 
-	if ((result = cli_lsa_enum_trust_dom(&cli, &pol, &enum_ctx,
+	if ((result = cli_lsa_enum_trust_dom(cli, &pol, &enum_ctx,
 					     &num_domains, &domain_names,
 					     &domain_sids) 
 	     != NT_STATUS_NOPROBLEMO)) {
@@ -306,10 +286,10 @@ static uint32 cmd_lsa_enum_trust_dom(int argc, char **argv)
  done:
 
 	if (got_policy_hnd) {
-		cli_lsa_close(&cli, &pol);
+		cli_lsa_close(cli, &pol);
 	}
 
-	cli_lsa_shutdown(&cli);
+	cli_nt_session_close(cli);
 
 	return result;
 }
@@ -317,9 +297,9 @@ static uint32 cmd_lsa_enum_trust_dom(int argc, char **argv)
 /* List of commands exported by this module */
 
 struct cmd_set lsarpc_commands[] = {
-	{ "lsaquery", cmd_lsa_query_info_policy, "Query info policy" },
-	{ "lookupsids", cmd_lsa_lookup_sids, "Convert SIDs to names" },
-	{ "lookupnames", cmd_lsa_lookup_names, "Convert names to SIDs" },
-	{ "enumtrust", cmd_lsa_enum_trust_dom, "Enumerate trusted domains" },
+	{ "lsaquery", 	cmd_lsa_query_info_policy, 	"Query info policy" },
+	{ "lookupsids", cmd_lsa_lookup_sids, 		"Convert SIDs to names" },
+	{ "lookupnames",cmd_lsa_lookup_names, 		"Convert names to SIDs" },
+	{ "enumtrust", 	cmd_lsa_enum_trust_dom, 	"Enumerate trusted domains" },
 	{ NULL, NULL, NULL }
 };

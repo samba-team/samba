@@ -25,7 +25,6 @@
 #include "includes.h"
 
 /* Opens a SMB connection to the SPOOLSS pipe */
-
 struct cli_state *cli_spoolss_initialise(struct cli_state *cli, 
 					 char *system_name,
 					 struct ntuser_creds *creds)
@@ -321,10 +320,14 @@ uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
 	NEW_BUFFER buffer;
 	uint32 needed = 100;
 	uint32 result;
+	fstring server;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
+	fstrcpy (server, cli->desthost);
+	strupper (server);
+	
 	do {
 		/* Initialise input parameters */
 
@@ -333,46 +336,39 @@ uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
 		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
 		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
-		make_spoolss_q_enumprinters(&q, flags, "", level, &buffer, 
+		make_spoolss_q_enumprinters(&q, flags, server, level, &buffer, 
 					    needed);
 
 		/* Marshall data and send request */
 
 		if (!spoolss_io_q_enumprinters("", &q, &qbuf, 0) ||
-		    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERS, &qbuf,
-				      &rbuf)) {
+		    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERS, &qbuf, &rbuf)) {
 			result = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
 
 		/* Unmarshall response */
-
-		prs_switch_type(&buffer.prs, UNMARSHALL);
-	        prs_set_offset(&buffer.prs, 0);		
-		r.buffer = &buffer;
-
 		if (new_spoolss_io_r_enumprinters("", &r, &rbuf, 0)) {
 			needed = r.needed;
 		}
 		
 		/* Return output parameters */
 
-		if ((result = r.status) == NT_STATUS_NOPROBLEMO &&
-		    r.returned > 0) {
+		if ((result = r.status) == NT_STATUS_NOPROBLEMO && r.returned > 0) {
 
 			*returned = r.returned;
 
 			switch (level) {
 			case 1:
-				decode_printer_info_1(&buffer, r.returned, 
+				decode_printer_info_1(r.buffer, r.returned, 
 						      &ctr->printers_1);
 				break;
 			case 2:
-				decode_printer_info_2(&buffer, r.returned, 
+				decode_printer_info_2(r.buffer, r.returned, 
 						      &ctr->printers_2);
 				break;
 			case 3:
-				decode_printer_info_3(&buffer, r.returned, 
+				decode_printer_info_3(r.buffer, r.returned, 
 						      &ctr->printers_3);
 				break;
 			}			
@@ -398,9 +394,13 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 	NEW_BUFFER buffer;
 	uint32 needed = 100;
 	uint32 result;
+	fstring server;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
+
+	fstrcpy (server, cli->desthost);
+	strupper (server);
 
 	do {
 		/* Initialise input parameters */
@@ -410,23 +410,20 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
 		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
+		/* NT4 will return NT_STATUS_CTL_FILE_NOT_SUPPORTED is we
+		   set the servername here in the query.  Not sure why  \
+		   --jerry */
 		make_spoolss_q_enumports(&q, "", level, &buffer, needed);
 
 		/* Marshall data and send request */
 
 		if (!spoolss_io_q_enumports("", &q, &qbuf, 0) ||
-		    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPORTS, &qbuf,
-				      &rbuf)) {
+		    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPORTS, &qbuf, &rbuf)) {
 			result = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
 
 		/* Unmarshall response */
-
-		prs_switch_type(&buffer.prs, UNMARSHALL);
-	        prs_set_offset(&buffer.prs, 0);		
-		r.buffer = &buffer;
-
 		if (new_spoolss_io_r_enumports("", &r, &rbuf, 0)) {
 			needed = r.needed;
 		}
@@ -440,11 +437,11 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 
 			switch (level) {
 			case 1:
-				decode_port_info_1(&buffer, r.returned, 
+				decode_port_info_1(r.buffer, r.returned, 
 						   &ctr->port.info_1);
 				break;
 			case 2:
-				decode_port_info_2(&buffer, r.returned, 
+				decode_port_info_2(r.buffer, r.returned, 
 						   &ctr->port.info_2);
 				break;
 			}			
@@ -495,11 +492,6 @@ uint32 cli_spoolss_getprinter(struct cli_state *cli, POLICY_HND *pol,
 		}
 
 		/* Unmarshall response */
-
-		prs_switch_type(&buffer.prs, UNMARSHALL);
-	        prs_set_offset(&buffer.prs, 0);		
-		r.buffer = &buffer;
-
 		if (spoolss_io_r_getprinter("", &r, &rbuf, 0)) {
 			needed = r.needed;
 		}
@@ -510,19 +502,19 @@ uint32 cli_spoolss_getprinter(struct cli_state *cli, POLICY_HND *pol,
 
 			switch (level) {
 			case 0:
-				decode_printer_info_0(&buffer, 1, 
+				decode_printer_info_0(r.buffer, 1, 
 						      &ctr->printers_0);
 				break;
 			case 1:
-				decode_printer_info_1(&buffer, 1, 
+				decode_printer_info_1(r.buffer, 1, 
 						      &ctr->printers_1);
 				break;
 			case 2:
-				decode_printer_info_2(&buffer, 1,
+				decode_printer_info_2(r.buffer, 1,
 						      &ctr->printers_2);
 				break;
 			case 3:
-				decode_printer_info_3(&buffer, 1,
+				decode_printer_info_3(r.buffer, 1,
 						      &ctr->printers_3);
 				break;
 			}			

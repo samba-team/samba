@@ -669,7 +669,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	{
 		DEBUG(1,("failed session request\n"));
 		if (do_shutdown)
-          cli_shutdown(cli);
+			cli_shutdown(cli);
 		return False;
 	}
 
