@@ -1,5 +1,7 @@
 Fri Aug 15 00:09:37 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* kdc/kerberos5.c: Fix for old clients passing 0 for `no endtime'.
+
 	* lib/45/get_ad_tkt.c: Kerberos 4 get_ad_tkt using
  	krb524_convert_creds_kdc.
 
