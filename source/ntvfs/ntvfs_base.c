@@ -102,7 +102,7 @@ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 		NTVFS_INTERFACE_VERSION,
 		sizeof(struct ntvfs_ops),
 		sizeof(SMB_OFF_T),
-		sizeof(struct tcon_context),
+		sizeof(struct smbsrv_tcon),
 		sizeof(struct request_context),
 	};
 
@@ -135,12 +135,12 @@ BOOL ntvfs_init(void)
 */
 NTSTATUS ntvfs_init_connection(struct request_context *req)
 {
-	const char *handler = lp_ntvfs_handler(req->conn->service);
+	const char *handler = lp_ntvfs_handler(req->tcon->service);
 
-	req->conn->ntvfs_ops = ntvfs_backend_byname(handler, req->conn->type);
+	req->tcon->ntvfs_ops = ntvfs_backend_byname(handler, req->tcon->type);
 
-	if (!req->conn->ntvfs_ops) {
-		DEBUG(1,("ntvfs_init_connection: failed to find backend=%s, type=%d\n", handler, req->conn->type));
+	if (!req->tcon->ntvfs_ops) {
+		DEBUG(1,("ntvfs_init_connection: failed to find backend=%s, type=%d\n", handler, req->tcon->type));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 

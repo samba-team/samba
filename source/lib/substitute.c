@@ -165,16 +165,16 @@ char *alloc_sub_advanced(int snum, const char *user,
  Do some standard substitutions in a string.
 ****************************************************************************/
 
-void standard_sub_conn(struct tcon_context *conn, char *str, size_t len)
+void standard_sub_tcon(struct smbsrv_tcon *tcon, char *str, size_t len)
 {
 }
 
-char *talloc_sub_conn(TALLOC_CTX *mem_ctx, struct tcon_context *conn, char *str)
+char *talloc_sub_tcon(TALLOC_CTX *mem_ctx, struct smbsrv_tcon *tcon, char *str)
 {
 	return talloc_strdup(mem_ctx, str);
 }
 
-char *alloc_sub_conn(struct tcon_context *conn, char *str)
+char *alloc_sub_tcon(struct smbsrv_tcon *tcon, char *str)
 {
 	return strdup(str);
 }

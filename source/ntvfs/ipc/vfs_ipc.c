@@ -107,18 +107,18 @@ static struct pipe_state *pipe_state_find(struct ipc_private *private, uint16_t 
 */
 static NTSTATUS ipc_connect(struct request_context *req, const char *sharename)
 {
-	struct tcon_context *conn = req->conn;
+	struct smbsrv_tcon *tcon = req->tcon;
 	struct ipc_private *private;
 
-	conn->fs_type = talloc_strdup(conn->mem_ctx, "IPC");
-	conn->dev_type = talloc_strdup(conn->mem_ctx, "IPC");
+	tcon->fs_type = talloc_strdup(tcon->mem_ctx, "IPC");
+	tcon->dev_type = talloc_strdup(tcon->mem_ctx, "IPC");
 
 	/* prepare the private state for this connection */
-	private = talloc(conn->mem_ctx, sizeof(struct ipc_private));
+	private = talloc(tcon->mem_ctx, sizeof(struct ipc_private));
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	conn->ntvfs_private = (void *)private;
+	tcon->ntvfs_private = (void *)private;
 
 	private->pipe_list = NULL;
 	private->next_fnum = 1;
@@ -130,7 +130,7 @@ static NTSTATUS ipc_connect(struct request_context *req, const char *sharename)
 /*
   disconnect from a share
 */
-static NTSTATUS ipc_disconnect(struct tcon_context *tcon)
+static NTSTATUS ipc_disconnect(struct smbsrv_tcon *tcon)
 {
 	struct ipc_private *private = tcon->ntvfs_private;
 
@@ -196,7 +196,7 @@ static NTSTATUS ipc_open_generic(struct request_context *req, const char *fname,
 	NTSTATUS status;
 	struct dcesrv_ep_description ep_description;
 	struct auth_session_info *session_info = NULL;
-	struct ipc_private *private = req->conn->ntvfs_private;
+	struct ipc_private *private = req->tcon->ntvfs_private;
 
 	mem_ctx = talloc_init("ipc_open '%s'", fname);
 	if (!mem_ctx) {
@@ -374,7 +374,7 @@ static NTSTATUS ipc_copy(struct request_context *req, struct smb_copy *cp)
 */
 static NTSTATUS ipc_read(struct request_context *req, union smb_read *rd)
 {
-	struct ipc_private *private = req->conn->ntvfs_private;
+	struct ipc_private *private = req->tcon->ntvfs_private;
 	DATA_BLOB data;
 	uint16_t fnum;
 	struct pipe_state *p;
@@ -426,7 +426,7 @@ static NTSTATUS ipc_read(struct request_context *req, union smb_read *rd)
 */
 static NTSTATUS ipc_write(struct request_context *req, union smb_write *wr)
 {
-	struct ipc_private *private = req->conn->ntvfs_private;
+	struct ipc_private *private = req->tcon->ntvfs_private;
 	DATA_BLOB data;
 	uint16_t fnum;
 	struct pipe_state *p;
@@ -495,7 +495,7 @@ static NTSTATUS ipc_flush(struct request_context *req, struct smb_flush *io)
 */
 static NTSTATUS ipc_close(struct request_context *req, union smb_close *io)
 {
-	struct ipc_private *private = req->conn->ntvfs_private;
+	struct ipc_private *private = req->tcon->ntvfs_private;
 	struct pipe_state *p;
 
 	if (io->generic.level != RAW_CLOSE_CLOSE) {
@@ -595,7 +595,7 @@ NTSTATUS ipc_search_close(struct request_context *req, union smb_search_close *i
 static NTSTATUS ipc_dcerpc_cmd(struct request_context *req, struct smb_trans2 *trans)
 {
 	struct pipe_state *p;
-	struct ipc_private *private = req->conn->ntvfs_private;
+	struct ipc_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
 
 	/* the fnum is in setup[1] */
@@ -640,7 +640,7 @@ static NTSTATUS ipc_dcerpc_cmd(struct request_context *req, struct smb_trans2 *t
 static NTSTATUS ipc_set_nm_pipe_state(struct request_context *req, struct smb_trans2 *trans)
 {
 	struct pipe_state *p;
-	struct ipc_private *private = req->conn->ntvfs_private;
+	struct ipc_private *private = req->tcon->ntvfs_private;
 
 	/* the fnum is in setup[1] */
 	p = pipe_state_find(private, trans->in.setup[1]);

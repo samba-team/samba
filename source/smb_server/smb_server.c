@@ -25,16 +25,16 @@
 /*
   send an oplock break request to a client
 */
-BOOL req_send_oplock_break(struct tcon_context *conn, uint16_t fnum, uint8_t level)
+BOOL req_send_oplock_break(struct smbsrv_tcon *tcon, uint16_t fnum, uint8_t level)
 {
 	struct request_context *req;
 
-	req = init_smb_request(conn->smb_ctx);
+	req = init_smb_request(tcon->smb_ctx);
 
 	req_setup_reply(req, 8, 0);
 	
 	SCVAL(req->out.hdr,HDR_COM,SMBlockingX);
-	SSVAL(req->out.hdr,HDR_TID,conn->cnum);
+	SSVAL(req->out.hdr,HDR_TID,tcon->cnum);
 	SSVAL(req->out.hdr,HDR_PID,0xFFFF);
 	SSVAL(req->out.hdr,HDR_UID,0);
 	SSVAL(req->out.hdr,HDR_MID,0xFFFF);
@@ -456,7 +456,7 @@ static void switch_message(int type, struct request_context *req)
 		UID_FIELD_INVALID : 
 		SVAL(req->in.hdr,HDR_UID);
 
-	req->conn = conn_find(smb_ctx, SVAL(req->in.hdr,HDR_TID));
+	req->tcon = conn_find(smb_ctx, SVAL(req->in.hdr,HDR_TID));
 
 	/* setup the user context for this request */
 	setup_user_context(req);
@@ -475,7 +475,7 @@ static void switch_message(int type, struct request_context *req)
 	}
 	
 	/* does this protocol need a valid tree connection? */
-	if ((flags & AS_USER) && !req->conn) {
+	if ((flags & AS_USER) && !req->tcon) {
 		req_reply_error(req, NT_STATUS_NETWORK_NAME_DELETED);
 		return;
 	}
@@ -490,7 +490,7 @@ static void switch_message(int type, struct request_context *req)
 
 	/* does this protocol need to be run as the connected user? */
 #if HACK_REWRITE
-	if ((flags & AS_USER) && !change_to_user(req->conn,session_tag)) {
+	if ((flags & AS_USER) && !change_to_user(req->tcon,session_tag)) {
 		if (!(flags & AS_GUEST)) {
 			req_reply_error(req, NT_STATUS_ACCESS_DENIED);
 			return;
@@ -509,19 +509,19 @@ static void switch_message(int type, struct request_context *req)
 	}
 	
 	/* does it need write permission? */
-	if ((flags & NEED_WRITE) && !CAN_WRITE(req->conn)) {
+	if ((flags & NEED_WRITE) && !CAN_WRITE(req->tcon)) {
 		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
 	
 	/* ipc services are limited */
-	if (req->conn && req->conn->type == NTVFS_IPC && (flags & AS_USER) && !(flags & CAN_IPC)) {
+	if (req->tcon && req->tcon->type == NTVFS_IPC && (flags & AS_USER) && !(flags & CAN_IPC)) {
 		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
 	
 	/* load service specific parameters */
-	if (req->conn && !set_current_service(req->conn,(flags & AS_USER)?True:False)) {
+	if (req->tcon && !set_current_service(req->tcon,(flags & AS_USER)?True:False)) {
 		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}

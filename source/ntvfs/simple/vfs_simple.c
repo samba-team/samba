@@ -33,7 +33,7 @@
 #define O_DIRECTORY 0
 #endif
 
-#define CHECK_READ_ONLY(req) do { if (lp_readonly(req->conn->service)) return NT_STATUS_ACCESS_DENIED; } while (0)
+#define CHECK_READ_ONLY(req) do { if (lp_readonly(req->tcon->service)) return NT_STATUS_ACCESS_DENIED; } while (0)
 
 #ifndef HAVE_PREAD
 static ssize_t pread(int __fd, void *__buf, size_t __nbytes, off_t __offset)
@@ -64,15 +64,15 @@ static ssize_t pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offs
 static NTSTATUS svfs_connect(struct request_context *req, const char *sharename)
 {
 	struct stat st;
-	struct tcon_context *conn = req->conn;
+	struct smbsrv_tcon *tcon = req->tcon;
 	struct svfs_private *private;
 
-	conn->ntvfs_private = talloc_p(conn->mem_ctx, struct svfs_private);
+	tcon->ntvfs_private = talloc_p(tcon->mem_ctx, struct svfs_private);
 
-	private = conn->ntvfs_private;
+	private = tcon->ntvfs_private;
 
 	private->next_search_handle = 0;
-	private->connectpath = talloc_strdup(conn->mem_ctx, lp_pathname(conn->service));
+	private->connectpath = talloc_strdup(tcon->mem_ctx, lp_pathname(tcon->service));
 	private->open_files = NULL;
 
 	/* the directory must exist */
@@ -82,8 +82,8 @@ static NTSTATUS svfs_connect(struct request_context *req, const char *sharename)
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
-	conn->fs_type = talloc_strdup(conn->mem_ctx, "NTFS");
-	conn->dev_type = talloc_strdup(conn->mem_ctx, "A:");
+	tcon->fs_type = talloc_strdup(tcon->mem_ctx, "NTFS");
+	tcon->dev_type = talloc_strdup(tcon->mem_ctx, "A:");
 
 	DEBUG(0,("WARNING: ntvfs simple: connect to share [%s] with ROOT privileges!!!\n",sharename));
 
@@ -93,7 +93,7 @@ static NTSTATUS svfs_connect(struct request_context *req, const char *sharename)
 /*
   disconnect from a share
 */
-static NTSTATUS svfs_disconnect(struct tcon_context *req)
+static NTSTATUS svfs_disconnect(struct smbsrv_tcon *tcon)
 {
 	return NT_STATUS_OK;
 }
@@ -268,7 +268,7 @@ static NTSTATUS svfs_qpathinfo(struct request_context *req, union smb_fileinfo *
 */
 static NTSTATUS svfs_qfileinfo(struct request_context *req, union smb_fileinfo *info)
 {
-	struct svfs_private *private = req->conn->ntvfs_private;
+	struct svfs_private *private = req->tcon->ntvfs_private;
 	struct svfs_file *f;
 	struct stat st;
 
@@ -296,7 +296,7 @@ static NTSTATUS svfs_qfileinfo(struct request_context *req, union smb_fileinfo *
 */
 static NTSTATUS svfs_open(struct request_context *req, union smb_open *io)
 {
-	struct svfs_private *private = req->conn->ntvfs_private;
+	struct svfs_private *private = req->tcon->ntvfs_private;
 	char *unix_path;
 	struct stat st;
 	int fd, flags;
@@ -307,7 +307,7 @@ static NTSTATUS svfs_open(struct request_context *req, union smb_open *io)
 		return ntvfs_map_open(req, io);
 	}
 
-	if (lp_readonly(req->conn->service)) {
+	if (lp_readonly(req->tcon->service)) {
 		create_flags = 0;
 		rdwr_flags = O_RDONLY;
 	} else {
@@ -341,7 +341,7 @@ static NTSTATUS svfs_open(struct request_context *req, union smb_open *io)
 
 	if (io->generic.in.create_options & NTCREATEX_OPTIONS_DIRECTORY) {
 		flags = O_RDONLY | O_DIRECTORY;
-		if (lp_readonly(req->conn->service)) {
+		if (lp_readonly(req->tcon->service)) {
 			goto do_open;
 		}
 		switch (io->generic.in.open_disposition) {
@@ -376,9 +376,9 @@ do_open:
 		return map_nt_error_from_unix(errno);
 	}
 
-	f = talloc_p(req->conn->mem_ctx, struct svfs_file);
+	f = talloc_p(req->tcon->mem_ctx, struct svfs_file);
 	f->fd = fd;
-	f->name = talloc_strdup(req->conn->mem_ctx, unix_path);
+	f->name = talloc_strdup(req->tcon->mem_ctx, unix_path);
 
 	DLIST_ADD(private->open_files, f);
 
@@ -562,7 +562,7 @@ static NTSTATUS svfs_flush(struct request_context *req, struct smb_flush *io)
 */
 static NTSTATUS svfs_close(struct request_context *req, union smb_close *io)
 {
-	struct svfs_private *private = req->conn->ntvfs_private;
+	struct svfs_private *private = req->tcon->ntvfs_private;
 	struct svfs_file *f;
 
 	if (io->generic.level != RAW_CLOSE_CLOSE) {
@@ -580,8 +580,8 @@ static NTSTATUS svfs_close(struct request_context *req, union smb_close *io)
 	}
 
 	DLIST_REMOVE(private->open_files, f);
-	talloc_free(req->conn->mem_ctx, f->name);
-	talloc_free(req->conn->mem_ctx, f);
+	talloc_free(req->tcon->mem_ctx, f->name);
+	talloc_free(req->tcon->mem_ctx, f);
 
 	return NT_STATUS_OK;
 }
@@ -661,7 +661,7 @@ static NTSTATUS svfs_setfileinfo(struct request_context *req,
 */
 static NTSTATUS svfs_fsinfo(struct request_context *req, union smb_fsinfo *fs)
 {
-	struct svfs_private *private = req->conn->ntvfs_private;
+	struct svfs_private *private = req->tcon->ntvfs_private;
 	struct stat st;
 
 	if (fs->generic.level != RAW_QFS_GENERIC) {
@@ -690,8 +690,8 @@ static NTSTATUS svfs_fsinfo(struct request_context *req, union smb_fsinfo *fs)
 	fs->generic.out.quota_soft = 0;
 	fs->generic.out.quota_hard = 0;
 	fs->generic.out.quota_flags = 0;
-	fs->generic.out.volume_name = talloc_strdup(req->mem_ctx, lp_servicename(req->conn->service));
-	fs->generic.out.fs_type = req->conn->fs_type;
+	fs->generic.out.volume_name = talloc_strdup(req->mem_ctx, lp_servicename(req->tcon->service));
+	fs->generic.out.fs_type = req->tcon->fs_type;
 
 	return NT_STATUS_OK;
 }
@@ -703,7 +703,7 @@ static NTSTATUS svfs_fsinfo(struct request_context *req, union smb_fsinfo *fs)
 static NTSTATUS svfs_fsattr(struct request_context *req, union smb_fsattr *fs)
 {
 	struct stat st;
-	struct svfs_private *private = req->conn->ntvfs_private;
+	struct svfs_private *private = req->tcon->ntvfs_private;
 
 	if (fs->generic.level != RAW_FSATTR_GENERIC) {
 		return ntvfs_map_fsattr(req, fs);
@@ -722,7 +722,7 @@ static NTSTATUS svfs_fsattr(struct request_context *req, union smb_fsattr *fs)
 	fs->generic.out.serial_number = 1;
 	fs->generic.out.fs_type = talloc_strdup(req->mem_ctx, "NTFS");
 	fs->generic.out.volume_name = talloc_strdup(req->mem_ctx, 
-						    lp_servicename(req->conn->service));
+						    lp_servicename(req->tcon->service));
 
 	return NT_STATUS_OK;
 }
@@ -745,7 +745,7 @@ static NTSTATUS svfs_search_first(struct request_context *req, union smb_search_
 {
 	struct svfs_dir *dir;
 	int i;
-	struct svfs_private *private = req->conn->ntvfs_private;
+	struct svfs_private *private = req->tcon->ntvfs_private;
 	struct search_state *search;
 	union smb_search_data file;
 	TALLOC_CTX *mem_ctx;
@@ -819,7 +819,7 @@ static NTSTATUS svfs_search_next(struct request_context *req, union smb_search_n
 {
 	struct svfs_dir *dir;
 	int i;
-	struct svfs_private *private = req->conn->ntvfs_private;
+	struct svfs_private *private = req->tcon->ntvfs_private;
 	struct search_state *search;
 	union smb_search_data file;
 	uint_t max_count;
@@ -902,7 +902,7 @@ found:
 /* close a search */
 static NTSTATUS svfs_search_close(struct request_context *req, union smb_search_close *io)
 {
-	struct svfs_private *private = req->conn->ntvfs_private;
+	struct svfs_private *private = req->tcon->ntvfs_private;
 	struct search_state *search;
 
 	for (search=private->search; search; search = search->next) {
