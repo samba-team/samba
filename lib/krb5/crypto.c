@@ -2305,12 +2305,15 @@ decrypt_internal_derived(krb5_context context,
     struct encryption_type *et = crypto->et;
     unsigned long l;
     
+    checksum_sz = CHECKSUMSIZE(et->keyed_checksum);
+    if (len < checksum_sz)
+	return EINVAL;		/* better error code? */
+
     p = malloc(len);
     if(len != 0 && p == NULL)
 	return ENOMEM;
     memcpy(p, data, len);
 
-    checksum_sz = CHECKSUMSIZE(et->keyed_checksum);
     len -= checksum_sz;
 
     ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
