@@ -162,7 +162,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 			break;
 		}
 	
-		DEBUG( 3,
+		DEBUG((ret != KRB5_BAD_ENCTYPE) ? 3 : 10,
 				("ads_verify_ticket: enc type [%u] failed to decrypt with error %s\n",
 				(unsigned int)enctypes[i], error_message(ret)));
 	}
