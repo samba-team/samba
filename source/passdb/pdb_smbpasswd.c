@@ -44,8 +44,6 @@ struct smb_passwd
 };
 
 
-extern pstring samlogon_user;
-extern BOOL sam_logon_in_ssb;
 extern struct passdb_ops pdb_ops;
 
 /* used for maintain locks on the smbpasswd file */
@@ -1210,12 +1208,6 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw
 
 	pdb_set_uid (sam_pass, &pwfile->pw_uid);
 	pdb_set_gid (sam_pass, &pwfile->pw_gid);
-
-	/* FIXME!!  This doesn't belong here.  Should be set in net_sam_logon() 
-	   --jerry */
-
-	pstrcpy(samlogon_user, pw_buf->smb_name);
-	sam_logon_in_ssb = True;
 		
 	pdb_set_fullname(sam_pass, pwfile->pw_gecos);		
 	
@@ -1251,32 +1243,30 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw
 	pdb_set_pass_must_change_time (sam_pass, pw_buf->pass_last_set_time + MAX_PASSWORD_AGE);
 
 	/* check if this is a user account or a machine account */
-	if (samlogon_user[strlen(samlogon_user)-1] != '$')
+	if (pw_buf->smb_name[strlen(pw_buf->smb_name)-1] != '$')
 	{
 		pstring 	str;
 		
 		pstrcpy(str, lp_logon_path());
-		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, str);
+		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, pw_buf->smb_name, str);
 		pdb_set_profile_path(sam_pass, str);
 		
 		pstrcpy(str, lp_logon_home());
-		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, str);
+		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, pw_buf->smb_name, str);
 		pdb_set_homedir(sam_pass, str);
 		
 		pstrcpy(str, lp_logon_drive());
-		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, str);
+		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, pw_buf->smb_name, str);
 		pdb_set_dir_drive(sam_pass, str);
 		
 		pstrcpy(str, lp_logon_script());
-		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, str);
+		standard_sub_advanced(-1, pwfile->pw_name, "", pwfile->pw_gid, pw_buf->smb_name, str);
 		pdb_set_logon_script(sam_pass, str);
 		
 	} else {
 		/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
 		/*pdb_set_group_rid (sam_pass, DOMAIN_GROUP_RID_USERS); */
 	}
-
-	sam_logon_in_ssb = False;
 	
 	return True;
 }

@@ -25,6 +25,7 @@
 BOOL global_machine_password_needs_changing = False;
 
 extern pstring global_myname;
+extern userdom_struct current_user_info;
 
 /***********************************************************************
  Connect to a remote machine for domain security authentication
@@ -62,7 +63,7 @@ static BOOL connect_to_domain_password_server(struct cli_state *pcli,
 		fstrcpy(remote_machine, server);
 	}
 
-	standard_sub_basic(remote_machine);
+	standard_sub_basic(current_user_info.smb_name, remote_machine);
 	strupper(remote_machine);
 
 	if(!resolve_name( remote_machine, &dest_ip, 0x20)) {

@@ -121,8 +121,6 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 	pstring str;
 	GROUP_MAP map;
 	uint32 rid;
-	extern BOOL sam_logon_in_ssb;
-	extern pstring samlogon_user;
 
 	if (!pwd) {
 		new_sam_acct = NULL;
@@ -149,28 +147,22 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 		rid=pdb_gid_to_group_rid(pwd->pw_gid);
 	pdb_set_group_rid(*new_sam_acct, rid);
 
-	/* UGLY, UGLY HACK!!! */
-	pstrcpy(samlogon_user, pwd->pw_name);
-	
-	sam_logon_in_ssb = True;
-	
 	pstrcpy(str, lp_logon_path());
-	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, str);
+	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, pwd->pw_name, str);
 	pdb_set_profile_path(*new_sam_acct, str);
 	
 	pstrcpy(str, lp_logon_home());
-	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, str);
+	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, pwd->pw_name, str);
 	pdb_set_homedir(*new_sam_acct, str);
 	
 	pstrcpy(str, lp_logon_drive());
-	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, str);
+	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, pwd->pw_name, str);
 	pdb_set_dir_drive(*new_sam_acct, str);
 
 	pstrcpy(str, lp_logon_script());
-	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, str);
+	standard_sub_advanced(-1, pwd->pw_name, "", pwd->pw_gid, pwd->pw_name, str);
 	pdb_set_logon_script(*new_sam_acct, str);
 	
-	sam_logon_in_ssb = False;
 	return True;
 }
 

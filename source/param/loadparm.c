@@ -54,6 +54,7 @@
 BOOL in_client = False;		/* Not in the client by default */
 BOOL bLoaded = False;
 
+extern userdom_struct current_user_info;
 extern int DEBUGLEVEL_CLASS[DBGC_LAST];
 extern pstring user_socket_options;
 extern pstring global_myname;
@@ -115,8 +116,6 @@ typedef struct
 	char *szWorkGroup;
 	char *szRealm;
 	char *szADSserver;
-	char **szDomainAdminGroup;
-	char **szDomainGuestGroup;
 	char *szUsernameMap;
 	char *szLogonScript;
 	char *szLogonPath;
@@ -881,13 +880,10 @@ static struct parm_struct parm_table[] = {
 
 	{"Domain Options", P_SEP, P_SEPARATOR},
 	
-	{"domain admin group", P_LIST, P_GLOBAL, &Globals.szDomainAdminGroup, NULL, NULL, 0},
-	{"domain guest group", P_LIST, P_GLOBAL, &Globals.szDomainGuestGroup, NULL, NULL, 0},
-	
 	{"machine password timeout", P_INTEGER, P_GLOBAL, &Globals.machine_password_timeout, NULL, NULL, 0},
 
 	{"Logon Options", P_SEP, P_SEPARATOR},
-	
+
 	{"add user script", P_STRING, P_GLOBAL, &Globals.szAddUserScript, NULL, NULL, 0},
 	{"delete user script", P_STRING, P_GLOBAL, &Globals.szDelUserScript, NULL, NULL, 0},
 	{"add group script", P_STRING, P_GLOBAL, &Globals.szAddGroupScript, NULL, NULL, 0},
@@ -1391,7 +1387,7 @@ static char *lp_string(const char *s)
 
 	trim_string(ret, "\"", "\"");
 
-	standard_sub_basic(ret);
+	standard_sub_basic(current_user_info.smb_name,ret);
 	return (ret);
 }
 
@@ -1486,8 +1482,6 @@ FN_GLOBAL_STRING(lp_shutdown_script, &Globals.szShutdownScript)
 FN_GLOBAL_STRING(lp_abort_shutdown_script, &Globals.szAbortShutdownScript)
 
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
-FN_GLOBAL_LIST(lp_domain_admin_group, &Globals.szDomainAdminGroup)
-FN_GLOBAL_LIST(lp_domain_guest_group, &Globals.szDomainGuestGroup)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
@@ -2189,7 +2183,7 @@ BOOL lp_file_list_changed(void)
 		time_t mod_time;
 
 		pstrcpy(n2, f->name);
-		standard_sub_basic(n2);
+		standard_sub_basic(current_user_info.smb_name, n2);
 
 		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
 			     f->name, n2, ctime(&f->modtime)));
@@ -2223,7 +2217,7 @@ static BOOL handle_netbios_name(char *pszParmValue, char **ptr)
 
 	pstrcpy(netbios_name, pszParmValue);
 
-	standard_sub_basic(netbios_name);
+	standard_sub_basic(current_user_info.smb_name, netbios_name);
 	strupper(netbios_name);
 
 	pstrcpy(global_myname, netbios_name);
@@ -2305,7 +2299,7 @@ static BOOL handle_source_env(char *pszParmValue, char **ptr)
 
 	pstrcpy(fname, pszParmValue);
 
-	standard_sub_basic(fname);
+	standard_sub_basic(current_user_info.smb_name, fname);
 
 	string_set(ptr, pszParmValue);
 
@@ -2363,7 +2357,7 @@ static BOOL handle_include(char *pszParmValue, char **ptr)
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
 
-	standard_sub_basic(fname);
+	standard_sub_basic(current_user_info.smb_name, fname);
 
 	add_to_file_list(pszParmValue, fname);
 
@@ -3294,7 +3288,7 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 	BOOL bRetval;
 
 	pstrcpy(n2, pszFname);
-	standard_sub_basic(n2);
+	standard_sub_basic(current_user_info.smb_name, n2);
 
 	add_to_file_list(pszFname, n2);
 
@@ -3416,7 +3410,7 @@ int lp_servicenumber(const char *pszServiceName)
 			 * service names
 			 */
 			fstrcpy(serviceName, ServicePtrs[iService]->szService);
-			standard_sub_basic(serviceName);
+			standard_sub_basic(current_user_info.smb_name, serviceName);
 			if (strequal(serviceName, pszServiceName))
 				break;
 		}

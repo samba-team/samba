@@ -25,8 +25,6 @@
 fstring local_machine="";
 fstring remote_arch="UNKNOWN";
 userdom_struct current_user_info;
-pstring samlogon_user="";
-BOOL sam_logon_in_ssb = False;
 fstring remote_proto="UNKNOWN";
 fstring remote_machine="";
 extern pstring global_myname;
@@ -168,7 +166,7 @@ static char *automount_server(char *user_name)
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
-void standard_sub_basic(char *str)
+void standard_sub_basic(char *smb_name, char *str)
 {
 	char *p, *s;
 	fstring pidstr;
@@ -181,12 +179,12 @@ void standard_sub_basic(char *str)
 		
 		switch (*(p+1)) {
 		case 'U' : 
-			fstrcpy(tmp_str, sam_logon_in_ssb?samlogon_user:current_user_info.smb_name);
+			fstrcpy(tmp_str, smb_name);
 			strlower(tmp_str);
 			string_sub(p,"%U",tmp_str,l);
 			break;
 		case 'G' :
-			fstrcpy(tmp_str, sam_logon_in_ssb?samlogon_user:current_user_info.smb_name);
+			fstrcpy(tmp_str, smb_name);
 			if ((pass = Get_Pwnam(tmp_str))!=NULL) {
 				string_sub(p,"%G",gidtoname(pass->pw_gid),l);
 			} else {
@@ -232,7 +230,7 @@ void standard_sub_basic(char *str)
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
-void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str)
+void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *smb_name, char *str)
 {
 	char *p, *s, *home;
 
@@ -282,7 +280,7 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 		}
 	}
 
-	standard_sub_basic(str);
+	standard_sub_basic(smb_name, str);
 }
 
 /****************************************************************************
@@ -290,7 +288,7 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 ****************************************************************************/
 void standard_sub_conn(connection_struct *conn, char *str)
 {
-	standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath, conn->gid, str);
+	standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath, conn->gid, current_user_info.smb_name, str);
 }
 
 /****************************************************************************
@@ -309,7 +307,7 @@ void standard_sub_snum(int snum, char *str)
 		cached_uid = current_user.uid;
 	}
 
-	standard_sub_advanced(snum, cached_user, "", -1, str);
+	standard_sub_advanced(snum, cached_user, "", -1, current_user_info.smb_name, str);
 }
 
 /*******************************************************************
@@ -317,7 +315,7 @@ void standard_sub_snum(int snum, char *str)
 ********************************************************************/
 void standard_sub_vuser(char *str, user_struct *vuser)
 {
-	standard_sub_advanced(-1, vuser->user.unix_name, "", -1, str);
+	standard_sub_advanced(-1, vuser->user.unix_name, "", -1, current_user_info.smb_name, str);
 }
 
 /*******************************************************************
@@ -325,5 +323,5 @@ void standard_sub_vuser(char *str, user_struct *vuser)
 ********************************************************************/
 void standard_sub_vsnum(char *str, user_struct *vuser, int snum)
 {
-	standard_sub_advanced(snum, vuser->user.unix_name, "", -1, str);
+	standard_sub_advanced(snum, vuser->user.unix_name, "", -1, current_user_info.smb_name, str);
 }

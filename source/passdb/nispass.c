@@ -46,8 +46,6 @@
 #include <rpcsvc/nis.h>
 
 extern int      DEBUGLEVEL;
-extern pstring samlogon_user;
-extern BOOL sam_logon_in_ssb;
 
 static VOLATILE sig_atomic_t gotalarm;
 
@@ -295,12 +293,7 @@ static BOOL make_sam_from_nisp_object(struct sam_passwd *pw_buf, nis_object *obj
 	  strtol(temp, NULL, 16) : pdb_uid_to_user_rid (pw_buf->smb_userid);
 
 	if (pw_buf->smb_name[strlen(pw_buf->smb_name)-1] != '$') {
-	  
-	  /* XXXX hack to get standard_sub_basic() to use sam logon username */
-	  /* possibly a better way would be to do a change_to_user() call */
-	  pstrcpy(samlogon_user, pw_buf->smb_name);
-	  sam_logon_in_ssb = True;
-	  
+	  	  
 	  get_single_attribute(obj, NPF_GROUP_RID, temp, sizeof(pstring));
 	  
 	  if (strlen(temp) > 0)
@@ -332,8 +325,6 @@ static BOOL make_sam_from_nisp_object(struct sam_passwd *pw_buf, nis_object *obj
 #endif
 	  get_single_attribute(obj, NPF_ACCT_DESC, acct_desc, sizeof(pstring));
 	  get_single_attribute(obj, NPF_WORKSTATIONS, workstations, sizeof(pstring));
-	  
-	  sam_logon_in_ssb = False;
 
 	} else {
 	  

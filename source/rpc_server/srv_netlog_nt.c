@@ -27,8 +27,6 @@
 
 #include "includes.h"
 
-extern BOOL sam_logon_in_ssb;
-extern pstring samlogon_user;
 extern pstring global_myname;
 extern DOM_SID global_sam_sid;
 
@@ -642,16 +640,10 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		int num_gids = 0;
 		pstring my_name;
 		pstring my_workgroup;
-		pstring domain_groups;
 	
 		/* set up pointer indicating user/password failed to be found */
 		usr_info->ptr_user_info = 0;
         
-		/* XXXX hack to get standard_sub_basic() to use sam logon username */
-		/* possibly a better way would be to do a change_to_user() call */
-		sam_logon_in_ssb = True;
-		pstrcpy(samlogon_user, nt_username);
-
 		pstrcpy(my_workgroup, lp_workgroup());
 		pstrcpy(my_name, global_myname);
 		strupper(my_name);
@@ -664,17 +656,8 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		 * JRA.
 		 */
 
-		*domain_groups = 0;
-  
-		get_domain_user_groups(domain_groups, nt_username);
-        
-		/*
-		 * make_dom_gids allocates the gids array. JRA.
-		 */
-		gids = NULL;
-		num_gids = make_dom_gids(p->mem_ctx, domain_groups, &gids);
-        
-		sam_logon_in_ssb = False;
+  		gids = NULL;
+		get_domain_user_groups(p->mem_ctx, &num_gids, &gids, server_info->sam_account);
         
 		init_net_user_info3(p->mem_ctx, usr_info, server_info->sam_account,
                             0, /* logon_count */
@@ -687,6 +670,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
                             my_workgroup, /* char *logon_dom */
                             &global_sam_sid,     /* DOM_SID *dom_sid */
                             NULL); /* char *other_sids */
+
 	}
 	free_server_info(&server_info);
 	return status;
