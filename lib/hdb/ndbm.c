@@ -19,7 +19,6 @@ NDBM_fetch(krb5_context context, HDB *db, hdb_entry *entry)
     DBM *d = (DBM*)db->db;
     datum key, value;
     krb5_data data;
-    int err;
 
     hdb_principal2key(context, entry->principal, &data);
 
