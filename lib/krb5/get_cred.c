@@ -225,26 +225,37 @@ init_tgs_req (krb5_context context,
 
     {
 	krb5_auth_context ac;
-	krb5_keyblock *key;
+	krb5_keyblock *key = NULL;
 
 	ret = krb5_auth_con_init(context, &ac);
 	if(ret)
 	    goto fail;
-	ret = krb5_generate_subkey (context, &krbtgt->session, &key);
-	if (ret) {
-	    krb5_auth_con_free (context, ac);
-	    goto fail;
-	}
-	ret = krb5_auth_con_setlocalsubkey(context, ac, key);
-	if (ret) {
-	    krb5_free_keyblock (context, key);
-	    krb5_auth_con_free (context, ac);
-	    goto fail;
+
+	if (krb5_config_get_bool_default(context, NULL, FALSE,
+					 "realms",
+					 krbtgt->server->realm,
+					 "tgs_require_subkey",
+					 NULL))
+	{
+	    ret = krb5_generate_subkey (context, &krbtgt->session, &key);
+	    if (ret) {
+		krb5_auth_con_free (context, ac);
+		goto fail;
+	    }
+
+	    ret = krb5_auth_con_setlocalsubkey(context, ac, key);
+	    if (ret) {
+		if (key)
+		    krb5_free_keyblock (context, key);
+		krb5_auth_con_free (context, ac);
+		goto fail;
+	    }
 	}
 
 	ret = set_auth_data (context, &t->req_body, &in_creds->authdata, key);
 	if (ret) {
-	    krb5_free_keyblock (context, key);
+	    if (key)
+		krb5_free_keyblock (context, key);
 	    krb5_auth_con_free (context, ac);
 	    goto fail;
 	}
@@ -256,7 +267,8 @@ init_tgs_req (krb5_context context,
 			      krbtgt,
 			      usage);
 	if(ret) {
-	    krb5_free_keyblock (context, key);
+	    if (key)
+		krb5_free_keyblock (context, key);
 	    krb5_auth_con_free(context, ac);
 	    goto fail;
 	}
