@@ -176,10 +176,10 @@ typedef struct
   int client_code_page;
   int announce_as;   /* This is initialised in init_globals */
   int machine_password_timeout;
-#ifdef USE_LDAP
+#ifdef WITH_LDAP
   int ldap_port;
-#endif /* USE_LDAP */
-#ifdef USE_SSL
+#endif /* WITH_LDAP */
+#ifdef WITH_SSL
   int sslVersion;
   char *sslHostsRequire;
   char *sslHostsResign;
@@ -194,7 +194,7 @@ typedef struct
   BOOL sslReqClientCert;
   BOOL sslReqServerCert;
   BOOL sslCompatibility;
-#endif /* USE_SSL */
+#endif /* WITH_SSL */
   BOOL bDNSproxy;
   BOOL bWINSsupport;
   BOOL bWINSproxy;
@@ -454,7 +454,7 @@ static struct enum_list enum_case[] = {{CASE_LOWER, "lower"}, {CASE_UPPER, "uppe
 
 static struct enum_list enum_lm_announce[] = {{0, "False"}, {1, "True"}, {2, "Auto"}, {-1, NULL}};
 
-#ifdef USE_SSL
+#ifdef WITH_SSL
 static struct enum_list enum_ssl_version[] = {{SMB_SSL_V2, "ssl2"}, {SMB_SSL_V3, "ssl3"},
   {SMB_SSL_V23, "ssl2or3"}, {SMB_SSL_TLS1, "tls1"}, {-1, NULL}};
 #endif
@@ -526,7 +526,7 @@ static struct parm_struct parm_table[] =
   {"hosts deny",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL,  FLAG_GLOBAL|FLAG_BASIC|FLAG_PRINT},
   {"deny hosts",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL,   NULL,  0},
 
-#ifdef USE_SSL
+#ifdef WITH_SSL
   {"Secure Socket Layer Options", P_SEP, P_SEPARATOR},
   {"ssl",              P_BOOL,    P_GLOBAL, &Globals.sslEnabled,        NULL,   NULL,  0 },
   {"ssl hosts",        P_STRING,  P_GLOBAL, &Globals.sslHostsRequire,   NULL,   NULL,  0 },
@@ -542,7 +542,7 @@ static struct parm_struct parm_table[] =
   {"ssl ciphers",      P_STRING,  P_GLOBAL, &Globals.sslCiphers,        NULL,   NULL,  0 },
   {"ssl version",      P_ENUM,    P_GLOBAL, &Globals.sslVersion,        NULL,   enum_ssl_version, 0},
   {"ssl compatibility", P_BOOL,    P_GLOBAL, &Globals.sslCompatibility, NULL,   NULL,  0 },
-#endif        /* USE_SSL */
+#endif        /* WITH_SSL */
 
   {"Logging Options", P_SEP, P_SEPARATOR},
   {"log level",        P_INTEGER, P_GLOBAL, &DEBUGLEVEL,                NULL,   NULL,  FLAG_BASIC},
@@ -676,7 +676,7 @@ static struct parm_struct parm_table[] =
   {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_GLOBAL},
   {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  0},
 
-#ifdef USE_LDAP
+#ifdef WITH_LDAP
   {"Ldap Options", P_SEP, P_SEPARATOR},
   {"ldap server",      P_STRING,  P_GLOBAL, &Globals.szLdapServer,      NULL,   NULL,  0},
   {"ldap port",        P_INTEGER, P_GLOBAL, &Globals.ldap_port,         NULL,   NULL,  0},
@@ -684,7 +684,7 @@ static struct parm_struct parm_table[] =
   {"ldap filter",      P_STRING,  P_GLOBAL, &Globals.szLdapFilter,      NULL,   NULL,  0},
   {"ldap root",        P_STRING,  P_GLOBAL, &Globals.szLdapRoot,        NULL,   NULL,  0},
   {"ldap root passwd", P_STRING,  P_GLOBAL, &Globals.szLdapRootPassword,NULL,   NULL,  0},
-#endif /* USE_LDAP */
+#endif /* WITH_LDAP */
 
 
   {"Miscellaneous Options", P_SEP, P_SEPARATOR},
@@ -817,7 +817,7 @@ static void init_globals(void)
   Globals.shmem_size = SHMEM_SIZE;
   Globals.announce_as = ANNOUNCE_AS_NT;
   Globals.bUnixRealname = False;
-#if (defined(NETGROUP) && defined(AUTOMOUNT))
+#if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
   Globals.bNISHomeMap = False;
 #ifdef NISPLUS_HOME
   string_set(&Globals.szNISHomeMapName, "auto_home.org_dir");
@@ -833,13 +833,13 @@ static void init_globals(void)
   Globals.bUnixPasswdSync = False;
   Globals.bPasswdChatDebug = False;
 
-#ifdef USE_LDAP
+#ifdef WITH_LDAP
   /* default values for ldap */
   string_set(&Globals.szLdapServer, "localhost");
   Globals.ldap_port=389;
-#endif /* USE_LDAP */
+#endif /* WITH_LDAP */
 
-#ifdef USE_SSL
+#ifdef WITH_SSL
   Globals.sslVersion = SMB_SSL_V23;
   Globals.sslHostsRequire = NULL;
   Globals.sslHostsResign = NULL;
@@ -854,7 +854,7 @@ static void init_globals(void)
   Globals.sslReqClientCert = False;
   Globals.sslReqServerCert = False;
   Globals.sslCompatibility = False;
-#endif        /* USE_SSL */
+#endif        /* WITH_SSL */
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -918,15 +918,15 @@ static void init_locals(void)
       string_initial(&sDefault.szLpqcommand,"lpstat -o%p");
       string_initial(&sDefault.szLprmcommand,"cancel %p-%j");
       string_initial(&sDefault.szPrintcommand,"lp -c -d%p %s; rm %s");
-#ifdef SVR4
+#ifdef SYSV
       string_initial(&sDefault.szLppausecommand,"lp -i %p-%j -H hold");
       string_initial(&sDefault.szLpresumecommand,"lp -i %p-%j -H resume");
       string_initial(&sDefault.szQueuepausecommand, "lpc stop %p");
       string_initial(&sDefault.szQueueresumecommand, "lpc start %p");
-#else /* SVR4 */
+#else /* SYSV */
       string_initial(&sDefault.szQueuepausecommand, "disable %p");
       string_initial(&sDefault.szQueueresumecommand, "enable %p");
-#endif /* SVR4 */
+#endif /* SYSV */
       break;
 
     case PRINT_QNX:
@@ -1066,15 +1066,15 @@ FN_GLOBAL_STRING(lp_domain_guest_users,&Globals.szDomainGuestUsers)
 FN_GLOBAL_STRING(lp_domain_hostsallow,&Globals.szDomainHostsallow)
 FN_GLOBAL_STRING(lp_domain_hostsdeny,&Globals.szDomainHostsdeny)
 
-#ifdef USE_LDAP
+#ifdef WITH_LDAP
 FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);
 FN_GLOBAL_STRING(lp_ldap_suffix,&Globals.szLdapSuffix);
 FN_GLOBAL_STRING(lp_ldap_filter,&Globals.szLdapFilter);
 FN_GLOBAL_STRING(lp_ldap_root,&Globals.szLdapRoot);
 FN_GLOBAL_STRING(lp_ldap_rootpasswd,&Globals.szLdapRootPassword);
-#endif /* USE_LDAP */
+#endif /* WITH_LDAP */
 
-#ifdef USE_SSL
+#ifdef WITH_SSL
 FN_GLOBAL_INTEGER(lp_ssl_version,&Globals.sslVersion);
 FN_GLOBAL_STRING(lp_ssl_hosts,&Globals.sslHostsRequire);
 FN_GLOBAL_STRING(lp_ssl_hosts_resign,&Globals.sslHostsResign);
@@ -1089,7 +1089,7 @@ FN_GLOBAL_BOOL(lp_ssl_enabled,&Globals.sslEnabled);
 FN_GLOBAL_BOOL(lp_ssl_reqClientCert,&Globals.sslReqClientCert);
 FN_GLOBAL_BOOL(lp_ssl_reqServerCert,&Globals.sslReqServerCert);
 FN_GLOBAL_BOOL(lp_ssl_compatibility,&Globals.sslCompatibility);
-#endif        /* USE_SSL */
+#endif        /* WITH_SSL */
 
 FN_GLOBAL_BOOL(lp_dns_proxy,&Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
@@ -1147,9 +1147,9 @@ FN_GLOBAL_INTEGER(lp_lm_announce,&Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval,&Globals.lm_interval)
 FN_GLOBAL_INTEGER(lp_machine_password_timeout,&Globals.machine_password_timeout)
 
-#ifdef USE_LDAP
+#ifdef WITH_LDAP
 FN_GLOBAL_INTEGER(lp_ldap_port,&Globals.ldap_port)
-#endif /* USE_LDAP */
+#endif /* WITH_LDAP */
 
 FN_LOCAL_STRING(lp_preexec,szPreExec)
 FN_LOCAL_STRING(lp_postexec,szPostExec)

@@ -2,7 +2,7 @@
 #5 July 96 Dan.Shearer@unisa.edu.au  removed hardcoded values
 
 MANDIR=$1
-SRCDIR=$2
+SRCDIR=$2/
 
 echo Installing man pages in $MANDIR
 

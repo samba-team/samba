@@ -20,9 +20,7 @@
    
 */
 
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
+#define NO_SYSLOG
 
 #include "includes.h"
 

@@ -32,9 +32,7 @@
  * This program reports current SMB connections
  */
 
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
+#define NO_SYSLOG
 
 #include "includes.h"
 

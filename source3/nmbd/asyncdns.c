@@ -135,7 +135,7 @@ void start_async_dns(void)
 {
 	int fd1[2], fd2[2];
 
-	signal(SIGCLD, SIG_IGN);
+	CatchChild();
 
 	if (pipe(fd1) || pipe(fd2)) {
 		return;
@@ -154,10 +154,10 @@ void start_async_dns(void)
 	fd_in = fd2[0];
 	fd_out = fd1[1];
 
-	signal(SIGUSR2, SIG_IGN);
-	signal(SIGUSR1, SIG_IGN);
-	signal(SIGHUP, SIG_IGN);
-        signal(SIGTERM, SIGNAL_CAST sig_term );
+	CatchSignal(SIGUSR2, SIG_IGN);
+	CatchSignal(SIGUSR1, SIG_IGN);
+	CatchSignal(SIGHUP, SIG_IGN);
+        CatchSignal(SIGTERM, SIGNAL_CAST sig_term );
 
 	asyncdns_process();
 }

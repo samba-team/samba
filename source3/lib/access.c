@@ -203,7 +203,7 @@ static int string_match(char *tok,char *s)
 	    && strcasecmp(tok, s + str_len - tok_len) == 0)
 	    return (YES);
     } else if (tok[0] == '@') {			/* netgroup: look it up */
-#ifdef	NETGROUP
+#ifdef	HAVE_NETGROUP
       static char *mydomain = NULL;
       char *hostname = NULL;
       BOOL netgroup_ok = False;

@@ -1,0 +1,578 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(byteorder.h)
+AC_CONFIG_HEADER(config.h)
+
+dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_SUBST(SHELL)
+AC_PROG_AWK
+
+AC_CANONICAL_SYSTEM
+case "$host_os" in
+	*linux*)   AC_DEFINE(LINUX);;
+        *solaris*) AC_DEFINE(SUNOS5);;
+        *sunos*) AC_DEFINE(SUNOS4);;
+        *irix*) AC_DEFINE(IRIX);;
+        *aix*) AC_DEFINE(AIX);;
+        *hpux*) AC_DEFINE(HPUX);;
+        *qnx*) AC_DEFINE(QNX);;
+        *osf1*) AC_DEFINE(OSF1);;
+        *sco*) AC_DEFINE(SCO);;
+        *next2*) AC_DEFINE(NEXT2);;
+esac
+
+AC_INLINE
+AC_HEADER_STDC
+AC_HEADER_DIRENT
+AC_HEADER_TIME
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS(sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h)
+AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h net/if.h)
+AC_CHECK_HEADERS(compat.h sys/param.h ctype.h sys/wait.h sys/ioctl.h)
+AC_CHECK_HEADERS(sys/filio.h string.h stdlib.h sys/socket.h sys/mode.h)
+AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h)
+AC_CHECK_HEADERS(sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
+AC_CHECK_HEADERS(shadow.h netinet/tcp.h sys/security.h security/pam_appl.h)
+
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(short)
+
+AC_C_CONST
+AC_C_INLINE
+AC_C_BIGENDIAN
+AC_C_CHAR_UNSIGNED
+
+AC_TYPE_SIGNAL
+AC_TYPE_UID_T
+AC_TYPE_MODE_T
+AC_TYPE_OFF_T
+AC_TYPE_SIZE_T
+AC_TYPE_PID_T
+AC_STRUCT_ST_RDEV
+AC_CHECK_TYPE(ino_t,unsigned)
+
+echo $ac_n "checking for errno in errno.h... $ac_c"
+AC_TRY_COMPILE([#include <errno.h>],[int i = errno],
+echo yes; AC_DEFINE(HAVE_ERRNO_DECL),
+echo no)
+
+AC_FUNC_MEMCMP
+
+###############################################
+# test for where we get crypt() from
+if test "$ac_cv_lib_crypt_crypt" = "yes"; then
+  AC_CHECK_LIB(crypt, crypt)
+  AC_DEFINE(HAVE_CRYPT)
+fi
+if test "$ac_cv_lib_crypt_crypt" = "no" || 
+   test "$ac_cv_lib_crypt_crypt" = ""; then
+# look for crypt 
+AC_CHECK_FUNC(crypt, AC_DEFINE(HAVE_CRYPT), 
+[case "$LIBS" in
+*-lcrypt*) ;;
+*) AC_CHECK_LIB(crypt, crypt) ;;
+esac
+if test "$ac_cv_lib_crypt_crypt" = "yes"; then
+  ac_cv_func_crypt=yes
+  AC_DEFINE(HAVE_CRYPT)
+fi])
+fi
+
+
+###############################################
+# test for where we get pam_authenticate() from
+# might need libdl for this to work
+if test "$ac_cv_header_security_pam_appl_h" = "yes"; then
+  AC_HAVE_LIBRARY(dl)
+fi
+if test "$ac_cv_lib_pam_pam_authenticate" = "yes"; then
+  AC_CHECK_LIB(pam, pam_authenticate)
+  AC_DEFINE(HAVE_PAM_AUTHENTICATE)
+fi
+if test "$ac_cv_lib_pam_pam_authenticate" = "no" || 
+   test "$ac_cv_lib_pam_pam_authenticate" = ""; then
+# look for pam_authenticate
+AC_CHECK_FUNC(pam_authenticate, AC_DEFINE(HAVE_PAM_AUTHENTICATE), 
+[case "$LIBS" in
+*-lpam*) ;;
+*) AC_CHECK_LIB(pam, pam_authenticate) ;;
+esac
+if test "$ac_cv_lib_pam_pam_authenticate" = "yes"; then
+  ac_cv_func_pam_authenticate=yes
+  AC_DEFINE(HAVE_PAM_AUTHENTICATE)
+fi])
+fi
+
+
+AC_CHECK_FUNCS(waitpid getcwd strdup strerror chown chmod chroot)
+AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync execl)
+AC_CHECK_FUNCS(memmove vsnprintf setsid glob strpbrk pipe crypt16 getauthuid)
+AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr)
+AC_CHECK_FUNCS(initgroups select rdchk getgrnam pathconf putprpwnam)
+AC_CHECK_FUNCS(setresuid setuidx setgroups mktime rename ftruncate)
+AC_CHECK_FUNCS(set_auth_parameters atexit grantpt getspnam dup2)
+AC_CHECK_FUNCS(bigcrypt getprpwnam setluid yp_get_default_domain)
+
+echo $ac_n "checking for long long ... $ac_c"
+AC_TRY_RUN([#include <stdio.h>
+main() { long long x = 1000000; x *= x; exit(((x/1000000) == 1000000)? 0: 1); }],
+echo yes;AC_DEFINE(HAVE_LONGLONG), 
+echo no)
+
+echo $ac_n "checking for off64_t ... $ac_c"
+AC_TRY_RUN([#include <stdio.h>
+#include <sys/stat.h>
+main() { struct stat64 st; off64_t s; if (sizeof(off_t) == sizeof(off64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
+echo yes;AC_DEFINE(HAVE_OFF64_T), 
+echo no)
+
+echo $ac_n "checking for union semun ... $ac_c"
+AC_TRY_RUN([
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+main() { union semun ss; exit(0); }],
+echo yes;AC_DEFINE(HAVE_UNION_SEMUN), 
+echo no)
+
+echo $ac_n "checking for unsigned char ... $ac_c"
+AC_TRY_RUN([#include <stdio.h>
+main() { char c; c=250; exit((c > 0)?0:1); }],
+echo yes;AC_DEFINE(HAVE_UNSIGNED_CHAR), 
+echo no)
+
+echo $ac_n "checking for sin_len in sock ... $ac_c"
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <sys/socket.h>],
+[struct sockaddr_in sock; sock.sin_len = sizeof(sock);],
+echo yes;AC_DEFINE(HAVE_SOCK_SIN_LEN), 
+echo no)
+
+echo $ac_n "checking if gettimeofday takes tz argument ... $ac_c"
+AC_TRY_RUN([
+#include <sys/time.h>
+#include <unistd.h>
+main() { struct timeval tv; exit(gettimeofday(&tv, NULL));}],
+           echo yes;AC_DEFINE(HAVE_GETTIMEOFDAY_TZ),
+	   echo no)
+
+
+echo $ac_n "checking for broken readdir ... $ac_c"
+AC_TRY_RUN([#include <sys/types.h>
+#include <dirent.h>
+main() { struct dirent *di; DIR *d = opendir("."); di = readdir(d);
+if (di && di->d_name[-2] == '.' && di->d_name[-1] == 0 &&
+di->d_name[0] == 0) exit(0); exit(1);} ],
+echo yes - you are using the broken /usr/ucb/cc;AC_DEFINE(HAVE_BROKEN_READDIR), 
+echo no)
+
+echo $ac_n "checking for utimbuf ... $ac_c"
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <utime.h>],
+[struct utimbuf tbuf;  tbuf.actime = 0; tbuf.modtime = 1; exit(utime("foo.c",&tbuf));],
+echo yes;AC_DEFINE(HAVE_UTIMBUF), 
+echo no)
+
+echo $ac_n "checking for ftruncate extend ... $ac_c"
+AC_TRY_RUN([#include "tests/ftruncate.c"],
+           echo yes;AC_DEFINE(HAVE_FTRUNCATE_EXTEND), 
+	   echo no)
+
+# The following test taken from the cvs sources
+# If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
+# The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
+# libsocket.so which has a bad implementation of gethostbyname (it
+# only looks in /etc/hosts), so we only look for -lsocket if we need
+# it.
+AC_CHECK_FUNC(connect, :, 
+[case "$LIBS" in
+*-lnsl*) ;;
+*) AC_CHECK_LIB(nsl_s, printf) ;;
+esac
+case "$LIBS" in
+*-lnsl*) ;;
+*) AC_CHECK_LIB(nsl, printf) ;;
+esac
+case "$LIBS" in
+*-lsocket*) ;;
+*) AC_CHECK_LIB(socket, connect) ;;
+esac
+case "$LIBS" in
+*-linet*) ;;
+*) AC_CHECK_LIB(inet, connect) ;;
+esac
+dnl We can't just call AC_CHECK_FUNCS(connect) here, because the value
+dnl has been cached.
+if test "$ac_cv_lib_socket_connect" = "yes" || 
+   test "$ac_cv_lib_inet_connect" = "yes"; then
+  ac_cv_func_connect=yes
+  AC_DEFINE(HAVE_CONNECT)
+fi])
+
+
+echo $ac_n "checking for root ... $ac_c"
+AC_TRY_RUN([main() { exit(getuid() != 0); }],
+           echo yes;AC_DEFINE(HAVE_ROOT), 
+	   echo WARNING: running as non-root will disable some tests;)
+
+netmask=no;
+echo $ac_n "checking for netmask ifconf ... $ac_c"
+AC_TRY_RUN([
+#define HAVE_NETMASK_IFCONF 1
+#define AUTOCONF 1
+#include "netmask.c"],
+           echo yes;netmask=yes;AC_DEFINE(HAVE_NETMASK_IFCONF),
+	   echo no)
+
+if test $netmask = no; then
+echo $ac_n "checking for netmask ifreq ... $ac_c"
+AC_TRY_RUN([
+#define HAVE_NETMASK_IFREQ 1
+#define AUTOCONF 1
+#include "netmask.c"],
+           echo yes;netmask=yes;AC_DEFINE(HAVE_NETMASK_IFREQ),
+	   echo no)
+fi
+
+if test $netmask = no; then
+echo $ac_n "checking for netmask AIX ... $ac_c"
+AC_TRY_RUN([
+#define HAVE_NETMASK_AIX 1
+#define AUTOCONF 1
+#include "netmask.c"],
+           echo yes;netmask=yes;AC_DEFINE(HAVE_NETMASK_AIX),
+	   echo no)
+fi
+
+echo $ac_n "checking for trapdoor seteuid ... $ac_c"
+AC_TRY_RUN([#include "tests/trapdoor.c"],
+	   echo no,
+           echo yes;AC_DEFINE(HAVE_TRAPDOOR_UID))
+
+echo $ac_n "checking for shared mmap ... $ac_c"
+AC_TRY_RUN([#include "tests/shared_mmap.c"],
+           echo yes;AC_DEFINE(HAVE_SHARED_MMAP), 
+	   echo no)
+
+echo $ac_n "checking for fcntl locking ... $ac_c"
+AC_TRY_RUN([#include "tests/fcntl_lock.c"],
+           echo yes;AC_DEFINE(HAVE_FCNTL_LOCK), 
+	   echo no)
+
+echo $ac_n "checking for sysv ipc ... $ac_c"
+AC_TRY_RUN([#include "tests/sysv_ipc.c"],
+           echo yes;AC_DEFINE(HAVE_SYSV_IPC), 
+	   echo no)
+
+#################################################
+# check for the AFS filesystem
+AC_MSG_CHECKING(whether to use AFS)
+AC_ARG_WITH(afs,
+[  --with-afs     Include AFS support
+  --without-afs  Don't include AFS support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_AFS)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+
+#################################################
+# check for the DFS auth system
+AC_MSG_CHECKING(whether to use DFS auth)
+AC_ARG_WITH(dfs,
+[  --with-dfs     Include DFS support
+  --without-dfs  Don't include DFS support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_DFS)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
+# check for automount support
+AC_MSG_CHECKING(whether to use AUTOMOUNT)
+AC_ARG_WITH(automount,
+[  --with-automount     Include AUTOMOUNT support
+  --without-automount  Don't include AUTOMOUNT support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_AUTOMOUNT)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
+# check for a LDAP password database
+AC_MSG_CHECKING(whether to use LDAP password database)
+AC_ARG_WITH(ldap,
+[  --with-ldap     Include LDAP support
+  --without-ldap  Don't include LDAP support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_LDAP)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
+# check for a NISPLUS password database
+AC_MSG_CHECKING(whether to use NISPLUS password database)
+AC_ARG_WITH(nisplus,
+[  --with-nisplus     Include NISPLUS password database support
+  --without-nisplus  Don't include NISPLUS password database support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_NISPLUS)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
+# check for the secure socket layer
+AC_MSG_CHECKING(whether to use SSL)
+AC_ARG_WITH(ssl,
+[  --with-ssl     Include SSL support
+  --without-ssl  Don't include SSL support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_SSL)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
+# check for experimental mmap support
+AC_MSG_CHECKING(whether to use MMAP)
+AC_ARG_WITH(mmap,
+[  --with-mmap     Include experimental MMAP support
+  --without-mmap  Don't include MMAP support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_MMAP)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
+# check for syslog logging
+AC_MSG_CHECKING(whether to use syslog logging)
+AC_ARG_WITH(syslog,
+[  --with-syslog     Include experimental SYSLOG support
+  --without-syslog  Don't include SYSLOG support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_SYSLOG)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+
+#################################################
+# these tests are taken from the GNU fileutils package
+AC_CHECKING(how to get filesystem space usage)
+space=no
+
+# Perform only the link test since it seems there are no variants of the
+# statvfs function.  This check is more than just AC_CHECK_FUNCS(statvfs)
+# because that got a false positive on SCO OSR5.  Adding the declaration
+# of a `struct statvfs' causes this test to fail (as it should) on such
+# systems.  That system is reported to work fine with STAT_STATFS4 which
+# is what it gets when this test fails.
+if test $space = no; then
+  # SVR4
+  AC_CACHE_CHECK([statvfs function (SVR4)], fu_cv_sys_stat_statvfs,
+		 [AC_TRY_LINK([#include <sys/types.h>
+#include <sys/statvfs.h>],
+			      [struct statvfs fsd; statvfs (0, &fsd);],
+			      fu_cv_sys_stat_statvfs=yes,
+			      fu_cv_sys_stat_statvfs=no)])
+  if test $fu_cv_sys_stat_statvfs = yes; then
+    space=yes
+    AC_DEFINE(STAT_STATVFS)
+  fi
+fi
+
+if test $space = no; then
+  # DEC Alpha running OSF/1
+  AC_MSG_CHECKING([for 3-argument statfs function (DEC OSF/1)])
+  AC_CACHE_VAL(fu_cv_sys_stat_statfs3_osf1,
+  [AC_TRY_RUN([
+#include <sys/param.h>
+#include <sys/types.h>
+#include <sys/mount.h>
+  main ()
+  {
+    struct statfs fsd;
+    fsd.f_fsize = 0;
+    exit (statfs (".", &fsd, sizeof (struct statfs)));
+  }],
+  fu_cv_sys_stat_statfs3_osf1=yes,
+  fu_cv_sys_stat_statfs3_osf1=no,
+  fu_cv_sys_stat_statfs3_osf1=no)])
+  AC_MSG_RESULT($fu_cv_sys_stat_statfs3_osf1)
+  if test $fu_cv_sys_stat_statfs3_osf1 = yes; then
+    space=yes
+    AC_DEFINE(STAT_STATFS3_OSF1)
+  fi
+fi
+
+if test $space = no; then
+# AIX
+  AC_MSG_CHECKING([for two-argument statfs with statfs.bsize dnl
+member (AIX, 4.3BSD)])
+  AC_CACHE_VAL(fu_cv_sys_stat_statfs2_bsize,
+  [AC_TRY_RUN([
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
+#ifdef HAVE_SYS_VFS_H
+#include <sys/vfs.h>
+#endif
+  main ()
+  {
+  struct statfs fsd;
+  fsd.f_bsize = 0;
+  exit (statfs (".", &fsd));
+  }],
+  fu_cv_sys_stat_statfs2_bsize=yes,
+  fu_cv_sys_stat_statfs2_bsize=no,
+  fu_cv_sys_stat_statfs2_bsize=no)])
+  AC_MSG_RESULT($fu_cv_sys_stat_statfs2_bsize)
+  if test $fu_cv_sys_stat_statfs2_bsize = yes; then
+    space=yes
+    AC_DEFINE(STAT_STATFS2_BSIZE)
+  fi
+fi
+
+if test $space = no; then
+# SVR3
+  AC_MSG_CHECKING([for four-argument statfs (AIX-3.2.5, SVR3)])
+  AC_CACHE_VAL(fu_cv_sys_stat_statfs4,
+  [AC_TRY_RUN([#include <sys/types.h>
+#include <sys/statfs.h>
+  main ()
+  {
+  struct statfs fsd;
+  exit (statfs (".", &fsd, sizeof fsd, 0));
+  }],
+    fu_cv_sys_stat_statfs4=yes,
+    fu_cv_sys_stat_statfs4=no,
+    fu_cv_sys_stat_statfs4=no)])
+  AC_MSG_RESULT($fu_cv_sys_stat_statfs4)
+  if test $fu_cv_sys_stat_statfs4 = yes; then
+    space=yes
+    AC_DEFINE(STAT_STATFS4)
+  fi
+fi
+
+if test $space = no; then
+# 4.4BSD and NetBSD
+  AC_MSG_CHECKING([for two-argument statfs with statfs.fsize dnl
+member (4.4BSD and NetBSD)])
+  AC_CACHE_VAL(fu_cv_sys_stat_statfs2_fsize,
+  [AC_TRY_RUN([#include <sys/types.h>
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
+  main ()
+  {
+  struct statfs fsd;
+  fsd.f_fsize = 0;
+  exit (statfs (".", &fsd));
+  }],
+  fu_cv_sys_stat_statfs2_fsize=yes,
+  fu_cv_sys_stat_statfs2_fsize=no,
+  fu_cv_sys_stat_statfs2_fsize=no)])
+  AC_MSG_RESULT($fu_cv_sys_stat_statfs2_fsize)
+  if test $fu_cv_sys_stat_statfs2_fsize = yes; then
+    space=yes
+    AC_DEFINE(STAT_STATFS2_FSIZE)
+  fi
+fi
+
+if test $space = no; then
+  # Ultrix
+  AC_MSG_CHECKING([for two-argument statfs with struct fs_data (Ultrix)])
+  AC_CACHE_VAL(fu_cv_sys_stat_fs_data,
+  [AC_TRY_RUN([#include <sys/types.h>
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
+#ifdef HAVE_SYS_FS_TYPES_H
+#include <sys/fs_types.h>
+#endif
+  main ()
+  {
+  struct fs_data fsd;
+  /* Ultrix's statfs returns 1 for success,
+     0 for not mounted, -1 for failure.  */
+  exit (statfs (".", &fsd) != 1);
+  }],
+  fu_cv_sys_stat_fs_data=yes,
+  fu_cv_sys_stat_fs_data=no,
+  fu_cv_sys_stat_fs_data=no)])
+  AC_MSG_RESULT($fu_cv_sys_stat_fs_data)
+  if test $fu_cv_sys_stat_fs_data = yes; then
+    space=yes
+    AC_DEFINE(STAT_STATFS2_FS_DATA)
+  fi
+fi
+
+
+AC_OUTPUT(Makefile tests/dummy client/dummy lib/dummy lib/rpc/dummy
+lib/rpc/client/dummy lib/rpc/include/dummy lib/rpc/parse/dummy
+lib/rpc/server/dummy lib/smb/dummy ubiqx/dummy web/dummy)

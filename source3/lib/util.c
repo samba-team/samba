@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-#if (defined(NETGROUP) && defined (AUTOMOUNT))
+#if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 #ifdef NISPLUS_HOME
 #include <rpcsvc/nis.h>
 #else
@@ -29,12 +29,12 @@
 #endif
 #endif
 
-#ifdef USE_SSL
+#ifdef WITH_SSL
 #include <ssl.h>
 #undef Realloc  /* SSLeay defines this and samba has a function of this name */
 extern SSL  *ssl;
 extern int  sslFd;
-#endif  /* USE_SSL */
+#endif  /* WITH_SSL */
 
 pstring scope = "";
 
@@ -70,7 +70,7 @@ int trans_num = 0;
 int case_default = CASE_LOWER;
 
 pstring debugf = "";
-int syslog_level;
+int syslog_level = 0;
 
 /* the following control case operations - they are put here so the
    client can link easily */
@@ -119,17 +119,16 @@ int sig_usr2(void)
   DEBUG( 0, ( "Got SIGUSR2 set debug level to %d.\n", DEBUGLEVEL ) );
    
   BlockSignals( False, SIGUSR2);
-#ifndef DONT_REINSTALL_SIG
-  signal(SIGUSR2, SIGNAL_CAST sig_usr2);
-#endif 
+  CatchSignal(SIGUSR2, SIGNAL_CAST sig_usr2);
+
   return(0);
 }  
 #endif /* SIGUSR1 */
    
 #if defined(SIGUSR1)
-/**************************************************************************** **
+/******************************************************************************
  catch a sigusr1 - increase the debug log level. 
- **************************************************************************** */
+ *****************************************************************************/
 int sig_usr1(void)
 {
   BlockSignals( True, SIGUSR1);
@@ -142,9 +141,7 @@ int sig_usr1(void)
   DEBUG( 0, ( "Got SIGUSR1 set debug level to %d.\n", DEBUGLEVEL ) );
 
   BlockSignals( False, SIGUSR1);
-#ifndef DONT_REINSTALL_SIG
-  signal(SIGUSR1, SIGNAL_CAST sig_usr1);
-#endif
+  CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
   return(0);
 }
 #endif /* SIGUSR1 */
@@ -155,7 +152,7 @@ int sig_usr1(void)
   ******************************************************************/
 void setup_logging(char *pname,BOOL interactive)
 {
-#ifdef SYSLOG
+#ifdef WITH_SYSLOG
   if (!interactive) {
     char *p = strrchr(pname,'/');
     if (p) pname = p+1;
@@ -273,7 +270,7 @@ static void check_log_size(void)
 write an debug message on the debugfile. This is called by the DEBUG
 macro
 ********************************************************************/
-#ifdef __STDC__
+#ifdef HAVE_STDARG_H
  int Debug1(char *format_str, ...)
 {
 #else
@@ -286,7 +283,7 @@ va_dcl
   int old_errno = errno;
 
   if (stdout_logging) {
-#ifdef __STDC__
+#ifdef HAVE_STDARG_H
     va_start(ap, format_str);
 #else
     va_start(ap);
@@ -298,7 +295,7 @@ va_dcl
     return(0);
   }
   
-#ifdef SYSLOG
+#ifdef WITH_SYSLOG
   if (!lp_syslog_only())
 #endif  
     {
@@ -318,7 +315,7 @@ va_dcl
       }
     }
 
-#ifdef SYSLOG
+#ifdef WITH_SYSLOG
   if (syslog_level < lp_syslog())
     {
       /* 
@@ -341,7 +338,7 @@ va_dcl
       else
 	priority = priority_map[syslog_level];
       
-#ifdef __STDC__
+#ifdef HAVE_STDARG_H
       va_start(ap, format_str);
 #else
       va_start(ap);
@@ -355,11 +352,11 @@ va_dcl
     }
 #endif
   
-#ifdef SYSLOG
+#ifdef WITH_SYSLOG
   if (!lp_syslog_only())
 #endif
     {
-#ifdef __STDC__
+#ifdef HAVE_STDARG_H
       va_start(ap, format_str);
 #else
       va_start(ap);
@@ -483,65 +480,6 @@ char **toktocliplist(int *ctok, char *sep)
   return ret;
 }
 
-#ifndef HAVE_MEMMOVE
-/*******************************************************************
-safely copies memory, ensuring no overlap problems.
-this is only used if the machine does not have it's own memmove().
-this is not the fastest algorithm in town, but it will do for our
-needs.
-********************************************************************/
-void *MemMove(void *dest,void *src,int size)
-{
-  unsigned long d,s;
-  int i;
-  if (dest==src || !size) return(dest);
-
-  d = (unsigned long)dest;
-  s = (unsigned long)src;
-
-  if ((d >= (s+size)) || (s >= (d+size))) {
-    /* no overlap */
-    memcpy(dest,src,size);
-    return(dest);
-  }
-
-  if (d < s)
-    {
-      /* we can forward copy */
-      if (s-d >= sizeof(int) && 
-	  !(s%sizeof(int)) && !(d%sizeof(int)) && !(size%sizeof(int))) {
-	/* do it all as words */
-	int *idest = (int *)dest;
-	int *isrc = (int *)src;
-	size /= sizeof(int);
-	for (i=0;i<size;i++) idest[i] = isrc[i];
-      } else {
-	/* simplest */
-	char *cdest = (char *)dest;
-	char *csrc = (char *)src;
-	for (i=0;i<size;i++) cdest[i] = csrc[i];
-      }
-    }
-  else
-    {
-      /* must backward copy */
-      if (d-s >= sizeof(int) && 
-	  !(s%sizeof(int)) && !(d%sizeof(int)) && !(size%sizeof(int))) {
-	/* do it all as words */
-	int *idest = (int *)dest;
-	int *isrc = (int *)src;
-	size /= sizeof(int);
-	for (i=size-1;i>=0;i--) idest[i] = isrc[i];
-      } else {
-	/* simplest */
-	char *cdest = (char *)dest;
-	char *csrc = (char *)src;
-	for (i=size-1;i>=0;i--) cdest[i] = csrc[i];
-      }      
-    }
-  return(dest);
-}
-#endif
 
 /* ************************************************************************* **
  * Duplicate a block of memory.
@@ -686,9 +624,9 @@ void set_socket_options(int fd, char *options)
 ****************************************************************************/
 void close_sockets(void )
 {
-#ifdef USE_SSL
+#ifdef WITH_SSL
   sslutil_disconnect(Client);
-#endif /* USE_SSL */
+#endif /* WITH_SSL */
 
   close(Client);
   Client = 0;
@@ -2188,15 +2126,15 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out)
     if (mincnt == 0) mincnt = maxcnt;
 
     while (nread < mincnt) {
-#ifdef USE_SSL
+#ifdef WITH_SSL
       if(fd == sslFd){
         readret = SSL_read(ssl, buf + nread, maxcnt - nread);
       }else{
         readret = read(fd, buf + nread, maxcnt - nread);
       }
-#else /* USE_SSL */
+#else /* WITH_SSL */
       readret = read(fd, buf + nread, maxcnt - nread);
-#endif /* USE_SSL */
+#endif /* WITH_SSL */
 
       if (readret == 0) {
 	smb_read_error = READ_EOF;
@@ -2242,15 +2180,15 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out)
 	return -1;
       }
       
-#ifdef USE_SSL
+#ifdef WITH_SSL
     if(fd == sslFd){
       readret = SSL_read(ssl, buf + nread, maxcnt - nread);
     }else{
       readret = read(fd, buf + nread, maxcnt - nread);
     }
-#else /* USE_SSL */
+#else /* WITH_SSL */
     readret = read(fd, buf+nread, maxcnt-nread);
-#endif /* USE_SSL */
+#endif /* WITH_SSL */
 
       if (readret == 0) {
 	/* we got EOF on the file descriptor */
@@ -2335,15 +2273,15 @@ int read_data(int fd,char *buffer,int N)
 
   while (total < N)
   {
-#ifdef USE_SSL
+#ifdef WITH_SSL
     if(fd == sslFd){
       ret = SSL_read(ssl, buffer + total, N - total);
     }else{
       ret = read(fd,buffer + total,N - total);
     }
-#else /* USE_SSL */
+#else /* WITH_SSL */
     ret = read(fd,buffer + total,N - total);
-#endif /* USE_SSL */
+#endif /* WITH_SSL */
 
     if (ret == 0)
     {
@@ -2371,15 +2309,15 @@ int write_data(int fd,char *buffer,int N)
 
   while (total < N)
   {
-#ifdef USE_SSL
+#ifdef WITH_SSL
     if(fd == sslFd){
       ret = SSL_write(ssl,buffer + total,N - total);
     }else{
       ret = write(fd,buffer + total,N - total);
     }
-#else /* USE_SSL */
+#else /* WITH_SSL */
     ret = write(fd,buffer + total,N - total);
-#endif /* USE_SSL */
+#endif /* WITH_SSL */
 
     if (ret == -1) return -1;
     if (ret == 0) return total;
@@ -3364,28 +3302,25 @@ become a daemon, discarding the controlling terminal
 ****************************************************************************/
 void become_daemon(void)
 {
-#ifndef NO_FORK_DEBUG
-  if (fork())
-    _exit(0);
+	if (fork()) {
+		_exit(0);
+	}
 
   /* detach from the terminal */
-#ifdef USE_SETSID
-  setsid();
-#else /* USE_SETSID */
-#ifdef TIOCNOTTY
-  {
-    int i = open("/dev/tty", O_RDWR);
-    if (i >= 0) 
-      {
-	ioctl(i, (int) TIOCNOTTY, (char *)0);      
-	close(i);
-      }
-  }
-#endif /* TIOCNOTTY */
-#endif /* USE_SETSID */
-  /* Close fd's 0,1,2. Needed if started by rsh */
-  close_low_fds();
-#endif /* NO_FORK_DEBUG */
+#ifdef HAVE_SETSID
+	setsid();
+#elif defined(TIOCNOTTY)
+	{
+		int i = open("/dev/tty", O_RDWR);
+		if (i != -1) {
+			ioctl(i, (int) TIOCNOTTY, (char *)0);      
+			close(i);
+		}
+	}
+#endif /* HAVE_SETSID */
+
+	/* Close fd's 0,1,2. Needed if started by rsh */
+	close_low_fds();
 }
 
 
@@ -3484,7 +3419,7 @@ int set_filelen(int fd, long len)
    extend a file with ftruncate. Provide alternate implementation
    for this */
 
-#if FTRUNCATE_CAN_EXTEND
+#ifdef HAVE_FTRUNCATE_EXTEND
   return ftruncate(fd, len);
 #else
   struct stat st;
@@ -3606,22 +3541,6 @@ void *Realloc(void *p,int size)
   return(ret);
 }
 
-#ifdef NOSTRDUP
-/****************************************************************************
-duplicate a string
-****************************************************************************/
- char *strdup(char *s)
-{
-  char *ret = NULL;
-  int len;
-  if (!s) return(NULL);
-  ret = (char *)malloc((len = strlen(s))+1);
-  if (!ret) return(NULL);
-  safe_strcpy(ret,s,len);
-  return(ret);
-}
-#endif
-
 
 /****************************************************************************
   Signal handler for SIGPIPE (write on a disconnected socket) 
@@ -3707,7 +3626,8 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
   
   bzero((char *)&sock,sizeof(sock));
   memcpy((char *)&sock.sin_addr,(char *)hp->h_addr, hp->h_length);
-#if defined(__FreeBSD__) || defined(NETBSD) || defined(__OpenBSD__) /* XXX not the right ifdef */
+
+#ifdef HAVE_SOCK_SIN_LEN
   sock.sin_len = sizeof(sock);
 #endif
   sock.sin_port = htons( port );
@@ -4065,7 +3985,7 @@ char *client_addr(int fd)
 	return addr_buf;
 }
 
-#if (defined(NETGROUP) && defined(AUTOMOUNT))
+#if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 /******************************************************************
  Remove any mount options such as -rsize=2048,wsize=2048 etc.
  Based on a fix from <Thomas.Hepper@icem.de>.
@@ -4213,10 +4133,10 @@ char *automount_server(char *user_name)
 	static pstring server_name;
 
 	/* use the local machine name as the default */
-	/* this will be the default if AUTOMOUNT is not used or fails */
+	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
 	pstrcpy(server_name, local_machine);
 
-#if (defined(NETGROUP) && defined (AUTOMOUNT))
+#if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
 	if (lp_nis_home_map())
 	{
@@ -4248,11 +4168,11 @@ char *automount_path(char *user_name)
 	static pstring server_path;
 
 	/* use the passwd entry as the default */
-	/* this will be the default if AUTOMOUNT is not used or fails */
+	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
 	/* pstrcpy() copes with get_home_dir() returning NULL */
 	pstrcpy(server_path, get_home_dir(user_name));
 
-#if (defined(NETGROUP) && defined (AUTOMOUNT))
+#if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
 	if (lp_nis_home_map())
 	{
@@ -4484,31 +4404,11 @@ turn a gid into a group name
 ********************************************************************/
 char *gidtoname(int gid)
 {
-  static char name[40];
-  struct group *grp = getgrgid(gid);
-  if (grp) return(grp->gr_name);
-  slprintf(name,sizeof(name) - 1, "%d",gid);
-  return(name);
-}
-
-/*******************************************************************
-block sigs
-********************************************************************/
-void BlockSignals(BOOL block,int signum)
-{
-#ifdef USE_SIGBLOCK
-  int block_mask = sigmask(signum);
-  static int oldmask = 0;
-  if (block) 
-    oldmask = sigblock(block_mask);
-  else
-    sigsetmask(oldmask);
-#elif defined(USE_SIGPROCMASK)
-  sigset_t set;
-  sigemptyset(&set);
-  sigaddset(&set,signum);
-  sigprocmask(block?SIG_BLOCK:SIG_UNBLOCK,&set,NULL);
-#endif
+	static char name[40];
+	struct group *grp = getgrgid(gid);
+	if (grp) return(grp->gr_name);
+	slprintf(name,sizeof(name) - 1, "%d",gid);
+	return(name);
 }
 
 #if AJT
@@ -4517,15 +4417,10 @@ my own panic function - not suitable for general use
 ********************************************************************/
 void ajt_panic(void)
 {
-  system("/usr/bin/X11/xedit -display solen:0 /tmp/ERROR_FAULT");
+	system("/usr/bin/X11/xedit -display :0 /tmp/ERROR_FAULT");
 }
 #endif
 
-#ifdef USE_DIRECT
-#define DIRECT direct
-#else
-#define DIRECT dirent
-#endif
 
 /*******************************************************************
 a readdir wrapper which just returns the file name
@@ -4533,43 +4428,33 @@ also return the inode number if requested
 ********************************************************************/
 char *readdirname(void *p)
 {
-  struct DIRECT *ptr;
-  char *dname;
+	struct dirent *ptr;
+	char *dname;
 
-  if (!p) return(NULL);
+	if (!p) return(NULL);
   
-  ptr = (struct DIRECT *)readdir(p);
-  if (!ptr) return(NULL);
+	ptr = (struct dirent *)readdir(p);
+	if (!ptr) return(NULL);
 
-  dname = ptr->d_name;
+	dname = ptr->d_name;
 
 #ifdef NEXT2
-  if (telldir(p) < 0) return(NULL);
+	if (telldir(p) < 0) return(NULL);
 #endif
 
-#ifdef SUNOS5
-  /* this handles a broken compiler setup, causing a mixture
-   of BSD and SYSV headers and libraries */
-  {
-    static BOOL broken_readdir = False;
-    if (!broken_readdir && !(*(dname)) && strequal("..",dname-2))
-      {
-	DEBUG(0,("Your readdir() is broken. You have somehow mixed SYSV and BSD headers and libraries\n"));
-	broken_readdir = True;
-      }
-    if (broken_readdir)
-      dname = dname - 2;
-  }
+#ifdef HAVE_BROKEN_READDIR
+	/* using /usr/ucb/cc is BAD */
+	dname = dname - 2;
 #endif
 
-  {
-    static pstring buf;
-    pstrcpy(buf, dname);
-    unix_to_dos(buf, True);
-    dname = buf;
-  }
+	{
+		static pstring buf;
+		memcpy(buf, dname, NAMLEN(ptr)+1);
+		unix_to_dos(buf, True);
+		dname = buf;
+	}
 
-  return(dname);
+	return(dname);
 }
 
 /*******************************************************************

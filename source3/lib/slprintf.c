@@ -83,7 +83,7 @@ int vslprintf(char *str, int n, char *format, va_list ap)
 #endif
 }
 
-#ifdef __STDC__
+#ifdef HAVE_STDARG_H
  int slprintf(char *str, int n, char *format, ...)
 {
 #else
@@ -96,7 +96,7 @@ va_dcl
 	va_list ap;  
 	int ret;
 
-#ifdef __STDC__
+#ifdef HAVE_STDARG_H
 	va_start(ap, format);
 #else
 	va_start(ap);

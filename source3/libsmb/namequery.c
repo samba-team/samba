@@ -313,7 +313,7 @@ FILE *startlmhosts(char *fname)
 {
   FILE *fp = fopen(fname,"r");
   if (!fp) {
-    DEBUG(2,("startlmhosts: Can't open lmhosts file %s. Error was %s\n",
+    DEBUG(4,("startlmhosts: Can't open lmhosts file %s. Error was %s\n",
              fname, strerror(errno)));
     return NULL;
   }

@@ -152,12 +152,6 @@
    accessible to root */
 #define DUMP_CORE 1
 
-/* what is the longest significant password available on your system? 
- Knowing this speeds up password searches a lot */
-#ifndef PASSWORD_LENGTH
-#define PASSWORD_LENGTH 8
-#endif
-
 #define SMB_ALIGNMENT 1
 
 

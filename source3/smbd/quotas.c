@@ -581,7 +581,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 
   euser_id = geteuid();
 
-#ifdef USE_SETRES
+#ifdef HPUX
   {
     uid_t user_id;
 
@@ -592,7 +592,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
     if (setresuid(user_id,-1,-1))
       DEBUG(5,("Unable to reset uid to %d\n", user_id));
   }
-#else /* USE_SETRES */
+#else 
 #if defined(__FreeBSD__) || defined(__OpenBSD__)
   {
     /* FreeBSD patches from Marty Moll <martym@arbor.edu> */
@@ -620,7 +620,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 #else /* !__FreeBSD__ && !AIX && !__OpenBSD__ */
   r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
 #endif /* !__FreeBSD__ && !AIX && !__OpenBSD__ */
-#endif /* USE_SETRES */
+#endif /* HAVE_SETRES */
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
 #if defined(__FreeBSD__) || defined(__OpenBSD__)

@@ -212,7 +212,6 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
   strlower(user);
   last_char = strlen(user)-1;
   user[last_char] = toupper(user[last_char]);
-  DEBUG(3, ("Trying username %s\n", user));
   ret = _Get_Pwnam(user);
   if (ret) return(ret);
 
@@ -232,7 +231,7 @@ check if a user is in a netgroup user list
 ****************************************************************************/
 static BOOL user_in_netgroup_list(char *user,char *ngname)
 {
-#ifdef NETGROUP
+#ifdef HAVE_NETGROUP
   static char *mydomain = NULL;
   if (mydomain == NULL)
     yp_get_default_domain(&mydomain);
@@ -252,7 +251,7 @@ static BOOL user_in_netgroup_list(char *user,char *ngname)
     if (innetgr(ngname, NULL, user, mydomain))
       return (True);
   }
-#endif /* NETGROUP */
+#endif /* HAVE_NETGROUP */
   return False;
 }
 
@@ -261,7 +260,7 @@ check if a user is in a UNIX user list
 ****************************************************************************/
 static BOOL user_in_group_list(char *user,char *gname)
 {
-#if HAVE_GETGRNAM 
+#ifdef HAVE_GETGRNAM 
   struct group *gptr;
   char **member;  
   struct passwd *pass = Get_Pwnam(user,False);

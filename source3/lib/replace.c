@@ -27,20 +27,8 @@ extern int DEBUGLEVEL;
  void replace_dummy(void) 
 {}
 
-#ifdef REPLACE_STRLEN
-/****************************************************************************
-a replacement strlen() that returns int for solaris
-****************************************************************************/
- int Strlen(char *s)
-{
-  int ret=0;
-  if (!s) return(0);
-  while (*s++) ret++;
-  return(ret);
-}
-#endif
 
-#ifdef NO_FTRUNCATE
+#ifndef HAVE_FTRUNCATE
  /*******************************************************************
 ftruncate for operating systems that don't have it
 ********************************************************************/
@@ -57,27 +45,7 @@ ftruncate for operating systems that don't have it
 #endif
 
 
-#ifdef REPLACE_STRSTR
-/****************************************************************************
-Mips version of strstr doesn't seem to work correctly.
-There is a #define in includes.h to redirect calls to this function.
-****************************************************************************/
-char *Strstr(char *s, char *p)
-{
-	int len = strlen(p);
-
-	while ( *s != '\0' ) {
-		if ( strncmp(s, p, len) == 0 )
-		return s;
-		s++;
-	}
-
-	return NULL;
-}
-#endif /* REPLACE_STRSTR */
-
-
-#ifdef REPLACE_MKTIME
+#ifndef HAVE_MKTIME
 /*******************************************************************
 a mktime() replacement for those who don't have it - contributed by 
 C.A. Lademann <cal@zls.com>
@@ -86,7 +54,7 @@ C.A. Lademann <cal@zls.com>
 #define  HOUR    60*MINUTE
 #define  DAY             24*HOUR
 #define  YEAR    365*DAY
-time_t Mktime(struct tm      *t)
+ time_t mktime(struct tm *t)
 {
   struct tm       *u;
   time_t  epoch = 0;
@@ -126,22 +94,17 @@ time_t Mktime(struct tm      *t)
     t->tm_wday = u->tm_wday;
     t->tm_yday = u->tm_yday;
     t->tm_isdst = u->tm_isdst;
-#ifndef NO_TM_NAME
-    memcpy(t->tm_name, u->tm_name, LTZNMAX);
-#endif
   }
 
   return(epoch);
 }
-#endif /* REPLACE_MKTIME */
+#endif /* !HAVE_MKTIME */
 
 
 
-#ifdef REPLACE_RENAME
+#ifndef HAVE_RENAME
 /* Rename a file. (from libiberty in GNU binutils)  */
- int rename (zfrom, zto)
-     const char *zfrom;
-     const char *zto;
+ int rename(const char *zfrom, const char *zto)
 {
   if (link (zfrom, zto) < 0)
     {
@@ -156,73 +119,70 @@ time_t Mktime(struct tm      *t)
 #endif
 
 
-#ifdef REPLACE_INNETGR
+#ifndef HAVE_INNETGR
 /*
  * Search for a match in a netgroup. This replaces it on broken systems.
  */
-int InNetGr(char *group,char *host,char *user,char *dom)
+ int innetgr(char *group,char *host,char *user,char *dom)
 {
-  char *hst, *usr, *dm;
+	char *hst, *usr, *dm;
   
-  setnetgrent(group);
-  while (getnetgrent(&hst, &usr, &dm))
-    if (((host == 0) || (hst == 0) || !strcmp(host, hst)) &&
-	((user == 0) || (usr == 0) || !strcmp(user, usr)) &&
-	((dom == 0) || (dm == 0) || !strcmp(dom, dm))) {
-      endnetgrent();
-      return (1);
-    }
-  endnetgrent();
-  return (0);
+	setnetgrent(group);
+	while (getnetgrent(&hst, &usr, &dm)) {
+		if (((host == 0) || (hst == 0) || !strcmp(host, hst)) &&
+		    ((user == 0) || (usr == 0) || !strcmp(user, usr)) &&
+		    ((dom == 0) || (dm == 0) || !strcmp(dom, dm))) {
+			endnetgrent();
+			return (1);
+		}
+	}
+	endnetgrent();
+	return (0);
 }
 #endif
 
 
 
-#ifdef NO_INITGROUPS
-#include <sys/types.h>
-#include <limits.h>
-#include <grp.h>
-
-#ifndef NULL
-#define NULL (void *)0
-#endif
-
+#ifndef HAVE_INITGROUPS
 /****************************************************************************
  some systems don't have an initgroups call 
 ****************************************************************************/
  int initgroups(char *name,gid_t id)
 {
-#ifdef NO_SETGROUPS
-  /* yikes! no SETGROUPS or INITGROUPS? how can this work? */
-  return(0);
-#else
-  gid_t  grouplst[NGROUPS_MAX];
-  int    i,j;
-  struct group *g;
-  char   *gr;
-
-  grouplst[0] = id;
-  i = 1;
-  while (i < NGROUPS_MAX && 
-	 ((g = (struct group *)getgrent()) != (struct group *)NULL)) 
-    {
-      if (g->gr_gid == id)
-	continue;
-      j = 0;
-      gr = g->gr_mem[0];
-      while (gr && (*gr != (char)NULL)) {
-	if (strcmp(name,gr) == 0) {
-	  grouplst[i] = g->gr_gid;
-	  i++;
-	  gr = (char *)NULL;
-	  break;
+#ifndef HAVE_SETGROUPS
+	static int done;
+	if (!done) {
+		DEBUG(1,("WARNING: running without setgroups\n"));
+		done=1;
 	}
-	gr = g->gr_mem[++j];
-      }
-    }
-  endgrent();
-  return(setgroups(i,grouplst));
+	/* yikes! no SETGROUPS or INITGROUPS? how can this work? */
+	return(0);
+#else
+	gid_t  grouplst[NGROUPS_MAX];
+	int    i,j;
+	struct group *g;
+	char   *gr;
+	
+	grouplst[0] = id;
+	i = 1;
+	while (i < NGROUPS_MAX && 
+	       ((g = (struct group *)getgrent()) != (struct group *)NULL)) {
+		if (g->gr_gid == id)
+			continue;
+		j = 0;
+		gr = g->gr_mem[0];
+		while (gr && (*gr != (char)NULL)) {
+			if (strcmp(name,gr) == 0) {
+				grouplst[i] = g->gr_gid;
+				i++;
+				gr = (char *)NULL;
+				break;
+			}
+			gr = g->gr_mem[++j];
+		}
+	}
+	endgrent();
+	return(setgroups(i,grouplst));
 #endif
 }
 #endif
@@ -232,27 +192,89 @@ int InNetGr(char *group,char *host,char *user,char *dom)
 /* This is needed due to needing the nap() function but we don't want
    to include the Xenix libraries since that will break other things...
    BTW: system call # 0x0c28 is the same as calling nap() */
-long nap(long milliseconds) {
-  return syscall(0x0c28, milliseconds);
-}
+ long nap(long milliseconds) {
+	 return syscall(0x0c28, milliseconds);
+ }
 #endif
 
 
-#if WRAP_MEMCPY
-#undef memcpy
+#ifndef HAVE_MEMMOVE
 /*******************************************************************
-a wrapper around memcpy for diagnostic purposes
+safely copies memory, ensuring no overlap problems.
+this is only used if the machine does not have it's own memmove().
+this is not the fastest algorithm in town, but it will do for our
+needs.
 ********************************************************************/
-void *memcpy_wrapped(void *d,void *s,int l,char *fname,int line)
+ void *memmove(void *dest,const void *src,int size)
 {
-  if (l>64 && (((int)d)%4) != (((int)s)%4))
-    DEBUG(4,("Misaligned memcpy(0x%X,0x%X,%d) at %s(%d)\n",d,s,l,fname,line));
-#ifdef xx_old_memcpy  
-  return(xx_old_memcpy(d,s,l));
-#else
-  return(memcpy(d,s,l));
-#endif
+	unsigned long d,s;
+	int i;
+	if (dest==src || !size) return(dest);
+
+	d = (unsigned long)dest;
+	s = (unsigned long)src;
+
+	if ((d >= (s+size)) || (s >= (d+size))) {
+		/* no overlap */
+		memcpy(dest,src,size);
+		return(dest);
+	}
+
+	if (d < s) {
+		/* we can forward copy */
+		if (s-d >= sizeof(int) && 
+		    !(s%sizeof(int)) && 
+		    !(d%sizeof(int)) && 
+		    !(size%sizeof(int))) {
+			/* do it all as words */
+			int *idest = (int *)dest;
+			int *isrc = (int *)src;
+			size /= sizeof(int);
+			for (i=0;i<size;i++) idest[i] = isrc[i];
+		} else {
+			/* simplest */
+			char *cdest = (char *)dest;
+			char *csrc = (char *)src;
+			for (i=0;i<size;i++) cdest[i] = csrc[i];
+		}
+	} else {
+		/* must backward copy */
+		if (d-s >= sizeof(int) && 
+		    !(s%sizeof(int)) && 
+		    !(d%sizeof(int)) && 
+		    !(size%sizeof(int))) {
+			/* do it all as words */
+			int *idest = (int *)dest;
+			int *isrc = (int *)src;
+			size /= sizeof(int);
+			for (i=size-1;i>=0;i--) idest[i] = isrc[i];
+		} else {
+			/* simplest */
+			char *cdest = (char *)dest;
+			char *csrc = (char *)src;
+			for (i=size-1;i>=0;i--) cdest[i] = csrc[i];
+		}      
+	}
+	return(dest);
 }
-#define memcpy(d,s,l) memcpy_wrapped(d,s,l,__FILE__,__LINE__)
+#endif
+
+#ifndef HAVE_STRDUP
+/****************************************************************************
+duplicate a string
+****************************************************************************/
+ char *strdup(const char *s)
+{
+	int len;
+	char *ret;
+
+	if (!s) return(NULL);
+
+	len = strlen(s)+1;
+	ret = (char *)malloc(len);
+	if (!ret) return(NULL);
+	memcpy(ret,s,len);
+	return(ret);
+}
 #endif
 

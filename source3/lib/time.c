@@ -51,10 +51,10 @@ a gettimeofday wrapper
 ********************************************************************/
 void GetTimeOfDay(struct timeval *tval)
 {
-#ifdef GETTIMEOFDAY1
-  gettimeofday(tval);
+#ifdef HAVE_GETTIMEOFDAY_TZ
+	gettimeofday(tval,NULL);
 #else
-  gettimeofday(tval,NULL);
+	gettimeofday(tval);
 #endif
 }
 
@@ -477,11 +477,11 @@ char *http_timestring(time_t t)
   if (!tm)
     slprintf(buf,sizeof(buf)-1,"%ld seconds since the Epoch",(long)t);
   else
-#ifdef NO_STRFTIME
+#ifndef HAVE_STRFTIME
   fstrcpy(buf, asctime(tm));
-#else /* NO_STRFTIME */
+#else /* !HAVE_STRFTIME */
   strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", tm);
-#endif /* NO_STRFTIME */
+#endif /* !HAVE_STRFTIME */
   return buf;
 }
 
@@ -492,31 +492,20 @@ char *http_timestring(time_t t)
 ****************************************************************************/
 char *timestring(void )
 {
-  static fstring TimeBuf;
-  time_t t = time(NULL);
-  struct tm *tm = LocalTime(&t);
+	static fstring TimeBuf;
+	time_t t = time(NULL);
+	struct tm *tm = LocalTime(&t);
 
-  if (!tm)
-    slprintf(TimeBuf,sizeof(TimeBuf)-1,"%ld seconds since the Epoch",(long)t);
-  else
-#ifdef NO_STRFTIME
-  fstrcpy(TimeBuf, asctime(tm));
-#elif defined(CLIX) || defined(CONVEX)
-  strftime(TimeBuf,100,"%Y/%m/%d %I:%M:%S %p",tm);
-#elif defined(AMPM)
-  strftime(TimeBuf,100,"%Y/%m/%d %r",tm);
-#elif defined(TZ_TIME)
-  {
-    int zone = TimeDiff(t);
-    int absZoneMinutes = (zone<0 ? -zone : zone) / 60;
-    size_t len = strftime(TimeBuf,sizeof(TimeBuf)-6,"%Y/%m/%d %T",tm);
-    slprintf(TimeBuf+len, sizeof(fstring) - len - 1, " %c%02d%02d",
-	    zone<0?'+':'-',absZoneMinutes/60,absZoneMinutes%60);
-  }
+	if (!tm) {
+		slprintf(TimeBuf,sizeof(TimeBuf)-1,"%ld seconds since the Epoch",(long)t);
+	} else {
+#ifdef HAVE_STRFTIME
+		strftime(TimeBuf,100,"%Y/%m/%d %T",tm);
 #else
-  strftime(TimeBuf,100,"%Y/%m/%d %T",tm);
+		fstrcpy(TimeBuf, asctime(tm));
 #endif
-  return(TimeBuf);
+	}
+	return(TimeBuf);
 }
 
 /****************************************************************************

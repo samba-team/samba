@@ -16,7 +16,9 @@
 
 */
 
-#ifdef UFC_CRYPT
+#include "includes.h"
+
+#ifndef HAVE_CRYPT
 
 /*
  * UFC-crypt: ultra fast crypt(3) implementation
@@ -42,7 +44,6 @@
  * Support routines
  *
  */
-#include "includes.h"
 
 
 #ifndef long32

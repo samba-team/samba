@@ -20,7 +20,7 @@
    
 */
 
-#ifdef USE_LDAP_DB
+#ifdef WITH_LDAP
 
 #include "includes.h"
 

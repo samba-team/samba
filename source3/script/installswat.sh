@@ -2,7 +2,9 @@
 #fist version March 1998, Andrew Tridgell
 
 SWATDIR=$1
-SRCDIR=$2
+SRCDIR=$2/
+
+echo Installing SWAT in $SWATDIR
 
 echo Installing the Samba Web Admisistration Tool
 

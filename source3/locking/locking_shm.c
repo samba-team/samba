@@ -32,9 +32,10 @@
    October 1997 - split into separate file (tridge)
 */
 
+#include "includes.h"
+
 #ifdef FAST_SHARE_MODES
 
-#include "includes.h"
 extern int DEBUGLEVEL;
 extern connection_struct Connections[];
 extern files_struct Files[];
@@ -678,13 +679,15 @@ struct share_ops *locking_shm_init(int ronly)
 {
 	read_only = ronly;
 
-#ifdef USE_SYSV_IPC
+#ifdef HAVE_SYSV_IPC
 	shmops = sysv_shm_open(read_only);
 	if (shmops) return &share_ops;
 #endif
 
+#ifdef HAVE_SHARED_MMAP
 	shmops = smb_shm_open(read_only);
 	if (shmops) return &share_ops;
+#endif
 
 	return NULL;
 }
@@ -692,7 +695,7 @@ struct share_ops *locking_shm_init(int ronly)
 #else
  int locking_shm_dummy_procedure(void)
 {return 0;}
-#endif
+#endif /* FAST_SHARE_MODES */
 
 
 

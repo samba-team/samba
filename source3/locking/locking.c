@@ -88,7 +88,7 @@ BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset, int lock_type)
    * Note that most UNIX's can *test* for a write lock on
    * a read-only fd, just not *set* a write lock on a read-only
    * fd. So we don't need to use map_lock_type here.
-   */ 
+   */
 
   return(fcntl_lock(fsp->fd_ptr->fd,F_GETLK,offset,count,lock_type));
 }
@@ -161,13 +161,10 @@ BOOL locking_init(int read_only)
 
 #ifdef FAST_SHARE_MODES
 	share_ops = locking_shm_init(read_only);
-	if (!share_ops) {
-		DEBUG(0,("ERROR: Failed to initialise fast share modes - trying slow code\n"));
-	}
-	if (share_ops) return True;
-#endif	
-
+#else
 	share_ops = locking_slow_init(read_only);
+#endif
+
 	if (!share_ops) {
 		DEBUG(0,("ERROR: Failed to initialise share modes!\n"));
 		return False;

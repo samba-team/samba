@@ -51,25 +51,20 @@
 
 extern int DEBUGLEVEL;
 
-#ifdef ALLOW_CHANGE_PASSWORD
-
+#if ALLOW_CHANGE_PASSWORD
 #define MINPASSWDLENGTH 5
 #define BUFSIZE 512
 
 static int findpty(char **slave)
 {
   int master;
-#if defined(USE_GRANTPT)
-#if defined(SVR4) || defined(SUNOS5)
-  extern char *ptsname();
-#endif /* defined(SVR4) || defined(SUNOS5) */
-#else /* USE_GRANTPT */
+#ifndef HAVE_GRANTPT
   static fstring line;
   void *dirp;
   char *dpname;
-#endif /* USE_GRANTPT */
+#endif /* !HAVE_GRANTPT */
   
-#if defined(USE_GRANTPT)
+#if defined(HAVE_GRANTPT)
   if ((master = open("/dev/ptmx", O_RDWR)) >= 1) {
     grantpt(master);
     unlockpt(master);
@@ -82,7 +77,7 @@ static int findpty(char **slave)
       return (master);
     }
   }
-#else /* USE_GRANTPT */
+#else /* HAVE_GRANTPT */
   fstrcpy( line, "/dev/ptyXX" );
 
   dirp = OpenDir(-1, "/dev", False);
@@ -102,7 +97,7 @@ static int findpty(char **slave)
     }
   }
   CloseDir(dirp);
-#endif /* USE_GRANTPT */
+#endif /* HAVE_GRANTPT */
   return (-1);
 }
 
@@ -122,11 +117,11 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
 
   gid = pass->pw_gid;
   uid = pass->pw_uid;
-#ifdef USE_SETRES
+#ifdef HAVE_SETRESUID
   setresuid(0,0,0);
-#else /* USE_SETRES */
+#else 
   setuid(0);
-#endif /* USE_SETRES */
+#endif
 
   /* Start new session - gets rid of controlling terminal. */
   if (setsid() < 0) {
@@ -140,17 +135,15 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
 	     slavedev));
     return(False);
   }
-#if defined(SVR4) || defined(SUNOS5) || defined(SCO)
+#ifdef I_PUSH
   ioctl(slave, I_PUSH, "ptem");
   ioctl(slave, I_PUSH, "ldterm");
-#else /* defined(SVR4) || defined(SUNOS5) || defined(SCO) */
-#if defined(TIOCSCTTY)
+#elif defined(TIOCSCTTY)
   if (ioctl(slave,TIOCSCTTY,0) <0) {
      DEBUG(3,("Error in ioctl call for slave pty\n"));
      /* return(False); */
   }
-#endif /* defined(TIOCSCTTY) */
-#endif /* defined(SVR4) || defined(SUNOS5) || defined(SCO) */
+#endif 
 
   /* Close master. */
   close(master);
@@ -188,18 +181,18 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
 
   /* make us completely into the right uid */
   if(!as_root) {
-#ifdef USE_SETRES
-    setresgid(0,0,0);
-    setresuid(0,0,0);
-    setresgid(gid,gid,gid);
-    setresuid(uid,uid,uid);      
+#ifdef HAVE_SETRESUID
+	  setresgid(0,0,0);
+	  setresuid(0,0,0);
+	  setresgid(gid,gid,gid);
+	  setresuid(uid,uid,uid);      
 #else      
-    setuid(0);
-    seteuid(0);
-    setgid(gid);
-    setegid(gid);
-    setuid(uid);
-    seteuid(uid);
+	  setuid(0);
+	  seteuid(0);
+	  setgid(gid);
+	  setegid(gid);
+	  setuid(uid);
+	  seteuid(uid);
 #endif
   }
 
@@ -391,13 +384,8 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
       return (False);		/* inform the user */
     }
 
-#if (defined(PASSWD_PROGRAM) && defined(PASSWD_CHAT))
-  pstrcpy(passwordprogram,PASSWD_PROGRAM);
-  pstrcpy(chatsequence,PASSWD_CHAT);
-#else
   pstrcpy(passwordprogram,lp_passwd_program());
   pstrcpy(chatsequence,lp_passwd_chat());
-#endif
 
   if (!*chatsequence) {
     DEBUG(2,("Null chat sequence - no password changing\n"));

@@ -19,9 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
+#define NO_SYSLOG
 
 #include <linux/version.h>
 #define LVERSION(major,minor,patch) (((((major)<<8)+(minor))<<8)+(patch))
@@ -295,7 +293,7 @@ send_fs_socket(char *mount_point, char *inbuf, char *outbuf)
 		/*
 		 * Wait for a signal from smbfs ...
 		 */
-		signal(SIGUSR1, &usr1_handler);
+		CatchSignal(SIGUSR1, &usr1_handler);
 		pause();
 		DEBUG(0, ("smbmount: got signal, getting new socket\n"));
 
@@ -450,61 +448,25 @@ void cmd_help(char *dum_in, char *dum_out)
 /****************************************************************************
 wait for keyboard activity, swallowing network packets
 ****************************************************************************/
-#ifdef CLIX
-static char wait_keyboard(char *buffer)
-#else
 static void wait_keyboard(char *buffer)
-#endif
 {
   fd_set fds;
   int selrtn;
   struct timeval timeout;
-  
-#ifdef CLIX
-  int delay = 0;
-#endif
   
   while (1) 
     {
       extern int Client;
       FD_ZERO(&fds);
       FD_SET(Client,&fds);
-#ifndef CLIX
       FD_SET(fileno(stdin),&fds);
-#endif
 
       timeout.tv_sec = 20;
       timeout.tv_usec = 0;
-#ifdef CLIX
-      timeout.tv_sec = 0;
-#endif
       selrtn = sys_select(&fds,&timeout);
       
-#ifndef CLIX
       if (FD_ISSET(fileno(stdin),&fds))
   	return;
-#else
-      {
-	char ch;
-	int readret;
-
-    set_blocking(fileno(stdin), False);	
-	readret = read_data( fileno(stdin), &ch, 1);
-	set_blocking(fileno(stdin), True);
-	if (readret == -1)
-	  {
-	    if (errno != EAGAIN)
-	      {
-		/* should crash here */
-		DEBUG(1,("readchar stdin failed\n"));
-	      }
-	  }
-	else if (readret != 0)
-	  {
-	    return ch;
-	  }
-      }
-#endif
 
       /* We deliberately use receive_smb instead of
          client_receive_smb as we want to receive
@@ -513,16 +475,7 @@ static void wait_keyboard(char *buffer)
       if (FD_ISSET(Client,&fds))
   	receive_smb(Client,buffer,0);
       
-#ifdef CLIX
-      delay++;
-      if (delay > 100000)
-	{
-	  delay = 0;
-	  chkpath("\\",False);
-	}
-#else
       chkpath("\\",False);
-#endif
     }  
 }
 
@@ -595,22 +548,11 @@ static BOOL process(char *base_directory)
       DEBUG(0,("smb: %s> ", CNV_LANG(cur_dir)));
       fflush(dbf);
 
-#ifdef CLIX
-      line[0] = wait_keyboard(InBuffer);
-      /* this might not be such a good idea... */
-      if ( line[0] == EOF)
-	break;
-#else
       wait_keyboard(InBuffer);
-#endif
   
       /* and get a response */
-#ifdef CLIX
-      fgets( &line[1],999, stdin);
-#else
       if (!fgets(line,1000,stdin))
 	break;
-#endif
 
       /* input language code to internal one */
       CNV_INPUT (line);
