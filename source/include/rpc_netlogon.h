@@ -156,7 +156,7 @@ typedef struct net_user_info_3
 	uint32 buffer_groups; /* undocumented buffer pointer to groups. */
 	uint32 user_flgs;     /* user flags */
 
-	uint8 user_sess_key[16]; /* unused user session key */
+	uint8 user_sess_key[16]; /* user session key */
 
 	UNIHDR hdr_logon_srv; /* logon server unicode string header */
 	UNIHDR hdr_logon_dom; /* logon domain unicode string header */

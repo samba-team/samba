@@ -350,13 +350,6 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	} else {
 		nt_status = make_server_info_info3(mem_ctx, user_info->internal_username.str, 
 						   user_info->smb_name.str, domain, server_info, &info3);
-#if 0 
-		/* The stuff doesn't work right yet */
-		SMB_ASSERT(sizeof((*server_info)->session_key) == sizeof(info3.user_sess_key)); 
-		memcpy((*server_info)->session_key, info3.user_sess_key, sizeof((*server_info)->session_key)/* 16 */);
-		SamOEMhash((*server_info)->session_key, trust_passwd, sizeof((*server_info)->session_key));
-#endif		
-
 		uni_group_cache_store_netlogon(mem_ctx, &info3);
 	}
 

@@ -30,7 +30,7 @@
 
 #define WINBINDD_SOCKET_NAME "pipe"            /* Name of PF_UNIX socket */
 #define WINBINDD_SOCKET_DIR  "/tmp/.winbindd"  /* Name of PF_UNIX dir */
-
+#define WINBINDD_PRIV_SOCKET_SUBDIR "winbindd_privilaged" /* name of subdirectory of lp_lockdir() to hold the 'privilaged' pipe */
 #define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variables */
 #define WINBINDD_DONT_ENV    "_NO_WINBINDD"
 
@@ -104,6 +104,9 @@ enum winbindd_cmd {
 
 	WINBINDD_NETBIOS_NAME,       /* The netbios name of the server */
 	/* Placeholder for end of cmd list */
+
+	/* find the location of our privilaged pipe */
+	WINBINDD_PRIV_PIPE_DIR,
 
 	WINBINDD_NUM_CMDS
 };
