@@ -440,6 +440,9 @@ resolve via "bcast" method
 static BOOL resolve_bcast(const char *name, struct in_addr *return_ip, int name_type)
 {
 	int sock, i;
+	struct in_addr *iplist = NULL;
+	int count;
+	int num_interfaces = iface_count();
 	
 	/*
 	 * "bcast" means do a broadcast lookup on all the local interfaces.
@@ -450,31 +453,28 @@ static BOOL resolve_bcast(const char *name, struct in_addr *return_ip, int name_
 	sock = open_socket_in( SOCK_DGRAM, 0, 3,
 			       interpret_addr(lp_socket_address()), True );
 
-	if (sock != -1) {
-		struct in_addr *iplist = NULL;
-		int count;
-		int num_interfaces = iface_count();
-		set_socket_options(sock,"SO_BROADCAST");
-		/*
-		 * Lookup the name on all the interfaces, return on
-		 * the first successful match.
-		 */
-		for( i = 0; i < num_interfaces; i++) {
-			struct in_addr sendto_ip;
-			/* Done this way to fix compiler error on IRIX 5.x */
-			sendto_ip = *iface_bcast(*iface_n_ip(i));
-			iplist = name_query(sock, name, name_type, True, 
-					    True, sendto_ip, &count, NULL);
-			if(iplist != NULL) {
-				*return_ip = iplist[0];
-				free((char *)iplist);
-				close(sock);
-				return True;
-			}
+	if (sock == -1) return False;
+
+	set_socket_options(sock,"SO_BROADCAST");
+	/*
+	 * Lookup the name on all the interfaces, return on
+	 * the first successful match.
+	 */
+	for( i = 0; i < num_interfaces; i++) {
+		struct in_addr sendto_ip;
+		/* Done this way to fix compiler error on IRIX 5.x */
+		sendto_ip = *iface_bcast(*iface_n_ip(i));
+		iplist = name_query(sock, name, name_type, True, 
+				    True, sendto_ip, &count, NULL);
+		if(iplist != NULL) {
+			*return_ip = iplist[0];
+			free((char *)iplist);
+			close(sock);
+			return True;
 		}
-		close(sock);
 	}
 
+	close(sock);
 	return False;
 }
 
@@ -607,7 +607,10 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
   for (i=0; pure_address && name[i]; i++)
     if (!(isdigit((int)name[i]) || name[i] == '.'))
       pure_address = False;
-   
+  
+  /* Check that a pure number is not misinterpreted as an IP */
+  pure_address = pure_address && (strchr(name, '.') != NULL);
+ 
   /* if it's in the form of an IP address then get the lib to interpret it */
   if (pure_address) {
     return_ip->s_addr = inet_addr(name);

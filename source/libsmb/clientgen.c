@@ -28,6 +28,8 @@
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
 
+static void cli_process_oplock(struct cli_state *cli);
+
 /*
  * Change the port number used to call on 
  */
@@ -44,7 +46,23 @@ recv an smb
 ****************************************************************************/
 static BOOL cli_receive_smb(struct cli_state *cli)
 {
-	return client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
+	BOOL ret;
+ again:
+	ret = client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
+	
+	if (ret && cli->use_oplocks) {
+		/* it might be an oplock break request */
+		if (CVAL(cli->inbuf,smb_com) == SMBlockingX &&
+		    SVAL(cli->inbuf,smb_vwv6) == 0 &&
+		    SVAL(cli->inbuf,smb_vwv7) == 0) {
+			cli_process_oplock(cli);
+			/* try to prevent loops */
+			CVAL(cli->inbuf,smb_com) = 0xFF;
+			goto again;
+		}
+	}
+
+	return ret;
 }
 
 /****************************************************************************
@@ -79,6 +97,62 @@ static BOOL cli_send_smb(struct cli_state *cli)
 	
 	return True;
 }
+
+/****************************************************************************
+setup basics in a outgoing packet
+****************************************************************************/
+static void cli_setup_packet(struct cli_state *cli)
+{
+        cli->rap_error = 0;
+        cli->nt_error = 0;
+	SSVAL(cli->outbuf,smb_pid,cli->pid);
+	SSVAL(cli->outbuf,smb_uid,cli->vuid);
+	SSVAL(cli->outbuf,smb_mid,cli->mid);
+	if (cli->protocol > PROTOCOL_CORE) {
+		SCVAL(cli->outbuf,smb_flg,0x8);
+		SSVAL(cli->outbuf,smb_flg2,0x1);
+	}
+}
+
+
+
+/****************************************************************************
+process an oplock break request from the server
+****************************************************************************/
+static void cli_process_oplock(struct cli_state *cli)
+{
+	char *oldbuf = cli->outbuf;
+	pstring buf;
+	int fnum;
+
+	fnum = SVAL(cli->inbuf,smb_vwv2);
+
+	/* damn, we really need to keep a record of open files so we
+	   can detect a oplock break and a close crossing on the
+	   wire. for now this swallows the errors */
+	if (fnum == 0) return;
+
+	cli->outbuf = buf;
+
+        memset(buf,'\0',smb_size);
+        set_message(buf,8,0,True);
+
+        CVAL(buf,smb_com) = SMBlockingX;
+	SSVAL(buf,smb_tid, cli->cnum);
+        cli_setup_packet(cli);
+	SSVAL(buf,smb_vwv0,0xFF);
+	SSVAL(buf,smb_vwv1,0);
+	SSVAL(buf,smb_vwv2,fnum);
+	SSVAL(buf,smb_vwv3,2); /* oplock break ack */
+	SIVAL(buf,smb_vwv4,0); /* timoeut */
+	SSVAL(buf,smb_vwv6,0); /* unlockcount */
+	SSVAL(buf,smb_vwv7,0); /* lockcount */
+
+        cli_send_smb(cli);	
+
+	cli->outbuf = oldbuf;
+}
+
 
 /*****************************************************
  RAP error codes - a small start but will be extended.
@@ -173,23 +247,6 @@ char *cli_errstr(struct cli_state *cli)
 
 	return error_message;
 }
-
-/****************************************************************************
-setup basics in a outgoing packet
-****************************************************************************/
-static void cli_setup_packet(struct cli_state *cli)
-{
-        cli->rap_error = 0;
-        cli->nt_error = 0;
-	SSVAL(cli->outbuf,smb_pid,cli->pid);
-	SSVAL(cli->outbuf,smb_uid,cli->vuid);
-	SSVAL(cli->outbuf,smb_mid,cli->mid);
-	if (cli->protocol > PROTOCOL_CORE) {
-		SCVAL(cli->outbuf,smb_flg,0x8);
-		SSVAL(cli->outbuf,smb_flg2,0x1);
-	}
-}
-
 
 /*****************************************************************************
  Convert a character pointer in a cli_call_api() response to a form we can use.
@@ -1162,6 +1219,14 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	SSVAL(cli->outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
 	SSVAL(cli->outbuf,smb_vwv5,0);
 	SSVAL(cli->outbuf,smb_vwv8,openfn);
+
+	if (cli->use_oplocks) {
+		/* if using oplocks then ask for a batch oplock via
+                   core and extended methods */
+		CVAL(cli->outbuf,smb_flg) |= 
+			FLAG_REQUEST_OPLOCK|FLAG_REQUEST_BATCH_OPLOCK;
+		SSVAL(cli->outbuf,smb_vwv2,SVAL(cli->outbuf,smb_vwv2) | 6);
+	}
   
 	p = smb_buf(cli->outbuf);
 	pstrcpy(p,fname);
@@ -1334,7 +1399,17 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 	int total = -1;
 	int issued=0;
 	int received=0;
-	int mpx = MAX(cli->max_mux-1, 1);
+/*
+ * There is a problem in this code when mpx is more than one.
+ * for some reason files can get corrupted when being read.
+ * Until we understand this fully I am serializing reads (one
+ * read/one reply) for now. JRA.
+ */
+#if 0
+	int mpx = MAX(cli->max_mux-1, 1); 
+#else
+	int mpx = 1;
+#endif
 	int block = (cli->max_xmit - (smb_size+32)) & ~1023;
 	int mid;
 	int blocks = (size + (block-1)) / block;
@@ -1492,39 +1567,50 @@ ssize_t cli_write(struct cli_state *cli,
   write to a file using a SMBwrite and not bypassing 0 byte writes
 ****************************************************************************/
 ssize_t cli_smbwrite(struct cli_state *cli,
-		     int fnum, char *buf, off_t offset, size_t size)
+		     int fnum, char *buf, off_t offset, size_t size1)
 {
 	char *p;
+	ssize_t total = 0;
 
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
+	do {
+		size_t size = MIN(size1, cli->max_xmit - 48);
+		
+		memset(cli->outbuf,'\0',smb_size);
+		memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,5, 3 + size,True);
+		set_message(cli->outbuf,5, 3 + size,True);
 
-	CVAL(cli->outbuf,smb_com) = SMBwrite;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+		CVAL(cli->outbuf,smb_com) = SMBwrite;
+		SSVAL(cli->outbuf,smb_tid,cli->cnum);
+		cli_setup_packet(cli);
+		
+		SSVAL(cli->outbuf,smb_vwv0,fnum);
+		SSVAL(cli->outbuf,smb_vwv1,size);
+		SIVAL(cli->outbuf,smb_vwv2,offset);
+		SSVAL(cli->outbuf,smb_vwv4,0);
+		
+		p = smb_buf(cli->outbuf);
+		*p++ = 1;
+		SSVAL(p, 0, size);
+		memcpy(p+2, buf, size);
+		
+		cli_send_smb(cli);
+		if (!cli_receive_smb(cli)) {
+			return -1;
+		}
+		
+		if (CVAL(cli->inbuf,smb_rcls) != 0) {
+			return -1;
+		}
 
-	SSVAL(cli->outbuf,smb_vwv0,fnum);
-	SSVAL(cli->outbuf,smb_vwv1,size);
-	SIVAL(cli->outbuf,smb_vwv2,offset);
-	SSVAL(cli->outbuf,smb_vwv4,0);
-  
-	p = smb_buf(cli->outbuf);
-	*p++ = 1;
-	SSVAL(p, 0, size);
-	memcpy(p+2, buf, size);
+		size = SVAL(cli->inbuf,smb_vwv0);
+		if (size == 0) break;
 
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return False;
-	}
+		size1 -= size;
+		total += size;
+	} while (size1);
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return -1;
-	}
-
-	return SVAL(cli->inbuf,smb_vwv0);
+	return total;
 }
 
 
@@ -1538,7 +1624,7 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,2,0,True);
+	set_message(cli->outbuf,1,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBgetattrE;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -1974,7 +2060,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				p += 4; /* EA size */
 				p += 2; /* short name len? */
 				p += 24; /* short name? */	  
-				StrnCpy(finfo->name,p,namelen);
+				StrnCpy(finfo->name,p,MIN(sizeof(finfo->name)-1,namelen));
 				return(ret);
 			}
 			return(SVAL(p,0));
@@ -2098,7 +2184,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 				case 260:
 					ff_resume_key =0;
 					StrnCpy(mask,p+ff_lastname,
-						data_len-ff_lastname);
+						MIN(sizeof(mask)-1,data_len-ff_lastname));
 					break;
 				case 1:
 					pstrcpy(mask,p + ff_lastname + 1);
@@ -2294,7 +2380,8 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->max_mux = SVAL(cli->inbuf, smb_vwv1+1);
 		cli->max_xmit = IVAL(cli->inbuf,smb_vwv3+1);
 		cli->sesskey = IVAL(cli->inbuf,smb_vwv7+1);
-		cli->serverzone = SVALS(cli->inbuf,smb_vwv15+1)*60;
+		cli->serverzone = SVALS(cli->inbuf,smb_vwv15+1);
+		cli->serverzone *= 60;
 		/* this time arrives in real GMT */
 		cli->servertime = interpret_long_date(cli->inbuf+smb_vwv11+1);
 		memcpy(cli->cryptkey,smb_buf(cli->inbuf),8);
@@ -2307,7 +2394,8 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
 		cli->max_xmit = SVAL(cli->inbuf,smb_vwv2);
 		cli->sesskey = IVAL(cli->inbuf,smb_vwv6);
-		cli->serverzone = SVALS(cli->inbuf,smb_vwv10)*60;
+		cli->serverzone = SVALS(cli->inbuf,smb_vwv10);
+		cli->serverzone *= 60;
 		/* this time is converted to GMT by make_unix_date */
 		cli->servertime = make_unix_date(cli->inbuf+smb_vwv8);
 		cli->readbraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x1) != 0);
