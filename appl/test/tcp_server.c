@@ -53,6 +53,7 @@ proto (int sock, const char *service)
     krb5_data packet;
     krb5_data data;
     u_int32_t len, net_len;
+    ssize_t n;
 
     status = krb5_auth_con_init (context, &auth_context);
     if (status)
@@ -99,15 +100,21 @@ proto (int sock, const char *service)
     krb5_data_zero (&data);
     krb5_data_zero (&packet);
 
-    if (krb5_net_read (context, &sock, &net_len, 4) != 4)
-	err (1, "krb5_net_read");
+    n = krb5_net_read (context, &sock, &net_len, 4);
+    if (n == 0)
+	krb5_errx (context, 1, "EOF in krb5_net_read");
+    if (n < 0)
+	krb5_err (context, 1, errno, "krb5_net_read");
 
     len = ntohl(net_len);
 
     krb5_data_alloc (&packet, len);
 
-    if (krb5_net_read (context, &sock, packet.data, len) != len)
-	err (1, "krb5_net_read");
+    n = krb5_net_read (context, &sock, packet.data, len);
+    if (n == 0)
+	krb5_errx (context, 1, "EOF in krb5_net_read");
+    if (n < 0)
+	krb5_err (context, 1, errno, "krb5_net_read");
     
     status = krb5_rd_safe (context,
 			   auth_context,
@@ -120,15 +127,21 @@ proto (int sock, const char *service)
     printf ("safe packet: %.*s\n", (int)data.length,
 	    (char *)data.data);
 
-    if (krb5_net_read (context, &sock, &net_len, 4) != 4)
-	err (1, "krb5_net_read");
+    n = krb5_net_read (context, &sock, &net_len, 4);
+    if (n == 0)
+	krb5_errx (context, 1, "EOF in krb5_net_read");
+    if (n < 0)
+	krb5_err (context, 1, errno, "krb5_net_read");
 
     len = ntohl(net_len);
 
     krb5_data_alloc (&packet, len);
 
-    if (krb5_net_read (context, &sock, packet.data, len) != len)
-	err (1, "krb5_net_read");
+    n = krb5_net_read (context, &sock, packet.data, len);
+    if (n == 0)
+	krb5_errx (context, 1, "EOF in krb5_net_read");
+    if (n < 0)
+	krb5_err (context, 1, errno, "krb5_net_read");
     
     status = krb5_rd_priv (context,
 			   auth_context,
