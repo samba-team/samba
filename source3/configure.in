@@ -153,18 +153,20 @@ AC_SUBST(SHELL)
 AC_SUBST(RUNPROG)
 AC_SUBST(MPROGS)
 AC_SUBST(LDSHFLAGS)
+AC_SUBST(SONAMEFLAG)
 AC_SUBST(SHLD)
 AC_SUBST(HOST_OS)
 AC_SUBST(PAM_MOD)
 AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
+AC_SUBST(WRAPPROG)
 AC_SUBST(PICFLAG)
 AC_SUBST(PICSUFFIX)
 AC_SUBST(POBAD_CC)
 AC_SUBST(SHLIBEXT)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 
-# compile with optimisation and without debugging by default
+# compile with optimization and without debugging by default
 CFLAGS="-O ${CFLAGS}"
 
 AC_ARG_ENABLE(debug, 
@@ -865,6 +867,7 @@ AC_LIBTESTFUNC(sec, getprpwnam)
 # these are the defaults, good for lots of systems
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
+SONAMEFLAG="#"
 SHLD="\${CC}"
 PICFLAG=""
 PICSUFFIX="po"
@@ -881,11 +884,13 @@ case "$host_os" in
 			LDSHFLAGS="-shared" 
 			DYNEXP="-Wl,--export-dynamic"
 			PICFLAG="-fPIC"
+			SONAMEFLAG="-Wl,-soname="
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 		*solaris*) AC_DEFINE(SUNOS5)
 			BLDSHARED="true"
 			LDSHFLAGS="-G"
+			SONAMEFLAG="-h "
 			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
 				if test "${ac_cv_prog_gnu_ld}" = "yes"; then
@@ -904,11 +909,13 @@ case "$host_os" in
 		*sunos*) AC_DEFINE(SUNOS4)
 			BLDSHARED="true"
 			LDSHFLAGS="-G"
+			SONAMEFLAG="-Wl,-h,"
 			PICFLAG="-KPIC"   # Is this correct for SunOS
 		;;
 		*bsd*)  BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			DYNEXP="-Wl,-Bdynamic"
+			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
@@ -920,6 +927,7 @@ case "$host_os" in
 			ATTEMPT_WRAP32_BUILD=yes
 			BLDSHARED="true"
 			LDSHFLAGS="-set_version sgi1.0 -shared"
+			SONAMEFLAG="-soname "
 			SHLD="\${LD}"
 			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
@@ -949,6 +957,7 @@ case "$host_os" in
 				BLDSHARED="true"
 				SHLD="/usr/bin/ld"
 				LDSHFLAGS="-B symbolic -b -z"
+				SONAMEFLAG="+h "
 				PICFLAG="+z"
 			fi
 			DYNEXP="-Wl,-E"
@@ -958,12 +967,14 @@ case "$host_os" in
 		*osf*) AC_DEFINE(OSF1)
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
+			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
 		;;
 		*sco*) AC_DEFINE(SCO);;
 		*unixware*) AC_DEFINE(UNIXWARE)
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
+			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-KPIC"
 		;;
 		*next2*) AC_DEFINE(NEXT2);;
@@ -1866,7 +1877,8 @@ AC_ARG_WITH(smbwrapper,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_SMBWRAPPER)
-	WRAP="bin/smbsh bin/smbwrapper.$SHLIBEXT"
+	WRAPPROG="bin/smbsh"
+	WRAP="bin/smbwrapper.$SHLIBEXT"
 
 	if test x$ATTEMPT_WRAP32_BUILD = x; then
 		WRAP32=""
@@ -1878,10 +1890,12 @@ AC_ARG_WITH(smbwrapper,
 
 	if test x$PICFLAG = x; then
 	   echo No support for PIC code - disabling smbwrapper and smbsh
+	   WRAPPROG=""
 	   WRAP=""
 	   WRAP32=""
 	elif test x$ac_cv_func_syscall = xno; then
 	   AC_MSG_RESULT([No syscall() -- disabling smbwrapper and smbsh])
+	   WRAPPROG=""
 	   WRAP=""
 	   WRAP32=""
 	fi
@@ -2313,6 +2327,32 @@ AC_ARG_WITH(manpages-langs,
   AC_MSG_RESULT($manlangs)
   AC_SUBST(manlangs)]
 )
+
+#################################################
+# should we build libsmbclient?
+
+LIBSMBCLIENT_SHARED=
+LIBSMBCLIENT=
+AC_MSG_CHECKING(whether to build the libsmbclient shared library)
+AC_ARG_WITH(libsmbclient,
+[  --with-libsmbclient     Build the libsmbclient shared library (default=yes)],
+[ case "$withval" in
+  no) 
+     AC_MSG_RESULT(no)
+     ;;
+  *)
+     if test $BLDSHARED = true; then
+        LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
+        LIBSMBCLIENT=libsmbclient
+        AC_MSG_RESULT(yes)
+     else
+        AC_MSG_RESULT(no shared library support)
+     fi
+     ;;
+  esac ],
+  AC_MSG_RESULT(yes)
+)
+
 
 #################################################
 # these tests are taken from the GNU fileutils package
