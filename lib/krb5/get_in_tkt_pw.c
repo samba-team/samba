@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -55,7 +55,10 @@ krb5_password_key_proc (krb5_context context,
     if (*key == NULL)
 	return ENOMEM;
     if (password == NULL) {
-	des_read_pw_string (buf, sizeof(buf), "Password: ", 0);
+	if(des_read_pw_string (buf, sizeof(buf), "Password: ", 0)) {
+	    free (*key);
+	    return KRB5_LIBOS_PWDINTR;
+	}
 	password = buf;
     }
     ret = krb5_string_to_key_salt (context, type, password, salt, *key);
