@@ -30,7 +30,7 @@
 		<arg choice="opt">-l logfile</arg>
 		<arg choice="opt">-L &lt;netbios name&gt;</arg>
 		<arg choice="opt">-I destinationIP</arg>
-		<arg choice="opt">-E &lt;terminal code&gt;</arg>
+		<arg choice="opt">-E</arg>
 		<arg choice="opt">-c &lt;command string&gt;</arg>
 		<arg choice="opt">-i scope</arg>
 		<arg choice="opt">-O &lt;socket options&gt;</arg>
