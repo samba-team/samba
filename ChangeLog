@@ -13,6 +13,14 @@
 
 2000-07-08  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/crypto.c: fix type in des3-cbc-none
+
+	* lib/hdb/mkey.c: add key usage
+
+	* kdc/kstash.c: remove writing of old keyfile, and treat
+	--convert-file as just reading and writing the keyfile without
+	asking for a new key
+	
 	* lib/hdb/mkey.c (read_master_encryptionkey): handle old keytype
 	based files, and convert the key to cfb64
 
