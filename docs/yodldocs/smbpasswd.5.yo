@@ -42,7 +42,9 @@ label(uid)
 dit(bf(uid)) nl() nl()
 
 	This is the UNIX uid. It must match the uid field for the same
-	user entry in the standard UNIX passwd file.
+	user entry in the standard UNIX passwd file. If this does not
+	match then Samba will refuse to recognis this bf(smbpasswd) file entry
+	as being valid for a user.
 
 label(LanmanPasswordHash)
 dit(bf(Lanman Password Hash)) nl() nl()

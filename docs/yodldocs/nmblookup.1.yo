@@ -39,7 +39,8 @@ rfc1002 for details.
 
 label(minusS)
 dit(bf(-S)) Once the name query has returned an IP address then do a
-node status query as well.
+node status query as well. A node status query returns the NetBIOS names 
+registered by a host.
 
 label(minusr)
 dit(bf(-r)) Try and bind to UDP port 137 to send and receive UDP
@@ -91,11 +92,10 @@ level))(smb.conf.5.html#loglevel) parameter in the url(bf(smb.conf
 label(minuss)
 dit(bf(-s smb.conf)) This parameter specifies the pathname to the
 Samba configuration file, smb.conf. This file controls all aspects of
-the Samba setup on the machine and smbclient also needs to read this
-file.
+the Samba setup on the machine.
 
 label(minusi)
-dit(bf(-i scope)) This specifies a NetBIOS scope that smbclient will use
+dit(bf(-i scope)) This specifies a NetBIOS scope that bf(nmblookup) will use
 to communicate with when generating NetBIOS names. For details on the
 use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
 are em(very) rarely used, only set this parameter if you are the
@@ -106,16 +106,17 @@ label(name)
 dit(bf(name)) This is the NetBIOS name being queried. Depending upon
 the previous options this may be a NetBIOS name or IP address. If a
 NetBIOS name then the different name types may be specified by
-appending tt(#<type>) to the name.
+appending tt(#<type>) to the name. This name may also be tt("*"),
+which will return all registered names within a broadcast area.
 
 enddit()
 
 label(EXAMPLES)
 manpagesection(EXAMPLES)
 
-bf(nmblookup) can be used to query a WINS server (in the same way .B
-nslookup is used to query DNS servers). To query a WINS server,
-nmblookup must be called like this:
+bf(nmblookup) can be used to query a WINS server (in the same way
+bf(nslookup) is used to query DNS servers). To query a WINS server,
+bf(nmblookup) must be called like this:
 
 tt(nmblookup -U server -R 'name')
 
@@ -141,7 +142,7 @@ label(AUTHOR)
 manpageauthor()
 
 The original Samba software and related utilities were created by
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+Andrew Tridgell email(samba-bugs@samba.anu.edu.au). Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 
