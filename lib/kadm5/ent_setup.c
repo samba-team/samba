@@ -41,6 +41,7 @@
 RCSID("$Id$");
 
 #define set_value(X, V) do { if((X) == NULL) (X) = malloc(sizeof(*(X))); *(X) = V; } while(0)
+#define set_null(X)     do { if((X) != NULL) free((X)); (X) = NULL; } while (0)
 
 static void
 attr_to_flags(unsigned attr, HDBFlags *flags)
@@ -96,18 +97,30 @@ _kadm5_setup_entry(hdb_entry *ent,
     }
     if(mask & KADM5_MAX_LIFE) {
 	if(princ_mask & KADM5_MAX_LIFE)
-	    set_value(ent->max_life, princ->max_life);
+	    if(princ->max_life)
+	      set_value(ent->max_life, princ->max_life);
+	    else
+	      set_null(ent->max_life);
 	else if(def_mask & KADM5_MAX_LIFE)
-	    set_value(ent->max_life, def->max_life);
+	    if(def->max_life)
+	      set_value(ent->max_life, def->max_life);
+	    else
+	      set_null(ent->max_life);
     }
     if(mask & KADM5_KVNO
        && princ_mask & KADM5_KVNO)
 	ent->kvno = princ->kvno;
     if(mask & KADM5_MAX_RLIFE) {
 	if(princ_mask & KADM5_MAX_RLIFE)
+	  if(princ->max_renewable_life)
 	    set_value(ent->max_renew, princ->max_renewable_life);
+	  else
+	    set_null(ent->max_renew);
 	else if(def_mask & KADM5_MAX_RLIFE)
+	  if(def->max_renewable_life)
 	    set_value(ent->max_renew, def->max_renewable_life);
+	  else
+	    set_null(ent->max_renew);
     }
     if(mask & KADM5_KEY_DATA
        && princ_mask & KADM5_KEY_DATA) {
