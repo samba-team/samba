@@ -1,3 +1,7 @@
+1999-08-11  Johan Danielsson  <joda@pdc.kth.se>
+
+	* afskauthlib/verify.c: make this compile w/o krb4
+
 1999-08-04  Assar Westerlund  <assar@sics.se>
 
 	* afskauthlib/verify.c: incorporate patches from Miroslav Ruda
