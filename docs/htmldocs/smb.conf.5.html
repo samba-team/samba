@@ -1141,6 +1141,15 @@ CLASS="PARAMETER"
 ><TT
 CLASS="PARAMETER"
 ><I
+>enhanced browsing</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
 >enumports command</I
 ></TT
 ></P
@@ -2266,7 +2275,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN734"
+NAME="AEN737"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -3307,7 +3316,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1080"
+NAME="AEN1083"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -6301,6 +6310,41 @@ CLASS="COMMAND"
 >Default: <B
 CLASS="COMMAND"
 >encrypt passwords = no</B
+></P
+></DD
+><DT
+><A
+NAME="ENHANCEDBROWSING"
+></A
+>enhanced browsing (G)</DT
+><DD
+><P
+>This option enables a couple of enhancements to 
+		cross-subnet browse propogation that have been added in Samba 
+		but which are not standard in Microsoft implementations.  
+		<I
+CLASS="EMPHASIS"
+>These enhancements are currently only available in
+		the HEAD Samba CVS tree (not Samba 2.2.x).</I
+></P
+><P
+>The first enhancement to browse propogation consists of a regular
+		wildcard query to a Samba WINS server for all Domain Master Browsers,
+		followed by a browse synchronisation with each of the returned
+		DMBs. The second enhancement consists of a regular randomised browse
+		synchronisation with all currently known DMBs.</P
+><P
+>You may wish to disable this option if you have a problem with empty
+		workgroups not disappearing from browse lists. Due to the restrictions
+		of the browse protocols these enhancements can cause a empty workgroup
+		to stay around forever which can be annoying.</P
+><P
+>In general you should leave this option enabled as it makes
+		cross-subnet browse propogation much more reliable.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>enhanced browsing = yes</B
 ></P
 ></DD
 ><DT
@@ -16861,7 +16905,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5310"
+NAME="AEN5324"
 ></A
 ><H2
 >WARNINGS</H2
@@ -16891,7 +16935,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5316"
+NAME="AEN5330"
 ></A
 ><H2
 >VERSION</H2
@@ -16902,7 +16946,7 @@ NAME="AEN5316"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5319"
+NAME="AEN5333"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -16981,7 +17025,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5339"
+NAME="AEN5353"
 ></A
 ><H2
 >AUTHOR</H2
