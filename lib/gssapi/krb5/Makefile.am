@@ -24,12 +24,14 @@ libgssapi_la_SOURCES =		\
 	display_status.c	\
 	duplicate_name.c	\
 	encapsulate.c		\
+	export_sec_context.c	\
 	export_name.c		\
 	external.c		\
 	get_mic.c		\
 	gssapi.h		\
 	gssapi_locl.h		\
 	import_name.c		\
+	import_sec_context.c	\
 	indicate_mechs.c	\
 	init.c			\
 	init_sec_context.c	\
