@@ -757,7 +757,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			int ret;
 			
 			use_in_memory_ccache();
-			ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */, NULL);
+			ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */, NULL, NULL);
 			
 			if (ret){
 				SAFE_FREE(principal);

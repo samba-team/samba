@@ -81,7 +81,7 @@
 #endif
 
 #if defined(HAVE_KRB5_PRINCIPAL2SALT) && defined(HAVE_KRB5_USE_ENCTYPE) && defined(HAVE_KRB5_STRING_TO_KEY)
- int create_kerberos_key_from_string(krb5_context context,
+ int create_kerberos_key_from_string_direct(krb5_context context,
 					krb5_principal host_princ,
 					krb5_data *password,
 					krb5_keyblock *key,
@@ -102,7 +102,7 @@
 	return ret;
 }
 #elif defined(HAVE_KRB5_GET_PW_SALT) && defined(HAVE_KRB5_STRING_TO_KEY_SALT)
- int create_kerberos_key_from_string(krb5_context context,
+ int create_kerberos_key_from_string_direct(krb5_context context,
 					krb5_principal host_princ,
 					krb5_data *password,
 					krb5_keyblock *key,
@@ -122,6 +122,27 @@
 #else
  __ERROR_XX_UNKNOWN_CREATE_KEY_FUNCTIONS
 #endif
+
+int create_kerberos_key_from_string(krb5_context context,
+					krb5_principal host_princ,
+					krb5_data *password,
+					krb5_keyblock *key,
+					krb5_enctype enctype)
+{
+	krb5_principal salt_princ = NULL;
+	int ret;
+	/*
+	 * Check if we've determined that the KDC is salting keys for this
+	 * principal/enctype in a non-obvious way.  If it is, try to match
+	 * its behavior.
+	 */
+	salt_princ = kerberos_fetch_salt_princ_for_host_princ(context, host_princ, enctype);
+	ret = create_kerberos_key_from_string_direct(context, salt_princ ? salt_princ : host_princ, password, key, enctype);
+	if (salt_princ) {
+		krb5_free_principal(context, salt_princ);
+	}
+	return ret;
+}
 
 #if defined(HAVE_KRB5_GET_PERMITTED_ENCTYPES)
  krb5_error_code get_kerberos_allowed_etypes(krb5_context context, 
@@ -251,6 +272,17 @@
 }
 #endif
 
+void kerberos_free_data_contents(krb5_context context, krb5_data *pdata)
+{
+#if !defined(HAVE_KRB5_FREE_DATA_CONTENTS)
+	if (pdata->data) {
+		krb5_free_data_contents(context, pdata);
+	}
+#else
+	SAFE_FREE(pdata->data);
+#endif
+}
+
 void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype)
 {
 #if defined(HAVE_KRB5_KEYBLOCK_IN_CREDS)
@@ -262,7 +294,7 @@ void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype)
 #endif
 }
 
-krb5_boolean kerberos_compatible_enctypes(krb5_context context,
+BOOL kerberos_compatible_enctypes(krb5_context context,
 				  krb5_enctype enctype1,
 				  krb5_enctype enctype2)
 {
@@ -270,9 +302,9 @@ krb5_boolean kerberos_compatible_enctypes(krb5_context context,
 	krb5_boolean similar = 0;
 
 	krb5_c_enctype_compare(context, enctype1, enctype2, &similar);
-	return similar;
+	return similar ? True : False;
 #elif defined(HAVE_KRB5_ENCTYPES_COMPATIBLE_KEYS)
-	return krb5_enctypes_compatible_keys(context, enctype1, enctype2);
+	return krb5_enctypes_compatible_keys(context, enctype1, enctype2) ? True : False;
 #endif
 }
 
@@ -447,10 +479,7 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 
 	*ticket = data_blob(packet.data, packet.length);
 
-/* Hmm, heimdal dooesn't have this - what's the correct call? */
-#ifdef HAVE_KRB5_FREE_DATA_CONTENTS
- 	krb5_free_data_contents(context, &packet); 
-#endif
+ 	kerberos_free_data_contents(context, &packet); 
 
 failed:
 
