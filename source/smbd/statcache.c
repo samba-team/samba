@@ -286,7 +286,7 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
  JRA. Use a djb-algorithm hash for speed.
 ***************************************************************/
                                                                                                      
-static u32 string_hash(TDB_DATA *key)
+u32 fast_string_hash(TDB_DATA *key)
 {
         u32 n = 0;
         const char *p;
@@ -311,7 +311,7 @@ BOOL reset_stat_cache( void )
 
 	/* Create the in-memory tdb using our custom hash function. */
 	tdb_stat_cache = tdb_open_ex("statcache", 0, TDB_INTERNAL,
-                                    (O_RDWR|O_CREAT), 0644, NULL, string_hash);
+                                    (O_RDWR|O_CREAT), 0644, NULL, fast_string_hash);
 
 	if (!tdb_stat_cache)
 		return False;
