@@ -139,11 +139,7 @@ NTSTATUS testsam_init(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const 
 	return NT_STATUS_OK;
 }
 
-int init_module(void);
-
-int init_module() {
-	if(smb_register_passdb("testsam", testsam_init, PASSDB_INTERFACE_VERSION))
-		return 0;
-
-	return 1;
+NTSTATUS init_module(void) {
+	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "testsam",
+				   testsam_init);
 }
