@@ -42,9 +42,7 @@ static void fault_report(int sig)
 	DEBUG(0,("\nPlease read the file BUGS.txt in the distribution\n"));
 	DEBUG(0,("===============================================================\n"));
   
-#if AJT
-	ajt_panic();
-#endif  
+	smb_panic("internal error");
 
 	if (cont_fn) {
 		cont_fn(NULL);

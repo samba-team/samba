@@ -1265,10 +1265,6 @@ void dfs_unlogin(void);
 extern int dcelogin_atmost_once;
 #endif
 
-#if AJT
-void ajt_panic(void);
-#endif
-
 #ifdef NOSTRDUP
 char *strdup(char *s);
 #endif

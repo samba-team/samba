@@ -377,9 +377,7 @@ va_dcl
     DEBUG(2,("type error in package: %s instead of %*s\n",str,
  	     strlen(str),p->curpos));
     va_end(args);
-#if AJT
-    ajt_panic();
-#endif  
+    smb_panic("invalid types in ipc");
     return 0;
   }
 #endif
