@@ -140,6 +140,12 @@ static struct talloc_chunk *talloc_parent_chunk(const void *ptr)
 	return tc->parent;
 }
 
+void *talloc_parent(const void *ptr)
+{
+	struct talloc_chunk *tc = talloc_parent_chunk(ptr);
+	return (void *)(tc+1);
+}
+
 /* 
    Allocate a bit of memory as a child of an existing pointer
 */
@@ -695,7 +701,7 @@ static int talloc_reference_count(const void *ptr)
 /*
   report on memory usage by all children of a pointer, giving a full tree view
 */
-static void talloc_report_depth(const void *ptr, FILE *f, int depth)
+void talloc_report_depth(const void *ptr, FILE *f, int depth)
 {
 	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
 

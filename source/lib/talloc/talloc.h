@@ -89,6 +89,8 @@ void *talloc_named(const void *context, size_t size,
 		   const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 void *talloc_named_const(const void *context, size_t size, const char *name);
 const char *talloc_get_name(const void *ptr);
+void talloc_report_depth(const void *ptr, FILE *f, int depth);
+void *talloc_parent(const void *ptr);
 void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
 int talloc_free(void *ptr);
 void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *name);
