@@ -256,9 +256,8 @@ mcc_get_principal(krb5_context context,
 {
     krb5_mcache *m = MCACHE(id);
 
-    if (MISDEAD(m))
+    if (MISDEAD(m) || m->primary_principal == NULL)
 	return ENOENT;
-
     return krb5_copy_principal (context,
 				m->primary_principal,
 				principal);
