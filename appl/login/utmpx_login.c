@@ -6,6 +6,7 @@ RCSID("$Id$");
 
 /* utmpx_login - update utmp and wtmp after login */
 
+#ifdef HAVE_UTMPX
 static
 void
 update(struct utmpx *ut, char *line, char *user, char *host)
@@ -25,6 +26,7 @@ update(struct utmpx *ut, char *line, char *user, char *host)
     updwtmpx(WTMPX_FILE, ut);
 #endif
 }
+#endif
 
 int
 utmpx_login(char *line, char *user, char *host)
