@@ -1655,6 +1655,26 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       break;
     }
 
+    /*
+     * NT seems to use this call with a size of zero
+     * to mean truncate the file. JRA.
+     */
+
+    case SMB_SET_FILE_ALLOCATION_INFO:
+    {
+      SMB_OFF_T newsize = IVAL(pdata,0);
+#ifdef LARGE_SMB_OFF_T
+      newsize |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+#else /* LARGE_SMB_OFF_T */
+      if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
+         return(ERROR(ERRDOS,ERRunknownlevel));
+#endif /* LARGE_SMB_OFF_T */
+      DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n", fname, (double)newsize ));
+      if(newsize == 0)
+        size = 0;
+      break;
+    }
+
     case SMB_SET_FILE_END_OF_FILE_INFO:
     {
       size = IVAL(pdata,0);
@@ -1664,11 +1684,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
          return(ERROR(ERRDOS,ERRunknownlevel));
 #endif /* LARGE_SMB_OFF_T */
+      DEBUG(10,("call_trans2setfilepathinfo: Set end of file info for file %s to %.0f\n", fname, (double)size ));
       break;
     }
-
-    case SMB_SET_FILE_ALLOCATION_INFO:
-      break; /* We don't need to do anything for this call. */
 
     case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
     {
@@ -1817,9 +1835,21 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
   DEBUG(6,("mode: %x\n"  , mode));
 
   /* get some defaults (no modifications) if any info is zero. */
-  if (!tvs.actime) tvs.actime = st.st_atime;
-  if (!tvs.modtime) tvs.modtime = st.st_mtime;
-  if (!size) size = st.st_size;
+  if (!tvs.actime)
+    tvs.actime = st.st_atime;
+
+  if (!tvs.modtime)
+    tvs.modtime = st.st_mtime;
+
+  if(!((info_level == SMB_SET_FILE_END_OF_FILE_INFO) ||
+     (info_level == SMB_SET_FILE_ALLOCATION_INFO))) {
+    /*
+     * Only do this test if we are not explicitly
+     * changing the size of a file.
+     */
+    if (!size)
+      size = st.st_size;
+  }
 
   /* Try and set the times, size and mode of this file -
      if they are different from the current values
