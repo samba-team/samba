@@ -114,8 +114,10 @@ them to the string list option @code{[kdc]use_2b} in the kdc's
 
 @example
 [kdc]
-	use_2b = afs@@SU.SE
-	use_2b = afs/it.su.se@@SU.SE
+	use_2b = {
+		afs@@SU.SE = yes
+		afs/it.su.se@@SU.SE = yes
+	}
 @end example
 
 @subsection Configuring AFS clients
