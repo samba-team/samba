@@ -254,6 +254,13 @@
 	sent to smbd.</para></listitem>
 	</varlistentry>
 
+	<varlistentry>
+	<term>reload-config</term>
+	<listitem><para>Force daemon to reload smb.conf configuration file. Can be sent
+	to <constant>smbd</constant>, <constant>nmbd</constant>, or <constant>winbindd</constant>.
+	</para></listitem>
+	</varlistentry>
+
 </variablelist>
 </refsect1>
 
