@@ -1173,7 +1173,8 @@ receive_data(FILE *instr, FILE *outstr)
     {
 	char *p, *q;
 	int cr_flag = 0;
-	while ((cnt = auth_read(fileno(instr), buf+cr_flag, sizeof(buf))) > 0){
+	while ((cnt = auth_read(fileno(instr), buf+cr_flag, 
+				sizeof(buf)-cr_flag)) > 0){
 	    byte_count += cnt;
 	    cr_flag = 0;
 	    for(p = buf, q = buf; p < buf + cnt;){
@@ -1522,7 +1523,11 @@ dologout(int status)
 		    k_unlog();
 	}
 	/* beware of flushing buffers after a SIGPIPE */
+#ifdef XXX
+	exit(status);
+#else
 	_exit(status);
+#endif	
 }
 
 void abor(void)
