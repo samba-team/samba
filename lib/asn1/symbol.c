@@ -46,8 +46,6 @@ addsym (char *name)
   key.name = name;
   s = (Symbol *)hashtabsearch (htab, (void *)&key);
   if (s == NULL) {
-    char *p;
-
     s = (Symbol *)malloc (sizeof (*s));
     s->name = name;
     s->gen_name = strdup(name);
