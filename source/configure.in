@@ -3345,7 +3345,7 @@ done
 
 # Always built these modules static
 MODULE_pdb_guest=STATIC
-MODULE_rpc_spools=STATIC
+MODULE_rpc_spoolss=STATIC
 MODULE_rpc_srv=STATIC
 
 AC_ARG_WITH(static-modules,
