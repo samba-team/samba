@@ -414,25 +414,9 @@ BOOL check_name(pstring name,connection_struct *conn)
 		}
 	}
 
-	if (!lp_widelinks(SNUM(conn))) {
+	if (!lp_widelinks(SNUM(conn)) || !lp_symlinks(SNUM(conn))) {
 		ret = reduce_name(conn,name);
 	}
-
-	/* Check if we are allowing users to follow symlinks */
-	/* Patch from David Clerc <David.Clerc@cui.unige.ch>
-		University of Geneva */
-
-#ifdef S_ISLNK
-	if (!lp_symlinks(SNUM(conn))) {
-		SMB_STRUCT_STAT statbuf;
-		if ( (SMB_VFS_LSTAT(conn,name,&statbuf) != -1) &&
-				(S_ISLNK(statbuf.st_mode)) ) {
-			DEBUG(3,("check_name: denied: file path name %s is a symlink\n",name));
-			errno = EACCES;
-			ret = False; 
-		}
-	}
-#endif
 
 	if (!ret) {
 		DEBUG(5,("check_name on %s failed\n",name));
