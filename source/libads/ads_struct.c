@@ -33,32 +33,34 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 	
 	r = strdup(realm);
 
-	if (!r || !*r) return r;
+	if (!r || !*r)
+		return r;
 
-	for (p=r; *p; p++) {
-		if (strchr(sep, *p)) numbits++;
-	}
+	for (p=r; *p; p++)
+		if (strchr(sep, *p))
+			numbits++;
 
 	len = (numbits+1)*(strlen(field)+1) + strlen(r) + 1;
 
 	ret = malloc(len);
+	if (!ret)
+		return NULL;
+
 	strlcpy(ret,field, len);
 	p=strtok(r,sep); 
 	strlcat(ret, p, len);
 
 	while ((p=strtok(NULL,sep))) {
 		char *s;
-		if (reverse) {
+		if (reverse)
 			asprintf(&s, "%s%s,%s", field, p, ret);
-		} else {
+		else
 			asprintf(&s, "%s,%s%s", ret, field, p);
-		}
 		free(ret);
 		ret = s;
 	}
 
 	free(r);
-
 	return ret;
 }
 

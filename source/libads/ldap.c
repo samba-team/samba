@@ -1528,7 +1528,8 @@ char *ads_pull_string(ADS_STRUCT *ads,
 	int rc;
 
 	values = ldap_get_values(ads->ld, msg, field);
-	if (!values) return NULL;
+	if (!values)
+		return NULL;
 	
 	if (values[0]) {
 		rc = pull_utf8_talloc(mem_ctx, &ux_string, 
@@ -1557,15 +1558,22 @@ char **ads_pull_strings(ADS_STRUCT *ads,
 	int i, n;
 
 	values = ldap_get_values(ads->ld, msg, field);
-	if (!values) return NULL;
+	if (!values)
+		return NULL;
 
-	for (i=0;values[i];i++) /* noop */ ;
+	for (i=0;values[i];i++)
+		/* noop */ ;
 	n = i;
 
 	ret = talloc(mem_ctx, sizeof(char *) * (n+1));
+	if (!ret) {
+		ldap_value_free(values);
+		return NULL;
+	}
 
 	for (i=0;i<n;i++) {
 		if (pull_utf8_talloc(mem_ctx, &ret[i], values[i]) == -1) {
+			ldap_value_free(values);
 			return NULL;
 		}
 	}
@@ -1590,7 +1598,8 @@ BOOL ads_pull_uint32(ADS_STRUCT *ads,
 	char **values;
 
 	values = ldap_get_values(ads->ld, msg, field);
-	if (!values) return False;
+	if (!values)
+		return False;
 	if (!values[0]) {
 		ldap_value_free(values);
 		return False;
@@ -1614,7 +1623,8 @@ BOOL ads_pull_guid(ADS_STRUCT *ads,
 	char **values;
 
 	values = ldap_get_values(ads->ld, msg, "objectGUID");
-	if (!values) return False;
+	if (!values)
+		return False;
 	
 	if (values[0]) {
 		memcpy(guid, values[0], sizeof(GUID));
@@ -1643,11 +1653,11 @@ BOOL ads_pull_sid(ADS_STRUCT *ads,
 
 	values = ldap_get_values_len(ads->ld, msg, field);
 
-	if (!values) return False;
+	if (!values)
+		return False;
 
-	if (values[0]) {
+	if (values[0])
 		ret = sid_parse(values[0]->bv_val, values[0]->bv_len, sid);
-	}
 	
 	ldap_value_free_len(values);
 	return ret;
@@ -1671,16 +1681,23 @@ int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 
 	values = ldap_get_values_len(ads->ld, msg, field);
 
-	if (!values) return 0;
+	if (!values)
+		return 0;
 
-	for (i=0; values[i]; i++) /* nop */ ;
+	for (i=0; values[i]; i++)
+		/* nop */ ;
 
 	(*sids) = talloc(mem_ctx, sizeof(DOM_SID) * i);
+	if (!(*sids)) {
+		ldap_value_free_len(values);
+		return 0;
+	}
 
 	count = 0;
 	for (i=0; values[i]; i++) {
 		ret = sid_parse(values[i]->bv_val, values[i]->bv_len, &(*sids)[count]);
-		if (ret) count++;
+		if (ret)
+			count++;
 	}
 	
 	ldap_value_free_len(values);
