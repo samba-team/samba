@@ -22,8 +22,6 @@
 #include "../web/swat_proto.h"
 #include "dynconfig.h"
 
-/** Need to wait for daemons to startup */
-#define SLEEP_TIME 3
 
 /** Startup smbd from web interface. */
 void start_smbd(void)
@@ -33,7 +31,6 @@ void start_smbd(void)
 	if (geteuid() != 0) return;
 
 	if (fork()) {
-		sleep(SLEEP_TIME);
 		return;
 	}
 
@@ -54,7 +51,6 @@ void start_nmbd(void)
 	if (geteuid() != 0) return;
 
 	if (fork()) {
-		sleep(SLEEP_TIME);
 		return;
 	}
 
@@ -75,7 +71,6 @@ void start_winbindd(void)
 	if (geteuid() != 0) return;
 
 	if (fork()) {
-		sleep(SLEEP_TIME);
 		return;
 	}
 
@@ -133,5 +128,4 @@ void kill_pid(pid_t pid)
 	if (pid <= 0) return;
 
 	kill(pid, SIGTERM);
-	sleep(SLEEP_TIME);
 }
