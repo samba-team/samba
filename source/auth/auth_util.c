@@ -478,12 +478,32 @@ void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
 	fstring sid_str;
 	int     i;
 	
+	if (!token) {
+		DEBUGC(dbg_class, dbg_lev, ("NT user token: (NULL)\n"));
+		return;
+	}
+	
 	DEBUGC(dbg_class, dbg_lev, ("NT user token of user %s\n",
-		sid_to_string(sid_str, &token->user_sids[0]) ));
+				    sid_to_string(sid_str, &token->user_sids[0]) ));
 	DEBUGADDC(dbg_class, dbg_lev, ("contains %i SIDs\n", token->num_sids));
 	for (i = 0; i < token->num_sids; i++)
 		DEBUGADDC(dbg_class, dbg_lev, ("SID[%3i]: %s\n", i, 
-			sid_to_string(sid_str, &token->user_sids[i])));
+					       sid_to_string(sid_str, &token->user_sids[i])));
+}
+
+/****************************************************************************
+ prints a UNIX 'token' to debug output.
+****************************************************************************/
+
+void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid, int n_groups, gid_t *groups)
+{
+	int     i;
+	DEBUGC(dbg_class, dbg_lev, ("UNIX token of user %ld\n", (long int)uid));
+
+	DEBUGADDC(dbg_class, dbg_lev, ("Primary group is %ld and contains %i supplementary groups\n", (long int)gid, n_groups));
+	for (i = 0; i < n_groups; i++)
+		DEBUGADDC(dbg_class, dbg_lev, ("Group[%3i]: %ld\n", i, 
+			(long int)groups[i]));
 }
 
 /****************************************************************************
@@ -668,12 +688,10 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 		}
 	}
 
+	debug_unix_user_token(DBGC_CLASS, 5, usr->pw_uid, usr->pw_gid, n_unix_groups, *unix_groups);
+
 	passwd_free(&usr);
 	
-	DEBUG(5,("get_user_groups_from_local_sam: user is in the unix following groups\n"));
-	for (i = 0; i < n_unix_groups; i++)
-		DEBUGADD(5,("supplementary group gid:%ld\n",(long int)(*unix_groups)[i]));
-
 	if (n_unix_groups > 0) {
 		*groups   = malloc(sizeof(DOM_SID) * n_unix_groups);
 		if (!*groups) {

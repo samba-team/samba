@@ -287,17 +287,8 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	DEBUG(3, ("setting sec ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
 		(unsigned int)uid, (unsigned int)gid, sec_ctx_stack_ndx));
 
-	if (ngroups) {
-		int i;
-
-		DEBUG(3, ("%d user groups: \n", ngroups));
-		for (i = 0; i < ngroups; i++) {
-			DEBUGADD(3, ("%u ", (unsigned int)groups[i]));
-		}
-
-		DEBUG(3, ("\n"));
-	}
-	
+	debug_nt_user_token(DBGC_CLASS, 5, token);
+	debug_unix_user_token(DBGC_CLASS, 5, uid, gid, ngroups, groups);
 
 	gain_root();
 
