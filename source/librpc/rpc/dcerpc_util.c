@@ -202,7 +202,7 @@ const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bindi
 		return NULL;
 	}
 
-	if (!uuid_all_zero(&b->object)) { 
+	if (!GUID_all_zero(&b->object)) { 
 		s = talloc_asprintf(s, "%s@",
 				    GUID_string(mem_ctx, &b->object));
 	}

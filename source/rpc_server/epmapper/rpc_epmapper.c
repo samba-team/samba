@@ -227,7 +227,7 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	
 	for (i=0;i<count;i++) {
 		struct epm_tower t;
-		if (!uuid_equal(&floors[0].lhs.info.uuid.uuid, &eps[i].ep_description.object) ||
+		if (!GUID_equal(&floors[0].lhs.info.uuid.uuid, &eps[i].ep_description.object) ||
 		    floors[0].lhs.info.uuid.version != eps[i].ep_description.object_version) {
 			continue;
 		}

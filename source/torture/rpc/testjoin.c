@@ -259,7 +259,7 @@ void torture_leave_domain(struct test_join *join)
 	struct samr_DeleteUser d;
 	NTSTATUS status;
 
-	if (!uuid_all_zero(&join->user_handle.uuid)) {
+	if (!GUID_all_zero(&join->user_handle.uuid)) {
 		d.in.user_handle = &join->user_handle;
 		d.out.user_handle = &join->user_handle;
 		

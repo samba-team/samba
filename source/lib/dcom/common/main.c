@@ -162,7 +162,7 @@ static WERROR dcom_create_object_remote(struct dcom_context *ctx, struct GUID *c
 	ZERO_STRUCT(r.in);
 	r.in.this.version.MajorVersion = COM_MAJOR_VERSION;
 	r.in.this.version.MinorVersion = COM_MINOR_VERSION;
-	uuid_generate_random(&r.in.this.cid);
+	r.in.this.cid = GUID_random();
 	r.in.Clsid = *clsid;
 	r.in.ClientImpLevel = RPC_C_IMP_LEVEL_IDENTIFY;
 	r.in.num_protseqs = ARRAY_SIZE(protseq);
@@ -279,7 +279,7 @@ WERROR dcom_get_class_object_remote(struct dcom_context *ctx, struct GUID *clsid
 	ZERO_STRUCT(r.in);
 	r.in.this.version.MajorVersion = COM_MAJOR_VERSION;
 	r.in.this.version.MinorVersion = COM_MINOR_VERSION;
-	uuid_generate_random(&r.in.this.cid);
+	r.in.this.cid = GUID_random();
 	r.in.Clsid = *clsid;
 	r.in.ClientImpLevel = RPC_C_IMP_LEVEL_IDENTIFY;
 	r.in.num_protseqs = ARRAY_SIZE(protseq);
@@ -355,7 +355,7 @@ NTSTATUS dcom_get_pipe (struct dcom_interface_p *iface, struct dcerpc_pipe **p)
 	iid = iface->interface->iid;
 
 	if (iface->ox->pipe) {
-		if (!uuid_equal(&iface->ox->pipe->syntax.uuid, &iid)) {
+		if (!GUID_equal(&iface->ox->pipe->syntax.uuid, &iid)) {
 			iface->ox->pipe->syntax.uuid = iid;
 			status = dcerpc_alter(iface->ox->pipe, iface->ctx);
 			if (NT_STATUS_IS_ERR(status)) {
@@ -538,7 +538,7 @@ struct dcom_interface_p *dcom_new_local_ifacep(struct dcom_context *ctx, const s
 	ip->ctx = ctx;
 	ip->interface = iface;
 	ip->vtable = vtable;
-	uuid_generate_random(&ip->ipid);
+	ip->ipid = GUID_random();
 	ip->object = object;
 	ip->objref_flags = 0;
 	ip->orpc_flags = 0;

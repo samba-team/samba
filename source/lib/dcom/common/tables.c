@@ -37,7 +37,7 @@ const struct dcom_interface *dcom_interface_by_iid(const struct GUID *iid)
 
 	while(l) {
 		
-		if (uuid_equal(iid, &l->interface.iid)) 
+		if (GUID_equal(iid, &l->interface.iid)) 
 			return &l->interface;
 		
 		l = l->next;
@@ -52,7 +52,7 @@ const struct dcom_class *dcom_class_by_clsid(const struct GUID *clsid)
 
 	while(c) {
 
-		if (uuid_equal(clsid, &c->class.clsid)) {
+		if (GUID_equal(clsid, &c->class.clsid)) {
 			return &c->class;
 		}
 

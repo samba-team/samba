@@ -40,7 +40,7 @@ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection *dce_conn,
 	h->destroy = NULL;
 
 	h->wire_handle.handle_type = handle_type;
-	uuid_generate_random(&h->wire_handle.uuid);
+	h->wire_handle.uuid = GUID_random();
 	
 	DLIST_ADD(dce_conn->handles, h);
 
@@ -77,7 +77,7 @@ struct dcesrv_handle *dcesrv_handle_fetch(struct dcesrv_connection *dce_conn,
 
 	for (h=dce_conn->handles; h; h=h->next) {
 		if (h->wire_handle.handle_type == p->handle_type &&
-		    uuid_equal(&p->uuid, &h->wire_handle.uuid)) {
+		    GUID_equal(&p->uuid, &h->wire_handle.uuid)) {
 			if (handle_type != DCESRV_HANDLE_ANY &&
 			    p->handle_type != handle_type) {
 				DEBUG(0,("client gave us the wrong handle type (%d should be %d)\n",
