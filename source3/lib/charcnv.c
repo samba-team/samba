@@ -270,7 +270,7 @@ size_t convert_string(charset_t from, charset_t to,
 					break;
 			} else {
 				if (srclen == (size_t)-1) {
-					srclen = strlen(src)+1;
+					srclen = strlen(p)+1;
 				}
 				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
 			}
@@ -296,7 +296,7 @@ size_t convert_string(charset_t from, charset_t to,
 					break;
 			} else {
 				if (srclen == (size_t)-1) {
-					srclen = strlen_w(src)+2;
+					srclen = strlen_w((const void *)p)+2;
 				}
 				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
 			}
@@ -322,7 +322,7 @@ size_t convert_string(charset_t from, charset_t to,
 					break;
 			} else {
 				if (srclen == (size_t)-1) {
-					srclen = strlen(src)+1;
+					srclen = strlen(p)+1;
 				}
 				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
 			}
