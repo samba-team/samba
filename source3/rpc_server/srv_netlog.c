@@ -288,8 +288,7 @@ static void api_net_req_chal( uint16 vuid,
 	/* grab the challenge... */
 	net_io_q_req_chal("", &q_r, data, 0);
 
-	fstrcpy(mach_acct, unistrn2(q_r.uni_logon_clnt.buffer,
-	                            q_r.uni_logon_clnt.uni_str_len));
+	fstrcpy(mach_acct, unistr2_to_str(&q_r.uni_logon_clnt));
 
 	fstrcpy(mach_name, mach_acct);
 	strlower(mach_name);
@@ -400,8 +399,7 @@ static void api_net_srv_pwset( uint16 vuid,
 
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
 
-		pstrcpy(mach_acct, unistrn2(q_a.clnt_id.login.uni_acct_name.buffer,
-		                            q_a.clnt_id.login.uni_acct_name.uni_str_len));
+		fstrcpy(mach_acct, unistr2_to_str(&q_a.clnt_id.login.uni_acct_name));
 
 		DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
 
@@ -609,6 +607,7 @@ static void api_net_sam_logon( uint16 vuid,
 	NTTIME pass_can_change_time ;
 	NTTIME pass_must_change_time;
 
+	fstring nt_name     ;
 	fstring full_name   ;
 	fstring logon_script;
 	fstring profile_path;
@@ -705,6 +704,7 @@ static void api_net_sam_logon( uint16 vuid,
 		pass_can_change_time  = sam_pass->pass_can_change_time;
 		pass_must_change_time = sam_pass->pass_must_change_time;
 
+		fstrcpy(nt_name     , sam_pass->nt_name);
 		fstrcpy(full_name   , sam_pass->full_name);
 		fstrcpy(logon_script, sam_pass->logon_script);
 		fstrcpy(profile_path, sam_pass->profile_path);
@@ -769,7 +769,7 @@ static void api_net_sam_logon( uint16 vuid,
 				&pass_can_change_time,
 				&pass_must_change_time,
 
-				nt_username     , /* user_name */
+				nt_name         , /* user_name */
 				full_name       , /* full_name */
 				logon_script    , /* logon_script */
 				profile_path    , /* profile_path */

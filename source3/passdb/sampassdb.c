@@ -337,10 +337,16 @@ struct smb_passwd *pwdb_sam_to_smb(struct sam_passwd *user)
 
 	pwdb_init_smb(&pw_buf);
 
-	fstrcpy(nt_name  , user->nt_name);
-	fstrcpy(unix_name, user->unix_name);
-	pw_buf.nt_name            = nt_name;
-	pw_buf.unix_name          = unix_name;
+	if (user->nt_name != NULL)
+	{
+		fstrcpy(nt_name  , user->nt_name);
+		pw_buf.nt_name = nt_name;
+	}
+	if (user->unix_name != NULL)
+	{
+		fstrcpy(unix_name, user->unix_name);
+		pw_buf.unix_name = unix_name;
+	}
 	pw_buf.unix_uid           = user->unix_uid;
 	pw_buf.user_rid           = user->user_rid;
 	pw_buf.smb_passwd         = user->smb_passwd;
@@ -366,10 +372,16 @@ struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 
 	pwdb_init_sam(&pw_buf);
 
-	fstrcpy(nt_name  , user->nt_name);
-	fstrcpy(unix_name, user->unix_name);
-	pw_buf.nt_name            = nt_name;
-	pw_buf.unix_name          = unix_name;
+	if (user->nt_name != NULL)
+	{
+		fstrcpy(nt_name  , user->nt_name);
+		pw_buf.nt_name = nt_name;
+	}
+	if (user->unix_name != NULL)
+	{
+		fstrcpy(unix_name, user->unix_name);
+		pw_buf.unix_name = unix_name;
+	}
 	pw_buf.unix_uid           = user->unix_uid;
 	pw_buf.user_rid           = user->user_rid;
 	pw_buf.smb_passwd         = user->smb_passwd;
