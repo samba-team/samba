@@ -375,6 +375,7 @@ typedef struct
 	BOOL bDeleteReadonly;
 	BOOL bFakeOplocks;
 	BOOL bDeleteVetoFiles;
+	BOOL bDosFilemode;
 	BOOL bDosFiletimes;
 	BOOL bDosFiletimeResolution;
 	BOOL bFakeDirCreateTimes;
@@ -489,6 +490,7 @@ static service sDefault = {
 	False,			/* bDeleteReadonly */
 	False,			/* bFakeOplocks */
 	False,			/* bDeleteVetoFiles */
+	False,			/* bDosFilemode */
 	False,			/* bDosFiletimes */
 	False,			/* bDosFiletimeResolution */
 	False,			/* bFakeDirCreateTimes */
@@ -984,6 +986,7 @@ static struct parm_struct parm_table[] = {
 	{"magic script", P_STRING, P_LOCAL, &sDefault.szMagicScript, NULL, NULL, FLAG_SHARE},
 	{"magic output", P_STRING, P_LOCAL, &sDefault.szMagicOutput, NULL, NULL, FLAG_SHARE},
 	{"delete readonly", P_BOOL, P_LOCAL, &sDefault.bDeleteReadonly, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
+	{"dos filemode", P_BOOL, P_LOCAL, &sDefault.bDosFilemode, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"dos filetimes", P_BOOL, P_LOCAL, &sDefault.bDosFiletimes, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"dos filetime resolution", P_BOOL, P_LOCAL, &sDefault.bDosFiletimeResolution, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 
@@ -1603,6 +1606,7 @@ FN_LOCAL_BOOL(lp_map_system, bMap_system)
 FN_LOCAL_BOOL(lp_delete_readonly, bDeleteReadonly)
 FN_LOCAL_BOOL(lp_fake_oplocks, bFakeOplocks)
 FN_LOCAL_BOOL(lp_recursive_veto_delete, bDeleteVetoFiles)
+FN_LOCAL_BOOL(lp_dos_filemode, bDosFilemode)
 FN_LOCAL_BOOL(lp_dos_filetimes, bDosFiletimes)
 FN_LOCAL_BOOL(lp_dos_filetime_resolution, bDosFiletimeResolution)
 FN_LOCAL_BOOL(lp_fake_dir_create_times, bFakeDirCreateTimes)

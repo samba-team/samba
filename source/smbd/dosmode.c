@@ -184,50 +184,84 @@ chmod a file - but preserve some bits
 ********************************************************************/
 int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *st)
 {
-  SMB_STRUCT_STAT st1;
-  int mask=0;
-  mode_t tmp;
-  mode_t unixmode;
+	extern struct current_user current_user;
+	SMB_STRUCT_STAT st1;
+	int mask=0;
+	mode_t tmp;
+	mode_t unixmode;
+	int ret = -1;
 
-  if (!st) {
-    st = &st1;
-    if (vfs_stat(conn,fname,st)) return(-1);
-  }
+	if (!st) {
+		st = &st1;
+		if (vfs_stat(conn,fname,st))
+			return(-1);
+	}
 
-  if (S_ISDIR(st->st_mode)) dosmode |= aDIR;
+	if (S_ISDIR(st->st_mode))
+		dosmode |= aDIR;
 
-  if (dos_mode(conn,fname,st) == dosmode) return(0);
+	if (dos_mode(conn,fname,st) == dosmode)
+		return(0);
 
-  unixmode = unix_mode(conn,dosmode,fname);
+	unixmode = unix_mode(conn,dosmode,fname);
 
-  /* preserve the s bits */
-  mask |= (S_ISUID | S_ISGID);
+	/* preserve the s bits */
+	mask |= (S_ISUID | S_ISGID);
 
-  /* preserve the t bit */
+	/* preserve the t bit */
 #ifdef S_ISVTX
-  mask |= S_ISVTX;
+	mask |= S_ISVTX;
 #endif
 
-  /* possibly preserve the x bits */
-  if (!MAP_ARCHIVE(conn)) mask |= S_IXUSR;
-  if (!MAP_SYSTEM(conn)) mask |= S_IXGRP;
-  if (!MAP_HIDDEN(conn)) mask |= S_IXOTH;
+	/* possibly preserve the x bits */
+	if (!MAP_ARCHIVE(conn))
+		mask |= S_IXUSR;
+	if (!MAP_SYSTEM(conn))
+		mask |= S_IXGRP;
+	if (!MAP_HIDDEN(conn))
+		mask |= S_IXOTH;
 
-  unixmode |= (st->st_mode & mask);
+	unixmode |= (st->st_mode & mask);
 
-  /* if we previously had any r bits set then leave them alone */
-  if ((tmp = st->st_mode & (S_IRUSR|S_IRGRP|S_IROTH))) {
-    unixmode &= ~(S_IRUSR|S_IRGRP|S_IROTH);
-    unixmode |= tmp;
-  }
+	/* if we previously had any r bits set then leave them alone */
+	if ((tmp = st->st_mode & (S_IRUSR|S_IRGRP|S_IROTH))) {
+		unixmode &= ~(S_IRUSR|S_IRGRP|S_IROTH);
+		unixmode |= tmp;
+	}
 
-  /* if we previously had any w bits set then leave them alone 
-   whilst adding in the new w bits, if the new mode is not rdonly */
-  if (!IS_DOS_READONLY(dosmode)) {
-    unixmode |= (st->st_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
-  }
+	/* if we previously had any w bits set then leave them alone 
+		whilst adding in the new w bits, if the new mode is not rdonly */
+	if (!IS_DOS_READONLY(dosmode)) {
+		unixmode |= (st->st_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
+	}
 
-  return(vfs_chmod(conn,fname,unixmode));
+	ret = vfs_chmod(conn,fname,unixmode);
+
+	if((errno != EPERM) && (errno != EACCES))
+		return -1;
+
+	if(!lp_dos_filemode(SNUM(conn)))
+		return -1;
+
+	/* We want DOS semantics, ie allow non owner with write permission to change the
+		bits on a file. Just like file_utime below.
+	*/
+
+	/* Check if we have write access. */
+	if (CAN_WRITE(conn)) {
+		if (((st->st_mode & S_IWOTH) ||
+				conn->admin_user ||
+				((st->st_mode & S_IWUSR) && current_user.uid==st->st_uid) ||
+				((st->st_mode & S_IWGRP) &&
+				in_group(st->st_gid,current_user.gid, current_user.ngroups,current_user.groups)))) {
+					/* We are allowed to become root and change the file mode. */
+					become_root();
+					ret = vfs_chmod(conn,fname,unixmode);
+					unbecome_root();
+		}
+	}
+
+	return( ret );
 }
 
 

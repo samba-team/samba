@@ -1609,6 +1609,7 @@ BOOL lp_map_system(int );
 BOOL lp_delete_readonly(int );
 BOOL lp_fake_oplocks(int );
 BOOL lp_recursive_veto_delete(int );
+BOOL lp_dos_filemode(int );
 BOOL lp_dos_filetimes(int );
 BOOL lp_dos_filetime_resolution(int );
 BOOL lp_fake_dir_create_times(int );
