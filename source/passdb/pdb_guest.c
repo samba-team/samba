@@ -110,7 +110,15 @@ static NTSTATUS guestsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT
 
 static NTSTATUS guestsam_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
 {
+#if 0	/* JERRY */
 	return methods->parent->pdb_add_sam_account(methods->parent, newpwd);
+#else
+	/* I don't think we should allow any modification of 
+	   the guest account as SID will could messed up with 
+	   the smbpasswd backend   --jerry */
+
+	return NT_STATUS_NOT_IMPLEMENTED;
+#endif
 }
 
 NTSTATUS pdb_init_guestsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
