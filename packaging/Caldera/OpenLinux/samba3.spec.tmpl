@@ -267,7 +267,7 @@ strip $DESTDIR/usr/bin/smb{mount,mnt,umount}
 	ln -s /usr/bin/smbumount umount.smbfs )
 
 # First install /usr/bin progs
-for i in smbfilter make_printerdef debug2html
+for i in smbfilter debug2html
 do
 	install -m 755 source/bin/$i $DESTDIR/usr/bin
 done
