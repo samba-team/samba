@@ -6,7 +6,6 @@
 <!ENTITY DOMAIN-MEMBER SYSTEM "DOMAIN_MEMBER.sgml">
 <!ENTITY WINBIND SYSTEM "winbind.sgml">
 <!ENTITY NT-Security SYSTEM "NT_Security.sgml">
-<!ENTITY OS2-Client SYSTEM "OS2-Client-HOWTO.sgml">
 <!ENTITY Samba-PDC-HOWTO SYSTEM "Samba-PDC-HOWTO.sgml">
 <!ENTITY Samba-BDC-HOWTO SYSTEM "Samba-BDC-HOWTO.sgml">
 <!ENTITY CVS-Access SYSTEM "CVS-Access.sgml">
@@ -19,6 +18,9 @@
 <!ENTITY SECURITY-LEVEL SYSTEM "security_level.sgml">
 <!ENTITY SPEED SYSTEM "Speed.sgml">
 <!ENTITY BROWSING SYSTEM "Browsing.sgml">
+<!ENTITY GROUP-MAPPING-HOWTO "GROUP-MAPPING-HOWTO.sgml">
+<!ENTITY Portability "Portability.sgml">
+<!ENTITY Other-Clients "Other-Clients.sgml">
 ]>
 
 <book id="Samba-Project-Documentation">
@@ -78,8 +80,10 @@ Cheers, jerry
 &Samba-LDAP;
 &BROWSING;
 &SPEED;
-&OS2-Client;
+&Other-Clients;
 &CVS-Access;
 &BUGS;
+&GROUP-MAPPING-HOWTO;
+&Portability;
 
 </book>
