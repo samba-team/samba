@@ -195,11 +195,11 @@ const char *trust_keystr(const char *domain)
  *
  * @return stored password's key
  **/
-char *trustdom_keystr(const char *domain)
+static char *trustdom_keystr(const char *domain)
 {
-	static char* keystr;
+	static pstring keystr;
 
-	asprintf(&keystr, "%s/%s", SECRETS_DOMTRUST_ACCT_PASS, domain);
+	pstr_sprintf(keystr, "%s/%s", SECRETS_DOMTRUST_ACCT_PASS, domain);
 	strupper_m(keystr);
 		
 	return keystr;
