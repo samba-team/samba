@@ -122,6 +122,7 @@ int
 main(int argc, char **argv)
 {
     int optind = 0;
+    set_progname(argv[0]);
     krb5_init_context(&context);
     if(getarg(args, num_args, argc, argv, &optind))
 	usage(1);
