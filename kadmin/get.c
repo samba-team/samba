@@ -187,7 +187,9 @@ format_field(kadm5_principal_ent_t princ, unsigned int field,
 	break;
 
     case KADM5_MOD_NAME:
-	if(condensed)
+	if (princ->mod_name == NULL)
+	    strlcpy(buf, "unknown", buf_len);
+	else if(condensed)
 	    krb5_unparse_name_fixed_short(context, princ->mod_name, buf, buf_len);
 	else
 	    krb5_unparse_name_fixed(context, princ->mod_name, buf, buf_len);
