@@ -48,7 +48,7 @@ to spend a *lot* of time hand checking the results.
 Finally, I think that for code that is parsing or formatting protocol
 packets the code layout should strongly reflect the packet
 format. That means ordring the code so that it parses in the same
-order as the packet is stored on the while (where possible) and using
+order as the packet is stored on the wire (where possible) and using
 white space to align packet offsets so that a reader can immediately
 map any line of the code to the corresponding place in the packet.
 
@@ -369,7 +369,8 @@ possible. You can do things like this:
 
 then in your callback function you can call the smb_raw_XXXX_recv()
 function to receive the reply. Your callback will receive the "req"
-pointer, which you can use to retrieve your private data.
+pointer, which you can use to retrieve your private data from
+req->async.private.
 
 Then all you need to do is ensure that the main loop in the client
 library gets called. You can either do that by polling the connection
@@ -388,17 +389,19 @@ The SMB protocol is inherently async. Some functions (such as change
 notify) often don't return for hours, while hundreds of other
 functions pass through the socket. Take a look at the RAW-MUX test in
 the Samba4 smbtorture to see some really extreme examples of the sort
-of async operations that Windows supports. 
+of async operations that Windows supports. I particularly like the
+open/open/close sequence where the 2nd open (which conflicts with the
+first) succeeds because the subsequent close is answered out of order.
 
 In Samba3 we handled this stuff very badly. We had awful "pending
 request" queues that allocated full 128k packet buffers, and even with
 all that crap we got the semantics wrong. In Samba4 I intend to make
 sure we get this stuff right.
 
-So, how do we do this? We now an async interface between smbd and the
-NTVFS backends. Whenever smbd calls into a backend the backend has an
-option of answer the request in a synchronous fashion if it wants to
-just like in Samba3, but it also has the option of answering the
+So, how do we do this? We now have an async interface between smbd and
+the NTVFS backends. Whenever smbd calls into a backend the backend has
+an option of answer the request in a synchronous fashion if it wants
+to just like in Samba3, but it also has the option of answering the
 request asynchronously. The only backend that currently does this is
 the CIFS backend, but I hope the other backends will soon do this to.
 
@@ -409,7 +412,8 @@ To make this work you need to do things like this in the backend:
 that tells smbd that the backend has elected to reply later rather
 than replying immediately. The backend must *only* do this if
 req->async.send_fn is not NULL. If send_fn is NULL then it means that
-smbd cannot handle this function being replied to in an async fashion.
+the smbd front end cannot handle this function being replied to in an
+async fashion.
 
 If the backend does this then it is up to the backend to call
 req->async.send_fn() when it is ready to reply. It the meantime smbd
@@ -422,14 +426,128 @@ parts - just like the client library has a _send() and _recv()
 function, so smbd has a _send() function and the parse function for
 each SMB.
 
-Go and have a look at reply_getatr_send() and reply_getatr() in
-smbd/reply.c. Read them? Good. 
+As an example go and have a look at reply_getatr_send() and
+reply_getatr() in smbd/reply.c. Read them? Good.
 
 Notice that reply_getatr() sets up the req->async structure to contain
-the send function. Thats how the backend gets to do an async
-reply. Also notice that reply_getatr() only does the parsing of the
-request, and does not to the reply generation. That is done by the
-_send() function. Nice and simple really.
+the send function. Thats how the backend gets to do an async reply, it
+calls this function when it is ready. Also notice that reply_getatr()
+only does the parsing of the request, and does not do the reply
+generation. That is done by the _send() function. 
+
+The only missing piece in the Samba4 right now that prevents it being
+fully async is that it currently does the low level socket calls (read
+and write on sockets) in a blocking fashion. It does use select() to
+make it somewhat async, but if a client were to send a partial packet
+then delay before sending the rest then smbd would be stuck waiting
+for the second half of the packet. 
+
+To fix this I plan on making the socket calls async as well, which
+luckily will not involve any API changes in the core of smbd or the
+library. It just involves a little bit of extra code in clitransport.c
+and smbd/request.c. As a side effect I hope that this will also reduce
+the average number of system calls required to answer a request, so we
+may see a performance improvement.
+
+
+NTVFS
+-----
+
+One of the most noticeable changes in Samba4 is the introduction of
+the NTVFS layer. This provided the initial motivation for the design
+of Samba4 and in many ways lies at the heart of the design.
+
+In Samba3 the main file serving process (smbd) combined the handling
+of the SMB protocol with the mapping to POSIX semantics in the same
+code. If you look in smbd/reply.c in Samba3 you see numerous places
+where POSIX assumptions are mixed tightly with SMB parsing code. We
+did have a VFS layer in Samba3, but it was a POSIX-like VFS layer, so
+no matter how you wrote a plugin you could not bypass the POSIX
+mapping decisions that had already been made before the VFS layer was
+called.
+
+In Samba4 things are quite different. All SMB parsing is performed in
+the smbd front end, then fully parsed requests are passed to the NTVFS
+backend. That backend makes any semantic mapping decisions and fills
+in the 'out' portion of the request. The front end is then responsible
+for putting those results into wire format and sending them to the
+client.
+
+Lets have a look at one of those request structures. Go and read the
+definition of "union smb_write" and "enum write_level" in
+include/smb_interfaces.h. (no, don't just skip reading it, really go
+and read it. Yes, that means you!).
+
+Notice the union? That's how Samba4 allows a single NTVFS backend
+interface to handle the several different ways of doing a write
+operation in the SMB protocol. Now lets look at one section of that
+union:
+
+	/* SMBwriteX interface */
+	struct {
+		enum write_level level;
+
+		struct {
+			uint16 fnum;
+			SMB_BIG_UINT offset;
+			uint16 wmode;
+			uint16 remaining;
+			uint32 count;
+			const char *data;
+		} in;
+		struct {
+			uint32 nwritten;
+			uint16 remaining;
+		} out;
+	} writex;
+
+see the "in" and "out" sections? The "in" section is for parameters
+that the SMB client sends on the wire as part of the request. The smbd
+front end parse code parses the wire request and fills in all those
+parameters. It then calls the NTVFS interface which looks like this:
+
+  NTSTATUS (*write)(struct request_context *req, union smb_write *io);
+
+and the NTVFS backend does the write request. The backend then fills
+in the "out" section of the writex structure and gives the union back
+to the front end (either by returning, or if done in an async fashion
+then by calling the async send function. See the async discussion
+elsewhere in this document).
+
+The NTVFS backend knows which particular function is being requested
+by looking at io->generic.level. Notice that this enum is also
+repeated inside each of the sub-structures in the union, so the
+backend could just as easily look at io->writex.level and would get
+the same variable.
+
+Notice also that some levels (such as splwrite) don't have an "out"
+section. This happens because there is no return value apart from a
+status code from those SMB calls. 
+
+So what about status codes? The status code is returned directly by
+the backend NTVFS interface when the call is performed
+synchronously. When performed asynchronously then the status code is
+put into req->async.status before the req->async.send_fn() callback is
+called.
+
+Currently the most complete NTVFS backend is the CIFS backend. I don't
+expect this backend will be used much in production, but it does
+provide the ideal test case for our NTVFS design. As it offers the
+full capabilities that are possible with a CIFS server we can be sure
+that we don't have any gaping holes in our APIs, and that the front
+end code is flexible enough to handle any advances in the NT style
+feature sets of Unix filesystems that make come along.
+
+
+Process Models
+--------------
+
+In Samba3 we supported just one process model. It just so happens that
+the process model that Samba3 supported is the "right" one for most
+users, but there are situations where this model wasn't ideal.
+
+In Samba4 you can choose the smbd process model on the smbd command
+line. 
 
 
 
