@@ -1996,12 +1996,13 @@ static void spoolss_notify_submitted_time(int snum,
 {
 	struct tm *t;
 	uint32 len;
+	SYSTEMTIME st;
 
 	t=gmtime(&queue->time);
 
 	len = sizeof(SYSTEMTIME);
 
-	data->notify_data.data.length = len;
+	data->notify_data.data.length = len/2 - 1;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 
 	if (!data->notify_data.data.string) {
@@ -2009,7 +2010,8 @@ static void spoolss_notify_submitted_time(int snum,
 		return;
 	}
 	
-	make_systemtime((SYSTEMTIME*)(data->notify_data.data.string), t);
+	make_systemtime(&st, t);
+	memcpy(data->notify_data.data.string,&st,len);
 }
 
 #define END 65535
