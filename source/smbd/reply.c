@@ -37,7 +37,6 @@ extern connection_struct Connections[];
 extern files_struct Files[];
 extern BOOL case_sensitive;
 extern pstring sesssetup_user;
-extern fstring local_machine;
 extern int Client;
 
 /* this macro should always be used to extract an fnum (smb_fid) from
@@ -55,6 +54,7 @@ int reply_special(char *inbuf,char *outbuf)
   int msg_flags = CVAL(inbuf,1);
   pstring name1,name2;
   extern fstring remote_machine;
+  extern fstring local_machine;
   char *p;
 
   *name1 = *name2 = 0;
@@ -319,14 +319,6 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   BOOL guest=False;
   BOOL computer_id=False;
 
-  char domain[17];
-
-  char *work_alias = conf_alias_to_workgroup(local_machine); /* look-up */
-
-  if (work_alias)
-      StrnCpy(domain, work_alias, 16);
-  else
-      StrnCpy(domain, lp_workgroup(), 16);
   *smb_apasswd = 0;
   
   sess_uid = SVAL(inbuf,smb_uid);
@@ -460,7 +452,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     p = smb_buf(outbuf);
     strcpy(p,"Unix"); p = skip_string(p,1);
     strcpy(p,"Samba "); strcat(p,VERSION); p = skip_string(p,1);
-    strcpy(p,domain); p = skip_string(p,1);
+    strcpy(p,lp_workgroup()); p = skip_string(p,1);
     set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
     /* perhaps grab OS version here?? */
   }

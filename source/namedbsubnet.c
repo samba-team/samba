@@ -26,9 +26,6 @@
    04 jul 96: lkcl@pires.co.uk
    created module namedbsubnet containing subnet database functions
 
-   30 July 96: David.Chappell@mail.trincoll.edu
-   Expanded multiple workgroup domain master browser support.
-
 */
 
 #include "includes.h"
@@ -93,16 +90,16 @@ struct subnet_record *find_subnet(struct in_addr bcast_ip)
   for (d = subnetlist; d; d = d->next)
     {
         if (ip_equal(bcast_ip, wins_ip))
-        {
+	    {
            if (ip_equal(bcast_ip, d->bcast_ip))
            {
                return d;
            }
         }
         else if (same_net(bcast_ip, d->bcast_ip, d->mask_ip))
-        {
-          return(d);
-        }
+	    {
+	      return(d);
+	    }
     }
   
   return (NULL);
@@ -157,60 +154,47 @@ static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr
   ****************************************************************************/
 void add_subnet_interfaces(void)
 {
-    struct interface *i;
+	struct interface *i;
 
-    /* loop on all local interfaces */
-    for (i = local_interfaces; i; i = i->next)
-    {
-        /* add the interface into our subnet database */
-        if (!find_subnet(i->bcast))
-        {
-          make_subnet(i->bcast,i->nmask);
-        }
-    }
+	/* loop on all local interfaces */
+	for (i = local_interfaces; i; i = i->next)
+	{
+		/* add the interface into our subnet database */
+		if (!find_subnet(i->bcast))
+		{
+		  make_subnet(i->bcast,i->nmask);
+		}
+	}
 
-    /* add the pseudo-ip interface for WINS: 255.255.255.255 */
-    if (lp_wins_support() || (*lp_wins_server()))
+	/* add the pseudo-ip interface for WINS: 255.255.255.255 */
+	if (lp_wins_support() || (*lp_wins_server()))
     {
-        struct in_addr wins_bcast = ipgrp;
-        struct in_addr wins_nmask = ipzero;
-        make_subnet(wins_bcast, wins_nmask);
+		struct in_addr wins_bcast = ipgrp;
+		struct in_addr wins_nmask = ipzero;
+		make_subnet(wins_bcast, wins_nmask);
     }
 }
 
-
-
-/****************************************************************************
-  add the default workgroups into my domain
-  **************************************************************************/
-void add_workgroup_to_subnet(char *group, struct in_addr bcast_ip,
-						struct in_addr mask_ip)
-{
-  if (group && *group != '*')
-  {
-    DEBUG(4,("add_wg_to_subnet: %s %s\n", group, inet_ntoa(bcast_ip)));
-    add_subnet_entry(bcast_ip,mask_ip,group, True, False);
-  }
-}
 
 
 /****************************************************************************
   add the default workgroup into my domain
   **************************************************************************/
-void add_workgroups_to_subnets()
+void add_my_subnets(char *group)
 {
   struct interface *i;
 
   /* add or find domain on our local subnet, in the default workgroup */
+  
+  if (*group == '*') return;
 
-  for (i = local_interfaces; i; i = i->next)
-  {
-    int token;
-    for (token = 0; token < get_num_workgroups(); token++)
+	/* the coding choice is up to you, andrew: i can see why you don't want
+       global access to the local_interfaces structure: so it can't get
+       messed up! */
+    for (i = local_interfaces; i; i = i->next)
     {
-      add_workgroup_to_subnet(conf_workgroup_name(token),i->bcast,i->nmask);
+      add_subnet_entry(i->bcast,i->nmask,group, True, False);
     }
-  }
 }
 
 
@@ -219,49 +203,48 @@ void add_workgroups_to_subnets()
   to the named a workgroup.
   ****************************************************************************/
 struct subnet_record *add_subnet_entry(struct in_addr bcast_ip, 
-                       struct in_addr mask_ip,
-                       char *name, BOOL add, BOOL lmhosts)
+				       struct in_addr mask_ip,
+				       char *name, BOOL add, BOOL lmhosts)
 {
   struct subnet_record *d;
 
-  DEBUG(4,("add_subnet_entry: %s %\n", name,inet_ntoa(bcast_ip)));
+  /* XXXX andrew: struct in_addr ip appears not to be referenced at all except
+     in the DEBUG comment. i assume that the DEBUG comment below actually
+     intends to refer to bcast_ip? i don't know.
 
-  if (zero_ip(bcast_ip)) bcast_ip = *iface_bcast(bcast_ip);
+  struct in_addr ip = ipgrp;
+
+  */
+
+  if (zero_ip(bcast_ip)) 
+    bcast_ip = *iface_bcast(bcast_ip);
   
   /* add the domain into our domain database */
-  if ((d = find_subnet(bcast_ip)) || (d = make_subnet(bcast_ip, mask_ip)))
-  {
-    struct work_record *work = find_workgroupstruct(d, name, add);
-      
-    if (!work) return NULL;
-
-    if (conf_should_workgroup_member(work->token))
+  if ((d = find_subnet(bcast_ip)) ||
+      (d = make_subnet(bcast_ip, mask_ip)))
     {
-        /* add samba server name to workgroup list. don't add
-           lmhosts server entries to local interfaces */
+      struct work_record *w = find_workgroupstruct(d, name, add);
+      
+      if (!w) return NULL;
 
-        pstring comment;
-        char *my_name    = conf_browsing_alias        (work->token);
-        char *my_comment = conf_browsing_alias_comment(work->token);
-
-        StrnCpy(comment, my_comment, 43);
-
-        add_server_entry(d,work,my_name,
-                        work->ServerType | SV_TYPE_LOCAL_LIST_ONLY,
-                        0,comment,True);
-
+      /* add WORKGROUP(1e) and WORKGROUP(00) entries into name database
+	 or register with WINS server, if it's our workgroup */
+      if (strequal(lp_workgroup(), name))
+	{
+	  add_my_name_entry(d,name,0x1e,nb_type|NB_ACTIVE|NB_GROUP);
+	  add_my_name_entry(d,name,0x0 ,nb_type|NB_ACTIVE|NB_GROUP);
+	}
+      /* add samba server name to workgroup list. don't add
+         lmhosts server entries to local interfaces */
+      if (strequal(lp_workgroup(), name))
+      {
+	add_server_entry(d,w,myname,w->ServerType,0,lp_serverstring(),True);
         DEBUG(3,("Added server name entry %s at %s\n",
                   name,inet_ntoa(bcast_ip)));
-
-        /* add WORKGROUP(1e) and WORKGROUP(00) entries into name database
-           or register with WINS server, if it's our workgroup */
-        add_my_name_entry(d,work->token,name,0x1e,nb_type|NB_ACTIVE|NB_GROUP);
-        add_my_name_entry(d,work->token,name,0x0 ,nb_type|NB_ACTIVE|NB_GROUP);
-    }
+      }
       
-    return d;
-  }
-
+      return d;
+    }
   return NULL;
 }
 
@@ -307,31 +290,31 @@ void write_browse_list(void)
     {
       struct work_record *work;
       for (work = d->workgrouplist; work ; work = work->next)
-    {
-      struct server_record *s;
-      for (s = work->serverlist; s ; s = s->next)
-        {
-          fstring tmp;
-          
-          /* don't list domains I don't have a master for */
-          if ((s->serv.type & SV_TYPE_DOMAIN_ENUM) && !s->serv.comment[0])
-        {
-          continue;
-        }
-          
-          /* output server details, plus what workgroup/domain
-         they're in. without the domain information, the
-         combined list of all servers in all workgroups gets
-         sent to anyone asking about any workgroup! */
-          
-          sprintf(tmp, "\"%s\"", s->serv.name);
-          fprintf(f, "%-25s ", tmp);
-          fprintf(f, "%08x ", s->serv.type);
-          sprintf(tmp, "\"%s\" ", s->serv.comment);
-          fprintf(f, "%-30s", tmp);
-          fprintf(f, "\"%s\"\n", work->work_group);
-        }
-    }
+	{
+	  struct server_record *s;
+	  for (s = work->serverlist; s ; s = s->next)
+	    {
+	      fstring tmp;
+	      
+	      /* don't list domains I don't have a master for */
+	      if ((s->serv.type & SV_TYPE_DOMAIN_ENUM) && !s->serv.comment[0])
+		{
+		  continue;
+		}
+	      
+	      /* output server details, plus what workgroup/domain
+		 they're in. without the domain information, the
+		 combined list of all servers in all workgroups gets
+		 sent to anyone asking about any workgroup! */
+	      
+	      sprintf(tmp, "\"%s\"", s->serv.name);
+	      fprintf(f, "%-25s ", tmp);
+	      fprintf(f, "%08x ", s->serv.type);
+	      sprintf(tmp, "\"%s\" ", s->serv.comment);
+	      fprintf(f, "%-30s", tmp);
+	      fprintf(f, "\"%s\"\n", work->work_group);
+	    }
+	}
     }
   
   fclose(f);

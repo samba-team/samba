@@ -23,10 +23,6 @@
    14 jan 96: lkcl@pires.co.uk
    added multiple workgroup domain master support
 
-
-   30 July 96: David.Chappell@mail.trincoll.edu
-   Expanded multiple workgroup domain master browser support.
-
 */
 
 #include "includes.h"
@@ -169,10 +165,10 @@ static void expire_names_and_servers(void)
   time_t t = time(NULL);
   
   if (!lastrun) lastrun = t;
-  if (t < lastrun + 15) return; /* give samba time to check its names */
+  if (t < lastrun + 5) return;
   lastrun = t;
   
-  check_expire_names(t); /* this checks samba's NetBIOS names */
+  expire_names(t);
   expire_servers(t);
 }
 
@@ -191,10 +187,10 @@ BOOL reload_services(BOOL test)
       pstring fname;
       strcpy(fname,lp_configfile());
       if (file_exist(fname,NULL) && !strcsequal(fname,servicesf))
-    {
-      strcpy(servicesf,fname);
-      test = False;
-    }
+	{
+	  strcpy(servicesf,fname);
+	  test = False;
+	}
     }
 
   if (test && !lp_file_list_changed())
@@ -255,32 +251,32 @@ static void load_hosts_file(char *fname)
       if (count <= 0) continue;
       
       if (count > 0 && count < 2) {
-    DEBUG(0,("Ill formed hosts line [%s]\n",line));     
-    continue;
+	DEBUG(0,("Ill formed hosts line [%s]\n",line));	    
+	continue;
       }
       
       if (count >= 4) {
-    DEBUG(0,("too many columns in %s (obsolete syntax)\n",fname));
-    continue;
+	DEBUG(0,("too many columns in %s (obsolete syntax)\n",fname));
+	continue;
       }
       
       DEBUG(4, ("lmhost entry: %s %s %s\n", ip, name, flags));
       
       if (strchr(flags,'G') || strchr(flags,'S')) {
-    DEBUG(0,("group flag in %s ignored (obsolete)\n",fname));
-    continue;
+	DEBUG(0,("group flag in %s ignored (obsolete)\n",fname));
+	continue;
       }
       
       if (strchr(flags,'M')) {
-    source = SELF;
-    strcpy(myname,name);
+	source = SELF;
+	strcpy(myname,name);
       }
       
       ipaddr = *interpret_addr2(ip);
       d = find_subnet(ipaddr);
       if (d) {
-    add_netbios_entry(d,name,0x00,NB_ACTIVE,0,source,ipaddr,True,True);
-    add_netbios_entry(d,name,0x20,NB_ACTIVE,0,source,ipaddr,True,True);
+	add_netbios_entry(d,name,0x00,NB_ACTIVE,0,source,ipaddr,True,True);
+	add_netbios_entry(d,name,0x20,NB_ACTIVE,0,source,ipaddr,True,True);
       } 
     }
   
@@ -296,7 +292,8 @@ static void process(void)
   BOOL run_election;
 
   while (True)
-  {
+    {
+      time_t t = time(NULL);
       run_election = check_elections();
       listen_for_packets(run_election);
 
@@ -313,11 +310,12 @@ static void process(void)
 
       expire_names_and_servers();
       expire_netbios_response_entries();
+      refresh_my_names(t);
 
       write_browse_list();
       do_browser_lists();
       check_master_browser();
-  }
+    }
 }
 
 
@@ -437,50 +435,50 @@ static void usage(char *pname)
   while ((opt = getopt(argc, argv, "s:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:")) != EOF)
     {
       switch (opt)
-    {
-    case 's':
-      strcpy(servicesf,optarg);
-      break;      
-    case 'N':
-    case 'B':
-    case 'I':
-    case 'C':
-    case 'G':
-      DEBUG(0,("Obsolete option '%c' used\n",opt));
-      break;
-    case 'H':
-      strcpy(host_file,optarg);
-      break;
-    case 'n':
-      strcpy(myname,optarg);
-      strupper(myname);
-      break;
-    case 'l':
-      sprintf(debugf,"%s.nmb",optarg);
-      break;
-    case 'i':
-      strcpy(scope,optarg);
-      strupper(scope);
-      break;
-    case 'D':
-      is_daemon = True;
-      break;
-    case 'd':
-      DEBUGLEVEL = atoi(optarg);
-      break;
-    case 'p':
-      port = atoi(optarg);
-      break;
-    case 'h':
-      usage(argv[0]);
-      exit(0);
-      break;
-    default:
-      if (!is_a_socket(0)) {
-        usage(argv[0]);
-      }
-      break;
-    }
+	{
+	case 's':
+	  strcpy(servicesf,optarg);
+	  break;	  
+	case 'N':
+	case 'B':
+	case 'I':
+	case 'C':
+	case 'G':
+	  DEBUG(0,("Obsolete option '%c' used\n",opt));
+	  break;
+	case 'H':
+	  strcpy(host_file,optarg);
+	  break;
+	case 'n':
+	  strcpy(myname,optarg);
+	  strupper(myname);
+	  break;
+	case 'l':
+	  sprintf(debugf,"%s.nmb",optarg);
+	  break;
+	case 'i':
+	  strcpy(scope,optarg);
+	  strupper(scope);
+	  break;
+	case 'D':
+	  is_daemon = True;
+	  break;
+	case 'd':
+	  DEBUGLEVEL = atoi(optarg);
+	  break;
+	case 'p':
+	  port = atoi(optarg);
+	  break;
+	case 'h':
+	  usage(argv[0]);
+	  exit(0);
+	  break;
+	default:
+	  if (!is_a_socket(0)) {
+	    usage(argv[0]);
+	  }
+	  break;
+	}
     }
 
   DEBUG(1,("%s netbios nameserver version %s started\n",timestring(),VERSION));
@@ -489,18 +487,10 @@ static void usage(char *pname)
   get_myname(myhostname,NULL);
 
   if (!reload_services(False))
-    return(-1); 
-  
+    return(-1);	
+
   init_structs();
 
-  /* reads the smbbrowse.conf file. this is an alias mapping between
-     workgroups and samba NetBIOS aliases. samba can therefore be
-     a member of multiple workgroups, a local master browser of
-     multiple workgroups, or a domain master browser of multiple
-     workgroups, via each NetBIOS name alias. the aliases MUST
-     be unique for this to work. */
-  read_smbbrowse_conf(myname);
-    
   reload_services(True);
 
   set_samba_nb_type();
@@ -530,7 +520,7 @@ static void usage(char *pname)
     DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
   }
 
-  add_workgroups_to_subnets();
+  add_my_subnets(lp_workgroup());
 
   DEBUG(3,("Checked names\n"));
   

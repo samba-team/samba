@@ -294,8 +294,8 @@ void reply_name_reg(struct packet_struct *p)
     /* initiate some enquiries to the current owner. */
 	queue_netbios_packet(d,ClientNMB,NMB_QUERY,
 						 NAME_REGISTER_CHALLENGE,
-						 -1,reply_name->name,reply_name->name_type,
-	                     n->source, nb_flags,0,0,NULL,NULL,
+						 reply_name->name,reply_name->name_type,
+	                     nb_flags,0,0,NULL,NULL,
 						 False, False, n->ip_flgs[0].ip, p->ip);
   }
   else

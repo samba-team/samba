@@ -58,12 +58,10 @@ struct smbbrowse
     char work_name[16];               /* workgroup name */
     char browsing_alias[16];          /* alias for our role in this workgroup */
     struct server_identity *my_names; /* a list of server name we should appear here as */
-    BOOL should_workgroup_member;     /* should we be a member of this workgroup? */
-    BOOL should_local_master;         /* should we be a master browser? */
-    BOOL should_preferred_master;     /* should we initiate attempts to become a master browser? */
-    BOOL should_domain_master;        /* should we be the domain master browser? */
-    BOOL should_domain_logon;         /* should we be the domain logon? */
-};
+    BOOL should_workgroup_member;     /* should we try to become a member of this workgroup? */
+    BOOL should_local_master;         /* should we try to become a master browser? */
+    BOOL should_domain_master;        /* should we try to become the domain master browser? */
+} ;
 
 /* The whole list */
 static struct smbbrowse *smbbrowse_workgroups = (struct smbbrowse*)NULL;
@@ -89,7 +87,7 @@ static struct smbbrowse *new_workgroup(struct smbbrowse *model,
 {
     struct smbbrowse *new;
 
-    if ( ! (array_size > nexttoken) )
+    if( ! (array_size > nexttoken) )
     {
     array_size += 10;
     smbbrowse_workgroups = (struct smbbrowse*)realloc(smbbrowse_workgroups,
@@ -98,7 +96,7 @@ static struct smbbrowse *new_workgroup(struct smbbrowse *model,
 
     new = &smbbrowse_workgroups[nexttoken];
 
-    if (model != (struct smbbrowse *)NULL )
+    if(model != (struct smbbrowse *)NULL )
     memcpy(new, model, sizeof(struct smbbrowse));
     else
         memset(new, 0, sizeof(struct smbbrowse));
@@ -129,22 +127,22 @@ int conf_workgroup_name_to_token(char *workgroup_name,char *default_name)
     int idx;
     
     /* Look for an existing instance. */
-    for (idx=0; idx < nexttoken; idx++)
+    for(idx=0; idx < nexttoken; idx++)
     {
-        if (strequal(workgroup_name, smbbrowse_workgroups[idx].work_name))
+        if(strequal(workgroup_name, smbbrowse_workgroups[idx].work_name))
         {
             return idx;
         }
     }
     
     /* See if creating new ones in admissable. */
-    for (idx=0; idx < nexttoken; idx++)
+    for(idx=0; idx < nexttoken; idx++)
     {
-        if (strequal("*", smbbrowse_workgroups[idx].work_name))
+        if(strequal("*", smbbrowse_workgroups[idx].work_name))
         {
             struct smbbrowse *w = new_workgroup(&smbbrowse_workgroups[idx],
                                                 workgroup_name, default_name);
-            w->should_workgroup_member = True;
+            w->should_workgroup_member = False;
 
             return (nexttoken - 1);
         }
@@ -160,7 +158,7 @@ int conf_workgroup_name_to_token(char *workgroup_name,char *default_name)
 */
 static int range_check(int token)
 {
-    if (token < 0 || token >= nexttoken)
+    if(token < 0 || token >= nexttoken)
     {
     DEBUG(0, ("range_check(): failed\n"));
         return True;
@@ -174,7 +172,7 @@ static int range_check(int token)
 */
 char *conf_workgroup_name(int token)
 {
-    if (range_check(token))
+    if(range_check(token))
         return (char*)NULL;
     
     return smbbrowse_workgroups[token].work_name;
@@ -184,23 +182,10 @@ char *conf_workgroup_name(int token)
 ** Given a token, return True if we should try
 ** to become a master browser.
 */
-int conf_should_preferred_master(int token)
-    {
-
-    if (range_check(token))
-        return False;
-    
-    return smbbrowse_workgroups[token].should_preferred_master;
-    }
-
-/*
-** Given a token, return True if we should try
-** to become a master browser.
-*/
 int conf_should_workgroup_member(int token)
     {
 
-    if (range_check(token))
+    if(range_check(token))
         return False;
     
     return smbbrowse_workgroups[token].should_workgroup_member;
@@ -211,22 +196,12 @@ int conf_should_workgroup_member(int token)
 ** to become a master browser.
 */
 int conf_should_local_master(int token)
-{
-    if (range_check(token)) return False;
+    {
+    if(range_check(token))
+        return False;
     
     return smbbrowse_workgroups[token].should_local_master;
-}
-
-/*
-** Given a token, return True if we should try
-** to become a domain master browser.
-*/
-int conf_should_domain_logon(int token)
-{
-    if (range_check(token)) return False;
-    
-    return smbbrowse_workgroups[token].should_domain_logon;
-}
+    }
 
 /*
 ** Given a token, return True if we should try
@@ -234,7 +209,7 @@ int conf_should_domain_logon(int token)
 */
 int conf_should_domain_master(int token)
     {
-    if (range_check(token))
+    if(range_check(token))
         return False;
     
     return smbbrowse_workgroups[token].should_domain_master;
@@ -244,12 +219,12 @@ int conf_should_domain_master(int token)
 ** Given a token, return the name.
 */
 char *conf_browsing_alias(int token)
-{
-    if (range_check(token))
+    {
+    if(range_check(token))
         return (char*)NULL;
 
     return smbbrowse_workgroups[token].browsing_alias;
-}
+    }
 
 /*
 ** Return the server comment which should be used with the
@@ -257,11 +232,11 @@ char *conf_browsing_alias(int token)
 */
 char *conf_browsing_alias_comment(int token)
 {
-    if (range_check(token))
+    if(range_check(token))
         return (char*) NULL;
         
-    return lp_server_comment();
-}       
+    return "Browser";
+    }       
 
 /*
 ** Given an alias name for this server, return the name of the workgroup 
@@ -273,11 +248,11 @@ char *conf_alias_to_workgroup(char *alias)
     
 	DEBUG(4,("alias_to_workgroup: %s", alias));
 
-    for (x=0; x < nexttoken; x++)
+    for(x=0; x < nexttoken; x++)
     {
 		DEBUG(4,("%s ", smbbrowse_workgroups[x].browsing_alias));
 
-        if (strequal(alias, smbbrowse_workgroups[x].browsing_alias))
+        if(strequal(alias, smbbrowse_workgroups[x].browsing_alias))
         {
 			DEBUG(4,("OK\n"));
             return smbbrowse_workgroups[x].work_name;
@@ -295,9 +270,9 @@ int conf_alias_to_token(char *alias)
 {
     int x;
     
-    for (x=0; x < nexttoken; x++)
+    for(x=0; x < nexttoken; x++)
     {
-        if (strequal(alias, smbbrowse_workgroups[x].browsing_alias))
+        if(strequal(alias, smbbrowse_workgroups[x].browsing_alias))
         {
             return x;
         }
@@ -315,19 +290,15 @@ static void default_smbbrowse_conf(char *default_name)
     
     /* The workgroup specified in smb.conf */
     w = new_workgroup((struct smbbrowse *)NULL, lp_workgroup(), default_name);
-    w->should_local_master     = lp_local_master();
-    w->should_domain_master    = lp_domain_master();
-    w->should_domain_logon     = lp_domain_logons();
+    w->should_local_master = lp_preferred_master();
+    w->should_domain_master = lp_domain_master();
     w->should_workgroup_member = True;
 
-    /* default action: allow any new workgroup to be added. this is
-       _not_ the same as the old 1.9.14-1.9.15 definition of "*"
-     */
+    /* default action: allow any new workgroup to be added */
     w = new_workgroup((struct smbbrowse *)NULL, "*", default_name);
-    w->should_local_master     = False;
-    w->should_domain_master    = False;
+    w->should_local_master = False;
+    w->should_domain_master = False;
     w->should_workgroup_member = False;
-    w->should_domain_logon     = False;
 }
 
 /*
@@ -360,10 +331,8 @@ void read_smbbrowse_conf(char *default_name)
       if (count <= 0) continue;
         
       w = new_workgroup((struct smbbrowse *)NULL, work_name, default_name);
-      w->should_local_master     = lp_local_master();
-      w->should_domain_master    = lp_domain_master();
-      w->should_preferred_master = lp_preferred_master();
-      w->should_domain_logon     = lp_domain_logons();
+      w->should_local_master = lp_local_master();
+      w->should_domain_master = lp_domain_master();
       w->should_workgroup_member = True;
     }
 
