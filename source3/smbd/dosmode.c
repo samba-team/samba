@@ -237,7 +237,7 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
 
 	ret = vfs_chmod(conn,fname,unixmode);
 
-	if((errno != EPERM) && (errno != EACCES))
+	if((ret == -1) && (errno != EPERM) && (errno != EACCES))
 		return -1;
 
 	if(!lp_dos_filemode(SNUM(conn)))
