@@ -3306,10 +3306,11 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sh
 			printername));
 		info.devmode = construct_nt_devicemode(printername);
 	}
-	
-	safe_strcpy(adevice, info.printername, sizeof(adevice)-1);
-	fstrcpy(info.devmode->devicename, adevice);	
 
+	safe_strcpy(adevice, info.printername, sizeof(adevice)-1);
+	if (info.devmode) {
+		fstrcpy(info.devmode->devicename, adevice);	
+	}
 
 	len += unpack_values( &info.data, dbuf.dptr+len, dbuf.dsize-len );
 
