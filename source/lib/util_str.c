@@ -794,6 +794,17 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 	return num_chars;
 }
 
+DATA_BLOB strhex_to_data_blob(const char *strhex) 
+{
+	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
+
+	ret_blob.length = strhex_to_str(ret_blob.data, 	
+					strlen(strhex), 
+					strhex);
+
+	return ret_blob;
+}
+
 /**
  * Routine to print a buffer as HEX digits, into an allocated string.
  */
