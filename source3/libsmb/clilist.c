@@ -140,8 +140,8 @@ static int interpret_long_filename(struct cli_state *cli,
 				p += 24; /* short name? */	  
 				clistr_pull(cli, finfo->name, p,
 					    sizeof(finfo->name),
-					    -1, 
-					    CLISTR_TERMINATE | CLISTR_CONVERT);
+					    namelen, 
+					    CLISTR_CONVERT);
 				return(ret);
 			}
 			return(SVAL(p,0));
