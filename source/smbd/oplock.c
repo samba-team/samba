@@ -1314,7 +1314,7 @@ BOOL attempt_close_oplocked_file(files_struct *fsp)
     /* Try and break the oplock. */
     file_fd_struct *fd_ptr = fsp->fd_ptr;
     if(oplock_break( fd_ptr->dev, fd_ptr->inode, &fsp->open_time, True)) {
-      if(!fsp->open) /* Did the oplock break close the file ? */
+      if(file_find_fsp(fsp) == NULL) /* Did the oplock break close the file ? */
         return True;
     }
   }

@@ -2496,6 +2496,7 @@ void file_close_conn(connection_struct *conn);
 void file_init(void);
 void file_close_user(int vuid);
 files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval);
+files_struct *file_find_fsp(files_struct *orig_fsp);
 files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode);
 files_struct *file_find_di_next(files_struct *start_fsp);
 files_struct *file_find_print(void);

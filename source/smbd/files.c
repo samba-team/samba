@@ -273,6 +273,22 @@ files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval
 }
 
 /****************************************************************************
+ Check if an fsp still exists.
+****************************************************************************/
+
+files_struct *file_find_fsp(files_struct *orig_fsp)
+{
+	files_struct *fsp;
+
+	for (fsp=Files;fsp;fsp=fsp->next) {
+		if (fsp == orig_fsp)
+			return fsp;
+	}
+
+	return NULL;
+}
+
+/****************************************************************************
  Find the first fsp given a device and inode.
 ****************************************************************************/
 
