@@ -190,7 +190,7 @@ struct smb_passwd *getsmbpwent(void *vp)
   }
 
   pw_buf.acct_ctrl = ACB_NORMAL;  
-  pw_buf.last_change_time = (time_t)-1;
+  pw_buf.pass_last_set_time = (time_t)-1;
 
   /*
    * Scan the file, a line at a time and check if the name matches.
@@ -431,7 +431,7 @@ struct smb_passwd *getsmbpwent(void *vp)
              * read into a time_t as the seconds since
              * 1970 that the password was last changed.
              */
-            pw_buf.last_change_time = (time_t)strtol(p, NULL, 16);
+            pw_buf.pass_last_set_time = (time_t)strtol(p, NULL, 16);
           }
         }
       }
@@ -730,7 +730,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
   int             lockfd;
   char           *pfile = lp_smb_passwd_file();
   BOOL found_entry = False;
-  BOOL got_last_change_time = False;
+  BOOL got_pass_last_set_time = False;
 
   long pwd_seekpos = 0;
 
@@ -959,7 +959,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
            * read into a time_t as the seconds since
            * 1970 that the password was last changed.
            */
-          got_last_change_time = True;
+          got_pass_last_set_time = True;
         } /* i == 8 */
       } /* *p && StrnCaseCmp() */
     } /* p == ':' */
@@ -1029,11 +1029,11 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
   /* Add on the account info bits and the time of last
      password change. */
 
-  pwd->last_change_time = time(NULL);
+  pwd->pass_last_set_time = time(NULL);
 
-  if(got_last_change_time) {
+  if(got_pass_last_set_time) {
     sprintf(&ascii_p16[strlen(ascii_p16)], ":[%s]:TLC-%08X:", 
-                     encode_bits, (uint32)pwd->last_change_time );
+                     encode_bits, (uint32)pwd->pass_last_set_time );
     wr_len = strlen(ascii_p16);
   }
 
@@ -1154,7 +1154,7 @@ BOOL machine_password_delete( char *domain, char *name )
  The user of this function must have locked the machine password file.
 ************************************************************************/
 
-BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *last_change_time)
+BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time)
 {
   char linebuf[256];
   char *p;
@@ -1162,7 +1162,7 @@ BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *last_change_t
 
   linebuf[0] = '\0';
 
-  *last_change_time = (time_t)0;
+  *pass_last_set_time = (time_t)0;
   memset(ret_pwd, '\0', 16);
 
   if(fseek( mach_passwd_fp, 0L, SEEK_SET) == -1) {
@@ -1225,7 +1225,7 @@ BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *last_change_t
    * 1970 that the password was last changed.
    */
 
-  *last_change_time = (time_t)strtol(p, NULL, 16);
+  *pass_last_set_time = (time_t)strtol(p, NULL, 16);
 
   return True;
 }

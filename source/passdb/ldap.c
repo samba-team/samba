@@ -261,7 +261,7 @@ static void ldap_get_user(LDAP *ldap_struct,LDAPMessage *entry,
 	
 	if ( (valeur=ldap_get_values(ldap_struct,entry, "pwdLastSet")) != NULL)
 	{	
-		ldap_passwd->last_change_time=(time_t)strtol(valeur[0], NULL, 16);
+		ldap_passwd->pass_last_set_time=(time_t)strtol(valeur[0], NULL, 16);
 		ldap_value_free(valeur);
 	}
 }
@@ -321,13 +321,15 @@ static struct smb_passwd *get_ldappwd_entry(char *name, int smb_userid)
 
 	static struct smb_passwd ldap_passwd;
 
+	bzero(&ldap_passwd, sizeof(ldap_passwd));
+
 	ldap_passwd.smb_name      = NULL;
 	ldap_passwd.smb_passwd    = NULL;
 	ldap_passwd.smb_nt_passwd = NULL;
 	
-	ldap_passwd.smb_userid       = -1;
-	ldap_passwd.acct_ctrl        = ACB_DISABLED;
-	ldap_passwd.last_change_time = 0;
+	ldap_passwd.smb_userid         = -1;
+	ldap_passwd.acct_ctrl          = ACB_DISABLED;
+	ldap_passwd.pass_last_set_time = (time_t)-1;
 
 	ldap_struct=NULL;
 
@@ -374,20 +376,17 @@ static struct smb_passwd *get_ldappwd_entry(char *name, int smb_userid)
 	{
 		DEBUG(0,("get_ldappwd_entry: Found user: %s\n",name));
 
-		if (name[strlen(name)-1]=='$')
-			machine=True;
-		else 
-			machine=False;
+		machine = name[strlen(name)-1] == '$';
 	}
 		
-	if (machine==False)
+	if (!machine)
 	{
-		if (ldap_check_user(ldap_struct, entry)==True)
+		if (ldap_check_user(ldap_struct, entry))
 			ldap_get_user(ldap_struct, entry, &ldap_passwd);
 	}
 	else
 	{
-		if (ldap_check_machine(ldap_struct, entry)==True)
+		if (ldap_check_machine(ldap_struct, entry))
 			ldap_get_machine(ldap_struct, entry, &ldap_passwd);
 	}
 				
