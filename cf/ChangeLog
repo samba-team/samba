@@ -1,5 +1,7 @@
 2002-08-28  Assar Westerlund  <assar@kth.se>
 
+	* krb-readline.m4: also add LIB_tgetent in the case of editline
+
 	* crypto.m4: define HAVE_OPENSSL even if we got to hear about it
 	by krb4
 
