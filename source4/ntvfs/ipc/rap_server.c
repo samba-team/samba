@@ -32,12 +32,12 @@ NTSTATUS rap_netshareenum(struct smbsrv_request *req,
 	r->out.info = talloc_array_p(req,
 				     union rap_shareenum_info, 2);
 
-	strncpy(r->out.info[0].info1.name, "C$", 12);
+	strncpy(r->out.info[0].info1.name, "C$", sizeof(r->out.info[0].info1.name));
 	r->out.info[0].info1.pad = 0;
 	r->out.info[0].info1.type = 0;
 	r->out.info[0].info1.comment = talloc_strdup(req, "Bla");
 	
-	strncpy(r->out.info[1].info1.name, "IPC$", 12);
+	strncpy(r->out.info[1].info1.name, "IPC$", sizeof(r->out.info[0].info1.name));
 	r->out.info[1].info1.pad = 0;
 	r->out.info[1].info1.type = 1;
 	r->out.info[1].info1.comment = talloc_strdup(req, "Blub");
