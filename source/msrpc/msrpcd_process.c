@@ -173,11 +173,12 @@ static void process_msrpc(pipes_struct *p, int c)
   }
 #endif
 
-	if (rpc_local(p, pdu.data, len) && msrpc_send(c, &p->rsmb_pdu))
+	if (rpc_local(p->l, pdu.data, len, p->name) &&
+	    msrpc_send(c, &p->l->rsmb_pdu))
 	{
-		prs_free_data(&p->rsmb_pdu);
+		prs_free_data(&p->l->rsmb_pdu);
 
-		while (rpc_local(p, NULL, 0))
+		while (rpc_local(p->l, NULL, 0, p->name))
 		{
 			fd_set fds;
 			int selrtn;
@@ -210,11 +211,11 @@ static void process_msrpc(pipes_struct *p, int c)
 
 			if (FD_ISSET(c,&fds))
 			{
-				if (!msrpc_send(c, &p->rsmb_pdu))
-				prs_free_data(&p->rsmb_pdu);
+				if (!msrpc_send(c, &p->l->rsmb_pdu))
+				prs_free_data(&p->l->rsmb_pdu);
 				break;
 			}
-			prs_free_data(&p->rsmb_pdu);
+			prs_free_data(&p->l->rsmb_pdu);
 		}
 	}
   trans_num++;

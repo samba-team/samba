@@ -101,8 +101,6 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 	}
 
 	prs_init(&l->rhdr , 0x18, 4, False);
-	prs_init(&l->rauth, 1024, 4, False);
-	prs_init(&l->rverf, 0x10, 4, False);
 
 	l->hdr.pkt_type = RPC_RESPONSE; /* mark header as an rpc response */
 
@@ -164,6 +162,9 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 	if (auth_len > 0)
 	{
 		uint32 crc32 = 0;
+
+		prs_init(&l->rauth, 1024, 4, False);
+		prs_init(&l->rverf, 0x10, 4, False);
 
 		DEBUG(5,("create_rpc_reply: sign: %s seal: %s data %d auth %d\n",
 			 BOOLSTR(auth_verify), BOOLSTR(auth_seal), data_len, auth_len));
@@ -991,7 +992,7 @@ BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name,
  pdu; hands pdu off to msrpc, which gets a pdu back (except in the
  case of the RPC_BINDCONT pdu).
  ********************************************************************/
-BOOL rpc_local(pipes_struct *p, char *data, int len)
+BOOL rpc_local(rpcsrv_struct *l, char *data, int len, char *name)
 {
 	BOOL reply = False;
 
@@ -999,22 +1000,22 @@ BOOL rpc_local(pipes_struct *p, char *data, int len)
 
 	if (len != 0)
 	{
-		reply = prs_add_data(&p->smb_pdu, data, len);
+		reply = prs_add_data(&l->smb_pdu, data, len);
 
-		if (reply && is_complete_pdu(&p->smb_pdu))
+		if (reply && is_complete_pdu(&l->smb_pdu))
 		{
-			p->smb_pdu.offset = p->smb_pdu.data_size;
-			prs_link(NULL, &p->smb_pdu, NULL);
-			reply = rpc_redir_local(p->l, &p->smb_pdu, &p->rsmb_pdu, p->name);
-			prs_free_data(&p->smb_pdu);
-			prs_init(&p->smb_pdu, 0, 4, True);
+			l->smb_pdu.offset = l->smb_pdu.data_size;
+			prs_link(NULL, &l->smb_pdu, NULL);
+			reply = rpc_redir_local(l, &l->smb_pdu, &l->rsmb_pdu, name);
+			prs_free_data(&l->smb_pdu);
+			prs_init(&l->smb_pdu, 0, 4, True);
 		}
 	}
 	else
 	{
-		prs_free_data(&p->smb_pdu);
-		prs_init(&p->smb_pdu, 0, 4, True);
-		reply = rpc_redir_local(p->l, &p->smb_pdu, &p->rsmb_pdu, p->name);
+		prs_free_data(&l->smb_pdu);
+		prs_init(&l->smb_pdu, 0, 4, True);
+		reply = rpc_redir_local(l, &l->smb_pdu, &l->rsmb_pdu, name);
 	}
 	return reply;
 }

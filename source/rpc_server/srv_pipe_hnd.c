@@ -160,6 +160,9 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 		l->rhdr.offset  = 0;
 		l->rdata.offset = 0;
 		
+		prs_init(&l->smb_pdu, 0, 4, True);
+		prs_init(&l->rsmb_pdu, 0, 4, False);
+
 		l->ntlmssp_validated = False;
 		l->ntlmssp_auth      = False;
 
@@ -189,14 +192,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	p->conn = conn;
 	p->vuid  = vuid;
 	
-	p->file_offset     = 0;
-	p->prev_pdu_file_offset = 0;
-	p->hdr_offsets     = 0;
-	
 	fstrcpy(p->name, pipe_name);
-
-	prs_init(&p->smb_pdu, 0, 4, True);
-	prs_init(&p->rsmb_pdu, 0, 4, False);
 
 	DEBUG(4,("Opened pipe %s with handle %x (pipes_open=%d)\n",
 		 pipe_name, i, pipes_open));
@@ -283,9 +279,6 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 		return False;
 	}
 
-	prs_free_data(&p->smb_pdu );
-	prs_free_data(&p->rsmb_pdu);
-
 	bitmap_clear(bmap, p->pnum - pipe_handle_offset);
 
 	pipes_open--;
@@ -314,6 +307,9 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 
 		prs_free_data(&p->l->rdata);
 		rpcsrv_free_temp(p->l);
+
+		prs_free_data(&p->l->smb_pdu );
+		prs_free_data(&p->l->rsmb_pdu);
 
 		free(p->l);
 	}

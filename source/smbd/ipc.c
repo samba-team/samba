@@ -180,7 +180,7 @@ static void api_rpc_trans_reply(char *outbuf, char *rdata, int rlen)
 /****************************************************************************
  WaitNamedPipeHandleState 
 ****************************************************************************/
-static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param)
+static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param, int mdrcnt)
 {
 	uint16 priority;
 
@@ -192,7 +192,7 @@ static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param)
 	if (wait_rpc_pipe_hnd_state(p, priority))
 	{
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, NULL, NULL, 0, p->file_offset);
+		send_trans_reply(outbuf, NULL, NULL, NULL, 0, mdrcnt);
 
 		return True;
 	}
@@ -203,7 +203,7 @@ static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param)
 /****************************************************************************
  SetNamedPipeHandleState 
 ****************************************************************************/
-static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param)
+static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param, int mdrcnt)
 {
 	uint16 id;
 
@@ -215,7 +215,7 @@ static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param)
 	if (set_rpc_pipe_hnd_state(p, id))
 	{
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, NULL, NULL, 0, p->file_offset);
+		send_trans_reply(outbuf, NULL, NULL, NULL, 0, mdrcnt);
 
 		return True;
 	}
@@ -282,11 +282,7 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 				  subcommand, p->name, pnum));
 
 		/* record maximum data length that can be transmitted in an SMBtrans */
-		p->file_offset          = MIN(1024, mdrcnt);
-		p->prev_pdu_file_offset = 0;
-
-                DEBUG(10,("api_fd_reply: p:%p file_offset: %d\n",
-                           p, p->file_offset));
+                DEBUG(10,("api_fd_reply: p:%p mdrcnt: %d\n", p, mdrcnt));
 
 		switch (subcommand)
 		{
@@ -305,13 +301,13 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 			case 0x53:
 			{
 				/* Wait Named Pipe Handle state */
-				reply = api_WNPHS(outbuf, p, params);
+				reply = api_WNPHS(outbuf, p, params, mdrcnt);
 				break;
 			}
 			case 0x01:
 			{
 				/* Set Named Pipe Handle state */
-				reply = api_SNPHS(outbuf, p, params);
+				reply = api_SNPHS(outbuf, p, params, mdrcnt);
 				break;
 			}
 		}

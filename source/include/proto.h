@@ -3795,7 +3795,7 @@ void add_msrpc_command_processor(char* pipe_name,
 				BOOL (*fn) (rpcsrv_struct *));
 BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name,
 				struct api_struct *api_rpc_cmds);
-BOOL rpc_local(pipes_struct *p, char *data, int len);
+BOOL rpc_local(rpcsrv_struct *l, char *data, int len, char *name);
 
 /*The following definitions come from  rpc_server/srv_reg.c  */
 

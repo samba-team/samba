@@ -95,6 +95,9 @@ typedef struct rpcsrv_struct
 	prs_struct rverf; /* output verifier */
 	prs_struct rntlm; /* output ntlmssp */
 
+	prs_struct smb_pdu;
+	prs_struct rsmb_pdu;
+
 	uint32 rdata_offset;
 
 	RPC_HDR       hdr;
@@ -147,15 +150,6 @@ typedef struct pipes_struct
 
 	/* local, server-side rpc state processing */
 	rpcsrv_struct *l;
-
-	/* to store pdus being constructed / communicated from smb to msrpc */
-	prs_struct smb_pdu;
-	prs_struct rsmb_pdu;
-
-	/* state-based info used in processing smbs to/from msrpc pdus */ 
-	uint32 file_offset;
-	uint32 prev_pdu_file_offset;
-	uint32 hdr_offsets;
 
 } pipes_struct;
 

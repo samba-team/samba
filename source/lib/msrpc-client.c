@@ -90,7 +90,7 @@ BOOL msrpc_send(int fd, prs_struct *ps)
 	ssize_t ret;
 	char *outbuf = ps->data;
 
-	DEBUG(10,("msrpc_send_prs: len %d\n", len));
+	DEBUG(10,("msrpc_send_prs: data: %p len %d\n", outbuf, len));
 	dbgflush();
 
 	dump_data(10, outbuf, len);
