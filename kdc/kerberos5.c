@@ -727,6 +727,14 @@ as_rep(KDC_REQ *req,
 	copy_HostAddresses(b->addresses, et.caddr);
     }
     
+    {
+	krb5_data empty_string;
+      
+	krb5_data_zero(&empty_string); 
+	et.transited.tr_type = DOMAIN_X500_COMPRESS;
+	et.transited.contents = empty_string;
+    }
+     
     copy_EncryptionKey(&et.key, &ek.key);
 
     /* The MIT ASN.1 library (obviously) doesn't tell lengths encoded
@@ -944,7 +952,7 @@ fix_transited_encoding(TransitedEncoding *tr,
 	char **realms = NULL, **tmp;
 	int num_realms = 0;
 	int i;
-	if(tr->tr_type){
+	if(tr->tr_type && tr->contents.length != 0) {
 	    if(tr->tr_type != DOMAIN_X500_COMPRESS){
 		kdc_log(0, "Unknown transited type: %u", 
 			tr->tr_type);
@@ -1472,7 +1480,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    Realm req_rlm, new_rlm;
 	    if(loop++ < 2 && (req_rlm = is_krbtgt(&sp->name))){
 		new_rlm = find_rpath(req_rlm);
-		if(new_rlm){
+		if(new_rlm) {
 		    kdc_log(5, "krbtgt for realm %s not found, trying %s", 
 			    req_rlm, new_rlm);
 		    krb5_free_principal(context, sp);
