@@ -42,8 +42,8 @@ struct auth_usersupplied_info
 	
  	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
- 	DATA_BLOB lm_interactive_pwd;
-	DATA_BLOB nt_interactive_pwd;
+ 	DATA_BLOB lm_interactive_password;
+	DATA_BLOB nt_interactive_password;
  	DATA_BLOB plaintext_password;
 	
 	BOOL encrypted;
@@ -55,12 +55,6 @@ struct auth_usersupplied_info
 	AUTH_STR           wksta_name;           /* workstation name (netbios calling name) unicode string */
 	
 };
-
-#define SAM_FILL_NAME  0x01
-#define SAM_FILL_INFO3 0x02
-#define SAM_FILL_SAM   0x04
-#define SAM_FILL_UNIX  0x08
-#define SAM_FILL_ALL (SAM_FILL_NAME | SAM_FILL_INFO3 | SAM_FILL_SAM | SAM_FILL_UNIX)
 
 struct auth_serversupplied_info 
 {
@@ -76,7 +70,25 @@ struct auth_serversupplied_info
 	
 	DATA_BLOB user_session_key;
 	DATA_BLOB lm_session_key;
+
+	char *account_name;
+	char *full_name;
+	char *logon_script;
+	char *profile_path;
+	char *home_dir;
+	char *home_drive;
 	
+	NTTIME logon_time;
+	NTTIME logoff_time;
+	NTTIME kickoff_time;
+	NTTIME password_last_set;
+	NTTIME password_can_change;
+	NTTIME password_must_change;
+
+	uint16 logon_count;
+	uint16 bad_password_count;
+	
+	uint32 acct_flags;
 };
 
 struct auth_session_info 
