@@ -61,7 +61,7 @@ uint32 lookup_lsa_names(const char *srv_name,
 	}
 
 	res1 = res1 ? lsa_open_policy(srv_name, &lsa_pol, True,
-				      0x02000000) : False;
+				      SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 	res2 = res1 ? lsa_lookup_names(&lsa_pol,
 				       num_names, names,
@@ -101,7 +101,7 @@ uint32 lookup_lsa_name(const char *domain,
 
 	/* lookup domain controller; receive a policy handle */
 	res3 = res3 ? lsa_open_policy(srv_name, &lsa_pol, True,
-				      0x02000000) : False;
+				      SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 	/* send lsa lookup sids call */
 	res4 = res3 ? lsa_lookup_names(&lsa_pol,
@@ -158,7 +158,7 @@ uint32 lookup_lsa_sid(const char *domain,
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy(srv_name, &lsa_pol, True,
-				    0x02000000) : False;
+				    SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 	/* send lsa lookup sids call */
 	res1 = res ? lsa_lookup_sids(&lsa_pol,
@@ -200,7 +200,8 @@ BOOL msrpc_lsa_create_secret(const char *srv_name, const char *secret_name,
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy(srv_name,
-				    &lsa_pol, True, 0x02000000) : False;
+				    &lsa_pol, True, 
+                                    SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 	/* lookup domain controller; receive a policy handle */
 	res1 = res ? lsa_create_secret(&lsa_pol,
@@ -262,11 +263,12 @@ BOOL msrpc_lsa_set_secret(const char *srv_name,
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy(srv_name,
-				    &lsa_pol, True, 0x02000000) : False;
+				    &lsa_pol, True, 
+                                    SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 	/* lookup domain controller; receive a policy handle */
 	res1 = res ? lsa_open_secret(&lsa_pol,
-				     secret_name, 0x02000000,
+				     secret_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
 				     &pol_sec) : False;
 
 	res2 = res1 ? (lsa_set_secret(&pol_sec, &secret) ==
@@ -295,11 +297,12 @@ BOOL msrpc_lsa_query_secret(const char *srv_name,
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy2(srv_name,
-				     &lsa_pol, False, 0x02000000) : False;
+				     &lsa_pol, False, 
+                                     SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 	/* lookup domain controller; receive a policy handle */
 	res1 = res ? lsa_open_secret(&lsa_pol,
-				     secret_name, 0x02000000,
+				     secret_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
 				     &pol_sec) : False;
 
 	res2 = res1 ? lsa_query_secret(&pol_sec, secret, last_update) : False;

@@ -78,12 +78,13 @@ static void update_trust_account(void)
 
 	make_unistr2(&uni_sec_name, name, strlen(name));
 
-	s = _lsa_open_policy2(NULL, &lsa_pol, NULL, 0x02000000);
+	s = _lsa_open_policy2(NULL, &lsa_pol, NULL, 
+                              SEC_RIGHTS_MAXIMUM_ALLOWED);
 
 	if (s == NT_STATUS_NOPROBLEMO)
 	{
-		s1 = _lsa_open_secret(&lsa_pol, &uni_sec_name, 0x02000000,
-				      &pol_sec);
+		s1 = _lsa_open_secret(&lsa_pol, &uni_sec_name, 
+                                      SEC_RIGHTS_MAXIMUM_ALLOWED, &pol_sec);
 	}
 	else
 	{

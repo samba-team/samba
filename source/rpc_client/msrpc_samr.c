@@ -45,7 +45,8 @@ uint32 lookup_sam_domainname(const char *srv_name,
 	}
 
 	/* establish a connection. */
-	res  = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res  = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                  &sam_pol) : False;
 
 	res1 = res ? samr_query_lookup_domain(&sam_pol, domain, sid) : False;
 
@@ -70,7 +71,7 @@ uint32 lookup_sam_names(const char *domain, const DOM_SID *sid,
 	BOOL res = True;
 	BOOL res1 = True;
 	uint32 *my_types = NULL;
-	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
@@ -103,7 +104,8 @@ uint32 lookup_sam_names(const char *domain, const DOM_SID *sid,
 	}
 
 	/* establish a connection. */
-	res =  res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res =  res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED, 
+                                  &sam_pol) : False;
 
 	/* connect to the domain */
 	res  = res ? samr_open_domain(&sam_pol, ace_perms, sid, &pol_dom) : False;
@@ -148,7 +150,7 @@ uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 	fstring srv_name;
 	BOOL res = True;
 	BOOL res1 = True;
-	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	char *names[1];
 	uint32 *rids = NULL;
 	uint32 *types = NULL;
@@ -166,7 +168,8 @@ uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 	}
 
 	/* establish a connection. */
-	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED, 
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain( &sam_pol, ace_perms, sid, &pol_dom) : False;
@@ -204,7 +207,7 @@ uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
 	int i;
 	BOOL res = True;
 	BOOL res1 = True;
-	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	char **names = NULL;
 	uint32 *rid_mem;
 	uint32 *types = NULL;
@@ -218,7 +221,8 @@ uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
 	}
 
 	/* establish a connection. */
-	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED, 
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain( &sam_pol, ace_perms, sid, &pol_dom) : False;
@@ -506,7 +510,8 @@ BOOL msrpc_sam_query_user( const char* srv_name,
 	POLICY_HND pol_dom;
 
 	/* establish a connection. */
-	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED, 
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain( &sam_pol, 0x304, sid, &pol_dom) : False;
@@ -581,7 +586,7 @@ int msrpc_sam_enum_users( const char* srv_name,
 	          start_idx, unk_0, acb_mask, unk_1));
 
 	/* establish a connection. */
-	res = res ? samr_connect( srv_name, 0x02000000,
+	res = res ? samr_connect( srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
 				&sam_pol) : False;
 
 	/* connect to the domain */
@@ -653,13 +658,13 @@ BOOL sam_query_dominfo(const char* srv_name,
 	BOOL res = True;
 	BOOL res1 = True;
 	BOOL res2 = True;
-	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
 	/* establish a connection. */
 	res = res ? samr_connect( 
-				srv_name, 0x02000000,
+				srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
 				&sam_pol) : False;
 
 	/* connect to the domain */
@@ -749,8 +754,9 @@ BOOL sam_query_aliasmem(const char *srv_name,
         }
 
         /* lookup domain controller; receive a policy handle */
-        res3 = res3 ? lsa_open_policy( srv_name,
-                                       &lsa_pol, True, 0x02000000) : False;
+        res3 = res3 ? lsa_open_policy(srv_name,
+                                      &lsa_pol, True, 
+                                      SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
         /* send lsa lookup sids call */
         res4 = res3 ? lsa_lookup_sids( &lsa_pol,
@@ -953,7 +959,7 @@ uint32 msrpc_sam_get_first_domain( const char* srv_name,
 				DOM_SID *dom_sid)
 {
 	BOOL res = True;
-	uint32 ace_perms = 0x02000000; /* access control permissions. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	POLICY_HND sam_pol;
 	uint32 status;
 	struct acct_info *sam = NULL;
@@ -1019,7 +1025,7 @@ uint32 msrpc_sam_enum_domains( const char* srv_name,
 				DOMAIN_INFO_FN(dom_inf_fn))
 {
 	BOOL res = True;
-	uint32 ace_perms = 0x02000000; /* access control permissions. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	POLICY_HND sam_pol;
 	uint32 status;
 
@@ -1104,13 +1110,13 @@ uint32 msrpc_sam_enum_groups( const char* srv_name,
 				GROUP_MEM_FN(grp_mem_fn))
 {
 	BOOL res = True;
-	uint32 ace_perms = 0x02000000; /* access control permissions. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 	uint32 status;
 
 	/* establish a connection. */
-	res = res ? samr_connect( srv_name, 0x02000000,
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
 				&sam_pol) : False;
 
 	/* connect to the domain */
@@ -1194,14 +1200,14 @@ uint32 msrpc_sam_enum_aliases( const char* srv_name,
 				ALIAS_MEM_FN(als_mem_fn))
 {
 	BOOL res = True;
-	uint32 ace_perms = 0x02000000; /* access control permissions */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 	uint32 status = 0x0;
 
 	/* establish a connection. */
-	res = res ? samr_connect( srv_name, 0x02000000,
-				&sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain( &sam_pol, ace_perms, sid1,
@@ -1731,8 +1737,9 @@ BOOL get_samr_query_groupinfo(
 	ZERO_STRUCTP(ctr);
 
 	/* send open domain (on group sid) */
-	if (!samr_open_group( pol_open_domain,
-				0x02000000, group_rid, &pol_open_group))
+	if (!samr_open_group(pol_open_domain,
+                             SEC_RIGHTS_MAXIMUM_ALLOWED, group_rid, 
+                             &pol_open_group))
 	{
 		return False;
 	}
@@ -1764,8 +1771,8 @@ BOOL get_samr_query_aliasinfo(
 	ZERO_STRUCTP(ctr);
 
 	/* send open domain (on alias sid) */
-	if (!samr_open_alias( pol_open_domain,
-				0x02000000, alias_rid, &pol_open_alias))
+	if (!samr_open_alias(pol_open_domain, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                             alias_rid, &pol_open_alias))
 	{
 		return False;
 	}
@@ -1792,14 +1799,13 @@ BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
 	BOOL res = True;
 	BOOL res1 = True;
 	BOOL res2 = True;
-	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	uint32 user_rid; 
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
 	/* establish a connection. */
-	res = res ? samr_connect( 
-				srv_name, 0x02000000,
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
 				&sam_pol) : False;
 
 	/* connect to the domain */
@@ -1842,7 +1848,8 @@ BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
 	POLICY_HND pol_dom;
 
 	/* establish a connection. */
-	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain( &sam_pol, ace_perms, sid1,
@@ -1987,7 +1994,8 @@ BOOL msrpc_sam_query_userinfo(const char* srv_name, const DOM_SID *sid,
 	POLICY_HND pol_dom;
 
 	/* establish a connection to a domain */
-	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 	res = res ? samr_open_domain( &sam_pol, 0x304, sid, &pol_dom) : False;
 
 	/* look up user rid */

@@ -299,7 +299,8 @@ static void run_lsahandles(struct client_info *info, int argc, char *argv[])
 	for (i = 1; i <= numops; i++)
 	{
 		POLICY_HND pol;
-		if (!lsa_open_policy(srv_name, &pol, False, 0x02000000))
+		if (!lsa_open_policy(srv_name, &pol, False, 
+                                     SEC_RIGHTS_MAXIMUM_ALLOWED))
 		{
 			failed++;
 		}

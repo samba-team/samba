@@ -69,7 +69,7 @@ BOOL get_domain_sids(const char *domain, DOM_SID * sid3, DOM_SID * sid5)
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy(srv_name, &pol, False,
-				    0x02000000) : False;
+				    SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 	if (sid3 != NULL)
 	{
@@ -148,7 +148,7 @@ BOOL get_trust_sid_and_domain(const char *myname, char *server,
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy(srv_name, &pol, False,
-				    0x02000000) : False;
+				    SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 	/* send client info query, level 3.  receive domain name and sid */
 	res1 = res ? lsa_query_info_pol(&pol, 3, dom3, &sid3) : False;

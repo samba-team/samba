@@ -63,10 +63,11 @@ static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
 		ZERO_STRUCTP(ctr);
 	}
 
-	status_sam = _samr_connect(NULL, 0x02000000, &sam_pol);
+	status_sam = _samr_connect(NULL, SEC_RIGHTS_MAXIMUM_ALLOWED, &sam_pol);
 	if (status_sam == NT_STATUS_NOPROBLEMO)
 	{
-		status_dom = _samr_open_domain(&sam_pol, 0x02000000,
+		status_dom = _samr_open_domain(&sam_pol, 
+                                               SEC_RIGHTS_MAXIMUM_ALLOWED,
 					       &global_sam_sid, &dom_pol);
 	}
 	if (status_dom == NT_STATUS_NOPROBLEMO)
@@ -86,7 +87,8 @@ static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
 	}
 	if (status_usr == NT_STATUS_NOPROBLEMO)
 	{
-		status_usr = _samr_open_user(&dom_pol, 0x02000000,
+		status_usr = _samr_open_user(&dom_pol, 
+                                             SEC_RIGHTS_MAXIMUM_ALLOWED,
 					     user_rid, &usr_pol);
 	}
 	if (status_usr == NT_STATUS_NOPROBLEMO)
@@ -1203,11 +1205,12 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 
 	(*sync_context) = 1;
 
-	if (_samr_connect(NULL, 0x02000000, &sam_pol) != NT_STATUS_NOPROBLEMO)
+	if (_samr_connect(NULL, SEC_RIGHTS_MAXIMUM_ALLOWED, &sam_pol) != 
+            NT_STATUS_NOPROBLEMO)
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	if (_samr_open_domain(&sam_pol, 0x02000000,
+	if (_samr_open_domain(&sam_pol, SEC_RIGHTS_MAXIMUM_ALLOWED,
 			      &global_sam_sid,
 			      &dom_pol) != NT_STATUS_NOPROBLEMO)
 	{
@@ -1240,8 +1243,8 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 		ZERO_STRUCT(ctr);
 
 		status_usr =
-			_samr_open_user(&dom_pol, 0x02000000, sam[idx].rid,
-					&usr_pol);
+			_samr_open_user(&dom_pol, SEC_RIGHTS_MAXIMUM_ALLOWED, 
+                                        sam[idx].rid, &usr_pol);
 		if (status_usr == NT_STATUS_NOPROBLEMO
 		    && _samr_query_userinfo(&usr_pol, 0x21,
 					    &ctr) == NT_STATUS_NOPROBLEMO)

@@ -284,7 +284,8 @@ void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "Lookup Domain %s in SAM Server\n", domain);
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_query_lookup_domain(&sam_pol, domain,
@@ -343,7 +344,7 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 	fstring srv_name;
 	fstring domain;
 	DOM_SID sid_dom;
-	uint32 ace_perms = 0x02000000;	/* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	BOOL res = True, res1 = True;
 	POLICY_HND pol_sam;
 	POLICY_HND pol_dom;
@@ -407,7 +408,8 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &pol_sam) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &pol_sam) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&pol_sam, ace_perms, &sid_dom,
@@ -453,7 +455,7 @@ void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 	fstring srv_name;
 	fstring domain;
 	DOM_SID sid_dom;
-	uint32 ace_perms = 0x02000000;	/* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	BOOL res = True, res1 = True;
 	POLICY_HND pol_sam;
 	POLICY_HND pol_dom;
@@ -527,7 +529,8 @@ void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &pol_sam) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &pol_sam) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&pol_sam, ace_perms, &sid_dom,
@@ -579,7 +582,7 @@ void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 	BOOL res = True;
 	BOOL res1 = True;
 	BOOL res2 = True;
-	uint32 ace_perms = 0x02000000;	/* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	DOM_SID member_sid;
 	uint32 alias_rid;
 	POLICY_HND sam_pol;
@@ -619,7 +622,8 @@ void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "SAM Domain Alias Member\n");
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, ace_perms, &sid1,
@@ -677,7 +681,7 @@ void cmd_sam_delete_dom_alias(struct client_info *info, int argc,
 	BOOL res = True;
 	BOOL res1 = True;
 	BOOL res2 = True;
-	uint32 ace_perms = 0x02000000;	/* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	uint32 alias_rid = 0;
 	char *names[1];
 	uint32 *rids;
@@ -716,7 +720,8 @@ void cmd_sam_delete_dom_alias(struct client_info *info, int argc,
 	report(out_hnd, "SAM Delete Domain Alias\n");
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED, 
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, ace_perms, &sid1,
@@ -781,7 +786,7 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 	BOOL res2 = True;
 	BOOL res3 = True;
 	BOOL res4 = True;
-	uint32 ace_perms = 0x02000000;	/* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	uint32 alias_rid;
 	char **names = NULL;
 	int num_names = 0;
@@ -824,8 +829,8 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "SAM Domain Alias Member\n");
 
 	/* lookup domain controller; receive a policy handle */
-	res3 = res3 ? lsa_open_policy(srv_name,
-				      &lsa_pol, True, 0x02000000) : False;
+	res3 = res3 ? lsa_open_policy(srv_name, &lsa_pol, True, 
+                                      SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 	/* send lsa lookup sids call */
 	res4 = res3 ? lsa_lookup_names(&lsa_pol,
@@ -857,7 +862,8 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, ace_perms, &sid1,
@@ -1195,7 +1201,8 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		 * local copy-of trust account out-of-sync with the
 		 * remote one, and you're stuffed!
 		 */
-		res = lsa_open_policy(wks_name, &lsa_pol, True, 0x02000000);
+		res = lsa_open_policy(wks_name, &lsa_pol, True, 
+                                      SEC_RIGHTS_MAXIMUM_ALLOWED);
 
 		if (!res)
 		{
@@ -1342,7 +1349,8 @@ void cmd_sam_create_dom_alias(struct client_info *info, int argc,
 	       domain, acct_name, acct_desc);
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, ace_perms, &sid1,
@@ -1382,7 +1390,7 @@ void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 	BOOL res = True;
 	BOOL res1 = True;
 	BOOL res2 = True;
-	uint32 ace_perms = 0x02000000;	/* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	uint32 member_rid;
 	uint32 group_rid;
 	POLICY_HND sam_pol;
@@ -1422,7 +1430,8 @@ void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "SAM Add Domain Group member\n");
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, ace_perms, &sid1,
@@ -1518,7 +1527,8 @@ void cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "SAM Delete Domain User\n");
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, 0x0200, &sid1,
@@ -1587,7 +1597,7 @@ void cmd_sam_delete_dom_group(struct client_info *info, int argc,
 	BOOL res = True;
 	BOOL res1 = True;
 	BOOL res2 = True;
-	uint32 ace_perms = 0x02000000;	/* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	uint32 group_rid = 0;
 	char *names[1];
 	uint32 *rids;
@@ -1626,7 +1636,8 @@ void cmd_sam_delete_dom_group(struct client_info *info, int argc,
 	report(out_hnd, "SAM Delete Domain Group\n");
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, ace_perms, &sid1,
@@ -1691,7 +1702,7 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 	BOOL res2 = True;
 	BOOL res3 = True;
 	BOOL res4 = True;
-	uint32 ace_perms = 0x02000000;	/* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	uint32 *group_rids;
 	uint32 *group_types;
 	char **names = NULL;
@@ -1750,7 +1761,8 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "SAM Add Domain Group member\n");
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res4 = res ? samr_open_domain(&sam_pol, ace_perms, &sid1,
@@ -1887,7 +1899,7 @@ void cmd_sam_create_dom_group(struct client_info *info, int argc,
 	DOM_SID sid1;
 	BOOL res = True;
 	BOOL res1 = True;
-	uint32 ace_perms = 0x02000000;	/* absolutely no idea. */
+	uint32 ace_perms = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	uint32 group_rid;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
@@ -1935,7 +1947,8 @@ void cmd_sam_create_dom_group(struct client_info *info, int argc,
 	       domain, acct_name, acct_desc);
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, ace_perms, &sid1,
@@ -2089,7 +2102,8 @@ void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 	       info->myhostname, srv_name, domain, sid_str);
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, 0x304, &sid, &pol_dom) : False;
@@ -2185,7 +2199,8 @@ void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 	       info->myhostname, srv_name, domain, sid_str);
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, 0x304, &sid, &pol_dom) : False;
@@ -2282,7 +2297,8 @@ void cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[])
 	       info->myhostname, srv_name, domain, sid_str);
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, 0x304, &sid, &pol_dom) : False;
@@ -2429,7 +2445,8 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	       info->myhostname, srv_name, domain, sid_str);
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, 0x304, &sid, &pol_dom) : False;
@@ -2574,11 +2591,12 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "SAM Set User Info: %s\n", user_name);
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(&sam_pol, 0x02000000, &sid,
-				     &pol_dom) : False;
+	res = res ? samr_open_domain(&sam_pol, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                     &sid, &pol_dom) : False;
 
 	/* look up user rid */
 	names[0] = user_name;
@@ -2756,11 +2774,12 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	report(out_hnd, "Password: %s\n", password);
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
-	res = res ? samr_open_domain(&sam_pol, 0x02000000, &sid,
-				     &pol_dom) : False;
+	res = res ? samr_open_domain(&sam_pol, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                     &sid, &pol_dom) : False;
 
 	/* look up user rid */
 	names[0] = user_name;
@@ -3032,7 +3051,8 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 	       info->myhostname, srv_name, domain, sid_str);
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, 0x304, &sid, &pol_dom) : False;
@@ -3129,7 +3149,8 @@ void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 	       info->myhostname, srv_name, domain, sid_str);
 
 	/* establish a connection. */
-	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
+                                 &sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(&sam_pol, 0x304, &sid, &pol_dom) : False;

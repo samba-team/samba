@@ -53,7 +53,8 @@ void cmd_lsa_enum_trust_dom(struct client_info *info, int argc, char *argv[])
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy( srv_name,
-				&lsa_pol, False, 0x02000000) : False;
+				&lsa_pol, False, 
+                                     SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 	do
 	{
@@ -111,8 +112,8 @@ void cmd_lsa_query_info(struct client_info *info, int argc, char *argv[])
 	DEBUG(4,("cmd_lsa_query_info: server:%s\n", srv_name));
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy( srv_name,
-				&lsa_pol, False, 0x02000000) : False;
+	res = res ? lsa_open_policy(srv_name, &lsa_pol, False, 
+                                    SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 	/* send client info query, level 3.  receive domain name and sid */
 	res = res ? lsa_query_info_pol( &lsa_pol, 0x03,
@@ -286,8 +287,8 @@ void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy( srv_name,
-				&lsa_pol, True, 0x02000000) : False;
+	res = res ? lsa_open_policy(srv_name, &lsa_pol, True, 
+                                    SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 	/* send lsa lookup sids call */
 	res = res ? lsa_lookup_sids( &lsa_pol,
@@ -429,12 +430,12 @@ void cmd_lsa_query_secret_secobj(struct client_info *info, int argc, char *argv[
 	secret_name = argv[1];
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy(srv_name,
-				     &lsa_pol, False, 0x02000000) : False;
+	res = res ? lsa_open_policy(srv_name, &lsa_pol, False, 
+                                    SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res1 = res ? lsa_open_secret(&lsa_pol,
-				     secret_name, 0x02000000,
+	res1 = res ? lsa_open_secret(&lsa_pol, secret_name, 
+                                     SEC_RIGHTS_MAXIMUM_ALLOWED,
 				     &pol_sec) : False;
 
 	res2 = res1 ? lsa_query_sec_obj(&pol_sec, 0x07, &buf) : False;
