@@ -748,7 +748,7 @@ static void api_net_sam_logon( uint16 vuid,
 		strupper(my_name);
 
 		status = lookup_user_rids(samlogon_user, &r_uid, &r_gid);
-		status = status == 0 ? getusergroupsnam(samlogon_user, &grp_mem, &num_gids) : 0xC0000000 | NT_STATUS_INVALID_PRIMARY_GROUP;
+		status = getusergroupsnam(samlogon_user, &grp_mem, &num_gids) ? 0 : 0xC0000000 | NT_STATUS_INVALID_PRIMARY_GROUP;
 
 		if (status == 0x0)
 		{
@@ -786,10 +786,6 @@ static void api_net_sam_logon( uint16 vuid,
 
 				&global_sam_sid,     /* DOM_SID *dom_sid */
 				NULL); /* char *other_sids */
-		}
-		else
-		{
-			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
 		}
 
 		/* Free any allocated groups array. */

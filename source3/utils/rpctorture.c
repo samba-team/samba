@@ -558,9 +558,7 @@ static void run_handles(int numops, struct client_info *cli_info)
 
 static void run_pipegobbler(int numops, struct client_info *cli_info)
 {
-/*
 	run_pipegobble(numops, cli_info, PIPE_SAMR);
-*/
 	run_pipegobble(numops, cli_info, PIPE_LSARPC);
 }
 
@@ -954,9 +952,9 @@ enum client_action
 	}
 */
 
-	create_procs(nprocs, numops, &cli_info, run_tcpconnect);
-/*
 	create_procs(nprocs, numops, &cli_info, run_pipegobbler);
+/*
+	create_procs(nprocs, numops, &cli_info, run_tcpconnect);
 	create_procs(nprocs, numops, &cli_info, run_handles);
 	create_procs(nprocs, numops, &cli_info, run_randomrpc);
 */
