@@ -34,7 +34,7 @@
 
 	/******************/
 	/* Function: 0x03 */
-	NTSTATUS dfs_UNKNOWN3 ();
+	NTSTATUS dfs_SetInfo ();
 
 	/******************/
 	/* Function: 0x04 */

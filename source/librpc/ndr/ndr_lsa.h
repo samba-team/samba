@@ -86,12 +86,14 @@ struct lsa_ChangePassword {
 };
 
 struct lsa_QosInfo {
+	uint32 len;
 	uint16 impersonation_level;
 	uint8 context_mode;
 	uint8 effective_only;
 };
 
 struct lsa_ObjectAttribute {
+	uint32 len;
 	uint8 *root_dir;
 	const char *object_name;
 	uint32 attributes;
