@@ -64,22 +64,20 @@ BOOL modify_trust_password(const char *domain, const char *srv_name,
  Do the same as security=server, but using NT Domain calls and a session
  key from the workstation trust account password.
 ************************************************************************/
-uint32 domain_client_validate(const char *server,
-			      const char *user, const char *domain,
-			      const char *acct_name, uint16 acct_type,
-			      const char *challenge,
-			      const char *smb_apasswd,
-			      int smb_apasslen,
-			      const char *smb_ntpasswd,
-			      int smb_ntpasslen, NET_USER_INFO_3 * info3)
+uint32 domain_client_validate_backend(const char *srv_name,
+				      const char *user, const char *domain,
+				      const char *acct_name, uint16 acct_type,
+				      const unsigned char trust_passwd[16],
+				      const char *challenge,
+				      const char *smb_apasswd,
+				      int smb_apasslen,
+				      const char *smb_ntpasswd,
+				      int smb_ntpasslen, NET_USER_INFO_3 * info3)
 {
-	unsigned char trust_passwd[16];
 	NET_ID_INFO_CTR ctr;
 	uint32 smb_uid_low;
 	uint32 status;
 	fstring trust_acct;
-	fstring srv_name;
-	fstring sec_name;
 	uint16 validation_level;
 	BOOL cleartext = smb_apasslen != 0 && smb_apasslen != 24 &&
 		smb_ntpasslen == 0;
@@ -90,42 +88,6 @@ uint32 domain_client_validate(const char *server,
 
 	fstrcpy(trust_acct, acct_name);
 	fstrcat(trust_acct, "$");
-
-	if (server != NULL)
-	{
-		fstrcpy(srv_name, server);
-	}
-	else if (!get_any_dc_name(domain, srv_name))
-	{
-		DEBUG(3,
-		      ("domain_client_validate: could not find domain %s, using local SAM\n",
-		       domain));
-		fstrcpy(srv_name, "\\\\.");
-	}
-
-	if (acct_type == SEC_CHAN_DOMAIN)
-	{
-		fstrcpy(sec_name, "G$$");
-		fstrcat(sec_name, domain);
-	}
-	else
-	{
-		fstrcpy(sec_name, "$MACHINE.ACC");
-	}
-
-	if (!msrpc_lsa_query_trust_passwd("\\\\.", sec_name,
-					  trust_passwd, NULL))
-	{
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/*
-	 * At this point, smb_apasswd points to the lanman response to
-	 * the challenge in local_challenge, and smb_ntpasswd points to
-	 * the NT response to the challenge in local_challenge. Ship
-	 * these over the secure channel to a domain controller and
-	 * see if they were valid.
-	 */
 
 	/*
 	   * Ok - we have an anonymous connection to the IPC$ share.
@@ -221,6 +183,65 @@ uint32 domain_client_validate(const char *server,
 
 	return 0x0;
 }
+
+
+/***********************************************************************
+ Do the same as security=server, but using NT Domain calls and a session
+ key from the workstation trust account password.
+************************************************************************/
+uint32 domain_client_validate(const char *server,
+			      const char *user, const char *domain,
+			      const char *acct_name, uint16 acct_type,
+			      const char *challenge,
+			      const char *smb_apasswd,
+			      int smb_apasslen,
+			      const char *smb_ntpasswd,
+			      int smb_ntpasslen, NET_USER_INFO_3 * info3)
+{
+	unsigned char trust_passwd[16];
+	fstring trust_acct;
+	fstring srv_name;
+	fstring sec_name;
+
+	fstrcpy(trust_acct, acct_name);
+	fstrcat(trust_acct, "$");
+
+	if (server != NULL)
+	{
+		fstrcpy(srv_name, server);
+	}
+	else if (!get_any_dc_name(domain, srv_name))
+	{
+		DEBUG(3,
+		      ("domain_client_validate: could not find domain %s, using local SAM\n",
+		       domain));
+		fstrcpy(srv_name, "\\\\.");
+	}
+
+	if (acct_type == SEC_CHAN_DOMAIN)
+	{
+		fstrcpy(sec_name, "G$$");
+		fstrcat(sec_name, domain);
+	}
+	else
+	{
+		fstrcpy(sec_name, "$MACHINE.ACC");
+	}
+
+	if (!msrpc_lsa_query_trust_passwd("\\\\.", sec_name,
+					  trust_passwd, NULL))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+
+	return domain_client_validate_backend(server, user, domain, acct_name, acct_type,
+					      trust_passwd, 
+					      challenge, smb_apasswd, smb_apasslen,
+					      smb_ntpasswd, smb_ntpasslen,
+					      info3);
+}
+
 
 /****************************************************************************
  Check for a valid username and password in security=domain mode.
