@@ -46,9 +46,16 @@
 #define NERR_DfsInternalError           (NERR_BASE+590)
 #define NERR_DfsCantCreateJunctionPoint (NERR_BASE+569)
 
+typedef struct dfs_q_dfs_exist
+{
+  uint32 dummy;
+}
+DFS_Q_DFS_EXIST;
+
+/* status == 1 if dfs exists. */
 typedef struct dfs_r_dfs_exist
 {
-  uint32 dfs_exist_flag;
+  uint32 status;
 }
 DFS_R_DFS_EXIST;
 

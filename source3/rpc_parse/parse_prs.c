@@ -125,12 +125,17 @@ void prs_mem_free(prs_struct *ps)
 }
 
 /*******************************************************************
- Allocate memory when unmarshalling...
+ Allocate memory when unmarshalling... Always zero clears.
  ********************************************************************/
 
 char *prs_alloc_mem(prs_struct *ps, size_t size)
 {
-	return talloc(ps->mem_ctx, size);
+	char *ret = talloc(ps->mem_ctx, size);
+
+	if (ret)
+		memset(ret, '\0', size);
+
+	return ret;
 }
 
 /*******************************************************************
