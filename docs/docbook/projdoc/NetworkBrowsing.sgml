@@ -2,7 +2,7 @@
 <chapterinfo>
 	&author.jht;
 	<pubdate>July 5, 1998</pubdate>
-	<pubdate>Updated: March 15, 2003</pubdate>
+	<pubdate>Updated: April 21, 2003</pubdate>
 </chapterinfo>
 
 <title>Samba / MS Windows Network Browsing Guide</title>
@@ -220,7 +220,7 @@ and so on.
 </para>
 
 <sect2>
-<title>Setting up Browsing in a WORKGROUP</title>
+<title>Setting up WORKGROUP Browsing</title>
 
 <para>
 To set up cross subnet browsing on a network containing machines
@@ -322,7 +322,7 @@ options in the <command>[global]</command> section of the
 </sect2>
 
 <sect2>
-<title>Setting up Browsing in a DOMAIN</title>
+<title>Setting up DOMAIN Browsing</title>
 
 <para>
 If you are adding Samba servers to a Windows NT Domain then
@@ -743,7 +743,7 @@ all &smb.conf; files :
 </para>
 
 <para>
-where &gt;name or IP address&lt; is either the DNS name of the WINS server
+where &lt;name or IP address&gt; is either the DNS name of the WINS server
 machine or its IP address.
 </para>
 
@@ -1147,7 +1147,7 @@ Now examine subnet 2.  As soon as N2_B has become the local
 master browser it looks for a Domain master browser to synchronize
 its browse list with.  It does this by querying the WINS server
 (N2_D) for the IP address associated with the NetBIOS name 
-WORKGROUP&gt;1B&lt;.  This name was registerd by the Domain master
+WORKGROUP&lt;1B&gt;.  This name was registerd by the Domain master
 browser (N1_C) with the WINS server as soon as it was booted.
 </para>
 

@@ -1,19 +1,49 @@
 <chapter id="SWAT">
 <chapterinfo>
 	&author.jht;
-	<pubdate>April 3, 2003</pubdate>
+	<pubdate>April 21, 2003</pubdate>
 </chapterinfo>
 
 <title>SWAT - The Samba Web Admininistration Tool</title>
 
 <para>
-This is a rough guide to SWAT.
+There are many and varied opinions regarding the usefulness or otherwise of SWAT.
+No matter how hard one tries to produce the perfect configuration tool it remains
+an object of personal taste. SWAT is a tool that will allow web based configuration
+of samba. It has a wizard that may help to get samba configured quickly, it has context
+sensitive help on each smb.conf parameter, it provides for monitoring of current state
+of connection information, and it allows network wide MS Windows network password
+management.
 </para>
 
 <sect1>
 <title>SWAT Features and Benefits</title>
 
-<para>You must use at least the following ...</para>
+<para>
+There are network administrators who believe that it is a good idea to write systems
+documentation inside configuration files, for them SWAT will aways be a nasty tool. SWAT
+does not store the configuration file in any intermediate form, rather, it stores only the
+parameter settings, so when SWAT writes the smb.conf file to disk it will write only
+those parameters that are at other than the default settings. The result is that all comments
+will be lost from the smb.conf file. Additionally, the parameters will be written back in
+internal ordering.
+</para>
+
+<para><note>
+So before using SWAT please be warned - SWAT will completely replace your smb.conf with
+a fully optimised file that has been stripped of all comments you might have placed there
+and only non-default settings will be written to the file.
+</note></para>
+
+<para>
+SWAT should be installed to run via the network super daemon. Depending on which system
+your Unix/Linux system has you will have either an <filename>inetd</filename> or
+<filename>xinetd</filename> based system.
+</para>
+
+<para>
+The nature and location of the network super
+</para>
 
 <sect2>
 <title>The SWAT Home Page</title>
