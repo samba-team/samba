@@ -132,16 +132,20 @@ mandoc_template(struct getargs *args,
     printf("Supported options:\n");
     printf(".Bl -tag -width Ds\n");
     for(i = 0; i < num_args; i++){
+	printf(".It Xo\n");
 	if(args[i].short_name){
-	    printf(".It Fl %c", args[i].short_name);
+	    printf(".Fl %c", args[i].short_name);
 	    print_arg(stdout, 1, 0, args + i);
+	    if(args[i].long_name)
+		printf(" Ns ,");
 	    printf("\n");
 	}
 	if(args[i].long_name){
-	    printf(".It Fl -%s", args[i].long_name);
+	    printf(".Fl -%s", args[i].long_name);
 	    print_arg(stdout, 1, 1, args + i);
 	    printf("\n");
 	}
+	printf(".Xc\n");
 	if(args[i].help)
 	    printf("%s\n", args[i].help);
     /*
