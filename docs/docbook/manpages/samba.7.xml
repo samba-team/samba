@@ -13,7 +13,7 @@
 
 
 <refnamediv>
-	<refname>Samba</refname>
+	<refname>samba</refname>
 	<refpurpose>A Windows SMB/CIFS fileserver for UNIX</refpurpose>
 </refnamediv>
 
