@@ -832,6 +832,7 @@ static void _lookup_pdc_name(char *p, char *master,char *rname)
     if(type == 0x20) {
       StrnCpy(rname,p,15);
       trim_string(rname,NULL," ");
+      dos_to_unix(rname, True);
       return;
     }
     p += 18;
