@@ -725,14 +725,6 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 		return True;
 	}
 
-	/*
-	 * Don't try to convert the rid to a name if 
-	 * running in appliance mode
-	 */
-
-	if (lp_hide_local_users())
-		return False;
-		
 	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
 		return False;
 	}
@@ -851,12 +843,6 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 		*psid_name_use = SID_NAME_ALIAS;
 		return True;
 	}
-
-	/* 
-	 * Don't lookup local unix users if running in appliance mode
-	 */
-	if (lp_hide_local_users()) 
-		return False;
 
 	(void)map_username(user);
 

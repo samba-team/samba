@@ -875,140 +875,11 @@ static void make_group_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNIST
 
 /*******************************************************************
  Get the group entries - similar to get_sampwd_entries().
- ********************************************************************/
+ ******************************************************************/
 
-static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 start_idx,
-				    uint32 *p_num_entries, uint32 max_entries)
-{
-	fstring sid_str;
-	uint32 num_entries = 0;
-	int i;
-	GROUP_MAP smap;
-	GROUP_MAP *map = NULL;
-
-	sid_to_string(sid_str, sid);
-	DEBUG(5, ("get_group_alias_entries: enumerating aliases on SID: %s\n", sid_str));
-
-	*p_num_entries = 0;
-
-	/* well-known aliases */
-	if (sid_equal(sid, &global_sid_Builtin) && !lp_hide_local_users()) {
-		
-		become_root();
-		pdb_enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ONLY_MAPPED);
-		unbecome_root();
-		
-		if (num_entries != 0) {		
-			*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
-			if (*d_grp==NULL)
-				return NT_STATUS_NO_MEMORY;
-			
-			for(i=0; i<num_entries && i<max_entries; i++) {
-				fstrcpy((*d_grp)[i].name, map[i+start_idx].nt_name);
-				sid_split_rid(&map[i+start_idx].sid, &(*d_grp)[i].rid);
-				
-			}
-		}
-		SAFE_FREE(map);
-		
-	} else if (sid_equal(sid, get_global_sam_sid()) && !lp_hide_local_users()) {
-		struct sys_grent *glist;
-		struct sys_grent *grp;
-		gid_t winbind_gid_low, winbind_gid_high;
-		BOOL winbind_groups_exist = lp_idmap_gid(&winbind_gid_low, &winbind_gid_high);
-		BOOL ret;
-
-		/* local aliases */
-		/* we return the UNIX groups here.  This seems to be the right */
-		/* thing to do, since NT member servers return their local     */
-                /* groups in the same situation.                               */
-
-		/* use getgrent_list() to retrieve the list of groups to avoid
-		 * problems with getgrent possible infinite loop by internal
-		 * libc grent structures overwrites by called functions */
-		grp = glist = getgrent_list();
-		if (grp == NULL)
-			return NT_STATUS_NO_MEMORY;
-		
-		for (; (num_entries < max_entries) && (grp != NULL); grp = grp->next) {
-			uint32 trid;
-			
-			become_root();
-			ret = pdb_getgrgid(&smap, grp->gr_gid);
-			unbecome_root();
-			if( !ret )
-				continue;
-			
-			if (smap.sid_name_use!=SID_NAME_ALIAS) {
-				continue;
-			}
-
-			sid_split_rid(&smap.sid, &trid);
-			
-			if (!sid_equal(sid, &smap.sid))
-				continue;
-
-			/* Don't return winbind groups as they are not local! */
-			if (winbind_groups_exist && (grp->gr_gid >= winbind_gid_low)&&(grp->gr_gid <= winbind_gid_high)) {
-				DEBUG(10,("get_group_alias_entries: not returing %s, not local.\n", smap.nt_name ));
-				continue;
-			}
-
-			/* Don't return user private groups... */
-
-			if (Get_Pwnam(smap.nt_name) != 0) {
-				DEBUG(10,("get_group_alias_entries: not returing %s, clashes with user.\n", smap.nt_name ));
-				continue;			
-			}
-
-			for( i = 0; i < num_entries; i++)
-				if ( (*d_grp)[i].rid == trid )
-					break;
-
-			if ( i < num_entries ) {
-				continue; /* rid was there, dup! */
-			}
-
-			/* JRA - added this for large group db enumeration... */
-
-			if (start_idx > 0) {
-				/* skip the requested number of entries.
-					not very efficient, but hey...
-				*/
-				start_idx--;
-				continue;
-			}
-
-			*d_grp=talloc_realloc(ctx,*d_grp, (num_entries+1)*sizeof(DOMAIN_GRP));
-			if (*d_grp==NULL) {
-				grent_free(glist);
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			fstrcpy((*d_grp)[num_entries].name, smap.nt_name);
-			(*d_grp)[num_entries].rid = trid;
-			num_entries++;
-			DEBUG(10,("get_group_alias_entries: added entry %d, rid:%d\n", num_entries, trid));
-		}
-
-		grent_free(glist);
-	}
-
-	*p_num_entries = num_entries;
-
-	DEBUG(10,("get_group_alias_entries: returning %d entries\n", *p_num_entries));
-
-	if (num_entries >= max_entries)
-		return STATUS_MORE_ENTRIES;
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
- Get the group entries - similar to get_sampwd_entries().
- ********************************************************************/
-
-static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 start_idx,
-				     uint32 *p_num_entries, uint32 max_entries)
+static NTSTATUS get_group_entries( enum SID_NAME_USE type, TALLOC_CTX *ctx, 
+                                   DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 start_idx,
+                                   uint32 *p_num_entries, uint32 max_entries )
 {
 	GROUP_MAP *map=NULL;
 	int i;
@@ -1021,7 +892,7 @@ static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DO
 	   needed for some passdb backends to enumerate groups */
 	   
 	become_root();
-	pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED);
+	pdb_enum_group_mapping(type, &map, (int *)&group_entries, ENUM_ONLY_MAPPED);
 	unbecome_root();
 	
 	num_entries=group_entries-start_idx;
@@ -1042,12 +913,50 @@ static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DO
 		fstrcpy((*d_grp)[i].name, map[i+start_idx].nt_name);
 		fstrcpy((*d_grp)[i].comment, map[i+start_idx].comment);
 		sid_split_rid(&map[i+start_idx].sid, &(*d_grp)[i].rid);
-		(*d_grp)[i].attr=SID_NAME_DOM_GRP;
+		(*d_grp)[i].attr=type;
 	}
 
 	SAFE_FREE(map);
 
 	*p_num_entries = num_entries;
+
+	DEBUG(10,("get_group_entries: returning %d entries\n", *p_num_entries));
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ Wrapper for enuemrating domain groups
+ ******************************************************************/
+
+static NTSTATUS get_group_domain_entries( TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, 
+		                          DOM_SID *sid, uint32 start_idx, 
+					  uint32 *p_num_entries, uint32 max_entries )
+{
+	return get_group_entries( SID_NAME_DOM_GRP, ctx, d_grp, sid, start_idx, 
+		p_num_entries, max_entries );
+}
+
+/*******************************************************************
+ Wrapper for enumerating local groups
+ ******************************************************************/
+
+static NTSTATUS get_group_alias_entries( TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, 
+		                         DOM_SID *sid, uint32 start_idx,
+                                         uint32 *p_num_entries, uint32 max_entries)
+{
+	if ( sid_equal(sid, &global_sid_Builtin) ) {	
+		return get_group_entries( SID_NAME_WKN_GRP, ctx, d_grp, 
+			sid, start_idx, p_num_entries, max_entries );
+	}
+	else if ( sid_equal(sid, get_global_sam_sid()) ) {
+		return get_group_entries( SID_NAME_ALIAS, ctx, d_grp, 
+			sid, start_idx, p_num_entries, max_entries );	
+	}
+
+	/* can't do anything with this SID */
+		
+	*p_num_entries = 0;
 
 	return NT_STATUS_OK;
 }
