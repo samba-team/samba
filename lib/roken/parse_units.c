@@ -52,13 +52,15 @@ RCSID("$Id$");
  * def_unit defines the default unit.
  */
 
-int
-parse_units (const char *s, const struct units *units,
-	     const char *def_unit)
+static int
+parse_something (const char *s, const struct units *units,
+		 const char *def_unit,
+		 int (*func)(int res, int val, unsigned mult),
+		 int init,
+		 int accept_no_val_p)
 {
     const char *p;
-    int res = 0;
-    int val;
+    int res = init;
     unsigned def_mult = 1;
 
     if (def_unit != NULL) {
@@ -84,24 +86,36 @@ parse_units (const char *s, const struct units *units,
 
 	val = strtod (p, &next); /* strtol(p, &next, 0); */
 	if (val == 0 && p == next)
-	    return -1;
+	    if(accept_no_val_p)
+		val = 1;
+	    else
+		return -1;
 	p = next;
 	while (isspace(*p))
 	    ++p;
 	if (*p == '\0') {
-	    res += val * def_mult;
+	    res = (*func)(res, val, def_mult);
+	    if (res < 0)
+		return res;
 	    break;
+	} else if (*p == '+') {
+	    ++p;
+	} else if (*p == '-') {
+	    ++p;
+	    val = -1;
 	}
 	u_len = strcspn (p, "0123456789 \t");
-	partial = NULL;
 	partial = 0;
+	partial_unit = NULL;
 	if (u_len > 1 && p[u_len - 1] == 's')
 	    --u_len;
 	for (u = units; u->name; ++u) {
 	    if (strncasecmp (p, u->name, u_len) == 0) {
 		if (u_len == strlen (u->name)) {
 		    p += u_len;
-		    res += val * u->mult;
+		    res = (*func)(res, val, u->mult);
+		    if (res < 0)
+			return res;
 		    break;
 		} else {
 		    ++partial;
@@ -112,7 +126,9 @@ parse_units (const char *s, const struct units *units,
 	if (u->name == NULL)
 	    if (partial == 1) {
 		p += u_len;
-		res += val * partial_unit->mult;
+		res = (*func)(res, val, partial_unit->mult);
+		if (res < 0)
+		    return res;
 	    } else {
 		return -1;
 	    }
@@ -123,32 +139,121 @@ parse_units (const char *s, const struct units *units,
 }
 
 /*
- * Return a string representation according to `units' of `num' in `s'
- * with maximum length `len'.
+ * The string consists of a sequence of `n unit'
  */
 
-size_t
-unparse_units (int num, const struct units *units, char *s, size_t len)
+static int
+acc_units(int res, int val, unsigned mult)
+{
+    return res + val * mult;
+}
+
+int
+parse_units (const char *s, const struct units *units,
+	     const char *def_unit)
+{
+    return parse_something (s, units, def_unit, acc_units, 0, 0);
+}
+
+/*
+ * The string consists of a sequence of `[+-]flag'.  `orig' consists
+ * the original set of flags, those are then modified and returned as
+ * the function value.
+ */
+
+static int
+acc_flags(int res, int val, unsigned mult)
+{
+    if(val == 1)
+	return res | mult;
+    else if(val == -1)
+	return res & ~mult;
+    else
+	return -1;
+}
+
+int
+parse_flags (const char *s, const struct units *units,
+	     int orig)
+{
+    return parse_something (s, units, NULL, acc_flags, orig, 1);
+}
+
+/*
+ * Return a string representation according to `units' of `num' in `s'
+ * with maximum length `len'.  The actual length is the function value.
+ */
+
+static size_t
+unparse_something (int num, const struct units *units, char *s, size_t len,
+		   int (*print) (char *s, size_t len, int div,
+				const char *name, int rem),
+		   int (*update) (int in, unsigned mult),
+		   const char *zero_string)
 {
     const struct units *u;
     size_t ret = 0, tmp;
 
     if (num == 0)
-	return snprintf (s, len, "%u", 0);
+	return snprintf (s, len, "%s", zero_string);
 
     for (u = units; num > 0 && u->name; ++u) {
 	int div;
 
 	div = num / u->mult;
 	if (div) {
-	    num %= u->mult;
-	    tmp = snprintf (s, len, "%u %s%s%s", div, u->name,
-			    div == 1 ? "" : "s",
-			    num > 0 ? " " : "");
+	    num = (*update) (num, u->mult);
+	    tmp = (*print) (s, len, div, u->name, num);
+
 	    len -= tmp;
 	    s += tmp;
 	    ret += tmp;
 	}
     }
     return ret;
+}
+
+static int
+print_unit (char *s, size_t len, int div, const char *name, int rem)
+{
+    return snprintf (s, len, "%u %s%s%s",
+		     div, name,
+		     div == 1 ? "" : "s",
+		     rem > 0 ? " " : "");
+}
+
+static int
+update_unit (int in, unsigned mult)
+{
+    return in % mult;
+}
+
+size_t
+unparse_units (int num, const struct units *units, char *s, size_t len)
+{
+    return unparse_something (num, units, s, len,
+			      print_unit,
+			      update_unit,
+			      "0");
+}
+
+static int
+print_flag (char *s, size_t len, int div, const char *name, int rem)
+{
+    return snprintf (s, len, "%s%s", name, rem > 0 ? ", " : "");
+}
+
+static int
+update_flag (int in, unsigned mult)
+{
+    return in - mult;
+}
+
+size_t
+unparse_flags (int num, const struct units *units, char *s, size_t len)
+{
+    return unparse_something (num, units, s, len,
+			      print_flag,
+			      update_flag,
+			      "");
 }
