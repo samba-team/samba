@@ -88,8 +88,8 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
-	printf("<tr><td><A HREF=\"help/parameters.html#%s\">?</A> %s</td><td>", 
-	       parm->label, parm->label);
+	printf("<tr><td><A HREF=\"%shelp/parameters.html#%s\">?</A> %s</td><td>", 
+	       cgi_rooturl(), parm->label, parm->label);
 
 	switch (parm->type) {
 	case P_CHAR:
