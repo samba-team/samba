@@ -23,6 +23,62 @@
 #include "includes.h"
 #include "vfs_posix.h"
 #include "system/time.h"
+#include "librpc/gen_ndr/ndr_xattr.h"
+
+
+/*
+  add a single DOS EA
+*/
+static NTSTATUS pvfs_setfileinfo_ea_set(struct pvfs_state *pvfs, 
+					struct pvfs_filename *name,
+					int fd, struct ea_struct *ea)
+{
+	struct xattr_DosEAs *ealist = talloc_p(pvfs, struct xattr_DosEAs);
+	int i;
+	NTSTATUS status;
+
+	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	/* load the current list */
+	status = pvfs_doseas_load(pvfs, name, fd, ealist);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* see if its already there */
+	for (i=0;i<ealist->num_eas;i++) {
+		if (StrCaseCmp(ealist->eas[i].name, ea->name.s) == 0) {
+			ealist->eas[i].value = ea->value;
+			goto save;
+		}
+	}
+
+	/* add it */
+	ealist->eas = talloc_realloc_p(ealist, ealist->eas, struct xattr_EA, ealist->num_eas+1);
+	if (ealist->eas == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ealist->eas[i].name = ea->name.s;
+	ealist->eas[i].value = ea->value;
+	ealist->num_eas++;
+	
+save:
+	status = pvfs_doseas_save(pvfs, name, fd, ealist);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	name->dos.ea_size = 4;
+	for (i=0;i<ealist->num_eas;i++) {
+		name->dos.ea_size += 4 + strlen(ealist->eas[i].name)+1 + 
+			ealist->eas[i].value.length;
+	}
+
+	/* update the ea_size attrib */
+	return pvfs_dosattrib_save(pvfs, name, fd);
+}
 
 /*
   set info on a open file
@@ -76,6 +132,9 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 			unix_to_nt_time(&newstats.dos.write_time, info->setattre.in.write_time);
 		}
   		break;
+
+	case RAW_SFILEINFO_EA_SET:
+		return pvfs_setfileinfo_ea_set(pvfs, f->name, f->fd, &info->ea_set.in.ea);
 
 	case RAW_SFILEINFO_BASIC_INFO:
 	case RAW_SFILEINFO_BASIC_INFORMATION:
@@ -165,13 +224,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	*f->name = newstats;
 
-#if HAVE_XATTR_SUPPORT
-	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
-		return pvfs_xattr_save(pvfs, f->name, f->fd);
-	}
-#endif
-
-	return NT_STATUS_OK;
+	return pvfs_dosattrib_save(pvfs, f->name, f->fd);
 }
 
 
@@ -226,6 +279,9 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 			unix_to_nt_time(&newstats.dos.write_time, info->setattre.in.write_time);
 		}
   		break;
+
+	case RAW_SFILEINFO_EA_SET:
+		return pvfs_setfileinfo_ea_set(pvfs, name, -1, &info->ea_set.in.ea);
 
 	case RAW_SFILEINFO_BASIC_INFO:
 	case RAW_SFILEINFO_BASIC_INFORMATION:
@@ -296,12 +352,6 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 
 	*name = newstats;
 
-#if HAVE_XATTR_SUPPORT
-	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
-		return pvfs_xattr_save(pvfs, name, -1);
-	}
-#endif
-
-	return NT_STATUS_OK;
+	return pvfs_dosattrib_save(pvfs, name, -1);
 }
 

@@ -522,6 +522,12 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		flags &= ~LIBNDR_FLAG_STR_ASCII;
 	}
 
+	if (flags & LIBNDR_FLAG_STR_UTF8) {
+		chset = CH_UTF8;
+		byte_mul = 1;
+		flags &= ~LIBNDR_FLAG_STR_UTF8;
+	}
+
 	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
 	flags &= ~LIBNDR_FLAG_STR_CHARLEN;
 
@@ -762,6 +768,12 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		flags &= ~LIBNDR_FLAG_STR_ASCII;
 	}
 
+	if (flags & LIBNDR_FLAG_STR_UTF8) {
+		chset = CH_UTF8;
+		byte_mul = 1;
+		flags &= ~LIBNDR_FLAG_STR_UTF8;
+	}
+
 	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
 
 	if (flags & LIBNDR_FLAG_STR_CHARLEN) {
@@ -902,7 +914,7 @@ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
 	
 	c_len = s?strlen_m(s):0;
 
-	if (flags & LIBNDR_FLAG_STR_ASCII) {
+	if (flags & (LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_UTF8)) {
 		byte_mul = 1;
 	}
 
