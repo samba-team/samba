@@ -117,7 +117,7 @@
 #endif
 
 #ifndef _PATH_VARRUN
-#deifne _PATH_VARRUN "/var/run/"
+#define _PATH_VARRUN "/var/run/"
 #endif
 
 #ifndef MAXPATHLEN
