@@ -793,11 +793,10 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
         return WINBINDD_OK;
 }
 
-/* Initialise user supplementary groups.  This function is not documented in 
-   the glibc documentation.  If not defined in the nss module a compatability 
-   call that uses {set,get,end}grent() to achieve the same thing is run. */
+/* Get user supplementary groups.  This is much quicker than trying to
+   invert the groups database. */
 
-enum winbindd_result winbindd_initgroups(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 {
 	fstring name_domain, name_user, name;
 	DOM_SID user_sid;
@@ -809,7 +808,7 @@ enum winbindd_result winbindd_initgroups(struct winbindd_cli_state *state)
 	gid_t *gid_list;
 	int i;
 	
-	DEBUG(3, ("[%5d]: initgroups %s\n", state->pid,
+	DEBUG(3, ("[%5d]: getgroups %s\n", state->pid,
 		  state->request.data.username));
 
 	if (state == NULL) return WINBINDD_ERROR;

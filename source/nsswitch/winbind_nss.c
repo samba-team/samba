@@ -773,7 +773,7 @@ _nss_winbind_initgroups(char *user, gid_t group, long int *start,
 	strncpy(request.data.username, user,
 		sizeof(request.data.username) - 1);
 
-	ret = winbindd_request(WINBINDD_INITGROUPS, &request, &response);
+	ret = winbindd_request(WINBINDD_GETGROUPS, &request, &response);
 
 	if (ret == NSS_STATUS_SUCCESS) {
 		int num_gids = response.data.num_entries;
