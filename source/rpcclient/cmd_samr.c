@@ -1431,7 +1431,8 @@ static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli,
 				      flags, num_rids, rids,
 				      &num_names, &names, &name_types);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED))
 		goto done;
 
 	/* Display results */
