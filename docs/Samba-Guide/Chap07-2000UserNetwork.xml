@@ -1148,7 +1148,7 @@ index default               sub
 <smbconfoption><name>name resolve order</name><value>wins bcast hosts</value></smbconfoption>
 <smbconfoption><name>time server</name><value>Yes</value></smbconfoption>
 <smbconfoption><name>printcap name</name><value>CUPS</value></smbconfoption>
-<smbconfoption><name>add user script</name><value>/var/lib/samba/sbin/smbldap-useradd.pl -a -m '%u'</value></smbconfoption>
+<smbconfoption><name>add user script</name><value>/var/lib/samba/sbin/smbldap-useradd.pl -m '%u'</value></smbconfoption>
 <smbconfoption><name>delete user script</name><value>/var/lib/samba/sbin/smbldap-userdel.pl '%u'</value></smbconfoption>
 <smbconfoption><name>add group script</name><value>/var/lib/samba/sbin/smbldap-groupadd.pl -p '%g'</value></smbconfoption>
 <smbconfoption><name>delete group script</name><value>/var/lib/samba/sbin/smbldap-groupdel.pl '%g'</value></smbconfoption>
