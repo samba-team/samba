@@ -699,8 +699,30 @@ struct response_record *queue_query_name( struct subnet_record *subrec,
 					  subrec->bcast_ip)) == NULL)
     return NULL;
 
-  if(initiate_name_query_packet( p ) == False)
-  {
+  if(lp_bind_interfaces_only()) {
+    int i;
+
+    DEBUG(10,("queue_query_name: bind_interfaces_only is set, looking for suitable source IP\n"));
+    for(i = 0; i < iface_count(); i++) {
+      struct in_addr *ifip = iface_n_ip(i);
+
+      if(ifip == NULL) {
+        DEBUG(0,("queue_query_name: interface %d has NULL IP address !\n", i));
+        continue;
+      }
+
+      if (ip_equal(*ifip,loopback_ip)) {
+        DEBUG(5,("queue_query_name: ignoring loopback interface (%d)\n", i));
+        continue;
+      }
+
+      DEBUG(10,("queue_query_name: using source IP %s\n",inet_ntoa(*ifip)));
+      p->fd = find_subnet_fd_for_address( *ifip );
+      break;
+    }
+  }
+
+  if(initiate_name_query_packet( p ) == False) {
     p->locked = False;
     free_packet(p);
     return NULL;
