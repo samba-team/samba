@@ -255,6 +255,7 @@ int event_loop_wait(struct event_context *ev)
 	time_t t;
 
 	ZERO_STRUCT(ev->exit);
+	ev->maxfd = EVENT_INVALID_MAXFD;
 
 	t = time(NULL);
 

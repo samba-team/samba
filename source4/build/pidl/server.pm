@@ -108,11 +108,22 @@ static NTSTATUS $name\_op_init_server(struct dcesrv_context *dce_ctx, const stru
 
 static BOOL $name\_op_interface_by_uuid(struct dcesrv_interface *iface, const char *uuid, uint32 if_version)
 {
+	if (strcmp($name\_interface.ndr->name, name)==0) {
+		memcpy(iface,&$name\_interface, sizeof(*iface);
+		return True;
+	}
+
 	return False;	
 }
 
 static BOOL $name\_op_interface_by_name(struct dcesrv_interface *iface, const char *name)
 {
+	if ($name\_interface.ndr->if_version == if_version &&
+		strcmp($name\_interface.ndr->uuid, uuid)==0) {
+		memcpy(iface,&$name\_interface, sizeof(*iface);
+		return True;
+	}
+
 	return False;	
 }
 	
