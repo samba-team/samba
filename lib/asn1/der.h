@@ -26,7 +26,9 @@ enum {
      UT_GeneralString = 27
 };
 
+#ifndef HAVE_TIMEGM
 time_t timegm (struct tm *);
+#endif
 
 void time2generalizedtime (time_t t, octet_string *s);
 
