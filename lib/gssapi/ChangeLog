@@ -1,3 +1,8 @@
+2003-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* verify_mic.c (verify_mic_des3): always check if the mic is the
+	correct mic or the mic that old heimdal would have generated
+	
 2003-04-28  Jacques Vidrine  <nectar@kth.se>
 
 	* verify_mic.c (verify_mic_des3): If MIC verification fails,
