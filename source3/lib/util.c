@@ -1140,8 +1140,18 @@ something really nasty happened - panic!
 void smb_panic(char *why)
 {
 	char *cmd = lp_panic_action();
+	int result;
+
 	if (cmd && *cmd) {
-		system(cmd);
+		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmd));
+		result = system(cmd);
+
+		if (result == -1)
+			DEBUG(0, ("smb_panic(): fork failed in panic action: %s\n",
+				  strerror(errno)));
+		else
+			DEBUG(0, ("smb_panic(): action returned status %d\n",
+				  WEXITSTATUS(result)));
 	}
 	DEBUG(0,("PANIC: %s\n", why));
 	dbgflush();
