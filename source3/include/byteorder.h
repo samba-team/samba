@@ -128,6 +128,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 
 
 #if CAREFUL_ALIGNMENT
+
 #define SVAL(buf,pos) (PVAL(buf,pos)|PVAL(buf,(pos)+1)<<8)
 #define IVAL(buf,pos) (SVAL(buf,pos)|SVAL(buf,(pos)+2)<<16)
 #define SSVALX(buf,pos,val) (CVAL(buf,pos)=(val)&0xFF,CVAL(buf,pos+1)=(val)>>8)
@@ -138,7 +139,9 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define SIVAL(buf,pos,val) SIVALX((buf),(pos),((uint32)(val)))
 #define SSVALS(buf,pos,val) SSVALX((buf),(pos),((int16)(val)))
 #define SIVALS(buf,pos,val) SIVALX((buf),(pos),((int32)(val)))
+
 #else
+
 /* this handles things for architectures like the 386 that can handle
    alignment errors */
 /*
@@ -157,6 +160,11 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define SIVAL(buf,pos,val) IVAL(buf,pos)=((uint32)(val))
 #define SSVALS(buf,pos,val) SVALS(buf,pos)=((int16)(val))
 #define SIVALS(buf,pos,val) IVALS(buf,pos)=((int32)(val))
+
+#endif
+
+
+/* macros for reading / writing arrays */
 
 #define SMBMACRO(macro,buf,pos,val,len,size) \
 { int l; for (l = 0; l < (len); l++) (val)[l] = macro((buf), (pos) + (size)*l); }
@@ -180,8 +188,6 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define PSSVALS(buf,pos,val,len) SSMBMACRO(SSVALS,buf,pos,val,len,2)
 #define PSIVALS(buf,pos,val,len) SSMBMACRO(SIVALS,buf,pos,val,len,4)
 
-#endif
-
 
 /* now the reverse routines - these are used in nmb packets (mostly) */
 #define SREV(x) ((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
@@ -191,3 +197,4 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define RIVAL(buf,pos) IREV(IVAL(buf,pos))
 #define RSSVAL(buf,pos,val) SSVAL(buf,pos,SREV(val))
 #define RSIVAL(buf,pos,val) SIVAL(buf,pos,IREV(val))
+
