@@ -10,7 +10,7 @@ include_HEADERS = \
 	asn1.h asn1_err.h bits.h cache.h config_file.h des.h error.h \
 	getarg.h gssapi.h hdb.h hdb_asn1.h hdb_err.h heim_err.h kafs.h \
 	keytab.h krb5.h krb5_err.h md4.h md5.h otp.h parse_time.h \
-	parse_units.h roken.h sha.h sl.h store.h @EXTRA_HEADERS@
+	parse_units.h roken.h sha.h sl.h store.h @EXTRA_HDRS@
 
 EXTRA_HEADERS = err.h
 

@@ -89,8 +89,8 @@ AC_CHECK_HEADERS(sys/utsname.h sys/wait.h syslog.h termio.h)
 AC_CHECK_HEADERS(termios.h tmpdir.h unistd.h util.h utmp.h utmpx.h)
 
 if test "$ac_cv_header_err_h" = no; then
-	EXTRA_HEADERS="$EXTRA_HEADERS err.h"
-	AC_SUBST(EXTRA_HEADERS)
+	EXTRA_HDRS="$EXTRA_HDRS err.h"
+	AC_SUBST(EXTRA_HDRS)
 fi
 
 dnl Checks for libraries.
