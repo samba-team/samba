@@ -206,7 +206,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		if (lm_key) {
 			memcpy(lm_key, base->LMSessKey.key, 8);
 		}
-	} else if (samlogon_state->creds->negotiate_flags) {
+	} else if (samlogon_state->creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 		static const char zeros[16];
 			
 		if (memcmp(base->key.key, zeros,  
@@ -968,7 +968,7 @@ static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	E_deshash(plain_pass, pinfo.lmpassword.hash);
 	E_md4hash(plain_pass, pinfo.ntpassword.hash);
 
-	if (creds->negotiate_flags) {
+	if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 		creds_arcfour_crypt(creds, pinfo.lmpassword.hash, 16);
 		creds_arcfour_crypt(creds, pinfo.ntpassword.hash, 16);
 	} else {
@@ -1022,7 +1022,6 @@ BOOL torture_rpc_samlogon(void)
 		return False;
 	}
 
-
 	if (!test_SetupCredentials(p, mem_ctx, 
 				    TEST_MACHINE_NAME, machine_pass, &creds)) {
 		ret = False;
@@ -1041,11 +1040,37 @@ BOOL torture_rpc_samlogon(void)
 		return False;
 	}
 
+	if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
+		ret = False;
+	}
+
 	if (!test_SamLogon(p, mem_ctx, &creds)) {
 		ret = False;
 	}
 
+	if (!test_SetupCredentials2(p, mem_ctx, NETLOGON_NEG_ARCFOUR,
+				    TEST_MACHINE_NAME, machine_pass, &creds)) {
+		return False;
+	}
+
 	if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
+		ret = False;
+	}
+
+	if (!test_SamLogon(p, mem_ctx, &creds)) {
+		ret = False;
+	}
+
+	if (!test_SetupCredentials2(p, mem_ctx, NETLOGON_NEG_ARCFOUR | NETLOGON_NEG_128BIT,
+				    TEST_MACHINE_NAME, machine_pass, &creds)) {
+		return False;
+	}
+
+	if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
+		ret = False;
+	}
+
+	if (!test_SamLogon(p, mem_ctx, &creds)) {
 		ret = False;
 	}
 
@@ -1054,11 +1079,11 @@ BOOL torture_rpc_samlogon(void)
 		return False;
 	}
 
-	if (!test_SamLogon(p, mem_ctx, &creds)) {
+	if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
 		ret = False;
 	}
 
-	if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
+	if (!test_SamLogon(p, mem_ctx, &creds)) {
 		ret = False;
 	}
 
@@ -1067,11 +1092,11 @@ BOOL torture_rpc_samlogon(void)
 		return False;
 	}
 
-	if (!test_SamLogon(p, mem_ctx, &creds)) {
+	if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
 		ret = False;
 	}
 
-	if (!test_InteractiveLogon(p, mem_ctx, &creds)) {
+	if (!test_SamLogon(p, mem_ctx, &creds)) {
 		ret = False;
 	}
 
