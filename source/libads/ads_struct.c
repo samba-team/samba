@@ -103,6 +103,8 @@ static char *find_ldap_server(ADS_STRUCT *ads)
 {
 	char *list = NULL;
 
+	if (!ads->realm) return NULL;
+
 	if (ldap_domain2hostlist(ads->realm, &list) == LDAP_SUCCESS) {
 		char *p;
 		p = strchr(list, ':');
@@ -149,6 +151,7 @@ ADS_STRUCT *ads_init(const char *realm,
 		if (!ads->realm[0]) {
 			ads->realm = get_default_realm(ads);
 		}
+		if (!ads->realm) ads->realm = strdup("");
 	}
 	if (!ads->bind_path) {
 		ads->bind_path = ads_build_dn(ads->realm);
