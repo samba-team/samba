@@ -1787,8 +1787,10 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
   if (num_params > total_params || num_data > total_data)
 	  exit_server("invalid params in reply_trans2");
 
-  memcpy( params, smb_base(inbuf) + SVAL(inbuf, smb_psoff), num_params);
-  memcpy( data, smb_base(inbuf) + SVAL(inbuf, smb_dsoff), num_data);
+  if(params)
+    memcpy( params, smb_base(inbuf) + SVAL(inbuf, smb_psoff), num_params);
+  if(data)
+    memcpy( data, smb_base(inbuf) + SVAL(inbuf, smb_dsoff), num_data);
 
   if(num_data_sofar < total_data || num_params_sofar < total_params)
     {
@@ -1812,8 +1814,10 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
               else
                 DEBUG(0,("reply_trans2: %s in getting secondary trans2 response.\n",
                          (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
-	      free(params);
-	      free(data);
+              if(params)
+                free(params);
+              if(data)
+                free(data);
 	      return(ERROR(ERRSRV,ERRerror));
 	    }
       
