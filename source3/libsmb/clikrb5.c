@@ -74,7 +74,8 @@
  int create_kerberos_key_from_string(krb5_context context,
 					krb5_principal host_princ,
 					krb5_data *password,
-					krb5_keyblock *key)
+					krb5_keyblock *key,
+					krb5_enctype enctype)
 {
 	int ret;
 	krb5_data salt;
@@ -85,14 +86,15 @@
 		DEBUG(1,("krb5_principal2salt failed (%s)\n", error_message(ret)));
 		return ret;
 	}
-	krb5_use_enctype(context, &eblock, ENCTYPE_DES_CBC_MD5);
+	krb5_use_enctype(context, &eblock, enctype);
 	return krb5_string_to_key(context, &eblock, key, password, &salt);
 }
 #elif defined(HAVE_KRB5_GET_PW_SALT) && defined(HAVE_KRB5_STRING_TO_KEY_SALT)
  int create_kerberos_key_from_string(krb5_context context,
 					krb5_principal host_princ,
 					krb5_data *password,
-					krb5_keyblock *key)
+					krb5_keyblock *key,
+					krb5_enctype enctype)
 {
 	int ret;
 	krb5_salt salt;
@@ -102,11 +104,39 @@
 		DEBUG(1,("krb5_get_pw_salt failed (%s)\n", error_message(ret)));
 		return ret;
 	}
-	return krb5_string_to_key_salt(context, ENCTYPE_DES_CBC_MD5, password->data,
+	return krb5_string_to_key_salt(context, enctype, password->data,
 		salt, key);
 }
 #else
  __ERROR_XX_UNKNOWN_CREATE_KEY_FUNCTIONS
+#endif
+
+#if defined(HAVE_KRB5_GET_PERMITTED_ENCTYPES)
+krb5_error_code get_kerberos_allowed_etypes(krb5_context context, 
+					    krb5_enctype **enctypes)
+{
+	return krb5_get_permitted_enctypes(context, enctypes);
+}
+#elif defined(HAVE_KRB5_GET_DEFAULT_IN_TKT_ETYPES)
+krb5_error_code get_kerberos_allowed_etypes(krb5_context context, 
+					    krb5_enctype **enctypes)
+{
+	return krb5_get_default_in_tkt_etypes(context, enctypes);
+}
+#else
+ __ERROR_XX_UNKNOWN_GET_ENCTYPES_FUNCTIONS
+#endif
+
+#if defined(HAVE_KRB5_FREE_KTYPES)
+void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes)
+{
+	return krb5_free_ktypes(context, enctypes);
+}
+#else
+void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes)
+{
+	return free(enctypes);
+}
 #endif
 
 #if defined(HAVE_KRB5_AUTH_CON_SETKEY) && !defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY)
