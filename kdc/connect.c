@@ -199,6 +199,14 @@ struct descr {
     char addr_string[128];
 };
 
+static void
+init_descr(struct descr *d)
+{
+    memset(d, 0, sizeof(*d));
+    d->sa = (struct sockaddr *)&d->__ss;
+    d->s = -1;
+}
+
 /*
  * Create the socket (family, type, port) in `d'
  */
@@ -211,9 +219,7 @@ init_socket(struct descr *d, krb5_address *a, int family, int type, int port)
     struct sockaddr *sa = (struct sockaddr *)&__ss;
     int sa_size;
 
-    memset(d, 0, sizeof(*d));
-    d->sa = (struct sockaddr *)&d->__ss;
-    d->s = -1;
+    init_descr (d);
 
     ret = krb5_addr2sockaddr (a, sa, &sa_size, port);
     if (ret) {
@@ -734,7 +740,7 @@ loop(void)
 		d = tmp;
 		memset(d + ndescr, 0, 4 * sizeof(*d));
 		for(i = ndescr; i < ndescr + 4; i++)
-		    d[i].s = -1;
+		    init_descr (&d[i]);
 		min_free = ndescr;
 		ndescr += 4;
 	    }
