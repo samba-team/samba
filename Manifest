@@ -1,4 +1,4 @@
-Copyright (C) 1997 - Samba-Team
+Copyright (C) 1997-1998 - Samba-Team
 
 The Samba package you have just unpacked contains the following:
 
@@ -7,7 +7,7 @@ Directory	Notes:
 docs		(Samba Documentation):
 --------------------------------------
 
-	The Samba documentation for 1.9.17 has had some of its content
+	The Samba documentation for 1.9.18 has had some of its content
 	updated and a new structure has been put in place. However, since
 	this is all rather new the documentation format of previous
 	versions will remain in place. 
@@ -42,7 +42,7 @@ examples	(Example configuration files):
 
 packaging	(Only for those wishing to build binary distributions):
 -----------------------------------------------------------------------
-	Currently support is included only for RedHat Linux. We hope that
+	Currently support is included for RedHat Linux and SGI. We hope that
 	other Unix OS vendors will contribute their binary distribution
 	packaging control files - and we hope to make their binary packages
 	available on the master ftp site under:
