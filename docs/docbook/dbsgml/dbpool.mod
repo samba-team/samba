@@ -7,7 +7,7 @@
      Corporation, and the Organization for the Advancement of
      Structured Information Standards (OASIS).
 
-     $Id: dbpool.mod,v 1.1 2001/02/26 13:35:47 jerry Exp $
+     $Id: dbpool.mod,v 1.1.2.1 2001/02/28 19:05:00 jerry Exp $
 
      Permission to use, copy, modify and distribute the DocBook DTD and
      its accompanying documentation for any purpose and without fee is
