@@ -10,7 +10,9 @@ NAME-TYPE ::= INTEGER {
 	KRB5_NT_SRV_HST(3),	-- Service with host name as instance
 	KRB5_NT_SRV_XHST(4),	-- Service with host as remaining components
 	KRB5_NT_UID(5),		-- Unique ID
-	KRB5_NT_X500_PRINCIPAL(6) -- PKINIT
+	KRB5_NT_X500_PRINCIPAL(6), -- PKINIT
+	KRB5_NT_SMTP_NAME(7),	-- Name in form of SMTP email name
+	KRB5_NT_ENTERPRISE(10)	-- May be mapped to principal name
 }
 
 -- message types
