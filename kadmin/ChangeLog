@@ -1,5 +1,8 @@
 1999-06-23  Assar Westerlund  <assar@sics.se>
 
+	* version4.c (kadm_ser_cpw): read the key in the strange order
+ 	it's sent
+
 	* util.c (edit_entry): look at default
 	(edit_time): always set mask even if value == 0
 
