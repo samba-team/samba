@@ -4525,7 +4525,25 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 	 */
 	if ( (in_value_len==0) && (in_data_len==0) ) {
 		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
-		
+
+		/*
+		 * NT can ask for a specific parameter size - we need to return NO_MORE_ITEMS
+		 * if this parameter size doesn't exist.
+		 * Ok - my opinion here is that the client is not asking for the greatest
+		 * possible size of all the parameters, but is asking specifically for the size needed
+		 * for this specific parameter. In that case we can remove the loop below and
+		 * simplify this lookup code considerably. JF - comments welcome. JRA.
+		 */
+
+		if (!get_specific_param_by_index(*printer, 2, idx, value, &data, &type, &data_len)) {
+			safe_free(data);
+			free_a_printer(&printer, 2);
+			return ERROR_NO_MORE_ITEMS;
+		}
+
+		safe_free(data);
+		data = NULL;
+
 		param_index=0;
 		biggest_valuesize=0;
 		biggest_datasize=0;
@@ -4537,6 +4555,7 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 			DEBUG(6,("current values: [%d], [%d]\n", biggest_valuesize, biggest_datasize));
 
 			safe_free(data);
+			data = NULL;
 			param_index++;
 		}
 
