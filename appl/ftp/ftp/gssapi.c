@@ -52,7 +52,7 @@ gss_init(void *app_data)
 {
     struct gss_data *d = app_data;
     d->context_hdl = GSS_C_NO_CONTEXT;
-    d->delegated_cred_handle = NULL;
+    d->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 #if defined(FTP_SERVER)
     return 0;
 #else
@@ -184,15 +184,6 @@ gss_adat(void *app_data, void *buf, size_t len)
     input_token.value = buf;
     input_token.length = len;
 
-    d->delegated_cred_handle = malloc(sizeof(*d->delegated_cred_handle));
-    if (d->delegated_cred_handle == NULL) {
-	reply(500, "Out of memory");
-	goto out;
-    }
-
-    memset ((char*)d->delegated_cred_handle, 0,
-	    sizeof(*d->delegated_cred_handle));
-    
     maj_stat = gss_accept_sec_context (&min_stat,
 				       &d->context_hdl,
 				       GSS_C_NO_CREDENTIAL,
