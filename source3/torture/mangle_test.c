@@ -22,7 +22,7 @@
 
 static TDB_CONTEXT *tdb;
 
-#define NAME_LENGTH 30
+#define NAME_LENGTH 20
 
 static unsigned total, collisions;
 
@@ -61,6 +61,24 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 		return False;
 	}
 
+	/* recreate by short name */
+	fnum = cli_open(cli, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum == -1) {
+		printf("open2 of %s failed (%s)\n", name2, cli_errstr(cli));
+		return False;
+	}
+	if (!cli_close(cli, fnum)) {
+		printf("close of %s failed (%s)\n", name, cli_errstr(cli));
+		return False;
+	}
+
+	/* and unlink by long name */
+	if (!cli_unlink(cli, name)) {
+		printf("unlink2 of %s  (%s) failed (%s)\n", 
+		       name, name2, cli_errstr(cli));
+		return False;
+	}
+
 	/* see if the short name is already in the tdb */
 	data = tdb_fetch_by_string(tdb, shortname);
 	if (data.dptr) {
@@ -83,7 +101,7 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 
 static void gen_name(char *name)
 {
-	const char *chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz._-$~";
+	const char *chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz._-$~...";
 	unsigned max_idx = strlen(chars);
 	unsigned len;
 	int i;
@@ -102,6 +120,19 @@ static void gen_name(char *name)
 
 	if (strcmp(p, ".") == 0 || strcmp(p, "..") == 0) {
 		p[0] = '_';
+	}
+
+	/* have a high probability of a common lead char */
+	if (random() % 2 == 0) {
+		p[0] = 'A';
+	}
+
+	/* and a high probability of a good extension length */
+	if (random() % 2 == 0) {
+		char *s = strrchr(p, '.');
+		if (s) {
+			s[4] = 0;
+		}
 	}
 }
 
