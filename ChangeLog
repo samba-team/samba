@@ -1,5 +1,9 @@
 Fri Mar 14 05:06:44 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/krb5/get_in_tkt.c: Fix some memory leaks.
+
+	* lib/krb5/krbhst.c: Properly free hostlist.
+
 	* lib/krb5/decrypt.c: CRCs are 32 bits.
 
 Fri Mar 14 04:39:15 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
