@@ -709,9 +709,7 @@ static BOOL run_netbench(int client)
 	}
 	fclose(f);
 
-	slprintf(fname,sizeof(fname), "clients/client%d", client);
-	rmdir(fname);
-	rmdir("clients");
+	nb_cleanup();
 
 	if (!torture_close_connection(&cli)) {
 		correct = False;
