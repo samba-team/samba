@@ -181,6 +181,24 @@ sub has_property($$)
 	return $e->{PROPERTIES}->{$p};
 }
 
+#####################################################################
+# see if a pidl property matches a value
+sub property_matches($$$)
+{
+	my($e) = shift;
+	my($p) = shift;
+	my($v) = shift;
+
+	if (!defined has_property($e, $p)) {
+		return undef;
+	}
+
+	if ($e->{PROPERTIES}->{$p} =~ /$v/) {
+		return 1;
+	}
+
+	return undef;
+}
 
 sub is_scalar_type($)
 {
