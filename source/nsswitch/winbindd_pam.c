@@ -190,13 +190,59 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	/* do password magic */
 	
-	generate_random_buffer(chal, 8);
-	SMBencrypt(state->request.data.auth.pass, chal, local_lm_response);
-		
-	SMBNTencrypt(state->request.data.auth.pass, chal, local_nt_response);
 
-	lm_resp = data_blob_talloc(mem_ctx, local_lm_response, sizeof(local_lm_response));
-	nt_resp = data_blob_talloc(mem_ctx, local_nt_response, sizeof(local_nt_response));
+	generate_random_buffer(chal, 8);
+	if (lp_client_ntlmv2_auth()) {
+		DATA_BLOB server_chal;
+		DATA_BLOB names_blob;
+		DATA_BLOB nt_response;
+		DATA_BLOB lm_response;
+		server_chal = data_blob_talloc(mem_ctx, chal, 8); 
+		
+		/* note that the 'workgroup' here is a best guess - we don't know
+		   the server's domain at this point.  The 'server name' is also
+		   dodgy... 
+		*/
+		names_blob = NTLMv2_generate_names_blob(global_myname(), lp_workgroup());
+		
+		if (!SMBNTLMv2encrypt(name_user, name_domain, 
+				      state->request.data.auth.pass, 
+				      &server_chal, 
+				      &names_blob,
+				      &lm_response, &nt_response, NULL)) {
+			data_blob_free(&names_blob);
+			data_blob_free(&server_chal);
+			DEBUG(0, ("winbindd_pam_auth: SMBNTLMv2encrypt() failed!\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		data_blob_free(&names_blob);
+		data_blob_free(&server_chal);
+		lm_resp = data_blob_talloc(mem_ctx, lm_response.data, lm_response.length);
+		nt_resp = data_blob_talloc(mem_ctx, nt_response.data, nt_response.length);
+		data_blob_free(&lm_response);
+		data_blob_free(&nt_response);
+
+	} else {
+		if (lp_client_lanman_auth() 
+		    && SMBencrypt(state->request.data.auth.pass, 
+				  chal, 
+				  local_lm_response)) {
+			lm_resp = data_blob_talloc(mem_ctx, 
+						   local_lm_response, 
+						   sizeof(local_lm_response));
+		} else {
+			lm_resp = data_blob(NULL, 0);
+		}
+		SMBNTencrypt(state->request.data.auth.pass, 
+			     chal,
+			     local_nt_response);
+
+		nt_resp = data_blob_talloc(mem_ctx, 
+					   local_nt_response, 
+					   sizeof(local_nt_response));
+	}
+
 	
 	/* what domain should we contact? */
 	
