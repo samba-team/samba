@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
 #include "librpc/gen_ndr/ndr_echo.h"
-#include "events.h"
+#include "lib/events/events.h"
 
 
 static NTSTATUS echo_AddOne(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_AddOne *r)

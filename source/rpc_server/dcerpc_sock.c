@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "events.h"
+#include "lib/events/events.h"
 #include "rpc_server/dcerpc_server.h"
 #include "smbd/service_stream.h"
 
