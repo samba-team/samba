@@ -212,7 +212,7 @@ mcc_set_flags(krb5_context context,
     return 0; /* XXX */
 }
 		    
-krb5_cc_ops mcc_ops = {
+krb5_cc_ops krb5_mcc_ops = {
     "MEMORY",
     mcc_get_name,
     mcc_resolve,
