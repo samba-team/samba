@@ -20,6 +20,7 @@ libgssapi_la_SOURCES =				\
 	decapsulate.c				\
 	delete_sec_context.c			\
 	display_name.c				\
+	display_status.c			\
 	duplicate_name.c			\
 	encapsulate.c				\
 	export_name.c				\
