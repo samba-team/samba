@@ -36,7 +36,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	time_t last_change_time;
         uint32 smb_uid_low;
         NET_USER_INFO_3 info3;
-        struct cli_state *cli;
+        struct cli_state *cli = NULL;
 	uchar chal[8];
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB lm_resp;
@@ -57,6 +57,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	if (!parse_domain_user(state->request.data.auth.user, name_domain, 
 			       name_user)) {
 		DEBUG(5,("no domain seperator (%s) in username (%s) - failing fauth\n", lp_winbind_separator(), state->request.data.auth.user));
+		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
 	}
 
@@ -64,6 +65,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		
 	if (!*state->request.data.auth.pass) {
 		return WINBINDD_ERROR;
+		talloc_destroy(mem_ctx);
 	} else {
 		unsigned char local_lm_response[24];
 		unsigned char local_nt_response[24];
@@ -85,6 +87,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
                 lp_workgroup(), trust_passwd, &last_change_time)) {
 		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account "
                           "password for domain %s\n", lp_workgroup()));
+		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
 	}
 
@@ -110,7 +113,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	uni_group_cache_store_netlogon(mem_ctx, &info3);
 done:
 
-	cli_shutdown(cli);
+	if (cli) 
+		cli_shutdown(cli);
 
 	talloc_destroy(mem_ctx);
 	
@@ -125,7 +129,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
         NET_USER_INFO_3 info3;
-        struct cli_state *cli;
+        struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx;
 
 	DATA_BLOB lm_resp, nt_resp;
@@ -151,6 +155,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
                 lp_workgroup(), trust_passwd, &last_change_time)) {
 		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account "
                           "password for domain %s\n", lp_workgroup()));
+		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
 	}
 
@@ -173,7 +178,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 done:
 	talloc_destroy(mem_ctx);
 
-	cli_shutdown(cli);
+	if (cli)
+		cli_shutdown(cli);
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
