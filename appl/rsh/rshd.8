@@ -1,8 +1,6 @@
-.\" Things to fix:
-.\"   * remove Op from mandatory flags
-.\"   * use better macros for arguments (like .Pa for files)
+.\" $Id$
 .\"
-.Dd July 31, 2001
+.Dd November 22, 2002
 .Dt RSHD 8
 .Os HEIMDAL
 .Sh NAME
@@ -43,7 +41,10 @@ configuration.
 .Fl -encrypt
 .Xc
 For Kerberos 4 this means that the connections are encrypted. Kerberos
-5 will negotiate encryption inline. This option implies
+5 can negotiate encryption even without this option, but if it's
+present
+.Nm
+will deny unencrypted connections. This option implies
 .Fl k .
 .\".It Xo
 .\".Fl l ,
