@@ -210,8 +210,8 @@ BOOL get_any_dc_name(const char *domain, char *srv_name);
 /*The following definitions come from  libsmb/credentials.c  */
 
 char *credstr(const uchar *cred);
-void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
-		      uchar session_key[8]);
+void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, const char *pass,
+		      const uchar session_key[8]);
 void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp, 
 		 DOM_CHAL *cred);
 int cred_assert(const DOM_CHAL *cred, uchar session_key[8],

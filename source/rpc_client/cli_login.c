@@ -59,7 +59,7 @@ uint32 cli_nt_setup_creds(const char *srv_name,
 	/**************** Long-term Session key **************/
 
 	/* calculate the session key */
-	cred_session_key(&clnt_chal, &srv_chal, (char *)trust_pwd, sess_key);
+	cred_session_key(&clnt_chal, &srv_chal, trust_pwd, sess_key);
 	bzero(sess_key + 8, 8);
 
 	/******************* Authenticate 2 ********************/

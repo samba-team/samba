@@ -18,6 +18,9 @@
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef gid_t
 
+/* Define if you have a working `mmap' system call.  */
+#undef HAVE_MMAP
+
 /* Define if your struct stat has st_rdev.  */
 #undef HAVE_ST_RDEV
 
@@ -112,6 +115,7 @@
 #undef WITH_PROFILE
 #undef WITH_SSL
 #undef WITH_LDAP
+#undef WITH_TDBSURS
 #undef WITH_NISPLUS
 #undef WITH_NISPLUS_HOME
 #undef WITH_AUTOMOUNT
@@ -150,15 +154,16 @@
 #undef WITH_LIBNMB
 #undef WITH_LIBSAMBA
 #undef WITH_LIBSMB
+#undef WITH_LIBSURS
 #undef WITH_LIBSMBPW
 #undef WITH_LIBUBIQX
-
-#undef WITH_NT5LDAP
 
 #undef USE_SETEUID
 #undef USE_SETRESUID
 #undef USE_SETREUID
 #undef USE_SETUIDX
+
+#undef WITH_NT5LDAP
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT

@@ -46,8 +46,8 @@ Input: 8 byte challenge block
 Output:
       8 byte session key
 ****************************************************************************/
-void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
-		      uchar session_key[8])
+void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, const char *pass,
+		      const uchar session_key[8])
 {
 	uint32 sum[2];
 	unsigned char sum2[8];

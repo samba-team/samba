@@ -222,8 +222,16 @@ BOOL surs_algdomonly_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid,
 
 /*The following definitions come from  lib/sursalgnt5ldap.c  */
 
-BOOL surs_nt5ldap_sam_sid_to_unixid(LDAPDB *hds, DOM_SID *sid, uint32 type, uint32 *id);
-BOOL surs_nt5ldap_unixid_to_sam_sid(LDAPDB *hds, uint32 id, uint32 type, DOM_SID *sid,
+BOOL surs_nt5ldap_sam_sid_to_unixid(LDAPDB *hds, DOM_SID * sid, uint32 type,
+				    uint32 * id, BOOL create);
+BOOL surs_nt5ldap_unixid_to_sam_sid(LDAPDB *hds, uint32 id, uint32 type,
+				    DOM_SID * sid, BOOL create);
+
+/*The following definitions come from  lib/surstdb.c  */
+
+BOOL surs_tdb_sam_sid_to_unixid(DOM_SID * sid, uint32 type, uint32 * id,
+				BOOL create);
+BOOL surs_tdb_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID * sid,
 				BOOL create);
 
 /*The following definitions come from  lib/system.c  */
@@ -744,8 +752,8 @@ BOOL get_any_dc_name(const char *domain, char *srv_name);
 /*The following definitions come from  libsmb/credentials.c  */
 
 char *credstr(const uchar *cred);
-void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
-		      uchar session_key[8]);
+void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, const char *pass,
+		      const uchar session_key[8]);
 void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp, 
 		 DOM_CHAL *cred);
 int cred_assert(const DOM_CHAL *cred, uchar session_key[8],
