@@ -1390,7 +1390,6 @@ NTSTATUS _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN
 	SAM_ACCOUNT *sampass=NULL;
 	DOM_SID sid;
 	POLICY_HND domain_pol = q_u->domain_pol;
-	uint32 user_rid = q_u->user_rid;
 	POLICY_HND *user_pol = &r_u->user_pol;
 	struct samr_info *info = NULL;
 	BOOL ret;
@@ -1401,27 +1400,27 @@ NTSTATUS _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN
 	if (!find_policy_by_hnd(p, &domain_pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
+	/* Get the domain SID stored in the domain policy */
+	if(!get_lsa_policy_samr_sid(p, &domain_pol, &sid))
+		return NT_STATUS_INVALID_HANDLE;
+
+	/* append the user's RID to it */
+	if(!sid_append_rid(&sid, q_u->user_rid))
+		return NT_STATUS_NO_SUCH_USER;
+
 	pdb_init_sam(&sampass);
 
 	become_root();
-	ret=pdb_getsampwrid(sampass, user_rid);
+	ret=pdb_getsampwsid(sampass, &sid);
 	unbecome_root();
 
-	/* check that the RID exists in our domain. */
+	/* check that the SID exists in our domain. */
 	if (ret == False) {
 		pdb_free_sam(&sampass);
         	return NT_STATUS_NO_SUCH_USER;
 	}
 
 	pdb_free_sam(&sampass);
-
-	/* Get the domain SID stored in the domain policy */
-	if(!get_lsa_policy_samr_sid(p, &domain_pol, &sid))
-		return NT_STATUS_INVALID_HANDLE;
-
-	/* append the user's RID to it */
-	if(!sid_append_rid(&sid, user_rid))
-		return NT_STATUS_NO_SUCH_USER;
 
 	/* associate the user's SID with the new handle. */
 	if ((info = get_samr_info_by_sid(&sid)) == NULL)
@@ -1438,7 +1437,7 @@ NTSTATUS _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN
  get_user_info_10. Safe. Only gives out acb bits.
  *************************************************************************/
 
-static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
+static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, DOM_SID *user_sid)
 {
 	SAM_ACCOUNT *smbpass=NULL;
 	BOOL ret;
@@ -1446,11 +1445,11 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 	pdb_init_sam(&smbpass);
 
 	become_root();
-	ret = pdb_getsampwrid(smbpass, user_rid);
+	ret = pdb_getsampwsid(smbpass, user_sid);
 	unbecome_root();
 
 	if (ret==False) {
-		DEBUG(4,("User 0x%x not found\n", user_rid));
+		DEBUG(4,("User %s not found\n", sid_string_static(user_sid)));
 		pdb_free_sam(&smbpass);
 		return False;
 	}
@@ -1471,7 +1470,7 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
  user. JRA. 
  *************************************************************************/
 
-static NTSTATUS get_user_info_12(pipes_struct *p, SAM_USER_INFO_12 * id12, uint32 user_rid)
+static NTSTATUS get_user_info_12(pipes_struct *p, SAM_USER_INFO_12 * id12, DOM_SID *user_sid)
 {
 	SAM_ACCOUNT *smbpass=NULL;
 	BOOL ret;
@@ -1487,10 +1486,10 @@ static NTSTATUS get_user_info_12(pipes_struct *p, SAM_USER_INFO_12 * id12, uint3
 	 */
 	pdb_init_sam(&smbpass);
 
-	ret = pdb_getsampwrid(smbpass, user_rid);
+	ret = pdb_getsampwsid(smbpass, user_sid);
 
 	if (ret == False) {
-		DEBUG(4, ("User 0x%x not found\n", user_rid));
+		DEBUG(4, ("User %s not found\n", sid_string_static(user_sid)));
 		pdb_free_sam(&smbpass);
 		return (geteuid() == (uid_t)0) ? NT_STATUS_NO_SUCH_USER : NT_STATUS_ACCESS_DENIED;
 	}
@@ -1514,7 +1513,7 @@ static NTSTATUS get_user_info_12(pipes_struct *p, SAM_USER_INFO_12 * id12, uint3
  get_user_info_20
  *************************************************************************/
 
-static BOOL get_user_info_20(SAM_USER_INFO_20 *id20, uint32 user_rid)
+static BOOL get_user_info_20(SAM_USER_INFO_20 *id20, DOM_SID *user_sid)
 {
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
@@ -1522,11 +1521,11 @@ static BOOL get_user_info_20(SAM_USER_INFO_20 *id20, uint32 user_rid)
 	pdb_init_sam(&sampass);
 
 	become_root();
-	ret = pdb_getsampwrid(sampass, user_rid);
+	ret = pdb_getsampwsid(sampass, user_sid);
 	unbecome_root();
 
 	if (ret == False) {
-		DEBUG(4,("User 0x%x not found\n", user_rid));
+		DEBUG(4,("User %s not found\n", sid_string_static(user_sid)));
 		pdb_free_sam(&sampass);
 		return False;
 	}
@@ -1547,7 +1546,7 @@ static BOOL get_user_info_20(SAM_USER_INFO_20 *id20, uint32 user_rid)
  get_user_info_21
  *************************************************************************/
 
-static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
+static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, DOM_SID *user_sid)
 {
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
@@ -1555,11 +1554,11 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 	pdb_init_sam(&sampass);
 
 	become_root();
-	ret = pdb_getsampwrid(sampass, user_rid);
+	ret = pdb_getsampwsid(sampass, user_sid);
 	unbecome_root();
 
 	if (ret == False) {
-		DEBUG(4,("User 0x%x not found\n", user_rid));
+		DEBUG(4,("User %s not found\n", sid_string_static(user_sid)));
 		pdb_free_sam(&sampass);
 		return False;
 	}
@@ -1583,7 +1582,6 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_QUERY_USERINFO *r_u)
 {
 	SAM_USERINFO_CTR *ctr;
-	uint32 rid = 0;
 	struct samr_info *info = NULL;
 
 	r_u->status=NT_STATUS_OK;
@@ -1595,9 +1593,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 	if (!sid_check_is_in_our_domain(&info->sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	sid_peek_rid(&info->sid, &rid);
-
-	DEBUG(5,("_samr_query_userinfo: rid:0x%x\n", rid));
+	DEBUG(5,("_samr_query_userinfo: sid:%s\n", sid_string_static(&info->sid)));
 
 	ctr = (SAM_USERINFO_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_USERINFO_CTR));
 	if (!ctr)
@@ -1614,7 +1610,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 		if (ctr->info.id10 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		if (!get_user_info_10(ctr->info.id10, rid))
+		if (!get_user_info_10(ctr->info.id10, &info->sid))
 			return NT_STATUS_NO_SUCH_USER;
 		break;
 
@@ -1649,7 +1645,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 		if (ctr->info.id12 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		if (NT_STATUS_IS_ERR(r_u->status = get_user_info_12(p, ctr->info.id12, rid)))
+		if (NT_STATUS_IS_ERR(r_u->status = get_user_info_12(p, ctr->info.id12, &info->sid)))
 			return r_u->status;
 		break;
 
@@ -1657,7 +1653,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 		ctr->info.id20 = (SAM_USER_INFO_20 *)talloc_zero(p->mem_ctx,sizeof(SAM_USER_INFO_20));
 		if (ctr->info.id20 == NULL)
 			return NT_STATUS_NO_MEMORY;
-		if (!get_user_info_20(ctr->info.id20, rid))
+		if (!get_user_info_20(ctr->info.id20, &info->sid))
 			return NT_STATUS_NO_SUCH_USER;
 		break;
 
@@ -1665,7 +1661,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 		ctr->info.id21 = (SAM_USER_INFO_21 *)talloc_zero(p->mem_ctx,sizeof(SAM_USER_INFO_21));
 		if (ctr->info.id21 == NULL)
 			return NT_STATUS_NO_MEMORY;
-		if (!get_user_info_21(ctr->info.id21, rid))
+		if (!get_user_info_21(ctr->info.id21, &info->sid))
 			return NT_STATUS_NO_SUCH_USER;
 		break;
 
@@ -1689,7 +1685,6 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	SAM_ACCOUNT *sam_pass=NULL;
 	DOM_GID *gids = NULL;
 	int num_groups = 0;
-	uint32 rid;
 	struct samr_info *info = NULL;
 	BOOL ret;
 
@@ -1716,12 +1711,10 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	if (!sid_check_is_in_our_domain(&info->sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	sid_peek_rid(&info->sid, &rid);
-
 	pdb_init_sam(&sam_pass);
 
 	become_root();
-	ret = pdb_getsampwrid(sam_pass, rid);
+	ret = pdb_getsampwsid(sam_pass, &info->sid);
 	unbecome_root();
 
 	if (ret == False) {
@@ -2223,14 +2216,14 @@ NTSTATUS _api_samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OP
  set_user_info_10
  ********************************************************************/
 
-static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, uint32 rid)
+static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, DOM_SID *sid)
 {
 	SAM_ACCOUNT *pwd =NULL;
 	BOOL ret;
 	
 	pdb_init_sam(&pwd);
 	
-	ret = pdb_getsampwrid(pwd, rid);
+	ret = pdb_getsampwsid(pwd, sid);
 	
 	if(ret==False) {
 		pdb_free_sam(&pwd);
@@ -2262,13 +2255,13 @@ static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, uint32 rid)
  set_user_info_12
  ********************************************************************/
 
-static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
+static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, DOM_SID *sid)
 {
 	SAM_ACCOUNT *pwd = NULL;
 
 	pdb_init_sam(&pwd);
 
-	if(!pdb_getsampwrid(pwd, rid)) {
+	if(!pdb_getsampwsid(pwd, sid)) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
@@ -2305,7 +2298,7 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
  set_user_info_21
  ********************************************************************/
 
-static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
+static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, DOM_SID *sid)
 {
 	SAM_ACCOUNT *pwd = NULL;
  
@@ -2316,7 +2309,7 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
  
 	pdb_init_sam(&pwd);
  
-	if (!pdb_getsampwrid(pwd, rid)) {
+	if (!pdb_getsampwsid(pwd, sid)) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
@@ -2345,7 +2338,7 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
  set_user_info_23
  ********************************************************************/
 
-static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
+static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, DOM_SID *sid)
 {
 	SAM_ACCOUNT *pwd = NULL;
 	pstring plaintext_buf;
@@ -2359,7 +2352,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
  
  	pdb_init_sam(&pwd);
  
-	if (!pdb_getsampwrid(pwd, rid)) {
+	if (!pdb_getsampwsid(pwd, sid)) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -2412,7 +2405,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
  set_user_info_pw
  ********************************************************************/
 
-static BOOL set_user_info_pw(char *pass, uint32 rid)
+static BOOL set_user_info_pw(char *pass, DOM_SID *sid)
 {
 	SAM_ACCOUNT *pwd = NULL;
 	uint32 len;
@@ -2421,7 +2414,7 @@ static BOOL set_user_info_pw(char *pass, uint32 rid)
  
  	pdb_init_sam(&pwd);
  
-	if (!pdb_getsampwrid(pwd, rid)) {
+	if (!pdb_getsampwsid(pwd, sid)) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -2480,7 +2473,6 @@ static BOOL set_user_info_pw(char *pass, uint32 rid)
 
 NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SET_USERINFO *r_u)
 {
-	uint32 rid = 0x0;
 	DOM_SID sid;
 	POLICY_HND *pol = &q_u->pol;
 	uint16 switch_value = q_u->switch_value;
@@ -2494,9 +2486,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	if (!get_lsa_policy_samr_sid(p, pol, &sid))
 		return NT_STATUS_INVALID_HANDLE;
 
-	sid_split_rid(&sid, &rid);
-
-	DEBUG(5, ("_samr_set_userinfo: rid:0x%x, level:%d\n", rid, switch_value));
+	DEBUG(5, ("_samr_set_userinfo: sid:%s, level:%d\n", sid_string_static(&sid), switch_value));
 
 	if (ctr == NULL) {
 		DEBUG(5, ("_samr_set_userinfo: NULL info level\n"));
@@ -2506,7 +2496,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	switch (switch_value) {
 		case 0x12:
-			if (!set_user_info_12(ctr->info.id12, rid))
+			if (!set_user_info_12(ctr->info.id12, &sid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 
@@ -2515,7 +2505,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 			dump_data(100, (char *)ctr->info.id24->pass, 516);
 
-			if (!set_user_info_pw((char *)ctr->info.id24->pass, rid))
+			if (!set_user_info_pw((char *)ctr->info.id24->pass, &sid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 
@@ -2533,7 +2523,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 			dump_data(100, (char *)ctr->info.id25->pass, 532);
 
-			if (!set_user_info_pw(ctr->info.id25->pass, rid))
+			if (!set_user_info_pw(ctr->info.id25->pass, &sid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 #endif
@@ -2544,7 +2534,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 			dump_data(100, (char *)ctr->info.id23->pass, 516);
 
-			if (!set_user_info_23(ctr->info.id23, rid))
+			if (!set_user_info_23(ctr->info.id23, &sid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 
@@ -2562,7 +2552,6 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SET_USERINFO2 *r_u)
 {
 	DOM_SID sid;
-	uint32 rid = 0x0;
 	SAM_USERINFO_CTR *ctr = q_u->ctr;
 	POLICY_HND *pol = &q_u->pol;
 	uint16 switch_value = q_u->switch_value;
@@ -2575,9 +2564,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	if (!get_lsa_policy_samr_sid(p, pol, &sid))
 		return NT_STATUS_INVALID_HANDLE;
 
-	sid_split_rid(&sid, &rid);
-
-	DEBUG(5, ("samr_reply_set_userinfo2: rid:0x%x\n", rid));
+	DEBUG(5, ("samr_reply_set_userinfo2: sid:%s\n", sid_string_static(&sid)));
 
 	if (ctr == NULL) {
 		DEBUG(5, ("samr_reply_set_userinfo2: NULL info level\n"));
@@ -2589,16 +2576,16 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	switch (switch_value) {
 		case 21:
-			if (!set_user_info_21(ctr->info.id21, rid))
+			if (!set_user_info_21(ctr->info.id21, &sid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 		case 16:
-			if (!set_user_info_10(ctr->info.id10, rid))
+			if (!set_user_info_10(ctr->info.id10, &sid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 		case 18:
 			/* Used by AS/U JRA. */
-			if (!set_user_info_12(ctr->info.id12, rid))
+			if (!set_user_info_12(ctr->info.id12, &sid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 		default:
@@ -2886,7 +2873,6 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	struct passwd *pwd;
 	struct group *grp;
 	fstring grp_name;
-	uint32 rid;
 	GROUP_MAP map;
 	NTSTATUS ret;
 	SAM_ACCOUNT *sam_user = NULL;
@@ -2914,13 +2900,11 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 			return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
-	sid_split_rid(&q_u->sid.sid, &rid);
-	
 	ret = pdb_init_sam(&sam_user);
 	if (NT_STATUS_IS_ERR(ret))
 		return ret;
 	
-	check = pdb_getsampwrid(sam_user, rid);
+	check = pdb_getsampwsid(sam_user, &q_u->sid.sid);
 	
 	if (check != True) {
 		pdb_free_sam(&sam_user);
@@ -2974,7 +2958,6 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	fstring alias_sid_str;
 	struct group *grp;
 	fstring grp_name;
-	uint32 rid;
 	GROUP_MAP map;
 	SAM_ACCOUNT *sam_pass=NULL;
 
@@ -3000,11 +2983,9 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	/* we need to copy the name otherwise it's overloaded in user_in_group_list */
 	fstrcpy(grp_name, grp->gr_name);
 
-	sid_peek_rid(&q_u->sid.sid, &rid);
-
 	/* check if the user exists before trying to remove it from the group */
 	pdb_init_sam(&sam_pass);
-	if(!pdb_getsampwrid(sam_pass, rid)) {
+	if(!pdb_getsampwsid(sam_pass, &q_u->sid.sid)) {
 		DEBUG(5,("_samr_del_aliasmem:User %s doesn't exist.\n", pdb_get_username(sam_pass)));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
@@ -3035,6 +3016,7 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_ADD_GROUPMEM *r_u)
 {
 	DOM_SID group_sid;
+	DOM_SID user_sid;
 	fstring group_sid_str;
 	struct passwd *pwd;
 	struct group *grp;
@@ -3060,11 +3042,14 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	if(!get_domain_group_from_sid(group_sid, &map, MAPPING_WITHOUT_PRIV))
 		return NT_STATUS_NO_SUCH_GROUP;
 
+	sid_copy(&user_sid, &global_sam_sid);
+	sid_append_rid(&user_sid, q_u->rid);
+
 	ret = pdb_init_sam(&sam_user);
 	if (NT_STATUS_IS_ERR(ret))
 		return ret;
 	
-	check = pdb_getsampwrid(sam_user, q_u->rid);
+	check = pdb_getsampwsid(sam_user, &user_sid);
 	
 	if (check != True) {
 		pdb_free_sam(&sam_user);
@@ -3117,8 +3102,8 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DEL_GROUPMEM *r_u)
 {
 	DOM_SID group_sid;
+	DOM_SID user_sid;
 	SAM_ACCOUNT *sam_pass=NULL;
-	uint32 rid;
 	GROUP_MAP map;
 	fstring grp_name;
 	struct group *grp;
@@ -3136,7 +3121,8 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	if(!sid_check_is_in_our_domain(&group_sid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	rid=q_u->rid;
+	sid_copy(&user_sid, &global_sam_sid);
+	sid_append_rid(&user_sid, q_u->rid);
 
 	if(!get_domain_group_from_sid(group_sid, &map, MAPPING_WITHOUT_PRIV))
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -3149,7 +3135,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 
 	/* check if the user exists before trying to remove it from the group */
 	pdb_init_sam(&sam_pass);
-	if(!pdb_getsampwrid(sam_pass, rid)) {
+	if(!pdb_getsampwsid(sam_pass, &user_sid)) {
 		DEBUG(5,("User %s doesn't exist.\n", pdb_get_username(sam_pass)));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
@@ -3200,7 +3186,6 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 {
 	DOM_SID user_sid;
 	SAM_ACCOUNT *sam_pass=NULL;
-	uint32 rid;
 
 	DEBUG(5, ("_samr_delete_dom_user: %d\n", __LINE__));
 
@@ -3211,11 +3196,9 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	if (!sid_check_is_in_our_domain(&user_sid))
 		return NT_STATUS_CANNOT_DELETE;
 
-	sid_peek_rid(&user_sid, &rid);
-
 	/* check if the user exists before trying to delete */
 	pdb_init_sam(&sam_pass);
-	if(!pdb_getsampwrid(sam_pass, rid)) {
+	if(!pdb_getsampwsid(sam_pass, &user_sid)) {
 		DEBUG(5,("_samr_delete_dom_user:User %s doesn't exist.\n", pdb_get_username(sam_pass)));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
