@@ -706,7 +706,7 @@ static struct parm_struct parm_table[] = {
 	{"admin users", P_STRING, P_LOCAL, &sDefault.szAdminUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"read list", P_STRING, P_LOCAL, &sDefault.readlist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"write list", P_STRING, P_LOCAL, &sDefault.writelist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
-	{"printer admin", P_STRING, P_GLOBAL, &Globals.szPrinterAdmin, NULL, NULL, FLAG_GLOBAL},
+	{"printer admin", P_STRING, P_GLOBAL, &Globals.szPrinterAdmin, NULL, NULL, FLAG_GLOBAL|FLAG_DOS_STRING},
 	{"force user", P_STRING, P_LOCAL, &sDefault.force_user, NULL, NULL, FLAG_SHARE},
 	{"force group", P_STRING, P_LOCAL, &sDefault.force_group, NULL, NULL, FLAG_SHARE},
 	{"group", P_STRING, P_LOCAL, &sDefault.force_group, NULL, NULL, 0},
