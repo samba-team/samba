@@ -143,14 +143,16 @@ static int TimeZoneFaster(time_t t)
     zone = TimeZone(t);
     tdt = (struct dst_table *)Realloc(dst_table,
 					      sizeof(dst_table[0])*(i+1));
-	if (!tdt) {
-		DEBUG(0,("TimeZoneFaster: out of memory!\n"));
-		if (dst_table)
-			free(dst_table);
-		table_size = 0;
-	} else {
-      table_size++;
+    if (!tdt) {
+      DEBUG(0,("TimeZoneFaster: out of memory!\n"));
+      if (dst_table)
+        free(dst_table);
+      table_size = 0;
+    } else {
 
+      dst_table = tdt;
+      table_size++;
+    
       dst_table[i].zone = zone; 
       dst_table[i].start = dst_table[i].end = t;
     
