@@ -39,6 +39,8 @@ extern int DEBUGLEVEL;
 extern connection_struct Connections[];
 extern files_struct Files[];
 
+static struct shmem_ops *shmops;
+
 /* share mode record pointed to in shared memory hash bucket */
 typedef struct
 {
@@ -65,7 +67,7 @@ static int read_only;
   ******************************************************************/
 static BOOL shm_stop_share_mode_mgmt(void)
 {
-   return smb_shm_close();
+   return shmops->close();
 }
 
 /*******************************************************************
@@ -73,7 +75,7 @@ static BOOL shm_stop_share_mode_mgmt(void)
   ******************************************************************/
 static BOOL shm_lock_share_entry(int cnum, uint32 dev, uint32 inode, int *ptok)
 {
-  return smb_shm_lock_hash_entry(HASH_ENTRY(dev, inode));
+  return shmops->lock_hash_entry(HASH_ENTRY(dev, inode));
 }
 
 /*******************************************************************
@@ -81,7 +83,7 @@ static BOOL shm_lock_share_entry(int cnum, uint32 dev, uint32 inode, int *ptok)
   ******************************************************************/
 static BOOL shm_unlock_share_entry(int cnum, uint32 dev, uint32 inode, int token)
 {
-  return smb_shm_unlock_hash_entry(HASH_ENTRY(dev, inode));
+  return shmops->unlock_hash_entry(HASH_ENTRY(dev, inode));
 }
 
 /*******************************************************************
@@ -112,7 +114,7 @@ static int shm_get_share_modes(int cnum, int token, uint32 dev, uint32 inode,
     return 0;
   }
 
-  mode_array = (int *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+  mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
   
   if(mode_array[hash_entry] == NULL_OFFSET)
   {
@@ -120,7 +122,7 @@ static int shm_get_share_modes(int cnum, int token, uint32 dev, uint32 inode,
     return 0;
   }
 
-  file_scanner_p = (share_mode_record *)smb_shm_offset2addr(mode_array[hash_entry]);
+  file_scanner_p = (share_mode_record *)shmops->offset2addr(mode_array[hash_entry]);
   file_prev_p = file_scanner_p;
   while(file_scanner_p)
   {
@@ -132,7 +134,7 @@ static int shm_get_share_modes(int cnum, int token, uint32 dev, uint32 inode,
     else
     {
       file_prev_p = file_scanner_p ;
-      file_scanner_p = (share_mode_record *)smb_shm_offset2addr(
+      file_scanner_p = (share_mode_record *)shmops->offset2addr(
                                     file_scanner_p->next_offset);
     }
   }
@@ -153,7 +155,7 @@ bucket %d\n", file_scanner_p->locking_version, dev, inode, hash_entry));
       mode_array[hash_entry] = file_scanner_p->next_offset;
     else
       file_prev_p->next_offset = file_scanner_p->next_offset;
-    smb_shm_free(smb_shm_addr2offset(file_scanner_p));
+    shmops->free(shmops->addr2offset(file_scanner_p));
     return (0);
   }
 
@@ -172,7 +174,7 @@ bucket %d\n", file_scanner_p->locking_version, dev, inode, hash_entry));
 
   num_entries_copied = 0;
   
-  entry_scanner_p = (shm_share_mode_entry*)smb_shm_offset2addr(
+  entry_scanner_p = (shm_share_mode_entry*)shmops->offset2addr(
                                            file_scanner_p->share_mode_entries);
   entry_prev_p = entry_scanner_p;
   while(entry_scanner_p)
@@ -189,7 +191,7 @@ bucket %d\n", file_scanner_p->locking_version, dev, inode, hash_entry));
       {
         /* We are at start of list */
         file_scanner_p->share_mode_entries = entry_scanner_p->next_share_mode_entry;
-        entry_scanner_p = (shm_share_mode_entry*)smb_shm_offset2addr(
+        entry_scanner_p = (shm_share_mode_entry*)shmops->offset2addr(
                                            file_scanner_p->share_mode_entries);
         entry_prev_p = entry_scanner_p;
       }
@@ -197,7 +199,7 @@ bucket %d\n", file_scanner_p->locking_version, dev, inode, hash_entry));
       {
         entry_prev_p->next_share_mode_entry = entry_scanner_p->next_share_mode_entry;
         entry_scanner_p = (shm_share_mode_entry*)
-                           smb_shm_offset2addr(entry_scanner_p->next_share_mode_entry);
+                           shmops->offset2addr(entry_scanner_p->next_share_mode_entry);
       }
       /* Decrement the number of share mode entries on this share mode record */
       file_scanner_p->num_share_mode_entries -= 1;
@@ -217,7 +219,7 @@ bucket %d (number of entries now = %d)\n",
             pid, share_mode, dev, inode, hash_entry,
             file_scanner_p->num_share_mode_entries));
 
-      smb_shm_free(smb_shm_addr2offset(delete_entry_p));
+      shmops->free(shmops->addr2offset(delete_entry_p));
     } 
     else
     {
@@ -235,7 +237,7 @@ bucket %d (number of entries now = %d)\n",
 record mode 0x%X pid=%d\n", entry_scanner_p->e.share_mode, entry_scanner_p->e.pid));
        entry_prev_p = entry_scanner_p;
        entry_scanner_p = (shm_share_mode_entry *)
-                           smb_shm_offset2addr(entry_scanner_p->next_share_mode_entry);
+                           shmops->offset2addr(entry_scanner_p->next_share_mode_entry);
     }
   }
   
@@ -253,7 +255,7 @@ hash bucket %d has a share mode record but no entries - deleting\n",
       mode_array[hash_entry] = file_scanner_p->next_offset;
     else
       file_prev_p->next_offset = file_scanner_p->next_offset;
-    smb_shm_free(smb_shm_addr2offset(file_scanner_p));
+    shmops->free(shmops->addr2offset(file_scanner_p));
   }
 
   DEBUG(5,("get_share_modes (FAST_SHARE_MODES): file with dev %d, inode %d in \
@@ -291,7 +293,7 @@ static void shm_del_share_mode(int token, int fnum)
     return;
   }
 
-  mode_array = (int *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+  mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
  
   if(mode_array[hash_entry] == NULL_OFFSET)
   {  
@@ -300,7 +302,7 @@ static void shm_del_share_mode(int token, int fnum)
     return;
   }  
   
-  file_scanner_p = (share_mode_record *)smb_shm_offset2addr(mode_array[hash_entry]);
+  file_scanner_p = (share_mode_record *)shmops->offset2addr(mode_array[hash_entry]);
   file_prev_p = file_scanner_p;
 
   while(file_scanner_p)
@@ -314,7 +316,7 @@ static void shm_del_share_mode(int token, int fnum)
     {
       file_prev_p = file_scanner_p ;
       file_scanner_p = (share_mode_record *)
-                        smb_shm_offset2addr(file_scanner_p->next_offset);
+                        shmops->offset2addr(file_scanner_p->next_offset);
     }
   }
     
@@ -334,12 +336,12 @@ record due to old locking version %d for file dev %d, inode %d hash bucket %d\n"
       mode_array[hash_entry] = file_scanner_p->next_offset;
     else
       file_prev_p->next_offset = file_scanner_p->next_offset;
-    smb_shm_free(smb_shm_addr2offset(file_scanner_p));
+    shmops->free(shmops->addr2offset(file_scanner_p));
     return;
   }
 
   found = False;
-  entry_scanner_p = (shm_share_mode_entry*)smb_shm_offset2addr(
+  entry_scanner_p = (shm_share_mode_entry*)shmops->offset2addr(
                                          file_scanner_p->share_mode_entries);
   entry_prev_p = entry_scanner_p;
   while(entry_scanner_p)
@@ -355,7 +357,7 @@ record due to old locking version %d for file dev %d, inode %d hash bucket %d\n"
     {
       entry_prev_p = entry_scanner_p;
       entry_scanner_p = (shm_share_mode_entry *)
-                          smb_shm_offset2addr(entry_scanner_p->next_share_mode_entry);
+                          shmops->offset2addr(entry_scanner_p->next_share_mode_entry);
     }
   } 
 
@@ -372,7 +374,7 @@ Deleting share mode entry dev = %d, inode = %d in hash bucket %d (num entries no
       file_scanner_p->share_mode_entries = entry_scanner_p->next_share_mode_entry;
     else
       entry_prev_p->next_share_mode_entry = entry_scanner_p->next_share_mode_entry;
-    smb_shm_free(smb_shm_addr2offset(entry_scanner_p));
+    shmops->free(shmops->addr2offset(entry_scanner_p));
 
     /* PARANOIA TEST */
     if(file_scanner_p->num_share_mode_entries < 0)
@@ -392,7 +394,7 @@ record dev = %d, inode = %d in hash bucket %d\n", dev, inode, hash_entry));
         mode_array[hash_entry] = file_scanner_p->next_offset;
       else
         file_prev_p->next_offset = file_scanner_p->next_offset;
-      smb_shm_free(smb_shm_addr2offset(file_scanner_p));
+      shmops->free(shmops->addr2offset(file_scanner_p));
     }
   }
   else
@@ -430,9 +432,9 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
     return False;
   }
 
-  mode_array = (int *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+  mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
 
-  file_scanner_p = (share_mode_record *)smb_shm_offset2addr(mode_array[hash_entry]);
+  file_scanner_p = (share_mode_record *)shmops->offset2addr(mode_array[hash_entry]);
   file_prev_p = file_scanner_p;
   
   while(file_scanner_p)
@@ -446,7 +448,7 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
     {
       file_prev_p = file_scanner_p ;
       file_scanner_p = (share_mode_record *)
-                         smb_shm_offset2addr(file_scanner_p->next_offset);
+                         shmops->offset2addr(file_scanner_p->next_offset);
     }
   }
   
@@ -454,14 +456,14 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
   {
     /* We must create a share_mode_record */
     share_mode_record *new_mode_p = NULL;
-    int new_offset = smb_shm_alloc( sizeof(share_mode_record) +
+    int new_offset = shmops->alloc( sizeof(share_mode_record) +
                                         strlen(fs_p->name) + 1);
     if(new_offset == NULL_OFFSET)
     {
-      DEBUG(0,("ERROR:set_share_mode (FAST_SHARE_MODES): smb_shm_alloc fail !\n"));
+      DEBUG(0,("ERROR:set_share_mode (FAST_SHARE_MODES): shmops->alloc fail !\n"));
       return False;
     }
-    new_mode_p = smb_shm_offset2addr(new_offset);
+    new_mode_p = shmops->offset2addr(new_offset);
     new_mode_p->locking_version = LOCKING_VERSION;
     new_mode_p->st_dev = dev;
     new_mode_p->st_ino = inode;
@@ -480,19 +482,19 @@ inode %d in hash bucket %d\n", fs_p->name, dev, inode, hash_entry));
   }
  
   /* Now create the share mode entry */ 
-  new_entry_offset = smb_shm_alloc( sizeof(shm_share_mode_entry));
+  new_entry_offset = shmops->alloc( sizeof(shm_share_mode_entry));
   if(new_entry_offset == NULL_OFFSET)
   {
     int delete_offset = mode_array[hash_entry];
-    DEBUG(0,("ERROR:set_share_mode (FAST_SHARE_MODES): smb_shm_alloc fail 1!\n"));
+    DEBUG(0,("ERROR:set_share_mode (FAST_SHARE_MODES): shmops->alloc fail 1!\n"));
     /* Unlink the damaged record */
     mode_array[hash_entry] = file_scanner_p->next_offset;
     /* And delete it */
-    smb_shm_free( delete_offset );
+    shmops->free( delete_offset );
     return False;
   }
 
-  new_entry_p = smb_shm_offset2addr(new_entry_offset);
+  new_entry_p = shmops->offset2addr(new_entry_offset);
 
   new_entry_p->e.pid = getpid();
   new_entry_p->e.share_mode = fs_p->share_mode;
@@ -552,7 +554,7 @@ static BOOL shm_remove_share_oplock(int fnum, int token)
     return False;
   }
 
-  mode_array = (int *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+  mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
 
   if(mode_array[hash_entry] == NULL_OFFSET)
   {
@@ -561,7 +563,7 @@ static BOOL shm_remove_share_oplock(int fnum, int token)
     return False;
   } 
     
-  file_scanner_p = (share_mode_record *)smb_shm_offset2addr(mode_array[hash_entry]);
+  file_scanner_p = (share_mode_record *)shmops->offset2addr(mode_array[hash_entry]);
   file_prev_p = file_scanner_p;
     
   while(file_scanner_p)
@@ -575,7 +577,7 @@ static BOOL shm_remove_share_oplock(int fnum, int token)
     {
       file_prev_p = file_scanner_p ;
       file_scanner_p = (share_mode_record *)
-                        smb_shm_offset2addr(file_scanner_p->next_offset);
+                        shmops->offset2addr(file_scanner_p->next_offset);
     }
   } 
    
@@ -595,12 +597,12 @@ record due to old locking version %d for file dev %d, inode %d hash bucket %d\n"
       mode_array[hash_entry] = file_scanner_p->next_offset;
     else
       file_prev_p->next_offset = file_scanner_p->next_offset;
-    smb_shm_free(smb_shm_addr2offset(file_scanner_p));
+    shmops->free(shmops->addr2offset(file_scanner_p));
     return False;
   }
 
   found = False;
-  entry_scanner_p = (shm_share_mode_entry*)smb_shm_offset2addr(
+  entry_scanner_p = (shm_share_mode_entry*)shmops->offset2addr(
                                          file_scanner_p->share_mode_entries);
   entry_prev_p = entry_scanner_p;
   while(entry_scanner_p)
@@ -620,7 +622,7 @@ record due to old locking version %d for file dev %d, inode %d hash bucket %d\n"
     {
       entry_prev_p = entry_scanner_p;
       entry_scanner_p = (shm_share_mode_entry *)
-                          smb_shm_offset2addr(entry_scanner_p->next_share_mode_entry);
+                          shmops->offset2addr(entry_scanner_p->next_share_mode_entry);
     }
   } 
 
@@ -645,21 +647,21 @@ static int shm_share_forall(void (*fn)(share_mode_entry *, char *))
 	int *mode_array;
 	share_mode_record *file_scanner_p;
 
-	mode_array = (int *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+	mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
 
 	for( i = 0; i < lp_shmem_hash_size(); i++) {
-		smb_shm_lock_hash_entry(i);
+		shmops->lock_hash_entry(i);
 		if(mode_array[i] == NULL_OFFSET)  {
-			smb_shm_unlock_hash_entry(i);
+			shmops->unlock_hash_entry(i);
 			continue;
 		}
 
-		file_scanner_p = (share_mode_record *)smb_shm_offset2addr(mode_array[i]);
+		file_scanner_p = (share_mode_record *)shmops->offset2addr(mode_array[i]);
 		while((file_scanner_p != 0) && 
 		      (file_scanner_p->num_share_mode_entries != 0)) {
 			shm_share_mode_entry *entry_scanner_p = 
 				(shm_share_mode_entry *)
-				smb_shm_offset2addr(file_scanner_p->share_mode_entries);
+				shmops->offset2addr(file_scanner_p->share_mode_entries);
 
 			while(entry_scanner_p != 0) {
 				
@@ -668,14 +670,14 @@ static int shm_share_forall(void (*fn)(share_mode_entry *, char *))
 
 				entry_scanner_p = 
 					(shm_share_mode_entry *)
-					smb_shm_offset2addr(
+					shmops->offset2addr(
 							    entry_scanner_p->next_share_mode_entry);
 				count++;
 			} /* end while entry_scanner_p */
 			file_scanner_p = (share_mode_record *)
-				smb_shm_offset2addr(file_scanner_p->next_offset);
+				shmops->offset2addr(file_scanner_p->next_offset);
 		} /* end while file_scanner_p */
-		smb_shm_unlock_hash_entry(i);
+		shmops->unlock_hash_entry(i);
 	} /* end for */
 
 	return count;
@@ -689,7 +691,7 @@ static void shm_share_status(FILE *f)
 {
 	int bytes_free, bytes_used, bytes_overhead, bytes_total;
 
-	smb_shm_get_usage(&bytes_free, &bytes_used, &bytes_overhead);
+	shmops->get_usage(&bytes_free, &bytes_used, &bytes_overhead);
 	bytes_total = bytes_free + bytes_used + bytes_overhead;
 
 	fprintf(f, "Share mode memory usage (bytes):\n");
@@ -721,7 +723,12 @@ struct share_ops *locking_shm_init(int ronly)
 	pstring shmem_file_name;
 
 	read_only = ronly;
-   
+
+#ifdef USE_SYSV_IPC
+	shmops = sysv_shm_open(lp_shmem_size(), read_only);
+	if (shmops) return &share_ops;
+#endif
+
 	pstrcpy(shmem_file_name,lp_lockdir());
 	if (!directory_exist(shmem_file_name,NULL)) {
 		if (read_only) return NULL;
@@ -730,8 +737,9 @@ struct share_ops *locking_shm_init(int ronly)
 	trim_string(shmem_file_name,"","/");
 	if (!*shmem_file_name) return(False);
 	strcat(shmem_file_name, "/SHARE_MEM_FILE");
-	if (smb_shm_open(shmem_file_name, lp_shmem_size(), read_only))
-		return &share_ops;
+	shmops = smb_shm_open(shmem_file_name, lp_shmem_size(), read_only);
+	if (shmops) return &share_ops;
+
 	return NULL;
 }
 

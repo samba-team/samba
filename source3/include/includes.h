@@ -214,6 +214,9 @@ Here come some platform specific sections
 #include <dirent.h>
 #include <string.h>
 #include <sys/vfs.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
 #include <netinet/in.h>
 #ifndef NO_ASMSIGNALH
 #include <asm/signal.h>
@@ -233,6 +236,7 @@ Here come some platform specific sections
 #define HAVE_MEMMOVE
 #define USE_SIGPROCMASK
 #define USE_WAITPID
+#define USE_SYSV_IPC
 #if 0
 /* SETFS disabled until we can check on some bug reports */
 #if _LINUX_C_LIB_VERSION_MAJOR >= 5
@@ -293,6 +297,9 @@ typedef unsigned short mode_t;
 #include <sys/statvfs.h>
 #include <sys/filio.h>
 #include <sys/sockio.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
 #include <netinet/in_systm.h>
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
@@ -317,6 +324,7 @@ extern int innetgr (const char *, const char *, const char *, const char *);
 #define USE_STATVFS
 #define USE_GETCWD
 #define USE_SETSID
+#define USE_SYSV_IPC
 #ifndef REPLACE_GETPASS
 #define REPLACE_GETPASS
 #endif /* REPLACE_GETPASS */
@@ -548,6 +556,9 @@ char *mktemp(char *); /* No standard include */
 #include <sys/types.h>
 #include <sys/termios.h>
 #include <netinet/tcp.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
 #ifdef HPUX_10_TRUSTED
 #include <hpsecurity.h>
 #include <prot.h>
@@ -563,6 +574,7 @@ char *mktemp(char *); /* No standard include */
 #define USE_GETCWD
 #define USE_SETSID
 #define USE_SETRES
+#define USE_SYSV_IPC
 #define DEFAULT_PRINTING PRINT_HPUX
 /* Ken Weiss <krweiss@ucdavis.edu> tells us that SIGCLD_IGNORE is
    not good for HPUX */

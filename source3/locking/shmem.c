@@ -152,6 +152,136 @@ static BOOL smb_shm_global_unlock(void)
    
 }
 
+
+static void *smb_shm_offset2addr(int offset)
+{
+   if (offset == NULL_OFFSET )
+      return (void *)(0);
+   
+   if (!smb_shm_header_p)
+      return (void *)(0);
+   
+   return (void *)((char *)smb_shm_header_p + offset );
+}
+
+static int smb_shm_addr2offset(void *addr)
+{
+   if (!addr)
+      return NULL_OFFSET;
+   
+   if (!smb_shm_header_p)
+      return NULL_OFFSET;
+   
+   return (int)((char *)addr - (char *)smb_shm_header_p);
+}
+
+
+
+static int smb_shm_alloc(int size)
+{
+   unsigned num_cells ;
+   struct SmbShmBlockDesc *scanner_p;
+   struct SmbShmBlockDesc *prev_p;
+   struct SmbShmBlockDesc *new_p;
+   int result_offset;
+   
+   
+   if( !smb_shm_header_p )
+   {
+      /* not mapped yet */
+      DEBUG(0,("ERROR smb_shm_alloc : shmem not mapped\n"));
+      return NULL_OFFSET;
+   }
+   
+   smb_shm_global_lock();
+
+   if( !smb_shm_header_p->consistent)
+   {
+      DEBUG(0,("ERROR smb_shm_alloc : shmem not consistent\n"));
+      smb_shm_global_unlock();
+      return NULL_OFFSET;
+   }
+   
+   
+   /* calculate	the number of cells */
+   num_cells = (size + CellSize -1) / CellSize;
+
+   /* set start	of scan */
+   prev_p = (struct SmbShmBlockDesc *)smb_shm_offset2addr(smb_shm_header_p->first_free_off);
+   scanner_p =	prev_p ;
+   
+   /* scan the free list to find a matching free space */
+   while ( ( scanner_p != EOList_Addr ) && ( scanner_p->size < num_cells ) )
+   {
+      prev_p = scanner_p;
+      scanner_p = (struct SmbShmBlockDesc *)smb_shm_offset2addr(scanner_p->next);
+   }
+   
+   /* at this point scanner point to a block header or to the end of the list */
+   if ( scanner_p == EOList_Addr )	
+   {
+      DEBUG(0,("ERROR smb_shm_alloc : alloc of %d bytes failed, no free space found\n",size));
+      smb_shm_global_unlock();
+      return (NULL_OFFSET);
+   }
+   
+   /* going to modify shared mem */
+   smb_shm_header_p->consistent = False;
+   
+   /* if we found a good one : scanner == the good one */
+   if ( scanner_p->size <= num_cells + 2 )
+   {
+      /* there is no use in making a new one, it will be too small anyway 
+      *	 we will link out scanner
+      */
+      if ( prev_p == scanner_p )
+      {
+	 smb_shm_header_p->first_free_off = scanner_p->next ;
+      }
+      else
+      {
+	 prev_p->next = scanner_p->next ;
+      }
+      smb_shm_header_p->statistics.cells_free -= scanner_p->size;
+      smb_shm_header_p->statistics.cells_used += scanner_p->size;
+   }
+   else
+   {
+      /* Make a new one */
+      new_p = scanner_p + 1 + num_cells;
+      new_p->size = scanner_p->size - num_cells - 1;
+      new_p->next = scanner_p->next;
+      scanner_p->size = num_cells;
+      scanner_p->next = smb_shm_addr2offset(new_p);
+      
+      if ( prev_p	!= scanner_p )
+      {
+	 prev_p->next	   = smb_shm_addr2offset(new_p)  ;
+      }
+      else
+      {
+	 smb_shm_header_p->first_free_off = smb_shm_addr2offset(new_p)  ;
+      }
+      smb_shm_header_p->statistics.cells_free -= num_cells+1;
+      smb_shm_header_p->statistics.cells_used += num_cells;
+      smb_shm_header_p->statistics.cells_system += 1;
+   }
+
+   result_offset = smb_shm_addr2offset( &(scanner_p[1]) );
+   scanner_p->next =	SMB_SHM_NOT_FREE_OFF ;
+
+   /* end modification of shared mem */
+   smb_shm_header_p->consistent = True;
+
+   DEBUG(6,("smb_shm_alloc : request for %d bytes, allocated %d bytes at offset %d\n",size,scanner_p->size*CellSize,result_offset ));
+
+   smb_shm_global_unlock();
+   return ( result_offset );
+}   
+
+
+
+
 /* 
  * Function to create the hash table for the share mode entries. Called
  * when smb shared memory is global locked.
@@ -391,130 +521,7 @@ static void smb_shm_solve_neighbors(struct SmbShmBlockDesc *head_p )
 
 
 
-BOOL smb_shm_open(char *file_name, int size, int ronly)
-{
-   int filesize;
-   BOOL created_new = False;
-   BOOL other_processes = True;
-
-   read_only = ronly;
-   
-   DEBUG(5,("smb_shm_open : using shmem file %s to be of size %d\n",file_name,size));
-
-   smb_shm_fd = open(file_name, read_only?O_RDONLY:(O_RDWR|O_CREAT),
-		     SHM_FILE_MODE);
-
-   if ( smb_shm_fd < 0 )
-   {
-      DEBUG(0,("ERROR smb_shm_open : open failed with code %s\n",strerror(errno)));
-      return False;
-   }
-   
-   if (!smb_shm_global_lock())
-   {
-      DEBUG(0,("ERROR smb_shm_open : can't do smb_shm_global_lock\n"));
-      return False;
-   }
-   
-   if( (filesize = lseek(smb_shm_fd, 0, SEEK_END)) < 0)
-   {
-      DEBUG(0,("ERROR smb_shm_open : lseek failed with code %s\n",strerror(errno)));
-      smb_shm_global_unlock();
-      close(smb_shm_fd);
-      return False;
-   }
-
-   /* return the file offset to 0 to save on later seeks */
-   lseek(smb_shm_fd,0,SEEK_SET);
-
-   if (filesize == 0)
-   {
-      /* we just created a new one */
-      created_new = True;
-   }
-   
-   /* to find out if some other process is already mapping the file,
-      we use a registration file containing the processids of the file mapping processes
-      */
-
-   /* construct processreg file name */
-   strcpy(smb_shm_processreg_name, file_name);
-   strcat(smb_shm_processreg_name, ".processes");
-
-   if (!read_only && 
-       !smb_shm_register_process(smb_shm_processreg_name, getpid(), &other_processes))
-   {
-      smb_shm_global_unlock();
-      close(smb_shm_fd);
-      return False;
-   }
-
-   if (!read_only && (created_new || !other_processes))
-   {
-      /* we just created a new one, or are the first opener, lets set it size */
-      if( ftruncate(smb_shm_fd, size) <0)
-      {
-         DEBUG(0,("ERROR smb_shm_open : ftruncate failed with code %s\n",strerror(errno)));
-	 smb_shm_unregister_process(smb_shm_processreg_name, getpid());
-	 smb_shm_global_unlock();
-	 close(smb_shm_fd);
-	 return False;
-      }
-
-      /* paranoia */
-      lseek(smb_shm_fd,0,SEEK_SET);
-
-      filesize = size;
-   }
-   
-   if (size != filesize )
-   {
-      /* the existing file has a different size and we are not the first opener.
-	 Since another process is still using it, we will use the file size */
-      DEBUG(0,("WARNING smb_shm_open : filesize (%d) != expected size (%d), using filesize\n",filesize,size));
-      size = filesize;
-   }
-   
-   smb_shm_header_p = (struct SmbShmHeader *)mmap(NULL, size, 
-						  read_only?PROT_READ:
-						  (PROT_READ | PROT_WRITE), 
-						  MAP_FILE | MAP_SHARED, 
-						  smb_shm_fd, 0);
-   /* WARNING, smb_shm_header_p can be different for different processes mapping the same file ! */
-   if (smb_shm_header_p  == (struct SmbShmHeader *)(-1))
-   {
-      DEBUG(0,("ERROR smb_shm_open : mmap failed with code %s\n",strerror(errno)));
-      smb_shm_unregister_process(smb_shm_processreg_name, getpid());
-      smb_shm_global_unlock();
-      close(smb_shm_fd);
-      return False;
-   }      
-   
-      
-   if (!read_only && (created_new || !other_processes))
-   {
-      smb_shm_initialize(size);
-      /* Create the hash buckets for the share file entries. */
-      smb_shm_create_hash_table( lp_shmem_hash_size() );
-   }
-   else if (!smb_shm_validate_header(size) )
-   {
-      /* existing file is corrupt, samba admin should remove it by hand */
-      DEBUG(0,("ERROR smb_shm_open : corrupt shared mem file, remove it manually\n"));
-      munmap((caddr_t)smb_shm_header_p, size);
-      smb_shm_unregister_process(smb_shm_processreg_name, getpid());
-      smb_shm_global_unlock();
-      close(smb_shm_fd);
-      return False;
-   }
-   
-   smb_shm_global_unlock();
-   return True;
-      
-}
-
-
-BOOL smb_shm_close( void )
+static BOOL smb_shm_close( void )
 {
    
    if(smb_shm_initialize_called == False)
@@ -545,111 +552,8 @@ BOOL smb_shm_close( void )
    return True;
 }
 
-int smb_shm_alloc(int size)
-{
-   unsigned num_cells ;
-   struct SmbShmBlockDesc *scanner_p;
-   struct SmbShmBlockDesc *prev_p;
-   struct SmbShmBlockDesc *new_p;
-   int result_offset;
-   
-   
-   if( !smb_shm_header_p )
-   {
-      /* not mapped yet */
-      DEBUG(0,("ERROR smb_shm_alloc : shmem not mapped\n"));
-      return NULL_OFFSET;
-   }
-   
-   smb_shm_global_lock();
 
-   if( !smb_shm_header_p->consistent)
-   {
-      DEBUG(0,("ERROR smb_shm_alloc : shmem not consistent\n"));
-      smb_shm_global_unlock();
-      return NULL_OFFSET;
-   }
-   
-   
-   /* calculate	the number of cells */
-   num_cells = (size + CellSize -1) / CellSize;
-
-   /* set start	of scan */
-   prev_p = (struct SmbShmBlockDesc *)smb_shm_offset2addr(smb_shm_header_p->first_free_off);
-   scanner_p =	prev_p ;
-   
-   /* scan the free list to find a matching free space */
-   while ( ( scanner_p != EOList_Addr ) && ( scanner_p->size < num_cells ) )
-   {
-      prev_p = scanner_p;
-      scanner_p = (struct SmbShmBlockDesc *)smb_shm_offset2addr(scanner_p->next);
-   }
-   
-   /* at this point scanner point to a block header or to the end of the list */
-   if ( scanner_p == EOList_Addr )	
-   {
-      DEBUG(0,("ERROR smb_shm_alloc : alloc of %d bytes failed, no free space found\n",size));
-      smb_shm_global_unlock();
-      return (NULL_OFFSET);
-   }
-   
-   /* going to modify shared mem */
-   smb_shm_header_p->consistent = False;
-   
-   /* if we found a good one : scanner == the good one */
-   if ( scanner_p->size <= num_cells + 2 )
-   {
-      /* there is no use in making a new one, it will be too small anyway 
-      *	 we will link out scanner
-      */
-      if ( prev_p == scanner_p )
-      {
-	 smb_shm_header_p->first_free_off = scanner_p->next ;
-      }
-      else
-      {
-	 prev_p->next = scanner_p->next ;
-      }
-      smb_shm_header_p->statistics.cells_free -= scanner_p->size;
-      smb_shm_header_p->statistics.cells_used += scanner_p->size;
-   }
-   else
-   {
-      /* Make a new one */
-      new_p = scanner_p + 1 + num_cells;
-      new_p->size = scanner_p->size - num_cells - 1;
-      new_p->next = scanner_p->next;
-      scanner_p->size = num_cells;
-      scanner_p->next = smb_shm_addr2offset(new_p);
-      
-      if ( prev_p	!= scanner_p )
-      {
-	 prev_p->next	   = smb_shm_addr2offset(new_p)  ;
-      }
-      else
-      {
-	 smb_shm_header_p->first_free_off = smb_shm_addr2offset(new_p)  ;
-      }
-      smb_shm_header_p->statistics.cells_free -= num_cells+1;
-      smb_shm_header_p->statistics.cells_used += num_cells;
-      smb_shm_header_p->statistics.cells_system += 1;
-   }
-
-   result_offset = smb_shm_addr2offset( &(scanner_p[1]) );
-   scanner_p->next =	SMB_SHM_NOT_FREE_OFF ;
-
-   /* end modification of shared mem */
-   smb_shm_header_p->consistent = True;
-
-   DEBUG(6,("smb_shm_alloc : request for %d bytes, allocated %d bytes at offset %d\n",size,scanner_p->size*CellSize,result_offset ));
-
-   smb_shm_global_unlock();
-   return ( result_offset );
-}   
-
-
-
-BOOL smb_shm_free(int offset)
+static BOOL smb_shm_free(int offset)
 {
    struct SmbShmBlockDesc *header_p  ; /*	pointer	to header of block to free */
    struct SmbShmBlockDesc *scanner_p ; /*	used to	scan the list			   */
@@ -728,7 +632,7 @@ BOOL smb_shm_free(int offset)
    }
 }
 
-int smb_shm_get_userdef_off(void)
+static int smb_shm_get_userdef_off(void)
 {
    if (!smb_shm_header_p)
       return NULL_OFFSET;
@@ -736,33 +640,10 @@ int smb_shm_get_userdef_off(void)
       return smb_shm_header_p->userdef_off;
 }
 
-void *smb_shm_offset2addr(int offset)
-{
-   if (offset == NULL_OFFSET )
-      return (void *)(0);
-   
-   if (!smb_shm_header_p)
-      return (void *)(0);
-   
-   return (void *)((char *)smb_shm_header_p + offset );
-}
-
-int smb_shm_addr2offset(void *addr)
-{
-   if (!addr)
-      return NULL_OFFSET;
-   
-   if (!smb_shm_header_p)
-      return NULL_OFFSET;
-   
-   return (int)((char *)addr - (char *)smb_shm_header_p);
-}
-
 /*******************************************************************
   Lock a particular hash bucket entry.
   ******************************************************************/
-
-BOOL smb_shm_lock_hash_entry( unsigned int entry)
+static BOOL smb_shm_lock_hash_entry( unsigned int entry)
 {
   int start = (smb_shm_header_p->userdef_off + (entry * sizeof(int)));
 
@@ -792,8 +673,7 @@ BOOL smb_shm_lock_hash_entry( unsigned int entry)
 /*******************************************************************
   Unlock a particular hash bucket entry.
   ******************************************************************/
-
-BOOL smb_shm_unlock_hash_entry( unsigned int entry )
+static BOOL smb_shm_unlock_hash_entry( unsigned int entry )
 {
   int start = (smb_shm_header_p->userdef_off + (entry * sizeof(int)));
 
@@ -823,8 +703,7 @@ BOOL smb_shm_unlock_hash_entry( unsigned int entry )
 /*******************************************************************
   Gather statistics on shared memory usage.
   ******************************************************************/
-
-BOOL smb_shm_get_usage(int *bytes_free,
+static BOOL smb_shm_get_usage(int *bytes_free,
 		   int *bytes_used,
 		   int *bytes_overhead)
 {
@@ -840,6 +719,144 @@ BOOL smb_shm_get_usage(int *bytes_free,
    
    return True;
 }
+
+
+static struct shmem_ops shmops = {
+	smb_shm_close,
+	smb_shm_alloc,
+	smb_shm_free,
+	smb_shm_get_userdef_off,
+	smb_shm_offset2addr,
+	smb_shm_addr2offset,
+	smb_shm_lock_hash_entry,
+	smb_shm_unlock_hash_entry,
+	smb_shm_get_usage,
+};
+
+/*******************************************************************
+  open the shared memory
+  ******************************************************************/
+struct shmem_ops *smb_shm_open(char *file_name, int size, int ronly)
+{
+   int filesize;
+   BOOL created_new = False;
+   BOOL other_processes = True;
+
+   read_only = ronly;
+   
+   DEBUG(5,("smb_shm_open : using shmem file %s to be of size %d\n",file_name,size));
+
+   smb_shm_fd = open(file_name, read_only?O_RDONLY:(O_RDWR|O_CREAT),
+		     SHM_FILE_MODE);
+
+   if ( smb_shm_fd < 0 )
+   {
+      DEBUG(0,("ERROR smb_shm_open : open failed with code %s\n",strerror(errno)));
+      return NULL;
+   }
+   
+   if (!smb_shm_global_lock())
+   {
+      DEBUG(0,("ERROR smb_shm_open : can't do smb_shm_global_lock\n"));
+      return NULL;
+   }
+   
+   if( (filesize = lseek(smb_shm_fd, 0, SEEK_END)) < 0)
+   {
+      DEBUG(0,("ERROR smb_shm_open : lseek failed with code %s\n",strerror(errno)));
+      smb_shm_global_unlock();
+      close(smb_shm_fd);
+      return NULL;
+   }
+
+   /* return the file offset to 0 to save on later seeks */
+   lseek(smb_shm_fd,0,SEEK_SET);
+
+   if (filesize == 0)
+   {
+      /* we just created a new one */
+      created_new = True;
+   }
+   
+   /* to find out if some other process is already mapping the file,
+      we use a registration file containing the processids of the file mapping processes
+      */
+
+   /* construct processreg file name */
+   strcpy(smb_shm_processreg_name, file_name);
+   strcat(smb_shm_processreg_name, ".processes");
+
+   if (!read_only && 
+       !smb_shm_register_process(smb_shm_processreg_name, getpid(), &other_processes))
+   {
+      smb_shm_global_unlock();
+      close(smb_shm_fd);
+      return NULL;
+   }
+
+   if (!read_only && (created_new || !other_processes))
+   {
+      /* we just created a new one, or are the first opener, lets set it size */
+      if( ftruncate(smb_shm_fd, size) <0)
+      {
+         DEBUG(0,("ERROR smb_shm_open : ftruncate failed with code %s\n",strerror(errno)));
+	 smb_shm_unregister_process(smb_shm_processreg_name, getpid());
+	 smb_shm_global_unlock();
+	 close(smb_shm_fd);
+	 return NULL;
+      }
+
+      /* paranoia */
+      lseek(smb_shm_fd,0,SEEK_SET);
+
+      filesize = size;
+   }
+   
+   if (size != filesize )
+   {
+      /* the existing file has a different size and we are not the first opener.
+	 Since another process is still using it, we will use the file size */
+      DEBUG(0,("WARNING smb_shm_open : filesize (%d) != expected size (%d), using filesize\n",filesize,size));
+      size = filesize;
+   }
+   
+   smb_shm_header_p = (struct SmbShmHeader *)mmap(NULL, size, 
+						  read_only?PROT_READ:
+						  (PROT_READ | PROT_WRITE), 
+						  MAP_FILE | MAP_SHARED, 
+						  smb_shm_fd, 0);
+   /* WARNING, smb_shm_header_p can be different for different processes mapping the same file ! */
+   if (smb_shm_header_p  == (struct SmbShmHeader *)(-1))
+   {
+      DEBUG(0,("ERROR smb_shm_open : mmap failed with code %s\n",strerror(errno)));
+      smb_shm_unregister_process(smb_shm_processreg_name, getpid());
+      smb_shm_global_unlock();
+      close(smb_shm_fd);
+      return NULL;
+   }      
+   
+      
+   if (!read_only && (created_new || !other_processes))
+   {
+      smb_shm_initialize(size);
+      /* Create the hash buckets for the share file entries. */
+      smb_shm_create_hash_table( lp_shmem_hash_size() );
+   }
+   else if (!smb_shm_validate_header(size) )
+   {
+      /* existing file is corrupt, samba admin should remove it by hand */
+      DEBUG(0,("ERROR smb_shm_open : corrupt shared mem file, remove it manually\n"));
+      munmap((caddr_t)smb_shm_header_p, size);
+      smb_shm_unregister_process(smb_shm_processreg_name, getpid());
+      smb_shm_global_unlock();
+      close(smb_shm_fd);
+      return NULL;
+   }
+   
+   smb_shm_global_unlock();
+   return &shmops;
+}
+
 
 #else /* FAST_SHARE_MODES */
  int shmem_dummy_procedure(void)
