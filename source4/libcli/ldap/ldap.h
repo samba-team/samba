@@ -53,6 +53,7 @@ enum ldap_auth_mechanism {
 enum ldap_result_code {
 	LDAP_SUCCESS = 0,
 	LDAP_SASL_BIND_IN_PROGRESS = 0x0e,
+	LDAP_INVALID_CREDENTIALS = 0x31,
 	LDAP_OTHER = 0x50
 };
 
