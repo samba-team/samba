@@ -1952,8 +1952,8 @@ void nmbd_wins_new_entry(int msg_type, pid_t src, void *buf, size_t len)
 		/* I'm giving up on multi homed. Too much complex to understand */
 		
 		if (record->wins_flags&WINS_MHOMED) {
-			if (! namerec->data.wins_flags&WINS_ACTIVE) {
-				if ( !namerec->data.wins_flags&WINS_RELEASED && !namerec->data.wins_flags&WINS_NGROUP)
+			if (! (namerec->data.wins_flags&WINS_ACTIVE)) {
+				if ( !(namerec->data.wins_flags&WINS_RELEASED) && !(namerec->data.wins_flags&WINS_NGROUP))
 					overwrite=True;
 			}
 			else {
