@@ -742,6 +742,14 @@ BOOL local_lookup_sid(const DOM_SID *sid, char *name, enum SID_NAME_USE *psid_na
 	GROUP_MAP map;
 	BOOL ret;
 
+	if (sid_equal(get_global_sam_sid(), sid)) {
+		*psid_name_use = SID_NAME_DOMAIN;
+		fstrcpy(name, "");
+		DEBUG(5,("local_lookup_sid: SID is our own domain-sid: %s.\n", 
+			sid_string_static(sid)));
+		return True;
+	}
+
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid)){
 		DEBUG(0,("local_lookup_sid: sid_peek_check_rid return False! SID: %s\n",
 			sid_string_static(&map.sid)));
