@@ -170,6 +170,21 @@ NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const char *data, uint32 n)
 	return NT_STATUS_OK;
 }
 
+/*
+  save the current position
+ */
+void ndr_push_save(struct ndr_push *ndr, struct ndr_push_save *save)
+{
+	save->offset = ndr->offset;
+}
+
+/*
+  restore the position
+ */
+void ndr_push_restore(struct ndr_push *ndr, struct ndr_push_save *save)
+{
+	ndr->offset = save->offset;
+}
 
 /*
   this is used when a packet has a 4 byte length field. We remember the start position
@@ -178,16 +193,17 @@ NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const char *data, uint32 n)
 NTSTATUS ndr_push_length4_start(struct ndr_push *ndr, struct ndr_push_save *save)
 {
 	NDR_PUSH_ALIGN(ndr, 4);
-	save->offset = ndr->offset;
+	ndr_push_save(ndr, save);
 	return ndr_push_u32(ndr, 0);
 }
 
 NTSTATUS ndr_push_length4_end(struct ndr_push *ndr, struct ndr_push_save *save)
 {
-	uint32 offset = ndr->offset;
-	ndr->offset = save->offset;
-	NDR_CHECK(ndr_push_u32(ndr, offset - save->offset));
-	ndr->offset = offset;
+	struct ndr_push_save save2;
+	ndr_push_save(ndr, &save2);
+	ndr_push_restore(ndr, save);
+	NDR_CHECK(ndr_push_u32(ndr, save2.offset - ndr->offset));
+	ndr_push_restore(ndr, &save2);
 	return NT_STATUS_OK;
 }
 
@@ -217,3 +233,38 @@ NTSTATUS ndr_push_unistr(struct ndr_push *ndr, const char *s)
 	return NT_STATUS_OK;
 }
 
+/*
+  push a 4 byte offset pointer, remembering where we are so we can later fill
+  in the correct value
+*/
+NTSTATUS ndr_push_offset(struct ndr_push *ndr, struct ndr_push_save *ofs)
+{
+	NDR_PUSH_ALIGN(ndr, 4);
+	ndr_push_save(ndr, ofs);
+	return ndr_push_u32(ndr, 0);
+}
+
+/*
+  fill in the correct offset in a saved offset pointer
+  the offset is taken relative to 'save'
+*/
+NTSTATUS ndr_push_offset_ptr(struct ndr_push *ndr, 
+			     struct ndr_push_save *ofs, 
+			     struct ndr_push_save *save)
+{
+	struct ndr_push_save save2;
+	ndr_push_save(ndr, &save2);
+	ndr_push_restore(ndr, ofs);
+	NDR_CHECK(ndr_push_u32(ndr, save2.offset - save->offset));
+	ndr_push_restore(ndr, &save2);
+	return NT_STATUS_OK;
+}
+
+
+/*
+  push a GUID
+*/
+NTSTATUS ndr_push_guid(struct ndr_push *ndr, GUID *guid)
+{
+	return ndr_push_bytes(ndr, guid->info, GUID_SIZE);
+}
