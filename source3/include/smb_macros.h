@@ -100,7 +100,6 @@
 
 /* access various service details */
 #define SERVICE(snum)      (lp_servicename(snum))
-#define PRINTCAP           (lp_printcapname())
 #define PRINTCOMMAND(snum) (lp_printcommand(snum))
 #define PRINTERNAME(snum)  (lp_printername(snum))
 #define CAN_WRITE(conn)    (!conn->read_only)
