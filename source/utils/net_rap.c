@@ -27,152 +27,9 @@
 #include "includes.h"
 #include "../utils/net.h"
 
-#define FILE_INFO_DISPLAY \
-    "File ID          %d\n"\
-    "User name        %s\n"\
-    "Locks            0x%-4.2x\n"\
-    "Path             %s\n"\
-    "Permissions      0x%x\n"
-#define FILE_ENUM_DISPLAY \
-    "\nEnumerating open files on remote server:\n\n"\
-    "\n\tFileId  Opened by            Perms  Locks  Path \n"\
-    "\t------  ---------            -----  -----  ---- \n"
-
-#define RAP_SHARE_USAGE \
-    "\nnet rap share [misc. options] [targets] \n"\
-    "\tenumerates all exported resources (network shares) on target server\n"\
-    "\nnet rap share ADD <name=serverpath> [misc. options] [targets]"\
-    "\n\tAdd a share from a server (makes the export active)\n"\
-    "\nnet rap share DELETE <sharename> [misc. options] [targets]\n"\
-    "\tor"\
-    "\nnet rap share CLOSE <sharename> [misc. options] [targets]"\
-    "\n\tDeletes a share from a server (makes the export inactive)\n"
-    
-#define SHARE_ENUM_DISPLAY \
-    "\nEnumerating shared resources (exports) on remote server:\n\n"\
-    "\nShare name   Type     Description\n"\
-    "----------   ----     -----------\n"
-
-
-#define RAP_SESSION_USAGE \
-    "\nnet rap session [misc. options] [targets]"\
-    "\n\tenumerates all active SMB/CIFS sessions on target server\n"\
-    "\nnet rap session DELETE <client_name> [misc. options] [targets] \n"\
-    "\tor"\
-    "\nnet rap session CLOSE <client_name> [misc. options] [targets]"\
-    "\n\tDeletes (closes) a session from specified client to server\n"
-
-#define SESSION_ENUM_DISPLAY \
-    "Computer             User name            Client Type        Opens Idle time\n\n"\
-    "------------------------------------------------------------------------------\n"
-
-
-#define SESSION_DISPLAY_ONE \
-    
-
-#define SESSION_DISPLAY_CONNS \
-    "Share name     Type     # Opens\n"\
-    "------------------------------------------------------------------------------\n"
-
-#define RAP_SERVER_USAGE \
-    "\nUsage:\n"\
-    "  net rap server [domain]\tlists the servers in the specified domain or workgroup.\n"\
-    "    If domain is not specified, it uses the current domain or workgroup as\n"\
-    "    the default.\n"
-
-#define SERVER_ENUM_DISPLAY "\nEnumerating servers in this domain or workgroup: \n\n"  \
-    "\n\tServer name          Server description\n"\
-    "\t-------------        ----------------------------\n"
-
-
-#define RAP_DOMAIN_USAGE \
-    "\nUsage:\n"\
-    "  net rap domain [misc. options] [target]\n\tlists the domains "\
-    "or workgroups visible on the current network\n"
-
-#define DOMAIN_ENUM_DISPLAY \
-    "\nEnumerating domains:\n\n"\
-    "\n\tDomain name          Server name of Browse Master\n"\
-    "\t-------------        ----------------------------\n"
-
-#define RAP_PRINTQ_USAGE \
-    "\nUsage:\n"\
-    " net rap printq [misc. options] [targets]\n"\
-    "\tor\n"\
-    " net rap printq list [<queue_name>] [misc. options] [targets]\n"\
-    "\tlists the specified queue and jobs on the target server.\n"\
-    "\tIf the queue name is not specified, all queues are listed.\n\n"\
-    " net rap printq delete [<queue name>] [misc. options] [targets]\n"\
-    "\tdeletes the specified job number on the target server, or the\n"\
-    "\tprinter queue if no job number is specified\n"
-#define PRINTQ_ENUM_DISPLAY \
-    "Print queues at \\\\%s\n\n"\
-    "Name                         Job #      Size            Status\n\n"\
-    "------------------------------------------------------------------"\
-    "-------------\n"
-#define PRINTQ_DISPLAY_ONE "%-23.23s %5d jobs                      %-22.22s\n"
-#define PRINTQ_PRINTER_ACTIVE "*Printer Active*"
-#define PRINTQ_PRINTER_PAUSED "*Printer Paused*"
-#define PRINTQ_PRINTER_ERROR "*Printer error*"
-#define PRINTQ_PRINTER_DELPEND "*Delete Pending*"
-#define PRINTQ_PRINTER_STATUNK "**UNKNOWN STATUS**"
-#define PRINTQ_DISPLAY_JOB "     %-23.23s %5d %9d            %-22.22s\n"
-#define PRINTQ_JOB_PRINTING "Printing"
-#define PRINTQ_JOB_QUEUED "Waiting"
-#define PRINTQ_JOB_PAUSED "Held in queue"
-#define PRINTQ_JOB_SPOOLING "Spooling"
-#define PRINTQ_QUEUE_WORD " Queue"
-
-#define RAP_USER_USAGE \
-    "\nnet rap user [misc. options] [targets]\n\tEnumerate users\n"\
-    "\nnet rap user DELETE <name> [misc. options] [targets]"\
-    "\n\tDelete specified user\n"\
-    "\nnet rap user INFO <name> [misc. options] [targets]"\
-    "\n\tList the domain groups of the specified user\n"\
-    "\nnet rap user ADD <name> [-F user flags] [misc. options] [targets]"\
-    "\n\tAdd specified user\n"
-
-#define USER_ENUM_DISPLAY \
-    "\nEnumerating shared resources (exports) on remote server:\n\n"\
-    "\nUser name             Description                                     Home Directory                          Profile Directory\n"\
-    "---------             -----------                                     --------------                          -----------------\n"
-
-#define RAP_GROUP_USAGE \
-    "net rap group [misc. options] [targets]"\
-    "\n\tEnumerate user groups\n"\
-    "\nnet rap group DELETE <name> [misc. options] [targets]"\
-    "\n\tDelete specified group\n"\
-    "\nnet rap group ADD <name> [-C comment] [misc. options] [targets]"\
-    "\n\tCreate specified group\n"
-
-#define RAP_GROUPMEMBER_USAGE \
-    "net rap groupmember LIST <group name> [misc. options] [targets]"\
-    "\n\t Enumerate users in a group\n"\
-    "\nnet rap groupmember DELETE <group name> <user name> [misc. options] "\
-    "[targets]\n\t Delete sepcified user from specified group\n"\
-    "\nnet rap groupmember ADD <group name> <user name> [misc. options] [targets]"\
-    "\n\t Add specified user to specified group\n"
-
-            
-#define RAP_SERVICE_USAGE \
-    "net rap service [misc. options] [targets] \n"\
-    "\tenumerates all running service daemons on target server\n"\
-    "\nnet rap service ADD <name> [service startup arguments] [misc. options] [targets]"\
-    "\n\tStart named service on remote server\n"\
-    "\nnet rap service DELETE <name> [misc. options] [targets]\n"\
-    "\n\tStop named service on remote server\n"
-    
-
-#define RAP_VALIDATE_USAGE \
-    "net rap validate <username> [password]\n"\
-    "\tValidate user and password to check whether they can access target server or domain\n"
-
-#define GLBL_LCL_MASTER   "global browsemaster or local browse master if that is not found"
-#define DOMAIN_MASTER     "local domain browse master"
-
-#define ERRMSG_NOCONN_TARGET_SRVR	
+/* The following messages were for error checking that is not properly 
+   reported at the moment.  At least some of them need to be reinstated */
 #define ERRMSG_NOCONN_BROWSE_MSTR	"\nUnable to connect to browse master\n"
-#define ERRMSG_NOT_IMPLEMENTED		"\nNot implemented\n"
 #define ERRMSG_FILEID_MISSING		"\nMissing fileid of file to close\n\n"
 #define ERRMSG_GROUPNAME_MISSING        "\n\nGroup name not specified\n"
 #define ERRMSG_USERNAME_MISSING        "\n\nUser name not specified\n"
@@ -193,17 +50,7 @@
 #define HOMED_STR     "Home directory "
 #define LOGONS_STR    "Logon script "
 
-#define PORT_USAGE        "\t-p or --port=<port number>\tconnection port on target server\n"
-#define WORKGROUP_USAGE   "\t-w or --workgroup=<wg>\t\ttarget workgroup or domain name\n"
 #define COMMENT_USAGE     "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n"
-#define MYWORKGROUP_USAGE "\t-W or --myworkgroup=<wg>\tclient workgroup\n"
-#define DEBUG_USAGE       "\t-d or --debug=<level>\t\tdebug level (0-10)\n"
-#define MYNAME_USAGE      "\t-n or --myname=<name>\t\tclient name\n"
-#define USER_USAGE        "\t-U or --user=<name>\t\tuser name\n"
-#define CONF_USAGE        "\t-s or --conf=<path>\t\tpathname of smb.conf file\n"
-#define JOBID_USAGE       "\t-j or --jobid=<job id>\t\tjob id\n"
-#define MAXUSERS_USAGE    "\t-M or --maxusers=<num>\t\tmax users allowed for share\n"
-#define LONG_USAGE        "\t-l or --long\t\t\tDisplay full information\n"
 
 static const char *share_type[] = {
   "Disk",
@@ -212,23 +59,30 @@ static const char *share_type[] = {
   "IPC"
 };
 
-/* End of weird 'strings at top of file' section */
+
+static int errmsg_not_implemented(void)
+{
+	d_printf("\nNot implemented\n");
+	return 0;
+}
 
 int general_rap_usage(int argc, const char **argv)
 {
 
-	d_printf("Valid targets: choose one (none defaults to using localhost)\n");
+	d_printf("Valid targets: choose one (none defaults to localhost)\n");
 	d_printf("\t-S or --server=<server>\t\tserver name\n");
-	d_printf("\t-I or --ipaddress=<ipaddr>\tip address of target server\n");
+	d_printf("\t-I or --ipaddress=<ipaddr>\taddress of target server\n");
+	d_printf("\t-w or --workgroup=<wg>\t\ttarget workgroup or domain\n");
 
 	d_printf("\n");
 	d_printf("Valid miscellaneous options are:\n"); /* misc options */
-	d_printf(PORT_USAGE);
-	d_printf(MYWORKGROUP_USAGE);
-	d_printf(DEBUG_USAGE);
-	d_printf(MYNAME_USAGE);
-	d_printf(USER_USAGE);
-	d_printf(CONF_USAGE);
+	d_printf("\t-p or --port=<port>\tconnection port on target server\n");
+	d_printf("\t-W or --myworkgroup=<wg>\tclient workgroup\n");
+	d_printf("\t-d or --debug=<level>\t\tdebug level (0-10)\n");
+	d_printf("\t-n or --myname=<name>\t\tclient name\n");
+	d_printf("\t-U or --user=<name>\t\tuser name\n");
+	d_printf("\t-s or --conf=<path>\t\tpathname of smb.conf file\n");
+	d_printf("\t-l or --long\t\t\tDisplay full information\n");
 	return -1;
 }
 
@@ -236,10 +90,9 @@ int general_rap_usage(int argc, const char **argv)
 int net_rap_file_usage(int argc, const char **argv)
 {
 	d_printf("net rap file [misc. options] [targets]\n"\
-	"\tenumerates all open files on file server\n\n");
-
+		 "\tlists all open files on file server\n\n");
 	d_printf("net rap file USER <username> [misc. options] [targets]\n"\
-		 "\tenumerates all files opened by username on file server\n\n");
+		 "\tlists all files opened by username on file server\n\n");
 	d_printf("net rap file CLOSE <id> [misc. options] [targets]\n"\
 		 "\tcloses specified file on target server\n");
 
@@ -260,7 +113,12 @@ static void file_fn(const char * pPath, const char * pUser, uint16 perms,
 static void one_file_fn(const char *pPath, const char *pUser, uint16 perms, 
 			uint16 locks, uint32 id)
 {
-	d_printf(FILE_INFO_DISPLAY, id, pUser, locks, pPath, perms);
+	d_printf("File ID          %d\n"\
+		 "User name        %s\n"\
+		 "Locks            0x%-4.2x\n"\
+		 "Path             %s\n"\
+		 "Permissions      0x%x\n",
+		 id, pUser, locks, pPath, perms);
 }
 
 
@@ -320,7 +178,10 @@ int net_rap_file(int argc, const char **argv)
                         return -1;
 
 		/* list open files */
-		d_printf(FILE_ENUM_DISPLAY); /* file list header */
+		d_printf(
+		 "\nEnumerating open files on remote server:\n\n"\
+		 "\n\tFileId  Opened by            Perms  Locks  Path \n"\
+		 "\t------  ---------            -----  -----  ---- \n");
 		ret = cli_NetFileEnum(cli, NULL, NULL, file_fn);
 		cli_shutdown(cli);
 		return ret;
@@ -331,16 +192,33 @@ int net_rap_file(int argc, const char **argv)
 		       
 int net_rap_share_usage(int argc, const char **argv)
 {
-	d_printf(RAP_SHARE_USAGE); /* command syntax */
+	d_printf(
+	 "\nnet [rap] share [misc. options] [targets] \n"\
+	 "\tenumerates all exported resources (network shares) "\
+	 "on target server\n");
+	d_printf(
+	 "\nnet rap share ADD <name=serverpath> [misc. options] [targets]"\
+	 "\n\tAdds a share from a server (makes the export active)\n");
+	d_printf(
+	 "\nnet rap share DELETE <sharename> [misc. options] [targets]\n"\
+	 "\tor"\
+	 "\nnet rap share CLOSE <sharename> [misc. options] [targets]"\
+	 "\n\tDeletes a share from a server (makes the export inactive)\n");
+	general_rap_usage(argc, argv);
+	d_printf(COMMENT_USAGE);
+	d_printf("\t-M or --maxusers=<num>\t\tmax users allowed for share\n");
 	return -1;
 }
 
-static void long_share_fn(const char *share_name, uint32 type, const char *comment, void *state)
+static void long_share_fn(const char *share_name, uint32 type, 
+			  const char *comment, void *state)
 {
-	d_printf("%-12.12s %-8.8s %-50.50s\n", share_name, share_type[type], comment);
+	d_printf("%-12.12s %-8.8s %-50.50s\n",
+		 share_name, share_type[type], comment);
 }
 
-static void share_fn(const char *share_name, uint32 type, const char *comment, void *state)
+static void share_fn(const char *share_name, uint32 type, 
+		     const char *comment, void *state)
 {
 	d_printf("%-12.12s\n", share_name);
 }
@@ -417,7 +295,10 @@ int net_rap_share(int argc, const char **argv)
 			return -1;
 		
 		if (opt_long_list_entries) {
-			d_printf(SHARE_ENUM_DISPLAY);
+			d_printf(
+	"\nEnumerating shared resources (exports) on remote server:\n\n"\
+	"\nShare name   Type     Description\n"\
+	"----------   ----     -----------\n");
 			ret = cli_RNetShareEnum(cli, long_share_fn, NULL);
 		}
 		ret = cli_RNetShareEnum(cli, share_fn, NULL);
@@ -431,8 +312,15 @@ int net_rap_share(int argc, const char **argv)
 		
 int net_rap_session_usage(int argc, const char **argv)
 {
-	d_printf(RAP_SESSION_USAGE); /* command syntax */
-	
+	d_printf(
+	 "\nnet rap session [misc. options] [targets]"\
+	 "\n\tenumerates all active SMB/CIFS sessions on target server\n");
+	d_printf(
+	 "\nnet rap session DELETE <client_name> [misc. options] [targets] \n"\
+	 "\tor"\
+	 "\nnet rap session CLOSE <client_name> [misc. options] [targets]"\
+	 "\n\tDeletes (closes) a session from specified client to server\n");
+
 	general_rap_usage(argc, argv);
 	return -1;
 }
@@ -449,9 +337,10 @@ static void list_sessions_func(char *wsname, char *username, uint16 conns,
 		 wsname, username, clitype, opens, hrs, min, sec);
 }
 
-static void display_session_func(const char *wsname, const char *username, uint16 conns,
-				 uint16 opens, uint16 users, uint32 sess_time,
-				 uint32 idle_time, uint32 user_flags, const char *clitype)
+static void display_session_func(const char *wsname, const char *username, 
+				 uint16 conns, uint16 opens, uint16 users, 
+				 uint32 sess_time, uint32 idle_time, 
+				 uint32 user_flags, const char *clitype)
 {
 	int ihrs = idle_time / 3600;
 	int imin = (idle_time / 60) % 60;
@@ -470,9 +359,12 @@ static void display_session_func(const char *wsname, const char *username, uint1
 		 shrs, smin, ssec, ihrs, imin, isec);
 }
 
-static void display_conns_func(uint16 conn_id, uint16 conn_type, uint16 opens, uint16 users, uint32 conn_time, const char *username, const char *netname)
+static void display_conns_func(uint16 conn_id, uint16 conn_type, uint16 opens,
+			       uint16 users, uint32 conn_time,
+			       const char *username, const char *netname)
 {
-	d_printf("%-14.14s %-8.8s %5d\n", netname, share_type[conn_type], opens);
+	d_printf("%-14.14s %-8.8s %5d\n",
+		 netname, share_type[conn_type], opens);
 }
 
 static int rap_session_info(int argc, const char **argv)
@@ -495,8 +387,8 @@ static int rap_session_info(int argc, const char **argv)
                 return ret;
 	}
 
-	d_printf(SESSION_DISPLAY_CONNS);
-
+	d_printf("Share name     Type     # Opens\n-------------------------"\
+		 "-----------------------------------------------------\n");
 	ret = cli_NetConnectionEnum(cli, sessname, display_conns_func);
 	cli_shutdown(cli);
 	return ret;
@@ -534,6 +426,10 @@ int net_rap_session(int argc, const char **argv)
 		if (!(cli = net_make_ipc_connection(0))) 
 			return -1;
 
+		d_printf("Computer             User name            "\
+			 "Client Type        Opens Idle time\n"\
+			 "------------------------------------------"\
+			 "------------------------------------\n");
 		ret = cli_NetSessionEnum(cli, list_sessions_func);
 
 		cli_shutdown(cli);
@@ -546,7 +442,8 @@ int net_rap_session(int argc, const char **argv)
 /****************************************************************************
 list a server name
 ****************************************************************************/
-static void display_server_func(const char *name, uint32 m, const char *comment, void * reserved)
+static void display_server_func(const char *name, uint32 m,
+				const char *comment, void * reserved)
 {
 	d_printf("\t%-16.16s     %s\n", name, comment);
 }
@@ -554,8 +451,11 @@ static void display_server_func(const char *name, uint32 m, const char *comment,
 
 int net_rap_server_usage(int argc, const char **argv)
 {
-	d_printf(RAP_SERVER_USAGE); /* command syntax */
-	
+	d_printf("net rap server [misc. options] [target]\n\t"\
+		 "lists the servers in the specified domain or workgroup.\n");
+	d_printf("\n\tIf domain is not specified, it uses the current"\
+		 " domain or workgroup as\n\tthe default.\n");
+
 	general_rap_usage(argc, argv);
 	return -1;
 }
@@ -568,16 +468,21 @@ int net_rap_server(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
 
-	d_printf(SERVER_ENUM_DISPLAY); /* header for list of servers */
-	ret = cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, display_server_func,NULL); 
+	d_printf("\nEnumerating servers in this domain or workgroup: \n\n"\
+		 "\tServer name          Server description\n"\
+		 "\t-------------        ----------------------------\n");
+
+	ret = cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, 
+				display_server_func,NULL); 
 	cli_shutdown(cli);
 	return ret;	
 }
 		      
 int net_rap_domain_usage(int argc, const char **argv)
 {
-	d_printf(RAP_DOMAIN_USAGE); /* command syntax */
-	
+	d_printf("net rap domain [misc. options] [target]\n\tlists the"\
+		 " domains or workgroups visible on the current network\n");
+
 	general_rap_usage(argc, argv);
 	return -1;
 }
@@ -591,73 +496,92 @@ int net_rap_domain(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
 
-	d_printf(DOMAIN_ENUM_DISPLAY); /* header for list of domains */
-	ret = cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM, display_server_func,NULL);	
+	d_printf("\nEnumerating domains:\n\n"\
+		 "\tDomain name          Server name of Browse Master\n"\
+		 "\t-------------        ----------------------------\n");
+
+	ret = cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM,
+				display_server_func,NULL);	
 	cli_shutdown(cli);
 	return ret;	
 }
 		      
 int net_rap_printq_usage(int argc, const char **argv)
 {
-	d_printf(RAP_PRINTQ_USAGE);
-	
+	d_printf(
+	 "net rap printq [misc. options] [targets]\n"\
+	 "\tor\n"\
+	 "net rap printq list [<queue_name>] [misc. options] [targets]\n"\
+	 "\tlists the specified queue and jobs on the target server.\n"\
+	 "\tIf the queue name is not specified, all queues are listed.\n\n");
+	d_printf(
+	 "net rap printq delete [<queue name>] [misc. options] [targets]\n"\
+	 "\tdeletes the specified job number on the target server, or the\n"\
+	 "\tprinter queue if no job number is specified\n");
+
 	general_rap_usage(argc, argv);
+        d_printf("\t-j or --jobid=<job id>\t\tjob id\n");
+
 	return -1;
 }	
 
-static void enum_queue(const char *queuename, uint16 pri, uint16 start, uint16 until, 
-		       const char *sep, const char *pproc, const char *dest, 
-		       const char *qparms, const char *qcomment, uint16 status, 
-		       uint16 jobcount) {
-	pstring queuecol;
-	pstring statcol;
-
-	pstrcpy(queuecol, queuename);
-	pstrcat(queuecol, PRINTQ_QUEUE_WORD);
-	
-	switch (status) {
-	case 0:
-		pstrcpy(statcol, PRINTQ_PRINTER_ACTIVE);
-		break;
-	case 1:
-		pstrcpy(statcol, PRINTQ_PRINTER_PAUSED);
-		break;
-	case 2:
-		pstrcpy(statcol, PRINTQ_PRINTER_ERROR);
-		break;
-	case 3:
-		pstrcpy(statcol, PRINTQ_PRINTER_DELPEND);
-		break;
-	default:
-		pstrcpy(statcol, PRINTQ_PRINTER_STATUNK);
-	}
-	d_printf(PRINTQ_DISPLAY_ONE, queuecol, jobcount, statcol);
-}
-
-static void enum_jobs(uint16 jobid, const char *ownername, const char *notifyname, 
-		      const char *datatype, const char *jparms, uint16 pos, 
-		      uint16 status, const char *jstatus, uint submitted, uint jobsize, 
-		      const char *comment) {
-	pstring statcol;
+static void enum_queue(const char *queuename, uint16 pri, uint16 start, 
+		       uint16 until, const char *sep, const char *pproc, 
+		       const char *dest, const char *qparms, 
+		       const char *qcomment, uint16 status, uint16 jobcount) 
+{
+	d_printf("%-17.17s Queue %5d jobs                      ",
+		 queuename, jobcount);
 
 	switch (status) {
 	case 0:
-		pstrcpy(statcol, PRINTQ_JOB_QUEUED);
+		d_printf("*Printer Active*\n");
 		break;
 	case 1:
-		pstrcpy(statcol, PRINTQ_JOB_PAUSED);
+		d_printf("*Printer Paused*\n");
 		break;
 	case 2:
-		pstrcpy(statcol, PRINTQ_JOB_SPOOLING);
+		d_printf("*Printer error*\n");
 		break;
 	case 3:
-		pstrcpy(statcol, PRINTQ_JOB_PRINTING);
+		d_printf("*Delete Pending*\n");
 		break;
 	default:
-		pstrcpy(statcol, PRINTQ_PRINTER_STATUNK);
+		d_printf("**UNKNOWN STATUS**\n");
 	}
-	d_printf(PRINTQ_DISPLAY_JOB, ownername, jobid, jobsize, statcol);
 }
+
+static void enum_jobs(uint16 jobid, const char *ownername, 
+		      const char *notifyname, const char *datatype,
+		      const char *jparms, uint16 pos, uint16 status, 
+		      const char *jstatus, uint submitted, uint jobsize, 
+		      const char *comment)
+{
+	d_printf("     %-23.23s %5d %9d            ",
+		 ownername, jobid, jobsize);
+	switch (status) {
+	case 0:
+		d_printf("Waiting\n");
+		break;
+	case 1:
+		d_printf("Held in queue\n");
+		break;
+	case 2:
+		d_printf("Spooling\n");
+		break;
+	case 3:
+		d_printf("Printing\n");
+		break;
+	default:
+		d_printf("**UNKNOWN STATUS**\n");
+	}
+}
+
+#define PRINTQ_ENUM_DISPLAY \
+    "Print queues at \\\\%s\n\n"\
+    "Name                         Job #      Size            Status\n\n"\
+    "------------------------------------------------------------------"\
+    "-------------\n"
 
 static int rap_printq_info(int argc, const char **argv)
 {
@@ -670,6 +594,7 @@ static int rap_printq_info(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
 
+	d_printf(PRINTQ_ENUM_DISPLAY, cli->desthost); /* list header */
 	ret = cli_NetPrintQGetInfo(cli, argv[0], enum_queue, enum_jobs);
 	cli_shutdown(cli);
 	return ret;
@@ -706,6 +631,7 @@ int net_rap_printq(int argc, const char **argv)
 		if (!(cli = net_make_ipc_connection(0))) 
 			return -1;
 
+		d_printf(PRINTQ_ENUM_DISPLAY, cli->desthost); /* list header */
 		ret = cli_NetPrintQEnum(cli, enum_queue, enum_jobs);
 		cli_shutdown(cli);
 		return ret;
@@ -717,21 +643,32 @@ int net_rap_printq(int argc, const char **argv)
 	
 int net_rap_user_usage(int argc, const char **argv)
 {
-	d_printf(RAP_USER_USAGE); /* command syntax */
-	
+	d_printf("\nnet rap user [misc. options] [targets]\n\tList users\n");
+	d_printf("\nnet rap user DELETE <name> [misc. options] [targets]"\
+		 "\n\tDelete specified user\n");
+	d_printf("\nnet rap user INFO <name> [misc. options] [targets]"\
+		 "\n\tList the domain groups of the specified user\n");
+	d_printf("\nnet rap user ADD <name> [-F user flags] [misc. options]"\
+		 " [targets]\n\tAdd specified user\n");
+
 	general_rap_usage(argc, argv);
+	d_printf(COMMENT_USAGE);
 	return -1;
 } 
 	
-static void user_fn(const char *user_name, const char *comment, const char * home_dir, 
-		    const char * logon_script, void *state)
+static void user_fn(const char *user_name, const char *comment,
+		    const char * home_dir, const char * logon_script,
+		    void *state)
 {
 	d_printf("%-21.21s\n", user_name);
 }
 
-static void long_user_fn(const char *user_name, const char *comment, const char * home_dir, const char * logon_script, void *state)
+static void long_user_fn(const char *user_name, const char *comment,
+			 const char * home_dir, const char * logon_script, 
+			 void *state)
 {
-	d_printf("%-21.21s %-47.47s %-35.35s %35.35s\n", user_name, comment, home_dir, logon_script);
+	d_printf("%-21.21s %-47.47s %-35.35s %35.35s\n",
+		 user_name, comment, home_dir, logon_script);
 }
 
 static void group_member_fn(const char *user_name, void *state)
@@ -813,7 +750,12 @@ int net_rap_user(int argc, const char **argv)
 		if (!(cli = net_make_ipc_connection(0)))
                         return -1;
 		if (opt_long_list_entries) {
-			d_printf(USER_ENUM_DISPLAY);
+			d_printf(
+   "\nListing users on remote server:\n\n"\
+   "\nUser name             Description                                     "\
+   "Home Directory                          Profile Directory"\
+   "\n---------             -----------                                     "\
+   "--------------                          -----------------\n");
 			ret = cli_RNetUserEnum(cli, long_user_fn, NULL);
 			cli_shutdown(cli);
 			return ret;
@@ -829,13 +771,20 @@ int net_rap_user(int argc, const char **argv)
 
 int net_rap_group_usage(int argc, const char **argv)
 {
-	d_printf(RAP_GROUP_USAGE); /* command syntax */
-	
+	d_printf("net rap group [misc. options] [targets]"\
+		 "\n\tList user groups\n");
+	d_printf("\nnet rap group DELETE <name> [misc. options] [targets]"\
+		 "\n\tDelete specified group\n");
+	d_printf("\nnet rap group ADD <name> [-C comment] [misc. options]"\
+		 " [targets]\n\tCreate specified group\n");
+
 	general_rap_usage(argc, argv);
+	d_printf(COMMENT_USAGE);
 	return -1;
 }
 
-static void long_group_fn(const char *group_name, const char *comment, void *state)
+static void long_group_fn(const char *group_name, const char *comment,
+			  void *state)
 {
 	d_printf("%-21.21s %-50.50s\n", group_name, comment);
 }
@@ -912,8 +861,14 @@ int net_rap_group(int argc, const char **argv)
 
 int net_rap_groupmember_usage(int argc, const char **argv)
 {
-	d_printf(RAP_GROUPMEMBER_USAGE); /* command syntax */
-	
+	d_printf(
+	 "net rap groupmember LIST <group> [misc. options] [targets]"\
+	 "\n\t Enumerate users in a group\n"\
+	 "\nnet rap groupmember DELETE <group> <user> [misc. options] "\
+	 "[targets]\n\t Delete sepcified user from specified group\n"\
+	 "\nnet rap groupmember ADD <group> <user> [misc. options] [targets]"\
+	 "\n\t Add specified user to specified group\n");
+
 	general_rap_usage(argc, argv);
 	return -1;
 }
@@ -978,43 +933,48 @@ int net_rap_groupmember(int argc, const char **argv)
 
 int net_rap_validate_usage(int argc, const char **argv)
 {
-	d_printf(RAP_VALIDATE_USAGE); /* command syntax */
-	
+	d_printf("net rap validate <username> [password]\n"\
+		 "\tValidate user and password to check whether they"\
+		 " can access target server or domain\n");
+
 	general_rap_usage(argc, argv);
 	return -1;
 }
 
 int net_rap_validate(int argc, const char **argv)
 {
-	d_printf(ERRMSG_NOT_IMPLEMENTED);
-	return 0;
+	return errmsg_not_implemented();
 }
 
 int net_rap_service_usage(int argc, const char **argv)
 {
-	d_printf(RAP_SERVICE_USAGE); /* command syntax */
-	
+	d_printf("net rap service [misc. options] [targets] \n"\
+		 "\tlists all running service daemons on target server\n");
+	d_printf("\nnet rap service START <name> [service startup arguments]"\
+		 " [misc. options] [targets]"\
+		 "\n\tStart named service on remote server\n");
+	d_printf("\nnet rap service STOP <name> [misc. options] [targets]\n"\
+		 "\n\tStop named service on remote server\n");
+    
 	general_rap_usage(argc, argv);
 	return -1;
 }
 
-static int rap_service_add(int argc, const char **argv)
+static int rap_service_start(int argc, const char **argv)
 {
-	d_printf(ERRMSG_NOT_IMPLEMENTED);
-	return 0;
+	return errmsg_not_implemented();
 }
 
-static int rap_service_delete(int argc, const char **argv)
+static int rap_service_stop(int argc, const char **argv)
 {
-	d_printf(ERRMSG_NOT_IMPLEMENTED);
-	return 0;
+	return errmsg_not_implemented();
 }
 
 int net_rap_service(int argc, const char **argv)
 {
 	struct functable func[] = {
-		{"ADD", rap_service_add},
-		{"DELETE", rap_service_delete},
+		{"START", rap_service_start},
+		{"STOP", rap_service_stop},
 		{NULL, NULL}
 	};
 
@@ -1025,7 +985,8 @@ int net_rap_service(int argc, const char **argv)
 			return -1;
 
 		if (opt_long_list_entries) {
-			d_printf("%-15.15s %-50.50s\n", SERVICE_STR, COMMENT_STR); 
+			d_printf("%-15.15s %-50.50s\n", 
+				 SERVICE_STR, COMMENT_STR); 
 			d_printf("-----------------------------\n");
 			ret = cli_RNetServiceEnum(cli, long_group_fn, NULL);
 		}
@@ -1039,8 +1000,9 @@ int net_rap_service(int argc, const char **argv)
 
 int net_rap_password_usage(int argc, const char **argv)
 {
-	d_printf("net rap password <user> <old password> <new password> [misc_options] [targets]\n");
-	d_printf("\tchanges the password for the specified user on a remote server\n"); 
+	d_printf(
+	 "net rap password <user> <oldpwo> <newpw> [misc. options] [target]\n"\
+	 "\tchanges the password for the specified user at target\n"); 
 	
 	return -1;
 }
@@ -1065,8 +1027,9 @@ int net_rap_password(int argc, const char **argv)
 
 int net_rap_admin_usage(int argc, const char **argv)
 {
-	d_printf("net rap admin <remote command to execute> [cmd arguments [environment]] [misc_options] [targets]\n");
-	d_printf("\texecutes a remote command on an os/2 target server\n"); 
+	d_printf(
+   "net rap admin <remote command> [cmd args [env]] [misc. options] [targets]"\
+   "\n\texecutes a remote command on an os/2 target server\n"); 
 	
 	return -1;
 }
@@ -1074,8 +1037,7 @@ int net_rap_admin_usage(int argc, const char **argv)
 
 int net_rap_admin(int argc, const char **argv)
 {
-	d_printf(ERRMSG_NOT_IMPLEMENTED);
-	return 0;
+	return errmsg_not_implemented();
 }
 
 /* The help subsystem for the RAP subcommand */
@@ -1103,11 +1065,11 @@ int net_rap_usage(int argc, const char **argv)
 int rap_help_usage(int argc, const char **argv)
 {
 	d_printf("\n"\
-"Usage: net rap help <function>\n"\
-"\n"\
-"Valid functions are:\n"\
-"  FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP\n"\
-"  VALIDATE GROUPMEMBER ADMIN SERVICE PASSWORD\n");
+		 "Usage: net rap help <function>\n"\
+		 "\n"\
+		 "Valid functions are:\n"\
+		 "  FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP\n"\
+		 "  VALIDATE GROUPMEMBER ADMIN SERVICE PASSWORD\n");
 	return -1;
 }
 
