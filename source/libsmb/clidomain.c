@@ -75,6 +75,17 @@ char *get_trusted_serverlist(const char *domain)
 	    strequal(domain, "") || strequal(lp_workgroup(), domain))
 	{
 		pstrcpy(srv_list, lp_passwordserver());
+
+		if (strcmp(lp_passwordserver(),"*") == 0) {
+			struct in_addr ip;
+			extern pstring global_myname;
+
+			if (!resolve_name(lp_workgroup(), &ip, 0x1B)) return NULL;
+
+			if (!lookup_pdc_name(global_myname, lp_workgroup(), &ip, 
+					     srv_list)) return NULL;
+		}
+
 		DEBUG(10, ("local domain server list: %s\n", srv_list));
 		return srv_list;
 	}

@@ -238,12 +238,6 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
         state->getpwent_state = NULL;
     }
 
-    /* Ensure we have enumerated all trusted domains */
-
-    if (!server_state.got_trusted_domains) {
-        server_state.got_trusted_domains = get_trusted_domains();
-    }
-
     /* Create sam pipes for each domain we know about */
 
     for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
@@ -317,7 +311,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 
                 /* Fetch the user entries */
 
-                if (!open_sam_handles(ent->domain)) goto cleanup;
+                if (!domain_handles_open(ent->domain)) goto cleanup;
 
                 do {
                     status =
