@@ -730,14 +730,21 @@ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 	ndr->depth--;	
 }
 
+const char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
+{
+	return talloc_asprintf(mem_ctx, 
+			       "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+			       IVAL(guid->info, 0), SVAL(guid->info, 4), 
+			       SVAL(guid->info, 6),
+			       guid->info[8], guid->info[9],
+			       guid->info[10], guid->info[11], 
+			       guid->info[12], guid->info[13], 
+			       guid->info[14], guid->info[15]);
+}
+
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid)
 {
-	ndr->print(ndr, "%-25s: %08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x", 
-		   name,
-		   IVAL(guid->info, 0), SVAL(guid->info, 4), SVAL(guid->info, 6),
-		   guid->info[8], guid->info[9],
-		   guid->info[10], guid->info[11], guid->info[12], guid->info[13], 
-		   guid->info[14], guid->info[15]);
+	ndr->print(ndr, "%-25s: %s", GUID_string(ndr->mem_ctx, guid));
 }
 
 void ndr_print_DATA_BLOB(struct ndr_print *ndr, const char *name, DATA_BLOB r)

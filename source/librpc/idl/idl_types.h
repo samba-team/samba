@@ -50,3 +50,12 @@
 #define NDR_ALIGN2    LIBNDR_FLAG_ALIGN2
 #define NDR_ALIGN4    LIBNDR_FLAG_ALIGN4
 #define NDR_ALIGN8    LIBNDR_FLAG_ALIGN8
+
+
+/*
+  these are used by the epmapper and mgmt interfaces
+*/
+#define error_status_t uint32
+#define boolean32 uint32
+#define unsigned32 uint32
+

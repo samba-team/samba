@@ -10,7 +10,8 @@ interface dcerpc
 {
 	typedef struct {
 		GUID uuid;
-		uint32 if_version;
+		uint16 major_version;
+		uint16 minor_version;
 	} dcerpc_syntax_id;
 
 	typedef struct {

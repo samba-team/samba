@@ -20,35 +20,19 @@
 
 #include "includes.h"
 
-struct dcerpc_interface_table *pipes[] = {
-	&dcerpc_table_samr,
-	&dcerpc_table_lsarpc,
-	&dcerpc_table_netdfs,
-	&dcerpc_table_atsvc,
-	&dcerpc_table_dcerpc,
-	&dcerpc_table_rpcecho,
-	&dcerpc_table_epmapper,
-	&dcerpc_table_eventlog,
-	&dcerpc_table_spoolss,
-	&dcerpc_table_srvsvc,
-	&dcerpc_table_winreg,
-	&dcerpc_table_wkssvc,
-	NULL
-};
-
 static struct dcerpc_interface_table *find_pipe(const char *pipe_name)
 {
 	int i;
-	for (i=0;pipes[i];i++) {
-		if (strcmp(pipes[i]->name, pipe_name) == 0) {
+	for (i=0;dcerpc_pipes[i];i++) {
+		if (strcmp(dcerpc_pipes[i]->name, pipe_name) == 0) {
 			break;
 		}
 	}
-	if (!pipes[i]) {
+	if (!dcerpc_pipes[i]) {
 		printf("pipe '%s' not in table\n", pipe_name);
 		exit(1);
 	}
-	return pipes[i];
+	return dcerpc_pipes[i];
 }
 
 static const struct dcerpc_interface_call *find_function(
@@ -80,8 +64,8 @@ static void show_pipes(void)
 	usage();
 	printf("\nYou must specify a pipe\n");
 	printf("known pipes are:\n");
-	for (i=0;pipes[i];i++) {
-		printf("\t%s\n", pipes[i]->name);
+	for (i=0;dcerpc_pipes[i];i++) {
+		printf("\t%s\n", dcerpc_pipes[i]->name);
 	}
 	exit(1);
 }

@@ -247,3 +247,9 @@ typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint32, v
 #include "librpc/gen_ndr/ndr_eventlog.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_winreg.h"
+#include "librpc/gen_ndr/ndr_mgmt.h"
+
+/* this can be used to loop over all pipes - please extend the table
+   in librpc/ndr/ndr.c 
+*/
+extern const struct dcerpc_interface_table *dcerpc_pipes[];
