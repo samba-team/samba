@@ -627,6 +627,75 @@ static void api_samr_del_aliasmem( pipes_struct *p, prs_struct *data, prs_struct
 }
 
 /*******************************************************************
+ samr_reply_enum_domains
+ ********************************************************************/
+static void samr_reply_enum_domains(SAMR_Q_ENUM_DOMAINS *q_u,
+				prs_struct *rdata)
+{
+	SAMR_R_ENUM_DOMAINS r_e;
+	char  **doms = NULL;
+	uint32 num_entries = 0;
+
+	r_e.status = 0x0;
+	r_e.num_entries2 = 0;
+
+	ZERO_STRUCT(r_e);
+
+	r_e.status = 0x0;
+
+	/* find the connection policy handle. */
+	if (r_e.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
+	{
+		r_e.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
+	DEBUG(5,("samr_reply_enum_domains:\n"));
+
+	if (!enumdomains(&doms, &num_entries))
+	{
+		r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
+	}
+
+	if (r_e.status == 0x0)
+	{
+		make_samr_r_enum_domains(&r_e,
+		          q_u->start_idx + num_entries,
+		          num_entries, doms, r_e.status);
+	}
+
+	/* store the response in the SMB stream */
+	samr_io_r_enum_domains("", &r_e, rdata, 0);
+
+	free_char_array(num_entries, doms);
+
+	if (r_e.sam != NULL)
+	{
+		free(r_e.sam);
+	}
+
+	if (r_e.uni_dom_name != NULL)
+	{
+		free(r_e.uni_dom_name);
+	}
+
+	DEBUG(5,("samr_enum_domains: %d\n", __LINE__));
+}
+
+/*******************************************************************
+ api_samr_enum_domains
+ ********************************************************************/
+static void api_samr_enum_domains( pipes_struct *p, prs_struct *data, prs_struct *rdata)
+{
+	SAMR_Q_ENUM_DOMAINS q_e;
+
+	/* grab the samr open */
+	samr_io_q_enum_domains("", &q_e, data, 0);
+
+	/* construct reply. */
+	samr_reply_enum_domains(&q_e, rdata);
+}
+
+/*******************************************************************
  samr_reply_enum_dom_groups
  ********************************************************************/
 static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
@@ -693,7 +762,7 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 }
 
 /*******************************************************************
- api_samr_enum_dom_aliases
+ api_samr_enum_dom_groups
  ********************************************************************/
 static void api_samr_enum_dom_groups( pipes_struct *p, prs_struct *data, prs_struct *rdata)
 {
@@ -2933,6 +3002,7 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_CLOSE_HND"        , SAMR_CLOSE_HND        , api_samr_close_hnd        },
 	{ "SAMR_CONNECT"          , SAMR_CONNECT          , api_samr_connect          },
 	{ "SAMR_CONNECT_ANON"     , SAMR_CONNECT_ANON     , api_samr_connect_anon     },
+	{ "SAMR_ENUM_DOMAINS"     , SAMR_ENUM_DOMAINS     , api_samr_enum_domains     },
 	{ "SAMR_ENUM_DOM_USERS"   , SAMR_ENUM_DOM_USERS   , api_samr_enum_dom_users   },
 	{ "SAMR_ENUM_DOM_GROUPS"  , SAMR_ENUM_DOM_GROUPS  , api_samr_enum_dom_groups  },
 	{ "SAMR_ENUM_DOM_ALIASES" , SAMR_ENUM_DOM_ALIASES , api_samr_enum_dom_aliases },
