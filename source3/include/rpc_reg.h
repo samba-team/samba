@@ -63,6 +63,10 @@
 #define HKEY_LOCAL_MACHINE 	0x80000002
 #define HKEY_USERS         	0x80000003
 
+#define KEY_HKLM	"HKLM"
+#define KEY_HKU		"HKU"
+
+
 /* Registry data types */
 
 #define REG_NONE                       0
@@ -81,6 +85,18 @@
 /* Shutdown options */
 #define REG_FORCE_SHUTDOWN 0x001
 #define REG_REBOOT_ON_SHUTDOWN 0x100
+
+/* structure to store the registry handles */
+
+typedef struct _RegistryKey {
+
+	struct _RegistryKey *prev, *next;
+
+	fstring name; /* name of registry key */
+	POLICY_HND	hnd;
+	
+} Registry_Key;
+
 
 /* REG_Q_OPEN_HKCR   */
 typedef struct q_reg_open_hkcr_info
