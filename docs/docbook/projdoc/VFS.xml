@@ -2,9 +2,10 @@
 <chapterinfo>
 	&author.jelmer;
 	&author.jht;
-	<author><firstname>Alexander</firstname><surname>Bokovoy</surname></author>
 	<author><firstname>Tim</firstname><surname>Potter</surname></author>
-	<author><firstname>Simo</firstname><surname>Sorce</surname></author>
+	<author><firstname>Simo</firstname><surname>Sorce</surname><contrib>original vfs_skel README</contrib></author>
+	<author><firstname>Alexander</firstname><surname>Bokovoy</surname><contrib>original vfs_netatalk docs</contrib></author>
+	<author><firstname>Stefan</firstname><surname>Metzmacher</surname><contrib>Update for multiple modules</contrib></author>
 </chapterinfo>
 <title>Stackable VFS modules</title>
 
@@ -32,27 +33,46 @@ on different systems.  They currently have been tested against GNU/Linux and IRI
 
 <para>
 To use the VFS modules, create a share similar to the one below.  The
-important parameter is the <parameter>vfs object</parameter> parameter which must point to
-the exact pathname of the shared library objects. For example, to log all access 
-to files and use a recycle bin:
+important parameter is the <command>vfs objects</command> parameter where
+you can list one or more VFS modules by name. For example, to log all access 
+to files and put deleted files in a recycle bin:
 
 <programlisting>
 [audit]
-	comment = Audited /data directory
-    path = /data
-    vfs object = /path/to/audit.so /path/to/recycle.so
-    writeable = yes
-    browseable = yes
+        comment = Audited /data directory
+        path = /data
+        vfs objects = audit recycle
+        writeable = yes
+        browseable = yes
 </programlisting>
 </para>
 
 <para>
-The modules are used in the order they are specified.
+The modules are used in the order in which they are specified.
 </para>
 
 <para>
-Further documentation on writing VFS modules for Samba can be found in
-the Samba Developers Guide.
+Samba will attempt to load modules from the <emphasis>lib</emphasis>
+directory in the root directory of the samba installation (usually 
+<filename>/usr/lib/samba</filename> or <filename>/usr/local/samba/lib
+</filename>).
+</para>
+
+<para>
+Some modules can be used twice for the same share.
+This can be done using a configuration similar to the one below.
+
+<programlisting>
+[test]
+        comment = VFS TEST
+        path = /data
+        writeable = yes
+        browseable = yes
+        vfs objects = example:example1 example example:test
+		example1: parameter = 1
+		example:  parameter = 5
+		test:	  parameter = 7
+</programlisting>
 </para>
 
 </sect1>
@@ -82,7 +102,7 @@ the Samba Developers Guide.
 		<para>
 		This module is identical with the <emphasis>audit</emphasis> module above except
 		that it sends audit logs to both syslog as well as the smbd log file/s. The 
-		loglevel for this module is set in the smb.conf file.
+		loglevel for this module is set in the smb.conf file. 
 		</para>
 
 		<para>
@@ -126,46 +146,46 @@ the Samba Developers Guide.
 		will be intercepted and files moved to the recycle
 		directory instead of being deleted.
 		</para>
-
+		
 		<para>Supported options:
 		<variablelist>
 			<varlistentry>
-			<term>vfs_recycle_bin:repository</term>
+			<term>recycle:repository</term>
 			<listitem><para>FIXME</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
-			<term>vfs_recycle_bin:keeptree</term>
+			<term>recycle:keeptree</term>
 			<listitem><para>FIXME</para></listitem>
 			</varlistentry>
 			
 			<varlistentry>
-			<term>vfs_recycle_bin:versions</term>
+			<term>recycle:versions</term>
 			<listitem><para>FIXME</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
-			<term>vfs_recycle_bin:touch</term>
+			<term>recycle:touch</term>
 			<listitem><para>FIXME</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
-			<term>vfs_recycle_bin:maxsize</term>
+			<term>recycle:maxsize</term>
 			<listitem><para>FIXME</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
-			<term>vfs_recycle_bin:exclude</term>
+			<term>recycle:exclude</term>
 			<listitem><para>FIXME</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
-			<term>vfs_recycle_bin:exclude_dir</term>
+			<term>recycle:exclude_dir</term>
 			<listitem><para>FIXME</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
-			<term>vfs_recycle_bin:noversions</term>
+			<term>recycle:noversions</term>
 			<listitem><para>FIXME</para></listitem>
 			</varlistentry>
 		</variablelist>
