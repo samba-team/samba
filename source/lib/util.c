@@ -3862,7 +3862,6 @@ static char *automount_lookup(char *user_name)
 char *automount_server(char *user_name)
 {
 	static pstring server_name;
-	int home_server_len;
 
 	/* use the local machine name as the default */
 	/* this will be the default if AUTOMOUNT is not used or fails */
@@ -3872,6 +3871,7 @@ char *automount_server(char *user_name)
 
 	if (lp_nis_home_map())
 	{
+	        int home_server_len;
 		char *automount_value = automount_lookup(user_name);
 		home_server_len = strcspn(automount_value,":");
 		DEBUG(5, ("NIS lookup succeeded.  Home server length: %d\n",home_server_len));
@@ -3897,7 +3897,6 @@ char *automount_server(char *user_name)
 char *automount_path(char *user_name)
 {
 	static pstring server_path;
-	char *home_path_start;
 
 	/* use the passwd entry as the default */
 	/* this will be the default if AUTOMOUNT is not used or fails */
@@ -3908,6 +3907,7 @@ char *automount_path(char *user_name)
 
 	if (lp_nis_home_map())
 	{
+	        char *home_path_start;
 		char *automount_value = automount_lookup(user_name);
 		home_path_start = strchr(automount_value,':');
 		if (home_path_start != NULL)
