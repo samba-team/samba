@@ -1,0 +1,33 @@
+Template: samba/run_mode
+Type: select
+Default: daemons
+Choices: daemons, inetd
+Description: How do you want to run Samba?
+ The Samba services (nmbd and smbd) can run as normal daemons or 
+ from inetd. Running as daemons is the recommended approach.
+
+Template: samba/generate_smbpasswd
+Type: boolean
+Default: false
+Description: Create samba password file, /etc/samba/smbpasswd?
+ To be compatible with the defaults in most versions of Windows,
+ Samba must be configured to use encrypted passwords.  This requires
+ user passwords to be stored in a file separate from /etc/passwd.
+ This file can be created automatically, but the passwords must
+ be added manually (by you or the user) by running smbpasswd,
+ and you must arrange to keep it up-to-date in the future.  If
+ you do not create it, you will have to reconfigure samba
+ (and probably your client machines) to use plaintext passwords.
+ See /usr/share/doc/samba-doc/htmldocs/ENCRYPTION.html from the 
+ samba-doc package for more details.
+
+Template: samba/log_files_moved
+Type: note
+Description: Samba's log files have moved.
+ Starting with the first packages of Samba 2.2 for Debian the log
+ files for both Samba daemons (nmbd and smbd) are now stored in
+ /var/log/samba/. The names of the files are log.nmbd and log.smbd,
+ for nmbd and smbd respectively.
+ .
+ The old log files that were in /var/log/ will be moved to
+ the new location for you.

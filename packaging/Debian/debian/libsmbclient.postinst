@@ -2,6 +2,8 @@
 #
 # postinst script for libsmbclient
 #
+# $Id: libsmbclient.postinst,v 1.1.2.2 2002/05/02 20:02:04 jerry Exp $
+#
 
 if [ "$1" = "configure" ]; then
 	ldconfig

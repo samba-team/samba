@@ -1,0 +1,10 @@
+/var/log/samba/log.winbindd {
+	weekly
+	missingok
+	rotate 7
+	postrotate
+		killall -q -HUP winbindd || true
+	endscript
+	compress
+	notifempty
+}

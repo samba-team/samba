@@ -1,74 +1,25 @@
-#!/bin/sh
-#
-# Pre-removal script for the Samba package for Debian GNU/Linux.
-#
-# Written by Eloy A. Paris for the Debian project.
-#
+#!/bin/sh -e
 
-DEBIAN_CONFIG=/etc/samba/debian_config
+# Clean up any such stale file.
+rm -f /tmp/samba-was-not-running
 
-NMBDPID=/var/state/samba/nmbd.pid
-SMBDPID=/var/state/samba/smbd.pid
-
-# The most important thing the prerm script must do is to stop the Samba
-#	daemons (nmbd and smbd). Note that this can be tricky since Samba
-#	can be running from the inetd meta-daemon or as daemons (it's a 
-#	user choice).
-
-# Before we stop Samba we need to know how it is running (from inetd
-#	or as daemons). We could source in the debian_config file but it
-#	is safer to grep /etc/inetd.conf.
-if grep -q '^netbios-ns' /etc/inetd.conf; then
-	# Samba is running from inetd. We need to disable the Samba daemons
-	#	in /etc/inetd.conf before we stop the daemons. Otherwise traffic
-	#	in the NetBIOS ports will make inetd start them again.
-	#
-	# Note: user preferences regarding the mode he/she wants Samba to
-	#	be run (inetd or daemons) will be lost next. In the postinst
-	#	we depend on the information present in the debian_config
-	#	file to restore everything back to the way it was.
-	update-inetd --disable netbios-ssn
-	update-inetd --disable netbios-ns
-
-	# Now it is safe to stop the daemons...
-
-	# I have just recalled that old versions of nmbd and smbd did not store
-	#	their PID's in /var/samba/state/ (or whatever directory
-	#	was used for this purpose in configure), so I can't use
-	#	--pidfile in start-stop-daemon to stop nmbd or smbd. I 
-	#	will handle this by testing first whether the PID file exists.
-	if [ -f $NMBDPID ]; then
-		start-stop-daemon --stop --oknodo --user root --name nmbd --quiet --pidfile $NMBDPID
-	else
-		start-stop-daemon --stop --oknodo --user root --name nmbd --quiet
+# The smbd pid file is missing, or points to a dead process
+if [ ! -f /var/run/samba/smbd.pid ] || \
+	! ps h `cat /var/run/samba/smbd.pid` > /dev/null
+then
+	# The nmbd pid file is missing, or points to a dead process
+	if [ -f /var/run/samba/nmbd.pid ] || \
+		! ps h `cat /var/run/samba/nmbd.pid` > /dev/null
+	then
+		# let the postinst know not to start samba.
+		[ "$1" = "upgrade" ] && touch /tmp/samba-was-not-running
 	fi
+fi
 
-	# nmbd must be dead by now, now it's smbd's turn
-	if [ -f $SMBDPID ]; then
-		start-stop-daemon --stop --oknodo --user root --name smbd --quiet --pidfile $SMBDPID
-	else
-		start-stop-daemon --stop --oknodo --user root --name smbd --quiet
-	fi
-elif [ -x /etc/init.d/samba ]; then	# Old Samba packages didn't have a
-					#	/etc/init.d/samba so we better 
+if [ -x /etc/init.d/samba ]; then	# Old Samba packages didn't have  
+					#	/etc/init.d/samba so we'd better
 					#	check first.
-	# Samba is running as daemons. No problem here, just stop Samba...
 	/etc/init.d/samba stop
 fi
 
-if [ \( "$1" = "upgrade" -o "$1" = "remove" \) -a -L /usr/doc/samba ]; then
-	rm -f /usr/doc/samba
-fi
-
-# Make sure there are no nmbd or smbd daemons running (security check)
-# (as you see this code is commented out - so far I haven't had the need
-#	to do this sanity check - peloy, Aug. 23, 1998)
-#ps -ax | grep nmbd
-#if [ $? ... ]; then
-#	killall -9 nmbd
-#fi
-
-#ps -ax | grep smbd
-#if [ $? ... ]; then
-#	killall -9 smbd
-#fi
+#DEBHELPER#

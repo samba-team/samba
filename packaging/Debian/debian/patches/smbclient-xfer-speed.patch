@@ -1,6 +1,6 @@
---- samba-2.2.2.cvs20020120/source/client/client.c.orig	Wed Jan 23 23:32:44 2002
-+++ samba-2.2.2.cvs20020120/source/client/client.c	Wed Jan 23 23:33:50 2002
-@@ -92,10 +92,10 @@
+--- samba-2.2.4/source/client/client.c.orig	Wed May  1 23:13:57 2002
++++ samba-2.2.4/source/client/client.c	Thu May  2 00:34:16 2002
+@@ -91,10 +91,10 @@
  extern file_info def_finfo;
  
  /* timing globals */

@@ -1,0 +1,47 @@
+Template: samba-common/do_debconf
+Type: boolean
+Default: true
+Description: Configure smb.conf through debconf?
+ The rest of the configuration of Samba deals with questions that affect
+ parameters in /etc/samba/smb.conf, which is the file used to configure the
+ Samba programs (nmbd and smbd.) If you want to be asked just a few
+ questions then select "Yes" and continue with the configuration. If you
+ want to have full control, select "No" and configure your smb.conf
+ manually or through SWAT.
+Description-fr: Voulez-vous configurer smb.conf avec debconf ?
+ La suite de la configuration de Samba pose des questions sur des paramètres
+ de /etc/samba/smb.conf, le fichier utilisé pour configurer les programmes
+ de Samba (nmbd et smbd). Si vous voulez bien répondre à quelques questions,
+ choisissez « Yes » et poursuivez la configuration. Si vous voulez un
+ contrôle total, choisissez « No » et configurez le fichier smb.conf
+ manuellement ou avec SWAT.
+
+Template: samba-common/workgroup
+Type: string
+Description: Workgroup/Domain Name?
+ This controls what workgroup your server will appear to be in when queried
+ by clients. Note that this parameter also controls the Domain name used
+ with the security=domain setting.
+Description-fr: Groupe de travail et nom de domaine ?
+ Ce paramètre indique le groupe de travail où les clients trouveront le
+ serveur. Il indique aussi le nom de domaine utilisé par le paramètre
+ « security=domain ».
+
+Template: samba-common/encrypt_passwords
+Type: boolean
+Default: true
+Description: Use password encryption?
+ Recent Windows clients communicate with SMB servers using encrypted
+ passwords. If you want to use clear text passwords you will need to change
+ a parameter in your Windows registry. It is recommended that you use
+ encrypted passwords. If you do, make sure you have a valid
+ /etc/samba/smbpasswd file and that you set passwords in there for each
+ user using the smbpasswd command.
+Description-fr: Voulez-vous chiffrer les mots de passe ?
+ Des clients Windows récents communiquent avec les serveurs SMB en utilisant
+ des mots de passe chiffrés. Si vous voulez utiliser des mots de passe sans
+ chiffrement, vous devez modifier un paramètre dans le registre de Windows.
+ Il est recommandé d'utiliser des mots de passe chiffrés. Si vous le faites,
+ n'oubliez pas de créer un fichier /etc/samba/smbpasswd et d'y mettre les
+ mots de passe de tous les utilisateurs qui se servent de la commande
+ smbpasswd.

@@ -1,7 +1,16 @@
 #!/bin/sh -e
+#
+# $Id: patch-source,v 1.1.2.2 2002/05/02 20:02:05 jerry Exp $
+#
 
 for patch in debian/patches/*.patch; do
 	patch -p1 < $patch
 done
+
+cat debian/changelog | perl -pi -e '($version) = <STDIN> =~/\((.*)\)/; \
+		s/\".*\"/\"$version for Debian\"/' source/include/version.h
+
+# Regenerate configure only if it is older than configure.in
+[ source/configure -ot source/configure.in ] && (cd source && autoconf)
 
 exit 0

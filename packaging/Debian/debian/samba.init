@@ -2,31 +2,23 @@
 #
 # Start/stops the Samba daemons (nmbd and smbd).
 #
+# $Id: samba.init,v 1.1.2.2 2002/05/02 20:02:04 jerry Exp $
+#
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin
-DEBIAN_CONFIG=/etc/samba/debian_config
+# Defaults
+RUN_MODE="daemons"
 
-NMBDPID=/var/state/samba/nmbd.pid
-SMBDPID=/var/state/samba/smbd.pid
+# Reads config file (will override defaults above)
+[ -r /etc/default/samba ] && . /etc/default/samba
+
+NMBDPID=/var/run/samba/nmbd.pid
+SMBDPID=/var/run/samba/smbd.pid
 
 # clear conflicting settings from the environment
 unset TMPDIR
 
-# Sanity check: see if Samba has been configured on this system.
-if [ ! -f $DEBIAN_CONFIG ]; then
-	echo "The file $DEBIAN_CONFIG does not exist! There is something wrong"
-	echo "with the installation of Samba on this system. Please re-install"
-	echo "Samba. I can't continue!!!"
-	exit 1
-fi
-
-# Read current Samba configuration
-. $DEBIAN_CONFIG
-
-#       the Samba daemons.
-
 # If Samba is running from inetd then there is nothing to do
-if [ "$run_mode" = "from_inetd" ]; then
+if [ "$RUN_MODE" = "inetd" ]; then
 	# Commented out to close bug #26884 (startup message is rather long). I
 	#	have yet to think how to let the user know that if he/she is running
 	#	Samba from inetd, he can't just "/etc/init.d/samba stop" to stop

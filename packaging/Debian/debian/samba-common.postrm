@@ -1,6 +1,11 @@
 #!/bin/sh
+#
+# $Id: samba-common.postrm,v 1.1.2.2 2002/05/02 20:02:04 jerry Exp $
+#
 
 if [ "$1" = purge ]; then
 	# Remove any files left in /etc/samba/
 	rm -Rf /etc/samba/
 fi
+
+#DEBHELPER#

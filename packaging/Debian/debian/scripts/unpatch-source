@@ -1,7 +1,17 @@
 #!/bin/sh -e
+#
+# $Id: unpatch-source,v 1.1.2.2 2002/05/02 20:02:05 jerry Exp $
+#
 
-for patch in debian/patches/*.patch; do
+# We want to reverse the patches in the opposite order we applied
+#	them, hence the 'ls|sort -r'.
+for patch in `ls debian/patches/*.patch | sort -r`; do
 	patch -p1 -R < $patch
 done
+
+perl -pi -e's/-.* for Debian//' source/include/version.h
+
+# Regenerate configure only if it is older than configure.in
+[ source/configure -ot source/configure.in ] && (cd source && autoconf)
 
 exit 0

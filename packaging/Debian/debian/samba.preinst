@@ -7,6 +7,8 @@
 # Thanks to Ben Pfaff <pfaffben@pilot.msu.edu> for sharing on debian-devel
 #	his ideas about how to move conffiles to new locations.
 #
+# $Id: samba.preinst,v 1.1.2.2 2002/05/02 20:02:04 jerry Exp $
+#
 
 # First see if a smb.conf file currently exists.
 test -f /etc/smb.conf || exit 0
@@ -45,3 +47,5 @@ if [ -f /etc/smbpasswd -a ! -e /etc/samba/smbpasswd ]; then
 	# Finally, move the conffile to its new location.
 	mv /etc/smbpasswd /etc/samba/smbpasswd
 fi
+
+#DEBHELPER#
