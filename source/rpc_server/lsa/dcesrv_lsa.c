@@ -51,7 +51,6 @@ static void lsa_Policy_close(struct lsa_policy_state *state)
 {
 	state->reference_count--;
 	if (state->reference_count == 0) {
-		samdb_close(state->sam_ctx);
 		talloc_destroy(state->mem_ctx);
 	}
 }
@@ -162,7 +161,7 @@ static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	state->mem_ctx = lsa_mem_ctx;
 
 	/* make sure the sam database is accessible */
-	state->sam_ctx = samdb_connect();
+	state->sam_ctx = samdb_connect(state->mem_ctx);
 	if (state->sam_ctx == NULL) {
 		talloc_destroy(state->mem_ctx);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -173,7 +172,6 @@ static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	state->domain_dn = samdb_search_string(state->sam_ctx, state->mem_ctx, NULL,
 					       "dn", "(&(objectClass=domain)(!(objectclass=builtinDomain)))");
 	if (!state->domain_dn) {
-		samdb_close(state->sam_ctx);
 		talloc_destroy(state->mem_ctx);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
