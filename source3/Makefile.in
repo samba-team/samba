@@ -914,8 +914,8 @@ bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 	ln -snf libbigballofmud.so bin/libbigballofmud.so.0
 
 # It would be nice to build a static bigballofmud too, but when I try
-# I get linker errors about dl_open and similar things.  I'm not sure
-# if it can be fixed or if they just can't be called from a static
+# I get linker errors about dl_open and similar things.  I'm not sure if
+# it can be fixed or if they just can't be called from a static
 # library.
 
 libsmbclient: $(LIBSMBCLIENT)
