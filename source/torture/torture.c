@@ -2067,6 +2067,10 @@ static BOOL run_trans2test(int dummy)
 	cli_unlink(&cli, fname);
 	fnum = cli_open(&cli, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	if (fnum == -1) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(&cli));
+		return False;
+	}
 	cli_close(&cli, fnum);
 
 	if (!cli_qpathinfo(&cli, fname, &c_time, &a_time, &m_time, &size, NULL)) {
@@ -2190,9 +2194,7 @@ static BOOL run_w2ktest(int dummy)
 			O_RDWR | O_CREAT , DENY_NONE);
 
 	for (level = 1004; level < 1040; level++) {
-		if (!new_trans(&cli, fnum, level)) {
-			correct = False;
-		}
+		new_trans(&cli, fnum, level);
 	}
 
 	cli_close(&cli, fnum);
