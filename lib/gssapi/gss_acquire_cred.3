@@ -61,6 +61,7 @@
 .Nm gss_inquire_names_for_mech ,
 .Nm gss_krb5_copy_ccache ,
 .Nm gss_krb5_compat_des3_mic ,
+.Nm gss_krb5_extract_authz_data_from_sec_context ,
 .Nm gss_process_context_token ,
 .Nm gss_release_buffer ,
 .Nm gss_release_cred ,
@@ -288,6 +289,13 @@ GSS-API library (libgssapi, -lgssapi)
 .Fa "OM_uint32 * minor_status"
 .Fa "gss_ctx_id_t context_handle"
 .Fa "int onoff"
+.Fc
+.Ft OM_uint32
+.Fo gss_krb5_extract_authz_data_from_sec_context
+.Fa "OM_uint32 *minor_status"
+.Fa "gss_ctx_id_t context_handle"
+.Fa "int ad_type"
+.Fa "gss_buffer_t ad_data"
 .Fc
 .Ft OM_uint32
 .Fo gss_process_context_token
@@ -577,6 +585,15 @@ The acceptor receives the delegated token in the last argument to
 .Pp
 .Fn gsskrb5_register_acceptor_identity
 sets the Kerberos 5 principal that the acceptor will use.
+.Pp
+.Fn gss_krb5_extract_authz_data_from_sec_context
+extracts the Kerberos authorizationdata that may be stored within the
+context.
+Tha caller must free the returned buffer
+.Fa ad_data
+with
+.Fn gss_release_buffer
+upon success.
 .Pp
 .Fn gss_krb5_compat_des3_mic
 turns on or off the compatibly with older version of Heimdal using
