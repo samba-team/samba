@@ -1117,8 +1117,28 @@ char *skip_string(char *buf,int n)
 }
 
 /*******************************************************************
+ Count the number of characters in a string. Normally this will
+ be the same as the number of bytes in a string for single byte strings,
+ but will be different for multibyte.
+ 16.oct.98, jdblair@cobaltnet.com.
+********************************************************************/
+
+size_t str_charnum(char *s)
+{
+  size_t len = 0;
+  
+  while (*s != '\0') {
+    int skip = skip_multibyte_char(*s);
+    s += (skip ? skip : 1);
+    len++;
+  }
+  return len;
+}
+
+/*******************************************************************
 trim the specified elements off the front and back of a string
 ********************************************************************/
+
 BOOL trim_string(char *s,char *front,char *back)
 {
   BOOL ret = False;
@@ -1138,14 +1158,76 @@ BOOL trim_string(char *s,char *front,char *back)
     }
   }
 
-  s_len = strlen(s);
-  while (back_len && s_len >= back_len && 
-        (strncmp(s + s_len - back_len, back, back_len)==0))  
+  /*
+   * We split out the multibyte code page
+   * case here for speed purposes. Under a
+   * multibyte code page we need to walk the
+   * string forwards only and multiple times.
+   * Thanks to John Blair for finding this
+   * one. JRA.
+   */
+
+  if(back_len)
   {
-    ret = True;
-    s[s_len - back_len] = 0;
-    s_len = strlen(s);
-  }
+    if(!is_multibyte_codepage())
+    {
+      s_len = strlen(s);
+      while ((s_len >= back_len) && 
+             (strncmp(s + s_len - back_len, back, back_len)==0))  
+      {
+        ret = True;
+        s[s_len - back_len] = '\0';
+        s_len = strlen(s);
+      }
+    }
+    else
+    {
+
+      /*
+       * Multibyte code page case.
+       * Keep going through the string, trying
+       * to match the 'back' string with the end
+       * of the string. If we get a match, truncate
+       * 'back' off the end of the string and
+       * go through the string again from the
+       * start. Keep doing this until we have
+       * gone through the string with no match
+       * at the string end.
+       */
+
+      size_t mb_back_len = str_charnum(back);
+      size_t mb_s_len = str_charnum(s);
+
+      while(mb_s_len >= mb_back_len)
+      {
+        size_t charcount = 0;
+        char *mbp = s;
+
+        while(charcount < (mb_s_len - mb_back_len))
+        {
+          size_t skip = skip_multibyte_char(*mbp);
+          mbp += (skip ? skip : 1);
+          charcount++;
+        }
+
+        /*
+         * mbp now points at mb_back_len multibyte
+         * characters from the end of s.
+         */
+
+        if(strcmp(mbp, back) == 0)
+        {
+          ret = True;
+          *mbp = '\0';
+          mb_s_len = str_charnum(s);
+          mbp = s;
+        }
+        else
+          break;
+      } /* end while mb_s_len... */
+    } /* end else .. */
+  } /* end if back_len .. */
+
   return(ret);
 }
 

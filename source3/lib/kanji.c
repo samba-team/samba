@@ -88,105 +88,110 @@ static char hex_tag = HEXTAG;
 /*******************************************************************
   SHIFT JIS functions
 ********************************************************************/
+
 /*******************************************************************
  search token from S1 separated any char of S2
  S1 contains SHIFT JIS chars.
 ********************************************************************/
+
 static char *sj_strtok(char *s1, char *s2)
 {
-    static char *s = NULL;
-    char *q;
-    if (!s1) {
-	if (!s) {
-	    return NULL;
-	}
-	s1 = s;
+  static char *s = NULL;
+  char *q;
+  if (!s1) {
+    if (!s) {
+      return NULL;
     }
-    for (q = s1; *s1; ) {
-	if (is_shift_jis (*s1)) {
-	    s1 += 2;
-	} else if (is_kana (*s1)) {
-	    s1++;
-	} else {
-	    char *p = strchr (s2, *s1);
-	    if (p) {
-		if (s1 != q) {
-		    s = s1 + 1;
-		    *s1 = '\0';
-		    return q;
-		}
-		q = s1 + 1;
-	    }
-	    s1++;
-	}
+    s1 = s;
+  }
+  for (q = s1; *s1; ) {
+    if (is_shift_jis (*s1)) {
+      s1 += 2;
+    } else if (is_kana (*s1)) {
+      s1++;
+    } else {
+      char *p = strchr (s2, *s1);
+      if (p) {
+        if (s1 != q) {
+          s = s1 + 1;
+          *s1 = '\0';
+          return q;
+        }
+        q = s1 + 1;
+      }
+      s1++;
     }
-    s = NULL;
-    if (*q) {
-	return q;
-    }
-    return NULL;
+  }
+  s = NULL;
+  if (*q) {
+    return q;
+  }
+  return NULL;
 }
 
 /*******************************************************************
  search string S2 from S1
  S1 contains SHIFT JIS chars.
 ********************************************************************/
+
 static char *sj_strstr(char *s1, char *s2)
 {
-    int len = strlen ((char *) s2);
-    if (!*s2) 
-	return (char *) s1;
-    for (;*s1;) {
-	if (*s1 == *s2) {
-	    if (strncmp (s1, s2, len) == 0)
-		return (char *) s1;
-	}
-	if (is_shift_jis (*s1)) {
-	    s1 += 2;
-	} else {
-	    s1++;
-	}
+  int len = strlen ((char *) s2);
+  if (!*s2) 
+    return (char *) s1;
+  for (;*s1;) {
+    if (*s1 == *s2) {
+      if (strncmp (s1, s2, len) == 0)
+        return (char *) s1;
     }
-    return 0;
+    if (is_shift_jis (*s1)) {
+      s1 += 2;
+    } else {
+      s1++;
+    }
+  }
+  return 0;
 }
 
 /*******************************************************************
  Search char C from beginning of S.
  S contains SHIFT JIS chars.
 ********************************************************************/
+
 static char *sj_strchr (char *s, int c)
 {
-    for (; *s; ) {
-	if (*s == c)
-	    return (char *) s;
-	if (is_shift_jis (*s)) {
-	    s += 2;
-	} else {
-	    s++;
-	}
+  for (; *s; ) {
+    if (*s == c)
+      return (char *) s;
+    if (is_shift_jis (*s)) {
+      s += 2;
+    } else {
+      s++;
     }
-    return 0;
+  }
+  return 0;
 }
 
 /*******************************************************************
  Search char C end of S.
  S contains SHIFT JIS chars.
 ********************************************************************/
+
 static char *sj_strrchr(char *s, int c)
 {
-    char *q;
+  char *q;
 
-    for (q = 0; *s; ) {
-	if (*s == c) {
-	    q = (char *) s;
-	}
-	if (is_shift_jis (*s)) {
-	    s += 2;
-	} else {
-	    s++;
-	}
+  for (q = 0; *s; ) {
+    if (*s == c) {
+      q = (char *) s;
     }
-    return q;
+    if (is_shift_jis (*s)) {
+      s += 2;
+    } else {
+      s++;
+    }
+  }
+  return q;
 }
 
 /*******************************************************************
@@ -259,35 +264,35 @@ static BOOL simpch_is_multibyte_char_1(char c)
 
 static char *generic_multibyte_strtok(char *s1, char *s2)
 {
-    static char *s = NULL;
-    char *q;
-    if (!s1) {
-        if (!s) {
-            return NULL;
+  static char *s = NULL;
+  char *q;
+  if (!s1) {
+    if (!s) {
+      return NULL;
+    }
+    s1 = s;
+  }
+  for (q = s1; *s1; ) {
+    if ((*is_multibyte_char_1)(*s1)) {
+        s1 += 2;
+    } else {
+      char *p = strchr (s2, *s1);
+      if (p) {
+        if (s1 != q) {
+          s = s1 + 1;
+          *s1 = '\0';
+          return q;
         }
-        s1 = s;
+        q = s1 + 1;
+      }
+    s1++;
     }
-    for (q = s1; *s1; ) {
-        if ((*is_multibyte_char_1)(*s1)) {
-            s1 += 2;
-        } else {
-            char *p = strchr (s2, *s1);
-            if (p) {
-                if (s1 != q) {
-                    s = s1 + 1;
-                    *s1 = '\0';
-                    return q;
-                }
-                q = s1 + 1;
-            }
-            s1++;
-        }
-    }
-    s = NULL;
-    if (*q) {
-        return q;
-    }
-    return NULL;
+  }
+  s = NULL;
+  if (*q) {
+    return q;
+  }
+  return NULL;
 }
 
 /*******************************************************************
@@ -297,21 +302,21 @@ static char *generic_multibyte_strtok(char *s1, char *s2)
 
 static char *generic_multibyte_strstr(char *s1, char *s2)
 {
-    int len = strlen ((char *) s2);
-    if (!*s2)
+  int len = strlen ((char *) s2);
+  if (!*s2)
+    return (char *) s1;
+  for (;*s1;) {
+    if (*s1 == *s2) {
+      if (strncmp (s1, s2, len) == 0)
         return (char *) s1;
-    for (;*s1;) {
-        if (*s1 == *s2) {
-            if (strncmp (s1, s2, len) == 0)
-                return (char *) s1;
-        }
-        if ((*is_multibyte_char_1)(*s1)) {
-            s1 += 2;
-        } else {
-            s1++;
-        }
     }
-    return 0;
+    if ((*is_multibyte_char_1)(*s1)) {
+      s1 += 2;
+    } else {
+      s1++;
+    }
+  }
+  return 0;
 }
 
 /*******************************************************************
@@ -321,16 +326,16 @@ static char *generic_multibyte_strstr(char *s1, char *s2)
 
 static char *generic_multibyte_strchr(char *s, int c)
 {
-    for (; *s; ) {
-        if (*s == c)
-            return (char *) s;
-        if ((*is_multibyte_char_1)(*s)) {
-            s += 2;
-        } else {
-            s++;
-        }
+  for (; *s; ) {
+    if (*s == c)
+      return (char *) s;
+    if ((*is_multibyte_char_1)(*s)) {
+      s += 2;
+    } else {
+      s++;
     }
-    return 0;
+  }
+  return 0;
 }
 
 /*******************************************************************
@@ -340,19 +345,19 @@ static char *generic_multibyte_strchr(char *s, int c)
 
 static char *generic_multibyte_strrchr(char *s, int c)
 {
-    char *q;
+  char *q;
  
-    for (q = 0; *s; ) {
-        if (*s == c) {
-            q = (char *) s;
-        }
-        if ((*is_multibyte_char_1)(*s)) {
-            s += 2;
-        } else {
-            s++;
-        }
+  for (q = 0; *s; ) {
+    if (*s == c) {
+      q = (char *) s;
     }
-    return q;
+    if ((*is_multibyte_char_1)(*s)) {
+      s += 2;
+    } else {
+      s++;
+    }
+  }
+  return q;
 }
 
 /*******************************************************************
@@ -370,119 +375,125 @@ static int skip_generic_multibyte_char(char c)
 /*******************************************************************
   Code conversion
 ********************************************************************/
+
 /* convesion buffer */
 static char cvtbuf[1024];
 
 /*******************************************************************
   EUC <-> SJIS
 ********************************************************************/
+
 static int euc2sjis (int hi, int lo)
 {
-    if (hi & 1)
-	return ((hi / 2 + (hi < 0xdf ? 0x31 : 0x71)) << 8) |
-	    (lo - (lo >= 0xe0 ? 0x60 : 0x61));
-    else
-	return ((hi / 2 + (hi < 0xdf ? 0x30 : 0x70)) << 8) | (lo - 2);
+  if (hi & 1)
+    return ((hi / 2 + (hi < 0xdf ? 0x31 : 0x71)) << 8) |
+            (lo - (lo >= 0xe0 ? 0x60 : 0x61));
+  else
+    return ((hi / 2 + (hi < 0xdf ? 0x30 : 0x70)) << 8) | (lo - 2);
 }
 
 static int sjis2euc (int hi, int lo)
 {
-    if (lo >= 0x9f)
-	return ((hi * 2 - (hi >= 0xe0 ? 0xe0 : 0x60)) << 8) | (lo + 2);
-    else
-	return ((hi * 2 - (hi >= 0xe0 ? 0xe1 : 0x61)) << 8) |
-	    (lo + (lo >= 0x7f ? 0x60 : 0x61));
+  if (lo >= 0x9f)
+    return ((hi * 2 - (hi >= 0xe0 ? 0xe0 : 0x60)) << 8) | (lo + 2);
+  else
+    return ((hi * 2 - (hi >= 0xe0 ? 0xe1 : 0x61)) << 8) |
+            (lo + (lo >= 0x7f ? 0x60 : 0x61));
 }
 
 /*******************************************************************
  Convert FROM contain SHIFT JIS codes to EUC codes
  return converted buffer
 ********************************************************************/
+
 static char *sj_to_euc(char *from, BOOL overwrite)
 {
-    char *out;
-    char *save;
+  char *out;
+  char *save;
 
-    save = (char *) from;
-    for (out = cvtbuf; *from;) {
-	if (is_shift_jis (*from)) {
-	    int code = sjis2euc ((int) from[0] & 0xff, (int) from[1] & 0xff);
-	    *out++ = (code >> 8) & 0xff;
-	    *out++ = code;
-	    from += 2;
-	} else if (is_kana (*from)) {
-	    *out++ = (char)euc_kana;
-	    *out++ = *from++;
-	} else {
-	    *out++ = *from++;
-	}
-    }
-    *out = 0;
-    if (overwrite) {
-	pstrcpy((char *) save, (char *) cvtbuf);
-	return (char *) save;
+  save = (char *) from;
+  for (out = cvtbuf; *from;) {
+    if (is_shift_jis (*from)) {
+      int code = sjis2euc ((int) from[0] & 0xff, (int) from[1] & 0xff);
+      *out++ = (code >> 8) & 0xff;
+      *out++ = code;
+      from += 2;
+    } else if (is_kana (*from)) {
+      *out++ = (char)euc_kana;
+      *out++ = *from++;
     } else {
-	return cvtbuf;
+      *out++ = *from++;
     }
+  }
+  *out = 0;
+  if (overwrite) {
+    pstrcpy((char *) save, (char *) cvtbuf);
+    return (char *) save;
+  } else {
+    return cvtbuf;
+  }
 }
 
 /*******************************************************************
  Convert FROM contain EUC codes to SHIFT JIS codes
  return converted buffer
 ********************************************************************/
+
 static char *euc_to_sj(char *from, BOOL overwrite)
 {
-    char *out;
-    char *save;
+  char *out;
+  char *save;
 
-    save = (char *) from;
-    for (out = cvtbuf; *from; ) {
-	if (is_euc (*from)) {
-	    int code = euc2sjis ((int) from[0] & 0xff, (int) from[1] & 0xff);
-	    *out++ = (code >> 8) & 0xff;
-	    *out++ = code;
-	    from += 2;
-	} else if (is_euc_kana (*from)) {
-	    *out++ = from[1];
-	    from += 2;
-	} else {
-	    *out++ = *from++;
-	}
-    }
-    *out = 0;
-    if (overwrite) {
-	pstrcpy(save, (char *) cvtbuf);
-	return save;
+  save = (char *) from;
+  for (out = cvtbuf; *from; ) {
+    if (is_euc (*from)) {
+      int code = euc2sjis ((int) from[0] & 0xff, (int) from[1] & 0xff);
+      *out++ = (code >> 8) & 0xff;
+      *out++ = code;
+      from += 2;
+    } else if (is_euc_kana (*from)) {
+      *out++ = from[1];
+      from += 2;
     } else {
-	return cvtbuf;
+      *out++ = *from++;
     }
+  }
+  *out = 0;
+  if (overwrite) {
+    pstrcpy(save, (char *) cvtbuf);
+    return save;
+  } else {
+    return cvtbuf;
+  }
 }
 
 /*******************************************************************
   JIS7,JIS8,JUNET <-> SJIS
 ********************************************************************/
+
 static int sjis2jis(int hi, int lo)
 {
-    if (lo >= 0x9f)
-	return ((hi * 2 - (hi >= 0xe0 ? 0x160 : 0xe0)) << 8) | (lo - 0x7e);
-    else
-	return ((hi * 2 - (hi >= 0xe0 ? 0x161 : 0xe1)) << 8) |
-	    (lo - (lo >= 0x7f ? 0x20 : 0x1f));
+  if (lo >= 0x9f)
+    return ((hi * 2 - (hi >= 0xe0 ? 0x160 : 0xe0)) << 8) | (lo - 0x7e);
+  else
+    return ((hi * 2 - (hi >= 0xe0 ? 0x161 : 0xe1)) << 8) |
+            (lo - (lo >= 0x7f ? 0x20 : 0x1f));
 }
 
 static int jis2sjis(int hi, int lo)
 {
-    if (hi & 1)
-	return ((hi / 2 + (hi < 0x5f ? 0x71 : 0xb1)) << 8) |
-	    (lo + (lo >= 0x60 ? 0x20 : 0x1f));
-    else
-	return ((hi / 2 + (hi < 0x5f ? 0x70 : 0xb0)) << 8) | (lo + 0x7e);
+  if (hi & 1)
+    return ((hi / 2 + (hi < 0x5f ? 0x71 : 0xb1)) << 8) |
+            (lo + (lo >= 0x60 ? 0x20 : 0x1f));
+  else
+    return ((hi / 2 + (hi < 0x5f ? 0x70 : 0xb0)) << 8) | (lo + 0x7e);
 }
 
 /*******************************************************************
  Convert FROM contain JIS codes to SHIFT JIS codes
  return converted buffer
 ********************************************************************/
+
 static char *jis8_to_sj(char *from, BOOL overwrite)
 {
     char *out;
@@ -533,6 +544,7 @@ static char *jis8_to_sj(char *from, BOOL overwrite)
  Convert FROM contain SHIFT JIS codes to JIS codes
  return converted buffer
 ********************************************************************/
+
 static char *sj_to_jis8(char *from, BOOL overwrite)
 {
     char *out;
@@ -1146,6 +1158,17 @@ static BOOL not_multibyte_char_1(char c)
 }
 
 /*******************************************************************
+ Function to determine if we are in a multibyte code page.
+*******************************************************************/
+
+static BOOL is_multibyte_codepage_val = False;
+
+BOOL is_multibyte_codepage(void)
+{
+  return is_multibyte_codepage_val;
+}
+
+/*******************************************************************
  Setup the function pointers for the functions that are replaced
  when multi-byte codepages are used.
 
@@ -1165,6 +1188,7 @@ void initialize_multibyte_vectors( int client_codepage)
     multibyte_strtok = (char *(*)(char *, char *)) sj_strtok;
     _skip_multibyte_char = skip_kanji_multibyte_char;
     is_multibyte_char_1 = is_kanji_multibyte_char_1;
+    is_multibyte_codepage_val = True;
     break;
   case HANGUL_CODEPAGE:
     multibyte_strchr = (char *(*)(char *, int )) generic_multibyte_strchr;
@@ -1173,6 +1197,7 @@ void initialize_multibyte_vectors( int client_codepage)
     multibyte_strtok = (char *(*)(char *, char *)) generic_multibyte_strtok;
     _skip_multibyte_char = skip_generic_multibyte_char;
     is_multibyte_char_1 = hangul_is_multibyte_char_1;
+    is_multibyte_codepage_val = True;
     break;
   case BIG5_CODEPAGE:
     multibyte_strchr = (char *(*)(char *, int )) generic_multibyte_strchr;
@@ -1181,6 +1206,7 @@ void initialize_multibyte_vectors( int client_codepage)
     multibyte_strtok = (char *(*)(char *, char *)) generic_multibyte_strtok;
     _skip_multibyte_char = skip_generic_multibyte_char;
     is_multibyte_char_1 = big5_is_multibyte_char_1;
+    is_multibyte_codepage_val = True;
     break;
   case SIMPLIFIED_CHINESE_CODEPAGE:
     multibyte_strchr = (char *(*)(char *, int )) generic_multibyte_strchr;
@@ -1189,6 +1215,7 @@ void initialize_multibyte_vectors( int client_codepage)
     multibyte_strtok = (char *(*)(char *, char *)) generic_multibyte_strtok;
     _skip_multibyte_char = skip_generic_multibyte_char;
     is_multibyte_char_1 = simpch_is_multibyte_char_1;
+    is_multibyte_codepage_val = True;
     break;
   /*
    * Single char size code page.
@@ -1200,6 +1227,7 @@ void initialize_multibyte_vectors( int client_codepage)
     multibyte_strtok = (char *(*)(char *, char *)) strtok;
     _skip_multibyte_char = skip_non_multibyte_char;
     is_multibyte_char_1 = not_multibyte_char_1;
+    is_multibyte_codepage_val = False;
     break; 
   }
 }

@@ -113,6 +113,7 @@ struct in_addr *iface_ip(struct in_addr ip);
 /*The following definitions come from  lib/kanji.c  */
 
 void interpret_coding_system(char *str);
+BOOL is_multibyte_codepage(void);
 void initialize_multibyte_vectors( int client_codepage);
 
 /*The following definitions come from  lib/md4.c  */
