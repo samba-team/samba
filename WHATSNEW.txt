@@ -1,4 +1,4 @@
-              WHATS NEW IN 1.9.17p2 - October 13th 1997
+              WHATS NEW IN 1.9.17p2 - October 14th 1997
               ===========================================
 
 Update release: Samba - version 1.9.17p3.
@@ -11,7 +11,7 @@ for all current bug-fixes.
 Here are a list of the fixes in this release (the fixes
 introduced between 1.9.17p2 and 1.9.17p3) :
 
-1). Truncation of long browse lists.
+1). Removed truncation problem with long browse lists.
 2). Crash bug when dead share mode memory entries need removing.
 3). Race condition in slow share mode code.
 4). Potential buffer overflow from password server.
@@ -24,6 +24,8 @@ introduced between 1.9.17p2 and 1.9.17p3) :
 10). Wrapping log file causes incorrect errors to be returned to
      the clients.
 11). Crash fix for nmbd Get_Hostbyname bad return.
+12). 'become_root' 'unbecome_root' added to fix changing uid problems.
+13). No magic scripts or printing done on exceptional file close problems.
 
 Reporting bugs
 --------------
