@@ -123,8 +123,11 @@ static int StrCaseCmp_slow(const char *s1, const char *s2)
 	smb_ucs2_t *u1, *u2;
 	int ret;
 
-	convert_string_allocate(CH_UNIX, CH_UTF16, s1, strlen(s1)+1, &u1);
-	convert_string_allocate(CH_UNIX, CH_UTF16, s2, strlen(s2)+1, &u2);
+	if (convert_string_allocate(CH_UNIX, CH_UTF16, s1, strlen(s1)+1, &u1) == -1 ||
+	    convert_string_allocate(CH_UNIX, CH_UTF16, s2, strlen(s2)+1, &u2) == -1) {
+		/* fallback to a simple comparison */
+		return strcasecmp(s1, s2);
+	}
 
 	ret = strcasecmp_w(u1, u2);
 
