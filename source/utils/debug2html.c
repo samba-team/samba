@@ -28,7 +28,6 @@
  * does a decent job of converting Samba logs into HTML.
  * -------------------------------------------------------------------------- **
  *
- * $Log: debug2html.c,v $
  * Revision 1.4  1998/11/13 03:37:01  tridge
  * fixes for OSF1 compilation
  *
