@@ -47,6 +47,7 @@ int net_common_flags_usage(int argc, const char **argv)
 	d_printf("\t-U or --user=<name>\t\tuser name\n");
 	d_printf("\t-s or --conf=<path>\t\tpathname of smb.conf file\n");
 	d_printf("\t-l or --long\t\t\tDisplay full information\n");
+	d_printf("\t-P or --machine-pass\t\tAuthenticate as machine account\n");
 	return -1;
 }
 
@@ -160,6 +161,7 @@ static int net_usage(int argc, const char **argv)
 		 "  net rpc <command>\tto run RPC commands\n"\
 		 "\n"\
 		 "Type \"net help <option>\" to get more information on that option\n");
+	net_common_flags_usage(argc, argv);
 	return -1;
 }
 
