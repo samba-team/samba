@@ -1,3 +1,11 @@
+1999-10-20  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: set version of kadm5srv to 3:0:2 (new password
+ 	quality functions).
+ 	set version of kdam5clnt to 2:1:1 (no interface changes)
+
+	* Makefile.am (LDADD): add $(LIB_dlopen)
+
 1999-10-17  Assar Westerlund  <assar@sics.se>
 
 	* randkey_s.c (kadm5_s_randkey_principal): use

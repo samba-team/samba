@@ -1,3 +1,41 @@
+1999-10-20  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/Makefile.am: bump version to 4:0:0
+ 	(krb524_convert_creds_kdc and potentially some other functions
+ 	have changed prototypes)
+
+	* lib/hdb/Makefile.am: bump version to 3:1:0
+
+	* lib/asn1/Makefile.am: bump version to 1:3:0
+
+	* configure.in (LIB_roken): add dbopen.  getcap in roken
+ 	references dbopen and with shared libraries we need to add this
+ 	dependency.
+
+	* lib/krb5/verify_krb5_conf.c (main): support speicifying the
+ 	configuration file to test on the command line
+
+	* lib/krb5/config_file.c (parse_binding): handle line with no
+ 	whitespace before =
+	(krb5_config_parse_file_debug): set lineno earlier so that we don't
+	use it unitialized
+
+	* configure.in (AM_INIT_AUTOMAKE): bump to 0.2b-pre opt*: need
+ 	more include files for these tests
+
+	* lib/krb5/set_default_realm.c (krb5_set_default_realm): use
+ 	krb5_config_get_strings, which means that your configuration file
+ 	should look like:
+	
+	[libdefaults]
+	  default_realm = realm1 realm2 realm3
+
+	* lib/krb5/set_default_realm.c (config_binding_to_list): fix
+ 	copy-o.  From Michal Vocu <michal@karlin.mff.cuni.cz>
+
+	* kdc/config.c (configure): add a missing strdup.  From Michal
+ 	Vocu <michal@karlin.mff.cuni.cz>
+
 1999-10-17  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.2a

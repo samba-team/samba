@@ -1,3 +1,7 @@
+1999-10-20  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: set version to 0:2:0
+
 1999-09-21  Assar Westerlund  <assar@sics.se>
 
 	* init_sec_context.c (gss_init_sec_context): initialize `ticket'

@@ -1,3 +1,9 @@
+1999-10-20  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: set version to 1:1:1
+
+	* afskrb5.c (get_cred): always request a DES key
+
 Fri Oct  8 18:17:22 1999  Bjoern Groenvall  <bg@mummel.sics.se>
 
 	* afskrb.c, common.c : Change code to make a clear distinction
