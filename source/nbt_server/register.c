@@ -23,6 +23,8 @@
 #include "includes.h"
 #include "dlinklist.h"
 #include "nbt_server/nbt_server.h"
+#include "libcli/raw/libcliraw.h"
+#include "libcli/composite/composite.h"
 
 /*
   start a timer to refresh this name
@@ -35,14 +37,13 @@ static void nbt_start_refresh_timer(struct nbt_iface_name *iname)
 /*
   a name registration has completed
 */
-static void nbt_register_handler(struct nbt_name_request *req)
+static void nbt_register_handler(struct smbcli_composite *req)
 {
 	struct nbt_iface_name *iname = talloc_get_type(req->async.private, struct nbt_iface_name);
 	NTSTATUS status;
-	struct nbt_name_register io;
 
-	status = nbt_name_register_recv(req, iname, &io);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+	status = nbt_name_register_bcast_recv(req);
+	if (NT_STATUS_IS_OK(status)) {
 		/* good - nobody complained about our registration */
 		iname->nb_flags |= NBT_NM_ACTIVE;
 		DEBUG(3,("Registered %s<%02x> on interface %s\n",
@@ -51,19 +52,12 @@ static void nbt_register_handler(struct nbt_name_request *req)
 		return;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("Error registering %s<%02x> on interface %s - %s\n",
-			 iname->name.name, iname->name.type, iname->iface->bcast_address,
-			 nt_errstr(status)));
-		return;
-	}
-
 	/* someone must have replied with an objection! */
 	iname->nb_flags |= NBT_NM_CONFLICT;
-	
-	DEBUG(1,("Name conflict registering %s<%02x> on interface %s - rcode %d from %s for %s\n",
+
+	DEBUG(1,("Error registering %s<%02x> on interface %s - %s\n",
 		 iname->name.name, iname->name.type, iname->iface->bcast_address,
-		 io.out.rcode, io.out.reply_from, io.out.reply_addr));
+		 nt_errstr(status)));
 }
 
 
@@ -76,8 +70,8 @@ static void nbt_register_name_iface(struct nbt_interface *iface,
 {
 	struct nbt_iface_name *iname;
 	const char *scope = lp_netbios_scope();
-	struct nbt_name_register io;
-	struct nbt_name_request *req;
+	struct nbt_name_register_bcast io;
+	struct smbcli_composite *req;
 
 	iname = talloc(iface, struct nbt_iface_name);
 	if (!iname) return;
@@ -108,12 +102,9 @@ static void nbt_register_name_iface(struct nbt_interface *iface,
 	io.in.dest_addr       = iface->bcast_address;
 	io.in.address         = iface->ip_address;
 	io.in.nb_flags        = nb_flags;
-	io.in.register_demand = False;
-	io.in.broadcast       = True;
 	io.in.ttl             = iname->ttl;
-	io.in.timeout         = 1;
 
-	req = nbt_name_register_send(iface->nbtsock, &io);
+	req = nbt_name_register_bcast_send(iface->nbtsock, &io);
 	if (req == NULL) return;
 
 	req->async.fn = nbt_register_handler;

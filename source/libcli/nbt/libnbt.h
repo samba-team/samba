@@ -151,3 +151,14 @@ struct nbt_name_register {
 		uint8_t rcode;
 	} out;
 };
+
+/* a send 3 times then demand name broadcast name registration */
+struct nbt_name_register_bcast {
+	struct {
+		struct nbt_name name;
+		const char *dest_addr;
+		const char *address;
+		uint16_t nb_flags;
+		uint32_t ttl;
+	} in;
+};
