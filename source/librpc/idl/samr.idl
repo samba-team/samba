@@ -121,7 +121,7 @@
 
 	typedef struct {
 		ULONG8 force_logoff_time;
-		samr_Name unknown1;
+		samr_Name comment;
 		samr_Name domain;  /* domain name */
 		samr_Name primary; /* PDC name if this is a BDC */
 		HYPER_T sequence_num;
@@ -138,7 +138,10 @@
 	} samr_DomInfo3;
 
 	typedef struct {
-		samr_Name unknown;
+		/* I'm not entirely sure this is a comment. win2003
+		   allows it to be set, and it seems harmless (like a
+		   comment) but I haven't seen it show up anywhere */
+		samr_Name comment;
 	} samr_DomInfo4;
 
 	typedef struct {
@@ -159,18 +162,18 @@
 	} samr_DomInfo8;
 
 	typedef struct {
-		uint32 unknown;
+		uint32 unknown; /* w2k3 returns 1 */
 	} samr_DomInfo9;
 
 	typedef struct {
 		ULONG8 force_logoff_time;
-		samr_Name unknown1;
+		samr_Name comment;
 		samr_Name domain;
 		samr_Name primary;
 		HYPER_T sequence_num;
-		uint32 unknown2;
+		uint32 unknown2;  /* w2k3 returns 1 */
 		uint32 role;
-		uint32 unknown3;
+		uint32 unknown3;  /* w2k3 returns 1 */
 		uint32 num_users;
 		uint32 num_groups;
 		uint32 num_aliases;
