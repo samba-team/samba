@@ -149,7 +149,7 @@ BOOL account_policy_get(int field, uint32 *value)
 		return False;
 	}
 	if (!tdb_fetch_uint32(tdb, name, value)) {
-		DEBUG(1, ("account_policy_get: tdb_fetch_uint32 failed for efild %d (%s), returning 0", field, name));
+		DEBUG(1, ("account_policy_get: tdb_fetch_uint32 failed for field %d (%s), returning 0\n", field, name));
 		return False;
 	}
 	DEBUG(10,("account_policy_get: %s:%d\n", name, *value));
