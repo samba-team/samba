@@ -1333,6 +1333,7 @@ NTSTATUS _lsa_add_acct_rights(pipes_struct *p, LSA_Q_ADD_ACCT_RIGHTS *q_u, LSA_R
 	DOM_SID sid;
 	fstring privname;
 	UNISTR2_ARRAY *uni_privnames = &q_u->rights;
+	struct current_user user;
 	
 
 	/* find the connection policy handle. */
@@ -1342,8 +1343,12 @@ NTSTATUS _lsa_add_acct_rights(pipes_struct *p, LSA_Q_ADD_ACCT_RIGHTS *q_u, LSA_R
 	/* check to see if the pipe_user is a Domain Admin since 
 	   account_pol.tdb was already opened as root, this is all we have */
 	   
-	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+	get_current_user( &user, p );
+	if ( user.uid != sec_initial_uid()
+		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) ) 
+	{
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* according to an NT4 PDC, you can add privileges to SIDs even without
 	   call_lsa_create_account() first.  And you can use any arbitrary SID. */
@@ -1381,6 +1386,7 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 	DOM_SID sid;
 	fstring privname;
 	UNISTR2_ARRAY *uni_privnames = &q_u->rights;
+	struct current_user user;
 	
 
 	/* find the connection policy handle. */
@@ -1390,8 +1396,12 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 	/* check to see if the pipe_user is a Domain Admin since 
 	   account_pol.tdb was already opened as root, this is all we have */
 	   
-	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+	get_current_user( &user, p );
+	if ( user.uid != sec_initial_uid()
+		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+	{
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	sid_copy( &sid, &q_u->sid.sid );
 
