@@ -274,7 +274,7 @@ int string_hash(int hash_size, const char *key);
 hash_element *hash_lookup(hash_table *table, char *key);
 hash_element *hash_insert(hash_table *table, char *value, char *key);
 void hash_remove(hash_table *table, hash_element *hash_elem);
-void hash_clear(hash_table *table);
+BOOL hash_clear(hash_table *table);
 
 /*The following definitions come from  lib/hmacmd5.c  */
 
@@ -3768,8 +3768,6 @@ BOOL last_challenge(unsigned char *challenge);
 
 /*The following definitions come from  smbd/chgpasswd.c  */
 
-BOOL chgpasswd(const char *_name, char *oldpass, char *newpass, BOOL as_root);
-BOOL chgpasswd(const char *name, char *oldpass, char *newpass, BOOL as_root);
 BOOL pass_oem_change(const char *user,
 		     const uchar * lmdata, const uchar * lmhash,
 		     const uchar * ntdata, const uchar * nthash);
@@ -3777,7 +3775,6 @@ BOOL update_smbpassword_file(const char *user, const char *password);
 
 /*The following definitions come from  smbd/close.c  */
 
-void close_filestruct(files_struct *fsp);
 int close_file(files_struct *fsp, BOOL normal_close);
 
 /*The following definitions come from  smbd/conn.c  */
@@ -3845,11 +3842,8 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 
 /*The following definitions come from  smbd/fileio.c  */
 
-SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos);
-BOOL read_from_write_cache(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
 ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
 ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n);
-void delete_write_cache(files_struct *fsp);
 void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size);
 ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason);
 void sync_file(connection_struct *conn, files_struct *fsp);
@@ -3951,7 +3945,6 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 /*The following definitions come from  smbd/oplock.c  */
 
 int32 get_number_of_exclusive_open_oplocks(void);
-BOOL setup_kernel_oplock_pipe(void);
 BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
 BOOL set_file_oplock(files_struct *fsp, int oplock_type);
@@ -3975,8 +3968,6 @@ BOOL password_ok(const char *orig_user, const char *domain,
 BOOL authorise_login(int snum, char *user, char *domain,
 		     char *password, int pwlen,
 		     BOOL *guest, BOOL *force, const vuser_key * key);
-BOOL check_user_equiv_line(char *buf, const char *user, const char *remote,
-			   BOOL *plus_allowed, BOOL *ret);
 BOOL check_hosts_equiv(char *user);
 
 /*The following definitions come from  smbd/pipes.c  */
@@ -4114,14 +4105,12 @@ int reply_getattrE(connection_struct * conn, char *inbuf, char *outbuf,
 /*The following definitions come from  smbd/server.c  */
 
 int smbd_server_fd(void);
-void smbd_set_server_fd(int fd);
 BOOL reload_services(BOOL test);
 void exit_server(char *reason);
 
 /*The following definitions come from  smbd/service.c  */
 
 BOOL become_service(connection_struct *conn,BOOL do_chdir);
-int find_service(char *service);
 connection_struct *make_connection(char *service,char *user,
 				char *domain,
 				char *password, int pwlen,
@@ -4139,7 +4128,6 @@ int sslutil_negotiate_ssl(int fd, int msg_type);
 
 /*The following definitions come from  smbd/statcache.c  */
 
-void print_stat_cache_statistics(void);
 void stat_cache_add( char *full_orig_name, char *orig_translated_path);
 BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath, 
 		       char **start, SMB_STRUCT_STAT *pst);
