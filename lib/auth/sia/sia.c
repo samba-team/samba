@@ -202,13 +202,13 @@ common_auth(sia_collect_func_t *collect,
     {
 	char realm[REALM_SZ];
 	int ret;
-	struct passwd pw, *pwd,  fpw, *fpwd;
-	char pwbuf[1024],  fpwbuf[1024];
+	struct passwd pw, *pwd, fpw, *fpwd;
+	char pwbuf[1024], fpwbuf[1024];
 	struct state *s = (struct state*)entity->mech[pkgind];
-
+	
 	if(getpwnam_r(entity->name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0)
 	    return SIADFAIL;
-
+	
 	snprintf(s->ticket, sizeof(s->ticket),
 		 TKT_ROOT "%u_%u", (unsigned)pwd->pw_uid, (unsigned)getpid());
 	krb_get_lrealm(realm, 1);
@@ -221,8 +221,7 @@ common_auth(sia_collect_func_t *collect,
 #else
 	    ouid = getuid();
 #endif
-	    if(getpwuid_r(ouid, &fpw, 
-			  fpwbuf, sizeof(fpwbuf), &fpwd) != 0)
+	    if(getpwuid_r(ouid, &fpw, fpwbuf, sizeof(fpwbuf), &fpwd) != 0)
 		return SIADFAIL;
 	    snprintf(s->ticket, sizeof(s->ticket), TKT_ROOT "_%s_to_%s_%d", 
 		     fpwd->pw_name, pwd->pw_name, getpid());
@@ -231,9 +230,10 @@ common_auth(sia_collect_func_t *collect,
 		toinst = pwd->pw_name;
 	    }
 	}
-
+    
 	krb_set_tkt_string(s->ticket);
 	
+	setuid(0); /* XXX fix for fix in tf_util.c */
 	if(krb_kuserok(toname, toinst, realm, entity->name))
 	    return SIADFAIL;
 	ret = krb_verify_user(toname, toinst, realm,
