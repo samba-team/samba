@@ -96,6 +96,11 @@ sub FieldFromPython($$)
 	return $result;
     }
 
+    if ($e->{TYPE} eq "DATA_BLOB") {
+	$result .= "\tDATA_BLOB_ptr_from_python(mem_ctx, &s->$prefix$e->{NAME}, $obj, \"$e->{NAME}\");\n";
+	return $result;
+    }
+
     # Generate conversion for element
     
     if (util::is_scalar_type($e->{TYPE})) {
