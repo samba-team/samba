@@ -383,7 +383,7 @@ void clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32
 
 /****************************************************************************
 ****************************************************************************/
-BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, struct current_user *user)
+BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, struct current_user *user, uint32 *perr)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 	fstring architecture;
@@ -400,24 +400,28 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	int outsize = 0;
 	int i;
 
+	*perr = 0;
+	memset(inbuf, '\0', sizeof(inbuf));
+	memset(outbuf, '\0', sizeof(outbuf));
+
 	if (level==3)
 		driver=driver_abstract.info_3;
 	
 	get_short_archi(architecture, driver->environment);
 
-	/* connect to the print$ share under the same account as the user connected to the rpc pipe */	
-	fstrcpy(user_name, uidtoname(user->uid));
-	DEBUG(10,("move_driver_to_download_area: uid %d -> user %s\n", (int)user->uid, user_name));
-
 	become_root();
-	smb_pass = getsmbpwnam(user_name);
+	smb_pass = getsmbpwuid(user->uid);
 	if(smb_pass == NULL) {
-		DEBUG(0,("move_driver_to_download_area: Unable to get smbpasswd entry for user %s\n",
-				user_name ));
+		DEBUG(0,("move_driver_to_download_area: Unable to get smbpasswd entry for uid %u\n",
+				(unsigned int)user->uid ));
 		unbecome_root();
 		return False;
 	}
 	unbecome_root();
+
+	/* connect to the print$ share under the same account as the user connected to the rpc pipe */	
+	fstrcpy(user_name, smb_pass->smb_name );
+	DEBUG(10,("move_driver_to_download_area: uid %d -> user %s\n", (int)user->uid, user_name));
 
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
@@ -425,6 +429,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 
 	if (conn == NULL) {
 		DEBUG(0,("move_driver_to_download_area: Unable to connect\n"));
+		*perr = (uint32)ecode;
 		return False;
 	}
 
@@ -468,6 +473,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 				old_name, new_name ));
 		close_cnum(conn, user->vuid);
 		pop_sec_ctx();
+		*perr = (uint32)SVAL(outbuf,smb_err);
 		return False;
 	}
 
@@ -479,6 +485,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 					old_name, new_name ));
 			close_cnum(conn, user->vuid);
 			pop_sec_ctx();
+			*perr = (uint32)SVAL(outbuf,smb_err);
 			return False;
 		}
 	}
@@ -492,6 +499,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 				old_name, new_name ));
 			close_cnum(conn, user->vuid);
 			pop_sec_ctx();
+			*perr = (uint32)SVAL(outbuf,smb_err);
 			return False;
 		}
 	}
@@ -506,6 +514,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 				old_name, new_name ));
 			close_cnum(conn, user->vuid);
 			pop_sec_ctx();
+			*perr = (uint32)SVAL(outbuf,smb_err);
 			return False;
 		}
 	}
@@ -530,6 +539,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 						old_name, new_name ));
 					close_cnum(conn, user->vuid);
 					pop_sec_ctx();
+					*perr = (uint32)SVAL(outbuf,smb_err);
 					return False;
 				}
 			}
