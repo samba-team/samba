@@ -2598,8 +2598,13 @@ BOOL spoolss_io_r_setform(char *desc, SPOOL_R_SETFORM *r_u, prs_struct *ps, int 
 BOOL spoolss_io_r_getjob(char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_getjob(char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int depth);
 void free_devmode(DEVICEMODE *devmode);
-void free_printer_info_3(PRINTER_INFO_3 *printer);
+void free_printer_info_1(PRINTER_INFO_1 *printer);
 void free_printer_info_2(PRINTER_INFO_2 *printer);
+void free_printer_info_3(PRINTER_INFO_3 *printer);
+void free_spool_printer_info_1(SPOOL_PRINTER_INFO_LEVEL_1 *printer);
+void free_spool_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 *printer);
+void free_spool_printer_info_3(SPOOL_PRINTER_INFO_LEVEL_3 *printer);
+void free_spool_printer_info_level(SPOOL_PRINTER_INFO_LEVEL *pil);
 void free_print2_array(uint32 num_entries, PRINTER_INFO_2 **entries);
 void free_print1_array(uint32 num_entries, PRINTER_INFO_1 **entries);
 void free_job1_array(uint32 num_entries, JOB_INFO_1 **entries);

@@ -473,7 +473,7 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 	uint32 extra_space;
 	uint32 old_offset;
 	
-	ps=&(buffer->prs);
+	ps= &buffer->prs;
 
 	/* damn, I'm doing the reverse operation of prs_grow() :) */
 	if (buffer_size < prs_data_size(ps))
@@ -2398,7 +2398,10 @@ static uint32 getprinter_level_2(fstring servername, int snum, NEW_BUFFER *buffe
 	}
 
 	/* fill the buffer with the structures */
-	new_smb_io_printer_info_2("", buffer, printer, 0);	
+	if (!new_smb_io_printer_info_2("", buffer, printer, 0)) {
+		free_printer_info_2(printer);
+		return ERROR_NOT_ENOUGH_MEMORY;
+	}
 	
 	/* clear memory */
 	free_printer_info_2(printer);
@@ -3002,7 +3005,6 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 {
 	int snum;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	NT_DEVICEMODE *ntdevmode = NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 	
 	DEBUG(8,("update_printer\n"));
@@ -3025,6 +3027,7 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 	convert_printer_info(info, printer, level);
 	
 	if (info->info_2->devmode_ptr != 0) {
+		NT_DEVICEMODE *ntdevmode = NULL;
 		/* we have a valid devmode
 		   convert it and link it*/
 		
@@ -3036,6 +3039,7 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 		}
 				
 		convert_devicemode(devmode, ntdevmode);
+		free_nt_devicemode(&ntdevmode);
 	} else {
 		if (printer->info_2->devmode != NULL)
 			free_nt_devicemode(&printer->info_2->devmode);
@@ -3097,6 +3101,7 @@ uint32 _spoolss_fcpn(const POLICY_HND *handle)
 	Printer->notify.localmachine[0]='\0';
 	Printer->notify.printerlocal=0;
 	safe_free(Printer->notify.option);
+	safe_free(Printer->notify.option->ctr.type);
 	Printer->notify.option=NULL;
 	
 	return NT_STATUS_NO_PROBLEMO;
