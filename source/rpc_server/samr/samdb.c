@@ -77,7 +77,7 @@ void *samdb_connect(TALLOC_CTX *mem_ctx)
 
 	ldb_set_debug(static_sam_db, samdb_debug, NULL);
 
-	ctx = talloc_p(NULL, struct samdb_context);
+	ctx = talloc_p(mem_ctx, struct samdb_context);
 	if (!ctx) {
 		errno = ENOMEM;
 		return NULL;
