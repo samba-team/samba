@@ -1,3 +1,11 @@
+2000-09-10  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/log.c: use DEFAULT_LOG_DEST
+
+	* kdc/config.c: use _PATH_KDC_CONF
+
+	* kdc/kdc_locl.h: add macro constants for kdc.conf, and kdc.log
+
 2000-09-06  Johan Danielsson  <joda@pdc.kth.se>
 
 	* configure.in: fix dpagaix test
