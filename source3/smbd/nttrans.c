@@ -2155,7 +2155,7 @@ static int call_nt_transact_set_user_quota(connection_struct *conn,
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(pdata,20) != 0)&&
 		((qt.usedspace != 0xFFFFFFFF)||
-		(IVAL(pdata,20)!=0xFFFFFFFF)))) {
+		(IVAL(pdata,20)!=0xFFFFFFFF))) {
 		/* more than 32 bits? */
 		return ERROR_DOS(ERRDOS,ERRunknownlevel);
 	}
@@ -2168,7 +2168,7 @@ static int call_nt_transact_set_user_quota(connection_struct *conn,
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(pdata,28) != 0)&&
 		((qt.softlim != 0xFFFFFFFF)||
-		(IVAL(pdata,28)!=0xFFFFFFFF)))) {
+		(IVAL(pdata,28)!=0xFFFFFFFF))) {
 		/* more than 32 bits? */
 		return ERROR_DOS(ERRDOS,ERRunknownlevel);
 	}
@@ -2181,7 +2181,7 @@ static int call_nt_transact_set_user_quota(connection_struct *conn,
 #else /* LARGE_SMB_OFF_T */
 	if ((IVAL(pdata,36) != 0)&&
 		((qt.hardlim != 0xFFFFFFFF)||
-		(IVAL(pdata,36)!=0xFFFFFFFF)))) {
+		(IVAL(pdata,36)!=0xFFFFFFFF))) {
 		/* more than 32 bits? */
 		return ERROR_DOS(ERRDOS,ERRunknownlevel);
 	}
