@@ -28,8 +28,8 @@
 #define TEST_ACCOUNT_NAME "samrtorturetest"
 #define TEST_ALIASNAME "samrtorturetestalias"
 #define TEST_GROUPNAME "samrtorturetestgroup"
-#define TEST_MACHINENAME "samrtorturetestmach$"
-#define TEST_DOMAINNAME "samrtorturetestdom$"
+#define TEST_MACHINENAME "samrtestmach$"
+#define TEST_DOMAINNAME "samrtestdom$"
 
 
 static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
@@ -162,7 +162,8 @@ static BOOL test_QuerySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			     struct policy_handle *handle, uint32_t base_acct_flags)
+			     struct policy_handle *handle, uint32_t base_acct_flags,
+			     const char *base_account_name)
 {
 	NTSTATUS status;
 	struct samr_SetUserInfo s;
@@ -171,6 +172,7 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_QueryUserInfo q0;
 	union samr_UserInfo u;
 	BOOL ret = True;
+	const char *test_account_name;
 
 	uint32_t user_extra_flags = 0;
 	if (base_acct_flags == ACB_NORMAL) {
@@ -191,24 +193,24 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 #define TESTCALL(call, r) \
 		status = dcerpc_samr_ ##call(p, mem_ctx, &r); \
 		if (!NT_STATUS_IS_OK(status)) { \
-			printf(#call " level %u failed - %s (line %d)\n", \
-			       r.in.level, nt_errstr(status), __LINE__); \
+			printf(#call " level %u failed - %s (%s)\n", \
+			       r.in.level, nt_errstr(status), __location__); \
 			ret = False; \
 			break; \
 		}
 
 #define STRING_EQUAL(s1, s2, field) \
 		if ((s1 && !s2) || (s2 && !s1) || strcmp(s1, s2)) { \
-			printf("Failed to set %s to '%s' (line %d)\n", \
-			       #field, s2, __LINE__); \
+			printf("Failed to set %s to '%s' (%s)\n", \
+			       #field, s2, __location__); \
 			ret = False; \
 			break; \
 		}
 
 #define INT_EQUAL(i1, i2, field) \
 		if (i1 != i2) { \
-			printf("Failed to set %s to 0x%x - got 0x%x (line %d)\n", \
-			       #field, i2, i1, __LINE__); \
+			printf("Failed to set %s to 0x%x - got 0x%x (%s)\n", \
+			       #field, i2, i1, __location__); \
 			ret = False; \
 			break; \
 		}
@@ -278,6 +280,22 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_STRING(21, comment, 21, comment, "xx21-21 comment", 
 			   SAMR_FIELD_COMMENT);
 
+	test_account_name = talloc_asprintf(mem_ctx, "%sxx7-1", base_account_name);
+	TEST_USERINFO_STRING(7, account_name,  1, account_name, base_account_name, 0);
+	test_account_name = talloc_asprintf(mem_ctx, "%sxx7-3", base_account_name);
+	TEST_USERINFO_STRING(7, account_name,  3, account_name, base_account_name, 0);
+	test_account_name = talloc_asprintf(mem_ctx, "%sxx7-5", base_account_name);
+	TEST_USERINFO_STRING(7, account_name,  5, account_name, base_account_name, 0);
+	test_account_name = talloc_asprintf(mem_ctx, "%sxx7-6", base_account_name);
+	TEST_USERINFO_STRING(7, account_name,  6, account_name, base_account_name, 0);
+	test_account_name = talloc_asprintf(mem_ctx, "%sxx7-7", base_account_name);
+	TEST_USERINFO_STRING(7, account_name,  7, account_name, base_account_name, 0);
+	test_account_name = talloc_asprintf(mem_ctx, "%sxx7-21", base_account_name);
+	TEST_USERINFO_STRING(7, account_name, 21, account_name, base_account_name, 0);
+	test_account_name = base_account_name;
+	TEST_USERINFO_STRING(21, account_name, 21, account_name, base_account_name, 
+			   SAMR_FIELD_ACCOUNT_NAME);
+
 	TEST_USERINFO_STRING(6, full_name,  1, full_name, "xx6-1 full_name", 0);
 	TEST_USERINFO_STRING(6, full_name,  3, full_name, "xx6-3 full_name", 0);
 	TEST_USERINFO_STRING(6, full_name,  5, full_name, "xx6-5 full_name", 0);
@@ -286,7 +304,7 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_STRING(6, full_name, 21, full_name, "xx6-21 full_name", 0);
 	TEST_USERINFO_STRING(8, full_name, 21, full_name, "xx8-21 full_name", 0);
 	TEST_USERINFO_STRING(21, full_name, 21, full_name, "xx21-21 full_name", 
-			   SAMR_FIELD_NAME);
+			   SAMR_FIELD_FULL_NAME);
 
 	TEST_USERINFO_STRING(11, logon_script, 3, logon_script, "xx11-3 logon_script", 0);
 	TEST_USERINFO_STRING(11, logon_script, 5, logon_script, "xx11-5 logon_script", 0);
@@ -1265,7 +1283,8 @@ static BOOL test_TestPrivateFunctionsUser(struct dcerpc_pipe *p, TALLOC_CTX *mem
 
 
 static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			  struct policy_handle *handle, uint32_t base_acct_flags)
+			  struct policy_handle *handle, uint32_t base_acct_flags, 
+			  const char *base_acct_name)
 {
 	BOOL ret = True;
 
@@ -1281,7 +1300,8 @@ static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_SetUserInfo(p, mem_ctx, handle, base_acct_flags)) {
+	if (!test_SetUserInfo(p, mem_ctx, handle, base_acct_flags,
+			      base_acct_name)) {
 		ret = False;
 	}	
 
@@ -1604,7 +1624,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (!test_user_ops(p, mem_ctx, user_handle, acct_flags)) {
+	if (!test_user_ops(p, mem_ctx, user_handle, acct_flags, name.string)) {
 		ret = False;
 	}
 
@@ -1755,7 +1775,7 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				}
 			}
 		
-			if (!test_user_ops(p, mem_ctx, &user_handle, acct_flags)) {
+			if (!test_user_ops(p, mem_ctx, &user_handle, acct_flags, name.string)) {
 				ret = False;
 			}
 

@@ -665,7 +665,8 @@
 
 	/* this defines the bits used for fields_present in info21 */
 	typedef [bitmap32bit] bitmap {
-		SAMR_FIELD_NAME         = 0x00000002,
+		SAMR_FIELD_ACCOUNT_NAME = 0x00000001,
+		SAMR_FIELD_FULL_NAME    = 0x00000002,
 		SAMR_FIELD_DESCRIPTION  = 0x00000010,
 		SAMR_FIELD_COMMENT      = 0x00000020,
 		SAMR_FIELD_LOGON_SCRIPT = 0x00000100,
