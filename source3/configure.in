@@ -1442,7 +1442,7 @@ main() {
 }
 ],
 samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=yes,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=no,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=cross)])
-if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes" && test x"$target_cpu" != x"s390"; then
+if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes"; then
     AC_DEFINE(HAVE_KERNEL_CHANGE_NOTIFY)
 fi
 
