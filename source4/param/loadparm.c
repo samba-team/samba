@@ -2639,6 +2639,33 @@ BOOL lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 	return True;
 }
 
+/*
+  set a option from the commandline in 'a=b' format. Use to support --option
+*/
+BOOL lp_set_option(const char *option)
+{
+	char *p, *s;
+	BOOL ret;
+
+	s = strdup(option);
+	if (!s) {
+		return False;
+	}
+
+	p = strchr(s, '=');
+	if (!p) {
+		free(s);
+		return False;
+	}
+
+	*p = 0;
+
+	ret = lp_set_cmdline(s, p+1);
+	free(s);
+	return ret;
+}
+
+
 /***************************************************************************
  Print a parameter of the specified type.
 ***************************************************************************/
