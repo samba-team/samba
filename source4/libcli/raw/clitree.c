@@ -235,9 +235,7 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 	/* prepare a session setup to establish a security context */
 	setup.generic.level = RAW_SESSSETUP_GENERIC;
 	setup.generic.in.sesskey = transport->negotiate.sesskey;
-	setup.generic.in.capabilities = CAP_UNICODE | CAP_STATUS32 | 
-		CAP_LARGE_FILES | CAP_NT_SMBS | CAP_LEVEL_II_OPLOCKS | 
-		CAP_W2K_SMBS | CAP_LARGE_READX | CAP_LARGE_WRITEX;
+	setup.generic.in.capabilities = transport->negotiate.capabilities;
 	if (!user || !user[0]) {
 		setup.generic.in.password = NULL;
 		setup.generic.in.user = "";

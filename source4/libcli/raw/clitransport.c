@@ -38,6 +38,7 @@ struct cli_transport *cli_transport_init(struct cli_socket *sock)
 	transport->mem_ctx = mem_ctx;
 	transport->socket = sock;
 	transport->negotiate.protocol = PROTOCOL_NT1;
+	transport->options.use_spnego = lp_use_spnego();
 	transport->negotiate.max_xmit = ~0;
 	cli_null_set_signing(transport);
 	transport->socket->reference_count++;
