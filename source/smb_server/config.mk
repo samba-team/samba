@@ -7,7 +7,6 @@ INIT_OBJ_FILES = \
 		smb_server/smb_server.o
 ADD_OBJ_FILES = \
 		smb_server/conn.o \
-		smb_server/connection.o \
 		smb_server/negprot.o \
 		smb_server/nttrans.o \
 		smb_server/password.o \
