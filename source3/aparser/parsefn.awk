@@ -15,7 +15,7 @@ function parse_array(f, v, elnum, flags,
 	v["FLAGS"] = flags;
 	v["ARRAY_LEN"] = elements[elnum, "array_len"];
 
-	if (type == "uint16") {
+	if (type == "wchar") {
 		print_template(f, "prs_wstring.tpl", v);
 	} else {
 		print_template(f, "prs_array.tpl", v);

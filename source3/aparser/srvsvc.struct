@@ -1,28 +1,16 @@
 module srvsvc
 
-#define SRV_NETCONNENUM        0x08
-#define SRV_NETFILEENUM        0x09
-#define SRV_NETSESSENUM        0x0c
-#define SRV_NETSHAREENUM       0x0f
-#define SRV_NET_SHARE_GET_INFO 0x10
-#define SRV_NET_SRV_GET_INFO   0x15
-#define SRV_NET_SRV_SET_INFO   0x16
-#define SRV_NET_REMOTE_TOD     0x1c
+typedef uint32 LONG;
+typedef uint32 *ENUM_HND;
 
-struct UNISTR2 {
+typedef struct _UNISTR2 {
        uint32 max_len;
        uint32 undoc;
        uint32 str_len;
-       uint16 buffer[str_len];
-};
+       wchar  buffer[str_len];
+} UNISTR2;
 
-struct LPWSTR {
-       UNISTR2 *str;
-};
-
-struct ENUM_HND {
-	uint32 *handle;           /* enumeration handle */
-};
+typedef UNISTR2 *LPWSTR;
 
 /* function 8 */
 struct CONN_INFO_0 {

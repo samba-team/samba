@@ -9,6 +9,19 @@ function start_module(name)
 	num_tests=0;
 }
 
+function parse_typedef(type1, type2,
+		       LOCAL, type, i)
+{
+	type=type2;
+	if (substr(type,1,1)=="*") type=substr(type,2);
+
+	i=match(type,"[[]");
+	if (i != 0) type = substr(type, 1, i-1);
+	start_struct(type);
+	add_struct_elem(type1, type2);
+	end_struct("");
+}
+
 function start_struct(name) 
 {
 	current_struct=num_structs;
@@ -18,8 +31,9 @@ function start_struct(name)
 	structs[current_struct, "num_unions"]=0;
 }
 
-function end_struct() 
+function end_struct(name) 
 {
+	if (name!="") structs[num_structs, "name"]=name;
 	printf("struct %s with %d elements\n", 
 	       structs[num_structs, "name"],
 	       structs[num_structs, "num_elems"]);

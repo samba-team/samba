@@ -25,6 +25,7 @@
 typedef int BOOL;
 typedef unsigned char uint8;
 typedef unsigned short uint16;
+typedef unsigned short wchar;
 typedef unsigned uint32;
 
 #define False 0
