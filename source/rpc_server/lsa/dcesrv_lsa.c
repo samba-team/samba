@@ -429,90 +429,90 @@ static NTSTATUS lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call, TALLOC_
 
 
 /* 
-  ADDPRIVS 
+  lsa_AddPrivilegesToAccount
 */
-static NTSTATUS ADDPRIVS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ADDPRIVS *r)
+static NTSTATUS lsa_AddPrivilegesToAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_AddPrivilegesToAccount *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  REMOVEPRIVS 
+  lsa_RemovePrivilegesFromAccount
 */
-static NTSTATUS REMOVEPRIVS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct REMOVEPRIVS *r)
+static NTSTATUS lsa_RemovePrivilegesFromAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_RemovePrivilegesFromAccount *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  GETQUOTAS 
+  lsa_GetQuotasForAccount
 */
-static NTSTATUS GETQUOTAS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct GETQUOTAS *r)
+static NTSTATUS lsa_GetQuotasForAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_GetQuotasForAccount *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  SETQUOTAS 
+  lsa_SetQuotasForAccount
 */
-static NTSTATUS SETQUOTAS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct SETQUOTAS *r)
+static NTSTATUS lsa_SetQuotasForAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_SetQuotasForAccount *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  GETSYSTEMACCOUNT 
+  lsa_GetSystemAccessAccount
 */
-static NTSTATUS GETSYSTEMACCOUNT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct GETSYSTEMACCOUNT *r)
+static NTSTATUS lsa_GetSystemAccessAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_GetSystemAccessAccount *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  SETSYSTEMACCOUNT 
+  lsa_SetSystemAccessAccount
 */
-static NTSTATUS SETSYSTEMACCOUNT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct SETSYSTEMACCOUNT *r)
+static NTSTATUS lsa_SetSystemAccessAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_SetSystemAccessAccount *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  OPENTRUSTDOM 
+  lsa_OpenTrustedDomain
 */
-static NTSTATUS OPENTRUSTDOM(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct OPENTRUSTDOM *r)
+static NTSTATUS lsa_OpenTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_OpenTrustedDomain *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  QUERYTRUSTDOM 
+  lsa_QueryInfoTrustedDomain
 */
-static NTSTATUS QUERYTRUSTDOM(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct QUERYTRUSTDOM *r)
+static NTSTATUS lsa_QueryInfoTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_QueryInfoTrustedDomain *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  SETINFOTRUSTDOM 
+  lsa_SetInformationTrustedDomain
 */
-static NTSTATUS SETINFOTRUSTDOM(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct SETINFOTRUSTDOM *r)
+static NTSTATUS lsa_SetInformationTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_SetInformationTrustedDomain *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -549,10 +549,10 @@ static NTSTATUS lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 
 /* 
-  LOOKUPPRIVVALUE 
+  lsa_LookupPrivValue
 */
-static NTSTATUS LOOKUPPRIVVALUE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct LOOKUPPRIVVALUE *r)
+static NTSTATUS lsa_LookupPrivValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LookupPrivValue *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -569,30 +569,30 @@ static NTSTATUS lsa_LookupPrivName(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 
 /* 
-  PRIV_GET_DISPNAME 
+  lsa_LookupPrivDisplayName
 */
-static NTSTATUS PRIV_GET_DISPNAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct PRIV_GET_DISPNAME *r)
+static NTSTATUS lsa_LookupPrivDisplayName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LookupPrivDisplayName *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  DELETEOBJECT 
+  lsa_DeleteObject
 */
-static NTSTATUS DELETEOBJECT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DELETEOBJECT *r)
+static NTSTATUS lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_DeleteObject *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  ENUMACCTWITHRIGHT 
+  lsa_EnumAccountsWithUserRight
 */
-static NTSTATUS ENUMACCTWITHRIGHT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ENUMACCTWITHRIGHT *r)
+static NTSTATUS lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_EnumAccountsWithUserRight *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -609,84 +609,213 @@ static NTSTATUS lsa_EnumAccountRights(struct dcesrv_call_state *dce_call, TALLOC
 
 
 /* 
-  ADDACCTRIGHTS 
+  lsa_AddAccountRights
 */
-static NTSTATUS ADDACCTRIGHTS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct ADDACCTRIGHTS *r)
+static NTSTATUS lsa_AddAccountRights(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_AddAccountRights *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  REMOVEACCTRIGHTS 
+  lsa_RemoveAccountRights
 */
-static NTSTATUS REMOVEACCTRIGHTS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct REMOVEACCTRIGHTS *r)
+static NTSTATUS lsa_RemoveAccountRights(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_RemoveAccountRights *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  QUERYTRUSTDOMINFO 
+  lsa_QueryTrustDomainInfo
 */
-static NTSTATUS QUERYTRUSTDOMINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct QUERYTRUSTDOMINFO *r)
+static NTSTATUS lsa_QueryTrustDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_QueryTrustDomainInfo *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  SETTRUSTDOMINFO 
+  lsa_SetTrustDomainInfo
 */
-static NTSTATUS SETTRUSTDOMINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct SETTRUSTDOMINFO *r)
+static NTSTATUS lsa_SetTrustDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_SetTrustDomainInfo *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  DELETETRUSTDOM 
+  lsa_DeleteTrustDomain
 */
-static NTSTATUS DELETETRUSTDOM(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DELETETRUSTDOM *r)
+static NTSTATUS lsa_DeleteTrustDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_DeleteTrustDomain *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  STOREPRIVDATA 
+  lsa_StorePrivateData
 */
-static NTSTATUS STOREPRIVDATA(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct STOREPRIVDATA *r)
+static NTSTATUS lsa_StorePrivateData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_StorePrivateData *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  RETRPRIVDATA 
+  lsa_RetrievePrivateData
 */
-static NTSTATUS RETRPRIVDATA(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct RETRPRIVDATA *r)
+static NTSTATUS lsa_RetrievePrivateData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_RetrievePrivateData *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  UNK_GET_CONNUSER 
+  lsa_GetUserName
 */
-static NTSTATUS UNK_GET_CONNUSER(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct UNK_GET_CONNUSER *r)
+static NTSTATUS lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_GetUserName *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
+/*
+  lsa_SetInfoPolicy2
+*/
+static NTSTATUS lsa_SetInfoPolicy2(struct dcesrv_call_state *dce_call,
+				   TALLOC_CTX *mem_ctx,
+				   struct lsa_SetInfoPolicy2 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_QueryTrustedDomainInfoByName
+*/
+static NTSTATUS lsa_QueryTrustedDomainInfoByName(struct dcesrv_call_state *dce_call,
+						 TALLOC_CTX *mem_ctx,
+						 struct lsa_QueryTrustedDomainInfoByName *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_SetTrustedDomainInfoByName
+*/
+static NTSTATUS lsa_SetTrustedDomainInfoByName(struct dcesrv_call_state *dce_call,
+					       TALLOC_CTX *mem_ctx,
+					       struct lsa_SetTrustedDomainInfoByName *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_EnumTrustedDomainsEx
+*/
+static NTSTATUS lsa_EnumTrustedDomainsEx(struct dcesrv_call_state *dce_call,
+					 TALLOC_CTX *mem_ctx,
+					 struct lsa_EnumTrustedDomainsEx *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_CreateTrustedDomainEx
+*/
+static NTSTATUS lsa_CreateTrustedDomainEx(struct dcesrv_call_state *dce_call,
+					  TALLOC_CTX *mem_ctx,
+					  struct lsa_CreateTrustedDomainEx *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_CloseTrustedDomainEx
+*/
+static NTSTATUS lsa_CloseTrustedDomainEx(struct dcesrv_call_state *dce_call,
+					 TALLOC_CTX *mem_ctx,
+					 struct lsa_CloseTrustedDomainEx *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_QueryDomainInformationPolicy
+*/
+static NTSTATUS lsa_QueryDomainInformationPolicy(struct dcesrv_call_state *dce_call,
+						 TALLOC_CTX *mem_ctx,
+						 struct lsa_QueryDomainInformationPolicy *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_SetDomInfoPolicy
+*/
+static NTSTATUS lsa_SetDomInfoPolicy(struct dcesrv_call_state *dce_call,
+				     TALLOC_CTX *mem_ctx,
+				     struct lsa_SetDomInfoPolicy *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_OpenTrustedDomainByName
+*/
+static NTSTATUS lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce_call,
+					    TALLOC_CTX *mem_ctx,
+					    struct lsa_OpenTrustedDomainByName *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_TestCall
+*/
+static NTSTATUS lsa_TestCall(struct dcesrv_call_state *dce_call,
+			     TALLOC_CTX *mem_ctx,
+			     struct lsa_TestCall *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_LookupSids2
+*/
+static NTSTATUS lsa_LookupSids2(struct dcesrv_call_state *dce_call,
+				TALLOC_CTX *mem_ctx,
+				struct lsa_LookupSids2 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_LookupNames2
+*/
+static NTSTATUS lsa_LookupNames2(struct dcesrv_call_state *dce_call,
+				 TALLOC_CTX *mem_ctx,
+				 struct lsa_LookupNames2 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_CreateTrustedDomainEx2
+*/
+static NTSTATUS lsa_CreateTrustedDomainEx2(struct dcesrv_call_state *dce_call,
+					   TALLOC_CTX *mem_ctx,
+					   struct lsa_CreateTrustedDomainEx2 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_lsa_s.c"

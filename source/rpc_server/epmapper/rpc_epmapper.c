@@ -327,6 +327,11 @@ static NTSTATUS epm_MgmtDelete(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+static NTSTATUS epm_MapAuth(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+			    struct epm_MapAuth *r)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_epmapper_s.c"
