@@ -720,6 +720,7 @@ BOOL cli_unlink(struct cli_state *cli, char *fname);
 BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);
 int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess);
+int cli_nt_create_uni(struct cli_state *cli, char *fname, uint32 DesiredAccess);
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, 
