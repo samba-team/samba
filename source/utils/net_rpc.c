@@ -915,7 +915,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx=0, max_entries=250, num_entries, i;
+	uint32 start_idx=0, max_entries=250, num_entries, i, loop_count = 0;
 	struct acct_info *groups;
 	DOM_SID global_sid_Builtin;
 
@@ -943,17 +943,33 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 		d_printf("\nGroup name            Comment"\
 			 "\n-----------------------------\n");
 	do {
-		result = cli_samr_enum_dom_groups(cli, mem_ctx, &domain_pol,
-						  &start_idx, max_entries,
-						  &groups, &num_entries);
+		SAM_DISPINFO_CTR ctr;
+		SAM_DISPINFO_3 info3;
+		uint32 max_size;
+
+		ZERO_STRUCT(ctr);
+		ZERO_STRUCT(info3);
+		ctr.sam.info3 = &info3;
+
+		get_query_dispinfo_params(
+			loop_count, &max_entries, &max_size);
+
+		result = cli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
+						 &start_idx, 3, &num_entries,
+						 max_entries, max_size, &ctr);
 						 
 		for (i = 0; i < num_entries; i++) {
+
+			fstring group, desc;
+
+			unistr2_to_ascii(group, &(&ctr.sam.info3->str[i])->uni_grp_name, sizeof(group)-1);
+			unistr2_to_ascii(desc, &(&ctr.sam.info3->str[i])->uni_grp_desc, sizeof(desc)-1);
+			
 			if (opt_long_list_entries)
-				printf("%-21.21s %-50.50s\n", 
-				       groups[i].acct_name,
-				       groups[i].acct_desc);
+				printf("%-21.21s %-50.50s\n",
+				       group, desc);
 			else
-				printf("%-21.21s\n", groups[i].acct_name);
+				printf("%-21.21s\n", group);
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 	/* query domain aliases */
@@ -962,14 +978,38 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
 						  &start_idx, max_entries,
 						  &groups, &num_entries);
-						 
+
 		for (i = 0; i < num_entries; i++) {
-			if (opt_long_list_entries)
+
+			char *description = NULL;
+
+			if (opt_long_list_entries) {
+
+				POLICY_HND alias_pol;
+				ALIAS_INFO_CTR ctr;
+
+				if ((NT_STATUS_IS_OK(cli_samr_open_alias(cli, mem_ctx,
+									 &domain_pol,
+									 0x8,
+									 groups[i].rid,
+									 &alias_pol))) &&
+				    (NT_STATUS_IS_OK(cli_samr_query_alias_info(cli, mem_ctx,
+									       &alias_pol, 3,
+									       &ctr))) &&
+				    (NT_STATUS_IS_OK(cli_samr_close(cli, mem_ctx,
+								    &alias_pol)))) {
+					description = unistr2_tdup(mem_ctx,
+								   &ctr.alias.info3.uni_acct_desc);
+				}
+			}
+			
+			if (description != NULL) {
 				printf("%-21.21s %-50.50s\n", 
 				       groups[i].acct_name,
-				       groups[i].acct_desc);
-			else
+				       description);
+			} else {
 				printf("%-21.21s\n", groups[i].acct_name);
+			}
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 	cli_samr_close(cli, mem_ctx, &domain_pol);
@@ -989,12 +1029,36 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 						  &groups, &num_entries);
 						 
 		for (i = 0; i < num_entries; i++) {
-			if (opt_long_list_entries)
+
+			char *description = NULL;
+
+			if (opt_long_list_entries) {
+
+				POLICY_HND alias_pol;
+				ALIAS_INFO_CTR ctr;
+
+				if ((NT_STATUS_IS_OK(cli_samr_open_alias(cli, mem_ctx,
+									 &domain_pol,
+									 0x8,
+									 groups[i].rid,
+									 &alias_pol))) &&
+				    (NT_STATUS_IS_OK(cli_samr_query_alias_info(cli, mem_ctx,
+									       &alias_pol, 3,
+									       &ctr))) &&
+				    (NT_STATUS_IS_OK(cli_samr_close(cli, mem_ctx,
+								    &alias_pol)))) {
+					description = unistr2_tdup(mem_ctx,
+								   &ctr.alias.info3.uni_acct_desc);
+				}
+			}
+			
+			if (description != NULL) {
 				printf("%-21.21s %-50.50s\n", 
 				       groups[i].acct_name,
-				       groups[i].acct_desc);
-			else
-				printf("%s\n", groups[i].acct_name);
+				       description);
+			} else {
+				printf("%-21.21s\n", groups[i].acct_name);
+			}
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
