@@ -40,6 +40,10 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl -canonicalize
+.Oo Fl c cache \*(Ba Xo
+.Fl -cache= Ns Ar cache
+.Xc
+.Oc
 .Oo Fl e Ar enctype \*(Ba Xo
 .Fl -enctype= Ns Ar enctype
 .Xc
@@ -62,10 +66,15 @@ Supported options:
 .Xc
 requests that the KDC canonicalize the principal.
 .It Xo
+.Fl c Ar cache ,
+.Fl -cache= Ns Ar cache
+.Xc
+the credential cache to use.
+.It Xo
 .Fl e Ar enctype ,
 .Fl -enctype= Ns Ar enctype
 .Xc
-encryption type to use
+encryption type to use.
 .It Xo
 .Fl -no-transit-check
 .Xc
