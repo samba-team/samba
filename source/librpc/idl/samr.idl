@@ -11,7 +11,8 @@
 [ uuid("12345778-1234-abcd-ef00-0123456789ac"),
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\samr]","ncacn_ip_tcp:", "ncalrpc:"),
-  pointer_default(unique)
+  pointer_default(unique),
+  depends(lsa)
 ] interface samr
 {
 	/* account control (acct_flags) bits */
@@ -125,14 +126,6 @@
 
 	/************************/
 	/* Function    0x08     */
-
-	/* server roles */
-	typedef enum {
-		ROLE_STANDALONE    = 0,
-		ROLE_DOMAIN_MEMBER = 1,
-		ROLE_DOMAIN_BDC    = 2,
-		ROLE_DOMAIN_PDC    = 3
-	} samr_Role;
 
 	typedef struct {
 		uint16 min_password_len;

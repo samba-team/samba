@@ -22,6 +22,9 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_epmapper.h"
+#include "librpc/gen_ndr/ndr_dcom.h"
+#include "librpc/gen_ndr/ndr_oxidresolver.h"
 
 /*
   see if two endpoints match

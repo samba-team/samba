@@ -53,6 +53,7 @@
  */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_svcctl.h"
 
 BOOL in_client = False;		/* Not in the client by default */
 static BOOL bLoaded = False;

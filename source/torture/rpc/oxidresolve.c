@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_oxidresolver.h"
 
 static int test_SimplePing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T setid)
 {

@@ -4,6 +4,9 @@
   schannel structures
 */
 
+[
+	depends(netlogon)
+]
 interface schannel
 {
 	/*

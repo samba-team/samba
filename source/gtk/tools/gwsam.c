@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 #include "gtk/common/gtk-smb.h"
 
 struct policy_handle sam_handle;

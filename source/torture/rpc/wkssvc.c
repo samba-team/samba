@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_wkssvc.h"
 
 
 static BOOL test_NetWkstaGetInfo(struct dcerpc_pipe *p, 

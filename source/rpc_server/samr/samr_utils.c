@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 
 /* 
 translated the ACB_CTRL Flags to UserFlags (userAccountControl) 

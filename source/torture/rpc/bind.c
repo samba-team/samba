@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
 
 /*
   This test is 'bogus' in that it doesn't actually perform to the

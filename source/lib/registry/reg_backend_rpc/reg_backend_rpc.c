@@ -18,6 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
  
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_winreg.h"
 
 /**
  * This is the RPC backend for the registry library.
