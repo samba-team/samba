@@ -1,3 +1,7 @@
+2004-08-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rnd_keys.c (DES_rand_data): also try /dev/arandom
+
 2004-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rnd_keys.c: don't include krb4 headers
