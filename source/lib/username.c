@@ -30,7 +30,7 @@ static struct passwd *uname_string_combinations2(char *s, int offset, struct pas
  Get a users home directory.
 ****************************************************************************/
 
-char *get_home_dir(char *user)
+char *get_user_home_dir(char *user)
 {
   static struct passwd *pass;
 

@@ -210,7 +210,7 @@ char *ufc_crypt(char *key,char *salt);
 
 /*The following definitions come from  lib/username.c  */
 
-char *get_home_dir(char *user);
+char *get_user_home_dir(char *user);
 BOOL map_username(char *user);
 struct passwd *Get_Pwnam(char *user,BOOL allow_change);
 BOOL user_in_list(char *user,char *list);

@@ -2095,8 +2095,8 @@ static char *automount_path(char *user_name)
 
 	/* use the passwd entry as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
-	/* pstrcpy() copes with get_home_dir() returning NULL */
-	pstrcpy(server_path, get_home_dir(user_name));
+	/* pstrcpy() copes with get_user_home_dir() returning NULL */
+	pstrcpy(server_path, get_user_home_dir(user_name));
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
@@ -2248,7 +2248,7 @@ void standard_sub(connection_struct *conn,char *str)
 
 		switch (*(p+1)) {
 		case 'H': 
-			if ((home = get_home_dir(conn->user))) {
+			if ((home = get_user_home_dir(conn->user))) {
 				string_sub(p,"%H",home,l);
 			} else {
 				p += 2;

@@ -2504,7 +2504,7 @@ static void lp_add_auto_services(char *str)
 	homes = lp_servicenumber(HOMES_NAME);
 	
 	for (p=strtok(s,LIST_SEP);p;p=strtok(NULL,LIST_SEP)) {
-		char *home = get_home_dir(p);
+		char *home = get_user_home_dir(p);
 		
 		if (lp_servicenumber(p) >= 0) continue;
 		
