@@ -578,15 +578,16 @@ static void usage(void)
 {
 	printf("Usage: rpcclient [options] server\n");
 
-	printf("\t-A or --authfile authfile          file containing user credentials\n");
-	printf("\t-c or --command \"command string\"   execute semicolon separated cmds\n");
-	printf("\t-d or --debug debuglevel           set the debuglevel\n");
-	printf("\t-l or --logfile logfile            logfile to use instead of stdout\n");
+	printf("\t-A or --authfile authfile          File containing user credentials\n");
+	printf("\t-c or --command \"command string\"   Execute semicolon separated cmds\n");
+	printf("\t-d or --debug debuglevel           Set the debuglevel\n");
+	printf("\t-l or --logfile logfile            Logfile to use instead of stdout\n");
 	printf("\t-h or --help                       Print this help message.\n");
-	printf("\t-N or --nopass                     don't ask for a password\n");
-	printf("\t-s or --conf configfile            specify an alternative config file\n");
-	printf("\t-U or --user username              set the network username\n");
-	printf("\t-W or --workgroup domain           set the domain name for user account\n");
+	printf("\t-N or --nopass                     Don't ask for a password\n");
+	printf("\t-s or --conf configfile            Specify an alternative config file\n");
+	printf("\t-U or --user username              Set the network username\n");
+	printf("\t-W or --workgroup domain           Set the domain name for user account\n");
+	printf("\t-I or --dest-ip ip                 Specify destination IP address\n");
 	printf("\n");
 }
 
@@ -609,7 +610,8 @@ static void usage(void)
 				*opt_username=NULL,
 				*opt_domain=NULL,
 				*opt_configfile=NULL,
-				*opt_logfile=NULL;
+ 	                        *opt_logfile=NULL,
+	                        *opt_ipaddr=NULL;
 	static int		opt_debuglevel;
 	pstring 		logfile;
 	struct cmd_set 		**cmd_set;
@@ -631,7 +633,8 @@ static void usage(void)
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr},
 		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l'},
 		{"help",        'h', POPT_ARG_NONE,	0, 'h'},
-		{ 0, 0, 0, 0}
+		{"dest-ip",     'I', POPT_ARG_STRING,   &opt_ipaddr, 'I'},
+		{ NULL }
 	};
 
 
@@ -688,7 +691,12 @@ static void usage(void)
 			}
 			break;
 		}
-			
+		case 'I':
+		        if (!inet_aton(opt_ipaddr, &server_ip)) {
+				fprintf(stderr, "%s not a valid IP address\n",
+					opt_ipaddr);
+				return 1;
+			}
 		case 'W':
 			pstrcpy(domain, opt_domain);
 			break;
@@ -733,7 +741,7 @@ static void usage(void)
 
 	/* Resolve the IP address */
 
-	if (!resolve_name(server, &server_ip, 0x20))  {
+	if (!opt_ipaddr && !resolve_name(server, &server_ip, 0x20))  {
 		DEBUG(1,("Unable to resolve %s\n", server));
 		return 1;
 	}
