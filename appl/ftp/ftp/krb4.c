@@ -499,6 +499,7 @@ void
 krb4_quit(void)
 {
   auth_complete = 0;
+  data_prot = 0;
 }
 
 int krb4_write_enc(FILE *F, char *fmt, va_list ap)
