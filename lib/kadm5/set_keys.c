@@ -257,7 +257,9 @@ _kadm5_generate_key_set(krb5_context context, krb5_principal principal,
 	    p = "des:pw-salt:";
 	else if(strcmp(p, "afs") == 0 || strcmp(p, "afs3") == 0)
 	    p = "des:afs3-salt";
-
+	else if (strcmp(p, "arcfour-hmac-md5") == 0)
+	    p = "arcfour-hmac-md5:pw-salt";
+	    
 	memset(&salt, 0, sizeof(salt));
 
 	ret = parse_key_set(context, p,
