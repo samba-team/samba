@@ -777,16 +777,37 @@ BOOL make_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf)
 /*******************************************************************
 creates a STRING2 structure.
 ********************************************************************/
-BOOL make_string2(STRING2 *str, char *buf, int len)
+BOOL make_string2(STRING2 *str, const char *buf, int len)
 {
-  /* set up string lengths. */
-  str->str_max_len = len;
-  str->undoc       = 0;
-  str->str_str_len = len;
+	/* set up string lengths. */
+	str->str_max_len = len;
+	str->undoc       = 0;
+	str->str_str_len = len;
 
-  /* store the string */
-  if(len != 0)
-    memcpy(str->buffer, buf, len);
+	/* store the string */
+	if(len != 0)
+	{
+		memcpy(str->buffer, buf, len);
+	}
+
+	return True;
+}
+
+/*******************************************************************
+creates a STRING2 structure: sets up the buffer, too
+********************************************************************/
+BOOL make_buf_string2(STRING2 *str, uint32 *ptr, const char *buf)
+{
+	if (buf != NULL)
+	{
+		*ptr = 1;
+		make_string2(str, buf, strlen(buf)+1);
+	}
+	else
+	{
+		*ptr = 0;
+		make_string2(str, "", 0);
+	}
 
 	return True;
 }

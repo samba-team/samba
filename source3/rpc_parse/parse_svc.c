@@ -822,20 +822,35 @@ BOOL svc_io_r_close(char *desc,  SVC_R_CLOSE *r_u, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-makes a SVC_Q_UNKNOWN_1B structure.
+makes an SVC_Q_CHANGE_SVC_CONFIG structure.
 ********************************************************************/
-BOOL make_svc_q_unknown_1b(SVC_Q_UNKNOWN_1B *q_u,
-		const POLICY_HND *pol, uint32 switch_value,
-		uint32 unknown_1)
+BOOL make_svc_q_change_svc_config(SVC_Q_CHANGE_SVC_CONFIG *q_u, POLICY_HND *hnd,
+				uint32 service_type, uint32 start_type,
+				uint32 unknown_0,
+				uint32 error_control,
+				char* bin_path_name, char* load_order_grp, 
+				uint32 tag_id,
+				char* dependencies, char* service_start_name,
+				char* password,
+				char* disp_name)
 {
-	if (q_u == NULL) return False;
+	if (q_u == NULL || hnd == NULL) return False;
 
-	DEBUG(5,("make_svc_r_unknwon_12\n"));
+	DEBUG(5,("make_svc_q_change_svc_config\n"));
 
-	memcpy(&(q_u->pol), pol, sizeof(*pol));
+	memcpy(&(q_u->pol), hnd, sizeof(q_u->pol));
 
-	q_u->switch_value = switch_value;
-	q_u->unknown_1    = unknown_1;
+	q_u->service_type = service_type;
+	q_u->start_type = start_type;
+	q_u->unknown_0 = unknown_0;
+	q_u->error_control = error_control;
+	make_buf_unistr2(&(q_u->uni_bin_path_name     ), &(q_u->ptr_bin_path_name     ), bin_path_name     );
+	make_buf_unistr2(&(q_u->uni_load_order_grp    ), &(q_u->ptr_load_order_grp    ), load_order_grp    );
+	q_u->tag_id = tag_id;
+	make_buf_unistr2(&(q_u->uni_dependencies      ), &(q_u->ptr_dependencies      ), dependencies      );
+	make_buf_unistr2(&(q_u->uni_service_start_name), &(q_u->ptr_service_start_name), service_start_name);
+	make_buf_string2(&(q_u->str_password          ), &(q_u->ptr_password          ), password          );
+	make_buf_unistr2(&(q_u->uni_display_name      ), &(q_u->ptr_display_name      ), disp_name         );
 
 	return True;
 }
@@ -843,67 +858,60 @@ BOOL make_svc_q_unknown_1b(SVC_Q_UNKNOWN_1B *q_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL svc_io_q_unknown_1b(char *desc,  SVC_Q_UNKNOWN_1B *q_u, prs_struct *ps, int depth)
+BOOL svc_io_q_change_svc_config(char *desc,  SVC_Q_CHANGE_SVC_CONFIG *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
-	prs_debug(ps, depth, desc, "svc_io_q_unknown_1b");
+	prs_debug(ps, depth, desc, "svc_io_q_change_svc_config");
 	depth++;
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth); 
+	smb_io_pol_hnd("", &(q_u->pol), ps, depth); 
 	prs_align(ps);
 
-	prs_uint32("switch_value", ps, depth, &(q_u->switch_value));
-	prs_uint32("unknown_1   ", ps, depth, &(q_u->unknown_1   ));
+	prs_uint32("service_type          ", ps, depth, &(q_u->service_type          ));
+	prs_uint32("start_type            ", ps, depth, &(q_u->start_type            ));
+	prs_uint32("unknown_0             ", ps, depth, &(q_u->unknown_0             ));
+	prs_uint32("error_control         ", ps, depth, &(q_u->error_control         ));
+	prs_uint32("ptr_bin_path_name     ", ps, depth, &(q_u->ptr_bin_path_name     ));
+	smb_io_unistr2("uni_bin_path_name     ", &(q_u->uni_bin_path_name     ), q_u->ptr_bin_path_name     , ps, depth); 
+	prs_align(ps);
+
+	prs_uint32("ptr_load_order_grp    ", ps, depth, &(q_u->ptr_load_order_grp    ));
+	smb_io_unistr2("uni_load_order_grp    ", &(q_u->uni_load_order_grp    ), q_u->ptr_load_order_grp    , ps, depth); 
+	prs_align(ps);
+	prs_uint32("tag_id                ", ps, depth, &(q_u->tag_id                ));
+	prs_uint32("ptr_dependencies      ", ps, depth, &(q_u->ptr_dependencies      ));
+	smb_io_unistr2("uni_dependencies      ", &(q_u->uni_dependencies      ), q_u->ptr_dependencies      , ps, depth); 
+	prs_align(ps);
+	prs_uint32("ptr_service_start_name", ps, depth, &(q_u->ptr_service_start_name));
+	smb_io_unistr2("uni_service_start_name", &(q_u->uni_service_start_name), q_u->ptr_service_start_name, ps, depth); 
+	prs_align(ps);
+	prs_uint32("ptr_password          ", ps, depth, &(q_u->ptr_password          ));
+
+	smb_io_string2("str_password          ", &(q_u->str_password          ), q_u->ptr_display_name      , ps, depth); 
+	prs_align(ps);
+
+	prs_uint32("ptr_display_name      ", ps, depth, &(q_u->ptr_display_name      ));
+	smb_io_unistr2("uni_display_name      ", &(q_u->uni_display_name      ), q_u->ptr_display_name      , ps, depth); 
+	prs_align(ps);
 
 	return True;
 }
 
 /*******************************************************************
-makes a SVC_R_UNKNOWN_1B structure.
+makes an SVC_R_CHANGE_SVC_CONFIG structure.
 ********************************************************************/
-BOOL make_svc_r_unknown_1b(SVC_R_UNKNOWN_1B *r_u,
-		uint32 switch_value, uint32 unknown_1,
-		uint32 num_items, uint32 **item,
-		uint32 status)
+BOOL make_svc_r_change_svc_config(SVC_R_CHANGE_SVC_CONFIG *r_c, 
+				uint32 unknown_0, uint32 status)
 {
-	uint32 i;
-	if (r_u == NULL) return False;
+	if (r_c == NULL) return False;
 
-	DEBUG(5,("make_svc_r_unknown_1b\n"));
+	DEBUG(5,("make_svc_r_change_svc_config\n"));
 
-	if (status == 0x0)
-	{
-		r_u->num_items1 = num_items;
-		r_u->ptr        = 1;
-		r_u->num_items2 = num_items;
-
-		r_u->items = item;
-		if (num_items != 0)
-		{
-			r_u->ptr_items = (uint32*)malloc(num_items * sizeof(r_u->ptr_items[0]));
-			if (r_u->ptr_items == NULL)
-			{
-				svc_free_r_unknown_1b(r_u);
-				return False;
-			}
-			for (i = 0; i < num_items; i++)
-			{
-				r_u->ptr_items[i] = item[i] != NULL ? 1 : 0;
-			}
-		}
-
-	}
-	else
-	{
-		r_u->num_items1 = num_items;
-		r_u->ptr_items  = 0;
-		r_u->num_items2 = num_items;
-	}
-
-	r_u->status = status;
+	r_c->unknown_0 = unknown_0;
+	r_c->status = status;
 
 	return True;
 }
@@ -911,92 +919,18 @@ BOOL make_svc_r_unknown_1b(SVC_R_UNKNOWN_1B *r_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL svc_io_r_unknown_1b(char *desc, SVC_R_UNKNOWN_1B *r_u, prs_struct *ps, int depth)
+BOOL svc_io_r_change_svc_config(char *desc,  SVC_R_CHANGE_SVC_CONFIG *r_u, prs_struct *ps, int depth)
 {
-	uint32 i;
-	uint32 count = 0;
-	fstring tmp;
 	if (r_u == NULL) return False;
 
-	prs_debug(ps, depth, desc, "svc_io_r_unknown_1b");
+	prs_debug(ps, depth, desc, "svc_io_r_change_svc_config");
 	depth++;
 
 	prs_align(ps);
 
-	prs_uint32("num_items1", ps, depth, &(r_u->num_items1));
-	prs_uint32("ptr       ", ps, depth, &(r_u->ptr       ));
-	prs_uint32("num_items2", ps, depth, &(r_u->num_items2));
-
-	if (r_u->ptr_items != 0 && r_u->num_items1 != 0)
-	{
-		r_u->ptr_items = (uint32*)Realloc(r_u->ptr_items,
-		                   r_u->num_items2 * sizeof(r_u->ptr_items[0]));
-		if (r_u->ptr_items == NULL)
-		{
-			return False;
-		}
-
-		for (i = 0; i < r_u->num_items2; i++)
-		{
-			prs_grow(ps);
-			slprintf(tmp, sizeof(tmp) - 1, "ptr_item[%02d]", i);
-			prs_uint32(tmp, ps, depth, &(r_u->ptr_items[i]));
-		}
-
-		for (i = 0; i < r_u->num_items2; i++)
-		{
-			slprintf(tmp, sizeof(tmp) - 1, "item[%02d]", i);
-
-			if (ps->io)
-			{
-				/* reading */
-				if (r_u->ptr_items[i] != 0)
-				{
-					uint32 item;
-					prs_uint32(tmp, ps, depth, &item);
-					add_uint32s_to_array(&count, &r_u->items, &item);
-				}
-				else
-				{
-					add_uint32s_to_array(&count, &r_u->items, NULL);
-				}
-			}
-			else
-			{
-				/* writing */
-				if (r_u->ptr_items[i] != 0)
-				{
-					prs_uint32(tmp, ps, depth, r_u->items[i]);
-				}
-			}
-		}
-	}
-
-	prs_uint32("status", ps, depth, &(r_u->status));
-
-	if (!ps->io)
-	{
-		/* storing.  don't need memory any more */
-		svc_free_r_unknown_1b(r_u);
-	}
+	prs_uint32("unknown_0", ps, depth, &(r_u->unknown_0));
+	prs_uint32("status   ", ps, depth, &(r_u->status   ));
 
 	return True;
 }
 
-/*******************************************************************
-frees a structure.
-********************************************************************/
-void svc_free_r_unknown_1b(SVC_R_UNKNOWN_1B *r_u)
-{
-	if (r_u->ptr_items != NULL)
-	{
-		free(r_u->ptr_items);
-		r_u->ptr_items = NULL;
-	}
-	if (r_u->items != NULL)
-	{
-		free_uint32_array(r_u->num_items1, r_u->items);
-		r_u->items = NULL;
-		r_u->num_items1 = 0;
-	}
-}
