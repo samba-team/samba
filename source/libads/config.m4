@@ -341,6 +341,8 @@ if test x"$with_krb5_support" != x"no"; then
 	AC_CHECK_FUNC_EXT(krb5_krbhst_get_addrinfo, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_c_enctype_compare, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_enctypes_compatible_keys, $KRB5_LIBS)
+	AC_CHECK_FUNC_EXT(krb5_get_error_string, $KRB5_LIBS)
+	AC_CHECK_FUNC_EXT(krb5_free_error_string, $KRB5_LIBS)
 
 	LIBS="$LIBS $KRB5_LIBS"
   
