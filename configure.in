@@ -163,6 +163,7 @@ AC_DEFINE(KRB5, 1, [Enable Kerberos 5 support in applications.])dnl
 AC_SUBST(LIB_kdb)dnl
 
 KRB_CRYPTO
+AC_DEFINE(ENABLE_AES, 1, [Define if you want support AES])
 
 KRB_PTHREADS
 
