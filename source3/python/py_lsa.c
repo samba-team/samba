@@ -1,18 +1,11 @@
 #include "includes.h"
 #include "Python.h"
-#include "python/py_common.h"
 
+#include "python/py_lsa.h"
 static void py_policy_hnd_dealloc(PyObject* self)
 {
 	PyObject_Del(self);
 }
-
-typedef struct {
-	PyObject_HEAD
-	struct cli_state *cli;
-	TALLOC_CTX *mem_ctx;
-	POLICY_HND pol;
-} lsa_policy_hnd_object;
 
 PyTypeObject lsa_policy_hnd_type = {
 	PyObject_HEAD_INIT(NULL)
@@ -31,6 +24,20 @@ PyTypeObject lsa_policy_hnd_type = {
 	0,          /*tp_as_mapping*/
 	0,          /*tp_hash */
 };
+
+PyObject *new_lsa_policy_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				    POLICY_HND *pol)
+{
+	lsa_policy_hnd_object *o;
+
+	o = PyObject_New(lsa_policy_hnd_object, &lsa_policy_hnd_type);
+
+	o->cli = cli;
+	o->mem_ctx = mem_ctx;
+	memcpy(&o->pol, pol, sizeof(POLICY_HND));
+
+	return (PyObject*)o;
+}
 
 /* 
  * Exceptions raised by this module 
@@ -52,23 +59,70 @@ static PyObject *lsa_openpolicy(PyObject *self, PyObject *args,
 {
 	static char *kwlist[] = { "servername", "creds", "access", NULL };
 	char *server_name;
-	PyObject *creds = NULL;
+	PyObject *creds = NULL, *result;
 	uint32 desired_access = MAXIMUM_ALLOWED_ACCESS;
+	struct cli_state *cli;
+	NTSTATUS ntstatus;
+	TALLOC_CTX *mem_ctx;
+	POLICY_HND hnd;
 
 	if (!PyArg_ParseTupleAndKeywords(
 		args, kw, "s|O!i", kwlist, &server_name, &PyDict_Type,
-		&creds, &desired_access)) {
+		&creds, &desired_access))
+		return NULL;
 
-		goto done;
+	if (!(cli = open_pipe_creds(server_name, creds, cli_lsa_initialise,
+				    NULL))) {
+		fprintf(stderr, "could not initialise cli state\n");
+		return NULL;
 	}
 
- done:
-	return NULL;
+	if (!(mem_ctx = talloc_init())) {
+		fprintf(stderr, "unable to initialise talloc context\n");
+		return NULL;
+	}
+
+	ntstatus = cli_lsa_open_policy(cli, mem_ctx, True,
+				       SEC_RIGHTS_MAXIMUM_ALLOWED, &hnd);
+
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		cli_shutdown(cli);
+		SAFE_FREE(cli);
+		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
+		return NULL;
+	}
+
+	result = new_lsa_policy_hnd_object(cli, mem_ctx, &hnd);
+
+	return result;
 }
 
 static PyObject *lsa_close(PyObject *self, PyObject *args, PyObject *kw) 
 {
-	return NULL;
+	PyObject *po;
+	lsa_policy_hnd_object *hnd;
+	NTSTATUS result;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTuple(args, "O!", &lsa_policy_hnd_type, &po))
+		return NULL;
+
+	hnd = (lsa_policy_hnd_object *)po;
+
+	/* Call rpc function */
+
+	result = cli_lsa_close(hnd->cli, hnd->mem_ctx, &hnd->pol);
+
+	/* Cleanup samba stuf */
+
+	cli_shutdown(hnd->cli);
+	talloc_destroy(hnd->mem_ctx);
+
+	/* Return value */
+
+	Py_INCREF(Py_None);
+	return Py_None;	
 }
 
 static PyObject *lsa_lookupnames(PyObject *self, PyObject *args, 
