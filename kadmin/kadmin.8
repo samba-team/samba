@@ -1,4 +1,4 @@
-.\" Copyright (c) 2000 - 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2000 - 2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\"
-.Dd September 10, 2000
+.Dd March 24, 2004
 .Dt KADMIN 8
 .Os HEIMDAL
 .Sh NAME
@@ -128,7 +128,16 @@ If no
 .Ar command
 is given on the command line,
 .Nm
-will prompt for commands to process. Commands include:
+will prompt for commands to process. Some of the commands which take a
+principal as argument
+.Ns ( Nm delete ,
+.Nm ext_keytab ,
+.Nm get ,
+.Nm modify ,
+and
+.Nm passwd )
+will accept a glob style wildcard, and perform the operation on all
+matching principals.  Commands include:
 .\" not using a list here, since groff apparently gets confused
 .\" with nested Xo/Xc
 .Bd -ragged -offset indent
@@ -148,7 +157,63 @@ will prompt for commands to process. Commands include:
 .Ar principal...
 .Pp
 .Bd -ragged -offset indent
-creates a new principal
+Adds a new principal to the database. The options not passed on the
+command line will be promped for.
+.Ed
+.Pp
+.Nm delete
+.Ar principal...
+.Pp
+.Bd -ragged -offset indent
+Removes a principal.
+.Ed
+.Pp
+.Nm del_enctype
+.Ar principal enctypes...
+.Pp
+.Bd -ragged -offset indent
+Removes some enctypes from a principal. This can be useful the service
+belonging to the principal is known to not handle certain enctypes.
+.Ed
+.Pp
+.Nm ext_keytab
+.Oo Fl k Ar string \*(Ba Xo
+.Fl -keytab= Ns Ar string
+.Xc
+.Oc
+.Ar principal...
+.Pp
+.Bd -ragged -offset indent
+Creates a keytab with the keys of the specified principals.
+.Ed
+.Pp
+.Nm get
+.Op Fl l | Fl -long
+.Op Fl s | Fl -short
+.Op Fl t | Fl -terse
+.Ar principal...
+.Pp
+.Bd -ragged -offset indent
+Lists the matching principals, long format gives more information, and
+terse just prints the names.
+.Ed
+.Pp
+.Nm modify
+.Oo Fl a Ar attributes \*(Ba Xo
+.Fl -attributes= Ns Ar attributes
+.Xc
+.Oc
+.Op Fl -max-ticket-life= Ns Ar lifetime
+.Op Fl -max-renewable-life= Ns Ar lifetime
+.Op Fl -expiration-time= Ns Ar time
+.Op Fl -pw-expiration-time= Ns Ar time
+.Op Fl -kvno= Ns Ar number
+.Ar principal...
+.Pp
+.Bd -ragged -offset indent
+Modifies certain attributes of a principal. If run without command
+line options, you will be prompted. With command line options, it will
+only change the ones specified.
 .Ed
 .Pp
 .Nm passwd
@@ -162,68 +227,7 @@ creates a new principal
 .Ar principal...
 .Pp
 .Bd -ragged -offset indent
-changes the password of an existing principal
-.Ed
-.Pp
-.Nm delete
-.Ar principal...
-.Pp
-.Bd -ragged -offset indent
-removes a principal
-.Ed
-.Pp
-.Nm del_enctype
-.Ar principal enctypes...
-.Pp
-.Bd -ragged -offset indent
-removes some enctypes from a principal. This can be useful the service
-belonging to the principal is known to not handle certain enctypes
-.Ed
-.Pp
-.Nm ext_keytab
-.Oo Fl k Ar string \*(Ba Xo
-.Fl -keytab= Ns Ar string
-.Xc
-.Oc
-.Ar principal...
-.Pp
-.Bd -ragged -offset indent
-creates a keytab with the keys of the specified principals
-.Ed
-.Pp
-.Nm get
-.Op Fl l | Fl -long
-.Op Fl s | Fl -short
-.Op Fl t | Fl -terse
-.Ar expression...
-.Pp
-.Bd -ragged -offset indent
-lists the principals that match the expressions (which are shell glob
-like), long format gives more information, and terse just prints the
-names
-.Ed
-.Pp
-.Nm rename
-.Ar from to
-.Pp
-.Bd -ragged -offset indent
-renames a principal
-.Ed
-.Pp
-.Nm modify
-.Oo Fl a Ar attributes \*(Ba Xo
-.Fl -attributes= Ns Ar attributes
-.Xc
-.Oc
-.Op Fl -max-ticket-life= Ns Ar lifetime
-.Op Fl -max-renewable-life= Ns Ar lifetime
-.Op Fl -expiration-time= Ns Ar time
-.Op Fl -pw-expiration-time= Ns Ar time
-.Op Fl -kvno= Ns Ar number
-.Ar principal
-.Pp
-.Bd -ragged -offset indent
-modifies certain attributes of a principal
+Changes the password of an existing principal.
 .Ed
 .Pp
 .Nm password-quality
@@ -232,7 +236,7 @@ modifies certain attributes of a principal
 .Pp
 .Bd -ragged -offset indent
 Run the password quality check function locally.
-You can run this on the host the is configured to run the kadmind
+You can run this on the host that is configured to run the kadmind
 process to verify that your configuration file is correct.
 The verification is done locally, if kadmin is is run in remote mode,
 no rpc call is done to the server.
@@ -241,7 +245,24 @@ no rpc call is done to the server.
 .Nm privileges
 .Pp
 .Bd -ragged -offset indent
-lists the operations you are allowed to perform
+Lists the operations you are allowed to perform. These include
+.Li add , 
+.Li change-password ,
+.Li delete ,
+.Li get ,
+.Li list ,
+and
+.Li modify .
+.Ed
+.Pp
+.Nm rename
+.Ar from to
+.Pp
+.Bd -ragged -offset indent
+Renames a principal. This is normally transparent, but since keys are
+salted with the principal name, they will have a non-standard salt,
+and clients which are unable to cope with this will fail. Kerberos 4
+suffers from this.
 .Ed
 .Pp
 .Ed
@@ -253,9 +274,12 @@ When running in local mode, the following commands can also be used:
 .Op Ar dump-file
 .Pp
 .Bd -ragged -offset indent
-writes the database in
+Writes the database in
 .Dq human readable
-form to the specified file, or standard out
+form to the specified file, or standard out. If the database is
+encrypted, the dump will also have encrypted keys, unless 
+.Fl -decrypt
+is used.
 .Ed
 .Pp
 .Nm init
@@ -264,24 +288,25 @@ form to the specified file, or standard out
 .Ar realm
 .Pp
 .Bd -ragged -offset indent
-initializes the Kerberos database with entries for a new realm. It's
-possible to have more than one realm served by one server
+Initializes the Kerberos database with entries for a new realm. It's
+possible to have more than one realm served by one server.
 .Ed
 .Pp
 .Nm load
 .Ar file
 .Pp
 .Bd -ragged -offset indent
-reads a previously dumped database, and re-creates that database from scratch
+Reads a previously dumped database, and re-creates that database from
+scratch.
 .Ed
 .Pp
 .Nm merge
 .Ar file
 .Pp
 .Bd -ragged -offset indent
-similar to
+Similar to
 .Nm load
-but just modifies the database with the entries in the dump file
+but just modifies the database with the entries in the dump file.
 .Ed
 .Pp
 .Ed
