@@ -2927,9 +2927,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		case SMB_QUERY_POSIX_ACL:
 			{
 				SMB_ACL_T file_acl = NULL;
-				SMB_ACL_T dir_acl = NULL;
+				SMB_ACL_T def_acl = NULL;
 				uint16 num_file_acls = 0;
-				uint16 num_dir_acls = 0;
+				uint16 num_def_acls = 0;
 
 				if (fsp && !fsp->is_directory && (fsp->fd != -1)) {
 					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fd);
@@ -2945,48 +2945,48 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 				if (S_ISDIR(sbuf.st_mode)) {
 					if (fsp && fsp->is_directory) {
-						dir_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fsp->fsp_name, SMB_ACL_TYPE_DEFAULT);
+						def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fsp->fsp_name, SMB_ACL_TYPE_DEFAULT);
 					} else {
-						dir_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_DEFAULT);
+						def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_DEFAULT);
 					}
-					dir_acl = free_empty_sys_acl(conn, dir_acl);
+					def_acl = free_empty_sys_acl(conn, def_acl);
 				}
 
 				num_file_acls = count_acl_entries(conn, file_acl);
-				num_dir_acls = count_acl_entries(conn, dir_acl);
+				num_def_acls = count_acl_entries(conn, def_acl);
 
-				if ( data_size < (num_file_acls + num_dir_acls)*SMB_POSIX_ACL_ENTRY_SIZE + SMB_POSIX_ACL_HEADER_SIZE) {
+				if ( data_size < (num_file_acls + num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE + SMB_POSIX_ACL_HEADER_SIZE) {
 					DEBUG(5,("call_trans2qfilepathinfo: data_size too small (%u) need %u\n",
 						data_size,
-						(unsigned int)((num_file_acls + num_dir_acls)*SMB_POSIX_ACL_ENTRY_SIZE +
+						(unsigned int)((num_file_acls + num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE +
 							SMB_POSIX_ACL_HEADER_SIZE) ));
 					if (file_acl) {
 						SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
 					}
-					if (dir_acl) {
-						SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+					if (def_acl) {
+						SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
 					}
 					return ERROR_NT(NT_STATUS_BUFFER_TOO_SMALL);
 				}
 
 				SSVAL(pdata,0,SMB_POSIX_ACL_VERSION);
 				SSVAL(pdata,2,num_file_acls);
-				SSVAL(pdata,4,num_dir_acls);
+				SSVAL(pdata,4,num_def_acls);
 				if (!marshall_posix_acl(conn, pdata + SMB_POSIX_ACL_HEADER_SIZE, &sbuf, file_acl)) {
 					if (file_acl) {
 						SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
 					}
-					if (dir_acl) {
-						SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+					if (def_acl) {
+						SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
 					}
 					return ERROR_NT(NT_STATUS_INTERNAL_ERROR);
 				}
-				if (!marshall_posix_acl(conn, pdata + SMB_POSIX_ACL_HEADER_SIZE + (num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE), &sbuf, dir_acl)) {
+				if (!marshall_posix_acl(conn, pdata + SMB_POSIX_ACL_HEADER_SIZE + (num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE), &sbuf, def_acl)) {
 					if (file_acl) {
 						SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
 					}
-					if (dir_acl) {
-						SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+					if (def_acl) {
+						SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
 					}
 					return ERROR_NT(NT_STATUS_INTERNAL_ERROR);
 				}
@@ -2994,10 +2994,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				if (file_acl) {
 					SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
 				}
-				if (dir_acl) {
-					SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+				if (def_acl) {
+					SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
 				}
-				data_size = (num_file_acls + num_dir_acls)*SMB_POSIX_ACL_ENTRY_SIZE + SMB_POSIX_ACL_HEADER_SIZE;
+				data_size = (num_file_acls + num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE + SMB_POSIX_ACL_HEADER_SIZE;
 				break;
 			}
 
@@ -3813,34 +3813,47 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		{
 			uint16 posix_acl_version;
 			uint16 num_file_acls;
-			uint16 num_dir_acls;
+			uint16 num_def_acls;
+			BOOL valid_file_acls = True;
+			BOOL valid_def_acls = True;
 
 			if (total_data < SMB_POSIX_ACL_HEADER_SIZE) {
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 			}
 			posix_acl_version = SVAL(pdata,0);
 			num_file_acls = SVAL(pdata,2);
-			num_dir_acls = SVAL(pdata,4);
+			num_def_acls = SVAL(pdata,4);
+
+			if (num_file_acls == SMB_POSIX_IGNORE_ACE_ENTRIES) {
+				valid_file_acls = False;
+				num_file_acls = 0;
+			}
+
+			if (num_def_acls == SMB_POSIX_IGNORE_ACE_ENTRIES) {
+				valid_def_acls = False;
+				num_def_acls = 0;
+			}
 
 			if (posix_acl_version != SMB_POSIX_ACL_VERSION) {
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 			}
 
 			if (total_data < SMB_POSIX_ACL_HEADER_SIZE +
-					(num_file_acls+num_dir_acls)*SMB_POSIX_ACL_ENTRY_SIZE) {
+					(num_file_acls+num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE) {
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 			}
 
-			if (!set_unix_posix_default_acl(conn, fname, &sbuf, num_dir_acls,
-						pdata + SMB_POSIX_ACL_HEADER_SIZE +
-						(num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE))) {
+			if (valid_file_acls && !set_unix_posix_acl(conn, fsp, fname, num_file_acls,
+					pdata + SMB_POSIX_ACL_HEADER_SIZE)) {
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
 
-			if (!set_unix_posix_acl(conn, fsp, fname, num_file_acls,
-						pdata + SMB_POSIX_ACL_HEADER_SIZE)) {
+			if (valid_def_acls && !set_unix_posix_default_acl(conn, fname, &sbuf, num_def_acls,
+					pdata + SMB_POSIX_ACL_HEADER_SIZE +
+					(num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE))) {
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
+
 			SSVAL(params,0,0);
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
 			return(-1);

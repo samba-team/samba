@@ -506,6 +506,10 @@ In the same format as the uid/gid fields in the other
 UNIX extensions definitions. Use 0xFFFFFFFFFFFFFFFF for
 the MASK and OTHER entry types.
 
+If the Number of ACE entries for either file or default ACE's
+is set to 0xFFFF this means ignore this kind of ACE (and the
+number of entries sent will be zero.
+
 */
 
 /* The query/set info levels for POSIX ACLs. */
@@ -530,4 +534,6 @@ the MASK and OTHER entry types.
 
 #define SMB_POSIX_ACL_HEADER_SIZE         6
 #define SMB_POSIX_ACL_ENTRY_SIZE         10
+
+#define SMB_POSIX_IGNORE_ACE_ENTRIES	0xFFFF
 #endif
