@@ -44,7 +44,7 @@ acquire initial tickets
 .Op Fl -anonymous
 .Op Fl -version
 .Op Fl -help
-.Op Ar principal
+.Op Ar principal Op Ar command
 .Sh DESCRIPTION
 .Nm
 is used to authenticate to the kerberos server as
@@ -185,6 +185,13 @@ options can be set to a default value from the
 .Dv appdefaults
 section in krb5.conf, see
 .Xr krb5_appdefault 3 .
+.Pp
+If  a
+.Ar command
+is given, 
+.Nm kinit
+will setup new credentials caches, and AFS PAG, and then run the given
+command. When it finishes the credentials will be removed.
 .Sh ENVIRONMENT
 .Bl -tag -width Ds
 .It Ev KRB5CCNAME
