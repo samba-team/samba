@@ -1,5 +1,7 @@
 2003-04-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss_acquire_cred.3: spelling
+	
 	* Makefile.am: remove stuff that sneaked in with last commit
 	
 	* acquire_cred.c (acquire_initiator_cred): if the requested name
