@@ -39,6 +39,6 @@ struct in6_addr any = IPV6ADDR_ANY_INIT;
 ac_cv_lib_ipv6=yes,
 ac_cv_lib_ipv6=no))
 if test "$ac_cv_lib_ipv6" = yes; then
-  AC_DEFINE(HAVE_STRUCT_SOCKADDR_IN6)
+  AC_DEFINE(HAVE_IPV6)
 fi
 ])

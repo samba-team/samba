@@ -109,7 +109,7 @@ parse_ports(char *str)
     p = strtok_r(str, " \t", &pos);
     while(p){
 	if(strcmp(p, "+") == 0) {
-#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
+#ifdef HAVE_IPV6
 	    add_standard_ports(AF_INET6);
 #else
 	    add_standard_ports(AF_INET);
@@ -118,13 +118,13 @@ parse_ports(char *str)
 	    char *q = strchr(p, '/');
 	    if(q){
 		*q++ = 0;
-#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
+#ifdef HAVE_IPV6
 		add_port(AF_INET6, p, q);
 #else
 		add_port(AF_INET, p, q);
 #endif
 	    }else {
-#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
+#ifdef HAVE_IPV6
 		add_port(AF_INET6, p, "udp");
 		add_port(AF_INET6, p, "tcp");
 #else
@@ -280,7 +280,7 @@ addr_to_string(struct sockaddr *addr, size_t addr_len, char *str, size_t len)
     case AF_INET:
 	strncpy(str, inet_ntoa(((struct sockaddr_in*)addr)->sin_addr), len);
 	break;
-#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6) && defined(HAVE_INET_NTOP)
+#if defined(HAVE_IPV6) && defined(HAVE_INET_NTOP)
     case AF_INET6 :
 	inet_ntop(AF_INET6, &((struct sockaddr_in6*)addr)->sin6_addr,
 		  str, len);

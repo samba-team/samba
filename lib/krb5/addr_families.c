@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -116,7 +116,7 @@ ipv4_anyaddr (struct sockaddr *sa, int *sa_size, int port)
  * AF_INET6 - aka IPv6 implementation
  */
 
-#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
+#ifdef HAVE_IPV6
 
 static krb5_error_code
 ipv6_sockaddr2addr (const struct sockaddr *sa, krb5_address *a)
@@ -202,7 +202,7 @@ static struct addr_operations at[] = {
     {AF_INET,	KRB5_ADDRESS_INET, sizeof(struct sockaddr_in),
      ipv4_sockaddr2addr, ipv4_h_addr2sockaddr, ipv4_h_addr2addr,
      ipv4_uninteresting, ipv4_anyaddr},
-#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
+#ifdef HAVE_IPV6
     {AF_INET6,	KRB5_ADDRESS_INET6, sizeof(struct sockaddr_in6),
      ipv6_sockaddr2addr, ipv6_h_addr2sockaddr, ipv6_h_addr2addr,
      ipv6_uninteresting, ipv6_anyaddr}

@@ -50,8 +50,8 @@
 /*  Define this if struct utmpx have ut_exit  */
 #undef HAVE_UT_EXIT
 
-/*  Define this if you have a struct sockaddr_in6 */
-#undef HAVE_STRUCT_SOCKADDR_IN6
+/*  Define this if you have a IPv6 */
+#undef HAVE_IPV6
 
 /* define if prototype of gethostbyname is compatible with
    `struct hostent *gethostbyname(const char *)
@@ -69,7 +69,7 @@
 #undef GETSERVBYNAME_PROTO_COMPATIBLE
 
 /* define if prototype of openlog is compatible with
-   `void open(const char *, int, int)'
+   `void openlog(const char *, int, int)'
    */
 #undef OPENLOG_PROTO_COMPATIBLE
 

@@ -2029,7 +2029,7 @@ int
 tn(int argc, char **argv)
 {
     struct hostent *host = 0;
-#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
+#ifdef HAVE_IPV6
     struct sockaddr_in6 sin6;
 #endif
     struct sockaddr_in sin;
@@ -2121,7 +2121,7 @@ tn(int argc, char **argv)
     } else {
 #endif
 	memset (&sin, 0, sizeof(sin));
-#if defined(HAVE_INET_PTON) && defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
+#ifdef HAVE_IPV6
 	memset (&sin6, 0, sizeof(sin6));
 
 	if(inet_pton(AF_INET6, hostp, &sin6.sin6_addr)) {
@@ -2158,7 +2158,7 @@ tn(int argc, char **argv)
 		    sin.sin_family = family;
 		    sin.sin_addr   = *((struct in_addr *)(*host->h_addr_list));
 		    break;
-#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
+#ifdef HAVE_IPV6
 		case AF_INET6:
 		    memset(&sin6, 0, sizeof(sin6));
 		    sa_size = sizeof(sin6);
@@ -2224,7 +2224,7 @@ tn(int argc, char **argv)
 	sin.sin_port = port;
 	printf("Trying %s...\r\n", inet_ntoa(sin.sin_addr));
 	break;
-#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
+#ifdef HAVE_IPV6
     case AF_INET6: {
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 46 
@@ -2289,7 +2289,7 @@ tn(int argc, char **argv)
 			    inet_ntoa(sin.sin_addr));
 		    sin.sin_addr = *((struct in_addr *)(*++host->h_addr_list));
 		    break;
-#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
+#ifdef HAVE_IPV6
 		case AF_INET6: {
 		    char buf[INET6_ADDRSTRLEN];
 
