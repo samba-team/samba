@@ -5,8 +5,6 @@
   http://www.grimes.demon.co.uk/DCOM/DCOMSpec.htm
  */
 
-#define IPID GUID
-
 [
 	uuid("4d9f4ab8-7d1c-11cf-861e-0020af6e7c57"),
 	pointer_default(unique),
@@ -43,7 +41,7 @@ interface IRemoteActivation
 			[in, size_is(num_protseqs)] uint16 protseq[],
 			[out] HYPER_T pOxid,
 			[out] DUALSTRINGARRAY *pdsaOxidBindings,
-			[out] IPID ipidRemUnknown,
+			[out] GUID ipidRemUnknown,
 			[out] uint32 AuthnHint,
 			[out] COMVERSION ServerVersion,
 			[out] WERROR hr,
