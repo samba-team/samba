@@ -41,21 +41,29 @@ cannot be implemented with an underlying username database which is
 different from the Windows NT SAM.  Support for the Remote Administration
 Protocol is planned for a future release of Samba.
 
-The domain support works for WfWg, and Win95 clients.  Support for Windows
-NT and OS/2 clients is still being worked on and is still experimental.
-Support for profiles is confirmed as working for Win95, NT 4.0 and NT 3.51,
-although NT Workstation requires manual configuration of user accounts with
-NT's "User Manager for Domains", and no automatic profile location support
-is available using samba, although it has been confirmed as possible to use
-an NT server to specify that the location of profiles is on a samba server.
+The domain support works for WfWg, and Win95 clients and NT 4.0 and 3.51.
+Domain support is currently at an early experimental stage for NT 4.0 and
+NT 3.51.  Support for Windows OS/2 clients is still being worked on and is
+still experimental.
 
-The help of an NT server can be enlisted, both for profile storage and
-for user authentication.  For details on user authentication, see
+Support for profiles is confirmed as working for Win95, NT 4.0 and NT 3.51.
+It is possible to specify: the profile location; script file to be loaded
+on login; the user's home directory; and for NT a kick-off time could also
+now easily be supported.
+
+With NT Workstations, all this does not require the use or intervention of
+an NT 4.0 or NT 3.51 server: Samba can now replace the logon services
+provided by an NT server, to a limited and experimental degree (for example,
+running "User Manager for Domains" will not provide you with access to
+a domain created by a Samba Server).
+
+With Win95, the help of an NT server can be enlisted, both for profile storage
+and for user authentication.  For details on user authentication, see
 security_level.txt.  For details on profile storage, see below.
 
 
 Using these features you can make your clients verify their logon via
-the Samba server, make clients run a batch file when they logon to
+the Samba server; make clients run a batch file when they logon to
 the network and download their preferences, desktop and start menu.
 
 
@@ -70,9 +78,7 @@ To use domain logons and profiles you need to do the following:
    for details.
 
 2) Setup a WINS server (see NetBIOS.txt) and configure all your clients
-   to use that WINS service.  [lkcl 12jul97 - problems occur where
-   clients do not pick up the profiles properly unless they are using a
-   WINS server.  this is still under investigation].
+   to use that WINS service.  
 
 3) Create a share called [netlogon] in your smb.conf. This share should
    be readable by all users, and probably should not be writeable. This
@@ -136,8 +142,8 @@ In the [global] section of smb.conf set the following (for example):
 
   logon path = \\profileserver\profileshare\profilepath\%U\moreprofilepath
 
-The default for this option is \\%L\%U\profile, namely
-\\sambaserver\username\profile.  The \\L%\%U services is created
+The default for this option is \\%N\%U\profile, namely
+\\sambaserver\username\profile.  The \\N%\%U service is created
 automatically by the [homes] service.
 
 If you are using a samba server for the profiles, you _must_ make the
@@ -270,15 +276,18 @@ Windows NT Workstation 4.0
 --------------------------
 
 When a user first logs in to a Windows NT Workstation, the profile
-NTuser.MAN is created.  The "User Manager for Domains" can be used
-to specify the location of the profile.  Samba cannot be a domain
-logon server for NT, therefore you will need to manually configure
-each and every account.  [lkcl 10aug97 - i tried setting the path
-in each account to \\samba-server\homes\profile, and discovered that
-this fails because a background process maintains the connection to
-the [homes] share which does _not_ close down in between user logins.
-you have to have \\samba-server\user\profile, where user is the
-username created from the [homes] share].
+NTuser.DAT is created.  The profile location can be now specified
+through the "logon path" parameter, in exactly the same way as it
+can for Win95.  [lkcl 10aug97 - i tried setting the path to
+\\samba-server\homes\profile, and discovered that this fails because
+a background process maintains the connection to the [homes] share
+which does _not_ close down in between user logins.  you have to
+have \\samba-server\%L\profile, where user is the username created
+from the [homes] share].
+
+There is a parameter that is now available for use with NT Profiles:
+"logon drive".  This should be set to "h:" or any other drive, and
+should be used in conjunction with the new "logon home" parameter.
 
 The entry for the NT 4.0 profile is a _directory_ not a file.  The NT
 help on profiles mentions that a directory is also created with a .PDS
@@ -326,18 +335,17 @@ a mandatory profile, NTuser.MAN].
 Windows NT Server
 -----------------
 
-Following the instructions for NT Workstation, there is nothing to stop
-you specifying any path that you like for the location of users' profiles.
-Therefore, you could specify that the profile be stored on a samba server,
-or any other SMB server, as long as that SMB server supports encrypted
-passwords.
+There is nothing to stop you specifying any path that you like for the
+location of users' profiles.  Therefore, you could specify that the
+profile be stored on a samba server, or any other SMB server, as long as
+that SMB server supports encrypted passwords.
 
 
 
 Sharing Profiles between W95 and NT Workstation 4.0
 ---------------------------------------------------
 
-The default logon path is \\%L\U%.  NT Workstation will attempt to create
+The default logon path is \\%N\U%.  NT Workstation will attempt to create
 a directory "\\samba-server\username.PDS" if you specify the logon path
 as "\\samba-server\username" with the NT User Manager.  Therefore, you
 will need to specify (for example) "\\samba-server\username\profile".
@@ -348,7 +356,7 @@ If you then want to share the same Start Menu / Desktop with W95, you will
 need to specify "logon path = \\samba-server\username\profile" [lkcl 10aug97
 this has its drawbacks: i created a shortcut to telnet.exe, which attempts
 to run from the c:\winnt\system32 directory.  this directory is obviously
-unlikely to exist on a W95 host].
+unlikely to exist on a Win95-only host].
 
 If you have this set up correctly, you will find separate user.DAT and
 NTuser.DAT files in the same profile directory.
