@@ -92,16 +92,49 @@ struct vfs_ops audit_ops = {
 	NULL,                     /* lstat */
 	audit_unlink,
 	audit_chmod,
+	audit_fchmod,
 	NULL,                     /* chown */
+	NULL,                     /* fchown */
 	NULL,                     /* chdir */
 	NULL,                     /* getwd */
 	NULL,                     /* utime */
 	NULL,                     /* ftruncate */
 	NULL,                     /* lock */
+	NULL,                     /* symlink */
+	NULL,                     /* readlink */
+	NULL,                     /* link */
+	NULL,                     /* mknod */
+	NULL,                     /* realpath */
 	NULL,                     /* fget_nt_acl */
 	NULL,                     /* get_nt_acl */
 	NULL,                     /* fset_nt_acl */
-	NULL                      /* set_nt_acl */
+	NULL,                      /* set_nt_acl */
+
+	audit_chmod_acl,		/* chmod_acl */
+	audit_fchmod_acl,		/* fchmod_acl */
+
+	NULL,				/* sys_acl_get_entry */
+	NULL,				/* sys_acl_get_tag_type */
+        NULL,			/* sys_acl_get_permset */
+	NULL,			/*sys_acl_get_qualifier */
+	NULL,			/* sys_acl_get_file */
+	NULL,			/* sys_acl_get_fd */
+	NULL,			/* sys_acl_clear_perms */
+	NULL,			/* sys_acl_add_perm */
+	NULL,			/* sys_acl_to_text */
+	NULL,			/* sys_acl_init */
+	NULL,			/* sys_acl_create_entry */
+	NULL,			/* sys_acl_set_tag_type */
+	NULL,			/* sys_acl_set_qualifier */
+	NULL,			/* sys_acl_set_permset */
+	NULL,			/* sys_acl_valid */
+	NULL,			/* sys_acl_set_file */
+	NULL,			/* sys_acl_set_fd */
+	NULL,			/* sys_acl_delete_def_file */
+	NULL,			/* sys_acl_get_perm */
+	NULL,			/* sys_acl_free_text */
+	NULL,			/* sys_acl_free_acl */
+	NULL			/* sys_acl_free_qualifier */
 };
 
 /* VFS initialisation function.  Return initialised vfs_ops structure
@@ -227,4 +260,3 @@ int audit_chmod(struct connection_struct *conn, char *path, mode_t mode)
 
 	return result;
 }
-
