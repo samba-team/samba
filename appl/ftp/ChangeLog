@@ -1,3 +1,7 @@
+2000-07-01  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpd.c (krb5_verify): conditionalize on KRB5
+
 2000-06-21  Assar Westerlund  <assar@sics.se>
 
 	* ftpd: support for authenticating passwords with krb5, by Daniel

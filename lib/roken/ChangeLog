@@ -1,3 +1,8 @@
+2000-06-28  Assar Westerlund  <assar@sics.se>
+
+	* getnameinfo_verified.c (getnameinfo_verified): free memory
+	returned from getaddrinfo
+
 2000-06-27  Assar Westerlund  <assar@sics.se>
 
 	* resolve.c: export string_to_type and type_to_string
