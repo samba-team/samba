@@ -1518,7 +1518,7 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
  ********************************************************************/
 BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 {
-	if (!sampass || !*pwd) return False;
+	if (!sampass || !pwd) return False;
 	
 	if (sampass->lm_pw!=NULL)
 		DEBUG(0,("pdb_set_lanman_passwd: LM hash non NULL overwritting ?\n"));
