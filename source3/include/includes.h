@@ -1114,15 +1114,15 @@ extern char *sys_errlist[];
 #endif
 
 #ifndef S_ISREG
-#define S_ISREG(x) ((S_IFREG & x)!=0)
+#define S_ISREG(x) ((S_IFREG & (x))!=0)
 #endif
 
 #ifndef S_ISDIR
-#define S_ISDIR(x) ((S_IFDIR & x)!=0)
+#define S_ISDIR(x) ((S_IFDIR & (x))!=0)
 #endif
 
 #if !defined(S_ISLNK) && defined(S_IFLNK)
-#define S_ISLNK(x) ((S_IFLNK & x)!=0)
+#define S_ISLNK(x) ((S_IFLNK & (x))!=0)
 #endif
 
 #ifdef UFC_CRYPT
@@ -1202,7 +1202,7 @@ it works and getting lots of bug reports */
 
 /* this is a rough check to see if this machine has a lstat() call.
    it is not guaranteed to work */
-#if !(defined(S_ISLNK) || defined(S_IFLNK))
+#if !defined(S_ISLNK)
 #define lstat stat
 #endif
 

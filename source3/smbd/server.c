@@ -214,9 +214,11 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
   if (S_ISDIR(sbuf->st_mode))
     result = aDIR | (result & aRONLY);
 
+#ifdef S_ISLNK
 #if LINKS_READ_ONLY
   if (S_ISLNK(sbuf->st_mode) && S_ISDIR(sbuf->st_mode))
     result |= aRONLY;
+#endif
 #endif
 
   /* hide files with a name starting with a . */
@@ -863,6 +865,7 @@ BOOL check_name(char *name,int cnum)
   /* Patch from David Clerc <David.Clerc@cui.unige.ch>
      University of Geneva */
 
+#ifdef S_ISLNK
   if (!lp_symlinks(SNUM(cnum)))
     {
       struct stat statbuf;
@@ -873,6 +876,7 @@ BOOL check_name(char *name,int cnum)
           ret=0; 
         }
     }
+#endif
 
   if (!ret)
     DEBUG(5,("check_name on %s failed\n",name));

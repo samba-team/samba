@@ -460,7 +460,7 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
       /* send a session setup command */
       bzero(outbuf,smb_size);
 
-      if (passlen > MAX_PASSWORD_LENGTH) {
+      if (passlen > MAX_PASS_LEN) {
 	      DEBUG(1,("password too long %d\n", passlen));
 	      return False;
       }
