@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    ID Mapping
    Copyright (C) Tim Potter 2000
-   Copyright (C) Anthony Liguori <aliguor@us.ibm.com>	2003
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com>	2003
    Copyright (C) Simo Sorce 2003
    Copyright (C) Jeremy Allison 2003.
 

@@ -7,7 +7,6 @@
  *  Copyright (C) Elrond                            2000,
  *  Copyright (C) Jeremy Allison                    2001,
  *  Copyright (C) Jean François Micouleau      1998-2001,
- *  Copyright (C) Anthony Liguori                   2002,
  *  Copyright (C) Jim McDonough                     2002.
  *  
  *  This program is free software; you can redistribute it and/or modify
