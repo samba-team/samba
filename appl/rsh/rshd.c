@@ -226,7 +226,6 @@ static void
 krb5_start_session (void)
 {
     krb5_error_code ret;
-    krb5_ccache ccache;
 
     ret = krb5_cc_resolve (context, tkfile, &ccache2);
     if (ret) {
@@ -270,8 +269,6 @@ recv_krb5_auth (int s, u_char *buf,
 	|| memcmp (buf, KRB5_SENDAUTH_VERSION, len) != 0)
 	syslog_and_die ("bad sendauth version: %.8s", buf);
     
-    krb5_init_context (&context);
-
     status = krb5_sock_to_principal (context,
 				     s,
 				     "host",
@@ -726,20 +723,10 @@ doit (int do_kerberos, int check_rhosts)
 #ifdef KRB4
     if(k_hasafs()) {
 	char cell[64];
-	char *pw_dir;
-
-#ifdef _AIX
-	/* XXX this is a fix for a bug in AFS for AIX 4.3, w/o
-	   this hack the kernel crashes on the following
-	   pioctl... */
-	pw_dir = strdup(pwd->pw_dir);
-#else
-	pw_dir = pwd->pw_dir;
-#endif
 
 	if(do_newpag)
 	    k_setpag();
-	if (k_afs_cell_of_file (pw_dir, cell, sizeof(cell)) == 0)
+	if (k_afs_cell_of_file (pwd->pw_dir, cell, sizeof(cell)) == 0)
 	    krb_afslog_uid_home (cell, NULL, pwd->pw_uid, pwd->pw_dir);
 
 	krb_afslog_uid_home(NULL, NULL, pwd->pw_uid, pwd->pw_dir);
@@ -819,6 +806,10 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
+
+#ifdef KRB5
+    krb5_init_context (&context);
+#endif
 
     if(port_str) {
 	struct servent *s = roken_getservbyname (port_str, "tcp");
