@@ -358,6 +358,10 @@ char *timestring(TALLOC_CTX *mem_ctx, time_t t)
 	}
 
 #ifdef HAVE_STRFTIME
+	/* some versions of gcc complain about using %c. This is a bug
+	   in the gcc warning, not a bug in this code. See a recent
+	   strftime() manual page for details.
+	 */
 	strftime(tempTime,sizeof(tempTime)-1,"%c %Z",tm);
 	TimeBuf = talloc_strdup(mem_ctx, tempTime);
 #else
