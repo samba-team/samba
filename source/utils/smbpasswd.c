@@ -565,6 +565,103 @@ static int join_domain_byuser(char *domain, char *remote,
 	return retval;
 }
 
+/* Fetch a DOMAIN sid. Does complete cli setup / teardown anonymously. */
+
+static BOOL fetch_domain_sid( char *domain, const char *server, DOM_SID *psid)
+{
+	struct cli_state cli;
+	NTSTATUS result;
+	POLICY_HND lsa_pol;
+	BOOL ret = False;
+ 
+	ZERO_STRUCT(cli);
+	if(cli_initialise(&cli) == False) {
+		DEBUG(0,("fetch_domain_sid: unable to initialize client connection.\n"));
+		return False;
+	}
+ 
+	if(!resolve_name( server, &cli.dest_ip, 0x20)) {
+		DEBUG(0,("fetch_domain_sid: Can't resolve address for %s\n", server));
+		goto done;
+	}
+ 
+	if (!cli_connect(&cli, server, &cli.dest_ip)) {
+		DEBUG(0,("fetch_domain_sid: unable to connect to SMB server on \
+machine %s. Error was : %s.\n", server, cli_errstr(&cli) ));
+		goto done;
+	}
+
+	if (!attempt_netbios_session_request(&cli, global_myname_unix(), server, &cli.dest_ip)) {
+		DEBUG(0,("fetch_domain_sid: machine %s rejected the NetBIOS session request.\n", 
+			server));
+		goto done;
+	}
+ 
+	cli.protocol = PROTOCOL_NT1;
+ 
+	if (!cli_negprot(&cli)) {
+		DEBUG(0,("fetch_domain_sid: machine %s rejected the negotiate protocol. \
+Error was : %s.\n", server, cli_errstr(&cli) ));
+		goto done;
+	}
+ 
+	if (cli.protocol != PROTOCOL_NT1) {
+		DEBUG(0,("fetch_domain_sid: machine %s didn't negotiate NT protocol.\n",
+			server));
+		goto done;
+	}
+ 
+	/*
+	 * Do an anonymous session setup.
+	 */
+ 
+	if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
+		DEBUG(0,("fetch_domain_sid: machine %s rejected the session setup. \
+Error was : %s.\n", server, cli_errstr(&cli) ));
+		goto done;
+	}
+ 
+	if (!(cli.sec_mode & 1)) {
+		DEBUG(0,("fetch_domain_sid: machine %s isn't in user level security mode\n",
+			server));
+		goto done;
+	}
+
+	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
+		DEBUG(0,("fetch_domain_sid: machine %s rejected the tconX on the IPC$ share. \
+Error was : %s.\n", server, cli_errstr(&cli) ));
+		goto done;
+	}
+
+	/* Fetch domain sid */
+ 
+	if (!cli_nt_session_open(&cli, PI_LSARPC)) {
+		DEBUG(0, ("fetch_domain_sid: Error connecting to LSARPC pipe\n"));
+		goto done;
+	}
+ 
+	result = cli_lsa_open_policy(&cli, cli.mem_ctx, True, SEC_RIGHTS_QUERY_VALUE, &lsa_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("fetch_domain_sid: Error opening lsa policy handle. %s\n",
+			get_nt_error_msg(result) ));
+		goto done;
+	}
+ 
+	result = cli_lsa_query_info_policy(&cli, cli.mem_ctx, &lsa_pol, 5, domain, psid);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("fetch_domain_sid: Error querying lsa policy handle. %s\n",
+			get_nt_error_msg(result) ));
+		goto done;
+	}
+ 
+	ret = True;
+
+  done:
+
+	cli_shutdown(&cli);
+	return ret;
+}
+
 /*********************************************************
 Join a domain. Old server manager method.
 **********************************************************/
@@ -577,7 +674,7 @@ static int join_domain(char *domain, char *remote)
 	DOM_SID domain_sid;
 	BOOL ret;
 
-	pstrcpy(pdc_name, remote ? remote : "");
+	pstrcpy(pdc_name, remote ? remote : "*");
 	fstrcpy(trust_passwd, global_myname_dos());
 	strlower(trust_passwd);
 
@@ -608,12 +705,35 @@ machine %s in domain %s.\n", global_myname_unix(), domain);
 		return 1;
 	}
 	
+	/* Set domain sid of newly joined domain.  Since we need to contact 
+           the PDC to change the trust account password we might as well use 
+           it to retrieve the domain SID as well. What a mess! */
+
+	if (strequal(pdc_name, "*")) {
+		struct in_addr pdc_ip;
+		
+		if (!get_pdc_ip(domain, &pdc_ip)) {
+			fprintf(stderr, "Can't get IP for PDC for domain %s\n",
+				domain);
+			secrets_trust_password_delete(domain);
+			return 1;
+		}
+		
+		if (!name_status_find(domain, 0x1c, 0x20, pdc_ip, pdc_name))  {
+			fprintf(stderr, "Can't get PDC name for IP %s\n",
+				inet_ntoa(pdc_ip));
+			secrets_trust_password_delete(domain);
+			return 1;
+		}
+	}
+
 	if (!fetch_domain_sid( domain, pdc_name, &domain_sid) ||
-		!secrets_store_domain_sid(domain, &domain_sid)) {
+	    !secrets_store_domain_sid(domain, &domain_sid)) {
+		secrets_trust_password_delete(domain);
 		fprintf(stderr,"Failed to get domain SID. Unable to join domain %s.\n",domain);
 		return 1;
 	}
-	
+
 	/* pdc_name can be NULL, *, or some name given by the user */
 	/* all 3 cases are handledm by change_trust_account_password() */
 	ret = change_trust_account_password( domain, pdc_name);
@@ -622,9 +742,9 @@ machine %s in domain %s.\n", global_myname_unix(), domain);
 		secrets_trust_password_delete(domain);
 		fprintf(stderr,"Unable to join domain %s.\n",domain);
 		return 1;
-	} else {
-		printf("Joined domain %s.\n",domain);
 	}
+
+	printf("Joined domain %s.\n",domain);
 	
 	return 0;
 }
