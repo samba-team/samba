@@ -619,7 +619,7 @@ NTSTATUS make_session_info(struct auth_serversupplied_info *server_info,
 void free_session_info(struct auth_session_info **session_info)
 {
 	DEBUG(5,("attempting to free a session_info structure\n"));
-	if (!*session_info) {
+	if (*session_info) {
 		(*session_info)->refcount--;
 		if ((*session_info)->refcount <= 0) {
 			talloc_destroy((*session_info)->mem_ctx);
