@@ -30,18 +30,16 @@
 
 static int established_socket = -1;           /* fd for winbindd socket */
 
-/*
- * Utility and helper functions
- */
+/* Initialise a request structure */
 
-void init_request(struct winbindd_request *req,int rq_type)
+void init_request(struct winbindd_request *request, int request_type)
 {
         static char *domain_env;
         static BOOL initialised;
 
-	req->cmd = rq_type;
-	req->pid = getpid();
-	req->domain[0] = '\0';
+	request->cmd = request_type;
+	request->pid = getpid();
+	request->domain[0] = '\0';
 
 	if (!initialised) {
 		initialised = True;
@@ -49,10 +47,19 @@ void init_request(struct winbindd_request *req,int rq_type)
 	}
 
 	if (domain_env) {
-		strncpy(req->domain, domain_env,
-			sizeof(req->domain) - 1);
-		req->domain[sizeof(req->domain) - 1] = '\0';
+		strncpy(request->domain, domain_env,
+			sizeof(request->domain) - 1);
+		request->domain[sizeof(request->domain) - 1] = '\0';
 	}
+}
+
+/* Initialise a response structure */
+
+void init_response(struct winbindd_response *response)
+{
+	/* Initialise return value */
+
+	response->result = NSS_STATUS_UNAVAIL;
 }
 
 /* Close established socket */
@@ -322,7 +329,9 @@ enum nss_status winbindd_request(int req_type,
 	}
 	
 	/* Fill in request and send down pipe */
+
 	init_request(request, req_type);
+	init_response(response);
 	
 	if (write_sock(request, sizeof(*request)) == -1) {
 		return NSS_STATUS_UNAVAIL;
