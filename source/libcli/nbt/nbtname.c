@@ -334,10 +334,11 @@ static const char *nbt_hex_encode(TALLOC_CTX *mem_ctx, const char *s)
 {
 	int i, len;
 	char *ret;
-	const char *valid_chars = "_-.$@";
+	const char *valid_chars = "_-.$@ ";
+#define NBT_CHAR_ALLOW(c) (isalnum(c) || strchr(valid_chars, c))
 
 	for (len=i=0;s[i];i++,len++) {
-		if (!isalnum(s[i]) && !strchr(valid_chars, s[i])) {
+		if (!NBT_CHAR_ALLOW(s[i])) {
 			len += 2;
 		}
 	}
@@ -346,7 +347,7 @@ static const char *nbt_hex_encode(TALLOC_CTX *mem_ctx, const char *s)
 	if (ret == NULL) return NULL;
 
 	for (len=i=0;s[i];i++) {
-		if (isalnum(s[i]) || strchr(valid_chars, s[i])) {
+		if (NBT_CHAR_ALLOW(s[i])) {
 			ret[len++] = s[i];
 		} else {
 			snprintf(&ret[len], 4, "%%%02x", (unsigned char)s[i]);
