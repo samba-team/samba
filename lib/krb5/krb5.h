@@ -41,27 +41,7 @@
 #ifndef __KRB5_H__
 #define __KRB5_H__
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <stdarg.h>
-
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
-#ifdef HAVE_NETINET_IN6_MACHTYPES_H
-#include <netinet/in6_machtypes.h>
-#endif
-
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif
-
+#include <time.h>
 #include <bits.h>
 
 #include <des.h>
@@ -70,8 +50,6 @@
 #include <heim_err.h>
 
 #include <asn1.h>
-
-#include "config_file.h"
 
 /* simple constants */
 
@@ -238,6 +216,21 @@ typedef struct krb5_cc_ops{
 } krb5_cc_ops;
 
 struct krb5_log_facility;
+
+struct krb5_config_binding {
+    enum { STRING, LIST } type;
+    char *name;
+    struct krb5_config_binding *next;
+    union {
+	char *string;
+	struct krb5_config_binding *list;
+	void *generic;
+    } u;
+};
+
+typedef struct krb5_config_binding krb5_config_binding;
+
+typedef krb5_config_binding krb5_config_section;
 
 typedef struct krb5_context_data{
     krb5_enctype *etypes;
@@ -433,9 +426,8 @@ typedef struct _krb5_verify_init_creds_opt {
 
 #define KRB5_VERIFY_INIT_CREDS_OPT_AP_REQ_NOFAIL	0x0001
 
-#include "cache.h"
-
-#include "keytab.h"
+extern krb5_cc_ops krb5_fcc_ops;
+extern krb5_cc_ops krb5_mcc_ops;
 
 #define KRB5_KPASSWD_SUCCESS	0
 #define KRB5_KPASSWD_MALFORMED	0
@@ -444,8 +436,6 @@ typedef struct _krb5_verify_init_creds_opt {
 #define KRB5_KPASSWD_SOFTERROR	0
 
 #define KPASSWD_PORT 464
-
-#include "store.h"
 
 #include <krb5-protos.h>
 
