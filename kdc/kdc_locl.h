@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <krb5.h>
 #include <hdb_err.h>
