@@ -12,6 +12,13 @@
   pointer_default(unique)
 ] interface samr
 {
+	/* a 4 byte aligned 64-bit integer */
+	typedef struct {
+		uint32 low;
+		uint32 high;
+	} ULONG8;
+
+
 	/******************/
 	/* Function: 0x00 */
 	NTSTATUS samr_Connect (
@@ -108,7 +115,7 @@
 	} samr_DomInfo1;
 
 	typedef struct {
-		HYPER_T force_logoff_time;
+		ULONG8 force_logoff_time;
 		samr_Name unknown1;
 		samr_Name domain;  /* domain name */
 		samr_Name primary; /* PDC name if this is a BDC */
@@ -122,7 +129,7 @@
 	} samr_DomInfo2;
 
 	typedef struct {
-		HYPER_T force_logoff_time;
+		ULONG8 force_logoff_time;
 	} samr_DomInfo3;
 
 	typedef struct {
@@ -151,7 +158,7 @@
 	} samr_DomInfo9;
 
 	typedef struct {
-		HYPER_T force_logoff_time;
+		ULONG8 force_logoff_time;
 		samr_Name unknown1;
 		samr_Name domain;
 		samr_Name primary;
