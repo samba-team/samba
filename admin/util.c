@@ -39,18 +39,27 @@
 #include "admin_locl.h"
 #include <parse_units.h>
 
+static void
+add_key(Key *k, krb5_keytype keytype)
+{
+    memset(k, 0, sizeof(*k));
+    krb5_generate_random_keyblock(context, keytype, &k->key);
+    seal_key(k);
+}
+
 void
 init_des_key(hdb_entry *ent)
 {
     Key *k;
+
     ent->keys.val = realloc(ent->keys.val, 
-			    (ent->keys.len + 1) * sizeof(*ent->keys.val));
+			    (ent->keys.len + 2) * sizeof(*ent->keys.val));
     k = ent->keys.val + ent->keys.len;
-    ent->keys.len++;
-    memset(k, 0, sizeof(*k));
-    krb5_generate_random_keyblock(context, KEYTYPE_DES, &k->key);
-    seal_key(k);
+    ent->keys.len += 2;
     ent->kvno++;
+
+    add_key(k++, KEYTYPE_DES);
+    add_key(k++, KEYTYPE_DES3);
 }
 
 void
@@ -261,8 +270,10 @@ set_password(hdb_entry *ent)
 	ent->keys.val = NULL;
 	init_des_key(ent);
     } else{
-	ent->keys.len = 1;
-	ent->keys.val = calloc(1, sizeof(*ent->keys.val));
+	ent->keys.len = 2;
+	ent->keys.val = calloc(2, sizeof(*ent->keys.val));
+	ent->keys.val[0].key.keytype = KEYTYPE_DES;
+	ent->keys.val[1].key.keytype = KEYTYPE_DES3;
 	set_keys(ent, buf);
     }
     return 0;
