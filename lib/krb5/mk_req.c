@@ -15,15 +15,7 @@ krb5_mk_req(krb5_context context,
   krb5_error_code r;
   krb5_creds this_cred, *cred;
   char **realms;
-  Authenticator *auth;
-  krb5_data realm_data, authenticator;
-  Checksum c;
-
-  if (*auth_context == NULL) {
-      r = krb5_auth_con_init(context, auth_context);
-      if (r)
-	  return r;
-  }
+  krb5_data realm_data;
 
   r = krb5_get_host_realm(context, hostname, &realms);
   if (r)
@@ -50,28 +42,10 @@ krb5_mk_req(krb5_context context,
   if (r)
     return r;
 
-  (*auth_context)->key.keytype = cred->session.keytype;
-  krb5_data_copy (&(*auth_context)->key.contents,
-		  cred->session.contents.data,
-		  cred->session.contents.length);
-
-  r = krb5_create_checksum (context,
-			    CKSUMTYPE_RSA_MD4,
-			    in_data->data,
-			    in_data->length,
-			    &c);
-  
-  r = krb5_build_authenticator (context,
-				*auth_context,
-				cred,
-				&c,
-				&auth,
-				&authenticator);
-  if (r)
-    return r;
-
-  r = krb5_build_ap_req (context, cred, ap_req_options,
-			 authenticator, outbuf);
-  krb5_data_free (&authenticator);
-  return r;
+  return krb5_mk_req_extended (context,
+			       auth_context,
+			       ap_req_options,
+			       in_data,
+			       cred,
+			       outbuf);
 }
