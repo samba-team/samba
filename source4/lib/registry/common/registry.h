@@ -31,7 +31,7 @@
 struct reg_key_s {
   char *name;         /* Name of the key                    */
   char *path;		  /* Full path to the key */
-  smb_ucs2_t *class_name; /* Name of key class */
+  char *class_name; /* Name of key class */
   NTTIME last_mod; /* Time last modified                 */
   SEC_DESC *security;
   REG_HANDLE *handle;

@@ -32,6 +32,12 @@
  * exit
  */
 
+static REG_KEY *cmd_pwd(REG_KEY *cur, int argc, char **argv)
+{
+	printf("%s\n", reg_key_get_path_abs(cur));
+	return cur;
+}
+
 static REG_KEY *cmd_set(REG_KEY *cur, int argc, char **argv)
 {
 	/* FIXME */
@@ -52,7 +58,7 @@ static REG_KEY *cmd_ck(REG_KEY *cur, int argc, char **argv)
 		}
 	} 
 
-	printf("Current path is: %s\n", reg_key_get_path(new));
+	printf("Current path is: %s\n", reg_key_get_path_abs(new));
 	
 	return new;
 }
@@ -68,7 +74,7 @@ static REG_KEY *cmd_ls(REG_KEY *cur, int argc, char **argv)
 	}
 
 	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while browsing thru keys\n"));
+		DEBUG(0, ("Error occured while browsing thru keys: %s\n", win_errstr(error)));
 	}
 
 	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(cur, i, &value)); i++) {
@@ -90,7 +96,7 @@ static REG_KEY *cmd_mkkey(REG_KEY *cur, int argc, char **argv)
 		return NULL;
 	}
 
-	fprintf(stderr, "Successfully added new subkey '%s' to '%s'\n", argv[1], reg_key_get_path(cur));
+	fprintf(stderr, "Successfully added new subkey '%s' to '%s'\n", argv[1], reg_key_get_path_abs(cur));
 	
 	return NULL; 
 }
@@ -139,6 +145,11 @@ static REG_KEY *cmd_rmval(REG_KEY *cur, int argc, char **argv)
 	return NULL; 
 }
 
+static REG_KEY *cmd_hive(REG_KEY *cur, int argc, char **argv)
+{
+	/* FIXME */
+}
+
 static REG_KEY *cmd_exit(REG_KEY *cur, int argc, char **argv)
 {
 	exit(0);
@@ -154,10 +165,12 @@ struct {
 	REG_KEY *(*handle)(REG_KEY *, int argc, char **argv);
 } regshell_cmds[] = {
 	{"ck", "cd", "Change current key", cmd_ck },
+	{"ch", "hive", "Change current hive", cmd_hive },
 	{"list", "ls", "List values/keys in current key", cmd_ls },
 	{"mkkey", "mkdir", "Make new key", cmd_mkkey },
 	{"rmval", "rm", "Remove value", cmd_rmval },
 	{"rmkey", "rmdir", "Remove key", cmd_rmkey },
+	{"pwd", "pwk", "Printing current key", cmd_pwd },
 	{"set", "update", "Update value", cmd_set },
 	{"help", "?", "Help", cmd_help },
 	{"exit", "quit", "Exit", cmd_exit },
@@ -235,7 +248,7 @@ static REG_KEY *process_cmd(REG_KEY *k, char *line)
 	while(True) {
 		char *line, *prompt;
 		
-		asprintf(&prompt, "%s> ", reg_key_get_path(curkey));
+		asprintf(&prompt, "%s> ", reg_key_get_path_abs(curkey));
 		
 		line = smb_readline(prompt, NULL, NULL);
 
