@@ -83,6 +83,7 @@ interface dcerpc
 
 
 	const int DCERPC_FAULT_OP_RNG_ERROR       = 0x1c010002;
+	const int DCERPC_FAULT_UNK_IF             = 0x1c010003;
 	const int DCERPC_FAULT_NDR                = 0x000006f7;
 	const int DCERPC_FAULT_INVALID_TAG        = 0x1c000006;
 	const int DCERPC_FAULT_CONTEXT_MISMATCH   = 0x1c00001a;
