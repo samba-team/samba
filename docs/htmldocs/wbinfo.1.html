@@ -36,12 +36,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >wbinfo</B
->  [-u] [-g] [-n name] [-s sid] [-U uid] [-G gid] [-S sid] [-Y sid] [-t] [-m]</P
+>  [-u] [-g] [-n name] [-s sid] [-U uid] [-G gid] [-S sid] [-Y sid] [-t] [-m] [-r user] [-a user%password] [-A user%password]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN21"
+NAME="AEN24"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -78,7 +78,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN32"
+NAME="AEN35"
 ></A
 ><H2
 >OPTIONS</H2
@@ -227,13 +227,41 @@ CLASS="COMMAND"
 		NT domain the server is a Primary Domain Controller for.
 		</P
 ></DD
+><DT
+>-r username</DT
+><DD
+><P
+>Try to obtain the list of UNIX group ids
+		to which the user belongs.  This only works for users
+		defined on a Domain Controller.
+		</P
+></DD
+><DT
+>-a username%password</DT
+><DD
+><P
+>Attempt to authenticate a user via winbindd. 
+                This checks both authenticaion methods and reports its results.
+		</P
+></DD
+><DT
+>-A username%password</DT
+><DD
+><P
+>Store username and password used by winbindd 
+		during session setup to a domain controller.  This enables
+		winbindd to operate in a Windows 2000 domain with Restrict
+		Anonymous turned on (a.k.a. Permissions compatiable with
+		Windows 2000 servers only).
+		</P
+></DD
 ></DL
 ></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN88"
+NAME="AEN103"
 ></A
 ><H2
 >EXIT STATUS</H2
@@ -252,7 +280,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN93"
+NAME="AEN108"
 ></A
 ><H2
 >VERSION</H2
@@ -263,7 +291,7 @@ NAME="AEN93"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN96"
+NAME="AEN111"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -281,7 +309,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN101"
+NAME="AEN116"
 ></A
 ><H2
 >AUTHOR</H2
