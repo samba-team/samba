@@ -87,8 +87,8 @@ WINBIND_PAM_PROGS = nsswitch/pam_winbind.so
 WINBIND_LPROGS = @WINBIND_PAM_PROGS@ nsswitch/libnss_winbind.so
 
 SPROGS = bin/smbd bin/nmbd bin/swat @WINBIND_STARGETS@
-PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/make_printerdef bin/pdbedit @RUNPROG@ @WINBIND_TARGETS@
-PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/rpcclient bin/make_unicodemap bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@
+PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/make_printerdef @RUNPROG@ @WINBIND_TARGETS@
+PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/rpcclient bin/make_unicodemap bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@ @PDBEDIT@
 MPROGS = @MPROGS@
 LPROGS = @WINBIND_LTARGETS@
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup
