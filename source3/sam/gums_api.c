@@ -346,7 +346,7 @@ const DATA_BLOB gums_get_user_nt_pwd(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return data_blob(NULL, 0);
 
-	smbpasswd_sethexpwd(p, (unsigned char *)(obj->user->nt_pw.data), 0);
+	pdb_sethexpwd(p, (unsigned char *)(obj->user->nt_pw.data), 0);
 	DEBUG(100, ("Reading NT Password=[%s]\n", p));
 
 	return obj->user->nt_pw;
@@ -359,7 +359,7 @@ const DATA_BLOB gums_get_user_lm_pwd(const GUMS_OBJECT *obj)
 	if (!obj || obj->type != GUMS_OBJ_NORMAL_USER)
 		return data_blob(NULL, 0);
 
-	smbpasswd_sethexpwd(p, (unsigned char *)(obj->user->lm_pw.data), 0);
+	pdb_sethexpwd(p, (unsigned char *)(obj->user->lm_pw.data), 0);
 	DEBUG(100, ("Reading LM Password=[%s]\n", p));
 
 	return obj->user->lm_pw;
@@ -586,7 +586,7 @@ NTSTATUS gums_set_user_nt_pwd(GUMS_OBJECT *obj, const DATA_BLOB nt_pwd)
 	obj->user->nt_pw = data_blob_talloc(obj->mem_ctx, nt_pwd.data, nt_pwd.length);
 
 	memcpy(r, nt_pwd.data, 16);
-	smbpasswd_sethexpwd(p, r, 0);
+	pdb_sethexpwd(p, r, 0);
 	DEBUG(100, ("Setting NT Password=[%s]\n", p));
 
 	return NT_STATUS_OK;
@@ -606,7 +606,7 @@ NTSTATUS gums_set_user_lm_pwd(GUMS_OBJECT *obj, const DATA_BLOB lm_pwd)
 	obj->user->lm_pw = data_blob_talloc(obj->mem_ctx, lm_pwd.data, lm_pwd.length);
 
 	memcpy(r, lm_pwd.data, 16);
-	smbpasswd_sethexpwd(p, r, 0);
+	pdb_sethexpwd(p, r, 0);
 	DEBUG(100, ("Setting LM Password=[%s]\n", p));
 
 	return NT_STATUS_OK;
