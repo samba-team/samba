@@ -102,8 +102,10 @@ static void dptr_idleoldest(void)
    */
 
   for(; dptr; dptr = dptr->prev) {
-    if (dptr->ptr)
+    if (dptr->ptr) {
       dptr_idle(dptr);
+      return;
+    }
   }
 }
 
