@@ -1,0 +1,10 @@
+In no particular order:
+
+- New packages for winbind stuff.
+- Fix stuff in packaging/Debian/ (add infrastructure for stable
+  builds)
+- Compile with LDAP support.
+- Finish debconf support.
+- Test debconf support.
+- Review /etc/init.d/samba (Brian White reports problems, should add
+  --oknodo to start-stop-daemon)
