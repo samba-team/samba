@@ -1,3 +1,9 @@
+2003-08-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Don't do local checks on xnlock, it only passes if
+	there is a working X11 socket, XXX should really be fixed in
+	xnlock
+
 2003-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* xnlock.c (verify_krb5): use krb5_cc_clear_mcred
