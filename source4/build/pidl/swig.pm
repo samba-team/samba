@@ -67,6 +67,16 @@ sub ArrayFromPython($$)
 	$result .= "\ts->$prefix$e->{NAME} = talloc(mem_ctx, $array_len * sizeof($type));\n";
     }
 
+    $result .= "\tif (!PyDict_GetItemString(obj, \"$e->{NAME}\")) {\n";
+    $result .= "\t\tPyErr_Format(PyExc_ValueError, \"Expecting key '%s'\", \"$e->{NAME}\");\n";
+    $result .= "\t\treturn NULL;\n";
+    $result .= "\t}\n\n";
+
+    $result .= "\tif (!PyList_Check(PyDict_GetItemString(obj, \"$e->{NAME}\"))) {\n";
+    $result .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting list value for key '%s'\", \"$e->{NAME}\");\n";
+    $result .= "\t\treturn NULL;\n";
+    $result .= "\t}\n\n";
+
     $result .= "\t{\n";
 
     $result .= "\t\tint i;\n\n";
@@ -326,8 +336,7 @@ sub ParseStruct($)
     $result .= "\t\treturn NULL;\n";
     $result .= "\t}\n\n";
 
-    $result .= "\tif (obj == Py_None) return NULL;\n";
-    $result .= "\t}\n\n";
+    $result .= "\tif (obj == Py_None) return NULL;\n\n";
 
     $result .= "\tif (!PyDict_Check(obj)) {\n";
     $result .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for key '%s'\", name);\n";
