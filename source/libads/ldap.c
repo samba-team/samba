@@ -78,11 +78,13 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 {
 	int rc;
 #define ADS_PAGE_CTL_OID "1.2.840.113556.1.4.319"
+#define ADS_NO_REFERRALS_OID "1.2.840.113556.1.4.1339"
 	int version;
 	LDAPControl PagedResults; 
+	LDAPControl NoReferrals;
 	BerElement *berelem = NULL;
 	struct berval *berval = NULL;
-	LDAPControl *controls[2];
+	LDAPControl *controls[3];
 	LDAPControl **rcontrols, *cur_control;
 
 	*res = NULL;
@@ -105,19 +107,29 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	}
 	ber_flatten(berelem, &berval);
 	PagedResults.ldctl_oid = ADS_PAGE_CTL_OID;
-	PagedResults.ldctl_iscritical = (char) 1;
+	PagedResults.ldctl_iscritical = (char) 0;
 	PagedResults.ldctl_value.bv_len = berval->bv_len;
 	PagedResults.ldctl_value.bv_val = berval->bv_val;
-			
-	controls[0] = &PagedResults;
-	controls[1] = NULL;
+
+	NoReferrals.ldctl_oid = ADS_NO_REFERRALS_OID;
+	NoReferrals.ldctl_iscritical = (char) 0;
+	NoReferrals.ldctl_value.bv_len = 0;
+	NoReferrals.ldctl_value.bv_val = "";
+
+	controls[0] = &NoReferrals;
+	controls[1] = &PagedResults;
+	controls[2] = NULL;
 
 	*res = NULL;
 
 	/* we need to disable referrals as the openldap libs don't
 	   seem to handle them correctly. They result in the result
 	   record containing the server control being removed from the
-	   result list (tridge) */
+	   result list (tridge) 
+	
+	   leaving this in despite the control that says don't generate
+	   referrals, in case the server doesn't support it (jmcd)
+	*/
 	ldap_set_option(ads->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
 	rc = ldap_search_ext_s(ads->ld, bind_path, scope, exp, 
