@@ -54,10 +54,11 @@ enum winbindd_cmd {
 	WINBINDD_PAM_AUTH,
 	WINBINDD_PAM_CHAUTHTOK,
 
-	/* List domain users and groups w/o unixid mapping */
+	/* List various things */
 
-        WINBINDD_LIST_USERS,
-        WINBINDD_LIST_GROUPS,
+        WINBINDD_LIST_USERS,         /* List w/o rid->id mapping */
+        WINBINDD_LIST_GROUPS,        /* Ditto */
+	WINBINDD_LIST_TRUSTDOM,
 
 	/* SID conversion */
 
@@ -71,7 +72,13 @@ enum winbindd_cmd {
 	WINBINDD_UID_TO_SID,
 	WINBINDD_GID_TO_SID,
 
-	WINBINDD_NUM_CMDS        /* Placeholder for end of cmd list */
+	/* Miscellaneous other stuff */
+
+	WINBINDD_CHECK_MACHACC,     /* Check machine account pw works */
+
+	/* Placeholder for end of cmd list */
+
+	WINBINDD_NUM_CMDS
 };
 
 /* Winbind request structure */
@@ -116,12 +123,12 @@ struct winbindd_response {
 	int length;                           /* Length of response */
 	enum winbindd_result result;          /* Result code */
 
-    /* Fixed length return data */
-
+	/* Fixed length return data */
+	
 	union {
-        
+		
 		/* getpwnam, getpwuid, getpwent */
-
+		
 		struct winbindd_pw {
 			fstring pw_name;
 			fstring pw_passwd;
