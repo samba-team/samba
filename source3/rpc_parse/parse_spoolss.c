@@ -1112,7 +1112,6 @@ BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
         q_u->handle = *handle;
 	init_unistr2(&q_u->valuename, valuename, strlen(valuename) + 1);
         q_u->size = size;
-
         return True;
 }
 
@@ -7227,5 +7226,18 @@ BOOL make_spoolss_q_writeprinter(SPOOL_Q_WRITEPRINTER *q_u,
         memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
 	q_u->buffer_size = q_u->buffer_size2 = data_size;
 	q_u->buffer = data;
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_deleteprinterdata(SPOOL_Q_DELETEPRINTERDATA *q_u, 
+				 POLICY_HND *handle, char *valuename)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+	init_unistr2(&q_u->valuename, valuename, strlen(valuename) + 1);
+
 	return True;
 }

@@ -2122,4 +2122,49 @@ WERROR cli_spoolss_writeprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Delete printer data */
+
+WERROR cli_spoolss_deleteprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				     POLICY_HND *hnd, char *valuename)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_DELETEPRINTERDATA q;
+	SPOOL_R_DELETEPRINTERDATA r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_deleteprinterdata(&q, hnd, valuename);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_deleteprinterdata("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_DELETEPRINTERDATA, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_deleteprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /** @} **/
